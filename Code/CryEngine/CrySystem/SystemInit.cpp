@@ -48,6 +48,7 @@
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CrySystem/ICmdLine.h>
 #include <CrySystem/IProcess.h>
+#include <CryReflection/IReflection.h>
 
 #include "CryPak.h"
 #include "XConsole.h"
@@ -108,6 +109,7 @@
 #include "Serialization/ArchiveHost.h"
 
 #include "CrySchematyc/ICore.h"
+#include <CrySchematyc2/Schematyc_IFramework.h>
 #include "ManualFrameStep.h"
 
 #if CRY_PLATFORM_IOS
@@ -983,6 +985,24 @@ bool CSystem::InitNetwork(const SSystemInitParams& startupParams)
 		CryFatalError("Error creating Network System!");
 		return false;
 	}
+
+	return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+bool CSystem::InitReflectionSystem(const SSystemInitParams& startupParams)
+{
+	LOADING_TIME_PROFILE_SECTION(GetISystem());
+
+	if (!InitializeEngineModule(startupParams, "CryReflection", cryiidof<Cry::Reflection::IReflection>(), true))
+		return false;
+
+	if (!m_env.pReflection)
+	{
+		CryFatalError("Error initializing Reflection!");
+		return false;
+	}
+
 	return true;
 }
 
@@ -994,9 +1014,18 @@ bool CSystem::InitSchematyc(const SSystemInitParams& startupParams)
 	if (!InitializeEngineModule(startupParams, "CrySchematyc", cryiidof<ICrySchematycCore>(), true))
 		return false;
 
-	if (!m_env.pSchematyc)
+	if (m_env.pSchematyc == nullptr)
 	{
 		CryFatalError("Error initializing Schematyc!");
+		return false;
+	}
+
+	if (!InitializeEngineModule(startupParams, "CrySchematyc2", cryiidof<Schematyc2::IFramework>(), true))
+		return false;
+
+	if (m_env.pSchematyc2 == nullptr)
+	{
+		CryFatalError("Error initializing Schematyc 2!");
 		return false;
 	}
 
@@ -2821,6 +2850,11 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		}
 
 		CryGetIMemReplay()->EnableAsynchMode();
+
+		if (!InitReflectionSystem(startupParams))
+		{
+			return false;
+		}
 
 		m_pResourceManager->Init();
 

@@ -338,6 +338,7 @@ endif()
 
 if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
 	add_subdirectory ("Code/CryEngine/CrySystem")
+	add_subdirectory ("Code/CryEngine/CryReflection")
 	add_subdirectory ("Code/CryEngine/CryCommon")
 	add_subdirectory ("Code/CryEngine/RenderDll/XRenderD3D9")
 	
@@ -359,7 +360,9 @@ if (OPTION_ENGINE)
 	add_subdirectory ("Code/CryEngine/CryInput")
 	add_subdirectory ("Code/CryEngine/CryMovie")
 	add_subdirectory ("Code/CryEngine/CryNetwork")
+	#add_subdirectory ("Code/CryEngine/CryReflection")
 	add_subdirectory ("Code/CryEngine/CrySchematyc")
+	add_subdirectory ("Code/CryEngine/CrySchematyc2")
 	add_subdirectory ("Code/CryEngine/CryScriptSystem")
 	add_subdirectory ("Code/CryEngine/CryFlowGraph")
 

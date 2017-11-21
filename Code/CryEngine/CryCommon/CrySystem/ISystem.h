@@ -63,6 +63,13 @@ namespace CryAudio
 struct IAudioSystem;
 }
 struct ISystem;
+namespace Cry
+{
+namespace Reflection
+{
+struct IReflection;
+}
+}
 struct IFrameProfileSystem;
 struct IStatoscope;
 class IDiskProfiler;
@@ -158,6 +165,10 @@ struct IJobManager;
 }
 
 struct ICrySchematycCore;
+namespace Schematyc2
+{
+	struct IFramework;
+}
 
 #define PROC_MENU     1
 #define PROC_3DENGINE 2
@@ -831,6 +842,8 @@ struct SSystemGlobalEnvironment
 	IThreadManager*              pThreadManager;
 	IScaleformHelper*            pScaleformHelper; // nullptr when Scaleform support is not enabled
 	ICrySchematycCore*           pSchematyc;
+	Schematyc2::IFramework*      pSchematyc2;
+	Cry::Reflection::IReflection* pReflection;
 
 #if CRY_PLATFORM_DURANGO
 	void*      pWindow;
