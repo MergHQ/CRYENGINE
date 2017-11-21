@@ -675,6 +675,8 @@ private:
 
 	void GatherNavigationVolumesToSave(std::vector<NavigationVolumeID>& usedVolumes) const;
 
+	bool GrowMarkupsIfNeeded();
+
 	// Returns false when the capacity is reached and no new element can be inserted
 	template<class IdMap>
 	bool GrowIdMapIfNeeded(IdMap& idMap)

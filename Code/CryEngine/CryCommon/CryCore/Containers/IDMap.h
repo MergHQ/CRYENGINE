@@ -254,12 +254,20 @@ size_t id_map<IDType, ValueType, IndexType, CounterType >::grow(size_t amount)
 	{
 		index_type first = static_cast<index_type>(size);
 
-		if (freesBegin_ <= freesEnd_)
+		if (freesBegin_ <= freesEnd_ && size != freesLen_)
 		{
 			frees_.resize(size + amount);
-			for (size_t i = 0; i < amount; ++i)
-				frees_[freesEnd_ + i] = first++;
-			freesEnd_ += amount;
+
+			for (size_t i = freesEnd_; i < size; ++i)
+			{
+				frees_[i + amount] = frees_[i];
+			}
+			const size_t newEnd = freesEnd_ + amount;
+			for (size_t i = freesEnd_; i < newEnd; ++i)
+			{
+				frees_[i] = first++;
+			}
+			freesEnd_ = newEnd;
 		}
 		else
 		{
