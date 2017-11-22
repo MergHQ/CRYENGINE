@@ -4366,17 +4366,16 @@ void CD3D9Renderer::SetProfileMarker(const char* label, ESPM mode) const
 ///////////////////////////////////////////
 bool CD3D9Renderer::ProjectToScreen(float ptx, float pty, float ptz, float* sx, float* sy, float* sz)
 {
-	auto& camera = GetISystem()->GetViewCamera();
-	Vec3 out(0,0,0);
-	if (!camera.Project(Vec3(ptx,pty,ptz),out))
-		return false;
+	auto& camera = GetISystem()->GetViewCamera();	
+	Vec3 out(0, 0, 0);
+	bool visible = camera.Project(Vec3(ptx, pty, ptz), out);
 
 	// Returns sx,sy in the range 0 to 100
 	*sx = out.x * 100.f / camera.GetViewSurfaceX();
 	*sy = out.y * 100.f / camera.GetViewSurfaceZ();
 	*sz = out.z;
 
-	return true;
+	return visible;
 }
 
 static bool InvertMatrixPrecise(Matrix44& out, const float* m)
