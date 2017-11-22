@@ -44,12 +44,17 @@ void CScreenSpaceReflectionsStage::Execute()
 			m_passRaytracing.SetTechnique(pShader, techRaytrace, 0);
 			m_passRaytracing.SetRenderTarget(0, destRT);
 			m_passRaytracing.SetState(GS_NODEPTHTEST);
-			m_passRaytracing.SetTextureSamplerPair(0, CRendererResources::s_ptexLinearDepth, EDefaultSamplerStates::PointClamp);
-			m_passRaytracing.SetTextureSamplerPair(1, CRendererResources::s_ptexSceneNormalsMap, EDefaultSamplerStates::LinearClamp);
-			m_passRaytracing.SetTextureSamplerPair(2, CRendererResources::s_ptexSceneSpecular, EDefaultSamplerStates::LinearClamp);
-			m_passRaytracing.SetTextureSamplerPair(3, CRendererResources::s_ptexLinearDepthScaled[0], EDefaultSamplerStates::PointClamp);
-			m_passRaytracing.SetTextureSamplerPair(4, CRendererResources::s_ptexHDRTargetPrev, EDefaultSamplerStates::LinearBorder_Black);
-			m_passRaytracing.SetTextureSamplerPair(5, CRendererResources::s_ptexHDRMeasuredLuminance[rd->RT_GetCurrGpuID()], EDefaultSamplerStates::PointClamp);
+			m_passRaytracing.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+			m_passRaytracing.SetTexture(1, CRendererResources::s_ptexSceneNormalsMap);
+			m_passRaytracing.SetTexture(2, CRendererResources::s_ptexSceneSpecular);
+			m_passRaytracing.SetTexture(3, CRendererResources::s_ptexLinearDepthScaled[0]);
+			m_passRaytracing.SetTexture(4, CRendererResources::s_ptexHDRTargetPrev);
+			m_passRaytracing.SetTexture(5, CRendererResources::s_ptexHDRMeasuredLuminance[rd->RT_GetCurrGpuID()]);
+
+			m_passRaytracing.SetSampler(0, EDefaultSamplerStates::PointClamp);
+			m_passRaytracing.SetSampler(1, EDefaultSamplerStates::LinearClamp);
+			m_passRaytracing.SetSampler(2, EDefaultSamplerStates::LinearBorder_Black);
+
 			m_passRaytracing.SetRequireWorldPos(true);
 			m_passRaytracing.SetRequirePerViewConstantBuffer(true);
 			m_passRaytracing.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);

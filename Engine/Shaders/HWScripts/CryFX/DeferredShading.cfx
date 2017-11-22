@@ -1097,7 +1097,21 @@ technique FilterGBuffer
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
+// --- SSR_Raytrace --- //////////////////////////////////////////////////////////////////////////////////////////////////
+
+Texture2D   SSRComp_LinDepth      : register(t0);
+Texture2D   SSRComp_LinDepthSc    : register(t3);
+Texture2D   SSRComp_HDRLum     	  : register(t5); 
+// This sampler is used by the preceding textures, this pattern is repeated
+SamplerState  SSRComp_LinDepth_Sampler : register(s0); //pointClamp
+
+Texture2D   SSRComp_Norms    	  : register(t1);
+Texture2D   SSRComp_Spec     	  : register(t2);
+SamplerState  SSRComp_Norms_Sampler : register(s1); //linearClamp
+
+Texture2D   SSRComp_HDRTarg    	  : register(t4);
+SamplerState  SSRComp_HDRT_Sampler : register(s2); //linearBorder_black
+
 
 vtxOutWPOS SSRRaytraceVS(vtxInWPOS IN)
 {
@@ -1131,9 +1145,9 @@ pixout SSRRaytracePS( vtxOutWPOS IN )
 
 	float2 ScreenTC = MapViewportToRaster(IN.baseTC.xy);
 	
-	MaterialAttribsCommon attribs = DecodeGBuffer( tex2D( _tex1, ScreenTC + halfTexel ), 0, tex2D( _tex2, ScreenTC + halfTexel ) );
+	MaterialAttribsCommon attribs = DecodeGBuffer( GetTexture2D( SSRComp_Norms, SSRComp_Norms_Sampler, ScreenTC + halfTexel ), 0, GetTexture2D( SSRComp_Spec, SSRComp_Norms_Sampler, ScreenTC + halfTexel ) );
 	
-	const float fDepth = GetLinearDepth( _tex0, ScreenTC );
+	const float fDepth = GetLinearDepth( SSRComp_LinDepth, ScreenTC);
 	float3 vPositionWS = GetWorldPos( fDepth, IN.CamVec );
 	float3 viewVec = normalize( vPositionWS );
 	vPositionWS += CV_WorldViewPosition.xyz;
@@ -1180,8 +1194,8 @@ pixout SSRRaytracePS( vtxOutWPOS IN )
 			return OUT;
 		}
 
-		//float fLinearDepthTap = tex2Dlod( _tex3, float4( projPos.xy, 0, 0 ) ).x; // half res R16F
-		float fLinearDepthTap = tex2Dlod( _tex3, float4( uvMultiRes.xy, 0, 0 ) ).x;
+		//float fLinearDepthTap = GetTexture2DLod( _tex3, float4( projPos.xy, 0, 0 ) ).x; // half res R16F
+		float fLinearDepthTap = GetTexture2DLod( SSRComp_LinDepthSc, SSRComp_LinDepth_Sampler, float4( uvMultiRes.xy, 0, 0 ) ).x;
 
 		if (abs(fLinearDepthTap - projPos.z) < intervalSize)
 		{
@@ -1209,9 +1223,9 @@ pixout SSRRaytracePS( vtxOutWPOS IN )
 		
 		reprojPos.xy = MapViewportToRaster(reprojPos.xy);
 
-		const float curAvgLum = tex2Dlod( _tex5, float4( ScreenTC, 0, 0 ) ).x;
+		const float curAvgLum = GetTexture2DLod( SSRComp_HDRLum, SSRComp_LinDepth_Sampler, float4( ScreenTC, 0, 0 ) ).x;
 		const float maxLum = curAvgLum * 100;  // Limit brightness to reduce aliasing of specular highlights
-		color.rgb = min( tex2Dlod( _tex4, float4( reprojPos.xy, 0, 0 ) ).rgb, maxLum.xxx );
+		color.rgb = min( GetTexture2DLod( SSRComp_HDRTarg, SSRComp_HDRT_Sampler, float4( reprojPos.xy, 0, 0 ) ).rgb, maxLum.xxx );
 
 		// Filter out NANs that we still have sometimes, otherwise they get propagated and remain in the view
 		color.rgb = isfinite( color.rgb ) ? color.rgb: 0;
@@ -1583,7 +1597,7 @@ float2 HammersleySequence(uint sampleIndex, uint sampleCount)
 	return float2((float)sampleIndex / (float)sampleCount, RadicalInverse2(sampleIndex));
 }
 
-float calcHMAO(float3 vReceiverPos, float2x2 mSampleRotMat, int sampleCount, sampler2D heightmap, float sampleRadius, float mip)
+float calcHMAO(float3 vReceiverPos, float2x2 mSampleRotMat, int sampleCount, Texture2D heightmap, SamplerState ssHgtMap, float sampleRadius, float mip)
 {
 	const float ConstBias = 0.5f;
 	const float DistanceFalloffThreshold = 25.0;
@@ -1606,12 +1620,12 @@ float calcHMAO(float3 vReceiverPos, float2x2 mSampleRotMat, int sampleCount, sam
 				
 		// get mirrored samples
 		float3 vSampleTC_0 = float3(P0.xy + samplePos.xy, 0);
-		vSampleTC_0.z = tex2Dlod( heightmap, half4( vSampleTC_0, mip ) );
+		vSampleTC_0.z = GetTexture2DLod( heightmap, ssHgtMap, half4( vSampleTC_0, mip ) );
 		half3 vSample_0 = float3(samplePos.xy, vSampleTC_0.z) * HMAO_TexToWorldScale;
 		vSample_0.z += texToWorldDepth - ConstBias;
 		
 		float3 vSampleTC_1 = float3(P0.xy - samplePos.xy, 0);
-		vSampleTC_1.z = tex2Dlod( heightmap, half4( vSampleTC_1, mip ) );
+		vSampleTC_1.z = GetTexture2DLod( heightmap, ssHgtMap, half4( vSampleTC_1, mip ) );
 		half3 vSample_1 = float3(-samplePos.xy, vSampleTC_1.z) * HMAO_TexToWorldScale;
 		vSample_1.z += texToWorldDepth - ConstBias;
 		
@@ -1652,7 +1666,14 @@ float calcHMAO(float3 vReceiverPos, float2x2 mSampleRotMat, int sampleCount, sam
 #endif
 }
 
-Texture2D<float4> sceneDepth : register(t1);
+Texture2D<float4> HMAO_sceneDepth : register(t1);
+Texture2D<float4> HMAO_Norms      : register(t0);
+Texture2D<float4> HMAO_NrmBnt	  : register(t10);
+// This sampler is used by the preceding textures, this pattern is repeated
+SamplerState  HMAO_Sampler : register(s0); //pointClamp
+
+Texture2D<float4> HMAO_AODepth    : register(t11);
+SamplerState  HMAO_AOZSampler : register(s1); //TrilinearBorder_White
 
 pixout HeightMapAOPS( vtxOutWPOS IN )
 {
@@ -1662,7 +1683,7 @@ pixout HeightMapAOPS( vtxOutWPOS IN )
 	const float distThreshold = 30;     // mip map selection (in meters)
 	const float maxKernelRadius = 7.5;  // sampling radius (in meters)
 	
-	float2 tileDepths = sceneDepth.Load(int3(IN.WPos.xy,0)).xy;
+	float2 tileDepths = HMAO_sceneDepth.Load(int3(IN.WPos.xy,0)).xy;
 	float depth0 = tileDepths.x;
 	float depth1 = tileDepths.y;	
 	
@@ -1676,7 +1697,7 @@ pixout HeightMapAOPS( vtxOutWPOS IN )
 	
 	float3 worldPos0  = GetWorldPos( depth0, IN.CamVec ) + CV_WorldViewPosition.xyz;
 	float mip0 = min(depth0 * PS_NearFarClipDist.y / distThreshold, 3);
-	float hmao0 = calcHMAO(worldPos0, mSampleRotMat0, samplesNum, _texB, sampleRadius, mip0);
+	float hmao0 = calcHMAO(worldPos0, mSampleRotMat0, samplesNum, HMAO_AODepth, HMAO_AOZSampler, sampleRadius, mip0);
 	float hmao1 = hmao0;
 	
 	// AO for min depth
@@ -1688,7 +1709,7 @@ pixout HeightMapAOPS( vtxOutWPOS IN )
 		
 		float3 worldPos1 = GetWorldPos( depth1, IN.CamVec ) + CV_WorldViewPosition.xyz;	
 		float mip1 = min(depth1 * PS_NearFarClipDist.y / distThreshold, 3);
-		hmao1 = calcHMAO(worldPos1, mSampleRotMat1, samplesNum, _texB, sampleRadius, mip1);
+		hmao1 = calcHMAO(worldPos1, mSampleRotMat1, samplesNum, HMAO_AODepth, HMAO_AOZSampler, sampleRadius, mip1);
 	}
 
 	OUT.Color.r = saturate(1 - hmao0 * HMAO_Params.x);
