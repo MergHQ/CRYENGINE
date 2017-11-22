@@ -23,6 +23,6 @@ add_sources("EditorPortAudio_uber_0.cpp"
 end_sources()
 #END-FILE-LIST
 
-CreateDynamicModule(EditorCryAudioImplPortAudio SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl" OUTDIR EditorPlugins/ace)
+CryEditorPlugin(EditorCryAudioImplPortAudio SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl" OUTDIR EditorPlugins/ace)
 target_include_directories(${THIS_PROJECT} PRIVATE ../common GeneratedFiles)
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOT_USE_CRY_MEMORY_MANAGER -DPLUGIN_EXPORTS)
