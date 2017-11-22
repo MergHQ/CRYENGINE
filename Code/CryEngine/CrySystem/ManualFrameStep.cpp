@@ -47,6 +47,10 @@ CManualFrameStepController::CManualFrameStepController()
 	{
 		gEnv->pInput->AddEventListener(this);
 	}
+	if (gEnv->pSystem)
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CManualFrameStepController");
+	}
 
 	SCVars::Register();
 }
@@ -56,6 +60,10 @@ CManualFrameStepController::~CManualFrameStepController()
 	if (gEnv->pInput)
 	{
 		gEnv->pInput->RemoveEventListener(this);
+	}
+	if (gEnv->pSystem)
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 	}
 
 	SCVars::Unregister();
@@ -328,6 +336,21 @@ bool CManualFrameStepController::OnInputEvent(const SInputEvent& inputEvent)
 	}
 
 	return false;
+}
+
+void CManualFrameStepController::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+{
+	switch (event)
+	{
+	case ESYSTEM_EVENT_EDITOR_GAME_MODE_CHANGED:
+	{
+		if (wparam == 0) //! 0: Game -> Editor, 1: Editor -> Game
+		{
+			Enable(false);
+		}
+		break;
+	}
+	}
 }
 
 /*static*/ void CManualFrameStepController::GetFramesFolder(stack_string& outFolder)
