@@ -228,7 +228,7 @@ EServerError CShaderSrv::Compile(std::vector<uint8>& rVec,
 	do
 	{
 		if (errCompile != ESOK)
-			Sleep(5000);
+			CrySleep(5000);
 
 		if (!CreateRequest(CompileData, Nodes))
 		{
@@ -363,7 +363,7 @@ EServerError CShaderSrv::Recv(CRYSOCKET Socket, std::vector<uint8>& rCompileData
 					waitingtime += 5;
 
 					// sleep a bit and try again
-					Sleep(5);
+					CrySleep(5);
 				}
 				else
 				{
@@ -525,7 +525,7 @@ EServerError CShaderSrv::Send(std::vector<uint8>& rCompileData) const
 			// (for more info on windows side check : http://www.proxyplus.cz/faq/articles/EN/art10002.htm)
 			if (sockErr == CrySock::eCSE_ENOBUFS)
 			{
-				Sleep(5000);
+				CrySleep(5000);
 			}
 
 			CrySock::closesocket(Socket);

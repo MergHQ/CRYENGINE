@@ -275,7 +275,7 @@ void CD3D9Renderer::StartLoadtimeFlashPlayback(ILoadtimeCallback* pCallback)
 		while (m_pRT->m_eVideoThreadMode != SRenderThread::eVTM_Active)
 		{
 			m_pRT->FlushAndWait();
-			Sleep(0);
+			CrySleep(0);
 		}
 	}
 }
@@ -292,7 +292,7 @@ void CD3D9Renderer::StopLoadtimeFlashPlayback()
 		while (m_pRT->m_eVideoThreadMode != SRenderThread::eVTM_Disabled)
 		{
 			m_pRT->FlushAndWait();
-			Sleep(0);
+			CrySleep(0);
 		}
 
 		m_pRT->m_pLoadtimeCallback = 0;

@@ -148,7 +148,7 @@ void CSamplingThread::Run()
 		if (!m_pSampler->AddSample(ip))
 			break;
 
-		Sleep(m_samplePeriodMs);
+		CrySleep(m_samplePeriodMs);
 	}
 }
 

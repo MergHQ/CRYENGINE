@@ -52,7 +52,7 @@ public:
 	{
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 		while (CryInterlockedCompareExchange(&s_locked, 1L, 0L) == 1L)
-			Sleep(0);
+			CrySleep(0);
 #endif
 	}
 
@@ -3368,7 +3368,7 @@ Start:
 				SShaderAsyncInfo::FlushPendingShaders();
 			}
 			else
-				Sleep(1);
+				CrySleep(1);
 		}
 		// Compile FXC shaders or next iteration of internal shaders
 		SShaderAsyncInfo::FlushPendingShaders();
@@ -4459,9 +4459,9 @@ void CAsyncShaderTask::CShaderThread::ThreadEntry()
 	{
 		m_task->FlushPendingShaders();
 		if (!CRenderer::CV_r_shadersasynccompiling)
-			Sleep(250);
+			CrySleep(250);
 		else
-			Sleep(25);
+			CrySleep(25);
 	}
 }
 

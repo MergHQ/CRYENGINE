@@ -1082,7 +1082,7 @@ public:
 					//int timeSleep = (int)((m_timeTarget-gEnv->pTimer->GetAsyncTime()).GetMilliSeconds()*0.9f);
 					//Sleep(max(0,timeSleep));
 				}
-				if (!stepped) Sleep(0);
+				if (!stepped) CrySleep(0);
 				m_FrameDone.Set();
 #ifdef ENABLE_LW_PROFILERS
 				QueryPerformanceCounter(&stepEnd);
@@ -1276,7 +1276,7 @@ void CSystem::SleepIfInactive()
 				if (gEnv->pGameFramework->IsInTimeDemo())
 					break;
 			}
-			Sleep(5);
+			CrySleep(5);
 		}
 	}
 #endif
@@ -1422,7 +1422,7 @@ struct SBreakListenerTask : public IThread
 	{
 		do
 		{
-			Sleep(200);
+			CrySleep(200);
 			if (++m_nBreakIdle > 1)
 			{
 				WriteLock lock(g_lockInput);

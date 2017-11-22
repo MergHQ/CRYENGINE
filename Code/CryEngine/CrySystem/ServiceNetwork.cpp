@@ -266,7 +266,7 @@ void CServiceNetworkConnection::FlushAndWait()
 	// Wait for the connection to be empty
 	while (IsAlive() && !m_pSendQueue.empty())
 	{
-		Sleep(1);
+		CrySleep(1);
 	}
 
 	// Resume communication layer
@@ -1720,7 +1720,7 @@ void CServiceNetwork::ThreadEntry()
 
 		// Internal delay
 		// TODO: this is guess work right now
-		Sleep(5);
+		CrySleep(5);
 	}
 }
 

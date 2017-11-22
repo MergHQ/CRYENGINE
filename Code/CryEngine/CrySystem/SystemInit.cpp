@@ -371,7 +371,7 @@ public:
 		while (true)
 		{
 			CmdCrashTest(&commandArg);
-			Sleep(1); // Allow other threads to run
+			CrySleep(1); // Allow other threads to run
 		}
 	}
 

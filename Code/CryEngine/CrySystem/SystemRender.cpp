@@ -750,7 +750,7 @@ void CSystem::RenderStats()
 		// DO NOT REMOVE OR COMMENT THIS OUT!
 		// If you hit this, then you most likely have invalid (synchronous) file accesses
 		// which must be fixed in order to not stall the entire game.
-		Sleep(3000);
+		CrySleep(3000);
 		m_bHasRenderedErrorMessage = false;
 	}
 #endif

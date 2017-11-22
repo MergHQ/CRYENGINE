@@ -100,7 +100,7 @@ void CIntroMovieRenderer::WaitForCompletion()
 			break;
 		}
 		gEnv->pLog->UpdateLoadingScreen(0);
-		Sleep(1);
+		CrySleep(1);
 	}
 }
 

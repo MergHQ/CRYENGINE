@@ -69,7 +69,7 @@ void CDebugOutput::Run(CRYSOCKET sock)
 		}
 		if (sleep)
 		{
-			Sleep(1000);
+			CrySleep(1000);
 		}
 	}
 }

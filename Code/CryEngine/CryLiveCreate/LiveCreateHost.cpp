@@ -144,7 +144,7 @@ void CPlatformService::ThreadEntry()
 			if (errCode == CrySock::eCSE_EWOULDBLOCK || errCode == CrySock::eCSE_ETIMEDOUT)
 			{
 				// just a timeout
-				Sleep(500);
+				CrySleep(500);
 				continue;
 			}
 

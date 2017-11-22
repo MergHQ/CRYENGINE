@@ -821,7 +821,7 @@ struct ImpatientWriteLock {
 				lock = -10;
 				*(int*)0 = 0;
 			}
-			Sleep(0);
+			CrySleep(0);
 		}
 	}
 	~ImpatientWriteLock() { if (bActive) { while(*pLock==-10); AtomicAdd(pLock,-WRITE_LOCK_VAL); } }

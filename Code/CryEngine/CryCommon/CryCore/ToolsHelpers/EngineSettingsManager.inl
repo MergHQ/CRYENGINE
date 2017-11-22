@@ -442,7 +442,7 @@ void CEngineSettingsManager::CallSettingsDialog(void* pParent)
 		return;
 	}
 
-	Sleep(1000);
+	CrySleep(1000);
 }
 
 //////////////////////////////////////////////////////////////////////////
