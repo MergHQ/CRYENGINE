@@ -55,8 +55,8 @@ void SRenderNodeTempData::FreeRenderObjects()
 
 void SRenderNodeTempData::InvalidateRenderObjectsInstanceData()
 {
-	// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
-	WriteLock lock(userData.permanentObjectCreateLock);
+	// TODO: protecting from races with a lock here will break rendering, look for a proper fix
+	// WriteLock lock(userData.permanentObjectCreateLock);
 
 	// Release permanent CRenderObject(s)
 	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
