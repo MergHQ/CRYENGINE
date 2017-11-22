@@ -2755,6 +2755,9 @@ void CDeviceObjectFactory::AllocateNullResources()
 			m_NullResources[D3D11_RESOURCE_DIMENSION_BUFFER] = pNullBuffer;
 
 			vkCmdFillBuffer(GetCoreCommandList().GetVKCommandList()->GetVkCommandList(), pNullBuffer->AsBuffer()->GetHandle(), 0, info.size, 0x0);
+
+			auto setLayout = GetDeviceObjectFactory().GetInlineConstantBufferLayout();
+			pNullBuffer->CreateDynamicDescriptorSet(setLayout, static_cast<uint32_t>(info.size));
 		}
 		else
 		{
