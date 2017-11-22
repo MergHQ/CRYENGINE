@@ -69,12 +69,16 @@ void CScreenSpaceObscuranceStage::Execute()
 		m_passObscurance.SetRequirePerViewConstantBuffer(true);
 		m_passObscurance.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 
-		m_passObscurance.SetTextureSamplerPair(0, CRendererResources::s_ptexSceneNormalsMap, EDefaultSamplerStates::PointClamp);
-		m_passObscurance.SetTextureSamplerPair(1, CRendererResources::s_ptexLinearDepth, EDefaultSamplerStates::PointClamp);
-		m_passObscurance.SetTextureSamplerPair(3, CRendererResources::s_ptexAOVOJitter, EDefaultSamplerStates::PointWrap);
-		m_passObscurance.SetTextureSamplerPair(5, CRendererResources::s_ptexLinearDepthScaled[bLowResOutput], EDefaultSamplerStates::PointClamp);
-		m_passObscurance.SetTextureSamplerPair(11, heightMapAO->GetHeightMapAOScreenDepthTex(), EDefaultSamplerStates::PointClamp);
+		// These 'pairs' all used the same samplerstate!!
+		m_passObscurance.SetTexture(0, CRendererResources::s_ptexSceneNormalsMap);
+		m_passObscurance.SetTexture(1, CRendererResources::s_ptexLinearDepth);
+		m_passObscurance.SetTexture(5, CRendererResources::s_ptexLinearDepthScaled[bLowResOutput]);
+		m_passObscurance.SetTexture(11, heightMapAO->GetHeightMapAOScreenDepthTex());
 		m_passObscurance.SetTexture(12, heightMapAO->GetHeightMapAOTex());
+		m_passObscurance.SetSampler(0, EDefaultSamplerStates::PointClamp);
+
+		m_passObscurance.SetTexture(3, CRendererResources::s_ptexAOVOJitter);
+		m_passObscurance.SetSampler(1, EDefaultSamplerStates::PointWrap);
 
 		{
 			SRenderViewInfo viewInfo[CCamera::eEye_eCount];
@@ -144,6 +148,11 @@ void CScreenSpaceObscuranceStage::Execute()
 			m_passFilter.SetState(GS_NODEPTHTEST);
 			m_passFilter.SetTextureSamplerPair(0, CRendererResources__s_ptexSceneSpecular, EDefaultSamplerStates::LinearClamp);
 			m_passFilter.SetTextureSamplerPair(1, CRendererResources::s_ptexLinearDepth, EDefaultSamplerStates::PointClamp);
+			// this is probably no help, since 2 samplers are required anyway...
+/*			m_passFilter.SetTexture(0, CRendererResources__s_ptexSceneSpecular);
+			m_passFilter.SetTexture(1, CRendererResources::s_ptexLinearDepth);
+			m_passFilter.SetSampler(0, EDefaultSamplerStates::LinearClamp);
+			m_passFilter.SetSampler(1, EDefaultSamplerStates::PointClamp);*/
 		}
 
 		static CCryNameR sourceTexSizeName("SSDO_SourceTexSize");

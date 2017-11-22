@@ -17,8 +17,6 @@ float Script : STANDARDSGLOBAL
            "ShaderType = PostProcess;"
 >; 
 
-Texture2DArray<float4> shadowMask : register(t8);
-
 float4 g_LightPos < vsregister = c12; psregister = c4; > ;
 half4 g_LightDiffuse < psregister = c5; > ;
 
@@ -235,20 +233,6 @@ vtxOutWPOSOnly LightVolumeVS(vtxInLightPrePass IN)
 	
 	//final ViewProj transformation
 	OUT.HPosition = mul(CV_ViewProjMatr, vPos);
-
-  return OUT;
-}
-
-vtxOutWPOSOnly DecalVolumeVS(vtxInLightPrePass IN)
-{
-  vtxOutWPOSOnly OUT= (vtxOutWPOSOnly)0;
-
-  float4 vPos = IN.Position;
-
-  vPos = mul(g_mInvLightProj, vPos);
-  vPos /= vPos.w;
-	
-  OUT.HPosition = mul(CV_ViewProjMatr, vPos);
 
   return OUT;
 }
@@ -697,17 +681,6 @@ technique DeferredDecalVolumeMerged
   }
 }
 
-technique DeferredDecalVolume
-{
-  pass p0
-  {
-    VertexShader = DecalVolumeVS() DeferredDecalPassVS;            
-    GeometryShader = $AutoGS_MultiRes();
-    PixelShader = DecalPassPS() DeferredDecalPassPS;
-
-    CullMode = None;        
-  }
-}
 
 technique DeferredLightVolume
 {
@@ -1347,17 +1320,24 @@ vtxOut DirOccPassVS(vtxIn IN)
   return OUT;
 }
 
-half4 SSDOFetchDepths( sampler2D smp, half4 tc[2], uint component )
+half4 SSDOFetchDepths( Texture2D depthTex, SamplerState ssDepth, half4 tc[2], uint component )
 {
-	return half4( tex2Dlod( smp, half4( tc[0].xy, 0, 0 ) )[component],
-								tex2Dlod( smp, half4( tc[0].zw, 0, 0 ) )[component],
-								tex2Dlod( smp, half4( tc[1].xy, 0, 0 ) )[component],
-								tex2Dlod( smp, half4( tc[1].zw, 0, 0 ) )[component] );
+	return half4( GetTexture2DLod( depthTex, ssDepth, half4( tc[0].xy, 0, 0 ) )[component],
+	              GetTexture2DLod( depthTex, ssDepth, half4( tc[0].zw, 0, 0 ) )[component],
+	              GetTexture2DLod( depthTex, ssDepth, half4( tc[1].xy, 0, 0 ) )[component],
+	              GetTexture2DLod( depthTex, ssDepth, half4( tc[1].zw, 0, 0 ) )[component] );
 }
 
-Texture2D<float4> HeightmapAODepth : register(t11);
-Texture2D<float4> HeightmapAO      : register(t12);
-SamplerState HeightmapAOSampler    : register(s11);
+Texture2D<float4> SSDOSamp_HMAODepth : register(t11);
+Texture2D<float4> SSDOSamp_HMAO      : register(t12);
+Texture2D<float4> SSDOSamp_Norms  : register(t0);
+Texture2D<float4> SSDOSamp_LinZ   : register(t1);
+Texture2D<float4> SSDOSamp_LinZSc : register(t5);
+SamplerState SSDOSamp_depthSS : register(s0);   //PointClamp
+
+Texture2D<float4> SSDOSamp_AOVJt  : register(t3);
+SamplerState SSDOSamp_AOVSS : register(s1);  //PointWrap
+
 
 pixout SSDO_Sampling_PS(vtxOut IN)
 {
@@ -1380,7 +1360,7 @@ pixout SSDO_Sampling_PS(vtxOut IN)
 	screenTC.xy = IN.WPos.xy * cbSSDO.screenSize.zw;	
 	screenTC.zw = IN.WPos.xy * 0.25;
 	
-	float fCenterDepth = GetLinearDepth( _tex1, screenTC.xy );
+	float fCenterDepth = GetLinearDepth( SSDOSamp_LinZ, int2(screenTC.xy ));
 	float2 linearUV = IN.baseTC.xy;
 
 	float3 vReceiverPos = float3( linearUV.xy * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fCenterDepth * cbSSDO.nearFarClipDist.y;
@@ -1415,7 +1395,7 @@ pixout SSDO_Sampling_PS(vtxOut IN)
 #if %_RT_SAMPLE2
 	half3 vNormalVS = normalize(cross(ddy(vReceiverPos), ddx(vReceiverPos)));
 #else	
-	half3 vNormal = DecodeGBufferNormal( tex2D( _tex0, screenTC.xy ) );
+	half3 vNormal = DecodeGBufferNormal( GetTexture2D( SSDOSamp_Norms, SSDOSamp_depthSS, screenTC.xy ) );
 	half3 vNormalVS = normalize( mul( CV_ViewMatr, half4(vNormal, 0) ).xyz ) * float3(1, -1, -1);
 #endif
 	
@@ -1442,10 +1422,10 @@ pixout SSDO_Sampling_PS(vtxOut IN)
 		vSampleTC = vSampleUV;
 	#endif
 		
-	#if %_RT_SAMPLE0
-		half4 fLinearDepthTap = SSDOFetchDepths( _tex5, vSampleTC, 3 ) + 0.0000001;
-	#else
-		half4 fLinearDepthTap = SSDOFetchDepths( _tex1, vSampleTC, 0 );
+	 #if %_RT_SAMPLE0
+		half4 fLinearDepthTap = SSDOFetchDepths( SSDOSamp_LinZSc, SSDOSamp_depthSS, vSampleTC, 3 ) + 0.0000001;
+	 #else
+		half4 fLinearDepthTap = SSDOFetchDepths( SSDOSamp_LinZ, SSDOSamp_depthSS, vSampleTC, 0 );
 	#endif
 	
 		fLinearDepthTap *= cbSSDO.nearFarClipDist.y;
@@ -1494,11 +1474,11 @@ pixout SSDO_Sampling_PS(vtxOut IN)
 #if %_RT_SAMPLE1
 	float2 scaledTC = (IN.WPos.xy * cbSSDO.hmaoParams.z) * cbSSDO.hmaoParams.xy;
 	
-	float4 depths0 = HeightmapAODepth.GatherRed(HeightmapAOSampler, scaledTC);
-	float4 depths1 = HeightmapAODepth.GatherGreen(HeightmapAOSampler, scaledTC);
+	float4 depths0 = SSDOSamp_HMAODepth.GatherRed(SSDOSamp_depthSS, scaledTC);
+	float4 depths1 = SSDOSamp_HMAODepth.GatherGreen(SSDOSamp_depthSS, scaledTC);
 	
-	float4 occl0 = HeightmapAO.GatherRed(HeightmapAOSampler, scaledTC);
-	float4 occl1 = HeightmapAO.GatherGreen(HeightmapAOSampler, scaledTC);
+	float4 occl0 = SSDOSamp_HMAO.GatherRed(SSDOSamp_depthSS, scaledTC);
+	float4 occl1 = SSDOSamp_HMAO.GatherGreen(SSDOSamp_depthSS, scaledTC);
 
 	float4 w0 =  1.0 / (abs(depths0 - fCenterDepth) + 1e-5);
 	float4 w1 =  1.0 / (abs(depths1 - fCenterDepth) + 1e-5);
@@ -1841,179 +1821,10 @@ technique SSSSS_Blur
     CullMode = None;
   }
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-float ShadowOcclusionLookup(float2 tc)
-{
-	float shadowMaskValue = shadowMask.Load(int4( tc * PS_ScreenSize.xy, 0, 0)).r;
-	return 1.0h - saturate(shadowMaskValue);
-}
-
-struct pixoutSSS
-{
-	half4 Color  : COLOR0;
-#if %_RT_SAMPLE1
-  half4 DiffuseAcc  : COLOR1;
-#endif
-};
-
-// todo: merge all PassVS functions into one
-vtxOutWPOS DeferredShadingPassVS(vtxInWPOS IN)
-{
-  vtxOutWPOS OUT = (vtxOutWPOS)0; 
-
-	OUT.HPosition = Get2dHPos(IN.Position);
-  OUT.baseTC.xy = IN.baseTC.xy;
-	OUT.baseTC.zw = IN.baseTC.xy + float2(g_ScreenSize.z * 2.0, 0.0);
-  OUT.CamVec.xyz = IN.CamVec;
-
-  return OUT;
-}
-
-[earlydepthstencil]
-pixoutSSS DeferredShadingPassPS(vtxOutWPOS IN)
-{
-	pixoutSSS OUT = (pixoutSSS) 0;
-
-	half selfShadow = 1;
-	
-	float2 ScreenTC = MapViewportToRaster(IN.baseTC.xy);
-
-#if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1
-	uint uSample = 0;
-  #if %_RT_MSAA_SAMPLEFREQ_PASS
-    uSample = IN.uSample;
-  #endif
-
-	half3 diffuseAcc = GetTargetIndexMS( 0, ScreenTC, GetMSAASampleNum(), uSample );
-	half3 specularAcc = GetTargetIndexMS( 1, ScreenTC, GetMSAASampleNum(), uSample );
-	float fDepth = GetLinearDepth( GetTargetIndexMS( 5, ScreenTC, GetMSAASampleNum(), uSample ).x);
-#else
-	half3 diffuseAcc = DecodeLightBuffer( tex2D( _tex0, ScreenTC ) );
-	half3 specularAcc = DecodeLightBuffer( tex2D( _tex1, ScreenTC ) );  
-	float fDepth = GetLinearDepth( _tex5, ScreenTC );
-#endif
-	
-	MaterialAttribsCommon attribs;
-#if (%RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_MSAA_SAMPLEFREQ_PASS
-	attribs = DecodeGBuffer( GetTargetIndexMS( 4, ScreenTC, GetMSAASampleNum(), uSample ),
-	                         GetTargetIndexMS( 2, ScreenTC, GetMSAASampleNum(), uSample ),
-	                         GetTargetIndexMS( 3, ScreenTC, GetMSAASampleNum(), uSample ) );
-#else
-	attribs = DecodeGBuffer( tex2D( _tex4, ScreenTC ), tex2D( _tex2, ScreenTC ), tex2D( _tex3, ScreenTC ) );
-#endif
-
-  float3 vPosition = ReconstructWorldPos(IN.WPos.xy, fDepth, true);
-	
-	half3 albedo = attribs.Albedo;
-	// Simple energy conservation between specular and diffuse
-	albedo *= saturate( 1 - GetLuminance( attribs.Reflectance ) );  // Sat required to handle precision issues
-
-	half NdotL = saturate( dot( SunLightDir.xyz, attribs.NormalWorld ) );
-	half3 vView = -normalize( vPosition );
-
-#if %_RT_SAMPLE2
-	// Spherical area light for sun.
-	half3 sunSpec = AreaLightGGX( attribs.NormalWorld, vView.xyz, SunLightDir.xyz * 10000.0f, attribs.Smoothness, attribs.Reflectance, g_AreaLightMatrix, AREA_LIGHT_SPHERE ) * SunColor.w;
-#else
-	half3 sunSpec = SpecularBRDF( attribs.NormalWorld, vView, SunLightDir.xyz, attribs.Smoothness, attribs.Reflectance ) * SunColor.w;
-#endif
-	half shadowOccl = ShadowOcclusionLookup(ScreenTC);
-
-	#if %_RT_MSAA_SAMPLEFREQ_PASS					
-		const int nTaps = 9;
-		const float2 vTaps[nTaps] = 
-		{
-			float2(-1, 1),
-			float2(0, 1),
-		  float2(1, 1),
-
-			float2(-1, 0),
-			float2(0, 0),
-		  float2(1, 0),
-
-			float2(-1, -1),
-			float2(0, -1),
-		  float2(1, -1),
-		};
-
-		half2 shadowOcclAcc = 0;
-					
-		for(int t=0; t < nTaps; t++)
-		{
-			const float fDepthTap = GetLinearDepthUnclamped( _tex9, ScreenTC + vTaps[t]*g_ScreenSize.zw*2);
-			const float fBilateralWeight = saturate(exp(-abs(fDepth-fDepthTap)*PS_NearFarClipDist.y));
-			shadowOcclAcc += half2( ShadowOcclusionLookup( ScreenTC + vTaps[t]*g_ScreenSize.zw*2 ), 1)*saturate(fBilateralWeight);
-		}
-	
-		shadowOccl = saturate(shadowOcclAcc.x/(shadowOcclAcc.y+1e-6f));
-	#endif
-
-	half fLightOccl = shadowOccl;
-#if %_RT_LIGHTVOLUME0
-	const int nStencilID = tex2D(_tex6, ScreenTC ).x * 255.0f;
-	const uint nClipVolumeData = asuint(g_vVisAreasParams[nStencilID & (MAX_CLIPVOLUMES-1)].a);
-	fLightOccl = (nClipVolumeData & CLIPVOLUME_AFFECTED_BY_SUN)? fLightOccl : 0.0f;
-#endif
-			
-	// Directional occlusion
-	half3 occlusionDir = tex2D(_tex7, ScreenTC).xyz * 2.h - 1.h;
-	half dirOccl = 1.h - saturate(dot(SunLightDir.xyz, occlusionDir) * SSDOParams.x);
-	fLightOccl *= dirOccl * dirOccl;
-
-	bool bSunLight = false;
-	#if %_RT_SAMPLE4
-		bSunLight = true;
-		fLightOccl *= selfShadow;
-	#endif
-	
-	half3 cDiffuse = 0;
-	half3 cSpecular = 0;
-
-	if( bSunLight )
-	{
-		half diffuseTerm = DiffuseBRDF(attribs.NormalWorld, vView, SunLightDir.xyz, attribs.Smoothness, NdotL);
-		half3 diffuseTranslucency = ThinTranslucencyBRDF(attribs.NormalWorld, SunLightDir.xyz, attribs.Transmittance);
-		cDiffuse = diffuseAcc + SunColor.xyz * fLightOccl * ((attribs.LightingModel == LIGHTINGMODEL_TRANSMITTANCE) ? diffuseTranslucency : diffuseTerm.xxx);
-	}
-	else
-		cDiffuse = diffuseAcc;
-
-	cSpecular = specularAcc;
-	if( bSunLight )
-		cSpecular += sunSpec * NdotL * fLightOccl * SunColor.xyz;
-
-	// Apply pre-multiplied lbuffer and hdr range rescale (consoles)
-	cDiffuse *= g_GeneralParams.w;
-	cSpecular *= g_GeneralParams.w;
-	
-#if !%_RT_SAMPLE1  // No SSS
-	OUT.Color.rgb = albedo * cDiffuse + cSpecular;
-#else
-	OUT.Color.rgb = cSpecular;
-	OUT.DiffuseAcc.rgb = cDiffuse * (floor( attribs.ScatteringIndex ) != SSS_PROFILE_SKIN ? sqrt( albedo ) : 1);
-	
-	if (attribs.ScatteringIndex == 0)
-		OUT.Color.rgb += cDiffuse * albedo;
-#endif
-
-	return OUT;
-}
-
-technique DeferredShadingPass
-{
-  pass p0
-  {
-    VertexShader = DeferredShadingPassVS() DeferredPassVS;
-    GeometryShader = $AutoGS_MultiRes();
-    PixelShader = DeferredShadingPassPS() DeferredPassPS;
-    CullMode = None;
-  }
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+SamplerState  Debug_SamplerPClamp : register(s0);
 
 vtxOutWPOS DebugVS(vtxInWPOS IN)
 {
@@ -2033,8 +1844,8 @@ vtxOutWPOS DebugVS(vtxInWPOS IN)
 pixout DebugPS( vtxInWPOS IN )
 {
   pixout OUT = (pixout) 0;
-  float4 c = DecodeLightBuffer(tex2D( _tex0, IN.baseTC.xy ));
-  float4 cOutOverdraw = tex2D( _tex1, float2(0, c.x) ); // funky palette vertical instead of horizontal.. 
+  float4 c = DecodeLightBuffer(GetTexture2D( _tex0, Debug_SamplerPClamp, IN.baseTC.xy ));
+  float4 cOutOverdraw = GetTexture2D( _tex1, Debug_SamplerPClamp, float2(0, c.x) ); // funky palette vertical instead of horizontal.. 
 
   OUT.Color = cOutOverdraw;
   
@@ -2063,7 +1874,7 @@ pixout DebugGBufferPS( vtxOut IN )
   pixout OUT = (pixout) 0;
 	
 	MaterialAttribsCommon attribs;
-	attribs = DecodeGBuffer( tex2D( _tex1, IN.baseTC.xy ), tex2D( _tex2, IN.baseTC.xy ), tex2D( _tex3, IN.baseTC.xy ) );
+	attribs = DecodeGBuffer( GetTexture2D( _tex1, Debug_SamplerPClamp, IN.baseTC.xy ), GetTexture2D( _tex2, Debug_SamplerPClamp, IN.baseTC.xy ), GetTexture2D( _tex3, Debug_SamplerPClamp, IN.baseTC.xy ) );
 	
 	OUT.Color.w = 1;
 	
@@ -2139,157 +1950,6 @@ struct pixoutResolve
 	float DevDepth		: DEPTH;
 };
 
-Texture2DMS<float4>  DevDepthTexMS : register(t4);
-
-pixoutResolve MSAACustomResolvePS( vtxOutWPOS IN )
-{
-  pixoutResolve OUT = (pixoutResolve) 1;
-  
-#if %_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1 
-
-	float4 vDepths[2] = (float4[2]) 0;
-	float4 vNormals[8] = (float4[8]) 0;
-
-	const int nSampleCountMS = GetMSAASampleNum();
-
-	if( nSampleCountMS >= 2 )
-	{
-		vDepths[0].xy = float2(GetTargetIndexMS(0, IN.baseTC.xy, GetMSAASampleNum(), 0).x,
-														GetTargetIndexMS(0, IN.baseTC.xy, GetMSAASampleNum(), 1).x);
-		vNormals[0] = GetTargetIndexMS(1, IN.baseTC.xy, GetMSAASampleNum(), 0);
-		vNormals[1] = GetTargetIndexMS(1, IN.baseTC.xy, GetMSAASampleNum(), 1);
-	}
-
-	if( nSampleCountMS >= 4 )
-	{
-		vDepths[0].zw = float2(GetTargetIndexMS(0, IN.baseTC.xy, GetMSAASampleNum(), 2).x,
-														GetTargetIndexMS(0, IN.baseTC.xy, GetMSAASampleNum(), 3).x);
-		vNormals[2] = GetTargetIndexMS(1, IN.baseTC.xy, GetMSAASampleNum(), 2);
-		vNormals[3] = GetTargetIndexMS(1, IN.baseTC.xy, GetMSAASampleNum(), 3);
-	}
-
-	if( nSampleCountMS >= 8 )
-	{
-		vDepths[1] = float4(GetTargetIndexMS(0, IN.baseTC.xy, GetMSAASampleNum(), 4).x,
-												GetTargetIndexMS(0, IN.baseTC.xy, GetMSAASampleNum(), 5).x,
-												GetTargetIndexMS(0, IN.baseTC.xy, GetMSAASampleNum(), 6).x,
-												GetTargetIndexMS(0, IN.baseTC.xy, GetMSAASampleNum(), 7).x);
-		vNormals[4] = GetTargetIndexMS(1, IN.baseTC.xy, GetMSAASampleNum(), 4);
-		vNormals[5] = GetTargetIndexMS(1, IN.baseTC.xy, GetMSAASampleNum(), 5);
-		vNormals[6] = GetTargetIndexMS(1, IN.baseTC.xy, GetMSAASampleNum(), 6);
-		vNormals[7] = GetTargetIndexMS(1, IN.baseTC.xy, GetMSAASampleNum(), 7);
-	}
-	
-	OUT.fDepth = vDepths[0].x;
-	OUT.vNormal = vNormals[0];
-
-	vNormals[0].xyz = DecodeGBufferNormal(vNormals[0]);
-	vNormals[1].xyz = DecodeGBufferNormal(vNormals[1]);
-
-	const float fThresholdDepth = MSAAResolveParams.z;
-	const float fThresholdNormal = MSAAResolveParams.w;
-	float4 vIsEdge0 = abs( vDepths[0].x - vDepths[0] ) > vDepths[0].x * fThresholdDepth;
-	float4 vIsEdge1 = abs( vDepths[0].x - vDepths[1] ) > vDepths[0].x * fThresholdDepth;
-
-	// Most robust would be surface normal (less false positives) + per-instance id (or primitive id). 
-	int nEdge = (vIsEdge0.y > 0) || (dot(vNormals[0].xyz, vNormals[1].xyz) < fThresholdNormal);
-
-	if( nSampleCountMS >= 4 )
-	{
-		vNormals[2].xyz = DecodeGBufferNormal(vNormals[2]);
-		vNormals[3].xyz = DecodeGBufferNormal(vNormals[3]);
-		nEdge |= (vIsEdge0.z>0) || (dot(vNormals[0].xyz , vNormals[2].xyz) < fThresholdNormal);
-		nEdge |= (vIsEdge0.w>0) || (dot(vNormals[0].xyz , vNormals[3].xyz) < fThresholdNormal);
-	}
-
-	if( nSampleCountMS >= 8 )
-  {
-		vNormals[4].xyz = DecodeGBufferNormal(vNormals[4]);
-		vNormals[5].xyz = DecodeGBufferNormal(vNormals[5]);
-		vNormals[6].xyz = DecodeGBufferNormal(vNormals[6]);
-		vNormals[7].xyz = DecodeGBufferNormal(vNormals[7]);
-		nEdge |= (vIsEdge1.x>0) || (dot(vNormals[0].xyz, vNormals[4].xyz) < fThresholdNormal);
-		nEdge |= (vIsEdge1.y>0) || (dot(vNormals[0].xyz, vNormals[5].xyz) < fThresholdNormal);
-		nEdge |= (vIsEdge1.z>0) || (dot(vNormals[0].xyz, vNormals[6].xyz) < fThresholdNormal);
-		nEdge |= (vIsEdge1.w>0) || (dot(vNormals[0].xyz, vNormals[7].xyz) < fThresholdNormal);
-	}
-
-	int2 ddxy = abs( int2( ddx(nEdge), ddy(nEdge) ) );
-	OUT.cEdges = saturate( (nEdge + dot(ddxy, 1))  ); // tag entire quad
-
-	OUT.vDiffuse = GetTargetIndexMS(2, IN.baseTC.xy, GetMSAASampleNum(), 0);
-	OUT.vSpecular = GetTargetIndexMS(3, IN.baseTC.xy, GetMSAASampleNum(), 0);
-		
-	//OUT.DevDepth = DevDepthTexMS.Load(int3( IN.baseTC.xy * PS_ScreenSize.xy, 0), 0); // this should work, debug further. Why is sample 0 mismatching non-ms depth? Follow up with NV/AMD
-	
-	// Get device depth taking into account nearest depth scaling
-	float fNearestScaledLinear = g_PS_ProjRatio.y / (g_PS_NearestScaled.z - g_PS_ProjRatio.x);
-	float2 ProjRatio = (OUT.fDepth.x<fNearestScaledLinear)?g_PS_NearestScaled.xy:g_PS_ProjRatio.xy;
-  OUT.DevDepth = ProjRatio.x + (ProjRatio.y+1e-6f)/OUT.fDepth.x;
-	
-#endif
-
-  return OUT;
-}
-
-technique MSAACustomResolve
-{
-  pass p0
-  {
-    VertexShader = FsQuadCamVecVS() DeferredLightPassVS;
-    PixelShader = MSAACustomResolvePS() DeferredLightPassPS;
-    CullMode = None;        
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-pixout MSAASampleFreqStencilMaskPS( vtxOut IN )
-{
-  pixout OUT = (pixout) 0;
-
-  half fStencilMask = tex2D(_tex0, IN.baseTC.xy).x;
-
-  
-#if !%_RT_MSAA_SAMPLEFREQ_PASS
-  clip( fStencilMask - 0.5 ); // discard all edges (for pixel frequency passes)
-#else
-  clip( 0.5 - fStencilMask ); // discard all non-edges (for sample frequency passes)
-#endif
-
-  return OUT;
-}
-
-technique MSAASampleFreqStencilMask
-{
-  pass p0
-  {
-    VertexShader = FsQuadVS() DeferredLightPassVS;
-    PixelShader = MSAASampleFreqStencilMaskPS() DeferredLightPassPS;
-    CullMode = None;        
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-pixout ClearReservedStencilPS( vtxOut IN )
-{
-  pixout OUT = (pixout) 0;
-  return OUT;
-}
-
-technique ClearReservedStencil
-{
-  pass p0
-  {
-    VertexShader = FsQuadVS() DeferredLightPassVS;
-    PixelShader = ClearReservedStencilPS() DeferredLightPassPS;
-    CullMode = None;        
-  }
-}
-
 struct vtxOutMSAA
 {
   float4 HPosition  : POSITION;
@@ -2324,17 +1984,6 @@ float4 ResolveStencilPS(vtxOutMSAA IN) : COLOR0
 #else
 	return nStencilVal.g * fMaxStencilRefRcp;
 #endif
-}
-
-technique ResolveStencilLegacy
-{
-  pass p0
-  {
-    VertexShader = FsQuadVS() DeferredLightPassVS;
-    GeometryShader = $AutoGS_MultiRes();
-    PixelShader = ResolveStencilPS() DeferredLightPassPS;
-    CullMode = None;        
-  }
 }
 
 technique ResolveStencil
