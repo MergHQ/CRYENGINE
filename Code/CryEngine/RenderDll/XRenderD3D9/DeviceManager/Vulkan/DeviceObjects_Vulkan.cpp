@@ -533,6 +533,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 		return EInitResult::Failure;
 
 	const bool bDiscardRasterizer = (hwShaders[eHWSC_Pixel].pHwShader == nullptr) && (psoDesc.m_RenderState & GS_NODEPTHTEST) && !(psoDesc.m_RenderState & GS_DEPTHWRITE) && !(psoDesc.m_RenderState & GS_STENCIL);
+	const bool bUsingDynamicDepthBias = psoDesc.m_bDynamicDepthBias;
 
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[eHWSC_Num];
 
@@ -741,7 +742,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 	rasterizationStateCreateInfo.polygonMode = (psoDesc.m_RenderState & GS_WIREFRAME) ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
 	rasterizationStateCreateInfo.cullMode = (psoDesc.m_CullMode == eCULL_Back) ? VK_CULL_MODE_BACK_BIT : (psoDesc.m_CullMode == eCULL_None) ? VK_CULL_MODE_NONE : VK_CULL_MODE_FRONT_BIT;
 	rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-	rasterizationStateCreateInfo.depthBiasEnable = VK_FALSE;
+	rasterizationStateCreateInfo.depthBiasEnable = bUsingDynamicDepthBias ? VK_TRUE : VK_FALSE;
 	rasterizationStateCreateInfo.depthBiasConstantFactor = 0;
 	rasterizationStateCreateInfo.depthBiasClamp = 0;
 	rasterizationStateCreateInfo.depthBiasSlopeFactor = 0;
@@ -935,14 +936,12 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 
 	static const VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_STENCIL_REFERENCE, VK_DYNAMIC_STATE_DEPTH_BIAS };
 	static const unsigned int dynamicStateCount = sizeof(dynamicStates) / sizeof(dynamicStates[0]);
-	
-	const bool bDisableDynamicDepthBias = !psoDesc.m_bDynamicDepthBias;
 
 	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {};
 	dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	dynamicStateCreateInfo.pNext = nullptr;
 	dynamicStateCreateInfo.flags = 0;
-	dynamicStateCreateInfo.dynamicStateCount = dynamicStateCount - bDisableDynamicDepthBias;
+	dynamicStateCreateInfo.dynamicStateCount = dynamicStateCount - !bUsingDynamicDepthBias;
 	dynamicStateCreateInfo.pDynamicStates = dynamicStates;
 
 	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
