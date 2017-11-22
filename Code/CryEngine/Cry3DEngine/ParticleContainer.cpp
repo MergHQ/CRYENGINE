@@ -1022,7 +1022,9 @@ void CParticleContainer::Reset()
 // Stat functions.
 void CParticleContainer::GetCounts(SParticleCounts& counts) const
 {
-	counts.components.alive += 1.f;
+	counts.components.alloc += 1.f;
+	counts.components.alive += GetContainerLife() <= GetAge();
+	counts.particles.alloc += m_Particles.size();
 	counts.particles.alive += m_Particles.size();
 
 	if (GetTimeToUpdate() == 0.f)

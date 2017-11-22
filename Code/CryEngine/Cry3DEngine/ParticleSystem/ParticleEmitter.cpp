@@ -95,7 +95,7 @@ Vec3 CParticleEmitter::GetPos(bool bWorldOnly) const
 
 void CParticleEmitter::Render(const struct SRendParams& rParam, const SRenderingPassInfo& passInfo)
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	CRY_PFX2_PROFILE_DETAIL;
 	PARTICLE_LIGHT_PROFILER();
 
 	if (!passInfo.RenderParticles() || passInfo.IsRecursivePass())
@@ -123,7 +123,7 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 
 void CParticleEmitter::Update()
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	CRY_PFX2_PROFILE_DETAIL;
 
 	m_deltaTime = gEnv->pTimer->GetFrameTime() * GetTimeScale();
 	m_deltaTime = max(m_deltaTime, m_primeTime);
@@ -131,9 +131,9 @@ void CParticleEmitter::Update()
 	m_time += m_deltaTime;
 	++m_currentSeed;
 
-	m_pEffectOriginal->Compile();
 	if (m_active && m_effectEditVersion != m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion)
 	{
+		m_pEffectOriginal->Compile();
 		m_attributeInstance.Reset(m_pEffectOriginal->GetAttributeTable());
 		UpdateRuntimes();
 		m_effectEditVersion = m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion;
@@ -147,12 +147,13 @@ void CParticleEmitter::Update()
 
 	UpdateBoundingBox(m_deltaTime);
 
+	m_emitterStats.alive += IsAlive();
 	m_emitterStats.updated++;
 }
 
 void CParticleEmitter::UpdateBoundingBox(const float frameTime)
 {
-	AABB bounds = AABB(m_location.t, 1.0f / 1024.0f);
+	AABB bounds = AABB::RESET;
 	for (auto& pRuntime : m_componentRuntimes)
 		bounds.Add(pRuntime->GetBounds());
 
@@ -185,11 +186,12 @@ void CParticleEmitter::UpdateBoundingBox(const float frameTime)
 	{
 		Unregister();
 		Register();
-		m_visEnviron.Update(GetPos(), m_bounds);
 		m_physEnviron.GetPhysAreas(
 			CParticleManager::Instance()->GetPhysEnviron(), m_bounds,
 			m_visEnviron.OriginIndoors(), ENV_GRAVITY | ENV_WIND | ENV_WATER, true, 0);
+		m_visEnviron.Invalidate();
 	}
+	m_visEnviron.Update(GetPos(), m_bounds);
 }
 
 void CParticleEmitter::DebugRender() const
@@ -375,6 +377,8 @@ void CParticleEmitter::Activate(bool activate)
 
 bool CParticleEmitter::IsAlive() const
 {
+	if (!m_bounds.IsReset())
+		return true;
 	for (auto const& pRuntime : m_componentRuntimes)
 		if (pRuntime->IsAlive())
 			return true;
@@ -431,6 +435,7 @@ void CParticleEmitter::SetLocation(const QuatTS& loc)
 
 		m_parentContainer.GetIOVec3Stream(EPVF_Velocity).Store(0, velocity1);
 		m_parentContainer.GetIOVec3Stream(EPVF_AngularVelocity).Store(0, angularVelocity1);
+		m_visEnviron.Invalidate();
 	}
 }
 

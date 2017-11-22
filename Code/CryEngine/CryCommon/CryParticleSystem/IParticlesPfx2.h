@@ -18,12 +18,14 @@ typedef Serialization::IArchive IArchive;
 
 template<typename F>
 struct TParticleStats
-	: INumberVector<F, 11, TParticleStats<F>>
+	: INumberVector<F, 14, TParticleStats<F>>
 {
 	TElementCounts<F> emitters;
 	TElementCounts<F> components;
 
-	struct ParticleStats : TElementCounts<F>
+	struct ParticleStats
+		: INumberVector<F, 5, ParticleStats>
+		, TElementCountsBase<F>
 	{
 		F clipped = 0;
 	} particles;

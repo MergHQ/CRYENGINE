@@ -50,7 +50,10 @@ public:
 		m_restart.AddToComponent(pComponent, this);
 
 		pParams->m_emitterLifeTime.start += m_delay.GetValueRange().start;
-		pParams->m_emitterLifeTime.end += m_delay.GetValueRange().end + m_duration.GetValueRange().end;
+		if (m_restart.IsEnabled())
+			pParams->m_emitterLifeTime.end = gInfinity;
+		else
+			pParams->m_emitterLifeTime.end += m_delay.GetValueRange().end + m_duration.GetValueRange().end;
 	}
 
 	virtual void InitSubInstances(const SUpdateContext& context, SUpdateRange instanceRange) override

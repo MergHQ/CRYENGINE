@@ -606,10 +606,15 @@ struct IParticleEffectListener
 
 // General particle stats
 template<typename F>
-struct TElementCounts
-	: INumberVector<F, 3, TElementCounts<F>>
+struct TElementCountsBase
 {
-	F alive = 0, updated = 0, rendered = 0;
+	F alloc = 0, alive = 0, updated = 0, rendered = 0;
+};
+template<typename F>
+struct TElementCounts
+	: INumberVector<F, 4, TElementCounts<F>>
+	, TElementCountsBase<F>
+{
 };
 
 // pfx1 particle stats
@@ -633,14 +638,14 @@ struct TContainerCountsBase
 
 template<typename F>
 struct TContainerCounts
-	: INumberVector<float, 14, TContainerCounts<F>>
+	: INumberVector<float, 16, TContainerCounts<F>>
 	, TContainerCountsBase<F>
 {
 };
 
 template<typename F>
 struct TParticleCounts
-	: INumberVector<float, 20, TParticleCounts<F>>
+	: INumberVector<float, 23, TParticleCounts<F>>
 	, TContainerCountsBase<F>
 {
 	TElementCounts<F> emitters;

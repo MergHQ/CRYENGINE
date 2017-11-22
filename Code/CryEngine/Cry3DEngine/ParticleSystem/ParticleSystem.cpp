@@ -147,14 +147,21 @@ void CParticleSystem::Update()
 
 		m_statsCPU = SParticleStats();
 		m_statsGPU = SParticleStats();
-		m_statsCPU.emitters.alive = m_emitters.size();
+		m_statsCPU.emitters.alloc = m_emitters.size();
 		for (auto& pEmitter : m_emitters)
 			pEmitter->AccumStats(m_statsCPU, m_statsGPU);
 
 		for (auto& pEmitter : m_emitters)
 		{
-			pEmitter->Update();
-			m_jobManager.AddEmitter(pEmitter);
+			if (pEmitter->IsAlive())
+			{
+				pEmitter->Update();
+				m_jobManager.AddEmitter(pEmitter);
+			}
+			else
+			{
+				pEmitter->Unregister();
+			}
 		}
 
 		m_jobManager.KernelUpdateAll();
@@ -188,7 +195,7 @@ void CParticleSystem::DeferredRender()
 
 void DisplayStatsHeader(Vec2& displayLocation, float lineHeight, cstr name)
 {
-	const char* titleLabel = "%-12s: Rendered /  Updated /    Alive";
+	const char* titleLabel = "%-12s: Rendered /  Updated /    Alive /    Alloc";
 	gEnv->p3DEngine->DrawTextRightAligned(
 		displayLocation.x, displayLocation.y,
 		titleLabel,
@@ -198,13 +205,13 @@ void DisplayStatsHeader(Vec2& displayLocation, float lineHeight, cstr name)
 
 void DisplayElementStats(Vec2& displayLocation, float lineHeight, cstr name, const TElementCounts<float>& stats, int prec = 0)
 {
-	if (stats.alive)
+	if (stats.alloc)
 	{
-		const char* emittersLabel = " %-11s: %8.*f / %8.*f / %8.*f";
+		const char* emittersLabel = " %-11s: %8.*f / %8.*f / %8.*f / %8.*f";
 		gEnv->p3DEngine->DrawTextRightAligned(
 			displayLocation.x, displayLocation.y,
 			emittersLabel,
-			name, prec, stats.rendered, prec, stats.updated, prec, stats.alive);
+			name, prec, stats.rendered, prec, stats.updated, prec, stats.alive, prec, stats.alloc, prec);
 		displayLocation.y += lineHeight;
 	}
 }
@@ -215,7 +222,7 @@ void DisplayParticleStats(Vec2& displayLocation, float lineHeight, cstr name, co
 	DisplayStatsHeader(displayLocation, lineHeight, name);
 	DisplayElementStats(displayLocation, lineHeight, "Emitters", stats.emitters);
 	DisplayElementStats(displayLocation, lineHeight, "Components", stats.components);
-	DisplayElementStats(displayLocation, lineHeight, "Particles", stats.particles);
+	DisplayElementStats(displayLocation, lineHeight, "Particles", reinterpret_cast<const TElementCounts<float>&>(stats.particles));
 }
 
 float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
@@ -231,9 +238,9 @@ float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
 	statsGPUCur.Set(m_statsGPU);
 	statsGPUAvg = Lerp(statsGPUAvg, statsGPUCur, blendCur);
 
-	if (statsCPUAvg.emitters.alive)
+	if (statsCPUAvg.emitters.alloc)
 		DisplayParticleStats(displayLocation, lineHeight, "Wavicle CPU", statsCPUAvg);
-	if (statsGPUAvg.components.alive)
+	if (statsGPUAvg.components.alloc)
 		DisplayParticleStats(displayLocation, lineHeight, "Wavicle GPU", statsGPUAvg);
 
 	if (m_pPartManager)
@@ -243,7 +250,7 @@ float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
 		m_pPartManager->GetCounts(counts);
 		countsAvg = Lerp(countsAvg, counts, blendCur);
 
-		if (countsAvg.emitters.alive)
+		if (countsAvg.emitters.alloc)
 		{
 			DisplayParticleStats(displayLocation, lineHeight, "Particles V1", countsAvg);
 
@@ -251,7 +258,7 @@ float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
 			float screenPix = (float)(GetRenderer()->GetWidth() * GetRenderer()->GetHeight());
 			fill.rendered = countsAvg.pixels.rendered / screenPix;
 			fill.updated = countsAvg.pixels.updated / screenPix;
-			fill.alive = 1.0f;
+			fill.alloc = 1.0f;
 			DisplayElementStats(displayLocation, lineHeight, "Scr Fill", fill, 3);
 		}
 	}

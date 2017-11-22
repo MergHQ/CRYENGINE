@@ -94,8 +94,6 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 	AddParticles(context);
 	UpdateNewBorns(context);
 	m_container.ResetSpawnedParticles();
-
-	m_particleStats.updated += m_container.GetLastParticleId();
 }
 
 void CParticleComponentRuntime::UpdateParticles(const SUpdateContext& context)
@@ -118,6 +116,8 @@ void CParticleComponentRuntime::UpdateParticles(const SUpdateContext& context)
 
 	UpdateLocalSpace(context.m_updateRange);
 	AgeUpdate(context);
+
+	m_particleStats.updated += m_container.GetNumParticles();
 }
 
 void CParticleComponentRuntime::ComputeVertices(const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)
@@ -630,9 +630,11 @@ void CParticleComponentRuntime::AccumStats(SParticleStats& statsCPU, SParticleSt
 		const uint allocParticles = uint(m_container.GetMaxParticles());
 		const uint aliveParticles = uint(m_container.GetLastParticleId());
 
-		statsCPU.particles.alive += allocParticles;
+		statsCPU.particles.alloc += allocParticles;
+		statsCPU.particles.alive += aliveParticles;
 
-		statsCPU.components.alive += aliveParticles > 0;
+		statsCPU.components.alloc ++;
+		statsCPU.components.alive += IsAlive();
 		statsCPU.components.updated += m_particleStats.updated > 0;
 		statsCPU.components.rendered += m_particleStats.rendered > 0;
 
