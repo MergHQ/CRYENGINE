@@ -78,7 +78,7 @@ namespace Cry
 
 			CUserLobby::~CUserLobby()
 			{
-				SteamMatchmaking()->LeaveLobby(m_steamLobbyId);
+				Leave();
 
 				// Just in case loading gets aborted
 				gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
@@ -184,18 +184,22 @@ namespace Cry
 
 			void CUserLobby::Leave()
 			{
-				SteamMatchmaking()->LeaveLobby(m_steamLobbyId);
-
-				for (IListener* pListener : m_listeners)
+				constexpr Identifier invalidLobby = 0;
+				if (m_steamLobbyId != invalidLobby)
 				{
-					pListener->OnLeave();
+					SteamMatchmaking()->LeaveLobby(m_steamLobbyId);
+					m_steamLobbyId = invalidLobby;
+
+					for (IListener* pListener : m_listeners)
+					{
+						pListener->OnLeave();
+					}
+
+					if (m_serverIP != 0)
+						SteamUser()->TerminateGameConnection(m_serverIP, m_serverPort);
+
+					static_cast<CMatchmaking*>(CPlugin::GetInstance()->GetMatchmaking())->OnLobbyRemoved(this);
 				}
-
-				if (m_serverIP != 0)
-					SteamUser()->TerminateGameConnection(m_serverIP, m_serverPort);
-
-				static_cast<CMatchmaking* >(CPlugin::GetInstance()->GetMatchmaking())->OnLobbyRemoved(this);
-				delete this;
 			}
 
 			IUser::Identifier CUserLobby::GetOwnerId() const
