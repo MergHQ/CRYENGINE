@@ -28,8 +28,6 @@ public:
 	void     Clear();
 
 private:
-	static ILINE CSaltHandle<> IdToHandle(const EntityId id) { return CSaltHandle<>(id >> 16, id & 0xffff); }
-
 	class CEntry
 	{
 	public:

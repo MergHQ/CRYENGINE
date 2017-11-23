@@ -2000,7 +2000,7 @@ void CEntitySystem::ReserveEntityId(const EntityId id)
 {
 	assert(id);
 
-	const CSaltHandle<> hdl = IdToHandle(id);
+	const CSaltHandle hdl = IdToHandle(id);
 	if (m_EntitySaltBuffer.IsUsed(hdl.GetIndex())) // Do not reserve if already used.
 		return;
 	//assert(m_EntitySaltBuffer.IsUsed(hdl.GetIndex()) == false);	// don't reserve twice or overriding in used one

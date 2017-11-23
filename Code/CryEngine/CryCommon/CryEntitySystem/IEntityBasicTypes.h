@@ -2,8 +2,14 @@
 
 #pragma once
 
-//!< Unique identifier for each entity instance. Don't change the type!
-typedef uint32 EntityId;
+//!< Unique identifier for each entity instance.
+using EntityId = uint32;
+//! Salt used in entity id in order to facilitate re-use of entity identifiers
+using EntitySalt = uint16;
+//! Index of an entity in the internal array, must be exactly half the size of EntityId!
+using EntityIndex = EntitySalt;
+
+static_assert(std::numeric_limits<EntityIndex>::digits == std::numeric_limits<EntityId>::digits / 2, "Entity Index must be exactly half the size of EntityId, identifier consists of both index of salt");
 
 constexpr EntityId INVALID_ENTITYID = 0;
 
