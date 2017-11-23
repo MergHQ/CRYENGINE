@@ -560,6 +560,12 @@ private:
 	bool CloseRenderLibrary(const char* t_rend);
 
 	//@}
+
+	//! @name Unload routines
+	//@{
+	void UnloadSchematycModule();
+	//@}
+
 	void Strange();
 	bool ParseSystemConfig(string& sFileName);
 

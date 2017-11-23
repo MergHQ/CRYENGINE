@@ -79,7 +79,9 @@ namespace Schematyc2
 	{
 		Schematyc2::CVars::Unregister();
 
-		gEnv->pSchematyc2 = nullptr;
+		// TODO: Currently set to null in CSystem::UnloadSchematyc() funcion. Remove it there as soon as we have fixed internal Schematyc shutdown order.
+		//gEnv->pSchematyc2 = nullptr;
+		// ~TODO
 	}
 
 	//////////////////////////////////////////////////////////////////////////

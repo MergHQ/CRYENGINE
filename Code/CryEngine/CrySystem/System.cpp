@@ -654,8 +654,7 @@ void CSystem::ShutDown()
 		m_env.pPhysicalWorld->SetPhysicsEventClient(0);
 	}
 
-	UnloadEngineModule("CrySchematyc");
-	UnloadEngineModule("CrySchematyc2");
+	UnloadSchematycModule();
 
 	if (gEnv->pGameFramework != nullptr)
 	{
@@ -832,7 +831,7 @@ void CSystem::ShutDown()
 	delete gEnv->pSystemScheduler;
 #endif // defined(MAP_LOADING_SLICING)
 
-	SAFE_DELETE(m_env.pReflection);
+	UnloadEngineModule("CryReflection");
 
 #if CAPTURE_REPLAY_LOG
 	CryGetIMemReplay()->Stop();
@@ -2781,6 +2780,15 @@ void CSystem::OnPLMEvent(EPLM_Event event)
 	}
 }
 #endif
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::UnloadSchematycModule()
+{
+	UnloadEngineModule("CrySchematyc");
+	UnloadEngineModule("CrySchematyc2");
+
+	gEnv->pSchematyc2 = nullptr;
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::Strange()
