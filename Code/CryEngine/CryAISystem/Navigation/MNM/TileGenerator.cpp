@@ -313,11 +313,14 @@ bool CTileGenerator::Generate(const Params& params, STile& tile, SMetaData& tile
 			}
 		}
 		
+		AABB tileAABBExpanded(aabb);
+		tileAABBExpanded.Expand(float(params.agent.radius) * params.voxelSize);
 		for (size_t mIdx = 0; mIdx < m_params.markupsCount; ++mIdx)
 		{
 			const SMarkupVolume& volume = m_params.markups[mIdx];
+			const AABB& tileAABBToCheck = volume.bExpandByAgentRadius ? tileAABBExpanded : aabb;
 
-			BoundingVolume::ExtendedOverlap eoverlap = volume.Contains(aabb);
+			BoundingVolume::ExtendedOverlap eoverlap = volume.Contains(tileAABBToCheck);
 			if (eoverlap == BoundingVolume::NoOverlap)
 				continue;
 
@@ -2134,23 +2137,18 @@ struct MarkupCanvas
 public:
 	Vec2i m_paintMin;
 	Vec2i m_paintMax;
-	Vec2i m_rasterMin;
-	Vec2i m_rasterMax;
 	Vec2i m_size;
 	int m_agentRadius;
 	uint16 m_paintIdx;
 	std::vector<uint16> m_paint;
 	std::vector<uint16> m_distances;
 
-	MarkupCanvas(const Vec2i& rasterMin, const Vec2i& rasterMax, const Vec2i& boundsMin, const Vec2i& boundsMax, int agentRadius, uint16 paintIdx)
-		: m_rasterMin(rasterMin)
-		, m_rasterMax(rasterMax)
+	MarkupCanvas(const Vec2i& rasterMin, const Vec2i& rasterMax, int agentRadius, uint16 paintIdx)
+		: m_paintMin(rasterMin)
+		, m_paintMax(rasterMax)
 		, m_agentRadius(agentRadius)
 		, m_paintIdx(paintIdx)
 	{
-		m_paintMin = Vec2i(max(boundsMin.x, rasterMin.x - agentRadius), max(boundsMin.y, rasterMin.y - agentRadius));
-		m_paintMax = Vec2i(min(boundsMax.x, rasterMax.x + agentRadius), min(boundsMax.y, rasterMax.y + agentRadius));
-		
 		m_size = m_paintMax - m_paintMin;
 		m_paint.resize(m_size.x * m_size.y);
 		std::fill(m_paint.begin(), m_paint.end(), CTileGenerator::NoPaint);
@@ -2166,7 +2164,7 @@ public:
 		std::vector<int> xPositions;
 		xPositions.reserve(count);
 
-		for (int y = m_rasterMin.y; y < m_rasterMax.y; ++y)
+		for (int y = m_paintMin.y; y < m_paintMax.y; ++y)
 		{
 			xPositions.clear();
 
@@ -2300,12 +2298,14 @@ void CTileGenerator::PaintMarkupExpanded(const MarkupData& markupData, const AAB
 {
 	const Vec2i tilePaintMin = borderSize;
 	const Vec2i tilePaintMax = canvasSize - borderSize;
+	const Vec3 maxExpand = Vec3(float(m_params.agent.radius) * m_params.voxelSize.x, float(m_params.agent.radius) * m_params.voxelSize.y, 0.0f);
 
 	AABB tranformedAABB = markupData.pVolume->aabb;
+	tranformedAABB.Expand(maxExpand);
 	tranformedAABB.Move(-tileAabb.min);
 
-	const Vec2i rasterMin(max(borderSize.x, int(tranformedAABB.min.x * voxelSizeInv.x)), max(borderSize.y, int(tranformedAABB.min.y * voxelSizeInv.y)));
-	const Vec2i rasterMax(min(tilePaintMax.x, int(tranformedAABB.max.x * voxelSizeInv.x)), min(tilePaintMax.y, int(tranformedAABB.max.y * voxelSizeInv.y)));
+	const Vec2i rasterMin(max(0, int(tranformedAABB.min.x * voxelSizeInv.x)), max(0, int(tranformedAABB.min.y * voxelSizeInv.y)));
+	const Vec2i rasterMax(min(canvasSize.x, int(tranformedAABB.max.x * voxelSizeInv.x)), min(canvasSize.y, int(tranformedAABB.max.y * voxelSizeInv.y)));
 
 	if (rasterMin.x >= rasterMax.x || rasterMin.y >= rasterMax.y)
 		return;
@@ -2318,7 +2318,7 @@ void CTileGenerator::PaintMarkupExpanded(const MarkupData& markupData, const AAB
 		tranformedVertices[i] = vertices[i] - tileAabb.min;
 	}
 
-	MarkupCanvas markupCanvas(rasterMin, rasterMax, tilePaintMin, tilePaintMax, m_params.agent.radius, markupData.paintIdx);
+	MarkupCanvas markupCanvas(rasterMin, rasterMax, m_params.agent.radius, markupData.paintIdx);
 	markupCanvas.Rasterize(tranformedVertices, voxelSize, voxelSizeInv);
 	markupCanvas.Erode();
 
@@ -2333,9 +2333,11 @@ void CTileGenerator::PaintMarkupExpanded(const MarkupData& markupData, const AAB
 			const uint16 paint = markupCanvas.m_paint[markupIndex];
 			if(paint == NoPaint)
 				continue;
-			
-			size_t spanX = x + markupCanvas.m_paintMin.x;
-			size_t spanY = y + markupCanvas.m_paintMin.y;
+
+			const size_t spanX = x + markupCanvas.m_paintMin.x;
+			const size_t spanY = y + markupCanvas.m_paintMin.y;
+			if(spanX < tilePaintMin.x || spanX >= tilePaintMax.x || spanY < tilePaintMin.y || spanY >= tilePaintMax.y)
+				continue;
 
 			const size_t spanGridIndex = (spanY * canvasSize.x) + spanX;
 			const CompactSpanGrid::Cell& cell = m_spanGrid[spanGridIndex];
@@ -2380,7 +2382,6 @@ void CTileGenerator::CalcPaintValues(const AABB& aabb)
 	const size_t borderH = BorderSizeH(m_params);
 	const size_t borderV = BorderSizeV(m_params);
 	const size_t erosion = m_params.flags & Params::NoErosion ? 0 : m_params.agent.radius << 1;
-	const size_t climbableVoxelCount = m_params.agent.climbableHeight;
 
 	for (size_t y = borderH; y < gridHeight - borderH; ++y)
 	{
@@ -2391,8 +2392,6 @@ void CTileGenerator::CalcPaintValues(const AABB& aabb)
 			for (size_t s = 0; s < cell.count; ++s)
 			{
 				const size_t index = cell.index + s;
-				const CompactSpanGrid::Span& span = m_spanGrid.GetSpan(index);
-
 				if (m_distances[index] < erosion || IsBorderLabel(m_labels[index]))
 				{
 					m_paint[index] = BadPaint;
