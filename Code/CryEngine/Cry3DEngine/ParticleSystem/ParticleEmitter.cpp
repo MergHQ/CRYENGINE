@@ -28,7 +28,6 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	, m_pEffectOriginal(pEffect)
 	, m_registered(false)
 	, m_bounds(AABB::RESET)
-	, m_resetBoundsCache(0.0f)
 	, m_viewDistRatio(1.0f)
 	, m_active(false)
 	, m_location(IDENTITY)
@@ -151,39 +150,46 @@ void CParticleEmitter::Update()
 	m_emitterStats.updated++;
 }
 
+namespace Bounds
+{
+	static const float RoundOutPrecision = 1 / 32.0f;
+	static const float ShrinkThreshold   = 0.5f;
+}
+
 void CParticleEmitter::UpdateBoundingBox(const float frameTime)
 {
 	AABB bounds = AABB::RESET;
 	for (auto& pRuntime : m_componentRuntimes)
 		bounds.Add(pRuntime->GetBounds());
 
-	const float sideLen = (bounds.max - bounds.min).GetLength();
-	const float round = exp2(ceil(log2(sideLen))) / 64.0f;
-	const float invRound = 1.0f / round;
-
-	AABB outterBox;
-	outterBox.min.x = floor(bounds.min.x * invRound) * round;
-	outterBox.min.y = floor(bounds.min.y * invRound) * round;
-	outterBox.min.z = floor(bounds.min.z * invRound) * round;
-	outterBox.max.x = ceil(bounds.max.x * invRound) * round;
-	outterBox.max.y = ceil(bounds.max.y * invRound) * round;
-	outterBox.max.z = ceil(bounds.max.z * invRound) * round;
-
-	bool reRegister = !m_registered;
-	m_resetBoundsCache -= frameTime;
-	if (m_resetBoundsCache < 0.0f)
+	if (bounds.IsReset())
 	{
-		m_bounds = outterBox;
-		m_resetBoundsCache = 2.0f;
+		Unregister();
+		return;
 	}
-	else if (!m_bounds.ContainsBox(outterBox))
-	{
+
+	bool reRegister = false;
+	if (!m_registered)
 		reRegister = true;
-		m_bounds.Add(outterBox);
-	}
-
+	else if (!m_bounds.ContainsBox(bounds))
+		reRegister = true;
+	else if (bounds.GetVolume() < m_bounds.GetVolume() * Bounds::ShrinkThreshold)
+		reRegister = true;
+	
 	if (reRegister)
 	{
+		AABB outerBounds;
+		for (int a = 0; a < 3; ++a)
+		{
+			const float sideLen = (bounds.max[a] - bounds.min[a]);
+			const float round = exp2(ceil(log2(sideLen))) * Bounds::RoundOutPrecision;
+			const float invRound = 1.0f / round;
+
+			outerBounds.min[a] = floor(bounds.min[a] * invRound) * round;
+			outerBounds.max[a] = ceil( bounds.max[a] * invRound) * round;
+		}
+
+		m_bounds = outerBounds;
 		Unregister();
 		Register();
 		m_physEnviron.GetPhysAreas(
@@ -505,9 +511,9 @@ bool CParticleEmitter::UpdateStreamableComponents(float fImportance, const Matri
 	return true;
 }
 
-void CParticleEmitter::GetSpawnParams(SpawnParams& sp) const
+void CParticleEmitter::GetSpawnParams(SpawnParams& spawnParams) const
 {
-	sp = m_spawnParams;
+	spawnParams = m_spawnParams;
 }
 
 void CParticleEmitter::SetEmitGeom(const GeomRef& geom)
@@ -519,6 +525,8 @@ void CParticleEmitter::SetEmitGeom(const GeomRef& geom)
 
 void CParticleEmitter::SetSpawnParams(const SpawnParams& spawnParams)
 {
+	if (spawnParams.bIgnoreVisAreas != m_spawnParams.bIgnoreVisAreas || spawnParams.bRegisterByBBox != m_spawnParams.bRegisterByBBox)
+		Unregister();
 	m_spawnParams = spawnParams;	
 }
 
@@ -712,8 +720,8 @@ void CParticleEmitter::Register()
 {
 	if (m_registered)
 		return;
-	bool posContained = GetBBox().IsContainPoint(GetPos());
-	SetRndFlags(ERF_REGISTER_BY_POSITION, posContained);
+	SetRndFlags(ERF_REGISTER_BY_POSITION, true);
+	SetRndFlags(ERF_RENDER_ALWAYS, m_spawnParams.bIgnoreVisAreas);
 	SetRndFlags(ERF_CASTSHADOWMAPS, false);
 	gEnv->p3DEngine->RegisterEntity(this);
 	m_registered = true;

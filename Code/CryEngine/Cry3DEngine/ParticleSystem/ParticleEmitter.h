@@ -139,7 +139,6 @@ private:
 	CAttributeInstance          m_attributeInstance;
 	pfx2::TParticleFeatures     m_emitterFeatures;
 	AABB                        m_bounds;
-	float                       m_resetBoundsCache;
 	CParticleContainer          m_parentContainer;
 	TRuntimes                   m_componentRuntimes;
 	TRuntimes                   m_componentRuntimesFor;

@@ -291,16 +291,15 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 		}
 	}
 
-	if ((GetCVars()->e_ParticlesDebug & AlphaBit('c')) == 0)
+	if (!emitter.GetSpawnParams().bIgnoreVisAreas)
 	{
 		// vis area clipping
-		CRY_PFX2_ASSERT(container.HasData(EPDT_Size));
-		Matrix34 viewTM = pSpritesContext->m_camInfo.pCamera->GetMatrix();
-		Vec3 normal = -viewTM.GetColumn0();
-		IVisArea* pVisArea = pSpritesContext->m_visEnviron.GetClipVisArea(pSpritesContext->m_camInfo.pCameraVisArea, pSpritesContext->m_bounds);
-
-		if (pVisArea)
+		if (IVisArea* pVisArea = pSpritesContext->m_visEnviron.GetClipVisArea(pSpritesContext->m_camInfo.pCameraVisArea, pSpritesContext->m_bounds))
 		{
+			CRY_PFX2_ASSERT(container.HasData(EPDT_Size));
+			Matrix34 viewTM = pSpritesContext->m_camInfo.pCamera->GetMatrix();
+			Vec3 normal = -viewTM.GetColumn0();
+
 			const uint count = pSpritesContext->m_numSprites;
 			for (uint i = 0, j = 0; i < count; ++i)
 			{
