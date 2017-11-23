@@ -67,10 +67,11 @@ void CAutoExposureStage::MeasureLuminance()
 			m_passLuminanceInitial.SetState(GS_NODEPTHTEST);
 			m_passLuminanceInitial.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
-			m_passLuminanceInitial.SetTextureSamplerPair(0, CRendererResources::s_ptexHDRTargetScaled[1], EDefaultSamplerStates::LinearClamp);
-			m_passLuminanceInitial.SetTextureSamplerPair(1, CRendererResources::s_ptexSceneNormalsMap, EDefaultSamplerStates::LinearClamp);
-			m_passLuminanceInitial.SetTextureSamplerPair(2, CRendererResources::s_ptexSceneDiffuse, EDefaultSamplerStates::LinearClamp);
-			m_passLuminanceInitial.SetTextureSamplerPair(3, CRendererResources::s_ptexSceneSpecular, EDefaultSamplerStates::LinearClamp);
+			m_passLuminanceInitial.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1]);
+			m_passLuminanceInitial.SetTexture(1, CRendererResources::s_ptexSceneNormalsMap);
+			m_passLuminanceInitial.SetTexture(2, CRendererResources::s_ptexSceneDiffuse);
+			m_passLuminanceInitial.SetTexture(3, CRendererResources::s_ptexSceneSpecular);
+			m_passLuminanceInitial.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 		}
 
 		static CCryNameR sampleLumOffsets0Name("SampleLumOffsets0");
@@ -109,7 +110,8 @@ void CAutoExposureStage::MeasureLuminance()
 			passLuminanceIteration.SetTechnique(pShader, techLumIterative, rtMask);
 			passLuminanceIteration.SetRenderTarget(0, CRendererResources::s_ptexHDRToneMaps[curTexture]);
 			passLuminanceIteration.SetState(GS_NODEPTHTEST);
-			passLuminanceIteration.SetTextureSamplerPair(0, CRendererResources::s_ptexHDRToneMaps[curTexture + 1], EDefaultSamplerStates::LinearClamp);
+			passLuminanceIteration.SetTexture(0, CRendererResources::s_ptexHDRToneMaps[curTexture + 1]);
+			passLuminanceIteration.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 		}
 
 		static CCryNameR param1Name("SampleOffsets");
@@ -153,8 +155,10 @@ void CAutoExposureStage::AdjustExposure()
 		m_passAutoExposure.SetTechnique(pShader, techAdaptedLum, 0);
 		m_passAutoExposure.SetRenderTarget(0, pTexCur);
 		m_passAutoExposure.SetState(GS_NODEPTHTEST);
-		m_passAutoExposure.SetTextureSamplerPair(0, pTexPrev, EDefaultSamplerStates::PointClamp);
-		m_passAutoExposure.SetTextureSamplerPair(1, CRendererResources::s_ptexHDRToneMaps[0], EDefaultSamplerStates::PointClamp);
+
+		m_passAutoExposure.SetTexture(0, pTexPrev);
+		m_passAutoExposure.SetTexture(1, CRendererResources::s_ptexHDRToneMaps[0]);
+		m_passAutoExposure.SetSampler(0, EDefaultSamplerStates::PointClamp);
 	}
 
 	static CCryNameR param0Name("ElapsedTime");
