@@ -395,16 +395,6 @@ void C3DEngine::UnloadLevel()
 		m_pPartManager->ClearDeferredReleaseResources();
 	}
 
-	if (gEnv->pCharacterManager)
-	{
-		CryComment("Deleting Characters");
-		gEnv->pCharacterManager->ClearResources(false);
-		CryComment("done");
-	}
-
-	//SAFE_DELETE(m_pObjManager);
-	// delete terrain
-
 	// delete decal manager
 	if (m_pDecalManager)
 	{
