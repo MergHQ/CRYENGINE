@@ -225,6 +225,12 @@ bool CMessageQueue::CConfig::Read(XmlNodeRef n)
 					"Scheduler policy name should not exceed 4 characters.");
 				return false;
 			}
+			if (key == ~uint32(0))
+			{
+				CryWarning(VALIDATOR_MODULE_NETWORK, VALIDATOR_ERROR,
+					"Invalid scheduler policy name '%s'.", name);
+				return false;
+			}
 			m_policy[key] = pol;
 		}
 		else
@@ -2010,7 +2016,7 @@ void CMessageQueue::SetConfig(CConfig* pConfig, int version)
 	m_nAccountingGroups = 0;
 	for (std::map<uint32, SAccountingGroupPolicy>::iterator iter = pConfig->m_policy.begin(); iter != pConfig->m_policy.end(); ++iter)
 	{
-		NET_ASSERT(iter->first > SNetObjectID::InvalidId);
+		NET_ASSERT(iter->first != ~uint32(0));
 		SAccountingGroup* pGrp = &m_accountingGroups[m_nAccountingGroups++];
 		pGrp->policy = iter->second;
 		pGrp->totBandwidthUsed = 0;
@@ -2023,7 +2029,7 @@ void CMessageQueue::SetConfig(CConfig* pConfig, int version)
 	#if HIGH_PRIORITY_LOGGING
 		for (uint32 index = 0; index < m_nAccountingGroups; ++index)
 		{
-			NetLog("[Accounting Group] : index %d id %x", index, m_accountingGroups[index].id);
+			NetLog("[Accounting Group] : index %d id %x key %s", index, m_accountingGroups[index].id, KeyToString(m_accountingGroups[index].id).c_str());
 		}
 	#endif // HIGH_PRIORITY_LOGGING
 	}
