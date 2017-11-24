@@ -43,6 +43,8 @@
 #ifdef CRY_USE_SCHEMATYC2_BRIDGE
 
 namespace Bridge { struct IFramework; };
+namespace Bridge { struct IScriptFile; };
+
 Bridge::IFramework* GetBridge();
 
 #define GetSchematyc() GetBridge()

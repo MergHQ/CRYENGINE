@@ -26,6 +26,7 @@ add_sources("Schematyc_Uber_Editor_0.cpp"
 
 add_sources("Schematyc_Uber_Editor_0.cpp"
 	SOURCE_GROUP "Bridge\\\\Private"
+		"Bridge/Private/Bridge_LibUtils.cpp"
 		"Bridge/Private/Bridge_Compiler.cpp"
 		"Bridge/Private/Bridge_Compiler.h"
 		"Bridge/Private/Bridge_Framework.cpp"
