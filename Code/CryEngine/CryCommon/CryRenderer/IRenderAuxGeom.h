@@ -8,6 +8,7 @@
 #endif // _MSC_VER > 1000
 
 struct SAuxGeomRenderFlags;
+struct SRender2DImageDescription;
 
 #include "IRenderer.h"
 
@@ -22,25 +23,6 @@ enum EBoundingBoxDrawStyle
 //! interface provide functions to render 2d geometry and also text.
 struct IRenderAuxGeom
 {
-	// 2D Images added to the rendering frame
-	struct SRender2DImageDescription
-	{
-		float x = 0;
-		float y = 0;
-		float z = 0;
-		float w = 0;
-		float h = 0;
-		Vec2  uv[2];           //!< Texture UV coordinates
-		float angle = 0;
-		float stereoDepth = 0; //!< Places image in stereo 3d space. The depth is specified in camera space.
-		ColorB color;
-
-		uint32 textureId = 0;
-		uint32 targetId = 0;
-
-		CryDisplayContextHandle context = 0;
-	};
-
 	// <interfuscator:shuffle>
 	virtual ~IRenderAuxGeom(){}
 
@@ -622,7 +604,10 @@ enum EAuxGeomPublicRenderflags_Defaults
 
 	//! Default render flags for 2D primitives.
 	e_Def2DPublicRenderflags = e_Mode2D | e_AlphaNone | e_DrawInFrontOff | e_FillModeSolid |
-	                           e_CullModeBack | e_DepthWriteOn | e_DepthTestOn
+	                           e_CullModeBack | e_DepthWriteOn | e_DepthTestOn,
+
+	//! Default render flags for images.
+	e_Def2DImageRenderflags = e_Mode2D | e_DepthTestOff | e_AlphaBlended | e_CullModeNone
 };
 
 struct SAuxGeomRenderFlags
@@ -954,6 +939,26 @@ inline CRenderAuxGeomRenderFlagsRestore::~CRenderAuxGeomRenderFlagsRestore()
 	m_pRender->SetRenderFlags(m_backuppedRenderFlags);
 }
 
+// 2D Images added to the rendering frame
+struct SRender2DImageDescription
+{
+	float x = 0;
+	float y = 0;
+	float z = 0;
+	float w = 0;
+	float h = 0;
+	Vec2  uv[2];           //!< Texture UV coordinates
+	float angle = 0;
+	float stereoDepth = 0; //!< Places image in stereo 3d space. The depth is specified in camera space.
+	ColorB color;
+
+	uint32 textureId = 0;
+	uint32 targetId = 0;
+
+	CryDisplayContextHandle context = 0;
+	SAuxGeomRenderFlags renderFlags = e_Def2DImageRenderflags;
+};
+
 // Helper class to abstract pushing 2d images for rendering
 class IRenderAuxImage
 {
@@ -980,7 +985,7 @@ public:
 	{
 		if (gEnv->pRenderer)
 		{
-			IRenderAuxGeom::SRender2DImageDescription img;
+			SRender2DImageDescription img;
 			img.x = xpos;
 			img.y = ypos;
 			img.z = z;
@@ -1003,7 +1008,7 @@ public:
 	{
 		if (gEnv->pRenderer)
 		{
-			IRenderAuxGeom::SRender2DImageDescription img;
+			SRender2DImageDescription img;
 			img.x = xpos;
 			img.y = ypos;
 			img.z = 1.f;
@@ -1027,7 +1032,7 @@ public:
 	{
 		if (gEnv->pRenderer)
 		{
-			IRenderAuxGeom::SRender2DImageDescription img;
+			SRender2DImageDescription img;
 			img.x = xpos;
 			img.y = ypos;
 			img.z = 1.f;

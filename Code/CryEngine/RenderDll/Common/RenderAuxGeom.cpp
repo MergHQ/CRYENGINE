@@ -2139,14 +2139,16 @@ void CAuxGeomCB::Draw2dImages(SAux2DImages& images, bool reset)
 	const float vh = static_cast<float>(viewport.height);
 	Vec3 scale800x600 = Vec3(vw / 800.0f, vh / 600.0f, 1.0f);
 
-	SAuxGeomRenderFlags newRenderFlags;
-	newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
-	newRenderFlags.SetAlphaBlendMode(e_AlphaBlended);
-	newRenderFlags.SetMode2D3DFlag(e_Mode2D);
-	newRenderFlags.SetCullMode(e_CullModeNone);
-	SAuxGeomRenderFlags oldRenderFlags = pAux->SetRenderFlags(newRenderFlags);
+	SAuxGeomRenderFlags oldRenderFlags = pAux->GetRenderFlags();
+	SAuxGeomRenderFlags currRenderFlags = oldRenderFlags;
 	for (const SRender2DImageDescription &img : images)
 	{
+		if (img.renderFlags != currRenderFlags)
+		{
+			currRenderFlags = img.renderFlags;
+			pAux->SetRenderFlags(currRenderFlags);
+		}
+
 		float xpos = img.x;// * scale800x600.x;
 		float ypos = img.y;// * scale800x600.y;
 		float w    = img.w;// * scale800x600.x;
