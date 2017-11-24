@@ -1072,18 +1072,18 @@ technique FilterGBuffer
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // --- SSR_Raytrace --- //////////////////////////////////////////////////////////////////////////////////////////////////
 
-Texture2D   SSRComp_LinDepth      : register(t0);
-Texture2D   SSRComp_LinDepthSc    : register(t3);
-Texture2D   SSRComp_HDRLum     	  : register(t5); 
+Texture2D   SSRRay_LinDepth        : register(t0);
+Texture2D   SSRRay_LinDepthSc      : register(t3);
+Texture2D   SSRRay_HDRLum     	   : register(t5); 
 // This sampler is used by the preceding textures, this pattern is repeated
-SamplerState  SSRComp_LinDepth_Sampler : register(s0); //pointClamp
+SamplerState  SSRRay_LinDepth_Sampler : register(s0); //pointClamp
 
-Texture2D   SSRComp_Norms    	  : register(t1);
-Texture2D   SSRComp_Spec     	  : register(t2);
-SamplerState  SSRComp_Norms_Sampler : register(s1); //linearClamp
+Texture2D   SSRRay_Norms    	   : register(t1);
+Texture2D   SSRRay_Spec     	   : register(t2);
+SamplerState  SSRRay_Norms_Sampler : register(s1); //linearClamp
 
-Texture2D   SSRComp_HDRTarg    	  : register(t4);
-SamplerState  SSRComp_HDRT_Sampler : register(s2); //linearBorder_black
+Texture2D   SSRRay_HDRTarg    	   : register(t4);
+SamplerState  SSRRay_HDRT_Sampler  : register(s2); //linearBorder_black
 
 
 vtxOutWPOS SSRRaytraceVS(vtxInWPOS IN)
@@ -1118,9 +1118,9 @@ pixout SSRRaytracePS( vtxOutWPOS IN )
 
 	float2 ScreenTC = MapViewportToRaster(IN.baseTC.xy);
 	
-	MaterialAttribsCommon attribs = DecodeGBuffer( GetTexture2D( SSRComp_Norms, SSRComp_Norms_Sampler, ScreenTC + halfTexel ), 0, GetTexture2D( SSRComp_Spec, SSRComp_Norms_Sampler, ScreenTC + halfTexel ) );
+	MaterialAttribsCommon attribs = DecodeGBuffer( GetTexture2D( SSRRay_Norms, SSRRay_Norms_Sampler, ScreenTC + halfTexel ), 0, GetTexture2D( SSRRay_Spec, SSRRay_Norms_Sampler, ScreenTC + halfTexel ) );
 	
-	const float fDepth = GetLinearDepth( SSRComp_LinDepth, ScreenTC);
+	const float fDepth = GetLinearDepth( SSRRay_LinDepth, ScreenTC);
 	float3 vPositionWS = GetWorldPos( fDepth, IN.CamVec );
 	float3 viewVec = normalize( vPositionWS );
 	vPositionWS += CV_WorldViewPosition.xyz;
@@ -1168,7 +1168,7 @@ pixout SSRRaytracePS( vtxOutWPOS IN )
 		}
 
 		//float fLinearDepthTap = GetTexture2DLod( _tex3, float4( projPos.xy, 0, 0 ) ).x; // half res R16F
-		float fLinearDepthTap = GetTexture2DLod( SSRComp_LinDepthSc, SSRComp_LinDepth_Sampler, float4( uvMultiRes.xy, 0, 0 ) ).x;
+		float fLinearDepthTap = GetTexture2DLod( SSRRay_LinDepthSc, SSRRay_LinDepth_Sampler, float4( uvMultiRes.xy, 0, 0 ) ).x;
 
 		if (abs(fLinearDepthTap - projPos.z) < intervalSize)
 		{
@@ -1196,9 +1196,9 @@ pixout SSRRaytracePS( vtxOutWPOS IN )
 		
 		reprojPos.xy = MapViewportToRaster(reprojPos.xy);
 
-		const float curAvgLum = GetTexture2DLod( SSRComp_HDRLum, SSRComp_LinDepth_Sampler, float4( ScreenTC, 0, 0 ) ).x;
+		const float curAvgLum = GetTexture2DLod( SSRRay_HDRLum, SSRRay_LinDepth_Sampler, float4( ScreenTC, 0, 0 ) ).x;
 		const float maxLum = curAvgLum * 100;  // Limit brightness to reduce aliasing of specular highlights
-		color.rgb = min( GetTexture2DLod( SSRComp_HDRTarg, SSRComp_HDRT_Sampler, float4( reprojPos.xy, 0, 0 ) ).rgb, maxLum.xxx );
+		color.rgb = min( GetTexture2DLod( SSRRay_HDRTarg, SSRRay_HDRT_Sampler, float4( reprojPos.xy, 0, 0 ) ).rgb, maxLum.xxx );
 
 		// Filter out NANs that we still have sometimes, otherwise they get propagated and remain in the view
 		color.rgb = isfinite( color.rgb ) ? color.rgb: 0;
@@ -1222,22 +1222,31 @@ technique SSR_Raytrace
   }
 }
 
+
+Texture2D   SSRComp_Spec     	      : register(t0);
+SamplerState  SSRComp_Sampler 	  	  : register(s0); //linearClamp
+
+Texture2D   SSRComp_HDRTargSc0    	  : register(t1);
+Texture2D   SSRComp_HDRTargSc1    	  : register(t2);
+Texture2D   SSRComp_HDRTargSc2    	  : register(t3);
+Texture2D   SSRComp_HDRTargSc3    	  : register(t4);
+
 pixout SSRCompositionPS( vtxOut IN )
 {
 	pixout OUT = (pixout) 0;
 	
 	float2 ScreenTC = MapViewportToRaster(IN.baseTC.xy);
 	
-	MaterialAttribsCommon attribs = DecodeGBuffer( 0, 0, tex2D( _tex0, ScreenTC ) );
+	MaterialAttribsCommon attribs = DecodeGBuffer( 0, 0, GetTexture2D( SSRComp_Spec, SSRComp_Sampler, ScreenTC ) );
 	half gloss = attribs.Smoothness;
 	gloss *= gloss;
 	
 	float weight = frac( min( gloss, 0.9999 ) * 3 );
 	
-	half4 refl0 = tex2D( _tex1, ScreenTC );
-	half4 refl1 = tex2D( _tex2, ScreenTC );
-	half4 refl2 = tex2D( _tex3, ScreenTC );
-	half4 refl3 = tex2D( _tex4, ScreenTC );
+	half4 refl0 = GetTexture2D( SSRComp_HDRTargSc0, SSRComp_Sampler, ScreenTC );
+	half4 refl1 = GetTexture2D( SSRComp_HDRTargSc1, SSRComp_Sampler, ScreenTC );
+	half4 refl2 = GetTexture2D( SSRComp_HDRTargSc2, SSRComp_Sampler, ScreenTC );
+	half4 refl3 = GetTexture2D( SSRComp_HDRTargSc3, SSRComp_Sampler, ScreenTC );
 	
 	[branch] if (gloss > 2.0/3.0)
 		OUT.Color = lerp( refl1, refl0, weight * weight );
@@ -1256,41 +1265,6 @@ technique SSReflection_Comp
     VertexShader = BaseVS() DeferredPassVS;
     GeometryShader = $AutoGS_MultiRes();
     PixelShader = SSRCompositionPS() DeferredPassPS;
-    CullMode = None;
-  }
-}
-
-pixout ApplySSR_PS( vtxOutWPOS IN )
-{
-	// Note: This pass is pretty expensive but obsolete with tiled deferred shading
-	//       If fully optimized regular deferred shading is required, try to merge with another pass or
-	//       apply Fresnel during SSR Raytrace pass (less correct)
-	
-	pixout OUT = (pixout) 0;
-
-	OUT.Color = tex2D( _tex0, IN.baseTC.xy );
-	
-	float fDepth = GetLinearDepth( _tex1, IN.baseTC.xy );
-	float3 vPosition = GetWorldPos( fDepth, IN.CamVec );
-	half3 vView = -normalize( vPosition );
-	
-	MaterialAttribsCommon attribs;
-	attribs = DecodeGBuffer( tex2D( _tex2, IN.baseTC.xy ), tex2D( _tex3, IN.baseTC.xy ), tex2D( _tex4, IN.baseTC.xy ) );
-	
-	half fNdotE = saturate( dot( attribs.NormalWorld, vView ) );
-	half3 fresnel = GetEnvBRDFFresnel( attribs.Reflectance, attribs.Smoothness, fNdotE, _tex5 );
-	
-	OUT.Color.rgb *= fresnel;
-	
-	return OUT;
-}
-
-technique ApplySSR
-{
-  pass p0
-  {
-    VertexShader = AmbientVS() DeferredPassVS;
-    PixelShader = ApplySSR_PS() DeferredPassPS;
     CullMode = None;
   }
 }
@@ -1328,15 +1302,15 @@ half4 SSDOFetchDepths( Texture2D depthTex, SamplerState ssDepth, half4 tc[2], ui
 	              GetTexture2DLod( depthTex, ssDepth, half4( tc[1].zw, 0, 0 ) )[component] );
 }
 
-Texture2D<float4> SSDOSamp_HMAODepth : register(t11);
-Texture2D<float4> SSDOSamp_HMAO      : register(t12);
-Texture2D<float4> SSDOSamp_Norms  : register(t0);
-Texture2D<float4> SSDOSamp_LinZ   : register(t1);
-Texture2D<float4> SSDOSamp_LinZSc : register(t5);
-SamplerState SSDOSamp_depthSS : register(s0);   //PointClamp
+Texture2D<float4> SSDOSamp_HMAODepth 	: register(t11);
+Texture2D<float4> SSDOSamp_HMAO      	: register(t12);
+Texture2D<float4> SSDOSamp_Norms  		: register(t0);
+Texture2D<float4> SSDOSamp_LinZ   		: register(t1);
+Texture2D<float4> SSDOSamp_LinZSc 		: register(t5);
+SamplerState SSDOSamp_depthSS 			: register(s0);   //PointClamp
 
-Texture2D<float4> SSDOSamp_AOVJt  : register(t3);
-SamplerState SSDOSamp_AOVSS : register(s1);  //PointWrap
+Texture2D<float4> SSDOSamp_AOVJt  		: register(t3);
+SamplerState SSDOSamp_AOVSS 			: register(s1);  //PointWrap
 
 
 pixout SSDO_Sampling_PS(vtxOut IN)
@@ -1499,6 +1473,11 @@ float4 SSDO_SourceTexSize;
 float4 SSDO_BlurOffset;
 float4 SSDO_BlurKernel;
 
+Texture2D<float4> SSDOFiltSSpec 		: register(t0);
+SamplerState SSDOFiltSamplerSSpec 		: register(s0);  //LinearClamp
+Texture2D<float4> SSDOFiltLDpth 		: register(t1);
+SamplerState SSDOFiltSamplerLDpth 		: register(s1);  //PointClamp
+
 pixout SSDO_Filter_PS(vtxOut IN)
 {
 	pixout OUT = (pixout)0;
@@ -1508,20 +1487,20 @@ pixout SSDO_Filter_PS(vtxOut IN)
 	half2 addr2 = addr0 + SSDO_BlurKernel.yz;
 	half2 addr3 = addr2 + SSDO_BlurKernel.xy;
 
-	half4 value0 = tex2D(_tex0, addr0);
-	half4 value1 = tex2D(_tex0, addr1);
-	half4 value2 = tex2D(_tex0, addr2);
-	half4 value3 = tex2D(_tex0, addr3);
+	half4 value0 = GetTexture2D(SSDOFiltSSpec, SSDOFiltSamplerSSpec, float4(addr0,0,0));
+	half4 value1 = GetTexture2D(SSDOFiltSSpec, SSDOFiltSamplerSSpec, float4(addr1,0,0));
+	half4 value2 = GetTexture2D(SSDOFiltSSpec, SSDOFiltSamplerSSpec, float4(addr2,0,0));
+	half4 value3 = GetTexture2D(SSDOFiltSSpec, SSDOFiltSamplerSSpec, float4(addr3,0,0));
 	
 	// Sample depth values
 	const half4 vDepthAddrOffset = half4(1.h, 1.h, -1.h, -1.h) * SSDO_BlurOffset.xyxy;
 	half4 depth4;
-	depth4.x = tex2D(_tex1, addr0 + vDepthAddrOffset.zw);
-	depth4.y = tex2D(_tex1, addr1 + vDepthAddrOffset.xw);
-	depth4.z = tex2D(_tex1, addr2 + vDepthAddrOffset.zy);
-	depth4.w = tex2D(_tex1, addr3 + vDepthAddrOffset.xy);
+	depth4.x = GetTexture2D(SSDOFiltLDpth, SSDOFiltSamplerLDpth, float4(addr0 + vDepthAddrOffset.zw,0,0));
+	depth4.y = GetTexture2D(SSDOFiltLDpth, SSDOFiltSamplerLDpth, float4(addr1 + vDepthAddrOffset.xw,0,0));
+	depth4.z = GetTexture2D(SSDOFiltLDpth, SSDOFiltSamplerLDpth, float4(addr2 + vDepthAddrOffset.zy,0,0));
+	depth4.w = GetTexture2D(SSDOFiltLDpth, SSDOFiltSamplerLDpth, float4(addr3 + vDepthAddrOffset.xy,0,0));
 
-	half centerDepth = tex2D(_tex1, IN.baseTC.xy);
+	half centerDepth = GetTexture2D(SSDOFiltLDpth, SSDOFiltSamplerLDpth,  float4(IN.baseTC.xy,0,0));
 	half4 weight4 = saturate(1.h - 35.h * abs(depth4 / centerDepth - 1.h));
 
 	half totalWeight = dot(weight4, 1.h);

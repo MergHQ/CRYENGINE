@@ -94,11 +94,13 @@ void CScreenSpaceReflectionsStage::Execute()
 			m_passComposition.SetTechnique(pShader, techComposition, 0);
 			m_passComposition.SetRenderTarget(0, destTex);
 			m_passComposition.SetState(GS_NODEPTHTEST);
-			m_passComposition.SetTextureSamplerPair(0, CRendererResources::s_ptexSceneSpecular, EDefaultSamplerStates::LinearClamp);
-			m_passComposition.SetTextureSamplerPair(1, CRendererResources::s_ptexHDRTargetScaled[0], EDefaultSamplerStates::LinearClamp);
-			m_passComposition.SetTextureSamplerPair(2, CRendererResources::s_ptexHDRTargetScaled[1], EDefaultSamplerStates::LinearClamp);
-			m_passComposition.SetTextureSamplerPair(3, CRendererResources::s_ptexHDRTargetScaled[2], EDefaultSamplerStates::LinearClamp);
-			m_passComposition.SetTextureSamplerPair(4, CRendererResources::s_ptexHDRTargetScaled[3], EDefaultSamplerStates::LinearClamp);
+			m_passComposition.SetTexture(0, CRendererResources::s_ptexSceneSpecular);
+			m_passComposition.SetTexture(1, CRendererResources::s_ptexHDRTargetScaled[0]);
+			m_passComposition.SetTexture(2, CRendererResources::s_ptexHDRTargetScaled[1]);
+			m_passComposition.SetTexture(3, CRendererResources::s_ptexHDRTargetScaled[2]);
+			m_passComposition.SetTexture(4, CRendererResources::s_ptexHDRTargetScaled[3]);
+
+			m_passComposition.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 
 			m_passComposition.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 		}

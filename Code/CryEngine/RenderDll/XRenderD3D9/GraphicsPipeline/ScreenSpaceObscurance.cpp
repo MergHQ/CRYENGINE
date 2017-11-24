@@ -146,13 +146,10 @@ void CScreenSpaceObscuranceStage::Execute()
 			m_passFilter.SetTechnique(pShader, techFilter, 0);
 			m_passFilter.SetRenderTarget(0, CRendererResources::s_ptexSceneNormalsBent);
 			m_passFilter.SetState(GS_NODEPTHTEST);
-			m_passFilter.SetTextureSamplerPair(0, CRendererResources__s_ptexSceneSpecular, EDefaultSamplerStates::LinearClamp);
-			m_passFilter.SetTextureSamplerPair(1, CRendererResources::s_ptexLinearDepth, EDefaultSamplerStates::PointClamp);
-			// this is probably no help, since 2 samplers are required anyway...
-/*			m_passFilter.SetTexture(0, CRendererResources__s_ptexSceneSpecular);
+			m_passFilter.SetTexture(0, CRendererResources__s_ptexSceneSpecular);
 			m_passFilter.SetTexture(1, CRendererResources::s_ptexLinearDepth);
 			m_passFilter.SetSampler(0, EDefaultSamplerStates::LinearClamp);
-			m_passFilter.SetSampler(1, EDefaultSamplerStates::PointClamp);*/
+			m_passFilter.SetSampler(1, EDefaultSamplerStates::PointClamp);
 		}
 
 		static CCryNameR sourceTexSizeName("SSDO_SourceTexSize");
