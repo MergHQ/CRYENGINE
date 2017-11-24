@@ -799,7 +799,7 @@ void CD3D9Renderer::FillFrame(ColorF clearColor)
 		pDisplayContext->GetCurrentBackBuffer()->Clear(clearColor);
 
 		pDisplayContext->GetRenderOutput()->m_hasBeenCleared |= FRT_CLEAR_COLOR;
-	}, ERenderCommandFlags::None);
+	}, ERenderCommandFlags::SkipDuringLoading);
 }
 
 void CD3D9Renderer::RT_BeginFrame(CryDisplayContextHandle hWnd)
@@ -3100,7 +3100,7 @@ void CD3D9Renderer::EndFrame()
 				m_pRenderAuxGeomD3D->FreeMemory();
 				ReturnAuxGeomCollector(pCurrentCollector);
 			}
-			, ERenderCommandFlags::None)
+			, ERenderCommandFlags::SkipDuringLoading)
 			;
 	}
 #endif //ENABLE_RENDER_AUX_GEOM
