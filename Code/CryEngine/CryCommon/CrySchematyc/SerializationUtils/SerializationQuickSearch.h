@@ -269,7 +269,7 @@ inline bool Serialize(Serialization::IArchive& archive, SStringListStaticQuickSe
 {
 	if (archive.isEdit())
 	{
-		Serialization::ResourceSelector<Serialization::StringListStaticValue> resourceSelector(value.value, "StringListStaticQuickSearch", std::make_shared<CStringListStaticQuickSearchOptions>(value.value.stringList(), value.szHeader, value.szDelimiter));
+		Serialization::ResourceSelector<Serialization::StringListStaticValue> resourceSelector(value.value, "StringListStaticSearch", std::make_shared<CStringListStaticQuickSearchOptions>(value.value.stringList(), value.szHeader, value.szDelimiter));
 		return archive(resourceSelector, szName, szLabel);
 	}
 	else
@@ -282,7 +282,7 @@ inline bool Serialize(Serialization::IArchive& archive, SStringListQuickSearchDe
 {
 	if (archive.isEdit())
 	{
-		Serialization::ResourceSelector<Serialization::StringListValue> resourceSelector(value.value, "StringListQuickSearch", std::make_shared<CStringListQuickSearchOptions>(value.value.stringList(), value.szHeader, value.szDelimiter));
+		Serialization::ResourceSelector<Serialization::StringListValue> resourceSelector(value.value, "StringListSearch", std::make_shared<CStringListQuickSearchOptions>(value.value.stringList(), value.szHeader, value.szDelimiter));
 		return archive(resourceSelector, szName, szLabel);
 	}
 	else
@@ -341,7 +341,7 @@ template<typename TYPE> inline bool Serialize(Serialization::IArchive& archive, 
 		if (pConfig)
 		{
 			CQuickSearchAdapter<TYPE> adapter(value.value, *pConfig->GetOptions());
-			Serialization::ResourceSelector<CQuickSearchAdapter<TYPE>> resourceSelector(adapter, "StringListQuickSearch", pConfig->GetOptions());
+			Serialization::ResourceSelector<CQuickSearchAdapter<TYPE>> resourceSelector(adapter, "StringListSearch", pConfig->GetOptions());
 			return archive(resourceSelector, szName, szLabel);
 		}
 		return false;

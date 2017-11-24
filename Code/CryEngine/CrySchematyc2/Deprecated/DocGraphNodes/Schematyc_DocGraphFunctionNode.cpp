@@ -575,7 +575,7 @@ namespace Schematyc2
 				if(pFunction)
 				{
 					const size_t componentInstanceIdx = LibUtils::FindComponentInstanceByGUID(compiler.GetLibClass(), contextGUID);
-					CRY_ASSERT(componentInstanceIdx != INVALID_INDEX);
+					SCHEMATYC2_SYSTEM_ASSERT(componentInstanceIdx != INVALID_INDEX);
 					if(componentInstanceIdx != INVALID_INDEX)
 					{
 						const CAny<uint32> componentIdx = MakeAny(static_cast<uint32>(componentInstanceIdx));
@@ -592,7 +592,7 @@ namespace Schematyc2
 				if(pFunction)
 				{
 					const size_t actionInstanceIdx = LibUtils::FindActionInstanceByGUID(compiler.GetLibClass(), contextGUID);
-					CRY_ASSERT(actionInstanceIdx != INVALID_INDEX);
+					SCHEMATYC2_SYSTEM_ASSERT(actionInstanceIdx != INVALID_INDEX);
 					if(actionInstanceIdx != INVALID_INDEX)
 					{
 						const CAny<uint32> actionIdx = MakeAny(static_cast<uint32>(actionInstanceIdx));
