@@ -119,11 +119,17 @@ protected:
 		const CParticleEmitter* pEmitter = context.m_runtime.GetEmitter();
 		if (pEmitter->IsIndependent())
 		{
-			if (!runtime.IsChild() && context.m_params.IsImmortal())
-				return;
+			if (!runtime.IsChild())
+			{
+				// Skip spawning immortal independent top-level effects
+				float maxLifetime = m_delay.GetValueRange().end + m_duration.GetValueRange().end + context.m_params.m_maxParticleLifeTime;
+				if (!std::isfinite(maxLifetime))
+					return;
+			}
 		}
 		else if (m_restart.IsEnabled())
 		{
+			// Perform restarts only on 
 			THeapArray<uint> indicesArray(*context.m_pMemHeap);
 			indicesArray.reserve(numInstances);
 
