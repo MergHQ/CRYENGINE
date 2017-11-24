@@ -124,6 +124,10 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 		"Sets the renderer driver ( DX11/DX12/GL/VK/AUTO ).\n"
 		"Specify in system.cfg like this: r_Driver = \"DX11\"");
 
+	m_rBorderlessWindow = REGISTER_INT("r_BorderlessWindow", 0, VF_DUMPTODISK,
+		"Toggles borderless window mode.\n"
+		"Usage: r_BorderlessWindow [0=normal window borders/1=borderless]");
+
 	m_rFullscreen = REGISTER_INT("r_Fullscreen", iFullScreenDefault, VF_DUMPTODISK,
 		"Toggles fullscreen mode. Default is 1 in normal game and 0 in DevMode.\n"
 		"Usage: r_Fullscreen [0=window/1=fullscreen]");

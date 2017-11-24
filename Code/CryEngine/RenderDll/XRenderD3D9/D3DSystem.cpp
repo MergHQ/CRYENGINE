@@ -584,11 +584,20 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 		return result;
 	#elif CRY_PLATFORM_WINDOWS
 	bool bFullscreenWindow = CV_r_FullscreenWindow && CV_r_FullscreenWindow->GetIVal() != 0;
+	bool borderlessWindow = CV_r_BorderlessWindow && CV_r_BorderlessWindow->GetIVal() != 0;
 
 	if (!m_bFullScreen && !bFullscreenWindow)
 	{
-		// Set windowed-mode style
-		SetWindowLongW(m_hWnd, GWL_STYLE, m_dwWindowStyle);
+		if (!borderlessWindow)
+		{
+			// Set windowed-mode style
+			SetWindowLongW(m_hWnd, GWL_STYLE, m_dwWindowStyle);
+		}
+		else
+		{
+			// Set borderless style
+			SetWindowLongW(m_hWnd, GWL_STYLE, m_dwWindowStyle & ~(WS_CAPTION));
+		}
 	}
 	else
 	{
@@ -615,7 +624,14 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 	{
 		RECT wndrect;
 		SetRect(&wndrect, 0, 0, displayWidth, displayHeight);
-		AdjustWindowRectEx(&wndrect, m_dwWindowStyle, FALSE, WS_EX_APPWINDOW);
+		if (!borderlessWindow)
+		{
+			AdjustWindowRectEx(&wndrect, m_dwWindowStyle, FALSE, WS_EX_APPWINDOW);
+		}
+		else
+		{
+			AdjustWindowRectEx(&wndrect, m_dwWindowStyle & ~(WS_CAPTION), FALSE, WS_EX_APPWINDOW);
+		}
 
 		const int wdt = wndrect.right - wndrect.left;
 		const int hgt = wndrect.bottom - wndrect.top;
@@ -1475,8 +1491,10 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 #if CRY_PLATFORM_CONSOLE || CRY_PLATFORM_MOBILE
 	bNativeResolution = true;
 #elif CRY_PLATFORM_WINDOWS
+	CV_r_BorderlessWindow = iConsole->GetCVar("r_BorderlessWindow");
+	m_borderlessWindow = CV_r_BorderlessWindow && CV_r_BorderlessWindow->GetIVal() != 0;
 	CV_r_FullscreenWindow = iConsole->GetCVar("r_FullscreenWindow");
-	m_fullscreenWindow = CV_r_FullscreenWindow && CV_r_FullscreenWindow->GetIVal();
+	m_fullscreenWindow = CV_r_FullscreenWindow && CV_r_FullscreenWindow->GetIVal() != 0;
 	CV_r_FullscreenNativeRes = iConsole->GetCVar("r_FullscreenNativeRes");
 	bNativeResolution = CV_r_FullscreenNativeRes && CV_r_FullscreenNativeRes->GetIVal() != 0 && (bFullscreen || m_fullscreenWindow);
 

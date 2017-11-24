@@ -793,6 +793,7 @@ private: // ------------------------------------------------------
 	ICVar* m_rColorBits;
 	ICVar* m_rDepthBits;
 	ICVar* m_rStencilBits;
+	ICVar* m_rBorderlessWindow;
 	ICVar* m_rFullscreen;
 	ICVar* m_rFullsceenNativeRes;
 	ICVar* m_rFullscreenWindow;

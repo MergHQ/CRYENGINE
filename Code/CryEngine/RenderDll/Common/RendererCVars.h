@@ -615,8 +615,10 @@ public:
 
 #if defined(CRY_PLATFORM_WINDOWS)
 	static int CV_d3d11_preventDriverThreading;
+	ICVar*     CV_r_BorderlessWindow;
 	ICVar*     CV_r_FullscreenWindow;
 	ICVar*     CV_r_FullscreenNativeRes;
+	bool       m_borderlessWindow;
 	bool       m_fullscreenWindow;
 #endif
 

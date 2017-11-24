@@ -571,6 +571,16 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 
 		const bool bFullScreenNativeRes = CV_r_FullscreenNativeRes && CV_r_FullscreenNativeRes->GetIVal() != 0;
 		bNativeRes = bFullScreenNativeRes && (bFullScreen || m_fullscreenWindow);
+
+		if (!IsEditorMode())
+		{
+			const bool borderlessWindow = CV_r_BorderlessWindow && CV_r_BorderlessWindow->GetIVal() != 0;
+			if (borderlessWindow != m_borderlessWindow)
+			{
+				AdjustWindowForChange(GetWidth(), GetHeight());
+				m_borderlessWindow = borderlessWindow;
+			}
+		}
 #else
 		bNativeRes = false;
 #endif
