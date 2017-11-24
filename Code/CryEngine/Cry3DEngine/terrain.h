@@ -111,18 +111,40 @@ protected:
 		return IsPointUnderGround(pTerrain, m_nUnitsToSectorBitShift, nX_units, nY_units, fTestZ);
 	}
 
-	struct SCachedHeight
+	union SCachedHeight
 	{
-		SCachedHeight() { x = y = 0; fHeight = 0; }
-		uint16 x, y;
-		float  fHeight;
+		SCachedHeight() : packedValue(0)
+		{
+			static_assert(sizeof(x) + sizeof(y) + sizeof(fHeight) == sizeof(packedValue), "SCachedHeight: Unexpected data size!");
+		}
+		SCachedHeight(const SCachedHeight& other)
+			: packedValue(other.packedValue)
+		{}
+		
+		struct  
+		{
+			uint16 x, y;
+			float  fHeight;
+		};
+		uint64 packedValue;
 	};
 
-	struct SCachedSurfType
+	union SCachedSurfType
 	{
-		SCachedSurfType() { x = y = surfType = 0; }
-		uint16 x, y;
-		uint32 surfType;
+		struct
+		{
+			uint16 x, y;
+			uint32 surfType;
+		};
+		uint64 packedValue;
+		
+		SCachedSurfType() : packedValue(0)
+		{
+			static_assert(sizeof(x) + sizeof(y) + sizeof(surfType) == sizeof(packedValue), "SCachedSurfType: Unexpected data size!");
+		}
+		SCachedSurfType(const SCachedSurfType& other)
+			: packedValue(other.packedValue)
+		{}
 	};
 
 	static CRY_ALIGN(128) SCachedHeight m_arrCacheHeight[nHMCacheSize * nHMCacheSize];
