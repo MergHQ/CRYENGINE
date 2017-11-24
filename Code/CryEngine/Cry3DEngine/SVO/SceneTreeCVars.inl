@@ -26,7 +26,7 @@ PodArray<ICVar*> m_arrVars;
 
 REGISTER_CVAR_AUTO(int, e_svoLoadTree, 0, VF_NULL, "Start SVO generation or loading from disk");
 REGISTER_CVAR_AUTO(int, e_svoDispatchX, 64, VF_NULL, "Controls parameters of SVO compute shaders execution");
-REGISTER_CVAR_AUTO(int, e_svoDispatchY, nVoxBloMaxDim, VF_NULL, "Controls parameters of SVO compute shaders execution");
+REGISTER_CVAR_AUTO(int, e_svoDispatchY, SVO_BRICK_ALLOC_CHUNK_SIZE, VF_NULL, "Controls parameters of SVO compute shaders execution");
 REGISTER_CVAR_AUTO(int, e_svoDVR, 0, VF_NULL, "Activate Direct Volume Rendering of SVO (trace and output results to the screen)");
 REGISTER_CVAR_AUTO(float, e_svoDVR_DistRatio, 0, VF_NULL, "Controls voxels LOD ratio for streaming and tracing");
 REGISTER_CVAR_AUTO(int, e_svoEnabled, 0, VF_NULL, "Activates SVO subsystem");
@@ -165,12 +165,12 @@ REGISTER_CVAR_AUTO(int, e_svoStreamVoxels, 0, VF_NULL,
 		if (pCVar->GetFlags() & VF_EXPERIMENTAL)
 			continue;
 
-		int nOffset = strstr(pCVar->GetName(), "e_svoTI_") ? 8 : 5;
+		int offset = strstr(pCVar->GetName(), "e_svoTI_") ? 8 : 5;
 
 		#define IsLowerCC(c) (c >= 'a' && c <= 'z')
 		#define IsUpperCC(c) (c >= 'A' && c <= 'Z')
 
-		string sText = pCVar->GetName() + nOffset;
+		string sText = pCVar->GetName() + offset;
 
 		for (int i = 1; i < sText.length() - 1; i++)
 		{
