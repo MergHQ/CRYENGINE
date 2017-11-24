@@ -42,11 +42,11 @@ void CMainWindow::CreateDefaultLayout(CDockableContainer* pSender)
 {
 	CRY_ASSERT(pSender);
 
-	auto pComponentsWidget      = pSender->SpawnWidget("Generic0");
-	auto pVariablesWidget       = pSender->SpawnWidget("Generic1", QToolWindowAreaReference::VSplitRight);
+	//auto pComponentsWidget      = pSender->SpawnWidget("Generic0");
+	//auto pVariablesWidget       = pSender->SpawnWidget("Generic1", QToolWindowAreaReference::VSplitRight);
 
-	auto pGraphsWidget          = pSender->SpawnWidget("Generic2", pComponentsWidget, QToolWindowAreaReference::HSplitBottom);
-	auto pSignalsAndTypesWidget = pSender->SpawnWidget("Generic3", pGraphsWidget,     QToolWindowAreaReference::HSplitBottom);	
+	//auto pGraphsWidget          = pSender->SpawnWidget("Generic2", pComponentsWidget, QToolWindowAreaReference::HSplitBottom);
+	//auto pSignalsAndTypesWidget = pSender->SpawnWidget("Generic3", pGraphsWidget,     QToolWindowAreaReference::HSplitBottom);	
 }
 
 void CMainWindow::OnOpenLegacy()
@@ -88,10 +88,10 @@ void CMainWindow::FinishLegacyOpenDlg()
 
 void CMainWindow::InitGenericWidgets()
 {
-	RegisterDockableWidget("Generic0", std::bind(&CMainWindow::CreateWidgetTemplateFunc, this, "<Empty>"), true, false);	
-	RegisterDockableWidget("Generic1", std::bind(&CMainWindow::CreateWidgetTemplateFunc, this, "<Empty>"), true, false);
-	RegisterDockableWidget("Generic2", std::bind(&CMainWindow::CreateWidgetTemplateFunc, this, "<Empty>"), true, false);
-	RegisterDockableWidget("Generic3", std::bind(&CMainWindow::CreateWidgetTemplateFunc, this, "<Empty>"), true, false);
+	//RegisterDockableWidget("Generic0", std::bind(&CMainWindow::CreateWidgetTemplateFunc, this, "<Empty>"), true, false);	
+	//RegisterDockableWidget("Generic1", std::bind(&CMainWindow::CreateWidgetTemplateFunc, this, "<Empty>"), true, false);
+	//RegisterDockableWidget("Generic2", std::bind(&CMainWindow::CreateWidgetTemplateFunc, this, "<Empty>"), true, false);
+	//RegisterDockableWidget("Generic3", std::bind(&CMainWindow::CreateWidgetTemplateFunc, this, "<Empty>"), true, false);
 }
 
 void CMainWindow::FinishGenericWidgets()
