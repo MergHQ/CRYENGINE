@@ -259,6 +259,7 @@ CRenderPrimitive::EDirtyFlags CRenderPrimitive::Compile(const CPrimitiveRenderPa
 			assert(cBuffers.size() <= m_inlineConstantBuffers.max_size());
 			size_t sz = std::min(m_inlineConstantBuffers.max_size(),cBuffers.size());
 			std::copy_n(cBuffers.begin(), sz, m_inlineConstantBuffers.begin());
+			std::fill(m_inlineConstantBuffers.begin() + sz, m_inlineConstantBuffers.end(), SDeviceObjectHelpers::SConstantBufferBindInfo());
 		}
 
 		m_dirtyMask = dirtyMask = eDirty_None;
