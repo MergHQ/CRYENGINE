@@ -124,7 +124,6 @@ Texture2D<float4> HDRBloom_Temp           : register(t0);
 Texture2D<float4> HDRBloom_Temp2          : register(t1);
 Texture2D<float4> HDRBloom_TMap           : register(t2);
 SamplerState HDRCalc_BloomSampler         : register(s0);   // PointClamp or LinearClamp
-SamplerState HDRCalc_PClampSampler        : register(s2);   // PointClamp
 
 pixout HDRBloomGaussianPS(vtxOut IN)
 {
