@@ -60,7 +60,7 @@ void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 			m_passV.SetTexture(3, CRendererResources::s_ptexSceneDiffuse);
 			m_passV.SetTexture(4, CRendererResources::s_ptexSceneSpecular);
 			m_passV.SetTexture(5, pIrradianceTex);
-			m_passH.SetSampler(0, EDefaultSamplerStates::PointClamp);
+			m_passV.SetSampler(0, EDefaultSamplerStates::PointClamp);
 		}
 
 		m_passV.BeginConstantUpdate();
