@@ -1139,6 +1139,11 @@ technique Debug
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+Texture2D<float4> GBufDBG_LDepth             : register(t0); 
+Texture2D<float4> GBufDBG_Norms              : register(t1); 
+Texture2D<float4> GBufDBG_Diff               : register(t2); 
+Texture2D<float4> GBufDBG_Spec               : register(t3); 
+SamplerState GBufDBG_Sampler                 : register(s0); //pointClamp
 
 float3 ToSRGB( float3 col )
 {
@@ -1150,7 +1155,7 @@ pixout DebugGBufferPS( vtxOut IN )
   pixout OUT = (pixout) 0;
 	
 	MaterialAttribsCommon attribs;
-	attribs = DecodeGBuffer( GetTexture2D( _tex1, Debug_SamplerPClamp, IN.baseTC.xy ), GetTexture2D( _tex2, Debug_SamplerPClamp, IN.baseTC.xy ), GetTexture2D( _tex3, Debug_SamplerPClamp, IN.baseTC.xy ) );
+	attribs = DecodeGBuffer( GetTexture2D( GBufDBG_Norms, GBufDBG_Sampler, IN.baseTC.xy ), GetTexture2D( GBufDBG_Diff, GBufDBG_Sampler, IN.baseTC.xy ), GetTexture2D( GBufDBG_Spec, GBufDBG_Sampler, IN.baseTC.xy ) );
 	
 	OUT.Color.w = 1;
 	
