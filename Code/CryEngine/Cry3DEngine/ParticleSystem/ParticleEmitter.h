@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2014-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 // -------------------------------------------------------------------------
 //  Created:     23/09/2014 by Filipe amim
@@ -84,6 +84,7 @@ public:
 
 	void                      InitSeed();
 	void                      DebugRender() const;
+	void                      UpdateAll();
 	void                      PostUpdate();
 	CParticleContainer&       GetParentContainer()         { return m_parentContainer; }
 	const CParticleContainer& GetParentContainer() const   { return m_parentContainer; }
@@ -116,6 +117,7 @@ public:
 
 	bool                      IsIndependent() const        { return Unique(); }
 	bool                      HasParticles() const;
+	bool                      HasBounds() const            { return !m_bounds.IsReset(); }
 	bool                      WasRenderedLastFrame() const { return (m_lastTimeRendered >= m_time) && ((GetRndFlags() & ERF_HIDDEN) == 0); }
 
 	void                      AccumStats(SParticleStats& statsCPU, SParticleStats& statsGPU);
@@ -138,11 +140,11 @@ private:
 	SpawnParams                 m_spawnParams;
 	CAttributeInstance          m_attributeInstance;
 	pfx2::TParticleFeatures     m_emitterFeatures;
+	AABB                        m_realBounds;
 	AABB                        m_bounds;
 	CParticleContainer          m_parentContainer;
 	TRuntimes                   m_componentRuntimes;
 	TRuntimes                   m_componentRuntimesFor;
-	TElementCounts<uint>        m_emitterStats;
 	QuatTS                      m_location;
 	IEntity*                    m_entityOwner;
 	int                         m_entitySlot;
@@ -161,8 +163,11 @@ private:
 	uint                        m_currentSeed;
 	uint                        m_emitterId;
 	bool                        m_registered;
+	bool                        m_reRegister;
 	bool                        m_active;
 };
+
+typedef TDynArray<_smart_ptr<CParticleEmitter>> TParticleEmitters;
 
 }
 

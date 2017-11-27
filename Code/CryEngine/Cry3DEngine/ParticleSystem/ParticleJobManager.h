@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2015-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 // -------------------------------------------------------------------------
 //  Created:     13/03/2015 by Filipe amim
@@ -10,6 +10,7 @@
 #pragma once
 
 #include <CryThreading/IJobManager_JobDelegator.h>
+#include "ParticleEmitter.h"
 
 class CRenderObject;
 namespace JobManager {
@@ -26,6 +27,7 @@ class CParticleComponentRuntime;
 class CParticleEffect;
 struct SRenderContext;
 
+// Schedules particle update and render jobs
 class CParticleJobManager
 {
 public:
@@ -67,34 +69,24 @@ public:
 	};
 
 public:
-	void AddEmitter(CParticleEmitter* pEmitter);
+	void AddEmitter(CParticleEmitter* pEmitter) { m_emitterRefs.push_back(pEmitter); }
 	void AddDeferredRender(CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
 	void ScheduleComputeVertices(CParticleComponentRuntime* pComponentRuntime, CRenderObject* pRenderObject, const SRenderContext& renderContext);
-	void KernelUpdateAll();
-	void SynchronizeUpdate();
+	void ScheduleUpdates();
+	void SynchronizeUpdates();
 	void DeferredRender();
 
 	// job entry points
-	void Job_UpdateEmitter(uint componentRefIdx);
-	void Job_UpdateComponent(uint componentRefIdx);
-	void Job_AddRemoveParticles(uint componentRefIdx);
-	void Job_UpdateParticles(uint componentRefIdx, SUpdateRange updateRange);
-	void Job_PostUpdateParticles(uint componentRefIdx);
-	void Job_CalculateBounds(uint componentRefIdx);
+	void Job_ScheduleUpdates(TVarArray<CParticleEmitter*> emitters);
+	void Job_UpdateEmitters(TVarArray<CParticleEmitter*> emitters);
 	// ~job entry points
 
 private:
-	void AddComponentRecursive(CParticleEmitter* pEmitter, size_t parentRefIdx);
-
-	void ScheduleUpdateParticles(uint componentRefIdx);
-
 	void ClearAll();
 
-	std::vector<SComponentRef>     m_componentRefs;
-	std::vector<size_t>            m_firstGenComponentsRef;
-	std::vector<CParticleEmitter*> m_emitterRefs;
-	std::vector<SDeferredRender>   m_deferredRenders;
-	JobManager::SJobState          m_updateState;
+	TDynArray<CParticleEmitter*> m_emitterRefs;
+	TDynArray<SDeferredRender>   m_deferredRenders;
+	JobManager::SJobState        m_updateState;
 };
 
 }

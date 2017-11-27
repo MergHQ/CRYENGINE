@@ -31,6 +31,7 @@ SUpdateContext::SUpdateContext(CParticleComponentRuntime* pRuntime, const SUpdat
 	, m_parentContainer(pRuntime->GetParentContainer())
 	, m_params(pRuntime->GetComponentParams())
 	, m_updateRange(updateRange)
+	, m_pMemHeap(&m_pSystem->GetThreadData().memHeap)
 	, m_deltaTime(pRuntime->GetEmitter()->GetDeltaTime())
 	, m_time(pRuntime->GetEmitter()->GetTime())
 	, m_spawnRng(pRuntime->MakeSeed(GetSpawnedRange().m_begin))
@@ -38,8 +39,6 @@ SUpdateContext::SUpdateContext(CParticleComponentRuntime* pRuntime, const SUpdat
 	, m_updateRng(pRuntime->MakeSeed(GetUpdateRange().m_begin))
 	, m_updateRngv(m_updateRng)
 {
-	const uint32 threadId = JobManager::GetWorkerThreadId();
-	m_pMemHeap = &m_pSystem->GetMemHeap(threadId);
 }
 
 }

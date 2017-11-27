@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2014-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 // -------------------------------------------------------------------------
 //  Created:     23/09/2014 by Filipe amim
@@ -27,6 +27,8 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	: m_pEffect(pEffect)
 	, m_pEffectOriginal(pEffect)
 	, m_registered(false)
+	, m_reRegister(false)
+	, m_realBounds(AABB::RESET)
 	, m_bounds(AABB::RESET)
 	, m_viewDistRatio(1.0f)
 	, m_active(false)
@@ -112,12 +114,16 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	CFogVolumeRenderNode::TraceFogVolumes(GetPos(), fogVolumeContrib, passInfo);
 	renderContext.m_fogVolumeId = passInfo.GetIRenderView()->PushFogVolumeContribution(fogVolumeContrib, passInfo);
 	
+	auto& stats = GetPSystem()->GetThreadData().statsCPU;
+	stats.emitters.rendered ++;
 	for (auto& pRuntime : m_componentRuntimes)
 	{
-		if (passInfo.GetCamera().IsAABBVisible_E(pRuntime->GetBounds()))
+		if (pRuntime->GetComponent()->IsVisible() && passInfo.GetCamera().IsAABBVisible_E(pRuntime->GetBounds()))
+		{
 			pRuntime->GetComponent()->RenderAll(this, pRuntime, renderContext);
+			stats.components.rendered ++;
+		}
 	}
-	m_emitterStats.rendered++;
 }
 
 void CParticleEmitter::Update()
@@ -138,16 +144,20 @@ void CParticleEmitter::Update()
 		m_effectEditVersion = m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion;
 	}
 
-	if (m_entityOwner)
-		UpdateFromEntity();
+	UpdateFromEntity();
 
-	for (auto& pRuntime : m_componentRuntimes)
-		pRuntime->GetComponent()->MainPreUpdate(pRuntime);
+	for (auto const& elem: GetCEffect()->MainPreUpdate)
+	{
+		auto pRuntime = GetRuntimeFor(elem.pComponent);
+		elem.pFeature->MainPreUpdate(pRuntime);
+	}
 
-	UpdateBoundingBox(m_deltaTime);
-
-	m_emitterStats.alive += IsAlive();
-	m_emitterStats.updated++;
+	if (m_reRegister)
+	{
+		Unregister();
+		Register();
+		m_reRegister = false;
+	}
 }
 
 namespace Bounds
@@ -158,46 +168,45 @@ namespace Bounds
 
 void CParticleEmitter::UpdateBoundingBox(const float frameTime)
 {
-	AABB bounds = AABB::RESET;
-	for (auto& pRuntime : m_componentRuntimes)
-		bounds.Add(pRuntime->GetBounds());
+	m_reRegister = false;
 
-	if (bounds.IsReset())
-	{
-		Unregister();
+	if (m_realBounds.IsReset())
 		return;
-	}
 
-	bool reRegister = false;
 	if (!m_registered)
-		reRegister = true;
-	else if (!m_bounds.ContainsBox(bounds))
-		reRegister = true;
-	else if (bounds.GetVolume() < m_bounds.GetVolume() * Bounds::ShrinkThreshold)
-		reRegister = true;
-	
-	if (reRegister)
+		m_reRegister = true;
+	else if (!m_bounds.ContainsBox(m_realBounds))
+		m_reRegister = true;
+	else if (m_realBounds.GetVolume() < m_bounds.GetVolume() * Bounds::ShrinkThreshold)
+		m_reRegister = true;
+	if (m_reRegister)
 	{
-		AABB outerBounds;
+		// Expand bounds to rounded borders
 		for (int a = 0; a < 3; ++a)
 		{
-			const float sideLen = (bounds.max[a] - bounds.min[a]);
+			const float sideLen = (m_realBounds.max[a] - m_realBounds.min[a]);
 			const float round = exp2(ceil(log2(sideLen))) * Bounds::RoundOutPrecision;
 			const float invRound = 1.0f / round;
 
-			outerBounds.min[a] = floor(bounds.min[a] * invRound) * round;
-			outerBounds.max[a] = ceil( bounds.max[a] * invRound) * round;
+			m_bounds.min[a] = floor(m_realBounds.min[a] * invRound) * round;
+			m_bounds.max[a] = ceil( m_realBounds.max[a] * invRound) * round;
 		}
-
-		m_bounds = outerBounds;
-		Unregister();
-		Register();
-		m_physEnviron.GetPhysAreas(
-			CParticleManager::Instance()->GetPhysEnviron(), m_bounds,
-			m_visEnviron.OriginIndoors(), ENV_GRAVITY | ENV_WIND | ENV_WATER, true, 0);
-		m_visEnviron.Invalidate();
 	}
-	m_visEnviron.Update(GetPos(), m_bounds);
+}
+
+void CParticleEmitter::UpdateAll()
+{
+	// Update all components, and accumulate bounds and stats
+	CRY_PFX2_PROFILE_DETAIL;
+
+	m_realBounds = AABB::RESET;
+	for (auto& pRuntime : m_componentRuntimes)
+	{
+		pRuntime->UpdateAll();
+		m_realBounds.Add(pRuntime->GetBounds());
+	}
+
+	UpdateBoundingBox(m_deltaTime);
 }
 
 void CParticleEmitter::DebugRender() const
@@ -383,8 +392,7 @@ void CParticleEmitter::Activate(bool activate)
 
 bool CParticleEmitter::IsAlive() const
 {
-	if (!m_bounds.IsReset())
-		return true;
+	CRY_PFX2_PROFILE_DETAIL;
 	for (auto const& pRuntime : m_componentRuntimes)
 		if (pRuntime->IsAlive())
 			return true;
@@ -636,9 +644,9 @@ void CParticleEmitter::AddInstance()
 	}
 }
 
-void CParticleEmitter::UpdateFromEntity()
+ILINE void CParticleEmitter::UpdateFromEntity()
 {
-	if (m_entityOwner)
+	if (m_entityOwner && m_target.bPriority)
 		UpdateTargetFromEntity(m_entityOwner);
 }
 
@@ -718,13 +726,23 @@ void CParticleEmitter::UpdateTargetFromEntity(IEntity* pEntity)
 
 void CParticleEmitter::Register()
 {
+	CRY_PFX2_PROFILE_DETAIL;
+
 	if (m_registered)
 		return;
-	SetRndFlags(ERF_REGISTER_BY_POSITION, true);
+	bool posContained = GetBBox().IsContainPoint(GetPos());
+	SetRndFlags(ERF_REGISTER_BY_POSITION, posContained);
+	SetRndFlags(ERF_REGISTER_BY_BBOX, m_spawnParams.bRegisterByBBox);
 	SetRndFlags(ERF_RENDER_ALWAYS, m_spawnParams.bIgnoreVisAreas);
 	SetRndFlags(ERF_CASTSHADOWMAPS, false);
 	gEnv->p3DEngine->RegisterEntity(this);
 	m_registered = true;
+
+	m_visEnviron.Invalidate();
+	m_visEnviron.Update(GetPos(), m_bounds);
+	m_physEnviron.GetPhysAreas(
+		CParticleManager::Instance()->GetPhysEnviron(), m_bounds,
+		m_visEnviron.OriginIndoors(), ENV_GRAVITY | ENV_WIND | ENV_WATER, true, 0);
 }
 
 void CParticleEmitter::Unregister()
@@ -757,16 +775,6 @@ uint CParticleEmitter::GetParticleSpec() const
 
 	const ESystemConfigSpec configSpec = gEnv->pSystem->GetConfigSpec();
 	return uint(configSpec);
-}
-
-void CParticleEmitter::AccumStats(SParticleStats& statsCPU, SParticleStats& statsGPU)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-		
-	for (auto& pRuntime : m_componentRuntimes)
-		pRuntime->AccumStats(statsCPU, statsGPU);
-	statsCPU.emitters += m_emitterStats;
-	m_emitterStats = {};
 }
 
 }

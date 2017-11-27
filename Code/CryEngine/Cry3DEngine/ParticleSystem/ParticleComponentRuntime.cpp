@@ -58,7 +58,7 @@ const CParticleContainer& CParticleComponentRuntime::GetParentContainer() const
 
 void CParticleComponentRuntime::Initialize()
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	CRY_PFX2_PROFILE_DETAIL;
 
 	m_container.ResetUsedData();
 	for (EParticleDataType type(0); type < EParticleDataType::size(); type = type + type.info().dimension)
@@ -69,7 +69,7 @@ void CParticleComponentRuntime::Initialize()
 
 void CParticleComponentRuntime::UpdateAll()
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	CRY_PFX2_PROFILE_DETAIL;
 
 	if (GetGpuRuntime())
 		return UpdateGPURuntime(SUpdateContext(this));
@@ -77,15 +77,13 @@ void CParticleComponentRuntime::UpdateAll()
 	AddRemoveParticles(SUpdateContext(this));
 	UpdateParticles(SUpdateContext(this));
 	CalculateBounds();
+
+	AccumStats();
 }
 
 void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context)
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-
-	if (GetGpuRuntime())
-		return UpdateGPURuntime(context);
-
+	CRY_PFX2_PROFILE_DETAIL;
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_NewBornTime);
 
 	m_container.RemoveNewBornFlags();
@@ -98,7 +96,7 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 
 void CParticleComponentRuntime::UpdateParticles(const SUpdateContext& context)
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	CRY_PFX2_PROFILE_DETAIL;
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_UpdateTime);
 
 	m_container.FillData(EPVF_Acceleration, 0.0f, context.m_updateRange);
@@ -117,14 +115,14 @@ void CParticleComponentRuntime::UpdateParticles(const SUpdateContext& context)
 	UpdateLocalSpace(context.m_updateRange);
 	AgeUpdate(context);
 
-	m_particleStats.updated += m_container.GetNumParticles();
+	m_particleStats.updated += context.m_updateRange.size();
 }
 
 void CParticleComponentRuntime::ComputeVertices(const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)
 {
 	if (GetComponent()->IsVisible())
 	{
-		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+		CRY_PFX2_PROFILE_DETAIL;
 		CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_ComputeVerticesTime);
 
 		GetComponent()->ComputeVertices(this, camInfo, pRE, uRenderFlags, fMaxPixels);
@@ -562,6 +560,15 @@ void CParticleComponentRuntime::UpdateGPURuntime(const SUpdateContext& context)
 	m_pGpuRuntime->UpdateData(params, m_spawnEntries, parentData);
 
 	m_spawnEntries.clear();
+
+	// Accum stats
+	SParticleStats stats;
+	m_pGpuRuntime->AccumStats(stats);
+	stats.particles.rendered *= m_particleStats.rendered;
+	stats.components.rendered *= m_particleStats.rendered;
+	GetPSystem()->GetThreadData().statsGPU += stats;
+
+	m_particleStats = {};
 }
 
 void CParticleComponentRuntime::DebugStabilityCheck()
@@ -611,38 +618,24 @@ bool CParticleComponentRuntime::HasParticles() const
 	return m_pGpuRuntime ? m_pGpuRuntime->HasParticles() : m_container.GetLastParticleId() != 0; 
 }
 
-void CParticleComponentRuntime::AccumStats(SParticleStats& statsCPU, SParticleStats& statsGPU)
+void CParticleComponentRuntime::AccumStats()
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	auto& statsCPU = GetPSystem()->GetThreadData().statsCPU;
 
-	if (m_pGpuRuntime)
-	{
-		SParticleStats stats;
-		m_pGpuRuntime->AccumStats(stats);
-		stats.particles.rendered *= m_particleStats.rendered;
-		stats.components.rendered *= m_particleStats.rendered;
-		statsGPU += stats;
-	}
-	else
-	{
-		statsCPU.particles += m_particleStats;
+	statsCPU.particles += m_particleStats;
 
-		const uint allocParticles = uint(m_container.GetMaxParticles());
-		const uint aliveParticles = uint(m_container.GetLastParticleId());
+	const uint allocParticles = m_container.GetMaxParticles();
+	const uint aliveParticles = m_container.GetNumParticles();
 
-		statsCPU.particles.alloc += allocParticles;
-		statsCPU.particles.alive += aliveParticles;
+	statsCPU.particles.alloc += allocParticles;
+	statsCPU.particles.alive += aliveParticles;
+	statsCPU.components.alive += IsAlive();
 
-		statsCPU.components.alloc ++;
-		statsCPU.components.alive += IsAlive();
-		statsCPU.components.updated += m_particleStats.updated > 0;
-		statsCPU.components.rendered += m_particleStats.rendered > 0;
+	statsCPU.components.updated ++;
 
-		CParticleProfiler& profiler = GetPSystem()->GetProfiler();
-		profiler.AddEntry(this, EPS_ActiveParticles, aliveParticles);
-		profiler.AddEntry(this, EPS_AllocatedParticles, allocParticles);
-	}
-
+	CParticleProfiler& profiler = GetPSystem()->GetProfiler();
+	profiler.AddEntry(this, EPS_ActiveParticles, aliveParticles);
+	profiler.AddEntry(this, EPS_AllocatedParticles, allocParticles);
 	m_particleStats = {};
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2015-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 // -------------------------------------------------------------------------
 //  Created:     06/02/2015 by Filipe amim
@@ -307,7 +307,7 @@ void DebugOptSpline()
 
 }
 
-void DebugParticleSystem(const std::vector<_smart_ptr<CParticleEmitter>>& activeEmitters)
+void DebugParticleSystem(const TParticleEmitters& activeEmitters)
 {
 	DebugOptSpline();
 
@@ -344,7 +344,7 @@ void DebugParticleSystem(const std::vector<_smart_ptr<CParticleEmitter>>& active
 
 #else
 
-void DebugParticleSystem(const std::vector<_smart_ptr<CParticleEmitter>>& activeEmitters) {}
+void DebugParticleSystem(const TParticleEmitters& activeEmitters) {}
 
 #endif
 

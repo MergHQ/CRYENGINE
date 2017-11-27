@@ -7,9 +7,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef PARTICLEEFFECT_H
-#define PARTICLEEFFECT_H
-
 #pragma once
 
 #include "ParticleCommon.h"
@@ -81,6 +78,15 @@ public:
 	float                     GetEquilibriumTime() const;
 	int                       GetEditVersion() const;
 
+	// Consolidated list of MainPreUpdate features, called per emitter
+	struct ComponentFeature
+	{
+		CParticleComponent* pComponent;
+		CParticleFeature*   pFeature;
+	};
+	using TComponentFeatures = std::vector<ComponentFeature>;
+	TComponentFeatures MainPreUpdate;
+
 private:
 	string             m_name;
 	TAttributeTablePtr m_pAttributes;
@@ -94,5 +100,3 @@ private:
 };
 
 }
-
-#endif // PARTICLEEFFECT_H

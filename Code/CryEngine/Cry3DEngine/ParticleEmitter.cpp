@@ -350,7 +350,11 @@ void CParticleEmitter::Register(bool b, bool bImmediate)
 			if (!m_bbWorld.IsReset())
 			{
 				// Register node.
-				SetRndFlags(ERF_REGISTER_BY_POSITION, true);
+				// Register node.
+				// Normally, use emitter's designated position for visibility.
+				// However, if all bounds are computed dynamically, they might not contain the origin, so use bounds for visibility.
+				SetRndFlags(ERF_REGISTER_BY_POSITION, m_bbWorld.IsContainPoint(GetPos()));
+				SetRndFlags(ERF_REGISTER_BY_BBOX, m_SpawnParams.bRegisterByBBox);
 				SetRndFlags(ERF_RENDER_ALWAYS, m_SpawnParams.bIgnoreVisAreas);
 				m_p3DEngine->RegisterEntity(this);
 				m_nEmitterFlags |= ePEF_Registered;

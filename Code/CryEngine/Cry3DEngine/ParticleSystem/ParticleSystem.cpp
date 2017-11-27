@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2014-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 // -------------------------------------------------------------------------
 //  Created:     06/04/2014 by Filipe amim
@@ -23,7 +23,7 @@ namespace pfx2
 CRYREGISTER_SINGLETON_CLASS(CParticleSystem)
 
 CParticleSystem::CParticleSystem()
-	: m_memHeap(gEnv->pJobManager->GetNumWorkerThreads() + 1)
+	: m_threadData(gEnv->pJobManager->GetNumWorkerThreads() + 1) // 1 for main thread, 1 for each job thread
 {
 }
 
@@ -114,7 +114,7 @@ void CParticleSystem::InvalidateCachedRenderObjects()
 
 void CParticleSystem::Update()
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	CRY_PFX2_PROFILE_DETAIL;
 	PARTICLE_LIGHT_PROFILER();
 
 	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
@@ -134,27 +134,25 @@ void CParticleSystem::Update()
 		auto gpuMan = gEnv->pRenderer->GetGpuParticleManager();
 		gpuMan->BeginFrame();
 
-		for (auto& it : m_memHeap)
-			CRY_PFX2_ASSERT(it.GetTotalMemory().nUsed == 0);  // some emitter leaked memory on mem stack
-		m_profiler.Display();
-
 		TrimEmitters(!m_bResetEmitters);
 		m_bResetEmitters = false;
-		m_emitters.insert(m_emitters.end(), m_newEmitters.begin(), m_newEmitters.end());
+		m_emitters.append(m_newEmitters);
 		m_newEmitters.clear();
 
 		InvalidateCachedRenderObjects();
 
-		m_statsCPU = SParticleStats();
-		m_statsGPU = SParticleStats();
-		m_statsCPU.emitters.alloc = m_emitters.size();
-		for (auto& pEmitter : m_emitters)
-			pEmitter->AccumStats(m_statsCPU, m_statsGPU);
+		auto& mainData = GetMainData();
+		mainData.statsCPU = {};
+		mainData.statsGPU = {};
 
+		mainData.statsCPU.emitters.alloc = m_emitters.size();
 		for (auto& pEmitter : m_emitters)
 		{
-			if (pEmitter->IsAlive())
+			mainData.statsCPU.components.alloc += pEmitter->GetRuntimes().size();
+			if (pEmitter->HasBounds() || pEmitter->IsAlive())
 			{
+				mainData.statsCPU.emitters.alive++;
+				mainData.statsCPU.emitters.updated++;
 				pEmitter->Update();
 				m_jobManager.AddEmitter(pEmitter);
 			}
@@ -164,17 +162,33 @@ void CParticleSystem::Update()
 			}
 		}
 
-		m_jobManager.KernelUpdateAll();
+		m_jobManager.ScheduleUpdates();
 	}
 }
 
-void CParticleSystem::SyncronizeUpdateKernels()
+void CParticleSystem::FinishUpdate()
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	m_jobManager.SynchronizeUpdate();
+	m_jobManager.SynchronizeUpdates();
+
 	for (auto& pEmitter : m_emitters)
 		pEmitter->PostUpdate();
+
+	// Accumulate thread stats
+	auto& mainData = GetMainData();
+	for (auto& data : m_threadData)
+	{
+		CRY_PFX2_ASSERT(data.memHeap.GetTotalMemory().nUsed == 0);  // some emitter leaked memory on mem stack
+		if (&data != &mainData)
+		{
+			mainData.statsCPU += data.statsCPU;
+			data.statsCPU = {};
+			mainData.statsGPU += data.statsGPU;
+			data.statsGPU = {};
+		}
+	}
+
 	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
 	m_lastCameraPose = QuatT(camera.GetMatrix());
 }
@@ -184,8 +198,7 @@ void CParticleSystem::DeferredRender()
 	m_jobManager.DeferredRender();
 	DebugParticleSystem(m_emitters);
 
-	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
-	const bool debugBBox = (pCVars->e_ParticlesDebug & AlphaBit('b')) != 0;
+	const bool debugBBox = (GetCVars()->e_ParticlesDebug & AlphaBit('b')) != 0;
 	if (debugBBox)
 	{
 		for (auto& pEmitter : m_emitters)
@@ -233,9 +246,9 @@ float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
 
 	static TParticleStats<float> statsCPUAvg, statsGPUAvg;
 	TParticleStats<float> statsCPUCur, statsGPUCur; 
-	statsCPUCur.Set(m_statsCPU);
+	statsCPUCur.Set(GetMainData().statsCPU);
 	statsCPUAvg = Lerp(statsCPUAvg, statsCPUCur, blendCur);
-	statsGPUCur.Set(m_statsGPU);
+	statsGPUCur.Set(GetMainData().statsGPU);
 	statsGPUAvg = Lerp(statsGPUAvg, statsGPUCur, blendCur);
 
 	if (statsCPUAvg.emitters.alloc)
@@ -344,7 +357,7 @@ bool CParticleSystem::SerializeFeatures(IArchive& ar, TParticleFeatures& feature
 
 void CParticleSystem::GetStats(SParticleStats& stats)
 {
-	stats = m_statsCPU + m_statsGPU;
+	stats = GetMainData().statsCPU + GetMainData().statsGPU;
 }
 
 void CParticleSystem::GetMemoryUsage(ICrySizer* pSizer) const
