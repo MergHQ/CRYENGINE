@@ -152,10 +152,6 @@ void InitCRTHandlers() {}
 //////////////////////////////////////////////////////////////////////////
 extern "C" DLL_EXPORT void ModuleInitISystem(ISystem* pSystem, const char* moduleName)
 {
-	#if defined(USE_CRY_ASSERT)
-	CryAssertSetGlobalFlagAddress(pSystem->GetAssertFlagAddress());
-	#endif
-
 	if (gEnv) // Already registered.
 		return;
 

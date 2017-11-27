@@ -192,11 +192,7 @@ bool CProjectManager::ParseProjectFile()
 
 		for (SProject::SConsoleInstruction& consoleCommand : m_project.consoleCommands)
 		{
-			stack_string command = consoleCommand.key;
-			command.append(" ");
-			command.append(consoleCommand.value.c_str());
-			
-			gEnv->pConsole->ExecuteString(command.c_str(), false, true);
+			gEnv->pConsole->LoadConfigCommand(consoleCommand.key.c_str(), consoleCommand.value.c_str());
 		}
 
 		auto gameDllIt = m_project.legacyGameDllPaths.find("any");

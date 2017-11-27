@@ -364,7 +364,13 @@ struct IConsole
 	//! \param szCommand Must not be 0.
 	virtual void                   AddCommandToHistory(const char* szCommand) = 0;
 
+	//! Sets the value of a CVar as loaded from a config
+	//! Will defer setting of the value until the CVar is registered if it hasn't been already
 	virtual void                   LoadConfigVar(const char* sVariable, const char* sValue) = 0;
+	//! Executes a command with optional arguments
+	//! Will defer setting of the value until the command is registered if it hasn't been already
+	virtual void                   LoadConfigCommand(const char* szCommand, const char* szArguments = nullptr) = 0;
+
 	// Sets how to treat calls to LoadConfigVar, return previous configuration type.
 	virtual ELoadConfigurationType SetCurrentConfigType(ELoadConfigurationType configType) = 0;
 

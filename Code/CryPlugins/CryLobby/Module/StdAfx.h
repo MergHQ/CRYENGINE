@@ -10,7 +10,7 @@
 //#define NOT_USE_CRY_MEMORY_MANAGER
 
 #include <CryCore/Project/CryModuleDefs.h>
-#define eCryModule eCryM_Lobby
+#define eCryModule eCryM_EnginePlugin
 #define CRYLOBBY_EXPORTS
 #include <CryCore/Platform/platform.h>
 

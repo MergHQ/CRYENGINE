@@ -240,7 +240,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.bBootProfilerEnabledFrames = false;
 	m_env.callbackStartSection = 0;
 	m_env.callbackEndSection = 0;
-	m_env.bIgnoreAllAsserts = false;
+
 	m_env.bUnattendedMode = false;
 	m_env.bTesting = false;
 

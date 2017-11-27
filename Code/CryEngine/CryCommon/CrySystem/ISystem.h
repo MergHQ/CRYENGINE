@@ -862,7 +862,7 @@ struct SSystemGlobalEnvironment
 
 	uint32                nMainFrameID;
 
-	const char*           szCmdLine;       //!< Startup command line.
+	const char*           szCmdLine = "";       //!< Startup command line.
 
 	//! Generic debug string which can be easily updated by any system and output by the debug handler
 	enum { MAX_DEBUG_STRING_LENGTH = 128 };
@@ -886,13 +886,11 @@ struct SSystemGlobalEnvironment
 	FrameProfilerSectionCallback callbackEndSection;
 	//////////////////////////////////////////////////////////////////////////
 
-	// Indicate Editor status.
-
-	//////////////////////////////////////////////////////////////////////////
-	// Used by CRY_ASSERT
-	bool bIgnoreAllAsserts;
-	bool bStoppedOnAssert;
-	//////////////////////////////////////////////////////////////////////////
+#if defined(USE_CRY_ASSERT)
+	bool ignoreAllAsserts = false;
+	bool stoppedOnAssert = false;
+	ECryAssertLevel cryAssertLevel = ECryAssertLevel::Enabled;
+#endif
 
 	//! Whether we are running unattended, disallows message boxes and other blocking events that require human intervention
 	bool bUnattendedMode;
@@ -907,7 +905,7 @@ struct SSystemGlobalEnvironment
 	SSystemInitParams::ProtectedFunction pProtectedFunctions[eProtectedFuncsLast];
 
 	//////////////////////////////////////////////////////////////////////////
-	//! Flag to able to print out of memory conditon
+	//! Flag to able to print out of memory condition
 	bool             bIsOutOfMemory;
 	bool             bIsOutOfVideoMemory;
 
@@ -1072,7 +1070,7 @@ private:
 	bool m_isCutscenePlaying;
 
 public:
-	SSystemGlobalEnvironment() : szCmdLine("")
+	SSystemGlobalEnvironment()
 	{
 		mAsyncDipState.nValue = 0;
 	};
@@ -1479,6 +1477,10 @@ struct ISystem
 	//! It will return false if the pointer is not registered. Otherwise, returns true.
 	virtual bool UnregisterErrorObserver(IErrorObserver* errorObserver) = 0;
 
+	//! Returns true if the system is loading a level currently
+	virtual bool IsLoading() = 0;
+
+#if defined(USE_CRY_ASSERT)
 	//! Called after the processing of the assert message box(Windows or Xbox).
 	//! It will be called even when asserts are disabled by the console variables.
 	virtual void OnAssert(const char* condition, const char* message, const char* fileName, unsigned int fileLineNumber) = 0;
@@ -1489,18 +1491,14 @@ struct ISystem
 	//! OBS2: it will always return false, if asserts are disabled or ignored.
 	virtual bool IsAssertDialogVisible() const = 0;
 
-	//! Returns true if the system is loading a level currently
-	virtual bool IsLoading() = 0;
-
-	//! Returns address controlled by sys_asserts CVar, if available.
-	//! The value at the address shall be non-zero if asserts are enabled.
-	//! The function shall return nullptr if sys_asserts CVar is not available (ie, release config).
-	virtual int* GetAssertFlagAddress() const = 0;
-
+	//! Checks if asserts are enabled for the specified module (see eCryModule)
+	virtual bool AreAssertsEnabledForModule(uint32 moduleId) = 0;
+	//! Disables assertions for the specified module (see eCryModule)
+	virtual void DisableAssertionsForModule(uint32 moduleId) = 0;
 	//! Sets the AssertVisisble internal variable.
 	//! Typically it should only be called by CryAssert.
 	virtual void SetAssertVisible(bool bAssertVisble) = 0;
-	//////////////////////////////////////////////////////////////////////////
+#endif
 
 	//! Get the index of the currently running Crytek application, (0 = first instance, 1 = second instance, etc).
 	virtual int GetApplicationInstance() = 0;

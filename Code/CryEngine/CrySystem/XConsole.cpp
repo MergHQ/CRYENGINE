@@ -729,6 +729,20 @@ void CXConsole::LoadConfigVar(const char* sVariable, const char* sValue)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CXConsole::LoadConfigCommand(const char* szCommand, const char* szArguments)
+{
+	auto it = m_mapCommands.find(szCommand);
+	if (it == m_mapCommands.end())
+	{
+		m_configCommands.emplace(szCommand, szArguments);
+		return;
+	}
+
+	string arguments = string().Format("%s %s", szCommand, szArguments);
+	ExecuteCommand(it->second, arguments);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CXConsole::EnableActivationKey(bool bEnable)
 {
 	m_bActivationKeyEnable = bEnable;
@@ -1840,14 +1854,14 @@ void CXConsole::ScrollConsole()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXConsole::AddCommand(const char* sCommand, ConsoleCommandFunc func, int nFlags, const char* sHelp, bool bIsManagedExternally)
+void CXConsole::AddCommand(const char* szCommand, ConsoleCommandFunc func, int nFlags, const char* sHelp, bool bIsManagedExternally)
 {
-	AssertName(sCommand);
+	AssertName(szCommand);
 
-	if (m_mapCommands.find(sCommand) == m_mapCommands.end())
+	if (m_mapCommands.find(szCommand) == m_mapCommands.end())
 	{
 		CConsoleCommand cmd;
-		cmd.m_sName = sCommand;
+		cmd.m_sName = szCommand;
 		cmd.m_func = func;
 		cmd.m_isManagedExternally = bIsManagedExternally;
 		if (sHelp)
@@ -1855,11 +1869,23 @@ void CXConsole::AddCommand(const char* sCommand, ConsoleCommandFunc func, int nF
 			cmd.m_sHelp = sHelp;
 		}
 		cmd.m_nFlags = nFlags;
-		m_mapCommands.insert(std::make_pair(cmd.m_sName, cmd));
+		auto commandIt = m_mapCommands.insert(std::make_pair(cmd.m_sName, cmd)).first;
+
+		// See if this command was already executed by a config
+		// If so we need to execute it immediately
+		auto commandRange = m_configCommands.equal_range(szCommand);
+		for (auto commandPair = commandRange.first; commandPair != commandRange.second; ++commandPair)
+		{
+			string arguments = string().Format("%s %s", szCommand, commandPair->second.c_str());
+			ExecuteCommand(commandIt->second, arguments);
+		}
+
+		// Remove all entries
+		m_configCommands.erase(commandRange.first, commandRange.second);
 	}
 	else
 	{
-		gEnv->pLog->LogError("[CVARS]: [DUPLICATE] CXConsole::AddCommand(): console command [%s] is already registered", sCommand);
+		gEnv->pLog->LogError("[CVARS]: [DUPLICATE] CXConsole::AddCommand(): console command [%s] is already registered", szCommand);
 #if LOG_CVAR_INFRACTIONS_CALLSTACK
 		gEnv->pSystem->debug_LogCallStack();
 #endif // LOG_CVAR_INFRACTIONS_CALLSTACK
