@@ -2119,7 +2119,7 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 		string gameFolder = (!PathUtil::GetGameFolder().empty()) ? (PathUtil::GetGameFolder() + "/") : "";
 		AddCVarGroupDirectory(gameFolder + "Config/CVarGroups");
 	}
-	AddCVarGroupDirectory("Config/CVarGroups");
+	AddCVarGroupDirectory("%ENGINE%/Config/CVarGroups");
 
 #if defined(USE_PATCH_PAK)
 	LoadPatchPaks();
