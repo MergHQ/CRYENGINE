@@ -1418,7 +1418,9 @@ void CGame::InitGameType(bool multiplayer, bool fromInit /*= false*/)
 		EPlatform platform = GetPlatform();
 		switch (platform)
 		{
-		case ePlatform_PC:
+			case EPlatform::Windows:
+			case EPlatform::Linux:
+			case EPlatform::MacOS:
 			{
 				mpConfigName = "multiplayer_pc";
 				break;
@@ -3142,17 +3144,7 @@ const char* CGame::GetName()
 
 EPlatform CGame::GetPlatform() const
 {
-	EPlatform platform = ePlatform_Unknown;
-
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
-	platform = ePlatform_PC;
-#elif CRY_PLATFORM_ORBIS
-	platform = ePlatform_PS4;
-#else
-	#error Unsupported Platform
-#endif
-
-	return platform;
+	return EPlatform::Current;
 }
 
 void CGame::InitPlatformOS()

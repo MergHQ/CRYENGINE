@@ -10,6 +10,33 @@
 	#error windows.h should not be included prior to platform.h
 #endif
 
+enum class EPlatform
+{
+	Windows,
+	Linux,
+	MacOS,
+	XboxOne,
+	PS4,
+	Android,
+	iOS,
+
+#ifdef CRY_PLATFORM_WINDOWS
+	Current = Windows
+#elif defined(CRY_PLATFORM_LINUX)
+	Current = Linux
+#elif defined(CRY_PLATFORM_APPLE) && !defined(CRY_PLATFORM_MOBILE)
+	Current = MacOS
+#elif defined(CRY_PLATFORM_DURANGO)
+	Current = XboxOne
+#elif defined(CRY_PLATFORM_ORBIS)
+	Current = PS4
+#elif defined(CRY_PLATFORM_ANDROID)
+	Current = Android
+#elif defined(CRY_PLATFORM_APPLE) && defined(CRY_PLATFORM_MOBILE)
+	Current = iOS
+#endif
+};
+
 // Alignment|InitializerList support.
 #if CRY_COMPILER_MSVC && (_MSC_VER >= 1800)
 	#define _ALLOW_INITIALIZER_LISTS

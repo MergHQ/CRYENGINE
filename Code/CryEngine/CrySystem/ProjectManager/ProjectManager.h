@@ -5,6 +5,16 @@
 #include <CrySystem/ICryPluginManager.h>
 #include <CrySerialization/yasli/STL.h>
 
+YASLI_ENUM_BEGIN(EPlatform, "Platform")
+YASLI_ENUM(EPlatform::Windows, "Windows", "Windows")
+YASLI_ENUM(EPlatform::Linux, "Linux", "Linux")
+YASLI_ENUM(EPlatform::MacOS, "MacOS", "MacOS")
+YASLI_ENUM(EPlatform::XboxOne, "XboxOne", "XboxOne")
+YASLI_ENUM(EPlatform::PS4, "PS4", "PS4")
+YASLI_ENUM(EPlatform::Android, "Android", "Android")
+YASLI_ENUM(EPlatform::iOS, "iOS", "iOS")
+YASLI_ENUM_END()
+
 struct SPluginDefinition
 {
 	SPluginDefinition() {}
@@ -16,6 +26,7 @@ struct SPluginDefinition
 	{
 		ar(type, "type", "type");
 		ar(path, "path", "path");
+		ar(platforms, "platforms", "platforms");
 	}
 
 	bool operator==(const SPluginDefinition& rhs) const
@@ -29,6 +40,9 @@ struct SPluginDefinition
 
 	Cry::IPluginManager::EType type;
 	string path;
+	//! Determines the platforms for which this plug-in should be loaded
+	//! An empty vector indicates that we should always load
+	std::vector<EPlatform> platforms;
 };
 
 namespace Cry

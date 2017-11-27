@@ -226,17 +226,6 @@ enum EDifficulty
 	eDifficulty_COUNT,
 };
 
-//! Platform defines
-enum EPlatform
-{
-	ePlatform_Unknown = 0,
-	ePlatform_PC,
-	ePlatform_XBoxOne,
-	ePlatform_PS4,
-
-	ePlatform_COUNT,
-};
-
 //! Controller layout types
 enum EControllerLayout
 {
@@ -692,7 +681,7 @@ protected:
 		EPlatform platformId;
 		BYTE      devices;      // Devices to use when registering actions
 
-		SPlatformInfo(EPlatform _platformId = ePlatform_Unknown) : platformId(_platformId), devices(eAID_KeyboardMouse | eAID_XboxPad | eAID_PS4Pad) {}
+		SPlatformInfo(EPlatform _platformId = EPlatform::Current) : platformId(_platformId), devices(eAID_KeyboardMouse | eAID_XboxPad | eAID_PS4Pad) {}
 	};
 	SPlatformInfo m_platformInfo;
 

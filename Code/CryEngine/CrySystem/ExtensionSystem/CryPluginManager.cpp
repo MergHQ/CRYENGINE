@@ -248,6 +248,11 @@ void CCryPluginManager::LoadProjectPlugins()
 
 	for (const SPluginDefinition& pluginDefinition : pluginDefinitions)
 	{
+		if (!pluginDefinition.platforms.empty() && !stl::find(pluginDefinition.platforms, EPlatform::Current))
+		{
+			continue;
+		}
+
 #if defined(CRY_IS_MONOLITHIC_BUILD)
 		// Don't attempt to load plug-ins that were statically linked in
 		string pluginName = PathUtil::GetFileName(pluginDefinition.path);

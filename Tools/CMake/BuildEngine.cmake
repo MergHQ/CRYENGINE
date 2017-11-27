@@ -398,7 +398,7 @@ if (OPTION_ENGINE)
 		add_subdirectory("Code/Libs/oculus")
 	endif()
 	
-	if (PLUGIN_HTTP OR WIN32)
+	if (WIN32)
 		add_subdirectory ("Code/Libs/curl")
 	endif ()
 	add_subdirectory ("Code/Libs/freetype")
