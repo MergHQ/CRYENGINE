@@ -424,8 +424,6 @@ void CAttachmentManager::InitAttachmentList(const CharacterAttachment* parrAttac
 			QuatT defaultTransform;
 			if (pAttachment->m_nJointID < 0)
 			{
-				CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "CryAnimation: Attachment '%s' cannot be attached to bone '%s' because it doesn't exist in skeleton '%s'",
-				           attach.m_strAttachmentName.c_str(), attach.m_strJointName.c_str(), rDefaultSkeleton.GetModelFilePath());
 				defaultTransform.SetIdentity();
 			}
 			else
