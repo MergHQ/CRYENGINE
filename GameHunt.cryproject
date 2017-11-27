@@ -23,7 +23,6 @@
 	},
 	"console_variables": [
 		{ "name": "sys_archive_host_xml_version", "value": "1" },
-		{ "name": "sys_asserts", "value": "0" },
 		{ "name": "sys_localization_folder", "value": "Localization" },
 		{ "name": "sys_target_platforms", "value": "pc,ps4,xboxone" },
 		{ "name": "sc_LogToFile", "value": "2" },
@@ -50,5 +49,5 @@
 		
 		{ "name": "e_LodFaceAreaTargetSize", "value": "0.01" }
 	],
-	"console_commands": [ ]
+	"console_commands": [ {"name": "sys_ignore_asserts_from_module", "value": "CryGame"} ]
 }
