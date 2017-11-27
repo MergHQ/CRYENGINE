@@ -2,38 +2,60 @@
 
 #pragma once
 
-#include <ProxyModels/DeepFilterProxyModel.h>
+#include <ProxyModels/AttributeFilterProxyModel.h>
 #include <SystemTypes.h>
+
+class CItemModelAttribute;
+class QMimeData;
 
 namespace ACE
 {
+class CImplItem;
 class CSystemControl;
 class CSystemLibrary;
 class CSystemFolder;
 class CSystemAsset;
 class CSystemAssetsManager;
 
-enum class EDataRole
+namespace SystemModelUtils
+{
+enum class EColumns
+{
+	Notification,
+	Type,
+	Placeholder,
+	NoConnection,
+	NoControl,
+	Scope,
+	Name,
+	Count,
+};
+
+enum class ERoles
 {
 	ItemType = Qt::UserRole + 1,
-	Modified,
+	Name,
 	InternalPointer,
 	Id,
 };
 
-namespace AudioModelUtils
-{
-void          GetAssetsFromIndexesSeparated(QModelIndexList const& list, std::vector<CSystemLibrary*>& outLibraries, std::vector<CSystemFolder*>& outFolders, std::vector<CSystemControl*>& outControls);
-void          GetAssetsFromIndexesCombined(QModelIndexList const& list, std::vector<CSystemAsset*>& outAssets);
-CSystemAsset* GetAssetFromIndex(QModelIndex const& index);
-} // namespace AudioModelUtils
+CItemModelAttribute* GetAttributeForColumn(EColumns const column);
+QVariant             GetHeaderData(int const section, Qt::Orientation const orientation, int const role);
 
-class CAudioLibraryModel : public QAbstractItemModel
+void                 GetAssetsFromIndexesSeparated(QModelIndexList const& list, std::vector<CSystemLibrary*>& outLibraries, std::vector<CSystemFolder*>& outFolders, std::vector<CSystemControl*>& outControls);
+void                 GetAssetsFromIndexesCombined(QModelIndexList const& list, std::vector<CSystemAsset*>& outAssets);
+CSystemAsset*        GetAssetFromIndex(QModelIndex const& index, int const column);
+void                 DecodeImplMimeData(const QMimeData* pData, std::vector<CImplItem*>& outItems);
+} // namespace SystemModelUtils
+
+class CSystemSourceModel : public QAbstractItemModel
 {
 public:
 
-	CAudioLibraryModel(CSystemAssetsManager* const pAssetsManager);
-	virtual ~CAudioLibraryModel() override;
+	CSystemSourceModel(CSystemAssetsManager* const pAssetsManager, QObject* const pParent);
+	virtual ~CSystemSourceModel() override;
+
+	void DisconnectSignals();
 
 protected:
 
@@ -52,23 +74,24 @@ protected:
 	virtual QStringList     mimeTypes() const override;
 	// ~QAbstractItemModel
 
-	void ConnectToSystem();
-	void DisconnectFromSystem();
-	CSystemAssetsManager* const m_pAssetsManager;
+private:
+
+	void ConnectSignals();
+
+	CSystemAssetsManager* m_pAssetsManager;
+	bool                  m_ignoreLibraryUpdates;
 };
 
-class CSystemControlsModel : public QAbstractItemModel
+class CSystemLibraryModel : public QAbstractItemModel
 {
 public:
 
-	CSystemControlsModel(CSystemAssetsManager* const pAssetsManager, CSystemLibrary* const pLibrary);
-	virtual ~CSystemControlsModel() override;
+	CSystemLibraryModel(CSystemAssetsManager* const pAssetsManager, CSystemLibrary* const pLibrary, QObject* const pParent);
+	virtual ~CSystemLibraryModel() override;
 
-	void DisconnectFromSystem();
+	void DisconnectSignals();
 
 protected:
-
-	QModelIndex IndexFromItem(CSystemAsset const* pItem) const;
 
 	// QAbstractItemModel
 	virtual int             rowCount(QModelIndex const& parent) const override;
@@ -86,30 +109,29 @@ protected:
 	virtual QStringList     mimeTypes() const override;
 	// ~QAbstractItemModel
 
-	void ConnectToSystem();
+private:
 
-	CSystemAssetsManager* const m_pAssetsManager;
-	CSystemLibrary* const       m_pLibrary;
+	void        ConnectSignals();
+	QModelIndex IndexFromItem(CSystemAsset const* pItem) const;
+
+	CSystemAssetsManager* m_pAssetsManager;
+	CSystemLibrary*       m_pLibrary;
 };
 
-class CSystemControlsFilterProxyModel final : public QDeepFilterProxyModel
+class CSystemFilterProxyModel final : public QAttributeFilterProxyModel
 {
 public:
 
-	CSystemControlsFilterProxyModel(QObject* parent);
+	CSystemFilterProxyModel(QObject* const pParent);
 
-	// QDeepFilterProxyModel
-	virtual bool rowMatchesFilter(int source_row, QModelIndex const& source_parent) const override;
-	// ~QDeepFilterProxyModel
+protected:
+
+	// QAttributeFilterProxyModel
+	virtual bool rowMatchesFilter(int sourceRow, QModelIndex const& sourcePparent) const override;
+	// ~QAttributeFilterProxyModel
 
 	// QSortFilterProxyModel
 	virtual bool lessThan(QModelIndex const& left, QModelIndex const& right) const override;
 	// ~QSortFilterProxyModel
-
-	void EnableControl(bool const isEnabled, ESystemItemType const type);
-
-private:
-
-	uint m_validControlsMask = std::numeric_limits<uint>::max();
 };
 } // namespace ACE

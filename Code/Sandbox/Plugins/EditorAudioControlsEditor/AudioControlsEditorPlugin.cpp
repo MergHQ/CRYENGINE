@@ -4,7 +4,7 @@
 #include "AudioControlsEditorPlugin.h"
 
 #include "SystemAssets.h"
-#include "AudioControlsEditorWindow.h"
+#include "MainWindow.h"
 #include "AudioControlsLoader.h"
 #include "AudioControlsWriter.h"
 #include "ImplementationManager.h"
@@ -35,7 +35,7 @@ CCrySignal<void()> CAudioControlsEditorPlugin::signalLoaded;
 CCrySignal<void()> CAudioControlsEditorPlugin::signalAboutToSave;
 CCrySignal<void()> CAudioControlsEditorPlugin::signalSaved;
 
-REGISTER_VIEWPANE_FACTORY(CAudioControlsEditorWindow, "Audio Controls Editor", "Tools", true)
+REGISTER_VIEWPANE_FACTORY(CMainWindow, "Audio Controls Editor", "Tools", true)
 
 //////////////////////////////////////////////////////////////////////////
 CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()

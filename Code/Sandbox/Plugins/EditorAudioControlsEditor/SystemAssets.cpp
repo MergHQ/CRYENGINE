@@ -26,9 +26,35 @@ CSystemAsset::CSystemAsset(string const& name, ESystemItemType const type)
 }
 
 //////////////////////////////////////////////////////////////////////////
+char const* CSystemAsset::GetTypeName() const
+{
+	switch (m_type)
+	{
+	case ESystemItemType::Trigger:
+		return "Trigger";
+	case ESystemItemType::Parameter:
+		return "Parameter";
+	case ESystemItemType::Switch:
+		return "Switch";
+	case ESystemItemType::State:
+		return "State";
+	case ESystemItemType::Environment:
+		return "Environment";
+	case ESystemItemType::Preload:
+		return "Preload";
+	case ESystemItemType::Folder:
+		return "Folder";
+	case ESystemItemType::Library:
+		return "Library";
+	}
+
+	return "";
+}
+
+//////////////////////////////////////////////////////////////////////////
 CSystemAsset* CSystemAsset::GetChild(size_t const index) const
 {
-	CRY_ASSERT_MESSAGE(index < m_children.size(), "Index out of bounds.");
+	CRY_ASSERT_MESSAGE(index < m_children.size(), "Asset child index out of bounds.");
 	return m_children[index];
 }
 

@@ -5,7 +5,7 @@
 #include "MiddlewareDataModel.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
-#include "ItemStatusHelper.h"
+#include "ModelUtils.h"
 
 #include <IEditorImpl.h>
 #include <ImplItem.h>
@@ -19,25 +19,109 @@
 
 namespace ACE
 {
-char const* const CMiddlewareDataModel::ms_szMimeType = "application/cryengine-audioimplementationitem";
+//////////////////////////////////////////////////////////////////////////
+CMiddlewareDataModel::CMiddlewareDataModel(QObject* const pParent)
+	: QAbstractItemModel(pParent)
+	, m_pEditorImpl(CAudioControlsEditorPlugin::GetImplEditor())
+{
+	ConnectSignals();
+}
 
 //////////////////////////////////////////////////////////////////////////
-CMiddlewareDataModel::CMiddlewareDataModel()
-	: m_pEditorImpl(CAudioControlsEditorPlugin::GetImplEditor())
+CMiddlewareDataModel::~CMiddlewareDataModel()
 {
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
-	{
-		m_pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-		beginResetModel();
-		endResetModel();
-	});
+	DisconnectSignals();
+}
 
+//////////////////////////////////////////////////////////////////////////
+void CMiddlewareDataModel::ConnectSignals()
+{
 	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
 	{
 		beginResetModel();
 		m_pEditorImpl = nullptr;
 		endResetModel();
-	});
+	}, reinterpret_cast<uintptr_t>(this));
+
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
+	{
+		m_pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
+		beginResetModel();
+		endResetModel();
+	}, reinterpret_cast<uintptr_t>(this));
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CMiddlewareDataModel::DisconnectSignals()
+{
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CMiddlewareDataModel::Reset()
+{
+	beginResetModel();
+	endResetModel();
+}
+
+//////////////////////////////////////////////////////////////////////////
+CItemModelAttribute* CMiddlewareDataModel::GetAttributeForColumn(EColumns const column)
+{
+	switch (column)
+	{
+	case EColumns::Notification:
+		return &ModelUtils::s_notificationAttribute;
+	case EColumns::Connected:
+		return &ModelUtils::s_connectedAttribute;
+	case EColumns::Localized:
+		return &ModelUtils::s_localizedAttribute;
+	case EColumns::Name:
+		return &Attributes::s_nameAttribute;
+	default:
+		return nullptr;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+QVariant CMiddlewareDataModel::GetHeaderData(int const section, Qt::Orientation const orientation, int const role)
+{
+	if (orientation != Qt::Horizontal)
+	{
+		return QVariant();
+	}
+
+	auto const pAttribute = GetAttributeForColumn(static_cast<EColumns>(section));
+
+	if (pAttribute == nullptr)
+	{
+		return QVariant();
+	}
+
+	switch (role)
+	{
+	case Qt::DecorationRole:
+		if (section == static_cast<int>(EColumns::Notification))
+		{
+			return CryIcon("icons:General/Scripting.ico"); // This icon is a placeholder.
+		}
+		break;
+	case Qt::DisplayRole:
+		// For Notification we use Icons instead.
+		if (section == static_cast<int>(EColumns::Name))
+		{
+			return pAttribute->GetName();
+		}
+		break;
+	case Qt::ToolTipRole:
+		return pAttribute->GetName();
+	case Attributes::s_getAttributeRole:
+		return QVariant::fromValue(pAttribute);
+	default:
+		break;
+	}
+
+	return QVariant();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -65,7 +149,7 @@ int CMiddlewareDataModel::rowCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 int CMiddlewareDataModel::columnCount(QModelIndex const& parent) const
 {
-	return static_cast<int>(EMiddlewareDataColumns::Count);
+	return static_cast<int>(EColumns::Count);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -84,50 +168,62 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 		{
 			switch (index.column())
 			{
-			case static_cast<int>(EMiddlewareDataColumns::Name):
+			case static_cast<int>(EColumns::Notification):
 				{
 					switch (role)
 					{
-					case Qt::DisplayRole:
-						return static_cast<char const*>(pImplItem->GetName());
-						break;
 					case Qt::DecorationRole:
-						return CryIcon(m_pEditorImpl->GetTypeIcon(pImplItem));
-						break;
-					case Qt::ForegroundRole:
-						if (pImplItem->IsLocalised())
+						if ((!pImplItem->IsConnected() && !pImplItem->IsContainer()))
 						{
-							return GetItemStatusColor(EItemStatus::Localized);
+							return CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
 						}
-						else if (!pImplItem->IsConnected() && (m_pEditorImpl->ImplTypeToSystemType(pImplItem) != ESystemItemType::Invalid))
+						else if (pImplItem->IsLocalised())
 						{
-							// Tint non connected controls that can actually be connected to something (ie. exclude folders)
-							return GetItemStatusColor(EItemStatus::NoConnection);
+							return CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized));
 						}
 						break;
 					case Qt::ToolTipRole:
-						if (pImplItem->IsLocalised())
-						{
-							return tr("Item is localized");
-						}
-						else if (!pImplItem->IsConnected())
+						if ((!pImplItem->IsConnected() && !pImplItem->IsContainer()))
 						{
 							return tr("Item is not connected to any audio system control");
 						}
+						else if (pImplItem->IsLocalised())
+						{
+							return tr("Item is localized");
+						}
 						break;
-					case static_cast<int>(EMiddlewareDataAttributes::Connected):
-						return pImplItem->IsConnected();
+					}
+				}
+				break;
+			case static_cast<int>(EColumns::Connected):
+				{
+					if ((role == Qt::CheckStateRole) && (!pImplItem->IsContainer()))
+					{
+						return pImplItem->IsConnected() ? Qt::Checked : Qt::Unchecked;
+					}
+				}
+				break;
+			case static_cast<int>(EColumns::Localized):
+				{
+					if ((role == Qt::CheckStateRole) && (!pImplItem->IsContainer()))
+					{
+						return pImplItem->IsLocalised() ? Qt::Checked : Qt::Unchecked;
+					}
+				}
+				break;
+			case static_cast<int>(EColumns::Name):
+				{
+					switch (role)
+					{
+					case Qt::DecorationRole:
+						return CryIcon(m_pEditorImpl->GetTypeIcon(pImplItem));
 						break;
-					case static_cast<int>(EMiddlewareDataAttributes::Container) :
-						return pImplItem->IsContainer();
+					case Qt::DisplayRole:
+					case Qt::ToolTipRole:
+					case static_cast<int>(ERoles::Name):
+						return static_cast<char const*>(pImplItem->GetName());
 						break;
-					case static_cast<int>(EMiddlewareDataAttributes::Placeholder):
-						return pImplItem->IsPlaceholder();
-						break;
-					case static_cast<int>(EMiddlewareDataAttributes::Localized):
-						return pImplItem->IsLocalised();
-						break;
-					case static_cast<int>(EMiddlewareDataAttributes::Id) :
+					case static_cast<int>(ERoles::Id):
 						return pImplItem->GetId();
 						break;
 					}
@@ -136,18 +232,14 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 			}
 		}
 	}
+
 	return QVariant();
 }
 
 //////////////////////////////////////////////////////////////////////////
-QVariant CMiddlewareDataModel::headerData(int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole*/) const
+QVariant CMiddlewareDataModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-	if ((orientation == Qt::Horizontal) && (role == Qt::DisplayRole))
-	{
-		return tr("Name");
-	}
-
-	return QVariant();
+	return GetHeaderData(section, orientation, role);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -224,7 +316,7 @@ Qt::DropActions CMiddlewareDataModel::supportedDragActions() const
 QStringList CMiddlewareDataModel::mimeTypes() const
 {
 	QStringList list = QAbstractItemModel::mimeTypes();
-	list << ms_szMimeType;
+	list << ModelUtils::s_szMiddlewareMimeType;
 	return list;
 }
 
@@ -235,7 +327,16 @@ QMimeData* CMiddlewareDataModel::mimeData(QModelIndexList const& indexes) const
 	QByteArray byteArray;
 	QDataStream stream(&byteArray, QIODevice::ReadWrite);
 
-	for (auto const& index : indexes)
+	QModelIndexList nameIndexes;
+
+	for (QModelIndex const& index : indexes)
+	{
+		nameIndexes.append(index.sibling(index.row(), static_cast<int>(EColumns::Name)));
+	}
+
+	nameIndexes.erase(std::unique(nameIndexes.begin(), nameIndexes.end()), nameIndexes.end());
+
+	for (auto const& index : nameIndexes)
 	{
 		CImplItem const* const pImplItem = ItemFromIndex(index);
 
@@ -245,7 +346,7 @@ QMimeData* CMiddlewareDataModel::mimeData(QModelIndexList const& indexes) const
 		}
 	}
 
-	pData->setData(ms_szMimeType, byteArray);
+	pData->setData(ModelUtils::s_szMiddlewareMimeType, byteArray);
 	return pData;
 }
 
@@ -288,125 +389,4 @@ QModelIndex CMiddlewareDataModel::IndexFromItem(CImplItem const* const pImplItem
 
 	return QModelIndex();
 }
-
-//////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataModel::Reset()
-{
-	beginResetModel();
-	endResetModel();
-}
-
-//////////////////////////////////////////////////////////////////////////
-CMiddlewareDataFilterProxyModel::CMiddlewareDataFilterProxyModel(QObject* parent)
-	: QDeepFilterProxyModel(QDeepFilterProxyModel::BehaviorFlags(QDeepFilterProxyModel::AcceptIfChildMatches), parent)
-	, m_hideConnected(false)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CMiddlewareDataFilterProxyModel::rowMatchesFilter(int source_row, const QModelIndex& source_parent) const
-{
-	if (QDeepFilterProxyModel::rowMatchesFilter(source_row, source_parent))
-	{
-		QModelIndex const index = sourceModel()->index(source_row, 0, source_parent);
-
-		if (index.isValid())
-		{
-			// Hide placeholder
-			if (sourceModel()->data(index, static_cast<int>(CMiddlewareDataModel::EMiddlewareDataAttributes::Placeholder)).toBool())
-			{
-				return false;
-			}
-
-			if (m_hideConnected)
-			{
-				if (sourceModel()->data(index, static_cast<int>(CMiddlewareDataModel::EMiddlewareDataAttributes::Connected)).toBool())
-				{
-					return false;
-				}
-
-				if (sourceModel()->data(index, static_cast<int>(CMiddlewareDataModel::EMiddlewareDataAttributes::Container)).toBool())
-				{
-					return false;
-				}
-
-				if (sourceModel()->hasChildren(index))
-				{
-					int const rowCount = sourceModel()->rowCount(index);
-
-					for (int i = 0; i < rowCount; ++i)
-					{
-						if (filterAcceptsRow(i, index))
-						{
-							return true;
-						}
-					}
-
-					return false;
-				}
-			}
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataFilterProxyModel::SetHideConnected(bool const hideConnected)
-{
-	m_hideConnected = hideConnected;
-	invalidate();
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CMiddlewareDataFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex const& right) const
-{
-	if (left.column() == right.column())
-	{
-		bool const hasLeftChildren = (sourceModel()->rowCount(left) > 0);
-		bool const hasRightChildren = (sourceModel()->rowCount(right) > 0);
-
-		if (hasLeftChildren == hasRightChildren)
-		{
-			QVariant const& valueLeft = sourceModel()->data(left, Qt::DisplayRole);
-			QVariant const& valueRight = sourceModel()->data(right, Qt::DisplayRole);
-			return valueLeft < valueRight;
-		}
-		else
-		{
-			return !hasRightChildren; //high priority to the one that has children
-		}
-	}
-
-	return QSortFilterProxyModel::lessThan(left, right);
-}
-
-//////////////////////////////////////////////////////////////////////////
-namespace AudioModelUtils
-{
-//////////////////////////////////////////////////////////////////////////
-void DecodeImplMimeData(const QMimeData* pData, std::vector<CImplItem*>& outItems)
-{
-	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-	QByteArray encoded = pData->data(CMiddlewareDataModel::ms_szMimeType);
-	QDataStream stream(&encoded, QIODevice::ReadOnly);
-	while (!stream.atEnd())
-	{
-		CID id;
-		stream >> id;
-
-		if (id != ACE_INVALID_ID)
-		{
-			CImplItem* const pImplControl = pEditorImpl->GetControl(id);
-
-			if (pImplControl != nullptr)
-			{
-				outItems.emplace_back(pImplControl);
-			}
-		}
-	}
-}
-} // namespace AudioModelUtils
 } // namespace ACE

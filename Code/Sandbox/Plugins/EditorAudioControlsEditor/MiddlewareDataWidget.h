@@ -5,18 +5,16 @@
 #include <QWidget>
 #include <SystemTypes.h>
 
-class QToolButton;
-class QVBoxLayout;
+class QAttributeFilterProxyModel;
+class QFilteringPanel;
 
 namespace ACE
 {
 class CSystemAssetsManager;
 class CSystemControl;
-class CMiddlewareDataFilterProxyModel;
-class CMiddlewareDataModel;
-class CAudioTreeView;
-class CElidedLabel;
 class CImplItem;
+class CMiddlewareDataModel;
+class CTreeView;
 
 class CMiddlewareDataWidget final : public QWidget
 {
@@ -24,7 +22,7 @@ class CMiddlewareDataWidget final : public QWidget
 
 public:
 
-	CMiddlewareDataWidget(CSystemAssetsManager* pAssetsManager);
+	CMiddlewareDataWidget(CSystemAssetsManager* const pAssetsManager, QWidget* const pParent);
 	virtual ~CMiddlewareDataWidget() override;
 
 	void Reset();
@@ -33,7 +31,7 @@ public:
 
 signals:
 
-	void SelectConnectedSystemControl(CSystemControl const* const pControl);
+	void SignalSelectConnectedSystemControl(CSystemControl const& sytemControl);
 
 private slots:
 
@@ -41,14 +39,11 @@ private slots:
 
 private:
 
-	void InitFilterWidgets(QVBoxLayout* const pMainLayout);
-
-	CSystemAssetsManager* const            m_pAssetsManager;
-	CMiddlewareDataFilterProxyModel* const m_pFilterProxyModel;
-	CMiddlewareDataModel* const            m_pAssetsModel;
-	CElidedLabel* const                    m_pImplNameLabel;
-	QToolButton* const                     m_pHideAssignedButton;
-	CAudioTreeView* const                  m_pTreeView;
-	QString                                m_filter;
+	CSystemAssetsManager* const       m_pAssetsManager;
+	QAttributeFilterProxyModel* const m_pAttributeFilterProxyModel;
+	CMiddlewareDataModel* const       m_pMiddlewareDataModel;
+	QFilteringPanel*                  m_pFilteringPanel;
+	CTreeView* const                  m_pTreeView;
+	int const                         m_nameColumn;
 };
 } // namespace ACE

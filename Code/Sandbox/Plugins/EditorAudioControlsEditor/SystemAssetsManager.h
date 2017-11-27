@@ -7,26 +7,9 @@
 #include <CrySandbox/CrySignal.h>
 #include <array>
 
-#include <QVariant>
-
 namespace ACE
 {
 class CImplItem;
-
-static QVariant GetHeaderData(int const section, Qt::Orientation const orientation, int const role)
-{
-	if (orientation != Qt::Horizontal)
-	{
-		return QVariant();
-	}
-
-	if (role == Qt::DisplayRole)
-	{
-		return "Name";
-	}
-
-	return QVariant();
-}
 
 class CSystemAssetsManager
 {
@@ -89,13 +72,13 @@ public:
 	ModifiedLibraryNames GetModifiedLibraries() const { return m_modifiedLibraryNames; }
 
 	// Dirty flags signal
-	CCrySignal<void(bool)> signalIsDirty;
+	CCrySignal<void(bool)>                         signalIsDirty;
 
 	// Library signals
-	CCrySignal<void()>                signalLibraryAboutToBeAdded;
-	CCrySignal<void(CSystemLibrary*)> signalLibraryAdded;
-	CCrySignal<void(CSystemLibrary*)> signalLibraryAboutToBeRemoved;
-	CCrySignal<void()>                signalLibraryRemoved;
+	CCrySignal<void()>                             signalLibraryAboutToBeAdded;
+	CCrySignal<void(CSystemLibrary*)>              signalLibraryAdded;
+	CCrySignal<void(CSystemLibrary*)>              signalLibraryAboutToBeRemoved;
+	CCrySignal<void()>                             signalLibraryRemoved;
 
 	// Items signals
 	CCrySignal<void(CSystemAsset*)>                signalItemAboutToBeAdded;

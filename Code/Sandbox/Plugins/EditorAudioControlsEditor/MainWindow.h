@@ -4,12 +4,9 @@
 
 #include <EditorFramework/Editor.h>
 #include <IEditor.h>
-#include "SystemAssetsManager.h"
-#include <QFileSystemWatcher>
-#include <QtViewPane.h>
-#include <qobjectdefs.h>
 
 class QAction;
+class QLabel;
 class QVBoxLayout;
 
 namespace ACE
@@ -23,29 +20,26 @@ class CSystemControl;
 class CFileMonitorSystem;
 class CFileMonitorMiddleware;
 
-class CAudioControlsEditorWindow final : public CDockableEditor, public IEditorNotifyListener
+class CMainWindow final : public CDockableEditor, public IEditorNotifyListener
 {
 	Q_OBJECT
 
 public:
 
-	CAudioControlsEditorWindow();
-	virtual ~CAudioControlsEditorWindow() override;
-
-	// IEditorNotifyListener
-	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
-	// ~IEditorNotifyListener
+	CMainWindow();
+	virtual ~CMainWindow() override;
 
 	// CDockableEditor
 	virtual char const* GetEditorName() const override { return "Audio Controls Editor"; }
 	// ~CDockableEditor
 
+	// IEditorNotifyListener
+	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
+	// ~IEditorNotifyListener
+
 	// IPane
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	// ~IPane
-
-	void ReloadSystemData();
-	void ReloadMiddlewareData();
 
 protected:
 
@@ -67,9 +61,8 @@ protected slots:
 
 signals:
 
-	void OnSelectedSystemControlChanged();
-	void OnStartTextFiltering();
-	void OnStopTextFiltering();
+	void SignalSelectedSystemControlChanged();
+	void SignalSelectConnectedSystemControl(CSystemControl const& systemControl);
 
 private slots:
 
@@ -77,33 +70,36 @@ private slots:
 
 private:
 
-	void InitMenu();
+	void InitMenuBar();
 	void InitToolbar(QVBoxLayout* const pWindowLayout);
+	void UpdateImplLabel();
 	void RegisterWidgets();
 	void Reload();
 	void Save();
 	void SaveBeforeImplementationChange();
 	void CheckErrorMask();
 	void UpdateAudioSystemData();
+	void ReloadSystemData();
+	void ReloadMiddlewareData();
 	void RefreshAudioSystem();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
-	void SelectConnectedSystemControl(CSystemControl const* const pControl);
 	bool TryClose();
 
 	std::vector<CSystemAsset*> GetSelectedSystemAssets();
 
-	CSystemControlsWidget* CreateSystemControlsWidget();
-	CPropertiesWidget*     CreatePropertiesWidget();
-	CMiddlewareDataWidget* CreateMiddlewareDataWidget();
+	CSystemControlsWidget*     CreateSystemControlsWidget();
+	CPropertiesWidget*         CreatePropertiesWidget();
+	CMiddlewareDataWidget*     CreateMiddlewareDataWidget();
 
-	CSystemAssetsManager*                   m_pAssetsManager;
-	CSystemControlsWidget*                  m_pSystemControlsWidget;
-	CPropertiesWidget*                      m_pPropertiesWidget;
-	CMiddlewareDataWidget*                  m_pMiddlewareDataWidget;
-	QAction*                                m_pSaveAction;
-	std::unique_ptr<CFileMonitorSystem>     m_pMonitorSystem;
-	std::unique_ptr<CFileMonitorMiddleware> m_pMonitorMiddleware;
-	bool                                    m_isModified = false;
+	CSystemAssetsManager*         m_pAssetsManager;
+	CSystemControlsWidget*        m_pSystemControlsWidget;
+	CPropertiesWidget*            m_pPropertiesWidget;
+	CMiddlewareDataWidget*        m_pMiddlewareDataWidget;
+	QAction*                      m_pSaveAction;
+	QLabel* const                 m_pImplNameLabel;
+	CFileMonitorSystem* const     m_pMonitorSystem;
+	CFileMonitorMiddleware* const m_pMonitorMiddleware;
+	bool                          m_isModified;
 };
 } // namespace ACE

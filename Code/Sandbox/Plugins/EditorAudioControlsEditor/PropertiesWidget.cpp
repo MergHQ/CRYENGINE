@@ -5,7 +5,6 @@
 
 #include "SystemAssetsManager.h"
 #include "ConnectionsWidget.h"
-#include "SystemControlsEditorIcons.h"
 
 #include <SystemTypes.h>
 #include <IEditor.h>
@@ -19,12 +18,13 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* pAssetsManager)
-	: m_pAssetsManager(pAssetsManager)
-	, m_pPropertyTree(new QPropertyTree())
-	, m_pConnectionsWidget(new CConnectionsWidget())
+CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* const pAssetsManager, QWidget* const pParent)
+	: QWidget(pParent)
+	, m_pAssetsManager(pAssetsManager)
+	, m_pPropertyTree(new QPropertyTree(this))
+	, m_pConnectionsWidget(new CConnectionsWidget(this))
 {
-	CRY_ASSERT(m_pAssetsManager);
+	CRY_ASSERT_MESSAGE(m_pAssetsManager != nullptr, "Asset manager is null pointer.");
 
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
@@ -44,21 +44,40 @@ CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* pAssetsManager)
 	
 	pMainLayout->addWidget(m_pConnectionsWidget);
 
-	auto revertFunction = [&]()
+	m_pAssetsManager->signalItemAdded.Connect([&]()
 	{
-		if (!m_supressUpdates)
+		if (!m_pAssetsManager->IsLoading())
 		{
-			m_pPropertyTree->revert();
+			RevertPropertyTree();
 		}
-	};
+	}, reinterpret_cast<uintptr_t>(this));
 
-	pAssetsManager->signalItemAdded.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
-	pAssetsManager->signalItemRemoved.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
-	pAssetsManager->signalControlModified.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
-	pAssetsManager->signalAssetRenamed.Connect(revertFunction, reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalItemRemoved.Connect([&]()
+	{
+		if (!m_pAssetsManager->IsLoading())
+		{
+			RevertPropertyTree();
+		}
+	}, reinterpret_cast<uintptr_t>(this));
 
-	connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_supressUpdates = true; });
-	connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_supressUpdates = false; });
+	m_pAssetsManager->signalControlModified.Connect([&]()
+	{
+		if (!m_pAssetsManager->IsLoading())
+		{
+			RevertPropertyTree();
+		}
+	}, reinterpret_cast<uintptr_t>(this));
+
+	m_pAssetsManager->signalAssetRenamed.Connect([&]()
+	{
+		if (!m_pAssetsManager->IsLoading())
+		{
+			RevertPropertyTree();
+		}
+	}, reinterpret_cast<uintptr_t>(this));
+
+	QObject::connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_supressUpdates = true; });
+	QObject::connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_supressUpdates = false; });
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -77,7 +96,7 @@ void CPropertiesWidget::Reload()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropertiesWidget::SetSelectedAssets(std::vector<CSystemAsset*> const& selectedAssets)
+void CPropertiesWidget::OnSetSelectedAssets(std::vector<CSystemAsset*> const& selectedAssets)
 {
 	// Update property tree
 	m_pPropertyTree->detach();
@@ -85,7 +104,7 @@ void CPropertiesWidget::SetSelectedAssets(std::vector<CSystemAsset*> const& sele
 
 	for (auto const pAsset : selectedAssets)
 	{
-		CRY_ASSERT(pAsset != nullptr);
+		CRY_ASSERT_MESSAGE(pAsset != nullptr, "Selected asset is null pointer.");
 		serializers.emplace_back(*pAsset);
 	}
 
@@ -142,5 +161,14 @@ void CPropertiesWidget::BackupTreeViewStates()
 void CPropertiesWidget::RestoreTreeViewStates()
 {
 	m_pConnectionsWidget->RestoreTreeViewStates();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CPropertiesWidget::RevertPropertyTree()
+{
+	if (!m_supressUpdates)
+	{
+		m_pPropertyTree->revert();
+	}
 }
 } // namespace ACE

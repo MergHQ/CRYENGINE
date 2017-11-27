@@ -5,13 +5,13 @@
 #include <QWidget>
 
 class QPropertyTree;
-class QDeepFilterProxyModel;
+class QAttributeFilterProxyModel;
 
 namespace ACE
 {
 class CSystemControl;
 class CConnectionModel;
-class CAudioTreeView;
+class CTreeView;
 
 class CConnectionsWidget final : public QWidget
 {
@@ -19,7 +19,7 @@ class CConnectionsWidget final : public QWidget
 
 public:
 
-	CConnectionsWidget(QWidget* pParent = nullptr);
+	CConnectionsWidget(QWidget* const pParent);
 	virtual ~CConnectionsWidget() override;
 
 	void SetControl(CSystemControl* pControl);
@@ -40,10 +40,11 @@ private:
 	void RemoveSelectedConnection();
 	void RefreshConnectionProperties();
 
-	CSystemControl*              m_pControl;
-	QPropertyTree* const         m_pConnectionProperties;
-	QDeepFilterProxyModel* const m_pFilterProxyModel;
-	CConnectionModel* const      m_pConnectionModel;
-	CAudioTreeView* const        m_pTreeView;
+	CSystemControl*                   m_pControl;
+	QPropertyTree* const              m_pConnectionProperties;
+	QAttributeFilterProxyModel* const m_pAttributeFilterProxyModel;
+	CConnectionModel* const           m_pConnectionModel;
+	CTreeView* const                  m_pTreeView;
+	int const                         m_nameColumn;
 };
 } // namespace ACE
