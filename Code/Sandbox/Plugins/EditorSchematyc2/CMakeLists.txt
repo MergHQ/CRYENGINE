@@ -116,11 +116,11 @@ target_link_libraries(${THIS_PROJECT} PRIVATE Sandbox)
 target_link_libraries(${THIS_PROJECT} PRIVATE MFCToolsPlugin)
 
 target_include_directories(${THIS_PROJECT} PRIVATE 
-	GeneratedFiles, 
-	"${CRYENGINE_DIR}/Code/Sandbox/Plugins/EditorSchematyc2/Bridge/Public",
-	"${CRYENGINE_DIR}/Code/Sandbox/Plugins/EditorSchematyc2/Bridge/Private",
-	"${CRYENGINE_DIR}/Code/Sandbox/Plugins/EditorSchematyc2/Bridge/Public/Script",
-	"${CRYENGINE_DIR}/Code/Sandbox/Plugins/EditorSchematyc2/Bridge/Private/Script",
+	GeneratedFiles 
+	"${CRYENGINE_DIR}/Code/Sandbox/Plugins/EditorSchematyc2/Bridge/Public"
+	"${CRYENGINE_DIR}/Code/Sandbox/Plugins/EditorSchematyc2/Bridge/Private"
+	"${CRYENGINE_DIR}/Code/Sandbox/Plugins/EditorSchematyc2/Bridge/Public/Script"
+	"${CRYENGINE_DIR}/Code/Sandbox/Plugins/EditorSchematyc2/Bridge/Private/Script"
 	"${CRYENGINE_DIR}/Code/Sandbox/Plugins/EditorSchematyc2/Bridge/Public/Deprecated")
 
 use_xt()
