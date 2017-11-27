@@ -281,6 +281,15 @@ void CAttachmentVCLOTH::UpdateRemapTable()
 		pSimRenderMesh->CreateRemappedBoneIndicesPair(m_arrSimRemapTable, pDefaultSkeleton->GetGuid(), this);
 }
 
+bool CAttachmentVCLOTH::EnsureRemapTableIsValid()
+{
+	if (m_arrSimRemapTable.size() == 0 || m_arrRemapTable.size() == 0)
+	{
+		UpdateRemapTable();
+	}
+	return m_arrSimRemapTable.size() > 0 && m_arrRemapTable.size() > 0;
+}
+
 void CAttachmentVCLOTH::ReleaseSimRemapTablePair()
 {
 	if (!m_pSimSkin)
@@ -3178,6 +3187,8 @@ void CClothPiece::UpdateSimulation(const DualQuat* pTransformations, const uint 
 	if (m_poolIdx >= 0)
 		m_buffers = m_clothGeom->GetBufferPtr(m_poolIdx);
 	if (m_buffers == NULL)
+		return;
+	if (!m_pVClothAttachment->EnsureRemapTableIsValid())
 		return;
 
 	DynArray<Vec3>& arrDstPositions = m_buffers->m_arrDstPositions;
