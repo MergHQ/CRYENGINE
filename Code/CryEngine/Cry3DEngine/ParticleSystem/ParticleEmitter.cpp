@@ -41,9 +41,11 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	, m_time(0.0f)
 	, m_deltaTime(0.0f)
 	, m_primeTime(0.0f)
-	, m_lastTimeRendered(0.0f)
+	, m_timeCreated(0.0f)
+	, m_timeLastRendered(0.0f)
 	, m_initialSeed(0)
 	, m_emitterId(emitterId)
+
 {
 	m_currentSeed = m_initialSeed;
 	m_nInternalFlags |= IRenderNode::REQUIRES_FORWARD_RENDERING;
@@ -104,7 +106,7 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	if (passInfo.IsShadowPass())
 		return;
 
-	m_lastTimeRendered = m_time;
+	m_timeLastRendered = m_time;
 
 	CLightVolumesMgr& lightVolumeManager = m_p3DEngine->GetLightVolumeManager();
 	SRenderContext renderContext(rParam, passInfo);
@@ -219,7 +221,7 @@ void CParticleEmitter::DebugRender() const
 	if (m_bounds.IsReset())
 		return;
 
-	const bool visible = (m_lastTimeRendered == m_time);
+	const bool visible = (m_timeLastRendered == m_time);
 	const ColorB cachedColor = visible ? ColorB(255, 255, 255) : ColorB(255, 0, 0);
 	const ColorB boundsColor = visible ? ColorB(255, 128, 0) : ColorB(255, 0, 0);
 	pRenderAux->DrawAABB(m_bounds, false, cachedColor, eBBD_Faceted);
@@ -351,7 +353,8 @@ void CParticleEmitter::InitSeed()
 		m_initialSeed = cry_random_uint32();
 		m_time = gEnv->pTimer->GetCurrTime();
 	}
-	m_lastTimeRendered = m_time;
+	m_timeCreated = m_time;
+	m_timeLastRendered = m_time;
 	m_currentSeed = m_initialSeed;
 }
 

@@ -109,6 +109,8 @@ public:
 	void                      SetRenderObject(CRenderObject* pRenderObject, uint threadId, uint renderObjectIdx);
 	float                     GetDeltaTime() const         { return m_deltaTime; }
 	float                     GetTime() const              { return m_time; }
+	float                     GetAge() const               { return m_time - m_timeCreated; }
+	bool                      WasRenderedLastFrame() const { return (m_timeLastRendered >= m_time) && ((GetRndFlags() & ERF_HIDDEN) == 0); }
 	uint32                    GetInitialSeed() const       { return m_initialSeed; }
 	uint32                    GetCurrentSeed() const       { return m_currentSeed; }
 	uint                      GetEmitterId() const         { return m_emitterId; }
@@ -118,7 +120,6 @@ public:
 	bool                      IsIndependent() const        { return Unique(); }
 	bool                      HasParticles() const;
 	bool                      HasBounds() const            { return !m_bounds.IsReset(); }
-	bool                      WasRenderedLastFrame() const { return (m_lastTimeRendered >= m_time) && ((GetRndFlags() & ERF_HIDDEN) == 0); }
 
 	void                      AccumStats(SParticleStats& statsCPU, SParticleStats& statsGPU);
 	
@@ -156,7 +157,8 @@ private:
 	float                       m_time;
 	float                       m_deltaTime;
 	float                       m_primeTime;
-	float                       m_lastTimeRendered;
+	float                       m_timeCreated;
+	float                       m_timeLastRendered;
 	int                         m_emitterEditVersion;
 	int                         m_effectEditVersion;
 	uint                        m_initialSeed;

@@ -607,7 +607,7 @@ bool CParticleComponentRuntime::IsAlive() const
 		return true;
 	if (GetNumInstances())
 	{
-		if (m_pEmitter->GetTime() <= m_pComponent->GetComponentParams().m_emitterLifeTime.end)
+		if (m_pEmitter->GetAge() <= m_pComponent->GetComponentParams().m_emitterLifeTime.end)
 			return true;
 	}
 	return false;
