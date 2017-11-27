@@ -366,7 +366,7 @@ bool CD3D9Renderer::ChangeOutputResolution(int nNewOutputWidth, int nNewOutputHe
 	return true;
 }
 
-bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDisplayHeight, int nNewColDepth, int nNewRefreshHZ, bool bFullScreen, bool bForceReset, CryDisplayContextHandle hContext)
+bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDisplayHeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, CryDisplayContextHandle hContext)
 {
 	if (m_bDeviceLost)
 		return true;
@@ -381,14 +381,15 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 	iLog->Log("Changing resolution...");
 
+	m_isChangingResolution = true;
+
 	const int  nPrevColorDepth = m_cbpp;
-	const bool bPrevFullScreen = m_bFullScreen;
 	if (nNewColDepth < 24)
 		nNewColDepth = 16;
 	else
 		nNewColDepth = 32;
 
-	bool bNeedReset = bForceReset || nNewColDepth != nPrevColorDepth || bFullScreen != bPrevFullScreen;
+	bool bNeedReset = bForceReset || nNewColDepth != nPrevColorDepth || previousWindowState != m_windowState;
 
 #if !defined(SUPPORT_DEVICE_INFO) || CRY_RENDERER_VULKAN
 	bNeedReset |= m_VSync != CV_r_vsync;
@@ -397,12 +398,14 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 	bNeedReset |= m_overrideRefreshRate != CV_r_overrideRefreshRate || m_overrideScanlineOrder != CV_r_overrideScanlineOrder;
 #endif
 
+	bool wasFullscreen = previousWindowState == EWindowState::Fullscreen;
+
 #if defined(SUPPORT_DEVICE_INFO)
 	// This is only allowed for the main viewport
 	if (!IsEditorMode() && (pDC == pBC))
 	{
 		bNeedReset |=
-			m_devInfo.SwapChainDesc().Windowed != !bFullScreen ||
+			m_devInfo.SwapChainDesc().Windowed != !IsFullscreen() ||
 			m_devInfo.SwapChainDesc().BufferDesc.Width  != nNewDisplayWidth ||
 			m_devInfo.SwapChainDesc().BufferDesc.Height != nNewDisplayHeight;
 	}
@@ -410,7 +413,6 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 	// Save the new dimensions
 	m_cbpp        = nNewColDepth;
-	m_bFullScreen = bFullScreen;
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
 	m_overrideRefreshRate   = CV_r_overrideRefreshRate;
 	m_overrideScanlineOrder = CV_r_overrideScanlineOrder;
@@ -425,18 +427,13 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 	m_devInfo.SyncInterval() = m_VSync ? 1 : 0;
 #endif
 
-	if (bFullScreen && nNewColDepth == 16)
+	if (IsFullscreen() && nNewColDepth == 16)
 	{
 		m_zbpp = 16;
 		m_sbpp = 0;
 	}
 
 	RestoreGamma();
-
-	bool bFullscreenWindow = false;
-#if CRY_PLATFORM_WINDOWS
-	bFullscreenWindow = CV_r_FullscreenWindow && CV_r_FullscreenWindow->GetIVal() != 0;
-#endif
 
 	if (IsEditorMode() && !bForceReset)
 	{
@@ -460,7 +457,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 		SCOPED_DISABLE_FLOAT_EXCEPTIONS();
 	#endif
 	#if (CRY_RENDERER_DIRECT3D >= 120)
-		CRY_ASSERT_MESSAGE(!(bFullScreen && (m_devInfo.SwapChainDesc().Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)), "Fullscreen does not work with Waitable SwapChain");
+		CRY_ASSERT_MESSAGE(!(IsFullscreen() && (m_devInfo.SwapChainDesc().Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)), "Fullscreen does not work with Waitable SwapChain");
 	#elif CRY_RENDERER_VULKAN
 		m_devInfo.SwapChain()->SetVSyncEnabled(m_VSync != 0);
 	#endif
@@ -472,7 +469,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 		if (m_CVColorBits)
 			m_CVColorBits->Set(nNewColDepth);
 
-		m_devInfo.SwapChainDesc().Windowed = !bFullScreen;
+		m_devInfo.SwapChainDesc().Windowed = !IsFullscreen();
 		m_devInfo.SwapChainDesc().BufferDesc.Width  = nNewDisplayWidth;
 		m_devInfo.SwapChainDesc().BufferDesc.Height = nNewDisplayHeight;
 
@@ -485,7 +482,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 		// Find the mode with the best fit for the given dimensions
 		m_devInfo.SnapSettings();
 
-		AdjustWindowForChange(nNewDisplayWidth, nNewDisplayHeight);
+		AdjustWindowForChange(nNewDisplayWidth, nNewDisplayHeight, previousWindowState);
 
 	#if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
 		UserOverrideDisplayProperties(m_devInfo.SwapChainDesc().BufferDesc);
@@ -496,8 +493,8 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 		// TODO: Check if SetFullscreenState creates ResizeContext events
 		// NOTE: Going fullscreen doesn't require freeing the back-buffers
-		if (bPrevFullScreen != bFullScreen)
-			m_devInfo.SwapChain()->SetFullscreenState(bFullScreen, 0);
+		if (wasFullscreen != IsFullscreen())
+			m_devInfo.SwapChain()->SetFullscreenState(IsFullscreen(), 0);
 
 		OnD3D11PostCreateDevice(m_devInfo.Device());
 
@@ -505,7 +502,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 		pBC->SetViewport(SRenderViewport(0, 0, nNewDisplayWidth, nNewDisplayHeight));
 
 		if (gEnv->pHardwareMouse)
-			gEnv->pHardwareMouse->GetSystemEventListener()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, bFullScreen ? 1 : 0, 0);
+			gEnv->pHardwareMouse->GetSystemEventListener()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, IsFullscreen() ? 1 : 0, 0);
 #endif
 
 #if CRY_RENDERER_GNM
@@ -535,13 +532,15 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 	PostDeviceReset();
 
+	m_isChangingResolution = false;
+
 	return true;
 }
 
 void CD3D9Renderer::PostDeviceReset()
 {
 	m_bDeviceLost = 0;
-	if (m_bFullScreen)
+	if (IsFullscreen())
 		SetGamma(CV_r_gamma + m_fDeltaGamma, CV_r_brightness, CV_r_contrast, true);
 
 	m_nFrameReset++;
@@ -554,21 +553,16 @@ void CD3D9Renderer::PostDeviceReset()
 //       to provide different behavior, such as switching to an entirely
 //       different window for fullscreen mode (as in the MFC sample apps).
 //-----------------------------------------------------------------------------
-HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int displayHeight)
+HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int displayHeight, EWindowState previousWindowState)
 {
 	CRenderDisplayContext* pDC = GetBaseDisplayContext();
-
-	if (m_windowParametersOverridden)
-	{
-		OverrideWindowParameters(true, m_overriddenWindowSize.x, m_overriddenWindowSize.y, m_overriddenWindowFullscreenState);
-		return S_OK;
-	}
 
 #if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
 	if (IsEditorMode())
 		return S_OK;
+#endif
 
-	#if CRY_RENDERER_OPENGL
+#if CRY_RENDERER_OPENGL
 	const DXGI_SWAP_CHAIN_DESC& swapChainDesc(m_devInfo.SwapChainDesc());
 
 	DXGI_MODE_DESC modeDesc;
@@ -582,31 +576,16 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 	HRESULT result = pDC->m_pSwapChain->ResizeTarget(&modeDesc);
 	if (FAILED(result))
 		return result;
-	#elif CRY_PLATFORM_WINDOWS
-	bool bFullscreenWindow = CV_r_FullscreenWindow && CV_r_FullscreenWindow->GetIVal() != 0;
-	bool borderlessWindow = CV_r_BorderlessWindow && CV_r_BorderlessWindow->GetIVal() != 0;
+#elif CRY_PLATFORM_WINDOWS
 
-	if (!m_bFullScreen && !bFullscreenWindow)
+	if (IsFullscreen())
 	{
-		if (!borderlessWindow)
+		constexpr auto fullscreenStyle = WS_POPUP | WS_VISIBLE;
+		if (previousWindowState != EWindowState::Fullscreen)
 		{
-			// Set windowed-mode style
-			SetWindowLongW(m_hWnd, GWL_STYLE, m_dwWindowStyle);
+			SetWindowLongPtrW(m_hWnd, GWL_STYLE, fullscreenStyle);
 		}
-		else
-		{
-			// Set borderless style
-			SetWindowLongW(m_hWnd, GWL_STYLE, m_dwWindowStyle & ~(WS_CAPTION));
-		}
-	}
-	else
-	{
-		// Set fullscreen-mode style
-		SetWindowLongW(m_hWnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
-	}
 
-	if (m_bFullScreen)
-	{
 		int x = m_prefMonX;
 		int y = m_prefMonY;
 		#if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
@@ -614,91 +593,45 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 		#endif
 		SetWindowPos(m_hWnd, HWND_TOPMOST, x, y, displayWidth, displayHeight, SWP_SHOWWINDOW);
 	}
-	else if (bFullscreenWindow)
+	else if (m_windowState == EWindowState::BorderlessWindow || m_windowState == EWindowState::BorderlessFullscreen)
 	{
+		constexpr auto fullscreenWindowStyle = WS_POPUP | WS_VISIBLE;
+		if (previousWindowState != EWindowState::BorderlessWindow)
+		{
+			// Set fullscreen-mode style
+			SetWindowLongPtrW(m_hWnd, GWL_STYLE, fullscreenWindowStyle);
+		}
+
 		const int x = m_prefMonX + (m_prefMonWidth  - displayWidth) / 2;
 		const int y = m_prefMonY + (m_prefMonHeight - displayHeight) / 2;
 		SetWindowPos(m_hWnd, HWND_NOTOPMOST, x, y, displayWidth, displayHeight, SWP_SHOWWINDOW);
 	}
 	else
 	{
-		RECT wndrect;
-		SetRect(&wndrect, 0, 0, displayWidth, displayHeight);
-		if (!borderlessWindow)
+		constexpr auto windowedStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+		if (previousWindowState != EWindowState::Windowed)
 		{
-			AdjustWindowRectEx(&wndrect, m_dwWindowStyle, FALSE, WS_EX_APPWINDOW);
-		}
-		else
-		{
-			AdjustWindowRectEx(&wndrect, m_dwWindowStyle & ~(WS_CAPTION), FALSE, WS_EX_APPWINDOW);
+			SetWindowLongPtrW(m_hWnd, GWL_STYLE, windowedStyle);
 		}
 
-		const int wdt = wndrect.right - wndrect.left;
-		const int hgt = wndrect.bottom - wndrect.top;
+		RECT windowRect;
+		GetWindowRect(m_hWnd, &windowRect);
 
-		const int x = m_prefMonX + (m_prefMonWidth  - wdt) / 2;
-		const int y = m_prefMonY + (m_prefMonHeight - hgt) / 2;
+		int x = windowRect.left;
+		int y = windowRect.top;
 
-		SetWindowPos(m_hWnd, HWND_NOTOPMOST, x, y, wdt, hgt, SWP_SHOWWINDOW);
+		windowRect.right = windowRect.left + displayWidth;
+		windowRect.bottom = windowRect.top + displayHeight;
+		AdjustWindowRectEx(&windowRect, windowedStyle, FALSE, WS_EX_APPWINDOW);
+
+		const int width = windowRect.right - windowRect.left;
+		const int height = windowRect.bottom - windowRect.top;
+
+		SetWindowPos(m_hWnd, HWND_NOTOPMOST, x, y, width, height, SWP_SHOWWINDOW);
 	}
-	#endif
 #endif
 
 	return S_OK;
-}
-
-//override window parameters, mostly taken from AdjustWindowForChange
-void CD3D9Renderer::OverrideWindowParameters(bool overrideParameters, int width, int height, bool fullscreen)
-{
-	m_windowParametersOverridden = overrideParameters;
-	if (!m_windowParametersOverridden)
-	{
-		AdjustWindowForChange(width, height);
-		return;
-	}
-
-#if CRY_PLATFORM_WINDOWS
-	if (width == 0 || height == 0 || fullscreen)
-	{
-		width  = m_prefMonWidth;
-		height = m_prefMonHeight;
-	}
-
-	if (!fullscreen)
-	{
-		SetWindowLongW(m_hWnd, GWL_STYLE, m_dwWindowStyle);
-	}
-	else
-	{
-		// Set fullscreen-mode style
-		SetWindowLongW(m_hWnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
-	}
-
-	if (fullscreen)
-	{
-		int x = m_prefMonX;
-		int y = m_prefMonY;
-		SetWindowPos(m_hWnd, HWND_TOPMOST, x, y, width, height, SWP_SHOWWINDOW);
-	}
-	else
-	{
-		RECT wndrect;
-		SetRect(&wndrect, 0, 0, width, height);
-		AdjustWindowRectEx(&wndrect, m_dwWindowStyle, FALSE, WS_EX_APPWINDOW);
-
-		const int wdt = wndrect.right - wndrect.left;
-		const int hgt = wndrect.bottom - wndrect.top;
-
-		const int x = m_prefMonX + (m_prefMonWidth - wdt) / 2;
-		const int y = m_prefMonY + (m_prefMonHeight - hgt) / 2;
-
-		SetWindowPos(m_hWnd, HWND_NOTOPMOST, x, y, wdt, hgt, SWP_SHOWWINDOW);
-	}
-
-	m_overriddenWindowSize.x = width;
-	m_overriddenWindowSize.y = height;
-	m_overriddenWindowFullscreenState = fullscreen;
-#endif
 }
 
 #if defined(SUPPORT_DEVICE_INFO)
@@ -1126,11 +1059,11 @@ HWND CD3D9Renderer::CreateWindowCallback()
 	const int displayWidth  = pDC->GetDisplayResolution()[0];
 	const int displayHeight = pDC->GetDisplayResolution()[1];
 
-	return gcpRendD3D->SetWindow(displayWidth, displayHeight, gcpRendD3D->m_bFullScreen, gcpRendD3D->m_hWnd) ? gcpRendD3D->m_hWnd : 0;
+	return gcpRendD3D->SetWindow(displayWidth, displayHeight) ? gcpRendD3D->m_hWnd : 0;
 }
 #endif
 
-bool CD3D9Renderer::SetWindow(int width, int height, bool fullscreen, WIN_HWND hWnd)
+bool CD3D9Renderer::SetWindow(int width, int height)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
@@ -1142,47 +1075,36 @@ bool CD3D9Renderer::SetWindow(int width, int height, bool fullscreen, WIN_HWND h
 	VKCreateSDLWindow(m_WinTitle, width, height, fullscreen, &m_hWnd);
 #elif CRY_PLATFORM_WINDOWS
 	DWORD style, exstyle;
-	int x, y, wdt, hgt;
+	int x, y;
 
 	if (width < 640)
 		width = 640;
 	if (height < 480)
 		height = 480;
 
-	m_dwWindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+	bool isFullscreenWindow = m_windowState == EWindowState::BorderlessWindow;
 
-	// Do not allow the user to resize the window
-	m_dwWindowStyle &= ~WS_MAXIMIZEBOX;
-	m_dwWindowStyle &= ~WS_THICKFRAME;
-
-	bool bFullscreenWindow = false;
-	#if CRY_PLATFORM_WINDOWS
-	bFullscreenWindow = CV_r_FullscreenWindow && CV_r_FullscreenWindow->GetIVal() != 0;
-	#endif
-
-	if (fullscreen || bFullscreenWindow)
+	if (IsFullscreen() || isFullscreenWindow)
 	{
-		exstyle = bFullscreenWindow ? WS_EX_APPWINDOW : WS_EX_TOPMOST;
+		exstyle = isFullscreenWindow ? WS_EX_APPWINDOW : WS_EX_TOPMOST;
 		style = WS_POPUP | WS_VISIBLE;
 		x = m_prefMonX + (m_prefMonWidth - width) / 2;
 		y = m_prefMonY + (m_prefMonHeight - height) / 2;
-		wdt = width;
-		hgt = height;
 	}
 	else
 	{
 		exstyle = WS_EX_APPWINDOW;
-		style = m_dwWindowStyle;
+		style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
 
 		RECT wndrect;
 		SetRect(&wndrect, 0, 0, width, height);
 		AdjustWindowRectEx(&wndrect, style, FALSE, exstyle);
 
-		wdt = wndrect.right - wndrect.left;
-		hgt = wndrect.bottom - wndrect.top;
+		width = wndrect.right - wndrect.left;
+		height = wndrect.bottom - wndrect.top;
 
-		x = m_prefMonX + (m_prefMonWidth - wdt) / 2;
-		y = m_prefMonY + (m_prefMonHeight - hgt) / 2;
+		x = m_prefMonX + (m_prefMonWidth - width) / 2;
+		y = m_prefMonY + (m_prefMonHeight - height) / 2;
 	}
 
 	if (IsEditorMode())
@@ -1190,12 +1112,11 @@ bool CD3D9Renderer::SetWindow(int width, int height, bool fullscreen, WIN_HWND h
 	#if defined(UNICODE) || defined(_UNICODE)
 		#error Review this, probably should be wide if Editor also has UNICODE support (or maybe moved into Editor)
 	#endif
-		m_dwWindowStyle = WS_OVERLAPPED;
-		style = m_dwWindowStyle;
+		style = WS_OVERLAPPED;
 		exstyle = 0;
 		x = y = 0;
-		wdt = 100;
-		hgt = 100;
+		width = 100;
+		height = 100;
 
 		WNDCLASSA wc;
 		memset(&wc, 0, sizeof(WNDCLASSA));
@@ -1208,12 +1129,12 @@ bool CD3D9Renderer::SetWindow(int width, int height, bool fullscreen, WIN_HWND h
 			CryFatalError("Cannot Register Window Class %s", wc.lpszClassName);
 			return false;
 		}
-		m_hWnd = CreateWindowExA(exstyle, wc.lpszClassName, m_WinTitle, style, x, y, wdt, hgt, NULL, NULL, wc.hInstance, NULL);
+		m_hWnd = CreateWindowExA(exstyle, wc.lpszClassName, m_WinTitle, style, x, y, width, height, NULL, NULL, wc.hInstance, NULL);
 		ShowWindow(m_hWnd, SW_HIDE);
 	}
 	else
 	{
-		if (!hWnd)
+		if (!m_hWnd)
 		{
 			LPCWSTR pClassName = L"CryENGINE";
 
@@ -1242,7 +1163,7 @@ bool CD3D9Renderer::SetWindow(int width, int height, bool fullscreen, WIN_HWND h
 
 			wstring wideTitle = Unicode::Convert<wstring>(m_WinTitle);
 
-			m_hWnd = CreateWindowExW(exstyle, pClassName, wideTitle.c_str(), style, x, y, wdt, hgt, NULL, NULL, wc.hInstance, NULL);
+			m_hWnd = CreateWindowExW(exstyle, pClassName, wideTitle.c_str(), style, x, y, width, height, NULL, NULL, wc.hInstance, NULL);
 			if (m_hWnd && !IsWindowUnicode(m_hWnd))
 			{
 				CryFatalError("Expected an UNICODE window for launcher");
@@ -1251,11 +1172,9 @@ bool CD3D9Renderer::SetWindow(int width, int height, bool fullscreen, WIN_HWND h
 
 			EnableCloseButton(m_hWnd, false);
 
-			if (fullscreen && (!gEnv->pSystem->IsDevMode() && CV_r_enableAltTab == 0))
+			if (IsFullscreen() && (!gEnv->pSystem->IsDevMode() && CV_r_enableAltTab == 0))
 				SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
 		}
-		else
-			m_hWnd = (HWND)hWnd;
 
 		if (m_hWnd)
 		{
@@ -1466,7 +1385,7 @@ static void Command_ColorGradingChartImage(IConsoleCmdArgs* pCmd)
 	}
 }
 
-WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int colorBits, int depthBits, int stencilBits, bool bFullscreen, WIN_HWND Glhwnd, bool bReInit, bool bShaderCacheGen)
+WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int colorBits, int depthBits, int stencilBits, WIN_HWND Glhwnd, bool bReInit, bool bShaderCacheGen)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
@@ -1483,20 +1402,21 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 
 	m_CVWidth = iConsole->GetCVar("r_Width");
 	m_CVHeight = iConsole->GetCVar("r_Height");
-	m_CVFullScreen = iConsole->GetCVar("r_Fullscreen");
+	m_CVWindowType = iConsole->GetCVar("r_WindowType");
 	m_CVDisplayInfo = iConsole->GetCVar("r_DisplayInfo");
 	m_CVColorBits = iConsole->GetCVar("r_ColorBits");
+
+#if CRY_PLATFORM_WINDOWS
+	CV_r_FullscreenNativeRes = iConsole->GetCVar("r_FullscreenNativeRes");
+#endif
+
+	m_windowState = CalculateWindowState();
 
 	bool bNativeResolution;
 #if CRY_PLATFORM_CONSOLE || CRY_PLATFORM_MOBILE
 	bNativeResolution = true;
 #elif CRY_PLATFORM_WINDOWS
-	CV_r_BorderlessWindow = iConsole->GetCVar("r_BorderlessWindow");
-	m_borderlessWindow = CV_r_BorderlessWindow && CV_r_BorderlessWindow->GetIVal() != 0;
-	CV_r_FullscreenWindow = iConsole->GetCVar("r_FullscreenWindow");
-	m_fullscreenWindow = CV_r_FullscreenWindow && CV_r_FullscreenWindow->GetIVal() != 0;
-	CV_r_FullscreenNativeRes = iConsole->GetCVar("r_FullscreenNativeRes");
-	bNativeResolution = CV_r_FullscreenNativeRes && CV_r_FullscreenNativeRes->GetIVal() != 0 && (bFullscreen || m_fullscreenWindow);
+	bNativeResolution = CV_r_FullscreenNativeRes && CV_r_FullscreenNativeRes->GetIVal() != 0 && (m_windowState == EWindowState::Fullscreen || m_windowState == EWindowState::BorderlessWindow);
 
 	{
 		RECT rcDesk;
@@ -1549,7 +1469,11 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	{
 		Glhwnd = 0;
 		m_bEditor = true;
-		bFullscreen = false;
+
+		if (m_windowState == EWindowState::Fullscreen)
+		{
+			m_windowState = EWindowState::Windowed;
+		}
 	}
 
 	m_bShaderCacheGen = bShaderCacheGen;
@@ -1562,7 +1486,6 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	m_cbpp = colorBits;
 	m_zbpp = depthBits;
 	m_sbpp = stencilBits;
-	m_bFullScreen = bFullscreen;
 
 	CRenderDisplayContext* pDC = GetBaseDisplayContext();
 	CalculateResolutions(width, height, bNativeResolution, &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
@@ -1669,7 +1592,7 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 		iLog->Log(" Pixel Shaders version %d.%d", 5, 0);
 #endif
 
-		iLog->Log(" Current Resolution: %dx%dx%d %s", CRendererResources::s_renderWidth, CRendererResources::s_renderHeight, CRenderer::m_cbpp, m_bFullScreen ? "Full Screen" : "Windowed");
+		iLog->Log(" Current Resolution: %dx%dx%d %s", CRendererResources::s_renderWidth, CRendererResources::s_renderHeight, CRenderer::m_cbpp, GetWindowStateName());
 		iLog->Log(" HDR Rendering: %s", m_nHDRType == 1 ? "FP16" : m_nHDRType == 2 ? "MRT" : "Disabled");
 		iLog->Log(" Occlusion queries: %s", (m_Features & RFT_OCCLUSIONTEST) ? "Supported" : "Not supported");
 		iLog->Log(" Geometry instancing: %s", (m_bDeviceSupportsInstancing) ? "Supported" : "Not supported");
@@ -2149,7 +2072,7 @@ bool CD3D9Renderer::CreateDevice()
 
 	OnD3D11PostCreateDevice(m_devInfo.Device());
 
-	AdjustWindowForChange(displayWidth, displayHeight);
+	AdjustWindowForChange(displayWidth, displayHeight, EWindowState::Fullscreen);
 
 #elif CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX
 
@@ -2164,7 +2087,7 @@ bool CD3D9Renderer::CreateDevice()
 
 	// DirectX9 and DirectX10 device creating
 	#if defined(SUPPORT_DEVICE_INFO)
-	if (m_devInfo.CreateDevice(!m_bFullScreen, displayWidth, displayHeight, m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
+	if (m_devInfo.CreateDevice(!IsFullscreen(), displayWidth, displayHeight, m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
 	{
 		m_devInfo.SyncInterval() = m_VSync ? 1 : 0;
 	}
@@ -2184,7 +2107,7 @@ bool CD3D9Renderer::CreateDevice()
 	OnD3D11PostCreateDevice(m_devInfo.Device());
 	#endif
 
-	AdjustWindowForChange(displayWidth, displayHeight);
+	AdjustWindowForChange(displayWidth, displayHeight, EWindowState::Fullscreen);
 
 #elif CRY_RENDERER_GNM
 	CGnmDevice::Create();
@@ -2545,11 +2468,16 @@ bool CD3D9Renderer::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			{
 				if (wParam == VK_RETURN) // ALT+ENTER
 				{
-					ICVar* const pVar = iConsole->GetCVar("r_fullscreen");
-					if (pVar)
+					if (m_CVWindowType != nullptr)
 					{
-						int fullscreen = pVar->GetIVal();
-						pVar->Set((int)(fullscreen == 0)); // Toggle CVar
+						if (m_CVWindowType->GetIVal() == static_cast<int>(EWindowState::Fullscreen))
+						{
+							m_CVWindowType->Set(static_cast<int>(EWindowState::Windowed));
+						}
+						else
+						{
+							m_CVWindowType->Set(static_cast<int>(EWindowState::Fullscreen));
+						}
 					}
 				}
 				else if (wParam == VK_MENU)
@@ -2559,6 +2487,16 @@ bool CD3D9Renderer::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 					*pResult = 0;
 					return true;
 				}
+			}
+		}
+		break;
+
+	case WM_SIZE:
+		{
+			if (m_CVWidth != nullptr && !m_isChangingResolution && !IsFullscreen())
+			{
+				m_CVWidth->Set(LOWORD(lParam));
+				m_CVHeight->Set(HIWORD(lParam));
 			}
 		}
 		break;
@@ -2585,7 +2523,7 @@ static const char* GetScanlineOrderNaming(DXGI_MODE_SCANLINE_ORDER v)
 
 void UserOverrideDisplayProperties(DXGI_MODE_DESC& desc)
 {
-	if (gRenDev->m_CVFullScreen->GetIVal())
+	if (gcpRendD3D->IsFullscreen())
 	{
 		if (gRenDev->CV_r_overrideRefreshRate > 0)
 		{

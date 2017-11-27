@@ -24,7 +24,7 @@ bool CD3D9Renderer::RT_CreateDevice()
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_D3D, 0, "Renderer CreateDevice");
 
 #if CRY_PLATFORM_WINDOWS && !defined(SUPPORT_DEVICE_INFO)
-	if (!m_bShaderCacheGen && !SetWindow(m_width, m_height, m_bFullScreen, m_hWnd))
+	if (!m_bShaderCacheGen && !SetWindow(m_width, m_height))
 		return false;
 #endif
 

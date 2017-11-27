@@ -350,7 +350,7 @@ bool CD3DStereoRenderer::EnableStereo()
 		uint8 windowedSupport = 0;
 		NvAPI_Stereo_IsWindowedModeSupported(&windowedSupport);
 
-		if (m_renderer.m_bFullScreen || windowedSupport)
+		if (m_renderer.IsFullscreen() || windowedSupport)
 		{
 			NvAPI_Stereo_Activate(m_nvStereoHandle);
 			NvAPI_Stereo_SetNotificationMessage(m_nvStereoHandle, 0, 0);

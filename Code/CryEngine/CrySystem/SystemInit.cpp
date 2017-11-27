@@ -1273,7 +1273,7 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 		m_hWnd = m_env.pRenderer->Init(
 			0, 0, width, height,
 			m_rColorBits->GetIVal(), m_rDepthBits->GetIVal(), m_rStencilBits->GetIVal(),
-			m_rFullscreen->GetIVal() ? true : false, hwnd, false, startupParams.bShaderCacheGen);
+			hwnd, false, startupParams.bShaderCacheGen);
 
 		startupParams.hWnd = m_hWnd;
 

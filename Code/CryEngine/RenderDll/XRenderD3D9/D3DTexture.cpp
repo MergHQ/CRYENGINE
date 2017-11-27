@@ -726,7 +726,7 @@ bool CTexture::RenderEnvironmentCMHDR(int size, Vec3& Pos, TArray<unsigned short
 
 	vecData.SetUse(0);
 
-	bool bFullScreen = (iConsole->GetCVar("r_Fullscreen")->GetIVal() != 0) && (!gEnv->IsEditor());
+	bool bFullScreen = gcpRendD3D->IsFullscreen();
 
 	CTexture* ptexGenEnvironmentCM = CTexture::GetOrCreate2DTexture("$GenEnvironmentCM", size, size, 1, FT_DONT_STREAM, nullptr, eTF_R16G16B16A16F);
 	if (!ptexGenEnvironmentCM || !ptexGenEnvironmentCM->GetDevTexture())
