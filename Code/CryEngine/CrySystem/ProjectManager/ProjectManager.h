@@ -17,16 +17,17 @@ YASLI_ENUM_END()
 
 struct SPluginDefinition
 {
-	SPluginDefinition() {}
-	SPluginDefinition(Cry::IPluginManager::EType pluginType, const char* szPath)
-		: type(pluginType)
-		, path(szPath) {}
+	SPluginDefinition() = default;
 
 	void Serialize(Serialization::IArchive& ar)
 	{
 		ar(type, "type", "type");
 		ar(path, "path", "path");
-		ar(platforms, "platforms", "platforms");
+
+		if (ar.isInput() || !platforms.empty())
+		{
+			ar(platforms, "platforms", "platforms");
+		}
 	}
 
 	bool operator==(const SPluginDefinition& rhs) const
@@ -260,7 +261,7 @@ protected:
 	void LoadLegacyGameCfg();
 	void AddDefaultPlugins(unsigned int previousVersion);
 
-	void AddPlugin(Cry::IPluginManager::EType type, const char* szFileName);
+	void AddPlugin(const SPluginDefinition& definition);
 
 	string LoadTemplateFile(const char* szPath, std::function<string(const char* szAlias)> aliasReplacementFunc) const;
 	void FindSourceFilesInDirectoryRecursive(const char* szDirectory, const char* szExtension, std::vector<string>& sourceFiles) const;

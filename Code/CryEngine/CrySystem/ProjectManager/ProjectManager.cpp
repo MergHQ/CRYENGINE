@@ -192,7 +192,11 @@ bool CProjectManager::ParseProjectFile()
 
 		for (SProject::SConsoleInstruction& consoleCommand : m_project.consoleCommands)
 		{
-			gEnv->pConsole->LoadConfigCommand(consoleCommand.key.c_str(), consoleCommand.value.c_str());
+			stack_string command = consoleCommand.key;
+			command.append(" ");
+			command.append(consoleCommand.value.c_str());
+			
+			gEnv->pConsole->ExecuteString(command.c_str(), false, true);
 		}
 
 		auto gameDllIt = m_project.legacyGameDllPaths.find("any");
@@ -431,8 +435,8 @@ void CProjectManager::LoadLegacyPluginCSV()
 		pluginClassName.assign(pTokenStart, pSemicolon - pTokenStart);
 		pluginClassName.Trim();
 
-		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
 		pSemicolon = Parser_StrChr(pTokenStart, pNewline, ';');
+		pTokenStart = Parser_NextChar(pSemicolon, pNewline);
 
 		string pluginBinaryPath;
 		pluginBinaryPath.assign(pTokenStart, pSemicolon - pTokenStart);
@@ -446,8 +450,7 @@ void CProjectManager::LoadLegacyPluginCSV()
 		pluginAssetDirectory.Trim();
 
 		pTokenStart = Parser_NextChar(pNewline, pBufferEnd);
-
-		AddPlugin(pluginType, pluginBinaryPath);
+		AddPlugin(SPluginDefinition{ pluginType, pluginBinaryPath });
 	}
 }
 
@@ -476,23 +479,23 @@ void CProjectManager::AddDefaultPlugins(unsigned int previousVersion)
 		// If the version the plug-in was made default in is higher than the version we're upgrading from, add to project
 		if (defaultPlugin.first > previousVersion)
 		{
-			AddPlugin(Cry::IPluginManager::EType::Native, defaultPlugin.second);
+			AddPlugin(defaultPlugin.second);
 		}
 	}
 }
 
-void CProjectManager::AddPlugin(Cry::IPluginManager::EType type, const char* szFileName)
+void CProjectManager::AddPlugin(const SPluginDefinition& definition)
 {
 	// Make sure duplicates aren't added
 	for(const SPluginDefinition& pluginDefinition : m_project.plugins)
 	{
-		if (!stricmp(pluginDefinition.path, szFileName))
+		if (!stricmp(pluginDefinition.path, definition.path))
 		{
 			return;
 		}
 	}
 
-	m_project.plugins.emplace_back(type, szFileName);
+	m_project.plugins.push_back(definition);
 }
 
 string CProjectManager::LoadTemplateFile(const char* szPath, std::function<string(const char* szAlias)> aliasReplacementFunc) const
