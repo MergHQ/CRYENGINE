@@ -79,13 +79,15 @@ void LoadControllers(const GlobalAnimationHeaderCAF& rGAH, const Command::CState
 		}
 	}
 
-	const uint32* pLodJointMask = NULL;
-	uint32 lodJointMaskCount = 0;
-	if (state.m_lod > 0)
+	const uint32* pLodJointMask     = NULL;
+	uint32        lodJointMaskCount = 0;
+	const int     forceLod          = Console::GetInst().ca_ForceAnimationLod;
+
+	if (state.m_lod > 0 || forceLod > 0)
 	{
 		if (uint32 lodCount = state.m_pDefaultSkeleton->m_arrAnimationLOD.size())
 		{
-			uint32 lod = state.m_lod;
+			uint32 lod = forceLod > 0 ? forceLod : state.m_lod;
 			if (lod > lodCount)
 				lod = lodCount;
 			--lod;

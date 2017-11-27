@@ -122,6 +122,7 @@ struct CRY_ALIGN(128) Console
 	DeclareConstIntCVar(ca_LockFeetWithIK, 1);
 	DeclareConstIntCVar(ca_AllowMultipleEffectsOfSameName, 1);
 	DeclareConstIntCVar(ca_UseAssetDefinedLod, 0);
+	DeclareConstIntCVar(ca_ForceAnimationLod, 0);
 	DeclareConstIntCVar(ca_PrecacheAnimationSets, 0);
 	DeclareConstIntCVar(ca_DisableAnimationUnloading, 0);
 	DeclareConstIntCVar(ca_PreloadAllCAFs, 0);

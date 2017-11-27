@@ -209,6 +209,7 @@ void Console::Init()
 	DefineConstIntCVar(ca_SerializeSkeletonAnim, 0, VF_CHEAT, "Turn on CSkeletonAnim Serialization.");
 	DefineConstIntCVar(ca_AllowMultipleEffectsOfSameName, 1, VF_CHEAT, "Allow a skeleton animation to spawn more than one instance of an effect with the same name on the same instance.");
 	DefineConstIntCVar(ca_UseAssetDefinedLod, 0, VF_CHEAT, "Lowers render LODs for characters with respect to \"consoles_lod0\" UDP. Requires characters to be reloaded.");
+	DefineConstIntCVar(ca_ForceAnimationLod, 0, VF_CHEAT, "Forces a specific LOD to be used for animation updates.");
 	DefineConstIntCVar(ca_Validate, 0, VF_CHEAT, "if set to 1, will run validation on animation data");
 	// animation transition interpolation mode
 	REGISTER_COMMAND("ca_DefaultTransitionInterpolationType", (ConsoleCommandFunc)CADefaultTransitionInterpolationType, VF_CHEAT, "changes transition interpolation method.");
