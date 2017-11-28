@@ -1805,8 +1805,6 @@ CDeviceRenderPassPtr CDeviceObjectFactory::GetOrCreateRenderPass(const CDeviceRe
 		return pRenderPass;
 
 	auto pPass = std::make_shared<CDeviceRenderPass>();
-	pPass->Update(passDesc);
-
 	{
 		CryAutoCriticalSectionNoRecursive lock(m_RenderPassCacheLock);
 		m_RenderPassCache.emplace(std::piecewise_construct,
