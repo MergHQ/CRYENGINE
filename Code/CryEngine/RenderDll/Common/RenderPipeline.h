@@ -208,15 +208,5 @@ enum EShapeMeshType
 	SHAPE_MAX,
 };
 
-// Render pipeline structure
-struct SRenderPipeline
-{
-public:
-	CShaderResources* m_pShaderResources = nullptr;
-
-	uint64            m_FlagsShader_RT;                     // Shader runtime mask
-	uint32            m_FlagsShader_MD;                     // Shader texture modificator mask
-};
-
 
 #endif  // __RENDERPIPELINE_H__

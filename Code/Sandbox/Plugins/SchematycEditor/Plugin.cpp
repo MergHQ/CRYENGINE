@@ -30,12 +30,43 @@ CryGUID GenerateGUID()
 	return guid;
 }
 
-REGISTER_PLUGIN(CSchematycPlugin);
+//REGISTER_PLUGIN(CSchematycPlugin);
+
+// TODO: Temp solution for the case Schematyc plugin was not loaded.
+static IEditor* g_pEditor = nullptr;
+IEditor* GetIEditor() { return g_pEditor; }
+
+DLL_EXPORT IPlugin* CreatePluginInstance(PLUGIN_INIT_PARAM* pInitParam)
+{
+	if (pInitParam->pluginVersion != SANDBOX_PLUGIN_SYSTEM_VERSION)
+	{
+		pInitParam->outErrorCode = IPlugin::eError_VersionMismatch;
+		return nullptr;
+	}
+
+	g_pEditor = pInitParam->pIEditor;
+	ModuleInitISystem(g_pEditor->GetSystem(), "CSchematycPlugin");
+	if (gEnv->pSchematyc2 == nullptr)
+	{
+		return nullptr;
+	}
+	CSchematycPlugin* pPlugin = new CSchematycPlugin();
+
+	RegisterPlugin();
+
+	return pPlugin;
+}
+
+DLL_EXPORT void DeletePluginInstance(IPlugin* pPlugin)
+{
+	UnregisterPlugin();
+	delete pPlugin;
+}
+// ~TODO
 
 CSchematycPlugin::CSchematycPlugin()
 {	
-	gEnv->pSchematyc2->GetScriptRegistry().Load();	
-	gEnv->pSchematyc2->GetCompiler().CompileAll();	
+
 }
 
 int32 CSchematycPlugin::GetPluginVersion()

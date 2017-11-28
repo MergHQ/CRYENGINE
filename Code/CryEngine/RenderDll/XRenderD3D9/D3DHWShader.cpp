@@ -597,10 +597,8 @@ bool CHWShader_D3D::mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallb
 			return bRes;
 
 		pInst->m_fLastAccess = gRenDev->GetFrameSyncTime().GetSeconds();
-		Ident.m_MDMask = gRenDev->m_RP.m_FlagsShader_MD & ~HWMD_TEXCOORD_FLAG_MASK;
+		Ident.m_MDMask = cmb.m_MDMask & ~HWMD_TEXCOORD_FLAG_MASK;
 	}
-	if (m_eSHClass == eHWSC_Pixel && gRenDev->m_RP.m_pShaderResources)
-		Ident.m_MDMask &= ~HWMD_TEXCOORD_FLAG_MASK;
 
 	if (Ident.m_MDMask || bForce)
 	{
@@ -1555,7 +1553,6 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 
 	CD3D9Renderer* const __restrict r = gcpRendD3D;
 	SRenderViewShaderConstants& PF = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView()->GetShaderConstants();
-	SRenderPipeline& RESTRICT_REFERENCE rRP = r->m_RP;
 
 	UFloat4* sData = sDataBuffer; // data length must not exceed the lenght of sDataBuffer [=sozeof(36*float4)]
 

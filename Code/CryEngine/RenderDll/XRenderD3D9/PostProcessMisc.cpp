@@ -178,7 +178,7 @@ void CPost3DRenderer::RenderSilhouettes(uint8 groupId, float screenRect[4])
 	CTexture* pOutlineTex = CRendererResources::s_ptexBackBufferScaled[0];
 	CTexture* pGlowTex = CRendererResources::s_ptexBackBufferScaled[1];
 
-	ApplyShaderQuality();
+	uint64 nRTMaskQ = ApplyShaderQuality();
 	SilhouetteOutlines(pOutlineTex, pGlowTex);
 	SilhouetteGlow(pOutlineTex, pGlowTex);
 	SilhouetteCombineBlurAndOutline(pOutlineTex, pGlowTex);
@@ -203,7 +203,7 @@ void CPost3DRenderer::SilhouetteOutlines(CTexture* pOutlineTex, CTexture* pGlowT
 
 }
 
-void CPost3DRenderer::ApplyShaderQuality(EShaderType shaderType)
+uint64 CPost3DRenderer::ApplyShaderQuality(EShaderType shaderType)
 {
 	CD3D9Renderer* const __restrict pRD = gcpRendD3D;
 
@@ -212,7 +212,7 @@ void CPost3DRenderer::ApplyShaderQuality(EShaderType shaderType)
 	int nQuality = (int)pSP->GetShaderQuality();
 
 	// Apply correct flag set
-	pRD->m_RP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_QUALITY] | g_HWSR_MaskBit[HWSR_QUALITY1]);
+	uint64 nRTMaskQ = 0;
 
 	SRenderQuality rq = gRenDev->GetRenderQuality();
 	rq.shaderQuality = pSP->GetShaderQuality();
@@ -221,16 +221,17 @@ void CPost3DRenderer::ApplyShaderQuality(EShaderType shaderType)
 	switch (nQuality)
 	{
 	case eSQ_Medium:
-		pRD->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_QUALITY];
+		nRTMaskQ |= g_HWSR_MaskBit[HWSR_QUALITY];
 		break;
 	case eSQ_High:
-		pRD->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_QUALITY1];
+		nRTMaskQ |= g_HWSR_MaskBit[HWSR_QUALITY1];
 		break;
 	case eSQ_VeryHigh:
-		pRD->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_QUALITY];
-		pRD->m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_QUALITY1];
+		nRTMaskQ |= g_HWSR_MaskBit[HWSR_QUALITY];
+		nRTMaskQ |= g_HWSR_MaskBit[HWSR_QUALITY1];
 		break;
 	}
+	return nRTMaskQ;
 }
 
 #pragma warning(pop)

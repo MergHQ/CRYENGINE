@@ -1032,6 +1032,7 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 		i = 1;
 
 	string szDst = m_pCEF->m_szUserPath + nameBin;
+	nameBin = string("%ENGINE%/") + nameBin;
 	byte bValid = 0;
 	float fVersion = (float)FX_CACHE_VER;
 	for (; i < n; i++)

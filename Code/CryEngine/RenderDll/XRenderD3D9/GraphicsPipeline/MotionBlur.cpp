@@ -71,9 +71,9 @@ void CMotionBlurStage::Execute()
 			m_passPacking.SetTechnique(pShader, techPackVelocities, bRadialBlur ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0);
 			m_passPacking.SetRenderTarget(0, CRendererResources::s_ptexVelocity);
 			m_passPacking.SetState(GS_NODEPTHTEST);
-			m_passPacking.SetTextureSamplerPair(0, CRendererResources::s_ptexLinearDepth, EDefaultSamplerStates::PointClamp);
-			m_passPacking.SetTextureSamplerPair(1, CRendererResources::s_ptexHDRTarget, EDefaultSamplerStates::PointClamp);
-			m_passPacking.SetTextureSamplerPair(2, GetUtils().GetVelocityObjectRT(RenderView()), EDefaultSamplerStates::PointClamp);
+			m_passPacking.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+			m_passPacking.SetTexture(1, GetUtils().GetVelocityObjectRT(RenderView()));
+			m_passPacking.SetSampler(0, EDefaultSamplerStates::PointClamp);
 			m_passPacking.SetRequireWorldPos(true);
 		}
 
@@ -184,9 +184,11 @@ void CMotionBlurStage::Execute()
 			m_passMotionBlur.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 			m_passMotionBlur.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
 			m_passMotionBlur.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA);
-			m_passMotionBlur.SetTextureSamplerPair(0, bGatherDofEnabled ? CRendererResources::s_ptexSceneTargetR11G11B10F[0] : CRendererResources::s_ptexHDRTargetPrev, EDefaultSamplerStates::LinearClamp);
-			m_passMotionBlur.SetTextureSamplerPair(1, CRendererResources::s_ptexVelocity, EDefaultSamplerStates::PointClamp);
-			m_passMotionBlur.SetTextureSamplerPair(2, CRendererResources::s_ptexVelocityTiles[2], EDefaultSamplerStates::PointClamp);
+			m_passMotionBlur.SetTexture(0, bGatherDofEnabled ? CRendererResources::s_ptexSceneTargetR11G11B10F[0] : CRendererResources::s_ptexHDRTargetPrev);
+			m_passMotionBlur.SetTexture(1, CRendererResources::s_ptexVelocity);
+			m_passMotionBlur.SetTexture(2, CRendererResources::s_ptexVelocityTiles[2]);
+			m_passMotionBlur.SetSampler(0, EDefaultSamplerStates::LinearClamp);
+			m_passMotionBlur.SetSampler(1, EDefaultSamplerStates::PointClamp);
 		}
 
 		m_passMotionBlur.BeginConstantUpdate();

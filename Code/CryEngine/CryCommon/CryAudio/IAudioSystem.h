@@ -48,10 +48,10 @@ static constexpr char const* OffStateName = "off";
 static constexpr char const* GlobalPreloadRequestName = "global_atl_preloads";
 
 /**
-* A utility function to convert a string value to an Id.
-* @param szSource - string to convert
-* @return a 32bit CRC computed on the lower case version of the passed string
-*/
+ * A utility function to convert a string value to an Id.
+ * @param szSource - string to convert
+ * @return a 32bit CRC computed on the lower case version of the passed string
+ */
 static constexpr uint32 StringToId(char const* const szSource)
 {
 	return CCrc32::ComputeLowercase_CompileTime(szSource);
@@ -181,12 +181,12 @@ struct SCreateObjectData
 	  EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
 	  CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
 	  EntityId const entityId_ = INVALID_ENTITYID,
-	  bool const bSetCurrentEnvironments_ = false)
+	  bool const setCurrentEnvironments_ = false)
 		: szName(szName_)
 		, occlusionType(occlusionType_)
 		, transformation(transformation_)
 		, entityId(entityId_)
-		, bSetCurrentEnvironments(bSetCurrentEnvironments_)
+		, setCurrentEnvironments(setCurrentEnvironments_)
 	{}
 
 	static SCreateObjectData const& GetEmptyObject() { static SCreateObjectData const emptyInstance; return emptyInstance; }
@@ -201,19 +201,20 @@ struct SCreateObjectData
 	CObjectTransformation const transformation;
 
 	EntityId const              entityId;
-	bool const                  bSetCurrentEnvironments;
+	bool const                  setCurrentEnvironments;
 };
 
 struct SExecuteTriggerData : public SCreateObjectData
 {
 	explicit SExecuteTriggerData(
-	  char const* const _szName,
-	  EOcclusionType const _occlusionType,
-	  CObjectTransformation const& _transformation,
-	  bool const _bSetCurrentEnvironments,
-	  ControlId const _triggerId)
-		: SCreateObjectData(_szName, _occlusionType, _transformation, _bSetCurrentEnvironments)
-		, triggerId(_triggerId)
+	  ControlId const triggerId_,
+	  char const* const szName_ = nullptr,
+	  EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
+	  CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
+	  EntityId const entityId_ = INVALID_ENTITYID,
+	  bool const setCurrentEnvironments_ = false)
+		: triggerId(triggerId_)
+		, SCreateObjectData(szName_, occlusionType_, transformation_, entityId_, setCurrentEnvironments_)
 	{}
 
 	ControlId const triggerId;
@@ -542,7 +543,7 @@ struct IAudioSystem
 
 	/**
 	 * Retrieve ProfileData interface which gives access to various methods retrieving audio system internal data.
-	 * @return void
+	 * @return Pointer to the CryAudio::IProfileData interface.
 	 */
 	virtual IProfileData* GetProfileData() const = 0;
 
@@ -551,6 +552,7 @@ struct IAudioSystem
 	 * Note: Don't use this method directly, instead use Cry::Audio::Log()!
 	 * @param type - log message type (ELogType)
 	 * @param szFormat, ... - printf-style format string and its argument
+	 * @return void
 	 */
 	virtual void Log(ELogType const type, char const* const szFormat, ...) = 0;
 	// </interfuscator:shuffle>

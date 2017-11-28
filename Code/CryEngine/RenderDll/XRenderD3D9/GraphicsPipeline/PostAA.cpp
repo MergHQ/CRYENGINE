@@ -493,10 +493,16 @@ void CPostAAStage::Execute()
 
 	// TODO: Un-jitter depth buffer for AuxGeom depth tests (alternative: jitter aux)
 	// TODO: Don't do anything and throw away depth when no depth-test/aux is used
-	if (const auto* pRO = RenderView()->GetRenderOutput())
 	{
-		DoFinalComposition(pCurrRT, pRO->GetColorTarget(), aaMode);
-		CStretchRectPass::GetPass().Execute(pCurrDS, pRO->GetDepthTarget());
+		CTexture* pDestRT = RenderView()->GetColorTarget();
+		CTexture* pDestDS = RenderView()->GetDepthTarget();
+
+		DoFinalComposition(pCurrRT, pDestRT, aaMode);
+		if (pCurrDS != pDestDS)
+		{
+			CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
+			commandList.GetCopyInterface()->Copy(pCurrDS->GetDevTexture(), pDestDS->GetDevTexture());
+		}
 	}
 
 	if (pMgpuRT)

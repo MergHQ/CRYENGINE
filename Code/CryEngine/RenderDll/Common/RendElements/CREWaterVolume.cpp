@@ -412,7 +412,6 @@ void CREWaterVolume::UpdatePerInstanceCB(
   CRenderView *pRenderView) const
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	SRenderPipeline& rp(gRenDev->m_RP);
 	SRenderViewShaderConstants& PF = pRenderView->GetShaderConstants();
 	const auto cameraPos = PF.pCameraPos;
 

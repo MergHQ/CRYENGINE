@@ -74,6 +74,7 @@ struct SSFXSampler;
 struct SSFXTexture;
 class CShaderResources;
 struct SShaderCombIdent;
+struct SCacheCombination;
 
 enum eCompareFunc
 {
@@ -744,7 +745,7 @@ public:
 	virtual void        GetMemoryUsage(ICrySizer* Sizer) const = 0;
 	virtual void        mfReset(uint32 CRC32) {}
 
-	virtual bool        mfAddEmptyCombination(CShader* pSH, uint64 nRT, uint64 nGL, uint32 nLT) = 0;
+	virtual bool        mfAddEmptyCombination(CShader* pSH, uint64 nRT, uint64 nGL, uint32 nLT, const SCacheCombination& cmbSaved) = 0;
 	virtual bool        mfStoreEmptyCombination(CShader* pSH, SEmptyCombination& Comb) = 0;
 	virtual const char* mfGetCurScript() { return NULL; }
 	virtual const char* mfGetEntryName() = 0;

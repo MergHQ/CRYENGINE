@@ -72,3 +72,8 @@ namespace UQS
 #ifndef UQS_SCHEMATYC_SUPPORT
 #error UQS_SCHEMATYC_SUPPORT has to be set from the outside (i. e. at compiler level) to 0 or 1 (but is not set at all)
 #endif
+
+
+// - specifies the subsystem for use in the frame profiler
+// - currently, we don't have specific subsystems for plugins like UQS, so we specify a rather generic one here
+#define UQS_PROFILED_SUBSYSTEM_TO_USE PROFILE_GAME

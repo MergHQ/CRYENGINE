@@ -343,7 +343,7 @@ void GetPhysicsStatus(IPhysicalEntity* pPhysEnt, float& fMass, float& fVolume, f
 
 //////////////////////////////////////////////////////////////////////////
 void CBreakableManager::BreakIntoPieces(GeomRef& geoOrig, const Matrix34& mxSrcTM,
-                                        IStatObj* pPiecesObj, const Matrix34& mxPiecesTM,
+                                        IStatObj* pPiecesObj, const Matrix34& mxPiecesTM,	IStatObj* pRemovedObj,
                                         BreakageParams const& Breakage, int nMatLayers)
 {
 	ENTITY_PROFILER;
@@ -463,12 +463,11 @@ void CBreakableManager::BreakIntoPieces(GeomRef& geoOrig, const Matrix34& mxSrcT
 		}
 	}
 
-#ifdef FIX
-	if (fDefaultDensity <= 0.f && geoOrig.m_pMeshObj)
+	if (fDefaultDensity <= 0.f && pRemovedObj)
 	{
 		// Compute default density from main piece.
 		float fMass, fDensity;
-		geoOrig.m_pMeshObj->GetPhysicalProperties(fMass, fDensity);
+		pRemovedObj->GetPhysicalProperties(fMass, fDensity);
 		if (fDensity > 0)
 			fDefaultDensity = fDensity * 1000.f;
 		else
@@ -482,7 +481,6 @@ void CBreakableManager::BreakIntoPieces(GeomRef& geoOrig, const Matrix34& mxSrcT
 		}
 		fTotalMass = fMass;
 	}
-#endif
 
 	// set parameters to delayed Material Effect execution
 	exec.fTotalMass = fTotalMass;
@@ -495,10 +493,8 @@ void CBreakableManager::BreakIntoPieces(GeomRef& geoOrig, const Matrix34& mxSrcT
 	QuatTS entityQuatTS(mxPiecesTM);
 
 	const char* sSourceGeometryProperties = "";
-#ifdef FIX
-	if (geoOrig.m_pMeshObj)
-		sSourceGeometryProperties = geoOrig.m_pMeshObj->GetProperties();
-#endif
+	if (pRemovedObj)
+		sSourceGeometryProperties = pRemovedObj->GetProperties();
 
 	//////////////////////////////////////////////////////////////////////////
 	for (int i = 0; i < max(nSubObjs, 1); i++)
@@ -803,7 +799,7 @@ void CBreakableManager::BreakIntoPieces(IEntity* pEntity, int nOrigSlot, int nPi
 			GeomRef geoOrig;
 			geoOrig.Set(pEntity, nOrigSlot);
 
-			BreakIntoPieces(geoOrig, mx1, pPiecesObj, mx2, Breakage, pRenderNode->GetMaterialLayers());
+			BreakIntoPieces(geoOrig, mx1, pPiecesObj, mx2, nullptr, Breakage, pRenderNode->GetMaterialLayers());
 		}
 	}
 }
@@ -1118,7 +1114,7 @@ bool CBreakableManager::CheckForPieces(IStatObj* pSrcStatObj, IStatObj::SSubObje
 		Breakage.bMaterialEffects = true;
 		Breakage.type = BREAKAGE_TYPE_FREEZE_SHATTER;
 		// Only spawn freeze shatter material effect!
-		BreakIntoPieces(geoOrig, objWorldTM, NULL, Matrix34(), Breakage, nMatLayers);
+		BreakIntoPieces(geoOrig, objWorldTM, NULL, Matrix34(), pSubObj->pStatObj, Breakage, nMatLayers);
 	}
 
 	bool bHavePieces = (strstr(sProperties, "pieces=") != 0);
@@ -1138,7 +1134,7 @@ bool CBreakableManager::CheckForPieces(IStatObj* pSrcStatObj, IStatObj::SSubObje
 		BreakageParams Breakage;
 		Breakage.bOnlyHelperPieces = true;
 		Breakage.bMaterialEffects = true;
-		Breakage.bForceEntity = gEnv->bMultiplayer;
+		Breakage.bForceEntity = true;
 		Breakage.fExplodeImpulse = 0;
 		Breakage.fParticleLifeTime = 30.f;
 		Breakage.nGenericCount = 0;
@@ -1153,7 +1149,7 @@ bool CBreakableManager::CheckForPieces(IStatObj* pSrcStatObj, IStatObj::SSubObje
 
 		Matrix34 objWorldTM = worldTM * pSubObj->tm;
 
-		BreakIntoPieces(geoOrig, objWorldTM, pPiecesObj, worldTM, Breakage, nMatLayers);
+		BreakIntoPieces(geoOrig, objWorldTM, pPiecesObj, worldTM, pSubObj->pStatObj, Breakage, nMatLayers);
 
 		// New physical entity must be deleted.
 		if (pPhysEnt)

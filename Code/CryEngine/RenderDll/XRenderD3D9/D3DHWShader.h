@@ -718,7 +718,7 @@ public:
 public:
 	virtual ~CHWShader_D3D();
 
-	bool                mfAddEmptyCombination(CShader* pSH, uint64 nRT, uint64 nGL, uint32 nLT) override;
+	bool                mfAddEmptyCombination(CShader* pSH, uint64 nRT, uint64 nGL, uint32 nLT, const SCacheCombination& cmbSaved) override;
 	bool                mfStoreEmptyCombination(CShader* pSH, SEmptyCombination& Comb) override;
 
 	virtual void        mfReset(uint32 CRC32) override;

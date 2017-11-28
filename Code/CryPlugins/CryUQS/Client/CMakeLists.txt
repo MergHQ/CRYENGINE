@@ -47,7 +47,7 @@ end_sources()
 CryEngineStaticModule(CryUQS_Client PCH "client/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
 # Now that this CryUQS_Client.lib is being linked against by the EditorUQS.DLL, we need to make it use the Standard Memory Manager (the one that all editor plugins use because Qt uses it)
 if(WIN32 OR WIN64)
-	target_compile_definitions(${THIS_PROJECT} PRIVATE NOT_USE_CRY_MEMORY_MANAGER)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:NOT_USE_CRY_MEMORY_MANAGER>)
 endif()
 target_link_libraries (${THIS_PROJECT} PRIVATE CryUQS_Shared)
 

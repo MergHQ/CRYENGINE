@@ -1189,8 +1189,6 @@ public:
 	void              EF_AddRTStat(CTexture* pTex, int nFlags = 0, int nW = -1, int nH = -1);
 	void              EF_PrintRTStats(const char* szName);
 
-	int               FX_ApplyShadowQuality();
-
 	static inline eAntialiasingType FX_GetAntialiasingType () { return (eAntialiasingType)((uint32)1 << min(CV_r_AntialiasingMode, eAT_AAMODES_COUNT - 1)); }
 	static inline bool              IsHDRModeEnabled       () { return (CV_r_HDRRendering && !CV_r_measureoverdraw) ? true : false; }
 	static inline bool              IsPostProcessingEnabled() { return (CV_r_PostProcess && !CV_r_measureoverdraw) ? true : false; }
@@ -1354,7 +1352,6 @@ public:
 	//=============================================================================================================
 	CSubmissionQueue_DX11 m_DevMan;
 	CDeviceBufferManager m_DevBufMan;
-	SRenderPipeline      m_RP;
 	//=============================================================================================================
 
 	CIntroMovieRenderer* m_pIntroMovieRenderer;

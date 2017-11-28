@@ -923,7 +923,6 @@ void CVolumetricFogStage::ExecuteDownscaleShadowmap()
 	//PROFILE_LABEL_SCOPE("DOWNSCALE_SHADOWMAP");
 
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	SRenderPipeline& rp(gRenDev->m_RP);
 
 	CShader* pShader = CShaderMan::s_shDeferredShading;
 

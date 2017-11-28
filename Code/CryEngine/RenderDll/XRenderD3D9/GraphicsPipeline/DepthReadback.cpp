@@ -101,7 +101,6 @@ bool CDepthReadbackStage::IsReadbackRequired()
 CTexture* CDepthReadbackStage::GetInputTexture(EConfigurationFlags& flags)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	SRenderPipeline& rp(rd->m_RP);
 
 	const bool bMultiResEnabled = CVrProjectionManager::IsMultiResEnabledStatic();
 	const bool bUseNativeDepth = CRenderer::CV_r_CBufferUseNativeDepth && !bMultiResEnabled && !gEnv->IsEditor();

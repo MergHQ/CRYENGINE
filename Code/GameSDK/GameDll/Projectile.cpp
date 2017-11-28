@@ -1127,8 +1127,8 @@ void CProjectile::Destroy()
 			m_mpDestructionDelay = m_pAmmoParams->mpProjectileDestructDelay;
 		}
 		SetProjectileFlags(ePFlag_needDestruction);
-		gEnv->pAISystem->GetAIObjectManager()->RemoveObjectByEntityId(GetEntityId());         // unregister from AI. Will be removed from active list when hidden otherwise (see EvaluateUpdateActivation)
-		GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_UPDATE_HIDDEN); // Bugfix for grenades persisting on client after exploding.
+		gEnv->pAISystem->GetAIObjectManager()->RemoveObjectByEntityId(GetEntityId()); // unregister from AI. Will be removed from active list when hidden otherwise (see EvaluateUpdateActivation)
+		GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_UPDATE_HIDDEN);   // Bugfix for grenades persisting on client after exploding.
 		GetEntity()->Hide(true);
 		return;
 	}
@@ -1419,14 +1419,14 @@ void CProjectile::UpdateWhiz(const Vec3& pos, bool destroy)
 //------------------------------------------------------------------------
 void CProjectile::WhizSound(const Vec3& pos)
 {
-	CryAudio::SExecuteTriggerData const data("WhizBy", CryAudio::EOcclusionType::Ignore, pos, true, m_whizTriggerID);
+	CryAudio::SExecuteTriggerData const data(m_whizTriggerID, "WhizBy", CryAudio::EOcclusionType::Ignore, pos, INVALID_ENTITYID, true);
 	gEnv->pAudioSystem->ExecuteTriggerEx(data);
 }
 
 //------------------------------------------------------------------------
 void CProjectile::RicochetSound(const Vec3& pos)
 {
-	CryAudio::SExecuteTriggerData const data("Ricochet", CryAudio::EOcclusionType::Ignore, pos, true, m_ricochetTriggerID);
+	CryAudio::SExecuteTriggerData const data(m_ricochetTriggerID, "Ricochet", CryAudio::EOcclusionType::Ignore, pos, INVALID_ENTITYID, true);
 	gEnv->pAudioSystem->ExecuteTriggerEx(data);
 }
 

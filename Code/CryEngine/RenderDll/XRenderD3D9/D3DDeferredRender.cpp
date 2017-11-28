@@ -154,31 +154,6 @@ HRESULT GetSampleOffsetsGaussBlur5x5Bilinear(DWORD dwD3DTexWidth, DWORD dwD3DTex
 	return S_OK;
 }
 
-int CRenderer::FX_ApplyShadowQuality()
-{
-	SShaderProfile* pSP = &m_cEF.m_ShaderProfiles[eST_Shadow];
-	const uint64 quality = g_HWSR_MaskBit[HWSR_QUALITY];
-	const uint64 quality1 = g_HWSR_MaskBit[HWSR_QUALITY1];
-	m_RP.m_FlagsShader_RT &= ~(quality | quality1);
-
-	int nQuality = (int)pSP->GetShaderQuality();
-	m_renderQuality.shaderQuality = pSP->GetShaderQuality();
-	switch (nQuality)
-	{
-	case eSQ_Medium:
-		m_RP.m_FlagsShader_RT |= quality;
-		break;
-	case eSQ_High:
-		m_RP.m_FlagsShader_RT |= quality1;
-		break;
-	case eSQ_VeryHigh:
-		m_RP.m_FlagsShader_RT |= quality;
-		m_RP.m_FlagsShader_RT |= quality1;
-		break;
-	}
-	return nQuality;
-}
-
 bool CD3D9Renderer::CreateAuxiliaryMeshes()
 {
 	t_arrDeferredMeshIndBuff arrDeferredInds;

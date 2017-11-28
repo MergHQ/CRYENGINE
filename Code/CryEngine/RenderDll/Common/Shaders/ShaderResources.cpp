@@ -612,6 +612,8 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 	CShader* pSH = (CShader*)pISH;
 	assert(pSH->m_Flags & EF_LOADED); // Make sure shader is parsed
 
+	uint32 nMDMask = 0;
+
 	// Update common PM parameters
 	{
 		Matrix44 matrixTCM(IDENTITY);
@@ -619,7 +621,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 
 		if (pTex && pTex->m_Ext.m_pTexModifier)
 		{
-			pTex->Update(EFTT_DIFFUSE);
+			pTex->Update(EFTT_DIFFUSE, nMDMask);
 			matrixTCM = pTex->m_Ext.m_pTexModifier->m_TexMatrix;
 		}
 
@@ -627,7 +629,7 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		pTex = m_Textures[EFTT_DETAIL_OVERLAY];
 		if (pTex && pTex->m_Ext.m_pTexModifier)
 		{
-			pTex->Update(EFTT_DETAIL_OVERLAY);
+			pTex->Update(EFTT_DETAIL_OVERLAY, nMDMask);
 			detailTilingAndAlpharef.x = pTex->m_Ext.m_pTexModifier->m_Tiling[0];
 			detailTilingAndAlpharef.y = pTex->m_Ext.m_pTexModifier->m_Tiling[1];
 		}

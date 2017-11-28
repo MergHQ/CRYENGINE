@@ -1096,7 +1096,6 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 void CWaterStage::UpdatePerPassResources(EPass passId)
 {
 	CD3D9Renderer* RESTRICT_POINTER pRenderer = gcpRendD3D;
-	SRenderPipeline& rp(pRenderer->m_RP);
 	SRenderViewShaderConstants& PF = RenderView()->GetShaderConstants();
 
 	// update per pass constant buffer.

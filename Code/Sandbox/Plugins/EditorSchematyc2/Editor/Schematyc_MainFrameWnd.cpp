@@ -173,7 +173,7 @@ namespace Schematyc2
 
 		virtual const char* Category()
 		{
-			return "Old Schematyc Editor 2";
+			return "Schematyc Editor";
 		};
 
 		virtual CRuntimeClass* GetRuntimeClass()
@@ -183,7 +183,7 @@ namespace Schematyc2
 
 		virtual const char* GetPaneTitle()
 		{
-			return _T("Old Schematyc Editor 2");
+			return _T("Schematyc Editor");
 		};
 
 		virtual EDockingDirection GetDockingDirection()

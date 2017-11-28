@@ -660,7 +660,7 @@ struct SBandwidthStatsSubset
 struct SBandwidthStats
 {
 	SBandwidthStats()
-		: m_total(), m_prev(), m_1secAvg(), m_10secAvg()
+		: m_total(), m_prev(), m_1secAvg(), m_10secAvg(), m_numChannels()
 	{
 	}
 

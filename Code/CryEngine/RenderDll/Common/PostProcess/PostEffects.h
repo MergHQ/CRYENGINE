@@ -1716,7 +1716,7 @@ private:
 	void SilhouetteOutlines(CTexture* pOutlineTex, CTexture* pGlowTex);
 	void SilhouetteGlow(CTexture* pOutlineTex, CTexture* pGlowTex);
 	void SilhouetteCombineBlurAndOutline(CTexture* pOutlineTex, CTexture* pGlowTex);
-	void ApplyShaderQuality(EShaderType shaderType = eST_General);
+	uint64 ApplyShaderQuality(EShaderType shaderType = eST_General);
 
 	CCryNameTSCRC m_gammaCorrectionTechName;
 	CCryNameTSCRC m_alphaCorrectionTechName;

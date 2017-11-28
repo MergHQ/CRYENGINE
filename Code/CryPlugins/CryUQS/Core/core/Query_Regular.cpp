@@ -309,6 +309,8 @@ namespace UQS
 
 		CQuery_Regular::EPhaseStatus CQuery_Regular::Phase2_GenerateItems(const SPhaseUpdateContext& phaseUpdateContext)
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			const Client::IGenerator::SUpdateContext updateContext(m_queryID, m_blackboard, phaseUpdateContext.error);
 			const Client::IGenerator::EUpdateStatus generatorStatus = m_pGenerator->Update(updateContext, m_generatedItems);
 
@@ -584,6 +586,8 @@ namespace UQS
 
 		CQuery_Regular::EPhaseStatus CQuery_Regular::Phase5_RunCheapEvaluators(const SPhaseUpdateContext& phaseUpdateContext)
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			//
 			// basically, the algorithm goes like this:
 			//
@@ -1203,6 +1207,8 @@ namespace UQS
 
 		CQuery_Regular::EPhaseStatus CQuery_Regular::Phase7_RunExpensiveEvaluators(const SPhaseUpdateContext& phaseUpdateContext)
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			//
 			// update the deferred tasks (each task is working on one item)
 			//

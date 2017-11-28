@@ -247,6 +247,8 @@ namespace UQS
 
 		CQueryBase::EUpdateState CQueryBase::Update(const CTimeValue& amountOfGrantedTime, Shared::CUqsString& error)
 		{
+			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());
+
 			m_timeBudgetForCurrentUpdate.Restart(amountOfGrantedTime);
 
 			const CTimeValue startTime = gEnv->pTimer->GetAsyncTime();

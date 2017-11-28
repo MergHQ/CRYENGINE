@@ -41,6 +41,8 @@ namespace UQS
 
 				typename BaseClass::EUpdateStatus DoUpdate(const typename BaseClass::SUpdateContext& updateContext, CItemListProxy_Writable<TItem>& itemListToPopulate)
 				{
+					CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);	// mainly for keeping an eye on the copy operation of the passed-in items below
+
 					if (!updateContext.blackboard.pShuttledItems)
 					{
 						updateContext.error.Format("CGen_PropagateShuttledItems<>::DoUpdate: updateContext.blackboard.pShuttledItems == NULL (this can happen if there was no previous query that forwarded its resulting items)");

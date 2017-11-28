@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -741,7 +741,7 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTriggerEx> final 
 		, occlusionType(data.occlusionType)
 		, transformation(data.transformation)
 		, entityId(data.entityId)
-		, bSetCurrentEnvironments(data.bSetCurrentEnvironments)
+		, setCurrentEnvironments(data.setCurrentEnvironments)
 		, triggerId(data.triggerId)
 	{}
 
@@ -751,7 +751,7 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTriggerEx> final 
 		, occlusionType(pAORData->occlusionType)
 		, transformation(pAORData->transformation)
 		, entityId(pAORData->entityId)
-		, bSetCurrentEnvironments(pAORData->bSetCurrentEnvironments)
+		, setCurrentEnvironments(pAORData->setCurrentEnvironments)
 		, triggerId(pAORData->triggerId)
 	{}
 
@@ -761,7 +761,7 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::ExecuteTriggerEx> final 
 	EOcclusionType const                       occlusionType;
 	CObjectTransformation const                transformation;
 	EntityId const                             entityId;
-	bool const bSetCurrentEnvironments;
+	bool const setCurrentEnvironments;
 	ControlId const                            triggerId;
 };
 
@@ -901,7 +901,7 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> final : 
 		, occlusionType(data.occlusionType)
 		, transformation(data.transformation)
 		, entityId(data.entityId)
-		, bSetCurrentEnvironments(data.bSetCurrentEnvironments)
+		, setCurrentEnvironments(data.setCurrentEnvironments)
 	{}
 
 	explicit SAudioObjectRequestData(SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> const* const pAMRData)
@@ -910,7 +910,7 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> final : 
 		, occlusionType(pAMRData->occlusionType)
 		, transformation(pAMRData->transformation)
 		, entityId(pAMRData->entityId)
-		, bSetCurrentEnvironments(pAMRData->bSetCurrentEnvironments)
+		, setCurrentEnvironments(pAMRData->setCurrentEnvironments)
 	{}
 
 	virtual ~SAudioObjectRequestData() override = default;
@@ -919,7 +919,7 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::RegisterObject> final : 
 	EOcclusionType const                       occlusionType;
 	CObjectTransformation const                transformation;
 	EntityId const                             entityId;
-	bool const bSetCurrentEnvironments;
+	bool const setCurrentEnvironments;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -993,8 +993,8 @@ template<>
 struct SAudioListenerRequestData<EAudioListenerRequestType::SetTransformation> final : public SAudioListenerRequestDataBase
 {
 	explicit SAudioListenerRequestData(
-		CObjectTransformation const& transformation_,
-		CATLListener* const pListener_)
+	  CObjectTransformation const& transformation_,
+	  CATLListener* const pListener_)
 		: SAudioListenerRequestDataBase(EAudioListenerRequestType::SetTransformation)
 		, transformation(transformation_)
 		, pListener(pListener_)
@@ -1129,16 +1129,16 @@ enum class EAudioDebugDrawFilter : EnumFlagsType
 CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioDebugDrawFilter);
 
 static constexpr EAudioDebugDrawFilter objectDebugMask =
-	EAudioDebugDrawFilter::ShowSpheres |
-	EAudioDebugDrawFilter::ShowObjectLabel |
-	EAudioDebugDrawFilter::ShowObjectTriggers |
-	EAudioDebugDrawFilter::ShowObjectStates |
-	EAudioDebugDrawFilter::ShowObjectParameters |
-	EAudioDebugDrawFilter::ShowObjectEnvironments |
-	EAudioDebugDrawFilter::ShowObjectDistance |
-	EAudioDebugDrawFilter::ShowOcclusionRayLabels |
-	EAudioDebugDrawFilter::ShowOcclusionRays |
-	EAudioDebugDrawFilter::ShowObjectStandaloneFiles;
+  EAudioDebugDrawFilter::ShowSpheres |
+  EAudioDebugDrawFilter::ShowObjectLabel |
+  EAudioDebugDrawFilter::ShowObjectTriggers |
+  EAudioDebugDrawFilter::ShowObjectStates |
+  EAudioDebugDrawFilter::ShowObjectParameters |
+  EAudioDebugDrawFilter::ShowObjectEnvironments |
+  EAudioDebugDrawFilter::ShowObjectDistance |
+  EAudioDebugDrawFilter::ShowOcclusionRayLabels |
+  EAudioDebugDrawFilter::ShowOcclusionRays |
+  EAudioDebugDrawFilter::ShowObjectStandaloneFiles;
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 

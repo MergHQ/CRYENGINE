@@ -19,7 +19,7 @@
 namespace Cry {
 namespace SchematycEd {
 
-REGISTER_VIEWPANE_FACTORY(CMainWindow, "Schematyc Editor", "Tools", false)
+REGISTER_VIEWPANE_FACTORY(CMainWindow, "Schematyc Editor (Reworked)", "Tools", false)
 
 CMainWindow::CMainWindow()
 	: CAssetEditor(QStringList{ "SchematycEntity", "SchematycLibrary" })

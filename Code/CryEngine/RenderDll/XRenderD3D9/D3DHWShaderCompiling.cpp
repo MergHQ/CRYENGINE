@@ -2306,20 +2306,17 @@ bool CHWShader_D3D::mfAddCacheItem(SShaderCache* pCache, SShaderCacheHeaderItem*
 
 std::vector<SEmptyCombination> SEmptyCombination::s_Combinations;
 
-bool CHWShader_D3D::mfAddEmptyCombination(CShader* pSH, uint64 nRT, uint64 nGL, uint32 nLT)
+bool CHWShader_D3D::mfAddEmptyCombination(CShader* pSH, uint64 nRT, uint64 nGL, uint32 nLT, const SCacheCombination& cmbSaved)
 {
-	CD3D9Renderer* rd = gcpRendD3D;
-	SRenderPipeline& RESTRICT_REFERENCE rRP = gRenDev->m_RP;
-
 	SEmptyCombination Comb;
 	Comb.nGLNew = m_nMaskGenShader;
-	Comb.nRTNew = rRP.m_FlagsShader_RT & m_nMaskAnd_RT | m_nMaskOr_RT;
-	Comb.nLTNew = 0;
+	Comb.nRTNew = cmbSaved.Ident.m_RTMask & m_nMaskAnd_RT | m_nMaskOr_RT;
+	Comb.nLTNew = cmbSaved.Ident.m_LightMask;
 	Comb.nGLOrg = nGL;
 	Comb.nRTOrg = nRT & m_nMaskAnd_RT | m_nMaskOr_RT;
 	Comb.nLTOrg = nLT;
-	Comb.nMD = rRP.m_FlagsShader_MD;
-	Comb.nMDV = 0;
+	Comb.nMD = cmbSaved.Ident.m_MDMask;
+	Comb.nMDV = cmbSaved.Ident.m_MDVMask;
 	if (m_eSHClass == eHWSC_Pixel)
 	{
 		Comb.nMD &= ~HWMD_TEXCOORD_FLAG_MASK;
@@ -2327,8 +2324,8 @@ bool CHWShader_D3D::mfAddEmptyCombination(CShader* pSH, uint64 nRT, uint64 nGL, 
 	}
 
 	Comb.pShader = this;
-	//if (Comb.nRTNew != Comb.nRTOrg || Comb.nGLNew != Comb.nGLOrg || Comb.nLTNew != Comb.nLTOrg)
-	//	SEmptyCombination::s_Combinations.push_back(Comb);
+	if (Comb.nRTNew != Comb.nRTOrg || Comb.nGLNew != Comb.nGLOrg || Comb.nLTNew != Comb.nLTOrg)
+		SEmptyCombination::s_Combinations.push_back(Comb);
 
 	m_nMaskGenShader = nGL;
 

@@ -168,7 +168,7 @@ bool CColorGrading::UpdateParams(SColorGradingMergeParams& pMergeParams, bool bU
 	Vec4 pParams4 = Vec4(fSelectiveColorCyans, fSelectiveColorMagentas, fSelectiveColorYellows, fSelectiveColorBlacks);
 
 	// Enable corresponding shader variation
-	pMergeParams.nFlagsShaderRT = gRenDev->m_RP.m_FlagsShader_RT;
+	pMergeParams.nFlagsShaderRT = 0;
 	pMergeParams.nFlagsShaderRT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE0] | g_HWSR_MaskBit[HWSR_SAMPLE1] | g_HWSR_MaskBit[HWSR_SAMPLE2] | g_HWSR_MaskBit[HWSR_SAMPLE3] | g_HWSR_MaskBit[HWSR_SAMPLE4] | g_HWSR_MaskBit[HWSR_SAMPLE5]);
 
 	if (CRenderer::CV_r_colorgrading_levels && (fMinInput || fGammaInput || fMaxInput || fMinOutput || fMaxOutput))

@@ -71,7 +71,7 @@ CTexture* CPostEffectContext::GetDstBackBufferTexture() const
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
-	CTexture* pFinalOutput = GetRenderView()->GetRenderOutput()->GetColorTarget();
+	CTexture* pFinalOutput = GetRenderView()->GetColorTarget();
 	if (m_bUseAltBackBuffer)
 		pFinalOutput = CRendererResources::s_ptexSceneDiffuse;
 
@@ -82,7 +82,7 @@ CTexture* CPostEffectContext::GetDstDepthStencilTexture() const
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
-	CTexture* pFinalOutput = GetRenderView()->GetRenderOutput()->GetDepthTarget();
+	CTexture* pFinalOutput = GetRenderView()->GetDepthTarget();
 	if (m_bUseAltBackBuffer)
 		pFinalOutput = CRendererResources::s_ptexSceneDepth;
 
@@ -1473,13 +1473,6 @@ void CHud3DPass::Execute(const CPostEffectContext& context)
 
 		auto& hud3d = *static_cast<CHud3D*>(pPostEffect);
 
-		// TODO: remove after removing old graphics pipeline.
-		rd->m_RP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE0] |
-		                               g_HWSR_MaskBit[HWSR_SAMPLE1] |
-		                               g_HWSR_MaskBit[HWSR_SAMPLE2] |
-		                               g_HWSR_MaskBit[HWSR_DEBUG1] |
-		                               g_HWSR_MaskBit[HWSR_DEBUG2]);
-
 		CD3DStereoRenderer& pS3DRend = rd->GetS3DRend();
 		bool bPostProcStereoAndSequential = pS3DRend.IsPostStereoEnabled() && pS3DRend.RequiresSequentialSubmission();
 
@@ -1706,17 +1699,12 @@ void CHud3DPass::ExecuteDownsampleHud4x4(const CPostEffectContext& context, clas
 
 				// update constant buffer
 				{
-					uint64 prevRTMask = gcpRendD3D->m_RP.m_FlagsShader_RT;
-					gcpRendD3D->m_RP.m_FlagsShader_RT = prim.GetShaderRtMask();
-
 					auto& cm = prim.GetConstantManager();
 					cm.BeginNamedConstantUpdate();
 
 					SetShaderParams(context,EShaderStage_Vertex | EShaderStage_Pixel, cm, pData, hud3d);
 
 					cm.EndNamedConstantUpdate(&viewport); // Unmap constant buffers and mark as bound
-
-					gcpRendD3D->m_RP.m_FlagsShader_RT = prevRTMask;
 				}
 
 				pass.AddPrimitive(&prim);
@@ -1816,17 +1804,12 @@ void CHud3DPass::ExecuteBloomTexUpdate(const CPostEffectContext& context, class 
 
 				// update constant buffer
 				{
-					uint64 prevRTMask = gcpRendD3D->m_RP.m_FlagsShader_RT;
-					gcpRendD3D->m_RP.m_FlagsShader_RT = prim.GetShaderRtMask();
-
 					auto& cm = prim.GetConstantManager();
 					cm.BeginNamedConstantUpdate();
 
 					SetShaderParams(context,EShaderStage_Vertex, cm, pData, hud3d);
 
 					cm.EndNamedConstantUpdate(&viewport); // Unmap constant buffers and mark as bound
-
-					gcpRendD3D->m_RP.m_FlagsShader_RT = prevRTMask;
 				}
 
 				pass.AddPrimitive(&prim);
@@ -2021,9 +2004,6 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 
 				// update constant buffer
 				{
-					uint64 prevRTMask = gcpRendD3D->m_RP.m_FlagsShader_RT;
-					gcpRendD3D->m_RP.m_FlagsShader_RT = prim.GetShaderRtMask();
-
 					auto& cm = prim.GetConstantManager();
 					cm.BeginNamedConstantUpdate();
 
@@ -2068,8 +2048,6 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 					cm.SetNamedConstant(hud3d.m_pHudOverrideColorMultParamName, vOverrideColorParams, eHWSC_Pixel);
 
 					cm.EndNamedConstantUpdate(&viewport); // Unmap constant buffers and mark as bound
-
-					gcpRendD3D->m_RP.m_FlagsShader_RT = prevRTMask;
 				}
 
 				pass.AddPrimitive(&prim);

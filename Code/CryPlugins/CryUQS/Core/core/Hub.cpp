@@ -83,6 +83,8 @@ namespace UQS
 
 		void CHub::Update()
 		{
+			CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);
+
 			// - if this assert fails, then the game code tries to do the update when it hasn't declared to do so
 			// - this check is done to prevent updating from more than one place
 			assert(gEnv->IsEditing() || (m_bAutomaticUpdateInProgress == !m_overrideFlags.Check(EHubOverrideFlags::CallUpdate)));

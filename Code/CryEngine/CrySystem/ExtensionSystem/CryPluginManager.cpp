@@ -18,74 +18,24 @@
 // This is separate since a plugin does not necessarily have to come from a binary, for example if static linking is used.
 struct SNativePluginModule
 {
-	SNativePluginModule() {}
-
-	SNativePluginModule(const char* path)
-		: m_engineModulePath(path)
-		, m_pFactory(nullptr)
-	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "LoadPlugin");
-		MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "%s", path);
-
-		WIN_HMODULE hModule = static_cast<CSystem*>(gEnv->pSystem)->LoadDynamicLibrary(path, false);
-		if (hModule != nullptr)
-		{
-			// Find the first Cry::IEnginePlugin instance inside the module
-			PtrFunc_GetHeadToRegFactories getHeadToRegFactories = (PtrFunc_GetHeadToRegFactories)CryGetProcAddress(hModule, "GetHeadToRegFactories");
-			SRegFactoryNode* pFactoryNode = getHeadToRegFactories();
-
-			while (pFactoryNode != nullptr)
-			{
-				if (pFactoryNode->m_pFactory->ClassSupports(cryiidof<Cry::IEnginePlugin>()))
-				{
-					m_pFactory = pFactoryNode->m_pFactory;
-					break;
-				}
-
-				pFactoryNode = pFactoryNode->m_pNext;
-			}
-
-			if (m_pFactory == nullptr)
-			{
-				string errorMessage = string().Format("Plugin load failed - valid ICryPlugin implementation was not found in plugin %s!", path);
-				CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, errorMessage.c_str());
-
-				MarkUnloaded();
-				return;
-			}
-		}
-		else
-		{
-			string errorMessage = string().Format("Plugin load failed, could not find dynamic library %s!", path);
-			CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, errorMessage.c_str());
-
-			MarkUnloaded();
-		}
-	}
-
+	SNativePluginModule() : m_pFactory(nullptr) {}
+	SNativePluginModule(const char* szPath, ICryFactory* pFactory = nullptr)
+		: m_engineModulePath(szPath)
+		, m_pFactory(pFactory) {}
 	SNativePluginModule(SNativePluginModule& other)
+		: m_engineModulePath(other.m_engineModulePath)
+		, m_pFactory(other.m_pFactory)
 	{
-		m_engineModulePath = other.m_engineModulePath;
-		
 		other.MarkUnloaded();
 	}
-
+	SNativePluginModule& operator=(const SNativePluginModule&) = default;
 	SNativePluginModule(SNativePluginModule&& other)
+		: m_engineModulePath(std::move(other.m_engineModulePath))
+		, m_pFactory(other.m_pFactory)
 	{
-		m_engineModulePath = other.m_engineModulePath;
-		
 		other.MarkUnloaded();
 	}
-
-	SNativePluginModule& operator=(const SNativePluginModule&& other)
-	{
-		m_engineModulePath = other.m_engineModulePath;
-		
-		return *this;
-	}
-
+	SNativePluginModule& operator=(SNativePluginModule&&) = default;
 	~SNativePluginModule()
 	{
 		Shutdown();
@@ -115,9 +65,6 @@ struct SNativePluginModule
 		return m_engineModulePath.size() > 0;
 	}
 
-	ICryFactory* GetFactory() const { return m_pFactory; }
-
-protected:
 	string m_engineModulePath;
 	ICryFactory* m_pFactory;
 };
@@ -127,7 +74,7 @@ struct SPluginContainer
 	// Constructor for native plug-ins
 	SPluginContainer(const std::shared_ptr<Cry::IEnginePlugin>& plugin, SNativePluginModule&& module)
 		: m_pPlugin(plugin)
-		, m_module(module)
+		, m_module(std::move(module))
 		, m_pluginClassId(plugin->GetFactory()->GetClassID())
 	{
 	}
@@ -281,47 +228,82 @@ void CCryPluginManager::LoadProjectPlugins()
 	SPluginDefinition userAnalyticsPlugin{ EType::Native, "CryUserAnalytics" };
 	if (std::find(std::begin(pluginDefinitions), std::end(pluginDefinitions), userAnalyticsPlugin) == std::end(pluginDefinitions))
 	{
-		LoadPluginFromDisk(userAnalyticsPlugin.type, userAnalyticsPlugin.path);
+		LoadPluginFromDisk(userAnalyticsPlugin.type, userAnalyticsPlugin.path, false);
 	}
 #endif
 }
 
-bool CCryPluginManager::LoadPluginFromDisk(EType type, const char* path)
+bool CCryPluginManager::LoadPluginFromDisk(EType type, const char* szPath, bool notifyUserOnFailure)
 {
 	CRY_ASSERT_MESSAGE(m_bLoadedProjectPlugins, "Plug-ins must not be loaded before LoadProjectPlugins!");
 
-	CryLogAlways("Loading plug-in %s", path);
+	CryLogAlways("Loading plug-in %s", szPath);
 
 	switch (type)
 	{
 	case EType::Native:
 		{
-			// Load the module, note that this calls ISystem::InitializeEngineModule
-			// Automatically unloads in destructor
-			SNativePluginModule module(path);
-			ICryFactory* pFactory = module.GetFactory();
-			if (pFactory == nullptr)
+			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "LoadPlugin");
+			MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "%s", szPath);
+
+			WIN_HMODULE hModule = static_cast<CSystem*>(gEnv->pSystem)->LoadDynamicLibrary(szPath, false);
+			if (hModule == nullptr)
 			{
-				string errorMessage = string().Format("Plugin load failed - failed to get plug-in factory in %s!", path);
-				CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, errorMessage.c_str());
+				string errorMessage = string().Format("Plugin load failed, could not find dynamic library %s!", szPath);
+				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, errorMessage.c_str());
+				if (notifyUserOnFailure)
+				{
+					CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
+				}
 
 				return false;
 			}
 
-			ICryUnknownPtr pUnk = pFactory->CreateClassInstance();
+			// Create RAII struct to ensure that module is unloaded on failure
+			SNativePluginModule nativeModule(szPath);
+
+			// Find the first Cry::IEnginePlugin instance inside the module
+			PtrFunc_GetHeadToRegFactories getHeadToRegFactories = (PtrFunc_GetHeadToRegFactories)CryGetProcAddress(hModule, "GetHeadToRegFactories");
+			SRegFactoryNode* pFactoryNode = getHeadToRegFactories();
+
+			while (pFactoryNode != nullptr)
+			{
+				if (pFactoryNode->m_pFactory->ClassSupports(cryiidof<Cry::IEnginePlugin>()))
+				{
+					nativeModule.m_pFactory = pFactoryNode->m_pFactory;
+					break;
+				}
+
+				pFactoryNode = pFactoryNode->m_pNext;
+			}
+
+			if (nativeModule.m_pFactory == nullptr)
+			{
+				string errorMessage = string().Format("Plugin load failed - valid ICryPlugin implementation was not found in plugin %s!", szPath);
+				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, errorMessage.c_str());
+				if (notifyUserOnFailure)
+				{
+					CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
+				}
+
+				return false;
+			}
+
+			ICryUnknownPtr pUnk = nativeModule.m_pFactory->CreateClassInstance();
 			std::shared_ptr<Cry::IEnginePlugin> pPlugin = cryinterface_cast<Cry::IEnginePlugin>(pUnk);
 			if (pPlugin == nullptr)
 			{
-				string errorMessage = string().Format("Plugin load failed - failed to create plug-in class instance in %s!", path);
-				CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, errorMessage.c_str());
+				string errorMessage = string().Format("Plugin load failed - failed to create plug-in class instance in %s!", szPath);
+				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, errorMessage.c_str());
+				if (notifyUserOnFailure)
+				{
+					CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
+				}
 
 				return false;
 			}
 
-			m_pluginContainer.emplace_back(pPlugin, std::move(module));
-			module.MarkUnloaded();
+			m_pluginContainer.emplace_back(pPlugin, std::move(nativeModule));
 
 			break;
 		}
@@ -330,19 +312,25 @@ bool CCryPluginManager::LoadPluginFromDisk(EType type, const char* path)
 		{
 			if (gEnv->pMonoRuntime == nullptr)
 			{
-				string errorMessage = string().Format("Plugin load failed - Tried to load Mono plugin %s without having loaded the CryMono module!", path);
-				CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, errorMessage.c_str());
+				string errorMessage = string().Format("Plugin load failed - Tried to load Mono plugin %s without having loaded the CryMono module!", szPath);
+				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, errorMessage.c_str());
+				if (notifyUserOnFailure)
+				{
+					CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
+				}
 
 				return false;
 			}
 
-			std::shared_ptr<Cry::IEnginePlugin> pPlugin = gEnv->pMonoRuntime->LoadBinary(path);
+			std::shared_ptr<Cry::IEnginePlugin> pPlugin = gEnv->pMonoRuntime->LoadBinary(szPath);
 			if (pPlugin == nullptr)
 			{
-				string errorMessage = string().Format("Plugin load failed - Plugin load failed - Could not load Mono binary %s!", path);
-				CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, errorMessage.c_str());
+				string errorMessage = string().Format("Plugin load failed - Plugin load failed - Could not load Mono binary %s!", szPath);
+				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, errorMessage.c_str());
+				if (notifyUserOnFailure)
+				{
+					CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
+				}
 
 				return false;
 			}
@@ -352,18 +340,21 @@ bool CCryPluginManager::LoadPluginFromDisk(EType type, const char* path)
 		}
 	}
 
-	return OnPluginLoaded();
+	return OnPluginLoaded(notifyUserOnFailure);
 }
 
-bool CCryPluginManager::OnPluginLoaded()
+bool CCryPluginManager::OnPluginLoaded(bool notifyUserOnFailure)
 {
 	SPluginContainer& containedPlugin = m_pluginContainer.back();
 
 	if (!containedPlugin.Initialize(*gEnv, m_systemInitParams))
 	{
 		string errorMessage = string().Format("Plugin load failed - Initialization failure, check log for possible errors");
-		CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
 		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, errorMessage.c_str());
+		if (notifyUserOnFailure)
+		{
+			CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
+		}
 
 		if (containedPlugin.m_pPlugin != nullptr)
 		{

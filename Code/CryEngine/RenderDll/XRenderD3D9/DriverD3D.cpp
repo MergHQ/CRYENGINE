@@ -1225,6 +1225,7 @@ void CD3D9Renderer::ResolveSupersampledRendering()
 
 	PROFILE_LABEL_SCOPE("RESOLVE_SUPERSAMPLED");
 
+	const CRenderView* pRenderView = GetGraphicsPipeline().GetCurrentRenderView();
 	const CRenderOutput* pOutput = GetGraphicsPipeline().GetCurrentRenderOutput();
 	CRenderDisplayContext* pDC = GetActiveDisplayContext(); pDC->PostPresent();
 
@@ -1257,7 +1258,7 @@ void CD3D9Renderer::ResolveSupersampledRendering()
 	else
 	{
 		GetGraphicsPipeline().m_DownscalePass->Execute(
-			CRendererResources::s_ptexSceneSpecular,
+			pRenderView->GetColorTarget(),
 			pOutput->GetColorTarget(),
 			CRendererResources::s_renderWidth, CRendererResources::s_renderHeight,
 			pOutput->GetOutputResolution()[0], pOutput->GetOutputResolution()[1],
