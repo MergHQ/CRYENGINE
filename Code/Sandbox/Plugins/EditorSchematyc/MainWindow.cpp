@@ -88,7 +88,7 @@ inline void FormatDetailHeader(Schematyc::CStackString& detailHeader, const Sche
 	}
 }
 
-REGISTER_VIEWPANE_FACTORY(CMainWindow, "Schematyc Editor", "Tools", false)
+REGISTER_VIEWPANE_FACTORY(CMainWindow, "Schematyc Editor (Experimental)", "Tools", false)
 
 CMainWindow::CMainWindow()
 	: CAssetEditor(QStringList { "SchematycEntity", "SchematycLibrary" })

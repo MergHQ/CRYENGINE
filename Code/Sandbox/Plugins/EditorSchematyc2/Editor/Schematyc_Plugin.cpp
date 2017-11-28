@@ -37,24 +37,27 @@ namespace
 
 CSchematycPlugin::CSchematycPlugin()
 {
-	CRY_ASSERT_MESSAGE(GetSchematyc() != nullptr, "Schematyc must be available for editor plug-in to function!");
+	if(gEnv->pSchematyc2)
+	{
+		CRY_ASSERT_MESSAGE(GetSchematyc() != nullptr, "Schematyc must be available for editor plug-in to function!");
 
-	Schematyc2::CMainFrameWnd::RegisterViewClass();
-	Schematyc2::CCryLinkCommands::GetInstance().Register(GetIEditor()->GetSystem()->GetIConsole());
+		Schematyc2::CMainFrameWnd::RegisterViewClass();
+		Schematyc2::CCryLinkCommands::GetInstance().Register(GetIEditor()->GetSystem()->GetIConsole());
 
 
-	// Hook up GUID generator then fix-up script files and resolve broken/deprecated dependencies.
-	CryLogAlways("[SchematycLegacyEditor]: Initializing...");
-	GetSchematyc()->SetGUIDGenerator(Schematyc2::GUIDGenerator::FromGlobalFunction<GenerateGUID>());
-	CryLogAlways("[SchematycLegacyEditor]: Fixing up script files");
-	GetSchematyc()->GetScriptRegistry().RefreshFiles(Schematyc2::SScriptRefreshParams(Schematyc2::EScriptRefreshReason::EditorFixUp));
-	CryLogAlways("[SchematycLegacyEditor]: Compiling script files");
-	GetSchematyc()->GetCompiler().CompileAll();
-	CryLogAlways("[SchematycLegacyEditor]: Initialization complete");
+		// Hook up GUID generator then fix-up script files and resolve broken/deprecated dependencies.
+		CryLogAlways("[SchematycLegacyEditor]: Initializing...");
+		GetSchematyc()->SetGUIDGenerator(Schematyc2::GUIDGenerator::FromGlobalFunction<GenerateGUID>());
+		CryLogAlways("[SchematycLegacyEditor]: Fixing up script files");
+		GetSchematyc()->GetScriptRegistry().RefreshFiles(Schematyc2::SScriptRefreshParams(Schematyc2::EScriptRefreshReason::EditorFixUp));
+		CryLogAlways("[SchematycLegacyEditor]: Compiling script files");
+		GetSchematyc()->GetCompiler().CompileAll();
+		CryLogAlways("[SchematycLegacyEditor]: Initialization complete");
 
-	GetIEditor()->RegisterURIListener(this, "view");
+		GetIEditor()->RegisterURIListener(this, "view");
 
-	m_bRegistered = true;
+		m_bRegistered = true;
+	}
 }
 
 CSchematycPlugin::~CSchematycPlugin()
@@ -86,5 +89,36 @@ void CSchematycPlugin::OnUriReceived(const char* szUri)
 	GetIEditor()->OpenView(uri.GetAdress());
 }
 
-REGISTER_PLUGIN(CSchematycPlugin);
+//REGISTER_PLUGIN(CSchematycPlugin);
 
+// TODO: Temp solution for the case Schematyc plugin was not loaded.
+static IEditor* g_pEditor = nullptr;
+IEditor* GetIEditor() { return g_pEditor; }
+
+DLL_EXPORT IPlugin* CreatePluginInstance(PLUGIN_INIT_PARAM* pInitParam)
+{
+	if (pInitParam->pluginVersion != SANDBOX_PLUGIN_SYSTEM_VERSION)
+	{
+		pInitParam->outErrorCode = IPlugin::eError_VersionMismatch;
+		return nullptr;
+	}
+
+	g_pEditor = pInitParam->pIEditor;
+	ModuleInitISystem(g_pEditor->GetSystem(), "CSchematycPlugin");
+	if (gEnv->pSchematyc2 == nullptr)
+	{
+		return nullptr;
+	}
+	CSchematycPlugin* pPlugin = new CSchematycPlugin();
+
+	RegisterPlugin();
+
+	return pPlugin;
+}
+
+DLL_EXPORT void DeletePluginInstance(IPlugin* pPlugin)
+{
+	UnregisterPlugin();
+	delete pPlugin;
+}
+// ~TODO

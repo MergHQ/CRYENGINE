@@ -228,6 +228,7 @@ extern HMODULE gDLLHandle;
 #endif
 
 //static int g_sysSpecChanged = false;
+int sys_SchematycPlugin;
 
 const char* g_szLvlResExt = "_LvlRes.txt";
 
@@ -1033,22 +1034,28 @@ bool CSystem::InitSchematyc(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
-	if (!InitializeEngineModule(startupParams, "CrySchematyc", cryiidof<ICrySchematycCore>(), true))
-		return false;
-
-	if (m_env.pSchematyc == nullptr)
+	if (sys_SchematycPlugin == 0 || sys_SchematycPlugin == 1)
 	{
-		CryFatalError("Error initializing Schematyc!");
-		return false;
+		if (!InitializeEngineModule(startupParams, "CrySchematyc2", cryiidof<Schematyc2::IFramework>(), true))
+			return false;
+
+		if (m_env.pSchematyc2 == nullptr)
+		{
+			CryFatalError("Error initializing Schematyc!");
+			return false;
+		}
 	}
 
-	if (!InitializeEngineModule(startupParams, "CrySchematyc2", cryiidof<Schematyc2::IFramework>(), true))
-		return false;
-
-	if (m_env.pSchematyc2 == nullptr)
+	if (sys_SchematycPlugin == 0 || sys_SchematycPlugin == 2)
 	{
-		CryFatalError("Error initializing Schematyc 2!");
-		return false;
+		if (!InitializeEngineModule(startupParams, "CrySchematyc", cryiidof<ICrySchematycCore>(), true))
+			return false;
+
+		if (m_env.pSchematyc == nullptr)
+		{
+			CryFatalError("Error initializing experimental Schematyc!");
+			return false;
+		}
 	}
 
 	return true;
@@ -5223,6 +5230,12 @@ void CSystem::CreateSystemVars()
 	              "2 = Output full statistics including loading time and memory allocations with call stack info");
 
 	REGISTER_CVAR_CB(sys_ProfileLevelLoadingDump, 0, VF_CHEAT, "Output level loading dump stats into log\n", OnLevelLoadingDump);
+
+	REGISTER_CVAR(sys_SchematycPlugin, 0, VF_REQUIRE_APP_RESTART,
+		"Set whether default Schematyc and/or experimental plugin is loaded\n"
+		"0 = Both plugins\n"
+		"1 = Loads default Schematyc plugin only\n"
+		"2 = Loads experimental Schematyc plugin only");
 
 	assert(m_env.pConsole);
 	m_env.pConsole->CreateKeyBind("alt_f12", "Screenshot");

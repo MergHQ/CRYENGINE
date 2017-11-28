@@ -509,7 +509,6 @@ static constexpr CryGUID EntityPackageGUID = "{FAA7837E-1310-454D-808B-99BDDC695
 //////////////////////////////////////////////////////////////////////////
 void CEntityClassRegistry::RegisterSchematycEntityClass()
 {
-	assert(gEnv->pSchematyc);
 	if (!gEnv->pSchematyc)
 		return;
 
