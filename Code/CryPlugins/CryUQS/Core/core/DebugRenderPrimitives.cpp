@@ -367,7 +367,7 @@ namespace UQS
 		void CDebugRenderPrimitive_Cylinder::Draw(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorF& color, bool bHighlight)
 		{
 			const bool bVisible = bHighlight ? (Pulsate() > 1.5f) : true;
-			
+
 			IRenderAuxGeom* pAux = GetRenderAuxGeom();
 			if (bVisible && pAux)
 			{
@@ -424,7 +424,7 @@ namespace UQS
 			{
 				SDrawTextInfo ti;
 				ti.scale.set(size, size);
-				ti.flags = eDrawText_FixedSize | eDrawText_800x600;
+				ti.flags = eDrawText_FixedSize;
 				if (SCvars::debugDrawZTestOn)
 				{
 					ti.flags |= eDrawText_DepthTest;
