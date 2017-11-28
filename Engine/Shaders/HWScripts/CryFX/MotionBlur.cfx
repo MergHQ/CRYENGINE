@@ -27,6 +27,13 @@ float4 vRadBlurParam;
 // Motion Blur
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+Texture2D<float4> MoBlur_Targ              : register(t0); 
+Texture2D<float4> MoBlur_Vel               : register(t1);
+Texture2D<float4> MoBlur_VelTiles          : register(t2); 
+
+SamplerState MoBlur_TargSampler            : register(s0); //linearClamp
+SamplerState MoBlur_VelSampler             : register(s1); //pointClamp
+
 float2 UnpackLengthAndDepth( float2 packedLenDepth )
 {
 	packedLenDepth.x = (packedLenDepth.x * packedLenDepth.x) / 32.0f;
@@ -69,12 +76,12 @@ float4 MotionBlurPS(vtxOut IN) : SV_Target0
 	
 	float2 screenTC = MapViewportToRaster(IN.baseTC.xy);
 
-	float3 maxVel = tex2Dlod(_tex2, float4(screenTC.xy + tileOffset * vMotionBlurParams.xy, 0, 0));
+	float3 maxVel = GetTexture2DLod(MoBlur_VelTiles, MoBlur_VelSampler, float4(screenTC.xy + tileOffset * vMotionBlurParams.xy, 0, 0));
 	maxVel.xy = DecodeMotionVector(maxVel.xy);
 	const float2 blurStep = maxVel.xy * weightStep;
  
- 	const float2 centerLenDepth = UnpackLengthAndDepth(tex2Dlod(_tex1, float4(screenTC.xy, 0, 0)).zw);
-	const float4 sampleCenter = tex2Dlod(_tex0, float4(screenTC.xy, 0, 0));
+ 	const float2 centerLenDepth = UnpackLengthAndDepth(GetTexture2DLod(MoBlur_Vel, MoBlur_VelSampler, float4(screenTC.xy, 0, 0)).zw);
+	const float4 sampleCenter = GetTexture2DLod(MoBlur_Targ, MoBlur_TargSampler, float4(screenTC.xy, 0, 0));
 	
 	// Early out when no motion (disabled to have more predictable costs)
 	//if (length(maxVel.xy) < 0.0001f) return float4(sampleCenter.rgb, 1.0f);
@@ -91,8 +98,8 @@ float4 MotionBlurPS(vtxOut IN) : SV_Target0
 		tc0 = MapViewportToRaster(tc0);
 		tc1 = MapViewportToRaster(tc1);
 	
-		float2 lenDepth0 = UnpackLengthAndDepth(tex2Dlod(_tex1, float4(tc0.xy, 0, 0)).zw);
-		float2 lenDepth1 = UnpackLengthAndDepth(tex2Dlod(_tex1, float4(tc1.xy, 0, 0)).zw);
+		float2 lenDepth0 = UnpackLengthAndDepth(GetTexture2DLod(MoBlur_Vel, MoBlur_VelSampler, float4(tc0.xy, 0, 0)).zw);
+		float2 lenDepth1 = UnpackLengthAndDepth(GetTexture2DLod(MoBlur_Vel, MoBlur_VelSampler, float4(tc1.xy, 0, 0)).zw);
 
 		float weight0 = MBSampleWeight(centerLenDepth.y, lenDepth0.y, centerLenDepth.x, lenDepth0.x, s, 1.0 / length(blurStep));
 		float weight1 = MBSampleWeight(centerLenDepth.y, lenDepth1.y, centerLenDepth.x, lenDepth1.x, s, 1.0 / length(blurStep));
@@ -101,8 +108,8 @@ float4 MotionBlurPS(vtxOut IN) : SV_Target0
  		weight0 = all(mirror) ? weight1 : weight0;
  		weight1 = any(mirror) ? weight1 : weight0;
 
-		acc += float4(tex2Dlod(_tex0, float4(tc0.xy, 0, 0)).rgb, 1.0f) * weight0;
-		acc += float4(tex2Dlod(_tex0, float4(tc1.xy, 0, 0)).rgb, 1.0f) * weight1;
+		acc += float4(GetTexture2DLod(MoBlur_Targ, MoBlur_TargSampler, float4(tc0.xy, 0, 0)).rgb, 1.0f) * weight0;
+		acc += float4(GetTexture2DLod(MoBlur_Targ, MoBlur_TargSampler, float4(tc1.xy, 0, 0)).rgb, 1.0f) * weight1;
 	}
 	acc.rgba *= weightStep;
 	
@@ -123,10 +130,16 @@ technique MotionBlur
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // Velocity buffers pre-processing techniques
 
+Texture2D<float4> PkVel_LinDepth           : register(t0); 
+Texture2D<float4> PkVel_VelObj             : register(t1); 
+
+// This sampler is used by the preceding textures, this pattern is repeated
+SamplerState PkVel_Sampler                 : register(s0); //pointClamp
+
 pixout PackVelocitiesPS(vtxOutWPOS IN) 
 {	
 	pixout OUT = (pixout) 0;
-	const float fDepth = GetLinearDepth(_tex0, IN.baseTC.xy).x;
+	const float fDepth = GetLinearDepth(PkVel_LinDepth, int2(IN.baseTC.xy)).x;
 	const float3 vPosWS = WorldViewPos.xyz + IN.CamVec.xyz * fDepth; 
 
 	float3 vPrevPos = mViewProjPrev[0].xyw * vPosWS.x + (mViewProjPrev[1].xyw * vPosWS.y + (mViewProjPrev[2].xyw * vPosWS.z + mViewProjPrev[3].xyw)); // <=> mul(float4(vPosWS, 1.0), mViewProjPrev).xyw;
@@ -134,7 +147,7 @@ pixout PackVelocitiesPS(vtxOutWPOS IN)
 
 	float2 vCurrPos = IN.baseTC.xy;
 	
-	const float4 vVelocityObjs = tex2D(_tex2, IN.baseTC.xy);
+	const float4 vVelocityObjs = GetTexture2D(PkVel_VelObj, PkVel_Sampler, IN.baseTC.xy);
 	vCurrPos.xy = (vVelocityObjs.x == 0) ? vCurrPos.xy : 0;
 	vPrevPos.xy = (vVelocityObjs.x == 0) ? vPrevPos.xy : DecodeMotionVector(vVelocityObjs); 
 	
@@ -200,27 +213,30 @@ technique VelocityTileGen
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
+Texture2D<float4> VTileN_VelTile             : register(t0); 
+SamplerState VTileN_Sampler                  : register(s0); //pointClamp
+
 
 float4 VelocityTileNeighborhoodPS(vtxOut IN) : SV_Target0
 {
-	float3 maxVel = tex2D(_tex0, IN.baseTC.xy + float2(0, 0) * vMotionBlurParams.xy).xyz;
-	float3 vel = tex2D(_tex0, IN.baseTC.xy + float2( 0, -1) * vMotionBlurParams.xy).xyz;
+	float3 maxVel = GetTexture2D(VTileN_VelTile, VTileN_Sampler, IN.baseTC.xy + float2(0, 0) * vMotionBlurParams.xy).xyz;
+	float3 vel = GetTexture2D(VTileN_VelTile, VTileN_Sampler, IN.baseTC.xy + float2( 0, -1) * vMotionBlurParams.xy).xyz;
 	if (vel.b > maxVel.b) maxVel = vel;
-	vel = tex2D(_tex0, IN.baseTC.xy + float2(-1,  0) * vMotionBlurParams.xy).xyz;
+	vel = GetTexture2D(VTileN_VelTile, VTileN_Sampler, IN.baseTC.xy + float2(-1,  0) * vMotionBlurParams.xy).xyz;
 	if (vel.b > maxVel.b) maxVel = vel;
-	vel = tex2D(_tex0, IN.baseTC.xy + float2( 1,  0) * vMotionBlurParams.xy).xyz;
+	vel = GetTexture2D(VTileN_VelTile, VTileN_Sampler, IN.baseTC.xy + float2( 1,  0) * vMotionBlurParams.xy).xyz;
 	if (vel.b > maxVel.b) maxVel = vel;
-	vel = tex2D(_tex0, IN.baseTC.xy + float2( 0,  1) * vMotionBlurParams.xy).xyz;
+	vel = GetTexture2D(VTileN_VelTile, VTileN_Sampler, IN.baseTC.xy + float2( 0,  1) * vMotionBlurParams.xy).xyz;
 	if (vel.b > maxVel.b) maxVel = vel;
 	
 	// For diagonal tiles, check if the maximum velocity affects the center tile
-	vel = tex2D(_tex0, IN.baseTC.xy + float2(-1, -1) * vMotionBlurParams.xy).xyz;
+	vel = GetTexture2D(VTileN_VelTile, VTileN_Sampler, IN.baseTC.xy + float2(-1, -1) * vMotionBlurParams.xy).xyz;
 	if (vel.b > maxVel.b && dot(DecodeMotionVector(vel.xy).xy, -float2(-1, -1)) > 0) maxVel = vel;
-	vel = tex2D(_tex0, IN.baseTC.xy + float2( 1, -1) * vMotionBlurParams.xy).xyz;
+	vel = GetTexture2D(VTileN_VelTile, VTileN_Sampler, IN.baseTC.xy + float2( 1, -1) * vMotionBlurParams.xy).xyz;
 	if (vel.b > maxVel.b && dot(DecodeMotionVector(vel.xy).xy, -float2( 1, -1)) > 0) maxVel = vel;
-	vel = tex2D(_tex0, IN.baseTC.xy + float2(-1,  1) * vMotionBlurParams.xy).xyz;
+	vel = GetTexture2D(VTileN_VelTile, VTileN_Sampler, IN.baseTC.xy + float2(-1,  1) * vMotionBlurParams.xy).xyz;
 	if (vel.b > maxVel.b && dot(DecodeMotionVector(vel.xy).xy, -float2(-1,  1)) > 0) maxVel = vel;
-	vel = tex2D(_tex0, IN.baseTC.xy + float2( 1,  1) * vMotionBlurParams.xy).xyz;
+	vel = GetTexture2D(VTileN_VelTile, VTileN_Sampler, IN.baseTC.xy + float2( 1,  1) * vMotionBlurParams.xy).xyz;
 	if (vel.b > maxVel.b && dot(DecodeMotionVector(vel.xy).xy, -float2( 1,  1)) > 0) maxVel = vel;
 	
 	return float4(maxVel, 0);

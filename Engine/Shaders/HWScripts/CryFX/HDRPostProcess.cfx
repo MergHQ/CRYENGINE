@@ -876,17 +876,13 @@ void FogPassCommon(
 
 float4 SVO_AirTextureScale;
 
-Texture2D FOG_smp_Air_RGBA_Min    : register(t13);
-Texture2D FOG_smp_Air_Depths      : register(t14);
-Texture2D FOG_smp_Air_RGBA_Max    : register(t15);
+Texture2D FOG_smp_Air_RGBA_Min    : register(t12);
+Texture2D FOG_smp_Air_Depths      : register(t13);
+Texture2D FOG_smp_Air_RGBA_Max    : register(t14);
 SamplerState FOG_SStatePC         : register(s0);
 
 pixout GetSvoGiFog(vert2fragFog IN, pixout OUT)
 {
-	sampler2D smp_Air_RGBA_Min = _texC;
-	sampler2D smp_Air_Depths = _texD;
-	sampler2D smp_Air_RGBA_Max = _texE;
-
 	// Blend in SVO atmospheric effects (with upscale)
 	int nRange = 1;
 
