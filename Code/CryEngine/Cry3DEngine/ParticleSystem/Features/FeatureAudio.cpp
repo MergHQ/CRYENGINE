@@ -191,7 +191,7 @@ private:
 
 	void Trigger(CryAudio::ControlId id, cstr proxyName, const Vec3& position)
 	{
-		const CryAudio::SExecuteTriggerData data(proxyName, m_occlusionType, position, true, id);
+		const CryAudio::SExecuteTriggerData data(id, proxyName, m_occlusionType, position, INVALID_ENTITYID, true);
 		gEnv->pAudioSystem->ExecuteTriggerEx(data);
 	}
 

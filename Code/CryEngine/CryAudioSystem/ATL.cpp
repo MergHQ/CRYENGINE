@@ -917,7 +917,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 				result = pNewObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
 
-				if (pRequestData->bSetCurrentEnvironments)
+				if (pRequestData->setCurrentEnvironments)
 				{
 					SetCurrentEnvironmentsOnObject(pNewObject, INVALID_ENTITYID, pRequestData->transformation.GetPosition());
 				}
@@ -1075,7 +1075,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			result = pObject->HandleSetTransformation(pRequestData->transformation, 0.0f);
 			CRY_ASSERT(result == ERequestStatus::Success);
 
-			if (pRequestData->bSetCurrentEnvironments)
+			if (pRequestData->setCurrentEnvironments)
 			{
 				SetCurrentEnvironmentsOnObject(pObject, INVALID_ENTITYID, pRequestData->transformation.GetPosition());
 			}
