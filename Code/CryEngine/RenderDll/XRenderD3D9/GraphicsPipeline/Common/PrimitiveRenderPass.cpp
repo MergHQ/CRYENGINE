@@ -17,12 +17,13 @@ CGraphicsPipeline& CRenderPassBase::GetGraphicsPipeline() const
 }
 
 SCompiledRenderPrimitive::SCompiledRenderPrimitive(SCompiledRenderPrimitive&& other)
-	: m_stencilRef(std::move(other.m_stencilRef))
-	, m_pVertexInputSet(std::move(other.m_pVertexInputSet))
-	, m_pIndexInputSet(std::move(other.m_pIndexInputSet))
-	, m_pPipelineState(std::move(other.m_pPipelineState))
+	: m_pPipelineState(std::move(other.m_pPipelineState))
 	, m_pResourceLayout(std::move(other.m_pResourceLayout))
 	, m_pResources(std::move(other.m_pResources))
+	, m_pVertexInputSet(std::move(other.m_pVertexInputSet))
+	, m_pIndexInputSet(std::move(other.m_pIndexInputSet))
+	, m_inlineConstantBuffers(std::move(other.m_inlineConstantBuffers))
+	, m_stencilRef(std::move(other.m_stencilRef))
 	, m_drawInfo(std::move(other.m_drawInfo))
 {
 }
@@ -38,6 +39,8 @@ void SCompiledRenderPrimitive::Reset()
 
 	m_pPipelineState.reset();
 	m_pResourceLayout.reset();
+
+	m_inlineConstantBuffers.fill(SDeviceObjectHelpers::SConstantBufferBindInfo());
 }
 
 CRenderPrimitive::SPrimitiveGeometry::SPrimitiveGeometry()
@@ -256,6 +259,7 @@ CRenderPrimitive::EDirtyFlags CRenderPrimitive::Compile(const CPrimitiveRenderPa
 			assert(cBuffers.size() <= m_inlineConstantBuffers.max_size());
 			size_t sz = std::min(m_inlineConstantBuffers.max_size(),cBuffers.size());
 			std::copy_n(cBuffers.begin(), sz, m_inlineConstantBuffers.begin());
+			std::fill(m_inlineConstantBuffers.begin() + sz, m_inlineConstantBuffers.end(), SDeviceObjectHelpers::SConstantBufferBindInfo());
 		}
 
 		m_dirtyMask = dirtyMask = eDirty_None;

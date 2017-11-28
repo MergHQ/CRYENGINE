@@ -240,7 +240,7 @@ dll_string StringListQuickSearchSelector(const SResourceSelectorContext& context
 	return "";
 }
 
-REGISTER_RESOURCE_SELECTOR("StringListStaticQuickSearch", StringListStaticQuickSearchSelector, "icons:General/Search.ico")
-REGISTER_RESOURCE_SELECTOR("StringListQuickSearch", StringListQuickSearchSelector, "icons:General/Search.ico")
+REGISTER_RESOURCE_SELECTOR("StringListStaticSearch", StringListStaticQuickSearchSelector, "icons:General/Search.ico")
+REGISTER_RESOURCE_SELECTOR("StringListSearch", StringListQuickSearchSelector, "icons:General/Search.ico")
 } // SerializationUtils
 } // Schematyc

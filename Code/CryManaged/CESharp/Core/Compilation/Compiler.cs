@@ -26,13 +26,13 @@ namespace CryEngine.Compilation
 			}
 		}
 
-		public static Assembly CompileCSharpSourceFiles(string[] sourceFiles, out string compileException)
+		public static Assembly CompileCSharpSourceFiles(string assemblyPath, string[] sourceFiles, out string compileException)
 		{
 			Assembly assembly = null;
 			compileException = null;
 			try
 			{
-				assembly = CompileSourceFiles(CodeDomProvider.CreateProvider("CSharp"), sourceFiles);
+				assembly = CompileSourceFiles(CodeDomProvider.CreateProvider("CSharp"), assemblyPath, sourceFiles);
 			}
 			catch(CompilationFailedException ex)
 			{
@@ -45,16 +45,7 @@ namespace CryEngine.Compilation
 			return assembly;
 		}
 
-		public static void CompileAndLoadFromSourceFiles(CodeDomProvider provider, string searchPattern)
-		{
-			var sourceFiles = Directory.GetFiles(Engine.DataDirectory, searchPattern, SearchOption.AllDirectories);
-			if(sourceFiles.Length == 0)
-				return;
-
-			CompileSourceFiles(provider, sourceFiles);
-		}
-
-		public static Assembly CompileSourceFiles(CodeDomProvider provider, string[] sourceFiles)
+		public static Assembly CompileSourceFiles(CodeDomProvider provider, string assemblyPath, string[] sourceFiles)
 		{
 			using(provider)
 			{
@@ -73,10 +64,8 @@ namespace CryEngine.Compilation
 
 				if(!compilerParameters.GenerateInMemory)
 				{
-					var scriptsDir = Path.Combine(Directory.GetCurrentDirectory(), "user", "scripts");
-					var dllName = "CRYENGINE.CSharp.dll";
-					Directory.CreateDirectory(scriptsDir);
-					compilerParameters.OutputAssembly = Path.Combine(scriptsDir, dllName);
+					Directory.CreateDirectory(Path.GetDirectoryName(assemblyPath));
+					compilerParameters.OutputAssembly = Path.Combine(assemblyPath);
 				}
 
 				AddReferencedAssembliesForSourceFiles(sourceFiles, ref compilerParameters);

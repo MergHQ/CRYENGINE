@@ -323,7 +323,7 @@ void CNetCVars::Stall(IConsoleCmdArgs* pArgs)
 	{
 		NetLogAlways("Sleeping for %f seconds", -stallTime);
 		SCOPED_GLOBAL_LOCK;
-		Sleep((DWORD)(-1000.0f * stallTime));
+		CrySleep((DWORD)(-1000.0f * stallTime));
 	}
 }
 #endif

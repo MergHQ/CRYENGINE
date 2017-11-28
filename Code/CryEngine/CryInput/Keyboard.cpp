@@ -15,7 +15,7 @@
 
 #ifdef USE_DXINPUT
 
-int CKeyboard::s_disableWinKeys = 1;
+int CKeyboard::s_disableWinKeys = 0;
 CKeyboard* CKeyboard::s_instance = NULL;
 
 //////////////////////////////////////////////////////////////////////

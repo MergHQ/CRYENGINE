@@ -23,7 +23,14 @@
 
 	#if defined(USE_CRY_ASSERT)
 
-void CryAssertSetGlobalFlagAddress(int*);
+enum class ECryAssertLevel
+{
+	Disabled,
+	Enabled,
+	FatalErrorOnAssert,
+	DebugBreakOnAssert
+};
+
 bool CryAssertIsEnabled();
 void CryAssertTrace(const char*, ...);
 void CryLogAssert(const char*, const char*, unsigned int, bool*);

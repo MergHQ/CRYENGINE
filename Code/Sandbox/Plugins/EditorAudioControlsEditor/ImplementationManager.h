@@ -17,9 +17,9 @@ public:
 	CImplementationManager();
 	virtual ~CImplementationManager() override;
 
-	bool                LoadImplementation();
-	void                Release();
-	IEditorImpl*        GetImplementation();
+	bool         LoadImplementation();
+	void         Release();
+	IEditorImpl* GetImplementation();
 
 	CCrySignal<void()> signalImplementationAboutToChange;
 	CCrySignal<void()> signalImplementationChanged;

@@ -25,6 +25,8 @@
 #include "ExtensionSystem/CryPluginManager.h"
 #include "UserAnalytics/UserAnalyticsSystem.h"
 
+#include <bitset>
+
 struct IConsoleCmdArgs;
 class CServerThrottle;
 struct ICryFactoryRegistryImpl;
@@ -153,7 +155,6 @@ struct SSystemCVars
 	int sys_simple_http_base_port;
 #endif
 
-	int sys_asserts;
 	int sys_log_asserts;
 	int sys_error_debugbreak;
 
@@ -560,6 +561,12 @@ private:
 	bool CloseRenderLibrary(const char* t_rend);
 
 	//@}
+
+	//! @name Unload routines
+	//@{
+	void UnloadSchematycModule();
+	//@}
+
 	void Strange();
 	bool ParseSystemConfig(string& sFileName);
 
@@ -789,7 +796,7 @@ private: // ------------------------------------------------------
 	ICVar* m_rStencilBits;
 	ICVar* m_rFullscreen;
 	ICVar* m_rFullsceenNativeRes;
-	ICVar* m_rFullscreenWindow;
+	ICVar* m_rWindowState;
 	ICVar* m_rDriver;
 	ICVar* m_pPhysicsLibrary;
 	ICVar* m_rDisplayInfo;
@@ -947,20 +954,18 @@ public:
 	// CryAssert and error related.
 	virtual bool RegisterErrorObserver(IErrorObserver* errorObserver) override;
 	bool         UnregisterErrorObserver(IErrorObserver* errorObserver) override;
-	virtual void OnAssert(const char* condition, const char* message, const char* fileName, unsigned int fileLineNumber) override;
+
 	void         OnFatalError(const char* message);
 
-	bool         IsAssertDialogVisible() const override;
-	void         SetAssertVisible(bool bAssertVisble) override;
-	int*         GetAssertFlagAddress() const override
-	{
-#if !defined(_RELEASE)
-		return &g_cvars.sys_asserts;
-#else
-		return nullptr;
+#if defined(USE_CRY_ASSERT)
+	virtual void OnAssert(const char* condition, const char* message, const char* fileName, unsigned int fileLineNumber) override;
+
+	virtual bool IsAssertDialogVisible() const override;
+	virtual bool AreAssertsEnabledForModule(uint32 moduleId) override;
+	virtual void DisableAssertionsForModule(uint32 moduleId) override;
+
+	virtual void         SetAssertVisible(bool bAssertVisble) override;
 #endif
-	}
-	//////////////////////////////////////////////////////////////////////////
 
 	virtual void ClearErrorMessages() override
 	{
@@ -1033,7 +1038,11 @@ protected: // -------------------------------------------------------------
 	std::unordered_map<uint32, bool> m_mapWarningOnceAlreadyPrinted;
 	CryMutex						 m_mapWarningOnceMutex;
 
-	bool           m_bIsAsserting = false;
+#if defined(USE_CRY_ASSERT)
+	bool m_isAsserting = false;
+	// Used to check if CryAssert is enabled for a specific module
+	std::bitset<eCryM_Num> m_disabledAssertModules;
+#endif
 
 	friend struct SDefaultValidator;
 	friend struct SCryEngineFoldersLoader;

@@ -240,7 +240,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.bBootProfilerEnabledFrames = false;
 	m_env.callbackStartSection = 0;
 	m_env.callbackEndSection = 0;
-	m_env.bIgnoreAllAsserts = false;
+
 	m_env.bUnattendedMode = false;
 	m_env.bTesting = false;
 
@@ -654,8 +654,7 @@ void CSystem::ShutDown()
 		m_env.pPhysicalWorld->SetPhysicsEventClient(0);
 	}
 
-	UnloadEngineModule("CrySchematyc");
-	UnloadEngineModule("CrySchematyc2");
+	UnloadSchematycModule();
 
 	if (gEnv->pGameFramework != nullptr)
 	{
@@ -832,7 +831,7 @@ void CSystem::ShutDown()
 	delete gEnv->pSystemScheduler;
 #endif // defined(MAP_LOADING_SLICING)
 
-	SAFE_DELETE(m_env.pReflection);
+	UnloadEngineModule("CryReflection");
 
 #if CAPTURE_REPLAY_LOG
 	CryGetIMemReplay()->Stop();
@@ -1082,7 +1081,7 @@ public:
 					//int timeSleep = (int)((m_timeTarget-gEnv->pTimer->GetAsyncTime()).GetMilliSeconds()*0.9f);
 					//Sleep(max(0,timeSleep));
 				}
-				if (!stepped) Sleep(0);
+				if (!stepped) CrySleep(0);
 				m_FrameDone.Set();
 #ifdef ENABLE_LW_PROFILERS
 				QueryPerformanceCounter(&stepEnd);
@@ -1276,7 +1275,7 @@ void CSystem::SleepIfInactive()
 				if (gEnv->pGameFramework->IsInTimeDemo())
 					break;
 			}
-			Sleep(5);
+			CrySleep(5);
 		}
 	}
 #endif
@@ -1422,7 +1421,7 @@ struct SBreakListenerTask : public IThread
 	{
 		do
 		{
-			Sleep(200);
+			CrySleep(200);
 			if (++m_nBreakIdle > 1)
 			{
 				WriteLock lock(g_lockInput);
@@ -2781,6 +2780,15 @@ void CSystem::OnPLMEvent(EPLM_Event event)
 	}
 }
 #endif
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::UnloadSchematycModule()
+{
+	UnloadEngineModule("CrySchematyc");
+	UnloadEngineModule("CrySchematyc2");
+
+	gEnv->pSchematyc2 = nullptr;
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::Strange()

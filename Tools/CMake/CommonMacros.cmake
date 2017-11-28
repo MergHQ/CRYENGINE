@@ -754,6 +754,7 @@ macro(set_editor_module_flags)
 	target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR /bigobj /wd4251 /wd4275)
 	target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/Sandbox/Libs/CryQt")
 	target_link_libraries(${THIS_PROJECT} PRIVATE CryQt)
+	set_property(TARGET ${THIS_PROJECT} PROPERTY EXCLUDE_FROM_DEFAULT_BUILD_RELEASE TRUE)
 endmacro()
 
 function(CryEditor target)

@@ -23,6 +23,7 @@ class CManualFrameStepController final
 	: public IManualFrameStepController
 	, public CNetMessageSinkHelper<CManualFrameStepController, INetMessageSink>
 	, public IInputEventListener
+	, public ISystemEventListener
 {
 private:
 	enum : uint8
@@ -88,6 +89,10 @@ private:
 	// IInputEventListener
 	virtual bool OnInputEvent(const SInputEvent& inputEvent) override;
 	// ~IInputEventListener
+
+	// ISystemEventListener
+	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
+	// ~ISystemEventListener
 
 	static void GetFramesFolder(stack_string& outFolder);
 	static void DisplayDebugInfo();

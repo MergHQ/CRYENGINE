@@ -17,8 +17,16 @@ void AbstractMeshElement::ValidateMesh()
 	{
 		GenMesh();
 		
-		if (m_vertexBuffer != ~0u) gcpRendD3D->m_DevBufMan.Destroy(m_vertexBuffer);
-		if (m_indexBuffer  != ~0u) gcpRendD3D->m_DevBufMan.Destroy(m_indexBuffer);
+		if (m_vertexBuffer != ~0u) 
+		{
+			gcpRendD3D->m_DevBufMan.Destroy(m_vertexBuffer);
+			m_vertexBuffer = ~0u;
+		}
+		if (m_indexBuffer != ~0u) 
+		{
+			gcpRendD3D->m_DevBufMan.Destroy(m_indexBuffer);
+			m_indexBuffer = ~0u;
+		}
 
 		if (!m_vertices.empty())
 		{

@@ -86,8 +86,6 @@ private:
 };
 typedef std::vector<SEntityLoadParams>              TEntityLoadParamsContainer;
 
-typedef CSaltHandle<unsigned short, unsigned short> CEntityHandle;
-
 // Mutatable set is a specialized customization of the std::set where items can be added or removed within foreach iteration.
 template<typename T>
 class CMutatableSet
@@ -368,9 +366,9 @@ public:
 	CGeomCacheAttachmentManager*     GetGeomCacheAttachmentManager() const     { return m_pGeomCacheAttachmentManager; }
 	CCharacterBoneAttachmentManager* GetCharacterBoneAttachmentManager() const { return m_pCharacterBoneAttachmentManager; }
 
-	static ILINE uint16              IdToIndex(const EntityId id)              { return id & 0xffff; }
-	static ILINE CSaltHandle<>       IdToHandle(const EntityId id)             { return CSaltHandle<>(id >> 16, id & 0xffff); }
-	static ILINE EntityId            HandleToId(const CSaltHandle<> id)        { return (((uint32)id.GetSalt()) << 16) | ((uint32)id.GetIndex()); }
+	static EntityIndex         IdToIndex(const EntityId id) { return CSaltHandle::GetHandleFromId(id).GetIndex(); }
+	static CSaltHandle         IdToHandle(const EntityId id) { return CSaltHandle::GetHandleFromId(id); }
+	static EntityId            HandleToId(const CSaltHandle id) { return id.GetId(); }
 
 	EntityId                         GenerateEntityId(bool bStaticId);
 
@@ -434,7 +432,7 @@ private: // -----------------------------------------------------------------
 	std::array<std::vector<IEntitySystemSink*>, (size_t)SinkEventSubscriptions::Count> m_sinks;
 	
 	ISystem*                 m_pISystem;
-	std::array<CEntity*, CSaltBufferArray<>::GetTSize()>    m_EntityArray;                 // [id.GetIndex()]=CEntity
+	std::array<CEntity*, CSaltBufferArray::GetTSize()>    m_EntityArray;                 // [id.GetIndex()]=CEntity
 	DeletedEntities          m_deletedEntities;
 	std::vector<CEntity*>    m_deferredUsedEntities;
 
@@ -443,7 +441,7 @@ private: // -----------------------------------------------------------------
 
 	EntityNamesMap           m_mapEntityNames;         // Map entity name to entity ID.
 
-	CSaltBufferArray<>       m_EntitySaltBuffer;            // used to create new entity ids (with uniqueid=salt)
+	CSaltBufferArray        m_EntitySaltBuffer;            // used to create new entity ids (with uniqueid=salt)
 	//////////////////////////////////////////////////////////////////////////
 
 	// Entity timers.

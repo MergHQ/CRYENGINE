@@ -1207,14 +1207,12 @@ namespace Schematyc2
 					}
 				case ContextMenuItem::FIND_REFEFERENCES_IN_WHOLE_REGISTRY:
 					{
-						// TODO: Implement in bridge.
-						/*const TScriptFile* pFile = GetItemScriptFile(*pItem);
+						const TScriptFile* pFile = GetItemScriptFile(*pItem);
 						SGUID refGuid = pItem->GetGUID();
 						SGUID refGoBack = pItem->GetGUID();
 						const char* szItemName = pItem->GetText();
 	
-					  Schematyc2::LibUtils::FindAndLogReferences(refGuid, refGoBack, szItemName, pFile, true);*/
-					// ~TODO
+						Schematyc2::LibUtils::FindAndLogReferences(refGuid, refGoBack, szItemName, pFile, true);
 						break;
 					}
 				}

@@ -212,9 +212,12 @@ public:
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-		counts.emitters.alive += 1.f;
+		counts.emitters.alloc += 1.f;
 		if (IsActive())
+		{
+			counts.emitters.alive += 1.f;
 			counts.emitters.updated += 1.f;
+		}
 		if (TimeNotRendered() == 0.f)
 			counts.emitters.rendered += 1.f;
 

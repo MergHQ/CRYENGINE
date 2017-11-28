@@ -10,6 +10,8 @@
 #include <CryCore/Platform/CryWindows.h>
 
 // BAI navigation file version history
+// Changes in version 11
+// - Fixed saving/loading markups when its' container is dynamic
 // Changes in version 10
 // - Navigation markup volumes and markup volumes data are stored
 // Changes in version 9
@@ -19,7 +21,7 @@
 //    * volumes stored only onces, instead of storing them together with each mesh.
 // Changes in version 8
 //  - struct MNM::Tile::STriangle layout is changed - now it has triangle flags
-#define BAI_NAVIGATION_FILE_VERSION 10
+#define BAI_NAVIGATION_FILE_VERSION 11
 
 #define MAX_NAME_LENGTH             512
 #if defined(SW_NAVMESH_USE_GUID)
@@ -2184,6 +2186,7 @@ void NavigationSystem::Clear()
 		if (!m_markupVolumes.index_free(i))
 			DestroyMarkupVolume(NavigationVolumeID(m_markupVolumes.get_index_id(i)));
 	}
+	m_markupVolumes.clear();
 	m_markupsData.clear();
 
 	m_volumesManager.Clear();
@@ -3087,7 +3090,18 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 				std::vector<Vec3> markupVerticesBuffer;
 
 				uint32 markupsCount;
+				uint32 markupsCapacity;
 				file.ReadType(&markupsCount);
+				file.ReadType(&markupsCapacity);
+
+				if (markupsCapacity > m_markupVolumes.capacity())
+				{
+					m_markupVolumes.grow(markupsCapacity - m_markupVolumes.capacity());
+				}
+				if (markupsCapacity > m_markupsData.capacity())
+				{
+					m_markupsData.grow(markupsCapacity - m_markupsData.capacity());
+				}
 
 				for (uint32 idx = 0; idx < markupsCount; ++idx)
 				{
@@ -3397,12 +3411,17 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 			// Read markups data
 			uint32 dataCount;
 			file.ReadType(&dataCount);
+
+			CRY_ASSERT(m_markupsData.capacity() == m_markupVolumes.capacity());
+			CRY_ASSERT(dataCount <= m_markupsData.capacity());
+
 			for (uint32 idx = 0; idx < dataCount; ++idx)
 			{
 				NavigationVolumeID markupId;
 				ReadNavigationIdType(file, markupId);
 
 				m_markupsData.insert(markupId, MNM::SMarkupVolumeData());
+
 				MNM::SMarkupVolumeData& markupData = m_markupsData[markupId];
 
 				uint32 meshTrianglesCount;
@@ -3419,6 +3438,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 
 					uint32 trianglesCount;
 					file.ReadType(&trianglesCount);
+
 					meshTriangles.triangleIds.reserve(trianglesCount);
 					for (uint32 triIdx = 0; triIdx < trianglesCount; ++triIdx)
 					{
@@ -3633,7 +3653,9 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 		{
 			//TODO: gather markup volumes to save
 			const uint32 markupsCount = static_cast<uint32>(m_markupVolumes.size());
+			const uint32 markupsCapacity = static_cast<uint32>(m_markupVolumes.capacity());
 			file.WriteType(&markupsCount);
+			file.WriteType(&markupsCapacity);
 
 			for (uint32 idx = 0; idx < m_markupVolumes.capacity(); ++idx)
 			{

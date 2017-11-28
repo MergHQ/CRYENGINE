@@ -123,7 +123,7 @@ namespace Cry
 				CryLogAlways("[Steam] Successfully initialized Steam API, running build id %i", SteamApps()->GetAppBuildId());
 
 				// Check if user requested to join a lobby right away
-				if (const ICmdLineArg* pCmdArg = pCmdLine->FindArg(eCLAT_Pre, "connect_lobby"))
+				if (const ICmdLineArg* pCmdArg = pCmdLine->FindArg(eCLAT_Post, "connect_lobby"))
 				{
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Steam] Received pre-launch join request, loading lobby");
 					CSteamID lobbyId = CSteamID((uint64)atoll(pCmdArg->GetValue()));

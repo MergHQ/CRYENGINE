@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2014-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 // -------------------------------------------------------------------------
 //  Created:     06/04/2014 by Filipe amim
@@ -28,7 +28,6 @@ class CParticleSystem : public Cry3DEngineBase, public IParticleSystem
 	virtual ~CParticleSystem() {}
 
 private:
-	typedef std::vector<_smart_ptr<CParticleEmitter>>                                                                     TParticleEmitters;
 	typedef std::unordered_map<string, _smart_ptr<CParticleEffect>, stl::hash_stricmp<string>, stl::hash_stricmp<string>> TEffectNameMap;
 
 public:
@@ -53,21 +52,31 @@ public:
 	void                    GetMemoryUsage(ICrySizer* pSizer) const override;
 	// ~IParticleSystem
 
-	PParticleEffect      LoadEffect(cstr effectName);
-	TParticleHeap&       GetMemHeap(uint32 threadId = ~0) { return m_memHeap[threadId + 1]; }
-	CParticleJobManager& GetJobManager()                  { return m_jobManager; }
-	CParticleProfiler&   GetProfiler()                    { return m_profiler; }
-	void                 SyncronizeUpdateKernels();
-	void                 DeferredRender();
-	float                DisplayDebugStats(Vec2 displayLocation, float lineHeight);
+	struct SThreadData
+	{
+		TParticleHeap  memHeap;
+		SParticleStats statsCPU;
+		SParticleStats statsGPU;
+	};
 
-	void                 ClearRenderResources();
+	PParticleEffect          LoadEffect(cstr effectName);
 
-	static float         GetMaxAngularDensity(const CCamera& camera);
-	QuatT                GetLastCameraPose() const { return m_lastCameraPose; }
-	QuatT                GetCameraMotion() const { return m_cameraMotion; }
-	TParticleEmitters    GetActiveEmitters() const { return m_emitters; }
-	IMaterial*           GetFlareMaterial();
+	SThreadData&             GetThreadData() { return m_threadData[JobManager::GetWorkerThreadId() + 1]; }
+	SThreadData&             GetMainData()   { return m_threadData[0]; }
+	CParticleJobManager&     GetJobManager() { return m_jobManager; }
+	CParticleProfiler&       GetProfiler()   { return m_profiler; }
+
+	void                     FinishUpdate();
+	void                     DeferredRender();
+	float                    DisplayDebugStats(Vec2 displayLocation, float lineHeight);
+
+	void                     ClearRenderResources();
+
+	static float             GetMaxAngularDensity(const CCamera& camera);
+	QuatT                    GetLastCameraPose() const        { return m_lastCameraPose; }
+	QuatT                    GetCameraMotion() const          { return m_cameraMotion; }
+	const TParticleEmitters& GetActiveEmitters() const        { return m_emitters; }
+	IMaterial*               GetFlareMaterial();
 
 	typedef std::vector<SParticleFeatureParams> TFeatureParams;
 	
@@ -86,14 +95,12 @@ private:
 	// ~PFX1 to PFX2
 
 private:
-	SParticleStats             m_statsCPU;
-	SParticleStats             m_statsGPU;
 	CParticleJobManager        m_jobManager;
 	CParticleProfiler          m_profiler;
 	TEffectNameMap             m_effects;
 	TParticleEmitters          m_emitters;
 	TParticleEmitters          m_newEmitters;
-	std::vector<TParticleHeap> m_memHeap;
+	std::vector<SThreadData>   m_threadData;
 	_smart_ptr<IMaterial>      m_pFlareMaterial;
 	bool                       m_bResetEmitters = false;
 	QuatT                      m_lastCameraPose = IDENTITY;

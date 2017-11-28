@@ -424,8 +424,6 @@ void CAttachmentManager::InitAttachmentList(const CharacterAttachment* parrAttac
 			QuatT defaultTransform;
 			if (pAttachment->m_nJointID < 0)
 			{
-				CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "CryAnimation: Attachment '%s' cannot be attached to bone '%s' because it doesn't exist in skeleton '%s'",
-				           attach.m_strAttachmentName.c_str(), attach.m_strJointName.c_str(), rDefaultSkeleton.GetModelFilePath());
 				defaultTransform.SetIdentity();
 			}
 			else
@@ -1815,7 +1813,20 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 				continue;
 			Matrix34 FinalMat34 = (((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34) * Matrix34(pCAttachmentBone->m_AttModelRelative * pCAttachmentBone->m_addTransformation);
 			rParams.pMatrix = &FinalMat34;
+			 
+			// store rParams.pNearestMatrix
+			Matrix34* pNearestMatrixOld = rParams.pNearestMatrix;
+
+			// propagate relative transformations in pNearestMatrix 
+			if (rParams.pNearestMatrix)
+			{
+				rParams.pNearestMatrix = &FinalMat34;
+			}
+
 			pCAttachmentBone->m_pIAttachmentObject->RenderAttachment(rParams, passInfo);
+
+			// restore rParams.pNearestMatrix
+			rParams.pNearestMatrix = pNearestMatrixOld;
 		}
 	}
 

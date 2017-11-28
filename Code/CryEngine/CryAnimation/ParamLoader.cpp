@@ -966,6 +966,8 @@ bool CParamLoader::LoadXML(CDefaultSkeleton* pDefaultSkeleton, string defaultAni
 
 bool CParamLoader::LoadLod(const XmlNodeRef lodNode)
 {
+	m_pDefaultSkeleton->m_arrAnimationLOD.clear();
+
 	if (!lodNode)
 		return false;
 

@@ -6,19 +6,18 @@
 #include "IEditorImpl.h"
 #include "SystemAssetsManager.h"
 #include "AudioControlsEditorPlugin.h"
-#include "AudioControlsEditorWindow.h"
 
 #include <CryString/CryPath.h>
 
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CFileMonitor::CFileMonitor(CAudioControlsEditorWindow* const window, int const delay)
-	: m_window(window)
+CFileMonitor::CFileMonitor(int const delay, QObject* const pParent)
+	: QTimer(pParent)
 	, m_delay(delay)
 {
 	setSingleShot(true);
-	connect(this, &CFileMonitor::timeout, this, &CFileMonitor::ReloadData);
+	connect(this, &CFileMonitor::timeout, this, &CFileMonitor::SignalReloadData);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -42,10 +41,10 @@ void CFileMonitor::Disable()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileMonitorSystem::CFileMonitorSystem(CAudioControlsEditorWindow* const window, int const delay)
-	: CFileMonitor(window, delay)
+CFileMonitorSystem::CFileMonitorSystem(int const delay, QObject* const pParent)
+	: CFileMonitor(delay, pParent)
 	, m_assetFolder (Utils::GetAssetFolder())
-	, m_delayTimer(new QTimer())
+	, m_delayTimer(new QTimer(this))
 {
 	m_delayTimer->setSingleShot(true);
 	connect(m_delayTimer, &QTimer::timeout, this, &CFileMonitorSystem::Enable);
@@ -65,14 +64,8 @@ void CFileMonitorSystem::EnableDelayed()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileMonitorSystem::ReloadData()
-{
-	m_window->ReloadSystemData();
-}
-
-//////////////////////////////////////////////////////////////////////////
-CFileMonitorMiddleware::CFileMonitorMiddleware(CAudioControlsEditorWindow* const window, int const delay)
-	: CFileMonitor(window, delay)
+CFileMonitorMiddleware::CFileMonitorMiddleware(int const delay, QObject* const pParent)
+	: CFileMonitor(delay, pParent)
 {
 	Enable();
 }
@@ -112,11 +105,5 @@ void CFileMonitorMiddleware::Enable()
 			}
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileMonitorMiddleware::ReloadData()
-{
-	m_window->ReloadMiddlewareData();
 }
 } // namespace ACE

@@ -1845,11 +1845,10 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 #endif
 
 	InitCVars();
-	InitCommands();
 
 	InitGameVolumesManager();
 
-	InlineInitializationProcessing("CCryAction::Init InitCommands");
+	InlineInitializationProcessing("CCryAction::Init InitCVars");
 	if (m_pSystem->IsDevMode())
 		m_pDevMode = new CDevMode();
 
@@ -2306,6 +2305,8 @@ bool CCryAction::CompleteInit()
 		pTestSystem->QuitInNSeconds(1.f);
 	}
 #endif
+
+	InitCommands();
 
 	InlineInitializationProcessing("CCryAction::CompleteInit End");
 	return true;

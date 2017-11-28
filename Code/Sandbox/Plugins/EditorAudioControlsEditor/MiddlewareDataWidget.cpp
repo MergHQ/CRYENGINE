@@ -7,119 +7,75 @@
 #include "MiddlewareDataModel.h"
 #include "ImplementationManager.h"
 #include "SystemAssetsManager.h"
-#include "SystemControlsEditorIcons.h"
-#include "AudioTreeView.h"
+#include "SystemControlsIcons.h"
+#include "TreeView.h"
 
 #include <IEditorImpl.h>
 #include <ImplItem.h>
-#include <CryIcon.h>
+#include <QFilteringPanel.h>
 #include <QSearchBox.h>
 #include <QtUtil.h>
+#include <ProxyModels/AttributeFilterProxyModel.h>
 
-#include <QFontMetrics>
-#include <QHBoxLayout>
 #include <QHeaderView>
-#include <QLabel>
 #include <QMenu>
-#include <QToolButton>
 #include <QVBoxLayout>
 
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-class CElidedLabel final : public QLabel
+CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* const pAssetsManager, QWidget* const pParent)
+	: QWidget(pParent)
+	, m_pAssetsManager(pAssetsManager)
+	, m_pAttributeFilterProxyModel(new QAttributeFilterProxyModel(QAttributeFilterProxyModel::AcceptIfChildMatches, this))
+	, m_pMiddlewareDataModel(new CMiddlewareDataModel(this))
+	, m_pTreeView(new CTreeView(this))
+	, m_nameColumn(static_cast<int>(CMiddlewareDataModel::EColumns::Name))
 {
-public:
-
-	CElidedLabel::CElidedLabel(QString const& text)
-	{
-		setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
-		SetLabelText(text);
-	}
-
-	void SetLabelText(QString const& text)
-	{
-		m_originalText = text;
-		ElideText();
-	}
-
-private:
-
-	// QWidget
-	virtual void resizeEvent(QResizeEvent *) override
-	{
-		ElideText();
-	}
-	// ~QWidget
-
-	void ElideText()
-	{
-		QFontMetrics const metrics(font());
-		QString const elidedText = metrics.elidedText(m_originalText, Qt::ElideRight, size().width());
-		setText(elidedText);
-	}
-
-	QString m_originalText;
-};
-
-//////////////////////////////////////////////////////////////////////////
-CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* pAssetsManager)
-	: m_pAssetsManager(pAssetsManager)
-	, m_pFilterProxyModel(new CMiddlewareDataFilterProxyModel(this))
-	, m_pAssetsModel(new CMiddlewareDataModel())
-	, m_pHideAssignedButton(new QToolButton())
-	, m_pImplNameLabel(new CElidedLabel(""))
-	, m_pTreeView(new CAudioTreeView())
-{
-	m_pFilterProxyModel->setDynamicSortFilter(true);
-	m_pFilterProxyModel->setSourceModel(m_pAssetsModel);
-
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-	QVBoxLayout* const pMainLayout = new QVBoxLayout(this);
-	pMainLayout->setContentsMargins(0, 0, 0, 0);
-
-	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-	if (pEditorImpl != nullptr)
-	{
-		m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pEditorImpl->GetName()));
-	}
-
-	pMainLayout->addWidget(m_pImplNameLabel);
-
-	InitFilterWidgets(pMainLayout);
+	m_pAttributeFilterProxyModel->setSourceModel(m_pMiddlewareDataModel);
+	m_pAttributeFilterProxyModel->setFilterKeyColumn(m_nameColumn);
 
 	m_pTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	m_pTreeView->setDragEnabled(true);
 	m_pTreeView->setDragDropMode(QAbstractItemView::DragOnly);
 	m_pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	m_pTreeView->setSelectionBehavior(QAbstractItemView::SelectRows);
+	m_pTreeView->setTreePosition(m_nameColumn);
+	m_pTreeView->setUniformRowHeights(true);
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
-	m_pTreeView->setModel(m_pFilterProxyModel);
-	m_pTreeView->sortByColumn(0, Qt::AscendingOrder);
-	pMainLayout->addWidget(m_pTreeView);
-	
-	QObject::connect(m_pTreeView, &CAudioTreeView::customContextMenuRequested, this, &CMiddlewareDataWidget::OnContextMenu);
-	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, m_pTreeView, &CAudioTreeView::OnSelectionChanged);
-	
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
-	{
-		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
+	m_pTreeView->setModel(m_pAttributeFilterProxyModel);
+	m_pTreeView->sortByColumn(m_nameColumn, Qt::AscendingOrder);
+	m_pTreeView->header()->setMinimumSectionSize(25);
+	m_pTreeView->header()->setSectionResizeMode(static_cast<int>(CMiddlewareDataModel::EColumns::Notification), QHeaderView::ResizeToContents);
+	m_pTreeView->SetNameColumn(m_nameColumn);
+	m_pTreeView->SetNameRole(static_cast<int>(CMiddlewareDataModel::ERoles::Name));
+	m_pTreeView->TriggerRefreshHeaderColumns();
 
-		if (pEditorImpl != nullptr)
+	m_pFilteringPanel = new QFilteringPanel("ACEMiddlewareData", m_pAttributeFilterProxyModel);
+	m_pFilteringPanel->SetContent(m_pTreeView);
+	m_pFilteringPanel->GetSearchBox()->SetAutoExpandOnSearch(m_pTreeView);
+
+	QVBoxLayout* const pMainLayout = new QVBoxLayout(this);
+	pMainLayout->setContentsMargins(0, 0, 0, 0);
+	pMainLayout->addWidget(m_pFilteringPanel);
+
+	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CMiddlewareDataWidget::OnContextMenu);
+
+	m_pAssetsManager->signalConnectionAdded.Connect([&]()
+	{
+		if (!m_pAssetsManager->IsLoading())
 		{
-			m_pImplNameLabel->SetLabelText(QtUtil::ToQString(pEditorImpl->GetName()));
+			m_pAttributeFilterProxyModel->invalidate();
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->signalIsDirty.Connect([&](bool const isDirty)
+	m_pAssetsManager->signalConnectionRemoved.Connect([&]()
 	{
-		if (isDirty)
+		if (!m_pAssetsManager->IsLoading())
 		{
-			if (m_pFilterProxyModel->IsHideConnected())
-			{
-				m_pFilterProxyModel->invalidate();
-			}
+			m_pAttributeFilterProxyModel->invalidate();
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 }
@@ -127,77 +83,18 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* pAssetsManage
 //////////////////////////////////////////////////////////////////////////
 CMiddlewareDataWidget::~CMiddlewareDataWidget()
 {
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->signalIsDirty.DisconnectById(reinterpret_cast<uintptr_t>(this));
-}
+	m_pAssetsManager->signalConnectionAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->signalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
-//////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataWidget::InitFilterWidgets(QVBoxLayout* const pMainLayout)
-{
-	QHBoxLayout* const pFilterLayout = new QHBoxLayout();
-
-	QSearchBox* const pSearchBox = new QSearchBox();
-	QObject::connect(pSearchBox, &QSearchBox::textChanged, [&](QString const& filter)
-	{
-		if (m_filter != filter)
-		{
-			if (m_filter.isEmpty() && !filter.isEmpty())
-			{
-				BackupTreeViewStates();
-				m_pTreeView->expandAll();
-			}
-			else if (!m_filter.isEmpty() && filter.isEmpty())
-			{
-				m_pFilterProxyModel->setFilterFixedString(filter);
-				m_pTreeView->collapseAll();
-				RestoreTreeViewStates();
-			}
-			else if (!m_filter.isEmpty() && !filter.isEmpty())
-			{
-				m_pFilterProxyModel->setFilterFixedString(filter);
-				m_pTreeView->expandAll();
-			}
-
-			m_filter = filter;
-		}
-
-		m_pFilterProxyModel->setFilterFixedString(filter);
-	});
-
-	pFilterLayout->addWidget(pSearchBox);
-
-	m_pHideAssignedButton->setIcon(CryIcon("icons:General/Visibility_True.ico"));
-	m_pHideAssignedButton->setToolTip(tr("Hide assigned middleware data"));
-	m_pHideAssignedButton->setCheckable(true);
-	m_pHideAssignedButton->setMaximumSize(QSize(20, 20));
-	QObject::connect(m_pHideAssignedButton, &QToolButton::toggled, [&](bool const isChecked)
-	{
-		if (isChecked)
-		{
-			BackupTreeViewStates();
-			m_pFilterProxyModel->SetHideConnected(isChecked);
-			m_pHideAssignedButton->setIcon(CryIcon("icons:General/Visibility_False.ico"));
-			m_pHideAssignedButton->setToolTip(tr("Show all middleware data"));
-		}
-		else
-		{
-			m_pFilterProxyModel->SetHideConnected(isChecked);
-			RestoreTreeViewStates();
-			m_pHideAssignedButton->setIcon(CryIcon("icons:General/Visibility_True.ico"));
-			m_pHideAssignedButton->setToolTip(tr("Hide assigned middleware data"));
-		}
-	});
-
-	pFilterLayout->addWidget(m_pHideAssignedButton);
-
-	pMainLayout->addLayout(pFilterLayout);
+	m_pMiddlewareDataModel->DisconnectSignals();
+	m_pMiddlewareDataModel->deleteLater();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 {
-	QMenu* const pContextMenu = new QMenu();
-	auto const& selection = m_pTreeView->selectionModel()->selectedRows();
+	QMenu* const pContextMenu = new QMenu(this);
+	auto const& selection = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
 
 	if (!selection.isEmpty())
 	{
@@ -207,12 +104,12 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 
 			if (pEditorImpl != nullptr)
 			{
-				CID const itemId = selection[0].data(static_cast<int>(CMiddlewareDataModel::EMiddlewareDataAttributes::Id)).toInt();
+				CID const itemId = selection[0].data(static_cast<int>(CMiddlewareDataModel::ERoles::Id)).toInt();
 				CImplItem const* const pImplControl = pEditorImpl->GetControl(itemId);
 
 				if ((pImplControl != nullptr) && pImplControl->IsConnected())
 				{
-					QMenu* const pConnectionsMenu = new QMenu();
+					QMenu* const pConnectionsMenu = new QMenu(pContextMenu);
 					auto const controls = m_pAssetsManager->GetControls();
 					int count = 0;
 
@@ -220,7 +117,7 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 					{
 						if (pControl->GetConnection(pImplControl) != nullptr)
 						{
-							pConnectionsMenu->addAction(GetItemTypeIcon(pControl->GetType()), tr(pControl->GetName()), [=]() { SelectConnectedSystemControl(pControl); });
+							pConnectionsMenu->addAction(GetItemTypeIcon(pControl->GetType()), tr(pControl->GetName()), [=]() { SignalSelectConnectedSystemControl(*pControl); });
 							++count;
 						}
 					}
@@ -249,8 +146,8 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 //////////////////////////////////////////////////////////////////////////
 void CMiddlewareDataWidget::Reset()
 {
-	m_pAssetsModel->Reset();
-	m_pFilterProxyModel->invalidate();
+	m_pMiddlewareDataModel->Reset();
+	m_pAttributeFilterProxyModel->invalidate();
 }
 
 //////////////////////////////////////////////////////////////////////////

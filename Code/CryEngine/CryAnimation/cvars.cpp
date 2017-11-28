@@ -209,6 +209,7 @@ void Console::Init()
 	DefineConstIntCVar(ca_SerializeSkeletonAnim, 0, VF_CHEAT, "Turn on CSkeletonAnim Serialization.");
 	DefineConstIntCVar(ca_AllowMultipleEffectsOfSameName, 1, VF_CHEAT, "Allow a skeleton animation to spawn more than one instance of an effect with the same name on the same instance.");
 	DefineConstIntCVar(ca_UseAssetDefinedLod, 0, VF_CHEAT, "Lowers render LODs for characters with respect to \"consoles_lod0\" UDP. Requires characters to be reloaded.");
+	DefineConstIntCVar(ca_ForceAnimationLod, 0, VF_CHEAT, "Forces a specific LOD to be used for animation updates.");
 	DefineConstIntCVar(ca_Validate, 0, VF_CHEAT, "if set to 1, will run validation on animation data");
 	// animation transition interpolation mode
 	REGISTER_COMMAND("ca_DefaultTransitionInterpolationType", (ConsoleCommandFunc)CADefaultTransitionInterpolationType, VF_CHEAT, "changes transition interpolation method.");
@@ -286,7 +287,7 @@ void Console::Init()
 	REGISTER_CVAR(ca_FacialAnimationRadius, 30.f, VF_CHEAT, "Maximum distance at which facial animations are updated - handles zooming correctly");
 
 	//sampling
-	REGISTER_CVAR(ca_ResetCulledJointsToBindPose, 0, 0, "Specifies whether culled joints should be reset to bind pose or preserve their transform from last evaluated frame (0 = preserve, 1 = reset).");
+	REGISTER_CVAR(ca_ResetCulledJointsToBindPose, 1, 0, "Specifies whether culled joints should be reset to bind pose or preserve their transform from last evaluated frame (0 = preserve, 1 = reset).");
 	DefineConstIntCVar(ca_SampleQuatHemisphereFromCurrentPose, 0, VF_NULL, "For override animation sampling, use current pose for quat hemisphere sign");
 
 	DefineConstIntCVar(ca_DrawCloth, 1, VF_CHEAT, "bitfield: 2 shows particles, 4 shows proxies, 6 shows both");

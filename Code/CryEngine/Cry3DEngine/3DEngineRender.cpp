@@ -1802,7 +1802,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 	pfx2::CParticleSystem* pParticleSystem = static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get());
 	if (pParticleSystem)
-		pParticleSystem->SyncronizeUpdateKernels();
+		pParticleSystem->FinishUpdate();
 	if (m_pPartManager)
 		m_pPartManager->FinishParticleRenderTasks(passInfo);
 	if (pParticleSystem)

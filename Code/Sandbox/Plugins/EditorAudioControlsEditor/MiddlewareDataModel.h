@@ -4,43 +4,48 @@
 
 #include <ProxyModels/DeepFilterProxyModel.h>
 
+class CItemModelAttribute;
+
 namespace ACE
 {
 struct IEditorImpl;
 class CImplItem;
 
-namespace AudioModelUtils
-{
-	void DecodeImplMimeData(const QMimeData* pData, std::vector<CImplItem*>& outItems);
-} // namespace AudioModelUtils
-
 class CMiddlewareDataModel final : public QAbstractItemModel
 {
 public:
 
-	enum class EMiddlewareDataColumns
+	enum class EColumns
 	{
+		Notification,
+		Connected,
+		Localized,
 		Name,
 		Count,
 	};
 
-	// TODO: Should be replaced with the new attribute system
-	enum class EMiddlewareDataAttributes
+	enum class ERoles
 	{
-		Connected = Qt::UserRole + 1,
-		Container,
-		Placeholder,
-		Localized,
-		Id,
+		Id = Qt::UserRole + 1,
+		Name,
 	};
 
-	CMiddlewareDataModel();
+	CMiddlewareDataModel(QObject* const pParent);
+	virtual ~CMiddlewareDataModel() override;
+
+	static CItemModelAttribute* GetAttributeForColumn(EColumns const column);
+	static QVariant             GetHeaderData(int const section, Qt::Orientation const orientation, int const role);
+
+	void   DisconnectSignals();
+	void   Reset();
+
+protected:
 
 	// QAbstractItemModel
 	virtual int             rowCount(QModelIndex const& parent) const override;
 	virtual int             columnCount(QModelIndex const& parent) const override;
 	virtual QVariant        data(QModelIndex const& index, int role) const override;
-	virtual QVariant        headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+	virtual QVariant        headerData(int section, Qt::Orientation orientation, int role) const override;
 	virtual Qt::ItemFlags   flags(QModelIndex const& index) const override;
 	virtual QModelIndex     index(int row, int column, QModelIndex const& parent = QModelIndex()) const override;
 	virtual QModelIndex     parent(QModelIndex const& index) const override;
@@ -49,36 +54,12 @@ public:
 	virtual QMimeData*      mimeData(QModelIndexList const& indexes) const override;
 	// ~QAbstractItemModel
 
+private:
+
+	void        ConnectSignals();
 	CImplItem*  ItemFromIndex(QModelIndex const& index) const;
 	QModelIndex IndexFromItem(CImplItem const* const pImplItem) const;
-	void        Reset();
-
-	static char const* const ms_szMimeType;
-
-private:
 
 	IEditorImpl* m_pEditorImpl;
-};
-
-class CMiddlewareDataFilterProxyModel final : public QDeepFilterProxyModel
-{
-public:
-
-	CMiddlewareDataFilterProxyModel(QObject* parent);
-
-	// QSortFilterProxyModel
-	virtual bool lessThan(QModelIndex const& left, QModelIndex const& right) const override;
-	// ~QSortFilterProxyModel
-
-	// QDeepFilterProxyModel
-	virtual bool rowMatchesFilter(int source_row, QModelIndex const& source_parent) const override;
-	// ~QDeepFilterProxyModel
-
-	void SetHideConnected(bool const hideConnected);
-	bool IsHideConnected() const { return m_hideConnected; }
-	
-private:
-
-	bool m_hideConnected;
 };
 } // namespace ACE

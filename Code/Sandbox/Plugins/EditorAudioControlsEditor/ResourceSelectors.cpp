@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 
-#include "SystemControlsEditorIcons.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ResourceSelectorDialog.h"
 
@@ -18,14 +17,13 @@ namespace
 dll_string ShowSelectDialog(SResourceSelectorContext const& context, char const* szPreviousValue, ESystemItemType const controlType)
 {
 	CSystemAssetsManager const* const pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
-	CRY_ASSERT(pAssetsManager);
-
-	CResourceSelectorDialog dialog(context.parentWidget, controlType);
-	dialog.setModal(true);
+	CRY_ASSERT_MESSAGE(pAssetsManager != nullptr, "Asset manager is null pointer.");
 
 	char* szLevelName;
 	gEnv->pGameFramework->GetEditorLevel(&szLevelName, nullptr);
-	dialog.SetScope(pAssetsManager->GetScope(szLevelName));
+	CResourceSelectorDialog dialog(controlType, pAssetsManager->GetScope(szLevelName), context.parentWidget);
+	dialog.setModal(true);
+
 	return dialog.ChooseItem(szPreviousValue);
 }
 

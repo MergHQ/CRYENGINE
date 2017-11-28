@@ -42,62 +42,40 @@ SERIALIZATION_DECLARE_ENUM(EParticleSpec,
 //! Some parameters override emitter params.
 struct SpawnParams
 {
-	bool                     bPrime;          //!< Advance emitter age to its equilibrium state.
-	bool                     bRegisterByBBox; //!< Use the Bounding Box instead of Position to Register in VisArea.
-	bool                     bNowhere;        //!< Exists outside of level.
-	bool                     bPlaced;         //!< Loaded from placed entity.
-	float                    fCountScale;     //!< Multiple for particle count (on top of bCountPerUnit if set).
-	float                    fSizeScale;      //!< Multiple for all effect sizes.
-	float                    fSpeedScale;     //!< Multiple for particle emission speed.
-	float                    fTimeScale;      //!< Multiple for emitter time evolution.
-	float                    fPulsePeriod;    //!< How often to restart emitter.
-	float                    fStrength;       //!< Controls parameter strength curves.
-	int                      nSeed;           //!< Initial seed. Default is -1 which means random seed.
+	bool                     bPrime          = false;                            //!< Advance emitter age to its equilibrium state.
 
-	EParticleSpec            eSpec;           //!< Overrides particle spec for this emitter
-	EGeomType                eAttachType;     //!< What type of object particles emitted from.
-	EGeomForm                eAttachForm;     //!< What aspect of shape emitted from.
-	bool                     bCountPerUnit;   //!< Multiply particle count also by geometry extent (length/area/volume).
+	// Placement options
+	bool                     bIgnoreVisAreas = false;                            //!< Renders in all VisAreas.
+	bool                     bRegisterByBBox = false;                            //!< Registers in any overlapping portal VisArea.
+	bool                     bNowhere        = false;                            //!< Exists outside of level.
+	bool                     bPlaced         = false;                            //!< Loaded from placed entity.
 
-	bool                     bEnableAudio;  //!< Used by particle effect instances to indicate whether audio should be updated or not.
-	CryAudio::EOcclusionType occlusionType; //!< Audio obstruction/occlusion calculation type.
-	string                   audioRtpc;     //!< Indicates what audio RTPC this particle effect instance drives.
+	float                    fCountScale     = 1;                                //!< Multiple for particle count (on top of bCountPerUnit if set).
+	float                    fSizeScale      = 1;                                //!< Multiple for all effect sizes.
+	float                    fSpeedScale     = 1;                                //!< Multiple for particle emission speed.
+	float                    fTimeScale      = 1;                                //!< Multiple for emitter time evolution.
+	float                    fPulsePeriod    = 0;                                //!< How often to restart emitter.
+	float                    fStrength       = -1;                               //!< Controls parameter strength curves.
+	int                      nSeed           = -1;                               //!< Initial seed. Default is -1 which means random seed.
 
-	inline SpawnParams()
-	{
-		bPrime = false;
-		bRegisterByBBox = false;
-		bNowhere = false;
-		bPlaced = false;
-		fCountScale = 1;
-		fSizeScale = 1;
-		fSpeedScale = 1;
-		fTimeScale = 1;
-		fPulsePeriod = 0;
-		fStrength = -1;
-		nSeed = -1;
-		eSpec = EParticleSpec::Default;
-		eAttachType = GeomType_None;
-		eAttachForm = GeomForm_Surface;
-		bCountPerUnit = false;
-		bEnableAudio = true;
-		occlusionType = CryAudio::EOcclusionType::Ignore;
-	}
+	EParticleSpec            eSpec           = EParticleSpec::Default;           //!< Overrides particle spec for this emitter
+	EGeomType                eAttachType     = GeomType_None;                    //!< What type of object particles emitted from.
+	EGeomForm                eAttachForm     = GeomForm_Surface;                 //!< What aspect of shape emitted from.
+	bool                     bCountPerUnit   = false;                            //!< Multiply particle count also by geometry extent (length/area/volume).
+
+	bool                     bEnableAudio    = true;                             //!< Used by particle effect instances to indicate whether audio should be updated or not.
+	CryAudio::EOcclusionType occlusionType   = CryAudio::EOcclusionType::Ignore; //!< Audio obstruction/occlusion calculation type.
+	string                   audioRtpc;                                          //!< Indicates what audio RTPC this particle effect instance drives.
 
 	void Serialize(Serialization::IArchive& ar)
 	{
-		ar(eSpec, "spec", "Particle Spec");
-		ar.doc("Overrides Particle Spec for this emitter");
-		ar(fSizeScale, "scale", "Uniform Scale");
-		ar.doc("Emitter uniform scale");
-		ar(fCountScale, "countScale", "Count Scale");
-		ar.doc("Particle count multiplier");
-		ar(fSpeedScale, "speedScale", "Speed Scale");
-		ar.doc("Particle emission speed multiplier");
-		ar(fTimeScale, "timeScale", "Time Scale");
-		ar.doc("Emitter time multiplier");
-		ar(bPrime, "prime", "Prime");
-		ar.doc("Advance emitter age to its equilibrium state");
+		ar(bPrime, "prime", "Prime");                                  ar.doc("Advance emitter age to its equilibrium state");
+		ar(fSizeScale, "scale", "Uniform Scale");                      ar.doc("Emitter uniform scale");
+		ar(fCountScale, "countScale", "Count Scale");                  ar.doc("Particle count multiplier");
+		ar(fSpeedScale, "speedScale", "Speed Scale");                  ar.doc("Particle emission speed multiplier");
+		ar(fTimeScale, "timeScale", "Time Scale");                     ar.doc("Emitter time evolution multiplier");
+		ar(eSpec, "spec", "Particle Spec");                            ar.doc("Overrides System Spec for this emitter");
+		ar(bIgnoreVisAreas, "ignoreVvisAreas", "Ignore Vis Areas");    ar.doc("Renders in all VisAreas");
 
 		bool bOverrideSeed = true;
 		if (ar.isEdit())
@@ -606,10 +584,15 @@ struct IParticleEffectListener
 
 // General particle stats
 template<typename F>
-struct TElementCounts
-	: INumberVector<F, 3, TElementCounts<F>>
+struct TElementCountsBase
 {
-	F alive = 0, updated = 0, rendered = 0;
+	F alloc = 0, alive = 0, updated = 0, rendered = 0;
+};
+template<typename F>
+struct TElementCounts
+	: INumberVector<F, 4, TElementCounts<F>>
+	, TElementCountsBase<F>
+{
 };
 
 // pfx1 particle stats
@@ -633,14 +616,14 @@ struct TContainerCountsBase
 
 template<typename F>
 struct TContainerCounts
-	: INumberVector<float, 14, TContainerCounts<F>>
+	: INumberVector<float, 16, TContainerCounts<F>>
 	, TContainerCountsBase<F>
 {
 };
 
 template<typename F>
 struct TParticleCounts
-	: INumberVector<float, 20, TParticleCounts<F>>
+	: INumberVector<float, 23, TParticleCounts<F>>
 	, TContainerCountsBase<F>
 {
 	TElementCounts<F> emitters;

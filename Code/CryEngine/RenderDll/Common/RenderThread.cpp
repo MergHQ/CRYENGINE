@@ -1032,7 +1032,7 @@ void SRenderThread::WaitFlushFinishedCond()
 		{
 			gEnv->pSystem->PumpWindowMessage(true, hWnd);
 		}
-		Sleep(0);
+		CrySleep(0);
 	#endif
 		READ_WRITE_BARRIER
 	}
@@ -1058,7 +1058,7 @@ void SRenderThread::WaitFlushCond()
 	{
 		if (m_bQuit)
 			break;
-		::Sleep(0);
+		CrySleep(0);
 		READ_WRITE_BARRIER
 	}
 #endif

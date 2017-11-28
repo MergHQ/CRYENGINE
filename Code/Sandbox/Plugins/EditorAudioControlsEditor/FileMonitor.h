@@ -7,32 +7,28 @@
 
 namespace ACE
 {
-class CAudioControlsEditorWindow;
-
 class CFileMonitor : public QTimer, public IFileChangeListener
 {
 	Q_OBJECT
-
-protected:
-
-	CFileMonitor(CAudioControlsEditorWindow* const window, int const delay);
-
-	virtual ~CFileMonitor() override;
 
 public:
 
 	void Disable();
 
+signals:
+
+	void SignalReloadData();
+
 protected:
+
+	CFileMonitor(int const delay, QObject* const pParent);
+	virtual ~CFileMonitor() override;
 
 	// IFileChangeListener
 	virtual void OnFileChange(char const* filename, EChangeType eType) override;
 	// ~IFileChangeListener
 
-	virtual void ReloadData() {}
-
-	CAudioControlsEditorWindow* m_window;
-	int const                   m_delay;
+	int const m_delay;
 };
 
 class CFileMonitorSystem final : public CFileMonitor
@@ -41,19 +37,15 @@ class CFileMonitorSystem final : public CFileMonitor
 
 public:
 
-	CFileMonitorSystem(CAudioControlsEditorWindow* const window, int const delay);
+	CFileMonitorSystem(int const delay, QObject* const pParent);
 
 	void Enable();
 	void EnableDelayed();
 
 private:
 
-	// CFileMonitor
-	virtual void ReloadData() override;
-	// ~CFileMonitor
-
-	string const m_assetFolder;
-	QTimer*      m_delayTimer;
+	string const  m_assetFolder;
+	QTimer* const m_delayTimer;
 };
 
 class CFileMonitorMiddleware final : public CFileMonitor
@@ -62,15 +54,11 @@ class CFileMonitorMiddleware final : public CFileMonitor
 
 public:
 
-	CFileMonitorMiddleware(CAudioControlsEditorWindow* const window, int const delay);
+	CFileMonitorMiddleware(int const delay, QObject* const pParent);
 
 	void Enable();
 
 private:
-
-	// CFileMonitor
-	virtual void ReloadData() override;
-	// ~CFileMonitor
 
 	std::vector<char const*> m_monitorFolders;
 };

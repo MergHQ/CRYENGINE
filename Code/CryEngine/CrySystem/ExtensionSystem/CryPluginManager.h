@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "ProjectManager/ProjectManager.h"
+
 #include <CrySystem/ICryPluginManager.h>
 #include <CrySystem/ICryPlugin.h>
 #include <array>
@@ -53,7 +55,7 @@ public:
 
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 
-	using TDefaultPluginPair = std::pair<uint8 /* version with which the plug-in was made default */, const char* /* name */>;
+	using TDefaultPluginPair = std::pair<uint8 /* version with which the plug-in was made default */, SPluginDefinition>;
 	// Gets the plug-ins, along with the version that they were made default in
 	// This is called in order to update the default plug-ins for projects on upgrade
 	// These are also built with the engine, thus will be statically linked in for monolithic builds.
@@ -63,9 +65,11 @@ public:
 		{
 			{ 
 				// Plug-ins made default with version 1
-				{ 1, "CryDefaultEntities" }, { 1, "CrySensorSystem" }, { 1, "CryPerceptionSystem" },
+				{ 1, SPluginDefinition { EType::Native, "CryDefaultEntities" } },
+				{ 1, SPluginDefinition { EType::Native, "CrySensorSystem" } },
+				{ 1, SPluginDefinition { EType::Native, "CryPerceptionSystem" } },
 				// Plug-ins made default with version 3
-				{ 3, "CryGamePlatform" } 
+				{ 3, SPluginDefinition { EType::Native, "CryGamePlatform", { EPlatform::Windows, EPlatform::PS4 } } }
 			}
 		};
 	}

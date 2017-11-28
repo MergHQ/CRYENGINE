@@ -6,13 +6,13 @@
 
 namespace ACE
 {
-class CAudioTreeView final : public QAdvancedTreeView
+class CTreeView final : public QAdvancedTreeView
 {
 	Q_OBJECT
 
 public:
 
-	CAudioTreeView();
+	CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
 
 	QModelIndexList GetSelectedIndexes() const { return selectedIndexes(); }
 	bool            IsEditing() const;
@@ -26,9 +26,8 @@ public:
 	void            BackupSelection();
 	void            RestoreSelection();
 
-public slots:
-
-	void OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected);
+	void            SetNameRole(int const nameRole) { m_nameRole = nameRole; }
+	void            SetNameColumn(int const nameColumn) { m_nameColumn = nameColumn; }
 
 private:
 
@@ -37,7 +36,8 @@ private:
 	void   RestoreExpandedChildren(QModelIndex const& index);
 	void   RestoreSelectionChildren(QModelIndex const& index);
 
-	bool         m_hasSelectionChanged;
+	int          m_nameRole = 0;
+	int          m_nameColumn = 0;
 	QSet<uint32> m_expandedBackup;
 	QSet<uint32> m_selectionBackup;
 };

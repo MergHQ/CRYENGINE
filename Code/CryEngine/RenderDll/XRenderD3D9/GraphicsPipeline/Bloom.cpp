@@ -37,8 +37,9 @@ void CBloomStage::Execute()
 		m_pass1H.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, 0);
 		m_pass1H.SetRenderTarget(0, CRendererResources::s_ptexHDRTempBloom[1]);
 		m_pass1H.SetState(GS_NODEPTHTEST);
-		m_pass1H.SetTextureSamplerPair(0, CRendererResources::s_ptexHDRTargetScaled[1], samplerBloom);
-		m_pass1H.SetTextureSamplerPair(2, CRendererResources::s_ptexHDRToneMaps[0], EDefaultSamplerStates::PointClamp);
+		m_pass1H.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1]);
+		m_pass1H.SetTexture(2, CRendererResources::s_ptexHDRToneMaps[0]);
+		m_pass1H.SetSampler(0, samplerBloom);
 	}
 
 	m_pass1H.BeginConstantUpdate();
@@ -52,8 +53,9 @@ void CBloomStage::Execute()
 		m_pass1V.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, 0);
 		m_pass1V.SetRenderTarget(0, CRendererResources::s_ptexHDRTempBloom[0]);
 		m_pass1V.SetState(GS_NODEPTHTEST);
-		m_pass1V.SetTextureSamplerPair(0, CRendererResources::s_ptexHDRTempBloom[1], samplerBloom);
-		m_pass1V.SetTextureSamplerPair(2, CRendererResources::s_ptexHDRToneMaps[0], EDefaultSamplerStates::PointClamp);
+		m_pass1V.SetTexture(0, CRendererResources::s_ptexHDRTempBloom[1]);
+		m_pass1V.SetTexture(2, CRendererResources::s_ptexHDRToneMaps[0]);
+		m_pass1V.SetSampler(0, samplerBloom);
 	}
 
 	m_pass1V.BeginConstantUpdate();
@@ -67,8 +69,9 @@ void CBloomStage::Execute()
 		m_pass2H.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, 0);
 		m_pass2H.SetRenderTarget(0, CRendererResources::s_ptexHDRTempBloom[1]);
 		m_pass2H.SetState(GS_NODEPTHTEST);
-		m_pass2H.SetTextureSamplerPair(0, CRendererResources::s_ptexHDRTempBloom[0], samplerBloom);
-		m_pass2H.SetTextureSamplerPair(2, CRendererResources::s_ptexHDRToneMaps[0], EDefaultSamplerStates::PointClamp);
+		m_pass2H.SetTexture(0, CRendererResources::s_ptexHDRTempBloom[0]);
+		m_pass2H.SetTexture(2, CRendererResources::s_ptexHDRToneMaps[0]);
+		m_pass2H.SetSampler(0, samplerBloom);
 	}
 
 	m_pass2H.BeginConstantUpdate();
@@ -82,9 +85,10 @@ void CBloomStage::Execute()
 		m_pass2V.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, g_HWSR_MaskBit[HWSR_SAMPLE0]);
 		m_pass2V.SetRenderTarget(0, CRendererResources::s_ptexHDRFinalBloom);
 		m_pass2V.SetState(GS_NODEPTHTEST);
-		m_pass2V.SetTextureSamplerPair(0, CRendererResources::s_ptexHDRTempBloom[1], samplerBloom);
-		m_pass2V.SetTextureSamplerPair(1, CRendererResources::s_ptexHDRTempBloom[0], samplerBloom);
-		m_pass2V.SetTextureSamplerPair(2, CRendererResources::s_ptexHDRToneMaps[0], EDefaultSamplerStates::PointClamp);
+		m_pass2V.SetTexture(0, CRendererResources::s_ptexHDRTempBloom[1]);
+		m_pass2V.SetTexture(1, CRendererResources::s_ptexHDRTempBloom[0]);
+		m_pass2V.SetTexture(2, CRendererResources::s_ptexHDRToneMaps[0]);
+		m_pass2V.SetSampler(0, samplerBloom);
 	}
 
 	m_pass2V.BeginConstantUpdate();

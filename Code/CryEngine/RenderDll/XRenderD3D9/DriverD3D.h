@@ -78,6 +78,18 @@ class IBenchmarkRendererSensor;
 class CAsyncShaderTask;
 #endif
 
+enum class EWindowState
+{
+	//! Normal window with borders
+	Windowed,
+	//! Rendered in a window without borders, showing desktop behind if the window does not cover the entire screen
+	BorderlessWindow,
+	//! Rendered in a full screen window without borders, allowing alt-tab to other applications without any delay
+	BorderlessFullscreen,
+	//! Rendered in exclusive full screen
+	Fullscreen,
+};
+
 class CD3D9Renderer final : public CRenderer, public IWindowMessageHandler
 {
 	friend struct SPixFormat;
@@ -205,9 +217,9 @@ public:
 	void                             GetDeviceGamma();
 	void                             SetDeviceGamma(SGammaRamp*);
 
-	HRESULT                          AdjustWindowForChange(const int displayWidth, const int displayHeight);
+	HRESULT                          AdjustWindowForChange(const int displayWidth, const int displayHeight, EWindowState previousWindowState);
 
-	bool                             IsFullscreen()           { return m_bFullScreen; }
+	bool                             IsFullscreen()           { return m_windowState == EWindowState::Fullscreen; }
 
 #if defined(SUPPORT_DEVICE_INFO)
 	static HWND CreateWindowCallback();
@@ -217,7 +229,7 @@ public:
 private:
 	void                    DebugShowRenderTarget();
 
-	bool                    SetWindow(int width, int height, bool fullscreen, WIN_HWND hWnd);
+	bool                    SetWindow(int width, int height);
 	bool                    CreateDevice();
 	void                    UnSetRes();
 	void                    DisplaySplash(); //!< Load a bitmap from a file, blit it to the windowdc and free it
@@ -267,7 +279,7 @@ public:
 
 	//===============================================================================
 
-	virtual WIN_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, bool fullscreen, WIN_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) override;
+	virtual WIN_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, WIN_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) override;
 
 	virtual void     GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t& vidMemUsedRecently, bool bGetPoolsSizes = false) override;
 
@@ -295,7 +307,7 @@ public:
 	//! Changes resolution of the window/device (doesn't require to reload the level)
 	bool         ChangeRenderResolution(int nNewRenderWidth, int nNewRenderHeight, CRenderView* pRenderView);
 	bool         ChangeOutputResolution(int nNewOutputWidth, int nNewOutputHeight, CRenderOutput* pRenderOutput);
-	bool         ChangeDisplayResolution(int nNewDisplayWidth, int nNewHDisplayeight, int nNewColDepth, int nNewRefreshHZ, bool bFullScreen, bool bForceReset, CryDisplayContextHandle hContext);
+	bool         ChangeDisplayResolution(int nNewDisplayWidth, int nNewHDisplayeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, CryDisplayContextHandle hContext);
 
 	void         CalculateResolutions(int displayWidthRequested, int displayHeightRequested, bool bUseNativeRes, int* pRenderWidth, int* pRenderHeight, int* pOutputWidth, int* pOutputHeight, int* pDisplayWidth, int* pDisplayHeight);
 
@@ -657,6 +669,8 @@ public:
 
 private:
 	void                                               HandleDisplayPropertyChanges();
+	EWindowState                                       CalculateWindowState() const;
+	const char*                                        GetWindowStateName() const;
 
 	void                                               ResolveSupersampledRendering();
 	void                                               ResolveSubsampledOutput();
@@ -670,9 +684,6 @@ public:
 	// Called to inspect window messages sent to this renderer's windows
 	virtual bool HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult) override;
 #endif
-
-	//#FIX , temporary code to define window parameters that don't change when the rendering resolution changes
-	void OverrideWindowParameters(bool overrideParameters, int width = 0, int height = 0, bool fullscreen = true);
 
 public:
 	//////////////////////////////////////////////////////////////////////////
@@ -756,7 +767,8 @@ public:
 	int                      m_MatDepth;
 
 	string                   m_Description;
-	bool                     m_bFullScreen;
+	EWindowState             m_windowState = EWindowState::Windowed;
+	bool                     m_isChangingResolution = false;
 
 	uint32                                              m_uniqueRContextId = 0;
 	std::vector<std::shared_ptr<CRenderDisplayContext>> m_RContexts;
@@ -808,7 +820,6 @@ private:
 	DWORD           m_dwPresentStatus; // Indicate present status
 
 	DWORD           m_dwCreateFlags;      // Indicate sw or hw vertex processing
-	DWORD           m_dwWindowStyle;      // Saved window style for mode switches
 	char            m_strDeviceStats[90]; // String to hold D3D device stats
 
 	int             m_SceneRecurseCount = 0;
@@ -860,12 +871,6 @@ private:
 	CAuxGeomCB_Null            m_renderAuxGeomNull;
 
 	CShadowTextureGroupManager m_ShadowTextureGroupManager;           // to combine multiple shadowmaps into one texture
-
-	//#FIX , temporary code to define window parameters that don't change when the rendering resolution changes
-	bool  m_windowParametersOverridden;
-	Vec2i m_overriddenWindowSize;
-	bool  m_overriddenWindowFullscreenState;
-	//////////////////////////////////////////////////////////////////////////
 
 #ifdef ENABLE_BENCHMARK_SENSOR
 public:

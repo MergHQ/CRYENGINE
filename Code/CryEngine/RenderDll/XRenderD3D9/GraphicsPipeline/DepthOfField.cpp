@@ -51,7 +51,7 @@ void CDepthOfFieldStage::Execute()
 
 	PROFILE_LABEL_SCOPE("DOF");
 
-	CShader* pShader = CShaderMan::s_shPostMotionBlur;
+	CShader* pShader = CShaderMan::s_shPostDepthOfField; // s_shPostMotionBlur;
 
 	Vec4 vFocus = dofParams.vFocus;
 	vFocus.w *= 2;  // For backwards compatibility
@@ -173,11 +173,13 @@ void CDepthOfFieldStage::Execute()
 				m_passGather0.SetRenderTarget(2, CRendererResources::s_ptexSceneCoCTemp);
 				m_passGather0.SetState(GS_NODEPTHTEST);
 
-				m_passGather0.SetTextureSamplerPair(0, CRendererResources::s_ptexLinearDepthScaled[0], EDefaultSamplerStates::PointClamp);
-				m_passGather0.SetTextureSamplerPair(1, CRendererResources::s_ptexHDRDofLayers[0], EDefaultSamplerStates::LinearClamp);
-				m_passGather0.SetTextureSamplerPair(2, CRendererResources::s_ptexHDRDofLayers[1], EDefaultSamplerStates::LinearClamp);
-				m_passGather0.SetTextureSamplerPair(3, CRendererResources::s_ptexSceneCoC[0], EDefaultSamplerStates::LinearClamp);
-				m_passGather0.SetTextureSamplerPair(4, CRendererResources::s_ptexSceneCoC[MIN_DOF_COC_K - 1], EDefaultSamplerStates::PointClamp);
+				m_passGather0.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[0]);
+				m_passGather0.SetTexture(4, CRendererResources::s_ptexSceneCoC[MIN_DOF_COC_K - 1]);
+				m_passGather0.SetSampler(0, EDefaultSamplerStates::PointClamp);
+
+				m_passGather0.SetTexture(1, CRendererResources::s_ptexHDRDofLayers[0]);
+				m_passGather0.SetTexture(2, CRendererResources::s_ptexHDRDofLayers[1]);
+				m_passGather0.SetSampler(1, EDefaultSamplerStates::LinearClamp);
 			}
 
 			m_passGather0.BeginConstantUpdate();
@@ -215,11 +217,13 @@ void CDepthOfFieldStage::Execute()
 				m_passGather1.SetRenderTarget(2, CRendererResources::s_ptexSceneCoC[0]);
 				m_passGather1.SetState(GS_NODEPTHTEST);
 
-				m_passGather1.SetTextureSamplerPair(0, CRendererResources::s_ptexLinearDepthScaled[0], EDefaultSamplerStates::PointClamp);
-				m_passGather1.SetTextureSamplerPair(1, pTexDofLayersTmp[0], EDefaultSamplerStates::LinearClamp);
-				m_passGather1.SetTextureSamplerPair(2, pTexDofLayersTmp[1], EDefaultSamplerStates::LinearClamp);
-				m_passGather1.SetTextureSamplerPair(3, CRendererResources::s_ptexSceneCoCTemp, EDefaultSamplerStates::PointClamp);  // TODO: Point filtering good here?
-				m_passGather1.SetTextureSamplerPair(4, CRendererResources::s_ptexSceneCoC[MIN_DOF_COC_K - 1], EDefaultSamplerStates::PointClamp);
+				m_passGather1.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[0]);
+				m_passGather1.SetTexture(4, CRendererResources::s_ptexSceneCoC[MIN_DOF_COC_K - 1]);
+				m_passGather1.SetSampler(0, EDefaultSamplerStates::PointClamp);
+
+				m_passGather1.SetTexture(1, pTexDofLayersTmp[0]);
+				m_passGather1.SetTexture(2, pTexDofLayersTmp[1]);
+				m_passGather1.SetSampler(1, EDefaultSamplerStates::LinearClamp);
 			}
 
 			m_passGather1.BeginConstantUpdate();
@@ -242,11 +246,13 @@ void CDepthOfFieldStage::Execute()
 				m_passComposition.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
 				m_passComposition.SetState(GS_NODEPTHTEST);
 
-				m_passComposition.SetTextureSamplerPair(0, CRendererResources::s_ptexLinearDepth, EDefaultSamplerStates::PointClamp);
-				m_passComposition.SetTextureSamplerPair(1, CRendererResources::s_ptexHDRDofLayers[0], EDefaultSamplerStates::LinearClamp);
-				m_passComposition.SetTextureSamplerPair(2, CRendererResources::s_ptexHDRDofLayers[1], EDefaultSamplerStates::LinearClamp);
-				m_passComposition.SetTextureSamplerPair(3, CRendererResources::s_ptexSceneCoCTemp, EDefaultSamplerStates::LinearClamp);
-				m_passComposition.SetTextureSamplerPair(4, CRendererResources::s_ptexSceneTarget, EDefaultSamplerStates::PointClamp);
+				m_passComposition.SetTexture(1, CRendererResources::s_ptexHDRDofLayers[0]);
+				m_passComposition.SetTexture(2, CRendererResources::s_ptexHDRDofLayers[1]);
+				m_passComposition.SetSampler(1, EDefaultSamplerStates::LinearClamp);
+
+				m_passComposition.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+				m_passComposition.SetTexture(4, CRendererResources::s_ptexSceneTarget);
+				m_passComposition.SetSampler(0, EDefaultSamplerStates::PointClamp);
 			}
 
 			m_passComposition.BeginConstantUpdate();

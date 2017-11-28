@@ -371,7 +371,7 @@ public:
 		while (true)
 		{
 			CmdCrashTest(&commandArg);
-			Sleep(1); // Allow other threads to run
+			CrySleep(1); // Allow other threads to run
 		}
 	}
 
@@ -411,6 +411,28 @@ static void CmdDumpThreadConfigList(IConsoleCmdArgs* pArgs)
 	}
 #endif
 }
+
+//////////////////////////////////////////////////////////////////////////
+#if defined(USE_CRY_ASSERT)
+static void CmdIgnoreAssertsFromModule(IConsoleCmdArgs* pArgs)
+{
+	if (gEnv && gEnv->pSystem && pArgs->GetArgCount() == 2)
+	{
+		wstring requestedModule = CryStringUtils::UTF8ToWStr(pArgs->GetArg(1));
+
+		for(uint32 i = 0; i < eCryM_Num; ++i)
+		{
+			if (requestedModule == g_moduleNames[i])
+			{
+				gEnv->pSystem->DisableAssertionsForModule(i);
+				return;
+			}
+		}
+
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Tried to ignore assertions for unknown module %s", pArgs->GetArg(1));
+	}
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 struct SysSpecOverrideSink : public ILoadConfigurationEntrySink
@@ -1273,7 +1295,7 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 		m_hWnd = m_env.pRenderer->Init(
 			0, 0, width, height,
 			m_rColorBits->GetIVal(), m_rDepthBits->GetIVal(), m_rStencilBits->GetIVal(),
-			m_rFullscreen->GetIVal() ? true : false, hwnd, false, startupParams.bShaderCacheGen);
+			hwnd, false, startupParams.bShaderCacheGen);
 
 		startupParams.hWnd = m_hWnd;
 
@@ -2119,7 +2141,7 @@ bool CSystem::InitFileSystem_LoadEngineFolders()
 		string gameFolder = (!PathUtil::GetGameFolder().empty()) ? (PathUtil::GetGameFolder() + "/") : "";
 		AddCVarGroupDirectory(gameFolder + "Config/CVarGroups");
 	}
-	AddCVarGroupDirectory("Config/CVarGroups");
+	AddCVarGroupDirectory("%ENGINE%/Config/CVarGroups");
 
 #if defined(USE_PATCH_PAK)
 	LoadPatchPaks();
@@ -2963,10 +2985,13 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		if (g_cvars.sys_vr_support)
 			GetISystem()->LoadConfiguration("vr.cfg", 0, eLoadConfigInit);
-		if (g_cvars.sys_asserts > 1)
+
+#ifdef USE_CRY_ASSERT
+		if (m_env.cryAssertLevel > ECryAssertLevel::Enabled)
 		{
 			gEnv->bUnattendedMode = true; // skip assert UI when sys_assert is 2 or 3
 		}
+#endif
 
 #if defined(CRY_PLATFORM_DESKTOP) && defined(USE_DEDICATED_SERVER_CONSOLE)
 		m_pTextModeConsole->SetTitle(m_pProjectManager->GetCurrentProjectName());
@@ -5287,16 +5312,18 @@ void CSystem::CreateSystemVars()
 	REGISTER_CVAR2("sys_usePlatformSavingAPIEncryption", &g_cvars.sys_usePlatformSavingAPIEncryption, default_sys_usePlatformSavingAPIDefault, VF_CHEAT, "Use encryption cipher when using the platform APIs for saving and loading");
 #endif
 
-#if !defined(_RELEASE)
+#if defined(USE_CRY_ASSERT)
 	const bool defaultAsserts = 1;
-	REGISTER_CVAR2("sys_asserts", &g_cvars.sys_asserts, defaultAsserts, VF_CHEAT,
-	               "0 = Disable Asserts\n"
-	               "1 = Enable Asserts\n"
-	               "2 = Fatal Error on Assert\n"
-	               "3 = Debug break on Assert\n"
-	               );
-#endif
+	REGISTER_CVAR2("sys_asserts", &m_env.cryAssertLevel, defaultAsserts, VF_CHEAT,
+		"0 = Disable Asserts\n"
+		"1 = Enable Asserts\n"
+		"2 = Fatal Error on Assert\n"
+		"3 = Debug break on Assert\n"
+	);
+
+	REGISTER_COMMAND("sys_ignore_asserts_from_module", CmdIgnoreAssertsFromModule, VF_CHEAT, "Disables asserts from the specified module");
 	REGISTER_CVAR2("sys_log_asserts", &g_cvars.sys_log_asserts, 1, VF_CHEAT, "Enable/Disable Asserts logging");
+#endif
 
 	REGISTER_CVAR2("sys_error_debugbreak", &g_cvars.sys_error_debugbreak, 0, VF_CHEAT, "__debugbreak() if a VALIDATOR_ERROR_DBGBREAK message is hit");
 
@@ -5486,35 +5513,6 @@ bool CSystem::UnregisterErrorObserver(IErrorObserver* errorObserver)
 	return stl::find_and_erase(m_errorObservers, errorObserver);
 }
 
-void CSystem::OnAssert(const char* condition, const char* message, const char* fileName, unsigned int fileLineNumber)
-{
-	if (g_cvars.sys_asserts == 0)
-	{
-		return;
-	}
-
-	std::vector<IErrorObserver*>::const_iterator end = m_errorObservers.end();
-	for (std::vector<IErrorObserver*>::const_iterator it = m_errorObservers.begin(); it != end; ++it)
-	{
-		(*it)->OnAssert(condition, message, fileName, fileLineNumber);
-	}
-	if (!m_env.bIgnoreAllAsserts)
-	{
-		if (g_cvars.sys_asserts == 2)
-		{
-			CryFatalError("<assert> %s\r\n%s\r\n%s (%u)\r\n", condition, message, fileName, fileLineNumber);
-		}
-		if (g_cvars.sys_asserts >= 3)
-		{
-#ifndef _RELEASE
-	#ifdef WIN32
-			__debugbreak();
-	#endif
-#endif
-		}
-	}
-}
-
 void CSystem::OnFatalError(const char* message)
 {
 	std::vector<IErrorObserver*>::const_iterator end = m_errorObservers.end();
@@ -5524,12 +5522,51 @@ void CSystem::OnFatalError(const char* message)
 	}
 }
 
+#if defined(USE_CRY_ASSERT)
+void CSystem::OnAssert(const char* condition, const char* message, const char* fileName, unsigned int fileLineNumber)
+{
+	if (m_env.cryAssertLevel == ECryAssertLevel::Disabled)
+	{
+		return;
+	}
+
+	std::vector<IErrorObserver*>::const_iterator end = m_errorObservers.end();
+	for (std::vector<IErrorObserver*>::const_iterator it = m_errorObservers.begin(); it != end; ++it)
+	{
+		(*it)->OnAssert(condition, message, fileName, fileLineNumber);
+	}
+	if (!m_env.ignoreAllAsserts)
+	{
+		if (m_env.cryAssertLevel == ECryAssertLevel::FatalErrorOnAssert)
+		{
+			CryFatalError("<assert> %s\r\n%s\r\n%s (%u)\r\n", condition, message, fileName, fileLineNumber);
+		}
+		if (m_env.cryAssertLevel == ECryAssertLevel::DebugBreakOnAssert)
+		{
+#ifndef _RELEASE
+			CryDebugBreak();
+#endif
+		}
+	}
+}
+
+bool CSystem::AreAssertsEnabledForModule(uint32 moduleId)
+{
+	return !m_disabledAssertModules[moduleId];
+}
+
+void CSystem::DisableAssertionsForModule(uint32 moduleId)
+{
+	m_disabledAssertModules.set(moduleId, true);
+}
+
 bool CSystem::IsAssertDialogVisible() const
 {
-	return m_bIsAsserting;
+	return m_isAsserting;
 }
 
 void CSystem::SetAssertVisible(bool bAssertVisble)
 {
-	m_bIsAsserting = bAssertVisble;
+	m_isAsserting = bAssertVisble;
 }
+#endif

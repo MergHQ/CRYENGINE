@@ -724,6 +724,7 @@ public:
 	void                 DrawAttachment(SRendParams& rParams, const SRenderingPassInfo& passInfo, const Matrix34& rWorldMat34, f32 fZoomFactor = 1);
 	void                 RecreateDefaultSkeleton(CCharInstance* pInstanceSkel, uint32 nLoadingFlags);
 	void                 UpdateRemapTable();
+	bool                 EnsureRemapTableIsValid();
 
 	void                 ComputeClothCacheKey();
 	uint64               GetClothCacheKey() const { return m_clothCacheKey; };

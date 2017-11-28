@@ -628,7 +628,7 @@ void CTextureCompiler::ConsumeQueuedResourceCompiler(TProcItem* item)
 		// Try to spin for some time if there is a file lock on the source
 		for( int i = 0; IsFileOpened(item->src.c_str()) && (i < 5); ++i)
 		{
-			Sleep(300);
+			CrySleep(300);
 			continue;
 		}
 

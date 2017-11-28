@@ -101,7 +101,6 @@ CD3D9Renderer::CD3D9Renderer()
 void CD3D9Renderer::InitRenderer()
 {
 	CRenderer::InitRenderer();
-	m_windowParametersOverridden = false;
 
 	m_uLastBlendFlagsPassGroup = 0xFFFFFFFF;
 	m_fAdaptedSceneScaleLBuffer = 1.0f;
@@ -255,7 +254,7 @@ void CD3D9Renderer::RT_Reset(void)
 	RestoreGamma();
 	m_bDeviceLost = 0;
 
-	if (m_bFullScreen)
+	if (IsFullscreen())
 		SetGamma(CV_r_gamma + m_fDeltaGamma, CV_r_brightness, CV_r_contrast, false);
 }
 
@@ -511,12 +510,6 @@ void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayH
 		{
 			m_pStereoRenderer->CalculateResolution(*pDisplayWidth, *pDisplayHeight, pDisplayWidth, pDisplayHeight);
 		}
-
-		if (m_windowParametersOverridden)
-		{
-			*pDisplayWidth  = m_overriddenWindowSize.x;
-			*pDisplayHeight = m_overriddenWindowSize.y;
-		}
 	}
 
 	// Calculate the rendering resolution based on inputs ///////////////////////////////////////////////////////////
@@ -538,10 +531,12 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 
 	bool bChangedRendering = false;
 	bool bChangedOutputting = false;
-	bool bFullScreen = false;
 	bool bResizeSwapchain = false;
 	bool bRecreateSwapchain = (pDC->m_pSwapChain == nullptr);
 	bool bNativeRes = false;
+	bool wasFullscreen = IsFullscreen();
+
+	EWindowState previousWindowState = m_windowState;
 
 	if (!IsEditorMode())
 	{
@@ -551,26 +546,21 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
 		bChangedRendering |= m_overrideRefreshRate != CV_r_overrideRefreshRate || m_overrideScanlineOrder != CV_r_overrideScanlineOrder;
 #endif
+		
+		EWindowState windowState = CalculateWindowState();
+		m_windowState = windowState;
 
-		// Detect changes in full-screen property ///////////////////////////////////////////////////////////////////////
-#if CRY_PLATFORM_MOBILE || CRY_PLATFORM_CONSOLE
-		bFullScreen = m_bFullScreen;
-#else
-		bFullScreen = m_CVFullScreen ? m_CVFullScreen->GetIVal() != 0 : m_bFullScreen;
-#endif
+		bChangedRendering |= windowState != previousWindowState;
+		bResizeSwapchain |= windowState != previousWindowState;
 
 #if CRY_PLATFORM_CONSOLE || CRY_PLATFORM_MOBILE
 		bNativeRes = true;
 #elif CRY_PLATFORM_WINDOWS
-		bResizeSwapchain |= m_bDisplayChanged && bFullScreen;
+		bResizeSwapchain |= m_bDisplayChanged && IsFullscreen();
 		m_bDisplayChanged = false;
 
-		const bool fullscreenWindow = CV_r_FullscreenWindow && CV_r_FullscreenWindow->GetIVal() != 0;
-		bChangedRendering |= m_fullscreenWindow != fullscreenWindow;
-		m_fullscreenWindow = fullscreenWindow;
-
 		const bool bFullScreenNativeRes = CV_r_FullscreenNativeRes && CV_r_FullscreenNativeRes->GetIVal() != 0;
-		bNativeRes = bFullScreenNativeRes && (bFullScreen || m_fullscreenWindow);
+		bNativeRes = bFullScreenNativeRes && (IsFullscreen() || m_windowState == EWindowState::BorderlessWindow);
 #else
 		bNativeRes = false;
 #endif
@@ -600,6 +590,18 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 		int displayHeightRequested = !IsEditorMode() && (pDC == pBC) && m_CVHeight ? m_CVHeight->GetIVal() : displayHeightBefore;
 
 #if CRY_PLATFORM_WINDOWS
+		// Match monitor resolution in borderless full screen mode
+		if (m_windowState == EWindowState::BorderlessFullscreen)
+		{
+			HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST);
+			MONITORINFO monitorInfo;
+			monitorInfo.cbSize = sizeof(monitorInfo);
+			GetMonitorInfo(hMonitor, &monitorInfo);
+
+			displayWidthRequested = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+			displayHeightRequested = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+		}
+
 		if (IsEditorMode())
 		{
 			HWND hWnd = (HWND)pDC->GetHandle();
@@ -646,14 +648,14 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 		// Swap-Chain recreate
 		if (m_cbpp != colorBits ||
 			m_VSync != vSync ||
-			m_bFullScreen != bFullScreen)
+			wasFullscreen != IsFullscreen())
 		{
 			bRecreateSwapchain = true;
 		}
 
 		if (bResizeSwapchain | bRecreateSwapchain)
 		{
-			ChangeDisplayResolution(displayWidth, displayHeight, colorBits, 75, bFullScreen, bResizeSwapchain | bRecreateSwapchain, pDC->GetHandle());
+			ChangeDisplayResolution(displayWidth, displayHeight, colorBits, 75, previousWindowState, bResizeSwapchain | bRecreateSwapchain, pDC->GetHandle());
 
 			CRendererResources::OnDisplayResolutionChanged(displayWidth, displayHeight);
 		}
@@ -675,10 +677,31 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 
 		if (!IsEditorMode() && (pDC == pBC) && (bResizeSwapchain | bChangedOutputting | bChangedRendering))
 		{
-			iLog->Log("  Display resolution: %dx%dx%d (%s)", CRendererResources::s_displayWidth, CRendererResources::s_displayHeight, colorBits, bFullScreen ? "Fullscreen" : "Windowed");
+			iLog->Log("  Display resolution: %dx%dx%d (%s)", CRendererResources::s_displayWidth, CRendererResources::s_displayHeight, colorBits, GetWindowStateName());
 			iLog->Log("  Post/Overlay resolution: %dx%d", CRendererResources::s_outputWidth, CRendererResources::s_outputHeight);
 			iLog->Log("  Render resolution: %dx%d", CRendererResources::s_renderWidth, CRendererResources::s_renderHeight);
 		}
+	}
+}
+
+EWindowState CD3D9Renderer::CalculateWindowState() const
+{
+	return static_cast<EWindowState>(m_CVWindowType->GetIVal());
+}
+
+const char* CD3D9Renderer::GetWindowStateName() const
+{
+	switch (m_windowState)
+	{
+		case EWindowState::Fullscreen:
+			return "Fullscreen";
+		case EWindowState::BorderlessWindow:
+			return "Fullscreen Window";
+			break;
+		case EWindowState::Windowed:
+		default:
+			return "Windowed";
+			break;
 	}
 }
 
@@ -789,7 +812,7 @@ void CD3D9Renderer::FillFrame(ColorF clearColor)
 		pDisplayContext->GetCurrentBackBuffer()->Clear(clearColor);
 
 		pDisplayContext->GetRenderOutput()->m_hasBeenCleared |= FRT_CLEAR_COLOR;
-	}, ERenderCommandFlags::None);
+	}, ERenderCommandFlags::SkipDuringLoading);
 }
 
 void CD3D9Renderer::RT_BeginFrame(CryDisplayContextHandle hWnd)
@@ -3090,7 +3113,7 @@ void CD3D9Renderer::EndFrame()
 				m_pRenderAuxGeomD3D->FreeMemory();
 				ReturnAuxGeomCollector(pCurrentCollector);
 			}
-			, ERenderCommandFlags::None)
+			, ERenderCommandFlags::SkipDuringLoading)
 			;
 	}
 #endif //ENABLE_RENDER_AUX_GEOM
@@ -4366,17 +4389,16 @@ void CD3D9Renderer::SetProfileMarker(const char* label, ESPM mode) const
 ///////////////////////////////////////////
 bool CD3D9Renderer::ProjectToScreen(float ptx, float pty, float ptz, float* sx, float* sy, float* sz)
 {
-	auto& camera = GetISystem()->GetViewCamera();
-	Vec3 out(0,0,0);
-	if (!camera.Project(Vec3(ptx,pty,ptz),out))
-		return false;
+	auto& camera = GetISystem()->GetViewCamera();	
+	Vec3 out(0, 0, 0);
+	bool visible = camera.Project(Vec3(ptx, pty, ptz), out);
 
 	// Returns sx,sy in the range 0 to 100
 	*sx = out.x * 100.f / camera.GetViewSurfaceX();
 	*sy = out.y * 100.f / camera.GetViewSurfaceZ();
 	*sz = out.z;
 
-	return true;
+	return visible;
 }
 
 static bool InvertMatrixPrecise(Matrix44& out, const float* m)

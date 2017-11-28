@@ -27,9 +27,11 @@ public:
 	explicit CAudioControlsEditorPlugin();
 	virtual ~CAudioControlsEditorPlugin() override;
 
-	int32                          GetPluginVersion() override     { return 1; }
-	char const*                    GetPluginName() override        { return "Audio Controls Editor"; }
-	char const*                    GetPluginDescription() override { return "The Audio Controls Editor enables browsing and configuring audio events exposed from the audio middleware"; }
+	// IPlugin
+	virtual int32                  GetPluginVersion() override     { return 1; }
+	virtual char const*            GetPluginName() override        { return "Audio Controls Editor"; }
+	virtual char const*            GetPluginDescription() override { return "The Audio Controls Editor enables browsing and configuring audio events exposed from the audio middleware"; }
+	// ~IPlugin
 
 	static void                    SaveModels();
 	static void                    ReloadModels(bool const reloadImplementation);

@@ -32,6 +32,7 @@ public:
 	CSystemAsset(string const& name, ESystemItemType const type);
 
 	ESystemItemType GetType() const { return m_type; }
+	char const*     GetTypeName() const;
 
 	CSystemAsset*   GetParent() const { return m_pParent; }
 	void            SetParent(CSystemAsset* const pParent);

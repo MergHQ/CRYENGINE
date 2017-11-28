@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2014-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 // -------------------------------------------------------------------------
 //  Created:     23/09/2014 by Filipe amim
@@ -84,6 +84,7 @@ public:
 
 	void                      InitSeed();
 	void                      DebugRender() const;
+	void                      UpdateAll();
 	void                      PostUpdate();
 	CParticleContainer&       GetParentContainer()         { return m_parentContainer; }
 	const CParticleContainer& GetParentContainer() const   { return m_parentContainer; }
@@ -108,6 +109,8 @@ public:
 	void                      SetRenderObject(CRenderObject* pRenderObject, uint threadId, uint renderObjectIdx);
 	float                     GetDeltaTime() const         { return m_deltaTime; }
 	float                     GetTime() const              { return m_time; }
+	float                     GetAge() const               { return m_time - m_timeCreated; }
+	bool                      WasRenderedLastFrame() const { return (m_timeLastRendered >= m_time) && ((GetRndFlags() & ERF_HIDDEN) == 0); }
 	uint32                    GetInitialSeed() const       { return m_initialSeed; }
 	uint32                    GetCurrentSeed() const       { return m_currentSeed; }
 	uint                      GetEmitterId() const         { return m_emitterId; }
@@ -116,7 +119,7 @@ public:
 
 	bool                      IsIndependent() const        { return Unique(); }
 	bool                      HasParticles() const;
-	bool                      WasRenderedLastFrame() const { return (m_lastTimeRendered >= m_time) && ((GetRndFlags() & ERF_HIDDEN) == 0); }
+	bool                      HasBounds() const            { return !m_bounds.IsReset(); }
 
 	void                      AccumStats(SParticleStats& statsCPU, SParticleStats& statsGPU);
 	
@@ -138,12 +141,11 @@ private:
 	SpawnParams                 m_spawnParams;
 	CAttributeInstance          m_attributeInstance;
 	pfx2::TParticleFeatures     m_emitterFeatures;
+	AABB                        m_realBounds;
 	AABB                        m_bounds;
-	float                       m_resetBoundsCache;
 	CParticleContainer          m_parentContainer;
 	TRuntimes                   m_componentRuntimes;
 	TRuntimes                   m_componentRuntimesFor;
-	TElementCounts<uint>        m_emitterStats;
 	QuatTS                      m_location;
 	IEntity*                    m_entityOwner;
 	int                         m_entitySlot;
@@ -155,15 +157,19 @@ private:
 	float                       m_time;
 	float                       m_deltaTime;
 	float                       m_primeTime;
-	float                       m_lastTimeRendered;
+	float                       m_timeCreated;
+	float                       m_timeLastRendered;
 	int                         m_emitterEditVersion;
 	int                         m_effectEditVersion;
 	uint                        m_initialSeed;
 	uint                        m_currentSeed;
 	uint                        m_emitterId;
 	bool                        m_registered;
+	bool                        m_reRegister;
 	bool                        m_active;
 };
+
+typedef TDynArray<_smart_ptr<CParticleEmitter>> TParticleEmitters;
 
 }
 

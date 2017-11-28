@@ -3019,7 +3019,7 @@ void CRendererCVars::InitExternalCVars()
 {
 	m_CVWidth = iConsole->GetCVar("r_Width");
 	m_CVHeight = iConsole->GetCVar("r_Height");
-	m_CVFullScreen = iConsole->GetCVar("r_Fullscreen");
+	m_CVWindowType = iConsole->GetCVar("r_WindowType");
 	m_CVDisplayInfo = iConsole->GetCVar("r_DisplayInfo");
 	m_CVColorBits = iConsole->GetCVar("r_ColorBits");
 }

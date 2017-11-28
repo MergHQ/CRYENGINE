@@ -30,11 +30,12 @@ void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 			m_passH.SetRenderTarget(0, CRendererResources::s_ptexSceneTargetR11G11B10F[1]);
 			m_passH.SetState(GS_NODEPTHTEST);
 
-			m_passH.SetTextureSamplerPair(0, pIrradianceTex, EDefaultSamplerStates::PointClamp);
-			m_passH.SetTextureSamplerPair(1, CRendererResources::s_ptexLinearDepth, EDefaultSamplerStates::PointClamp);
-			m_passH.SetTextureSamplerPair(2, CRendererResources::s_ptexSceneNormalsMap, EDefaultSamplerStates::PointClamp);
-			m_passH.SetTextureSamplerPair(3, CRendererResources::s_ptexSceneDiffuse, EDefaultSamplerStates::PointClamp);
-			m_passH.SetTextureSamplerPair(4, CRendererResources::s_ptexSceneSpecular, EDefaultSamplerStates::PointClamp);
+			m_passH.SetTexture(0, pIrradianceTex);
+			m_passH.SetTexture(1, CRendererResources::s_ptexLinearDepth);
+			m_passH.SetTexture(2, CRendererResources::s_ptexSceneNormalsMap);
+			m_passH.SetTexture(3, CRendererResources::s_ptexSceneDiffuse);
+			m_passH.SetTexture(4, CRendererResources::s_ptexSceneSpecular);
+			m_passH.SetSampler(0, EDefaultSamplerStates::PointClamp);
 		}
 
 		m_passH.BeginConstantUpdate();
@@ -53,12 +54,13 @@ void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 			m_passV.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
 			m_passV.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
 
-			m_passV.SetTextureSamplerPair(0, CRendererResources::s_ptexSceneTargetR11G11B10F[1], EDefaultSamplerStates::PointClamp);
-			m_passV.SetTextureSamplerPair(1, CRendererResources::s_ptexLinearDepth, EDefaultSamplerStates::PointClamp);
-			m_passV.SetTextureSamplerPair(2, CRendererResources::s_ptexSceneNormalsMap, EDefaultSamplerStates::PointClamp);
-			m_passV.SetTextureSamplerPair(3, CRendererResources::s_ptexSceneDiffuse, EDefaultSamplerStates::PointClamp);
-			m_passV.SetTextureSamplerPair(4, CRendererResources::s_ptexSceneSpecular, EDefaultSamplerStates::PointClamp);
-			m_passV.SetTextureSamplerPair(5, pIrradianceTex, EDefaultSamplerStates::PointClamp);
+			m_passV.SetTexture(0, CRendererResources::s_ptexSceneTargetR11G11B10F[1]);
+			m_passV.SetTexture(1, CRendererResources::s_ptexLinearDepth);
+			m_passV.SetTexture(2, CRendererResources::s_ptexSceneNormalsMap);
+			m_passV.SetTexture(3, CRendererResources::s_ptexSceneDiffuse);
+			m_passV.SetTexture(4, CRendererResources::s_ptexSceneSpecular);
+			m_passV.SetTexture(5, pIrradianceTex);
+			m_passV.SetSampler(0, EDefaultSamplerStates::PointClamp);
 		}
 
 		m_passV.BeginConstantUpdate();

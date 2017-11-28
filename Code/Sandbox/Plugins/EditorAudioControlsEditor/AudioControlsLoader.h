@@ -12,7 +12,7 @@ class CAudioControlsLoader
 {
 public:
 
-	CAudioControlsLoader(CSystemAssetsManager* pAssetsManager);
+	CAudioControlsLoader(CSystemAssetsManager* const pAssetsManager);
 	std::set<string> GetLoadedFilenamesList();
 	void             LoadAll();
 	void             LoadControls();
@@ -25,7 +25,7 @@ private:
 
 	void            LoadAllLibrariesInFolder(string const& folderPath, string const& level);
 	void            LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint const version);
-	CSystemControl* LoadControl(XmlNodeRef const pNode, Scope scope, uint version, CSystemAsset* const pParentItem);
+	CSystemControl* LoadControl(XmlNodeRef const pNode, Scope const scope, uint const version, CSystemAsset* const pParentItem);
 
 	void            LoadPreloadConnections(XmlNodeRef const pNode, CSystemControl* const pControl, uint const version);
 	void            LoadConnections(XmlNodeRef const root, CSystemControl* const pControl);
@@ -48,8 +48,8 @@ private:
 	static string const s_levelsFolder;
 	// TODO: Move these strings to Utils
 
-	CSystemAssetsManager* m_pAssetsManager;
-	std::set<string>      m_loadedFilenames;
-	EErrorCode            m_errorCodeMask;
+	CSystemAssetsManager* const m_pAssetsManager;
+	std::set<string>            m_loadedFilenames;
+	EErrorCode                  m_errorCodeMask;
 };
 } // namespace ACE

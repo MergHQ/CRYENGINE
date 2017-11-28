@@ -12,7 +12,6 @@ namespace ACE
 {
 class CConnectionsWidget;
 class CSystemAssetsManager;
-class CImplItem;
 class CSystemAsset;
 
 class CPropertiesWidget final : public QWidget
@@ -21,7 +20,7 @@ class CPropertiesWidget final : public QWidget
 
 public:
 
-	explicit CPropertiesWidget(CSystemAssetsManager* pAssetsManager);
+	explicit CPropertiesWidget(CSystemAssetsManager* const pAssetsManager, QWidget* const pParent);
 	virtual ~CPropertiesWidget() override;
 
 	void Reload();
@@ -30,9 +29,11 @@ public:
 
 public slots:
 
-	void SetSelectedAssets(std::vector<CSystemAsset*> const& selectedAssets);
+	void OnSetSelectedAssets(std::vector<CSystemAsset*> const& selectedAssets);
 
 private:
+
+	void RevertPropertyTree();
 
 	CSystemAssetsManager* const m_pAssetsManager;
 	CConnectionsWidget* const   m_pConnectionsWidget;

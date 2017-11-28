@@ -3161,7 +3161,7 @@ void CDataWriter::WriteData(const void* vpData, int vsize)
 				return;
 			}
 
-			Sleep(1);
+			CrySleep(1);
 		}
 		while (true);
 

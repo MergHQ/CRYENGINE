@@ -615,9 +615,7 @@ public:
 
 #if defined(CRY_PLATFORM_WINDOWS)
 	static int CV_d3d11_preventDriverThreading;
-	ICVar*     CV_r_FullscreenWindow;
 	ICVar*     CV_r_FullscreenNativeRes;
-	bool       m_fullscreenWindow;
 #endif
 
 	static int CV_r_VolumetricClouds;
@@ -641,7 +639,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	ICVar* m_CVWidth;
 	ICVar* m_CVHeight;
-	ICVar* m_CVFullScreen;
+	ICVar* m_CVWindowType;
 	ICVar* m_CVColorBits;
 	ICVar* m_CVDisplayInfo;
 	//////////////////////////////////////////////////////////////////////////

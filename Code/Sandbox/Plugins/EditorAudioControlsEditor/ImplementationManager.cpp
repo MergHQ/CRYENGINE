@@ -1,11 +1,11 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ImplementationManager.h"
 
-#include "SystemAssetsManager.h"
+#include "ImplementationManager.h"
 #include "AudioControlsEditorPlugin.h"
-#include "IUndoManager.h"
+
+#include <IUndoManager.h>
 
 #include <IEditorImpl.h>
 #include <CrySystem/IConsole.h>

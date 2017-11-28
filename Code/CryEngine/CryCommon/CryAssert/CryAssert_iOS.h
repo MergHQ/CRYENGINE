@@ -24,7 +24,7 @@ void CryAssertTrace(const char* szFormat, ...)
 		return;
 	}
 
-	if (!gEnv->bIgnoreAllAsserts || gEnv->bTesting)
+	if (!gEnv->ignoreAllAsserts || gEnv->bTesting)
 	{
 		if (szFormat == NULL || szFormat[0] == '\0')
 		{
@@ -88,7 +88,7 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 
 	size_t file_len = strlen(szFile);
 
-	if (!gEnv->bUnattendedMode && !gEnv->bIgnoreAllAsserts)
+	if (!gEnv->bUnattendedMode && !gEnv->ignoreAllAsserts)
 	{
 		CryLogAlways("!!ASSERT!!\n\tCondition: %s\n\tMessage  : %s\n\tFile     : %s\n\tLine     : %d", szCondition, gs_szMessage, szFile, line);
 	}

@@ -37,7 +37,7 @@ cstr CParticleEffect::GetName() const
 
 void CParticleEffect::Compile()
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	CRY_PFX2_PROFILE_DETAIL;
 
 	if (!m_dirty)
 		return;
@@ -59,6 +59,8 @@ void CParticleEffect::Compile()
 	{
 		component->m_componentId = id++;
 		component->Compile();
+		for (auto feature : component->MainPreUpdate)
+			MainPreUpdate.push_back( {component, feature} );
 	}
 	for (auto& component : m_components)
 		component->FinalizeCompile();
@@ -212,7 +214,7 @@ void CParticleEffect::Serialize(Serialization::IArchive& ar)
 
 IParticleEmitter* CParticleEffect::Spawn(const ParticleLoc& loc, const SpawnParams* pSpawnParams)
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	CRY_PFX2_PROFILE_DETAIL;
 
 	PParticleEmitter pEmitter = GetPSystem()->CreateEmitter(this);
 	CParticleEmitter* pCEmitter = static_cast<CParticleEmitter*>(pEmitter.get());

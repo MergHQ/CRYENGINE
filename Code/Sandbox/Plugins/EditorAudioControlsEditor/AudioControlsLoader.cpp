@@ -55,7 +55,7 @@ ESystemItemType TagToType(string const& tag)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioControlsLoader::CAudioControlsLoader(CSystemAssetsManager* pAssetsManager)
+CAudioControlsLoader::CAudioControlsLoader(CSystemAssetsManager* const pAssetsManager)
 	: m_pAssetsManager(pAssetsManager)
 	, m_errorCodeMask(EErrorCode::NoError)
 {}
@@ -222,7 +222,7 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string co
 }
 
 //////////////////////////////////////////////////////////////////////////
-CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope scope, uint version, CSystemAsset* const pParentItem)
+CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, uint const version, CSystemAsset* const pParentItem)
 {
 	CSystemControl* pControl = nullptr;
 

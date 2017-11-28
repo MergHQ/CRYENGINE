@@ -152,10 +152,6 @@ void InitCRTHandlers() {}
 //////////////////////////////////////////////////////////////////////////
 extern "C" DLL_EXPORT void ModuleInitISystem(ISystem* pSystem, const char* moduleName)
 {
-	#if defined(USE_CRY_ASSERT)
-	CryAssertSetGlobalFlagAddress(pSystem->GetAssertFlagAddress());
-	#endif
-
 	if (gEnv) // Already registered.
 		return;
 
@@ -236,7 +232,7 @@ bool CryInitializeEngine(SSystemInitParams& startupParams, bool bManualEngineLoo
 //////////////////////////////////////////////////////////////////////////
 void CrySleep(unsigned int dwMilliseconds)
 {
-	Sleep(dwMilliseconds);
+	::Sleep(dwMilliseconds);
 }
 
 //////////////////////////////////////////////////////////////////////////

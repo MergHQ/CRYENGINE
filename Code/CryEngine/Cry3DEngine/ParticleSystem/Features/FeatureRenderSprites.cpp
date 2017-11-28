@@ -39,6 +39,7 @@ struct SSpritesContext
 		, m_spriteAlphas(memHeap, numParticles)
 		, m_numParticles(numParticles)
 		, m_numSprites(0)
+		, m_fill(0)
 		, m_renderFlags(0)
 		, m_rangeId(0)
 	{
@@ -54,6 +55,7 @@ struct SSpritesContext
 	TFloatArray             m_spriteAlphas;
 	size_t                  m_numParticles;
 	size_t                  m_numSprites;
+	float                   m_fill;
 	uint64                  m_renderFlags;
 	size_t                  m_rangeId;
 };
@@ -164,8 +166,7 @@ void CFeatureRenderSprites::ComputeVertices(CParticleComponentRuntime* pComponen
 	    (!isAfterWater && physEnv.m_tUnderWater.Value == ETrinaryNames::If_False))
 		return;
 
-	uint32 threadId = JobManager::GetWorkerThreadId();
-	TParticleHeap& memHeap = GetPSystem()->GetMemHeap(threadId);
+	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
 
 	SSpritesContext spritesContext(
 	  pComponentRuntime, pComponentRuntime->GetComponentParams(),
@@ -280,6 +281,7 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 					const float ratio = min(size * invMinAng, maxCamDist) * invDist;
 					cull *= min((ratio - 1.0f) * 3.0f, 1.0f);
 				}
+				pSpritesContext->m_fill += sqr(size * invDist);
 			}
 		}
 
@@ -291,16 +293,15 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 		}
 	}
 
-	if ((GetCVars()->e_ParticlesDebug & AlphaBit('c')) == 0)
+	if (!emitter.GetSpawnParams().bIgnoreVisAreas)
 	{
 		// vis area clipping
-		CRY_PFX2_ASSERT(container.HasData(EPDT_Size));
-		Matrix34 viewTM = pSpritesContext->m_camInfo.pCamera->GetMatrix();
-		Vec3 normal = -viewTM.GetColumn0();
-		IVisArea* pVisArea = pSpritesContext->m_visEnviron.GetClipVisArea(pSpritesContext->m_camInfo.pCameraVisArea, pSpritesContext->m_bounds);
-
-		if (pVisArea)
+		if (IVisArea* pVisArea = pSpritesContext->m_visEnviron.GetClipVisArea(pSpritesContext->m_camInfo.pCameraVisArea, pSpritesContext->m_bounds))
 		{
+			CRY_PFX2_ASSERT(container.HasData(EPDT_Size));
+			Matrix34 viewTM = pSpritesContext->m_camInfo.pCamera->GetMatrix();
+			Vec3 normal = -viewTM.GetColumn0();
+
 			const uint count = pSpritesContext->m_numSprites;
 			for (uint i = 0, j = 0; i < count; ++i)
 			{
@@ -361,8 +362,7 @@ void CFeatureRenderSprites::SortSprites(SSpritesContext* pSpritesContext)
 	if (m_sortMode == ESortMode::None || GetCVars()->e_ParticlesSortQuality == 0)
 		return;
 
-	uint32 threadId = JobManager::GetWorkerThreadId();
-	TParticleHeap& memHeap = GetPSystem()->GetMemHeap(threadId);
+	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
 	const uint numSprites = pSpritesContext->m_numSprites;
 
 	THeapArray<uint32> indices(memHeap, numSprites);

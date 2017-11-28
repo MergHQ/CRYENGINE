@@ -1261,7 +1261,7 @@ void CNotificationNetwork::ProcessSockets()
 	if (r < 0)
 	{
 		// So we force the sleep here for now.
-		Sleep(1000);
+		CrySleep(1000);
 		return;
 	}
 

@@ -548,8 +548,8 @@ bool CShadowUtils::SetupShadowsForFog(SShadowCascades& shadowCascades, CRenderVi
 
 	const bool valid = GetShadowCascades(shadowCascades, pRenderView);
 
-	//gcpRendD3D->FX_SetupForwardShadows(pRenderView, false);
-
+	gcpRendD3D->FX_SetupForwardShadows(pRenderView, false);
+	 
 	return valid;
 }
 

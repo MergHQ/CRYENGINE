@@ -6652,7 +6652,7 @@ int CScriptBind_Entity::GetLinkName(IFunctionHandler* pH, ScriptHandle targetId)
 	}
 
 	if (pLink)
-		return pH->EndFunction(pLink->name);
+		return pH->EndFunction(pLink->name.c_str());
 
 	return pH->EndFunction();
 }

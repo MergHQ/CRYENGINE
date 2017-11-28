@@ -59,9 +59,9 @@ public:
 
 	void WriteHeader()
 	{
-		Column("Entity");
 		Column("Effect");
 		Column("Component");
+		Column("Entity");
 		for (const auto& stat : statisticsOutput)
 			Column(stat.m_statName);
 		NewLine();
@@ -76,16 +76,22 @@ public:
 		cstr effectName = pEffect->GetFullName();
 		cstr componentName = pComponent->GetName();
 		cstr entityName = pEntity ? pEntity->GetName() : gDefaultEntityName;
-		bool isIndependent = pEmitter->IsIndependent();
-		bool isChild = !!pComponent->GetParentComponent();
-		bool isImmortal = pComponent->ComponentParams().IsImmortal();
 
-		Column(string().Format("%s%s", entityName, isIndependent ? " [Independent]" : ""));
-		Column(effectName);
-		Column(string().Format("%s%s%s", 
-			componentName, 
-			isImmortal ? " [Immortal]" : "",
-			isChild ? " [Child]" : ""));
+		if (!pRuntime->IsAlive() && pComponent->ComponentParams().IsImmortal())
+			pEntity = pEntity;
+
+		Column(string().Format("%s%s%s",
+			pEmitter->IsActive() ? "#Active " : "#Inactive ",
+			pEmitter->IsAlive() ? "#E:Alive " : "#E:Dead ",
+			effectName));
+		Column(string().Format("%s%s%s%s", 
+			pComponent->GetParentComponent() ? "#Child " : "",
+			pComponent->ComponentParams().IsImmortal() ? "#Immortal " : "",
+			pRuntime->IsAlive() ? "#C:Alive " : "#C:Dead ",
+			componentName));
+		Column(string().Format("%s%s", entityName, 
+			pEmitter->IsIndependent() ? " #Independent" : ""
+		));
 		for (const auto& stat : statisticsOutput)
 			Column(string().Format("%d", statistics.m_values[stat.m_stat]));
 		NewLine();

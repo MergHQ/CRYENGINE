@@ -397,13 +397,20 @@ void CMonoRuntime::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 
 				CManagedPlugin::s_pCurrentlyRegisteringFactory = nullptr;
 
-				// Compile C# source files in the assets directory
-				const char* szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryAbsolute();
-				if (szAssetDirectory != nullptr && szAssetDirectory[0] != '\0')
+				if (gEnv->IsEditor())
 				{
-					CMonoLibrary* pCompiledLibrary = pPluginDomain->CompileFromSource(szAssetDirectory);
-					m_pAssetsPlugin = std::make_shared<CManagedPlugin>(pCompiledLibrary);
-					m_plugins.emplace_back(m_pAssetsPlugin);
+					// Compile C# source files in the assets directory
+					const char* szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryAbsolute();
+					if (szAssetDirectory != nullptr && szAssetDirectory[0] != '\0')
+					{
+						CMonoLibrary* pCompiledLibrary = pPluginDomain->CompileFromSource(szAssetDirectory);
+						m_pAssetsPlugin = std::make_shared<CManagedPlugin>(pCompiledLibrary);
+						m_plugins.emplace_back(m_pAssetsPlugin);
+					}
+				}
+				else
+				{
+
 				}
 
 				for (const std::weak_ptr<IManagedPlugin>& plugin : m_plugins)

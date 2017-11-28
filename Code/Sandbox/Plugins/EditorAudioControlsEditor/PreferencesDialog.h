@@ -6,19 +6,19 @@
 
 namespace ACE
 {
-class CPreferencesDialog : public CEditorDialog
+class CPreferencesDialog final : public CEditorDialog
 {
 	Q_OBJECT
 
 public:
 
-	CPreferencesDialog(QWidget* pParent);
+	CPreferencesDialog(QWidget* const pParent);
 
 signals:
 
-	void ImplementationSettingsAboutToChange();
-	void ImplementationSettingsChanged();
-	void EnableSaveButton(bool);
+	void SignalImplementationSettingsAboutToChange();
+	void SignalImplementationSettingsChanged();
+	void SignalEnableSaveButton(bool);
 
 private:
 

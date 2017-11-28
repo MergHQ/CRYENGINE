@@ -273,11 +273,9 @@ enum EEntityGetSetSlotFlags
 	ENTITY_SLOT_ACTUAL = 1 << 31
 };
 
-#define ENTITY_LINK_NAME_MAX_LENGTH 31
-
 struct IEntityLink
 {
-	char         name[ENTITY_LINK_NAME_MAX_LENGTH + 1]; //!< Name of the link.
+	string       name;                                  //!< Name of the link.
 	EntityId     entityId;                              //!< Entity targeted by the link.
 	EntityGUID   entityGuid;                            //!< Entity targeted by the link.
 	IEntityLink* next;                                  //!< Pointer to the next link, or NULL if last link.

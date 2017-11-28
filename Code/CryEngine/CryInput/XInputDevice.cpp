@@ -92,7 +92,7 @@ public:
 					g_bConnected[i] = r == ERROR_SUCCESS;
 				}
 			}
-			Sleep(1000);
+			CrySleep(1000);
 		}
 	}
 };

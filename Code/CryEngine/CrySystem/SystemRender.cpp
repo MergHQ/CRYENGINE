@@ -53,6 +53,22 @@ extern CMTSafeHeap* g_pPakHeap;
 
 extern int CryMemoryGetAllocatedSize();
 
+// Remap r_fullscreen to keep legacy functionality, r_WindowType is new desired path
+void OnFullscreenStateChanged(ICVar* pFullscreenCVar)
+{
+	if (ICVar* pCVar = gEnv->pConsole->GetCVar("r_WindowType"))
+	{
+		if (pFullscreenCVar->GetIVal() != 0)
+		{
+			pCVar->Set(3);
+		}
+		else if(pCVar->GetIVal() == 3)
+		{
+			pCVar->Set(0);
+		}
+	}
+}
+
 /////////////////////////////////////////////////////////////////////////////////
 void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 {
@@ -124,17 +140,17 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 		"Sets the renderer driver ( DX11/DX12/GL/VK/AUTO ).\n"
 		"Specify in system.cfg like this: r_Driver = \"DX11\"");
 
-	m_rFullscreen = REGISTER_INT("r_Fullscreen", iFullScreenDefault, VF_DUMPTODISK,
+	m_rFullscreen = REGISTER_INT_CB("r_Fullscreen", iFullScreenDefault, VF_DUMPTODISK,
 		"Toggles fullscreen mode. Default is 1 in normal game and 0 in DevMode.\n"
-		"Usage: r_Fullscreen [0=window/1=fullscreen]");
+		"Usage: r_Fullscreen [0=window/1=fullscreen]", OnFullscreenStateChanged);
+
+	m_rWindowState = REGISTER_INT("r_WindowType", 0, VF_DUMPTODISK,
+		"Changes the type of window for the rendered viewport.\n"
+		"Usage: r_WindowType [0=normal window/1=borderless window/2=borderless full screen/3=exclusive full screen]");
 
 	m_rFullsceenNativeRes = REGISTER_INT("r_FullscreenNativeRes", 0, VF_DUMPTODISK,
 		"Toggles native resolution upscaling.\n"
 		"If enabled, scene gets upscaled from specified resolution while UI is rendered in native resolution.");
-
-	m_rFullscreenWindow = REGISTER_INT("r_FullscreenWindow", 0, VF_DUMPTODISK,
-		"Toggles fullscreen-as-window mode. Fills screen but allows seamless switching. Default is 0.\n"
-		"Usage: r_FullscreenWindow [0=locked fullscreen/1=fullscreen as window]");
 
 	m_rDisplayInfo = REGISTER_INT("r_DisplayInfo", iDisplayInfoDefault, VF_RESTRICTEDMODE | VF_DUMPTODISK,
 		"Toggles debugging information display.\n"
@@ -750,7 +766,7 @@ void CSystem::RenderStats()
 		// DO NOT REMOVE OR COMMENT THIS OUT!
 		// If you hit this, then you most likely have invalid (synchronous) file accesses
 		// which must be fixed in order to not stall the entire game.
-		Sleep(3000);
+		CrySleep(3000);
 		m_bHasRenderedErrorMessage = false;
 	}
 #endif

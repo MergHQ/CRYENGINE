@@ -2876,20 +2876,17 @@ IEntityLink* CEntity::GetEntityLinks()
 };
 
 //////////////////////////////////////////////////////////////////////////
-IEntityLink* CEntity::AddEntityLink(const char* sLinkName, EntityId entityId, EntityGUID entityGuid)
+IEntityLink* CEntity::AddEntityLink(const char* szLinkName, EntityId entityId, EntityGUID entityGuid)
 {
-	assert(sLinkName);
-	if (sLinkName == NULL)
-		return NULL;
+	CRY_ASSERT(szLinkName != nullptr);
 
 	CEntity* pLinkedEntity = g_pIEntitySystem->GetEntityFromID(entityId);
 
 	IEntityLink* pNewLink = new IEntityLink;
-	assert(strlen(sLinkName) <= ENTITY_LINK_NAME_MAX_LENGTH);
-	cry_strcpy(pNewLink->name, sLinkName);
+	pNewLink->name = szLinkName;
 	pNewLink->entityId = entityId;
 	pNewLink->entityGuid = entityGuid;
-	pNewLink->next = 0;
+	pNewLink->next = nullptr;
 
 	if (m_pEntityLinks)
 	{
@@ -2912,12 +2909,12 @@ IEntityLink* CEntity::AddEntityLink(const char* sLinkName, EntityId entityId, En
 };
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::RenameEntityLink(IEntityLink* pLink, const char* sNewLinkName)
+void CEntity::RenameEntityLink(IEntityLink* pLink, const char* szNewLinkName)
 {
-	if (!m_pEntityLinks || !pLink || !sNewLinkName)
+	if (m_pEntityLinks == nullptr || pLink == nullptr || szNewLinkName == nullptr)
 		return;
 
-	cry_strcpy(pLink->name, ENTITY_LINK_NAME_MAX_LENGTH, sNewLinkName);
+	pLink->name = szNewLinkName;
 }
 
 //////////////////////////////////////////////////////////////////////////

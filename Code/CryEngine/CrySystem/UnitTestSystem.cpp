@@ -275,12 +275,14 @@ void CUnitTestManager::SetExceptionCause(const char* szExpression, const char* s
 {
 	if (m_bRunningTest)
 	{
+#ifdef USE_CRY_ASSERT
 		// Reset assert flag to not block other updates depending on the flag, e.g. editor update, 
 		// in case we do not immediately quit after the unit test.
 		// The flag has to be set here, since the majority of engine code does not use exceptions
 		// but we are using exception or longjmp here, so it no longer returns to the assert caller
 		// which would otherwise reset the flag.
-		gEnv->bStoppedOnAssert = false;
+		gEnv->stoppedOnAssert = false;
+#endif
 
 		m_failureMsg = szExpression;
 #if defined(CRY_UNIT_TESTING_USE_EXCEPTIONS)

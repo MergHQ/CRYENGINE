@@ -145,8 +145,7 @@ void CFeatureRenderRibbon::ComputeVertices(CParticleComponentRuntime* pComponent
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
 
-	const uint32 threadId = JobManager::GetWorkerThreadId();
-	auto& memHep = GetPSystem()->GetMemHeap(threadId);
+	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
 	const CParticleContainer& container = pComponentRuntime->GetContainer();
 	const TParticleId lastParticleId = container.GetLastParticleId();
 
@@ -154,8 +153,8 @@ void CFeatureRenderRibbon::ComputeVertices(CParticleComponentRuntime* pComponent
 		return;
 
 	uint numVertices;
-	TParticleIdArray sortEntries(memHep, lastParticleId);
-	TRibbons ribbons(memHep);
+	TParticleIdArray sortEntries(memHeap, lastParticleId);
+	TRibbons ribbons(memHeap);
 	MakeRibbons(pComponentRuntime, &sortEntries, &ribbons, &numVertices);
 	WriteToGPUMem(pComponentRuntime, camInfo, pRE, sortEntries, ribbons, numVertices);
 
@@ -170,8 +169,7 @@ void CFeatureRenderRibbon::MakeRibbons(CParticleComponentRuntime* pComponentRunt
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	const uint32 threadId = JobManager::GetWorkerThreadId();
-	auto& memHep = GetPSystem()->GetMemHeap(threadId);
+	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
 	const SUpdateContext context = SUpdateContext(pComponentRuntime);
 	const CParticleContainer& container = pComponentRuntime->GetContainer();
 	const IUintStream ribbonIds = container.GetIUintStream(EPDT_RibbonId);
@@ -182,7 +180,7 @@ void CFeatureRenderRibbon::MakeRibbons(CParticleComponentRuntime* pComponentRunt
 
 	{
 		const uint64 noKey = uint64(-1);
-		THeapArray<uint64> sortEntries(memHep, lastParticleId);
+		THeapArray<uint64> sortEntries(memHeap, lastParticleId);
 		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId ribbonId = ribbonIds.Load(particleId);
@@ -195,7 +193,7 @@ void CFeatureRenderRibbon::MakeRibbons(CParticleComponentRuntime* pComponentRunt
 		}
 		RadixSort(
 		  pSortEntries->begin(), pSortEntries->end(),
-		  sortEntries.begin(), sortEntries.end(), memHep);
+		  sortEntries.begin(), sortEntries.end(), memHeap);
 	}
 
 	uint ribbonCount = 0;

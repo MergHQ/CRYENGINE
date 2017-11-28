@@ -669,7 +669,7 @@ void        CVisArea::PreRender(int nReqursionLevel,
 					continue;
 			}
 
-			if ((bCanSeeThruThisArea || m_lstConnections.Count() == 1) && (m_bThisIsPortal || CurCamera.IsAABBVisible_F(pNeibVolume->m_boxStatics)))
+			if (bCanSeeThruThisArea && (m_bThisIsPortal || CurCamera.IsAABBVisible_F(pNeibVolume->m_boxStatics)))
 				pNeibVolume->PreRender(nReqursionLevel - 1, CurCamera, this, pCurPortal, pbOutdoorVisible, plstOutPortCameras, pbSkyVisible, pbOceanVisible, lstVisibleAreas, passInfo);
 		}
 	}

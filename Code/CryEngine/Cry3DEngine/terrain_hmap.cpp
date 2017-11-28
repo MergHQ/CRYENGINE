@@ -778,16 +778,22 @@ float CHeightMap::GetHeightFromUnits_Callback(int ix, int iy)
 {
 	const uint32 idx = encodeby1(ix & ((nHMCacheSize - 1))) | (encodeby1(iy & ((nHMCacheSize - 1))) << 1);
 	CHeightMap::SCachedHeight& rCache = m_arrCacheHeight[idx];
-	if (rCache.x == ix && rCache.y == iy)
-		return rCache.fHeight;
+
+	// Get copy of the cached value
+	CHeightMap::SCachedHeight cacheCopy(rCache);
+	if (cacheCopy.x == ix && cacheCopy.y == iy)
+		return cacheCopy.fHeight;
 
 	assert(sizeof(m_arrCacheHeight[0]) == 8);
 
-	rCache.x = ix;
-	rCache.y = iy;
-	rCache.fHeight = Cry3DEngineBase::GetTerrain()->GetZfromUnits(ix, iy);
+	cacheCopy.x = ix;
+	cacheCopy.y = iy;
+	cacheCopy.fHeight = Cry3DEngineBase::GetTerrain()->GetZfromUnits(ix, iy);
 
-	return rCache.fHeight;
+	// Update cache by new value
+	rCache.packedValue = cacheCopy.packedValue;
+
+	return cacheCopy.fHeight;
 }
 
 unsigned char CHeightMap::GetSurfaceTypeFromUnits_Callback(int ix, int iy)
@@ -811,14 +817,20 @@ unsigned char CHeightMap::GetSurfaceTypeFromUnits_Callback(int ix, int iy)
 
 	const uint32 idx = encodeby1(ix & ((nHMCacheSize - 1))) | (encodeby1(iy & ((nHMCacheSize - 1))) << 1);
 	CHeightMap::SCachedSurfType& rCache = m_arrCacheSurfType[idx];
-	if (rCache.x == ix && rCache.y == iy)
-		return rCache.surfType;
+
+	// Get copy of the cached value
+	CHeightMap::SCachedSurfType cacheCopy(rCache);
+	if (cacheCopy.x == ix && cacheCopy.y == iy)
+		return cacheCopy.surfType;
 
 	//  nBad++;
 
-	rCache.x = ix;
-	rCache.y = iy;
-	rCache.surfType = Cry3DEngineBase::GetTerrain()->GetSurfTypeFromUnits(ix, iy);
+	cacheCopy.x = ix;
+	cacheCopy.y = iy;
+	cacheCopy.surfType = Cry3DEngineBase::GetTerrain()->GetSurfTypeFromUnits(ix, iy);
 
-	return rCache.surfType;
+	// Update cache by new value
+	rCache.packedValue = cacheCopy.packedValue;
+
+	return cacheCopy.surfType;
 }

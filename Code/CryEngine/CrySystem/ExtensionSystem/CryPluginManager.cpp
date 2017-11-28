@@ -248,14 +248,19 @@ void CCryPluginManager::LoadProjectPlugins()
 
 	for (const SPluginDefinition& pluginDefinition : pluginDefinitions)
 	{
+		if (!pluginDefinition.platforms.empty() && !stl::find(pluginDefinition.platforms, EPlatform::Current))
+		{
+			continue;
+		}
+
 #if defined(CRY_IS_MONOLITHIC_BUILD)
 		// Don't attempt to load plug-ins that were statically linked in
 		string pluginName = PathUtil::GetFileName(pluginDefinition.path);
 		bool bValid = true;
 
-		for (const std::pair<uint8, const char*>& defaultPlugin : CCryPluginManager::GetDefaultPlugins())
+		for (const std::pair<uint8, SPluginDefinition>& defaultPlugin : CCryPluginManager::GetDefaultPlugins())
 		{
-			if (!strcmp(defaultPlugin.second, pluginName.c_str()))
+			if (!strcmp(defaultPlugin.second.path, pluginName.c_str()))
 			{
 				bValid = false;
 				break;
@@ -273,7 +278,7 @@ void CCryPluginManager::LoadProjectPlugins()
 
 #if !defined(CRY_IS_MONOLITHIC_BUILD)
 	// Always load the CryUserAnalytics plugin
-	SPluginDefinition userAnalyticsPlugin(EType::Native, "CryUserAnalytics");
+	SPluginDefinition userAnalyticsPlugin{ EType::Native, "CryUserAnalytics" };
 	if (std::find(std::begin(pluginDefinitions), std::end(pluginDefinitions), userAnalyticsPlugin) == std::end(pluginDefinitions))
 	{
 		LoadPluginFromDisk(userAnalyticsPlugin.type, userAnalyticsPlugin.path);

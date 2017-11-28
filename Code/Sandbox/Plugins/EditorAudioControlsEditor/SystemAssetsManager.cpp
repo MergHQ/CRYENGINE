@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "SystemAssetsManager.h"
 
-#include "AudioControlsEditorUndo.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 
@@ -229,8 +228,8 @@ void CSystemAssetsManager::Clear()
 		DeleteItem(pLibrary);
 	}
 
-	CRY_ASSERT(m_controls.empty());
-	CRY_ASSERT(m_systemLibraries.empty());
+	CRY_ASSERT_MESSAGE(m_controls.empty(),"m_controls is not empty.");
+	CRY_ASSERT_MESSAGE(m_systemLibraries.empty(), "m_systemLibraries is not empty.");
 	ClearScopes();
 	ClearDirtyFlags();
 }

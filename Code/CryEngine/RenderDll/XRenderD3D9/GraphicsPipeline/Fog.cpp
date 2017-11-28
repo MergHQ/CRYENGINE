@@ -137,6 +137,7 @@ void CFogStage::Execute()
 			m_passFog.SetState(nRS);
 
 			m_passFog.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+			m_passFog.SetSampler(0, EDefaultSamplerStates::PointClamp);
 
 			if (bVolumtricFog)
 			{
@@ -145,16 +146,16 @@ void CFogStage::Execute()
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 			else if (bVolFogShadow)
 			{
-				m_passFog.SetTextureSamplerPair(1, CRendererResources::s_ptexVolFogShadowBuf[0], EDefaultSamplerStates::PointClamp);
+				m_passFog.SetTexture(1, CRendererResources::s_ptexVolFogShadowBuf[0]);
 			}
 #endif
 #if defined(FEATURE_SVO_GI)
 			else if (nSvoGiTexId)
 			{
 				// bind SVO atmosphere
-				m_passFog.SetTextureSamplerPair(12, pSR->GetTroposphereMinRT(), EDefaultSamplerStates::PointClamp);
-				m_passFog.SetTextureSamplerPair(13, pSR->GetTroposphereShadRT(), EDefaultSamplerStates::PointClamp);
-				m_passFog.SetTextureSamplerPair(14, pSR->GetTroposphereMaxRT(), EDefaultSamplerStates::PointClamp);
+				m_passFog.SetTexture(12, pSR->GetTroposphereMinRT());
+				m_passFog.SetTexture(13, pSR->GetTroposphereShadRT());
+				m_passFog.SetTexture(14, pSR->GetTroposphereMaxRT());
 			}
 #endif
 		}

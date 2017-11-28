@@ -78,8 +78,9 @@ void CSunShaftsStage::Execute()
 			m_passShaftsMask.SetRenderTarget(0, pFinalRT);
 			m_passShaftsMask.SetState(GS_NODEPTHTEST);
 
-			m_passShaftsMask.SetTextureSamplerPair(0, CRendererResources::s_ptexLinearDepthScaled[0], EDefaultSamplerStates::PointClamp);
-			m_passShaftsMask.SetTextureSamplerPair(1, CRendererResources::s_ptexHDRTargetScaled[0], EDefaultSamplerStates::PointClamp);  // TODO
+			m_passShaftsMask.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[0]);
+			m_passShaftsMask.SetTexture(1, CRendererResources::s_ptexHDRTargetScaled[0]);  // TODO
+			m_passShaftsMask.SetSampler(0, EDefaultSamplerStates::PointClamp);  
 		}
 
 		m_passShaftsMask.BeginConstantUpdate();
@@ -111,7 +112,8 @@ void CSunShaftsStage::Execute()
 				m_passShaftsGen0.SetTechnique(pShader, techShaftsGen, rtMask);
 				m_passShaftsGen0.SetRenderTarget(0, pTempRT);
 				m_passShaftsGen0.SetState(GS_NODEPTHTEST);
-				m_passShaftsGen0.SetTextureSamplerPair(0, pFinalRT, EDefaultSamplerStates::LinearClamp);
+				m_passShaftsGen0.SetTexture(0, pFinalRT);
+				m_passShaftsGen0.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 			}
 
 			auto constants = m_passShaftsGen0.BeginTypedConstantUpdate<SSunShaftConstants>(eConstantBufferShaderSlot_PerBatch);
@@ -137,7 +139,8 @@ void CSunShaftsStage::Execute()
 				m_passShaftsGen1.SetTechnique(pShader, techShaftsGen, rtMask);
 				m_passShaftsGen1.SetRenderTarget(0, pFinalRT);
 				m_passShaftsGen1.SetState(GS_NODEPTHTEST);
-				m_passShaftsGen1.SetTextureSamplerPair(0, pTempRT, EDefaultSamplerStates::LinearClamp);
+				m_passShaftsGen1.SetTexture(0, pTempRT);
+				m_passShaftsGen1.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 			}
 
 			auto constants = m_passShaftsGen1.BeginTypedConstantUpdate<SSunShaftConstants>(eConstantBufferShaderSlot_PerBatch);

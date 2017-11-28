@@ -329,7 +329,7 @@ __int64 CWinThreadSampler::RDTSC()
 	DWORD mask = SetThreadAffinityMask(GetCurrentThread(), 1);
 
 	//reshedule to CPU 1
-	Sleep(0);
+	CrySleep(0);
 
 	__int64 cycles;
 

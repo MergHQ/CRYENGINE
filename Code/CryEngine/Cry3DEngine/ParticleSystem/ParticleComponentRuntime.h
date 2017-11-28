@@ -67,7 +67,7 @@ public:
 
 	bool                      IsAlive() const;
 	bool                      HasParticles() const;
-	void                      AccumStats(SParticleStats& statsCPU, SParticleStats& statsGPU);
+	void                      AccumStats();
 
 	SParticleStats::ParticleStats& GetParticleStats() { return m_particleStats; }
 

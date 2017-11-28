@@ -5,8 +5,7 @@
 #include <Controls/EditorDialog.h>
 #include <SystemTypes.h>
 
-class QAdvancedTreeView;
-class QDeepFilterProxyModel;
+class QSearchBox;
 class QDialogButtonBox;
 class CMountingProxyModel;
 class QAbstractItemModel;
@@ -14,9 +13,12 @@ class QModelIndex;
 
 namespace ACE
 {
+class CTreeView;
+class CSystemAsset;
 class CSystemAssetsManager;
+class CResourceSourceModel;
 class CResourceLibraryModel;
-class CResourceControlsModel;
+class CResourceFilterProxyModel;
 
 class CResourceSelectorDialog final : public CEditorDialog
 {
@@ -24,50 +26,46 @@ class CResourceSelectorDialog final : public CEditorDialog
 
 public:
 
-	CResourceSelectorDialog(QWidget* pParent, ESystemItemType const eType);
+	CResourceSelectorDialog(ESystemItemType const type, Scope const scope, QWidget* const pParent);
 	~CResourceSelectorDialog();
+
+	char const* ChooseItem(char const* currentValue);
+
+	// QDialog
+	virtual QSize sizeHint() const override;
+	// ~QDialog
 
 private slots:
 
-	void UpdateSelectedControl();
-	void SetTextFilter(QString const&filter);
-	void StopTrigger();
-	void ItemDoubleClicked(QModelIndex const& modelIndex);
+	void OnUpdateSelectedControl();
+	void OnStopTrigger();
+	void OnItemDoubleClicked(QModelIndex const& modelIndex);
 	void OnContextMenu(QPoint const& pos);
-
-public:
-
-	void        SetScope(Scope const scope);
-	char const* ChooseItem(char const* currentValue);
-	QSize       sizeHint() const override;
 
 private:
 
 	QModelIndex         FindItem(string const& sControlName);
-	void                ApplyFilter();
-	bool                ApplyFilter(QModelIndex const& parent);
-	bool                IsValid(QModelIndex const& index);
-	QAbstractItemModel* CreateControlsModelFromIndex(QModelIndex const& sourceIndex);
+	QAbstractItemModel* CreateLibraryModelFromIndex(QModelIndex const& sourceIndex);
+	void                DeleteModels();
 
 	// QDialog
 	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 	// ~QDialog
 
-	// Filtering
-	QString                              m_sFilter;
-	ESystemItemType                      m_eType;
-	Scope                                m_scope;
-	bool                                 m_selectionIsValid = false;
+	ESystemItemType const               m_type;
+	Scope const                         m_scope;
+	bool                                m_selectionIsValid = false;
 
-	static string                        s_previousControlName;
-	static ESystemItemType               s_previousControlType;
-	QAdvancedTreeView* const             m_pTreeView;
-	QDialogButtonBox* const              m_pDialogButtons;
+	CSystemAssetsManager* const         m_pAssetsManager;
+	QSearchBox* const                   m_pSearchBox;
+	CTreeView* const                    m_pTreeView;
+	QDialogButtonBox* const             m_pDialogButtons;
+	CResourceFilterProxyModel* const    m_pFilterProxyModel;
+	CMountingProxyModel*                m_pMountingProxyModel;
+	CResourceSourceModel* const         m_pSourceModel;
+	std::vector<CResourceLibraryModel*> m_libraryModels;
 
-	CSystemAssetsManager*                m_pAssetsManager;
-	QDeepFilterProxyModel*               m_pFilterProxyModel;
-	CResourceLibraryModel*               m_pLibraryModel;
-	CMountingProxyModel*                 m_pMountingProxyModel;
-	std::vector<CResourceControlsModel*> m_controlsModels;
+	static string                       s_previousControlName;
+	static ESystemItemType              s_previousControlType;
 };
 } // namespace ACE

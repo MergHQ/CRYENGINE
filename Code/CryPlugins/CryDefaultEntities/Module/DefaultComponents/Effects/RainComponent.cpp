@@ -91,6 +91,8 @@ namespace Cry
 
 		CRainComponent::~CRainComponent()
 		{
+			Reset();
+
 			for (ITexture* pTexture : m_Textures)
 			{
 				pTexture->Release();

@@ -60,6 +60,7 @@ public:
 public:
 	CParticleProfiler();
 
+	bool IsEnabled() const { return Cry3DEngineBase::GetCVars()->e_ParticlesProfiler != 0; }
 	void Reset();
 	void Display();
 	void SaveToFile();

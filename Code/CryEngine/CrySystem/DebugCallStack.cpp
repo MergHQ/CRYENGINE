@@ -884,7 +884,10 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 		return EXCEPTION_EXECUTE_HANDLER;
 	}
 
-	gEnv->bIgnoreAllAsserts = true;
+#ifdef USE_CRY_ASSERT
+	gEnv->ignoreAllAsserts = true;
+#endif
+
 	gEnv->pLog->FlushAndClose();
 
 	ResetFPU(exception_pointer);
@@ -1280,9 +1283,12 @@ void DebugCallStack::MinimalExceptionReport(EXCEPTION_POINTERS* exception_pointe
 
 	int prev_sys_no_crash_dialog = g_cvars.sys_no_crash_dialog;
 
-	gEnv->bIgnoreAllAsserts = true;
+#ifdef USE_CRY_ASSERT
+	gEnv->ignoreAllAsserts = true;
+	gEnv->cryAssertLevel = ECryAssertLevel::Disabled;
+#endif
+
 	g_cvars.sys_no_crash_dialog = 1;
-	g_cvars.sys_asserts = 0;
 
 	CrySpinLock(&s_exception_handler_lock, 0, 1);
 

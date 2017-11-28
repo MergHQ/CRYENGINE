@@ -15,7 +15,7 @@ namespace Schematyc2
 	ICVar* CVars::sc_LogToFile                = nullptr;
 	ICVar* CVars::sc_LogFileStreams           = nullptr;
 	ICVar* CVars::sc_LogFileMessageTypes      = nullptr;
-	int    CVars::sc_DisplayCriticalErrors    = 1;
+	int    CVars::sc_DisplayCriticalErrors    = 0;
 
 	int    CVars::sc_RunUnitTests             = 0;
 	int    CVars::sc_MaxRecursionDepth        = 100;

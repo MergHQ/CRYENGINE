@@ -87,10 +87,14 @@ void CHeightMapAOStage::Execute()
 				m_passSampling.SetRenderTarget(0, pDestRT);
 				m_passSampling.SetState(GS_NODEPTHTEST);
 
-				m_passSampling.SetTextureSamplerPair(0, CRendererResources::s_ptexSceneNormalsMap, EDefaultSamplerStates::PointClamp);
-				m_passSampling.SetTextureSamplerPair(1, m_pHeightMapAOScreenDepthTex, EDefaultSamplerStates::PointClamp);
-				m_passSampling.SetTextureSamplerPair(10, CRendererResources::s_ptexSceneNormalsBent, EDefaultSamplerStates::PointClamp);
-				m_passSampling.SetTextureSamplerPair(11, CRendererResources::s_ptexHeightMapAODepth[1], EDefaultSamplerStates::TrilinearBorder_White);
+				m_passSampling.SetTexture(0, CRendererResources::s_ptexSceneNormalsMap);
+				m_passSampling.SetTexture(1, m_pHeightMapAOScreenDepthTex);
+				m_passSampling.SetTexture(10, CRendererResources::s_ptexSceneNormalsBent);
+				m_passSampling.SetTexture(11, CRendererResources::s_ptexHeightMapAODepth[1]);
+
+				m_passSampling.SetSampler(0, EDefaultSamplerStates::PointClamp);
+				m_passSampling.SetSampler(1, EDefaultSamplerStates::TrilinearBorder_White);
+
 				m_passSampling.SetRequireWorldPos(true);
 				m_passSampling.SetRequirePerViewConstantBuffer(true);
 			}

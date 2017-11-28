@@ -13,6 +13,7 @@
 
 #include "stdafx.h"
 #include "EntityTimeoutList.h"
+#include "EntitySystem.h"
 #include <CrySystem/ITimer.h>
 #include "EntityCVars.h"
 
@@ -39,7 +40,7 @@ void CEntityTimeoutList::ResetTimeout(EntityId id, float timeOffset)
 	if (id)
 	{
 		WriteLock lock(m_lock);
-		int index = IdToHandle(id).GetIndex() + 1;
+		int index = CEntitySystem::IdToHandle(id).GetIndex() + 1;
 
 		if (int(m_entries.size()) <= index)
 		{

@@ -1335,7 +1335,7 @@ void SParticleVertexContext::Init(float fMaxContainerPixels, CParticleContainer*
 	}
 
 	m_fClipWaterSense = 0.f;
-	const bool bAllowClip = !(cvars.e_ParticlesDebug & AlphaBit('c'));
+	const bool bAllowClip = !emitterMain.GetSpawnParams().bIgnoreVisAreas;
 	const SPhysEnviron& PhysEnv = emitterMain.GetPhysEnviron();
 	if (bAllowClip && params.eFacing != params.eFacing.Water && PhysEnv.m_tUnderWater == ETrinary())
 	{

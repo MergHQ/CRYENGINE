@@ -1739,18 +1739,18 @@ void CEntitySystem::OnEditorSimulationModeChanged(EEditorSimulationMode mode)
 		if (CEntity* pEntity = *it)
 		{
 			pEntity->OnEditorGameModeChanged(bSimulating);
-
-			SEntityEvent event;
-			event.event = ENTITY_EVENT_RESET;
-			event.nParam[0] = bSimulating ? 1 : 0;
-			pEntity->SendEvent(event);
-
-			if (bSimulating)
-			{
-				event.event = ENTITY_EVENT_START_GAME;
-				pEntity->SendEvent(event);
-			}
 		}
+	}
+
+	SEntityEvent event;
+	event.event = ENTITY_EVENT_RESET;
+	event.nParam[0] = bSimulating ? 1 : 0;
+	SendEventToAll(event);
+
+	if (bSimulating)
+	{
+		event.event = ENTITY_EVENT_START_GAME;
+		SendEventToAll(event);
 	}
 }
 
@@ -2000,7 +2000,7 @@ void CEntitySystem::ReserveEntityId(const EntityId id)
 {
 	assert(id);
 
-	const CSaltHandle<> hdl = IdToHandle(id);
+	const CSaltHandle hdl = IdToHandle(id);
 	if (m_EntitySaltBuffer.IsUsed(hdl.GetIndex())) // Do not reserve if already used.
 		return;
 	//assert(m_EntitySaltBuffer.IsUsed(hdl.GetIndex()) == false);	// don't reserve twice or overriding in used one

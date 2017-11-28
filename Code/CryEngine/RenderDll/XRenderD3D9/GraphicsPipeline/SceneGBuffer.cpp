@@ -477,10 +477,11 @@ void CSceneGBufferStage::ExecuteGBufferVisualization()
 		m_passBufferVisualization.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuseTmp);
 		m_passBufferVisualization.SetState(GS_NODEPTHTEST);
 
-		m_passBufferVisualization.SetTextureSamplerPair(0, CRendererResources::s_ptexLinearDepth, EDefaultSamplerStates::PointClamp);
-		m_passBufferVisualization.SetTextureSamplerPair(1, CRendererResources::s_ptexSceneNormalsMap, EDefaultSamplerStates::PointClamp);
-		m_passBufferVisualization.SetTextureSamplerPair(2, CRendererResources::s_ptexSceneDiffuse, EDefaultSamplerStates::PointClamp);
-		m_passBufferVisualization.SetTextureSamplerPair(3, CRendererResources::s_ptexSceneSpecular, EDefaultSamplerStates::PointClamp);
+		m_passBufferVisualization.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+		m_passBufferVisualization.SetTexture(1, CRendererResources::s_ptexSceneNormalsMap);
+		m_passBufferVisualization.SetTexture(2, CRendererResources::s_ptexSceneDiffuse);
+		m_passBufferVisualization.SetTexture(3, CRendererResources::s_ptexSceneSpecular);
+		m_passBufferVisualization.SetSampler(0, EDefaultSamplerStates::PointClamp);
 
 		m_passBufferVisualization.BeginConstantUpdate();
 		static CCryNameR paramName("DebugViewMode");
