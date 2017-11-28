@@ -668,7 +668,6 @@ void CVolumetricCloudsStage::ExecuteShadowGen()
 void CVolumetricCloudsStage::Execute()
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	SRenderPipeline& rp(gRenDev->m_RP);
 	const bool bVolumetricClouds = rd->m_bVolumetricCloudsEnabled;
 
 	if (!bVolumetricClouds)

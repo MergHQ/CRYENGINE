@@ -202,7 +202,6 @@ bool CREWaterOcean::RequestVerticesBuffer(SVF_P3F_C4B_T2F** pOutputVertices, uin
 	}
 
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	SRenderPipeline& rp(rd->m_RP);
 	auto nThreadID = gRenDev->GetMainThreadID();
 	CRY_ASSERT(rd->m_pRT->IsMainThread());
 
@@ -234,7 +233,6 @@ bool CREWaterOcean::SubmitVerticesBuffer(uint32 nVerticesCount, uint32 nIndicesC
 	}
 
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	SRenderPipeline& rp(rd->m_RP);
 	auto nThreadID = gRenDev->GetMainThreadID();
 	CRY_ASSERT(rd->m_pRT->IsMainThread());
 
@@ -411,7 +409,6 @@ bool CREWaterOcean::Compile(CRenderObject* pObj,CRenderView *pRenderView)
 	cro.m_bValid = 0;
 
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	SRenderPipeline& rp(gRenDev->m_RP);
 	auto nThreadID = gRenDev->GetRenderThreadID();
 	CRY_ASSERT(rd->m_pRT->IsRenderThread());
 	auto* pWaterStage = rd->GetGraphicsPipeline().GetWaterStage();

@@ -420,8 +420,6 @@ void CDeferredShading::SetupPasses(CRenderView* pRenderView)
 {
 	m_nThreadID = gRenDev->GetRenderThreadID();
 
-	gRenDev->m_RP.m_FlagsShader_RT &= ~(RT_LIGHTSMASK | RT_DEBUGMASK);
-
 	m_pNormalsRT = CRendererResources::s_ptexSceneNormalsMap;
 	m_pDepthRT = CRendererResources::s_ptexLinearDepth;
 	m_pResolvedStencilRT = CRendererResources::s_ptexVelocity;
@@ -565,7 +563,6 @@ bool CDeferredShading::DeferredDecalPass(const SDeferredDecal& rDecal, uint32 in
 void CDeferredShading::GetLightRenderSettings(const SRenderLight* const __restrict pDL, bool& bStencilMask, bool& bUseLightVolumes, EShapeMeshType& meshType)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	SRenderPipeline& RESTRICT_REFERENCE rRP = gRenDev->m_RP;
 
 	const bool bAreaLight = (pDL->m_Flags & DLF_AREA_LIGHT) && pDL->m_fAreaWidth && pDL->m_fAreaHeight && pDL->m_fLightFrustumAngle;
 
@@ -701,8 +698,6 @@ bool CDeferredShading::PackAllShadowFrustums(CRenderView *pRenderView)
 
 	CRY_ASSERT(rd->m_pRT->IsRenderThread());
 
-	const uint64 nPrevFlagsShaderRT = gRenDev->m_RP.m_FlagsShader_RT;
-
 	static ICVar* p_e_ShadowsPoolSize = iConsole->GetCVar("e_ShadowsPoolSize");
 
 	RenderLightsList& arrLights = m_pCurrentRenderView->GetLightsArray(eDLT_DeferredLight);
@@ -791,9 +786,6 @@ bool CDeferredShading::PackAllShadowFrustums(CRenderView *pRenderView)
 	SRenderStatistics::Write().m_NumShadowPoolFrustums += m_shadowPoolAlloc.Num();
 #endif
 	
-
-	gRenDev->m_RP.m_FlagsShader_RT = nPrevFlagsShaderRT;
-
 	return true;
 }
 

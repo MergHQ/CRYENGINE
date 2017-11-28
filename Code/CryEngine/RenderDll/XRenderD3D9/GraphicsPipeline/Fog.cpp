@@ -414,7 +414,6 @@ void CFogStage::ExecuteVolumetricFogShadow()
 f32 CFogStage::GetFogCullDistance() const
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	SRenderPipeline& rp(rd->m_RP);
 	CRenderView* pRenderView = RenderView();
 	SRenderViewShaderConstants& PF = pRenderView->GetShaderConstants();
 

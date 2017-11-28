@@ -54,10 +54,6 @@ bool CShader::mfPrecache(SShaderCombination& cmb, bool bForce, CShaderResources*
 
 	uint32 i, j;
 
-	//is this required? Messing with the global render state?
-	//gRenDev->m_RP.m_pShader = this;
-	//gRenDev->m_RP.m_pCurTechnique = NULL;
-
 	for (i = 0; i < m_HWTechniques.Num(); i++)
 	{
 		SShaderTechnique* pTech = m_HWTechniques[i];
@@ -65,10 +61,10 @@ bool CShader::mfPrecache(SShaderCombination& cmb, bool bForce, CShaderResources*
 		{
 			SShaderPass& Pass = pTech->m_Passes[j];
 			SShaderCombination c = cmb;
-			gRenDev->m_RP.m_FlagsShader_MD = cmb.m_MDMask;
+			uint32 nFlagsShader_MD = cmb.m_MDMask;
 			if (Pass.m_PShader)
 				bRes &= Pass.m_PShader->mfPrecache(cmb, bForce, false, this, pRes);
-			cmb.m_MDMask = gRenDev->m_RP.m_FlagsShader_MD;
+			cmb.m_MDMask = nFlagsShader_MD;
 			if (Pass.m_VShader)
 				bRes &= Pass.m_VShader->mfPrecache(cmb, bForce, false, this, pRes);
 			cmb = c;
@@ -1752,6 +1748,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 					for (int n = 0; n < pTech->m_Passes.Num(); n++)
 					{
 						SShaderPass* pPass = &pTech->m_Passes[n];
+						SCacheCombination cmbSaved = *cmba;
 
 						// Adjust some flags for low spec
 						CHWShader* shaders[] = { pPass->m_PShader, pPass->m_VShader };
@@ -1760,14 +1757,17 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 							CHWShader* shader = shaders[i];
 							if (shader && (!m_szShaderPrecache || !stricmp(m_szShaderPrecache, shader->m_EntryFunc.c_str()) != 0))
 							{
+								uint64 nFlagsOrigShader_RT = cmbSaved.Ident.m_RTMask & shader->m_nMaskAnd_RT | shader->m_nMaskOr_RT;
+								uint64 nFlagsOrigShader_GL = shader->m_nMaskGenShader;
+								uint32 nFlagsOrigShader_LT = cmbSaved.Ident.m_LightMask;
+
 								shader->PrecacheShader(pSH, cmba->Ident, nFlags);
 
-								uint64 nFlagsOrigShader_RT = cmba->Ident.m_RTMask & shader->m_nMaskAnd_RT | shader->m_nMaskOr_RT;
-								if (nFlagsOrigShader_RT != cmba->Ident.m_RTMask)
+								if (nFlagsOrigShader_RT != cmbSaved.Ident.m_RTMask || nFlagsOrigShader_GL != shader->m_nMaskGenShader || nFlagsOrigShader_LT != cmbSaved.Ident.m_LightMask)
 								{
 									m_nCombinationsEmpty++;
 									if (!bStatsOnly)
-										shader->mfAddEmptyCombination(pSH, nFlagsOrigShader_RT, shader->m_nMaskGenShader, cmba->Ident.m_LightMask);
+										shader->mfAddEmptyCombination(pSH, nFlagsOrigShader_RT, nFlagsOrigShader_GL, nFlagsOrigShader_LT, cmbSaved);
 								}
 							}
 							

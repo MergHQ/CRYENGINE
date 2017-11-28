@@ -95,6 +95,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 		return;
 
 	uint64 rtFlags = g_HWSR_MaskBit[HWSR_CUBEMAP0];
+	uint32 mdFlags = 0;
 
 	ITexture* pNormalMap = TextureHelpers::LookupTexDefault(EFTT_NORMALS);
 	if (SEfResTexture* pNormalRes = shaderItem.m_pShaderResources->GetTexture(EFTT_NORMALS))
@@ -147,7 +148,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 
 			if (pDiffuseRes->IsHasModificators())
 			{
-				pDiffuseRes->UpdateWithModifier(EFTT_MAX);
+				pDiffuseRes->UpdateWithModifier(EFTT_MAX, mdFlags);
 				SEfTexModificator* mod = pDiffuseRes->m_Ext.m_pTexModifier;
 				texMatrix = pDiffuseRes->m_Ext.m_pTexModifier->m_TexMatrix;
 			}

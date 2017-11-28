@@ -517,7 +517,7 @@ public:
 
 	bool CheckSSAAChange();
 
-	void FX_SetupForwardShadows(CRenderView* pRenderView, bool bUseShaderPermutations = false);
+	void FX_SetupForwardShadows(CRenderView* pRenderView, uint64& nMaskRT, bool bUseShaderPermutations = false);
 
 	bool FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pRes, CRenderObject* pObj, SShaderTechnique* pTech, SHRenderTarget* pTarg, int nPreprType, CRenderElement* pRE,const SRenderingPassInfo& passInfo);
 

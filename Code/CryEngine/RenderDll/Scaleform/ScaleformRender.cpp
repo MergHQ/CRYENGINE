@@ -464,8 +464,6 @@ void CD3D9Renderer::SF_DrawIndexedTriList(int baseVertexIndex, int minVertexInde
 	if (IsDeviceLost())
 		return;
 
-	SRenderPipeline& RESTRICT_REFERENCE rRP = m_RP;
-
 	CRY_ASSERT(params.vtxData->VertexFormat != IScaleformPlayback::Vertex_Glyph && params.vtxData->VertexFormat != IScaleformPlayback::Vertex_None);
 
 	SSF_ResourcesD3D& sfRes(SF_GetResources());
@@ -579,8 +577,6 @@ void CD3D9Renderer::SF_DrawGlyphClear(const IScaleformPlayback::DeviceData* vtxD
 
 	if (IsDeviceLost())
 		return;
-
-	SRenderPipeline& RESTRICT_REFERENCE rRP = m_RP;
 
 	CRY_ASSERT(vtxData->VertexFormat == IScaleformPlayback::Vertex_Glyph || vtxData->VertexFormat == IScaleformPlayback::Vertex_XY16i);
 

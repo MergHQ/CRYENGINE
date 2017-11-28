@@ -185,3 +185,27 @@ inline uint8 CDeviceObjectFactory::MarkWriteRange(D3DBuffer* buffer, buffer_size
 
 	return uint8(marker);
 }
+
+// Local helper function to erase items with refcount 1 from some cache of shared pointers
+template<typename TCache>
+inline void EraseUnusedEntriesFromCache(TCache& cache)
+{
+	for (auto it = cache.begin(), itEnd = cache.end(); it != itEnd; )
+	{
+		auto itCurrentEntry = it++;
+		if (itCurrentEntry->second.use_count() == 1)
+			cache.erase(itCurrentEntry->first);
+	}
+}
+
+// Local helper function to erase expired-items from some cache of weak pointers
+template<typename TCache>
+inline void EraseExpiredEntriesFromCache(TCache& cache)
+{
+	for (auto it = cache.begin(), itEnd = cache.end(); it != itEnd; )
+	{
+		auto itCurrentEntry = it++;
+		if (itCurrentEntry->second.expired())
+			cache.erase(itCurrentEntry->first);
+	}
+}

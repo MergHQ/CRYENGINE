@@ -660,13 +660,13 @@ void CD3D9Renderer::ConfigShadowTexgen(CRenderView* pRenderView, int Num, Shadow
 }
 
 //=============================================================================================================
-void CD3D9Renderer::FX_SetupForwardShadows(CRenderView* pRenderView, bool bUseShaderPermutations)
+void CD3D9Renderer::FX_SetupForwardShadows(CRenderView* pRenderView, uint64& nMaskRT, bool bUseShaderPermutations)
 {
 	auto& SMFrustums = pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic);
 
 	if (bUseShaderPermutations)
 	{
-		m_RP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE0] | g_HWSR_MaskBit[HWSR_SAMPLE1] | g_HWSR_MaskBit[HWSR_SAMPLE2] | g_HWSR_MaskBit[HWSR_SAMPLE3] |
+		nMaskRT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE0] | g_HWSR_MaskBit[HWSR_SAMPLE1] | g_HWSR_MaskBit[HWSR_SAMPLE2] | g_HWSR_MaskBit[HWSR_SAMPLE3] |
 		                           g_HWSR_MaskBit[HWSR_LIGHT_TEX_PROJ]);
 	}
 	else
@@ -684,7 +684,7 @@ void CD3D9Renderer::FX_SetupForwardShadows(CRenderView* pRenderView, bool bUseSh
 		ConfigShadowTexgen(pRenderView,cascadeCount, pFr, -1, true);
 
 		if (bUseShaderPermutations)
-			m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_SAMPLE0 + cascadeCount];
+			nMaskRT |= g_HWSR_MaskBit[HWSR_SAMPLE0 + cascadeCount];
 
 		++cascadeCount;
 	}
@@ -698,7 +698,7 @@ void CD3D9Renderer::FX_SetupForwardShadows(CRenderView* pRenderView, bool bUseSh
 		nCascadeMask |= CShadowUtils::eForwardShadowFlags_CloudsShadows;
 
 		if (bUseShaderPermutations)
-			m_RP.m_FlagsShader_RT |= g_HWSR_MaskBit[HWSR_LIGHT_TEX_PROJ];
+			nMaskRT |= g_HWSR_MaskBit[HWSR_LIGHT_TEX_PROJ];
 	}
 
 	// store cascade mask in m_TempVecs[4].z

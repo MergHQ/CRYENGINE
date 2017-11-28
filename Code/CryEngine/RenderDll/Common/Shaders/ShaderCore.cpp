@@ -1909,7 +1909,7 @@ void SEfResTexture::UpdateForCreate()
 }
 
 // Update TexGen and TexTransform matrices for current material texture
-void SEfResTexture::Update(int nTSlot)
+void SEfResTexture::Update(int nTSlot, uint32& nMDMask)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
 	  PrefetchLine(m_Sampler.m_pTex, 0);
@@ -1923,15 +1923,15 @@ void SEfResTexture::Update(int nTSlot)
 	IF (!pMod, 1)
 	{
 		if (nTSlot == 0)
-			gRenDev->m_RP.m_FlagsShader_MD |= m_Ext.m_nUpdateFlags;
+			nMDMask |= m_Ext.m_nUpdateFlags;
 	}
 	else
 	{
-		UpdateWithModifier(nTSlot);
+		UpdateWithModifier(nTSlot, nMDMask);
 	}
 }
 
-void SEfResTexture::UpdateWithModifier(int nTSlot)
+void SEfResTexture::UpdateWithModifier(int nTSlot, uint32& nMDMask)
 {
 	CRenderer* rd = gRenDev;
 	int nFrameID = gRenDev->GetRenderFrameID();
@@ -1939,7 +1939,7 @@ void SEfResTexture::UpdateWithModifier(int nTSlot)
 	if (m_Ext.m_nFrameUpdated == nFrameID && m_Ext.m_nLastRecursionLevel == recursion)
 	{
 		if (nTSlot == 0)
-			gRenDev->m_RP.m_FlagsShader_MD |= m_Ext.m_nUpdateFlags;
+			nMDMask |= m_Ext.m_nUpdateFlags;
 
 		return;
 	}
@@ -2268,7 +2268,7 @@ void SEfResTexture::UpdateWithModifier(int nTSlot)
 		m_Ext.m_nUpdateFlags |= HWMD_TEXCOORD_PROJ;
 
 	if (nTSlot == 0)
-		gRenDev->m_RP.m_FlagsShader_MD |= m_Ext.m_nUpdateFlags;
+		nMDMask |= m_Ext.m_nUpdateFlags;
 }
 
 //---------------------------------------------------------------------------

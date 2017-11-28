@@ -43,7 +43,6 @@ void CLightVolumeBuffer::UpdateContent()
 	PROFILE_FRAME(DLightsInfo_UpdateSRV);
 
 	CD3D9Renderer* pRenderer = gcpRendD3D;
-	SRenderPipeline& RESTRICT_REFERENCE rp = gRenDev->m_RP;
 
 	struct SLightVolume* pLightVols;
 	uint32 numVols;

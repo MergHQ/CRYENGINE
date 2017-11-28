@@ -32,9 +32,6 @@ void CAutoExposureStage::MeasureLuminance()
 
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 
-	uint64 nFlagsShader_RT = gRenDev->m_RP.m_FlagsShader_RT;
-	gRenDev->m_RP.m_FlagsShader_RT &= ~(g_HWSR_MaskBit[HWSR_SAMPLE0] | g_HWSR_MaskBit[HWSR_SAMPLE1] | g_HWSR_MaskBit[HWSR_SAMPLE2] | g_HWSR_MaskBit[HWSR_SAMPLE5]);
-
 	int32 curTexture = NUM_HDR_TONEMAP_TEXTURES - 1;
 
 	float tU = 1.0f / (3.0f * CRendererResources::s_ptexHDRToneMaps[curTexture]->GetWidth());

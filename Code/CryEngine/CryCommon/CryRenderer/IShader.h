@@ -1191,8 +1191,8 @@ struct SEfResTexture
 	SEfResTextureExt m_Ext;
 
 	void        UpdateForCreate();
-	void        Update(int nTSlot);
-	void        UpdateWithModifier(int nTSlot);
+	void        Update(int nTSlot, uint32& nMDMask);
+	void        UpdateWithModifier(int nTSlot, uint32& nMDMask);
 
 	inline bool operator!=(const SEfResTexture& m) const
 	{

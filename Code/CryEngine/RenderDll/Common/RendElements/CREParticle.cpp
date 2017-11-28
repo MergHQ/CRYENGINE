@@ -232,8 +232,6 @@ void CREParticle::SetRuntime(gpu_pfx2::CParticleComponentRuntime* pRuntime)
 
 SRenderVertices* CREParticle::AllocVertices(int nAllocVerts, int nAllocInds)
 {
-	SRenderPipeline& rp = gRenDev->m_RP;
-
 	CParticleBufferSet::SAlloc alloc;
 
 	auto& particleBuffer = gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet();
@@ -255,8 +253,6 @@ SRenderVertices* CREParticle::AllocVertices(int nAllocVerts, int nAllocInds)
 
 SRenderVertices* CREParticle::AllocPullVertices(int nPulledVerts)
 {
-	SRenderPipeline& rp = gRenDev->m_RP;
-
 	auto& particleBuffer = gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet();
 
 	CParticleBufferSet::SAllocStreams streams;
