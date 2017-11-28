@@ -529,6 +529,10 @@ macro(apply_compile_settings)
 	if(MODULE_SOLUTION_FOLDER)
 		set_solution_folder("${MODULE_SOLUTION_FOLDER}" ${THIS_PROJECT})
 	endif()
+
+	if (WIN32 AND NOT OPTION_DEDICATED_SERVER)
+		target_compile_options(${THIS_PROJECT} PRIVATE $<$<CONFIG:Release>:-DPURE_CLIENT>)
+	endif()
 	
 	if (DEFINED PROJECT_BUILD_CRYENGINE AND NOT PROJECT_BUILD_CRYENGINE)
 		# If option to not build engine modules is selected they are excluded from the build
