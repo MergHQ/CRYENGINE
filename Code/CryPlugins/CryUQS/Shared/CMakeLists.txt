@@ -28,7 +28,7 @@ end_sources()
 
 CryEngineStaticModule(CryUQS_Shared PCH "shared/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
 if(WIN32 OR WIN64)
-	target_compile_definitions(${THIS_PROJECT} PRIVATE NOT_USE_CRY_MEMORY_MANAGER)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:NOT_USE_CRY_MEMORY_MANAGER>)
 endif()
 
 target_include_directories(${THIS_PROJECT} 
