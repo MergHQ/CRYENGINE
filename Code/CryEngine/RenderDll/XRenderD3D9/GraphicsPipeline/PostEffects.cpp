@@ -71,7 +71,7 @@ CTexture* CPostEffectContext::GetDstBackBufferTexture() const
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
-	CTexture* pFinalOutput = GetRenderView()->GetRenderOutput()->GetColorTarget();
+	CTexture* pFinalOutput = GetRenderView()->GetColorTarget();
 	if (m_bUseAltBackBuffer)
 		pFinalOutput = CRendererResources::s_ptexSceneDiffuse;
 
@@ -82,7 +82,7 @@ CTexture* CPostEffectContext::GetDstDepthStencilTexture() const
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
-	CTexture* pFinalOutput = GetRenderView()->GetRenderOutput()->GetDepthTarget();
+	CTexture* pFinalOutput = GetRenderView()->GetDepthTarget();
 	if (m_bUseAltBackBuffer)
 		pFinalOutput = CRendererResources::s_ptexSceneDepth;
 

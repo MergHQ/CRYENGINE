@@ -384,12 +384,12 @@ void CRenderView::SwitchUsageMode(EUsageMode mode)
 
 		CRY_ASSERT(m_usageMode == IRenderView::eUsageModeWritingDone);
 
-		CalculateViewInfo();
-
 		if (m_pRenderOutput)
 		{
 			m_pRenderOutput->BeginRendering(this);
 		}
+
+		CalculateViewInfo();
 
 		//CompileModifiedRenderObjects();
 		UpdateModifiedShaderItems();
@@ -932,6 +932,10 @@ CRenderObject* CRenderView::AllocateTemporaryRenderObject()
 void CRenderView::SetViewport(const SRenderViewport &viewport)
 {
 	m_viewport = viewport;
+
+	for (CCamera::EEye eye = CCamera::eEye_Left; eye != CCamera::eEye_eCount; eye = CCamera::EEye(eye + 1))
+		m_viewInfo[eye].viewport = viewport;
+
 }
 
 //////////////////////////////////////////////////////////////////////////
