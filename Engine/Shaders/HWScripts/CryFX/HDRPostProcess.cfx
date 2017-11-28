@@ -818,7 +818,7 @@ float VolFogShadowBilateralFilter(in Texture2D tex, in SamplerState pointClampSS
 }
 
 Texture2D volFogShadowGatherTex : register(t0);
-SamplerState volFogShadowGatherSState : register(s0);
+SamplerState volFogPointSamplerState : register(s0);
 
 pixout FogPassVolShadowsGatherPassPS(vert2fragFog IN)
 {
@@ -826,8 +826,8 @@ pixout FogPassVolShadowsGatherPassPS(vert2fragFog IN)
 	
 	float2 sampleUV = MapViewportToRaster(IN.baseTC.xy);
 
-	const float refDepth = volFogShadowGatherTex.Sample(volFogShadowGatherSState, sampleUV + volFogShadowBufSampleOffsets[4].xy).x;
-	const float value = VolFogShadowBilateralFilter(volFogShadowGatherTex, volFogShadowGatherSState, 8, sampleUV, refDepth, 50.0);
+	const float refDepth = volFogShadowGatherTex.Sample(volFogPointSamplerState, sampleUV + volFogShadowBufSampleOffsets[4].xy).x;
+	const float value = VolFogShadowBilateralFilter(volFogShadowGatherTex, volFogPointSamplerState, 8, sampleUV, refDepth, 50.0);
 
 	OUT.Color = float4(refDepth, 1, 1, value);
 
@@ -835,7 +835,6 @@ pixout FogPassVolShadowsGatherPassPS(vert2fragFog IN)
 }
 
 Texture2D volFogShadowTex : register(t1);
-SamplerState volFogShadowSState : register(s1);
 
 float4 volFogShadowDarkening;
 float4 volFogShadowDarkeningSunAmb;
@@ -865,7 +864,7 @@ void FogPassCommon(
 
 #if %_RT_SAMPLE0
 	const float refDepth = min(sceneDepth, volFogShadowRange.x) * volFogShadowRange.y;
-	const float volFogShadowContrib = VolFogShadowBilateralFilter(volFogShadowTex, volFogShadowSState, 5, sampleUV, refDepth, 100.0);
+	const float volFogShadowContrib = VolFogShadowBilateralFilter(volFogShadowTex, volFogPointSamplerState, 5, sampleUV, refDepth, 100.0);
 
 	const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * volFogShadowDarkeningSunAmb.xz + volFogShadowDarkeningSunAmb.yw);
 	localFogColor = GetVolumetricFogColor(worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
