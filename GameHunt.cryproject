@@ -17,7 +17,6 @@
 		"plugins": [
 			{ "type": "EPluginType::Native", "path": "CryDefaultEntities" },
 			{ "type": "EPluginType::Native", "path": "CryUQS_Core" },
-			{ "type": "EPluginType::Native", "path": "CryGamePlatform" },
 			{ "type": "EPluginType::Native", "path": "CryLobby" }
 		]
 	},
@@ -36,8 +35,9 @@
 		{ "name": "ca_PreloadAllCAFs", "value": "1" },
 		{ "name": "ca_SampleQuatHemisphereFromCurrentPose", "value": "1" },
 		{ "name": "ca_useIMG_CAF", "value": "0" },
+		{ "name": "ca_ResetCulledJointsToBindPose", "value": "1" },
 		
-		{ "name": "cl_AISystem", "value": "1" },
+		{ "name": "cl_AISystem", "value": "0" },
 		{ "name": "cl_initClientActor", "value": "0" },
 
 		{ "name": "r_HDREyeAdaptationMode", "value": "1" },
