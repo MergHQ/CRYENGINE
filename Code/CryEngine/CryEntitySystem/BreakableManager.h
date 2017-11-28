@@ -20,7 +20,7 @@ public:
 
 	// actual breaking function.
 	void BreakIntoPieces(GeomRef& geoOrig, const Matrix34& srcObjTM,
-	                     IStatObj* pPiecesObj, const Matrix34& piecesObjTM,
+	                     IStatObj* pPiecesObj, const Matrix34& piecesObjTM,	IStatObj *pRemovedObj,
 	                     BreakageParams const& Breakage, int nMatLayers);
 
 	//////////////////////////////////////////////////////////////////////////
