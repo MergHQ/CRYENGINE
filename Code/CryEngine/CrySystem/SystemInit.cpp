@@ -650,7 +650,7 @@ WIN_HMODULE CSystem::LoadDynamicLibrary(const char* szModulePath, bool bQuitIfNo
 	if (m_binariesDir.empty())
 	{
 		handle = CryLoadLibrary(modulePath);
-		if (!handle)
+		if (!handle && bLogLoadingInfo)
 		{
 			DWORD dwErrorCode = GetLastError();
 			CryLogAlways("DLL Failed to load, error code: %X", dwErrorCode);

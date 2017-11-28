@@ -75,8 +75,8 @@ public:
 	}
 
 protected:
-	bool LoadPluginFromDisk(EType type, const char* path);
-	bool OnPluginLoaded();
+	bool LoadPluginFromDisk(EType type, const char* path, bool notifyUserOnFailure = true);
+	bool OnPluginLoaded(bool notifyUserOnFailure = true);
 	void OnPluginUnloaded(Cry::IEnginePlugin* pPlugin);
 
 	std::vector<Cry::IEnginePlugin*>& GetUpdatedPluginsForStep(Cry::IEnginePlugin::EUpdateStep step) { return m_updatedPlugins[IntegerLog2(static_cast<uint8>(step))]; }
