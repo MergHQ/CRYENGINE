@@ -434,6 +434,7 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 		static CCryNameTSCRC techLinearizeDepth("LinearizeDepth");
 
 		m_passDepthLinearization.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		m_passDepthLinearization.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_passDepthLinearization.SetTechnique(CShaderMan::s_shPostEffects, techLinearizeDepth, 0);
 		m_passDepthLinearization.SetRenderTarget(0, CRendererResources::s_ptexLinearDepth);
 		m_passDepthLinearization.SetState(GS_NODEPTHTEST);
@@ -475,6 +476,7 @@ void CSceneGBufferStage::ExecuteGBufferVisualization()
 
 		m_passBufferVisualization.SetTechnique(CShaderMan::s_shDeferredShading, tech, 0);
 		m_passBufferVisualization.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuseTmp);
+		m_passBufferVisualization.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_passBufferVisualization.SetState(GS_NODEPTHTEST);
 
 		m_passBufferVisualization.SetTexture(0, CRendererResources::s_ptexLinearDepth);

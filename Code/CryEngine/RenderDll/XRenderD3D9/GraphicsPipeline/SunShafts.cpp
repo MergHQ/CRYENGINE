@@ -74,6 +74,7 @@ void CSunShaftsStage::Execute()
 			static CCryNameTSCRC techMaskGen("SunShaftsMaskGen");
 			uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0];
 			m_passShaftsMask.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_VS);
+			m_passShaftsMask.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passShaftsMask.SetTechnique(pShader, techMaskGen, rtMask);
 			m_passShaftsMask.SetRenderTarget(0, pFinalRT);
 			m_passShaftsMask.SetState(GS_NODEPTHTEST);
@@ -110,6 +111,7 @@ void CSunShaftsStage::Execute()
 				static CCryNameTSCRC techShaftsGen("SunShaftsGen");
 				uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0];
 				m_passShaftsGen0.SetTechnique(pShader, techShaftsGen, rtMask);
+				m_passShaftsGen0.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				m_passShaftsGen0.SetRenderTarget(0, pTempRT);
 				m_passShaftsGen0.SetState(GS_NODEPTHTEST);
 				m_passShaftsGen0.SetTexture(0, pFinalRT);
@@ -137,6 +139,7 @@ void CSunShaftsStage::Execute()
 				static CCryNameTSCRC techShaftsGen("SunShaftsGen");
 				uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0];
 				m_passShaftsGen1.SetTechnique(pShader, techShaftsGen, rtMask);
+				m_passShaftsGen1.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				m_passShaftsGen1.SetRenderTarget(0, pFinalRT);
 				m_passShaftsGen1.SetState(GS_NODEPTHTEST);
 				m_passShaftsGen1.SetTexture(0, pTempRT);

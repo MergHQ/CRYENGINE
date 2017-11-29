@@ -348,6 +348,7 @@ void CVrProjectionManager::ExecuteFlattenDepth(CTexture* pSrcRT, CTexture* pDest
 		m_passDepthFlattening.SetRenderTarget(0, pDestRT);
 		m_passDepthFlattening.SetState(GS_NODEPTHTEST);
 		m_passDepthFlattening.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
+		m_passDepthFlattening.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 
 		m_passDepthFlattening.SetTexture(16, pSrcRT);
 	}
@@ -366,6 +367,7 @@ void CVrProjectionManager::ExecuteLensMatchedOctagon(CTexture* pDestRT)
 
 	m_primitiveLensMatchedOctagon.SetTechnique(pShader, techName, CVrProjectionManager::Instance()->GetRTFlags());
 	m_primitiveLensMatchedOctagon.SetRenderState(GS_DEPTHFUNC_LESS | GS_DEPTHWRITE);
+	m_primitiveLensMatchedOctagon.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 
 	if (m_primitiveLensMatchedOctagon.IsDirty())
 	{

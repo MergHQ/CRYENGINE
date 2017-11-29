@@ -172,16 +172,6 @@ float3 GetCamVecFsQuad(float4 vPos)
 
 ///////////////// vertex shader //////////////////
 
-float4 GetHPos_FromTriVertexID(uint vertexID)
-{
-	return float4(float2(((vertexID << 1) & 2) * 2.0, (vertexID == 0) ? -4.0 : 0.0) + float2(-1.0, 1.0), 0.0, 1.0);
-}
-
-float2 GetBaseTC_FromTriVertexID(uint vertexID)
-{
-	return float2((vertexID << 1) & 2, (vertexID == 0) ? 2.0 : 0.0);
-}
-
 vtxOut FullscreenTriVS(uint VertexID : SV_VertexID)
 {
 	vtxOut OUT = (vtxOut)0;
@@ -210,15 +200,16 @@ vtxOutWPOS FsQuadCamVecVS(vtxIn IN)
 }
 
 // deprecated, can be removed once all dependent techniques updated to use DrawQuadFS from cpp
-vtxOut BaseVS(vtxIn IN)
+vtxOut BaseVS(uint VertexID : SV_VertexID)
 {
-  vtxOut OUT = (vtxOut)0; 
-	OUT.HPosition = Get2dHPos(IN.Position);  
-  OUT.baseTC.xy = IN.baseTC.xy;
-
-  // output with correct aspect ratio into wz
-  OUT.baseTC.wz = (IN.baseTC.xy -0.5 ) * float2(0.75*(ScrSize.x/ScrSize.y), 1.0) + 0.5;
-  return OUT;
+   vtxOut OUT = (vtxOut)0; 
+   OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+   float2 baseTC = GetBaseTC_FromTriVertexID(VertexID);  
+   OUT.baseTC.xy = baseTC;
+   
+   // output with correct aspect ratio into wz
+   OUT.baseTC.wz = (baseTC -0.5 ) * float2(0.75*(ScrSize.x/ScrSize.y), 1.0) + 0.5;
+   return OUT;
 }
 
 // deprecated

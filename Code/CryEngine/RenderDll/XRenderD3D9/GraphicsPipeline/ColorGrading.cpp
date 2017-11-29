@@ -198,6 +198,7 @@ void CColorGradingStage::PreparePrimitives(CColorGradingController& controller, 
 		m_colorGradingPrimitive.SetTechnique(CShaderMan::s_shPostEffectsGame, techName, rtFlags);
 		m_colorGradingPrimitive.SetRenderState(GS_NODEPTHTEST);
 		m_colorGradingPrimitive.SetSampler(0, EDefaultSamplerStates::LinearClamp);
+		m_colorGradingPrimitive.SetPrimitiveType(CRenderPrimitive::ePrim_Custom);
 		m_colorGradingPrimitive.SetCustomVertexStream(m_slicesVertexBuffer, EDefaultInputLayouts::P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F));
 		m_colorGradingPrimitive.SetDrawInfo(eptTriangleList, 0, 0, 6 * controller.GetColorChartSize());
 		m_colorGradingPrimitive.SetTexture(0, m_pChartToUse);

@@ -70,6 +70,7 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 	static CCryNameTSCRC techTexToTexResampled("TextureToTextureResampled");
 
 	m_pass.SetPrimitiveFlags(bResample ? CRenderPrimitive::eFlags_ReflectShaderConstants_PS : CRenderPrimitive::eFlags_None);
+	m_pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	m_pass.SetRenderTarget(0, pDestRT);
 	m_pass.SetTechnique(CShaderMan::s_shPostEffects, bResample ? techTexToTexResampled : techTexToTex, 0);
 	m_pass.SetState(GS_NODEPTHTEST);
@@ -220,7 +221,7 @@ bool CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRend
 	ParamsTC.w = (float)(rcS.bottom - rcS.top) / (float)pSrcRT->GetHeight();
 
 	prim.SetFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);
-	prim.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuad);
+	prim.SetPrimitiveType(bResample ? CRenderPrimitive::ePrim_FullscreenQuad : CRenderPrimitive::ePrim_ProceduralTriangle);
 
 	prim.SetTechnique(CShaderMan::s_shPostEffects, bResample ? techTexToTexResampled : techTexToTex, 0);
 	prim.SetRenderState(renderState);
@@ -269,6 +270,7 @@ void CSharpeningUpsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 	params0.y = (float)pSrcRT->GetHeight();
 
 	m_pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+	m_pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	m_pass.SetRenderTarget(0, pDestRT);
 	m_pass.SetTechnique(CShaderMan::s_shPostAA, techName, 0);
 	m_pass.SetState(GS_NODEPTHTEST);
@@ -307,6 +309,7 @@ void CNearestDepthUpsamplePass::Execute(CTexture* pOrgDS, CTexture* pSrcRT, CTex
 	params0.w = (float)pSrcDS->GetHeight();
 
 	pPass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+	pPass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	pPass.SetRenderTarget(0, pDestRT);
 	pPass.SetTechnique(CShaderMan::s_shPostEffects, techName, 0);
 	pPass.SetState(GS_NODEPTHTEST | GS_NOCOLMASK_A | GS_BLSRC_ONE | (bAlphaBased ? GS_BLDST_SRCALPHA : GS_BLDST_ONE));
@@ -425,6 +428,7 @@ void CDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, int nSrcW, in
 	const Vec4 params2(vSampleStep.x, vSampleStep.y, vFirstSamplePos.x, vFirstSamplePos.y);
 
 	m_pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+	m_pass.SetPrimitiveType(CRenderPrimitive::EPrimitiveType::ePrim_ProceduralTriangle);
 	m_pass.SetRenderTarget(0, pDestRT);
 	m_pass.SetTechnique(CShaderMan::s_shPostEffects, techName, FlagsShader_RT);
 	m_pass.SetState(GS_NODEPTHTEST);
@@ -456,6 +460,7 @@ void CStableDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bK
 	static CCryNameTSCRC techName("DownsampleStable");
 
 	m_pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+	m_pass.SetPrimitiveType(CRenderPrimitive::EPrimitiveType::ePrim_ProceduralTriangle);
 	m_pass.SetRenderTarget(0, pDestRT);
 	m_pass.SetTechnique(CShaderMan::s_shPostEffects, techName, bKillFireflies ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0);
 	m_pass.SetState(GS_NODEPTHTEST);
@@ -614,6 +619,7 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 	m_passH.SetTechnique(pShader, techName, 0);
 	m_passH.SetState(GS_NODEPTHTEST);
 	m_passH.SetTextureSamplerPair(0, pScrDestRT, EDefaultSamplerStates::LinearClamp);
+	m_passH.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 
 	m_passH.BeginConstantUpdate();
 	m_passH.SetConstantArray(param1Name, m_paramsH, numSamples / 2, eHWSC_Vertex);
@@ -626,6 +632,7 @@ void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float s
 	m_passV.SetTechnique(pShader, techName, 0);
 	m_passV.SetState(GS_NODEPTHTEST);
 	m_passV.SetTextureSamplerPair(0, pTempRT, EDefaultSamplerStates::LinearClamp);
+	m_passV.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 
 	m_passV.BeginConstantUpdate();
 	m_passV.SetConstantArray(param1Name, m_paramsV, numSamples / 2, eHWSC_Vertex);
@@ -657,6 +664,7 @@ void CMipmapGenPass::Execute(CTexture* pScrDestRT, int mipCount)
 			auto rtv = SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(pScrDestRT->GetDstFormat()), 0, -1, i + 1);
 			auto srv = SResourceView::ShaderResourceView(DeviceFormats::ConvertFromTexFormat(pScrDestRT->GetDstFormat()), 0, -1, i, 1);
 			curPass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+			curPass.SetPrimitiveType(CRenderPrimitive::EPrimitiveType::ePrim_ProceduralTriangle);
 			curPass.SetRenderTarget(0, pScrDestRT, pScrDestRT->GetDevTexture()->GetOrCreateResourceViewHandle(rtv));
 			curPass.SetTechnique(CShaderMan::s_shPostEffects, techDownsample, 0);
 			curPass.SetState(GS_NODEPTHTEST);

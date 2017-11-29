@@ -91,6 +91,7 @@ void CScreenSpaceReflectionsStage::Execute()
 		{
 			static CCryNameTSCRC techComposition("SSReflection_Comp");
 			m_passComposition.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_VS);
+			m_passComposition.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passComposition.SetTechnique(pShader, techComposition, 0);
 			m_passComposition.SetRenderTarget(0, destTex);
 			m_passComposition.SetState(GS_NODEPTHTEST);

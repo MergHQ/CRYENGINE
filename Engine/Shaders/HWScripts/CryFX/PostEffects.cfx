@@ -48,11 +48,12 @@ struct vtxOutTexToTex
   MSAA_SAMPLE_INDEX_PS
 };
 
-vtxOutTexToTex TexToTexVS(vtxIn IN)
+vtxOutTexToTex TexToTexVS(uint VertexID : SV_VertexID)
 {
   vtxOutTexToTex OUT; 
-  OUT.HPosition = Get2dHPos(IN.Position);
-  OUT.baseTC.xy = IN.baseTC.xy;
+  OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+  float2 baseTC = GetBaseTC_FromTriVertexID(VertexID);
+  OUT.baseTC.xy = baseTC;
   return OUT;
 }
 
@@ -767,42 +768,44 @@ struct vtxOutGaussMasked
   float2 tc7 : TEXCOORDN;    
 };
 
-vtxOutGauss GaussBlurBilinearVS(vtxIn IN)
+vtxOutGauss GaussBlurBilinearVS(uint VertexID : SV_VertexID)
 {
   vtxOutGauss OUT = (vtxOutGauss) 0;
 
-	OUT.HPosition = Get2dHPos(IN.Position);
+  OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+  float2 baseTC = GetBaseTC_FromTriVertexID(VertexID);
   
-  OUT.tc0.xy = IN.baseTC.xy + PB_psOffsets[0].xy;
-  OUT.tc0.zw = IN.baseTC.xy + PB_psOffsets[1].xy;
-  OUT.tc1.xy = IN.baseTC.xy + PB_psOffsets[2].xy;
-  OUT.tc1.zw = IN.baseTC.xy + PB_psOffsets[3].xy;
-  OUT.tc2.xy = IN.baseTC.xy + PB_psOffsets[4].xy;
-  OUT.tc2.zw = IN.baseTC.xy + PB_psOffsets[5].xy;
-  OUT.tc3.xy = IN.baseTC.xy + PB_psOffsets[6].xy;
-  OUT.tc3.zw = IN.baseTC.xy + PB_psOffsets[7].xy;
-	OUT.tc4.xy = IN.baseTC.xy;  // Original coordinates
+  OUT.tc0.xy = baseTC + PB_psOffsets[0].xy;
+  OUT.tc0.zw = baseTC + PB_psOffsets[1].xy;
+  OUT.tc1.xy = baseTC + PB_psOffsets[2].xy;
+  OUT.tc1.zw = baseTC + PB_psOffsets[3].xy;
+  OUT.tc2.xy = baseTC + PB_psOffsets[4].xy;
+  OUT.tc2.zw = baseTC + PB_psOffsets[5].xy;
+  OUT.tc3.xy = baseTC + PB_psOffsets[6].xy;
+  OUT.tc3.zw = baseTC + PB_psOffsets[7].xy;
+  OUT.tc4.xy = baseTC;  // Original coordinates
 
   return OUT;
 }
 
-vtxOutGaussMasked MaskedGaussBlurBilinearVS(vtxIn IN)
+vtxOutGaussMasked MaskedGaussBlurBilinearVS(uint VertexID : SV_VertexID)
 {
   vtxOutGaussMasked OUT = (vtxOutGaussMasked) 0;
-	OUT.HPosition = Get2dHPos(IN.Position);
+  OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+  float2 baseTC = GetBaseTC_FromTriVertexID(VertexID);
 
-  OUT.tc0.xy = IN.baseTC.xy + PB_psOffsets[0].xy;
-  OUT.tc1.xy = IN.baseTC.xy + PB_psOffsets[1].xy;
-  OUT.tc2.xy = IN.baseTC.xy + PB_psOffsets[2].xy;
-  OUT.tc3.xy = IN.baseTC.xy + PB_psOffsets[3].xy;
-  OUT.tc4.xy = IN.baseTC.xy + PB_psOffsets[4].xy;
-  OUT.tc5.xy = IN.baseTC.xy + PB_psOffsets[5].xy;
-  OUT.tc6.xy = IN.baseTC.xy + PB_psOffsets[6].xy;
-  OUT.tc7.xy = IN.baseTC.xy + PB_psOffsets[7].xy;
+  OUT.tc0.xy = baseTC + PB_psOffsets[0].xy;
+  OUT.tc1.xy = baseTC + PB_psOffsets[1].xy;
+  OUT.tc2.xy = baseTC + PB_psOffsets[2].xy;
+  OUT.tc3.xy = baseTC + PB_psOffsets[3].xy;
+  OUT.tc4.xy = baseTC + PB_psOffsets[4].xy;
+  OUT.tc5.xy = baseTC + PB_psOffsets[5].xy;
+  OUT.tc6.xy = baseTC + PB_psOffsets[6].xy;
+  OUT.tc7.xy = baseTC + PB_psOffsets[7].xy;
 
   // special case for masked blur  - output with correct aspect ratio into wz
-  OUT.tc0.wz = IN.baseTC.xy;
-  OUT.tc1.wz = (IN.baseTC.xy -0.5 ) * float2(0.75*(ScrSize.x/ScrSize.y), 1.0) + 0.5;
+  OUT.tc0.wz = baseTC;
+  OUT.tc1.wz = (baseTC -0.5 ) * float2(0.75*(ScrSize.x/ScrSize.y), 1.0) + 0.5;
 
   return OUT;
 }
@@ -928,20 +931,21 @@ struct vtxOutAlphaBlur
   float2 tc7 : TEXCOORDN;    
 };
 
-vtxOutAlphaBlur GaussAlphaBlurVS(vtxIn IN)
+vtxOutAlphaBlur GaussAlphaBlurVS(uint VertexID : SV_VertexID)
 {
   vtxOutAlphaBlur OUT = (vtxOutAlphaBlur) 0;
-	OUT.HPosition = Get2dHPos(IN.Position);
+  OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+  float2 baseTC = GetBaseTC_FromTriVertexID(VertexID);
 
-	OUT.tc0.zw = IN.baseTC.xy;
-  OUT.tc0.xy = IN.baseTC.xy + PB_psOffsets[0].xy;
-  OUT.tc1.xy = IN.baseTC.xy + PB_psOffsets[1].xy;
-  OUT.tc2.xy = IN.baseTC.xy + PB_psOffsets[2].xy;
-  OUT.tc3.xy = IN.baseTC.xy + PB_psOffsets[3].xy;
-  OUT.tc4.xy = IN.baseTC.xy + PB_psOffsets[4].xy;
-  OUT.tc5.xy = IN.baseTC.xy + PB_psOffsets[5].xy;
-  OUT.tc6.xy = IN.baseTC.xy + PB_psOffsets[6].xy;
-  OUT.tc7.xy = IN.baseTC.xy + PB_psOffsets[7].xy;
+  OUT.tc0.zw = baseTC;
+  OUT.tc0.xy = baseTC + PB_psOffsets[0].xy;
+  OUT.tc1.xy = baseTC + PB_psOffsets[1].xy;
+  OUT.tc2.xy = baseTC + PB_psOffsets[2].xy;
+  OUT.tc3.xy = baseTC + PB_psOffsets[3].xy;
+  OUT.tc4.xy = baseTC + PB_psOffsets[4].xy;
+  OUT.tc5.xy = baseTC + PB_psOffsets[5].xy;
+  OUT.tc6.xy = baseTC + PB_psOffsets[6].xy;
+  OUT.tc7.xy = baseTC + PB_psOffsets[7].xy;
 
   return OUT;
 }
@@ -1892,18 +1896,21 @@ technique ImageGhosting
 
 ///////////////// vertex shaders //////////////////
 
-vtxOut Post3DRendererGammaCorrection_VS(vtxIn IN)
+vtxOut Post3DRendererGammaCorrection_VS(uint VertexID : SV_VertexID)
 {
 	#define startPos			vsParams[0].xy
 	#define invScale			vsParams[0].zw
 
   vtxOut OUT = (vtxOut)0; 
 
-	OUT.HPosition = Get2dHPos(IN.Position);
-	OUT.baseTC.xy = IN.baseTC.xy;
+  OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+  float2 baseTC = GetBaseTC_FromTriVertexID(VertexID);
+  
+  OUT.baseTC.xy = baseTC;
+  
 
-	// 0.0->1.0 coords
-  OUT.baseTC.zw = (IN.baseTC.xy - startPos) * invScale;
+  // 0.0->1.0 coords
+  OUT.baseTC.zw = (baseTC - startPos) * invScale;
 
   return OUT;
 }
@@ -2028,19 +2035,20 @@ struct vtxOutSilhouette
 
 float outlineWidth;
 
-vtxOutSilhouette SelectionSilhouetteVS(vtxIn IN)
+vtxOutSilhouette SelectionSilhouetteVS(uint VertexID : SV_VertexID)
 {
     const half uvOffsetScale = outlineWidth;
 
     vtxOutSilhouette OUT = (vtxOutSilhouette) 0;
-    OUT.HPosition = Get2dHPos(IN.Position);
+    OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+	float2 baseTC = GetBaseTC_FromTriVertexID(VertexID);
 
-    OUT.baseTC0.xy = IN.baseTC.xy;
+    OUT.baseTC0.xy = baseTC;
  
-    OUT.baseTC1.xy = IN.baseTC.xy + uvOffsetScale * float2(0, -1) * ScrSize.zw;
-    OUT.baseTC1.zw = IN.baseTC.xy + uvOffsetScale * float2(0,  1) * ScrSize.zw;
-    OUT.baseTC2.xy = IN.baseTC.xy + uvOffsetScale * float2(-1, 0) * ScrSize.zw;
-    OUT.baseTC2.zw = IN.baseTC.xy + uvOffsetScale * float2( 1, 0) * ScrSize.zw;
+    OUT.baseTC1.xy = baseTC + uvOffsetScale * float2(0, -1) * ScrSize.zw;
+    OUT.baseTC1.zw = baseTC + uvOffsetScale * float2(0,  1) * ScrSize.zw;
+    OUT.baseTC2.xy = baseTC + uvOffsetScale * float2(-1, 0) * ScrSize.zw;
+    OUT.baseTC2.zw = baseTC + uvOffsetScale * float2( 1, 0) * ScrSize.zw;
 
     return OUT;
 }

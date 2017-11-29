@@ -292,6 +292,30 @@ void CRenderPrimitive::AddPrimitiveGeometryCacheUser()
 			gcpRendD3D->m_DevBufMan.UpdateBuffer(primitiveGeometry.vertexStream.hStream, fullscreenTriVertices, fullscreenTriVerticesSize);
 		}
 
+		// ePrim_ProceduralTriangle
+		{
+			SPrimitiveGeometry& primitiveGeometry = s_primitiveGeometryCache[ePrim_ProceduralTriangle];
+
+			primitiveGeometry.vertexStream.hStream = ~0u;
+			primitiveGeometry.vertexStream.nStride = 0;
+			primitiveGeometry.primType = eptTriangleList;
+			primitiveGeometry.vertexFormat = EDefaultInputLayouts::Empty;
+			primitiveGeometry.vertexOrIndexOffset = 0;
+			primitiveGeometry.vertexOrIndexCount = 3;
+		}
+
+		// ePrim_ProceduralQuad
+		{
+			SPrimitiveGeometry& primitiveGeometry = s_primitiveGeometryCache[ePrim_ProceduralQuad];
+
+			primitiveGeometry.vertexStream.hStream = ~0u;
+			primitiveGeometry.vertexStream.nStride = 0;
+			primitiveGeometry.primType = eptTriangleStrip;
+			primitiveGeometry.vertexFormat = EDefaultInputLayouts::Empty;
+			primitiveGeometry.vertexOrIndexOffset = 0;
+			primitiveGeometry.vertexOrIndexCount = 4;
+		}
+
 		// ePrim_FullscreenQuad
 		{
 			SPrimitiveGeometry& primitiveGeometry = s_primitiveGeometryCache[ePrim_FullscreenQuad];

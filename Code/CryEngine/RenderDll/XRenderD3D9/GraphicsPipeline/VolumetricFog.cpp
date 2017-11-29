@@ -974,6 +974,7 @@ void CVolumetricFogStage::ExecuteDownscaleShadowmap()
 				}
 				static CCryNameTSCRC techName("RenderDownscaledShadowMap");
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+				pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				pass.SetTechnique(pShader, techName, rtMask);
 				pass.SetDepthTarget(target);
 				pass.SetState(GS_NOCOLMASK_RGBA | GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
@@ -1001,6 +1002,7 @@ void CVolumetricFogStage::ExecuteDownscaleShadowmap()
 				static CCryNameTSCRC shaderName1("DownscaleShadowMap4");
 				const auto& techName = (CRenderer::CV_r_VolumetricFogDownscaledSunShadowRatio == 1) ? shaderName0 : shaderName1;
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+				pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				pass.SetTechnique(pShader, techName, 0);
 
 				CTexture* source = m_pDownscaledShadowTemp;

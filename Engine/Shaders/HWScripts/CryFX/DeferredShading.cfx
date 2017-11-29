@@ -570,14 +570,12 @@ cbuffer CBSSDO : register(b0)
 	} cbSSDO;
 };
 
-vtxOut DirOccPassVS(vtxIn IN)
+vtxOut DirOccPassVS(uint VertexID : SV_VertexID)
 {
-  vtxOut OUT = (vtxOut)0; 
-
-	OUT.HPosition = Get2dHPos(IN.Position);
-	OUT.baseTC.xy = IN.baseTC.xy;
-
-  return OUT;
+   vtxOut OUT = (vtxOut)0; 
+   OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+   OUT.baseTC.xy = GetBaseTC_FromTriVertexID(VertexID);
+   return OUT;
 }
 
 half4 SSDOFetchDepths( Texture2D depthTex, SamplerState ssDepth, half4 tc[2], uint component )

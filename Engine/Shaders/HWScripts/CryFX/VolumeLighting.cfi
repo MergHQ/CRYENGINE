@@ -2458,11 +2458,11 @@ struct vtxOutVolumetricFog
 
 float4 ParamDepth;
 
-vtxOutVolumetricFog StoreJitteringDepthToClipVolumeDepthVS(vtxIn IN)
+vtxOutVolumetricFog StoreJitteringDepthToClipVolumeDepthVS(uint VertexID : SV_VertexID)
 {
 	vtxOutVolumetricFog OUT; 
-	OUT.HPosition = Get2dHPos(IN.Position);
-	OUT.baseTC.xy = IN.baseTC.xy;
+	OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+	OUT.baseTC.xy = GetBaseTC_FromTriVertexID(VertexID);
 	return OUT;
 }
 
@@ -2504,11 +2504,11 @@ Texture2D<float4> DownscaleShadowMapTexture : register(t0);
 
 SamplerState DownscaleShadowMapSampler : register(s0);
 
-vtxOutVolumetricFog RenderDownscaledShadowMapVS(vtxIn IN)
+vtxOutVolumetricFog RenderDownscaledShadowMapVS(uint VertexID : SV_VertexID)
 {
 	vtxOutVolumetricFog OUT; 
-	OUT.HPosition = Get2dHPos(IN.Position);
-	OUT.baseTC.xy = IN.baseTC.xy;
+	OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+	OUT.baseTC.xy = GetBaseTC_FromTriVertexID(VertexID);
 	return OUT;
 }
 
