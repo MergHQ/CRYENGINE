@@ -187,7 +187,10 @@ namespace Cry
 				constexpr Identifier invalidLobby = 0;
 				if (m_steamLobbyId != invalidLobby)
 				{
-					SteamMatchmaking()->LeaveLobby(m_steamLobbyId);
+					if (auto pMatchMaking = SteamMatchmaking())
+					{
+						pMatchMaking->LeaveLobby(m_steamLobbyId);
+					}
 					m_steamLobbyId = invalidLobby;
 
 					for (IListener* pListener : m_listeners)
@@ -285,6 +288,11 @@ namespace Cry
 					{
 						ConnectToServer(atoi(ipString), atoi(portString), atoi(serverIdString));
 					}
+				}
+
+				for (IListener* pListener : m_listeners)
+				{
+					pListener->OnDataUpdate(pCallback->m_ulSteamIDMember);
 				}
 			}
 
