@@ -380,7 +380,7 @@ void CDeviceObjectFactory::AllocateNullResources()
 		info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		info.pNext = nullptr;
 		info.flags = 0;
-		info.size = 16;
+		info.size = 256;
 		info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT       | VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | 
 		             VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
