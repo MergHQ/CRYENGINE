@@ -49,14 +49,14 @@ class CAudioControlsWriter
 {
 public:
 
-	CAudioControlsWriter(CSystemAssetsManager* pAssetsManager, IEditorImpl* pEditorImpl, std::set<string>& previousLibraryPaths);
+	CAudioControlsWriter(CSystemAssetsManager* const pAssetsManager, IEditorImpl* const pEditorImpl, std::set<string>& previousLibraryPaths);
 
 private:
 
-	void WriteLibrary(CSystemLibrary& library);
+	void WriteLibrary(CSystemLibrary const& library);
 	void WriteItem(CSystemAsset* const pItem, string const& path, LibraryStorage& library);
 	void GetScopes(CSystemAsset const* const pItem, std::unordered_set<Scope>& scopes);
-	void WriteControlToXML(XmlNodeRef const pNode, CSystemControl* pControl, string const& path);
+	void WriteControlToXML(XmlNodeRef const pNode, CSystemControl* const pControl, string const& path);
 	void WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* const pControl, int const platformIndex = -1);
 	void WriteLibraryEditorData(CSystemAsset const& library, XmlNodeRef const pParentNode) const;
 	void WriteFolderEditorData(CSystemAsset const& library, XmlNodeRef const pParentNode) const;
@@ -65,8 +65,8 @@ private:
 	void CheckOutFile(string const& filepath);
 	void DeleteLibraryFile(string const& filepath);
 
-	CSystemAssetsManager* m_pAssetsManager;
-	IEditorImpl*          m_pEditorImpl;
+	CSystemAssetsManager* const m_pAssetsManager;
+	IEditorImpl*          const m_pEditorImpl;
 
 	std::set<string>      m_foundLibraryPaths;
 

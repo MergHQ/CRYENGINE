@@ -36,6 +36,7 @@ public:
 
 	void                        Init(CSystemControl* const pControl);
 	void                        DisconnectSignals();
+
 	static CItemModelAttribute* GetAttributeForColumn(EColumns const column);
 	static QVariant             GetHeaderData(int const section, Qt::Orientation const orientation, int const role);
 
@@ -61,9 +62,9 @@ private:
 	void ResetModelAndCache();
 	void DecodeMimeData(QMimeData const* pData, std::vector<CID>& ids) const;
 
-	CSystemAssetsManager*      m_pAssetsManager;
-	CSystemControl*            m_pControl;
-	IEditorImpl*               m_pEditorImpl;
-	std::vector<ConnectionPtr> m_connectionsCache;
+	CSystemAssetsManager* const m_pAssetsManager;
+	CSystemControl*             m_pControl;
+	IEditorImpl*                m_pEditorImpl;
+	std::vector<ConnectionPtr>  m_connectionsCache;
 };
 } // namespace ACE

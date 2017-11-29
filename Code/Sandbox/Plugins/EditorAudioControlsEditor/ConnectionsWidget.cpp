@@ -61,7 +61,11 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 	m_pTreeView->TriggerRefreshHeaderColumns();
 
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CConnectionsWidget::OnContextMenu);
-	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CConnectionsWidget::RefreshConnectionProperties);
+	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, [this]()
+	{
+		RefreshConnectionProperties();
+		UpdateSelectedConnections();
+	});
 
 	QSplitter* const pSplitter = new QSplitter(Qt::Vertical, this);
 	pSplitter->addWidget(m_pTreeView);
@@ -147,16 +151,16 @@ void CConnectionsWidget::RemoveSelectedConnection()
 	if (m_pControl != nullptr)
 	{
 		CQuestionDialog* const messageBox = new CQuestionDialog();
-		QModelIndexList const& selectedIndices = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
+		QModelIndexList const& selectedIndexes = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
 
-		if (!selectedIndices.empty())
+		if (!selectedIndexes.empty())
 		{
-			int const size = selectedIndices.length();
+			int const size = selectedIndexes.length();
 			QString text;
 
 			if (size == 1)
 			{
-				text = R"(Are you sure you want to delete the connection between ")" + QtUtil::ToQString(m_pControl->GetName()) + R"(" and ")" + selectedIndices[0].data(Qt::DisplayRole).toString() + R"("?)";
+				text = R"(Are you sure you want to delete the connection between ")" + QtUtil::ToQString(m_pControl->GetName()) + R"(" and ")" + selectedIndexes[0].data(Qt::DisplayRole).toString() + R"("?)";
 			}
 			else
 			{
@@ -172,9 +176,9 @@ void CConnectionsWidget::RemoveSelectedConnection()
 				if (pEditorImpl != nullptr)
 				{
 					std::vector<CImplItem*> implItems;
-					implItems.reserve(selectedIndices.size());
+					implItems.reserve(selectedIndexes.size());
 
-					for (QModelIndex const& index : selectedIndices)
+					for (QModelIndex const& index : selectedIndexes)
 					{
 						CID const id = index.data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt();
 						implItems.emplace_back(pEditorImpl->GetControl(id));
@@ -194,13 +198,42 @@ void CConnectionsWidget::RemoveSelectedConnection()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionsWidget::SetControl(CSystemControl* pControl)
+void CConnectionsWidget::SetControl(CSystemControl* const pControl)
 {
 	if (m_pControl != pControl)
 	{
 		m_pControl = pControl;
 		Reload();
-		m_pTreeView->setCurrentIndex(m_pTreeView->model()->index(0, m_nameColumn));
+
+		if (m_pControl != nullptr)
+		{
+			auto const& selectedConnections = m_pControl->GetSelectedConnections();
+
+			if (!selectedConnections.empty())
+			{
+				int matchCount = 0;
+
+				for (auto const itemId : selectedConnections)
+				{
+					auto const matches = m_pConnectionModel->match(m_pConnectionModel->index(0, 0, QModelIndex()), static_cast<int>(CConnectionModel::ERoles::Id), itemId, 1, Qt::MatchRecursive);
+
+					if (!matches.isEmpty())
+					{
+						m_pTreeView->selectionModel()->select(matches.first(), QItemSelectionModel::Select | QItemSelectionModel::Rows);
+						++matchCount;
+					}
+				}
+
+				if (matchCount == 0)
+				{
+					m_pTreeView->setCurrentIndex(m_pTreeView->model()->index(0, m_nameColumn));
+				}
+			}
+			else
+			{
+				m_pTreeView->setCurrentIndex(m_pTreeView->model()->index(0, m_nameColumn));
+			}
+		}
 	}
 }
 
@@ -219,11 +252,11 @@ void CConnectionsWidget::RefreshConnectionProperties()
 
 	if (m_pControl != nullptr)
 	{
-		QModelIndexList const& selectedIndices = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
+		QModelIndexList const& selectedIndexes = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
 
-		if (!selectedIndices.empty())
+		if (!selectedIndexes.empty())
 		{
-			QModelIndex const& index = selectedIndices[0];
+			QModelIndex const& index = selectedIndexes[0];
 
 			if (index.isValid())
 			{
@@ -243,6 +276,24 @@ void CConnectionsWidget::RefreshConnectionProperties()
 		m_pConnectionProperties->detach();
 		m_pConnectionProperties->setHidden(true);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CConnectionsWidget::UpdateSelectedConnections()
+{
+	std::vector<CID> currentSelection;
+	QModelIndexList const& selectedIndexes = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
+
+	for (auto const& index : selectedIndexes)
+	{
+		if (index.isValid())
+		{
+			CID const id = index.data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt();
+			currentSelection.emplace_back(id);
+		}
+	}
+
+	m_pControl->SetSelectedConnections(currentSelection);
 }
 
 //////////////////////////////////////////////////////////////////////////

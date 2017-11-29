@@ -117,7 +117,11 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 					{
 						if (pControl->GetConnection(pImplControl) != nullptr)
 						{
-							pConnectionsMenu->addAction(GetItemTypeIcon(pControl->GetType()), tr(pControl->GetName()), [=]() { SignalSelectConnectedSystemControl(*pControl); });
+							pConnectionsMenu->addAction(GetItemTypeIcon(pControl->GetType()), tr(pControl->GetName()), [=]()
+							{
+								SignalSelectConnectedSystemControl(*pControl, pImplControl->GetId());
+							});
+
 							++count;
 						}
 					}

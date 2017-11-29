@@ -55,7 +55,15 @@ char const* CSystemAsset::GetTypeName() const
 CSystemAsset* CSystemAsset::GetChild(size_t const index) const
 {
 	CRY_ASSERT_MESSAGE(index < m_children.size(), "Asset child index out of bounds.");
-	return m_children[index];
+
+	if (index < m_children.size())
+	{
+		return m_children[index];
+	}
+	else
+	{
+		return nullptr;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

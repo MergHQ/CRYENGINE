@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "SystemTypes.h"
-
 #include <ProxyModels/ItemModelAttribute.h>
 
 namespace ACE

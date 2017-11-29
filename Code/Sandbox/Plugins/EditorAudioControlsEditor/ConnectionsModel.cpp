@@ -217,6 +217,9 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 										return tr("Item is localized");
 									}
 									break;
+								case static_cast<int>(ERoles::Id) :
+									return pImplItem->GetId();
+									break;
 								}
 							}
 							break;

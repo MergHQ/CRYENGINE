@@ -22,7 +22,7 @@ public:
 	CConnectionsWidget(QWidget* const pParent);
 	virtual ~CConnectionsWidget() override;
 
-	void SetControl(CSystemControl* pControl);
+	void SetControl(CSystemControl* const pControl);
 	void Reload();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
@@ -39,6 +39,7 @@ private:
 
 	void RemoveSelectedConnection();
 	void RefreshConnectionProperties();
+	void UpdateSelectedConnections();
 
 	CSystemControl*                   m_pControl;
 	QPropertyTree* const              m_pConnectionProperties;
