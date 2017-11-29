@@ -290,6 +290,8 @@ bool CMNMPathfinder::CheckIfPointsAreOnStraightWalkableLine(const NavigationMesh
 
 void CMNMPathfinder::SetupNewValidPathRequests()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+	
 	const size_t freeAvailableSlotsToProcessNewRequests = m_processingContextsPool.GetFreeSlotsCount();
 
 	for (size_t i = 0; (i < freeAvailableSlotsToProcessNewRequests) && !m_requestedPathsQueue.empty(); ++i)
@@ -328,6 +330,8 @@ void CMNMPathfinder::SetupNewValidPathRequests()
 
 void CMNMPathfinder::SpawnJobs()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+
 	const bool isPathfinderMultithreaded = gAIEnv.CVars.MNMPathfinderMT != 0;
 	if (isPathfinderMultithreaded)
 	{
@@ -398,6 +402,7 @@ void CMNMPathfinder::WaitForJobToFinish(MNM::PathfinderUtils::ProcessingContext&
 
 void CMNMPathfinder::DispatchResults()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
 	if(m_pathfindingFailedEventsToDispatch.size())
 	{
 		MNM::PathfinderUtils::PathfindingFailedEvent failedEvent;
@@ -437,6 +442,8 @@ void CMNMPathfinder::Update()
 
 void CMNMPathfinder::OnNavigationMeshChanged(const NavigationMeshID meshId, const MNM::TileID tileId)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+	
 	const size_t maximumAmountOfSlotsToUpdate = m_processingContextsPool.GetOccupiedSlotsCount();
 	for (size_t i = 0; i < maximumAmountOfSlotsToUpdate; ++i)
 	{
@@ -487,6 +494,8 @@ void CMNMPathfinder::OnNavigationMeshChanged(const NavigationMeshID meshId, cons
 
 bool CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, MNM::PathfinderUtils::ProcessingContext& processingContext)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+	
 	MNM::PathfinderUtils::ProcessingRequest& processingRequest = processingContext.processingRequest;
 	processingRequest.Reset();
 
@@ -589,6 +598,8 @@ bool CMNMPathfinder::ApplySnappingRules(const MNM::CNavMesh& navMesh, const SSna
 
 void CMNMPathfinder::ProcessPathRequest(MNM::PathfinderUtils::ProcessingContext& processingContext)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+	
 	if (processingContext.status != MNM::PathfinderUtils::ProcessingContext::InProgress)
 		return;
 
@@ -627,6 +638,8 @@ bool CMNMPathfinder::ConstructPathFromFoundWay(
   const Vec3& endLocation,
   CPathHolder<PathPointDescriptor>& outputPath)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+	
 	const MNM::WayTriangleData* pWayData = way.GetWayData();
 	const size_t waySize = way.GetWaySize();
 
@@ -700,6 +713,8 @@ void CMNMPathfinder::ConstructPathIfWayWasFound(MNM::PathfinderUtils::Processing
 {
 	if (processingContext.status != MNM::PathfinderUtils::ProcessingContext::FindWayCompleted)
 		return;
+
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_AI, CryStringUtils::toString(static_cast<unsigned>(processingContext.queryResult.GetWaySize())));
 
 	MNM::PathfinderUtils::ProcessingRequest& processingRequest = processingContext.processingRequest;
 
