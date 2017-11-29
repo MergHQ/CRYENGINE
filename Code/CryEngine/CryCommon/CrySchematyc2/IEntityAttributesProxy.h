@@ -10,7 +10,7 @@
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/Serializer.h>
 
-#include <CrySchematyc2/Schematyc_ILib.h>
+#include <CrySchematyc2/ILib.h>
 
 struct IEntityAttribute;
 DECLARE_SHARED_POINTERS(IEntityAttribute)

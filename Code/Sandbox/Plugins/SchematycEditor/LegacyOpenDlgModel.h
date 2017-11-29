@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Controls/DictionaryWidget.h>
-#include <CrySchematyc2/Schematyc_GUID.h>
+#include <CrySchematyc2/GUID.h>
 
 namespace Cry {
 namespace SchematycEd {

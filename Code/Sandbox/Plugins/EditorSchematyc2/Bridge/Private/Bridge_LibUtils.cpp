@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "Bridge_LibUtils.h"
 
-#include "CrySchematyc2/Schematyc_LibUtils.h"
+#include "CrySchematyc2/LibUtils.h"
 
 namespace Schematyc2 {
 

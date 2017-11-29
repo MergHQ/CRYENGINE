@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include "CrySchematyc2/Schematyc_Prerequisites.h"
+#include "CrySchematyc2/Prerequisites.h"
 
 namespace Schematyc2 {
 

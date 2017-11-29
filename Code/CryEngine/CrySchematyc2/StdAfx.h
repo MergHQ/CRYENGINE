@@ -11,7 +11,7 @@
 #include <CrySystem/ISystem.h>
 #include <CryString/CryString.h>
 
-#include <CrySchematyc2/Schematyc_Prerequisites.h>
+#include <CrySchematyc2/Prerequisites.h>
 
 #define CRY_STRING
 

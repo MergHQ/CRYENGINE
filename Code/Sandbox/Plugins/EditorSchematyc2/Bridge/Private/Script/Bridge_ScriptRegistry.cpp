@@ -4,7 +4,7 @@
 #include "Bridge_ScriptRegistry.h"
 
 #include "Bridge_ScriptFile.h"
-#include <CrySchematyc2/Script/Schematyc_IScriptRegistry.h>
+#include <CrySchematyc2/Script/IScriptRegistry.h>
 
 
 namespace Bridge {

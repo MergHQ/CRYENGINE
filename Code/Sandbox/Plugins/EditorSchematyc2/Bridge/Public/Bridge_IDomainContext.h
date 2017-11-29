@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "CrySchematyc2/Schematyc_IDomainContext.h"
+#include "CrySchematyc2/IDomainContext.h"
 
 namespace Bridge {
 

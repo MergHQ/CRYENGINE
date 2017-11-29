@@ -7,16 +7,16 @@
 
 #pragma once
 
-#include "CrySchematyc2/Schematyc_Prerequisites.h"
+#include "CrySchematyc2/Prerequisites.h"
 
 #include <CrySchematyc2/TemplateUtils/TemplateUtils_Delegate.h>
 
-#include "CrySchematyc2/Schematyc_IFoundation.h"
-#include "CrySchematyc2/Schematyc_ILibRegistry.h"
-#include "CrySchematyc2/Env/Schematyc_IEnvRegistry.h"
-#include "CrySchematyc2/Script/Schematyc_IScriptGraph.h"
-#include "CrySchematyc2/Script/Schematyc_IScriptRegistry.h"
-#include "CrySchematyc2/Services/Schematyc_ILog.h"
+#include "CrySchematyc2/IFoundation.h"
+#include "CrySchematyc2/ILibRegistry.h"
+#include "CrySchematyc2/Env/IEnvRegistry.h"
+#include "CrySchematyc2/Script/IScriptGraph.h"
+#include "CrySchematyc2/Script/IScriptRegistry.h"
+#include "CrySchematyc2/Services/ILog.h"
 
 #include "Bridge_IScriptFile.h"
 

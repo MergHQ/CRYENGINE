@@ -2,8 +2,8 @@
 
 #pragma once
 #include <Controls/DictionaryWidget.h>
-#include <CrySchematyc2/Schematyc_GUID.h>
-#include <CrySchematyc2/Script/Schematyc_IScriptElement.h>
+#include <CrySchematyc2/GUID.h>
+#include <CrySchematyc2/Script/IScriptElement.h>
 
 //////////////////////////////////////////////////////////////////////////
 namespace Cry {	

@@ -6,7 +6,7 @@
 #include "BaseEnv/BaseEnv_AutoRegistrar.h"
 
 #include <CrySerialization/Forward.h>
-#include <CrySchematyc2/Env/Schematyc_IEnvRegistry.h>
+#include <CrySchematyc2/Env/IEnvRegistry.h>
 #include <CrySchematyc2/TemplateUtils/TemplateUtils_Delegate.h>
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Random.h>
