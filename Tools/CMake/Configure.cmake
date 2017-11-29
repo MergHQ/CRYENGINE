@@ -202,6 +202,10 @@ foreach( current_define ${platform_defines} )
 	list(APPEND global_defines "${current_define}")
 endforeach()
 
+if (OPTION_RELEASE_PROFILING)
+	list(APPEND global_defines  "$<$<CONFIG:Release>:PERFORMANCE_BUILD>")
+endif()
+
 if ((WIN32 OR WIN64) AND OPTION_ENABLE_BROFILER AND OPTION_ENGINE)
 	list(APPEND global_defines USE_BROFILER)
 	list(APPEND global_includes "${SDK_DIR}/Brofiler" )

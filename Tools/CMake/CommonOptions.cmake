@@ -36,3 +36,5 @@ option(OPTION_LTCG "Enable link-time code generation/optimization" OFF)
 if (MSVC_VERSION)
 option(OPTION_SHOW_COMPILE_METRICS "Show MSVC compilation metrics" OFF)
 endif()
+
+option(OPTION_RELEASE_PROFILING "Enable basic profiling in Release builds" OFF)
