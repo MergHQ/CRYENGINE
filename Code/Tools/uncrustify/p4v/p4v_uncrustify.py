@@ -121,7 +121,7 @@ def main():
     args, filelist = parse_arguments()
     uncrustify = UncrustifyRunner(args.user, args.client, args.patterns, args.trigger)
     try:
-        return uncrustify.run(changelist=args.changelist, filelist=filelist, check=not args.apply)
+        return not uncrustify.run(changelist=args.changelist, filelist=filelist, check=not args.apply)
     except ValueError as e:
         print(f'Error: {e}')
         return 1
