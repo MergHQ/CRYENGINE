@@ -29,8 +29,8 @@ public:
 		f(asset, asset->GetMetadataFile(), rootDepth);
 
 		CAssetManager* pAssetManager = GetIEditor()->GetAssetManager();
-		std::stack<std::vector<string>> stack;
-		stack.push(std::move(asset->GetDependencies()));
+		std::stack<std::vector<SAssetDependencyInfo>> stack;
+		stack.push(asset->GetDependencies());
 		while (!stack.empty())
 		{
 			auto& dependencies = stack.top();
@@ -40,9 +40,9 @@ public:
 				stack.pop();
 				continue;
 			}
-
-			CAsset* pAsset = pAssetManager->FindAssetForFile(dependencies.back());
-			f(pAsset, dependencies.back(), stack.size());
+			const string& path = dependencies.back().path;
+			CAsset* pAsset = pAssetManager->FindAssetForFile(path);
+			f(pAsset, path, stack.size());
 			dependencies.pop_back();
 
 			if (!pAsset)
@@ -50,7 +50,7 @@ public:
 				// Unresolved dependency.
 				continue;
 			}
-			stack.push(std::move(pAsset->GetDependencies()));
+			stack.push(pAsset->GetDependencies());
 		}
 	}
 

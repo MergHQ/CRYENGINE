@@ -117,10 +117,10 @@ void CollectCgfDetails(XmlNodeRef& xmlnode, const CContentCGF& cgf)
 		details.emplace_back("bonesCount", string().Format("%i", pSkin->m_arrBoneEntities.size()));
 	}
 
-	std::vector<string> dependencies;
+	std::vector<std::pair<string,int32>> dependencies;
 	if (materialCount)
 	{
-		dependencies.emplace_back(PathUtil::ReplaceExtension(cgf.GetMaterial(0)->name, "mtl"));
+		dependencies.emplace_back(PathUtil::ReplaceExtension(cgf.GetMaterial(0)->name, "mtl"), 1);
 	}
 
 	AssetManager::AddDetails(xmlnode, details);
@@ -165,7 +165,7 @@ bool CollectMtlDetails(XmlNodeRef& xmlnode, const char* szFilename, IResourceCom
 
 	int subMaterialCount = 0;
 	int textureCount = 0;
-	std::vector<string> dependencies;
+	std::vector<std::pair<string, int32>> dependencies;
 	std::stack<XmlNodeRef> mtls;
 	mtls.push(mtl);
 	while (!mtls.empty())
@@ -186,11 +186,17 @@ bool CollectMtlDetails(XmlNodeRef& xmlnode, const char* szFilename, IResourceCom
 					continue;
 				}
 				const string path = PathUtil::ReplaceExtension(filename, "dds");
-				if (std::any_of(dependencies.begin(), dependencies.end(), [&path](const string& x) { return path.CompareNoCase(x) == 0; }))
+				auto it = std::find_if(dependencies.begin(), dependencies.end(), [&path](const auto& x) 
+				{ 
+					return path.CompareNoCase(x.first) == 0; 
+				});
+
+				if (it != dependencies.end())
 				{
+					++(it->second);
 					continue;
 				}
-				dependencies.emplace_back(path);
+				dependencies.emplace_back(path, 1);
 				++textureCount;
 			}
 		}
@@ -257,16 +263,16 @@ bool CollectCdfDetails(XmlNodeRef& xmlnode, const char* szFilename, IResourceCom
 		return false;
 	}
 
-	std::vector<string> dependencies;
+	std::vector<std::pair<string,int32>> dependencies;
 
 	const char* filename;
 	const XmlNodeRef model = cdf->findChild("Model");
 	if (model && model->getAttr("File", &filename))
 	{
-		dependencies.emplace_back(filename);
+		dependencies.emplace_back(filename, 0);
 		if (model->getAttr("Material", &filename))
 		{
-			dependencies.emplace_back(filename);
+			dependencies.emplace_back(filename, 0);
 		}
 	}
 
@@ -290,7 +296,7 @@ bool CollectCdfDetails(XmlNodeRef& xmlnode, const char* szFilename, IResourceCom
 			{
 				if (item->getAttr(szAttr, &filename))
 				{
-					dependencies.emplace_back(filename);
+					dependencies.emplace_back(filename, 0);
 				}
 			}
 		}
