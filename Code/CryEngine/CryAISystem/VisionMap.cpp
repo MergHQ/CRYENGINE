@@ -891,11 +891,11 @@ void CVisionMap::RayCastComplete(const QueuedRayID& queuedRayID, const RayCastRe
 	bool visible = !rayCastResult;
 
 #if VISIONMAP_DEBUG
-	pvsEntry.lastObserverPositionChecked   = pendingRayInfo.observerPosition;
+	pvsEntry.lastObserverPositionChecked = pendingRayInfo.observerPosition;
 	pvsEntry.lastObservablePositionChecked = pendingRayInfo.observablePosition;
 #endif
-	const ObserverInfo& observerInfo        = pendingRayInfo.observerInfo;
-	const ObservableInfo& observableInfo    = pvsEntry.observableInfo;
+	const ObserverInfo& observerInfo = pendingRayInfo.observerInfo;
+	const ObservableInfo& observableInfo = pvsEntry.observableInfo;
 	const bool requiresStatisticalAnalysis = (observableInfo.observableParams.mode == EObservableMode::Statistical) &&
 		IsInStatisticalAnalysisSightRange(observerInfo, observableInfo);
 	static_assert(static_cast<int>(EObservableMode::Count) == 2, "Enum changed!");
@@ -909,14 +909,13 @@ void CVisionMap::RayCastComplete(const QueuedRayID& queuedRayID, const RayCastRe
 		{
 			if (++pvsEntry.currentTestPositionIndex < observableInfo.observableParams.observablePositionsCount)
 			{
+				m_pendingRays.erase(pendingRayIt);
 				QueueRay(observerInfo, pvsEntry);
+				return;
 			}
-			m_pendingRays.erase(pendingRayIt);
-			return;
 		}
 	}
 
-	bool hasChangedVisibility = false;
 	bool isLastRaycast = false;
 	if (requiresStatisticalAnalysis)
 	{
@@ -930,31 +929,31 @@ void CVisionMap::RayCastComplete(const QueuedRayID& queuedRayID, const RayCastRe
 			pvsEntry.firstVisPos = pvsEntry.currentTestPositionIndex;
 		}
 
-		if (++pvsEntry.currentTestPositionIndex < observableInfo.observableParams.observablePositionsCount)
-		{
-			QueueRay(observerInfo, pvsEntry);
-		}
-
 		if (isLastRaycast)
 		{
 			const float newNormalizedVisibility = (float)pvsEntry.numberOfSucceededRaycasts / (float)pvsEntry.numberOfCompletedRaycasts;
 			if (newNormalizedVisibility != pvsEntry.lastComputedNormalizedVisibility)
 			{
-				hasChangedVisibility = true;
 				pvsEntry.lastComputedNormalizedVisibility = newNormalizedVisibility;
 			}
+		}
+
+		if (++pvsEntry.currentTestPositionIndex < observableInfo.observableParams.observablePositionsCount)
+		{
+			m_pendingRays.erase(pendingRayIt);
+			QueueRay(observerInfo, pvsEntry);
+			return;
 		}
 	}
 	else
 	{
 		pvsEntry.currentTestPositionIndex = 0;
 	}
-	
-	const bool triggersCallback   = 
+
+	const bool triggersCallback =
 		(!requiresStatisticalAnalysis && pvsEntry.visible != visible) ||                                                  // default mode     - changed visibility
-		(requiresStatisticalAnalysis  && hasChangedVisibility) ||                                                         // statistical mode - changed visibility 
-		(requiresStatisticalAnalysis  && (visible && !pvsEntry.visible && !isLastRaycast)) ||                             // statistical mode - became visible
-		(requiresStatisticalAnalysis  && (pvsEntry.numberOfSucceededRaycasts == 0 && pvsEntry.visible && isLastRaycast)); // statistical mode - became invisible
+		(requiresStatisticalAnalysis && (visible && !pvsEntry.visible && !isLastRaycast)) ||                             // statistical mode - became visible
+		(requiresStatisticalAnalysis && (pvsEntry.numberOfSucceededRaycasts == 0 && pvsEntry.visible && isLastRaycast)); // statistical mode - became invisible
 
 	if (triggersCallback)
 	{
@@ -975,10 +974,11 @@ void CVisionMap::RayCastComplete(const QueuedRayID& queuedRayID, const RayCastRe
 
 	if (requiresStatisticalAnalysis && isLastRaycast)
 	{
-		pvsEntry.currentTestPositionIndex  = 0;
+		pvsEntry.currentTestPositionIndex = 0;
 		pvsEntry.numberOfCompletedRaycasts = 0;
 		pvsEntry.numberOfSucceededRaycasts = 0;
 	}
+
 }
 
 void CVisionMap::AcquireSkipList(IPhysicalEntity** skipList, uint32 skipListSize)
