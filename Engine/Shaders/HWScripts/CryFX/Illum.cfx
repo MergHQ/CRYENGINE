@@ -667,11 +667,7 @@ pixout IlluminationPS(vert2FragGeneral IN)
 
 	// Gather surface material attributes
 	MaterialAttribsCommon commonAttribs;
-#if %_RT_FOG || %_RT_PER_INSTANCE_CB_TEMP
 	half3x3 mTangentToWS = half3x3(IN.vTangent.xyz, IN.vBinormal.xyz, cross(IN.vTangent.xyz, IN.vBinormal.xyz) * IN.vTangent.w);
-#else
-	half3x3 mTangentToWS = half3x3(half3(1, 0, 0), half3(0, 1, 0), half3(0, 0, 1));
-#endif
 	half4 vertexColor = 0;
 #if %VERTCOLORS || %BLENDLAYER || %DIRTLAYER
 	vertexColor = IN.Color;

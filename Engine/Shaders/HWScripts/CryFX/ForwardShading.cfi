@@ -299,9 +299,7 @@ void Fwd_StandardOpaqueShading(in MaterialAttribsCommon commonAttribs, inout For
 #endif
 	
 #if %_RT_TILED_SHADING
-	#if %_RT_PER_INSTANCE_CB_TEMP
-		TiledForwardShading(fwdAttribs, diffuseAcc, specularAcc, ssFwdBilinearWrap, ssFwdComparison, true, true, true, false, true);
-	#endif
+	TiledForwardShading(fwdAttribs, diffuseAcc, specularAcc, ssFwdBilinearWrap, ssFwdComparison, true, true, true, false, true);
 #endif
 
 	// Apply albedo (using simple energy conservation between specular and diffuse)

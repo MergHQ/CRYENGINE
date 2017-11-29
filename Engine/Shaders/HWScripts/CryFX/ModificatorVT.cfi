@@ -48,11 +48,7 @@ cbuffer CBPerInstanceNewBackend : register(b12)
  #if %_RT_ENVIRONMENT_CUBEMAP
 	return 1;
  #else
-	#if %_RT_PER_INSTANCE_CB_TEMP
-		return PerInstanceBlendTerrainColInfo;
-	#else
-		return float4(0);
-	#endif
+	return PerInstanceBlendTerrainColInfo;
 #endif
 	}
 #endif
@@ -62,10 +58,8 @@ cbuffer CBPerInstanceNewBackend : register(b12)
 	{
 	#if %_RT_ENVIRONMENT_CUBEMAP
 		return float4x4(0);
-	#elif %_RT_PER_INSTANCE_CB_TEMP
-		return PerInstanceTerrainLayerInfo;
 	#else
-		return float4x4(0);
+		return PerInstanceTerrainLayerInfo;
 	#endif
 	}
 #endif
@@ -148,11 +142,7 @@ float Get_SPI_Dissolve()
 	// dissolved objects are not instanced, so we always use value from the first object
 	return SInstancingData[0].PerInstanceCustomData.w;
 #else 
-	#if %_RT_PER_INSTANCE_CB_TEMP
-		return PerInstanceCustomData.w;
-	#else
-		return 0;
-	#endif
+	return PerInstanceCustomData.w;
 #endif
 }
 
@@ -162,11 +152,7 @@ int Get_PerInstanceTessellationPatchId()
 	// Instancing support
 	return asint(SInstancingData[0].PerInstanceCustomData.z);
 #else 
-	#if %_RT_PER_INSTANCE_CB_TEMP
-		return asint(PerInstanceCustomData.z);
-	#else
-		return 0;
-	#endif
+	return asint(PerInstanceCustomData.z);
 #endif
 }
 
