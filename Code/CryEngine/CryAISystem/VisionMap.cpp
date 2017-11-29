@@ -136,7 +136,7 @@ void CVisionMap::RegisterObservable(const ObservableID& observableID, const Obse
 	assert(observableParams.observablePositionsCount > 0);
 	assert(observableParams.observablePositionsCount <= ObservableParams::MaxPositionCount);
 
-	std::pair<Observables::iterator, bool> result = m_observables.insert(Observables::value_type(observableID, ObservableInfo(observableID, observableParams)));
+	std::pair<Observables::iterator, bool> result = m_observables.insert(Observables::value_type(observableID, ObservableInfo(observableID, ObservableParams())));
 
 	ObservableInfo& insertedObservableInfo = result.first->second;
 	m_observablesGrid.insert(insertedObservableInfo.observableParams.observablePositions[0], &insertedObservableInfo);
