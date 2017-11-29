@@ -294,15 +294,18 @@ void CPlugin_CryDefaultEntities::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 			stdClass.sName = "AreaShape";
 			gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
 
-			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
-			  stl::make_unique<Schematyc::CEnvPackage>(
-			    CPlugin_CryDefaultEntities::GetCID(),
-			    "EntityComponents",
-			    "Crytek GmbH",
-			    "CRYENGINE Default Entity Components",
-			    [this](Schematyc::IEnvRegistrar& registrar) { RegisterComponents(registrar); }
-			    )
-			  );
+			if (gEnv->pSchematyc != nullptr)
+			{
+				gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
+					stl::make_unique<Schematyc::CEnvPackage>(
+						CPlugin_CryDefaultEntities::GetCID(),
+						"EntityComponents",
+						"Crytek GmbH",
+						"CRYENGINE Default Entity Components",
+						[this](Schematyc::IEnvRegistrar& registrar) { RegisterComponents(registrar); }
+						)
+				);
+			}
 		}
 		break;
 	}
