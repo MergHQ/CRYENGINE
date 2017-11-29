@@ -20,7 +20,7 @@
     <Definition>
      <Name>Uncrustify: validate files</Name>
      <Command>cmd</Command>
-     <Arguments>/c $r/Code/Tools/uncrustify/p4v/p4v_uncrustify.exe --check --user=$u --client=$c %F</Arguments>
+     <Arguments>/c $r/Code/Tools/uncrustify/p4v/p4v_uncrustify.exe --user=$u --client=$c %F</Arguments>
     </Definition>
     <Console>
      <CloseOnExit>false</CloseOnExit>
@@ -44,7 +44,7 @@
     <Definition>
      <Name>Uncrustify: validate changelist</Name>
      <Command>cmd</Command>
-     <Arguments>/c $r/Code/Tools/uncrustify/p4v/p4v_uncrustify.exe --check --user=$u --client=$c --changelist %P</Arguments>
+     <Arguments>/c $r/Code/Tools/uncrustify/p4v/p4v_uncrustify.exe --user=$u --client=$c --changelist %P</Arguments>
     </Definition>
     <Console>
      <CloseOnExit>false</CloseOnExit>
