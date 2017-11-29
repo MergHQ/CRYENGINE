@@ -17,13 +17,16 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX12::Init(const CDeviceGraph
 	if (!pRenderPassDesc)
 		return EInitResult::Failure;
 
-	auto hwShaders = SDeviceObjectHelpers::GetShaderInstanceInfo(psoDesc.m_pShader, psoDesc.m_technique, psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, nullptr, psoDesc.m_bAllowTesselation);
+	SDeviceObjectHelpers::THwShaderInfo hwShaders;
+	::EShaderStage validShaderStages = SDeviceObjectHelpers::GetShaderInstanceInfo(hwShaders, psoDesc.m_pShader, psoDesc.m_technique, 
+		psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, nullptr, psoDesc.m_bAllowTesselation);
+
+	if (validShaderStages == EShaderStage_None)
+		return CDeviceGraphicsPSO::EInitResult::Failure;
+
 	// validate shaders first
 	for (EHWShaderClass shaderClass = eHWSC_Vertex; shaderClass < eHWSC_Num; shaderClass = EHWShaderClass(shaderClass + 1))
 	{
-		if (hwShaders[shaderClass].pHwShader && hwShaders[shaderClass].pHwShaderInstance == NULL)
-			return EInitResult::Failure;
-
 		m_pHwShaderInstances[shaderClass] = hwShaders[shaderClass].pHwShaderInstance;
 	}
 
@@ -177,10 +180,11 @@ bool CDeviceComputePSO_DX12::Init(const CDeviceComputePSODesc& psoDesc)
 	if (psoDesc.m_pResourceLayout == NULL)
 		return false;
 
-	auto hwShaders = SDeviceObjectHelpers::GetShaderInstanceInfo(psoDesc.m_pShader, psoDesc.m_technique, psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, nullptr, false);
+	SDeviceObjectHelpers::THwShaderInfo hwShaders;
+	::EShaderStage validShaderStages = SDeviceObjectHelpers::GetShaderInstanceInfo(hwShaders, psoDesc.m_pShader, psoDesc.m_technique, 
+		psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, nullptr, false);
 
-	// validate shaders first
-	if (hwShaders[eHWSC_Compute].pHwShader && hwShaders[eHWSC_Compute].pHwShaderInstance == NULL)
+	if (validShaderStages != EShaderStage_Compute)
 		return false;
 
 	m_pHwShaderInstance = hwShaders[eHWSC_Compute].pHwShaderInstance;

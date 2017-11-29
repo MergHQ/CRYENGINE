@@ -37,7 +37,13 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 
 	uint64 resourceLayoutHash = reinterpret_cast<CDeviceResourceLayout_Vulkan*>(psoDesc.m_pResourceLayout.get())->GetHash();
 	UPipelineState customPipelineState[] = { resourceLayoutHash, resourceLayoutHash, resourceLayoutHash, resourceLayoutHash, resourceLayoutHash, resourceLayoutHash };
-	auto hwShaders = SDeviceObjectHelpers::GetShaderInstanceInfo(psoDesc.m_pShader, psoDesc.m_technique, psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, customPipelineState, psoDesc.m_bAllowTesselation);
+
+	SDeviceObjectHelpers::THwShaderInfo hwShaders;
+	EShaderStage validShaderStages = SDeviceObjectHelpers::GetShaderInstanceInfo(hwShaders, psoDesc.m_pShader, psoDesc.m_technique, 
+		psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, customPipelineState, psoDesc.m_bAllowTesselation);
+
+	if (validShaderStages == EShaderStage_None)
+		return EInitResult::Failure;
 
 	// Vertex shader is required, both tessellation shaders should be used or omitted.
 	if (hwShaders[eHWSC_Vertex].pHwShader == nullptr || (!(hwShaders[eHWSC_Domain].pHwShader == nullptr && hwShaders[eHWSC_Hull].pHwShader == nullptr) && !(hwShaders[eHWSC_Domain].pHwShader != nullptr && hwShaders[eHWSC_Hull].pHwShader != nullptr)))
@@ -510,9 +516,12 @@ bool CDeviceComputePSO_Vulkan::Init(const CDeviceComputePSODesc& psoDesc)
 
 	uint64 resourceLayoutHash = reinterpret_cast<CDeviceResourceLayout_Vulkan*>(psoDesc.m_pResourceLayout.get())->GetHash();
 	UPipelineState customPipelineState[] = { resourceLayoutHash, resourceLayoutHash, resourceLayoutHash, resourceLayoutHash, resourceLayoutHash, resourceLayoutHash };
-	auto hwShaders = SDeviceObjectHelpers::GetShaderInstanceInfo(psoDesc.m_pShader, psoDesc.m_technique, psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, customPipelineState, false);
 
-	if (hwShaders[eHWSC_Compute].pHwShader == nullptr || hwShaders[eHWSC_Compute].pHwShaderInstance == nullptr)
+	SDeviceObjectHelpers::THwShaderInfo hwShaders;
+	EShaderStage validShaderStages = SDeviceObjectHelpers::GetShaderInstanceInfo(hwShaders, psoDesc.m_pShader, psoDesc.m_technique,
+		psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, customPipelineState, false);
+
+	if (validShaderStages != EShaderStage_Compute)
 		return false;
 
 	VkComputePipelineCreateInfo computePipelineCreateInfo = {};
