@@ -3262,7 +3262,7 @@ CDefaultSkeleton* CharacterManager::CreateExtendedSkel(CCharInstance* pCharInsta
 		pExtDefaultSkeleton->m_poseDefaultData.GetJointsAbsolute()[i] = lh.m_arrExtModelJoints[i].m_DefaultAbsolute;
 		pExtDefaultSkeleton->m_poseDefaultData.GetJointsRelative()[i] = pExtDefaultSkeleton->m_poseDefaultData.GetJointsAbsolute()[p].GetInverted() * lh.m_arrExtModelJoints[i].m_DefaultAbsolute;
 	}
-	pExtDefaultSkeleton->PrepareJointIDHash();
+	pExtDefaultSkeleton->RebuildJointLookupCaches();
 	pExtDefaultSkeleton->CopyAndAdjustSkeletonParams(pDefaultSkeleton);
 	pExtDefaultSkeleton->SetupPhysicalProxies(pDefaultSkeleton->m_arrBackupPhyBoneMeshes, pDefaultSkeleton->m_arrBackupBoneEntities, pDefaultSkeleton->GetIMaterial(), pFilepathSKEL);
 	pExtDefaultSkeleton->VerifyHierarchy();
