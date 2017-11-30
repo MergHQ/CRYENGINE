@@ -52,6 +52,17 @@ set(CLANG_COMMON_FLAGS
 	-gfull
 	-ffast-math
 	-fno-rtti
+
+	# clang 3.8 -> 5.0 upgrade
+	-Wno-unknown-warning-option      # Allows multiple versions of clang to be used
+	-Wno-dangling-else
+	-Wno-null-dereference
+	-Wno-undefined-var-template
+	-Wno-delete-non-virtual-dtor
+	-Wno-unused-lambda-capture
+	-Wno-deprecated-declarations
+	-Wno-address-of-packed-member
+	-Wno-expansion-to-defined
 )
 
 if(NOT ANDROID)
