@@ -89,7 +89,7 @@ _smart_ptr<CImageFile> CImageFile::mfLoad_file(const string& filename, const uin
 	}
 
 	char ext[16];
-	if (!mfInvokeRC(sFileToLoad, filename, ext, 16, true))
+	if (!mfInvokeRC(sFileToLoad, filename, ext, 16, (nFlags & FIM_IMMEDIATE_RC) != 0))
 		return NULL;
 
 	_smart_ptr<CImageFile> pImageFile;

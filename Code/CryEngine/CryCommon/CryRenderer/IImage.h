@@ -9,7 +9,7 @@
 enum EImFileError { eIFE_OK = 0, eIFE_IOerror, eIFE_OutOfMemory, eIFE_BadFormat, eIFE_ChunkNotFound };
 
 	#define FIM_NORMALMAP        0x00001    //!< Image contains normal vectors.
-//efine FIM_____________________ 0x00002
+	#define FIM_IMMEDIATE_RC     0x00002    //!< Resource Compiler should be invoked immediately if TIF needs compiling to DDS. Used for textures that the engine cannot start without, results in a blocking operation!
 	#define FIM_NOTSUPPORTS_MIPS 0x00004
 	#define FIM_ALPHA            0x00008    //!< Request attached alpha image instead of base image.
 	#define FIM_DECAL            0x00010    //!< Use bordercolor instead of tiling for this image.

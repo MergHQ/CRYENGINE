@@ -1083,7 +1083,8 @@ bool CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
 
 	uint32 nImageFlags =
 	  ((m_eFlags & FT_ALPHA) ? FIM_ALPHA : 0) |
-	  ((m_eFlags & FT_STREAMED_PREPARE) ? FIM_READ_VIA_STREAMS : 0);
+	  ((m_eFlags & FT_STREAMED_PREPARE) ? FIM_READ_VIA_STREAMS : 0) |
+	  ((m_eFlags & FT_DONT_STREAM) ? FIM_IMMEDIATE_RC : 0);
 
 	_smart_ptr<CImageFile> pImage = CImageFile::mfLoad_file(sFileName, nImageFlags);
 	return Load(pImage);
