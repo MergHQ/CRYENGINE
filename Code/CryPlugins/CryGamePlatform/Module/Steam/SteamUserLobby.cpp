@@ -187,9 +187,10 @@ namespace Cry
 				constexpr Identifier invalidLobby = 0;
 				if (m_steamLobbyId != invalidLobby)
 				{
-					if (auto pMatchMaking = SteamMatchmaking())
+					const bool isShuttingDown = SteamMatchmaking() == nullptr;
+					if (!isShuttingDown)
 					{
-						pMatchMaking->LeaveLobby(m_steamLobbyId);
+						SteamMatchmaking()->LeaveLobby(m_steamLobbyId);
 					}
 					m_steamLobbyId = invalidLobby;
 
@@ -201,7 +202,10 @@ namespace Cry
 					if (m_serverIP != 0)
 						SteamUser()->TerminateGameConnection(m_serverIP, m_serverPort);
 
-					static_cast<CMatchmaking*>(CPlugin::GetInstance()->GetMatchmaking())->OnLobbyRemoved(this);
+					if (!isShuttingDown)
+					{
+						static_cast<CMatchmaking*>(CPlugin::GetInstance()->GetMatchmaking())->OnLobbyRemoved(this);
+					}
 				}
 			}
 
