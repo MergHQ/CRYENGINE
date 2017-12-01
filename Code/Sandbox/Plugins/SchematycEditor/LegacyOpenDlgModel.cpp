@@ -3,8 +3,8 @@
 #include "StdAfx.h"
 #include "LegacyOpenDlgModel.h"
 
-#include <CrySchematyc2/Schematyc_IFramework.h>
-#include <CrySchematyc2/Script/Schematyc_IScriptRegistry.h>
+#include <CrySchematyc2/IFramework.h>
+#include <CrySchematyc2/Script/IScriptRegistry.h>
 
 #include "Util.h"
 

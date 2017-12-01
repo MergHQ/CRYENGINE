@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <CrySchematyc2/Env/Schematyc_IEnvRegistry.h>
+#include <CrySchematyc2/Env/IEnvRegistry.h>
 #include <CrySchematyc2/TemplateUtils/TemplateUtils_Delegate.h>
 
 //struct ICharacterInstance;

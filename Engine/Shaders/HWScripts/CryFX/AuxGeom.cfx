@@ -101,7 +101,7 @@ AuxGeomObjVS( SAuxGeomObjApp2VS IN )
 
 // Default pixel shader to render auxiliary 2D/3D geometries and geometry objects
 float4
-AuxGeomPS( SAuxVS2PS IN ) : COLOR0
+AuxGeomPS( SAuxVS2PS IN ) : SV_Target0
 {
   return IN.col;
 }
@@ -113,7 +113,7 @@ SamplerState smpAux : register(s0);
 
 // Default pixel shader to render auxiliary 2D/3D geometries and geometry objects with texture
 float4
-AuxGeomTexturePS( SAuxGeomApp2VS IN ) : COLOR0
+AuxGeomTexturePS( SAuxGeomApp2VS IN ) : SV_Target0
 {
   float4 col = GetInputColor(IN.col);
   float4 tex = GetTexture2D(texAux, smpAux, IN.tex.xy);
@@ -252,7 +252,7 @@ SAuxVS2PSWithColor AuxTextVS(SAuxGeomApp2VS IN)
   return OUT;
 }
 
-float4 AuxTextPS(SAuxVS2PSWithColor IN) : COLOR0
+float4 AuxTextPS(SAuxVS2PSWithColor IN) : SV_Target0
 {
   float4 col = GetInputColor(IN.col);
   float4 tex = GetTexture2D(texFont, smpFont, IN.tex.xy);

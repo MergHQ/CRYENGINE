@@ -78,8 +78,8 @@ private:
 
 	void ConnectSignals();
 
-	CSystemAssetsManager* m_pAssetsManager;
-	bool                  m_ignoreLibraryUpdates;
+	CSystemAssetsManager* const m_pAssetsManager;
+	bool                        m_ignoreLibraryUpdates;
 };
 
 class CSystemLibraryModel : public QAbstractItemModel
@@ -114,8 +114,8 @@ private:
 	void        ConnectSignals();
 	QModelIndex IndexFromItem(CSystemAsset const* pItem) const;
 
-	CSystemAssetsManager* m_pAssetsManager;
-	CSystemLibrary*       m_pLibrary;
+	CSystemAssetsManager* const m_pAssetsManager;
+	CSystemLibrary* const       m_pLibrary;
 };
 
 class CSystemFilterProxyModel final : public QAttributeFilterProxyModel

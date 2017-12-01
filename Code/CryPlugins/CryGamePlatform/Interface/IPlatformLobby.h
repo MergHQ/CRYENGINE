@@ -62,6 +62,8 @@ namespace Cry
 				virtual void OnGameCreated(IServer::Identifier serverId, uint32 ipAddress, uint16 port, bool bLocal) = 0;
 				//! Sent when a chat message is received from another user
 				virtual void OnChatMessage(IUser::Identifier userId, const char* message) = 0;
+				//! Sent when lobby metadata has changed
+				virtual void OnDataUpdate(IUser::Identifier userId) = 0;
 			};
 
 			virtual ~IUserLobby() {}

@@ -609,7 +609,6 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, CRenderView *p
 
 	// Create Pipeline States
 	SGraphicsPipelineStateDescription psoDescription(pRenderObject, pRenderElement, m_shaderItem, TTYPE_GENERAL, geomInfo.eVertFormat, 0 /*geomInfo.CalcStreamMask()*/, ERenderPrimitiveType(geomInfo.primitiveType));
-	psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_PER_INSTANCE_CB_TEMP];  // Enable flag to use special per instance constant buffer
 	if (m_pInstancingConstBuffer)
 	{
 		//#TODO: Rename HWSR_ENVIRONMENT_CUBEMAP to HWSR_GEOM_INSTANCING

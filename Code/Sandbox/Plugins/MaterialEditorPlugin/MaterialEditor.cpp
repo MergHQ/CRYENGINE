@@ -226,7 +226,7 @@ bool CMaterialEditor::OnSaveAsset(CEditableAsset& editAsset)
 	{
 		editAsset.SetFiles("", { m_pMaterial->GetFilename() });
 
-		std::vector<string> filenames;
+		std::vector<SAssetDependencyInfo> filenames;
 
 		//TODO : not all dependencies are found, some paths are relative to same folder which is not good ...
 		int textureCount = m_pMaterial->GetTextureDependencies(filenames);

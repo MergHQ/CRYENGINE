@@ -732,6 +732,7 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 
 				static CCryNameTSCRC shaderName("StoreJitteringDepthToClipVolumeDepth");
 				pass->SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+				pass->SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				pass->SetTechnique(CShaderMan::s_shDeferredShading, shaderName, 0);
 				pass->SetState(GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
 				pass->SetDepthTarget(m_depthTargetVolFog, depthTargetView);
@@ -768,6 +769,7 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 				// write jittering depth.
 				static CCryNameTSCRC shaderName("StoreJitteringDepthToClipVolumeDepth");
 				pass->SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+				pass->SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				pass->SetTechnique(CShaderMan::s_shDeferredShading, shaderName, 0);
 				pass->SetState(GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
 				pass->SetDepthTarget(pTex, depthTarget);

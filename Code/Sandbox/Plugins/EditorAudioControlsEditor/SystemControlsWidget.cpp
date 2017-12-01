@@ -241,7 +241,7 @@ void CSystemControlsWidget::Reload()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CSystemControl* CSystemControlsWidget::CreateControl(string const& name, ESystemItemType type, CSystemAsset* const pParent)
+CSystemControl* CSystemControlsWidget::CreateControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent)
 {
 	m_isCreatedFromMenu = true;
 
@@ -707,13 +707,15 @@ bool CSystemControlsWidget::IsEditing() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControlsWidget::SelectConnectedSystemControl(CSystemControl const& systemControl)
+void CSystemControlsWidget::SelectConnectedSystemControl(CSystemControl& systemControl, CID const itemId)
 {
 	ClearFilters();
 	auto const matches = m_pSystemFilterProxyModel->match(m_pSystemFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(SystemModelUtils::ERoles::Id), systemControl.GetId(), 1, Qt::MatchRecursive);
 
 	if (!matches.isEmpty())
 	{
+		std::vector<CID> selectedConnection{ itemId };
+		systemControl.SetSelectedConnections(selectedConnection);
 		m_pTreeView->setFocus();
 		m_pTreeView->selectionModel()->setCurrentIndex(matches.first(), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 	}

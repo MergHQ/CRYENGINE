@@ -759,6 +759,7 @@ void CSceneForwardStage::ExecuteTransparentDepthFixup()
 	uint64 rtMask = 0;
 
 	screenPass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+	screenPass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	screenPass.SetRenderTarget(0, pDestRT);
 	screenPass.SetTechnique(CShaderMan::s_shPostEffects, techName, rtMask);
 	screenPass.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLEND_OP_MIN);

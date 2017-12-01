@@ -28,6 +28,7 @@ void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 		{
 			m_passH.SetTechnique(pShader, techBlur, 0);
 			m_passH.SetRenderTarget(0, CRendererResources::s_ptexSceneTargetR11G11B10F[1]);
+			m_passH.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passH.SetState(GS_NODEPTHTEST);
 
 			m_passH.SetTexture(0, pIrradianceTex);
@@ -52,6 +53,7 @@ void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 		{
 			m_passV.SetTechnique(pShader, techBlur, g_HWSR_MaskBit[HWSR_SAMPLE0]);
 			m_passV.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
+			m_passV.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passV.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
 
 			m_passV.SetTexture(0, CRendererResources::s_ptexSceneTargetR11G11B10F[1]);

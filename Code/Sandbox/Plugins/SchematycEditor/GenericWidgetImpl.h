@@ -4,7 +4,7 @@
 
 #include <QWidget>
 
-#include <CrySchematyc2/Schematyc_GUID.h>
+#include <CrySchematyc2/GUID.h>
 
 #include "GenericWidget.h"
 #include "GenericWidgetModelImpl.h"

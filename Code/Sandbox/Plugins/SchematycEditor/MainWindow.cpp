@@ -8,8 +8,8 @@
 #include <qlayout.h>
 #include <qpushbutton.h>
 
-#include <CrySchematyc2/Schematyc_IFramework.h>
-#include <CrySchematyc2/Script/Schematyc_IScriptRegistry.h>
+#include <CrySchematyc2/IFramework.h>
+#include <CrySchematyc2/Script/IScriptRegistry.h>
 
 #include "GenericWidget.h"
 #include "LegacyOpenDlg.h"

@@ -73,16 +73,17 @@ struct vtxOutAAOpt
 #endif
 };
 
-vtxOutAAOpt EdgeAAOptVS(vtxIn IN)
+vtxOutAAOpt EdgeAAOptVS(uint VertexID : SV_VertexID)
 {
   vtxOutAAOpt OUT = (vtxOutAAOpt)0; 
-  OUT.HPosition = Get2dHPos(IN.Position);
-  OUT.baseTC = IN.baseTC.xy;
+  OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+  float2 baseTC = GetBaseTC_FromTriVertexID(VertexID);
+  OUT.baseTC = baseTC;
 
 #if %_RT_SAMPLE4
 	static const half3 vOffs = half3(0.h, -1.h, 1.h);
-	OUT.baseTC1 = IN.baseTC.xyxy + vOffs.xyyx * g_VS_ScreenSize.zwzw * 2;
-	OUT.baseTC2 = IN.baseTC.xyxy + vOffs.zxxz * g_VS_ScreenSize.zwzw * 2;
+	OUT.baseTC1 = baseTC.xyxy + vOffs.xyyx * g_VS_ScreenSize.zwzw * 2;
+	OUT.baseTC2 = baseTC.xyxy + vOffs.zxxz * g_VS_ScreenSize.zwzw * 2;
 #endif
 
   return OUT;
@@ -125,13 +126,11 @@ SamplerState  SSHFTG_LCSampler     : register(s0); //linear clamp
 
 /// Samplers ////////////////////////////
 
-vtxOutSunShaftsGen SunShaftsGenVS(vtxIn IN)
+vtxOutSunShaftsGen SunShaftsGenVS(uint VertexID : SV_VertexID)
 {
   vtxOutSunShaftsGen OUT = (vtxOutSunShaftsGen)0; 
-  OUT.HPosition = Get2dHPos(IN.Position);
-  
-  OUT.baseTC.xy = IN.baseTC.xy;
-
+  OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+  OUT.baseTC.xy = GetBaseTC_FromTriVertexID(VertexID);
   return OUT;
 }
 

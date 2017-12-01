@@ -10,13 +10,12 @@ extern CD3D9Renderer gcpRendD3D;
 #include "XRenderD3D9/D3DHWShader.h" // CHWShader_D3D
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHelpers::GetShaderInstanceInfo(::CShader* pShader, const CCryNameTSCRC& technique, uint64 rtFlags, uint32 mdFlags, uint32 mdvFlags, const UPipelineState pipelineState[eHWSC_Num], bool bAllowTesselation)
+EShaderStage SDeviceObjectHelpers::GetShaderInstanceInfo(THwShaderInfo& result, ::CShader* pShader, const CCryNameTSCRC& technique, uint64 rtFlags, uint32 mdFlags, uint32 mdvFlags, const UPipelineState pipelineState[eHWSC_Num], bool bAllowTesselation)
 {
-	std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> result;
 	if (SShaderTechnique* pShaderTechnique = pShader->mfFindTechnique(technique))
 	{
 		if (pShaderTechnique->m_Passes.empty())
-			return result;
+			return EShaderStage_None;
 
 		SShaderPass& shaderPass = pShaderTechnique->m_Passes[0];
 
@@ -29,6 +28,8 @@ std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHe
 			shaderPass.m_DShader,
 			shaderPass.m_HShader,
 		};
+
+		EShaderStage validShaderStages = EShaderStage_None;
 
 		for (EHWShaderClass shaderStage = eHWSC_Vertex; shaderStage < eHWSC_Num; shaderStage = EHWShaderClass(shaderStage + 1))
 		{
@@ -65,6 +66,7 @@ std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHe
 				Ident.m_GLMask = pHWShaderD3D->m_nMaskGenShader;
 				Ident.m_pipelineState = pipelineState ? pipelineState[shaderStage] : UPipelineState();
 
+				bool isShaderValid = false;
 				if (auto pInstance = pHWShaderD3D->mfGetInstance(pShader, Ident, 0))
 				{
 					if (pHWShaderD3D->CheckActivation(pShader, pInstance, 0))
@@ -77,14 +79,25 @@ std::array<SDeviceObjectHelpers::SShaderInstanceInfo, eHWSC_Num> SDeviceObjectHe
 						{
 							result[shaderStage].pHwShaderInstance = pInstance;
 							result[shaderStage].pDeviceShader = pInstance->m_Handle.m_pShader->m_pHandle;
+
+							validShaderStages |= SHADERSTAGE_FROM_SHADERCLASS(shaderStage);
 						}
+
+						isShaderValid = true;
 					}
+				}
+				
+				if (!isShaderValid)
+				{
+					return EShaderStage_None;
 				}
 			}
 		}
+
+		return validShaderStages;
 	}
 
-	return result;
+	return EShaderStage_None;
 }
 
 bool SDeviceObjectHelpers::CheckTessellationSupport(SShaderItem& shaderItem)

@@ -517,7 +517,7 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 	//---------------------------------------------------------------------------------------------------------------
 
 	InitializeHardcodedJointsProperty();
-	PrepareJointIDHash();
+	RebuildJointLookupCaches();
 	stack_string paramFileName = strGeomFileNameNoExt + "." + CRY_CHARACTER_PARAM_FILE_EXT;
 	uint32 isPrevMode = nLoadingFlags & CA_PreviewMode;
 	if (isPrevMode == 0)

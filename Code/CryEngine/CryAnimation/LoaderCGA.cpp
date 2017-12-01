@@ -98,7 +98,7 @@ CDefaultSkeleton* CryCGALoader::LoadNewCGA(const char* OriginalGeomName, Charact
 		return 0;
 	}
 
-	pCGAModel->PrepareJointIDHash();
+	pCGAModel->RebuildJointLookupCaches();
 
 	//
 	m_CtrlVec3.clear();

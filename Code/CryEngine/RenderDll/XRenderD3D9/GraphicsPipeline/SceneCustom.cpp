@@ -478,6 +478,7 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 		m_highlightPass.SetRenderTarget(0, pTargetTex);
 		m_highlightPass.SetState(GS_NODEPTHTEST | GS_BLDST_ONEMINUSSRCALPHA | GS_BLSRC_SRCALPHA);
 		m_highlightPass.SetTextureSamplerPair(0, pTargetRT, EDefaultResourceViews::Default);
+		m_highlightPass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	}
 
 	static CCryNameR highlightColorName("highlightColor");

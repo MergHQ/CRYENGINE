@@ -77,6 +77,7 @@ void COmniCameraStage::Execute()
 				static CCryNameTSCRC techName("CubeTextureToTexture");
 
 				m_cubemapToScreenPass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+				m_cubemapToScreenPass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				m_cubemapToScreenPass.SetRenderTarget(0, pTargetTexture);
 				m_cubemapToScreenPass.SetTechnique(CShaderMan::s_shPostEffects, techName, 0);
 				m_cubemapToScreenPass.SetState(GS_NODEPTHTEST);

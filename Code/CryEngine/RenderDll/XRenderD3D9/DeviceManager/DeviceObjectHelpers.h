@@ -515,7 +515,8 @@ struct SDeviceObjectHelpers
 	};
 
 	// Get shader instances for each shader stage
-	static std::array<SShaderInstanceInfo, eHWSC_Num> GetShaderInstanceInfo(::CShader* pShader, const CCryNameTSCRC& technique, uint64 rtFlags, uint32 mdFlags, uint32 mdvFlags, const UPipelineState pipelineState[eHWSC_Num], bool bAllowTesselation);
+	typedef std::array<SShaderInstanceInfo, eHWSC_Num> THwShaderInfo;
+	static EShaderStage GetShaderInstanceInfo(THwShaderInfo& result, ::CShader* pShader, const CCryNameTSCRC& technique, uint64 rtFlags, uint32 mdFlags, uint32 mdvFlags, const UPipelineState pipelineState[eHWSC_Num], bool bAllowTesselation);
 
 	// Check if shader has tessellation support
 	static bool CheckTessellationSupport(SShaderItem& shaderItem);

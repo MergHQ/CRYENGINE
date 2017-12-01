@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "GenericWidgetModelImpl.h"
 
-#include <CrySchematyc2/Script/Schematyc_IScriptGraph.h>
+#include <CrySchematyc2/Script/IScriptGraph.h>
 
 #include "Util.h"
 

@@ -434,8 +434,16 @@ char *AllocSolverTmpBuf(int size)
 		memset(g_SolverBuf+g_iSolverBufPos-size, 0, size);
 		return g_SolverBuf+g_iSolverBufPos-size;
 	}	else {
-		if (g_iSolverBufAuxPos+size>g_sizeSolverBufAux)
+		if (g_iSolverBufAuxPos+size>g_sizeSolverBufAux)	{
+			char *pBufAux = g_pSolverBufAux;
 			ReallocateList(g_pSolverBufAux, g_iSolverBufAuxPos, g_sizeSolverBufAux+=sizeof(g_SolverBuf));
+			for(int i=0; i<g_nContacts; i++) {
+				if ((unsigned int)((char*)g_pContacts[i]-pBufAux) < (unsigned int)(g_sizeSolverBufAux-sizeof(g_SolverBuf)))
+					(char*&)g_pContacts[i] += g_pSolverBufAux-pBufAux;
+				if ((unsigned int)((char*)g_pContacts[i]->pBounceCount-pBufAux) < (unsigned int)(g_sizeSolverBufAux-sizeof(g_SolverBuf)))
+					(char*&)g_pContacts[i]->pBounceCount += g_pSolverBufAux-pBufAux;
+			}
+		}
 		memset(g_pSolverBufAux+g_iSolverBufAuxPos, 0, size);
 		g_iSolverBufAuxPos += size;
 		return g_pSolverBufAux+g_iSolverBufAuxPos-size;

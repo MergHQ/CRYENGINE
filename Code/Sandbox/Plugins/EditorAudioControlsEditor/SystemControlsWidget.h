@@ -33,7 +33,7 @@ public:
 
 	bool                       IsEditing() const;
 	std::vector<CSystemAsset*> GetSelectedAssets() const;
-	void                       SelectConnectedSystemControl(CSystemControl const& control);
+	void                       SelectConnectedSystemControl(CSystemControl& control, CID const itemId);
 	void                       Reload();
 	void                       BackupTreeViewStates();
 	void                       RestoreTreeViewStates();
@@ -62,7 +62,7 @@ private:
 	void ClearFilters();
 	void DeleteModels();
 
-	CSystemControl*     CreateControl(string const& name, ESystemItemType type, CSystemAsset* const pParent);
+	CSystemControl*     CreateControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent);
 	CSystemAsset*       CreateFolder(CSystemAsset* const pParent);
 	void                CreateParentFolder();
 	bool                IsParentFolderAllowed();

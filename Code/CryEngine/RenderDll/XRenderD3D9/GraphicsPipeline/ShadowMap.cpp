@@ -853,6 +853,7 @@ void CShadowMapStage::CopyShadowMap(const CShadowMapPass& sourcePass, CShadowMap
 			m_CopyShadowMapPass.SetDepthTarget(depthTarget.pTexture, depthTarget.view);
 			m_CopyShadowMapPass.SetTechnique(pShader, tech, 0);
 			m_CopyShadowMapPass.SetState(GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
+			m_CopyShadowMapPass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_CopyShadowMapPass.SetTextureSamplerPair(0, pSrc->pDepthTex, EDefaultSamplerStates::LinearClamp);
 			m_CopyShadowMapPass.BeginConstantUpdate();
 

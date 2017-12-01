@@ -226,10 +226,13 @@ bool CSubstancePresetEditor::OnOpenAsset(CAsset* pAsset)
 bool CSubstancePresetEditor::OnSaveAsset(CEditableAsset& editAsset)
 {
 	m_pPreset->Save();
-	std::vector<string> dependencies;
-	dependencies.push_back(m_pPreset->GetSubstanceArchive());
+	std::vector<SAssetDependencyInfo> dependencies;
+	dependencies.emplace_back(m_pPreset->GetSubstanceArchive(), 1);
 	const std::vector<string> images = m_pPreset->GetInputImages();
-	dependencies.insert(dependencies.end(), images.begin(), images.end());
+	for( const string& image : images)
+	{
+		dependencies.emplace_back(image, 1);
+	}
 	editAsset.SetDependencies(dependencies);
 
 	GetAssetBeingEdited()->SetModified(false);

@@ -21,97 +21,124 @@ extern float g_YLine;
 namespace Command
 {
 
-void LoadControllers(const GlobalAnimationHeaderCAF& rGAH, const Command::CState& state, IController** controllers)
+//! Performs in-place intersection of sorted range [it1, it1End) against another sorted range [it2, it2End).
+template<typename TIt1, typename TIt2, typename TCompare>
+TIt1 inplace_set_intersection(TIt1 it1, const TIt1 it1End, TIt2 it2, const TIt2 it2End, TCompare compare)
 {
-	DEFINE_PROFILER_FUNCTION();
+	TIt1 itOut = it1;
 
+	while (it1 != it1End && it2 != it2End)
+	{
+		if (compare(*it1, *it2))
+		{
+			++it1;
+		}
+		else
+		{
+			if (!compare(*it2, *it1))
+			{
+				*itOut++ = *it1++;
+			}
+			++it2;
+		}
+	}
+
+	return itOut;
+}
+
+void GatherControllers(const GlobalAnimationHeaderCAF& rGAH, const Command::CState& state, IController** controllers)
+{
 	memset(controllers, 0, state.m_jointCount * sizeof(IController*));
 
 	if (rGAH.IsAssetOnDemand())
 	{
 		assert(rGAH.IsAssetLoaded());
-		if (rGAH.IsAssetLoaded() == 0)
+		if (!rGAH.IsAssetLoaded())
 		{
 			return;
-			//	int nCurrentFrameID = g_pCharacterManager->m_nUpdateCounter;
-			//	CryFatalError("CryAnimation: Asset Not Loaded: %s   nCurrentFrameID: %d  Weight: %f",rCAF.GetFilePath(),nCurrentFrameID,ac.m_fWeight);
 		}
 	}
 
-	if (rGAH.m_nControllers2)
+	if (rGAH.m_nControllers2 > 0 && rGAH.m_nControllers == 0)
 	{
-		if (rGAH.m_nControllers == 0)
+		if (rGAH.m_FilePathDBACRC32)
 		{
-			uint32 dba_exists = 0;
-			if (rGAH.m_FilePathDBACRC32)
+			const auto itSearch = std::find_if(g_AnimationManager.m_arrGlobalHeaderDBA.begin(), g_AnimationManager.m_arrGlobalHeaderDBA.end(), [&rGAH](const CGlobalHeaderDBA& dbaHeader)
 			{
-				size_t numDBA_Files = g_AnimationManager.m_arrGlobalHeaderDBA.size();
-				for (uint32 d = 0; d < numDBA_Files; d++)
-				{
-					CGlobalHeaderDBA& pGlobalHeaderDBA = g_AnimationManager.m_arrGlobalHeaderDBA[d];
-					if (rGAH.m_FilePathDBACRC32 != pGlobalHeaderDBA.m_FilePathDBACRC32)
-						continue;
+				return dbaHeader.m_FilePathDBACRC32 == rGAH.m_FilePathDBACRC32;
+			});
 
-					dba_exists++;
-					break;
-				}
-
-			}
-
-			if (dba_exists)
+			if (itSearch != g_AnimationManager.m_arrGlobalHeaderDBA.end())
 			{
 				if (Console::GetInst().ca_DebugCriticalErrors)
 				{
-					//this case is virtually impossible, unless something went wrong with a DBA or maybe a CAF in a DBA was compressed to death and all controllers removed
-					//	const char* mname = state.m_pInstance->GetFilePath();
-					//	f32 fColor[4] = {1,1,0,1};
-					//	g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.2f, fColor, false,"model: %s",mname);
-					//	g_YLine+=0x10;
-					//	g_pAuxGeom->Draw2dLabel( 1,g_YLine, 2.3f, fColor, false,"No Controllers found in Asset: %02x %08x %s",rGAH.m_nControllers2,rGAH.m_FilePathDBACRC32,rGAH.m_FilePath.c_str() );
-					//	g_YLine+=23.0f;
+					// This case is virtually impossible, unless something went wrong with a DBA or maybe a CAF in a DBA was compressed to death and all controllers removed
+					// TODO: Investigate if this condition is validated against when loading assets, so that we can safely assume it's an invariant at this point.
 					CryFatalError("CryAnimation: No Controllers found in Asset: %s", rGAH.GetFilePath());
 				}
-
 				g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, 0, "No Controllers found in Asset: %s", rGAH.GetFilePath());
 			}
-
-			return;  //return and don't play animation, because we don't have any controllers
 		}
+		return;
 	}
 
-	const uint32* pLodJointMask     = NULL;
-	uint32        lodJointMaskCount = 0;
-	const int     forceLod          = Console::GetInst().ca_ForceAnimationLod;
-
-	if (state.m_lod > 0 || forceLod > 0)
+	std::pair<CDefaultSkeleton::SJointDescriptor*, CDefaultSkeleton::SJointDescriptor*> jointList;
 	{
-		if (uint32 lodCount = state.m_pDefaultSkeleton->m_arrAnimationLOD.size())
-		{
-			uint32 lod = forceLod > 0 ? forceLod : state.m_lod;
-			if (lod > lodCount)
-				lod = lodCount;
-			--lod;
+		jointList.first = CryStackAllocVector(CDefaultSkeleton::SJointDescriptor, state.m_jointCount, alignof(CDefaultSkeleton::SJointDescriptor));
+		jointList.second = jointList.first + state.m_jointCount;
 
-			pLodJointMask = &state.m_pDefaultSkeleton->m_arrAnimationLOD[lod][0];
-			lodJointMaskCount = state.m_pDefaultSkeleton->m_arrAnimationLOD[lod].size();
-		}
+		const auto& skeletonJoints = state.m_pDefaultSkeleton->m_crcOrderedJointDescriptors;
+		assert(skeletonJoints.size() == state.m_jointCount);
+		std::copy(skeletonJoints.begin(), skeletonJoints.end(), jointList.first);
 	}
 
-	const CDefaultSkeleton::SJoint* pModelJoint = &state.m_pDefaultSkeleton->m_arrModelJoints[0];
-	uint32 jointCount = state.m_jointCount;
-	for (uint32 i = 0; i < jointCount; ++i)
+	const int forcedLod = Console::GetInst().ca_ForceAnimationLod;
+	const std::pair<const uint32*, const uint32*> lodMask = state.m_pDefaultSkeleton->FindClosestAnimationLod(forcedLod > 0 ? forcedLod : state.m_lod);
+	const std::pair<const uint32*, const uint32*> stateMask = { state.m_pJointMask, state.m_pJointMask + state.m_jointMaskCount };
+
+	struct CrcOderingComparator
 	{
-		const uint32 crc32 = pModelJoint[i].m_nJointCRC32;
-		if (pLodJointMask)
+		bool operator()(const CDefaultSkeleton::SJointDescriptor& lhs, const uint32& rhs) const { return lhs.crc32 < rhs; }
+		bool operator()(const uint32& lhs, const CDefaultSkeleton::SJointDescriptor& rhs) const { return lhs < rhs.crc32; }
+	};
+
+	if (std::distance(lodMask.first, lodMask.second) > 0)
+	{
+		jointList.second = inplace_set_intersection(jointList.first, jointList.second, lodMask.first, lodMask.second, CrcOderingComparator());
+	}
+
+	if (std::distance(stateMask.first, stateMask.second) > 0)
+	{
+		jointList.second = inplace_set_intersection(jointList.first, jointList.second, stateMask.first, stateMask.second, CrcOderingComparator());
+	}
+
+	{
+		auto itJoint = jointList.first;
+		const auto itJointEnd = jointList.second;
+
+		auto itController = rGAH.m_arrControllerLookupVector.begin();
+		const auto itControllerEnd = rGAH.m_arrControllerLookupVector.end();
+
+		while (itJoint != itJointEnd && itController != itControllerEnd)
 		{
-			if (Helper::FindFromSorted(pLodJointMask, lodJointMaskCount, crc32) == NULL)
-				continue;
+			const auto crcJoint = itJoint->crc32;
+			const auto crcController = *itController;
+
+			if (crcJoint < crcController)
+			{
+				++itJoint;
+			}
+			else
+			{
+				if (!(crcController < crcJoint))
+				{
+					const size_t controllerIndex = std::distance(rGAH.m_arrControllerLookupVector.begin(), itController);
+					controllers[itJoint->id] = rGAH.m_arrController[controllerIndex];
+					++itJoint;
+				}
+				++itController;
+			}
 		}
-
-		if (!state.IsJointActive(crc32))
-			continue;
-
-		controllers[i] = rGAH.GetControllerByJointCRC32(pModelJoint[i].m_nJointCRC32);
 	}
 }
 
@@ -182,7 +209,7 @@ void SampleAddAnimFull::Execute(const CState& state, CEvaluationContext& context
 
 	PREFAST_SUPPRESS_WARNING(6255);
 	const auto parrJointControllers = static_cast<IController**>(alloca(state.m_jointCount * sizeof(IController*)));
-	LoadControllers(rCAF, state, parrJointControllers);
+	GatherControllers(rCAF, state, parrJointControllers);
 
 	const int32 bufferIndex = (m_flags & Flag_TmpBuffer) ? Command::TmpBuffer : Command::TargetBuffer;
 	const auto outputRelPose = static_cast<QuatT*>(context.m_buffers[bufferIndex + 0]);
@@ -491,7 +518,7 @@ void SampleAddAnimPart::Execute(const CState& state, CEvaluationContext& context
 
 	PREFAST_SUPPRESS_WARNING(6255)
 	const auto parrController = static_cast<IController**>(alloca(state.m_jointCount * sizeof(IController*)));
-	LoadControllers(rCAF, state, parrController);
+	GatherControllers(rCAF, state, parrController);
 
 	assert(m_fAnimTime >= 0.0f && m_fAnimTime <= 1.0f);
 	const f32 fKeyTimeNew = rCAF.NTime2KTime(m_fAnimTime);

@@ -12,7 +12,6 @@ namespace ACE
 {
 class CSystemAssetsManager;
 class CSystemControl;
-class CImplItem;
 class CMiddlewareDataModel;
 class CTreeView;
 
@@ -31,7 +30,7 @@ public:
 
 signals:
 
-	void SignalSelectConnectedSystemControl(CSystemControl const& sytemControl);
+	void SignalSelectConnectedSystemControl(CSystemControl& sytemControl, CID const itemId);
 
 private slots:
 

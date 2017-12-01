@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <CrySchematyc2/Schematyc_IFramework.h>
+#include <CrySchematyc2/IFramework.h>
 
 #include "Bridge_ICompiler.h"
 #include "Bridge_IDomainContext.h"

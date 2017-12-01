@@ -455,6 +455,7 @@ void BenchmarkRendererSensor::copyStereoFrameToScreen(CTexture* left, CTexture* 
 	m_copyPass.SetState(GS_NODEPTHTEST);
 	m_copyPass.SetTextureSamplerPair(0, left, EDefaultSamplerStates::LinearClamp);
 	m_copyPass.SetTextureSamplerPair(1, right, EDefaultSamplerStates::LinearClamp);
+	m_copyPass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	
 	m_copyPass.BeginConstantUpdate();
 	m_copyPass.SetConstant(m_shaderUniformName, pParams);

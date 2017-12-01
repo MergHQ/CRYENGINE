@@ -14,9 +14,9 @@
 #include <ProxyModels/MergingProxyModel.h>
 #include <ProxyModels/ItemModelAttribute.h>
 
-#include <CrySchematyc2/Schematyc_GUID.h>
-#include <CrySchematyc2/Schematyc_IFramework.h>
-#include <CrySchematyc2/Script/Schematyc_IScriptRegistry.h>
+#include <CrySchematyc2/GUID.h>
+#include <CrySchematyc2/IFramework.h>
+#include <CrySchematyc2/Script/IScriptRegistry.h>
 
 #include "Util.h"
 #include "GenericWidgetImpl.h"

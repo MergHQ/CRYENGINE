@@ -386,17 +386,7 @@ vtxOutVegetation VegetationVS(app2vertGeneral IN)
 		OUT.binormVec.w = ParallelOpacityFalloff(vertPassPos.WorldPos.xyz, worldTangentN.xyz, CapOpacityFalloff, alphaTest);
 	#endif
 
-#if !%_RT_PER_INSTANCE_CB_TEMP
-	#if !%_RT_VOLUMETRIC_FOG
-		float fVolumetricFogDensity = GetVolumetricFogDensity(vertPassPos.WorldPos.xyz);
-		OUT.vView.w = fVolumetricFogDensity;
-		OUT.AvgFogVolumeContrib = AvgFogVolumeContrib;
-	#else
-		OUT.AvgFogVolumeContrib = GetVolumetricFogAnalyticalColor(outPos.xyz).xyzw;
-	#endif
-#else
 	OUT.AvgFogVolumeContrib = Fwd_GetLocalFogColor(vertPassPos.WorldPos.xyz, OUT.vView.xyz);
-#endif
 #endif
 	return OUT;
 }
@@ -508,12 +498,6 @@ pixout VegetationPS(vtxOutVegetation IN, bool bIsFrontFace : SV_IsFrontFace)
 	pixout OUT = (pixout)0;
 	OUT.Color.rgb = diffuseAcc + specularAcc;
 	OUT.Color.a = 1;
-
-#if !%_RT_PER_INSTANCE_CB_TEMP
-#if %_RT_FOG
-	Fwd_ApplyFog(In.AvgFogVolumeContrib, IN.HPosition, OUT.Color);
-#endif
-#endif
 
 	return OUT;
 }

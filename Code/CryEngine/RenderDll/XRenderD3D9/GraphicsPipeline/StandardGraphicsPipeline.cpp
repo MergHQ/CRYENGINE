@@ -497,8 +497,6 @@ bool CStandardGraphicsPipeline::FillCommonScenePassStates(const SGraphicsPipelin
 	}
 #endif
 
-	psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_PER_INSTANCE_CB_TEMP];
-
 	psoDesc.m_CullMode = bTwoSided ? eCULL_None : ((pShaderPass && pShaderPass->m_eCull != -1) ? (ECull)pShaderPass->m_eCull : eCULL_Back);
 	psoDesc.m_PrimitiveType = inputDesc.primitiveType;
 

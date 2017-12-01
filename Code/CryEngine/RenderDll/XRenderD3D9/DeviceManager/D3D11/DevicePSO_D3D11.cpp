@@ -36,15 +36,16 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX11::Init(const CDeviceGraph
 	m_NumSamplers.fill(0);
 	m_NumSRVs.fill(0);
 
-	auto hwShaders = SDeviceObjectHelpers::GetShaderInstanceInfo(psoDesc.m_pShader, psoDesc.m_technique, psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, nullptr, psoDesc.m_bAllowTesselation);
+	SDeviceObjectHelpers::THwShaderInfo hwShaders;
+	EShaderStage validShaderStages = SDeviceObjectHelpers::GetShaderInstanceInfo(hwShaders, psoDesc.m_pShader, psoDesc.m_technique,
+		psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, nullptr, psoDesc.m_bAllowTesselation);
 
-	// validate shaders first
+	if (validShaderStages == EShaderStage_None)
+		return EInitResult::Failure;
+
 	for (EHWShaderClass shaderClass = eHWSC_Vertex; shaderClass < eHWSC_Num; shaderClass = EHWShaderClass(shaderClass + 1))
 	{
-		if (hwShaders[shaderClass].pHwShader && (hwShaders[shaderClass].pHwShaderInstance == NULL || hwShaders[shaderClass].pDeviceShader == NULL))
-			return EInitResult::Failure;
-
-		m_pDeviceShaders[shaderClass] = hwShaders[shaderClass].pDeviceShader;
+		m_pDeviceShaders[shaderClass]     = hwShaders[shaderClass].pDeviceShader;
 		m_pHwShaderInstances[shaderClass] = hwShaders[shaderClass].pHwShaderInstance;
 	}
 
@@ -125,13 +126,15 @@ bool CDeviceComputePSO_DX11::Init(const CDeviceComputePSODesc& psoDesc)
 	m_bValid = false;
 	m_nUpdateCount++;
 
-	auto hwShaders = SDeviceObjectHelpers::GetShaderInstanceInfo(psoDesc.m_pShader, psoDesc.m_technique, psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, nullptr, false);
+	SDeviceObjectHelpers::THwShaderInfo hwShaders;
+	EShaderStage validShaderStages = SDeviceObjectHelpers::GetShaderInstanceInfo(hwShaders, psoDesc.m_pShader, psoDesc.m_technique, 
+		psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, nullptr, false);
 
-	if (hwShaders[eHWSC_Compute].pHwShader && (hwShaders[eHWSC_Compute].pHwShaderInstance == NULL || hwShaders[eHWSC_Compute].pDeviceShader == NULL))
+	if (validShaderStages != EShaderStage_Compute)
 		return false;
 
 	m_pDeviceShaders[eHWSC_Compute] = hwShaders[eHWSC_Compute].pDeviceShader;
-	m_pHwShaderInstance = hwShaders[eHWSC_Compute].pHwShaderInstance;
+	m_pHwShaderInstance             = hwShaders[eHWSC_Compute].pHwShaderInstance;
 
 	m_bValid = true;
 	return true;

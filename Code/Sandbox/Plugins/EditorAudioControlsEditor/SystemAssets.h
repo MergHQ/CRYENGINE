@@ -87,44 +87,47 @@ public:
 	CSystemControl(string const& name, CID const id, ESystemItemType const type);
 	~CSystemControl();
 
-	CID           GetId() const            { return m_id; }
+	CID                     GetId() const            { return m_id; }
 
-	virtual void  SetName(string const& name) override;
+	virtual void            SetName(string const& name) override;
 
-	virtual void  SetDescription(string const& description) override;
+	virtual void            SetDescription(string const& description) override;
 
-	Scope         GetScope() const { return m_scope; }
-	void          SetScope(Scope const scope);
+	Scope                   GetScope() const { return m_scope; }
+	void                    SetScope(Scope const scope);
 
-	bool          IsAutoLoad() const { return m_isAutoLoad; }
-	void          SetAutoLoad(bool const isAutoLoad);
+	bool                    IsAutoLoad() const { return m_isAutoLoad; }
+	void                    SetAutoLoad(bool const isAutoLoad);
 
-	float         GetRadius() const { return m_radius; }
-	void          SetRadius(float const radius);
+	float                   GetRadius() const { return m_radius; }
+	void                    SetRadius(float const radius);
 
-	float         GetOcclusionFadeOutDistance() const { return m_occlusionFadeOutDistance; }
-	void          SetOcclusionFadeOutDistance(float const fadeOutArea);
+	float                   GetOcclusionFadeOutDistance() const { return m_occlusionFadeOutDistance; }
+	void                    SetOcclusionFadeOutDistance(float const fadeOutArea);
 
-	size_t        GetConnectionCount() const { return m_connectedControls.size(); }
-	void          AddConnection(ConnectionPtr const pConnection);
-	void          RemoveConnection(ConnectionPtr const pConnection);
-	void          RemoveConnection(CImplItem* const pImplControl);
-	void          ClearConnections();
-	ConnectionPtr GetConnectionAt(int const index) const;
-	ConnectionPtr GetConnection(CID const id) const;
-	ConnectionPtr GetConnection(CImplItem const* const pImplControl) const;
-	void          ReloadConnections();
-	void          LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex = -1);
+	std::vector<CID> const& GetSelectedConnections() const { return m_selectedConnectionIds; }
+	void                    SetSelectedConnections(std::vector<CID> selectedConnectionIds) { m_selectedConnectionIds = selectedConnectionIds; }
 
-	void          MatchRadiusToAttenuation();
-	bool          IsMatchRadiusToAttenuationEnabled() const { return m_matchRadiusAndAttenuation; }
-	void          SetMatchRadiusToAttenuationEnabled(bool const isEnabled) { m_matchRadiusAndAttenuation = isEnabled; }
+	size_t                  GetConnectionCount() const { return m_connectedControls.size(); }
+	void                    AddConnection(ConnectionPtr const pConnection);
+	void                    RemoveConnection(ConnectionPtr const pConnection);
+	void                    RemoveConnection(CImplItem* const pImplControl);
+	void                    ClearConnections();
+	ConnectionPtr           GetConnectionAt(int const index) const;
+	ConnectionPtr           GetConnection(CID const id) const;
+	ConnectionPtr           GetConnection(CImplItem const* const pImplControl) const;
+	void                    ReloadConnections();
+	void                    LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex = -1);
 
-	virtual void  Serialize(Serialization::IArchive& ar) override;
+	void                    MatchRadiusToAttenuation();
+	bool                    IsMatchRadiusToAttenuationEnabled() const { return m_matchRadiusAndAttenuation; }
+	void                    SetMatchRadiusToAttenuationEnabled(bool const isEnabled) { m_matchRadiusAndAttenuation = isEnabled; }
+
+	virtual void            Serialize(Serialization::IArchive& ar) override;
 
 	// All the raw connection nodes. Used for reloading the data when switching middleware.
-	void          AddRawXMLConnection(XmlNodeRef const xmlNode, bool const isValid, int const platformIndex = -1);
-	XMLNodeList&  GetRawXMLConnections(int const platformIndex = -1);
+	void                    AddRawXMLConnection(XmlNodeRef const xmlNode, bool const isValid, int const platformIndex = -1);
+	XMLNodeList&            GetRawXMLConnections(int const platformIndex = -1);
 
 private:
 
@@ -143,6 +146,7 @@ private:
 	bool                       m_matchRadiusAndAttenuation = true;
 
 	std::map<int, XMLNodeList> m_connectionNodes;
+	std::vector<CID>           m_selectedConnectionIds;
 };
 
 class CSystemLibrary final : public CSystemAsset

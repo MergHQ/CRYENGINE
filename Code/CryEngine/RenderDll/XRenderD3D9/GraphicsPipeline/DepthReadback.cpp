@@ -260,7 +260,7 @@ void CDepthReadbackStage::ConfigurePasses(CTexture* pSource, EConfigurationFlags
 		{
 			// Simple shader only has PS constants, and expects full-screen triangle
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
-			pass.SetPrimitiveType(CRenderPrimitive::ePrim_Triangle);
+			pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			pass.SetTechnique(CShaderMan::s_shPostEffects, techniqueNameSimple, rtFlags);
 		}
 	};

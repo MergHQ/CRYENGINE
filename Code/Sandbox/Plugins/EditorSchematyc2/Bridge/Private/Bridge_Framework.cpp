@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <CrySchematyc2/Schematyc_IFramework.h>
+#include <CrySchematyc2/IFramework.h>
 
 #include "Bridge_Framework.h"
 #include "Bridge_DomainContext.h"

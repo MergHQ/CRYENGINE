@@ -109,7 +109,7 @@
 #include "Serialization/ArchiveHost.h"
 
 #include "CrySchematyc/ICore.h"
-#include <CrySchematyc2/Schematyc_IFramework.h>
+#include <CrySchematyc2/IFramework.h>
 #include "ManualFrameStep.h"
 
 #if CRY_PLATFORM_IOS

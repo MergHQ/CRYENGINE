@@ -991,8 +991,6 @@ void CShaderMan::mfInitGlobal(void)
 				g_HWSR_MaskBit[HWSR_QUALITY] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_QUALITY1")
 				g_HWSR_MaskBit[HWSR_QUALITY1] = gb->m_Mask;
-			else if (gb->m_ParamName == "%_RT_PER_INSTANCE_CB_TEMP")
-				g_HWSR_MaskBit[HWSR_PER_INSTANCE_CB_TEMP] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_NO_TESSELLATION")
 				g_HWSR_MaskBit[HWSR_NO_TESSELLATION] = gb->m_Mask;
 			else if (gb->m_ParamName == "%_RT_VERTEX_VELOCITY")

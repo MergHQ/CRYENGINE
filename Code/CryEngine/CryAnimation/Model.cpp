@@ -890,6 +890,20 @@ void CDefaultSkeleton::CopyAndAdjustSkeletonParams(const CDefaultSkeleton* pCDef
 	}
 }
 
+std::pair<const uint32*, const uint32*> CDefaultSkeleton::FindClosestAnimationLod(const int lodValue) const
+{
+	const auto maxLod = m_arrAnimationLOD.size();
+	if (lodValue > 0 && maxLod > 0)
+	{
+		const auto lodIndex = std::min<int>(lodValue, maxLod) - 1;
+		return{ &m_arrAnimationLOD[lodIndex][0], &m_arrAnimationLOD[lodIndex][0] + m_arrAnimationLOD[lodIndex].size() };
+	}
+	else
+	{
+		return{ nullptr, nullptr };
+	}
+}
+
 uint32 CDefaultSkeleton::SizeOfDefaultSkeleton() const
 {
 	uint32 nSize = sizeof(CDefaultSkeleton);

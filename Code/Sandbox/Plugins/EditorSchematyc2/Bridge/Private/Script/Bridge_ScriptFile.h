@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <CrySchematyc2/Script/Schematyc_IScriptFile.h>
+#include <CrySchematyc2/Script/IScriptFile.h>
 
 #include "Bridge_IScriptFile.h"
 

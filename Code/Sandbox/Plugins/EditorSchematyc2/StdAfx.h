@@ -69,19 +69,19 @@ Bridge::IFramework* GetBridge();
 #define TDomainContextScope Schematyc2::SDomainContextScope
 #define TScriptFileConstVisitor Schematyc2::ScriptFileConstVisitor
 
-#include <CrySchematyc2/Schematyc_ICompiler.h>
-#include <CrySchematyc2/Schematyc_IFramework.h>
-#include <CrySchematyc2/Script/Schematyc_IScriptFile.h>
-#include <CrySchematyc2/Deprecated/Schematyc_DocUtils.h>
+#include <CrySchematyc2/ICompiler.h>
+#include <CrySchematyc2/IFramework.h>
+#include <CrySchematyc2/Script/IScriptFile.h>
+#include <CrySchematyc2/Deprecated/DocUtils.h>
 
 #endif
 
 #include <CrySchematyc2/TemplateUtils/TemplateUtils_Delegate.h>
 #include <CrySchematyc2/TemplateUtils/TemplateUtils_Signal.h>
-#include <CrySchematyc2/Schematyc_LibUtils.h>
-#include <CrySchematyc2/Schematyc_GUID.h>
-#include <CrySchematyc2/Schematyc_ILibRegistry.h>
-#include <CrySchematyc2/Services/Schematyc_ILog.h>
+#include <CrySchematyc2/LibUtils.h>
+#include <CrySchematyc2/GUID.h>
+#include <CrySchematyc2/ILibRegistry.h>
+#include <CrySchematyc2/Services/ILog.h>
 
 IEditor* GetIEditor();
 HINSTANCE GetHInstance();

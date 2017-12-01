@@ -7,10 +7,10 @@
 
 #include "IResourceSelectorHost.h"
 
-#include <CrySchematyc2/Schematyc_ICompiler.h>
-#include <CrySchematyc2/Schematyc_IFramework.h>
-#include <CrySchematyc2/Script/Schematyc_IScriptElement.h>
-#include <CrySchematyc2/Script/Schematyc_IScriptRegistry.h>
+#include <CrySchematyc2/ICompiler.h>
+#include <CrySchematyc2/IFramework.h>
+#include <CrySchematyc2/Script/IScriptElement.h>
+#include <CrySchematyc2/Script/IScriptRegistry.h>
 
 const int   g_pluginVersion = 1;
 const char* g_szPluginName  = "Schematyc Plugin";

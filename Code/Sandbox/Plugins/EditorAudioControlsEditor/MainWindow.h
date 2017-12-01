@@ -4,6 +4,7 @@
 
 #include <EditorFramework/Editor.h>
 #include <IEditor.h>
+#include <SystemTypes.h>
 
 class QAction;
 class QLabel;
@@ -62,7 +63,7 @@ protected slots:
 signals:
 
 	void SignalSelectedSystemControlChanged();
-	void SignalSelectConnectedSystemControl(CSystemControl const& systemControl);
+	void SignalSelectConnectedSystemControl(CSystemControl& systemControl, CID const itemId);
 
 private slots:
 
@@ -92,7 +93,7 @@ private:
 	CPropertiesWidget*         CreatePropertiesWidget();
 	CMiddlewareDataWidget*     CreateMiddlewareDataWidget();
 
-	CSystemAssetsManager*         m_pAssetsManager;
+	CSystemAssetsManager* const   m_pAssetsManager;
 	CSystemControlsWidget*        m_pSystemControlsWidget;
 	CPropertiesWidget*            m_pPropertiesWidget;
 	CMiddlewareDataWidget*        m_pMiddlewareDataWidget;

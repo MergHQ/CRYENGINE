@@ -44,6 +44,8 @@ public:
 	enum EPrimitiveType
 	{
 		ePrim_Triangle,
+		ePrim_ProceduralTriangle,     // Triangle generated procedurally on GPU (no vertex stream)
+		ePrim_ProceduralQuad,         // Quad generated procedurally on GPU (no vertex stream)
 		ePrim_UnitBox,                // axis aligned box ( 0, 0, 0) - (1,1,1)
 		ePrim_CenteredBox,            // axis aligned box (-1,-1,-1) - (1,1,1)
 		ePrim_Projector,              // pyramid shape with sparsely tessellated ground plane

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <CrySchematyc2/Schematyc_ICompiler.h>
+#include <CrySchematyc2/ICompiler.h>
 
 namespace Bridge {
 

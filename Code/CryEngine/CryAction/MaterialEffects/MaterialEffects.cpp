@@ -558,6 +558,10 @@ TMFXEffectId CMaterialEffects::GetEffectId(int surfaceIndex1, int surfaceIndex2)
 		{
 			m_pVisualDebug->AddLastSearchHint(effectId, surfaceIndex1, surfaceIndex2);
 		}
+		else
+		{
+			GameWarning("Could not find a valid effect at row %i and column %i of libs/materialeffects/materialeffects.xml", idx1, idx2);
+		}
 	}
 
 	return effectId;
@@ -583,6 +587,10 @@ TMFXEffectId CMaterialEffects::GetEffectId(const char* customName, int surfaceIn
 		if (effectId != InvalidEffectId)
 		{
 			m_pVisualDebug->AddLastSearchHint(effectId, customName, surfaceIndex2);
+		}
+		else
+		{
+			GameWarning("Could not find a valid effect at row %i and column %i of libs/materialeffects/materialeffects.xml", idx1, idx2 );
 		}
 	}
 
@@ -611,6 +619,10 @@ TMFXEffectId CMaterialEffects::GetEffectId(IEntityClass* pEntityClass, int surfa
 		if (effectId != InvalidEffectId)
 		{
 			m_pVisualDebug->AddLastSearchHint(effectId, pEntityClass, surfaceIndex2);
+		}
+		else
+		{
+			GameWarning("Could not find a valid effect at row %i and column %i of libs/materialeffects/materialeffects.xml", idx1, idx2);
 		}
 	}
 

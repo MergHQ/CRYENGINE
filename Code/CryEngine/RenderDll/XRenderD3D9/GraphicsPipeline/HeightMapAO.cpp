@@ -143,6 +143,7 @@ void CHeightMapAOStage::Execute()
 				m_passSmoothing.SetTechnique(pShader, techSmoothing, rtMask);
 				m_passSmoothing.SetRenderTarget(0, m_pHeightMapAOTex);
 				m_passSmoothing.SetState(GS_NODEPTHTEST);
+				m_passSmoothing.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 
 				m_passSmoothing.SetTextureSamplerPair(0, pDestRT, EDefaultSamplerStates::PointClamp);
 				m_passSmoothing.SetTextureSamplerPair(1, m_pHeightMapAOScreenDepthTex, EDefaultSamplerStates::PointClamp);

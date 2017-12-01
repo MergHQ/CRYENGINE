@@ -43,7 +43,7 @@ string TypeToTag(ESystemItemType const eType)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioControlsWriter::CAudioControlsWriter(CSystemAssetsManager* pAssetsManager, IEditorImpl* pEditorImpl, std::set<string>& previousLibraryPaths)
+CAudioControlsWriter::CAudioControlsWriter(CSystemAssetsManager* const pAssetsManager, IEditorImpl* pEditorImpl, std::set<string>& previousLibraryPaths)
 	: m_pAssetsManager(pAssetsManager)
 	, m_pEditorImpl(pEditorImpl)
 {
@@ -74,7 +74,7 @@ CAudioControlsWriter::CAudioControlsWriter(CSystemAssetsManager* pAssetsManager,
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsWriter::WriteLibrary(CSystemLibrary& library)
+void CAudioControlsWriter::WriteLibrary(CSystemLibrary const& library)
 {
 	if (library.IsModified())
 	{
@@ -270,7 +270,7 @@ void CAudioControlsWriter::GetScopes(CSystemAsset const* const pItem, std::unord
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsWriter::WriteControlToXML(XmlNodeRef const pNode, CSystemControl* pControl, string const& path)
+void CAudioControlsWriter::WriteControlToXML(XmlNodeRef const pNode, CSystemControl* const pControl, string const& path)
 {
 	ESystemItemType const type = pControl->GetType();
 	XmlNodeRef const pChildNode = pNode->createNode(TypeToTag(type));

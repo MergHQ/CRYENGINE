@@ -36,12 +36,12 @@ struct psout
 
 ///////////////// vertex shader //////////////////
 
-v2f StereoVS(a2v IN)
+v2f StereoVS(uint VertexID : SV_VertexID)
 {
 	v2f OUT = (v2f)0; 
 
-	OUT.Position = Get2dHPos(IN.Position);
-	OUT.baseTC.xy = IN.baseTC.xy;
+	OUT.Position = GetHPos_FromTriVertexID(VertexID);
+	OUT.baseTC.xy = GetBaseTC_FromTriVertexID(VertexID);
 	OUT.baseTC.zw = 2 * g_VS_ScreenSize.zw;
 	
 	return OUT;

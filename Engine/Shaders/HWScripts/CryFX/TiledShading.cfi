@@ -168,10 +168,8 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 	float specCubeLod = TILED_SHADING_SPECPROBE_MAXMIP - attribs.smoothness * TILED_SHADING_SPECPROBE_MAXMIP;
 	float NdotV = saturate(dot(viewVec, attribs.normalSpecProbe));
 	float3 envFresnel = GetEnvmapFresnel(attribs.reflectance, attribs.smoothness, NdotV);
-#if %_RT_PER_INSTANCE_CB_TEMP
 	float2 envBRDF = Fwd_EnvironmentBRDF.SampleLevel(ssTrilinearClamp, float2(NdotV, attribs.smoothness), 0).xy;
 	envFresnel = lerp(envBRDF.xxx, envBRDF.yyy, attribs.reflectance);
-#endif
 
 	float2 occlusion = float2(1, 1);
 	if (bOpaque)
@@ -203,11 +201,7 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 			
 		if (applyProbes)
 		{
-		#if !%_RT_PER_INSTANCE_CB_TEMP
-			const float clipVolumeWeight = GetClipVolumeWeightBinary(ClipVolumeParams.x, Fwd_TiledLightsShadeInfo[lightIndex].stencilID);
-		#else
 			const float clipVolumeWeight = 1;  // TODO
-		#endif
 			if (Fwd_TiledLightsShadeInfo[lightIndex].lightType == TILEDLIGHT_TYPE_PROBE && probeWeightSum < 1 && clipVolumeWeight > 0)
 			{
 				STiledLightShadeInfo light = Fwd_TiledLightsShadeInfo[lightIndex];
@@ -248,14 +242,6 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 		}
 	}
 		
-#if FEATURE_SVO_GI
-#if !%_RT_PER_INSTANCE_CB_TEMP	
-	//if(!pPass.bRefractionMap)
-		ApplyGI(specularAcc, diffuseAcc, diffuseAcc, tcProj + .5f / CV_ScreenSize.xy, attribs.smoothness, attribs.reflectance,  // TODO
-		        Fwd_GiDiffuseRT, Fwd_GiSpecularRT, ssTrilinearClamp, (int)(ForwGiIntegrationMode.y));
-#endif
-#endif
-
 	for (;;)
 	{
 		[branch]
@@ -280,13 +266,7 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 			float attenuation = GetPhysicalLightAttenuation( length( lightVec ), 1.0 / light.posRad.w, light.attenuationParams.x );
 			lightParams.illuminance *= attenuation;
 			
-		#if !%_RT_PER_INSTANCE_CB_TEMP	
-			const float clipVolumeWeight = GetClipVolumeWeightBinary(ClipVolumeParams.x, light.stencilID);
-		#else
 			const float clipVolumeWeight = 1;
-		#endif
-			[branch] if( clipVolumeWeight == 0.0f)
-				skipShading = true;
 
 			if (light.lightType == TILEDLIGHT_TYPE_REGULAR_PROJECTOR)
 			{
@@ -324,10 +304,7 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 					P0.xy /= P0.w;
 					P0.z -= light.shadowParams.y;
 					
-					bool bAllowHighQualityShadows = true;
-				#if %_RT_PER_INSTANCE_CB_TEMP
-					bAllowHighQualityShadows = false;
-				#endif
+					bool bAllowHighQualityShadows = false;
 					
 					if (bOpaque)
 					{

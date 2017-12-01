@@ -44,7 +44,7 @@
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryMono/IMonoRuntime.h>
 #include <CrySchematyc/ICore.h>
-#include <CrySchematyc2/Schematyc_IFramework.h>
+#include <CrySchematyc2/IFramework.h>
 
 #include "CryPak.h"
 #include "XConsole.h"

@@ -33,6 +33,6 @@ bool ReadMetadata(const XmlNodeRef& asset, SAssetMetadata& metadata);
 
 const XmlNodeRef GetMetadataNode(const XmlNodeRef& asset);
 void AddDetails(XmlNodeRef& xml, const std::vector<std::pair<string, string>>& details);
-void AddDependencies(XmlNodeRef& xml, const std::vector<string>& dependencies);
+void AddDependencies(XmlNodeRef& xml, const std::vector<std::pair<string, int32>>& dependencies);
 
 }

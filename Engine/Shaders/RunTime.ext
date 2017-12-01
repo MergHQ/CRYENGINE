@@ -551,47 +551,6 @@ Property
 
 Property
 {
-  Name = %_RT_PER_INSTANCE_CB_TEMP
-  Mask = 0x100000
-  AutoPrecache
-  Precache = GeneralVS
-	Precache = GeneralPS
-  Precache = ClothVS
-  Precache = SkinVS
-	Precache = SkinPS
-  Precache = HairVS
-  Precache = HairPS
-  Precache = EyeVS
-  Precache = EyePS
-  Precache = GlassVS
-	Precache = GlassPS
-  Precache = VegetationVS
-  Precache = VegetationPS
-	Precache = VegetationDS
-  Precache = VegetationHS
-	Precache = TerrainVS
-  Precache = TerrainPS
-  Precache = ShadowVS
-  Precache = ShadowGenVS
-  Precache = ShadowGenPS
-  Precache = ZVS
-  Precache = ZPS
-  Precache = ZGS
-  Precache = DetailVS
-  Precache = GlowVS
-  Precache = MotionBlurVS
-  Precache = CustomRenderVS
-  Precache = DebugPassVS
-  Precache = DebugPassPS
-  Precache = GeneralHS
-  Precache = GeneralDS
-	Precache = DistanceCloudsVS
-	Precache = DistanceCloudsPS
-	Precache = TemplBeamVS
-}
-
-Property
-{
   Name = %_RT_ENVIRONMENT_CUBEMAP
   Mask = 0x400000
   Precache = ParticlePS
