@@ -56,15 +56,15 @@ void CParticleComponentRuntime::UpdateParticles(SUpdateContext& context, CDevice
 
 void CParticleComponentRuntime::CalculateBounds(SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
-	if (CRenderer::CV_r_GpuParticlesConstantRadiusBoundingBoxes > 0)
-	{
-		m_bounds = AABB(m_parameters->emitterPosition, (float)CRenderer::CV_r_GpuParticlesConstantRadiusBoundingBoxes);
-		return;
-	}
-
 	if (!m_parameters->numParticles)
 	{
 		m_bounds = AABB::RESET;
+		return;
+	}
+
+	if (CRenderer::CV_r_GpuParticlesConstantRadiusBoundingBoxes > 0)
+	{
+		m_bounds = AABB(m_parameters->emitterPosition, (float)CRenderer::CV_r_GpuParticlesConstantRadiusBoundingBoxes);
 		return;
 	}
 
@@ -489,11 +489,13 @@ void CParticleComponentRuntime::Initialize()
 
 void CParticleComponentRuntime::AccumStats(SParticleStats& stats)
 {
+	stats.components.alloc++;
 	stats.components.alive++;
 	stats.components.updated++;
 	stats.components.rendered++;
-	stats.particles.rendered += m_parameters->numParticles;
+	stats.particles.alloc += m_params.maxParticles;
+	stats.particles.alive += m_parameters->numParticles;
 	stats.particles.updated += m_parameters->numParticles;
-	stats.particles.alive += m_params.maxParticles;
+	stats.particles.rendered += m_parameters->numParticles;
 }
 }

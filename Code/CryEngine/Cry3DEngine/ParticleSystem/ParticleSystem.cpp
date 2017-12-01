@@ -23,7 +23,7 @@ namespace pfx2
 CRYREGISTER_SINGLETON_CLASS(CParticleSystem)
 
 CParticleSystem::CParticleSystem()
-	: m_threadData(gEnv->pJobManager->GetNumWorkerThreads() + 1) // 1 for main thread, 1 for each job thread
+	: m_threadData(gEnv->pJobManager->GetNumWorkerThreads() + 2) // 1 for main thread, 1 for each job thread, 1 for sum stats
 {
 }
 
@@ -134,6 +134,22 @@ void CParticleSystem::Update()
 		auto gpuMan = gEnv->pRenderer->GetGpuParticleManager();
 		gpuMan->BeginFrame();
 
+		// Accumulate thread stats from last frame
+		auto& sumData = GetSumData();
+		sumData.statsCPU = {};
+		sumData.statsGPU = {};
+		for (auto& data : m_threadData)
+		{
+			CRY_PFX2_ASSERT(data.memHeap.GetTotalMemory().nUsed == 0);  // some emitter leaked memory on mem stack
+			if (&data != &sumData)
+			{
+				sumData.statsCPU += data.statsCPU;
+				data.statsCPU = {};
+				sumData.statsGPU += data.statsGPU;
+				data.statsGPU = {};
+			}
+		}
+
 		TrimEmitters(!m_bResetEmitters);
 		m_bResetEmitters = false;
 		m_emitters.append(m_newEmitters);
@@ -141,6 +157,7 @@ void CParticleSystem::Update()
 
 		InvalidateCachedRenderObjects();
 
+		// Init stats for current frame
 		auto& mainData = GetMainData();
 		mainData.statsCPU = {};
 		mainData.statsGPU = {};
@@ -168,26 +185,12 @@ void CParticleSystem::Update()
 
 void CParticleSystem::FinishUpdate()
 {
-	FUNCTION_PROFILER_3DENGINE;
+	CRY_PFX2_PROFILE_DETAIL;
 
 	m_jobManager.SynchronizeUpdates();
 
 	for (auto& pEmitter : m_emitters)
 		pEmitter->PostUpdate();
-
-	// Accumulate thread stats
-	auto& mainData = GetMainData();
-	for (auto& data : m_threadData)
-	{
-		CRY_PFX2_ASSERT(data.memHeap.GetTotalMemory().nUsed == 0);  // some emitter leaked memory on mem stack
-		if (&data != &mainData)
-		{
-			mainData.statsCPU += data.statsCPU;
-			data.statsCPU = {};
-			mainData.statsGPU += data.statsGPU;
-			data.statsGPU = {};
-		}
-	}
 
 	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
 	m_lastCameraPose = QuatT(camera.GetMatrix());
@@ -246,9 +249,9 @@ float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
 
 	static TParticleStats<float> statsCPUAvg, statsGPUAvg;
 	TParticleStats<float> statsCPUCur, statsGPUCur; 
-	statsCPUCur.Set(GetMainData().statsCPU);
+	statsCPUCur.Set(GetSumData().statsCPU);
 	statsCPUAvg = Lerp(statsCPUAvg, statsCPUCur, blendCur);
-	statsGPUCur.Set(GetMainData().statsGPU);
+	statsGPUCur.Set(GetSumData().statsGPU);
 	statsGPUAvg = Lerp(statsGPUAvg, statsGPUCur, blendCur);
 
 	if (statsCPUAvg.emitters.alloc)
@@ -357,7 +360,7 @@ bool CParticleSystem::SerializeFeatures(IArchive& ar, TParticleFeatures& feature
 
 void CParticleSystem::GetStats(SParticleStats& stats)
 {
-	stats = GetMainData().statsCPU + GetMainData().statsGPU;
+	stats = GetSumData().statsCPU + GetSumData().statsGPU;
 }
 
 void CParticleSystem::GetMemoryUsage(ICrySizer* pSizer) const

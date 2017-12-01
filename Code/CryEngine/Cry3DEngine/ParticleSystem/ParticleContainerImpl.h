@@ -21,14 +21,14 @@ namespace pfx2
 template<typename T>
 ILINE T* CParticleContainer::GetData(EParticleDataType type)
 {
-	CRY_PFX2_DEBUG_ONLY_ASSERT(type.info().isType<T>());
+	CRY_PFX2_DEBUG_ASSERT(type.info().isType<T>());
 	return reinterpret_cast<T*>(m_pData[type]);
 }
 
 template<typename T>
 ILINE const T* CParticleContainer::GetData(EParticleDataType type) const
 {
-	CRY_PFX2_DEBUG_ONLY_ASSERT(type.info().isType<T>());
+	CRY_PFX2_DEBUG_ASSERT(type.info().isType<T>());
 	return reinterpret_cast<const T*>(m_pData[type]);
 }
 
@@ -88,7 +88,7 @@ ILINE IOFStream CParticleContainer::GetIOFStream(EParticleDataType type)
 
 ILINE IVec3Stream CParticleContainer::GetIVec3Stream(EParticleDataType type, Vec3 defaultVal) const
 {
-	CRY_PFX2_DEBUG_ONLY_ASSERT(type.info().isType<float>(3));
+	CRY_PFX2_DEBUG_ASSERT(type.info().isType<float>(3));
 	return IVec3Stream(
 	  GetData<float>(type),
 	  GetData<float>(type + 1u),
@@ -98,7 +98,7 @@ ILINE IVec3Stream CParticleContainer::GetIVec3Stream(EParticleDataType type, Vec
 
 ILINE IOVec3Stream CParticleContainer::GetIOVec3Stream(EParticleDataType type)
 {
-	CRY_PFX2_DEBUG_ONLY_ASSERT(type.info().isType<float>(3));
+	CRY_PFX2_DEBUG_ASSERT(type.info().isType<float>(3));
 	return IOVec3Stream(
 	  GetData<float>(type),
 	  GetData<float>(type + 1u),
@@ -107,7 +107,7 @@ ILINE IOVec3Stream CParticleContainer::GetIOVec3Stream(EParticleDataType type)
 
 ILINE IQuatStream CParticleContainer::GetIQuatStream(EParticleDataType type, Quat defaultVal) const
 {
-	CRY_PFX2_DEBUG_ONLY_ASSERT(type.info().isType<float>(4));
+	CRY_PFX2_DEBUG_ASSERT(type.info().isType<float>(4));
 	return IQuatStream(
 	  GetData<float>(type),
 	  GetData<float>(type + 1u),
@@ -117,7 +117,7 @@ ILINE IQuatStream CParticleContainer::GetIQuatStream(EParticleDataType type, Qua
 }
 ILINE IOQuatStream CParticleContainer::GetIOQuatStream(EParticleDataType type)
 {
-	CRY_PFX2_DEBUG_ONLY_ASSERT(type.info().isType<float>(4));
+	CRY_PFX2_DEBUG_ASSERT(type.info().isType<float>(4));
 	return IOQuatStream(
 	  GetData<float>(type),
 	  GetData<float>(type + 1u),

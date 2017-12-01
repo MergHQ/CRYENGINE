@@ -45,7 +45,6 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	, m_timeLastRendered(0.0f)
 	, m_initialSeed(0)
 	, m_emitterId(emitterId)
-
 {
 	m_currentSeed = m_initialSeed;
 	m_nInternalFlags |= IRenderNode::REQUIRES_FORWARD_RENDERING;
@@ -173,7 +172,10 @@ void CParticleEmitter::UpdateBoundingBox(const float frameTime)
 	m_reRegister = false;
 
 	if (m_realBounds.IsReset())
+	{
+		m_bounds.Reset();
 		return;
+	}
 
 	if (!m_registered)
 		m_reRegister = true;
@@ -184,14 +186,18 @@ void CParticleEmitter::UpdateBoundingBox(const float frameTime)
 	if (m_reRegister)
 	{
 		// Expand bounds to rounded borders
+		m_bounds = m_realBounds;
 		for (int a = 0; a < 3; ++a)
 		{
-			const float sideLen = (m_realBounds.max[a] - m_realBounds.min[a]);
-			const float round = exp2(ceil(log2(sideLen))) * Bounds::RoundOutPrecision;
-			const float invRound = 1.0f / round;
+			const float sideLen = (m_bounds.max[a] - m_bounds.min[a]);
+			if (sideLen > 0.0f)
+			{
+				const float round = exp2(ceil(log2(sideLen))) * Bounds::RoundOutPrecision;
+				const float invRound = 1.0f / round;
 
-			m_bounds.min[a] = floor(m_realBounds.min[a] * invRound) * round;
-			m_bounds.max[a] = ceil( m_realBounds.max[a] * invRound) * round;
+				m_bounds.min[a] = floor(m_bounds.min[a] * invRound) * round;
+				m_bounds.max[a] = ceil(m_bounds.max[a] * invRound) * round;
+			}
 		}
 	}
 }

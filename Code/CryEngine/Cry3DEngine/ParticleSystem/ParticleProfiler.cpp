@@ -77,9 +77,6 @@ public:
 		cstr componentName = pComponent->GetName();
 		cstr entityName = pEntity ? pEntity->GetName() : gDefaultEntityName;
 
-		if (!pRuntime->IsAlive() && pComponent->ComponentParams().IsImmortal())
-			pEntity = pEntity;
-
 		Column(string().Format("%s%s%s",
 			pEmitter->IsActive() ? "#Active " : "#Inactive ",
 			pEmitter->IsAlive() ? "#E:Alive " : "#E:Dead ",

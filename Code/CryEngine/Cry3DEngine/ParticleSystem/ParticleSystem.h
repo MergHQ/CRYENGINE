@@ -62,7 +62,8 @@ public:
 	PParticleEffect          LoadEffect(cstr effectName);
 
 	SThreadData&             GetThreadData() { return m_threadData[JobManager::GetWorkerThreadId() + 1]; }
-	SThreadData&             GetMainData()   { return m_threadData[0]; }
+	SThreadData&             GetMainData()   { return m_threadData.front(); }
+	SThreadData&             GetSumData()    { return m_threadData.back(); }
 	CParticleJobManager&     GetJobManager() { return m_jobManager; }
 	CParticleProfiler&       GetProfiler()   { return m_profiler; }
 

@@ -72,26 +72,10 @@ void CParticleJobManager::ScheduleUpdates()
 	m_updateState.SetRunning(numJobs);
 	uint e = 0;
 
-	std::vector<uint> jobParticles(numJobs);
-	auto frameRate = gEnv->pTimer->GetFrameRate();
-
 	for (uint j = 0; j < numJobs; ++j)
 	{
 		uint e2 = (j+1) * m_emitterRefs.size() / numJobs;
 		TUpdateEmittersJob job(m_emitterRefs(e, e2 - e));
-		for (; e < e2; ++e)
-		{
-			CParticleEmitter* pEmitter = m_emitterRefs[e];
-			uint numParticles = 0;
-			for (auto const& runtime : pEmitter->GetRuntimes())
-			{
-				CParticleComponentRuntime* pRuntime = runtime;
-				int total, perframe; 
-				pRuntime->GetComponent()->GetMaxParticleCounts(total, perframe, frameRate, frameRate);
-				numParticles += total;
-			}
-			jobParticles[j] += numParticles;
-		}
 		e = e2;
 		job.SetClassInstance(this);
 		job.Run();
