@@ -247,9 +247,11 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 			m_passSMAABlendWeights.SetRenderTarget(0, pBlendWeightsRT);
 			m_passSMAABlendWeights.SetDepthTarget(CRendererResources::s_ptexSceneDepth);
 			m_passSMAABlendWeights.SetState(GS_NODEPTHTEST);
-			m_passSMAABlendWeights.SetTextureSamplerPair(0, pEdgesRT, EDefaultSamplerStates::LinearClamp);
-			m_passSMAABlendWeights.SetTextureSamplerPair(1, m_pTexAreaSMAA, EDefaultSamplerStates::LinearClamp);
-			m_passSMAABlendWeights.SetTextureSamplerPair(2, m_pTexSearchSMAA, EDefaultSamplerStates::PointClamp);
+			m_passSMAABlendWeights.SetTexture(0, pEdgesRT);
+			m_passSMAABlendWeights.SetTexture(1, m_pTexAreaSMAA);
+			m_passSMAABlendWeights.SetTexture(2, m_pTexSearchSMAA);
+			m_passSMAABlendWeights.SetSampler(0, EDefaultSamplerStates::PointClamp);
+			m_passSMAABlendWeights.SetSampler(1, EDefaultSamplerStates::LinearClamp);
 		}
 		if (CRenderer::CV_r_AntialiasingModeSCull)
 		{
@@ -274,8 +276,10 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 			m_passSMAANeighborhoodBlending.SetTechnique(CShaderMan::s_shPostAA, techNeighborhoodBlending, 0);
 			m_passSMAANeighborhoodBlending.SetRenderTarget(0, pDestRT);
 			m_passSMAANeighborhoodBlending.SetState(GS_NODEPTHTEST);
-			m_passSMAANeighborhoodBlending.SetTextureSamplerPair(0, pBlendWeightsRT, EDefaultSamplerStates::PointClamp);
-			m_passSMAANeighborhoodBlending.SetTextureSamplerPair(1, pCurrRT, EDefaultSamplerStates::LinearClamp);
+			m_passSMAANeighborhoodBlending.SetTexture(0, pBlendWeightsRT);
+			m_passSMAANeighborhoodBlending.SetTexture(1, pCurrRT);
+			m_passSMAANeighborhoodBlending.SetSampler(0, EDefaultSamplerStates::PointClamp);
+			m_passSMAANeighborhoodBlending.SetSampler(1, EDefaultSamplerStates::LinearClamp);
 		}
 		m_passSMAANeighborhoodBlending.BeginConstantUpdate();
 		m_passSMAANeighborhoodBlending.Execute();
@@ -310,12 +314,16 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 		m_passTemporalAA.SetRequirePerViewConstantBuffer(true);
 		m_passTemporalAA.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
-		m_passTemporalAA.SetTextureSamplerPair(0, pCurrRT, EDefaultSamplerStates::LinearClamp);
-		m_passTemporalAA.SetTextureSamplerPair(1, pPrevRT, EDefaultSamplerStates::LinearClamp);
-		m_passTemporalAA.SetTextureSamplerPair(2, CRendererResources::s_ptexLinearDepth, EDefaultSamplerStates::PointClamp);
-		m_passTemporalAA.SetTextureSamplerPair(3, GetUtils().GetVelocityObjectRT(RenderView()), EDefaultSamplerStates::PointClamp);
 		m_passTemporalAA.SetTextureSamplerPair(4, pCurrRT, EDefaultSamplerStates::LinearClamp, EDefaultResourceViews::sRGB);
-		m_passTemporalAA.SetTextureSamplerPair(5, pPrevRT, EDefaultSamplerStates::LinearClamp);
+
+		m_passTemporalAA.SetTexture(0, pCurrRT);
+		m_passTemporalAA.SetTexture(1, pPrevRT);
+		m_passTemporalAA.SetTexture(2, CRendererResources::s_ptexLinearDepth);
+		m_passTemporalAA.SetTexture(3, GetUtils().GetVelocityObjectRT(RenderView()));
+		m_passTemporalAA.SetTexture(5, pPrevRT);
+		m_passTemporalAA.SetSampler(0, EDefaultSamplerStates::LinearClamp);
+		m_passTemporalAA.SetSampler(1, EDefaultSamplerStates::PointClamp);
+
 		m_passTemporalAA.SetTexture(16, CRendererResources::s_ptexSceneDepth);
 	}
 
@@ -430,11 +438,16 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		m_passComposition.SetTechnique(CShaderMan::s_shPostAA, techComposition, rtMask);
 		m_passComposition.SetRenderTarget(0, pDestRT);
 		m_passComposition.SetState(GS_NODEPTHTEST);
-		m_passComposition.SetTextureSamplerPair(0, pCurrRT, EDefaultSamplerStates::LinearClamp);
-		m_passComposition.SetTextureSamplerPair(5, pTexLensOptics, EDefaultSamplerStates::PointClamp);
-		m_passComposition.SetTextureSamplerPair(6, CRendererResources::s_ptexFilmGrainMap, EDefaultSamplerStates::PointWrap);
-		m_passComposition.SetTextureSamplerPair(7, CRendererResources::s_ptexCurLumTexture, EDefaultSamplerStates::PointClamp);
-		m_passComposition.SetTextureSamplerPair(8, pColorChartTex, EDefaultSamplerStates::LinearClamp);
+
+		m_passComposition.SetTexture(0, pCurrRT);
+		m_passComposition.SetTexture(5, pTexLensOptics);
+		m_passComposition.SetTexture(6, CRendererResources::s_ptexFilmGrainMap);
+		m_passComposition.SetTexture(7, CRendererResources::s_ptexCurLumTexture);
+		m_passComposition.SetTexture(8, pColorChartTex);
+
+		m_passComposition.SetSampler(0, EDefaultSamplerStates::LinearClamp);
+		m_passComposition.SetSampler(1, EDefaultSamplerStates::PointClamp);
+		m_passComposition.SetSampler(2, EDefaultSamplerStates::PointWrap);
 
 		prevRTMask = rtMask;
 	}

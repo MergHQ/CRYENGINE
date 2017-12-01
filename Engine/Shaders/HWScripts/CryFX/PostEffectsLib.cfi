@@ -123,8 +123,8 @@ sampler2D screenTargetSampler : register (s0)
 
 struct pixout_MRT
 {
-  float4 Color  : COLOR0;
-  float4 Color1 : COLOR1;
+  float4 Color  : SV_Target0;
+  float4 Color1 : SV_Target1;
 };
 
 struct vtxIn
