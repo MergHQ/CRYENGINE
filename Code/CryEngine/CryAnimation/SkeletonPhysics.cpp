@@ -1491,7 +1491,7 @@ cloth_aux:
 				simp.minEnergy = 0;
 		}
 		pr.surface_idx = *(int*)(physInfo.spring_angle + 1);
-		pr.noCollDist = 0;
+		pr.noCollDist = pf.flagsOR & rope_collides_with_attachment ? 0.0f : 0.3f;
 
 		m_auxPhys[j].pPhysEnt->SetParams(&pr);
 		m_auxPhys[j].pPhysEnt->SetParams(&simp);
