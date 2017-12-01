@@ -1514,34 +1514,6 @@ void CharacterManager::CleanupModelCache(bool bForceCleanup)
 	CryLogAlways("CharacterManager:CleanModelCache - Placeholder objects '%d'", CPlaceholderCharacter::GetAllocatedObjects());
 #endif
 
-	uint32 numSKEL1 = m_arrModelCacheSKEL.size();
-	for (uint32 i = 0; i < numSKEL1; i++)
-		m_arrModelCacheSKEL[i].m_pDefaultSkeleton->SetKeepInMemory(true);   // Make sure nothing gets deleted.
-
-	int32 numSKEL2 = m_arrModelCacheSKEL.size();                            // Clean all instances.
-	for (int32 s = (numSKEL2 - 1); s > -1; s--)
-	{
-		int numInstances = m_arrModelCacheSKEL[s].m_RefByInstances.size();
-		if (numInstances)
-			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, 0, "CharacterManager.CleanupInstances", "Forcing deletion of %d instances for body %s. CRASH POSSIBLE because other subsystems may have stored dangling pointer(s).", m_arrModelCacheSKEL[s].m_pDefaultSkeleton->GetRefCounter(), m_arrModelCacheSKEL[s].m_pDefaultSkeleton->m_strFilePath.c_str());
-		for (int32 i = (numInstances - 1); i > -1; i--)
-			delete m_arrModelCacheSKEL[s].m_RefByInstances[i];
-	}
-
-	uint32 numSKEL3 = m_arrModelCacheSKEL.size();                           //count backwards, because the array is decreased after each delete.
-	for (int32 i = (numSKEL3 - 1); i > -1; i--)
-		m_arrModelCacheSKEL[i].m_pDefaultSkeleton->DeleteIfNotReferenced(); //even if locked in memory
-
-	uint32 numSKEL4 = m_arrModelCacheSKEL.size();                           //if we still have instances, then something went wrong
-	if (numSKEL4)
-	{
-		for (uint32 i = 0; i < numSKEL4; i++)
-			CryLogAlways("m_arrModelCacheSKEL[%i] = %s", i, m_arrModelCacheSKEL[i].m_pDefaultSkeleton->GetModelFilePath());
-		CryFatalError("m_arrModelCacheSKEL is supposed to be empty, but there are still %d CSkels in memory", numSKEL4);
-	}
-
-	//----------------------------------------------------------------------------------------------------------------------
-
 	uint32 numSKIN1 = m_arrModelCacheSKIN.size();
 	for (uint32 i = 0; i < numSKIN1; i++)
 		m_arrModelCacheSKIN[i].m_pDefaultSkinning->SetKeepInMemory(true);   // Make sure nothing gets deleted.
@@ -1572,6 +1544,34 @@ void CharacterManager::CleanupModelCache(bool bForceCleanup)
 		for (uint32 i = 0; i < numSKIN4; i++)
 			CryLogAlways("m_arrModelCacheSKIN[%i] = %s", i, m_arrModelCacheSKIN[i].m_pDefaultSkinning->GetModelFilePath());
 		CryFatalError("m_arrModelCacheSKIN is supposed to be empty, but there are still %d CSkins in memory", numSKIN4);
+	}
+
+	//----------------------------------------------------------------------------------------------------------------------
+
+	uint32 numSKEL1 = m_arrModelCacheSKEL.size();
+	for (uint32 i = 0; i < numSKEL1; i++)
+		m_arrModelCacheSKEL[i].m_pDefaultSkeleton->SetKeepInMemory(true);   // Make sure nothing gets deleted.
+
+	int32 numSKEL2 = m_arrModelCacheSKEL.size();                            // Clean all instances.
+	for (int32 s = (numSKEL2 - 1); s > -1; s--)
+	{
+		int numInstances = m_arrModelCacheSKEL[s].m_RefByInstances.size();
+		if (numInstances)
+			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, 0, "CharacterManager.CleanupInstances", "Forcing deletion of %d instances for body %s. CRASH POSSIBLE because other subsystems may have stored dangling pointer(s).", m_arrModelCacheSKEL[s].m_pDefaultSkeleton->GetRefCounter(), m_arrModelCacheSKEL[s].m_pDefaultSkeleton->m_strFilePath.c_str());
+		for (int32 i = (numInstances - 1); i > -1; i--)
+			delete m_arrModelCacheSKEL[s].m_RefByInstances[i];
+	}
+
+	uint32 numSKEL3 = m_arrModelCacheSKEL.size();                           //count backwards, because the array is decreased after each delete.
+	for (int32 i = (numSKEL3 - 1); i > -1; i--)
+		m_arrModelCacheSKEL[i].m_pDefaultSkeleton->DeleteIfNotReferenced(); //even if locked in memory
+
+	uint32 numSKEL4 = m_arrModelCacheSKEL.size();                           //if we still have instances, then something went wrong
+	if (numSKEL4)
+	{
+		for (uint32 i = 0; i < numSKEL4; i++)
+			CryLogAlways("m_arrModelCacheSKEL[%i] = %s", i, m_arrModelCacheSKEL[i].m_pDefaultSkeleton->GetModelFilePath());
+		CryFatalError("m_arrModelCacheSKEL is supposed to be empty, but there are still %d CSkels in memory", numSKEL4);
 	}
 
 	CryCHRLoader::ClearCachedLodSkeletonResults();
