@@ -166,7 +166,7 @@ void CParticleSystem::Update()
 		for (auto& pEmitter : m_emitters)
 		{
 			mainData.statsCPU.components.alloc += pEmitter->GetRuntimes().size();
-			if (pEmitter->HasBounds() || pEmitter->IsAlive())
+			if (pEmitter->IsAlive())
 			{
 				mainData.statsCPU.emitters.alive++;
 				mainData.statsCPU.emitters.updated++;
@@ -188,9 +188,6 @@ void CParticleSystem::FinishUpdate()
 	CRY_PFX2_PROFILE_DETAIL;
 
 	m_jobManager.SynchronizeUpdates();
-
-	for (auto& pEmitter : m_emitters)
-		pEmitter->PostUpdate();
 
 	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
 	m_lastCameraPose = QuatT(camera.GetMatrix());

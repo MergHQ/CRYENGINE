@@ -22,6 +22,7 @@ CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter,
 	: m_pEmitter(pEmitter)
 	, m_pComponent(pComponent)
 	, m_bounds(AABB::RESET)
+	, m_alive(true)
 {
 	Initialize();
 	if (pComponent->UsesGPU())
@@ -71,13 +72,18 @@ void CParticleComponentRuntime::UpdateAll()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
+	m_alive = false;
+
 	if (GetGpuRuntime())
 		return UpdateGPURuntime(SUpdateContext(this));
 
 	AddRemoveParticles(SUpdateContext(this));
-	UpdateParticles(SUpdateContext(this));
+	if (HasParticles())
+	{
+		m_alive = true;
+		UpdateParticles(SUpdateContext(this));
+	}
 	CalculateBounds();
-
 	AccumStats();
 }
 
@@ -385,52 +391,56 @@ void CParticleComponentRuntime::CalculateBounds()
 	CRY_PFX2_PROFILE_DETAIL;
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_UpdateTime);
 
-	IVec3Stream positions = m_container.GetIVec3Stream(EPVF_Position);
-	IFStream sizes = m_container.GetIFStream(EPDT_Size);
-	const floatv fMin = ToFloatv(std::numeric_limits<float>::max());
-	const floatv fMax = ToFloatv(-std::numeric_limits<float>::max());
-
-	Vec3v bbMin = Vec3v(fMin, fMin, fMin);
-	Vec3v bbMax = Vec3v(fMax, fMax, fMax);
-
-	// PFX2_TODO : clean up this mess
-#ifdef CRY_PFX2_USE_SSE
-	// vector part
-	const TParticleId lastParticleId = m_container.GetLastParticleId();
-	const TParticleGroupId lastParticleGroupId = CRY_PFX2_PARTICLESGROUP_LOWER(lastParticleId);
-	for (auto particleGroupId : SGroupRange(0, lastParticleGroupId))
+	if (HasParticles())
 	{
-		const floatv size = sizes.Load(particleGroupId);
-		const Vec3v position = positions.Load(particleGroupId);
-		bbMin = min(bbMin, Sub(position, size));
-		bbMax = max(bbMax, Add(position, size));
+		IVec3Stream positions = m_container.GetIVec3Stream(EPVF_Position);
+		IFStream sizes = m_container.GetIFStream(EPDT_Size);
+		const floatv fMin = ToFloatv(std::numeric_limits<float>::max());
+		const floatv fMax = ToFloatv(-std::numeric_limits<float>::max());
+
+		Vec3v bbMin = Vec3v(fMin, fMin, fMin);
+		Vec3v bbMax = Vec3v(fMax, fMax, fMax);
+
+		// PFX2_TODO : clean up this mess
+	#ifdef CRY_PFX2_USE_SSE
+		// vector part
+		const TParticleId lastParticleId = m_container.GetLastParticleId();
+		const TParticleGroupId lastParticleGroupId = CRY_PFX2_PARTICLESGROUP_LOWER(lastParticleId);
+		for (auto particleGroupId : SGroupRange(0, lastParticleGroupId))
+		{
+			const floatv size = sizes.Load(particleGroupId);
+			const Vec3v position = positions.Load(particleGroupId);
+			bbMin = min(bbMin, Sub(position, size));
+			bbMax = max(bbMax, Add(position, size));
+		}
+		m_bounds.min = HMin(bbMin);
+		m_bounds.max = HMax(bbMax);
+
+		// linear part
+		for (auto particleId : SUpdateRange(+lastParticleGroupId, lastParticleId))
+		{
+			const float size = sizes.Load(particleId);
+			const Vec3 sizev = Vec3(size, size, size);
+			const Vec3 position = positions.Load(particleId);
+			m_bounds.min = min(m_bounds.min, position - sizev);
+			m_bounds.max = max(m_bounds.max, position + sizev);
+		}
+	#else
+		for (auto particleId : m_container.GetFullRange())
+		{
+			const float size = sizes.Load(particleId);
+			const Vec3 sizev = Vec3(size, size, size);
+			const Vec3 position = positions.Load(particleId);
+			m_bounds.min = min(m_bounds.min, position - sizev);
+			m_bounds.max = max(m_bounds.max, position + sizev);
+		}
+	#endif
+
+		CRY_PFX2_ASSERT(m_bounds.GetRadius() < 10000.f);
 	}
-	m_bounds.min = HMin(bbMin);
-	m_bounds.max = HMax(bbMax);
-
-	// linear part
-	for (auto particleId : SUpdateRange(+lastParticleGroupId, lastParticleId))
+	else
 	{
-		const float size = sizes.Load(particleId);
-		const Vec3 sizev = Vec3(size, size, size);
-		const Vec3 position = positions.Load(particleId);
-		m_bounds.min = min(m_bounds.min, position - sizev);
-		m_bounds.max = max(m_bounds.max, position + sizev);
-	}
-#else
-	for (auto particleId : m_container.GetFullRange())
-	{
-		const float size = sizes.Load(particleId);
-		const Vec3 sizev = Vec3(size, size, size);
-		const Vec3 position = positions.Load(particleId);
-		m_bounds.min = min(m_bounds.min, position - sizev);
-		m_bounds.max = max(m_bounds.max, position + sizev);
-	}
-#endif
-
-	if (m_bounds.GetRadius() > 1000.f)
-	{
-		m_bounds = m_bounds;
+		m_bounds.Reset();
 	}
 
 	// augment bounds from features
@@ -569,6 +579,9 @@ void CParticleComponentRuntime::UpdateGPURuntime(const SUpdateContext& context)
 	GetPSystem()->GetThreadData().statsGPU += stats;
 
 	m_particleStats = {};
+	
+	if (stats.particles.alive)
+		m_alive = true;
 }
 
 void CParticleComponentRuntime::DebugStabilityCheck()
@@ -599,18 +612,6 @@ void CParticleComponentRuntime::DebugStabilityCheck()
 		CRY_PFX2_ASSERT(parentId < parentCount);    // this instance is not pointing to the correct parent
 	}
 #endif
-}
-
-bool CParticleComponentRuntime::IsAlive() const
-{
-	if (HasParticles())
-		return true;
-	if (GetNumInstances())
-	{
-		if (m_pEmitter->GetAge() <= m_pComponent->GetComponentParams().m_emitterLifeTime.end)
-			return true;
-	}
-	return false;
 }
 
 bool CParticleComponentRuntime::HasParticles() const
