@@ -14,7 +14,7 @@
 #include <Controls/EditorDialog.h>
 #include <IPostRenderer.h>
 
-#include <CryUQS/Interfaces/InterfacesIncludes.h>
+#include <CryUQS/Shared/SharedIncludes.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
 
 struct SQuery;

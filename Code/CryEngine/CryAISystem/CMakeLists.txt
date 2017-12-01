@@ -484,6 +484,7 @@ end_sources()
 
 CryEngineModule(CryAISystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 
-target_link_libraries (${THIS_PROJECT} PRIVATE
-	CryUQS_Client
+# path to CryPlugins for #including <CryUQS/...h>
+target_include_directories(${THIS_PROJECT}
+	PRIVATE "${CRYENGINE_DIR}/Code/CryPlugins"
 )

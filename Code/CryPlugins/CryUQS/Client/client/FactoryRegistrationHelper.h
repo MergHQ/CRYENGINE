@@ -25,5 +25,14 @@ namespace UQS
 			static void RegisterAllFactoryInstancesInHub(Core::IHub& hub);
 		};
 
+		inline void CFactoryRegistrationHelper::RegisterAllFactoryInstancesInHub(Core::IHub& hub)
+		{
+			Internal::CItemFactoryBase::RegisterAllInstancesInFactoryDatabase(hub.GetItemFactoryDatabase());
+			Internal::CFunctionFactoryBase::RegisterAllInstancesInFactoryDatabase(hub.GetFunctionFactoryDatabase());
+			Internal::CGeneratorFactoryBase::RegisterAllInstancesInFactoryDatabase(hub.GetGeneratorFactoryDatabase());
+			Internal::CInstantEvaluatorFactoryBase::RegisterAllInstancesInFactoryDatabase(hub.GetInstantEvaluatorFactoryDatabase());
+			Internal::CDeferredEvaluatorFactoryBase::RegisterAllInstancesInFactoryDatabase(hub.GetDeferredEvaluatorFactoryDatabase());
+		}
+
 	}
 }

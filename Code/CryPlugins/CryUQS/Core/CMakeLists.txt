@@ -116,14 +116,13 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineModule(CryUQS_Core PCH "core/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
-target_link_libraries (${THIS_PROJECT} PRIVATE CryUQS_Shared)
 target_link_libraries (${THIS_PROJECT} PRIVATE CryUQS_DataSource_XML)
 target_link_libraries (${THIS_PROJECT} PRIVATE CryUQS_StdLib)
 
 target_include_directories(${THIS_PROJECT}
 	PRIVATE core
 	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
-	INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../.."
+	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../.."
 )
 
 if(OPTION_UQS_SCHEMATYC_SUPPORT)
