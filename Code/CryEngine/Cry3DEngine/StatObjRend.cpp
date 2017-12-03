@@ -1189,7 +1189,7 @@ void CStatObj::RenderSubObjectInternal(CRenderObject* pRenderObject, int nLod, c
 	assert(!(m_nFlags & STATIC_OBJECT_COMPOUND));
 
 	nLod = CLAMP(nLod, GetMinUsableLod(), (int)m_nMaxUsableLod);
-	assert(nLod < MAX_STATOBJ_LODS_NUM);
+	CRY_ASSERT(nLod >= 0 && nLod < MAX_STATOBJ_LODS_NUM);
 
 	// Skip rendering of this suboject if it is marked as deformable
 	if (GetCVars()->e_MergedMeshes == 1 && nLod == 0 && m_isDeformable)
@@ -1239,7 +1239,7 @@ void CStatObj::RenderObjectInternal(CRenderObject* pRenderObject, int nTargetLod
 	}
 
 	int nLod = CLAMP(nTargetLod, GetMinUsableLod(), (int)m_nMaxUsableLod);
-	assert(nLod < MAX_STATOBJ_LODS_NUM);
+	CRY_ASSERT(nLod >= 0 && nLod < MAX_STATOBJ_LODS_NUM);
 
 	// Skip rendering of this suboject if it is marked as deformable
 	if (GetCVars()->e_MergedMeshes == 1 && nTargetLod == 0 && m_isDeformable)
@@ -1384,15 +1384,21 @@ void CStatObj::RenderRenderMesh(CRenderObject* pRenderObject, SInstancingInfo* p
 ///////////////////////////////////////////////////////////////////////////////
 int CStatObj::GetMaxUsableLod()
 {
+	auto lodMax = GetCVars()->e_LodMax;
+	lodMax = CLAMP(lodMax, 0, MAX_STATOBJ_LODS_NUM - 1);
+
 	int maxUsable = m_pLod0 ? max((int)m_nMaxUsableLod, (int)m_pLod0->m_nMaxUsableLod) : (int)m_nMaxUsableLod;
-	return min(maxUsable, GetCVars()->e_LodMax);
+	return min(maxUsable, lodMax);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 int CStatObj::GetMinUsableLod()
 {
+	auto lodMin = GetCVars()->e_LodMin;
+	lodMin = CLAMP(lodMin, 0, MAX_STATOBJ_LODS_NUM - 1);
+
 	int minUsable = m_pLod0 ? max((int)m_nMinUsableLod0, (int)m_pLod0->m_nMinUsableLod0) : (int)m_nMinUsableLod0;
-	return max(minUsable, GetCVars()->e_LodMin);
+	return max(minUsable, lodMin);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -50,10 +50,7 @@ public:
 		m_restart.AddToComponent(pComponent, this);
 
 		pParams->m_emitterLifeTime.start += m_delay.GetValueRange().start;
-		if (m_restart.IsEnabled())
-			pParams->m_emitterLifeTime.end = gInfinity;
-		else
-			pParams->m_emitterLifeTime.end += m_delay.GetValueRange().end + m_duration.GetValueRange().end;
+		pParams->m_emitterLifeTime.end += m_delay.GetValueRange().end + m_duration.GetValueRange().end;
 	}
 
 	virtual void InitSubInstances(const SUpdateContext& context, SUpdateRange instanceRange) override
@@ -117,25 +114,25 @@ protected:
 			return;
 
 		const CParticleEmitter* pEmitter = context.m_runtime.GetEmitter();
-		if (pEmitter->IsIndependent())
+		const bool isIndependent = runtime.GetEmitter()->IsIndependent() && !runtime.IsChild();
+		if (isIndependent)
 		{
-			if (!runtime.IsChild())
-			{
-				// Skip spawning immortal independent top-level effects
-				float maxLifetime = m_delay.GetValueRange().end + m_duration.GetValueRange().end + context.m_params.m_maxParticleLifeTime;
-				if (!std::isfinite(maxLifetime))
-					return;
-			}
+			// Skip spawning immortal independent effects
+			float maxLifetime = m_delay.GetValueRange().end + m_duration.GetValueRange().end + context.m_params.m_maxParticleLifeTime;
+			if (!std::isfinite(maxLifetime))
+				return;
 		}
 		else if (m_restart.IsEnabled())
 		{
-			// Perform restarts only on 
+			// Skip restarts on independent effects
 			THeapArray<uint> indicesArray(*context.m_pMemHeap);
 			indicesArray.reserve(numInstances);
 
 			for (uint i = 0; i < numInstances; ++i)
 			{
 				SSpawnData* pSpawn = GetSpawnData(runtime, i);
+				if (std::isfinite(pSpawn->m_restart))
+					runtime.SetAlive();
 				pSpawn->m_restart -= context.m_deltaTime;
 				if (pSpawn->m_restart <= 0.0f)
 					indicesArray.push_back(i);
@@ -167,6 +164,9 @@ protected:
 			const float endTime = min(pSpawn->m_timer + dT, pSpawn->m_duration);
 			const float spawnTime = endTime - startTime;
 			const float amount = amounts[i] * countScale;
+			
+			if (pSpawn->m_timer <= pSpawn->m_duration)
+				runtime.SetAlive();
 
 			if (spawnTime >= 0.0f && amount > 0.0f)
 			{

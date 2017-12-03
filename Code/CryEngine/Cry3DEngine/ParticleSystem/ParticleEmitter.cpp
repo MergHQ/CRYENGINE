@@ -32,6 +32,7 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	, m_bounds(AABB::RESET)
 	, m_viewDistRatio(1.0f)
 	, m_active(false)
+	, m_alive(true)
 	, m_location(IDENTITY)
 	, m_emitterEditVersion(-1)
 	, m_effectEditVersion(-1)
@@ -45,7 +46,6 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	, m_timeLastRendered(0.0f)
 	, m_initialSeed(0)
 	, m_emitterId(emitterId)
-
 {
 	m_currentSeed = m_initialSeed;
 	m_nInternalFlags |= IRenderNode::REQUIRES_FORWARD_RENDERING;
@@ -173,7 +173,10 @@ void CParticleEmitter::UpdateBoundingBox(const float frameTime)
 	m_reRegister = false;
 
 	if (m_realBounds.IsReset())
+	{
+		m_bounds.Reset();
 		return;
+	}
 
 	if (!m_registered)
 		m_reRegister = true;
@@ -184,14 +187,18 @@ void CParticleEmitter::UpdateBoundingBox(const float frameTime)
 	if (m_reRegister)
 	{
 		// Expand bounds to rounded borders
+		m_bounds = m_realBounds;
 		for (int a = 0; a < 3; ++a)
 		{
-			const float sideLen = (m_realBounds.max[a] - m_realBounds.min[a]);
-			const float round = exp2(ceil(log2(sideLen))) * Bounds::RoundOutPrecision;
-			const float invRound = 1.0f / round;
+			const float sideLen = (m_bounds.max[a] - m_bounds.min[a]);
+			if (sideLen > 0.0f)
+			{
+				const float round = exp2(ceil(log2(sideLen))) * Bounds::RoundOutPrecision;
+				const float invRound = 1.0f / round;
 
-			m_bounds.min[a] = floor(m_realBounds.min[a] * invRound) * round;
-			m_bounds.max[a] = ceil( m_realBounds.max[a] * invRound) * round;
+				m_bounds.min[a] = floor(m_bounds.min[a] * invRound) * round;
+				m_bounds.max[a] = ceil(m_bounds.max[a] * invRound) * round;
+			}
 		}
 	}
 }
@@ -201,14 +208,18 @@ void CParticleEmitter::UpdateAll()
 	// Update all components, and accumulate bounds and stats
 	CRY_PFX2_PROFILE_DETAIL;
 
+	m_alive = false;
 	m_realBounds = AABB::RESET;
 	for (auto& pRuntime : m_componentRuntimes)
 	{
 		pRuntime->UpdateAll();
+		m_alive = m_alive || pRuntime->IsAlive();
 		m_realBounds.Add(pRuntime->GetBounds());
 	}
 
+	PostUpdate();
 	UpdateBoundingBox(m_deltaTime);
+	CRY_PFX2_ASSERT(IsAlive() || !HasBounds());
 }
 
 void CParticleEmitter::DebugRender() const
@@ -391,15 +402,6 @@ void CParticleEmitter::Activate(bool activate)
 	}
 
 	m_active = activate;
-}
-
-bool CParticleEmitter::IsAlive() const
-{
-	CRY_PFX2_PROFILE_DETAIL;
-	for (auto const& pRuntime : m_componentRuntimes)
-		if (pRuntime->IsAlive())
-			return true;
-	return false;
 }
 
 void CParticleEmitter::Restart()
@@ -613,6 +615,8 @@ void CParticleEmitter::UpdateRuntimes()
 			pComponent->PrepareRenderObjects(this, pComponent, true);
 		}
 	}
+
+	m_alive = true;
 }
 
 void CParticleEmitter::ResetRenderObjects()

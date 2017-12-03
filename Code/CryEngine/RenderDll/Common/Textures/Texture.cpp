@@ -2709,7 +2709,7 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperLayoutElement::CreateIn
 		cry_strcpy(name, layoutName);
 		PathUtil::RemoveExtension(name);
 		const char* pExt = PathUtil::GetExt(layoutName);
-		if (!pExt || strcmpi(pExt, ".layout") != 0)
+		if (!pExt || strcmpi(pExt, "layout") != 0)
 		{
 			return;
 		}
@@ -2940,11 +2940,11 @@ bool CFlashTextureSourceBase::IsFlashFile(const char* pFlashFileName)
 			if (!bPath)
 			{
 				// Pseudo files (no path, looks up flow-node)
-				return (!stricmp(pExt, ".ui"));
+				return (!stricmp(pExt, "ui"));
 			}
 
 			// Real files (looks up filesystem)
-			return (!stricmp(pExt, ".layout") || !stricmp(pExt, ".gfx") || !stricmp(pExt, ".swf") || !stricmp(pExt, ".usm"));
+			return (!stricmp(pExt, "layout") || !stricmp(pExt, "gfx") || !stricmp(pExt, "swf") || !stricmp(pExt, "usm"));
 		}
 	}
 
@@ -2963,7 +2963,7 @@ bool CFlashTextureSourceBase::IsFlashUIFile(const char* pFlashFileName)
 			if (!bPath)
 			{
 				// Pseudo files (no path, looks up flow-node)
-				return !stricmp(pExt, ".ui");
+				return !stricmp(pExt, "ui");
 			}
 		}
 	}
@@ -2979,7 +2979,7 @@ bool CFlashTextureSourceBase::IsFlashUILayoutFile(const char* pFlashFileName)
 
 		if (pExt)
 		{
-			return !stricmp(pExt, ".layout");
+			return !stricmp(pExt, "layout");
 		}
 	}
 

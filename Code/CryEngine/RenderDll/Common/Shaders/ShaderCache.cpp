@@ -2381,9 +2381,9 @@ bool CShaderMan::mfPreloadBinaryShaders()
 		if (fileinfo.attrib & _A_SUBDIR)
 			continue;
 		const char* szExt = PathUtil::GetExt(fileinfo.name);
-		if (!stricmp(szExt, ".cfib"))
+		if (!stricmp(szExt, "cfib"))
 			FilesCFI.push_back(fileinfo.name);
-		else if (!stricmp(szExt, ".cfxb"))
+		else if (!stricmp(szExt, "cfxb"))
 			FilesCFX.push_back(fileinfo.name);
 	}
 	while (gEnv->pCryPak->FindNext(handle, &fileinfo) != -1);

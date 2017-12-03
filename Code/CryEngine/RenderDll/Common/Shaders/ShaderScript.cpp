@@ -254,7 +254,7 @@ bool CShaderMan::mfReloadFile(const char* szPath, const char* szName, int nFlags
 	m_nFrameForceReload++;
 
 	const char* szExt = PathUtil::GetExt(szName);
-	if (!stricmp(szExt, ".cfx"))
+	if (!stricmp(szExt, "cfx"))
 	{
 		m_bReload = true;
 		char szShaderName[256];
@@ -270,7 +270,7 @@ bool CShaderMan::mfReloadFile(const char* szPath, const char* szName, int nFlags
 		}
 		m_bReload = false;
 	}
-	else if (!stricmp(szExt, ".cfi"))
+	else if (!stricmp(szExt, "cfi"))
 	{
 		CCryNameTSCRC Name = CShader::mfGetClassName();
 		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(Name);

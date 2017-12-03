@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <CryUQS/Interfaces/InterfacesIncludes.h>
-#include <CryUQS/Shared/SharedIncludes.h>
-#include <CryUQS/Client/ClientIncludes.h>
+#include "../Interfaces/InterfacesIncludes.h"
+#include "../Shared/SharedIncludes.h"
+#include "../Client/ClientIncludes.h"
 
 #include "../StdLibRegistration.h"
 #include "ItemDebugProxies.h"

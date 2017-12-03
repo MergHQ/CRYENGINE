@@ -7,9 +7,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef PARTICLECOMMON_H
-#define PARTICLECOMMON_H
-
 #pragma once
 
 #include <CryParticleSystem/IParticlesPfx2.h>
@@ -39,9 +36,9 @@
 #endif
 
 #ifdef CRY_PFX2_DEBUG
-#	define CRY_PFX2_DEBUG_ONLY_ASSERT(cond) CRY_PFX2_ASSERT(cond);
+#	define CRY_PFX2_DEBUG_ASSERT(cond) CRY_PFX2_ASSERT(cond);
 #else
-#	define CRY_PFX2_DEBUG_ONLY_ASSERT(cond)
+#	define CRY_PFX2_DEBUG_ASSERT(cond)
 #endif
 
 #ifdef CRY_PFX2_PROFILE_DETAILS
@@ -93,6 +90,7 @@ using TParticleIdArray                 = THeapArray<TParticleId>;
 using TFloatArray                      = THeapArray<float>;
 
 template<typename T> using TDynArray   = FastDynArray<T, uint, NAlloc::ModuleAlloc>;
+template<typename T> using TSmartArray = TDynArray<_smart_ptr<T>>;
 
 
 #ifdef CRY_PFX2_USE_SSE
@@ -108,7 +106,6 @@ public:
 	friend bool                       operator>=(const TParticleGroupId a, const TParticleGroupId b) { return a.id >= b.id; }
 	friend bool                       operator==(const TParticleGroupId a, const TParticleGroupId b) { return a.id == b.id; }
 	friend bool                       operator!=(const TParticleGroupId a, const TParticleGroupId b) { return a.id != b.id; }
-	TParticleGroupId&                 operator++()                                                   { ++id; return *this; }
 	TParticleGroupId                  operator++(int)                                                { id++; return *this; }
 	TParticleGroupId&                 operator+=(int stride)                                         { id += stride; return *this; }
 	template<class type> friend type* operator+(type* ptr, TParticleGroupId id)                      { return ptr + id.id; }
@@ -196,4 +193,3 @@ enum EFeatureType
 
 }
 
-#endif // PARTICLECOMMON_H

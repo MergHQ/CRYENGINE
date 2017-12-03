@@ -39,13 +39,11 @@ end_sources()
 
 CryEditorPlugin(EditorUQS PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
 target_link_libraries (${THIS_PROJECT} PRIVATE
-	CryUQS_Client
-	CryUQS_Shared
 	CryUQS_DataSource_XML
 )
 
 target_include_directories(${THIS_PROJECT}
-	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/.." "${CMAKE_CURRENT_SOURCE_DIR}/GeneratedFiles"
+	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/../.." "${CMAKE_CURRENT_SOURCE_DIR}/GeneratedFiles"
 )
 
 if(OPTION_UQS_SCHEMATYC_SUPPORT)

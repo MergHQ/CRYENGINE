@@ -24,7 +24,7 @@ public:
 	CParticleEmitter(CParticleEffect* pEffect, uint emitterId);
 	~CParticleEmitter();
 
-	using TRuntimes = std::vector<_smart_ptr<CParticleComponentRuntime>>;
+	using TRuntimes = TSmartArray<CParticleComponentRuntime>;
 
 	// IRenderNode
 	virtual EERType          GetRenderNodeType() override;
@@ -70,7 +70,7 @@ public:
 
 	// pfx1 IParticleEmitter
 	virtual int          GetVersion() const override                        { return 2; }
-	virtual bool         IsAlive() const override;
+	virtual bool         IsAlive() const override                           { return m_alive; }
 	virtual void         Restart() override;
 	virtual void         SetEffect(const IParticleEffect* pEffect) override {}
 	virtual void         SetEmitGeom(const GeomRef& geom) override;
@@ -110,6 +110,7 @@ public:
 	float                     GetDeltaTime() const         { return m_deltaTime; }
 	float                     GetTime() const              { return m_time; }
 	float                     GetAge() const               { return m_time - m_timeCreated; }
+	void                      SetAlive()                   { m_alive = true; }
 	bool                      WasRenderedLastFrame() const { return (m_timeLastRendered >= m_time) && ((GetRndFlags() & ERF_HIDDEN) == 0); }
 	uint32                    GetInitialSeed() const       { return m_initialSeed; }
 	uint32                    GetCurrentSeed() const       { return m_currentSeed; }
@@ -167,9 +168,10 @@ private:
 	bool                        m_registered;
 	bool                        m_reRegister;
 	bool                        m_active;
+	bool                        m_alive;
 };
 
-typedef TDynArray<_smart_ptr<CParticleEmitter>> TParticleEmitters;
+typedef TSmartArray<CParticleEmitter> TParticleEmitters;
 
 }
 

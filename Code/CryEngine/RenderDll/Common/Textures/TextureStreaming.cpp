@@ -648,7 +648,7 @@ bool CTexture::StreamPrepare(bool bFromLoad)
 	if (!m_pFileTexMips)
 	{
 		const char* szExt = PathUtil::GetExt(m_SrcName.c_str());
-		if (szExt != 0 && (!stricmp(szExt, ".tif") || !stricmp(szExt, ".hdr")) && !gEnv->pCryPak->IsFileExist(m_SrcName.c_str()))
+		if (szExt != 0 && (!stricmp(szExt, "tif") || !stricmp(szExt, "hdr")) && !gEnv->pCryPak->IsFileExist(m_SrcName.c_str()))
 		{
 			m_SrcName = PathUtil::ReplaceExtension(m_SrcName, "dds");
 			if (!gEnv->pCryPak->IsFileExist(m_SrcName))

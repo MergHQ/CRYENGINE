@@ -1205,7 +1205,7 @@ ITexture* CRenderer::EF_GetTextureByName(const char* nameTex, uint32 flags)
 		INDENT_LOG_DURING_SCOPE(true, "While trying to find texture '%s' flags=0x%x...", nameTex, flags);
 
 		const char* ext = PathUtil::GetExt(nameTex);
-		if (ext != 0 && (stricmp(ext, ".tif") == 0 || stricmp(ext, ".hdr") == 0))
+		if (ext != 0 && (stricmp(ext, "tif") == 0 || stricmp(ext, "hdr") == 0))
 		{
 			// for compilable files, register by the dds file name (to not load it twice)
 			char nameDDS[256];
@@ -1229,7 +1229,7 @@ ITexture* CRenderer::EF_LoadTexture(const char* szName, const uint32 flags)
 		INDENT_LOG_DURING_SCOPE(true, "While trying to load texture '%s' flags=0x%x...", nameTex, flags);
 
 		const char* szExtension = PathUtil::GetExt(szName);
-		if (szExtension != nullptr && (!stricmp(szExtension, ".tif") || !stricmp(szExtension, ".hdr")))
+		if (szExtension != nullptr && (!stricmp(szExtension, "tif") || !stricmp(szExtension, "hdr")))
 		{
 			// for compilable files, register by the dds file name (to not load it twice)
 			return CTexture::ForName(PathUtil::ReplaceExtension(szName, "dds"), flags, eTF_Unknown);

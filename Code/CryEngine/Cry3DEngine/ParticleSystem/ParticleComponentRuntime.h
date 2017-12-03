@@ -56,6 +56,8 @@ public:
 	void                      UpdateParticles(const SUpdateContext& context);
 	void                      CalculateBounds();
 
+	bool                      IsAlive() const               { return m_alive; }
+	void                      SetAlive()                    { m_alive = true; }
 	uint                      GetNumInstances() const       { return m_subInstances.size(); }
 	const SInstance&          GetInstance(uint idx) const   { return m_subInstances[idx]; }
 	SInstance&                GetInstance(uint idx)         { return m_subInstances[idx]; }
@@ -65,7 +67,6 @@ public:
 	SChaosKey                 MakeSeed(TParticleId id = 0) const;
 	SChaosKey                 MakeParentSeed(TParticleId id = 0) const;
 
-	bool                      IsAlive() const;
 	bool                      HasParticles() const;
 	void                      AccumStats();
 
@@ -88,6 +89,7 @@ private:
 	TDynArray<SSpawnEntry>                          m_spawnEntries;
 	AABB                                            m_bounds;
 	SParticleStats::ParticleStats                   m_particleStats;
+	bool                                            m_alive;
 
 	_smart_ptr<gpu_pfx2::IParticleComponentRuntime> m_pGpuRuntime;
 };
