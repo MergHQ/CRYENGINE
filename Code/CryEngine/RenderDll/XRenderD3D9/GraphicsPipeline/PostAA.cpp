@@ -214,6 +214,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 		{
 			static CCryNameTSCRC techEdgeDetection("LumaEdgeDetectionSMAA");
 			m_passSMAAEdgeDetection.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			m_passSMAAEdgeDetection.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passSMAAEdgeDetection.SetTechnique(CShaderMan::s_shPostAA, techEdgeDetection, 0);
 			m_passSMAAEdgeDetection.SetTargetClearMask(CPrimitiveRenderPass::eClear_Color0);
 			m_passSMAAEdgeDetection.SetRenderTarget(0, pEdgesRT);
@@ -242,6 +243,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 		{
 			static CCryNameTSCRC techBlendWeights("BlendWeightSMAA");
 			m_passSMAABlendWeights.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			m_passSMAABlendWeights.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passSMAABlendWeights.SetTechnique(CShaderMan::s_shPostAA, techBlendWeights, 0);
 			m_passSMAABlendWeights.SetTargetClearMask(CPrimitiveRenderPass::eClear_Color0);
 			m_passSMAABlendWeights.SetRenderTarget(0, pBlendWeightsRT);
@@ -273,6 +275,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 		{
 			static CCryNameTSCRC techNeighborhoodBlending("NeighborhoodBlendingSMAA");
 			m_passSMAANeighborhoodBlending.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			m_passSMAANeighborhoodBlending.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passSMAANeighborhoodBlending.SetTechnique(CShaderMan::s_shPostAA, techNeighborhoodBlending, 0);
 			m_passSMAANeighborhoodBlending.SetRenderTarget(0, pDestRT);
 			m_passSMAANeighborhoodBlending.SetState(GS_NODEPTHTEST);
@@ -435,6 +438,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		static CCryNameTSCRC techComposition("PostAAComposites");
 
 		m_passComposition.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		m_passComposition.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_passComposition.SetTechnique(CShaderMan::s_shPostAA, techComposition, rtMask);
 		m_passComposition.SetRenderTarget(0, pDestRT);
 		m_passComposition.SetState(GS_NODEPTHTEST);

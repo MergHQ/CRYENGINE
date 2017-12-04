@@ -524,6 +524,7 @@ void CUnderwaterGodRaysPass::Execute(const CPostEffectContext& context)
 		{
 			static CCryNameTSCRC techName("UnderwaterGodRaysFinal");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			pass.SetTechnique(CShaderMan::s_shPostEffects, techName, 0);
 			pass.SetState(GS_NODEPTHTEST);
 
@@ -709,6 +710,7 @@ void CSharpeningPass::Execute(const CPostEffectContext& context)
 	{
 		static CCryNameTSCRC techName("CA_Sharpening");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		pass.SetTechnique(CShaderMan::s_shPostEffects, techName, 0);
 		pass.SetState(GS_NODEPTHTEST);
 
@@ -771,6 +773,7 @@ void CBlurringPass::Execute(const CPostEffectContext& context)
 	{
 		static CCryNameTSCRC techName("BlurInterpolation");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		pass.SetTechnique(CShaderMan::s_shPostEffects, techName, 0);
 		pass.SetState(GS_NODEPTHTEST);
 
@@ -841,6 +844,7 @@ void CUberGamePostEffectPass::Execute(const CPostEffectContext& context)
 		{
 			static CCryNameTSCRC techName("UberGamePostProcess");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			pass.SetTechnique(CShaderMan::s_shPostEffectsGame, techName, rtMask);
 			pass.SetState(renderState);
 
@@ -959,6 +963,7 @@ void CFlashBangPass::Execute(const CPostEffectContext& context)
 		{
 			static CCryNameTSCRC techName("FlashBang");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			pass.SetTechnique(CShaderMan::s_shPostEffectsGame, techName, 0);
 			pass.SetState(GS_NODEPTHTEST);
 
@@ -1053,6 +1058,7 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 		{
 			static CCryNameTSCRC techName("PostStereo");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			pass.SetTechnique(CShaderMan::s_shPostEffects, techName, 0);
 			pass.SetState(GS_NODEPTHTEST);
 
@@ -1130,6 +1136,7 @@ void CKillCameraPass::Execute(const CPostEffectContext& context)
 		{
 			static CCryNameTSCRC techName("KillCameraFilter");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			pass.SetTechnique(CShaderMan::s_shPostEffectsGame, techName, 0);
 			pass.SetState(GS_NODEPTHTEST | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
 
@@ -1273,6 +1280,7 @@ void CScreenBloodPass::Execute(const CPostEffectContext& context)
 	{
 		static CCryNameTSCRC techName("ScreenBlood");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		pass.SetTechnique(CShaderMan::s_shPostEffectsGame, techName, 0);
 		pass.SetState(GS_NODEPTHTEST | GS_BLSRC_DSTCOL | GS_BLDST_SRCALPHA);
 

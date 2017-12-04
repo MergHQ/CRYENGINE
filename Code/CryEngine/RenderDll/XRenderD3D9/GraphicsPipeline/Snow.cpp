@@ -136,6 +136,7 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 	{
 		static CCryNameTSCRC techName("Snow");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, rtMask);
 
 		const int32 stencilState = STENC_FUNC(FSS_STENCFUNC_EQUAL) |
@@ -292,6 +293,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 		{
 			static CCryNameTSCRC techName = "ParallaxMapPrepass";
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, 0);
 
 			pass.SetState(GS_NODEPTHTEST);
@@ -323,6 +325,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 		{
 			static CCryNameTSCRC techName = "ParallaxMapMin";
 			pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, 0);
+			pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 
 			pass.SetState(GS_NODEPTHTEST);
 
@@ -360,6 +363,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 			if (pass.InputChanged())
 			{
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+				pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, 0);
 
 				pass.SetState(GS_NODEPTHTEST);
@@ -392,6 +396,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 			if (pass.InputChanged())
 			{
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+				pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, 0);
 
 				pass.SetState(GS_NODEPTHTEST);
@@ -425,6 +430,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 			{
 				uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0];
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+				pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, rtMask);
 
 				pass.SetState(GS_NODEPTHTEST);
@@ -805,6 +811,7 @@ void CSnowStage::ExecuteHalfResComposite()
 	{
 		static CCryNameTSCRC techName = "SnowHalfResComposite";
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+		pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		pass.SetTechnique(CShaderMan::s_shPostEffectsGame, techName, 0);
 		pass.SetState(GS_NODEPTHTEST | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
 

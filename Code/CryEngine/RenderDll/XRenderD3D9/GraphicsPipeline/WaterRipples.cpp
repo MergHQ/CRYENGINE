@@ -275,6 +275,7 @@ void CWaterRipplesStage::Execute()
 			{
 				uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0];
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+				pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				pass.SetTechnique(CShaderMan::s_shPostEffects, m_ripplesGenTechName, rtMask);
 
 				pass.SetTexture(0, m_pTexWaterRipplesDDN);
@@ -300,6 +301,7 @@ void CWaterRipplesStage::Execute()
 			if (pass.InputChanged())
 			{
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+				pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				pass.SetTechnique(CShaderMan::s_shPostEffects, m_ripplesGenTechName, 0);
 
 				pass.SetTexture(0, pTempTex);
