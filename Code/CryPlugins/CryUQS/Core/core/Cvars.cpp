@@ -16,6 +16,7 @@ namespace UQS
 		int           SCvars::debugDrawAlphaValueOfDiscardedItems;
 		int           SCvars::logQueryHistory;
 		float         SCvars::timeBudgetExcessThresholdInPercentBeforeWarning;
+		int           SCvars::printTimeExcessWarningsToConsole;
 
 		void SCvars::Register()
 		{
@@ -40,6 +41,9 @@ namespace UQS
 
 			REGISTER_CVAR2("uqs_timeBudgetExcessThresholdInPercentBeforeWarning", &timeBudgetExcessThresholdInPercentBeforeWarning, 20.0f, VF_NULL,
 				"Percentage of the granted time of a query that we allow to exceed before issuing a warning.");
+
+			REGISTER_CVAR2("uqs_printTimeExcessWarningsToConsole", &printTimeExcessWarningsToConsole, 1, VF_NULL,
+				"0/1: Print warnings due to time excess of queries also to the console, not just to the query history.");
 		}
 
 		void SCvars::Unregister()
@@ -50,6 +54,8 @@ namespace UQS
 			gEnv->pConsole->UnregisterVariable("uqs_debugDrawLineThickness");
 			gEnv->pConsole->UnregisterVariable("uqs_debugDrawAlphaValueOfDiscardedItems");
 			gEnv->pConsole->UnregisterVariable("uqs_logQueryHistory");
+			gEnv->pConsole->UnregisterVariable("uqs_timeBudgetExcessThresholdInPercentBeforeWarning");
+			gEnv->pConsole->UnregisterVariable("uqs_printTimeExcessWarningsToConsole");
 		}
 	}
 }
