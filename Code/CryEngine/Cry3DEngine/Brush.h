@@ -90,7 +90,7 @@ public:
 	void CalcBBox();
 	void UpdatePhysicalMaterials(int bThreadSafe = 0);
 
-	virtual void OnRenderNodeBecomeVisibleAsync(const SRenderingPassInfo& passInfo) final;
+	virtual void OnRenderNodeBecomeVisibleAsync(SRenderNodeTempData* pTempData, const SRenderingPassInfo& passInfo) final;
 
 	bool HasDeformableData() const { return m_pDeform != NULL; }
 

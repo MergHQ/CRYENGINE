@@ -366,6 +366,7 @@ namespace UQS
 			commonWarningMessage.Format("Exceeded time-budget in current frame: granted time = %f ms, actually consumed = %f ms", timeGranted.GetMilliSeconds(), timeUsed.GetMilliSeconds());
 
 			// print a warning to the console
+			if(SCvars::printTimeExcessWarningsToConsole == 1)
 			{
 				Shared::CUqsString queryIdAsString;
 				m_queryID.ToString(queryIdAsString);

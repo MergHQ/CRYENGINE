@@ -1932,8 +1932,9 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 			pNewEntity = static_cast<CEntity*>(CreateObjectAsEntity(pNewStatObj, pCreateEvent->pEntNew, pCreateEvent->pEntity, createParams));
 			bNewEntity = pNewEntity != pPrevNewEntity;
 
+			int lastDrawnFrame = pSrcRenderNode ? pSrcRenderNode->GetDrawFrame() : 0;
 			if (pCreateEvent->nTotParts == 1)
-				SetEntityLifetime(pNewEntity, pNewStatObj->GetProperties(), pSrcRenderNode && (!pSrcRenderNode->m_pTempData || pSrcRenderNode->GetDrawFrame() + 10 > gEnv->pRenderer->GetFrameID()));
+				SetEntityLifetime(pNewEntity, pNewStatObj->GetProperties(), pSrcRenderNode && (!lastDrawnFrame || lastDrawnFrame + 10 > gEnv->pRenderer->GetFrameID()));
 		}
 	}
 

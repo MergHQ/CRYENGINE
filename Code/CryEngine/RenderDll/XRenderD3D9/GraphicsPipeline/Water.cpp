@@ -464,6 +464,7 @@ void CWaterStage::ExecuteDeferredWaterVolumeCaustics()
 		pass.SetSampler(1, EDefaultSamplerStates::PointClamp);
 	
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		pass.SetRequirePerViewConstantBuffer(true);
 	}
 
@@ -1257,6 +1258,7 @@ void CWaterStage::ExecuteWaterNormalGen()
 		{
 			static CCryNameTSCRC techName("WaterVolumesNormalGen");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			pass.SetTechnique(CShaderMan::s_shPostEffectsGame, techName, 0);
 			pass.SetRenderTarget(0, CRendererResources::s_ptexWaterVolumeDDN);
 			pass.SetState(GS_NODEPTHTEST);
@@ -1399,6 +1401,7 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 		{
 			static CCryNameTSCRC techName("WaterCausticsInfoDilate");
 			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+			pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			pass.SetTechnique(CShaderMan::s_ShaderDeferredCaustics, techName, 0);
 			pass.SetRenderTarget(0, CRendererResources::s_ptexWaterCaustics[1]);
 			pass.SetState(GS_NODEPTHTEST);

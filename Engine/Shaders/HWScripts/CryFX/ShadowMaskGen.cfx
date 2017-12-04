@@ -186,6 +186,9 @@ pixout_StencilCull_void StencilCullPS(vert2fragStencilCull IN)
 float4x4 g_mReprojDstToSrc;
 float4x4 g_mReprojSrcToDst;
 
+Texture2D<float4>ReprojSM_Dpth      : register(t0);
+SamplerState ReprojSM_SSDpth        : register(s0);  //LinearClamp
+
 pixout_cl_void_depth ReprojectShadowMap(vtxOut IN)
 {
 	pixout_cl_void_depth OUT = (pixout_cl_void_depth) 1;
@@ -195,7 +198,7 @@ pixout_cl_void_depth ReprojectShadowMap(vtxOut IN)
 	clipPosSrc.xy /= clipPosSrc.w;
 	
 	float2 tcSrc = clipPosSrc.xy * float2(0.5, -0.5) + 0.5;
-	float srcDepth = tex2D(_tex0, tcSrc);
+	float srcDepth = GetTexture2D(ReprojSM_Dpth,ReprojSM_SSDpth, tcSrc);
 	clipPosDst.zw = mul(float4(clipPosSrc.xy, srcDepth, 1.0f), g_mReprojSrcToDst).zw;
 	float dstDepth = clipPosDst.z / clipPosDst.w;
 	

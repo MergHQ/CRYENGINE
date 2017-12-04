@@ -1072,7 +1072,7 @@ void CWaterVolumeRenderNode::SyncToPhysMesh(const QuatT& qtSurface, IGeometry* p
 
 void CWaterVolumeRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (m_pTempData) m_pTempData->OffsetPosition(delta);
+	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_vOffset += delta;
 	m_center += delta;
 	m_WSBBox.Move(delta);

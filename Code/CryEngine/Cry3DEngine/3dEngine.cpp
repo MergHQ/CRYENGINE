@@ -2027,11 +2027,7 @@ void C3DEngine::FreeRenderNodeState(IRenderNode* pEnt)
 
 	UnRegisterEntityImpl(pEnt);
 
-	if (pEnt->m_pTempData)
-	{
-		pEnt->m_pTempData->MarkForDelete();
-		pEnt->m_pTempData = nullptr;
-	}
+	pEnt->RemoveAndMarkForAutoDeleteTempData();
 }
 
 const char* C3DEngine::GetLevelFilePath(const char* szFileName)
@@ -4769,75 +4765,70 @@ bool C3DEngine::RenderMeshRayIntersection(IRenderMesh* pRenderMesh, SRayHitInfo&
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void C3DEngine::CreateRenderNodeTempData(SRenderNodeTempData** ppInputTempData, IRenderNode* pRNode, const SRenderingPassInfo& passInfo)
+SRenderNodeTempData* C3DEngine::CreateRenderNodeTempData(IRenderNode* pRNode, const SRenderingPassInfo& passInfo)
 {
-	// g_renderNodeTempDataLock lock scope
-	{
-		CryAutoCriticalSectionNoRecursive lock(g_renderNodeTempDataLock);
+	SRenderNodeTempData* pNewTempData = m_visibleNodesManager.AllocateTempData(passInfo.GetFrameID());
+	pNewTempData->userData.pOwnerNode = pRNode;
 
-		FUNCTION_PROFILER_3DENGINE;
+	pRNode->OnRenderNodeBecomeVisibleAsync(pNewTempData, passInfo); // Internally uses the just assigned RNTmpData pointer i.e IRenderNode::m_pRNTmpData ...
 
-		if (*ppInputTempData && (*ppInputTempData)->IsValid())
-			return; // check if another thread already initialized temp data
+	if (IVisArea* pVisArea = pRNode->GetEntityVisArea())
+		pNewTempData->userData.m_pClipVolume = pVisArea;
+	else if (GetClipVolumeManager()->IsClipVolumeRequired(pRNode))
+		GetClipVolumeManager()->UpdateEntityClipVolume(pRNode->GetPos(), pRNode);
 
-		if (*ppInputTempData)
-		{
-			(*ppInputTempData)->MarkForDelete();
-			(*ppInputTempData) = nullptr;
-		}
-
-		SRenderNodeTempData* pNewTempData = m_visibleNodesManager.AllocateTempData(passInfo.GetFrameID());
-		m_visibleNodesManager.SetLastSeenFrame(pNewTempData, passInfo);
-		pNewTempData->userData.pOwnerNode = pRNode;
-		*ppInputTempData = pNewTempData;
-	}
-
-	if (pRNode)
-	{
-		pRNode->OnRenderNodeBecomeVisibleAsync(passInfo); // Internally uses the just assigned RNTmpData pointer i.e IRenderNode::m_pRNTmpData ...
-
-		if (IVisArea* pVisArea = pRNode->GetEntityVisArea())
-			pRNode->m_pTempData->userData.m_pClipVolume = pVisArea;
-		else if (GetClipVolumeManager()->IsClipVolumeRequired(pRNode))
-			GetClipVolumeManager()->UpdateEntityClipVolume(pRNode->GetPos(), pRNode);
-	}
+	return pNewTempData;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool C3DEngine::CheckAndCreateRenderNodeTempData(SRenderNodeTempData** ppTempData, IRenderNode* pRNode, const SRenderingPassInfo& passInfo)
+SRenderNodeTempData* C3DEngine::CheckAndCreateRenderNodeTempData(IRenderNode* pRNode, const SRenderingPassInfo& passInfo)
 {
-	assert(pRNode);
+	FUNCTION_PROFILER_3DENGINE;
+	CRY_ASSERT(pRNode);
+	if (!pRNode)
+		return nullptr;
 
-	SRenderNodeTempData* pCurrentTempData = *ppTempData;
+	SRenderNodeTempData* pTempData = pRNode->m_pTempData.load();
+	bool bCanBeRendered = false;
 
-	bool bValid = (pCurrentTempData && pCurrentTempData->IsValid());
-
-	// detect render resources modification (for example because of mesh streaming or material editing)
-	if (bValid && pCurrentTempData->userData.nStatObjLastModificationId)
 	{
-		if (GetObjManager()->GetResourcesModificationChecksum(pRNode) != pCurrentTempData->userData.nStatObjLastModificationId)
+		CryAutoCriticalSectionNoRecursive lock(g_renderNodeTempDataLock);
+
+		if (!pTempData)
 		{
-			pRNode->InvalidatePermanentRenderObject();
+			pTempData = CreateRenderNodeTempData(pRNode, passInfo);
 		}
-	}
-
-	if (bValid)
-	{
-		if (pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID)
+		else
 		{
-			pCurrentTempData->FreeRenderObjects();
+			// detect render resources modification (for example because of mesh streaming or material editing)
+			if (pTempData->userData.nStatObjLastModificationId)
+			{
+				if (GetObjManager()->GetResourcesModificationChecksum(pRNode) != pTempData->userData.nStatObjLastModificationId)
+				{
+					pRNode->InvalidatePermanentRenderObject();
+				}
+			}
+
+			if (pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID)
+			{
+				pTempData->FreeRenderObjects();
+			}
+
 			CryInterlockedExchangeAnd((volatile LONG*)&pRNode->m_nInternalFlags, ~uint32(IRenderNode::PERMANENT_RO_INVALID));
 		}
-		return m_visibleNodesManager.SetLastSeenFrame(pCurrentTempData, passInfo);
-	}
-	else
-	{
-		CryInterlockedExchangeAnd((volatile LONG*)&pRNode->m_nInternalFlags, ~uint32(IRenderNode::PERMANENT_RO_INVALID));
 
-		CreateRenderNodeTempData(ppTempData, pRNode, passInfo);
+		bCanBeRendered = m_visibleNodesManager.SetLastSeenFrame(pTempData, passInfo);
 	}
 
-	return true;
+	// Place new pointer back atomically
+	SRenderNodeTempData* pTempDataWasNull = nullptr;
+
+	// If something was placed meanwhile, get rid of whatever we did (it should be a nullptr though)
+	// If RemoveAndMarkForAutoDeleteTempData took the pointer out, we put it back in (which works fine)
+	if (!pRNode->m_pTempData.compare_exchange_strong(pTempDataWasNull, pTempData))
+		pTempData->MarkForAutoDelete();
+
+	return bCanBeRendered ? pRNode->m_pTempData.load() : nullptr;
 }
 
 void C3DEngine::CopyObjectsByType(EERType objType, const AABB* pBox, PodArray<IRenderNode*>* plstObjects, uint64 dwFlags)
@@ -6329,12 +6320,11 @@ void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const 
 	else if (passInfo.GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED_MGPU_COPY)
 		nStaticObjectLod = pRenderNode->m_cStaticShadowLod;
 
-	if (!Get3DEngine()->CheckAndCreateRenderNodeTempData(&pRenderNode->m_pTempData, pRenderNode, passInfo))
-	{
+	SRenderNodeTempData* pTempData = Get3DEngine()->CheckAndCreateRenderNodeTempData(pRenderNode, passInfo);
+	if (!pTempData)
 		return;
-	}
 
-	int wantedLod = pRenderNode->m_pTempData->userData.nWantedLod;
+	int wantedLod = pTempData->userData.nWantedLod;
 	if (pRenderNode->GetShadowLodBias() != IRenderNode::SHADOW_LODBIAS_DISABLE)
 	{
 		if (passInfo.IsShadowPass() && (pRenderNode->GetDrawFrame(0) < (passInfo.GetFrameID() - 10)))
@@ -6428,8 +6418,8 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 	EERType eERType = pEnt->GetRenderNodeType();
 
 #ifdef SUPP_HMAP_OCCL
-	if (pEnt->m_pTempData)
-		pEnt->m_pTempData->userData.m_OcclState.vLastVisPoint.Set(0, 0, 0);
+	if (SRenderNodeTempData* pTempData = pEnt->m_pTempData.load())
+		pTempData->userData.m_OcclState.vLastVisPoint.Set(0, 0, 0);
 #endif
 
 	UpdateObjectsLayerAABB(pEnt);
@@ -6543,18 +6533,17 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 	}
 
 	// update clip volume: use vis area if we have one, otherwise check if we're in the same volume as before. check other volumes as last resort only
-	if (pEnt->m_pTempData)
+	if (SRenderNodeTempData* pTempData = pEnt->m_pTempData.load())
 	{
 		Vec3 vEntCenter = GetEntityRegisterPoint(pEnt);
-		SRenderNodeTempData::SUserData& userData = pEnt->m_pTempData->userData;
 
 		if (IVisArea* pVisArea = pEnt->GetEntityVisArea())
-			userData.m_pClipVolume = pVisArea;
+			pTempData->userData.m_pClipVolume = pVisArea;
 		else if (GetClipVolumeManager()->IsClipVolumeRequired(pEnt))
 			GetClipVolumeManager()->UpdateEntityClipVolume(vEntCenter, pEnt);
 	}
 
-	// register decals, to clean up longer not renderes decals and their render meshes
+	// register decals, to clean up longer not renders decals and their render meshes
 	if (eERType == eERType_Decal)
 	{
 		m_decalRenderNodes.push_back((IDecalRenderNode*)pEnt);

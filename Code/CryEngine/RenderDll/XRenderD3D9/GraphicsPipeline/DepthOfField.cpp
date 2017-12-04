@@ -167,6 +167,7 @@ void CDepthOfFieldStage::Execute()
 			{
 				static CCryNameTSCRC techDOF("Dof");
 				m_passGather0.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+				m_passGather0.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				m_passGather0.SetTechnique(pShader, techDOF, 0);
 				m_passGather0.SetRenderTarget(0, pTexDofLayersTmp[0]);
 				m_passGather0.SetRenderTarget(1, pTexDofLayersTmp[1]);
@@ -211,6 +212,7 @@ void CDepthOfFieldStage::Execute()
 			{
 				static CCryNameTSCRC techDOF("Dof");
 				m_passGather1.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+				m_passGather1.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				m_passGather1.SetTechnique(pShader, techDOF, g_HWSR_MaskBit[HWSR_SAMPLE0]);
 				m_passGather1.SetRenderTarget(0, CRendererResources::s_ptexHDRDofLayers[0]);
 				m_passGather1.SetRenderTarget(1, CRendererResources::s_ptexHDRDofLayers[1]);
@@ -242,6 +244,7 @@ void CDepthOfFieldStage::Execute()
 			{
 				static CCryNameTSCRC techCompositeDof("CompositeDof");
 				m_passComposition.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+				m_passComposition.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				m_passComposition.SetTechnique(pShader, techCompositeDof, 0);
 				m_passComposition.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
 				m_passComposition.SetState(GS_NODEPTHTEST);

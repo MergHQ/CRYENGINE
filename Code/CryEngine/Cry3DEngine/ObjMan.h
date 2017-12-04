@@ -273,9 +273,9 @@ public:
 
 	uint16 CheckCachedNearestCubeProbe(IRenderNode* pEnt, Vec4* pEnvProbMults = nullptr)
 	{
-		if (pEnt->m_pTempData)
+		if (SRenderNodeTempData* pTempData = pEnt->m_pTempData.load())
 		{
-			SRenderNodeTempData::SUserData& pUserDataRN = pEnt->m_pTempData->userData;
+			SRenderNodeTempData::SUserData& pUserDataRN = pTempData->userData;
 
 			const uint16 nCacheClearThreshold = 32;
 			++pUserDataRN.nCubeMapIdCacheClearCounter;
@@ -285,6 +285,7 @@ public:
 			{
 				if (pEnvProbMults)
 					*pEnvProbMults = pUserDataRN.vEnvironmentProbeMults;
+
 				return pUserDataRN.nCubeMapId;
 			}
 		}
@@ -312,7 +313,7 @@ public:
 										 const AABB &objBox, float fEntDistance, bool bSunOnly,
 										 CVisArea * pVisArea, bool nCheckOcclusion, const SRenderingPassInfo &passInfo);
 
-	int  ComputeDissolve(const CLodValue& lodValueIn, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2]);
+	int  ComputeDissolve(const CLodValue& lodValueIn, SRenderNodeTempData* pTempData, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2]);
 
 	void RenderDecalAndRoad(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffectingLights,
 	                        const Vec3& vAmbColor, const AABB& objBox, float fEntDistance,

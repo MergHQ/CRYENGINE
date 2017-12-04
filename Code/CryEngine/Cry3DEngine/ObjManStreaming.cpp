@@ -1093,7 +1093,7 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 	ctx.lod = nLod;
 	ctx.bFullUpdate = bFullUpdate;
 
-	if (pObj->m_pTempData)
+	if (auto pTempData = pObj->m_pTempData.load())
 	{
 		if (GetFloatCVar(e_StreamCgfGridUpdateDistance) != 0.0f || GetFloatCVar(e_StreamPredictionAhead) != 0.0f || GetFloatCVar(e_StreamPredictionMinFarZoneDistance) != 0.0f)
 		{
@@ -1106,11 +1106,11 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 				fDistanceToCam = sqrt_tpl(Distance::Point_AABBSq(passInfo.GetCamera().GetPosition(), objBoxS)) * passInfo.GetZoomFactor();
 			}
 
-			pObj->m_pTempData->userData.nWantedLod = CObjManager::GetObjectLOD(pObj, fDistanceToCam);
+			pTempData->userData.nWantedLod = CObjManager::GetObjectLOD(pObj, fDistanceToCam);
 		}
 		else
 		{
-			pObj->m_pTempData->userData.nWantedLod = nLod;
+			pTempData->userData.nWantedLod = nLod;
 		}
 	}
 

@@ -639,7 +639,7 @@ _smart_ptr<IRenderMesh> CAttachmentVCLOTH::CreateVertexAnimationRenderMesh(uint 
 
 void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRenderingPassInfo &passInfo, const Matrix34& rWorldMat34, f32 fZoomFactor)
 {
-	if (!m_clothPiece.GetSimulator().IsVisible()) return;
+	if (!m_clothPiece.GetSimulator().IsVisible() || Console::GetInst().ca_VClothMode == 0) return;
 
 	bool bNeedSWskinning = (m_pAttachmentManager->m_pSkelInstance->m_CharEditMode&CA_CharacterTool); // in character tool always use software skinning
 	if (!bNeedSWskinning)
@@ -2169,6 +2169,7 @@ bool CClothSimulator::CheckForceSkinningByFpsThreshold()
 bool CClothSimulator::CheckForceSkinning()
 {
 	bool forceSkinning = CheckForceSkinningByFpsThreshold(); // detect framerate; force skinning if needed
+	forceSkinning |= Console::GetInst().ca_VClothMode == 2;
 	forceSkinning |= m_doSkinningForNSteps > 0;
 	forceSkinning |= !IsSimulationEnabled();
 	forceSkinning |= (m_timeInterval / m_config.timeStep) > (float)m_config.timeStepsMax; // not possible to simulate the actual framerate with the provided max no of substeps
@@ -2319,6 +2320,8 @@ void CClothSimulator::PositionsSetAttachedToSkinnedInterpolated(float t01)
 
 int CClothSimulator::Step()
 {
+	if (Console::GetInst().ca_VClothMode == 0) return 1; // in case vcloth is disabled by c_var: skip simulation
+
 	// determine dt
 	m_dt = m_config.timeStep;
 	// m_time starts for substeps with m_timeInterval-m_config.timeStep (might be negative), and ends with 0, split last two timesteps to avoid very small timesteps

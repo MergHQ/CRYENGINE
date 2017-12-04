@@ -64,11 +64,7 @@ CBrush::~CBrush()
 		m_pCameraSpacePos = nullptr;
 	}
 
-	if (m_pTempData)
-	{
-		m_pTempData->MarkForDelete();
-		m_pTempData = nullptr;
-	}
+	RemoveAndMarkForAutoDeleteTempData();
 
 	GetInstCount(GetRenderNodeType())--;
 }
@@ -182,23 +178,24 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 
 void CBrush::SetMatrix(const Matrix34& mat)
 {
-	Get3DEngine()->UnRegisterEntityAsJob(this);
-
-	bool replacePhys = false;
-
 	if (!IsMatrixValid(mat))
 	{
-		Warning("Error: IRenderNode::SetMatrix: Invalid matrix passed from the editor - ignored, reset to identity: %s", GetName());
-		replacePhys = true;
-		m_Matrix.SetIdentity();
+		const Vec3 pos = mat.GetTranslation();
+		stack_string message;
+		message.Format("Error: IRenderNode::SetMatrix: Invalid matrix ignored (name=\"%s\", position=[%.2f,%.2f,%.2f])", GetName(), pos.x, pos.y, pos.z);
+		Warning(message.c_str());
+		return;
 	}
-	else
-	{
-		replacePhys = fabs(mat.GetColumn(0).len() - m_Matrix.GetColumn(0).len())
-		              + fabs(mat.GetColumn(1).len() - m_Matrix.GetColumn(1).len())
-		              + fabs(mat.GetColumn(2).len() - m_Matrix.GetColumn(2).len()) > FLT_EPSILON;
-		m_Matrix = mat;
-	}
+
+	if (m_Matrix == mat)
+		return;
+
+	m_Matrix = mat;
+
+	bool replacePhys = fabs(mat.GetColumn(0).len() - m_Matrix.GetColumn(0).len())
+	                 + fabs(mat.GetColumn(1).len() - m_Matrix.GetColumn(1).len())
+	                 + fabs(mat.GetColumn(2).len() - m_Matrix.GetColumn(2).len()) > FLT_EPSILON;
+	
 	InvalidatePermanentRenderObjectMatrix();
 
 	pe_params_foreign_data foreignData;
@@ -211,7 +208,9 @@ void CBrush::SetMatrix(const Matrix34& mat)
 
 	CalcBBox();
 
+	Get3DEngine()->UnRegisterEntityAsJob(this);
 	Get3DEngine()->RegisterEntity(this);
+
 	if (replacePhys)
 		Dephysicalize();
 	if (!m_pPhysEnt)
@@ -655,11 +654,7 @@ void CBrush::SetStatObj(IStatObj* pStatObj)
 	if (pStatObj == m_pStatObj)
 		return;
 
-	if (m_pTempData)
-	{
-		m_pTempData->MarkForDelete();
-		m_pTempData = nullptr;
-	}
+	RemoveAndMarkForAutoDeleteTempData();
 
 	m_pStatObj = (CStatObj*)pStatObj;
 	if (m_pStatObj && m_pStatObj->IsDeformable())
@@ -672,15 +667,7 @@ void CBrush::SetStatObj(IStatObj* pStatObj)
 	else
 		SAFE_DELETE(m_pDeform);
 
-	if (m_pTempData)
-	{
-		m_pTempData->MarkForDelete();
-		m_pTempData = nullptr;
-	}
-
 	m_nInternalFlags |= UPDATE_DECALS;
-
-	InvalidatePermanentRenderObject();
 }
 
 IRenderNode* CBrush::Clone() const
@@ -726,7 +713,7 @@ IRenderMesh* CBrush::GetRenderMesh(int nLod)
 
 void CBrush::OffsetPosition(const Vec3& delta)
 {
-	if (m_pTempData) m_pTempData->OffsetPosition(delta);
+	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_Matrix.SetTranslation(m_Matrix.GetTranslation() + delta);
 	InvalidatePermanentRenderObjectMatrix();
 	m_WSBBox.Move(delta);
@@ -828,6 +815,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 
 	CRenderObject* pObj = 0;
 
+	auto pTempData = m_pTempData.load();
 	if (m_pFoliage || m_pDeform || (m_dwRndFlags & ERF_HUD))
 	{
 		// Foliage and deform do not support permanent render objects
@@ -837,7 +825,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 
 	if (!pObj)
 	{
-		if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pObj, &lodValue, passInfo))
+		if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pObj, &lodValue, passInfo))
 		{
 			if (pObj && pObj->m_bInstanceDataDirty)
 			{
@@ -847,7 +835,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		}
 	}
 
-	SRenderNodeTempData::SUserData& userData = m_pTempData->userData;
+	SRenderNodeTempData::SUserData& userData = pTempData->userData;
 
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	const Vec3 vObjCenter = CBrush::GetBBox().GetCenter();
@@ -888,7 +876,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		if (!(pObj->m_nTextureID = GetObjManager()->CheckCachedNearestCubeProbe(this)) || !GetCVars()->e_CacheNearestCubePicking)
 			pObj->m_nTextureID = GetObjManager()->GetNearestCubeProbe(pAffectingLights, m_pOcNode->GetVisArea(), CBrush::GetBBox());
 
-		m_pTempData->userData.nCubeMapId = pObj->m_nTextureID;
+		pTempData->userData.nCubeMapId = pObj->m_nTextureID;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -912,7 +900,8 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 
 		if (bUseTerrainColor)
 		{
-			m_pTempData->userData.bTerrainColorWasUsed = true;
+			pTempData->userData.bTerrainColorWasUsed = true;
+
 			pObj->m_ObjFlags |= FOB_BLEND_WITH_TERRAIN_COLOR;
 
 			pObj->m_data.m_pTerrainSectorTextureInfo = pTerrainTexInfo;
@@ -1015,12 +1004,10 @@ IStatObj* CBrush::GetEntityStatObj(unsigned int nSubPartId, Matrix34A* pMatrix, 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CBrush::OnRenderNodeBecomeVisibleAsync(const SRenderingPassInfo& passInfo)
+void CBrush::OnRenderNodeBecomeVisibleAsync(SRenderNodeTempData* pTempData, const SRenderingPassInfo& passInfo)
 {
 	// Not reentrant, multiple simultaneous calls to this method on the same Render Node from multiple threads is not supported
-
-	assert(m_pTempData);
-	SRenderNodeTempData::SUserData& userData = m_pTempData->userData;
+	SRenderNodeTempData::SUserData& userData = pTempData->userData;
 
 	userData.objMat = m_Matrix;
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
@@ -1044,6 +1031,7 @@ void CBrush::CalcNearestTransform(Matrix34& transformMatrix, const SRenderingPas
 		// (This will not have the precision advantages of camera space rendering)
 		transformMatrix.AddTranslation(-passInfo.GetCamera().GetPosition());
 	}
+
 	InvalidatePermanentRenderObjectMatrix();
 }
 
@@ -1054,10 +1042,10 @@ void CBrush::InvalidatePermanentRenderObjectMatrix()
 		// Compound unmerged stat objects create duplicate sub render objects and do not support fast matrix only instance update for PermanentRenderObject
 		InvalidatePermanentRenderObject();
 	}
-	else if (m_pTempData)
+	else if (auto pTempData = m_pTempData.load())
 	{
 		// Special optimization when only matrix change, we invalidate render object instance data flag
-		m_pTempData->InvalidateRenderObjectsInstanceData();
+		pTempData->InvalidateRenderObjectsInstanceData();
 	}
 }
 

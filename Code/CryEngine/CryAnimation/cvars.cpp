@@ -274,6 +274,9 @@ void Console::Init()
 	REGISTER_CVAR(ca_AttachmentCullingRation, 200.0f, 0, "ration between size of attachment and distance to camera");
 	REGISTER_CVAR(ca_AttachmentCullingRationMP, 300.0f, 0, "ration between size of attachment and distance to camera for MP");
 
+	// vcloth
+	REGISTER_CVAR(ca_VClothMode, 1, 0, "0 - disabled (disable rendering & simulation)\n1 - enabled (default)\n2 - force skinning (disable simulation)");
+
 	//cloth
 	REGISTER_CVAR(ca_cloth_max_timestep, 0.0f, 0, "");
 	REGISTER_CVAR(ca_cloth_max_safe_step, 0.0f, 0, "if a segment stretches more than this (in *relative* units), its length is reinforced");

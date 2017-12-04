@@ -449,6 +449,7 @@ void CClipVolumesStage::Execute()
 		static CCryNameTSCRC techResolveStencil("ResolveStencil");
 
 		m_stencilResolvePass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+		m_stencilResolvePass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_stencilResolvePass.SetTechnique(CShaderMan::s_shDeferredShading, techResolveStencil, 0);
 		m_stencilResolvePass.SetRenderTarget(0, m_pBlendValuesRT);
 		m_stencilResolvePass.SetState(GS_NODEPTHTEST | GS_NOCOLMASK_GBA);
@@ -818,6 +819,7 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 
 			auto& pPass = m_resolveVolumetricStencilPassArray[i];
 			pPass->SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+			pPass->SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			pPass->SetTechnique(CShaderMan::s_shDeferredShading, techResolveStencil, 0);
 			pPass->SetRenderTarget(0, m_pClipVolumeStencilVolumeTex, rtvHandle);
 			pPass->SetState(GS_NODEPTHTEST);

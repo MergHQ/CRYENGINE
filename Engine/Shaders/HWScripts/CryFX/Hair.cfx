@@ -281,14 +281,14 @@ void Callback_ShadingDirect(in ForwardShadingAttribs attribs, in ForwardLightPar
 
 struct pixoutHair
 {
-  half4 Color  : COLOR0;
+  half4 Color  : SV_Target0;
 };
 
 struct pixoutHair2
 {
-  half4 Color  : COLOR0;
+  half4 Color  : SV_Target0;
 #if %THIN_HAIR
-  half4 BlendFactors : COLOR1;
+  half4 BlendFactors : SV_Target1;
 #endif
 };
 

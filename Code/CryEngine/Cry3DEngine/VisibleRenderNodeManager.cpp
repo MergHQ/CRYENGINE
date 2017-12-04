@@ -8,16 +8,23 @@
 //////////////////////////////////////////////////////////////////////////
 void SRenderNodeTempData::Free()
 {
-	FreeRenderObjects();
+	// Release permanent CRenderObject(s)
+	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
+	{
+		if (userData.arrPermanentRenderObjects[lod])
+		{
+			gEnv->pRenderer->EF_FreeObject(userData.arrPermanentRenderObjects[lod]);
+			userData.arrPermanentRenderObjects[lod] = nullptr;
+		}
+	}
 
 	if (userData.m_pFoliage)
 	{
 		userData.m_pFoliage->Release();
-		userData.m_pFoliage = NULL;
+		userData.m_pFoliage = nullptr;
 	}
 
 	userData.pOwnerNode = nullptr;
-	userData.bToDelete = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -55,8 +62,8 @@ void SRenderNodeTempData::FreeRenderObjects()
 
 void SRenderNodeTempData::InvalidateRenderObjectsInstanceData()
 {
-	// TODO: protecting from races with a lock here will break rendering, look for a proper fix
-	// WriteLock lock(userData.permanentObjectCreateLock);
+	// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
+	WriteLock lock(userData.permanentObjectCreateLock);
 
 	// Release permanent CRenderObject(s)
 	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
@@ -146,9 +153,10 @@ void CVisibleRenderNodesManager::UpdateVisibleNodes(int currentFrame, int maxNod
 		{
 			for (size_t i = m_firstAddedNode, num = m_visibleNodes.size(); i < num; ++i)
 			{
-				if (m_visibleNodes[i]->userData.pOwnerNode && !m_visibleNodes[i]->userData.bToDelete)
+				SRenderNodeTempData* pTempData = m_visibleNodes[i];
+				if (pTempData->userData.pOwnerNode->m_pTempData.load() == pTempData)
 				{
-					OnRenderNodeVisibilityChange(m_visibleNodes[i]->userData.pOwnerNode,true);
+					OnRenderNodeVisibilityChange(pTempData->userData.pOwnerNode, true);
 				}
 			}
 			m_firstAddedNode = -1;
@@ -171,20 +179,22 @@ void CVisibleRenderNodesManager::UpdateVisibleNodes(int currentFrame, int maxNod
 		int numItemsToDelete = 0;
 		for (int i = start; i < end && i <= lastNode; ++i)
 		{
-			SRenderNodeTempData* RESTRICT_POINTER pTempData = m_visibleNodes[i];
+			SRenderNodeTempData* pTempData = m_visibleNodes[i];
 
 			int lastSeenFrame = std::max(pTempData->userData.lastSeenFrame[0], pTempData->userData.lastSeenFrame[1]);
 			lastSeenFrame = std::max(lastSeenFrame, pTempData->userData.lastSeenShadowFrame);
 			int diff = std::abs(currentFrame - lastSeenFrame);
-			if (diff > maxFrames || pTempData->userData.bToDelete)
+			if (diff > maxFrames)
 			{
-				if (pTempData->userData.pOwnerNode && !pTempData->userData.bToDelete)
+				// clear reference to use from owning render node.
+				SRenderNodeTempData* pOldData = pTempData;
+				if (pTempData->userData.pOwnerNode->m_pTempData.compare_exchange_strong(pOldData, nullptr))
 				{
-					OnRenderNodeVisibilityChange(pTempData->userData.pOwnerNode,false);
-					pTempData->userData.pOwnerNode->m_pTempData = nullptr; // clear reference to use from owning render node.
+					OnRenderNodeVisibilityChange(pTempData->userData.pOwnerNode, false);
 				}
-				m_visibleNodes[i]->Free();
-				m_toDeleteNodes[m_currentNodesToDelete].push_back(m_visibleNodes[i]);
+
+				pTempData->Free();
+				m_toDeleteNodes[m_currentNodesToDelete].push_back(pTempData);
 				if (i < lastNode)
 				{
 					// move item from the end of the array to this spot, and repeat check on same index.
@@ -209,15 +219,18 @@ void CVisibleRenderNodesManager::UpdateVisibleNodes(int currentFrame, int maxNod
 //////////////////////////////////////////////////////////////////////////
 void CVisibleRenderNodesManager::InvalidateAll()
 {
+	// LOCK START
+	CryAutoCriticalSectionNoRecursive lock(m_accessLock);
+
+	for (auto* node : m_visibleNodes)
 	{
-		// LOCK START
-		CryAutoCriticalSectionNoRecursive lock(m_accessLock);
-		for (auto* node : m_visibleNodes)
+		SRenderNodeTempData* oldnode = node;
+		if (node->userData.pOwnerNode->m_pTempData.compare_exchange_strong(oldnode, nullptr))
 		{
-			node->userData.bToDelete = true;
+			node->MarkForAutoDelete();
 		}
-		// LOCK END
 	}
+	// LOCK END
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -227,11 +240,6 @@ void CVisibleRenderNodesManager::ClearAll()
 
 	for (auto* node : m_visibleNodes)
 	{
-		if (node->userData.pOwnerNode && !node->userData.bToDelete)
-		{
-			OnRenderNodeVisibilityChange(node->userData.pOwnerNode,false);
-			node->userData.pOwnerNode->m_pTempData = nullptr; // clear reference to use from owning render node.
-		}
 		m_pool.Delete(node);
 	}
 	m_visibleNodes.clear();
@@ -242,6 +250,7 @@ void CVisibleRenderNodesManager::ClearAll()
 		{
 			m_pool.Delete(node);
 		}
+
 		nodes.clear();
 	}
 }

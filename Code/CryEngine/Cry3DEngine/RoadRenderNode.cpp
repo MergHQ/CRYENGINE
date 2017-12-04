@@ -481,7 +481,8 @@ void CRoadRenderNode::Render(const SRendParams& RendParams, const SRenderingPass
 
 	CRenderObject* pObj = 0;
 
-	if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pObj, NULL, passInfo))
+	SRenderNodeTempData* pTempData = m_pTempData.load();
+	if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pObj, NULL, passInfo))
 		return;
 
 	pObj->m_pRenderNode = this;
@@ -654,7 +655,7 @@ void CRoadRenderNode::GetClipPlanes(Plane* pPlanes, int nPlanesNum, int nVertId)
 
 void CRoadRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (m_pTempData) m_pTempData->OffsetPosition(delta);
+	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_serializedData.worldSpaceBBox.Move(delta);
 }
 

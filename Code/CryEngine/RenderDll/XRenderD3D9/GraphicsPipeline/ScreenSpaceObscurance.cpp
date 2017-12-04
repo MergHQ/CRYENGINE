@@ -63,6 +63,7 @@ void CScreenSpaceObscuranceStage::Execute()
 		static CCryNameTSCRC techSampling("SSDO_Sampling");
 
 		m_passObscurance.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+		m_passObscurance.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_passObscurance.SetTechnique(pShader, techSampling, rtMask);
 		m_passObscurance.SetRenderTarget(0, CRendererResources__s_ptexSceneSpecular);
 		m_passObscurance.SetState(GS_NODEPTHTEST);
@@ -143,6 +144,7 @@ void CScreenSpaceObscuranceStage::Execute()
 		{
 			static CCryNameTSCRC techFilter("SSDO_Filter");
 			m_passFilter.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			m_passFilter.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passFilter.SetTechnique(pShader, techFilter, 0);
 			m_passFilter.SetRenderTarget(0, CRendererResources::s_ptexSceneNormalsBent);
 			m_passFilter.SetState(GS_NODEPTHTEST);

@@ -717,14 +717,14 @@ CObjManager::~CObjManager()
 #endif
 }
 
-int CObjManager::ComputeDissolve(const CLodValue &lodValueIn, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2])
+int CObjManager::ComputeDissolve(const CLodValue &lodValueIn, SRenderNodeTempData* pTempData, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2])
 {
 	int nLodMain = CLAMP(0, lodValueIn.LodA(), MAX_STATOBJ_LODS_NUM - 1);
 	int nLodMin = max(nLodMain - 1, 0);
 	int nLodMax = min(nLodMain + 1, MAX_STATOBJ_LODS_NUM - 1);
 
 	float prevLodLastTimeUsed = 0;
-	float * arrLodLastTimeUsed = pEnt->m_pTempData->userData.arrLodLastTimeUsed;
+	float * arrLodLastTimeUsed = pTempData->userData.arrLodLastTimeUsed;
 
 	// Find when previous lod was used as primary lod last time and update last time used for current primary lod
 	for (int nLO = nLodMin; nLO <= nLodMax; nLO++)
@@ -1191,14 +1191,12 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 		}
 
 		// Permanent object needs to be filled first time,
-		if (pTempData->IsValid())
-			pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
+		if (pTempData) pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
 
 		return false;
 	}
 
 	pRenderObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
-
 	return false;
 }
 

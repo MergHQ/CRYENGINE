@@ -59,6 +59,7 @@ void CAutoExposureStage::MeasureLuminance()
 		{
 			static CCryNameTSCRC techLumInitial("HDRSampleLumInitial");
 			m_passLuminanceInitial.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			m_passLuminanceInitial.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passLuminanceInitial.SetTechnique(pShader, techLumInitial, 0);
 			m_passLuminanceInitial.SetRenderTarget(0, CRendererResources::s_ptexHDRToneMaps[curTexture]);
 			m_passLuminanceInitial.SetState(GS_NODEPTHTEST);
@@ -104,6 +105,7 @@ void CAutoExposureStage::MeasureLuminance()
 
 			static CCryNameTSCRC techLumIterative("HDRSampleLumIterative");
 			passLuminanceIteration.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			passLuminanceIteration.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			passLuminanceIteration.SetTechnique(pShader, techLumIterative, rtMask);
 			passLuminanceIteration.SetRenderTarget(0, CRendererResources::s_ptexHDRToneMaps[curTexture]);
 			passLuminanceIteration.SetState(GS_NODEPTHTEST);
@@ -149,6 +151,7 @@ void CAutoExposureStage::AdjustExposure()
 	{
 		static CCryNameTSCRC techAdaptedLum("HDRCalculateAdaptedLum");
 		m_passAutoExposure.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		m_passAutoExposure.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_passAutoExposure.SetTechnique(pShader, techAdaptedLum, 0);
 		m_passAutoExposure.SetRenderTarget(0, pTexCur);
 		m_passAutoExposure.SetState(GS_NODEPTHTEST);

@@ -130,6 +130,7 @@ private:
 	void              DebugDrawNavigationMeshesForSelectedAgent(NavigationSystem& navigationSystem, MNM::TileID excludeTileID);
 	void              DebugDrawNavigationSystemState(NavigationSystem& navigationSystem);
 	void              DebugDrawMemoryStats(NavigationSystem& navigationSystem);
+	void              DebugDrawTriangleOnCursor(NavigationSystem& navigationSystem);
 
 	DebugDrawSettings GetDebugDrawSettings(NavigationSystem& navigationSystem);
 

@@ -58,6 +58,8 @@ struct IAnnotationsLibrary
 	virtual size_t               GetAreaFlagCount() const = 0;
 	virtual NavigationAreaFlagID GetAreaFlagID(const size_t index) const = 0;
 	virtual const SAreaFlag*     GetAreaFlag(const size_t index) const = 0;
+
+	virtual void                 GetAreaColor(const AreaAnnotation annotation, ColorB& color) const = 0;
 };
 
 } // namespace MNM

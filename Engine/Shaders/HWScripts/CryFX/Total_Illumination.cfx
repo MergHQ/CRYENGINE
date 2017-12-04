@@ -90,17 +90,17 @@ struct vtxInWPOS
 
 struct pixoutMRT
 {
-	half4 Diffuse : COLOR0;
-	half4 Specular : COLOR1;
-	half4 Diffuse1 : COLOR2;
-	half4 Specular1 : COLOR3;
+	half4 Diffuse : SV_Target0;
+	half4 Specular : SV_Target1;
+	half4 Diffuse1 : SV_Target2;
+	half4 Specular1 : SV_Target3;
 };
 
 struct pixout_RenderAtmosphere
 {
-	half4 Air_RGBA_Min : COLOR0;
-	half4 SVO_Shadow : COLOR1;
-	half4 Air_RGBA_Max : COLOR2;
+	half4 Air_RGBA_Min : SV_Target0;
+	half4 SVO_Shadow : SV_Target1;
+	half4 Air_RGBA_Max : SV_Target2;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

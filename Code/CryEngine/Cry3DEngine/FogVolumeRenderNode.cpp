@@ -250,6 +250,9 @@ void CFogVolumeRenderNode::GetLocalBounds(AABB& bbox)
 
 void CFogVolumeRenderNode::SetMatrix(const Matrix34& mat)
 {
+	if (m_matNodeWS == mat)
+		return;
+
 	m_matNodeWS = mat;
 
 	// get translation and rotational part of fog volume from entity matrix
@@ -506,7 +509,7 @@ void CFogVolumeRenderNode::GetMemoryUsage(ICrySizer* pSizer) const
 
 void CFogVolumeRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (m_pTempData) m_pTempData->OffsetPosition(delta);
+	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_pos += delta;
 	m_matNodeWS.SetTranslation(m_matNodeWS.GetTranslation() + delta);
 	m_matWS.SetTranslation(m_matWS.GetTranslation() + delta);

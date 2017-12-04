@@ -118,8 +118,8 @@ half4 AmbientOpPB        : PB_AmbientOpacity;
 struct pixout_shadow
 {
 #if (!ENABLE_TESSELLATION || %_RT_NO_TESSELLATION) && %_RT_SAMPLE4
-  float4 Color   : COLOR0;
-  half4  Normal	 : COLOR1;
+  float4 Color   : SV_Target0;
+  half4 Normal   : SV_Target1;
 #endif
 
 #if %_RT_SAMPLE0

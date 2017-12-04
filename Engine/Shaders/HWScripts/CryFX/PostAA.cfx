@@ -968,10 +968,10 @@ pixout PostAAComposites_PS(vtxOut IN)
 
 	// Apply lens composite
 #if %_RT_SAMPLE1
-	half4 cLensOpticsComposite = GetTexture2D(PAAComp_LensOpt, PAAComp_LLSS,, IN.baseTC.xy);
+	half4 cLensOpticsComposite = GetTexture2D(PAAComp_LensOpt, PAAComp_LLSS, IN.baseTC.xy);
 	#if %_RT_SAMPLE3
 		half2 vTexelSize = 2.0h * PS_ScreenSize.zw * vLensOpticsParams.w;
-		cLensOpticsComposite.r = GetTexture2D(PAAComp_LensOpt, PAAComp_LLSS,, (IN.baseTC.xy-0.5) * (1 + vTexelSize)+ 0.5).r;
+		cLensOpticsComposite.r = GetTexture2D(PAAComp_LensOpt, PAAComp_LLSS, (IN.baseTC.xy-0.5) * (1 + vTexelSize)+ 0.5).r;
 	#endif
 		float3 cLensOptics = cLensOpticsComposite * (1 - OUT.Color.rgb);// should blend in linear space, but increases cost further
 	#if %_RT_SAMPLE5

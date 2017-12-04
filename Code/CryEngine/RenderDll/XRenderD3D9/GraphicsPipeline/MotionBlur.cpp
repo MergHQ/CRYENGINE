@@ -104,6 +104,7 @@ void CMotionBlurStage::Execute()
 			if (m_passTileGen1.InputChanged())
 			{
 				m_passTileGen1.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+				m_passTileGen1.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				m_passTileGen1.SetTechnique(pShader, techVelocityTileGen, 0);
 				m_passTileGen1.SetRenderTarget(0, CRendererResources::s_ptexVelocityTiles[0]);
 				m_passTileGen1.SetState(GS_NODEPTHTEST);
@@ -126,6 +127,7 @@ void CMotionBlurStage::Execute()
 			if (m_passTileGen2.InputChanged())
 			{
 				m_passTileGen2.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+				m_passTileGen2.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				m_passTileGen2.SetTechnique(pShader, techVelocityTileGen, 0);
 				m_passTileGen2.SetRenderTarget(0, CRendererResources::s_ptexVelocityTiles[1]);
 				m_passTileGen2.SetState(GS_NODEPTHTEST);
@@ -149,6 +151,7 @@ void CMotionBlurStage::Execute()
 			if (m_passNeighborMax.InputChanged())
 			{
 				m_passNeighborMax.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+				m_passNeighborMax.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 				m_passNeighborMax.SetTechnique(pShader, techTileNeighborhood, 0);
 				m_passNeighborMax.SetRenderTarget(0, CRendererResources::s_ptexVelocityTiles[2]);
 				m_passNeighborMax.SetState(GS_NODEPTHTEST);
@@ -180,6 +183,7 @@ void CMotionBlurStage::Execute()
 
 			static CCryNameTSCRC techMotionBlur("MotionBlur");
 			m_passMotionBlur.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			m_passMotionBlur.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passMotionBlur.SetTechnique(pShader, techMotionBlur, rtMask);
 			m_passMotionBlur.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 			m_passMotionBlur.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);

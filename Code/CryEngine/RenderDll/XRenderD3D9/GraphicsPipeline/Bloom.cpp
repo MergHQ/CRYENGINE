@@ -34,6 +34,7 @@ void CBloomStage::Execute()
 	if (m_pass1H.InputChanged())
 	{
 		m_pass1H.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		m_pass1H.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_pass1H.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, 0);
 		m_pass1H.SetRenderTarget(0, CRendererResources::s_ptexHDRTempBloom[1]);
 		m_pass1H.SetState(GS_NODEPTHTEST);
@@ -50,6 +51,7 @@ void CBloomStage::Execute()
 	if (m_pass1V.InputChanged())
 	{
 		m_pass1V.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		m_pass1V.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_pass1V.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, 0);
 		m_pass1V.SetRenderTarget(0, CRendererResources::s_ptexHDRTempBloom[0]);
 		m_pass1V.SetState(GS_NODEPTHTEST);
@@ -66,6 +68,7 @@ void CBloomStage::Execute()
 	if (m_pass2H.InputChanged())
 	{
 		m_pass2H.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		m_pass2H.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_pass2H.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, 0);
 		m_pass2H.SetRenderTarget(0, CRendererResources::s_ptexHDRTempBloom[1]);
 		m_pass2H.SetState(GS_NODEPTHTEST);
@@ -82,6 +85,7 @@ void CBloomStage::Execute()
 	if (m_pass2V.InputChanged())
 	{
 		m_pass2V.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		m_pass2V.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_pass2V.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, g_HWSR_MaskBit[HWSR_SAMPLE0]);
 		m_pass2V.SetRenderTarget(0, CRendererResources::s_ptexHDRFinalBloom);
 		m_pass2V.SetState(GS_NODEPTHTEST);

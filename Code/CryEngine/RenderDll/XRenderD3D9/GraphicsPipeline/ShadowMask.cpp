@@ -523,7 +523,7 @@ void CSunShadows::PrepareCascadePrimitivesWithPrepass(CPrimitiveRenderPass& slic
 		  STENCOP_FAIL(FSS_STENCOP_KEEP) |
 		  STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
 		  STENCOP_PASS(FSS_STENCOP_KEEP), stencilRef);
-		primSampling.SetPrimitiveType(CRenderPrimitive::ePrim_Triangle);
+		primSampling.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		primSampling.SetTexture(0, pFrustum->pDepthTex ? pFrustum->pDepthTex : CRendererResources::s_ptexFarPlane);
 		primSampling.SetTexture(1, CRendererResources::s_ptexShadowJitterMap);
 		primSampling.SetTexture(2, CRendererResources::s_ptexLinearDepth);
@@ -944,7 +944,7 @@ void CSunShadows::PrepareCloudShadowPrimitive(CRenderPrimitive& primitive, _smar
 
 	primitive.SetTechnique(pShader, techCloudShadow, rtFlags);
 	primitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLEND_OP_MAX);
-	primitive.SetPrimitiveType(CRenderPrimitive::ePrim_Triangle);
+	primitive.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	primitive.SetTexture(0, pCloudShadowTex);
 	primitive.SetTexture(2, CRendererResources::s_ptexLinearDepth);
 	primitive.SetSampler(0, cloudSamplerState);
@@ -990,6 +990,7 @@ bool CSunShadows::PrepareDebugPrimitive(CPrimitiveRenderPass& debugPass, CRender
 
 	CShader* pShader = CShaderMan::s_ShaderShadowMaskGen;
 
+	primitive.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	primitive.SetTechnique(pShader, DebugTech, 0);
 	primitive.SetRenderState(GS_STENCIL | GS_NODEPTHTEST);
 	primitive.SetStencilState(StencilStateTest, stencilRef);
@@ -1191,7 +1192,7 @@ int CLocalLightShadows::PreparePrimitivesForLight(CPrimitiveRenderPass& sliceGen
 			primSampling.SetTexture(7, CRendererResources::s_ptexShadowJitterMap);
 			primSampling.SetSampler(3, EDefaultSamplerStates::LinearCompare);
 			primSampling.SetSampler(7, EDefaultSamplerStates::PointWrap);
-			primSampling.SetPrimitiveType(bUseLightVolumes ? primitiveType : CRenderPrimitive::ePrim_Triangle);
+			primSampling.SetPrimitiveType(bUseLightVolumes ? primitiveType : CRenderPrimitive::ePrim_ProceduralTriangle);
 
 			PrepareConstantBuffersForPrimitives(primitives, pFrustumToRender, nS, bUseLightVolumes);
 

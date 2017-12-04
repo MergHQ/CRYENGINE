@@ -1012,6 +1012,7 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 		static CCryNameTSCRC techCopy("CopyToDeviceDepth");
 
 		m_passCopyDepth.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+		m_passCopyDepth.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_passCopyDepth.SetTechnique(CShaderMan::s_shPostEffects, techCopy, 0);
 		m_passCopyDepth.SetRequirePerViewConstantBuffer(true);
 		m_passCopyDepth.SetDepthTarget(pDepthRT);
@@ -1083,7 +1084,7 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 				uint32 numVertices = volumeMesh.numVertices;
 				uint32 numInstances = m_numVolumesPerPass[pass];
 			
-				primitive.SetCustomVertexStream(volumeMesh.vertexBuffer, EDefaultInputLayouts::P3F_C4B_T2F, sizeof(SVF_P3F_C4B_T2F));
+				primitive.SetCustomVertexStream(~0u, EDefaultInputLayouts::Empty, 0);
 				primitive.SetCustomIndexStream(volumeMesh.indexBuffer, Index16);
 				primitive.SetDrawInfo(eptTriangleList, 0, 0, numIndices * numInstances);
 				primitive.SetBuffer(0, &volumeMesh.vertexDataBuf, EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Pixel);

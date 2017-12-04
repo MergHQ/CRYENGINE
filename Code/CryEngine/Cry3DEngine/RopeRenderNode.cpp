@@ -817,6 +817,9 @@ void CRopeRenderNode::GetLocalBounds(AABB& bbox)
 //////////////////////////////////////////////////////////////////////////
 void CRopeRenderNode::SetMatrix(const Matrix34& mat)
 {
+	if (m_worldTM == mat)
+		return;
+
 	m_worldTM = mat;
 	m_InvWorldTM = m_worldTM.GetInverted();
 	m_pos = mat.GetTranslation();
@@ -1889,7 +1892,7 @@ void CRopeRenderNode::SetAudioParams(SRopeAudioParams const& audioParams)
 ///////////////////////////////////////////////////////////////////////////////
 void CRopeRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (m_pTempData) m_pTempData->OffsetPosition(delta);
+	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_pos += delta;
 	m_worldTM.SetTranslation(m_pos);
 	m_InvWorldTM = m_worldTM.GetInverted();

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <atomic>
 #include "../CryAudio/IAudioSystem.h"
 
 #define SUPP_HMAP_OCCL
@@ -91,6 +92,54 @@ struct OcclusionTestClient
 	Vec3 vLastVisPoint;
 	int  nTerrainOccLastFrame;
 #endif
+};
+
+struct SRenderNodeTempData
+{
+	struct SUserData
+	{
+		int                             lastSeenFrame[MAX_RECURSION_LEVELS]; // must be first, see IRenderNode::SetDrawFrame()
+		int                             lastSeenShadowFrame;                 // When was last rendered to shadow
+		CRenderObject*                  arrPermanentRenderObjects[MAX_STATOBJ_LODS_NUM];
+		float                           arrLodLastTimeUsed[MAX_STATOBJ_LODS_NUM];
+		Matrix34                        objMat;
+		OcclusionTestClient             m_OcclState;
+		struct IFoliage*                m_pFoliage;
+		struct IClipVolume*             m_pClipVolume;
+
+		Vec4                            vEnvironmentProbeMults;
+		uint32                          nCubeMapId                  : 16;
+		uint32                          nCubeMapIdCacheClearCounter : 16;
+		uint32                          nWantedLod                  : 8;
+		uint32                          bTerrainColorWasUsed        : 1;
+		volatile int                    permanentObjectCreateLock;
+		IRenderNode*                    pOwnerNode;
+		uint32                          nStatObjLastModificationId;
+	};
+
+public:
+	SUserData userData;
+
+public:
+	SRenderNodeTempData() { ZeroStruct(*this); assert((void*)this == (void*)&this->userData); }
+	~SRenderNodeTempData() { Free(); };
+
+	CRenderObject* GetRenderObject(int nLod);
+	void Free();
+	void FreeRenderObjects();
+	void InvalidateRenderObjectsInstanceData();
+
+	void OffsetPosition(const Vec3& delta)
+	{
+		userData.objMat.SetTranslation(userData.objMat.GetTranslation() + delta);
+	}
+
+	void MarkForAutoDelete()
+	{
+		userData.lastSeenFrame[0] =
+		userData.lastSeenFrame[1] =
+		userData.lastSeenShadowFrame = 0;
+	}
 };
 
 // RenderNode flags
@@ -297,7 +346,7 @@ public:
 	virtual struct IFoliage* GetFoliage(int nSlot = 0) { return 0; }
 
 	//! Make sure I3DEngine::FreeRenderNodeState(this) is called in destructor of derived class.
-	virtual ~IRenderNode() { assert(!m_pTempData); };
+	virtual ~IRenderNode() { CRY_ASSERT(!m_pTempData.load()); };
 
 	//! Set override material for this instance.
 	virtual void SetMaterial(IMaterial* pMat) = 0;
@@ -331,7 +380,7 @@ public:
 
 	//! Called immediately when render node becomes visible from any thread.
 	//! Not reentrant, multiple simultaneous calls to this method on the same rendernode from multiple threads is not supported and should not happen
-	virtual void OnRenderNodeBecomeVisibleAsync(const SRenderingPassInfo& passInfo) {}
+	virtual void OnRenderNodeBecomeVisibleAsync(SRenderNodeTempData* pTempData, const SRenderingPassInfo& passInfo) {}
 
 	//! Called when RenderNode becomes visible or invisible, can only be called from the Main thread
 	virtual void  OnRenderNodeVisible(bool bBecomeVisible) {}
@@ -389,17 +438,21 @@ public:
 	//! Object draw frames (set if was drawn).
 	ILINE void SetDrawFrame(int nFrameID, int nRecursionLevel)
 	{
-		assert(m_pTempData);
-		int* pDrawFrames = (int*)m_pTempData;
+		// If we can get a pointer atomically it must be valid [until the end of the frame] and we can access it
+		SRenderNodeTempData* pTempData = m_pTempData.load();
+		CRY_ASSERT(pTempData);
+
+		int* pDrawFrames = pTempData->userData.lastSeenFrame;
 		pDrawFrames[nRecursionLevel] = nFrameID;
 	}
 
 	ILINE int GetDrawFrame(int nRecursionLevel = 0) const
 	{
-		IF (!m_pTempData, 0)
-			return 0;
+		// If we can get a pointer atomically it must be valid [until the end of the frame] and we can access it
+		SRenderNodeTempData* pTempData = m_pTempData.load();
+		IF (!pTempData, 0) return 0;
 
-		int* pDrawFrames = (int*)m_pTempData;
+		int* pDrawFrames = pTempData->userData.lastSeenFrame;
 		return pDrawFrames[nRecursionLevel];
 	}
 
@@ -490,6 +543,17 @@ public:
 	// Variables
 	//////////////////////////////////////////////////////////////////////////
 
+	void RemoveAndMarkForAutoDeleteTempData()
+	{
+		// Remove pointer atomically
+		SRenderNodeTempData* pTempData = nullptr;
+		m_pTempData.exchange(pTempData);
+
+		// Keep the contents of the object valid, but schedule it for removal at the end of the frame
+		if (pTempData)
+			pTempData->MarkForAutoDelete();
+	}
+
 public:
 
 	//! Every sector has linked list of IRenderNode objects.
@@ -499,7 +563,7 @@ public:
 	IOctreeNode* m_pOcNode;
 
 	//! Pointer to temporary data allocated only for currently visible objects.
-	struct SRenderNodeTempData* m_pTempData;
+	std::atomic<SRenderNodeTempData*> m_pTempData;
 
 	//! Hud silhouette parameter, default is black with alpha zero
 	uint32 m_nHUDSilhouettesParam;

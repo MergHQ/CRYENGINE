@@ -114,6 +114,9 @@ void CCharacterRenderNode::SetMatrix(const Matrix34& transform)
 		return;
 	}
 
+	if (m_matrix == transform)
+		return;
+
 	m_matrix = transform;
 
 	m_cachedBoundsLocal = m_cachedBoundsWorld = AABB(0.0f);
@@ -272,8 +275,7 @@ void CCharacterRenderNode::SetCharacter(ICharacterInstance* pCharacter)
 //////////////////////////////////////////////////////////////////////////
 void CCharacterRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (m_pTempData)
-		m_pTempData->OffsetPosition(delta);
+	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_matrix.SetTranslation(m_matrix.GetTranslation() + delta);
 	m_cachedBoundsLocal = m_cachedBoundsWorld = AABB(0.0f);
 }

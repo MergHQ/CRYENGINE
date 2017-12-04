@@ -212,6 +212,7 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 	{
 		static CCryNameTSCRC techName("DeferredRainGBuffer");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		pass.SetTechnique(CShaderMan::s_ShaderDeferredRain, techName, rtMask);
 
 		pass.SetState(GS_NODEPTHTEST);

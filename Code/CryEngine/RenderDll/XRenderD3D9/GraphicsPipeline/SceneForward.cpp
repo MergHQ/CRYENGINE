@@ -789,6 +789,7 @@ void CSceneForwardStage::ExecuteTransparentLoRes(int subRes)
 		static CCryNameTSCRC techCopy("CopyToDeviceDepth");
 
 		m_depthCopyPass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+		m_depthCopyPass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_depthCopyPass.SetTechnique(CShaderMan::s_shPostEffects, techCopy, 0);
 		m_depthCopyPass.SetRequirePerViewConstantBuffer(true);
 		m_depthCopyPass.SetDepthTarget(pTargetDS);

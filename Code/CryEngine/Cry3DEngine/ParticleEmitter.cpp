@@ -1358,7 +1358,7 @@ IParticleAttributes& CParticleEmitter::GetAttributes()
 void CParticleEmitter::OffsetPosition(const Vec3& delta)
 {
 	SMoveState::OffsetPosition(delta);
-	if (m_pTempData) m_pTempData->OffsetPosition(delta);
+	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_Target.vTarget += delta;
 	m_bbWorld.Move(delta);
 

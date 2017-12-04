@@ -554,7 +554,11 @@ IRenderNode* CDecalRenderNode::Clone() const
 
 void CDecalRenderNode::SetMatrix(const Matrix34& mat)
 {
-	m_pos = mat.GetTranslation();
+	Vec3 translation = mat.GetTranslation();
+	if (m_pos == translation)
+		return;
+
+	m_pos = translation;
 
 	if (m_decalProperties.m_projectionType == SDecalProperties::ePlanar)
 		m_WSBBox.SetTransformedAABB(m_Matrix, AABB(-Vec3(1, 1, 0.5f), Vec3(1, 1, 0.5f)));
@@ -566,6 +570,9 @@ void CDecalRenderNode::SetMatrix(const Matrix34& mat)
 
 void CDecalRenderNode::SetMatrixFull(const Matrix34& mat)
 {
+	if (m_Matrix == mat)
+		return;
+
 	m_Matrix = mat;
 	m_pos = mat.GetTranslation();
 
@@ -693,7 +700,7 @@ void CDecalRenderNode::CleanUpOldDecals()
 
 void CDecalRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (m_pTempData) m_pTempData->OffsetPosition(delta);
+	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_pos += delta;
 	m_WSBBox.Move(delta);
 	m_Matrix.SetTranslation(m_Matrix.GetTranslation() + delta);
