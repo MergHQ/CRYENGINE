@@ -6,8 +6,10 @@
 #include "../MNM/NavMesh.h"
 #include "DebugDrawContext.h"
 #include "MNMPathfinder.h"
+
 #include <CryThreading/IJobManager_JobDelegator.h>
 #include <CryCore/Platform/CryWindows.h>
+#include <CryInput/IHardwareMouse.h>
 
 // BAI navigation file version history
 // Changes in version 11
@@ -4147,6 +4149,8 @@ void NavigationSystemDebugDraw::DebugDraw(NavigationSystem& navigationSystem)
 
 		DebugDrawNavigationMeshesForSelectedAgent(navigationSystem, excludeTileID);
 
+		DebugDrawTriangleOnCursor(navigationSystem);
+
 		m_progress.Draw();
 
 		if (navigationSystem.IsInUse())
@@ -4963,10 +4967,132 @@ void NavigationSystemDebugDraw::DebugDrawNavigationMeshesForSelectedAgent(Naviga
 	}
 }
 
+void NavigationSystemDebugDraw::DebugDrawTriangleOnCursor(NavigationSystem& navigationSystem)
+{
+	if (!gAIEnv.CVars.DebugTriangleOnCursor)
+		return;
+
+	CDebugDrawContext dc;
+	float yPos = gEnv->pRenderer->GetHeight() - 100.0f;
+	const float textSize = 1.2f;
+	const float xPos = 200.0f;
+
+	dc->Draw2dLabel(xPos - 2.0f, yPos, 1.6f, Col_White, false, "NavMesh Triangle Info");
+	yPos += 20.0f;
+	
+	const CCamera& viewCamera = gEnv->pSystem->GetViewCamera();
+	
+	Vec3 rayStartPos = viewCamera.GetPosition();
+	Vec3 rayDir = viewCamera.GetViewdir();
+
+	if (gEnv->IsEditing())
+	{
+		float mouseX, mouseY;
+		gEnv->pHardwareMouse->GetHardwareMouseClientPosition(&mouseX, &mouseY);
+
+		// Invert mouse Y
+		mouseY = gEnv->pRenderer->GetHeight() - mouseY;
+
+		Vec3 pos0(0.0f);
+		Vec3 pos1(0.0f);
+		gEnv->pRenderer->UnProjectFromScreen(mouseX, mouseY, 0, &pos0.x, &pos0.y, &pos0.z);
+		gEnv->pRenderer->UnProjectFromScreen(mouseX, mouseY, 1, &pos1.x, &pos1.y, &pos1.z);
+
+		rayStartPos = pos0;
+		rayDir = pos1 - pos0;
+	}
+	rayDir.SetLength(200);
+	
+	ray_hit hit;
+	if (gAIEnv.pWorld->RayWorldIntersection(rayStartPos, rayDir, ent_static | ent_terrain | ent_sleeping_rigid, rwi_stop_at_pierceable | rwi_colltype_any, &hit, 1))
+	{
+		if (NavigationMeshID meshID = navigationSystem.GetEnclosingMeshID(m_agentTypeID, hit.pt))
+		{
+			if (MNM::TriangleID triangleID = navigationSystem.GetClosestMeshLocation(meshID, hit.pt, 1.0f, 1.0f, nullptr, nullptr))
+			{
+				const MNM::CNavMesh& navMesh = navigationSystem.GetMesh(meshID).navMesh;
+				const MNM::vector3_t tileCoords = navMesh.GetTileContainerCoordinates(MNM::ComputeTileID(triangleID));
+				dc->Draw2dLabel(xPos, yPos, textSize, Col_White, false, "Tile Coords: x %d, y %d, z %d", tileCoords.x.as_int(), tileCoords.y.as_int(), tileCoords.z.as_int());
+				yPos += 15.0f;
+				dc->Draw2dLabel(xPos, yPos, textSize, Col_White, false, "Triangle ID: %u", triangleID);
+				yPos += 15.0f;
+
+				MNM::Tile::STriangle triangleData;
+				if (navMesh.GetTriangle(triangleID, triangleData))
+				{
+					const MNM::CAnnotationsLibrary& annotationsLib = navigationSystem.GetAnnotations();
+					
+					const MNM::SAreaType* pAreaType = annotationsLib.GetAreaType(triangleData.areaAnnotation.GetType());
+					if (pAreaType)
+					{
+						dc->Draw2dLabel(xPos, yPos, textSize, Col_White, false, "Area Type: '%s'", pAreaType->name.c_str());
+						yPos += 15.0f;
+					}
+					else
+					{
+						dc->Draw2dLabel(xPos, yPos, textSize, Col_White, false, "Area Type: -- Not defined --");
+						yPos += 15.0f;
+					}
+
+					string flagNames;
+					const MNM::AreaAnnotation::value_type triFlags = triangleData.areaAnnotation.GetFlags();
+					for (size_t i = 0, count = annotationsLib.GetAreaFlagCount(); i < count; ++i)
+					{
+						const MNM::SAreaFlag* pAreaFlag = annotationsLib.GetAreaFlag(i);
+						if (pAreaFlag->value & triFlags)
+						{
+							if (!flagNames.IsEmpty())
+							{
+								flagNames.Append(", ");
+							}
+							flagNames.Append("'");
+							flagNames.Append(pAreaFlag->name);
+							flagNames.Append("'");
+						}
+					}
+					if (flagNames.IsEmpty())
+					{
+						flagNames = "---";
+					}
+					dc->Draw2dLabel(xPos, yPos, textSize, Col_White, false, "Area Flags: %s", flagNames.c_str());
+					yPos += 15.0f;
+
+					MNM::vector3_t mnmVertices[3];
+					if (navMesh.GetVertices(triangleID, mnmVertices))
+					{
+						const Vec3 offset(0.0f, 0.0f, 0.055f);
+						const Vec3 offsetMid(0.0f, 0.0f, 0.005f);
+						IRenderAuxGeom& renderAuxGeom = *gEnv->pRenderer->GetIRenderAuxGeom();
+
+						Vec3 vertices[3];
+						vertices[0] = mnmVertices[0].GetVec3() + offset;
+						vertices[1] = mnmVertices[1].GetVec3() + offset;
+						vertices[2] = mnmVertices[2].GetVec3() + offset;
+
+						ColorB color;
+						navigationSystem.GetAnnotations().GetAreaColor(triangleData.areaAnnotation, color);
+
+						renderAuxGeom.DrawPolyline(vertices, 3, true, color, 8.0f);
+
+						vertices[0] += offsetMid;
+						vertices[1] += offsetMid;
+						vertices[2] += offsetMid;
+						renderAuxGeom.DrawPolyline(vertices, 3, true, Col_White, 2.0f);
+					}
+				}
+				return;
+			}
+		}
+	}
+	
+	dc->Draw2dLabel(xPos, yPos, textSize, Col_White, false, "---");
+	yPos += 15.0f;
+}
+
 void NavigationSystemDebugDraw::DebugDrawNavigationSystemState(NavigationSystem& navigationSystem)
 {
 	CDebugDrawContext dc;
-
+	
 	if (gAIEnv.CVars.DebugDrawNavigation)
 	{
 		switch (navigationSystem.m_state)
@@ -4974,8 +5100,8 @@ void NavigationSystemDebugDraw::DebugDrawNavigationSystemState(NavigationSystem&
 		case NavigationSystem::Working:
 			dc->Draw2dLabel(10.0f, 300.0f, 1.6f, Col_Yellow, false, "Navigation System Working");
 			dc->Draw2dLabel(10.0f, 322.0f, 1.2f, Col_White, false, "Processing: %d\nRemaining: %d\nThroughput: %.2f/s\n"
-			                                                       "Cache Hits: %.2f/s",
-			                navigationSystem.m_runningTasks.size(), navigationSystem.GetWorkingQueueSize(), navigationSystem.m_throughput, navigationSystem.m_cacheHitRate);
+				"Cache Hits: %.2f/s",
+				navigationSystem.m_runningTasks.size(), navigationSystem.GetWorkingQueueSize(), navigationSystem.m_throughput, navigationSystem.m_cacheHitRate);
 			break;
 		case NavigationSystem::Idle:
 			dc->Draw2dLabel(10.0f, 300.0f, 1.6f, Col_ForestGreen, false, "Navigation System Idle");
@@ -4985,6 +5111,35 @@ void NavigationSystemDebugDraw::DebugDrawNavigationSystemState(NavigationSystem&
 			break;
 		}
 		static_cast<CMNMUpdatesManager*>(navigationSystem.GetUpdateManager())->DebugDraw();
+	}
+
+	// Draw annotations legend
+	auto DrawLabel = [&dc](float posX, float posY, const Vec2& size, const ColorF& color, float fontSize, const char* szLabel)
+	{
+		dc->Draw2dImage(posX - 1.0f, posY - 1.0f, size.x + 2.0f, size.y + 2.0f, -1, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		dc->Draw2dImage(posX, posY, size.x, size.y, -1, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, color.r, color.g, color.b, 1.0f);
+		dc->Draw2dLabel(posX + size.x + 5.0f, posY, fontSize, Col_White, false, szLabel);
+	};
+
+	const MNM::CAnnotationsLibrary& annotationsLib = navigationSystem.GetAnnotations();
+
+	const size_t areaTypesCount = annotationsLib.GetAreaTypeCount();
+	const float lineHeight = 25.0f;
+	const float yPos = gEnv->pRenderer->GetHeight() - float(areaTypesCount + 1) * lineHeight - 20.0f;
+
+	dc->Draw2dLabel(10.0f, yPos, 1.6f, Col_White, false, "Area Types");
+
+	ColorB color;
+	MNM::AreaAnnotation annotation;
+	
+	for (size_t i = 0; i < areaTypesCount; ++i)
+	{
+		const MNM::SAreaType* pAreaType = annotationsLib.GetAreaType(i);
+		annotation.SetType(pAreaType->id);
+
+		annotationsLib.GetAreaColor(annotation, color);
+
+		DrawLabel(10.0f, yPos + lineHeight * (i + 1), Vec2(13.0f), color, 1.3f, pAreaType->name.c_str());
 	}
 }
 

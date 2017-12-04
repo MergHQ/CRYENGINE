@@ -29,6 +29,8 @@ public:
 	virtual size_t               GetAreaFlagCount() const override;
 	virtual NavigationAreaFlagID GetAreaFlagID(const size_t index) const override;
 	virtual const SAreaFlag*     GetAreaFlag(const size_t index) const override;
+
+	virtual void                 GetAreaColor(const MNM::AreaAnnotation annotation, ColorB& color) const override;
 	// ~IAnnotationsLibrary
 
 	void                 Clear();
@@ -37,7 +39,6 @@ public:
 	NavigationAreaFlagID CreateAreaFlag(const uint32 id, const char* szName, const ColorB* pColor = nullptr);
 
 	void                 SetDefaultAreaColor(const ColorB& color) { m_defaultColor = color; }
-	void                 GetAreaColor(const MNM::AreaAnnotation annotation, ColorB& color) const;
 	bool                 GetFirstFlagColor(const MNM::AreaAnnotation::value_type flags, ColorB& color) const;
 private:
 	std::vector<MNM::SAreaType> m_areaTypes;
