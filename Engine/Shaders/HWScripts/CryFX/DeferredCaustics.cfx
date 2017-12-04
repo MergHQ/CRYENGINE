@@ -157,7 +157,7 @@ float4 DeferredOceanCausticsStencilVS(in float4 pos : POSITION) : POSITION
 	return outPos;
 }
 
-float4 DeferredOceanCausticsStencilPS() : COLOR0
+float4 DeferredOceanCausticsStencilPS() : SV_Target0
 {
 	return float4(0.0f, 0.0f, 0.0f, 0.0f);
 }
