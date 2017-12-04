@@ -27,6 +27,9 @@
 %template(IReadStreamPtr) _smart_ptr<IReadStream>;
 %template(IRenderMeshPtr) _smart_ptr<IRenderMesh>;
 
+%ignore SRenderNodeTempData;
+%ignore IRenderNode::m_pTempData;
+
 %typemap(cscode) IParticleEffect
 %{
 	public string Name { get { return GetName (); } }

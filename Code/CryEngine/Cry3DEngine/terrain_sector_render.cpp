@@ -397,7 +397,8 @@ void CTerrainNode::SetupTexGenParams(SSurfaceType* pSurfaceType, float* pOutPara
 
 void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 {
-	if (!Get3DEngine()->CheckAndCreateRenderNodeTempData(&m_pTempData, this, passInfo))
+	SRenderNodeTempData* pTempData = Get3DEngine()->CheckAndCreateRenderNodeTempData(this, passInfo);
+	if (!pTempData)
 		return;
 
 	// Use mesh instancing for distant low-lod sectors and during shadow map generation
@@ -413,7 +414,7 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 		CRenderObject* pTerrainRenderObject = 0;
 
 		CLodValue dymmyLod(3, 0, 3);
-		if (!GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pTerrainRenderObject, &dymmyLod, passInfo))
+		if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &dymmyLod, passInfo))
 		{
 			pTerrainRenderObject->m_pRenderNode = 0;
 			pTerrainRenderObject->m_II.m_AmbColor = Get3DEngine()->GetSkyColor();
@@ -442,7 +443,7 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 	CRenderObject* pTerrainRenderObject = 0;
 
 	CLodValue dymmyLod(0, 0, 0);
-	if (!GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pTerrainRenderObject, &dymmyLod, passInfo))
+	if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &dymmyLod, passInfo))
 	{
 		pTerrainRenderObject->m_pRenderNode = 0;
 		pTerrainRenderObject->m_II.m_AmbColor = Get3DEngine()->GetSkyColor();
@@ -504,7 +505,7 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 				CRenderObject* pDetailObj = nullptr;
 
 				CLodValue dymmyLod(1 + nP, 0, 1 + nP);
-				if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pDetailObj, &dymmyLod, passInfo))
+				if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pDetailObj, &dymmyLod, passInfo))
 					continue;
 				;
 

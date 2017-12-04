@@ -113,21 +113,22 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 		float fSwitchRange = min(fSpriteSwitchDist * GetCVars()->e_LodTransitionSpriteDistRatio, GetCVars()->e_LodTransitionSpriteMinDist);
 		float fLodTransitionDistband = 1.f;
 
+		SRenderNodeTempData* pTempData = pObj->m_pTempData.load();
 		if (pObj->m_pSpriteInfo)
 		{
 			CStatObj* pStatObj = vegetGroup.GetStatObj();
 
-			if (fEntDistance2D < (fSpriteSwitchDist - fSwitchRange) && pObj && pObj->m_pTempData)
+			if (fEntDistance2D < (fSpriteSwitchDist - fSwitchRange) && pTempData)
 			{
 				int nLodA;
 
-				nLodA = CLAMP(pObj->m_pTempData->userData.nWantedLod, (uint32)pStatObj->GetMinUsableLod(), (uint32)pStatObj->m_nMaxUsableLod);
+				nLodA = CLAMP(pTempData->userData.nWantedLod, (uint32)pStatObj->GetMinUsableLod(), (uint32)pStatObj->m_nMaxUsableLod);
 				nLodA = pStatObj->FindNearesLoadedLOD(nLodA);
 
 				// TODO: start dissolve transition to 3d lod
 			}
 
-			if (pObj->m_pTempData)
+			if (pTempData)
 			{
 				// TODO: update dissolve transition to 3d lod, detect finish oif transition
 			}
@@ -160,7 +161,7 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 				pObj->m_pSpriteInfo = new SVegetationSpriteInfo;
 				SVegetationSpriteInfo& si = *pObj->m_pSpriteInfo;
 
-				if (pObj->m_pTempData)
+				if (pTempData)
 				{
 					// TODO: start lod transition into sprite
 				}
@@ -2534,10 +2535,13 @@ void COctreeNode::RenderContentJobEntry(int nRenderMask, Vec3 vAmbColor, SRender
 		{
 			for (IRenderNode* pObj = m_arrObjects[nListId].m_pFirstNode; pObj; pObj = pObj->m_pNext)
 			{
-				// Invalidate objects where terrain texture is used
-				if (pObj->m_pTempData && pObj->m_pTempData->userData.bTerrainColorWasUsed)
+				if (auto pTempData = pObj->m_pTempData.load())
 				{
-					pObj->InvalidatePermanentRenderObject();
+					// Invalidate objects where terrain texture is used
+					if (pTempData->userData.bTerrainColorWasUsed)
+					{
+						pObj->InvalidatePermanentRenderObject();
+					}
 				}
 			}
 		}
@@ -3396,30 +3400,26 @@ void CObjManager::RenderBrush(CBrush* pEnt, PodArray<SRenderLight*>* pAffectingL
 	assert(passInfo.RenderBrushes());
 
 	// check-allocate RNTmpData for visible objects
-	if (!Get3DEngine()->CheckAndCreateRenderNodeTempData(&pEnt->m_pTempData, pEnt, passInfo))
-	{
+	SRenderNodeTempData* pTempData = Get3DEngine()->CheckAndCreateRenderNodeTempData(pEnt, passInfo);
+	if (!pTempData)
 		return;
-	}
 
 	if (nCheckOcclusion && pEnt->m_pOcNode)
 	{
-		if (GetObjManager()->IsBoxOccluded(objBox, fEntDistance * passInfo.GetInverseZoomFactor(), &pEnt->m_pTempData->userData.m_OcclState,
+		if (GetObjManager()->IsBoxOccluded(objBox, fEntDistance * passInfo.GetInverseZoomFactor(), &pTempData->userData.m_OcclState,
 			pEnt->m_pOcNode->GetVisArea() != NULL, eoot_OBJECT, passInfo))
 			return;
 	}
-	assert(pEnt && pEnt->m_pTempData);
-	if (!pEnt || !pEnt->m_pTempData)
-		return;
 
 	//////////////////////////////////////////////////////////////////////////
-	const CLodValue lodValue = pEnt->ComputeLod(pEnt->m_pTempData->userData.nWantedLod, passInfo);
+	const CLodValue lodValue = pEnt->ComputeLod(pTempData->userData.nWantedLod, passInfo);
 
 	if (GetCVars()->e_LodTransitionTime && passInfo.IsGeneralPass())
 	{
 		// Render current lod and (if needed) previous lod and perform time based lod transition using dissolve
 
 		CLodValue arrlodVals[2];
-		int nLodsNum = ComputeDissolve(lodValue, pEnt, fEntDistance, &arrlodVals[0]);
+		int nLodsNum = ComputeDissolve(lodValue, pTempData, pEnt, fEntDistance, &arrlodVals[0]);
 
 		for (int i = 0; i < nLodsNum; i++)
 			pEnt->Render(arrlodVals[i], passInfo, pTerrainTexInfo, pAffectingLights);

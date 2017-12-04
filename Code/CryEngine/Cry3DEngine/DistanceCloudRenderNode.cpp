@@ -53,6 +53,9 @@ void CDistanceCloudRenderNode::SetProperties(const SDistanceCloudProperties& pro
 
 void CDistanceCloudRenderNode::SetMatrix(const Matrix34& mat)
 {
+	if (m_pos == mat.GetTranslation())
+		return;
+
 	Get3DEngine()->UnRegisterEntityAsJob(this);
 
 	m_pos = mat.GetTranslation();
@@ -172,7 +175,7 @@ void CDistanceCloudRenderNode::GetMemoryUsage(ICrySizer* pSizer) const
 
 void CDistanceCloudRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (m_pTempData) m_pTempData->OffsetPosition(delta);
+	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_pos += delta;
 	m_WSBBox.Move(delta);
 }

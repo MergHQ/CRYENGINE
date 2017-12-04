@@ -2930,7 +2930,8 @@ void CMergedMeshRenderNode::RenderRenderMesh(
 {
 	CRenderObject* ro = 0;
 
-	if (GetObjManager()->AddOrCreatePersistentRenderObject((type == RUT_STATIC) ? m_pTempData : NULL, ro, NULL, passInfo))
+	auto pTempData = m_pTempData.load();
+	if (GetObjManager()->AddOrCreatePersistentRenderObject((type == RUT_STATIC) ? pTempData : NULL, ro, NULL, passInfo))
 		return;
 
 	std::vector<SMMRM>& renderMeshes = m_renderMeshes[type];
@@ -2964,7 +2965,7 @@ void CMergedMeshRenderNode::RenderRenderMesh(
 	ro->m_ObjFlags = FOB_TRANS_MASK | FOB_INSHADOW | FOB_DYNAMIC_OBJECT;
 	if (pTerrainTexInfo)
 	{
-		m_pTempData->userData.bTerrainColorWasUsed = true;
+		pTempData->userData.bTerrainColorWasUsed = true;
 		ro->m_II.m_AmbColor.a = clamp_tpl((1.0f / 255.f * ucSunDotTerrain), 0.f, 1.f);
 		ro->m_ObjFlags |= FOB_BLEND_WITH_TERRAIN_COLOR;
 		ro->m_data.m_pTerrainSectorTextureInfo = pTerrainTexInfo;

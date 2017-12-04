@@ -223,7 +223,8 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 
 	CRenderObject* pRenderObject = 0;
 
-	if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pRenderObject, &lodValue, passInfo))
+	auto pTempData = m_pTempData.load();
+	if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pRenderObject, &lodValue, passInfo))
 	{
 		if (GetCVars()->e_StaticInstancing == 3 && m_pInstancingInfo)
 			DrawBBox(GetBBox());
@@ -231,7 +232,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 		return;
 	}
 
-	assert(m_pTempData);
+	assert(pTempData);
 
 	if (pRenderObject->m_bPermanent && m_pOcNode && GetCVars()->e_StaticInstancing && m_pInstancingInfo)
 	{
@@ -263,7 +264,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	float fEntDistance2D = pRenderObject->m_bPermanent ? 0 : sqrt_tpl(vCamPos.GetSquaredDistance2D(m_vPos)) * passInfo.GetZoomFactor();
 	bool bUseTerrainColor((vegetGroup.bUseTerrainColor && GetCVars()->e_VegetationUseTerrainColor) || GetCVars()->e_VegetationUseTerrainColor == 2);
 
-	SRenderNodeTempData::SUserData& userData = m_pTempData->userData;
+	SRenderNodeTempData::SUserData& userData = pTempData->userData;
 
 	pRenderObject->m_pRenderNode = const_cast<IRenderNode*>(static_cast<const IRenderNode*>(this));
 	pRenderObject->m_II.m_Matrix = userData.objMat;
@@ -278,7 +279,8 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 
 	if (bUseTerrainColor)
 	{
-		m_pTempData->userData.bTerrainColorWasUsed = true;
+		pTempData->userData.bTerrainColorWasUsed = true;
+
 		pRenderObject->m_ObjFlags |= FOB_BLEND_WITH_TERRAIN_COLOR;
 	}
 	else
@@ -631,25 +633,30 @@ bool CVegetation::PhysicalizeFoliage(bool bPhysicalize, int iSource, int nSlot)
 	if (!pBody || !pBody->m_pSpines)
 		return false;
 
-	if (bPhysicalize)
+	if (auto pTempData = m_pTempData.load())
 	{
-		if (m_pTempData) // Temporary data should exist for visible objects (will not physicalize invisible objects)
+		if (bPhysicalize)
 		{
-			Matrix34A mtx;
-			CalcMatrix(mtx);
-			if (pBody->PhysicalizeFoliage(m_pPhysEnt, mtx, m_pTempData->userData.m_pFoliage, GetCVars()->e_FoliageBranchesTimeout, iSource))//&& !pBody->m_arrPhysGeomInfo[PHYS_GEOM_TYPE_DEFAULT])
+			if (pTempData) // Temporary data should exist for visible objects (will not physicalize invisible objects)
 			{
-				((CStatObjFoliage*)m_pTempData->userData.m_pFoliage)->m_pVegInst = this;
+				Matrix34A mtx;
+				CalcMatrix(mtx);
+				if (pBody->PhysicalizeFoliage(m_pPhysEnt, mtx, pTempData->userData.m_pFoliage, GetCVars()->e_FoliageBranchesTimeout, iSource))//&& !pBody->m_arrPhysGeomInfo[PHYS_GEOM_TYPE_DEFAULT])
+				{
+					((CStatObjFoliage*)pTempData->userData.m_pFoliage)->m_pVegInst = this;
+				}
 			}
 		}
-	}
-	else if (m_pTempData && m_pTempData->userData.m_pFoliage)
-	{
-		m_pTempData->userData.m_pFoliage->Release();
-		m_pTempData->userData.m_pFoliage = NULL;
+		else if (pTempData->userData.m_pFoliage)
+		{
+			pTempData->userData.m_pFoliage->Release();
+			pTempData->userData.m_pFoliage = nullptr;
+		}
+
+		return pTempData->userData.m_pFoliage != nullptr;
 	}
 
-	return m_pTempData && m_pTempData->userData.m_pFoliage;
+	return false;
 }
 
 IRenderNode* CVegetation::Clone() const
@@ -688,7 +695,7 @@ IRenderNode* CVegetation::Clone() const
 void CVegetation::ShutDown()
 {
 	Get3DEngine()->FreeRenderNodeState(this); // Also does unregister entity.
-	assert(!m_pTempData);
+	CRY_ASSERT(!m_pTempData.load());
 
 	// TODO: Investigate thread-safety wrt tempdata here.
 	Dephysicalize();
@@ -716,11 +723,16 @@ void CVegetation::Dephysicalize(bool bKeepIfReferenced)
 	if (m_pPhysEnt && GetSystem()->GetIPhysicalWorld()->DestroyPhysicalEntity(m_pPhysEnt, 4 * (int)bKeepIfReferenced))
 	{
 		m_pPhysEnt = 0;
-		if (m_pTempData && m_pTempData->userData.m_pFoliage)
+
+		if (auto pTempData = m_pTempData.load())
 		{
-			m_pTempData->userData.m_pFoliage->Release();
-			m_pTempData->userData.m_pFoliage = NULL;
-			InvalidatePermanentRenderObject();
+			if (pTempData->userData.m_pFoliage)
+			{
+				pTempData->userData.m_pFoliage->Release();
+				pTempData->userData.m_pFoliage = nullptr;
+
+				InvalidatePermanentRenderObject();
+			}
 		}
 	}
 }
@@ -773,10 +785,9 @@ float CVegetation::GetZAngle() const
 	return BYTE2RAD(m_ucAngle);
 }
 
-void CVegetation::OnRenderNodeBecomeVisibleAsync(const SRenderingPassInfo& passInfo)
+void CVegetation::OnRenderNodeBecomeVisibleAsync(SRenderNodeTempData* pTempData, const SRenderingPassInfo& passInfo)
 {
-	assert(m_pTempData);
-	SRenderNodeTempData::SUserData& userData = m_pTempData->userData;
+	SRenderNodeTempData::SUserData& userData = pTempData->userData;
 
 	Matrix34A mtx;
 	CalcMatrix(mtx);
@@ -846,10 +857,10 @@ void CVegetation::UpdateSpriteInfo(SVegetationSpriteInfo& si, float fSpriteAmoun
 
 IFoliage* CVegetation::GetFoliage(int nSlot)
 {
-	if (m_pTempData)
-		return m_pTempData->userData.m_pFoliage;
+	if (auto pTempData = m_pTempData.load())
+		return pTempData->userData.m_pFoliage;
 
-	return 0;
+	return nullptr;
 }
 
 IPhysicalEntity* CVegetation::GetBranchPhys(int idx, int nSlot)
@@ -892,7 +903,7 @@ void CVegetation::CheckCreateDeformable()
 
 void CVegetation::OffsetPosition(const Vec3& delta)
 {
-	if (m_pTempData) m_pTempData->OffsetPosition(delta);
+	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	// GetBBox before moving position
 	AABB aabb = GetBBox();
 	if (m_bApplyPhys)
@@ -993,9 +1004,9 @@ IStatObj* CVegetation::GetEntityStatObj(unsigned int nSubPartId, Matrix34A* pMat
 {
 	if (pMatrix)
 	{
-		if (m_pTempData)
+		if (SRenderNodeTempData* pTempData = m_pTempData.load())
 		{
-			*pMatrix = m_pTempData->userData.objMat;
+			*pMatrix = pTempData->userData.objMat;
 		}
 		else
 		{

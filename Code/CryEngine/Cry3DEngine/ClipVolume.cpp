@@ -24,8 +24,9 @@ CClipVolume::~CClipVolume()
 	for (size_t i = 0; i < m_lstRenderNodes.size(); ++i)
 	{
 		IRenderNode* pNode = m_lstRenderNodes[i];
-		if (pNode->m_pTempData)
-			pNode->m_pTempData->userData.m_pClipVolume = NULL;
+
+		if (auto pTempData = pNode->m_pTempData.load())
+			pTempData->userData.m_pClipVolume = nullptr;
 	}
 }
 
@@ -82,15 +83,18 @@ void CClipVolume::RegisterRenderNode(IRenderNode* pRenderNode)
 	{
 		m_lstRenderNodes.Add(pRenderNode);
 
-		if (pRenderNode->m_pTempData)
-			pRenderNode->m_pTempData->userData.m_pClipVolume = this;
+		if (auto pTempData = pRenderNode->m_pTempData.load())
+			pTempData->userData.m_pClipVolume = this;
 	}
 }
 void CClipVolume::UnregisterRenderNode(IRenderNode* pRenderNode)
 {
 	AUTO_LOCK(m_lstRenderNodesCritSection);
-	if (m_lstRenderNodes.Delete(pRenderNode) && pRenderNode->m_pTempData)
-		pRenderNode->m_pTempData->userData.m_pClipVolume = NULL;
+	if (m_lstRenderNodes.Delete(pRenderNode))
+	{
+		if (auto pTempData = pRenderNode->m_pTempData.load())
+			pTempData->userData.m_pClipVolume = nullptr;
+	}
 }
 
 void CClipVolume::GetMemoryUsage(class ICrySizer* pSizer) const

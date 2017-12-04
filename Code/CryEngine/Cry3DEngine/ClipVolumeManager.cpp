@@ -67,10 +67,13 @@ void CClipVolumeManager::UpdateEntityClipVolume(const Vec3& pos, IRenderNode* pR
 {
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "CClipVolumeManager::UpdateEntityClipVolume");
 
-	if (!pRenderNode || !pRenderNode->m_pTempData)
+	if (!pRenderNode)
+		return;
+	auto pTempData = pRenderNode->m_pTempData.load();
+	if (!pTempData)
 		return;
 
-	IClipVolume* pPreviousVolume = pRenderNode->m_pTempData->userData.m_pClipVolume;
+	IClipVolume* pPreviousVolume = pTempData->userData.m_pClipVolume;
 	UnregisterRenderNode(pRenderNode);
 
 	// user assigned clip volume
@@ -109,8 +112,8 @@ void CClipVolumeManager::UnregisterRenderNode(IRenderNode* pRenderNode)
 	for (size_t i = 0; i < m_ClipVolumes.size(); ++i)
 		m_ClipVolumes[i].m_pVolume->UnregisterRenderNode(pRenderNode);
 
-	if (pRenderNode->m_pTempData)
-		pRenderNode->m_pTempData->userData.m_pClipVolume = NULL;
+	if (auto pTempData = pRenderNode->m_pTempData.load())
+		pTempData->userData.m_pClipVolume = NULL;
 }
 
 bool CClipVolumeManager::IsClipVolumeRequired(IRenderNode* pRenderNode) const

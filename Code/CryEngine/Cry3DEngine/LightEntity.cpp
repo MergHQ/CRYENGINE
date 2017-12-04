@@ -119,6 +119,9 @@ bool CLightEntity::IsLightAreasVisible()
 //////////////////////////////////////////////////////////////////////////
 void CLightEntity::SetMatrix(const Matrix34& mat)
 {
+	if (m_Matrix == mat)
+		return;
+
 	m_Matrix = mat;
 	Vec3 wp = mat.GetTranslation();
 	if (!(m_light.m_Flags & DLF_DEFERRED_CUBEMAPS))
@@ -1996,7 +1999,11 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 		if ((m_light.m_Flags & DLF_HAS_CLIP_VOLUME) != 0 && m_light.m_pClipVolumes[1] != NULL)
 			m_light.m_nStencilRef[1] = m_light.m_pClipVolumes[1]->GetStencilRef();
 
-		m_light.m_nStencilRef[0] = (m_pTempData && m_pTempData->userData.m_pClipVolume) ? m_pTempData->userData.m_pClipVolume->GetStencilRef() : 0;
+		m_light.m_nStencilRef[0] = 0;
+		if (SRenderNodeTempData* pTempData = m_pTempData.load())
+		{
+			m_light.m_nStencilRef[0] = pTempData->userData.m_pClipVolume ? pTempData->userData.m_pClipVolume->GetStencilRef() : 0;
+		}
 	}
 
 	// associated clip volume invisible
@@ -2114,7 +2121,7 @@ void CLightEntity::SetOwnerEntity(IEntity* pEnt)
 
 void CLightEntity::OffsetPosition(const Vec3& delta)
 {
-	if (m_pTempData) m_pTempData->OffsetPosition(delta);
+	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_light.m_Origin += delta;
 	m_light.m_BaseOrigin += delta;
 	m_Matrix.SetTranslation(m_Matrix.GetTranslation() + delta);
