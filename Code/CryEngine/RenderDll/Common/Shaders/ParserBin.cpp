@@ -775,7 +775,7 @@ void CParserBin::SetupForD3D11()
 	AddMacro(CParserBin::fxToken("PCDX11"), nMacro, 1, 0, m_StaticMacros);
 #endif
 	m_nPlatform = SF_D3D11;
-	gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/D3D11/";
+	gRenDev->m_cEF.m_ShadersCache = "%ENGINE%/Shaders/Cache/D3D11/";
 	gRenDev->m_cEF.m_ShadersFilter = "D3D11";
 	SetupFeatureDefines();
 	gRenDev->m_cEF.m_Bin.InvalidateCache();
@@ -794,7 +794,7 @@ void CParserBin::SetupForGL4()
 	AddMacro(CParserBin::fxToken("OPENGL"), nMacro, 1, 0, m_StaticMacros);
 #endif
 	m_nPlatform = SF_GL4;
-	gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/GL4/";
+	gRenDev->m_cEF.m_ShadersCache = "%ENGINE%/Shaders/Cache/GL4/";
 	gRenDev->m_cEF.m_ShadersFilter = "GL4";
 	SetupFeatureDefines();
 	gRenDev->m_cEF.m_Bin.InvalidateCache();
@@ -812,7 +812,7 @@ void CParserBin::SetupForGLES3()
 	AddMacro(CParserBin::fxToken("PCDX11"), nMacro, 1, 0, m_StaticMacros);
 #endif
 	m_nPlatform = SF_GLES3;
-	gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/GLES3/";
+	gRenDev->m_cEF.m_ShadersCache = "%ENGINE%/Shaders/Cache/GLES3/";
 	gRenDev->m_cEF.m_ShadersFilter = "GLES3";
 	SetupFeatureDefines();
 	gRenDev->m_cEF.m_Bin.InvalidateCache();
@@ -828,7 +828,7 @@ void CParserBin::SetupForOrbis()
 	uint32 nMacro[1] = { eT_1 };
 	AddMacro(CParserBin::fxToken("ORBIS"), nMacro, 1, 0, m_StaticMacros);
 	m_nPlatform = SF_ORBIS;
-	gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/Orbis/";
+	gRenDev->m_cEF.m_ShadersCache = "%ENGINE%/Shaders/Cache/Orbis/";
 	gRenDev->m_cEF.m_ShadersFilter = "Orbis";
 	SetupFeatureDefines();
 	gRenDev->m_cEF.m_Bin.InvalidateCache();
@@ -843,7 +843,7 @@ void CParserBin::SetupForDurango()
 	uint32 nMacro[1] = { eT_1 };
 
 	m_nPlatform = SF_DURANGO;
-	gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/Durango/";
+	gRenDev->m_cEF.m_ShadersCache = "%ENGINE%/Shaders/Cache/Durango/";
 	gRenDev->m_cEF.m_ShadersFilter = "Durango";
 	AddMacro(CParserBin::fxToken("DURANGO"), nMacro, 1, 0, m_StaticMacros);
 
@@ -861,7 +861,7 @@ void CParserBin::SetupForVulkan()
 	uint32 nMacro[1] = { eT_1 };
 
 	m_nPlatform = SF_VULKAN;
-	gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/Vulkan/";
+	gRenDev->m_cEF.m_ShadersCache = "%ENGINE%/Shaders/Cache/Vulkan/";
 	gRenDev->m_cEF.m_ShadersFilter = "Vulkan";
 	AddMacro(CParserBin::fxToken("VULKAN"), nMacro, 1, 0, m_StaticMacros);
 

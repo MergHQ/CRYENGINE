@@ -1105,68 +1105,31 @@ const char* CCryPak::AdjustFileName(const char* src, char dst[g_nMaxPath], unsig
 //////////////////////////////////////////////////////////////////////////
 bool CCryPak::AdjustAliases(char* dst)
 {
-	// since CCryPak::SetAlias happens once at the game start, we can temporary remove it
-
-	char szDest[512];
-
-	bool bFoundAlias = false;
-	const TAliasList::const_iterator cAliasEnd = m_arrAliases.end();
-	for (TAliasList::const_iterator it = m_arrAliases.begin(); it != cAliasEnd; ++it)
+	bool foundAlias = false;
+	for (tNameAlias* tTemp : m_arrAliases)
 	{
-		tNameAlias* tTemp = (*it);
-		// find out if the folder is used
-		char* szSrc = dst;
-		do
+		// Replace the alias if it's the first item in the path
+		if (strncmp(dst, tTemp->szName, tTemp->nLen1) == 0 && dst[tTemp->nLen1] == g_cNativeSlash)
 		{
-			//if (*szSrc==g_cNativeSlash)
-			//	break; // didnt find any
-
-			const char* szComp = tTemp->szName;
-			if (*szSrc == *szComp)
-			{
-				char* szSrc2 = szSrc;
-				int k;
-				for (k = 0; k < tTemp->nLen1; k++)
-				{
-					if ((!(*szSrc2)) || (!(*szComp)) || (*szSrc2 != *szComp))
-						break;
-					szSrc2++;
-					szComp++;
-				}
-
-				if (k < tTemp->nLen1)
-					break; // comparison failed, stop
-
-				// we must verify that the next character is a slash, to be sure
-				// this is the whole folder and we aren't erroneously replacing partial folders (ex. Game04 with Game1)
-				if (*szSrc2 != g_cNativeSlash)
-					break; // comparison failed, stop
-
-				// replace name
-				int nLenDiff = (int)(szSrc - dst);
-				memcpy(szDest, dst, nLenDiff);                           // copy till the name to be replaced
-				memcpy(szDest + nLenDiff, tTemp->szAlias, tTemp->nLen2); // add the new name
-				// add the rest
-				//strcat(szDest+nLenDiff+tTemp->nLen2,dst+nLenDiff+tTemp->nLen1);
-				szSrc2 = dst + nLenDiff + tTemp->nLen1;
-				szSrc = szDest + nLenDiff + tTemp->nLen2;
-				while (*szSrc2)
-				{
-					*szSrc++ = *szSrc2++;
-				}
-				*szSrc = 0;
-				memcpy(dst, szDest, 256);
-				bFoundAlias = true;
-				break; // done
-			}
-
-			break; // check only the first folder name, skip the rest.
-
+			foundAlias = true;
+			char temp[512];
+			strcpy(temp, &dst[tTemp->nLen1]); // Make a copy of string remainder to avoid trampling from sprintf
+			sprintf(dst, "%s%s", tTemp->szAlias, temp);
 		}
-		while (*szSrc++);
-	} //it
 
-	return bFoundAlias;
+		// Strip extra aliases from path
+		char* searchIdx = dst;
+		char* pos;
+		while ((pos = strstr(searchIdx, tTemp->szName)))
+		{
+			if (pos[tTemp->nLen1] == g_cNativeSlash && pos[-1] == g_cNativeSlash)
+			{
+				strcpy(pos, &pos[tTemp->nLen1+1]);
+			}
+			searchIdx = pos + 1;
+		}
+	}
+	return foundAlias;
 }
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
