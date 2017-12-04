@@ -1145,14 +1145,14 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 	const bool bCreatePostAA = CRenderer::CV_r_AntialiasingMode && (!CTexture::IsTextureExist(s_ptexPrevBackBuffer[0][0])) || (gRenDev->IsStereoEnabled() && !s_ptexPrevBackBuffer[0][1]);
 	const bool bCreateCaustics = (CRenderer::CV_r_watervolumecaustics && CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred) && !CTexture::IsTextureExist(s_ptexWaterCaustics[0]);
 
+	const int width = resourceWidth, width_r2 = (width + 1) / 2, width_r4 = (width_r2 + 1) / 2, width_r8 = (width_r4 + 1) / 2;
+	const int height = resourceHeight, height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2, height_r8 = (height_r4 + 1) / 2;
+
 	if (!s_ptexBackBufferScaled[0] ||
-		s_ptexBackBufferScaled[0]->GetWidth() != resourceWidth ||
-		s_ptexBackBufferScaled[0]->GetHeight() != resourceHeight || bCreatePostAA || bCreateCaustics)
+		s_ptexBackBufferScaled[0]->GetWidth() != width_r2 ||
+		s_ptexBackBufferScaled[0]->GetHeight() != height_r2 || bCreatePostAA || bCreateCaustics)
 	{
 		assert(gRenDev);
-
-		const int width  = resourceWidth , width_r2  = (width  + 1) / 2, width_r4  = (width_r2  + 1) / 2, width_r8  = (width_r4  + 1) / 2;
-		const int height = resourceHeight, height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2, height_r8 = (height_r4 + 1) / 2;
 
 		if (CRenderer::CV_r_AntialiasingMode)
 		{
