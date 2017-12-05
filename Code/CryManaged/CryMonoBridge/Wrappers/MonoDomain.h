@@ -41,10 +41,12 @@ public:
 	//! Check whether or not we are currently reloading the app domain
 	virtual bool IsReloading() { return false; }
 
+	virtual string TempDirectoryPath();
+
 	std::shared_ptr<CMonoString> CreateString(const char* szString);
 	static std::shared_ptr<CMonoString> CreateString(MonoInternals::MonoString* pManagedString);
 	
-	CMonoLibrary* LoadLibrary(const char* szPath);
+	CMonoLibrary* LoadLibrary(const char* szPath, int loadInded = -1);
 	CMonoLibrary& GetLibraryFromMonoAssembly(MonoInternals::MonoAssembly* pAssembly);
 
 	MonoInternals::MonoDomain* GetHandle() const { return m_pDomain; }
@@ -55,6 +57,8 @@ public:
 protected:
 	void Unload();
 	void CacheObjectMethods();
+	void CleanTempDirectory();
+	void UnloadAssemblies();
 
 	MonoInternals::MonoDomain* GetMonoDomain() const { return m_pDomain; }
 

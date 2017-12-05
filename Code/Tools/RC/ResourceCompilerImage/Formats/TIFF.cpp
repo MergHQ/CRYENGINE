@@ -104,7 +104,10 @@ string LoadSpecialInstructionsByUsingTIFFLoader(const char* filenameRead)
 {
 	string specialInstructions;
 
-	TIFF* const tif = TIFFOpen(filenameRead, "r");
+	wstring widePath;
+	Unicode::Convert(widePath, filenameRead);
+
+	TIFF* const tif = TIFFOpenW(widePath.c_str(), "r");
 	if (tif) 
 	{
 		specialInstructions = GetSpecialInstructionsFromTIFF(tif);
@@ -230,7 +233,10 @@ ImageObject* LoadByUsingTIFFLoader(const char* filenameRead, CImageProperties* p
 {
 	res_specialInstructions.clear();
 
-	TIFF* const tif = TIFFOpen(filenameRead, "r");
+	wstring widePath;
+	Unicode::Convert(widePath, filenameRead);
+
+	TIFF* const tif = TIFFOpenW(widePath.c_str(), "r");
 
 	std::auto_ptr<ImageObject> pRet;
 
@@ -240,7 +246,7 @@ ImageObject* LoadByUsingTIFFLoader(const char* filenameRead, CImageProperties* p
 		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), 0, messageBuffer, sizeof(messageBuffer) - 1, NULL);
 		string messagetrim(messageBuffer);
 		messagetrim.replace('\n',' ');
-		RCLogError("%s: TIFFOpen failed (%s) - (%s)", __FUNCTION__, messagetrim.c_str(), filenameRead); 
+		RCLogError("%s: TIFFOpenW failed (%s) - (%s)", __FUNCTION__, messagetrim.c_str(), filenameRead); 
 	}
 	else
 	{
@@ -1239,7 +1245,10 @@ static bool UpdateAndSaveSettingsToTIF(const char *filenameRead, const char *fil
 	assert(filenameRead && filenameRead[0]);
 	assert(filenameWrite && filenameWrite[0]);
 
-	TIFF* tif_in = TIFFOpen(filenameRead, "r");	
+	wstring widePath;
+	Unicode::Convert(widePath, filenameRead);
+
+	TIFF* tif_in = TIFFOpenW(widePath.c_str(), "r");	
 	if (!tif_in) 
 	{			
 		return false;
@@ -1326,7 +1335,9 @@ static bool UpdateAndSaveSettingsToTIF(const char *filenameRead, const char *fil
 
 	// write image with resource compiler settings
 
-	TIFF* const tif_out = TIFFOpen(filenameWrite, "w");
+	Unicode::Convert(widePath, filenameWrite);
+
+	TIFF* const tif_out = TIFFOpenW(widePath.c_str(), "w");
 	if (!tif_out)
 	{
 		return false;
@@ -1561,7 +1572,10 @@ static bool SaveByUsingTIFFSaver(const char *filenameWrite, const string& settin
 	uint32 dwWidth, dwHeight, dwMips;
 	pImageObject->GetExtent(dwWidth, dwHeight, dwMips);
 
-	TIFF* const pTiffFile = TIFFOpen(filenameWrite, "w");
+	wstring widePath;
+	Unicode::Convert(widePath, filenameWrite);
+
+	TIFF* const pTiffFile = TIFFOpenW(widePath.c_str(), "w");
 	if (!pTiffFile) 
 	{
 		return false;

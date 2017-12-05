@@ -30,6 +30,8 @@ ModeCharacter::ModeCharacter()
 	: m_scene(new Manip::CScene())
 	, m_ignoreSceneSelectionChange(false)
 	, m_transformPanel()
+	, m_posMouse(ZERO)
+	, m_isCurBoneFree(true)
 {
 	EXPECTED(connect(m_scene.get(), SIGNAL(SignalUndo()), this, SLOT(OnSceneUndo())));
 	EXPECTED(connect(m_scene.get(), SIGNAL(SignalRedo()), this, SLOT(OnSceneRedo())));
@@ -331,12 +333,30 @@ void ModeCharacter::OnViewportRender(const SRenderContext& rc)
 {
 	m_scene->OnViewportRender(rc);
 
+	if (QApplication::queryKeyboardModifiers() != Qt::ShiftModifier)
+		m_curBoneName = "";
+	IRenderAuxText::Draw2dLabel(m_posMouse.x + 6, m_posMouse.y - 6, 1.4f, ColorF(!m_isCurBoneFree, 1, 0), false, m_curBoneName);
+
 	CharacterDefinition* cdf = m_document->GetLoadedCharacterDefinition();
 	if (cdf && m_character)
 	{
 		bool applyPhys = cdf->m_physNeedsApply;
 		if (m_window->ProxyMakingMode() && !cdf->m_physEdit)
 		{
+			DisplayOptions* opt = m_document->GetDisplayOptions().get();
+			int changed = 0;
+			if (opt->physics.showPhysicalProxies == DisplayPhysicsOptions::DISABLED)
+			{
+				opt->physics.showPhysicalProxies = DisplayPhysicsOptions::SOLID;
+				++changed;
+			}
+			if (opt->physics.showRagdollJointLimits == DisplayPhysicsOptions::NONE)
+			{
+				opt->physics.showRagdollJointLimits = DisplayPhysicsOptions::ALL;
+				++changed;
+			}
+			if (changed)
+				m_document->DisplayOptionsChanged();
 			cdf->LoadPhysProxiesFromCharacter(m_character);
 			m_window->GetPropertiesPanel()->PropertyTree()->revert();
 			m_window->GetPropertiesPanel()->OnChanged();
@@ -377,7 +397,7 @@ struct SFakeSizer : public ICrySizer
 
 void ModeCharacter::OnViewportMouse(const SMouseEvent& ev)
 {
-	if (m_document->GetLoadedCharacterDefinition() && m_character && ev.type == SMouseEvent::TYPE_PRESS && ev.button == SMouseEvent::BUTTON_RIGHT && 
+	if (m_document->GetLoadedCharacterDefinition() && m_character && QApplication::keyboardModifiers() == Qt::ShiftModifier && 
 			m_window->ProxyMakingMode() && m_window->GetPropertiesPanel()->PropertyTree() && OnViewportMouseProxy(ev))
 		return;
 
@@ -437,10 +457,18 @@ bool ModeCharacter::OnViewportMouseProxy(const SMouseEvent& ev)
 		ibone0 = rhit.partid;
 
 	IDefaultSkeleton& skel = m_character->GetIDefaultSkeleton();
+	m_curBoneName = ibone0 > 0 ? skel.GetJointNameByID(ibone0) : "";
+	m_posMouse.set(ev.x, ev.y);
+	m_isCurBoneFree = true;
+
 	if (ibone0 > 0)
 	{
 		if (skel.GetJointPhysGeom(ibone0) && skel.GetJointPhysGeom(ibone0)->pGeom->GetiForeignData() != -1)
 		{
+			m_isCurBoneFree = false;
+			if (ev.type != SMouseEvent::TYPE_PRESS || ev.button != SMouseEvent::BUTTON_LEFT)
+				return false;
+			m_document->GetDisplayOptions()->physics.selectedBone = ibone0;
 			char name[256] = "$";
 			strcpy(name+1, m_character->GetIDefaultSkeleton().GetJointNameByID(ibone0));
 			for(uint i = 0; i < cdf->attachments.size(); i++)
@@ -458,8 +486,9 @@ bool ModeCharacter::OnViewportMouseProxy(const SMouseEvent& ev)
 					}
 				}
 		}
-		else
+		else if (ev.type == SMouseEvent::TYPE_PRESS && ev.button == SMouseEvent::BUTTON_LEFT)
 		{
+			m_document->GetDisplayOptions()->physics.selectedBone = ibone0;
 			strided_pointer<CryBonePhysics> bonePhys;
 			bonePhys.data = skel.GetJointPhysInfo(0);
 			bonePhys.iStride = (int)((INT_PTR)skel.GetJointPhysInfo(1) - (INT_PTR)bonePhys.data);
@@ -549,7 +578,7 @@ bool ModeCharacter::OnViewportMouseProxy(const SMouseEvent& ev)
 				ProxyDimFromGeom(pBestPrim, att.m_jointSpacePosition, att.m_ProxyParams);
 				att.m_ProxyParams *= min(1.0f, (1 + pow(pCHull->GetVolume()/pBestPrim->GetVolume(), 1.0f/3)) * 0.5f);
 				att.m_prevProxyParams = att.m_ProxyParams;
-				att.m_characterSpacePosition = skel.GetDefaultAbsJointByID(ibone0) * att.m_jointSpacePosition;
+				att.m_characterSpacePosition = (att.m_boneTrans = skel.GetDefaultAbsJointByID(ibone0)) * att.m_jointSpacePosition;
 				att.m_ProxyType = att.m_prevProxyType = (geomtypes)pBestPrim->GetType();
 				(att.m_proxySrc = new CharacterAttachment::ProxySource)->m_hullMesh = pCHull;
 				att.m_meshSmooth = 3;
@@ -558,6 +587,7 @@ bool ModeCharacter::OnViewportMouseProxy(const SMouseEvent& ev)
 				att.m_tension = Vec3(1);
 				att.m_damping = Vec3(1);
 				att.m_frame0 = Ang3(0);
+				att.UpdateMirrorInfo(ibone0, skel);
 				cdf->attachments.push_back(att);
 				pBestPrim->Release();
 				pCHull->Release();

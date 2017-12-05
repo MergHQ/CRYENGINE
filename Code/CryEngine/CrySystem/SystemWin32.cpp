@@ -1517,7 +1517,7 @@ void CSystem::ChangeUserPath(const char* sUserPath)
 
 		// Make the userFolder path absolute
 		char cwdBuffer[MAX_PATH];
-		_getcwd(cwdBuffer, MAX_PATH);
+		CryGetCurrentDirectory(MAX_PATH, cwdBuffer);
 		string tempBuffer;
 		tempBuffer.Format("%s\\%s", cwdBuffer, userFolder.c_str());
 		tempBuffer = PathUtil::RemoveSlash(tempBuffer);

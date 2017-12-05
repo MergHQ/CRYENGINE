@@ -39,6 +39,7 @@
 
 #include "FileUtil.h"                       // GetFileSize()
 
+#include <CryString/CryPath.h>
 #include "StringHelpers.h"
 
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
@@ -181,7 +182,7 @@ bool CImageCompiler::SaveOutput(const ImageObject* pImageObject, const char* szT
 
 	const uint32 sizeTotal = CalcTextureMemory(pImageObject);
 
-	const string filename = PathHelpers::GetFilename(lpszPathName);
+	const string filename = PathUtil::GetFile(lpszPathName);
 	if (pImageObject->GetAttachedImage())
 	{
 		const uint32 sizeAttached = CalcTextureMemory(pImageObject->GetAttachedImage());
@@ -849,7 +850,7 @@ string CImageCompiler::GetOutputFileNameOnly() const
 	const string sourceFileFinal = m_CC.config->GetAsString("overwritefilename", m_CC.sourceFileNameOnly.c_str(), m_CC.sourceFileNameOnly.c_str());
 	const bool bSplitForStreaming = m_CC.config->GetAsBool("streaming", false, true);
 	const bool bUseTiffExtension = 
-		StringHelpers::EqualsIgnoreCase(PathHelpers::FindExtension(m_CC.sourceFileNameOnly), "tif") &&
+		StringHelpers::EqualsIgnoreCase(PathUtil::GetExt(m_CC.sourceFileNameOnly), "tif") &&
 		(m_CC.config->GetAsBool("cleansettings", false, true) || 
 		m_CC.config->HasKey("savesettings") || 
 		m_CC.config->HasKey("savepreset"));
@@ -860,12 +861,12 @@ string CImageCompiler::GetOutputFileNameOnly() const
 		szExtension = (bSplitForStreaming ? "$dds" : "dds");
 	}
 
-	return PathHelpers::ReplaceExtension(sourceFileFinal, szExtension);
+	return PathUtil::ReplaceExtension(sourceFileFinal, szExtension);
 }
 
 string CImageCompiler::GetOutputPath() const
 {
-	return PathHelpers::Join(m_CC.GetOutputFolder(), GetOutputFileNameOnly());
+	return PathUtil::Make(m_CC.GetOutputFolder(), GetOutputFileNameOnly());
 }
 
 void CImageCompiler::AutoPreset()
@@ -911,8 +912,8 @@ bool CImageCompiler::AnalyzeWithProperties(bool autopreset, const char *szExtend
 	// add a string to the filename (before the extension)
 	if (szExtendFileName)
 	{
-		const string ext = PathHelpers::FindExtension(sOutputFileName);
-		sOutputFileName = PathHelpers::RemoveExtension(sOutputFileName) + szExtendFileName + string(".") + ext;
+		const string ext = PathUtil::GetExt(sOutputFileName);
+		sOutputFileName = PathUtil::RemoveExtension(sOutputFileName.c_str()) + szExtendFileName + string(".") + ext;
 	}
 
 	{
@@ -1079,8 +1080,8 @@ bool CImageCompiler::RunWithProperties(bool inbSave, const char *szExtendFileNam
 	// add a string to the filename (before the extension)
 	if (szExtendFileName)
 	{
-		const string ext = PathHelpers::FindExtension(sOutputFileName);
-		sOutputFileName = PathHelpers::RemoveExtension(sOutputFileName) + szExtendFileName + string(".") + ext;
+		const string ext = PathUtil::GetExt(sOutputFileName);
+		sOutputFileName = PathUtil::RemoveExtension(sOutputFileName.c_str()) + szExtendFileName + string(".") + ext;
 	}
 
 	if (m_pFinalImage)
@@ -1748,11 +1749,11 @@ bool CImageCompiler::RunWithProperties(bool inbSave, const char *szExtendFileNam
 		if (szExtendFileName)
 		{
 			// Faking source filename to generate output filename with respect to postfix
-			const string outFilename = PathHelpers::GetFilename(outFile);
-			sourceFileFinal = PathHelpers::RemoveExtension(outFilename);
+			const string outFilename = PathUtil::GetFile(outFile);
+			sourceFileFinal = PathUtil::RemoveExtension(outFilename);
 			sourceFileFinal += szExtendFileName;
 
-			const string ext = PathHelpers::FindExtension(outFilename);
+			const string ext = PathUtil::GetExt(outFilename);
 			if (!ext.empty())
 			{
 				sourceFileFinal += '.';
@@ -1761,7 +1762,7 @@ bool CImageCompiler::RunWithProperties(bool inbSave, const char *szExtendFileNam
 		}
 		else
 		{
-			sourceFileFinal = PathHelpers::GetFilename(outFile);
+			sourceFileFinal = PathUtil::GetFile(outFile);
 		}
 
 		cc_split.SetSourceFileNameOnly(sourceFileFinal);

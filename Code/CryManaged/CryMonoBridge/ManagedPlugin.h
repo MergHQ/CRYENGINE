@@ -49,6 +49,7 @@ public:
 	virtual void Load(CAppDomain* pDomain) override;
 	virtual void OnCoreLibrariesDeserialized() override;
 	virtual void OnPluginLibrariesDeserialized() override;
+	virtual void SetLoadIndex(int i) override { m_loadIndex = i; }
 	// ~IManagedPlugin
 
 	// ICryUnknown
@@ -81,8 +82,10 @@ public:
 	void RegisterSchematycPackageContents(Schematyc::IEnvRegistrar& registrar) const;
 	const CryGUID& GetGUID() const { return m_guid; }
 
-	// The plug-in that is currently registering types in CManagedPlugin::InitializePlugin
-	static std::vector<std::shared_ptr<CManagedEntityComponentFactory>>* s_pCurrentlyRegisteringFactory;
+	// Collection of all factories that belong to the plugin that is currently registering types in CManagedPlugin::InitializePlugin and CManagedPlugin::ScanAssembly
+	static std::vector<std::shared_ptr<CManagedEntityComponentFactory>>* s_pCurrentlyRegisteringFactories;
+	// Collection of all factories that have been registered by all managed plugins.
+	static std::vector<std::shared_ptr<CManagedEntityComponentFactory>>* s_pCrossPluginRegisteredFactories;
 
 protected:
 	void InitializePlugin();
@@ -97,6 +100,8 @@ protected:
 
 	string m_libraryPath;
 	CryGUID m_guid;
+
+	int m_loadIndex = -1;
 
 	// Map containing entity component factories for this module
 	std::vector<std::shared_ptr<CManagedEntityComponentFactory>> m_entityComponentFactories;

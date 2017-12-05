@@ -1,12 +1,11 @@
-﻿using System;
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+
+using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-
-using CryEngine;
 using System.Text.RegularExpressions;
 
 namespace CryEngine.Compilation
@@ -26,13 +25,13 @@ namespace CryEngine.Compilation
 			}
 		}
 
-		public static Assembly CompileCSharpSourceFiles(string assemblyPath, string[] sourceFiles, out string compileException)
+		public static Assembly CompileCSharpSourceFiles(string assemblyPath, string[] sourceFiles, string[] managedPlugins, out string compileException)
 		{
 			Assembly assembly = null;
 			compileException = null;
 			try
 			{
-				assembly = CompileSourceFiles(CodeDomProvider.CreateProvider("CSharp"), assemblyPath, sourceFiles);
+				assembly = CompileSourceFiles(CodeDomProvider.CreateProvider("CSharp"), assemblyPath, sourceFiles, managedPlugins);
 			}
 			catch(CompilationFailedException ex)
 			{
@@ -45,7 +44,7 @@ namespace CryEngine.Compilation
 			return assembly;
 		}
 
-		public static Assembly CompileSourceFiles(CodeDomProvider provider, string assemblyPath, string[] sourceFiles)
+		public static Assembly CompileSourceFiles(CodeDomProvider provider, string assemblyPath, string[] sourceFiles, string[] managedPlugins)
 		{
 			using(provider)
 			{
@@ -68,7 +67,7 @@ namespace CryEngine.Compilation
 					compilerParameters.OutputAssembly = Path.Combine(assemblyPath);
 				}
 
-				AddReferencedAssembliesForSourceFiles(sourceFiles, ref compilerParameters);
+				AddReferencedAssembliesForSourceFiles(managedPlugins, ref compilerParameters);
 
 				var results = provider.CompileAssemblyFromFile(compilerParameters, sourceFiles);
 				if(!results.Errors.HasErrors && results.CompiledAssembly != null)
@@ -92,41 +91,13 @@ namespace CryEngine.Compilation
 			}
 		}
 
-		private static void AddReferencedAssembliesForSourceFiles(IEnumerable<string> sourceFilePaths, ref CompilerParameters compilerParameters)
+		private static void AddReferencedAssembliesForSourceFiles(string[] managedPlugins, ref CompilerParameters compilerParameters)
 		{
 			// Always reference any currently loaded assembly, such CryEngine.Core.dll.
 			var currentDomainAssemblies = AppDomain.CurrentDomain.GetAssemblies().Select(x => x.Location).ToArray();
 			compilerParameters.ReferencedAssemblies.AddRange(currentDomainAssemblies);
 
-			var usedNamespaces = new HashSet<string>();
-
-			foreach(var sourceFilePath in sourceFilePaths)
-			{
-				// Open the script
-				using(var stream = new FileStream(sourceFilePath, FileMode.Open))
-				{
-					GetNamespacesFromStream(stream, ref usedNamespaces);
-				}
-			}
-
-			var unusedAssemblies = defaultNetFrameworkAssemblies;
-			var referencedAssemblies = new List<string>();
-
-			var watch = System.Diagnostics.Stopwatch.StartNew();
-			foreach(var foundNamespace in usedNamespaces)
-			{
-				unusedAssemblies.RemoveAll(assembly => assembly.GetTypes().Any(x =>
-				{
-					referencedAssemblies.Add(assembly.Location);
-
-					return x.Namespace == foundNamespace;
-				}));
-			}
-
-			// compilerParameters.ReferencedAssemblies.AddRange(referencedAssemblies.ToArray());
-
-			watch.Stop();
-			Log.Always("Took {0}", watch.ElapsedMilliseconds);
+			compilerParameters.ReferencedAssemblies.AddRange(managedPlugins);
 		}
 
 		private static void GetNamespacesFromStream(Stream stream, ref HashSet<string> namespaces)

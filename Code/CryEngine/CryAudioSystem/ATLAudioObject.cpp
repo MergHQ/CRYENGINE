@@ -1044,7 +1044,6 @@ void CATLAudioObject::DrawDebugInfo(
 			bool const bShowEnvironments = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectEnvironments) != 0;
 			bool const bShowDistance = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectDistance) != 0;
 			bool const bShowOcclusionRayLabel = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowOcclusionRayLabels) != 0;
-			bool const bShowOcclusionRays = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowOcclusionRays) != 0;
 			bool const bFilterAllObjectInfo = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::FilterAllObjectInfo) != 0;
 
 			// Check if object name matches text filter.
@@ -1452,10 +1451,7 @@ void CATLAudioObject::DrawDebugInfo(
 					}
 				}
 
-				if (bShowOcclusionRays)
-				{
-					m_propagationProcessor.DrawObstructionRays(auxGeom, m_flags);
-				}
+				m_propagationProcessor.DrawDebugInfo(auxGeom, m_flags, listenerPosition);
 			}
 		}
 	}

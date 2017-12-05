@@ -684,7 +684,7 @@ void CImageUserDialog::CreateDialogItems()
 void CImageUserDialog::SelectPreset(const string &presetName)
 {
 	string filename = m_pImageCompiler->m_CC.config->GetAsString("overwritefilename", m_pImageCompiler->m_CC.sourceFileNameOnly, m_pImageCompiler->m_CC.sourceFileNameOnly);
-	filename = PathHelpers::RemoveExtension(filename);
+	filename = PathUtil::RemoveExtension(filename.c_str());
 
 	const HWND hwnd = GetDlgItem(m_hWindow, IDC_TEMPLATECOMBO);
 	SendMessage(hwnd, CB_RESETCONTENT, 0, 0);

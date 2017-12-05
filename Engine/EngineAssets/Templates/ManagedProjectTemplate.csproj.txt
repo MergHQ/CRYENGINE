@@ -52,6 +52,7 @@
       <HintPath>$engine_bin_directory\CryEngine.Core.UI.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    $managed_plugin_references
   </ItemGroup>
   <ItemGroup>
 $includes

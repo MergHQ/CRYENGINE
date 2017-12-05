@@ -807,21 +807,33 @@ bool CSystem::InitializeEngineModule(const SSystemInitParams& startupParams, con
 	else
 		ZeroStruct(memStart);
 
+	bool loadedLibrary = false;
+
 	std::shared_ptr<Cry::IDefaultModule> pModule;
 	if (!CryCreateClassInstanceForInterface(moduleInterfaceId, pModule))
 	{
 		if (LoadDynamicLibrary(dllName, bQuitIfNotFound, true) == 0)
 			return false;
 
+		loadedLibrary = true;
 		CryCreateClassInstanceForInterface(moduleInterfaceId, pModule);
 	}
 
-	bool bSuccess = false;
-
-	if (pModule)
+	if (pModule == nullptr)
 	{
-		MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Initialize module: %s", pModule->GetFactory()->GetName());
-		bSuccess = pModule->Initialize(m_env, startupParams);
+		return false;
+	}
+
+	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Initialize module: %s", pModule->GetFactory()->GetName());
+	if (!pModule->Initialize(m_env, startupParams))
+	{
+		if (loadedLibrary)
+		{
+			pModule.reset();
+			UnloadDynamicLibrary(dllName);
+		}
+
+		return false;
 	}
 
 	if (GetIMemoryManager())
@@ -832,7 +844,7 @@ bool CSystem::InitializeEngineModule(const SSystemInitParams& startupParams, con
 		CryLog("Initializing %s done, MemUsage=%uKb", dllName, uint32(memUsed / 1024));
 	}
 
-	return bSuccess;
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1544,7 +1556,7 @@ bool CSystem::InitPhysics(const SSystemInitParams& startupParams)
 	               "Sets physical time step granularity.\n"
 	               "Usage: p_time_granularity [0..0.1]\n"
 	               "Used for internal tweaking only.");
-	REGISTER_CVAR2("p_list_active_objects", &pVars->bLogActiveObjects, pVars->bLogActiveObjects, VF_NULL, "");
+	REGISTER_CVAR2("p_list_active_objects", &pVars->bLogActiveObjects, pVars->bLogActiveObjects, VF_NULL, "1 - list normal objects, 2 - list independent objects, 3 - both");
 	REGISTER_CVAR2("p_profile_entities", &pVars->bProfileEntities, pVars->bProfileEntities, 0,
 	               "Enables per-entity time step profiling");
 	REGISTER_CVAR2("p_profile_functions", &pVars->bProfileFunx, pVars->bProfileFunx, 0,

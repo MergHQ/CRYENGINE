@@ -2380,11 +2380,16 @@ void CArticulatedEntity::BreakableConstraintsUpdated()
 void CArticulatedEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 {
 	if (!pRenderer) return;
+	int idsel = -1;
+	if (flags & 1<<28) {
+		idsel = flags>>16 & 0xFFF;
+		flags &= 0xF000FFFF;
+	}
 
 	CRigidEntity::DrawHelperInformation(pRenderer, flags);
 
 	if(flags&0x10){
-		for(int i=0;i<m_nJoints;i++){
+		for(int i=0;i<m_nJoints;i++) if ((m_joints[i].idbody | idsel>>31)==idsel) {
 			quaternionf q_parent;
 			if (m_joints[i].iParent>=0) q_parent = m_joints[m_joints[i].iParent].quat;
 			else q_parent = m_qNew;

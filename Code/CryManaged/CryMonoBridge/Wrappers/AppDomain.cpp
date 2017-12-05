@@ -1,3 +1,5 @@
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 #include "AppDomain.h"
 
@@ -8,7 +10,7 @@
 #include "MonoMethod.h"
 
 #include "RootMonoDomain.h"
-
+#include <CrySystem/ISystem.h>
 #include <CrySystem/IProjectManager.h>
 
 CAppDomain::CAppDomain(char *name, bool bActivate)
@@ -22,6 +24,8 @@ CAppDomain::CAppDomain(char *name, bool bActivate)
 
 	char executableFolder[_MAX_PATH];
 	CryGetExecutableFolder(_MAX_PATH, executableFolder);
+
+	CleanTempDirectory();
 
 	string libraryPath = PathUtil::Make(executableFolder, "CryEngine.Common");
 	m_pLibCommon = LoadLibrary(libraryPath);
@@ -127,10 +131,7 @@ bool CAppDomain::Reload()
 	SerializeDomainData(serializedData);
 
 	// Unload assemblies
-	for (auto it = m_loadedLibraries.rbegin(); it != m_loadedLibraries.rend(); ++it)
-	{
-		it->get()->Unload();
-	}
+	UnloadAssemblies();
 
 	// Kill the domain
 	Unload();
@@ -190,6 +191,12 @@ bool CAppDomain::Reload()
 CMonoLibrary* CAppDomain::CompileFromSource(const char* szDirectory)
 {
 	m_loadedLibraries.emplace_back(stl::make_unique<CCompiledMonoLibrary>(szDirectory, this));
+	return m_loadedLibraries.back().get();
+}
+
+CMonoLibrary* CAppDomain::GetCompiledLibrary()
+{
+	m_loadedLibraries.emplace_back(stl::make_unique<CCompiledMonoLibrary>(this));
 	return m_loadedLibraries.back().get();
 }
 

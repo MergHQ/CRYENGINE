@@ -143,8 +143,6 @@ bool CMonoRuntime::Initialize(SSystemGlobalEnvironment& env, const SSystemInitPa
 	if (!gEnv->pCryPak->IsFileExist(sMonoLib, ICryPak::eFileLocation_OnDisk) || !gEnv->pCryPak->IsFileExist(sMonoEtc, ICryPak::eFileLocation_OnDisk))
 	{
 		CryLogAlways("Failed to initialize Mono runtime, Mono directory was not found or incomplete in %s directory", szMonoDirectoryParent);
-		delete this;
-
 		return false;
 	}
 
@@ -159,7 +157,7 @@ bool CMonoRuntime::Initialize(SSystemGlobalEnvironment& env, const SSystemInitPa
 	m_pRootDomain = std::make_shared<CRootMonoDomain>();
 	m_pRootDomain->Initialize();
 
-	m_domainLookupMap.emplace(std::make_pair(m_pRootDomain->GetMonoDomain(), m_pRootDomain));
+	m_domains.emplace_back(m_pRootDomain);
 
 	RegisterInternalInterfaces();
 
@@ -174,7 +172,7 @@ bool CMonoRuntime::Initialize(SSystemGlobalEnvironment& env, const SSystemInitPa
 void CMonoRuntime::Shutdown()
 {
 	// Root domain HAS to be deleted last, its destructor shuts down the entire runtime!
-	m_domainLookupMap.clear();
+	m_domains.clear();
 	m_pRootDomain.reset();
 
 	m_nodeCreators.clear();
@@ -247,16 +245,14 @@ CMonoDomain* CMonoRuntime::GetActiveDomain()
 		return pDomain;
 	}
 
-	auto pair = m_domainLookupMap.emplace(std::make_pair(pActiveMonoDomain, std::make_shared<CAppDomain>(pActiveMonoDomain)));
-	return pair.first->second.get();
+	m_domains.emplace_back(std::make_shared<CAppDomain>(pActiveMonoDomain));
+	return m_domains.back().get();
 }
 
 CAppDomain* CMonoRuntime::CreateDomain(char* name, bool bActivate)
 {
-	std::shared_ptr<CAppDomain> pDomain = std::make_shared<CAppDomain>(name, bActivate);
-	auto pair = m_domainLookupMap.emplace(std::make_pair(pDomain->GetMonoDomain(), pDomain));
-
-	return pDomain.get();
+	m_domains.emplace_back(std::make_shared<CAppDomain>(name, bActivate));
+	return static_cast<CAppDomain*>(m_domains.back().get());
 }
 
 CMonoLibrary* CMonoRuntime::GetCryCommonLibrary() const
@@ -291,15 +287,18 @@ void CMonoRuntime::RegisterNativeToManagedInterface(IMonoNativeToManagedInterfac
 	interface.RegisterFunctions(registerInternalCall);
 }
 
-CMonoDomain* CMonoRuntime::FindDomainByHandle(MonoInternals::MonoDomain* pDomain)
+CMonoDomain* CMonoRuntime::FindDomainByHandle(MonoInternals::MonoDomain* pMonoDomain)
 {
-	auto domainIt = m_domainLookupMap.find(pDomain);
-	if (domainIt == m_domainLookupMap.end())
+	for (const std::shared_ptr<CMonoDomain>& pDomain : m_domains)
 	{
-		domainIt = m_domainLookupMap.emplace(std::make_pair(pDomain, std::make_shared<CAppDomain>(pDomain))).first;
+		if (pDomain->GetMonoDomain() == pMonoDomain)
+		{
+			return pDomain.get();
+		}
 	}
 
-	return domainIt->second.get();
+	m_domains.emplace_back(std::make_shared<CAppDomain>(pMonoDomain));
+	return m_domains.back().get();
 }
 
 CAppDomain* CMonoRuntime::LaunchPluginDomain()
@@ -383,23 +382,22 @@ void CMonoRuntime::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 
 			if (pPluginDomain != nullptr)
 			{
-				// Temporary, remove scanning of the Core assembly when we use the unified components
-				static std::vector<std::shared_ptr<CManagedEntityComponentFactory>> coreLibraryFactoryMap;
-				CManagedPlugin::s_pCurrentlyRegisteringFactory = &coreLibraryFactoryMap;
-
+				CManagedPlugin::s_pCrossPluginRegisteredFactories->clear();
+				CManagedPlugin::s_pCurrentlyRegisteringFactories = CManagedPlugin::s_pCrossPluginRegisteredFactories;
+				
 				//Scan the Core-assembly for entity components etc.
-				void* pRegisterArgs[1] = { m_pPluginDomain->GetCryCoreLibrary()->GetManagedObject() };
 				std::shared_ptr<CMonoClass> pEngineClass = m_pPluginDomain->GetCryCoreLibrary()->GetTemporaryClass("CryEngine", "Engine");
-				if (std::shared_ptr<CMonoMethod> pMethod = pEngineClass->FindMethodWithDesc("ScanAssembly(Assembly)").lock())
+				if (std::shared_ptr<CMonoMethod> pMethod = pEngineClass->FindMethodWithDesc("ScanEngineAssembly").lock())
 				{
-					pMethod->InvokeStatic(pRegisterArgs);
+					pMethod->InvokeStatic(nullptr);
 				}
 
-				CManagedPlugin::s_pCurrentlyRegisteringFactory = nullptr;
+				CManagedPlugin::s_pCurrentlyRegisteringFactories = nullptr;
 
 				if (gEnv->IsEditor())
 				{
 					// Compile C# source files in the assets directory
+					// This is placed at the back of m_plugins to make sure that the compiled library is always the last one to be scanned.
 					const char* szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryAbsolute();
 					if (szAssetDirectory != nullptr && szAssetDirectory[0] != '\0')
 					{
@@ -410,17 +408,29 @@ void CMonoRuntime::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 				}
 				else
 				{
-
+					if (CMonoLibrary* pCompiledLibrary = pPluginDomain->GetCompiledLibrary())
+					{
+						m_pAssetsPlugin = std::make_shared<CManagedPlugin>(pCompiledLibrary);
+						m_plugins.emplace_back(m_pAssetsPlugin);
+					}
 				}
 
+				int i = 0;
 				for (const std::weak_ptr<IManagedPlugin>& plugin : m_plugins)
 				{
 					if (std::shared_ptr<IManagedPlugin> pPlugin = plugin.lock())
 					{
+						pPlugin->SetLoadIndex(i);
 						pPlugin->Load(pPluginDomain);
+						++i;
 					}
 				}
 			}
+		}
+		break;
+		case ESYSTEM_EVENT_FAST_SHUTDOWN:
+		{
+			Shutdown();
 		}
 		break;
 	}
@@ -456,6 +466,19 @@ void CMonoRuntime::HandleException(MonoInternals::MonoException* pException)
 
 void CMonoRuntime::OnCoreLibrariesDeserialized()
 {
+	// Clear the previous components, and get all engine components again.
+	CManagedPlugin::s_pCrossPluginRegisteredFactories->clear();
+	CManagedPlugin::s_pCurrentlyRegisteringFactories = CManagedPlugin::s_pCrossPluginRegisteredFactories;
+
+	//Scan the Core-assembly for entity components etc.
+	std::shared_ptr<CMonoClass> pEngineClass = m_pPluginDomain->GetCryCoreLibrary()->GetTemporaryClass("CryEngine", "Engine");
+	if (std::shared_ptr<CMonoMethod> pMethod = pEngineClass->FindMethodWithDesc("ScanEngineAssembly").lock())
+	{
+		pMethod->InvokeStatic(nullptr);
+	}
+
+	CManagedPlugin::s_pCurrentlyRegisteringFactories = nullptr;
+
 	for (const std::weak_ptr<IManagedPlugin>& pWeakPlugin : m_plugins)
 	{
 		if (std::shared_ptr<IManagedPlugin> pPlugin = pWeakPlugin.lock())

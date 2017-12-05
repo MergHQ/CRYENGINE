@@ -230,26 +230,31 @@ public:
 	CProjectManager();
 	virtual ~CProjectManager() {}
 
-	bool ParseProjectFile();
-	void MigrateFromLegacyWorkflowIfNecessary();
+	bool                                  ParseProjectFile();
+	void                                  MigrateFromLegacyWorkflowIfNecessary();
 
 	// IProjectManager
-	virtual const char* GetCurrentProjectName() const override;
-	virtual CryGUID     GetCurrentProjectGUID() const override;
+	virtual const char*                   GetCurrentProjectName() const override;
+	virtual CryGUID                       GetCurrentProjectGUID() const override;
 
-	virtual const char* GetCurrentProjectDirectoryAbsolute() const override;
+	virtual const char*                   GetCurrentProjectDirectoryAbsolute() const override;
 
-	virtual const char* GetCurrentAssetDirectoryRelative() const override;
-	virtual const char* GetCurrentAssetDirectoryAbsolute() const override;
+	virtual const char*                   GetCurrentAssetDirectoryRelative() const override;
+	virtual const char*                   GetCurrentAssetDirectoryAbsolute() const override;
 
-	virtual void        RegenerateCSharpSolution(const char* szDirectory) const override;
+	virtual void                          RegenerateCSharpSolution(const char* szDirectory) const override;
 
-	virtual void        StoreConsoleVariable(const char* szCVarName, const char* szValue) override;
-	virtual void        SaveProjectChanges() override;
+	virtual void                          StoreConsoleVariable(const char* szCVarName, const char* szValue) override;
+	virtual void                          SaveProjectChanges() override;
+
+	virtual const uint16                  GetPluginCount() const override { return static_cast<uint16>(m_project.plugins.size()); };
+	virtual void                          GetPluginInfo(uint16 index, Cry::IPluginManager::EType& typeOut, string& pathOut) const override;
+
+	virtual string                        LoadTemplateFile(const char* szPath, std::function<string(const char* szAlias)> aliasReplacementFunc) const override;
 	// ~IProjectManager
 
 	// ILoadConfigurationEntrySink
-	virtual void OnLoadConfigurationEntry(const char* szKey, const char* szValue, const char* szGroup) override;
+	virtual void                          OnLoadConfigurationEntry(const char* szKey, const char* szValue, const char* szGroup) override;
 	// ~ILoadConfigurationEntrySink
 
 	const std::vector<SPluginDefinition>& GetPluginDefinitions() const { return m_project.plugins; }
@@ -263,7 +268,6 @@ protected:
 
 	void AddPlugin(const SPluginDefinition& definition);
 
-	string LoadTemplateFile(const char* szPath, std::function<string(const char* szAlias)> aliasReplacementFunc) const;
 	void FindSourceFilesInDirectoryRecursive(const char* szDirectory, const char* szExtension, std::vector<string>& sourceFiles) const;
 
 	bool CanMigrateFromLegacyWorkflow() const { return m_project.version == 0 && m_sys_game_folder->GetString()[0] != '\0' && !m_project.filePath.empty(); }

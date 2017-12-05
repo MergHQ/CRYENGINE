@@ -65,7 +65,7 @@ void CryGetCurrentDirectory(unsigned int nBufferLength, char* lpBuffer)
 	}
 
 	// Convert to UTF-8
-	if (Unicode::Convert<Unicode::eEncoding_UTF16, Unicode::eEncoding_UTF8>(lpBuffer, nBufferLength, &buffer[0]) > nBufferLength)
+	if (Unicode::Convert<Unicode::eEncoding_UTF8, Unicode::eEncoding_UTF16>(lpBuffer, nBufferLength, &buffer[0]) > nBufferLength)
 	{
 		*lpBuffer = 0;
 	}

@@ -14,6 +14,8 @@
 #ifndef __cryversion_h__
 #define __cryversion_h__
 
+#include <CryString/CryFixedString.h>
+
 //////////////////////////////////////////////////////////////////////////
 /** This class keeps file version information.
  */

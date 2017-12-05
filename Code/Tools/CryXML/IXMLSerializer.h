@@ -20,6 +20,10 @@ public:
 	{
 		file = std::fopen(path, "r");
 	}
+	explicit FileXmlBufferSource(const wchar_t* path)
+	{
+		file = _wfopen(path, L"r");
+	}
 	~FileXmlBufferSource()
 	{
 		if (file)

@@ -123,7 +123,8 @@ void CSOLibrary::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	case eNotify_OnEndNewScene:             // Sent after the document have been cleared.
 	case eNotify_OnMissionChange:           // Send when the current mission changes.
 	case eNotify_OnEditModeChange:          // Sent when editing mode change (move,rotate,scale,....)
-	case eNotify_OnEditToolChange:          // Sent when edit tool is changed (ObjectMode,TerrainModify,....)
+	case eNotify_OnEditToolBeginChange:     // Sent when edit tool is about to be changed (ObjectMode,TerrainModify,....)
+	case eNotify_OnEditToolEndChange:       // Sent when edit tool has been changed (ObjectMode,TerrainModify,....)
 	case eNotify_OnEndGameMode:             // Send when editor goes out of game mode.
 	case eNotify_OnUpdateViewports:         // Sent when editor needs to update data in the viewports.
 	case eNotify_OnInvalidateControls:      // Sent when editor needs to update some of the data that can be cached by controls like combo boxes.
@@ -2034,7 +2035,8 @@ void CSmartObjectsEditorDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	// Editing events.
 	//////////////////////////////////////////////////////////////////////////
 	case eNotify_OnEditModeChange:          // Sent when editing mode change (move,rotate,scale,....)
-	case eNotify_OnEditToolChange:          // Sent when edit tool is changed (ObjectMode,TerrainModify,....)
+	case eNotify_OnEditToolBeginChange:     // Sent when edit tool is about to be changed (ObjectMode,TerrainModify,....)
+	case eNotify_OnEditToolEndChange:       // Sent when edit tool has been changed (ObjectMode,TerrainModify,....)
 		break;
 
 	// Game related events.

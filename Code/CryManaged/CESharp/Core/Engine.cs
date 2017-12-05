@@ -2,10 +2,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.IO;
 using System.Linq;
-using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -119,18 +117,21 @@ namespace CryEngine
 			EndReload?.Invoke();
 		}
 
+		internal static void ScanEngineAssembly()
+		{
+			ScanAssembly(typeof(Engine).Assembly);
+		}
+
 		internal static void ScanAssembly(Assembly assembly)
 		{
 			var registeredTypes = new List<Type>();
 			foreach(Type t in assembly.GetTypes())
 			{
-				if(typeof(EntityComponent).IsAssignableFrom(t) && t != typeof(object))
+				if(typeof(EntityComponent).IsAssignableFrom(t) && 
+				   t != typeof(object) &&
+				   t.Assembly == assembly &&
+				   !registeredTypes.Contains(t))
 				{
-					if(registeredTypes.Contains(t))
-					{
-						continue;
-					}
-
 					RegisterComponent(t, ref registeredTypes);
 				}
 
@@ -145,12 +146,12 @@ namespace CryEngine
 		{
 			// Get the base class so those can be registered first.
 			var baseType = component.BaseType;
-			if(baseType != null && baseType != typeof(object))
+			if(baseType != null && baseType != typeof(object) && baseType.Assembly == component.Assembly)
 			{
 				var registerQueue = new List<Type>();
 				registerQueue.Add(baseType);
 
-				while(baseType.BaseType != null && baseType != typeof(EntityComponent))
+				while(baseType.BaseType != null && baseType.BaseType.Assembly == component.Assembly)
 				{
 					baseType = baseType.BaseType;
 					registerQueue.Add(baseType);

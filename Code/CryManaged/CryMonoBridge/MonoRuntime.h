@@ -151,7 +151,7 @@ private:
 	void InvokeManagedConsoleCommandNotification(const char* szCommandName, IConsoleCmdArgs* pConsoleCommandArguments);
 
 private:
-	std::unordered_map<MonoInternals::MonoDomain*, std::shared_ptr<CMonoDomain>> m_domainLookupMap;
+	std::vector<std::shared_ptr<CMonoDomain>> m_domains;
 	std::vector<std::shared_ptr<CManagedNodeCreatorProxy>> m_nodeCreators;
 
 	std::shared_ptr<CRootMonoDomain>            m_pRootDomain;

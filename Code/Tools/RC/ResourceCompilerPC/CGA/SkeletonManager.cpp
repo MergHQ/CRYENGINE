@@ -120,7 +120,7 @@ const CSkeletonInfo* SkeletonManager::LoadSkeletonInfo(const string& name, const
 		return 0;
 	}
 
-	string fullFile = PathHelpers::Join(m_rootPath, file);
+	string fullFile = PathUtil::Make(m_rootPath, file);
 	RCLog("Loading skeleton with alias '%s' from file '%s'.", name.c_str(), fullFile.c_str());
 
 	SkeletonLoader& skeletonInfo = m_nameToSkeletonInfo[name];

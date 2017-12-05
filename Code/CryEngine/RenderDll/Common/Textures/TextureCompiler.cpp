@@ -693,7 +693,7 @@ void CTextureCompiler::ConsumeQueuedResourceCompiler(TProcItem* item)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CTextureCompiler::ProcessTextureIfNeeded(
+CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
   const char* originalFilename,
   char* processedFilename,
   size_t processedFilenameSizeInBytes,
@@ -710,6 +710,8 @@ bool CTextureCompiler::ProcessTextureIfNeeded(
 
 	// Adjust filename so that it is global.
 	gEnv->pCryPak->AdjustFileName(sDestFile, sFullDestFilename, 0);
+
+	EResult result = EResult::AlreadyCompiled;
 
 	for (uint32 dwIndex = 0;; ++dwIndex)    // check for all input files
 	{
@@ -820,10 +822,18 @@ bool CTextureCompiler::ProcessTextureIfNeeded(
 			if (immediate)
 			{
 				processed = InvokeResourceCompiler(sFullSrcFilename, sFullDestFilename, false, true) == eRcExitCode_Success;    // false=no window, true=force compile
+
+				// Mark result as having been processed, unless another part of this texture was queued
+				if (result != EResult::Queued)
+				{
+					result = EResult::Available;
+				}
 			}
 			else
 			{
 				processed = QueueResourceCompiler(sFullSrcFilename, sFullDestFilename, false, true) == eRcCallResult_queued;    // false=no window, true=force compile
+
+				result = EResult::Queued;
 			}
 
 			if(!processed)
@@ -831,7 +841,7 @@ bool CTextureCompiler::ProcessTextureIfNeeded(
 				cry_strcpy(processedFilename, processedFilenameSizeInBytes, originalFilename);
 
 				// rc failed
-				return false;
+				return EResult::Failed;
 			}
 		}
 
@@ -842,7 +852,7 @@ bool CTextureCompiler::ProcessTextureIfNeeded(
 	cry_strcpy(processedFilename, processedFilenameSizeInBytes, sDestFile);
 
 	// rc didn't fail
-	return true;
+	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////

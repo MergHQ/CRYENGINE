@@ -8,10 +8,11 @@ class CCompiledMonoLibrary final  : public CMonoLibrary
 {
 public:
 	CCompiledMonoLibrary(const char* szDirectory, CMonoDomain* pDomain);
+	CCompiledMonoLibrary(CMonoDomain* pDomain);
 
 private:
 	// CMonoLibrary
-	virtual bool Load() override;
+	virtual bool Load(int loadIndex) override;
 	virtual bool WasCompiledAtRuntime() override { return true; }
 	// ~CMonoLibrary
 

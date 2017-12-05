@@ -951,7 +951,8 @@ void CDialogEditorDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	// Editing events.
 	//////////////////////////////////////////////////////////////////////////
 	case eNotify_OnEditModeChange:          // Sent when editing mode change (move,rotate,scale,....)
-	case eNotify_OnEditToolChange:          // Sent when edit tool is changed (ObjectMode,TerrainModify,....)
+	case eNotify_OnEditToolBeginChange:     // Sent when edit tool is about to be changed (ObjectMode,TerrainModify,....)
+	case eNotify_OnEditToolEndChange:       // Sent when edit tool has been changed (ObjectMode,TerrainModify,....)
 		break;
 
 	// Game related events.

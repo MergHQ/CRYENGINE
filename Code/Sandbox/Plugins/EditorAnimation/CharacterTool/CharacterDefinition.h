@@ -87,6 +87,10 @@ struct CharacterAttachment
 	Vec3i                m_limits[2];
 	Ang3                 m_frame0;
 	Vec3                 m_tension, m_damping;
+	string               m_strJointNameMirror;
+	bool                 m_updateMirror;
+	QuatT                m_boneTrans, m_boneTransMirror;
+	Vec3                 m_dirChild;
 
 	struct ProxySource
 	{
@@ -122,6 +126,19 @@ struct CharacterAttachment
 		, m_viewDistanceMultiplier(1.0f)
 		, m_nFlags(0)
 		, m_definition()
+		, m_ProxyType(GEOM_BOX)
+		, m_prevProxyType(GEOM_BOX)
+		, m_prevProxyParams(0, 0, 0, 0)
+		, m_meshSmooth(0)
+		, m_prevMeshSmooth(0)
+		, m_limits { ZERO, ZERO }
+		, m_frame0(0, 0, 0)
+		, m_tension(0)
+		, m_damping(0)
+		, m_updateMirror(false)
+		, m_boneTrans(IDENTITY)
+		, m_boneTransMirror(IDENTITY)
+		, m_dirChild(ZERO)
 	{
 	}
 
@@ -130,6 +147,7 @@ struct CharacterAttachment
 	IGeometry* CreateProxyGeom() const;
 	void       ChangeProxyType();
 	void       GenerateMesh();
+	void       UpdateMirrorInfo(int idBone, const IDefaultSkeleton& skel);
 };
 
 struct ICryAnimation;

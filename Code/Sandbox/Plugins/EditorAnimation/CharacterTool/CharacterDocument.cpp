@@ -2009,16 +2009,22 @@ void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const S
 	}
 
 	// draw physics
-	if (m_displayOptions->physics.showPhysicalProxies || m_displayOptions->physics.showRagdollJointLimits)
+	if (m_displayOptions->physics.showPhysicalProxies != DisplayPhysicsOptions::DISABLED || m_displayOptions->physics.showRagdollJointLimits != DisplayPhysicsOptions::NONE)
 	{
 		pAuxGeom->SetRenderFlags(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeNone | e_DepthWriteOff | e_DepthTestOn);
 		IPhysicsDebugRenderer* pPhysRender = GetIEditor()->GetSystem()->GetIPhysicsDebugRenderer();
 		pPhysRender->UpdateCamera(*context.camera);
 		int iDrawHelpers = 0;
-		if (m_displayOptions->physics.showPhysicalProxies)
-			iDrawHelpers |= 2;
-		if (m_displayOptions->physics.showRagdollJointLimits)
-			iDrawHelpers |= 0x10;
+		switch (m_displayOptions->physics.showPhysicalProxies)
+		{
+			case DisplayPhysicsOptions::TRANSLUCENT: iDrawHelpers |= 1 << 29;
+			case DisplayPhysicsOptions::SOLID: iDrawHelpers |= 2;
+		}
+		switch (m_displayOptions->physics.showRagdollJointLimits)
+		{
+			case DisplayPhysicsOptions::SELECTED: iDrawHelpers |= 1 << 28 | m_displayOptions->physics.selectedBone << 16;
+			case DisplayPhysicsOptions::ALL: iDrawHelpers |= 0x10;
+		}
 		DrawPhysicalEntities(pPhysRender, pInstanceBase, iDrawHelpers);
 		pPhysRender->Flush(FrameTime);
 	}
