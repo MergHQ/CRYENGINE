@@ -50,6 +50,7 @@ bool ProxyDimFromGeom(IGeometry *pGeom, QuatT& trans, Vec4& dim)
 	}
 }
 
+
 namespace CharacterTool
 {
 
@@ -802,6 +803,91 @@ void CharacterAttachment::GenerateMesh()
 	m_prevMeshSmooth = m_meshSmooth;
 }
 
+void CharacterAttachment::UpdateMirrorInfo(int idBone, const IDefaultSkeleton& skel)
+{
+	m_boneTransMirror.SetIdentity();
+	int idc = skel.GetJointChildIDAtIndexByID(idBone, 0);
+	m_dirChild = idc >= 0 ? skel.GetDefaultRelJointByID(idc).t : Vec3(ZERO);
+
+	// find mirror bones by left-right substring matching ('#' means string start or end)
+	const char* mirrorNames[] = { " l ", " r ",  "_l_", "_r_",  "#l ", "#r ",  "#l_", "#r_",  " l#", " r#",  "_l#", "_r#",  "left", "right" };
+	string jname0 = m_strJointName, jname1; 
+	jname0.MakeLower();
+	for(int j = 0, id1 = -1; j < CRY_ARRAY_COUNT(mirrorNames) && id1 < 0; j++)
+	{
+		int l = strlen(mirrorNames[j]) - 1;
+		if (*mirrorNames[j] == '#' && !strncmp(jname0, mirrorNames[j] + 1, l))
+			(jname1 = mirrorNames[j ^ 1] + 1).append(jname0.c_str() + l);
+		else if (mirrorNames[j][l] == '#' && !strncmp(jname0.c_str() - l, mirrorNames[j], l))
+			(jname1 = jname0.substr(0, jname0.length() - l)).append(mirrorNames[j ^ 1], l);
+		else if (const char *p = strstr(jname0, mirrorNames[j]))
+			jname1 = jname0.substr(0, p - jname0.c_str()) + string(mirrorNames[j ^ 1]) + string(p + l + 1);
+		else
+			continue;
+		m_strJointNameMirror = skel.GetJointNameByID(id1 = skel.GetJointIDByName(jname1));
+		m_boneTransMirror = skel.GetDefaultAbsJointByID(id1);
+	}
+	m_updateMirror = false;
+}
+
+void MirrorAttachment(const CharacterAttachment& att0, CharacterAttachment& att1)
+{
+	Vec3 axes[2], dir = att0.m_dirChild;
+	QuatT trans[] = { att0.m_boneTrans, att0.m_boneTransMirror };
+	if (!dir.len2()) // use the principal direction of the phys proxy primitive if child direction not available
+		dir = Quat(att0.m_jointSpacePosition.q).GetColumn(att0.m_ProxyType == GEOM_BOX ? idxmax3(&att0.m_ProxyParams.x) : 2);
+	for(int j = 0; j < 2; j++)
+		axes[j] = trans[j].q.GetColumn(idxmax3(dir.abs()));
+	Vec3 axis = ((axes[0] - axes[1]).len2() > 0.001f ? axes[0] - axes[1] : trans[0].t - trans[1].t).normalized();
+	axis *= sgnnz(axis[idxmax3(axis.abs())]);
+
+	att1.m_strJointName = att0.m_strJointNameMirror;
+	att1.m_strJointNameMirror = att0.m_strJointName;
+	att1.m_strSocketName = string("$") + att1.m_strJointName;
+	att1.m_attachmentType = CA_PROX;
+	att1.m_ProxyPurpose = CharacterAttachment::RAGDOLL;
+	att1.m_rotationSpace = CharacterAttachment::SPACE_JOINT;
+	att1.m_positionSpace = CharacterAttachment::SPACE_JOINT;
+	att1.m_boneTrans = att0.m_boneTransMirror;
+	att1.m_boneTransMirror = att0.m_boneTrans;
+	auto Mirror = [axis](const Vec3& v) { return v - axis * ((axis * v) * 2); };
+	att1.m_dirChild = Mirror(trans[0].q * att0.m_dirChild) * trans[1].q;
+	Matrix33 mtx;
+	for(int j = 0; j < 2; j++)
+		mtx.SetColumn(j + 1, !trans[1].q * Mirror(trans[0].q * Quat(att0.m_jointSpacePosition.q).GetColumn(j + 1)));
+	mtx.SetColumn(0, mtx.GetColumn1() ^ mtx.GetColumn2());
+	att1.m_jointSpacePosition.q = Quat(mtx);
+	att1.m_ProxyParams = att1.m_prevProxyParams = att0.m_ProxyParams;
+	att1.m_jointSpacePosition.t = Mirror(trans[0].q * att0.m_jointSpacePosition.t) * trans[1].q;
+	att1.m_ProxyType = att1.m_prevProxyType = att0.m_ProxyType;
+	att1.m_proxySrc = nullptr;
+	att1.m_meshSmooth = att1.m_prevMeshSmooth = 0;
+	att1.m_characterSpacePosition = trans[1] * att1.m_jointSpacePosition;
+	att1.m_limits[0] = -att0.m_limits[1]; att1.m_limits[1] = -att0.m_limits[0];
+	mtx = Matrix33(trans[0].q * Quat(att0.m_frame0));
+	Vec3 axProj, axNew;
+	for(int j = 0; j < 3; j++)
+	{
+		axProj[j] = (axes[1] * (axNew = Mirror(mtx.GetColumn(j))));
+		mtx.SetColumn(j, axNew);
+	}
+	int icorr = idxmax3(axProj.abs()), iter = 0;
+	do 
+	{	// we'll have to flip one axis of q0, choose it so that q0 (global and mirrored) is close to trans[1].q
+		icorr = inc_mod3[icorr];
+		axNew = mtx.GetColumn(inc_mod3[icorr]) ^ mtx.GetColumn(dec_mod3[icorr]);
+	} while	(++iter < 2 && (axNew * trans[1].q.GetColumn(icorr)) < 0);
+	if (mtx.GetColumn(icorr) * axNew < 0)
+		std::swap(att1.m_limits[0][icorr] *= -1, att1.m_limits[1][icorr] *= -1);
+	mtx.SetColumn(icorr, axNew);
+	att1.m_frame0 = Ang3(Matrix33(!trans[1].q) * mtx);
+	for(int j = 0; j < 3; j++)
+		att1.m_frame0[j] = ((int)fabs(att1.m_frame0[j] * 10) * 0.1f) * sgnnz(att1.m_frame0[j]);
+	att1.m_damping = att0.m_damping;
+	att1.m_tension = att0.m_tension;
+	att1.m_updateMirror = false;
+}
+
 std::map<INT_PTR,_smart_ptr<CharacterAttachment::ProxySource>> CharacterDefinition::g_meshArchive;
 int CharacterDefinition::g_meshArchiveUsed = 0;
 
@@ -1035,6 +1121,13 @@ void CharacterAttachment::Serialize(Serialization::IArchive& ar)
 			ar(Serialization::RadiansAsDeg(m_frame0), "frame0", "Rotation0");
 			ar(m_tension, "tension", "Spring Tension");
 			ar(m_damping, "damping", "Spring Damping");
+			ar(m_strJointNameMirror, "mirrorName");
+			ar(m_boneTrans, "boneTrans");
+			ar(m_boneTransMirror, "boneTransMirror");
+			ar(m_dirChild, "dirChild");
+			ar(m_prevProxyParams, "prevDim");
+			if (m_ProxyType != GEOM_TRIMESH && *m_strJointNameMirror)
+				ar(Serialization::ToggleButton(m_updateMirror), "mirrorUpd", "Update L/R Mirror");
 		}	
 		else if (ar.openBlock("lozenge", "+Lozenge"))
 		{
@@ -1345,8 +1438,20 @@ void CharacterDefinition::Serialize(Serialization::IArchive& ar)
 	}
 
 	if (ar.isInput())
+	{
 		for (size_t i = 0; i < attachments.size(); ++i)
-			attachments[i].m_definition = this;
+		{
+			CharacterAttachment& att = attachments[i];
+			att.m_definition = this;
+			if (att.m_attachmentType == CA_PROX && att.m_ProxyPurpose == CharacterAttachment::RAGDOLL && att.m_updateMirror && att.m_ProxyType != GEOM_TRIMESH && *att.m_strJointNameMirror)
+			{
+				att.m_updateMirror = false;
+				auto mirror = std::find_if(attachments.begin(), attachments.end(), 
+					[att](auto &att1) { return !strcmp(att.m_strJointNameMirror, att1.m_strSocketName.c_str() + 1) && att1.m_strSocketName[0] == '$'; });
+				MirrorAttachment(att, mirror == attachments.end() ? (attachments.push_back(CharacterAttachment()), attachments.back()) : *mirror);
+			}
+		}
+	}
 
 	if (attachments.empty())
 		ar.warning(attachments, "Add attachments to the skeleton to create character geometry.\nIf you want to see the skeleton: go to 'Display Options', 'Skeleton' and select 'Joints'.");
@@ -2623,7 +2728,7 @@ void CharacterDefinition::LoadPhysProxiesFromCharacter(ICharacterInstance *chara
 		{
 			CharacterAttachment att;
 			att.m_strJointName = skel.GetJointNameByID(i);
-			att.m_strSocketName = string("$")+att.m_strJointName;
+			att.m_strSocketName = string("$") + att.m_strJointName;
 			att.m_attachmentType = CA_PROX;
 			att.m_ProxyPurpose = CharacterAttachment::RAGDOLL;
 			att.m_rotationSpace = CharacterAttachment::SPACE_JOINT;
@@ -2634,7 +2739,7 @@ void CharacterDefinition::LoadPhysProxiesFromCharacter(ICharacterInstance *chara
 			if (att.m_ProxyType == GEOM_TRIMESH)
 				(att.m_proxySrc = new CharacterAttachment::ProxySource)->m_proxyMesh = pPhys->pGeom;
 			att.m_meshSmooth = att.m_prevMeshSmooth = 0;
-			att.m_characterSpacePosition = skel.GetDefaultAbsJointByID(i) * att.m_jointSpacePosition;
+			att.m_characterSpacePosition = (att.m_boneTrans = skel.GetDefaultAbsJointByID(i)) * att.m_jointSpacePosition;
 			const CryBonePhysics& bp = *skel.GetJointPhysInfo(i);
 			for(int l = 0; l < 2; l++) for(int j = 0; j < 3; j++)
 				att.m_limits[l][j] = (int)(min(180.0f, max(-180.0f, RAD2DEG(bp.min[l * 3 + j] * (~bp.flags >> j & 1)))) + 180) - 180;
@@ -2649,6 +2754,8 @@ void CharacterDefinition::LoadPhysProxiesFromCharacter(ICharacterInstance *chara
 			att.m_frame0 = Ang3(q0);
 			for(j = 0; j < 3; j++)
 				att.m_frame0[j] = ((int)fabs(att.m_frame0[j] * 10) * 0.1f) * sgnnz(att.m_frame0[j]);
+			att.UpdateMirrorInfo(i, skel);
+
 			attachments.push_back(att);
 			origBonePhysAtt.push_back(att);
 		}

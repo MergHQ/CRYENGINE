@@ -102,12 +102,17 @@ struct DisplaySecondaryAnimationOptions
 
 struct DisplayPhysicsOptions
 {
-	bool showPhysicalProxies;
-	bool showRagdollJointLimits;
+	enum EDbgRenderProxy	{ DISABLED, SOLID, TRANSLUCENT };
+	enum EDbgRenderLimits	{ NONE, ALL, SELECTED };
+
+	EDbgRenderProxy  showPhysicalProxies;
+	EDbgRenderLimits showRagdollJointLimits;
+	int              selectedBone;
 
 	DisplayPhysicsOptions()
-		: showPhysicalProxies(false)
-		, showRagdollJointLimits(false)
+		: showPhysicalProxies(DISABLED)
+		, showRagdollJointLimits(NONE)
+		, selectedBone(-1)
 	{
 	}
 

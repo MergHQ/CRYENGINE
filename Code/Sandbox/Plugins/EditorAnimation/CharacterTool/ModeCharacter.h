@@ -79,6 +79,10 @@ private:
 	CharacterToolForm*          m_window;
 	TransformPanel*             m_transformPanel;
 	std::vector<QPropertyTree*> m_layerPropertyTrees;
+
+	string                      m_curBoneName;
+	Vec2                        m_posMouse;
+	bool                        m_isCurBoneFree;
 };
 
 }
