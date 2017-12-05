@@ -2793,6 +2793,36 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 	return MNM::TriangleID(0);
 }
 
+bool NavigationSystem::SnapToNavMesh(const NavigationAgentTypeID agentID, const Vec3& position, const INavMeshQueryFilter* pFilter, const SSnapToNavMeshRulesInfo& snappingRules, Vec3& snappedPosition, MNM::TriangleID* pTriangleId) const
+{
+	//TODO: don't we need to expand NavMeshes' bboxes when searching for nearest NavMesh? (input position may be outside of mesh volume)
+	NavigationMeshID meshId = GetEnclosingMeshID(agentID, position);
+	if (!meshId)
+		return false;
+
+	const NavigationMesh& mesh = GetMesh(meshId);
+	const MNM::CNavMesh& navMesh = mesh.navMesh;
+	const MNM::CNavMesh::SGridParams& paramsGrid = navMesh.GetGridParams();
+
+	const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x), MNM::real_t(paramsGrid.origin.y), MNM::real_t(paramsGrid.origin.z));
+
+	AgentType agentTypeProperties;
+	const bool arePropertiesValid = GetAgentTypeProperties(agentID, agentTypeProperties);
+	CRY_ASSERT(arePropertiesValid);
+
+	const MNM::real_t horizontalRange = MNMUtils::CalculateMinHorizontalRange(agentTypeProperties.settings.agent.radius, paramsGrid.voxelSize.x);
+	const MNM::real_t verticalRange = MNMUtils::CalculateMinVerticalRange(agentTypeProperties.settings.agent.height, paramsGrid.voxelSize.z);
+
+	MNM::vector3_t navMeshPos;
+	MNM::aabb_t aroundPositionAABB(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalRange));
+	if (navMesh.SnapPosition(MNM::vector3_t(position) - origin, aroundPositionAABB, snappingRules, pFilter, navMeshPos, pTriangleId))
+	{
+		snappedPosition = navMeshPos.GetVec3();
+		return true;
+	}
+	return false;
+}
+
 bool NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& toPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const
 {
 	NavigationMeshID meshId = GetEnclosingMeshID(agentTypeID, startPos);
@@ -4142,8 +4172,8 @@ void NavigationSystemDebugDraw::DebugDraw(NavigationSystem& navigationSystem)
 		DebugDrawPathFinder(navigationSystem, settings);
 
 		DebugDrawClosestPoint(navigationSystem, settings);
-
 		DebugDrawGroundPoint(navigationSystem, settings);
+		DebugDrawSnapToNavmesh(navigationSystem, settings);
 
 		DebugDrawIslandConnection(navigationSystem, settings);
 
@@ -4603,6 +4633,27 @@ void NavigationSystemDebugDraw::DebugDrawGroundPoint(NavigationSystem& navigatio
 		const Vec3 endPos(closestPosition + origin.GetVec3());
 		renderAuxGeom->DrawSphere(endPos + verticalOffset, 0.05f, ColorB(Col_Red));
 		renderAuxGeom->DrawSphere(startLoc, 0.05f, ColorB(Col_Black));
+	}
+}
+
+void NavigationSystemDebugDraw::DebugDrawSnapToNavmesh(NavigationSystem& navigationSystem, const DebugDrawSettings& settings)
+{
+	CAISystem::SObjectDebugParams debugObject;
+	if (!GetAISystem()->GetObjectDebugParamsFromName("MNMSnappedPoint", debugObject))
+		return;
+
+	SSnapToNavMeshRulesInfo snappingRules;
+	snappingRules.bVerticalSearch = true;
+	snappingRules.bBoxSearch = true;
+
+	Vec3 snappedPosition;
+	MNM::TriangleID triangleId;
+	if (navigationSystem.SnapToNavMesh(m_agentTypeID, debugObject.objectPos, nullptr, snappingRules, snappedPosition, &triangleId))
+	{
+		IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+		const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);
+		renderAuxGeom->DrawSphere(snappedPosition + verticalOffset, 0.05f, ColorB(Col_Red));
+		renderAuxGeom->DrawSphere(debugObject.objectPos + verticalOffset, 0.05f, ColorB(Col_Black));
 	}
 }
 

@@ -499,7 +499,7 @@ size_t CNavMesh::GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriC
 }
 #pragma warning(pop)
 
-TriangleID CNavMesh::GetTriangleAt(const vector3_t& location, const real_t verticalDownwardRange, const real_t verticalUpwardRange, const INavMeshQueryFilter* pFilter, float minIslandArea) const
+TriangleID CNavMesh::GetTriangleAt(const vector3_t& location, const real_t verticalDownwardRange, const real_t verticalUpwardRange, const INavMeshQueryFilter* pFilter, float minIslandArea /*= 0.0f*/) const
 {
 	const MNM::aabb_t aabb(
 	  MNM::vector3_t(MNM::real_t(location.x), MNM::real_t(location.y), MNM::real_t(location.z - verticalDownwardRange)),
@@ -534,7 +534,6 @@ TriangleID CNavMesh::GetTriangleAt(const vector3_t& location, const real_t verti
 			}
 		}
 	}
-
 	return closestID;
 }
 
@@ -596,6 +595,27 @@ TriangleID CNavMesh::GetClosestTriangle(const vector3_t& location, real_t vrange
 
 	return resultClosestTriangleId;
 }
+
+TriangleID CNavMesh::GetClosestTriangle(const vector3_t& location, const aabb_t& aroundLocationAABB, const INavMeshQueryFilter* pFilter,
+	real_t* distance /*= nullptr*/, vector3_t* closest /*= nullptr*/, float minIslandArea /*= 0.0f*/) const
+{
+	const MNM::aabb_t aabb(location + aroundLocationAABB.min , location + aroundLocationAABB.max);
+
+	const size_t MaxTriCandidateCount = 1024;
+	TriangleID candidates[MaxTriCandidateCount];
+
+	const size_t candidatesCount = GetTriangles(aabb, candidates, MaxTriCandidateCount, pFilter, minIslandArea);
+	real_t::unsigned_overflow_type distanceSq;
+	const TriangleID resultClosestTriangleId = FindClosestTriangleInternal(location, candidates, candidatesCount, closest, &distanceSq);
+
+	if ((resultClosestTriangleId != Constants::InvalidTriangleID) && (distance != nullptr))
+	{
+		*distance = real_t::sqrtf(distanceSq);
+	}
+
+	return resultClosestTriangleId;
+}
+
 
 bool CNavMesh::GetVertices(TriangleID triangleID, vector3_t& v0, vector3_t& v1, vector3_t& v2) const
 {
@@ -848,6 +868,36 @@ bool CNavMesh::CanTrianglePassFilter(const TriangleID triangleID, const INavMesh
 		const TileContainer& container = m_tiles[tileID - 1];
 		Tile::STriangle& triangle = container.tile.triangles[ComputeTriangleIndex(triangleID)];
 		return filter.PassFilter(triangle);
+	}
+	return false;
+}
+
+bool CNavMesh::SnapPosition(const vector3_t& position, const aabb_t& aroundPositionAABB, const SSnapToNavMeshRulesInfo& snappingRules, const INavMeshQueryFilter* pFilter, vector3_t& snappedPosition, MNM::TriangleID* pTriangleId) const
+{
+	// Note: GetClosestTriangle and GetTriangleAt are expecting input positions in navmesh's local space, but returned snapped position is in global space
+	// We'll keep the same behavior here for now
+	
+	if (snappingRules.bVerticalSearch)
+	{
+		if (TriangleID triangleId = GetTriangleAt(position, -aroundPositionAABB.min.z, aroundPositionAABB.max.z, pFilter, 0.0f))
+		{
+			// TODO: get the position projected down on the triangle
+			// Using input position in global space for now
+			snappedPosition = position + vector3_t(m_params.origin);
+
+			if (pTriangleId)
+				*pTriangleId = triangleId;
+			return true;
+		}
+	}
+	if (snappingRules.bBoxSearch)
+	{
+		if (TriangleID triangleId = GetClosestTriangle(position, aroundPositionAABB, pFilter, nullptr, &snappedPosition))
+		{
+			if (pTriangleId)
+				*pTriangleId = triangleId;
+			return true;
+		}
 	}
 	return false;
 }
