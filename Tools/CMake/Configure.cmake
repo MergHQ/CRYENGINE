@@ -66,6 +66,11 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 	set(OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}_release")
 endif()
 
+set(OUTPUT_DIRECTORY_SUFFIX "" CACHE STRING "Optional suffix for the binary output directory")
+if(OUTPUT_DIRECTORY_SUFFIX)
+	set(OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}_${OUTPUT_DIRECTORY_SUFFIX}")
+endif()
+
 set(METADATA_PROJECT_NAME "CryEngine" CACHE STRING "Name of the solution project")
 project("${METADATA_PROJECT_NAME}_CMake_${BUILD_PLATFORM}" CXX C)
 
