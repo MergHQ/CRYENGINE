@@ -10,7 +10,8 @@
 #include "Wrappers/MonoMethod.h"
 #include <CrySystem/IProjectManager.h>
 
-std::vector<std::shared_ptr<CManagedEntityComponentFactory>>* CManagedPlugin::s_pCurrentlyRegisteringFactory = nullptr;
+std::vector<std::shared_ptr<CManagedEntityComponentFactory>>* CManagedPlugin::s_pCurrentlyRegisteringFactories = nullptr;
+std::vector<std::shared_ptr<CManagedEntityComponentFactory>>* CManagedPlugin::s_pCrossPluginRegisteredFactories = new std::vector<std::shared_ptr<CManagedEntityComponentFactory>>();
 
 CManagedPlugin::CManagedPlugin(const char* szBinaryPath)
 	: m_pLibrary(nullptr)
@@ -89,10 +90,10 @@ void CManagedPlugin::ScanAssembly()
 		CMonoLibrary* pCoreAssembly = static_cast<CMonoLibrary*>(GetMonoRuntime()->GetCryCoreLibrary());
 		std::shared_ptr<CMonoClass> pEngineClass = pCoreAssembly->GetTemporaryClass("CryEngine", "Engine");
 
-		s_pCurrentlyRegisteringFactory = &m_entityComponentFactories;
+		s_pCurrentlyRegisteringFactories = &m_entityComponentFactories;
 
 		// Mark all factories as unregistered. All existing factories will get registered again during ScaneAssembly.
-		for (std::shared_ptr<CManagedEntityComponentFactory>& pFactory : *s_pCurrentlyRegisteringFactory)
+		for (std::shared_ptr<CManagedEntityComponentFactory>& pFactory : *s_pCurrentlyRegisteringFactories)
 		{
 			pFactory->SetIsRegistered(false);
 		}
@@ -105,20 +106,21 @@ void CManagedPlugin::ScanAssembly()
 		}
 
 		// If a factory is not registered again, it means the component was removed.
-		for (auto it = s_pCurrentlyRegisteringFactory->begin(); it != s_pCurrentlyRegisteringFactory->end();)
+		for (auto it = s_pCurrentlyRegisteringFactories->begin(); it != s_pCurrentlyRegisteringFactories->end();)
 		{
 			if (!(*it)->IsRegistered())
 			{
 				(*it)->RemoveAllComponentInstances();
-				it = s_pCurrentlyRegisteringFactory->erase(it);
+				it = s_pCurrentlyRegisteringFactories->erase(it);
 			}
 			else
 			{
+				s_pCrossPluginRegisteredFactories->emplace_back((*it));
 				++it;
 			}
 		}
 
-		s_pCurrentlyRegisteringFactory = nullptr;
+		s_pCurrentlyRegisteringFactories = nullptr;
 
 		// Register any potential Schematyc types
 		gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(stl::make_unique<CSchematycPackage>(*this));
@@ -181,7 +183,7 @@ void CManagedPlugin::Load(CAppDomain* pPluginDomain)
 {
 	if (m_pLibrary == nullptr && m_libraryPath.size() > 0)
 	{
-		m_pLibrary = pPluginDomain->LoadLibrary(m_libraryPath);
+		m_pLibrary = pPluginDomain->LoadLibrary(m_libraryPath, m_loadIndex);
 		if (m_pLibrary == nullptr)
 		{
 			gEnv->pLog->LogError("[Mono] could not initialize plug-in '%s'!", m_libraryPath.c_str());

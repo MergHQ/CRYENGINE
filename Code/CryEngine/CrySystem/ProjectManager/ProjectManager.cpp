@@ -581,13 +581,46 @@ void CProjectManager::RegenerateCSharpSolution(const char* szDirectory) const
 		includes += "    <Compile Include=\"" + PathUtil::ToDosPath(sourceFileRelativePath) + "\" />\n";
 	}
 
+	string pluginReferences;
+	const std::vector<SPluginDefinition> plugins = m_project.plugins;
+	for (const SPluginDefinition& plugin : plugins)
+	{
+		if (plugin.type != Cry::IPluginManager::EType::Managed)
+		{
+			continue;
+		}
+
+		bool include = plugin.platforms.empty();
+		if (!include)
+		{
+			for (EPlatform platform : plugin.platforms)
+			{
+				include = platform == EPlatform::Current;
+				if (include)
+				{
+					break;
+				}
+			}
+		}
+		
+		if (include)
+		{
+			string pluginName = PathUtil::GetFileName(plugin.path);
+			string path = plugin.path;
+			pluginReferences += "    <Reference Include=\"" + pluginName + "\">\n"
+			                    "      <HintPath>" + path + "</HintPath>\n"
+			                    "      <Private>False</Private>\n"
+			                    "    </Reference>\n";
+		}
+	}
+
 	string csProjName = "Game.csproj";
 
 	string projectFilePath = PathUtil::Make(m_project.rootDirectory, csProjName.c_str());
-	CCryFile projectFile(projectFilePath.c_str(), "wb");
+	CCryFile projectFile(projectFilePath.c_str(), "wb", ICryPak::FLAGS_NO_LOWCASE);
 	if (projectFile.GetHandle() != nullptr)
 	{
-		string projectFileContents = LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedProject.csproj", [this, includes](const char* szAlias) -> string
+		string projectFileContents = LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedProjectTemplate.csproj.txt", [this, includes, pluginReferences](const char* szAlias) -> string
 		{
 			if (!strcmp(szAlias, "csproject_guid"))
 			{
@@ -613,11 +646,15 @@ void CProjectManager::RegenerateCSharpSolution(const char* szDirectory) const
 			}
 			else if (!strcmp(szAlias, "output_path"))
 			{
-				return PathUtil::Make(m_project.rootDirectory, "user/bin");
+				return PathUtil::Make(m_project.rootDirectory, "bin");
 			}
 			else if (!strcmp(szAlias, "includes"))
 			{
 				return includes;
+			}
+			else if (!strcmp(szAlias, "managed_plugin_references"))
+			{
+				return pluginReferences;
 			}
 
 			CRY_ASSERT_MESSAGE(false, "Unhandled alias!");
@@ -627,10 +664,10 @@ void CProjectManager::RegenerateCSharpSolution(const char* szDirectory) const
 		projectFile.Write(projectFileContents.data(), projectFileContents.size());
 
 		string solutionFilePath = PathUtil::Make(m_project.rootDirectory, "Game.sln");
-		CCryFile solutionFile(solutionFilePath.c_str(), "wb");
+		CCryFile solutionFile(solutionFilePath.c_str(), "wb", ICryPak::FLAGS_NO_LOWCASE);
 		if (solutionFile.GetHandle() != nullptr)
 		{
-			string solutionFileContents = LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedSolution.sln", [this, csProjName](const char* szAlias) -> string
+			string solutionFileContents = LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedSolutionTemplate.sln.txt", [this, csProjName](const char* szAlias) -> string
 			{
 				if (!strcmp(szAlias, "project_name"))
 				{
@@ -654,6 +691,14 @@ void CProjectManager::RegenerateCSharpSolution(const char* szDirectory) const
 
 			solutionFile.Write(solutionFileContents.data(), solutionFileContents.size());
 		}
+		else
+		{
+			CRY_ASSERT_MESSAGE(false, "Unable to create C# solution file!");
+		}
+	}
+	else
+	{
+		CRY_ASSERT_MESSAGE(false, "Unable to create C# project file!");
 	}
 }
 
@@ -694,4 +739,11 @@ void CProjectManager::FindSourceFilesInDirectoryRecursive(const char* szDirector
 
 		gEnv->pCryPak->FindClose(handle);
 	}
+}
+
+void CProjectManager::GetPluginInfo(uint16 index, Cry::IPluginManager::EType& typeOut, string& pathOut) const
+{
+	auto plugin = m_project.plugins[index];
+	pathOut = plugin.path;
+	typeOut = plugin.type;
 }

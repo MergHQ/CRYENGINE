@@ -61,35 +61,29 @@ bool CSharpSourcefileAssetType::OnCreate(CEditableAsset& editAsset, const void* 
 	string cleanAssetName = GetCleanName(assetName);
 	CryGUID guid = CryGUID::Create();
 
-	string sourceContents = string().Format(
-		"using System;\n"
-		"using CryEngine;\n\n"
-		"namespace %s\n"
-		"{\n"
-		"	[EntityComponent(Guid=\"%s\")]\n"
-		"	public class %s : EntityComponent\n"
-		"	{\n"
-		"		/// <summary>\n"
-		"		/// Called at the start of the game.\n"
-		"		/// </summary>\n"
-		"		protected override void OnGameplayStart()\n"
-		"		{\n\n"
-		"		}\n\n"
-		"		/// <summary>\n"
-		"		/// Called once every frame when the game is running.\n"
-		"		/// </summary>\n"
-		"		/// <param name=\"frameTime\">The time difference between this and the previous frame.</param>\n"
-		"		protected override void OnUpdate(float frameTime)\n"
-		"		{\n\n"
-		"		}\n"
-		"	}\n"
-		"}", cleanProjectName.c_str(), guid.ToString().c_str(), cleanAssetName.c_str());
-
-	CCryFile file(csFilePath.c_str(), "wt", ICryPak::FLAGS_NO_LOWCASE);
-
-	if (file.GetHandle() != nullptr)
+	CCryFile assetFile(csFilePath.c_str(), "wb", ICryPak::FLAGS_NO_LOWCASE);
+	if (assetFile.GetHandle() != nullptr)
 	{
-		if (file.Write(sourceContents.c_str(), sourceContents.size()) != 0)
+		string assetContents = gEnv->pSystem->GetIProjectManager()->LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedAsset.cs.txt", [this, cleanProjectName, cleanAssetName, guid](const char* szAlias) -> string
+		{
+			if (!strcmp(szAlias, "namespace"))
+			{
+				return cleanProjectName;
+			}
+			else if (!strcmp(szAlias, "guid"))
+			{
+				return guid.ToString();
+			}
+			else if (!strcmp(szAlias, "class_name"))
+			{
+				return cleanAssetName;
+			}
+
+			CRY_ASSERT_MESSAGE(false, "Unhandled alias!");
+			return "";
+		});
+
+		if (assetFile.Write(assetContents.data(), assetContents.size()))
 		{
 			editAsset.SetFiles("", { csFilePath });
 		}

@@ -53,7 +53,7 @@ static void RegisterComponent(MonoInternals::MonoReflectionType* pType, uint64 g
 	std::shared_ptr<CMonoString> pDesc = pDomain->CreateString(pCategory);
 	std::shared_ptr<CMonoString> pClassIcon = pDomain->CreateString(pIcon);
 
-	for (std::shared_ptr<CManagedEntityComponentFactory>& pFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactory)
+	for (std::shared_ptr<CManagedEntityComponentFactory>& pFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactories)
 	{
 		if (pFactory->GetGUID() == id)
 		{
@@ -64,7 +64,7 @@ static void RegisterComponent(MonoInternals::MonoReflectionType* pType, uint64 g
 	}
 
 	// New factory, emplace
-	CManagedPlugin::s_pCurrentlyRegisteringFactory->emplace_back(std::make_shared<CManagedEntityComponentFactory>(library.GetClassFromMonoClass(pMonoClass), id, info, pClassName->GetString(), pClassCategory->GetString(), pDesc->GetString(), pClassIcon->GetString()));
+	CManagedPlugin::s_pCurrentlyRegisteringFactories->emplace_back(std::make_shared<CManagedEntityComponentFactory>(library.GetClassFromMonoClass(pMonoClass), id, info, pClassName->GetString(), pClassCategory->GetString(), pDesc->GetString(), pClassIcon->GetString()));
 }
 
 static void AddComponentBase(MonoInternals::MonoReflectionType* pType, MonoInternals::MonoReflectionType* pBaseType)
@@ -75,7 +75,7 @@ static void AddComponentBase(MonoInternals::MonoReflectionType* pType, MonoInter
 	std::shared_ptr<CManagedEntityComponentFactory> pFactory;
 	std::shared_ptr<CManagedEntityComponentFactory> pBaseFactory;
 
-	for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactory)
+	for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactories)
 	{
 		if (pRegisteredFactory->GetClass()->GetMonoClass() == pMonoClass)
 		{
@@ -84,6 +84,22 @@ static void AddComponentBase(MonoInternals::MonoReflectionType* pType, MonoInter
 		else if (pRegisteredFactory->GetClass()->GetMonoClass() == pBaseMonoClass)
 		{
 			pBaseFactory = pRegisteredFactory;
+		}
+	}
+
+	// If the component or base component was not found, it might be in another plugin.
+	if (pFactory == nullptr || pBaseFactory == nullptr)
+	{
+		for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCrossPluginRegisteredFactories)
+		{
+			if (!pFactory && pRegisteredFactory->GetClass()->GetMonoClass() == pMonoClass)
+			{
+				pFactory = pRegisteredFactory;
+			}
+			else if (!pBaseFactory && pRegisteredFactory->GetClass()->GetMonoClass() == pBaseMonoClass)
+			{
+				pBaseFactory = pRegisteredFactory;
+			}
 		}
 	}
 
@@ -117,7 +133,7 @@ static void RegisterManagedEntityWithDefaultComponent(MonoInternals::MonoString*
 	MonoInternals::MonoClass* pMonoClass = MonoInternals::mono_type_get_class(MonoInternals::mono_reflection_type_get_type(pComponentType));
 	std::shared_ptr<CManagedEntityComponentFactory> pFactory;
 
-	for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactory)
+	for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactories)
 	{
 		if (pRegisteredFactory->GetClass()->GetMonoClass() == pMonoClass)
 		{
@@ -221,7 +237,7 @@ static void RegisterComponentProperty(MonoInternals::MonoReflectionType* pCompon
 {
 	MonoInternals::MonoClass* pMonoClass = MonoInternals::mono_type_get_class(MonoInternals::mono_reflection_type_get_type(pComponentType));
 	std::shared_ptr<CManagedEntityComponentFactory> pFactory;
-	for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactory)
+	for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactories)
 	{
 		if (pRegisteredFactory->GetClass()->GetMonoClass() == pMonoClass)
 		{
@@ -243,7 +259,7 @@ static void RegisterComponentFunction(MonoInternals::MonoReflectionType* pCompon
 {
 	MonoInternals::MonoClass* pMonoClass = MonoInternals::mono_type_get_class(MonoInternals::mono_reflection_type_get_type(pComponentType));
 	std::shared_ptr<CManagedEntityComponentFactory> pFactory;
-	for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactory)
+	for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactories)
 	{
 		if (pRegisteredFactory->GetClass()->GetMonoClass() == pMonoClass)
 		{
@@ -260,7 +276,7 @@ static int RegisterComponentSignal(MonoInternals::MonoReflectionType* pComponent
 {
 	MonoInternals::MonoClass* pMonoClass = MonoInternals::mono_type_get_class(MonoInternals::mono_reflection_type_get_type(pComponentType));
 	std::shared_ptr<CManagedEntityComponentFactory> pFactory;
-	for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactory)
+	for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactories)
 	{
 		if (pRegisteredFactory->GetClass()->GetMonoClass() == pMonoClass)
 		{
@@ -282,7 +298,7 @@ static void AddComponentSignalParameter(MonoInternals::MonoReflectionType* pComp
 {
 	MonoInternals::MonoClass* pMonoClass = MonoInternals::mono_type_get_class(MonoInternals::mono_reflection_type_get_type(pComponentType));
 	std::shared_ptr<CManagedEntityComponentFactory> pFactory;
-	for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactory)
+	for (std::shared_ptr<CManagedEntityComponentFactory>& pRegisteredFactory : *CManagedPlugin::s_pCurrentlyRegisteringFactories)
 	{
 		if (pRegisteredFactory->GetClass()->GetMonoClass() == pMonoClass)
 		{

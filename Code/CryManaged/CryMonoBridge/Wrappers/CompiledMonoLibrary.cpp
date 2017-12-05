@@ -5,24 +5,31 @@
 #include "MonoRuntime.h"
 #include "MonoLibrary.h"
 #include "MonoDomain.h"
+#include <CrySystem/IProjectManager.h>
+#include <CrySystem/ICryPluginManager.h>
 
 CCompiledMonoLibrary::CCompiledMonoLibrary(const char* szDirectory, CMonoDomain* pDomain)
 	: CMonoLibrary(nullptr, "", pDomain)
 	, m_directory(szDirectory)
 {
-	Load();
+	m_assemblyPath = PathUtil::Make(PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "bin"), "CRYENGINE.CSharp.dll");
+	Load(-1);
 }
 
-bool CCompiledMonoLibrary::Load()
+CCompiledMonoLibrary::CCompiledMonoLibrary(CMonoDomain* pDomain)
+	: CMonoLibrary(nullptr, "", pDomain)
 {
-	const string defaultAssemblyPath = PathUtil::Make(PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "bin"), "CRYENGINE.CSharp.dll");
+	m_assemblyPath = PathUtil::Make(PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "bin"), "CRYENGINE.CSharp.dll");
+	Load(-1);
+}
 
+bool CCompiledMonoLibrary::Load(int loadIndex)
+{
 	// Zero assembly and image, in case we are reloading
 	m_pAssembly = nullptr;
 	m_pImage = nullptr;
 	
 	MonoInternals::MonoString* pOutString = nullptr;
-	bool hasLoadedAssembly = false;
 
 	if (gEnv->IsEditor())
 	{
@@ -31,56 +38,71 @@ bool CCompiledMonoLibrary::Load()
 		if (sourceFiles.size() == 0)
 		{
 			// Don't treat no assets as a failure, this is OK!
+			// The old dll file needs to be removed though.
+			if (gEnv->pCryPak->IsFileExist(m_assemblyPath))
+			{
+				gEnv->pCryPak->RemoveFile(m_assemblyPath);
+				
+				// Remove debug files as well.
+				string mdbFilePath = m_assemblyPath + ".mdb";
+				string pdbFilePath = m_assemblyPath;
+				pdbFilePath = PathUtil::ReplaceExtension(pdbFilePath, "pdb");
+				if (gEnv->pCryPak->IsFileExist(mdbFilePath))
+				{
+					gEnv->pCryPak->RemoveFile(mdbFilePath);
+				}
+				if (gEnv->pCryPak->IsFileExist(pdbFilePath))
+				{
+					gEnv->pCryPak->RemoveFile(pdbFilePath);
+				}
+			}
 			return true;
+		}
+
+		std::vector<string> pluginPaths;
+		IProjectManager* projectManager = gEnv->pSystem->GetIProjectManager();
+		uint16 pluginCount = projectManager->GetPluginCount();
+		for (uint16 i = 0; i < pluginCount; ++i)
+		{
+			string path;
+			Cry::IPluginManager::EType type;
+			projectManager->GetPluginInfo(i, type, path);
+			if (type == Cry::IPluginManager::EType::Managed)
+			{
+				pluginPaths.emplace_back(path);
+			}
 		}
 
 		CMonoLibrary* pCoreLibrary = GetMonoRuntime()->GetCryCoreLibrary();
 
 		std::shared_ptr<CMonoClass> pCompilerClass = pCoreLibrary->GetTemporaryClass("CryEngine.Compilation", "Compiler");
-		std::shared_ptr<CMonoMethod> pCompilationMethod = pCompilerClass->FindMethod("CompileCSharpSourceFiles", 3).lock();
+		std::shared_ptr<CMonoMethod> pCompilationMethod = pCompilerClass->FindMethod("CompileCSharpSourceFiles", 4).lock();
+		
+		// Path where the assembly will be saved to.
+		std::shared_ptr<CMonoString> pMonoAssemblyPath = pCoreLibrary->GetDomain()->CreateString(m_assemblyPath.c_str());
 
-		MonoInternals::MonoArray* pStringArray = MonoInternals::mono_array_new(m_pDomain->GetMonoDomain(), MonoInternals::mono_get_string_class(), sourceFiles.size());
+		// String array of all C# source files.
+		MonoInternals::MonoArray* pSourceFilesStringArray = MonoInternals::mono_array_new(m_pDomain->GetMonoDomain(), MonoInternals::mono_get_string_class(), sourceFiles.size());
 		for (int i = 0; i < sourceFiles.size(); ++i)
 		{
-			mono_array_set(pStringArray, MonoInternals::MonoString*, i, mono_string_new(m_pDomain->GetMonoDomain(), sourceFiles[i]));
+			mono_array_set(pSourceFilesStringArray, MonoInternals::MonoString*, i, mono_string_new(m_pDomain->GetMonoDomain(), sourceFiles[i]));
 		}
 
-		std::shared_ptr<CMonoString> pMonoAssemblyPath = pCoreLibrary->GetDomain()->CreateString(defaultAssemblyPath.c_str());
-		void* pParams[3] = { pMonoAssemblyPath->GetManagedObject(), pStringArray, &pOutString };
-		std::shared_ptr<CMonoObject> pResult = pCompilationMethod->InvokeStatic(pParams);
-
-		if (pResult)
+		// String array with paths to all managed plugins in this project.
+		MonoInternals::MonoArray* pPluginsStringArray = MonoInternals::mono_array_new(m_pDomain->GetMonoDomain(), MonoInternals::mono_get_string_class(), pluginPaths.size());
+		for (int i = 0; i < pluginPaths.size(); ++i)
 		{
-			if (MonoInternals::MonoReflectionAssembly* pReflectionAssembly = (MonoInternals::MonoReflectionAssembly*)pResult->GetManagedObject())
-			{
-				if (m_pAssembly = MonoInternals::mono_reflection_assembly_get_assembly(pReflectionAssembly))
-				{
-					m_pImage = MonoInternals::mono_assembly_get_image(m_pAssembly);
-					m_assemblyPath = MonoInternals::mono_image_get_filename(m_pImage);
-					hasLoadedAssembly = true;
-				}
-			}
+			mono_array_set(pPluginsStringArray, MonoInternals::MonoString*, i, mono_string_new(m_pDomain->GetMonoDomain(), pluginPaths[i]));
 		}
-		else if (!m_assemblyPath.empty())
-		{
-			// Reload previously working assembly
-			if (m_pAssembly = MonoInternals::mono_domain_assembly_open(m_pDomain->GetHandle(), m_assemblyPath))
-			{
-				m_pImage = MonoInternals::mono_assembly_get_image(m_pAssembly);
-				hasLoadedAssembly = true;
-			}
-		}
+		
+		void* pParams[4] = { pMonoAssemblyPath->GetManagedObject(), pSourceFilesStringArray, pPluginsStringArray, &pOutString };
+		pCompilationMethod->InvokeStatic(pParams);
 	}
 	
-	// If no assembly has been loaded, attempt to load the dll from the default location.
-	// This prevents that no assemblies are loaded when the sandbox is started with compile errors in the C# assets.
-	if(!hasLoadedAssembly)
+	// Load the assembly by default, even if compiling might have failed because the Sandbox can use the previous assembly.
+	if(!m_assemblyPath.IsEmpty())
 	{
-		
-		if (m_pAssembly = MonoInternals::mono_domain_assembly_open(m_pDomain->GetHandle(), defaultAssemblyPath))
-		{
-			m_pImage = MonoInternals::mono_assembly_get_image(m_pAssembly);
-		}
+		LoadLibraryFile(m_assemblyPath);
 	}
 
 	if (gEnv->IsEditor())

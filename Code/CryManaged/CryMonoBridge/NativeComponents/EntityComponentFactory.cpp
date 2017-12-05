@@ -34,7 +34,7 @@ CManagedEntityComponentFactory::CManagedEntityComponentFactory(std::shared_ptr<C
 	m_classDescription.SetDescription(szUiDescription);
 	m_classDescription.SetIcon(szIcon);
 
-	m_classDescription.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+	m_classDescription.SetComponentFlags({ IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
 	// TODO: Determine whether or not we allow a missing constructor
 	CacheMethods(false);

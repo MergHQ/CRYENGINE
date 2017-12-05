@@ -20,6 +20,7 @@ struct IManagedPlugin
 	virtual void Load(CAppDomain* pDomain) = 0;
 	virtual void OnCoreLibrariesDeserialized() = 0;
 	virtual void OnPluginLibrariesDeserialized() = 0;
+	virtual void SetLoadIndex(int order) = 0;
 };
 
 struct IMonoListener

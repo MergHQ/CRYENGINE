@@ -25,6 +25,7 @@ public:
 	CMonoLibrary* GetCryCoreLibrary() const { return m_pLibCore; }
 
 	CMonoLibrary* CompileFromSource(const char* szDirectory);
+	CMonoLibrary* GetCompiledLibrary();
 
 	void SerializeObject(CMonoObject* pSerializer, MonoInternals::MonoObject* pObject, bool bIsAssembly);
 	std::shared_ptr<CMonoObject> DeserializeObject(CMonoObject* pSerializer, const CMonoClass* const pObjectClass);
