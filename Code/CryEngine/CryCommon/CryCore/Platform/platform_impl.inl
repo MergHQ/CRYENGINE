@@ -326,9 +326,7 @@ void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRoot
 			strTempPath.erase(nCurDirSlashPos + 1, string::npos);
 			strTempPath.append(i == 0 ? "Engine" : "engine");
 
-			// Does directory exist
-			struct stat info;
-			if (stat(strTempPath.c_str(), &info) == 0 && (info.st_mode & S_IFMT) == S_IFDIR)
+			if(CryDirectoryExists(strTempPath.c_str()))
 			{
 				bFoundMatch = true;
 				break;

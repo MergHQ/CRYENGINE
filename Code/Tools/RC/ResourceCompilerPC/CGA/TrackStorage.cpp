@@ -1040,7 +1040,7 @@ void CTrackStorage::SaveDataBase905(const char* name, bool bPrepareForInPlaceStr
 
 	saver.SaveControllerDB905(bSwapEndian, chunk0905, &storage[0], storage.size());
 
-	if (!FileUtil::EnsureDirectoryExists(PathHelpers::GetDirectory(name).c_str()))
+	if (!FileUtil::EnsureDirectoryExists(PathUtil::GetPathWithoutFilename(name).c_str()))
 	{
 		RCLogError("Failed creating directory for %s", name);
 	}

@@ -9,6 +9,7 @@
 #include "FileUtil.h"
 #include "ResourceCompiler.h"
 #include <CryCore/CryCrc32.h>
+#include <CryString/CryPath.h>
 #include "ZipEncryptor.h"
 
 namespace
@@ -16,9 +17,9 @@ namespace
 
 string CreateTempFileName(const string& filepath)
 {
-	const string ext = PathHelpers::FindExtension(filepath);
+	const string ext = PathUtil::GetExt(filepath);
 
-	return PathHelpers::ReplaceExtension(filepath, string().Format("$%s", ext.c_str()));
+	return PathUtil::ReplaceExtension(filepath, string().Format("$%s", ext.c_str()));
 }
 
 }
@@ -283,7 +284,7 @@ PakManager::ECallResult PakManager::CreatePakFile(
 		}
 	}
 
-	if (!FileUtil::EnsureDirectoryExists(PathHelpers::GetDirectory(requestedPakFilename).c_str()))
+	if (!FileUtil::EnsureDirectoryExists(PathUtil::GetPathWithoutFilename(requestedPakFilename).c_str()))
 	{
 		RCLogError("Failed creating directory for %s", requestedPakFilename.c_str());
 		return eCallResult_Failed;
@@ -292,7 +293,7 @@ PakManager::ECallResult PakManager::CreatePakFile(
 	std::map<string, std::vector<PakHelpers::PakEntry>> fileMap;
 
 	{
-		const size_t nCount = PakHelpers::CreatePakEntryList(sourceFiles, fileMap, eSortType, eSplitType, PathHelpers::ReplaceExtension(requestedPakFilename, "pak"));
+		const size_t nCount = PakHelpers::CreatePakEntryList(sourceFiles, fileMap, eSortType, eSplitType, PathUtil::ReplaceExtension(requestedPakFilename, "pak"));
 		if (nCount == 0)
 		{
 			return eCallResult_Failed;
@@ -330,7 +331,7 @@ PakManager::ECallResult PakManager::CreatePakFile(
 			::DeleteFile(pakFilename.c_str());
 		}
 
-		if (!FileUtil::EnsureDirectoryExists(PathHelpers::GetDirectory(pakFilename).c_str()))
+		if (!FileUtil::EnsureDirectoryExists(PathUtil::GetPathWithoutFilename(pakFilename).c_str()))
 		{
 			RCLogError("Failed creating directory for %s", pakFilename.c_str());
 			return eCallResult_Failed;
@@ -389,12 +390,12 @@ PakManager::ECallResult PakManager::CreatePakFile(
 		for (size_t i = 0; i < numFiles; ++i)
 		{
 
-			string sFileNameInZip = PathHelpers::RemoveDuplicateSeparators(PathHelpers::ToDosPath(PathHelpers::Join(folderInPak, files[i].m_rcFile.m_sourceInnerPathAndName)));
-			const string sRealFilename = PathHelpers::Join(files[i].m_rcFile.m_sourceLeftPath, files[i].m_rcFile.m_sourceInnerPathAndName);
+			string sFileNameInZip = PathHelpers::RemoveDuplicateSeparators(PathUtil::ToDosPath(PathUtil::Make(folderInPak, files[i].m_rcFile.m_sourceInnerPathAndName)));
+			const string sRealFilename = PathUtil::Make(files[i].m_rcFile.m_sourceLeftPath, files[i].m_rcFile.m_sourceInnerPathAndName);
 
 			// Skip files with extensions starting with "$" or "pak".
 			{
-				const string ext = PathHelpers::FindExtension(sRealFilename);
+				const string ext = PathUtil::GetExt(sRealFilename);
 				if (!ext.empty() && (ext[0] == '$' || stricmp(ext, "pak") == 0))
 				{
 					++numFilesSkipped;
@@ -442,7 +443,7 @@ PakManager::ECallResult PakManager::CreatePakFile(
 		{
 			if (bUpdate)
 			{
-				const string existingPak = PathHelpers::ReplaceExtension(pakFilenameToWrite, "pak");
+				const string existingPak = PathUtil::ReplaceExtension(pakFilenameToWrite, "pak");
 				if (FileUtil::FileExists(existingPak))
 				{
 					::SetFileAttributes(existingPak.c_str(), FILE_ATTRIBUTE_ARCHIVE);
@@ -819,7 +820,7 @@ PakManager::ECallResult PakManager::CreatePakFile(
 
 		for (string& tempFileName : m_zipFiles)
 		{
-			const string fileName = PathHelpers::ReplaceExtension(tempFileName, "pak");
+			const string fileName = PathUtil::ReplaceExtension(tempFileName, "pak");
 			::MoveFileEx(tempFileName.c_str(), fileName.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
 			tempFileName = fileName;
 		}

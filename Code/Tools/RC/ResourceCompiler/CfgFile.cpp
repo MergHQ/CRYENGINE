@@ -22,6 +22,8 @@
 #include "Config.h"
 #include "IRCLog.h"
 
+#include <CryString/UnicodeFunctions.h>
+
 #define  Log while (false)
 
 
@@ -50,7 +52,10 @@ bool CfgFile::Load( const string &fileName )
 	m_fileName = fileName;
 	m_modified = false;
 
-	FILE *file = fopen( fileName.c_str(),"rb" );
+	wstring widePath;
+	Unicode::Convert(widePath, fileName);
+
+	FILE *file = _wfopen(widePath.c_str(), L"rb");
 	if (!file)
 	{
 		RCLog("Can't open \"%s\"", fileName.c_str());
@@ -76,7 +81,10 @@ bool CfgFile::Load( const string &fileName )
 // Save configuration file, with the stored name in m_fileName
 bool CfgFile::Save()
 {
-	FILE *file = fopen(m_fileName.c_str(),"wb");
+	wstring widePath;
+	Unicode::Convert(widePath, m_fileName.c_str());
+
+	FILE *file = _wfopen(widePath.c_str(), L"wb");
 
 	if(!file)
 		return(false);

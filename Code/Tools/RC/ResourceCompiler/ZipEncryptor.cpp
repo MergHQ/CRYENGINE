@@ -32,7 +32,7 @@ string ZipEncryptor::GetOutputFileNameOnly() const
 
 string ZipEncryptor::GetOutputPath() const
 {
-	return PathHelpers::Join(m_CC.GetOutputFolder(), GetOutputFileNameOnly());
+	return PathUtil::Make(m_CC.GetOutputFolder(), GetOutputFileNameOnly());
 }
 
 const char* ZipEncryptor::GetExt(int index) const
