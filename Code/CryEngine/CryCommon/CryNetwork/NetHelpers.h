@@ -323,16 +323,15 @@ private:
     TSerialize serialize,                                                                                                    \
     uint32 curSeq,                                                                                                           \
     uint32 oldSeq,                                                                                                           \
-    uint32 timeFraction32,                                                                                                           \
+    uint32 timeFraction32,                                                                                                   \
     EntityId * pEntityId, INetChannel * pChannel)                                                                            \
   {                                                                                                                          \
-    char* p = (char*) handler;                                                                                               \
-    p -= size_t((INetMessageSink*)(cls*)NULL);                                                                               \
+    cls* p = static_cast<cls*>(handler);                                                                                     \
     TParam ## name param;                                                                                                    \
     param.SerializeWith(serialize);                                                                                          \
     return TNetMessageCallbackResult(true,                                                                                   \
                                      new CNetSimpleAtSyncItem<TParam ## name, cls>(                                          \
-                                       (cls*)p, &cls::Handle ## name, param, *pEntityId,                                     \
+                                       p, &cls::Handle ## name, param, *pEntityId,                                           \
                                        curSeq == DEMO_PLAYBACK_SEQ_NUMBER && oldSeq == DEMO_PLAYBACK_SEQ_NUMBER, pChannel)); \
   }                                                                                                                          \
   inline bool cls::Handle ## name(const TParam ## name & param, EntityId entityId, bool bFromDemoSystem, INetChannel * pNetChannel, EDisconnectionCause & disconnectCause, string & disconnectMessage)
