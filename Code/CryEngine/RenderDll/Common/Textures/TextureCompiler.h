@@ -32,11 +32,23 @@ public:
 	// run compiler only on developer platform
 #if defined(CRY_ENABLE_RC_HELPER)
 public:
+	enum class EResult
+	{
+		//! Texture was already compiled, no need to run RC
+		AlreadyCompiled,
+		//! Texture was queued for compilation, will not be available immediately
+		Queued,
+		//! Texture was compiled immediately, and can be loaded right away.
+		Available,
+		//! Texture compilation failed
+		Failed
+	};
+
 	// checks file date and existence
 	// Return:
 	//   fills processedFilename[] with name of the file that should be loaded
 	//   boolean for success
-	bool ProcessTextureIfNeeded(
+	EResult ProcessTextureIfNeeded(
 	  const char* originalFilename,
 	  char* processedFilename,
 	  size_t processedFilenameSizeInBytes,

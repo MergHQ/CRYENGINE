@@ -1095,7 +1095,7 @@ bool CRenderer::EF_ReloadFile (const char* szFileName)
 			gameRelativePath += gameFolderPathLength;
 
 		char buffer[512];
-		return CTextureCompiler::GetInstance().ProcessTextureIfNeeded(gameRelativePath, buffer, sizeof(buffer), false);
+		return CTextureCompiler::GetInstance().ProcessTextureIfNeeded(gameRelativePath, buffer, sizeof(buffer), false) != CTextureCompiler::EResult::Failed;
 	}
 #endif //defined(CRY_ENABLE_RC_HELPER)
 
