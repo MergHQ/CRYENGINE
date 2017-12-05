@@ -1556,7 +1556,7 @@ bool CSystem::InitPhysics(const SSystemInitParams& startupParams)
 	               "Sets physical time step granularity.\n"
 	               "Usage: p_time_granularity [0..0.1]\n"
 	               "Used for internal tweaking only.");
-	REGISTER_CVAR2("p_list_active_objects", &pVars->bLogActiveObjects, pVars->bLogActiveObjects, VF_NULL, "");
+	REGISTER_CVAR2("p_list_active_objects", &pVars->bLogActiveObjects, pVars->bLogActiveObjects, VF_NULL, "1 - list normal objects, 2 - list independent objects, 3 - both");
 	REGISTER_CVAR2("p_profile_entities", &pVars->bProfileEntities, pVars->bProfileEntities, 0,
 	               "Enables per-entity time step profiling");
 	REGISTER_CVAR2("p_profile_functions", &pVars->bProfileFunx, pVars->bProfileFunx, 0,

@@ -4096,18 +4096,34 @@ void CPhysicalWorld::DrawPhysicsHelperInformation(IPhysRenderer *pRenderer, int 
 
 	if (m_vars.bLogActiveObjects) {
 		ReadLock lock(m_lockList);
-		m_vars.bLogActiveObjects = 0;
 		int i,nPrims,nCount=0;
-		RigidBody *pbody;
-		for(pent=m_pTypedEnts[2]; pent; pent=pent->m_next) if (pent->GetMassInv()>0) {
-			for(i=nPrims=0;i<pent->m_nParts;i++) if (pent->m_parts[i].flags & geom_colltype0)
-				nPrims += ((CGeometry*)pent->m_parts[i].pPhysGeomProxy->pGeom)->GetPrimitiveCount();
-			pbody = pent->GetRigidBody();	++nCount;
-			CryLogAlways("%s @ %7.2f,%7.2f,%7.2f, mass %.2f, v %.1f, w %.1f, #polies %d, id %d",
-				m_pRenderer ? m_pRenderer->GetForeignName(pent->m_pForeignData,pent->m_iForeignData,pent->m_iForeignFlags):"",
-				pent->m_pos.x,pent->m_pos.y,pent->m_pos.z, pbody->M,pbody->v.len(),pbody->w.len(),nPrims,pent->m_id);
+		if (m_vars.bLogActiveObjects & 1)	{
+			RigidBody *pbody;
+			for(pent=m_pTypedEnts[2]; pent; pent=pent->m_next) if (pent->GetMassInv()>0) {
+				for(i=nPrims=0;i<pent->m_nParts;i++) if (pent->m_parts[i].flags & geom_colltype0)
+					nPrims += ((CGeometry*)pent->m_parts[i].pPhysGeomProxy->pGeom)->GetPrimitiveCount();
+				pbody = pent->GetRigidBody();	++nCount;
+				CryLogAlways("%s @ %7.2f,%7.2f,%7.2f, mass %.2f, v %.1f, w %.1f, #polies %d, id %d",
+					m_pRenderer ? m_pRenderer->GetForeignName(pent->m_pForeignData,pent->m_iForeignData,pent->m_iForeignFlags):"",
+					pent->m_pos.x,pent->m_pos.y,pent->m_pos.z, pbody->M,pbody->v.len(),pbody->w.len(),nPrims,pent->m_id);
+			}
 		}
+		if (m_vars.bLogActiveObjects & 2)
+			for(pent=m_pTypedEntsPerm[4]; pent; pent=pent->m_next) if (!(pent->m_flags & pef_disabled) && pent->IsAwake()) {
+				++nCount;
+				const char *type = "*wrong type*";
+				switch (pent->GetType()) {
+					case PE_ROPE: type = "Rope"; break;
+					case PE_SOFT: type = "Cloth"; break;
+					case PE_PARTICLE: type = "Particle"; break;
+					case PE_ARTICULATED: type = "Character"; break;
+				}
+				CryLogAlways("%s @ %7.2f,%7.2f,%7.2f, %s, id %d",
+					m_pRenderer ? m_pRenderer->GetForeignName(pent->m_pForeignData,pent->m_iForeignData,pent->m_iForeignFlags):"",
+					pent->m_pos.x,pent->m_pos.y,pent->m_pos.z, type, pent->m_id);
+			}
 		CryLogAlways("%d active object(s)",nCount);
+		m_vars.bLogActiveObjects = 0;
 	}
 #endif//_RELEASE
 }

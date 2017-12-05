@@ -344,6 +344,8 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 			{
 				nEnts = nMaxEntities;
 			}
+			for(; nEnts > 0 && pInfos[nEnts - 1].nCallsLast + pInfos[nEnts - 1].nCallsAvg < 0.2f; nEnts--)
+				;
 
 			if (!pVars->bSingleStepMode)
 			{
