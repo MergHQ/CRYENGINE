@@ -1039,6 +1039,11 @@ void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
 			}
 
 			fputs(tempString.c_str(), m_pLogFile);
+
+			if (m_pLogFile)
+			{
+				fflush(m_pLogFile); // Flush or the changes will only show up on shutdown.
+			}
 		}
 	#else
 		if (bAdd)

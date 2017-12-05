@@ -10,7 +10,7 @@
 
 #define MAX_FILENAME_SIZE 256
 
-#if defined(DEDICATED_SERVER)
+#if defined(DEDICATED_SERVER) || defined (CRY_PLATFORM_WINDOWS)
 	#define KEEP_LOG_FILE_OPEN 1
 #else
 	#define KEEP_LOG_FILE_OPEN 0
