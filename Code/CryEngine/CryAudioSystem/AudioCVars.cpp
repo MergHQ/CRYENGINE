@@ -145,6 +145,11 @@ void CCVars::RegisterVariables()
 	               "Usage: s_OcclusionRayLengthOffset [0/...]\n"
 	               "Default: 0.1 (10 cm)\n");
 
+	REGISTER_CVAR2("s_ListenerOcclusionPlaneSize", &m_listenerOcclusionPlaneSize, 1.0f, VF_CHEAT | VF_CHEAT_NOCHECK,
+	               "Sets the size of the plane at listener position against which occlusion is calculated.\n"
+	               "Usage: s_ListenerOcclusionPlaneSize [0/...]\n"
+	               "Default: 1.0 (100 cm)\n");
+
 	REGISTER_CVAR2("s_FileCacheManagerSize", &m_fileCacheManagerSize, m_fileCacheManagerSize, VF_REQUIRE_APP_RESTART,
 	               "Sets the size in KiB the AFCM will allocate on the heap.\n"
 	               "Usage: s_FileCacheManagerSize [0/...]\n"
@@ -308,6 +313,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_PositionUpdateThresholdMultiplier");
 		pConsole->UnregisterVariable("s_VelocityTrackingThreshold");
 		pConsole->UnregisterVariable("s_OcclusionRayLengthOffset");
+		pConsole->UnregisterVariable("s_ListenerOcclusionPlaneSize");
 		pConsole->UnregisterVariable("s_FileCacheManagerSize");
 		pConsole->UnregisterVariable("s_AudioObjectPoolSize");
 		pConsole->UnregisterVariable("s_AudioEventPoolSize");

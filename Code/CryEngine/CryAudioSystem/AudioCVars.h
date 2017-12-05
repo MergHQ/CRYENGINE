@@ -37,6 +37,7 @@ public:
 	float m_positionUpdateThresholdMultiplier = 0.02f;
 	float m_velocityTrackingThreshold = 0.0f;
 	float m_occlusionRayLengthOffset = 0.0f;
+	float m_listenerOcclusionPlaneSize = 0.0f;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	float  m_debugDistance = 0.0f;

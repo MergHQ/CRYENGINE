@@ -1106,25 +1106,26 @@ private:
 // Filter for drawing debug info to the screen
 enum class EAudioDebugDrawFilter : EnumFlagsType
 {
-	All                       = 0,
-	ShowSpheres               = BIT(6),  // a
-	ShowObjectLabel           = BIT(7),  // b
-	ShowObjectTriggers        = BIT(8),  // c
-	ShowObjectStates          = BIT(9),  // d
-	ShowObjectParameters      = BIT(10), // e
-	ShowObjectEnvironments    = BIT(11), // f
-	ShowObjectDistance        = BIT(12), // g
-	ShowOcclusionRayLabels    = BIT(13), // h
-	ShowOcclusionRays         = BIT(14), // i
-	ShowObjectStandaloneFiles = BIT(15), // j
+	All                        = 0,
+	ShowSpheres                = BIT(6),  // a
+	ShowObjectLabel            = BIT(7),  // b
+	ShowObjectTriggers         = BIT(8),  // c
+	ShowObjectStates           = BIT(9),  // d
+	ShowObjectParameters       = BIT(10), // e
+	ShowObjectEnvironments     = BIT(11), // f
+	ShowObjectDistance         = BIT(12), // g
+	ShowOcclusionRayLabels     = BIT(13), // h
+	ShowOcclusionRays          = BIT(14), // i
+	DrawListenerOcclusionPlane = BIT(15), // j
+	ShowObjectStandaloneFiles  = BIT(16), // k
 
-	HideMemoryInfo            = BIT(18), // m
-	FilterAllObjectInfo       = BIT(19), // n
+	HideMemoryInfo             = BIT(18), // m
+	FilterAllObjectInfo        = BIT(19), // n
 
-	ShowStandaloneFiles       = BIT(26), // u
-	ShowActiveEvents          = BIT(27), // v
-	ShowActiveObjects         = BIT(28), // w
-	ShowFileCacheManagerInfo  = BIT(29), // x
+	ShowStandaloneFiles        = BIT(26), // u
+	ShowActiveEvents           = BIT(27), // v
+	ShowActiveObjects          = BIT(28), // w
+	ShowFileCacheManagerInfo   = BIT(29), // x
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioDebugDrawFilter);
 
@@ -1138,6 +1139,7 @@ static constexpr EAudioDebugDrawFilter objectDebugMask =
   EAudioDebugDrawFilter::ShowObjectDistance |
   EAudioDebugDrawFilter::ShowOcclusionRayLabels |
   EAudioDebugDrawFilter::ShowOcclusionRays |
+  EAudioDebugDrawFilter::DrawListenerOcclusionPlane |
   EAudioDebugDrawFilter::ShowObjectStandaloneFiles;
 
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
