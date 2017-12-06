@@ -609,26 +609,27 @@ PakManager::ECallResult PakManager::CreatePakFile(
 					const size_t filenameCountForDelete = filenameInZipPtrsForDelete.size();
 					const size_t filenameCountConsumed = sizeSplitter.m_fileLast + 1;
 					filenameInZipPtrsForDelete.resize(filenameCountForDelete + filenameCountConsumed);
-					memcpy(&filenameInZipPtrsForDelete[filenameCountForDelete],
-					       &filenameInZipPtrs[0], sizeof(filenameInZipPtrs[0]) * filenameCountConsumed);
+					memcpy(&filenameInZipPtrsForDelete[filenameCountForDelete], &filenameInZipPtrs[0], sizeof(filenameInZipPtrs[0]) * filenameCountConsumed);
 
 					// shift pending names to the front of the list
 					filenameCount -= filenameCountConsumed;
-					memmove(&realFilenamePtrs[0], &realFilenamePtrs[filenameCountConsumed],
-					        sizeof(realFilenamePtrs[0]) * filenameCount);
-					memmove(&filenameInZipPtrs[0], &filenameInZipPtrs[filenameCountConsumed],
-					        sizeof(filenameInZipPtrs[0]) * filenameCount);
-					realFilenamePtrs.resize(filenameCount);
-					filenameInZipPtrs.resize(filenameCount);
-
-					if (!bKeepTrying)
+					if (filenameCount > 0)
 					{
-						// delete skipped over files from archive
-						for (size_t i = 0; i < filenameCount; ++i)
+						memmove(&realFilenamePtrs[0], &realFilenamePtrs[filenameCountConsumed], sizeof(realFilenamePtrs[0]) * filenameCount);
+						memmove(&filenameInZipPtrs[0], &filenameInZipPtrs[filenameCountConsumed], sizeof(filenameInZipPtrs[0]) * filenameCount);
+
+						if (!bKeepTrying)
 						{
-							pPakFile->zip->RemoveFile(filenameInZipPtrs[i]);
+							// delete skipped over files from archive
+							for (size_t i = 0; i < filenameCount; ++i)
+							{
+								pPakFile->zip->RemoveFile(filenameInZipPtrs[i]);
+							}
 						}
 					}
+
+					realFilenamePtrs.resize(filenameCount);
+					filenameInZipPtrs.resize(filenameCount);
 
 					if (sizeSplitter.HasReachedWriteLimit())
 					{
@@ -685,6 +686,7 @@ PakManager::ECallResult PakManager::CreatePakFile(
 					}
 
 					assert(filenameCount == 0);
+
 					assert(realFilenamePtrs.size() == 0);
 					assert(filenameInZipPtrs.size() == 0);
 				}
