@@ -564,13 +564,13 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 #else
 		bNativeRes = false;
 #endif
-
-		// Detect changes in rendering resolution ///////////////////////////////////////////////////////////////////////
-		pDC->m_nSSSamplesX = CV_r_Supersampling;
-		pDC->m_nSSSamplesY = CV_r_Supersampling;
 	}
 
 	{
+		// Detect changes in rendering resolution ///////////////////////////////////////////////////////////////////////
+		pDC->m_nSSSamplesX = CV_r_Supersampling;
+		pDC->m_nSSSamplesY = CV_r_Supersampling;
+	
 		// Detect changes in back-buffer property ///////////////////////////////////////////////////////////////////////
 		const int colorBits = m_CVColorBits ? m_CVColorBits->GetIVal() : m_cbpp;
 //		const int depthBits = m_CVDepthBits ? m_CVDepthBits->GetIVal() : m_zbpp;
@@ -1243,27 +1243,12 @@ void CD3D9Renderer::ResolveSupersampledRendering()
 		(CRendererResources::s_renderWidth  % pOutput->GetOutputResolution()[0]) == 0 &&
 		(CRendererResources::s_renderHeight % pOutput->GetOutputResolution()[1]) == 0);
 
-	if (IsEditorMode())
-	{
-		// New pipeline, wrong namespace
-		PostProcessUtils().CopyScreenToTexture(CRendererResources::s_ptexBackBuffer);
-
-		GetGraphicsPipeline().m_DownscalePass->Execute(
-			CRendererResources::s_ptexBackBuffer,
-			pOutput->GetColorTarget(),
-			CRendererResources::s_renderWidth, CRendererResources::s_renderHeight,
-			pOutput->GetOutputResolution()[0], pOutput->GetOutputResolution()[1],
-			eFilter);
-	}
-	else
-	{
-		GetGraphicsPipeline().m_DownscalePass->Execute(
-			pRenderView->GetColorTarget(),
-			pOutput->GetColorTarget(),
-			CRendererResources::s_renderWidth, CRendererResources::s_renderHeight,
-			pOutput->GetOutputResolution()[0], pOutput->GetOutputResolution()[1],
-			eFilter);
-	}
+	GetGraphicsPipeline().m_DownscalePass->Execute(
+		pRenderView->GetColorTarget(),
+		pOutput->GetColorTarget(),
+		CRendererResources::s_renderWidth, CRendererResources::s_renderHeight,
+		pOutput->GetOutputResolution()[0], pOutput->GetOutputResolution()[1],
+		eFilter);
 }
 
 void CD3D9Renderer::ResolveSubsampledOutput()
