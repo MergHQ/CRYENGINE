@@ -464,9 +464,17 @@ void CCryAction::StaticSetPbClEnabled(IConsoleCmdArgs* pArgs)
 
 uint16 ChooseListenPort()
 {
-	return (gEnv->pLobby && gEnv->bMultiplayer) ?
-	       gEnv->pLobby->GetLobbyParameters().m_listenPort :
-	       gEnv->pConsole->GetCVar("sv_port")->GetIVal();
+	if (gEnv->bMultiplayer)
+	{
+		if (gEnv->pLobby)
+		{
+			if (gEnv->pLobby->GetLobbyService() != nullptr)
+			{
+				return gEnv->pLobby->GetLobbyParameters().m_listenPort;
+			}
+		}
+	}
+	return gEnv->pConsole->GetCVar("sv_port")->GetIVal();
 }
 
 //------------------------------------------------------------------------
