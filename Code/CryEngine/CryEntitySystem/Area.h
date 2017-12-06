@@ -368,13 +368,16 @@ private:
 	a2DBBox m_areaBBox;
 	size_t  m_bbox_holder;
 	// the area segments
-	std::vector<Vec2> m_areaPoints;
+	std::vector<Vec3> m_areaPoints;
 	using AreaSegments = std::vector<a2DSegment*>;
 	AreaSegments m_areaSegments;
 	CGeomExtents m_extents;
 	float m_area = 0;
 	bool m_bClosed = true;
 	std::vector<int> m_triIndices;
+
+	size_t PrevPoint(size_t i) const { return i > 0 ? i - 1 : m_areaPoints.size() - 1; }
+	size_t NextPoint(size_t i) const { return i < m_areaPoints.size() - 1 ? i + 1 : 0; }
 
 	// for sector areas ----------------------------------------------------------------------
 	//	int	m_Building;
@@ -413,7 +416,7 @@ private:
 	float m_origin;
 	//  area height (vertical size). If (m_height<=0) - not used, only 2D check is done. Otherwise
 	//  additional check for Z to be in [m_origin, m_origin + m_height] range is done
-	float                        m_height;
+	float m_height;
 
 	Cry::AreaManager::EAreaState m_state = Cry::AreaManager::EAreaState::None;
 };

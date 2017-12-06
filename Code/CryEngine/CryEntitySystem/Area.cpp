@@ -169,6 +169,7 @@ void CArea::ClearPoints()
 		m_areaSegments.clear();
 	}
 	m_areaPoints.clear();
+	m_triIndices.clear();
 	m_extents.Clear();
 	m_area = 0.0f;
 
@@ -243,8 +244,6 @@ void CArea::UpdateSegment(a2DSegment& segment, a2DPoint const& p0, a2DPoint cons
 		segment.b = 0.0f;
 	}
 	segment.normal = Vec2(p1.y - p0.y, p0.x - p1.x).GetNormalized();
-	if (m_area < 0.0f)
-		segment.normal = -segment.normal;
 }
 
 // calculates min distance from point within area to the border of area
@@ -2252,51 +2251,16 @@ void CArea::SetPoints(Vec3 const* const pPoints, bool const* const pSoundObstruc
 		{
 			// Set potentially both, points and sound obstruction.
 			ReleaseAreaData();
-			m_areaPoints.resize(numLocalPoints);
-			m_origin = pPoints[0].z;
 			m_bClosed = bClosed;
-
-			for (size_t i = 0; i < numLocalPoints; ++i)
+			m_areaPoints.resize(numLocalPoints);
+			m_areaSegments.resize(numLocalPoints - !bClosed);
+			for (size_t i = 0; i < m_areaSegments.size(); ++i)
 			{
-				m_areaPoints[i] = pPoints[i];
-				if (pPoints[i].z < m_origin)
-				{
-					m_origin = pPoints[i].z;
-				}
-				if (bClosed)
-				{
-					size_t j = i == 0 ? numLocalPoints - 1 : i - 1;
-					m_area += (pPoints[j].x * pPoints[i].y - pPoints[j].y * pPoints[i].x);
-				}
-			}
-			m_area *= 0.5f;
-
-			// We ignore "Roof" and "Floor" as they are no segments.
-			bool bObstructSound = false;
-
-			for (size_t pIdx = (bClosed ? 0 : 1); pIdx < numLocalPoints; ++pIdx)
-			{
-				if (pSoundObstructionSegments != nullptr)
-				{
-					bObstructSound = *(pSoundObstructionSegments + pIdx - 1);
-				}
-
-				size_t pIdx0 = pIdx ? pIdx - 1 : numLocalPoints - 1;
-				AddSegment(*((CArea::a2DPoint*)(pPoints + pIdx0)), *((CArea::a2DPoint*)(pPoints + pIdx)), bObstructSound);
+				m_areaSegments[i] = new a2DSegment;
+				m_areaSegments[i]->bObstructSound = pSoundObstructionSegments && pSoundObstructionSegments[i];
 			}
 
-			// Reverse all arrays if CW
-			if (m_area < 0.0f)
-			{
-				for (size_t i = 0; i < numLocalPoints / 2; ++i)
-				{
-					std::swap(m_areaPoints[i], m_areaPoints[numLocalPoints - 1 - i]);
-					std::swap(m_areaSegments[i], m_areaSegments[numLocalPoints - 1 - i]);
-				}
-				m_area = -m_area;
-			}
-
-			CalcBBox();
+			MovePoints(pPoints, numLocalPoints);
 
 			if (pSoundObstructionSegments != nullptr)
 			{
@@ -2329,19 +2293,33 @@ void CArea::MovePoints(Vec3 const* const pPoints, size_t const numLocalPoints)
 	{
 		assert(numLocalPoints == m_areaPoints.size());
 
+		m_area = 0.0f;
 		m_origin = pPoints[0].z;
 		for (size_t i = 0; i < numLocalPoints; ++i)
 		{
 			m_areaPoints[i] = pPoints[i];
 			m_origin = min(m_origin, pPoints[i].z);
+			if (m_bClosed)
+			{
+				size_t j = NextPoint(i);
+				m_area += (pPoints[i].x * pPoints[j].y - pPoints[i].y * pPoints[j].x);
+			}
+		}
+		m_area *= 0.5f;
+
+		// Reverse points if closed and CW
+		if (m_area < 0.0f)
+		{
+			for (size_t i = 0; i < numLocalPoints / 2; ++i)
+				std::swap(m_areaPoints[i], m_areaPoints[numLocalPoints - 1 - i]);
+			m_area = -m_area;
 		}
 
-		for (size_t i = (m_bClosed ? 0 : 1); i < numLocalPoints; ++i)
+		// Update segments
+		for (size_t i = 0; i < m_areaSegments.size(); ++i)
 		{
-			size_t j = i ? i - 1 : numLocalPoints - 1;
-			a2DPoint const& p0 = *((CArea::a2DPoint*)(pPoints + j));
-			a2DPoint const& p1 = *((CArea::a2DPoint*)(pPoints + i));
-			UpdateSegment(*m_areaSegments[j], p0, p1);
+			size_t j = NextPoint(i);
+			UpdateSegment(*m_areaSegments[i], m_areaPoints[i], m_areaPoints[j]);
 		}
 
 		CalcBBox();
@@ -3175,45 +3153,29 @@ void CArea::Draw(size_t const idx)
 		break;
 	case ENTITY_AREA_TYPE_SHAPE:
 		{
-			Vec3 v0, v1;
-			float deltaZ = 0.1f;
-			size_t const nSize = m_areaSegments.size();
+			const float deltaZ = 0.1f;
+			size_t const nSize = m_areaPoints.size();
 
 			for (size_t i = 0; i < nSize; ++i)
 			{
-				if (m_areaSegments[i]->k < 0)
-				{
-					v0.x = m_areaSegments[i]->bbox.min.x;
-					v0.y = m_areaSegments[i]->bbox.max.y;
-
-					v1.x = m_areaSegments[i]->bbox.max.x;
-					v1.y = m_areaSegments[i]->bbox.min.y;
-				}
-				else
-				{
-					v0.x = m_areaSegments[i]->bbox.min.x;
-					v0.y = m_areaSegments[i]->bbox.min.y;
-
-					v1.x = m_areaSegments[i]->bbox.max.x;
-					v1.y = m_areaSegments[i]->bbox.max.y;
-				}
-
-				v0.z = max(m_origin, p3DEngine->GetTerrainElevation(v0.x, v0.y) + deltaZ);
-				v1.z = max(m_origin, p3DEngine->GetTerrainElevation(v1.x, v1.y) + deltaZ);
+				Vec3 v0 = m_areaPoints[i];
+				Vec3 v1 = m_areaPoints[NextPoint(i)];
+				v0.z = max(v0.z, p3DEngine->GetTerrainElevation(v0.x, v0.y) + deltaZ);
+				v1.z = max(v1.z, p3DEngine->GetTerrainElevation(v1.x, v1.y) + deltaZ);
 
 				// draw lower line segments
-				pRC->DrawLine(v0, color, v1, color);
+				if (i < nSize - !m_bClosed)
+					pRC->DrawLine(v0, color, v1, color);
 
 				// Draw upper line segments and vertical edges
 				if (m_height > 0.0f)
 				{
-					Vec3 v0Z = Vec3(v0.x, v0.y, m_origin + m_height);
-					Vec3 v1Z = Vec3(v1.x, v1.y, m_origin + m_height);
+					Vec3 v0Z = Vec3(v0.x, v0.y, v0.z + m_height);
+					Vec3 v1Z = Vec3(v1.x, v1.y, v1.z + m_height);
 
+					if (i < nSize - !m_bClosed)
+						pRC->DrawLine(v0Z, color, v1Z, color);
 					pRC->DrawLine(v0, color, v0Z, color);
-					//pRC->DrawLine( v1, color, v1Z, color );
-					pRC->DrawLine(v0Z, color, v1Z, color);
-
 				}
 			}
 			break;
@@ -3427,7 +3389,7 @@ float CArea::GetExtent(EGeomForm eForm)
 				if (!m_bClosed)
 					return 0.0f;
 
-				TPolygon2D<Vec2> polygon(m_areaPoints);
+				TPolygon2D<Vec3> polygon(m_areaPoints);
 				polygon.Triangulate(m_triIndices);
 				int nTris = m_triIndices.size() / 3;
 				ext.ReserveParts(nTris);
@@ -3497,21 +3459,18 @@ void CArea::GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm
 
 		auto SetVertexPoint = [=](PosNorm& point, int n, float tv)
 		{
-			point.vPos = Vec3(m_areaPoints[n], m_origin + m_height * tv);
+			point.vPos = m_areaPoints[n];
+			point.vPos.z += m_height * tv;
 			if (!m_bClosed && (n == 0 || n == m_areaPoints.size() - 1))
 				point.vNorm = Vec3(m_areaSegments[n]->normal);
 			else
-			{
-				int n2 = n > 0 ? n - 1 : m_areaSegments.size() - 1;
-				point.vNorm = Vec3(m_areaSegments[n]->normal + m_areaSegments[n2]->normal).GetNormalizedFast();
-			}
+				point.vNorm = Vec3(m_areaSegments[n]->normal + m_areaSegments[PrevPoint(n)]->normal).GetNormalizedFast();
 		};
 		auto SetSegmentPoint = [=](PosNorm& point, int n, float th, float tv)
 		{
-			const auto& segment = m_areaSegments[n];
-			Vec2 v2 = Lerp(segment->GetStart(), segment->GetEnd(), th);
-			point.vPos = Vec3(v2, m_origin + m_height * tv);
-			point.vNorm = Vec3(segment->normal);
+			point.vPos = Lerp(m_areaPoints[n], m_areaPoints[NextPoint(n)], th);
+			point.vPos.z += m_height * tv;
+			point.vNorm = Vec3(m_areaSegments[n]->normal);
 		};
 
 		if (eForm == GeomForm_Vertices)
@@ -3559,14 +3518,14 @@ void CArea::GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm
 			{
 				int part = ext.RandomPart(seed);
 				int index = part * 3;
-				Vec2 a = m_areaPoints[m_triIndices[index]],
+				Vec3 a = m_areaPoints[m_triIndices[index]],
 				     b = m_areaPoints[m_triIndices[index + 1]],
 				     c = m_areaPoints[m_triIndices[index + 2]];
 
 				float t[3];
 				RandomSplit3(seed, t);
 
-				point.vPos = Vec3(a * t[0] + b * t[1] + c * t[2], m_origin);
+				point.vPos = Vec3(a * t[0] + b * t[1] + c * t[2]);
 				point.vPos.z += seed.GetRandom(0.0f, m_height);
 				point.vNorm = Vec3(0, 0, 1);
 			}

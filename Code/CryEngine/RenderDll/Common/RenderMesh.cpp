@@ -3472,7 +3472,7 @@ void CRenderMesh::UpdateBBoxFromMesh()
   }
 }
 
-static void BlendWeights(DualQuat& dq, Array<const DualQuat> aBoneLocs, const JointIdType* aBoneRemap, const uint16* indices, UCol weights)
+static void BlendWeights(DualQuat& dq, const DualQuat aBoneLocs[], const JointIdType aBoneRemap[], const uint16 indices[], UCol weights)
 {
 	// Get 8-bit weights as floats
 	f32 w0 = weights.bcolor[0];
@@ -3516,7 +3516,7 @@ struct PosNormData
 #endif
 	strided_pointer<SVF_W4B_I4S> aSkinning;
 
-	void GetPosNorm(PosNorm& ran, int nV)
+	ILINE void GetPosNorm(PosNorm& ran, int nV)
 	{
 		ran = aPosNorms[nV];
 	#if SKIN_MORPHING
@@ -3542,9 +3542,9 @@ struct PosNormData
 			DualQuat dq;
 			BlendWeights(
 				dq,
-				ArrayT(pSkinningData->pBoneQuatsS, (int)pSkinningData->nNumBones),
+				pSkinningData->pBoneQuatsS,
 				pSkinningData->pRemapTable, 
-				&aSkinning[nV].indices[0],
+				aSkinning[nV].indices,
 				aSkinning[nV].weights);
 			ran <<= dq;
 		}
