@@ -93,7 +93,7 @@ void GatherControllers(const GlobalAnimationHeaderCAF& rGAH, const Command::CSta
 	}
 
 	const int forcedLod = Console::GetInst().ca_ForceAnimationLod;
-	const std::pair<const uint32*, const uint32*> lodMask = state.m_pDefaultSkeleton->FindClosestAnimationLod(forcedLod > 0 ? forcedLod : state.m_lod);
+	const std::pair<const uint32*, const uint32*> lodMask = state.m_pDefaultSkeleton->FindClosestAnimationLod(forcedLod < 0 ? state.m_lod : forcedLod);
 	const std::pair<const uint32*, const uint32*> stateMask = { state.m_pJointMask, state.m_pJointMask + state.m_jointMaskCount };
 
 	struct CrcOderingComparator

@@ -75,11 +75,9 @@ class UncrustifyRunner:
         :return: The local paths of the CPP files in the changelist.
         """
         description = self.p4.run_describe('-s', changelist)[0]
-        if not self.trigger:
-            if 'depotFile' not in description:
-                raise ValueError('This script cannot modify shelved files.')
-        else:
+        if 'depotFile' not in description:
             description = self.p4.run_describe('-s', '-S', changelist)[0]
+        if self.trigger:
             if 'shelved' not in description:
                 raise ValueError('The changelist does not have shelved files.')
             self.unshelve_changelist = self.create_changelist('!X For style check')

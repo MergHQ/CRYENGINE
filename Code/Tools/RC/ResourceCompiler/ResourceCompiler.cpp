@@ -1796,23 +1796,70 @@ static void GetCommandLineArguments(std::vector<string>& resArgs, const string& 
 {
 	resArgs.clear();
 
-	bool newArg = false;
+	const char* src = cmdLine.data();
 
-	for (char c : cmdLine)
+	auto next = [](const char*& src) -> string
 	{
-		if (c == ' ' || c == '\t' || c == '"')
-		{
-			newArg = true;
-		}
-		else
-		{
-			if (resArgs.size() == 0 || newArg)
-			{
-				resArgs.emplace_back();
-				newArg = false;
-			}
+		char ch = 0;
+		const char* org = src;
 
-			resArgs.back() += c;
+		while (ch = *src++)
+		{
+			switch (ch)
+			{
+				case '\'':
+				case '\"':
+					org = src;
+
+					while ((*src++ != ch) && *src)
+						;
+
+					return string(org, src - 1);
+
+				case '[':
+					org = src;
+					while ((*src++ != ']') && *src)
+						;
+					return string(org, src - 1);
+
+				case ' ':
+					continue;
+				default:
+					org = src - 1;
+					for (; *src != ' ' && *src != '\t' && *src; ++src)
+						;
+
+					return string(org, src);
+			}
+		}
+
+		return string();
+	};
+
+	for (;; )
+	{
+		if (*src == '\0')
+			break;
+
+		string arg = next(src);
+
+		if (resArgs.empty())
+		{
+			// this is the filename, convert backslash to forward slash
+			arg.replace('\\', '/');
+			resArgs.push_back(arg.c_str());
+		}
+		else if (!arg.empty())
+		{
+			resArgs.emplace_back();
+
+			for(char c : arg)
+			{
+				if (c != '"')
+				{
+					resArgs.back() += c;
+				}
+			}
 		}
 	}
 }
@@ -1929,7 +1976,7 @@ static void GetFileSizeAndCrc32(int64& size, uint32& crc32, const char* pFilenam
 static CrashHandler s_crashHandler;
 
 //////////////////////////////////////////////////////////////////////////
-int __cdecl main(int argCount, char**, char**)
+int __cdecl main(int argCount, char** argv, char** envp)
 {
 #if 0
 	EnableCrtMemoryChecks();

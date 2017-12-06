@@ -197,7 +197,7 @@ void CFrameProfileSystem::AddDisplayedProfiler(CFrameProfiler* pProfiler, int le
 	//if (pProfiler->m_displayedValue == 0)
 	//return;
 
-	char bExpended = pProfiler->m_bExpended;
+	bool bExpended = pProfiler->m_bExpended;
 
 	int newLevel = level + 1;
 	if (!m_bSubsystemFilterEnabled || pProfiler->m_subsystem == (uint8)m_subsystemFilter)
@@ -209,7 +209,7 @@ void CFrameProfileSystem::AddDisplayedProfiler(CFrameProfiler* pProfiler, int le
 	}
 	else
 	{
-		bExpended = 1;
+		bExpended = true;
 		newLevel = level;
 	}
 	// Find childs.
