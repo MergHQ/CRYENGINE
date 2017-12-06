@@ -18,13 +18,13 @@ static bool IsSubdirOrSameDir( const char* dir, const char* baseDir )
 	Unicode::Convert(wbasedir, baseDir);
 
 	wchar_t szFullPathDir[2*1024];
-	if (!_wfullpath(szFullPathDir, wdir.c_str(), sizeof(szFullPathDir)))
+	if (!_wfullpath(szFullPathDir, wdir.c_str(), sizeof(szFullPathDir) / sizeof(wchar_t)))
 	{
 		return false;
 	}
 
 	wchar_t szFullPathBaseDir[2*1024];
-	if (!_wfullpath(szFullPathBaseDir, wbasedir.c_str(), sizeof(szFullPathBaseDir)))
+	if (!_wfullpath(szFullPathBaseDir, wbasedir.c_str(), sizeof(szFullPathBaseDir) / sizeof(wchar_t)))
 	{
 		return false;
 	}
@@ -33,7 +33,7 @@ static bool IsSubdirOrSameDir( const char* dir, const char* baseDir )
 	const wchar_t* q = szFullPathBaseDir;
 	for(;;++p, ++q)
 	{
-		if (tolower(*p) == tolower(*q))
+		if (towlower(*p) == towlower(*q))
 		{
 			if (*p == 0)
 			{
