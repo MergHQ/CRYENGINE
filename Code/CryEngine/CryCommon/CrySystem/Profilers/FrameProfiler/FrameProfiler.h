@@ -312,12 +312,12 @@ public:
 	CFrameProfiler* m_pParent;
 
 	//! Expended or collapsed displaying state.
-	uint64 m_bExpended     : 8;
-	uint64 m_bHaveChildren : 8;
-	uint64 m_subsystem     : 8;
+	bool m_bExpended;
+	bool m_bHaveChildren;
+	uint8 m_subsystem;
 
 	//! Identifier to be used for color lookup
-	uint64      m_colorIdentifier : 8;
+	uint8      m_colorIdentifier;
 
 	const char* m_stallCause;     //!< Additional information of stall cause.
 
@@ -347,8 +347,7 @@ public:
 
 	CFrameProfiler(const EProfiledSubsystem subsystem, const EProfileDescription desc,
 	               const char* sCollectorName, const char* fileName, const unsigned long fileLine)
-		: m_pISystem(GetISystem())
-		, m_name(sCollectorName)
+		: m_name(sCollectorName)
 		, m_fileName(fileName)
 		, m_fileLine(fileLine)
 		, m_totalTime(0)
@@ -359,8 +358,8 @@ public:
 		, m_variance(0.0f)
 		, m_peak(0)
 		, m_pParent(nullptr)
-		, m_bExpended(0)
-		, m_bHaveChildren(0)
+		, m_bExpended(false)
+		, m_bHaveChildren(false)
 		, m_subsystem((uint8)subsystem)
 		, m_colorIdentifier(0)
 		, m_stallCause(nullptr)
@@ -374,18 +373,21 @@ public:
 		, m_pGraph(nullptr)
 		, m_pOfflineHistory(nullptr)
 	{
-		if (IFrameProfileSystem* const pFrameProfileSystem = m_pISystem->GetIProfileSystem())
+		if (ISystem* const pSystem = GetISystem())
 		{
-			pFrameProfileSystem->AddFrameProfiler(this);
+			if (IFrameProfileSystem* const pFrameProfileSystem = pSystem->GetIProfileSystem())
+			{
+				pFrameProfileSystem->AddFrameProfiler(this);
+			}
 		}
 	}
 
 	~CFrameProfiler()
 	{
 		// This is needed for when modules get unloaded at runtime.
-		if (m_pISystem != nullptr)
+		if (ISystem* const pSystem = GetISystem())
 		{
-			if (IFrameProfileSystem* const pFrameProfileSystem = m_pISystem->GetIProfileSystem())
+			if (IFrameProfileSystem* const pFrameProfileSystem = pSystem->GetIProfileSystem())
 			{
 				pFrameProfileSystem->RemoveFrameProfiler(this);
 			}
@@ -460,16 +462,16 @@ public:
 		  , m_pFrameProfiler(profiler)
 		  , m_pParent(nullptr)
 	{
-		if (profiler)
+		if (ISystem* const pSystem = GetISystem())
 		{
-			m_pFrameProfiler->m_pISystem->GetIProfileSystem()->StartCustomSection(this);
+			pSystem->GetIProfileSystem()->StartCustomSection(this);
 		}
 	}
 	ILINE ~CCustomProfilerSection()
 	{
-		if (m_pFrameProfiler)
+		if (ISystem* const pSystem = GetISystem())
 		{
-			m_pFrameProfiler->m_pISystem->GetIProfileSystem()->EndCustomSection(this);
+			pSystem->GetIProfileSystem()->EndCustomSection(this);
 		}
 	}
 };

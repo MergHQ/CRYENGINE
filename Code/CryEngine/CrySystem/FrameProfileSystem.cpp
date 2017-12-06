@@ -306,8 +306,6 @@ void CFrameProfileSystem::Done()
 
 		delete pFrameProfiler->m_pOfflineHistory;
 		pFrameProfiler->m_pOfflineHistory = nullptr;
-		
-		pFrameProfiler->m_pISystem = nullptr;
 	}
 
 	for (auto const pFrameProfiler : m_netTrafficProfilers)
@@ -317,8 +315,6 @@ void CFrameProfileSystem::Done()
 
 		delete pFrameProfiler->m_pOfflineHistory;
 		pFrameProfiler->m_pOfflineHistory = nullptr;
-
-		pFrameProfiler->m_pISystem = nullptr;
 	}
 
 	stl::free_container(m_profilers);
@@ -582,10 +578,6 @@ void CFrameProfileSystem::RemoveFrameProfiler(CFrameProfiler* pProfiler)
 	SAFE_DELETE(pProfiler->m_pGraph);
 	SAFE_DELETE(pProfiler->m_pOfflineHistory);
 
-	// When this static object gets destroyed its dtor checks against m_pISystem.
-	// We need to make sure to nullptr it here so we do not access a dangling pointer during shutdown!
-	pProfiler->m_pISystem = nullptr;
-
 	if ((EProfiledSubsystem)pProfiler->m_subsystem == PROFILE_NETWORK_TRAFFIC)
 	{
 		stl::find_and_erase(m_netTrafficProfilers, pProfiler);
@@ -637,7 +629,6 @@ CFrameProfiler* CFrameProfileSystem::SProfilerThreads::NewThreadProfiler(CFrameP
 	pProfiler->m_fileName = pMainProfiler->m_fileName;
 	pProfiler->m_fileLine = pMainProfiler->m_fileLine;
 	pProfiler->m_subsystem = pMainProfiler->m_subsystem;
-	pProfiler->m_pISystem = pMainProfiler->m_pISystem;
 	pProfiler->m_threadId = nThreadId;
 	pProfiler->m_description = pMainProfiler->m_description;
 	pProfiler->m_colorIdentifier = pMainProfiler->m_colorIdentifier;
@@ -752,7 +743,7 @@ void CFrameProfileSystem::AccumulateProfilerSection(CFrameProfilerSection* pSect
 		pSection->m_pParent->m_excludeTime += totalTime;
 		if (!pProfiler->m_pParent && pSection->m_pParent->m_pFrameProfiler)
 		{
-			pSection->m_pParent->m_pFrameProfiler->m_bHaveChildren = 1;
+			pSection->m_pParent->m_pFrameProfiler->m_bHaveChildren = true;
 			pProfiler->m_pParent = pSection->m_pParent->m_pFrameProfiler;
 		}
 	}
@@ -835,7 +826,7 @@ void CFrameProfileSystem::EndMemoryProfilerSection(CFrameProfilerSection* pSecti
 		pSection->m_pParent->m_excludeTime += totalTime;
 		if (!pProfiler->m_pParent && pSection->m_pParent->m_pFrameProfiler)
 		{
-			pSection->m_pParent->m_pFrameProfiler->m_bHaveChildren = 1;
+			pSection->m_pParent->m_pFrameProfiler->m_bHaveChildren = true;
 			pProfiler->m_pParent = pSection->m_pParent->m_pFrameProfiler;
 		}
 	}
@@ -880,7 +871,7 @@ void CFrameProfileSystem::EndCustomSection(CCustomProfilerSection* pSection)
 	if (m_pCurrentCustomSection)
 	{
 		// If we have parent, add this counter total time to parent exclude time.
-		m_pCurrentCustomSection->m_pFrameProfiler->m_bHaveChildren = 1;
+		m_pCurrentCustomSection->m_pFrameProfiler->m_bHaveChildren = true;
 		m_pCurrentCustomSection->m_excludeValue += total;
 		pProfiler->m_pParent = m_pCurrentCustomSection->m_pFrameProfiler;
 	}
