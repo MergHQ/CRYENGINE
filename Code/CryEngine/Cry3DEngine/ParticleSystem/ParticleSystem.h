@@ -71,6 +71,8 @@ public:
 	void                     DeferredRender();
 	float                    DisplayDebugStats(Vec2 displayLocation, float lineHeight);
 
+	bool                     IsRuntime() const                { return m_numClears > 0 && m_numFrames > 1; }
+	void                     CheckFileAccess(cstr filename = 0) const;
 	void                     ClearRenderResources();
 
 	static float             GetMaxAngularDensity(const CCamera& camera);
@@ -96,18 +98,20 @@ private:
 	// ~PFX1 to PFX2
 
 private:
-	CParticleJobManager        m_jobManager;
-	CParticleProfiler          m_profiler;
-	TEffectNameMap             m_effects;
-	TParticleEmitters          m_emitters;
-	TParticleEmitters          m_newEmitters;
-	std::vector<SThreadData>   m_threadData;
-	_smart_ptr<IMaterial>      m_pFlareMaterial;
-	bool                       m_bResetEmitters = false;
-	QuatT                      m_lastCameraPose = IDENTITY;
-	QuatT                      m_cameraMotion   = ZERO;
-	uint                       m_nextEmitterId  = 0;
-	int32                      m_lastSysSpec    = END_CONFIG_SPEC_ENUM;
+	CParticleJobManager      m_jobManager;
+	CParticleProfiler        m_profiler;
+	TEffectNameMap           m_effects;
+	TParticleEmitters        m_emitters;
+	TParticleEmitters        m_newEmitters;
+	std::vector<SThreadData> m_threadData;
+	_smart_ptr<IMaterial>    m_pFlareMaterial;
+	bool                     m_bResetEmitters = false;
+	QuatT                    m_lastCameraPose = IDENTITY;
+	QuatT                    m_cameraMotion   = ZERO;
+	uint                     m_numClears      = 0;
+	uint                     m_numFrames      = 0;
+	uint                     m_nextEmitterId  = 0;
+	int32                    m_lastSysSpec    = END_CONFIG_SPEC_ENUM;
 };
 
 ILINE CParticleSystem* GetPSystem()

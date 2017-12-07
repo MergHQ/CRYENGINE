@@ -1153,7 +1153,8 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 		m_skyPass.SetDepthTarget(pDepthTex);
 		m_skyPass.SetViewport(viewport);
 		m_skyPass.SetState(GS_DEPTHFUNC_EQUAL);
-		m_skyPass.SetTextureSamplerPair(0, pSkyDomeTex, EDefaultSamplerStates::LinearClamp);
+		m_skyPass.SetTexture(0, pSkyDomeTex);
+		m_skyPass.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 
 		CTexture *pSkyDomeTextureMie = CRendererResources::s_ptexBlack;
 		CTexture *pSkyDomeTextureRayleigh = CRendererResources::s_ptexBlack;
@@ -1168,9 +1169,10 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 			}
 		}
 
-		m_skyPass.SetTextureSamplerPair(1, pSkyDomeTextureMie, samplerStateLinearWrapU);
-		m_skyPass.SetTextureSamplerPair(2, pSkyDomeTextureRayleigh, samplerStateLinearWrapU);
-		m_skyPass.SetTextureSamplerPair(3, pSkyMoonTex, EDefaultSamplerStates::LinearClamp);
+		m_skyPass.SetTexture(1, pSkyDomeTextureMie);
+		m_skyPass.SetTexture(2, pSkyDomeTextureRayleigh);
+		m_skyPass.SetTexture(3, pSkyMoonTex);
+		m_skyPass.SetSampler(1, samplerStateLinearWrapU);
 
 		m_pSkyDomeTextureMie = pSkyDomeTextureMie;
 		m_pSkyDomeTextureRayleigh = pSkyDomeTextureRayleigh;

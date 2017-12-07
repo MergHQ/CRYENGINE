@@ -197,6 +197,8 @@ bool C3DEngine::InitLevelForEditor(const char* szFolderName, const char* szMissi
 	// recreate particles and decals
 	if (m_pPartManager)
 		m_pPartManager->Reset();
+	if (m_pParticleSystem)
+		static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get())->Reset();
 
 	// recreate decals
 	SAFE_DELETE(m_pDecalManager);

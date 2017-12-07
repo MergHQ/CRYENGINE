@@ -96,7 +96,7 @@ void CREClientPoly::AssignPolygon(const SRenderPolygonDescription& poly, const S
 	auto& verts = poly.pVertices;
 	auto& tangs = poly.pTangents;
 
-	size_t nSize = CDeviceObjectFactory::LookupInputLayout(EDefaultInputLayouts::P3F_C4B_T2F).first.m_Stride * poly.numVertices;
+	size_t nSize = CDeviceObjectFactory::GetInputLayoutDescriptor(EDefaultInputLayouts::P3F_C4B_T2F)->m_Strides[0] * poly.numVertices;
 	int nOffs = vertexPool.size();
 	vertexPool.resize(nOffs + nSize);
 	SVF_P3F_C4B_T2F* vt = (SVF_P3F_C4B_T2F*)&vertexPool[nOffs];
@@ -173,11 +173,11 @@ bool CREClientPoly::GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessel
 	geomInfo.indexStream.hStream = m_pPolygonDataPool->m_indexBuffer;
 
 	geomInfo.vertexStreams[VSF_GENERAL].nSlot = VSF_GENERAL;
-	geomInfo.vertexStreams[VSF_GENERAL].nStride = CDeviceObjectFactory::LookupInputLayout(EDefaultInputLayouts::P3F_C4B_T2F).first.m_Stride;
+	geomInfo.vertexStreams[VSF_GENERAL].nStride = CDeviceObjectFactory::GetInputLayoutDescriptor(EDefaultInputLayouts::P3F_C4B_T2F)->m_Strides[0];
 	geomInfo.vertexStreams[VSF_GENERAL].hStream = m_pPolygonDataPool->m_vertexBuffer;
 
 	geomInfo.vertexStreams[VSF_TANGENTS].nSlot = VSF_TANGENTS;
-	geomInfo.vertexStreams[VSF_TANGENTS].nStride = CDeviceObjectFactory::LookupInputLayout(EDefaultInputLayouts::T4S_B4S).first.m_Stride;
+	geomInfo.vertexStreams[VSF_TANGENTS].nStride = CDeviceObjectFactory::GetInputLayoutDescriptor(EDefaultInputLayouts::T4S_B4S)->m_Strides[0];
 	geomInfo.vertexStreams[VSF_TANGENTS].hStream = m_pPolygonDataPool->m_tangentsBuffer;
 
 	return true;

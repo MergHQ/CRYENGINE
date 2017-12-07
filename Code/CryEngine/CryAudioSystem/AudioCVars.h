@@ -24,7 +24,6 @@ public:
 	int   m_audioObjectPoolSize = 0;
 	int   m_audioEventPoolSize = 0;
 	int   m_audioStandaloneFilePoolSize = 0;
-	int   m_audioProxiesInitType = 0;
 	int   m_tickWithMainThread = 0;
 	int   m_accumulateOcclusion = 1;
 

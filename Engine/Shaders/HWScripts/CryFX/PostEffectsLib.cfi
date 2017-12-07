@@ -240,33 +240,6 @@ vtxOutWPOS BaseWPOSVS(vtxInWPOS IN)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Color grading/charts tex lookup
-void TexColorChart2D(in sampler2D chartSampler, inout half3 cImage)
-{
-	const float chartDim	= 16.0;
-	const float3 scale = float3(chartDim - 1.0, chartDim - 1.0, chartDim - 1.0) / chartDim;
-	const float3 bias = float3(0.5, 0.5, 0.0) / chartDim;
-
-	//cImage = float3(0.5, 1.0, 4.0 / chartDim); // debug lookup color to test addressing of "unwrapped" chart slices
-	
-	float3 lookup = saturate(cImage) * scale + bias;
-	
-	// convert input color into 2d color chart lookup address 
-	float slice = lookup.z * chartDim;	
-	float sliceFrac = frac(slice);	
-	float sliceIdx = slice - sliceFrac;
-	
-	lookup.x = (lookup.x + sliceIdx) / chartDim;
-	
- 	// lookup adjacent slices
- 	float3 col0 = GetTexture2D(chartSampler, lookup.xy); 	
- 	lookup.x += 1.0 / chartDim;
- 	float3 col1 = GetTexture2D(chartSampler, lookup.xy);
-
-	// linearly blend between slices 	 	
-	cImage = col0 + (col1 - col0) * sliceFrac;
- 	//cImage = sliceFrac;
-}
 
 // Color grading/charts tex lookup
 void TexColorChart2D(in Texture2D chartTex, in SamplerState chartSampler, inout half3 cImage)

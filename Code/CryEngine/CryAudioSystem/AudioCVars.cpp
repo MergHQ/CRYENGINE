@@ -16,7 +16,6 @@ void CCVars::RegisterVariables()
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
-	m_audioProxiesInitType = 0;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -28,7 +27,6 @@ void CCVars::RegisterVariables()
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
-	m_audioProxiesInitType = 0;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -40,7 +38,6 @@ void CCVars::RegisterVariables()
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
-	m_audioProxiesInitType = 0;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -52,7 +49,6 @@ void CCVars::RegisterVariables()
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
-	m_audioProxiesInitType = 0;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -64,7 +60,6 @@ void CCVars::RegisterVariables()
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
-	m_audioProxiesInitType = 0;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -76,7 +71,6 @@ void CCVars::RegisterVariables()
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
-	m_audioProxiesInitType = 0;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -88,7 +82,6 @@ void CCVars::RegisterVariables()
 	m_audioObjectPoolSize = 256;
 	m_audioEventPoolSize = 256;
 	m_audioStandaloneFilePoolSize = 1;
-	m_audioProxiesInitType = 0;
 	m_occlusionMaxSyncDistance = 10.0f;
 	m_occlusionHighDistance = 10.0f;
 	m_occlusionMediumDistance = 80.0f;
@@ -169,19 +162,6 @@ void CCVars::RegisterVariables()
 	               "Sets the number of preallocated audio standalone files.\n"
 	               "Usage: s_AudioStandaloneFilePoolSize [0/...]\n"
 	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
-
-	REGISTER_CVAR2("s_AudioProxiesInitType", &m_audioProxiesInitType, m_audioProxiesInitType, VF_NULL,
-	               "Can override AudioProxies' init type on a global scale.\n"
-	               "If set it determines whether AudioProxies initialize synchronously or asynchronously.\n"
-	               "This is a performance type cvar as asynchronously initializing AudioProxies\n"
-	               "will have a greatly reduced impact on the calling thread.\n"
-	               "Be aware though that when set to initialize asynchronously that audio will play back delayed.\n"
-	               "By how much will greatly depend on the audio thread's work load.\n"
-	               "0: AudioProxy specific initialization.\n"
-	               "1: All AudioProxies initialize synchronously.\n"
-	               "2: All AudioProxies initialize asynchronously.\n"
-	               "Usage: s_AudioProxiesInitType [0/1/2]\n"
-	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
 
 	REGISTER_CVAR2("s_TickWithMainThread", &m_tickWithMainThread, m_tickWithMainThread, VF_REQUIRE_APP_RESTART,
 	               "Sets whether work on the audio thread is done in sync with the main thread or on its own pace.\n"
@@ -318,7 +298,6 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_AudioObjectPoolSize");
 		pConsole->UnregisterVariable("s_AudioEventPoolSize");
 		pConsole->UnregisterVariable("s_AudioStandaloneFilePoolSize");
-		pConsole->UnregisterVariable("s_AudioProxiesInitType");
 		pConsole->UnregisterVariable("s_TickWithMainThread");
 		pConsole->UnregisterVariable("s_AccumulateOcclusion");
 		pConsole->UnregisterVariable("s_ExecuteTrigger");

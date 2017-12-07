@@ -86,6 +86,7 @@ struct CVars : public Cry3DEngineBase
 #define e_WindDefault                                      (0.1f)
 #define e_ShadowsCastViewDistRatioLightsDefault            (1.f)
 #define e_DecalsRangeDefault                               (20.f)
+#define e_MinMassDistanceCheckRenderMeshCollisionDefault   (0.5f)
 #define e_GsmRangeStepExtendedDefault                      (8.f)
 #define e_TerrainDetailMaterialsViewDistXYDefault          (2048.f)
 #define e_SunAngleSnapSecDefault                           (0.1f)
@@ -445,6 +446,7 @@ struct CVars : public Cry3DEngineBase
 	int   e_ShadowsMaxTexRes;
 	int   e_Sun;
 	DeclareConstFloatCVar(e_DecalsRange);
+	DeclareConstFloatCVar(e_MinMassDistanceCheckRenderMeshCollision);
 	float e_ScreenShotMapCenterY;
 	int   e_CacheNearestCubePicking;
 	DeclareConstIntCVar(e_CoverCgfDebug, 0);

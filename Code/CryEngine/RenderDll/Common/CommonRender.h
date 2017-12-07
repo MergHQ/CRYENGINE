@@ -502,11 +502,10 @@ struct SShaderBlob
 
 struct SInputLayout
 {
-	std::vector<D3D11_INPUT_ELEMENT_DESC> m_Declaration;   // Configuration
-	const SShaderBlob*                    m_pVertexShader; // Shader template
-	uint16                                m_Slots;         // Number of slots mapped (1 for base layouts, >= 1 for compount layouts
-	uint16                                m_Stride;        // Stride of all streams counted together
-	std::array<int8, 4>                   m_Offsets;       // The offsets of "POSITION", "COLOR", "TEXCOORD" and "NORMAL"
+	std::vector<D3D11_INPUT_ELEMENT_DESC> m_Declaration;			 // Configuration
+	uint16                                m_firstSlot;
+	std::vector<uint16>                   m_Strides;				 // Stride of each input slot, starting from m_firstSlot
+	std::array<int8, 4>                   m_Offsets;				 // The offsets of "POSITION", "COLOR", "TEXCOORD" and "NORMAL"
 
 	enum
 	{
@@ -516,37 +515,24 @@ struct SInputLayout
 		eOffset_Normal,
 	};
 
-	SInputLayout() : m_Slots(0), m_Stride(0), m_pVertexShader(nullptr) { m_Offsets[eOffset_Position] = m_Offsets[eOffset_Color] = m_Offsets[eOffset_TexCoord] = m_Offsets[eOffset_Normal] = -1; }
-
-	SInputLayout(const SInputLayout& src) : m_Declaration(src.m_Declaration), m_Slots(src.m_Slots), m_Stride(src.m_Stride), m_Offsets(src.m_Offsets), m_pVertexShader(src.m_pVertexShader) { }
-	SInputLayout(const SInputLayout&& src) : m_Declaration(src.m_Declaration), m_Slots(src.m_Slots), m_Stride(src.m_Stride), m_Offsets(src.m_Offsets), m_pVertexShader(src.m_pVertexShader) { }
-
-	SInputLayout& operator=(const SInputLayout& src) { m_Declaration = src.m_Declaration; m_Slots = src.m_Slots; m_Stride = src.m_Stride; m_Offsets = src.m_Offsets; m_pVertexShader = src.m_pVertexShader; return *this; }
-	SInputLayout& operator=(const SInputLayout&& src) { m_Declaration = src.m_Declaration; m_Slots = src.m_Slots; m_Stride = src.m_Stride; m_Offsets = src.m_Offsets; m_pVertexShader = src.m_pVertexShader; return *this; }
-
-	inline friend bool operator==(const SInputLayout& m1, const SInputLayout& m2)
+	SInputLayout(std::vector<D3D11_INPUT_ELEMENT_DESC> &&decs) : m_Declaration(std::move(decs))
 	{
-		if (m1.m_Declaration.size() == m2.m_Declaration.size())
+		// Calculate first slot index
+		m_firstSlot = std::numeric_limits<uint16>::max();
+		for (const auto &dec : m_Declaration)
+			m_firstSlot = std::min(m_firstSlot, static_cast<uint16>(dec.InputSlot));
+
+		// Calculate strides
+		for (const auto &dec : m_Declaration)
 		{
-			return !memcmp(m1.m_Declaration.data(), m2.m_Declaration.data(), m1.m_Declaration.size() * sizeof(D3D11_INPUT_ELEMENT_DESC));
+			const uint16 slot = dec.InputSlot - m_firstSlot;
+			if (m_Strides.size() <= slot)
+				m_Strides.resize(slot + 1, 0);
+
+			m_Strides[slot] = std::max(m_Strides[slot], uint16(dec.AlignedByteOffset + DeviceFormats::GetStride(dec.Format)));
 		}
 
-		return false;
-	}
-
-	void CalculateStride()
-	{
-		// Calculate stride if first slot (can be != 0)
-		uint16 firstStride = 0;
-		for (int n = 0; n < m_Declaration.size(); ++n)
-			if (m_Declaration[0].InputSlot == m_Declaration[n].InputSlot)
-				firstStride = std::max(firstStride, uint16(m_Declaration[n].AlignedByteOffset + DeviceFormats::GetStride(m_Declaration[n].Format)));
-
-		m_Stride = firstStride;
-	}
-
-	void CalculateOffsets()
-	{
+		// Calculate offsets
 		m_Offsets[eOffset_Position] = m_Offsets[eOffset_Color] = m_Offsets[eOffset_TexCoord] = m_Offsets[eOffset_Normal] = -1;
 		for (int n = 0; n < m_Declaration.size(); ++n)
 		{
@@ -554,15 +540,20 @@ struct SInputLayout
 				continue;
 
 			if ((m_Offsets[eOffset_Position] == -1) && (!stricmp(m_Declaration[n].SemanticName, "POSITION")))
-				 m_Offsets[eOffset_Position] = m_Declaration[n].AlignedByteOffset;
-			if ((m_Offsets[eOffset_Color   ] == -1) && (!stricmp(m_Declaration[n].SemanticName, "COLOR"   )))
-				 m_Offsets[eOffset_Color   ] = m_Declaration[n].AlignedByteOffset;
+				m_Offsets[eOffset_Position] = m_Declaration[n].AlignedByteOffset;
+			if ((m_Offsets[eOffset_Color] == -1) && (!stricmp(m_Declaration[n].SemanticName, "COLOR")))
+				m_Offsets[eOffset_Color] = m_Declaration[n].AlignedByteOffset;
 			if ((m_Offsets[eOffset_TexCoord] == -1) && (!stricmp(m_Declaration[n].SemanticName, "TEXCOORD")))
-				 m_Offsets[eOffset_TexCoord] = m_Declaration[n].AlignedByteOffset;
-			if ((m_Offsets[eOffset_Normal  ] == -1) && (!stricmp(m_Declaration[n].SemanticName, "NORMAL"  ) || !stricmp(m_Declaration[n].SemanticName, "TANGENT" )))
-				 m_Offsets[eOffset_Normal  ] = m_Declaration[n].AlignedByteOffset;
+				m_Offsets[eOffset_TexCoord] = m_Declaration[n].AlignedByteOffset;
+			if ((m_Offsets[eOffset_Normal] == -1) && (!stricmp(m_Declaration[n].SemanticName, "NORMAL") || !stricmp(m_Declaration[n].SemanticName, "TANGENT")))
+				m_Offsets[eOffset_Normal] = m_Declaration[n].AlignedByteOffset;
 		}
 	}
+
+	SInputLayout(const SInputLayout& src) = default;
+	SInputLayout(SInputLayout&& src) = default;
+	SInputLayout& operator=(const SInputLayout& src) = default;
+	SInputLayout& operator=(SInputLayout&& src) = default;
 };
 
 //=================================================================

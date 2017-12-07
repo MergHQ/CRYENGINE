@@ -935,6 +935,10 @@ void CRenderMesh::UnlockStream(int nStream)
   MEMORY_SCOPE_CHECK_HEAP();
   UnlockVB(nStream);
 	SREC_AUTO_LOCK(m_sResLock);
+	
+	const auto vertexFormatDescriptor = CDeviceObjectFactory::GetInputLayoutDescriptor(GetVertexFormat());
+	if (!vertexFormatDescriptor)
+		return;
 
 	if (nStream == VSF_GENERAL)
 	{
@@ -944,7 +948,7 @@ void CRenderMesh::UnlockStream(int nStream)
 			int nStride;
 			byte *pDst = (byte *)LockVB(nStream, FSL_SYSTEM_UPDATE, 0, m_nVerts, &nStride);
 
-			int8 ofs = CDeviceObjectFactory::LookupInputLayout(GetVertexFormat()).first.m_Offsets[SInputLayout::eOffset_Position];
+			int8 ofs = vertexFormatDescriptor->m_Offsets[SInputLayout::eOffset_Position];
 			assert(ofs >= 0);
 			pDst += ofs;
 
@@ -967,7 +971,7 @@ void CRenderMesh::UnlockStream(int nStream)
 			int nStride;
 			byte *pDst = (byte *)LockVB(nStream, FSL_SYSTEM_UPDATE, 0, m_nVerts, &nStride);
 
-			int8 ofs = CDeviceObjectFactory::LookupInputLayout(GetVertexFormat()).first.m_Offsets[SInputLayout::eOffset_TexCoord];
+			int8 ofs = vertexFormatDescriptor->m_Offsets[SInputLayout::eOffset_TexCoord];
 			assert(ofs >= 0);
 			pDst += ofs;
 
@@ -2013,6 +2017,7 @@ bool CRenderMesh::CreateCachePos(byte *pSrc, uint32 nStrideSrc, uint nFlags)
 	#ifdef USE_VBIB_PUSH_DOWN
 		SREC_AUTO_LOCK(m_sResLock);//on USE_VBIB_PUSH_DOWN tick is executed in renderthread
 	#endif
+
 		m_nFlagsCachePos = (nFlags & FSL_WRITE) != 0;
 		m_nFrameRequestCachePos = GetCurrentFrameID();
 		if ((nFlags & FSL_READ) && m_pCachePos)
@@ -2025,7 +2030,11 @@ bool CRenderMesh::CreateCachePos(byte *pSrc, uint32 nStrideSrc, uint nFlags)
 		{
 			if (nFlags == FSL_SYSTEM_UPDATE || (nFlags & FSL_READ))
 			{
-				int8 offs = CDeviceObjectFactory::LookupInputLayout(_GetVertexFormat()).first.m_Offsets[SInputLayout::eOffset_Position];
+				const auto vertexFormatDescriptor = CDeviceObjectFactory::GetInputLayoutDescriptor(_GetVertexFormat());
+				if (!vertexFormatDescriptor)
+					return false;
+
+				int8 offs = vertexFormatDescriptor->m_Offsets[SInputLayout::eOffset_Position];
 				if (offs >= 0)
 					pSrc += offs;
 
@@ -2059,7 +2068,11 @@ bool CRenderMesh::CreateCacheUVs(byte *pSrc, uint32 nStrideSrc, uint nFlags)
 		{
 			if (nFlags == FSL_SYSTEM_UPDATE || (nFlags & FSL_READ))
 			{
-				int8 offs = CDeviceObjectFactory::LookupInputLayout(_GetVertexFormat()).first.m_Offsets[SInputLayout::eOffset_TexCoord];
+				const auto vertexFormatDescriptor = CDeviceObjectFactory::GetInputLayoutDescriptor(_GetVertexFormat());
+				if (!vertexFormatDescriptor)
+					return false;
+
+				int8 offs = vertexFormatDescriptor->m_Offsets[SInputLayout::eOffset_TexCoord];
 				if (offs >= 0)
 					pSrc += offs;
 
@@ -2085,7 +2098,12 @@ byte *CRenderMesh::GetPosPtrNoCache(int32& nStride, uint32 nFlags, int32 nOffset
   if (!pData)
     return NULL;
   nStride = nStr;
-  int8 offs = CDeviceObjectFactory::LookupInputLayout(_GetVertexFormat()).first.m_Offsets[SInputLayout::eOffset_Position];
+
+  const auto vertexFormatDescriptor = CDeviceObjectFactory::GetInputLayoutDescriptor(_GetVertexFormat());
+  if (!vertexFormatDescriptor)
+	  return NULL;
+
+  int8 offs = vertexFormatDescriptor->m_Offsets[SInputLayout::eOffset_Position];
   if (offs >= 0)
 	  return &pData[offs];
   return NULL;
@@ -2101,7 +2119,12 @@ byte *CRenderMesh::GetPosPtr(int32& nStride, uint32 nFlags, int32 nOffset)
   if (!pData)
     return NULL;
   nStride = nStr;
-  int8 offs = CDeviceObjectFactory::LookupInputLayout(_GetVertexFormat()).first.m_Offsets[SInputLayout::eOffset_Position];
+
+  const auto vertexFormatDescriptor = CDeviceObjectFactory::GetInputLayoutDescriptor(_GetVertexFormat());
+  if (!vertexFormatDescriptor)
+	  return NULL;
+
+  int8 offs = vertexFormatDescriptor->m_Offsets[SInputLayout::eOffset_Position];
 
   // TODO: remove conversion from Half to Float
   if (CreateCachePos(pData, nStr, nFlags))
@@ -2132,7 +2155,12 @@ byte *CRenderMesh::GetColorPtr(int32& nStride, uint32 nFlags, int32 nOffset)
   if (!pData)
     return NULL;
   nStride = nStr;
-  int8 offs = CDeviceObjectFactory::LookupInputLayout(_GetVertexFormat()).first.m_Offsets[SInputLayout::eOffset_Color];
+
+  const auto vertexFormatDescriptor = CDeviceObjectFactory::GetInputLayoutDescriptor(_GetVertexFormat());
+  if (!vertexFormatDescriptor)
+	  return NULL;
+
+  int8 offs = vertexFormatDescriptor->m_Offsets[SInputLayout::eOffset_Color];
   if (offs >= 0)
     return &pData[offs];
   return NULL;
@@ -2147,7 +2175,7 @@ byte *CRenderMesh::GetNormPtr(int32& nStride, uint32 nFlags, int32 nOffset)
   if (pData)
   {
     nStride = sizeof(SPipNormal);
-    int8 offs = CDeviceObjectFactory::LookupInputLayout(EDefaultInputLayouts::N3F).first.m_Offsets[SInputLayout::eOffset_Normal];
+    int8 offs = CDeviceObjectFactory::GetInputLayoutDescriptor(EDefaultInputLayouts::N3F)->m_Offsets[SInputLayout::eOffset_Normal];
     if (offs >= 0)
       return &pData[offs];
     return NULL;
@@ -2158,7 +2186,12 @@ byte *CRenderMesh::GetNormPtr(int32& nStride, uint32 nFlags, int32 nOffset)
   if (!pData)
     return NULL;
   nStride = nStr;
-  int8 offs = CDeviceObjectFactory::LookupInputLayout(_GetVertexFormat()).first.m_Offsets[SInputLayout::eOffset_Normal];
+
+  const auto vertexFormatDescriptor = CDeviceObjectFactory::GetInputLayoutDescriptor(_GetVertexFormat());
+  if (!vertexFormatDescriptor)
+	  return NULL;
+
+  int8 offs = vertexFormatDescriptor->m_Offsets[SInputLayout::eOffset_Normal];
   if (offs >= 0)
     return &pData[offs];
   return NULL;
@@ -2172,7 +2205,12 @@ byte *CRenderMesh::GetUVPtrNoCache(int32& nStride, uint32 nFlags, int32 nOffset)
 	if (!pData)
 		return NULL;
 	nStride = nStr;
-	int8 offs = CDeviceObjectFactory::LookupInputLayout(_GetVertexFormat()).first.m_Offsets[SInputLayout::eOffset_TexCoord];
+
+	const auto vertexFormatDescriptor = CDeviceObjectFactory::GetInputLayoutDescriptor(_GetVertexFormat());
+	if (!vertexFormatDescriptor)
+		return NULL;
+
+	int8 offs = vertexFormatDescriptor->m_Offsets[SInputLayout::eOffset_TexCoord];
 	if (offs >= 0)
 		return &pData[offs];
 	return NULL;
@@ -2186,7 +2224,12 @@ byte *CRenderMesh::GetUVPtr(int32& nStride, uint32 nFlags, int32 nOffset)
   if (!pData)
     return NULL;
   nStride = nStr;
-  int8 offs = CDeviceObjectFactory::LookupInputLayout(_GetVertexFormat()).first.m_Offsets[SInputLayout::eOffset_TexCoord];
+
+  const auto vertexFormatDescriptor = CDeviceObjectFactory::GetInputLayoutDescriptor(_GetVertexFormat());
+  if (!vertexFormatDescriptor)
+	  return NULL;
+
+  int8 offs = vertexFormatDescriptor->m_Offsets[SInputLayout::eOffset_TexCoord];
 
   // TODO: remove conversion from Half to Float
   if (CreateCacheUVs(pData, nStr, nFlags))

@@ -379,11 +379,11 @@ void CD3D9Renderer::SF_PrecacheShaders()
 	auto* pInstanceXY16iC32  = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(shaderInfoXY16iC32 [eHWSC_Vertex].pHwShaderInstance);
 	auto* pInstanceXY16iCF32 = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(shaderInfoXY16iCF32[eHWSC_Vertex].pHwShaderInstance);
 	auto* pInstanceGlyph     = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(shaderInfoGlyph    [eHWSC_Vertex].pHwShaderInstance);
-	
-	Res.m_vertexDecls[IScaleformPlayback::Vertex_XY16i    ] = CDeviceObjectFactory::GetOrCreateInputLayoutHandle(&pInstanceXY16i    ->m_Shader, 1, VertexDeclXY16i    );
-	Res.m_vertexDecls[IScaleformPlayback::Vertex_XY16iC32 ] = CDeviceObjectFactory::GetOrCreateInputLayoutHandle(&pInstanceXY16iC32 ->m_Shader, 2, VertexDeclXY16iC32 );
-	Res.m_vertexDecls[IScaleformPlayback::Vertex_XY16iCF32] = CDeviceObjectFactory::GetOrCreateInputLayoutHandle(&pInstanceXY16iCF32->m_Shader, 3, VertexDeclXY16iCF32);
-	Res.m_vertexDecls[IScaleformPlayback::Vertex_Glyph    ] = CDeviceObjectFactory::GetOrCreateInputLayoutHandle(&pInstanceGlyph    ->m_Shader, 3, VertexDeclGlyph    );
+
+	Res.m_vertexDecls[IScaleformPlayback::Vertex_XY16i]     = CDeviceObjectFactory::CreateCustomVertexFormat(1, VertexDeclXY16i);
+	Res.m_vertexDecls[IScaleformPlayback::Vertex_XY16iC32]  = CDeviceObjectFactory::CreateCustomVertexFormat(2, VertexDeclXY16iC32);
+	Res.m_vertexDecls[IScaleformPlayback::Vertex_XY16iCF32] = CDeviceObjectFactory::CreateCustomVertexFormat(3, VertexDeclXY16iCF32);
+	Res.m_vertexDecls[IScaleformPlayback::Vertex_Glyph]     = CDeviceObjectFactory::CreateCustomVertexFormat(3, VertexDeclGlyph);
 
 	const SamplerStateHandle texStateID[8] =
 	{

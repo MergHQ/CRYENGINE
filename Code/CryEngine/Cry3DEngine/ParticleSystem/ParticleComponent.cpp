@@ -406,8 +406,13 @@ IMaterial* CParticleComponent::MakeMaterial()
 		const char* shaderName = UsesGPU() ? "Particles.ParticlesGpu" : "Particles";
 		const string& diffuseMap = m_componentParams.m_diffuseMap;
 		const uint32 textureLoadFlags = FT_DONT_STREAM;
-		const int textureId = gEnv->pRenderer->EF_LoadTexture(diffuseMap.c_str(), textureLoadFlags)->GetTextureID();
-		if (textureId <= 0)
+		ITexture* pTexture = gEnv->pRenderer->EF_GetTextureByName(diffuseMap.c_str(), textureLoadFlags);
+		if (!pTexture)
+		{
+			GetPSystem()->CheckFileAccess(diffuseMap.c_str());
+			pTexture = gEnv->pRenderer->EF_LoadTexture(diffuseMap.c_str(), textureLoadFlags);
+		}
+		if (pTexture->GetTextureID() <= 0)
 			CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_WARNING, "Particle effect texture %s not found", diffuseMap.c_str());
 
 		SInputShaderResourcesPtr pResources = gEnv->pRenderer->EF_CreateInputShaderResource();
@@ -417,9 +422,6 @@ IMaterial* CParticleComponent::MakeMaterial()
 			mask |= eGpuParticlesVertexShaderFlags_FacingVelocity;
 		SShaderItem shaderItem = gEnv->pRenderer->EF_LoadShaderItem(shaderName, false, 0, pResources, mask);
 		pMaterial->AssignShaderItem(shaderItem);
-
-		if (textureId > 0)
-			gEnv->pRenderer->RemoveTexture(textureId);
 	}
 	Vec3 white = Vec3(1.0f, 1.0f, 1.0f);
 	float defaultOpacity = 1.0f;

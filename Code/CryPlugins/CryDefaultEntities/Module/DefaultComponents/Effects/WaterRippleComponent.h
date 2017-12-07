@@ -11,6 +11,9 @@ namespace Cry
 	{
 		class CWaterRippleComponent
 			: public IEntityComponent
+#ifndef RELEASE
+			, public IEntityComponentPreviewer
+#endif
 		{
 		public:
 			friend CPlugin_CryDefaultEntities;
@@ -29,6 +32,13 @@ namespace Cry
 
 			void SpawnRippleAtPosition(const Vec3& position, const float strength = 1.0f, const float scale = 1.0f) const;
 
+#ifndef RELEASE
+			// IEntityComponentPreviewer
+			virtual IEntityComponentPreviewer* GetPreviewer() final { return this; }
+			virtual void SerializeProperties(Serialization::IArchive& archive) final {}
+			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const final;
+			// ~IEntityComponentPreviewer
+#endif
 			static void ReflectType(Schematyc::CTypeDesc<CWaterRippleComponent>& desc)
 			{
 				desc.SetGUID("{24F28FE1-826A-4237-988D-4DD3274C7C6A}"_cry_guid);

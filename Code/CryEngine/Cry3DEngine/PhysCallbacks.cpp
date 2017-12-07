@@ -420,7 +420,7 @@ void CDeferredCollisionEventOnPhysCollision::TestCollisionWithRenderMesh()
 	// do not spawn if too far
 	float fZoom = gEnv->p3DEngine->GetZoomFactor();
 	float fCollisionDistance = pCollisionEvent->pt.GetDistance(vCamPos);
-	if (fCollisionDistance * fZoom > GetFloatCVar(e_DecalsRange) && pCollisionEvent->mass[0] < 0.5f)
+	if (fCollisionDistance * fZoom > GetFloatCVar(e_DecalsRange) && pCollisionEvent->mass[0] < GetFloatCVar(e_MinMassDistanceCheckRenderMeshCollision))
 	{
 		// only apply distance check for bullets; heavier particles should use it always
 		MarkFinished(1);
