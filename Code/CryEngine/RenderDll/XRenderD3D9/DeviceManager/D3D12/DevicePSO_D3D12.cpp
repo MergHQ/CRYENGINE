@@ -154,7 +154,8 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX12::Init(const CDeviceGraph
 		{
 			uint32 streamMask = psoDesc.CombineVertexStreamMasks(uint8(pVsInstance->m_VStreamMask_Decl), psoDesc.m_ObjectStreamMask);
 
-			m_pInputLayout = &CDeviceObjectFactory::LookupInputLayout(CDeviceObjectFactory::GetOrCreateInputLayoutHandle(&pVsInstance->m_Shader, streamMask, 0, 0, nullptr, psoDesc.m_VertexFormat)).first;
+			const auto inputLayoutPair = CDeviceObjectFactory::GetOrCreateInputLayout(&pVsInstance->m_Shader, streamMask, psoDesc.m_VertexFormat);
+			m_pInputLayout = &inputLayoutPair->first;
 
 			// D3D12_INPUT_ELEMENT_DESC := D3D11_INPUT_ELEMENT_DESC
 			psoInitParams.m_Desc.InputLayout.pInputElementDescs = reinterpret_cast<const D3D12_INPUT_ELEMENT_DESC*>(&m_pInputLayout->m_Declaration[0]);

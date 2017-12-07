@@ -113,20 +113,17 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 			const VkPhysicalDeviceLimits& limits = GetDevice()->GetPhysicalDeviceInfo()->deviceProperties.limits;
 			vertexInputBindingDescriptions.reserve(min(limits.maxVertexInputBindings, 16u));
 			vertexInputAttributeDescriptions.reserve(min(limits.maxVertexInputAttributes, 32u));
-			std::vector<uint32> strides(limits.maxVertexInputBindings, 0);
 
 			uint32 streamMask = psoDesc.CombineVertexStreamMasks(uint8(pVsInstance->m_VStreamMask_Decl), psoDesc.m_ObjectStreamMask);
 
-			auto& inputLayout = CDeviceObjectFactory::LookupInputLayout(CDeviceObjectFactory::GetOrCreateInputLayoutHandle(&pVsInstance->m_Shader, streamMask, 0, 0, nullptr, psoDesc.m_VertexFormat)).first;
+			const auto& inputLayoutPair = CDeviceObjectFactory::GetOrCreateInputLayout(&pVsInstance->m_Shader, streamMask, psoDesc.m_VertexFormat);
+			const auto& inputLayout = inputLayoutPair->first;
 			const unsigned int declarationCount = inputLayout.m_Declaration.size();
 
 			// match shader inputs to input layout by semantic
 			for (const auto& declInputElement : inputLayout.m_Declaration)
 			{
 				// update stride for this slot
-				CRY_ASSERT(declInputElement.InputSlot < strides.size());
-				strides[declInputElement.InputSlot] = max(strides[declInputElement.InputSlot], declInputElement.AlignedByteOffset + DeviceFormats::GetStride(declInputElement.Format));
-
 				for (const auto& vsInputElement : pVsInstance->m_VSInputStreams)
 				{
 					if (strcmp(vsInputElement.semanticName, declInputElement.SemanticName) == 0 &&
@@ -172,7 +169,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 
 			// update binding strides
 			for (auto& binding : vertexInputBindingDescriptions)
-				binding.stride = strides[binding.binding];
+				binding.stride = inputLayout.m_Strides[binding.binding - inputLayout.m_firstSlot];
 		}
 	}
 

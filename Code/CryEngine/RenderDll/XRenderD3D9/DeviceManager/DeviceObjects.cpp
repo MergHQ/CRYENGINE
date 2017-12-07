@@ -8,6 +8,62 @@
 #include "Common/Textures/TextureHelpers.h"
 #include "../GraphicsPipeline/Common/GraphicsPipelineStateSet.h"
 
+
+uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutHandle VertexFormat, ID3D11ShaderReflection* pShaderReflection)
+{
+	uint8_t shaderMask = 0;
+
+	D3D11_SHADER_DESC Desc;
+	pShaderReflection->GetDesc(&Desc);
+
+	// layoutDescriptor's names will be ordered in lexicographical ascending order
+	const auto* layoutDescriptor = CDeviceObjectFactory::GetInputLayoutDescriptor(VertexFormat);
+	if (!layoutDescriptor || !Desc.InputParameters)
+		return shaderMask;
+
+	// Read and store lexicographically ordered pointers to reflected names
+	std::vector<const char*> reflectedNames;
+	reflectedNames.reserve(Desc.InputParameters);
+	for (uint32 i=0; i<Desc.InputParameters; i++)
+	{
+		D3D11_SIGNATURE_PARAMETER_DESC Sig;
+		pShaderReflection->GetInputParameterDesc(i, &Sig);
+		if (!Sig.SemanticName)
+			continue;
+
+		// Insert ordered by element name
+		auto it = std::lower_bound(reflectedNames.begin(), reflectedNames.end(), Sig.SemanticName, [](const char* const lhs, const char* const rhs)
+		{
+			return std::strcmp(lhs, rhs) <= 0;
+		});
+		reflectedNames.insert(it, Sig.SemanticName);
+	}
+
+	// Check which of the names that are expected by the vertex format actually exist as input in the VS
+	auto layout_it = layoutDescriptor->m_Declaration.cbegin();
+	auto vs_it = reflectedNames.cbegin();
+	for (int i = 0; layout_it != layoutDescriptor->m_Declaration.cend() && vs_it != reflectedNames.cend(); ++i, ++layout_it)
+	{
+		int compResult;
+		while (vs_it != reflectedNames.cend() && (compResult = std::strcmp(*vs_it, layout_it->SemanticName)) < 0)
+		{
+			// Reaching this means that the vs_it element exists in shader but not in layout!
+			CRY_ASSERT((std::string("Vertex Shader expects attribute \"") + *vs_it + "\" but none provided by specified input layout.").c_str());
+			++vs_it;
+		}
+
+		// Match?
+		if (compResult == 0)
+		{
+			shaderMask |= 1 << i;
+			++vs_it;
+		}
+	}
+
+	return shaderMask;
+}
+
+
 CDeviceObjectFactory CDeviceObjectFactory::m_singleton;
 
 CDeviceObjectFactory::~CDeviceObjectFactory()
@@ -120,9 +176,8 @@ void CDeviceObjectFactory::ReleaseSamplerStates()
 ////////////////////////////////////////////////////////////////////////////
 // InputLayout API
 
-CStaticDeviceObjectStorage<InputLayoutHandle, SInputLayout, CDeviceInputLayout, true, CDeviceObjectFactory::CreateInputLayout> CDeviceObjectFactory::s_InputLayouts;
-
-std::vector<InputLayoutHandle> CDeviceObjectFactory::s_InputLayoutPermutations[1 << VSF_NUM][3]; // [StreamMask][Morph][VertexFmt]
+std::vector<SInputLayout> CDeviceObjectFactory::m_vertexFormatToInputLayoutCache;
+std::unordered_map<SInputLayoutCompositionDescriptor, CDeviceObjectFactory::SInputLayoutPair, SInputLayoutCompositionDescriptor::hasher> CDeviceObjectFactory::s_InputLayoutCompositions;
 
 static const D3D11_INPUT_ELEMENT_DESC VertexDecl_Empty[] = { {} }; // Empty
 
@@ -288,203 +343,149 @@ VertexDecls[EDefaultInputLayouts::PreAllocated] =
 
 void CDeviceObjectFactory::AllocatePredefinedInputLayouts()
 {
-	ReserveInputLayouts(EDefaultInputLayouts::PreAllocated);
-
-	for (InputLayoutHandle nFormat = EDefaultInputLayouts::Empty; nFormat < EDefaultInputLayouts::PreAllocated; nFormat = InputLayoutHandle::ValueType(uint16(nFormat) + 1U))
-	{
-		SInputLayout out;
-		for (size_t n = 0; n < VertexDecls[uint32(nFormat)].numDescs; n++)
-			out.m_Declaration.push_back(VertexDecls[uint32(nFormat)].inputDescs[n]);
-
-		// General vertex stream stride
-		out.CalculateStride();
-		out.CalculateOffsets();
-		out.m_pVertexShader = nullptr;
-
-		InputLayoutHandle r = GetOrCreateInputLayoutHandle(out);
-		assert(r == nFormat);
-	}
-
-	for (int n = 0; n <= MASK(VSF_NUM); ++n)
-	{
-		s_InputLayoutPermutations[n][0].resize(EDefaultInputLayouts::PreAllocated);
-		s_InputLayoutPermutations[n][1].resize(EDefaultInputLayouts::PreAllocated);
-	}
-
-	// NOTE: s_InputLayoutPermutations is entirely empty in the beginning. Subsequent calls to
-	// GetOrCreateInputLayoutHandle() with a valid shader blob will retry creating the input layout objects
-}
-
-void CDeviceObjectFactory::TrimInputLayouts()
-{
-	s_InputLayouts.Release(EDefaultInputLayouts::PreAllocated);
-
-	// for simplicity sake, clear lookup table
-	for (auto& permutationsForMask : s_InputLayoutPermutations)
-		for (auto& permutationsForMorph : permutationsForMask)
-			permutationsForMorph.clear();
+	m_vertexFormatToInputLayoutCache.reserve(EDefaultInputLayouts::PreAllocated);
+	for (size_t i = 0; i < EDefaultInputLayouts::PreAllocated; ++i)
+		CreateCustomVertexFormat(VertexDecls[i].numDescs, VertexDecls[i].inputDescs);
 }
 
 void CDeviceObjectFactory::ReleaseInputLayouts()
 {
-	s_InputLayouts.Release(EDefaultInputLayouts::Empty);
-
-	// for simplicity sake, clear lookup table
-	for (auto& permutationsForMask : s_InputLayoutPermutations)
-		for (auto& permutationsForMorph : permutationsForMask)
-			permutationsForMorph.clear();
+	m_vertexFormatToInputLayoutCache.clear();
 }
 
-InputLayoutHandle CDeviceObjectFactory::GetOrCreateInputLayoutHandle(const SShaderBlob* pVertexShader, int StreamMask, int InstAttrMask, uint32 nUsedAttr, byte Attributes[], const InputLayoutHandle VertexFormat)
+void CDeviceObjectFactory::TrimInputLayouts()
 {
-	bool bMorph = (StreamMask & VSM_MORPHBUDDY) != 0;
-	bool bInstanced = (StreamMask & VSM_INSTANCED) != 0;
-	bool bInstAttribs = (InstAttrMask != 0);
+	m_vertexFormatToInputLayoutCache.erase(m_vertexFormatToInputLayoutCache.begin() + EDefaultInputLayouts::PreAllocated, m_vertexFormatToInputLayoutCache.end());
+}
 
-	int nShared = (bInstAttribs) ? 2 : ((bMorph || bInstanced) ? 1 : 0);
-	InputLayoutHandle *pDeclCache = &s_InputLayoutPermutations[StreamMask % MASK(VSF_NUM)][nShared][VertexFormat];
-
-#if CRY_PLATFORM_ORBIS && !defined(CUSTOM_FETCH_SHADERS)
-	// TODO: Discuss with PS4 implementer!
-
-	// Orbis shader compiler strips out unused declarations so keep creating until we find a shader that's fully bound
-	if (pDeclCache->m_pDeclaration && !pDeclCache->m_pDeclaration->IsFullyBound())
+const SInputLayout* CDeviceObjectFactory::GetInputLayoutDescriptor(const InputLayoutHandle VertexFormat)
+{
+	uint64_t idx = static_cast<uint64_t>(VertexFormat);
+	const auto size = m_vertexFormatToInputLayoutCache.size();
+	if (idx >= size)
 	{
-		SAFE_RELEASE(pDeclCache->m_pDeclaration);
+		CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "GetInputLayoutDescriptor(): Supplied handle is neither a predefined format nor was created via CreateCustomVertexFormat()!");
+		return nullptr;
 	}
-#endif
 
-	if (*pDeclCache == InputLayoutHandle::Unspecified)
+	return &m_vertexFormatToInputLayoutCache[static_cast<size_t>(idx)];
+}
+
+const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateInputLayout(const SShaderBlob* pVertexShader, int StreamMask, const InputLayoutHandle VertexFormat)
+{
+	CRY_ASSERT(pVertexShader);
+	if (!pVertexShader)
+		return nullptr;
+
+	bool bInstanced = (StreamMask & VSM_INSTANCED) != 0;
+
+	// Reflect
+	void* pShaderReflBuf;
+	HRESULT hr = D3DReflect(pVertexShader->m_pShaderData, pVertexShader->m_nDataSize, IID_ID3D11ShaderReflection, &pShaderReflBuf);
+	CRY_ASSERT(SUCCEEDED(hr) && pShaderReflBuf);
+	ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pShaderReflBuf;
+
+	// Create the composition descriptor
+	SInputLayoutCompositionDescriptor compositionDescriptor(VertexFormat, StreamMask, pShaderReflection);
+
+	auto it = s_InputLayoutCompositions.lower_bound(compositionDescriptor);
+	if (it == s_InputLayoutCompositions.end() || it->first != compositionDescriptor)
 	{
-		*pDeclCache = VertexFormat;
+		// Create the input layout for the current permutation
+		auto il = CreateInputLayoutForPermutation(pVertexShader, compositionDescriptor, StreamMask, VertexFormat);
+		auto deviceInputLayout = CreateInputLayout(il, pVertexShader);
 
-		//	iLog->Log("OnDemandVertexDeclaration %d %d %d (DEBUG test - shouldn't log too often)", StreamMask, VertexFormat, bMorph ? 1 : 0);
-		const std::pair<SInputLayout, CDeviceInputLayout*>& baseLayout = LookupInputLayout(VertexFormat);
+		auto pair = std::make_pair(il, deviceInputLayout);
+		// Insert with hint
+		return &s_InputLayoutCompositions.insert(it, std::make_pair(compositionDescriptor, pair))->second;
+	}
 
-		if (baseLayout.first.m_pVertexShader != pVertexShader)
+	return &it->second;
+}
+
+const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateInputLayout(const SShaderBlob* pVS, const InputLayoutHandle VertexFormat)
+{
+	return GetOrCreateInputLayout(pVS, 0, VertexFormat);
+}
+
+SInputLayout CDeviceObjectFactory::CreateInputLayoutForPermutation(const SShaderBlob* m_pConsumingVertexShader, const SInputLayoutCompositionDescriptor &compositionDescription, int StreamMask, const InputLayoutHandle VertexFormat)
+{
+	bool bInstanced = (StreamMask & VSM_INSTANCED) != 0;
+
+	const auto* layoutDescriptor = GetInputLayoutDescriptor(VertexFormat);
+	CRY_ASSERT(layoutDescriptor);
+	if (!layoutDescriptor)
+		return SInputLayout({});
+
+	// Copy layout declarations that also exists in shader, using the shaderMask of the composition description
+	std::vector<D3D11_INPUT_ELEMENT_DESC> decs;
+	decs.reserve(layoutDescriptor->m_Declaration.size());
+	for (int i=0; i<layoutDescriptor->m_Declaration.size(); ++i)
+			decs.push_back(layoutDescriptor->m_Declaration[i]);
+
+	// Create instanced vertex declaration
+	if (bInstanced)
+	{
+		for (size_t n = 0; n < decs.size(); n++)
 		{
-			SInputLayout out = baseLayout.first;
+			D3D11_INPUT_ELEMENT_DESC& elem = decs[n];
 
-			if (StreamMask || bInstAttribs)
-			{
-				// Create instanced vertex declaration
-				if (bInstanced)
-				{
-					for (size_t n = 0; n < out.m_Declaration.size(); n++)
-					{
-						D3D11_INPUT_ELEMENT_DESC& elem = out.m_Declaration[n];
-
-						elem.InputSlotClass = D3D11_INPUT_PER_INSTANCE_DATA;
-						elem.InstanceDataStepRate = 1;
-					}
-				}
-
-				// Append additional streams
-				for (int n = 1; n < VSF_NUM; n++)
-				{
-					if (!(StreamMask & (1 << n)))
-						continue;
-
-					InputLayoutHandle AttachmentFormat = EDefaultInputLayouts::Unspecified;
-					switch (n)
-					{
-					#ifdef TANG_FLOATS
-						case VSF_TANGENTS       : AttachmentFormat = EDefaultInputLayouts::T4F_B4F; break;
-						case VSF_QTANGENTS      : AttachmentFormat = EDefaultInputLayouts::Q4F; break;
-					#else
-						case VSF_TANGENTS       : AttachmentFormat = EDefaultInputLayouts::T4S_B4S; break;
-						case VSF_QTANGENTS      : AttachmentFormat = EDefaultInputLayouts::Q4S; break;
-					#endif
-						case VSF_HWSKIN_INFO    : AttachmentFormat = EDefaultInputLayouts::W4B_I4S; break;
-						case VSF_VERTEX_VELOCITY: AttachmentFormat = EDefaultInputLayouts::V3F; break;
-						case VSF_NORMALS        : AttachmentFormat = EDefaultInputLayouts::N3F; break;
-					}
-
-					const std::pair<SInputLayout, CDeviceInputLayout*>& addLayout = LookupInputLayout(AttachmentFormat);
-					for (size_t n = 0; n < addLayout.first.m_Declaration.size(); n++)
-						out.m_Declaration.push_back(addLayout.first.m_Declaration[n]);
-				}
-
-				// Append morph buddies
-				if (bMorph)
-				{
-					uint32 dwNumWithoutMorph = out.m_Declaration.size();
-
-					for (size_t n = 0; n < dwNumWithoutMorph; n++)
-					{
-						D3D11_INPUT_ELEMENT_DESC El = out.m_Declaration[n];
-
-						El.InputSlot += VSF_MORPHBUDDY;
-						El.SemanticIndex += 8;
-
-						out.m_Declaration.push_back(El);
-					}
-
-					const std::pair<SInputLayout, CDeviceInputLayout*>& addLayout = LookupInputLayout(EDefaultInputLayouts::W2F);
-					for (size_t n = 0; n < addLayout.first.m_Declaration.size(); n++)
-						out.m_Declaration.push_back(addLayout.first.m_Declaration[n]);
-				}
-
-				// Append instance data
-				if (bInstAttribs)
-				{
-					const int nInstOffs = 1;
-
-					const std::pair<SInputLayout, CDeviceInputLayout*>& addLayout = LookupInputLayout(EDefaultInputLayouts::V4Fi);
-					for (int i = 0; i < nUsedAttr; i++)
-					{
-						for (size_t n = 0; n < addLayout.first.m_Declaration.size(); n++)
-						{
-							D3D11_INPUT_ELEMENT_DESC El = addLayout.first.m_Declaration[n];
-
-							El.AlignedByteOffset = i * addLayout.first.m_Stride;
-							El.SemanticIndex = Attributes[i] + nInstOffs;
-
-							out.m_Declaration.push_back(El);
-						}
-					}
-				}
-			}
-
-			// General vertex stream stride
-			out.CalculateStride();
-			out.CalculateOffsets();
-			out.m_pVertexShader = pVertexShader;
-
-			*pDeclCache = GetOrCreateInputLayoutHandle(out);
-			assert(*pDeclCache == VertexFormat || *pDeclCache >= EDefaultInputLayouts::PreAllocated);
+			elem.InputSlotClass = D3D11_INPUT_PER_INSTANCE_DATA;
+			elem.InstanceDataStepRate = 1;
 		}
 	}
 
-	// NOTE: s_InputLayoutPermutations is entirely empty in the beginning. Subsequent calls to
-	// GetOrCreateInputLayoutHandle() with a valid shader blob will retry creating the input layout objects
-
-	assert(pVertexShader);
-	assert(LookupInputLayout(*pDeclCache).first.m_pVertexShader);
-
-	return *pDeclCache;
-}
-
-InputLayoutHandle CDeviceObjectFactory::GetOrCreateInputLayoutHandle(const SShaderBlob* pVertexShader, size_t numDescs, const D3D11_INPUT_ELEMENT_DESC* inputLayout)
-{
-	SInputLayout out;
-	for (int n = 0; n < numDescs; ++n)
-		out.m_Declaration.push_back(inputLayout[n]);
-
-	// General vertex stream stride
-	out.CalculateStride();
-	out.CalculateOffsets();
-	out.m_pVertexShader = pVertexShader;
-
-	InputLayoutHandle newVF = GetOrCreateInputLayoutHandle(out);
-
-	for (int n = 0; n <= MASK(VSF_NUM); ++n)
+	// Append additional streams
+	for (int n = 1; n < VSF_NUM; n++)
 	{
-		s_InputLayoutPermutations[n][0].resize(uint32(newVF) + 1U);
-		s_InputLayoutPermutations[n][1].resize(uint32(newVF) + 1U);
+		if (!(StreamMask & (1 << n)))
+			continue;
+
+		InputLayoutHandle AttachmentFormat = EDefaultInputLayouts::Unspecified;
+		switch (n)
+		{
+#ifdef TANG_FLOATS
+		case VSF_TANGENTS: AttachmentFormat = EDefaultInputLayouts::T4F_B4F; break;
+		case VSF_QTANGENTS: AttachmentFormat = EDefaultInputLayouts::Q4F; break;
+#else
+		case VSF_TANGENTS: AttachmentFormat = EDefaultInputLayouts::T4S_B4S; break;
+		case VSF_QTANGENTS: AttachmentFormat = EDefaultInputLayouts::Q4S; break;
+#endif
+		case VSF_HWSKIN_INFO: AttachmentFormat = EDefaultInputLayouts::W4B_I4S; break;
+		case VSF_VERTEX_VELOCITY: AttachmentFormat = EDefaultInputLayouts::V3F; break;
+		case VSF_NORMALS: AttachmentFormat = EDefaultInputLayouts::N3F; break;
+		}
+
+		const auto* addLayout = GetInputLayoutDescriptor(AttachmentFormat);
+		CRY_ASSERT(addLayout);
+		if (addLayout)
+		{
+			for (size_t n = 0; n < addLayout->m_Declaration.size(); n++)
+				decs.push_back(addLayout->m_Declaration[n]);
+		}
 	}
 
-	return newVF;
+	return SInputLayout(std::move(decs));
+}
+
+InputLayoutHandle CDeviceObjectFactory::CreateCustomVertexFormat(size_t numDescs, const D3D11_INPUT_ELEMENT_DESC* inputLayout)
+{
+	std::vector<D3D11_INPUT_ELEMENT_DESC> decs;
+	for (int n = 0; n < numDescs; ++n) 
+	{
+		// Insert ordered by element name
+		auto it = std::lower_bound(decs.begin(), decs.end(), inputLayout[n], [](const D3D11_INPUT_ELEMENT_DESC& lhs, const D3D11_INPUT_ELEMENT_DESC& rhs)
+		{
+			return std::strcmp(lhs.SemanticName, rhs.SemanticName) <= 0;
+		});
+		decs.insert(it, inputLayout[n]);
+	}
+
+	// Store
+	auto idx = m_vertexFormatToInputLayoutCache.size();
+	m_vertexFormatToInputLayoutCache.emplace_back(std::move(decs));
+
+	return InputLayoutHandle(static_cast<uint8_t>(idx));
 }
 
 void CDeviceObjectFactory::EraseRenderPass(CDeviceRenderPass* pPass, bool bRemoveInvalidateCallbacks)

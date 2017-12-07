@@ -303,10 +303,13 @@ public:
 				case VSF_HWSKIN_INFO    : eVF = EDefaultInputLayouts::W4B_I4S; break;
 				case VSF_VERTEX_VELOCITY: eVF = EDefaultInputLayouts::V3F; break;
 				case VSF_NORMALS        : eVF = EDefaultInputLayouts::N3F; break;
+				default:
+					CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING, "Unknown nStream");
+					return 0;
 			}
 		}
 
-		uint16 Stride = CDeviceObjectFactory::LookupInputLayout(eVF).first.m_Stride;
+		uint16 Stride = CDeviceObjectFactory::GetInputLayoutDescriptor(eVF)->m_Strides[0];
 		assert(Stride != 0);
 
 		return Stride;
@@ -357,7 +360,8 @@ public:
 	{
 		if (GetStridedArray(arr, stream))
 		{
-			int8 offset = CDeviceObjectFactory::LookupInputLayout(_GetVertexFormat()).first.m_Offsets[dataType];
+			const auto vertexFormatDescriptor = CDeviceObjectFactory::GetInputLayoutDescriptor(_GetVertexFormat());
+			int8 offset = vertexFormatDescriptor ? vertexFormatDescriptor->m_Offsets[dataType] : -1;
 			if (offset < 0)
 				arr.data = nullptr;
 			else

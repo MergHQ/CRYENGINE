@@ -481,18 +481,19 @@ CDeviceSamplerState* CDeviceObjectFactory::CreateSamplerState(const SSamplerStat
 ////////////////////////////////////////////////////////////////////////////
 // InputLayout API
 
-CDeviceInputLayout* CDeviceObjectFactory::CreateInputLayout(const SInputLayout& pLayout)
+CDeviceInputLayout* CDeviceObjectFactory::CreateInputLayout(const SInputLayout& pLayout, const SShaderBlob* m_pConsumingVertexShader)
 {
-	CDeviceInputLayout* Layout = nullptr;
-	if (!pLayout.m_pVertexShader || !pLayout.m_pVertexShader->m_pShaderData)
-		return Layout;
+	if (!m_pConsumingVertexShader || !m_pConsumingVertexShader->m_pShaderData)
+		return nullptr;
 
-	const int   nSize = pLayout.m_pVertexShader->m_nDataSize;
-	const void* pVSData = pLayout.m_pVertexShader->m_pShaderData;
+	const int   nSize = m_pConsumingVertexShader->m_nDataSize;
+	const void* pVSData = m_pConsumingVertexShader->m_pShaderData;
 
+	CDeviceInputLayout* Layout;
 	HRESULT hr = E_FAIL;
 	if (FAILED(hr = gcpRendD3D->GetDevice().CreateInputLayout(&pLayout.m_Declaration[0], pLayout.m_Declaration.size(), pVSData, nSize, &Layout)))
 	{
+		CRY_ASSERT(false);
 		return Layout;
 	}
 

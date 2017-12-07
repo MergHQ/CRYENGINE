@@ -46,6 +46,40 @@ class CDeviceRenderPass;
 // Fence API (TODO: offload all to CDeviceFenceHandle)
 typedef uintptr_t DeviceFenceHandle;
 
+struct SInputLayoutCompositionDescriptor
+{
+	const InputLayoutHandle VertexFormat;
+	const uint8_t StreamMask;
+	const bool bInstanced;
+	const uint8_t ShaderMask;
+
+	static uint8_t GenerateShaderMask(const InputLayoutHandle VertexFormat, ID3D11ShaderReflection* pShaderReflection);
+
+	SInputLayoutCompositionDescriptor(InputLayoutHandle VertexFormat, int Stream, ID3D11ShaderReflection* pShaderReflection) noexcept
+		: VertexFormat(VertexFormat), StreamMask(static_cast<uint8_t>(Stream % MASK(VSF_NUM))), bInstanced((StreamMask & VSM_INSTANCED) != 0), ShaderMask(GenerateShaderMask(VertexFormat, pShaderReflection))
+	{}
+
+	SInputLayoutCompositionDescriptor(SInputLayoutCompositionDescriptor&&) = default;
+	SInputLayoutCompositionDescriptor &operator=(SInputLayoutCompositionDescriptor&&) = default;
+	SInputLayoutCompositionDescriptor(const SInputLayoutCompositionDescriptor&) = default;
+	SInputLayoutCompositionDescriptor &operator=(const SInputLayoutCompositionDescriptor&) = default;
+
+	bool operator==(const SInputLayoutCompositionDescriptor &rhs) const noexcept
+	{
+		return VertexFormat == rhs.VertexFormat && StreamMask == rhs.StreamMask && ShaderMask == rhs.ShaderMask;
+	}
+	bool operator!=(const SInputLayoutCompositionDescriptor &rhs) const noexcept { return !(*this == rhs); }
+
+	struct hasher 
+	{
+		size_t operator()(const SInputLayoutCompositionDescriptor &d) const noexcept
+		{
+			const auto x = static_cast<size_t>(d.StreamMask) | (static_cast<size_t>(d.ShaderMask) << 8) | (static_cast<size_t>(d.VertexFormat.value) << 16) | (static_cast<size_t>(d.bInstanced) << 24);
+			return std::hash<size_t>()(x);
+		}
+	};
+};
+
 class CDeviceObjectFactory
 {
 	static CDeviceObjectFactory m_singleton;
@@ -122,18 +156,21 @@ public:
 
 	////////////////////////////////////////////////////////////////////////////
 	// InputLayout API
-
+	
 	static void AllocatePredefinedInputLayouts();
 	static void TrimInputLayouts();
 	static void ReleaseInputLayouts();
-	static void ReserveInputLayouts(const uint32 hNum) { s_InputLayouts.Reserve(hNum); }
 
-	static InputLayoutHandle GetOrCreateInputLayoutHandle(const SInputLayout& pState) { return s_InputLayouts.GetOrCreateHandle(pState); }
-	static const std::pair<SInputLayout, CDeviceInputLayout*>& LookupInputLayout(const InputLayoutHandle hState) { return s_InputLayouts.Lookup(hState); }
+public:
+	using SInputLayoutPair = std::pair<SInputLayout, CDeviceInputLayout*>;
+
+	static const SInputLayout* GetInputLayoutDescriptor(const InputLayoutHandle VertexFormat);
 
 	// Higher level input-layout composition / / / / / / / / / / / / / / / / / /
-	static InputLayoutHandle GetOrCreateInputLayoutHandle(const SShaderBlob* pVS, int StreamMask, int InstAttrMask, uint32 nUsedAttr, byte Attributes[], const InputLayoutHandle VertexFormat);
-	static InputLayoutHandle GetOrCreateInputLayoutHandle(const SShaderBlob* pVS, size_t numDescs, const D3D11_INPUT_ELEMENT_DESC* inputLayout);
+	static SInputLayout            CreateInputLayoutForPermutation(const SShaderBlob* m_pConsumingVertexShader, const SInputLayoutCompositionDescriptor &compositionDescription, int StreamMask, const InputLayoutHandle VertexFormat);
+	static const SInputLayoutPair* GetOrCreateInputLayout(const SShaderBlob* pVS, int StreamMask, const InputLayoutHandle VertexFormat);
+	static const SInputLayoutPair* GetOrCreateInputLayout(const SShaderBlob* pVS, const InputLayoutHandle VertexFormat);
+	static InputLayoutHandle       CreateCustomVertexFormat(size_t numDescs, const D3D11_INPUT_ELEMENT_DESC* inputLayout);
 
 	////////////////////////////////////////////////////////////////////////////
 	// PipelineState API
@@ -362,11 +399,11 @@ private:
 	// InputLayout API
 
 	// A heap containing all permutations of InputLayout, they are global and are never evicted
-	static CDeviceInputLayout* CreateInputLayout(const SInputLayout& pState);
-	static CStaticDeviceObjectStorage<InputLayoutHandle, SInputLayout, CDeviceInputLayout, true, CreateInputLayout> s_InputLayouts;
+	static CDeviceInputLayout* CreateInputLayout(const SInputLayout& pState, const SShaderBlob* m_pConsumingVertexShader);
+	static std::vector<SInputLayout> m_vertexFormatToInputLayoutCache;
 
 	// Higher level input-layout composition / / / / / / / / / / / / / / / / / /
-	static std::vector<InputLayoutHandle> s_InputLayoutPermutations[1 << VSF_NUM][3]; // [StreamMask][Morph][VertexFmt]
+	static std::unordered_map<SInputLayoutCompositionDescriptor, SInputLayoutPair, SInputLayoutCompositionDescriptor::hasher> s_InputLayoutCompositions;
 
 	////////////////////////////////////////////////////////////////////////////
 	// PipelineState API

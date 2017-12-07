@@ -150,9 +150,9 @@ cbuffer CBDeferredOceanStencil : register(b0)
 	float4x4 transformMatrix;
 };
 
-float4 DeferredOceanCausticsStencilVS(in float4 pos : POSITION) : POSITION
+float4 DeferredOceanCausticsStencilVS(in float3 pos : POSITION) : POSITION
 {
-	float4 worldPos = mul(transformMatrix, pos);
+    float4 worldPos = mul(transformMatrix, float4(pos, 1));
 	float4 outPos = mul(CV_ViewProjMatr, worldPos);
 	return outPos;
 }
