@@ -1640,15 +1640,23 @@ extern SSystemGlobalEnvironment* gEnv;
 //! Gets the system interface.
 inline ISystem* GetISystem()
 {
+#if defined(SYS_ENV_AS_STRUCT)
 	return gEnv->pSystem;
-};
+#else
+	return gEnv != nullptr ? gEnv->pSystem : nullptr;
+#endif // defined(SYS_ENV_AS_STRUCT)
+}
 
 #if defined(MAP_LOADING_SLICING)
 //! Gets the system scheduler interface.
 inline ISystemScheduler* GetISystemScheduler(void)
 {
+#if defined(SYS_ENV_AS_STRUCT)
 	return gEnv->pSystemScheduler;
-};
+#else
+	return gEnv != nullptr ? gEnv->pSystemScheduler : nullptr;
+#endif // defined(SYS_ENV_AS_STRUCT)
+}
 #endif // defined(MAP_LOADING_SLICING)
 //! This function must be called once by each module at the beginning, to setup global pointers.
 extern "C" DLL_EXPORT void ModuleInitISystem(ISystem* pSystem, const char* moduleName);
