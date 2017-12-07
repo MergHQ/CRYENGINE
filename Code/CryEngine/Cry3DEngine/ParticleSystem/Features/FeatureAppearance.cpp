@@ -122,7 +122,14 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		if (!m_materialName.empty())
-			pParams->m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialName.c_str());
+		{
+			pParams->m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->FindMaterial(m_materialName);
+			if (!pParams->m_pMaterial)
+			{
+				GetPSystem()->CheckFileAccess(m_materialName);
+				pParams->m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialName);
+			}
+		}
 		if (!m_textureName.empty())
 			pParams->m_diffuseMap = m_textureName;
 		MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Dummy);

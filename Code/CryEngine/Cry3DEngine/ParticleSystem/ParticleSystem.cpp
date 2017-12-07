@@ -117,6 +117,8 @@ void CParticleSystem::Update()
 	CRY_PFX2_PROFILE_DETAIL;
 	PARTICLE_LIGHT_PROFILER();
 
+	m_numFrames++;
+
 	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
 	const QuatT currentCameraPose = QuatT(camera.GetMatrix());
 	if (m_cameraMotion.q.GetLength() == 0.0f)
@@ -290,6 +292,9 @@ void CParticleSystem::ClearRenderResources()
 
 	m_emitters.clear();
 
+	m_numFrames = 0;
+	m_numClears++;
+	auto numEffects = m_effects.size();
 	for (auto it = m_effects.begin(); it != m_effects.end(); )
 	{
 		if (!it->second || it->second->Unique())
@@ -297,6 +302,13 @@ void CParticleSystem::ClearRenderResources()
 		else
 			++it;
 	}
+	Warning("ParticleSystem: Purging %d/%d effects", numEffects - m_effects.size(), numEffects);
+}
+
+void CParticleSystem::CheckFileAccess(cstr filename) const
+{
+	if (IsRuntime() && filename)
+		Warning("Particle asset runtime access: %s", filename);
 }
 
 float CParticleSystem::GetMaxAngularDensity(const CCamera& camera)
@@ -330,6 +342,7 @@ PParticleEffect CParticleSystem::LoadEffect(cstr effectName)
 
 	if (gEnv->pCryPak->IsFileExist(effectName))
 	{
+		CheckFileAccess(effectName);
 		PParticleEffect pEffect = CreateEffect();
 		RenameEffect(pEffect, effectName);
 		if (Serialization::LoadJsonFile(*CastEffect(pEffect), effectName))

@@ -63,7 +63,12 @@ public:
 
 	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pParams->m_pMesh = m_pStaticObject = Get3DEngine()->LoadStatObj(m_meshName.c_str(), NULL, NULL, m_piecesMode == EPiecesMode::Whole);
+		if (!(m_pStaticObject = Get3DEngine()->FindStatObjectByFilename(m_meshName)))
+		{
+			GetPSystem()->CheckFileAccess(m_meshName);
+			m_pStaticObject = Get3DEngine()->LoadStatObj(m_meshName, NULL, NULL, m_piecesMode == EPiecesMode::Whole);
+		}
+		pParams->m_pMesh = m_pStaticObject;
 		pParams->m_meshCentered = m_originMode == EOriginMode::Center;
 		if (m_pStaticObject)
 		{
