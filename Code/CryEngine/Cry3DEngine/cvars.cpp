@@ -305,6 +305,8 @@ void CVars::Init()
 	                   "Clip decal geometry by decal bbox");
 	DefineConstFloatCVar(e_DecalsRange, VF_NULL,
 	                     "Less precision for decals outside this range");
+	DefineConstFloatCVar(e_MinMassDistanceCheckRenderMeshCollision, VF_NULL,
+		"Minimum mass to check for e_DecalsRange as distance in a RenderMesh Collision check");
 	REGISTER_CVAR(e_DecalsLifeTimeScale, 1.f, VF_NULL,
 	              "Allows to increase or reduce decals life time for different specs");
 	REGISTER_CVAR(e_DecalsNeighborMaxLifeTime, 4.f, VF_NULL,
