@@ -70,42 +70,8 @@ namespace Cry
 				bool allowHit = (gEnv->pTimer->GetCurrTime() - m_lastSpawnTime) > fFrequency;
 				if (m_bAutoSpawn && allowHit)
 					ProcessHit(false);
-
-				const bool debugDraw = m_bEnabled && gEnv->IsEditing();
-				if (debugDraw)
-				{
-					IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
-
-					const ColorF colorGoodPosition0(0.0f, 0.0f, 0.5f, 0.0f);
-					const ColorF colorGoodPosition1(0.0f, 0.5f, 1.0f, 1.0f);
-					const ColorF colorBadPosition0(1.0f, 0.1f, 0.1f, 0.0f);
-					const ColorF colorBadPosition1(1.0f, 0.1f, 0.1f, 1.0f);
-
-					const ColorF& surfaceColor0 = m_currentLocationOk ? colorGoodPosition0 : colorBadPosition0;
-					const ColorF& surfaceColor1 = m_currentLocationOk ? colorGoodPosition1 : colorBadPosition1;
-
-					const Vec3 surfacePosition(GetEntity()->GetWorldPos());
-
-					pRenderAux->DrawSphere(surfacePosition, 0.1f, surfaceColor1);
-
-					const static int lines = 8;
-					const static float radius0 = 0.5f;
-					const static float radius1 = 1.0f;
-					const static float radius2 = 2.0f;
-					for (int i = 0; i < lines; ++i)
-					{
-						const float radians = ((float)i / (float)lines) * gf_PI2;
-						const float cosine = cos_tpl(radians);
-						const float sinus = sin_tpl(radians);
-						const Vec3 offset0(radius0 * cosine, radius0 * sinus, 0);
-						const Vec3 offset1(radius1 * cosine, radius1 * sinus, 0);
-						const Vec3 offset2(radius2 * cosine, radius2 * sinus, 0);
-						pRenderAux->DrawLine(surfacePosition + offset0, surfaceColor0, surfacePosition + offset1, surfaceColor1, 2.0f);
-						pRenderAux->DrawLine(surfacePosition + offset1, surfaceColor1, surfacePosition + offset2, surfaceColor0, 2.0f);
-					}
-				}
-				break;
 			}
+			break;
 			}
 		}
 
@@ -182,5 +148,40 @@ namespace Cry
 
 			return (fabs_tpl(waterLevel - testPosition.z) < threshold);
 		}
+
+#ifndef RELEASE
+		void CWaterRippleComponent::Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const
+		{
+			IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
+
+			const ColorF colorGoodPosition0(0.0f, 0.0f, 0.5f, 0.0f);
+			const ColorF colorGoodPosition1(0.0f, 0.5f, 1.0f, 1.0f);
+			const ColorF colorBadPosition0(1.0f, 0.1f, 0.1f, 0.0f);
+			const ColorF colorBadPosition1(1.0f, 0.1f, 0.1f, 1.0f);
+
+			const ColorF& surfaceColor0 = m_currentLocationOk ? colorGoodPosition0 : colorBadPosition0;
+			const ColorF& surfaceColor1 = m_currentLocationOk ? colorGoodPosition1 : colorBadPosition1;
+
+			const Vec3 surfacePosition(GetEntity()->GetWorldPos());
+
+			pRenderAux->DrawSphere(surfacePosition, 0.1f, surfaceColor1);
+
+			const static int lines = 8;
+			const static float radius0 = 0.5f;
+			const static float radius1 = 1.0f;
+			const static float radius2 = 2.0f;
+			for (int i = 0; i < lines; ++i)
+			{
+				const float radians = ((float)i / (float)lines) * gf_PI2;
+				const float cosine = cos_tpl(radians);
+				const float sinus = sin_tpl(radians);
+				const Vec3 offset0(radius0 * cosine, radius0 * sinus, 0);
+				const Vec3 offset1(radius1 * cosine, radius1 * sinus, 0);
+				const Vec3 offset2(radius2 * cosine, radius2 * sinus, 0);
+				pRenderAux->DrawLine(surfacePosition + offset0, surfaceColor0, surfacePosition + offset1, surfaceColor1, 2.0f);
+				pRenderAux->DrawLine(surfacePosition + offset1, surfaceColor1, surfacePosition + offset2, surfaceColor0, 2.0f);
+			}
+		}
+#endif
 	}
 }
