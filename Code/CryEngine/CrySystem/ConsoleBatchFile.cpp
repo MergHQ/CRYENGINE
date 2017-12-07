@@ -130,7 +130,8 @@ bool CConsoleBatchFile::ExecuteConfigFile(const char* sFilename)
 			continue;
 
 #if defined(CVARS_WHITELIST)
-		if ((ignoreWhitelist) || (gEnv->pSystem->GetCVarsWhiteList()->IsWhiteListed(strLine, false)))
+		auto pWhiteList = gEnv->pSystem->GetCVarsWhiteList();
+		if ((ignoreWhitelist) || (pWhiteList && pWhiteList->IsWhiteListed(strLine, false)))
 #endif // defined(CVARS_WHITELIST)
 		{
 			m_pConsole->ExecuteString(strLine);
