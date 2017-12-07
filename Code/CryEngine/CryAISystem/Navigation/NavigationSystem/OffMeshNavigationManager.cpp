@@ -71,7 +71,7 @@ bool OffMeshNavigationManager::IsLinkRemovalRequested(const MNM::OffMeshLinkID& 
 	return false;
 }
 
-bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM::OffMeshLinkPtr& pLinkData, MNM::OffMeshLinkID& linkID, const bool bCloneLinkData)
+bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM::OffMeshLinkPtr& pLinkData, MNM::OffMeshLinkID& linkID, MNM::TriangleID* pOutStartTriangleID, MNM::TriangleID* pOutEndTriangleID, const bool bCloneLinkData)
 {
 	// Grab the navigation mesh
 	NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
@@ -152,6 +152,16 @@ bool OffMeshNavigationManager::AddCustomLink(const NavigationMeshID& meshID, MNM
 
 	gAIEnv.pNavigationSystem->AddOffMeshLinkIslandConnectionsBetweenTriangles(meshID, startTriangleID, endTriangleID, linkID);
 
+	if (pOutStartTriangleID)
+	{
+		*pOutStartTriangleID = startTriangleID;
+	}
+
+	if (pOutEndTriangleID)
+	{
+		*pOutEndTriangleID = endTriangleID;
+	}
+
 	return true;
 }
 
@@ -188,10 +198,12 @@ void OffMeshNavigationManager::ProcessQueuedRequests()
 			{
 			case MNM::eOffMeshOperationType_Add:
 				{
-					const bool linkGotSuccessfullyAdded = AddCustomLink(it->meshId, it->pLinkData, it->linkId, it->bCloneLinkData);
+					MNM::TriangleID startTriangleID = MNM::TriangleID(0);
+					MNM::TriangleID endTriangleID = MNM::TriangleID(0);
+					const bool linkGotSuccessfullyAdded = AddCustomLink(it->meshId, it->pLinkData, it->linkId, &startTriangleID, &endTriangleID, it->bCloneLinkData);
 					if (it->callback)
 					{
-						it->callback(MNM::SOffMeshOperationCallbackData(it->linkId, linkGotSuccessfullyAdded));
+						it->callback(MNM::SOffMeshOperationCallbackData(it->linkId, startTriangleID, endTriangleID, linkGotSuccessfullyAdded));
 					}
 				}
 				break;
