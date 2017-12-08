@@ -150,8 +150,8 @@ void CParticleEmitter::Update()
 
 	for (auto const& elem: GetCEffect()->MainPreUpdate)
 	{
-		auto pRuntime = GetRuntimeFor(elem.pComponent);
-		elem.pFeature->MainPreUpdate(pRuntime);
+		if (auto pRuntime = GetRuntimeFor(elem.pComponent))
+			elem.pFeature->MainPreUpdate(pRuntime);
 	}
 
 	if (m_reRegister)
@@ -251,8 +251,8 @@ void CParticleEmitter::DebugRender() const
 
 void CParticleEmitter::PostUpdate()
 {
-	m_parentContainer.GetIOVec3Stream(EPVF_Velocity).Store(0, Vec3(ZERO));
-	m_parentContainer.GetIOVec3Stream(EPVF_AngularVelocity).Store(0, Vec3(ZERO));
+	m_parentContainer.GetIOVec3Stream(EPVF_Velocity).Store(TParticleGroupId(0), Vec3v(ZERO));
+	m_parentContainer.GetIOVec3Stream(EPVF_AngularVelocity).Store(TParticleGroupId(0), Vec3v(ZERO));
 }
 
 IPhysicalEntity* CParticleEmitter::GetPhysics() const

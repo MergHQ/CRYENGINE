@@ -312,7 +312,7 @@ void DebugParticleSystem(const TParticleEmitters& activeEmitters)
 	DebugOptSpline();
 
 	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
-	const bool debugContainers = (pCVars->e_ParticlesDebug & AlphaBit('t')) != 0;
+	const bool debugContainers = (pCVars->e_ParticlesDebug & AlphaBit('c')) != 0;
 	const bool debugCollisions = (pCVars->e_ParticlesDebug & AlphaBit('u')) != 0;
 
 	if (debugContainers || debugCollisions)

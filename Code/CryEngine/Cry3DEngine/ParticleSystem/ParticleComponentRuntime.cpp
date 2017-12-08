@@ -44,17 +44,14 @@ bool CParticleComponentRuntime::IsValidForComponent() const
 CParticleContainer& CParticleComponentRuntime::GetParentContainer()
 {
 	if (CParticleComponent* pParent = m_pComponent->GetParentComponent())
-		return GetEmitter()->GetRuntimeFor(pParent)->GetContainer();
-	else
-		return GetEmitter()->GetParentContainer();
+		if (CParticleComponentRuntime* pParentRuntime = GetEmitter()->GetRuntimeFor(pParent))
+			return pParentRuntime->GetContainer();
+	return GetEmitter()->GetParentContainer();
 }
 
 const CParticleContainer& CParticleComponentRuntime::GetParentContainer() const
 {
-	if (CParticleComponent* pParent = m_pComponent->GetParentComponent())
-		return GetEmitter()->GetRuntimeFor(pParent)->GetContainer();
-	else
-		return GetEmitter()->GetParentContainer();
+	return non_const(this)->GetParentContainer();
 }
 
 void CParticleComponentRuntime::Initialize()
