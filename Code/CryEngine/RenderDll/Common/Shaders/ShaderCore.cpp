@@ -1552,6 +1552,7 @@ bool CShaderMan::mfGatherShadersList(const char* szPath, bool bCheckIncludes, bo
 		{
 			if (!stricmp(&nmf[len], ".cfi"))
 			{
+				cry_strcpy(nmf, fileinfo.name);
 				PathUtil::RemoveExtension(nmf);
 				SShaderBin* pBin = m_Bin.GetBinShader(nmf, true, 0, &bChanged);
 
@@ -1568,6 +1569,7 @@ bool CShaderMan::mfGatherShadersList(const char* szPath, bool bCheckIncludes, bo
 		}
 		if (stricmp(&nmf[len], ".cfx"))
 			continue;
+		cry_strcpy(nmf, fileinfo.name);
 		PathUtil::RemoveExtension(nmf);
 		mfAddFXShaderNames(nmf, Names, bUpdateCRC);
 	}

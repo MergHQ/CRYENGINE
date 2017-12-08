@@ -96,6 +96,7 @@ bool CShaderMan::mfReloadShaderIncludes(const char* szPath, int nFlags)
 				continue;
 			if (!stricmp(&nmf[len], ".cfi"))
 			{
+				cry_strcpy(nmf, fileinfo.name);
 				PathUtil::RemoveExtension(nmf);
 				bool bCh = false;
 				SShaderBin* pBin = m_Bin.GetBinShader(nmf, true, 0, &bCh);
