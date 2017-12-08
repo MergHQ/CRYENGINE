@@ -5054,15 +5054,19 @@ void CRenderMesh::ClearJobResources()
 {
 	for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
 	{
-		for (size_t j = 0; j < m_deferredSubsetGarbageCollection[i].size(); ++j)
+		for (size_t j = 0, size = m_deferredSubsetGarbageCollection[i].size();  j < size; ++j)
 		{
 			if (m_deferredSubsetGarbageCollection[i][j])
+			{
 				m_deferredSubsetGarbageCollection[i][j]->GarbageCollectSubsetRenderMeshes();
+			}
 		}
 		stl::free_container(m_deferredSubsetGarbageCollection[i]);
 
-		for (size_t j = 0; j < m_deferredSubsetGarbageCollection[i].size(); ++j)
+		for (size_t j = 0, size = m_meshSubSetRenderMeshJobs[i].size(); j < size; ++j)
+		{
 			gEnv->pJobManager->WaitForJob(m_meshSubSetRenderMeshJobs[i][j].jobState);
+		}
 		stl::free_container(m_meshSubSetRenderMeshJobs[i]);
 	}
 }
