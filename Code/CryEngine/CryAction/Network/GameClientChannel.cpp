@@ -383,11 +383,7 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 		GetGameContext()->GetNetContext()->SpawnedObject(entityId);
 		CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
 
-		CGameObject* pGameObject = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER);
-		if (pGameObject)
-		{
-			pGameObject->PostRemoteSpawn();
-		}
+		pEntity->SendEvent(SEntityEvent(ENTITY_EVENT_SPAWNED_REMOTELY));
 
 		return true;
 	}

@@ -255,6 +255,9 @@ enum EEntityEvent
 	//! Sent when the physical type of an entity changed, i.e. physicalized or dephysicalized.
 	ENTITY_EVENT_PHYSICAL_TYPE_CHANGED,
 
+	//! Entity was just spawned on this machine as requested by the server
+	ENTITY_EVENT_SPAWNED_REMOTELY,
+
 	//! Last entity event in list.
 	ENTITY_EVENT_LAST,
 };
