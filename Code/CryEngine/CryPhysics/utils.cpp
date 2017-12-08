@@ -917,7 +917,7 @@ int ascii2bin(const unsigned char *pin,int sz, unsigned char *pout)
 {
 	int a[4],nout,count0;
 	const unsigned char *pin0=pin;
-	for(nout=count0=0; *pin; nout+=3) {
+	for(nout=count0=0; *pin || count0; nout+=3) {
 		for(int i=0;i<4;i++) if (count0>0) 
 			a[i]=0, count0--; 
 		else if (*pin!='#')
