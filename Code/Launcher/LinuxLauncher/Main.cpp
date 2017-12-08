@@ -18,6 +18,7 @@
 #include <CrySystem/IConsole.h>
 #include <sys/types.h>
 #include <netdb.h>
+#include <unistd.h>				// used for crash handling
 #include <sys/resource.h>
 #include <sys/prctl.h>
 #include <libgen.h>
@@ -146,6 +147,21 @@ static void SignalHandler(int sig, siginfo_t* info, void* secret)
 			else
 				cry_sprintf(cmd, "echo [%02d] $(addr2line  -C -f -i -e \"%s\" -p %p) >> 'backtrace.log'", i, objname, trace[i]);
 			system(cmd);
+		}
+	}
+
+	// If the Linux crash handler exists, use it.
+	if(!access("Tools/CrashHandler/LinuxCrashUploader.py", R_OK))
+	{
+		pid_t thispid = fork();
+		if (thispid == 0)			// we're the child process
+		{
+			char pid_arg[MAX_PATH];
+			char sig_arg[MAX_PATH];
+			cry_sprintf(pid_arg, "--pid=%d", pid);
+			cry_sprintf(sig_arg, "--signal=%d", sig);
+			int rval = execlp("python3", "python3", "Tools/CrashHandler/LinuxCrashUploader.py", pid_arg, sig_arg, NULL);
+			CryLogAlways("Error number = %d (rval = %d)", errno, rval);
 		}
 	}
 	abort();
