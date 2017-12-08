@@ -73,7 +73,8 @@ struct SJobQueue
 		eMaxWorkQueueJobsHighPriority    = nMaxWorkQueueJobsHighPriority,
 		eMaxWorkQueueJobsRegularPriority = nMaxWorkQueueJobsRegularPriority,
 		eMaxWorkQueueJobsLowPriority     = nMaxWorkQueueJobsLowPriority,
-		eMaxWorkQueueJobsStreamPriority  = nMaxWorkQueueJobsStreamPriority
+		eMaxWorkQueueJobsStreamPriority  = nMaxWorkQueueJobsStreamPriority,
+		eMaxWorkQueueJobsSize            = nMaxWorkQueueJobsHighPriority + nMaxWorkQueueJobsRegularPriority + nMaxWorkQueueJobsLowPriority + nMaxWorkQueueJobsStreamPriority
 	};
 
 	CRY_ALIGN(128) JobManager::SJobQueuePos push;                     // position in which jobs are pushed by the PPU

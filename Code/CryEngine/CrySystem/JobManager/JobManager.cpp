@@ -17,6 +17,8 @@
 #include "../System.h"
 #include "../CPUDetect.h"
 
+#include <3rdParty/concqueue/concqueue.hpp>
+
 namespace JobManager {
 namespace Detail {
 
@@ -1591,7 +1593,6 @@ void JobManager::CJobManager::AddBlockingFallbackJob(JobManager::SInfoBlock* pIn
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 TLS_DEFINE(uint32, gWorkerThreadId);
-TLS_DEFINE(uintptr_t, gFallbackInfoBlocks);
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace JobManager {
@@ -1617,19 +1618,17 @@ uint32 JobManager::detail::GetWorkerThreadId()
 	return is_marked_worker_thread_id(nID) ? unmark_worker_thread_id(nID) : ~0;
 }
 
+static BoundMPMC<JobManager::SInfoBlock*> gFallbackInfoBlocks(JobManager::detail::GetFallbackJobListSize());
+
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::detail::PushToFallbackJobList(JobManager::SInfoBlock* pInfoBlock)
 {
-	pInfoBlock->pNext = (JobManager::SInfoBlock*)TLS_GET(uintptr_t, gFallbackInfoBlocks);
-	TLS_SET(gFallbackInfoBlocks, (uintptr_t)pInfoBlock);
+	bool ret = gFallbackInfoBlocks.enqueue(pInfoBlock);
+	CRY_ASSERT_MESSAGE(ret, "JobSystem: Fallback info block limit reached");
 }
 
 JobManager::SInfoBlock* JobManager::detail::PopFromFallbackJobList()
 {
-	JobManager::SInfoBlock* pRet = (JobManager::SInfoBlock*)TLS_GET(uintptr_t, gFallbackInfoBlocks);
-	IF (pRet != NULL, 0)
-	{
-		TLS_SET(gFallbackInfoBlocks, (uintptr_t)pRet->pNext);
-	}
-	return pRet;
+	JobManager::SInfoBlock* pInfoBlock = nullptr;
+	return gFallbackInfoBlocks.dequeue(pInfoBlock) ? pInfoBlock : nullptr;
 }
