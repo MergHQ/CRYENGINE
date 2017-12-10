@@ -1384,8 +1384,14 @@ bool CEntity::LoadComponentLegacy(XmlNodeRef& entityNode, XmlNodeRef& componentN
 
 		if (bCanCreateComponent)
 		{
+			CryGUID instanceGUID;
+			if (!componentNode->getAttr("guid", instanceGUID))
+			{
+				instanceGUID = CryGUID::Create();
+			}
+
 			// Only user created components, should create components, otherwise component should be created by entity class or Schematyc objects
-			IEntityComponent::SInitParams initParams(this, CryGUID(), "", nullptr, EEntityComponentFlags::None, nullptr, nullptr);
+			IEntityComponent::SInitParams initParams(this, instanceGUID, "", nullptr, EEntityComponentFlags::None, nullptr, nullptr);
 			pComponent = CreateComponentByInterfaceID(componentTypeId, &initParams);
 		}
 	}
@@ -1681,6 +1687,7 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 {
 	CRY_ASSERT_MESSAGE(pClassDescription == nullptr || !(pClassDescription->GetComponentFlags().Check(EEntityComponentFlags::ClientOnly) && !gEnv->IsClient()), "Trying to add a client-only component on the server!");
 	CRY_ASSERT_MESSAGE(pClassDescription == nullptr || !(pClassDescription->GetComponentFlags().Check(EEntityComponentFlags::ServerOnly) && !gEnv->bServer), "Trying to add a server-only component on the client!");
+	CRY_ASSERT_MESSAGE(pInitParams == nullptr || !pInitParams->guid.IsNull(), "Components require a valid instance guid!");
 
 	// Initialize common component members
 	pComponent->PreInit(pInitParams != nullptr ? *pInitParams : IEntityComponent::SInitParams(this, CryGUID::Create(), "", pClassDescription, EEntityComponentFlags::None, nullptr, nullptr));

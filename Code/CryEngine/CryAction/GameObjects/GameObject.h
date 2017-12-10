@@ -250,8 +250,6 @@ public:
 
 	void         FlushActivatableExtensions() { FlushExtensions(false); }
 
-	void         PostRemoteSpawn();
-
 	void         GetMemoryUsage(ICrySizer* s) const override;
 
 	virtual void DontSyncPhysics() override;
@@ -426,6 +424,7 @@ private:
 	bool DoSetAspectProfile(EEntityAspects aspect, uint8 profile, bool fromNetwork);
 	void SetActivation(bool activate);
 	void SetPhysicsDisable(bool disablePhysics);
+	void PostRemoteSpawn();
 
 	static const float        UpdateTimeouts[eUS_COUNT_STATES];
 	static const EUpdateState UpdateTransitions[eUS_COUNT_STATES][eUSE_COUNT_EVENTS];

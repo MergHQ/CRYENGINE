@@ -715,6 +715,9 @@ void CGameObject::ProcessEvent(const SEntityEvent& event)
 		case ENTITY_EVENT_UNHIDE:
 			EvaluateUpdateActivation();
 			break;
+		case ENTITY_EVENT_SPAWNED_REMOTELY:
+			PostRemoteSpawn();
+			break;
 		}
 
 		if (IAIObject* aiObject = m_pEntity->GetAI())
@@ -741,7 +744,8 @@ uint64 CGameObject::GetEventMask() const
 		BIT64(ENTITY_EVENT_LEAVEAREA) |
 		BIT64(ENTITY_EVENT_POST_SERIALIZE) |
 		BIT64(ENTITY_EVENT_HIDE) |
-		BIT64(ENTITY_EVENT_UNHIDE);
+		BIT64(ENTITY_EVENT_UNHIDE) |
+		BIT64(ENTITY_EVENT_SPAWNED_REMOTELY);
 
 	if (m_bShouldUpdate)
 	{

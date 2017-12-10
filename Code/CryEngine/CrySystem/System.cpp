@@ -1669,6 +1669,8 @@ bool CSystem::DoFrame(uintptr_t hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags
 		m_env.pFrameProfileSystem->EndFrame();
 	}
 
+	SleepIfNeeded();
+
 	return continueRunning;
 }
 

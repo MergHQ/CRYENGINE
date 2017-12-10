@@ -149,8 +149,10 @@ public:
 			const Ang3 randSpin = FromVec3(m_randomSpin);
 			for (auto particleId : context.GetSpawnedRange())
 			{
+				const Quat wOrientation0 = orientations.Load(particleId);
 				const Ang3 angularVelocity = RandomAng3(context.m_spawnRng, randSpin) + initSpin;
-				angularVelocities.Store(particleId, Vec3(angularVelocity));
+				const Vec3 wAngularVelocity = wOrientation0 * Vec3(angularVelocity);
+				angularVelocities.Store(particleId, Vec3(wAngularVelocity));
 			}
 		}
 	}

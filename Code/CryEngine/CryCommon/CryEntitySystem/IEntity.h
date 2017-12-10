@@ -947,6 +947,31 @@ public:
 			return CreateComponentClass<ComponentType>(std::forward<TArgs>(args) ...);
 		}
 	}
+
+	//! Removes the first instance of the specified component type found in the entity
+	//! \param checkHierarchy Whether or not we should traverse the inheritance hierarchy for all components, otherwise performs a (much faster) equality check to see if the implementation is ComponentType
+	template<typename ComponentType>
+	void RemoveComponent(bool checkHierarchy = true)
+	{
+		if (ComponentType* pComponent = GetComponent<ComponentType>(checkHierarchy))
+		{
+			RemoveComponent(pComponent);
+		}
+	}
+
+	//! Removes all instances of the specified component type found in the entity
+	//! \param checkHierarchy Whether or not we should traverse the inheritance hierarchy for all components, otherwise performs a (much faster) equality check to see if the implementation is ComponentType
+	template<typename ComponentType>
+	void RemoveAllComponents(bool checkHierarchy = true)
+	{
+		DynArray<ComponentType*> components;
+		GetAllComponents(components, checkHierarchy);
+
+		for(ComponentType* pComponent : components)
+		{
+			RemoveComponent(pComponent);
+		}
+	}
 #endif // !defined(SWIG)
 
 	//! Creates instances of the components contained in the other entity
