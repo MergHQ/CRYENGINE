@@ -4,10 +4,9 @@
 #include "SceneForward.h"
 
 #include "DriverD3D.h"
+#include "D3D_SVO.h"
 #include "Common/ReverseDepth.h"
 #include "Common/RendElements/Stars.h"
-#include "Fog.h"
-#include "VolumetricFog.h"
 
 #include "GraphicsPipeline/Fog.h"
 #include "GraphicsPipeline/VolumetricFog.h"
@@ -48,7 +47,6 @@ void CSceneForwardStage::Init()
 	m_pOpaqueResourceLayout      = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_opaquePassResources);
 	m_pTransparentResourceLayout = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_transparentPassResources);
 	m_pEyeOverlayResourceLayout  = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_eyeOverlayPassResources);
-
 
 	// Freeze resource-set layout (assert  will fire when violating the constraint)
 	m_opaquePassResources     .AcceptChangedBindPoints();
@@ -537,6 +535,19 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 					pResources->SetBuffer(17, pTiledLights->GetTiledTranspLightMaskBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				}
 			}
+
+#if defined(FEATURE_SVO_GI)
+			if (bOnInit || !CSvoRenderer::GetInstance()->IsActive() || !CSvoRenderer::GetInstance()->GetSpecularFinRT())
+			{
+				pResources->SetTexture(46, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetTexture(47, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			}
+			else
+			{
+				pResources->SetTexture(46, CSvoRenderer::GetInstance()->GetDiffuseFinRT(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+				pResources->SetTexture(47, CSvoRenderer::GetInstance()->GetSpecularFinRT(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			}
+#endif
 
 			pResources->SetTexture(23, CRendererResources::s_ptexRT_ShadowPool, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			pResources->SetTexture(24, CRendererResources::s_ptexSceneNormalsBent, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
