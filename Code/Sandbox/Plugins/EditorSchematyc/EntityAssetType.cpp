@@ -110,7 +110,7 @@ bool CEntityAssetType::OnCreate(CEditableAsset& editAsset, const void* /*pTypeSp
 
 CAssetEditor* CEntityAssetType::Edit(CAsset* pAsset) const
 {
-	return CAssetEditor::OpenAssetForEdit("Schematyc Editor", pAsset);
+	return CAssetEditor::OpenAssetForEdit("Schematyc Editor (Experimental)", pAsset);
 }
 
 bool CEntityAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
