@@ -36,6 +36,7 @@
 		{ "name": "ca_SampleQuatHemisphereFromCurrentPose", "value": "1" },
 		{ "name": "ca_useIMG_CAF", "value": "0" },
 		{ "name": "ca_ResetCulledJointsToBindPose", "value": "1" },
+		{ "name": "ca_ForceAnimationLod", "value": "0" },
 		
 		{ "name": "cl_AISystem", "value": "0" },
 		{ "name": "cl_initClientActor", "value": "0" },
@@ -47,7 +48,9 @@
 		{ "name": "g_hunt_telemetry_enable", "value": "1" },
 		{ "name": "g_PlayerSilhouettes", "value": "0" },
 		
-		{ "name": "e_LodFaceAreaTargetSize", "value": "0.01" }
+		{ "name": "e_LodFaceAreaTargetSize", "value": "0.01" },
+
+		{ "name": "uqs_printTimeExcessWarningsToConsole", "value": "0" }
 	],
 	"console_commands": [ {"name": "sys_ignore_asserts_from_module", "value": "CryGame"} ]
 }
