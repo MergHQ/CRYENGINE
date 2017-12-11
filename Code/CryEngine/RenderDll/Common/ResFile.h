@@ -287,6 +287,9 @@ public:
 	int  Size();
 	void GetMemoryUsage(ICrySizer* pSizer) const;
 
+	bool RequiresSwapEndianOnRead() const { return m_bSwapEndianRead; }
+	bool RequiresSwapEndianOnWrite() const { return m_bSwapEndianWrite; }
+
 	static void Tick();
 	static bool IsStreaming();
 

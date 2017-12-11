@@ -350,6 +350,9 @@ struct SShaderCache
 	bool            m_bReadOnly[2];
 	bool            m_bValid[2];
 	bool            m_bNeedPrecache;
+
+	std::unique_ptr<byte[]> m_pBinary[2] = { nullptr, nullptr };
+
 	SShaderCache()
 	{
 		m_nPlatform = 0;
@@ -360,6 +363,8 @@ struct SShaderCache
 		m_bReadOnly[0] = m_bReadOnly[1] = false;
 		m_bNeedPrecache = false;
 	}
+	bool ReadResource(CResFile* rf, int i);
+	std::pair<byte*, uint32> DecompressResource(int resVersion, int i, size_t offset, size_t size, bool swapEndian = false);
 	bool isValid();
 	int  Size();
 	void GetMemoryUsage(ICrySizer* pSizer) const;

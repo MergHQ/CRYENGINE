@@ -597,10 +597,10 @@ public:
 
 	//============================================================================
 	// Binary cache support
-	SShaderCacheHeaderItem* mfGetCacheItem(uint32& nFlags, int32& nSize);
-	static bool             mfAddCacheItem(SShaderCache* pCache, SShaderCacheHeaderItem* pItem, const byte* pData, int nLen, bool bFlush, CCryNameTSCRC Name);
+	byte*		mfGetCacheItem(uint32& nFlags, int32& nSize);
+	static bool mfAddCacheItem(SShaderCache* pCache, SShaderCacheHeaderItem* pItem, const byte* pData, int nLen, bool bFlush, CCryNameTSCRC Name);
 
-	bool                    mfCloseCacheFile()
+	bool mfCloseCacheFile()
 	{
 		SAFE_RELEASE(m_pDevCache);
 		SAFE_RELEASE(m_pGlobalCache);
