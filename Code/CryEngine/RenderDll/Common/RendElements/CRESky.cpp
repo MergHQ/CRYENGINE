@@ -114,12 +114,9 @@ CStars::CStars()
 	, m_pStarMesh(0)
 	, m_pShader(0)
 {
-	if (LoadData())
+	if (!LoadData())
 	{
-
-		gRenDev->m_cEF.mfRefreshSystemShader("Stars", gRenDev->m_cEF.s_ShaderStars);
-		m_pShader = gRenDev->m_cEF.s_ShaderStars;
-
+		CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "CStars: Failed to load data");
 	}
 }
 
@@ -132,7 +129,7 @@ bool CStars::LoadData()
 {
 	const uint32 c_fileTag(0x52415453);       // "STAR"
 	const uint32 c_fileVersion(0x00010001);
-	const char c_fileName[] = "engineassets/sky/stars.dat";
+	const char c_fileName[] = "%ENGINE%/engineassets/sky/stars.dat";
 
 	ICryPak* pPak(gEnv->pCryPak);
 	if (pPak)
