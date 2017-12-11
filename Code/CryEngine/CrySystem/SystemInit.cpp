@@ -453,7 +453,8 @@ struct SysSpecOverrideSink : public ILoadConfigurationEntrySink
 				{
 					// If it is set to 0 then ignore this request to set to something else
 					// If it is set to 0 then the user wants to changes system spec settings in system.cfg
-					if (pCvar->GetIVal() != 0)
+					// Ignore the spec if the renderer wasn't initialized.
+					if (pCvar->GetIVal() != 0 && gEnv->pRenderer != nullptr)
 					{
 						applyCvar = true;
 					}

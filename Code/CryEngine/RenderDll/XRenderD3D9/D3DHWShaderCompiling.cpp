@@ -3,6 +3,9 @@
 #include "StdAfx.h"
 #include "DriverD3D.h"
 
+#include <lzss/LZSS.H>
+#include <lzma/Lzma86.h>
+
 #if !CRY_PLATFORM_ORBIS && !CRY_RENDERER_OPENGL && !CRY_RENDERER_OPENGLES && !CRY_RENDERER_VULKAN
 	#if CRY_PLATFORM_DURANGO
 		#include <D3D11Shader_x.h>
@@ -2190,6 +2193,105 @@ void SShaderCache::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(m_pRes[1]);
 }
 
+bool SShaderCache::ReadResource(CResFile* rf, int i)
+{
+	CryLog((std::string("SShaderCache: Caching \"") + rf->mfGetFileName() + "\"").c_str());
+
+	const auto librarySize = rf->mfGetResourceSize();
+	const auto handle = rf->mfGetHandle();
+	if (librarySize > 0)
+	{
+		m_pBinary[i] = std::unique_ptr<byte[]>(new byte[librarySize]);
+		gEnv->pCryPak->FSeek(handle, 0, SEEK_SET);
+		const auto readBytes = gEnv->pCryPak->FReadRaw(m_pBinary[i].get(), librarySize, 1, handle);
+		if (readBytes != 1)
+		{
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING, (std::string("SShaderCache: \"") + rf->mfGetFileName() + "\" invalid!").c_str());
+			m_pBinary[i] = nullptr;
+
+			return false;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+std::pair<byte*, uint32> SShaderCache::DecompressResource(int resVersion, int i, size_t offset, size_t size, bool swapEndian)
+{
+	uint32 decompressedSize = 0;
+	byte* pData = nullptr;
+	const auto failure = std::pair<byte*, size_t>(nullptr, 0);
+
+	const auto buf = m_pBinary[i].get() + offset;
+
+	switch(resVersion)
+	{
+	case RESVERSION_LZSS:
+		decompressedSize = *reinterpret_cast<uint32*>(buf);
+		if (size >= 10000000)
+			return failure;
+		if (swapEndian)
+			SwapEndian(decompressedSize, eBigEndian);
+		pData = new byte[decompressedSize];
+		if (!pData)
+		{
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - Allocation fault");
+			return failure;
+		}
+		if (!Decodem(&buf[4], (byte*)pData, size - 4, decompressedSize))
+		{
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - Decodem fault");
+			return failure;
+		}
+
+		break;
+		
+	case RESVERSION_LZMA:
+		uint64 outSize64;
+		if (Lzma86_GetUnpackSize(buf, size, &outSize64) != 0)
+		{
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - data error");
+			return failure;
+		}
+		decompressedSize = static_cast<uint32>(outSize64);
+		if (decompressedSize != 0)
+		{
+			pData = new byte[decompressedSize];
+			if (pData == 0)
+			{
+				CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - can't allocate");
+				return failure;
+			}
+			size_t sizeOut = decompressedSize;
+			const auto res = Lzma86_Decode(pData, &sizeOut, buf, &size);
+			decompressedSize = static_cast<uint32_t>(sizeOut);
+			if (res != 0)
+			{
+				CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - LzmaDecoder error");
+				return failure;
+			}
+		}
+
+		break;
+
+	case RESVERSION_DEBUG:
+		decompressedSize = size - 20;
+		if (decompressedSize < 0 || decompressedSize > 128 * 1024 * 1024)
+		{
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - Corrupt DirEntiy size");
+			return failure;
+		}
+		pData = new byte[decompressedSize];
+		memcpy(pData, &buf[10], decompressedSize);
+
+		break;
+	}
+
+	return std::make_pair(pData, decompressedSize);
+}
+
 void SShaderDevCache::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
@@ -2213,7 +2315,7 @@ SShaderDevCache* CHWShader::mfInitDevCache(const char* name, CHWShader* pSH)
 	return pCache;
 }
 
-SShaderCacheHeaderItem* CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSize)
+byte* CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSize)
 {
 	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
 	SHWSInstance* pInst = m_pCurInst;
@@ -2242,28 +2344,49 @@ SShaderCacheHeaderItem* CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSi
 		if (CRenderer::CV_r_shadersdebug == 3 || CRenderer::CV_r_shadersdebug == 4)
 			iLog->Log("---Cache: LoadedFromGlobal %s': 0x%x", rf->mfGetFileName(), de->Name.get());
 		pInst->m_nCache = i;
-		SShaderCacheHeaderItem* pIt = NULL;
-		nSize = rf->mfFileRead(de);
-		pInst->m_bAsyncActivating = (nSize == -1);
-		pData = (byte*)rf->mfFileGetBuf(de);
+
+		pInst->m_bAsyncActivating = false;
+
+		// Attempt to cache the whole entry
+		if (!m_pGlobalCache->m_pBinary[i] && CRenderer::CV_r_shaderscacheinmemory != 0)
+			m_pGlobalCache->ReadResource(rf, i);
+
+		if (m_pGlobalCache->m_pBinary[i] && CRenderer::CV_r_shaderscacheinmemory != 0)
+		{
+			// Decompress from library
+			const auto pair = m_pGlobalCache->DecompressResource(rf->mfGetVersion(), i, de->offset, de->size, rf->RequiresSwapEndianOnRead());
+			nSize = static_cast<int32>(pair.second);
+			pData = pair.first;
+		}
+		else
+		{
+			nSize = rf->mfFileRead(de);
+			pInst->m_bAsyncActivating = (nSize == -1);
+			byte* pD = (byte*)rf->mfFileGetBuf(de);
+
+			if (pD && nSize > 0)
+			{
+				pData = new byte[nSize];
+				std::memcpy(pData, pD, nSize);
+			}
+
+			rf->mfFileClose(de);
+		}
+
 		if (pData && nSize > 0)
 		{
-			byte* pD = new byte[nSize];
-			memcpy(pD, pData, nSize);
-			pIt = (SShaderCacheHeaderItem*)pD;
 			if (CParserBin::m_bEndians)
-				SwapEndian(*pIt, eBigEndian);
+				SwapEndian(*reinterpret_cast<SShaderCacheHeaderItem*>(pData), eBigEndian);
 			pInst->m_DeviceObjectID = de->Name.get();
-			rf->mfFileClose(de);
 		}
 		if (i == CACHE_USER)
 			nFlags |= HWSG_CACHE_USER;
-		return pIt;
+		return pData;
 	}
 	else
 	{
 		pInst->m_bAsyncActivating = bAsync;
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -4032,61 +4155,52 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 		if (!m_pDevCache)
 			m_pDevCache = mfInitDevCache(nameCache, this);
 
-		int32 nSize;
-		SShaderCacheHeaderItem* pCacheItem = NULL;
 		{
-			// if shader compiling is enabled, make sure the user folder shader caches are also available
-			bool bReadOnly = CRenderer::CV_r_shadersAllowCompilation == 0;
-			if (!m_pGlobalCache || m_pGlobalCache->m_nPlatform != CParserBin::m_nPlatform ||
-			    (!bReadOnly && !m_pGlobalCache->m_pRes[CACHE_USER]))
+			int32 nSize;
+			std::unique_ptr<byte[]> pCacheItemBuffer = nullptr;
 			{
-				SAFE_RELEASE(m_pGlobalCache);
-				bool bAsync = CRenderer::CV_r_shadersasyncactivation != 0;
-				if (nFlags & HWSF_PRECACHE)
-					bAsync = false;
-				m_pGlobalCache = mfInitCache(nameCache, this, true, m_CRC32, bReadOnly, bAsync);
+				// if shader compiling is enabled, make sure the user folder shader caches are also available
+				bool bReadOnly = CRenderer::CV_r_shadersAllowCompilation == 0;
+				if (!m_pGlobalCache || m_pGlobalCache->m_nPlatform != CParserBin::m_nPlatform ||
+					(!bReadOnly && !m_pGlobalCache->m_pRes[CACHE_USER]))
+				{
+					SAFE_RELEASE(m_pGlobalCache);
+					bool bAsync = CRenderer::CV_r_shadersasyncactivation != 0;
+					if (nFlags & HWSF_PRECACHE)
+						bAsync = false;
+					m_pGlobalCache = mfInitCache(nameCache, this, true, m_CRC32, bReadOnly, bAsync);
+				}
+				if (gRenDev->m_cEF.m_nCombinationsProcess >= 0)
+				{
+					mfGetDstFileName(pInst, this, nameCache, 256, 0);
+					PathUtil::ReplaceExtension(nameCache, "fxcb");
+					FXShaderCacheNamesItor it = m_ShaderCacheList.find(nameCache);
+					if (it == m_ShaderCacheList.end())
+						m_ShaderCacheList.insert(FXShaderCacheNamesItor::value_type(nameCache, m_CRC32));
+				}
+				pCacheItemBuffer = std::unique_ptr<byte[]>(mfGetCacheItem(nFlags, nSize));
 			}
-			if (gRenDev->m_cEF.m_nCombinationsProcess >= 0)
+
+			auto pCacheItem = reinterpret_cast<SShaderCacheHeaderItem*>(pCacheItemBuffer.get());
+			if (pCacheItem && pCacheItem->m_Class != 255)
 			{
-				mfGetDstFileName(pInst, this, nameCache, 256, 0);
-				PathUtil::ReplaceExtension(nameCache, "fxcb");
-				FXShaderCacheNamesItor it = m_ShaderCacheList.find(nameCache);
-				if (it == m_ShaderCacheList.end())
-					m_ShaderCacheList.insert(FXShaderCacheNamesItor::value_type(nameCache, m_CRC32));
+				if (Table && CRenderer::CV_r_shadersAllowCompilation)
+					mfGetCacheTokenMap(Table, pSHData, m_nMaskGenShader);
+				if (((m_Flags & HWSG_PRECACHEPHASE) || gRenDev->m_cEF.m_nCombinationsProcess >= 0))
+				{
+					return true;
+				}
+				bool bRes = mfActivateCacheItem(pSH, pCacheItem, nSize, nFlags);
+
+				if (bRes)
+					return (pInst->m_Handle.m_pShader != NULL);
 			}
-			pCacheItem = mfGetCacheItem(nFlags, nSize);
-		}
-		if (pCacheItem && pCacheItem->m_Class != 255)
-		{
-			if (Table && CRenderer::CV_r_shadersAllowCompilation)
-				mfGetCacheTokenMap(Table, pSHData, m_nMaskGenShader);
-			if (((m_Flags & HWSG_PRECACHEPHASE) || gRenDev->m_cEF.m_nCombinationsProcess >= 0))
+			else if (pCacheItem && pCacheItem->m_Class == 255 && (nFlags & HWSF_PRECACHE) == 0)
 			{
-				byte* pData = (byte*)pCacheItem;
-				SAFE_DELETE_ARRAY(pData);
-				return true;
+				return false;
 			}
-			bool bRes = mfActivateCacheItem(pSH, pCacheItem, nSize, nFlags);
-			byte* pData = (byte*)pCacheItem;
-			SAFE_DELETE_ARRAY(pData);
-			pCacheItem = NULL;
-			if (bRes)
-				return (pInst->m_Handle.m_pShader != NULL);
-			pCacheItem = NULL;
 		}
-		else if (pCacheItem && pCacheItem->m_Class == 255 && (nFlags & HWSF_PRECACHE) == 0)
-		{
-			byte* pData = (byte*)pCacheItem;
-			SAFE_DELETE_ARRAY(pData);
-			pCacheItem = NULL;
-			return false;
-		}
-		if (pCacheItem)
-		{
-			byte* pData = (byte*)pCacheItem;
-			SAFE_DELETE_ARRAY(pData);
-			pCacheItem = NULL;
-		}
+		
 		//assert(!m_TokenData.empty());
 
 		TArray<char> newScr;

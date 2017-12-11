@@ -1059,66 +1059,13 @@ bool CRenderer::EF_ReloadFile_Request (const char* szFileName)
 
 bool CRenderer::EF_ReloadFile (const char* szFileName)
 {
-	// Replace .tif extensions with .dds extensions.
-	char realName[MAX_PATH + 1];
-	int  nameLength = __min(strlen(szFileName), size_t(MAX_PATH));
-	memcpy(realName, szFileName, nameLength);
-	realName[nameLength] = 0;
-	static const char* tifExtension    = ".tif"; // Must start with "." to distinguish from ".*tif"
-	static const char* ddsExtension    = ".dds";
-	static const int   extensionLength = 4;
-
-#if defined(CRY_ENABLE_RC_HELPER)
-	if (nameLength >= extensionLength && (memcmp(realName + nameLength - extensionLength, tifExtension, extensionLength) == 0 ||
-	  memcmp(realName + nameLength - extensionLength, ddsExtension, extensionLength) == 0))
-	{
-		// Usually reloading a dds will automatically trigger the resource compiler if necessary to
-		// compile the .tif into a .dds. However, this does not happen if texture streaming is
-		// enabled, so we explicitly run the resource compiler here.
-		memcpy(realName + nameLength - extensionLength, tifExtension, extensionLength);
-
-		char gameFolderPath[256];
-		cry_strcpy(gameFolderPath, PathUtil::GetGameFolder());
-		int gameFolderPathLength = strlen(gameFolderPath);
-		if (gameFolderPathLength > 0 && gameFolderPath[gameFolderPathLength - 1] == '\\')
-		{
-			gameFolderPath[gameFolderPathLength - 1] = '/';
-		}
-		else if (gameFolderPathLength > 0 && gameFolderPath[gameFolderPathLength - 1] != '/')
-		{
-			gameFolderPath[gameFolderPathLength++] = '/';
-			gameFolderPath[gameFolderPathLength]   = 0;
-		}
-
-		string gameRelativePath = PathUtil::ToUnixPath(realName);
-		if (gameRelativePath.size() >= (uint32)gameFolderPathLength && memcmp(gameRelativePath.c_str(), gameFolderPath, gameFolderPathLength) == 0)
-			gameRelativePath += gameFolderPathLength;
-
-		char buffer[512];
-		return CTextureCompiler::GetInstance().ProcessTextureIfNeeded(gameRelativePath, buffer, sizeof(buffer), false) != CTextureCompiler::EResult::Failed;
-	}
-#endif //defined(CRY_ENABLE_RC_HELPER)
-
-	if (nameLength >= extensionLength && memcmp(realName + nameLength - extensionLength, tifExtension, extensionLength) == 0)
-		memcpy(realName + nameLength - extensionLength, ddsExtension, extensionLength);
-
-	char nmf[512];
-	char drn[512];
-	char drv[16];
-	char dirn[512];
-	char fln[128];
-	char extn[16];
-	_splitpath(realName, drv, dirn, fln, extn);
-	cry_strcpy(drn, drv);
-	cry_strcat(drn, dirn);
-	cry_strcpy(nmf, fln);
-	cry_strcat(nmf, extn);
-
+	const char* szExtension = PathUtil::GetExt(szFileName);
+	
 	//TODO replace this with a single function get file type
 	//function should return and enum and the following code replaced with a switch statement
-	if (stricmp(extn, ".cgf") == 0)
+	if (!stricmp(szExtension, "cgf"))
 	{
-		IStatObj* pStatObjectToReload = gEnv->p3DEngine->FindStatObjectByFilename(realName);
+		IStatObj* pStatObjectToReload = gEnv->p3DEngine->FindStatObjectByFilename(szFileName);
 		if (pStatObjectToReload)
 		{
 			pStatObjectToReload->Refresh(FRO_GEOMETRY | FRO_SHADERS | FRO_TEXTURES);
@@ -1126,7 +1073,7 @@ bool CRenderer::EF_ReloadFile (const char* szFileName)
 		}
 		return false;
 	}
-	else if (!stricmp(extn, ".cfx") || (!CV_r_shadersignoreincludeschanging && !stricmp(extn, ".cfi")))
+	else if (!stricmp(szExtension, "cfx") || (!CV_r_shadersignoreincludeschanging && !stricmp(szExtension, "cfi")))
 	{
 		gRenDev->m_cEF.m_Bin.InvalidateCache();
 		// This is a temporary fix so that shaders would reload during hot update.
@@ -1136,14 +1083,17 @@ bool CRenderer::EF_ReloadFile (const char* szFileName)
 		return bRet;
 		//    return gRenDev->m_cEF.mfReloadFile(drn, nmf, FRO_SHADERS);
 	}
-	else if (!stricmp(extn, ".tif") || !stricmp(extn, ".hdr") || !stricmp(extn, ".tga") || !stricmp(extn, ".pcx") || !stricmp(extn, ".dds") || !stricmp(extn, ".jpg") || !stricmp(extn, ".gif") || !stricmp(extn, ".bmp"))
+	else if (!stricmp(szExtension, "tif") || !stricmp(szExtension, "hdr") || !stricmp(szExtension, "tga") || !stricmp(szExtension, "pcx")
+		|| !stricmp(szExtension, "dds") || !stricmp(szExtension, "jpg") || !stricmp(szExtension, "gif") || !stricmp(szExtension, "bmp"))
 	{
-		return CTexture::ReloadFile(realName);
+		string correctedName = PathUtil::ReplaceExtension(szFileName, "dds");
+
+		return CTexture::ReloadFile(correctedName);
 	}
 #if defined(USE_GEOM_CACHES)
-	else if (!stricmp(extn, ".cax"))
+	else if (!stricmp(szExtension, "cax"))
 	{
-		IGeomCache* pGeomCache = gEnv->p3DEngine->FindGeomCacheByFilename(realName);
+		IGeomCache* pGeomCache = gEnv->p3DEngine->FindGeomCacheByFilename(szFileName);
 		if (pGeomCache)
 		{
 			pGeomCache->Reload();

@@ -900,7 +900,11 @@ public:
 		}
 		else
 		{
-			m_pEmitter = 0;
+			if (m_pEmitter)
+			{
+				m_pEmitter->Activate(false);
+				m_pEmitter = 0;
+			}
 		}
 	}
 

@@ -291,6 +291,7 @@ int CRendererCVars::CV_r_shadersasynccompiling;
 int CRendererCVars::CV_r_shadersasyncactivation;
 int CRendererCVars::CV_r_shadersasyncmaxthreads;
 int CRendererCVars::CV_r_shaderscachedeterministic;
+int CRendererCVars::CV_r_shaderscacheinmemory;
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersprecachealllights);
 AllocateConstIntCVar(CRendererCVars, CV_r_ReflectTextureSlots);
 int CRendererCVars::CV_r_shaderssubmitrequestline;
@@ -2186,6 +2187,7 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_ShadersAsyncMaxThreads", CV_r_shadersasyncmaxthreads, 1, VF_DUMPTODISK, "");
 	REGISTER_CVAR3("r_ShadersCacheDeterministic", CV_r_shaderscachedeterministic, 1, VF_NULL, "Ensures that 2 shaderCaches built from the same source are binary equal");
+	REGISTER_CVAR3("r_ShadersCacheInMemory", CV_r_shaderscacheinmemory, 1, VF_NULL, "Caches compressed compiled shaders in memory");
 	DefineConstIntCVar3("r_ShadersPrecacheAllLights", CV_r_shadersprecachealllights, 1, VF_NULL, "");
 	REGISTER_CVAR3("r_ShadersSubmitRequestline", CV_r_shaderssubmitrequestline, 1, VF_NULL, "");
 
