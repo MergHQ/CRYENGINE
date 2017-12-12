@@ -167,7 +167,7 @@ bool CAIProxy::GetLinkedVehicleVisionHelper(Vec3& outHelperPos) const
 
 //
 //----------------------------------------------------------------------------------------------------------
-void CAIProxy::QueryBodyInfo(SAIBodyInfo& bodyInfo)
+bool CAIProxy::QueryBodyInfo(SAIBodyInfo& bodyInfo)
 {
 	if (IMovementController* pMC = m_pGameObject->GetMovementController())
 	{
@@ -213,7 +213,10 @@ void CAIProxy::QueryBodyInfo(SAIBodyInfo& bodyInfo)
 		IVehicle* pVehicle = pActor ? pActor->GetLinkedVehicle() : 0;
 		IEntity* pVehicleEntity = pVehicle ? pVehicle->GetEntity() : 0;
 		bodyInfo.linkedVehicleEntityId = pVehicleEntity ? pVehicleEntity->GetId() : 0;
+
+		return true;
 	}
+	return false;
 }
 
 bool CAIProxy::QueryBodyInfo(const SAIBodyInfoQuery& query, SAIBodyInfo& bodyInfo)

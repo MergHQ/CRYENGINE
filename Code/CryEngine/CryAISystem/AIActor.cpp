@@ -331,29 +331,33 @@ void CAIActor::SetPos(const Vec3& pos, const Vec3& dirFwrd)
 
 	if (IAIActorProxy* pProxy = GetProxy())
 	{
+		//Overwrite parameters by values from body info if possible
 		SAIBodyInfo bodyInfo;
-		pProxy->QueryBodyInfo(bodyInfo);
+		if (pProxy->QueryBodyInfo(bodyInfo))
+		{
+			assert(bodyInfo.vEyeDir.IsValid());
+			assert(bodyInfo.vEyePos.IsValid());
+			assert(bodyInfo.vFireDir.IsValid());
+			assert(bodyInfo.vFirePos.IsValid());
 
-		assert(bodyInfo.vEyeDir.IsValid());
-		assert(bodyInfo.vEyePos.IsValid());
-		assert(bodyInfo.vFireDir.IsValid());
-		assert(bodyInfo.vFirePos.IsValid());
+			position = bodyInfo.vEyePos;
 
-		position = bodyInfo.vEyePos;
-		vEyeDir = bodyInfo.GetEyeDir();
-		assert(vEyeDir.IsUnit());
+			vEyeDir = bodyInfo.GetEyeDir();
 
-		SetViewDir(vEyeDir);
-		SetBodyDir(bodyInfo.GetBodyDir());
+			assert(vEyeDir.IsUnit());
 
-		SetFirePos(bodyInfo.vFirePos);
-		SetFireDir(bodyInfo.vFireDir);
-		SetMoveDir(bodyInfo.vMoveDir);
-		SetEntityDir(bodyInfo.GetBodyDir());
+			SetViewDir(vEyeDir);
+			SetBodyDir(bodyInfo.GetBodyDir());
 
-		assert(bodyInfo.vFireDir.IsUnit());
-		assert(bodyInfo.vMoveDir.IsUnit() || bodyInfo.vMoveDir.IsZero());
-		assert(bodyInfo.vEntityDir.IsUnit() || bodyInfo.vEntityDir.IsZero());
+			SetFirePos(bodyInfo.vFirePos);
+			SetFireDir(bodyInfo.vFireDir);
+			SetMoveDir(bodyInfo.vMoveDir);
+			SetEntityDir(bodyInfo.GetBodyDir());
+
+			assert(bodyInfo.vFireDir.IsUnit());
+			assert(bodyInfo.vMoveDir.IsUnit() || bodyInfo.vMoveDir.IsZero());
+			assert(bodyInfo.vEntityDir.IsUnit() || bodyInfo.vEntityDir.IsZero());
+		}
 	}
 
 	CAIObject::SetPos(position, vEyeDir); // can set something else than passed position

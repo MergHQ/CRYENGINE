@@ -81,7 +81,7 @@ public:
 	virtual bool                     SetCharacter(const char* character, const char* behaviour = NULL);
 	virtual const char*              GetCharacter();
 #endif
-	virtual void                     QueryBodyInfo(SAIBodyInfo& bodyInfo);
+	virtual bool                     QueryBodyInfo(SAIBodyInfo& bodyInfo);
 	virtual bool                     QueryBodyInfo(const SAIBodyInfoQuery& query, SAIBodyInfo& bodyInfo);
 	virtual void                     QueryWeaponInfo(SAIWeaponInfo& weaponInfo);
 	virtual EntityId                 GetLinkedDriverEntityId();
