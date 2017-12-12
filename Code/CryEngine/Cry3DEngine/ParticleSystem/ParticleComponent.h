@@ -214,7 +214,7 @@ private:
 	string                                   m_name;
 	CParticleEffect*                         m_pEffect;
 	uint                                     m_componentId;
-	TComponentPtr                            m_parent;
+	CParticleComponent*                      m_parent;
 	TComponents                              m_children;
 	Vec2                                     m_nodePosition;
 	SComponentParams                         m_componentParams;

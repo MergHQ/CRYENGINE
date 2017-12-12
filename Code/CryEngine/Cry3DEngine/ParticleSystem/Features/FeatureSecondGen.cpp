@@ -145,10 +145,10 @@ private:
 		}
 	}
 
-	std::vector<string> m_componentNames;
-	TComponents         m_components;
-	SUnitFloat          m_probability;
-	ESecondGenMode      m_mode;
+	std::vector<string>              m_componentNames;
+	std::vector<CParticleComponent*> m_components;
+	SUnitFloat                       m_probability;
+	ESecondGenMode                   m_mode;
 };
 
 //////////////////////////////////////////////////////////////////////////
