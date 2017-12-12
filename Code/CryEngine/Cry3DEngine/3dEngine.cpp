@@ -134,9 +134,6 @@ public:
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-CryCriticalSectionNonRecursive g_renderNodeTempDataLock;
-
-//////////////////////////////////////////////////////////////////////
 C3DEngine::C3DEngine(ISystem* pSystem)
 {
 	m_renderNodeStatusListenersArray.resize(EERType::eERType_TypesNum, TRenderNodeStatusListeners(0));
@@ -4770,8 +4767,8 @@ SRenderNodeTempData* C3DEngine::CreateRenderNodeTempData(IRenderNode* pRNode, co
 	SRenderNodeTempData* pNewTempData = m_visibleNodesManager.AllocateTempData(passInfo.GetFrameID());
 	pNewTempData->userData.pOwnerNode = pRNode;
 
-	pRNode->OnRenderNodeBecomeVisibleAsync(pNewTempData, passInfo); // Internally uses the just assigned RNTmpData pointer i.e IRenderNode::m_pRNTmpData ...
-
+	pRNode->OnRenderNodeBecomeVisibleAsync(pNewTempData, passInfo);
+	 
 	if (IVisArea* pVisArea = pRNode->GetEntityVisArea())
 		pNewTempData->userData.m_pClipVolume = pVisArea;
 	else if (GetClipVolumeManager()->IsClipVolumeRequired(pRNode))
@@ -4788,47 +4785,66 @@ SRenderNodeTempData* C3DEngine::CheckAndCreateRenderNodeTempData(IRenderNode* pR
 	if (!pRNode)
 		return nullptr;
 
-	SRenderNodeTempData* pTempData = pRNode->m_pTempData.load();
-	bool bCanBeRendered = false;
-
+	// Allocation and check occurs once a frame only. Contention of the check only occurs
+	// for the threads colliding when the check hasn't been conducted in the beginning of
+	// the frame.
+	// The lock behaves like a GroupSyncWithMemoryBarrier() for the contending threads.
+	// The algorithm only needs to protect from races across this function, and not against
+	// races of this functions with other functions.
+	const int currentFrame = passInfo.GetFrameID();
+	if (pRNode->m_manipulationFrame != currentFrame)
 	{
-		CryAutoCriticalSectionNoRecursive lock(g_renderNodeTempDataLock);
+		pRNode->m_manipulationLock.WLock();
 
-		if (!pTempData)
+		if (pRNode->m_manipulationFrame != currentFrame)
 		{
-			pTempData = CreateRenderNodeTempData(pRNode, passInfo);
-		}
-		else
-		{
-			// detect render resources modification (for example because of mesh streaming or material editing)
-			if (pTempData->userData.nStatObjLastModificationId)
+			// The code inside this scope is only executed by the first thread in this frame
+			SRenderNodeTempData* pTempData = pRNode->m_pTempData.load();
+
+			// No TempData seen yet
+			if (!pTempData)
 			{
-				if (GetObjManager()->GetResourcesModificationChecksum(pRNode) != pTempData->userData.nStatObjLastModificationId)
-				{
-					pRNode->InvalidatePermanentRenderObject();
-				}
+				pRNode->m_pTempData = (pTempData = CreateRenderNodeTempData(pRNode, passInfo));
 			}
 
-			if (pRNode->m_nInternalFlags & IRenderNode::PERMANENT_RO_INVALID)
+			// Manual invalidation of TempData occurred
+			else if (pTempData->invalidRenderObjects)
 			{
 				pTempData->FreeRenderObjects();
 			}
 
-			CryInterlockedExchangeAnd((volatile LONG*)&pRNode->m_nInternalFlags, ~uint32(IRenderNode::PERMANENT_RO_INVALID));
+			// Automatic invalidation check
+			else if (pTempData->hasValidRenderObjects)
+			{
+				// detect render resources modification (for example because of mesh streaming or material editing)
+				if (auto nStatObjLastModificationId = pTempData->userData.nStatObjLastModificationId)
+				{
+					if (nStatObjLastModificationId != GetObjManager()->GetResourcesModificationChecksum(pRNode))
+					{
+						pTempData->FreeRenderObjects();
+					}
+				}
+			}
+
+			// Allow other threads to bypass this outer scope only after all operations finished
+			pRNode->m_manipulationFrame = currentFrame;
 		}
 
-		bCanBeRendered = m_visibleNodesManager.SetLastSeenFrame(pTempData, passInfo);
+		pRNode->m_manipulationLock.WUnlock();
 	}
 
-	// Place new pointer back atomically
-	SRenderNodeTempData* pTempDataWasNull = nullptr;
+	SRenderNodeTempData* pTempData = pRNode->m_pTempData.load();
+	CRY_ASSERT(!pTempData->invalidRenderObjects);
 
-	// If something was placed meanwhile, get rid of whatever we did (it should be a nullptr though)
-	// If RemoveAndMarkForAutoDeleteTempData took the pointer out, we put it back in (which works fine)
-	if (!pRNode->m_pTempData.compare_exchange_strong(pTempDataWasNull, pTempData))
-		pTempData->MarkForAutoDelete();
+	// Technically this function is unsafe if the same node is hit (non-atomic read-modify-write)
+	// The assumption is that the same node can not be contended for the same condition(s), which is
+	// approximately the "distinct" passes used. For as long as different passes contend the node it's fine.
+	if (!m_visibleNodesManager.SetLastSeenFrame(pTempData, passInfo))
+	{
+		pTempData = nullptr;
+	}
 
-	return bCanBeRendered ? pRNode->m_pTempData.load() : nullptr;
+	return pTempData;
 }
 
 void C3DEngine::CopyObjectsByType(EERType objType, const AABB* pBox, PodArray<IRenderNode*>* plstObjects, uint64 dwFlags)

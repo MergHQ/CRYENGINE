@@ -122,10 +122,9 @@ struct ProcessingContext
 		, status(Invalid)
 	{
 	}
-
-	~ProcessingContext()
-	{
-	}
+	
+	ProcessingContext(ProcessingContext&&) = default;
+	ProcessingContext(const ProcessingContext&) = delete;
 
 	void Reset()
 	{
@@ -156,6 +155,9 @@ struct ProcessingContext
 			return "Error. Unknown status";
 		}
 	}
+
+	ProcessingContext& operator=(ProcessingContext&&) = default;
+	ProcessingContext& operator=(const ProcessingContext&) = delete;
 
 	ProcessingRequest            processingRequest;
 	CNavMesh::WayQueryResult     queryResult;
@@ -189,9 +191,9 @@ public:
 	typedef Functor1<ProcessingContext&>   ProcessingOperation;
 
 	ProcessingContextsPool(const size_t maxAmountOfTrianglesToCalculateWay = 512)
-		: m_pool(gAIEnv.CVars.MNMPathfinderConcurrentRequests, ProcessingContext(maxAmountOfTrianglesToCalculateWay))
-		, m_maxAmountOfTrianglesToCalculateWay(maxAmountOfTrianglesToCalculateWay)
+		: m_maxAmountOfTrianglesToCalculateWay(maxAmountOfTrianglesToCalculateWay)
 	{
+		Reset();
 	}
 
 	struct IsProcessCompleted
@@ -245,11 +247,6 @@ public:
 		void operator()(ProcessingContext& context) { if (context.status == ProcessingContext::Completed) context.Reset(); }
 	};
 
-	struct ResetProcessingContext
-	{
-		void operator()(ProcessingContext& context) { context.Reset(); }
-	};
-
 	void CleanupFinishedRequests()
 	{
 		std::for_each(m_pool.begin(), m_pool.end(), InvalidateCompletedProcess());
@@ -279,9 +276,15 @@ public:
 
 	void Reset()
 	{
+		const int poolSize = gAIEnv.CVars.MNMPathfinderConcurrentRequests;
+
 		m_pool.clear();
-		m_pool.resize(gAIEnv.CVars.MNMPathfinderConcurrentRequests, ProcessingContext(m_maxAmountOfTrianglesToCalculateWay));
-		std::for_each(m_pool.begin(), m_pool.end(), ResetProcessingContext());
+		m_pool.reserve(poolSize);
+
+		for(int i = 0; i < poolSize; ++i)
+		{
+			m_pool.emplace_back(m_maxAmountOfTrianglesToCalculateWay);
+		}
 	}
 
 private:

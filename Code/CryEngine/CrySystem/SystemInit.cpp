@@ -29,9 +29,9 @@
 #endif
 
 #if CRY_PLATFORM_WINDOWS
-#include <float.h>
-#include <timeapi.h>
-#include <algorithm>
+	#include <float.h>
+	#include <timeapi.h>
+	#include <algorithm>
 #endif
 
 #include <CryNetwork/INetwork.h>
@@ -257,8 +257,11 @@ static void CmdCrashTest(IConsoleCmdArgs* pArgs)
 
 	if (pArgs->GetArgCount() == 2)
 	{
-		//This method intentionally crashes, a lot.
-
+		// This method intentionally crashes, a lot.
+#if CRY_COMPILER_MSVC
+	#pragma warning(push)
+	#pragma warning(disable:4723) // potential divide by 0
+#endif // CRY_COMPILER_MSVC
 		int crashType = atoi(pArgs->GetArg(1));
 		switch (crashType)
 		{
@@ -349,6 +352,9 @@ static void CmdCrashTest(IConsoleCmdArgs* pArgs)
 			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "CmdCrashTest: Unsupported error number \"%i\" provided for crash test function.", crashType);
 			break;
 		}
+#if CRY_COMPILER_MSVC
+	#pragma warning(pop)
+#endif // CRY_COMPILER_MSVC
 	}
 }
 
@@ -421,7 +427,7 @@ static void CmdIgnoreAssertsFromModule(IConsoleCmdArgs* pArgs)
 	{
 		wstring requestedModule = CryStringUtils::UTF8ToWStr(pArgs->GetArg(1));
 
-		for(uint32 i = 0; i < eCryM_Num; ++i)
+		for (uint32 i = 0; i < eCryM_Num; ++i)
 		{
 			if (requestedModule == g_moduleNames[i])
 			{
@@ -1303,19 +1309,19 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 
 		WIN_HWND hwnd = (startupParams.bEditor) ? (WIN_HWND)1 : m_hWnd;
 
-		int width  = m_rWidth ->GetIVal();
+		int width = m_rWidth->GetIVal();
 		int height = m_rHeight->GetIVal();
 		if (gEnv->IsEditor())
 		{
 			// In Editor base default Display Context is not really used, so it is allocated with the minimal resolution.
-			width  = 32;
+			width = 32;
 			height = 32;
 		}
 
 		m_hWnd = m_env.pRenderer->Init(
-			0, 0, width, height,
-			m_rColorBits->GetIVal(), m_rDepthBits->GetIVal(), m_rStencilBits->GetIVal(),
-			hwnd, false, startupParams.bShaderCacheGen);
+		  0, 0, width, height,
+		  m_rColorBits->GetIVal(), m_rDepthBits->GetIVal(), m_rStencilBits->GetIVal(),
+		  hwnd, false, startupParams.bShaderCacheGen);
 
 		startupParams.hWnd = m_hWnd;
 
@@ -2734,7 +2740,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		if (m_pUserCallback == NULL)
 		{
-			auto getProductVersion = [this] 
+			auto getProductVersion = [this]
 			{
 				char version[64];
 				GetProductVersion().ToString(version);
@@ -5245,10 +5251,10 @@ void CSystem::CreateSystemVars()
 	REGISTER_CVAR_CB(sys_ProfileLevelLoadingDump, 0, VF_CHEAT, "Output level loading dump stats into log\n", OnLevelLoadingDump);
 
 	REGISTER_CVAR(sys_SchematycPlugin, 0, VF_REQUIRE_APP_RESTART,
-		"Set whether default Schematyc and/or experimental plugin is loaded\n"
-		"0 = Both plugins\n"
-		"1 = Loads default Schematyc plugin only\n"
-		"2 = Loads experimental Schematyc plugin only");
+	              "Set whether default Schematyc and/or experimental plugin is loaded\n"
+	              "0 = Both plugins\n"
+	              "1 = Loads default Schematyc plugin only\n"
+	              "2 = Loads experimental Schematyc plugin only");
 
 	assert(m_env.pConsole);
 	m_env.pConsole->CreateKeyBind("alt_f12", "Screenshot");
@@ -5341,11 +5347,11 @@ void CSystem::CreateSystemVars()
 #if defined(USE_CRY_ASSERT)
 	const bool defaultAsserts = 1;
 	REGISTER_CVAR2("sys_asserts", &m_env.cryAssertLevel, defaultAsserts, VF_CHEAT,
-		"0 = Disable Asserts\n"
-		"1 = Enable Asserts\n"
-		"2 = Fatal Error on Assert\n"
-		"3 = Debug break on Assert\n"
-	);
+	               "0 = Disable Asserts\n"
+	               "1 = Enable Asserts\n"
+	               "2 = Fatal Error on Assert\n"
+	               "3 = Debug break on Assert\n"
+	               );
 
 	REGISTER_COMMAND("sys_ignore_asserts_from_module", CmdIgnoreAssertsFromModule, VF_CHEAT, "Disables asserts from the specified module");
 	REGISTER_CVAR2("sys_log_asserts", &g_cvars.sys_log_asserts, 1, VF_CHEAT, "Enable/Disable Asserts logging");
@@ -5568,9 +5574,9 @@ void CSystem::OnAssert(const char* condition, const char* message, const char* f
 		}
 		if (m_env.cryAssertLevel == ECryAssertLevel::DebugBreakOnAssert)
 		{
-#ifndef _RELEASE
+	#ifndef _RELEASE
 			CryDebugBreak();
-#endif
+	#endif
 		}
 	}
 }

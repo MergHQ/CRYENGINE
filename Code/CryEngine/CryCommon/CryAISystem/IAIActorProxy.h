@@ -30,7 +30,7 @@ struct IAIActorProxy :
 	virtual bool                     SetCharacter(const char* character, const char* behaviour = NULL) = 0;
 	virtual const char*              GetCharacter() = 0;
 #endif
-	virtual void                     QueryBodyInfo(SAIBodyInfo& bodyInfo) = 0;
+	virtual bool                     QueryBodyInfo(SAIBodyInfo& bodyInfo) = 0;
 	virtual bool                     QueryBodyInfo(const SAIBodyInfoQuery& query, SAIBodyInfo& bodyInfo) = 0;
 	virtual void                     QueryWeaponInfo(SAIWeaponInfo& weaponInfo) = 0;
 	virtual EntityId                 GetLinkedDriverEntityId() = 0;

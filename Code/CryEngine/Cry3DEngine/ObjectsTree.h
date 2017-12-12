@@ -454,7 +454,7 @@ protected:
 	void  CompileObjects(ERNListType eListType);
 	void  UpdateStaticInstancing();
 	void  UpdateObjects(IRenderNode* pObj);
-	void  CompileCharacter(ICharacterInstance* pChar, uint32& nInternalFlags);
+	void  CompileCharacter(ICharacterInstance* pChar, uint8& nInternalFlags);
 	float GetNodeObjectsMaxViewDistance();
 
 	// Check if min spec specified in render node passes current server config spec.
