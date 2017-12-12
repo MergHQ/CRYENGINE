@@ -8,14 +8,9 @@
 //////////////////////////////////////////////////////////////////////////
 void SRenderNodeTempData::Free()
 {
-	// Release permanent CRenderObject(s)
-	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
+	if (hasValidRenderObjects)
 	{
-		if (userData.arrPermanentRenderObjects[lod])
-		{
-			gEnv->pRenderer->EF_FreeObject(userData.arrPermanentRenderObjects[lod]);
-			userData.arrPermanentRenderObjects[lod] = nullptr;
-		}
+		FreeRenderObjects();
 	}
 
 	if (userData.m_pFoliage)
@@ -28,26 +23,29 @@ void SRenderNodeTempData::Free()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CRenderObject* SRenderNodeTempData::GetRenderObject(int nLod)
+CRenderObject* SRenderNodeTempData::GetRenderObject(int lod)
 {
+	CRY_ASSERT(!invalidRenderObjects);
+
 	// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
-	WriteLock lock(userData.permanentObjectCreateLock);
+	arrPermanentObjectLock[lod].WLock();
 
 	// Do we have to create a new permanent render object?
-	if (userData.arrPermanentRenderObjects[nLod] == nullptr)
+	if (userData.arrPermanentRenderObjects[lod] == nullptr)
 	{
-		userData.arrPermanentRenderObjects[nLod] = gEnv->pRenderer->EF_GetObject();
+		userData.arrPermanentRenderObjects[lod] = gEnv->pRenderer->EF_GetObject();
+		hasValidRenderObjects = true;
 	}
 
-	CRenderObject* pRenderObject = userData.arrPermanentRenderObjects[nLod];
+	CRenderObject* pRenderObject = userData.arrPermanentRenderObjects[lod];
+	arrPermanentObjectLock[lod].WUnlock();
 
 	return pRenderObject;
 }
 
 void SRenderNodeTempData::FreeRenderObjects()
 {
-	// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
-	WriteLock lock(userData.permanentObjectCreateLock);
+	CRY_ASSERT(hasValidRenderObjects);
 
 	// Release permanent CRenderObject(s)
 	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
@@ -58,20 +56,28 @@ void SRenderNodeTempData::FreeRenderObjects()
 			userData.arrPermanentRenderObjects[lod] = nullptr;
 		}
 	}
+
+	hasValidRenderObjects = false;
+	invalidRenderObjects = false;
 }
 
 void SRenderNodeTempData::InvalidateRenderObjectsInstanceData()
 {
-	// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
-	WriteLock lock(userData.permanentObjectCreateLock);
+	if (!hasValidRenderObjects)
+		return;
 
 	// Release permanent CRenderObject(s)
 	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
 	{
+		// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
+		arrPermanentObjectLock[lod].RLock();
+
 		if (userData.arrPermanentRenderObjects[lod])
 		{
 			userData.arrPermanentRenderObjects[lod]->m_bInstanceDataDirty = true;
 		}
+
+		arrPermanentObjectLock[lod].RUnlock();
 	}
 }
 
@@ -90,7 +96,7 @@ CVisibleRenderNodesManager::~CVisibleRenderNodesManager()
 	ClearAll();
 }
 
-SRenderNodeTempData* CVisibleRenderNodesManager::AllocateTempData(int lastSeenFrame)
+SRenderNodeTempData* CVisibleRenderNodesManager::AllocateTempData(int lastSeenFrame) //threadsafe
 {
 	SRenderNodeTempData* pData = m_pool.New();
 
@@ -117,11 +123,16 @@ bool CVisibleRenderNodesManager::SetLastSeenFrame(SRenderNodeTempData* pTempData
 	}
 	else
 	{
+		// TODO: shakey condition, what if environment-rendering (which is recursive)
+		// wants to render the same node across multiple cube-slices?
+
 		int recursion = passInfo.IsRecursivePass() ? 1 : 0;
 		// Only return true if last seen frame is different form the current
 		bCanRenderThisFrame = pTempData->userData.lastSeenFrame[recursion] != frame;
 		pTempData->userData.lastSeenFrame[recursion] = frame;
 	}
+
+	CRY_ASSERT(bCanRenderThisFrame);
 	return bCanRenderThisFrame;
 }
 
@@ -193,7 +204,6 @@ void CVisibleRenderNodesManager::UpdateVisibleNodes(int currentFrame, int maxNod
 					OnRenderNodeVisibilityChange(pTempData->userData.pOwnerNode, false);
 				}
 
-				pTempData->Free();
 				m_toDeleteNodes[m_currentNodesToDelete].push_back(pTempData);
 				if (i < lastNode)
 				{

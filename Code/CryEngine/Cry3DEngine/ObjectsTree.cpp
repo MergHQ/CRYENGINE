@@ -3212,7 +3212,7 @@ void COctreeNode::UpdateObjects(IRenderNode* pObj)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void COctreeNode::CompileCharacter(ICharacterInstance* pChar, uint32& nInternalFlags)
+void COctreeNode::CompileCharacter(ICharacterInstance* pChar, uint8& nInternalFlags)
 {
 	const uint32 nCompileMask = IRenderNode::REQUIRES_FORWARD_RENDERING | IRenderNode::REQUIRES_NEAREST_CUBEMAP;
 	if (pChar)
@@ -3221,7 +3221,7 @@ void COctreeNode::CompileCharacter(ICharacterInstance* pChar, uint32& nInternalF
 
 		if (pCharMaterial)
 		{
-			uint32 nInternalFlagsNew = pCharMaterial->IsForwardRenderingRequired() ? IRenderNode::REQUIRES_FORWARD_RENDERING : 0;
+			uint8 nInternalFlagsNew = pCharMaterial->IsForwardRenderingRequired() ? IRenderNode::REQUIRES_FORWARD_RENDERING : 0;
 			nInternalFlagsNew |= pCharMaterial->IsNearestCubemapRequired() ? IRenderNode::REQUIRES_NEAREST_CUBEMAP : 0;
 			nInternalFlags |= nInternalFlagsNew;
 
@@ -3254,7 +3254,7 @@ void COctreeNode::CompileCharacter(ICharacterInstance* pChar, uint32& nInternalF
 
 							if (pMat)
 							{
-								uint32 nInternalFlagsNew = pMat->IsForwardRenderingRequired() ? IRenderNode::REQUIRES_FORWARD_RENDERING : 0;
+								uint8 nInternalFlagsNew = pMat->IsForwardRenderingRequired() ? IRenderNode::REQUIRES_FORWARD_RENDERING : 0;
 								nInternalFlagsNew |= pMat->IsNearestCubemapRequired() ? IRenderNode::REQUIRES_NEAREST_CUBEMAP : 0;
 								nInternalFlags |= nInternalFlagsNew;
 
@@ -3274,7 +3274,7 @@ void COctreeNode::CompileCharacter(ICharacterInstance* pChar, uint32& nInternalF
 
 								if (pMat)
 								{
-									uint32 nInternalFlagsNew = pMat->IsForwardRenderingRequired() ? IRenderNode::REQUIRES_FORWARD_RENDERING : 0;
+									uint8 nInternalFlagsNew = pMat->IsForwardRenderingRequired() ? IRenderNode::REQUIRES_FORWARD_RENDERING : 0;
 									nInternalFlagsNew |= pMat->IsNearestCubemapRequired() ? IRenderNode::REQUIRES_NEAREST_CUBEMAP : 0;
 									nInternalFlags |= nInternalFlagsNew;
 

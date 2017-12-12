@@ -51,7 +51,7 @@ void CVegetation::Init()
 	m_ucAngle = 0;
 	m_ucAngleX = 0;
 	m_ucAngleY = 0;
-	m_pTempData = NULL;
+	m_pTempData = nullptr;
 	m_pSpriteInfo = NULL;
 	m_pDeformable = NULL;
 	m_bApplyPhys = false;

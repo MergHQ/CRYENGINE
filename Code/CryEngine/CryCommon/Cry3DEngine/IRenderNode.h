@@ -112,7 +112,6 @@ struct SRenderNodeTempData
 		uint32                          nCubeMapIdCacheClearCounter : 16;
 		uint32                          nWantedLod                  : 8;
 		uint32                          bTerrainColorWasUsed        : 1;
-		volatile int                    permanentObjectCreateLock;
 		IRenderNode*                    pOwnerNode;
 		uint32                          nStatObjLastModificationId;
 	};
@@ -120,13 +119,18 @@ struct SRenderNodeTempData
 public:
 	SUserData userData;
 
+	CryRWLock arrPermanentObjectLock[MAX_STATOBJ_LODS_NUM];
+
+	std::atomic<uint32> hasValidRenderObjects;
+	std::atomic<uint32> invalidRenderObjects;
+
 public:
-	SRenderNodeTempData() { ZeroStruct(*this); assert((void*)this == (void*)&this->userData); }
+	SRenderNodeTempData() { ZeroStruct(userData); hasValidRenderObjects = invalidRenderObjects = false; }
 	~SRenderNodeTempData() { Free(); };
 
-	CRenderObject* GetRenderObject(int nLod);
+	CRenderObject* GetRenderObject(int nLod); /* thread-safe */
 	void Free();
-	void FreeRenderObjects();
+	void FreeRenderObjects(); /* non-thread-safe */
 	void InvalidateRenderObjectsInstanceData();
 
 	void OffsetPosition(const Vec3& delta)
@@ -227,7 +231,7 @@ protected:
 
 struct IRenderNode : public IShadowCaster
 {
-	enum EInternalFlags
+	enum EInternalFlags : uint8
 	{
 		DECAL_OWNER                = BIT(0),   //!< Owns some decals.
 		REQUIRES_NEAREST_CUBEMAP   = BIT(1),   //!< Pick nearest cube map.
@@ -237,7 +241,6 @@ struct IRenderNode : public IShadowCaster
 		WAS_IN_VISAREA             = BIT(5),   //!< Was inside vis-ares last frame.
 		WAS_FARAWAY                = BIT(6),   //!< Was considered 'far away' for the purposes of physics deactivation.
 		HAS_OCCLUSION_PROXY        = BIT(7),   //!< This node has occlusion proxy.
-		PERMANENT_RO_INVALID       = BIT(8)    //!< If this node uses permanent render object, it is not valid anymore and must be recreated.
 	};
 	typedef uint64 RenderFlagsType;
 
@@ -262,7 +265,7 @@ public:
 		m_fWSMaxViewDist = 0;
 		m_nInternalFlags = 0;
 		m_nMaterialLayers = 0;
-		m_pTempData = NULL;
+		m_pTempData = nullptr;
 		m_pPrev = m_pNext = NULL;
 		m_cShadowLodBias = 0;
 		m_cStaticShadowLod = 0;
@@ -519,7 +522,7 @@ public:
 	}
 
 	//! Inform 3d engine that permanent render object that captures drawing state of this node is not valid and must be recreated.
-	ILINE void   InvalidatePermanentRenderObject() { CryInterlockedExchangeOr((volatile LONG*)&m_nInternalFlags, uint32(PERMANENT_RO_INVALID)); };
+	ILINE void   InvalidatePermanentRenderObject() { if (auto pTempData = m_pTempData.load()) pTempData->invalidRenderObjects = pTempData->hasValidRenderObjects.load(); };
 
 	virtual void SetEditorObjectId(uint32 nEditorObjectId)
 	{
@@ -564,6 +567,8 @@ public:
 
 	//! Pointer to temporary data allocated only for currently visible objects.
 	std::atomic<SRenderNodeTempData*> m_pTempData;
+	int                               m_manipulationFrame = -1;
+	CryRWLock                         m_manipulationLock;
 
 	//! Hud silhouette parameter, default is black with alpha zero
 	uint32 m_nHUDSilhouettesParam;
@@ -575,7 +580,7 @@ public:
 	RenderFlagsType m_dwRndFlags;
 
 	//! Flags for render node internal usage, one or more bits from EInternalFlags.
-	uint32 m_nInternalFlags;
+	uint8 m_nInternalFlags;
 
 	//! Max view distance settings.
 	uint8 m_ucViewDistRatio;
