@@ -235,12 +235,12 @@ public:
 			: m_wayMaxSize(wayMaxSize)
 			, m_waySize(0)
 		{
-			m_pWayTriData.reset(new WayTriangleData[m_wayMaxSize]);
+			Reset();
 		}
 
-		~WayQueryResult()
-		{
-		}
+		WayQueryResult(WayQueryResult&&) = default;
+		WayQueryResult(const WayQueryResult&) = delete;
+		~WayQueryResult() = default;
 
 		void Reset()
 		{
@@ -255,11 +255,15 @@ public:
 		ILINE void             SetWaySize(const size_t waySize) { m_waySize = waySize; }
 
 		ILINE void             Clear()                          { m_waySize = 0; }
+
+		WayQueryResult& operator=(WayQueryResult&&) = default;
+		WayQueryResult& operator=(const WayQueryResult&) = delete;
+
 	private:
 
-		std::shared_ptr<WayTriangleData> m_pWayTriData;
-		size_t                           m_wayMaxSize;
-		size_t                           m_waySize;
+		std::unique_ptr<WayTriangleData[]> m_pWayTriData;
+		size_t                             m_wayMaxSize;
+		size_t                             m_waySize;
 	};
 
 	enum EWayQueryResult
