@@ -742,7 +742,7 @@ OffMeshNavigationManager::OffMeshLinkIDList* OffMeshNavigationManager::GetClassI
 			}
 		}
 	}
-	assert(0);
+	CRY_ASSERT_MESSAGE(linkInfo.offMeshLink->GetLinkType() != MNM::OffMeshLink::eLinkType_SmartObject, "Offmesh Link for entity id %u doesn't have SmartObject assigned!", entityId);
 	return nullptr;
 }
 
