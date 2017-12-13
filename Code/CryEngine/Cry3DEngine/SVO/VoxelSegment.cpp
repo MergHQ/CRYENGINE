@@ -636,7 +636,7 @@ void CVoxelSegment::StreamAsyncOnComplete(IReadStream* pStream, unsigned nError)
 	}
 
 	// load child info if available
-	if ((pData - pDataRead) + (sizeof(uint32) * 2 * 8) <= bytesRead)
+	if (ptrdiff_t(pData - pDataRead + (sizeof(uint32) * 2 * 8)) <= ptrdiff_t(bytesRead))
 	{
 		bool bChildsExist = false;
 
@@ -673,11 +673,11 @@ void CVoxelSegment::StreamAsyncOnComplete(IReadStream* pStream, unsigned nError)
 		}
 	}
 
-	assert((pData - pDataRead) <= (int)bytesRead);
+	assert(ptrdiff_t(pData - pDataRead) <= ptrdiff_t(bytesRead));
 
-	if ((pData - pDataRead) > (int)bytesRead)
+	if (ptrdiff_t(pData - pDataRead) > ptrdiff_t(bytesRead))
 	{
-		ErrorTerminate("%s: Data size error, nBytesRead = %d, (pData - pDataRead) = %d", __FUNCTION__, bytesRead, (pData - pDataRead));
+		ErrorTerminate("%s: Data size error, nBytesRead = %d, (pData - pDataRead) = %td", __FUNCTION__, bytesRead, ptrdiff_t(pData - pDataRead));
 	}
 }
 
