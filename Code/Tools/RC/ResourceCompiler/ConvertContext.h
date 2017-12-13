@@ -96,7 +96,7 @@ struct ConvertContext
 
 	const string GetSourcePath() const
 	{
-		return PathUtil::Make(sourceFolder, sourceFileNameOnly).c_str();
+		return PathUtil::Make(sourceFolder, sourceFileNameOnly);
 	}
 
 	const string& GetOutputFolder() const

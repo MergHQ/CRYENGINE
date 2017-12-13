@@ -79,17 +79,13 @@ string UnifiedPath(const string& path)
 
 string RelativePath(const string& path, const string& relativeToPath)
 {
-	const string relPath = PathHelpers::GetShortestRelativePath(relativeToPath, path);
-	if (!relPath.empty())
+	const auto fullpath = PathUtil::ToUnixPath(path);
+	const auto rootDataFolder = PathUtil::ToUnixPath(PathUtil::AddSlash(relativeToPath));
+	if (fullpath.length() > rootDataFolder.length() && strnicmp(fullpath.c_str(), rootDataFolder.c_str(), rootDataFolder.length()) == 0)
 	{
-		// we don't allow path to point outside of base path (or to base path itself)
-		if ((relPath[0] == '.' && (relPath.length() == 1 || relPath[1] == '.')) ||
-			!PathHelpers::IsRelative(relPath))
-		{
-			return string();
-		}
+		return fullpath.substr(rootDataFolder.length(), fullpath.length() - rootDataFolder.length());
 	}
-	return relPath;
+	return fullpath;
 }
 
 
