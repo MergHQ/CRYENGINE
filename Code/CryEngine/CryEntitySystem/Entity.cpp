@@ -1385,7 +1385,7 @@ bool CEntity::LoadComponentLegacy(XmlNodeRef& entityNode, XmlNodeRef& componentN
 		if (bCanCreateComponent)
 		{
 			CryGUID instanceGUID;
-			if (!componentNode->getAttr("guid", instanceGUID))
+			if (!componentNode->getAttr("guid", instanceGUID) || instanceGUID.IsNull())
 			{
 				instanceGUID = CryGUID::Create();
 			}
