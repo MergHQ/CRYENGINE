@@ -71,24 +71,18 @@ vert2fragZ Common_ZPassVS(app2vertGBuffer IN_common)
 	#endif
 
 	float fAlphaTest = 0.0f;
-	float fDissolve = 0.0f;
-	#if %_RT_ALPHATEST || %_RT_DISSOLVE
-		#if %_RT_DISSOLVE
-			fAlphaTest = Get_MaterialAlphaTest();
-	fDissolve = Get_SPI_Dissolve();
-		#else
-	fAlphaTest = Get_MaterialAlphaTest();
-		#endif
-		OUT.baseTC.wz = float2(fAlphaTest,fDissolve);
+	#if %_RT_ALPHATEST	
+		fAlphaTest = Get_MaterialAlphaTest();
+		OUT.vNormalWS.w = fAlphaTest;
 		#if %LEAVES
-			OUT.baseTC.w = ParallelOpacityFalloff(vertPassPos.WorldPos.xyz, worldTangentN.xyz, CapOpacityFalloff, fAlphaTest);
+			OUT.vNormalWS.w = ParallelOpacityFalloff(vertPassPos.WorldPos.xyz, worldTangentN.xyz, CapOpacityFalloff, fAlphaTest);
 		#endif
 	#endif
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	// Output tangents
 
-	OUT.vNormalWS = float4(worldTangentN.xyz, 0); // w= dissolve out sign
+	OUT.vNormalWS = float4(worldTangentN.xyz, fAlphaTest);
 
 	#if !%GRASS
 		OUT.vTangent = float4(worldTangentS, vertPassPos.Tangent.w); 
@@ -333,15 +327,16 @@ pixout_gbuffer Common_ZPassPS(vert2fragZ IN)
 	#if %_RT_ALPHATEST
 		half fDiffuseAlpha = GetAlphaTex(diffuseTex, IN.baseTC.xy);
 		#if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST
-			GetAlphaCoverageMask( diffuseTex, IN.baseTC.xy, IN.baseTC.w, fDiffuseAlpha, OUT.uCoverageMask);
+			GetAlphaCoverageMask( diffuseTex, IN.baseTC.xy, IN.vNormalWS.w, fDiffuseAlpha, OUT.uCoverageMask);
 		#endif
-    clip(fDiffuseAlpha - IN.baseTC.w);
+    clip(fDiffuseAlpha - IN.vNormalWS.w);
 	#endif
 	
 	#if %_RT_DISSOLVE
+		float fDissolve = Get_SPI_Dissolve();
 		const int2 vPixQuadIdx= (int2)IN.WPos.xy % 2; // 4 transparency levels for a 2x2 quad. We're using dot/abs instead, since rsx doens't support array indexing. 
-		clip( (IN.baseTC.z > 0 ? 1 : -1) * (abs(dot(half4(0.0h, 0.76h, 0.5h,-1.0h), vPixQuadIdx.xxyy))-abs(IN.baseTC.z))); // todo: try using coverage mask when in MSAA mode.
-  #endif
+		clip( (fDissolve > 0 ? 1 : -1) * (abs(dot(half4(0.0h, 0.76h, 0.5h,-1.0h), vPixQuadIdx.xxyy))-abs(fDissolve))); // todo: try using coverage mask when in MSAA mode.
+	#endif
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
   // Output normals
