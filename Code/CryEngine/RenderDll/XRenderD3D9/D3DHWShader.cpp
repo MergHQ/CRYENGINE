@@ -252,6 +252,7 @@ void CHWShader_D3D::ShutDown()
 
 	gRenDev->m_cEF.m_Bin.mfReleaseFXParams();
 
+#if 0
 	while (!m_ShaderCache.empty())
 	{
 		SShaderCache* pC = m_ShaderCache.begin()->second;
@@ -261,6 +262,7 @@ void CHWShader_D3D::ShutDown()
 		SAFE_RELEASE(pC);
 	}
 	m_ShaderCacheList.clear();
+#endif
 
 	CGParamManager::Shutdown();
 
