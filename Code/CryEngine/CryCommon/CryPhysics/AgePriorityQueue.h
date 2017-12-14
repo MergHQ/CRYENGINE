@@ -76,7 +76,7 @@ private:
 				if (!other.isFree)
 				{
 					other.isFree = true;
-					valueStorage.MoveConstruct(other.get_value());
+					valueStorage.MoveConstruct(std::move(other.get_value()));
 				}
 			}
 
