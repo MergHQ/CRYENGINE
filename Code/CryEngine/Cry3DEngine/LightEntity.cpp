@@ -119,37 +119,37 @@ bool CLightEntity::IsLightAreasVisible()
 //////////////////////////////////////////////////////////////////////////
 void CLightEntity::SetMatrix(const Matrix34& mat)
 {
-	if (m_Matrix == mat)
-		return;
-
-	m_Matrix = mat;
-	Vec3 wp = mat.GetTranslation();
-	if (!(m_light.m_Flags & DLF_DEFERRED_CUBEMAPS))
-	{
-		float fRadius = m_light.m_fRadius;
-		if (m_light.m_Flags & DLF_AREA_LIGHT) // Use max for area lights.
-			fRadius += max(m_light.m_fAreaWidth, m_light.m_fAreaHeight);
-		SetBBox(AABB(wp - Vec3(fRadius), wp + Vec3(fRadius)));
-	}
-	else
-	{
-		OBB obb(OBB::CreateOBBfromAABB(Matrix33(m_Matrix), AABB(-m_light.m_ProbeExtents, m_light.m_ProbeExtents)));
-		SetBBox(AABB::CreateAABBfromOBB(wp, obb));
-	}
-	m_light.SetPosition(wp);
+	m_light.SetPosition(mat.GetTranslation());
 	m_light.SetMatrix(mat);
-	SetLightProperties(m_light);
-	Get3DEngine()->RegisterEntity(this);
 
-	if (!memcmp(&m_Matrix, &mat, sizeof(Matrix34)))
-		return;
-
-	//update shadow frustums
-	if (m_pShadowMapInfo != NULL)
+	if (m_Matrix != mat)
 	{
-		for (int i = 0; i < MAX_GSM_LODS_NUM && m_pShadowMapInfo->pGSM[i] != NULL; i++)
+		Vec3 worldPosition = mat.GetTranslation();
+
+		if (!(m_light.m_Flags & DLF_DEFERRED_CUBEMAPS))
 		{
-			m_pShadowMapInfo->pGSM[i]->RequestUpdate();
+			float fRadius = m_light.m_fRadius;
+			if (m_light.m_Flags & DLF_AREA_LIGHT) // Use max for area lights.
+				fRadius += max(m_light.m_fAreaWidth, m_light.m_fAreaHeight);
+			SetBBox(AABB(worldPosition - Vec3(fRadius), worldPosition + Vec3(fRadius)));
+		}
+		else
+		{
+			OBB obb(OBB::CreateOBBfromAABB(Matrix33(m_Matrix), AABB(-m_light.m_ProbeExtents, m_light.m_ProbeExtents)));
+			SetBBox(AABB::CreateAABBfromOBB(worldPosition, obb));
+		}
+
+		m_Matrix = mat;
+		SetLightProperties(m_light);
+		Get3DEngine()->RegisterEntity(this);
+
+		//update shadow frustums
+		if (m_pShadowMapInfo != NULL)
+		{
+			for (int i = 0; i < MAX_GSM_LODS_NUM && m_pShadowMapInfo->pGSM[i] != NULL; i++)
+			{
+				m_pShadowMapInfo->pGSM[i]->RequestUpdate();
+			}
 		}
 	}
 }
