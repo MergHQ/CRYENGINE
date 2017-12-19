@@ -37,9 +37,22 @@ static uint8 GetDefaultProfileForAspect(EntityId id, EEntityAspects aspectID)
 static void SetEntityAspectProfile(EntityId id, NetworkAspectType aspectBit, uint8 profile)
 {
 	CRY_ASSERT(0 == (aspectBit & (aspectBit - 1)));
-	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
-	if (INetEntity* pNetEntity = pEntity->GetNetEntity())
-		pNetEntity->SetAspectProfile(static_cast<EEntityAspects>(aspectBit), profile, true);
+
+	if (id == INVALID_ENTITYID)
+	{
+		// Object is unbound while waiting for profile change propagation
+		return;
+	}
+
+	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id))
+	{
+		if (INetEntity* pNetEntity = pEntity->GetNetEntity())
+		{
+			pNetEntity->SetAspectProfile(static_cast<EEntityAspects>(aspectBit), profile, true);
+			return;
+		}
+	}
+	NetWarning("SetEntityAspectProfile: unable to find entity %08x", id);
 }
 
 CNetContextState::CNetContextState(CNetContext* pContext, int token, CNetContextState* pPrev) : m_pMMM(new CMementoMemoryManager(string().Format("NetContextState[%d]", token)))
