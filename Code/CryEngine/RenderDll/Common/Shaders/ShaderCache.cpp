@@ -1946,7 +1946,7 @@ void CShaderMan::mfPrecacheShaders(bool bStatsOnly)
 		CParserBin::m_bShaderCacheGen = true;
 
 		gRenDev->m_Features |= RFT_HW_SM50;
-		CParserBin::SetupForOrbis();
+		CParserBin::SetupForPlatform(SF_ORBIS);
 		CryLogAlways("\nStarting shader compilation for Orbis...");
 		mfInitShadersList(NULL);
 		mfPreloadShaderExts();
@@ -1962,7 +1962,7 @@ void CShaderMan::mfPrecacheShaders(bool bStatsOnly)
 		CParserBin::m_bShaderCacheGen = true;
 
 		gRenDev->m_Features |= RFT_HW_SM50;
-		CParserBin::SetupForDurango();
+		CParserBin::SetupForPlatform(SF_DURANGO);
 		CryLogAlways("\nStarting shader compilation for Durango...");
 		mfInitShadersList(NULL);
 		mfPreloadShaderExts();
@@ -1977,7 +1977,7 @@ void CShaderMan::mfPrecacheShaders(bool bStatsOnly)
 		CParserBin::m_bShaderCacheGen = true;
 
 		gRenDev->m_Features |= RFT_HW_SM50;
-		CParserBin::SetupForD3D11();
+		CParserBin::SetupForPlatform(SF_D3D11);
 		CryLogAlways("\nStarting shader compilation for D3D11...");
 		mfInitShadersList(NULL);
 		mfPreloadShaderExts();
@@ -1992,7 +1992,7 @@ void CShaderMan::mfPrecacheShaders(bool bStatsOnly)
 		CParserBin::m_bShaderCacheGen = true;
 
 		gRenDev->m_Features |= RFT_HW_SM50;
-		CParserBin::SetupForGL4();
+		CParserBin::SetupForPlatform(SF_GL4);
 		CryLogAlways("\nStarting shader compilation for GLSL 4...");
 		mfInitShadersList(NULL);
 		mfPreloadShaderExts();
@@ -2007,14 +2007,14 @@ void CShaderMan::mfPrecacheShaders(bool bStatsOnly)
 		CParserBin::m_bShaderCacheGen = true;
 
 		gRenDev->m_Features |= RFT_HW_SM50;
-		CParserBin::SetupForGLES3();
+		CParserBin::SetupForPlatform(SF_GLES3);
 		CryLogAlways("\nStarting shader compilation for GLSL-ES 3...");
 		mfInitShadersList(NULL);
 		mfPreloadShaderExts();
 		_PrecacheShaderList(bStatsOnly);
 	}
 
-	CParserBin::SetupForD3D11();
+	CParserBin::SetupForPlatform(SF_D3D11);
 
 	gRenDev->m_cEF.m_Bin.InvalidateCache();
 }
@@ -2210,7 +2210,7 @@ void CShaderMan::_MergeShaders()
 			}
 		}
 		char szDest[256];
-		cry_strcpy(szDest, m_ShadersCache);
+		cry_strcpy(szDest, m_ShadersCache.c_str());
 		const char* p = &szNameA[strlen(szNameA) - nLen - 2];
 		while (*p != '/' && *p != '\\')
 		{
@@ -2260,7 +2260,7 @@ void CShaderMan::_MergeShaders()
 		pCache->Release();
 	}
 
-	mfOptimiseShaders(gRenDev->m_cEF.m_ShadersCache, true);
+	mfOptimiseShaders(gRenDev->m_cEF.m_ShadersCache.c_str(), true);
 
 	float t1 = gEnv->pTimer->GetAsyncCurTime();
 	CryLog("All shaders files merged in %.2f seconds", t1 - t0);
@@ -2270,7 +2270,7 @@ void CShaderMan::mfMergeShaders()
 {
 	CHWShader::mfFlushPendedShadersWait(-1);
 
-	CParserBin::SetupForD3D11();
+	CParserBin::SetupForPlatform(SF_D3D11);
 	_MergeShaders();
 }
 

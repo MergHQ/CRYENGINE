@@ -2049,7 +2049,7 @@ void CHWShader_D3D::mfGenName(SHWSInstance* pInst, char* dstname, int nSize, byt
 
 void CHWShader_D3D::mfGetDstFileName(SHWSInstance* pInst, CHWShader_D3D* pSH, char* dstname, int nSize, byte bType)
 {
-	cry_strcpy(dstname, nSize, gRenDev->m_cEF.m_ShadersCache);
+	cry_strcpy(dstname, nSize, gRenDev->m_cEF.m_ShadersCache.c_str());
 
 	if (pSH->m_eSHClass == eHWSC_Vertex)
 	{

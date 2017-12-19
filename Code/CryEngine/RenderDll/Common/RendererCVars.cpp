@@ -862,41 +862,41 @@ static void ShadersOptimise(IConsoleCmdArgs* Cmd)
 {
 	if (CRenderer::CV_r_shadersdx11)
 	{
-		CParserBin::SetupForD3D11();
+		CParserBin::SetupForPlatform(SF_D3D11);
 		CryLogAlways("\nStarting shaders optimizing for DX11...");
-		string str = string("%USER%/") + string(gRenDev->m_cEF.m_ShadersCache);
+		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
 		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
 		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
 	}
 	if (CRenderer::CV_r_shadersGL4)
 	{
-		CParserBin::SetupForGL4();
+		CParserBin::SetupForPlatform(SF_GL4);
 		CryLogAlways("\nStarting shaders optimizing for GLSL 4...");
-		string str = string("%USER%/") + string(gRenDev->m_cEF.m_ShadersCache);
+		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
 		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
 		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
 	}
 	if (CRenderer::CV_r_shadersGLES3)
 	{
-		CParserBin::SetupForGLES3();
+		CParserBin::SetupForPlatform(SF_GLES3);
 		CryLogAlways("\nStarting shaders optimizing for GLSL-ES 3...");
-		string str = string("%USER%/") + string(gRenDev->m_cEF.m_ShadersCache);
+		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
 		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
 		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
 	}
 	if (CRenderer::CV_r_shadersdurango)
 	{
-		CParserBin::SetupForDurango();
+		CParserBin::SetupForPlatform(SF_DURANGO);
 		CryLogAlways("\nStarting shaders optimizing for Durango...");
-		string str = string("%USER%/") + string(gRenDev->m_cEF.m_ShadersCache);
+		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
 		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
 		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
 	}
 	if (CRenderer::CV_r_shadersorbis)
 	{
-		CParserBin::SetupForOrbis();
+		CParserBin::SetupForPlatform(SF_ORBIS);
 		CryLogAlways("\nStarting shaders optimizing for Orbis...");
-		string str = string("%USER%/") + string(gRenDev->m_cEF.m_ShadersCache);
+		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
 		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
 		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
 	}
@@ -2187,7 +2187,7 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_ShadersAsyncMaxThreads", CV_r_shadersasyncmaxthreads, 1, VF_DUMPTODISK, "");
 	REGISTER_CVAR3("r_ShadersCacheDeterministic", CV_r_shaderscachedeterministic, 1, VF_NULL, "Ensures that 2 shaderCaches built from the same source are binary equal");
-	REGISTER_CVAR3("r_ShadersCacheInMemory", CV_r_shaderscacheinmemory, 1, VF_NULL, "Caches compressed compiled shaders in memory");
+	REGISTER_CVAR3("r_ShadersCacheInMemory", CV_r_shaderscacheinmemory, 0, VF_NULL, "Caches compressed compiled shaders in memory");
 	DefineConstIntCVar3("r_ShadersPrecacheAllLights", CV_r_shadersprecachealllights, 1, VF_NULL, "");
 	REGISTER_CVAR3("r_ShadersSubmitRequestline", CV_r_shaderssubmitrequestline, 1, VF_NULL, "");
 
