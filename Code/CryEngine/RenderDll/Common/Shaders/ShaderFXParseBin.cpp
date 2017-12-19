@@ -269,7 +269,7 @@ SShaderBin* CShaderManBin::SaveBinShader(
 	//pBin->CryptTable();
 
 	char nameFile[256];
-	cry_sprintf(nameFile, "%s%s.%s", m_pCEF->m_ShadersCache, szName, bInclude ? "cfib" : "cfxb");
+	cry_sprintf(nameFile, "%s%s.%s", m_pCEF->m_ShadersCache.c_str(), szName, bInclude ? "cfib" : "cfxb");
 	stack_string szDst = stack_string(m_pCEF->m_szUserPath.c_str()) + stack_string(nameFile);
 	const char* szFileName = szDst;
 
@@ -1023,7 +1023,7 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 	}
 	//char szPath[1024];
 	//getcwd(szPath, 1024);
-	nameBin.Format("%s%s.%s", m_pCEF->m_ShadersCache, szName, bInclude ? "cfib" : "cfxb");
+	nameBin.Format("%s%s.%s", m_pCEF->m_ShadersCache.c_str(), szName, bInclude ? "cfib" : "cfxb");
 	FILE* fpDst = NULL;
 	int i = 0, n = 2;
 
