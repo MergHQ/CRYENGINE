@@ -2029,7 +2029,10 @@ void CAttachmentManager::DrawMergedAttachments(SRendParams& rParams, const Matri
 					continue; //if radius is zero, then the object is most probably not visible and we can continue
 				if (!(rParams.nCustomFlags & COB_POST_3D_RENDER) && fZoomDistanceSq > fRadiusSqr)
 					continue; //too small to render. cancel the update
-				pCAttachmentMerged->DrawAttachment(rParams, passInfo, rWorldMat34, fZoomFactor);
+
+				// Similar to DrawAttachments() handle special case for nearest
+				const auto& FinalMat34 = ((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34;
+				pCAttachmentMerged->DrawAttachment(rParams, passInfo, FinalMat34, fZoomFactor);
 			}
 		}
 	}

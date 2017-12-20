@@ -797,6 +797,7 @@ bool CShadowMapStage::CShadowMapPass::PrepareResources(CRenderView* pMainView)
 		viewInfo.cameraProjZeroMatrix = m_ViewProjMatrix;
 		viewInfo.cameraProjMatrix = m_ViewProjMatrix;
 		viewInfo.cameraProjNearestMatrix = m_ViewProjMatrix;
+		viewInfo.cameraOrigin = viewInfo.pCamera->GetPosition();
 		viewInfo.projMatrix = m_ViewProjMatrix;
 		viewInfo.prevCameraProjMatrix = m_ViewProjMatrix;
 		viewInfo.prevCameraProjNearestMatrix = m_ViewProjMatrix;
