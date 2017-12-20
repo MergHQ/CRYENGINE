@@ -47,8 +47,7 @@ uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutH
 		int compResult;
 		while (vs_it != reflectedNames.cend() && (compResult = std::strcmp(*vs_it, layout_it->SemanticName)) < 0)
 		{
-			// Reaching this means that the vs_it element exists in shader but not in layout!
-			CRY_ASSERT((std::string("Vertex Shader expects attribute \"") + *vs_it + "\" but none provided by specified input layout.").c_str());
+			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "Vertex Shader expects attribute \"%s\" but none provided by specified input layout.", *vs_it);
 			++vs_it;
 		}
 
