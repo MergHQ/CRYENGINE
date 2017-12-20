@@ -689,6 +689,10 @@ void CEntitySlot::SetAsLight(const SRenderLight& lightData, uint16 layerId)
 	newLightData.m_sName = m_pEntity->GetName(); // For debugging only.
 	newLightData.m_nEntityId = m_pEntity->GetId();
 
+	auto lightNodeMatrix = pLightNode->GetMatrix();
+	newLightData.SetPosition(lightNodeMatrix.GetTranslation());
+	newLightData.SetMatrix(lightNodeMatrix);
+
 	m_flags |= ENTITY_SLOT_RENDER;
 
 	UpdateRenderNode();

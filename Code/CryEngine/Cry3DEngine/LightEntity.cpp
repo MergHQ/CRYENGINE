@@ -119,11 +119,10 @@ bool CLightEntity::IsLightAreasVisible()
 //////////////////////////////////////////////////////////////////////////
 void CLightEntity::SetMatrix(const Matrix34& mat)
 {
-	m_light.SetPosition(mat.GetTranslation());
-	m_light.SetMatrix(mat);
-
 	if (m_Matrix != mat)
 	{
+		m_Matrix = mat;
+
 		Vec3 worldPosition = mat.GetTranslation();
 
 		if (!(m_light.m_Flags & DLF_DEFERRED_CUBEMAPS))
@@ -139,7 +138,8 @@ void CLightEntity::SetMatrix(const Matrix34& mat)
 			SetBBox(AABB::CreateAABBfromOBB(worldPosition, obb));
 		}
 
-		m_Matrix = mat;
+		m_light.SetPosition(mat.GetTranslation());
+		m_light.SetMatrix(mat);
 		SetLightProperties(m_light);
 		Get3DEngine()->RegisterEntity(this);
 
