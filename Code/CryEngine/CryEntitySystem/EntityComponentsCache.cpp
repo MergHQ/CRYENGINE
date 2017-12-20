@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "EntityComponentsCache.h"
@@ -65,7 +65,7 @@ void CEntitiesComponentPropertyCache::LoadComponent(CEntity& entity, IEntityComp
 		return;
 	}
 
-	auto iter = m_componentPropertyCache.find( { entity.GetGuid(), component.GetGUID() } );
+	auto iter = m_componentPropertyCache.find({ entity.GetGuid(), component.GetGUID() });
 	if (iter != m_componentPropertyCache.end())
 	{
 		auto& pClassProperties = iter->second;
@@ -84,24 +84,28 @@ void CEntitiesComponentPropertyCache::LoadComponent(CEntity& entity, IEntityComp
 void CEntitiesComponentPropertyCache::StoreEntity(CEntity& entity)
 {
 	entity.GetComponentsVector().ForEach(
-	  [&](const SEntityComponentRecord& rec)
+	  [&](const SEntityComponentRecord& rec) -> bool
 	{
 		if (!rec.pComponent->GetClassDesc().GetName().IsEmpty())
 		{
-			StoreComponent(entity, *rec.pComponent.get());
+		  StoreComponent(entity, *rec.pComponent.get());
 		}
+
+		return true;
 	});
 }
 
 void CEntitiesComponentPropertyCache::LoadEntity(CEntity& entity)
 {
 	entity.GetComponentsVector().ForEach(
-	  [&](const SEntityComponentRecord& rec)
+	  [&](const SEntityComponentRecord& rec) -> bool
 	{
 		if (!rec.pComponent->GetClassDesc().GetName().IsEmpty())
 		{
-			LoadComponent(entity, *rec.pComponent.get());
+		  LoadComponent(entity, *rec.pComponent.get());
 		}
+
+		return true;
 	});
 }
 

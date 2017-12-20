@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -52,7 +52,7 @@ enum ESpecType
 struct IArea
 {
 	// <interfuscator:shuffle>
-	virtual ~IArea()= default;
+	virtual ~IArea() = default;
 	virtual size_t         GetEntityAmount() const = 0;
 	virtual const EntityId GetEntityByIdx(size_t const index) const = 0;
 	virtual int            GetGroup() const = 0;
@@ -259,9 +259,7 @@ struct IEntityArchetype
 //! Interface entity archetype manager extension. Allows to react to archetype changes.
 struct IEntityArchetypeManagerExtension
 {
-#if (eCryModule != eCryM_LegacyGameDLL && eCryModule != eCryM_Legacy && eCryModule != eCryM_Editor && eCryModule != eCryM_EntitySystem)
-	CRY_DEPRECATED("(v5.5) Entity archetypes are deprecated in favour of Schematyc usage") IEntityArchetypeManagerExtension() = default;
-#endif
+	CRY_DEPRECATED_ENTTIY_ARCHETYPE IEntityArchetypeManagerExtension() = default;
 
 	virtual ~IEntityArchetypeManagerExtension() = default;
 
@@ -335,8 +333,8 @@ struct IEntitySystem
 		OnRemove      = BIT(2),
 		OnReused      = BIT(3),
 
-		Last = OnReused,
-		Count = 4,
+		Last          = OnReused,
+		Count         = 4,
 
 		AllSinkEvents = ~0u,
 	};
@@ -570,7 +568,7 @@ struct IEntitySystem
 	virtual void EnableLayer(const char* layer, bool isEnable, bool isSerialized = true) = 0;
 
 	//! Enable entity layers specified in the layer set and hide all other known layers.
-	virtual void EnableLayerSet(const char* const * pLayers, size_t layerCount, bool isSerialized = true, IEntityLayerSetUpdateListener* pListener = nullptr) = 0;
+	virtual void EnableLayerSet(const char* const* pLayers, size_t layerCount, bool isSerialized = true, IEntityLayerSetUpdateListener* pListener = nullptr) = 0;
 
 	//! Find a layer with a given name.
 	virtual IEntityLayer* FindLayer(const char* szLayerName, const bool bCaseSensitive = true) const = 0;
@@ -716,12 +714,12 @@ typedef struct IEntitySystem* (* PFNCREATEENTITYSYSTEM)(ISystem* pISystem);
 
 template<class T>
 inline IEntityClass* RegisterEntityClassWithDefaultComponent(
-	const char* name,
-	const CryGUID classGUID, // This is a guid for the Entity Class, not for component
-	const CryGUID componentUniqueGUID, // This is not a class type of component guid, but a unique guid of this unique component inside entity
-	bool bIconOnTop = false,
-	IFlowNodeFactory *pOptionalFlowNodeFactory = nullptr
-)
+  const char* name,
+  const CryGUID classGUID,           // This is a guid for the Entity Class, not for component
+  const CryGUID componentUniqueGUID, // This is not a class type of component guid, but a unique guid of this unique component inside entity
+  bool bIconOnTop = false,
+  IFlowNodeFactory* pOptionalFlowNodeFactory = nullptr
+  )
 {
 	const CEntityComponentClassDesc* pClassDesc = &Schematyc::GetTypeDesc<T>();
 
@@ -732,18 +730,18 @@ inline IEntityClass* RegisterEntityClassWithDefaultComponent(
 	clsDesc.editorClassInfo.sIcon = pClassDesc->GetIcon();
 	clsDesc.editorClassInfo.bIconOnTop = bIconOnTop;
 	clsDesc.pIFlowNodeFactory = pOptionalFlowNodeFactory;
-	
+
 	auto onSpawnLambda = [componentUniqueGUID, pClassDesc](IEntity& entity, SEntitySpawnParams& params) -> bool
 	{
 		string componentName = pClassDesc->GetName().c_str();
 		IEntityComponent::SInitParams initParams(
-			&entity,
-			componentUniqueGUID,
-			componentName,
-			pClassDesc,
-			EEntityComponentFlags::None,
-			nullptr,
-			nullptr);
+		  &entity,
+		  componentUniqueGUID,
+		  componentName,
+		  pClassDesc,
+		  EEntityComponentFlags::None,
+		  nullptr,
+		  nullptr);
 		entity.CreateComponentByInterfaceID(pClassDesc->GetGUID(), &initParams);
 		return true;
 	};

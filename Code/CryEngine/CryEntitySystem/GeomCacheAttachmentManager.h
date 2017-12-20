@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -6,7 +6,7 @@
 struct IGeomCacheRenderNode;
 class CEntity;
 
-#include <CryCore/Containers/VectorMap.h>
+	#include <CryCore/Containers/VectorMap.h>
 
 class CGeomCacheAttachmentManager
 {

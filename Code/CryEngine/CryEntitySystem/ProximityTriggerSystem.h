@@ -1,9 +1,10 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
+#include "RadixSort.h"
+
 class CEntityComponentTriggerBounds;
-class RadixSort;
 
 //////////////////////////////////////////////////////////////////////////
 struct SProximityElement
@@ -99,8 +100,8 @@ private:
 
 	std::vector<SProximityEvent>    m_events;
 
-	RadixSort*                      m_pTriggerSorter;
-	RadixSort*                      m_pEntitySorter;
+	RadixSort                       m_triggerSorter;
+	RadixSort                       m_entitySorter;
 
 	std::vector<float>              m_minPosList0;
 	std::vector<float>              m_minPosList1;

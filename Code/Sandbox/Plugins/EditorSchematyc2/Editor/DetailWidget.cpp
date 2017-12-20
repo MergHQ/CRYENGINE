@@ -103,7 +103,7 @@ namespace Schematyc2
 	{
 		if(m_pDocGraphViewNode)
 		{
-			//ISerializationContextPtr pSerializationContext = GetSchematyc()->CreateSerializationContext(SSerializationContextParams(archive, m_pScriptFile, ESerializationPass::Edit));
+			ISerializationContextPtr pSerializationContext = GetSchematyc()->CreateSerializationContext(Schematyc2::SSerializationContextParams(archive, m_pScriptFile->GetDelegate(), ESerializationPass::Edit));
 			m_pDocGraphViewNode->Serialize(archive);
 		}
 	}

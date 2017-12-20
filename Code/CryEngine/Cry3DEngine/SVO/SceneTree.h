@@ -156,6 +156,7 @@ public:
 	Vec4                      m_vSvoOriginAndSize;
 	AABB                      m_aabbLightsTI_D;
 	SRenderLight*             m_pGlobalEnvProbe;
+	CVoxStreamEngine*         m_pStreamEngine;
 	CSvoNode*                 m_pSvoRoot;
 	bool                      m_bReady;
 	PodArray<CVoxelSegment*>  m_arrForStreaming[SVO_STREAM_QUEUE_MAX_SIZE][SVO_STREAM_QUEUE_MAX_SIZE];

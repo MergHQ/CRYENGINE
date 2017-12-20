@@ -128,7 +128,7 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 
 	if (prevEventMask != m_eventMask)
 	{
-		for (auto it = m_componentInstances.begin(); it != m_componentInstances.end();)
+		for (auto it = m_componentInstances.begin(); it != m_componentInstances.end(); )
 		{
 			if (std::shared_ptr<CManagedEntityComponent> pComponent = it->lock())
 			{
@@ -140,12 +140,19 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 
 std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromPool() const
 {
+	return CreateFromBuffer(CryModuleMalloc(GetSize()));
+}
+
+size_t CManagedEntityComponentFactory::GetSize() const
+{
+	return sizeof(CManagedEntityComponent) + sizeof(SPropertyValue) * m_properties.size();
+}
+
+std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromBuffer(void* pBuffer) const
+{
 	// We allocate extra memory for entity components in order to support getting properties from the Schematyc callbacks at the end of this file.
 	// This allows us to get both the property being processed and the component itself from one pointer currently being handled by Schematyc
 	// Otherwise we would need to refactor Schematyc to utilize std::function, introducing extra overhead in terms of both memory and performance.
-	uint32 entityComponentSize = sizeof(CManagedEntityComponent) + sizeof(SPropertyValue) * m_properties.size();
-	CManagedEntityComponent* pRawComponent = static_cast<CManagedEntityComponent*>(CryModuleMalloc(entityComponentSize));
-
 	struct CustomDeleter
 	{
 		void operator()(CManagedEntityComponent* p)
@@ -165,7 +172,7 @@ std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromPool
 		}
 	};
 
-	std::shared_ptr<CManagedEntityComponent> pComponent = std::shared_ptr<CManagedEntityComponent>(new(pRawComponent) CManagedEntityComponent(*this), CustomDeleter());
+	std::shared_ptr<CManagedEntityComponent> pComponent = std::shared_ptr<CManagedEntityComponent>(new(pBuffer) CManagedEntityComponent(*this), CustomDeleter());
 
 	// Keep a weak reference to all objects, this allows us to reallocate components on deserialization
 	const_cast<CManagedEntityComponentFactory*>(this)->m_componentInstances.emplace_back(pComponent);
@@ -174,7 +181,7 @@ std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromPool
 	for (auto it = m_properties.begin(); it != m_properties.end(); ++it)
 	{
 		size_t offsetFromParent = sizeof(CManagedEntityComponent) + std::distance(m_properties.begin(), it) * sizeof(SPropertyValue);
-		SPropertyValue* pPropertyValue = reinterpret_cast<SPropertyValue*>((reinterpret_cast<uintptr_t>(pRawComponent) + offsetFromParent));
+		SPropertyValue* pPropertyValue = reinterpret_cast<SPropertyValue*>((reinterpret_cast<uintptr_t>(pBuffer) + offsetFromParent));
 
 		new(pPropertyValue) SPropertyValue(*it->get(), nullptr, pComponent->GetObject());
 	}
@@ -210,7 +217,7 @@ void CManagedEntityComponentFactory::FinalizeComponentRegistration()
 	{
 		// Re-allocate all components, since the number of properties has changed
 		// TODO: Only do this if needed
-		for (auto it = m_componentInstances.begin(); it != m_componentInstances.end();)
+		for (auto it = m_componentInstances.begin(); it != m_componentInstances.end(); )
 		{
 			if (std::shared_ptr<CManagedEntityComponent> pComponent = it->lock())
 			{
@@ -242,7 +249,7 @@ void CManagedEntityComponentFactory::FinalizeComponentRegistration()
 				pComponent = std::shared_ptr<CManagedEntityComponent>(new(pRawComponent) CManagedEntityComponent(std::move(*pOldComponent)), CustomDeleter());
 				// Re-assign the weak pointer in m_componentInstances
 				*it = pComponent;
-				
+
 				// Replace the component in the entity
 				pOldComponent->GetEntity()->ReplaceComponent(pOldComponent.get(), pComponent);
 
@@ -314,7 +321,7 @@ void CManagedEntityComponentFactory::AddProperty(MonoInternals::MonoReflectionPr
 		std::shared_ptr<CMonoObject> pDefaultValueObject = pDefaultValue != nullptr ? pMonoClass->CreateFromMonoObject(pDefaultValue) : nullptr;
 
 		// First check if the property was already registered (if deserializing)
-		for(auto it = m_properties.begin(), end = m_properties.end(); it != end; ++it)
+		for (auto it = m_properties.begin(), end = m_properties.end(); it != end; ++it)
 		{
 			SPropertyTypeDescription& existingTypeDescription = *it->get();
 
@@ -326,12 +333,12 @@ void CManagedEntityComponentFactory::AddProperty(MonoInternals::MonoReflectionPr
 
 				existingTypeDescription.pProperty = pProperty;
 				existingTypeDescription.SetDefaultValue(pDefaultValueObject);
-		
+
 				existingTypeDescription.monoType = monoType;
 				existingTypeDescription.serializationType = type;
 
 				m_classDescription.AddMember(existingTypeDescription, memberOffset, static_cast<uint32>(std::distance(m_properties.begin(), it)), szPropertyName, szPropertyLabel, szPropertyDesc,
-					stl::make_unique<CManagedEntityPropertyDefaultValue>(*m_properties.back().get(), pDefaultValueObject));
+				                             stl::make_unique<CManagedEntityPropertyDefaultValue>(*m_properties.back().get(), pDefaultValueObject));
 
 				return;
 			}
@@ -344,7 +351,7 @@ void CManagedEntityComponentFactory::AddProperty(MonoInternals::MonoReflectionPr
 		m_properties.emplace_back(stl::make_unique<SPropertyTypeDescription>(pProperty, type, monoType, pDefaultValueObject));
 
 		m_classDescription.AddMember(*m_properties.back().get(), memberOffset, m_properties.size(), szPropertyName, szPropertyLabel, szPropertyDesc,
-			stl::make_unique<CManagedEntityPropertyDefaultValue>(*m_properties.back().get(), pDefaultValueObject));
+		                             stl::make_unique<CManagedEntityPropertyDefaultValue>(*m_properties.back().get(), pDefaultValueObject));
 	}
 }
 
@@ -354,16 +361,16 @@ void CManagedEntityComponentFactory::AddFunction(MonoInternals::MonoReflectionMe
 {
 	// Hacky workaround for no API access for getting MonoProperty from reflection data
 	// We should expose this to Mono and send the change back.
-	struct InternalMonoReflectionMethod 
+	struct InternalMonoReflectionMethod
 	{
-		MonoInternals::MonoObject object;
-		MonoInternals::MonoMethod *method;
-		MonoInternals::MonoString *name;
-		MonoInternals::MonoReflectionType *reftype;
+		MonoInternals::MonoObject          object;
+		MonoInternals::MonoMethod*         method;
+		MonoInternals::MonoString*         name;
+		MonoInternals::MonoReflectionType* reftype;
 	};
 
 	InternalMonoReflectionMethod* pInternalMethod = (InternalMonoReflectionMethod*)pReflectionMethod;
-	
+
 	// Generate a GUID that's persistent based on the C# name (TODO: Allow using the GUID attribute)
 	const char* szMethodName = MonoInternals::mono_method_get_name(pInternalMethod->method);
 	CryGUID guid = GetGUID();
@@ -423,7 +430,7 @@ Schematyc::ETypeCategory GetSchematycPropertyType(MonoInternals::MonoTypeEnum ty
 	return Schematyc::ETypeCategory::Unknown;
 }
 
-template <typename T>
+template<typename T>
 static bool SerializePrimitive(Serialization::IArchive& archive, const CManagedEntityComponentFactory::SPropertyValue& propertyValue, const char* szName, const char* szLabel, MonoInternals::MonoClass* pMonoClass)
 {
 	T value;
@@ -475,7 +482,7 @@ CManagedEntityComponentFactory::SPropertyTypeDescription::SPropertyTypeDescripti
 	m_operators.toString = &SPropertyTypeDescription::ToString;
 
 	m_size = sizeof(CManagedEntityComponentFactory::SPropertyValue);
-	
+
 	m_pDefaultValue = stl::make_unique<CManagedEntityPropertyDefaultValue>(*this, pDefaultValue);
 }
 
@@ -490,7 +497,6 @@ void CManagedEntityComponentFactory::SPropertyTypeDescription::DefaultConstruct(
 	CRY_ASSERT(false);
 }
 
-
 void CManagedEntityComponentFactory::SPropertyTypeDescription::Destroy(void* pPropertyAddress)
 {
 	SPropertyValue* pPropertyValue = static_cast<CManagedEntityComponentFactory::SPropertyValue*>(pPropertyAddress);
@@ -501,7 +507,7 @@ void CManagedEntityComponentFactory::SPropertyTypeDescription::CopyConstruct(voi
 {
 	SPropertyValue* pTargetPropertyValue = static_cast<CManagedEntityComponentFactory::SPropertyValue*>(pTargetPropertyAddress);
 	const SPropertyValue* pSourcePropertyValue = static_cast<const CManagedEntityComponentFactory::SPropertyValue*>(pSourcePropertyAddress);
-	
+
 	new(pTargetPropertyValue) CManagedEntityComponentFactory::SPropertyValue(pSourcePropertyValue->typeDescription, pSourcePropertyValue->pObject != nullptr ? pSourcePropertyValue->pObject->Clone() : nullptr, nullptr);
 }
 
@@ -543,7 +549,7 @@ bool CManagedEntityComponentFactory::SPropertyTypeDescription::Equals(const void
 	pLeftPropertyValue->CacheManagedValueFromOwner();
 	pRightPropertyValue->CacheManagedValueFromOwner();
 
-	if(pLeftPropertyValue->pObject != nullptr && pRightPropertyValue->pObject != nullptr)
+	if (pLeftPropertyValue->pObject != nullptr && pRightPropertyValue->pObject != nullptr)
 	{
 		return pLeftPropertyValue->pObject->ReferenceEquals(*pRightPropertyValue->pObject.get());
 	}
@@ -558,126 +564,126 @@ bool CManagedEntityComponentFactory::SPropertyTypeDescription::Serialize(Seriali
 	switch (pPropertyValue->typeDescription.monoType)
 	{
 	case MonoInternals::MONO_TYPE_BOOLEAN:
-	{
-		return SerializePrimitive<bool>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_boolean_class());
-	}
-	break;
+		{
+			return SerializePrimitive<bool>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_boolean_class());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_STRING:
-	{
-		string value;
-		if (archive.isOutput())
 		{
-			pPropertyValue->CacheManagedValueFromOwner();
-
-			if (std::shared_ptr<CMonoString> pValue = pPropertyValue->pObject != nullptr ? pPropertyValue->pObject->ToString() : nullptr)
+			string value;
+			if (archive.isOutput())
 			{
-				value = pValue->GetString();
-			}
-		}
+				pPropertyValue->CacheManagedValueFromOwner();
 
-		switch (pPropertyValue->typeDescription.serializationType)
-		{
-		case EEntityPropertyType::Primitive:
-			archive(value, szName, szLabel);
-			break;
-		case EEntityPropertyType::Object:
-			archive(Serialization::ModelFilename(value), szName, szLabel);
-			break;
-		case EEntityPropertyType::Texture:
-			archive(Serialization::TextureFilename(value), szName, szLabel);
-			break;
-		case EEntityPropertyType::Particle:
-			archive(Serialization::ParticlePicker(value), szName, szLabel);
-			break;
-		case EEntityPropertyType::AnyFile:
-			archive(Serialization::GeneralFilename(value), szName, szLabel);
-			break;
-		case EEntityPropertyType::Sound:
-			archive(Serialization::SoundFilename(value), szName, szLabel);
-			break;
-		case EEntityPropertyType::Material:
-			archive(Serialization::MaterialPicker(value), szName, szLabel);
-			break;
-		case EEntityPropertyType::Animation:
-			archive(Serialization::CharacterAnimationPicker(value), szName, szLabel);
-			break;
-		}
-
-		if (archive.isInput())
-		{
-			MonoInternals::MonoObject* pString = (MonoInternals::MonoObject*)MonoInternals::mono_string_new(MonoInternals::mono_domain_get(), value);
-
-			if (pPropertyValue->pObject != nullptr)
-			{
-				pPropertyValue->pObject->CopyFrom(pString);
-			}
-			else
-			{
-				MonoInternals::MonoClass* pStringClass = MonoInternals::mono_object_get_class(pString);
-				MonoInternals::MonoAssembly* pStringAssembly = MonoInternals::mono_image_get_assembly(MonoInternals::mono_class_get_image(pStringClass));
-
-				CMonoLibrary& library = GetMonoRuntime()->GetActiveDomain()->GetLibraryFromMonoAssembly(pStringAssembly);
-
-				pPropertyValue->pObject = library.GetClassFromMonoClass(pStringClass)->CreateFromMonoObject(pString);
+				if (std::shared_ptr<CMonoString> pValue = pPropertyValue->pObject != nullptr ? pPropertyValue->pObject->ToString() : nullptr)
+				{
+					value = pValue->GetString();
+				}
 			}
 
-			pPropertyValue->ApplyCachedValueToOwner();
-		}
+			switch (pPropertyValue->typeDescription.serializationType)
+			{
+			case EEntityPropertyType::Primitive:
+				archive(value, szName, szLabel);
+				break;
+			case EEntityPropertyType::Object:
+				archive(Serialization::ModelFilename(value), szName, szLabel);
+				break;
+			case EEntityPropertyType::Texture:
+				archive(Serialization::TextureFilename(value), szName, szLabel);
+				break;
+			case EEntityPropertyType::Particle:
+				archive(Serialization::ParticlePicker(value), szName, szLabel);
+				break;
+			case EEntityPropertyType::AnyFile:
+				archive(Serialization::GeneralFilename(value), szName, szLabel);
+				break;
+			case EEntityPropertyType::Sound:
+				archive(Serialization::SoundFilename(value), szName, szLabel);
+				break;
+			case EEntityPropertyType::Material:
+				archive(Serialization::MaterialPicker(value), szName, szLabel);
+				break;
+			case EEntityPropertyType::Animation:
+				archive(Serialization::CharacterAnimationPicker(value), szName, szLabel);
+				break;
+			}
 
-		return true;
-	}
-	break;
+			if (archive.isInput())
+			{
+				MonoInternals::MonoObject* pString = (MonoInternals::MonoObject*)MonoInternals::mono_string_new(MonoInternals::mono_domain_get(), value);
+
+				if (pPropertyValue->pObject != nullptr)
+				{
+					pPropertyValue->pObject->CopyFrom(pString);
+				}
+				else
+				{
+					MonoInternals::MonoClass* pStringClass = MonoInternals::mono_object_get_class(pString);
+					MonoInternals::MonoAssembly* pStringAssembly = MonoInternals::mono_image_get_assembly(MonoInternals::mono_class_get_image(pStringClass));
+
+					CMonoLibrary& library = GetMonoRuntime()->GetActiveDomain()->GetLibraryFromMonoAssembly(pStringAssembly);
+
+					pPropertyValue->pObject = library.GetClassFromMonoClass(pStringClass)->CreateFromMonoObject(pString);
+				}
+
+				pPropertyValue->ApplyCachedValueToOwner();
+			}
+
+			return true;
+		}
+		break;
 	case MonoInternals::MONO_TYPE_U1:
 	case MonoInternals::MONO_TYPE_CHAR: // Char is unsigned by default for .NET
-	{
-		return SerializePrimitive<uchar>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_char_class());
-	}
-	break;
+		{
+			return SerializePrimitive<uchar>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_char_class());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_I1:
-	{
-		return SerializePrimitive<char>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_byte_class());
-	}
-	break;
+		{
+			return SerializePrimitive<char>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_byte_class());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_I2:
-	{
-		return SerializePrimitive<int16>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_int16_class());
-	}
-	break;
+		{
+			return SerializePrimitive<int16>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_int16_class());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_U2:
-	{
-		return SerializePrimitive<uint16>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_uint16_class());
-	}
-	break;
+		{
+			return SerializePrimitive<uint16>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_uint16_class());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_I4:
-	{
-		return SerializePrimitive<int32>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_int32_class());
-	}
-	break;
+		{
+			return SerializePrimitive<int32>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_int32_class());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_U4:
-	{
-		return SerializePrimitive<uint32>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_uint32_class());
-	}
-	break;
+		{
+			return SerializePrimitive<uint32>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_uint32_class());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_I8:
-	{
-		return SerializePrimitive<int64>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_int64_class());
-	}
-	break;
+		{
+			return SerializePrimitive<int64>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_int64_class());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_U8:
-	{
-		return SerializePrimitive<uint64>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_uint64_class());
-	}
-	break;
+		{
+			return SerializePrimitive<uint64>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_uint64_class());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_R4:
-	{
-		return SerializePrimitive<float>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_single_class());
-	}
-	break;
+		{
+			return SerializePrimitive<float>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_single_class());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_R8:
-	{
-		return SerializePrimitive<double>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_double_class());
-	}
-	break;
+		{
+			return SerializePrimitive<double>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_double_class());
+		}
+		break;
 	}
 
 	return false;
@@ -710,7 +716,7 @@ CManagedEntityComponentFactory::CSchematycFunction::CSchematycFunction(std::shar
 	MonoInternals::MonoType* pReturnType = MonoInternals::mono_signature_get_return_type(pSignature);
 	if (pReturnType != nullptr && MonoInternals::mono_type_get_type(pReturnType) != MonoInternals::MONO_TYPE_VOID)
 	{
-		m_outputs.emplace_back(SParameter{ 0, pReturnType, "Result" });
+		m_outputs.emplace_back(SParameter { 0, pReturnType, "Result" });
 	}
 
 	m_pMethod->VisitParameters([this, pSignature](int index, MonoInternals::MonoType* pType, const char* szName)
@@ -720,43 +726,43 @@ CManagedEntityComponentFactory::CSchematycFunction::CSchematycFunction(std::shar
 		switch (MonoInternals::mono_type_get_type(pType))
 		{
 		case MonoInternals::MONO_TYPE_BOOLEAN:
-		{
-			bool defaultVal = false;
-			defaultValue = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<bool>(), &defaultVal);
-		}
-		break;
+			{
+			  bool defaultVal = false;
+			  defaultValue = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<bool>(), &defaultVal);
+			}
+			break;
 		case MonoInternals::MONO_TYPE_STRING:
-		{
-			Schematyc::CSharedString defaultVal = "";
-			defaultValue = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<Schematyc::CSharedString>(), &defaultVal);
-		}
-		break;
+			{
+			  Schematyc::CSharedString defaultVal = "";
+			  defaultValue = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<Schematyc::CSharedString>(), &defaultVal);
+			}
+			break;
 		case MonoInternals::MONO_TYPE_U1:
 		case MonoInternals::MONO_TYPE_CHAR: // Char is unsigned by default for .NET
 		case MonoInternals::MONO_TYPE_U2:
 		case MonoInternals::MONO_TYPE_U4:
 		case MonoInternals::MONO_TYPE_U8: // Losing precision! TODO: Add Schematyc support for 64?
-		{
-			uint32 defaultVal = 0;
-			defaultValue = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<uint32>(), &defaultVal);
-		}
-		break;
+			{
+			  uint32 defaultVal = 0;
+			  defaultValue = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<uint32>(), &defaultVal);
+			}
+			break;
 		case MonoInternals::MONO_TYPE_I1:
 		case MonoInternals::MONO_TYPE_I2:
 		case MonoInternals::MONO_TYPE_I4:
 		case MonoInternals::MONO_TYPE_I8: // Losing precision! TODO: Add Schematyc support for 64?
-		{
-			int32 defaultVal = 0;
-			defaultValue = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<int32>(), &defaultVal);
-		}
-		break;
+			{
+			  int32 defaultVal = 0;
+			  defaultValue = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<int32>(), &defaultVal);
+			}
+			break;
 		case MonoInternals::MONO_TYPE_R4:
 		case MonoInternals::MONO_TYPE_R8: // Losing precision! TODO: Add Schematyc support for 64?
-		{
-			float defaultVal = 0;
-			defaultValue = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<float>(), &defaultVal);
-		}
-		break;
+			{
+			  float defaultVal = 0;
+			  defaultValue = Schematyc::CAnyValue::MakeShared(Schematyc::GetTypeDesc<float>(), &defaultVal);
+			}
+			break;
 
 		default:
 			CRY_ASSERT_MESSAGE(false, "Tried to register Schematyc function with non-primitive parameter type!");
@@ -765,11 +771,11 @@ CManagedEntityComponentFactory::CSchematycFunction::CSchematycFunction(std::shar
 
 		if (MonoInternals::mono_signature_param_is_out(pSignature, index) != 0)
 		{
-			m_outputs.emplace_back(SParameter{ index + 1, pType, szName, defaultValue });
+		  m_outputs.emplace_back(SParameter { index + 1, pType, szName, defaultValue });
 		}
 		else
 		{
-			m_inputs.emplace_back(SParameter{ index + 1, pType, szName, defaultValue });
+		  m_inputs.emplace_back(SParameter { index + 1, pType, szName, defaultValue });
 		}
 
 		m_numParameters++;
@@ -801,48 +807,48 @@ void CManagedEntityComponentFactory::CSchematycFunction::Execute(Schematyc::CRun
 		for (const SParameter& parameter : m_outputs)
 		{
 			MonoInternals::MonoObject* pObject = *(MonoInternals::MonoObject**)MonoInternals::mono_array_addr_with_size(pParameters, sizeof(void*), parameter.index - 1);
-			
+
 			switch (MonoInternals::mono_type_get_type(parameter.pType))
 			{
 			case MonoInternals::MONO_TYPE_BOOLEAN:
-			{
-				params.SetOutput(Schematyc::CUniqueId::FromUInt32(parameter.index), *(bool *)MonoInternals::mono_object_unbox(pObject));
-			}
-			break;
+				{
+					params.SetOutput(Schematyc::CUniqueId::FromUInt32(parameter.index), *(bool*)MonoInternals::mono_object_unbox(pObject));
+				}
+				break;
 			case MonoInternals::MONO_TYPE_STRING:
-			{
-				char* szValue = MonoInternals::mono_string_to_utf8((MonoInternals::MonoString*)pObject);
-				params.SetOutput(Schematyc::CUniqueId::FromUInt32(parameter.index), Schematyc::CSharedString(szValue));
-				MonoInternals::mono_free(szValue);
-			}
-			break;
+				{
+					char* szValue = MonoInternals::mono_string_to_utf8((MonoInternals::MonoString*)pObject);
+					params.SetOutput(Schematyc::CUniqueId::FromUInt32(parameter.index), Schematyc::CSharedString(szValue));
+					MonoInternals::mono_free(szValue);
+				}
+				break;
 			case MonoInternals::MONO_TYPE_U1:
 			case MonoInternals::MONO_TYPE_CHAR: // Char is unsigned by default for .NET
 			case MonoInternals::MONO_TYPE_U2:
 			case MonoInternals::MONO_TYPE_U4:
 			case MonoInternals::MONO_TYPE_U8: // Losing precision! TODO: Add Schematyc support for 64?
-			{
-				params.SetOutput(Schematyc::CUniqueId::FromUInt32(parameter.index), *(uint32 *)MonoInternals::mono_object_unbox(pObject));
-			}
-			break;
+				{
+					params.SetOutput(Schematyc::CUniqueId::FromUInt32(parameter.index), *(uint32*)MonoInternals::mono_object_unbox(pObject));
+				}
+				break;
 			case MonoInternals::MONO_TYPE_I1:
 			case MonoInternals::MONO_TYPE_I2:
 			case MonoInternals::MONO_TYPE_I4:
 			case MonoInternals::MONO_TYPE_I8: // Losing precision! TODO: Add Schematyc support for 64?
-			{
-				params.SetOutput(Schematyc::CUniqueId::FromUInt32(parameter.index), *(int32 *)MonoInternals::mono_object_unbox(pObject));
-			}
-			break;
+				{
+					params.SetOutput(Schematyc::CUniqueId::FromUInt32(parameter.index), *(int32*)MonoInternals::mono_object_unbox(pObject));
+				}
+				break;
 			case MonoInternals::MONO_TYPE_R4:
 			case MonoInternals::MONO_TYPE_R8: // Losing precision! TODO: Add Schematyc support for 64?
-			{
-				params.SetOutput(Schematyc::CUniqueId::FromUInt32(parameter.index), *(float *)MonoInternals::mono_object_unbox(pObject));
-			}
-			break;
+				{
+					params.SetOutput(Schematyc::CUniqueId::FromUInt32(parameter.index), *(float*)MonoInternals::mono_object_unbox(pObject));
+				}
+				break;
 
-		default:
-			CRY_ASSERT_MESSAGE(false, "Tried to execute Schematyc function with non-primitive parameter type!");
-			break;
+			default:
+				CRY_ASSERT_MESSAGE(false, "Tried to execute Schematyc function with non-primitive parameter type!");
+				break;
 			}
 		}
 	}
@@ -856,38 +862,38 @@ void CManagedEntityComponentFactory::CSchematycSignal::CSignalClassDesc::AddPara
 	switch (MonoInternals::mono_type_get_type(MonoInternals::mono_reflection_type_get_type(pType)))
 	{
 	case MonoInternals::MONO_TYPE_BOOLEAN:
-	{
-		AddMember(Schematyc::GetTypeDesc<bool>(), GetMembers().size(), GetMembers().size(), szParameter, szParameter, "", Schematyc::Utils::CDefaultValue<bool>::MakeUnique());
-	}
-	break;
+		{
+			AddMember(Schematyc::GetTypeDesc<bool>(), GetMembers().size(), GetMembers().size(), szParameter, szParameter, "", Schematyc::Utils::CDefaultValue<bool>::MakeUnique());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_STRING:
-	{
-		AddMember(Schematyc::GetTypeDesc<Schematyc::CSharedString>(), GetMembers().size(), GetMembers().size(), szParameter, szParameter, "", Schematyc::Utils::CDefaultValue<Schematyc::CSharedString>::MakeUnique());
-	}
-	break;
+		{
+			AddMember(Schematyc::GetTypeDesc<Schematyc::CSharedString>(), GetMembers().size(), GetMembers().size(), szParameter, szParameter, "", Schematyc::Utils::CDefaultValue<Schematyc::CSharedString>::MakeUnique());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_U1:
 	case MonoInternals::MONO_TYPE_CHAR: // Char is unsigned by default for .NET
 	case MonoInternals::MONO_TYPE_U2:
 	case MonoInternals::MONO_TYPE_U4:
 	case MonoInternals::MONO_TYPE_U8: // Losing precision! TODO: Add Schematyc support for 64?
-	{
-		AddMember(Schematyc::GetTypeDesc<uint32>(), GetMembers().size(), GetMembers().size(), szParameter, szParameter, "", Schematyc::Utils::CDefaultValue<uint32>::MakeUnique());
-	}
-	break;
+		{
+			AddMember(Schematyc::GetTypeDesc<uint32>(), GetMembers().size(), GetMembers().size(), szParameter, szParameter, "", Schematyc::Utils::CDefaultValue<uint32>::MakeUnique());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_I1:
 	case MonoInternals::MONO_TYPE_I2:
 	case MonoInternals::MONO_TYPE_I4:
 	case MonoInternals::MONO_TYPE_I8: // Losing precision! TODO: Add Schematyc support for 64?
-	{
-		AddMember(Schematyc::GetTypeDesc<int32>(), GetMembers().size(), GetMembers().size(), szParameter, szParameter, "", Schematyc::Utils::CDefaultValue<int32>::MakeUnique());
-	}
-	break;
+		{
+			AddMember(Schematyc::GetTypeDesc<int32>(), GetMembers().size(), GetMembers().size(), szParameter, szParameter, "", Schematyc::Utils::CDefaultValue<int32>::MakeUnique());
+		}
+		break;
 	case MonoInternals::MONO_TYPE_R4:
 	case MonoInternals::MONO_TYPE_R8: // Losing precision! TODO: Add Schematyc support for 64?
-	{
-		AddMember(Schematyc::GetTypeDesc<float>(), GetMembers().size(), GetMembers().size(), szParameter, szParameter, "", Schematyc::Utils::CDefaultValue<float>::MakeUnique());
-	}
-	break;
+		{
+			AddMember(Schematyc::GetTypeDesc<float>(), GetMembers().size(), GetMembers().size(), szParameter, szParameter, "", Schematyc::Utils::CDefaultValue<float>::MakeUnique());
+		}
+		break;
 
 	default:
 		CRY_ASSERT_MESSAGE(false, "Tried to add Schematyc signal parameter with non-primitive type!");

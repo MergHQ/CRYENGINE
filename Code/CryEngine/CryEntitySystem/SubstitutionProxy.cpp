@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "SubstitutionProxy.h"
@@ -92,7 +92,7 @@ void CEntityComponentSubstitution::GameSerialize(TSerialize ser)
 			IPhysicalEntity** pents;
 			m_pSubstitute = 0;
 			int i = gEnv->pPhysicalWorld->GetEntitiesInBox(center - Vec3(0.05f), center + Vec3(0.05f), pents, ent_static);
-			for (--i; i >= 0 && !((m_pSubstitute = (IRenderNode*)pents[i]->GetForeignData(PHYS_FOREIGN_ID_STATIC)) &&
+			for (--i; i >= 0 && !((m_pSubstitute = static_cast<IRenderNode*>(pents[i]->GetForeignData(PHYS_FOREIGN_ID_STATIC))) &&
 			                      (m_pSubstitute->GetPos() - pos).len2() < sqr(0.03f) &&
 			                      (m_pSubstitute->GetBBox().GetCenter() - center).len2() < sqr(0.03f)); i--)
 				;

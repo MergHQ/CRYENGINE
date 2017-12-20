@@ -400,7 +400,9 @@ void CVars::Init()
 	DefineConstIntCVar(e_ShadowsFrustums, 0, VF_CHEAT,
 	                   "Debug");
 	DefineConstIntCVar(e_ShadowsDebug, 0, VF_CHEAT,
-	                   "0=off, 2=visualize shadow maps on the screen");
+						"0=off,\n"
+						"2=visualize shadow maps on the screen,\n"
+						"4=visualize shadow frustums as spheres and cones\n");
 	REGISTER_CVAR(e_ShadowsCacheUpdate, 0, VF_NULL,
 	              "Trigger updates of the shadow cache: 0=no update, 1=one update, 2=continuous updates");
 	REGISTER_CVAR(e_ShadowsCacheObjectLod, 0, VF_NULL,

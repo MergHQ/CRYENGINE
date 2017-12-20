@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "EntityClass.h"
@@ -93,7 +93,7 @@ IEntityArchetype* CEntityArchetypeManager::CreateArchetype(IEntityClass* pClass,
 	CEntityArchetype* pArchetype = stl::find_in_map(m_nameToArchetypeMap, sArchetype, NULL);
 	if (pArchetype)
 		return pArchetype;
-	pArchetype = new CEntityArchetype((CEntityClass*)pClass);
+	pArchetype = new CEntityArchetype(static_cast<CEntityClass*>(pClass));
 	pArchetype->SetName(sArchetype);
 	m_nameToArchetypeMap[pArchetype->GetName()] = pArchetype;
 

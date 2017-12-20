@@ -2144,7 +2144,7 @@ CFileUtil::ECopyTreeResult CFileUtil::MoveTree(const CString& strSourceDirectory
 			}
 		}
 
-		bnLastFileWasCopied = ::MoveFileEx(name, strTargetName, MOVEFILE_REPLACE_EXISTING);
+		bnLastFileWasCopied = ::MoveFileEx(name, strTargetName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
 		if (!bnLastFileWasCopied)
 		{
 			eCopyResult = ETREECOPYFAIL;
@@ -2339,7 +2339,7 @@ CFileUtil::ECopyTreeResult CFileUtil::MoveFile(const CString& strSourceFile, con
 		}
 	}
 
-	bnLastFileWasCopied = ::MoveFileEx(name, strFullStargetName, MOVEFILE_REPLACE_EXISTING);
+	bnLastFileWasCopied = ::MoveFileEx(name, strFullStargetName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
 	if (!bnLastFileWasCopied)
 	{
 		eCopyResult = ETREECOPYFAIL;

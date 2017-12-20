@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   timedemorecorder.cpp
@@ -556,17 +556,19 @@ const char* CTimeDemoRecorder::GetCurrentLevelPath()
 	 */
 }
 
-std::array<EEntityEvent, 8> g_recordedEntityEvents = 
-{ {
-	ENTITY_EVENT_XFORM,
-	ENTITY_EVENT_HIDE,
-	ENTITY_EVENT_UNHIDE,
-	ENTITY_EVENT_ATTACH,
-	ENTITY_EVENT_DETACH,
-	ENTITY_EVENT_DETACH_THIS,
-	ENTITY_EVENT_ENABLE_PHYSICS,
-	ENTITY_EVENT_ENTER_SCRIPT_STATE
-} };
+std::array<EEntityEvent, 8> g_recordedEntityEvents =
+{
+	{
+		ENTITY_EVENT_XFORM,
+		ENTITY_EVENT_HIDE,
+		ENTITY_EVENT_UNHIDE,
+		ENTITY_EVENT_ATTACH,
+		ENTITY_EVENT_DETACH,
+		ENTITY_EVENT_DETACH_THIS,
+		ENTITY_EVENT_ENABLE_PHYSICS,
+		ENTITY_EVENT_ENTER_SCRIPT_STATE
+	}
+};
 
 //////////////////////////////////////////////////////////////////////////
 void CTimeDemoRecorder::Record(bool bEnable)
@@ -662,7 +664,7 @@ void CTimeDemoRecorder::Play(bool bEnable)
 
 		// Put it back later!
 		Load(filename);
-		
+
 		if (m_records.empty())
 		{
 			m_bDemoFinished = true;
@@ -2223,7 +2225,7 @@ void CTimeDemoRecorder::PlayBackEntityEvent(const EntityEventRecord& rec)
 	case ENTITY_EVENT_DETACH:
 		break;
 	case ENTITY_EVENT_DETACH_THIS:
-		pEntity->DetachThis(0, ENTITY_XFORM_TIMEDEMO);
+		pEntity->DetachThis(IEntity::EAttachmentFlags(0), ENTITY_XFORM_TIMEDEMO);
 		break;
 	case ENTITY_EVENT_ENABLE_PHYSICS:
 		if (rec.nParam[0] == 0)

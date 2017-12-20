@@ -1088,7 +1088,20 @@ bool CRenderer::EF_ReloadFile (const char* szFileName)
 	{
 		string correctedName = PathUtil::ReplaceExtension(szFileName, "dds");
 
+#if !defined(CRY_ENABLE_RC_HELPER)
 		return CTexture::ReloadFile(correctedName);
+#else 
+		if (ITexture* pTexture = gcpRendD3D->EF_GetTextureByName(correctedName))
+		{
+			return CTexture::ReloadFile(correctedName);
+		}
+		else
+		{
+			char buffer[512];
+			return CTextureCompiler::GetInstance().ProcessTextureIfNeeded(szFileName, buffer, sizeof(buffer), false) != CTextureCompiler::EResult::Failed;
+		}
+#endif //defined(CRY_ENABLE_RC_HELPER)
+
 	}
 #if defined(USE_GEOM_CACHES)
 	else if (!stricmp(szExtension, "cax"))

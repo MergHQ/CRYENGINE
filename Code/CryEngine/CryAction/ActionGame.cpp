@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "IGameRulesSystem.h"
@@ -211,7 +211,6 @@ CActionGame::CActionGame(CScriptRMI* pScriptRMI)
 	, m_pGameClientNub(0)
 	, m_pGameServerNub(0)
 	, m_pGameContext(0)
-	, m_pNetContext(gEnv->pNetContext)
 	, m_pGameTokenSystem(0)
 	, m_pPhysicalWorld(0)
 	, m_pGameStats(0)
@@ -223,8 +222,6 @@ CActionGame::CActionGame(CScriptRMI* pScriptRMI)
 #endif
 	, m_initState(eIS_Uninited)
 	, m_pendingPlaneBreaks(10)
-	, m_clientActorID(0)
-	, m_pClientActor(NULL)
 {
 	CRY_ASSERT(!s_this);
 	s_this = this;
@@ -276,9 +273,11 @@ CActionGame::~CActionGame()
 		m_pClientNub = NULL;
 	}
 
-	if (m_pNetContext)
-		m_pNetContext->DeleteContext();
-	m_pNetContext = 0;
+	if (gEnv->pNetContext != nullptr)
+	{
+		gEnv->pNetContext->DeleteContext();
+		gEnv->pNetContext = nullptr;
+	}
 
 	if (m_pGameContext && m_pGameContext->GetFramework()->GetIGameRulesSystem() &&
 	    m_pGameContext->GetFramework()->GetIGameRulesSystem()->GetCurrentGameRules())
@@ -437,10 +436,6 @@ bool CActionGame::Init(const SGameStartParams* pGameStartParams)
 
 	memset(&m_throttling, 0, sizeof(m_throttling));
 
-	// Needed for the editor, as the action game won't be destroyed
-	m_clientActorID = 0;
-	m_pClientActor = NULL;
-
 	// initialize client server infrastructure
 
 	CAdjustLocalConnectionPacketRate adjustLocalPacketRate(50.0f, 30.0f);
@@ -450,8 +445,8 @@ bool CActionGame::Init(const SGameStartParams* pGameStartParams)
 		ctxFlags |= INetwork::eNCCF_Multiplayer;
 	if (m_pNetwork)
 	{
-		m_pNetContext = m_pNetwork->CreateNetContext(m_pGameContext, ctxFlags);
-		m_pGameContext->Init(m_pNetContext);
+		gEnv->pNetContext = m_pNetwork->CreateNetContext(m_pGameContext, ctxFlags);
+		m_pGameContext->Init(gEnv->pNetContext);
 	}
 
 	if (gEnv->pAISystem)
@@ -991,7 +986,7 @@ CActionGame::eInitTaskState CActionGame::NonBlockingConnect(BlockingConditionFun
 bool CActionGame::BlockingConnect(BlockingConditionFunction condition, bool requireClientChannel, const char* conditionText)
 {
 	LOADING_TIME_PROFILE_SECTION
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "BlockingConnect");
+	  MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "BlockingConnect");
 
 	bool ok = false;
 
@@ -1075,14 +1070,7 @@ IActor* CActionGame::GetClientActor()
 	if (m_pGameContext->GetNetContext()->IsDemoPlayback())
 		return gEnv->pGameFramework->GetIActorSystem()->GetCurrentDemoSpectator();
 
-	//ID caching causes problems in the editor
-	if (m_clientActorID != playerId || gEnv->IsEditor())
-	{
-		m_clientActorID = playerId;
-		m_pClientActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(playerId);
-	}
-
-	return m_pClientActor;
+	return CCryAction::GetCryAction()->GetIActorSystem()->GetActor(playerId);
 }
 
 bool CActionGame::Update()
@@ -3324,10 +3312,10 @@ int CActionGame::OnStateChangeLogged(const EventPhys* pEvent)
 	const EventPhysStateChange* pStateChange = static_cast<const EventPhysStateChange*>(pEvent);
 	IGameObject* pSrc = s_this->GetPhysicalEntityGameObject(pStateChange->pEntity);
 
-	if (!gEnv->bServer && pSrc && pStateChange->iSimClass[1] > 1 && pStateChange->iSimClass[0] <= 1 && Get()->m_pNetContext)
+	if (!gEnv->bServer && pSrc && pStateChange->iSimClass[1] > 1 && pStateChange->iSimClass[0] <= 1 && gEnv->pNetContext)
 	{
 		//CryLogAlways("[0] = %d, [1] = %d", pStateChange->iSimClass[0], pStateChange->iSimClass[1]);
-		Get()->m_pNetContext->RequestRemoteUpdate(pSrc->GetEntityId(), eEA_Physics);
+		gEnv->pNetContext->RequestRemoteUpdate(pSrc->GetEntityId(), eEA_Physics);
 	}
 
 	if (pSrc && pSrc->WantsPhysicsEvent(eEPE_OnStateChangeLogged))
@@ -5082,10 +5070,4 @@ void CActionGame::ReleaseGameStats()
 {
 	delete m_pGameStats;
 	m_pGameStats = 0;
-}
-
-void CActionGame::OnEntitySystemReset()
-{
-	m_clientActorID = 0;
-	m_pClientActor = NULL;
 }

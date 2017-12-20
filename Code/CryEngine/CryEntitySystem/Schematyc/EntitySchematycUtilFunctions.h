@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "Entity.h"
 #include "EntitySystem.h"
@@ -90,7 +90,7 @@ void GetRotation(ExplicitEntityId entityId, CryTransform::CRotation& rotationOut
 	{
 		rotationOut = CryTransform::CRotation(pEntity->GetWorldRotation());
 	}
-	else 
+	else
 	{
 		rotationOut = CryTransform::CRotation();
 	}

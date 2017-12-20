@@ -28,6 +28,14 @@ struct PythonWidget
 	operator bool() const { return pShibokenWrapper && pQtWidget; }
 };
 
+QWidget* CreateErrorWidget()
+{
+	QLabel* result = new QLabel();
+	result->setAlignment(Qt::AlignCenter);
+	result->setText("Failed to create widget. Consult the error log for details.");
+	return result;
+}
+
 PythonWidget InstantiateWidgetFromPython(PyObject* pWidgetType)
 {
 	PyObject *arglist;
@@ -45,7 +53,7 @@ PythonWidget InstantiateWidgetFromPython(PyObject* pWidgetType)
 			PyErr_PrintEx(0);
 		}
 
-		return PythonWidget{ nullptr, nullptr };
+		return PythonWidget{ nullptr, CreateErrorWidget() };
 	}
 
 	// Check to make sure we've gotten a QWidget
@@ -54,7 +62,7 @@ PythonWidget InstantiateWidgetFromPython(PyObject* pWidgetType)
 	{
 		Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "IWidgetFactory.ConstructWidget", Shiboken::SbkType< QWidget >()->tp_name, pyResult->ob_type->tp_name);
 		Py_DECREF(pyResult);
-		return PythonWidget{ nullptr, nullptr };
+		return PythonWidget{ nullptr, CreateErrorWidget() };
 	}
 
 	// Convert python QWidget to a QWidget*
@@ -129,14 +137,7 @@ public:
 	virtual bool SinglePane() override { return unique; }
 	virtual IPane* CreatePane() const override
 	{ 
-		PythonViewPaneWidget* paneWidget = new PythonViewPaneWidget(pWidgetType, name.c_str());
-		if (!paneWidget->pythonWidget.pQtWidget || !paneWidget->pythonWidget.pShibokenWrapper)
-		{
-			delete paneWidget;
-			return nullptr;
-		}
-
-		return paneWidget;
+		return new PythonViewPaneWidget(pWidgetType, name.c_str());
 	}
 };
 

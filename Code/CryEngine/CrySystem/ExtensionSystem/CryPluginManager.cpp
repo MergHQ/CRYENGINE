@@ -223,7 +223,7 @@ void CCryPluginManager::LoadProjectPlugins()
 		LoadPluginFromDisk(pluginDefinition.type, pluginDefinition.path);
 	}
 
-#if !defined(CRY_IS_MONOLITHIC_BUILD)
+#if !defined(CRY_IS_MONOLITHIC_BUILD) && !defined(CRY_PLATFORM_CONSOLE)
 	// Always load the CryUserAnalytics plugin
 	SPluginDefinition userAnalyticsPlugin{ EType::Native, "CryUserAnalytics" };
 	if (std::find(std::begin(pluginDefinitions), std::end(pluginDefinitions), userAnalyticsPlugin) == std::end(pluginDefinitions))

@@ -109,20 +109,17 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 	const f32 fZoomFactor = 0.0f + 1.0f * (RAD2DEG(fFOV) / 60.f);
 	const f32 attachmentCullingRation = (gEnv->bMultiplayer) ? Console::GetInst().ca_AttachmentCullingRationMP : Console::GetInst().ca_AttachmentCullingRation;
 	const f32 fZoomDistanceSq = sqr(RendParams.fDistance * fZoomFactor / attachmentCullingRation);
+	const auto& FinalMat = (attachmentRendParams.dwFObjFlags & FOB_NEAREST) != 0 ? *RendParams.pNearestMatrix : RenderMat34;
 
-	m_AttachmentManager.DrawMergedAttachments(attachmentRendParams, RenderMat34, passInfo, fZoomFactor, fZoomDistanceSq);
+	m_AttachmentManager.DrawMergedAttachments(attachmentRendParams, FinalMat, passInfo, fZoomFactor, fZoomDistanceSq);
 	
 	if (m_pDefaultSkeleton->m_ObjectType == CGA)
-	{
-		RenderCGA(RendParams, RenderMat34, passInfo);
-	}
+		RenderCGA(RendParams, FinalMat, passInfo);
 	else
-	{
-		RenderCHR(RendParams, RenderMat34, passInfo);
-	}
+		RenderCHR(RendParams, FinalMat, passInfo);
 
 	// draw weapon and binded objects
-	m_AttachmentManager.DrawAttachments(attachmentRendParams, RenderMat34, passInfo, fZoomFactor, fZoomDistanceSq);
+	m_AttachmentManager.DrawAttachments(attachmentRendParams, FinalMat, passInfo, fZoomFactor, fZoomDistanceSq);
 
 #ifndef _RELEASE
 	// in-game debug rendering of characters attachments proxies 

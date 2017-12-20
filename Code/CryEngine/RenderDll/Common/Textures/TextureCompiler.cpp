@@ -222,6 +222,22 @@ static bool CopyDummy(const char* szImposter, const char* szSrcFile, const char*
 	return success;
 }
 
+static string GetLastErrorString()
+{
+	const char szMsgBuf[1024]{};
+
+	FormatMessageA(
+		FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		GetLastError(),
+		0,
+		(LPSTR)&szMsgBuf,
+		1024,
+		NULL);
+
+	return string(szMsgBuf);
+}
+
 static bool MoveAssetFile(const char* szSrcFile, const char* szDstFile)
 {
 	if (strcmp(szSrcFile, szDstFile) == 0)
@@ -229,10 +245,10 @@ static bool MoveAssetFile(const char* szSrcFile, const char* szDstFile)
 		return true;
 	}
 
-	const auto attributes = GetFileAttributes(szDstFile);
-	if (attributes != INVALID_FILE_ATTRIBUTES)
+	const auto dstFileAttributes = GetFileAttributes(szDstFile);
+	if (dstFileAttributes != INVALID_FILE_ATTRIBUTES)
 	{
-		if ((attributes & FILE_ATTRIBUTE_READONLY) != 0)
+		if ((dstFileAttributes & FILE_ATTRIBUTE_READONLY) != 0)
 		{
 			// CE-12815. Should be able to compile tiff to dds if .cryasset file is write protected.
 			if (stricmp(PathUtil::GetExt(szDstFile), "cryasset") == 0)
@@ -250,23 +266,64 @@ static bool MoveAssetFile(const char* szSrcFile, const char* szDstFile)
 
 	gEnv->pCryPak->MakeDir(PathUtil::GetPathWithoutFilename(szDstFile));
 
-	bool success = GetFileAttributes(szSrcFile) != INVALID_FILE_ATTRIBUTES;
-	success = success && (MoveFileEx(szSrcFile, szDstFile, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != FALSE);
+	const string tempFilename = string().Format("%s.$tmp$", szDstFile);
+
+	bool success = false;
+	// try spin for 1.5 seconds, there might still be a file lock on either source or target
+	// compilation isn't time critical, and this occurs infrequently
+	for (int i = 0, stage = 0; i < 5; ++i)
+	{
+		if (i)
+		{
+			CrySleep(300);
+		}
+
+		switch (stage)
+		{
+		case 0:
+			if (GetFileAttributes(szSrcFile) == INVALID_FILE_ATTRIBUTES)
+			{
+				continue;
+			}
+			++stage;
+			// falls through
+		case 1: 
+			if (!MoveFileEx(szSrcFile, tempFilename.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED | MOVEFILE_WRITE_THROUGH))
+			{
+				continue;
+			}
+			++stage;
+			// falls through
+		case 2:
+			if ((dstFileAttributes != INVALID_FILE_ATTRIBUTES) && !DeleteFile(szDstFile))
+			{
+				continue;
+			}
+			++stage;
+			// falls through
+		case 3:
+			// Even if we have already deleted the target file on the previos stage or it did not exist,
+			// there is a possibility that AssetGenerator of Sandbox has already created a new one.
+			// So we have to overwrite it. 
+			// TODO: find a way not to generate cryasset with the Sandbox AssetGenerator until all asset files are copied.
+			if (!MoveFileEx(tempFilename.c_str(), szDstFile, MOVEFILE_REPLACE_EXISTING))
+			{
+				continue;
+			}
+			++stage;
+			// falls through
+		default:
+			break;
+		}
+
+		success = true;
+		break;
+	}
 
 	if (!success)
 	{
-		// try spin for 1.5 seconds, there might still be a file lock on either source or target
-		// compilation isn't time critical, and this occurs infrequently
-		for (int i = 0; (i < 5) && (!success); ++i)
-		{
-			CrySleep(300);
-			success = MoveFileEx(szSrcFile, szDstFile, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != FALSE;
-		}
-
-		if (!success)
-		{
-			iLog->LogError("Can't copy from \"%s\" to \"%s\"\n", szSrcFile, szDstFile);
-		}
+		iLog->LogError("Can't copy from \"%s\" to \"%s\": %s\n", szSrcFile, szDstFile, GetLastErrorString().c_str());
+		DeleteFile(tempFilename.c_str());
 	}
 
 	return success;

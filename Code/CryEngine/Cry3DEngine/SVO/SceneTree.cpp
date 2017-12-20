@@ -220,7 +220,7 @@ bool CSvoEnv::Render()
 						if (CVoxelSegment::m_arrLoadedSegments.Count() > maxLoadedNodes)
 							break;
 
-						if (/*m_arrForStreaming[treeLevel][nDistId][i]->m_nFileStreamSize>0 && */ !m_arrForStreaming[treeLevel][distId][i]->StartStreaming())
+						if (/*m_arrForStreaming[treeLevel][nDistId][i]->m_nFileStreamSize>0 && */ !m_arrForStreaming[treeLevel][distId][i]->StartStreaming(m_pStreamEngine))
 							break;
 					}
 
@@ -272,7 +272,7 @@ bool CSvoEnv::Render()
 		}
 	}
 
-	CVoxelSegment::UpdateStreamingEngine();
+	m_pStreamEngine->ProcessSyncCallBacks();
 
 	CVoxelSegment::m_maxBrickUpdates = max(1, bMultiUserMode ? Cry3DEngineBase::GetCVars()->e_svoMaxBrickUpdates * 16 : (Cry3DEngineBase::GetCVars()->e_svoMaxBrickUpdates / max(1, Cry3DEngineBase::GetCVars()->e_svoTI_LowSpecMode / (int)2 + 1)));
 	if (!(m_streamingStartTime < 0)) // if not bSvoReady yet
@@ -904,9 +904,9 @@ Vec3* GeneratePointsOnHalfSphere(int n)
 	return p;
 }
 
-CSvoEnv::CSvoEnv(const AABB& worldBox)
+CSvoEnv::CSvoEnv(const AABB& worldBox)	
 {
-	gSvoEnv = this;
+	gSvoEnv = this;	
 
 	m_vSvoOriginAndSize = Vec4(worldBox.min, worldBox.max.x - worldBox.min.x);
 	m_debugDrawVoxelsCounter = 0;
@@ -949,17 +949,13 @@ CSvoEnv::CSvoEnv(const AABB& worldBox)
 	GetRenderer()->GetISvoRenderer(); // allocate SVO sub-system in renderer
 	m_bFirst_SvoFreezeTime = m_bFirst_StartStreaming = true;
 	m_bStreamingDonePrev = false;
+
+	m_pStreamEngine = new CVoxStreamEngine();
 }
 
 CSvoEnv::~CSvoEnv()
 {
-	// wait until all streaming requests are complete
-	while (CVoxelSegment::m_streamingTasksInProgress)
-	{
-		CrySleep(20);
-		CVoxelSegment::UpdateStreamingEngine();
-	}
-
+	SAFE_DELETE(m_pStreamEngine);
 	SAFE_DELETE(m_pSvoRoot);
 
 	#ifdef FEATURE_SVO_GI_USE_MESH_RT

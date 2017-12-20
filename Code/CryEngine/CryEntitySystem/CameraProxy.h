@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -22,8 +22,8 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize() final;
-	virtual void ProcessEvent(const SEntityEvent& event) final;
+	virtual void   Initialize() final;
+	virtual void   ProcessEvent(const SEntityEvent& event) final;
 	virtual uint64 GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
 
@@ -31,9 +31,9 @@ public:
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_CAMERA; }
-	virtual void         Release() final { delete this;};
+	virtual void         Release() final            { delete this; };
 	virtual void         GameSerialize(TSerialize ser) final;
-	virtual bool         NeedGameSerialize() final { return false; };
+	virtual bool         NeedGameSerialize() final  { return false; };
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual void     SetCamera(CCamera& cam) final;
@@ -47,5 +47,5 @@ public:
 		pSizer->AddObject(this, sizeof(*this));
 	}
 private:
-	CCamera  m_camera;
+	CCamera m_camera;
 };

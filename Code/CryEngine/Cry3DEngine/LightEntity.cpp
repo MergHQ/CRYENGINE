@@ -119,11 +119,10 @@ bool CLightEntity::IsLightAreasVisible()
 //////////////////////////////////////////////////////////////////////////
 void CLightEntity::SetMatrix(const Matrix34& mat)
 {
-	m_light.SetPosition(mat.GetTranslation());
-	m_light.SetMatrix(mat);
-
 	if (m_Matrix != mat)
 	{
+		m_Matrix = mat;
+
 		Vec3 worldPosition = mat.GetTranslation();
 
 		if (!(m_light.m_Flags & DLF_DEFERRED_CUBEMAPS))
@@ -139,7 +138,8 @@ void CLightEntity::SetMatrix(const Matrix34& mat)
 			SetBBox(AABB::CreateAABBfromOBB(worldPosition, obb));
 		}
 
-		m_Matrix = mat;
+		m_light.SetPosition(mat.GetTranslation());
+		m_light.SetMatrix(mat);
 		SetLightProperties(m_light);
 		Get3DEngine()->RegisterEntity(this);
 
@@ -1504,12 +1504,39 @@ void CLightEntity::InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllo
 	//pFr->fDepthTestBias *= (pFr->fFarDist - pFr->fNearDist) / 256.f;
 
 	pFr->nUpdateFrameId = nFrameId;
+
+	if ((m_light.m_Flags & DLF_PROJECT) && GetCVars()->e_ShadowsDebug == 4)
+	{
+		auto pAux = IRenderAuxGeom::GetAux();
+		auto oldRenderFlags = pAux->GetRenderFlags();
+		SAuxGeomRenderFlags renderFlags;
+		renderFlags.SetFillMode(e_FillModeWireframe);
+		pAux->SetRenderFlags(renderFlags);
+		auto coneDirection = pFr->vLightSrcRelPos.normalized();
+		auto coneApex = m_light.GetPosition();
+		auto coneHeight = pFr->fFarDist;
+		auto coneBaseRadius = coneHeight * tan(CryTransform::CAngle::FromDegrees(pFr->fFOV / 2.0f).ToRadians());
+		auto coneBaseCenter = coneApex - coneHeight * coneDirection;
+		pAux->DrawCone(coneBaseCenter, coneDirection, coneBaseRadius, coneHeight, ColorB(255, 0, 0));
+		pAux->SetRenderFlags(oldRenderFlags);
+	}
 }
 
 void CLightEntity::InitShadowFrustum_OMNI(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo)
 {
 	InitShadowFrustum_PROJECTOR(pFr, dwAllowedTypes, passInfo);
 	CheckValidFrustums_OMNI(pFr, passInfo);
+
+	if ((m_light.m_Flags & DLF_POINT) && GetCVars()->e_ShadowsDebug == 4)
+	{
+		auto pAux = IRenderAuxGeom::GetAux();
+		auto oldRenderFlags = pAux->GetRenderFlags();
+		SAuxGeomRenderFlags renderFlags;
+		renderFlags.SetFillMode(e_FillModeWireframe);
+		pAux->SetRenderFlags(renderFlags);
+		pAux->DrawSphere(m_light.GetPosition(), m_light.m_fRadius, ColorB(255, 0, 0));
+		pAux->SetRenderFlags(oldRenderFlags);
+	}
 }
 
 bool IsABBBVisibleInFrontOfPlane_FAST(const AABB& objBox, const SPlaneObject& clipPlane);

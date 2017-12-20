@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -10,23 +10,23 @@
 
 namespace Schematyc
 {
-	struct IRuntimeClass;
+struct IRuntimeClass;
 };
 
 //////////////////////////////////////////////////////////////////////////
 // Description:
 //    Standard implementation of the IEntityClassRegistry interface.
 //////////////////////////////////////////////////////////////////////////
-class CEntityClassRegistry final 
+class CEntityClassRegistry final
 	: public IEntityClassRegistry
-	, public INetworkedClientListener
+	  , public INetworkedClientListener
 {
 public:
 	CEntityClassRegistry();
 	virtual ~CEntityClassRegistry() override;
 
-	bool          RegisterEntityClass(IEntityClass* pClass);
-	bool          UnregisterEntityClass(IEntityClass* pClass);
+	bool RegisterEntityClass(IEntityClass* pClass);
+	bool UnregisterEntityClass(IEntityClass* pClass);
 
 	// IEntityClassRegistry
 	IEntityClass* FindClass(const char* sClassName) const override;
@@ -34,10 +34,10 @@ public:
 	IEntityClass* GetDefaultClass() const override;
 
 	IEntityClass* RegisterStdClass(const SEntityClassDesc& entityClassDesc) override;
-	virtual bool  UnregisterStdClass(const CryGUID &guid) override;
+	virtual bool  UnregisterStdClass(const CryGUID& guid) override;
 
 	void          UnregisterSchematycEntityClass() override;
-	
+
 	void          RegisterListener(IEntityClassRegistryListener* pListener) override;
 	void          UnregisterListener(IEntityClassRegistryListener* pListener) override;
 
@@ -83,19 +83,19 @@ private:
 private:
 
 	typedef std::map<string, IEntityClass*> ClassNameMap;
-	ClassNameMap           m_mapClassName;
+	ClassNameMap                       m_mapClassName;
 
 	std::vector<std::vector<EntityId>> m_channelEntityInstances;
 
-	std::map<CryGUID,IEntityClass*> m_mapClassGUIDs;
+	std::map<CryGUID, IEntityClass*>   m_mapClassGUIDs;
 
-	IEntityClass*          m_pDefaultClass;
+	IEntityClass*                      m_pDefaultClass;
 
-	ISystem*               m_pSystem;
-	ClassNameMap::iterator m_currentMapIterator;
+	ISystem*                           m_pSystem;
+	ClassNameMap::iterator             m_currentMapIterator;
 
 	typedef CListenerSet<IEntityClassRegistryListener*> TListenerSet;
-	TListenerSet m_listeners;
+	TListenerSet                m_listeners;
 
 	Schematyc::CConnectionScope m_connectionScope;
 };

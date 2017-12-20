@@ -2195,7 +2195,7 @@ void SShaderCache::GetMemoryUsage(ICrySizer* pSizer) const
 
 bool SShaderCache::ReadResource(CResFile* rf, int i)
 {
-	CryLog((std::string("SShaderCache: Caching \"") + rf->mfGetFileName() + "\"").c_str());
+	CryLog("SShaderCache: Caching \"%s\"...", rf->mfGetFileName());
 
 	const auto librarySize = rf->mfGetResourceSize();
 	const auto handle = rf->mfGetHandle();
@@ -2206,7 +2206,7 @@ bool SShaderCache::ReadResource(CResFile* rf, int i)
 		const auto readBytes = gEnv->pCryPak->FReadRaw(m_pBinary[i].get(), librarySize, 1, handle);
 		if (readBytes != 1)
 		{
-			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING, (std::string("SShaderCache: \"") + rf->mfGetFileName() + "\" invalid!").c_str());
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING, "SShaderCache: \"%s\" invalid!", rf->mfGetFileName());
 			m_pBinary[i] = nullptr;
 
 			return false;
@@ -2872,6 +2872,7 @@ bool CHWShader::mfOpenCacheFile(const char* szName, float fVersion, SShaderCache
 	if ((!bReadOnly || gRenDev->IsShaderCacheGenMode()) && !pCache->m_pRes[CACHE_USER])
 	{
 		stack_string szUser = stack_string(gRenDev->m_cEF.m_szUserPath.c_str()) + stack_string(szName);
+		szUser.replace("%ENGINE%/", "");
 		CResFile* rfUser = new CResFile(szUser.c_str());
 		bValidUser = _OpenCacheFile(fVersion, pCache, pSH, bCheckValid, CRC32, CACHE_USER, rfUser, bReadOnly);
 	}

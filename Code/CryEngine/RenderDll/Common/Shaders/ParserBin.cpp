@@ -793,8 +793,8 @@ void CParserBin::SetupForPlatform(uint32 nPlatform)
 #if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
 		AddMacro(CParserBin::fxToken("PCDX11"), nMacro, 1, 0, m_StaticMacros);
 #endif
-		ShaderCacheSubFolder = string("DX11/");
-		ShaderFilter = string("DX11");
+		ShaderCacheSubFolder = string("D3D11/");
+		ShaderFilter = string("D3D11");
 		break;
 
 	case SF_ORBIS:

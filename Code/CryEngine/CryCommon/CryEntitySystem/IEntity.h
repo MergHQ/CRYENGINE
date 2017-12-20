@@ -4,6 +4,7 @@
 
 #include <CryEntitySystem/IEntityBasicTypes.h>
 #include <CryEntitySystem/IEntityComponent.h>
+#include <CrySchematyc/Utils/EnumFlags.h>
 
 #include <type_traits>
 
@@ -50,6 +51,7 @@ struct IEnvRegistrar;
 #include <CryNetwork/SerializeFwd.h>
 //////////////////////////////////////////////////////////////////////////
 
+//! Parameters used when attaching one entity to another, creating a parent-child hierarchy
 struct SChildAttachParams
 {
 	SChildAttachParams()
@@ -67,116 +69,99 @@ struct SChildAttachParams
 		, m_target(target)
 	{}
 
+	//! See IEntity::EAttachmentFlags
 	int         m_nAttachFlags;
 	const char* m_target;
 };
 
+#if (eCryModule != eCryM_LegacyGameDLL && eCryModule != eCryM_ScriptSystem && eCryModule != eCryM_AISystem && eCryModule != eCryM_FlowGraph \
+  && eCryModule != eCryM_GameFramework && eCryModule != eCryM_Legacy && eCryModule != eCryM_Editor && eCryModule != eCryM_EntitySystem \
+  && eCryModule != eCryM_MonoBridge)
+	#define CRY_DEPRECATED_ENTTIY_ARCHETYPE CRY_DEPRECATED("(v5.4) Entity archetypes are deprecated in favour of Schematyc usage")
+#else
+	#define CRY_DEPRECATED_ENTTIY_ARCHETYPE
+#endif
+
+#if (eCryModule != eCryM_LegacyGameDLL && eCryModule != eCryM_System && eCryModule != eCryM_ScriptSystem && eCryModule != eCryM_Movie \
+  && eCryModule != eCryM_FlowGraph && eCryModule != eCryM_GameFramework && eCryModule != eCryM_Legacy && eCryModule != eCryM_Editor   \
+  && eCryModule != eCryM_EntitySystem && eCryModule != eCryM_AISystem && eCryModule != eCryM_MonoBridge)
+	#define CRY_DEPRECATED_ENTTIY_LUA CRY_DEPRECATED("(v5.5) Lua has been deprecated in favor of C# and Schematyc")
+#else
+	#define CRY_DEPRECATED_ENTTIY_LUA
+#endif
+
+//! Structure used when spawning new entities to define their initial state
 struct SEntitySpawnParams
 {
-	//! The Entity unique identifier (EntityId).
-	//! If 0 then an ID will be generated automatically (based on the bStaticEntityId parameter).
-	EntityId   id;
-	EntityId   prevId;          //!< Previously used entityId, in the case of reloading.
+	SEntitySpawnParams() = default;
 
-	EntityGUID guid;            //!< Optional entity guid.
-	EntityGUID prevGuid;        //!< Previously used entityGuid, in the case of reloading.
+	//! Optional: Initial position of the new entity instance in world space if pParent is not specified, otherwise local
+	Vec3 vPosition = ZERO;
+	//! Optional: Initial rotation of the new entity instance in world space if pParent is not specified, otherwise local
+	Quat qRotation = IDENTITY;
+	//! Optional: Initial scale of the new entity instance in world space if pParent is not specified, otherwise local
+	Vec3 vScale = Vec3(1.f);
 
-	//! Class of entity.
-	IEntityClass* pClass;
+	//! Optional: Name of the new entity instance
+	//! Does *not* have to be unique!
+	const char* sName = "";          //!< \note The name of the entity does not need to be unique.
+	//! Optional: Default entity flags to assign to the new instance
+	//! See EEntityFlags
+	uint32 nFlags = 0;
+	//! Optional: Default extended entity flags to assign to the new instance
+	//! See EEntityFlagsExtended
+	uint32 nFlagsExtended = 0;
 
-	//! Entity archetype.
-	IEntityArchetype* pArchetype;
-
-	//! The name of the layer the entity resides in, when in the Editor.
-	const char* sLayerName;
-
-	//! Reference to entity's xml node in level data.
-	XmlNodeRef entityNode;
-
-	//////////////////////////////////////////////////////////////////////////
-	// Initial Entity parameters.
-	const char* sName;          //!< \note The name of the entity does not need to be unique.
-	uint32      nFlags;         //!< Entity flags, e.g. ENTITY_FLAG_CASTSHADOW.
-	uint32      nFlagsExtended; //!< EEntityFlagsExtended flags.
-	bool        bIgnoreLock;    //!< Spawn lock.
-
-	//! To support save games compatible with patched levels (patched levels might use.
-	//! More EntityIDs and save game might conflict with dynamic ones).
-	bool  bStaticEntityId;
-
-	Vec3  vPosition;                  //!< Initial entity position in world space if pParent is not specified, otherwise local.
-	Quat  qRotation;                  //!< Initial entity rotation in world space if pParent is not specified, otherwise local.
-	Vec3  vScale;                     //!< Initial entity scale in world space if pParent is not specified, otherwise local.
-	void* pUserData;                  //!< Any user defined data. It will be available for container when it will be created.
-	//////////////////////////////////////////////////////////////////////////
-
-	//! Used to set the parent of the spawned entity before initialization.
-	IEntity*           pParent;
+	//! Optional: Specify the parent of the new entity instance, ensuring that the new instance's coordinates are in relation to its parent
+	//! Note that setting this will indicate that vPosition, qRotation and vScale should be provided in local space
+	IEntity*           pParent = nullptr;
 	//! Used when pParent is specified, same behavior as pParent->AttachChild(this, attachmentParams).
 	SChildAttachParams attachmentParams;
 
-	//////////////////////////////////////////////////////////////////////////
-	// Optional properties table.
-	IScriptTable* pPropertiesTable;
-	IScriptTable* pPropertiesInstanceTable;
-	//////////////////////////////////////////////////////////////////////////
+	//! Optional: Entity class to use, if null we use the default class
+	IEntityClass* pClass = nullptr;
 
-	SEntitySpawnParams()
-		: id(0)
-		, prevId(0)
-		, nFlags(0)
-		, nFlagsExtended(0)
-		, bIgnoreLock(false)
-		, bStaticEntityId(false)
-		, pClass(NULL)
-		, sName("")
-		, sLayerName("")
-		, pArchetype(NULL)
-		, vPosition(ZERO)
-		, vScale(Vec3Constants<float>::fVec3_One)
-		, pUserData(0)
-		, pPropertiesTable(0)
-		, pPropertiesInstanceTable(0)
-		, pParent(nullptr)
-	{
-		qRotation.SetIdentity();
-	}
+	// Optional: Unique entity identifier to use for the new instance, generates automatically if not provided
+	EntityId id = INVALID_ENTITYID;
+	//! Optional: Unique entity identifier used for the previous instance if we are reloading
+	EntityId prevId = INVALID_ENTITYID;
+	//! Optional: Used when id is set to automatically generate (id = INVALID_ENTITYID) to pick identifiers from the static pool instead of being treated as a dynamically spawned entity
+	//! This is useful for supporting save games compatible with patched levels
+	bool bStaticEntityId = false;
+
+	//! Optional: Globally unique identifier for this entity instance, this is guaranteed to be unique across sessions and save games assuming that the entity is saved by the entity system
+	//! If one is not provided, it will be generated by the entity system
+	EntityGUID guid;
+	//! Optional: Globally unique identifier used for the previous instance if we are reloading
+	EntityGUID prevGuid;
+
+	//! Optional: The name of the layer the entity resides in, used in the Editor
+	const char* sLayerName = "";
+
+	//! Optional: Reference to entity's xml data, used when loading entities from disk
+	XmlNodeRef entityNode;
+
+	//! Optional: Whether the spawning of this entity should ignore whether or not IEntitySystem::LockSpawning was called
+	//! If not provided, the spawning will fail if a lock was put in place
+	bool bIgnoreLock = false;
+
+	//! Optional: User data that can be read from IEntitySystemSink to interact with the spawning of entities
+	void* pUserData = nullptr;
+
+	/*CRY_DEPRECATED_ENTTIY_LUA*/ IScriptTable*           pPropertiesTable = nullptr;
+	/*CRY_DEPRECATED_ENTTIY_LUA*/ IScriptTable*           pPropertiesInstanceTable = nullptr;
+	/*CRY_DEPRECATED_ENTTIY_ARCHETYPE*/ IEntityArchetype* pArchetype = nullptr;
 };
 
-//! Entity update context structure.
+//! Update context of an entity, passed along to components with useful data such as frame time and frame identifier
 struct SEntityUpdateContext
 {
-	int      nFrameID;            //!< Current rendering frame id.
-	CCamera* pCamera;             //!< Current camera.
-	float    fCurrTime;           //!< Current system time.
-	float    fFrameTime;          //!< Delta frame time (of last frame).
-	bool     bProfileToLog;       //!< Indicates if a profile entity must update the log.
-	int      numUpdatedEntities;  //!< Number of updated entities.
-	int      numVisibleEntities;  //!< Number of visible and updated entities.
-	float    fMaxViewDist;        //!< Maximal view distance.
-	float    fMaxViewDistSquared; //!< Maximal view distance squared.
-	Vec3     vCameraPos;          //!< Camera source position.
-
-	SEntityUpdateContext() : nFrameID(0), pCamera(0), fCurrTime(0),
-		bProfileToLog(false), numVisibleEntities(0), numUpdatedEntities(0), fMaxViewDist(1e+8), fFrameTime(0) {};
-};
-
-enum EEntityXFormFlags
-{
-	ENTITY_XFORM_POS                      = BIT(1),
-	ENTITY_XFORM_ROT                      = BIT(2),
-	ENTITY_XFORM_SCL                      = BIT(3),
-	ENTITY_XFORM_NO_PROPOGATE             = BIT(4),
-	ENTITY_XFORM_FROM_PARENT              = BIT(5),   //!< When parent changes his transformation.
-	ENTITY_XFORM_PHYSICS_STEP             = BIT(13),
-	ENTITY_XFORM_EDITOR                   = BIT(14),
-	ENTITY_XFORM_TRACKVIEW                = BIT(15),
-	ENTITY_XFORM_TIMEDEMO                 = BIT(16),
-	ENTITY_XFORM_NOT_REREGISTER           = BIT(17),  //!< Optimization flag, when set object will not be re-registered in 3D engine.
-	ENTITY_XFORM_NO_EVENT                 = BIT(18),  //!< Suppresses ENTITY_EVENT_XFORM event.
-	ENTITY_XFORM_NO_SEND_TO_ENTITY_SYSTEM = BIT(19),
-	ENTITY_XFORM_IGNORE_PHYSICS           = BIT(20),  //!< When set physics ignore xform event handling.
-	ENTITY_XFORM_USER                     = 0x1000000,
+	//! Delta time for this frame
+	float  fFrameTime;
+	//! Current time at the start of the entity update - see ITimer::GetCurTime
+	float  fCurrTime;
+	//! The current frame identifier, see gEnv->nMainFrameID
+	uint32 frameID;
 };
 
 enum EEntityHideFlags
@@ -187,25 +172,17 @@ enum EEntityHideFlags
 	ENTITY_HIDE_PARENT  = BIT(1),
 };
 
-//! Updates policy defines in which cases to call entity update function every frame.
-enum EEntityUpdatePolicy
+//! Each entity instance holds flags that indicate special behavior within the system
+//! These can be set with IEntity::SetFlags, and retrieved with IEntity::GetFlags
+enum EEntityFlags : uint32
 {
-	ENTITY_UPDATE_NEVER,           //!< Never update entity every frame.
-	ENTITY_UPDATE_IN_RANGE,        //!< Only update entity if it is in specified range from active camera.
-	ENTITY_UPDATE_POT_VISIBLE,     //!< Only update entity if it is potentially visible.
-	ENTITY_UPDATE_VISIBLE,         //!< Only update entity if it is visible.
-	ENTITY_UPDATE_PHYSICS,         //!< Only update entity if it is need to be updated due to physics.
-	ENTITY_UPDATE_PHYSICS_VISIBLE, //!< Only update entity if it is need to be updated due to physics or if it is visible.
-	ENTITY_UPDATE_ALWAYS,          //!< Always update entity every frame.
-};
+	//! Entity was scheduled for removal, and will be removed soon
+	ENTITY_FLAG_REMOVED = BIT(0),
 
-//! Flags can be set on entity with SetFlags/GetFlags method.
-enum EEntityFlags
-{
 	//////////////////////////////////////////////////////////////////////////
 	// Persistent flags (can be set from the editor).
 	ENTITY_FLAG_CASTSHADOW          = BIT(1),
-	ENTITY_FLAG_UNREMOVABLE         = BIT(2),        //!< This entity cannot be removed using IEntitySystem::RemoveEntity until this flag is cleared.
+	ENTITY_FLAG_UNREMOVABLE         = BIT(2), //!< This entity cannot be removed using IEntitySystem::RemoveEntity until this flag is cleared.
 	ENTITY_FLAG_GOOD_OCCLUDER       = BIT(3),
 	ENTITY_FLAG_NO_DECALNODE_DECALS = BIT(4),
 	//////////////////////////////////////////////////////////////////////////
@@ -213,33 +190,37 @@ enum EEntityFlags
 	ENTITY_FLAG_WRITE_ONLY              = BIT(5),
 	ENTITY_FLAG_NOT_REGISTER_IN_SECTORS = BIT(6),
 	ENTITY_FLAG_CALC_PHYSICS            = BIT(7),
+	//! Entity should only be present on the client, and not server
 	ENTITY_FLAG_CLIENT_ONLY             = BIT(8),
+	//! Entity sohuld only be present on the server, and not clients
 	ENTITY_FLAG_SERVER_ONLY             = BIT(9),
-	ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO   = BIT(10),  //!< This entity have special custom view distance ratio (AI/Vehicles must have it).
-	ENTITY_FLAG_CALCBBOX_USEALL         = BIT(11),  //!< use character and objects in BBOx calculations.
-	ENTITY_FLAG_VOLUME_SOUND            = BIT(12),  //!< Entity is a volume sound (will get moved around by the sound proxy).
-	ENTITY_FLAG_HAS_AI                  = BIT(13),  //!< Entity has an AI object.
-	ENTITY_FLAG_TRIGGER_AREAS           = BIT(14),  //!< This entity will trigger areas when it enters them.
-	ENTITY_FLAG_NO_SAVE                 = BIT(15),  //!< This entity will not be saved.
-	ENTITY_FLAG_CAMERA_SOURCE           = BIT(16),  //!< This entity is a camera source.
-	ENTITY_FLAG_CLIENTSIDE_STATE        = BIT(17),  //!< Prevents error when state changes on the client and does not sync state changes to the client.
-	ENTITY_FLAG_SEND_RENDER_EVENT       = BIT(18),  //!< When set entity will send ENTITY_EVENT_RENDER_VISIBILITY_CHANGE when starts or stop actual rendering.
-	ENTITY_FLAG_NO_PROXIMITY            = BIT(19),  //!< Entity will not be registered in the partition grid and can not be found by proximity queries.
-	ENTITY_FLAG_PROCEDURAL              = BIT(20),  //!< Entity has been generated at runtime.
-	ENTITY_FLAG_UPDATE_HIDDEN           = BIT(21),  //!< Entity will be update even when hidden.
-	ENTITY_FLAG_NEVER_NETWORK_STATIC    = BIT(22),  //!< Entity should never be considered a static entity by the network system.
-	ENTITY_FLAG_IGNORE_PHYSICS_UPDATE   = BIT(23),  //!< Used by Editor only, (don't set).
-	ENTITY_FLAG_SPAWNED                 = BIT(24),  //!< Entity was spawned dynamically without a class.
-	ENTITY_FLAG_SLOTS_CHANGED           = BIT(25),  //!< Entity's slots were changed dynamically.
-	ENTITY_FLAG_MODIFIED_BY_PHYSICS     = BIT(26),  //!< Entity was procedurally modified by physics.
-	ENTITY_FLAG_OUTDOORONLY             = BIT(27),  //!< Same as Brush->Outdoor only.
+	ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO   = BIT(10), //!< This entity have special custom view distance ratio (AI/Vehicles must have it).
+	ENTITY_FLAG_CALCBBOX_USEALL         = BIT(11), //!< use character and objects in BBOx calculations.
+	ENTITY_FLAG_VOLUME_SOUND            = BIT(12), //!< Entity is a volume sound (will get moved around by the sound proxy).
+	ENTITY_FLAG_HAS_AI                  = BIT(13), //!< Entity has an AI object.
+	ENTITY_FLAG_TRIGGER_AREAS           = BIT(14), //!< This entity will trigger areas when it enters them.
+	ENTITY_FLAG_NO_SAVE                 = BIT(15), //!< This entity will not be saved.
+	ENTITY_FLAG_CAMERA_SOURCE           = BIT(16), //!< This entity is a camera source.
+	ENTITY_FLAG_CLIENTSIDE_STATE        = BIT(17), //!< Prevents error when state changes on the client and does not sync state changes to the client.
+	ENTITY_FLAG_SEND_RENDER_EVENT       = BIT(18), //!< When set entity will send ENTITY_EVENT_RENDER_VISIBILITY_CHANGE when starts or stop actual rendering.
+	ENTITY_FLAG_NO_PROXIMITY            = BIT(19), //!< Entity will not be registered in the partition grid and can not be found by proximity queries.
+	ENTITY_FLAG_PROCEDURAL              = BIT(20), //!< Entity has been generated at runtime.
+	ENTITY_FLAG_UPDATE_HIDDEN           = BIT(21), //!< Whether update of game logic should be skipped when the entity is hidden. This does *not* disable update of components unless they specifically request it.
+	ENTITY_FLAG_NEVER_NETWORK_STATIC    = BIT(22), //!< Entity should never be considered a static entity by the network system.
+	ENTITY_FLAG_IGNORE_PHYSICS_UPDATE   = BIT(23), //!< Used by Editor only, (don't set).
+	ENTITY_FLAG_SPAWNED                 = BIT(24), //!< Entity was spawned dynamically without a class.
+	ENTITY_FLAG_SLOTS_CHANGED           = BIT(25), //!< Entity's slots were changed dynamically.
+	ENTITY_FLAG_MODIFIED_BY_PHYSICS     = BIT(26), //!< Entity was procedurally modified by physics.
+	ENTITY_FLAG_OUTDOORONLY             = BIT(27), //!< Same as Brush->Outdoor only.
 
-	ENTITY_FLAG_RECVWIND                = BIT(29),  //!< Receives wind.
-	ENTITY_FLAG_LOCAL_PLAYER            = BIT(30),
-	ENTITY_FLAG_AI_HIDEABLE             = BIT(31),  //!< AI can use the object to calculate automatic hide points.
+	ENTITY_FLAG_RECVWIND                = BIT(28), //!< Receives wind.
+	ENTITY_FLAG_LOCAL_PLAYER            = BIT(29),
+	ENTITY_FLAG_AI_HIDEABLE             = BIT(30), //!< AI can use the object to calculate automatic hide points.
+
+	ENTITY_FLAG_PREALLOCATED_COMPONENTS = BIT(31)   //! Components known at load time were allocated in one contiguous chunk of memory along with the entity
 };
 
-enum EEntityFlagsExtended
+enum EEntityFlagsExtended : uint16
 {
 	ENTITY_FLAG_EXTENDED_AUDIO_LISTENER                 = BIT(0),
 	ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE               = BIT(1),
@@ -253,15 +234,14 @@ enum EEntityFlagsExtended
 	ENTITY_FLAG_EXTENDED_IGNORED_IN_NAVMESH_GENERATION  = BIT(9), //!< Entity's geometry doesn't contribute to NavMesh generation
 };
 
-#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 4               // Bit offset of entity GI mode in EEntityFlagsExtended. Must be equal to the bit id of ENTITY_FLAG_EXTENDED_GI_MODE_BIT0
+#define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 4                                                                                                           // Bit offset of entity GI mode in EEntityFlagsExtended. Must be equal to the bit id of ENTITY_FLAG_EXTENDED_GI_MODE_BIT0
 #define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK   (ENTITY_FLAG_EXTENDED_GI_MODE_BIT0 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT1 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT2) // Bit mask of entity GI mode.
 
 //! Flags can be passed to IEntity::Serialize().
 enum EEntitySerializeFlags
 {
-
-	ENTITY_SERIALIZE_PROXIES    = BIT(1),    //!< Serialize proxies.
-	ENTITY_SERIALIZE_POSITION   = BIT(2),    //!< Serialize properties common to all entities (position, rotation, scale).
+	ENTITY_SERIALIZE_PROXIES    = BIT(1), //!< Serialize proxies.
+	ENTITY_SERIALIZE_POSITION   = BIT(2), //!< Serialize properties common to all entities (position, rotation, scale).
 	ENTITY_SERIALIZE_ROTATION   = BIT(3),
 	ENTITY_SERIALIZE_SCALE      = BIT(4),
 	ENTITY_SERIALIZE_GEOMETRIES = BIT(5),
@@ -273,15 +253,18 @@ enum EEntityGetSetSlotFlags
 	ENTITY_SLOT_ACTUAL = 1 << 31
 };
 
+//! Representation of a link connecting one entity to another
+//! Links can be added by designers in the Editor to indicate specific behavior between two entities
+//! Each link can be given a name, allowing code to identify a certain type of connection.
 struct IEntityLink
 {
-	string       name;                                  //!< Name of the link.
+	string       name;
 	EntityId     entityId;                              //!< Entity targeted by the link.
 	EntityGUID   entityGuid;                            //!< Entity targeted by the link.
 	IEntityLink* next;                                  //!< Pointer to the next link, or NULL if last link.
 };
 
-//! Parameters passed to IEntity::Physicalize function.
+//! Parameters used to determine how an entity should be physicalized when IEntity::Physicalize is called
 struct SEntityPhysicalizeParams
 {
 	//////////////////////////////////////////////////////////////////////////
@@ -418,7 +401,9 @@ struct IEntityEventListener
 	// </interfuscator:shuffle>
 };
 
-//! Interface to entity object.
+//! Entities represent dynamic objects that can manipulate themselves or the scene they reside in during runtime.
+//! Examples include light sources, physicalized objects (such as bullets) and players.
+//! Entities themselves can not contain custom logic, instead they can contain Components (see IEntityComponent).
 struct IEntity
 {
 #ifndef SWIG
@@ -437,12 +422,17 @@ struct IEntity
 	};
 	enum EAttachmentFlags
 	{
-		ATTACHMENT_KEEP_TRANSFORMATION = BIT(0),    //!< Keeps world transformation of entity when attaching or detaching it.
-		ATTACHMENT_GEOMCACHENODE       = BIT(1),    //!< Attach to geom cache node.
-		ATTACHMENT_CHARACTERBONE       = BIT(2),    //!< Attached to character bone.
-		ATTACHMENT_LOCAL_SIM           = BIT(3),    //!< Simulated inside the parent by the physics
-		ATTACHMENT_SUPPRESS_UPDATE     = BIT(4),    //!< Suppresses attachment event and matrix update
+		ATTACHMENT_KEEP_TRANSFORMATION = BIT(0), //!< Keeps world transformation of entity when attaching or detaching it.
+		ATTACHMENT_GEOMCACHENODE       = BIT(1), //!< Attach to geom cache node.
+		ATTACHMENT_CHARACTERBONE       = BIT(2), //!< Attached to character bone.
+		ATTACHMENT_LOCAL_SIM           = BIT(3), //!< Simulated inside the parent by the physics
+		ATTACHMENT_SUPPRESS_UPDATE     = BIT(4), //!< Suppresses attachment event and matrix update
+
+		ATTACHMENT_COUNT               = 5,
 	};
+
+	using AttachmentFlagsMask = CEnumFlags<EAttachmentFlags>;
+	using AttachmentFlagsType = uint32;
 
 	static constexpr int CREATE_NEW_UNIQUE_TIMER_ID = -666;
 	static constexpr int KILL_ALL_TIMER = -1;
@@ -468,16 +458,17 @@ struct IEntity
 
 public:
 	// <interfuscator:shuffle>
-	virtual ~IEntity(){}
+	virtual ~IEntity() {}
 
 	//! Retrieves the runtime unique identifier of this entity assigned to it by the Entity System.
-	//! EntityId may not be the same when saving/loading entity.
-	//! EntityId is mostly used in runtime for fast and unique identification of entities..
-	//! \return The entity ID.
+	//! EntityId may not be the same when saving/loading entity
+	//! EntityId is not unique across the network, but can be serialized via the 'eid' compression policy
+	//! EntityId is mostly used in runtime for fast and unique identification of entities, as the system allows for an O(1) retrieval
+	//! \return The entity instance's identifier
 	virtual EntityId GetId() const = 0;
 
 	//! Retrieves the globally unique identifier of this entity assigned to it by the Entity System.
-	//! EntityGuid is guaranteed to be the same when saving/loading entity, it is also same in the editor and in the game.
+	//! EntityGuid is guaranteed to be the same when saving / loading entity, it is also same in the editor and in the game.
 	//! \return The entity globally unique identifier.
 	virtual const EntityGUID& GetGuid() const = 0;
 
@@ -489,7 +480,7 @@ public:
 	//! Retrieves the entity archetype.
 	//! Entity archetype contain definition for entity script properties.
 	//! \return Pointer to the entity archetype interface.
-	virtual IEntityArchetype* GetArchetype() const = 0;
+	CRY_DEPRECATED_ENTTIY_ARCHETYPE virtual IEntityArchetype* GetArchetype() const = 0;
 
 	//! Sets entity flags, completely replaces all flags which are already set in the entity.
 	//! \param flags Flag values which are defined in EEntityFlags.
@@ -555,12 +546,10 @@ public:
 	virtual void AttachChild(IEntity* pChildEntity, const SChildAttachParams& attachParams = SChildAttachParams()) = 0;
 
 	//! Detaches all the child entities attached to this entity.
-	//! \param nDetachFlags Combination of the EAttachmentFlags flags.
-	virtual void DetachAll(int nDetachFlags = 0) = 0;
+	virtual void DetachAll(AttachmentFlagsType attachmentFlags = 0) = 0;
 
 	//! Detach this entity from the parent entity (assumes that this entity is the child entity).
-	//! \param nDetachFlags Combination of the EAttachmentFlags flags.
-	virtual void DetachThis(int nDetachFlags = 0, int nWhyFlags = 0) = 0;
+	virtual void DetachThis(AttachmentFlagsType attachmentFlags = 0, EntityTransformationFlagsType transformReasons = 0) = 0;
 
 	//! Retrieves the number of attached child entities.
 	virtual int GetChildCount() const = 0;
@@ -590,11 +579,11 @@ public:
 
 	//! Sets entity transformation matrix in the world space.
 	//! \param tm World space transformation matrix (Non unifrorm scale is not supported).
-	virtual void SetWorldTM(const Matrix34& tm, int nWhyFlags = 0) = 0;
+	virtual void SetWorldTM(const Matrix34& tm, EntityTransformationFlagsMask transformReasons = EntityTransformationFlagsMask()) = 0;
 
 	//! Sets entity transformation matrix in the local entity space.
 	//! \param tm Local space transformation matrix (Non unifrorm scale is not supported).
-	virtual void SetLocalTM(const Matrix34& tm, int nWhyFlags = 0) = 0;
+	virtual void SetLocalTM(const Matrix34& tm, EntityTransformationFlagsMask transformReasons = EntityTransformationFlagsMask()) = 0;
 
 	//! Retrieves the entity transformation matrix in the world space.
 	//! \return World space transformation matrix (Include transformations of all parent entities).
@@ -622,25 +611,25 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Set the entity local space position.
-	virtual void SetPos(const Vec3& vPos, int nWhyFlags = 0, bool bRecalcPhyBounds = false, bool bForce = false) = 0;
+	virtual void SetPos(const Vec3& vPos, EntityTransformationFlagsMask transformReasons = EntityTransformationFlagsMask(), bool bRecalcPhyBounds = false, bool bForce = false) = 0;
 
 	//! Retrieve the entity local space position.
 	virtual const Vec3& GetPos() const = 0;
 
 	//! Sets the entity local space rotation quaternion.
-	virtual void SetRotation(const Quat& qRotation, int nWhyFlags = 0) = 0;
+	virtual void SetRotation(const Quat& qRotation, EntityTransformationFlagsMask transformReasons = EntityTransformationFlagsMask()) = 0;
 
 	//! Retrieves the entity local space rotation quaternion.
 	virtual const Quat& GetRotation() const = 0;
 
 	//! Sets the entity local space scale.
-	virtual void SetScale(const Vec3& vScale, int nWhyFlags = 0) = 0;
+	virtual void SetScale(const Vec3& vScale, EntityTransformationFlagsMask transformReasons = EntityTransformationFlagsMask()) = 0;
 
 	//! Retrieves the entity local space scale.
 	virtual const Vec3& GetScale() const = 0;
 
 	//! Sets the entity position,rotation and scale at once.
-	virtual void SetPosRotScale(const Vec3& vPos, const Quat& qRotation, const Vec3& vScale, int nWhyFlags = 0) = 0;
+	virtual void SetPosRotScale(const Vec3& vPos, const Quat& qRotation, const Vec3& vScale, EntityTransformationFlagsMask transformReasons = EntityTransformationFlagsMask()) = 0;
 
 	//! Helper function to retrieve world space entity position.
 	virtual Vec3 GetWorldPos() const = 0;
@@ -658,12 +647,6 @@ public:
 
 	//! Checks whether the entity is set to be updated this / next frame.
 	virtual bool IsActivatedForUpdates() const = 0;
-
-	//! Activates entity, if entity is active it will be updated every frame.
-	virtual void PrePhysicsActivate(bool bActive) = 0;
-
-	//! Check if the entity is active now.
-	virtual bool IsPrePhysicsActive() = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -708,9 +691,6 @@ public:
 	//! Checks if the entity is hidden.
 	virtual bool IsHidden() const = 0;
 
-	//! Checks if the entity is in a hidden layer
-	virtual bool IsInHiddenLayer() const = 0;
-
 	//! Makes the entity invisible and disable its physics.
 	//! Different from hide in that the entity is still updated.
 	virtual void Invisible(bool bInvisible) = 0;
@@ -728,18 +708,6 @@ public:
 
 	//! Retrieve access to the rendering functionality of the Entity.
 	IEntity* GetRenderInterface() { return this; };
-
-	//! Changes the entity update policy.
-	//! Update policy of entity defines the automatic activation rules for the entity.
-	//! For example. when a physical object awakens it will activate the entity, and when will go to sleep
-	//! again will deactivate it.
-	//! Or entity can become active every time that it becomes visible, and deactivated when goes out of view.
-	//! There are multiple such predefined update policies exist, consider EEntityUpdatePolicy enum.
-	//! \param eUpdatePolicy - Update policy, one of EEntityUpdatePolicy enums.
-	virtual void SetUpdatePolicy(EEntityUpdatePolicy eUpdatePolicy) = 0;
-
-	//! Retrieves the entity update policy.
-	virtual EEntityUpdatePolicy GetUpdatePolicy() const = 0;
 
 	// Entity Proxies Interfaces access functions.
 
@@ -974,10 +942,6 @@ public:
 	}
 #endif // !defined(SWIG)
 
-	//! Creates instances of the components contained in the other entity
-	//! Also copies over properties for all the components created.
-	virtual void CloneComponentsFrom(IEntity& otherEntity) = 0;
-
 	//! Retrieve array of entity components
 	virtual void GetComponents(DynArray<IEntityComponent*>& components) const = 0;
 
@@ -1069,15 +1033,15 @@ public:
 	virtual bool GetSlotInfo(int nIndex, SEntitySlotInfo& slotInfo) const = 0;
 
 	//! \return World transformation matrix of the object slot.
-	virtual const Matrix34& GetSlotWorldTM(int nSlot) const = 0;
+	virtual Matrix34 GetSlotWorldTM(int nSlot) const = 0;
 
 	//! \return Local transformation matrix relative to host entity transformation matrix of the object slot.
 	//! \param nSlot - Index of required slot.
 	//! \param bRelativeToParent - flag specifying whether the local transformation matrix is relative to the parent slot or the entity.
-	virtual const Matrix34& GetSlotLocalTM(int nSlot, bool bRelativeToParent) const = 0;
+	virtual Matrix34 GetSlotLocalTM(int nSlot, bool bRelativeToParent) const = 0;
 
 	//! Sets local transformation matrix of the object slot.
-	virtual void SetSlotLocalTM(int nSlot, const Matrix34& localTM, int nWhyFlags = 0) = 0;
+	virtual void SetSlotLocalTM(int nSlot, const Matrix34& localTM, EntityTransformationFlagsMask transformReasons = EntityTransformationFlagsMask()) = 0;
 
 	//! Sets camera space position of the object slot.
 	virtual void SetSlotCameraSpacePos(int nSlot, const Vec3& cameraSpacePos) = 0;
@@ -1221,10 +1185,10 @@ public:
 	virtual int LoadFogVolume(int nSlot, const SFogVolumeProperties& properties) = 0;
 
 	//! Invalidates the entity's and all its children's transformation matrices!
-	virtual void InvalidateTM(int nWhyFlags = 0, bool bRecalcPhyBounds = false) = 0;
+	virtual void InvalidateTM(EntityTransformationFlagsMask transformReasons = EntityTransformationFlagsMask(), bool bRecalcPhyBounds = false) = 0;
 
 	//! Easy Script table access.
-	virtual IScriptTable* GetScriptTable() const = 0;
+	CRY_DEPRECATED_ENTTIY_LUA virtual IScriptTable* GetScriptTable() const = 0;
 
 	//! Retrieve 3D Engine render node, used to render this entity for a given slot.
 	//! If nSlot is -1 return first existing render node in slots.
@@ -1259,10 +1223,7 @@ public:
 	//! \return An attached child entity that corresponds to the physical part partId.
 	virtual IEntity* UnmapAttachedChild(int& partId) = 0;
 
-	//! \return true if entity is completely initialized.
-	virtual bool IsInitialized() const = 0;
-
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const = 0;
+	virtual void     GetMemoryUsage(ICrySizer* pSizer) const = 0;
 
 	//! Increase/or decrease KeepAliveCounter
 	//! Used as a refcount to prevent deletion when deferring some events
@@ -1288,7 +1249,6 @@ public:
 	//! so it should be set by editor and have a 1-1 correspondence with a baseobject. This is intended as a
 	//! runtime ID and does not need to be serialized
 	virtual uint32 GetEditorObjectID() const = 0;
-	virtual void   SetObjectID(uint32 ID) = 0;
 	virtual void   GetEditorObjectInfo(bool& bSelected, bool& bHighlighted) const = 0;
 	virtual void   SetEditorObjectInfo(bool bSelected, bool bHighlighted) = 0;
 

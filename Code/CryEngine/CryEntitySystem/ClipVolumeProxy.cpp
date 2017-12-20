@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 
@@ -189,7 +189,7 @@ void CEntityComponentClipVolume::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(m_pBspTree);
 }
 
-void CEntityComponentClipVolume::SetGeometryFilename(const char *sFilename)
+void CEntityComponentClipVolume::SetGeometryFilename(const char* sFilename)
 {
 	m_GeometryFileName = sFilename;
 }

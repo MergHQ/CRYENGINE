@@ -1,10 +1,8 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "ProximityTriggerSystem.h"
 #include "TriggerProxy.h"
-
-#include "RadixSort.h"
 
 #define AXIS_0        0
 #define AXIS_1        1
@@ -12,7 +10,7 @@
 
 #define ENTITY_RADIUS (0.5f)
 
-#define GET_ENTITY_NAME(eid) ((CEntity*)g_pIEntitySystem->GetEntityFromID(eid))->GetName()
+#define GET_ENTITY_NAME(eid) g_pIEntitySystem->GetEntityFromID(eid)->GetName()
 
 namespace
 {
@@ -107,8 +105,6 @@ CProximityTriggerSystem::ProximityElement_PoolAlloc* CProximityTriggerSystem::g_
 CProximityTriggerSystem::CProximityTriggerSystem()
 	: m_bTriggerMoved(false)
 	, m_bResetting(false)
-	, m_pTriggerSorter(new RadixSort)
-	, m_pEntitySorter(new RadixSort)
 	, m_Sorted0(nullptr)
 	, m_Sorted1(nullptr)
 {
@@ -119,8 +115,6 @@ CProximityTriggerSystem::CProximityTriggerSystem()
 //////////////////////////////////////////////////////////////////////////
 CProximityTriggerSystem::~CProximityTriggerSystem()
 {
-	delete m_pTriggerSorter;
-	delete m_pEntitySorter;
 	delete g_pProximityElement_PoolAlloc;
 }
 
@@ -222,8 +216,7 @@ void CProximityTriggerSystem::SortTriggers()
 						g_pIEntitySystem->QueryProximity(q);
 						for (int k = 0; k < q.nCount; k++)
 						{
-							CEntity* pEnt = (CEntity*) q.pEntities[k];
-							if (pEnt)
+							if (CEntity* pEnt = static_cast<CEntity*>(q.pEntities[k]))
 							{
 								if (SProximityElement* pProxElem = pEnt->GetProximityElement())
 								{
@@ -237,7 +230,7 @@ void CProximityTriggerSystem::SortTriggers()
 					   #define LOG_AABB(idx,xx) CryLogAlways("diff[%d]: (%.1f,%.1f,%.1f)->(%.1f,%.1f,%.1f)", idx, xx.min.x, xx.min.y, xx.min.z, xx.max.x, xx.max.y, xx.max.z)
 					          if (ndifferences)
 					          {
-					            LOG_AABB(-200, m_triggersAABB[i]);
+					            LOG_AABB(-200, m_triggersAABB[i]);m_pTriggerSorter
 					            LOG_AABB(-100, m_triggers[i]->aabb);
 					            for (int j=0; j<ndifferences; j++)
 					            {
@@ -250,7 +243,7 @@ void CProximityTriggerSystem::SortTriggers()
 				m_triggersAABB[i] = m_triggers[i]->aabb;
 				m_minPosList1[i] = m_triggers[i]->aabb.min[AXIS_0];
 			}
-			m_Sorted1 = m_pTriggerSorter->Sort(&m_minPosList1[0], m_minPosList1.size()).GetRanks();
+			m_Sorted1 = m_triggerSorter.Sort(&m_minPosList1[0], m_minPosList1.size()).GetRanks();
 		}
 	}
 }
@@ -299,7 +292,7 @@ void CProximityTriggerSystem::Update()
 			CheckIfLeavingTrigger(m_entities[i]);
 			m_minPosList0[i] = m_entities[i]->aabb.min[AXIS_0];
 		}
-		m_Sorted0 = m_pEntitySorter->Sort(&m_minPosList0[0], m_minPosList0.size()).GetRanks();
+		m_Sorted0 = m_entitySorter.Sort(&m_minPosList0[0], m_minPosList0.size()).GetRanks();
 		if (!m_minPosList0.empty() && !m_minPosList1.empty())
 		{
 			// Prune triggers.
@@ -561,8 +554,8 @@ void CProximityTriggerSystem::Reset()
 	Elements(m_triggers).swap(m_triggers);
 	Elements(m_triggersToRemove).swap(m_triggersToRemove);
 	Elements(m_entitiesToRemove).swap(m_entitiesToRemove);
-	stl::reconstruct(*m_pEntitySorter);
-	stl::reconstruct(*m_pTriggerSorter);
+	stl::reconstruct(m_entitySorter);
+	stl::reconstruct(m_triggerSorter);
 
 	g_pProximityElement_PoolAlloc->FreeMemory();
 
@@ -578,8 +571,6 @@ void CProximityTriggerSystem::BeginReset()
 void CProximityTriggerSystem::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
-	pSizer->AddObject(m_pTriggerSorter);
-	pSizer->AddObject(m_pEntitySorter);
 	pSizer->AddObject(g_pProximityElement_PoolAlloc);
 	pSizer->AddContainer(m_triggers);
 	pSizer->AddContainer(m_triggersToRemove);

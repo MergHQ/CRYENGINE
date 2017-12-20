@@ -487,11 +487,11 @@ namespace CryEngine
 		{
 			var entity = NativeHandle;
 
-			var flags = !keepWorldTransform ? 0 : (int)IEntity.EAttachmentFlags.ATTACHMENT_KEEP_TRANSFORMATION;
+            uint flags = !keepWorldTransform ? 0 : (uint)IEntity.EAttachmentFlags.ATTACHMENT_KEEP_TRANSFORMATION;
 			entity.DetachThis(flags);
 			if(parent != null)
 			{
-				parent.AttachChild(this, new SChildAttachParams(flags));
+				parent.AttachChild(this, new SChildAttachParams((int)flags));
 			}
 		}
 

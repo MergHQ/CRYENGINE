@@ -1,9 +1,11 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __VOXELSEGMENT_H__
-#define __VOXELSEGMENT_H__
+#pragma once
 
 #if defined(FEATURE_SVO_GI)
+
+#include <3rdParty/concqueue/concqueue.hpp>
+#include <CryThreading/IThreadManager.h>	
 
 	#pragma pack(push,4)
 
@@ -161,6 +163,46 @@ struct SBuildVoxelsParams
 	PodArray<int>*       pTrisInt;
 };
 
+class CVoxelSegment;
+
+class CVoxStreamEngine
+{
+public:
+
+	struct SVoxStreamItem
+	{
+		CVoxelSegment* pObj;
+		uint           requestFrameId;
+	};
+
+	class CVoxStreamEngineThread final : public IThread
+	{
+	public:
+		CVoxStreamEngineThread(CVoxStreamEngine* pStreamingEngine);
+		virtual void ThreadEntry();
+		void SignalStopWork();
+
+	private:
+		CVoxStreamEngine* m_pStreamingEngine;
+		bool m_bRun;
+	};
+
+	CVoxStreamEngine();
+	~CVoxStreamEngine();
+
+	void DecompressVoxStreamItem(const SVoxStreamItem item);
+	void ProcessSyncCallBacks();
+	bool StartRead(CVoxelSegment* pObj, int64 fileOffset, int bytesToRead);
+
+public:
+	BoundMPMC<SVoxStreamItem> m_arrForFileRead;
+	BoundMPMC<SVoxStreamItem> m_arrForSyncCallBack;
+	CrySemaphore m_fileReadSemaphore;
+
+private:
+	std::vector<CVoxStreamEngineThread*> m_workerThreads;	
+};
+
 class CVoxelSegment : public Cry3DEngineBase, public SSuperMesh, public IStreamCallback
 {
 public:
@@ -171,7 +213,7 @@ public:
 	bool         CheckUpdateBrickRenderData(bool bJustCheck);
 	bool         LoadVoxels(byte* pData, int size);
 	void         SaveVoxels(PodArray<byte>& arrData);
-	bool         StartStreaming();
+	bool         StartStreaming(CVoxStreamEngine* pVoxStreamEngine);
 	bool         UpdateBrickRenderData();
 	ColorF       GetBilinearAt(float iniX, float iniY, const ColorB* pImg, int dimW, int dimH, float multiplier);
 	ColorF       GetColorF_255(int x, int y, const ColorB* pImg, int imgSizeW, int imgSizeH);
@@ -189,7 +231,6 @@ public:
 	static void  FreeBrick(ColorB*& pPtr);
 	static void  MakeFolderName(char szFolder[256], bool bCreateDirectory = false);
 	static void  SetVoxCamera(const CCamera& newCam);
-	static void  UpdateStreamingEngine();
 	static void  UpdateObjectLayersInfo();
 	static void  ErrorTerminate(const char* format, ...);
 	Vec3i        GetDxtDim();
@@ -284,156 +325,9 @@ public:
 	std::map<ObjectLayerIdType, SVoxBrick>               m_objLayerMap;
 };
 
-template<class T, int maxQeueSize>
-struct SThreadSafeArray
-{
-	SThreadSafeArray()
-	{
-		m_bThreadDone = false;
-		m_maxQeueSize = maxQeueSize;
-		m_ucOverflow = 0;
-		m_requestFrameId = 0;
-	}
-
-	T GetNextTaskFromQeue()
-	{
-		T pNewTask = NULL;
-
-		if (m_arrQeue.Count())
-		{
-			AUTO_LOCK(m_csQeue);
-			if (m_arrQeue.Count())
-			{
-				pNewTask = m_arrQeue[0];
-				m_arrQeue.Delete((const int)0);
-			}
-		}
-
-		return pNewTask;
-	}
-
-	T GetNextTaskFromQeueOrdered2()
-	{
-		T pNewTask = NULL;
-
-		if (m_arrQeue.Count())
-		{
-			AUTO_LOCK(m_csQeue);
-			if (m_arrQeue.Count())
-			{
-				for (int i = 0; i < m_arrQeue.Count(); i++)
-				{
-					if (m_arrQeue[i].nRequestFrameId == m_requestFrameId)
-					{
-						pNewTask = m_arrQeue[i];
-						m_arrQeue.Delete((const int)i);
-						m_requestFrameId++;
-						break;
-					}
-				}
-			}
-		}
-
-		return pNewTask;
-	}
-
-	T GetNextTaskFromQeueOrdered()
-	{
-		T pNewTask = NULL;
-
-		if (m_arrQeue.Count())
-		{
-			AUTO_LOCK(m_csQeue);
-			if (m_arrQeue.Count())
-			{
-				for (int i = 0; i < m_arrQeue.Count(); i++)
-				{
-					if (m_arrQeue[i]->pIBackBufferReader->nRequestFrameId == m_requestFrameId)
-					{
-						pNewTask = m_arrQeue[i];
-						m_arrQeue.Delete((const int)i);
-						m_requestFrameId++;
-						break;
-					}
-				}
-			}
-		}
-
-		return pNewTask;
-	}
-
-	T GetNextTaskFromQeueOrderedForThread(int threadId)
-	{
-		T pNewTask = NULL;
-
-		if (m_arrQeue.Count())
-		{
-			AUTO_LOCK(m_csQeue);
-			if (m_arrQeue.Count())
-			{
-				for (int i = 0; i < m_arrQeue.Count(); i++)
-				{
-					if (m_arrQeue[i]->pIBackBufferReader->nRequestFrameId == m_requestFrameId && ((m_arrQeue[i]->pIBackBufferReader->nUserId & 1) == (threadId & 1)))
-					{
-						pNewTask = m_arrQeue[i];
-						m_arrQeue.Delete((const int)i);
-						m_requestFrameId++;
-						break;
-					}
-				}
-			}
-		}
-
-		return pNewTask;
-	}
-
-	void AddNewTaskToQeue(T pNewTask, bool bSkipOverflow = false)
-	{
-		if (m_ucOverflow)
-			m_ucOverflow--;
-
-		if (bSkipOverflow)
-		{
-			// drop new item in case of overflow
-			if (m_arrQeue.Count() >= m_maxQeueSize)
-			{
-				m_ucOverflow = ~0;
-				return;
-			}
-		}
-		else
-		{
-			// stall in case of overflow
-			while (m_arrQeue.Count() >= m_maxQeueSize)
-			{
-				m_ucOverflow = ~0;
-				CrySleep(1);
-			}
-		}
-
-		{
-			AUTO_LOCK(m_csQeue);
-			m_arrQeue.Add(pNewTask);
-		}
-	}
-
-	int Count()
-	{
-		return m_arrQeue.Count();
-	}
-
-	bool               m_bThreadDone;
-	int                m_maxQeueSize;
-	PodArray<T>        m_arrQeue;
-	CryCriticalSection m_csQeue;
-	unsigned char      m_ucOverflow;
-	int                m_requestFrameId;
-};
-
 inline uint GetCurrPassMainFrameID() { return CVoxelSegment::m_currPassMainFrameID; }
 
 	#pragma pack(pop)
 
 #endif
 
-#endif

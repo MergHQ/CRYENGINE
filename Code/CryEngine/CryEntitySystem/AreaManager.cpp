@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AreaManager.h"
@@ -509,7 +509,7 @@ void CAreaManager::ProcessArea(
 			{
 				// Was far before both EnterNear and Enter needed.
 				// This is optimized internally and might not recalculate but rather retrieve the cached data.
-				float const distanceSq = pArea->CalcPointNearDistSq(entityId, pos, Closest3d, false);
+				pArea->CalcPointNearDistSq(entityId, pos, Closest3d, false);
 				pArea->EnterNearArea(entityId, Closest3d, 0.0f);
 				pArea->EnterArea(entityId);
 			}
@@ -1348,7 +1348,7 @@ void CAreaManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 {
 	switch (event)
 	{
-		case ESYSTEM_EVENT_LEVEL_LOAD_END:
+	case ESYSTEM_EVENT_LEVEL_LOAD_END:
 		{
 			LOADING_TIME_PROFILE_SECTION_NAMED("CAreaManager::OnSystemEvent ESYSTEM_EVENT_LEVEL_LOAD_END");
 			for (auto const pArea : m_areas)

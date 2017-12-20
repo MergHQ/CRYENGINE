@@ -536,9 +536,59 @@ void DebugCallStack::doneSymbols()
 
 void DebugCallStack::RemoveOldFiles()
 {
-	RemoveFile("error.log");
-	RemoveFile("error.jpg");
-	RemoveFile("error.dmp");
+	string baseName;
+
+	struct stat fileStat;
+	if (stat("error.log", &fileStat)>=0 && fileStat.st_mtime)
+	{
+		tm* today = localtime(&fileStat.st_mtime);
+		if (today)
+		{
+			char s[128];
+			strftime(s, 128, "%d %b %y (%H %M %S)", today);
+			baseName = "error_" + string(s);
+		}
+		else
+		{
+			baseName = "error";
+		}
+	}
+	else
+	{
+		baseName = "error";
+	}
+
+	baseName = PathUtil::Make("LogBackups", baseName);
+	string logDest = baseName + ".log";
+	string jpgDest = baseName + ".jpg";
+	string dmpDest = baseName + ".dmp";
+
+	MoveFile("error.log", logDest.c_str());
+	MoveFile("error.jpg", jpgDest.c_str());
+	MoveFile("error.dmp", dmpDest.c_str());
+}
+
+void DebugCallStack::MoveFile(const char* szFileNameOld, const char* szFileNameNew)
+{
+	FILE* const pFile = fopen(szFileNameOld, "r");
+
+	if (pFile)
+	{
+		fclose(pFile);
+
+		RemoveFile(szFileNameNew);
+
+		WriteLineToLog("Moving file \"%s\" to \"%s\"...", szFileNameOld, szFileNameNew);
+		if (rename(szFileNameOld, szFileNameNew) == 0)
+		{
+			WriteLineToLog("File successfully moved.");
+		}
+		else
+		{
+			WriteLineToLog("Couldn't move file!");
+			RemoveFile(szFileNameOld);
+		}
+	}
 }
 
 void DebugCallStack::RemoveFile(const char* szFileName)

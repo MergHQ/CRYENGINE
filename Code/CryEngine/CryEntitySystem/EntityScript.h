@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -73,7 +73,6 @@ enum EScriptStateFunctions
 	ScriptState_OnStartGame,
 	ScriptState_OnHidden,
 	ScriptState_OnUnhidden,
-	ScriptState_OnPreparedFromPool,
 	ScriptState_Last,
 };
 

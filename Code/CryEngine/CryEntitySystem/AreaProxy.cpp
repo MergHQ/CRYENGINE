@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AreaProxy.h"
@@ -170,7 +170,7 @@ void CEntityComponentArea::ProcessEvent(const SEntityEvent& event)
 	case ENTITY_EVENT_RENDER_VISIBILITY_CHANGE:
 		{
 			bool bVisible = event.nParam[0] != 0;
-			
+
 			if (m_pArea->GetAreaType() == ENTITY_AREA_TYPE_GRAVITYVOLUME)
 			{
 				if (bVisible && !m_bIsEnableInternal)
@@ -216,7 +216,7 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 			return;
 
 		int id = 0, groupId = 0, priority = 0;
-		float proximity = 0.0f, height = 0.0f, innerFadeDistance = 0.0f;
+		float proximity = 0.0f, innerFadeDistance = 0.0f;
 
 		areaNode->getAttr("Id", id);
 		areaNode->getAttr("Group", groupId);
@@ -283,6 +283,7 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 			m_abObstructSound.push_back(bObstructSound);
 			m_pArea->SetAreaType(ENTITY_AREA_TYPE_SHAPE);
 
+			float height = 0.f;
 			areaNode->getAttr("Height", height);
 			m_pArea->SetHeight(height);
 

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -68,7 +68,6 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual void OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass) final;
-	virtual void OnPreparedFromPool() final;
 
 	//////////////////////////////////////////////////////////////////////////
 	// State Management public interface.
@@ -80,8 +79,6 @@ public:
 	bool                IsInState(int nState);
 	virtual const char* GetState() final;
 	virtual int         GetStateId() final;
-	void                RegisterForAreaEvents(bool bEnable);
-	bool                IsRegisteredForAreaEvents() const;
 
 	virtual void        SetPhysParams(int type, IScriptTable* params) final;
 
@@ -98,7 +95,6 @@ private:
 	IScriptSystem* GetIScriptSystem() const { return gEnv->pScriptSystem; }
 
 	void           SerializeTable(TSerialize ser, const char* name);
-	bool           HaveTable(const char* name);
 
 	void           Update(SEntityUpdateContext& ctx);
 

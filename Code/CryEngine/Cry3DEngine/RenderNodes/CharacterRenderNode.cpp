@@ -26,7 +26,6 @@ CCharacterRenderNode::CCharacterRenderNode()
 	m_cachedBoundsWorld = AABB(0.0f);
 	m_cachedBoundsLocal = AABB(0.0f);
 	m_matrix.SetIdentity();
-	m_nearestMatrix.SetIdentity();
 
 	GetInstCount(GetRenderNodeType())++;
 }
@@ -88,9 +87,9 @@ void CCharacterRenderNode::Render(const SRendParams& inputRendParams, const SRen
 		// Nearest objects recalculate instance matrix every frame
 		//m_bPermanentRenderObjectMatrixValid = false;
 		
-		m_nearestMatrix = m_matrix;	
-		CalcNearestTransform(m_nearestMatrix, passInfo);
-		rParms.pNearestMatrix = &m_nearestMatrix;
+		auto nearestMatrix = m_matrix;	
+		CalcNearestTransform(nearestMatrix, passInfo);
+		rParms.pNearestMatrix = &nearestMatrix;
 
 		m_pCharacterInstance->Render(rParms, passInfo);
 	}

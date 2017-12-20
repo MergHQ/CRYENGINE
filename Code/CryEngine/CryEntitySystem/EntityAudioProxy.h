@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -66,7 +66,7 @@ private:
 
 	struct SAuxObjectWrapper
 	{
-		SAuxObjectWrapper(CryAudio::IObject* const _pIObject)
+		explicit SAuxObjectWrapper(CryAudio::IObject* const _pIObject)
 			: pIObject(_pIObject)
 			, offset(IDENTITY)
 		{}
@@ -145,7 +145,7 @@ private:
 
 	struct SStopFile
 	{
-		SStopFile(char const* const _szFile)
+		explicit SStopFile(char const* const _szFile)
 			: szFile(_szFile)
 		{}
 
@@ -215,7 +215,7 @@ private:
 
 	struct SSetOcclusionType
 	{
-		SSetOcclusionType(CryAudio::EOcclusionType const _occlusionType)
+		explicit SSetOcclusionType(CryAudio::EOcclusionType const _occlusionType)
 			: occlusionType(_occlusionType)
 		{}
 
@@ -249,7 +249,7 @@ private:
 
 	struct SSetCurrentEnvironments
 	{
-		SSetCurrentEnvironments(EntityId const entityId)
+		explicit SSetCurrentEnvironments(EntityId const entityId)
 			: m_entityId(entityId)
 		{}
 

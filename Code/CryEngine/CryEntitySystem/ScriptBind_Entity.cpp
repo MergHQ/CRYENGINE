@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "ScriptBind_Entity.h"
@@ -41,7 +41,7 @@
 #endif
 
 // Macro for getting IEntity pointer for function.
-#define GET_ENTITY                    CEntity * pEntity = (CEntity*)GetEntity(pH); if (!pEntity) return pH->EndFunction();
+#define GET_ENTITY                    CEntity * pEntity = static_cast<CEntity*>(GetEntity(pH)); if (pEntity == nullptr) return pH->EndFunction();
 
 #define PHYSICPARAM_PARTICLE          0x00000001
 #define PHYSICPARAM_VEHICLE           0x00000002
@@ -542,6 +542,18 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem)
 	SCRIPT_REG_GLOBAL(ENTITY_FLAG_CASTSHADOW);
 	SCRIPT_REG_GLOBAL(ENTITY_FLAG_GOOD_OCCLUDER);
 
+	//! Updates policy defines in which cases to call entity update function every frame.
+	enum EEntityUpdatePolicy
+	{
+		ENTITY_UPDATE_NEVER,           //!< Never update entity every frame.
+		ENTITY_UPDATE_IN_RANGE,        //!< Only update entity if it is in specified range from active camera.
+		ENTITY_UPDATE_POT_VISIBLE,     //!< Only update entity if it is potentially visible.
+		ENTITY_UPDATE_VISIBLE,         //!< Only update entity if it is visible.
+		ENTITY_UPDATE_PHYSICS,         //!< Only update entity if it is need to be updated due to physics.
+		ENTITY_UPDATE_PHYSICS_VISIBLE, //!< Only update entity if it is need to be updated due to physics or if it is visible.
+		ENTITY_UPDATE_ALWAYS,          //!< Always update entity every frame.
+	};
+
 	SCRIPT_REG_GLOBAL(ENTITY_UPDATE_NEVER);
 	SCRIPT_REG_GLOBAL(ENTITY_UPDATE_IN_RANGE);
 	SCRIPT_REG_GLOBAL(ENTITY_UPDATE_POT_VISIBLE);
@@ -801,7 +813,7 @@ int CScriptBind_Entity::GetBoneLocal(IFunctionHandler* pH, const char* boneName,
 	//	Vec3 p((pEntity->GetSlotWorldTM(0)*pCharacter->GetISkeleton()->GetAbsJMatrixByID(pBone_id)).GetTranslation());
 	Vec3 p((pEntity->GetSlotWorldTM(0) * Matrix34(pCharacter->GetISkeletonPose()->GetAbsJointByID(pBone_id))).GetTranslation());
 
-	//gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(p, ColorB(255, 255, 0, 255), p-(m.GetColumn(1)*100), ColorB(128, 0, 255, 255));
+	//gEnv->pAuxGeomRenderer->DrawLine(p, ColorB(255, 255, 0, 255), p-(m.GetColumn(1)*100), ColorB(128, 0, 255, 255));
 	//return pH->EndFunction(Ang3::GetAnglesXYZ(Quat(localMat)));
 	return pH->EndFunction(localMat.GetColumn(1).normalized());
 }
@@ -1807,7 +1819,7 @@ int CScriptBind_Entity::Physicalize(IFunctionHandler* pH, int nSlot, int nPhysic
 			// By default such entities are marked as unimportant.
 			pe_params_foreign_data pfd;
 			pfd.iForeignFlagsOR = PFF_UNIMPORTANT;
-			if (!(pEntity->GetPhysicalProxy()->GetFlags() & CEntityPhysics::FLAG_ATTACH_CLOTH_WHEN_VISIBLE))
+			if (!pEntity->HasInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender))
 				pPhysicalEntity->SetParams(&pfd);
 
 			if (nPhysicsType == PE_WHEELEDVEHICLE)
@@ -1957,7 +1969,6 @@ int CScriptBind_Entity::CreateBoneAttachment(IFunctionHandler* pH, int character
 	}
 
 	IAttachmentManager* pIAttachmentManager = pCharacter->GetIAttachmentManager();
-	IAttachment* pIAttachment = pIAttachmentManager->GetInterfaceByName(attachmentName);
 
 	bool bCallProjectAndSetDefaultPose = true;
 	if (pH->GetParamCount() > 3)
@@ -1965,9 +1976,9 @@ int CScriptBind_Entity::CreateBoneAttachment(IFunctionHandler* pH, int character
 		pH->GetParam(4, bCallProjectAndSetDefaultPose);
 	}
 
-	if (!pIAttachment)
+	if (pIAttachmentManager->GetInterfaceByName(attachmentName) == nullptr)
 	{
-		pIAttachment = pIAttachmentManager->CreateAttachment(attachmentName, CA_BONE, boneName, bCallProjectAndSetDefaultPose);
+		pIAttachmentManager->CreateAttachment(attachmentName, CA_BONE, boneName, bCallProjectAndSetDefaultPose);
 	}
 
 	return pH->EndFunction();
@@ -1979,17 +1990,16 @@ int CScriptBind_Entity::CreateSkinAttachment(IFunctionHandler* pH, int character
 
 	ICharacterInstance* pCharacter = pEntity->GetCharacter(characterSlot);
 
-	if (!pCharacter)
+	if (pCharacter == nullptr)
 	{
 		return pH->EndFunction();
 	}
 
 	IAttachmentManager* pIAttachmentManager = pCharacter->GetIAttachmentManager();
-	IAttachment* pIAttachment = pIAttachmentManager->GetInterfaceByName(attachmentName);
 
-	if (!pIAttachment)
+	if (pIAttachmentManager->GetInterfaceByName(attachmentName) == nullptr)
 	{
-		pIAttachment = pIAttachmentManager->CreateAttachment(attachmentName, CA_SKIN);
+		pIAttachmentManager->CreateAttachment(attachmentName, CA_SKIN);
 	}
 
 	return pH->EndFunction();
@@ -2327,7 +2337,7 @@ int CScriptBind_Entity::SetAttachmentDir(IFunctionHandler* pH, int characterSlot
 		/*
 		   // draw world transformation
 		   Matrix34 tm = pEntity->GetSlotWorldTM(characterSlot) * Matrix34(pIAttachment->GetLQuatT());
-		   IRenderAuxGeom* pGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+		   IRenderAuxGeom* pGeom = gEnv->pAuxGeomRenderer;
 		   pGeom->SetRenderFlags(e_Def3DPublicRenderflags);
 		   ColorB red(255,0,0,255);
 		   ColorB green(0,255,0,255);
@@ -2467,7 +2477,7 @@ int CScriptBind_Entity::DetachThis(IFunctionHandler* pH)
 	if (pH->GetParamCount() >= 1)
 		pH->GetParam(1, nFlags); // Optional flags.
 
-	pEntity->DetachThis(nFlags);
+	pEntity->DetachThis(IEntity::EAttachmentFlags(nFlags));
 
 	return pH->EndFunction();
 }
@@ -2479,7 +2489,7 @@ int CScriptBind_Entity::DetachAll(IFunctionHandler* pH)
 
 	int nFlags = 0;
 	pH->GetParam(1, nFlags); // Optional flags.
-	pEntity->DetachAll(nFlags);
+	pEntity->DetachAll(IEntity::EAttachmentFlags(nFlags));
 
 	return pH->EndFunction();
 }
@@ -2525,7 +2535,8 @@ int CScriptBind_Entity::EnableInheritXForm(IFunctionHandler* pH, bool bEnable)
 {
 	GET_ENTITY;
 
-	pEntity->EnableInheritXForm(bEnable);
+	// Deprecated
+	//pEntity->EnableInheritXForm(bEnable);
 	return pH->EndFunction();
 }
 
@@ -2703,17 +2714,8 @@ int CScriptBind_Entity::StartAnimation(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 
-	//SCRIPT_CHECK_PARAMETERS(2);
 	const char* animname;
-	int pos, layer = 0;
-
-	bool bLooping = false;
-	bool bRecursive(false);
-	bool partial(false);
-	bool bForceSingleFrame(false);
-
-	float fBlendTime = 0.15f;
-	float fAniSpeed = 1.0f;
+	int pos;
 
 	pH->GetParam(1, pos);
 	if (!pH->GetParam(2, animname))
@@ -2722,6 +2724,13 @@ int CScriptBind_Entity::StartAnimation(IFunctionHandler* pH)
 		                    0, "CScriptBind_Entity::StartAnimation, animation name not specified, in Entity %s", pEntity->GetName());
 		return pH->EndFunction(false);
 	}
+
+	int layer = 0;
+	bool bLooping = false;
+	bool bForceSingleFrame(false);
+
+	float fBlendTime = 0.15f;
+	float fAniSpeed = 1.0f;
 
 	if (pH->GetParamCount() > 2)
 	{
@@ -2738,14 +2747,16 @@ int CScriptBind_Entity::StartAnimation(IFunctionHandler* pH)
 
 					if (pH->GetParamCount() > 6)
 					{
-						pH->GetParam(7, bRecursive);
+						//pH->GetParam(7, bRecursive);
 
 						if (pH->GetParamCount() > 7)
 						{
-							pH->GetParam(8, partial);
+							//pH->GetParam(8, partial);
 
 							if (pH->GetParamCount() > 8)
+							{
 								pH->GetParam(9, bForceSingleFrame);
+							}
 						}
 					}
 				}
@@ -3398,13 +3409,13 @@ int CScriptBind_Entity::SetEntityPhysicParams(IFunctionHandler* pH, IPhysicalEnt
 		{
 			pTable->GetValue("flags", (int&)flags_params.flags);
 
-			if(pPhysicalEntity != nullptr)
+			if (pPhysicalEntity != nullptr)
 				pPhysicalEntity->GetParams(&flags_params_old);
 			if (flags_params_old.flags & pef_log_collisions)
 				flags_params.flags |= pef_log_collisions;
 		}
 
-		if(pPhysicalEntity != nullptr)
+		if (pPhysicalEntity != nullptr)
 			pPhysicalEntity->SetParams(&flags_params);
 		break;
 	case PHYSICPARAM_COLLISION_CLASS:
@@ -4745,26 +4756,8 @@ int CScriptBind_Entity::SetPublicParam(IFunctionHandler* pH)
 
 	// get params;
 	const char* name = 0;
-	const char* materialName = 0;
-	int nSlotId = 0;
 
 	pH->GetParam(1, name);
-
-	if (pH->GetParamCount() > 2)
-	{
-		pH->GetParam(3, materialName);
-
-		if (materialName)
-		{
-			// <<TODO>> currently there is no way to get a materialId!
-			// it's not needed currently, anyway.
-		}
-
-		if (pH->GetParamCount() > 3 && (pH->GetParamType(4) == svtNumber))
-		{
-			pH->GetParam(4, nSlotId);
-		}
-	}
 
 	SShaderParam shaderParam;
 	cry_strcpy(shaderParam.m_Name, name);
@@ -4874,8 +4867,6 @@ int CScriptBind_Entity::IsActive(IFunctionHandler* pH)
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::SetUpdatePolicy(IFunctionHandler* pH, int nUpdatePolicy)
 {
-	GET_ENTITY;
-	pEntity->SetUpdatePolicy((EEntityUpdatePolicy)nUpdatePolicy);
 	return pH->EndFunction();
 }
 
@@ -5412,22 +5403,7 @@ int CScriptBind_Entity::GetState(IFunctionHandler* pH)
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::GetCurAnimation(IFunctionHandler* pH)
 {
-	GET_ENTITY;
-	int iPos;
-	ICharacterInstance* pCharacter = nullptr;
-
-	SCRIPT_CHECK_PARAMETERS(1);
-
-	pH->GetParam(1, iPos);
-
-	pCharacter = pEntity->GetCharacter(iPos);
-	if (pCharacter)
-	{
-		//ask Ivo for details
-		//if (pCharacter->GetCurAnimation() && pCharacter->GetCurAnimation()[0] != '\0')
-		//	return pH->EndFunction(pCharacter->GetCurAnimation());
-	}
-
+	// Deprecated
 	return pH->EndFunction();
 }
 
@@ -5733,11 +5709,11 @@ int CScriptBind_Entity::GetEntitiesInContact(IFunctionHandler* pH)
 
 	IPhysicalWorld* pWorld = m_pISystem->GetIPhysicalWorld();
 	IPhysicalEntity** ppColliders;
-	int cnt = 0, valid = 0;
-	if (cnt = pWorld->GetEntitiesInBox(bbox.min, bbox.max, ppColliders, ent_living | ent_rigid | ent_sleeping_rigid | ent_static))
+	if (int cnt = pWorld->GetEntitiesInBox(bbox.min, bbox.max, ppColliders, ent_living | ent_rigid | ent_sleeping_rigid | ent_static))
 	{
 		// execute on collide for all of the entities
 		SmartScriptTable pObj(m_pSS);
+		int valid = 0;
 		for (int i = 0; i < cnt; i++)
 		{
 			CEntity* pFoundEntity = static_cast<CEntity*>(g_pIEntitySystem->GetEntityFromPhysics(ppColliders[i]));
@@ -5895,8 +5871,8 @@ int CScriptBind_Entity::GetMaterial(IFunctionHandler* pH)
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::ChangeAttachmentMaterial(IFunctionHandler* pH, const char* attachmentName, const char* materialName)
 {
-	CEntity* entity = (CEntity*)GetEntity(pH);
-	if (!entity)
+	CEntity* entity = static_cast<CEntity*>(GetEntity(pH));
+	if (entity == nullptr)
 		return pH->EndFunction();
 
 	IMaterial* material = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(materialName);
@@ -5969,7 +5945,7 @@ int CScriptBind_Entity::ReplaceMaterial(IFunctionHandler* pH, int slot, const ch
 				IAttachmentObject* pAttachmentObject = pManager->GetInterfaceByIndex(a)->GetIAttachmentObject();
 				if (pAttachmentObject)
 				{
-					IMaterial* pAttachMaterial = (IMaterial*)pAttachmentObject->GetBaseMaterial();
+					IMaterial* pAttachMaterial = static_cast<IMaterial*>(pAttachmentObject->GetBaseMaterial());
 					if (pAttachMaterial && !stricmp(pAttachMaterial->GetName(), name))
 						pAttachmentObject->SetReplacementMaterial(pReplacement);
 				}
@@ -6164,13 +6140,15 @@ int CScriptBind_Entity::MaterialFlashInvoke(IFunctionHandler* pH)
 	CRY_ASSERT(numArgs >= 0);
 
 	// build variable argument list
-	PREFAST_SUPPRESS_WARNING(6255) SFlashVarValue * pArgList = numArgs != 0 ? (SFlashVarValue*) alloca(sizeof(SFlashVarValue) * numArgs) : 0;
-	if (!pArgList && numArgs)
+	if (numArgs == 0)
 		return pH->EndFunction();
+
+	std::vector<SFlashVarValue> arguments;
+	arguments.resize(numArgs, SFlashVarValue::CreateUndefined());
 
 	if (numArgs)
 	{
-		for (int i(0); i < numArgs; ++i)
+		for (int i = 0; i < numArgs; ++i)
 		{
 			ScriptAnyValue param;
 			pH->GetParamAny(5 + i, param);
@@ -6180,20 +6158,20 @@ int CScriptBind_Entity::MaterialFlashInvoke(IFunctionHandler* pH)
 				{
 					float arg(0);
 					param.CopyTo(arg);
-					pArgList[i] = arg;
+					arguments[i] = arg;
 					break;
 				}
 			case svtString:
 				{
 					const char* arg(0);
 					param.CopyTo(arg);
-					pArgList[i] = arg;
+					arguments[i] = arg;
 					break;
 				}
 			default:
 				{
 					CRY_ASSERT(0); // unsupported type
-					pArgList[i] = SFlashVarValue::CreateUndefined();
+					arguments[i] = SFlashVarValue::CreateUndefined();
 				}
 			}
 		}
@@ -6223,7 +6201,7 @@ int CScriptBind_Entity::MaterialFlashInvoke(IFunctionHandler* pH)
 							if (pFlashPlayer)
 							{
 								SFlashVarValue invokeRes(SFlashVarValue::CreateUndefined());
-								if (pFlashPlayer->Invoke(pMethodName, pArgList, numArgs, &invokeRes))
+								if (pFlashPlayer->Invoke(pMethodName, arguments.data(), numArgs, &invokeRes))
 								{
 									res = invokeRes;
 								}
@@ -8464,7 +8442,7 @@ int CScriptBind_Entity::AttachSurfaceEffect(IFunctionHandler* pH, int nSlot, con
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::RagDollize(IFunctionHandler* pH, int slot)
 {
-	CEntity* pEntity = (CEntity*)GetEntity(pH);
+	CEntity* pEntity = static_cast<CEntity*>(GetEntity(pH));
 	if (!pEntity)
 		return pH->EndFunction();
 
@@ -8593,14 +8571,7 @@ int CScriptBind_Entity::DeleteParticleEmitter(IFunctionHandler* pH, int slot)
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::RegisterForAreaEvents(IFunctionHandler* pH, int enable)
 {
-	GET_ENTITY;
-
-	CEntityComponentLuaScript* pScriptProxy(pEntity->GetScriptProxy());
-	if (pScriptProxy)
-	{
-		pScriptProxy->RegisterForAreaEvents(enable != 0);
-	}
-
+	// Deprecated
 	return pH->EndFunction();
 }
 

@@ -71,180 +71,123 @@ CLockedMap<IMaterial*, _smart_ptr<IMaterial>> CVoxelSegment::m_arrLockedMaterial
 PodArray<CVoxelSegment*> CVoxelSegment::m_arrLoadedSegments;
 SRenderingPassInfo* CVoxelSegment::m_pCurrPassInfo = 0;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Streaming/building engine
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class CVoxStreamEngine
-{
-public:
-
-	struct SVoxStreamItem
-	{
-		static int32 Compare(const void* v1, const void* v2)
-		{
-			SVoxStreamItem* p[2] = { *(SVoxStreamItem**)v1, *(SVoxStreamItem**)v2 };
-
-			if (p[0]->requestFrameId > p[1]->requestFrameId)
-				return 1;
-			if (p[0]->requestFrameId < p[1]->requestFrameId)
-				return -1;
-
-			return 0;
-		}
-
-		CVoxelSegment* pObj;
-		uint           requestFrameId;
-	};
-
-	void ThreadEntry();
-
-	#if CRY_PLATFORM_ORBIS
-	static void* FileReadThreadFunc(void* pUD)
-	{
-		CVoxStreamEngine* pEng = (CVoxStreamEngine*)pUD;
-		pEng->ThreadEntry();
-		return NULL;
-	}
-	#else
-	static void FileReadThreadFunc(void* pUD)
-	{
-		CVoxStreamEngine* pEng = (CVoxStreamEngine*)pUD;
-		pEng->ThreadEntry();
-	}
-	#endif
-
-	SThreadSafeArray<SVoxStreamItem*, 512> m_arrForFileRead;
-	SThreadSafeArray<SVoxStreamItem*, 512> m_arrForSyncCallBack;
-	bool m_doResort;
-
-	CVoxStreamEngine()
-	{
-		m_doResort = false;
-		{
-	#if CRY_PLATFORM_DURANGO
-			void* m_thread;
-			uint32 m_threadId;
-
-			m_threadId = 0;
-			m_thread = (void*)CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)FileReadThreadFunc, (void*)this, 0, (LPDWORD)&m_threadId);
-			SetThreadPriority(m_thread, THREAD_PRIORITY_BELOW_NORMAL);
-			if (Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity0 >= 0)
-			{
-				SetThreadAffinityMask(m_thread, BIT64(Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity0));
-			}
-	#elif CRY_PLATFORM_ORBIS
-			ScePthread m_thread0;
-
-			::scePthreadCreate(&m_thread0, nullptr, FileReadThreadFunc, (void*)this, "VoxelThread_0");
-			::scePthreadSetprio(m_thread0, THREAD_PRIORITY_BELOW_NORMAL);
-			if (Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity0 >= 0)
-			{
-				::scePthreadSetaffinity(m_thread0, BIT64(Cry3DEngineBase::GetCVars()->e_svoTI_ThreadAffinity0));
-			}
-	#else
-			_beginthread(FileReadThreadFunc, 0, (void*)this);
-			_beginthread(FileReadThreadFunc, 0, (void*)this);
-	#endif
-		}
-	}
-
-	~CVoxStreamEngine()
-	{
-		m_arrForFileRead.m_bThreadDone = true;
-
-		while (m_arrForFileRead.m_bThreadDone || CVoxelSegment::m_tasksInProgressALL)
-		{
-			CrySleep(1);
-		}
-	}
-
-	void DecompressVoxStreamItem(SVoxStreamItem item)
-	{
-		item.pObj->StreamAsyncOnComplete(0, 0);
-
-		SVoxStreamItem* pNewItem = new SVoxStreamItem;
-		*pNewItem = item;
-
-		m_arrForSyncCallBack.AddNewTaskToQeue(pNewItem);
-	}
-
-	void ProcessSyncCallBacks()
-	{
-		while (SVoxStreamItem* pItem = m_arrForSyncCallBack.GetNextTaskFromQeue())
-		{
-			pItem->pObj->StreamOnComplete(0, 0);
-			delete pItem;
-			CVoxelSegment::m_tasksInProgressALL--;
-		}
-	}
-
-	bool StartRead(CVoxelSegment* pObj, int64 fileOffset, int bytesToRead);
-
-}* pVoxStreamEngine = 0;
-
 DECLARE_JOB("VoxelSegmentFileDecompress", TDecompressVoxStreamItemJob, CVoxStreamEngine::DecompressVoxStreamItem);
 DECLARE_JOB("VoxelSegmentBuildVoxels", TBuildVoxelsJob, CVoxelSegment::BuildVoxels);
 
-void CVoxStreamEngine::ThreadEntry()
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Voxel Stream Engine Thread
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+CVoxStreamEngine::CVoxStreamEngineThread::CVoxStreamEngineThread(CVoxStreamEngine* pStreamingEngine) : m_pStreamingEngine(pStreamingEngine)
+, m_bRun(true)
+{
+}
+
+void CVoxStreamEngine::CVoxStreamEngineThread::ThreadEntry()
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "VoxStreamEngine");
 
-	while (1)
+	while (m_bRun)
 	{
-		if (m_doResort)
+		m_pStreamingEngine->m_fileReadSemaphore.Acquire();
+
+		if (!m_bRun)
 		{
-			AUTO_LOCK(m_arrForFileRead.m_csQeue);
-			qsort(m_arrForFileRead.m_arrQeue.GetElements(), m_arrForFileRead.m_arrQeue.Count(), sizeof(SVoxStreamItem*), SVoxStreamItem::Compare);
-			m_doResort = false;
+			break;
 		}
 
-		if (SVoxStreamItem* pItem = m_arrForFileRead.GetNextTaskFromQeue())
+		SVoxStreamItem pItem;
+		if (m_pStreamingEngine->m_arrForFileRead.dequeue(pItem))
 		{
 			if (Cry3DEngineBase::GetCVars()->e_svoMaxStreamRequests > 4)
 			{
-				TDecompressVoxStreamItemJob job(*pItem);
-				job.SetClassInstance(this);
+				TDecompressVoxStreamItemJob job(pItem);
+				job.SetClassInstance(m_pStreamingEngine);
 				job.SetPriorityLevel(JobManager::eStreamPriority);
 				job.Run();
 			}
 			else
 			{
-				DecompressVoxStreamItem(*pItem);
+				m_pStreamingEngine->DecompressVoxStreamItem(pItem);
 			}
+		}
+	}
+}
 
-			delete pItem;
+void CVoxStreamEngine::CVoxStreamEngineThread::SignalStopWork()
+{
+	m_bRun = false;
+	m_pStreamingEngine->m_fileReadSemaphore.Release();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Voxel Stream Engine
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+CVoxStreamEngine::CVoxStreamEngine() : m_arrForFileRead(512)
+, m_arrForSyncCallBack(512)
+, m_fileReadSemaphore(512)
+{
+	const int numThreads = gEnv->pConsole->GetCVar("e_svoTI_NumStreamingThreads")->GetIVal();
+	for (int i = 0; i < numThreads; ++i)
+	{
+		CVoxStreamEngineThread* pStreamingThread = new CVoxStreamEngineThread(this);
+		if (!gEnv->pThreadManager->SpawnThread(pStreamingThread, "VoxelStreamingWorker_%u", i))
+		{
+			CryFatalError("Error spawning \"VoxelStreamingWorker_%u\" thread.", i);
+			delete pStreamingThread;
 		}
 		else
 		{
-			if (m_arrForFileRead.m_bThreadDone && !CVoxelSegment::m_tasksInProgressALL)
-				break;
-
-			CrySleep(1);
+			m_workerThreads.push_back(pStreamingThread);
 		}
 	}
+}
 
-	m_arrForFileRead.m_bThreadDone = false;
+CVoxStreamEngine::~CVoxStreamEngine()
+{
+	for (CVoxStreamEngineThread* pWorker : m_workerThreads)
+	{
+		pWorker->SignalStopWork();
+	}
+
+	for (CVoxStreamEngineThread* pWorker : m_workerThreads)
+	{
+		gEnv->pThreadManager->JoinThread(pWorker, eJM_Join);
+		delete pWorker;
+	}
+	m_workerThreads.clear();
+}
+
+void CVoxStreamEngine::DecompressVoxStreamItem(const SVoxStreamItem item)
+{
+	item.pObj->StreamAsyncOnComplete(0, 0);
+	const bool ret = m_arrForSyncCallBack.enqueue(item);
+	CRY_ASSERT_MESSAGE(ret, "CVoxStreamEngine::m_arrForSyncCallBack is not big enough.");
+}
+
+void CVoxStreamEngine::ProcessSyncCallBacks()
+{
+
+	SVoxStreamItem item;
+	while (m_arrForSyncCallBack.dequeue(item))
+	{
+		item.pObj->StreamOnComplete(0, 0);
+	}
 }
 
 bool CVoxStreamEngine::StartRead(CVoxelSegment* pObj, int64 fileOffset, int bytesToRead)
 {
-	if (m_arrForFileRead.Count() >= m_arrForFileRead.m_maxQeueSize)
-		return false;
-
 	FUNCTION_PROFILER_3DENGINE;
 
-	SVoxStreamItem* pNewItem = new SVoxStreamItem;
-	pNewItem->pObj = pObj;
-	pNewItem->requestFrameId = GetCurrPassMainFrameID() / 10;
 
-	CVoxelSegment::m_tasksInProgressALL++;
+	if (m_arrForFileRead.enqueue({ pObj, GetCurrPassMainFrameID() / 10 }))
+	{
+		m_fileReadSemaphore.Release();
+		return true;
+	}
 
-	m_arrForFileRead.AddNewTaskToQeue(pNewItem);
-
-	m_doResort = true;
-
-	return true;
+	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -718,7 +661,7 @@ void CVoxelSegment::UnloadStreamableData()
 	m_eStreamingStatus = ecss_NotLoaded;
 }
 
-bool CVoxelSegment::StartStreaming()
+bool CVoxelSegment::StartStreaming(CVoxStreamEngine* pVoxStreamEngine)
 {
 	if (m_eStreamingStatus != ecss_NotLoaded)
 	{
@@ -751,12 +694,10 @@ bool CVoxelSegment::StartStreaming()
 	else
 	{
 		// generate voxels on CPU
-
-		if (!pVoxStreamEngine)
-			pVoxStreamEngine = new CVoxStreamEngine();
-
 		if (!pVoxStreamEngine->StartRead(this, m_fileStreamOffset64, m_fileStreamSize))
+		{
 			return false;
+	}
 	}
 
 	m_eStreamingStatus = ecss_InProgress;
@@ -1082,14 +1023,6 @@ bool CVoxelSegment::CheckUpdateBrickRenderData(bool bJustCheck)
 	}
 
 	return bRes;
-}
-
-void CVoxelSegment::UpdateStreamingEngine()
-{
-	FUNCTION_PROFILER_3DENGINE;
-
-	if (pVoxStreamEngine)
-		pVoxStreamEngine->ProcessSyncCallBacks();
 }
 
 void CVoxelSegment::UpdateObjectLayersInfo()

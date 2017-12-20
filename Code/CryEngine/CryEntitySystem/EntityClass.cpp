@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "EntityClass.h"
@@ -73,7 +73,7 @@ int CEntityClass::GetEventCount()
 	if (!m_pEntityScript)
 		return 0;
 
-	return ((CEntityScript*)m_pEntityScript)->GetEventCount();
+	return static_cast<CEntityScript*>(m_pEntityScript)->GetEventCount();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -127,12 +127,11 @@ CEntityClass::SEventInfo CEntityClass::GetEventInfo(int nIndex)
 	if (!m_bScriptLoaded)
 		LoadScript(false);
 
-	// cppcheck-suppress assertWithSideEffect
-	assert(nIndex >= 0 && nIndex < GetEventCount());
+	CRY_ASSERT(nIndex >= 0 && nIndex < GetEventCount());
 
 	if (m_pEntityScript)
 	{
-		const SEntityScriptEvent& scriptEvent = ((CEntityScript*)m_pEntityScript)->GetEvent(nIndex);
+		const SEntityScriptEvent& scriptEvent = static_cast<CEntityScript*>(m_pEntityScript)->GetEvent(nIndex);
 		info.name = scriptEvent.name.c_str();
 		info.bOutput = scriptEvent.bOutput;
 		info.type = scriptEvent.valueType;
@@ -155,7 +154,7 @@ bool CEntityClass::FindEventInfo(const char* sEvent, SEventInfo& event)
 	if (!m_pEntityScript)
 		return false;
 
-	const SEntityScriptEvent* pScriptEvent = ((CEntityScript*)m_pEntityScript)->FindEvent(sEvent);
+	const SEntityScriptEvent* pScriptEvent = static_cast<CEntityScript*>(m_pEntityScript)->FindEvent(sEvent);
 	if (!pScriptEvent)
 		return false;
 
@@ -167,7 +166,7 @@ bool CEntityClass::FindEventInfo(const char* sEvent, SEventInfo& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityClass::SetClassDesc(const IEntityClassRegistry::SEntityClassDesc &classDesc)
+void CEntityClass::SetClassDesc(const IEntityClassRegistry::SEntityClassDesc& classDesc)
 {
 	m_sName = classDesc.sName;
 	m_nFlags = classDesc.flags;
@@ -182,7 +181,7 @@ void CEntityClass::SetClassDesc(const IEntityClassRegistry::SEntityClassDesc &cl
 	m_pEventHandler = classDesc.pEventHandler;
 
 	if (m_pIFlowNodeFactory)
-	{ 
+	{
 		m_pIFlowNodeFactory->Release();
 	}
 	m_pIFlowNodeFactory = classDesc.pIFlowNodeFactory;
@@ -228,7 +227,7 @@ void CEntityClass::SetScriptFileHandler(IEntityScriptFileHandler* pScriptFileHan
 	m_pScriptFileHandler = pScriptFileHandler;
 }
 
-void CEntityClass::SetOnSpawnCallback(const OnSpawnCallback &callback)
+void CEntityClass::SetOnSpawnCallback(const OnSpawnCallback& callback)
 {
 	m_onSpawnCallback = callback;
 }
