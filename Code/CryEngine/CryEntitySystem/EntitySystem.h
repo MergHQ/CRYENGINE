@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -6,7 +6,6 @@
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ITimer.h>
 #include "SaltBufferArray.h"          // SaltBufferArray<>
-#include "EntityTimeoutList.h"
 #include <CryCore/StlUtils.h>
 #include <CryMemory/STLPoolAllocator.h>
 #include <CryMemory/STLGlobalAllocator.h>
@@ -69,14 +68,15 @@ struct SEntityAttachment
 struct SEntityLoadParams
 {
 	SEntitySpawnParams spawnParams;
-	bool               bCallInit = false;
+	size_t             allocationSize;
 
 	SEntityLoadParams();
-	SEntityLoadParams(CEntity* pReuseEntity, SEntitySpawnParams& resetParams);
 	~SEntityLoadParams();
 
-	SEntityLoadParams& operator=(const SEntityLoadParams& other);
-	SEntityLoadParams(const SEntityLoadParams& other) { *this = other; }
+	SEntityLoadParams& operator=(const SEntityLoadParams& other) = delete;
+	SEntityLoadParams(const SEntityLoadParams& other) = delete;
+	SEntityLoadParams& operator=(SEntityLoadParams&& other) = default;
+	SEntityLoadParams(SEntityLoadParams&& other) = default;
 
 private:
 	void        AddRef();
@@ -86,149 +86,11 @@ private:
 };
 typedef std::vector<SEntityLoadParams>              TEntityLoadParamsContainer;
 
-// Mutatable set is a specialized customization of the std::set where items can be added or removed within foreach iteration.
-template<typename T>
-class CMutatableSet
-{
-public:
-	void insert(const T& item)
-	{
-		if (m_bIterating)
-			m_changeRequests.emplace_back(item, EChangeRequest::Add);
-		else
-			m_set.insert(item);
-	}
-	void erase(const T& item)
-	{
-		if (m_bIterating)
-			m_changeRequests.emplace_back(item, EChangeRequest::Remove);
-		else
-			m_set.erase(item);
-	}
-	void clear()
-	{
-		m_set.clear();
-		m_changeRequests.clear();
-	}
-	size_t size() const               { return m_set.size(); }
-	size_t count(const T& item) const { return m_set.count(item); }
-
-	//! Invokes the provided function f once with each component.
-	template<typename LambdaFunction>
-	void for_each(LambdaFunction f)
-	{
-		start_for_each();
-		for (auto& item : m_set)
-		{
-			f(item);
-		}
-		end_for_each();
-	}
-protected:
-	void start_for_each()
-	{
-		assert(!m_bIterating);
-		m_bIterating = true;
-	}
-	void end_for_each()
-	{
-		assert(m_bIterating);
-		m_bIterating = false;
-		for (const auto& itemRequestPair : m_changeRequests)
-		{
-			const T& item = itemRequestPair.first;
-			if (itemRequestPair.second == EChangeRequest::Add)
-			{
-				m_set.insert(item);
-			}
-			else
-			{
-				m_set.erase(item);
-			}
-		}
-		m_changeRequests.clear();
-	}
-private:
-	std::set<T> m_set;
-
-	enum class EChangeRequest
-	{
-		Add,
-		Remove
-	};
-	std::vector<std::pair<T, EChangeRequest>> m_changeRequests;
-	bool m_bIterating = false;
-};
-
-// Mutatable map is a specialized customization of the std::map where items can be added or removed within foreach iteration.
-template<typename TKey, typename TValue>
-class CMutatableMap
-{
-	typename std::pair<TKey, TValue> pair_type;
-public:
-	void insert(const TKey& key, const TValue& value)
-	{
-		if (m_bIterating)
-			m_added.push_back(std::make_pair(key, value));
-		else
-			m_map.insert(std::make_pair(key, value));
-	}
-	void erase(const TKey& key)
-	{
-		if (m_bIterating)
-			m_removed.push_back(key);
-		else
-			m_map.erase(key);
-	}
-	void clear()
-	{
-		m_map.clear();
-		m_added.clear();
-		m_removed.clear();
-	}
-	size_t size() const                 { return m_map.size(); }
-	size_t count(const TKey& key) const { return m_map.count(key); }
-
-	//! Invokes the provided function f once with each component.
-	template<typename LambdaFunction>
-	void for_each(LambdaFunction f)
-	{
-		start_for_each();
-		for (auto& item : m_map)
-		{
-			f(item.first, item.second);
-		}
-		end_for_each();
-	}
-protected:
-	void start_for_each()
-	{
-		assert(!m_bIterating);
-		m_bIterating = true;
-	}
-	void end_for_each()
-	{
-		assert(m_bIterating);
-		m_bIterating = false;
-		for (const auto& item : m_added)
-			m_map.insert(item);
-		for (const auto& item : m_removed)
-			m_map.erase(item->first);
-		m_added.clear();
-		m_removed.clear();
-	}
-private:
-	std::map<TKey, TValue>               m_map;
-	std::vector<std::pair<TKey, TValue>> m_added;
-	std::vector<TKey>                    m_removed;
-	bool m_bIterating = false;
-};
-
 //////////////////////////////////////////////////////////////////////
 class CEntitySystem final : public IEntitySystem
 {
 public:
-	CEntitySystem(ISystem* pSystem);
+	explicit CEntitySystem(ISystem* pSystem);
 	~CEntitySystem();
 
 	bool Init(ISystem* pSystem);
@@ -313,18 +175,18 @@ public:
 	virtual void                              ClearLayers() final;
 	virtual void                              EnableDefaultLayers(bool isSerialized = true) final;
 	virtual void                              EnableLayer(const char* layer, bool isEnable, bool isSerialized = true) final;
-	virtual void                              EnableLayerSet(const char* const * pLayers, size_t layerCount, bool bIsSerialized = true, IEntityLayerSetUpdateListener* pListener = nullptr) final;
+	virtual void                              EnableLayerSet(const char* const* pLayers, size_t layerCount, bool bIsSerialized = true, IEntityLayerSetUpdateListener* pListener = nullptr) final;
 	virtual IEntityLayer*                     FindLayer(const char* szLayerName, const bool bCaseSensitive = true) const final;
 	virtual bool                              IsLayerEnabled(const char* layer, bool bMustBeLoaded, bool bCaseSensitive = true) const final;
 	virtual bool                              ShouldSerializedEntity(IEntity* pEntity) final;
 	virtual void                              RegisterPhysicCallbacks() final;
 	virtual void                              UnregisterPhysicCallbacks() final;
 
-	CEntityLayer* GetLayerForEntity(EntityId id);
-	void EnableLayer(IEntityLayer* pLayer, bool bIsEnable, bool bIsSerialized, bool bAffectsChildren);
+	CEntityLayer*                             GetLayerForEntity(EntityId id);
+	void                                      EnableLayer(IEntityLayer* pLayer, bool bIsEnable, bool bIsSerialized, bool bAffectsChildren);
 
-	bool          OnBeforeSpawn(SEntitySpawnParams& params);
-	void          OnEntityReused(IEntity* pEntity, SEntitySpawnParams& params);
+	bool                                      OnBeforeSpawn(SEntitySpawnParams& params);
+	void                                      OnEntityReused(IEntity* pEntity, SEntitySpawnParams& params);
 
 	// Sets new entity timer event.
 	void AddTimerEvent(SEntityTimerEvent& event, CTimeValue startTime = gEnv->pTimer->GetFrameStartTime());
@@ -340,16 +202,13 @@ public:
 	virtual bool CreateEntity(XmlNodeRef& entityNode, SEntitySpawnParams& pParams, EntityId& outUsingId) final;
 	virtual void EndCreateEntities() final;
 
+	IEntity*     SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEntitySpawnParams& params, bool bAutoInit);
+
 	//////////////////////////////////////////////////////////////////////////
 	// Called from CEntity implementation.
 	//////////////////////////////////////////////////////////////////////////
 	void RemoveTimerEvent(EntityId id, int nTimerId);
 	bool HasTimerEvent(EntityId id, int nTimerId);
-
-	// Puts entity into active list.
-	void ActivateEntity(CEntity* pEntity, bool bActivate);
-	void ActivatePrePhysicsUpdateForEntity(CEntity* pEntity, bool bActivate);
-	bool IsPrePhysicsActive(CEntity* pEntity);
 
 	// Access to class that binds script to entity functions.
 	// Used by Script proxy.
@@ -388,19 +247,22 @@ public:
 	virtual IBSPTree3D*              CreateBSPTree3D(const IBSPTree3D::FaceList& faceList) final;
 	virtual void                     ReleaseBSPTree3D(IBSPTree3D*& pTree) final;
 
-	void RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately = false, bool ignoreSinks = false);
+	void                             RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately = false, bool ignoreSinks = false);
+	void                             EnableComponentUpdates(IEntityComponent* pComponent, bool bEnable);
+	void                             EnableComponentPrePhysicsUpdates(IEntityComponent* pComponent, bool bEnable);
 
-private: // -----------------------------------------------------------------
-	void DoUpdateLoop(float fFrameTime);
+private:
+	bool ValidateSpawnParameters(SEntitySpawnParams& params);
+
+	void UpdateEntityComponents(float fFrameTime);
 
 	void DeleteEntity(CEntity* pEntity);
-	void RemoveEntityFromActiveList(CEntity* pEntity);
 	void UpdateTimers();
 	void DebugDraw(const CEntity* const pEntity, float fUpdateTime);
 
 	void DebugDrawEntityUsage();
 	void DebugDrawLayerInfo();
-	
+
 	void ClearEntityArray();
 
 	void DumpEntity(CEntity* pEntity);
@@ -430,19 +292,19 @@ private: // -----------------------------------------------------------------
 	typedef std::vector<SEntityTimerEvent>                                                                                                                                                              EntityTimersVector;
 
 	std::array<std::vector<IEntitySystemSink*>, (size_t)SinkEventSubscriptions::Count> m_sinks;
-	
-	ISystem*                 m_pISystem;
-	std::array<CEntity*, CSaltBufferArray::GetTSize()>    m_EntityArray;                 // [id.GetIndex()]=CEntity
-	DeletedEntities          m_deletedEntities;
-	std::vector<CEntity*>    m_deferredUsedEntities;
 
-	CMutatableSet<EntityId>  m_mapActiveEntities;           // Map of currently active entities (All entities that need per frame update).
-	CMutatableSet<EntityId>  m_mapPrePhysicsEntities;       // map of entities requiring pre-physics activation
+	ISystem*              m_pISystem;
+	std::array<CEntity*, CSaltBufferArray::GetTSize()> m_EntityArray;                    // [id.GetIndex()]=CEntity
+	DeletedEntities       m_deletedEntities;
+	std::vector<CEntity*> m_deferredUsedEntities;
 
-	EntityNamesMap           m_mapEntityNames;         // Map entity name to entity ID.
+	EntityNamesMap        m_mapEntityNames;            // Map entity name to entity ID.
 
-	CSaltBufferArray        m_EntitySaltBuffer;            // used to create new entity ids (with uniqueid=salt)
+	CSaltBufferArray    m_EntitySaltBuffer;               // used to create new entity ids (with uniqueid=salt)
 	//////////////////////////////////////////////////////////////////////////
+
+	std::vector<IEntityComponent*> m_updatedEntityComponents;
+	std::vector<IEntityComponent*> m_prePhysicsUpdatedEntityComponents;
 
 	// Entity timers.
 	EntityTimersMap    m_timersMap;
@@ -488,7 +350,7 @@ private: // -----------------------------------------------------------------
 
 	TLayers m_layers;
 	THeaps  m_garbageLayerHeaps;
-	
+
 	std::unique_ptr<CEntitiesComponentPropertyCache> m_entitiesPropertyCache;
 
 public:

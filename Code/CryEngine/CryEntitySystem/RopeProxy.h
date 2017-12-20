@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -22,8 +22,8 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize() final;
-	virtual void ProcessEvent(const SEntityEvent& event) final;
+	virtual void   Initialize() final;
+	virtual void   ProcessEvent(const SEntityEvent& event) final;
 	virtual uint64 GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
 
@@ -31,7 +31,7 @@ public:
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_ROPE; }
-	virtual void         Release() final { delete this; };
+	virtual void         Release() final            { delete this; };
 	virtual void         Update(SEntityUpdateContext& ctx) final;
 	virtual void         LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) override final;
 	virtual bool         NeedGameSerialize() final;

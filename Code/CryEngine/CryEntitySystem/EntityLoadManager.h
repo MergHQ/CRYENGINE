@@ -1,19 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
-
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description: Handles management for loading of entities
-
-   -------------------------------------------------------------------------
-   History:
-   - 15:03:2010: Created by Kevin Kirst
-
-*************************************************************************/
-
-#ifndef __ENTITYLOADMANAGER_H__
-#define __ENTITYLOADMANAGER_H__
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "EntitySystem.h"
 
@@ -28,10 +13,10 @@ public:
 	bool LoadEntities(XmlNodeRef& entitesNode, bool bIsLoadingLevelFile, const Vec3& segmentOffset = Vec3(0, 0, 0));
 
 	void PrepareBatchCreation(int nSize);
-	bool CreateEntity(SEntityLoadParams& loadParams, EntityId& outUsingId, bool bIsLoadingLevellFile);
+	bool CreateEntity(CEntity* pPreallocatedEntity, SEntityLoadParams& loadParams, EntityId& outUsingId, bool bIsLoadingLevellFile);
 	void OnBatchCreationCompleted();
 
-	void     GetMemoryStatistics(ICrySizer* pSizer) const
+	void GetMemoryStatistics(ICrySizer* pSizer) const
 	{
 		pSizer->Add(*this);
 		pSizer->AddContainer(m_queuedFlowgraphs);
@@ -64,9 +49,8 @@ private:
 		SQueuedFlowGraph() : pEntity(NULL), pNode() {}
 	};
 	typedef std::vector<SQueuedFlowGraph> TQueuedFlowgraphs;
-	TQueuedFlowgraphs m_queuedFlowgraphs;
+	TQueuedFlowgraphs  m_queuedFlowgraphs;
 
-	TQueuedFlowgraphs m_queuedEntityLinks;
+	TQueuedFlowgraphs  m_queuedEntityLinks;
+	std::vector<uint8> m_entityPool;
 };
-
-#endif //__ENTITYLOADMANAGER_H__

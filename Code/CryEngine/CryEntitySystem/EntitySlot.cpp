@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "EntitySlot.h"
@@ -40,7 +40,6 @@ void CEntitySlot::Clear()
 	m_pMaterial = nullptr;
 	SetFlags(0);
 	m_nSubObjHideMask = 0;
-	m_internalFlags = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////

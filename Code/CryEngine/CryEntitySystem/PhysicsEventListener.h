@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -10,10 +10,9 @@ struct IPhysicalWorld;
 class CPhysicsEventListener
 {
 public:
-	CPhysicsEventListener(IPhysicalWorld* pPhysics);
+	explicit CPhysicsEventListener(IPhysicalWorld* pPhysics);
 	~CPhysicsEventListener();
 
-	static int OnBBoxOverlap(const EventPhys* pEvent);
 	static int OnStateChange(const EventPhys* pEvent);
 	static int OnPostStep(const EventPhys* pEvent);
 	static int OnPostStepImmediate(const EventPhys* pEvent);
@@ -34,7 +33,7 @@ private:
 	static CEntity* GetEntity(void* pForeignData, int iForeignData);
 	static CEntity* GetEntity(IPhysicalEntity* pPhysEntity);
 
-	IPhysicalWorld* m_pPhysics;
+	IPhysicalWorld*                      m_pPhysics;
 
 	static std::vector<IPhysicalEntity*> m_physVisAreaUpdateVector;
 	static int                           m_jointFxFrameId, m_jointFxCount;

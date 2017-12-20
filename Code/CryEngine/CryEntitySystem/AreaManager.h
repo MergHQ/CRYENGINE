@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -20,33 +20,18 @@ class CAreaManager : public IAreaManager, public ISystemEventListener
 {
 	struct SAreaCacheEntry
 	{
-		SAreaCacheEntry()
-			: pArea(NULL),
-			bNear(false),
-			bInside(false),
-			bInGrid(true)
-		{};
+		SAreaCacheEntry() = default;
 
 		SAreaCacheEntry(CArea* const pPassedArea, bool const bIsNear, bool const bIsInside)
 			: pArea(pPassedArea),
 			bNear(bIsNear),
 			bInside(bIsInside),
-			bInGrid(true)
-		{};
+			bInGrid(true) {}
 
-		SAreaCacheEntry& operator=(SAreaCacheEntry const& rOther)
-		{
-			pArea = rOther.pArea;
-			bInGrid = rOther.bInGrid;
-			bInside = rOther.bInside;
-			bNear = rOther.bNear;
-			return *this;
-		}
-
-		CArea* pArea;
-		bool   bInGrid;
-		bool   bInside;
-		bool   bNear;
+		CArea* pArea = nullptr;
+		bool   bInGrid = true;
+		bool   bInside = false;
+		bool   bNear = false;
 	};
 
 	typedef std::vector<SAreaCacheEntry> TAreaCacheVector;
@@ -102,7 +87,7 @@ public:
 	// ~ISystemEventListener
 
 	// Makes a new area.
-	CArea*         CreateArea();
+	CArea* CreateArea();
 
 	// Puts the passed entity ID into the update list for the next update.
 	virtual void MarkEntityForUpdate(EntityId const entityId) override;
@@ -148,10 +133,10 @@ protected:
 	void Unregister(CArea const* const pArea);
 
 	// Holds all registered areas.
-	TAreaPointers  m_areas;
+	TAreaPointers m_areas;
 
-	bool           m_bAreasDirty;
-	CAreaGrid      m_areaGrid;
+	bool          m_bAreasDirty;
+	CAreaGrid     m_areaGrid;
 
 private:
 

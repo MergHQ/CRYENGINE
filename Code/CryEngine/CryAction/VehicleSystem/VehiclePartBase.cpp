@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
    -------------------------------------------------------------------------
@@ -465,9 +465,9 @@ void CVehiclePartBase::GetGeometryName(EVehiclePartState state, string& name)
 }
 
 //------------------------------------------------------------------------
-const Matrix34& CVehiclePartBase::GetLocalTM(bool relativeToParentPart, bool forced)
+Matrix34 CVehiclePartBase::GetLocalTM(bool relativeToParentPart, bool forced)
 {
-	const Matrix34& tm = GetEntity()->GetSlotLocalTM(m_slot, relativeToParentPart);
+	const Matrix34 tm = GetEntity()->GetSlotLocalTM(m_slot, relativeToParentPart);
 
 	return VALIDATE_MAT(tm);
 }
@@ -489,7 +489,7 @@ void CVehiclePartBase::ResetLocalTM(bool recursive)
 }
 
 //------------------------------------------------------------------------
-const Matrix34& CVehiclePartBase::GetWorldTM()
+Matrix34 CVehiclePartBase::GetWorldTM()
 {
 	return VALIDATE_MAT(GetEntity()->GetSlotWorldTM(m_slot));
 }

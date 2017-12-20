@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include <CryAnimation/ICryAnimation.h>
@@ -279,7 +279,7 @@ bool CBreakableManager::CanShatterEntity(IEntity* pEntity, int nSlot)
 {
 	if (nSlot < 0)
 		nSlot = 0;
-	IStatObj* pStatObj = pEntity->GetStatObj(0 | ENTITY_SLOT_ACTUAL);
+	IStatObj* pStatObj = pEntity->GetStatObj(nSlot | ENTITY_SLOT_ACTUAL);
 	if (pStatObj)
 		return CanShatter(pStatObj);
 	else
@@ -651,7 +651,7 @@ void CBreakableManager::BreakIntoPieces(GeomRef& geoOrig, const Matrix34& mxSrcT
 					SEntitySpawnParams params;
 					params.nFlags = ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SPAWNED | ENTITY_FLAG_MODIFIED_BY_PHYSICS;
 					params.pClass = pClass;
-					CEntity* pNewEntity = (CEntity*)g_pIEntitySystem->SpawnEntity(params, false);
+					CEntity* pNewEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(params, false));
 					if (!pNewEntity)
 						continue;
 
@@ -781,7 +781,7 @@ void CBreakableManager::BreakIntoPieces(GeomRef& geoOrig, const Matrix34& mxSrcT
 void CBreakableManager::BreakIntoPieces(IEntity* pEntity, int nOrigSlot, int nPiecesSlot, BreakageParams const& Breakage)
 {
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
-	
+
 	{
 		IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 		if (pRenderNode)
@@ -944,7 +944,7 @@ IEntity* CBreakableManager::CreateObjectAsEntity(IStatObj* pStatObj, IPhysicalEn
 	SEntitySpawnParams params;
 	bool bNewEntitySpawned = false;
 
-	CEntity* pEntity = static_cast<CEntity*>(pPhysEnt ? (CEntity*)pPhysEnt->GetForeignData(PHYS_FOREIGN_ID_ENTITY) : NULL);
+	CEntity* pEntity = static_cast<CEntity*>(pPhysEnt ? static_cast<CEntity*>(pPhysEnt->GetForeignData(PHYS_FOREIGN_ID_ENTITY)) : nullptr);
 	if (!pEntity || !(pEntity->GetFlags() & ENTITY_FLAG_SPAWNED))
 	{
 		params.nFlags = ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_CASTSHADOW |
@@ -955,7 +955,7 @@ IEntity* CBreakableManager::CreateObjectAsEntity(IStatObj* pStatObj, IPhysicalEn
 
 		//We don't want this auto-initialised as we want to init it when the statobj is set,
 		//	allowing entity events to access it
-		pEntity = (CEntity*)g_pIEntitySystem->SpawnEntity(params, false);
+		pEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(params, false));
 		if (!pEntity)
 			return 0;
 
@@ -981,7 +981,7 @@ IEntity* CBreakableManager::CreateObjectAsEntity(IStatObj* pStatObj, IPhysicalEn
 		//if (createParams.pCustomMtl)
 		//	pEntity->SetMaterial( createParams.pCustomMtl );
 		//if (createParams.nMatLayers)
-			//pIEntityRender->SetMaterialLayers(createParams.nMatLayers);
+		//pIEntityRender->SetMaterialLayers(createParams.nMatLayers);
 		//pIEntityRender->SetRndFlags(createParams.nRenderNodeFlags);
 	}
 	else
@@ -1179,12 +1179,14 @@ IStatObj::SSubObject* CBreakableManager::CheckSubObjBreak(IStatObj* pStatObj, IS
 		while (pAdam->GetCloneSourceObject())
 			pAdam = pAdam->GetCloneSourceObject();
 		pe_params_structural_joint psj;
-		IStatObj::SSubObject* pJoint;
 		int nDestroyedJoints = pSubObj->nBreakerJoints;
 		for (psj.idx = 0; epcep->pEntNew->GetParams(&psj); psj.idx++)
+		{
+			IStatObj::SSubObject* pJoint;
 			if ((psj.partid[0] == epcep->partidNew || psj.partid[1] == epcep->partidNew) &&
 			    (pJoint = pAdam->GetSubObject(psj.id)) && strstr(pJoint->properties, "breaker"))
 				--nDestroyedJoints;
+		}
 		const char* ptr;
 		if (nDestroyedJoints > 0 && (ptr = strstr(pSubObj->properties, "pieces=")))
 			return pAdam->FindSubObject(ptr + 7);
@@ -1242,7 +1244,6 @@ void CBreakableManager::GetBrokenObjectIndicesForCloning(int32* pPartRemovalIndi
 		IRenderNode* pRenderNode = NULL;
 
 		EntityId originalBrokenId = 0;
-		int iBrokenObjectIndex = -1;
 
 		if (BreakEvents[pPartRemovalIndices[k]].iForeignData == PHYS_FOREIGN_ID_ENTITY)
 		{
@@ -1262,8 +1263,6 @@ void CBreakableManager::GetBrokenObjectIndicesForCloning(int32* pPartRemovalIndi
 					break;
 				}
 			}
-
-			assert(iBrokenObjectIndex >= 0);
 		}
 		else
 		{
@@ -1409,7 +1408,6 @@ void CBreakableManager::HideBrokenObjectsByIndex(const int32* pBrokenObjectIndic
 			//	decals being left floating in mid air, we need to remove them when the killcam starts
 			IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
 
-			
 			{
 				gEnv->p3DEngine->DeleteEntityDecals(pIEntityRender->GetRenderNode());
 			}
@@ -1602,23 +1600,23 @@ public:
 			else
 			{
 				// Wait some more to see if still rendered.
-				GetEntity()->SetTimer(0,m_timeoutMillis);
+				GetEntity()->SetTimer(0, m_timeoutMillis);
 			}
 		}
 	}
-	virtual uint64                 GetEventMask() const final { return BIT64(ENTITY_EVENT_TIMER)|BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE); }
-	virtual void                   Initialize() final
+	virtual uint64 GetEventMask() const final { return BIT64(ENTITY_EVENT_TIMER) | BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE); }
+	virtual void   Initialize() final
 	{
-		m_pEntity->AddFlags(ENTITY_FLAG_NO_SAVE|ENTITY_FLAG_SEND_RENDER_EVENT);
+		m_pEntity->AddFlags(ENTITY_FLAG_NO_SAVE | ENTITY_FLAG_SEND_RENDER_EVENT);
 	}
-	virtual void Release() final { delete this; }
-	
+	virtual void Release() final                     { delete this; }
+
 	virtual void GameSerialize(TSerialize ser) final {};
 
-	void SetTimeout( int timeoutMillis )
+	void         SetTimeout(int timeoutMillis)
 	{
 		m_timeoutMillis = timeoutMillis;
-		GetEntity()->SetTimer(0,m_timeoutMillis);
+		GetEntity()->SetTimer(0, m_timeoutMillis);
 	}
 
 private:
@@ -1641,7 +1639,7 @@ void SetEntityLifetime(CEntity* pEntity, const char* props, bool visible)
 	if (timeout > 0 || timeoutInvis >= 0)
 	{
 		auto pTimeout = pEntity->GetOrCreateComponent<CTimeoutKillComponent>();
-		pTimeout->SetTimeout( static_cast<int>(1000*std::max(timeout,timeoutInvis)) );
+		pTimeout->SetTimeout(static_cast<int>(1000 * std::max(timeout, timeoutInvis)));
 	}
 }
 
@@ -1662,7 +1660,6 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 	IRenderNode* pSrcRenderNode = 0;
 	IStatObj::SSubObject* pSubObj;
 	IStatObj* pCutShape = 0;
-	float cutShapeScale;
 	IBreakableManager::SCreateParams createParams;
 	int partidSrc = pCreateEvent->partidSrc;
 
@@ -1674,7 +1671,7 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 		params.pClass = g_pIEntitySystem->GetClassRegistry()->FindClass("RopeEntity");
 		params.nFlags = ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SPAWNED;
 		params.sName = "rope_piece";
-		pNewEntity = (CEntity*)g_pIEntitySystem->SpawnEntity(params, false);
+		pNewEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(params, false));
 		if (!pNewEntity)
 			return;
 
@@ -1710,8 +1707,8 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 	{
 		//CryLogAlways( "* CreateEvent Entity" );
 
-		pSrcEntity = (CEntity*)pForeignData;
-		pNewEntity = (CEntity*)pCreateEvent->pEntNew->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
+		pSrcEntity = static_cast<CEntity*>(pForeignData);
+		pNewEntity = static_cast<CEntity*>(pCreateEvent->pEntNew->GetForeignData(PHYS_FOREIGN_ID_ENTITY));
 
 		int nLevels, nBits;
 		EntityPhysicsUtils::ParsePartId(pCreateEvent->partidSrc, nLevels, nBits);
@@ -1724,7 +1721,7 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 			}
 
 		if (pCreateEvent->partidSrc >= EntityPhysicsUtils::PARTID_LINKED)
-			pSrcEntity = (CEntity*)pSrcEntity->UnmapAttachedChild(partidSrc);
+			pSrcEntity = static_cast<CEntity*>(pSrcEntity->UnmapAttachedChild(partidSrc));
 
 		//////////////////////////////////////////////////////////////////////////
 		// Handle Breakage of Entity.
@@ -1765,7 +1762,7 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 	{
 		//CryLogAlways( "* CreateEvent Static" );
 
-		pNewEntity = (CEntity*)pCreateEvent->pEntNew->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
+		pNewEntity = static_cast<CEntity*>(pCreateEvent->pEntNew->GetForeignData(PHYS_FOREIGN_ID_ENTITY));
 		if (pNewEntity)
 		{
 			pNewStatObj = pNewEntity->GetStatObj(ENTITY_SLOT_ACTUAL);
@@ -1774,7 +1771,7 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 		//////////////////////////////////////////////////////////////////////////
 		// Handle Breakage of Brush or Vegetation.
 		//////////////////////////////////////////////////////////////////////////
-		pSrcRenderNode = (IRenderNode*)pForeignData;
+		pSrcRenderNode = static_cast<IRenderNode*>(pForeignData);
 		if (pSrcRenderNode)
 		{
 			createParams.pSrcStaticRenderNode = pSrcRenderNode;
@@ -1882,8 +1879,11 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 	if (pCreateEvent->pMeshNew && !bAlreadyDeformed)
 	{
 		if (pCreateEvent->pLastUpdate && pCreateEvent->pLastUpdate->pMesh[1] &&
-		    (pCutShape = (IStatObj*)pCreateEvent->pLastUpdate->pMesh[1]->GetForeignData()))
+		    (pCutShape = static_cast<IStatObj*>(pCreateEvent->pLastUpdate->pMesh[1]->GetForeignData())))
+		{
+			float cutShapeScale;
 			pCutShape = pCutShape->GetLastBooleanOp(cutShapeScale);
+		}
 
 		pNewStatObj = gEnv->p3DEngine->UpdateDeformableStatObj(pCreateEvent->pMeshNew, pCreateEvent->pLastUpdate);
 		if (pNewStatObj)
@@ -1983,12 +1983,14 @@ void CBreakableManager::HandlePhysicsCreateEntityPartEvent(const EventPhysCreate
 				 */
 				float fMass = 0.0f;
 				float fDensity = 0.0f;
-				float fVolume = 0.0f;
 				Vec3 vCM(ZERO);
 				Vec3 vLinVel(ZERO);
 				Vec3 vAngVel(ZERO);
 				if (pCreateEvent->pEntNew)
+				{
+					float fVolume;
 					GetPhysicsStatus(pCreateEvent->pEntNew, fMass, fVolume, fDensity, vCM, vLinVel, vAngVel);
+				}
 				if (fDensity <= 0.0f)
 					pNewStatObj->GetPhysicalProperties(fMass, fDensity);
 				SMFXBreakageParams mfxBreakageParams;
@@ -2051,9 +2053,9 @@ void CBreakableManager::HandlePhysicsRevealSubPartEvent(const EventPhysRevealEnt
 
 	if (iForeignData == PHYS_FOREIGN_ID_ENTITY)
 	{
-		pEntity = (CEntity*)pForeignData;
+		pEntity = static_cast<CEntity*>(pForeignData);
 		if (pEntity && id >= EntityPhysicsUtils::PARTID_LINKED)
-			pEntity = (CEntity*)pEntity->UnmapAttachedChild(id);
+			pEntity = static_cast<CEntity*>(pEntity->UnmapAttachedChild(id));
 		if (pEntity)
 		{
 			pStatObj = pEntity->GetStatObj(ENTITY_SLOT_ACTUAL);
@@ -2063,7 +2065,7 @@ void CBreakableManager::HandlePhysicsRevealSubPartEvent(const EventPhysRevealEnt
 		}
 	}
 	else if (iForeignData == PHYS_FOREIGN_ID_STATIC)
-		if (pStatObj = (pRenderNode = (IRenderNode*)pForeignData)->GetEntityStatObj(0, &nodeTM))
+		if (pStatObj = (pRenderNode = static_cast<IRenderNode*>(pForeignData))->GetEntityStatObj(0, &nodeTM))
 		{
 			nSubObjHideMask = pStatObj->GetInitialHideMask();
 			bNewObject = true;
@@ -2105,7 +2107,7 @@ void CBreakableManager::HandlePhysicsRevealSubPartEvent(const EventPhysRevealEnt
 				createParams.nEntityFlagsAdd = ENTITY_FLAG_MODIFIED_BY_PHYSICS;
 			createParams.pName = pRenderNode->GetName();
 
-			pEntity = (CEntity*)CreateObjectAsEntity(pStatObj, pRevealEvent->pEntity, pRevealEvent->pEntity, createParams, true);
+			pEntity = static_cast<CEntity*>(CreateObjectAsEntity(pStatObj, pRevealEvent->pEntity, pRevealEvent->pEntity, createParams, true));
 		}
 
 	if (pEntity && pEntity->GetEntityRender())
@@ -2146,18 +2148,18 @@ void CBreakableManager::HandlePhysicsRemoveSubPartsEvent(const EventPhysRemoveEn
 	if (iForeignData == PHYS_FOREIGN_ID_ENTITY)
 	{
 		//CryLogAlways( "* RemoveEvent Entity" );
-		pEntity = (CEntity*)pForeignData;
+		pEntity = static_cast<CEntity*>(pForeignData);
 		if (pEntity && pRemoveEvent->idOffs >= EntityPhysicsUtils::PARTID_LINKED)
-			pEntity = (CEntity*)pEntity->UnmapAttachedChild(idOffs);
+			pEntity = static_cast<CEntity*>(pEntity->UnmapAttachedChild(idOffs));
 		if (pEntity)
 		{
 			pStatObj = pEntity->GetStatObj(ENTITY_SLOT_ACTUAL);
 			if (pEntity->GetSlotCount() > 1 && (!pStatObj || !(pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND)))
 			{
 				for (int i = 0; i < sizeof(pRemoveEvent->partIds) / sizeof(pRemoveEvent->partIds[0]); i++)
-					for(j = 0; j < 32; j++) 
+					for (j = 0; j < 32; j++)
 						if (pRemoveEvent->partIds[i] & 1u << j)
-							pEntity->FreeSlot(pRemoveEvent->idOffs + i*32 + j);
+							pEntity->FreeSlot(pRemoveEvent->idOffs + i * 32 + j);
 				return;
 			}
 		}
@@ -2184,7 +2186,7 @@ void CBreakableManager::HandlePhysicsRemoveSubPartsEvent(const EventPhysRemoveEn
 	else if (iForeignData == PHYS_FOREIGN_ID_STATIC)
 	{
 		//CryLogAlways( "* RemoveEvent Entity Static" );
-		pRenderNode = (IRenderNode*)pForeignData;
+		pRenderNode = static_cast<IRenderNode*>(pForeignData);
 		pStatObj = pRenderNode->GetEntityStatObj(0, &nodeTM);
 		bNewObject = true;
 	}
@@ -2331,7 +2333,7 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 		pe_params_rope pr;
 		pUpdateEvent->pEntity->GetParams(&pr);
 		CEntity* pSrcEntity = static_cast<CEntity*>(pRope->GetOwnerEntity());
-		CEntityComponentRope* pRopeProxy = (CEntityComponentRope*)pSrcEntity->GetProxy(ENTITY_PROXY_ROPE);
+		CEntityComponentRope* pRopeProxy = static_cast<CEntityComponentRope*>(pSrcEntity->GetProxy(ENTITY_PROXY_ROPE));
 		pRopeProxy->PreserveParams();
 		params.nNumSegments = FtoI(pr.nSegments * params.nNumSegments / (float)params.nPhysSegments);
 		params.fTextureTileV = params.fTextureTileV * pr.nSegments / params.nPhysSegments;
@@ -2344,7 +2346,7 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 
 	if (iForeignData == PHYS_FOREIGN_ID_ENTITY)
 	{
-		pCEntity = (CEntity*)pForeignData;
+		pCEntity = static_cast<CEntity*>(pForeignData);
 		if (!pCEntity || !pCEntity->GetPhysicalProxy())
 			return 1;
 	}
@@ -2352,9 +2354,9 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 	{
 		IBreakableManager::SCreateParams createParams;
 
-		CBreakableManager* pBreakMgr = (CBreakableManager*)GetIEntitySystem()->GetBreakableManager();
+		CBreakableManager* pBreakMgr = static_cast<CBreakableManager*>(GetIEntitySystem()->GetBreakableManager());
 
-		IRenderNode* pRenderNode = (IRenderNode*)pUpdateEvent->pForeignData;
+		IRenderNode* pRenderNode = static_cast<IRenderNode*>(pUpdateEvent->pForeignData);
 		IStatObj* pStatObj = pRenderNode->GetEntityStatObj(0, &mtx);
 
 		PhysicsVars* pVars = gEnv->pPhysicalWorld->GetPhysVars();
@@ -2388,7 +2390,7 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 		return 1;
 
 	bop_meshupdate* pmu = (bop_meshupdate*)pUpdateEvent->pMesh->GetForeignData(DATA_MESHUPDATE);
-	IStatObj* pSrcStatObj = (IStatObj*)pUpdateEvent->pMesh->GetForeignData();
+	IStatObj* pSrcStatObj = static_cast<IStatObj*>(pUpdateEvent->pMesh->GetForeignData());
 	if (pmu && pSrcStatObj && GetSurfaceType(pSrcStatObj))
 	{
 		SpawnParams paramsDestroy;
@@ -2444,7 +2446,7 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 			mesh_data* md = (mesh_data*)pUpdateEvent->pMeshSkel->GetData();
 			IStatObj* pStatObj = pIEntityRender->GetStatObj(pUpdateEvent->partid);
 			if (pUpdateEvent->idx == 0)
-				pDeformedStatObj = (IStatObj*)pUpdateEvent->pMesh->GetForeignData();
+				pDeformedStatObj = static_cast<IStatObj*>(pUpdateEvent->pMesh->GetForeignData());
 			else if (pStatObj)
 			{
 				Matrix34 mtxSkelToMeshAligned = pUpdateEvent->mtxSkelToMesh;
@@ -2549,7 +2551,7 @@ void CBreakableManager::GetPlaneMemoryStatistics(void* pPlaneRaw, ICrySizer* pSi
 	if (!pPlaneRaw)
 		return;
 
-	CBreakablePlane* pPlane = (CBreakablePlane*)pPlaneRaw;
+	CBreakablePlane* pPlane = static_cast<CBreakablePlane*>(pPlaneRaw);
 	pPlane->m_pGrid->GetMemoryStatistics(pSizer);
 }
 

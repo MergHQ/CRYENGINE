@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 
@@ -55,28 +55,28 @@ public:
 				};
 
 				gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
-					stl::make_unique<Schematyc::CEnvPackage>(
-						SchematyEntityComponentsPackageGUID,
-						"EntityComponents",
-						"Crytek GmbH",
-						"CRYENGINE Default Entity Components",
-						entitySchematycRegistration
-						)
-				);
+				  stl::make_unique<Schematyc::CEnvPackage>(
+				    SchematyEntityComponentsPackageGUID,
+				    "EntityComponents",
+				    "Crytek GmbH",
+				    "CRYENGINE Default Entity Components",
+				    entitySchematycRegistration
+				    )
+				  );
 			}
 			break;
 		case ESYSTEM_EVENT_FULL_SHUTDOWN:
 		case ESYSTEM_EVENT_FAST_SHUTDOWN:
-		{
-			// Deregister the Schematyc packages which were registered in the entity system.
-			if (gEnv->pSchematyc)
 			{
-				gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(SchematyEntityComponentsPackageGUID);
+				// Deregister the Schematyc packages which were registered in the entity system.
+				if (gEnv->pSchematyc)
+				{
+					gEnv->pSchematyc->GetEnvRegistry().DeregisterPackage(SchematyEntityComponentsPackageGUID);
 
-				g_pIEntitySystem->GetClassRegistry()->UnregisterSchematycEntityClass();
+					g_pIEntitySystem->GetClassRegistry()->UnregisterSchematycEntityClass();
+				}
 			}
-		}
-		break;
+			break;
 		case ESYSTEM_EVENT_LEVEL_LOAD_END:
 			{
 				if (g_pIEntitySystem)

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
    -------------------------------------------------------------------------
@@ -333,7 +333,7 @@ void CGameObject::Initialize()
 	GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
 
 	// Fix case where init was already called
-	if (m_pEntity->IsInitialized())
+	if (!m_wasInitialized)
 	{
 		SEntityEvent event(ENTITY_EVENT_INIT);
 		ProcessEvent(event);
@@ -386,7 +386,7 @@ bool CGameObject::BindToNetworkWithParent(EBindToNetworkMode mode, EntityId pare
 	bool previously_bound = m_pNetEntity->IsBoundToNetwork();
 	bool ret = m_pNetEntity->BindToNetworkWithParent(mode, parentId);
 
-	if (!previously_bound && ret && GetEntity()->IsInitialized())
+	if (!previously_bound && ret)
 	{
 		EvaluateUpdateActivation();
 	}
@@ -645,6 +645,7 @@ void CGameObject::ProcessEvent(const SEntityEvent& event)
 
 		// This is a CGameObject-specific vehicles-related workaround.
 		case ENTITY_EVENT_INIT:
+			m_wasInitialized = true;
 			OnInitEvent();
 			if (m_bNeedsNetworkRebind)
 			{
@@ -750,6 +751,11 @@ uint64 CGameObject::GetEventMask() const
 	if (m_bShouldUpdate)
 	{
 		eventMask |= BIT64(ENTITY_EVENT_UPDATE);
+	}
+
+	if (m_bPrePhysicsEnabled)
+	{
+		eventMask |= BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
 	}
 
 	return eventMask;
@@ -1644,8 +1650,8 @@ void CGameObject::EvaluateUpdateActivation()
 
 	if (shouldActivatePrePhysics != m_bPrePhysicsEnabled)
 	{
-		m_pEntity->PrePhysicsActivate(shouldActivatePrePhysics);
 		m_bPrePhysicsEnabled = shouldActivatePrePhysics;
+		m_pEntity->UpdateComponentEventMask(this);
 	}
 
 	if (TestIsProbablyVisible(m_updateState))
@@ -1669,6 +1675,7 @@ void CGameObject::SetActivation(bool activate)
 	if (TestIsProbablyVisible(m_updateState))
 		SetPhysicsDisable(false);
 	else
+	{
 		switch (m_physDisableMode)
 		{
 		default:
@@ -1682,6 +1689,13 @@ void CGameObject::SetActivation(bool activate)
 				SetPhysicsDisable(true);
 			break;
 		}
+	}
+
+	// Special case to keep legacy behavior of entity update being disabled when hiddden and ENTITY_FLAG_UPDATE_HIDDEN is not set
+	if (activate && (m_pEntity->IsHidden() && (m_pEntity->GetFlags() & ENTITY_FLAG_UPDATE_HIDDEN) == 0))
+	{
+		activate = false;
+	}
 
 	if (m_bShouldUpdate != activate)
 	{
@@ -1904,7 +1918,7 @@ void CGameObject::RegisterAsPredicted()
 {
 	CRY_ASSERT(!m_predictionHandle);
 	m_predictionHandle = gEnv->pGameFramework->GetNetContext()->RegisterPredictedSpawn(
-		gEnv->pGameFramework->GetClientChannel(), GetEntityId());
+	  gEnv->pGameFramework->GetClientChannel(), GetEntityId());
 }
 
 int CGameObject::GetPredictionHandle()
@@ -1918,11 +1932,11 @@ void CGameObject::RegisterAsValidated(IGameObject* pGO, int predictionHandle)
 		return;
 	m_predictionHandle = predictionHandle;
 
-	INetChannel *pNetChannel = gEnv->pGameFramework->GetNetChannel(pGO->GetChannelId());
+	INetChannel* pNetChannel = gEnv->pGameFramework->GetNetChannel(pGO->GetChannelId());
 	if (pNetChannel)
 	{
 		gEnv->pGameFramework->GetNetContext()->RegisterValidatedPredictedSpawn(
-			pNetChannel, m_predictionHandle, GetEntityId());
+		  pNetChannel, m_predictionHandle, GetEntityId());
 	}
 }
 
@@ -1997,12 +2011,12 @@ void CGameObject::UnRegisterExtForEvents(IGameObjectExtension* piExtention, cons
 	}
 }
 
-void CGameObject::OnNetworkedEntityTransformChanged(int whyFlags)
+void CGameObject::OnNetworkedEntityTransformChanged(EntityTransformationFlagsMask transformReasons)
 {
 	if (gEnv->bMultiplayer && (m_pEntity->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY)) == 0 && gEnv->pNetContext)
 	{
 		bool doAspectUpdate = true;
-		if (whyFlags & (ENTITY_XFORM_FROM_PARENT | ENTITY_XFORM_NO_PROPOGATE))
+		if (transformReasons.Check(ENTITY_XFORM_FROM_PARENT) && transformReasons.Check(ENTITY_XFORM_NO_PROPOGATE))
 			doAspectUpdate = false;
 		// position has changed, best let other people know about it
 		// disabled volatile... see OnSpawn for reasoning

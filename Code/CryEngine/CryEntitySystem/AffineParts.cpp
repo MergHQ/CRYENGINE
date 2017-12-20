@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 /**** Decompose.c ****/
 /* Ken Shoemake, 1993 */
@@ -335,21 +335,20 @@ static float polar_decomp(HMatrix M, HMatrix Q, HMatrix S)
 {
 #define TOL 1.0e-6
 	HMatrix Mk, MadjTk, Ek;
-	float det, M_one, M_inf, MadjT_one, MadjT_inf, E_one, gamma, g1, g2;
-	int i, j;
+	float det, E_one;
 	mat_tpose(Mk, =, M, 3);
-	M_one = norm_one(Mk);
-	M_inf = norm_inf(Mk);
+	float M_one = norm_one(Mk);
+	float M_inf = norm_inf(Mk);
 	do
 	{
 		adjoint_transpose(Mk, MadjTk);
 		det = vdot(Mk[0], MadjTk[0]);
 		if (det == 0.0f) { do_rank2(Mk, MadjTk, Mk); break; }
-		MadjT_one = norm_one(MadjTk);
-		MadjT_inf = norm_inf(MadjTk);
-		gamma = sqrtf(sqrtf((MadjT_one * MadjT_inf) / (M_one * M_inf)) / fabs(det));
-		g1 = gamma * 0.5f;
-		g2 = 0.5f / (gamma * det);
+		float MadjT_one = norm_one(MadjTk);
+		float MadjT_inf = norm_inf(MadjTk);
+		float gamma = sqrtf(sqrtf((MadjT_one * MadjT_inf) / (M_one * M_inf)) / fabs(det));
+		float g1 = gamma * 0.5f;
+		float g2 = 0.5f / (gamma * det);
 		mat_copy(Ek, =, Mk, 3);
 		mat_binop(Mk, =, g1 * Mk, +, g2 * MadjTk, 3);
 		mat_copy(Ek, -=, Mk, 3);
@@ -362,8 +361,8 @@ static float polar_decomp(HMatrix M, HMatrix Q, HMatrix S)
 	mat_pad(Q);
 	mat_mult(Mk, M, S);
 	mat_pad(S);
-	for (i = 0; i < 3; i++)
-		for (j = i; j < 3; j++)
+	for (int i = 0; i < 3; i++)
+		for (int j = i; j < 3; j++)
 			S[i][j] = S[j][i] = 0.5f * (S[i][j] + S[j][i]);
 	return (det);
 }

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,7 @@ class CEntityClass;
 class CEntityArchetype : public IEntityArchetype, public _i_reference_target_t
 {
 public:
-	CEntityArchetype(IEntityClass* pClass);
+	explicit CEntityArchetype(IEntityClass* pClass);
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityArchetype

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
    -------------------------------------------------------------------------
@@ -1568,10 +1568,10 @@ void CVehicle::Update(SEntityUpdateContext& ctx, int slot)
 #endif
 
 	const float frameTime = ctx.fFrameTime;
-	if (ctx.nFrameID != m_lastFrameId)
+	if (ctx.frameID != m_lastFrameId)
 	{
 		m_bNeedsUpdate = false;
-		m_lastFrameId = ctx.nFrameID;
+		m_lastFrameId = ctx.frameID;
 	}
 
 	switch (slot)
@@ -1830,7 +1830,7 @@ void CVehicle::DebugDraw(const float frameTime)
 		{
 			IRenderAuxText::DrawLabelExF(ite->second->GetWorldTM().GetTranslation(), 1.0f, drawColor, true, true, "<%s>", ite->first.c_str());
 
-			/*IRenderAuxGeom* pGeom = gEnv->pRenderer->GetIRenderAuxGeom();
+			/*IRenderAuxGeom* pGeom = gEnv->pAuxGeomRenderer;
 			   AABB bounds = AABB::CreateTransformedAABB(ite->second->GetWorldTM(), ite->second->GetLocalBounds());
 			   ColorB col(0,255,0,255);
 			   pGeom->DrawAABB(bounds, false, col, eBBD_Extremes_Color_Encoded);*/
@@ -1850,7 +1850,7 @@ void CVehicle::DebugDraw(const float frameTime)
 					IRenderAuxText::DrawLabelExF(partWorldTM.GetTranslation(), 1.0f, color, true, true, "<%s>", iPart->first.c_str());
 				}
 
-				if (IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom())
+				if (IRenderAuxGeom* pRenderAuxGeom = gEnv->pAuxGeomRenderer)
 				{
 					pRenderAuxGeom->DrawAABB(pPart->GetLocalBounds(), GetEntity()->GetWorldTM(), false, ColorB(255, 255, 255, 255), eBBD_Extremes_Color_Encoded);
 
@@ -1935,7 +1935,7 @@ void CVehicle::DebugDraw(const float frameTime)
 //------------------------------------------------------------------------
 void CVehicle::DebugDrawClientPredict()
 {
-	if (IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom())
+	if (IRenderAuxGeom* pRenderAuxGeom = gEnv->pAuxGeomRenderer)
 	{
 		CryAutoCriticalSection lk(m_debugDrawLock);
 
@@ -2971,7 +2971,7 @@ bool CVehicle::IsActionUsable(const SVehicleActionInfo& actionInfo, const SMovem
 			if (VehicleCVars().v_debugdraw > 1)
 			{
 				IRenderer* pRenderer = gEnv->pRenderer;
-				IRenderAuxGeom* pRenderAux = pRenderer->GetIRenderAuxGeom();
+				IRenderAuxGeom* pRenderAux = gEnv->pAuxGeomRenderer;
 				const Matrix34& worldTM = m_pVehicle->GetEntity()->GetWorldTM();
 				pRenderAux->DrawAABB(localbounds, worldTM, false, hit ? Col_Green : Col_Red, eBBD_Faceted);
 				pRenderAux->DrawLine(lineSeg.start, Col_Green, lineSeg.end, Col_Green);

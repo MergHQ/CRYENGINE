@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "CET_EntitySystem.h"
@@ -57,8 +57,6 @@ public:
 			if (!gEnv->pSystem->IsSerializingFile())
 				gEnv->pEntitySystem->Reset();
 		}
-
-		CActionGame::Get()->OnEntitySystemReset();
 
 		return eCETR_Ok;
 	}
@@ -288,7 +286,7 @@ void AddEntitySystemEvent(IContextEstablisher* pEst, EContextViewState state, co
 class CCET_EntitySystemGameplayStart final : public CCET_Base
 {
 public:
-	const char*                 GetName()  { return "EntitySystemGameplayStart"; }
+	const char*                 GetName() { return "EntitySystemGameplayStart"; }
 
 	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
 	{

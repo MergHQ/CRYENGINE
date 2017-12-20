@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "EntityCVars.h"
@@ -9,45 +9,22 @@
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryAISystem/IAISystem.h>
 
-ICVar* CVar::pDebug = NULL;
-ICVar* CVar::pCharacterIK = NULL;
-ICVar* CVar::pProfileEntities = NULL;
-//ICVar* CVar::pUpdateInvisibleCharacter = NULL;
-//ICVar* CVar::pUpdateBonePositions = NULL;
 ICVar* CVar::pUpdateScript = NULL;
-ICVar* CVar::pUpdateTimer = NULL;
-ICVar* CVar::pUpdateCamera = NULL;
-ICVar* CVar::pUpdatePhysics = NULL;
-ICVar* CVar::pUpdateAI = NULL;
 ICVar* CVar::pUpdateEntities = NULL;
-ICVar* CVar::pUpdateCollision = NULL;
-ICVar* CVar::pUpdateCollisionScript = NULL;
-ICVar* CVar::pUpdateContainer = NULL;
-ICVar* CVar::pUpdateCoocooEgg = NULL;
-ICVar* CVar::pPiercingCamera = NULL;
-ICVar* CVar::pVisCheckForUpdate = NULL;
 ICVar* CVar::pEntityBBoxes = NULL;
-ICVar* CVar::pEntityHelpers = NULL;
 ICVar* CVar::pMinImpulseVel = NULL;
 ICVar* CVar::pImpulseScale = NULL;
 ICVar* CVar::pMaxImpulseAdjMass = NULL;
 ICVar* CVar::pDebrisLifetimeScale = NULL;
-ICVar* CVar::pSplashThreshold = NULL;
-ICVar* CVar::pSplashTimeout = NULL;
 ICVar* CVar::pHitCharacters = NULL;
 ICVar* CVar::pHitDeadBodies = NULL;
-ICVar* CVar::pCharZOffsetSpeed = NULL;
 ICVar* CVar::pEnableFullScriptSave = NULL;
 ICVar* CVar::pLogCollisions = NULL;
-ICVar* CVar::pNotSeenTimeout = NULL;
-ICVar* CVar::pDebugNotSeenTimeout = NULL;
 ICVar* CVar::pDrawAreas = NULL;
 ICVar* CVar::pDrawAreaGrid = NULL;
 ICVar* CVar::pDrawAreaGridCells = NULL;
 ICVar* CVar::pDrawAreaDebug = NULL;
-ICVar* CVar::pDrawAudioProxyZRay = NULL;
 
-ICVar* CVar::pMotionBlur = NULL;
 ICVar* CVar::pSysSpecLight = NULL;
 
 int CVar::es_DebugTimers = 0;
@@ -58,7 +35,6 @@ float CVar::es_MaxPhysDistInvisible;
 float CVar::es_MaxPhysDistCloth;
 float CVar::es_FarPhysTimeout;
 int CVar::es_DebugEvents = 0;
-int CVar::es_SortUpdatesByClass = 0;
 int CVar::es_debugEntityLifetime = 0;
 int CVar::es_DebugEntityUsage = 0;
 const char* CVar::es_DebugEntityUsageFilter = "";
@@ -69,6 +45,8 @@ int CVar::es_SaveLoadUseLUANoSaveFlag = 1;
 float CVar::es_EntityUpdatePosDelta = 0.0f;
 int CVar::es_debugDrawEntityIDs = 0;
 int CVar::es_MaxJointFx = 8;
+
+int CVar::es_profileComponentUpdates = 0;
 
 // for editor only
 static void OnSysSpecLightChange(ICVar* pVar)
@@ -155,63 +133,17 @@ void CVar::Init()
 	REGISTER_COMMAND("es_dump_entity_classes_in_use", (ConsoleCommandFunc)DumpEntityClassesInUse, 0, "Dumps all used entity classes");
 	REGISTER_COMMAND("es_compile_area_grid", (ConsoleCommandFunc)CompileAreaGrid, 0, "Trigger a recompile of the area grid");
 
-	REGISTER_CVAR(es_SortUpdatesByClass, 0, 0, "Sort entity updates by class (possible optimization)");
-	pDebug = REGISTER_INT("es_debug", 0, VF_CHEAT,
-	                      "Enable entity debugging info\n"
-	                      "Usage: es_debug [0/1]\n"
-	                      "Default is 0 (on).");
-	pCharacterIK = REGISTER_INT("p_CharacterIK", 1, VF_CHEAT,
-	                            "Toggles character IK.\n"
-	                            "Usage: p_characterik [0/1]\n"
-	                            "Default is 1 (on). Set to 0 to disable inverse kinematics.");
 	pEntityBBoxes = REGISTER_INT("es_bboxes", 0, VF_CHEAT,
 	                             "Toggles entity bounding boxes.\n"
 	                             "Usage: es_bboxes [0/1]\n"
 	                             "Default is 0 (off). Set to 1 to display bounding boxes.");
-	pEntityHelpers = REGISTER_INT("es_helpers", 0, VF_CHEAT,
-	                              "Toggles helpers.\n"
-	                              "Usage: es_helpers [0/1]\n"
-	                              "Default is 0 (off). Set to 1 to display entity helpers.");
-	pProfileEntities = REGISTER_INT("es_profileentities", 0, VF_CHEAT,
-	                                "Usage: es_profileentities 1,2,3\n"
-	                                "Default is 0 (off).");
-	/*	pUpdateInvisibleCharacter = REGISTER_INT("es_UpdateInvisibleCharacter",0,VF_CHEAT,
-	    "Usage: \n"
-	    "Default is 0 (off).");
-	   pUpdateBonePositions = REGISTER_INT("es_UpdateBonePositions",1,VF_CHEAT,
-	    "Usage: \n"
-	    "Default is 1 (on).");
-	 */pUpdateScript = REGISTER_INT("es_UpdateScript", 1, VF_CHEAT,
+	pUpdateScript = REGISTER_INT("es_UpdateScript", 1, VF_CHEAT,
 	                             "Usage: es_UpdateScript [0/1]\n"
 	                             "Default is 1 (on).");
-	pUpdatePhysics = REGISTER_INT("es_UpdatePhysics", 1, VF_CHEAT,
-	                              "Toggles updating of entity physics.\n"
-	                              "Usage: es_UpdatePhysics [0/1]\n"
-	                              "Default is 1 (on). Set to 0 to prevent entity physics from updating.");
-	pUpdateAI = REGISTER_INT("es_UpdateAI", 1, VF_CHEAT,
-	                         "Toggles updating of AI entities.\n"
-	                         "Usage: es_UpdateAI [0/1]\n"
-	                         "Default is 1 (on). Set to 0 to prevent AI entities from updating.");
 	pUpdateEntities = REGISTER_INT("es_UpdateEntities", 1, VF_CHEAT,
 	                               "Toggles entity updating.\n"
 	                               "Usage: es_UpdateEntities [0/1]\n"
 	                               "Default is 1 (on). Set to 0 to prevent all entities from updating.");
-	pUpdateCollision = REGISTER_INT("es_UpdateCollision", 1, VF_CHEAT,
-	                                "Toggles updating of entity collisions.\n"
-	                                "Usage: es_UpdateCollision [0/1]\n"
-	                                "Default is 1 (on). Set to 0 to disable entity collision updating.");
-	pUpdateContainer = REGISTER_INT("es_UpdateContainer", 1, VF_CHEAT,
-	                                "Usage: es_UpdateContainer [0/1]\n"
-	                                "Default is 1 (on).");
-	pUpdateTimer = REGISTER_INT("es_UpdateTimer", 1, VF_CHEAT,
-	                            "Usage: es_UpdateTimer [0/1]\n"
-	                            "Default is 1 (on).");
-	pUpdateCollisionScript = REGISTER_INT("es_UpdateCollisionScript", 1, VF_CHEAT,
-	                                      "Usage: es_UpdateCollisionScript [0/1]\n"
-	                                      "Default is 1 (on).");
-	pVisCheckForUpdate = REGISTER_INT("es_VisCheckForUpdate", 1, VF_CHEAT,
-	                                  "Usage: es_VisCheckForUpdate [0/1]\n"
-	                                  "Default is 1 (on).");
 	pMinImpulseVel = REGISTER_FLOAT("es_MinImpulseVel", 0.0f, VF_CHEAT,
 	                                "Usage: es_MinImpulseVel 0.0");
 	pImpulseScale = REGISTER_FLOAT("es_ImpulseScale", 0.0f, VF_CHEAT,
@@ -220,23 +152,10 @@ void CVar::Init()
 	                                    "Usage: es_MaxImpulseAdjMass 2000.0");
 	pDebrisLifetimeScale = REGISTER_FLOAT("es_DebrisLifetimeScale", 1.0f, 0,
 	                                      "Usage: es_DebrisLifetimeScale 1.0");
-	pSplashThreshold = REGISTER_FLOAT("es_SplashThreshold", 1.0f, VF_CHEAT,
-	                                  "minimum instantaneous water resistance that is detected as a splash"
-	                                  "Usage: es_SplashThreshold 200.0");
-	pSplashTimeout = REGISTER_FLOAT("es_SplashTimeout", 3.0f, VF_CHEAT,
-	                                "minimum time interval between consecutive splashes"
-	                                "Usage: es_SplashTimeout 3.0");
 	pHitCharacters = REGISTER_INT("es_HitCharacters", 1, 0,
 	                              "specifies whether alive characters are affected by bullet hits (0 or 1)");
 	pHitDeadBodies = REGISTER_INT("es_HitDeadBodies", 1, 0,
 	                              "specifies whether dead bodies are affected by bullet hits (0 or 1)");
-	pCharZOffsetSpeed = REGISTER_FLOAT("es_CharZOffsetSpeed", 2.0f, VF_DUMPTODISK,
-	                                   "sets the character Z-offset change speed (in m/s), used for IK");
-
-	pNotSeenTimeout = REGISTER_INT("es_not_seen_timeout", 30, VF_DUMPTODISK,
-	                               "number of seconds after which to cleanup temporary render buffers in entity");
-	pDebugNotSeenTimeout = REGISTER_INT("es_debug_not_seen_timeout", 0, VF_DUMPTODISK,
-	                                    "if true, log messages when entities undergo not seen timeout");
 
 	pEnableFullScriptSave = REGISTER_INT("es_enable_full_script_save", 0,
 	                                     VF_DUMPTODISK, "Enable (experimental) full script save functionality");
@@ -275,7 +194,6 @@ void CVar::Init()
 	pDrawAreaGrid = REGISTER_INT("es_DrawAreaGrid", 0, VF_CHEAT, "Enables drawing of Area Grid");
 	pDrawAreaGridCells = REGISTER_INT("es_DrawAreaGridCells", 0, VF_CHEAT, "Enables drawing of Area Grid Cells' number and coordinates. Requires \"es_DrawAreaGrid\" to be enabled!");
 	pDrawAreaDebug = REGISTER_INT("es_DrawAreaDebug", 0, VF_CHEAT, "Enables debug drawing of Areas, set 2 for log details");
-	pDrawAudioProxyZRay = REGISTER_INT("es_DrawAudioProxyZRay", 0, VF_CHEAT, "Enables drawing of Z ray on check for Z visibility");
 
 	REGISTER_CVAR(es_UsePhysVisibilityChecks, 1, 0,
 	              "Activates physics quality degradation and forceful sleeping for invisible and faraway entities");
@@ -288,7 +206,6 @@ void CVar::Init()
 	REGISTER_CVAR(es_FarPhysTimeout, 4.0f, 0,
 	              "Timeout for faraway physics forceful deactivation");
 
-	pMotionBlur = gEnv->pConsole->GetCVar("r_MotionBlur");
 	pSysSpecLight = gEnv->pConsole->GetCVar("sys_spec_light");
 	if (pSysSpecLight && gEnv->IsEditor())
 		pSysSpecLight->SetOnChangeCallback(OnSysSpecLightChange);
@@ -311,6 +228,11 @@ void CVar::Init()
 	              "Note: es_debug must be set to 1 also (or else the EntityId won't be displayed)");
 
 	REGISTER_CVAR(es_MaxJointFx, 8, 0, "Sets the maximum number of joint break fx per frame");
+
+	REGISTER_CVAR(es_profileComponentUpdates, 0, 0, "Enables profiling of components that are updated per frame.\n"
+	                                                "Default: 0 (off)\n"
+	                                                "1 - Simple profiling, shows cost of all components per frame\n"
+	                                                "2 - Component type cost braekdown, shows cost of each component type per frame");
 }
 
 void CVar::DumpEntities(IConsoleCmdArgs* args)
@@ -410,10 +332,10 @@ void CVar::ConsoleCommandToggleLayer(IConsoleCmdArgs* pArgs)
 		const char* szLayerName = pArgs->GetArg(1);
 		const bool bSerialize = false;
 		const bool bShouldBeEnabled = !g_pIEntitySystem->IsLayerEnabled(szLayerName, false);
-		
+
 		CryLogAlways("[Info][Layers] Toggling EntitySystemLayer %s to: %s", szLayerName, bShouldBeEnabled ? "Enabled" : "Disabled");
 		g_pIEntitySystem->EnableLayer(szLayerName, bShouldBeEnabled, bSerialize);
-		
+
 		if (bShouldBeEnabled && gEnv->pAISystem)
 		{
 			CryLogAlways("[Info][Layers] Toggling AISystemLayer %s to: %s", szLayerName, bShouldBeEnabled ? "Enabled" : "Disabled");

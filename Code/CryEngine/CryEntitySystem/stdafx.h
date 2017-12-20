@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -50,8 +50,6 @@
 #include <CryEntitySystem/IEntitySystem.h>
 
 #include "EntityCVars.h"
-
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>  // to be removed
 
 #if !defined(_RELEASE)
 	#define INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE

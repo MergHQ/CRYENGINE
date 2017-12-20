@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -1398,7 +1398,7 @@ private: // --------------------------------------------------------------------
 	int      SetEntityPhysicParams(IFunctionHandler* pH, IPhysicalEntity* pe, int type, IScriptTable* pTable, ICharacterInstance* pIChar = nullptr);
 	EntityId GetEntityID(IScriptTable* pEntityTable);
 
-	ISystem*       m_pISystem;
+	ISystem* m_pISystem;
 
 	bool ParseLightParams(IScriptTable* pLightTable, SRenderLight& light);
 	bool ParseFogVolumesParams(IScriptTable* pTable, CEntity* pEntity, SFogVolumeProperties& properties);

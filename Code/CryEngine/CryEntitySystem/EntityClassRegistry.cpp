@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "EntityClassRegistry.h"
@@ -286,7 +286,6 @@ void CEntityClassRegistry::LoadArchetypes(const char* libPath, bool reload)
 
 	ICryPak* pCryPak = gEnv->pCryPak;
 	_finddata_t fd;
-	char filename[_MAX_PATH];
 
 	string sPath = libPath;
 	sPath.TrimRight("/\\");
@@ -297,6 +296,8 @@ void CEntityClassRegistry::LoadArchetypes(const char* libPath, bool reload)
 		int res = 0;
 		do
 		{
+			char filename[_MAX_PATH];
+
 			// Animation file found, load it.
 			cry_strcpy(filename, sPath);
 			cry_strcat(filename, "/");
@@ -529,7 +530,7 @@ void CEntityClassRegistry::RegisterSchematycEntityClass()
 
 	gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(
 	  stl::make_unique<Schematyc::CEnvPackage>(
-		EntityPackageGUID,
+	    EntityPackageGUID,
 	    "EntitySystem",
 	    "Crytek GmbH",
 	    "CRYENGINE EntitySystem Package",
@@ -553,8 +554,6 @@ void CEntityClassRegistry::OnSchematycClassCompilation(const Schematyc::IRuntime
 		className.append(runtimeClass.GetName());
 
 		className.MakeLower();
-
-		bool bModifyExisting = false;
 
 		IEntityClass* pEntityClass = g_pIEntitySystem->GetClassRegistry()->FindClass(className);
 		if (pEntityClass)

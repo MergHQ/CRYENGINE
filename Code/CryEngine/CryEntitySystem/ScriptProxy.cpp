@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "ScriptProxy.h"
@@ -528,21 +528,25 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 		m_pScript->Call_OnTransformFromEditorDone(m_pThis);
 		break;
 	}
-	;
 }
 
 //////////////////////////////////////////////////////////////////////////
 uint64 CEntityComponentLuaScript::GetEventMask() const
 {
-	// All events except runtime expensive ones
-	uint64 eventMasks = ~ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK;
+	uint64 eventMask = BIT64(ENTITY_EVENT_ANIM_EVENT) | BIT64(ENTITY_EVENT_DONE) | BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_INIT)
+	                   | BIT64(ENTITY_EVENT_TIMER) | BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_ATTACH) | BIT64(ENTITY_EVENT_ATTACH_THIS)
+	                   | BIT64(ENTITY_EVENT_DETACH) | BIT64(ENTITY_EVENT_DETACH_THIS) | BIT64(ENTITY_EVENT_ENTERAREA) | BIT64(ENTITY_EVENT_MOVEINSIDEAREA)
+	                   | BIT64(ENTITY_EVENT_LEAVEAREA) | BIT64(ENTITY_EVENT_ENTERNEARAREA) | BIT64(ENTITY_EVENT_LEAVENEARAREA) | BIT64(ENTITY_EVENT_MOVENEARAREA)
+	                   | BIT64(ENTITY_EVENT_PHYS_BREAK) | BIT64(ENTITY_EVENT_AUDIO_TRIGGER_ENDED) | BIT64(ENTITY_EVENT_LEVEL_LOADED) | BIT64(ENTITY_EVENT_START_LEVEL)
+	                   | BIT64(ENTITY_EVENT_START_GAME) | BIT64(ENTITY_EVENT_PRE_SERIALIZE) | BIT64(ENTITY_EVENT_POST_SERIALIZE) | BIT64(ENTITY_EVENT_HIDE)
+	                   | BIT64(ENTITY_EVENT_UNHIDE) | BIT64(ENTITY_EVENT_XFORM_FINISHED_EDITOR);
 
 	if (m_bUpdateFuncImplemented && m_bUpdateEnabledOverride && (!m_pEntity->IsHidden() || (m_pEntity->GetFlags() & ENTITY_FLAG_UPDATE_HIDDEN) != 0))
 	{
-		eventMasks |= BIT64(ENTITY_EVENT_UPDATE);
+		eventMask |= BIT64(ENTITY_EVENT_UPDATE);
 	}
 
-	return eventMasks;
+	return eventMask;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -566,8 +570,6 @@ bool CEntityComponentLuaScript::GotoState(int nState)
 {
 	if (nState == m_nCurrStateId)
 		return true; // Already in this state.
-
-	SScriptState* pState = m_pScript->GetState(nState);
 
 	// Call End state event.
 	m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnEndState);
@@ -753,16 +755,6 @@ void CEntityComponentLuaScript::GameSerialize(TSerialize ser)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntityComponentLuaScript::HaveTable(const char* name)
-{
-	SmartScriptTable table;
-	if (m_pThis && m_pThis->GetValue(name, table))
-		return true;
-	else
-		return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEntityComponentLuaScript::SerializeTable(TSerialize ser, const char* name)
 {
 	CHECK_SCRIPT_STACK;
@@ -928,12 +920,6 @@ void CEntityComponentLuaScript::CallInitEvent(bool bFromReload)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentLuaScript::OnPreparedFromPool()
-{
-	m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnPreparedFromPool);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEntityComponentLuaScript::OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass)
 {
 	if (!CurrentState()->IsStateFunctionImplemented(ScriptState_OnCollision))
@@ -1045,16 +1031,6 @@ void CEntityComponentLuaScript::SendScriptEvent(int Event, int nParam, bool* pRe
 	}
 }
 
-void CEntityComponentLuaScript::RegisterForAreaEvents(bool bEnable)
-{
-	m_bEnableSoundAreaEvents = bEnable;
-}
-
-bool CEntityComponentLuaScript::IsRegisteredForAreaEvents() const
-{
-	return m_bEnableSoundAreaEvents;
-}
-
 void CEntityComponentLuaScript::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
@@ -1064,5 +1040,5 @@ void CEntityComponentLuaScript::SetPhysParams(int type, IScriptTable* params)
 {
 	// This function can currently be called by a component created without an entity, hence the special case
 	IPhysicalEntity* pPhysicalEntity = m_pEntity != nullptr ? m_pEntity->GetPhysics() : nullptr;
-	((CEntitySystem*)g_pIEntitySystem)->GetScriptBindEntity()->SetEntityPhysicParams(nullptr, pPhysicalEntity, type, params);
+	g_pIEntitySystem->GetScriptBindEntity()->SetEntityPhysicParams(nullptr, pPhysicalEntity, type, params);
 }

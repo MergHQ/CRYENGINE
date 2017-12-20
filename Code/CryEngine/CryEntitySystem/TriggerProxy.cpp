@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "TriggerProxy.h"
@@ -28,6 +28,8 @@ void CEntityComponentTriggerBounds::Initialize()
 	m_pProximityTrigger = GetTriggerSystem()->CreateTrigger();
 	m_pProximityTrigger->id = m_pEntity->GetId();
 
+	m_pEntity->SetFlags(m_pEntity->GetFlags() | ENTITY_FLAG_NO_PROXIMITY);
+
 	Reset();
 }
 
@@ -36,7 +38,6 @@ void CEntityComponentTriggerBounds::Reset()
 {
 	auto* pCEntity = static_cast<CEntity*>(m_pEntity);
 
-	pCEntity->m_bTrigger = true;
 	m_forwardingEntity = 0;
 
 	// Release existing proximity entity if present, triggers should not trigger themself.
