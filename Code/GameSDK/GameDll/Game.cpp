@@ -3624,7 +3624,7 @@ void CGame::OnActionEvent(const SActionEvent& event)
 		break;
 	case eAE_disconnectCommandFinished:
 #if CRY_PLATFORM_DURANGO
-		if (!g_pGame->GetGameLobby()->IsCurrentlyInSession())
+		if (g_pGame->GetGameLobby() && !g_pGame->GetGameLobby()->IsCurrentlyInSession())
 		{
 			EnsureSigninState();
 		}
