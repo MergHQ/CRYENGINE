@@ -4575,6 +4575,7 @@ void CPhysicalWorld::GetMemoryStatistics(ICrySizer *pSizer)
 		"areas","triggers", "deleted entities" };
 	int i,j,n;
 	CPhysicalEntity *pent;
+	ReadLock lockStep(m_lockStep);
 
 #ifndef _LIB // Only when compiling as dynamic library
 	{
@@ -4606,6 +4607,7 @@ void CPhysicalWorld::GetMemoryStatistics(ICrySizer *pSizer)
 #endif*/
 
 	{ SIZER_COMPONENT_NAME(pSizer,"world structures");
+		ReadLock lockGeo(m_lockGeoman);
 		pSizer->AddObject(this, sizeof(CPhysicalWorld));
 		pSizer->AddObject(m_pTmpEntList, m_nEntsAlloc*sizeof(m_pTmpEntList[0]));
 		pSizer->AddObject(m_pTmpEntList1, m_nEntsAlloc*sizeof(m_pTmpEntList1[0]));
