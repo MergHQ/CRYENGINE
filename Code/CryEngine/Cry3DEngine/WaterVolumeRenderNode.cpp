@@ -709,8 +709,12 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 	float distToWaterVolumeSurface(GetCameraDistToWaterVolumeSurface(passInfo));
 	bool aboveWaterVolumeSurface(distToWaterVolumeSurface > 0.0f);
 	bool belowWaterVolume(m_capFogAtVolumeDepth && distToWaterVolumeSurface < -m_volumeDepth);
-	bool insideWaterVolumeSurface2D(IsCameraInsideWaterVolumeSurface2D(passInfo));
-	bool insideWaterVolume(insideWaterVolumeSurface2D && !aboveWaterVolumeSurface && !belowWaterVolume);
+	bool insideWaterVolume = false;
+	if (!aboveWaterVolumeSurface && !belowWaterVolume) // check for z-range: early abort, since the following triangle check is more expensive
+	{
+		insideWaterVolume = IsCameraInsideWaterVolumeSurface2D(passInfo); // surface triangle check
+	}
+
 
 	// fill parameters to render elements
 	m_wvParams[fillThreadID].m_viewerInsideVolume = insideWaterVolume;
@@ -883,10 +887,25 @@ float CWaterVolumeRenderNode::GetCameraDistSqToWaterVolumeAABB(const SRenderingP
 	return m_WSBBox.GetDistanceSqr(camPos);
 }
 
+namespace
+{
+
+	// aabb check - only for xy-axis
+	bool IsPointInsideAABB_2d(const AABB& aabb, const Vec3& pos)
+	{
+		if (pos.x < aabb.min.x) return false;
+		if (pos.y < aabb.min.y) return false;
+		if (pos.x > aabb.max.x) return false;
+		if (pos.y > aabb.max.y) return false;
+		return true;
+	}
+
+}
+
 bool CWaterVolumeRenderNode::IsCameraInsideWaterVolumeSurface2D(const SRenderingPassInfo& passInfo) const
 {
 	const CCamera& cam(passInfo.GetCamera());
-	Vec3 camPos(cam.GetPosition());
+	const Vec3 camPosWS(cam.GetPosition());
 
 	pe_status_area sa;
 	sa.bUniformOnly = true;
@@ -894,19 +913,26 @@ bool CWaterVolumeRenderNode::IsCameraInsideWaterVolumeSurface2D(const SRendering
 	if (m_pPhysArea && m_pPhysArea->GetStatus(&sa) && sa.pSurface)
 	{
 		pe_status_contains_point scp;
-		scp.pt = camPos;
+		scp.pt = camPosWS;
 		return m_pPhysArea->GetStatus(&scp) != 0;
 	}
 
+	// bounding box test in world space to abort early
+	if (!IsPointInsideAABB_2d(m_WSBBox, camPosWS)) return false;
+
+	// check triangles in entity space (i.e., water volume space), to avoid transformation of each single water volume vertex - thus, transform camera pos into entity space
+	const Vec3 camPos_entitySpace = m_parentEntityWorldTM.GetInvertedFast() * camPosWS;
 	TPolygon2D<SVF_P3F_C4B_T2F, Vec3> ca(m_waterSurfaceVertices);
 	for (size_t i(0); i < m_waterSurfaceIndices.size(); i += 3)
 	{
-		const Vec3 v0 = m_parentEntityWorldTM.TransformPoint(ca[m_waterSurfaceIndices[i]]);
-		const Vec3 v1 = m_parentEntityWorldTM.TransformPoint(ca[m_waterSurfaceIndices[i + 1]]);
-		const Vec3 v2 = m_parentEntityWorldTM.TransformPoint(ca[m_waterSurfaceIndices[i + 2]]);
+		const Vec3& v0 = ca[m_waterSurfaceIndices[i]];
+		const Vec3& v1 = ca[m_waterSurfaceIndices[i + 1]];
+		const Vec3& v2 = ca[m_waterSurfaceIndices[i + 2]];
 
-		if (ca.InsideTriangle(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, camPos.x, camPos.y))
+		if (ca.InsideTriangle(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, camPos_entitySpace.x, camPos_entitySpace.y))
+		{
 			return true;
+		}
 	}
 
 	return false;
