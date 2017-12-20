@@ -1740,6 +1740,8 @@ namespace VClothUtils
 // but with much better distance constraints by using path finding algorithm and closest neighbors
 void CClothSimulator::LongRangeAttachmentsSolve()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
+
 	if (m_bUseDijkstraForLRA)
 	{
 		// Dijekstra / geodesic approach / distances along mesh
@@ -1922,6 +1924,8 @@ namespace VClothUtils
 
 void CClothSimulator::UpdateCollidablesLerp(f32 t01)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
+
 	std::vector<SCollidable>& collidables = m_permCollidables;
 
 	// determine interpolated transformation matrices
@@ -1943,6 +1947,8 @@ void CClothSimulator::UpdateCollidablesLerp(f32 t01)
 
 void CClothSimulator::PositionsProjectToProxySurface(f32 t01)
 {
+	CRY_PROFILE_REGION(PROFILE_ANIMATION, "CClothSimulator::PositionsProjectToProxySurface");
+
 	std::vector<SCollidable>& collidables = m_permCollidables;
 	int colliderId[2];     // special handling for collision with two colliders at the same time, thus store id
 
@@ -2195,6 +2201,8 @@ bool CClothSimulator::CheckAnimationRewind()
 
 void CClothSimulator::DoForceSkinning()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
+
 	m_doSkinningForNSteps--;
 	if (m_doSkinningForNSteps < 0) m_doSkinningForNSteps = 0;
 
@@ -2220,6 +2228,8 @@ void CClothSimulator::DoAnimationRewind()
 
 void CClothSimulator::DampTangential()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
+
 	float k = m_config.collisionDampingTangential;
 	for (int i = 0; i < m_nVtx; i++)
 	{
@@ -2240,6 +2250,8 @@ void CClothSimulator::DampTangential()
 
 void CClothSimulator::PositionsIntegrate()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
+
 	const Vector4 dg = (m_gravity * m_config.gravityFactor / 1000.0f) * m_dt; // scale to precise/good floating point domain
 	const float resetDampingFactor = 1.0f - m_config.resetDampingFactor;
 	const float kd = 1.0f - m_config.friction;
@@ -2263,6 +2275,8 @@ void CClothSimulator::PositionsIntegrate()
 
 void CClothSimulator::PositionsPullToSkinnedPositions()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
+
 	const float minDist = m_config.maxAnimDistance;
 	const float domain = 2 * minDist;
 	const Vector4 up(0, 0, 1);
@@ -2285,6 +2299,8 @@ void CClothSimulator::PositionsPullToSkinnedPositions()
 
 void CClothSimulator::PositionsSetToSkinned(bool projectToProxySurface, bool setPosOld)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
+
 	// set positions by skinned positions
 	for (int n = 0; n < m_nVtx; ++n)
 	{
@@ -2320,6 +2336,8 @@ void CClothSimulator::PositionsSetAttachedToSkinnedInterpolated(float t01)
 
 int CClothSimulator::Step()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
+
 	if (Console::GetInst().ca_VClothMode == 0) return 1; // in case vcloth is disabled by c_var: skip simulation
 
 	// determine dt
@@ -2371,6 +2389,7 @@ int CClothSimulator::Step()
 		const f32 springDamping = m_config.springDamping;
 		if (springDamping)
 		{
+			CRY_PROFILE_REGION(PROFILE_ANIMATION, "CClothSimulator::Step::Damping");
 			for (int i = 0; i < m_nEdges; i++)
 			{
 				DampEdge(m_links[i], springDamping);
@@ -2405,6 +2424,8 @@ int CClothSimulator::Step()
 		float bendStiffness = m_config.bendStiffness;
 		float bendStiffnessByTrianglesAngle = -m_config.bendStiffnessByTrianglesAngle / 10.0f;
 
+		CRY_PROFILE_REGION(PROFILE_ANIMATION, "CClothSimulator::Step::ConstraintsAndCollisions");
+
 		// interpolate transformation of collisionProxies
 		UpdateCollidablesLerp(stepTime01);
 
@@ -2415,30 +2436,35 @@ int CClothSimulator::Step()
 			if (m_config.longRangeAttachments) LongRangeAttachmentsSolve();
 
 			// solve springs - stretching, bending & shearing
-			if (stretchStiffness)
 			{
-				for (int i = 0; i < m_nEdges; i++)
+				CRY_PROFILE_REGION(PROFILE_ANIMATION, "CClothSimulator::Step::SolveEdges");
+				if (stretchStiffness)
 				{
-					SolveEdge(m_links[i], stretchStiffness);
+					for (int i = 0; i < m_nEdges; i++)
+					{
+						SolveEdge(m_links[i], stretchStiffness);
+					}
 				}
-			}
-			if (shearStiffness)
-			{
-				for (auto it = m_shearLinks.begin(); it != m_shearLinks.end(); ++it)
+				if (shearStiffness)
 				{
-					SolveEdge(*it, shearStiffness);
+					for (auto it = m_shearLinks.begin(); it != m_shearLinks.end(); ++it)
+					{
+						SolveEdge(*it, shearStiffness);
+					}
 				}
-			}
-			if (bendStiffness)
-			{
-				for (auto it = m_bendLinks.begin(); it != m_bendLinks.end(); ++it)
+				if (bendStiffness)
 				{
-					SolveEdge(*it, bendStiffness);
+					for (auto it = m_bendLinks.begin(); it != m_bendLinks.end(); ++it)
+					{
+						SolveEdge(*it, bendStiffness);
+					}
 				}
+				if (bendStiffnessByTrianglesAngle) { BendByTriangleAngleSolve(bendStiffnessByTrianglesAngle); }
 			}
-			if (bendStiffnessByTrianglesAngle) { BendByTriangleAngleSolve(bendStiffnessByTrianglesAngle); }
+
 			if (m_config.springDampingPerSubstep && springDamping)
 			{
+				CRY_PROFILE_REGION(PROFILE_ANIMATION, "CClothSimulator::Step::DampEdges");
 				// only damp  stretch links here, in the collision/stiffness loop
 				for (int i = 0; i < m_nEdges; i++)
 				{
@@ -2762,6 +2788,8 @@ namespace VClothUtils
 // See also: https://code.google.com/p/opencloth/source/browse/trunk/OpenCloth_PositionBasedDynamics/OpenCloth_PositionBasedDynamics/main.cpp
 void CClothSimulator::DampPositionBasedDynamics()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
+
 	if (!m_config.rigidDamping) return;
 
 	Vector4 xcm(ZERO);
