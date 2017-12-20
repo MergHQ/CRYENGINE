@@ -190,7 +190,7 @@ static void CreateCone(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float radi
 	ib.reserve(numIndices);
 
 	// center vertex
-	vb.emplace_back(Vec3(0.0f, -height, 0.0f), Vec3(0.0f, -1.0f, 0.0f));
+	vb.emplace_back(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, -1.0f, 0.0f));
 
 	// create circle around it
 	float sectionSlice(DEG2RAD(360.0f / (float) sections));
@@ -198,7 +198,7 @@ static void CreateCone(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float radi
 	{
 		Vec3 v;
 		v.x = radius * cosf(i * sectionSlice);
-		v.y = -height;
+		v.y = 0.0f;
 		v.z = radius * sinf(i * sectionSlice);
 		vb.emplace_back(v, Vec3(0.0f, -1.0f, 0.0f));
 	}
@@ -212,18 +212,18 @@ static void CreateCone(AuxObjVertexBuffer& vb, AuxObjIndexBuffer& ib, float radi
 	}
 
 	// top
-	vb.emplace_back(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f));
+	vb.emplace_back(Vec3(0.0f, height, 0.0f), Vec3(0.0f, 1.0f, 0.0f));
 
 	for (uint32 i(0); i <= sections; ++i)
 	{
 		Vec3 v;
 		v.x = radius * cosf(i * sectionSlice);
-		v.y = -height;
+		v.y = 0.0f;
 		v.z = radius * sinf(i * sectionSlice);
 
 		Vec3 v1;
 		v1.x = radius * cosf(i * sectionSlice + 0.01f);
-		v1.y = -height;
+		v1.y = 0.0f;
 		v1.z = radius * sinf(i * sectionSlice + 0.01f);
 
 		Vec3 d(v1 - v);

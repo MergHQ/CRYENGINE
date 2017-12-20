@@ -1512,7 +1512,12 @@ void CLightEntity::InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllo
 		SAuxGeomRenderFlags renderFlags;
 		renderFlags.SetFillMode(e_FillModeWireframe);
 		pAux->SetRenderFlags(renderFlags);
-		pAux->DrawCone(m_light.GetPosition(), pFr->vLightSrcRelPos.normalized(), pFr->fFarDist * tan(CryTransform::CAngle::FromDegrees(pFr->fFOV / 2.0f).ToRadians()), pFr->fFarDist, ColorB(255, 0, 0));
+		auto coneDirection = pFr->vLightSrcRelPos.normalized();
+		auto coneApex = m_light.GetPosition();
+		auto coneHeight = pFr->fFarDist;
+		auto coneBaseRadius = coneHeight * tan(CryTransform::CAngle::FromDegrees(pFr->fFOV / 2.0f).ToRadians());
+		auto coneBaseCenter = coneApex - coneHeight * coneDirection;
+		pAux->DrawCone(coneBaseCenter, coneDirection, coneBaseRadius, coneHeight, ColorB(255, 0, 0));
 		pAux->SetRenderFlags(oldRenderFlags);
 	}
 }
