@@ -2872,6 +2872,7 @@ bool CHWShader::mfOpenCacheFile(const char* szName, float fVersion, SShaderCache
 	if ((!bReadOnly || gRenDev->IsShaderCacheGenMode()) && !pCache->m_pRes[CACHE_USER])
 	{
 		stack_string szUser = stack_string(gRenDev->m_cEF.m_szUserPath.c_str()) + stack_string(szName);
+		szUser.replace("%ENGINE%/", "");
 		CResFile* rfUser = new CResFile(szUser.c_str());
 		bValidUser = _OpenCacheFile(fVersion, pCache, pSH, bCheckValid, CRC32, CACHE_USER, rfUser, bReadOnly);
 	}
