@@ -251,6 +251,12 @@ REGISTER_CVAR_AUTO(float, e_svoTI_HighGlossOcclusion, 0.f, VF_NULL, "Normally sp
 REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizeUnderTerrain, 0, VF_NULL, "0 = Skip underground triangles during voxelization");
 REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizeHiddenObjects, 0, VF_NULL, "0 = Skip hidden objects during voxelization");
 REGISTER_CVAR_AUTO(int, e_svoTI_AsyncCompute, 0, VF_NULL, "Use asynchronous compute for SVO updates");
-REGISTER_CVAR_AUTO(int, e_svoTI_ThreadAffinity0, -1, VF_NULL, "Set CPU core allowed to be used for voxelization thread, -1 = use any CPU core");
-REGISTER_CVAR_AUTO(int, e_svoTI_ThreadAffinity1, -1, VF_NULL, "Set CPU core allowed to be used for voxelization thread, -1 = use any CPU core");
 REGISTER_CVAR_AUTO(float, e_svoTI_VoxelizeMapBorder, 0.f, VF_NULL, "Allows to skip voxelization of geometry near the edges of the map.");
+
+#if defined (CRY_PLATFORM_CONSOLE) || defined (CRY_PLATFORM_MOBILE)
+const int  svoTI_numStreamingThreads = 1;
+#else
+const int  svoTI_numStreamingThreads = 2;
+#endif
+
+REGISTER_CVAR_AUTO(int, e_svoTI_NumStreamingThreads, svoTI_numStreamingThreads, VF_NULL, "Set number of voxelization data streaming threads");
