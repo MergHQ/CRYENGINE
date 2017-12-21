@@ -74,7 +74,7 @@ public:
 	static bool          SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* sData);
 	static CTexture*     GetRsmColorMap(const ShadowMapFrustum& rFr, bool bCheckUpdate = false);
 	static CTexture*     GetRsmNormlMap(const ShadowMapFrustum& rFr, bool bCheckUpdate = false);
-	ShadowMapFrustum*    GetRsmSunFrustum(CRenderView* pRenderView) const;
+	ShadowMapFrustum*    GetRsmSunFrustum(const CRenderView* pRenderView) const;
 	CTexture*            GetTroposphereMinRT();
 	CTexture*            GetTroposphereMaxRT();
 	CTexture*            GetTroposphereShadRT();

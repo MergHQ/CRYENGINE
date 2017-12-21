@@ -42,6 +42,7 @@ class CRenderDisplayContext;
 #include "Common/OcclQuery.h"               // COcclusionQuery
 #include "Common/DeferredRenderUtils.h"     // t_arrDeferredMeshIndBuff
 #include "Common/Textures/Texture.h"        // CTexture
+#include "Common/ShadowUtils.h"
 
 #if RENDERER_SUPPORT_SCALEFORM
 	#include "../Scaleform/ScaleformPlayback.h"
@@ -101,7 +102,6 @@ class CD3D9Renderer final : public CRenderer, public IWindowMessageHandler
 	friend class CScaleformPlayback;
 
 public:
-	
 	struct SCharacterInstanceCB
 	{
 		CConstantBufferPtr               boneTransformsBuffer;
@@ -211,7 +211,7 @@ public:
 	void                             CreateDeferredUnitBox(t_arrDeferredMeshIndBuff& indBuff, t_arrDeferredMeshVertBuff& vertBuff);
 	const t_arrDeferredMeshIndBuff&  GetDeferredUnitBoxIndexBuffer() const;
 	const t_arrDeferredMeshVertBuff& GetDeferredUnitBoxVertexBuffer() const;
-	void                             ConfigShadowTexgen(CRenderView* pRenderView,int Num, ShadowMapFrustum* pFr, int nFrustNum = -1, bool bScreenToLocalBasis = false, bool bUseComparisonSampling = true);
+	CShadowUtils::SShadowsSetupInfo  ConfigShadowTexgen(CRenderView* pRenderView, const ShadowMapFrustum* pFr, int nFrustNum = -1, bool bScreenToLocalBasis = false);
 	void                             DrawAllDynTextures(const char* szFilter, const bool bLogNames, const bool bOnlyIfUsedThisFrame);
 
 	void                             GetDeviceGamma();
@@ -517,8 +517,6 @@ public:
 
 	bool CheckSSAAChange();
 
-	void FX_SetupForwardShadows(CRenderView* pRenderView, uint64& nMaskRT, bool bUseShaderPermutations = false);
-
 	bool FX_DrawToRenderTarget(CShader* pShader, CShaderResources* pRes, CRenderObject* pObj, SShaderTechnique* pTech, SHRenderTarget* pTarg, int nPreprType, CRenderElement* pRE,const SRenderingPassInfo& passInfo);
 
 #if CRY_PLATFORM_ORBIS
@@ -543,8 +541,6 @@ public:
 
 	bool CreateUnitVolumeMesh(t_arrDeferredMeshIndBuff& arrDeferredInds, t_arrDeferredMeshVertBuff& arrDeferredVerts, D3DIndexBuffer*& pUnitFrustumIB, D3DVertexBuffer*& pUnitFrustumVB);
 
-	bool FX_DeferredShadowPassSetup(const Matrix44& mShadowTexGen, CRenderView* pRenderView, ShadowMapFrustum* pShadowFrustum, float maskRTWidth, float maskRTHeight, Matrix44& mScreenToShadow, bool bNearest);
-	bool FX_DeferredShadowPassSetupBlend(const Matrix44& mShadowTexGen, CRenderView* pRenderView, int nFrustumNum, float maskRTWidth, float maskRTHeight);
 	void FX_DeferredShadowsNearFrustum(int maskRTWidth, int maskRTHeight);
 	void FX_SetDeferredShadows();
 

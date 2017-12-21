@@ -531,7 +531,6 @@ CShaderMan::CShaderMan()
 	m_nCombinationsCompiled = -1;
 	m_nCombinationsEmpty = -1;
 	m_szShaderPrecache = NULL;
-	memset(m_TempVecs, 0, sizeof(Vec4) * 16);
 
 	m_eCacheMode = eSC_Normal;
 	m_nFrameSubmit = 1;

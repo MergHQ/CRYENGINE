@@ -286,6 +286,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 {
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	const auto *pRenderView = RenderView();
 
 	const bool bCloudShadow = rd->m_bVolFogCloudShadowsEnabled;
 	const bool bVolCloudShadow = rd->m_bVolumetricCloudsEnabled;
@@ -295,7 +296,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 	// ray cast into sun shadow maps
 	{
 		CShadowUtils::SShadowCascades cascades;
-		bool bSunShadow = CShadowUtils::SetupShadowsForFog(cascades, RenderView());
+		bool bSunShadow = CShadowUtils::SetupShadowsForFog(cascades, pRenderView);
 		
 		m_pCloudShadowTex = cascades.pCloudShadowMap;
 
@@ -347,6 +348,20 @@ void CFogStage::ExecuteVolumetricFogShadow()
 
 		static CCryNameR volFogShadowRangeN("volFogShadowRange");
 		m_passVolFogShadowRaycast.SetConstant(volFogShadowRangeN, volFogShadowRange, eHWSC_Pixel);
+
+		CShadowUtils::SShadowCascadesSamplingInfo shadowSamplingInfo;
+		CShadowUtils::GetShadowCascadesSamplingInfo(shadowSamplingInfo, pRenderView);
+		m_passVolFogShadowRaycast.SetConstant(CCryNameR("TexGen0"), shadowSamplingInfo.shadowTexGen[0]);
+		m_passVolFogShadowRaycast.SetConstant(CCryNameR("TexGen1"), shadowSamplingInfo.shadowTexGen[1]);
+		m_passVolFogShadowRaycast.SetConstant(CCryNameR("TexGen2"), shadowSamplingInfo.shadowTexGen[2]);
+		m_passVolFogShadowRaycast.SetConstant(CCryNameR("TexGen3"), shadowSamplingInfo.shadowTexGen[3]);
+		m_passVolFogShadowRaycast.SetConstant(CCryNameR("vInvShadowMapSize"), shadowSamplingInfo.invShadowMapSize);
+		m_passVolFogShadowRaycast.SetConstant(CCryNameR("fDepthTestBias"), shadowSamplingInfo.depthTestBias);
+		m_passVolFogShadowRaycast.SetConstant(CCryNameR("fOneDivFarDist"), shadowSamplingInfo.oneDivFarDist);
+		m_passVolFogShadowRaycast.SetConstant(CCryNameR("fKernelRadius"), shadowSamplingInfo.kernelRadius);
+		m_passVolFogShadowRaycast.SetConstant(CCryNameR("CloudShadowParams"), shadowSamplingInfo.cloudShadowParams);
+		m_passVolFogShadowRaycast.SetConstant(CCryNameR("CloudShadowAnimParams"), shadowSamplingInfo.cloudShadowAnimParams);
+		m_passVolFogShadowRaycast.SetConstantArray(CCryNameR("irreg_kernel_2d"), shadowSamplingInfo.irregKernel2d, 8);
 
 		m_passVolFogShadowRaycast.Execute();
 	}

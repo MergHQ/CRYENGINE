@@ -2198,11 +2198,6 @@ CRenderView::ShadowFrustumsPtr& CRenderView::GetShadowFrustumsForLight(int light
 	return empty;
 }
 
-CRenderView::ShadowFrustumsPtr& CRenderView::GetShadowFrustumsByType(eShadowFrustumRenderType type)
-{
-	return m_shadows.m_frustumsByType[type];
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CRenderView::PostWriteShadowViews()
 {

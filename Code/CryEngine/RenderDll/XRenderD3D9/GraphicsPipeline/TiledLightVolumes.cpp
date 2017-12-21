@@ -848,11 +848,10 @@ void CTiledLightVolumesStage::GenerateLightList()
 
 						for (int side = 0; side < numSides; ++side)
 						{
-							rd->ConfigShadowTexgen(pRenderView, 0, &firstFrustum, side);
-							Matrix44A shadowMat = rd->m_TempMatrices[0][0];
-
+							CShadowUtils::SShadowsSetupInfo shadowsSetup = rd->ConfigShadowTexgen(pRenderView, &firstFrustum, side);
+							Matrix44A shadowMat = shadowsSetup.ShadowMat;
 							// Pre-multiply by inverse frustum far plane distance
-							(Vec4&)shadowMat.m20 *= rd->m_cEF.m_TempVecs[2].x;
+							(Vec4&)shadowMat.m20 *= shadowsSetup.RecpFarDist;
 
 							Vec4 spotParams = Vec4(cubeDirs[side].x, cubeDirs[side].y, cubeDirs[side].z, 0);
 							// slightly enlarge the frustum to prevent culling errors

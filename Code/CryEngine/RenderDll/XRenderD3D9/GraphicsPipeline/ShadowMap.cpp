@@ -337,7 +337,7 @@ void CShadowMapStage::Prepare()
 			      frustumType != CRenderView::eShadowFrustumRenderType_Count;
 			      frustumType  = CRenderView::eShadowFrustumRenderType(frustumType + 1))
 		{
-			for (auto pFrustumToRender : pRenderView->GetShadowFrustumsByType(frustumType))
+			for (auto& pFrustumToRender : pRenderView->GetShadowFrustumsByType(frustumType))
 			{
 				CRY_ASSERT(pRenderView->GetFrameId() == pFrustumToRender->pShadowsView->GetFrameId());
 				PrepareShadowPasses(*pFrustumToRender, frustumType);
@@ -765,25 +765,6 @@ bool CShadowMapStage::CShadowMapPass::PrepareResources(CRenderView* pMainView)
 			cb->CP_ShadowGen_VegetationAlphaClamp.x = pSvoRenderer->GetVegetationMaxOpacity();
 		}
 #endif
-
-		//// TODO: find way to handle per object const bias for non-directional lights (%_RT_CUBEMAP0)
-		//{
-		//	// FX_DrawShader_General
-		//	if (shadow gen)
-		//	{
-		//		if (slw->m_eCull == eCULL_None)
-		//			m_cEF.m_TempVecs[1][0] = rTI.m_vFrustumInfo.w;
-		//	}
-
-		//	// FX_FlushShader_ShadowGen
-		//	if (gRenDev->m_RP.m_pShaderResources)
-		//	{
-		//		if (gRenDev->m_RP.m_pShaderResources->m_ResFlags & MTL_FLAG_2SIDED)
-		//		{
-		//			//handle terrain self-shadowing and two-sided geom
-		//			rd->m_cEF.m_TempVecs[1][0] = rTI.m_vFrustumInfo.w;
-		//		}
-		//}
 
 		cb.CopyToDevice();
 

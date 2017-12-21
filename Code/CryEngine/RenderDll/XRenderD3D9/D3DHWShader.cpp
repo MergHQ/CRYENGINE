@@ -1283,14 +1283,6 @@ NO_INLINE void sNearFarDist(UFloat4* sData, CD3D9Renderer* r)
 	sData[0].f[3] = 1.0f / farPlane;
 }
 
-NO_INLINE void sGetTempData(UFloat4* sData, CD3D9Renderer* r, const SCGParam* ParamBind)
-{
-	sData[0].f[0] = r->m_cEF.m_TempVecs[ParamBind->m_nID].x;
-	sData[0].f[1] = r->m_cEF.m_TempVecs[ParamBind->m_nID].y;
-	sData[0].f[2] = r->m_cEF.m_TempVecs[ParamBind->m_nID].z;
-	sData[0].f[3] = r->m_cEF.m_TempVecs[ParamBind->m_nID].w;
-}
-
 }
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::ReadPerFrameShaderConstants(const SRenderingPassInfo& passInfo, bool bSecondaryViewport)
@@ -1615,12 +1607,6 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 				sData[0].f[1] = sData[0].f[2] = sData[0].f[3] = 0;
 				break;
 
-			case ECGP_Matr_PB_Temp4_0:
-			case ECGP_Matr_PB_Temp4_1:
-			case ECGP_Matr_PB_Temp4_2:
-			case ECGP_Matr_PB_Temp4_3:
-				pSrc = r->m_TempMatrices[ParamBind->m_eCGParamType - ECGP_Matr_PB_Temp4_0][ParamBind->m_nID].GetData();
-				break;
 			case ECGP_PB_AmbientOpacity:
 				sOneLine(sData);
 				break;
@@ -1635,10 +1621,7 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 					sData[0].f[nComp] = pData[(ParamBind->m_nID >> (nComp * 8)) & 0xff];
 					*/
 				break;
-			
-			case ECGP_PB_TempData:
-				sGetTempData(sData, r, ParamBind);
-				break;
+
 			case ECGP_PB_VolumetricFogParams:
 				sData[0].f[0] = PF.pVolumetricFogParams.x;
 				sData[0].f[1] = PF.pVolumetricFogParams.y;

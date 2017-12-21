@@ -1335,8 +1335,6 @@ public:
 public:
 	Matrix44A m_IdentityMatrix;
 
-	Matrix44A m_TempMatrices[4][8];
-
 	byte           m_bDeviceLost;
 	byte           m_bSystemResourcesInit;
 	byte           m_bSystemTargetsInit;
@@ -1622,10 +1620,6 @@ protected:
 	// Rendering Quality
 	SRenderQuality    m_renderQuality;
 
-	//////////////////////////////////////////////////////////////////////////
-	// Shadow rendering specific data
-	int  m_ShadowCustomTexBind[8];
-	bool m_ShadowCustomComparisonSampling[8];
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////

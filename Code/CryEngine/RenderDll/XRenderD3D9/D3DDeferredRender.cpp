@@ -9,110 +9,12 @@
 #include "GraphicsPipeline/StandardGraphicsPipeline.h"
 #include "GraphicsPipeline/ShadowMap.h"
 
-#pragma warning(push)
-#pragma warning(disable: 4244)
-
 #if CRY_PLATFORM_DURANGO
 	#pragma warning(push)
 	#pragma warning(disable : 4273)
 BOOL InflateRect(LPRECT lprc, int dx, int dy);
 	#pragma warning(pop)
 #endif
-
-bool CD3D9Renderer::FX_DeferredShadowPassSetupBlend(const Matrix44& mShadowTexGen, CRenderView* pRenderView, int nFrustumNum, float maskRTWidth, float maskRTHeight)
-{
-	//set ScreenToWorld Expansion Basis
-	Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPos;
-
-	CShadowUtils::ProjectScreenToWorldExpansionBasis(mShadowTexGen, pRenderView->GetCamera(CCamera::eEye_Left), pRenderView->m_vProjMatrixSubPixoffset, maskRTWidth, maskRTHeight, vWBasisX, vWBasisY, vWBasisZ, vCamPos, true);
-
-	Matrix44A* mat = &gRenDev->m_TempMatrices[nFrustumNum][2];
-	mat->SetRow4(0, vWBasisX);
-	mat->SetRow4(1, vWBasisY);
-	mat->SetRow4(2, vWBasisZ);
-	mat->SetRow4(3, vCamPos);
-
-	return true;
-}
-
-bool CD3D9Renderer::FX_DeferredShadowPassSetup(const Matrix44& mShadowTexGen, CRenderView* pRenderView, ShadowMapFrustum* pShadowFrustum, float maskRTWidth, float maskRTHeight, Matrix44& mScreenToShadow, bool bNearest)
-{
-	//set ScreenToWorld Expansion Basis
-	Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPos;
-	bool bVPosSM30 = (GetFeatures() & (RFT_HW_SM30 | RFT_HW_SM40)) != 0;
-
-	CCamera Cam = pRenderView->GetCamera(CCamera::eEye_Left);
-	if (bNearest && m_drawNearFov > 1.0f && m_drawNearFov < 179.0f)
-		Cam.SetFrustum(Cam.GetViewSurfaceX(), Cam.GetViewSurfaceZ(), DEG2RAD(m_drawNearFov), Cam.GetNearPlane(), Cam.GetFarPlane(), Cam.GetPixelAspectRatio());
-
-	CShadowUtils::ProjectScreenToWorldExpansionBasis(mShadowTexGen, Cam, pRenderView->m_vProjMatrixSubPixoffset, maskRTWidth, maskRTHeight, vWBasisX, vWBasisY, vWBasisZ, vCamPos, bVPosSM30);
-
-	//TOFIX: create PB components for these params
-	//creating common projection matrix for depth reconstruction
-
-	mScreenToShadow = Matrix44(vWBasisX.x, vWBasisX.y, vWBasisX.z, vWBasisX.w,
-	                           vWBasisY.x, vWBasisY.y, vWBasisY.z, vWBasisY.w,
-	                           vWBasisZ.x, vWBasisZ.y, vWBasisZ.z, vWBasisZ.w,
-	                           vCamPos.x, vCamPos.y, vCamPos.z, vCamPos.w);
-
-	//save magnitudes separately to inrease precision
-	m_cEF.m_TempVecs[14].x = vWBasisX.GetLength();
-	m_cEF.m_TempVecs[14].y = vWBasisY.GetLength();
-	m_cEF.m_TempVecs[14].z = vWBasisZ.GetLength();
-	m_cEF.m_TempVecs[14].w = 1.0f;
-
-	//Vec4r normalization in doubles
-	vWBasisX /= vWBasisX.GetLength();
-	vWBasisY /= vWBasisY.GetLength();
-	vWBasisZ /= vWBasisZ.GetLength();
-
-	m_cEF.m_TempVecs[10].x = vWBasisX.x;
-	m_cEF.m_TempVecs[10].y = vWBasisX.y;
-	m_cEF.m_TempVecs[10].z = vWBasisX.z;
-	m_cEF.m_TempVecs[10].w = vWBasisX.w;
-
-	m_cEF.m_TempVecs[11].x = vWBasisY.x;
-	m_cEF.m_TempVecs[11].y = vWBasisY.y;
-	m_cEF.m_TempVecs[11].z = vWBasisY.z;
-	m_cEF.m_TempVecs[11].w = vWBasisY.w;
-
-	m_cEF.m_TempVecs[12].x = vWBasisZ.x;
-	m_cEF.m_TempVecs[12].y = vWBasisZ.y;
-	m_cEF.m_TempVecs[12].z = vWBasisZ.z;
-	m_cEF.m_TempVecs[12].w = vWBasisZ.w;
-
-	m_cEF.m_TempVecs[13].x = CV_r_ShadowsAdaptionRangeClamp;
-	m_cEF.m_TempVecs[13].y = CV_r_ShadowsAdaptionSize * 250.f;//to prevent akwardy high number in cvar
-	m_cEF.m_TempVecs[13].z = CV_r_ShadowsAdaptionMin;
-
-	// Particles shadow constants
-	/*
-	if (m_RP.m_nPassGroupID == EFSLIST_TRANSP || m_RP.m_nPassGroupID == EFSLIST_HALFRES_PARTICLES)
-	{
-		m_cEF.m_TempVecs[13].x = CV_r_ShadowsParticleKernelSize;
-		m_cEF.m_TempVecs[13].y = CV_r_ShadowsParticleJitterAmount;
-		m_cEF.m_TempVecs[13].z = CV_r_ShadowsParticleAnimJitterAmount * 0.05f;
-		m_cEF.m_TempVecs[13].w = CV_r_ShadowsParticleNormalEffect;
-	}
-	*/
-
-	m_cEF.m_TempVecs[0].x = vCamPos.x;
-	m_cEF.m_TempVecs[0].y = vCamPos.y;
-	m_cEF.m_TempVecs[0].z = vCamPos.z;
-	m_cEF.m_TempVecs[0].w = vCamPos.w;
-
-	if (CV_r_ShadowsScreenSpace)
-	{
-		CShadowUtils::ProjectScreenToWorldExpansionBasis(Matrix44(IDENTITY), Cam, pRenderView->m_vProjMatrixSubPixoffset, maskRTWidth, maskRTHeight, vWBasisX, vWBasisY, vWBasisZ, vCamPos, bVPosSM30);
-
-		gRenDev->m_TempMatrices[0][3].SetRow4(0, vWBasisX);
-		gRenDev->m_TempMatrices[0][3].SetRow4(1, vWBasisY);
-		gRenDev->m_TempMatrices[0][3].SetRow4(2, vWBasisZ);
-		gRenDev->m_TempMatrices[0][3].SetRow4(3, Vec4(0, 0, 0, 1));
-	}
-
-	return true;
-}
 
 HRESULT GetSampleOffsetsGaussBlur5x5Bilinear(DWORD dwD3DTexWidth, DWORD dwD3DTexHeight, Vec4* avTexCoordOffset, Vec4* avSampleWeight, FLOAT fMultiplier)
 {
@@ -268,4 +170,3 @@ bool CD3D9Renderer::CreateUnitVolumeMesh(t_arrDeferredMeshIndBuff& arrDeferredIn
 
 	return SUCCEEDED(hr);
 }
-#pragma warning(pop)

@@ -96,11 +96,6 @@ static SParamDB sParams[] =
 
 	SParamDB(PARAM(PB_AmbientOpacity,                        ECGP_PB_AmbientOpacity),                        0),
 
-	SParamDB(PARAM(PB_TempMatr0,                             ECGP_Matr_PB_Temp4_0),                          PD_INDEXED),
-	SParamDB(PARAM(PB_TempMatr1,                             ECGP_Matr_PB_Temp4_1),                          PD_INDEXED),
-	SParamDB(PARAM(PB_TempMatr2,                             ECGP_Matr_PB_Temp4_2),                          PD_INDEXED),
-	SParamDB(PARAM(PB_TempMatr3,                             ECGP_Matr_PB_Temp4_3),                          PD_INDEXED),
-
 
 	SParamDB(PARAM(PM_MatChannelSB,                          ECGP_PM_MatChannelSB),                          0),
 	SParamDB(PARAM(PM_MatDiffuseColor,                       ECGP_PM_MatDiffuseColor),                       0),
@@ -124,7 +119,6 @@ static SParamDB sParams[] =
 	SParamDB(PARAM(PB_RegularKernel,                         ECGP_PB_RegularKernel),                         0),
 
 	SParamDB(PARAM(PI_MaterialLayersParams,                  ECGP_PI_MaterialLayersParams),                  0),
-	SParamDB(PARAM(PB_TempData,                              ECGP_PB_TempData),                              PD_INDEXED | 0),
 
 	SParamDB(PARAM(PB_VolumetricFogParams,                   ECGP_PB_VolumetricFogParams),                   0),
 	SParamDB(PARAM(PB_VolumetricFogRampParams,               ECGP_PB_VolumetricFogRampParams),               0),

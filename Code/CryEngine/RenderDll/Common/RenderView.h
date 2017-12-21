@@ -236,7 +236,8 @@ public:
 	std::vector<SShadowFrustumToRender>& GetFrustumsToRender() { return m_shadows.m_renderFrustums; };
 
 	ShadowFrustumsPtr& GetShadowFrustumsForLight(int lightId);
-	ShadowFrustumsPtr& GetShadowFrustumsByType(eShadowFrustumRenderType type);
+	ShadowFrustumsPtr& GetShadowFrustumsByType(eShadowFrustumRenderType type)             { return m_shadows.m_frustumsByType[type]; }
+	const ShadowFrustumsPtr& GetShadowFrustumsByType(eShadowFrustumRenderType type) const { return m_shadows.m_frustumsByType[type]; }
 
 	// Can start executing post write jobs on shadow views
 	void                      PostWriteShadowViews();

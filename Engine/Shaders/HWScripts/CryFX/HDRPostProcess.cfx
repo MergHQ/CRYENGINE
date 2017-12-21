@@ -489,7 +489,44 @@ SamplerState fogShadowPointClampSS : register(s2) = SS_PointClamp;
 SamplerState fogShadowBilinearWrapSS : register(s3) = SS_MaterialBilinearWrap;
 SamplerState fogShadowBilinearClampSS : register(s4) = SS_MaterialTrilinearBorder;
 
+float4x4 TexGen0;
+float4x4 TexGen1;
+float4x4 TexGen2;
+float4x4 TexGen3;
+
+float4 vInvShadowMapSize;
+float4 fDepthTestBias; // defines how hard depth test is (default is 100 - hard test)
+float4 fOneDivFarDist;
+float4 fKernelRadius;
+
+float4 CloudShadowParams;
+float4 CloudShadowAnimParams;
+
+float4 irreg_kernel_2d[HALF_MAX_SHADOW_SAMPLES_NUM];
+
 float4 volFogShadowRange;
+
+SShadowSamplingParams GetShadowSamplingParams()
+{
+    SShadowSamplingParams s;
+
+    s.TexGen0 = TexGen0;
+    s.TexGen1 = TexGen1;
+    s.TexGen2 = TexGen2;
+    s.TexGen3 = TexGen3;
+
+    s.vInvShadowMapSize = vInvShadowMapSize;
+    s.fDepthTestBias = fDepthTestBias; // defines how hard depth test is (default is 100 - hard test)
+    s.fOneDivFarDist = fOneDivFarDist;
+    s.fKernelRadius = fKernelRadius;
+
+    s.CloudShadowParams = CloudShadowParams;
+    s.CloudShadowAnimParams = CloudShadowAnimParams;
+
+    s.irreg_kernel_2d = irreg_kernel_2d;
+
+    return s;
+}
 
 float4 CalcHomogeneousPos(float2 WPos, float SceneDepth, float4x4 mScreenToShadow)
 {
@@ -667,6 +704,8 @@ pixout MultiGSMShadowedFogPS(fragInShadowFog IN)
 	pixout OUT;
 	OUT.Color = 0.0f;
 
+    SShadowSamplingParams ss = GetShadowSamplingParams();
+
 	//jitter
 	const float2 oj = fogShadowInterleaveTex.Sample(fogShadowPointWrapSS, IN.WPos.xy / 64.0f).xw;
 	const float offset = oj.x;
@@ -691,29 +730,29 @@ pixout MultiGSMShadowedFogPS(fragInShadowFog IN)
 
 	float sampleCount = 0.0;
 	float fogOccl = 0.0;
-	float fFogGsm = SingleGSMShadowedFog(fogShadowMap0Tex, fogShadowLinearClampCompSS, TexGen0, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
+    float fFogGsm = SingleGSMShadowedFog(fogShadowMap0Tex, fogShadowLinearClampCompSS, ss.TexGen0, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
 	fogOccl += fFogGsm;
 
-	const uint nCascadeMask = GetForwardShadowsCascadeMask();
+    const uint nCascadeMask = GetForwardShadowsCascadeMask(ss);
 
 	////		second cascade
 	if(nCascadeMask & FORWARD_SHADOWS_CASCADE_1)
 	{
-		fFogGsm = SingleGSMShadowedFog(fogShadowMap1Tex, fogShadowLinearClampCompSS, TexGen1, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
+        fFogGsm = SingleGSMShadowedFog(fogShadowMap1Tex, fogShadowLinearClampCompSS, ss.TexGen1, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
 		fogOccl += fFogGsm;
 	}
 
 	//////		3d cascade
 	if(nCascadeMask & FORWARD_SHADOWS_CASCADE_2)
 	{
-		fFogGsm = SingleGSMShadowedFog(fogShadowMap2Tex, fogShadowLinearClampCompSS, TexGen2, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
+        fFogGsm = SingleGSMShadowedFog(fogShadowMap2Tex, fogShadowLinearClampCompSS, ss.TexGen2, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
 		fogOccl += fFogGsm;
 	}
 
 	//////		4th cascade
 	if(nCascadeMask & FORWARD_SHADOWS_CASCADE_3)
 	{
-		fFogGsm = SingleGSMShadowedFog(fogShadowMap3Tex, fogShadowLinearClampCompSS, TexGen3, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
+        fFogGsm = SingleGSMShadowedFog(fogShadowMap3Tex, fogShadowLinearClampCompSS, ss.TexGen3, IN.WPos.xy, StartDepth, SceneDepth, RayStep); //updates StartDepth
 		fogOccl += fFogGsm;
 	}
 
@@ -778,7 +817,7 @@ pixout FogPassVolShadowsInterleavePassPS(vert2fragFog IN, float4 WPos : SV_POSIT
 	{
 		const float ratio = (((float)i + offset) / (float)numShadowSamples + jitter / (float)numTotalShadowSamples);
 		const float4 worldPos = float4(ratio * cameraToWorldPos.xyz + vfViewPos.xyz, 1);
-		float shadowSample = ShadowDepthTest(cascades, shadowContext, worldPos, bSampleCloudShadows, true).r;
+        float shadowSample = ShadowDepthTest(GetShadowSamplingParams(), cascades, shadowContext, worldPos, bSampleCloudShadows, true).r;
 
 #if %_RT_SAMPLE4
 		shadowSample = min(shadowSample, GetVolumetricCloudShadow(fogShadowVolCloudTex, fogShadowBilinearClampSS, worldPos.xyz, CV_SunLightDir.xyz, CloudShadowParams, CloudShadowAnimParams));

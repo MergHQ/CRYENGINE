@@ -7,8 +7,7 @@
 * Created by Nick Kasyan
    =============================================================================*/
 
-#ifndef __SHADOWUTILS_H__
-#define __SHADOWUTILS_H__
+#pragma once
 
 #define DEG2RAD_R(a) (f64(a) * (g_PI / 180.0))
 #define RAD2DEG_R(a) float((f64)(a) * (180.0 / g_PI))
@@ -104,6 +103,12 @@ public:
 		float    shadowFadingDist;
 	};
 
+	struct SShadowsSetupInfo
+	{
+		Matrix44 ShadowMat;
+		float    RecpFarDist;
+	};
+
 public:
 	static void              CalcDifferentials(const CCamera& cam, float fViewWidth, float fViewHeight, float& fFragSizeX);
 	static void              ProjectScreenToWorldExpansionBasis(const Matrix44r& mShadowTexGen, const CCamera& cam, const Vec2& vJitter, float fViewWidth, float fViewHeight, Vec4r& vWBasisX, Vec4r& vWBasisY, Vec4r& vWBasisZ, Vec4r& vCamPos, bool bWPos);
@@ -138,7 +143,7 @@ public:
 	static Matrix44 GetClipToTexSpaceMatrix(const ShadowMapFrustum* pFrustum, int nSide);
 
 	// setup shader constants, return the validity of the textures for forward sun shadow, and return the textures and the shader runtime flags.
-	static bool SetupShadowsForFog(SShadowCascades& shadowCascades, CRenderView* pRenderView);
+	static bool SetupShadowsForFog(SShadowCascades& shadowCascades, const CRenderView* pRenderView);
 
 	// set the sampler-states and textures for forward sun shadow to RenderPass.
 	template<class RenderPassType>
@@ -159,10 +164,10 @@ public:
 	  const SShadowCascades& shadowCascades);
 
 	// return the validity of all cascade textures for forward sun shadow, and return the textures.
-	static bool GetShadowCascades(SShadowCascades& shadowCascades, CRenderView* pRenderView);
+	static bool GetShadowCascades(SShadowCascades& shadowCascades, const CRenderView* pRenderView);
 
 	// return the validity of all sun shadow cascades, and shadow sampling info for forward rendering.
-	static bool                GetShadowCascadesSamplingInfo(SShadowCascadesSamplingInfo& samplingInfo, CRenderView* pRenderView);
+	static bool                GetShadowCascadesSamplingInfo(SShadowCascadesSamplingInfo& samplingInfo, const CRenderView* pRenderView);
 
 	static SShadowSamplingInfo GetDeferredShadowSamplingInfo(ShadowMapFrustum* pFr, int nSide, const CCamera& cam, const SRenderViewport& viewport, const Vec2& subpixelOffset);
 
@@ -176,5 +181,3 @@ private:
 	// Currently forced to use always ID 0 for sun (if sun present)
 	static const int nSunLightID = 0;
 };
-
-#endif

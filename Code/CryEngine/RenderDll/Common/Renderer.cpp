@@ -254,11 +254,6 @@ void CRenderer::InitRenderer()
 
 	m_IdentityMatrix.SetIdentity();
 
-
-	for (int i = 0; i < CRY_ARRAY_COUNT(m_TempMatrices); i++)
-		for (int j = 0; j < CRY_ARRAY_COUNT(m_TempMatrices[0]); j++)
-			m_TempMatrices[i][j].SetIdentity();
-
 	CParserBin::m_bParseFX = true;
 	//CParserBin::m_bEmbeddedSearchInfo = false;
 	if (gEnv->IsEditor())

@@ -70,11 +70,6 @@ enum ECGParam
 	ECGP_PB_Scalar,
 	ECGP_PM_Tweakable,
 
-	ECGP_Matr_PB_Temp4_0,
-	ECGP_Matr_PB_Temp4_1,
-	ECGP_Matr_PB_Temp4_2,
-	ECGP_Matr_PB_Temp4_3,
-
 	ECGP_PM_MatChannelSB,
 	ECGP_PM_MatDiffuseColor,
 	ECGP_PM_MatSpecularColor,
@@ -90,7 +85,6 @@ enum ECGParam
 	ECGP_PB_IrregKernel,
 	ECGP_PB_RegularKernel,
 
-	ECGP_PB_TempData,
 	ECGP_PB_VolumetricFogParams,
 	ECGP_PB_VolumetricFogRampParams,
 	ECGP_PB_VolumetricFogSunDir,
