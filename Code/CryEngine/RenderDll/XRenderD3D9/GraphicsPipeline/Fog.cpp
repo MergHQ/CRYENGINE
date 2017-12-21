@@ -127,7 +127,6 @@ void CFogStage::Execute()
 			m_passFog.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 			m_passFog.SetTechnique(pShader, techName, rtMask);
 			m_passFog.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
-			m_passFog.SetDepthTarget(CRendererResources::s_ptexSceneDepth);
 
 			m_passFog.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 
@@ -175,6 +174,8 @@ void CFogStage::Execute()
 			// reverse depth operation is needed here because CFullscreenPass's internal reverse operation counteracts projMat's reverse operation.
 			clipZ = bReverseDepth ? (1.0f - clipZ) : clipZ;
 		}
+
+		m_passFog.SetDepthTarget(RenderView()->GetDepthTarget());
 
 		m_passFog.SetRequireWorldPos(true, clipZ); // don't forget if shader reconstructs world position.
 

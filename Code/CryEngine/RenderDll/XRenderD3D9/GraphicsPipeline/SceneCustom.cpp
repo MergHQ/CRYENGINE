@@ -234,7 +234,7 @@ void CSceneCustomStage::Update()
 	CRenderView* pRenderView = RenderView();
 
 //	CTexture* pColorTexture = pRenderView->GetColorTarget();
-//	CTexture* pDepthTexture = pRenderView->GetDepthTarget();
+	CTexture* pDepthTexture = pRenderView->GetDepthTarget();
 
 	// Debug View Pass
 	m_debugViewPass.SetLabel("CUSTOM_DEBUGVIEW");
@@ -242,7 +242,7 @@ void CSceneCustomStage::Update()
 	m_debugViewPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
 	m_debugViewPass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pDepthTexture,
 		// Color 0
 		CRendererResources::s_ptexHDRTarget
 	);
@@ -253,7 +253,7 @@ void CSceneCustomStage::Update()
 	m_silhouetteMaskPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
 	m_silhouetteMaskPass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pDepthTexture,
 		// Color 0
 		CRendererResources::s_ptexSceneNormalsMap
 	);
@@ -266,7 +266,7 @@ void CSceneCustomStage::Update()
 		m_selectionIDPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
 		m_selectionIDPass.SetRenderTargets(
 			// Depth
-			CRendererResources::s_ptexSceneDepth,
+			pDepthTexture,
 			// Color 0
 			CRendererResources::s_ptexSceneSelectionIDs
 		);
@@ -419,7 +419,7 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 
 	// update our depth texture here
 	CTexture* pTargetRT = CRendererResources::s_ptexSceneSelectionIDs;
-	CTexture* pTargetDS = CRendererResources::s_ptexSceneDepth;
+	CTexture* pTargetDS = RenderView()->GetDepthTarget();
 
 	m_selectionIDPass.SetLabel("EDITOR_SELECTION_HIGHLIGHT");
 	m_selectionIDPass.SetViewport(D3DViewPort{

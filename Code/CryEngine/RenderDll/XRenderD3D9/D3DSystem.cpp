@@ -875,20 +875,6 @@ bool CD3D9Renderer::SetGammaDelta(const float fGamma)
 	return true;
 }
 
-SDepthTexture::~SDepthTexture()
-{
-}
-
-void SDepthTexture::Release(bool bReleaseTexture)
-{
-	if (bReleaseTexture && pTexture)
-		pTexture->Release();
-
-	pTarget = nullptr;
-	pSurface = nullptr;
-	pTexture = nullptr;
-}
-
 void CD3D9Renderer::ShutDownFast()
 {
 	CVrProjectionManager::Reset();

@@ -326,10 +326,13 @@ void CDeferredDecalsStage::Execute()
 #if defined(DURANGO_USE_ESRAM)
 	pSceneSpecular = CRendererResources::s_ptexSceneSpecularESRAM;
 #endif
+
+	const auto tempDepthTexture = CRendererResources::GetTempDepthSurface(RenderView()->GetRenderResolution().x, RenderView()->GetRenderResolution().y);
+
 	m_decalPass.SetRenderTarget(0, CRendererResources::s_ptexSceneNormalsMap);
 	m_decalPass.SetRenderTarget(1, CRendererResources::s_ptexSceneDiffuse);
 	m_decalPass.SetRenderTarget(2, pSceneSpecular);
-	m_decalPass.SetDepthTarget(CRendererResources::s_ptexSceneDepth);
+	m_decalPass.SetDepthTarget(tempDepthTexture->texture.pTexture);
 	
 	m_decalPass.SetViewport(RenderView()->GetViewport());
 		

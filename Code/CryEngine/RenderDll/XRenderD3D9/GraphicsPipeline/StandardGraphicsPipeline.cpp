@@ -763,6 +763,7 @@ void CStandardGraphicsPipeline::Execute()
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CRenderView* pRenderView = GetCurrentRenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
+	CTexture* pZTexture = pRenderView->GetDepthTarget();
 
 	PROFILE_LABEL_PUSH("GRAPHICS_PIPELINE");
 	
@@ -807,7 +808,7 @@ void CStandardGraphicsPipeline::Execute()
 		CRendererResources::s_ptexSceneNormalsMap,
 		CRendererResources::s_ptexSceneDiffuse,
 		CRendererResources::s_ptexSceneSpecular,
-		CRendererResources::s_ptexSceneDepth
+		pZTexture
 	};
 
 	CDeviceGraphicsCommandInterface* pCmdList = GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface();
@@ -827,7 +828,6 @@ void CStandardGraphicsPipeline::Execute()
 
 	// Depth downsampling
 	{
-		CTexture* pZTexture = CRendererResources::s_ptexSceneDepth;
 		CTexture* pSourceDepth = CRendererResources::s_ptexLinearDepth;
 
 #if CRY_PLATFORM_DURANGO

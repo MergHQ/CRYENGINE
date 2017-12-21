@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <Common/Textures/TempDepthTexture.h>
+
 class CRenderDisplayContext;
 
 //////////////////////////////////////////////////////////////////////////
@@ -73,9 +75,9 @@ private:
 	ColorF                 m_clearColor = {};
 	float                  m_clearDepth = 0.0f;
 
-	bool                   m_bUseEyeColorBuffer = false;
-	bool                   m_bUseTempDepthBuffer = false;
-	SDepthTexture*         m_pTempDepthTexture = nullptr;
+	bool                                         m_bUseEyeColorBuffer = false;
+	bool                                         m_bUseTempDepthBuffer = false;
+	CResourcePool<STempDepthTexture>::value_type m_pTempDepthTexture = nullptr;
 
 	SRenderViewport        m_viewport;
 

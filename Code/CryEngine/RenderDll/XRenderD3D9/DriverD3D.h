@@ -569,7 +569,7 @@ public:
 	virtual void RT_ResumeDevice() override;
 #endif
 
-	SDepthTexture* FX_GetDepthSurface(int nWidth, int nHeight, bool bAA, bool bExactMatch = false);
+	CTempTexture FX_GetDepthSurface(int nWidth, int nHeight, bool bExactMatch = false);
 
 	//========================================================================================
 

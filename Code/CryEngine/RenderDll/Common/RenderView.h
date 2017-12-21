@@ -6,6 +6,8 @@
 #include <CryThreading/CryThreadSafeWorkerContainer.h>
 #include <CryMath/Range.h>
 
+#include <Common/RendererResources.h>
+
 #include "RenderPipeline.h"
 #include "RenderItemDrawer.h"
 
@@ -437,9 +439,10 @@ private:
 	int32            m_RenderWidth = -1;
 	int32            m_RenderHeight = -1;
 
-	CRenderOutputPtr m_pRenderOutput; // Output render target (currently used for recursive pass and secondary viewport)
-	TexSmartPtr      m_pColorTarget = nullptr;
-	TexSmartPtr      m_pDepthTarget = nullptr;
+	CRenderOutputPtr                 m_pRenderOutput; // Output render target (currently used for recursive pass and secondary viewport)
+	TexSmartPtr                      m_pColorTarget = nullptr;
+	TexSmartPtr                      m_pDepthTarget = nullptr;
+	CRendererResources::CTempTexture m_pTempDepthTexture = nullptr;
 
 	SRenderViewport  m_viewport;
 

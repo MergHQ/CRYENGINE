@@ -57,6 +57,7 @@ void CSceneForwardStage::Init()
 void CSceneForwardStage::Update()
 {
 	CRenderView* pRenderView = RenderView();
+	CTexture* pZTexture = RenderView()->GetDepthTarget();
 
 //	CTexture* pColorTexture = pRenderView->GetColorTarget();
 //	CTexture* pDepthTexture = pRenderView->GetDepthTarget();
@@ -67,7 +68,7 @@ void CSceneForwardStage::Update()
 	m_forwardOpaquePass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
 	m_forwardOpaquePass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pZTexture,
 		// Color 0
 		CRendererResources::s_ptexHDRTarget
 	);
@@ -78,7 +79,7 @@ void CSceneForwardStage::Update()
 	m_forwardOverlayPass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
 	m_forwardOverlayPass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pZTexture,
 		// Color 0
 		CRendererResources::s_ptexHDRTarget
 	);
@@ -89,7 +90,7 @@ void CSceneForwardStage::Update()
 	m_forwardTransparentBWPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 	m_forwardTransparentBWPass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pZTexture,
 		// Color 0
 		CRendererResources::s_ptexHDRTarget
 	);
@@ -99,7 +100,7 @@ void CSceneForwardStage::Update()
 	m_forwardTransparentAWPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 	m_forwardTransparentAWPass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pZTexture,
 		// Color 0
 		CRendererResources::s_ptexHDRTarget
 	);
@@ -120,7 +121,7 @@ void CSceneForwardStage::Update()
 	m_forwardOpaqueRecursivePass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
 	m_forwardOpaqueRecursivePass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth, // this texture is used only for initialization.
+		pZTexture, // this texture is used only for initialization.
 		// Color 0
 		CRendererResources::s_ptexHDRTarget // this texture is used only for initialization.
 	);
@@ -131,7 +132,7 @@ void CSceneForwardStage::Update()
 	m_forwardOverlayRecursivePass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
 	m_forwardOverlayRecursivePass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth, // this texture is used only for initialization.
+		pZTexture, // this texture is used only for initialization.
 		// Color 0
 		CRendererResources::s_ptexHDRTarget // this texture is used only for initialization.
 	);
@@ -141,7 +142,7 @@ void CSceneForwardStage::Update()
 	m_forwardTransparentRecursivePass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 	m_forwardTransparentRecursivePass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth, // this texture is used only for initialization.
+		pZTexture, // this texture is used only for initialization.
 		// Color 0
 		CRendererResources::s_ptexHDRTarget // this texture is used only for initialization.
 	);
@@ -151,7 +152,7 @@ void CSceneForwardStage::Update()
 	m_forwardEyeOverlayPass.SetPassResources(m_pEyeOverlayResourceLayout, m_pEyeOverlayPassResourceSet);
 	m_forwardEyeOverlayPass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pZTexture,
 		// Color 0
 		CRendererResources::s_ptexSceneDiffuse
 	);
@@ -161,7 +162,7 @@ void CSceneForwardStage::Update()
 	m_forwardHDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 	m_forwardHDRPass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pZTexture,
 		// Color 0
 		CRendererResources::s_ptexSceneDiffuse
 	);
@@ -171,7 +172,7 @@ void CSceneForwardStage::Update()
 	m_forwardLDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
 	m_forwardLDRPass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pZTexture,
 		// Color 0
 		CRendererResources::s_ptexSceneDiffuse
 	);
@@ -682,7 +683,7 @@ void CSceneForwardStage::ExecuteOpaque()
 		renderItemDrawer.JobifyDrawSubmission();
 		renderItemDrawer.WaitForDrawSubmission();
 
-		ExecuteSky(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexSceneDepth);
+		ExecuteSky(CRendererResources::s_ptexHDRTarget, RenderView()->GetDepthTarget());
 
 		renderItemDrawer.InitDrawSubmission();
 

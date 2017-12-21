@@ -182,6 +182,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 	CTexture* pEdgesRT = CRendererResources::s_ptexSceneNormalsMap;   // Reusing ESRAM resident target
 	CTexture* pBlendWeightsRT = CRendererResources::s_ptexHDRTarget;  // Reusing ESRAM resident target (FP16 RT accessed using point filtering which gives full rate on GCN)
 	CTexture* pDestRT = CRendererResources::s_ptexSceneNormalsMap;
+	CTexture* pZTexture = RenderView()->GetDepthTarget();
 
 	assert(pBlendWeightsRT->GetDstFormat() != eTF_R11G11B10F);  // Alpha channel required
 
@@ -197,7 +198,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 		if (gcpRendD3D->m_nStencilMaskRef > STENC_MAX_REF)
 		{
 			// Stencil initialized to 1 - 0 is reserved for MSAAed samples
-			CClearSurfacePass::Execute(CRendererResources::s_ptexSceneDepth, CLEAR_STENCIL, 0.0f, 1);
+			CClearSurfacePass::Execute(pZTexture, CLEAR_STENCIL, 0.0f, 1);
 
 			gcpRendD3D->m_nStencilMaskRef = 1;
 		}
@@ -218,7 +219,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 			m_passSMAAEdgeDetection.SetTechnique(CShaderMan::s_shPostAA, techEdgeDetection, 0);
 			m_passSMAAEdgeDetection.SetTargetClearMask(CPrimitiveRenderPass::eClear_Color0);
 			m_passSMAAEdgeDetection.SetRenderTarget(0, pEdgesRT);
-			m_passSMAAEdgeDetection.SetDepthTarget(CRendererResources::s_ptexSceneDepth);
+			m_passSMAAEdgeDetection.SetDepthTarget(pZTexture);
 			m_passSMAAEdgeDetection.SetState(GS_NODEPTHTEST);
 			m_passSMAAEdgeDetection.SetRequirePerViewConstantBuffer(true);
 			m_passSMAAEdgeDetection.SetTextureSamplerPair(0, pCurrRT, EDefaultSamplerStates::PointClamp);
@@ -247,7 +248,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 			m_passSMAABlendWeights.SetTechnique(CShaderMan::s_shPostAA, techBlendWeights, 0);
 			m_passSMAABlendWeights.SetTargetClearMask(CPrimitiveRenderPass::eClear_Color0);
 			m_passSMAABlendWeights.SetRenderTarget(0, pBlendWeightsRT);
-			m_passSMAABlendWeights.SetDepthTarget(CRendererResources::s_ptexSceneDepth);
+			m_passSMAABlendWeights.SetDepthTarget(pZTexture);
 			m_passSMAABlendWeights.SetState(GS_NODEPTHTEST);
 			m_passSMAABlendWeights.SetTexture(0, pEdgesRT);
 			m_passSMAABlendWeights.SetTexture(1, m_pTexAreaSMAA);
@@ -317,7 +318,6 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 		m_passTemporalAA.SetRequirePerViewConstantBuffer(true);
 		m_passTemporalAA.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
-		m_passTemporalAA.SetTextureSamplerPair(4, pCurrRT, EDefaultSamplerStates::LinearClamp, EDefaultResourceViews::sRGB);
 
 		m_passTemporalAA.SetTexture(0, pCurrRT);
 		m_passTemporalAA.SetTexture(1, pPrevRT);
@@ -326,8 +326,7 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 		m_passTemporalAA.SetTexture(5, pPrevRT);
 		m_passTemporalAA.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 		m_passTemporalAA.SetSampler(1, EDefaultSamplerStates::PointClamp);
-
-		m_passTemporalAA.SetTexture(16, CRendererResources::s_ptexSceneDepth);
+		m_passTemporalAA.SetTexture(16, RenderView()->GetDepthTarget());
 	}
 
 	(pMgpuRT = pDestRT)->MgpuResourceUpdate(true);
@@ -494,7 +493,6 @@ void CPostAAStage::Execute()
 	PROFILE_LABEL_SCOPE("POST_AA");
 
 	CTexture* pCurrRT = CRendererResources::s_ptexSceneDiffuse;
-	CTexture* pCurrDS = CRendererResources::s_ptexSceneDepth;
 	CTexture* pMgpuRT = NULL;
 
 	// TODO: Support temporal AA in the editor
@@ -512,14 +510,7 @@ void CPostAAStage::Execute()
 	// TODO: Don't do anything and throw away depth when no depth-test/aux is used
 	{
 		CTexture* pDestRT = RenderView()->GetColorTarget();
-		CTexture* pDestDS = RenderView()->GetDepthTarget();
-
 		DoFinalComposition(pCurrRT, pDestRT, aaMode);
-		if (pCurrDS != pDestDS)
-		{
-			CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
-			commandList.GetCopyInterface()->Copy(pCurrDS->GetDevTexture(), pDestDS->GetDevTexture());
-		}
 	}
 
 	if (pMgpuRT)

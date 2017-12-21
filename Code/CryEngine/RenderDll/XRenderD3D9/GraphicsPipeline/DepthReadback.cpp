@@ -102,8 +102,9 @@ CTexture* CDepthReadbackStage::GetInputTexture(EConfigurationFlags& flags)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
+	const auto pRenderView = RenderView();
 	const bool bMultiResEnabled = CVrProjectionManager::IsMultiResEnabledStatic();
-	const bool bUseNativeDepth = CRenderer::CV_r_CBufferUseNativeDepth && !bMultiResEnabled && !gEnv->IsEditor();
+	const bool bUseNativeDepth = pRenderView && CRenderer::CV_r_CBufferUseNativeDepth && !bMultiResEnabled && !gEnv->IsEditor();
 	const bool bReverseDepth = true;
 	const bool bMSAA = bUseNativeDepth && gRenDev->IsMSAAEnabled();
 
@@ -114,7 +115,7 @@ CTexture* CDepthReadbackStage::GetInputTexture(EConfigurationFlags& flags)
 	flags = static_cast<EConfigurationFlags>(allFlags);
 
 	return
-	  bUseNativeDepth ? CRendererResources::s_ptexSceneDepth
+	  bUseNativeDepth ? pRenderView->GetDepthTarget()
 	  : bMultiResEnabled ? CVrProjectionManager::Instance()->GetZTargetFlattened()
 	  : CRendererResources::s_ptexLinearDepth;
 }

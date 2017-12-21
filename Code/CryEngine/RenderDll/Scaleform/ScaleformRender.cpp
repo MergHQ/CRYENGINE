@@ -320,11 +320,11 @@ CTexture* SSF_ResourcesD3D::GetColorSurface(CD3D9Renderer* pRenderer, int nWidth
 	return pTex;
 }
 
-SDepthTexture* SSF_ResourcesD3D::GetStencilSurface(CD3D9Renderer* pRenderer, int nWidth, int nHeight, ETEX_Format eFormat)
+CD3D9Renderer::CTempTexture SSF_ResourcesD3D::GetStencilSurface(CD3D9Renderer* pRenderer, int nWidth, int nHeight, ETEX_Format eFormat)
 {
 	CryCriticalSectionNonRecursive threadSafePool;
 
-	return pRenderer->GetTempDepthSurface(nWidth, nHeight, false, false);
+	return pRenderer->GetTempDepthSurface(nWidth, nHeight);
 }
 
 //////////////////////////////////////////////////////////////////////////

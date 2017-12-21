@@ -202,6 +202,7 @@ void CShadowMaskStage::Prepare()
 	// get rendertarget and initialize passes
 	{
 		m_pShadowMaskRT = CRendererResources::s_ptexShadowMask;
+		CTexture* pZTexture = RenderView()->GetDepthTarget();
 
 		// workaround for vector::resize requiring copy constructor on ps4
 		while (m_maskGenPasses.size() < CRendererResources::s_ptexShadowMask->StreamGetNumSlices())
@@ -226,14 +227,14 @@ void CShadowMaskStage::Prepare()
 			sliceGenPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 			sliceGenPass.SetTargetClearMask((shadowMaskSlice == 0) ? CPrimitiveRenderPass::eClear_Stencil : CPrimitiveRenderPass::eClear_None);
 			sliceGenPass.SetRenderTarget(0, m_pShadowMaskRT, curSliceView);
-			sliceGenPass.SetDepthTarget(CRendererResources::s_ptexSceneDepth);
+			sliceGenPass.SetDepthTarget(pZTexture);
 			sliceGenPass.SetViewport(viewport);
 			sliceGenPass.BeginAddingPrimitives();
 		}
 
 		m_debugCascadesPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 		m_debugCascadesPass.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuse);
-		m_debugCascadesPass.SetDepthTarget(CRendererResources::s_ptexSceneDepth);
+		m_debugCascadesPass.SetDepthTarget(pZTexture);
 		m_debugCascadesPass.SetViewport(viewport);
 		m_debugCascadesPass.BeginAddingPrimitives();
 	}
@@ -285,7 +286,7 @@ void CShadowMaskStage::Prepare()
 
 		SResourceView firstSliceDesc = SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(m_pShadowMaskRT->GetDstFormat()), 0, 1);
 		D3DSurface* pFirstSliceSRV = m_pShadowMaskRT->GetDevTexture()->GetOrCreateRTV(firstSliceDesc);
-		D3DDepthSurface* pAllSliceDSV = CRendererResources::s_ptexSceneDepth->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
+		D3DDepthSurface* pAllSliceDSV = RenderView()->GetDepthTarget()->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
 
 		commandList.GetGraphicsInterface()->ClearSurface(pFirstSliceSRV, Clr_Transparent);
 		commandList.GetGraphicsInterface()->ClearSurface(pAllSliceDSV, CLEAR_STENCIL, Clr_Unused.r, 0);

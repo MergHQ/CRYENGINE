@@ -842,7 +842,7 @@ void CVolumetricCloudsStage::Execute()
 				pass.SetTechnique(pShader, shaderName, rtMask);
 
 				pass.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
-				pass.SetDepthTarget(CRendererResources::s_ptexSceneDepth);
+				pass.SetDepthTarget(RenderView()->GetDepthTarget());
 
 				// using GS_BLDST_SRCALPHA because GS_BLDST_ONEMINUSSRCALPHA causes banding artifact when alpha value is very low.
 				pass.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_SRCALPHA);

@@ -168,8 +168,6 @@ CWaterStage::CWaterStage()
 
 void CWaterStage::Init()
 {
-	auto* pDepthTarget = CRendererResources::s_ptexSceneDepth;
-
 	m_pDefaultPerInstanceResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 	for (uint32 i = 0; i < ePass_Count; ++i)
 	{
@@ -206,11 +204,6 @@ void CWaterStage::Init()
 	CRY_ASSERT(m_pOceanCausticsTex == nullptr);
 	m_pOceanCausticsTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/caustics_sampler.dds", FT_DONT_STREAM, eTF_Unknown);
 
-	CRY_ASSERT(m_pOceanMaskTex == nullptr);
-	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
-	const ETEX_Format format = eTF_R8;
-	m_pOceanMaskTex = CTexture::GetOrCreateTextureObjectPtr("$OceanMask", pDepthTarget->GetWidth(), pDepthTarget->GetHeight(), 0, eTT_2D, flags, eTF_R8);
-
 	CConstantBufferPtr pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(water::SPrimitiveConstants));
 	m_deferredOceanStencilPrimitive[0].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex);
 	m_deferredOceanStencilPrimitive[1].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerBatch, pCB, EShaderStage_Vertex);
@@ -234,7 +227,6 @@ void CWaterStage::Init()
 	m_passOceanMaskGen.SetLabel("OCEAN_MASK_GEN");
 	m_passOceanMaskGen.SetupPassContext(m_stageID, ePass_OceanMaskGen, TTYPE_GENERAL, FB_GENERAL, EFSLIST_WATER, 0, false);
 	m_passOceanMaskGen.SetPassResources(m_pResourceLayout, m_pPerPassResourceSets[ePass_OceanMaskGen]);
-	m_passOceanMaskGen.SetRenderTargets(pDepthTarget, m_pOceanMaskTex);
 
 	auto* pDummyRenderTarget = CRendererResources::s_ptexSceneSpecular;
 	CRY_ASSERT(pDummyRenderTarget && pDummyRenderTarget->GetTextureDstFormat() == eTF_R8G8B8A8);
@@ -244,12 +236,10 @@ void CWaterStage::Init()
 	m_passWaterCausticsSrcGen.SetPassResources(m_pResourceLayout, m_pPerPassResourceSets[ePass_CausticsGen]);
 	m_passWaterCausticsSrcGen.SetRenderTargets(nullptr, pDummyRenderTarget);
 
-	auto* pRenderTarget = CRendererResources::s_ptexHDRTarget;
 
 	m_passWaterFogVolumeBeforeWater.SetLabel("WATER_FOG_VOLUME_BEFORE_WATER");
 	m_passWaterFogVolumeBeforeWater.SetupPassContext(m_stageID, ePass_FogVolume, TTYPE_GENERAL, FB_BELOW_WATER, EFSLIST_WATER_VOLUMES, 0, false);
 	m_passWaterFogVolumeBeforeWater.SetPassResources(m_pResourceLayout, m_pPerPassResourceSets[ePass_FogVolume]);
-	m_passWaterFogVolumeBeforeWater.SetRenderTargets(pDepthTarget, pRenderTarget);
 
 	m_passWaterReflectionGen.SetLabel("WATER_VOLUME_REFLECTION_GEN");
 	m_passWaterReflectionGen.SetupPassContext(m_stageID, ePass_ReflectionGen, TTYPE_WATERREFLPASS, FB_WATER_REFL, EFSLIST_WATER, 0, false);
@@ -259,21 +249,17 @@ void CWaterStage::Init()
 	m_passWaterSurface.SetLabel("WATER_SURFACE");
 	m_passWaterSurface.SetupPassContext(m_stageID, ePass_WaterSurface, TTYPE_GENERAL, FB_GENERAL, EFSLIST_WATER, 0, false);
 	m_passWaterSurface.SetPassResources(m_pResourceLayout, m_pPerPassResourceSets[ePass_WaterSurface]);
-	m_passWaterSurface.SetRenderTargets(pDepthTarget, pRenderTarget);
 
 	m_passWaterFogVolumeAfterWater.SetLabel("WATER_FOG_VOLUME_AFTER_WATER");
 	m_passWaterFogVolumeAfterWater.SetupPassContext(m_stageID, ePass_FogVolume, TTYPE_GENERAL, FB_GENERAL, EFSLIST_WATER_VOLUMES, FB_BELOW_WATER, false);
 	m_passWaterFogVolumeAfterWater.SetPassResources(m_pResourceLayout, m_pPerPassResourceSets[ePass_FogVolume]);
-	m_passWaterFogVolumeAfterWater.SetRenderTargets(pDepthTarget, pRenderTarget);
 }
 
 void CWaterStage::Update()
 {
 	CRenderView* pRenderView = RenderView();
-	auto* pDepthTarget = CRendererResources::s_ptexSceneDepth;
-
-	const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
-	const int32 renderHeight = pRenderView->GetRenderResolution()[1];
+	auto* pDepthTarget = RenderView()->GetDepthTarget();
+	auto* pRenderTarget = CRendererResources::s_ptexHDRTarget;
 
 	auto& waterRenderItems = pRenderView->GetRenderItems(EFSLIST_WATER);
 	auto& waterVolumeRenderItems = pRenderView->GetRenderItems(EFSLIST_WATER_VOLUMES);
@@ -303,23 +289,25 @@ void CWaterStage::Update()
 			break;
 		}
 
-		if (!bOceanMask && CTexture::IsTextureExist(m_pOceanMaskTex))
+		if (m_pOceanMaskTex) 
 		{
-			m_pOceanMaskTex->ReleaseDeviceTexture(false);
-		}
+			if (!bOceanMask && CTexture::IsTextureExist(m_pOceanMaskTex))
+				m_pOceanMaskTex->ReleaseDeviceTexture(false);
 
-		const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
-		const ETEX_Format format = eTF_R8;
-		if (bOceanMask
-			&& m_pOceanMaskTex
-			&& (!CTexture::IsTextureExist(m_pOceanMaskTex) || m_pOceanMaskTex->Invalidate(pDepthTarget->GetWidth(), pDepthTarget->GetHeight(), format)))
-		{
-			m_pOceanMaskTex->Create2DTexture(pDepthTarget->GetWidth(), pDepthTarget->GetHeight(), 1, flags, nullptr, format);
+			const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
+			const ETEX_Format format = eTF_R8;
+			if (bOceanMask && (!CTexture::IsTextureExist(m_pOceanMaskTex) || m_pOceanMaskTex->Invalidate(pDepthTarget->GetWidth(), pDepthTarget->GetHeight(), format)))
+				m_pOceanMaskTex->Create2DTexture(pDepthTarget->GetWidth(), pDepthTarget->GetHeight(), 1, flags, nullptr, format);
 		}
 	}
 
 	// Activate normal generation
 	m_bWaterNormalGen = (gRenDev->EF_GetRenderQuality() > eRQ_Low && !isEmpty) ? true : false;
+
+	m_passOceanMaskGen.SetRenderTargets(pDepthTarget, m_pOceanMaskTex);
+	m_passWaterFogVolumeBeforeWater.SetRenderTargets(pDepthTarget, pRenderTarget);
+	m_passWaterSurface.SetRenderTargets(pDepthTarget, pRenderTarget);
+	m_passWaterFogVolumeAfterWater.SetRenderTargets(pDepthTarget, pRenderTarget);
 }
 
 void CWaterStage::Prepare()
@@ -332,6 +320,12 @@ void CWaterStage::Prepare()
 		auto pGraphicsInterface = GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface();
 		pGraphicsInterface->PrepareResourcesForUse(EResourceLayoutSlot_PerInstanceExtraRS, m_pDefaultPerInstanceResourceSet.get());
 	}
+}
+
+void CWaterStage::Resize(int renderWidth, int renderHeight) 
+{
+	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET; 
+	m_pOceanMaskTex = CTexture::GetOrCreateTextureObjectPtr("$OceanMask", renderWidth, renderHeight, 0, eTT_2D, flags, eTF_R8);
 }
 
 void CWaterStage::ExecuteWaterVolumeCaustics()
@@ -540,7 +534,7 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 	uint8 stencilRef = 0xFF;
 
 	auto* pTargetTex = CRendererResources::s_ptexHDRTarget;
-	auto* pDepthTarget = CRendererResources::s_ptexSceneDepth;
+	auto* pDepthTarget = RenderView()->GetDepthTarget();
 
 	// Stencil pre-pass
 	if (CRenderer::CV_r_watercausticsdeferred == 2)

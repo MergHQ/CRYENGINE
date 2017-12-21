@@ -1147,7 +1147,7 @@ bool CFlashTextureSource::Update()
 
 void CFlashTextureSourceSharedRT::ProbeDepthStencilSurfaceCreation(int width, int height)
 {
-	gcpRendD3D->GetTempDepthSurface(width, height, false);
+	gcpRendD3D->GetTempDepthSurface(width, height);
 }
 
 bool CFlashTextureSourceSharedRT::Update()

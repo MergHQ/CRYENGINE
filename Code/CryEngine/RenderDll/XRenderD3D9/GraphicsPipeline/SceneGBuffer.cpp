@@ -35,12 +35,6 @@ void CSceneGBufferStage::Init()
 	m_depthPrepass.SetLabel("ZPREPASS");
 	m_depthPrepass.SetupPassContext(m_stageID, ePass_DepthPrepass, TTYPE_ZPREPASS, FB_ZPREPASS | FB_GENERAL);
 	m_depthPrepass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
-	m_depthPrepass.SetRenderTargets(
-		// Depth
-		CRendererResources::s_ptexSceneDepth,
-		// Color 0
-		NULL
-	);
 
 	CTexture* pSceneSpecular = CRendererResources::s_ptexSceneSpecular;
 #if defined(DURANGO_USE_ESRAM)
@@ -51,59 +45,21 @@ void CSceneGBufferStage::Init()
 	m_opaquePass.SetLabel("OPAQUE");
 	m_opaquePass.SetupPassContext(m_stageID, ePass_GBufferFill, TTYPE_Z, FB_Z);
 	m_opaquePass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
-	m_opaquePass.SetRenderTargets(
-		// Depth
-		CRendererResources::s_ptexSceneDepth,
-		// Color 0
-		CRendererResources::s_ptexSceneNormalsMap,
-		// Color 1
-		CRendererResources::s_ptexSceneDiffuse,
-		// Color 2
-		pSceneSpecular
-	);
 
 	// Opaque with Velocity Pass
 	m_opaqueVelocityPass.SetLabel("OPAQUE_VELOCITY");
 	m_opaqueVelocityPass.SetupPassContext(m_stageID, ePass_GBufferFill, TTYPE_Z, FB_Z);
 	m_opaqueVelocityPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
-	m_opaqueVelocityPass.SetRenderTargets(
-		// Depth
-		CRendererResources::s_ptexSceneDepth,
-		// Color 0
-		CRendererResources::s_ptexSceneNormalsMap,
-		// Color 1
-		CRendererResources::s_ptexSceneDiffuse,
-		// Color 2
-		pSceneSpecular,
-		// Color 3
-		CRendererResources::s_ptexVelocityObjects[0]
-	);
 
 	// Overlay Pass
 	m_overlayPass.SetLabel("OVERLAYS");
 	m_overlayPass.SetupPassContext(m_stageID, ePass_GBufferFill, TTYPE_Z, FB_Z);
 	m_overlayPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
-	m_overlayPass.SetRenderTargets(
-		// Depth
-		CRendererResources::s_ptexSceneDepth,
-		// Color 0
-		CRendererResources::s_ptexSceneNormalsMap,
-		// Color 1
-		CRendererResources::s_ptexSceneDiffuse,
-		// Color 2
-		pSceneSpecular
-	);
 
 	// Micro GBuffer Pass
 	m_microGBufferPass.SetLabel("MicroGBuffer");
 	m_microGBufferPass.SetupPassContext(m_stageID, ePass_MicroGBufferFill, TTYPE_Z, FB_Z);
 	m_microGBufferPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
-	m_microGBufferPass.SetRenderTargets(
-		// Depth
-		CRendererResources::s_ptexSceneDepth,
-		// Color 0
-		CRendererResources::s_ptexSceneNormalsMap
-	);
 }
 
 bool CSceneGBufferStage::CreatePipelineState(const SGraphicsPipelineStateDescription& desc, EPass passID, CDeviceGraphicsPSOPtr& outPSO)
@@ -266,10 +222,12 @@ void CSceneGBufferStage::Update()
 {
 	SetAndBuildPerPassResources(false);
 
+	CTexture* pZTexture = RenderView()->GetDepthTarget();
+
 	// Depth pre-pass
 	m_depthPrepass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pZTexture,
 		// Color 0
 		NULL
 	);
@@ -282,7 +240,7 @@ void CSceneGBufferStage::Update()
 	// Opaque Pass
 	m_opaquePass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pZTexture,
 		// Color 0
 		CRendererResources::s_ptexSceneNormalsMap,
 		// Color 1
@@ -294,7 +252,7 @@ void CSceneGBufferStage::Update()
 	// Opaque with Velocity Pass
 	m_opaqueVelocityPass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pZTexture,
 		// Color 0
 		CRendererResources::s_ptexSceneNormalsMap,
 		// Color 1
@@ -308,7 +266,7 @@ void CSceneGBufferStage::Update()
 	// Overlay Pass
 	m_overlayPass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pZTexture,
 		// Color 0
 		CRendererResources::s_ptexSceneNormalsMap,
 		// Color 1
@@ -320,7 +278,7 @@ void CSceneGBufferStage::Update()
 	// Micro GBuffer Pass
 	m_microGBufferPass.SetRenderTargets(
 		// Depth
-		CRendererResources::s_ptexSceneDepth,
+		pZTexture,
 		// Color 0
 		CRendererResources::s_ptexSceneNormalsMap
 	);
@@ -441,7 +399,7 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 		m_passDepthLinearization.SetRequirePerViewConstantBuffer(true);
 		m_passDepthLinearization.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
-		m_passDepthLinearization.SetTexture(0, CRendererResources::s_ptexSceneDepth);
+		m_passDepthLinearization.SetTexture(0, RenderView()->GetDepthTarget());
 	}
 
 	static CCryNameR paramName("NearProjection");
@@ -501,7 +459,7 @@ void CSceneGBufferStage::ExecuteMicroGBuffer()
 	m_microGBufferPass.SetViewport(GetViewport());
 
 	const bool bReverseDepth = true;
-	CClearSurfacePass::Execute(CRendererResources::s_ptexSceneDepth, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+	CClearSurfacePass::Execute(RenderView()->GetDepthTarget(), CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
 
 	m_microGBufferPass.SetFlags(bReverseDepth ? CSceneRenderPass::ePassFlags_ReverseDepth : CSceneRenderPass::ePassFlags_None);
 
@@ -526,6 +484,7 @@ void CSceneGBufferStage::Execute()
 	auto& rViewport = GetViewport();
 	CRenderView* pRenderView = RenderView();
 	auto& rendItemDrawer = pRenderView->GetDrawer();
+	CTexture* pZTexture = pRenderView->GetDepthTarget();
 
 	m_depthPrepass.SetViewport(rViewport);
 	m_opaquePass.SetViewport(rViewport);
@@ -540,12 +499,12 @@ void CSceneGBufferStage::Execute()
 		{ 
 			// use inverse depth here
 			bReverseDepth = !bReverseDepth;
-			CClearSurfacePass::Execute(CRendererResources::s_ptexSceneDepth, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
 			CVrProjectionManager::Instance()->ExecuteLensMatchedOctagon(pRenderView->GetDepthTarget());
 		}
 		else
 		{
-			CClearSurfacePass::Execute(CRendererResources::s_ptexSceneDepth, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
+			CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, bReverseDepth ? 0.0f : 1.0f, 1);
 		}
 
 		// Clear velocity target

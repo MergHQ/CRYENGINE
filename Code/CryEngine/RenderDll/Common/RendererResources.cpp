@@ -206,7 +206,6 @@ CTexture* CRendererResources::s_ptexSceneTarget = NULL;
 CTexture* CRendererResources::s_ptexSceneTargetR11G11B10F[2] = { NULL };
 CTexture* CRendererResources::s_ptexSceneDiffuseTmp;
 CTexture* CRendererResources::s_ptexSceneSpecularTmp;
-CTexture* CRendererResources::s_ptexSceneDepth;
 CTexture* CRendererResources::s_ptexSceneDepthScaled[3];
 CTexture* CRendererResources::s_ptexLinearDepth;
 CTexture* CRendererResources::s_ptexLinearDepthReadBack[4];
@@ -540,7 +539,6 @@ void CRendererResources::LoadDefaultSystemTextures()
 			s_ptexWaterCaustics[0] = CTexture::GetOrCreateTextureObject("$WaterVolumeCaustics", 512, 512, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_WATERVOLUMECAUSTICSMAP);
 			s_ptexWaterCaustics[1] = CTexture::GetOrCreateTextureObject("$WaterVolumeCausticsTemp", 512, 512, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_WATERVOLUMECAUSTICSMAPTEMP);
 
-			s_ptexSceneDepth          = CTexture::GetOrCreateTextureObject("$SceneDepth", 0, 0, 1, eTT_2D, FT_USAGE_DEPTHSTENCIL | FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
 			s_ptexSceneDepthScaled[0] = CTexture::GetOrCreateTextureObject("$SceneDepthScaled", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
 			s_ptexSceneDepthScaled[1] = CTexture::GetOrCreateTextureObject("$SceneDepthScaled2", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
 			s_ptexSceneDepthScaled[2] = CTexture::GetOrCreateTextureObject("$SceneDepthScaled3", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
@@ -760,11 +758,6 @@ void CRendererResources::CreateDepthMaps(int resourceWidth, int resourceHeight)
 
 	uint32 nDSFlags = FT_DONT_STREAM | FT_DONT_RELEASE | FT_USAGE_DEPTHSTENCIL;
 	uint32 nRTFlags = FT_DONT_STREAM | FT_DONT_RELEASE | FT_USAGE_RENDERTARGET;
-
-	s_ptexSceneDepth->SetFlags(nDSFlags);
-	s_ptexSceneDepth->SetWidth(resourceWidth);
-	s_ptexSceneDepth->SetHeight(resourceHeight);
-	s_ptexSceneDepth->CreateDepthStencil(preferredDepthFormat, clearValues);
 	
 	s_ptexLinearDepth->SetFlags(nRTFlags);
 	s_ptexLinearDepth->SetWidth(resourceWidth);
@@ -775,7 +768,6 @@ void CRendererResources::CreateDepthMaps(int resourceWidth, int resourceHeight)
 
 void CRendererResources::DestroyDepthMaps()
 {
-	SAFE_RELEASE_FORCE(s_ptexSceneDepth);
 	SAFE_RELEASE_FORCE(s_ptexLinearDepth);
 }
 
@@ -1495,7 +1487,6 @@ void CRendererResources::ShutDown()
 		s_ptexPrevBackBuffer[0][1] = NULL;
 		s_ptexPrevBackBuffer[1][1] = NULL;
 		s_ptexSceneTarget = NULL;
-		s_ptexSceneDepth = NULL;
 		s_ptexLinearDepth = NULL;
 		s_ptexHDRTarget = NULL;
 		s_ptexStereoL = NULL;
@@ -1521,74 +1512,89 @@ void CRendererResources::ShutDown()
 // TODO: implement reuse heap for DX11 as it exists for DX12 and Vulkan
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-TArray<SDepthTexture*> CRendererResources::m_TempDepths;
+CRendererResources::tempTexturePool_t CRendererResources::m_TempDepths;
 
-SDepthTexture* CRendererResources::GetTempDepthSurface(int nWidth, int nHeight, bool bAA, bool bExactMatch)
+STempDepthTexture::~STempDepthTexture() 
 {
-	SDepthTexture* pSrf = NULL;
-	uint32 i;
-	int nBestX = -1;
-	int nBestY = -1;
-	for (i = 0; i < m_TempDepths.Num(); i++)
-	{
-		pSrf = m_TempDepths[i];
-		if (!pSrf->bBusy)
-		{
-			if (pSrf->nWidth == nWidth && pSrf->nHeight == nHeight)
-			{
-				nBestX = i;
-				break;
-			}
-			if (!bExactMatch)
-			{
-				if (nBestX < 0 && pSrf->nWidth == nWidth && pSrf->nHeight >= nHeight)
-					nBestX = i;
-				else if (nBestY < 0 && pSrf->nWidth >= nWidth && pSrf->nHeight == nHeight)
-					nBestY = i;
-			}
-		}
-	}
-	if (nBestX >= 0)
-		return m_TempDepths[nBestX];
-	if (nBestY >= 0)
-		return m_TempDepths[nBestY];
-
-	bool allowUsingLargerRT = true;
-
-#if defined(OGL_DO_NOT_ALLOW_LARGER_RT)
-	allowUsingLargerRT = false;
-#elif defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
-	if (CRenderer::CV_r_EnableDebugLayer)
-		allowUsingLargerRT = false;
-#endif
-	if (bExactMatch)
-		allowUsingLargerRT = false;
-
-	if (allowUsingLargerRT)
-	{
-		for (i = 0; i < m_TempDepths.Num(); i++)
-		{
-			pSrf = m_TempDepths[i];
-			if (pSrf->nWidth >= nWidth && pSrf->nHeight >= nHeight && !pSrf->bBusy)
-				break;
-		}
-	}
-	else
-	{
-		i = m_TempDepths.Num();
-	}
-
-	if (i == m_TempDepths.Num())
-	{
-		pSrf = CreateDepthSurface(nWidth, nHeight, bAA);
-		if (pSrf != NULL)
-			m_TempDepths.AddElem(pSrf);
-	}
-
-	return pSrf;
+	texture.Release(true);
 }
 
-SDepthTexture* CRendererResources::CreateDepthSurface(int nWidth, int nHeight, bool bAA)
+CRendererResources::CTempTexture CRendererResources::GetTempDepthSurface(int nWidth, int nHeight, bool bExactMatch)
+{
+#if defined(OGL_DO_NOT_ALLOW_LARGER_RT)
+	bExactMatch = true;
+#endif
+
+	tempTexturePool_t::value_type selectedTex = nullptr;
+	int leastSquares = std::numeric_limits<int>::max();		// For non-exact matching
+
+	// Choose temporary texture
+	for (const auto &tex : m_TempDepths)
+	{
+		if (tex->UseCount() > 1)
+			continue;
+		if (tex->texture.nWidth < nWidth || tex->texture.nHeight < nHeight)
+			continue;
+
+		const auto widthDiff = tex->texture.nWidth - nWidth;
+		const auto heightDiff = tex->texture.nHeight - nHeight;
+		const auto d = sqr(widthDiff) + sqr(heightDiff);
+
+		if (d == 0)
+		{
+			// Exact match
+			selectedTex = tex;
+			break;
+		}
+		else if (leastSquares > d && !bExactMatch) 
+		{
+			// Non-exact match
+			leastSquares = d;
+			selectedTex = tex;
+		}
+	}
+
+	// Allocate new temporary depth surface
+	if (!selectedTex) 
+	{
+		auto depthSurface = CreateDepthSurface(nWidth, nHeight, false);
+		if (depthSurface.pTexture != NULL) 
+		{
+			m_TempDepths.allocate(std::move(depthSurface));
+			selectedTex = m_TempDepths.back();
+		}
+	}
+
+	// Erase unused
+	for (auto it = m_TempDepths.begin(); it != m_TempDepths.end();) 
+	{
+		const auto &tex = *it;
+		it = tex->UseCount() == 1 && (!tex->texture.pTexture || !tex->texture.pTexture->IsLocked()) ?
+			(it = m_TempDepths.erase(it)) :
+			std::next(it);
+	}
+
+	return selectedTex;
+}
+
+size_t CRendererResources::SizeofTempDepthSurfaces()
+{
+	size_t nSize = 0;
+	for (const auto &tex : m_TempDepths)
+		nSize += tex->texture.pTexture->GetDeviceDataSize();
+
+	return nSize;
+}
+
+void CRendererResources::ReleaseTempDepthSurfaces()
+{
+	m_TempDepths.clear();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+SDepthTexture CRendererResources::CreateDepthSurface(int nWidth, int nHeight, bool bAA)
 {
 	const ETEX_Format preferredDepthFormat =
 		gRenDev->GetDepthBpp() == 32 ? eTF_D32FS8 :
@@ -1613,56 +1619,29 @@ SDepthTexture* CRendererResources::CreateDepthSurface(int nWidth, int nHeight, b
 #endif
 	};
 
+	SDepthTexture depthSurface;
+	depthSurface.pTexture = nullptr;
+
 	Layout.m_eDstFormat = CTexture::GetClosestFormatSupported(Layout.m_eDstFormat, Layout.m_pPixelFormat);
 	CDeviceTexture* pZTexture = CDeviceTexture::Create(Layout, nullptr);
-	if (!pZTexture)
-		return nullptr;
+	if (pZTexture)
+	{
+		depthSurface.nWidth = nWidth;
+		depthSurface.nHeight = nHeight;
+		depthSurface.nFrameAccess = -1;
 
-	SDepthTexture depthSurface;
-	depthSurface.nWidth = nWidth;
-	depthSurface.nHeight = nHeight;
-	depthSurface.nFrameAccess = -1;
-	depthSurface.bBusy = false;
-
-	depthSurface.pTexture = new CTexture(FT_USAGE_DEPTHSTENCIL | FT_DONT_STREAM, clearValues, pZTexture);
-	depthSurface.pTarget = depthSurface.pTexture->GetDevTexture()->Get2DTexture();
-	depthSurface.pSurface = depthSurface.pTexture->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
+		depthSurface.pTexture = new CTexture(FT_USAGE_DEPTHSTENCIL | FT_DONT_STREAM, clearValues, pZTexture);
+		depthSurface.pTarget = depthSurface.pTexture->GetDevTexture()->Get2DTexture();
+		depthSurface.pSurface = depthSurface.pTexture->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
 
 #if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-	depthSurface.pTarget->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Dynamically requested Depth-Buffer"), "Dynamically requested Depth-Buffer");
+		depthSurface.pTarget->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Dynamically requested Depth-Buffer"), "Dynamically requested Depth-Buffer");
 #endif
 
-	CClearSurfacePass::Execute(depthSurface.pTexture, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
-
-	return new SDepthTexture(depthSurface);
-}
-
-size_t CRendererResources::SizeofTempDepthSurfaces()
-{
-	size_t nSize = 0;
-
-	for (unsigned int i = 0; i < m_TempDepths.Num(); i++)
-	{
-		SDepthTexture* pS = m_TempDepths[i];
-		if (pS && pS->pTexture)
-			nSize += pS->pTexture->GetDeviceDataSize();
+		CClearSurfacePass::Execute(depthSurface.pTexture, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, clearDepth, clearStencil);
 	}
 
-	return nSize;
-}
-
-void CRendererResources::ReleaseTempDepthSurfaces()
-{
-	for (unsigned int i = 0; i < m_TempDepths.Num(); i++)
-	{
-		SDepthTexture* pS = m_TempDepths[i];
-		if (pS)
-			pS->Release(true);
-
-		SAFE_DELETE(m_TempDepths[i]);
-	}
-
-	m_TempDepths.Free();
+	return depthSurface;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

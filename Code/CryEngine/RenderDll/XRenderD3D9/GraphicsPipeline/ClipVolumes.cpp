@@ -112,7 +112,7 @@ void CClipVolumesStage::Update()
 	CRenderView* pRenderView = RenderView();
 
 	m_pBlendValuesRT = CRendererResources::s_ptexVelocity;
-	m_pDepthTarget = CRendererResources::s_ptexSceneDepth;
+	m_pDepthTarget = RenderView()->GetDepthTarget();
 
 	m_stencilPass.SetDepthTarget(m_pDepthTarget);
 	m_stencilPass.SetViewport(pRenderView->GetViewport());

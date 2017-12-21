@@ -125,11 +125,10 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView)
 	//////////////////////////////////////////////////////////////////////////
 	if (m_bUseTempDepthBuffer)
 	{
-		m_pTempDepthTexture = gcpRendD3D->FX_GetDepthSurface(m_OutputWidth, m_OutputHeight, false, true);
+		m_pTempDepthTexture = gcpRendD3D->FX_GetDepthSurface(m_OutputWidth, m_OutputHeight, true);
 		CRY_ASSERT(m_pTempDepthTexture);
 
-		m_pDepthTarget = m_pTempDepthTexture->pTexture;
-		m_pTempDepthTexture->bBusy = true;
+		m_pDepthTarget = m_pTempDepthTexture->texture.pTexture;
 		m_pDepthTarget->Lock();
 		m_pDepthTarget->m_nUpdateFrameID = gRenDev->GetRenderFrameID();
 	}
@@ -189,10 +188,9 @@ void CRenderOutput::EndRendering(CRenderView* pRenderView)
 
 	if (m_pTempDepthTexture)
 	{
-		m_pTempDepthTexture->bBusy = false;
-		if (m_pTempDepthTexture->pTexture)
+		if (m_pTempDepthTexture->texture.pTexture)
 		{
-			m_pTempDepthTexture->pTexture->Unlock();
+			m_pTempDepthTexture->texture.pTexture->Unlock();
 		}
 		m_pTempDepthTexture = nullptr;
 	}

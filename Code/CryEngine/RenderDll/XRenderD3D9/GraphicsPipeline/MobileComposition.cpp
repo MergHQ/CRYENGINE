@@ -20,6 +20,7 @@ void CMobileCompositionStage::Execute()
 
 	CTexture* pBestProbe = CRendererResources::s_ptexDefaultProbeCM;
 	CTexture* pFinalOutput = pOutput->GetColorTarget();
+	CTexture* pZTexture = RenderView()->GetDepthTarget();
 		
 	// Find largest probe
 	{
@@ -40,7 +41,7 @@ void CMobileCompositionStage::Execute()
 		}
 	}
 
-	m_passDepthDownsample2.Execute(CRendererResources::s_ptexSceneDepth          , CRendererResources::s_ptexLinearDepthScaled[0], true , true);
+	m_passDepthDownsample2.Execute(pZTexture, CRendererResources::s_ptexLinearDepthScaled[0], true , true);
 	m_passDepthDownsample4.Execute(CRendererResources::s_ptexLinearDepthScaled[0], CRendererResources::s_ptexLinearDepthScaled[1], false, false);
 	m_passDepthDownsample8.Execute(CRendererResources::s_ptexLinearDepthScaled[1], CRendererResources::s_ptexLinearDepthScaled[2], false, false);
 
@@ -60,7 +61,7 @@ void CMobileCompositionStage::Execute()
 
 		m_passLighting.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
 		
-		m_passLighting.SetTexture(0, CRendererResources::s_ptexSceneDepth);
+		m_passLighting.SetTexture(0, pZTexture);
 		m_passLighting.SetTexture(1, CRendererResources::s_ptexSceneNormalsMap);
 		m_passLighting.SetTexture(2, CRendererResources::s_ptexSceneDiffuse);
 		m_passLighting.SetTexture(3, CRendererResources::s_ptexSceneSpecular);
