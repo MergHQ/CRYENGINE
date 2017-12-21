@@ -89,7 +89,7 @@ Texture2D smoothness2Tex : register(t7)
 // Tweakables //////////////////////
 
 #if %LEAVES
-half CapOpacityFalloff
+float CapOpacityFalloff
 <
 	register = REG_PM_PARAM_0.x;
 	string UIWidget = "slider";
@@ -103,7 +103,7 @@ half CapOpacityFalloff
 #endif
 
 #if %LEAVES  || %GRASS 
-half4 TransmittanceColor
+float4 TransmittanceColor
 <
 	register = REG_PM_PARAM_1;
 	string UIHelp = "Color tint for translucency";
@@ -157,7 +157,7 @@ float BlendTerrainColDist
 > = 0.5; 
 
 #if %DETAIL_MAPPING
-half DetailBumpScale
+float DetailBumpScale
 <
 	register = REG_PM_PARAM_3.x;
 	string UIHelp = "Set detail bump scale";                     
@@ -168,7 +168,7 @@ half DetailBumpScale
 	float UIStep = 0.1;
 > = 0.5;
 
-half DetailDiffuseScale
+float DetailDiffuseScale
 <
 	register = REG_PM_PARAM_3.y;
 	string UIHelp = "Set diffuse detail blend scale";                     
@@ -179,7 +179,7 @@ half DetailDiffuseScale
 	float UIStep = 0.1;
 > = 0.5;
 
-half DetailGlossScale
+float DetailGlossScale
 <
 	register = REG_PM_PARAM_3.z;
 	string UIHelp = "Set gloss detail blend scale";                     
@@ -192,7 +192,7 @@ half DetailGlossScale
 #endif
 
 #if %BLENDLAYER
-half BlendFactor
+float BlendFactor
 <
 	register = REG_PM_PARAM_3.w;
 	string UIHelp = "Change visbility of blended layer";
@@ -203,7 +203,7 @@ half BlendFactor
 	float UIStep = 0.2;
 > = 8.0;
 
-half BlendLayer2Tiling
+float BlendLayer2Tiling
 <
 	register = REG_PM_PARAM_4.x;
 	string UIHelp = "Change tiling of 2nd blend layer";
@@ -214,7 +214,7 @@ half BlendLayer2Tiling
 	float UIStep = 0.005;
 > = 1.0;
 
-half BlendFalloff
+float BlendFalloff
 <
 	register = REG_PM_PARAM_4.y;
 	string UIHelp = "Change falloff of blending";
@@ -225,7 +225,7 @@ half BlendFalloff
 	float UIStep = 1.0;
 > = 32.0;
 
-half BlendLayer2Specular
+float BlendLayer2Specular
 <
 	register = REG_PM_PARAM_4.z;
 	string UIHelp = "Change specular intensity of 2nd blend layer";
@@ -236,7 +236,7 @@ half BlendLayer2Specular
 	float UIStep = 0.001;
 > = 0.04;
 
-half BlendMaskTiling
+float BlendMaskTiling
 <
 	register = REG_PM_PARAM_4.w;
 	string UIHelp = "Change tiling of blend mask";
@@ -249,7 +249,7 @@ half BlendMaskTiling
 #else
 
 // <Deprecated> Will be removed post C3. This is needed for art to be able to optimize console materials (eg:disabling blend layer. Since veg uses vertex alpha as AO and blend layer uses color for layer blending => breaks look)
-half VertexAlphaBlendFactor
+float VertexAlphaBlendFactor
 <
 	register = REG_PM_PARAM_5.x;
 	string UIName = "Vtx Alpha Blend Factor";
@@ -317,7 +317,7 @@ struct vtxOutVegetation
 #endif
 
 #if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
-	half4 vNormal               : TEXCOORDN;
+	float4 vNormal              : TEXCOORDN;
 #endif
 
 #if %_RT_FOG

@@ -45,8 +45,8 @@ SamplerState Tx2Tx_Sampler              : register(s0);
 
 struct vtxOutTexToTex
 {
-  float4 HPosition  : POSITION;
-  float2  baseTC		: TEXCOORDN;       
+  float4 HPosition  : SV_POSITION;
+  float2 baseTC     : TEXCOORDN;       
 
   MSAA_SAMPLE_INDEX_PS
 };
@@ -703,7 +703,7 @@ technique DownsampleDepth
 
 Texture2D<float4> CopyToDeviceDepth_Tex0 : register(t0);
 
-void CopyToDeviceDepthPS(vtxOut IN, out float Depth : DEPTH, float4 WPos : SV_Position)
+void CopyToDeviceDepthPS(vtxOut IN, out float Depth : SV_Depth, float4 WPos : SV_Position)
 {
 	float linearDepth = CopyToDeviceDepth_Tex0.Load(int3(WPos.xy, 0)).x;
 	Depth = g_PS_ProjRatio.y / linearDepth + g_PS_ProjRatio.x;

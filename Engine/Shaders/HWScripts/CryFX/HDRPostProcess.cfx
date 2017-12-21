@@ -22,15 +22,15 @@ float4 ScreenSize  : PB_ScreenSize < register = VS_REG_PB_0 >;
 float4 SampleOffsets[16] < register = c0; >
 float4x4 mViewProjPrev;
 
-half4 HDRParams0;
+float4 HDRParams0;
 
-half4 HDREyeAdaptation;
-half4 HDRFilmCurve;
-half4 HDRBloomColor;
-half4 HDRColorBalance;			// (ColorBalance.rgb, fHDRSaturation)
-half4 HDRMiscParams;				// (1.0f, 1.0f, 1.0f, 1.0f)
+float4 HDREyeAdaptation;
+float4 HDRFilmCurve;
+float4 HDRBloomColor;
+float4 HDRColorBalance;			// (ColorBalance.rgb, fHDRSaturation)
+float4 HDRMiscParams;				// (1.0f, 1.0f, 1.0f, 1.0f)
 
-half4 SunShafts_SunCol;
+float4 SunShafts_SunCol;
 
 float4 ElapsedTime;
 float Time = {PB_time};
@@ -154,8 +154,8 @@ pixout HDRBloomGaussianPS(vtxOut IN)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-half4 SampleLumOffsets0;
-half4 SampleLumOffsets1;
+float4 SampleLumOffsets0;
+float4 SampleLumOffsets1;
 
 Texture2D<float4> HDRLum_Targ           : register(t0);
 Texture2D<float4> HDRLum_Norm           : register(t1);

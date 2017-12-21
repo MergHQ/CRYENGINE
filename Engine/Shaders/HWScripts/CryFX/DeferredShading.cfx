@@ -151,9 +151,9 @@ float CalcClipVolumeBlendWeight(sampler2D stencilMask, float2 tc, float lightSte
 
 struct poDecalsMRT
 {
-  half4 Normal  : COLOR0;	
-  half4 Diffuse  : COLOR1;
-	half4 Specular  : COLOR2;
+	half4 Normal    : SV_Target0;	
+	half4 Diffuse   : SV_Target1;
+	half4 Specular  : SV_Target2;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -178,7 +178,7 @@ float4 CalcHomogeneousPos(float SceneDepth, float2 WPos, float4 worldBasisX, flo
 
 struct vtxOutWPOSOnly
 {
-  float4 HPosition   : POSITION;
+  float4 HPosition   : SV_POSITION;
 
 #if !%_RT_CUBEMAP0
   float4 baseTC      : TEXCOORD0;
@@ -195,7 +195,7 @@ struct vtxInLightPrePass
 
 struct fragInWPOS
 {
-  float4 WPos	:	SV_POSITION;
+  float4 WPos        : SV_POSITION;
 #if !%_RT_CUBEMAP0
   float4 baseTC      : TEXCOORD0;
   float4 CamVec      : TEXCOORD1;
@@ -983,7 +983,7 @@ Texture2D<float4> SSSSBlur_Irrad  : register(t5); // used in 2nd (vertical) pass
 // This sampler is used by the preceding textures
 SamplerState  SSSSBlur_Sampler    : register(s0); //pointClamp
 
-half4 SSSBlurDir;  // xy: blur direction (pre-multiplied by projection scale)
+float4 SSSBlurDir;  // xy: blur direction (pre-multiplied by projection scale)
 
 // Gaussian cross bilateral filter
 // Scattering is optimized for skin for which a radius of 5.5 mm is assumed (variance 3.3 approaches 0 at approximately 5.5)
@@ -1220,23 +1220,23 @@ float4 MSAAResolveParams;
 
 struct pixoutResolve
 {
-	half4 fDepth  : COLOR0;
-  half4 vNormal : COLOR1;
-	half4 cEdges  : COLOR2;
-	half4 vDiffuse : COLOR3;
-	half4 vSpecular  : COLOR4;
+	half4 fDepth    : SV_Target0;
+	half4 vNormal   : SV_Target1;
+	half4 cEdges    : SV_Target2;
+	half4 vDiffuse  : SV_Target3;
+	half4 vSpecular : SV_Target4;
 
-	float DevDepth		: DEPTH;
+	float DevDepth  : DEPTH;
 };
 
 struct vtxOutMSAA
 {
-  float4 HPosition  : POSITION;
+  float4 HPosition  : SV_POSITION;
   float4 baseTC     : TEXCOORD0;
 	MSAA_SAMPLE_INDEX_PS
 };
 
-float4 ResolveStencilPS(vtxOutMSAA IN) : COLOR0 
+float4 ResolveStencilPS(vtxOutMSAA IN) : SV_Target0 
 {
 	const int BIT_STENCIL_STATIC            = 0x0000007F;
 	const int BIT_STENCIL_INSIDE_VOLUME     = 0x00000040;
@@ -1408,7 +1408,7 @@ technique ClipVolumeStencilVolFog
 	}
 }
 
-float4 ResolveStencilVolFogPS(vtxOut IN) : COLOR0 
+float4 ResolveStencilVolFogPS(vtxOut IN) : SV_Target0 
 {
 	const int BIT_STENCIL_STATIC            = 0x0000007F;
 	const int BIT_STENCIL_INSIDE_VOLUME     = 0x00000040;

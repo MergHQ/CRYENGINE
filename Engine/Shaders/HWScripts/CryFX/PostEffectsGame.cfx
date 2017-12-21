@@ -44,7 +44,7 @@ sampler2D chartSampler = sampler_state
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Alien Interference techniques //////////////////////////////////////////////////////////////////
 
-half4 AlienInterferenceTint;
+float4 AlienInterferenceTint;
 
 ///////////////// vertex shader //////////////////
 
@@ -988,13 +988,13 @@ technique DeferredSilhouettesOptimised
 /// Color grading technique /////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-half4 ColorGradingParams0;
-half4 ColorGradingParams1;
-half4 ColorGradingParams2;
-half4 ColorGradingParams3;
-half4 ColorGradingParams4;
-half4 ColorGradingParams5;
-half4 mColorGradingMatrix[3];
+float4 ColorGradingParams0;
+float4 ColorGradingParams1;
+float4 ColorGradingParams2;
+float4 ColorGradingParams3;
+float4 ColorGradingParams4;
+float4 ColorGradingParams5;
+float4 mColorGradingMatrix[3];
 
 sampler2D grainSampler = sampler_state
 {
@@ -1616,7 +1616,7 @@ struct vtxInSnow
 
 struct vtxOutSnow
 {
-  float4 HPosition  : POSITION;
+  float4 HPosition  : SV_POSITION;
   float4 baseTC     : TEXCOORDN;
   float4 screenProj : TEXCOORDN;
   float4 vVelocity	: TEXCOORDN;
@@ -1628,8 +1628,8 @@ struct vtxOutSnow
 
 struct pixoutSnow
 {
-  float4 Color		: COLOR0;
-  float4 Velocity	: COLOR1;
+  float4 Color      : SV_Target0;
+  float4 Velocity   : SV_Target1;
 };
 
 void SnowParticle_ApplyTurbulence( inout float4 vPos, inout float4 vPosPrev, in half fRandPhase )

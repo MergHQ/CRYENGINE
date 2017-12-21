@@ -30,8 +30,8 @@ half4 vRainColor;
 
 struct pixoutDofMRT
 {
-  half4 LayerNear  : COLOR0;
-  half4 LayerFar  : COLOR1;
+	half4 LayerNear  : COLOR0;
+	half4 LayerFar   : COLOR1;
 };
 
 struct a2vBokehQuad
@@ -43,8 +43,8 @@ struct a2vBokehQuad
 
 struct v2fBokehQuad
 {
-  float4 Position  : POSITION;  
-  float4 QuadPos   : TEXCOORD0; //zw dof params
+	float4 Position  : POSITION;  
+	float4 QuadPos   : TEXCOORD0; //zw dof params
 	float4 Color     : COLOR0;
 };
 
@@ -404,9 +404,9 @@ vtxOutDownscaleDof DownscaleDofVS(uint VertexID : SV_VertexID)
 
 struct OutDownscaleDof
 {
-	float4 LayerNear : COLOR0;
-	float4 LayerFar : COLOR1;	
-	float2 CocNearFar : COLOR2;
+	float4 LayerNear  : SV_Target0;
+	float4 LayerFar   : SV_Target1;	
+	float2 CocNearFar : SV_Target2;
 };
 
 OutDownscaleDof DownscaleDofPS(vtxOutDownscaleDof IN)
@@ -467,7 +467,7 @@ SamplerState TMCoC_SCoCSamp           : register(s0);  //LinearClamp
 
 struct OutTileMinCoC
 {
-	float2 CocNearFar : COLOR0;
+	float2 CocNearFar : SV_Target0;
 };
 
 vtxOutDownscaleDof TileMinCoCVS(uint VertexID : SV_VertexID)
@@ -530,9 +530,9 @@ float4 g_Taps[7*7];  // Max is 7x7 (for first iteration)
 
 struct pixout_dof
 {
-	float4 LayerNear : COLOR0;	
-	float4 LayerFar : COLOR1;		
-	float2 CocNearFar : COLOR2;		
+	float4 LayerNear  : SV_Target0;	
+	float4 LayerFar   : SV_Target1;		
+	float2 CocNearFar : SV_Target2;		
 };
 
 pixout_dof DofPS(vtxOut IN)
