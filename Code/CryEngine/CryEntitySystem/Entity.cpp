@@ -342,9 +342,12 @@ bool CEntity::Init(SEntitySpawnParams& params)
 		m_physics.SerializeXML(params.entityNode, true);
 	}
 
+	g_pIEntitySystem->RemoveSpawnSerializerForEntity(GetId());
+
 	// Initialize rendered slots last
 	m_render.PostInit();
 
+	SetInternalFlag(EInternalFlag::Initialized, true);
 	m_pNetEntity->OnEntityInitialized();
 
 	return true;
@@ -1095,6 +1098,43 @@ void CEntity::Invisible(bool invisible)
 }
 
 //////////////////////////////////////////////////////////////////////////
+ISerializableInfoPtr CEntity::GetSerializableNetworkSpawnInfo() const
+{
+	// Helper to call IEntityComponent::NetReplicateSerialize when the network system is ready to read data that will be sent over the network
+	struct SSerializableContainer : public ISerializableInfo
+	{
+		SSerializableContainer(EntityId identifier) : id(identifier) {}
+		void SerializeWith(TSerialize ser)
+		{
+			if (CEntity* pEntity = g_pIEntitySystem->GetEntityFromID(id))
+			{
+				for(const CryGUID& componentInstanceGUID : componentInstanceGUIDs)
+				{
+					if (IEntityComponent* pComponent = pEntity->GetComponentByGUID(componentInstanceGUID))
+					{
+						pComponent->NetReplicateSerialize(ser);
+					}
+				}
+			}
+		}
+
+		EntityId id;
+		std::vector<CryGUID> componentInstanceGUIDs;
+	};
+
+	_smart_ptr<SSerializableContainer> pContainer = new SSerializableContainer(GetId());
+	pContainer->componentInstanceGUIDs.reserve(m_components.Size());
+
+	m_components.ForEachUnchecked([&pContainer](const SEntityComponentRecord& record)
+	{
+		CRY_ASSERT(!record.pComponent->GetGUID().IsNull());
+		pContainer->componentInstanceGUIDs.emplace_back(record.pComponent->GetGUID());
+	});
+
+	return pContainer;
+}
+
+//////////////////////////////////////////////////////////////////////////
 string CEntity::GetEntityTextDescription() const
 {
 	return m_name + " (" + m_pClass->GetName() + ")";
@@ -1678,6 +1718,15 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 
 	// Entity has changed so make the state dirty
 	m_componentChangeState++;
+
+	// If we have not spawned fully yet, allow all components to serialize replicated network data
+	if (!HasInternalFlag(CEntity::EInternalFlag::Initialized))
+	{
+		if (TSerialize* pSpawnSerializer = g_pIEntitySystem->GetSpawnSerializerForEntity(GetId()))
+		{
+			pComponent->NetReplicateSerialize(*pSpawnSerializer);
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

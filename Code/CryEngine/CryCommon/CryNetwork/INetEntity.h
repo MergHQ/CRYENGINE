@@ -7,6 +7,9 @@
 #include <CryEntitySystem/IEntityBasicTypes.h>
 #include <CrySchematyc/Utils/EnumFlags.h>
 
+struct ISerializableInfo : public CMultiThreadRefCount, public ISerializable {};
+typedef _smart_ptr<ISerializableInfo> ISerializableInfoPtr;
+
 #define UNSAFE_NUM_ASPECTS 32                 // 8,16 or 32
 #define NUM_ASPECTS        (UNSAFE_NUM_ASPECTS)
 

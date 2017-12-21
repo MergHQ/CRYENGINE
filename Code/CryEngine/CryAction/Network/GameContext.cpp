@@ -908,10 +908,6 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 		channelId = pGameServerChannel->GetChannelId();
 	}
 
-	IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-
-	CGameObject* pGameObject = reinterpret_cast<CGameObject*>(pProxy);
-
 	SBasicSpawnParams params;
 	params.name = pEntity->GetName();
 	if (pEntity->GetArchetype())
@@ -947,7 +943,7 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 		pChannel->DeclareWitness(entityId);
 	}
 
-	return new CSpawnMsg(params, pGameObject ? pGameObject->GetSpawnInfo() : nullptr);
+	return new CSpawnMsg(params, pEntity->GetSerializableNetworkSpawnInfo());
 }
 
 void CGameContext::ObjectInitClient(EntityId entityId, INetChannel* pChannel)

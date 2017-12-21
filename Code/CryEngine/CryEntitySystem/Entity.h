@@ -63,29 +63,30 @@ class CEntity : public IEntity
 public:
 	enum class EInternalFlag : uint32
 	{
-		InActiveList        = 1 << 0,
-		Hidden              = 1 << 1,
-		Invisible           = 1 << 2,
-		LoadedFromLevelFile = 1 << 3,
-		SelectedInEditor    = 1 << 4,
-		HighlightedInEditor = 1 << 5,
+		Initialized         = 1 << 0,
+		InActiveList        = 1 << 1,
+		Hidden              = 1 << 2,
+		Invisible           = 1 << 3,
+		LoadedFromLevelFile = 1 << 4,
+		SelectedInEditor    = 1 << 5,
+		HighlightedInEditor = 1 << 6,
 
 		// Start CEntityRender entries
 		// Bounding box should not be recalculated
-		FixedBounds  = 1 << 6,
-		ValidBounds  = 1 << 7,
-		HasParticles = 1 << 8,
+		FixedBounds  = 1 << 7,
+		ValidBounds  = 1 << 8,
+		HasParticles = 1 << 9,
 
 		// Start CEntityPhysics entries
-		FirstPhysicsFlag                   = 1 << 9,
+		FirstPhysicsFlag                   = 1 << 10,
 		PhysicsIgnoreTransformEvent        = FirstPhysicsFlag,
-		PhysicsDisabled                    = 1 << 10,
-		PhysicsSyncCharacter               = 1 << 11,
-		PhysicsHasCharacter                = 1 << 12,
-		PhysicsAwakeOnRender               = 1 << 13,
-		PhysicsAttachClothOnRender         = 1 << 14,
-		PhysicsDisableNetworkSerialization = 1 << 15,
-		PhysicsRemoved                     = 1 << 16,
+		PhysicsDisabled                    = 1 << 11,
+		PhysicsSyncCharacter               = 1 << 12,
+		PhysicsHasCharacter                = 1 << 13,
+		PhysicsAwakeOnRender               = 1 << 14,
+		PhysicsAttachClothOnRender         = 1 << 15,
+		PhysicsDisableNetworkSerialization = 1 << 16,
+		PhysicsRemoved                     = 1 << 17,
 		LastPhysicsFlag                    = PhysicsRemoved
 	};
 
@@ -206,6 +207,8 @@ public:
 	virtual tAIObjectID      GetAIObjectID() const final         { return m_aiObjectID; }
 	virtual void             SetAIObjectID(tAIObjectID id) final { m_aiObjectID = id; }
 	//////////////////////////////////////////////////////////////////////////
+
+	virtual ISerializableInfoPtr GetSerializableNetworkSpawnInfo() const final;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Entity Proxies Interfaces access functions.
