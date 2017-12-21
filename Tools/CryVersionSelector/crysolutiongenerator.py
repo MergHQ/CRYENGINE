@@ -90,7 +90,7 @@ def generate_csharp_project (project_file, code_directory, cs_source_directory, 
   </PropertyGroup>
   <PropertyGroup Condition=" '$$(Configuration)|$$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
+    <DebugType>portable</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>$output_path</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -98,7 +98,7 @@ def generate_csharp_project (project_file, code_directory, cs_source_directory, 
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$$(Configuration)|$$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>$output_path</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
