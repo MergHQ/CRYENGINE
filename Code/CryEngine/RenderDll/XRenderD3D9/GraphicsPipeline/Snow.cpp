@@ -151,7 +151,7 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 		pass.SetRenderTarget(0, CRendererResources::s_ptexSceneNormalsMap);
 		pass.SetRenderTarget(1, CRendererResources::s_ptexSceneDiffuse);
 		pass.SetRenderTarget(2, CRendererResources__s_ptexSceneSpecular);
-		pass.SetDepthTarget(CRendererResources::s_ptexSceneDepth);
+		pass.SetDepthTarget(RenderView()->GetDepthTarget());
 
 		if (CRenderer::CV_r_snow_displacement)
 		{
@@ -716,7 +716,7 @@ void CSnowStage::RenderSnowClusters()
 	// Render to HDR and velocity.
 	pass.SetRenderTarget(0, pSceneSrc);
 	pass.SetRenderTarget(1, pVelocitySrc);
-	pass.SetDepthTarget(CRenderer::CV_r_snow_halfres ? nullptr : CRendererResources::s_ptexSceneDepth);
+	pass.SetDepthTarget(CRenderer::CV_r_snow_halfres ? nullptr : RenderView()->GetDepthTarget());
 	pass.SetViewport(viewport);
 	pass.BeginAddingPrimitives();
 

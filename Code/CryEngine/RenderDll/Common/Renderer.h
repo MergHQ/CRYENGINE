@@ -65,7 +65,9 @@ class CIndexBuffer;
 class CStandardGraphicsPipeline;
 class CBaseResource;
 
-namespace compute_skinning { struct IComputeSkinningStorage; }
+namespace compute_skinning {
+struct IComputeSkinningStorage;
+}
 
 typedef int (* pDrawModelFunc)(void);
 
@@ -514,8 +516,6 @@ struct S3DEngineCommon
 	void UpdateSnowInfo(const SRenderingPassInfo& passInfo);
 };
 
-
-
 struct SVolumetricCloudTexInfo
 {
 	int32 cloudTexId;
@@ -725,7 +725,6 @@ public:
 	virtual bool RT_CreateDevice() = 0;
 	virtual void RT_Reset() = 0;
 
-
 	virtual void RT_RenderScene(CRenderView* pRenderView, int nFlags) = 0;
 
 	virtual void RT_ReleaseRenderResources(uint32 nFlags) = 0;
@@ -739,7 +738,6 @@ public:
 	virtual void FlashRemoveTexture(ITexture* pTexture) override;
 
 	virtual void RT_RenderDebug(bool bRenderStats = true) = 0;
-
 
 	virtual void RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool stereo, bool doRealRender) = 0;
 	virtual void RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool stereo, bool finalPlayback, bool doRealRender) = 0;
@@ -1009,6 +1007,8 @@ public:
 	virtual void EF_EndEf3D(const int nFlags, const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo) override = 0;
 
 	virtual void EF_InvokeShadowMapRenderJobs(const SRenderingPassInfo& passInfo, const int nFlags) override {}
+	virtual IRenderView* GetNextAvailableShadowsView(IRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum) override;
+
 	// 2d interface for shaders
 	virtual void EF_EndEf2D(const bool bSort) override = 0;
 
@@ -1049,7 +1049,6 @@ public:
 	virtual void  EF_DisableTemporalEffects() override;
 
 	virtual void  ForceGC() override;
-
 
 	// create/delete RenderMesh object
 	virtual _smart_ptr<IRenderMesh> CreateRenderMesh(
@@ -1295,12 +1294,11 @@ public:
 
 	virtual compute_skinning::IComputeSkinningStorage* GetComputeSkinningStorage() = 0;
 
-	
 	int   GetStreamZoneRoundId( int zone ) const { assert(zone >=0 && zone < MAX_PREDICTION_ZONES); return m_streamZonesRoundId[zone]; };
 
 	// Only should be used to get current frame id internally in the render thread.
-	int   GetRenderFrameID() const;;
-	int   GetMainFrameID()   const;;
+	int GetRenderFrameID() const;
+	int GetMainFrameID()   const;
 
 	threadID GetMainThreadID() const { return m_nFillThreadID; }
 	threadID GetRenderThreadID() const { return m_nProcessThreadID; }
@@ -1336,9 +1334,6 @@ public:
 
 public:
 	Matrix44A m_IdentityMatrix;
-
-	Matrix44A m_TempMatrices[4][8];
-
 
 	byte           m_bDeviceLost;
 	byte           m_bSystemResourcesInit;
@@ -1626,10 +1621,6 @@ protected:
 	SRenderQuality    m_renderQuality;
 
 	//////////////////////////////////////////////////////////////////////////
-	// Shadow rendering specific data
-	int  m_ShadowCustomTexBind[8];
-	bool m_ShadowCustomComparisonSampling[8];
-	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
 	// Animation time is used for rendering animation effects and can be paused if CRenderer::m_bPauseTimer is true
@@ -1667,7 +1658,6 @@ inline int CRenderer::GetMainFrameID() const
 	assert(!m_pRT->IsMultithreaded() || !m_pRT->IsRenderThread());
 	return gEnv->nMainFrameID;
 }
-
 
 #include "CommonRender.h"
 

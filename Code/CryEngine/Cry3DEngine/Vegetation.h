@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #ifndef _CVegetation_H_
 #define _CVegetation_H_
@@ -26,14 +26,14 @@ public:
 	CDeformableNode*                            m_pDeformable;
 	PodArrayAABB<CRenderObject::SInstanceInfo>* m_pInstancingInfo;
 
-	int    m_nObjectTypeIndex;
-	byte   m_ucAngle;
-	byte   m_ucScale;
-	byte   m_boxExtends[6];
-	byte   m_ucRadius;
-	byte   m_ucAngleX;
-	byte   m_ucAngleY;
-	byte   m_bApplyPhys;
+	int  m_nObjectTypeIndex;
+	byte m_ucAngle;
+	byte m_ucScale;
+	byte m_boxExtends[6];
+	byte m_ucRadius;
+	byte m_ucAngleX;
+	byte m_ucAngleY;
+	byte m_bApplyPhys;
 
 	static CRY_ALIGN(128) float g_scBoxDecomprTable[256];
 
@@ -42,9 +42,7 @@ public:
 	void                 SetStatObjGroupIndex(int nVegetationGroupIndex) final;
 
 	void                 CheckCreateDeformable();
-
-	virtual bool         CanExecuteRenderAsJob()              { return false; } // Running in jobs breaks foliage skinning currently
-
+	virtual bool         CanExecuteRenderAsJob() final;
 	int                  GetStatObjGroupId() const final      { return m_nObjectTypeIndex; }
 	const char*          GetEntityClassName(void) const final { return "Vegetation"; }
 	Vec3                 GetPos(bool bWorldOnly = true) const final;

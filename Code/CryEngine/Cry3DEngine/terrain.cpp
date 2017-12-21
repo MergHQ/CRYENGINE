@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   terrain.cpp
@@ -40,23 +40,23 @@ void CTerrain::CheckVis(const SRenderingPassInfo& passInfo)
 	if (passInfo.IsGeneralPass())
 		m_fDistanceToSectorWithWater = OCEAN_IS_VERY_FAR_AWAY;
 
-	m_lstVisSectors.Clear();
+	ClearVisSectors();
 
 	// reopen texture file if needed, texture pack may be randomly closed by editor so automatic reopening used
 	if (!m_arrBaseTexInfos.m_nDiffTexIndexTableSize && m_bEditor)
 		OpenTerrainTextureFile(m_arrBaseTexInfos.m_hdrDiffTexHdr, m_arrBaseTexInfos.m_hdrDiffTexInfo,
-				                    COMPILED_TERRAIN_TEXTURE_FILE_NAME, m_arrBaseTexInfos.m_ucpDiffTexTmpBuffer, m_arrBaseTexInfos.m_nDiffTexIndexTableSize);
+		                       COMPILED_TERRAIN_TEXTURE_FILE_NAME, m_arrBaseTexInfos.m_ucpDiffTexTmpBuffer, m_arrBaseTexInfos.m_nDiffTexIndexTableSize);
 
 	GetParentNode()->CheckVis(false, (GetCVars()->e_CoverageBufferTerrain != 0) && (GetCVars()->e_CoverageBuffer != 0), passInfo);
 
 	if (passInfo.IsGeneralPass())
 	{
-		m_bOceanIsVisible = (int)((m_fDistanceToSectorWithWater != OCEAN_IS_VERY_FAR_AWAY) || !m_lstVisSectors.Count());
+		m_bOceanIsVisible = (int)((m_fDistanceToSectorWithWater != OCEAN_IS_VERY_FAR_AWAY) || !m_checkVisSectorsCount);
 
 		if (m_fDistanceToSectorWithWater < 0)
 			m_fDistanceToSectorWithWater = 0;
 
-		if (!m_lstVisSectors.Count())
+		if (!m_checkVisSectorsCount)
 			m_fDistanceToSectorWithWater = 0;
 
 		m_fDistanceToSectorWithWater = max(m_fDistanceToSectorWithWater, (passInfo.GetCamera().GetPosition().z - m_fOceanWaterLevel));
@@ -271,7 +271,7 @@ void CTerrain::UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo)
 
 			delete CTerrainNode::GetProcObjPoolMan();
 			CTerrainNode::SetProcObjPoolMan(new CProcVegetPoolMan(MAX_PROC_SECTORS_NUM));
-			
+
 			paramsCheckSumm = (MAX_PROC_OBJ_CHUNKS_NUM + MAX_PROC_SECTORS_NUM + GetCVars()->e_ProcVegetationMaxObjectsInChunk);
 		}
 
@@ -376,7 +376,7 @@ void CTerrain::ApplyForceToEnvironment(Vec3 vPos, float fRadius, float fAmountOf
 		fAmountOfForce = 1.f;
 
 	if ((vPos.GetDistance(gEnv->p3DEngine->GetRenderingCamera().GetPosition()) > 50.f + fRadius * 2.f) || // too far
-	    vPos.z < (GetZApr(vPos.x, vPos.y) - 1.f))                                            // under ground
+	    vPos.z < (GetZApr(vPos.x, vPos.y) - 1.f))                                                         // under ground
 		return;
 
 	Get3DEngine()->AddForcedWindArea(vPos, fAmountOfForce, fRadius);
@@ -471,17 +471,6 @@ int CTerrain::GetTerrainNodesAmount()
 #endif
 	amount >>= (65 - (GetParentNode()->m_nTreeLevel + 1) * 2);
 	return (int)amount;
-}
-
-void CTerrain::GetVisibleSectorsInAABB(PodArray<struct CTerrainNode*>& lstBoxSectors, const AABB& boxBox)
-{
-	lstBoxSectors.Clear();
-	for (int i = 0; i < m_lstVisSectors.Count(); i++)
-	{
-		CTerrainNode* pNode = m_lstVisSectors[i];
-		if (pNode->GetBBox().IsIntersectBox(boxBox))
-			lstBoxSectors.Add(pNode);
-	}
 }
 
 void CTerrain::IntersectWithShadowFrustum(PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, const SRenderingPassInfo& passInfo)

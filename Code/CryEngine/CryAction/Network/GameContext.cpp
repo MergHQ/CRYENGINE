@@ -908,10 +908,6 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 		channelId = pGameServerChannel->GetChannelId();
 	}
 
-	IEntityComponent* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-
-	CGameObject* pGameObject = reinterpret_cast<CGameObject*>(pProxy);
-
 	SBasicSpawnParams params;
 	params.name = pEntity->GetName();
 	if (pEntity->GetArchetype())
@@ -947,7 +943,7 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 		pChannel->DeclareWitness(entityId);
 	}
 
-	return new CSpawnMsg(params, pGameObject ? pGameObject->GetSpawnInfo() : nullptr);
+	return new CSpawnMsg(params, pEntity->GetSerializableNetworkSpawnInfo());
 }
 
 void CGameContext::ObjectInitClient(EntityId entityId, INetChannel* pChannel)
@@ -1118,25 +1114,17 @@ void CGameContext::OnSpawn(IEntity* pEntity, SEntitySpawnParams& params)
 	bool calledBindToNetwork = false;
 	if (m_isInLevelLoad && gEnv->bMultiplayer)
 	{
-		if (!pEntity->GetProxy(ENTITY_PROXY_USER))
+		if (pEntity->GetScriptTable())
 		{
-			if (pEntity->GetScriptTable())
-			{
-				IGameObject* pGO = CCryAction::GetCryAction()->GetIGameObjectSystem()->CreateGameObjectForEntity(pEntity->GetId());
-				if (pGO)
-				{
-					//CryLog("Forcibly binding %s to network", params.sName);
-					calledBindToNetwork = true;
-					pGO->BindToNetwork();
-				}
-			}
+			//CryLog("Forcibly binding %s to network", params.sName);
+			calledBindToNetwork = true;
+			pEntity->GetNetEntity()->BindToNetwork();
 		}
 	}
 
 	if (!calledBindToNetwork)
 	{
-		if (CGameObject* pGO = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER))
-			pGO->BindToNetwork(eBTNM_NowInitialized);
+		pEntity->GetNetEntity()->BindToNetwork(eBTNM_NowInitialized);
 	}
 
 	CallOnSpawnComplete(pEntity);

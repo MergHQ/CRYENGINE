@@ -95,6 +95,7 @@ public:
 	void  Init() final;
 	void  Update() final;
 	void  Prepare();
+	void Resize(int renderWidth, int renderHeight) override final;
 
 	void  ExecuteWaterVolumeCaustics();
 	void  ExecuteDeferredWaterVolumeCaustics();
@@ -133,7 +134,7 @@ private:
 	_smart_ptr<CTexture>                      m_pWaterGlossTex;
 	_smart_ptr<CTexture>                      m_pOceanWavesTex;
 	_smart_ptr<CTexture>                      m_pOceanCausticsTex;
-	_smart_ptr<CTexture>                      m_pOceanMaskTex;
+	_smart_ptr<CTexture>                      m_pOceanMaskTex = nullptr;
 
 	std::array<_smart_ptr<CTexture>, RainRippleTexCount> m_pRainRippleTex;
 	uint32                                               m_rainRippleTexIndex;

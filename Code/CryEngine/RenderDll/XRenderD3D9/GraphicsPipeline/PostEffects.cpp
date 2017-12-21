@@ -48,13 +48,6 @@ void CPostEffectContext::Setup(CPostEffectsMgr* pPostEffectsMgr)
 		m_shaderRTMask |= (quality | quality1);
 		break;
 	}
-
-	m_bUseAltBackBuffer = false;
-}
-
-void CPostEffectContext::EnableAltBackBuffer(bool enable)
-{
-	m_bUseAltBackBuffer = enable;
 }
 
 uint64 CPostEffectContext::GetShaderRTMask() const
@@ -69,24 +62,12 @@ CTexture* CPostEffectContext::GetSrcBackBufferTexture() const
 
 CTexture* CPostEffectContext::GetDstBackBufferTexture() const
 {
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
-	CTexture* pFinalOutput = GetRenderView()->GetColorTarget();
-	if (m_bUseAltBackBuffer)
-		pFinalOutput = CRendererResources::s_ptexSceneDiffuse;
-
-	return pFinalOutput;
+	return GetRenderView()->GetColorTarget();
 }
 
 CTexture* CPostEffectContext::GetDstDepthStencilTexture() const
 {
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
-	CTexture* pFinalOutput = GetRenderView()->GetDepthTarget();
-	if (m_bUseAltBackBuffer)
-		pFinalOutput = CRendererResources::s_ptexSceneDepth;
-
-	return pFinalOutput;
+	return GetRenderView()->GetDepthTarget();
 }
 
 CPostEffect* CPostEffectContext::GetPostEffect(EPostEffectID nID) const
@@ -221,7 +202,8 @@ bool CPostEffectStage::Execute()
 	m_context.Setup(pPostMgr);
 	m_context.SetRenderView(RenderView());
 
-	m_context.EnableAltBackBuffer(true);
+	const auto tempRT = CRendererResources::s_ptexSceneDiffuse;
+	bool usingTempRTs = true;
 
 	for (CPostEffectItor pItor = pPostMgr->GetEffects().begin(), pItorEnd = pPostMgr->GetEffects().end(); pItor != pItorEnd; ++pItor)
 	{
@@ -251,15 +233,13 @@ bool CPostEffectStage::Execute()
 			const auto id = pCurrEffect->GetID();
 
 			if (id >= EPostEffectID::PostAA)
-			{
-				m_context.EnableAltBackBuffer(false);
-			}
+				usingTempRTs = false;
 
 			uint32 nRenderFlags = pCurrEffect->GetRenderFlags();
 			if (nRenderFlags & PSP_UPDATE_BACKBUFFER)
 			{
 				CTexture* pDstTex = m_context.GetSrcBackBufferTexture();
-				CTexture* pSrcTex = m_context.GetDstBackBufferTexture();
+				CTexture* pSrcTex = usingTempRTs ? m_context.GetDstBackBufferTexture() : tempRT;
 
 				m_passCopyScreenToTex.Execute(pSrcTex, pDstTex);
 			}
@@ -1000,14 +980,14 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	CD3DStereoRenderer* const RESTRICT_POINTER rendS3D = &(gcpRendD3D.GetS3DRend());
-
+	
 	if (!rendS3D->IsPostStereoEnabled())
 	{
 		return;
 	}
 
 	PROFILE_LABEL_SCOPE("POST_STEREO");
-
+	
 	CTexture* pSrcBackBufferTexture = context.GetSrcBackBufferTexture();
 
 	// Mask near geometry (weapon)
@@ -1016,6 +996,7 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 	CRY_ASSERT(pTmpMaskTex->GetWidth() == pSrcBackBufferTexture->GetWidth());
 	CRY_ASSERT(pTmpMaskTex->GetHeight() == pSrcBackBufferTexture->GetHeight());
 	CRY_ASSERT(pTmpMaskTex->GetDstFormat() == pSrcBackBufferTexture->GetDstFormat());
+	CTexture* pZTexture = context.GetRenderView()->GetDepthTarget();
 
 	const bool bReverseDepth = true;
 
@@ -1037,7 +1018,7 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 			pass.SetState(nRS);
 
 			pass.SetRenderTarget(0, pTmpMaskTex);
-			pass.SetDepthTarget(CRendererResources::s_ptexSceneDepth);
+			pass.SetDepthTarget(pZTexture);
 		}
 
 		const float clipZ = CRenderer::CV_r_DrawNearZRange;
@@ -1064,7 +1045,7 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 
 			pass.SetRenderTarget(0, pLeftEyeTex);
 			pass.SetRenderTarget(1, pRightEyeTex);
-			pass.SetDepthTarget(CRendererResources::s_ptexSceneDepth);
+			pass.SetDepthTarget(pZTexture);
 
 			pass.SetTexture(0, pSrcBackBufferTexture);
 			pass.SetTexture(1, CRendererResources::s_ptexLinearDepth);

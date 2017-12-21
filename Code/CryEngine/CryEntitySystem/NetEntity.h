@@ -49,7 +49,7 @@ public:
 
 	virtual void                  OnNetworkedEntityTransformChanged(EntityTransformationFlagsMask transformReasons) override;
 
-	virtual void                  OnEntityInitialized() override { m_isEntityInitialized = true; }
+	virtual void                  OnEntityInitialized() override {}
 
 	static void                   UpdateSchedulingProfiles();
 
@@ -71,6 +71,5 @@ private:
 	uint8                            m_isBoundToNetwork    : 1;
 	uint8                            m_hasAuthority        : 1;
 	uint8                            m_bNoSyncPhysics      : 1;
-	uint8                            m_isEntityInitialized : 1;
 	uint8                            m_profiles[NUM_ASPECTS];
 };

@@ -22,7 +22,6 @@ CNetEntity::CNetEntity(CEntity* entity_)
 	, m_cachedParentId(0)
 	, m_schedulingProfiles(gEnv->pGameFramework->GetEntitySchedulerProfiles(entity_))
 	, m_hasAuthority(false)
-	, m_isEntityInitialized(false)
 {
 	for (int i = 0; i < NUM_ASPECTS; i++)
 		m_profiles[i] = 255;
@@ -117,7 +116,7 @@ bool CNetEntity::BindToNetworkWithParent(EBindToNetworkMode mode, EntityId paren
 	if (m_pEntity->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY))
 		return false;
 
-	if (!m_isEntityInitialized)
+	if (!m_pEntity->HasInternalFlag(CEntity::EInternalFlag::Initialized))
 	{
 		m_cachedParentId = parentId;
 		m_isBoundToNetwork = true;
@@ -360,7 +359,7 @@ bool CNetEntity::DoSetAspectProfile(EEntityAspects aspect, uint8 profile, bool f
 
 void CNetEntity::SetNetworkParent(EntityId id)
 {
-	if (!m_isEntityInitialized)
+	if (!m_pEntity->HasInternalFlag(CEntity::EInternalFlag::Initialized))
 	{
 		m_cachedParentId = id;
 		return;

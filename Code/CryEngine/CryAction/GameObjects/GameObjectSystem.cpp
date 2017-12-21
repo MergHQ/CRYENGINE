@@ -82,8 +82,6 @@ bool CGameObjectSystem::Init()
 		}
 	}
 
-	m_spawnSerializers.reserve(8);
-
 	LoadSerializationOrderFile();
 
 	return true;
@@ -362,10 +360,6 @@ IGameObjectExtension* CGameObjectSystem::Instantiate(ExtensionID id, IGameObject
 	if (!pExt)
 		return nullptr;
 
-	TSerialize* pSpawnSerializer = GetSpawnSerializerForEntity(pEntity->GetId());
-	if (pSpawnSerializer)
-		pExt->SerializeSpawnInfo(*pSpawnSerializer);
-
 	if (!pExt->Init(pObject))
 	{
 		pEntity->RemoveComponent(pExt);
@@ -435,33 +429,6 @@ const SEntitySchedulingProfiles* CGameObjectSystem::GetEntitySchedulerProfiles(I
 		return &m_defaultProfiles;
 	}
 	return &iter->second;
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-void CGameObjectSystem::SetSpawnSerializerForEntity(const EntityId entityId, TSerialize* pSerializer)
-{
-	CRY_ASSERT(GetSpawnSerializerForEntity(entityId) == NULL);
-	if (GetSpawnSerializerForEntity(entityId) != NULL)
-	{
-		__debugbreak();
-	}
-
-	m_spawnSerializers.push_back(SSpawnSerializer(entityId, pSerializer));
-}
-
-void CGameObjectSystem::ClearSpawnSerializerForEntity(const EntityId entityId)
-{
-	stl::find_and_erase(m_spawnSerializers, entityId);
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-TSerialize* CGameObjectSystem::GetSpawnSerializerForEntity(const EntityId entityId) const
-{
-	TSpawnSerializers::const_iterator it = std::find(m_spawnSerializers.begin(), m_spawnSerializers.end(), entityId);
-
-	return (it != m_spawnSerializers.end()) ? (*it).pSerializer : NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////

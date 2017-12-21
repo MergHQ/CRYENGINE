@@ -297,6 +297,9 @@ enum ESystemEvent
 	//! Used for a more efficient resource management.
 	ESYSTEM_EVENT_LEVEL_LOAD_START,
 
+	//! Sent before loading entities from disk
+	ESYSTEM_EVENT_LEVEL_LOAD_ENTITIES,
+
 	//! Sent after loading a level finished.
 	//! Used for a more efficient resource management.
 	ESYSTEM_EVENT_LEVEL_LOAD_END,

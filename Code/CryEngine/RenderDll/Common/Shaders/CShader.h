@@ -350,8 +350,6 @@ public:
 	const SInputShaderResources* m_pCurInputResources;
 	SShaderGen*                  m_pGlobalExt;
 
-	Vec4                         m_TempVecs[16];
-
 	std::vector<SShaderGenComb>  m_SGC;
 
 	int                          m_nCombinationsProcess;

@@ -71,7 +71,7 @@ Texture2DArray<float4> sunShadowMask : register(t38) = TS_ShadowMask;
 // Tweakables /////////////////
 
 #if !%EYE_AO_OVERLAY && !%EYE_SPECULAR_OVERLAY
-	half IrisDepth
+	float IrisDepth
 	< 
 		register = REG_PM_PARAM_0.x;
 		string UIHelp = "Set iris depth";                     
@@ -83,7 +83,7 @@ Texture2DArray<float4> sunShadowMask : register(t38) = TS_ShadowMask;
 		float UIStep = 0.001;
 	> = 0.005;
 
-	half ScleraSSS
+	float ScleraSSS
 	<
 		register = REG_PM_PARAM_0.y;
 		string UIHelp = "Change the subsurface scattering amount for the sclera";
@@ -94,7 +94,7 @@ Texture2DArray<float4> sunShadowMask : register(t38) = TS_ShadowMask;
 		float UIStep = 0.005;
 	> = 0.4;
 
-	half IrisSSS
+	float IrisSSS
 	<
 		register = REG_PM_PARAM_0.z;
 		string UIHelp = "Change the subsurface scattering amount for the iris";
@@ -105,7 +105,7 @@ Texture2DArray<float4> sunShadowMask : register(t38) = TS_ShadowMask;
 		float UIStep = 0.005;
 	> = 0.6;
 
-	half IrisShadowing
+	float IrisShadowing
 	<
 		register = REG_PM_PARAM_0.w;
 		string UIHelp = "Strength of shadowing on small details in the iris";
@@ -116,7 +116,7 @@ Texture2DArray<float4> sunShadowMask : register(t38) = TS_ShadowMask;
 		float UIStep = 0.1;
 	> = 5.0;
 	
-	half4 IrisColor
+	float4 IrisColor
 	<
 	  register = REG_PM_PARAM_1;
 	  string UIHelp = "Alter iris color";                   
@@ -125,7 +125,7 @@ Texture2DArray<float4> sunShadowMask : register(t38) = TS_ShadowMask;
 	  string UIWidget = "color";
 	> = {0.5, 0.5, 0.5, 1.0};
 		
-	half CorneaRefraction
+	float CorneaRefraction
 	<
 		register = REG_PM_PARAM_2.x;
 		string UIHelp = "Change the strength of refraction caused by the cornea";
@@ -136,7 +136,7 @@ Texture2DArray<float4> sunShadowMask : register(t38) = TS_ShadowMask;
 		float UIStep = 0.005;
 	> = 0.01;
 		
-	half CorneaSmoothness
+	float CorneaSmoothness
 	<
 		register = REG_PM_PARAM_2.y;
 		string UIHelp = "Change the smoothness/gloss of the sclera";
@@ -147,7 +147,7 @@ Texture2DArray<float4> sunShadowMask : register(t38) = TS_ShadowMask;
 		float UIStep = 0.005;
 	> = 1;
 #elif %EYE_AO_OVERLAY
-	half DiffOccStrength
+	float DiffOccStrength
 	< 
 	  register = REG_PM_PARAM_2.z;
 	  string UIHelp = "Set strength of diffuse occlusion";                     
@@ -159,7 +159,7 @@ Texture2DArray<float4> sunShadowMask : register(t38) = TS_ShadowMask;
 	  float UIStep = 0.001;
 	> = 1.0;
 
-	half SpecOccStrength
+	float SpecOccStrength
 	< 
 	  register = REG_PM_PARAM_2.w;
 	  string UIHelp = "Set strength of specular occlusion";                     
@@ -173,7 +173,7 @@ Texture2DArray<float4> sunShadowMask : register(t38) = TS_ShadowMask;
 #endif
 
 #if %EYE_SPECULAR_OVERLAY
-	half DepthBiasScale
+	float DepthBiasScale
 	< 
 	  register = REG_PM_PARAM_3.x;
 	  string UIHelp = "Scale of depth bias to avoid clipping.";                     

@@ -281,7 +281,7 @@ void CVariableCollection::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_name, "collection-name", "!>");
 
-	std::list<CVariable> variablesCopy;
+	std::vector<CVariable> variablesCopy;
 
 	if (ar.isOutput())
 	{

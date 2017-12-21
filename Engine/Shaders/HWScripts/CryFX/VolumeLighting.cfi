@@ -1249,7 +1249,46 @@ Texture2D vfCloudShadowTex : register(t4) = TS_CloudShadow;
 SamplerComparisonState vfShadowLinearClampCompSS : register(s0) = SS_Shadow2;
 SamplerState vfShadowBilinearWrapSS : register(s1) = SS_MaterialBilinearWrap;
 
+float4x4 TexGen0;
+float4x4 TexGen1;
+float4x4 TexGen2;
+float4x4 TexGen3;
+
+float4 vInvShadowMapSize;
+float4 fDepthTestBias; // defines how hard depth test is (default is 100 - hard test)
+float4 fOneDivFarDist;
+float4 fKernelRadius;
+
+float4 CloudShadowParams;
+float4 CloudShadowAnimParams;
+
+float4 irreg_kernel_2d[HALF_MAX_SHADOW_SAMPLES_NUM];
+
+float4 volFogShadowRange;
+
 float4 vfSunDir;
+
+SShadowSamplingParams GetShadowSamplingParams()
+{
+    SShadowSamplingParams s;
+
+    s.TexGen0 = TexGen0;
+    s.TexGen1 = TexGen1;
+    s.TexGen2 = TexGen2;
+    s.TexGen3 = TexGen3;
+
+    s.vInvShadowMapSize = vInvShadowMapSize;
+    s.fDepthTestBias = fDepthTestBias; // defines how hard depth test is (default is 100 - hard test)
+    s.fOneDivFarDist = fOneDivFarDist;
+    s.fKernelRadius = fKernelRadius;
+
+    s.CloudShadowParams = CloudShadowParams;
+    s.CloudShadowAnimParams = CloudShadowAnimParams;
+
+    s.irreg_kernel_2d = irreg_kernel_2d;
+
+    return s;
+}
 
 bool ShadowCascadeSampleVolumetricFog(Texture2D depthMap, SamplerComparisonState comparisonSampler, float4 p, float2 randDirTC, float fDepthTestBias, out float fShadow, bool bSingleTap = false)
 {
@@ -1269,7 +1308,9 @@ bool ShadowCascadeSampleVolumetricFog(Texture2D depthMap, SamplerComparisonState
 
 float ShadowDepthTestVolumetricFog(float3 worldPos, bool bSampleCloudShadows = true)
 {
-	const uint nCascadeMask = GetForwardShadowsCascadeMask();
+    SShadowSamplingParams ss = GetShadowSamplingParams();
+
+    const uint nCascadeMask = GetForwardShadowsCascadeMask(ss);
 
 	const Texture2D cascade0 = vfDepthMapSampler0;
 	const Texture2D cascade1 = vfDepthMapSampler1;
@@ -1285,36 +1326,36 @@ float ShadowDepthTestVolumetricFog(float3 worldPos, bool bSampleCloudShadows = t
 	if(nCascadeMask != 0)
 	{
 		float4 p;
-		ShadowTexSpace(float4(worldPos, 1), TexGen0, fOneDivFarDist.x, p);
+        ShadowTexSpace(float4(worldPos, 1), ss.TexGen0, ss.fOneDivFarDist.x, p);
 		const float2 randDirTC = 0;
-		bool bDone = ShadowCascadeSampleVolumetricFog(cascade0, compSS, p, randDirTC, fDepthTestBias.x, fShadow, true);
+        bool bDone = ShadowCascadeSampleVolumetricFog(cascade0, compSS, p, randDirTC, ss.fDepthTestBias.x, fShadow, true);
 
 		[branch]
 		if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_1))
 		{
-			ShadowTexSpace(float4(worldPos, 1), TexGen1, fOneDivFarDist.y, p);
-			bDone = ShadowCascadeSampleVolumetricFog(cascade1, compSS, p, randDirTC, fDepthTestBias.y, fShadow, true);
+            ShadowTexSpace(float4(worldPos, 1), ss.TexGen1, ss.fOneDivFarDist.y, p);
+            bDone = ShadowCascadeSampleVolumetricFog(cascade1, compSS, p, randDirTC, ss.fDepthTestBias.y, fShadow, true);
 
 #if %_RT_SAMPLE0 && %_RT_SAMPLE1
 			[branch]
 			if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_3))
 			{
-				ShadowTexSpace(float4(worldPos, 1), TexGen3, fOneDivFarDist.w, p);
-				ShadowCascadeSampleVolumetricFog(cascade3, compSS, p, randDirTC, fDepthTestBias.w, fShadow, true);
+				ShadowTexSpace(float4(worldPos, 1), ss.TexGen3, ss.fOneDivFarDist.w, p);
+				ShadowCascadeSampleVolumetricFog(cascade3, compSS, p, randDirTC, ss.fDepthTestBias.w, fShadow, true);
 			}
 #else // %_RT_SAMPLE1 || %_RT_SAMPLE0 || (!%_RT_SAMPLE0 && !%_RT_SAMPLE1)
 			[branch]
 			if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_2))
 			{
-				ShadowTexSpace(float4(worldPos, 1), TexGen2, fOneDivFarDist.z, p);
-				bDone = ShadowCascadeSampleVolumetricFog(cascade2, compSS, p, randDirTC, fDepthTestBias.z, fShadow, true);
+                ShadowTexSpace(float4(worldPos, 1), ss.TexGen2, ss.fOneDivFarDist.z, p);
+                bDone = ShadowCascadeSampleVolumetricFog(cascade2, compSS, p, randDirTC, ss.fDepthTestBias.z, fShadow, true);
 
 				[branch]
 				if(!bDone && (nCascadeMask & FORWARD_SHADOWS_CASCADE_3))
 				{
-					ShadowTexSpace(float4(worldPos, 1), TexGen3, fOneDivFarDist.w, p);
-					ShadowCascadeSampleVolumetricFog(cascade3, compSS, p, randDirTC, fDepthTestBias.w, fShadow, true);
-				}
+                    ShadowTexSpace(float4(worldPos, 1), ss.TexGen3, ss.fOneDivFarDist.w, p);
+                    ShadowCascadeSampleVolumetricFog(cascade3, compSS, p, randDirTC, ss.fDepthTestBias.w, fShadow, true);
+                }
 			}
 #endif
 		}
@@ -1322,8 +1363,8 @@ float ShadowDepthTestVolumetricFog(float3 worldPos, bool bSampleCloudShadows = t
 
 	if(bSampleCloudShadows && (nCascadeMask & FORWARD_SHADOWS_CLOUD_SHADOWS))
 	{
-		float fCloudShadow = GetCloudShadowCommon(worldPos, cloudTex, cloudSS, CloudShadowAnimParams, 
-		                                          CloudShadowParams, vfSunDir);
+        float fCloudShadow = GetCloudShadowCommon(worldPos, cloudTex, cloudSS, ss.CloudShadowAnimParams,
+		                                          ss.CloudShadowParams, vfSunDir);
 		fShadow *= fCloudShadow;
 	}
 

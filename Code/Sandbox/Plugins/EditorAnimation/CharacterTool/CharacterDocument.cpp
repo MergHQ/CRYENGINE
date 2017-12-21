@@ -1839,6 +1839,13 @@ void CharacterDocument::PreRender(const SRenderContext& context)
 			pVars->iOutOfBounds = 3;
 			gEnv->pPhysicalWorld->TimeStep(m_AverageFrameTime, ent_independent | ent_living | ent_flagged_only);
 			pVars->iOutOfBounds = iOutOfBounds;
+
+			pf.flagsOR = 0;
+			pf.flagsAND = ~pef_update;
+			if (pCharBasePhys)
+				pCharBasePhys->SetParams(&pf);
+			for (int i = 0; skeletonPose.GetCharacterPhysics(i); i++)
+				skeletonPose.GetCharacterPhysics(i)->SetParams(&pf);
 		}
 
 		//	pInstanceBase->SetAttachmentLocation_DEPRECATED( m_PhysicalLocation );

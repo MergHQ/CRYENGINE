@@ -214,7 +214,7 @@ bool CD3D9Renderer::FX_HDRScene(CRenderView *pRenderView, bool bEnableHDR, bool 
 		if (bClear || pRenderView->IsViewFlag(SRenderViewInfo::eFlags_MirrorCamera) || (pRenderView->GetShaderRenderingFlags() & SHDF_CUBEMAPGEN))
 		{
 			CClearSurfacePass::Execute(CRendererResources::s_ptexHDRTarget, Clr_Empty);
-			CClearSurfacePass::Execute(CRendererResources::s_ptexSceneDepth, CLEAR_ZBUFFER | CLEAR_STENCIL, 0.0f, 0);
+			CClearSurfacePass::Execute(pRenderView->GetDepthTarget(), CLEAR_ZBUFFER | CLEAR_STENCIL, 0.0f, 0);
 		}
 	}
 	else if (!CV_r_HDRRendering && CRendererResources::s_ptexHDRTarget)

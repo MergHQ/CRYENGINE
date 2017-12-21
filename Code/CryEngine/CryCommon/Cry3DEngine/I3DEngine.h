@@ -2545,8 +2545,11 @@ struct SRenderingPassInfo
 	CryDisplayContextHandle GetDisplayContextHandle() const             { return m_displayContextHandle; }
 
 	// Job state associated with rendering to this view
-	void  SetWriteMutex(void* jobState) { m_pJobState = jobState; }
-	void* WriteMutex() const            { return m_pJobState; };
+	void                             SetWriteMutex(void* jobState)                             { m_pJobState = jobState; }
+	void*                            WriteMutex() const                                        { return m_pJobState; };
+
+	void                             SetShadowPasses(class std::vector<SRenderingPassInfo>* p) { m_pShadowPasses = p; }
+	std::vector<SRenderingPassInfo>* GetShadowPasses() const                                   { return m_pShadowPasses; }
 
 	SRenderingPassInfo(threadID id)
 	{
@@ -2607,6 +2610,9 @@ private:
 
 	// Optional render target clear color.
 	ColorB m_clearColor = { 0, 0, 0, 0 };
+
+	// Additional sub-passes like shadow frustums (in the future - reflections and portals)
+	std::vector<SRenderingPassInfo>* m_pShadowPasses = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

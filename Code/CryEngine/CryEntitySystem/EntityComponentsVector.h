@@ -183,6 +183,20 @@ public:
 		}
 	}
 
+	// Iterate through all components, assumes that m_vector will not be changed during iteration!
+	template<typename LambdaFunction>
+	void ForEachUnchecked(LambdaFunction f) const
+	{
+		for (size_t index = 0; index < m_vector.size(); ++index)
+		{
+			const SEntityComponentRecord& rec = m_vector[index];
+			if (rec.pComponent)
+			{
+				f(rec);
+			}
+		}
+	}
+
 private:
 	static void ShutDownComponent(SEntityComponentRecord& componentRecord);
 };

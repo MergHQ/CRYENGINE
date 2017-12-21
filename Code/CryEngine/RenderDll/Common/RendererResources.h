@@ -3,6 +3,8 @@
 #pragma once
 
 #include <CryRenderer/ITexture.h>
+#include <Common/Textures/TempDepthTexture.h>
+#include <Common/ResourcePool.h>
 
 class CTexture;
 struct SEnvTexture;
@@ -99,16 +101,22 @@ enum
 
 class CRendererResources
 {
+	using tempTexturePool_t = CResourcePool<STempDepthTexture>;
+
+public:
+	using CTempTexture = tempTexturePool_t::value_type;
+
 public:
 	void InitResources() {}
 
 public:
-	static TArray<SDepthTexture*> m_TempDepths;
+	static tempTexturePool_t m_TempDepths;
 
-	static SDepthTexture* GetTempDepthSurface(int nWidth, int nHeight, bool bAA, bool bExactMatch = false);
-	static SDepthTexture* CreateDepthSurface(int nWidth, int nHeight, bool bAA);
+	static CTempTexture   GetTempDepthSurface(int nWidth, int nHeight, bool bExactMatch = true);
 	static size_t         SizeofTempDepthSurfaces();
 	static void           ReleaseTempDepthSurfaces();
+
+	static SDepthTexture CreateDepthSurface(int nWidth, int nHeight, bool bAA);
 
 public:
 	static bool m_bLoadedSystem;
@@ -250,7 +258,6 @@ public:
 
 	static CTexture* s_ptexSceneSelectionIDs;                                    // Selection ID buffer used for selection and highlight passes
 
-	static CTexture* s_ptexSceneDepth;
 	static CTexture* s_ptexSceneDepthScaled[3];                                  // Half/Quarter/Eighth resolution depth-stencil, used for sub-resolution rendering
 	static CTexture* s_ptexLinearDepth;
 	static CTexture* s_ptexLinearDepthScaled[3];                                 // Min, Max, Avg, med

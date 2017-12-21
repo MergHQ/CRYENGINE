@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   terrain_node.cpp
@@ -189,7 +189,7 @@ void CTerrainNode::SetupTexturing(bool bMakeUncompressedForEditing, const SRende
 	                  pTextureSourceNode->m_nNodeTexSet.nTex1 : nDefaultTexId;
 
 	m_nTexSet.nTex2 = (pTextureSourceNode && pTextureSourceNode->m_nNodeTexSet.nTex2) ?
-										pTextureSourceNode->m_nNodeTexSet.nTex2 : nDefaultTexId;
+	                  pTextureSourceNode->m_nNodeTexSet.nTex2 : nDefaultTexId;
 
 	if (pTextureSourceNode && pTextureSourceNode->m_nNodeTexSet.nTex0)
 		m_nTexSet = pTextureSourceNode->m_nNodeTexSet;
@@ -276,7 +276,7 @@ bool CTerrainNode::CheckVis(bool bAllInside, bool bAllowRenderIntoCBuffer, const
 		unitSize *= 2.f;
 		bitShift++;
 	}
-		
+
 	bool bContinueRecursion = false;
 	if (m_pChilds &&
 	    (m_arrfDistance[passInfo.GetRecursiveLevel()] < GetCVars()->e_TerrainLodDistRatio * (float)nSectorSize ||
@@ -302,12 +302,16 @@ bool CTerrainNode::CheckVis(bool bAllInside, bool bAllowRenderIntoCBuffer, const
 	}
 	else
 	{
-		if (Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && GetCVars()->e_StatObjBufferRenderTasks == 1 && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion"))
+		if (Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion"))
 		{
 			GetObjManager()->PushIntoCullQueue(SCheckOcclusionJobData::CreateTerrainJobData(this, GetBBox(), m_arrfDistance[passInfo.GetRecursiveLevel()]));
 		}
 		else
+		{
 			GetTerrain()->AddVisSector(this);
+		}
+
+		GetTerrain()->m_checkVisSectorsCount++;
 
 		if (boxWS.min.z < GetTerrain()->GetWaterLevel() && passInfo.IsGeneralPass())
 			if (m_arrfDistance[passInfo.GetRecursiveLevel()] < GetTerrain()->m_fDistanceToSectorWithWater)
@@ -552,7 +556,7 @@ void CTerrainNode::UpdateNodeTextureFromEditorData()
 	}
 
 	float sectorSizeM = GetBBox().GetSize().x;
-	
+
 	int smallestEditorTileSizeM = GetTerrain()->GetTerrainSize() / 16;
 
 	ColorB* colors = (ColorB*)alloca(sizeof(ColorB) * texDim);
@@ -563,13 +567,13 @@ void CTerrainNode::UpdateNodeTextureFromEditorData()
 	for (int x = 0; x < texDim; x++)
 	{
 		C3DEngine::m_pEditorHeightmap->GetColorAtPosition(
-			(float)m_nOriginY + float(0) * pixToMeter, (float)m_nOriginX + float(x) * pixToMeter, colors, texDim, pixToMeter);
+		  (float)m_nOriginY + float(0) * pixToMeter, (float)m_nOriginX + float(x) * pixToMeter, colors, texDim, pixToMeter);
 
 		ColorB* dst = &arrRGB[x][0];
 		ColorB* dstEnd = dst + texDim;
 		ColorB* src = colors;
 
-		while(dst < dstEnd)
+		while (dst < dstEnd)
 		{
 			dst->r = lookupTable[src->b >> 1];
 			dst->g = lookupTable[src->g >> 1];
@@ -602,8 +606,8 @@ void CTerrainNode::UpdateNodeNormalMapFromEditorData()
 		for (int y = 0; y < nTexSize; y++)
 		{
 			Vec3 vWSPos(
-				(float)m_nOriginX + fBoxSize * float(x) / nTexSize * (1.f + 1.f / (float)nTexSize),
-				(float)m_nOriginY + fBoxSize * float(y) / nTexSize * (1.f + 1.f / (float)nTexSize), 0);
+			  (float)m_nOriginX + fBoxSize * float(x) / nTexSize * (1.f + 1.f / (float)nTexSize),
+			  (float)m_nOriginY + fBoxSize * float(y) / nTexSize * (1.f + 1.f / (float)nTexSize), 0);
 
 			Vec3 vNormal = GetTerrain()->GetTerrainSurfaceNormal_Int(vWSPos.x, vWSPos.y);
 
@@ -703,7 +707,7 @@ int CTerrainNode::GetAreaLOD(const SRenderingPassInfo& passInfo)
 #endif
 }
 
-bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
+void CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 	bool bMeshIsUpToDate = true; // actually bUpdateNOTRequired
@@ -714,7 +718,7 @@ bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 	m_nLastTimeUsed = fastftol_positive(GetCurTimeSec());
 
 	if (!GetVisAreaManager()->IsOutdoorAreasVisible())
-		return true; // all fine, no update needed
+		return; // all fine, no update needed
 
 	const CCamera& rCamera = passInfo.GetCamera();
 	if (GetCVars()->e_TerrainDrawThisSectorOnly)
@@ -724,7 +728,7 @@ bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 		  rCamera.GetPosition().x < GetBBox().min.x ||
 		  rCamera.GetPosition().y > GetBBox().max.y ||
 		  rCamera.GetPosition().y < GetBBox().min.y)
-			return true;
+			return;
 	}
 
 	SetupTexturing(false, passInfo);
@@ -775,7 +779,10 @@ bool CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo)
 		}
 	}
 
-	return bMeshIsUpToDate;
+	if (!bMeshIsUpToDate)
+	{
+		m_pTerrain->m_pTerrainUpdateDispatcher->QueueJob(this, passInfo);
+	}
 }
 
 float CTerrainNode::GetSurfaceTypeAmount(Vec3 vPos, int nSurfType)
@@ -893,8 +900,7 @@ bool CTerrainNode::CheckUpdateProcObjects(const SRenderingPassInfo& passInfo)
 							vPos.z = GetTerrain()->GetZApr(vPos.x, vPos.y);
 						}
 
-						assert(0);
-						Vec3 vWPos = /*GetTerrain()->m_arrSegmentOrigns + */vPos;
+						Vec3 vWPos = /*GetTerrain()->m_arrSegmentOrigns + */ vPos;
 						if (vWPos.x < 0 || vWPos.x >= CTerrain::GetTerrainSize() || vWPos.y < 0 || vWPos.y >= CTerrain::GetTerrainSize())
 							continue;
 
@@ -1256,7 +1262,7 @@ void CTerrainNode::IntersectWithShadowFrustum(bool bAllIn, PodArray<IShadowCaste
 	if (bAllIn || (pFrustum && pFrustum->IntersectAABB(GetBBox(), &bAllIn)))
 	{
 		float fSectorSize = GetBBox().max.x - GetBBox().min.x;
-		if (m_pChilds && (fSectorSize*GetCVars()->e_TerrainMeshInstancingShadowLodRatio > fHalfGSMBoxSize || (m_nTreeLevel > GetCVars()->e_TerrainMeshInstancingMinLod && pFrustum->IsCached())))
+		if (m_pChilds && (fSectorSize * GetCVars()->e_TerrainMeshInstancingShadowLodRatio > fHalfGSMBoxSize || (m_nTreeLevel > GetCVars()->e_TerrainMeshInstancingMinLod && pFrustum->IsCached())))
 		{
 			for (int i = 0; i < 4; i++)
 				m_pChilds[i].IntersectWithShadowFrustum(bAllIn, plstResult, pFrustum, fHalfGSMBoxSize, passInfo);

@@ -13,6 +13,8 @@
 #include "../XRenderD3D9/GraphicsPipeline/Common/PrimitiveRenderPass.h"
 #include "../XRenderD3D9/GraphicsPipeline/Common/UtilityPasses.h"
 
+#include <Common/Textures/TempDepthTexture.h>
+
 #define ENABLE_FLASH_FILTERS
 
 struct IRenderer;
@@ -169,6 +171,7 @@ struct SSF_GlobalDrawParams
 		int key;
 
 		// Backups for GraphicsPipeline = 0
+		CResourcePool<STempDepthTexture>::value_type tempDepthTexture;
 		CTexture* pRenderTarget;
 		CTexture* pStencilTarget;
 		Matrix44 oldViewMat;

@@ -22,12 +22,13 @@ QCollapsibleFrame::QCollapsibleFrame(QWidget* pParent)
 	pMainLayout->setSpacing(0);
 	pMainLayout->setContentsMargins(2, 2, 2, 2);
 	setLayout(pMainLayout);
+	SetHeaderWidget(new CCollapsibleFrameHeader("", this));
 }
 
 QCollapsibleFrame::QCollapsibleFrame(const QString& title, QWidget* pParent)
 	: QCollapsibleFrame(pParent)
 {
-	SetHeaderWidget(new CCollapsibleFrameHeader(title, this));
+	SetTitle(title);
 }
 
 void QCollapsibleFrame::SetWidget(QWidget* pWidget)
@@ -44,10 +45,10 @@ void QCollapsibleFrame::SetWidget(QWidget* pWidget)
 
 	auto pMainLayout = m_pContentsFrame->layout();
 
-	// remove old widget
 	if (m_pWidget)
 	{
 		pMainLayout->removeWidget(m_pWidget);
+		m_pWidget->deleteLater();
 	}
 
 	m_pWidget = pWidget;

@@ -240,8 +240,6 @@ public:
 	virtual void         InitClient(int channelId);
 	virtual void         PostInitClient(int channelId);
 
-	ISerializableInfoPtr GetSpawnInfo();
-
 	NetworkAspectType    GetEnabledAspects() const override;
 	uint8                GetDefaultProfile(EEntityAspects aspect) override;
 

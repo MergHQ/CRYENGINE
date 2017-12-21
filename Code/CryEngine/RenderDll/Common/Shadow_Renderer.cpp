@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "Shadow_Renderer.h"
@@ -79,6 +79,11 @@ CRenderView* ShadowMapFrustum::GetNextAvailableShadowsView(CRenderView* pMainRen
 	return pShadowsView;
 }
 
+IRenderView* CRenderer::GetNextAvailableShadowsView(IRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum)
+{
+	return pOwnerFrustum->GetNextAvailableShadowsView((CRenderView*)pMainRenderView, pOwnerFrustum);
+}
+
 ShadowMapFrustumPtr ShadowMapFrustum::Clone()
 {
 	ShadowMapFrustumPtr pFrustum = new ShadowMapFrustum;
@@ -151,6 +156,11 @@ void SShadowRenderer::RenderFrustumsToView(CRenderView* pRenderView)
 
 	for (SShadowFrustumToRender& rFrustumToRender : frustumsToRender)
 	{
+		if (rFrustumToRender.pFrustum->pOnePassShadowView)
+		{
+			continue; // already processed in 3dengine
+		}
+
 		rFrustumToRender.pShadowsView->SwitchUsageMode(IRenderView::eUsageModeWriting);
 	}
 
@@ -158,6 +168,11 @@ void SShadowRenderer::RenderFrustumsToView(CRenderView* pRenderView)
 	// This will create multithreaded job for each rendering pass
 	for (SShadowFrustumToRender& rFrustumToRender : frustumsToRender)
 	{
+		if (rFrustumToRender.pFrustum->pOnePassShadowView)
+		{
+			continue; // already processed in 3dengine
+		}
+
 		ShadowMapFrustum* pCurFrustum = rFrustumToRender.pFrustum;
 		int numSides = pCurFrustum->GetNumSides();
 		for (int side = 0; side < numSides; side++)
@@ -173,6 +188,11 @@ void SShadowRenderer::RenderFrustumsToView(CRenderView* pRenderView)
 	// Now do a rendering pass for non job enabled casters, they will be rendered in this thread
 	for (SShadowFrustumToRender& rFrustumToRender : frustumsToRender)
 	{
+		if (rFrustumToRender.pFrustum->pOnePassShadowView)
+		{
+			continue; // already processed in 3dengine
+		}
+
 		ShadowMapFrustum* pCurFrustum = rFrustumToRender.pFrustum;
 		int numSides = pCurFrustum->GetNumSides();
 		for (int side = 0; side < numSides; side++)
@@ -188,6 +208,11 @@ void SShadowRenderer::RenderFrustumsToView(CRenderView* pRenderView)
 	// Switch all shadow views WritingDone
 	for (SShadowFrustumToRender& rFrustumToRender : frustumsToRender)
 	{
+		if (rFrustumToRender.pFrustum->pOnePassShadowView)
+		{
+			continue; // already processed in 3dengine
+		}
+
 		rFrustumToRender.pShadowsView->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
 	}
 

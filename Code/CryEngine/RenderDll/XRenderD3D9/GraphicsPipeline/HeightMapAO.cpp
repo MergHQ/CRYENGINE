@@ -30,14 +30,16 @@ void CHeightMapAOStage::Execute()
 	}
 
 	// Prepare Height Map AO frustum
+	CShadowUtils::SShadowsSetupInfo shadowsSetup;
 	CRenderView* pHeightmapRenderView = nullptr;
-	auto heightmapAOFrustums = RenderView()->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_HeightmapAO);
+	const auto& heightmapAOFrustums = RenderView()->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_HeightmapAO);
 	if (!heightmapAOFrustums.empty())
 	{
-		ShadowMapFrustum* pFrustum = heightmapAOFrustums.front()->pFrustum;
+		const ShadowMapFrustum* pFrustum = heightmapAOFrustums.front()->pFrustum;
 		if (pFrustum->pDepthTex)
 		{
-			pRenderer->ConfigShadowTexgen(RenderView(),0, pFrustum, -1, false, false);
+			shadowsSetup = pRenderer->ConfigShadowTexgen(RenderView(), pFrustum);
+
 			m_pHeightMapFrustum = pFrustum;
 			pHeightmapRenderView = reinterpret_cast<CRenderView*>(heightmapAOFrustums.front()->pShadowsView.get());
 		}
@@ -106,7 +108,7 @@ void CHeightMapAOStage::Execute()
 
 			m_passSampling.BeginConstantUpdate();
 
-			Matrix44A matHMAOTransform = gRenDev->m_TempMatrices[0][0];
+			Matrix44A matHMAOTransform = shadowsSetup.ShadowMat;
 			Matrix44A texToWorld = matHMAOTransform.GetInverted();
 
 			const float texelsPerMeter = CRenderer::CV_r_HeightMapAOResolution / CRenderer::CV_r_HeightMapAORange;

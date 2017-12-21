@@ -337,9 +337,6 @@ struct INetBreakageSimplePlayback : public CMultiThreadRefCount
 };
 typedef _smart_ptr<INetBreakageSimplePlayback> INetBreakageSimplePlaybackPtr;
 
-struct ISerializableInfo : public CMultiThreadRefCount, public ISerializable {};
-typedef _smart_ptr<ISerializableInfo> ISerializableInfoPtr;
-
 struct INetSendableSink
 {
 	// <interfuscator:shuffle>

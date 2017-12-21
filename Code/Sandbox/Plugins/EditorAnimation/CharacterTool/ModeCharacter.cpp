@@ -612,6 +612,141 @@ bool ModeCharacter::OnViewportMouseProxy(const SMouseEvent& ev)
 	return false;
 }
 
+void ModeCharacter::CommenceRagdollTest()
+{
+#if CRY_PLATFORM_WINDOWS
+	if (!m_character)
+		return;
+	gEnv->pSystem->SetThreadState(ESubsys_Physics, false);
+	ISkeletonPose& skel = *m_character->GetISkeletonPose();
+	skel.DestroyCharacterPhysics();
+	const Vec3 pos0(10, 10, 100);
+	pe_params_pos pp;
+	pp.pos = pos0;
+	pp.iSimClass = 2;
+	IPhysicalEntity *pents[6];
+	pents[0] = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_ARTICULATED, &pp);
+	skel.BuildPhysicalEntity(pents[0], 80, 0, 0, 1);
+	skel.CreateAuxilaryPhysics(pents[0], Matrix34(Vec3(1), pp.q, pp.pos), 1);
+	pe_action_reset ar;
+	pents[0]->Action(&ar, 1);
+	pe_params_articulated_body pab;
+	pab.bCollisionResp = 1;
+	pab.bCheckCollisions = 1;
+	pents[0]->SetParams(&pab, 1);
+	pe_params_flags pf;
+	pf.flagsOR = pef_update;
+	pents[0]->SetParams(&pf, 1);
+	pe_params_part ppart;
+	for(int i = 0; (pents[1] = skel.GetCharacterPhysics(i)); i++)
+	{
+		pents[1]->SetParams(&pf, 1);
+		for(ppart.ipart = 0; pents[1]->GetParams(&ppart); ppart.ipart++)
+			ppart.pPhysGeom->nMats |= pef_update;
+	}
+	pe_status_pos sp;
+	pents[0]->GetStatus(&sp);
+	for(ppart.ipart = 0; pents[0]->GetParams(&ppart); ppart.ipart++)
+		ppart.pPhysGeom->nMats |= pef_update;
+
+	MARK_UNUSED pp.iSimClass;
+	pp.q.SetIdentity();
+	float h = sp.BBox[1].z - sp.BBox[0].z;
+	primitives::box abox;
+	IGeomManager *pGeoman = gEnv->pPhysicalWorld->GetGeomManager();
+	pe_geomparams gp;
+	abox.Basis.SetIdentity();
+	abox.center.zero();
+	abox.size.Set(h * 3, h * 3, h * 0.25f);
+	phys_geometry *pgeom = pGeoman->RegisterGeometry(pGeoman->CreatePrimitive(primitives::box::type, &abox));
+	pgeom->pGeom->Release(); pgeom->nMats |= pef_update;
+	gp.pos.Set(0, 0, -abox.size.z);
+	pp.pos = pos0;
+	pents[1] = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_STATIC, &pp);
+	pents[1]->SetParams(&pf, 1);
+	pents[1]->AddGeometry(pgeom, &gp, -1, 1); --pgeom->nRefCount;
+	abox.size.Set(h * 0.25f, h * 0.2f, h * 0.15f);
+	pgeom = pGeoman->RegisterGeometry(pGeoman->CreatePrimitive(primitives::box::type, &abox));
+	pgeom->pGeom->Release(); pgeom->nMats |= pef_update;
+	gp.pos.Set(0, 0, abox.size.z);
+	pp.pos = pos0 - Vec3(0, h * 0.6f, 0);
+	pents[2] = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_STATIC, &pp);
+	pents[2]->SetParams(&pf, 1);
+	pents[2]->AddGeometry(pgeom, &gp, -1, 1); --pgeom->nRefCount;
+	abox.size.Set(h * 0.45f, h * 0.25f, h * 0.03f);
+	pgeom = pGeoman->RegisterGeometry(pGeoman->CreatePrimitive(primitives::box::type, &abox));
+	pgeom->pGeom->Release(); pgeom->nMats |= pef_update;
+	gp.pos.Set(0, 0, abox.size.z);
+	pp.pos = pos0 - Vec3(0, h * 1.4f, h * -0.6f);
+	pents[3] = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_RIGID, &pp);
+	pents[3]->SetParams(&pf, 1);
+	pents[3]->AddGeometry(pgeom, &gp, -1, 1); --pgeom->nRefCount;
+	pe_action_set_velocity asv;
+	asv.w.Set(0, 1, 0);
+	pents[3]->Action(&asv, 1);
+	const int tess = 64;
+	const float cosa = cos(gf_PI * 2 / tess), sina = sin(gf_PI * 2 / tess);
+	Vec3 *vtx = new Vec3[tess + 1];
+	Vec3_tpl<short> *tri = new Vec3_tpl<short>[tess];
+	Vec2 r(h * 5, 0);
+	vtx[tess].Set(0, 0, -h * 6);
+	for(int i = 0; i < tess; i++, r.set(r.x * cosa - r.y *sina, r.x * sina + r.y * cosa))
+	{
+		vtx[i] = r;	
+		tri[i].Set(i, i + 1 & tess - 1, tess);
+	}
+	pgeom = pGeoman->RegisterGeometry(pGeoman->CreateMesh(vtx, &tri[0].x, nullptr, nullptr, tess, mesh_OBB | mesh_multicontact1 | mesh_no_filter | mesh_no_vtx_merge, 0));
+	delete[] tri; delete[] vtx;
+	pgeom->pGeom->Release(); pgeom->nMats |= pef_update;
+	gp.pos = -vtx[tess];
+	gp.q = Quat::CreateRotationAA(DEG2RAD(-20), Vec3(1, 0, 0));
+	pp.pos = pos0 - Vec3(0, 0, h * 3);
+	pents[4] = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_STATIC, &pp);
+	pents[4]->SetParams(&pf, 1);
+	pents[4]->AddGeometry(pgeom, &gp, -1, 1); --pgeom->nRefCount;
+	
+	pp.pos = pos0 + Vec3(0, h * 2, h * 0.5f);
+	pp.q = Quat::CreateRotationAA(0, 1, Vec3(0, 0, 1));
+	pents[5] = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_LIVING, &pp);
+	pents[5]->SetParams(&pf, 1);
+	pe_player_dimensions pdim;
+	pdim.sizeCollider.zero();
+	pe_player_dynamics pdyn;
+	pdyn.bActive = 0;
+	pents[5]->SetParams(&pdim, 1);
+	pents[5]->SetParams(&pdyn, 1);
+
+	char buf[MAX_PATH * 3 + 13 + 17] = "Cannot start ", *path = buf + 13, pathTmp[MAX_PATH], *fnameEnts, *fnameGeoms;
+	CryGetExecutableFolder(MAX_PATH, path);
+	strcat(path, "PhysDebugger.exe");
+	GetTempPath(MAX_PATH, pathTmp);
+	GetTempFileName(pathTmp, "ents", 0, fnameEnts = path + strlen(path) + 1);
+	GetTempFileName(pathTmp, "geoms", 0, fnameGeoms = fnameEnts + strlen(fnameEnts) + 1);
+	gEnv->pPhysicalWorld->SerializeGeometries(fnameGeoms, 1 + ent_flagged_only);
+	gEnv->pPhysicalWorld->SerializeWorld(fnameEnts, 1 + ent_flagged_only);
+
+	for(int i = 0; i < CRY_ARRAY_COUNT(pents); i++)
+		gEnv->pPhysicalWorld->DestroyPhysicalEntity(pents[i]);
+	skel.DestroyCharacterPhysics();
+	EntryModifiedEvent ev;
+	ev.id = m_system->document->GetActiveCharacterEntry()->id;
+	m_document->OnCharacterModified(ev);
+	gEnv->pSystem->SetThreadState(ESubsys_Physics, true);
+
+	fnameGeoms[-1] = fnameEnts[-1] = ' ';
+	STARTUPINFO si;	memset(&si, 0, sizeof(si));
+	si.cb = sizeof(si);
+	PROCESS_INFORMATION pi;
+	if (!CreateProcess(nullptr, path, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi))
+	{
+		fnameGeoms[-1] = fnameEnts[-1] = 0;
+		DeleteFile(fnameGeoms);
+		DeleteFile(fnameEnts);
+		CryMessageBox(buf, "Error", eMB_Error);
+	}
+#endif
+}
+
 void ModeCharacter::OnActionRotateTool()
 {
 	m_scene->SetTransformationMode(Manip::MODE_ROTATE);

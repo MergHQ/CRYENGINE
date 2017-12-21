@@ -148,6 +148,11 @@ struct SEntitySpawnParams
 	//! Optional: User data that can be read from IEntitySystemSink to interact with the spawning of entities
 	void* pUserData = nullptr;
 
+	//! Set by networking when an entity is being spawned on a client as requested by the server
+	//! This can be used by custom entity classes to deserialize data specified by the host via IEntity::GetSerializableNetworkSpawnInfo.
+	//! Used internally to automatically call IEntityComponent::NetReplicateSerialize.
+	TSerialize* pSpawnSerializer = nullptr;
+
 	/*CRY_DEPRECATED_ENTTIY_LUA*/ IScriptTable*           pPropertiesTable = nullptr;
 	/*CRY_DEPRECATED_ENTTIY_LUA*/ IScriptTable*           pPropertiesInstanceTable = nullptr;
 	/*CRY_DEPRECATED_ENTTIY_ARCHETYPE*/ IEntityArchetype* pArchetype = nullptr;
@@ -708,6 +713,11 @@ public:
 
 	//! Retrieve access to the rendering functionality of the Entity.
 	IEntity* GetRenderInterface() { return this; };
+
+	//! Called by networking on the server to serialize entity information in order to replicate the entity (and its components) on a remote host.
+	//! The data is then deserialized on the remote host via SEntitySpawnParams::pSpawnSerializer.
+	//! This function will collect information from components by calling IEntityComponent::NetReplicateSerialize.
+	virtual ISerializableInfoPtr GetSerializableNetworkSpawnInfo() const = 0;
 
 	// Entity Proxies Interfaces access functions.
 

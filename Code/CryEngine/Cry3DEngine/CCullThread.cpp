@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "CCullThread.h"
@@ -282,17 +282,6 @@ void CCullThread::PrepareCullbufferAsync(const CCamera& rCamera)
 	rCamera.CalculateRenderMatrices();
 	MatProj = rCamera.GetRenderProjectionMatrix();
 	MatView = rCamera.GetRenderViewMatrix();
-
-	/*
-	uint32 nReverseDepthEnabled = 0;
-	m_pRenderer->EF_Query(EFQ_ReverseDepthEnabled, nReverseDepthEnabled);
-
-	if (nReverseDepthEnabled) // Convert to regular depth again. TODO: make occlusion culler work with reverse depth
-	{
-		MatProj.m22 = -MatProj.m22 + MatProj.m23;
-		MatProj.m32 = -MatProj.m32 + MatProj.m33;
-	}
-	*/
 
 	m_ViewDir = rCam.GetViewdir();
 	MatViewProj = MatView * MatProj;
@@ -734,13 +723,22 @@ void CCullThread::CheckOcclusion()
 			memcpy(&rAABB, &pOctTreeNode->GetObjectsBBox(), sizeof(AABB));
 			float fDistance = sqrtf(Distance::Point_AABBSq(cameraPosition, rAABB));
 
-			// Test OctTree BoundingBox
-			if (TestAABB(rAABB, fDistance))
+			// Test OctTree bounding box against main view
+			if (jobData.octTreeData.passCullMask & kPassCullMainMask && !TestAABB(rAABB, fDistance))
+			{
+				jobData.octTreeData.passCullMask &= ~kPassCullMainMask; // mark as not visible in general view
+			}
+
+			// TODO: check also occlusion of shadow volumes
+
+			if (jobData.octTreeData.passCullMask)
 			{
 				Vec3 vAmbColor(jobData.octTreeData.vAmbColor[0], jobData.octTreeData.vAmbColor[1], jobData.octTreeData.vAmbColor[2]);
 
 				SRenderingPassInfo passInfo = SRenderingPassInfo::CreateTempRenderingInfo(/*jobData.pCam,*/ jobData.rendItemSorter, m_passInfoForCheckOcclusion);
-				pOctTreeNode->COctreeNode::RenderContent(jobData.octTreeData.nRenderMask, vAmbColor, passInfo);
+				passInfo.SetShadowPasses(jobData.pShadowPasses);
+
+				pOctTreeNode->COctreeNode::RenderContent(jobData.octTreeData.nRenderMask, vAmbColor, jobData.octTreeData.passCullMask, passInfo);
 			}
 		}
 		else if (jobData.type == SCheckOcclusionJobData::TERRAIN_NODE)
@@ -773,6 +771,8 @@ bool CCullThread::TestAABB(const AABB& rAABB, float fEntDistance, float fVertica
 {
 	IF (GetCVars()->e_CheckOcclusion == 0, 0)
 		return true;
+
+	FUNCTION_PROFILER_3DENGINE;
 
 	const AABB PosAABB = AABB(m_Position, 0.5f);
 	const float Bias = GetCVars()->e_CoverageBufferAABBExpand;

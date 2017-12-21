@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   terrain_render.cpp
@@ -83,10 +83,7 @@ void CTerrain::DrawVisibleSectors(const SRenderingPassInfo& passInfo)
 
 	for (CTerrainNode* pNode : m_lstVisSectors)
 	{
-		if (!pNode->RenderNodeHeightmap(passInfo))
-		{
-			m_pTerrainUpdateDispatcher->QueueJob(pNode, passInfo);
-		}
+		pNode->RenderNodeHeightmap(passInfo);
 	}
 }
 

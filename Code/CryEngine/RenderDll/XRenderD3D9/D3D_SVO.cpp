@@ -1565,19 +1565,19 @@ void CSvoRenderer::SetupRsmSunConstants(T & rp)
 
 	if (pRsmFrustum && GetRsmColorMap(*pRsmFrustum))
 	{
-		gcpRendD3D->ConfigShadowTexgen(RenderView(), 0, pRsmFrustum, 0);
+		CShadowUtils::SShadowsSetupInfo shadowsSetup = gcpRendD3D->ConfigShadowTexgen(RenderView(), pRsmFrustum, 0);
 
 		assert(!pRsmFrustum->bUseShadowsPool);
 
 		// set up shadow matrix
-		shadowMat = gRenDev->m_TempMatrices[0][0];
+		shadowMat = shadowsSetup.ShadowMat;
 		const Vec4 vEye(viewInfo.cameraOrigin, 0.f);
 		Vec4 vecTranslation(vEye.Dot((Vec4&)shadowMat.m00), vEye.Dot((Vec4&)shadowMat.m10), vEye.Dot((Vec4&)shadowMat.m20), vEye.Dot((Vec4&)shadowMat.m30));
 		shadowMat.m03 += vecTranslation.x;
 		shadowMat.m13 += vecTranslation.y;
 		shadowMat.m23 += vecTranslation.z;
 		shadowMat.m33 += vecTranslation.w;
-		(Vec4&)shadowMat.m20 *= gRenDev->m_cEF.m_TempVecs[2].x;
+		(Vec4&)shadowMat.m20 *= shadowsSetup.RecpFarDist;
 		rp.SetConstantArray(lightProjParamName, alias_cast<Vec4*>(&shadowMat), 4);
 
 		Vec4 vData(gEnv->p3DEngine->GetSunColor(), e_svoTI_InjectionMultiplier);
@@ -1653,9 +1653,9 @@ void CSvoRenderer::BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, T & 
 	}
 }
 
-ShadowMapFrustum* CSvoRenderer::GetRsmSunFrustum(CRenderView* pRenderView) const
+ShadowMapFrustum* CSvoRenderer::GetRsmSunFrustum(const CRenderView* pRenderView) const
 {
-	for (auto pFrustumToRender : pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic))
+	for (const auto& pFrustumToRender : pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic))
 	{
 		if (pFrustumToRender->pFrustum->nShadowMapLod == e_svoTI_GsmCascadeLod)
 		{

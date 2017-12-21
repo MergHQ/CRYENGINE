@@ -15,11 +15,11 @@ float Script : STANDARDSGLOBAL
            "NoPreview;"
            "ShaderDrawType = Custom;"
            "ShaderType = PostProcess;"
->; 
+>;
 
-half4 CausticParams : PB_CausticsParams;
-half4 CausticSmoothSunDir : PB_CausticsSmoothSunDirection;
-half4 g_fWaterLevel : PB_WaterLevel;
+float4 CausticParams : PB_CausticsParams;
+float4 CausticSmoothSunDir : PB_CausticsSmoothSunDirection;
+float4 g_fWaterLevel : PB_WaterLevel;
 float4 CausticsAnimGenParams = { PB_time 1.0, PB_time 0.5, PB_time 0.25, PB_time 0.125};
 
 float4x4 mLightView;
@@ -190,9 +190,9 @@ technique DeferredOceanCausticsStencil
 // Structs
 struct vtxOutCaustic
 {
-	float4 HPosition : POSITION; 
-	float4 vOldPos	: TEXCOORD0;
-	float3 vNewPos	: TEXCOORD1;
+	float4 HPosition : SV_POSITION; 
+	float4 vOldPos   : TEXCOORD0;
+	float3 vNewPos   : TEXCOORD1;
 };
 
 ////////////////////////////////////

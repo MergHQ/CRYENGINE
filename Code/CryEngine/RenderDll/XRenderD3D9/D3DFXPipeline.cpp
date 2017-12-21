@@ -23,9 +23,9 @@
 
 //====================================================================================
 
-SDepthTexture* CD3D9Renderer::FX_GetDepthSurface(int nWidth, int nHeight, bool bAA, bool bExactMatch)
+CD3D9Renderer::CTempTexture CD3D9Renderer::FX_GetDepthSurface(int nWidth, int nHeight, bool bExactMatch)
 {
-	return GetTempDepthSurface(nWidth, nHeight, bAA, bExactMatch);
+	return GetTempDepthSurface(nWidth, nHeight, bExactMatch);
 }
 
 static int sTexLimitRes(uint32 nSrcsize, uint32 nDstSize)

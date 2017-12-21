@@ -1355,9 +1355,9 @@ void CVolumetricFogStage::GenerateLightList()
 
 						for (int32 side = 0; side < numSides; ++side)
 						{
-							rd->ConfigShadowTexgen(pRenderView,0, &firstFrustum, side);
-							Matrix44A shadowMat = rd->m_TempMatrices[0][0];
-							const float invFrustumFarPlaneDistance = rd->m_cEF.m_TempVecs[2].x;
+							CShadowUtils::SShadowsSetupInfo shadowsSetup = rd->ConfigShadowTexgen(pRenderView, &firstFrustum, side);
+							Matrix44A shadowMat = shadowsSetup.ShadowMat;
+							const float invFrustumFarPlaneDistance = shadowsSetup.RecpFarDist;
 
 							// Translate into camera space
 							const Vec4 vEye(viewInfo.cameraOrigin, 0.0f);
@@ -1850,7 +1850,7 @@ bool CVolumetricFogStage::ReplaceShadowMapWithStaticShadowMap(CShadowUtils::SSha
 		    && pFrustumToRender->pFrustum->pDepthTex
 		    && pFrustumToRender->pFrustum->pDepthTex != CRendererResources::s_ptexFarPlane)
 		{
-			rd->ConfigShadowTexgen(pRenderView,shadowCascadeSlot, pFrustumToRender->pFrustum, -1, true);
+			//CShadowUtils::SShadowsSetupInfo shadowsSetup = rd->ConfigShadowTexgen(pRenderView, pFrustumToRender->pFrustum, -1, true);
 			shadowCascades.pShadowMap[shadowCascadeSlot] = pFrustumToRender->pFrustum->pDepthTex;
 
 			return true;
@@ -2028,6 +2028,20 @@ void CVolumetricFogStage::ExecuteInjectInscatteringLight(const SScopedComputeCom
 	static CCryNameR paramSunDir("vfSunDir");
 	const Vec4 vParamSunDir(sunDir.x, sunDir.y, sunDir.z, 0.0f);
 	pass.SetConstant(paramSunDir, vParamSunDir);
+
+	CShadowUtils::SShadowCascadesSamplingInfo shadowSamplingInfo;
+	CShadowUtils::GetShadowCascadesSamplingInfo(shadowSamplingInfo, pRenderView);
+	pass.SetConstant(CCryNameR("TexGen0"), shadowSamplingInfo.shadowTexGen[0]);
+	pass.SetConstant(CCryNameR("TexGen1"), shadowSamplingInfo.shadowTexGen[1]);
+	pass.SetConstant(CCryNameR("TexGen2"), shadowSamplingInfo.shadowTexGen[2]);
+	pass.SetConstant(CCryNameR("TexGen3"), shadowSamplingInfo.shadowTexGen[3]);
+	pass.SetConstant(CCryNameR("vInvShadowMapSize"), shadowSamplingInfo.invShadowMapSize);
+	pass.SetConstant(CCryNameR("fDepthTestBias"), shadowSamplingInfo.depthTestBias);
+	pass.SetConstant(CCryNameR("fOneDivFarDist"), shadowSamplingInfo.oneDivFarDist);
+	pass.SetConstant(CCryNameR("fKernelRadius"), shadowSamplingInfo.kernelRadius);
+	pass.SetConstant(CCryNameR("CloudShadowParams"), shadowSamplingInfo.cloudShadowParams);
+	pass.SetConstant(CCryNameR("CloudShadowAnimParams"), shadowSamplingInfo.cloudShadowAnimParams);
+	pass.SetConstantArray(CCryNameR("irreg_kernel_2d"), shadowSamplingInfo.irregKernel2d, 8);
 
 	Vec3 sunColor;
 	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);

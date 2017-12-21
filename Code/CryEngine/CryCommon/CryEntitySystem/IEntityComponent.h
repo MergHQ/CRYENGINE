@@ -430,6 +430,13 @@ public:
 	//! \see ISerialize::Value()
 	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; };
 
+	//! Used to match an entity's state when it is replicated onto a remote machine.
+	//! This is called once when spawning an entity, in order to serialize its data - and once again on the remote client to deserialize the state.
+	//! Deserialization will always occur *before* IEntityComponent::Initialize is called.
+	//! @param[in,out] ser Serializer for reading / writing values.
+	//! \see ISerialize::Value()
+	virtual void NetReplicateSerialize(TSerialize ser) {}
+
 	//! \brief Call this to trigger aspect synchronization over the network. A shortcut.
 	//! \see INetEntity::MarkAspectsDirty()
 	virtual void NetMarkAspectsDirty(const NetworkAspectType aspects); // The definition is in IEntity.h

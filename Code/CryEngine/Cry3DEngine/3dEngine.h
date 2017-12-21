@@ -1022,6 +1022,7 @@ public:
 	void                            PrepareLightSourcesForRendering_0(const SRenderingPassInfo& passInfo);
 	void                            PrepareLightSourcesForRendering_1(const SRenderingPassInfo& passInfo);
 	void                            InitShadowFrustums(const SRenderingPassInfo& passInfo);
+	void                            PrepareShadowPasses(const SRenderingPassInfo& passInfo, std::vector<SRenderingPassInfo>& shadowPassInfo);
 
 	///////////////////////////////////////////////////////////////////////////////
 
@@ -1121,25 +1122,25 @@ public:
 	void                      MarkRNTmpDataPoolForReset() { m_bResetRNTmpDataPool = true; }
 
 	bool                      IsObjectsTreeValid()        { return m_pObjectsTree != nullptr; }
-	class COctreeNode* GetObjectsTree()            { return m_pObjectsTree; }
+	class COctreeNode*   GetObjectsTree()            { return m_pObjectsTree; }
 
-	static void        GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady = NULL, uint64 dwFlags = ~0);
-	static void        MoveObjectsIntoListGlobal(PodArray<SRNInfo>* plstResultEntities, const AABB* pAreaBox, bool bRemoveObjects = false, bool bSkipDecals = false, bool bSkip_ERF_NO_DECALNODE_DECALS = false, bool bSkipDynamicObjects = false, EERType eRNType = eERType_TypesNum);
+	static void          GetObjectsByTypeGlobal(PodArray<IRenderNode*>& lstObjects, EERType objType, const AABB* pBBox, bool* pInstStreamReady = NULL, uint64 dwFlags = ~0);
+	static void          MoveObjectsIntoListGlobal(PodArray<SRNInfo>* plstResultEntities, const AABB* pAreaBox, bool bRemoveObjects = false, bool bSkipDecals = false, bool bSkip_ERF_NO_DECALNODE_DECALS = false, bool bSkipDynamicObjects = false, EERType eRNType = eERType_TypesNum);
 
 	SRenderNodeTempData* CreateRenderNodeTempData(IRenderNode* pRNode, const SRenderingPassInfo& passInfo);
 	SRenderNodeTempData* CheckAndCreateRenderNodeTempData(IRenderNode* pRNode, const SRenderingPassInfo& passInfo);
 
-	void               UpdateRNTmpDataPool(bool bFreeAll);
+	void                 UpdateRNTmpDataPool(bool bFreeAll);
 
-	void               UpdateStatInstGroups();
-	void               UpdateRenderTypeEnableLookup();
-	void               ProcessOcean(const SRenderingPassInfo& passInfo);
-	void               ReRegisterKilledVegetationInstances();
-	Vec3               GetEntityRegisterPoint(IRenderNode* pEnt);
+	void                 UpdateStatInstGroups();
+	void                 UpdateRenderTypeEnableLookup();
+	void                 ProcessOcean(const SRenderingPassInfo& passInfo);
+	void                 ReRegisterKilledVegetationInstances();
+	Vec3                 GetEntityRegisterPoint(IRenderNode* pEnt);
 
-	virtual void       RenderRenderNode_ShadowPass(IShadowCaster* pRNode, const SRenderingPassInfo& passInfo);
-	void               ProcessCVarsChange();
-	ILINE int          GetGeomDetailScreenRes()
+	virtual void         RenderRenderNode_ShadowPass(IShadowCaster* pRNode, const SRenderingPassInfo& passInfo);
+	void                 ProcessCVarsChange();
+	ILINE int            GetGeomDetailScreenRes()
 	{
 		if (GetCVars()->e_ForceDetailLevelForScreenRes)
 		{
@@ -1184,6 +1185,7 @@ public:
 	PodArray<SPerObjectShadow>     m_lstPerObjectShadows;
 	std::vector<ShadowMapFrustum*> m_lstCustomShadowFrustums;
 	int                            m_nCustomShadowFrustumCount;
+	uint32                         m_onePassShadowFrustumsCount = 0;
 
 	PodArray<SImageInfo>           m_arrBaseTextureData;
 
@@ -1195,7 +1197,7 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	// PRIVATE DATA
 	//////////////////////////////////////////////////////////////////////////
-	struct CLightEntity* m_pSun;
+	class CLightEntity* m_pSun;
 
 	std::vector<byte>    arrFPSforSaveLevelStats;
 	PodArray<float>      m_arrProcessStreamingLatencyTestResults;

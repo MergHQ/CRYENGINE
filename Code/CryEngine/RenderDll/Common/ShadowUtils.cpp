@@ -542,16 +542,10 @@ bool CShadowUtils::GetSubfrustumMatrix(Matrix44A& result, const ShadowMapFrustum
 	return abs(crop.x) <= 1.0f && abs(crop.x + crop.z) <= 1.0f && abs(crop.y) <= 1.0f && abs(crop.y + crop.w) <= 1.0f;
 }
 
-bool CShadowUtils::SetupShadowsForFog(SShadowCascades& shadowCascades, CRenderView* pRenderView)
+bool CShadowUtils::SetupShadowsForFog(SShadowCascades& shadowCascades, const CRenderView* pRenderView)
 {
 	CRY_ASSERT(pRenderView != nullptr);
-
-	const bool valid = GetShadowCascades(shadowCascades, pRenderView);
-
-	uint64 maskRT;
-	gcpRendD3D->FX_SetupForwardShadows(pRenderView, maskRT, false);
-	 
-	return valid;
+	return GetShadowCascades(shadowCascades, pRenderView);	 
 }
 
 template<class RenderPassType>
@@ -637,13 +631,13 @@ template void CShadowUtils::SetShadowCascadesToRenderPass(
   int32 cloudShadowTexSlot,
   const SShadowCascades& shadowCascades);
 
-bool CShadowUtils::GetShadowCascades(SShadowCascades& shadowCascades, CRenderView* pRenderView)
+bool CShadowUtils::GetShadowCascades(SShadowCascades& shadowCascades, const CRenderView* pRenderView)
 {
 	CRY_ASSERT(pRenderView != nullptr);
 
 	auto cloudShadowTexId = gcpRendD3D->GetCloudShadowTextureId();
 
-	auto& shadowFrustumArray = pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic);
+	const auto& shadowFrustumArray = pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic);
 
 	// fill shadow cascades with default shadow map texture.
 	std::fill(std::begin(shadowCascades.pShadowMap), std::end(shadowCascades.pShadowMap), CRendererResources::s_ptexFarPlane);
@@ -654,7 +648,7 @@ bool CShadowUtils::GetShadowCascades(SShadowCascades& shadowCascades, CRenderVie
 	const int32 count = (size < MaxCascadesNum) ? size : MaxCascadesNum;
 	for (int32 i = 0; i < count; ++i)
 	{
-		auto pFrustm = shadowFrustumArray[i];
+		const auto& pFrustm = shadowFrustumArray[i];
 		if (pFrustm && pFrustm->pFrustum && pFrustm->pFrustum->pDepthTex)
 		{
 			if (pFrustm->pFrustum->pDepthTex == CRendererResources::s_ptexFarPlane)
@@ -675,15 +669,15 @@ bool CShadowUtils::GetShadowCascades(SShadowCascades& shadowCascades, CRenderVie
 	return valid;
 }
 
-bool CShadowUtils::GetShadowCascadesSamplingInfo(SShadowCascadesSamplingInfo& samplingInfo, CRenderView* pRenderView)
+bool CShadowUtils::GetShadowCascadesSamplingInfo(SShadowCascadesSamplingInfo& samplingInfo, const CRenderView* pRenderView)
 {
 	CRY_ASSERT(pRenderView != nullptr);
 
 	EShaderQuality shaderQuality = gcpRendD3D->m_cEF.m_ShaderProfiles[eST_Shadow].GetShaderQuality();
-	SRenderViewShaderConstants& PF = pRenderView->GetShaderConstants();
+	const auto& PF = pRenderView->GetShaderConstants();
 	const bool bCloudShadow = gcpRendD3D->m_bCloudShadowsEnabled && (gcpRendD3D->GetCloudShadowTextureId() > 0);
 
-	auto& shadowFrustumArray = pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic);
+	const auto& shadowFrustumArray = pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic);
 
 	memset(&samplingInfo, 0, sizeof(samplingInfo));
 
@@ -692,11 +686,11 @@ bool CShadowUtils::GetShadowCascadesSamplingInfo(SShadowCascadesSamplingInfo& sa
 	Matrix44 lightViewProj;
 	uint32 nCascadeMask = 0;
 	bool valid = true;
-	const int32 size = static_cast<int32>(shadowFrustumArray.size());
-	const int32 count = (size < MaxCascadesNum) ? size : MaxCascadesNum;
+	const auto size = static_cast<int32>(shadowFrustumArray.size());
+	const auto count = (size < MaxCascadesNum) ? size : MaxCascadesNum;
 	for (int32 i = 0; i < count; ++i)
 	{
-		auto pFrustm = shadowFrustumArray[i];
+		const auto& pFrustm = shadowFrustumArray[i];
 		if (pFrustm && pFrustm->pFrustum)
 		{
 			nCascadeMask |= 0x1 << i;
@@ -1029,7 +1023,8 @@ void CShadowUtils::GetIrregKernel(float sData[][4], int nSamplesNum)
 	   Vec4(0.574619f, 0.685879f, 0.574619f, 0),
 	   Vec4(0.03851f, -0.939059f, 0.03851f, 0)
 	   };
-	   f32 fFrustumScale = r->m_cEF.m_TempVecs[4][0]; //take only first cubemap
+	   //take only first cubemap
+	   f32 fFrustumScale = // SShadowsSetupInfo::Filter.x; 
 	   for (int i=0; i<8; i++)
 	   {
 	   sData[i].f[0] = irreg_kernel[i][0] * (1.0f/fFrustumScale);

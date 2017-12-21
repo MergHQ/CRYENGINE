@@ -632,7 +632,6 @@ CObjManager::CObjManager() :
 
 	m_decalsToPrecreate.reserve(128);
 
-
 	// init queue for check occlusion
 	m_CheckOcclusionQueue.Init(GetCVars()->e_CheckOcclusionQueueSize);
 	m_CheckOcclusionOutputQueue.Init(GetCVars()->e_CheckOcclusionOutputQueueSize);
@@ -864,18 +863,15 @@ void CObjManager::GetBandwidthStats(float* fBandwidthRequested)
 #endif
 }
 
-void CObjManager::ReregisterEntitiesInArea(Vec3 vBoxMin, Vec3 vBoxMax)
+void CObjManager::ReregisterEntitiesInArea(AABB * pBox, bool bCleanUpTree)
 {
 	PodArray<SRNInfo> lstEntitiesInArea;
 
-	AABB vBoxAABB(vBoxMin, vBoxMax);
-
-	Get3DEngine()->MoveObjectsIntoListGlobal(&lstEntitiesInArea, &vBoxAABB, true);
+	Get3DEngine()->MoveObjectsIntoListGlobal(&lstEntitiesInArea, pBox, true);
 
 	if (GetVisAreaManager())
-		GetVisAreaManager()->MoveObjectsIntoList(&lstEntitiesInArea, vBoxAABB, true);
+		GetVisAreaManager()->MoveObjectsIntoList(&lstEntitiesInArea, pBox, true);
 
-	int nChanged = 0;
 	for (int i = 0; i < lstEntitiesInArea.Count(); i++)
 	{
 		IVisArea* pPrevArea = lstEntitiesInArea[i].pNode->GetEntityVisArea();
@@ -883,10 +879,18 @@ void CObjManager::ReregisterEntitiesInArea(Vec3 vBoxMin, Vec3 vBoxMax)
 
 		if (lstEntitiesInArea[i].pNode->GetRenderNodeType() == eERType_Decal)
 			((CDecalRenderNode*)lstEntitiesInArea[i].pNode)->RequestUpdate();
+	}
 
+	if (bCleanUpTree)
+	{
+		Get3DEngine()->GetObjectsTree()->CleanUpTree();
+		if (GetVisAreaManager())
+			GetVisAreaManager()->CleanUpTrees();
+	}
+
+	for (int i = 0; i < lstEntitiesInArea.Count(); i++)
+	{
 		Get3DEngine()->RegisterEntity(lstEntitiesInArea[i].pNode);
-		if (pPrevArea != lstEntitiesInArea[i].pNode->GetEntityVisArea())
-			nChanged++;
 	}
 }
 
@@ -1231,10 +1235,18 @@ IRenderMesh* CObjManager::GetBillboardRenderMesh(IMaterial* pMaterial)
 		vert.color.dcolor = -1;
 
 		// verts
-		vert.xyz.Set(+.5, 0, -.5); vert.st = Vec2(1, 1); arrVertices.Add(vert);
-		vert.xyz.Set(-.5, 0, -.5); vert.st = Vec2(0, 1); arrVertices.Add(vert);
-		vert.xyz.Set(+.5, 0, +.5); vert.st = Vec2(1, 0); arrVertices.Add(vert);
-		vert.xyz.Set(-.5, 0, +.5); vert.st = Vec2(0, 0); arrVertices.Add(vert);
+		vert.xyz.Set(+.5, 0, -.5);
+		vert.st = Vec2(1, 1);
+		arrVertices.Add(vert);
+		vert.xyz.Set(-.5, 0, -.5);
+		vert.st = Vec2(0, 1);
+		arrVertices.Add(vert);
+		vert.xyz.Set(+.5, 0, +.5);
+		vert.st = Vec2(1, 0);
+		arrVertices.Add(vert);
+		vert.xyz.Set(-.5, 0, +.5);
+		vert.st = Vec2(0, 0);
+		arrVertices.Add(vert);
 
 		// tangents
 		arrTangents.Add(SPipTangents(Vec3(1, 0, 0), Vec3(0, 0, 1), 1));

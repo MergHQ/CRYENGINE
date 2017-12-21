@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   statobjman.h
@@ -301,23 +301,23 @@ public:
 	                   const Vec3& vAmbColor,
 	                   const AABB& objBox,
 	                   float fEntDistance,
-	                   bool bSunOnly,
 	                   EERType eERType,
-	                   const SRenderingPassInfo& passInfo);
+	                   const SRenderingPassInfo& passInfo,
+	                   uint32 passCullMask);
 
 	void RenderVegetation(class CVegetation* pEnt, PodArray<SRenderLight*>* pAffectingLights,
-													const AABB &objBox, float fEntDistance, bool bSunOnly,
-													SSectorTextureSet * pTerrainTexInfo, bool nCheckOcclusion, const SRenderingPassInfo &passInfo);
+													const AABB &objBox, float fEntDistance,
+													SSectorTextureSet * pTerrainTexInfo, bool nCheckOcclusion, const SRenderingPassInfo &passInfo, uint32 passCullMask);
 	void RenderBrush(class CBrush* pEnt, PodArray<SRenderLight*>* pAffectingLights,
 										 SSectorTextureSet * pTerrainTexInfo,
-										 const AABB &objBox, float fEntDistance, bool bSunOnly,
-										 CVisArea * pVisArea, bool nCheckOcclusion, const SRenderingPassInfo &passInfo);
+										 const AABB &objBox, float fEntDistance,
+										 bool nCheckOcclusion, const SRenderingPassInfo &passInfo, uint32 passCullMask);
 
 	int  ComputeDissolve(const CLodValue& lodValueIn, SRenderNodeTempData* pTempData, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2]);
 
 	void RenderDecalAndRoad(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffectingLights,
 	                        const Vec3& vAmbColor, const AABB& objBox, float fEntDistance,
-	                        bool bSunOnly, bool nCheckOcclusion, const SRenderingPassInfo& passInfo);
+	                        bool nCheckOcclusion, const SRenderingPassInfo& passInfo);
 
 	void      RenderObjectDebugInfo(IRenderNode* pEnt, float fEntDistance, const SRenderingPassInfo& passInfo);
 	void      RenderAllObjectDebugInfo();
@@ -358,7 +358,7 @@ public:
 	//  PodArray<class CVegetation*> m_lstVegetContainer;
 	void       LoadBrushes();
 	//  void MergeBrushes();
-	void       ReregisterEntitiesInArea(Vec3 vBoxMin, Vec3 vBoxMax);
+	void       ReregisterEntitiesInArea(AABB* pBox, bool bCleanUpTree = false);
 	//	void ProcessEntityParticles(IRenderNode * pEnt, float fEntDistance);
 	void       UpdateObjectsStreamingPriority(bool bSyncLoad, const SRenderingPassInfo& passInfo);
 	ILINE void SetCurrentTime(float fCurrentTime) { m_fCurrTime = fCurrentTime; }
@@ -451,7 +451,7 @@ public:
 	void         PrepareCullbufferAsync(const CCamera& rCamera);
 	void         BeginOcclusionCulling(const SRenderingPassInfo& passInfo);
 	void         EndOcclusionCulling();
-	void         RenderBufferedRenderMeshes(const SRenderingPassInfo& passInfo);
+	void         RenderNonJobObjects(const SRenderingPassInfo& passInfo);
 	uint32       GetResourcesModificationChecksum(IRenderNode* pOwnerNode) const;
 	bool         AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const SRenderingPassInfo& passInfo) const;
 	IRenderMesh* GetBillboardRenderMesh(IMaterial* pMaterial);
@@ -461,27 +461,27 @@ public:
 	// Public Member variables.
 	//////////////////////////////////////////////////////////////////////////
 
-	static int  m_nUpdateStreamingPrioriryRoundId;
-	static int  m_nUpdateStreamingPrioriryRoundIdFast;
-	static int  s_nLastStreamingMemoryUsage;        //For streaming tools in editor
+	static int                      m_nUpdateStreamingPrioriryRoundId;
+	static int                      m_nUpdateStreamingPrioriryRoundIdFast;
+	static int                      s_nLastStreamingMemoryUsage; //For streaming tools in editor
 
-	Vec3        m_vSkyColor;
-	Vec3        m_vSunColor;
-	float       m_fSunSkyRel;         //relation factor of sun sky, 1->sun has full part of brightness, 0->sky has full part
-	float       m_fILMul;
-	float       m_fSkyBrightMul;
-	float       m_fSSAOAmount;
-	float       m_fSSAOContrast;
-	float       m_fGIAmount;
-	SRainParams m_rainParams;
-	SSnowParams m_snowParams;
+	Vec3                            m_vSkyColor;
+	Vec3                            m_vSunColor;
+	float                           m_fSunSkyRel; //relation factor of sun sky, 1->sun has full part of brightness, 0->sky has full part
+	float                           m_fILMul;
+	float                           m_fSkyBrightMul;
+	float                           m_fSSAOAmount;
+	float                           m_fSSAOContrast;
+	float                           m_fGIAmount;
+	SRainParams                     m_rainParams;
+	SSnowParams                     m_snowParams;
 
-	int         m_bLockCGFResources;
+	int                             m_bLockCGFResources;
 
-	float       m_fMaxViewDistanceScale;
-	float       m_fGSMMaxDistance;
-	
-	_smart_ptr<CStatObj>			m_pDefaultCGF;
+	float                           m_fMaxViewDistanceScale;
+	float                           m_fGSMMaxDistance;
+
+	_smart_ptr<CStatObj>            m_pDefaultCGF;
 	PodArray<SStreamAbleObject>     m_arrStreamableObjects;
 	PodArray<COctreeNode*>          m_arrStreamingNodeStack;
 	PodArray<SObjManPrecachePoint>  m_vStreamPreCachePointDefs;
@@ -495,12 +495,12 @@ private:
 	// Private Member variables.
 	//////////////////////////////////////////////////////////////////////////
 
-	PodArray<IStreamable*> m_arrStreamableToRelease;
-	PodArray<IStreamable*> m_arrStreamableToLoad;
-	PodArray<IStreamable*> m_arrStreamableToDelete;
-	bool                   m_bNeedProcessObjectsStreaming_Finish;
+	PodArray<IStreamable*>  m_arrStreamableToRelease;
+	PodArray<IStreamable*>  m_arrStreamableToLoad;
+	PodArray<IStreamable*>  m_arrStreamableToDelete;
+	bool                    m_bNeedProcessObjectsStreaming_Finish;
 
-	float                  m_fCurrTime;
+	float                   m_fCurrTime;
 
 	_smart_ptr<IRenderMesh> m_pRMBox;
 	_smart_ptr<IRenderMesh> m_pBillboardMesh;
@@ -509,12 +509,12 @@ private:
 	std::vector<_smart_ptr<IStatObj>> m_lockedObjects;
 
 	//////////////////////////////////////////////////////////////////////////
-	CryMT::vector<CStatObj*>        m_checkForGarbage;
-	bool                            m_bGarbageCollectionEnabled;
+	CryMT::vector<CStatObj*> m_checkForGarbage;
+	bool                     m_bGarbageCollectionEnabled;
 
-	NCullQueue::SCullQueue          m_cullQueue;
+	NCullQueue::SCullQueue   m_cullQueue;
 
-	PodArray<CTerrainNode*>         m_lstTmpCastingNodes;
+	PodArray<CTerrainNode*>  m_lstTmpCastingNodes;
 
 #ifdef POOL_STATOBJ_ALLOCS
 	stl::PoolAllocator<sizeof(CStatObj), stl::PSyncMultiThread, alignof(CStatObj)>* m_statObjPool;

@@ -37,6 +37,8 @@ public:
 	void OnViewportMouse(const SMouseEvent& ev) override;
 
 	bool OnViewportMouseProxy(const SMouseEvent& ev);
+
+	void CommenceRagdollTest();
 protected slots:
 	void OnTransformPanelChanged();
 	void OnTransformPanelChangeFinished();

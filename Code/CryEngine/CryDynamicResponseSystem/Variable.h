@@ -54,10 +54,12 @@ public:
 
 	bool operator==(const CVariable& other) const         { return m_name == other.m_name && m_value == other.m_value; }
 
+	CVariable& operator= (const CVariable& other) { m_name = other.m_name; m_value = other.m_value; return *this; }
+
 	void Serialize(Serialization::IArchive& ar);
 
 	//protected:
-	const CHashedString m_name;
+	CHashedString		m_name;
 	CVariableValue      m_value;
 };
 

@@ -1017,8 +1017,11 @@ void CD3D9Renderer::DrawAllDynTextures(const char* szFilter, const bool bLogName
 			if (tp->m_nUpdateFrameID < gRenDev->GetRenderFrameID() - 2)
 				continue;
 
+		float posX = ScaleCoordX(x);
+		float posY = ScaleCoordY(y);
+
 		if (tp->GetTextureType() == eTT_2D)
-			IRenderAuxImage::Draw2dImage(x, y, fPicDimX - 2, fPicDimY - 2, tp->GetID(), 0, 1, 1, 0, 0);
+			IRenderAuxImage::Draw2dImage(posX, posY, ScaleCoordX(fPicDimX - 2), ScaleCoordY(fPicDimY - 2), tp->GetID(), 0, 1, 1, 0, 0);
 
 		tp->m_nAccessFrameID = nSavedAccessFrameID;
 
@@ -1042,8 +1045,6 @@ void CD3D9Renderer::DrawAllDynTextures(const char* szFilter, const bool bLogName
 		nameBuffer[sizeof nameBuffer - 1] = 0;
 		pTexName = nameBuffer;
 
-		float posX = ScaleCoordX(x);
-		float posY = ScaleCoordY(y);
 		IRenderAuxText::AColor color(0, 1, 0, 1);
 
 		IRenderAuxText::Draw2dLabel(posX, posY, 1.0f, color, false, "%8s", pTexName);
@@ -1146,7 +1147,7 @@ bool CFlashTextureSource::Update()
 
 void CFlashTextureSourceSharedRT::ProbeDepthStencilSurfaceCreation(int width, int height)
 {
-	gcpRendD3D->GetTempDepthSurface(width, height, false);
+	gcpRendD3D->GetTempDepthSurface(width, height);
 }
 
 bool CFlashTextureSourceSharedRT::Update()

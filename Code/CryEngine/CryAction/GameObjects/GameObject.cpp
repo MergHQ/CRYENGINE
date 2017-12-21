@@ -1795,37 +1795,6 @@ void CGameObject::ForceUpdate(bool force)
 	EvaluateUpdateActivation();
 }
 
-struct SContainerSer : public ISerializableInfo
-{
-	void SerializeWith(TSerialize ser)
-	{
-		for (size_t i = 0; i < m_children.size(); i++)
-			m_children[i]->SerializeWith(ser);
-	}
-
-	std::vector<ISerializableInfoPtr> m_children;
-};
-
-ISerializableInfoPtr CGameObject::GetSpawnInfo()
-{
-	_smart_ptr<SContainerSer> pC;
-
-	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
-	{
-		if (iter->pExtension)
-		{
-			ISerializableInfoPtr pS = iter->pExtension->GetSpawnInfo();
-			if (pS)
-			{
-				if (!pC)
-					pC = new SContainerSer;
-				pC->m_children.push_back(pS);
-			}
-		}
-	}
-	return &*pC;
-}
-
 void CGameObject::SetNetworkParent(EntityId id)
 {
 	m_pNetEntity->SetNetworkParent(id);

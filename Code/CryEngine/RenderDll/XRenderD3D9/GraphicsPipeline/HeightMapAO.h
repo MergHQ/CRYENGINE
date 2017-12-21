@@ -14,7 +14,7 @@ public:
 
 	bool IsValid() const { return m_bHeightMapAOExecuted; }
 
-	ShadowMapFrustum* GetHeightMapFrustum         () const { CRY_ASSERT(m_bHeightMapAOExecuted); return m_pHeightMapFrustum; }
+	const ShadowMapFrustum* GetHeightMapFrustum   () const { CRY_ASSERT(m_bHeightMapAOExecuted); return m_pHeightMapFrustum; }
 	CTexture*         GetHeightMapAOScreenDepthTex() const { CRY_ASSERT(m_bHeightMapAOExecuted); return m_pHeightMapAOScreenDepthTex; }
 	CTexture*         GetHeightMapAOTex           () const { CRY_ASSERT(m_bHeightMapAOExecuted); return m_pHeightMapAOTex; }
 
@@ -23,8 +23,8 @@ private:
 	CFullscreenPass m_passSmoothing;
 	CMipmapGenPass  m_passMipmapGen;
 
-	bool              m_bHeightMapAOExecuted = false;
-	ShadowMapFrustum* m_pHeightMapFrustum;
-	CTexture*         m_pHeightMapAOScreenDepthTex;
-	CTexture*         m_pHeightMapAOTex;
+	bool                    m_bHeightMapAOExecuted = false;
+	const ShadowMapFrustum* m_pHeightMapFrustum;
+	CTexture*               m_pHeightMapAOScreenDepthTex;
+	CTexture*               m_pHeightMapAOTex;
 };

@@ -191,7 +191,7 @@ bool AnimEvent::LoadFromXMLNode(const XmlNodeRef& dataIn)
 void AnimEventPreset::Serialize(IArchive& ar)
 {
 	ar(name, "name", "Name");
-	ar(Serialization::Decorators::Slider(colorHue, 0.0f, 1.0f), "colorHue", "Color Hue");
+	ar(Serialization::Decorators::Range<float>(colorHue, 0.0f, 1.0f), "colorHue", "Color Hue");
 	ar(event, "event", "<Event");
 	if (ar.isInput())
 	{

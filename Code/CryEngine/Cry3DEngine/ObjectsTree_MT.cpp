@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "PolygonClipContext.h"
@@ -42,11 +42,11 @@ void CObjManager::EndOcclusionCulling()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjManager::RenderBufferedRenderMeshes(const SRenderingPassInfo& passInfo)
+void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 {
-	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: RenderBufferedRenderMeshes");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("RenderBufferedRenderMeshes");
-	
+	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: RenderNonJobObjects");
+	CRYPROFILE_SCOPE_PROFILE_MARKER("RenderNonJobObjects");
+
 	SCheckOcclusionOutput outputData;
 	while (1)
 	{
@@ -62,29 +62,61 @@ void CObjManager::RenderBufferedRenderMeshes(const SRenderingPassInfo& passInfo)
 			                                    outputData.vAmbColor,
 			                                    outputData.objBox,
 			                                    outputData.common.fEntDistance,
-			                                    outputData.common.bSunOnly,
 			                                    outputData.common.bCheckPerObjectOcclusion,
 			                                    passInfo);
 			break;
+
 		case SCheckOcclusionOutput::COMMON:
-			GetObjManager()->RenderObject(outputData.common.pObj,
-			                              outputData.common.pAffectingLights,
-			                              outputData.vAmbColor,
-			                              outputData.objBox,
-			                              outputData.common.fEntDistance,
-			                              outputData.common.bSunOnly,
-			                              outputData.common.pObj->GetRenderNodeType(),
-			                              passInfo);
+			{
+				switch (outputData.common.pObj->GetRenderNodeType())
+				{
+				case eERType_Brush:
+				case eERType_MovableBrush:
+					GetObjManager()->RenderBrush((CBrush*)outputData.common.pObj,
+					                             outputData.common.pAffectingLights,
+					                             outputData.common.pTerrainTexInfo,
+					                             outputData.objBox,
+					                             outputData.common.fEntDistance,
+					                             outputData.common.bCheckPerObjectOcclusion,
+					                             passInfo,
+					                             outputData.common.passCullMask);
+					break;
+
+				case eERType_Vegetation:
+					GetObjManager()->RenderVegetation((CVegetation*)outputData.common.pObj,
+					                                  outputData.common.pAffectingLights,
+					                                  outputData.objBox,
+					                                  outputData.common.fEntDistance,
+					                                  outputData.common.pTerrainTexInfo,
+					                                  outputData.common.bCheckPerObjectOcclusion,
+					                                  passInfo,
+					                                  outputData.common.passCullMask);
+					break;
+
+				default:
+					GetObjManager()->RenderObject(outputData.common.pObj,
+					                              outputData.common.pAffectingLights,
+					                              outputData.vAmbColor,
+					                              outputData.objBox,
+					                              outputData.common.fEntDistance,
+					                              outputData.common.pObj->GetRenderNodeType(),
+					                              passInfo,
+					                              outputData.common.passCullMask);
+					break;
+				}
+			}
 			break;
 		case SCheckOcclusionOutput::TERRAIN:
-			GetTerrain()->AddVisSector(outputData.terrain.pTerrainNode);
+			outputData.terrain.pTerrainNode->RenderNodeHeightmap(passInfo);
 			break;
+
 		case SCheckOcclusionOutput::DEFORMABLE_BRUSH:
 			outputData.deformable_brush.pBrush->m_pDeform->RenderInternalDeform(outputData.deformable_brush.pRenderObject,
 			                                                                    outputData.deformable_brush.nLod,
 			                                                                    outputData.deformable_brush.pBrush->CBrush::GetBBox(),
 			                                                                    passInfo);
 			break;
+
 		default:
 			CryFatalError("Got Unknown Output type from CheckOcclusion");
 			break;

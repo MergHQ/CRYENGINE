@@ -97,7 +97,7 @@ bool CSvoEnv::Render()
 
 	if (Get3DEngine()->m_pObjectsTree)
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CGlobalCloud::Render_FindProbe");
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_FindProbe");
 
 		m_pGlobalEnvProbe = nullptr;
 
@@ -161,6 +161,8 @@ bool CSvoEnv::Render()
 
 	if (m_bReady && m_pSvoRoot)
 	{
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Traverse SVO");
+
 		//		UpdatePVS();
 
 		static Vec3 arrLastCamPos[16];
@@ -208,7 +210,7 @@ bool CSvoEnv::Render()
 
 	//	if(GetCVars()->e_rsMode != RS_FAT_CLIENT)
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CGlobalCloud::Render_StartStreaming");
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_StartStreaming");
 
 		for (int treeLevel = 0; (treeLevel < SVO_STREAM_QUEUE_MAX_SIZE); treeLevel++)
 		{
@@ -234,13 +236,13 @@ bool CSvoEnv::Render()
 	if (CVoxelSegment::m_arrLoadedSegments.Count() > (maxLoadedNodes - Cry3DEngineBase::GetCVars()->e_svoMaxStreamRequests))
 	{
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CGlobalCloud::Render_UnloadStreamable_Sort");
+			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_UnloadStreamable_Sort");
 
 			qsort(CVoxelSegment::m_arrLoadedSegments.GetElements(), CVoxelSegment::m_arrLoadedSegments.Count(), sizeof(CVoxelSegment::m_arrLoadedSegments[0]), CVoxelSegment::ComparemLastVisFrameID);
 		}
 
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CGlobalCloud::Render_UnloadStreamable_FreeRenderData");
+			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_UnloadStreamable_FreeRenderData");
 
 			int numNodesToDelete = 4 + Cry3DEngineBase::GetCVars()->e_svoMaxStreamRequests;//CVoxelSegment::m_arrLoadedSegments.Count()/1000;
 
@@ -280,7 +282,7 @@ bool CSvoEnv::Render()
 
 	//if(nUserId == 0 || !bMultiUserMode)
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CGlobalCloud::Render_BrickUpdate");
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_BrickUpdate");
 
 		CVoxelSegment::m_updatesInProgressTex = 0;
 		CVoxelSegment::m_updatesInProgressBri = 0;
@@ -312,7 +314,7 @@ bool CSvoEnv::Render()
 
 		if (m_texNodePoolId)
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CGlobalCloud::Render_UpdateNodeRenderDataPtrs");
+			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_UpdateNodeRenderDataPtrs");
 
 			m_pSvoRoot->UpdateNodeRenderDataPtrs();
 		}
@@ -2058,6 +2060,8 @@ void CSvoEnv::DetectMovement_StatLights()
 
 void CSvoEnv::StartupStreamingTimeTest(bool bDone)
 {
+	FUNCTION_PROFILER_3DENGINE;
+
 	if (m_svoFreezeTime > 0 && bDone && m_bStreamingDonePrev)
 	{
 		PrintMessage("SVO update finished in %.1f sec (%d / %d nodes, %d K tris)",
@@ -2372,13 +2376,8 @@ void CSvoEnv::CollectLights()
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	//AABB nodeBox = AABB(Vec3(0,0,0), Vec3( (float)gEnv->p3DEngine->GetTerrainSize(), (float)gEnv->p3DEngine->GetTerrainSize(), (float)gEnv->p3DEngine->GetTerrainSize()));
-	AABB nodeBox;
-	nodeBox.Reset();
-
-	nodeBox.Add(gEnv->pSystem->GetViewCamera().GetPosition());
-
-	nodeBox.Expand(Vec3(256, 256, 256));
+	float areaRange = 128.f;
+	AABB nodeBox(gEnv->pSystem->GetViewCamera().GetPosition() - Vec3(areaRange), gEnv->pSystem->GetViewCamera().GetPosition() + Vec3(areaRange));
 
 	m_lightsTI_S.Clear();
 	m_lightsTI_D.Clear();
@@ -2716,6 +2715,8 @@ bool CSvoNode::IsStreamingActive()
 
 void CSvoNode::CheckAllocateChilds()
 {
+	FUNCTION_PROFILER_3DENGINE;
+
 	if (m_nodeBox.GetSize().x <= Cry3DEngineBase::GetCVars()->e_svoMinNodeSize)
 		return;
 

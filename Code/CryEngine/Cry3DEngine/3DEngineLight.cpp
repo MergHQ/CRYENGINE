@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   3denginelight.cpp
@@ -132,7 +132,7 @@ void C3DEngine::FindPotentialLightSources(const SRenderingPassInfo& passInfo)
 	for (int i = 0; i < m_lstStaticLights.Count(); i++)
 	{
 		CLightEntity* pLightEntity = (CLightEntity*)m_lstStaticLights[i];
-		SRenderLight* pLight = &pLightEntity->m_light;
+		SRenderLight* pLight = &pLightEntity->GetLightProperties();
 
 		if (pLight->m_Flags & DLF_DEFERRED_LIGHT)
 			break; // process deferred lights in CLightEntity::Render(), deferred lights are stored in the end of this array
@@ -461,9 +461,9 @@ void C3DEngine::PrepareLightSourcesForRendering_0(const SRenderingPassInfo& pass
 				{
 					pLightEntity->UpdateGSMLightSourceShadowFrustum(passInfo);
 
-					if (pLightEntity->m_pShadowMapInfo)
+					if (pLightEntity->GetShadowMapInfo())
 					{
-						pLight->m_pShadowMapFrustums = reinterpret_cast<ShadowMapFrustum**>(pLightEntity->m_pShadowMapInfo->pGSM);
+						pLight->m_pShadowMapFrustums = reinterpret_cast<ShadowMapFrustum**>(pLightEntity->GetShadowMapInfo()->pGSM);
 						for (int nLod = 0; nLod < MAX_GSM_LODS_NUM && pLight->m_pShadowMapFrustums[nLod]; nLod++)
 							pLight->m_pShadowMapFrustums[nLod]->nDLightId = pLight->m_Id;
 					}
@@ -551,7 +551,7 @@ void C3DEngine::PrepareLightSourcesForRendering_1(const SRenderingPassInfo& pass
 			assert(m_lstDynLights[i]->m_Id == i);
 			if (m_lstDynLights[i]->m_Id != -1)
 			{
-					RegisterLightSourceInSectors(m_lstDynLights[i], passInfo);
+				RegisterLightSourceInSectors(m_lstDynLights[i], passInfo);
 			}
 		}
 	}
@@ -567,7 +567,7 @@ void C3DEngine::PrepareLightSourcesForRendering_1(const SRenderingPassInfo& pass
 			if (m_lstDynLights[i]->m_fRadius >= 0.5f)
 			{
 				assert(m_lstDynLights[i]->m_fRadius >= 0.5f && !(m_lstDynLights[i]->m_Flags & DLF_FAKE));
-					RegisterLightSourceInSectors(m_lstDynLights[i], passInfo);
+				RegisterLightSourceInSectors(m_lstDynLights[i], passInfo);
 			}
 		}
 
@@ -617,9 +617,9 @@ void C3DEngine::InitShadowFrustums(const SRenderingPassInfo& passInfo)
 		{
 			pLightEntity->UpdateGSMLightSourceShadowFrustum(passInfo);
 
-			if (pLightEntity->m_pShadowMapInfo)
+			if (pLightEntity->GetShadowMapInfo())
 			{
-				pLight->m_pShadowMapFrustums = reinterpret_cast<ShadowMapFrustum**>(pLightEntity->m_pShadowMapInfo->pGSM);
+				pLight->m_pShadowMapFrustums = reinterpret_cast<ShadowMapFrustum**>(pLightEntity->GetShadowMapInfo()->pGSM);
 				for (int nLod = 0; nLod < MAX_GSM_LODS_NUM && pLight->m_pShadowMapFrustums[nLod]; nLod++)
 					pLight->m_pShadowMapFrustums[nLod]->nDLightId = pLight->m_Id;
 			}
@@ -694,7 +694,7 @@ void C3DEngine::InitShadowFrustums(const SRenderingPassInfo& passInfo)
 }
 
 void C3DEngine::AddPerObjectShadow(IShadowCaster* pCaster, float fConstBias, float fSlopeBias, float fJitter, const Vec3& vBBoxScale, uint nTexSize)
-{	
+{
 	SPerObjectShadow* pOS = GetPerObjectShadow(pCaster);
 	if (!pOS)
 		pOS = &m_lstPerObjectShadows.AddNew();
@@ -860,7 +860,7 @@ void C3DEngine::SetupLightScissors(SRenderLight* pLight, const SRenderingPassInf
 		//optimization when we are inside light frustum
 		pLight->m_sX = 0;
 		pLight->m_sY = 0;
-		pLight->m_sWidth  = pCam.GetViewSurfaceX();
+		pLight->m_sWidth = pCam.GetViewSurfaceX();
 		pLight->m_sHeight = pCam.GetViewSurfaceZ();
 
 		return;
@@ -1074,7 +1074,7 @@ void C3DEngine::SetupLightScissors(SRenderLight* pLight, const SRenderingPassInf
 		}
 	}
 
-	int iWidth  = pCam.GetViewSurfaceX();
+	int iWidth = pCam.GetViewSurfaceX();
 	int iHeight = pCam.GetViewSurfaceZ();
 	float fWidth = (float)iWidth;
 	float fHeight = (float)iHeight;
@@ -1099,7 +1099,7 @@ void C3DEngine::SetupLightScissors(SRenderLight* pLight, const SRenderingPassInf
 	pLight->m_sHeight = (short)ceilf((vMax.y - vMin.y) * fHeight);
 
 	// make sure we don't create a scissor rect out of bound (D3DError)
-	pLight->m_sWidth  = (pLight->m_sX + pLight->m_sWidth ) > iWidth  ? iWidth  - pLight->m_sX : pLight->m_sWidth;
+	pLight->m_sWidth = (pLight->m_sX + pLight->m_sWidth) > iWidth ? iWidth - pLight->m_sX : pLight->m_sWidth;
 	pLight->m_sHeight = (pLight->m_sY + pLight->m_sHeight) > iHeight ? iHeight - pLight->m_sY : pLight->m_sHeight;
 
 #if !defined(RELEASE)
@@ -1117,7 +1117,7 @@ void C3DEngine::SetupLightScissors(SRenderLight* pLight, const SRenderingPassInf
 			newRenderFlags.SetMode2D3DFlag(e_Mode2D);
 			pAuxRenderer->SetRenderFlags(newRenderFlags);
 
-			const float screenWidth  = float(pAuxRenderer->GetCamera().GetViewSurfaceX());
+			const float screenWidth = float(pAuxRenderer->GetCamera().GetViewSurfaceX());
 			const float screenHeight = float(pAuxRenderer->GetCamera().GetViewSurfaceZ());
 
 			// Calc resolve area
@@ -1328,7 +1328,7 @@ PodArray<struct ILightSource*>* C3DEngine::GetAffectingLights(const AABB& bbox, 
 	for (int i = 0; i < m_lstStaticLights.Count(); i++)
 	{
 		CLightEntity* pLightEntity = (CLightEntity*)m_lstStaticLights[i];
-		SRenderLight* pLight = &pLightEntity->m_light;
+		SRenderLight* pLight = &pLightEntity->GetLightProperties();
 		if (pLight->m_Flags & DLF_SUN)
 			continue;
 
@@ -1410,8 +1410,8 @@ float C3DEngine::GetLightAmount(SRenderLight* pLight, const AABB& objBox)
 		fLightAttenuation = 0;
 
 	float fLightAmount =
-		(pLight->m_Color.r + pLight->m_Color.g + pLight->m_Color.b) * 0.233f +
-		(pLight->GetSpecularMult()) * 0.1f;
+	  (pLight->m_Color.r + pLight->m_Color.g + pLight->m_Color.b) * 0.233f +
+	  (pLight->GetSpecularMult()) * 0.1f;
 
 	return fLightAmount * fLightAttenuation;
 }

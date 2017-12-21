@@ -556,27 +556,28 @@ pixout GlassPS(vert2FragGeneral IN, bool bIsFrontFace : SV_IsFrontFace)
 #else
 	half4 vertColor = half4(1,1,1,1);
 #endif
-    
+    float4 localTintColor = TintColor;
+	float localTintCloudiness = TintCloudiness;
 #if %TINT_COLOR_MAP 
-	TintColor.xyz *= GetTexture2D(tintColorTex, ssMaterialTrilinear, IN.baseTC.xy).xyz;
+	localTintColor.xyz *= GetTexture2D(tintColorTex, ssMaterialTrilinear, IN.baseTC.xy).xyz;
 #endif
-	TintColor.xyz = saturate(TintColor.xyz * vertColor.rgb + tintMap.w * decalWhiteTint); // Tend tint color toward white based on decals
+	localTintColor.xyz = saturate(localTintColor.xyz * vertColor.rgb + tintMap.w * decalWhiteTint); // Tend tint color toward white based on decals
       
 #if %TINT_MAP		
-	TintCloudiness = saturate(TintCloudiness * tintMap.x * tintMap.y + tintMap.w * decalCloudiness);
-	TintColor.xyz = saturate(TintColor.xyz + (1 - tintMap.x));
+	localTintCloudiness = saturate(localTintCloudiness * tintMap.x * tintMap.y + tintMap.w * decalCloudiness);
+	localTintColor.xyz = saturate(localTintColor.xyz + (1 - tintMap.x));
 #else
-	TintCloudiness = saturate(TintCloudiness + tintMap.w * decalCloudiness);
+	localTintCloudiness = saturate(localTintCloudiness + tintMap.w * decalCloudiness);
 #endif
 
-	half3 tintBackground = cBackbuffer * TintColor.xyz;
-	half3 tintDiffuse = TintColor.xyz * diffuseAcc;
+	half3 tintBackground = cBackbuffer * localTintColor.xyz;
+	half3 tintDiffuse = localTintColor.xyz * diffuseAcc;
 	half3 litDiffuse = attribs.albedo * diffuseAcc;
 
 	float3 viewVec = -normalize(attribs.worldPos);
 	half3 fresnel = GetEnvmapFresnel(attribs.reflectance, attribs.smoothness, saturate(dot(attribs.normal, viewVec)));
 
-	half3 tintBlend = lerp(tintBackground, tintDiffuse, TintCloudiness);
+	half3 tintBlend = lerp(tintBackground, tintDiffuse, localTintCloudiness);
 	half3 cDiffuse = lerp(tintBlend, litDiffuse, attribs.custom.backlightMask);   
 	half3 cSpecular = specularAcc.xyz;
 
