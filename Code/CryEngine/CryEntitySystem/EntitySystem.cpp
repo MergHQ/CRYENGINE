@@ -1991,6 +1991,8 @@ void CEntitySystem::LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFi
 	//Update loading screen and important tick functions
 	SYNCHRONOUS_LOADING_TICK();
 
+	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_ENTITIES, 0, 0);
+
 	assert(m_pEntityLoadManager);
 	if (!m_pEntityLoadManager->LoadEntities(objectsNode, bIsLoadingLevelFile))
 	{
@@ -2001,6 +2003,8 @@ void CEntitySystem::LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFi
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile, const Vec3& segmentOffset)
 {
+	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_ENTITIES, 0, 0);
+
 	assert(m_pEntityLoadManager);
 	if (!m_pEntityLoadManager->LoadEntities(objectsNode, bIsLoadingLevelFile, segmentOffset))
 	{
