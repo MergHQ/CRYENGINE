@@ -318,6 +318,7 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 		m_passTemporalAA.SetRequirePerViewConstantBuffer(true);
 		m_passTemporalAA.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
+		m_passTemporalAA.SetTextureSamplerPair(4, pCurrRT, EDefaultSamplerStates::LinearClamp, EDefaultResourceViews::sRGB);
 
 		m_passTemporalAA.SetTexture(0, pCurrRT);
 		m_passTemporalAA.SetTexture(1, pPrevRT);
