@@ -1153,42 +1153,23 @@ void CLog::CreateBackupFile() const
 	// simple:
 	//		string bakpath = PathUtil::ReplaceExtension(m_szFilename,"bak");
 	//		CopyFile(m_szFilename,bakpath.c_str(),false);
-
 	// advanced: to backup directory
-	char temppath[_MAX_PATH];
-	char szPath[MAX_FILENAME_SIZE];
-
-	string sExt = PathUtil::GetExt(m_szFilename);
-	string sFileWithoutExt = PathUtil::GetFileName(m_szFilename);
-
-	{
-		assert(::strstr(sFileWithoutExt, ":") == 0);
-		assert(::strstr(sFileWithoutExt, "\\") == 0);
-	}
-
-	PathUtil::RemoveExtension(sFileWithoutExt);
-
-	#define LOG_BACKUP_PATH "LogBackups"
-
-	const char* path = LOG_BACKUP_PATH;
-
-	string szBackupPath;
-	string sLogFilename;
-
-	string temp = m_pSystem->GetRootFolder();
-	temp += path;
-	if (temp.size() < sizeof(szPath))
-		cry_strcpy(szPath, temp.c_str());
-	else
-		cry_strcpy(szPath, path);
-
 	if (!gEnv->pCryPak)
 	{
 		return;
 	}
-	szBackupPath = gEnv->pCryPak->AdjustFileName(szPath, temppath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+
+	const string sExt = PathUtil::GetExt(m_szFilename);
+	string sFileWithoutExt = PathUtil::GetFileName(m_szFilename);
+	CRY_ASSERT(sFileWithoutExt.find(':') == string::npos);
+	CRY_ASSERT(sFileWithoutExt.find('\\') == string::npos);
+
+	const char* path = "LogBackups";
+	char temppath[_MAX_PATH];
+
+	const string szBackupPath = gEnv->pCryPak->AdjustFileName(path, temppath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
 	gEnv->pCryPak->MakeDir(szBackupPath);
-	sLogFilename = gEnv->pCryPak->AdjustFileName(m_szFilename, temppath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+	string sLogFilename = gEnv->pCryPak->AdjustFileName(m_szFilename, temppath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
 
 	LockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
 	FILE* in = fxopen(sLogFilename, "rb");
@@ -1314,7 +1295,7 @@ void CLog::CreateBackupFile() const
 	}
 
 	#else
-	string bakdest = PathUtil::Make(szBackupPath, sFileWithoutExt + sBackupNameAttachment + "." + sExt);
+	const string bakdest = PathUtil::Make(szBackupPath, sFileWithoutExt + sBackupNameAttachment + "." + sExt);
 	cry_strcpy(m_sBackupFilename, bakdest.c_str());
 	CopyFile(sLogFilename, bakdest, false);
 	#endif
