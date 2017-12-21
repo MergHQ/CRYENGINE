@@ -256,6 +256,11 @@ void CharacterToolForm::Initialize()
 			EXPECTED(connect(m_clearProxiesButton, SIGNAL(clicked()), this, SLOT(OnClearProxiesButton())));
 			topLayout->addWidget(m_clearProxiesButton);
 
+			m_testRagdollButton = new QToolButton();
+			m_testRagdollButton->setText("Test Ragdoll");
+			EXPECTED(connect(m_testRagdollButton, &QToolButton::pressed, [this](){ ((ModeCharacter*)m_modeCharacter.data())->CommenceRagdollTest(); } ));
+			topLayout->addWidget(m_testRagdollButton);
+
 			centralLayout->addLayout(topLayout, 0);
 		}
 

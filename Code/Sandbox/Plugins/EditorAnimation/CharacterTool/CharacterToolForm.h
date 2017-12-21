@@ -153,6 +153,7 @@ private:
 	QToolButton*                               m_displayParametersButton;
 	QToolButton* 															 m_createProxyModeButton;
 	QToolButton* 															 m_clearProxiesButton;
+	QToolButton*                               m_testRagdollButton;
 	TransformPanel*                            m_transformPanel;
 
 	QMenu*                                     m_menuView;
