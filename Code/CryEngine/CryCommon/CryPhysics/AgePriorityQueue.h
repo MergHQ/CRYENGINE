@@ -54,8 +54,8 @@ private:
 		{
 			if (!other.isFree)
 			{
-				other.isFree = true;
 				valueStorage.MoveConstruct(std::move(other.get_value()));
+				other.isFree = true;
 			}
 		}
 
@@ -75,8 +75,8 @@ private:
 
 				if (!other.isFree)
 				{
-					other.isFree = true;
 					valueStorage.MoveConstruct(std::move(other.get_value()));
+					other.isFree = true;
 				}
 			}
 
