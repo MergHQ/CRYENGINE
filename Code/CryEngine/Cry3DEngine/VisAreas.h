@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   visareas.h
@@ -253,12 +253,12 @@ struct CVisAreaManager : public IVisAreaManager, Cry3DEngineBase
 	bool                 DeleteVisArea(CVisArea* pVisArea);
 	bool                 SetEntityArea(IRenderNode* pEnt, const AABB& objBox, const float fObjRadiusSqr);
 	void                 CheckVis(const SRenderingPassInfo& passInfo);
-	void                 DrawVisibleSectors(const SRenderingPassInfo& passInfo);
+	void                 DrawVisibleSectors(const SRenderingPassInfo& passInfo, uint32 passCullMask);
 	void                 ActivatePortal(const Vec3& vPos, bool bActivate, const char* szEntityName);
 	void                 ActivateOcclusionAreas(IVisAreaTestCallback* pTest, bool bActivate);
 	void                 UpdateVisArea(CVisArea* pArea, const Vec3* pPoints, int nCount, const char* szName, const SVisAreaInfo& info);
 	virtual void         UpdateConnections();
-	void                 MoveObjectsIntoList(PodArray<SRNInfo>* plstVisAreasEntities, const AABB& boxArea, bool bRemoveObjects = false);
+	void                 MoveObjectsIntoList(PodArray<SRNInfo>* plstVisAreasEntities, const AABB* boxArea, bool bRemoveObjects = false);
 	IVisArea*            GetVisAreaFromPos(const Vec3& vPos);
 	bool                 IntersectsVisAreas(const AABB& box, void** pNodeCache = 0);
 	bool                 ClipOutsideVisAreas(Sphere& sphere, Vec3 const& vNormal, void* pNodeCache = 0);
@@ -315,17 +315,18 @@ struct CVisAreaManager : public IVisAreaManager, Cry3DEngineBase
 	void         PhysicalizeInBox(const AABB&);
 	void         DephysicalizeInBox(const AABB&);
 	virtual void OffsetPosition(const Vec3& delta);
+	void         CleanUpTrees();
 
 private:
-	void        DeleteAllVisAreas();
+	void      DeleteAllVisAreas();
 
-	CVisArea*   CreateTypeVisArea();
-	CVisArea*   CreateTypePortal();
-	CVisArea*   CreateTypeOcclArea();
+	CVisArea* CreateTypeVisArea();
+	CVisArea* CreateTypePortal();
+	CVisArea* CreateTypeOcclArea();
 
-	CVisArea*   FindVisAreaByGuid(VisAreaGUID guid, PodArray<CVisArea*>& lstVisAreas);
+	CVisArea* FindVisAreaByGuid(VisAreaGUID guid, PodArray<CVisArea*>& lstVisAreas);
 	template<class T>
-	void        ResetVisAreaList(PodArray<CVisArea*>& lstVisAreas, PodArray<CVisArea*, ReservedVisAreaBytes>& visAreas, PodArray<T>& visAreaColdData);
+	void      ResetVisAreaList(PodArray<CVisArea*>& lstVisAreas, PodArray<CVisArea*, ReservedVisAreaBytes>& visAreas, PodArray<T>& visAreaColdData);
 
 	PodArray<CVisArea*, ReservedVisAreaBytes> m_portals;
 	PodArray<CVisArea*, ReservedVisAreaBytes> m_visAreas;

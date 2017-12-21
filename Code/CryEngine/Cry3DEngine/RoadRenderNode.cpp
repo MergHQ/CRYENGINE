@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 
@@ -686,4 +686,9 @@ Vec3 CRoadRenderNode::GetPos(bool) const
 IMaterial* CRoadRenderNode::GetMaterial(Vec3* pHitPos) const
 {
 	return m_pMaterial;
+}
+
+bool CRoadRenderNode::CanExecuteRenderAsJob()
+{
+	return !gEnv->IsEditor() && GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType());
 }

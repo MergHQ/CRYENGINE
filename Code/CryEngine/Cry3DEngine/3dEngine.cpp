@@ -758,6 +758,8 @@ void C3DEngine::ProcessCVarsChange()
 	  GetCVars()->e_LodTransitionSpriteMinDist +
 	  GetCVars()->e_VegetationUseTerrainColor +
 	  GetCVars()->e_TerrainDetailMaterials +
+	  GetCVars()->e_ObjectsTreeNodeMinSize +
+	  GetCVars()->e_ObjectsTreeNodeSizeRatio +
 	  GetCVars()->e_ViewDistRatio +
 	  GetCVars()->e_ViewDistMin +
 	  GetCVars()->e_ViewDistRatioDetail +
@@ -780,9 +782,7 @@ void C3DEngine::ProcessCVarsChange()
 
 		// re-register every instance in level
 		const float terrainSize = (float)GetTerrainSize();
-		GetObjManager()->ReregisterEntitiesInArea(
-		  Vec3(-terrainSize, -terrainSize, -terrainSize),
-		  Vec3(terrainSize * 2.f, terrainSize * 2.f, terrainSize * 2.f));
+		GetObjManager()->ReregisterEntitiesInArea(nullptr, true);
 
 		// force recreation of terrain meshes
 		if (CTerrain* const pTerrain = GetTerrain())
@@ -2841,7 +2841,10 @@ void C3DEngine::UpdateVisArea(IVisArea* pVisArea, const Vec3* pPoints, int nCoun
 	}
 
 	if (bReregisterObjects)
-		m_pObjManager->ReregisterEntitiesInArea(vTotalBoxMin - Vec3(8, 8, 8), vTotalBoxMax + Vec3(8, 8, 8));
+	{
+		AABB aabb(vTotalBoxMin - Vec3(8, 8, 8), vTotalBoxMax + Vec3(8, 8, 8));
+		m_pObjManager->ReregisterEntitiesInArea(&aabb);
+	}
 }
 
 IClipVolume* C3DEngine::CreateClipVolume()
@@ -3962,11 +3965,6 @@ void C3DEngine::UnlockCGFResources()
 	}
 }
 
-void CLightEntity::ShadowMapInfo::Release(struct IRenderer* pRenderer)
-{
-	delete this;
-}
-
 Vec3 C3DEngine::GetTerrainSurfaceNormal(Vec3 vPos)
 {
 	return m_pTerrain ? m_pTerrain->GetTerrainSurfaceNormal(vPos, 0.5f * GetHeightMapUnitSize()) : Vec3(0.f, 0.f, 1.f);
@@ -4768,7 +4766,7 @@ SRenderNodeTempData* C3DEngine::CreateRenderNodeTempData(IRenderNode* pRNode, co
 	pNewTempData->userData.pOwnerNode = pRNode;
 
 	pRNode->OnRenderNodeBecomeVisibleAsync(pNewTempData, passInfo);
-	 
+
 	if (IVisArea* pVisArea = pRNode->GetEntityVisArea())
 		pNewTempData->userData.m_pClipVolume = pVisArea;
 	else if (GetClipVolumeManager()->IsClipVolumeRequired(pRNode))
@@ -4806,13 +4804,11 @@ SRenderNodeTempData* C3DEngine::CheckAndCreateRenderNodeTempData(IRenderNode* pR
 			{
 				pRNode->m_pTempData = (pTempData = CreateRenderNodeTempData(pRNode, passInfo));
 			}
-
 			// Manual invalidation of TempData occurred
 			else if (pTempData->invalidRenderObjects)
 			{
 				pTempData->FreeRenderObjects();
 			}
-
 			// Automatic invalidation check
 			else if (pTempData->hasValidRenderObjects)
 			{
@@ -6310,13 +6306,8 @@ bool C3DEngine::IsTessellationAllowed(const CRenderObject* pObj, const SRenderin
 
 bool C3DEngine::IsStatObjBufferRenderTasksAllowed() const
 {
-	auto bDebugDrawEnabled = gEnv->pConsole->GetCVar("e_DebugDraw") != nullptr && gEnv->pConsole->GetCVar("e_DebugDraw")->GetIVal() != 0;
-	auto bMnDebugEnabled = gEnv->pConsole->GetCVar("mn_debug") != nullptr && strlen(gEnv->pConsole->GetCVar("mn_debug")->GetString()) != 0;
-	auto bStatObjBufferRenderTasksEnabled =
-	  gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks") != nullptr && gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks")->GetIVal() != 0;
-
-	return !bDebugDrawEnabled && !bMnDebugEnabled && bStatObjBufferRenderTasksEnabled;
-
+	static const auto bMnDebugEnabled = gEnv->pConsole->GetCVar("mn_debug") != nullptr && strlen(gEnv->pConsole->GetCVar("mn_debug")->GetString()) != 0;
+	return GetCVars()->e_StatObjBufferRenderTasks && !GetCVars()->e_DebugDraw && !bMnDebugEnabled;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -6518,7 +6509,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 	else
 	{
 		CLightEntity* pLight = (CLightEntity*)pEnt;
-		if ((pLight->m_light.m_Flags & (DLF_IGNORES_VISAREAS | DLF_DEFERRED_LIGHT | DLF_THIS_AREA_ONLY)) == (DLF_IGNORES_VISAREAS | DLF_DEFERRED_LIGHT))
+		if ((pLight->GetLightProperties().m_Flags & (DLF_IGNORES_VISAREAS | DLF_DEFERRED_LIGHT | DLF_THIS_AREA_ONLY)) == (DLF_IGNORES_VISAREAS | DLF_DEFERRED_LIGHT))
 		{
 			if (m_lstAlwaysVisible.Find(pEnt) < 0)
 				m_lstAlwaysVisible.Add(pEnt);

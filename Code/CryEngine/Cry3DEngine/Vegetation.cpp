@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   Vegetation.cpp
@@ -192,7 +192,7 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 					m_pSpriteInfo->ucAlphaTestRef = 255;
 				}
 			}
-		}		
+		}
 	}
 
 	return CLodValue(nLodA, nDissolveRefA, nLodB);
@@ -420,7 +420,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	if (lodValue.LodA() > pStatObj->GetMaxUsableLod() && vegetGroup.bUseSprites && GetCVars()->e_VegetationBillboards)
 	{
 		pRenderObject->m_pCurrMaterial = pStatObj->GetBillboardMaterial();
-		
+
 		if (pStatObj->GetBillboardMaterial())
 		{
 			float fZAngle = GetZAngle();
@@ -460,7 +460,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	{
 		pStatObj->RenderInternal(pRenderObject, 0, lodValue, passInfo);
 
-		if (m_pDeformable) 
+		if (m_pDeformable)
 			m_pDeformable->RenderInternalDeform(pRenderObject, lodValue.LodA(), GetBBox(), passInfo);
 	}
 
@@ -965,8 +965,8 @@ void CVegetation::UpdateRndFlags()
 	StatInstGroup& vegetGroup = GetStatObjGroup();
 
 	const auto dwFlagsToUpdate =
-		ERF_CASTSHADOWMAPS | ERF_DYNAMIC_DISTANCESHADOWS | ERF_HIDABLE | ERF_PICKABLE
-		| ERF_SPEC_BITS_MASK | ERF_OUTDOORONLY | ERF_ACTIVE_LAYER | ERF_GI_MODE_BITS_MASK;
+	  ERF_CASTSHADOWMAPS | ERF_DYNAMIC_DISTANCESHADOWS | ERF_HIDABLE | ERF_PICKABLE
+	  | ERF_SPEC_BITS_MASK | ERF_OUTDOORONLY | ERF_ACTIVE_LAYER | ERF_GI_MODE_BITS_MASK;
 
 	m_dwRndFlags &= ~dwFlagsToUpdate;
 	m_dwRndFlags |= vegetGroup.m_dwRndFlags & (dwFlagsToUpdate | ERF_HAS_CASTSHADOWMAPS);
@@ -1036,4 +1036,9 @@ IMaterial* CVegetation::GetMaterial(Vec3* pHitPos) const
 		return pBody->GetMaterial();
 
 	return NULL;
+}
+
+bool CVegetation::CanExecuteRenderAsJob()
+{
+	return (GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType())) != 0;
 }

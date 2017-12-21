@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   statobjmanshadows.cpp
@@ -34,8 +34,15 @@ void CObjManager::MakeShadowCastersList(CVisArea* pArea, const AABB& aabbReceive
 
 	assert(pLight && vLightPos.len() > 1); // world space pos required
 
-	pFr->castersList.Clear();
-	pFr->jobExecutedCastersList.Clear();
+	pFr->ResetCasterLists();
+
+	if (CLightEntity::IsOnePassTraversalFrustum(pFr))
+	{
+		// In case of one-pass octree traversal most frustums are submitting casters directly without filling castersList
+		return;
+	}
+
+	// TODO: make sure we never come here and then remove all FillShadowCastersList functions
 
 	CVisArea* pLightArea = pLight->m_pOwner ? (CVisArea*)pLight->m_pOwner->GetEntityVisArea() : NULL;
 
@@ -201,71 +208,6 @@ int CObjManager::MakeStaticShadowCastersList(IRenderNode* pIgnoreNode, ShadowMap
 	// if we got here we processed every tree, so reset tree index
 	pFrustum->pShadowCacheData->mOctreePath[0] = 0;
 	return nRemainingNodes;
-}
-
-uint64 CObjManager::GetShadowFrustumsList(PodArray<SRenderLight*>* pAffectingLights, const AABB& aabbReceiver,
-                                          float fObjDistance, uint32 nDLightMask, bool bIncludeNearFrustums,
-                                          const SRenderingPassInfo& passInfo)
-{
-	FUNCTION_PROFILER_3DENGINE;
-
-	assert(passInfo.RenderShadows());
-
-	if (!pAffectingLights || !pAffectingLights->Count())
-		return 0;
-
-	const int MAX_MASKED_GSM_LODS_NUM = 4;
-
-	// calculate frustums list id
-	uint64 nCastersListId = 0;
-	int32 nSunID = 0;
-	uint32 nFrustums = 0;
-	if (bIncludeNearFrustums)
-		for (int i = 0; i < 64 && i < pAffectingLights->Count(); i++)
-		{
-			SRenderLight* pLight = pAffectingLights->GetAt(i);
-
-			assert(pLight->m_Id < 64);
-
-			bool bSun = (pLight->m_Flags & DLF_SUN) != 0;
-
-			if ((pLight->m_Id >= 0) && (nDLightMask & (1 << pLight->m_Id)) && (pLight->m_Flags & DLF_CASTSHADOW_MAPS))
-			{
-				if (CLightEntity::ShadowMapInfo* pSMI = ((CLightEntity*)pLight->m_pOwner)->m_pShadowMapInfo)
-				{
-					const int nLodCount = Get3DEngine()->GetShadowsCascadeCount(pLight);
-					for (int nLod = 0; nLod < nLodCount && nLod < MAX_MASKED_GSM_LODS_NUM && pSMI->pGSM[nLod]; nLod++)
-					{
-						ShadowMapFrustum* pFr = pSMI->pGSM[nLod];
-						if (pFr->castersList.Count())
-						{
-							// take GSM Lod's containing receiver bbox inside shadow frustum
-							bool bUnused = false;
-							if (pFr->IntersectAABB(aabbReceiver, &bUnused))
-							{
-								if (bSun)
-								{
-									nSunID = pLight->m_Id;
-									nCastersListId |= (uint64(1) << nLod);
-								}
-								else
-									nCastersListId |= (uint64(1) << pLight->m_Id);
-								nFrustums++;
-							}
-
-							// todo: if(nCull == CULL_INCLUSION) break;
-						}
-					}
-				}
-			}
-		}
-	assert(nSunID == 0);
-
-	if (!nCastersListId)
-		return 0;
-
-	assert(nCastersListId);
-	return nCastersListId;
 }
 
 #pragma warning(pop)

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   3denginerender.cpp
@@ -803,7 +803,6 @@ void C3DEngine::DebugDraw_UpdateDebugNode()
 			{
 				IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
 
-				
 				{
 					IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 
@@ -1639,9 +1638,41 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed() && JobManager::InvokeAsJob("CheckOcclusion"))
 		m_pObjManager->BeginOcclusionCulling(passInfo);
 
+	////////////////////////////////////////////////////////////////////////////////////////
+	// Collect shadow passes
+	////////////////////////////////////////////////////////////////////////////////////////
+	std::vector<SRenderingPassInfo> shadowPassInfo; // shadow passes used in scene
+	uint32 passCullMask = kPassCullMainMask;        // initialize main view bit as visible
+
+	if (GetCVars()->e_OnePassOctreeTraversal && passInfo.RenderShadows() && !passInfo.IsRecursivePass())
+	{
+		// Collect shadow passes used in scene and allocate render view for each of them
+		PrepareShadowPasses(passInfo, shadowPassInfo);
+
+		// initialize shadow view bits
+		for (uint32 p = 0; p < shadowPassInfo.size(); p++)
+		{
+			passCullMask |= BIT(p + 1);
+		}
+
+		// store ptr to collected shadow passes into main view pass
+		const_cast<SRenderingPassInfo&>(passInfo).SetShadowPasses(&shadowPassInfo);
+	}
+	else
+	{
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "Traverse Outdoor Lights");
+
+		// render point lights
+		CLightEntity::SetShadowFrustumsCollector(nullptr);
+		m_pObjectsTree->Render_LightSources(false, passInfo);
+	}
+
 	// draw objects inside visible vis areas
 	if (m_pVisAreaManager)
-		m_pVisAreaManager->DrawVisibleSectors(passInfo);
+	{
+		CRY_PROFILE_REGION(PROFILE_3DENGINE, "Traverse Indoor Octrees");
+		m_pVisAreaManager->DrawVisibleSectors(passInfo, passCullMask);
+	}
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Clear current sprites list
@@ -1663,7 +1694,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (m_pTerrain)
 		m_pTerrain->ClearVisSectors();
 
-	if (IsOutdoorVisible() || GetRenderer()->IsPost3DRendererEnabled())
+	if (passCullMask || GetRenderer()->IsPost3DRendererEnabled())
 	{
 		if (m_pVisAreaManager && m_pVisAreaManager->m_lstOutdoorPortalCameras.Count() &&
 		    (m_pVisAreaManager->m_pCurArea || m_pVisAreaManager->m_pCurPortal))
@@ -1686,18 +1717,15 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 			m_pTerrain->UpdateNodesIncrementaly(passInfo);
 
 		passInfo.GetRendItemSorter().IncreaseOctreeCounter();
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "COctreeNode::Render_____");
-		m_pObjectsTree->Render_Object_Nodes(false, OCTREENODE_RENDER_FLAG_OBJECTS, GetSkyColor(), passInfo);
+		{
+			CRY_PROFILE_REGION(PROFILE_3DENGINE, "Traverse Outdoor Octree");
+			m_pObjectsTree->Render_Object_Nodes(false, OCTREENODE_RENDER_FLAG_OBJECTS, GetSkyColor(), passCullMask, passInfo);
+		}
 
 		if (GetCVars()->e_ObjectsTreeBBoxes >= 3)
 			m_pObjectsTree->RenderDebug();
 
 		passInfo.GetRendItemSorter().IncreaseGroupCounter();
-	}
-	else if (m_pVisAreaManager && m_pVisAreaManager->IsSkyVisible())
-	{
-		__debugbreak();
-		RenderSkyBox(GetSkyMaterial(), passInfo);
 	}
 
 	if (GetCVars()->e_ObjectLayersActivation == 4)
@@ -1717,7 +1745,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 			{
 				CCamera cam = passInfo.GetCamera();
 				cam.SetFrustum(cam.GetViewSurfaceX(), cam.GetViewSurfaceZ(), cam.GetFov(), min(cam.GetNearPlane(), 1.f), 2.f, cam.GetPixelAspectRatio());
-				m_pObjectsTree->Render_Object_Nodes(false, OCTREENODE_RENDER_FLAG_OBJECTS | OCTREENODE_RENDER_FLAG_OBJECTS_ONLY_ENTITIES, GetSkyColor(), SRenderingPassInfo::CreateTempRenderingInfo(cam, passInfo));
+				m_pObjectsTree->Render_Object_Nodes(false, OCTREENODE_RENDER_FLAG_OBJECTS | OCTREENODE_RENDER_FLAG_OBJECTS_ONLY_ENTITIES, GetSkyColor(), passCullMask & kPassCullMainMask, SRenderingPassInfo::CreateTempRenderingInfo(cam, passInfo));
 			}
 		}
 	}
@@ -1742,11 +1770,11 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 			{
 				if (pObj->GetRenderNodeType() == eERType_Brush || pObj->GetRenderNodeType() == eERType_MovableBrush)
 				{
-					GetObjManager()->RenderBrush((CBrush*)pObj, NULL, NULL, objBox, fEntDistance, false, (CVisArea*)pObj->GetEntityVisArea(), false, passInfo);
+					GetObjManager()->RenderBrush((CBrush*)pObj, NULL, NULL, objBox, fEntDistance, false, passInfo, passCullMask & kPassCullMainMask);
 				}
 				else
 				{
-					GetObjManager()->RenderObject(pObj, NULL, GetSkyColor(), objBox, fEntDistance, false, pObj->GetRenderNodeType(), passInfo);
+					GetObjManager()->RenderObject(pObj, NULL, GetSkyColor(), objBox, fEntDistance, pObj->GetRenderNodeType(), passInfo, passCullMask & kPassCullMainMask);
 				}
 			}
 		}
@@ -1756,22 +1784,54 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	ProcessOcean(passInfo);
 
 	if (m_pWaterRippleManager)
+	{
 		m_pWaterRippleManager->Render(passInfo);
+	}
+
 	if (m_pDecalManager && passInfo.RenderDecals())
+	{
 		m_pDecalManager->Render(passInfo);
+	}
 
 	// tell the occlusion culler that no new work will be submitted
-	if (IsStatObjBufferRenderTasksAllowed() && GetCVars()->e_StatObjBufferRenderTasks == 1 && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion"))
+	if (IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion"))
+	{
 		GetObjManager()->PushIntoCullQueue(SCheckOcclusionJobData::CreateQuitJobData());
+	}
 
-	// fill shadow list here to allow more time between starting and waiting for the occlusion buffer
-	InitShadowFrustums(passInfo);
+	if (!GetCVars()->e_OnePassOctreeTraversal)
+	{
+		// fill shadow list here to allow more time between starting and waiting for the occlusion buffer
+		InitShadowFrustums(passInfo);
+	}
 
 	if (passInfo.IsGeneralPass())
+	{
 		gEnv->pSystem->DoWorkDuringOcclusionChecks();
+	}
 
+#if defined(FEATURE_SVO_GI)
+	if (passInfo.IsGeneralPass() && (nRenderFlags & SHDF_ALLOW_AO))
+	{
+		CSvoManager::Render();
+	}
+#endif
+
+	// submit non-job render nodes into render views
+	// we wait for all render jobs to finish here
 	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed() && JobManager::InvokeAsJob("CheckOcclusion"))
-		m_pObjManager->RenderBufferedRenderMeshes(passInfo);
+	{
+		m_pObjManager->RenderNonJobObjects(passInfo);
+	}
+
+	if (GetCVars()->e_OnePassOctreeTraversal)
+	{
+		// all shadow casters are submitted, switch render views into eUsageModeWritingDone mode
+		for (uint32 p = 0; p < shadowPassInfo.size(); p++)
+		{
+			shadowPassInfo[p].GetIRenderView()->GetShadowFrustumOwner()->pOnePassShadowView->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
+		}
+	}
 
 	// Call postrender on the meshes that require it.
 	// Call it before InvokeShadowMapRenderJobs, otherwise render meshes are not constructed at the moment of shadow gen render calls
@@ -1794,11 +1854,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	// render terrain ground
 	if (m_pTerrain)
 		m_pTerrain->DrawVisibleSectors(passInfo);
-
-#if defined(FEATURE_SVO_GI)
-	if (passInfo.IsGeneralPass() && (nRenderFlags & SHDF_ALLOW_AO))
-		CSvoManager::Render();
-#endif
 
 	pfx2::CParticleSystem* pParticleSystem = static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get());
 	if (pParticleSystem)
@@ -1870,6 +1925,16 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed() && JobManager::InvokeAsJob("CheckOcclusion"))
 		m_pObjManager->EndOcclusionCulling();
+
+	if (GetCVars()->e_OnePassOctreeTraversal)
+	{
+		// release shadow views (from now only renderer owns it)
+		for (uint32 p = 0; p < shadowPassInfo.size(); p++)
+		{
+			shadowPassInfo[p].GetIRenderView()->GetShadowFrustumOwner()->pOnePassShadowView = nullptr;
+		}
+		const_cast<SRenderingPassInfo&>(passInfo).SetShadowPasses(nullptr);
+	}
 }
 
 void C3DEngine::ResetCoverageBufferSignalVariables()
@@ -2107,7 +2172,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		return;
 	}
 
-	IRenderAuxGeom *pAux = GetRenderer()->GetIRenderAuxGeom();
+	IRenderAuxGeom* pAux = GetRenderer()->GetIRenderAuxGeom();
 	const SAuxGeomRenderFlags flags = pAux->GetRenderFlags();
 	SAuxGeomRenderFlags newFlags(flags);
 	newFlags.SetAlphaBlendMode(e_AlphaBlended);
@@ -2716,7 +2781,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 							for (int l = 0; l < MAX_GSM_LODS_NUM; l++)
 							{
 								if (ShadowMapFrustum* pFr = m_lstDynLights[i]->m_pOwner->GetShadowFrustum(l))
-									nShadowCasterNumber += pFr->castersList.Count();
+									nShadowCasterNumber += pFr->GetCasterNum();
 							}
 							DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "%s - SM%d", m_lstDynLights[i]->m_sName, nShadowCasterNumber);
 						}
@@ -2734,7 +2799,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 								for (int l = 0; l < MAX_GSM_LODS_NUM; l++)
 								{
 									if (ShadowMapFrustum* pFr = m_lstDynLights[i]->m_pOwner->GetShadowFrustum(l))
-										nCastingObjects += pFr->castersList.Count();
+										nCastingObjects += pFr->GetCasterNum();
 								}
 
 								if (nCastingObjects)
@@ -2811,8 +2876,8 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 			uint32 nUsedShadowMaskChannels = nShadowMaskChannels & 0xFFFF;
 			bool bTooManyLights = nUsedShadowMaskChannels > nAvailableShadowMaskChannels ? true : false;
 
-			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE, (nShadowFrustums || nShadowAllocs) ? Col_Yellow : Col_White, "%d Shadow Mask Channels, %3d Shadow Frustums, %3d Frustum Renders This Frame",
-			                     nUsedShadowMaskChannels, nShadowFrustums, nShadowAllocs);
+			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE, (nShadowFrustums || nShadowAllocs) ? Col_Yellow : Col_White, "%d Shadow Mask Channels, %3d Frustums, %3d Frustums This Frame, %d One-Pass Frustums",
+			                     nUsedShadowMaskChannels, nShadowFrustums, nShadowAllocs, m_onePassShadowFrustumsCount);
 
 			if (bThrash)
 			{
@@ -3189,10 +3254,10 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 			float fScreenPix = (float)(GetRenderer()->GetOverlayWidth() * GetRenderer()->GetOverlayHeight());
 
 			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
-								 "(Rendered/Active/Alloc): Particles %5.0f/%5.0f/%5.0f, Emitters %3.0f/%3.0f/%3.0f, SubEmitter: %3.0f, Fill %5.2f/%5.2f",
-								 Counts.particles.rendered, Counts.particles.updated, Counts.particles.alive,
-								 Counts.components.rendered, Counts.components.updated, Counts.components.alive, Counts.subemitters.updated,
-								 Counts.pixels.rendered / fScreenPix, Counts.pixels.updated / fScreenPix);
+			                     "(Rendered/Active/Alloc): Particles %5.0f/%5.0f/%5.0f, Emitters %3.0f/%3.0f/%3.0f, SubEmitter: %3.0f, Fill %5.2f/%5.2f",
+			                     Counts.particles.rendered, Counts.particles.updated, Counts.particles.alive,
+			                     Counts.components.rendered, Counts.components.updated, Counts.components.alive, Counts.subemitters.updated,
+			                     Counts.pixels.rendered / fScreenPix, Counts.pixels.updated / fScreenPix);
 			fTextPosY += fTextStepY;
 		}
 
@@ -3236,7 +3301,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	{
 		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "--------------- GSM Stats ---------------");
 
-		if (CLightEntity::ShadowMapInfo* pSMI = m_pSun->m_pShadowMapInfo)
+		if (ShadowMapInfo* pSMI = m_pSun->GetShadowMapInfo())
 		{
 			int arrGSMCastersCount[MAX_GSM_LODS_NUM];
 			memset(arrGSMCastersCount, 0, sizeof(arrGSMCastersCount));
@@ -3248,7 +3313,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 				if (nLod)
 					cry_strcat(&szText[strlen(szText)], sizeof(szText) - strlen(szText), ", ");
 
-				cry_sprintf(&szText[strlen(szText)], sizeof(szText) - strlen(szText), "%d", pLsource->castersList.Count());
+				cry_sprintf(&szText[strlen(szText)], sizeof(szText) - strlen(szText), "%d", pLsource->GetCasterNum());
 			}
 
 			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "%s", szText);
@@ -3292,6 +3357,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		DRAW_OBJ_STATS(eERType_Road);
 		DRAW_OBJ_STATS(eERType_DistanceCloud);
 		DRAW_OBJ_STATS(eERType_Rope);
+		DRAW_OBJ_STATS(eERType_TerrainSector);
 		DRAW_OBJ_STATS(eERType_MovableBrush);
 		DRAW_OBJ_STATS(eERType_GameEffect);
 		DRAW_OBJ_STATS(eERType_BreakableGlass);
@@ -3317,7 +3383,9 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "RNTmpData(Used+Free): %d + %d = %d (%d KB)",
 		                     nUsed, nFree, nUsed + nFree, (nUsed + nFree) * (int)sizeof(SRenderNodeTempData) / 1024);
 
-		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "COctreeNode::m_arrEmptyNodes.Count() = %d", COctreeNode::m_arrEmptyNodes.Count());
+		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "COctreeNode::m_arrEmptyNodes = %d", COctreeNode::m_arrEmptyNodes.Count());
+
+		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, "COctreeNode::NodesCounterAll = %d", COctreeNode::m_nNodesCounterAll);
 	}
 
 		#if defined(INFO_FRAME_COUNTER)
@@ -3473,10 +3541,10 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 				float iconWidth = (float)nIconSize /* / vpWidth * 800.0f */;
 				float iconHeight = (float)nIconSize /* / vpHeight * 600.0f */;
 				IRenderAuxImage::Draw2dImage(
-					fTextPosX /* / vpWidth * 800.0f*/ - iconWidth,
-					(fTextPosY += nIconSize + 3) /* / vpHeight * 600.0f*/,
-					iconWidth, iconHeight,
-					pRenderTexture->GetTextureID(), 0, 1.0f, 1.0f, 0);
+				  fTextPosX /* / vpWidth * 800.0f*/ - iconWidth,
+				  (fTextPosY += nIconSize + 3) /* / vpHeight * 600.0f*/,
+				  iconWidth, iconHeight,
+				  pRenderTexture->GetTextureID(), 0, 1.0f, 1.0f, 0);
 			}
 		}
 	}
@@ -3511,7 +3579,7 @@ void C3DEngine::ScreenShotHighRes(CStitchedImage* pStitchedImage, const int nRen
 	GetRenderer()->EndFrame();
 	GetConsole()->SetScrollMax(0);
 
-	const uint32 ScreenWidth  = GetRenderer()->GetOverlayWidth();
+	const uint32 ScreenWidth = GetRenderer()->GetOverlayWidth();
 	const uint32 ScreenHeight = GetRenderer()->GetOverlayHeight();
 	uint32* pImage = new uint32[ScreenWidth * ScreenHeight];
 	for (uint32 yy = 0; yy < SliceCount; yy++)
@@ -3542,8 +3610,8 @@ void C3DEngine::ScreenShotHighRes(CStitchedImage* pStitchedImage, const int nRen
 			PrintMessagePlus("ok");
 
 			pStitchedImage->RasterizeRect(pImage, ScreenWidth, ScreenHeight, x, y, fTransitionSize,
-				fTransitionSize > 0.0001f && BlendX,
-				fTransitionSize > 0.0001f && BlendY);
+			                              fTransitionSize > 0.0001f && BlendX,
+			                              fTransitionSize > 0.0001f && BlendY);
 		}
 	}
 	delete[] pImage;
@@ -3676,7 +3744,7 @@ bool C3DEngine::ScreenShotPanorama(CStitchedImage* pStitchedImage, const int nRe
 
 		PrintMessage("PanoramaScreenShot %d/%d FadeBorders:%c (id: %d/%d)", iSlice + 1, SliceCount, bFadeBorders ? 't' : 'f', GetRenderer()->GetFrameID(false), GetRenderer()->GetFrameID(true));
 
-		pStitchedImage->RasterizeCylinder(pImage, GetRenderer()->GetOverlayWidth(), GetRenderer()->GetOverlayHeight(), iSlice + 1, bFadeBorders,cam);
+		pStitchedImage->RasterizeCylinder(pImage, GetRenderer()->GetOverlayWidth(), GetRenderer()->GetOverlayHeight(), iSlice + 1, bFadeBorders, cam);
 
 		// debug
 		//		m_pCurrentStitchedImage->SaveImage("PanoramaScreenShotsTest");
@@ -3699,13 +3767,13 @@ bool C3DEngine::ScreenShotPanorama(CStitchedImage* pStitchedImage, const int nRe
 #endif  // #if CRY_PLATFORM_WINDOWS
 }
 
-void C3DEngine::SetupClearColor(const SRenderingPassInfo &passInfo)
+void C3DEngine::SetupClearColor(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
 	bool bCameraInOutdoors = m_pVisAreaManager && !m_pVisAreaManager->m_pCurArea && !(m_pVisAreaManager->m_pCurPortal && m_pVisAreaManager->m_pCurPortal->m_lstConnections.Count() > 1);
 
-	passInfo.GetIRenderView()->SetTargetClearColor(bCameraInOutdoors ? m_vFogColor : Vec3(0, 0, 0),true);
+	passInfo.GetIRenderView()->SetTargetClearColor(bCameraInOutdoors ? m_vFogColor : Vec3(0, 0, 0), true);
 	/*
 	   if(bCameraInOutdoors)
 	   if(GetCamera().GetPosition().z<GetWaterLevel() && m_pTerrain)
@@ -3768,4 +3836,67 @@ void C3DEngine::FillDebugFPSInfo(SDebugFPSInfo& info)
 	info.fAverageFPS = average;
 	info.fMinFPS = min / (float)minc;
 	info.fMaxFPS = max / (float)maxc;
+}
+
+void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, std::vector<SRenderingPassInfo>& shadowPassInfo)
+{
+	std::vector<ShadowMapFrustum*> shadowFrustums;
+
+	// enable collection of all accessed frustums
+	CLightEntity::SetShadowFrustumsCollector(&shadowFrustums);
+
+	// collect dynamic sun frustums
+	InitShadowFrustums(passInfo);
+
+	// render outdoor point lights and collect dynamic point light frustums
+	if (IsObjectsTreeValid())
+	{
+		m_pObjectsTree->Render_LightSources(false, passInfo);
+	}
+
+	// render indoor point lights and collect dynamic point light frustums
+	for (int i = 0; i < m_pVisAreaManager->m_lstVisibleAreas.Count(); i++)
+	{
+		CVisArea* pArea = m_pVisAreaManager->m_lstVisibleAreas[i];
+
+		if (pArea->IsObjectsTreeValid())
+		{
+			for (int c = 0; c < pArea->m_lstCurCamerasLen; c++)
+			{
+				pArea->GetObjectsTree()->Render_LightSources(false, SRenderingPassInfo::CreateTempRenderingInfo(CVisArea::s_tmpCameras[pArea->m_lstCurCamerasIdx + c], passInfo));
+			}
+		}
+	}
+
+	// disable collection of frustums
+	CLightEntity::SetShadowFrustumsCollector(nullptr);
+	m_onePassShadowFrustumsCount = shadowFrustums.size();
+
+	shadowPassInfo.reserve(kMaxShadowPassesNum);
+	CRenderView* pMainRenderView = passInfo.GetRenderView();
+	for (uint32 i = 0; i < shadowFrustums.size() && i < kMaxShadowPassesNum; i++)
+	{
+		ShadowMapFrustum* pFr = shadowFrustums[i];
+
+		assert(!pFr->pOnePassShadowView);
+
+		int cubeSide = 0; // optimize only sun cascades for now
+
+		// create a matching rendering pass info for shadows
+		shadowPassInfo.push_back(SRenderingPassInfo::CreateShadowPassRenderingInfo(
+		                           GetRenderer()->GetNextAvailableShadowsView((IRenderView*)pMainRenderView, pFr),
+		                           passInfo.GetCamera(),
+		                           pFr->m_Flags,
+		                           pFr->nShadowMapLod,
+		                           pFr->IsCached(),
+		                           pFr->bIsMGPUCopy,
+		                           &pFr->nShadowGenMask,
+		                           cubeSide,
+		                           pFr->nShadowGenID[passInfo.ThreadID()][cubeSide],
+		                           SRenderingPassInfo::DEFAULT_SHADOWS_FLAGS));
+
+		pFr->pOnePassShadowView = shadowPassInfo[i].GetIRenderView();
+
+		pFr->pOnePassShadowView->SwitchUsageMode(IRenderView::eUsageModeWriting);
+	}
 }

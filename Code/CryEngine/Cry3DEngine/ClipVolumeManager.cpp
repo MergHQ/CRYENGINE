@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 
@@ -41,7 +41,7 @@ bool CClipVolumeManager::UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<I
 		volumeInfo.m_bActive = bActive;
 
 		AABB volumeBBox = pClipVolume->GetClipVolumeBBox();
-		Get3DEngine()->m_pObjManager->ReregisterEntitiesInArea(volumeBBox.min, volumeBBox.max);
+		Get3DEngine()->m_pObjManager->ReregisterEntitiesInArea(&volumeBBox);
 		return true;
 	}
 
@@ -78,11 +78,11 @@ void CClipVolumeManager::UpdateEntityClipVolume(const Vec3& pos, IRenderNode* pR
 
 	// user assigned clip volume
 	CLightEntity* pLight = static_cast<CLightEntity*>(pRenderNode);
-	if (pRenderNode->GetRenderNodeType() == eERType_Light && (pLight->m_light.m_Flags & DLF_HAS_CLIP_VOLUME) != 0)
+	if (pRenderNode->GetRenderNodeType() == eERType_Light && (pLight->GetLightProperties().m_Flags & DLF_HAS_CLIP_VOLUME) != 0)
 	{
 		for (int i = 1; i >= 0; --i)
 		{
-			if (CClipVolume* pVolume = static_cast<CClipVolume*>(pLight->m_light.m_pClipVolumes[i]))
+			if (CClipVolume* pVolume = static_cast<CClipVolume*>(pLight->GetLightProperties().m_pClipVolumes[i]))
 				pVolume->RegisterRenderNode(pRenderNode);
 		}
 	}
@@ -123,7 +123,7 @@ bool CClipVolumeManager::IsClipVolumeRequired(IRenderNode* pRenderNode) const
 	const bool bForwardObject = (pRenderNode->m_nInternalFlags & IRenderNode::REQUIRES_FORWARD_RENDERING) != 0;
 	const EERType ertype = pRenderNode->GetRenderNodeType();
 	const bool bIsValidLight = ertype == eERType_Light &&
-	                           (static_cast<CLightEntity*>(pRenderNode)->m_light.m_Flags & NoClipVolumeLights) == 0;
+	                           (static_cast<CLightEntity*>(pRenderNode)->GetLightProperties().m_Flags & NoClipVolumeLights) == 0;
 	const bool bIsValidFogVolume = (ertype == eERType_FogVolume) &&
 	                               static_cast<CFogVolumeRenderNode*>(pRenderNode)->IsAffectsThisAreaOnly();
 

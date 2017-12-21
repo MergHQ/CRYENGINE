@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "3dEngine.h"
@@ -123,8 +123,11 @@ bool CVisibleRenderNodesManager::SetLastSeenFrame(SRenderNodeTempData* pTempData
 	}
 	else
 	{
-		// TODO: shakey condition, what if environment-rendering (which is recursive)
-		// wants to render the same node across multiple cube-slices?
+		// It is valid to call SetLastSeenFrame multiple times, for example for objects visible through several portals
+		// Second call will return false and skip object rendering
+		// In case of rendering into multiple cube-map sides multiple full passes with increased frame id must be executed
+		// TODO: support multiple general passes in single scene graph traverse (similar to multi-frustum shadow generation)
+		// TODO: support omni-directional rendering for single-traverse 360 rendering
 
 		int recursion = passInfo.IsRecursivePass() ? 1 : 0;
 		// Only return true if last seen frame is different form the current
@@ -132,7 +135,6 @@ bool CVisibleRenderNodesManager::SetLastSeenFrame(SRenderNodeTempData* pTempData
 		pTempData->userData.lastSeenFrame[recursion] = frame;
 	}
 
-	CRY_ASSERT(bCanRenderThisFrame);
 	return bCanRenderThisFrame;
 }
 
@@ -266,7 +268,7 @@ void CVisibleRenderNodesManager::ClearAll()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVisibleRenderNodesManager::OnRenderNodeVisibilityChange(IRenderNode *pRenderNode, bool bVisible)
+void CVisibleRenderNodesManager::OnRenderNodeVisibilityChange(IRenderNode* pRenderNode, bool bVisible)
 {
 	//if (!passInfo.IsCachedShadowPass())
 	{
@@ -288,7 +290,7 @@ CVisibleRenderNodesManager::Statistics CVisibleRenderNodesManager::GetStatistics
 	return stats;
 }
 
-void CVisibleRenderNodesManager::OnEntityDeleted(IEntity *pEntity)
+void CVisibleRenderNodesManager::OnEntityDeleted(IEntity* pEntity)
 {
 #ifdef _DEBUG
 	LOADING_TIME_PROFILE_SECTION;
@@ -296,13 +298,13 @@ void CVisibleRenderNodesManager::OnEntityDeleted(IEntity *pEntity)
 	for (auto* node : m_visibleNodes)
 	{
 		const bool bEntityOwnerdeleted =
-			node->userData.pOwnerNode &&
-			node->userData.pOwnerNode->GetOwnerEntity() == pEntity;
+		  node->userData.pOwnerNode &&
+		  node->userData.pOwnerNode->GetOwnerEntity() == pEntity;
 		if (bEntityOwnerdeleted)
 		{
 			CryFatalError(
-				"%s: Dangling IEntity pointer detected in render node: %s",
-				__FUNCTION__, node->userData.pOwnerNode->GetEntityClassName());
+			  "%s: Dangling IEntity pointer detected in render node: %s",
+			  __FUNCTION__, node->userData.pOwnerNode->GetEntityClassName());
 		}
 	}
 #endif

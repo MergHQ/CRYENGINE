@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "WaterVolumeRenderNode.h"
@@ -1149,4 +1149,9 @@ Vec3 CWaterVolumeRenderNode::GetPos(bool bWorldOnly) const
 IMaterial* CWaterVolumeRenderNode::GetMaterial(Vec3* pHitPos) const
 {
 	return m_pMaterial;
+}
+
+bool CWaterVolumeRenderNode::CanExecuteRenderAsJob()
+{
+	return !gEnv->IsEditor() && GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType());
 }

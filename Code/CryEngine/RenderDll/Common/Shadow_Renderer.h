@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #if !defined(SHADOWRENDERER_H)
 #define SHADOWRENDERER_H
@@ -133,6 +133,7 @@ public:
 
 	PodArray<struct IShadowCaster*> castersList;
 	PodArray<struct IShadowCaster*> jobExecutedCastersList;
+	int                             onePassCastersNum = 0; // contains number of casters if one-pass octree traversal is used for this frustum
 
 	CCamera                         FrustumPlanes[OMNI_SIDES_NUM];
 	uint32                          nShadowGenID[RT_COMMAND_BUF_COUNT][OMNI_SIDES_NUM];
@@ -144,12 +145,12 @@ public:
 	int                             nUpdateFrameId;
 	IRenderNode*                    pLightOwner;
 	uint32                          uCastersListCheckSum;
-	int                             nShadowMapLod; // currently use as GSMLod, can be used as cubemap side, -1 means this variable is not used
-
+	int                             nShadowMapLod;                // currently use as GSMLod, can be used as cubemap side, -1 means this variable is not used
+	IRenderView*                    pOnePassShadowView = nullptr; // if one-pass octree traversal is used this view is allocated and filled by 3DEngine
 	uint32                          m_Flags;
 
 	// Render view that is used to accumulate items for this frustum.
-	std::shared_ptr<ShadowCacheData>                          pShadowCacheData;
+	std::shared_ptr<ShadowCacheData> pShadowCacheData;
 
 public:
 	ShadowMapFrustum()
@@ -430,6 +431,12 @@ public:
 	{
 		castersList.Clear();
 		jobExecutedCastersList.Clear();
+		onePassCastersNum = 0;
+	}
+
+	int GetCasterNum()
+	{
+		return castersList.Count() + jobExecutedCastersList.Count() + onePassCastersNum;
 	}
 
 	void                         GetMemoryUsage(ICrySizer* pSizer) const;

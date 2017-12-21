@@ -38,12 +38,11 @@ struct SRenderPolygonDescription
 	{}
 };
 
-
 //////////////////////////////////////////////////////////////////////
 //! Enum for types of deferred lights.
 enum eDeferredLightType
 {
-	eDLT_DeferredLight = 0,
+	eDLT_DeferredLight          = 0,
 
 	eDLT_NumShadowCastingLights = eDLT_DeferredLight + 1,
 
@@ -58,7 +57,7 @@ enum eDeferredLightType
 struct SRenderGlobalFogDescription
 {
 	bool   bEnable = false;
-	ColorF color   = {};
+	ColorF color = {};
 };
 
 // Interface to the render view.
@@ -83,8 +82,8 @@ struct IRenderView : public CMultiThreadRefCount
 		eUsageModeWritingDone,
 	};
 
-	virtual void   SetFrameId(int frameId) = 0;
-	virtual int    GetFrameId() const = 0;
+	virtual void SetFrameId(int frameId) = 0;
+	virtual int  GetFrameId() const = 0;
 
 	//! Set the start time of the frame
 	virtual void       SetFrameTime(CTimeValue time) = 0;
@@ -108,13 +107,13 @@ struct IRenderView : public CMultiThreadRefCount
 	virtual CryJobState* GetWriteMutex() = 0;
 
 	//! Enable global fog and provide the color when enabled.
-	virtual void         SetGlobalFog(const SRenderGlobalFogDescription &fogDescription) = 0;
+	virtual void SetGlobalFog(const SRenderGlobalFogDescription& fogDescription) = 0;
 
 	//! Enable clear of the back buffer to the desired color
-	virtual void         SetTargetClearColor(const ColorF &color,bool bEnableClear) = 0;
+	virtual void SetTargetClearColor(const ColorF& color, bool bEnableClear) = 0;
 
 	//! Assign rendering viewport to be used in render view
-	virtual void                   SetViewport(const SRenderViewport &viewport) = 0;
+	virtual void                   SetViewport(const SRenderViewport& viewport) = 0;
 	//! Retrieve rendering viewport for this Render View
 	virtual const SRenderViewport& GetViewport() const = 0;
 
@@ -164,6 +163,9 @@ struct IRenderView : public CMultiThreadRefCount
 
 	//! Return current used skinning pool index.
 	virtual uint32 GetSkinningPoolIndex() const = 0;
+
+	//! Return associated shadow frustum
+	virtual ShadowMapFrustum* GetShadowFrustumOwner() const = 0;
 };
 
 typedef _smart_ptr<IRenderView> IRenderViewPtr;

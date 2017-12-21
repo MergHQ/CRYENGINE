@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #ifndef _WATERVOLUME_RENDERNODE_
 #define _WATERVOLUME_RENDERNODE_
@@ -141,6 +141,7 @@ public:
 	virtual uint16       GetLayerId()                { return m_nLayerId; }
 
 	void                 Render_JobEntry(SRendParams rParam, SRenderingPassInfo passInfo);
+	virtual bool         CanExecuteRenderAsJob() final;
 
 	void                 Transform(const Vec3& localOrigin, const Matrix34& l2w);
 	virtual IRenderNode* Clone() const;

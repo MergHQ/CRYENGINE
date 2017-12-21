@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -85,7 +85,7 @@ DEFINE_ENUM_FLAG_OPERATORS(SRenderViewInfo::EFlags);
 class CRenderView : public IRenderView
 {
 public:
-	typedef TRange<int> ItemsRange;
+	typedef TRange<int>          ItemsRange;
 	typedef _smart_ptr<CTexture> TexSmartPtr;
 
 	enum eShadowFrustumRenderType
@@ -133,32 +133,32 @@ public:
 	virtual void       SetPreviousFrameCameras(const CCamera* pCameras, int cameraCount) final;
 
 	// Begin/End writing items to the view from 3d engine traversal.
-	virtual void                   SwitchUsageMode(EUsageMode mode) override;
+	virtual void                 SwitchUsageMode(EUsageMode mode) override;
 
-	virtual CryJobState*           GetWriteMutex() override { return &m_jobstate_Write; };
+	virtual CryJobState*         GetWriteMutex() override { return &m_jobstate_Write; };
 
-	virtual void                   AddRenderObject(CRenderElement* pRenderElement, SShaderItem& pShaderItem, CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo, int list, int afterWater) threadsafe final;
-	virtual void                   AddPermanentObject(CRenderObject* pObject, const SRenderingPassInfo& passInfo) final;
+	virtual void                 AddRenderObject(CRenderElement* pRenderElement, SShaderItem& pShaderItem, CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo, int list, int afterWater) threadsafe final;
+	virtual void                 AddPermanentObject(CRenderObject* pObject, const SRenderingPassInfo& passInfo) final;
 
-	virtual void                   SetGlobalFog(const SRenderGlobalFogDescription& fogDescription) final { m_globalFogDescription = fogDescription; };
+	virtual void                 SetGlobalFog(const SRenderGlobalFogDescription& fogDescription) final { m_globalFogDescription = fogDescription; };
 
-	virtual void                   SetTargetClearColor(const ColorF& color, bool bEnableClear) override;
+	virtual void                 SetTargetClearColor(const ColorF& color, bool bEnableClear) override;
 
-	virtual CRenderObject*         AllocateTemporaryRenderObject() final;
+	virtual CRenderObject*       AllocateTemporaryRenderObject() final;
 
-	void                           SetSkinningDataPools(const SSkinningDataPoolInfo& skinningData) { m_SkinningData = skinningData;   }
-	const SSkinningDataPoolInfo&   GetSkinningDataPools() const                                    { return m_SkinningData;           }
-	virtual uint32                 GetSkinningPoolIndex() const final                              { return m_SkinningData.poolIndex; }
+	void                         SetSkinningDataPools(const SSkinningDataPoolInfo& skinningData) { m_SkinningData = skinningData;   }
+	const SSkinningDataPoolInfo& GetSkinningDataPools() const                                    { return m_SkinningData;           }
+	virtual uint32               GetSkinningPoolIndex() const final                              { return m_SkinningData.poolIndex; }
 
 	//! HDR and Z Depth render target
-	CTexture*                      GetColorTarget() const;
-	CTexture*                      GetDepthTarget() const;
-	
-	void                           AssignRenderOutput(CRenderOutputPtr pRenderOutput);
-	void                           InspectRenderOutput();
-	void                           UnsetRenderOutput();
-	const CRenderOutput*           GetRenderOutput() const { return m_pRenderOutput.get(); }
-	CRenderOutput*                 GetRenderOutput() { return m_pRenderOutput.get(); }
+	CTexture*            GetColorTarget() const;
+	CTexture*            GetDepthTarget() const;
+
+	void                 AssignRenderOutput(CRenderOutputPtr pRenderOutput);
+	void                 InspectRenderOutput();
+	void                 UnsetRenderOutput();
+	const CRenderOutput* GetRenderOutput() const { return m_pRenderOutput.get(); }
+	CRenderOutput*       GetRenderOutput()       { return m_pRenderOutput.get(); }
 
 	//! Retrieve rendering viewport for this Render View
 	virtual void                   SetViewport(const SRenderViewport& viewport) final;
@@ -166,11 +166,11 @@ public:
 
 	//! Get resolution of the render target surface(s)
 	//! Note that Viewport can be smaller then this.
-	Vec2i                          GetRenderResolution() const { return Vec2i(m_RenderWidth, m_RenderHeight); }
-	Vec2i                          GetOutputResolution() const { return m_pRenderOutput ? m_pRenderOutput->GetOutputResolution() : GetRenderResolution(); }
-	Vec2i                          GetDisplayResolution() const { return m_pRenderOutput ? m_pRenderOutput->GetDisplayResolution() : GetRenderResolution(); }
+	Vec2i GetRenderResolution() const  { return Vec2i(m_RenderWidth, m_RenderHeight); }
+	Vec2i GetOutputResolution() const  { return m_pRenderOutput ? m_pRenderOutput->GetOutputResolution() : GetRenderResolution(); }
+	Vec2i GetDisplayResolution() const { return m_pRenderOutput ? m_pRenderOutput->GetDisplayResolution() : GetRenderResolution(); }
 
-	void                           ChangeRenderResolution(int renderWidth, int renderHeight, bool bForce);
+	void  ChangeRenderResolution(int renderWidth, int renderHeight, bool bForce);
 	//////////////////////////////////////////////////////////////////////////
 
 public:
@@ -192,16 +192,16 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Camera access
-	const CCamera&       GetCamera(CCamera::EEye eye)         const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_camera[eye]; }
-	const CCamera&       GetPreviousCamera(CCamera::EEye eye) const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_previousCamera[eye]; }
+	const CCamera& GetCamera(CCamera::EEye eye)         const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_camera[eye]; }
+	const CCamera& GetPreviousCamera(CCamera::EEye eye) const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_previousCamera[eye]; }
 
-	CCamera::EEye        GetCurrentEye() const;
+	CCamera::EEye  GetCurrentEye() const;
 
-	RenderItems&         GetRenderItems(int nRenderList);
-	uint32               GetBatchFlags(int nRenderList) const;
+	RenderItems& GetRenderItems(int nRenderList);
+	uint32       GetBatchFlags(int nRenderList) const;
 
-	void                 AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
-	                                   SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward) threadsafe;
+	void         AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
+	                           SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward) threadsafe;
 
 	bool       CheckPermanentRenderObjects() const { return !m_permanentObjects.empty(); }
 	void       AddPermanentObjectInline(CPermanentRenderObject* pObject, SRendItemSorter sorter, int shadowFrustumSide);
@@ -239,9 +239,10 @@ public:
 	ShadowFrustumsPtr& GetShadowFrustumsByType(eShadowFrustumRenderType type);
 
 	// Can start executing post write jobs on shadow views
-	void PostWriteShadowViews();
-	void PrepareShadowViews(); // Sync all outstanding shadow preparation jobs
-	void SetShadowFrustumOwner(ShadowMapFrustum* pOwner) { m_shadows.m_pShadowFrustumOwner = pOwner; }
+	void                      PostWriteShadowViews();
+	void                      PrepareShadowViews(); // Sync all outstanding shadow preparation jobs
+	void                      SetShadowFrustumOwner(ShadowMapFrustum* pOwner) { m_shadows.m_pShadowFrustumOwner = pOwner; }
+	virtual ShadowMapFrustum* GetShadowFrustumOwner() const final             { return m_shadows.m_pShadowFrustumOwner; }
 
 	//////////////////////////////////////////////////////////////////////////
 	const SRenderGlobalFogDescription& GetGlobalFog() const        { return m_globalFogDescription; };
@@ -441,10 +442,10 @@ private:
 
 	SRenderViewport  m_viewport;
 
-	bool            m_bTrackUncompiledItems;
-	bool            m_bAddingClientPolys;
+	bool             m_bTrackUncompiledItems;
+	bool             m_bAddingClientPolys;
 
-	uint32          m_skinningPoolIndex = 0;
+	uint32           m_skinningPoolIndex = 0;
 
 	// Render objects modified by this view.
 	lockfree_add_vector<CPermanentRenderObject*> m_permanentRenderObjectsToCompile;

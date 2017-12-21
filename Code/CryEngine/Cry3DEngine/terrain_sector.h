@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   terrain_sector.h
@@ -47,7 +47,7 @@ struct SSurfaceTypeLocal
 {
 	enum
 	{
-		kMaxSurfaceTypesNum =  3, // maximum number of surface types allowed to be mixed in single heightmap unit
+		kMaxSurfaceTypesNum = 3,  // maximum number of surface types allowed to be mixed in single heightmap unit
 		kMaxSurfaceTypeId   = 15, // maximum value of localized surface type id
 		kMaxVal             = 15  // wights and id's are stored in 4 bit uint
 	};
@@ -130,7 +130,7 @@ struct SHeightMapItem
 		return memcmp(this, &other, sizeof(SHeightMapItem)) == 0;
 	}
 
-	bool   operator!=(const SHeightMapItem& other)
+	bool operator!=(const SHeightMapItem& other)
 	{
 		return memcmp(this, &other, sizeof(SHeightMapItem)) != 0;
 	}
@@ -180,7 +180,7 @@ struct SRangeInfo
 		return GetRawDataByIndex(x * nSize + y);
 	}
 
-	inline float RawDataToHeight(const SHeightMapItem & data) const
+	inline float RawDataToHeight(const SHeightMapItem& data) const
 	{
 		return fOffset + float(data.height) * fRange;
 	}
@@ -241,14 +241,14 @@ struct SRangeInfo
 	// Finds or selects a 4-bit index in this sector (0-14) to represent the given global surface type index (0-126).
 	uint16 GetLocalSurfaceTypeID(uint16 usGlobalSurfaceTypeID);
 
-	float   fOffset;
-	float   fRange;
-	SHeightMapItem*pHMData;
+	float           fOffset;
+	float           fRange;
+	SHeightMapItem* pHMData;
 
-	uint16  nSize;
-	uint8   nUnitBitShift;
-	uint8   nModified;
-	uchar*  pSTPalette; // Maps the local surface type indices from the HM to the global ones in CTerrain
+	uint16          nSize;
+	uint8           nUnitBitShift;
+	uint8           nModified;
+	uchar*          pSTPalette; // Maps the local surface type indices from the HM to the global ones in CTerrain
 
 	enum
 	{
@@ -330,7 +330,7 @@ public:
 struct SProcObjChunk : public Cry3DEngineBase
 {
 	CVegetation* m_pInstances;
-	int nAllocatedItems;
+	int          nAllocatedItems;
 	SProcObjChunk();
 	~SProcObjChunk();
 	void GetMemoryUsage(class ICrySizer* pSizer) const;
@@ -393,7 +393,7 @@ public:
 
 	virtual void                       Render(const SRendParams& RendParams, const SRenderingPassInfo& passInfo);
 	const AABB                         GetBBox() const;
-	virtual const AABB                 GetBBoxVirtual()                                                                                   { return GetBBox(); }
+	virtual const AABB                 GetBBoxVirtual()                                                               { return GetBBox(); }
 	virtual void                       FillBBox(AABB& aabb);
 	virtual struct ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) { return NULL; };
 
@@ -433,12 +433,12 @@ public:
 	void          RequestTextures(const SRenderingPassInfo& passInfo);
 	void          EnableTextureEditingMode(unsigned int textureId);
 	void          UpdateNodeTextureFromEditorData();
-	void					UpdateNodeNormalMapFromEditorData();
+	void          UpdateNodeNormalMapFromEditorData();
 	static void   SaveCompressedMipmapLevel(const void* data, size_t size, void* userData);
 	void          CheckNodeGeomUnload(const SRenderingPassInfo& passInfo);
 	void          SetChildsLod(int nNewGeomLOD, const SRenderingPassInfo& passInfo);
 	int           GetAreaLOD(const SRenderingPassInfo& passInfo);
-	bool          RenderNodeHeightmap(const SRenderingPassInfo& passInfo);
+	void          RenderNodeHeightmap(const SRenderingPassInfo& passInfo);
 	bool          CheckUpdateProcObjects(const SRenderingPassInfo& passInfo);
 	void          IntersectTerrainAABB(const AABB& aabbBox, PodArray<CTerrainNode*>& lstResult);
 	void          UpdateDetailLayersInfo(bool bRecursive);
@@ -451,36 +451,36 @@ public:
 	CTerrainNode* GetReadyTexSourceNode(int nTexMML, eTexureType eTexType);
 	int           GetData(byte*& pData, int& nDataSize, EEndian eEndian, SHotUpdateInfo* pExportInfo);
 	void          CalculateTexGen(const CTerrainNode* pTextureSourceNode, float& fTexOffsetX, float& fTexOffsetY, float& fTexScale);
-	void          FillSectorHeightMapTextureData(Array2d<float> &arrHmData);
+	void          FillSectorHeightMapTextureData(Array2d<float>& arrHmData);
 
 	template<class T>
-	int   Load_T(T*& f, int& nDataSize, EEndian eEndian, bool bSectorPalettes, SHotUpdateInfo* pExportInfo);
-	int   Load(uint8*& f, int& nDataSize, EEndian eEndian, bool bSectorPalettes, SHotUpdateInfo* pExportInfo);
-	int   Load(FILE*& f, int& nDataSize, EEndian eEndian, bool bSectorPalettes, SHotUpdateInfo* pExportInfo);
-	int   ReloadModifiedHMData(FILE* f);
-	void  ReleaseHoleNodes();
+	int                          Load_T(T*& f, int& nDataSize, EEndian eEndian, bool bSectorPalettes, SHotUpdateInfo* pExportInfo);
+	int                          Load(uint8*& f, int& nDataSize, EEndian eEndian, bool bSectorPalettes, SHotUpdateInfo* pExportInfo);
+	int                          Load(FILE*& f, int& nDataSize, EEndian eEndian, bool bSectorPalettes, SHotUpdateInfo* pExportInfo);
+	int                          ReloadModifiedHMData(FILE* f);
+	void                         ReleaseHoleNodes();
 
-	void  UnloadNodeTexture(bool bRecursive);
-	float GetSurfaceTypeAmount(Vec3 vPos, int nSurfType);
-	void  GetMemoryUsage(ICrySizer* pSizer) const;
-	void  GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB);
+	void                         UnloadNodeTexture(bool bRecursive);
+	float                        GetSurfaceTypeAmount(Vec3 vPos, int nSurfType);
+	void                         GetMemoryUsage(ICrySizer* pSizer) const;
+	void                         GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB);
 
-	void  SetLOD(const SRenderingPassInfo& passInfo);
-	uint8 GetTextureLOD(float fDistance, const SRenderingPassInfo& passInfo);
+	void                         SetLOD(const SRenderingPassInfo& passInfo);
+	uint8                        GetTextureLOD(float fDistance, const SRenderingPassInfo& passInfo);
 
-	void                ReleaseHeightMapGeometry(bool bRecursive = false, const AABB* pBox = NULL);
-	void                ResetHeightMapGeometry(bool bRecursive = false, const AABB* pBox = NULL);
-	int                 GetSecIndex();
+	void                         ReleaseHeightMapGeometry(bool bRecursive = false, const AABB* pBox = NULL);
+	void                         ResetHeightMapGeometry(bool bRecursive = false, const AABB* pBox = NULL);
+	int                          GetSecIndex();
 
-	void                DrawArray(const SRenderingPassInfo& passInfo);
+	void                         DrawArray(const SRenderingPassInfo& passInfo);
 
-	void                UpdateRenderMesh(struct CStripsInfo* pArrayInfo, bool bUpdateVertices);
-	void                BuildVertices(float stepSize, bool bSafetyBorder);
-	void                SetVertexSurfaceType(float x, float y, float stepSize, CTerrain* pTerrain, SVF_P2S_N4B_C4B_T1F &vert);
-	void                SetVertexNormal(float x, float y, const float iLookupRadius, CTerrain* pTerrain, const int nTerrainSize, SVF_P2S_N4B_C4B_T1F &vert, Vec3 * pTerrainNorm = nullptr);
-	void                AppendTrianglesFromObjects(const int nOriginX, const int nOriginY, CTerrain* pTerrain, const float stepSize, const int nTerrainSize);
+	void                         UpdateRenderMesh(struct CStripsInfo* pArrayInfo, bool bUpdateVertices);
+	void                         BuildVertices(float stepSize, bool bSafetyBorder);
+	void                         SetVertexSurfaceType(float x, float y, float stepSize, CTerrain* pTerrain, SVF_P2S_N4B_C4B_T1F& vert);
+	void                         SetVertexNormal(float x, float y, const float iLookupRadius, CTerrain* pTerrain, const int nTerrainSize, SVF_P2S_N4B_C4B_T1F& vert, Vec3* pTerrainNorm = nullptr);
+	void                         AppendTrianglesFromObjects(const int nOriginX, const int nOriginY, CTerrain* pTerrain, const float stepSize, const int nTerrainSize);
 
-	int                 GetMML(int dist, int mmMin, int mmMax);
+	int                          GetMML(int dist, int mmMin, int mmMax);
 
 	uint32                       GetLastTimeUsed() { return m_nLastTimeUsed; }
 
@@ -494,7 +494,7 @@ public:
 	static void                  UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcRM, struct SSurfaceType* pSurface, _smart_ptr<IRenderMesh>& pMatRM, int nProjectionId, PodArray<vtx_idx>& lstIndices, const char* szComment, bool bUpdateOnlyBorders, int nNonBorderIndicesCount, const SRenderingPassInfo& passInfo);
 	static void                  SetupTexGenParams(SSurfaceType* pLayer, float* pOutParams, uint8 ucProjAxis, bool bOutdoor, float fTexGenScale = 1.f);
 
-	int                          CreateSectorTexturesFromBuffer(float * pSectorHeightMap);
+	int                          CreateSectorTexturesFromBuffer(float* pSectorHeightMap);
 
 	bool                         CheckUpdateDiffuseMap();
 	bool                         AssignTextureFileOffset(int16*& pIndices, int16& nElementsNum);
@@ -523,11 +523,11 @@ public:
 	CTerrainNode*        m_pChilds; // 4 childs or NULL
 
 	// flags
-	uint8                m_bProcObjectsReady  : 1;
-	uint8                m_bMergeNotAllowed   : 1;
-	uint8                m_bHasHoles          : 2; // sector has holes in the ground
-	uint8                m_bNoOcclusion       : 1; // sector has visareas under terrain surface
-	uint8                m_bUpdateOnlyBorders : 1; // remember if only the border were updated
+	uint8 m_bProcObjectsReady  : 1;
+	uint8 m_bMergeNotAllowed   : 1;
+	uint8 m_bHasHoles          : 2;                // sector has holes in the ground
+	uint8 m_bNoOcclusion       : 1;                // sector has visareas under terrain surface
+	uint8 m_bUpdateOnlyBorders : 1;                // remember if only the border were updated
 
 #ifndef _RELEASE
 	ETextureEditingState m_eTextureEditingState, m_eElevTexEditingState;

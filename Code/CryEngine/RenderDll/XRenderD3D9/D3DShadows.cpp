@@ -101,11 +101,23 @@ void CD3D9Renderer::EF_PrepareShadowGenRenderList(const SRenderingPassInfo& pass
 			if (PrepareShadowGenForFrustum(pRenderView, pCurFrustum, pSun, nSunID, 0))
 			{
 				ShadowMapFrustumPtr pFrustumForRenderer = pCurFrustum->Clone();
-				CRenderView* pShadowView = pCurFrustum->GetNextAvailableShadowsView(pRenderView, pFrustumForRenderer.get());
+				CRenderView* pShadowView = (CRenderView*)pCurFrustum->pOnePassShadowView;
+
+				if (!pShadowView)
+				{
+					// allocate view if was not prepared by 3dengine
+					pShadowView = pCurFrustum->GetNextAvailableShadowsView(pRenderView, pFrustumForRenderer.get());
+				}
 
 				pRenderView->AddShadowFrustumToRender(SShadowFrustumToRender(pFrustumForRenderer, pSun, nSunID, pShadowView));
 			}
+			else if (pCurFrustum->pOnePassShadowView)
+			{
+				// make sure unused render view will be released in valid state
+				pCurFrustum->pOnePassShadowView->SwitchUsageMode(IRenderView::eUsageModeReading);
+				pCurFrustum->pOnePassShadowView->SwitchUsageMode(IRenderView::eUsageModeReadingDone);
 		}
+	}
 	}
 
 	// Render All frustums.
@@ -144,10 +156,22 @@ bool CD3D9Renderer::EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRende
 		if (PrepareShadowGenForFrustum(pRenderView, pCurFrustum, pLight, nLightID, nCurLOD))
 		{
 			ShadowMapFrustumPtr pFrustumForRenderer = pCurFrustum->Clone();
-			CRenderView* pShadowView = pCurFrustum->GetNextAvailableShadowsView(pRenderView, pFrustumForRenderer.get());
+			IRenderView* pShadowView = pCurFrustum->pOnePassShadowView;
+
+			if (!pShadowView)
+			{
+				// allocate view if was not prepared by 3dengine
+				pShadowView = pCurFrustum->GetNextAvailableShadowsView(pRenderView, pFrustumForRenderer.get());
+			}
 
 			pRenderView->AddShadowFrustumToRender(SShadowFrustumToRender(pFrustumForRenderer, pLight, nLightID, pShadowView));
 			nCurLOD++;
+		}
+		else if (pCurFrustum->pOnePassShadowView)
+		{
+			// make sure unused render view will be released in valid state
+			pCurFrustum->pOnePassShadowView->SwitchUsageMode(IRenderView::eUsageModeReading);
+			pCurFrustum->pOnePassShadowView->SwitchUsageMode(IRenderView::eUsageModeReadingDone);
 		}
 	}
 
@@ -168,8 +192,7 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 		return false;
 	if (pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_Nearest)
 		return true;
-	if (pCurFrustum->castersList.Count() <= 0 && pCurFrustum->jobExecutedCastersList.Count() <= 0 &&
-	    !pCurFrustum->IsCached() && pCurFrustum->m_eFrustumType != ShadowMapFrustum::e_GsmDynamicDistance)
+	if (pCurFrustum->GetCasterNum() <= 0 && !pCurFrustum->IsCached() && pCurFrustum->m_eFrustumType != ShadowMapFrustum::e_GsmDynamicDistance)
 		return false;
 	if (pCurFrustum->IsCached() && pCurFrustum->nTexSize == 0)
 		return false;
@@ -311,7 +334,7 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 		nSides = OMNI_SIDES_NUM;
 
 	// Static shadow map might not have any active casters, so don't reset nShadowGenMask every frame
-	if (!pCurFrustum->IsCached())
+	if (!pCurFrustum->IsCached() && pCurFrustum->onePassCastersNum <= 0)
 		pCurFrustum->nShadowGenMask = pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance ? 1 : 0;
 	Matrix44 m;
 
@@ -704,4 +727,3 @@ void CD3D9Renderer::FX_SetupForwardShadows(CRenderView* pRenderView, uint64& nMa
 	// store cascade mask in m_TempVecs[4].z
 	*alias_cast<uint32*>(&m_cEF.m_TempVecs[4].z) = nCascadeMask;
 }
-

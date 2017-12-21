@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   brush.cpp
@@ -144,7 +144,7 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 
 	rParms.dwFObjFlags |= (m_dwRndFlags & ERF_FOB_RENDER_AFTER_POSTPROCESSING) ? FOB_RENDER_AFTER_POSTPROCESSING : 0;
 	rParms.dwFObjFlags |= FOB_TRANS_MASK;
-	
+
 	rParms.nHUDSilhouettesParams = m_nHUDSilhouettesParam;
 	rParms.nSubObjHideMask = m_nSubObjHideMask;
 
@@ -166,7 +166,7 @@ void CBrush::Render(const struct SRendParams& _EntDrawParams, const SRenderingPa
 		}
 
 		// Nearest objects recalculate instance matrix every frame
-		CalcNearestTransform(m_Matrix, passInfo);	
+		CalcNearestTransform(m_Matrix, passInfo);
 	}
 
 	m_pStatObj->Render(rParms, passInfo);
@@ -193,9 +193,9 @@ void CBrush::SetMatrix(const Matrix34& mat)
 	m_Matrix = mat;
 
 	bool replacePhys = fabs(mat.GetColumn(0).len() - m_Matrix.GetColumn(0).len())
-	                 + fabs(mat.GetColumn(1).len() - m_Matrix.GetColumn(1).len())
-	                 + fabs(mat.GetColumn(2).len() - m_Matrix.GetColumn(2).len()) > FLT_EPSILON;
-	
+	                   + fabs(mat.GetColumn(1).len() - m_Matrix.GetColumn(1).len())
+	                   + fabs(mat.GetColumn(2).len() - m_Matrix.GetColumn(2).len()) > FLT_EPSILON;
+
 	InvalidatePermanentRenderObjectMatrix();
 
 	pe_params_foreign_data foreignData;
@@ -978,7 +978,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 
 		if (lodValue.LodA() <= 0 && Cry3DEngineBase::GetCVars()->e_MergedMeshes != 0 && m_pDeform && m_pDeform->HasDeformableData())
 		{
-			if (Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && GetCVars()->e_StatObjBufferRenderTasks == 1 && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion"))
+			if (Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion"))
 			{
 				GetObjManager()->PushIntoCullOutputQueue(SCheckOcclusionOutput::CreateDeformableBrushOutput(this, gEnv->pRenderer->EF_DuplicateRO(pObj, passInfo), lodValue.LodA(), passInfo));
 			}
@@ -1052,7 +1052,7 @@ void CBrush::InvalidatePermanentRenderObjectMatrix()
 ///////////////////////////////////////////////////////////////////////////////
 bool CBrush::CanExecuteRenderAsJob()
 {
-	return false;
+	return (GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType())) != 0;
 }
 
 //////////////////////////////////////////////////////////////////////////

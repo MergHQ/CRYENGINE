@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   statobjmandraw.cpp
@@ -30,7 +30,7 @@
 void CObjManager::RenderDecalAndRoad(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffectingLights,
                                      const Vec3& vAmbColor, const AABB& objBox,
                                      float fEntDistance,
-                                     bool bSunOnly, bool nCheckOcclusion,
+                                     bool nCheckOcclusion,
                                      const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
@@ -109,8 +109,9 @@ void CObjManager::RenderDecalAndRoad(IRenderNode* pEnt, PodArray<SRenderLight*>*
 void CObjManager::RenderVegetation(CVegetation* pEnt, PodArray<SRenderLight*>* pAffectingLights,
                                    const AABB& objBox,
                                    float fEntDistance,
-                                   bool bSunOnly, SSectorTextureSet* pTerrainTexInfo, bool nCheckOcclusion,
-                                   const SRenderingPassInfo& passInfo)
+                                   SSectorTextureSet* pTerrainTexInfo, bool nCheckOcclusion,
+                                   const SRenderingPassInfo& passInfo,
+                                   uint32 passCullMask)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -127,34 +128,46 @@ void CObjManager::RenderVegetation(CVegetation* pEnt, PodArray<SRenderLight*>* p
 	if (!pTempData)
 		return;
 
-	if (nCheckOcclusion && pEnt->m_pOcNode)
-		if (GetObjManager()->IsBoxOccluded(objBox, fEntDistance * passInfo.GetInverseZoomFactor(), &pTempData->userData.m_OcclState,
-		                                   pEnt->m_pOcNode->GetVisArea() != NULL, eoot_OBJECT, passInfo))
-			return;
+	if (passCullMask & kPassCullMainMask && nCheckOcclusion && pEnt->m_pOcNode)
+	{
+		if (GetObjManager()->IsBoxOccluded(objBox, fEntDistance * passInfo.GetInverseZoomFactor(), &pTempData->userData.m_OcclState, pEnt->m_pOcNode->GetVisArea() != NULL, eoot_OBJECT, passInfo))
+		{
+			passCullMask &= ~kPassCullMainMask;
+		}
+	}
 
 	const CLodValue lodValue = pEnt->ComputeLod(pTempData->userData.nWantedLod, passInfo);
 
-	if (GetCVars()->e_LodTransitionTime && passInfo.IsGeneralPass())
+	if (passCullMask & kPassCullMainMask)
 	{
-		// Render current lod and (if needed) previous lod and perform time based lod transition using dissolve
+		if (GetCVars()->e_LodTransitionTime && passInfo.IsGeneralPass())
+		{
+			// Render current lod and (if needed) previous lod and perform time based lod transition using dissolve
 
-		CLodValue arrlodVals[2];
-		int nLodsNum = ComputeDissolve(lodValue, pTempData, pEnt, fEntDistance, &arrlodVals[0]);
+			CLodValue arrlodVals[2];
+			int nLodsNum = ComputeDissolve(lodValue, pTempData, pEnt, fEntDistance, &arrlodVals[0]);
 
-		for (int i = 0; i < nLodsNum; i++)
-			pEnt->Render(passInfo, arrlodVals[i], pTerrainTexInfo);
+			for (int i = 0; i < nLodsNum; i++)
+				pEnt->Render(passInfo, arrlodVals[i], pTerrainTexInfo);
+		}
+		else
+		{
+			pEnt->Render(passInfo, lodValue, pTerrainTexInfo);
+		}
 	}
-	else
+
+	if (passCullMask & ~kPassCullMainMask)
 	{
-		pEnt->Render(passInfo, lodValue, pTerrainTexInfo);
+		COctreeNode::RenderObjectIntoShadowViews(passInfo, fEntDistance, pEnt, objBox, passCullMask, &lodValue, nullptr, nullptr, pTerrainTexInfo);
 	}
 }
 
 void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffectingLights,
                                const Vec3& vAmbColor, const AABB& objBox,
                                float fEntDistance,
-                               bool bSunOnly, EERType eERType,
-                               const SRenderingPassInfo& passInfo)
+                               EERType eERType,
+                               const SRenderingPassInfo& passInfo,
+                               uint32 passCullMask)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -171,8 +184,14 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 	if (nRndFlags & ERF_HIDDEN)
 		return;
 
+	if (eERType == eERType_MovableBrush)
+	{
+		GetObjManager()->RenderBrush((CBrush*)pEnt, pAffectingLights, nullptr, objBox, fEntDistance, true, passInfo, passCullMask);
+		return;
+	}
+
 #ifndef _RELEASE
-	if (!passInfo.RenderEntities() && pEnt->GetOwnerEntity()) 
+	if (!passInfo.RenderEntities() && pEnt->GetOwnerEntity())
 		return;
 	// check cvars
 	switch (eERType)
@@ -251,11 +270,11 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 	if ((nRndFlags & ERF_GOOD_OCCLUDER))
 	{
 		if (pTempData->userData.m_OcclState.nLastOccludedMainFrameID == passInfo.GetMainFrameID())
-			return;
+			passCullMask &= ~kPassCullMainMask;
 
 		if (pCVars->e_CoverageBufferDrawOccluders)
 		{
-			return;
+			passCullMask &= ~kPassCullMainMask;
 		}
 	}
 #endif
@@ -269,7 +288,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 	if (!(nRndFlags & ERF_RENDER_ALWAYS) && !objBox.IsContainPoint(vCamPos))
 		if (eERType == eERType_Light || fEntDistance < pEnt->m_fWSMaxViewDist * pCVars->e_OcclusionCullingViewDistRatio)
 			if (IsBoxOccluded(objBox, fEntDistance * passInfo.GetInverseZoomFactor(), &pTempData->userData.m_OcclState, pVisArea != NULL, eoot_OBJECT, passInfo))
-				return;
+				passCullMask &= ~kPassCullMainMask;
 
 	SRendParams DrawParams;
 	DrawParams.pTerrainTexInfo = NULL;
@@ -280,7 +299,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 	DrawParams.nEditorSelectionID = pEnt->m_nEditorSelectionID;
 	//DrawParams.pInstance = pEnt;
 
-	if (eERType != eERType_Light && (pEnt->m_nInternalFlags & IRenderNode::REQUIRES_NEAREST_CUBEMAP))
+	if (passCullMask & kPassCullMainMask && eERType != eERType_Light && (pEnt->m_nInternalFlags & IRenderNode::REQUIRES_NEAREST_CUBEMAP))
 	{
 		Vec4 envProbMults = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		uint16 nCubemapTexId = 0;
@@ -314,7 +333,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 	if (pEnt->GetRndFlags() & ERF_HUD_REQUIRE_DEPTHTEST)
 	{
 		DrawParams.nCustomFlags |= COB_HUD_REQUIRE_DEPTHTEST;
-		DrawParams.dwFObjFlags  |= FOB_HUD_REQUIRE_DEPTHTEST;
+		DrawParams.dwFObjFlags |= FOB_HUD_REQUIRE_DEPTHTEST;
 	}
 	if (pEnt->GetRndFlags() & ERF_DISABLE_MOTION_BLUR)
 	{
@@ -334,22 +353,30 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 	DrawParams.nMaterialLayers = pEnt->GetMaterialLayers();
 	DrawParams.lodValue = pEnt->ComputeLod(pTempData->userData.nWantedLod, passInfo);
 
-	if (GetCVars()->e_LodTransitionTime && passInfo.IsGeneralPass() && pEnt->GetRenderNodeType() == eERType_MovableBrush)
+	if (passCullMask & kPassCullMainMask)
 	{
-		// Render current lod and (if needed) previous lod and perform time based lod transition using dissolve
-
-		CLodValue arrlodVals[2];
-		int nLodsNum = ComputeDissolve(DrawParams.lodValue, pTempData, pEnt, fEntDistance, &arrlodVals[0]);
-
-		for (int i = 0; i < nLodsNum; i++)
+		if (GetCVars()->e_LodTransitionTime && passInfo.IsGeneralPass() && pEnt->GetRenderNodeType() == eERType_MovableBrush)
 		{
-			DrawParams.lodValue = arrlodVals[i];
+			// Render current lod and (if needed) previous lod and perform time based lod transition using dissolve
+
+			CLodValue arrlodVals[2];
+			int nLodsNum = ComputeDissolve(DrawParams.lodValue, pTempData, pEnt, fEntDistance, &arrlodVals[0]);
+
+			for (int i = 0; i < nLodsNum; i++)
+			{
+				DrawParams.lodValue = arrlodVals[i];
+				pEnt->Render(DrawParams, passInfo);
+			}
+		}
+		else
+		{
 			pEnt->Render(DrawParams, passInfo);
 		}
 	}
-	else
+
+	if (passCullMask & ~kPassCullMainMask)
 	{
-		pEnt->Render(DrawParams, passInfo);
+		COctreeNode::RenderObjectIntoShadowViews(passInfo, fEntDistance, pEnt, objBox, passCullMask, nullptr, &DrawParams, pAffectingLights, nullptr);
 	}
 }
 
