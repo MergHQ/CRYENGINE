@@ -8,7 +8,9 @@
 #include <CryMath/Cry_Vector3.h>
 #include <CryMath/Cry_Vector4.h>
 #include <CryMath/Cry_Quat.h>
+#include <CryMath/Cry_Matrix33.h>
 #include <CryMath/Cry_Matrix34.h>
+#include <CryMath/Cry_Matrix44.h>
 #include <CryMath/Cry_Geo.h>
 #include <CrySerialization/Gap.h>
 #include <CrySerialization/Decorators/Range.h>
@@ -195,9 +197,16 @@ inline bool Serialize(Serialization::IArchive& ar, struct AABB& value, const cha
 }
 
 template<typename T>
+bool Serialize(Serialization::IArchive& ar, Matrix33_tpl<T>& value, const char* name, const char* label)
+{
+	typedef T(&Array)[9];
+	return ar((Array)value, name, label);
+}
+
+template<typename T>
 bool Serialize(Serialization::IArchive& ar, Matrix34_tpl<T>& value, const char* name, const char* label)
 {
-	typedef T (& Array)[3][4];
+	typedef T (& Array)[12];
 	return ar((Array)value, name, label);
 }
 
@@ -205,7 +214,24 @@ bool Serialize(Serialization::IArchive& ar, Matrix34_tpl<T>& value, const char* 
 template<typename T>
 bool Serialize(Serialization::IArchive& ar, Matrix34H<T>& value, const char* name, const char* label)
 {
-	typedef T (& Array)[3][4];
+	typedef T (& Array)[12];
+	return ar((Array)value, name, label);
+}
+#endif
+
+template<typename T>
+bool Serialize(Serialization::IArchive& ar, Matrix44_tpl<T>& value, const char* name, const char* label)
+{
+	typedef T(&Array)[16];
+	return ar((Array)value, name, label);
+}
+
+
+#ifdef CRY_TYPE_SIMD4
+template<typename T>
+bool Serialize(Serialization::IArchive& ar, Matrix44H<T>& value, const char* name, const char* label)
+{
+	typedef T(&Array)[16];
 	return ar((Array)value, name, label);
 }
 #endif
@@ -222,36 +248,27 @@ struct SRotation
 
 	void Serialize(Serialization::IArchive& ar)
 	{
-	}
-
-	Quat& quat;
-};
-
-inline bool Serialize(Serialization::IArchive& ar, SRotation& value, const char* name, const char* label)
-{
-	if (ar.isEdit())
-	{
-		if (ar.openBlock(name, label))
+		if (ar.isEdit())
 		{
-			Vec3 v = Vec3(RAD2DEG(Ang3::GetAnglesXYZ(Matrix33(value.quat))));
+			Vec3 v = Vec3(RAD2DEG(Ang3::GetAnglesXYZ(Matrix33(quat))));
 			ar(Serialization::MinMaxRange(v.x, 1.0f), "x", "^");
 			ar(Serialization::MinMaxRange(v.y, 1.0f), "y", "^");
 			ar(Serialization::MinMaxRange(v.z, 1.0f), "z", "^");
 			if (ar.isInput())
-				value.quat = Quat(Ang3(DEG2RAD(v)));
+				quat = Quat(Ang3(DEG2RAD(v)));
 
 			ar(Serialization::SGap(), "gap", "^");
 			ar.closeBlock();
-			return true;
 		}
-		return false;
+		else
+		{
+			typedef float(&Array)[4];
+			ar((Array)quat, "rotation", "Rotation");
+		}
 	}
-	else
-	{
-		typedef float (& Array)[4];
-		return ar((Array)value, name, label);
-	}
-}
+
+	Quat& quat;
+};
 
 struct SPosition
 {
@@ -261,32 +278,46 @@ struct SPosition
 
 	void Serialize(Serialization::IArchive& ar)
 	{
+		if (ar.isEdit())
+		{
+			ar(Serialization::MinMaxRange(vec.x), "x", "^");
+			ar(Serialization::MinMaxRange(vec.y), "y", "^");
+			ar(Serialization::MinMaxRange(vec.z), "z", "^");
+			ar(Serialization::SGap(), "gap", "^");
+		}
+		else
+		{
+			typedef float(*Array)[3];
+			ar(*((Array)& vec.x), "position", "Position");
+		}
 	}
 
 	Vec3& vec;
 };
 
-inline bool Serialize(Serialization::IArchive& ar, SPosition& c, const char* name, const char* label)
+struct SScale
 {
-	if (ar.isEdit())
+	explicit SScale(Vec3& v)
+		: vec(v)
+	{}
+
+	void Serialize(Serialization::IArchive& ar)
 	{
-		if (ar.openBlock(name, label))
+		if (ar.isEdit())
 		{
-			ar(Serialization::MinMaxRange(c.vec.x), "x", "^");
-			ar(Serialization::MinMaxRange(c.vec.y), "y", "^");
-			ar(Serialization::MinMaxRange(c.vec.z), "z", "^");
-			ar(Serialization::SGap(), "gap", "^");
-			ar.closeBlock();
-			return true;
+			ar(Serialization::MinMaxRange(vec.x), "x", "^");
+			ar(Serialization::MinMaxRange(vec.y), "y", "^");
+			ar(Serialization::MinMaxRange(vec.z), "z", "^");
 		}
-		return false;
+		else
+		{
+			typedef float(*Array)[3];
+			ar(*((Array)& vec.x), "scale", "Scale");
+		}
 	}
-	else
-	{
-		typedef float (* Array)[3];
-		return ar(*((Array) & c.vec.x), name, label);
-	}
-}
+
+	Vec3& vec;
+};
 
 struct SUniformScale
 {

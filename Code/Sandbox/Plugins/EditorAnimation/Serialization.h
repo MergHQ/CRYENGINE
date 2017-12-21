@@ -9,7 +9,6 @@
 struct SkeletonAlias;
 bool Serialize(Serialization::IArchive& ar, SkeletonAlias& value, const char* name, const char* label);
 
-#include <CrySerialization/Decorators/Slider.h>
 #include <CrySerialization/Decorators/Resources.h>
 #include <CrySerialization/Decorators/ResourceFilePath.h>
 #include <CrySerialization/Decorators/ResourceFolderPath.h>
@@ -35,7 +34,6 @@ using Serialization::CharacterRigPath;
 using Serialization::ResourceFolderPath;
 using Serialization::JointName;
 using Serialization::BitFlags;
-using Serialization::Decorators::Slider;
 using Serialization::LocalToJoint;
 using Serialization::ToggleButton;
 using Serialization::SerializeToMemory;

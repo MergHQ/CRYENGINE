@@ -144,13 +144,17 @@ public:
 #endif
 	};
 
-#if YASLI_NO_RTTI
-	static void* extractVPtr(BaseType* ptr)
+	template<typename T, typename std::enable_if<std::is_polymorphic<T>::value, int>::type = 0>
+	static void* extractVPtr(T* ptr)
 	{
 		return *((void**)ptr);
 	}
 
-#endif
+	template<typename T, typename std::enable_if<!std::is_polymorphic<T>::value, int>::type = 0>
+	static void* extractVPtr(T* ptr)
+	{
+		return nullptr;
+	}
 
 	template<class Derived>
 	struct Annotation
@@ -202,6 +206,8 @@ public:
 		if (ptr == 0)
 			return "";
 		void* vptr = extractVPtr(ptr);
+		if (!vptr)
+			return "";
 		typename VPtrToCreatorMap::const_iterator it = vptrToCreatorMap_.find(vptr);
 		if (it == vptrToCreatorMap_.end())
 			return "";
@@ -264,7 +270,8 @@ public:
 		while (current) {
 			typeToCreatorMap_.erase(current->description().typeID());
 #if YASLI_NO_RTTI
-			vptrToCreatorMap_.erase(current->vptr());
+			if(current->vptr())
+				vptrToCreatorMap_.erase(current->vptr());
 #endif
 			for (size_t i = 0; i < creators_.size(); ++i) {
 				if (creators_[i] == current) {
@@ -295,7 +302,8 @@ protected:
 		}
 		creators_.push_back(creator);
 		registeredNameToTypeID_[creator->description().name()] = creator->typeID();
-		vptrToCreatorMap_[creator->vptr()] =  creator;
+		if(creator->vptr())
+			vptrToCreatorMap_[creator->vptr()] =  creator;
 	}
 
 	template<class T>

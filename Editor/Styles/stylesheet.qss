@@ -767,6 +767,42 @@ QPropertySplitter {
 	margin: -1px -3px -1px 7px;
 }
 
+/* Top widget of the property tree */
+QPropertyTree2 { 
+	qproperty-collapsedIcon: url(icons:General/Pointer_Right.ico);
+	qproperty-expandedIcon: url(icons:General/Pointer_Down_Expanded.ico);
+	qproperty-dragHandleIcon: url(icons:General/Drag_Handle.ico);
+}
+
+/* Inner widget of the property tree. Contains rows and possibly other FormWidgets inside. 
+Use the nesting property value to style differently for different nesting levels.*/
+PropertyTree2--CFormWidget {
+	qproperty-margins: rect(0 0 0 0);
+	alternate-background-color: rgb(110,110,110);
+	font-size: 12px;
+	qproperty-spacing: 4;
+	qproperty-iconSize: 16;
+	qproperty-minRowHeight: 20;
+	qproperty-nestingIndent: 10;
+}
+
+PropertyTree2--CFormWidget[nesting="1"] {
+	qproperty-margins: rect(2 4 2 4);
+}
+
+PropertyTree2--CFormWidget[nesting="0"] {
+	qproperty-groupBorderColor: rgb(102,102,102);
+	qproperty-groupBorderWidth: 4;
+	qproperty-margins: rect(2 4 2 4);
+}
+
+/* For e.g. array "add" button to have the same height as regular rows */
+PropertyTree2--CFormWidget QToolButton {
+	max-width: 20;
+	max-height: 20;
+	icon-size: 20px;
+}
+
 QPushButton {
     background-color: rgb(102,102,102);
     color: rgb(242,242,242);
@@ -813,6 +849,11 @@ QPushButton::pressed {
 QPushButton::disabled {
     background-color: rgb(45,45,45);
     color: rgb(120,120,120);
+}
+
+CColorButton {
+    border: none;
+    border-radius: 3px;
 }
 
 QSeparators {
@@ -969,6 +1010,14 @@ QCheckBox::indicator:checked::disabled {
 
 QCheckBox::indicator:checked {
 	image: url(icons:General/Tick_Tinted.ico);
+}
+
+QCheckBox::indicator:indeterminate {
+	image: url(icons:General/Tick_Box_On.ico);
+}
+
+QCheckBox::indicator:indeterminate::disabled {
+	image: url(icons:General/Tick_Box_On_disabled.ico);
 }
 
 QTreeView {                                 /* tree body*/

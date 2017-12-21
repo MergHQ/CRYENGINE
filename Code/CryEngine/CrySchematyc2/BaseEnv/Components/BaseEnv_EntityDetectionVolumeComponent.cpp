@@ -6,7 +6,6 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
-#include <CrySerialization/Decorators/Slider.h>
 
 #include "BaseEnv/BaseEnv_AutoRegistrar.h"
 #include "BaseEnv/BaseEnv_BaseEnv.h"
