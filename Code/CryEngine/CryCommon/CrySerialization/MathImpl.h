@@ -258,7 +258,6 @@ struct SRotation
 				quat = Quat(Ang3(DEG2RAD(v)));
 
 			ar(Serialization::SGap(), "gap", "^");
-			ar.closeBlock();
 		}
 		else
 		{
