@@ -2102,6 +2102,12 @@ CAssetBrowser CBreadcrumbsBar QLineEdit[error=true]
     border: 1px solid rgb(193,70,70) outset;
 }
 
+CAssetBrowser QToolButton::menu-indicator 
+{
+	image: url("icons:common/general_dropdown_triangle.ico");
+	subcontrol-position: right bottom;
+}
+
 QWidget#HoverWidget
 {
 	margin-top: 2px;

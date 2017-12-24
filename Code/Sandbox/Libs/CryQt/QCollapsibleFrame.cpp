@@ -22,13 +22,12 @@ QCollapsibleFrame::QCollapsibleFrame(QWidget* pParent)
 	pMainLayout->setSpacing(0);
 	pMainLayout->setContentsMargins(2, 2, 2, 2);
 	setLayout(pMainLayout);
-	SetHeaderWidget(new CCollapsibleFrameHeader("", this));
 }
 
 QCollapsibleFrame::QCollapsibleFrame(const QString& title, QWidget* pParent)
 	: QCollapsibleFrame(pParent)
 {
-	SetTitle(title);
+	SetHeaderWidget(new CCollapsibleFrameHeader(title, this));
 }
 
 void QCollapsibleFrame::SetWidget(QWidget* pWidget)
