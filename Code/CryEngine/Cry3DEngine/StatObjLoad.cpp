@@ -436,7 +436,7 @@ bool CStatObj::LoadStreamRenderMeshes(const char* filename, const void* pData, c
 			}
 		}
 	}
-	if (!bMeshAssigned)
+	if (!bMeshAssigned && gEnv->pRenderer)
 	{
 		Warning("RenderMesh not assigned %s", m_szFileName.c_str());
 	}
