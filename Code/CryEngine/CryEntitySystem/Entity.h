@@ -173,6 +173,7 @@ public:
 	virtual Vec3        GetWorldPos() const final { return m_worldTM.GetTranslation(); }
 	virtual Ang3        GetWorldAngles() const final;
 	virtual Quat        GetWorldRotation() const final;
+	virtual Vec3        GetWorldScale() const final;
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual void UpdateComponentEventMask(const IEntityComponent* pComponent) final;
