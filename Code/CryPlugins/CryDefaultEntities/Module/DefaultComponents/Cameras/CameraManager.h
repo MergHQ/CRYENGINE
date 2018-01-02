@@ -35,10 +35,16 @@ public:
 			component->GetEntity()->UpdateComponentEventMask(component);
 		}
 	}
+
 	virtual void RemoveCamera(ICameraComponent* pComponent) override
 	{
 		if (pComponent->GetEntity()->GetSimulationMode() != EEntitySimulationMode::Preview)
 		{
+			if (pComponent == m_pActive)
+			{
+				m_pActive = nullptr;
+			}
+
 			stl::find_and_erase(m_Cameras, pComponent);
 		}
 	}
