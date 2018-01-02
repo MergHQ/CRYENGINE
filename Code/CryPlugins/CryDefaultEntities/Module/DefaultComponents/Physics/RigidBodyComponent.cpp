@@ -95,7 +95,7 @@ void CRigidBodyComponent::Initialize()
 {
 	Physicalize();
 
-	if (m_bNetworked)
+	if (m_isNetworked)
 	{
 		m_pEntity->GetNetEntity()->BindToNetwork();
 	}
@@ -116,7 +116,7 @@ void CRigidBodyComponent::Physicalize()
 	buoyancyParams.waterDamping = m_buoyancyParameters.damping;
 	m_pEntity->GetPhysicalEntity()->SetParams(&buoyancyParams);
 
-	Enable(m_bEnabledByDefault);
+	Enable(m_isEnabledByDefault);
 }
 
 void CRigidBodyComponent::ProcessEvent(const SEntityEvent& event)
@@ -171,9 +171,10 @@ void CRigidBodyComponent::ProcessEvent(const SEntityEvent& event)
 		break;
 	case ENTITY_EVENT_START_GAME:
 		{
-			if (m_bEnabledByDefault)
+			if (m_isEnabledByDefault)
 			{
 				pe_action_awake pa;
+				pa.bAwake = !m_isResting;
 				int result = m_pEntity->GetPhysicalEntity()->Action(&pa);
 			}
 		}
