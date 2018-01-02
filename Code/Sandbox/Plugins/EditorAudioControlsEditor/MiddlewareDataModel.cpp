@@ -9,13 +9,11 @@
 
 #include <IEditorImpl.h>
 #include <ImplItem.h>
-#include <CrySystem/File/CryFile.h>  // Includes CryPath.h in correct order.
-#include <QtUtil.h>
+#include <CrySystem/File/CryFile.h>
 #include <CrySandbox/CrySignal.h>
 #include <CryIcon.h>
 
-#include <QMimeData>
-#include <QDataStream>
+#include <DragDrop.h>
 
 namespace ACE
 {
@@ -36,14 +34,14 @@ CMiddlewareDataModel::~CMiddlewareDataModel()
 //////////////////////////////////////////////////////////////////////////
 void CMiddlewareDataModel::ConnectSignals()
 {
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.Connect([&]()
 	{
 		beginResetModel();
 		m_pEditorImpl = nullptr;
 		endResetModel();
 	}, reinterpret_cast<uintptr_t>(this));
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
 	{
 		m_pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
 		beginResetModel();
@@ -54,8 +52,8 @@ void CMiddlewareDataModel::ConnectSignals()
 //////////////////////////////////////////////////////////////////////////
 void CMiddlewareDataModel::DisconnectSignals()
 {
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -68,82 +66,93 @@ void CMiddlewareDataModel::Reset()
 //////////////////////////////////////////////////////////////////////////
 CItemModelAttribute* CMiddlewareDataModel::GetAttributeForColumn(EColumns const column)
 {
+	CItemModelAttribute* pAttribute = nullptr;
+
 	switch (column)
 	{
 	case EColumns::Notification:
-		return &ModelUtils::s_notificationAttribute;
+		pAttribute = &ModelUtils::s_notificationAttribute;
+		break;
 	case EColumns::Connected:
-		return &ModelUtils::s_connectedAttribute;
+		pAttribute = &ModelUtils::s_connectedAttribute;
+		break;
 	case EColumns::Localized:
-		return &ModelUtils::s_localizedAttribute;
+		pAttribute = &ModelUtils::s_localizedAttribute;
+		break;
 	case EColumns::Name:
-		return &Attributes::s_nameAttribute;
+		pAttribute = &Attributes::s_nameAttribute;
+		break;
 	default:
-		return nullptr;
+		pAttribute = nullptr;
+		break;
 	}
+
+	return pAttribute;
 }
 
 //////////////////////////////////////////////////////////////////////////
 QVariant CMiddlewareDataModel::GetHeaderData(int const section, Qt::Orientation const orientation, int const role)
 {
-	if (orientation != Qt::Horizontal)
-	{
-		return QVariant();
-	}
+	QVariant variant = QVariant();
 
-	auto const pAttribute = GetAttributeForColumn(static_cast<EColumns>(section));
-
-	if (pAttribute == nullptr)
+	if (orientation == Qt::Horizontal)
 	{
-		return QVariant();
-	}
+		auto const pAttribute = GetAttributeForColumn(static_cast<EColumns>(section));
 
-	switch (role)
-	{
-	case Qt::DecorationRole:
-		if (section == static_cast<int>(EColumns::Notification))
+		if (pAttribute != nullptr)
 		{
-			return CryIcon("icons:General/Scripting.ico"); // This icon is a placeholder.
+			switch (role)
+			{
+			case Qt::DecorationRole:
+				if (section == static_cast<int>(EColumns::Notification))
+				{
+					variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NotificationHeader));
+				}
+				break;
+			case Qt::DisplayRole:
+				// For Notification we use an icons instead.
+				if (section == static_cast<int>(EColumns::Name))
+				{
+					variant = pAttribute->GetName();
+				}
+				break;
+			case Qt::ToolTipRole:
+				variant = pAttribute->GetName();
+				break;
+			case Attributes::s_getAttributeRole:
+				variant = QVariant::fromValue(pAttribute);
+				break;
+			default:
+				break;
+			}
 		}
-		break;
-	case Qt::DisplayRole:
-		// For Notification we use Icons instead.
-		if (section == static_cast<int>(EColumns::Name))
-		{
-			return pAttribute->GetName();
-		}
-		break;
-	case Qt::ToolTipRole:
-		return pAttribute->GetName();
-	case Attributes::s_getAttributeRole:
-		return QVariant::fromValue(pAttribute);
-	default:
-		break;
 	}
 
-	return QVariant();
+	return variant;
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CMiddlewareDataModel::rowCount(QModelIndex const& parent) const
 {
+	int rowCount = 0;
+
 	if (m_pEditorImpl != nullptr)
 	{
 		CImplItem const* pImplItem = ItemFromIndex(parent);
 
 		if (pImplItem == nullptr)
 		{
-			// if not valid it must be a top level item so get root
+			// If not valid it must be a top level item, so get root.
 			pImplItem = m_pEditorImpl->GetRoot();
 		}
 
 		if (pImplItem != nullptr)
 		{
-			return pImplItem->ChildCount();
+			rowCount =  pImplItem->ChildCount();
 		}
 	}
 
-	return 0;
+	return rowCount;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -155,85 +164,96 @@ int CMiddlewareDataModel::columnCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 {
+	QVariant variant = QVariant();
+
 	if (m_pEditorImpl != nullptr)
 	{
-		if (!index.isValid())
+		if (index.isValid())
 		{
-			return QVariant();
-		}
+			CImplItem const* const pImplItem = ItemFromIndex(index);
 
-		CImplItem const* const pImplItem = ItemFromIndex(index);
-
-		if (pImplItem != nullptr)
-		{
-			switch (index.column())
+			if (pImplItem != nullptr)
 			{
-			case static_cast<int>(EColumns::Notification):
+				switch (index.column())
 				{
-					switch (role)
+				case static_cast<int>(EColumns::Notification):
 					{
-					case Qt::DecorationRole:
-						if ((!pImplItem->IsConnected() && !pImplItem->IsContainer()))
+						switch (role)
 						{
-							return CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
+						case Qt::DecorationRole:
+							if (!pImplItem->IsConnected() && !pImplItem->IsContainer())
+							{
+								variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
+							}
+							else if (pImplItem->IsLocalised())
+							{
+								variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized));
+							}
+							break;
+						case Qt::ToolTipRole:
+							if (!pImplItem->IsConnected() && !pImplItem->IsContainer())
+							{
+								variant = tr("Item is not connected to any audio system control");
+							}
+							else if (pImplItem->IsLocalised())
+							{
+								variant = tr("Item is localized");
+							}
+							break;
+						case static_cast<int>(ERoles::Id):
+							variant = pImplItem->GetId();
+							break;
+						default:
+							break;
 						}
-						else if (pImplItem->IsLocalised())
-						{
-							return CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized));
-						}
-						break;
-					case Qt::ToolTipRole:
-						if ((!pImplItem->IsConnected() && !pImplItem->IsContainer()))
-						{
-							return tr("Item is not connected to any audio system control");
-						}
-						else if (pImplItem->IsLocalised())
-						{
-							return tr("Item is localized");
-						}
-						break;
 					}
-				}
-				break;
-			case static_cast<int>(EColumns::Connected):
-				{
-					if ((role == Qt::CheckStateRole) && (!pImplItem->IsContainer()))
+					break;
+				case static_cast<int>(EColumns::Connected):
+					if ((role == Qt::CheckStateRole) && !pImplItem->IsContainer())
 					{
-						return pImplItem->IsConnected() ? Qt::Checked : Qt::Unchecked;
+						variant = pImplItem->IsConnected() ? Qt::Checked : Qt::Unchecked;
 					}
-				}
-				break;
-			case static_cast<int>(EColumns::Localized):
-				{
-					if ((role == Qt::CheckStateRole) && (!pImplItem->IsContainer()))
+					break;
+				case static_cast<int>(EColumns::Localized):
+					if ((role == Qt::CheckStateRole) && !pImplItem->IsContainer())
 					{
-						return pImplItem->IsLocalised() ? Qt::Checked : Qt::Unchecked;
+						variant = pImplItem->IsLocalised() ? Qt::Checked : Qt::Unchecked;
 					}
-				}
-				break;
-			case static_cast<int>(EColumns::Name):
-				{
-					switch (role)
+					break;
+				case static_cast<int>(EColumns::Name):
 					{
-					case Qt::DecorationRole:
-						return CryIcon(m_pEditorImpl->GetTypeIcon(pImplItem));
-						break;
-					case Qt::DisplayRole:
-					case Qt::ToolTipRole:
-					case static_cast<int>(ERoles::Name):
-						return static_cast<char const*>(pImplItem->GetName());
-						break;
-					case static_cast<int>(ERoles::Id):
-						return pImplItem->GetId();
-						break;
+						switch (role)
+						{
+						case Qt::DecorationRole:
+							variant = CryIcon(m_pEditorImpl->GetTypeIcon(pImplItem));
+							break;
+						case Qt::DisplayRole:
+						case Qt::ToolTipRole:
+						case static_cast<int>(ERoles::Name):
+							variant = static_cast<char const*>(pImplItem->GetName());
+							break;
+						case static_cast<int>(ERoles::Id):
+							variant = pImplItem->GetId();
+							break;
+						case static_cast<int>(ERoles::ItemType):
+							variant = pImplItem->GetType();
+							break;
+						case static_cast<int>(ERoles::IsPlaceholder):
+							variant = pImplItem->IsPlaceholder();
+							break;
+						default:
+							break;
+						}
 					}
+					break;
+				default:
+					break;
 				}
-				break;
 			}
 		}
 	}
 
-	return QVariant();
+	return variant;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -245,7 +265,7 @@ QVariant CMiddlewareDataModel::headerData(int section, Qt::Orientation orientati
 //////////////////////////////////////////////////////////////////////////
 Qt::ItemFlags CMiddlewareDataModel::flags(QModelIndex const& index) const
 {
-	Qt::ItemFlags flag = QAbstractItemModel::flags(index);
+	Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 
 	if (index.isValid() && (m_pEditorImpl != nullptr))
 	{
@@ -253,16 +273,18 @@ Qt::ItemFlags CMiddlewareDataModel::flags(QModelIndex const& index) const
 
 		if ((pImplItem != nullptr) && !pImplItem->IsPlaceholder() && (m_pEditorImpl->ImplTypeToSystemType(pImplItem) != ESystemItemType::NumTypes))
 		{
-			flag |= Qt::ItemIsDragEnabled;
+			flags |= Qt::ItemIsDragEnabled;
 		}
 	}
 
-	return flag;
+	return flags;
 }
 
 //////////////////////////////////////////////////////////////////////////
 QModelIndex CMiddlewareDataModel::index(int row, int column, QModelIndex const& parent /*= QModelIndex()*/) const
 {
+	QModelIndex modelIndex = QModelIndex();
+
 	if (m_pEditorImpl != nullptr)
 	{
 		if ((row >= 0) && (column >= 0))
@@ -280,29 +302,31 @@ QModelIndex CMiddlewareDataModel::index(int row, int column, QModelIndex const& 
 
 				if (pImplItem != nullptr)
 				{
-					return createIndex(row, column, reinterpret_cast<quintptr>(pImplItem));
+					modelIndex = createIndex(row, column, reinterpret_cast<quintptr>(pImplItem));
 				}
 			}
 		}
 	}
 
-	return QModelIndex();
+	return modelIndex;
 }
 
 //////////////////////////////////////////////////////////////////////////
 QModelIndex CMiddlewareDataModel::parent(QModelIndex const& index) const
 {
+	QModelIndex modelIndex = QModelIndex();
+
 	if (index.isValid())
 	{
 		CImplItem const* const pItem = ItemFromIndex(index);
 
 		if (pItem != nullptr)
 		{
-			return IndexFromItem(pItem->GetParent());
+			modelIndex = IndexFromItem(pItem->GetParent());
 		}
 	}
 
-	return QModelIndex();
+	return modelIndex;
 
 }
 
@@ -315,15 +339,15 @@ Qt::DropActions CMiddlewareDataModel::supportedDragActions() const
 //////////////////////////////////////////////////////////////////////////
 QStringList CMiddlewareDataModel::mimeTypes() const
 {
-	QStringList list = QAbstractItemModel::mimeTypes();
-	list << ModelUtils::s_szMiddlewareMimeType;
-	return list;
+	QStringList types = QAbstractItemModel::mimeTypes();
+	types << CDragDropData::GetMimeFormatForType(ModelUtils::s_szImplMimeType);
+	return types;
 }
 
 //////////////////////////////////////////////////////////////////////////
 QMimeData* CMiddlewareDataModel::mimeData(QModelIndexList const& indexes) const
 {
-	QMimeData* const pData = QAbstractItemModel::mimeData(indexes);
+	CDragDropData* const pDragDropData = new CDragDropData();
 	QByteArray byteArray;
 	QDataStream stream(&byteArray, QIODevice::ReadWrite);
 
@@ -346,24 +370,28 @@ QMimeData* CMiddlewareDataModel::mimeData(QModelIndexList const& indexes) const
 		}
 	}
 
-	pData->setData(ModelUtils::s_szMiddlewareMimeType, byteArray);
-	return pData;
+	pDragDropData->SetCustomData(ModelUtils::s_szImplMimeType, byteArray);
+	return pDragDropData;
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CMiddlewareDataModel::ItemFromIndex(QModelIndex const& index) const
 {
-	if ((index.row() < 0) || (index.column() < 0))
+	CImplItem* pImplItem = nullptr;
+
+	if (index.isValid())
 	{
-		return nullptr;
+		pImplItem = static_cast<CImplItem*>(index.internalPointer());
 	}
 
-	return static_cast<CImplItem*>(index.internalPointer());
+	return pImplItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
 QModelIndex CMiddlewareDataModel::IndexFromItem(CImplItem const* const pImplItem) const
 {
+	QModelIndex modelIndex = QModelIndex();
+
 	if (pImplItem != nullptr)
 	{
 		CImplItem const* pParent = pImplItem->GetParent();
@@ -381,12 +409,69 @@ QModelIndex CMiddlewareDataModel::IndexFromItem(CImplItem const* const pImplItem
 			{
 				if (pParent->GetChildAt(i) == pImplItem)
 				{
-					return createIndex(i, 0, reinterpret_cast<quintptr>(pImplItem));
+					modelIndex = createIndex(i, 0, reinterpret_cast<quintptr>(pImplItem));
+					break;
 				}
 			}
 		}
 	}
 
-	return QModelIndex();
+	return modelIndex;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CMiddlewareFilterProxyModel::CMiddlewareFilterProxyModel(QObject* const pParent)
+	: QAttributeFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CMiddlewareFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex const& sourceParent) const
+{
+	bool matchesFilter = QAttributeFilterProxyModel::rowMatchesFilter(sourceRow, sourceParent);
+
+	if (matchesFilter)
+	{
+		QModelIndex const& index = sourceModel()->index(sourceRow, static_cast<int>(CMiddlewareDataModel::EColumns::Name), sourceParent);
+
+		if (index.isValid())
+		{
+			// Hide placeholder.
+			matchesFilter = !sourceModel()->data(index, static_cast<int>(CMiddlewareDataModel::ERoles::IsPlaceholder)).toBool();
+		}
+	}
+
+	return matchesFilter;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CMiddlewareFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex const& right) const
+{
+	bool isLessThan = false;
+
+	// First sort by type, then by name.
+	if (left.column() == right.column())
+	{
+		int const itemTypeRole = static_cast<int>(CMiddlewareDataModel::ERoles::ItemType);
+		int const leftType = sourceModel()->data(left, itemTypeRole).toInt();
+		int const rightType = sourceModel()->data(right, itemTypeRole).toInt();
+
+		if (leftType != rightType)
+		{
+			isLessThan = leftType > rightType;
+		}
+		else
+		{
+			QVariant const& valueLeft = sourceModel()->data(left, Qt::DisplayRole);
+			QVariant const& valueRight = sourceModel()->data(right, Qt::DisplayRole);
+			isLessThan = valueLeft < valueRight;
+		}
+	}
+	else
+	{
+		isLessThan = QSortFilterProxyModel::lessThan(left, right);
+	}
+
+	return isLessThan;
 }
 } // namespace ACE

@@ -74,17 +74,21 @@ void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 CImplItem* CProjectLoader::CreateItem(string const& name, string const& path, EImpltemType const type, CImplItem& rootItem)
 {
 	CID id;
+	string filePath = m_assetsPath + CRY_NATIVE_PATH_SEPSTR;
 
 	if (path.empty())
 	{
-		id = CCrc32::ComputeLowercase(name);
+		id = CryAudio::StringToId(name);
+		filePath += name;
 	}
 	else
 	{
-		id = CCrc32::ComputeLowercase(path + CRY_NATIVE_PATH_SEPSTR + name);
+		id = CryAudio::StringToId(path + CRY_NATIVE_PATH_SEPSTR + name);
+		filePath += (path + CRY_NATIVE_PATH_SEPSTR + name);
 	}
 
 	CImplControl* const pControl = new CImplControl(name, id, static_cast<ItemType>(type));
+	pControl->SetFilePath(filePath);
 
 	if (type == EImpltemType::Folder)
 	{

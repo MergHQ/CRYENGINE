@@ -5,7 +5,6 @@
 #include "AudioCVars.h"
 #include "ATLAudioObject.h"
 #include "PropagationProcessor.h"
-#include "ProfileData.h"
 #include <CrySystem/ITimer.h>
 #include <CryString/CryPath.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -15,7 +14,7 @@ namespace CryAudio
 enum class ELoggingOptions : EnumFlagsType
 {
 	None,
-	Errors = BIT(6),   // a
+	Errors   = BIT(6), // a
 	Warnings = BIT(7), // b
 	Comments = BIT(8), // c
 };
@@ -270,7 +269,6 @@ bool CSystem::Initialize()
 #endif // ENABLE_AUDIO_LOGGING
 
 		g_cvars.RegisterVariables();
-		m_configPath = CryFixedStringT<MaxFilePathLength>((PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "ace" CRY_NATIVE_PATH_SEPSTR).c_str());
 		m_atl.Initialize(this);
 		CRY_ASSERT_MESSAGE(!m_mainThread.IsActive(), "AudioSystem thread active before initialization!");
 		m_mainThread.Init(this);
@@ -651,7 +649,7 @@ void CSystem::ReloadControlsData(
 ///////////////////////////////////////////////////////////////////////////
 char const* CSystem::GetConfigPath() const
 {
-	return m_configPath.c_str();
+	return m_atl.GetConfigPath();
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -721,8 +719,9 @@ void CSystem::GetTriggerData(ControlId const triggerId, STriggerData& triggerDat
 void CSystem::OnLoadLevel(char const* const szLevelName)
 {
 	// Requests need to be blocking so data is available for next preloading request!
-	CryFixedStringT<MaxFilePathLength> audioLevelPath(m_configPath.c_str());
-	audioLevelPath += "levels" CRY_NATIVE_PATH_SEPSTR;
+	CryFixedStringT<MaxFilePathLength> audioLevelPath(m_atl.GetConfigPath());
+	audioLevelPath += s_szLevelsFolderName;
+	audioLevelPath += CRY_NATIVE_PATH_SEPSTR;
 	audioLevelPath += szLevelName;
 	SAudioManagerRequestData<EAudioManagerRequestType::ParseControlsData> requestData1(audioLevelPath, EDataScope::LevelSpecific);
 	CAudioRequest request1(&requestData1);
@@ -767,16 +766,6 @@ void CSystem::OnLanguageChanged()
 	CAudioRequest request(&requestData);
 	request.flags = ERequestFlags::ExecuteBlocking;
 	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
-IProfileData* CSystem::GetProfileData() const
-{
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	return static_cast<IProfileData*>(m_atl.GetProfileData());
-#else
-	return nullptr;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -930,6 +919,15 @@ void CSystem::OnCallback(SRequestInfo const* const pRequestInfo)
 			}
 		}
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::GetImplInfo(SImplInfo& implInfo)
+{
+	SAudioManagerRequestData<EAudioManagerRequestType::GetImplInfo> requestData(implInfo);
+	CAudioRequest request(&requestData);
+	request.flags = ERequestFlags::ExecuteBlocking;
+	PushRequest(request);
 }
 
 //////////////////////////////////////////////////////////////////////////

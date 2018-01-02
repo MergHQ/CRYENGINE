@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "ATLEntities.h"
@@ -25,39 +25,6 @@ char const* const SATLXMLTags::szPlatform = "linux";
 #else
 	#error "Undefined platform."
 #endif
-
-char const* const SATLXMLTags::szRootNodeTag = "ATLConfig";
-char const* const SATLXMLTags::szEditorDataTag = "EditorData";
-char const* const SATLXMLTags::szTriggersNodeTag = "AudioTriggers";
-char const* const SATLXMLTags::szParametersNodeTag = "AudioRtpcs";
-char const* const SATLXMLTags::szSwitchesNodeTag = "AudioSwitches";
-char const* const SATLXMLTags::szPreloadsNodeTag = "AudioPreloads";
-char const* const SATLXMLTags::szEnvironmentsNodeTag = "AudioEnvironments";
-
-char const* const SATLXMLTags::szATLTriggerTag = "ATLTrigger";
-char const* const SATLXMLTags::szATLSwitchTag = "ATLSwitch";
-char const* const SATLXMLTags::szATLParametersTag = "ATLRtpc";
-char const* const SATLXMLTags::szATLSwitchStateTag = "ATLSwitchState";
-char const* const SATLXMLTags::szATLEnvironmentTag = "ATLEnvironment";
-char const* const SATLXMLTags::szATLPlatformsTag = "ATLPlatforms";
-char const* const SATLXMLTags::szATLConfigGroupTag = "ATLConfigGroup";
-
-char const* const SATLXMLTags::szATLTriggerRequestTag = "ATLTriggerRequest";
-char const* const SATLXMLTags::szATLSwitchRequestTag = "ATLSwitchRequest";
-char const* const SATLXMLTags::szATLValueTag = "ATLValue";
-char const* const SATLXMLTags::szATLParametersRequestTag = "ATLRtpcRequest";
-char const* const SATLXMLTags::szATLPreloadRequestTag = "ATLPreloadRequest";
-char const* const SATLXMLTags::szATLEnvironmentRequestTag = "ATLEnvironmentRequest";
-
-char const* const SATLXMLTags::szATLNameAttribute = "atl_name";
-char const* const SATLXMLTags::szATLVersionAttribute = "atl_version";
-char const* const SATLXMLTags::szATLInternalNameAttribute = "atl_internal_name";
-char const* const SATLXMLTags::szATLTypeAttribute = "atl_type";
-char const* const SATLXMLTags::szATLConfigGroupAttribute = "atl_config_group_name";
-char const* const SATLXMLTags::szATLRadiusAttribute = "atl_radius";
-char const* const SATLXMLTags::szATLOcclusionFadeOutDistanceAttribute = "atl_occlusion_fadeout_distance";
-
-char const* const SATLXMLTags::szATLDataLoadType = "AutoLoad";
 
 Impl::IImpl* CATLControlImpl::s_pIImpl = nullptr;
 

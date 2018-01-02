@@ -9,6 +9,7 @@
 #include <IEditorImpl.h>
 #include <ImplItem.h>
 
+#include <CryAudio/IAudioSystem.h>
 #include <CryString/StringUtils.h>
 #include <CryString/CryPath.h>
 #include <FilePathUtil.h>
@@ -29,32 +30,32 @@ CSystemAssetsManager::CSystemAssetsManager()
 //////////////////////////////////////////////////////////////////////////
 CSystemAssetsManager::~CSystemAssetsManager()
 {
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::signalAboutToLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::signalLoaded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::SignalAboutToLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::SignalLoaded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	Clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::Initialize()
 {
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.Connect([&]()
 		{
 			ClearAllConnections();
 		}, reinterpret_cast<uintptr_t>(this));
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
 		{
 			ReloadAllConnections();
 		}, reinterpret_cast<uintptr_t>(this));
 
-	CAudioControlsEditorPlugin::signalAboutToLoad.Connect([&]()
+	CAudioControlsEditorPlugin::SignalAboutToLoad.Connect([&]()
 		{
 			m_isLoading = true;
 		}, reinterpret_cast<uintptr_t>(this));
 
-	CAudioControlsEditorPlugin::signalLoaded.Connect([&]()
+	CAudioControlsEditorPlugin::SignalLoaded.Connect([&]()
 		{
 			m_isLoading = false;
 		}, reinterpret_cast<uintptr_t>(this));
@@ -63,6 +64,8 @@ void CSystemAssetsManager::Initialize()
 //////////////////////////////////////////////////////////////////////////
 CSystemControl* CSystemAssetsManager::CreateControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent)
 {
+	CSystemControl* pControl = nullptr;
+
 	if ((pParent != nullptr) && !name.empty())
 	{
 		ESystemItemType const parentType = pParent->GetType();
@@ -73,22 +76,24 @@ CSystemControl* CSystemAssetsManager::CreateControl(string const& name, ESystemI
 
 			if (pFoundControl != nullptr)
 			{
-				return pFoundControl;
+				pControl = pFoundControl;
 			}
+			else
+			{
+				SignalItemAboutToBeAdded(pParent);
 
-			signalItemAboutToBeAdded(pParent);
+				CSystemControl* const pNewControl = new CSystemControl(name, GenerateUniqueId(), type);
 
-			CSystemControl* const pControl = new CSystemControl(name, GenerateUniqueId(), type);
+				m_controls.emplace_back(pNewControl);
 
-			m_controls.emplace_back(pControl);
+				pNewControl->SetParent(pParent);
+				pParent->AddChild(pNewControl);
 
-			pControl->SetParent(pParent);
-			pParent->AddChild(pControl);
+				SignalItemAdded(pNewControl);
+				pNewControl->SetModified(true);
 
-			signalItemAdded(pControl);
-			pControl->SetModified(true);
-
-			return pControl;
+				pControl = pNewControl;
+			}
 		}
 		else
 		{
@@ -100,7 +105,7 @@ CSystemControl* CSystemAssetsManager::CreateControl(string const& name, ESystemI
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] No valid parent or name to create control!");
 	}
 
-	return nullptr;
+	return pControl;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -119,11 +124,11 @@ void CSystemAssetsManager::DeleteItem(CSystemAsset* const pItem)
 		// Inform that we're about to remove the item
 		if (type == ESystemItemType::Library)
 		{
-			signalLibraryAboutToBeRemoved(static_cast<CSystemLibrary*>(pItem));
+			SignalLibraryAboutToBeRemoved(static_cast<CSystemLibrary*>(pItem));
 		}
 		else
 		{
-			signalItemAboutToBeRemoved(pItem);
+			SignalItemAboutToBeRemoved(pItem);
 		}
 
 		// Remove/detach item from the tree
@@ -138,7 +143,7 @@ void CSystemAssetsManager::DeleteItem(CSystemAsset* const pItem)
 		if (type == ESystemItemType::Library)
 		{
 			m_systemLibraries.erase(std::remove(m_systemLibraries.begin(), m_systemLibraries.end(), static_cast<CSystemLibrary*>(pItem)), m_systemLibraries.end());
-			signalLibraryRemoved();
+			SignalLibraryRemoved();
 		}
 		else
 		{
@@ -151,9 +156,11 @@ void CSystemAssetsManager::DeleteItem(CSystemAsset* const pItem)
 				{
 					pControl->ClearConnections();
 					m_controls.erase(std::remove_if(m_controls.begin(), m_controls.end(), [&](auto pIterControl) { return pIterControl->GetId() == pControl->GetId(); }), m_controls.end());
+					SetTypeModified(type, true);
 				}
 			}
-			signalItemRemoved(pParent, pItem);
+
+			SignalItemRemoved(pParent, pItem);
 		}
 
 		pItem->SetModified(true);
@@ -164,15 +171,18 @@ void CSystemAssetsManager::DeleteItem(CSystemAsset* const pItem)
 //////////////////////////////////////////////////////////////////////////
 CSystemControl* CSystemAssetsManager::GetControlByID(CID const id) const
 {
+	CSystemControl* pSystemControl = nullptr;
+
 	for (auto const pControl : m_controls)
 	{
 		if (pControl->GetId() == id)
 		{
-			return pControl;
+			pSystemControl = pControl;
+			break;
 		}
 	}
 
-	return nullptr;
+	return pSystemControl;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -188,14 +198,14 @@ void CSystemAssetsManager::ClearScopes()
 void CSystemAssetsManager::AddScope(string const& name, bool const isLocalOnly)
 {
 	string scopeName = name;
-	m_scopes[CCrc32::Compute(scopeName.MakeLower())] = SScopeInfo(scopeName, isLocalOnly);
+	m_scopes[CryAudio::StringToId(scopeName.MakeLower())] = SScopeInfo(scopeName, isLocalOnly);
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CSystemAssetsManager::ScopeExists(string const& name) const
 {
 	string scopeName = name;
-	return m_scopes.find(CCrc32::Compute(scopeName.MakeLower())) != m_scopes.end();
+	return m_scopes.find(CryAudio::StringToId(scopeName.MakeLower())) != m_scopes.end();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -209,7 +219,7 @@ Scope CSystemAssetsManager::GetScope(string const& name) const
 {
 	string scopeName = name;
 	scopeName.MakeLower();
-	return CCrc32::Compute(scopeName);
+	return CryAudio::StringToId(scopeName);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -237,6 +247,9 @@ void CSystemAssetsManager::Clear()
 //////////////////////////////////////////////////////////////////////////
 CSystemLibrary* CSystemAssetsManager::CreateLibrary(string const& name)
 {
+	CSystemLibrary* pSystemLibrary = nullptr;
+	bool foundLibrary = false;
+
 	if (!name.empty())
 	{
 		size_t const size = m_systemLibraries.size();
@@ -247,24 +260,32 @@ CSystemLibrary* CSystemAssetsManager::CreateLibrary(string const& name)
 
 			if ((pLibrary != nullptr) && (name.compareNoCase(pLibrary->GetName()) == 0))
 			{
-				return pLibrary;
+				pSystemLibrary = pLibrary;
+				foundLibrary = true;
+				break;
 			}
 		}
 
-		signalLibraryAboutToBeAdded();
-		CSystemLibrary* const pLibrary = new CSystemLibrary(name);
-		m_systemLibraries.emplace_back(pLibrary);
-		signalLibraryAdded(pLibrary);
-		pLibrary->SetModified(true);
-		return pLibrary;
+		if (!foundLibrary)
+		{
+			SignalLibraryAboutToBeAdded();
+			CSystemLibrary* const pLibrary = new CSystemLibrary(name);
+			m_systemLibraries.emplace_back(pLibrary);
+			SignalLibraryAdded(pLibrary);
+			pLibrary->SetModified(true);
+			pSystemLibrary = pLibrary;
+		}
 	}
 
-	return nullptr;
+	return pSystemLibrary;
 }
 
 //////////////////////////////////////////////////////////////////////////
 CSystemAsset* CSystemAssetsManager::CreateFolder(string const& name, CSystemAsset* const pParent)
 {
+	CSystemAsset* pAsset = nullptr;
+	bool foundFolder = false;
+
 	if ((pParent != nullptr) && !name.empty())
 	{
 		if ((pParent->GetType() == ESystemItemType::Folder) || (pParent->GetType() == ESystemItemType::Library))
@@ -277,22 +298,27 @@ CSystemAsset* CSystemAssetsManager::CreateFolder(string const& name, CSystemAsse
 
 				if ((pItem != nullptr) && (pItem->GetType() == ESystemItemType::Folder) && (name.compareNoCase(pItem->GetName()) == 0))
 				{
-					return pItem;
+					pAsset = pItem;
+					foundFolder = true;
+					break;
 				}
 			}
 
-			CSystemFolder* const pFolder = new CSystemFolder(name);
-
-			if (pFolder != nullptr)
+			if (!foundFolder)
 			{
-				signalItemAboutToBeAdded(pParent);
-				pParent->AddChild(pFolder);
-				pFolder->SetParent(pParent);
-			}
+				CSystemFolder* const pFolder = new CSystemFolder(name);
 
-			signalItemAdded(pFolder);
-			pFolder->SetModified(true);
-			return pFolder;
+				if (pFolder != nullptr)
+				{
+					SignalItemAboutToBeAdded(pParent);
+					pParent->AddChild(pFolder);
+					pFolder->SetParent(pParent);
+				}
+
+				SignalItemAdded(pFolder);
+				pFolder->SetModified(true);
+				pAsset = pFolder;
+			}
 		}
 		else
 		{
@@ -304,7 +330,7 @@ CSystemAsset* CSystemAssetsManager::CreateFolder(string const& name, CSystemAsse
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] No valid parent or name to create folder!");
 	}
 
-	return nullptr;
+	return pAsset;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -315,25 +341,61 @@ void CSystemAssetsManager::OnControlAboutToBeModified(CSystemControl* const pCon
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::OnConnectionAdded(CSystemControl* const pControl, CImplItem* const pImplControl)
 {
-	signalConnectionAdded(pControl);
+	SignalConnectionAdded(pControl);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::OnConnectionRemoved(CSystemControl* const pControl, CImplItem* const pImplControl)
 {
-	signalConnectionRemoved(pControl);
+	SignalConnectionRemoved(pControl);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::OnAssetRenamed()
 {
-	signalAssetRenamed();
+	SignalAssetRenamed();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemAssetsManager::UpdateFolderPaths()
+{
+	string const& rootPath = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
+	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+
+	if (pEditorImpl != nullptr)
+	{
+		string const& implFolderPath = rootPath + pEditorImpl->GetFolderName() + CRY_NATIVE_PATH_SEPSTR;
+
+		m_configFolderPath = implFolderPath;
+		m_configFolderPath += CryAudio::s_szConfigFolderName;
+		m_configFolderPath += CRY_NATIVE_PATH_SEPSTR;
+
+		m_assetFolderPath = implFolderPath;
+		m_assetFolderPath += CryAudio::s_szAssetsFolderName;
+		m_assetFolderPath += CRY_NATIVE_PATH_SEPSTR;
+	}
+	else
+	{
+		m_configFolderPath = rootPath;
+		m_assetFolderPath = rootPath;
+	}
+}
+//////////////////////////////////////////////////////////////////////////
+string const& CSystemAssetsManager::GetConfigFolderPath() const
+{
+	return m_configFolderPath;
+}
+
+//////////////////////////////////////////////////////////////////////////
+string const& CSystemAssetsManager::GetAssetFolderPath() const
+{
+	return m_assetFolderPath;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::OnControlModified(CSystemControl* const pControl)
 {
-	signalControlModified(pControl);
+	SignalControlModified(pControl);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -351,10 +413,18 @@ void CSystemAssetsManager::SetAssetModified(CSystemAsset* const pAsset, bool con
 			m_modifiedLibraryNames.emplace(pAsset->GetName());
 		}
 
-		signalIsDirty(true);
+		SignalIsDirty(true);
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CSystemAssetsManager::SetTypeModified(ESystemItemType const type, bool const isModified)
+{
+	if (isModified)
+	{
+		m_modifiedTypes.emplace(type);
+	}
+}
 //////////////////////////////////////////////////////////////////////////
 bool CSystemAssetsManager::IsDirty() const
 {
@@ -372,19 +442,22 @@ void CSystemAssetsManager::ClearDirtyFlags()
 {
 	m_modifiedTypes.clear();
 	m_modifiedLibraryNames.clear();
-	signalIsDirty(false);
+	SignalIsDirty(false);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CSystemControl* CSystemAssetsManager::FindControl(string const& controlName, ESystemItemType const type, CSystemAsset* const pParent) const
 {
+	CSystemControl* pSystemControl = nullptr;
+
 	if (pParent == nullptr)
 	{
 		for (auto const pControl : m_controls)
 		{
 			if ((pControl != nullptr) && (pControl->GetName() == controlName) && (pControl->GetType() == type))
 			{
-				return pControl;
+				pSystemControl = pControl;
+				break;
 			}
 		}
 	}
@@ -398,12 +471,13 @@ CSystemControl* CSystemAssetsManager::FindControl(string const& controlName, ESy
 
 			if ((pControl != nullptr) && (pControl->GetName() == controlName) && (pControl->GetType() == type))
 			{
-				return pControl;
+				pSystemControl = pControl;
+				break;
 			}
 		}
 	}
 
-	return nullptr;
+	return pSystemControl;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -505,35 +579,44 @@ void CSystemAssetsManager::UpdateAssetConnectionStates(CSystemAsset* const pAsse
 			if (pControl != nullptr)
 			{
 				pControl->SetHasControl(true);
-				bool hasPlaceholder = false;
-				bool hasConnection = false;
-				int const connectionCount = pControl->GetConnectionCount();
-
-				for (int i = 0; i < connectionCount; ++i)
+				
+				if (pControl->IsHiddenDefault())
 				{
-					hasConnection = true;
-					IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+					pControl->SetHasConnection(true);
+				}
+				else
+				{
+					bool hasPlaceholder = false;
+					bool hasConnection = false;
+					int const connectionCount = pControl->GetConnectionCount();
 
-					if (pEditorImpl != nullptr)
+					for (int i = 0; i < connectionCount; ++i)
 					{
-						CImplItem const* const pImpleControl = pEditorImpl->GetControl(pControl->GetConnectionAt(i)->GetID());
+						hasConnection = true;
+						IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 
-						if (pImpleControl != nullptr)
+						if (pEditorImpl != nullptr)
 						{
-							if (pImpleControl->IsPlaceholder())
+							CImplItem const* const pImpleControl = pEditorImpl->GetControl(pControl->GetConnectionAt(i)->GetID());
+
+							if (pImpleControl != nullptr)
 							{
-								hasPlaceholder = true;
+								if (pImpleControl->IsPlaceholder())
+								{
+									hasPlaceholder = true;
+								}
 							}
 						}
 					}
-				}
 
-				pControl->SetHasPlaceholderConnection(hasPlaceholder);
-				pControl->SetHasConnection(hasConnection);
+					pControl->SetHasPlaceholderConnection(hasPlaceholder);
+					pControl->SetHasConnection(hasConnection);
+				}
 			}
 		}
 	}
 }
+
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::MoveItems(CSystemAsset* const pParent, std::vector<CSystemAsset*> const& items)
 {
@@ -547,17 +630,17 @@ void CSystemAssetsManager::MoveItems(CSystemAsset* const pParent, std::vector<CS
 
 				if (pPreviousParent != nullptr)
 				{
-					signalItemAboutToBeRemoved(pItem);
+					SignalItemAboutToBeRemoved(pItem);
 					pPreviousParent->RemoveChild(pItem);
 					pItem->SetParent(nullptr);
-					signalItemRemoved(pPreviousParent, pItem);
+					SignalItemRemoved(pPreviousParent, pItem);
 					pPreviousParent->SetModified(true);
 				}
 
-				signalItemAboutToBeAdded(pParent);
+				SignalItemAboutToBeAdded(pParent);
 				pParent->AddChild(pItem);
 				pItem->SetParent(pParent);
-				signalItemAdded(pItem);
+				SignalItemAdded(pItem);
 				pItem->SetModified(true);
 			}
 		}
@@ -569,9 +652,9 @@ void CSystemAssetsManager::MoveItems(CSystemAsset* const pParent, std::vector<CS
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::CreateAndConnectImplItems(CImplItem* const pImplItem, CSystemAsset* const pParent)
 {
-	signalItemAboutToBeAdded(pParent);
+	SignalItemAboutToBeAdded(pParent);
 	CSystemAsset* pItem = CreateAndConnectImplItemsRecursively(pImplItem, pParent);
-	signalItemAdded(pItem);
+	SignalItemAdded(pItem);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -639,7 +722,7 @@ namespace Utils
 //////////////////////////////////////////////////////////////////////////
 Scope GetGlobalScope()
 {
-	static Scope const globalScopeId = CCrc32::Compute("global");
+	static Scope const globalScopeId = CryAudio::StringToId("global");
 	return globalScopeId;
 }
 
@@ -754,13 +837,6 @@ void SelectTopLevelAncestors(std::vector<CSystemAsset*> const& source, std::vect
 			dest.emplace_back(pItem);
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-string const& GetAssetFolder()
-{
-	static string const path = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "ace" CRY_NATIVE_PATH_SEPSTR;
-	return path;
 }
 } // namespace Utils
 } // namespace ACE

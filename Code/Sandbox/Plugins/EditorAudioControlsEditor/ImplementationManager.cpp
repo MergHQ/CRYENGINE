@@ -40,7 +40,7 @@ CImplementationManager::~CImplementationManager()
 //////////////////////////////////////////////////////////////////////////
 bool CImplementationManager::LoadImplementation()
 {
-	signalImplementationAboutToChange();
+	SignalImplementationAboutToChange();
 	GetIEditor()->GetIUndoManager()->Suspend();
 
 	bool isLoaded = true;
@@ -106,7 +106,7 @@ bool CImplementationManager::LoadImplementation()
 	}
 
 	GetIEditor()->GetIUndoManager()->Resume();
-	signalImplementationChanged();
+	SignalImplementationChanged();
 	return isLoaded;
 }
 

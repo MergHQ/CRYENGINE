@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -33,6 +33,7 @@ static constexpr TriggerInstanceId InvalidTriggerInstanceId = 0;
 static constexpr EnumFlagsType InvalidEnumFlagType = 0;
 static constexpr AuxObjectId InvalidAuxObjectId = 0;
 static constexpr AuxObjectId DefaultAuxObjectId = 1;
+static constexpr uint8 MaxInfoStringLength = 128;
 static constexpr uint8 MaxControlNameLength = 128;
 static constexpr uint8 MaxFileNameLength = 128;
 static constexpr uint16 MaxFilePathLength = 256;
@@ -47,9 +48,9 @@ class CATLEvent;
 class CATLStandaloneFile;
 
 /**
-* An enum listing flags that can be passed into methods via the SRequestUserData parameter.
-* These flags control how an internally generated request behaves.
-*/
+ * An enum listing flags that can be passed into methods via the SRequestUserData parameter.
+ * These flags control how an internally generated request behaves.
+ */
 enum class ERequestFlags : EnumFlagsType
 {
 	None,
@@ -112,13 +113,13 @@ public:
 		m_up.NormalizeFast();
 	}
 
-	static CObjectTransformation const& GetEmptyObject() { static CObjectTransformation const emptyInstance; return emptyInstance; }
+	static CObjectTransformation const& GetEmptyObject()    { static CObjectTransformation const emptyInstance; return emptyInstance; }
 
-	ILINE Vec3 const& GetPosition() const { return m_position; }
-	ILINE Vec3 const& GetForward() const  { return m_forward; }
-	ILINE Vec3 const& GetUp() const       { return m_up; }
+	ILINE Vec3 const&                   GetPosition() const { return m_position; }
+	ILINE Vec3 const&                   GetForward() const  { return m_forward; }
+	ILINE Vec3 const&                   GetUp() const       { return m_up; }
 
-	bool              IsEquivalent(CObjectTransformation const& transformation, float const epsilon = VEC_EPSILON) const
+	bool                                IsEquivalent(CObjectTransformation const& transformation, float const epsilon = VEC_EPSILON) const
 	{
 		return m_position.IsEquivalent(transformation.GetPosition(), epsilon) &&
 		       m_forward.IsEquivalent(transformation.GetForward(), epsilon) &&
@@ -180,7 +181,6 @@ struct STriggerData
 	STriggerData& operator=(STriggerData&&) = delete;
 
 	float radius = 0.0f;
-	float occlusionFadeOutDistance = 0.0f;
 };
 
 struct SPlayFileInfo
@@ -197,5 +197,11 @@ struct SPlayFileInfo
 	char const* const szFile;
 	bool const        bLocalized;
 	ControlId const   usedTriggerForPlayback;
+};
+
+struct SImplInfo
+{
+	CryFixedStringT<MaxInfoStringLength> name;
+	CryFixedStringT<MaxInfoStringLength> folderName;
 };
 } // namespace CryAudio

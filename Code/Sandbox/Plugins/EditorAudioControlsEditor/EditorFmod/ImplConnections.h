@@ -10,7 +10,7 @@ namespace Fmod
 {
 enum class EEventType
 {
-	Start = 0,
+	Start,
 	Stop,
 };
 

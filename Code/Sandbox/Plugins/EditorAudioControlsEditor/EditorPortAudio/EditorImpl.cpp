@@ -6,11 +6,10 @@
 #include "ImplConnections.h"
 #include "ProjectLoader.h"
 
+#include <CryAudioImplPortAudio/GlobalData.h>
 #include <CrySystem/ISystem.h>
 #include <CryCore/CryCrc32.h>
 #include <CryCore/StlUtils.h>
-#include <CryAudio/IAudioSystem.h>
-#include <CryAudio/IProfileData.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/ClassFactory.h>
 
@@ -18,37 +17,25 @@ namespace ACE
 {
 namespace PortAudio
 {
-string const CEditorImpl::s_eventConnectionTag = "PortAudioEvent";
-string const CEditorImpl::s_sampleConnectionTag = "PortAudioSample";
-string const CEditorImpl::s_itemNameTag = "portaudio_name";
-string const CEditorImpl::s_pathNameTag = "portaudio_path";
-string const CEditorImpl::s_panningEnabledTag = "enable_panning";
-string const CEditorImpl::s_attenuationEnabledTag = "enable_distance_attenuation";
-string const CEditorImpl::s_attenuationDistMin = "attenuation_dist_min";
-string const CEditorImpl::s_attenuationDistMax = "attenuation_dist_max";
-string const CEditorImpl::s_volumeTag = "volume";
-string const CEditorImpl::s_loopCountTag = "loop_count";
-string const CEditorImpl::s_connectionTypeTag = "event_type";
-
-string const g_userSettingsFile = "%USER%/audiocontrolseditor_portaudio.user";
-
 //////////////////////////////////////////////////////////////////////////
-void CImplSettings::SetProjectPath(char const* szPath)
+CImplSettings::CImplSettings()
+	: m_assetAndProjectPath(
+		PathUtil::GetGameFolder() +
+		CRY_NATIVE_PATH_SEPSTR
+		AUDIO_SYSTEM_DATA_ROOT
+		CRY_NATIVE_PATH_SEPSTR +
+		CryAudio::Impl::PortAudio::s_szImplFolderName +
+		CRY_NATIVE_PATH_SEPSTR +
+		CryAudio::s_szAssetsFolderName)
 {
-	m_projectPath = szPath;
-	Serialization::SaveJsonFile(g_userSettingsFile.c_str(), *this);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CImplSettings::Serialize(Serialization::IArchive& ar)
-{
-	ar(m_projectPath, "projectPath", "Project Path");
 }
 
 //////////////////////////////////////////////////////////////////////////
 CEditorImpl::CEditorImpl()
 {
-	Serialization::LoadJsonFile(m_implSettings, g_userSettingsFile.c_str());
+	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
+	m_implName = m_implInfo.name.c_str();
+	m_implFolderName = CryAudio::Impl::PortAudio::s_szImplFolderName;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -90,84 +77,121 @@ void CEditorImpl::Reload(bool const preserveConnectionStatus)
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CEditorImpl::GetControl(CID const id) const
 {
+	CImplItem* pImplItem = nullptr;
+
 	if (id >= 0)
 	{
-		return stl::find_in_map(m_controlsCache, id, nullptr);
+		pImplItem = stl::find_in_map(m_controlsCache, id, nullptr);
 	}
 
-	return nullptr;
+	return pImplItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
 char const* CEditorImpl::GetTypeIcon(CImplItem const* const pImplItem) const
 {
+	char const* szIconPath = "icons:Dialogs/dialog-error.ico";
 	auto const type = static_cast<EImpltemType>(pImplItem->GetType());
 
 	switch (type)
 	{
 	case EImpltemType::Event:
-		return "icons:audio/portaudio/event.ico";
+		szIconPath = "icons:audio/portaudio/event.ico";
+		break;
 	case EImpltemType::Folder:
-		return "icons:General/Folder.ico";
+		szIconPath = "icons:General/Folder.ico";
+		break;
+	default:
+		szIconPath = "icons:Dialogs/dialog-error.ico";
+		break;
 	}
-	return "icons:Dialogs/dialog-error.ico";
+
+	return szIconPath;
 }
 
 //////////////////////////////////////////////////////////////////////////
-string CEditorImpl::GetName() const
+string const& CEditorImpl::GetName() const
 {
-	return gEnv->pAudioSystem->GetProfileData()->GetImplName();
+	return m_implName;
+}
+
+//////////////////////////////////////////////////////////////////////////
+string const& CEditorImpl::GetFolderName() const
+{
+	return m_implFolderName;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const
 {
+	bool isCompatible = false;
 	auto const implType = static_cast<EImpltemType>(pImplItem->GetType());
 
-	switch (systemType)
+	if (systemType == ESystemItemType::Trigger)
 	{
-	case ESystemItemType::Trigger:
-		return implType == EImpltemType::Event;
+		isCompatible = (implType == EImpltemType::Event);
 	}
-	return false;
+
+	return isCompatible;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ESystemItemType CEditorImpl::ImplTypeToSystemType(CImplItem const* const pImplItem) const
 {
-	auto const type = static_cast<EImpltemType>(pImplItem->GetType());
+	ESystemItemType systemType = ESystemItemType::Invalid;
+	auto const implType = static_cast<EImpltemType>(pImplItem->GetType());
 
-	switch (type)
+	switch (implType)
 	{
 	case EImpltemType::Event:
-		return ESystemItemType::Trigger;
+		systemType = ESystemItemType::Trigger;
+		break;
+	default:
+		systemType = ESystemItemType::Invalid;
+		break;
 	}
-	return ESystemItemType::Invalid;
+
+	return systemType;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ConnectionPtr CEditorImpl::CreateConnectionToControl(ESystemItemType const controlType, CImplItem* const pImplItem)
 {
+	ConnectionPtr pConnection = nullptr;
+
 	if (pImplItem != nullptr)
 	{
-		return std::make_shared<CConnection>(pImplItem->GetId());
+		pConnection = std::make_shared<CConnection>(pImplItem->GetId());
 	}
 
-	return nullptr;
+	return pConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystemItemType const controlType)
 {
+	ConnectionPtr pConnectionPtr = nullptr;
+
 	if (pNode != nullptr)
 	{
 		string const nodeTag = pNode->getTag();
 
-		if ((nodeTag == s_eventConnectionTag) || (nodeTag == s_sampleConnectionTag))
+		if ((nodeTag == CryAudio::s_szEventTag) || (nodeTag == CryAudio::Impl::PortAudio::s_szFileTag) || (nodeTag == "PortAudioEvent") || (nodeTag == "PortAudioSample"))
 		{
-			string const name = pNode->getAttr(s_itemNameTag);
-			string const path = pNode->getAttr(s_pathNameTag);
+			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
+			string path = pNode->getAttr(CryAudio::Impl::PortAudio::s_szPathAttribute);
+// Backwards compatibility will be removed before March 2019.
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+			if (name.IsEmpty() && pNode->haveAttr("portaudio_name"))
+			{
+				name = pNode->getAttr("portaudio_name");
+			}
 
+			if (path.IsEmpty() && pNode->haveAttr("portaudio_path"))
+			{
+				path = pNode->getAttr("portaudio_path");
+			}
+#endif // USE_BACKWARDS_COMPATIBILITY
 			CID id;
 
 			if (path.empty())
@@ -191,42 +215,48 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 			if (pImplControl != nullptr)
 			{
 				auto const pConnection = std::make_shared<CConnection>(pImplControl->GetId());
-				string const connectionType = pNode->getAttr(s_connectionTypeTag);
-				pConnection->m_type = connectionType == "stop" ? EConnectionType::Stop : EConnectionType::Start;
+				string connectionType = pNode->getAttr(CryAudio::s_szTypeAttribute);
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+				if (connectionType.IsEmpty() && pNode->haveAttr("event_type"))
+				{
+					connectionType = pNode->getAttr("event_type");
+				}
+#endif // USE_BACKWARDS_COMPATIBILITY
+				pConnection->m_type = connectionType == CryAudio::Impl::PortAudio::s_szStopValue ? EConnectionType::Stop : EConnectionType::Start;
 
-				string const enablePanning = pNode->getAttr(s_panningEnabledTag);
-				pConnection->m_isPanningEnabled = enablePanning == "true" ? true : false;
-
-				string const enableDistAttenuation = pNode->getAttr(s_attenuationEnabledTag);
-				pConnection->m_isAttenuationEnabled = enableDistAttenuation == "true" ? true : false;
-
-				pNode->getAttr(s_attenuationDistMin, pConnection->m_minAttenuation);
-				pNode->getAttr(s_attenuationDistMax, pConnection->m_maxAttenuation);
-				pNode->getAttr(s_volumeTag, pConnection->m_volume);
-				pNode->getAttr(s_loopCountTag, pConnection->m_loopCount);
+				pNode->getAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, pConnection->m_loopCount);
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+				if (pNode->haveAttr("loop_count"))
+				{
+					pNode->getAttr("loop_count", pConnection->m_loopCount);
+				}
+#endif // USE_BACKWARDS_COMPATIBILITY
 
 				if (pConnection->m_loopCount == -1)
 				{
 					pConnection->m_isInfiniteLoop = true;
 				}
 
-				return pConnection;
+				pConnectionPtr = pConnection;
 			}
 		}
 	}
 
-	return nullptr;
+	return pConnectionPtr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, ESystemItemType const controlType)
 {
+	XmlNodeRef pConnectionNode = nullptr;
+
 	std::shared_ptr<CConnection const> const pImplConnection = std::static_pointer_cast<CConnection const>(pConnection);
 	CImplItem const* const pImplControl = GetControl(pConnection->GetID());
+
 	if ((pImplControl != nullptr) && (pImplConnection != nullptr) && (controlType == ESystemItemType::Trigger))
 	{
-		XmlNodeRef const pConnectionNode = GetISystem()->CreateXmlNode(s_eventConnectionTag);
-		pConnectionNode->setAttr(s_itemNameTag, pImplControl->GetName());
+		pConnectionNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
+		pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pImplControl->GetName());
 
 		string path;
 		CImplItem const* pParent = pImplControl->GetParent();
@@ -250,35 +280,28 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 			pParent = pParent->GetParent();
 		}
 
-		pConnectionNode->setAttr(s_pathNameTag, path);
+		pConnectionNode->setAttr(CryAudio::Impl::PortAudio::s_szPathAttribute, path);
 
 		if (pImplConnection->m_type == EConnectionType::Start)
 		{
-			pConnectionNode->setAttr(s_connectionTypeTag, "start");
-			pConnectionNode->setAttr(s_panningEnabledTag, pImplConnection->m_isPanningEnabled ? "true" : "false");
-			pConnectionNode->setAttr(s_attenuationEnabledTag, pImplConnection->m_isAttenuationEnabled ? "true" : "false");
-			pConnectionNode->setAttr(s_attenuationDistMin, pImplConnection->m_minAttenuation);
-			pConnectionNode->setAttr(s_attenuationDistMax, pImplConnection->m_maxAttenuation);
-			pConnectionNode->setAttr(s_volumeTag, pImplConnection->m_volume);
+			pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::s_szStartValue);
 
 			if (pImplConnection->m_isInfiniteLoop)
 			{
-				pConnectionNode->setAttr(s_loopCountTag, -1);
+				pConnectionNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, -1);
 			}
 			else
 			{
-				pConnectionNode->setAttr(s_loopCountTag, pImplConnection->m_loopCount);
+				pConnectionNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, pImplConnection->m_loopCount);
 			}
 		}
 		else
 		{
-			pConnectionNode->setAttr(s_connectionTypeTag, "stop");
+			pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::s_szStopValue);
 		}
-
-		return pConnectionNode;
 	}
 
-	return nullptr;
+	return pConnectionNode;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -355,7 +378,7 @@ void CEditorImpl::CreateControlCache(CImplItem const* const pParent)
 //////////////////////////////////////////////////////////////////////////
 CID CEditorImpl::GetId(string const& name) const
 {
-	return CCrc32::ComputeLowercase(name);
+	return CryAudio::StringToId(name);
 }
 } // namespace PortAudio
 } // namespace ACE

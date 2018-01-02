@@ -54,6 +54,7 @@ enum class EAudioManagerRequestType : EnumFlagsType
 	ReleasePendingRays,
 	ReloadControlsData,
 	GetAudioFileData,
+	GetImplInfo,
 };
 
 enum class EAudioCallbackManagerRequestType : EnumFlagsType
@@ -430,6 +431,25 @@ struct SAudioManagerRequestData<EAudioManagerRequestType::GetAudioFileData> fina
 
 	CryFixedStringT<MaxFileNameLength> const name;
 	SFileData&                               fileData;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioManagerRequestData<EAudioManagerRequestType::GetImplInfo> final : public SAudioManagerRequestDataBase
+{
+	explicit SAudioManagerRequestData(SImplInfo& implInfo_)
+		: SAudioManagerRequestDataBase(EAudioManagerRequestType::GetImplInfo)
+		, implInfo(implInfo_)
+	{}
+
+	explicit SAudioManagerRequestData(SAudioManagerRequestData<EAudioManagerRequestType::GetImplInfo> const* const pAMRData)
+		: SAudioManagerRequestDataBase(EAudioManagerRequestType::GetImplInfo)
+		, implInfo(pAMRData->implInfo)
+	{}
+
+	virtual ~SAudioManagerRequestData() override = default;
+
+	SImplInfo& implInfo;
 };
 
 //////////////////////////////////////////////////////////////////////////

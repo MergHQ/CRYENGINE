@@ -6,7 +6,6 @@
 #include "AK/AkWwiseSDKVersion.h"
 #include <CryAudio/IAudioSystem.h>
 
-#define WWISE_IMPL_DATA_ROOT   AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise"
 #define WWISE_IMPL_INFO_STRING "Wwise " AK_WWISESDK_VERSIONNAME
 
 #define ASSERT_WWISE_OK(x) (CRY_ASSERT(x == AK_Success))

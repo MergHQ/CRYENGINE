@@ -63,7 +63,6 @@ public:
 	void ReleasePendingRays();
 	bool HasPendingRays() const { return m_remainingRays > 0; }
 	bool HasNewOcclusionValues();
-	void SetOcclusionMultiplier(float const occlusionFadeOut);
 
 private:
 
@@ -97,7 +96,6 @@ private:
 	float                        m_lastQuerriedObstruction;
 	float                        m_lastQuerriedOcclusion;
 	float                        m_occlusion;
-	float                        m_occlusionMultiplier;
 	float                        m_currentListenerDistance;
 	RayOcclusionVec              m_raysOcclusion;
 

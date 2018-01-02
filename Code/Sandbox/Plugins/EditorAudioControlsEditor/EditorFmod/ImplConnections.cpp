@@ -13,9 +13,10 @@ namespace Fmod
 void CEventConnection::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_type, "action", "Action");
+
 	if (ar.isInput())
 	{
-		signalConnectionChanged();
+		SignalConnectionChanged();
 	}
 }
 
@@ -27,7 +28,7 @@ void CParamConnection::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
-		signalConnectionChanged();
+		SignalConnectionChanged();
 	}
 }
 
@@ -38,7 +39,7 @@ void CParamToStateConnection::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
-		signalConnectionChanged();
+		SignalConnectionChanged();
 	}
 }
 
@@ -47,4 +48,4 @@ SERIALIZATION_ENUM(EEventType::Start, "start", "Start")
 SERIALIZATION_ENUM(EEventType::Stop, "stop", "Stop")
 SERIALIZATION_ENUM_END()
 } // namespace Fmod
-} //namespace ACE
+} // namespace ACE

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioXMLProcessor.h"
@@ -74,7 +74,7 @@ void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EData
 
 				if (pATLConfigRoot)
 				{
-					if (_stricmp(pATLConfigRoot->getTag(), SATLXMLTags::szRootNodeTag) == 0)
+					if (_stricmp(pATLConfigRoot->getTag(), s_szRootNodeTag) == 0)
 					{
 						size_t const nATLConfigChildrenCount = static_cast<size_t>(pATLConfigRoot->getChildCount());
 
@@ -86,24 +86,24 @@ void CAudioXMLProcessor::ParseControlsData(char const* const szFolderPath, EData
 							{
 								char const* const sAudioConfigNodeTag = pAudioConfigNode->getTag();
 
-								if (_stricmp(sAudioConfigNodeTag, SATLXMLTags::szTriggersNodeTag) == 0)
+								if (_stricmp(sAudioConfigNodeTag, s_szTriggersNodeTag) == 0)
 								{
 									ParseAudioTriggers(pAudioConfigNode, dataScope);
 								}
-								else if (_stricmp(sAudioConfigNodeTag, SATLXMLTags::szParametersNodeTag) == 0)
+								else if (_stricmp(sAudioConfigNodeTag, s_szParametersNodeTag) == 0)
 								{
 									ParseAudioParameters(pAudioConfigNode, dataScope);
 								}
-								else if (_stricmp(sAudioConfigNodeTag, SATLXMLTags::szSwitchesNodeTag) == 0)
+								else if (_stricmp(sAudioConfigNodeTag, s_szSwitchesNodeTag) == 0)
 								{
 									ParseAudioSwitches(pAudioConfigNode, dataScope);
 								}
-								else if (_stricmp(sAudioConfigNodeTag, SATLXMLTags::szEnvironmentsNodeTag) == 0)
+								else if (_stricmp(sAudioConfigNodeTag, s_szEnvironmentsNodeTag) == 0)
 								{
 									ParseAudioEnvironments(pAudioConfigNode, dataScope);
 								}
-								else if (_stricmp(sAudioConfigNodeTag, SATLXMLTags::szPreloadsNodeTag) == 0 ||
-								         _stricmp(sAudioConfigNodeTag, SATLXMLTags::szEditorDataTag) == 0)
+								else if (_stricmp(sAudioConfigNodeTag, s_szPreloadsNodeTag) == 0 ||
+								         _stricmp(sAudioConfigNodeTag, s_szEditorDataTag) == 0)
 								{
 									// This tag is valid but ignored here.
 								}
@@ -177,11 +177,11 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 
 				if (pATLConfigRoot)
 				{
-					if (_stricmp(pATLConfigRoot->getTag(), SATLXMLTags::szRootNodeTag) == 0)
+					if (_stricmp(pATLConfigRoot->getTag(), s_szRootNodeTag) == 0)
 					{
 
 						uint versionNumber = 1;
-						pATLConfigRoot->getAttr(SATLXMLTags::szATLVersionAttribute, versionNumber);
+						pATLConfigRoot->getAttr(s_szVersionAttribute, versionNumber);
 						size_t const numChildren = static_cast<size_t>(pATLConfigRoot->getChildCount());
 
 						for (size_t i = 0; i < numChildren; ++i)
@@ -192,7 +192,7 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 							{
 								char const* const szAudioConfigNodeTag = pAudioConfigNode->getTag();
 
-								if (_stricmp(szAudioConfigNodeTag, SATLXMLTags::szPreloadsNodeTag) == 0)
+								if (_stricmp(szAudioConfigNodeTag, s_szPreloadsNodeTag) == 0)
 								{
 									size_t const lastSlashIndex = rootFolderPath.rfind(CRY_NATIVE_PATH_SEPSTR[0]);
 
@@ -206,11 +206,11 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 										ParseAudioPreloads(pAudioConfigNode, dataScope, nullptr, versionNumber);
 									}
 								}
-								else if (_stricmp(szAudioConfigNodeTag, SATLXMLTags::szTriggersNodeTag) == 0 ||
-								         _stricmp(szAudioConfigNodeTag, SATLXMLTags::szParametersNodeTag) == 0 ||
-								         _stricmp(szAudioConfigNodeTag, SATLXMLTags::szSwitchesNodeTag) == 0 ||
-								         _stricmp(szAudioConfigNodeTag, SATLXMLTags::szEnvironmentsNodeTag) == 0 ||
-								         _stricmp(szAudioConfigNodeTag, SATLXMLTags::szEditorDataTag) == 0)
+								else if (_stricmp(szAudioConfigNodeTag, s_szTriggersNodeTag) == 0 ||
+								         _stricmp(szAudioConfigNodeTag, s_szParametersNodeTag) == 0 ||
+								         _stricmp(szAudioConfigNodeTag, s_szSwitchesNodeTag) == 0 ||
+								         _stricmp(szAudioConfigNodeTag, s_szEnvironmentsNodeTag) == 0 ||
+								         _stricmp(szAudioConfigNodeTag, s_szEditorDataTag) == 0)
 								{
 									// These tags are valid but ignored here.
 								}
@@ -343,15 +343,15 @@ void CAudioXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, E
 	{
 		XmlNodeRef const pPreloadRequestNode(pPreloadDataRoot->getChild(i));
 
-		if (pPreloadRequestNode && _stricmp(pPreloadRequestNode->getTag(), SATLXMLTags::szATLPreloadRequestTag) == 0)
+		if (pPreloadRequestNode && _stricmp(pPreloadRequestNode->getTag(), s_szPreloadRequestTag) == 0)
 		{
 			PreloadRequestId audioPreloadRequestId = GlobalPreloadRequestId;
-			char const* szAudioPreloadRequestName = GlobalPreloadRequestName;
-			bool const bAutoLoad = (_stricmp(pPreloadRequestNode->getAttr(SATLXMLTags::szATLTypeAttribute), SATLXMLTags::szATLDataLoadType) == 0);
+			char const* szAudioPreloadRequestName = s_szGlobalPreloadRequestName;
+			bool const bAutoLoad = (_stricmp(pPreloadRequestNode->getAttr(s_szTypeAttribute), s_szDataLoadType) == 0);
 
 			if (!bAutoLoad)
 			{
-				szAudioPreloadRequestName = pPreloadRequestNode->getAttr(SATLXMLTags::szATLNameAttribute);
+				szAudioPreloadRequestName = pPreloadRequestNode->getAttr(s_szNameAttribute);
 				audioPreloadRequestId = static_cast<PreloadRequestId>(StringToId(szAudioPreloadRequestName));
 			}
 			else if (dataScope == EDataScope::LevelSpecific)
@@ -363,59 +363,16 @@ void CAudioXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, E
 			if (audioPreloadRequestId != CryAudio::InvalidPreloadRequestId)
 			{
 				XmlNodeRef pFileListParentNode = nullptr;
-				if (version >= 2)
+				size_t const platformCount = pPreloadRequestNode->getChildCount();
+
+				for (size_t j = 0; j < platformCount; ++j)
 				{
-					size_t const platformCount = pPreloadRequestNode->getChildCount();
+					XmlNodeRef const pPlatformNode(pPreloadRequestNode->getChild(j));
 
-					for (size_t j = 0; j < platformCount; ++j)
+					if (pPlatformNode && _stricmp(pPlatformNode->getAttr(s_szNameAttribute), SATLXMLTags::szPlatform) == 0)
 					{
-						XmlNodeRef const pPlatformNode(pPreloadRequestNode->getChild(j));
-
-						if (pPlatformNode && _stricmp(pPlatformNode->getAttr(SATLXMLTags::szATLNameAttribute), SATLXMLTags::szPlatform) == 0)
-						{
-							pFileListParentNode = pPlatformNode;
-							break;
-						}
-					}
-				}
-				else
-				{
-					size_t const preloadRequestChidrenCount = static_cast<size_t>(pPreloadRequestNode->getChildCount());
-
-					if (preloadRequestChidrenCount > 1)
-					{
-						// We need to have at least two children: ATLPlatforms and at least one ATLConfigGroup
-						XmlNodeRef const pPlatformsNode(pPreloadRequestNode->getChild(0));
-						char const* szATLConfigGroupName = nullptr;
-
-						if (pPlatformsNode && _stricmp(pPlatformsNode->getTag(), SATLXMLTags::szATLPlatformsTag) == 0)
-						{
-							size_t const platformCount = pPlatformsNode->getChildCount();
-
-							for (size_t j = 0; j < platformCount; ++j)
-							{
-								XmlNodeRef const pPlatformNode(pPlatformsNode->getChild(j));
-
-								if (pPlatformNode && _stricmp(pPlatformNode->getAttr(SATLXMLTags::szATLNameAttribute), SATLXMLTags::szPlatform) == 0)
-								{
-									szATLConfigGroupName = pPlatformNode->getAttr(SATLXMLTags::szATLConfigGroupAttribute);
-									break;
-								}
-							}
-						}
-
-						if (szATLConfigGroupName != nullptr)
-						{
-							for (size_t j = 1; j < preloadRequestChidrenCount; ++j)
-							{
-								XmlNodeRef const pConfigGroupNode(pPreloadRequestNode->getChild(j));
-								if (_stricmp(pConfigGroupNode->getAttr(SATLXMLTags::szATLNameAttribute), szATLConfigGroupName) == 0)
-								{
-									pFileListParentNode = pConfigGroupNode;
-									break;
-								}
-							}
-						}
+						pFileListParentNode = pPlatformNode;
+						break;
 					}
 				}
 
@@ -509,9 +466,9 @@ void CAudioXMLProcessor::ParseAudioEnvironments(XmlNodeRef const pAudioEnvironme
 	{
 		XmlNodeRef const pAudioEnvironmentNode(pAudioEnvironmentRoot->getChild(i));
 
-		if (pAudioEnvironmentNode && _stricmp(pAudioEnvironmentNode->getTag(), SATLXMLTags::szATLEnvironmentTag) == 0)
+		if (pAudioEnvironmentNode && _stricmp(pAudioEnvironmentNode->getTag(), s_szEnvironmentTag) == 0)
 		{
-			char const* const szAudioEnvironmentName = pAudioEnvironmentNode->getAttr(SATLXMLTags::szATLNameAttribute);
+			char const* const szAudioEnvironmentName = pAudioEnvironmentNode->getAttr(s_szNameAttribute);
 			EnvironmentId const audioEnvironmentId = static_cast<EnvironmentId const>(StringToId(szAudioEnvironmentName));
 
 			if ((audioEnvironmentId != CryAudio::InvalidControlId) && (stl::find_in_map(m_environments, audioEnvironmentId, nullptr) == nullptr))
@@ -530,7 +487,7 @@ void CAudioXMLProcessor::ParseAudioEnvironments(XmlNodeRef const pAudioEnvironme
 					{
 						Impl::IEnvironment const* pIEnvironment = nullptr;
 
-						if (_stricmp(pEnvironmentImplNode->getTag(), SATLXMLTags::szATLEnvironmentRequestTag) == 0)
+						if (_stricmp(pEnvironmentImplNode->getTag(), s_szEnvironmentRequestTag) == 0)
 						{
 							pIEnvironment = NewInternalAudioEnvironment(pEnvironmentImplNode);
 						}
@@ -585,9 +542,9 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, ED
 	{
 		XmlNodeRef const pAudioTriggerNode(pXMLTriggerRoot->getChild(i));
 
-		if (pAudioTriggerNode && _stricmp(pAudioTriggerNode->getTag(), SATLXMLTags::szATLTriggerTag) == 0)
+		if (pAudioTriggerNode && _stricmp(pAudioTriggerNode->getTag(), s_szTriggerTag) == 0)
 		{
-			char const* const szAudioTriggerName = pAudioTriggerNode->getAttr(SATLXMLTags::szATLNameAttribute);
+			char const* const szAudioTriggerName = pAudioTriggerNode->getAttr(s_szNameAttribute);
 			ControlId const audioTriggerId = static_cast<ControlId const>(StringToId(szAudioTriggerName));
 
 			if ((audioTriggerId != CryAudio::InvalidControlId) && (stl::find_in_map(m_triggers, audioTriggerId, nullptr) == nullptr))
@@ -597,10 +554,7 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, ED
 				implPtrs.reserve(numAudioTriggerChildren);
 
 				float maxRadius = 0.0f;
-				pAudioTriggerNode->getAttr(SATLXMLTags::szATLRadiusAttribute, maxRadius);
-
-				float occlusionFadeOutDistance = 0.0f;
-				pAudioTriggerNode->getAttr(SATLXMLTags::szATLOcclusionFadeOutDistanceAttribute, occlusionFadeOutDistance);
+				pAudioTriggerNode->getAttr(s_szRadiusAttribute, maxRadius);
 
 				for (size_t m = 0; m < numAudioTriggerChildren; ++m)
 				{
@@ -610,7 +564,7 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, ED
 					{
 						Impl::ITrigger const* pITrigger = nullptr;
 
-						if (_stricmp(pTriggerImplNode->getTag(), SATLXMLTags::szATLTriggerRequestTag) == 0)
+						if (_stricmp(pTriggerImplNode->getTag(), s_szTriggerRequestTag) == 0)
 						{
 							pITrigger = NewInternalAudioTrigger(pTriggerImplNode);
 						}
@@ -633,7 +587,7 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, ED
 
 				implPtrs.shrink_to_fit();
 
-				CATLTrigger* pNewTrigger = new CATLTrigger(audioTriggerId, dataScope, implPtrs, maxRadius, occlusionFadeOutDistance);
+				CATLTrigger* pNewTrigger = new CATLTrigger(audioTriggerId, dataScope, implPtrs, maxRadius);
 
 				if (pNewTrigger != nullptr)
 				{
@@ -662,9 +616,9 @@ void CAudioXMLProcessor::ParseAudioSwitches(XmlNodeRef const pXMLSwitchRoot, EDa
 	{
 		XmlNodeRef const pATLSwitchNode(pXMLSwitchRoot->getChild(i));
 
-		if (pATLSwitchNode && _stricmp(pATLSwitchNode->getTag(), SATLXMLTags::szATLSwitchTag) == 0)
+		if (pATLSwitchNode && _stricmp(pATLSwitchNode->getTag(), s_szSwitchTag) == 0)
 		{
-			char const* const szAudioSwitchName = pATLSwitchNode->getAttr(SATLXMLTags::szATLNameAttribute);
+			char const* const szAudioSwitchName = pATLSwitchNode->getAttr(s_szNameAttribute);
 			ControlId const audioSwitchId = static_cast<ControlId const>(StringToId(szAudioSwitchName));
 
 			if ((audioSwitchId != CryAudio::InvalidControlId) && (stl::find_in_map(m_switches, audioSwitchId, nullptr) == nullptr))
@@ -680,9 +634,9 @@ void CAudioXMLProcessor::ParseAudioSwitches(XmlNodeRef const pXMLSwitchRoot, EDa
 				{
 					XmlNodeRef const pATLSwitchStateNode(pATLSwitchNode->getChild(j));
 
-					if (pATLSwitchStateNode && _stricmp(pATLSwitchStateNode->getTag(), SATLXMLTags::szATLSwitchStateTag) == 0)
+					if (pATLSwitchStateNode && _stricmp(pATLSwitchStateNode->getTag(), s_szStateTag) == 0)
 					{
-						char const* const szAudioSwitchStateName = pATLSwitchStateNode->getAttr(SATLXMLTags::szATLNameAttribute);
+						char const* const szAudioSwitchStateName = pATLSwitchStateNode->getAttr(s_szNameAttribute);
 						SwitchStateId const audioSwitchStateId = static_cast<SwitchStateId const>(StringToId(szAudioSwitchStateName));
 
 						if (audioSwitchStateId != CryAudio::InvalidSwitchStateId)
@@ -699,7 +653,7 @@ void CAudioXMLProcessor::ParseAudioSwitches(XmlNodeRef const pXMLSwitchRoot, EDa
 								if (pStateImplNode)
 								{
 									char const* const szStateImplNodeTag = pStateImplNode->getTag();
-									if (_stricmp(szStateImplNodeTag, SATLXMLTags::szATLSwitchRequestTag) == 0)
+									if (_stricmp(szStateImplNodeTag, s_szSwitchRequestTag) == 0)
 									{
 										IAudioSwitchStateImpl const* pSwitchStateImpl = NewInternalAudioSwitchState(pStateImplNode);
 										if (pSwitchStateImpl != nullptr)
@@ -745,9 +699,9 @@ void CAudioXMLProcessor::ParseAudioParameters(XmlNodeRef const pXMLParameterRoot
 	{
 		XmlNodeRef const pAudioParameterNode(pXMLParameterRoot->getChild(i));
 
-		if (pAudioParameterNode && _stricmp(pAudioParameterNode->getTag(), SATLXMLTags::szATLParametersTag) == 0)
+		if (pAudioParameterNode && _stricmp(pAudioParameterNode->getTag(), s_szParameterTag) == 0)
 		{
-			char const* const szAudioParameterName = pAudioParameterNode->getAttr(SATLXMLTags::szATLNameAttribute);
+			char const* const szAudioParameterName = pAudioParameterNode->getAttr(s_szNameAttribute);
 			ControlId const audioParameterId = static_cast<ControlId const>(StringToId(szAudioParameterName));
 
 			if ((audioParameterId != CryAudio::InvalidControlId) && (stl::find_in_map(m_parameters, audioParameterId, nullptr) == nullptr))
@@ -764,7 +718,7 @@ void CAudioXMLProcessor::ParseAudioParameters(XmlNodeRef const pXMLParameterRoot
 					{
 						char const* const szParameterImplNodeTag = pParameterImplNode->getTag();
 
-						if (_stricmp(szParameterImplNodeTag, SATLXMLTags::szATLParametersRequestTag) == 0)
+						if (_stricmp(szParameterImplNodeTag, s_szParameterRequestTag) == 0)
 						{
 							IParameterImpl const* pParameterImpl = NewInternalAudioParameter(pParameterImplNode);
 							if (pParameterImpl != nullptr)
@@ -821,15 +775,15 @@ IAudioSwitchStateImpl const* CAudioXMLProcessor::NewInternalAudioSwitchState(Xml
 {
 	IAudioSwitchStateImpl const* pSwitchStateImpl = nullptr;
 
-	char const* const szInternalSwitchNodeName = pXMLSwitchRoot->getAttr(SATLXMLTags::szATLNameAttribute);
+	char const* const szInternalSwitchNodeName = pXMLSwitchRoot->getAttr(s_szNameAttribute);
 
 	if ((szInternalSwitchNodeName != nullptr) && (szInternalSwitchNodeName[0] != 0) && (pXMLSwitchRoot->getChildCount() == 1))
 	{
 		XmlNodeRef const pValueNode(pXMLSwitchRoot->getChild(0));
 
-		if (pValueNode && _stricmp(pValueNode->getTag(), SATLXMLTags::szATLValueTag) == 0)
+		if (pValueNode && _stricmp(pValueNode->getTag(), s_szValueTag) == 0)
 		{
-			char const* const szInternalSwitchStateName = pValueNode->getAttr(SATLXMLTags::szATLNameAttribute);
+			char const* const szInternalSwitchStateName = pValueNode->getAttr(s_szNameAttribute);
 
 			if ((szInternalSwitchStateName != nullptr) && (szInternalSwitchStateName[0] != 0))
 			{

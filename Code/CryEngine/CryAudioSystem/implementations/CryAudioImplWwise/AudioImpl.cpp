@@ -5,6 +5,7 @@
 #include "AudioImplCVars.h"
 #include "FileIOHandler.h"
 #include "Common.h"
+#include "GlobalData.h"
 #include <Logger.h>
 #include <SharedAudioData.h>
 #include <CrySystem/File/ICryPak.h>
@@ -125,20 +126,6 @@ namespace Impl
 {
 namespace Wwise
 {
-char const* const CImpl::s_szWwiseEventTag = "WwiseEvent";
-char const* const CImpl::s_szWwiseRtpcTag = "WwiseRtpc";
-char const* const CImpl::s_szWwiseSwitchTag = "WwiseSwitch";
-char const* const CImpl::s_szWwiseStateTag = "WwiseState";
-char const* const CImpl::s_szWwiseRtpcSwitchTag = "WwiseRtpc";
-char const* const CImpl::s_szWwiseFileTag = "WwiseFile";
-char const* const CImpl::s_szWwiseAuxBusTag = "WwiseAuxBus";
-char const* const CImpl::s_szWwiseValueTag = "WwiseValue";
-char const* const CImpl::s_szWwiseNameAttribute = "wwise_name";
-char const* const CImpl::s_szWwiseValueAttribute = "wwise_value";
-char const* const CImpl::s_szWwiseMutiplierAttribute = "wwise_value_multiplier";
-char const* const CImpl::s_szWwiseShiftAttribute = "wwise_value_shift";
-char const* const CImpl::s_szWwiseLocalisedAttribute = "wwise_localised";
-
 class CAuxWwiseAudioThread final : public IThread
 {
 public:
@@ -240,10 +227,19 @@ CImpl::CImpl()
 	}
 
 	m_regularSoundBankFolder = szAssetDirectory;
-	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR WWISE_IMPL_DATA_ROOT;
+	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
+	m_regularSoundBankFolder += s_szImplFolderName;
+	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+	m_regularSoundBankFolder += s_szAssetsFolderName;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	m_name.Format("%s (Build: %d) (%s%s)", WWISE_IMPL_INFO_STRING, AK_WWISESDK_VERSION_BUILD, szAssetDirectory, CRY_NATIVE_PATH_SEPSTR WWISE_IMPL_DATA_ROOT);
+	m_name.Format(
+	  "%s (Build: %d) (%s%s%s)",
+	  WWISE_IMPL_INFO_STRING,
+	  AK_WWISESDK_VERSION_BUILD,
+	  szAssetDirectory,
+	  CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR,
+	  s_szImplFolderName);
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 }
 
@@ -366,7 +362,11 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	}
 
 	CryFixedStringT<AK_MAX_PATH> temp(PathUtil::GetGameFolder().c_str());
-	temp.append(CRY_NATIVE_PATH_SEPSTR WWISE_IMPL_DATA_ROOT CRY_NATIVE_PATH_SEPSTR);
+	temp.append(CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR);
+	temp.append(s_szImplFolderName);
+	temp.append(CRY_NATIVE_PATH_SEPSTR);
+	temp.append(s_szAssetsFolderName);
+	temp.append(CRY_NATIVE_PATH_SEPSTR);
 	AkOSChar const* szTemp = nullptr;
 	CONVERT_CHAR_TO_OSCHAR(temp.c_str(), szTemp);
 	m_fileIOHandler.SetBankPath(szTemp);
@@ -808,14 +808,14 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	if ((_stricmp(pRootNode->getTag(), s_szWwiseFileTag) == 0) && (pFileInfo != nullptr))
+	if ((_stricmp(pRootNode->getTag(), s_szFileTag) == 0) && (pFileInfo != nullptr))
 	{
-		char const* const szFileName = pRootNode->getAttr(s_szWwiseNameAttribute);
+		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
 
 		if (szFileName != nullptr && szFileName[0] != '\0')
 		{
-			char const* const szLocalized = pRootNode->getAttr(s_szWwiseLocalisedAttribute);
-			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, "true") == 0);
+			char const* const szLocalized = pRootNode->getAttr(s_szLocalizedAttribute);
+			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, s_szTrueValue) == 0);
 			pFileInfo->szFileName = szFileName;
 			pFileInfo->memoryBlockAlignment = AK_BANK_PLATFORM_DATA_ALIGNMENT;
 			pFileInfo->pImplData = new SFile();
@@ -849,6 +849,17 @@ char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 	}
 
 	return szResult;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::GetInfo(SImplInfo& implInfo) const
+{
+#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
+	implInfo.name = m_name.c_str();
+#else
+	implInfo.name = "name-not-present-in-release-mode";
+#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
+	implInfo.folderName = s_szImplFolderName;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1037,9 +1048,9 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 {
 	CTrigger* pTrigger = nullptr;
 
-	if (_stricmp(pRootNode->getTag(), s_szWwiseEventTag) == 0)
+	if (_stricmp(pRootNode->getTag(), s_szEventTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szWwiseNameAttribute);
+		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
 		AkUniqueID const uniqueId = AK::SoundEngine::GetIDFromString(szName); // Does not check if the string represents an event!
 
 		if (uniqueId != AK_INVALID_UNIQUE_ID)
@@ -1092,7 +1103,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 	char const* const szTag = pRootNode->getTag();
 	SSwitchState const* pSwitchState = nullptr;
 
-	if (_stricmp(szTag, s_szWwiseStateTag) == 0)
+	if (_stricmp(szTag, s_szStateGroupTag) == 0)
 	{
 		AkUInt32 stateOrSwitchGroupId = AK_INVALID_UNIQUE_ID;
 		AkUInt32 stateOrSwitchId = AK_INVALID_UNIQUE_ID;
@@ -1102,7 +1113,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 			pSwitchState = new SSwitchState(ESwitchType::StateGroup, stateOrSwitchGroupId, stateOrSwitchId);
 		}
 	}
-	else if (_stricmp(szTag, s_szWwiseSwitchTag) == 0)
+	else if (_stricmp(szTag, s_szSwitchGroupTag) == 0)
 	{
 		AkUInt32 stateOrSwitchGroupId = AK_INVALID_UNIQUE_ID;
 		AkUInt32 stateOrSwitchId = AK_INVALID_UNIQUE_ID;
@@ -1112,7 +1123,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 			pSwitchState = new SSwitchState(ESwitchType::SwitchGroup, stateOrSwitchGroupId, stateOrSwitchId);
 		}
 	}
-	else if (_stricmp(szTag, s_szWwiseRtpcSwitchTag) == 0)
+	else if (_stricmp(szTag, s_szParameterSwitchTag) == 0)
 	{
 		pSwitchState = ParseWwiseRtpcSwitch(pRootNode);
 	}
@@ -1137,9 +1148,9 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 	char const* const szTag = pRootNode->getTag();
 	SEnvironment const* pEnvironment = nullptr;
 
-	if (_stricmp(szTag, s_szWwiseAuxBusTag) == 0)
+	if (_stricmp(szTag, s_szAuxBusTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(s_szWwiseNameAttribute);
+		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
 		AkUniqueID const busId = AK::SoundEngine::GetIDFromString(szName);
 
 		if (busId != AK_INVALID_AUX_ID)
@@ -1151,7 +1162,7 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 			CRY_ASSERT(false); // Unknown AuxBus
 		}
 	}
-	else if (_stricmp(szTag, s_szWwiseRtpcTag) == 0)
+	else if (_stricmp(szTag, s_szParameterTag) == 0)
 	{
 		AkRtpcID rtpcId = AK_INVALID_RTPC_ID;
 		float multiplier = 1.0f;
@@ -1176,16 +1187,6 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
 {
 	delete pIEnvironment;
-}
-
-///////////////////////////////////////////////////////////////////////////
-char const* const CImpl::GetName() const
-{
-#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	return m_name.c_str();
-#endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
-
-	return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1235,15 +1236,15 @@ void CImpl::GetFileData(char const* const szName, SFileData& fileData) const
 bool CImpl::ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& outStateOrSwitchGroupId, AkUInt32& outStateOrSwitchId)
 {
 	bool bSuccess = false;
-	char const* const szStateOrSwitchGroupName = pNode->getAttr(s_szWwiseNameAttribute);
+	char const* const szStateOrSwitchGroupName = pNode->getAttr(s_szNameAttribute);
 
 	if ((szStateOrSwitchGroupName != nullptr) && (szStateOrSwitchGroupName[0] != 0) && (pNode->getChildCount() == 1))
 	{
 		XmlNodeRef const pValueNode(pNode->getChild(0));
 
-		if (pValueNode && _stricmp(pValueNode->getTag(), s_szWwiseValueTag) == 0)
+		if (pValueNode && _stricmp(pValueNode->getTag(), s_szValueTag) == 0)
 		{
-			char const* const szStateOrSwitchName = pValueNode->getAttr(s_szWwiseNameAttribute);
+			char const* const szStateOrSwitchName = pValueNode->getAttr(s_szNameAttribute);
 
 			if ((szStateOrSwitchName != nullptr) && (szStateOrSwitchName[0] != 0))
 			{
@@ -1269,13 +1270,13 @@ SSwitchState const* CImpl::ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 {
 	SSwitchState* pSwitchStateImpl = nullptr;
 
-	char const* const szName = pNode->getAttr(s_szWwiseNameAttribute);
+	char const* const szName = pNode->getAttr(s_szNameAttribute);
 
 	if ((szName != nullptr) && (szName[0] != '\0'))
 	{
 		float value = 0.0f;
 
-		if (pNode->getAttr(s_szWwiseValueAttribute, value))
+		if (pNode->getAttr(s_szValueAttribute, value))
 		{
 			AkUniqueID const rtpcId = AK::SoundEngine::GetIDFromString(szName);
 			pSwitchStateImpl = new SSwitchState(ESwitchType::Rtpc, rtpcId, rtpcId, value);
@@ -1295,16 +1296,16 @@ SSwitchState const* CImpl::ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::ParseRtpcImpl(XmlNodeRef const pNode, AkRtpcID& rtpcId, float& multiplier, float& shift)
 {
-	if (_stricmp(pNode->getTag(), s_szWwiseRtpcTag) == 0)
+	if (_stricmp(pNode->getTag(), s_szParameterTag) == 0)
 	{
-		char const* const szName = pNode->getAttr(s_szWwiseNameAttribute);
+		char const* const szName = pNode->getAttr(s_szNameAttribute);
 		rtpcId = static_cast<AkRtpcID>(AK::SoundEngine::GetIDFromString(szName));
 
 		if (rtpcId != AK_INVALID_RTPC_ID)
 		{
 			//the Wwise name is supplied
-			pNode->getAttr(s_szWwiseMutiplierAttribute, multiplier);
-			pNode->getAttr(s_szWwiseShiftAttribute, shift);
+			pNode->getAttr(s_szMutiplierAttribute, multiplier);
+			pNode->getAttr(s_szShiftAttribute, shift);
 		}
 		else
 		{
@@ -1393,7 +1394,11 @@ void CImpl::SetLanguage(char const* const szLanguage)
 		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
 		m_localizedSoundBankFolder += szLanguage;
 		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
-		m_localizedSoundBankFolder += WWISE_IMPL_DATA_ROOT;
+		m_localizedSoundBankFolder += AUDIO_SYSTEM_DATA_ROOT;
+		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+		m_localizedSoundBankFolder += s_szImplFolderName;
+		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+		m_localizedSoundBankFolder += s_szAssetsFolderName;
 
 		CryFixedStringT<MaxFilePathLength> temp(m_localizedSoundBankFolder);
 		temp += CRY_NATIVE_PATH_SEPSTR;

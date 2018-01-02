@@ -3,10 +3,10 @@
 #include "StdAfx.h"
 #include "PropertiesWidget.h"
 
-#include "SystemAssetsManager.h"
+#include "AudioControlsEditorPlugin.h"
+#include "ImplementationManager.h"
 #include "ConnectionsWidget.h"
 
-#include <SystemTypes.h>
 #include <IEditor.h>
 #include <QtUtil.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
@@ -24,7 +24,7 @@ CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* const pAssetsManager,
 	, m_pPropertyTree(new QPropertyTree(this))
 	, m_pConnectionsWidget(new CConnectionsWidget(this))
 {
-	CRY_ASSERT_MESSAGE(m_pAssetsManager != nullptr, "Asset manager is null pointer.");
+	CRY_ASSERT_MESSAGE(m_pAssetsManager != nullptr, "Assets manager is null pointer.");
 
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
@@ -44,7 +44,14 @@ CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* const pAssetsManager,
 	
 	pMainLayout->addWidget(m_pConnectionsWidget);
 
-	m_pAssetsManager->signalItemAdded.Connect([&]()
+	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
+
+	if (pEditorImpl == nullptr)
+	{
+		setEnabled(false);
+	}
+
+	m_pAssetsManager->SignalItemAdded.Connect([&]()
 	{
 		if (!m_pAssetsManager->IsLoading())
 		{
@@ -52,7 +59,7 @@ CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* const pAssetsManager,
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->signalItemRemoved.Connect([&]()
+	m_pAssetsManager->SignalItemRemoved.Connect([&]()
 	{
 		if (!m_pAssetsManager->IsLoading())
 		{
@@ -60,7 +67,7 @@ CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* const pAssetsManager,
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->signalControlModified.Connect([&]()
+	m_pAssetsManager->SignalControlModified.Connect([&]()
 	{
 		if (!m_pAssetsManager->IsLoading())
 		{
@@ -68,25 +75,33 @@ CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* const pAssetsManager,
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->signalAssetRenamed.Connect([&]()
+	m_pAssetsManager->SignalAssetRenamed.Connect([&]()
 	{
 		if (!m_pAssetsManager->IsLoading())
 		{
 			RevertPropertyTree();
 		}
+	}, reinterpret_cast<uintptr_t>(this));
+
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
+	{
+		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
+		setEnabled(pEditorImpl != nullptr);
 	}, reinterpret_cast<uintptr_t>(this));
 
 	QObject::connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_supressUpdates = true; });
 	QObject::connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_supressUpdates = false; });
+	QObject::connect(m_pConnectionsWidget, &CConnectionsWidget::SignalSelectConnectedImplItem, this, &CPropertiesWidget::SignalSelectConnectedImplItem);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CPropertiesWidget::~CPropertiesWidget()
 {
-	m_pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->signalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->signalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->signalAssetRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->SignalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->SignalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->SignalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->SignalAssetRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////

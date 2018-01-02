@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioCVars.h"
@@ -231,7 +231,8 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 			if (!levelName.empty() && levelName.compareNoCase("Untitled") != 0)
 			{
 				string levelPath(gEnv->pAudioSystem->GetConfigPath());
-				levelPath += "levels" CRY_NATIVE_PATH_SEPSTR;
+				levelPath += s_szLevelsFolderName;
+				levelPath += CRY_NATIVE_PATH_SEPSTR;
 				levelPath += levelName;
 
 				// Needs to be blocking so data is available for next preloading request!

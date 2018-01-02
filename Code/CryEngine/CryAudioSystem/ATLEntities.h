@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -18,39 +18,6 @@ class CATLAudioObject;
 struct SATLXMLTags
 {
 	static char const* const szPlatform;
-
-	static char const* const szRootNodeTag;
-	static char const* const szEditorDataTag;
-	static char const* const szTriggersNodeTag;
-	static char const* const szParametersNodeTag;
-	static char const* const szSwitchesNodeTag;
-	static char const* const szPreloadsNodeTag;
-	static char const* const szEnvironmentsNodeTag;
-
-	static char const* const szATLTriggerTag;
-	static char const* const szATLSwitchTag;
-	static char const* const szATLParametersTag;
-	static char const* const szATLSwitchStateTag;
-	static char const* const szATLEnvironmentTag;
-	static char const* const szATLPlatformsTag;
-	static char const* const szATLConfigGroupTag;
-
-	static char const* const szATLTriggerRequestTag;
-	static char const* const szATLSwitchRequestTag;
-	static char const* const szATLValueTag;
-	static char const* const szATLParametersRequestTag;
-	static char const* const szATLPreloadRequestTag;
-	static char const* const szATLEnvironmentRequestTag;
-
-	static char const* const szATLVersionAttribute;
-	static char const* const szATLNameAttribute;
-	static char const* const szATLInternalNameAttribute;
-	static char const* const szATLTypeAttribute;
-	static char const* const szATLConfigGroupAttribute;
-	static char const* const szATLRadiusAttribute;
-	static char const* const szATLOcclusionFadeOutDistanceAttribute;
-
-	static char const* const szATLDataLoadType;
 };
 
 namespace Impl
@@ -216,17 +183,14 @@ public:
 	  ControlId const audioTriggerId,
 	  EDataScope const dataScope,
 	  ImplPtrVec const& implPtrs,
-	  float const maxRadius,
-	  float const occlusionFadeOutDistance)
+	  float const maxRadius)
 		: ATLControl(audioTriggerId, dataScope)
 		, m_implPtrs(implPtrs)
 		, m_maxRadius(maxRadius)
-		, m_occlusionFadeOutDistance(occlusionFadeOutDistance)
 	{}
 
 	ImplPtrVec const m_implPtrs;
 	float const      m_maxRadius;
-	float const      m_occlusionFadeOutDistance;
 };
 
 // Base class for a parameter implementation

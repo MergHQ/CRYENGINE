@@ -8,7 +8,7 @@ namespace SDLMixer
 {
 enum class EImpltemType
 {
-	Invalid = 0,
+	Invalid,
 	Event,
 	Folder,
 };

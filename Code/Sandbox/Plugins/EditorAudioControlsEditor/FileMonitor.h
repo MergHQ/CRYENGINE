@@ -7,6 +7,8 @@
 
 namespace ACE
 {
+class CSystemAssetsManager;
+
 class CFileMonitor : public QTimer, public IFileChangeListener
 {
 	Q_OBJECT
@@ -21,14 +23,15 @@ signals:
 
 protected:
 
-	CFileMonitor(int const delay, QObject* const pParent);
+	CFileMonitor(int const delay, CSystemAssetsManager const& assetsManager, QObject* const pParent);
 	virtual ~CFileMonitor() override;
 
 	// IFileChangeListener
 	virtual void OnFileChange(char const* filename, EChangeType eType) override;
 	// ~IFileChangeListener
 
-	int const m_delay;
+	int const                   m_delay;
+	CSystemAssetsManager const& m_assetsManager;
 };
 
 class CFileMonitorSystem final : public CFileMonitor
@@ -37,14 +40,14 @@ class CFileMonitorSystem final : public CFileMonitor
 
 public:
 
-	CFileMonitorSystem(int const delay, QObject* const pParent);
+	CFileMonitorSystem(int const delay, CSystemAssetsManager const& assetsManager, QObject* const pParent);
 
 	void Enable();
 	void EnableDelayed();
 
 private:
 
-	string const  m_assetFolder;
+	string const  m_monitorFolder;
 	QTimer* const m_delayTimer;
 };
 
@@ -54,7 +57,7 @@ class CFileMonitorMiddleware final : public CFileMonitor
 
 public:
 
-	CFileMonitorMiddleware(int const delay, QObject* const pParent);
+	CFileMonitorMiddleware(int const delay, CSystemAssetsManager const& assetsManager, QObject* const pParent);
 
 	void Enable();
 

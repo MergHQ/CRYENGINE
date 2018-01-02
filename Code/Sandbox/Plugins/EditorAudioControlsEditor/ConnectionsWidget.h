@@ -3,6 +3,7 @@
 #pragma once
 
 #include <QWidget>
+#include <SystemTypes.h>
 
 class QPropertyTree;
 class QAttributeFilterProxyModel;
@@ -26,6 +27,10 @@ public:
 	void Reload();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
+
+signals:
+
+	void SignalSelectConnectedImplItem(CID const itemId);
 
 private slots:
 

@@ -15,17 +15,14 @@ namespace ResourceModelUtils
 //////////////////////////////////////////////////////////////////////////
 QVariant GetHeaderData(int const section, Qt::Orientation const orientation, int const role)
 {
-	if (orientation != Qt::Horizontal)
+	QVariant variant = QVariant();
+
+	if ((orientation == Qt::Horizontal) && ((role == Qt::DisplayRole) || (role == Qt::ToolTipRole)))
 	{
-		return QVariant();
+		variant = "Name";
 	}
 
-	if ((role == Qt::DisplayRole) || (role == Qt::ToolTipRole))
-	{
-		return "Name";
-	}
-
-	return QVariant();
+	return variant;
 }
 } // namespace ResourceModelUtils
 
@@ -38,6 +35,8 @@ int CResourceSourceModel::columnCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 QVariant CResourceSourceModel::data(QModelIndex const& index, int role) const
 {
+	QVariant variant = QVariant();
+
 	CSystemLibrary const* const pLibrary = static_cast<CSystemLibrary*>(index.internalPointer());
 
 	if (pLibrary != nullptr)
@@ -46,40 +45,41 @@ QVariant CResourceSourceModel::data(QModelIndex const& index, int role) const
 		{
 		case Qt::DisplayRole:
 		case Qt::ToolTipRole:
-			return QtUtil::ToQStringSafe(pLibrary->GetName());
+			variant = QtUtil::ToQStringSafe(pLibrary->GetName());
 			break;
-
 		case Qt::DecorationRole:
-			return GetItemTypeIcon(ESystemItemType::Library);
+			variant = GetItemTypeIcon(ESystemItemType::Library);
 			break;
-
 		case static_cast<int>(SystemModelUtils::ERoles::ItemType) :
-			return static_cast<int>(ESystemItemType::Library);
+			variant = static_cast<int>(ESystemItemType::Library);
 			break;
-
 		case static_cast<int>(SystemModelUtils::ERoles::InternalPointer) :
-			return reinterpret_cast<intptr_t>(pLibrary);
+			variant = reinterpret_cast<intptr_t>(pLibrary);
+			break;
+		default:
 			break;
 		}
 	}
 
-	return QVariant();
+	return variant;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CResourceSourceModel::setData(QModelIndex const& index, QVariant const& value, int role)
 {
+	bool wasDataSet = false;
+
 	if (index.isValid())
 	{
 		CSystemAsset const* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
 
 		if (pItem != nullptr)
 		{
-			return true;
+			wasDataSet = true;
 		}
 	}
 
-	return false;
+	return wasDataSet;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -91,12 +91,14 @@ QVariant CResourceSourceModel::headerData(int section, Qt::Orientation orientati
 //////////////////////////////////////////////////////////////////////////
 Qt::ItemFlags CResourceSourceModel::flags(QModelIndex const& index) const
 {
+	Qt::ItemFlags flags = Qt::NoItemFlags;
+
 	if (index.isValid())
 	{
-		return QAbstractItemModel::flags(index) | Qt::ItemIsSelectable;
+		flags =  QAbstractItemModel::flags(index) | Qt::ItemIsSelectable;
 	}
 
-	return Qt::NoItemFlags;
+	return flags;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -126,55 +128,56 @@ int CResourceLibraryModel::columnCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 QVariant CResourceLibraryModel::data(QModelIndex const& index, int role) const
 {
-	if (!index.isValid())
-	{
-		return QVariant();
-	}
+	QVariant variant = QVariant();
 
-	CSystemAsset const* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
-
-	if (pItem != nullptr)
-	{
-		ESystemItemType const itemType = pItem->GetType();
-
-		switch (role)
-		{
-		case Qt::DisplayRole:
-		case Qt::ToolTipRole:
-			return QtUtil::ToQStringSafe(pItem->GetName());
-			break;
-
-		case Qt::DecorationRole:
-			return GetItemTypeIcon(itemType);
-			break;
-
-		case static_cast<int>(SystemModelUtils::ERoles::ItemType) :
-			return static_cast<int>(itemType);
-			break;
-
-		case static_cast<int>(SystemModelUtils::ERoles::InternalPointer) :
-			return reinterpret_cast<intptr_t>(pItem);
-			break;
-		}
-	}
-
-	return QVariant();
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CResourceLibraryModel::setData(QModelIndex const& index, QVariant const& value, int role)
-{
 	if (index.isValid())
 	{
 		CSystemAsset const* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
 
 		if (pItem != nullptr)
 		{
-			return true;
+			ESystemItemType const itemType = pItem->GetType();
+
+			switch (role)
+			{
+			case Qt::DisplayRole:
+			case Qt::ToolTipRole:
+				variant = QtUtil::ToQStringSafe(pItem->GetName());
+				break;
+			case Qt::DecorationRole:
+				variant = GetItemTypeIcon(itemType);
+				break;
+			case static_cast<int>(SystemModelUtils::ERoles::ItemType) :
+				variant = static_cast<int>(itemType);
+				break;
+			case static_cast<int>(SystemModelUtils::ERoles::InternalPointer) :
+				variant = reinterpret_cast<intptr_t>(pItem);
+				break;
+			default:
+				break;
+			}
 		}
 	}
 
-	return false;
+	return variant;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CResourceLibraryModel::setData(QModelIndex const& index, QVariant const& value, int role)
+{
+	bool wasDataSet = false;
+
+	if (index.isValid())
+	{
+		CSystemAsset const* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
+
+		if (pItem != nullptr)
+		{
+			wasDataSet = true;
+		}
+	}
+
+	return wasDataSet;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -186,12 +189,14 @@ QVariant CResourceLibraryModel::headerData(int section, Qt::Orientation orientat
 //////////////////////////////////////////////////////////////////////////
 Qt::ItemFlags CResourceLibraryModel::flags(QModelIndex const& index) const
 {
+	Qt::ItemFlags flags = Qt::NoItemFlags;
+
 	if (index.isValid())
 	{
-		return QAbstractItemModel::flags(index) | Qt::ItemIsSelectable;
+		flags = QAbstractItemModel::flags(index) | Qt::ItemIsSelectable;
 	}
 
-	return Qt::NoItemFlags;
+	return flags;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -223,6 +228,8 @@ CResourceFilterProxyModel::CResourceFilterProxyModel(ESystemItemType const type,
 //////////////////////////////////////////////////////////////////////////
 bool CResourceFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex const& sourceParent) const
 {
+	bool matchesFilter = false;
+
 	if (QDeepFilterProxyModel::rowMatchesFilter(sourceRow, sourceParent))
 	{
 		QModelIndex const& index = sourceModel()->index(sourceRow, 0, sourceParent);
@@ -233,49 +240,53 @@ bool CResourceFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex cons
 
 			if (pAsset != nullptr)
 			{
-				if (pAsset->GetType() != m_type)
-				{
-					return false;
-				}
-				else
+				matchesFilter = (pAsset->GetType() == m_type);
+
+				if (matchesFilter)
 				{
 					auto const pControl = static_cast<CSystemControl*>(pAsset);
 					Scope const scope = pControl->GetScope();
 
 					if (scope != Utils::GetGlobalScope() && scope != m_scope)
 					{
-						return false;
+						matchesFilter = ((scope == Utils::GetGlobalScope()) || (scope == m_scope));
 					}
 				}
-				
-				return true;
 			}
 		}
 	}
 
-	return false;
+	return matchesFilter;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CResourceFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex const& right) const
 {
+	bool isLessThan = false;
+
 	// First sort by type, then by name.
 	if (left.column() == right.column())
 	{
-		ESystemItemType const leftType = static_cast<ESystemItemType>(sourceModel()->data(left, static_cast<int>(SystemModelUtils::ERoles::ItemType)).toInt());
-		ESystemItemType const rightType = static_cast<ESystemItemType>(sourceModel()->data(right, static_cast<int>(SystemModelUtils::ERoles::ItemType)).toInt());
+		int const itemTypeRole = static_cast<int>(SystemModelUtils::ERoles::ItemType);
+		ESystemItemType const leftType = static_cast<ESystemItemType>(sourceModel()->data(left, itemTypeRole).toInt());
+		ESystemItemType const rightType = static_cast<ESystemItemType>(sourceModel()->data(right, itemTypeRole).toInt());
 
 		if (leftType != rightType)
 		{
-			return rightType < ESystemItemType::Folder;
+			isLessThan = rightType < ESystemItemType::Folder;
 		}
-
-		QVariant const& valueLeft = sourceModel()->data(left, Qt::DisplayRole);
-		QVariant const& valueRight = sourceModel()->data(right, Qt::DisplayRole);
-
-		return valueLeft < valueRight;
+		else
+		{
+			QVariant const& valueLeft = sourceModel()->data(left, Qt::DisplayRole);
+			QVariant const& valueRight = sourceModel()->data(right, Qt::DisplayRole);
+			isLessThan = valueLeft < valueRight;
+		}
+	}
+	else
+	{
+		isLessThan = QSortFilterProxyModel::lessThan(left, right);
 	}
 
-	return QSortFilterProxyModel::lessThan(left, right);
+	return isLessThan;
 }
 } // namespace ACE

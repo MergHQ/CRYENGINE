@@ -43,10 +43,10 @@ public:
 	static void                    StopTriggerExecution();
 	static EErrorCode              GetLoadingErrorMask() { return s_loadingErrorMask; }
 
-	static CCrySignal<void()> signalAboutToLoad;
-	static CCrySignal<void()> signalLoaded;
-	static CCrySignal<void()> signalAboutToSave;
-	static CCrySignal<void()> signalSaved;
+	static CCrySignal<void()>      SignalAboutToLoad;
+	static CCrySignal<void()>      SignalLoaded;
+	static CCrySignal<void()>      SignalAboutToSave;
+	static CCrySignal<void()>      SignalSaved;
 
 private:
 

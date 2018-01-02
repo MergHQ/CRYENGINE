@@ -22,7 +22,7 @@ private:
 	CImplItem* CreateItem(string const& name, string const& path, EImpltemType const type, CImplItem& rootItem);
 	void       LoadFolder(string const& folderPath, CImplItem& parent);
 
-	string m_assetsPath;
+	string const m_assetsPath;
 };
 } // namespace PortAudio
 } // namespace ACE

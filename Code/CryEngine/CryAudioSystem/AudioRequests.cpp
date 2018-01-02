@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioInternalInterfaces.h"
@@ -57,6 +57,7 @@ SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestDa
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::ReleasePendingRays)
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::ReloadControlsData)
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::GetAudioFileData)
+				AM_REQUEST_BLOCK(EAudioManagerRequestType::GetImplInfo)
 			default:
 				{
 					Cry::Audio::Log(ELogType::Error, "Unknown audio manager request type (%u)", pBase->type);

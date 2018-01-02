@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ProxyModels/DeepFilterProxyModel.h>
+#include <ProxyModels/AttributeFilterProxyModel.h>
 
 class CItemModelAttribute;
 
@@ -28,6 +28,8 @@ public:
 	{
 		Id = Qt::UserRole + 1,
 		Name,
+		ItemType,
+		IsPlaceholder,
 	};
 
 	CMiddlewareDataModel(QObject* const pParent);
@@ -36,8 +38,8 @@ public:
 	static CItemModelAttribute* GetAttributeForColumn(EColumns const column);
 	static QVariant             GetHeaderData(int const section, Qt::Orientation const orientation, int const role);
 
-	void   DisconnectSignals();
-	void   Reset();
+	void                        DisconnectSignals();
+	void                        Reset();
 
 protected:
 
@@ -61,5 +63,22 @@ private:
 	QModelIndex IndexFromItem(CImplItem const* const pImplItem) const;
 
 	IEditorImpl* m_pEditorImpl;
+};
+
+class CMiddlewareFilterProxyModel final : public QAttributeFilterProxyModel
+{
+public:
+
+	CMiddlewareFilterProxyModel(QObject* const pParent);
+
+protected:
+
+	// QAttributeFilterProxyModel
+	virtual bool rowMatchesFilter(int sourceRow, QModelIndex const& sourcePparent) const override;
+	// ~QAttributeFilterProxyModel
+
+	// QSortFilterProxyModel
+	virtual bool lessThan(QModelIndex const& left, QModelIndex const& right) const override;
+	// ~QSortFilterProxyModel
 };
 } // namespace ACE

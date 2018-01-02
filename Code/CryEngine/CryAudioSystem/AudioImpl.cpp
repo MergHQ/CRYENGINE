@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioImpl.h"
@@ -134,6 +134,12 @@ void CImpl::DestructFile(IFile* const pIFile)
 char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 {
 	return nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::GetInfo(SImplInfo& implInfo) const
+{
+	implInfo.name = "null-impl";
 }
 
 ///////////////////////////////////////////////////////////////////////////

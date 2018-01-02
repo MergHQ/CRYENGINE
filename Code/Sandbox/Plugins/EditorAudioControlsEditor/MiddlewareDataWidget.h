@@ -5,7 +5,6 @@
 #include <QWidget>
 #include <SystemTypes.h>
 
-class QAttributeFilterProxyModel;
 class QFilteringPanel;
 
 namespace ACE
@@ -13,6 +12,7 @@ namespace ACE
 class CSystemAssetsManager;
 class CSystemControl;
 class CMiddlewareDataModel;
+class CMiddlewareFilterProxyModel;
 class CTreeView;
 
 class CMiddlewareDataWidget final : public QWidget
@@ -27,6 +27,7 @@ public:
 	void Reset();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
+	void SelectConnectedImplItem(CID const itemId);
 
 signals:
 
@@ -38,11 +39,13 @@ private slots:
 
 private:
 
-	CSystemAssetsManager* const       m_pAssetsManager;
-	QAttributeFilterProxyModel* const m_pAttributeFilterProxyModel;
-	CMiddlewareDataModel* const       m_pMiddlewareDataModel;
-	QFilteringPanel*                  m_pFilteringPanel;
-	CTreeView* const                  m_pTreeView;
-	int const                         m_nameColumn;
+	void ClearFilters();
+
+	CSystemAssetsManager* const        m_pAssetsManager;
+	CMiddlewareFilterProxyModel* const m_pMiddlewareFilterProxyModel;
+	CMiddlewareDataModel* const        m_pMiddlewareDataModel;
+	QFilteringPanel*                   m_pFilteringPanel;
+	CTreeView* const                   m_pTreeView;
+	int const                          m_nameColumn;
 };
 } // namespace ACE

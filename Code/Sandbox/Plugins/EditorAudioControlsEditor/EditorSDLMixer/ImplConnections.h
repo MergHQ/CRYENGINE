@@ -10,7 +10,7 @@ namespace SDLMixer
 {
 enum class EConnectionType
 {
-	Start = 0,
+	Start,
 	Stop,
 	NumTypes,
 };
@@ -29,7 +29,8 @@ public:
 		, m_volume(-14.0f)
 		, m_loopCount(1)
 		, m_isInfiniteLoop(false)
-	{}
+	{
+	}
 
 	// CImplConnection
 	virtual bool HasProperties() const override { return true; }
@@ -40,7 +41,7 @@ public:
 	float           m_minAttenuation;
 	float           m_maxAttenuation;
 	float           m_volume;
-	uint            m_loopCount;
+	uint32          m_loopCount;
 	bool            m_isPanningEnabled;
 	bool            m_isAttenuationEnabled;
 	bool            m_isInfiniteLoop;

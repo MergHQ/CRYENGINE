@@ -43,8 +43,8 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 			pLayout->addWidget(new QLabel(tr("Audio Middleware") + ":"), 0, 0, labelAlignment);
 			pLayout->addWidget(new QLabel(QtUtil::ToQString(pEditorImpl->GetName())), 0, 1, labelAlignment);
 
-			pLayout->addWidget(new QLabel(tr("Sound Banks Path") + ":"), 1, 0, labelAlignment);
-			pLayout->addWidget(new QLabel(pImplSettings->GetSoundBanksPath()), 1, 1);
+			pLayout->addWidget(new QLabel(tr("Assets Path") + ":"), 1, 0, labelAlignment);
+			pLayout->addWidget(new QLabel(pImplSettings->GetAssetsPath()), 1, 1);
 
 			pLayout->addWidget(new QLabel(tr("Project Path") + ":"), 2, 0, labelAlignment);
 
@@ -52,32 +52,42 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 			m_projectPath = pImplSettings->GetProjectPath();
 			QLineEdit* const pLineEdit = new QLineEdit(m_projectPath, this);
 			pLineEdit->setMinimumWidth(250);
-			QObject::connect(pLineEdit, &QLineEdit::textChanged, [&](QString const& projectPath)
-			{
-				SignalEnableSaveButton(m_projectPath.toLower().replace("/", R"(\)") != projectPath.toLower().replace("/", R"(\)"));
-			});
-
-			pProjectPathLayout->addWidget(pLineEdit);
 
 			QToolButton* const pBrowseButton = new QToolButton(this);
 			pBrowseButton->setText("...");
-			QObject::connect(pBrowseButton, &QToolButton::clicked, [&]()
+
+			if (pImplSettings->IsProjectPathEditable())
 			{
-				IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-				if (pEditorImpl != nullptr)
+				QObject::connect(pLineEdit, &QLineEdit::textChanged, [=](QString const& projectPath)
 				{
-					CSystemFileDialog::RunParams runParams;
-					runParams.initialDir = pLineEdit->text();
-					QString const& path = CSystemFileDialog::RunSelectDirectory(runParams, this);
+					SignalEnableSaveButton(m_projectPath.toLower().replace("/", R"(\)") != projectPath.toLower().replace("/", R"(\)"));
+				});
 
-					if (!path.isEmpty())
+				QObject::connect(pBrowseButton, &QToolButton::clicked, [=]()
+				{
+					IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
+
+					if (pEditorImpl != nullptr)
 					{
-						pLineEdit->setText(path);
-					}
-				}
-			});
+						CSystemFileDialog::RunParams runParams;
+						runParams.initialDir = pLineEdit->text();
+						QString const& path = CSystemFileDialog::RunSelectDirectory(runParams, this);
 
+						if (!path.isEmpty())
+						{
+							pLineEdit->setText(path);
+						}
+					}
+				});
+			}
+			else
+			{
+				pLineEdit->setEnabled(false);
+				pBrowseButton->setEnabled(false);
+			}
+
+			
+			pProjectPathLayout->addWidget(pLineEdit);
 			pProjectPathLayout->addWidget(pBrowseButton);
 
 			pLayout->addLayout(pProjectPathLayout, 2, 1);
@@ -88,7 +98,7 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 			pButtons->setStandardButtons(QDialogButtonBox::Save | QDialogButtonBox::Cancel);
 			pButtons->button(QDialogButtonBox::Save)->setEnabled(false);
 			QObject::connect(this, &CPreferencesDialog::SignalEnableSaveButton, pButtons->button(QDialogButtonBox::Save), &QPushButton::setEnabled);
-			QObject::connect(pButtons, &QDialogButtonBox::accepted, [&]()
+			QObject::connect(pButtons, &QDialogButtonBox::accepted, [=]()
 			{
 				IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
 

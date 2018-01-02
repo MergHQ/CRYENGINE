@@ -14,7 +14,6 @@
 #include <CryEntitySystem/IEntitySystem.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	#include "ProfileData.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -79,10 +78,6 @@ CAudioTranslationLayer::CAudioTranslationLayer()
 		Cry::Audio::Log(ELogType::Warning, R"(Audio Standalone File pool size should be greater than zero. Forcing the cvar "s_AudioStandaloneFilePoolSize" to 1!)");
 	}
 	CATLStandaloneFile::CreateAllocator(g_cvars.m_audioStandaloneFilePoolSize);
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	m_pProfileData = new CProfileData;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -95,10 +90,6 @@ CAudioTranslationLayer::~CAudioTranslationLayer()
 	}
 
 	CRY_ASSERT_MESSAGE(!m_pGlobalAudioObject, "Global audio object should have been destroyed in the audio thread, before the ATL is destructed.");
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	delete m_pProfileData;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -645,6 +636,13 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 			SAudioManagerRequestData<EAudioManagerRequestType::GetAudioFileData> const* const pRequestData =
 			  static_cast<SAudioManagerRequestData<EAudioManagerRequestType::GetAudioFileData> const* const>(request.GetData());
 			m_pIImpl->GetFileData(pRequestData->name.c_str(), pRequestData->fileData);
+			break;
+		}
+	case EAudioManagerRequestType::GetImplInfo:
+		{
+			SAudioManagerRequestData<EAudioManagerRequestType::GetImplInfo> const* const pRequestData =
+			  static_cast<SAudioManagerRequestData<EAudioManagerRequestType::GetImplInfo> const* const>(request.GetData());
+			m_pIImpl->GetInfo(pRequestData->implInfo);
 			break;
 		}
 	case EAudioManagerRequestType::None:
@@ -1234,10 +1232,14 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 
 	result = m_pIImpl->Init(g_cvars.m_audioObjectPoolSize, g_cvars.m_audioEventPoolSize);
 
+	m_pIImpl->GetInfo(m_implInfo);
+	m_configPath = (PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR).c_str();
+	m_configPath += (m_implInfo.folderName + CRY_NATIVE_PATH_SEPSTR + s_szConfigFolderName + CRY_NATIVE_PATH_SEPSTR).c_str();
+
 	if (result != ERequestStatus::Success)
 	{
 		// The impl failed to initialize, allow it to shut down and release then fall back to the null impl.
-		Cry::Audio::Log(ELogType::Error, "Failed to set the AudioImpl %s. Will run with the null implementation.", m_pIImpl->GetName());
+		Cry::Audio::Log(ELogType::Error, "Failed to set the AudioImpl %s. Will run with the null implementation.", m_implInfo.name.c_str());
 
 		// There's no need to call Shutdown when the initialization failed as
 		// we expect the implementation to clean-up itself if it couldn't be initialized
@@ -1273,10 +1275,6 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 
 	SetImplLanguage();
 	InitInternalControls();
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	m_pProfileData->SetImplName(m_pIImpl->GetName());
-#endif //INCLUDE_AUDIO_PRODUCTION_CODE
 
 	return result;
 }
@@ -1339,10 +1337,9 @@ ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLe
 
 	SetImplLanguage();
 
-	CryFixedStringT<MaxFilePathLength> configPath(gEnv->pAudioSystem->GetConfigPath());
-	result = ParseControlsData(configPath.c_str(), EDataScope::Global);
+	result = ParseControlsData(m_configPath.c_str(), EDataScope::Global);
 	CRY_ASSERT(result == ERequestStatus::Success);
-	result = ParsePreloadsData(configPath.c_str(), EDataScope::Global);
+	result = ParsePreloadsData(m_configPath.c_str(), EDataScope::Global);
 	CRY_ASSERT(result == ERequestStatus::Success);
 
 	// The global preload might not exist if no preloads have been created, for that reason we don't check the result of this call
@@ -1350,12 +1347,14 @@ ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLe
 
 	if (szLevelName != nullptr && szLevelName[0] != '\0')
 	{
-		configPath += "levels" CRY_NATIVE_PATH_SEPSTR;
-		configPath += szLevelName;
-		result = ParseControlsData(configPath.c_str(), EDataScope::LevelSpecific);
+		CryFixedStringT<MaxFilePathLength> levelPath = m_configPath;
+		levelPath += s_szLevelsFolderName;
+		levelPath += CRY_NATIVE_PATH_SEPSTR;
+		levelPath += szLevelName;
+		result = ParseControlsData(levelPath.c_str(), EDataScope::LevelSpecific);
 		CRY_ASSERT(result == ERequestStatus::Success);
 
-		result = ParsePreloadsData(configPath.c_str(), EDataScope::LevelSpecific);
+		result = ParsePreloadsData(levelPath.c_str(), EDataScope::LevelSpecific);
 		CRY_ASSERT(result == ERequestStatus::Success);
 
 		PreloadRequestId const preloadRequestId = StringToId(szLevelName);
@@ -1473,6 +1472,12 @@ void CAudioTranslationLayer::SetCurrentEnvironmentsOnObject(CATLAudioObject* con
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+char const* CAudioTranslationLayer::GetConfigPath() const
+{
+	return m_configPath.c_str();
+}
+
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
@@ -1502,7 +1507,7 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 
 		if (!((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::HideMemoryInfo) != 0))
 		{
-			pAuxGeom->Draw2dLabel(posX, posY, 1.5f, s_colorBlue, false, m_pProfileData->GetImplName());
+			pAuxGeom->Draw2dLabel(posX, posY, 1.5f, s_colorBlue, false, m_implInfo.name.c_str());
 
 			CryModuleMemoryInfo memInfo;
 			ZeroStruct(memInfo);
@@ -1699,14 +1704,7 @@ void CAudioTranslationLayer::GetAudioTriggerData(ControlId const audioTriggerId,
 	if (pTrigger != nullptr)
 	{
 		audioTriggerData.radius = pTrigger->m_maxRadius;
-		audioTriggerData.occlusionFadeOutDistance = pTrigger->m_occlusionFadeOutDistance;
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-CProfileData* CAudioTranslationLayer::GetProfileData() const
-{
-	return m_pProfileData;
 }
 
 ///////////////////////////////////////////////////////////////////////////

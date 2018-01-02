@@ -30,7 +30,6 @@ CATLAudioObject::CATLAudioObject()
 	, m_flags(EObjectFlags::InUse)
 	, m_previousVelocity(0.0f)
 	, m_propagationProcessor(m_attributes.transformation)
-	, m_occlusionFadeOutDistance(0.0f)
 	, m_entityId(INVALID_ENTITYID)
 	, m_numPendingSyncCallbacks(0)
 {}
@@ -114,7 +113,6 @@ void CATLAudioObject::ReportStartedEvent(CATLEvent* const pEvent)
 	if (pEvent->m_pTrigger)
 	{
 		m_maxRadius = std::max(pEvent->m_pTrigger->m_maxRadius, m_maxRadius);
-		m_occlusionFadeOutDistance = std::max(pEvent->m_pTrigger->m_occlusionFadeOutDistance, m_occlusionFadeOutDistance);
 	}
 
 	ObjectTriggerStates::iterator const iter(m_triggerStates.find(pEvent->m_audioTriggerInstanceId));
@@ -175,14 +173,12 @@ void CATLAudioObject::ReportFinishedEvent(CATLEvent* const pEvent, bool const bS
 
 	// Recalculate the max radius of the audio object.
 	m_maxRadius = 0.0f;
-	m_occlusionFadeOutDistance = 0.0f;
 
 	for (auto const pActiveEvent : m_activeEvents)
 	{
 		if (pActiveEvent->m_pTrigger != nullptr)
 		{
 			m_maxRadius = std::max(pActiveEvent->m_pTrigger->m_maxRadius, m_maxRadius);
-			m_occlusionFadeOutDistance = std::max(pActiveEvent->m_pTrigger->m_occlusionFadeOutDistance, m_occlusionFadeOutDistance);
 		}
 	}
 
@@ -648,25 +644,6 @@ void CATLAudioObject::Update(
 		SATLSoundPropagationData propagationData;
 		m_propagationProcessor.GetPropagationData(propagationData);
 		m_pImplData->SetObstructionOcclusion(propagationData.obstruction, propagationData.occlusion);
-	}
-
-	if (m_maxRadius > 0.0f)
-	{
-		float occlusionFadeOut = 0.0f;
-		if (distance < m_maxRadius)
-		{
-			float const fadeOutStart = m_maxRadius - m_occlusionFadeOutDistance;
-			if (fadeOutStart < distance)
-			{
-				occlusionFadeOut = 1.0f - ((distance - fadeOutStart) / m_occlusionFadeOutDistance);
-			}
-			else
-			{
-				occlusionFadeOut = 1.0f;
-			}
-		}
-
-		m_propagationProcessor.SetOcclusionMultiplier(occlusionFadeOut);
 	}
 }
 

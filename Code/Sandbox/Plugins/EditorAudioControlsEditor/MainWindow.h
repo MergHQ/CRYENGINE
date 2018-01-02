@@ -8,6 +8,7 @@
 
 class QAction;
 class QLabel;
+class QToolBar;
 class QVBoxLayout;
 
 namespace ACE
@@ -64,6 +65,7 @@ signals:
 
 	void SignalSelectedSystemControlChanged();
 	void SignalSelectConnectedSystemControl(CSystemControl& systemControl, CID const itemId);
+	void SignalSelectConnectedImplItem(CID const itemId);
 
 private slots:
 
@@ -97,6 +99,7 @@ private:
 	CSystemControlsWidget*        m_pSystemControlsWidget;
 	CPropertiesWidget*            m_pPropertiesWidget;
 	CMiddlewareDataWidget*        m_pMiddlewareDataWidget;
+	QToolBar*                     m_pToolBar;
 	QAction*                      m_pSaveAction;
 	QLabel* const                 m_pImplNameLabel;
 	CFileMonitorSystem* const     m_pMonitorSystem;
