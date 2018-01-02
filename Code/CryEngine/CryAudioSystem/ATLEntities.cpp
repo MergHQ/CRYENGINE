@@ -41,45 +41,40 @@ void CATLListener::SetTransformation(CObjectTransformation const& transformation
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CATLListener::Update()
+void CATLListener::Update(float const deltaTime)
 {
-	// Exponential decay towards zero.
-	if (m_attributes.velocity.GetLengthSquared() > 0.0f)
+	if (m_isMovingOrDecaying)
 	{
-		float const deltaTime = (g_lastMainThreadFrameStartTime - m_previousTime).GetSeconds();
-		float const decay = std::max(1.0f - deltaTime / 0.125f, 0.0f);
-		m_attributes.velocity *= decay;
-	}
-	else if (m_bNeedsFinalSetPosition)
-	{
-		m_attributes.velocity = ZERO;
+		Vec3 const deltaPos(m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition());
+
+		if (!deltaPos.IsZero())
+		{
+			m_attributes.velocity = deltaPos / deltaTime;
+			m_previousAttributes.transformation.SetPosition(m_attributes.transformation.GetPosition());
+		}
+		else if (!m_attributes.velocity.IsZero())
+		{
+			// We did not move last frame, begin exponential decay towards zero.
+			float const decay = std::max(1.0f - deltaTime / 0.05f, 0.0f);
+			m_attributes.velocity *= decay;
+
+			if (m_attributes.velocity.GetLengthSquared() < FloatEpsilon)
+			{
+				m_attributes.velocity = ZERO;
+				m_isMovingOrDecaying = false;
+			}
+		}
+
 		m_pImplData->Set3DAttributes(m_attributes);
-		m_bNeedsFinalSetPosition = false;
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CATLListener::HandleSetTransformation(CObjectTransformation const& transformation)
 {
-	float const deltaTime = (g_lastMainThreadFrameStartTime - m_previousTime).GetSeconds();
-
-	if (deltaTime > 0.0f)
-	{
-		m_attributes.transformation = transformation;
-		m_attributes.velocity = (m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition()) / deltaTime;
-		m_previousTime = g_lastMainThreadFrameStartTime;
-		m_previousAttributes = m_attributes;
-		m_bNeedsFinalSetPosition = m_attributes.velocity.GetLengthSquared() > 0.0f;
-	}
-	else if (deltaTime < 0.0f) //to handle time resets (e.g. loading a save-game might revert the game-time to a previous value)
-	{
-		m_attributes.transformation = transformation;
-		m_previousTime = g_lastMainThreadFrameStartTime;
-		m_previousAttributes = m_attributes;
-		m_bNeedsFinalSetPosition = m_attributes.velocity.GetLengthSquared() > 0.0f;
-	}
-
-	return m_pImplData->Set3DAttributes(m_attributes);
+	m_attributes.transformation = transformation;
+	m_isMovingOrDecaying = true;
+	return ERequestStatus::Success;
 }
 
 //////////////////////////////////////////////////////////////////////////

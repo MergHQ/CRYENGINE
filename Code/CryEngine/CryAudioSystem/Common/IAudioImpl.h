@@ -31,11 +31,10 @@ struct IImpl
 	/** @endcond */
 
 	/**
-	 * Update all of the internal components that require regular updates, update the audio middleware state.
-	 * @param deltaTime - Time since the last call to Update in milliseconds.
+	 * Is called at roughly the same rate as the external thread and a minimum rate if the external thread falls below a given threshold.
 	 * @return void
 	 */
-	virtual void Update(float const deltaTime) = 0;
+	virtual void Update() = 0;
 
 	/**
 	 * Initialize all internal components and the audio middleware.

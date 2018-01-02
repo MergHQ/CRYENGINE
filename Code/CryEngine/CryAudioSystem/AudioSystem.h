@@ -111,19 +111,21 @@ private:
 	using AudioRequests = ConcQueue<UnboundMPSC, CAudioRequest>;
 	using AudioRequestsSyncCallbacks = ConcQueue<UnboundSPSC, CAudioRequest>;
 
-	void        UpdateTime();
-	bool        ProcessRequests(AudioRequests& requestQueue);
+	void        ProcessRequests(AudioRequests& requestQueue);
 	static void OnCallback(SRequestInfo const* const pRequestInfo);
 
 	bool                       m_isInitialized;
-	CTimeValue                 m_lastUpdateTime;
-	float                      m_deltaTime;
+	bool                       m_didThreadWait;
+	volatile float             m_accumulatedFrameTime;
+	std::atomic<uint32>        m_externalThreadFrameId;
+	uint32                     m_lastExternalThreadFrameId;
 	CMainThread                m_mainThread;
 
 	CAudioTranslationLayer     m_atl;
 	AudioRequests              m_requestQueue;
 	AudioRequestsSyncCallbacks m_syncCallbacks;
 	CAudioRequest              m_syncRequest;
+	CAudioRequest              m_request;
 	CryEvent                   m_mainEvent;
 	CryEvent                   m_audioThreadWakeupEvent;
 

@@ -37,10 +37,10 @@ struct IImpl;
 enum class EObjectFlags : EnumFlagsType
 {
 	None                            = 0,
-	TrackDoppler                    = BIT(0),
-	TrackVelocity                   = BIT(1),
-	NeedsDopplerUpdate              = BIT(2),
-	NeedsVelocityUpdate             = BIT(3),
+	MovingOrDecaying                = BIT(0),
+	TrackAbsoluteVelocity           = BIT(1),
+	TrackRelativeVelocity           = BIT(2),
+	UpdateRelativeVelocity          = BIT(3),
 	InUse                           = BIT(4),
 	Virtual                         = BIT(5),
 	WaitingForInitialTransformation = BIT(6),
@@ -113,14 +113,14 @@ public:
 
 	explicit CATLListener(Impl::IListener* const pImplData)
 		: m_pImplData(pImplData)
-		, m_bNeedsFinalSetPosition(false)
+		, m_isMovingOrDecaying(false)
 	{}
 
 	// CryAudio::IListener
 	virtual void SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	// ~CryAudio::IListener
 
-	void                             Update();
+	void                             Update(float const deltaTime);
 	ERequestStatus                   HandleSetTransformation(CObjectTransformation const& transformation);
 	Impl::SObject3DAttributes const& Get3DAttributes() const { return m_attributes; }
 
@@ -132,11 +132,9 @@ public:
 
 private:
 
-	bool                      m_bNeedsFinalSetPosition;
+	bool                      m_isMovingOrDecaying;
 	Impl::SObject3DAttributes m_attributes;
 	Impl::SObject3DAttributes m_previousAttributes;
-	CTimeValue                m_previousTime;
-
 };
 
 class CATLControlImpl

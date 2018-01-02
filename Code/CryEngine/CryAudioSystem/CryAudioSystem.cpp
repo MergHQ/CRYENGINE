@@ -24,7 +24,6 @@ namespace CryAudio
 {
 // Define global objects.
 CCVars g_cvars;
-CTimeValue g_lastMainThreadFrameStartTime;
 
 //////////////////////////////////////////////////////////////////////////
 class CSystemEventListener_Sound : public ISystemEventListener

@@ -179,7 +179,7 @@ public:
 				break;
 			}
 
-			m_pImpl->Update(0.0f);
+			m_pImpl->Update();
 		}
 	}
 
@@ -244,7 +244,7 @@ CImpl::CImpl()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::Update(float const deltaTime)
+void CImpl::Update()
 {
 	if (AK::SoundEngine::IsInitialized())
 	{

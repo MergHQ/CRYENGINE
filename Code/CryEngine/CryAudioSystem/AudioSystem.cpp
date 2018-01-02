@@ -44,9 +44,9 @@ void CMainThread::SignalStopWork()
 ///////////////////////////////////////////////////////////////////////////
 void CMainThread::Activate()
 {
-	if (!gEnv->pThreadManager->SpawnThread(this, "MainAudioThread"))
+	if (!gEnv->pThreadManager->SpawnThread(this, "AudioMainThread"))
 	{
-		CryFatalError(R"(Error spawning "MainAudioThread" thread.)");
+		CryFatalError(R"(Error spawning "AudioMainThread" thread.)");
 	}
 }
 
@@ -68,8 +68,10 @@ bool CMainThread::IsActive()
 //////////////////////////////////////////////////////////////////////////
 CSystem::CSystem()
 	: m_isInitialized(false)
-	, m_lastUpdateTime()
-	, m_deltaTime(0.0f)
+	, m_didThreadWait(false)
+	, m_accumulatedFrameTime(0.0f)
+	, m_externalThreadFrameId(0)
+	, m_lastExternalThreadFrameId(0)
 	, m_atl()
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CryAudio::CSystem");
@@ -125,6 +127,12 @@ void CSystem::ExternalUpdate()
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	DrawAudioDebugData();
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	m_accumulatedFrameTime += gEnv->pTimer->GetFrameTime();
+	++m_externalThreadFrameId;
+
+	// If sleeping, wake up the audio thread to start processing requests again.
+	m_audioThreadWakeupEvent.Set();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -136,15 +144,15 @@ void CSystem::PushRequest(CAudioRequest const& request)
 	{
 		m_requestQueue.enqueue(request);
 
-		if ((request.flags & ERequestFlags::ExecuteBlocking) > 0)
+		if ((request.flags & ERequestFlags::ExecuteBlocking) != 0)
 		{
-			// If sleeping, wake up the audio thread to start processing requests again
+			// If sleeping, wake up the audio thread to start processing requests again.
 			m_audioThreadWakeupEvent.Set();
 
 			m_mainEvent.Wait();
 			m_mainEvent.Reset();
 
-			if ((request.flags & ERequestFlags::CallbackOnExternalOrCallingThread) > 0)
+			if ((request.flags & ERequestFlags::CallbackOnExternalOrCallingThread) != 0)
 			{
 				m_atl.NotifyListener(m_syncRequest);
 			}
@@ -154,14 +162,6 @@ void CSystem::PushRequest(CAudioRequest const& request)
 	{
 		Log(ELogType::Warning, "Discarded PushRequest due to ATL not allowing for new ones!");
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::UpdateTime()
-{
-	CTimeValue const currentAsyncTime(gEnv->pTimer->GetAsyncTime());
-	m_deltaTime += (currentAsyncTime - m_lastUpdateTime).GetMilliSeconds();
-	m_lastUpdateTime = currentAsyncTime;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -228,27 +228,38 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 //////////////////////////////////////////////////////////////////////////
 void CSystem::InternalUpdate()
 {
-	bool bWorkDone = false;
+	CRY_PROFILE_REGION(PROFILE_AUDIO, "Audio: Internal Update");
 
+	if (m_lastExternalThreadFrameId != m_externalThreadFrameId)
 	{
-		CRY_PROFILE_REGION(PROFILE_AUDIO, "Audio: Internal Update");
-
-		UpdateTime();
-		m_atl.Update(m_deltaTime);
-		m_deltaTime = 0.0f;
-
-		bWorkDone = ProcessRequests(m_requestQueue);
+		m_atl.Update(m_accumulatedFrameTime);
+		ProcessRequests(m_requestQueue);
+		m_lastExternalThreadFrameId = m_externalThreadFrameId;
+		m_accumulatedFrameTime = 0.0f;
+		m_didThreadWait = false;
 	}
-
-	if (bWorkDone == false)
+	else if (m_didThreadWait)
 	{
+		// Effectively no time has passed for the external thread as it didn't progress.
+		// Consequently 0.0f is passed for deltaTime.
+		m_atl.Update(0.0f);
+		ProcessRequests(m_requestQueue);
+		m_didThreadWait = false;
+	}
+	else
+	{
+		// If we're faster than the external thread let's wait to make room for other threads.
 		CRY_PROFILE_REGION_WAITING(PROFILE_AUDIO, "Wait - Audio Update");
 
-		if (m_audioThreadWakeupEvent.Wait(10))
+		// The external thread will wake the audio thread up effectively syncing it to itself.
+		// If not however, the audio thread will execute at a minimum of roughly 30 fps.
+		if (m_audioThreadWakeupEvent.Wait(30))
 		{
 			// Only reset if the event was signaled, not timed-out!
 			m_audioThreadWakeupEvent.Reset();
 		}
+
+		m_didThreadWait = true;
 	}
 }
 
@@ -832,64 +843,57 @@ void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CSystem::ProcessRequests(AudioRequests& requestQueue)
+void CSystem::ProcessRequests(AudioRequests& requestQueue)
 {
-	bool bSuccess = false;
-	CAudioRequest request;
-
-	while (requestQueue.dequeue(request))
+	while (requestQueue.dequeue(m_request))
 	{
-		if (request.status == ERequestStatus::None)
+		if (m_request.status == ERequestStatus::None)
 		{
-			request.status = ERequestStatus::Pending;
-			m_atl.ProcessRequest(request);
+			m_request.status = ERequestStatus::Pending;
+			m_atl.ProcessRequest(m_request);
 		}
 		else
 		{
 			// TODO: handle pending requests!
 		}
 
-		if (request.status != ERequestStatus::Pending)
+		if (m_request.status != ERequestStatus::Pending)
 		{
-			if ((request.flags & ERequestFlags::CallbackOnAudioThread) > 0)
+			if ((m_request.flags & ERequestFlags::CallbackOnAudioThread) != 0)
 			{
-				m_atl.NotifyListener(request);
+				m_atl.NotifyListener(m_request);
 
-				if ((request.flags & ERequestFlags::ExecuteBlocking) > 0)
+				if ((m_request.flags & ERequestFlags::ExecuteBlocking) != 0)
 				{
 					m_mainEvent.Set();
 				}
 			}
-			else if ((request.flags & ERequestFlags::CallbackOnExternalOrCallingThread) > 0)
+			else if ((m_request.flags & ERequestFlags::CallbackOnExternalOrCallingThread) != 0)
 			{
-				if ((request.flags & ERequestFlags::ExecuteBlocking) > 0)
+				if ((m_request.flags & ERequestFlags::ExecuteBlocking) != 0)
 				{
-					m_syncRequest = request;
+					m_syncRequest = m_request;
 					m_mainEvent.Set();
 				}
 				else
 				{
-					if (request.pObject == nullptr)
+					if (m_request.pObject == nullptr)
 					{
 						m_atl.IncrementGlobalObjectSyncCallbackCounter();
 					}
 					else
 					{
-						request.pObject->IncrementSyncCallbackCounter();
+						m_request.pObject->IncrementSyncCallbackCounter();
 					}
-					m_syncCallbacks.enqueue(request);
+					m_syncCallbacks.enqueue(m_request);
 				}
 			}
-			else if ((request.flags & ERequestFlags::ExecuteBlocking) > 0)
+			else if ((m_request.flags & ERequestFlags::ExecuteBlocking) != 0)
 			{
 				m_mainEvent.Set();
 			}
 		}
-
-		bSuccess = true;
 	}
-
-	return bSuccess;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -930,8 +934,8 @@ void CSystem::GetImplInfo(SImplInfo& implInfo)
 	PushRequest(request);
 }
 
-//////////////////////////////////////////////////////////////////////////
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+//////////////////////////////////////////////////////////////////////////
 void CSystem::DrawAudioDebugData()
 {
 	if (g_cvars.m_drawAudioDebug > 0)

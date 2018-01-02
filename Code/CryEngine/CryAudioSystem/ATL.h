@@ -93,7 +93,6 @@ private:
 	SInternalControls           m_internalControls;
 
 	// Utility members
-	uint32                             m_lastMainThreadFrameId = 0;
 	EInternalStates                    m_flags = EInternalStates::None;
 	Impl::IImpl*                       m_pIImpl = nullptr;
 	SImplInfo                          m_implInfo;

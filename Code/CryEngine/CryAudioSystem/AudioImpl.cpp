@@ -43,7 +43,7 @@ struct SObject final : IObject
 };
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::Update(float const deltaTime)
+void CImpl::Update()
 {
 }
 

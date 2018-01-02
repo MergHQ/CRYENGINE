@@ -98,6 +98,8 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 ///////////////////////////////////////////////////////////////////////////
 CPropagationProcessor::CPropagationProcessor(CObjectTransformation const& transformation)
 	: m_obstruction(0.0f)
+	, m_lastQuerriedObstruction(0.0f)
+	, m_lastQuerriedOcclusion(0.0f)
 	, m_occlusion(0.0f)
 	, m_remainingRays(0)
 	, m_rayIndex(0)
@@ -108,7 +110,6 @@ CPropagationProcessor::CPropagationProcessor(CObjectTransformation const& transf
 	, m_occlusionTypeWhenAdaptive(EOcclusionType::Low) //will be updated in the first Update
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	, m_rayDebugInfos(g_numConcurrentRaysHigh)
-	, m_timeSinceLastUpdateMS(0.0f)
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 {
 	UpdateOcclusionPlanes();
@@ -123,14 +124,14 @@ CPropagationProcessor::~CPropagationProcessor()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropagationProcessor::Init(CATLAudioObject* const pAudioObject, Vec3 const& audioListenerPosition)
+void CPropagationProcessor::Init(CATLAudioObject* const pObject, Vec3 const& listenerPosition)
 {
 	for (auto& rayInfo : m_raysInfo)
 	{
-		rayInfo.pObject = pAudioObject;
+		rayInfo.pObject = pObject;
 	}
 
-	m_currentListenerDistance = audioListenerPosition.GetDistance(m_transformation.GetPosition());
+	m_currentListenerDistance = listenerPosition.GetDistance(m_transformation.GetPosition());
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	m_listenerOcclusionPlaneColor.set(cry_random<uint8>(0, 255), cry_random<uint8>(0, 255), cry_random<uint8>(0, 255), uint8(64));
@@ -139,9 +140,8 @@ void CPropagationProcessor::Init(CATLAudioObject* const pAudioObject, Vec3 const
 
 ///////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::Update(
-  float const deltaTime,
-  float const distance,
-  Vec3 const& audioListenerPosition,
+  float const distanceToListener,
+  Vec3 const& listenerPosition,
   EObjectFlags const objectFlags)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -155,7 +155,7 @@ void CPropagationProcessor::Update(
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	m_currentListenerDistance = distance;
+	m_currentListenerDistance = distanceToListener;
 
 	if (CanRunObstructionOcclusion() && (objectFlags& EObjectFlags::Virtual) == 0)
 	{
@@ -176,28 +176,24 @@ void CPropagationProcessor::Update(
 		UpdateOcclusionPlanes();
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-		RunObstructionQuery(audioListenerPosition);
+		RunObstructionQuery(listenerPosition);
 	}
 	else
 	{
 		m_obstruction = 0.0f;
 		m_occlusion = 0.0f;
 	}
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	m_timeSinceLastUpdateMS += deltaTime;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropagationProcessor::SetOcclusionType(EOcclusionType const occlusionType, Vec3 const& audioListenerPosition)
+void CPropagationProcessor::SetOcclusionType(EOcclusionType const occlusionType, Vec3 const& listenerPosition)
 {
 	m_occlusionType = m_originalOcclusionType = occlusionType;
 	m_obstruction = 0.0f;
 	m_occlusion = 0.0f;
 
 	// First time run is synchronous and center ray only to get a quick initial value to start from.
-	Vec3 const direction(m_transformation.GetPosition() - audioListenerPosition);
+	Vec3 const direction(m_transformation.GetPosition() - listenerPosition);
 	m_currentListenerDistance = direction.GetLength();
 
 	if (CanRunObstructionOcclusion())
@@ -212,7 +208,7 @@ void CPropagationProcessor::SetOcclusionType(EOcclusionType const occlusionType,
 		// This is determined via formula "rwi pierceability (set in flags) >= surfacetype pierceability". We use "rwi_pierceability0" for "strongest" pierceability.
 		// Meaning the ray needs to encounter a surface type set to pierceability 0 to qualify as solid hit.
 		rayInfo.numHits = static_cast<size_t>(gEnv->pPhysicalWorld->RayWorldIntersection(
-		                                        audioListenerPosition,
+		                                        listenerPosition,
 		                                        finalDirection,
 		                                        physicsFlags,
 		                                        rwi_pierceability0,
@@ -364,16 +360,16 @@ void CPropagationProcessor::ReleasePendingRays()
 //////////////////////////////////////////////////////////////////////////
 bool CPropagationProcessor::HasNewOcclusionValues()
 {
-	bool bNewValues = false;
+	bool hasNewValues = false;
 
-	if (_isnan(m_lastQuerriedOcclusion) || _isnan(m_lastQuerriedObstruction) || fabs_tpl(m_lastQuerriedOcclusion - m_occlusion) > FloatEpsilon || fabs_tpl(m_lastQuerriedObstruction - m_obstruction) > FloatEpsilon)
+	if (fabs_tpl(m_lastQuerriedOcclusion - m_occlusion) > FloatEpsilon || fabs_tpl(m_lastQuerriedObstruction - m_obstruction) > FloatEpsilon)
 	{
 		m_lastQuerriedObstruction = m_obstruction;
 		m_lastQuerriedOcclusion = m_occlusion;
-		bNewValues = true;
+		hasNewValues = true;
 	}
 
-	return bNewValues;
+	return hasNewValues;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -404,10 +400,8 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	if (m_timeSinceLastUpdateMS > 100.0f && CanRunObstructionOcclusion()) // only re-sample the rays about 10 times per second for a smoother debug drawing
+	if (CanRunObstructionOcclusion()) // only re-sample the rays about 10 times per second for a smoother debug drawing
 	{
-		m_timeSinceLastUpdateMS = 0.0f;
-
 		for (size_t i = 0; i < g_numConcurrentRaysHigh; ++i)
 		{
 			CAudioRayInfo const& rayInfo = m_raysInfo[i];
@@ -487,16 +481,16 @@ void CPropagationProcessor::CastObstructionRay(
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CPropagationProcessor::RunObstructionQuery(Vec3 const& audioListenerPosition)
+void CPropagationProcessor::RunObstructionQuery(Vec3 const& listenerPosition)
 {
-	static Vec3 const worldUp(0.0f, 0.0f, 1.0f);
-
 	if (m_remainingRays == 0)
 	{
 		// Make the physics ray cast call synchronous or asynchronous depending on the distance to the listener.
 		bool const bSynch = (m_currentListenerDistance <= g_cvars.m_occlusionMaxSyncDistance);
-		Vec3 const side((audioListenerPosition - m_transformation.GetPosition()).Cross(worldUp).normalize());
-		Vec3 const up((audioListenerPosition - m_transformation.GetPosition()).Cross(side).normalize());
+
+		// TODO: this breaks if listener and object x and y coordinates are exactly the same.
+		Vec3 const side((listenerPosition - m_transformation.GetPosition()).Cross(Vec3Constants<float>::fVec3_OneZ).normalize());
+		Vec3 const up((listenerPosition - m_transformation.GetPosition()).Cross(side).normalize());
 
 		switch (m_occlusionType)
 		{
@@ -505,13 +499,13 @@ void CPropagationProcessor::RunObstructionQuery(Vec3 const& audioListenerPositio
 				switch (m_occlusionTypeWhenAdaptive)
 				{
 				case EOcclusionType::Low:
-					ProcessLow(audioListenerPosition, up, side, bSynch);
+					ProcessLow(listenerPosition, up, side, bSynch);
 					break;
 				case EOcclusionType::Medium:
-					ProcessMedium(audioListenerPosition, up, side, bSynch);
+					ProcessMedium(listenerPosition, up, side, bSynch);
 					break;
 				case EOcclusionType::High:
-					ProcessHigh(audioListenerPosition, up, side, bSynch);
+					ProcessHigh(listenerPosition, up, side, bSynch);
 					break;
 				default:
 					CRY_ASSERT_MESSAGE(false, "Calculated Adaptive Occlusion Type invalid");
@@ -520,13 +514,13 @@ void CPropagationProcessor::RunObstructionQuery(Vec3 const& audioListenerPositio
 			}
 			break;
 		case EOcclusionType::Low:
-			ProcessLow(audioListenerPosition, up, side, bSynch);
+			ProcessLow(listenerPosition, up, side, bSynch);
 			break;
 		case EOcclusionType::Medium:
-			ProcessMedium(audioListenerPosition, up, side, bSynch);
+			ProcessMedium(listenerPosition, up, side, bSynch);
 			break;
 		case EOcclusionType::High:
-			ProcessHigh(audioListenerPosition, up, side, bSynch);
+			ProcessHigh(listenerPosition, up, side, bSynch);
 			break;
 		}
 	}
@@ -534,7 +528,7 @@ void CPropagationProcessor::RunObstructionQuery(Vec3 const& audioListenerPositio
 
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::ProcessLow(
-  Vec3 const& audioListenerPosition,
+  Vec3 const& listenerPosition,
   Vec3 const& up,
   Vec3 const& side,
   bool const bSynch)
@@ -546,7 +540,7 @@ void CPropagationProcessor::ProcessLow(
 			m_rayIndex = 0;
 		}
 
-		Vec3 const origin(audioListenerPosition + up * g_raySamplePositionsLow[m_rayIndex].z + side * g_raySamplePositionsLow[m_rayIndex].x);
+		Vec3 const origin(listenerPosition + up * g_raySamplePositionsLow[m_rayIndex].z + side * g_raySamplePositionsLow[m_rayIndex].x);
 		CastObstructionRay(origin, i, m_rayIndex, bSynch);
 		++m_rayIndex;
 	}
@@ -554,7 +548,7 @@ void CPropagationProcessor::ProcessLow(
 
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::ProcessMedium(
-  Vec3 const& audioListenerPosition,
+  Vec3 const& listenerPosition,
   Vec3 const& up,
   Vec3 const& side,
   bool const bSynch)
@@ -566,7 +560,7 @@ void CPropagationProcessor::ProcessMedium(
 			m_rayIndex = 0;
 		}
 
-		Vec3 const origin(audioListenerPosition + up * g_raySamplePositionsMedium[m_rayIndex].z + side * g_raySamplePositionsMedium[m_rayIndex].x);
+		Vec3 const origin(listenerPosition + up * g_raySamplePositionsMedium[m_rayIndex].z + side * g_raySamplePositionsMedium[m_rayIndex].x);
 		CastObstructionRay(origin, i, m_rayIndex, bSynch);
 		++m_rayIndex;
 	}
@@ -574,7 +568,7 @@ void CPropagationProcessor::ProcessMedium(
 
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::ProcessHigh(
-  Vec3 const& audioListenerPosition,
+  Vec3 const& listenerPosition,
   Vec3 const& up,
   Vec3 const& side,
   bool const bSynch)
@@ -586,7 +580,7 @@ void CPropagationProcessor::ProcessHigh(
 			m_rayIndex = 0;
 		}
 
-		Vec3 const origin(audioListenerPosition + up * g_raySamplePositionsHigh[m_rayIndex].z + side * g_raySamplePositionsHigh[m_rayIndex].x);
+		Vec3 const origin(listenerPosition + up * g_raySamplePositionsHigh[m_rayIndex].z + side * g_raySamplePositionsHigh[m_rayIndex].x);
 		CastObstructionRay(origin, i, m_rayIndex, bSynch);
 		++m_rayIndex;
 	}
@@ -757,6 +751,7 @@ void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom, EObjectFlags 
 			newRenderFlags.SetCullMode(e_CullModeNone);
 			auxGeom.SetRenderFlags(newRenderFlags);
 
+			// TODO: this breaks if listener and object x and y coordinates are exactly the same.
 			Vec3 const side((listenerPosition - m_transformation.GetPosition()).Cross(Vec3Constants<float>::fVec3_OneZ).normalize());
 			Vec3 const up((listenerPosition - m_transformation.GetPosition()).Cross(side).normalize());
 

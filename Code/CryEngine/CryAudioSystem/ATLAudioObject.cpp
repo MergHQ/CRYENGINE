@@ -28,7 +28,8 @@ CATLAudioObject::CATLAudioObject()
 	: m_pImplData(nullptr)
 	, m_maxRadius(0.0f)
 	, m_flags(EObjectFlags::InUse)
-	, m_previousVelocity(0.0f)
+	, m_previousRelativeVelocity(0.0f)
+	, m_previousAbsoluteVelocity(0.0f)
 	, m_propagationProcessor(m_attributes.transformation)
 	, m_entityId(INVALID_ENTITYID)
 	, m_numPendingSyncCallbacks(0)
@@ -634,10 +635,12 @@ bool CATLAudioObject::HasActiveData(CATLAudioObject const* const pAudioObject) c
 ///////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::Update(
   float const deltaTime,
-  float const distance,
-  Vec3 const& audioListenerPosition)
+  float const distanceToListener,
+  Vec3 const& listenerPosition,
+  Vec3 const& listenerVelocity,
+  bool const listenerMoved)
 {
-	m_propagationProcessor.Update(deltaTime, distance, audioListenerPosition, m_flags);
+	m_propagationProcessor.Update(distanceToListener, listenerPosition, m_flags);
 
 	if (m_propagationProcessor.HasNewOcclusionValues())
 	{
@@ -656,45 +659,22 @@ void CATLAudioObject::ProcessPhysicsRay(CAudioRayInfo* const pAudioRayInfo)
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CATLAudioObject::HandleSetTransformation(CObjectTransformation const& transformation, float const distanceToListener)
 {
-	ERequestStatus status = ERequestStatus::Success;
 	float const threshold = distanceToListener * g_cvars.m_positionUpdateThresholdMultiplier;
 
 	if (!m_attributes.transformation.IsEquivalent(transformation, threshold))
 	{
-		float const deltaTime = (g_lastMainThreadFrameStartTime - m_previousTime).GetSeconds();
-
-		if (deltaTime > 0.0f)
-		{
-			m_attributes.transformation = transformation;
-			m_attributes.velocity = (m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition()) / deltaTime;
-			m_flags |= EObjectFlags::NeedsVelocityUpdate;
-			m_previousTime = g_lastMainThreadFrameStartTime;
-			m_previousAttributes = m_attributes;
-		}
-		else if (deltaTime < 0.0f) // delta time can get negative after loading a savegame...
-		{
-			m_previousTime = 0.0f;  // ...in that case we force an update to the new position
-			HandleSetTransformation(transformation, 0.0f);
-		}
-		else
-		{
-			// No time has passed meaning different transformations were set during the same main frame.
-			// TODO: update velocity accordingly!
-			m_attributes.transformation = transformation;
-			m_previousAttributes = m_attributes;
-		}
-
-		status = m_pImplData->Set3DAttributes(m_attributes);
+		m_attributes.transformation = transformation;
+		m_flags |= EObjectFlags::MovingOrDecaying;
 	}
 
-	return status;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::HandleSetOcclusionType(EOcclusionType const calcType, Vec3 const& audioListenerPosition)
+void CATLAudioObject::HandleSetOcclusionType(EOcclusionType const calcType, Vec3 const& listenerPosition)
 {
 	CRY_ASSERT(calcType != EOcclusionType::None);
-	m_propagationProcessor.SetOcclusionType(calcType, audioListenerPosition);
+	m_propagationProcessor.SetOcclusionType(calcType, listenerPosition);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -777,8 +757,10 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 					szState = "stopping";
 					break;
 				default:
+					szState = "unknown";
 					break;
 				}
+
 				Cry::Audio::Log(ELogType::Warning, R"(Request to stop a standalone audio file that is not playing! State: "%s")", szState);
 			}
 #endif  //INCLUDE_AUDIO_PRODUCTION_CODE
@@ -809,7 +791,7 @@ ERequestStatus CATLAudioObject::HandleStopFile(char const* const szFile)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& audioListenerPosition, EntityId entityId)
+void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplData, Vec3 const& listenerPosition, EntityId entityId)
 {
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	m_name = szName;
@@ -817,107 +799,97 @@ void CATLAudioObject::Init(char const* const szName, Impl::IObject* const pImplD
 
 	m_entityId = entityId;
 	m_pImplData = pImplData;
-	m_propagationProcessor.Init(this, audioListenerPosition);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::SetDopplerTracking(bool const bEnable)
-{
-	if (bEnable)
-	{
-		m_previousAttributes = m_attributes;
-		m_flags |= EObjectFlags::TrackDoppler;
-	}
-	else
-	{
-		m_flags &= ~EObjectFlags::TrackDoppler;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::SetVelocityTracking(bool const bEnable)
-{
-	if (bEnable)
-	{
-		m_previousAttributes = m_attributes;
-		m_flags |= EObjectFlags::TrackVelocity;
-	}
-	else
-	{
-		m_flags &= ~EObjectFlags::TrackVelocity;
-	}
+	m_propagationProcessor.Init(this, listenerPosition);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CATLAudioObject::UpdateControls(float const deltaTime, Impl::SObject3DAttributes const& listenerAttributes)
+void CATLAudioObject::UpdateControls(
+  float const deltaTime,
+  float const distanceToListener,
+  Vec3 const& listenerPosition,
+  Vec3 const& listenerVelocity,
+  bool const listenerMoved)
 {
-	if ((m_flags& EObjectFlags::TrackDoppler) != 0)
+	if ((m_flags& EObjectFlags::MovingOrDecaying) != 0)
 	{
-		// Approaching positive, departing negative value.
-		if (m_attributes.velocity.GetLengthSquared() > 0.0f || listenerAttributes.velocity.GetLengthSquared() > 0.0f)
+		Vec3 const deltaPos(m_attributes.transformation.GetPosition() - m_previousAttributes.transformation.GetPosition());
+
+		if (!deltaPos.IsZero())
 		{
-			Vec3 const relativeVelocityVec(m_attributes.velocity - listenerAttributes.velocity);
-			float const relativeVelocity = -relativeVelocityVec.Dot((m_attributes.transformation.GetPosition() - listenerAttributes.transformation.GetPosition()).GetNormalized());
+			m_attributes.velocity = deltaPos / deltaTime;
+			m_previousAttributes.transformation.SetPosition(m_attributes.transformation.GetPosition());
 
-			SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(RelativeVelocityParameterId, relativeVelocity);
-			CAudioRequest request(&requestData);
-			request.pObject = this;
-			s_pAudioSystem->PushRequest(request);
+			if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
+			{
+				float const absoluteVelocity = m_attributes.velocity.GetLength();
 
-			m_flags |= EObjectFlags::NeedsDopplerUpdate;
+				if (fabs(absoluteVelocity - m_previousAbsoluteVelocity) > g_cvars.m_velocityTrackingThreshold)
+				{
+					m_previousAbsoluteVelocity = absoluteVelocity;
+
+					SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(AbsoluteVelocityParameterId, absoluteVelocity);
+					CAudioRequest request(&requestData);
+					request.pObject = this;
+					s_pAudioSystem->PushRequest(request);
+				}
+			}
 		}
-		else if ((m_flags& EObjectFlags::NeedsDopplerUpdate) != 0)
+		else if (!m_attributes.velocity.IsZero())
 		{
-			m_attributes.velocity = ZERO;
+			// We did not move last frame, begin exponential decay towards zero.
+			float const decay = std::max(1.0f - deltaTime / 0.05f, 0.0f);
+			m_attributes.velocity *= decay;
 
+			if (m_attributes.velocity.GetLengthSquared() < FloatEpsilon)
+			{
+				if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
+				{
+					SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(AbsoluteVelocityParameterId, 0.0f);
+					CAudioRequest request(&requestData);
+					request.pObject = this;
+					s_pAudioSystem->PushRequest(request);
+
+					m_previousAbsoluteVelocity = 0.0f;
+				}
+
+				m_attributes.velocity = ZERO;
+				m_flags &= ~EObjectFlags::MovingOrDecaying;
+			}
+		}
+
+		m_pImplData->Set3DAttributes(m_attributes);
+	}
+
+	if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
+	{
+		if ((m_flags& EObjectFlags::MovingOrDecaying) != 0 || listenerMoved)
+		{
+			// Approaching positive, departing negative value.
+			Vec3 const relativeVelocityVec(m_attributes.velocity - listenerVelocity);
+			float const relativeVelocity = -relativeVelocityVec.Dot((m_attributes.transformation.GetPosition() - listenerPosition).GetNormalized());
+
+			if (fabs(relativeVelocity - m_previousRelativeVelocity) > g_cvars.m_velocityTrackingThreshold)
+			{
+				m_previousRelativeVelocity = relativeVelocity;
+
+				SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(RelativeVelocityParameterId, relativeVelocity);
+				CAudioRequest request(&requestData);
+				request.pObject = this;
+				s_pAudioSystem->PushRequest(request);
+
+				m_flags |= EObjectFlags::UpdateRelativeVelocity;
+			}
+		}
+		else if ((m_flags& EObjectFlags::UpdateRelativeVelocity) != 0)
+		{
 			SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(RelativeVelocityParameterId, 0.0f);
 			CAudioRequest request(&requestData);
 			request.pObject = this;
 			s_pAudioSystem->PushRequest(request);
 
-			m_flags &= ~EObjectFlags::NeedsDopplerUpdate;
-			m_pImplData->Set3DAttributes(m_attributes);
+			m_previousRelativeVelocity = 0.0f;
+			m_flags &= ~EObjectFlags::UpdateRelativeVelocity;
 		}
-	}
-
-	if ((m_flags& EObjectFlags::TrackVelocity) != 0)
-	{
-		if (m_attributes.velocity.GetLengthSquared() > 0.0f)
-		{
-			float const currentVelocity = m_attributes.velocity.GetLength();
-
-			if (fabs(currentVelocity - m_previousVelocity) > g_cvars.m_velocityTrackingThreshold)
-			{
-				m_previousVelocity = currentVelocity;
-
-				SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(AbsoluteVelocityParameterId, currentVelocity);
-				CAudioRequest request(&requestData);
-				request.pObject = this;
-				s_pAudioSystem->PushRequest(request);
-			}
-		}
-		else if ((m_flags& EObjectFlags::NeedsVelocityUpdate) != 0)
-		{
-			m_attributes.velocity = ZERO;
-			m_previousVelocity = 0.0f;
-
-			SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(AbsoluteVelocityParameterId, 0.0f);
-			CAudioRequest request(&requestData);
-			request.pObject = this;
-			s_pAudioSystem->PushRequest(request);
-
-			m_flags &= ~EObjectFlags::NeedsVelocityUpdate;
-			m_pImplData->Set3DAttributes(m_attributes);
-		}
-	}
-
-	// Exponential decay towards zero.
-	if (m_attributes.velocity.GetLengthSquared() > 0.0f)
-	{
-		float const deltaTime2 = (g_lastMainThreadFrameStartTime - m_previousTime).GetSeconds();
-		float const decay = std::max(1.0f - deltaTime2 / 0.125f, 0.0f);
-		m_attributes.velocity *= decay;
-		m_pImplData->Set3DAttributes(m_attributes);
 	}
 }
 
@@ -1298,7 +1270,7 @@ void CATLAudioObject::DrawDebugInfo(
 
 				if (bShowStates && !switchStateInfo.empty())
 				{
-					for (auto const switchStatePair : switchStateInfo)
+					for (auto const& switchStatePair : switchStateInfo)
 					{
 						auto const pSwitch = switchStatePair.first;
 						auto const pSwitchState = switchStatePair.second;

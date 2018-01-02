@@ -22,7 +22,7 @@ public:
 	CImpl& operator=(CImpl&&) = delete;
 
 	// CryAudio::Impl::IImpl
-	virtual void                Update(float const deltaTime) override;
+	virtual void                Update() override;
 	virtual ERequestStatus      Init(uint32 const objectPoolSize, uint32 const eventPoolSize) override;
 	virtual ERequestStatus      OnBeforeShutDown() override;
 	virtual ERequestStatus      ShutDown() override;

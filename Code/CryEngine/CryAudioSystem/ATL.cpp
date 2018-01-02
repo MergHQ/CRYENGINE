@@ -173,33 +173,16 @@ void CAudioTranslationLayer::Update(float const deltaTime)
 {
 	if (m_pIImpl != nullptr)
 	{
-		if (m_lastMainThreadFrameId != gEnv->nMainFrameID)
-		{
-			g_lastMainThreadFrameStartTime = gEnv->pTimer->GetFrameStartTime();
-			m_lastMainThreadFrameId = gEnv->nMainFrameID;
-
-			if (g_cvars.m_tickWithMainThread > 0)
-			{
-				m_audioListenerMgr.Update(deltaTime);
-				m_audioEventMgr.Update(deltaTime);
-				m_audioObjectMgr.Update(deltaTime, m_audioListenerMgr.GetActiveListenerAttributes());
-				m_pGlobalAudioObject->GetImplDataPtr()->Update();
-				m_fileCacheMgr.Update();
-
-				m_pIImpl->Update(deltaTime);
-			}
-		}
-
-		if (g_cvars.m_tickWithMainThread == 0)
+		if (deltaTime > 0.0f)
 		{
 			m_audioListenerMgr.Update(deltaTime);
 			m_audioEventMgr.Update(deltaTime);
 			m_audioObjectMgr.Update(deltaTime, m_audioListenerMgr.GetActiveListenerAttributes());
 			m_pGlobalAudioObject->GetImplDataPtr()->Update();
 			m_fileCacheMgr.Update();
-
-			m_pIImpl->Update(deltaTime);
 		}
+
+		m_pIImpl->Update();
 	}
 }
 
@@ -1407,42 +1390,33 @@ void CAudioTranslationLayer::InitInternalControls()
 
 	// Occlusion
 	COcclusionObstructionState* pOcclusionIgnore = new COcclusionObstructionState(IgnoreStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
-	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, IgnoreStateId)]
-	  = pOcclusionIgnore;
+	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, IgnoreStateId)] = pOcclusionIgnore;
 
 	COcclusionObstructionState* pOcclusionAdaptive = new COcclusionObstructionState(AdaptiveStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
-	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, AdaptiveStateId)]
-	  = pOcclusionAdaptive;
+	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, AdaptiveStateId)] = pOcclusionAdaptive;
 
 	COcclusionObstructionState* pOcclusionLow = new COcclusionObstructionState(LowStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
-	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, LowStateId)]
-	  = pOcclusionLow;
+	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, LowStateId)] = pOcclusionLow;
 
 	COcclusionObstructionState* pOcclusionMedium = new COcclusionObstructionState(MediumStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
-	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, MediumStateId)]
-	  = pOcclusionMedium;
+	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, MediumStateId)] = pOcclusionMedium;
 
 	COcclusionObstructionState* pOcclusionHigh = new COcclusionObstructionState(HighStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
-	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, HighStateId)]
-	  = pOcclusionHigh;
+	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, HighStateId)] = pOcclusionHigh;
 
-	// Relative Velocity
-	CDopplerTrackingState* pDopplerOn = new CDopplerTrackingState(OnStateId, *m_pGlobalAudioObject);
-	m_internalControls.m_switchStates[std::make_pair(RelativeVelocityTrackingSwitchId, OnStateId)]
-	  = pDopplerOn;
+	// Relative Velocity Tracking
+	CRelativeVelocityTrackingState* const pRelativeVelocityTrackingOn = new CRelativeVelocityTrackingState(OnStateId, *m_pGlobalAudioObject);
+	m_internalControls.m_switchStates[std::make_pair(RelativeVelocityTrackingSwitchId, OnStateId)] = pRelativeVelocityTrackingOn;
 
-	CDopplerTrackingState* pDopplerOff = new CDopplerTrackingState(OffStateId, *m_pGlobalAudioObject);
-	m_internalControls.m_switchStates[std::make_pair(RelativeVelocityTrackingSwitchId, OffStateId)]
-	  = pDopplerOff;
+	CRelativeVelocityTrackingState* const pRelativeVelocityTrackingOff = new CRelativeVelocityTrackingState(OffStateId, *m_pGlobalAudioObject);
+	m_internalControls.m_switchStates[std::make_pair(RelativeVelocityTrackingSwitchId, OffStateId)] = pRelativeVelocityTrackingOff;
 
-	// Absolute Velocity
-	CVelocityTrackingState* pVelocityOn = new CVelocityTrackingState(OnStateId, *m_pGlobalAudioObject);
-	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OnStateId)]
-	  = pVelocityOn;
+	// Absolute Velocity Tracking
+	CAbsoluteVelocityTrackingState* const pAbsoluteVelocityTrackingOn = new CAbsoluteVelocityTrackingState(OnStateId, *m_pGlobalAudioObject);
+	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OnStateId)] = pAbsoluteVelocityTrackingOn;
 
-	CVelocityTrackingState* pVelocityOff = new CVelocityTrackingState(OffStateId, *m_pGlobalAudioObject);
-	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OffStateId)]
-	  = pVelocityOff;
+	CAbsoluteVelocityTrackingState* const pAbsoluteVelocityTrackingOff = new CAbsoluteVelocityTrackingState(OffStateId, *m_pGlobalAudioObject);
+	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OffStateId)] = pAbsoluteVelocityTrackingOff;
 }
 
 //////////////////////////////////////////////////////////////////////////

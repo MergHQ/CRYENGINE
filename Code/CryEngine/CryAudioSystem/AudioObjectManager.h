@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -69,10 +69,7 @@ private:
 	bool HasActiveData(CATLAudioObject const* const pAudioObject) const;
 
 	ConstructedAudioObjectsList  m_constructedAudioObjects;
-
 	Impl::IImpl*                 m_pIImpl;
-	float                        m_timeSinceLastControlsUpdate;
-
 	CAudioEventManager&          m_audioEventMgr;
 	CAudioStandaloneFileManager& m_audioStandaloneFileMgr;
 	CAudioListenerManager const& m_listenerManager;

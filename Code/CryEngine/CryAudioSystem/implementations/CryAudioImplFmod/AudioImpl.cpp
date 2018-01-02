@@ -43,7 +43,7 @@ CImpl::CImpl()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::Update(float const deltaTime)
+void CImpl::Update()
 {
 	if (m_pSystem != nullptr)
 	{

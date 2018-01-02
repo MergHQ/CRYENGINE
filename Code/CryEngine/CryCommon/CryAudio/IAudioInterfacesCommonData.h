@@ -93,7 +93,7 @@ class CObjectTransformation
 public:
 
 	CObjectTransformation()
-		: m_position(ZERO)
+		: m_position(Vec3Constants<float>::fVec3_Zero)
 		, m_forward(Vec3Constants<float>::fVec3_OneY)
 		, m_up(Vec3Constants<float>::fVec3_OneZ)
 	{}
@@ -106,20 +106,14 @@ public:
 
 	CObjectTransformation(Matrix34 const& transformation)
 		: m_position(transformation.GetColumn3())
-		, m_forward(transformation.GetColumn1())   //!< Assuming forward vector = (0,1,0), also assuming unscaled.
-		, m_up(transformation.GetColumn2())        //!< Assuming up vector = (0,0,1).
+		, m_forward(transformation.GetColumn1()) //!< Assuming forward vector = (0,1,0), also assuming unscaled.
+		, m_up(transformation.GetColumn2())      //!< Assuming up vector = (0,0,1).
 	{
 		m_forward.NormalizeFast();
 		m_up.NormalizeFast();
 	}
 
-	static CObjectTransformation const& GetEmptyObject()    { static CObjectTransformation const emptyInstance; return emptyInstance; }
-
-	ILINE Vec3 const&                   GetPosition() const { return m_position; }
-	ILINE Vec3 const&                   GetForward() const  { return m_forward; }
-	ILINE Vec3 const&                   GetUp() const       { return m_up; }
-
-	bool                                IsEquivalent(CObjectTransformation const& transformation, float const epsilon = VEC_EPSILON) const
+	bool IsEquivalent(CObjectTransformation const& transformation, float const epsilon = VEC_EPSILON) const
 	{
 		return m_position.IsEquivalent(transformation.GetPosition(), epsilon) &&
 		       m_forward.IsEquivalent(transformation.GetForward(), epsilon) &&
@@ -132,6 +126,13 @@ public:
 		       m_forward.IsEquivalent(transformation.GetColumn1(), epsilon) &&
 		       m_up.IsEquivalent(transformation.GetColumn2(), epsilon);
 	}
+
+	void                                SetPosition(Vec3 const& position) { m_position = position; }
+	ILINE Vec3 const&                   GetPosition() const               { return m_position; }
+	ILINE Vec3 const&                   GetForward() const                { return m_forward; }
+	ILINE Vec3 const&                   GetUp() const                     { return m_up; }
+
+	static CObjectTransformation const& GetEmptyObject()                  { static CObjectTransformation const emptyInstance; return emptyInstance; }
 
 private:
 
