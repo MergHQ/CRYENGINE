@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -20,6 +20,7 @@ struct SInternalControls
 class COcclusionObstructionState final : public IAudioSwitchStateImpl
 {
 public:
+
 	explicit COcclusionObstructionState(SwitchStateId const stateId, CAudioListenerManager const& audioListenerManager, CATLAudioObject const& globalAudioObject);
 	virtual ERequestStatus Set(CATLAudioObject& audioObject) const override;
 
@@ -29,39 +30,44 @@ public:
 	COcclusionObstructionState& operator=(COcclusionObstructionState&&) = delete;
 
 private:
+
 	SwitchStateId const          m_stateId;
 	CAudioListenerManager const& m_audioListenerManager;
 	CATLAudioObject const&       m_globalAudioObject;
 };
 
-class CDopplerTrackingState final : public IAudioSwitchStateImpl
+class CRelativeVelocityTrackingState final : public IAudioSwitchStateImpl
 {
 public:
-	explicit CDopplerTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject);
+
+	explicit CRelativeVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject);
 	virtual ERequestStatus Set(CATLAudioObject& audioObject) const override;
 
-	CDopplerTrackingState(CDopplerTrackingState const&) = delete;
-	CDopplerTrackingState(CDopplerTrackingState&&) = delete;
-	CDopplerTrackingState& operator=(CDopplerTrackingState const&) = delete;
-	CDopplerTrackingState& operator=(CDopplerTrackingState&&) = delete;
+	CRelativeVelocityTrackingState(CRelativeVelocityTrackingState const&) = delete;
+	CRelativeVelocityTrackingState(CRelativeVelocityTrackingState&&) = delete;
+	CRelativeVelocityTrackingState& operator=(CRelativeVelocityTrackingState const&) = delete;
+	CRelativeVelocityTrackingState& operator=(CRelativeVelocityTrackingState&&) = delete;
 
 private:
+
 	SwitchStateId const    m_stateId;
 	CATLAudioObject const& m_globalAudioObject;
 };
 
-class CVelocityTrackingState final : public IAudioSwitchStateImpl
+class CAbsoluteVelocityTrackingState final : public IAudioSwitchStateImpl
 {
 public:
-	explicit CVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject);
+
+	explicit CAbsoluteVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject);
 	virtual ERequestStatus Set(CATLAudioObject& audioObject) const override;
 
-	CVelocityTrackingState(CVelocityTrackingState const&) = delete;
-	CVelocityTrackingState(CVelocityTrackingState&&) = delete;
-	CVelocityTrackingState& operator=(CVelocityTrackingState const&) = delete;
-	CVelocityTrackingState& operator=(CVelocityTrackingState&&) = delete;
+	CAbsoluteVelocityTrackingState(CAbsoluteVelocityTrackingState const&) = delete;
+	CAbsoluteVelocityTrackingState(CAbsoluteVelocityTrackingState&&) = delete;
+	CAbsoluteVelocityTrackingState& operator=(CAbsoluteVelocityTrackingState const&) = delete;
+	CAbsoluteVelocityTrackingState& operator=(CAbsoluteVelocityTrackingState&&) = delete;
 
 private:
+
 	SwitchStateId const    m_stateId;
 	CATLAudioObject const& m_globalAudioObject;
 };

@@ -6,8 +6,7 @@
 #include "ImplConnections.h"
 #include "ProjectLoader.h"
 
-#include <CryAudio/IAudioSystem.h>
-#include <CryAudio/IProfileData.h>
+#include <CryAudioImplWwise/GlobalData.h>
 #include <CrySystem/ISystem.h>
 #include <CryCore/CryCrc32.h>
 #include <CryCore/StlUtils.h>
@@ -19,119 +18,150 @@ namespace Wwise
 {
 string  const g_userSettingsFile = "%USER%/audiocontrolseditor_wwise.user";
 
-class CStringAndHash
-{
-	//a small helper class to make comparison of the stored c-string faster, by checking a hash-representation first.
-public:
-
-	CStringAndHash(char const* pText)
-		: szText(pText), hash(CCrc32::Compute(pText))
-	{}
-
-	operator string() const                      { return szText; }
-	operator char const*() const                 { return szText; }
-	bool operator==(const CStringAndHash& other) { return ((hash == other.hash) && (strcmp(szText, other.szText) == 0)); }
-
-private:
-
-	char const*  szText;
-	uint32 const hash;
-};
-
-// XML tags
-CStringAndHash const g_switchTag = "WwiseSwitch";
-CStringAndHash const g_stateTag = "WwiseState";
-CStringAndHash const g_fileTag = "WwiseFile";
-CStringAndHash const g_parameterTag = "WwiseRtpc";
-CStringAndHash const g_eventTag = "WwiseEvent";
-CStringAndHash const g_auxBusTag = "WwiseAuxBus";
-CStringAndHash const g_valueTag = "WwiseValue";
-
-// XML attributes
-string const g_nameAttribute = "wwise_name";
-string const g_shiftAttribute = "wwise_value_shift";
-string const g_multAttribute = "wwise_value_multiplier";
-string const g_valueAttribute = "wwise_value";
-string const g_localizedAttribute = "wwise_localised";
-string const g_trueAttribute = "true";
-
 //////////////////////////////////////////////////////////////////////////
-EImpltemType TagToType(char const* szTag)
+EImpltemType TagToType(string const& tag)
 {
-	CStringAndHash hashedTag(szTag);
-	if (hashedTag == g_eventTag)
+	EImpltemType type = EImpltemType::Invalid;
+
+	if (tag == CryAudio::s_szEventTag)
 	{
-		return EImpltemType::Event;
+		type = EImpltemType::Event;
 	}
-	if (hashedTag == g_fileTag)
+	else if (tag == CryAudio::Impl::Wwise::s_szFileTag)
 	{
-		return EImpltemType::SoundBank;
+		type = EImpltemType::SoundBank;
 	}
-	if (hashedTag == g_parameterTag)
+	else if (tag == CryAudio::Impl::Wwise::s_szParameterTag)
 	{
-		return EImpltemType::Parameter;
+		type = EImpltemType::Parameter;
 	}
-	if (hashedTag == g_switchTag)
+	else if (tag == CryAudio::Impl::Wwise::s_szSwitchGroupTag)
 	{
-		return EImpltemType::SwitchGroup;
+		type = EImpltemType::SwitchGroup;
 	}
-	if (hashedTag == g_stateTag)
+	else if (tag == CryAudio::Impl::Wwise::s_szStateGroupTag)
 	{
-		return EImpltemType::StateGroup;
+		type = EImpltemType::StateGroup;
 	}
-	if (hashedTag == g_auxBusTag)
+	else if (tag == CryAudio::Impl::Wwise::s_szAuxBusTag)
 	{
-		return EImpltemType::AuxBus;
+		type = EImpltemType::AuxBus;
 	}
-	return EImpltemType::Invalid;
+
+// Backwards compatibility will be removed before March 2019.
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+	else if (tag == "WwiseEvent")
+	{
+		type = EImpltemType::Event;
+	}
+	else if (tag == "WwiseFile")
+	{
+		type = EImpltemType::SoundBank;
+	}
+	else if (tag == "WwiseRtpc")
+	{
+		type = EImpltemType::Parameter;
+	}
+	else if (tag == "WwiseSwitch")
+	{
+		type = EImpltemType::SwitchGroup;
+	}
+	else if (tag == "WwiseState")
+	{
+		type = EImpltemType::StateGroup;
+	}
+	else if (tag == "WwiseAuxBus")
+	{
+		type = EImpltemType::AuxBus;
+	}
+#endif // USE_BACKWARDS_COMPATIBILITY
+
+	else
+	{
+		type = EImpltemType::Invalid;
+	}
+
+	return type;
 }
 
 //////////////////////////////////////////////////////////////////////////
-string TypeToTag(EImpltemType const type)
+char const* TypeToTag(EImpltemType const type)
 {
+	char const* tag = nullptr;
+
 	switch (type)
 	{
 	case EImpltemType::Event:
-		return g_eventTag;
+		tag = CryAudio::s_szEventTag;
+		break;
 	case EImpltemType::Parameter:
-		return g_parameterTag;
+		tag = CryAudio::Impl::Wwise::s_szParameterTag;
+		break;
 	case EImpltemType::Switch:
-		return g_valueTag;
+		tag = CryAudio::Impl::Wwise::s_szValueTag;
+		break;
 	case EImpltemType::AuxBus:
-		return g_auxBusTag;
+		tag = CryAudio::Impl::Wwise::s_szAuxBusTag;
+		break;
 	case EImpltemType::SoundBank:
-		return g_fileTag;
+		tag = CryAudio::Impl::Wwise::s_szFileTag;
+		break;
 	case EImpltemType::State:
-		return g_valueTag;
+		tag = CryAudio::Impl::Wwise::s_szValueTag;
+		break;
 	case EImpltemType::SwitchGroup:
-		return g_switchTag;
+		tag = CryAudio::Impl::Wwise::s_szSwitchGroupTag;
+		break;
 	case EImpltemType::StateGroup:
-		return g_stateTag;
+		tag = CryAudio::Impl::Wwise::s_szStateGroupTag;
+		break;
+	default:
+		tag = nullptr;
+		break;
 	}
-	return "";
+
+	return tag;
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImplItem* SearchForControl(CImplItem* const pImplItem, string const& name, ItemType const type)
 {
+	CImplItem* pImplControl = nullptr;
+
 	if ((pImplItem->GetName() == name) && (pImplItem->GetType() == type))
 	{
-		return pImplItem;
+		pImplControl = pImplItem;
 	}
-
-	int const count = pImplItem->ChildCount();
-
-	for (int i = 0; i < count; ++i)
+	else
 	{
-		CImplItem* const pFoundImplControl = SearchForControl(pImplItem->GetChildAt(i), name, type);
+		int const count = pImplItem->ChildCount();
 
-		if (pFoundImplControl != nullptr)
+		for (int i = 0; i < count; ++i)
 		{
-			return pFoundImplControl;
+			CImplItem* const pFoundImplControl = SearchForControl(pImplItem->GetChildAt(i), name, type);
+
+			if (pFoundImplControl != nullptr)
+			{
+				pImplControl = pFoundImplControl;
+				break;
+			}
 		}
 	}
 
-	return nullptr;
+	return pImplControl;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CImplSettings::CImplSettings()
+	: m_projectPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise_project")
+	, m_assetsPath(PathUtil::GetGameFolder() +
+		CRY_NATIVE_PATH_SEPSTR
+		AUDIO_SYSTEM_DATA_ROOT
+		CRY_NATIVE_PATH_SEPSTR +
+		CryAudio::Impl::Wwise::s_szImplFolderName +
+		CRY_NATIVE_PATH_SEPSTR +
+		CryAudio::s_szAssetsFolderName)
+{
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -151,6 +181,9 @@ void CImplSettings::Serialize(Serialization::IArchive& ar)
 CEditorImpl::CEditorImpl()
 {
 	Serialization::LoadJsonFile(m_implSettings, g_userSettingsFile.c_str());
+	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
+	m_implName = m_implInfo.name.c_str();
+	m_implFolderName = CryAudio::Impl::Wwise::s_szImplFolderName;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -164,7 +197,7 @@ void CEditorImpl::Reload(bool const preserveConnectionStatus)
 {
 	Clear();
 
-	CProjectLoader(GetSettings()->GetProjectPath(), GetSettings()->GetSoundBanksPath(), m_rootControl);
+	CProjectLoader(GetSettings()->GetProjectPath(), GetSettings()->GetAssetsPath(), m_rootControl);
 
 	CreateControlCache(&m_rootControl);
 
@@ -192,104 +225,149 @@ void CEditorImpl::Reload(bool const preserveConnectionStatus)
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CEditorImpl::GetControl(CID const id) const
 {
+	CImplItem* pImplItem = nullptr;
+
 	if (id >= 0)
 	{
-		return stl::find_in_map(m_controlsCache, id, nullptr);
+		pImplItem = stl::find_in_map(m_controlsCache, id, nullptr);
 	}
 
-	return nullptr;
+	return pImplItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
 char const* CEditorImpl::GetTypeIcon(CImplItem const* const pImplItem) const
 {
+	char const* szIconPath = "icons:Dialogs/dialog-error.ico";
 	auto const type = static_cast<EImpltemType>(pImplItem->GetType());
 
 	switch (type)
 	{
 	case EImpltemType::Event:
-		return "icons:audio/wwise/event.ico";
+		szIconPath = "icons:audio/wwise/event.ico";
+		break;
 	case EImpltemType::Parameter:
-		return "icons:audio/wwise/gameparameter.ico";
+		szIconPath = "icons:audio/wwise/gameparameter.ico";
+		break;
 	case EImpltemType::Switch:
-		return "icons:audio/wwise/switch.ico";
+		szIconPath = "icons:audio/wwise/switch.ico";
+		break;
 	case EImpltemType::AuxBus:
-		return "icons:audio/wwise/auxbus.ico";
+		szIconPath = "icons:audio/wwise/auxbus.ico";
+		break;
 	case EImpltemType::SoundBank:
-		return "icons:audio/wwise/soundbank.ico";
+		szIconPath = "icons:audio/wwise/soundbank.ico";
+		break;
 	case EImpltemType::State:
-		return "icons:audio/wwise/state.ico";
+		szIconPath = "icons:audio/wwise/state.ico";
+		break;
 	case EImpltemType::SwitchGroup:
-		return "icons:audio/wwise/switchgroup.ico";
+		szIconPath = "icons:audio/wwise/switchgroup.ico";
+		break;
 	case EImpltemType::StateGroup:
-		return "icons:audio/wwise/stategroup.ico";
+		szIconPath = "icons:audio/wwise/stategroup.ico";
+		break;
 	case EImpltemType::WorkUnit:
-		return "icons:audio/wwise/workunit.ico";
+		szIconPath = "icons:audio/wwise/workunit.ico";
+		break;
 	case EImpltemType::VirtualFolder:
-		return "icons:audio/wwise/virtualfolder.ico";
+		szIconPath = "icons:audio/wwise/virtualfolder.ico";
+		break;
 	case EImpltemType::PhysicalFolder:
-		return "icons:audio/wwise/physicalfolder.ico";
+		szIconPath = "icons:audio/wwise/physicalfolder.ico";
+		break;
+	default:
+		szIconPath = "icons:Dialogs/dialog-error.ico";
+		break;
 	}
-	return "icons:Dialogs/dialog-error.ico";
+
+	return szIconPath;
 }
 
 //////////////////////////////////////////////////////////////////////////
-string CEditorImpl::GetName() const
+string const& CEditorImpl::GetName() const
 {
-	return gEnv->pAudioSystem->GetProfileData()->GetImplName();
+	return m_implName;
+}
+
+//////////////////////////////////////////////////////////////////////////
+string const& CEditorImpl::GetFolderName() const
+{
+	return m_implFolderName;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const
 {
+	bool isCompatible = false;
 	auto const implType = static_cast<EImpltemType>(pImplItem->GetType());
 
 	switch (systemType)
 	{
 	case ESystemItemType::Trigger:
-		return implType == EImpltemType::Event;
+		isCompatible = (implType == EImpltemType::Event);
+		break;
 	case ESystemItemType::Parameter:
-		return implType == EImpltemType::Parameter;
+		isCompatible = (implType == EImpltemType::Parameter);
+		break;
 	case ESystemItemType::Switch:
-		return implType == EImpltemType::Invalid;
+		isCompatible = (implType == EImpltemType::Invalid);
+		break;
 	case ESystemItemType::State:
-		return (implType == EImpltemType::Switch) || (implType == EImpltemType::State) || (implType == EImpltemType::Parameter);
+		isCompatible = (implType == EImpltemType::Switch) || (implType == EImpltemType::State) || (implType == EImpltemType::Parameter);
+		break;
 	case ESystemItemType::Environment:
-		return (implType == EImpltemType::AuxBus) || (implType == EImpltemType::Switch) || (implType == EImpltemType::State) || (implType == EImpltemType::Parameter);
+		isCompatible = (implType == EImpltemType::AuxBus) || (implType == EImpltemType::Switch) || (implType == EImpltemType::State) || (implType == EImpltemType::Parameter);
+		break;
 	case ESystemItemType::Preload:
-		return implType == EImpltemType::SoundBank;
+		isCompatible = (implType == EImpltemType::SoundBank);
+		break;
 	}
-	return false;
+
+	return isCompatible;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ESystemItemType CEditorImpl::ImplTypeToSystemType(CImplItem const* const pImplItem) const
 {
+	ESystemItemType systemType = ESystemItemType::Invalid;
 	auto const itemType = static_cast<EImpltemType>(pImplItem->GetType());
 
 	switch (itemType)
 	{
 	case EImpltemType::Event:
-		return ESystemItemType::Trigger;
+		systemType = ESystemItemType::Trigger;
+		break;
 	case EImpltemType::Parameter:
-		return ESystemItemType::Parameter;
+		systemType = ESystemItemType::Parameter;
+		break;
 	case EImpltemType::Switch:
 	case EImpltemType::State:
-		return ESystemItemType::State;
+		systemType = ESystemItemType::State;
+		break;
 	case EImpltemType::AuxBus:
-		return ESystemItemType::Environment;
+		systemType = ESystemItemType::Environment;
+		break;
 	case EImpltemType::SoundBank:
-		return ESystemItemType::Preload;
+		systemType = ESystemItemType::Preload;
+		break;
 	case EImpltemType::StateGroup:
 	case EImpltemType::SwitchGroup:
-		return ESystemItemType::Switch;
+		systemType = ESystemItemType::Switch;
+		break;
+	default:
+		systemType = ESystemItemType::Invalid;
+		break;
 	}
-	return ESystemItemType::Invalid;
+
+	return systemType;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ConnectionPtr CEditorImpl::CreateConnectionToControl(ESystemItemType const controlType, CImplItem* const pImplItem)
 {
+	ConnectionPtr pConnection = nullptr;
+
 	if (pImplItem != nullptr)
 	{
 		if (static_cast<EImpltemType>(pImplItem->GetType()) == EImpltemType::Parameter)
@@ -297,25 +375,31 @@ ConnectionPtr CEditorImpl::CreateConnectionToControl(ESystemItemType const contr
 			switch (controlType)
 			{
 			case ESystemItemType::Parameter:
-				{
-					return std::make_shared<CParameterConnection>(pImplItem->GetId());
-				}
+				pConnection = std::make_shared<CParameterConnection>(pImplItem->GetId());
+				break;
 			case ESystemItemType::State:
-				{
-					return std::make_shared<CStateToParameterConnection>(pImplItem->GetId());
-				}
+				pConnection = std::make_shared<CStateToParameterConnection>(pImplItem->GetId());
+				break;
+			default:
+				pConnection = std::make_shared<CImplConnection>(pImplItem->GetId());
+				break;
 			}
 		}
+		else
+		{
+			pConnection = std::make_shared<CImplConnection>(pImplItem->GetId());
+		}
 
-		return std::make_shared<CImplConnection>(pImplItem->GetId());
 	}
 
-	return nullptr;
+	return pConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystemItemType const controlType)
 {
+	ConnectionPtr pConnectionPtr = nullptr;
+
 	if (pNode != nullptr)
 	{
 		char const* const szTag = pNode->getTag();
@@ -323,9 +407,20 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 
 		if (type != EImpltemType::Invalid)
 		{
-			string const name = pNode->getAttr(g_nameAttribute);
-			string const localizedAttribute = pNode->getAttr(g_localizedAttribute);
-			bool const isLocalized = (localizedAttribute.compareNoCase(g_trueAttribute) == 0);
+			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
+			string localizedAttribute = pNode->getAttr(CryAudio::Impl::Wwise::s_szLocalizedAttribute);
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+			if (name.IsEmpty() && pNode->haveAttr("wwise_name"))
+			{
+				name = pNode->getAttr("wwise_name");
+			}
+
+			if (localizedAttribute.IsEmpty() && pNode->haveAttr("wwise_localised"))
+			{
+				localizedAttribute = pNode->getAttr("wwise_localised");
+			}
+#endif // USE_BACKWARDS_COMPATIBILITY
+			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::Wwise::s_szTrueValue) == 0);
 
 			CImplItem* pImplControl = SearchForControl(&m_rootControl, name, static_cast<ItemType>(type));
 
@@ -351,7 +446,14 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 
 					if (pNode != nullptr)
 					{
-						string const childName = pNode->getAttr(g_nameAttribute);
+						string childName = pNode->getAttr(CryAudio::s_szNameAttribute);
+
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+						if (childName.IsEmpty() && pNode->haveAttr("wwise_name"))
+						{
+							childName = pNode->getAttr("wwise_name");
+						}
+#endif // USE_BACKWARDS_COMPATIBILITY
 
 						CImplItem* pStateControl = nullptr;
 						size_t const count = pImplControl->ChildCount();
@@ -396,30 +498,55 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 					case ESystemItemType::Parameter:
 						{
 							ParameterConnectionPtr const pConnection = std::make_shared<CParameterConnection>(pImplControl->GetId());
-
-							pNode->getAttr(g_multAttribute, pConnection->m_mult);
-							pNode->getAttr(g_shiftAttribute, pConnection->m_shift);
-							return pConnection;
+							pNode->getAttr(CryAudio::Impl::Wwise::s_szMutiplierAttribute, pConnection->m_mult);
+							pNode->getAttr(CryAudio::Impl::Wwise::s_szShiftAttribute, pConnection->m_shift);
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+							if (pNode->haveAttr("wwise_value_multiplier"))
+							{
+								pNode->getAttr("wwise_value_multiplier", pConnection->m_mult);
+							}
+							if (pNode->haveAttr("wwise_value_shift"))
+							{
+								pNode->getAttr("wwise_value_shift", pConnection->m_shift);
+							}
+#endif // USE_BACKWARDS_COMPATIBILITY
+							pConnectionPtr = pConnection;
 						}
+						break;
 					case ESystemItemType::State:
 						{
 							StateConnectionPtr const pConnection = std::make_shared<CStateToParameterConnection>(pImplControl->GetId());
-							pNode->getAttr(g_valueAttribute, pConnection->m_value);
-							return pConnection;
+							pNode->getAttr(CryAudio::Impl::Wwise::s_szValueAttribute, pConnection->m_value);
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+							if (pNode->haveAttr("wwise_value"))
+							{
+								pNode->getAttr("wwise_value", pConnection->m_value);
+							}
+#endif // USE_BACKWARDS_COMPATIBILITY
+							pConnectionPtr = pConnection;
 						}
+						break;
+					default:
+						pConnectionPtr = std::make_shared<CImplConnection>(pImplControl->GetId());
+						break;
 					}
 				}
-
-				return std::make_shared<CImplConnection>(pImplControl->GetId());
+				else
+				{
+					pConnectionPtr = std::make_shared<CImplConnection>(pImplControl->GetId());
+				}
 			}
 		}
 	}
-	return nullptr;
+
+	return pConnectionPtr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, ESystemItemType const controlType)
 {
+	XmlNodeRef pNode = nullptr;
+
 	CImplItem const* const pImplControl = GetControl(pConnection->GetID());
 
 	if (pImplControl != nullptr)
@@ -438,78 +565,77 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 				if (pParent != nullptr)
 				{
 					XmlNodeRef const pSwitchNode = GetISystem()->CreateXmlNode(TypeToTag(static_cast<EImpltemType>(pParent->GetType())));
-					pSwitchNode->setAttr(g_nameAttribute, pParent->GetName());
+					pSwitchNode->setAttr(CryAudio::s_szNameAttribute, pParent->GetName());
 
-					XmlNodeRef const pStateNode = pSwitchNode->createNode(g_valueTag);
-					pStateNode->setAttr(g_nameAttribute, pImplControl->GetName());
+					XmlNodeRef const pStateNode = pSwitchNode->createNode(CryAudio::Impl::Wwise::s_szValueTag);
+					pStateNode->setAttr(CryAudio::s_szNameAttribute, pImplControl->GetName());
 					pSwitchNode->addChild(pStateNode);
 
-					return pSwitchNode;
+					pNode = pSwitchNode;
 				}
 			}
 			break;
-
 		case EImpltemType::Parameter:
 			{
 				XmlNodeRef pConnectionNode;
 				pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				pConnectionNode->setAttr(g_nameAttribute, pImplControl->GetName());
+				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pImplControl->GetName());
 
 				if (controlType == ESystemItemType::Parameter)
 				{
 					std::shared_ptr<const CParameterConnection> pParameterConnection = std::static_pointer_cast<const CParameterConnection>(pConnection);
 					if (pParameterConnection->m_mult != 1.0f)
 					{
-						pConnectionNode->setAttr(g_multAttribute, pParameterConnection->m_mult);
+						pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szMutiplierAttribute, pParameterConnection->m_mult);
 					}
 					if (pParameterConnection->m_shift != 0.0f)
 					{
-						pConnectionNode->setAttr(g_shiftAttribute, pParameterConnection->m_shift);
+						pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szShiftAttribute, pParameterConnection->m_shift);
 					}
 
 				}
 				else if (controlType == ESystemItemType::State)
 				{
 					std::shared_ptr<const CStateToParameterConnection> pStateConnection = std::static_pointer_cast<const CStateToParameterConnection>(pConnection);
-					pConnectionNode->setAttr(g_valueAttribute, pStateConnection->m_value);
+					pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szValueAttribute, pStateConnection->m_value);
 				}
 
-				return pConnectionNode;
+				pNode = pConnectionNode;
 			}
 			break;
-
 		case EImpltemType::Event:
 			{
 				XmlNodeRef pConnectionNode;
 				pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				pConnectionNode->setAttr(g_nameAttribute, pImplControl->GetName());
-				return pConnectionNode;
+				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pImplControl->GetName());
+				pNode = pConnectionNode;
 			}
 			break;
-
 		case EImpltemType::AuxBus:
 			{
 				XmlNodeRef pConnectionNode;
 				pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				pConnectionNode->setAttr(g_nameAttribute, pImplControl->GetName());
-				return pConnectionNode;
+				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pImplControl->GetName());
+				pNode = pConnectionNode;
 			}
 			break;
-
 		case EImpltemType::SoundBank:
 			{
 				XmlNodeRef pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				pConnectionNode->setAttr(g_nameAttribute, pImplControl->GetName());
+				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pImplControl->GetName());
+
 				if (pImplControl->IsLocalised())
 				{
-					pConnectionNode->setAttr(g_localizedAttribute, g_trueAttribute);
+					pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szLocalizedAttribute, CryAudio::Impl::Wwise::s_szTrueValue);
 				}
-				return pConnectionNode;
+
+				pNode = pConnectionNode;
 			}
 			break;
 		}
 	}
-	return nullptr;
+
+	return pNode;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -586,7 +712,7 @@ void CEditorImpl::CreateControlCache(CImplItem const* const pParent)
 //////////////////////////////////////////////////////////////////////////
 CID CEditorImpl::GenerateID(string const& fullPathName) const
 {
-	return CCrc32::ComputeLowercase(fullPathName);
+	return CryAudio::StringToId(fullPathName);
 }
 
 //////////////////////////////////////////////////////////////////////////

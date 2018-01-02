@@ -25,6 +25,18 @@ struct SRawConnectionData
 
 using XMLNodeList = std::vector<SRawConnectionData>;
 
+enum class ESystemAssetFlags
+{
+	None                     = 0,
+	IsDefaultControl         = BIT(0),
+	IsHiddenDefault          = BIT(1),
+	IsModified               = BIT(2),
+	HasPlaceholderConnection = BIT(3),
+	HasConnection            = BIT(4),
+	HasControl               = BIT(5),
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(ESystemAssetFlags);
+
 class CSystemAsset
 {
 public:
@@ -48,20 +60,23 @@ public:
 	string          GetDescription() const { return m_description; }
 	virtual void    SetDescription(string const& description);
 
-	bool            IsHiddenDefault() const { return m_isHiddenDefault; }
+	bool            IsDefaultControl() const { return (m_flags & ESystemAssetFlags::IsDefaultControl) != 0; }
+	void            SetDefaultControl(bool const isDefaultControl);
+
+	bool            IsHiddenDefault() const { return (m_flags & ESystemAssetFlags::IsHiddenDefault) != 0; }
 	void            SetHiddenDefault(bool const isHiddenDefault);
 
-	virtual bool    IsModified() const { return m_isModified; }
+	virtual bool    IsModified() const { return (m_flags & ESystemAssetFlags::IsModified) != 0; }
 	virtual void    SetModified(bool const isModified, bool const isForced = false);
 
-	bool            HasPlaceholderConnection() const { return m_hasPlaceholderConnection; }
-	void            SetHasPlaceholderConnection(bool const hasPlaceholder) { m_hasPlaceholderConnection = hasPlaceholder; }
+	bool            HasPlaceholderConnection() const { return (m_flags & ESystemAssetFlags::HasPlaceholderConnection) != 0; }
+	void            SetHasPlaceholderConnection(bool const hasPlaceholder);
 	
-	bool            HasConnection() const { return m_hasConnection; }
-	void            SetHasConnection(bool const hasConnection) { m_hasConnection = hasConnection; }
+	bool            HasConnection() const { return (m_flags & ESystemAssetFlags::HasConnection) != 0; }
+	void            SetHasConnection(bool const hasConnection);
 	
-	bool            HasControl() const { return m_hasControl; }
-	void            SetHasControl(bool const hasControl) { m_hasControl = hasControl; }
+	bool            HasControl() const { return (m_flags & ESystemAssetFlags::HasControl) != 0; }
+	void            SetHasControl(bool const hasControl);
 
 	virtual void    Serialize(Serialization::IArchive& ar);
 
@@ -72,11 +87,7 @@ protected:
 	string                     m_name;
 	string                     m_description = "";
 	ESystemItemType const      m_type;
-	bool                       m_isHiddenDefault = false;
-	bool                       m_isModified = false;
-	bool                       m_hasPlaceholderConnection = false;
-	bool                       m_hasConnection = false;
-	bool                       m_hasControl = false;
+	ESystemAssetFlags          m_flags;
 };
 
 class CSystemControl final : public CSystemAsset
@@ -102,9 +113,6 @@ public:
 	float                   GetRadius() const { return m_radius; }
 	void                    SetRadius(float const radius);
 
-	float                   GetOcclusionFadeOutDistance() const { return m_occlusionFadeOutDistance; }
-	void                    SetOcclusionFadeOutDistance(float const fadeOutArea);
-
 	std::vector<CID> const& GetSelectedConnections() const { return m_selectedConnectionIds; }
 	void                    SetSelectedConnections(std::vector<CID> selectedConnectionIds) { m_selectedConnectionIds = selectedConnectionIds; }
 
@@ -120,8 +128,6 @@ public:
 	void                    LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex = -1);
 
 	void                    MatchRadiusToAttenuation();
-	bool                    IsMatchRadiusToAttenuationEnabled() const { return m_matchRadiusAndAttenuation; }
-	void                    SetMatchRadiusToAttenuationEnabled(bool const isEnabled) { m_matchRadiusAndAttenuation = isEnabled; }
 
 	virtual void            Serialize(Serialization::IArchive& ar) override;
 
@@ -141,9 +147,7 @@ private:
 	Scope                      m_scope = 0;
 	std::vector<ConnectionPtr> m_connectedControls;
 	float                      m_radius = 0.0f;
-	float                      m_occlusionFadeOutDistance = 0.0f;
 	bool                       m_isAutoLoad = true;
-	bool                       m_matchRadiusAndAttenuation = true;
 
 	std::map<int, XMLNodeList> m_connectionNodes;
 	std::vector<CID>           m_selectedConnectionIds;

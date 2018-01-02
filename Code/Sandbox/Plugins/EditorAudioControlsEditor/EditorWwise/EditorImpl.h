@@ -6,6 +6,7 @@
 
 #include "ImplControls.h"
 
+#include <CryAudio/IAudioSystem.h>
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
 
@@ -17,23 +18,21 @@ class CImplSettings final : public IImplSettings
 {
 public:
 
-	CImplSettings()
-		: m_projectPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise_project")
-		, m_soundBanksPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise")
-	{}
+	CImplSettings();
 
 	// IImplSettings
-	virtual char const* GetSoundBanksPath() const override { return m_soundBanksPath.c_str(); }
-	virtual char const* GetProjectPath() const override    { return m_projectPath.c_str(); }
+	virtual char const* GetAssetsPath() const override { return m_assetsPath.c_str(); }
+	virtual char const* GetProjectPath() const override { return m_projectPath.c_str(); }
 	virtual void        SetProjectPath(char const* szPath) override;
+	virtual bool        IsProjectPathEditable() const override { return true; }
 	// ~IImplSettings
 
-	void Serialize(Serialization::IArchive& ar);
+	void                Serialize(Serialization::IArchive& ar);
 
 private:
 
 	string       m_projectPath;
-	string const m_soundBanksPath;
+	string const m_assetsPath;
 };
 
 class CEditorImpl final : public IEditorImpl
@@ -48,7 +47,8 @@ public:
 	virtual CImplItem*      GetRoot() override { return &m_rootControl; }
 	virtual CImplItem*      GetControl(CID const id) const override;
 	virtual char const*     GetTypeIcon(CImplItem const* const pImplItem) const override;
-	virtual string          GetName() const override;
+	virtual string const&   GetName() const override;
+	virtual string const&   GetFolderName() const override;
 	virtual IImplSettings*  GetSettings() override { return &m_implSettings; }
 	virtual bool            IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const override;
 	virtual ESystemItemType ImplTypeToSystemType(CImplItem const* const pImplItem) const override;
@@ -65,19 +65,22 @@ private:
 	void CreateControlCache(CImplItem const* const pParent);
 
 	// Generates the ID of the control given its full path name.
-	CID GenerateID(string const& controlName, bool isLocalized, CImplItem* pParent) const;
+	CID  GenerateID(string const& controlName, bool isLocalized, CImplItem* pParent) const;
 	// Convenience function to form the full path name.
 	// Controls can have the same name if they're under different parents so knowledge of the parent name is needed.
 	// Localized controls live in different areas of disk so we also need to know if its localized.
-	CID GenerateID(string const& fullPathName) const;
+	CID  GenerateID(string const& fullPathName) const;
 
-	typedef std::map<CID, CImplItem*> ControlsCache;
-	typedef std::map<CID, int> ConnectionsMap;
+	using ControlsCache = std::map<CID, CImplItem*>;
+	using ConnectionsMap = std::map<CID, int>;
 
-	CImplItem      m_rootControl;
-	ControlsCache  m_controlsCache; // cache of the controls stored by id for faster access
-	ConnectionsMap m_connectionsByID;
-	CImplSettings  m_implSettings;
+	CImplItem           m_rootControl;
+	ControlsCache       m_controlsCache; // cache of the controls stored by id for faster access
+	ConnectionsMap      m_connectionsByID;
+	CImplSettings       m_implSettings;
+	CryAudio::SImplInfo m_implInfo;
+	string              m_implName;
+	string              m_implFolderName;
 };
 } // namespace Wwise
 } // namespace ACE

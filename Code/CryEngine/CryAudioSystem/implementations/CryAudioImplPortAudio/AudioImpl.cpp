@@ -8,6 +8,7 @@
 #include "AudioObject.h"
 #include "AudioImplCVars.h"
 #include "ATLEntities.h"
+#include "GlobalData.h"
 #include <Logger.h>
 #include <sndfile.hh>
 #include <CrySystem/File/ICryPak.h>
@@ -21,11 +22,6 @@ namespace Impl
 {
 namespace PortAudio
 {
-char const* const CImpl::s_szPortAudioEventTag = "PortAudioEvent";
-char const* const CImpl::s_szPortAudioEventNameAttribute = "portaudio_name";
-char const* const CImpl::s_szPortAudioEventTypeAttribute = "event_type";
-char const* const CImpl::s_szPortAudioEventNumLoopsAttribute = "num_loops";
-
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSize)
 {
@@ -45,7 +41,11 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 
 	m_regularSoundBankFolder = szAssetDirectory;
 	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
-	m_regularSoundBankFolder += PORTAUDIO_IMPL_DATA_ROOT;
+	m_regularSoundBankFolder += AUDIO_SYSTEM_DATA_ROOT;
+	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+	m_regularSoundBankFolder += s_szImplFolderName;
+	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+	m_regularSoundBankFolder += s_szAssetsFolderName;
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
 
 	PaError const err = Pa_Initialize();
@@ -59,7 +59,9 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	m_name = Pa_GetVersionText();
 	m_name += " (";
 	m_name += szAssetDirectory;
-	m_name += CRY_NATIVE_PATH_SEPSTR PORTAUDIO_IMPL_DATA_ROOT ")";
+	m_name += CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
+	m_name += s_szImplFolderName;
+	m_name += ")";
 #endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
 	return ERequestStatus::Success;
@@ -194,6 +196,17 @@ char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 	return szResult;
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CImpl::GetInfo(SImplInfo& implInfo) const
+{
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
+	implInfo.name = m_name.c_str();
+#else
+	implInfo.name = "name-not-present-in-release-mode";
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+	implInfo.folderName = s_szImplFolderName;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
@@ -269,11 +282,11 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 	CTrigger* pTrigger = nullptr;
 	char const* const szTag = pRootNode->getTag();
 
-	if (_stricmp(szTag, s_szPortAudioEventTag) == 0)
+	if (_stricmp(szTag, s_szEventTag) == 0)
 	{
 		stack_string path = m_regularSoundBankFolder.c_str();
 		path += CRY_NATIVE_PATH_SEPSTR;
-		path += pRootNode->getAttr(s_szPortAudioEventNameAttribute);
+		path += pRootNode->getAttr(s_szNameAttribute);
 
 		if (!path.empty())
 		{
@@ -284,12 +297,12 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 
 			if (pSndFile != nullptr)
 			{
-				CryFixedStringT<16> const eventTypeString(pRootNode->getAttr(s_szPortAudioEventTypeAttribute));
-				EEventType const eventType = eventTypeString.compareNoCase("start") == 0 ? EEventType::Start : EEventType::Stop;
+				CryFixedStringT<16> const eventTypeString(pRootNode->getAttr(s_szTypeAttribute));
+				EEventType const eventType = eventTypeString.compareNoCase(s_szStartValue) == 0 ? EEventType::Start : EEventType::Stop;
 
 				// numLoops -1 == infinite, 0 == once, 1 == twice etc
 				int numLoops = 0;
-				pRootNode->getAttr(s_szPortAudioEventNumLoopsAttribute, numLoops);
+				pRootNode->getAttr(s_szLoopCountAttribute, numLoops);
 				PaStreamParameters streamParameters;
 				streamParameters.device = Pa_GetDefaultOutputDevice();
 				streamParameters.channelCount = sfInfo.channels;
@@ -380,16 +393,6 @@ void CImpl::DestructEnvironment(IEnvironment const* const pIEnvironment)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-char const* const CImpl::GetName() const
-{
-#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
-	return m_name.c_str();
-#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
-
-	return nullptr;
-}
-
-///////////////////////////////////////////////////////////////////////////
 void CImpl::GetMemoryInfo(SMemoryInfo& memoryInfo) const
 {
 	CryModuleMemoryInfo memInfo;
@@ -439,7 +442,11 @@ void CImpl::SetLanguage(char const* const szLanguage)
 		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
 		m_localizedSoundBankFolder += szLanguage;
 		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
-		m_localizedSoundBankFolder += PORTAUDIO_IMPL_DATA_ROOT;
+		m_localizedSoundBankFolder += AUDIO_SYSTEM_DATA_ROOT;
+		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+		m_localizedSoundBankFolder += s_szImplFolderName;
+		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+		m_localizedSoundBankFolder += s_szAssetsFolderName;
 	}
 }
 

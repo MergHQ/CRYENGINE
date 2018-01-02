@@ -16,6 +16,7 @@ enum class EItemStatus
 	NoConnection,
 	NoControl,
 	Localized,
+	NotificationHeader,
 };
 
 void        GetPlatformNames();
@@ -23,21 +24,35 @@ QStringList GetScopeNames();
 
 inline char const* GetItemNotificationIcon(EItemStatus const status)
 {
+	char const* szIconPath = "icons:Dialogs/dialog-error.ico";
+
 	switch (status)
 	{
 	case EItemStatus::Placeholder:
-		return "icons:audio/notifications/placeholder.ico";
+		szIconPath = "icons:audio/notifications/placeholder.ico";
+		break;
 	case EItemStatus::NoConnection:
-		return "icons:audio/notifications/no_connection.ico";
+		szIconPath = "icons:audio/notifications/no_connection.ico";
+		break;
 	case EItemStatus::NoControl:
-		return "icons:audio/notifications/no_control.ico";
+		szIconPath = "icons:audio/notifications/no_control.ico";
+		break;
 	case EItemStatus::Localized:
-		return "icons:audio/notifications/localized.ico";
+		szIconPath = "icons:audio/notifications/localized.ico";
+		break;
+	case EItemStatus::NotificationHeader:
+		szIconPath = "icons:General/Scripting.ico";
+		break;
+	default:
+		szIconPath = "icons:Dialogs/dialog-error.ico";
+		break;
 	}
-	return "icons:Dialogs/dialog-error.ico";
+
+	return szIconPath;
 }
 
-static char const* const s_szMiddlewareMimeType = "application/cryengine-audioimplementationitem";
+static char const* const s_szSystemMimeType = "AudioSystemItems";
+static char const* const s_szImplMimeType = "AudioImplItems";
 static QStringList const s_typeFilterList{ "Trigger","Parameter","Switch","State","Environment","Preload" };
 
 static CItemModelAttribute              s_notificationAttribute("Notification", eAttributeType_String, CItemModelAttribute::Visible, false);

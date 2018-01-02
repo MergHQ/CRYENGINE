@@ -13,8 +13,3 @@
 	#define INCLUDE_AUDIO_PRODUCTION_CODE
 	#define ENABLE_AUDIO_LOGGING
 #endif // _RELEASE
-
-namespace CryAudio
-{
-extern CTimeValue g_lastMainThreadFrameStartTime;
-} // namespace CryAudio

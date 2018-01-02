@@ -29,7 +29,7 @@ public:
 	CResourceSelectorDialog(ESystemItemType const type, Scope const scope, QWidget* const pParent);
 	~CResourceSelectorDialog();
 
-	char const* ChooseItem(char const* currentValue);
+	char const*   ChooseItem(char const* currentValue);
 
 	// QDialog
 	virtual QSize sizeHint() const override;
@@ -49,7 +49,7 @@ private:
 	void                DeleteModels();
 
 	// QDialog
-	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
+	virtual bool        eventFilter(QObject* pObject, QEvent* pEvent) override;
 	// ~QDialog
 
 	ESystemItemType const               m_type;

@@ -54,18 +54,20 @@ private slots:
 private:
 
 	// QObject
-	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
+	virtual bool        eventFilter(QObject* pObject, QEvent* pEvent) override;
 	// ~QObject
 
-	void InitAddControlWidget(QVBoxLayout* const pLayout);
-	void SelectNewAsset(QModelIndex const& parent, int const row);
-	void ClearFilters();
-	void DeleteModels();
+	void                InitAddControlWidget(QVBoxLayout* const pLayout);
+	void                SelectNewAsset(QModelIndex const& parent, int const row);
+	void                ClearFilters();
+	void                DeleteModels();
 
 	CSystemControl*     CreateControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent);
 	CSystemAsset*       CreateFolder(CSystemAsset* const pParent);
 	void                CreateParentFolder();
-	bool                IsParentFolderAllowed();
+	bool                IsParentFolderAllowed() const;
+	bool                IsDefaultControlSelected() const;
+	bool                HasDefaultControl(CSystemAsset* const pAsset) const;
 
 	QAbstractItemModel* CreateLibraryModelFromIndex(QModelIndex const& sourceIndex);
 	CSystemAsset*       GetSelectedAsset() const;

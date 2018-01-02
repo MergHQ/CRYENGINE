@@ -36,6 +36,7 @@ enum class ERoles
 	ItemType = Qt::UserRole + 1,
 	Name,
 	InternalPointer,
+	IsDefaultControl,
 	Id,
 };
 
@@ -80,6 +81,7 @@ private:
 
 	CSystemAssetsManager* const m_pAssetsManager;
 	bool                        m_ignoreLibraryUpdates;
+	int const                   m_nameColumn;
 };
 
 class CSystemLibraryModel : public QAbstractItemModel
@@ -116,6 +118,7 @@ private:
 
 	CSystemAssetsManager* const m_pAssetsManager;
 	CSystemLibrary* const       m_pLibrary;
+	int const                   m_nameColumn;
 };
 
 class CSystemFilterProxyModel final : public QAttributeFilterProxyModel

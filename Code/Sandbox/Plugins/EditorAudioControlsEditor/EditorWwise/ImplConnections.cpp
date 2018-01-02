@@ -15,7 +15,7 @@ void CParameterConnection::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
-		signalConnectionChanged();
+		SignalConnectionChanged();
 	}
 }
 
@@ -26,7 +26,7 @@ void CStateToParameterConnection::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
-		signalConnectionChanged();
+		SignalConnectionChanged();
 	}
 }
 } // namespace Wwise

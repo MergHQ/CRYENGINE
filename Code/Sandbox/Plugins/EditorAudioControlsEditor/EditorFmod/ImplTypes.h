@@ -8,15 +8,14 @@ namespace Fmod
 {
 enum class EImpltemType
 {
-	Invalid = 0,
-	Folder,
-	Event,
-	EventParameter,
-	Snapshot,
-	SnapshotParameter,
+	Invalid,
 	Bank,
+	Snapshot,
 	Return,
+	Parameter,
+	Event,
 	Group,
+	Folder,
 };
 } // namespace Fmod
 } // namespace ACE

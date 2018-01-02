@@ -163,11 +163,6 @@ void CCVars::RegisterVariables()
 	               "Usage: s_AudioStandaloneFilePoolSize [0/...]\n"
 	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
 
-	REGISTER_CVAR2("s_TickWithMainThread", &m_tickWithMainThread, m_tickWithMainThread, VF_REQUIRE_APP_RESTART,
-	               "Sets whether work on the audio thread is done in sync with the main thread or on its own pace.\n"
-	               "Usage: s_TickWithMainThread [0/1]\n"
-	               "Default PC: 0, XboxOne: 0, PS4: 0, Mac: 0, Linux: 0, iOS: 0, Android: 0\n");
-
 	REGISTER_CVAR2("s_AccumulateOcclusion", &m_accumulateOcclusion, m_accumulateOcclusion, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Sets whether occlusion values encountered by a ray cast will be accumulated or only the highest value will be used.\n"
 	               "Usage: s_AccumulateOcclusion [0/1] (off/on)\n"
@@ -203,7 +198,7 @@ void CCVars::RegisterVariables()
 	                 "otherwise, the AudioSwitch is set on the GlobalAudioObject\n"
 	                 "Usage: s_SetSwitchState SurfaceType concrete 601 or s_SetSwitchState weather rain\n");
 
-	REGISTER_STRING("s_DefaultStandaloneFilesAudioTrigger", DoNothingTriggerName, 0,
+	REGISTER_STRING("s_DefaultStandaloneFilesAudioTrigger", s_szDoNothingTriggerName, 0,
 	                "The name of the ATL AudioTrigger which is used for playing back standalone files, when you call 'PlayFile' without specifying\n"
 	                "an override triggerId that should be used instead.\n"
 	                "Usage: s_DefaultStandaloneFilesAudioTrigger audio_trigger_name.\n"
@@ -298,7 +293,6 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_AudioObjectPoolSize");
 		pConsole->UnregisterVariable("s_AudioEventPoolSize");
 		pConsole->UnregisterVariable("s_AudioStandaloneFilePoolSize");
-		pConsole->UnregisterVariable("s_TickWithMainThread");
 		pConsole->UnregisterVariable("s_AccumulateOcclusion");
 		pConsole->UnregisterVariable("s_ExecuteTrigger");
 		pConsole->UnregisterVariable("s_StopTrigger");

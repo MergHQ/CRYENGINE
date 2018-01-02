@@ -24,5 +24,5 @@ end_sources()
 #END-FILE-LIST
 
 CryEditorPlugin(EditorCryAudioImplWwise SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl" OUTDIR EditorPlugins/ace)
-target_include_directories(${THIS_PROJECT} PRIVATE ../common GeneratedFiles)
-target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOT_USE_CRY_MEMORY_MANAGER -DPLUGIN_EXPORTS)
+target_include_directories(${THIS_PROJECT} PRIVATE ../common "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations")
+target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOT_USE_CRY_MEMORY_MANAGER -DPLUGIN_EXPORTS -DUSE_BACKWARDS_COMPATIBILITY)

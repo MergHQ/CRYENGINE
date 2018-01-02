@@ -67,6 +67,8 @@ void CTreeView::CollapseSelection(QModelIndexList const& indexList)
 //////////////////////////////////////////////////////////////////////////
 uint32 CTreeView::GetItemId(QModelIndex const& index) const
 {
+	uint32 itemId = CryAudio::InvalidCRC32;
+
 	if (index.isValid())
 	{
 		QModelIndex const itemIndex = index.sibling(index.row(), m_nameColumn);
@@ -82,11 +84,11 @@ uint32 CTreeView::GetItemId(QModelIndex const& index) const
 				parent = parent.parent();
 			}
 
-			return CryAudio::StringToId(itemName.toStdString().c_str());
+			itemId = CryAudio::StringToId(itemName.toStdString().c_str());
 		}
 	}
 
-	return CryAudio::InvalidCRC32;
+	return itemId;
 }
 
 //////////////////////////////////////////////////////////////////////////

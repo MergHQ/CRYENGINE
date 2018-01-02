@@ -13,7 +13,7 @@
 #include <CrySystem/File/CryFile.h>
 #include <CryIcon.h>
 
-#include <QMimeData>
+#include <DragDrop.h>
 
 namespace ACE
 {
@@ -37,30 +37,40 @@ CConnectionModel::~CConnectionModel()
 //////////////////////////////////////////////////////////////////////////
 void CConnectionModel::ConnectSignals()
 {
-	m_pAssetsManager->signalItemAdded.Connect([&]()
+	m_pAssetsManager->SignalItemAdded.Connect([&]()
 	{
-		ResetModelAndCache();
+		if (!m_pAssetsManager->IsLoading())
+		{
+			ResetModelAndCache();
+		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->signalItemRemoved.Connect([&]()
+	m_pAssetsManager->SignalItemRemoved.Connect([&]()
 	{
-		ResetModelAndCache();
+		if (!m_pAssetsManager->IsLoading())
+		{
+			ResetModelAndCache();
+		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->signalControlModified.Connect([&]()
+	m_pAssetsManager->SignalControlModified.Connect([&]()
 	{
-		ResetModelAndCache();
+		if (!m_pAssetsManager->IsLoading())
+		{
+			ResetModelAndCache();
+		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.Connect([&]()
 	{
 		beginResetModel();
 		m_pEditorImpl = nullptr;
+		m_pControl = nullptr;
 		m_connectionsCache.clear();
 		endResetModel();
 	}, reinterpret_cast<uintptr_t>(this));
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.Connect([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
 	{
 		m_pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
 		beginResetModel();
@@ -72,11 +82,11 @@ void CConnectionModel::ConnectSignals()
 //////////////////////////////////////////////////////////////////////////
 void CConnectionModel::DisconnectSignals()
 {
-	m_pAssetsManager->signalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->signalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->signalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->SignalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->SignalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->SignalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -91,81 +101,91 @@ void CConnectionModel::Init(CSystemControl* const pControl)
 //////////////////////////////////////////////////////////////////////////
 CItemModelAttribute* CConnectionModel::GetAttributeForColumn(EColumns const column)
 {
+	CItemModelAttribute* pAttribute = nullptr;
+
 	switch (column)
 	{
 	case EColumns::Notification:
-		return &ModelUtils::s_notificationAttribute;
+		pAttribute = &ModelUtils::s_notificationAttribute;
+		break;
 	case EColumns::Name:
-		return &Attributes::s_nameAttribute;
+		pAttribute = &Attributes::s_nameAttribute;
+		break;
 	case EColumns::Path:
-		return &ModelUtils::s_pathAttribute;
+		pAttribute = &ModelUtils::s_pathAttribute;
+		break;
 	default:
-		return nullptr;
+		pAttribute = nullptr;
+		break;
 	}
+
+	return pAttribute;
 }
 
 //////////////////////////////////////////////////////////////////////////
 QVariant CConnectionModel::GetHeaderData(int const section, Qt::Orientation const orientation, int const role)
 {
-	if (orientation != Qt::Horizontal)
-	{
-		return QVariant();
-	}
+	QVariant variant = QVariant();
 
-	CItemModelAttribute* pAttribute;
+	if (orientation == Qt::Horizontal)
+	{
+		CItemModelAttribute* pAttribute;
 
-	if (section >= static_cast<int>(EColumns::Count))
-	{
-		pAttribute = &ModelUtils::s_platformModellAttributes[section - static_cast<int>(EColumns::Count)];
-	}
-	else
-	{
-		pAttribute = GetAttributeForColumn(static_cast<EColumns>(section));
-	}
-
-	if (pAttribute == nullptr)
-	{
-		return QVariant();
-	}
-
-	switch (role)
-	{
-	case Qt::DecorationRole:
-		if (section == static_cast<int>(EColumns::Notification))
+		if (section >= static_cast<int>(EColumns::Count))
 		{
-			return CryIcon("icons:General/Scripting.ico"); // This icon is a placeholder.
+			pAttribute = &ModelUtils::s_platformModellAttributes[section - static_cast<int>(EColumns::Count)];
 		}
-		break;
-	case Qt::DisplayRole:
-		// For Notification we use Icons instead.
-		if (section != static_cast<int>(EColumns::Notification))
+		else
 		{
-			return pAttribute->GetName();
+			pAttribute = GetAttributeForColumn(static_cast<EColumns>(section));
 		}
-		break;
-	case Qt::ToolTipRole:
-		return pAttribute->GetName();
-	case Attributes::s_getAttributeRole:
-		return QVariant::fromValue(pAttribute);
-	default:
-		break;
+
+		if (pAttribute != nullptr)
+		{
+			switch (role)
+			{
+			case Qt::DecorationRole:
+				if (section == static_cast<int>(EColumns::Notification))
+				{
+					variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NotificationHeader));
+				}
+				break;
+			case Qt::DisplayRole:
+				// For Notification we use an icons instead.
+				if (section != static_cast<int>(EColumns::Notification))
+				{
+					variant = pAttribute->GetName();
+				}
+				break;
+			case Qt::ToolTipRole:
+				variant = pAttribute->GetName();
+				break;
+			case Attributes::s_getAttributeRole:
+				variant = QVariant::fromValue(pAttribute);
+				break;
+			default:
+				break;
+			}
+		}
 	}
 
-	return QVariant();
+	return variant;
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CConnectionModel::rowCount(QModelIndex const& parent) const
 {
+	int rowCount = 0;
+
 	if ((m_pControl != nullptr) && (m_pEditorImpl != nullptr))
 	{
 		if ((parent.row() < 0) || (parent.column() < 0))
 		{
-			return m_connectionsCache.size();
+			rowCount = m_connectionsCache.size();
 		}
 	}
 
-	return 0;
+	return rowCount;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -177,6 +197,8 @@ int CConnectionModel::columnCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 {
+	QVariant variant = QVariant();
+
 	if ((m_pEditorImpl != nullptr) && (m_pControl != nullptr) && index.isValid())
 	{
 		if (index.row() < m_connectionsCache.size())
@@ -200,25 +222,25 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 								case Qt::DecorationRole:
 									if (pImplItem->IsPlaceholder())
 									{
-										return CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder));
+										variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder));
 									}
 									else if (pImplItem->IsLocalised())
 									{
-										return CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized));
+										variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized));
 									}
 									break;
 								case Qt::ToolTipRole:
 									if (pImplItem->IsPlaceholder())
 									{
-										return tr("Control not found in the audio middleware project");
+										variant = tr("Item not found in middleware project");
 									}
 									else if (pImplItem->IsLocalised())
 									{
-										return tr("Item is localized");
+										variant = tr("Item is localized");
 									}
 									break;
 								case static_cast<int>(ERoles::Id) :
-									return pImplItem->GetId();
+									variant = pImplItem->GetId();
 									break;
 								}
 							}
@@ -228,15 +250,15 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 								switch (role)
 								{
 								case Qt::DecorationRole:
-									return CryIcon(m_pEditorImpl->GetTypeIcon(pImplItem));
+									variant = CryIcon(m_pEditorImpl->GetTypeIcon(pImplItem));
 									break;
 								case Qt::DisplayRole:
 								case Qt::ToolTipRole:
 								case static_cast<int>(ERoles::Name):
-									return static_cast<char const*>(pImplItem->GetName());
+									variant = static_cast<char const*>(pImplItem->GetName());
 									break;
 								case static_cast<int>(ERoles::Id):
-									return pImplItem->GetId();
+									variant = pImplItem->GetId();
 									break;
 								}
 							}
@@ -254,6 +276,7 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 										while (pImplItemParent != nullptr)
 										{
 											QString parentName = QString(static_cast<char const*>(pImplItemParent->GetName()));
+
 											if (!parentName.isEmpty())
 											{
 												if (path.isEmpty())
@@ -268,8 +291,9 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 											pImplItemParent = pImplItemParent->GetParent();
 										}
 
-										return path;
+										variant = path;
 									}
+									break;
 								}
 							}
 							break;
@@ -277,14 +301,14 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 					}
 					else if ((role == Qt::CheckStateRole) && (m_pControl->GetType() == ESystemItemType::Preload))
 					{
-						return pConnection->IsPlatformEnabled(index.column() - static_cast<int>(EColumns::Count)) ? Qt::Checked : Qt::Unchecked;
+						variant = pConnection->IsPlatformEnabled(index.column() - static_cast<int>(EColumns::Count)) ? Qt::Checked : Qt::Unchecked;
 					}
 				}
 			}
 		}
 	}
 
-	return QVariant();
+	return variant;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -309,21 +333,25 @@ Qt::ItemFlags CConnectionModel::flags(QModelIndex const& index) const
 //////////////////////////////////////////////////////////////////////////
 bool CConnectionModel::setData(QModelIndex const& index, QVariant const& value, int role)
 {
+	bool wasDataChanged = false;
+
 	if ((index.column() >= static_cast<int>(EColumns::Count)) && (role == Qt::CheckStateRole))
 	{
 		ConnectionPtr const pConnection = m_connectionsCache[index.row()];
 		pConnection->EnableForPlatform(index.column() - static_cast<int>(EColumns::Count), value == Qt::Checked);
 		QVector<int> roleVector(1, role);
 		dataChanged(index, index, roleVector);
-		return true;
+		wasDataChanged = true;
 	}
 
-	return false;
+	return wasDataChanged;
 }
 
 //////////////////////////////////////////////////////////////////////////
 QModelIndex CConnectionModel::index(int row, int column, QModelIndex const& parent /*= QModelIndex()*/) const
 {
+	QModelIndex modelIndex = QModelIndex();
+
 	if ((m_pEditorImpl != nullptr) && (m_pControl != nullptr))
 	{
 		if ((row >= 0) && (column >= 0))
@@ -338,14 +366,14 @@ QModelIndex CConnectionModel::index(int row, int column, QModelIndex const& pare
 
 					if (pImplItem != nullptr)
 					{
-						return createIndex(row, column);
+						modelIndex = createIndex(row, column);
 					}
 				}
 			}
 		}
 	}
 
-	return QModelIndex();
+	return modelIndex;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -357,6 +385,8 @@ QModelIndex CConnectionModel::parent(QModelIndex const& index) const
 //////////////////////////////////////////////////////////////////////////
 bool CConnectionModel::canDropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const
 {
+	bool canDrop = true;
+
 	if ((m_pEditorImpl != nullptr) && (m_pControl != nullptr))
 	{
 		std::vector<CID> ids;
@@ -371,31 +401,33 @@ bool CConnectionModel::canDropMimeData(QMimeData const* pData, Qt::DropAction ac
 				// is the type being dragged compatible?
 				if (!(m_pEditorImpl->IsTypeCompatible(m_pControl->GetType(), pImplItem)))
 				{
-					return false;
+					canDrop = false;
+					break;
 				}
 			}
 		}
 	}
 
-	return true;
+	return canDrop;
 }
 
 //////////////////////////////////////////////////////////////////////////
 QStringList CConnectionModel::mimeTypes() const
 {
-	QStringList list = QAbstractItemModel::mimeTypes();
-	list << ModelUtils::s_szMiddlewareMimeType;
-	return list;
+	QStringList types = QAbstractItemModel::mimeTypes();
+	types << CDragDropData::GetMimeFormatForType(ModelUtils::s_szImplMimeType);
+	return types;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CConnectionModel::dropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent)
 {
+	bool wasDropped = false;
+
 	if ((m_pEditorImpl != nullptr) && (m_pControl != nullptr))
 	{
 		std::vector<CID> ids;
 		DecodeMimeData(pData, ids);
-		bool wasConnectionAdded = false;
 
 		for (auto const id : ids)
 		{
@@ -412,16 +444,14 @@ bool CConnectionModel::dropMimeData(QMimeData const* pData, Qt::DropAction actio
 					if (pConnection != nullptr)
 					{
 						m_pControl->AddConnection(pConnection);
-						wasConnectionAdded = true;
+						wasDropped = true;
 					}
 				}
 			}
 		}
-
-		return wasConnectionAdded;
 	}
 
-	return false;
+	return wasDropped;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -462,12 +492,12 @@ void CConnectionModel::ResetModelAndCache()
 //////////////////////////////////////////////////////////////////////////
 void CConnectionModel::DecodeMimeData(QMimeData const* pData, std::vector<CID>& ids) const
 {
-	QString const format = ModelUtils::s_szMiddlewareMimeType;
+	CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
 
-	if (pData->hasFormat(format))
+	if (pDragDropData->HasCustomData(ModelUtils::s_szImplMimeType))
 	{
-		QByteArray encoded = pData->data(format);
-		QDataStream stream(&encoded, QIODevice::ReadOnly);
+		QByteArray const byteArray = pDragDropData->GetCustomData(ModelUtils::s_szImplMimeType);
+		QDataStream stream(byteArray);
 
 		while (!stream.atEnd())
 		{

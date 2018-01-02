@@ -8,17 +8,17 @@ namespace Wwise
 {
 enum class EImpltemType
 {
-	Invalid = 0,
+	Invalid,
+	SoundBank,
+	AuxBus,
 	Event,
 	Parameter,
 	Switch,
-	AuxBus,
-	SoundBank,
-	State,
 	SwitchGroup,
+	State,
 	StateGroup,
-	WorkUnit,
 	VirtualFolder,
+	WorkUnit,
 	PhysicalFolder,
 };
 } // namespace Wwise

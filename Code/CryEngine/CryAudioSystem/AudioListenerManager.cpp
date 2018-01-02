@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioListenerManager.h"
@@ -66,7 +66,7 @@ void CAudioListenerManager::Update(float const deltaTime)
 {
 	for (auto const pListener : m_activeListeners)
 	{
-		pListener->Update();
+		pListener->Update(deltaTime);
 	}
 }
 

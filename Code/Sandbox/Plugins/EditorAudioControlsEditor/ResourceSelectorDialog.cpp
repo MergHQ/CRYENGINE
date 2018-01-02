@@ -110,30 +110,34 @@ QSize CResourceSelectorDialog::sizeHint() const
 //////////////////////////////////////////////////////////////////////////
 QAbstractItemModel* CResourceSelectorDialog::CreateLibraryModelFromIndex(QModelIndex const& sourceIndex)
 {
-	if (sourceIndex.model() != m_pSourceModel)
+	QAbstractItemModel* pLibraryModel = nullptr;
+
+	if (sourceIndex.model() == m_pSourceModel)
 	{
-		return nullptr;
-	}
+		size_t const numLibraries = m_libraryModels.size();
+		size_t const row = static_cast<size_t>(sourceIndex.row());
 
-	size_t const numLibraries = m_libraryModels.size();
-	size_t const row = static_cast<size_t>(sourceIndex.row());
-
-	if (row >= numLibraries)
-	{
-		m_libraryModels.resize(row + 1);
-
-		for (size_t i = numLibraries; i < row + 1; ++i)
+		if (row >= numLibraries)
 		{
-			m_libraryModels[i] = new CResourceLibraryModel(m_pAssetsManager, m_pAssetsManager->GetLibrary(i), this);
+			m_libraryModels.resize(row + 1);
+
+			for (size_t i = numLibraries; i < row + 1; ++i)
+			{
+				m_libraryModels[i] = new CResourceLibraryModel(m_pAssetsManager, m_pAssetsManager->GetLibrary(i), this);
+			}
 		}
+
+		pLibraryModel = m_libraryModels[row];
 	}
 
-	return m_libraryModels[row];
+	return pLibraryModel;
 }
 
 //////////////////////////////////////////////////////////////////////////
 char const* CResourceSelectorDialog::ChooseItem(char const* szCurrentValue)
 {
+	char const* szControlsName = szCurrentValue;
+
 	if (std::strcmp(szCurrentValue, "") != 0)
 	{
 		s_previousControlName = szCurrentValue;
@@ -152,10 +156,10 @@ char const* CResourceSelectorDialog::ChooseItem(char const* szCurrentValue)
 
 	if (exec() == QDialog::Accepted)
 	{
-		return s_previousControlName.c_str();
+		szControlsName = s_previousControlName.c_str();
 	}
 
-	return szCurrentValue;
+	return szControlsName;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -183,6 +187,8 @@ void CResourceSelectorDialog::OnUpdateSelectedControl()
 //////////////////////////////////////////////////////////////////////////
 QModelIndex CResourceSelectorDialog::FindItem(string const& sControlName)
 {
+	QModelIndex modelIndex = QModelIndex();
+
 	QModelIndexList const indexes = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(sControlName), -1, Qt::MatchRecursive);
 	
 	if (!indexes.empty())
@@ -199,18 +205,20 @@ QModelIndex CResourceSelectorDialog::FindItem(string const& sControlName)
 
 				if (scope == Utils::GetGlobalScope() || scope == m_scope)
 				{
-					return indexes[0];
+					modelIndex = indexes[0];
 				}
 			}
 		}
 	}
 
-	return QModelIndex();
+	return modelIndex;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CResourceSelectorDialog::eventFilter(QObject* pObject, QEvent* pEvent)
 {
+	bool isEvent = false;
+
 	if ((pEvent->type() == QEvent::KeyRelease) && m_selectionIsValid)
 	{
 		QKeyEvent const* const pKeyEvent = static_cast<QKeyEvent*>(pEvent);
@@ -226,13 +234,18 @@ bool CResourceSelectorDialog::eventFilter(QObject* pObject, QEvent* pEvent)
 				if ((pAsset != nullptr) && (pAsset->GetType() == ESystemItemType::Trigger))
 				{
 					CAudioControlsEditorPlugin::ExecuteTrigger(pAsset->GetName());
-					return true;
+					isEvent = true;
 				}
 			}
 		}
 	}
 
-	return QWidget::eventFilter(pObject, pEvent);
+	if (!isEvent)
+	{
+		isEvent = QWidget::eventFilter(pObject, pEvent);
+	}
+
+	return isEvent;
 }
 
 //////////////////////////////////////////////////////////////////////////

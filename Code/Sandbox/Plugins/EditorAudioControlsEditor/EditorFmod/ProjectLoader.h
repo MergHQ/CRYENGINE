@@ -38,14 +38,14 @@ private:
 	CImplItem* LoadEvent(XmlNodeRef const pNode);
 	CImplItem* LoadSnapshot(XmlNodeRef const pNode);
 	CImplItem* LoadReturn(XmlNodeRef const pNode);
-	CImplItem* LoadParameter(XmlNodeRef const pNode, EImpltemType const type, CImplItem& parentEvent);
+	CImplItem* LoadParameter(XmlNodeRef const pNode);
 
 	typedef std::map<CID, CImplItem*> ControlsCache;
 
 	CImplItem&                   m_root;
 	ControlsCache                m_controlsCache;
 	std::map<string, CImplItem*> m_containerIdMap;
-	string                       m_projectPath;
+	string const                 m_projectPath;
 };
 } // namespace Fmod
 } // namespace ACE

@@ -10,7 +10,7 @@ namespace PortAudio
 {
 enum class EConnectionType
 {
-	Start = 0,
+	Start,
 	Stop,
 	NumTypes,
 };
@@ -22,11 +22,6 @@ public:
 	explicit CConnection(CID const id)
 		: CImplConnection(id)
 		, m_type(EConnectionType::Start)
-		, m_isPanningEnabled(true)
-		, m_isAttenuationEnabled(true)
-		, m_minAttenuation(0.0f)
-		, m_maxAttenuation(100.0f)
-		, m_volume(-14.0f)
 		, m_loopCount(1)
 		, m_isInfiniteLoop(false)
 	{}
@@ -37,12 +32,7 @@ public:
 	// ~CImplConnection
 
 	EConnectionType m_type;
-	float           m_minAttenuation;
-	float           m_maxAttenuation;
-	float           m_volume;
-	uint            m_loopCount;
-	bool            m_isPanningEnabled;
-	bool            m_isAttenuationEnabled;
+	uint32          m_loopCount;
 	bool            m_isInfiniteLoop;
 };
 } // namespace PortAudio

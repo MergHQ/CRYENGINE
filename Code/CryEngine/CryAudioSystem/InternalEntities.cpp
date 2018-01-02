@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "InternalEntities.h"
@@ -53,24 +53,24 @@ ERequestStatus COcclusionObstructionState::Set(CATLAudioObject& audioObject) con
 }
 
 //////////////////////////////////////////////////////////////////////////
-CDopplerTrackingState::CDopplerTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject)
+CRelativeVelocityTrackingState::CRelativeVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject)
 	: m_stateId(stateId)
 	, m_globalAudioObject(globalAudioObject)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CDopplerTrackingState::Set(CATLAudioObject& audioObject) const
+ERequestStatus CRelativeVelocityTrackingState::Set(CATLAudioObject& audioObject) const
 {
 	if (&audioObject != &m_globalAudioObject)
 	{
 		if (m_stateId == OnStateId)
 		{
-			audioObject.SetDopplerTracking(true);
+			audioObject.SetFlag(EObjectFlags::TrackRelativeVelocity);
 		}
 		else if (m_stateId == OffStateId)
 		{
-			audioObject.SetDopplerTracking(false);
+			audioObject.RemoveFlag(EObjectFlags::TrackRelativeVelocity);
 		}
 		else
 		{
@@ -82,24 +82,24 @@ ERequestStatus CDopplerTrackingState::Set(CATLAudioObject& audioObject) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-CVelocityTrackingState::CVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject)
+CAbsoluteVelocityTrackingState::CAbsoluteVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject)
 	: m_stateId(stateId)
 	, m_globalAudioObject(globalAudioObject)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CVelocityTrackingState::Set(CATLAudioObject& audioObject) const
+ERequestStatus CAbsoluteVelocityTrackingState::Set(CATLAudioObject& audioObject) const
 {
 	if (&audioObject != &m_globalAudioObject)
 	{
 		if (m_stateId == OnStateId)
 		{
-			audioObject.SetVelocityTracking(true);
+			audioObject.SetFlag(EObjectFlags::TrackAbsoluteVelocity);
 		}
 		else if (m_stateId == OffStateId)
 		{
-			audioObject.SetVelocityTracking(false);
+			audioObject.RemoveFlag(EObjectFlags::TrackAbsoluteVelocity);
 		}
 		else
 		{

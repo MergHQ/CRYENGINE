@@ -65,8 +65,9 @@ namespace Cry
 				// Static meshes must be initialized since they need to have slots assigned during physicalization
 				desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, "{6DDD0033-6AAA-4B71-B8EA-108258205E29}"_cry_guid);
 
-				desc.AddMember(&CRigidBodyComponent::m_bNetworked, 'netw', "Networked", "Network Synced", "Syncs the physical entity over the network, and keeps it in sync with the server", false);
-				desc.AddMember(&CRigidBodyComponent::m_bEnabledByDefault, 'enab', "EnabledByDefault", "Enabled by Default", "Whether the component is enabled by default", true);
+				desc.AddMember(&CRigidBodyComponent::m_isNetworked, 'netw', "Networked", "Network Synced", "Syncs the physical entity over the network, and keeps it in sync with the server", false);
+				desc.AddMember(&CRigidBodyComponent::m_isEnabledByDefault, 'enab', "EnabledByDefault", "Enabled by Default", "Whether the component is enabled by default", true);
+				desc.AddMember(&CRigidBodyComponent::m_isResting, 'res', "Resting", "Resting", "If resting is enabled the object will only start to be simulated if it was hit by something else.", false);
 				desc.AddMember(&CRigidBodyComponent::m_type, 'type', "Type", "Type", "Type of physicalized object to create", CRigidBodyComponent::EPhysicalType::Rigid);
 				desc.AddMember(&CRigidBodyComponent::m_bSendCollisionSignal, 'send', "SendCollisionSignal", "Send Collision Signal", "Whether or not this component should listen for collisions and report them", false);
 				desc.AddMember(&CRigidBodyComponent::m_buoyancyParameters, 'buoy', "Buoyancy", "Buoyancy Parameters", "Fluid behavior related to this entity", SBuoyancyParameters());
@@ -182,9 +183,11 @@ namespace Cry
 			void Physicalize();
 
 		public:
-			bool m_bNetworked = false;
+			bool m_isNetworked = false;
 
-			bool m_bEnabledByDefault = true;
+			bool m_isResting = false;
+
+			bool m_isEnabledByDefault = true;
 			EPhysicalType m_type = EPhysicalType::Rigid;
 			bool m_bSendCollisionSignal = false;
 			SBuoyancyParameters m_buoyancyParameters;

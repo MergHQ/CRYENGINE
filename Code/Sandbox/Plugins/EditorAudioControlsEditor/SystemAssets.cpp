@@ -22,33 +22,47 @@ namespace ACE
 CSystemAsset::CSystemAsset(string const& name, ESystemItemType const type)
 	: m_name(name)
 	, m_type(type)
+	, m_flags(ESystemAssetFlags::None)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 char const* CSystemAsset::GetTypeName() const
 {
+	char const* typeName = nullptr;
+
 	switch (m_type)
 	{
 	case ESystemItemType::Trigger:
-		return "Trigger";
+		typeName = "Trigger";
+		break;
 	case ESystemItemType::Parameter:
-		return "Parameter";
+		typeName = "Parameter";
+		break;
 	case ESystemItemType::Switch:
-		return "Switch";
+		typeName = "Switch";
+		break;
 	case ESystemItemType::State:
-		return "State";
+		typeName = "State";
+		break;
 	case ESystemItemType::Environment:
-		return "Environment";
+		typeName = "Environment";
+		break;
 	case ESystemItemType::Preload:
-		return "Preload";
+		typeName = "Preload";
+		break;
 	case ESystemItemType::Folder:
-		return "Folder";
+		typeName = "Folder";
+		break;
 	case ESystemItemType::Library:
-		return "Library";
+		typeName = "Library";
+		break;
+	default:
+		typeName = nullptr;
+		break;
 	}
 
-	return "";
+	return typeName;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -56,14 +70,14 @@ CSystemAsset* CSystemAsset::GetChild(size_t const index) const
 {
 	CRY_ASSERT_MESSAGE(index < m_children.size(), "Asset child index out of bounds.");
 
+	CSystemAsset* pAsset = nullptr;
+
 	if (index < m_children.size())
 	{
-		return m_children[index];
+		pAsset = m_children[index];
 	}
-	else
-	{
-		return nullptr;
-	}
+
+	return pAsset;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -92,7 +106,7 @@ void CSystemAsset::SetName(string const& name)
 {
 	if ((!name.IsEmpty()) && (name != m_name))
 	{
-		m_name = Utils::GenerateUniqueControlName(name, GetType(), *CAudioControlsEditorPlugin::GetAssetsManager());
+		m_name = Utils::GenerateUniqueControlName(name, m_type, *CAudioControlsEditorPlugin::GetAssetsManager());
 		SetModified(true);
 		CAudioControlsEditorPlugin::GetAssetsManager()->OnAssetRenamed();
 	}
@@ -111,9 +125,16 @@ void CSystemAsset::SetDescription(string const& description)
 //////////////////////////////////////////////////////////////////////////
 void CSystemAsset::SetHiddenDefault(bool const isHiddenDefault)
 {
-	m_isHiddenDefault = isHiddenDefault;
+	if (isHiddenDefault)
+	{
+		m_flags |= ESystemAssetFlags::IsHiddenDefault;
+	}
+	else
+	{
+		m_flags &= ~ESystemAssetFlags::IsHiddenDefault;
+	}
 
-	if (GetType() == ESystemItemType::Switch)
+	if (m_type == ESystemItemType::Switch)
 	{
 		for (auto const pChild : m_children)
 		{
@@ -128,10 +149,58 @@ void CSystemAsset::SetModified(bool const isModified, bool const isForced /* = f
 	if ((m_pParent != nullptr) && (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() || isForced))
 	{
 		CAudioControlsEditorPlugin::GetAssetsManager()->SetAssetModified(this, isModified);
-		m_isModified = isModified;
+
+		if (isModified)
+		{
+			m_flags |= ESystemAssetFlags::IsModified;
+		}
+		else
+		{
+			m_flags &= ~ESystemAssetFlags::IsModified;
+		}
+
 		// Note: This need to get changed once undo is working.
 		// Then we can't set the parent to be not modified if it still could contain other modified children.
 		m_pParent->SetModified(isModified, isForced);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemAsset::SetHasPlaceholderConnection(bool const hasPlaceholder)
+{
+	if (hasPlaceholder)
+	{
+		m_flags |= ESystemAssetFlags::HasPlaceholderConnection;
+	}
+	else
+	{
+		m_flags &= ~ESystemAssetFlags::HasPlaceholderConnection;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemAsset::SetHasConnection(bool const hasConnection)
+{
+	if (hasConnection)
+	{
+		m_flags |= ESystemAssetFlags::HasConnection;
+	}
+	else
+	{
+		m_flags &= ~ESystemAssetFlags::HasConnection;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemAsset::SetHasControl(bool const hasControl)
+{
+	if (hasControl)
+	{
+		m_flags |= ESystemAssetFlags::HasControl;
+	}
+	else
+	{
+		m_flags &= ~ESystemAssetFlags::HasControl;
 	}
 }
 
@@ -162,8 +231,8 @@ void CSystemAsset::Serialize(Serialization::IArchive& ar)
 CSystemControl::CSystemControl(string const& name, CID const id, ESystemItemType const type)
 	: CSystemAsset(name, type)
 	, m_id(id)
+	, m_scope(Utils::GetGlobalScope())
 {
-	m_scope = Utils::GetGlobalScope();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -178,7 +247,7 @@ void CSystemControl::SetName(string const& name)
 	if ((!name.IsEmpty()) && (name != m_name))
 	{
 		SignalControlAboutToBeModified();
-		m_name = Utils::GenerateUniqueControlName(name, GetType(), *CAudioControlsEditorPlugin::GetAssetsManager());
+		m_name = Utils::GenerateUniqueControlName(name, m_type, *CAudioControlsEditorPlugin::GetAssetsManager());
 		SignalControlModified();
 		CAudioControlsEditorPlugin::GetAssetsManager()->OnAssetRenamed();
 	}
@@ -192,6 +261,40 @@ void CSystemControl::SetDescription(string const& description)
 		SignalControlAboutToBeModified();
 		m_description = description;
 		SignalControlModified();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemAsset::SetDefaultControl(bool const isDefaultControl)
+{
+	if (isDefaultControl)
+	{
+		m_flags |= ESystemAssetFlags::IsDefaultControl;
+	}
+	else
+	{
+		m_flags &= ~ESystemAssetFlags::IsDefaultControl;
+	}
+
+	if (isDefaultControl && (m_type != ESystemItemType::Library) && (m_type != ESystemItemType::Folder))
+	{
+		CSystemControl* const pControl = static_cast<CSystemControl*>(this);
+
+		if (pControl != nullptr)
+		{
+			pControl->SetScope(Utils::GetGlobalScope());
+		}
+	}
+
+	if (m_type == ESystemItemType::Switch)
+	{
+		for (auto const pChild : m_children)
+		{
+			if (pChild != nullptr)
+			{
+				pChild->SetDefaultControl(isDefaultControl);
+			}
+		}
 	}
 }
 
@@ -231,26 +334,31 @@ void CSystemControl::SetRadius(float const radius)
 //////////////////////////////////////////////////////////////////////////
 ConnectionPtr CSystemControl::GetConnectionAt(int const index) const
 {
+	ConnectionPtr pConnection = nullptr;
+
 	if (index < m_connectedControls.size())
 	{
-		return m_connectedControls[index];
+		pConnection = m_connectedControls[index];
 	}
 
-	return nullptr;
+	return pConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ConnectionPtr CSystemControl::GetConnection(CID const id) const
 {
-	for (auto const pConnection : m_connectedControls)
+	ConnectionPtr pConnection = nullptr;
+
+	for (auto const pControl : m_connectedControls)
 	{
-		if ((pConnection != nullptr) && (pConnection->GetID() == id))
+		if ((pControl != nullptr) && (pControl->GetID() == id))
 		{
-			return pConnection;
+			pConnection = pControl;
+			break;
 		}
 	}
 
-	return nullptr;
+	return pConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -274,14 +382,9 @@ void CSystemControl::AddConnection(ConnectionPtr const pConnection)
 			{
 				pEditorImpl->EnableConnection(pConnection);
 
-				pConnection->signalConnectionChanged.Connect(this, &CSystemControl::SignalConnectionModified);
+				pConnection->SignalConnectionChanged.Connect(this, &CSystemControl::SignalConnectionModified);
 				m_connectedControls.emplace_back(pConnection);
-
-				if (m_matchRadiusAndAttenuation)
-				{
-					MatchRadiusToAttenuation();
-				}
-
+				MatchRadiusToAttenuation();
 				SignalConnectionAdded(pImplControl);
 				SignalControlModified();
 			}
@@ -308,12 +411,7 @@ void CSystemControl::RemoveConnection(ConnectionPtr const pConnection)
 				{
 					pEditorImpl->DisableConnection(pConnection);
 					m_connectedControls.erase(it);
-
-					if (m_matchRadiusAndAttenuation)
-					{
-						MatchRadiusToAttenuation();
-					}
-
+					MatchRadiusToAttenuation();
 					SignalConnectionRemoved(pImplControl);
 					SignalControlModified();
 				}
@@ -342,13 +440,9 @@ void CSystemControl::ClearConnections()
 				}
 			}
 		}
+
 		m_connectedControls.clear();
-
-		if (m_matchRadiusAndAttenuation)
-		{
-			MatchRadiusToAttenuation();
-		}
-
+		MatchRadiusToAttenuation();
 		SignalControlModified();
 	}
 }
@@ -373,12 +467,7 @@ void CSystemControl::RemoveConnection(CImplItem* const pImplControl)
 				}
 
 				m_connectedControls.erase(it);
-
-				if (m_matchRadiusAndAttenuation)
-				{
-					MatchRadiusToAttenuation();
-				}
-
+				MatchRadiusToAttenuation();
 				SignalConnectionRemoved(pImplControl);
 				SignalControlModified();
 				break;
@@ -421,11 +510,7 @@ void CSystemControl::SignalConnectionRemoved(CImplItem* const pImplControl)
 //////////////////////////////////////////////////////////////////////////
 void CSystemControl::SignalConnectionModified()
 {
-	if (m_matchRadiusAndAttenuation)
-	{
-		MatchRadiusToAttenuation();
-	}
-
+	MatchRadiusToAttenuation();
 	SignalControlModified();
 }
 
@@ -456,11 +541,11 @@ void CSystemControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const p
 
 	if (pEditorImpl != nullptr)
 	{
-		ConnectionPtr pConnection = pEditorImpl->CreateConnectionFromXMLNode(xmlNode, GetType());
+		ConnectionPtr pConnection = pEditorImpl->CreateConnectionFromXMLNode(xmlNode, m_type);
 
 		if (pConnection != nullptr)
 		{
-			if (GetType() == ESystemItemType::Preload)
+			if (m_type == ESystemItemType::Preload)
 			{
 				// The connection could already exist but using a different platform
 				ConnectionPtr const pPreviousConnection = GetConnection(pConnection->GetID());
@@ -487,8 +572,10 @@ void CSystemControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const p
 			{
 				AddConnection(pConnection);
 			}
+
+			AddRawXMLConnection(xmlNode, true, platformIndex);
 		}
-		else if ((GetType() == ESystemItemType::Preload) && (platformIndex == -1))
+		else if ((m_type == ESystemItemType::Preload) && (platformIndex == -1))
 		{
 			// If it's a preload connection from another middleware and the platform
 			// wasn't found (old file format) fall back to adding them to all the platforms
@@ -499,11 +586,11 @@ void CSystemControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const p
 			{
 				AddRawXMLConnection(xmlNode, false, i);
 			}
-
-			return;
 		}
-
-		AddRawXMLConnection(xmlNode, pConnection != nullptr, platformIndex);
+		else
+		{
+			AddRawXMLConnection(xmlNode, false, platformIndex);
+		}
 	}
 }
 
@@ -514,7 +601,16 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 	{
 		// Name
 		string const name = m_name;
-		ar(name, "name", "Name");
+
+		if (IsDefaultControl())
+		{
+			ar(name, "name", "!Name");
+		}
+		else
+		{
+			ar(name, "name", "Name");
+		}
+		
 		ar.doc(name);
 
 		// Description
@@ -523,20 +619,20 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 		ar.doc(description);
 
 		// Scope
-		Serialization::StringList scopeList;
-		ScopeInfoList scopeInfoList;
-		CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfoList(scopeInfoList);
-
-		for (auto const& scopeInfo : scopeInfoList)
-		{
-			scopeList.emplace_back(scopeInfo.name);
-		}
-
-		Serialization::StringListValue const selectedScope(scopeList, CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfo(m_scope).name);
 		Scope scope = m_scope;
 
-		if (m_type != ESystemItemType::State)
+		if (!IsDefaultControl() && (m_type != ESystemItemType::State))
 		{
+			Serialization::StringList scopeList;
+			ScopeInfoList scopeInfoList;
+			CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfoList(scopeInfoList);
+
+			for (auto const& scopeInfo : scopeInfoList)
+			{
+				scopeList.emplace_back(scopeInfo.name);
+			}
+
+			Serialization::StringListValue const selectedScope(scopeList, CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfo(m_scope).name);
 			ar(selectedScope, "scope", "Scope");
 			scope = CAudioControlsEditorPlugin::GetAssetsManager()->GetScope(scopeList[selectedScope.index()]);
 		}
@@ -551,16 +647,15 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 
 		// Max Radius
 		float radius = m_radius;
-		float fadeOutDistance = m_occlusionFadeOutDistance;
 
-		if ((m_type == ESystemItemType::Trigger) && (ar.openBlock("activity_radius", "Activity Radius")))
+		if (!IsDefaultControl() && (m_type == ESystemItemType::Trigger))
 		{
-			bool hasPlaceholderConnections = false;
 			IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 
 			if (pEditorImpl != nullptr)
 			{
-				radius = 0.0f;
+				bool hasPlaceholderConnections = false;
+				float connectionMaxRadius = 0.0f;
 
 				for (auto const pConnection : m_connectedControls)
 				{
@@ -568,44 +663,22 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 
 					if ((pImplControl != nullptr) && (!pImplControl->IsPlaceholder()))
 					{
-						radius = std::max(radius, pImplControl->GetRadius());
+						connectionMaxRadius = std::max(connectionMaxRadius, pImplControl->GetRadius());
 					}
 					else
 					{
 						// If control has placeholder connection we cannot enforce the link between activity radius
-						// and attenuation as the user could be missing the middleware project
+						// and attenuation as the user could be missing the middleware project.
 						hasPlaceholderConnections = true;
+						break;
 					}
 				}
-			}
 
-			if (m_matchRadiusAndAttenuation && !hasPlaceholderConnections)
-			{
-				ar(Serialization::Range<float>(radius, 0.0f, std::numeric_limits<float>::max()), "max_radius", "!^");
-			}
-			else
-			{
-				ar(Serialization::Range<float>(m_radius, 0.0f, std::numeric_limits<float>::max()), "max_radius", "^");
-			}
-
-			if (!hasPlaceholderConnections)
-			{
-				if (ar.openBlock("attenuation", "Attenuation"))
+				if (!hasPlaceholderConnections)
 				{
-					ar(radius, "attenuation", "!^");
-					ar(Serialization::ToggleButton(m_matchRadiusAndAttenuation, "icons:Navigation/Tools_Link.ico", "icons:Navigation/Tools_Link_Unlink.ico"), "link", "^");
-
-					if (!m_matchRadiusAndAttenuation)
-					{
-						radius = m_radius;
-					}
-
-					ar.closeBlock();
+					radius = connectionMaxRadius;
 				}
 			}
-
-			ar(Serialization::Range<float>(fadeOutDistance, 0.0f, radius), "fadeOutDistance", "Occlusion Fade-Out Distance");
-			ar.closeBlock();
 		}
 
 		if (ar.isInput())
@@ -615,21 +688,9 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 			SetScope(scope);
 			SetAutoLoad(isAutoLoad);
 			SetRadius(radius);
-			SetOcclusionFadeOutDistance(fadeOutDistance);
 		}
 
 		ar.closeBlock();
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystemControl::SetOcclusionFadeOutDistance(float const fadeOutDistance)
-{
-	if (fadeOutDistance != m_occlusionFadeOutDistance)
-	{
-		SignalControlAboutToBeModified();
-		m_occlusionFadeOutDistance = fadeOutDistance;
-		SignalControlModified();
 	}
 }
 
@@ -653,6 +714,7 @@ void CSystemControl::MatchRadiusToAttenuation()
 	if (pEditorImpl != nullptr)
 	{
 		float radius = 0.0f;
+		bool isPlaceHolder = false;
 
 		for (auto const pConnection : m_connectedControls)
 		{
@@ -660,20 +722,24 @@ void CSystemControl::MatchRadiusToAttenuation()
 
 			if (pImplControl != nullptr)
 			{
-				if (pImplControl->IsPlaceholder())
+				if (!pImplControl->IsPlaceholder())
 				{
-					// We don't match controls that have placeholder
-					// connections as we don't know what the real values should be
-					return;
+					radius = std::max(radius, pImplControl->GetRadius());
 				}
 				else
 				{
-					radius = std::max(radius, pImplControl->GetRadius());
+					// We don't match controls that have placeholder
+					// connections as we don't know what the real values should be.
+					isPlaceHolder = true;
+					break;
 				}
 			}
 		}
 
-		SetRadius(radius);
+		if (!isPlaceHolder)
+		{
+			SetRadius(radius);
+		}
 	}
 }
 
@@ -689,7 +755,15 @@ void CSystemLibrary::SetModified(bool const isModified, bool const isForced /* =
 	if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() || isForced)
 	{
 		CAudioControlsEditorPlugin::GetAssetsManager()->SetAssetModified(this, isModified);
-		m_isModified = isModified;
+		
+		if (isModified)
+		{
+			m_flags |= ESystemAssetFlags::IsModified;
+		}
+		else
+		{
+			m_flags &= ~ESystemAssetFlags::IsModified;
+		}
 	}
 }
 

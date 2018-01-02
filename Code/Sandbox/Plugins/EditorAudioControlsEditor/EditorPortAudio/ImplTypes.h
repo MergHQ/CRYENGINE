@@ -8,7 +8,7 @@ namespace PortAudio
 {
 enum class EImpltemType
 {
-	Invalid = 0,
+	Invalid,
 	Event,
 	Folder,
 };

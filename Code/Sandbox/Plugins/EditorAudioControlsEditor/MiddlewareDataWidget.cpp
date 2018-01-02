@@ -15,7 +15,7 @@
 #include <QFilteringPanel.h>
 #include <QSearchBox.h>
 #include <QtUtil.h>
-#include <ProxyModels/AttributeFilterProxyModel.h>
+#include <CrySystem/IProjectManager.h>
 
 #include <QHeaderView>
 #include <QMenu>
@@ -27,15 +27,15 @@ namespace ACE
 CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* const pAssetsManager, QWidget* const pParent)
 	: QWidget(pParent)
 	, m_pAssetsManager(pAssetsManager)
-	, m_pAttributeFilterProxyModel(new QAttributeFilterProxyModel(QAttributeFilterProxyModel::AcceptIfChildMatches, this))
+	, m_pMiddlewareFilterProxyModel(new CMiddlewareFilterProxyModel(this))
 	, m_pMiddlewareDataModel(new CMiddlewareDataModel(this))
 	, m_pTreeView(new CTreeView(this))
 	, m_nameColumn(static_cast<int>(CMiddlewareDataModel::EColumns::Name))
 {
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-	m_pAttributeFilterProxyModel->setSourceModel(m_pMiddlewareDataModel);
-	m_pAttributeFilterProxyModel->setFilterKeyColumn(m_nameColumn);
+	m_pMiddlewareFilterProxyModel->setSourceModel(m_pMiddlewareDataModel);
+	m_pMiddlewareFilterProxyModel->setFilterKeyColumn(m_nameColumn);
 
 	m_pTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	m_pTreeView->setDragEnabled(true);
@@ -45,7 +45,7 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* const pAssets
 	m_pTreeView->setTreePosition(m_nameColumn);
 	m_pTreeView->setUniformRowHeights(true);
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
-	m_pTreeView->setModel(m_pAttributeFilterProxyModel);
+	m_pTreeView->setModel(m_pMiddlewareFilterProxyModel);
 	m_pTreeView->sortByColumn(m_nameColumn, Qt::AscendingOrder);
 	m_pTreeView->header()->setMinimumSectionSize(25);
 	m_pTreeView->header()->setSectionResizeMode(static_cast<int>(CMiddlewareDataModel::EColumns::Notification), QHeaderView::ResizeToContents);
@@ -53,7 +53,7 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* const pAssets
 	m_pTreeView->SetNameRole(static_cast<int>(CMiddlewareDataModel::ERoles::Name));
 	m_pTreeView->TriggerRefreshHeaderColumns();
 
-	m_pFilteringPanel = new QFilteringPanel("ACEMiddlewareData", m_pAttributeFilterProxyModel);
+	m_pFilteringPanel = new QFilteringPanel("ACEMiddlewareData", m_pMiddlewareFilterProxyModel);
 	m_pFilteringPanel->SetContent(m_pTreeView);
 	m_pFilteringPanel->GetSearchBox()->SetAutoExpandOnSearch(m_pTreeView);
 
@@ -61,30 +61,44 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* const pAssets
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
 	pMainLayout->addWidget(m_pFilteringPanel);
 
+	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
+
+	if (pEditorImpl == nullptr)
+	{
+		setEnabled(false);
+	}
+
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CMiddlewareDataWidget::OnContextMenu);
 
-	m_pAssetsManager->signalConnectionAdded.Connect([&]()
+	m_pAssetsManager->SignalConnectionAdded.Connect([&]()
 	{
 		if (!m_pAssetsManager->IsLoading())
 		{
-			m_pAttributeFilterProxyModel->invalidate();
+			m_pMiddlewareFilterProxyModel->invalidate();
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->signalConnectionRemoved.Connect([&]()
+	m_pAssetsManager->SignalConnectionRemoved.Connect([&]()
 	{
 		if (!m_pAssetsManager->IsLoading())
 		{
-			m_pAttributeFilterProxyModel->invalidate();
+			m_pMiddlewareFilterProxyModel->invalidate();
 		}
+	}, reinterpret_cast<uintptr_t>(this));
+
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
+	{
+		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
+		setEnabled(pEditorImpl != nullptr);
 	}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
 CMiddlewareDataWidget::~CMiddlewareDataWidget()
 {
-	m_pAssetsManager->signalConnectionAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->signalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->SignalConnectionAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->SignalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	m_pMiddlewareDataModel->DisconnectSignals();
 	m_pMiddlewareDataModel->deleteLater();
@@ -133,6 +147,16 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 						pContextMenu->addSeparator();
 					}
 				}
+
+				if ((pImplControl != nullptr) && !pImplControl->GetFilePath().IsEmpty())
+				{
+					pContextMenu->addAction(tr("Open Containing Folder"), [&]()
+					{
+						QtUtil::OpenInExplorer(PathUtil::Make(GetISystem()->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), pImplControl->GetFilePath()).c_str());
+					});
+
+					pContextMenu->addSeparator();
+				}
 			}
 		}
 
@@ -148,10 +172,31 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CMiddlewareDataWidget::SelectConnectedImplItem(CID const itemId)
+{
+	ClearFilters();
+	auto const matches = m_pMiddlewareFilterProxyModel->match(m_pMiddlewareFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(CMiddlewareDataModel::ERoles::Id), itemId, 1, Qt::MatchRecursive);
+
+	if (!matches.isEmpty())
+	{
+		m_pTreeView->setFocus();
+		m_pTreeView->selectionModel()->setCurrentIndex(matches.first(), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CMiddlewareDataWidget::ClearFilters()
+{
+	m_pFilteringPanel->GetSearchBox()->clear();
+	m_pFilteringPanel->Clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CMiddlewareDataWidget::Reset()
 {
+	ClearFilters();
 	m_pMiddlewareDataModel->Reset();
-	m_pAttributeFilterProxyModel->invalidate();
+	m_pMiddlewareFilterProxyModel->invalidate();
 }
 
 //////////////////////////////////////////////////////////////////////////

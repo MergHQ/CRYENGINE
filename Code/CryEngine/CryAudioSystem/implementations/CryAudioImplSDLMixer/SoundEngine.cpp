@@ -3,6 +3,8 @@
 #include "stdafx.h"
 #include "SoundEngine.h"
 #include "SoundEngineUtil.h"
+#include "GlobalData.h"
+#include <CryAudio/IAudioSystem.h>
 #include <Logger.h>
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
@@ -10,14 +12,14 @@
 #include <SDL.h>
 #include <SDL_mixer.h>
 
-#define SDL_MIXER_PROJECT_PATH AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "sdlmixer" CRY_NATIVE_PATH_SEPSTR
-
 namespace CryAudio
 {
 namespace Impl
 {
 namespace SDL_mixer
 {
+#define SDL_MIXER_PROJECT_PATH AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR + s_szImplFolderName + CRY_NATIVE_PATH_SEPSTR + s_szAssetsFolderName + CRY_NATIVE_PATH_SEPSTR
+
 static constexpr int s_supportedFormats = MIX_INIT_OGG | MIX_INIT_MP3;
 static constexpr int s_numMixChannels = 512;
 static constexpr SampleId s_invalidSampleId = 0;
@@ -244,13 +246,13 @@ bool SoundEngine::Init()
 	int loadedFormats = Mix_Init(s_supportedFormats);
 	if ((loadedFormats & s_supportedFormats) != s_supportedFormats)
 	{
-		Cry::Audio::Log(ELogType::Error, "SDLMixer::Mix_Init() failed to init support for format flags %d with error \"%s\"", s_supportedFormats, Mix_GetError());
+		Cry::Audio::Log(ELogType::Error, R"(SDLMixer::Mix_Init() failed to init support for format flags %d with error "%s")", s_supportedFormats, Mix_GetError());
 		return false;
 	}
 
 	if (Mix_OpenAudio(s_sampleRate, MIX_DEFAULT_FORMAT, 2, s_bufferSize) < 0)
 	{
-		Cry::Audio::Log(ELogType::Error, "SDLMixer::Mix_OpenAudio() failed to init the SDL Mixer API with error \"%s\"", Mix_GetError());
+		Cry::Audio::Log(ELogType::Error, R"(SDLMixer::Mix_OpenAudio() failed to init the SDL Mixer API with error "%s")", Mix_GetError());
 		return false;
 	}
 
@@ -326,12 +328,12 @@ const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, const size_t siz
 		}
 		else
 		{
-			Cry::Audio::Log(ELogType::Error, "SDL Mixer failed to load sample. Error: \"%s\"", Mix_GetError());
+			Cry::Audio::Log(ELogType::Error, R"(SDL Mixer failed to load sample. Error: "%s")", Mix_GetError());
 		}
 	}
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "SDL Mixer failed to transform the audio data. Error: \"%s\"", SDL_GetError());
+		Cry::Audio::Log(ELogType::Error, R"(SDL Mixer failed to transform the audio data. Error: "%s")", SDL_GetError());
 	}
 	return s_invalidSampleId;
 }
@@ -368,7 +370,7 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 			const SampleId newId = SoundEngine::LoadSampleFromMemory(pData, fileSize, samplePath, id);
 			if (newId == s_invalidSampleId)
 			{
-				Cry::Audio::Log(ELogType::Error, "SDL Mixer failed to load sample %s. Error: \"%s\"", samplePath.c_str(), Mix_GetError());
+				Cry::Audio::Log(ELogType::Error, R"(SDL Mixer failed to load sample %s. Error: "%s")", samplePath.c_str(), Mix_GetError());
 				bSuccess = false;
 			}
 			CryModuleFree(pData);

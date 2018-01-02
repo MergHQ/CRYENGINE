@@ -6,8 +6,7 @@
 #include "ImplConnections.h"
 #include "ProjectLoader.h"
 
-#include <CryAudio/IAudioSystem.h>
-#include <CryAudio/IProfileData.h>
+#include <CryAudioImplFmod/GlobalData.h>
 #include <CrySystem/ISystem.h>
 #include <CryCore/StlUtils.h>
 #include <CrySerialization/IArchiveHost.h>
@@ -18,97 +17,138 @@ namespace Fmod
 {
 const string g_userSettingsFile = "%USER%/audiocontrolseditor_fmod.user";
 
-// XML tags
-string const g_eventTag = "FmodEvent";
-string const g_eventParameterTag = "FmodEventParameter";
-string const g_snapshotTag = "FmodSnapshot";
-string const g_snapshotParameterTag = "FmodSnapshotParameter";
-string const g_bankTag = "FmodFile";
-string const g_returnTag = "FmodBus";
-
-// XML attributes
-string const g_nameAttribute = "fmod_name";
-string const g_pathAttribute = "fmod_path";
-string const g_valueAttribute = "fmod_value";
-string const g_multAttribute = "fmod_value_multiplier";
-string const g_shiftAttribute = "fmod_value_shift";
-string const g_eventTypeAttribute = "fmod_event_type";
-string const g_localizedAttribute = "fmod_localized";
-string const g_trueAttribute = "true";
-
 //////////////////////////////////////////////////////////////////////////
 EImpltemType TagToType(string const& tag)
 {
-	if (tag == g_eventTag)
+	EImpltemType type = EImpltemType::Invalid;
+
+	if (tag == CryAudio::s_szEventTag)
 	{
-		return EImpltemType::Event;
+		type = EImpltemType::Event;
 	}
-	else if (tag == g_eventParameterTag)
+	else if (tag == CryAudio::Impl::Fmod::s_szParameterTag)
 	{
-		return EImpltemType::EventParameter;
+		type = EImpltemType::Parameter;
 	}
-	else if (tag == g_snapshotTag)
+	else if (tag == CryAudio::Impl::Fmod::s_szSnapshotTag)
 	{
-		return EImpltemType::Snapshot;
+		type = EImpltemType::Snapshot;
 	}
-	else if (tag == g_snapshotParameterTag)
+	else if (tag == CryAudio::Impl::Fmod::s_szFileTag)
 	{
-		return EImpltemType::SnapshotParameter;
+		type = EImpltemType::Bank;
 	}
-	else if (tag == g_bankTag)
+	else if (tag == CryAudio::Impl::Fmod::s_szBusTag)
 	{
-		return EImpltemType::Bank;
-	}
-	else if (tag == g_returnTag)
-	{
-		return EImpltemType::Return;
+		type = EImpltemType::Return;
 	}
 
-	return EImpltemType::Invalid;
+// Backwards compatibility will be removed before March 2019.
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+	else if (tag == "FmodEvent")
+	{
+		type = EImpltemType::Event;
+	}
+	else if (tag == "FmodEventParameter")
+	{
+		type = EImpltemType::Parameter;
+	}
+	else if (tag == "FmodSnapshot")
+	{
+		type = EImpltemType::Snapshot;
+	}
+	else if (tag == "FmodSnapshotParameter")
+	{
+		type = EImpltemType::Parameter;
+	}
+	else if (tag == "FmodFile")
+	{
+		type = EImpltemType::Bank;
+	}
+	else if (tag == "FmodBus")
+	{
+		type = EImpltemType::Return;
+	}
+#endif // USE_BACKWARDS_COMPATIBILITY
+
+	else
+	{
+		type = EImpltemType::Invalid;
+	}
+
+	return type;
 }
 
 //////////////////////////////////////////////////////////////////////////
-string TypeToTag(EImpltemType const type)
+char const* TypeToTag(EImpltemType const type)
 {
+	char const* tag = nullptr;
+
 	switch (type)
 	{
 	case EImpltemType::Event:
-		return g_eventTag;
-	case EImpltemType::EventParameter:
-		return g_eventParameterTag;
+		tag = CryAudio::s_szEventTag;
+		break;
+	case EImpltemType::Parameter:
+		tag = CryAudio::Impl::Fmod::s_szParameterTag;
+		break;
 	case EImpltemType::Snapshot:
-		return g_snapshotTag;
-	case EImpltemType::SnapshotParameter:
-		return g_snapshotParameterTag;
+		tag = CryAudio::Impl::Fmod::s_szSnapshotTag;
+		break;
 	case EImpltemType::Bank:
-		return g_bankTag;
+		tag = CryAudio::Impl::Fmod::s_szFileTag;
+		break;
 	case EImpltemType::Return:
-		return g_returnTag;
+		tag = CryAudio::Impl::Fmod::s_szBusTag;
+		break;
+	default:
+		tag = nullptr;
+		break;
 	}
-	return "";
+
+	return tag;
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImplItem* SearchForControl(CImplItem* const pImplItem, string const& name, ItemType const type)
 {
+	CImplItem* pItem = nullptr;
+
 	if ((pImplItem->GetName() == name) && (pImplItem->GetType() == type))
 	{
-		return pImplItem;
+		pItem =  pImplItem;
 	}
-
-	int const count = pImplItem->ChildCount();
-
-	for (int i = 0; i < count; ++i)
+	else
 	{
-		CImplItem* const pFoundImplControl = SearchForControl(pImplItem->GetChildAt(i), name, type);
+		int const count = pImplItem->ChildCount();
 
-		if (pFoundImplControl != nullptr)
+		for (int i = 0; i < count; ++i)
 		{
-			return pFoundImplControl;
+			CImplItem* const pFoundImplControl = SearchForControl(pImplItem->GetChildAt(i), name, type);
+
+			if (pFoundImplControl != nullptr)
+			{
+				pItem = pFoundImplControl;
+				break;
+			}
 		}
 	}
 
-	return nullptr;
+	return pItem;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CImplSettings::CImplSettings()
+	: m_projectPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "fmod_project")
+	, m_assetsPath(
+		PathUtil::GetGameFolder() +
+		CRY_NATIVE_PATH_SEPSTR
+		AUDIO_SYSTEM_DATA_ROOT
+		CRY_NATIVE_PATH_SEPSTR +
+		CryAudio::Impl::Fmod::s_szImplFolderName +
+		CRY_NATIVE_PATH_SEPSTR +
+		CryAudio::s_szAssetsFolderName)
+{
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -128,6 +168,9 @@ void CImplSettings::Serialize(Serialization::IArchive& ar)
 CEditorImpl::CEditorImpl()
 {
 	Serialization::LoadJsonFile(m_implSettings, g_userSettingsFile.c_str());
+	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
+	m_implName = m_implInfo.name.c_str();
+	m_implFolderName = CryAudio::Impl::Fmod::s_szImplFolderName;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -141,7 +184,7 @@ void CEditorImpl::Reload(bool const preserveConnectionStatus)
 {
 	Clear();
 
-	CProjectLoader(GetSettings()->GetProjectPath(), GetSettings()->GetSoundBanksPath(), m_rootControl);
+	CProjectLoader(GetSettings()->GetProjectPath(), GetSettings()->GetAssetsPath(), m_rootControl);
 
 	CreateControlCache(&m_rootControl);
 
@@ -169,133 +212,195 @@ void CEditorImpl::Reload(bool const preserveConnectionStatus)
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CEditorImpl::GetControl(CID const id) const
 {
+	CImplItem* pImplItem = nullptr;
+
 	if (id >= 0)
 	{
-		return stl::find_in_map(m_controlsCache, id, nullptr);
+		pImplItem = stl::find_in_map(m_controlsCache, id, nullptr);
 	}
 
-	return nullptr;
+	return pImplItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
 char const* CEditorImpl::GetTypeIcon(CImplItem const* const pImplItem) const
 {
+	char const* szIconPath = "icons:Dialogs/dialog-error.ico";
 	auto const type = static_cast<EImpltemType>(pImplItem->GetType());
 
 	switch (type)
 	{
 	case EImpltemType::Folder:
-		return "icons:audio/fmod/folder_closed.ico";
+		szIconPath = "icons:audio/fmod/folder_closed.ico";
+		break;
 	case EImpltemType::Event:
-		return "icons:audio/fmod/event.ico";
-	case EImpltemType::EventParameter:
-		return "icons:audio/fmod/tag.ico";
+		szIconPath = "icons:audio/fmod/event.ico";
+		break;
+	case EImpltemType::Parameter:
+		szIconPath = "icons:audio/fmod/tag.ico";
+		break;
 	case EImpltemType::Snapshot:
-		return "icons:audio/fmod/snapshot.ico";
-	case EImpltemType::SnapshotParameter:
-		return "icons:audio/fmod/tag.ico";
+		szIconPath = "icons:audio/fmod/snapshot.ico";
+		break;
 	case EImpltemType::Bank:
-		return "icons:audio/fmod/bank.ico";
+		szIconPath = "icons:audio/fmod/bank.ico";
+		break;
 	case EImpltemType::Return:
-		return "icons:audio/fmod/return.ico";
+		szIconPath = "icons:audio/fmod/return.ico";
+		break;
 	case EImpltemType::Group:
-		return "icons:audio/fmod/group.ico";
+		szIconPath = "icons:audio/fmod/group.ico";
+		break;
+	default:
+		szIconPath = "icons:Dialogs/dialog-error.ico";
+		break;
 	}
-	return "icons:Dialogs/dialog-error.ico";
+
+	return szIconPath;
 }
 
 //////////////////////////////////////////////////////////////////////////
-string CEditorImpl::GetName() const
+string const& CEditorImpl::GetName() const
 {
-	return gEnv->pAudioSystem->GetProfileData()->GetImplName();
+	return m_implName;
+}
+
+//////////////////////////////////////////////////////////////////////////
+string const& CEditorImpl::GetFolderName() const
+{
+	return m_implFolderName;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const
 {
+	bool isCompatible = false;
 	auto const implType = static_cast<EImpltemType>(pImplItem->GetType());
 
 	switch (systemType)
 	{
 	case ESystemItemType::Trigger:
-		return (implType == EImpltemType::Event) || (implType == EImpltemType::Snapshot);
+		isCompatible = (implType == EImpltemType::Event) || (implType == EImpltemType::Snapshot);
+		break;
 	case ESystemItemType::Parameter:
-		return (implType == EImpltemType::EventParameter) || (implType == EImpltemType::SnapshotParameter);
+		isCompatible = (implType == EImpltemType::Parameter);
+		break;
 	case ESystemItemType::Preload:
-		return implType == EImpltemType::Bank;
+		isCompatible = (implType == EImpltemType::Bank);
+		break;
 	case ESystemItemType::State:
-		return (implType == EImpltemType::EventParameter) || (implType == EImpltemType::SnapshotParameter);
+		isCompatible = (implType == EImpltemType::Parameter);
+		break;
 	case ESystemItemType::Environment:
-		return implType == EImpltemType::Return;
+		isCompatible = (implType == EImpltemType::Return);
+		break;
+	default:
+		isCompatible = false;
+		break;
 	}
-	return false;
+
+	return isCompatible;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ESystemItemType CEditorImpl::ImplTypeToSystemType(CImplItem const* const pImplItem) const
 {
-	auto const type = static_cast<EImpltemType>(pImplItem->GetType());
+	ESystemItemType systemType = ESystemItemType::Invalid;
+	auto const implType = static_cast<EImpltemType>(pImplItem->GetType());
 
-	switch (type)
+	switch (implType)
 	{
 	case EImpltemType::Event:
-		return ESystemItemType::Trigger;
-	case EImpltemType::EventParameter:
-		return ESystemItemType::Parameter;
+		systemType = ESystemItemType::Trigger;
+		break;
+	case EImpltemType::Parameter:
+		systemType = ESystemItemType::Parameter;
+		break;
 	case EImpltemType::Snapshot:
-		return ESystemItemType::Trigger;
-	case EImpltemType::SnapshotParameter:
-		return ESystemItemType::Parameter;
+		systemType = ESystemItemType::Trigger;
+		break;
 	case EImpltemType::Bank:
-		return ESystemItemType::Preload;
+		systemType = ESystemItemType::Preload;
+		break;
 	case EImpltemType::Return:
-		return ESystemItemType::Environment;
+		systemType = ESystemItemType::Environment;
+		break;
+	default:
+		systemType = ESystemItemType::Invalid;
+		break;
 	}
-	return ESystemItemType::Invalid;
+
+	return systemType;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ConnectionPtr CEditorImpl::CreateConnectionToControl(ESystemItemType const controlType, CImplItem* const pImplItem)
 {
+	ConnectionPtr pConnection = nullptr;
+
 	if (pImplItem != nullptr)
 	{
 		auto const type = static_cast<EImpltemType>(pImplItem->GetType());
 
 		if ((type == EImpltemType::Event) || (type == EImpltemType::Snapshot))
 		{
-			return std::make_shared<CEventConnection>(pImplItem->GetId());
+			pConnection = std::make_shared<CEventConnection>(pImplItem->GetId());
 		}
-		else if ((type == EImpltemType::EventParameter) || (type == EImpltemType::SnapshotParameter))
+		else if (type == EImpltemType::Parameter)
 		{
 			if (controlType == ESystemItemType::Parameter)
 			{
-				return std::make_shared<CParamConnection>(pImplItem->GetId());
+				pConnection = std::make_shared<CParamConnection>(pImplItem->GetId());
 			}
 			else if (controlType == ESystemItemType::State)
 			{
-				return std::make_shared<CParamToStateConnection>(pImplItem->GetId());
+				pConnection = std::make_shared<CParamToStateConnection>(pImplItem->GetId());
+			}
+			else
+			{
+				pConnection = std::make_shared<CImplConnection>(pImplItem->GetId());
 			}
 		}
-
-		return std::make_shared<CImplConnection>(pImplItem->GetId());
+		else
+		{
+			pConnection = std::make_shared<CImplConnection>(pImplItem->GetId());
+		}
 	}
 
-	return nullptr;
+	return pConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
 ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystemItemType const controlType)
 {
+	ConnectionPtr pConnectionPtr = nullptr;
+
 	if (pNode != nullptr)
 	{
 		auto const type = TagToType(pNode->getTag());
 
 		if (type != EImpltemType::Invalid)
 		{
-			string name = pNode->getAttr(g_nameAttribute);
-			string path = pNode->getAttr(g_pathAttribute);
-			string const localizedAttribute = pNode->getAttr(g_localizedAttribute);
-			bool const isLocalized = (localizedAttribute.compareNoCase(g_trueAttribute) == 0);
+			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
+			string path = pNode->getAttr(CryAudio::Impl::Fmod::s_szPathAttribute);
+			string localizedAttribute = pNode->getAttr(CryAudio::Impl::Fmod::s_szLocalizedAttribute);
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+			if (name.IsEmpty() && pNode->haveAttr("fmod_name"))
+			{
+				name = pNode->getAttr("fmod_name");
+			}
+
+			if (path.IsEmpty() && pNode->haveAttr("fmod_path"))
+			{
+				path = pNode->getAttr("fmod_path");
+			}
+
+			if (localizedAttribute.IsEmpty() && pNode->haveAttr("fmod_localized"))
+			{
+				localizedAttribute = pNode->getAttr("fmod_localized");
+			}
+#endif // USE_BACKWARDS_COMPATIBILITY
+			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::Fmod::s_szTrueValue) == 0);
 
 			if (!path.empty())
 			{
@@ -332,14 +437,20 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 			case EImpltemType::Event:
 			case EImpltemType::Snapshot:
 				{
-					string const eventType = pNode->getAttr(g_eventTypeAttribute);
+					string eventType = pNode->getAttr(CryAudio::s_szTypeAttribute);
+
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+					if (eventType.IsEmpty() && pNode->haveAttr("fmod_event_type"))
+					{
+						eventType = pNode->getAttr("fmod_event_type");
+					}
+#endif // USE_BACKWARDS_COMPATIBILITY
 					auto const pConnection = std::make_shared<CEventConnection>(pImplItem->GetId());
-					pConnection->m_type = (eventType == "stop") ? EEventType::Stop : EEventType::Start;
-					return pConnection;
+					pConnection->m_type = (eventType == CryAudio::Impl::Fmod::s_szStopValue) ? EEventType::Stop : EEventType::Start;
+					pConnectionPtr = pConnection;
 				}
 				break;
-			case EImpltemType::EventParameter:
-			case EImpltemType::SnapshotParameter:
+			case EImpltemType::Parameter:
 				{
 					if (controlType == ESystemItemType::Parameter)
 					{
@@ -347,78 +458,97 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 						float mult = 1.0f;
 						float shift = 0.0f;
 
-						if (pNode->haveAttr(g_multAttribute))
+						if (pNode->haveAttr(CryAudio::Impl::Fmod::s_szMutiplierAttribute))
 						{
-							string const value = pNode->getAttr(g_multAttribute);
+							string const value = pNode->getAttr(CryAudio::Impl::Fmod::s_szMutiplierAttribute);
 							mult = (float)std::atof(value.c_str());
 						}
-
-						if (pNode->haveAttr(g_shiftAttribute))
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+						else if (pNode->haveAttr("fmod_value_multiplier"))
 						{
-							string const value = pNode->getAttr(g_shiftAttribute);
+							string const value = pNode->getAttr("fmod_value_multiplier");
+							mult = (float)std::atof(value.c_str());
+						}
+#endif // USE_BACKWARDS_COMPATIBILITY
+						if (pNode->haveAttr(CryAudio::Impl::Fmod::s_szShiftAttribute))
+						{
+							string const value = pNode->getAttr(CryAudio::Impl::Fmod::s_szShiftAttribute);
 							shift = (float)std::atof(value.c_str());
 						}
-
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+						else if (pNode->haveAttr("fmod_value_shift"))
+						{
+							string const value = pNode->getAttr("fmod_value_shift");
+							shift = (float)std::atof(value.c_str());
+						}
+#endif // USE_BACKWARDS_COMPATIBILITY
 						pConnection->m_mult = mult;
 						pConnection->m_shift = shift;
-						return pConnection;
+						pConnectionPtr = pConnection;
 					}
 					else if (controlType == ESystemItemType::State)
 					{
 						std::shared_ptr<CParamToStateConnection> const pConnection = std::make_shared<CParamToStateConnection>(pImplItem->GetId());
-						string const value = pNode->getAttr(g_valueAttribute);
+						string value = pNode->getAttr(CryAudio::Impl::Fmod::s_szValueAttribute);
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+						if (value.IsEmpty() && pNode->haveAttr("fmod_value"))
+						{
+							value = pNode->getAttr("fmod_value");
+						}
+#endif
 						pConnection->m_value = (float)std::atof(value.c_str());
-						return pConnection;
+						pConnectionPtr = pConnection;
 					}
 				}
 				break;
 			case EImpltemType::Bank:
 			case EImpltemType::Return:
 				{
-					return std::make_shared<CImplConnection>(pImplItem->GetId());
+					pConnectionPtr = std::make_shared<CImplConnection>(pImplItem->GetId());
 				}
 				break;
 			}
 		}
 	}
 
-	return nullptr;
+	return pConnectionPtr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, ESystemItemType const controlType)
 {
+	XmlNodeRef pConnectionNode = nullptr;
+
 	CImplItem* const pImplControl = GetControl(pConnection->GetID());
 
 	if (pImplControl != nullptr)
 	{
 		auto const type = static_cast<EImpltemType>(pImplControl->GetType());
-		XmlNodeRef const pNode = GetISystem()->CreateXmlNode(TypeToTag(type));
+		pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(type));
 
 		switch (type)
 		{
 		case EImpltemType::Event:
 		case EImpltemType::Snapshot:
 			{
-				pNode->setAttr(g_nameAttribute, GetPathName(pImplControl));
+				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, GetPathName(pImplControl));
 				auto const pEventConnection = static_cast<const CEventConnection*>(pConnection.get());
 
 				if ((pEventConnection != nullptr) && (pEventConnection->m_type == EEventType::Stop))
 				{
-					pNode->setAttr(g_eventTypeAttribute, "stop");
+					pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::s_szStopValue);
 				}
 			}
 			break;
 		case EImpltemType::Return:
 			{
-				pNode->setAttr(g_nameAttribute, GetPathName(pImplControl));
+				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, GetPathName(pImplControl));
 			}
 			break;
-		case EImpltemType::EventParameter:
-		case EImpltemType::SnapshotParameter:
+		case EImpltemType::Parameter:
 			{
-				pNode->setAttr(g_nameAttribute, pImplControl->GetName());
-				pNode->setAttr(g_pathAttribute, GetPathName(pImplControl->GetParent()));
+				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pImplControl->GetName());
+				pConnectionNode->setAttr(CryAudio::Impl::Fmod::s_szPathAttribute, GetPathName(pImplControl->GetParent()));
 
 				if (controlType == ESystemItemType::State)
 				{
@@ -426,7 +556,7 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 
 					if (pStateConnection != nullptr)
 					{
-						pNode->setAttr(g_valueAttribute, pStateConnection->m_value);
+						pConnectionNode->setAttr(CryAudio::Impl::Fmod::s_szValueAttribute, pStateConnection->m_value);
 					}
 				}
 				else if (controlType == ESystemItemType::Parameter)
@@ -435,27 +565,25 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 
 					if (pParamConnection->m_mult != 1.0f)
 					{
-						pNode->setAttr(g_multAttribute, pParamConnection->m_mult);
+						pConnectionNode->setAttr(CryAudio::Impl::Fmod::s_szMutiplierAttribute, pParamConnection->m_mult);
 					}
 
 					if (pParamConnection->m_shift != 0.0f)
 					{
-						pNode->setAttr(g_shiftAttribute, pParamConnection->m_shift);
+						pConnectionNode->setAttr(CryAudio::Impl::Fmod::s_szShiftAttribute, pParamConnection->m_shift);
 					}
 				}
 			}
 			break;
 		case EImpltemType::Bank:
 			{
-				pNode->setAttr(g_nameAttribute, GetPathName(pImplControl));
+				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, GetPathName(pImplControl));
 			}
 			break;
 		}
-
-		return pNode;
 	}
 
-	return nullptr;
+	return pConnectionNode;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -586,12 +714,14 @@ CImplItem* CEditorImpl::CreateItem(EImpltemType const type, CImplItem* const pPa
 CID CEditorImpl::GetId(EImpltemType const type, string const& name, CImplItem* const pParent) const
 {
 	string const fullname = GetTypeName(type) + GetPathName(pParent) + CRY_NATIVE_PATH_SEPSTR + name;
-	return CCrc32::Compute(fullname);
+	return CryAudio::StringToId(fullname);
 }
 
 //////////////////////////////////////////////////////////////////////////
 string CEditorImpl::GetPathName(CImplItem const* const pImplItem) const
 {
+	string pathName = "";
+
 	if (pImplItem != nullptr)
 	{
 		string fullname = pImplItem->GetName();
@@ -604,35 +734,46 @@ string CEditorImpl::GetPathName(CImplItem const* const pImplItem) const
 			pParent = pParent->GetParent();
 		}
 
-		return fullname;
+		pathName = fullname;
 	}
 
-	return "";
+	return pathName;
 }
 
 //////////////////////////////////////////////////////////////////////////
 string CEditorImpl::GetTypeName(EImpltemType const type) const
 {
+	string name = "";
+
 	switch (type)
 	{
 	case EImpltemType::Folder:
-		return "folder:";
+		name = "folder:";
+		break;
 	case EImpltemType::Event:
-		return "event:";
-	case EImpltemType::EventParameter:
-		return "eventparameter:";
+		name = "event:";
+		break;
+	case EImpltemType::Parameter:
+		name = "parameter:";
+		break;
 	case EImpltemType::Snapshot:
-		return "snapshot:";
-	case EImpltemType::SnapshotParameter:
-		return "snapshotparameter:";
+		name = "snapshot:";
+		break;
 	case EImpltemType::Bank:
-		return "bank:";
+		name = "bank:";
+		break;
 	case EImpltemType::Return:
-		return "return:";
+		name = "return:";
+		break;
 	case EImpltemType::Group:
-		return "group:";
+		name = "group:";
+		break;
+	default:
+		name = "";
+		break;
 	}
-	return "";
+
+	return name;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -659,13 +800,16 @@ CImplItem* CEditorImpl::GetItemFromPath(string const& fullpath)
 			}
 		}
 
-		if (pChild == nullptr)
+		if (pChild != nullptr)
 		{
-			return nullptr;
+			pImplItem = pChild;
+			token = fullpath.Tokenize("/", start);
 		}
-
-		pImplItem = pChild;
-		token = fullpath.Tokenize("/", start);
+		else
+		{
+			pImplItem = nullptr;
+			break;
+		}
 	}
 
 	return pImplItem;

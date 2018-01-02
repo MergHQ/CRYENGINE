@@ -6,6 +6,7 @@
 
 #include "ImplControls.h"
 
+#include <CryAudio/IAudioSystem.h>
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
 
@@ -19,23 +20,18 @@ class CImplSettings final : public IImplSettings
 {
 public:
 
-	CImplSettings()
-		: m_projectPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "portaudio")
-		, m_soundBanksPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "portaudio")
-	{}
+	CImplSettings();
 
 	// IImplSettings
-	virtual char const* GetSoundBanksPath() const override { return m_soundBanksPath.c_str(); }
-	virtual char const* GetProjectPath() const override    { return m_projectPath.c_str(); }
-	virtual void        SetProjectPath(char const* szPath) override;
+	virtual char const* GetAssetsPath() const override              { return m_assetAndProjectPath.c_str(); }
+	virtual char const* GetProjectPath() const override             { return m_assetAndProjectPath.c_str(); }
+	virtual void        SetProjectPath(char const* szPath) override {}
+	virtual bool        IsProjectPathEditable() const override      { return false; }
 	// ~IImplSettings
-
-	void Serialize(Serialization::IArchive& ar);
 
 private:
 
-	string       m_projectPath;
-	string const m_soundBanksPath;
+	string const m_assetAndProjectPath;
 };
 
 class CEditorImpl final : public IEditorImpl
@@ -50,7 +46,8 @@ public:
 	virtual CImplItem*      GetRoot() override { return &m_rootControl; }
 	virtual CImplItem*      GetControl(CID const id) const override;
 	virtual char const*     GetTypeIcon(CImplItem const* const pImplItem) const override;
-	virtual string          GetName() const override;
+	virtual string const&   GetName() const override;
+	virtual string const&   GetFolderName() const override;
 	virtual IImplSettings*  GetSettings() override { return &m_implSettings; }
 	virtual bool            IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const override;
 	virtual ESystemItemType ImplTypeToSystemType(CImplItem const* const pImplItem) const override;
@@ -79,13 +76,16 @@ private:
 	static string const s_volumeTag;
 	static string const s_loopCountTag;
 
-	typedef std::map<CID, CImplItem*> ControlsCache;
-	typedef std::map<CID, int> ConnectionsMap;
+	using ControlsCache = std::map<CID, CImplItem*>;
+	using ConnectionsMap = std::map<CID, int>;
 
-	CImplItem               m_rootControl;
-	ControlsCache           m_controlsCache; // cache of the controls stored by id for faster access
-	ConnectionsMap          m_connectionsByID;
-	CImplSettings           m_implSettings;
+	CImplItem           m_rootControl;
+	ControlsCache       m_controlsCache; // cache of the controls stored by id for faster access
+	ConnectionsMap      m_connectionsByID;
+	CImplSettings       m_implSettings;
+	CryAudio::SImplInfo m_implInfo;
+	string              m_implName;
+	string              m_implFolderName;
 };
 } // namespace PortAudio
 } // namespace ACE

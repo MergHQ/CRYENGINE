@@ -644,6 +644,9 @@ public:
 
 	//! Helper function to retrieve world space entity orientation quaternion
 	virtual Quat GetWorldRotation() const = 0;
+
+	//! Helper function to retrieve world space entity scale
+	virtual Vec3 GetWorldScale() const = 0;
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Used to update the stored mask for a certain component, from IEntityComponent::GetEventMask

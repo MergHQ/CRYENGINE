@@ -37,21 +37,21 @@ private:
 		float maxRadius;
 	};
 
-	typedef std::map<uint32, SEventInfo> EventsInfoMap;
-	typedef std::map<CID, CImplItem*>    ControlsCache;
-	typedef std::map<uint32, string>     FilesCache;
-	typedef std::map<uint32, CImplItem*> Items;
+	using EventsInfoMap = std::map<uint32, SEventInfo>;
+	using ControlsCache = std::map<CID, CImplItem*>;
+	using FilesCache = std::map<uint32, string>;
+	using Items = std::map<uint32, CImplItem*>;
 
-	EventsInfoMap m_eventsInfoMap;
-	CImplItem&    m_root;
-	ControlsCache m_controlsCache;
-	string        m_projectPath;
+	EventsInfoMap    m_eventsInfoMap;
+	CImplItem&       m_root;
+	ControlsCache    m_controlsCache;
+	string const     m_projectPath;
 
 	// This maps holds the items with the internal IDs given in the Wwise files.
-	Items m_items;
+	Items            m_items;
 
 	// Cache with the file path to each work unit file
-	FilesCache m_filesCache;
+	FilesCache       m_filesCache;
 
 	// List of already loaded work unit files
 	std::set<uint32> m_filesLoaded;

@@ -19,7 +19,7 @@ public:
 	CImplConnection(CID const id)
 		: m_id(id)
 	{
-		m_configurationsMask = std::numeric_limits<uint>::max();
+		m_configurationsMask = std::numeric_limits<uint32>::max();
 	}
 
 	virtual ~CImplConnection() = default;
@@ -28,7 +28,7 @@ public:
 	virtual bool HasProperties() const                  { return false; }
 	virtual void Serialize(Serialization::IArchive& ar) {};
 
-	void EnableForPlatform(uint const platformIndex, bool const isEnabled)
+	void EnableForPlatform(uint32 const platformIndex, bool const isEnabled)
 	{
 		if (isEnabled)
 		{
@@ -39,10 +39,10 @@ public:
 			m_configurationsMask &= ~(1 << platformIndex);
 		}
 
-		signalConnectionChanged();
+		SignalConnectionChanged();
 	}
 
-	bool IsPlatformEnabled(uint const platformIndex)
+	bool IsPlatformEnabled(uint32 const platformIndex)
 	{
 		return (m_configurationsMask & (1 << platformIndex)) > 0;
 	}
@@ -52,15 +52,15 @@ public:
 		if (m_configurationsMask != 0)
 		{
 			m_configurationsMask = 0;
-			signalConnectionChanged();
+			SignalConnectionChanged();
 		}
 	}
 
-	CCrySignal<void()> signalConnectionChanged;
+	CCrySignal<void()> SignalConnectionChanged;
 
 private:
 
-	CID  m_id;
-	uint m_configurationsMask;
+	CID    m_id;
+	uint32 m_configurationsMask;
 };
 } // namespace ACE

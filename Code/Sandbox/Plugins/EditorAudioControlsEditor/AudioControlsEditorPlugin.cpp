@@ -3,10 +3,10 @@
 #include "StdAfx.h"
 #include "AudioControlsEditorPlugin.h"
 
-#include "SystemAssets.h"
 #include "MainWindow.h"
 #include "AudioControlsLoader.h"
-#include "AudioControlsWriter.h"
+#include "FileWriter.h"
+#include "FileLoader.h"
 #include "ImplementationManager.h"
 
 #include <IEditorImpl.h>
@@ -30,10 +30,10 @@ CryAudio::IObject* CAudioControlsEditorPlugin::s_pIAudioObject = nullptr;
 CryAudio::ControlId CAudioControlsEditorPlugin::s_audioTriggerId = CryAudio::InvalidControlId;
 CImplementationManager CAudioControlsEditorPlugin::s_implementationManager;
 EErrorCode CAudioControlsEditorPlugin::s_loadingErrorMask;
-CCrySignal<void()> CAudioControlsEditorPlugin::signalAboutToLoad;
-CCrySignal<void()> CAudioControlsEditorPlugin::signalLoaded;
-CCrySignal<void()> CAudioControlsEditorPlugin::signalAboutToSave;
-CCrySignal<void()> CAudioControlsEditorPlugin::signalSaved;
+CCrySignal<void()> CAudioControlsEditorPlugin::SignalAboutToLoad;
+CCrySignal<void()> CAudioControlsEditorPlugin::SignalLoaded;
+CCrySignal<void()> CAudioControlsEditorPlugin::SignalAboutToSave;
+CCrySignal<void()> CAudioControlsEditorPlugin::SignalSaved;
 
 REGISTER_VIEWPANE_FACTORY(CMainWindow, "Audio Controls Editor", "Tools", true)
 
@@ -46,9 +46,9 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 	s_assetsManager.Initialize();
 	s_implementationManager.LoadImplementation();
 
-	signalAboutToLoad();
+	SignalAboutToLoad();
 	ReloadModels(false);
-	signalLoaded();
+	SignalLoaded();
 
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CAudioControlsEditorPlugin");
 }
@@ -68,16 +68,17 @@ CAudioControlsEditorPlugin::~CAudioControlsEditorPlugin()
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorPlugin::SaveModels()
 {
-	signalAboutToSave();
+	SignalAboutToSave();
 	IEditorImpl* pEditorImpl = s_implementationManager.GetImplementation();
 
 	if (pEditorImpl != nullptr)
 	{
-		CAudioControlsWriter writer(&s_assetsManager, pEditorImpl, s_currentFilenames);
+		CFileWriter writer(s_assetsManager, pEditorImpl, s_currentFilenames);
+		writer.WriteAll();
 	}
 
 	s_loadingErrorMask = EErrorCode::NoError;
-	signalSaved();
+	SignalSaved();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -88,20 +89,32 @@ void CAudioControlsEditorPlugin::ReloadModels(bool const reloadImplementation)
 
 	IEditorImpl* const pEditorImpl = s_implementationManager.GetImplementation();
 
+	s_assetsManager.UpdateFolderPaths();
+	s_assetsManager.Clear();
+
 	if (pEditorImpl != nullptr)
 	{
-		s_assetsManager.Clear();
-
 		if (reloadImplementation)
 		{
 			pEditorImpl->Reload();
 		}
 
-		CAudioControlsLoader loader(&s_assetsManager);
-		loader.LoadAll();
+		// CAudioControlsLoader is deprecated and only used for backwards compatibility. It will be removed before March 2019.
+		CAudioControlsLoader loaderForBackwardsCompatibility(&s_assetsManager);
+		loaderForBackwardsCompatibility.LoadAll(true);
 
+		CFileLoader loader(s_assetsManager);
+		loader.LoadAll();
 		s_currentFilenames = loader.GetLoadedFilenamesList();
 		s_loadingErrorMask = loader.GetErrorCodeMask();
+
+		loaderForBackwardsCompatibility.LoadAll(false);
+		auto const& fileNames = loaderForBackwardsCompatibility.GetLoadedFilenamesList();
+
+		for (auto const& name : fileNames)
+		{
+			s_currentFilenames.emplace(name);
+		}
 	}
 
 	GetIEditor()->GetIUndoManager()->Resume();
@@ -111,8 +124,13 @@ void CAudioControlsEditorPlugin::ReloadModels(bool const reloadImplementation)
 void CAudioControlsEditorPlugin::ReloadScopes()
 {
 	s_assetsManager.ClearScopes();
-	CAudioControlsLoader loader(&s_assetsManager);
+
+	CFileLoader loader(s_assetsManager);
 	loader.LoadScopes();
+
+	// CAudioControlsLoader is deprecated and only used for backwards compatibility. It will be removed before March 2019.
+	CAudioControlsLoader loaderForBackwardsCompatibility(&s_assetsManager);
+	loaderForBackwardsCompatibility.LoadScopes();
 }
 
 //////////////////////////////////////////////////////////////////////////

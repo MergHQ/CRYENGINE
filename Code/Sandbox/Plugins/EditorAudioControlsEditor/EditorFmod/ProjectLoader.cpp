@@ -18,9 +18,11 @@ namespace ACE
 namespace Fmod
 {
 // Paths
-string const g_foldersPath = "/metadata/eventfolder/";
+string const g_eventFoldersPath = "/metadata/eventfolder/";
+string const g_parametersFoldersPath = "/metadata/parameterpresetfolder/";
 string const g_groupsPath = "/metadata/group/";
 string const g_eventsPath = "/metadata/event/";
+string const g_parametersPath = "/metadata/parameterpreset/";
 string const g_snapshotsPath = "/metadata/snapshot/";
 string const g_returnsPath = "/metadata/return/";
 
@@ -31,11 +33,13 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 {
 	LoadBanks(soundbanksPath);
 
-	ParseFolder(projectPath + g_foldersPath);    // folders
-	ParseFolder(projectPath + g_groupsPath);     // groups
-	ParseFolder(projectPath + g_eventsPath);     // events
-	ParseFolder(projectPath + g_snapshotsPath);  // snapshots
-	ParseFolder(projectPath + g_returnsPath);    // returns
+	ParseFolder(projectPath + g_eventFoldersPath);      // event folders
+	ParseFolder(projectPath + g_parametersFoldersPath); // event folders
+	ParseFolder(projectPath + g_groupsPath);            // groups
+	ParseFolder(projectPath + g_eventsPath);            // events
+	ParseFolder(projectPath + g_parametersPath);        // parameters
+	ParseFolder(projectPath + g_snapshotsPath);         // snapshots
+	ParseFolder(projectPath + g_returnsPath);           // returns
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -77,7 +81,8 @@ void CProjectLoader::LoadBanks(string const& folderPath)
 		{
 			if (filename.compare(0, masterBankName.length(), masterBankName) != 0)
 			{
-				CreateItem(EImpltemType::Bank, nullptr, filename);
+				CImplItem* const pSoundBank = CreateItem(EImpltemType::Bank, nullptr, filename);
+				pSoundBank->SetFilePath(folderPath + CRY_NATIVE_PATH_SEPSTR + filename);
 			}
 		}
 
@@ -115,9 +120,11 @@ void CProjectLoader::ParseFile(string const& filepath)
 	if (GetISystem()->GetIPak()->IsFileExist(filepath))
 	{
 		XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(filepath);
+
 		if (pRoot != nullptr)
 		{
 			CImplItem* pImplItem = nullptr;
+			float maxDistance = 0.0f;
 			int const size = pRoot->getChildCount();
 
 			for (int i = 0; i < size; ++i)
@@ -128,7 +135,7 @@ void CProjectLoader::ParseFile(string const& filepath)
 				{
 					string const className = pChild->getAttr("class");
 
-					if (className == "EventFolder")
+					if ((className == "EventFolder") || (className == "ParameterPresetFolder"))
 					{
 						pImplItem = LoadFolder(pChild);
 					}
@@ -140,23 +147,9 @@ void CProjectLoader::ParseFile(string const& filepath)
 					{
 						pImplItem = LoadSnapshot(pChild);
 					}
-					else if (className == "GameParameter")
+					else if (className == "ParameterPreset")
 					{
-						if (pImplItem != nullptr)
-						{
-							if (static_cast<EImpltemType>(pImplItem->GetType()) == EImpltemType::Event)
-							{
-								LoadParameter(pChild, EImpltemType::EventParameter, *pImplItem);
-							}
-							else
-							{
-								LoadParameter(pChild, EImpltemType::SnapshotParameter, *pImplItem);
-							}
-						}
-						else
-						{
-							CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] [Fmod] Found GameParameter tag before Event in file %s", filepath.c_str());
-						}
+						pImplItem = LoadParameter(pChild);
 					}
 					else if (className == "MixerReturn")
 					{
@@ -175,76 +168,77 @@ void CProjectLoader::ParseFile(string const& filepath)
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::GetContainer(string const& id, EImpltemType const type)
 {
+	CImplItem* pImplItem = nullptr;
 	auto folder = m_containerIdMap.find(id);
 
 	if (folder != m_containerIdMap.end())
 	{
-		return (*folder).second;
+		pImplItem =(*folder).second;
 	}
-
-	// If folder not found parse the file corresponding to it and try looking for it again
-	if (type == EImpltemType::Folder)
+	else
 	{
-		ParseFile(m_projectPath + g_foldersPath + id + ".xml");
-	}
-	else if (type == EImpltemType::Group)
-	{
-		ParseFile(m_projectPath + g_groupsPath + id + ".xml");
+		// If folder not found parse the file corresponding to it and try looking for it again
+		if (type == EImpltemType::Folder)
+		{
+			ParseFile(m_projectPath + g_eventFoldersPath + id + ".xml");
+		}
+		else if (type == EImpltemType::Group)
+		{
+			ParseFile(m_projectPath + g_groupsPath + id + ".xml");
+		}
+
+		folder = m_containerIdMap.find(id);
+
+		if (folder != m_containerIdMap.end())
+		{
+			pImplItem =(*folder).second;
+		}
 	}
 
-	folder = m_containerIdMap.find(id);
-
-	if (folder != m_containerIdMap.end())
-	{
-		return (*folder).second;
-	}
-
-	return nullptr;
+	return pImplItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::LoadContainer(XmlNodeRef const pNode, EImpltemType const type, string const& relationshipParamName)
 {
-	if (pNode != nullptr)
+	CImplItem* pImplItem = nullptr;
+	string containerName = "";
+	CImplItem* pParent = nullptr;
+	int const size = pNode->getChildCount();
+
+	for (int i = 0; i < size; ++i)
 	{
-		string containerName = "";
-		CImplItem* pParent = nullptr;
+		XmlNodeRef const pChild = pNode->getChild(i);
+		string const name = pChild->getAttr("name");
 
-		int const size = pNode->getChildCount();
-
-		for (int i = 0; i < size; ++i)
+		if (name == "name")
 		{
-			XmlNodeRef const pChild = pNode->getChild(i);
-			string const name = pChild->getAttr("name");
+			// Get the container name
+			XmlNodeRef const pContainerNameNode = pChild->getChild(0);
 
-			if (name == "name")
+			if (pContainerNameNode != nullptr)
 			{
-				// Get the container name
-				XmlNodeRef const pContainerNameNode = pChild->getChild(0);
-
-				if (pContainerNameNode != nullptr)
-				{
-					containerName = pContainerNameNode->getContent();
-				}
-			}
-			else if (name == relationshipParamName)
-			{
-				// Get the container parent
-				XmlNodeRef const pParentContainerNode = pChild->getChild(0);
-				if (pParentContainerNode != nullptr)
-				{
-					string const parentContainerId = pParentContainerNode->getContent();
-					pParent = GetContainer(parentContainerId, type);
-				}
+				containerName = pContainerNameNode->getContent();
 			}
 		}
+		else if (name == relationshipParamName)
+		{
+			// Get the container parent
+			XmlNodeRef const pParentContainerNode = pChild->getChild(0);
 
-		CImplItem* const pContainer = CreateItem(type, pParent, containerName);
-		m_containerIdMap[pNode->getAttr("id")] = pContainer;
-		return pContainer;
+			if (pParentContainerNode != nullptr)
+			{
+				string const parentContainerId = pParentContainerNode->getContent();
+				pParent = GetContainer(parentContainerId, type);
+			}
+		}
 	}
 
-	return nullptr;
+	CImplItem* const pContainer = CreateItem(type, pParent, containerName);
+	m_containerIdMap[pNode->getAttr("id")] = pContainer;
+	pImplItem = pContainer;
+
+	return pImplItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -262,61 +256,59 @@ CImplItem* CProjectLoader::LoadGroup(XmlNodeRef const pNode)
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::LoadItem(XmlNodeRef const pNode, EImpltemType const type)
 {
-	if (pNode != nullptr)
+	CImplItem* pImplItem = nullptr;
+	string name = "";
+	CImplItem* pParent = nullptr;
+	int const size = pNode->getChildCount();
+
+	for (int i = 0; i < size; ++i)
 	{
-		string name = "";
-		CImplItem* pParent = nullptr;
-		int const size = pNode->getChildCount();
+		XmlNodeRef const pChild = pNode->getChild(i);
 
-		for (int i = 0; i < size; ++i)
+		if (pChild != nullptr)
 		{
-			XmlNodeRef const pChild = pNode->getChild(i);
+			string const tag = pChild->getTag();
 
-			if (pChild != nullptr)
+			if (tag == "property")
 			{
-				string const tag = pChild->getTag();
+				string const paramName = pChild->getAttr("name");
 
-				if (tag == "property")
+				if (paramName == "name")
 				{
-					string const paramName = pChild->getAttr("name");
+					XmlNodeRef const pValue = pChild->getChild(0);
 
-					if (paramName == "name")
+					if (pValue != nullptr)
 					{
-						XmlNodeRef const pValue = pChild->getChild(0);
-
-						if (pValue != nullptr)
-						{
-							name = pValue->getContent();
-						}
+						name = pValue->getContent();
 					}
 				}
-				else if (tag == "relationship")
+			}
+			else if (tag == "relationship")
+			{
+				string const name = pChild->getAttr("name");
+
+				if (name == "folder" || name == "output")
 				{
-					string const name = pChild->getAttr("name");
+					XmlNodeRef const pValue = pChild->getChild(0);
 
-					if (name == "folder" || name == "output")
+					if (pValue != nullptr)
 					{
-						XmlNodeRef const pValue = pChild->getChild(0);
+						string const parentContainerId = pValue->getContent();
+						auto const folder = m_containerIdMap.find(parentContainerId);
 
-						if (pValue != nullptr)
+						if (folder != m_containerIdMap.end())
 						{
-							string const parentContainerId = pValue->getContent();
-							auto const folder = m_containerIdMap.find(parentContainerId);
-
-							if (folder != m_containerIdMap.end())
-							{
-								pParent = (*folder).second;
-							}
+							pParent = (*folder).second;
 						}
 					}
 				}
 			}
 		}
-
-		return CreateItem(type, pParent, name);
 	}
 
-	return nullptr;
+	pImplItem = CreateItem(type, pParent, name);
+
+	return pImplItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -338,43 +330,15 @@ CImplItem* CProjectLoader::LoadReturn(XmlNodeRef const pNode)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CImplItem* CProjectLoader::LoadParameter(XmlNodeRef const pNode, EImpltemType const type, CImplItem& parentEvent)
+CImplItem* CProjectLoader::LoadParameter(XmlNodeRef const pNode)
 {
-	if (pNode != nullptr)
-	{
-		int const size = pNode->getChildCount();
-
-		for (int i = 0; i < size; ++i)
-		{
-			XmlNodeRef const pChild = pNode->getChild(i);
-
-			if (pChild != nullptr)
-			{
-				string const name = pChild->getAttr("name");
-
-				if (name == "name")
-				{
-					XmlNodeRef const pValue = pChild->getChild(0);
-
-					if (pValue != nullptr)
-					{
-						string const value = pValue->getContent();
-						CImplItem* const pImplItem = CreateItem(type, &parentEvent, value);
-						return pImplItem;
-					}
-				}
-			}
-		}
-	}
-
-	return nullptr;
+	return LoadItem(pNode, EImpltemType::Parameter);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::CreateItem(EImpltemType const type, CImplItem* const pParent, string const& name)
 {
 	CID const id = GetId(type, name, pParent);
-
 	CImplItem* pImplItem = GetControl(id);
 
 	if (pImplItem != nullptr)
@@ -427,28 +391,33 @@ CImplItem* CProjectLoader::CreateItem(EImpltemType const type, CImplItem* const 
 CID CProjectLoader::GetId(EImpltemType const type, string const& name, CImplItem* const pParent) const
 {
 	string const fullname = GetTypeName(type) + GetPathName(pParent) + CRY_NATIVE_PATH_SEPSTR + name;
-	return CCrc32::Compute(fullname);
+	return CryAudio::StringToId(fullname);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::GetControl(CID const id) const
 {
+	CImplItem* pImplItem = nullptr;
+
 	for (auto const controlPair : m_controlsCache)
 	{
 		CImplItem* const pImplControl = controlPair.second;
 
 		if (pImplControl->GetId() == id)
 		{
-			return pImplControl;
+			pImplItem = pImplControl;
+			break;
 		}
 	}
 
-	return nullptr;
+	return pImplItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
 string CProjectLoader::GetPathName(CImplItem const* const pImplItem) const
 {
+	string pathName = "";
+
 	if (pImplItem != nullptr)
 	{
 		string fullname = pImplItem->GetName();
@@ -461,35 +430,46 @@ string CProjectLoader::GetPathName(CImplItem const* const pImplItem) const
 			pParent = pParent->GetParent();
 		}
 
-		return fullname;
+		pathName = fullname;
 	}
 
-	return "";
+	return pathName;
 }
 
 //////////////////////////////////////////////////////////////////////////
 string CProjectLoader::GetTypeName(EImpltemType const type) const
 {
+	string typeName = "";
+
 	switch (type)
 	{
 	case EImpltemType::Folder:
-		return "folder:";
+		typeName = "folder:";
+		break;
 	case EImpltemType::Event:
-		return "event:";
-	case EImpltemType::EventParameter:
-		return "eventparameter:";
+		typeName = "event:";
+		break;
+	case EImpltemType::Parameter:
+		typeName = "parameter:";
+		break;
 	case EImpltemType::Snapshot:
-		return "snapshot:";
-	case EImpltemType::SnapshotParameter:
-		return "snapshotparameter:";
+		typeName = "snapshot:";
+		break;
 	case EImpltemType::Bank:
-		return "bank:";
+		typeName = "bank:";
+		break;
 	case EImpltemType::Return:
-		return "return:";
+		typeName = "return:";
+		break;
 	case EImpltemType::Group:
-		return "group:";
+		typeName = "group:";
+		break;
+	default:
+		typeName = "";
+		break;
 	}
-	return "";
+
+	return typeName;
 }
 } // namespace Fmod
 } // namespace ACE

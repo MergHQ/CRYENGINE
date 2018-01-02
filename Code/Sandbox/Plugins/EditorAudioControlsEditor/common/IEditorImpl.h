@@ -19,9 +19,10 @@ class CImplItem;
 
 struct IImplSettings
 {
-	virtual char const* GetSoundBanksPath() const = 0;
+	virtual char const* GetAssetsPath() const = 0;
 	virtual char const* GetProjectPath() const = 0;
 	virtual void        SetProjectPath(char const* szPath) = 0;
+	virtual bool        IsProjectPathEditable() const = 0;
 };
 
 struct IEditorImpl
@@ -74,7 +75,14 @@ struct IEditorImpl
 	//      Gets the name of the implementation which might be used in the ACE UI.
 	// Returns:
 	//      String with the name of the implementation.
-	virtual string GetName() const = 0;
+	virtual string const& GetName() const = 0;
+
+	// <title GetFolderName>
+	// Description:
+	//      Gets the name of the implementation folder which might be used to construct paths to audio assets and ACE files.
+	// Returns:
+	//      String with the name of the implementation folder.
+	virtual string const& GetFolderName() const = 0;
 
 	// <title GetSettings>
 	// Description:
@@ -83,7 +91,7 @@ struct IEditorImpl
 
 	// <title IsTypeCompatible>
 	// Description:
-	//      Checks is the given audio system control type and middleware control are compatible.
+	//      Checks if the given audio system control type and middleware control are compatible.
 	// Arguments:
 	//      systemType - An audio system control type.
 	//      pImplItem - A middleware control.

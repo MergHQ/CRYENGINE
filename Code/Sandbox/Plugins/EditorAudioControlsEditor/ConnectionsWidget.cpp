@@ -80,9 +80,9 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 
 	setHidden(true);
 
-	CAudioControlsEditorPlugin::GetAssetsManager()->signalConnectionRemoved.Connect([&](CSystemControl* pControl)
+	CAudioControlsEditorPlugin::GetAssetsManager()->SignalConnectionRemoved.Connect([&](CSystemControl* pControl)
 	{
-		if (m_pControl == pControl)
+		if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() && (m_pControl == pControl))
 		{
 			// clear the selection if a connection is removed
 			m_pTreeView->selectionModel()->clear();
@@ -90,7 +90,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 		}
 	}, reinterpret_cast<uintptr_t>(this));
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.Connect([&]()
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.Connect([&]()
 	{
 		m_pTreeView->selectionModel()->clear();
 		RefreshConnectionProperties();
@@ -100,8 +100,8 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 //////////////////////////////////////////////////////////////////////////
 CConnectionsWidget::~CConnectionsWidget()
 {
-	CAudioControlsEditorPlugin::GetAssetsManager()->signalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::GetImplementationManger()->signalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetAssetsManager()->SignalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	m_pConnectionModel->DisconnectSignals();
 	m_pConnectionModel->deleteLater();
@@ -110,6 +110,8 @@ CConnectionsWidget::~CConnectionsWidget()
 //////////////////////////////////////////////////////////////////////////
 bool CConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 {
+	bool isEvent = false;
+
 	if (pEvent->type() == QEvent::KeyPress)
 	{
 		QKeyEvent const* const pKeyEvent = static_cast<QKeyEvent*>(pEvent);
@@ -117,17 +119,23 @@ bool CConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 		if ((pKeyEvent != nullptr) && (pKeyEvent->key() == Qt::Key_Delete) && (pObject == m_pTreeView))
 		{
 			RemoveSelectedConnection();
-			return true;
+			isEvent = true;
 		}
 	}
 
-	return QWidget::eventFilter(pObject, pEvent);
+	if (!isEvent)
+	{
+		isEvent = QWidget::eventFilter(pObject, pEvent);
+	}
+
+	return isEvent;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 {
-	int const selectionCount = m_pTreeView->selectionModel()->selectedRows().count();
+	auto const selection = m_pTreeView->selectionModel()->selectedRows();
+	int const selectionCount = selection.count();
 
 	if (selectionCount > 0)
 	{
@@ -141,6 +149,27 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 		}
 
 		pContextMenu->addAction(tr(actionName), [&]() { RemoveSelectedConnection(); });
+
+		if (selectionCount == 1)
+		{
+			IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
+
+			if (pEditorImpl != nullptr)
+			{
+				CID const itemId = selection[0].data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt();
+				CImplItem const* const pImplControl = pEditorImpl->GetControl(itemId);
+
+				if ((pImplControl != nullptr) && !pImplControl->IsPlaceholder())
+				{
+					pContextMenu->addSeparator();
+					pContextMenu->addAction(tr("Select in Middleware Data"), [=]()
+					{
+						SignalSelectConnectedImplItem(itemId);
+					});
+				}
+			}
+		}
+
 		pContextMenu->exec(QCursor::pos());
 	}
 }

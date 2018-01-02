@@ -9,25 +9,39 @@ namespace ACE
 {
 inline CryIcon GetItemTypeIcon(ESystemItemType const type)
 {
+	CryIcon typeIcon = CryIcon("icons:Dialogs/dialog-error.ico");
+
 	switch (type)
 	{
 	case ESystemItemType::Trigger:
-		return CryIcon("icons:audio/system/trigger.ico");
+		typeIcon = CryIcon("icons:audio/system/trigger.ico");
+		break;
 	case ESystemItemType::Parameter:
-		return CryIcon("icons:audio/system/parameter.ico");
+		typeIcon = CryIcon("icons:audio/system/parameter.ico");
+		break;
 	case ESystemItemType::Switch:
-		return CryIcon("icons:audio/system/switch.ico");
+		typeIcon = CryIcon("icons:audio/system/switch.ico");
+		break;
 	case ESystemItemType::State:
-		return CryIcon("icons:audio/system/state.ico");
+		typeIcon = CryIcon("icons:audio/system/state.ico");
+		break;
 	case ESystemItemType::Environment:
-		return CryIcon("icons:audio/system/environment.ico");
+		typeIcon = CryIcon("icons:audio/system/environment.ico");
+		break;
 	case ESystemItemType::Preload:
-		return CryIcon("icons:audio/system/preload.ico");
+		typeIcon = CryIcon("icons:audio/system/preload.ico");
+		break;
 	case ESystemItemType::Folder:
-		return CryIcon("icons:General/Folder.ico");
+		typeIcon = CryIcon("icons:General/Folder.ico");
+		break;
 	case ESystemItemType::Library:
-		return CryIcon("icons:General/File.ico");
+		typeIcon = CryIcon("icons:General/File.ico");
+		break;
+	default:
+		typeIcon = CryIcon("icons:Dialogs/dialog-error.ico");
+		break;
 	}
-	return CryIcon("icons:Dialogs/dialog-error.ico");
+
+	return typeIcon;
 }
 } // namespace ACE

@@ -10,14 +10,12 @@
 #include <CryGame/IGameFramework.h>
 #include <IEditor.h>
 
-using namespace ACE;
-
-namespace
+namespace ACE
 {
 dll_string ShowSelectDialog(SResourceSelectorContext const& context, char const* szPreviousValue, ESystemItemType const controlType)
 {
 	CSystemAssetsManager const* const pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
-	CRY_ASSERT_MESSAGE(pAssetsManager != nullptr, "Asset manager is null pointer.");
+	CRY_ASSERT_MESSAGE(pAssetsManager != nullptr, "Assets manager is null pointer.");
 
 	char* szLevelName;
 	gEnv->pGameFramework->GetEditorLevel(&szLevelName, nullptr);
@@ -63,4 +61,4 @@ REGISTER_RESOURCE_SELECTOR("AudioSwitchState", AudioSwitchStateSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioRTPC", AudioParameterSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioEnvironment", AudioEnvironmentSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioPreloadRequest", AudioPreloadRequestSelector, "")
-}
+} // namespace ACE
