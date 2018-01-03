@@ -3850,21 +3850,17 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, std::vec
 
 	// render outdoor point lights and collect dynamic point light frustums
 	if (IsObjectsTreeValid())
-	{
 		m_pObjectsTree->Render_LightSources(false, passInfo);
-	}
 
 	// render indoor point lights and collect dynamic point light frustums
-	for (int i = 0; i < m_pVisAreaManager->m_lstVisibleAreas.Count(); i++)
+	for (int i = 0; i < m_pVisAreaManager->m_lstVisibleAreas.Count(); ++i)
 	{
 		CVisArea* pArea = m_pVisAreaManager->m_lstVisibleAreas[i];
 
 		if (pArea->IsObjectsTreeValid())
 		{
-			for (int c = 0; c < pArea->m_lstCurCamerasLen; c++)
-			{
+			for (int c = 0; c < pArea->m_lstCurCamerasLen; ++c)
 				pArea->GetObjectsTree()->Render_LightSources(false, SRenderingPassInfo::CreateTempRenderingInfo(CVisArea::s_tmpCameras[pArea->m_lstCurCamerasIdx + c], passInfo));
-			}
 		}
 	}
 
@@ -3874,29 +3870,36 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, std::vec
 
 	shadowPassInfo.reserve(kMaxShadowPassesNum);
 	CRenderView* pMainRenderView = passInfo.GetRenderView();
-	for (uint32 i = 0; i < shadowFrustums.size() && i < kMaxShadowPassesNum; i++)
+	for (uint32 i = 0; i < shadowFrustums.size() && i < kMaxShadowPassesNum; ++i)
 	{
-		ShadowMapFrustum* pFr = shadowFrustums[i];
+		auto* pFr = shadowFrustums[i];
+		const auto nThreadID = passInfo.ThreadID();
 
 		assert(!pFr->pOnePassShadowView);
 
-		int cubeSide = 0; // optimize only sun cascades for now
+		const auto &pShadowsView = GetRenderer()->GetNextAvailableShadowsView((IRenderView*)pMainRenderView, pFr);
 
-		// create a matching rendering pass info for shadows
-		shadowPassInfo.push_back(SRenderingPassInfo::CreateShadowPassRenderingInfo(
-		                           GetRenderer()->GetNextAvailableShadowsView((IRenderView*)pMainRenderView, pFr),
-		                           passInfo.GetCamera(),
-		                           pFr->m_Flags,
-		                           pFr->nShadowMapLod,
-		                           pFr->IsCached(),
-		                           pFr->bIsMGPUCopy,
-		                           &pFr->nShadowGenMask,
-		                           cubeSide,
-		                           pFr->nShadowGenID[passInfo.ThreadID()][cubeSide],
-		                           SRenderingPassInfo::DEFAULT_SHADOWS_FLAGS));
+		for (int cubeSide = 0; cubeSide < pFr->GetNumSides(); ++cubeSide)
+		{
+			if (pFr->nShadowGenID[nThreadID][cubeSide] == 0xFFFFFFFF)
+				continue;
 
-		pFr->pOnePassShadowView = shadowPassInfo[i].GetIRenderView();
+			// create a matching rendering pass info for shadows
+			auto pass = SRenderingPassInfo::CreateShadowPassRenderingInfo(
+				pShadowsView,
+				pFr->GetCamera(cubeSide),
+				pFr->m_Flags,
+				pFr->nShadowMapLod,
+				pFr->IsCached(),
+				pFr->bIsMGPUCopy,
+				&pFr->nShadowGenMask,
+				cubeSide,
+				pFr->nShadowGenID[nThreadID][cubeSide],
+				SRenderingPassInfo::DEFAULT_SHADOWS_FLAGS);
+			shadowPassInfo.push_back(std::move(pass));
+		}
 
-		pFr->pOnePassShadowView->SwitchUsageMode(IRenderView::eUsageModeWriting);
+		pShadowsView->SwitchUsageMode(IRenderView::eUsageModeWriting);
+		pFr->pOnePassShadowView = pShadowsView;
 	}
 }
