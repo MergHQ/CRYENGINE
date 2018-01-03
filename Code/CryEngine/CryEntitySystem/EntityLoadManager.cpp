@@ -308,21 +308,18 @@ bool CEntityLoadManager::ExtractCommonEntityLoadParams(XmlNodeRef& entityNode, S
 				XmlNodeRef componentNode = componentsNode->getChild(i);
 				if (!componentNode->haveAttr("typeId"))
 				{
-					if (XmlNodeRef typeGUIDNode = componentNode->findChild("TypeGUID"))
+					CryGUID typeGUID;
+					if (componentNode->getAttr("TypeGUID", typeGUID))
 					{
-						CryGUID typeGUID;
-						if (typeGUIDNode->getAttr("value", typeGUID))
+						if (const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(typeGUID))
 						{
-							if (const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(typeGUID))
-							{
-								size_t componentSize = pEnvComponent->GetSize();
+							size_t componentSize = pEnvComponent->GetSize();
 
-								// Ensure alignment of component is consistent with CEntity (likely 16, very important due to the SIMD Matrix used for world transformation
-								uint32 remainder = componentSize % alignof(CEntity);
-								uint32 adjustedSize = remainder != 0 ? componentSize + alignof(CEntity) - remainder : componentSize;
+							// Ensure alignment of component is consistent with CEntity (likely 16, very important due to the SIMD Matrix used for world transformation
+							uint32 remainder = componentSize % alignof(CEntity);
+							uint32 adjustedSize = remainder != 0 ? componentSize + alignof(CEntity) - remainder : componentSize;
 
-								outLoadParams.allocationSize += adjustedSize;
-							}
+							outLoadParams.allocationSize += adjustedSize;
 						}
 					}
 				}

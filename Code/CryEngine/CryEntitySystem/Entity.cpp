@@ -1147,7 +1147,7 @@ string CEntity::GetEntityTextDescription() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::LoadComponent(Serialization::IArchive& archive, uint8* pComponentBuffer)
+void CEntity::LoadComponent(Serialization::IArchive& archive, uint8*& pComponentBuffer)
 {
 	// Load component Type GUID
 	CryGUID typeGUID;
@@ -1264,6 +1264,7 @@ void CEntity::LoadComponent(Serialization::IArchive& archive, uint8* pComponentB
 
 		// Add the component to the entity
 		AddComponentInternal(pComponent, typeGUID, &initParams, &componentClassDesc);
+		pComponent->Initialize();
 	}
 	else
 	{
@@ -1473,7 +1474,7 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 					struct SEntityComponentLoadHelper
 					{
 						CEntity& entity;
-						uint8*   pComponentAddress;
+						uint8*&  pComponentAddress;
 						void     Serialize(Serialization::IArchive& archive)
 						{
 							entity.LoadComponent(archive, pComponentAddress);
