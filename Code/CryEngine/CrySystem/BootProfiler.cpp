@@ -963,8 +963,10 @@ void CBootProfiler::StopFrame()
 
 void CBootProfiler::StopSaveSessionsThread()
 {
-	m_quitSaveThread = true;
-	m_saveThreadWakeUpEvent.Set();
+	if (!m_quitSaveThread)
+	{
+		m_quitSaveThread = true;
+		m_saveThreadWakeUpEvent.Set();
 
 	if (gEnv)
 	{
