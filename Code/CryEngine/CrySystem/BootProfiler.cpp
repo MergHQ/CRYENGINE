@@ -968,9 +968,10 @@ void CBootProfiler::StopSaveSessionsThread()
 		m_quitSaveThread = true;
 		m_saveThreadWakeUpEvent.Set();
 
-	if (gEnv)
-	{
-		gEnv->pThreadManager->JoinThread(this, eJM_Join);
+		if (gEnv)
+		{
+			gEnv->pThreadManager->JoinThread(this, eJM_Join);
+		}
 	}
 }
 
