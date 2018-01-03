@@ -648,6 +648,9 @@ void CATLAudioObject::Update(
 		m_propagationProcessor.GetPropagationData(propagationData);
 		m_pImplData->SetObstructionOcclusion(propagationData.obstruction, propagationData.occlusion);
 	}
+
+	UpdateControls(deltaTime, distanceToListener, listenerPosition, listenerVelocity, listenerMoved);
+	m_pImplData->Update();
 }
 
 ///////////////////////////////////////////////////////////////////////////
