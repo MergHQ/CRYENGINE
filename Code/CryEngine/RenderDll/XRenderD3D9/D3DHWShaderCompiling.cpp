@@ -951,7 +951,7 @@ void CHWShader::mfValidateTokenData(CResFile* pRes)
 	ResDir* Dir = pRes->mfGetDirectory();
 	for (unsigned int i = 0; i < Dir->size(); i++)
 	{
-		SDirEntry* pDE = &(*Dir)[i];
+		CDirEntry* pDE = &(*Dir)[i];
 		if (pDE->flags & RF_RES_$TOKENS)
 		{
 			uint32 nSize = pRes->mfFileRead(pDE);
@@ -1021,20 +1021,18 @@ bool CHWShader_D3D::mfStoreCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*&
 	}
 	if (!Data.size())
 		return false;
-	SDirEntry de;
-	de.Name = szName;
-	de.flags = RF_RES_$TOKENS;
-	de.size = Data.size();
+
+	CDirEntry de(szName, Data.size(), RF_RES_$TOKENS);
 	m_pGlobalCache->m_pRes[CACHE_USER]->mfFileAdd(&de);
-	SDirEntryOpen* pOE = m_pGlobalCache->m_pRes[CACHE_USER]->mfOpenEntry(&de);
+	SDirEntryOpen* pOE = m_pGlobalCache->m_pRes[CACHE_USER]->mfOpenEntry(de.GetName());
 	pOE->pData = &Data[0];
 	m_pGlobalCache->m_pRes[CACHE_USER]->mfFlush();
-	m_pGlobalCache->m_pRes[CACHE_USER]->mfCloseEntry(&de);
+	m_pGlobalCache->m_pRes[CACHE_USER]->mfCloseEntry(de.GetName(), de.GetFlags());
 
 	return true;
 }
 
-void CHWShader_D3D::mfGetTokenMap(CResFile* pRes, SDirEntry* pDE, FXShaderToken*& Table, TArray<uint32>*& pSHData)
+void CHWShader_D3D::mfGetTokenMap(CResFile* pRes, CDirEntry* pDE, FXShaderToken*& Table, TArray<uint32>*& pSHData)
 {
 	uint32 i;
 	int nSize = pRes->mfFileRead(pDE);
@@ -1130,8 +1128,8 @@ bool CHWShader_D3D::mfGetCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& p
 		}
 		return true;
 	}
-	SDirEntry* pDE = NULL;
-	CResFile* pRes = NULL;
+	CDirEntry* pDE = nullptr;
+	CResFile* pRes = nullptr;
 	for (int i = 0; i < 2; i++)
 	{
 		pRes = m_pGlobalCache->m_pRes[i];
@@ -1148,7 +1146,7 @@ bool CHWShader_D3D::mfGetCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& p
 		return false;
 	}
 	mfGetTokenMap(pRes, pDE, Table, pSHData);
-	pRes->mfFileClose(pDE);
+	pRes->mfFileClose(pDE->GetName(), pDE->GetFlags());
 
 	return true;
 }
@@ -2218,11 +2216,12 @@ bool SShaderCache::ReadResource(CResFile* rf, int i)
 	return false;
 }
 
-std::pair<byte*, uint32> SShaderCache::DecompressResource(int resVersion, int i, size_t offset, size_t size, bool swapEndian)
+std::pair<std::unique_ptr<byte[]>, uint32> SShaderCache::DecompressResource(int resVersion, int i, size_t offset, size_t size, bool swapEndian)
 {
+	using ReturnType = std::pair<std::unique_ptr<byte[]>, size_t>;
+
 	uint32 decompressedSize = 0;
-	byte* pData = nullptr;
-	const auto failure = std::pair<byte*, size_t>(nullptr, 0);
+	std::unique_ptr<byte[]> pData = nullptr;
 
 	const auto buf = m_pBinary[i].get() + offset;
 
@@ -2231,19 +2230,19 @@ std::pair<byte*, uint32> SShaderCache::DecompressResource(int resVersion, int i,
 	case RESVERSION_LZSS:
 		decompressedSize = *reinterpret_cast<uint32*>(buf);
 		if (size >= 10000000)
-			return failure;
+			return ReturnType{};
 		if (swapEndian)
 			SwapEndian(decompressedSize, eBigEndian);
-		pData = new byte[decompressedSize];
+		pData = std::unique_ptr<byte[]>(new byte[decompressedSize]);
 		if (!pData)
 		{
 			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - Allocation fault");
-			return failure;
+			return ReturnType{};
 		}
-		if (!Decodem(&buf[4], (byte*)pData, size - 4, decompressedSize))
+		if (!Decodem(&buf[4], pData.get(), size - 4, decompressedSize))
 		{
 			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - Decodem fault");
-			return failure;
+			return ReturnType{};
 		}
 
 		break;
@@ -2253,24 +2252,24 @@ std::pair<byte*, uint32> SShaderCache::DecompressResource(int resVersion, int i,
 		if (Lzma86_GetUnpackSize(buf, size, &outSize64) != 0)
 		{
 			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - data error");
-			return failure;
+			return ReturnType{};
 		}
 		decompressedSize = static_cast<uint32>(outSize64);
 		if (decompressedSize != 0)
 		{
-			pData = new byte[decompressedSize];
-			if (pData == 0)
+			pData = std::unique_ptr<byte[]>(new byte[decompressedSize]);
+			if (!pData)
 			{
 				CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - can't allocate");
-				return failure;
+				return ReturnType{};
 			}
 			size_t sizeOut = decompressedSize;
-			const auto res = Lzma86_Decode(pData, &sizeOut, buf, &size);
+			const auto res = Lzma86_Decode(pData.get(), &sizeOut, buf, &size);
 			decompressedSize = static_cast<uint32_t>(sizeOut);
 			if (res != 0)
 			{
 				CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - LzmaDecoder error");
-				return failure;
+				return ReturnType{};
 			}
 		}
 
@@ -2281,15 +2280,15 @@ std::pair<byte*, uint32> SShaderCache::DecompressResource(int resVersion, int i,
 		if (decompressedSize < 0 || decompressedSize > 128 * 1024 * 1024)
 		{
 			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - Corrupt DirEntiy size");
-			return failure;
+			return ReturnType{};
 		}
-		pData = new byte[decompressedSize];
-		memcpy(pData, &buf[10], decompressedSize);
+		pData = std::unique_ptr<byte[]>(new byte[decompressedSize]);
+		memcpy(pData.get(), &buf[10], decompressedSize);
 
 		break;
 	}
 
-	return std::make_pair(pData, decompressedSize);
+	return std::make_pair(std::move(pData), decompressedSize);
 }
 
 void SShaderDevCache::GetMemoryUsage(ICrySizer* pSizer) const
@@ -2315,16 +2314,16 @@ SShaderDevCache* CHWShader::mfInitDevCache(const char* name, CHWShader* pSH)
 	return pCache;
 }
 
-byte* CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSize)
+std::unique_ptr<byte[]> CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSize)
 {
 	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
 	SHWSInstance* pInst = m_pCurInst;
-	byte* pData = NULL;
+	std::unique_ptr<byte[]> pData;
 	nSize = 0;
 	if (!m_pGlobalCache || !m_pGlobalCache->isValid())
 		return NULL;
 	CResFile* rf = NULL;
-	SDirEntry* de = NULL;
+	CDirEntry* de = NULL;
 	int i;
 	bool bAsync = false;
 	int n = CRenderer::CV_r_shadersAllowCompilation == 0 ? 1 : 2;
@@ -2342,7 +2341,7 @@ byte* CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSize)
 	if (de)
 	{
 		if (CRenderer::CV_r_shadersdebug == 3 || CRenderer::CV_r_shadersdebug == 4)
-			iLog->Log("---Cache: LoadedFromGlobal %s': 0x%x", rf->mfGetFileName(), de->Name.get());
+			iLog->Log("---Cache: LoadedFromGlobal %s': 0x%x", rf->mfGetFileName(), de->GetName().get());
 		pInst->m_nCache = i;
 
 		pInst->m_bAsyncActivating = false;
@@ -2353,10 +2352,13 @@ byte* CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSize)
 
 		if (m_pGlobalCache->m_pBinary[i] && CRenderer::CV_r_shaderscacheinmemory != 0)
 		{
-			// Decompress from library
-			const auto pair = m_pGlobalCache->DecompressResource(rf->mfGetVersion(), i, de->offset, de->size, rf->RequiresSwapEndianOnRead());
-			nSize = static_cast<int32>(pair.second);
-			pData = pair.first;
+			if (de->IsValid())
+			{
+				// Decompress from library
+				auto pair = m_pGlobalCache->DecompressResource(rf->mfGetVersion(), i, de->GetOffset(), de->GetSize(), rf->RequiresSwapEndianOnRead());
+				nSize = static_cast<int32>(pair.second);
+				pData = std::move(pair).first;
+			}
 		}
 		else
 		{
@@ -2366,18 +2368,18 @@ byte* CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSize)
 
 			if (pD && nSize > 0)
 			{
-				pData = new byte[nSize];
-				std::memcpy(pData, pD, nSize);
+				pData = std::unique_ptr<byte[]>(new byte[nSize]);
+				std::memcpy(pData.get(), pD, nSize);
 			}
 
-			rf->mfFileClose(de);
+			rf->mfFileClose(de->GetName(), de->GetFlags());
 		}
 
 		if (pData && nSize > 0)
 		{
 			if (CParserBin::m_bEndians)
-				SwapEndian(*reinterpret_cast<SShaderCacheHeaderItem*>(pData), eBigEndian);
-			pInst->m_DeviceObjectID = de->Name.get();
+				SwapEndian(*reinterpret_cast<SShaderCacheHeaderItem*>(pData.get()), eBigEndian);
+			pInst->m_DeviceObjectID = de->GetName().get();
 		}
 		if (i == CACHE_USER)
 			nFlags |= HWSG_CACHE_USER;
@@ -2404,8 +2406,6 @@ bool CHWShader_D3D::mfAddCacheItem(SShaderCache* pCache, SShaderCacheHeaderItem*
 	//CryLog("Size: %d: CRC: %x", nLen, pItem->m_CRC32);
 
 	byte* pNew = new byte[sizeof(SShaderCacheHeaderItem) + nLen];
-	SDirEntry de;
-	de.offset = 0;
 	if (CParserBin::m_bEndians)
 	{
 		SShaderCacheHeaderItem IT = *pItem;
@@ -2415,14 +2415,18 @@ bool CHWShader_D3D::mfAddCacheItem(SShaderCache* pCache, SShaderCacheHeaderItem*
 	else
 		memcpy(pNew, pItem, sizeof(SShaderCacheHeaderItem));
 	memcpy(&pNew[sizeof(SShaderCacheHeaderItem)], pData, nLen);
-	de.Name = Name;
-	de.flags = RF_COMPRESS | RF_TEMPDATA;
-	de.size = nLen + sizeof(SShaderCacheHeaderItem);
+
+	CDirEntry de(Name, nLen + sizeof(SShaderCacheHeaderItem), RF_COMPRESS | RF_TEMPDATA);
 	pCache->m_pRes[CACHE_USER]->mfFileAdd(&de);
-	SDirEntryOpen* pOE = pCache->m_pRes[CACHE_USER]->mfOpenEntry(&de);
+	SDirEntryOpen* pOE = pCache->m_pRes[CACHE_USER]->mfOpenEntry(de.GetName());
 	pOE->pData = pNew;
 	if (bFlush)
+	{
 		pCache->m_pRes[CACHE_USER]->mfFlush();
+
+		// Also evict in-memory image of user cache
+		pCache->m_pBinary[CACHE_USER] = nullptr;
+	}
 
 	return true;
 }
@@ -2471,7 +2475,7 @@ bool CHWShader_D3D::mfStoreEmptyCombination(CShader* pSH, SEmptyCombination& Com
 	Ident.m_MDVMask = Comb.nMDV;
 	SHWSInstance* pInstNew = mfGetInstance(pSH, Ident, 0);
 	mfGenName(pInstNew, nameNew, 128, 1);
-	SDirEntry* deNew = rf->mfGetEntry(nameNew);
+	CDirEntry* deNew = rf->mfGetEntry(nameNew);
 	//assert(deNew);
 	if (!deNew)
 		return false;
@@ -2483,21 +2487,19 @@ bool CHWShader_D3D::mfStoreEmptyCombination(CShader* pSH, SEmptyCombination& Com
 	Ident.m_MDVMask = Comb.nMDV;
 	SHWSInstance* pInstOrg = mfGetInstance(pSH, Ident, 0);
 	mfGenName(pInstOrg, nameOrg, 128, 1);
-	SDirEntry* deOrg = rf->mfGetEntry(nameOrg);
+	CDirEntry* deOrg = rf->mfGetEntry(nameOrg);
 	if (deOrg)
 	{
-		if (deOrg->offset != deNew->offset)
-		{
-			deOrg->offset = -abs(deNew->offset);
-			deOrg->flags |= RF_NOTSAVED;
-		}
+		if (deOrg->GetOffset() != deNew->GetOffset())
+			deOrg->MarkNotSaved();
+
+		// Also evict in-memory image of user cache
+		m_pGlobalCache->m_pBinary[CACHE_USER] = nullptr;
+
 		return true;
 	}
-	SDirEntry de;
-	de.Name = CCryNameTSCRC(nameOrg);
-	de.flags = deNew->flags;
-	de.size = deNew->size;
-	de.offset = -abs(deNew->offset);
+	CDirEntry de(nameOrg, deNew->GetSize(), deNew->GetOffset(), deNew->GetFlags());
+	de.MarkNotSaved();
 	rf->mfFileAdd(&de);
 
 	return true;
@@ -2515,6 +2517,11 @@ bool CHWShader_D3D::mfFlushCacheFile()
 			pInst->m_Handle.SetShader(NULL);
 		}
 	}
+
+	// Also evict in-memory image of user cache
+	if (m_pGlobalCache)
+		m_pGlobalCache->m_pBinary[CACHE_USER] = nullptr;
+
 	return m_pGlobalCache && m_pGlobalCache->m_pRes[CACHE_USER] && m_pGlobalCache->m_pRes[CACHE_USER]->mfFlush();
 }
 
@@ -2545,10 +2552,10 @@ bool CHWShader::mfOptimiseCacheFile(SShaderCache* pCache, bool bForce, SOptimise
 	#ifdef _DEBUG
 	/*for (i=0; i<Dir->size(); i++)
 	   {
-	   SDirEntry *pDE = &(*Dir)[i];
+	   CDirEntry *pDE = &(*Dir)[i];
 	   for (j=i+1; j<Dir->size(); j++)
 	   {
-	    SDirEntry *pDE1 = &(*Dir)[j];
+	    CDirEntry *pDE1 = &(*Dir)[j];
 	    assert(pDE->Name != pDE1->Name);
 	   }
 	   }
@@ -2562,10 +2569,13 @@ bool CHWShader::mfOptimiseCacheFile(SShaderCache* pCache, bool bForce, SOptimise
 		pStats->nEntries += Dir->size();
 	for (i = 0; i < Dir->size(); i++)
 	{
-		SDirEntry* pDE = &(*Dir)[i];
-		if (pDE->flags & RF_RES_$)
+		CDirEntry* pDE = &(*Dir)[i];
+		if (!pDE->IsValid())
+			continue;
+
+		if (pDE->GetFlags() & RF_RES_$)
 		{
-			if (pDE->Name == CShaderMan::s_cNameHEAD)
+			if (pDE->GetName() == CShaderMan::s_cNameHEAD)
 				continue;
 
 			SData d;
@@ -2577,26 +2587,26 @@ bool CHWShader::mfOptimiseCacheFile(SShaderCache* pCache, bool bForce, SOptimise
 			if (pStats)
 				pStats->nTokenDataSize += d.nSizeDecomp;
 			d.bProcessed = 3;
-			d.Name = pDE->Name;
+			d.Name = pDE->GetName();
 			//d.CRC = 0;
 			d.nOffset = 0;
-			d.flags = (short)pDE->flags;
+			d.flags = (short)pDE->GetFlags();
 			Data.push_back(d);
 			continue;
 		}
 		SData d;
-		d.flags = pDE->flags;
+		d.flags = pDE->GetFlags();
 		d.nSizeComp = d.nSizeDecomp = 0;
 		d.pData = pRes->mfFileReadCompressed(pDE, d.nSizeDecomp, d.nSizeComp);
 		assert(d.pData && d.nSizeComp && d.nSizeDecomp);
 		if (!d.pData || !d.nSizeComp || !d.nSizeDecomp)
 			continue;
-		d.nOffset = pDE->offset;
+		d.nOffset = pDE->GetOffset();
 		d.bProcessed = 0;
-		d.Name = pDE->Name;
+		d.Name = pDE->GetName();
 		//d.CRC = 0;
 		Data.push_back(d);
-		pRes->mfCloseEntry(pDE);
+		pRes->mfCloseEntry(pDE->GetName(), pDE->GetFlags());
 	}
 	//FILE *fp = NULL;
 	int nDevID = 0x10000000;
@@ -2680,14 +2690,10 @@ bool CHWShader::mfOptimiseCacheFile(SShaderCache* pCache, bool bForce, SOptimise
 		for (i = 0; i < Data.size(); i++)
 		{
 			SData* pD = &Data[i];
+			CDirEntry de;
 
-			SDirEntry de;
-			de.Name = pD->Name;
-			de.flags = pD->flags;
 			if (pD->bProcessed == 1)
 			{
-				de.offset = pD->nOffset;
-				de.flags |= RF_COMPRESS | RF_COMPRESSED;
 				if (pStats)
 				{
 					pStats->nSizeUncompressed += pD->nSizeDecomp;
@@ -2697,30 +2703,31 @@ bool CHWShader::mfOptimiseCacheFile(SShaderCache* pCache, bool bForce, SOptimise
 				assert(pD->pData);
 				if (pD->pData)
 				{
-					de.size = pD->nSizeComp + 4;
-					SDirEntryOpen* pOE = pRes->mfOpenEntry(&de);
-					byte* pData = new byte[de.size];
+					de = CDirEntry(pD->Name, pD->nSizeComp + 4, pD->nOffset, pD->flags | RF_TEMPDATA | RF_COMPRESS | RF_COMPRESSED);
+
+					SDirEntryOpen* pOE = pRes->mfOpenEntry(pD->Name);
+					byte* pData = new byte[de.GetSize()];
 					int nSize = pD->nSizeDecomp;
 					*(int*)pData = nSize;
 					memcpy(&pData[4], pD->pData, pD->nSizeComp);
-					de.flags |= RF_TEMPDATA;
 					pOE->pData = pData;
 					SAFE_DELETE_ARRAY(pD->pData);
 				}
 			}
 			else if (pD->bProcessed != 3)
 			{
-				de.size = pD->nSizeComp + 4;
-				de.flags |= RF_COMPRESS;
-				de.offset = -pD->nOffset;
+				de = CDirEntry(pD->Name, pD->nSizeComp + 4, pD->nOffset, pD->flags | RF_COMPRESS);
+				de.MarkNotSaved();
 				SAFE_DELETE_ARRAY(pD->pData);
 			}
 			else
 			{
-				SDirEntryOpen* pOE = pRes->mfOpenEntry(&de);
+				SDirEntryOpen* pOE = pRes->mfOpenEntry(pD->Name);
 				pOE->pData = pD->pData;
-				de.size = pD->nSizeDecomp;
+
+				de = CDirEntry(pD->Name, pD->nSizeDecomp, pD->flags);
 			}
+
 			pRes->mfFileAdd(&de);
 		}
 	}
@@ -2754,13 +2761,13 @@ bool CHWShader::mfOptimiseCacheFile(SShaderCache* pCache, bool bForce, SOptimise
 
 int __cdecl sSort(const VOID* arg1, const VOID* arg2)
 {
-	SDirEntry** pi1 = (SDirEntry**)arg1;
-	SDirEntry** pi2 = (SDirEntry**)arg2;
-	SDirEntry* ti1 = *pi1;
-	SDirEntry* ti2 = *pi2;
-	if (ti1->Name < ti2->Name)
+	CDirEntry** pi1 = (CDirEntry**)arg1;
+	CDirEntry** pi2 = (CDirEntry**)arg2;
+	CDirEntry* ti1 = *pi1;
+	CDirEntry* ti2 = *pi2;
+	if (ti1->GetName() < ti2->GetName())
 		return -1;
-	if (ti1->Name == ti2->Name)
+	if (ti1->GetName() == ti2->GetName())
 		return 0;
 	return 1;
 }
@@ -4179,7 +4186,7 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 					if (it == m_ShaderCacheList.end())
 						m_ShaderCacheList.insert(FXShaderCacheNamesItor::value_type(nameCache, m_CRC32));
 				}
-				pCacheItemBuffer = std::unique_ptr<byte[]>(mfGetCacheItem(nFlags, nSize));
+				pCacheItemBuffer = mfGetCacheItem(nFlags, nSize);
 			}
 
 			auto pCacheItem = reinterpret_cast<SShaderCacheHeaderItem*>(pCacheItemBuffer.get());

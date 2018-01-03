@@ -8,21 +8,6 @@
 
 #include "Common/RenderView.h"
 
-int ShadowMapFrustum::GetNumSides() const
-{
-	int nSides = bOmniDirectionalShadow ? OMNI_SIDES_NUM : 1;
-	return nSides;
-}
-
-CCamera ShadowMapFrustum::GetCamera(int side) const
-{
-	if (!bOmniDirectionalShadow)
-	{
-		return gEnv->p3DEngine->GetRenderingCamera();
-	}
-	return FrustumPlanes[side];
-}
-
 //////////////////////////////////////////////////////////////////////////
 void ShadowMapFrustum::Job_RenderShadowCastersToView(const SRenderingPassInfo& passInfo, bool bJobCasters)
 {

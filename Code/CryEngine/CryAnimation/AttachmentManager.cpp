@@ -1073,7 +1073,7 @@ void CAttachmentManager::PhysicalizeAttachment(int idx, int nLod, IPhysicalEntit
 
 	// old path
 	if (!(pIAttachment = GetInterfaceByIndex(idx)) || pIAttachment->GetType() != CA_BONE || !(pIAttachment->GetFlags() & FLAGS_ATTACH_PHYSICALIZED) ||
-	    !pIAttachment->GetIAttachmentObject() || !(pStatObj = pIAttachment->GetIAttachmentObject()->GetIStatObj()) || !pStatObj->GetPhysGeom() ||
+	    !pIAttachment->GetIAttachmentObject() || !(pStatObj = pIAttachment->GetIAttachmentObject()->GetIStatObj()) ||
 	    pIAttachment->IsAttachmentHidden())
 		return;
 
@@ -1101,7 +1101,7 @@ void CAttachmentManager::PhysicalizeAttachment(int idx, int nLod, IPhysicalEntit
 		m_physAttachIds |= 1 << id;
 		pIAttachment->SetFlags(pIAttachment->GetFlags() | id << idbit);
 	}
-	pent->AddGeometry(pStatObj->GetPhysGeom(), &gp, m_pSkelInstance->m_pDefaultSkeleton->GetJointCount() + id);
+	pStatObj->Physicalize(pent, &gp, m_pSkelInstance->m_pDefaultSkeleton->GetJointCount() + id);
 	pIAttachment->SetFlags(pIAttachment->GetFlags() | FLAGS_ATTACH_WAS_PHYSICALIZED);
 }
 

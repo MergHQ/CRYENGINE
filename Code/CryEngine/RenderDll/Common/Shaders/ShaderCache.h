@@ -364,7 +364,7 @@ struct SShaderCache
 		m_bNeedPrecache = false;
 	}
 	bool ReadResource(CResFile* rf, int i);
-	std::pair<byte*, uint32> DecompressResource(int resVersion, int i, size_t offset, size_t size, bool swapEndian = false);
+	std::pair<std::unique_ptr<byte[]>, uint32> DecompressResource(int resVersion, int i, size_t offset, size_t size, bool swapEndian = false);
 	bool isValid();
 	int  Size();
 	void GetMemoryUsage(ICrySizer* pSizer) const;

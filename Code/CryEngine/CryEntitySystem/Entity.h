@@ -441,7 +441,7 @@ private:
 	// Component Save/Load
 	//////////////////////////////////////////////////////////////////////////
 	// Loads a component, but leaves it uninitialized
-	void LoadComponent(Serialization::IArchive& archive, uint8* pBuffer);
+	void LoadComponent(Serialization::IArchive& archive, uint8*& pBuffer);
 	void SaveComponent(Serialization::IArchive& archive, IEntityComponent& component);
 	// Loads a component with the legacy XML format, but leaves it uninitialized
 	bool LoadComponentLegacy(XmlNodeRef entityNode, XmlNodeRef componentNode);

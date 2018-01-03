@@ -1857,7 +1857,7 @@ IStatObj* CStatObj::SkinVertices(strided_pointer<Vec3> pSkelVtx, const Matrix34&
 			{
 				SMeshTangents tb(pTangents0[i]);
 
-				tb.RotateBy(M);
+				tb.RotateSafelyBy(M);
 				tb.ExportTo(pTangents[i]);
 			}
 			pVtx[i] = v3;
@@ -1886,7 +1886,8 @@ int CStatObj::Physicalize(IPhysicalEntity* pent, pe_geomparams* pgp, int id, con
 	if (GetFlags() & STATIC_OBJECT_COMPOUND)
 	{
 		Matrix34 mtxId(IDENTITY);
-		res = PhysicalizeSubobjects(pent, pgp->pMtx3x4 ? pgp->pMtx3x4 : &mtxId, pgp->mass, pgp->density, id, 0, szPropsOverride);
+		res = PhysicalizeSubobjects(pent, pgp->pMtx3x4 ? pgp->pMtx3x4 : &mtxId, pgp->mass, pgp->density, id, 0, szPropsOverride, 
+			pgp->type == pe_articgeomparams::type_id ? ((pe_articgeomparams*)pgp)->idbody : -1);
 	}
 	else
 	{
@@ -2004,7 +2005,7 @@ int CStatObj::Physicalize(IPhysicalEntity* pent, pe_geomparams* pgp, int id, con
 #define isalpha(c) isalpha((unsigned char)c)
 #define isdigit(c) isdigit((unsigned char)c)
 
-int CStatObj::PhysicalizeSubobjects(IPhysicalEntity* pent, const Matrix34* pMtx, float mass, float density, int id0, strided_pointer<int> pJointsIdMap, const char* szPropsOverride)
+int CStatObj::PhysicalizeSubobjects(IPhysicalEntity* pent, const Matrix34* pMtx, float mass, float density, int id0, strided_pointer<int> pJointsIdMap, const char* szPropsOverride, int idbodyArtic)
 {
 	int i, j, i0, i1, len = 0, len1, nObj = GetSubObjectCount(), ipart[2], nparts, bHasPlayerOnlyGeoms = 0, nGeoms = 0, id, idNext = 0;
 	float V[2], M, scale3, jointsz;
@@ -2098,7 +2099,7 @@ int CStatObj::PhysicalizeSubobjects(IPhysicalEntity* pent, const Matrix34* pMtx,
 		{
 			if (pJointsIdMap)
 				continue;
-			partpos.idbody = i + id0;
+			partpos.idbody = idbodyArtic + (i + id0 - idbodyArtic & idbodyArtic >> 31);
 			partpos.pMtx3x4 = pMtx ? &(mtxLoc = *pMtx * pSubObj->tm) : &pSubObj->tm;
 
 			float mi = 0, di = 0;

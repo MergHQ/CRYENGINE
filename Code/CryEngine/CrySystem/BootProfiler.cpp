@@ -963,12 +963,15 @@ void CBootProfiler::StopFrame()
 
 void CBootProfiler::StopSaveSessionsThread()
 {
-	m_quitSaveThread = true;
-	m_saveThreadWakeUpEvent.Set();
-
-	if (gEnv)
+	if (!m_quitSaveThread)
 	{
-		gEnv->pThreadManager->JoinThread(this, eJM_Join);
+		m_quitSaveThread = true;
+		m_saveThreadWakeUpEvent.Set();
+
+		if (gEnv)
+		{
+			gEnv->pThreadManager->JoinThread(this, eJM_Join);
+		}
 	}
 }
 

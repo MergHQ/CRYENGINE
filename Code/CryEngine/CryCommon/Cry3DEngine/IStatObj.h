@@ -477,11 +477,12 @@ struct IStatObj : IMeshObj, IStreamable
 	virtual IStatObj::SSubObject& AddSubObject(IStatObj* pStatObj) = 0;
 
 	//! Adds subobjects to pent, meshes as parts, joint helpers as breakable joints
-	virtual int PhysicalizeSubobjects(IPhysicalEntity* pent, const Matrix34* pMtx, float mass, float density = 0.0f, int id0 = 0, strided_pointer<int> pJointsIdMap = 0, const char* szPropsOverride = 0) = 0;
+	virtual int PhysicalizeSubobjects(IPhysicalEntity* pent, const Matrix34* pMtx, float mass, float density = 0.0f, int id0 = 0, strided_pointer<int> pJointsIdMap = 0, const char* szPropsOverride = 0, int idbodyArtic = -1) = 0;
 
 	//! Adds all phys geometries to pent, assigns ids starting from id; takes mass and density from the StatObj properties if not set in pgp.
 	//! id == -1 means that compound objects will use the 0th level in the id space (i.e. slot#==phys id), and simple objects will let the physics allocate an id
 	//! for compound objects calls PhysicalizeSubobjects
+	//! if >=0, idbodyArtic sets it for all parts as idbody, otherwise idbody is set to each node's phys part id
 	//! \return Physical id of the last physicalized part
 	virtual int  Physicalize(IPhysicalEntity* pent, pe_geomparams* pgp, int id = -1, const char* szPropsOverride = 0) = 0;
 
