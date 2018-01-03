@@ -2097,25 +2097,25 @@ static void sAddToList(SShaderCache* pCache, ShaderData& Data)
 	ResDir* Dir = pRes->mfGetDirectory();
 	for (i = 0; i < Dir->size(); i++)
 	{
-		SDirEntry* pDE = &(*Dir)[i];
-		if (pDE->Name == CShaderMan::s_cNameHEAD)
+		CDirEntry* pDE = &(*Dir)[i];
+		if (pDE->GetName() == CShaderMan::s_cNameHEAD)
 			continue;
-		ShaderDataItor it = Data.find(pDE->Name);
+		ShaderDataItor it = Data.find(pDE->GetName());
 		if (it == Data.end())
 		{
 			SMgData d;
 			d.nSize = pRes->mfFileRead(pDE);
-			SDirEntryOpen* pOE = pRes->mfGetOpenEntry(pDE);
+			SDirEntryOpen* pOE = pRes->mfGetOpenEntry(pDE->GetName());
 			assert(pOE);
 			if (!pOE)
 				continue;
-			d.flags = pDE->flags;
-			if (pDE->flags & RF_RES_$)
+			d.flags = pDE->GetFlags();
+			if (pDE->GetFlags() & RF_RES_$)
 			{
 				d.pData = new byte[d.nSize];
 				memcpy(d.pData, pOE->pData, d.nSize);
 				d.bProcessed = 0;
-				d.Name = pDE->Name;
+				d.Name = pDE->GetName();
 				d.CRC = 0;
 				d.nID = snCurListID++;
 				Data.insert(ShaderDataItor::value_type(d.Name, d));
@@ -2130,7 +2130,7 @@ static void sAddToList(SShaderCache* pCache, ShaderData& Data)
 			memcpy(d.pData, pOE->pData, d.nSize);
 			SShaderCacheHeaderItem* pItem = (SShaderCacheHeaderItem*)d.pData;
 			d.bProcessed = 0;
-			d.Name = pDE->Name;
+			d.Name = pDE->GetName();
 			d.CRC = pItem->m_CRC32;
 			d.nID = snCurListID++;
 			Data.insert(ShaderDataItor::value_type(d.Name, d));
@@ -2231,22 +2231,22 @@ void CShaderMan::_MergeShaders()
 		for (it = Data.begin(); it != Data.end(); it++)
 		{
 			SMgData* pD = &it->second;
-			SDirEntry de;
-			de.Name = pD->Name;
-			de.size = pD->nSize;
-			de.flags = pD->flags;
+			uint32 flags = pD->flags;
+			uint32 offset = 0;
 			if (pD->flags & RF_RES_$)
-				de.flags &= ~RF_COMPRESS;
+				flags &= ~RF_COMPRESS;
 			else
 			{
-				de.flags |= RF_COMPRESS;
-				de.offset = nDeviceShadersCounter++;
+				flags |= RF_COMPRESS;
+				offset = nDeviceShadersCounter++;
 			}
-			byte* pNew = new byte[de.size];
+			byte* pNew = new byte[pD->nSize];
 			memcpy(pNew, pD->pData, pD->nSize);
-			de.flags |= RF_TEMPDATA;
+			flags |= RF_TEMPDATA;
+
+			CDirEntry de(pD->Name, pD->nSize, offset, flags);
 			pRes->mfFileAdd(&de);
-			SDirEntryOpen* pOE = pRes->mfOpenEntry(&de);
+			SDirEntryOpen* pOE = pRes->mfOpenEntry(de.GetName());
 			pOE->pData = pNew;
 		}
 		for (it = Data.begin(); it != Data.end(); it++)

@@ -597,8 +597,8 @@ public:
 
 	//============================================================================
 	// Binary cache support
-	byte*		mfGetCacheItem(uint32& nFlags, int32& nSize);
-	static bool mfAddCacheItem(SShaderCache* pCache, SShaderCacheHeaderItem* pItem, const byte* pData, int nLen, bool bFlush, CCryNameTSCRC Name);
+	std::unique_ptr<byte[]> mfGetCacheItem(uint32& nFlags, int32& nSize);
+	static                  bool mfAddCacheItem(SShaderCache* pCache, SShaderCacheHeaderItem* pItem, const byte* pData, int nLen, bool bFlush, CCryNameTSCRC Name);
 
 	bool mfCloseCacheFile()
 	{
@@ -687,7 +687,7 @@ public:
 	bool          AddResourceLayoutToScript(SHWSInstance* pInst, const char* szProfile, const char* pFunCCryName, TArray<char>& Scr);
 	void          RemoveUnaffectedParameters_D3D10(CParserBin& Parser, SHWSInstance* pInst, std::vector<SCGBind>& InstBindVars);
 	bool          mfStoreCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& pSHData, const char* szName);
-	void          mfGetTokenMap(CResFile* pRes, SDirEntry* pDE, FXShaderToken*& Table, TArray<uint32>*& pSHData);
+	void          mfGetTokenMap(CResFile* pRes, CDirEntry* pDE, FXShaderToken*& Table, TArray<uint32>*& pSHData);
 	void          mfSetDefaultRT(uint64& nAndMask, uint64& nOrMask);
 	bool          AutoGenMultiresGS(TArray<char>& sNewScr, CShader *pSH);
 
