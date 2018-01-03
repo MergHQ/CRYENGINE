@@ -12,14 +12,13 @@
 
 int GeomRef::Set(IEntity* pEntity, int iSlot)
 {
-	if (!pEntity)
-	{
-		m_pMeshObj = nullptr;
-		m_pPhysEnt = nullptr;
-		return -1;
-	}
-
 	m_pMeshObj = nullptr;
+	m_pPhysEnt = nullptr;
+	m_pArea = nullptr;
+
+	if (!pEntity)
+		return -1;
+
 	int iStart = iSlot < 0 ? 0 : iSlot;
 	int iEnd = iSlot < 0 ? pEntity->GetSlotCount() : iSlot + 1;
 	iSlot = -1;

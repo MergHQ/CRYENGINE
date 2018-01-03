@@ -413,6 +413,7 @@ void CParticleEmitter::Restart()
 void CParticleEmitter::Kill()
 {
 	m_active = false;
+	m_alive = false;
 	m_componentRuntimes.clear();
 	m_componentRuntimesFor.clear();
 }
@@ -672,8 +673,7 @@ IEntity* CParticleEmitter::GetEmitGeometryEntity() const
 void CParticleEmitter::UpdateEmitGeomFromEntity()
 {
 	IEntity* pEntity = GetEmitGeometryEntity();
-	if (pEntity)
-		m_emitterGeometrySlot = m_emitterGeometry.Set(pEntity);
+	m_emitterGeometrySlot = m_emitterGeometry.Set(pEntity);
 }
 
 QuatTS CParticleEmitter::GetEmitterGeometryLocation() const

@@ -152,6 +152,8 @@ void CParticleSystem::Update()
 			}
 		}
 
+		m_profiler.Display();
+
 		TrimEmitters(!m_bResetEmitters);
 		m_bResetEmitters = false;
 		m_emitters.append(m_newEmitters);
@@ -291,18 +293,9 @@ void CParticleSystem::ClearRenderResources()
 #endif
 
 	m_emitters.clear();
-
+	m_effects.clear();
 	m_numFrames = 0;
 	m_numClears++;
-	auto numEffects = m_effects.size();
-	for (auto it = m_effects.begin(); it != m_effects.end(); )
-	{
-		if (!it->second || it->second->Unique())
-			it = m_effects.erase(it);
-		else
-			++it;
-	}
-	Warning("ParticleSystem: Purging %d/%d effects", numEffects - m_effects.size(), numEffects);
 }
 
 void CParticleSystem::CheckFileAccess(cstr filename) const
