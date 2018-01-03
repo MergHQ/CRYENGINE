@@ -693,40 +693,48 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 #endif
 
 #if CRY_PLATFORM_WINDOWS
-		UINT winOpenFlags = OF_CREATE | OF_SHARE_DENY_WRITE;
+		DWORD winAccessFlags = 0;
+		DWORD winCreationMode = 0;
 		int cOpenFlags = 0;
 		if (hasWriteAccess && hasReadAccess)
 		{
-			winOpenFlags |= OF_READWRITE;
+			winAccessFlags = (GENERIC_READ | GENERIC_WRITE);
+			winCreationMode = CREATE_ALWAYS;
+			cOpenFlags |= O_RDWR;
 		}
 		else if (hasWriteAccess)
 		{
-			winOpenFlags |= OF_WRITE;
+			winAccessFlags = GENERIC_WRITE;
+			winCreationMode = CREATE_ALWAYS;
+			cOpenFlags |= O_WRONLY;
 		}
 		else if (hasReadAccess)
 		{
-			winOpenFlags |= OF_READ;
+			winAccessFlags = GENERIC_READ;
+			winCreationMode = OPEN_EXISTING;
+			cOpenFlags |= O_RDONLY;
 		}
 		if (isTextMode)
 		{
-			cOpenFlags |= _O_TEXT;
+			cOpenFlags |= O_TEXT;
 		}
 		else if (isBinaryMode)
 		{
-			cOpenFlags |= _O_BINARY;
+			cOpenFlags |= O_BINARY;
 		}
 		if (isAppend)
 		{
-			cOpenFlags |= _O_APPEND;
+			winCreationMode = OPEN_ALWAYS;
+			cOpenFlags |= O_APPEND;
 		}
 
-		OFSTRUCT fileInfo;
-		HFILE winFile = OpenFile(szAdjustedPath, &fileInfo, winOpenFlags);
-		if (winFile == HFILE_ERROR)
+		HANDLE winFile = CreateFile(szAdjustedPath, winAccessFlags, FILE_SHARE_READ, 0, winCreationMode, FILE_ATTRIBUTE_NORMAL, 0);
+		if (winFile == INVALID_HANDLE_VALUE)
 		{
 			return 0;
 		}
-		int cHandle = _open_osfhandle(winFile, cOpenFlags);
+		
+		int cHandle = _open_osfhandle(reinterpret_cast<intptr_t>(winFile), cOpenFlags);
 		if (cHandle == -1)
 		{
 			return 0;
