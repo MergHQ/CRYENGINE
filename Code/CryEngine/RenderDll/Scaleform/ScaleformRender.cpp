@@ -324,7 +324,7 @@ CD3D9Renderer::CTempTexture SSF_ResourcesD3D::GetStencilSurface(CD3D9Renderer* p
 {
 	CryCriticalSectionNonRecursive threadSafePool;
 
-	return pRenderer->GetTempDepthSurface(nWidth, nHeight);
+	return pRenderer->GetTempDepthSurface(pRenderer->GetFrameID(), nWidth, nHeight);
 }
 
 //////////////////////////////////////////////////////////////////////////

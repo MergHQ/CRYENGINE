@@ -190,11 +190,11 @@ inline uint8 CDeviceObjectFactory::MarkWriteRange(D3DBuffer* buffer, buffer_size
 template<typename TCache>
 inline void EraseUnusedEntriesFromCache(TCache& cache)
 {
-	for (auto it = cache.begin(), itEnd = cache.end(); it != itEnd; )
+	for (auto it = cache.begin(); it != cache.end(); )
 	{
-		auto itCurrentEntry = it++;
-		if (itCurrentEntry->second.use_count() == 1)
-			cache.erase(itCurrentEntry->first);
+		it = it->second.use_count() == 1 ?
+			cache.erase(it) :
+			std::next(it);
 	}
 }
 
@@ -202,10 +202,10 @@ inline void EraseUnusedEntriesFromCache(TCache& cache)
 template<typename TCache>
 inline void EraseExpiredEntriesFromCache(TCache& cache)
 {
-	for (auto it = cache.begin(), itEnd = cache.end(); it != itEnd; )
+	for (auto it = cache.begin(); it != cache.end(); )
 	{
-		auto itCurrentEntry = it++;
-		if (itCurrentEntry->second.expired())
-			cache.erase(itCurrentEntry->first);
+		it = it->second.expired() ?
+			cache.erase(it) :
+			std::next(it);
 	}
 }

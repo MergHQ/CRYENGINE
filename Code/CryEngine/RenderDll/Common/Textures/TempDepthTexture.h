@@ -9,6 +9,7 @@
 struct STempDepthTexture : _i_reference_target<uint32_t> 
 {
 	SDepthTexture texture;
+	int lastAccessFrameID = 0;
 
 	STempDepthTexture(SDepthTexture &&texture) noexcept : texture(std::move(texture)) {}
 	~STempDepthTexture();

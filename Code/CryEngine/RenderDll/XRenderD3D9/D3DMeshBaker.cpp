@@ -735,7 +735,7 @@ bool CD3D9Renderer::BakeMesh(const SMeshBakingInputParams* pInputParams, SMeshBa
 			pBakeMaterial.push_back(PatchMaterial(*it)); // Replace current shader with MeshBake
 		}
 
-		auto pTmpDepthSurface = GetTempDepthSurface(outputWidth, outputHeight);
+		auto pTmpDepthSurface = GetTempDepthSurface(gEnv->pRenderer->GetFrameID(), outputWidth, outputHeight);
 		if (!pTmpDepthSurface)
 		{
 			CryLog("BakeMesh: Failed as temporary depth surface could not be created of size %dx%d\n", outputWidth, outputHeight);

@@ -908,6 +908,9 @@ void CD3D9Renderer::RT_BeginFrame(CryDisplayContextHandle hWnd)
 	// Delete resources scheduled for deletion.
 	RT_DelayedDeleteResources(false);
 
+	// Trim temporary depth texture pool
+	CRendererResources::TrimTempDepthSurfaces(GetFrameID(), 5);
+
 	// Update PSOs
 	GetDeviceObjectFactory().UpdatePipelineStates();
 

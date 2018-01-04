@@ -112,9 +112,24 @@ public:
 public:
 	static tempTexturePool_t m_TempDepths;
 
-	static CTempTexture   GetTempDepthSurface(int nWidth, int nHeight, bool bExactMatch = true);
+	static CTempTexture   GetTempDepthSurface(int currentFrameID, int nWidth, int nHeight, bool bExactMatch = true);
 	static size_t         SizeofTempDepthSurfaces();
 	static void           ReleaseTempDepthSurfaces();
+
+	// Erases temporaries that have been unused for a specified frames count
+	static void TrimTempDepthSurfaces(int currentFrameID, int delayFrames)
+	{
+		for (auto it = m_TempDepths.begin(); it != m_TempDepths.end();)
+		{
+			const auto &tex = *it;
+
+			const auto unused = tex->UseCount() == 1 && !tex->texture.IsLocked();
+			const auto shouldDelete = unused && currentFrameID - tex->lastAccessFrameID >= delayFrames;
+			it = shouldDelete ?
+				m_TempDepths.erase(it) :
+				std::next(it);
+		}
+	}
 
 	static SDepthTexture CreateDepthSurface(int nWidth, int nHeight, bool bAA);
 
