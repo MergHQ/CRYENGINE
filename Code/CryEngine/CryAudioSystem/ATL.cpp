@@ -173,13 +173,8 @@ void CAudioTranslationLayer::Update(float const deltaTime)
 {
 	if (m_pIImpl != nullptr)
 	{
-		if (deltaTime > 0.0f)
-		{
-			m_audioListenerMgr.Update(deltaTime);
-			m_pGlobalAudioObject->GetImplDataPtr()->Update();
-			m_fileCacheMgr.Update();
-		}
-
+		m_audioListenerMgr.Update(deltaTime);
+		m_pGlobalAudioObject->GetImplDataPtr()->Update();
 		m_audioObjectMgr.Update(deltaTime, m_audioListenerMgr.GetActiveListenerAttributes());
 		m_pIImpl->Update();
 	}
