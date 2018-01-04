@@ -80,54 +80,67 @@ void CAudioObjectManager::Update(float const deltaTime, Impl::SObject3DAttribute
 	CPropagationProcessor::s_totalSyncPhysRays = 0;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
-	bool const listenerMoved = listenerAttributes.velocity.GetLengthSquared() > FloatEpsilon;
-
-	auto iter = m_constructedAudioObjects.begin();
-	auto iterEnd = m_constructedAudioObjects.end();
-
-	while (iter != iterEnd)
+	if (deltaTime > 0.0f)
 	{
-		CATLAudioObject* const pObject = *iter;
+		bool const listenerMoved = listenerAttributes.velocity.GetLengthSquared() > FloatEpsilon;
 
-		CObjectTransformation const& transformation = pObject->GetTransformation();
+		auto iter = m_constructedAudioObjects.begin();
+		auto iterEnd = m_constructedAudioObjects.end();
 
-		float const distance = transformation.GetPosition().GetDistance(listenerAttributes.transformation.GetPosition());
-		float const radius = pObject->GetMaxRadius();
-
-		if (radius <= 0.0f || distance < radius)
+		while (iter != iterEnd)
 		{
-			if ((pObject->GetFlags() & EObjectFlags::Virtual) != 0)
+			CATLAudioObject* const pObject = *iter;
+
+			CObjectTransformation const& transformation = pObject->GetTransformation();
+
+			float const distance = transformation.GetPosition().GetDistance(listenerAttributes.transformation.GetPosition());
+			float const radius = pObject->GetMaxRadius();
+
+			if (radius <= 0.0f || distance < radius)
 			{
-				pObject->RemoveFlag(EObjectFlags::Virtual);
+				if ((pObject->GetFlags() & EObjectFlags::Virtual) != 0)
+				{
+					pObject->RemoveFlag(EObjectFlags::Virtual);
+				}
 			}
-		}
-		else
-		{
-			if ((pObject->GetFlags() & EObjectFlags::Virtual) == 0)
+			else
 			{
-				pObject->SetFlag(EObjectFlags::Virtual);
+				if ((pObject->GetFlags() & EObjectFlags::Virtual) == 0)
+				{
+					pObject->SetFlag(EObjectFlags::Virtual);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-				pObject->ResetObstructionRays();
+					pObject->ResetObstructionRays();
 #endif      // INCLUDE_AUDIO_PRODUCTION_CODE
+				}
+			}
+
+			if (IsActive(pObject))
+			{
+				pObject->Update(deltaTime, distance, listenerAttributes.transformation.GetPosition(), listenerAttributes.velocity, listenerMoved);
+			}
+			else if (pObject->CanBeReleased())
+			{
+				iter = m_constructedAudioObjects.erase(iter);
+				iterEnd = m_constructedAudioObjects.end();
+				m_pIImpl->DestructObject(pObject->GetImplDataPtr());
+				pObject->SetImplDataPtr(nullptr);
+
+				delete pObject;
+				continue;
+			}
+
+			++iter;
+		}
+	}
+	else
+	{
+		for (auto const pObject : m_constructedAudioObjects)
+		{
+			if (IsActive(pObject))
+			{
+				pObject->GetImplDataPtr()->Update();
 			}
 		}
-
-		if (IsActive(pObject))
-		{
-			pObject->Update(deltaTime, distance, listenerAttributes.transformation.GetPosition(), listenerAttributes.velocity, listenerMoved);
-		}
-		else if (pObject->CanBeReleased())
-		{
-			iter = m_constructedAudioObjects.erase(iter);
-			iterEnd = m_constructedAudioObjects.end();
-			m_pIImpl->DestructObject(pObject->GetImplDataPtr());
-			pObject->SetImplDataPtr(nullptr);
-
-			delete pObject;
-			continue;
-		}
-
-		++iter;
 	}
 }
 
