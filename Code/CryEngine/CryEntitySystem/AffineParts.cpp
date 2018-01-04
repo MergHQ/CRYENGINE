@@ -378,7 +378,7 @@ static HVect spect_decomp(HMatrix S, HMatrix U)
 {
 	HVect kv;
 	double Diag[3], OffD[3];  /* OffD is off-diag (by omitted index) */
-	double g, h, fabsh, fabsOffDi, t, theta, c, s, tau, ta, OffDq, a, b;
+	double g, h, absh, fabsOffDi, t, c, s, tau, ta, OffDq, a, b;
 	static char nxt[] = { Y, Z, X };
 	int sweep, i, j;
 	mat_copy(U, =, mat_id, 4);
@@ -390,29 +390,35 @@ static HVect spect_decomp(HMatrix S, HMatrix U)
 	OffD[Z] = S[X][Y];
 	for (sweep = 20; sweep > 0; sweep--)
 	{
-		float sm = fabs(OffD[X]) + fabs(OffD[Y]) + fabs(OffD[Z]);
-		if (sm == 0.0f) break;
+		const auto sm = abs(OffD[X]) + abs(OffD[Y]) + abs(OffD[Z]);
+		if (sm == 0.0) break;
 		for (i = Z; i >= X; i--)
 		{
 			int p = nxt[i];
 			int q = nxt[p];
-			fabsOffDi = fabs(OffD[i]);
+			fabsOffDi = abs(OffD[i]);
 			g = 100.0 * fabsOffDi;
 			if (fabsOffDi > 0.0f)
 			{
 				h = Diag[q] - Diag[p];
-				fabsh = fabs(h);
-				if (fabsh > FLT_EPSILON && (fabsh + g == fabsh))
+				absh = abs(h);
+				if (absh > std::numeric_limits<double>::epsilon() && (absh + g == absh))
 				{
 					t = OffD[i] / h;
 				}
 				else
 				{
-					theta = 0.5 * h / OffD[i];
-					t = 1.0f / (fabs(theta) + sqrtf(theta * theta + 1.0));
-					if (theta < 0.0f) t = -t;
+					// This is to avoid division by zero fp exceptions as well as avoid a NaN when h is zero.
+					t = 0;
+					if (abs(OffD[i]) > std::numeric_limits<double>::denorm_min())
+					{
+						const auto theta = 0.5 * h / OffD[i];
+						t = 1.0f / (abs(theta) + sqrt(theta * theta + 1.0));
+
+						if (theta < 0.0f) t = -t;
+					}
 				}
-				c = 1.0f / sqrtf(t * t + 1.0f);
+				c = 1.0f / sqrt(t * t + 1.0f);
 				s = t * c;
 				tau = s / (c + 1.0f);
 				ta = t * OffD[i];

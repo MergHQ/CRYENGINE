@@ -1270,8 +1270,12 @@ void SParticleVertexContext::Init(float fMaxContainerPixels, CParticleContainer*
 		m_fFillFactor *= 0.8285f;
 	m_fFillFade = 2.f / fMaxContainerPixels;
 
-	m_fInvMinPix = sqr(CParticleManager::Instance()->GetMaxAngularDensity(*m_CamInfo.pCamera) * emitterMain.GetViewDistRatioFloat() * params.fViewDistanceAdjust)
+	// Avoid division by zero fp exception
+	if (abs(m_fFillFactor) > std::numeric_limits<float>::denorm_min())
+		m_fInvMinPix = sqr(CParticleManager::Instance()->GetMaxAngularDensity(*m_CamInfo.pCamera) * emitterMain.GetViewDistRatioFloat() * params.fViewDistanceAdjust)
 		/ m_fFillFactor;
+	else
+		m_fInvMinPix = std::numeric_limits<float>::infinity();
 
 	m_fDistFuncCoefs[0] = 1.f;
 	m_fDistFuncCoefs[1] = m_fDistFuncCoefs[2] = 0.f;

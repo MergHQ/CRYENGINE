@@ -28,7 +28,6 @@ public:
 
 	void                Init(Impl::IImpl* const pIImpl);
 	void                Release();
-	void                Update(float const deltaTime);
 
 	CATLEvent*          ConstructAudioEvent();
 	void                ReleaseEvent(CATLEvent* const pEvent);

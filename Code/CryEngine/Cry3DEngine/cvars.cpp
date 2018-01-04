@@ -400,9 +400,9 @@ void CVars::Init()
 	DefineConstIntCVar(e_ShadowsFrustums, 0, VF_CHEAT,
 	                   "Debug");
 	DefineConstIntCVar(e_ShadowsDebug, 0, VF_CHEAT,
-						"0=off,\n"
-						"2=visualize shadow maps on the screen,\n"
-						"4=visualize shadow frustums as spheres and cones\n");
+	                   "0=off,\n"
+	                   "2=visualize shadow maps on the screen,\n"
+	                   "4=visualize shadow frustums as spheres and cones\n");
 	REGISTER_CVAR(e_ShadowsCacheUpdate, 0, VF_NULL,
 	              "Trigger updates of the shadow cache: 0=no update, 1=one update, 2=continuous updates");
 	REGISTER_CVAR(e_ShadowsCacheObjectLod, 0, VF_NULL,
@@ -472,6 +472,10 @@ void CVars::Init()
 
 	REGISTER_CVAR(e_Terrain, 1, VF_CHEAT | VF_CHEAT_ALWAYS_CHECK,
 	              "Activates drawing of terrain ground");
+	REGISTER_CVAR(e_TerrainAutoGenerateBaseTexture, 0, VF_NULL,
+	              "Instead of manually painting the base texture - just build it automatically based on terrain materials info painted");
+	REGISTER_CVAR(e_TerrainAutoGenerateBaseTextureTiling, 1.f / 16.f, VF_NULL,
+	              "Controls tiling of baked diffuse textures");
 	REGISTER_CVAR(e_TerrainIntegrateObjectsMaxVertices, 30000, VF_NULL,
 	              "Preallocate specified number of vertices to be used for objects integration into terrain (per terrain sector)\n"
 	              "0 - disable the feature completelly");

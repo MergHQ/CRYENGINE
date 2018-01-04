@@ -841,7 +841,7 @@ void CRenderView::ChangeRenderResolution(int renderWidth, int renderHeight, bool
 	}
 	else {
 		m_pDepthTarget = nullptr;
-		m_pTempDepthTexture = CRendererResources::GetTempDepthSurface(renderWidth, renderHeight);
+		m_pTempDepthTexture = CRendererResources::GetTempDepthSurface(GetFrameId(), renderWidth, renderHeight);
 		m_pColorTarget = CRendererResources::s_ptexHDRTarget;
 	}
 

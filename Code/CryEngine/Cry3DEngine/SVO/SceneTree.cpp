@@ -2446,7 +2446,7 @@ void CSvoEnv::CollectLights()
 				qsort(m_lightsTI_D.GetElements(), m_lightsTI_D.Count(), sizeof(m_lightsTI_D[0]), SLightTI_Compare);
 
 			if (m_lightsTI_D.Count() > 8)
-				m_lightsTI_D.PreAllocate(8);
+				m_lightsTI_D.PreAllocate(8, 8);
 		}
 	}
 }

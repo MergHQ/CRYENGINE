@@ -1264,7 +1264,6 @@ void CEntity::LoadComponent(Serialization::IArchive& archive, uint8*& pComponent
 
 		// Add the component to the entity
 		AddComponentInternal(pComponent, typeGUID, &initParams, &componentClassDesc);
-		pComponent->Initialize();
 	}
 	else
 	{

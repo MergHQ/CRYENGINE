@@ -752,7 +752,7 @@ Matrix44 CShadowUtils::GetClipToTexSpaceMatrix(const ShadowMapFrustum* pFrustum,
 	{
 		float arrOffs[2];
 		float arrScale[2];
-		pFrustum->GetTexOffset(nSide, arrOffs, arrScale, gcpRendD3D->m_nShadowPoolWidth, gcpRendD3D->m_nShadowPoolHeight);
+		pFrustum->GetTexOffset(nSide, arrOffs, arrScale);
 
 		//calculate crop matrix for  frustum
 		//TD: investigate proper half-texel offset with mCropView
@@ -809,7 +809,7 @@ CShadowUtils::SShadowSamplingInfo CShadowUtils::GetDeferredShadowSamplingInfo(Sh
 		blendInfo.x = fBlendVal;
 		blendInfo.y = 1.0f / (1.0f - fBlendVal);
 
-		if (pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance)
+		if (pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance && pFr->packWidth[0] > 0.0f && pFr->packHeight[0] > 0.0f)
 		{
 			blendTcNormalize.x =  pFr->pDepthTex->GetWidth() / float(pFr->packWidth[0]);
 			blendTcNormalize.y =  pFr->pDepthTex->GetHeight() / float(pFr->packHeight[0]);

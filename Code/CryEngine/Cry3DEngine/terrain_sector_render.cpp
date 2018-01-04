@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   terrain_sector_render.cpp
@@ -402,14 +402,14 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 		return;
 
 	// Use mesh instancing for distant low-lod sectors and during shadow map generation
-	if(passInfo.IsShadowPass() || (m_nTreeLevel >= GetCVars()->e_TerrainMeshInstancingMinLod))
+	if (passInfo.IsShadowPass() || (m_nTreeLevel >= GetCVars()->e_TerrainMeshInstancingMinLod))
 	{
 		SetupTexturing(false, passInfo);
 
 		float stepSize = (1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize();
 		float sectorSize = (m_boxHeigtmapLocal.max.x - m_boxHeigtmapLocal.min.x);
 
-		IRenderMesh * pRenderMesh = GetSharedRenderMesh(int(sectorSize / stepSize));
+		IRenderMesh* pRenderMesh = GetSharedRenderMesh(int(sectorSize / stepSize));
 
 		CRenderObject* pTerrainRenderObject = 0;
 
@@ -568,60 +568,46 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 }
 
 // update data in video buffer
-void CTerrainNode::UpdateRenderMesh(CStripsInfo* pArrayInfo, bool bUpdateVertices)
+void CTerrainNode::UpdateRenderMesh(CStripsInfo* pArrayInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
 	_smart_ptr<IRenderMesh>& pRenderMesh = GetLeafData()->m_pRenderMesh;
-	bool bIndicesUpdated = false;
 
-	// if changing lod or there is no buffer allocated - reallocate
-	if (!pRenderMesh || m_cCurrGeomMML != m_cNewGeomMML || bUpdateVertices)// || GetCVars()->e_TerrainDrawThisSectorOnly)
+	assert(m_pUpdateTerrainTempData->m_lstTmpVertArray.Count() < 65536);
+
+	static PodArray<SPipTangents> lstTangents;
+	lstTangents.Clear();
+
+	if (GetCVars()->e_DefaultMaterial && m_pUpdateTerrainTempData->m_lstTmpVertArray.Count())
 	{
-		assert(m_pUpdateTerrainTempData->m_lstTmpVertArray.Count() < 65536);
+		lstTangents.PreAllocate(m_pUpdateTerrainTempData->m_lstTmpVertArray.Count(), m_pUpdateTerrainTempData->m_lstTmpVertArray.Count());
 
-		static PodArray<SPipTangents> lstTangents;
-		lstTangents.Clear();
+		Vec3 vTang(0, 1, 0);
+		Vec3 vBitang(1, 0, 0);
+		Vec3 vNormal(0, 0, 1);
 
-		if (GetCVars()->e_DefaultMaterial && m_pUpdateTerrainTempData->m_lstTmpVertArray.Count())
-		{
-			lstTangents.PreAllocate(m_pUpdateTerrainTempData->m_lstTmpVertArray.Count(), m_pUpdateTerrainTempData->m_lstTmpVertArray.Count());
+		// Orthonormalize Tangent Frame
+		vBitang = -vNormal.Cross(vTang);
+		vTang = vNormal.Cross(vBitang);
 
-			Vec3 vTang(0, 1, 0);
-			Vec3 vBitang(1, 0, 0);
-			Vec3 vNormal(0, 0, 1);
-
-			// Orthonormalize Tangent Frame
-			vBitang = -vNormal.Cross(vTang);
-			vTang = vNormal.Cross(vBitang);
-
-			lstTangents[0] = SPipTangents(vTang, vBitang, -1);
-			for (int i = 1; i < lstTangents.Count(); i++)
-				lstTangents[i] = lstTangents[0];
-		}
-
-		ERenderMeshType eRMType = eRMT_Static;
-
-		bool bMultiGPU; 
-		gEnv->pRenderer->EF_Query(EFQ_MultiGPUEnabled, bMultiGPU);
-
-		pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
-		  m_pUpdateTerrainTempData->m_lstTmpVertArray.GetElements(), m_pUpdateTerrainTempData->m_lstTmpVertArray.Count(), EDefaultInputLayouts::P2S_N4B_C4B_T1F,
-		  pArrayInfo->idx_array.GetElements(), pArrayInfo->idx_array.Count(),
-		  prtTriangleList, "TerrainSector", "TerrainSector", eRMType, 1,
-		  m_nTexSet.nTex0, NULL, NULL, false, true, lstTangents.Count() ? lstTangents.GetElements() : NULL);
-		AABB boxWS = GetBBox();
-		pRenderMesh->SetBBox(boxWS.min, boxWS.max);
-		bIndicesUpdated = true;
+		lstTangents[0] = SPipTangents(vTang, vBitang, -1);
+		for (int i = 1; i < lstTangents.Count(); i++)
+			lstTangents[i] = lstTangents[0];
 	}
 
-	if (!bUpdateVertices && !GetCVars()->e_TerrainDrawThisSectorOnly)
-	{
-		assert(pArrayInfo->idx_array.Count() <= (int)pRenderMesh->GetIndicesCount());
-	}
+	ERenderMeshType eRMType = eRMT_Static;
 
-	if (!bIndicesUpdated)
-		pRenderMesh->UpdateIndices(pArrayInfo->idx_array.GetElements(), pArrayInfo->idx_array.Count(), 0, 0u);
+	bool bMultiGPU;
+	gEnv->pRenderer->EF_Query(EFQ_MultiGPUEnabled, bMultiGPU);
+
+	pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
+	  m_pUpdateTerrainTempData->m_lstTmpVertArray.GetElements(), m_pUpdateTerrainTempData->m_lstTmpVertArray.Count(), EDefaultInputLayouts::P2S_N4B_C4B_T1F,
+	  pArrayInfo->idx_array.GetElements(), pArrayInfo->idx_array.Count(),
+	  prtTriangleList, "TerrainSector", "TerrainSector", eRMType, 1,
+	  m_nTexSet.nTex0, NULL, NULL, false, true, lstTangents.Count() ? lstTangents.GetElements() : NULL);
+	AABB boxWS = GetBBox();
+	pRenderMesh->SetBBox(boxWS.min, boxWS.max);
 
 	pRenderMesh->SetChunk(GetTerrain()->m_pTerrainEf, 0, pRenderMesh->GetVerticesCount(), 0, min(m_pUpdateTerrainTempData->m_StripsInfo.nNonBorderIndicesCount, pArrayInfo->idx_array.Count()), 1.0f, 0);
 
@@ -678,7 +664,7 @@ void CTerrainNode::ResetHeightMapGeometry(bool bRecursive, const AABB* pBox)
 }
 
 // fill vertex buffer
-void CTerrainNode::BuildVertices(float stepSize, bool bSafetyBorder)
+void CTerrainNode::BuildVertices(float stepSize)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -730,7 +716,7 @@ void CTerrainNode::BuildVertices(float stepSize, bool bSafetyBorder)
 	}
 }
 
-void CTerrainNode::BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRenderingPassInfo& passInfo)
+void CTerrainNode::BuildIndices(CStripsInfo& si, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -738,11 +724,9 @@ void CTerrainNode::BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRend
 		return;
 
 	float stepSize = (1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize();
-	int nSectorSize = CTerrain::GetSectorSize() << m_nTreeLevel;
+	int sectorSize = CTerrain::GetSectorSize() << m_nTreeLevel;
 
-	float fSafetyBorder = bSafetyBorder ? stepSize : 0;
-
-	float fSectorSizeSB = nSectorSize + fSafetyBorder * 2;
+	float sectorSizeSB = sectorSize + stepSize * 2;
 
 	si.Clear();
 
@@ -751,9 +735,9 @@ void CTerrainNode::BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRend
 
 	float halfStep = stepSize / 2;
 
-	for (float x = 0; x < fSectorSizeSB; x += stepSize)
+	for (float x = 0; x < sectorSizeSB; x += stepSize)
 	{
-		for (float y = 0; y < fSectorSizeSB; y += stepSize)
+		for (float y = 0; y < sectorSizeSB; y += stepSize)
 		{
 			if (!m_bHasHoles || !pTerrain->GetHole(m_nOriginX + x - halfStep, m_nOriginY + y - halfStep))
 			{
@@ -761,7 +745,7 @@ void CTerrainNode::BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRend
 				int xu = int(x * CTerrain::GetInvUnitSize());
 				int yu = int(y * CTerrain::GetInvUnitSize());
 				int su = int(stepSize * CTerrain::GetInvUnitSize());
-				int ssu = int(fSectorSizeSB * CTerrain::GetInvUnitSize());
+				int ssu = int(sectorSizeSB * CTerrain::GetInvUnitSize());
 
 				if (pTerrain->IsMeshQuadFlipped(m_nOriginX + x - halfStep, m_nOriginY + y - halfStep, stepSize))
 				{
@@ -804,7 +788,7 @@ bool CTerrainNode::RenderSector(const SRenderingPassInfo& passInfo)
 	float stepSize = (1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize();
 	float sectorSize = (m_boxHeigtmapLocal.max.x - m_boxHeigtmapLocal.min.x);
 
-	IRenderMesh * pRenderMesh = (m_nTreeLevel >= GetCVars()->e_TerrainMeshInstancingMinLod) ? GetSharedRenderMesh(int(sectorSize / stepSize)) : GetLeafData()->m_pRenderMesh;
+	IRenderMesh* pRenderMesh = (m_nTreeLevel >= GetCVars()->e_TerrainMeshInstancingMinLod) ? GetSharedRenderMesh(int(sectorSize / stepSize)) : GetLeafData()->m_pRenderMesh;
 
 	bool bDetailLayersReady = passInfo.IsShadowPass() ||
 	                          !m_lstSurfaceTypeInfo.Count() ||
@@ -864,7 +848,7 @@ void CTerrainNode::RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo)
 
 	InvalidatePermanentRenderObject();
 
-	UpdateRenderMesh(&m_pUpdateTerrainTempData->m_StripsInfo, !m_bUpdateOnlyBorders);
+	UpdateRenderMesh(&m_pUpdateTerrainTempData->m_StripsInfo);
 
 	m_cCurrGeomMML = m_cNewGeomMML;
 
@@ -872,7 +856,7 @@ void CTerrainNode::RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo)
 	if (passInfo.RenderTerrainDetailMaterial())
 	{
 		// build all indices
-		GenerateIndicesForAllSurfaces(pRenderMesh, m_bUpdateOnlyBorders, pLeafData->m_arrpNonBorderIdxNum, m_pUpdateTerrainTempData->m_StripsInfo.nNonBorderIndicesCount, 0, m_pUpdateTerrainTempData);
+		GenerateIndicesForAllSurfaces(pRenderMesh, pLeafData->m_arrpNonBorderIdxNum, m_pUpdateTerrainTempData->m_StripsInfo.nNonBorderIndicesCount, 0, m_pUpdateTerrainTempData);
 
 		m_lstReadyTypes.Clear(); // protection from duplications in palette of types
 
@@ -893,13 +877,13 @@ void CTerrainNode::RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo)
 							int nProjId = b3D ? p : 3;
 							PodArray<vtx_idx>& lstIndices = m_arrIndices[pSurfaceType->ucThisSurfaceTypeId][nProjId];
 
-							if (!m_bUpdateOnlyBorders && m_lstSurfaceTypeInfo[i].arrpRM[p] && (lstIndices.Count() != m_lstSurfaceTypeInfo[i].arrpRM[p]->GetIndicesCount()))
+							if (m_lstSurfaceTypeInfo[i].arrpRM[p] && (lstIndices.Count() != m_lstSurfaceTypeInfo[i].arrpRM[p]->GetIndicesCount()))
 							{
 								m_lstSurfaceTypeInfo[i].arrpRM[p] = NULL;
 							}
 
 							if (lstIndices.Count())
-								UpdateSurfaceRenderMeshes(pRenderMesh, pSurfaceType, m_lstSurfaceTypeInfo[i].arrpRM[p], p, lstIndices, "TerrainMaterialLayer", m_bUpdateOnlyBorders, pLeafData->m_arrpNonBorderIdxNum[pSurfaceType->ucThisSurfaceTypeId][nProjId], passInfo);
+								UpdateSurfaceRenderMeshes(pRenderMesh, pSurfaceType, m_lstSurfaceTypeInfo[i].arrpRM[p], p, lstIndices, "TerrainMaterialLayer", pLeafData->m_arrpNonBorderIdxNum[pSurfaceType->ucThisSurfaceTypeId][nProjId], passInfo);
 
 							if (!b3D)
 								break;
@@ -922,7 +906,7 @@ void CTerrainNode::BuildIndices_Wrapper(SRenderingPassInfo passInfo)
 	if (pUpdateTerrainTempData->m_StripsInfo.idx_array.MemorySize() == 0) return;
 
 	STerrainNodeLeafData* pLeafData = GetLeafData();
-	BuildIndices(pUpdateTerrainTempData->m_StripsInfo, true, passInfo);
+	BuildIndices(pUpdateTerrainTempData->m_StripsInfo, passInfo);
 }
 
 void CTerrainNode::BuildVertices_Wrapper()
@@ -947,28 +931,7 @@ void CTerrainNode::BuildVertices_Wrapper()
 	if (stepSize > nSectorSize)
 		stepSize = nSectorSize;
 
-	// this could cost performace? to allow parallel execution, we cannot check for unchanged indices
-#if 1
-	BuildVertices(stepSize, false);
-	m_bUpdateOnlyBorders = false;
-#else
-	// update vertices if needed
-	int nVertsNumRequired = (nSectorSize / stepSize) * (nSectorSize / stepSize) + (nSectorSize / stepSize) + (nSectorSize / stepSize) + 1;
-	if (!pRenderMesh || m_cCurrGeomMML != m_cNewGeomMML || nVertsNumRequired != pRenderMesh->GetVerticesCount() || m_bEditor || !m_cNewGeomMML)
-	{
-		if (m_pUpdateTerrainTempData->m_StripsInfo.idx_array.Count())
-			BuildVertices(stepSize, false);
-		else
-			m_pUpdateTerrainTempData->m_lstTmpVertArray.Clear();
-
-		m_bUpdateOnlyBorders = false;
-	}
-	else
-	{
-		m_bUpdateOnlyBorders = true;
-	}
-#endif
-
+	BuildVertices(stepSize);
 }
 
 int GetVecProjectId(const Vec3& vNorm)
@@ -987,7 +950,7 @@ int GetVecProjectId(const Vec3& vNorm)
 	return nOpenId;
 }
 
-void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBorder, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo* pSurfaceTypeInfos, CUpdateTerrainTempData* pUpdateTerrainTempData)
+void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo* pSurfaceTypeInfos, CUpdateTerrainTempData* pUpdateTerrainTempData)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -1008,8 +971,7 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBor
 		{
 			m_arrIndices[s][p].Clear();
 
-			if (!bOnlyBorder)
-				arrpNonBorderIdxNum[s][p] = -1;
+			arrpNonBorderIdxNum[s][p] = -1;
 		}
 
 		if (pSurfaceTypeInfos)
@@ -1032,7 +994,7 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBor
 	bool useMesh = false;
 
 	// when possible, use the already on ppu computed data instead of going through the rendermesh
-	if (pUpdateTerrainTempData && !bOnlyBorder)
+	if (pUpdateTerrainTempData)
 	{
 		nSrcCount = pUpdateTerrainTempData->m_StripsInfo.idx_array.Count();
 		if (!nSrcCount)
@@ -1084,7 +1046,7 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBor
 
 		int nVertCount = pRM->GetVerticesCount();
 
-		for (int j = (bOnlyBorder ? nBorderStartIndex : 0); j < nSrcCount; j += 3)
+		for (int j = 0; j < nSrcCount; j += 3)
 		{
 			vtx_idx arrTriangle[3] = { pSrcInds[j + 0], pSrcInds[j + 1], pSrcInds[j + 2] };
 
@@ -1097,6 +1059,15 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBor
 			if (arrTriangle[0] >= (unsigned)nVertCount || arrTriangle[1] >= (unsigned)nVertCount || arrTriangle[2] >= (unsigned)nVertCount)
 				continue;
 
+			// skip safety border triangles
+			CryHalf2 xy0 = ((SVF_P2S_N4B_C4B_T1F*)pPosPtr)[arrTriangle[0]].xy;
+			CryHalf2 xy1 = ((SVF_P2S_N4B_C4B_T1F*)pPosPtr)[arrTriangle[1]].xy;
+			CryHalf2 xy2 = ((SVF_P2S_N4B_C4B_T1F*)pPosPtr)[arrTriangle[2]].xy;
+			if (xy0 == xy1 || xy0 == xy2 || xy1 == xy2)
+			{
+				continue;
+			}
+
 			UCol arrColor[3];
 			arrColor[0] = *(UCol*)&pColor[arrTriangle[0] * nColorStride];
 			arrColor[1] = *(UCol*)&pColor[arrTriangle[1] * nColorStride];
@@ -1106,8 +1077,8 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBor
 
 			struct SSurfTypeProjInfo
 			{
-				bool operator == (const SSurfTypeProjInfo& o) const { return surfType == o.surfType; }
-				int surfType = 0;
+				bool operator==(const SSurfTypeProjInfo& o) const { return surfType == o.surfType; }
+				int  surfType = 0;
 				byte projDir[4] = { 0 };
 			};
 
@@ -1185,7 +1156,7 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBor
 					{
 						PodArray<vtx_idx>& rList = m_arrIndices[rType.surfType][p];
 
-						if (!bOnlyBorder && j >= nBorderStartIndex && arrpNonBorderIdxNum[rType.surfType][p] < 0)
+						if (j >= nBorderStartIndex && arrpNonBorderIdxNum[rType.surfType][p] < 0)
 						{
 							arrpNonBorderIdxNum[rType.surfType][p] = rList.Count();
 						}
@@ -1205,7 +1176,7 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBor
 }
 
 void CTerrainNode::UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcRM, SSurfaceType* pSurface, _smart_ptr<IRenderMesh>& pMatRM, int nProjectionId,
-                                             PodArray<vtx_idx>& lstIndices, const char* szComment, bool bUpdateOnlyBorders, int nNonBorderIndicesCount,
+                                             PodArray<vtx_idx>& lstIndices, const char* szComment, int nNonBorderIndicesCount,
                                              const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
@@ -1221,7 +1192,7 @@ void CTerrainNode::UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcR
 		gEnv->pRenderer->EF_Query(EFQ_MultiGPUEnabled, bMultiGPU);
 
 		if (bMultiGPU && (gEnv->pRenderer->GetRenderType() != ERenderType::Direct3D12)
-			          && (gEnv->pRenderer->GetRenderType() != ERenderType::Vulkan))
+		    && (gEnv->pRenderer->GetRenderType() != ERenderType::Vulkan))
 			eRMType = eRMT_Dynamic;
 
 		pMatRM = GetRenderer()->CreateRenderMeshInitialized(
@@ -1236,38 +1207,8 @@ void CTerrainNode::UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcR
 
 	assert(1 || nNonBorderIndicesCount >= 0);
 
-	if (bUpdateOnlyBorders)
-	{
-		int nOldIndexCount = pMatRM->GetIndicesCount();
-
-		if (nNonBorderIndicesCount < 0 || !nOldIndexCount)
-		{
-			pMatRM->UnLockForThreadAccess();
-			return; // no borders involved
-		}
-
-		vtx_idx* pIndicesOld = pMatRM->GetIndexPtr(FSL_READ);
-
-		int nIndexCountNew = nNonBorderIndicesCount + lstIndices.Count();
-
-		assert(true || nIndexCountNew >= lstIndices.Count());
-
-		//C6255: _alloca indicates failure by raising a stack overflow exception. Consider using _malloca instead
-		PREFAST_SUPPRESS_WARNING(6255)
-		vtx_idx * pIndicesNew = (vtx_idx*) alloca(sizeof(vtx_idx) * nIndexCountNew);
-
-		memcpy(pIndicesNew, pIndicesOld, sizeof(vtx_idx) * nNonBorderIndicesCount);
-
-		memcpy(pIndicesNew + nNonBorderIndicesCount, lstIndices.GetElements(), sizeof(vtx_idx) * lstIndices.Count());
-
-		pMatRM->UpdateIndices(pIndicesNew, nIndexCountNew, 0, 0u);
-		pMatRM->SetChunk(pSurface->GetMaterialOfProjection(szProj[nProjectionId]), 0, pSrcRM->GetVerticesCount(), 0, nIndexCountNew, 1.0f);
-	}
-	else
-	{
-		pMatRM->UpdateIndices(lstIndices.GetElements(), lstIndices.Count(), 0, 0u);
-		pMatRM->SetChunk(pSurface->GetMaterialOfProjection(szProj[nProjectionId]), 0, pSrcRM->GetVerticesCount(), 0, lstIndices.Count(), 1.0f);
-	}
+	pMatRM->UpdateIndices(lstIndices.GetElements(), lstIndices.Count(), 0, 0u);
+	pMatRM->SetChunk(pSurface->GetMaterialOfProjection(szProj[nProjectionId]), 0, pSrcRM->GetVerticesCount(), 0, lstIndices.Count(), 1.0f);
 
 	assert(nProjectionId >= 0 && nProjectionId < 3);
 	float* pParams = pSurface->arrRECustomData[nProjectionId];
@@ -1289,33 +1230,7 @@ void CTerrainNode::UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcR
 
 	pParams[11] = pSurface->ucThisSurfaceTypeId;
 
-	// set texgen offset
-	Vec3 vCamPos = passInfo.GetCamera().GetPosition();
-
-	pParams[12] = pParams[13] = pParams[14] = pParams[15] = 0;
-
-	// for diffuse
-	if (IMaterial* pMat = pSurface->GetMaterialOfProjection(szProj[nProjectionId]))
-		if (pMat->GetShaderItem().m_pShaderResources)
-		{
-			if (SEfResTexture* pTex = pMat->GetShaderItem().m_pShaderResources->GetTexture(EFTT_DIFFUSE))
-			{
-				float fScaleX = pTex->m_bUTile ? pTex->GetTiling(0) * pSurface->fScale : 1.f;
-				float fScaleY = pTex->m_bVTile ? pTex->GetTiling(1) * pSurface->fScale : 1.f;
-
-				pParams[12] = int(vCamPos.x * fScaleX) / fScaleX;
-				pParams[13] = int(vCamPos.y * fScaleY) / fScaleY;
-			}
-
-			if (SEfResTexture* pTex = pMat->GetShaderItem().m_pShaderResources->GetTexture(EFTT_NORMALS))
-			{
-				float fScaleX = pTex->m_bUTile ? pTex->GetTiling(0) * pSurface->fScale : 1.f;
-				float fScaleY = pTex->m_bVTile ? pTex->GetTiling(1) * pSurface->fScale : 1.f;
-
-				pParams[14] = int(vCamPos.x * fScaleX) / fScaleX;
-				pParams[15] = int(vCamPos.y * fScaleY) / fScaleY;
-			}
-		}
+	pParams[12] = pParams[13] = pParams[14] = pParams[15] = 0; // previously used for texgen offset in order to avoid too big numbers on GPU
 
 	assert(8 + 8 <= TERRAIN_TEX_OFFSETS_SIZE);
 
@@ -1353,7 +1268,7 @@ void CTerrainUpdateDispatcher::RemoveJob(CTerrainNode* pNode)
 	}
 }
 
-void AddIndexShared(int _x, int _y, PodArray<vtx_idx> & arrIndices, int nSectorSize)
+void AddIndexShared(int _x, int _y, PodArray<vtx_idx>& arrIndices, int nSectorSize)
 {
 	int _step = 1;
 
@@ -1367,7 +1282,7 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh(int nDim)
 {
 	int nLod = 0;
 	int n = int(CTerrain::m_fInvUnitSize * (float)CTerrain::m_nSectorSize);
-	while (nDim < n && nLod<(TERRAIN_SHARED_MESH_LODS_NUM - 1))
+	while (nDim < n && nLod < (TERRAIN_SHARED_MESH_LODS_NUM - 1))
 	{
 		nLod++;
 		n >>= 1;
@@ -1397,9 +1312,9 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh(int nDim)
 	{
 		for (int y = -nBorder; y <= (nDim + nBorder); y++)
 		{
-			vert.xy = CryHalf2(SATURATE(float(x)/float(nDim)), SATURATE(float(y) / float(nDim)));
+			vert.xy = CryHalf2(SATURATE(float(x) / float(nDim)), SATURATE(float(y) / float(nDim)));
 
-			if(x<0 || y<0 || x>nDim || y>nDim)
+			if (x < 0 || y < 0 || x > nDim || y > nDim)
 				vert.z = -0.1f;
 			else
 				vert.z = 0.f;
@@ -1427,14 +1342,14 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh(int nDim)
 	}
 
 	m_pTerrain->m_pSharedRenderMesh[nLod] = GetRenderer()->CreateRenderMeshInitialized(
-		arrVertices.GetElements(),
-		arrVertices.Count(),
-		EDefaultInputLayouts::P2S_N4B_C4B_T1F,
-		arrIndices.GetElements(),
-		arrIndices.Count(),
-		prtTriangleList,
-		"TerrainSectorSharedRenderMesh", "TerrainSectorSharedRenderMesh",
-		eRMT_Static);
+	  arrVertices.GetElements(),
+	  arrVertices.Count(),
+	  EDefaultInputLayouts::P2S_N4B_C4B_T1F,
+	  arrIndices.GetElements(),
+	  arrIndices.Count(),
+	  prtTriangleList,
+	  "TerrainSectorSharedRenderMesh", "TerrainSectorSharedRenderMesh",
+	  eRMT_Static);
 
 	m_pTerrain->m_pSharedRenderMesh[nLod]->SetChunk(NULL, 0, arrVertices.Count(), 0, arrIndices.Count(), 1.0f, 0);
 
@@ -1477,14 +1392,14 @@ void CTerrainNode::AppendTrianglesFromObjects(const int nOriginX, const int nOri
 
 	for (int i = 0; i < lstObjects.Count(); i++)
 	{
-		IRenderNode * pRNode = (IRenderNode*)lstObjects[i];
+		IRenderNode* pRNode = (IRenderNode*)lstObjects[i];
 
 		if (pRNode->GetGIMode() != IRenderNode::eGM_IntegrateIntoTerrain)
 		{
 			continue;
 		}
 
-		IRenderMesh * pRM = pRNode->GetRenderMesh(0);
+		IRenderMesh* pRM = pRNode->GetRenderMesh(0);
 
 		if (pRM)
 		{
@@ -1551,7 +1466,7 @@ void CTerrainNode::AppendTrianglesFromObjects(const int nOriginX, const int nOri
 							{
 								vPosWS[v] = m34.TransformPoint((*(Vec3*)&pPos[nPosStride * pInds[i + v]]));
 
-								SPipTangents & basis = *(SPipTangents*)&pTangs[nTangsStride * pInds[i + v]];
+								SPipTangents& basis = *(SPipTangents*)&pTangs[nTangsStride * pInds[i + v]];
 
 								vNormWS[v] = m34.TransformVector(basis.GetN()).GetNormalized();
 
@@ -1583,22 +1498,22 @@ void CTerrainNode::AppendTrianglesFromObjects(const int nOriginX, const int nOri
 
 									int nIndex = -1;
 
-									PodArray<vtx_idx> & rHashIndices = arrVertHash[xh & (nHashDim-1)][yh & (nHashDim - 1)];
+									PodArray<vtx_idx>& rHashIndices = arrVertHash[xh & (nHashDim - 1)][yh & (nHashDim - 1)];
 
 									for (int nElem = 0; nElem < rHashIndices.Count(); nElem++)
 									{
 										vtx_idx nId = rHashIndices[nElem];
 
-										SVF_P2S_N4B_C4B_T1F & vertCached = *(m_pUpdateTerrainTempData->m_lstTmpVertArray.GetElements() + nId);
+										SVF_P2S_N4B_C4B_T1F& vertCached = *(m_pUpdateTerrainTempData->m_lstTmpVertArray.GetElements() + nId);
 
 										if (IsEquivalent(vertCached.xy.x, vert.xy.x) && IsEquivalent(vertCached.xy.y, vert.xy.y) && IsEquivalent(vertCached.z, vert.z, 0.1f))
 										{
 											nIndex = nId;
 											break;
-										}	
+										}
 									}
 
-									if(nIndex < 0)
+									if (nIndex < 0)
 									{
 										// set terrain surface normal
 										Vec3 vTerrainNorm;
@@ -1635,7 +1550,7 @@ void CTerrainNode::AppendTrianglesFromObjects(const int nOriginX, const int nOri
 	}
 }
 
-void CTerrainNode::SetVertexNormal(float x, float y, const float iLookupRadius, CTerrain* pTerrain, const int nTerrainSize, SVF_P2S_N4B_C4B_T1F &vert, Vec3 * pTerrainNorm /*= nullptr*/)
+void CTerrainNode::SetVertexNormal(float x, float y, const float iLookupRadius, CTerrain* pTerrain, const int nTerrainSize, SVF_P2S_N4B_C4B_T1F& vert, Vec3* pTerrainNorm /*= nullptr*/)
 {
 	float sx;
 	if ((x + iLookupRadius) < nTerrainSize && x > iLookupRadius)
@@ -1673,7 +1588,7 @@ void CTerrainNode::SetVertexNormal(float x, float y, const float iLookupRadius, 
 	SwapEndian(vert.normal.dcolor, eLittleEndian);
 }
 
-void CTerrainNode::SetVertexSurfaceType(float x, float y, float stepSize, CTerrain* pTerrain, SVF_P2S_N4B_C4B_T1F &vert)
+void CTerrainNode::SetVertexSurfaceType(float x, float y, float stepSize, CTerrain* pTerrain, SVF_P2S_N4B_C4B_T1F& vert)
 {
 	SSurfaceTypeItem st = pTerrain->GetSurfaceTypeItem(x, y);
 
@@ -1692,7 +1607,7 @@ void CTerrainNode::SetVertexSurfaceType(float x, float y, float stepSize, CTerra
 	vert.color.bcolor[0] = st.ty[0];
 	vert.color.bcolor[1] = st.ty[1];
 	vert.color.bcolor[2] = st.ty[2];
-	
+
 	const int weightBitMask = 15;
 	vert.color.bcolor[3] = (st.we[1] & weightBitMask) | ((st.we[2] & weightBitMask) << 4);
 
@@ -1703,9 +1618,9 @@ uint16 SRangeInfo::GetLocalSurfaceTypeID(uint16 usGlobalSurfaceTypeID)
 {
 	if (pSTPalette)
 	{
-		if (usGlobalSurfaceTypeID == e_undefined) 
+		if (usGlobalSurfaceTypeID == e_undefined)
 			return e_index_undefined;
-		if (usGlobalSurfaceTypeID == e_hole) 
+		if (usGlobalSurfaceTypeID == e_hole)
 			return e_index_hole;
 
 		// Check if a local entry has already been assigned for this global entry.

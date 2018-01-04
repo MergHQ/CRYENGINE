@@ -233,6 +233,8 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_Fog, 1);
 	float e_TimeOfDay;
 	int   e_Terrain;
+	int   e_TerrainAutoGenerateBaseTexture;
+	float e_TerrainAutoGenerateBaseTextureTiling;
 	int   e_TerrainIntegrateObjectsMaxVertices;
 	int   e_TerrainIntegrateObjectsMaxHeight;
 	DeclareConstIntCVar(e_SkyBox, 1);

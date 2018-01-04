@@ -474,8 +474,8 @@ public:
 
 	void                         DrawArray(const SRenderingPassInfo& passInfo);
 
-	void                         UpdateRenderMesh(struct CStripsInfo* pArrayInfo, bool bUpdateVertices);
-	void                         BuildVertices(float stepSize, bool bSafetyBorder);
+	void                         UpdateRenderMesh(struct CStripsInfo* pArrayInfo);
+	void                         BuildVertices(float stepSize);
 	void                         SetVertexSurfaceType(float x, float y, float stepSize, CTerrain* pTerrain, SVF_P2S_N4B_C4B_T1F& vert);
 	void                         SetVertexNormal(float x, float y, const float iLookupRadius, CTerrain* pTerrain, const int nTerrainSize, SVF_P2S_N4B_C4B_T1F& vert, Vec3* pTerrainNorm = nullptr);
 	void                         AppendTrianglesFromObjects(const int nOriginX, const int nOriginY, CTerrain* pTerrain, const float stepSize, const int nTerrainSize);
@@ -484,14 +484,14 @@ public:
 
 	uint32                       GetLastTimeUsed() { return m_nLastTimeUsed; }
 
-	static void                  GenerateIndicesForAllSurfaces(IRenderMesh* pRM, bool bOnlyBorder, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo* pSurfaceTypeInfos, CUpdateTerrainTempData* pUpdateTerrainTempData = NULL);
-	void                         BuildIndices(CStripsInfo& si, bool bSafetyBorder, const SRenderingPassInfo& passInfo);
+	static void                  GenerateIndicesForAllSurfaces(IRenderMesh* pRM, int arrpNonBorderIdxNum[SRangeInfo::e_max_surface_types][4], int nBorderStartIndex, SSurfaceTypeInfo* pSurfaceTypeInfos, CUpdateTerrainTempData* pUpdateTerrainTempData = NULL);
+	void                         BuildIndices(CStripsInfo& si, const SRenderingPassInfo& passInfo);
 
 	void                         BuildIndices_Wrapper(SRenderingPassInfo passInfo);
 	void                         BuildVertices_Wrapper();
 	void                         RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo);
 
-	static void                  UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcRM, struct SSurfaceType* pSurface, _smart_ptr<IRenderMesh>& pMatRM, int nProjectionId, PodArray<vtx_idx>& lstIndices, const char* szComment, bool bUpdateOnlyBorders, int nNonBorderIndicesCount, const SRenderingPassInfo& passInfo);
+	static void                  UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcRM, struct SSurfaceType* pSurface, _smart_ptr<IRenderMesh>& pMatRM, int nProjectionId, PodArray<vtx_idx>& lstIndices, const char* szComment, int nNonBorderIndicesCount, const SRenderingPassInfo& passInfo);
 	static void                  SetupTexGenParams(SSurfaceType* pLayer, float* pOutParams, uint8 ucProjAxis, bool bOutdoor, float fTexGenScale = 1.f);
 
 	int                          CreateSectorTexturesFromBuffer(float* pSectorHeightMap);
@@ -523,11 +523,10 @@ public:
 	CTerrainNode*        m_pChilds; // 4 childs or NULL
 
 	// flags
-	uint8 m_bProcObjectsReady  : 1;
-	uint8 m_bMergeNotAllowed   : 1;
-	uint8 m_bHasHoles          : 2;                // sector has holes in the ground
-	uint8 m_bNoOcclusion       : 1;                // sector has visareas under terrain surface
-	uint8 m_bUpdateOnlyBorders : 1;                // remember if only the border were updated
+	uint8 m_bProcObjectsReady : 1;
+	uint8 m_bMergeNotAllowed  : 1;
+	uint8 m_bHasHoles         : 2;                 // sector has holes in the ground
+	uint8 m_bNoOcclusion      : 1;                 // sector has visareas under terrain surface
 
 #ifndef _RELEASE
 	ETextureEditingState m_eTextureEditingState, m_eElevTexEditingState;

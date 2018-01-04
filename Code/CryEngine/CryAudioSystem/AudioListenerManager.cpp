@@ -64,9 +64,12 @@ void CAudioListenerManager::Release()
 //////////////////////////////////////////////////////////////////////////
 void CAudioListenerManager::Update(float const deltaTime)
 {
-	for (auto const pListener : m_activeListeners)
+	if (deltaTime > 0.0f)
 	{
-		pListener->Update(deltaTime);
+		for (auto const pListener : m_activeListeners)
+		{
+			pListener->Update(deltaTime);
+		}
 	}
 }
 

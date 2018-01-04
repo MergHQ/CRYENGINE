@@ -331,7 +331,12 @@ void CDepthReadbackStage::ExecutePasses(float sourceWidth, float sourceHeight, f
 		pass.SetConstant(psParam0Name, psParams0, eHWSC_Pixel);
 		pass.SetConstant(psParam1Name, psParams1, eHWSC_Pixel);
 
+		if (pass.IsDirty())
+			return false;
+
 		pass.Execute();
+
+		return true;
 	};
 
 	// Issue downsample
@@ -341,7 +346,10 @@ void CDepthReadbackStage::ExecutePasses(float sourceWidth, float sourceHeight, f
 		CFullscreenPass& pass = m_downsamplePass[i];
 		CTexture* const pTarget = CRendererResources::s_ptexLinearDepthDownSample[i];
 
-		executePass(pass, bInitial, sourceWidth, sourceHeight);
+		// If a pass is invalid, stop the downsample.
+		// This avoids reading-back invalid depth data.
+		if (!executePass(pass, bInitial, sourceWidth, sourceHeight))
+			return;
 
 		bInitial = false;
 		sourceWidth = (float)pTarget->GetWidth();

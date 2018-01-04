@@ -59,6 +59,9 @@ void CTerrainNode::SetLOD(const SRenderingPassInfo& passInfo)
 				break;
 
 		m_cNewGeomMML = min(nGeomMML, int(fDist / 32));
+
+		// Support only 2 LODs in sector, going lower than 16x16x2 triangles per sector makes very little sense but causes unnecessary mesh updates
+		m_cNewGeomMML = std::min<uint8>(m_cNewGeomMML, m_nTreeLevel + 1);
 	}
 
 	// Calculate Texture LOD

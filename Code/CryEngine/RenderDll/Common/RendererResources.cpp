@@ -1519,7 +1519,7 @@ STempDepthTexture::~STempDepthTexture()
 	texture.Release(true);
 }
 
-CRendererResources::CTempTexture CRendererResources::GetTempDepthSurface(int nWidth, int nHeight, bool bExactMatch)
+CRendererResources::CTempTexture CRendererResources::GetTempDepthSurface(int currentFrameID, int nWidth, int nHeight, bool bExactMatch)
 {
 #if defined(OGL_DO_NOT_ALLOW_LARGER_RT)
 	bExactMatch = true;
@@ -1558,21 +1558,14 @@ CRendererResources::CTempTexture CRendererResources::GetTempDepthSurface(int nWi
 	if (!selectedTex) 
 	{
 		auto depthSurface = CreateDepthSurface(nWidth, nHeight, false);
-		if (depthSurface.pTexture != NULL) 
+		if (depthSurface.pTexture) 
 		{
 			m_TempDepths.allocate(std::move(depthSurface));
 			selectedTex = m_TempDepths.back();
 		}
 	}
 
-	// Erase unused
-	for (auto it = m_TempDepths.begin(); it != m_TempDepths.end();) 
-	{
-		const auto &tex = *it;
-		it = tex->UseCount() == 1 && (!tex->texture.pTexture || !tex->texture.pTexture->IsLocked()) ?
-			(it = m_TempDepths.erase(it)) :
-			std::next(it);
-	}
+	selectedTex->lastAccessFrameID = currentFrameID;
 
 	return selectedTex;
 }

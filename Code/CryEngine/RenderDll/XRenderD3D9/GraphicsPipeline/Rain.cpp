@@ -530,7 +530,7 @@ void CRainStage::ExecuteRainOcclusionGen()
 	SRainParams& rainVolParams = m_RainVolParams;
 
 	// Get temp depth buffer
-	auto pTmpDepthSurface = rd->GetTempDepthSurface(RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE);
+	auto pTmpDepthSurface = rd->GetTempDepthSurface(rd->GetFrameID(), RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE);
 
 	// clear buffers
 	CClearSurfacePass::Execute(CRendererResources::s_ptexRainOcclusion, Clr_Neutral);

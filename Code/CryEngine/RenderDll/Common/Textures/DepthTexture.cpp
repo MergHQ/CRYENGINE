@@ -2,6 +2,7 @@
 
 #include <StdAfx.h>
 #include "DepthTexture.h"
+#include "Texture.h"
 
 SDepthTexture::~SDepthTexture()
 {
@@ -15,4 +16,9 @@ void SDepthTexture::Release(bool bReleaseTexture)
 	pTarget = nullptr;
 	pSurface = nullptr;
 	pTexture = nullptr;
+}
+
+bool SDepthTexture::IsLocked() const
+{
+	return pTexture && pTexture->IsLocked();
 }

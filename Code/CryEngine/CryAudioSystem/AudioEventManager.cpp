@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioEventManager.h"
@@ -47,11 +47,6 @@ void CAudioEventManager::Release()
 	}
 
 	m_pIImpl = nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioEventManager::Update(float const deltaTime)
-{
 }
 
 //////////////////////////////////////////////////////////////////////////

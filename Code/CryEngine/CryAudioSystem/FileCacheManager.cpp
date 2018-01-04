@@ -39,12 +39,6 @@ void CFileCacheManager::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileCacheManager::Update()
-{
-	// Not used for now as we do not queue entries!
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::AllocateHeap(size_t const size, char const* const szUsage)
 {
 	if (size > 0)
@@ -369,11 +363,11 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 
 			std::sort(soundBanksSorted.begin(), soundBanksSorted.end());
 
-			for (auto const szSoundBankName : soundBanksSorted)
+			for (auto const& soundBankName : soundBanksSorted)
 			{
 				for (auto const& audioFileEntryPair : m_audioFileEntries)
 				{
-					if (audioFileEntryPair.second->m_path.c_str() == szSoundBankName)
+					if (audioFileEntryPair.second->m_path == soundBankName)
 					{
 						CATLAudioFileEntry* const pAudioFileEntry = audioFileEntryPair.second;
 

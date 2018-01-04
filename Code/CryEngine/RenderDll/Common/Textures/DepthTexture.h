@@ -25,4 +25,5 @@ struct SDepthTexture
 	~SDepthTexture();
 
 	void Release(bool bReleaseTexture);
+	bool IsLocked() const;
 };
