@@ -55,6 +55,7 @@ void CParticleEffect::Compile()
 	Sort();
 
 	uint id = 0;
+	MainPreUpdate.clear();
 	for (auto& component : m_components)
 	{
 		component->m_componentId = id++;
