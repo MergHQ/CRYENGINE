@@ -52,7 +52,7 @@ namespace Cry
 				desc.SetLabel("Projector Light");
 				desc.SetDescription("Emits light from its position in a general direction, constrained to a specified angle");
 				desc.SetIcon("icons:ObjectTypes/light.ico");
-				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly, IEntityComponent::EFlags::NoCreationOffset });
 
 				desc.AddMember(&CProjectorLightComponent::m_bActive, 'actv', "Active", "Active", "Determines whether the light is enabled", true);
 				desc.AddMember(&CProjectorLightComponent::m_radius, 'radi', "Radius", "Range", "Determines whether the range of the point light", 10.f);
