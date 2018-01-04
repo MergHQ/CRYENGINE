@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioObject.h"
@@ -46,6 +46,8 @@ FMOD_RESULT F_CALLBACK EventCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_
 CObjectBase::CObjectBase()
 {
 	ZeroStruct(m_attributes);
+	m_attributes.forward.z = 1.0f;
+	m_attributes.up.y = 1.0f;
 
 	// Reserve enough room for events to minimize/prevent runtime allocations.
 	m_events.reserve(2);
