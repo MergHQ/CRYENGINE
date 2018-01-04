@@ -464,7 +464,7 @@ CShadowUtils::SShadowsSetupInfo CD3D9Renderer::ConfigShadowTexgen(CRenderView* p
 
 		float arrOffs[2];
 		float arrScale[2];
-		pFr->GetTexOffset(nFrustNum, arrOffs, arrScale, m_nShadowPoolWidth, m_nShadowPoolHeight);
+		pFr->GetTexOffset(nFrustNum, arrOffs, arrScale);
 
 		//calculate crop matrix for  frustum
 		//TD: investigate proper half-texel offset with mCropView

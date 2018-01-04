@@ -429,9 +429,9 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 			if (fZAngle != 0.0f)
 			{
 				// snap to possible sprite orientations
-				fZAngle /= g_PI2;
+				fZAngle /= static_cast<float>(g_PI2);
 				fZAngle = floor(fZAngle * FAR_TEX_COUNT) / FAR_TEX_COUNT;
-				fZAngle *= g_PI2;
+				fZAngle *= static_cast<float>(g_PI2);
 
 				matRotZ.SetRotationZ(fZAngle);
 			}

@@ -236,21 +236,21 @@ public:
 		}
 	}
 
-	void GetTexOffset(int nSide, float* pOffset, float* pScale, int nShadowsPoolSizeX, int nShadowsPoolSizeY) const
+	void GetTexOffset(int nSide, float* pOffset, float* pScale) const
 	{
 		if (bUseShadowsPool)
 		{
-			pScale[0] = float(nShadowMapSize) / nShadowsPoolSizeX; //SHADOWS_POOL_SZ 1024
-			pScale[1] = float(nShadowMapSize) / nShadowsPoolSizeY;
-			pOffset[0] = float(packX[nSide]) / nShadowsPoolSizeX;
-			pOffset[1] = float(packY[nSide]) / nShadowsPoolSizeY;
+			pScale[0]  = float(nShadowMapSize) / nTextureWidth; //SHADOWS_POOL_SZ 1024
+			pScale[1]  = float(nShadowMapSize) / nTextureHeight;
+			pOffset[0] = float(packX[nSide])   / nTextureWidth;
+			pOffset[1] = float(packY[nSide])   / nTextureHeight;
 		}
 		else
 		{
+			pScale[0]  = 1.0f / 3.0f;
+			pScale[1]  = 1.0f / 2.0f;
 			pOffset[0] = 1.0f / 3.0f * (nSide % 3);
 			pOffset[1] = 1.0f / 2.0f * (nSide / 3);
-			pScale[0] = 1.0f / 3.0f;
-			pScale[1] = 1.0f / 2.0f;
 		}
 	}
 

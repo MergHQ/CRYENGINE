@@ -5,6 +5,8 @@
 
 #include "VMath.hpp"
 
+#include <CryThreading/IThreadManager.h>		// For CScopedFloatingPointException
+
 //#define CULL_RENDERER_REPROJ_DEBUG
 #define CULL_RENDERER_MINZ
 
@@ -578,6 +580,8 @@ public:
 
 			vec4* pSrcZ = reinterpret_cast<vec4*>(&m_ZInput[nStartLine * sizeX]);
 
+			// Disable fp exceptions in the loop
+			CScopedFloatingPointException fpExceptionScope(eFPE_None);
 			for (y = nStartLine, fY = static_cast<float>(nStartLine); y < nStartLine + nNumLines; y++, fY += 1.0f)
 			{
 				const vec4 vYYYY = NVMath::Vec4(fY);
@@ -624,7 +628,7 @@ public:
 						float newDepth = Vec4float<2>(vNewDepth);
 #endif
 						// It is faster to use simple non-vectorized code to write the depth in the buffer
-
+						// The comparison will always test false if newDepth is NaN
 						if (newDepth > 0.f)
 						{
 							int X;

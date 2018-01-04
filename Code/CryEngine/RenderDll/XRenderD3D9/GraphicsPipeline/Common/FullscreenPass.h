@@ -124,6 +124,8 @@ public:
 
 	bool Execute();
 
+	bool IsDirty() const { return m_primitive.IsDirty(); }
+
 private:
 	void                     UpdatePrimitive();
 

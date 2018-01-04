@@ -1606,7 +1606,12 @@ bool CFlashVariableObject::Invoke(const char* pMethodName, const SFlashVarValue*
 		if (pTranslatedArgs || !numArgs)
 		{
 			GFxValue retVal;
-			res = m_value.Invoke(pMethodName, &retVal, pTranslatedArgs, numArgs);
+			{
+				// This is needed to disable fp exception being triggered in Scaleform
+				CScopedFloatingPointException fpExceptionScope(eFPE_None);
+
+				res = m_value.Invoke(pMethodName, &retVal, pTranslatedArgs, numArgs);
+			}
 			if (pResult)
 			{
 				if (retVal.IsString() || retVal.IsStringW())
@@ -3801,7 +3806,12 @@ bool CFlashPlayer::Invoke(const char* pMethodName, const SFlashVarValue* pArgs, 
 		if (pTranslatedArgs || !numArgs)
 		{
 			GFxValue retVal;
-			res = m_pMovieView->Invoke(pMethodName, &retVal, pTranslatedArgs, numArgs);
+			{
+				// This is needed to disable fp exception being triggered in Scaleform
+				CScopedFloatingPointException fpExceptionScope(eFPE_None);
+
+				res = m_pMovieView->Invoke(pMethodName, &retVal, pTranslatedArgs, numArgs);
+			}
 			if (pResult)
 			{
 				if (retVal.IsString() || retVal.IsStringW())
