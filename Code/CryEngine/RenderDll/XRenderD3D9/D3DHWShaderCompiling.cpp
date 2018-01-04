@@ -952,7 +952,7 @@ void CHWShader::mfValidateTokenData(CResFile* pRes)
 	for (unsigned int i = 0; i < Dir->size(); i++)
 	{
 		CDirEntry* pDE = &(*Dir)[i];
-		if (pDE->flags & RF_RES_$TOKENS)
+		if (pDE->GetFlags() & RF_RES_$TOKENS)
 		{
 			uint32 nSize = pRes->mfFileRead(pDE);
 			byte* pData = (byte*)pRes->mfFileGetBuf(pDE);
@@ -979,7 +979,7 @@ void CHWShader::mfValidateTokenData(CResFile* pRes)
 				break;
 			}
 
-			pRes->mfCloseEntry(pDE);
+			pRes->mfCloseEntry(pDE->GetName(), pDE->GetFlags());
 		}
 	}
 

@@ -69,6 +69,8 @@ public:
 
 	CDirEntry(CDirEntry&&) = default;
 	CDirEntry &operator=(CDirEntry&&) = default;
+	CDirEntry(const CDirEntry&) = default;
+	CDirEntry &operator=(const CDirEntry&) = default;
 
 	void GetMemoryUsage(ICrySizer* pSizer) const {}
 
