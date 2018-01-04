@@ -103,6 +103,12 @@ char* CSvoManager::GetStatusString(int lineId)
 		return szText;
 	}
 
+	if (lineId == (slotId++))
+	{
+		cry_sprintf(szText, "bouncing lights: dynamic: %d, static: %d", gSvoEnv->m_lightsTI_D.Count(), gSvoEnv->m_lightsTI_S.Count());
+		return szText;
+	}
+
 	if (gSvoEnv->m_pSvoRoot && lineId == (slotId++))
 	{
 		int trisCount = 0, vertCount = 0, trisBytes = 0, vertBytes = 0, maxVertPerArea = 0, matsCount = 0;

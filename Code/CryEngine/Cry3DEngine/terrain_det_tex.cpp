@@ -67,6 +67,10 @@ void CTerrain::LoadSurfaceTypesFromXML(XmlNodeRef pDetTexTagList)
 		const char* pMatName = pDetLayer->getAttr("DetailMaterial");
 		_smart_ptr<IMaterial> pMat = pMatName[0] ? pMatMan->LoadMaterial(pMatName) : NULL;
 
+		// material diffuse texture may be needed to generate terrain base texture (on CPU)
+		if (gEnv->IsEditor() && pMat)
+			pMat->SetKeepLowResSysCopyForDiffTex();
+
 		float fScaleX = 1.f;
 		pDetLayer->getAttr("DetailScaleX", fScaleX);
 		float fScaleY = 1.f;

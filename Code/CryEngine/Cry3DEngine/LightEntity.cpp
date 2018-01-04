@@ -1855,7 +1855,8 @@ void CLightEntity::UpdateCastShadowFlag(float fDistance, const SRenderingPassInf
 	}
 
 #if defined(FEATURE_SVO_GI)
-	if (GetGIMode() == eGM_DynamicVoxelization)
+	IRenderNode::EGIMode eVoxMode = GetGIMode();
+	if (eVoxMode == IRenderNode::eGM_DynamicVoxelization || (eVoxMode == IRenderNode::eGM_StaticVoxelization && !GetCVars()->e_svoTI_IntegrationMode && !(m_light.m_Flags & DLF_SUN)))
 		m_light.m_Flags |= DLF_USE_FOR_SVOGI;
 	else
 		m_light.m_Flags &= ~DLF_USE_FOR_SVOGI;

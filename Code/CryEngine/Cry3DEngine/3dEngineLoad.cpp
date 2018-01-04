@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   3dengineload.cpp
@@ -358,7 +358,7 @@ void C3DEngine::UnloadLevel()
 	{
 		GetRenderer()->FlushRTCommands(true, true, true);
 	}
-	
+
 	// release CGF and materials table
 	for (uint32 i = 0; m_pLevelStatObjTable && i < m_pLevelStatObjTable->size(); i++)
 	{
@@ -538,7 +538,7 @@ void C3DEngine::UnloadLevel()
 		CryComment("done");
 	}
 
-	assert(m_pObjectsTree  == NULL);
+	assert(m_pObjectsTree == NULL);
 
 	COctreeNode::StaticReset();
 
@@ -1046,11 +1046,11 @@ void C3DEngine::LoadMissionDataFromXMLNode(const char* szMissionName)
 	}
 
 	/*
-	if (GetRenderer())
-	{
-		GetRenderer()->MakeMainContextActive();
-	}
-	*/
+	   if (GetRenderer())
+	   {
+	   GetRenderer()->MakeMainContextActive();
+	   }
+	 */
 
 	// set default values
 	m_vFogColor(1, 1, 1);
@@ -1310,6 +1310,10 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 			m_bIntegrateObjectsIntoTerrain = bIntegrateObjectsIntoTerrain;
 		}
 	}
+
+	// Enable automatic base texture update based on terrain detail materials info. This cvar used only by the editor for now.
+	// TODO: support on-the-fly in-engine base texture generation (including roughness and normals) without exporting it from the editor.
+	GetCVars()->e_TerrainAutoGenerateBaseTexture = GetXMLAttribBool(pInputNode, "Terrain", "AutoGenerateBaseTexture", false);
 
 	{
 		int nMinSpec = 3;//atoi(pText);
