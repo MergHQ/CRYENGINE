@@ -54,8 +54,10 @@ if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Code/CryExtensions")
 	add_subdirectory(Code/CryExtensions)
 endif()
 
-# 4. Plug-ins
-add_subdirectory(Code/CryPlugins)
+if(OPTION_ENGINE)
+	# 4. Plug-ins
+	add_subdirectory(Code/CryPlugins)
+endif()
 
 # 5. Launchers
 include ("${TOOLS_CMAKE_DIR}/BuildLaunchers.cmake")
