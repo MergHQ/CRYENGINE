@@ -2759,7 +2759,7 @@ int CRigidEntity::Step(float time_interval)
 		m_qNew = m_body.q*m_body.qfb;
 		m_posNew = m_body.pos-m_qNew*m_body.offsfb;
 
-		ip.maxSurfaceGapAngle = max(0.1f, min(0.19f, (fabs_tpl(m_body.w.x)+fabs_tpl(m_body.w.y)+fabs_tpl(m_body.w.z))*time_interval));
+		ip.maxSurfaceGapAngle = max(0.15f, min(0.25f, (fabs_tpl(m_body.w.x)+fabs_tpl(m_body.w.y)+fabs_tpl(m_body.w.z))*time_interval));
 		ip.axisContactNormal = -m_gravity.normalized();
 		//ip.bNoAreaContacts = !m_pWorld->m_vars.bUseDistanceContacts;
 		gwd.v = m_body.v;
