@@ -197,15 +197,13 @@ void CSystemAssetsManager::ClearScopes()
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::AddScope(string const& name, bool const isLocalOnly)
 {
-	string scopeName = name;
-	m_scopes[CryAudio::StringToId(scopeName.MakeLower())] = SScopeInfo(scopeName, isLocalOnly);
+	m_scopes[CryAudio::StringToId(name.c_str())] = SScopeInfo(name, isLocalOnly);
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CSystemAssetsManager::ScopeExists(string const& name) const
 {
-	string scopeName = name;
-	return m_scopes.find(CryAudio::StringToId(scopeName.MakeLower())) != m_scopes.end();
+	return m_scopes.find(CryAudio::StringToId(name.c_str())) != m_scopes.end();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -217,9 +215,7 @@ void CSystemAssetsManager::GetScopeInfoList(ScopeInfoList& scopeList) const
 //////////////////////////////////////////////////////////////////////////
 Scope CSystemAssetsManager::GetScope(string const& name) const
 {
-	string scopeName = name;
-	scopeName.MakeLower();
-	return CryAudio::StringToId(scopeName);
+	return CryAudio::StringToId(name.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////////

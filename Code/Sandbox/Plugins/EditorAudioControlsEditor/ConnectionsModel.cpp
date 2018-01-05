@@ -125,7 +125,7 @@ CItemModelAttribute* CConnectionModel::GetAttributeForColumn(EColumns const colu
 //////////////////////////////////////////////////////////////////////////
 QVariant CConnectionModel::GetHeaderData(int const section, Qt::Orientation const orientation, int const role)
 {
-	QVariant variant = QVariant();
+	QVariant variant;
 
 	if (orientation == Qt::Horizontal)
 	{
@@ -197,7 +197,7 @@ int CConnectionModel::columnCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 {
-	QVariant variant = QVariant();
+	QVariant variant;
 
 	if ((m_pEditorImpl != nullptr) && (m_pControl != nullptr) && index.isValid())
 	{

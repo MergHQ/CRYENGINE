@@ -48,7 +48,8 @@ CMainWindow::CMainWindow()
 
 	if (m_pAssetsManager->IsLoading())
 	{
-		// The middleware is being swapped out therefore we must not reload it and must not call signalAboutToLoad and signalLoaded!
+		// The middleware is being swapped out therefore we must not
+		// reload it and must not call signalAboutToLoad and signalLoaded!
 		CAudioControlsEditorPlugin::ReloadModels(false);
 	}
 	else
@@ -425,7 +426,7 @@ void CMainWindow::CheckErrorMask()
 		if (pEditorImpl != nullptr)
 		{
 			QString const middlewareName = pEditorImpl->GetName();
-			CQuestionDialog::SWarning(tr(GetEditorName()), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nTriggers with their activity radius linked to the attenuation will be updated next time you save."));
+			CQuestionDialog::SWarning(tr(GetEditorName()), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nActivity radius of triggers will be updated next time you save."));
 		}
 	}
 }

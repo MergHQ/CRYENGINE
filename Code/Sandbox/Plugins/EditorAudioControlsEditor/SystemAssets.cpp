@@ -661,7 +661,7 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 				{
 					CImplItem const* const pImplControl = pEditorImpl->GetControl(pConnection->GetID());
 
-					if ((pImplControl != nullptr) && (!pImplControl->IsPlaceholder()))
+					if ((pImplControl != nullptr) && !pImplControl->IsPlaceholder())
 					{
 						connectionMaxRadius = std::max(connectionMaxRadius, pImplControl->GetRadius());
 					}
@@ -720,19 +720,16 @@ void CSystemControl::MatchRadiusToAttenuation()
 		{
 			CImplItem const* const pImplControl = pEditorImpl->GetControl(pConnection->GetID());
 
-			if (pImplControl != nullptr)
+			if ((pImplControl != nullptr) && !pImplControl->IsPlaceholder())
 			{
-				if (!pImplControl->IsPlaceholder())
-				{
-					radius = std::max(radius, pImplControl->GetRadius());
-				}
-				else
-				{
-					// We don't match controls that have placeholder
-					// connections as we don't know what the real values should be.
-					isPlaceHolder = true;
-					break;
-				}
+				radius = std::max(radius, pImplControl->GetRadius());
+			}
+			else
+			{
+				// We don't match controls that have placeholder
+				// connections as we don't know what the real values should be.
+				isPlaceHolder = true;
+				break;
 			}
 		}
 

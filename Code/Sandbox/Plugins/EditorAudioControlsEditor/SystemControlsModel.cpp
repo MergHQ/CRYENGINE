@@ -55,7 +55,7 @@ CItemModelAttribute* GetAttributeForColumn(EColumns const column)
 //////////////////////////////////////////////////////////////////////////
 QVariant GetHeaderData(int const section, Qt::Orientation const orientation, int const role)
 {
-	QVariant variant = QVariant();
+	QVariant variant;
 
 	if (orientation == Qt::Horizontal)
 	{
@@ -423,7 +423,7 @@ int CSystemSourceModel::columnCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 {
-	QVariant variant = QVariant();
+	QVariant variant;
 	CSystemLibrary const* const pLibrary = static_cast<CSystemLibrary*>(index.internalPointer());
 
 	if (pLibrary != nullptr)
@@ -822,7 +822,7 @@ int CSystemLibraryModel::columnCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 QVariant CSystemLibraryModel::data(QModelIndex const& index, int role) const
 {
-	QVariant variant = QVariant();
+	QVariant variant;
 
 	if (index.isValid())
 	{

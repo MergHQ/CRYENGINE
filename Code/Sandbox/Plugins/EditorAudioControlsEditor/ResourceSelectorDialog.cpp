@@ -136,7 +136,7 @@ QAbstractItemModel* CResourceSelectorDialog::CreateLibraryModelFromIndex(QModelI
 //////////////////////////////////////////////////////////////////////////
 char const* CResourceSelectorDialog::ChooseItem(char const* szCurrentValue)
 {
-	char const* szControlsName = szCurrentValue;
+	char const* szControlName = szCurrentValue;
 
 	if (std::strcmp(szCurrentValue, "") != 0)
 	{
@@ -156,10 +156,10 @@ char const* CResourceSelectorDialog::ChooseItem(char const* szCurrentValue)
 
 	if (exec() == QDialog::Accepted)
 	{
-		szControlsName = s_previousControlName.c_str();
+		szControlName = s_previousControlName.c_str();
 	}
 
-	return szControlsName;
+	return szControlName;
 }
 
 //////////////////////////////////////////////////////////////////////////

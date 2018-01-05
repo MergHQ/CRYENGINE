@@ -15,7 +15,7 @@ namespace ResourceModelUtils
 //////////////////////////////////////////////////////////////////////////
 QVariant GetHeaderData(int const section, Qt::Orientation const orientation, int const role)
 {
-	QVariant variant = QVariant();
+	QVariant variant;
 
 	if ((orientation == Qt::Horizontal) && ((role == Qt::DisplayRole) || (role == Qt::ToolTipRole)))
 	{
@@ -35,7 +35,7 @@ int CResourceSourceModel::columnCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 QVariant CResourceSourceModel::data(QModelIndex const& index, int role) const
 {
-	QVariant variant = QVariant();
+	QVariant variant;
 
 	CSystemLibrary const* const pLibrary = static_cast<CSystemLibrary*>(index.internalPointer());
 
@@ -128,7 +128,7 @@ int CResourceLibraryModel::columnCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 QVariant CResourceLibraryModel::data(QModelIndex const& index, int role) const
 {
-	QVariant variant = QVariant();
+	QVariant variant;
 
 	if (index.isValid())
 	{
