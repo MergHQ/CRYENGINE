@@ -81,7 +81,7 @@ namespace CryEngine.UI.Components
 		/// <summary>
 		/// Called by framework. Do not call directly.
 		/// </summary>
-		public override void OnAwake()
+		protected override void OnAwake()
 		{
 			Icon = SceneObject.Instantiate<Panel>(Owner);
 			Icon.RectTransform.Padding = new Padding(10, 8);
@@ -94,7 +94,7 @@ namespace CryEngine.UI.Components
 		/// <summary>
 		/// Called by framework. Do not call directly.
 		/// </summary>
-		public override void OnUpdate()
+		protected override void OnRender()
 		{
 			if (Mouse.LeftDown && ParentCanvas.CursorInside(Icon))
 			{

@@ -1,4 +1,7 @@
-﻿using CryEngine.Common;
+﻿// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+
+using System.Collections.Generic;
+using CryEngine.Common;
 using CryEngine.Rendering;
 
 namespace CryEngine
@@ -6,8 +9,77 @@ namespace CryEngine
 	/// <summary>
 	/// Central point for mouse access. Listens to CryEngine sided mouse callbacks and generates events from them.
 	/// </summary>
-	public class Mouse : IHardwareMouseEventListener, IGameUpdateReceiver
+	public class Mouse
 	{
+		private struct MouseEvent
+		{
+			public int X;
+			public int Y;
+			public EHARDWAREMOUSEEVENT HardwareEvent;
+			public int WheelDelta;
+
+			public MouseEvent(int x, int y, EHARDWAREMOUSEEVENT hardwareEvent, int wheelDelta)
+			{
+				X = x;
+				Y = y;
+				HardwareEvent = hardwareEvent;
+				WheelDelta = wheelDelta;
+			}
+		}
+
+		private class DeferredMouseListener : IHardwareMouseEventListener, IGameUpdateReceiver
+		{
+			private Mouse _mouse;
+			private readonly Queue<MouseEvent> _eventQueue = new Queue<MouseEvent>();
+
+			public DeferredMouseListener(Mouse mouse)
+			{
+				_mouse = mouse;
+				GameFramework.RegisterForUpdate(this);
+				Global.gEnv.pHardwareMouse.AddListener(this);
+			}
+
+			/// <summary>
+			/// Disposes this instance.
+			/// </summary>
+			public override void Dispose()
+			{
+				GameFramework.UnregisterFromUpdate(this);
+				Global.gEnv.pHardwareMouse.RemoveListener(this);
+				_mouse = null;
+
+				base.Dispose();
+			}
+
+			public override void OnHardwareMouseEvent(int iX, int iY, EHARDWAREMOUSEEVENT eHardwareMouseEvent, int wheelDelta)
+			{
+				MouseEvent mouseEvent = new MouseEvent(iX, iY, eHardwareMouseEvent, wheelDelta);
+				_eventQueue.Enqueue(mouseEvent);
+			}
+
+			public override void OnHardwareMouseEvent(int iX, int iY, EHARDWAREMOUSEEVENT eHardwareMouseEvent)
+			{
+				OnHardwareMouseEvent(iX, iY, eHardwareMouseEvent, 0);
+			}
+
+			public void OnUpdate()
+			{
+				var queue = new Queue<MouseEvent>(_eventQueue);
+				_eventQueue.Clear();
+				foreach(var mouseEvent in queue)
+				{
+					// If a mouse event triggered an engine unload the mouse can be null.
+					if(_mouse == null)
+					{
+						break;
+					}
+					_mouse.HandleMouseEvent(mouseEvent);
+				}
+
+				_mouse?.Update();
+			}
+		}
+
 		/// <summary>
 		/// Interface for overriding mouse input.
 		/// </summary>
@@ -65,6 +137,8 @@ namespace CryEngine
 		private static uint _hitEntityId = 0;
 		private static Vector2 _hitEntityUV = new Vector2();
 		private static bool _cursorVisible = false;
+
+		private DeferredMouseListener _mouseListener;
 
 		/// <summary>
 		/// Current Mouse Cursor Position, refreshed before update loop.
@@ -144,49 +218,46 @@ namespace CryEngine
 			_cursorVisible = false;
 		}
 
-		/// <summary>
-		/// Called by CryEngine. Do not call directly.
-		/// </summary>
-		/// <param name="iX">The x coordinate.</param>
-		/// <param name="iY">The y coordinate.</param>
-		/// <param name="eHardwareMouseEvent">Event struct.</param>
-		/// <param name="wheelDelta">Wheel delta.</param>
-		public override void OnHardwareMouseEvent(int iX, int iY, EHARDWAREMOUSEEVENT eHardwareMouseEvent, int wheelDelta)
+		private void HandleMouseEvent(MouseEvent mouseEvent)
 		{
-			switch (eHardwareMouseEvent)
+			int x = mouseEvent.X;
+			int y = mouseEvent.Y;
+
+			switch (mouseEvent.HardwareEvent)
 			{
-				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONDOWN:
-					{
-						_updateLeftDown = true;
-						HitScenes(iX, iY);
-						if (OnLeftButtonDown != null)
-							OnLeftButtonDown(iX, iY);
-						break;
-					}
-				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONUP:
-					{
-						_updateLeftUp = true;
-						HitScenes(iX, iY);
-						if (OnLeftButtonUp != null)
-							OnLeftButtonUp(iX, iY);
-						break;
-					}
-				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_RBUTTONDOWN:
-					{
-						_updateRightDown = true;
-						HitScenes(iX, iY);
-						if (OnRightButtonDown != null)
-							OnRightButtonDown(iX, iY);
-						break;
-					}
-				case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_RBUTTONUP:
-					{
-						_updateRightUp = true;
-						HitScenes(iX, iY);
-						if (OnRightButtonUp != null)
-							OnRightButtonUp(iX, iY);
-						break;
-					}
+			case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONDOWN:
+				_updateLeftDown = true;
+				HitScenes(x, y);
+				if (OnLeftButtonDown != null)
+				{
+						OnLeftButtonDown(x, y);
+				}
+				break;
+
+			case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_LBUTTONUP:
+				_updateLeftUp = true;
+				HitScenes(x, y);
+				if (OnLeftButtonUp != null)
+				{
+							OnLeftButtonUp(x, y);
+				}
+				break;
+			case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_RBUTTONDOWN:
+				_updateRightDown = true;
+				HitScenes(x, y);
+				if (OnRightButtonDown != null)
+				{
+					OnRightButtonDown(x, y);
+				}
+				break;
+			case EHARDWAREMOUSEEVENT.HARDWAREMOUSEEVENT_RBUTTONUP:
+				_updateRightUp = true;
+				HitScenes(x, y);
+				if (OnRightButtonUp != null)
+				{
+					OnRightButtonUp(x, y);
+				}
+				break;
 			}
 		}
 
@@ -253,7 +324,7 @@ namespace CryEngine
 		/// <summary>
 		/// Called by framework. Do not call directly.
 		/// </summary>
-		public void OnUpdate()
+		private void Update()
 		{
 			LeftDown = _updateLeftDown;
 			LeftUp = _updateLeftUp;
@@ -325,29 +396,24 @@ namespace CryEngine
 		/// </summary>
 		internal Mouse()
 		{
-			AddListener();
+			_mouseListener = new DeferredMouseListener(this);
+			Engine.StartReload += OnEngineUnload;
+			Engine.EndReload += OnEngineReload;
 
-			Engine.EndReload += AddListener;
 
 			HitEntityId = 0;
 			HitEntityUV = new Vector2();
 		}
 
-		private void AddListener()
+		private void OnEngineUnload()
 		{
-			GameFramework.RegisterForUpdate(this);
-			Global.gEnv.pHardwareMouse.AddListener(this);
+			_mouseListener.Dispose();
+			_mouseListener = null;
 		}
 
-		/// <summary>
-		/// Disposes this instance.
-		/// </summary>
-		public override void Dispose()
+		private void OnEngineReload()
 		{
-			GameFramework.UnregisterFromUpdate(this);
-			Global.gEnv.pHardwareMouse.RemoveListener(this);
-
-			base.Dispose();
+			_mouseListener = new DeferredMouseListener(this);
 		}
 	}
 }

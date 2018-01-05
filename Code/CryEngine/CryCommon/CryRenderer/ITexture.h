@@ -335,6 +335,9 @@ public:
 	virtual void            SetClamp(bool bEnable) = 0; //!< Texture addressing set.
 	virtual float           GetAvgBrightness() const = 0;
 
+	virtual bool            Clear() = 0;
+	virtual bool            Clear(const ColorF& color) = 0;
+
 	virtual int             StreamCalculateMipsSigned(float fMipFactor) const = 0;
 	virtual int             GetStreamableMipNumber() const = 0;
 	virtual int             GetStreamableMemoryUsage(int nStartMip) const = 0;
@@ -350,8 +353,6 @@ public:
 	virtual const int         GetAccessFrameId() const = 0;
 	virtual const int         GetCustomID() const = 0;
 	virtual void              SetCustomID(int nID) = 0;
-
-	virtual void              SetHighQualityFiltering(bool bState = true) = 0;
 
 	virtual const ETEX_Format GetTextureDstFormat() const = 0;
 	virtual const ETEX_Format GetTextureSrcFormat() const = 0;

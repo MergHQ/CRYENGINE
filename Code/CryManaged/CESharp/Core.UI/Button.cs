@@ -160,7 +160,7 @@ namespace CryEngine.UI
 		/// <summary>
 		/// Called by framework. Do not call directly.
 		/// </summary>
-		public override void OnAwake()
+		protected override void OnAwake()
 		{
 			base.OnAwake();
 			RectTransform.ClampMode = ClampMode.Full;

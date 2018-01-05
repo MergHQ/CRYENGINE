@@ -201,7 +201,6 @@ CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_
 	m_bNoTexture = false;
 	m_bResolved = true;
 	m_bUseMultisampledRTV = false;
-	m_bHighQualityFiltering = false;
 	m_bCustomFormat = false;
 	m_eSrcTileMode = eTM_Unspecified;
 

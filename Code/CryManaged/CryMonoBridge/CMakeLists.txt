@@ -85,7 +85,7 @@ if (OPTION_CRYMONO_SWIG)
 			"SWIG/ForwardDeclarations.i"
 	)
 endif()
-	
+
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
 		"StdAfx.cpp"
@@ -98,8 +98,8 @@ CryEngineModule(CryMonoBridge FORCE_SHARED_WIN PCH "StdAfx.cpp" SOLUTION_FOLDER 
 target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /bigobj)
 target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryAction" )
 
-# c# assembly generation should be uniform across all projects for 32 bit and 64 bit. 
-# Currently there are 4 other assemblies being generated 
+# c# assembly generation should be uniform across all projects for 32 bit and 64 bit.
+# Currently there are 4 other assemblies being generated
 # 1. CryEngine.Common
 # 2. CryEngine.Core
 # 3. CryEngine.Core.UI
@@ -108,7 +108,7 @@ target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEng
 if (OPTION_CRYMONO_SWIG)
 	# Create the common mono assembly generation environment variables
 	create_mono_compiler_settings()
-	
+
 	# Build SWIG
 	set(CMAKE_MODULE_LINKER_FLAGS_PROFILE ${CMAKE_SHARED_LINKER_FLAGS_PROFILE})
 	set(swig_inputs)
@@ -205,7 +205,7 @@ if (OPTION_CRYMONO_SWIG)
 		WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 	)
 endif()
-	
+
 if(WIN32)
 	target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/Mono/include/mono-2.0")
 	set_libpath_flag()
@@ -213,7 +213,7 @@ if(WIN32)
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}\"${SDK_DIR}/Mono/lib/x64\"")
 	else()
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}\"${SDK_DIR}/Mono/lib/x86\"")
-	endif()		
-	
+	endif()
+
 	target_link_libraries(${THIS_PROJECT} PRIVATE Shell32 mono-2.0-sgen)
 endif()

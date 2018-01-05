@@ -127,49 +127,48 @@ namespace CryEngine.UI
 
 			Renderer.ResolutionChanged += ResolutionChanged;
 			Input.OnKey += OnKey;
+
+			SceneManager.RegisterCanvas(this);
 		}
 
 		/// <summary>
 		/// Used by a Texture to draw itself on TargetTexture. Do not use directly.
 		/// </summary>
-		public void PushTexturePart(float x, float y, float w, float h, int id, float u0, float v0, float u1, float v1, float a, Color c)
+		internal void PushTexturePart(Texture texture, float x, float y, float w, float h, float u0, float v0, float u1, float v1, float a, Color c)
 		{
 			if(TargetTexture == null)
 			{
-				/*
-				var ix = 800.0f / Global.gEnv.pRenderer.GetWidth();
-				var iy = 600.0f / Global.gEnv.pRenderer.GetHeight();
-				Global.gEnv.pRenderer.Push2dImage(x * ix, y * iy, w * ix, h * iy, id, u0, v0, u1, v1, a, c.R, c.G, c.B, c.A);
-				*/
+				var id = texture.ID;
+				v0 = 1.0f - v0;
+				v1 = 1.0f - v1;
+				IRenderAuxImage.Draw2dImage(x, y, w, h, id, u0, v0, u1, v1, a, c);
 			}
 			else
 			{
-				/*
-				var tw = (float)TargetTexture.Width;
-				var th = (float)TargetTexture.Height;
-				Global.gEnv.pRenderer.PushUITexture(id, TargetTexture.ID, x / tw, y / th, w / tw, h / th, u0, v0, u1, v1, c.R, c.G, c.B, c.A);
-				*/
-			}
-		}
+				var width = texture.Width;
+				var height = texture.Height;
+				int regionX = (int)Math.Round(u0 * width);
+				int regionY = (int)Math.Round(v0 * height);
+				int regionW = (int)Math.Round((u1 - u0) * width);
+				int regionH = (int)Math.Round((v1 - v0) * height);
+				var srcRegion = new Region(regionX, regionY, regionW, regionH);
 
-		/// <summary>
-		/// Called by framework. Do not call directly.
-		/// </summary>
-		public override void OnUpdate()
-		{
-			if(TargetTexture != null)
-			{
-				/*var img2 = Resource.ImageFromFile (Application.UIPath + "orion1K.png");
-				Global.gEnv.pRenderer.PushUITexture (img2.Texture.ID, TargetTexture.ID, 0.1f, 0.1f, 0.8f, 0.8f, 0, 0, 1, 1, 1,1,1,1);*/
+				regionX = (int)Math.Round(x);
+				regionY = (int)Math.Round(y);
+				regionW = (int)Math.Round(w);
+				regionH = (int)Math.Round(h);
+				var dstRegion = new Region(regionX, regionY, regionW, regionH);
+
+				Texture.BlendTextureRegion(texture, srcRegion, TargetTexture, dstRegion, c);
 			}
 		}
 
 		/// <summary>
 		/// Adapts the UI Resolution, in case the Canvas target is not a Texture.
 		/// </summary>
-		/// <param name="w">The new Width.</param>
-		/// <param name="h">The new Height.</param>
-		void ResolutionChanged(int w, int h)
+		/// <param name="w">The new width.</param>
+		/// <param name="h">The new height.</param>
+		private void ResolutionChanged(int w, int h)
 		{
 			if(TargetTexture == null)
 			{
@@ -222,7 +221,7 @@ namespace CryEngine.UI
 			}
 			else
 			{
-				TargetTexture = new Graphic(resolution, resolution, data, true, false, true);
+				TargetTexture = new Graphic(resolution, resolution, data, false, true, true, Name + "_RenderTexture");
 			}
 
 			return SetupRenderMaterial(target);
@@ -465,8 +464,9 @@ namespace CryEngine.UI
 		/// <summary>
 		/// Called by framework. Do not call directly.
 		/// </summary>
-		public override void OnDestroy()
+		protected override void OnDestroy()
 		{
+			SceneManager.UnregisterCanvas(this);
 			Mouse.OnLeftButtonDown -= OnLeftMouseDown;
 			Mouse.OnLeftButtonUp -= OnLeftMouseUp;
 			Mouse.OnWindowLeave -= OnWindowLeave;
@@ -487,6 +487,15 @@ namespace CryEngine.UI
 			if(TargetTexture != null)
 			{
 				TargetTexture.Destroy();
+			}
+		}
+
+		internal void ClearRenderTarget()
+		{
+			// The equals operator is overloaded, so do a normal if check instead of using ?. operator.
+			if(TargetTexture != null)
+			{
+				TargetTexture.Clear(new Color());
 			}
 		}
 	}

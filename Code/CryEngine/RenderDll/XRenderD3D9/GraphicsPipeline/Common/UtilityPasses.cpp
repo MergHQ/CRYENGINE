@@ -110,7 +110,7 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// CStretchRectPass
+// CStretchRegionPass
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CStretchRegionPass *CStretchRegionPass::s_pPass = nullptr;
@@ -128,7 +128,7 @@ void CStretchRegionPass::Shutdown()
 	s_pPass = NULL;
 }
 
-void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT *pSrcRect, const RECT *pDstRect, bool bBigDownsample)
+void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT *pSrcRect, const RECT *pDstRect, bool bBigDownsample, const ColorF& color, const int renderStateFlags)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
@@ -173,27 +173,30 @@ void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 
-	int renderState = GS_NODEPTHTEST;
+	int renderState = GS_NODEPTHTEST | renderStateFlags;
 
 	m_pass.SetViewport(viewport);
 	m_pass.BeginAddingPrimitives();
 
 	// FIXME: I had to Reset primitive here because otherwise it doesn't recognize texture change
 	m_Primitive.Reset();
-	if (PreparePrimitive(m_Primitive, m_pass, rcS, renderState, viewport, bResample, bBigDownsample, pSrcRT, pDestRT))
+	GetDeviceObjectFactory().GetCoreCommandList().Reset();
+
+	if (PreparePrimitive(m_Primitive, m_pass, rcS, renderState, viewport, bResample, bBigDownsample, pSrcRT, pDestRT, color))
 	{
 		m_pass.AddPrimitive(&m_Primitive);
 		m_pass.Execute();
 	}
 }
 
-bool CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRenderPass& targetPass, const RECT& rcS, int renderState, const D3DViewPort& targetViewport, bool bResample, bool bBigDownsample, CTexture *pSrcRT, CTexture *pDestRT)
+bool CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRenderPass& targetPass, const RECT& rcS, int renderState, const D3DViewPort& targetViewport, bool bResample, bool bBigDownsample, CTexture *pSrcRT, CTexture *pDestRT, const ColorF& color)
 {
-	static CCryNameTSCRC techTexToTex("TextureToTexture");
-	static CCryNameTSCRC techTexToTexResampled("TextureToTextureResampledReg");
+	static CCryNameTSCRC techTexToTex("TextureToTextureTinted");
+	static CCryNameTSCRC techTexToTexResampled("TextureToTextureTintedResampledReg");
 
 	static CCryNameR param0Name("texToTexParams0");
 	static CCryNameR param1Name("texToTexParams1");
+	static CCryNameR param2Name("texToTexParams2");
 	static CCryNameR paramTCName("texToTexParamsTC");
 
 	CTexture* pOffsetTex = bBigDownsample ? pDestRT : pSrcRT;
@@ -214,14 +217,22 @@ bool CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRend
 		params0 = Vec4(-s1, -t1, s1, -t1);
 		params1 = Vec4(s1, t1, -s1, t1);
 	}
-	Vec4 ParamsTC;
-	ParamsTC.x = (float)rcS.left / (float)pSrcRT->GetWidth();
-	ParamsTC.z = (float)(rcS.right - rcS.left) / (float)pSrcRT->GetWidth();
-	ParamsTC.y = (float)rcS.top / (float)pSrcRT->GetHeight();
-	ParamsTC.w = (float)(rcS.bottom - rcS.top) / (float)pSrcRT->GetHeight();
+
+	Vec4 params2;
+	params2.x = color.r;
+	params2.y = color.g;
+	params2.z = color.b;
+	params2.w = color.a;
+
+	Vec4 paramsTC;
+	paramsTC.x = (float)rcS.left / (float)pSrcRT->GetWidth();
+	paramsTC.z = (float)(rcS.right - rcS.left) / (float)pSrcRT->GetWidth();
+	paramsTC.y = (float)rcS.top / (float)pSrcRT->GetHeight();
+	paramsTC.w = (float)(rcS.bottom - rcS.top) / (float)pSrcRT->GetHeight();
+
 
 	prim.SetFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);
-	prim.SetPrimitiveType(bResample ? CRenderPrimitive::ePrim_FullscreenQuad : CRenderPrimitive::ePrim_ProceduralTriangle);
+	prim.SetPrimitiveType(bResample ? CRenderPrimitive::ePrim_FullscreenQuadCentered : CRenderPrimitive::ePrim_ProceduralTriangle);
 
 	prim.SetTechnique(CShaderMan::s_shPostEffects, bResample ? techTexToTexResampled : techTexToTex, 0);
 	prim.SetRenderState(renderState);
@@ -235,7 +246,8 @@ bool CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRend
 
 		constantManager.SetNamedConstant(param0Name, params0, eHWSC_Pixel);
 		constantManager.SetNamedConstant(param1Name, params1, eHWSC_Pixel);
-		constantManager.SetNamedConstant(paramTCName, ParamsTC, eHWSC_Vertex);
+		constantManager.SetNamedConstant(param2Name, params2, eHWSC_Pixel);
+		constantManager.SetNamedConstant(paramTCName, paramsTC, eHWSC_Vertex);
 
 		constantManager.EndNamedConstantUpdate(&targetPass.GetViewport());
 

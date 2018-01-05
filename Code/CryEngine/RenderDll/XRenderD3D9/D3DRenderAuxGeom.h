@@ -338,8 +338,8 @@ private:
 	EAuxGeomPublicRenderflags_DrawInFrontMode m_curDrawInFrontMode;
 
 	CAuxGeomCB::AuxSortedPushBuffer           m_auxSortedPushBuffer;
-	const CAuxGeomCB::SAuxGeomCBRawData*      m_pCurCBRawData;				//!< Helper raw data pointer to currently used data in RT_Flush. 
-																			//!< It is used to reduce data pass
+	const CAuxGeomCB::SAuxGeomCBRawData*      m_pCurCBRawData;              //!< Helper raw data pointer to currently used data in RT_Flush. 
+	                                                                        //!< It is used to reduce data pass
 
 	int                                       CV_r_auxGeom;
 

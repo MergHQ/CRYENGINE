@@ -68,6 +68,14 @@ vtxOutTexToTex TexToTexRegVS(vtxIn IN)
   return OUT;
 }
 
+[earlydepthstencil]
+pixout TexToTexTintedPS(vtxOutTexToTex IN)
+{
+  pixout OUT = TexToTexPS(IN);
+  OUT.Color.rgba *= texToTexParams2.rgba;
+  return OUT;
+}
+
 ///////////////// pixel shader //////////////////
 
 [earlydepthstencil]
@@ -199,6 +207,13 @@ pixout TexToTexSampledPS(vtxOutTexToTex IN)
 			OUT.Color.a = 0;
 		#endif
 	return OUT;
+}
+
+pixout TexToTexTintedSampledPS(vtxOutTexToTex IN)
+{
+  pixout OUT = TexToTexSampledPS(IN);
+  OUT.Color.rgba *= texToTexParams2.rgba;
+  return OUT;
 }
 
 float4 g_vUITextureColor;
@@ -442,6 +457,15 @@ technique TextureToTexture
   }
 }
 
+technique TextureToTextureTinted
+{
+  pass p0
+  {
+    VertexShader = TexToTexVS() ResolveVS;
+    PixelShader = TexToTexTintedPS() ResolvePS;
+  }
+}
+
 technique CubeTextureToTexture
 {
   pass p0
@@ -466,6 +490,15 @@ technique TextureToTextureResampledReg
   {
     VertexShader = TexToTexRegVS() PostProcessGameVS;            
     PixelShader = TexToTexSampledPS() PostProcessGamePS; // PostProcessGamePS for RT_SAMPLE2
+  }
+}
+
+technique TextureToTextureTintedResampledReg
+{
+  pass p0
+  {
+    VertexShader = TexToTexRegVS() PostProcessGameVS;
+    PixelShader = TexToTexTintedSampledPS() PostProcessGamePS; // PostProcessGamePS for RT_SAMPLE2
   }
 }
 

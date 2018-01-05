@@ -1152,6 +1152,8 @@ public:
 
 	virtual void                                      UnloadShaderStartupCache() override;
 
+	virtual void                                      CopyTextureRegion(ITexture* pSrc, RectI srcRegion, ITexture* pDst, RectI dstRegion, ColorF& color, const int renderStateFlags) override;
+
 	virtual bool                                      LoadShaderLevelCache() override            { return false; }
 	virtual void                                      UnloadShaderLevelCache() override          {}
 

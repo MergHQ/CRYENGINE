@@ -76,7 +76,7 @@ namespace CryEngine
 		}
 
 		/// <summary>
-		/// Gets or sets the field of view by CVar.
+		/// Gets or sets the field of view of the view camera in degrees.
 		/// </summary>
 		/// <value>The field of view.</value>
 		public static float FieldOfView
@@ -105,13 +105,35 @@ namespace CryEngine
 		}
 
 		/// <summary>
-		/// Converts a point in world-space to screen-space.
+		/// Converts a point in world-space to the camera's screen-space.
 		/// </summary>
-		/// <param name="position"></param>
-		/// <returns></returns>
-		public static Vector2 ProjectToScreen(Vector3 position)
+		/// <returns><c>true</c>, if the point is visible, <c>false</c> otherwise.</returns>
+		/// <param name="position">Position of the point in world-space.</param>
+		/// <param name="screenPosition">Position of the point in the camera's screen-space.</param>
+		public static bool ProjectToScreen(Vector3 position, out Vector3 screenPosition)
 		{
-			return Global.gEnv.pRenderer.ProjectToScreen(position);
+			var camera = Global.gEnv.pSystem.GetViewCamera();
+			Vec3 result = new Vec3();
+			var visible = camera.Project(position, result);
+			screenPosition = result;
+			return visible;
+		}
+
+		/// <summary>
+		/// Converts a point in world-space to the camera's viewport-space.
+		/// </summary>
+		/// <returns><c>true</c>, if the point is visible, <c>false</c> otherwise.</returns>
+		/// <param name="position">Position of the point in world-space.</param>
+		/// <param name="viewportPosition">Position of the point in the camera's viewport-space.</param>
+		public static bool ProjectToViewport(Vector3 position, out Vector3 viewportPosition)
+		{
+			var camera = Global.gEnv.pSystem.GetViewCamera();
+			Vec3 result = new Vec3();
+			var visible = camera.Project(position, result);
+			viewportPosition = result;
+			viewportPosition.x /= camera.GetViewSurfaceX();
+			viewportPosition.y /= camera.GetViewSurfaceZ();
+			return visible;
 		}
 
 		/// <summary>

@@ -1616,6 +1616,9 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual bool  LoadShaderStartupCache() = 0;
 	virtual void  UnloadShaderStartupCache() = 0;
 
+	//! Copy a region from source texture to destination texture and apply a tint color. If blend is false, the source will override the destination area. Otherwise it will perform an alpha blend.
+	virtual void  CopyTextureRegion(ITexture* pSrc, RectI srcRegion, ITexture* pDst, RectI dstRegion, ColorF& color, const int renderStateFlags) = 0;
+
 	virtual bool  LoadShaderLevelCache() = 0;
 	virtual void  UnloadShaderLevelCache() = 0;
 

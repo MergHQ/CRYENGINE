@@ -92,7 +92,7 @@ namespace CryEngine
 
 		public void SetAsColor(uint id, Color value)
 		{
-			NativeHandle.SetAsColor(id, value);
+			NativeHandle.SetAsColor(id, (ColorF)value);
 		}
 
 		public void SetAsFloat(uint id, float value)

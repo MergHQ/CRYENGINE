@@ -114,7 +114,7 @@ namespace CryEngine.UI
 		/// <summary>
 		/// Called by framework. Do not call directly.
 		/// </summary>
-		public override void OnDestroy()
+		protected override void OnDestroy()
 		{
 			Children.Clear();
 		}

@@ -1,3 +1,5 @@
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;

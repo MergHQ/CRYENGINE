@@ -41,9 +41,9 @@ namespace CryEngine
 		}
 
 		internal static GameFramework Instance { get; set; }
-		private static List<DestroyAction> _destroyActions = new List<DestroyAction>();
-		private static List<IGameUpdateReceiver> _updateReceivers = new List<IGameUpdateReceiver>();
-		private static List<IGameRenderReceiver> _renderReceivers = new List<IGameRenderReceiver>();
+		private static readonly List<DestroyAction> _destroyActions = new List<DestroyAction>();
+		private static readonly List<IGameUpdateReceiver> _updateReceivers = new List<IGameUpdateReceiver>();
+		private static readonly List<IGameRenderReceiver> _renderReceivers = new List<IGameRenderReceiver>();
 
 		/// <summary>
 		/// Called when the engine saves the game.
@@ -144,6 +144,11 @@ namespace CryEngine
 		{
 			// Calculate time used to render last frame.
 			FrameTime.Delta = fDeltaTime;
+
+			if(!Global.gEnv.pGameFramework.GetILevelSystem().IsLevelLoaded())
+			{
+				return;
+			}
 
 			if(_destroyActions.Count > 0)
 			{

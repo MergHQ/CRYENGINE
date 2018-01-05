@@ -1,6 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 
@@ -47,6 +48,20 @@ namespace CryEngine
 			bmp.UnlockBits(data);
 
 			var bpp = bmp.GetBPP();
+			if(bpp == 3)
+			{
+				List<byte> pixels = new List<byte>(pix.Length / 3 * 4);
+				for(int i = 0; i < pix.Length; i += bpp)
+				{
+					for(int p = 0; p < 3; ++p)
+					{
+						pixels.Add(pix[i + p]);
+					}
+					pixels.Add(byte.MaxValue);
+				}
+				pix = pixels.ToArray();
+				bpp = 4;
+			}
 			Action<int> SwapRnB = (ofs) =>
 			{
 				byte p0 = pix[ofs];
