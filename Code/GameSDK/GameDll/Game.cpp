@@ -865,10 +865,9 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 
 		if (gEnv->IsDedicated())
 		{
-			const char* const DEDICATED_BASE_CONFIG_NAME = "dedicated";
-			string path = gEnv->pSystem->GetRootFolder();
+			const char* const szDedicatedBaseConfigName = "dedicated.cfg";
+			const string configFileName = PathUtil::Make(gEnv->pSystem->GetRootFolder(), szDedicatedBaseConfigName);
 
-			configFileName.Format("%s%s.cfg", path.c_str(), DEDICATED_BASE_CONFIG_NAME);
 			CryLog("[dedicated] loading dedicated config %s", configFileName.c_str());
 
 			SDedicatedConfigSink sink;

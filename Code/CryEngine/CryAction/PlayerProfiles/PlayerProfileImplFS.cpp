@@ -1290,15 +1290,13 @@ private:
 
 ILevelRotationFile* CCommonSaveGameHelper::GetLevelRotationFile(CPlayerProfileManager::SUserEntry* pEntry, const char* name)
 {
-	string filename = gEnv->pSystem->GetRootFolder();
-	if (filename.empty())
-	{
-		m_pImpl->InternalMakeFSPath(pEntry, pEntry->pCurrentProfile->GetName(), filename);
-		filename.append("levelrotation/");
-	}
+	string rootFolder;
+	m_pImpl->InternalMakeFSPath(pEntry, pEntry->pCurrentProfile->GetName(), rootFolder);
+	rootFolder = PathUtil::Make(rootFolder, "levelrotation/");
+
 	string strippedName = PathUtil::GetFile(name);
-	filename.append(strippedName);
-	filename.append(".xml");
+	strippedName = PathUtil::ReplaceExtension(strippedName, ".xml");
+	string filename = PathUtil::Make(rootFolder, strippedName);
 	return new CLevelRotationFile(filename);
 }
 

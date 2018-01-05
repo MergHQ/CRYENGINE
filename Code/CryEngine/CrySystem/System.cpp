@@ -378,7 +378,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	m_pPhysRenderer = nullptr;
 
-	m_root = PathUtil::GetEnginePath();
+	m_root = PathUtil::AddSlash(PathUtil::GetEnginePath());
 
 	m_pXMLUtils = new CXmlUtils(this);
 	m_pArchiveHost = Serialization::CreateArchiveHost();

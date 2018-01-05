@@ -1319,10 +1319,9 @@ void DebugCallStack::LogExceptionInfo(EXCEPTION_POINTERS* pex)
 
 	cry_strcat(errorString, errs);
 
-	stack_string errorlogFilename(m_outputPath.c_str());
-	errorlogFilename += "error.log";
+	stack_string errorlogFilename = PathUtil::Make(stack_string(m_outputPath), stack_string("error.log"));
 
-	WriteErrorLog(errorlogFilename.c_str(),errorString);
+	WriteErrorLog(errorlogFilename.c_str(), errorString);
 }
 
 //////////////////////////////////////////////////////////////////////////
