@@ -20,6 +20,8 @@
 #include <CrySystem/IStreamEngine.h>
 #include <CryMath/Cry_Color.h>
 
+class CDiskProfilerWindowsSpecific;
+
 //////////////////////////////////////////////////////////////////////////
 // Disk Profile main class
 //////////////////////////////////////////////////////////////////////////
@@ -57,6 +59,8 @@ protected:
 	int m_nHeightOffset;  // offset from bottom of the screen, in pixels
 
 	DiskOperationInfo m_outStatistics;
+
+	CDiskProfilerWindowsSpecific* m_windowsSpecificProfiling = nullptr;
 
 public:
 	static int profile_disk;

@@ -2103,7 +2103,6 @@ void CAuxGeomCB::PushImage(const SRender2DImageDescription &image)
 	m_cbCurrent->m_2dImages.push_back(image);
 }
 
-
 void CAuxGeomCB::Flush()
 {
 	Flush(true);
@@ -2137,7 +2136,6 @@ void CAuxGeomCB::Draw2dImages(SAux2DImages& images, bool reset)
 	SRenderViewport viewport = SRenderViewport(0, 0, camera.GetViewSurfaceX(), camera.GetViewSurfaceZ());
 	const float vw = static_cast<float>(viewport.width);
 	const float vh = static_cast<float>(viewport.height);
-	Vec3 scale800x600 = Vec3(vw / 800.0f, vh / 600.0f, 1.0f);
 
 	SAuxGeomRenderFlags oldRenderFlags = pAux->GetRenderFlags();
 	SAuxGeomRenderFlags currRenderFlags = oldRenderFlags;
@@ -2149,18 +2147,15 @@ void CAuxGeomCB::Draw2dImages(SAux2DImages& images, bool reset)
 			pAux->SetRenderFlags(currRenderFlags);
 		}
 
-		float xpos = img.x;// * scale800x600.x;
-		float ypos = img.y;// * scale800x600.y;
-		float w    = img.w;// * scale800x600.x;
-		float h    = img.h;// * scale800x600.y;
-		float z    = img.z;// * scale800x600.z;
+		float xpos = img.x;
+		float ypos = img.y;
+		float w    = img.w;
+		float h    = img.h;
+		float z    = img.z;
 
 		pAux->SetTexture(img.textureId);
 		UCol color;
-		color.a = img.color.a;
-		color.r = img.color.r;
-		color.g = img.color.g;
-		color.b = img.color.b;
+		color.dcolor = img.color.pack_abgr8888();
 
 		float parallax = 0;
 		/*TODO@ implement

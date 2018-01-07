@@ -1227,6 +1227,11 @@ namespace SchematycBaseEnv
 			return temp;
 		}
 
+		Vec3 ToVector3(const Vec2& value, float z)
+		{
+			return Vec3(value.x, value.y, z);
+		}
+
 		static void Register(Schematyc2::IEnvRegistry& envRegistry)
 		{
 			{
@@ -1357,6 +1362,17 @@ namespace SchematycBaseEnv
 				pFunction->BindOutput(0, "String", "String"); //pFunction->BindOutput(0, "Result", "Result");
 				envRegistry.RegisterGlobalFunction(pFunction);
 			}
+
+			{
+				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Vector2::ToVector3, "e5853217-c60d-4c26-aa85-7252e70c4e00");
+				pFunction->SetNamespace("Types::Vector2");
+				pFunction->SetAuthor("Crytek");
+				pFunction->SetDescription("Convert 2D vector to 3D vector");
+				pFunction->BindInput(1, "Value", "Value", Vec2(ZERO));
+				pFunction->BindInput(2, "Z", "Z", 0.0f);
+				pFunction->BindOutput(0, "Result", "Result");
+				envRegistry.RegisterGlobalFunction(pFunction);
+			}
 		}
 	}
 
@@ -1424,6 +1440,11 @@ namespace SchematycBaseEnv
 			char temp[Schematyc2::StringUtils::s_vec3StringBufferSize] = "";
 			Schematyc2::StringUtils::Vec3ToString(value, temp);
 			return temp;
+		}
+
+		Vec2 ToVector2(const Vec3& value) 
+		{
+			return Vec2(value.x, value.y);
 		}
 
 		bool IsZero(const Vec3& a)
@@ -1572,6 +1593,17 @@ namespace SchematycBaseEnv
 				pFunction->SetDescription("Convert 3D vector to string");
 				pFunction->BindInput(1, "Value", "Value", Vec3(ZERO));
 				pFunction->BindOutput(0, "String", "String"); //pFunction->BindOutput(0, "Result", "Result");
+				envRegistry.RegisterGlobalFunction(pFunction);
+			}
+
+			{
+				Schematyc2::IGlobalFunctionPtr pFunction = SCHEMATYC2_MAKE_GLOBAL_FUNCTION_SHARED(Vector3::ToVector2, "ecf32b36-d142-4f46-bbf6-6797cb4d574f");
+				pFunction->SetNamespace("Types::Vector3");
+				pFunction->SetAuthor("Crytek");
+				pFunction->SetDescription("Convert 3D vector to 2D vector");
+				pFunction->SetDescription("Convert vector3 to vector2");
+				pFunction->BindInput(1, "Value", "Value", Vec3(ZERO));
+				pFunction->BindOutput(0, "Result", "Result");
 				envRegistry.RegisterGlobalFunction(pFunction);
 			}
 

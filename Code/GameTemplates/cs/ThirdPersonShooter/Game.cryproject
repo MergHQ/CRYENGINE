@@ -29,7 +29,7 @@
         "name": "Third Person Shooter Game Template"
     },
     "require": {
-        "engine": "engine-5.4",
+        "engine": "engine-dev",
         "plugins": [
             {
                 "path": "CryDefaultEntities",

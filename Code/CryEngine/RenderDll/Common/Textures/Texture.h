@@ -1013,7 +1013,6 @@ private:
 	bool                m_bNoTexture            : 1;
 	bool                m_bResolved             : 1;
 	bool                m_bUseMultisampledRTV   : 1; // Allows switching rendering between multisampled/non-multisampled rendertarget views
-	bool                m_bHighQualityFiltering : 1;
 	bool                m_bCustomFormat         : 1; // Allow custom texture formats - for faster texture fetches
 	bool                m_bVertexTexture        : 1;
 	bool                m_bUseDecalBorderCol    : 1;
@@ -1190,8 +1189,8 @@ public:
 
 	// TODO: deprecate global state based sampler state configuration
 	virtual bool          SetFilter(int nFilter)                   final { return SSamplerState::SetDefaultFilterMode(nFilter); }
-	virtual bool          Clear();
-	virtual bool          Clear(const ColorF& color);
+	virtual bool          Clear() final;
+	virtual bool          Clear(const ColorF& color) final;
 	virtual float         GetAvgBrightness() const                 final { return m_fAvgBrightness; }
 	virtual void          SetAvgBrightness(float fBrightness)      final { m_fAvgBrightness = fBrightness; }
 	virtual const ColorF& GetMinColor() const                      final { return m_cMinColor; }
@@ -1324,9 +1323,6 @@ public:
 			m_pDevTexture->MgpuResourceUpdate(bUpdating);
 #endif
 	}
-
-	bool         IsHighQualityFiltered() const               { return m_bHighQualityFiltering; }
-	virtual void SetHighQualityFiltering(bool bState = true) { m_bHighQualityFiltering = bState; }
 
 	bool            IsFPFormat() const    { return CImageExtensionHelper::IsRangeless(m_eDstFormat); };
 

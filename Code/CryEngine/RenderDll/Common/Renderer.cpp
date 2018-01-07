@@ -3103,6 +3103,32 @@ ITexture* CRenderer::CreateTextureArray(const char* name, ETEX_Type eType, uint3
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CRenderer::CopyTextureRegion(ITexture* pSrc, RectI srcRegion, ITexture* pDst, RectI dstRegion, ColorF& color, const int renderStateFlags)
+{
+	_smart_ptr<ITexture> pSource = pSrc;
+	_smart_ptr<ITexture> pDestination = pDst;
+	ExecuteRenderThreadCommand(
+		[=]
+	{
+		RECT src;
+		src.left = srcRegion.x;
+		src.right = srcRegion.x + srcRegion.w;
+		src.bottom = srcRegion.y + srcRegion.h;
+		src.top = srcRegion.y;
+
+		RECT dst;
+		dst.left = dstRegion.x;
+		dst.right = dstRegion.x + dstRegion.w;
+		dst.bottom = dstRegion.y + dstRegion.h;
+		dst.top = dstRegion.y;
+
+		CStretchRegionPass::GetPass().Execute(static_cast<CTexture*>(pSource.get()), static_cast<CTexture*>(pDestination.get()), &src, &dst, false, color, renderStateFlags);
+	},
+		ERenderCommandFlags::None
+		);
+}
+
+//////////////////////////////////////////////////////////////////////////
 IShaderPublicParams* CRenderer::CreateShaderPublicParams()
 {
 	return new CShaderPublicParams;

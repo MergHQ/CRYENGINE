@@ -56,8 +56,8 @@ public:
 	CStretchRegionPass() {};
 	~CStretchRegionPass() {};
 
-	void Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT *pSrcRect=NULL, const RECT *pDstRect=NULL, bool bBigDownsample=false);
-	bool PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRenderPass& targetPass, const RECT& rcS, int renderState, const D3DViewPort& targetViewport, bool bResample, bool bBigDownsample, CTexture *pSrcRT, CTexture *pDstRT);
+	void Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT *pSrcRect = NULL, const RECT *pDstRect = NULL, bool bBigDownsample = false, const ColorF& color = ColorF(1,1,1,1), const int renderStateFlags = 0);
+	bool PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRenderPass& targetPass, const RECT& rcS, int renderState, const D3DViewPort& targetViewport, bool bResample, bool bBigDownsample, CTexture *pSrcRT, CTexture *pDstRT, const ColorF& color);
 
 	static CStretchRegionPass &GetPass();
 	static void Shutdown();

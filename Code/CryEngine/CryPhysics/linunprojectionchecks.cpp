@@ -852,7 +852,7 @@ int box_box_lin_unprojection(unprojection_mode *pmode, const box *pbox1,int iFea
 {
 	const box *pbox[2] = { pbox1,pbox2 };
 	Vec3r axes[3],center[2],origin,pt0,pt1,pt,dp,n,dir[2],size[2]={ pbox1->size,pbox2->size };
-	real nlen2;
+	real nlen2,dirlen2=1;
 	int i,iz,ibox,idir0,idir1,ix,iy,ix0,iy0,ix1,iy1,bFindMinUnproj;
 	idbest_type idbest=-1;
 	Vec3_tpl<int> isg0,isg1;
@@ -905,8 +905,9 @@ int box_box_lin_unprojection(unprojection_mode *pmode, const box *pbox1,int iFea
 		pt0[idir0]=-size[0][idir0]; pt0[ix0]=size[0][ix0]*isg0.x; pt0[iy0]=size[0][iy0]*isg0.y;
 		pt1 = center[0] - axes[idir1]*size[1][idir1] + axes[ix1]*(size[1][ix1]*isg1.x) + axes[iy1]*(size[1][iy1]*isg1.y);
 		dp = pt1-pt0;	t.x = (dp*n)*sg;
-		bBest = isneg(-t.x) & isneg(t-tmin);
+		bBest = isneg(-t.x) & isneg(sqr(t)*dir[0].len2() - sqr(tmin)*dirlen2);
 		UPDATE_IDTBEST(tmin, icode + (isg1.y+1+HALFX(isg1.x+1))*16 + (isg0.y+1+HALFX(isg0.x+1)));
+		dirlen2 += (dir[0].len2()-dirlen2)*bBest;
 	}
 
 	if (idbest==-1)
@@ -922,7 +923,8 @@ int box_box_lin_unprojection(unprojection_mode *pmode, const box *pbox1,int iFea
 		ix1 = inc_mod3[idir1]; iy1 = dec_mod3[idir1];
 		n[idir0]=0; n[ix0]=-axes[idir1][iy0]; n[iy0]=axes[idir1][ix0]; nlen2 = n.len2();
 		if (bFindMinUnproj)	{
-			dir[0] = n*-sgnnz(n*center[0]);
+			tmin.x *= (dir[0] = n.normalized())*n;
+			dir[0] *= -sgnnz(n*center[0]);
 			pmode->dir = dir[0]*pbox[0]->Basis;
 			dir[1] = pbox[1]->Basis*-pmode->dir;
 		}
@@ -951,7 +953,7 @@ int box_box_lin_unprojection(unprojection_mode *pmode, const box *pbox1,int iFea
 		pcontact->t = tmin.val();
 		pcontact->pt = pbox[ibox^1]->center + pmode->dir*pcontact->t*ibox -
 			(Vec3(pbox[ibox^1]->size.x*isg1.x, pbox[ibox^1]->size.y*isg1.y, pbox[ibox^1]->size.z*isg1.z)*isg0.z)*pbox[ibox^1]->Basis;
-		Vec3 ptface = pbox[ibox]->Basis*(pcontact->pt-pbox[ibox]->center-pmode->dir*(pcontact->t*(ibox^1))) - pbox[ibox]->size;
+		Vec3 ptface = (pbox[ibox]->Basis*(pcontact->pt-pbox[ibox]->center-pmode->dir*(pcontact->t*(ibox^1)))).abs() - pbox[ibox]->size;
 		bContact = isneg(max(ptface[inc_mod3[iz]], ptface[dec_mod3[iz]]));
 		pcontact->n = pbox[ibox]->Basis.GetRow(iz)*(isg0.z*(1-(ibox<<1)));
 		pcontact->iFeature[ibox] = 0x40 | iz | isg0.z+1>>1;
@@ -979,7 +981,7 @@ int box_box_lin_unprojection(unprojection_mode *pmode, const box *pbox1,int iFea
 				fabs_tpl(axes[1][iz])*pbox[1]->size.y+fabs_tpl(axes[2][iz])*pbox[1]->size.z);
 			diff1 = fabs_tpl(center[1][idir1]-dir[1][idir1]*pcontact->t) - (pbox[1]->size[idir1]+fabs_tpl(axes[idir1][0])*pbox[0]->size.x+
 				fabs_tpl(axes[idir1][1])*pbox[0]->size.y+fabs_tpl(axes[idir1][2])*pbox[0]->size.z);
-			if (min(fabs_tpl(diff0),fabs_tpl(diff1))<(pbox[0]->size[iz]+pbox[1]->size[idir1])*0.003f && fabs_tpl(dir[0][iz])>0.01f) { 
+			if (min(fabs_tpl(diff0),fabs_tpl(diff1))<(pbox[0]->size[iz]+pbox[1]->size[idir1])*0.03f && fabs_tpl(dir[0][iz])>0.01f) { 
 				// confirmed face-face contact
 				int iprev,ivtx0,ivtx1,iface[2],idedge[2][8];
 				Vec2 ptc2d,sz2d,axisx2d,axisy2d,pt2d[2][8];

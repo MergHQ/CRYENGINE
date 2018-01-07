@@ -489,10 +489,24 @@ void CSystemControlsWidget::OnDeleteSelectedControl()
 	if (size > 0)
 	{
 		QString text;
+		QStringList defaultControlNames;
 
-		if (IsDefaultControlSelected())
+		if (IsDefaultControlSelected(defaultControlNames))
 		{
-			text = tr("A default control is selected, that cannot get deleted.");
+			if (defaultControlNames.size() > 1)
+			{
+				text = tr("Default controls are selected, that cannot get deleted:");
+			}
+			else
+			{
+				text = tr("A default control is selected, that cannot get deleted:");
+			}
+
+			for (auto const& name : defaultControlNames)
+			{
+				text.append("\n" + name);
+			}
+
 			CQuestionDialog* const messageBox = new CQuestionDialog();
 			messageBox->SetupQuestion("Audio Controls Editor", text, QDialogButtonBox::Ok , QDialogButtonBox::Ok);
 			messageBox->Execute();
@@ -724,7 +738,7 @@ bool CSystemControlsWidget::IsParentFolderAllowed() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CSystemControlsWidget::IsDefaultControlSelected() const
+bool CSystemControlsWidget::IsDefaultControlSelected(QStringList& controlNames /*= QStringList()*/) const
 {
 	bool isDefaultControlSelected = false;
 	auto const& selection = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
@@ -733,10 +747,9 @@ bool CSystemControlsWidget::IsDefaultControlSelected() const
 	{
 		if (index.isValid())
 		{
-			if (HasDefaultControl(SystemModelUtils::GetAssetFromIndex(index, m_nameColumn)))
+			if (HasDefaultControl(SystemModelUtils::GetAssetFromIndex(index, m_nameColumn), controlNames))
 			{
 				isDefaultControlSelected = true;
-				break;
 			}
 		}
 	}
@@ -745,7 +758,7 @@ bool CSystemControlsWidget::IsDefaultControlSelected() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CSystemControlsWidget::HasDefaultControl(CSystemAsset* const pAsset) const
+bool CSystemControlsWidget::HasDefaultControl(CSystemAsset* const pAsset, QStringList& controlNames) const
 {
 	bool hasDefaultControl = false;
 
@@ -753,16 +766,26 @@ bool CSystemControlsWidget::HasDefaultControl(CSystemAsset* const pAsset) const
 	{
 		hasDefaultControl = pAsset->IsDefaultControl();
 
-		if (!hasDefaultControl)
+		if (hasDefaultControl)
+		{
+			QString name = "\"" + QtUtil::ToQString(pAsset->GetName()) + "\"";
+
+			if (pAsset->IsHiddenDefault())
+			{
+				name.append(" (" + tr("hidden") + ")");
+			}
+
+			controlNames.append(name);
+		}
+		else
 		{
 			size_t const childCount = pAsset->ChildCount();
 
 			for (size_t i = 0; i < childCount; ++i)
 			{
-				if (HasDefaultControl(pAsset->GetChild(i)))
+				if (HasDefaultControl(pAsset->GetChild(i),controlNames))
 				{
 					hasDefaultControl = true;
-					break;
 				}
 			}
 		}

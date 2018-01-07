@@ -93,7 +93,7 @@ CItemModelAttribute* CMiddlewareDataModel::GetAttributeForColumn(EColumns const 
 //////////////////////////////////////////////////////////////////////////
 QVariant CMiddlewareDataModel::GetHeaderData(int const section, Qt::Orientation const orientation, int const role)
 {
-	QVariant variant = QVariant();
+	QVariant variant;
 
 	if (orientation == Qt::Horizontal)
 	{
@@ -164,7 +164,7 @@ int CMiddlewareDataModel::columnCount(QModelIndex const& parent) const
 //////////////////////////////////////////////////////////////////////////
 QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 {
-	QVariant variant = QVariant();
+	QVariant variant;
 
 	if (m_pEditorImpl != nullptr)
 	{

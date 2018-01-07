@@ -49,12 +49,7 @@ bool CConsoleBatchFile::ExecuteConfigFile(const char* sFilename)
 	if (!m_pConsole)
 		Init();
 
-	string filename;
-	string root = gEnv->pSystem->GetRootFolder();
-	if (!root.empty())
-		filename = PathUtil::Make(root, PathUtil::GetFile(sFilename));
-	else
-		filename = sFilename;
+	string filename = PathUtil::Make(gEnv->pSystem->GetRootFolder(), PathUtil::GetFile(sFilename));
 	if (strlen(PathUtil::GetExt(filename)) == 0)
 	{
 		filename = PathUtil::ReplaceExtension(filename, "cfg");

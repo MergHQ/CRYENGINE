@@ -41,7 +41,7 @@ public:
 	void                DrawLines(const Vec3* v, const uint32* packedColorARGB8888, uint32 numPoints, float thickness = 1.0f, bool alphaFlag = true) final;
 	void                DrawLines(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB& col, float thickness = 1.0f) final;
 	void                DrawLines(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col, float thickness = 1.0f) final;
-	void				DrawLineStrip(const Vec3* v, uint32 numPoints, const ColorB* col, float thickness = 1.0f) final;
+	void                DrawLineStrip(const Vec3* v, uint32 numPoints, const ColorB* col, float thickness = 1.0f) final;
 	void                DrawPolyline(const Vec3* v, uint32 numPoints, bool closed, const ColorB& col, float thickness = 1.0f) final;
 	void                DrawPolyline(const Vec3* v, uint32 numPoints, bool closed, const ColorB* col, float thickness = 1.0f) final;
 
@@ -74,7 +74,7 @@ public:
 	int32               PushMatrix(const Matrix34& mat) final                                                                                                { return -1; }
 	Matrix34*           GetMatrix() final                                                                                                                    { return nullptr; }
 	void                SetMatrixIndex(int32 matID) final                                                                                                    {}
-	void				SetOrthographicProjection(bool enable, float l = 0, float r = 1, float b = 0, float t = 1, float n = -1e10, float f = 1e10) final	 {}
+	void                SetOrthographicProjection(bool enable, float l = 0, float r = 1, float b = 0, float t = 1, float n = -1e10, float f = 1e10) final    {}
 
 	void                Flush() final                                                                                                                        {}
 	void                Submit(uint frames = 0) final                                                                                                        {}

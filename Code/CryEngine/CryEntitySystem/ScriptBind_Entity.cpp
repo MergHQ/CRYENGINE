@@ -8571,7 +8571,13 @@ int CScriptBind_Entity::DeleteParticleEmitter(IFunctionHandler* pH, int slot)
 //////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::RegisterForAreaEvents(IFunctionHandler* pH, int enable)
 {
-	// Deprecated
+	GET_ENTITY;
+
+	if (CEntityComponentLuaScript* const pScriptProxy = pEntity->GetScriptProxy())
+	{
+		pScriptProxy->RegisterForAreaEvents(enable != 0);
+	}
+
 	return pH->EndFunction();
 }
 

@@ -1144,7 +1144,7 @@ struct ISystem
 	//! Returns the user-defined callback, notifies of system initialization flow.
 	virtual ISystemUserCallback* GetUserCallback() const = 0;
 
-	//! Returns the root folder specified by the command line option "-root <path>".
+	//! Returns the root folder of the engine installation.
 	virtual const char* GetRootFolder() const = 0;
 
 	//! Starts a new frame, updates engine systems, game logic and finally renders.

@@ -20,27 +20,15 @@ CRYREGISTER_CLASS(CEntityComponentLuaScript);
 //////////////////////////////////////////////////////////////////////////
 CEntityComponentLuaScript::CEntityComponentLuaScript()
 	: m_pScript(nullptr)
-	, m_pThis(nullptr)
 	, m_fScriptUpdateRate(0.0f)
 	, m_fScriptUpdateTimer(0.0f)
-	, m_nCurrStateId(0)
-	, m_bUpdateFuncImplemented(false)
-	, m_bUpdateEnabledOverride(false)
-	, m_bEnableSoundAreaEvents(false)
+	, m_currentStateId(0)
+	, m_implementedUpdateFunction(false)
+	, m_isUpdateEnabled(false)
+	, m_enableSoundAreaEvents(false)
 {
 	m_componentFlags.Add(EEntityComponentFlags::Legacy);
 	m_componentFlags.Add(EEntityComponentFlags::NoSave);
-}
-
-//////////////////////////////////////////////////////////////////////////
-CEntityComponentLuaScript::~CEntityComponentLuaScript()
-{
-	SAFE_RELEASE(m_pThis);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityComponentLuaScript::Initialize()
-{
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -49,26 +37,26 @@ void CEntityComponentLuaScript::ChangeScript(IEntityScript* pScript, SEntitySpaw
 	if (pScript)
 	{
 		// Release current
-		SAFE_RELEASE(m_pThis);
+		m_pThis.reset();
 
 		m_pScript = static_cast<CEntityScript*>(pScript);
-		m_nCurrStateId = 0;
+		m_currentStateId = 0;
 		m_fScriptUpdateRate = 0;
 		m_fScriptUpdateTimer = 0;
-		m_bEnableSoundAreaEvents = false;
+		m_enableSoundAreaEvents = false;
 
 		// New object must be created here.
 		CreateScriptTable(params);
 
-		m_bUpdateFuncImplemented = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+		m_implementedUpdateFunction = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
 		m_pEntity->UpdateComponentEventMask(this);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentLuaScript::EnableScriptUpdate(bool bEnable)
+void CEntityComponentLuaScript::EnableScriptUpdate(bool enable)
 {
-	m_bUpdateEnabledOverride = bEnable;
+	m_isUpdateEnabled = enable;
 	m_pEntity->UpdateComponentEventMask(this);
 }
 
@@ -76,7 +64,6 @@ void CEntityComponentLuaScript::EnableScriptUpdate(bool bEnable)
 void CEntityComponentLuaScript::CreateScriptTable(SEntitySpawnParams* pSpawnParams)
 {
 	m_pThis = m_pScript->GetScriptSystem()->CreateTable();
-	m_pThis->AddRef();
 	//m_pThis->Clone( m_pScript->GetScriptTable() );
 
 	if (g_pIEntitySystem)
@@ -147,7 +134,7 @@ void CEntityComponentLuaScript::Update(SEntityUpdateContext& ctx)
 
 			//////////////////////////////////////////////////////////////////////////
 			// Script Update.
-			m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnUpdate, ctx.fFrameTime);
+			m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnUpdate, ctx.fFrameTime);
 		}
 	}
 }
@@ -173,7 +160,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 				eventData->SetValue("jointName", pAnimEvent->m_BonePathName);
 				eventData->SetValue("offset", pAnimEvent->m_vOffset);
 				eventData->SetValue("direction", pAnimEvent->m_vDir);
-				m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAnimationEvent, pAnimEvent->m_EventName, eventData);
+				m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnAnimationEvent, pAnimEvent->m_EventName, eventData);
 			}
 		}
 		break;
@@ -183,7 +170,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 		break;
 	case ENTITY_EVENT_RESET:
 		// OnReset()
-		m_pScript->Call_OnReset(m_pThis, event.nParam[0] == 1);
+		m_pScript->Call_OnReset(m_pThis.get(), event.nParam[0] == 1);
 		break;
 	case ENTITY_EVENT_INIT:
 		{
@@ -193,11 +180,11 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 		break;
 	case ENTITY_EVENT_TIMER:
 		// OnTimer( nTimerId,nMilliseconds )
-		m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnTimer, (int)event.nParam[0], (int)event.nParam[1]);
+		m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnTimer, (int)event.nParam[0], (int)event.nParam[1]);
 		break;
 	case ENTITY_EVENT_XFORM:
 		// OnMove()
-		m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnMove);
+		m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnMove);
 		break;
 	case ENTITY_EVENT_ATTACH:
 		// OnBind( childEntity );
@@ -207,7 +194,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 			{
 				IScriptTable* pChildEntityThis = pChildEntity->GetScriptTable();
 				if (pChildEntityThis)
-					m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnBind, pChildEntityThis);
+					m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnBind, pChildEntityThis);
 			}
 		}
 		break;
@@ -219,9 +206,9 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 			{
 				IScriptTable* pParentEntityThis = pParentEntity->GetScriptTable();
 				if (pParentEntityThis)
-					m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnBindThis, pParentEntityThis);
+					m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnBindThis, pParentEntityThis);
 				else
-					m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnBindThis);
+					m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnBindThis);
 			}
 		}
 		break;
@@ -233,7 +220,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 			{
 				IScriptTable* pChildEntityThis = pChildEntity->GetScriptTable();
 				if (pChildEntityThis)
-					m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnUnBind, pChildEntityThis);
+					m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnUnBind, pChildEntityThis);
 			}
 		}
 		break;
@@ -245,15 +232,15 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 			{
 				IScriptTable* pParentEntityThis = pParentEntity->GetScriptTable();
 				if (pParentEntityThis)
-					m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnUnBindThis, pParentEntityThis);
+					m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnUnBindThis, pParentEntityThis);
 				else
-					m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnUnBindThis);
+					m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnUnBindThis);
 			}
 		}
 		break;
 	case ENTITY_EVENT_ENTERAREA:
 		{
-			if (m_bEnableSoundAreaEvents)
+			if (m_enableSoundAreaEvents)
 			{
 				CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(static_cast<EntityId>(event.nParam[0]));
 
@@ -268,30 +255,30 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 					{
 						if (pTriggerEntityScript != nullptr)
 						{
-							m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnEnterArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], pTriggerEntityScript);
+							m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnEnterArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], pTriggerEntityScript);
 						}
 						else
 						{
-							m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnEnterArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
+							m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnEnterArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 						}
 					}
 
-					// allow local player/camera source entities to trigger callback even without that entity having a scripttable
+					// allow local player/camera source entities to trigger callback even without that entity having a script table
 					if ((pIEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) > 0)
 					{
 						if (pTriggerEntityScript != nullptr)
 						{
-							m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientEnterArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], pTriggerEntityScript);
+							m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnLocalClientEnterArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], pTriggerEntityScript);
 						}
 						else
 						{
-							m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientEnterArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
+							m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnLocalClientEnterArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 						}
 					}
 
 					if ((pIEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerEnterArea, pTrgEntityThis);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnAudioListenerEnterArea, pTrgEntityThis);
 					}
 				}
 			}
@@ -300,7 +287,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 		}
 	case ENTITY_EVENT_MOVEINSIDEAREA:
 		{
-			if (m_bEnableSoundAreaEvents)
+			if (m_enableSoundAreaEvents)
 			{
 				CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(static_cast<EntityId>(event.nParam[0]));
 
@@ -310,18 +297,18 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 
 					if (pTrgEntityThis != nullptr)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnProceedFadeArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnProceedFadeArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 
 					// allow local player/camera source entities to trigger callback even without that entity having a scripttable
 					if ((pIEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientProceedFadeArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnLocalClientProceedFadeArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 
 					if ((pIEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerProceedFadeArea, pTrgEntityThis, event.fParam[0]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnAudioListenerProceedFadeArea, pTrgEntityThis, event.fParam[0]);
 					}
 				}
 			}
@@ -330,7 +317,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 		}
 	case ENTITY_EVENT_LEAVEAREA:
 		{
-			if (m_bEnableSoundAreaEvents)
+			if (m_enableSoundAreaEvents)
 			{
 				CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(static_cast<EntityId>(event.nParam[0]));
 
@@ -345,11 +332,11 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 					{
 						if (pTriggerEntityScript != nullptr)
 						{
-							m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], pTriggerEntityScript);
+							m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], pTriggerEntityScript);
 						}
 						else
 						{
-							m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
+							m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 						}
 					}
 
@@ -358,17 +345,17 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 					{
 						if (pTriggerEntityScript != nullptr)
 						{
-							m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], pTriggerEntityScript);
+							m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnLocalClientLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], pTriggerEntityScript);
 						}
 						else
 						{
-							m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
+							m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnLocalClientLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 						}
 					}
 
 					if ((pIEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnAudioListenerLeaveArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
 					}
 				}
 			}
@@ -377,7 +364,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 		}
 	case ENTITY_EVENT_ENTERNEARAREA:
 		{
-			if (m_bEnableSoundAreaEvents)
+			if (m_enableSoundAreaEvents)
 			{
 				CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(static_cast<EntityId>(event.nParam[0]));
 
@@ -387,18 +374,18 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 
 					if (pTrgEntityThis != nullptr)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnEnterNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnEnterNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 
 					// allow local player/camera source entities to trigger callback even without that entity having a scripttable
 					if ((pIEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientEnterNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnLocalClientEnterNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 
 					if ((pIEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerEnterNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnAudioListenerEnterNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 				}
 			}
@@ -407,7 +394,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 		}
 	case ENTITY_EVENT_LEAVENEARAREA:
 		{
-			if (m_bEnableSoundAreaEvents)
+			if (m_enableSoundAreaEvents)
 			{
 				CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(static_cast<EntityId>(event.nParam[0]));
 
@@ -417,18 +404,18 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 
 					if (pTrgEntityThis != nullptr)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLeaveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnLeaveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 
 					// allow local player/camera source entities to trigger callback even without that entity having a scripttable
 					if ((pIEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientLeaveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnLocalClientLeaveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 
 					if ((pIEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerLeaveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnAudioListenerLeaveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
 					}
 				}
 			}
@@ -437,7 +424,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 		}
 	case ENTITY_EVENT_MOVENEARAREA:
 		{
-			if (m_bEnableSoundAreaEvents)
+			if (m_enableSoundAreaEvents)
 			{
 				CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(static_cast<EntityId>(event.nParam[0]));
 
@@ -447,18 +434,18 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 
 					if (pTrgEntityThis != nullptr)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnMoveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnMoveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
 					}
 
 					// allow local player/camera source entities to trigger callback even without that entity having a scripttable
 					if ((pIEntity->GetFlags() & (ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_CAMERA_SOURCE)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLocalClientMoveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnLocalClientMoveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0], event.fParam[1]);
 					}
 
 					if ((pIEntity->GetFlagsExtended() & (ENTITY_FLAG_EXTENDED_AUDIO_LISTENER)) > 0)
 					{
-						m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnAudioListenerMoveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
+						m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnAudioListenerMoveNearArea, pTrgEntityThis, static_cast<int>(event.nParam[1]), event.fParam[0]);
 					}
 				}
 			}
@@ -473,7 +460,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 				Vec3 pBreakPos = pBreakEvent->pt;
 				int nBreakPartId = pBreakEvent->partid[0];
 				int nBreakOtherEntityPartId = pBreakEvent->partid[1];
-				m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnPhysicsBreak, pBreakPos, nBreakPartId, nBreakOtherEntityPartId);
+				m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnPhysicsBreak, pBreakPos, nBreakPartId, nBreakOtherEntityPartId);
 			}
 		}
 		break;
@@ -482,17 +469,17 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 			CryAudio::SRequestInfo const* const pRequestInfo = reinterpret_cast<CryAudio::SRequestInfo const* const>(event.nParam[0]);
 			ScriptHandle handle;
 			handle.n = static_cast<UINT_PTR>(pRequestInfo->audioControlId);
-			m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnSoundDone, handle);
+			m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnSoundDone, handle);
 		}
 		break;
 	case ENTITY_EVENT_LEVEL_LOADED:
-		m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnLevelLoaded);
+		m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnLevelLoaded);
 		break;
 	case ENTITY_EVENT_START_LEVEL:
-		m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnStartLevel);
+		m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnStartLevel);
 		break;
 	case ENTITY_EVENT_START_GAME:
-		m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnStartGame);
+		m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnStartGame);
 		break;
 
 	case ENTITY_EVENT_PRE_SERIALIZE:
@@ -500,28 +487,28 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 		{
 			// If state changed kill all old timers.
 			m_pEntity->KillTimer(IEntity::KILL_ALL_TIMER);
-			m_nCurrStateId = 0;
+			m_currentStateId = 0;
 		}
 		break;
 
 	case ENTITY_EVENT_POST_SERIALIZE:
 		if (m_pThis->HaveValue("OnPostLoad"))
 		{
-			Script::CallMethod(m_pThis, "OnPostLoad");
+			Script::CallMethod(m_pThis.get(), "OnPostLoad");
 		}
 		break;
 	case ENTITY_EVENT_HIDE:
 		{
 			m_pEntity->UpdateComponentEventMask(this);
 
-			m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnHidden);
+			m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnHidden);
 		}
 		break;
 	case ENTITY_EVENT_UNHIDE:
 		{
 			m_pEntity->UpdateComponentEventMask(this);
 
-			m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnUnhidden);
+			m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnUnhidden);
 		}
 		break;
 	case ENTITY_EVENT_XFORM_FINISHED_EDITOR:
@@ -541,7 +528,7 @@ uint64 CEntityComponentLuaScript::GetEventMask() const
 	                   | BIT64(ENTITY_EVENT_START_GAME) | BIT64(ENTITY_EVENT_PRE_SERIALIZE) | BIT64(ENTITY_EVENT_POST_SERIALIZE) | BIT64(ENTITY_EVENT_HIDE)
 	                   | BIT64(ENTITY_EVENT_UNHIDE) | BIT64(ENTITY_EVENT_XFORM_FINISHED_EDITOR);
 
-	if (m_bUpdateFuncImplemented && m_bUpdateEnabledOverride && (!m_pEntity->IsHidden() || (m_pEntity->GetFlags() & ENTITY_FLAG_UPDATE_HIDDEN) != 0))
+	if (m_implementedUpdateFunction && m_isUpdateEnabled && (!m_pEntity->IsHidden() || (m_pEntity->GetFlags() & ENTITY_FLAG_UPDATE_HIDDEN) != 0))
 	{
 		eventMask |= BIT64(ENTITY_EVENT_UPDATE);
 	}
@@ -566,31 +553,31 @@ bool CEntityComponentLuaScript::GotoState(const char* sStateName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntityComponentLuaScript::GotoState(int nState)
+bool CEntityComponentLuaScript::GotoState(int stateId)
 {
-	if (nState == m_nCurrStateId)
+	if (stateId == m_currentStateId)
 		return true; // Already in this state.
 
 	// Call End state event.
-	m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnEndState);
+	m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnEndState);
 
 	// If state changed kill all old timers.
 	m_pEntity->KillTimer(IEntity::KILL_ALL_TIMER);
 
 	SEntityEvent levent;
 	levent.event = ENTITY_EVENT_LEAVE_SCRIPT_STATE;
-	levent.nParam[0] = m_nCurrStateId;
+	levent.nParam[0] = m_currentStateId;
 	levent.nParam[1] = 0;
 	m_pEntity->SendEvent(levent);
 
-	m_nCurrStateId = nState;
+	m_currentStateId = stateId;
 
 	// Call BeginState event.
-	m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnBeginState);
+	m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnBeginState);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Repeat check if update script function is implemented.
-	m_bUpdateFuncImplemented = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+	m_implementedUpdateFunction = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
 	m_pEntity->UpdateComponentEventMask(this);
 
 	/*
@@ -607,7 +594,7 @@ bool CEntityComponentLuaScript::GotoState(int nState)
 
 	SEntityEvent eevent;
 	eevent.event = ENTITY_EVENT_ENTER_SCRIPT_STATE;
-	eevent.nParam[0] = nState;
+	eevent.nParam[0] = m_currentStateId;
 	eevent.nParam[1] = 0;
 	m_pEntity->SendEvent(eevent);
 
@@ -620,7 +607,7 @@ bool CEntityComponentLuaScript::IsInState(const char* sStateName)
 	int nStateId = m_pScript->GetStateId(sStateName);
 	if (nStateId >= 0)
 	{
-		return nStateId == m_nCurrStateId;
+		return nStateId == m_currentStateId;
 	}
 	return false;
 }
@@ -628,19 +615,19 @@ bool CEntityComponentLuaScript::IsInState(const char* sStateName)
 //////////////////////////////////////////////////////////////////////////
 bool CEntityComponentLuaScript::IsInState(int nState)
 {
-	return nState == m_nCurrStateId;
+	return nState == m_currentStateId;
 }
 
 //////////////////////////////////////////////////////////////////////////
 const char* CEntityComponentLuaScript::GetState()
 {
-	return m_pScript->GetStateName(m_nCurrStateId);
+	return m_pScript->GetStateName(m_currentStateId);
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CEntityComponentLuaScript::GetStateId()
 {
-	return m_nCurrStateId;
+	return m_currentStateId;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -649,7 +636,7 @@ bool CEntityComponentLuaScript::NeedGameSerialize()
 	if (!m_pThis)
 		return false;
 
-	if (m_fScriptUpdateRate != 0 || m_nCurrStateId != 0)
+	if (m_fScriptUpdateRate != 0 || m_currentStateId != 0)
 		return true;
 
 	if (CVar::pEnableFullScriptSave && CVar::pEnableFullScriptSave->GetIVal())
@@ -698,26 +685,26 @@ void CEntityComponentLuaScript::GameSerialize(TSerialize ser)
 			if (ser.BeginOptionalGroup("ScriptProxy", true))
 			{
 				ser.Value("scriptUpdateRate", m_fScriptUpdateRate);
-				int currStateId = m_nCurrStateId;
+				int currStateId = m_currentStateId;
 				ser.Value("currStateId", currStateId);
 
 				// Simulate state change
-				if (m_nCurrStateId != currStateId)
+				if (m_currentStateId != currStateId)
 				{
 					// If state changed kill all old timers.
 					m_pEntity->KillTimer(IEntity::KILL_ALL_TIMER);
-					m_nCurrStateId = currStateId;
+					m_currentStateId = currStateId;
 				}
 				if (ser.IsReading())
 				{
 					// Repeat check if update script function is implemented.
-					m_bUpdateFuncImplemented = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+					m_implementedUpdateFunction = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
 					m_pEntity->UpdateComponentEventMask(this);
 				}
 
 				if (CVar::pEnableFullScriptSave && CVar::pEnableFullScriptSave->GetIVal())
 				{
-					ser.Value("FullScriptData", m_pThis);
+					ser.Value("FullScriptData", m_pThis.get());
 				}
 				else if (m_pThis->HaveValue("OnSave") && m_pThis->HaveValue("OnLoad"))
 				{
@@ -727,10 +714,10 @@ void CEntityComponentLuaScript::GameSerialize(TSerialize ser)
 
 					SmartScriptTable persistTable(m_pThis->GetScriptSystem());
 					if (ser.IsWriting())
-						Script::CallMethod(m_pThis, "OnSave", persistTable);
+						Script::CallMethod(m_pThis.get(), "OnSave", persistTable);
 					ser.Value("ScriptData", persistTable.GetPtr());
 					if (ser.IsReading())
-						Script::CallMethod(m_pThis, "OnLoad", persistTable);
+						Script::CallMethod(m_pThis.get(), "OnLoad", persistTable);
 				}
 
 				ser.EndGroup(); //ScriptProxy
@@ -741,13 +728,13 @@ void CEntityComponentLuaScript::GameSerialize(TSerialize ser)
 
 				CRY_ASSERT(m_pScript);
 
-				m_pScript->Call_OnReset(m_pThis, true);
+				m_pScript->Call_OnReset(m_pThis.get(), true);
 			}
 		}
 	}
 	else
 	{
-		int stateId = m_nCurrStateId;
+		int stateId = m_currentStateId;
 		ser.Value("currStateId", stateId, 'sSts');
 		if (ser.IsReading())
 			GotoState(stateId);
@@ -872,25 +859,25 @@ void CEntityComponentLuaScript::SetEventTargets(XmlNodeRef& eventTargetsNode)
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentLuaScript::CallEvent(const char* sEvent)
 {
-	m_pScript->CallEvent(m_pThis, sEvent, (bool)true);
+	m_pScript->CallEvent(m_pThis.get(), sEvent, (bool)true);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentLuaScript::CallEvent(const char* sEvent, float fValue)
 {
-	m_pScript->CallEvent(m_pThis, sEvent, fValue);
+	m_pScript->CallEvent(m_pThis.get(), sEvent, fValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentLuaScript::CallEvent(const char* sEvent, bool bValue)
 {
-	m_pScript->CallEvent(m_pThis, sEvent, bValue);
+	m_pScript->CallEvent(m_pThis.get(), sEvent, bValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentLuaScript::CallEvent(const char* sEvent, const char* sValue)
 {
-	m_pScript->CallEvent(m_pThis, sEvent, sValue);
+	m_pScript->CallEvent(m_pThis.get(), sEvent, sValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -904,19 +891,19 @@ void CEntityComponentLuaScript::CallEvent(const char* sEvent, EntityId nEntityId
 		pTable = pIEntity->GetScriptTable();
 	}
 
-	m_pScript->CallEvent(m_pThis, sEvent, pTable);
+	m_pScript->CallEvent(m_pThis.get(), sEvent, pTable);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentLuaScript::CallEvent(const char* sEvent, const Vec3& vValue)
 {
-	m_pScript->CallEvent(m_pThis, sEvent, vValue);
+	m_pScript->CallEvent(m_pThis.get(), sEvent, vValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentLuaScript::CallInitEvent(bool bFromReload)
 {
-	m_pScript->Call_OnInit(m_pThis, bFromReload);
+	m_pScript->Call_OnInit(m_pThis.get(), bFromReload);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -977,7 +964,7 @@ void CEntityComponentLuaScript::OnCollision(CEntity* pTarget, int matId, const V
 		}
 	}
 
-	m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnCollision, m_hitTable);
+	m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnCollision, m_hitTable);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -989,9 +976,9 @@ void CEntityComponentLuaScript::SendScriptEvent(int Event, IScriptTable* pParamt
 		if (m_pScript->ShouldExecuteCall(i) && pState->pStateFuns[i] && pState->pStateFuns[i]->pFunction[ScriptState_OnEvent])
 		{
 			if (pRet)
-				Script::CallReturn(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis, Event, pParamters, *pRet);
+				Script::CallReturn(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis.get(), Event, pParamters, *pRet);
 			else
-				Script::Call(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis, Event, pParamters);
+				Script::Call(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis.get(), Event, pParamters);
 			pRet = nullptr;
 		}
 	}
@@ -1006,9 +993,9 @@ void CEntityComponentLuaScript::SendScriptEvent(int Event, const char* str, bool
 		if (m_pScript->ShouldExecuteCall(i) && pState->pStateFuns[i] && pState->pStateFuns[i]->pFunction[ScriptState_OnEvent])
 		{
 			if (pRet)
-				Script::CallReturn(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis, Event, str, *pRet);
+				Script::CallReturn(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis.get(), Event, str, *pRet);
 			else
-				Script::Call(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis, Event, str);
+				Script::Call(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis.get(), Event, str);
 			pRet = nullptr;
 		}
 	}
@@ -1023,9 +1010,9 @@ void CEntityComponentLuaScript::SendScriptEvent(int Event, int nParam, bool* pRe
 		if (m_pScript->ShouldExecuteCall(i) && pState->pStateFuns[i] && pState->pStateFuns[i]->pFunction[ScriptState_OnEvent])
 		{
 			if (pRet)
-				Script::CallReturn(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis, Event, nParam, *pRet);
+				Script::CallReturn(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis.get(), Event, nParam, *pRet);
 			else
-				Script::Call(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis, Event, nParam);
+				Script::Call(GetIScriptSystem(), pState->pStateFuns[i]->pFunction[ScriptState_OnEvent], m_pThis.get(), Event, nParam);
 			pRet = nullptr;
 		}
 	}
