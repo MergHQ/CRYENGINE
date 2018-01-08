@@ -134,7 +134,15 @@ private:
 #endif // ENABLE_AUDIO_LOGGING
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+public:
+	void ScheduleIRenderAuxGeomForRendering(IRenderAuxGeom* pRenderAuxGeom);
+
+private:
+	void SubmitLastIRenderAuxGeomForRendering();
 	void DrawAudioDebugData();
+
+	std::atomic<IRenderAuxGeom*> m_currentRenderAuxGeom;
+	std::atomic<IRenderAuxGeom*> m_lastRenderAuxGeom;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 } // namespace CryAudio

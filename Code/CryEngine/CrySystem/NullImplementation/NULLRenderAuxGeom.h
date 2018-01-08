@@ -52,6 +52,8 @@ public:
 	void                DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col) final;
 
 	void                DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured) final                                                    {}
+	SAuxVertex*         BeginDrawBuffer(uint32 maxVertices, bool textured) final                                                                             { return nullptr; }
+	void                EndDrawBuffer(uint32 numVertices) final                                                                                              {}
 
 	void                DrawAABB(const AABB& aabb, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final                           {}
 	void                DrawAABBs(const AABB* aabb, uint32 aabbCount, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final        {}
@@ -67,7 +69,6 @@ public:
 	void                DrawBone(const Vec3& rParent, const Vec3& rBone, ColorB col) final                                                                   {}
 
 	void                RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text) final                                                          {}
-	void                DrawBufferRT(const SAuxVertex* data, int numVertices, int blendMode, const Matrix44* matViewProj, int texID) final                   {}
 
 	void                PushImage(const SRender2DImageDescription &image) final;
 
@@ -76,7 +77,6 @@ public:
 	void                SetMatrixIndex(int32 matID) final                                                                                                    {}
 	void                SetOrthographicProjection(bool enable, float l = 0, float r = 1, float b = 0, float t = 1, float n = -1e10, float f = 1e10) final    {}
 
-	void                Flush() final                                                                                                                        {}
 	void                Submit(uint frames = 0) final                                                                                                        {}
 
 public:

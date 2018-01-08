@@ -381,7 +381,7 @@ void SRenderThread::RC_TryFlush()
 		return;
 
 	LOADINGLOCK_COMMANDQUEUE
-	gRenDev->GetIRenderAuxGeom()->Flush(); // need to issue flush of main thread's aux cb before EndFrame (otherwise it is processed after p3dDev->EndScene())
+	gRenDev->GetIRenderAuxGeom()->Submit(); // need to be submitted in main thread's aux cb before EndFrame (otherwise it is processed after p3dDev->EndScene())
 	SyncMainWithRender();
 }
 

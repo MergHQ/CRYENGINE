@@ -147,7 +147,26 @@ struct IRenderAuxGeom
 	virtual void DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col) = 0;
 	//! ##@}
 
+	//! Draw n triangles.
+	//! \param inVertices	List of vertices belonging to the sequence of triangles we have to draw.
+	//! \param numVertices	Number of the points we will find starting from the area memory defined by v.
+	//! \param textured		Whether the triangles are textured or not.
+	//! ##@{
 	virtual void DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured) = 0;
+	//! ##@}
+
+	//! passes a pointer to buffer of vertices for drawing n triangles.
+	//! \param numVertices	Maximum number of points we want to fill.
+	//! \param textured		Whether the triangles are textured or not.
+	//! ##@{
+	virtual SAuxVertex*         BeginDrawBuffer(uint32 maxVertices, bool textured) = 0;
+	//! ##@}
+
+	//! Signals filling the vertex buffer is done. There MUST be ONE corresponding BeginDrawBuffer call before this function call.
+	//! \param numVertices Number of vertices that are actually drawn.
+	//! ##@{
+	virtual void EndDrawBuffer(uint32 numVertices) = 0;
+	//! ##@}
 
 	//! Draw a Axis-aligned Bounding Boxes (AABB).
 	//! ##@{
@@ -193,8 +212,6 @@ struct IRenderAuxGeom
 	//! Draw Text.
 	//! ##@{
 	virtual void RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text) = 0;
-
-	virtual void DrawBufferRT(const SAuxVertex* data, int numVertices, int blendMode, const Matrix44* matViewProj, int texID) = 0;
 
 	void DrawQuad(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, const Vec3& v2, const ColorB& colV2,const Vec3& v3, const ColorB& colV3)
 	{
@@ -266,12 +283,6 @@ struct IRenderAuxGeom
 	//! Set world matrix for the next primitives based on ID. This function allows us to do push/pop semantics
 	//! \param matID matrix ID. Should be a matrix id returned by PushMatrix
 	virtual void SetMatrixIndex(int matID) = 0;
-
-	//! If possible flushes all elements stored on the buffer to rendering system.
-	//! Note 1: rendering system may start processing flushed commands immediately or postpone it till Submit() call.
-	//! Note 2: worker threads's commands are always postponed till Submit() call.
-	virtual void Flush() = 0;
-	// </interfuscator:shuffle>
 
 	//! Flushes yet unprocessed elements and notifies rendering system that issuing rendering commands for current frame is done and frame is ready to be drawn.
 	//! Thus Submit() guarantees that all previously issued commands will appear on the screen.

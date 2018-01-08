@@ -983,6 +983,7 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 	PreShutDown();
 
 	DeleteAuxGeomCollectors();
+	DeleteAuxGeomCBs();
 
 	if (m_pRT)
 	{

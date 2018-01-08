@@ -9,11 +9,11 @@
 #include "Common/Logger.h"
 #include <CrySystem/ISystem.h>
 #include <CryPhysics/IPhysics.h>
-#include <CryRenderer/IRenderer.h>
 #include <CryString/CryPath.h>
 #include <CryEntitySystem/IEntitySystem.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include "AudioSystem.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -1451,8 +1451,8 @@ char const* CAudioTranslationLayer::GetConfigPath() const
 void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AUDIO);
-
-	if (IRenderAuxGeom* const pAuxGeom = g_cvars.m_drawAudioDebug > 0 && gEnv->pRenderer != nullptr ? gEnv->pRenderer->GetIRenderAuxGeom() : nullptr)
+	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer ? gEnv->pRenderer->GetOrCreateIRenderAuxGeom() : nullptr;
+	if (pAuxGeom)
 	{
 		if ((g_cvars.m_drawAudioDebug & objectDebugMask) != 0)
 		{
@@ -1662,6 +1662,8 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 
 		DrawATLComponentDebugInfo(*pAuxGeom, posX, posY);
 	}
+
+	CATLAudioObject::s_pAudioSystem->ScheduleIRenderAuxGeomForRendering(pAuxGeom);
 }
 
 ///////////////////////////////////////////////////////////////////////////

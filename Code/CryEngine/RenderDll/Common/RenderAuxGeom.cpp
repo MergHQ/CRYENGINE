@@ -31,39 +31,81 @@ static inline uint32 AlphaFlags(const ColorB& colV)
 
 CAuxGeomCB::CAuxGeomCB()
 {
-	m_cbCurrent = AddCBuffer();
+	m_rawData = new SAuxGeomCBRawData;
+	m_activeDrawBuffer = false;
 }
 
 CAuxGeomCB::~CAuxGeomCB()
 {
-	for (auto const pData : m_cbData)
+	delete m_rawData;
+}
+
+void CAuxGeomCB::Merge(const CAuxGeomCB* pAuxGeomCB)
+{
+	// Offset of the buffer in the merged buffer
+	auto mergedBufferVerticesOffset = m_rawData->m_auxVertexBuffer.size();
+	auto mergedBufferIndicesOffset = m_rawData->m_auxIndexBuffer.size();
+	auto mergedBufferWorldMatricesOffset = m_rawData->m_auxWorldMatrices.size();
+	auto mergedBufferOrthoMatricesOffset = m_rawData->m_auxOrthoMatrices.size();
+	auto mergedBufferAuxDrawObjParamBufferOffset = m_rawData->m_auxDrawObjParamBuffer.size();
+
+	m_rawData->m_2dImages.insert(m_rawData->m_2dImages.end(), pAuxGeomCB->m_rawData->m_2dImages.begin(), pAuxGeomCB->m_rawData->m_2dImages.end());
+	m_rawData->m_TextMessages.Merge(pAuxGeomCB->m_rawData->m_TextMessages);
+
+	auto t = pAuxGeomCB->m_rawData->m_auxDrawObjParamBuffer;
+	m_rawData->m_auxDrawObjParamBuffer.insert(m_rawData->m_auxDrawObjParamBuffer.end(), pAuxGeomCB->m_rawData->m_auxDrawObjParamBuffer.begin(), pAuxGeomCB->m_rawData->m_auxDrawObjParamBuffer.end());
+
+	// Copy Geometry
+	for (auto& idx : pAuxGeomCB->m_rawData->m_auxIndexBuffer)
 	{
-		delete pData;
+		m_rawData->m_auxIndexBuffer.push_back(mergedBufferVerticesOffset + idx);
 	}
+	m_rawData->m_auxVertexBuffer.insert(m_rawData->m_auxVertexBuffer.end(), pAuxGeomCB->m_rawData->m_auxVertexBuffer.begin(), pAuxGeomCB->m_rawData->m_auxVertexBuffer.end());
+
+	for (auto pushBufferEntry : pAuxGeomCB->m_rawData->m_auxPushBuffer)
+	{
+		if (e_Obj == GetPrimType(pushBufferEntry.m_renderFlags))
+		{
+			pushBufferEntry.m_vertexOffs += mergedBufferAuxDrawObjParamBufferOffset;
+		}
+		else
+		{
+			pushBufferEntry.m_vertexOffs += mergedBufferVerticesOffset;
+			pushBufferEntry.m_indexOffs += mergedBufferIndicesOffset;
+		}
+
+		pushBufferEntry.m_worldMatrixIdx += mergedBufferWorldMatricesOffset;
+		pushBufferEntry.m_transMatrixIdx += mergedBufferOrthoMatricesOffset;
+		m_rawData->m_auxPushBuffer.push_back(pushBufferEntry);
+	}
+
+	// Copy Transformations
+	m_rawData->m_auxWorldMatrices.insert(m_rawData->m_auxWorldMatrices.end(), pAuxGeomCB->m_rawData->m_auxWorldMatrices.begin(), pAuxGeomCB->m_rawData->m_auxWorldMatrices.end());
+	m_rawData->m_auxOrthoMatrices.insert(m_rawData->m_auxOrthoMatrices.end(), pAuxGeomCB->m_rawData->m_auxOrthoMatrices.begin(), pAuxGeomCB->m_rawData->m_auxOrthoMatrices.end());
 }
 
 SAuxGeomRenderFlags CAuxGeomCB::SetRenderFlags(const SAuxGeomRenderFlags& renderFlags)
 {
-	SAuxGeomRenderFlags prevFlags = m_cbCurrent->m_curRenderFlags;
+	SAuxGeomRenderFlags prevFlags = m_rawData->m_curRenderFlags;
 	// make sure caller only tries to set public bits
 	CRY_ASSERT(0 == (renderFlags.m_renderFlags & ~e_PublicParamsMask));
-	m_cbCurrent->m_curRenderFlags = renderFlags;
+	m_rawData->m_curRenderFlags = renderFlags;
 	return prevFlags;
 }
 
 SAuxGeomRenderFlags CAuxGeomCB::GetRenderFlags()
 {
-	return(m_cbCurrent->m_curRenderFlags);
+	return(m_rawData->m_curRenderFlags);
 }
 
 void CAuxGeomCB::SetCamera(const CCamera& camera)
 {
-	m_cbCurrent->m_camera = camera;
+	m_rawData->m_camera = camera;
 };
 
 const CCamera& CAuxGeomCB::GetCamera() const
 {
-	return m_cbCurrent->m_camera;
+	return m_rawData->m_camera;
 };
 
 void CAuxGeomCB::DrawPoint(const Vec3& v, const ColorB& col, uint8 size)
@@ -485,10 +527,32 @@ void CAuxGeomCB::DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bo
 {
 	CRY_ASSERT((numVertices >= 3) && (0 == (numVertices % 3)));
 
-	SAuxVertex* bufVertices(nullptr);
-	AddPrimitive(bufVertices, numVertices, CreateTriangleRenderFlags(false, textured));
-
+	SAuxVertex* bufVertices = BeginDrawBuffer(numVertices, textured);
 	memcpy(bufVertices, inVertices, numVertices * sizeof(SAuxVertex));
+	EndDrawBuffer(numVertices);
+}
+
+SAuxVertex * CAuxGeomCB::BeginDrawBuffer(uint32 maxVertices, bool textured)
+{
+	CRY_ASSERT_MESSAGE(m_activeDrawBuffer == false, "Nested BeginDrawBuffer-EndDrawBuffer is not allowed.");
+	CRY_ASSERT((maxVertices >= 3) && (0 == (maxVertices % 3)));
+
+	SAuxVertex* bufVertices;
+	AddPrimitive(bufVertices, maxVertices, CreateTriangleRenderFlags(false, textured));
+	m_activeDrawBuffer = true;
+	m_activeDrawBufferMaxVertices = maxVertices;
+
+	return bufVertices;
+}
+
+void CAuxGeomCB::EndDrawBuffer(uint32 numVertices)
+{
+	AuxVertexBuffer& vertexBuffer(AccessData()->m_auxVertexBuffer);
+	AuxPushBuffer& auxPushBuffer(AccessData()->m_auxPushBuffer);
+	uint32_t notFilledElements = (m_activeDrawBufferMaxVertices - numVertices);
+	auxPushBuffer.back().m_numVertices -= notFilledElements;
+	vertexBuffer.resize(vertexBuffer.size() - notFilledElements);
+	m_activeDrawBuffer = false;
 }
 
 void CAuxGeomCB::DrawAABB(const AABB& aabb, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle)
@@ -1353,7 +1417,7 @@ void CAuxGeomCB::DrawAABB(const AABB& aabb, const Matrix34& mat, bool bSolid, co
 		}
 	}
 
-	m_cbCurrent->m_curWorldMatIdx = oldMatrixIndex;
+	m_rawData->m_curWorldMatIdx = oldMatrixIndex;
 }
 
 void CAuxGeomCB::DrawOBB(const OBB& obb, const Vec3& pos, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle)
@@ -1914,7 +1978,7 @@ void CAuxGeomCB::DrawOBB(const OBB& obb, const Matrix34& mat, bool bSolid, const
 		}
 	}
 
-	m_cbCurrent->m_curWorldMatIdx = oldMatrixIndex;
+	m_rawData->m_curWorldMatIdx = oldMatrixIndex;
 }
 
 void CAuxGeomCB::DrawSphere(const Vec3& pos, float radius, const ColorB& col, bool drawShaded)
@@ -2049,38 +2113,33 @@ void CAuxGeomCB::RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char*
 				return;
 		}
 
-		m_cbCurrent->m_TextMessages.PushEntry_Text(pos, col, pFont, ti.scale, ti.flags, text);
+		m_rawData->m_TextMessages.PushEntry_Text(pos, col, pFont, ti.scale, ti.flags, text);
 	}
-}
-
-void CAuxGeomCB::DrawBufferRT(const SAuxVertex* data, int numVertices, int blendMode, const Matrix44* matViewProj, int texID)
-{
-	DrawBuffer(data, numVertices, texID != 0);
 }
 
 int32 CAuxGeomCB::PushMatrix(const Matrix34& mat)
 {
-	int curIndex = m_cbCurrent->m_curWorldMatIdx;
-	m_cbCurrent->m_curWorldMatIdx = m_cbCurrent->m_auxWorldMatrices.size();
-	m_cbCurrent->m_auxWorldMatrices.push_back(mat);
+	int curIndex = m_rawData->m_curWorldMatIdx;
+	m_rawData->m_curWorldMatIdx = m_rawData->m_auxWorldMatrices.size();
+	m_rawData->m_auxWorldMatrices.push_back(mat);
 	return curIndex;
 }
 
 int CAuxGeomCB::SetTexture(int texID)
 {
-	int prev = m_cbCurrent->m_textureID;
-	m_cbCurrent->m_textureID = texID;
+	int prev = m_rawData->m_textureID;
+	m_rawData->m_textureID = texID;
 	return prev;
 }
 
 Matrix34* CAuxGeomCB::GetMatrix()
 {
-	return &m_cbCurrent->m_auxWorldMatrices[m_cbCurrent->m_curWorldMatIdx];
+	return &m_rawData->m_auxWorldMatrices[m_rawData->m_curWorldMatIdx];
 }
 
 void CAuxGeomCB::SetMatrixIndex(int matID)
 {
-	m_cbCurrent->m_curWorldMatIdx = matID;
+	m_rawData->m_curWorldMatIdx = matID;
 }
 
 void CAuxGeomCB::SetOrthographicProjection(bool enable, float l /*= 0*/, float r /*= 1*/, float b /*= 0*/, float t /*= 1*/, float n /*= -1e10*/, float f /*= 1e10*/)
@@ -2100,7 +2159,7 @@ void CAuxGeomCB::SetOrthographicProjection(bool enable, float l /*= 0*/, float r
 
 void CAuxGeomCB::PushImage(const SRender2DImageDescription &image)
 {
-	m_cbCurrent->m_2dImages.push_back(image);
+	m_rawData->m_2dImages.push_back(image);
 }
 
 void CAuxGeomCB::Flush()
@@ -2112,26 +2171,26 @@ void CAuxGeomCB::Flush(bool reset)
 {
 	FUNCTION_PROFILER_RENDERER();
 
-	Draw2dImages(m_cbCurrent->m_2dImages, reset);
-	DrawTextMessages(m_cbCurrent->m_TextMessages, reset);
+	Draw2dImages(m_rawData->m_2dImages, reset);
+	DrawTextMessages(m_rawData->m_TextMessages, reset);
 }
 
 void CAuxGeomCB::Submit(uint frames)
 {
-	m_cbCurrent->SetUsed(true);
-	m_cbCurrent->SetCount(frames);
+	m_rawData->SetUsed(true);
+	m_rawData->SetCount(0);
 
 	Flush();
 
-	CRY_ASSERT(m_cbCurrent->m_curTransMatIdx == -1);
-	m_cbCurrent->m_curTransMatIdx = -1;
+	CRY_ASSERT(m_rawData->m_curTransMatIdx == -1);
+	m_rawData->m_curTransMatIdx = -1;
 }
 
 void CAuxGeomCB::Draw2dImages(SAux2DImages& images, bool reset)
 {
 	IRenderAuxGeom* pAux = this;
 
-	const CCamera& camera = m_cbCurrent->m_camera;
+	const CCamera& camera = m_rawData->m_camera;
 
 	SRenderViewport viewport = SRenderViewport(0, 0, camera.GetViewSurfaceX(), camera.GetViewSurfaceZ());
 	const float vw = static_cast<float>(viewport.width);
@@ -2194,7 +2253,7 @@ void CAuxGeomCB::DrawTextMessages(CTextMessages& messages, bool reset)
 
 	CAuxGeomCB* pAux = this;
 
-	const CCamera& camera = m_cbCurrent->m_camera;
+	const CCamera& camera = m_rawData->m_camera;
 
 	SRenderViewport viewport = SRenderViewport(0, 0, camera.GetViewSurfaceX(), camera.GetViewSurfaceZ());
 	const float vw = static_cast<float>(viewport.width);
@@ -2363,7 +2422,7 @@ void CAuxGeomCB::DrawTextMessages(CTextMessages& messages, bool reset)
 			// Pass flags so that overscan borders can be applied if necessary
 			ctx.SetFlags(nDrawFlags);
 
-			pFont->RT_RenderCallback(vPos.x, vPos.y, vPos.z, szText, true, ctx, pAux);
+			pFont->RenderCallback(vPos.x, vPos.y, vPos.z, szText, true, ctx, pAux);
 		}
 	}
 
@@ -2391,7 +2450,7 @@ void CAuxGeomCB::SAuxGeomCBRawData::GetSortedPushBuffer(size_t begin, size_t end
 
 void CAuxGeomCB::SetCurrentDisplayContext(CryDisplayContextHandle context)
 {
-	m_cbCurrent->m_displayContextHandle = context;
+	m_rawData->m_displayContextHandle = context;
 }
 
 void CAuxGeomCB::AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const SAuxGeomRenderFlags& renderFlags)
@@ -2405,7 +2464,7 @@ void CAuxGeomCB::AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const
 
 	if (false == auxPushBuffer.empty() &&
 		(e_PtList == primType || e_LineList == primType || e_TriList == primType || e_LineStrip == primType) &&
-	    auxPushBuffer[auxPushBuffer.size() - 1].m_displayContextHandle == m_cbCurrent->m_displayContextHandle &&
+	    auxPushBuffer[auxPushBuffer.size() - 1].m_displayContextHandle == m_rawData->m_displayContextHandle &&
 	    auxPushBuffer[auxPushBuffer.size() - 1].m_textureID       == textureID &&
 	    auxPushBuffer[auxPushBuffer.size() - 1].m_renderFlags     == renderFlags &&
 	    auxPushBuffer[auxPushBuffer.size() - 1].m_transMatrixIdx  == GetTransMatrixIndex() &&
@@ -2427,12 +2486,13 @@ void CAuxGeomCB::AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const
 	else
 	{
 		// create new push buffer entry
-		auxPushBuffer.emplace_back(numVertices, numIndices, AccessData()->m_auxVertexBuffer.size(), AccessData()->m_auxIndexBuffer.size(), GetTransMatrixIndex(), GetWorldMatrixIndex(), renderFlags, textureID, m_cbCurrent->m_displayContextHandle);
+		auxPushBuffer.emplace_back(numVertices, numIndices, AccessData()->m_auxVertexBuffer.size(), AccessData()->m_auxIndexBuffer.size(), GetTransMatrixIndex(), GetWorldMatrixIndex(), renderFlags, textureID, m_rawData->m_displayContextHandle);
 	}
 }
 
 void CAuxGeomCB::AddPrimitive(SAuxVertex*& pVertices, uint32 numVertices, const SAuxGeomRenderFlags& renderFlags)
 {
+	CRY_ASSERT_MESSAGE(m_activeDrawBuffer == false, "Adding primitive while BeginDrawBuffer will cause issue in aux drawing.");
 	CRY_ASSERT(numVertices > 0);
 
 	// add push buffer entry to allow later merging of batches committed via DP
@@ -2442,11 +2502,13 @@ void CAuxGeomCB::AddPrimitive(SAuxVertex*& pVertices, uint32 numVertices, const 
 	AuxVertexBuffer& auxVertexBuffer(AccessData()->m_auxVertexBuffer);
 	AuxVertexBuffer::size_type oldVBSize(auxVertexBuffer.size());
 	auxVertexBuffer.resize(oldVBSize + numVertices);
+	CRY_ASSERT(auxVertexBuffer.size() > oldVBSize);
 	pVertices = &auxVertexBuffer[oldVBSize];
 }
 
 void CAuxGeomCB::AddIndexedPrimitive(SAuxVertex*& pVertices, uint32 numVertices, vtx_idx*& pIndices, uint32 numIndices, const SAuxGeomRenderFlags& renderFlags)
 {
+	CRY_ASSERT_MESSAGE(m_activeDrawBuffer == false, "Adding primitive while BeginDrawBuffer will cause issue in aux drawing.");
 	CRY_ASSERT(numVertices > 0);
 	CRY_ASSERT(numIndices > 0);
 
@@ -2457,12 +2519,14 @@ void CAuxGeomCB::AddIndexedPrimitive(SAuxVertex*& pVertices, uint32 numVertices,
 	AuxVertexBuffer& auxVertexBuffer(AccessData()->m_auxVertexBuffer);
 	AuxVertexBuffer::size_type oldVBSize(auxVertexBuffer.size());
 	auxVertexBuffer.resize(oldVBSize + numVertices);
+	CRY_ASSERT(auxVertexBuffer.size() >= oldVBSize);
 	pVertices = &auxVertexBuffer[oldVBSize];
 
 	// get index ptr
 	AuxIndexBuffer& auxIndexBuffer(AccessData()->m_auxIndexBuffer);
 	AuxIndexBuffer::size_type oldIBSize(auxIndexBuffer.size());
 	auxIndexBuffer.resize(oldIBSize + numIndices);
+	CRY_ASSERT(auxIndexBuffer.size() >= oldIBSize);
 	pIndices = &auxIndexBuffer[oldIBSize];
 }
 
@@ -2471,7 +2535,7 @@ void CAuxGeomCB::AddObject(SAuxDrawObjParams*& pDrawParams, const SAuxGeomRender
 	// create new push buffer entry
 	AuxPushBuffer& auxPushBuffer(AccessData()->m_auxPushBuffer);
 	AuxDrawObjParamBuffer& auxDrawObjParamBuffer(AccessData()->m_auxDrawObjParamBuffer);
-	auxPushBuffer.emplace_back(auxDrawObjParamBuffer.size(), GetTransMatrixIndex(), GetWorldMatrixIndex(), renderFlags, 0, m_cbCurrent->m_displayContextHandle);
+	auxPushBuffer.emplace_back(auxDrawObjParamBuffer.size(), GetTransMatrixIndex(), GetWorldMatrixIndex(), renderFlags, 0, m_rawData->m_displayContextHandle);
 
 	// get draw param buffer ptr
 	AuxDrawObjParamBuffer::size_type oldSize(auxDrawObjParamBuffer.size());

@@ -33,6 +33,8 @@ public:
 	friend class CRenderAuxGeomD3D;
 	using SAux2DImages = std::vector<SRender2DImageDescription>;
 
+	void Merge(const CAuxGeomCB* pAuxGeomCB);
+
 	// interface
 	SAuxGeomRenderFlags SetRenderFlags(const SAuxGeomRenderFlags& renderFlags) final;
 	SAuxGeomRenderFlags GetRenderFlags() final;
@@ -63,6 +65,8 @@ public:
 	void                DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col) override;
 
 	void                DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured) override;
+	SAuxVertex*         BeginDrawBuffer(uint32 maxVertices, bool textured) override;
+	void                EndDrawBuffer(uint32 numVertices) override;
 
 	void                DrawAABB(const AABB& aabb, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) override;
 	void                DrawAABBs(const AABB* aabbs, uint32 aabbCount, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) override;
@@ -78,8 +82,6 @@ public:
 	void                DrawBone(const Vec3& rParent, const Vec3& rBone, ColorB col) override;
 
 	void                RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text) override;
-
-	void                DrawBufferRT(const SAuxVertex* data, int numVertices, int blendMode, const Matrix44* matViewProj, int texID) override;
 
 	int                 SetTexture(int texID) override;
 	int                 PushMatrix(const Matrix34& mat) override;
@@ -299,18 +301,12 @@ public:
 	void GetMemoryUsage(ICrySizer* pSizer) const
 	{
 		pSizer->Add(*this);
-		for (auto pData : m_cbData)
-		{
-			pData->GetMemoryUsage(pSizer);
-		}
+		m_rawData->GetMemoryUsage(pSizer);
 	}
 
 	void FreeMemory()
 	{
-		for (auto pData : m_cbData)
-		{
-			stl::reconstruct(*pData);
-		}
+		stl::reconstruct(*m_rawData);
 	}
 
 	// setting orthogonal projection
@@ -323,11 +319,11 @@ public:
 
 		if (enable && pMatrix)
 		{
-			m_cbCurrent->m_curTransMatIdx = m_cbCurrent->m_auxOrthoMatrices.size();
-			m_cbCurrent->m_auxOrthoMatrices.push_back(*pMatrix);
+			m_rawData->m_curTransMatIdx = m_rawData->m_auxOrthoMatrices.size();
+			m_rawData->m_auxOrthoMatrices.push_back(*pMatrix);
 		}
 		else
-			m_cbCurrent->m_curTransMatIdx = -1;
+			m_rawData->m_curTransMatIdx = -1;
 	}
 
 private:
@@ -357,7 +353,7 @@ private:
 
 private:
 	void                Flush(bool reset);
-	void                Flush() override;
+	void                Flush();
 
 	uint32 CreatePointRenderFlags(uint8 size);
 	uint32 CreateLineRenderFlags(bool indexed);
@@ -369,31 +365,26 @@ private:
 	void   DrawThickLineStrip(const Vec3* v, uint32 numPoints, const ColorB& col, float thickness);
 
 	void   AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const SAuxGeomRenderFlags& renderFlags);
+
 	void   AddPrimitive(SAuxVertex*& pVertices, uint32 numVertices, const SAuxGeomRenderFlags& renderFlags);
 	void   AddIndexedPrimitive(SAuxVertex*& pVertices, uint32 numVertices, vtx_idx*& pIndices, uint32 numIndices, const SAuxGeomRenderFlags& renderFlags);
 	void   AddObject(SAuxDrawObjParams*& pDrawParams, const SAuxGeomRenderFlags& renderFlags);
-
+	bool     m_activeDrawBuffer;
+	uint32_t m_activeDrawBufferMaxVertices;
 protected:
 	int GetTransMatrixIndex() const
 	{
-		return m_cbCurrent->m_curTransMatIdx;
+		return m_rawData->m_curTransMatIdx;
 	}
 
 	int GetWorldMatrixIndex() const
 	{
-		return m_cbCurrent->m_curWorldMatIdx;
+		return m_rawData->m_curWorldMatIdx;
 	}
 
 	SAuxGeomCBRawData* AccessData()
 	{
-		return m_cbCurrent;
-	}
-
-	SAuxGeomCBRawData* AddCBuffer()
-	{
-		SAuxGeomCBRawData* ptr = new SAuxGeomCBRawData;
-		m_cbData.push_back(ptr);
-		return ptr;
+		return m_rawData;
 	}
 
 protected:
@@ -414,10 +405,7 @@ protected:
 		}
 	};
 
-	using CBList = std::list<SAuxGeomCBRawData*>;
-	CBList             m_cbData;
-
-	SAuxGeomCBRawData*			m_cbCurrent = nullptr;
+	SAuxGeomCBRawData*			m_rawData = nullptr;
 };
 
 // package CAuxGeomCB::SAuxGeomCBRawData ptr via seperate struct as nested types cannot be forward declared
@@ -434,18 +422,18 @@ struct SAuxGeomCBRawDataPackaged
 
 inline uint32 CAuxGeomCB::CreatePointRenderFlags(uint8 size)
 {
-	return(m_cbCurrent->m_curRenderFlags.m_renderFlags | (e_PtList << e_PrimTypeShift) | size);
+	return(m_rawData->m_curRenderFlags.m_renderFlags | (e_PtList << e_PrimTypeShift) | size);
 }
 
 inline uint32 CAuxGeomCB::CreateLineRenderFlags(bool indexed)
 {
 	if (false != indexed)
 	{
-		return(m_cbCurrent->m_curRenderFlags.m_renderFlags | (e_LineListInd << e_PrimTypeShift));
+		return(m_rawData->m_curRenderFlags.m_renderFlags | (e_LineListInd << e_PrimTypeShift));
 	}
 	else
 	{
-		return(m_cbCurrent->m_curRenderFlags.m_renderFlags | (e_LineList << e_PrimTypeShift));
+		return(m_rawData->m_curRenderFlags.m_renderFlags | (e_LineList << e_PrimTypeShift));
 	}
 }
 
@@ -453,11 +441,11 @@ inline uint32 CAuxGeomCB::CreateLineStripRenderFlag(bool indexed)
 {
 	if (false != indexed)
 	{
-		return(m_cbCurrent->m_curRenderFlags.m_renderFlags | (e_LineStripInd << e_PrimTypeShift));
+		return(m_rawData->m_curRenderFlags.m_renderFlags | (e_LineStripInd << e_PrimTypeShift));
 	}
 	else
 	{
-		return(m_cbCurrent->m_curRenderFlags.m_renderFlags | (e_LineStrip << e_PrimTypeShift));
+		return(m_rawData->m_curRenderFlags.m_renderFlags | (e_LineStrip << e_PrimTypeShift));
 	}
 }
 
@@ -466,12 +454,12 @@ inline uint32 CAuxGeomCB::CreateTriangleRenderFlags(bool indexed, bool textured)
 	uint32 idx = indexed ? e_TriListInd : e_TriList;
 	uint32 tex = textured ? 1 : 0;
 
-	return m_cbCurrent->m_curRenderFlags.m_renderFlags | (idx << e_PrimTypeShift) | tex;
+	return m_rawData->m_curRenderFlags.m_renderFlags | (idx << e_PrimTypeShift) | tex;
 }
 
 inline uint32 CAuxGeomCB::CreateObjectRenderFlags(const EAuxDrawObjType& objType)
 {
-	return(m_cbCurrent->m_curRenderFlags.m_renderFlags | (e_Obj << e_PrimTypeShift) | objType);
+	return(m_rawData->m_curRenderFlags.m_renderFlags | (e_Obj << e_PrimTypeShift) | objType);
 }
 
 inline CAuxGeomCB::EPrimType CAuxGeomCB::GetPrimType(const SAuxGeomRenderFlags& renderFlags)
@@ -614,7 +602,9 @@ public:
 	void                DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB& col) final                       {}
 	void                DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col) final                       {}
 
-	void                DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured) final                                                    {};
+	void                DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured) final                                                    {}
+	SAuxVertex*         BeginDrawBuffer(uint32 maxVertices, bool textured) final                                                                             { return nullptr; }
+	void                EndDrawBuffer(uint32 numVertices) final                                                                                              {}
 
 	void                DrawAABB(const AABB& aabb, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final                           {}
 	void                DrawAABBs(const AABB* aabbs, uint32 aabbCount, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final       {}
@@ -631,8 +621,6 @@ public:
 
 	void                RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text) final                                                          {}
 
-	void                DrawBufferRT(const SAuxVertex* data, int numVertices, int blendMode, const Matrix44* matViewProj, int texID) final                   {}
-
 	void                PushImage(const SRender2DImageDescription &image) final                                                                              {};
 
 	int                 PushMatrix(const Matrix34& mat) final                                                                                                { return -1; }
@@ -640,7 +628,6 @@ public:
 	void                SetMatrixIndex(int matID) final                                                                                                      {}
 	void                SetOrthographicProjection(bool enable, float l = 0, float r = 1, float b = 0, float t = 1, float n = -1e10, float f = 1e10) final	 {}
 
-	void                Flush() final                                                                                                                        {}
 	void                Submit(uint frames = 0) final                                                                                                        {}
 
 public:

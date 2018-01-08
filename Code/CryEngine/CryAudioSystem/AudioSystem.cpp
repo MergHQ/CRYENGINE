@@ -9,6 +9,10 @@
 #include <CryString/CryPath.h>
 #include <CryEntitySystem/IEntitySystem.h>
 
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	#include <CryRenderer/IRenderer.h>
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 namespace CryAudio
 {
 enum class ELoggingOptions : EnumFlagsType
@@ -75,6 +79,12 @@ CSystem::CSystem()
 	, m_atl()
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CryAudio::CSystem");
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	m_currentRenderAuxGeom.exchange(nullptr);
+	m_lastRenderAuxGeom.exchange(nullptr);
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -936,13 +946,50 @@ void CSystem::GetImplInfo(SImplInfo& implInfo)
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
+void CSystem::ScheduleIRenderAuxGeomForRendering(IRenderAuxGeom* pRenderAuxGeom)
+{
+	auto oldRenderAuxGeom = m_currentRenderAuxGeom.exchange(pRenderAuxGeom);
+	CRY_ASSERT(oldRenderAuxGeom != pRenderAuxGeom);
+
+	// Kill FIFO entries beyond 1, only the head survives in m_currentRenderAuxGeom
+	// Throw away all older entries
+	if (oldRenderAuxGeom && oldRenderAuxGeom != pRenderAuxGeom)
+	{
+		gEnv->pRenderer->DeleteAuxGeom(oldRenderAuxGeom);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::SubmitLastIRenderAuxGeomForRendering()
+{
+	// Consume the FIFO head
+	auto curRenderAuxGeom = m_currentRenderAuxGeom.exchange(nullptr);
+	if (curRenderAuxGeom)
+	{
+		// Replace the active Aux rendering by a new one only if there is a new one
+		// Otherwise keep rendering the currently active one
+		auto oldRenderAuxGeom = m_lastRenderAuxGeom.exchange(curRenderAuxGeom);
+		if (oldRenderAuxGeom)
+		{
+			gEnv->pRenderer->DeleteAuxGeom(oldRenderAuxGeom);
+		}
+	}
+
+	if (m_lastRenderAuxGeom != (volatile IRenderAuxGeom*)nullptr)
+	{
+		gEnv->pRenderer->SubmitAuxGeom(m_lastRenderAuxGeom);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystem::DrawAudioDebugData()
 {
 	if (g_cvars.m_drawAudioDebug > 0)
 	{
+		SubmitLastIRenderAuxGeomForRendering();
+
 		SAudioManagerRequestData<EAudioManagerRequestType::DrawDebugInfo> requestData;
 		CAudioRequest request(&requestData);
-		request.flags = ERequestFlags::ExecuteBlocking;
 		PushRequest(request);
 	}
 }

@@ -13,6 +13,9 @@ public:
 
 	class CTextMessageHeader;
 
+	const CTextMessages& operator=(const CTextMessages& rhs);
+	void                 Merge(const CTextMessages& rhs);
+
 	// iteration should not be started yet
 	// Arguments
 	//   vPos - WorldSpace position

@@ -1439,6 +1439,16 @@ void CAuxGeomCBCollector::SetDisplayContextHandle(CryDisplayContextHandle hWnd)
 	}
 }
 
+CCamera CAuxGeomCBCollector::GetCamera() const
+{
+	return m_camera;
+}
+
+CryDisplayContextHandle CAuxGeomCBCollector::GetDisplayContextHandle() const
+{
+	return m_hWnd;
+}
+
 void CAuxGeomCBCollector::FreeMemory()
 {
 	m_rwGlobal.WLock();
