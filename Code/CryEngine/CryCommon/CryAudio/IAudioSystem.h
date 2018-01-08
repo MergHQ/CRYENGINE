@@ -305,8 +305,9 @@ struct IAudioSystem
 	virtual void UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Performs the actions passed in the "triggerData" parameter on an audio object and then executes the passed trigger ID.
+	 * Performs the actions passed in the "triggerData" parameter. This is used for 3D type events exclusively. For 2D type events refer to ExecuteTrigger.
 	 * For convenience and efficiency this is used as a "fire and forget" type action where the user does not need to explicitly handle an audio object.
+	 * Make sure to only start non-looped type events this way otherwise they will turn into runaway loops.
 	 * @param triggerData - reference to an object that holds all of the data necessary for the trigger execution.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
@@ -314,7 +315,7 @@ struct IAudioSystem
 	virtual void ExecuteTriggerEx(SExecuteTriggerData const& triggerData, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Executes the passed trigger ID. This is used for "fire and forget" type operations and for 2D type events exclusively.
+	 * Executes the passed trigger ID. This is used for 2D type events exclusively. For 3D type events refer to ExecuteTriggerEx.
 	 * @param triggerId - ID of the trigger to execute.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
