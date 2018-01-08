@@ -370,7 +370,6 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 						if (pParent->GetType() == ESystemItemType::Library)
 						{
-							//TODO: Take into account files in the "levels" folder
 							pContextMenu->addAction(tr("Open Containing Folder"), [&]()
 							{
 								QtUtil::OpenInExplorer(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), m_pAssetsManager->GetConfigFolderPath() + pParent->GetName() + ".xml").c_str());
@@ -457,18 +456,17 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 			}
 		}
 
-		if (!IsDefaultControlSelected())
+		if ((selection.size() == 1) && !IsDefaultControlSelected())
 		{
 			pContextMenu->addAction(tr("Rename"), [&]()
 			{
 				QModelIndex const& nameColumnIndex = m_pTreeView->currentIndex().sibling(m_pTreeView->currentIndex().row(), m_nameColumn);
 				m_pTreeView->edit(nameColumnIndex);
 			});
-
-			pContextMenu->addAction(tr("Delete"), [&]() { OnDeleteSelectedControl(); });
-			pContextMenu->addSeparator();
 		}
 		
+		pContextMenu->addAction(tr("Delete"), [&]() { OnDeleteSelectedControl(); });
+		pContextMenu->addSeparator();
 		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(m_pTreeView->GetSelectedIndexes()); });
 		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(m_pTreeView->GetSelectedIndexes()); });
 		pContextMenu->addSeparator();
@@ -489,61 +487,64 @@ void CSystemControlsWidget::OnDeleteSelectedControl()
 	if (size > 0)
 	{
 		QString text;
-		QStringList defaultControlNames;
 
-		if (IsDefaultControlSelected(defaultControlNames))
+		if (size == 1)
 		{
-			if (defaultControlNames.size() > 1)
-			{
-				text = tr("Default controls are selected, that cannot get deleted:");
-			}
-			else
-			{
-				text = tr("A default control is selected, that cannot get deleted:");
-			}
-
-			for (auto const& name : defaultControlNames)
-			{
-				text.append("\n" + name);
-			}
-
-			CQuestionDialog* const messageBox = new CQuestionDialog();
-			messageBox->SetupQuestion("Audio Controls Editor", text, QDialogButtonBox::Ok , QDialogButtonBox::Ok);
-			messageBox->Execute();
+			text = tr(R"(Are you sure you want to delete ")") + selection[0].data(Qt::DisplayRole).toString() + R"("?.)";
 		}
 		else
 		{
-			if (size == 1)
-			{
-				text = tr(R"(Are you sure you want to delete ")") + selection[0].data(Qt::DisplayRole).toString() + R"("?.)";
-			}
-			else
-			{
-				text = tr("Are you sure you want to delete the selected controls and folders?");
-			}
+			text = tr("Are you sure you want to delete the selected controls and folders?");
+		}
 
-			CQuestionDialog* const messageBox = new CQuestionDialog();
-			messageBox->SetupQuestion("Audio Controls Editor", text);
+		CQuestionDialog* const messageBox = new CQuestionDialog();
+		messageBox->SetupQuestion("Audio Controls Editor", text);
 
-			if (messageBox->Execute() == QDialogButtonBox::Yes)
+		if (messageBox->Execute() == QDialogButtonBox::Yes)
+		{
+			std::vector<CSystemAsset*> selectedItems;
+
+			for (auto const& index : selection)
 			{
-				std::vector<CSystemAsset*> selectedItems;
-
-				for (auto const& index : selection)
+				if (index.isValid())
 				{
-					if (index.isValid())
-					{
-						selectedItems.emplace_back(SystemModelUtils::GetAssetFromIndex(index, m_nameColumn));
-					}
+					selectedItems.emplace_back(SystemModelUtils::GetAssetFromIndex(index, m_nameColumn));
 				}
+			}
 
-				std::vector<CSystemAsset*> itemsToDelete;
-				Utils::SelectTopLevelAncestors(selectedItems, itemsToDelete);
+			std::vector<CSystemAsset*> itemsToDelete;
+			Utils::SelectTopLevelAncestors(selectedItems, itemsToDelete);
+			std::vector<string> defaultControlNames;
 
-				for (auto const pItem : itemsToDelete)
+			for (auto const pItem : itemsToDelete)
+			{
+				if (!pItem->HasDefaultControlChildren(defaultControlNames))
 				{
 					m_pAssetsManager->DeleteItem(pItem);
 				}
+			}
+
+			if (!defaultControlNames.empty())
+			{
+				QString defaultControlText;
+
+				if (defaultControlNames.size() > 1)
+				{
+					defaultControlText = tr("Could not delete default controls and their parent item(s):");
+				}
+				else
+				{
+					defaultControlText = tr("Could not delete default control and its parent item(s):");
+				}
+
+				for (auto const& name : defaultControlNames)
+				{
+					defaultControlText.append("\n\"" + QtUtil::ToQString(name) + "\"");
+				}
+
+				CQuestionDialog* const defaultControlsMessageBox = new CQuestionDialog();
+				defaultControlsMessageBox->SetupQuestion("Audio Controls Editor", defaultControlText, QDialogButtonBox::Ok, QDialogButtonBox::Ok);
+				defaultControlsMessageBox->Execute();
 			}
 		}
 	}
@@ -738,60 +739,22 @@ bool CSystemControlsWidget::IsParentFolderAllowed() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CSystemControlsWidget::IsDefaultControlSelected(QStringList& controlNames /*= QStringList()*/) const
+bool CSystemControlsWidget::IsDefaultControlSelected() const
 {
 	bool isDefaultControlSelected = false;
-	auto const& selection = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
+	QModelIndex const& index = m_pTreeView->currentIndex();
 
-	for (auto const& index : selection)
+	if (index.isValid())
 	{
-		if (index.isValid())
+		CSystemAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(index, m_nameColumn);
+
+		if (pAsset != nullptr)
 		{
-			if (HasDefaultControl(SystemModelUtils::GetAssetFromIndex(index, m_nameColumn), controlNames))
-			{
-				isDefaultControlSelected = true;
-			}
+			isDefaultControlSelected = pAsset->IsDefaultControl();
 		}
 	}
 
 	return isDefaultControlSelected;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CSystemControlsWidget::HasDefaultControl(CSystemAsset* const pAsset, QStringList& controlNames) const
-{
-	bool hasDefaultControl = false;
-
-	if (pAsset != nullptr)
-	{
-		hasDefaultControl = pAsset->IsDefaultControl();
-
-		if (hasDefaultControl)
-		{
-			QString name = "\"" + QtUtil::ToQString(pAsset->GetName()) + "\"";
-
-			if (pAsset->IsHiddenDefault())
-			{
-				name.append(" (" + tr("hidden") + ")");
-			}
-
-			controlNames.append(name);
-		}
-		else
-		{
-			size_t const childCount = pAsset->ChildCount();
-
-			for (size_t i = 0; i < childCount; ++i)
-			{
-				if (HasDefaultControl(pAsset->GetChild(i),controlNames))
-				{
-					hasDefaultControl = true;
-				}
-			}
-		}
-	}
-
-	return hasDefaultControl;
 }
 
 //////////////////////////////////////////////////////////////////////////

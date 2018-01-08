@@ -205,6 +205,48 @@ void CSystemAsset::SetHasControl(bool const hasControl)
 }
 
 //////////////////////////////////////////////////////////////////////////
+string CSystemAsset::GetFullHierarchyName() const
+{
+	string name = m_name;
+	CSystemAsset* pParent = m_pParent;
+
+	while (pParent != nullptr)
+	{
+		name = pParent->GetName() + "/" + name;
+		pParent = pParent->GetParent();
+	}
+
+	return name;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CSystemAsset::HasDefaultControlChildren(std::vector<string>& names) const
+{
+	bool hasDefaultControlChildren = IsDefaultControl();
+
+	if (hasDefaultControlChildren)
+	{
+		names.emplace_back(GetFullHierarchyName());
+	}
+	else
+	{
+		size_t const childCount = ChildCount();
+
+		for (size_t i = 0; i < childCount; ++i)
+		{
+			CSystemAsset const* const pChild = GetChild(i);
+
+			if ((pChild != nullptr) && (pChild->HasDefaultControlChildren(names)))
+			{
+				hasDefaultControlChildren = true;
+			}
+		}
+	}
+
+	return hasDefaultControlChildren;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystemAsset::Serialize(Serialization::IArchive& ar)
 {
 	if (ar.openBlock("properties", "Properties"))
@@ -349,11 +391,11 @@ ConnectionPtr CSystemControl::GetConnection(CID const id) const
 {
 	ConnectionPtr pConnection = nullptr;
 
-	for (auto const pControl : m_connectedControls)
+	for (auto const& control : m_connectedControls)
 	{
-		if ((pControl != nullptr) && (pControl->GetID() == id))
+		if ((control != nullptr) && (control->GetID() == id))
 		{
-			pConnection = pControl;
+			pConnection = control;
 			break;
 		}
 	}
@@ -657,9 +699,9 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 				bool hasPlaceholderConnections = false;
 				float connectionMaxRadius = 0.0f;
 
-				for (auto const pConnection : m_connectedControls)
+				for (auto const& connection : m_connectedControls)
 				{
-					CImplItem const* const pImplControl = pEditorImpl->GetControl(pConnection->GetID());
+					CImplItem const* const pImplControl = pEditorImpl->GetControl(connection->GetID());
 
 					if ((pImplControl != nullptr) && !pImplControl->IsPlaceholder())
 					{
@@ -716,9 +758,9 @@ void CSystemControl::MatchRadiusToAttenuation()
 		float radius = 0.0f;
 		bool isPlaceHolder = false;
 
-		for (auto const pConnection : m_connectedControls)
+		for (auto const& connection : m_connectedControls)
 		{
-			CImplItem const* const pImplControl = pEditorImpl->GetControl(pConnection->GetID());
+			CImplItem const* const pImplControl = pEditorImpl->GetControl(connection->GetID());
 
 			if ((pImplControl != nullptr) && !pImplControl->IsPlaceholder())
 			{
