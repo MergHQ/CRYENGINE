@@ -601,21 +601,6 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 			displayWidthRequested = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
 			displayHeightRequested = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
 		}
-
-		if (IsEditorMode())
-		{
-			HWND hWnd = (HWND)pDC->GetHandle();
-			if (TRUE == ::IsWindow(hWnd))
-			{
-				RECT rc;
-				if (TRUE == GetWindowRect(hWnd, &rc))
-				{
-					// On Windows force screen resolution to be a real pixel size of the display context window
-					displayWidthRequested  = rc.right - rc.left;
-					displayHeightRequested = rc.bottom - rc.top;
-				}
-			}
-		}
 #endif
 #endif
 
