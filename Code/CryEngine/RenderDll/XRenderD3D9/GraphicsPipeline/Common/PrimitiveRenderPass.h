@@ -55,8 +55,8 @@ public:
 		ePrim_ClipProjector1,         // same as ePrim_Projector1 but with even denser tessellation
 		ePrim_ClipProjector2,         // same as ePrim_Projector2 but with even denser tessellation
 		ePrim_FullscreenQuad,         // fullscreen quad             ( 0  0, 0) - ( 1  1, 0)
-		ePrim_FullscreenQuadCentered, // fullscreen quad             (-1,-1, 0) - ( 1, 1, 0)
-		ePrim_FullscreenQuadTess,     // tessellated fullscreen quad (-1,-1, 0) - ( 1, 1, 0)
+		ePrim_FullscreenQuadCentered, // fullscreen quad             (-1,-1, 0) - ( 1, 1, 0). UV layout (0,0)=bottom left, (1,1)=top right
+		ePrim_FullscreenQuadTess,     // tessellated fullscreen quad (-1,-1, 0) - ( 1, 1, 0). UV layout (0,0)=bottom left, (1,1)=top right
 		ePrim_Custom,
 
 		ePrim_Count,
