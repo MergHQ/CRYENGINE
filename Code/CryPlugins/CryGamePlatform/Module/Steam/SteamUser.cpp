@@ -24,7 +24,12 @@ namespace Cry
 
 			const char* CUser::GetNickname() const
 			{
-				return SteamFriends()->GetFriendPersonaName(m_id);
+				ISteamFriends* pSteamFriends = SteamFriends();
+				if (!pSteamFriends)
+				{
+					return nullptr;
+				}
+				return pSteamFriends->GetFriendPersonaName(m_id);
 			}
 
 			IUser::Identifier CUser::GetIdentifier() const
@@ -34,41 +39,56 @@ namespace Cry
 
 			void CUser::SetStatus(const char* status)
 			{
-				if (m_id != SteamUser()->GetSteamID())
+				ISteamUser* pSteamUser = SteamUser();
+				ISteamFriends* pSteamFriends = SteamFriends();
+				if (!pSteamFriends || !pSteamUser || m_id != pSteamUser->GetSteamID())
+				{
 					return;
+				}
 
-				SteamFriends()->SetRichPresence("status", status);
+				pSteamFriends->SetRichPresence("status", status);
 			}
 
 			const char* CUser::GetStatus() const
 			{
-				return SteamFriends()->GetFriendRichPresence(m_id, "status");
+				ISteamFriends* pSteamFriends = SteamFriends();
+				if (!pSteamFriends)
+				{
+					return nullptr;
+				}
+				return pSteamFriends->GetFriendRichPresence(m_id, "status");
 			}
 
 			ITexture* CUser::GetAvatar(EAvatarSize size) const
 			{
 				int imageId = -1;
-				switch (size)
+				ISteamFriends* pSteamFriends = SteamFriends();
+				if (pSteamFriends)
 				{
-					case EAvatarSize::Large:
-						imageId = SteamFriends()->GetLargeFriendAvatar(m_id);
-						break;
-					case EAvatarSize::Medium:
-						imageId = SteamFriends()->GetMediumFriendAvatar(m_id);
-						break;
-					case EAvatarSize::Small:
-						imageId = SteamFriends()->GetSmallFriendAvatar(m_id);
-						break;
+					switch (size)
+					{
+						case EAvatarSize::Large:
+							imageId = pSteamFriends->GetLargeFriendAvatar(m_id);
+							break;
+						case EAvatarSize::Medium:
+							imageId = pSteamFriends->GetMediumFriendAvatar(m_id);
+							break;
+						case EAvatarSize::Small:
+							imageId = pSteamFriends->GetSmallFriendAvatar(m_id);
+							break;
+					}
 				}
 
-				if (imageId == -1)
+				ISteamUtils* pSteamUtils = SteamUtils();
+
+				if (imageId == -1 || !pSteamUtils)
 				{
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Steam] Failed to load avatar");
 					return nullptr;
 				}
 
 				uint32 width, height;
-				if (!SteamUtils()->GetImageSize(imageId, &width, &height))
+				if (!pSteamUtils->GetImageSize(imageId, &width, &height))
 				{
 					return nullptr;
 				}
@@ -76,7 +96,7 @@ namespace Cry
 				int imageSize = width*  height*  4;
 				std::vector<unsigned char> imageBuffer;
 				imageBuffer.resize(imageSize);
-				if (!SteamUtils()->GetImageRGBA(imageId, imageBuffer.data(), imageSize))
+				if (!pSteamUtils->GetImageRGBA(imageId, imageBuffer.data(), imageSize))
 				{
 					return nullptr;
 				}

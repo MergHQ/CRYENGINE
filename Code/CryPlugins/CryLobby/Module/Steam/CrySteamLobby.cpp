@@ -30,6 +30,15 @@
 	#if !defined(RELEASE)
 static void SteamShowOverlay_DevelopmentOnly(IConsoleCmdArgs* pArgs)
 {
+	ISteamUtils* pSteamUtils = SteamUtils();
+	ISteamFriends* pSteamFriends = SteamFriends();
+	if (!pSteamUtils || !pSteamFriends)
+	{
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Overlay cannot be shown; Steam is not initialized");
+		return;
+	}
+
+
 	const char* overlay[] = { "Friends", "Community", "Players", "Settings", "OfficialGameGroup", "Stats", "Achievements", "LobbyInvite" };
 	uint32 numOverlays = sizeof(overlay) / sizeof(char*);
 	uint32 requestedOverlay = 0;
@@ -48,10 +57,10 @@ static void SteamShowOverlay_DevelopmentOnly(IConsoleCmdArgs* pArgs)
 		}
 	}
 
-	if (SteamUtils()->IsOverlayEnabled() == false)
+	if (pSteamUtils->IsOverlayEnabled() == false)
 	{
 		NetLog("[STEAM]: Attempting to show [%s] overlay", overlay[requestedOverlay]);
-		SteamFriends()->ActivateGameOverlay(overlay[requestedOverlay]);
+		pSteamFriends->ActivateGameOverlay(overlay[requestedOverlay]);
 	}
 	else
 	{
@@ -63,12 +72,18 @@ static void SteamShowOverlay_DevelopmentOnly(IConsoleCmdArgs* pArgs)
 
 static void SteamShowFriends_DevelopmentOnly(IConsoleCmdArgs* pArgs)
 {
-	uint32 friendCount = SteamFriends()->GetFriendCount(k_EFriendFlagImmediate);
+	ISteamFriends* pSteamFriends = SteamFriends();
+	if (!pSteamFriends)
+	{
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam friends service not available");
+		return;
+	}
+	uint32 friendCount = pSteamFriends->GetFriendCount(k_EFriendFlagImmediate);
 	NetLog("[STEAM]: Friends list (%d friends):", friendCount);
 	for (uint32 index = 0; index < friendCount; ++index)
 	{
-		CSteamID friendID = SteamFriends()->GetFriendByIndex(index, k_EFriendFlagImmediate);
-		NetLog("[STEAM]:  [%d] : [%s] : [%s]", index, CSteamIDAsString(friendID).c_str(), SteamFriends()->GetFriendPersonaName(friendID));
+		CSteamID friendID = pSteamFriends->GetFriendByIndex(index, k_EFriendFlagImmediate);
+		NetLog("[STEAM]:  [%d] : [%s] : [%s]", index, CSteamIDAsString(friendID).c_str(), pSteamFriends->GetFriendPersonaName(friendID));
 	}
 }
 
@@ -76,7 +91,13 @@ static void SteamShowFriends_DevelopmentOnly(IConsoleCmdArgs* pArgs)
 
 static void SteamInviteToGame_DevelopmentOnly(IConsoleCmdArgs* pArgs)
 {
-	uint32 friendCount = SteamFriends()->GetFriendCount(k_EFriendFlagImmediate);
+	ISteamFriends* pSteamFriends = SteamFriends();
+	if (!pSteamFriends)
+	{
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam friends service not available");
+		return;
+	}
+	uint32 friendCount = pSteamFriends->GetFriendCount(k_EFriendFlagImmediate);
 	uint32 argCount = pArgs->GetArgCount();
 
 	if (argCount > 1)
@@ -92,10 +113,10 @@ static void SteamInviteToGame_DevelopmentOnly(IConsoleCmdArgs* pArgs)
 				uint32 friendIndex = atoi(pArgs->GetArg(argIndex++));
 				if (friendIndex < friendCount)
 				{
-					SCrySteamUserID* pFriendID = new SCrySteamUserID(SteamFriends()->GetFriendByIndex(friendIndex, k_EFriendFlagImmediate));
+					SCrySteamUserID* pFriendID = new SCrySteamUserID(pSteamFriends->GetFriendByIndex(friendIndex, k_EFriendFlagImmediate));
 					CryUserID id(pFriendID);
 					CrySessionHandle sh = ((CCryMatchMaking*)pLobbyService->GetMatchMaking())->CreateGameSessionHandle(lsh, CryMatchMakingInvalidConnectionUID);
-					NetLog("[STEAM]: Sending game invite to [%s]...", SteamFriends()->GetFriendPersonaName(pFriendID->m_steamID));
+					NetLog("[STEAM]: Sending game invite to [%s]...", pSteamFriends->GetFriendPersonaName(pFriendID->m_steamID));
 					pLobbyService->GetFriends()->FriendsSendGameInvite(0, sh, &id, 1, NULL, NULL, NULL);
 				}
 				else

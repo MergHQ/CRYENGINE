@@ -62,29 +62,67 @@ namespace Cry
 #ifdef RELEASE
 				AddLobbyQueryFilterString("version", versionString.c_str(), IUserLobby::EComparison::Equal);
 #endif
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (pSteamMatchmaking)
+				{
+					SteamAPICall_t hSteamAPICall = pSteamMatchmaking->RequestLobbyList();
+					m_callResultLobbyMatchList.Set(hSteamAPICall, this, &CMatchmaking::OnLobbyMatchList);
 
-				SteamAPICall_t hSteamAPICall = SteamMatchmaking()->RequestLobbyList();
-				m_callResultLobbyMatchList.Set(hSteamAPICall, this, &CMatchmaking::OnLobbyMatchList);
-
-				CPlugin::GetInstance()->SetAwaitingCallback(1);
+					CPlugin::GetInstance()->SetAwaitingCallback(1);
+				}
+				else
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam matchmaking service not available");
+					LobbyMatchList_t temp;
+					temp.m_nLobbiesMatching = 0;
+					CPlugin::GetInstance()->SetAwaitingCallback(1); // since OnLobbyMatchList will expect to be used as a callback
+					OnLobbyMatchList(&temp, true);
+				}
 			}
 
 			IUserLobby::Identifier CMatchmaking::GetQueriedLobbyIdByIndex(int index) const
 			{
-				return SteamMatchmaking()->GetLobbyByIndex(index).ConvertToUint64();
+				CSteamID result = k_steamIDNil;
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (pSteamMatchmaking)
+				{
+					result = pSteamMatchmaking->GetLobbyByIndex(index);
+				}
+				return result.ConvertToUint64();				
 			}
 
 			void CMatchmaking::AddLobbyQueryFilterString(const char* key, const char* value, IUserLobby::EComparison comparison)
 			{
-				SteamMatchmaking()->AddRequestLobbyListStringFilter(key, value, static_cast<ELobbyComparison>(comparison));
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (pSteamMatchmaking)
+				{
+					pSteamMatchmaking->AddRequestLobbyListStringFilter(key, value, static_cast<ELobbyComparison>(comparison));
+				}
+				else
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam matchmaking service not available");
+				}
 			}
 
 			void CMatchmaking::JoinLobby(IUserLobby::Identifier lobbyId)
 			{
-				SteamAPICall_t hSteamAPICall = SteamMatchmaking()->JoinLobby(lobbyId);
-				m_callResultLobbyEntered.Set(hSteamAPICall, this, &CMatchmaking::OnJoin);
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (pSteamMatchmaking)
+				{
+					SteamAPICall_t hSteamAPICall = pSteamMatchmaking->JoinLobby(lobbyId);
+					m_callResultLobbyEntered.Set(hSteamAPICall, this, &CMatchmaking::OnJoin);
 
-				CPlugin::GetInstance()->SetAwaitingCallback(1);
+					CPlugin::GetInstance()->SetAwaitingCallback(1);
+				}
+				else
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam matchmaking service not available");
+					LobbyEnter_t temp;
+					temp.m_EChatRoomEnterResponse = k_EChatRoomEnterResponseError;
+					temp.m_ulSteamIDLobby = k_steamIDNil.ConvertToUint64();
+					CPlugin::GetInstance()->SetAwaitingCallback(1); // since onJoin will expect to be used as a callback
+					OnJoin(&temp, true);
+				}
 			}
 
 			void CMatchmaking::OnLobbyRemoved(CUserLobby* pLobby)
@@ -194,7 +232,8 @@ namespace Cry
 
 			void CMatchmaking::OnInvited(LobbyInvite_t* pInvite)
 			{
-				if (pInvite->m_ulGameID != SteamUtils()->GetAppID())
+				ISteamUtils* pSteamUtils = SteamUtils();
+				if (!pSteamUtils || pInvite->m_ulGameID != pSteamUtils->GetAppID())
 					return;
 
 				// TODO: Display confirmation dialog

@@ -92,7 +92,8 @@ namespace Cry
 				if (gEnv->bMultiplayer)
 				{
 					IServer* pPlatformServer = CPlugin::GetInstance()->GetLocalServer();
-					if (pPlatformServer == nullptr)
+					ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+					if (pPlatformServer == nullptr || pSteamMatchmaking == nullptr)
 					{
 						CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Steam] Failed to create server!");
 						return;
@@ -115,22 +116,29 @@ namespace Cry
 
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Steam] Created server at %s:%i", ipAddressFinal, m_serverPort);
 
-					SteamMatchmaking()->SetLobbyGameServer(m_steamLobbyId, m_serverIP, m_serverPort, CSteamID(pPlatformServer->GetIdentifier()));
+					if (pSteamMatchmaking)
+					{
+						pSteamMatchmaking->SetLobbyGameServer(m_steamLobbyId, m_serverIP, m_serverPort, CSteamID(pPlatformServer->GetIdentifier()));
 
-					string ipAddressInt;
-					ipAddressInt.Format("%i", m_serverIP);
+						string ipAddressInt;
+						ipAddressInt.Format("%i", m_serverIP);
 
-					SteamMatchmaking()->SetLobbyData(m_steamLobbyId, "ipaddress", ipAddressInt);
+						pSteamMatchmaking->SetLobbyData(m_steamLobbyId, "ipaddress", ipAddressInt);
 
-					string port;
-					port.Format("%i", m_serverPort);
+						string port;
+						port.Format("%i", m_serverPort);
 
-					SteamMatchmaking()->SetLobbyData(m_steamLobbyId, "port", port);
+						pSteamMatchmaking->SetLobbyData(m_steamLobbyId, "port", port);
 
-					string serverIdString;
-					serverIdString.Format("%i", m_serverId);
+						string serverIdString;
+						serverIdString.Format("%i", m_serverId);
 
-					SteamMatchmaking()->SetLobbyData(m_steamLobbyId, "serverid", serverIdString);
+						pSteamMatchmaking->SetLobbyData(m_steamLobbyId, "serverid", serverIdString);
+					}
+					else
+					{
+						CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam matchmaking service not available");
+					}
 
 					gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 				}
@@ -138,19 +146,35 @@ namespace Cry
 
 			bool CUserLobby::SetData(const char* key, const char* value)
 			{
-				return SteamMatchmaking()->SetLobbyData(m_steamLobbyId, key, value);
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (!pSteamMatchmaking)
+				{
+					return pSteamMatchmaking->SetLobbyData(m_steamLobbyId, key, value);
+				}
+				return false;
 			}
 
 			const char* CUserLobby::GetData(const char* key) const
 			{
-				return SteamMatchmaking()->GetLobbyData(m_steamLobbyId, key);
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (!pSteamMatchmaking)
+				{
+					return pSteamMatchmaking->GetLobbyData(m_steamLobbyId, key);
+				}
+				return nullptr;
 			}
 
 			bool CUserLobby::HostServer(const char* szLevel, bool isLocal)
 			{
-				CSteamID ownerId = SteamMatchmaking()->GetLobbyOwner(m_steamLobbyId);
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (!pSteamMatchmaking)
+				{
+					return false;
+				}
+				CSteamID ownerId = pSteamMatchmaking->GetLobbyOwner(m_steamLobbyId);
 				// Only owner can decide to host
-				if (ownerId != SteamUser()->GetSteamID())
+				ISteamUser* pSteamUser = SteamUser();
+				if (!pSteamUser || ownerId != pSteamUser->GetSteamID())
 					return false;
 
 				IServer* pPlatformServer = CPlugin::GetInstance()->CreateServer(isLocal);
@@ -169,17 +193,33 @@ namespace Cry
 
 			int CUserLobby::GetMemberLimit() const
 			{
-				return SteamMatchmaking()->GetLobbyMemberLimit(m_steamLobbyId);
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (pSteamMatchmaking)
+				{
+					return pSteamMatchmaking->GetLobbyMemberLimit(m_steamLobbyId);
+				}
+				return 0;
 			}
 
 			int CUserLobby::GetNumMembers() const
 			{
-				return SteamMatchmaking()->GetNumLobbyMembers(m_steamLobbyId);
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (pSteamMatchmaking)
+				{
+					return pSteamMatchmaking->GetNumLobbyMembers(m_steamLobbyId);
+				}
+				return 0;
 			}
 
 			IUser::Identifier CUserLobby::GetMemberAtIndex(int index) const
 			{
-				return SteamMatchmaking()->GetLobbyMemberByIndex(m_steamLobbyId, index).ConvertToUint64();
+				CSteamID result = k_steamIDNil;
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (pSteamMatchmaking)
+				{
+					result = pSteamMatchmaking->GetLobbyMemberByIndex(m_steamLobbyId, index);
+				}
+				return result.ConvertToUint64();
 			}
 
 			void CUserLobby::Leave()
@@ -187,10 +227,11 @@ namespace Cry
 				constexpr Identifier invalidLobby = 0;
 				if (m_steamLobbyId != invalidLobby)
 				{
-					const bool isShuttingDown = SteamMatchmaking() == nullptr;
+					ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+					const bool isShuttingDown = pSteamMatchmaking == nullptr;
 					if (!isShuttingDown)
 					{
-						SteamMatchmaking()->LeaveLobby(m_steamLobbyId);
+						pSteamMatchmaking->LeaveLobby(m_steamLobbyId);
 					}
 					m_steamLobbyId = invalidLobby;
 
@@ -199,8 +240,10 @@ namespace Cry
 						pListener->OnLeave();
 					}
 
-					if (m_serverIP != 0)
-						SteamUser()->TerminateGameConnection(m_serverIP, m_serverPort);
+					ISteamUser* pSteamUser = SteamUser();
+
+					if (pSteamUser && m_serverIP != 0)
+						pSteamUser->TerminateGameConnection(m_serverIP, m_serverPort);
 
 					if (!isShuttingDown)
 					{
@@ -211,12 +254,23 @@ namespace Cry
 
 			IUser::Identifier CUserLobby::GetOwnerId() const
 			{
-				return SteamMatchmaking()->GetLobbyOwner(m_steamLobbyId).ConvertToUint64();
+				CSteamID result = k_steamIDNil;
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (pSteamMatchmaking)
+				{
+					result = pSteamMatchmaking->GetLobbyOwner(m_steamLobbyId);
+				}
+				return result.ConvertToUint64();
 			}
 
 			bool CUserLobby::SendChatMessage(const char* message) const
 			{
-				return SteamMatchmaking()->SendLobbyChatMsg(m_steamLobbyId, message, strlen(message) + 1);
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (pSteamMatchmaking)
+				{
+					return pSteamMatchmaking->SendLobbyChatMsg(m_steamLobbyId, message, strlen(message) + 1);
+				}
+				return false;
 			}
 
 			void CUserLobby::ShowInviteDialog() const
@@ -310,7 +364,12 @@ namespace Cry
 				char data[2048];
 				int cubData = sizeof(data);
 
-				int numBytes = SteamMatchmaking()->GetLobbyChatEntry(m_steamLobbyId, pCallback->m_iChatID, &userId, data, cubData, &entryType);
+				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
+				if (!pSteamMatchmaking)
+				{
+					return;
+				}
+				int numBytes = pSteamMatchmaking->GetLobbyChatEntry(m_steamLobbyId, pCallback->m_iChatID, &userId, data, cubData, &entryType);
 				if (entryType == k_EChatEntryTypeChatMsg)
 				{
 					string message(data, numBytes);
@@ -327,9 +386,17 @@ namespace Cry
 
 			void CUserLobby::OnLobbyGameCreated(LobbyGameCreated_t* pCallback)
 			{
-				for (IListener* pListener : m_listeners)
+				ISteamUser* pSteamUser = SteamUser();
+				if (pSteamUser)
 				{
-					pListener->OnGameCreated(pCallback->m_ulSteamIDGameServer, pCallback->m_unIP, pCallback->m_usPort, SteamUser()->GetSteamID() == GetOwnerId());
+					for (IListener* pListener : m_listeners)
+					{
+						pListener->OnGameCreated(pCallback->m_ulSteamIDGameServer, pCallback->m_unIP, pCallback->m_usPort, pSteamUser->GetSteamID() == GetOwnerId());
+					}
+				}
+				else
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam user service not available");
 				}
 
 				if (!gEnv->bServer)

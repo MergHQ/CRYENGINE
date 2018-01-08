@@ -19,59 +19,95 @@ namespace Cry
 
 			void CUserGeneratedContent::StartPropertyUpdate()
 			{
-				if (m_updateHandle != 0)
+				ISteamUGC* pSteamUGC = SteamUGC();
+				if (!pSteamUGC || m_updateHandle != 0)
+				{
 					return;
+				}
 
-				m_updateHandle = SteamUGC()->StartItemUpdate(m_appId, m_id);
+				m_updateHandle = pSteamUGC->StartItemUpdate(m_appId, m_id);
 			}
 
 			bool CUserGeneratedContent::SetTitle(const char* newTitle)
 			{
+				ISteamUGC* pSteamUGC = SteamUGC();
+				if (!pSteamUGC)
+				{
+					return false;
+				}
 				StartPropertyUpdate();
-				return SteamUGC()->SetItemTitle(m_updateHandle, newTitle);
+				return pSteamUGC->SetItemTitle(m_updateHandle, newTitle);
 			}
 
 			bool CUserGeneratedContent::SetDescription(const char* newDescription)
 			{
+				ISteamUGC* pSteamUGC = SteamUGC();
+				if (!pSteamUGC)
+				{
+					return false;
+				}
 				StartPropertyUpdate();
-				return SteamUGC()->SetItemDescription(m_updateHandle, newDescription);
+				return pSteamUGC->SetItemDescription(m_updateHandle, newDescription);
 			}
 
 			bool CUserGeneratedContent::SetVisibility(IUserGeneratedContent::EVisibility visibility)
 			{
+				ISteamUGC* pSteamUGC = SteamUGC();
+				if (!pSteamUGC)
+				{
+					return false;
+				}
 				StartPropertyUpdate();
-				return SteamUGC()->SetItemVisibility(m_updateHandle, (ERemoteStoragePublishedFileVisibility)visibility);
+				return pSteamUGC->SetItemVisibility(m_updateHandle, (ERemoteStoragePublishedFileVisibility)visibility);
 			}
 
 			bool CUserGeneratedContent::SetTags(const char* *pTags, int numTags)
 			{
+				ISteamUGC* pSteamUGC = SteamUGC();
+				if (!pSteamUGC)
+				{
+					return false;
+				}
 				StartPropertyUpdate();
 
 				SteamParamStringArray_t stringArray;
 				stringArray.m_ppStrings = pTags;
 				stringArray.m_nNumStrings = numTags;
 
-				return SteamUGC()->SetItemTags(m_updateHandle, &stringArray);
+				return pSteamUGC->SetItemTags(m_updateHandle, &stringArray);
 			}
 
 			bool CUserGeneratedContent::SetContent(const char* contentFolderPath)
 			{
+				ISteamUGC* pSteamUGC = SteamUGC();
+				if (!pSteamUGC)
+				{
+					return false;
+				}
 				StartPropertyUpdate();
-				return SteamUGC()->SetItemContent(m_updateHandle, contentFolderPath);
+				return pSteamUGC->SetItemContent(m_updateHandle, contentFolderPath);
 			}
 
 			bool CUserGeneratedContent::SetPreview(const char* previewFilePath)
 			{
+				ISteamUGC* pSteamUGC = SteamUGC();
+				if (!pSteamUGC)
+				{
+					return false;
+				}
 				StartPropertyUpdate();
-				return SteamUGC()->SetItemPreview(m_updateHandle, previewFilePath);
+				return pSteamUGC->SetItemPreview(m_updateHandle, previewFilePath);
 			}
 
 			void CUserGeneratedContent::CommitChanges(const char* changeNote)
 			{
-				if (m_updateHandle == 0)
+				ISteamUGC* pSteamUGC = SteamUGC();
+				if (!pSteamUGC || m_updateHandle == 0)
+				{
 					return;
+				}
 
-				SteamAPICall_t result = SteamUGC()->SubmitItemUpdate(m_updateHandle, changeNote);;
+				SteamAPICall_t result = pSteamUGC->SubmitItemUpdate(m_updateHandle, changeNote);;
 				m_callResultContentUpdated.Set(result, this, &CUserGeneratedContent::OnContentUpdated);
 
 				CPlugin::GetInstance()->SetAwaitingCallback(1);
