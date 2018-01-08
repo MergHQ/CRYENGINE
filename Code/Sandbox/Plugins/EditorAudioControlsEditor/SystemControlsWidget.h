@@ -66,8 +66,7 @@ private:
 	CSystemAsset*       CreateFolder(CSystemAsset* const pParent);
 	void                CreateParentFolder();
 	bool                IsParentFolderAllowed() const;
-	bool                IsDefaultControlSelected(QStringList& controlNames = QStringList()) const;
-	bool                HasDefaultControl(CSystemAsset* const pAsset, QStringList& controlNames) const;
+	bool                IsDefaultControlSelected() const;
 
 	QAbstractItemModel* CreateLibraryModelFromIndex(QModelIndex const& sourceIndex);
 	CSystemAsset*       GetSelectedAsset() const;

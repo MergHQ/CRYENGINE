@@ -709,7 +709,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags)
 
 	if (!bRecurse)
 	{
-		gRenDev->GetIRenderAuxGeom()->Flush();
+		gRenDev->GetIRenderAuxGeom()->Submit();
 	}
 }
 

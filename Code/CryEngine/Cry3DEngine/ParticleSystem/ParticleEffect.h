@@ -76,6 +76,7 @@ public:
 	uint                      AddRenderObjectId();
 	uint                      GetNumRenderObjectIds() const;
 	float                     GetEquilibriumTime() const;
+	string                    GetShortName() const;
 	int                       GetEditVersion() const;
 
 	// Consolidated list of MainPreUpdate features, called per emitter

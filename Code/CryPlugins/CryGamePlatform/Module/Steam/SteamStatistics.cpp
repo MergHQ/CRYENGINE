@@ -25,8 +25,8 @@ namespace Cry
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Steam] Failed to retrieve current stats");
 				}
 
-				if (ISteamUserStats* pUserStats = SteamUserStats())
-					m_appId = SteamUtils()->GetAppID();
+				if (ISteamUtils* pSteamUtils = SteamUtils())
+					m_appId = pSteamUtils->GetAppID();
 			}
 
 			CStatistics::~CStatistics()
@@ -199,7 +199,8 @@ namespace Cry
 
 			void CStatistics::OnStatsUnloaded(UserStatsUnloaded_t* pCallback)
 			{
-				if (pCallback->m_steamIDUser == SteamUser()->GetSteamID())
+				ISteamUser* pSteamUser = SteamUser();
+				if (pSteamUser && pCallback->m_steamIDUser == pSteamUser->GetSteamID())
 					Download();
 			}
 

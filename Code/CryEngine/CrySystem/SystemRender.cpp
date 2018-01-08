@@ -299,7 +299,7 @@ void CSystem::RenderPhysicsHelpers()
 	}
 
 	if (m_env.pAuxGeomRenderer)
-		m_env.pAuxGeomRenderer->Flush();
+		m_env.pAuxGeomRenderer->Submit();
 #endif
 }
 

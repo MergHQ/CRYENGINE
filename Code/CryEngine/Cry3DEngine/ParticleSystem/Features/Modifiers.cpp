@@ -221,7 +221,7 @@ public:
 
 private:
 
-	UFloat m_amount;
+	TValue<float, THardLimits<0, 2>> m_amount;
 };
 
 SERIALIZATION_CLASS_NAME(IModifier, CModRandom, "Random", "Random");

@@ -197,7 +197,7 @@ void CParticleSystem::FinishUpdate()
 	m_lastCameraPose = QuatT(camera.GetMatrix());
 }
 
-void CParticleSystem::DeferredRender()
+void CParticleSystem::DeferredRender(const SRenderingPassInfo& passInfo)
 {
 	m_jobManager.DeferredRender();
 	DebugParticleSystem(m_emitters);
@@ -206,7 +206,7 @@ void CParticleSystem::DeferredRender()
 	if (debugBBox)
 	{
 		for (auto& pEmitter : m_emitters)
-			pEmitter->DebugRender();
+			pEmitter->DebugRender(passInfo);
 	}
 }
 

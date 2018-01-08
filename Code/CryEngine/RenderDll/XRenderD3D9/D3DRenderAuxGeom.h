@@ -110,7 +110,8 @@ public:
 	AUXJobs SubmitAuxGeomsAndPrepareForRendering();
 	void SetCamera(const CCamera& camera);
 	void SetDisplayContextHandle(CryDisplayContextHandle hWnd);
-
+	CCamera                 GetCamera() const;
+	CryDisplayContextHandle GetDisplayContextHandle() const;
 	void GetMemoryUsage(ICrySizer* pSizer) const;
 };
 

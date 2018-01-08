@@ -13,7 +13,12 @@ namespace Cry
 		{
 			void CLeaderboards::FindOrCreateLeaderboard(const char* name, ELeaderboardSortMethod sortMethod, ELeaderboardDisplayType displayType)
 			{
-				SteamAPICall_t hSteamAPICall = SteamUserStats()->FindOrCreateLeaderboard(name, sortMethod, displayType);
+				ISteamUserStats* pSteamUserStats = SteamUserStats();
+				if (!pSteamUserStats)
+				{
+					return;
+				}
+				SteamAPICall_t hSteamAPICall = pSteamUserStats->FindOrCreateLeaderboard(name, sortMethod, displayType);
 				m_callResultFindLeaderboard.Set(hSteamAPICall, this, &CLeaderboards::OnFindLeaderboard);
 
 				CPlugin::GetInstance()->SetAwaitingCallback(1);
@@ -22,15 +27,16 @@ namespace Cry
 			void CLeaderboards::OnFindLeaderboard(LeaderboardFindResult_t* pResult, bool bIOFailure)
 			{
 				CPlugin::GetInstance()->SetAwaitingCallback(-1);
+				ISteamUserStats* pSteamUserStats = SteamUserStats();
 
-				if (!pResult->m_bLeaderboardFound || bIOFailure)
+				if (!pResult->m_bLeaderboardFound || bIOFailure || !pSteamUserStats)
 				{
 					return;
 				}
 
 				if (m_pQueuedEntryRequest != nullptr)
 				{
-					SteamAPICall_t hSteamAPICall = SteamUserStats()->DownloadLeaderboardEntries(pResult->m_hSteamLeaderboard, m_pQueuedEntryRequest->request, m_pQueuedEntryRequest->minRange, m_pQueuedEntryRequest->maxRange);
+					SteamAPICall_t hSteamAPICall = pSteamUserStats->DownloadLeaderboardEntries(pResult->m_hSteamLeaderboard, m_pQueuedEntryRequest->request, m_pQueuedEntryRequest->minRange, m_pQueuedEntryRequest->maxRange);
 					m_callResultEntriesDownloaded.Set(hSteamAPICall, this, &CLeaderboards::OnEntriesDownloaded);
 
 					CPlugin::GetInstance()->SetAwaitingCallback(1);
@@ -41,7 +47,7 @@ namespace Cry
 				if (m_pQueuedUpdateRequest != nullptr)
 				{
 					int scoreDetails[1] = { static_cast<int>(m_pQueuedUpdateRequest->scoreType) };
-					SteamAPICall_t hSteamAPICall = SteamUserStats()->UploadLeaderboardScore(pResult->m_hSteamLeaderboard, m_pQueuedUpdateRequest->method, m_pQueuedUpdateRequest->score, scoreDetails, 1);
+					SteamAPICall_t hSteamAPICall = pSteamUserStats->UploadLeaderboardScore(pResult->m_hSteamLeaderboard, m_pQueuedUpdateRequest->method, m_pQueuedUpdateRequest->score, scoreDetails, 1);
 
 					m_pQueuedUpdateRequest.reset();
 				}
@@ -73,16 +79,29 @@ namespace Cry
 
 				auto* pUser = CPlugin::GetInstance()->GetLocalClient();
 
+				ISteamUserStats* pSteamUserStats = SteamUserStats();
+				if (!pSteamUserStats)
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam user stats service not available");
+					return;
+				}
+				ISteamFriends* pSteamFriends = SteamFriends();
+				if (!pSteamFriends)
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam friends service not available");
+					return;
+				}
+
 				for (int i = 0; i < pResult->m_cEntryCount; i++)
 				{
-					if (SteamUserStats()->GetDownloadedLeaderboardEntry(pResult->m_hSteamLeaderboardEntries, i, &leaderboardEntry, details, 3))
+					if (pSteamUserStats->GetDownloadedLeaderboardEntry(pResult->m_hSteamLeaderboardEntries, i, &leaderboardEntry, details, 3))
 					{
 						for (IListener* pListener : m_listeners)
 						{
 							Identifier leaderboardIdentifier;
-							leaderboardIdentifier.szName = SteamUserStats()->GetLeaderboardName(pResult->m_hSteamLeaderboard);
+							leaderboardIdentifier.szName = pSteamUserStats->GetLeaderboardName(pResult->m_hSteamLeaderboard);
 
-							pListener->OnEntryDownloaded(leaderboardIdentifier, SteamFriends()->GetFriendPersonaName(leaderboardEntry.m_steamIDUser), leaderboardEntry.m_nGlobalRank, leaderboardEntry.m_nScore, (EScoreType)details[0], leaderboardEntry.m_steamIDUser.ConvertToUint64() == pUser->GetIdentifier());
+							pListener->OnEntryDownloaded(leaderboardIdentifier, pSteamFriends->GetFriendPersonaName(leaderboardEntry.m_steamIDUser), leaderboardEntry.m_nGlobalRank, leaderboardEntry.m_nScore, (EScoreType)details[0], leaderboardEntry.m_steamIDUser.ConvertToUint64() == pUser->GetIdentifier());
 						}
 					}
 				}

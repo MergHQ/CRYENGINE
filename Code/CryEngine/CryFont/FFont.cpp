@@ -38,7 +38,6 @@ CFFont::CFFont(ISystem* pSystem, CCryFont* pCryFont, const char* pFontName)
 	, m_pCryFont(pCryFont)
 	, m_fontTexDirty(false)
 	, m_effects()
-	, m_pDrawVB(0)
 {
 	assert(m_name.c_str());
 	assert(m_pSystem);
@@ -47,8 +46,6 @@ CFFont::CFFont(ISystem* pSystem, CCryFont* pCryFont, const char* pFontName)
 	// create default effect
 	SEffect* pEffect = AddEffect("default");
 	pEffect->AddPass();
-
-	m_pDrawVB = new SVF_P3F_C4B_T2F[MaxDrawVBQuads * 6];
 }
 
 CFFont::~CFFont()
@@ -60,8 +57,6 @@ CFFont::~CFFont()
 	}
 
 	Free();
-
-	SAFE_DELETE(m_pDrawVB);
 }
 
 void CFFont::Release()
@@ -154,7 +149,7 @@ void CFFont::DrawString(float x, float y, const char* pStr, const bool asciiMult
 void CFFont::DrawString(float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx)
 {
 	IF(!pStr, 0) return;
-	RT_RenderCallback(x, y, 1.0f, pStr, asciiMultiLine, ctx, IRenderAuxGeom::GetAux());
+	RenderCallback(x, y, 1.0f, pStr, asciiMultiLine, ctx, IRenderAuxGeom::GetAux());
 }
 
 ILINE DWORD COLCONV(DWORD clr)
@@ -162,7 +157,7 @@ ILINE DWORD COLCONV(DWORD clr)
 	return ((clr & 0xff00ff00) | ((clr & 0xff0000) >> 16) | ((clr & 0xff) << 16));
 }
 
-void CFFont::RT_RenderCallback(float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx,IRenderAuxGeom* pAux)
+void CFFont::RenderCallback(float x, float y, float z, const char* pStr, const bool asciiMultiLine, const STextDrawContext& ctx,IRenderAuxGeom* pAux)
 {
 	const size_t fxSize = m_effects.size();
 
@@ -275,8 +270,8 @@ void CFFont::RT_RenderCallback(float x, float y, float z, const char* pStr, cons
 
 		bool drawFrame = ctx.m_framed && i == numPasses - 1;
 
-		SVF_P3F_C4B_T2F* pVertex = m_pDrawVB;
-
+		SVF_P3F_C4B_T2F* pVertex = pAux->BeginDrawBuffer(MaxDrawVBQuads * 6, m_texID != 0);
+	
 		//int vbLen = 0;
 		size_t vbOffset = 0;
 
@@ -563,15 +558,16 @@ void CFFont::RT_RenderCallback(float x, float y, float z, const char* pStr, cons
 
 			IF (vbOffset == MaxDrawVBQuads * 6, 0)
 			{
-				pAux->DrawBufferRT(m_pDrawVB, vbOffset, pPass->m_blendSrc | pPass->m_blendDest, nullptr, m_texID);
+                pAux->EndDrawBuffer(vbOffset);
+                pVertex = pAux->BeginDrawBuffer(MaxDrawVBQuads * 6, m_texID != 0);
 				vbOffset = 0;
 			}
 
 			charX += advance;
 		}
 
-		IF (vbOffset, 1)
-			pAux->DrawBufferRT(m_pDrawVB, vbOffset, pPass->m_blendSrc | pPass->m_blendDest, nullptr, m_texID);
+
+        pAux->EndDrawBuffer(vbOffset);
 	}
 	pAux->SetTexture(-1);
 }
@@ -880,7 +876,7 @@ void CFFont::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(m_pFontTexture);
 	pSizer->AddObject(m_pFontBuffer, m_fontBufferSize);
 	pSizer->AddObject(m_effects);
-	pSizer->AddObject(m_pDrawVB, sizeof(SVF_P3F_C4B_T2F) * MaxDrawVBQuads * 6);
+	//pSizer->AddObject(m_pDrawVB, sizeof(SVF_P3F_C4B_T2F) * MaxDrawVBQuads * 6);
 }
 
 void CFFont::GetGradientTextureCoord(float& minU, float& minV, float& maxU, float& maxV) const

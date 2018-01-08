@@ -222,7 +222,7 @@ void CParticleEmitter::UpdateAll()
 	CRY_PFX2_ASSERT(IsAlive() || !HasBounds());
 }
 
-void CParticleEmitter::DebugRender() const
+void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 {
 	if (!GetRenderer())
 		return;
@@ -233,20 +233,24 @@ void CParticleEmitter::DebugRender() const
 		return;
 
 	const bool visible = (m_timeLastRendered == m_time);
-	const ColorB cachedColor = visible ? ColorB(255, 255, 255) : ColorB(255, 0, 0);
-	const ColorB boundsColor = visible ? ColorB(255, 128, 0) : ColorB(255, 0, 0);
-	pRenderAux->DrawAABB(m_bounds, false, cachedColor, eBBD_Faceted);
+
+	const float maxDist = non_const(*this).GetMaxViewDist();
+	const float dist = (GetPos() - passInfo.GetCamera().GetPosition()).GetLength();
+	const float alpha = sqr(crymath::saturate(1.0f - dist / maxDist));
+	const float ac = alpha * 0.75f + 0.25f;
+	const ColorF alphaColor(ac, ac, ac, alpha);
+
+	const ColorB emitterColor = ColorF(1, visible, visible) * alphaColor;
+	pRenderAux->DrawAABB(m_bounds, false, emitterColor, eBBD_Faceted);
 	if (visible)
 	{
+		const ColorB componentColor = ColorF(1, 0.5, 0) * alphaColor;
 		for (auto& pRuntime : m_componentRuntimes)
-			pRenderAux->DrawAABB(pRuntime->GetBounds(), false, boundsColor, eBBD_Faceted);
-	}
+			pRenderAux->DrawAABB(pRuntime->GetBounds(), false, componentColor, eBBD_Faceted);
 
-	ColorF labelColor = ColorF(1.0f, 1.0f, 1.0f);
-	stack_string label = stack_string().Format(
-		"\"%s\"",
-		GetEffect()->GetName());
-	IRenderAuxText::DrawLabelEx(m_bounds.GetCenter(), 1.5f, (float*)&labelColor, true, true, label);
+		ColorF labelColor = alphaColor;
+		IRenderAuxText::DrawLabelEx(m_location.t, 1.5f, (float*)&labelColor, true, true, m_pEffect->GetShortName());
+	}
 }
 
 void CParticleEmitter::PostUpdate()

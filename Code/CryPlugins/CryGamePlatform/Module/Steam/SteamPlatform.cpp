@@ -114,13 +114,19 @@ namespace Cry
 
 				ICmdLine* pCmdLine = gEnv->pSystem->GetICmdLine();
 
+				ISteamApps* pSteamApps = SteamApps();
+				if (!pSteamApps)
+				{
+					return false;
+				}
+
 				char betaName[256];
-				if (SteamApps()->GetCurrentBetaName(betaName, 256))
+				if (pSteamApps->GetCurrentBetaName(betaName, 256))
 				{
 					CryLogAlways("[Steam] Running Steam game beta %s", betaName);
 				}
 
-				CryLogAlways("[Steam] Successfully initialized Steam API, running build id %i", SteamApps()->GetAppBuildId());
+				CryLogAlways("[Steam] Successfully initialized Steam API, running build id %i", pSteamApps->GetAppBuildId());
 
 				// Check if user requested to join a lobby right away
 				if (const ICmdLineArg* pCmdArg = pCmdLine->FindArg(eCLAT_Post, "connect_lobby"))
@@ -134,7 +140,7 @@ namespace Cry
 				}
 
 				ILocalizationManager* pLocalizationManager = gEnv->pSystem->GetLocalizationManager();
-				const char* szDesiredLanguage = SteamApps()->GetCurrentGameLanguage();
+				const char* szDesiredLanguage = pSteamApps->GetCurrentGameLanguage();
 				if (szDesiredLanguage != nullptr && szDesiredLanguage[0] != '\0')
 				{
 					CryLogAlways("Attempting to automatically set user preferred language %s", szDesiredLanguage);
@@ -170,7 +176,11 @@ namespace Cry
 
 			int CPlugin::GetBuildIdentifier() const
 			{
-				return SteamApps()->GetAppBuildId();
+				if (ISteamApps* pSteamApps = SteamApps())
+				{
+					return pSteamApps->GetAppBuildId();
+				}
+				return 0;
 			}
 
 			IUser* CPlugin::GetLocalClient()
@@ -287,7 +297,9 @@ namespace Cry
 
 			ApplicationIdentifier CPlugin::GetAppId() const
 			{
-				return SteamUtils()->GetAppID();
+				if (ISteamUtils* pSteamUtils = SteamUtils())
+					return pSteamUtils->GetAppID();
+				return k_uAppIdInvalid;
 			}
 
 			IServer* CPlugin::CreateServer(bool bLocal)
@@ -320,7 +332,13 @@ namespace Cry
 			{
 				char rgchToken[2048];
 				uint32 unTokenLen = 0;
-				m_authTicketHandle = (uint32)SteamUser()->GetAuthSessionTicket(rgchToken, sizeof(rgchToken), &unTokenLen);
+				ISteamUser* pSteamUser = SteamUser();
+				if (!pSteamUser)
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam user service not available");
+					return false;
+				}
+				m_authTicketHandle = (uint32)pSteamUser->GetAuthSessionTicket(rgchToken, sizeof(rgchToken), &unTokenLen);
 
 				const char hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 

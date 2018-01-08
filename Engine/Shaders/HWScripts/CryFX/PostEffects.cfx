@@ -64,7 +64,7 @@ vtxOutTexToTex TexToTexRegVS(vtxIn IN)
 {
   vtxOutTexToTex OUT; 
   OUT.HPosition = IN.Position;
-  OUT.baseTC.xy = IN.baseTC.xy * texToTexParamsTC.zw + texToTexParamsTC.xy;
+  OUT.baseTC.xy = float2(IN.baseTC.x, 1-IN.baseTC.y) * texToTexParamsTC.zw + texToTexParamsTC.xy;
   return OUT;
 }
 

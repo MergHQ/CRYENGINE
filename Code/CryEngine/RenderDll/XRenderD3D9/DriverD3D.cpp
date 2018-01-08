@@ -601,21 +601,6 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 			displayWidthRequested = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
 			displayHeightRequested = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
 		}
-
-		if (IsEditorMode())
-		{
-			HWND hWnd = (HWND)pDC->GetHandle();
-			if (TRUE == ::IsWindow(hWnd))
-			{
-				RECT rc;
-				if (TRUE == GetWindowRect(hWnd, &rc))
-				{
-					// On Windows force screen resolution to be a real pixel size of the display context window
-					displayWidthRequested  = rc.right - rc.left;
-					displayHeightRequested = rc.bottom - rc.top;
-				}
-			}
-		}
 #endif
 #endif
 
@@ -707,7 +692,7 @@ const char* CD3D9Renderer::GetWindowStateName() const
 
 void CD3D9Renderer::BeginFrame(CryDisplayContextHandle hWnd)
 {
-	m_auxGeometryCollectorPool.renderThreadAuxGeom.SetCurrentDisplayContext(hWnd);
+	renderThreadAuxGeom.SetCurrentDisplayContext(hWnd);
 	//////////////////////////////////////////////////////////////////////
 	// Set up everything so we can start rendering
 	//////////////////////////////////////////////////////////////////////
@@ -3091,13 +3076,14 @@ void CD3D9Renderer::EndFrame()
 		m_currentAuxGeomCBCollector->SetCamera(pCurrentCollector->Get(0)->GetCamera());
 		gEnv->pAuxGeomRenderer = m_currentAuxGeomCBCollector->Get(0);
 
+		auto renderData = pCurrentCollector->SubmitAuxGeomsAndPrepareForRendering();
+
 		// Commit all Aux Geom buffers except ones from the Render Thread,
 		// Render Thread will commit it's own buffer right before final rendering
 		m_pRT->ExecuteRenderThreadCommand(
 			[=]
 			{	 
 				// Renders the aux geometries collected with the collector assigned to the renderer between begin and end.
-				auto renderData = pCurrentCollector->SubmitAuxGeomsAndPrepareForRendering();
 				m_pRenderAuxGeomD3D->RT_Render(renderData);
 				m_pRenderAuxGeomD3D->FreeMemory();
 				ReturnAuxGeomCollector(pCurrentCollector);
@@ -3201,9 +3187,9 @@ void CD3D9Renderer::RT_EndFrame()
 		gEnv->pHardwareMouse->Render();
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
-	m_auxGeometryCollectorPool.renderThreadAuxGeom.Submit();
-	m_pRenderAuxGeomD3D->RT_Render(std::vector<CAuxGeomCB*>{ &m_auxGeometryCollectorPool.renderThreadAuxGeom });
-	m_auxGeometryCollectorPool.renderThreadAuxGeom.FreeMemory();
+	renderThreadAuxGeom.Submit();
+	m_pRenderAuxGeomD3D->RT_Render(std::vector<CAuxGeomCB*>{ &renderThreadAuxGeom });
+	renderThreadAuxGeom.FreeMemory();
 #endif
 	//////////////////////////////////////////////////////////////////////////
 
@@ -5021,11 +5007,31 @@ IRenderAuxGeom* CD3D9Renderer::GetIRenderAuxGeom()
 #if defined(ENABLE_RENDER_AUX_GEOM)
 	// Separate aux geometry primitive for render thread
 	if (m_pRT->IsRenderThread())
-		return &m_auxGeometryCollectorPool.renderThreadAuxGeom;
+		return &renderThreadAuxGeom;
 
 	return m_currentAuxGeomCBCollector->Get(0);
 #endif
 	return &m_renderAuxGeomNull;
+}
+
+IRenderAuxGeom* CD3D9Renderer::GetOrCreateIRenderAuxGeom()
+{
+	return m_auxGeomCBPool.GetOrCreateOneElement();
+}
+
+void CD3D9Renderer::DeleteAuxGeom(IRenderAuxGeom* pRenderAuxGeom)
+{
+	m_auxGeomCBPool.ReturnToPool(static_cast<CAuxGeomCB*>(pRenderAuxGeom));
+}
+
+void CD3D9Renderer::SubmitAuxGeom(IRenderAuxGeom* pIRenderAuxGeom)
+{
+	m_currentAuxGeomCBCollector->Get(0)->Merge(static_cast<const CAuxGeomCB*>(pIRenderAuxGeom));
+}
+
+void CD3D9Renderer::DeleteAuxGeomCBs()
+{
+	m_auxGeomCBPool.ShutDown();
 }
 
 void CD3D9Renderer::SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector)
@@ -5035,43 +5041,19 @@ void CD3D9Renderer::SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomColle
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static CryCriticalSection gs_auxGeomCollectorLock;
-
 CAuxGeomCBCollector* CD3D9Renderer::GetOrCreateAuxGeomCollector()
 {
-	CAuxGeomCBCollector* auxGeomCollector = nullptr;
-
-	if (!m_auxGeometryCollectorPool.requestable.dequeue(auxGeomCollector))
-	{
-		AUTO_LOCK(gs_auxGeomCollectorLock);
-		auxGeomCollector = new CAuxGeomCBCollector;
-		m_auxGeometryCollectorPool.requested.emplace_back(auxGeomCollector);
-	}
-
-	return auxGeomCollector;
+	return m_auxGeometryCollectorPool.GetOrCreateOneElement();
 }
 
 void CD3D9Renderer::ReturnAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector)
 {
-	if (auxGeomCollector)
-	{
-		auxGeomCollector->FreeMemory();
-		m_auxGeometryCollectorPool.requestable.enqueue(auxGeomCollector);
-	}
+	return m_auxGeometryCollectorPool.ReturnToPool(auxGeomCollector);
 }
 
 void CD3D9Renderer::DeleteAuxGeomCollectors()
 {
-	// Release render views
-	CAuxGeomCBCollector* auxGeomCollector;
-	while (m_auxGeometryCollectorPool.requestable.dequeue(auxGeomCollector));
-
-	while (m_auxGeometryCollectorPool.requested.size())
-	{
-		m_auxGeometryCollectorPool.requested.back()->FreeMemory();
-		delete m_auxGeometryCollectorPool.requested.back();
-		m_auxGeometryCollectorPool.requested.pop_back();
-	}
+	m_auxGeometryCollectorPool.ShutDown();
 }
 
 IColorGradingController* CD3D9Renderer::GetIColorGradingController()

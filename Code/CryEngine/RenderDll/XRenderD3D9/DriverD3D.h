@@ -6,6 +6,7 @@
 #include <CryMath/Cry_XOptimise.h>
 #include <CrySystem/IWindowMessageHandler.h>
 #include <CryInput/IHardwareMouse.h>
+#include <Common/ElementPool.h>
 
 #if defined(_DEBUG)
 	#define ENABLE_CONTEXT_THREAD_CHECKING 1
@@ -52,6 +53,7 @@ class CRenderDisplayContext;
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 
 #include "Common/RenderOutput.h"
+#include <Common/ElementPool.h>
 
 //=====================================================
 
@@ -613,8 +615,12 @@ public:
 	virtual ISvoRenderer* GetISvoRenderer() override;
 #endif
 	
-	IRenderAuxGeom* GetIRenderAuxGeom() override;
-	void SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector);
+	IRenderAuxGeom*      GetIRenderAuxGeom() override;
+	IRenderAuxGeom*      GetOrCreateIRenderAuxGeom() override;
+	void                 DeleteAuxGeom(IRenderAuxGeom* pRenderAuxGeom) override;
+	void                 SubmitAuxGeom(IRenderAuxGeom* pRenderAuxGeom) override;
+	void                 DeleteAuxGeomCBs();
+	void                 SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector);
 	
 	CAuxGeomCBCollector* GetOrCreateAuxGeomCollector() threadsafe;
 	void ReturnAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector) threadsafe;
@@ -625,15 +631,19 @@ private:
 	CAuxGeomCBCollector* m_currentAuxGeomCBCollector;
 
 	// Aux Geometry Collector Pool
-	struct AuxGeometryCollectorPool {
-		std::list             <CAuxGeomCBCollector*> requested;
-		ConcQueue<UnboundMPSC, CAuxGeomCBCollector*> requestable;
-		CAuxGeomCB	renderThreadAuxGeom;
-	} m_auxGeometryCollectorPool;
+	SElementPool<CAuxGeomCBCollector> m_auxGeometryCollectorPool{
+		[](CAuxGeomCBCollector* pAuxGeomCBCollector) { pAuxGeomCBCollector->FreeMemory(); }
+	};
+
+	// Aux Geometry Command Buffer Pool
+	SElementPool<CAuxGeomCB> m_auxGeomCBPool{
+		[](CAuxGeomCB* pAuxGeomCB) { pAuxGeomCB->FreeMemory(); }
+	};
+
+	CAuxGeomCB	renderThreadAuxGeom;	
 
 public:
-
-
+	
 	virtual IColorGradingController* GetIColorGradingController() override;
 
 	virtual IStereoRenderer*         GetIStereoRenderer() override;

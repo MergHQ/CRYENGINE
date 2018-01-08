@@ -28,29 +28,54 @@ namespace Cry
 
 			bool CNetworking::SendPacket(IUser::Identifier remoteUser, void* pData, uint32 dataLength)
 			{
-				return GetSteamNetworking()->SendP2PPacket(remoteUser, pData, dataLength, k_EP2PSendReliable);
+				ISteamNetworking* pSteamNetworking = GetSteamNetworking();
+				if (!pSteamNetworking)
+				{
+					return false;
+				}
+				return pSteamNetworking->SendP2PPacket(remoteUser, pData, dataLength, k_EP2PSendReliable);
 			}
 
 			bool CNetworking::CloseSession(IUser::Identifier remoteUser)
 			{
-				return GetSteamNetworking()->CloseP2PSessionWithUser(remoteUser);
+				ISteamNetworking* pSteamNetworking = GetSteamNetworking();
+				if (!pSteamNetworking)
+				{
+					return false;
+				}
+				return pSteamNetworking->CloseP2PSessionWithUser(remoteUser);
 			}
 
 			bool CNetworking::IsPacketAvailable(uint32* pPacketSizeOut) const
 			{
-				return GetSteamNetworking()->IsP2PPacketAvailable(pPacketSizeOut);
+				ISteamNetworking* pSteamNetworking = GetSteamNetworking();
+				if (!pSteamNetworking)
+				{
+					return false;
+				}
+				return pSteamNetworking->IsP2PPacketAvailable(pPacketSizeOut);
 			}
 
 			bool CNetworking::ReadPacket(void* pDest, uint32 destLength, uint32* pMessageSizeOut, IUser::Identifier* pRemoteIdOut)
 			{
-				return GetSteamNetworking()->ReadP2PPacket(pDest, destLength, pMessageSizeOut, reinterpret_cast<CSteamID*>(pRemoteIdOut));
+				ISteamNetworking* pSteamNetworking = GetSteamNetworking();
+				if (!pSteamNetworking)
+				{
+					return false;
+				}
+				return pSteamNetworking->ReadP2PPacket(pDest, destLength, pMessageSizeOut, reinterpret_cast<CSteamID*>(pRemoteIdOut));
 			}
 
 			// Steam callbacks
 			void CNetworking::OnSessionRequest(P2PSessionRequest_t* pP2PSessionRequest)
 			{
 				// always accept packets
-				GetSteamNetworking()->AcceptP2PSessionWithUser(pP2PSessionRequest->m_steamIDRemote);
+				ISteamNetworking* pSteamNetworking = GetSteamNetworking();
+				if (!pSteamNetworking)
+				{
+					return;
+				}
+				pSteamNetworking->AcceptP2PSessionWithUser(pP2PSessionRequest->m_steamIDRemote);
 			}
 
 			void CNetworking::OnSessionConnectFail(P2PSessionConnectFail_t* pP2PSessionConnectFail)

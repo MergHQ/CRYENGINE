@@ -482,8 +482,6 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 		// Find the mode with the best fit for the given dimensions
 		m_devInfo.SnapSettings();
 
-		AdjustWindowForChange(nNewDisplayWidth, nNewDisplayHeight, previousWindowState);
-
 	#if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
 		UserOverrideDisplayProperties(m_devInfo.SwapChainDesc().BufferDesc);
 	#endif
@@ -491,15 +489,26 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 		WaitForAsynchronousDevice();
 	#endif
 
-		// TODO: Check if SetFullscreenState creates ResizeContext events
-		// NOTE: Going fullscreen doesn't require freeing the back-buffers
-		if (wasFullscreen != IsFullscreen())
-			m_devInfo.SwapChain()->SetFullscreenState(IsFullscreen(), 0);
-
 		OnD3D11PostCreateDevice(m_devInfo.Device());
 
 		pBC->ChangeDisplayResolution(nNewDisplayWidth, nNewDisplayHeight, false /* uses AdjustWindowForChange() */, true);
 		pBC->SetViewport(SRenderViewport(0, 0, nNewDisplayWidth, nNewDisplayHeight));
+
+		// TODO: Check if SetFullscreenState creates ResizeContext events
+		// NOTE: Going fullscreen doesn't require freeing the back-buffers
+		const bool isFullscreen = IsFullscreen();
+		if (wasFullscreen != isFullscreen)
+		{
+			m_devInfo.SwapChain()->SetFullscreenState(isFullscreen, 0);
+		}
+		else if (isFullscreen)
+		{
+			// Forces resolution and aspect-ratio changes while in fullscreen
+			m_devInfo.SwapChain()->SetFullscreenState(!isFullscreen, 0);
+			m_devInfo.SwapChain()->SetFullscreenState(isFullscreen, 0);
+		}
+
+		AdjustWindowForChange(nNewDisplayWidth, nNewDisplayHeight, previousWindowState);
 
 		if (gEnv->pHardwareMouse)
 			gEnv->pHardwareMouse->GetSystemEventListener()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, IsFullscreen() ? 1 : 0, 0);
@@ -974,6 +983,7 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 	PreShutDown();
 
 	DeleteAuxGeomCollectors();
+	DeleteAuxGeomCBs();
 
 	if (m_pRT)
 	{

@@ -78,6 +78,10 @@ public:
 	bool            HasControl() const { return (m_flags & ESystemAssetFlags::HasControl) != 0; }
 	void            SetHasControl(bool const hasControl);
 
+	string          GetFullHierarchyName() const;
+
+	bool            HasDefaultControlChildren(std::vector<string>& names) const;
+
 	virtual void    Serialize(Serialization::IArchive& ar);
 
 protected:

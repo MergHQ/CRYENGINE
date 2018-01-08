@@ -20,12 +20,22 @@ namespace Cry
 
 			bool CAchivement::Reset()
 			{
-				return SteamUserStats()->ClearAchievement(m_name);
+				ISteamUserStats* pSteamUserStats = SteamUserStats();
+				if (!pSteamUserStats)
+				{
+					return false;
+				}
+				return pSteamUserStats->ClearAchievement(m_name);
 			}
 
 			bool CAchivement::Achieve()
 			{
-				bool bResult = SteamUserStats()->SetAchievement(m_name);
+				ISteamUserStats* pSteamUserStats = SteamUserStats();
+				if (!pSteamUserStats)
+				{
+					return false;
+				}
+				bool bResult = pSteamUserStats->SetAchievement(m_name);
 
 				CPlugin::GetInstance()->GetStatistics()->Upload();
 

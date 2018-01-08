@@ -1298,15 +1298,12 @@ private:
 	// Camera data is shared per-effect, based on the global render camera and effect params
 	struct SCameraData
 	{
-		int32     nFrameId;
-		Vec2      scrWidth;
-		float     maxDistance;
-		Matrix34  toWorld;
-		Matrix34  fromWorld;
-		AngleAxis camRot;
-
-		SCameraData()
-			: nFrameId(-1), camRot(0, Vec3(0)) {}
+		int32     nFrameId    {-1};
+		Vec2      scrWidth    {0};
+		float     maxDistance {0};
+		Matrix34  toWorld     {IDENTITY};
+		Matrix34  fromWorld   {IDENTITY};
+		AngleAxis camRot      {0, Vec3(0)};
 	};
 	SCameraData m_camData;
 

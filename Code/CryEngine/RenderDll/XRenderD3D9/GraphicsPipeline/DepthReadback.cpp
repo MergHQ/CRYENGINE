@@ -320,7 +320,7 @@ void CDepthReadbackStage::ExecutePasses(float sourceWidth, float sourceHeight, f
 		{
 			const float right = sampledWidth / sourceWidth;
 			const float bottom = sampledHeight / sourceHeight;
-			const Vec4 vsParams(0.0f, 1.0f, right, -bottom);
+			const Vec4 vsParams(0.0f, 0.0f, right, bottom);
 			pass.SetConstant(vsParamName, vsParams, eHWSC_Vertex);
 		}
 

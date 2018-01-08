@@ -91,7 +91,7 @@ namespace SchematycBaseEnv
 					{
 						pEntity->GetRenderNode()->Render(params, passInfo);
 					}
-					gEnv->pRenderer->GetIRenderAuxGeom()->Flush();
+					gEnv->pRenderer->GetIRenderAuxGeom()->Submit();
 				}
 			}
 		}

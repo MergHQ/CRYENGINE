@@ -19,17 +19,19 @@ namespace Cry
 
 			int CRemoteFile::GetFileSize() const
 			{
-				if (m_name.empty())
+				ISteamRemoteStorage* pSteamRemoteStorage = SteamRemoteStorage();
+				if (!pSteamRemoteStorage || m_name.empty())
 					return 0;
 
-				return SteamRemoteStorage()->GetFileSize(m_name.c_str());
+				return pSteamRemoteStorage->GetFileSize(m_name.c_str());
 			}
 
 			bool CRemoteFile::Share()
 			{
-				if (m_sharedHandle == 0)
+				ISteamRemoteStorage* pSteamRemoteStorage = SteamRemoteStorage();
+				if (pSteamRemoteStorage && m_sharedHandle == 0)
 				{
-					SteamAPICall_t hSteamAPICall = SteamRemoteStorage()->FileShare(m_name.c_str());
+					SteamAPICall_t hSteamAPICall = pSteamRemoteStorage->FileShare(m_name.c_str());
 					m_callResultFileShared.Set(hSteamAPICall, this, &CRemoteFile::OnFileShared);
 
 					CPlugin::GetInstance()->SetAwaitingCallback(1);
@@ -95,10 +97,11 @@ namespace Cry
 
 			bool CRemoteFile::Delete()
 			{
-				if (m_name.length() == 0)
+				ISteamRemoteStorage* pSteamRemoteStorage = SteamRemoteStorage();
+				if (!pSteamRemoteStorage || m_name.length() == 0)
 					return false;
 
-				return SteamRemoteStorage()->FileDelete(m_name.c_str());
+				return pSteamRemoteStorage->FileDelete(m_name.c_str());
 			}
 
 			// Steam callbacks
