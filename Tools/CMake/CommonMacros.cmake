@@ -149,8 +149,12 @@ MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 		# Iterate Debug/Release configs and adds _DEBUG or _RELEASE
 		foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
 			string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
-			set_target_properties(${TargetProject} PROPERTIES LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${libout})
-			set_target_properties(${TargetProject} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${runout})
+
+			string(REPLACE ${BASE_OUTPUT_DIRECTORY} ${BASE_OUTPUT_DIRECTORY_${OUTPUTCONFIG}} libout_config "${libout}")
+			string(REPLACE ${BASE_OUTPUT_DIRECTORY} ${BASE_OUTPUT_DIRECTORY_${OUTPUTCONFIG}} runout_config "${runout}")
+
+			set_target_properties(${TargetProject} PROPERTIES LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${libout_config})
+			set_target_properties(${TargetProject} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${runout_config})
 		endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 	endif()
 
