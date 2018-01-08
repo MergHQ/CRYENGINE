@@ -68,7 +68,7 @@ public:
 	CParticleProfiler&       GetProfiler()   { return m_profiler; }
 
 	void                     FinishUpdate();
-	void                     DeferredRender();
+	void                     DeferredRender(const SRenderingPassInfo& passInfo);
 	float                    DisplayDebugStats(Vec2 displayLocation, float lineHeight);
 
 	bool                     IsRuntime() const                { return m_numClears > 0 && m_numFrames > 1; }

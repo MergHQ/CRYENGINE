@@ -1861,7 +1861,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (m_pPartManager)
 		m_pPartManager->FinishParticleRenderTasks(passInfo);
 	if (pParticleSystem)
-		pParticleSystem->DeferredRender();
+		pParticleSystem->DeferredRender(passInfo);
 
 	if (passInfo.IsGeneralPass())
 		m_LightVolumesMgr.Update(passInfo);
@@ -3270,10 +3270,13 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		}
 		if (GetCVars()->e_ParticlesDebug & AlphaBits('bx'))
 		{
-			float fDiv = 1.f / (Counts.volume.dyn + FLT_MIN);
-			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
-			                     "Particle BB vol: Stat %.3g, Stat/Dyn %.2f, Err/Dyn %.3g",
-			                     Counts.volume.stat, Counts.volume.stat * fDiv, Counts.volume.error * fDiv);
+			if (Counts.volume.stat + Counts.volume.dyn > 0.0f)
+			{
+				float fDiv = 1.f / (Counts.volume.dyn + FLT_MIN);
+				DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY,
+					"Particle BB vol: Stat %.3g, Stat/Dyn %.2f, Err/Dyn %.3g",
+					Counts.volume.stat, Counts.volume.stat * fDiv, Counts.volume.error * fDiv);
+			}
 		}
 	}
 

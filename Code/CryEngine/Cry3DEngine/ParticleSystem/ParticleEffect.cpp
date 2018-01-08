@@ -157,6 +157,16 @@ float CParticleEffect::GetEquilibriumTime() const
 	return maxEqTime;
 }
 
+string CParticleEffect::GetShortName() const
+{
+	string name = m_name;
+	if (name.Right(4).MakeLower() == ".pfx")
+		name.resize(name.length() - 4);
+	if (name.Left(10).MakeLower() == "particles/")
+		name.erase(0, 10);
+	return name;
+}
+
 int CParticleEffect::GetEditVersion() const
 {
 	int version = m_editVersion + m_components.size();

@@ -104,12 +104,11 @@ struct SParticleDataInfo
 	typedef yasli::TypeID TypeID;
 
 	TypeID   type;
-	size_t   sizeOf;
-	uint     dimension;
-	BHasInit hasInit;
+	size_t   sizeOf    = 0;
+	uint     dimension = 0;
+	BHasInit hasInit   = BHasInit(false);
 
-	SParticleDataInfo()
-		: dimension(0), hasInit(BHasInit(false)) {}
+	SParticleDataInfo() {}
 
 	template<typename T>
 	SParticleDataInfo(T*, uint dim = 1, BHasInit init = BHasInit(false))

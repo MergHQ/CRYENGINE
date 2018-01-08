@@ -83,7 +83,7 @@ public:
 	// ~pfx1 CPArticleEmitter
 
 	void                      InitSeed();
-	void                      DebugRender() const;
+	void                      DebugRender(const SRenderingPassInfo& passInfo) const;
 	void                      UpdateAll();
 	void                      PostUpdate();
 	CParticleContainer&       GetParentContainer()         { return m_parentContainer; }

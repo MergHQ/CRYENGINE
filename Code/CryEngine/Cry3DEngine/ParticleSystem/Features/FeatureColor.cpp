@@ -194,8 +194,8 @@ private:
 		}
 	}
 
-	UFloat m_luminance;
-	UFloat m_rgb;
+	UUnitFloat m_luminance;
+	UUnitFloat m_rgb;
 };
 
 SERIALIZATION_CLASS_NAME(IColorModifier, CColorRandom, "ColorRandom", "Color Random");
