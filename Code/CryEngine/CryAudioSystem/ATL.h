@@ -69,8 +69,11 @@ private:
 
 	ERequestStatus RefreshAudioSystem(char const* const szLevelName);
 	void           SetImplLanguage();
-	void           InitInternalControls();
+	void           CreateInternalControls();
 	void           SetCurrentEnvironmentsOnObject(CATLAudioObject* const pObject, EntityId const entityToIgnore, Vec3 const& position);
+
+	void           CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId);
+	void           CreateInternalSwitch(char const* const szSwitchName, ControlId const switchId, std::vector<char const*> const& stateNames);
 
 	// ATLObject containers
 	AudioTriggerLookup        m_triggers;

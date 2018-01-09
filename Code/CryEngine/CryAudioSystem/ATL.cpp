@@ -202,7 +202,7 @@ ERequestStatus CAudioTranslationLayer::ClearControlsData(EDataScope const dataSc
 	m_xmlProcessor.ClearControlsData(dataScope);
 	if (dataScope == EDataScope::All || dataScope == EDataScope::Global)
 	{
-		InitInternalControls();
+		CreateInternalControls();
 	}
 
 	return ERequestStatus::Success;
@@ -1251,7 +1251,7 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 	CATLControlImpl::SetImpl(m_pIImpl);
 
 	SetImplLanguage();
-	InitInternalControls();
+	CreateInternalControls();
 
 	return result;
 }
@@ -1377,40 +1377,120 @@ bool CAudioTranslationLayer::OnInputEvent(SInputEvent const& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioTranslationLayer::InitInternalControls()
+void CAudioTranslationLayer::CreateInternalControls()
 {
 	m_internalControls.m_switchStates.clear();
-	m_internalControls.m_parameters.clear();
+	m_internalControls.m_triggers.clear();
 
 	// Occlusion
-	COcclusionObstructionState* pOcclusionIgnore = new COcclusionObstructionState(IgnoreStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
+	COcclusionObstructionState const* const pOcclusionIgnore = new COcclusionObstructionState(IgnoreStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, IgnoreStateId)] = pOcclusionIgnore;
 
-	COcclusionObstructionState* pOcclusionAdaptive = new COcclusionObstructionState(AdaptiveStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
+	COcclusionObstructionState const* const pOcclusionAdaptive = new COcclusionObstructionState(AdaptiveStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, AdaptiveStateId)] = pOcclusionAdaptive;
 
-	COcclusionObstructionState* pOcclusionLow = new COcclusionObstructionState(LowStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
+	COcclusionObstructionState const* const pOcclusionLow = new COcclusionObstructionState(LowStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, LowStateId)] = pOcclusionLow;
 
-	COcclusionObstructionState* pOcclusionMedium = new COcclusionObstructionState(MediumStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
+	COcclusionObstructionState const* const pOcclusionMedium = new COcclusionObstructionState(MediumStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, MediumStateId)] = pOcclusionMedium;
 
-	COcclusionObstructionState* pOcclusionHigh = new COcclusionObstructionState(HighStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
+	COcclusionObstructionState const* const pOcclusionHigh = new COcclusionObstructionState(HighStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, HighStateId)] = pOcclusionHigh;
 
 	// Relative Velocity Tracking
-	CRelativeVelocityTrackingState* const pRelativeVelocityTrackingOn = new CRelativeVelocityTrackingState(OnStateId, *m_pGlobalAudioObject);
+	CRelativeVelocityTrackingState const* const pRelativeVelocityTrackingOn = new CRelativeVelocityTrackingState(OnStateId, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(RelativeVelocityTrackingSwitchId, OnStateId)] = pRelativeVelocityTrackingOn;
 
-	CRelativeVelocityTrackingState* const pRelativeVelocityTrackingOff = new CRelativeVelocityTrackingState(OffStateId, *m_pGlobalAudioObject);
+	CRelativeVelocityTrackingState const* const pRelativeVelocityTrackingOff = new CRelativeVelocityTrackingState(OffStateId, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(RelativeVelocityTrackingSwitchId, OffStateId)] = pRelativeVelocityTrackingOff;
 
 	// Absolute Velocity Tracking
-	CAbsoluteVelocityTrackingState* const pAbsoluteVelocityTrackingOn = new CAbsoluteVelocityTrackingState(OnStateId, *m_pGlobalAudioObject);
+	CAbsoluteVelocityTrackingState const* const pAbsoluteVelocityTrackingOn = new CAbsoluteVelocityTrackingState(OnStateId, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OnStateId)] = pAbsoluteVelocityTrackingOn;
 
-	CAbsoluteVelocityTrackingState* const pAbsoluteVelocityTrackingOff = new CAbsoluteVelocityTrackingState(OffStateId, *m_pGlobalAudioObject);
+	CAbsoluteVelocityTrackingState const* const pAbsoluteVelocityTrackingOff = new CAbsoluteVelocityTrackingState(OffStateId, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OffStateId)] = pAbsoluteVelocityTrackingOff;
+
+	// Do Nothing
+	CATLTriggerImpl const* const pDoNothingTrigger = new CATLTriggerImpl(DoNothingTriggerId);
+	m_internalControls.m_triggers[DoNothingTriggerId] = pDoNothingTrigger;
+
+	// Create internal controls.
+	std::vector<char const*> const occlStates {
+		s_szIgnoreStateName, s_szAdaptiveStateName, s_szLowStateName, s_szMediumStateName, s_szHighStateName
+	};
+	CreateInternalSwitch(s_szOcclCalcSwitchName, OcclusionCalcSwitchId, occlStates);
+
+	std::vector<char const*> const onOffStates {
+		s_szOnStateName, s_szOffStateName
+	};
+	CreateInternalSwitch(s_szRelativeVelocityTrackingSwitchName, RelativeVelocityTrackingSwitchId, onOffStates);
+	CreateInternalSwitch(s_szAbsoluteVelocityTrackingSwitchName, AbsoluteVelocityTrackingSwitchId, onOffStates);
+
+	CreateInternalTrigger(s_szDoNothingTriggerName, DoNothingTriggerId);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioTranslationLayer::CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId)
+{
+	if ((triggerId != CryAudio::InvalidControlId) && (stl::find_in_map(m_triggers, triggerId, nullptr) == nullptr))
+	{
+		CATLTrigger::ImplPtrVec implPtrs;
+		implPtrs.reserve(1);
+
+		CATLTriggerImpl const* const pTriggerImpl = stl::find_in_map(m_internalControls.m_triggers, triggerId, nullptr);
+
+		if (pTriggerImpl != nullptr)
+		{
+			implPtrs.push_back(pTriggerImpl);
+		}
+
+		CATLTrigger* const pNewTrigger = new CATLTrigger(triggerId, EDataScope::Global, implPtrs, 0.0f);
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+		pNewTrigger->m_name = szTriggerName;
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
+		m_triggers[triggerId] = pNewTrigger;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioTranslationLayer::CreateInternalSwitch(char const* const szSwitchName, ControlId const switchId, std::vector<char const*> const& stateNames)
+{
+	if ((switchId != CryAudio::InvalidControlId) && (stl::find_in_map(m_switches, switchId, nullptr) == nullptr))
+	{
+		CATLSwitch* const pNewSwitch = new CATLSwitch(switchId, EDataScope::Global);
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+		pNewSwitch->m_name = szSwitchName;
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
+		for (auto const szStateName : stateNames)
+		{
+			SwitchStateId const stateId = static_cast<SwitchStateId const>(StringToId(szStateName));
+
+			if (stateId != CryAudio::InvalidSwitchStateId)
+			{
+				CATLSwitchState::ImplPtrVec switchStateImplVec;
+				switchStateImplVec.reserve(1);
+
+				IAudioSwitchStateImpl const* const pSwitchStateImpl = stl::find_in_map(m_internalControls.m_switchStates, std::make_pair(switchId, stateId), nullptr);
+
+				if (pSwitchStateImpl != nullptr)
+				{
+					switchStateImplVec.push_back(pSwitchStateImpl);
+				}
+
+				CATLSwitchState* const pNewState = new CATLSwitchState(switchId, stateId, switchStateImplVec);
+				pNewSwitch->audioSwitchStates[stateId] = pNewState;
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+				pNewState->m_name = szStateName;
+#endif    // INCLUDE_AUDIO_PRODUCTION_CODE
+			}
+		}
+
+		m_switches[switchId] = pNewSwitch;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

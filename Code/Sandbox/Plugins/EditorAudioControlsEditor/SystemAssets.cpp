@@ -123,22 +123,22 @@ void CSystemAsset::SetDescription(string const& description)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemAsset::SetHiddenDefault(bool const isHiddenDefault)
+void CSystemAsset::SetInternalControl(bool const isInternal)
 {
-	if (isHiddenDefault)
+	if (isInternal)
 	{
-		m_flags |= ESystemAssetFlags::IsHiddenDefault;
+		m_flags |= ESystemAssetFlags::IsInternalControl;
 	}
 	else
 	{
-		m_flags &= ~ESystemAssetFlags::IsHiddenDefault;
+		m_flags &= ~ESystemAssetFlags::IsInternalControl;
 	}
 
 	if (m_type == ESystemItemType::Switch)
 	{
 		for (auto const pChild : m_children)
 		{
-			pChild->SetHiddenDefault(isHiddenDefault);
+			pChild->SetInternalControl(isInternal);
 		}
 	}
 }

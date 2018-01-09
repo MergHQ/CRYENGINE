@@ -29,7 +29,7 @@ enum class ESystemAssetFlags
 {
 	None                     = 0,
 	IsDefaultControl         = BIT(0),
-	IsHiddenDefault          = BIT(1),
+	IsInternalControl        = BIT(1),
 	IsModified               = BIT(2),
 	HasPlaceholderConnection = BIT(3),
 	HasConnection            = BIT(4),
@@ -63,8 +63,8 @@ public:
 	bool            IsDefaultControl() const { return (m_flags & ESystemAssetFlags::IsDefaultControl) != 0; }
 	void            SetDefaultControl(bool const isDefaultControl);
 
-	bool            IsHiddenDefault() const { return (m_flags & ESystemAssetFlags::IsHiddenDefault) != 0; }
-	void            SetHiddenDefault(bool const isHiddenDefault);
+	bool            IsInternalControl() const { return (m_flags & ESystemAssetFlags::IsInternalControl) != 0; }
+	void            SetInternalControl(bool const isInternal);
 
 	virtual bool    IsModified() const { return (m_flags & ESystemAssetFlags::IsModified) != 0; }
 	virtual void    SetModified(bool const isModified, bool const isForced = false);

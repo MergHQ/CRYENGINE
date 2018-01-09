@@ -54,7 +54,7 @@ private:
 	EErrorCode                  m_errorCodeMask;
 	bool                        m_loadOnlyDefaultControls;
 
-	std::set<string>            m_defaultTriggerNames{ CryAudio::s_szGetFocusTriggerName, CryAudio::s_szLoseFocusTriggerName, CryAudio::s_szMuteAllTriggerName, CryAudio::s_szUnmuteAllTriggerName, CryAudio::s_szDoNothingTriggerName };
+	std::set<string>            m_defaultTriggerNames{ CryAudio::s_szGetFocusTriggerName, CryAudio::s_szLoseFocusTriggerName, CryAudio::s_szMuteAllTriggerName, CryAudio::s_szUnmuteAllTriggerName };
 	std::set<string>            m_defaultParameterNames{ CryAudio::s_szAbsoluteVelocityParameterName, "object_speed", CryAudio::s_szRelativeVelocityParameterName, "object_doppler" };
 };
 } // namespace ACE
