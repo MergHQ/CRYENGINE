@@ -21,6 +21,7 @@
 #include <CryString/CryPath.h>          // PathUtil::ReplaceExtension()
 #include <CryGame/IGameFramework.h>
 #include <CryString/UnicodeFunctions.h>
+#include <CryString/StringUtils.h>
 
 #if CRY_PLATFORM_WINDOWS
 	#include <time.h>
@@ -1150,43 +1151,34 @@ void CLog::CreateBackupFile() const
 {
 	LOADING_TIME_PROFILE_SECTION;
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_DURANGO
-	// simple:
-	//		string bakpath = PathUtil::ReplaceExtension(m_szFilename,"bak");
-	//		CopyFile(m_szFilename,bakpath.c_str(),false);
-	// advanced: to backup directory
+
 	if (!gEnv->pCryPak)
 	{
 		return;
 	}
 
-	const string sExt = PathUtil::GetExt(m_szFilename);
-	string sFileWithoutExt = PathUtil::GetFileName(m_szFilename);
-	CRY_ASSERT(sFileWithoutExt.find(':') == string::npos);
-	CRY_ASSERT(sFileWithoutExt.find('\\') == string::npos);
-
-	const char* path = "LogBackups";
-	char temppath[_MAX_PATH];
-
-	const string szBackupPath = gEnv->pCryPak->AdjustFileName(path, temppath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
-	gEnv->pCryPak->MakeDir(szBackupPath);
-	string sLogFilename = gEnv->pCryPak->AdjustFileName(m_szFilename, temppath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+	const string srcFilePath = m_szFilename;
+	const string srcFileName = PathUtil::GetFileName(srcFilePath);
+	const string srcFileExt = PathUtil::GetExt(srcFilePath);
+	const string logBackupFolder = "LogBackups";
+	gEnv->pCryPak->MakeDir(logBackupFolder);
 
 	LockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
-	FILE* in = fxopen(sLogFilename, "rb");
+	FILE* src = fxopen(srcFilePath, "rb");
 	UnlockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
 
 	string sBackupNameAttachment;
 
 	// parse backup name attachment
 	// e.g. BackupNameAttachment="attachment name"
-	if (in)
+	if (src)
 	{
 		bool bKeyFound = false;
 		string sName;
 
-		while (!feof(in))
+		while (!feof(src))
 		{
-			uint8 c = fgetc(in);
+			uint8 c = fgetc(src);
 
 			if (c == '\"')
 			{
@@ -1219,86 +1211,30 @@ void CLog::CreateBackupFile() const
 				break;
 		}
 		LockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
-		fclose(in);
+		fclose(src);
 		UnlockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
 	}
 
-	#if CRY_PLATFORM_DURANGO
-
+	const string dstFilePath = PathUtil::Make(logBackupFolder, srcFileName + sBackupNameAttachment + "." + srcFileExt);
+	
+#if CRY_PLATFORM_DURANGO
 	// Xbox has some limitation in file names. No spaces in file name are allowed. The full path is limited by MAX_PATH, etc.
 	// I change spaces with underscores here for valid name and cut it if it exceed a limit.
-	string bakdest = PathUtil::Make(szBackupPath, sFileWithoutExt + sBackupNameAttachment + "." + sExt);
-	if (bakdest.size() > MAX_PATH)
-		bakdest.resize(MAX_PATH);
-	sLogFilename = PathUtil::ToDosPath(sLogFilename);
-	bakdest = PathUtil::ToDosPath(bakdest);
-	bakdest.replace(' ', '_');
-
-	cry_strcpy(m_sBackupFilename, bakdest.c_str());
-
-	// Durango XDK does not provide CopyFile or CopyFileEx
-	const int BUFFER_SIZE = 1024;
-	const char* pBuffer[BUFFER_SIZE];
-	FILE* pSrcFile = 0;
-	FILE* pDstFile = 0;
-	int numr, numw;
-
-	// Open files
-	if (!(pSrcFile = fopen(sLogFilename, "rb")) || !(pDstFile = fopen(bakdest, "wb")))
+	auto processDurangoPath = [](string path)
 	{
-		DWORD errCode = GetLastError();
-		char tmp[128];
-		cry_sprintf(tmp, "Error backup log file:%u", errCode);
-		OutputDebugString(tmp);
-	}
-
-	// Copy file
-	if (pSrcFile && pDstFile)
-	{
-		while (!feof(pSrcFile))
-		{
-			numr = fread(pBuffer, sizeof(char), BUFFER_SIZE, pSrcFile); // Read
-			if (numr != BUFFER_SIZE && ferror(pSrcFile))
-			{
-				DWORD errCode = GetLastError();
-				char tmp[128];
-				cry_sprintf(tmp, "Error backup log file:%u", errCode);
-				OutputDebugString(tmp);
-				break;
-			}
-
-			numw = fwrite(pBuffer, sizeof(char), numr, pDstFile); // Write
-			if (numw != numr && ferror(pDstFile))
-			{
-				DWORD errCode = GetLastError();
-				char tmp[128];
-				cry_sprintf(tmp, "Error backup log file:%u", errCode);
-				OutputDebugString(tmp);
-				break;
-			}
-		}
-	}
-
-	// Close files
-	if (pSrcFile)
-	{
-		LockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
-		fclose(pSrcFile);
-		UnlockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
-	}
-
-	if (pDstFile)
-	{
-		LockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
-		fclose(pDstFile);
-		UnlockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
-	}
-
-	#else
-	const string bakdest = PathUtil::Make(szBackupPath, sFileWithoutExt + sBackupNameAttachment + "." + sExt);
-	cry_strcpy(m_sBackupFilename, bakdest.c_str());
-	CopyFile(sLogFilename, bakdest, false);
-	#endif
+		path = PathUtil::ToDosPath(path);
+		path.replace(' ', '_');
+		if (path.size() > MAX_PATH)
+			path.resize(MAX_PATH);
+		return CryStringUtils::UTF8ToWStrSafe(path);
+	};
+	const wstring durangoSrcFilePath = processDurangoPath(srcFilePath);
+	const wstring durangosDstFilePath = processDurangoPath(dstFilePath);
+	HRESULT result = CopyFile2(durangoSrcFilePath, durangosDstFilePath, nullptr);
+	CRY_ASSERT_MESSAGE(result == S_OK, "Error copying log backup file");
+#else
+	CopyFile(srcFilePath, dstFilePath, false);
+#endif
 
 #endif
 }
