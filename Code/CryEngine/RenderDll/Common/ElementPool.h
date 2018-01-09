@@ -18,14 +18,14 @@ struct SElementPool
 	std::list<T*>              allocatedElements;
 	ConcQueue<UnboundMPSC, T*> availableFreeElements;
 
-	AllocFunctionType        allocElementFunction;
-	FreeFunctionType         freeElementFunction;
+	AllocFunctionType        allocElementFunction = nullptr;
+	FreeFunctionType         freeElementFunction = nullptr;
 
-	SElementPool(AllocFunctionType allocFunction = nullptr, FreeFunctionType freeFunction = nullptr)
-	{
-		allocElementFunction = allocFunction;
-		freeElementFunction = freeFunction;
-	}
+	SElementPool() = default;
+
+	template <typename AllocFuncType, typename FreeFuncType>
+	SElementPool(AllocFuncType&& allocFunc, FreeFuncType&& freeFunc) :
+		allocElementFunction(std::forward<AllocFuncType>(allocFunc)), freeElementFunction(std::forward<FreeFuncType>(freeFunc)) {}
 
 	T* GetOrCreateOneElement()
 	{
@@ -47,9 +47,9 @@ struct SElementPool
 		if (pElement)
 		{
 			AUTO_LOCK(availableFreeElementsLock);
+			CRY_ASSERT_MESSAGE(freeElementFunction, "Free element function is not provided.");
 			if (freeElementFunction != nullptr)
 			{
-				CRY_ASSERT_MESSAGE(freeElementFunction, "Free element function is not provided.");
 				freeElementFunction(pElement);
 			}
 			availableFreeElements.enqueue(pElement);
