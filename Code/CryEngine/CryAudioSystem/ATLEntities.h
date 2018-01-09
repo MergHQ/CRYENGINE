@@ -40,10 +40,9 @@ enum class EObjectFlags : EnumFlagsType
 	MovingOrDecaying                = BIT(0),
 	TrackAbsoluteVelocity           = BIT(1),
 	TrackRelativeVelocity           = BIT(2),
-	UpdateRelativeVelocity          = BIT(3),
-	InUse                           = BIT(4),
-	Virtual                         = BIT(5),
-	WaitingForInitialTransformation = BIT(6),
+	InUse                           = BIT(3),
+	Virtual                         = BIT(4),
+	WaitingForInitialTransformation = BIT(5),
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
 

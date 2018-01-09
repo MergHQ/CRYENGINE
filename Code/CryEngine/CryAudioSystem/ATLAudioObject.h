@@ -182,6 +182,7 @@ private:
 	  Vec3 const& listenerPosition,
 	  Vec3 const& listenerVelocity,
 	  bool const listenerMoved);
+	void TryToSetRelativeVelocity(float const relativeVelocity);
 
 	ObjectStandaloneFileMap   m_activeStandaloneFiles;
 	ObjectEventSet            m_activeEvents;
