@@ -576,38 +576,31 @@ void CSystemAssetsManager::UpdateAssetConnectionStates(CSystemAsset* const pAsse
 			{
 				pControl->SetHasControl(true);
 				
-				if (pControl->IsHiddenDefault())
-				{
-					pControl->SetHasConnection(true);
-				}
-				else
-				{
-					bool hasPlaceholder = false;
-					bool hasConnection = false;
-					int const connectionCount = pControl->GetConnectionCount();
+				bool hasPlaceholder = false;
+				bool hasConnection = false;
+				int const connectionCount = pControl->GetConnectionCount();
 
-					for (int i = 0; i < connectionCount; ++i)
+				for (int i = 0; i < connectionCount; ++i)
+				{
+					hasConnection = true;
+					IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+
+					if (pEditorImpl != nullptr)
 					{
-						hasConnection = true;
-						IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+						CImplItem const* const pImpleControl = pEditorImpl->GetControl(pControl->GetConnectionAt(i)->GetID());
 
-						if (pEditorImpl != nullptr)
+						if (pImpleControl != nullptr)
 						{
-							CImplItem const* const pImpleControl = pEditorImpl->GetControl(pControl->GetConnectionAt(i)->GetID());
-
-							if (pImpleControl != nullptr)
+							if (pImpleControl->IsPlaceholder())
 							{
-								if (pImpleControl->IsPlaceholder())
-								{
-									hasPlaceholder = true;
-								}
+								hasPlaceholder = true;
 							}
 						}
 					}
-
-					pControl->SetHasPlaceholderConnection(hasPlaceholder);
-					pControl->SetHasConnection(hasConnection);
 				}
+
+				pControl->SetHasPlaceholderConnection(hasPlaceholder);
+				pControl->SetHasConnection(hasConnection);
 			}
 		}
 	}

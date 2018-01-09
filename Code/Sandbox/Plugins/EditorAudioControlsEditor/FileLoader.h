@@ -30,8 +30,10 @@ private:
 	void            LoadPreloadConnections(XmlNodeRef const pNode, CSystemControl* const pControl, uint32 const version);
 	void            LoadConnections(XmlNodeRef const root, CSystemControl* const pControl);
 
+	void            CreateInternalControls();
+	void            CreateInternalControl(CSystemAsset* const pLibrary, char const* const szName, ESystemItemType const type);
+	void            CreateInternalSwitch(CSystemAsset* const pLibrary, char const* const szSwitchName, SwitchStates const& StateNames);
 	void            CreateDefaultControls();
-	bool            CreateDefaultSwitch(CSystemAsset* const pLibrary, char const* const szExternalName, char const* const szInternalName, SwitchStates const& states);
 
 	void            LoadScopesImpl(string const& path);
 

@@ -42,6 +42,13 @@ public:
 		else
 			return m_cached[index];
 	}
+	const T& operator[](size_t index) const
+	{
+		if (index >= eCachedItems)
+			return m_array[index - eCachedItems];
+		else
+			return m_cached[index];
+	}
 	size_t size() const { return m_size; }
 
 private:
@@ -281,7 +288,7 @@ public:
 
 	// Compile(): Returns true if the compilation is fully finished, false if compilation should be retriggered later
 
-	bool Compile(CRenderObject* pRenderObject,CRenderView *pRenderView);
+	bool Compile(CRenderObject* pRenderObject, const IRenderView::SInstanceUpdateInfo& instanceInfo, CRenderView *pRenderView, bool updateInstanceDataOnly);
 	void PrepareForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
 
 	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 0) const;
@@ -301,7 +308,7 @@ public:
 	static void SetStaticPools(CRenderObjectsPools* pools) { s_pPools = pools; }
 
 private:
-	void CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject);
+	void CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject, const IRenderView::SInstanceUpdateInfo& instanceInfo);
 	void CompilePerInstanceExtraResources(CRenderObject* pRenderObject);
 	void CompileInstancingData(CRenderObject* pRenderObject, bool bForce);
 	void UpdatePerInstanceCB(void* pData, size_t size);

@@ -139,8 +139,8 @@ void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, CParticleC
 	pRenderObject->m_fDistance = renderContext.m_distance - sortBias;
 	pObjData->m_FogVolumeContribIdx = renderContext.m_fogVolumeId;
 	pObjData->m_LightVolumeId = renderContext.m_lightVolumeId;
-	if (auto pTempData = pEmitter->m_pTempData.load())
-		*((Vec4f*)&pObjData->m_fTempVars[0]) = (const Vec4f&)pTempData->userData.vEnvironmentProbeMults;
+	if (const auto p = pEmitter->m_pTempData.load())
+		*((Vec4f*)&pObjData->m_fTempVars[0]) = Vec4f(p->userData.vEnvironmentProbeMults);
 	else
 		*((Vec4f*)&pObjData->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -149,6 +149,8 @@ void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, CParticleC
 
 	renderContext.m_passInfo.GetIRenderView()->AddPermanentObject(
 		pRenderObject,
+		IRenderView::SInstanceUpdateInfo{ pRenderObject->m_II.m_Matrix },
+		pRenderObject->m_bInstanceDataDirty,
 		renderContext.m_passInfo);
 }
 

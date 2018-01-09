@@ -10,6 +10,7 @@
 #include "RenderThread.h"                             // SRenderThread
 #include "../Scaleform/ScaleformRender.h"
 #include "../XRenderD3D9/DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h" // CSubmissionQueue_DX11
+#include "ElementPool.h"
 
 typedef void (PROCRENDEF)(SShaderPass* l, int nPrimType);
 
@@ -1008,6 +1009,7 @@ public:
 
 	virtual void EF_InvokeShadowMapRenderJobs(const SRenderingPassInfo& passInfo, const int nFlags) override {}
 	virtual IRenderView* GetNextAvailableShadowsView(IRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum) override;
+	void PrepareShadowFrustumForShadowPool(ShadowMapFrustum* pFrustum, uint32 frameID, const SRenderLight& light, uint32 *timeSlicedShadowsUpdated) override final;
 
 	// 2d interface for shaders
 	virtual void EF_EndEf2D(const bool bSort) override = 0;
@@ -1546,7 +1548,6 @@ protected:
 
 	CSkinningDataPool                          m_SkinningDataPool[3];        // Tripple Buffered for motion blur
 	std::array<std::vector<SSkinningData*>, 3> m_computeSkinningData;
-	uint32                                     m_nShadowGenId[RT_COMMAND_BUF_COUNT];
 
 	int                                        m_cloudShadowTexId;
 	Vec3                                       m_cloudShadowSpeed;
@@ -1578,8 +1579,8 @@ protected:
 	Vec4  m_highlightParams;
 
 	// Separate render views per recursion
-	std::list             <CRenderView*> m_pRenderViewsRequested  [IRenderView::eViewType_Count];
-	ConcQueue<UnboundMPSC, CRenderView*> m_pRenderViewsRequestable[IRenderView::eViewType_Count];
+	SElementPool<CRenderView> m_pRenderViewPool[IRenderView::eViewType_Count];
+	void InitRenderViewPool();
 
 	// Temporary render objects storage
 	struct STempObjects

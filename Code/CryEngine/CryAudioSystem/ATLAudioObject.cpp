@@ -821,21 +821,6 @@ void CATLAudioObject::UpdateControls(
 		{
 			m_attributes.velocity = deltaPos / deltaTime;
 			m_previousAttributes.transformation.SetPosition(m_attributes.transformation.GetPosition());
-
-			if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
-			{
-				float const absoluteVelocity = m_attributes.velocity.GetLength();
-
-				if (fabs(absoluteVelocity - m_previousAbsoluteVelocity) > g_cvars.m_velocityTrackingThreshold)
-				{
-					m_previousAbsoluteVelocity = absoluteVelocity;
-
-					SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(AbsoluteVelocityParameterId, absoluteVelocity);
-					CAudioRequest request(&requestData);
-					request.pObject = this;
-					s_pAudioSystem->PushRequest(request);
-				}
-			}
 		}
 		else if (!m_attributes.velocity.IsZero())
 		{
@@ -845,54 +830,72 @@ void CATLAudioObject::UpdateControls(
 
 			if (m_attributes.velocity.GetLengthSquared() < FloatEpsilon)
 			{
-				if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
-				{
-					SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(AbsoluteVelocityParameterId, 0.0f);
-					CAudioRequest request(&requestData);
-					request.pObject = this;
-					s_pAudioSystem->PushRequest(request);
-
-					m_previousAbsoluteVelocity = 0.0f;
-				}
-
 				m_attributes.velocity = ZERO;
 				m_flags &= ~EObjectFlags::MovingOrDecaying;
 			}
 		}
 
 		m_pImplData->Set3DAttributes(m_attributes);
-	}
 
-	if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
-	{
-		if ((m_flags& EObjectFlags::MovingOrDecaying) != 0 || listenerMoved)
+		if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
 		{
-			// Approaching positive, departing negative value.
-			Vec3 const relativeVelocityVec(m_attributes.velocity - listenerVelocity);
-			float const relativeVelocity = -relativeVelocityVec.Dot((m_attributes.transformation.GetPosition() - listenerPosition).GetNormalized());
+			float const absoluteVelocity = m_attributes.velocity.GetLength();
 
-			if (fabs(relativeVelocity - m_previousRelativeVelocity) > g_cvars.m_velocityTrackingThreshold)
+			if (absoluteVelocity == 0.0f || fabs(absoluteVelocity - m_previousAbsoluteVelocity) > g_cvars.m_velocityTrackingThreshold)
 			{
-				m_previousRelativeVelocity = relativeVelocity;
+				m_previousAbsoluteVelocity = absoluteVelocity;
 
-				SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(RelativeVelocityParameterId, relativeVelocity);
+				SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(AbsoluteVelocityParameterId, absoluteVelocity);
 				CAudioRequest request(&requestData);
 				request.pObject = this;
 				s_pAudioSystem->PushRequest(request);
-
-				m_flags |= EObjectFlags::UpdateRelativeVelocity;
 			}
 		}
-		else if ((m_flags& EObjectFlags::UpdateRelativeVelocity) != 0)
-		{
-			SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(RelativeVelocityParameterId, 0.0f);
-			CAudioRequest request(&requestData);
-			request.pObject = this;
-			s_pAudioSystem->PushRequest(request);
 
-			m_previousRelativeVelocity = 0.0f;
-			m_flags &= ~EObjectFlags::UpdateRelativeVelocity;
+		if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
+		{
+			// Approaching positive, departing negative value.
+			float relativeVelocity = 0.0f;
+
+			if ((m_flags& EObjectFlags::MovingOrDecaying) != 0 && !listenerMoved)
+			{
+				relativeVelocity = -m_attributes.velocity.Dot((m_attributes.transformation.GetPosition() - listenerPosition).GetNormalized());
+			}
+			else if ((m_flags& EObjectFlags::MovingOrDecaying) != 0 && listenerMoved)
+			{
+				Vec3 const relativeVelocityVec(m_attributes.velocity - listenerVelocity);
+				relativeVelocity = -relativeVelocityVec.Dot((m_attributes.transformation.GetPosition() - listenerPosition).GetNormalized());
+			}
+
+			TryToSetRelativeVelocity(relativeVelocity);
 		}
+	}
+	else if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
+	{
+		// Approaching positive, departing negative value.
+		if (listenerMoved)
+		{
+			float const relativeVelocity = listenerVelocity.Dot((m_attributes.transformation.GetPosition() - listenerPosition).GetNormalized());
+			TryToSetRelativeVelocity(relativeVelocity);
+		}
+		else if (m_previousRelativeVelocity != 0.0f)
+		{
+			TryToSetRelativeVelocity(0.0f);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CATLAudioObject::TryToSetRelativeVelocity(float const relativeVelocity)
+{
+	if (relativeVelocity == 0.0f || fabs(relativeVelocity - m_previousRelativeVelocity) > g_cvars.m_velocityTrackingThreshold)
+	{
+		m_previousRelativeVelocity = relativeVelocity;
+
+		SAudioObjectRequestData<EAudioObjectRequestType::SetParameter> requestData(RelativeVelocityParameterId, relativeVelocity);
+		CAudioRequest request(&requestData);
+		request.pObject = this;
+		s_pAudioSystem->PushRequest(request);
 	}
 }
 

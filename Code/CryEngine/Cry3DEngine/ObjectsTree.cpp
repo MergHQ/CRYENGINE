@@ -113,7 +113,7 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 		float fSwitchRange = min(fSpriteSwitchDist * GetCVars()->e_LodTransitionSpriteDistRatio, GetCVars()->e_LodTransitionSpriteMinDist);
 		float fLodTransitionDistband = 1.f;
 
-		SRenderNodeTempData* pTempData = pObj->m_pTempData.load();
+		const auto pTempData = pObj->m_pTempData.load();
 		if (pObj->m_pSpriteInfo)
 		{
 			CStatObj* pStatObj = vegetGroup.GetStatObj();

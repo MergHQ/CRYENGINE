@@ -247,7 +247,8 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 			string const name = pNode->getAttr("atl_name");
 			ESystemItemType const controlType = TagToType_BackwardsComp(pNode->getTag());
 
-			if (!((controlType == ESystemItemType::Switch) && (name == "ObstrOcclCalcType")))
+			if (!((controlType == ESystemItemType::Switch) && (name == "ObstrOcclCalcType")) &&
+				!((controlType == ESystemItemType::Trigger) && (name == CryAudio::s_szDoNothingTriggerName)))
 			{
 				pControl = m_pAssetsManager->FindControl(name, controlType);
 

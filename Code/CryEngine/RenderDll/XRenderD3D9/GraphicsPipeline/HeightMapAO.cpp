@@ -133,9 +133,9 @@ void CHeightMapAOStage::Execute()
 
 			CShader* pShader = pRenderer->m_cEF.s_ShaderShadowBlur;
 
-			const Vec4* pClipVolumeParams = NULL;
-			uint32 clipVolumeCount = 0;
-			CDeferredShading::Instance().GetClipVolumeParams(pClipVolumeParams, clipVolumeCount);
+			const Vec4* pClipVolumeParams = nullptr;
+			uint32 clipVolumeCount = RenderView()->GetClipVolumes().size();
+			CDeferredShading::Instance().GetClipVolumeParams(pClipVolumeParams);
 
 			if (m_passSmoothing.InputChanged(resolutionIndex, clipVolumeCount > 0 ? 1 : 0))
 			{

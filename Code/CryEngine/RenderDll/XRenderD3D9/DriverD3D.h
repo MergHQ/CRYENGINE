@@ -546,6 +546,8 @@ public:
 	void FX_DeferredShadowsNearFrustum(int maskRTWidth, int maskRTHeight);
 	void FX_SetDeferredShadows();
 
+	void PrepareShadowPool(CRenderView* pRenderView) const override final;
+
 	bool FX_HDRScene(CRenderView *pRenderView, bool bEnable, bool bClear = true);
 
 	// Performance queries
@@ -632,11 +634,13 @@ private:
 
 	// Aux Geometry Collector Pool
 	SElementPool<CAuxGeomCBCollector> m_auxGeometryCollectorPool{
+		[] { return new CAuxGeomCBCollector; }, 
 		[](CAuxGeomCBCollector* pAuxGeomCBCollector) { pAuxGeomCBCollector->FreeMemory(); }
 	};
 
 	// Aux Geometry Command Buffer Pool
 	SElementPool<CAuxGeomCB> m_auxGeomCBPool{
+		[] { return new CAuxGeomCB; }, 
 		[](CAuxGeomCB* pAuxGeomCB) { pAuxGeomCB->FreeMemory(); }
 	};
 
@@ -877,6 +881,8 @@ private:
 	CAuxGeomCB_Null            m_renderAuxGeomNull;
 
 	CShadowTextureGroupManager m_ShadowTextureGroupManager;           // to combine multiple shadowmaps into one texture
+
+	uint32                     m_nTimeSlicedShadowsUpdatedThisFrame;
 
 #ifdef ENABLE_BENCHMARK_SENSOR
 public:

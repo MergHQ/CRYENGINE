@@ -195,7 +195,7 @@ bool CNetEntity::NetSerializeEntity(TSerialize ser, EEntityAspects aspect, uint8
 	return true;
 }
 
-void CNetEntity::RmiRegister(SRmiHandler& handler)
+void CNetEntity::RmiRegister(const SRmiHandler& handler)
 {
 	auto found = std::find_if(m_rmiHandlers.begin(), m_rmiHandlers.end(),
 	                          [&handler](SRmiHandler& p) { return p.decoder == handler.decoder; });

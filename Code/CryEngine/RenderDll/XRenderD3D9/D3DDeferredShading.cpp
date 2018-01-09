@@ -361,10 +361,9 @@ RenderLightIndex CDeferredShading::AddLight(const SRenderLight& pDL, float fMult
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void CDeferredShading::GetClipVolumeParams(const Vec4*& pParams, uint32& nCount)
+void CDeferredShading::GetClipVolumeParams(const Vec4*& pParams)
 {
 	pParams = m_vClipVolumeParams;
-	nCount = RenderView()->GetClipVolumes().size();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -398,8 +397,6 @@ void CDeferredShading::ReleaseData()
 	stl::free_container(m_shadowPoolAlloc);
 
 	m_blockPack.FreeContainers();
-
-	m_nShadowPoolSize = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -427,7 +424,7 @@ void CDeferredShading::SetupPasses(CRenderView* pRenderView)
 	m_pSpecularRT = CRendererResources::s_ptexSceneSpecular;
 	m_pMSAAMaskRT = CRendererResources::s_ptexBackBuffer;
 
-	const auto& viewInfo = RenderView()->GetViewInfo(CCamera::eEye_Left);
+	const auto& viewInfo = pRenderView->GetViewInfo(CCamera::eEye_Left);
 
 
 	m_pCamFront = viewInfo.cameraVZ;
@@ -458,13 +455,13 @@ void CDeferredShading::SetupPasses(CRenderView* pRenderView)
 	m_nCurTargetWidth = m_pDiffuseRT->GetWidth();
 	m_nCurTargetHeight = m_pDiffuseRT->GetHeight();
 
-	SetupGlobalConsts();
+	SetupGlobalConsts(pRenderView);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CDeferredShading::SetupGlobalConsts()
+void CDeferredShading::SetupGlobalConsts(CRenderView* pRenderView)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
@@ -474,7 +471,7 @@ void CDeferredShading::SetupGlobalConsts()
 	Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPos;
 	Vec4 vParamValue, vMag;
 
-	CShadowUtils::ProjectScreenToWorldExpansionBasis(rd->m_IdentityMatrix, RenderView()->GetCamera(CCamera::eEye_Left), RenderView()->m_vProjMatrixSubPixoffset, maskRTWidth, maskRTHeight, vWBasisX, vWBasisY, vWBasisZ, vCamPos, true);
+	CShadowUtils::ProjectScreenToWorldExpansionBasis(rd->m_IdentityMatrix, pRenderView->GetCamera(CCamera::eEye_Left), pRenderView->m_vProjMatrixSubPixoffset, maskRTWidth, maskRTHeight, vWBasisX, vWBasisY, vWBasisZ, vCamPos, true);
 
 	const auto& downscaleFactor = gRenDev->GetRenderQuality().downscaleFactor;
 	vWorldBasisX = vWBasisX / downscaleFactor.x;
@@ -560,7 +557,7 @@ bool CDeferredShading::DeferredDecalPass(const SDeferredDecal& rDecal, uint32 in
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CDeferredShading::GetLightRenderSettings(const SRenderLight* const __restrict pDL, bool& bStencilMask, bool& bUseLightVolumes, EShapeMeshType& meshType)
+void CDeferredShading::GetLightRenderSettings(const CRenderView* pRenderView, const SRenderLight* const __restrict pDL, bool& bStencilMask, bool& bUseLightVolumes, EShapeMeshType& meshType)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
@@ -579,7 +576,7 @@ void CDeferredShading::GetLightRenderSettings(const SRenderLight* const __restri
 			mObjInv.Invert();
 
 			// check if volumes bounding box intersects the near clipping plane
-			const CCamera& camera = RenderView()->GetCamera(CCamera::eEye_Left);
+			const CCamera& camera = pRenderView->GetCamera(CCamera::eEye_Left);
 			const Plane* pNearPlane(camera.GetFrustumPlane(FR_PLANE_NEAR));
 			Vec3 pntOnNearPlane(camera.GetPosition() - pNearPlane->DistFromPlane(camera.GetPosition()) * pNearPlane->n);
 			Vec3 pntOnNearPlaneOS(mObjInv.TransformPoint(pntOnNearPlane));
@@ -670,343 +667,6 @@ bool CDeferredShading::AmbientPass(const SRenderLight* pGlobalCubemap, bool& bOu
 void CDeferredShading::DeferredShadingPass()
 {
 	ASSERT_LEGACY_PIPELINE
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-void CDeferredShading::DeferredLights(CRenderView *pRenderView,RenderLightsList& rLights, bool bCastShadows)
-{
-	if (rLights.size())
-	{
-		PROFILE_LABEL_SCOPE("DEFERRED_LIGHTS");
-
-		if (bCastShadows)
-		{
-			PackAllShadowFrustums(false);
-		}
-	}
-}
-*/
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool CDeferredShading::PackAllShadowFrustums(CRenderView *pRenderView)
-{
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
-	CRY_ASSERT(rd->m_pRT->IsRenderThread());
-
-	static ICVar* p_e_ShadowsPoolSize = iConsole->GetCVar("e_ShadowsPoolSize");
-
-	RenderLightsList& arrLights = m_pCurrentRenderView->GetLightsArray(eDLT_DeferredLight);
-
-#if defined(ENABLE_PROFILING_CODE)
-	SRenderStatistics::Write().m_NumShadowPoolFrustums = 0;
-	SRenderStatistics::Write().m_NumShadowPoolAllocsThisFrame = 0;
-	SRenderStatistics::Write().m_NumShadowMaskChannels = 0;
-#endif
-
-	int nRequestedPoolSize = p_e_ShadowsPoolSize->GetIVal();
-	if (m_nShadowPoolSize != nRequestedPoolSize)
-	{
-		m_blockPack.UpdateSize(nRequestedPoolSize >> TEX_POOL_BLOCKLOGSIZE, nRequestedPoolSize >> TEX_POOL_BLOCKLOGSIZE);
-		m_nShadowPoolSize = nRequestedPoolSize;
-
-		// clear pool and reset allocations
-		m_blockPack.Clear();
-		m_shadowPoolAlloc.SetUse(0);
-	}
-
-	
-	m_bClearPool = (CRenderer::CV_r_ShadowPoolMaxFrames > 0) ? false : true;
-
-	m_nFirstShadowPoolLight = 0;
-	m_nLastShadowPoolLight = 0;
-
-	auto nLightId = 0;
-	auto itrStop = arrLights.end();
-	auto itrCurr = arrLights.begin();
-
-
-	// TODO: Sort lights so allocated ones are rendered first to reduce impact of a thrash
-
-	for (; itrCurr != itrStop; ++itrCurr) //pre-loop to avoid 0.5 ms restore/resolve
-	{
-		const SRenderLight& rLight = *itrCurr;
-		if (!(rLight.m_Flags & DLF_DIRECTIONAL) && (rLight.m_Flags & DLF_CASTSHADOW_MAPS))
-			break;
-
-		++m_nFirstShadowPoolLight;
-	}
-
-	if (itrCurr != itrStop) // Shadow allocation tick, free old shadows.
-	{
-		uint32 nAllocs = m_shadowPoolAlloc.Num();
-		for (uint32 i = 0; i < nAllocs; i++)
-		{
-			SShadowAllocData* pAlloc = &m_shadowPoolAlloc[i];
-			uint32 currFrame = RenderView()->GetFrameId() & 0xFF;
-			if (!pAlloc->isFree() && ((currFrame - pAlloc->m_frameID) > (uint)CRenderer::CV_r_ShadowPoolMaxFrames))
-			{
-				m_blockPack.RemoveBlock(pAlloc->m_blockID);
-				pAlloc->Clear();
-				break;  //Max one delete per frame, this should spread updates across more frames
-			}
-		}
-	}
-
-	 m_nLastShadowPoolLight = m_nFirstShadowPoolLight;
-
-	// init before shadowgen
-	SetupPasses(pRenderView);
-
-	{
-		while (itrCurr != itrStop)
-		{
-			SRenderLight& rLight = *itrCurr;
-			if (!(rLight.m_Flags & (DLF_DIRECTIONAL | DLF_FAKE)) && (rLight.m_Flags & DLF_CASTSHADOW_MAPS))
-			{
-
-				bool bPacked = PackToPool(&m_blockPack, rLight, m_nLastShadowPoolLight, m_nFirstShadowPoolLight, m_bClearPool);
-				m_bClearPool = !bPacked;
-				if (!bPacked)
-				{
-					break;
-				}
-			}
-
-			++m_nLastShadowPoolLight;
-			++itrCurr;
-		}
-	}
-
-#if defined(ENABLE_PROFILING_CODE)
-	SRenderStatistics::Write().m_NumShadowPoolFrustums += m_shadowPoolAlloc.Num();
-#endif
-	
-	return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool CDeferredShading::PackToPool(CPowerOf2BlockPacker* pBlockPack, SRenderLight& light, const int nLightID, const int nFirstCandidateLight, bool bClearPool)
-{
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
-	CRenderView* pRenderView = RenderView();
-
-	//////////////////////////////////////////////////////////////////////////
-	int nDLights = RenderView()->GetDynamicLightsCount();
-
-	//////////////////////////////////////////////////////////////////////////
-	int nFrustumIdx = nLightID + nDLights;
-	auto& SMFrustums = pRenderView->GetShadowFrustumsForLight(nFrustumIdx);
-
-	int nUpdatedThisFrame = 0;
-
-	assert((unsigned int) nFrustumIdx < (MAX_REND_LIGHTS + MAX_DEFERRED_LIGHTS));
-	if ((unsigned int) nFrustumIdx >= (MAX_REND_LIGHTS + MAX_DEFERRED_LIGHTS))
-	{
-		int nFrameID = pRenderView->GetFrameId();
-		if (m_nWarningFrame != nFrameID)
-		{
-			Warning("CDeferredShading::ShadowLightPasses: Too many light sources used ...");
-			m_nWarningFrame = nFrameID;
-		}
-		//reset castshadow flag for further processing
-		light.m_Flags &= ~DLF_CASTSHADOW_MAPS;
-		return true;
-	}
-	//////////////////////////////////////////////////////////////////////////
-
-	//no single frustum was allocated for this light
-	if (SMFrustums.empty())
-	{
-		//reset castshadow flag for further processing
-		light.m_Flags &= ~DLF_CASTSHADOW_MAPS;
-		return true;
-	}
-
-	if (pRenderView->IsRecursive())
-	{
-		//reset castshadow flag for further processing
-		light.m_Flags &= ~DLF_CASTSHADOW_MAPS;
-		return true;
-	}
-
-	ShadowMapFrustum& firstFrustum = *SMFrustums.front()->pFrustum;
-
-	//////////////////////////////////////////////////////////////////////////
-	int nBlockW = firstFrustum.nTexSize >> TEX_POOL_BLOCKLOGSIZE;
-	int nBlockH = firstFrustum.nTexSize >> TEX_POOL_BLOCKLOGSIZE;
-	int nLogBlockW = IntegerLog2((uint32)nBlockW);
-	int nLogBlockH = nLogBlockW;
-
-	bool bNeedsUpdate = false;
-
-	if (bClearPool)
-	{
-		pBlockPack->Clear();
-		m_shadowPoolAlloc.SetUse(0);
-	}
-
-	uint32 currFrame = pRenderView->GetFrameId() & 0xFF;
-
-	uint32 lightID = light.m_nEntityId;
-
-	assert(lightID != (uint32) - 1);
-
-	uint SidesNum = firstFrustum.bUnwrapedOmniDirectional ? OMNI_SIDES_NUM : 1;
-	uint nUpdateMask = firstFrustum.bUnwrapedOmniDirectional ? 0x3F : 0x1;
-
-	for (uint nSide = 0; nSide < SidesNum; nSide++)
-	{
-		bNeedsUpdate = false;
-		uint nX1, nX2, nY1, nY2;
-
-		//Find block allocation info (alternative: store in frustum data, but this does not persist)
-		bool bFoundAlloc = false;
-#if CRY_PLATFORM_WINDOWS
-		int nMGPUUpdate = -1;
-#endif
-		uint32 nAllocs = m_shadowPoolAlloc.Num();
-		SShadowAllocData* pAlloc = NULL;
-		for (uint32 i = 0; i < nAllocs; i++)
-		{
-			pAlloc = &m_shadowPoolAlloc[i];
-
-			if (pAlloc->m_lightID == lightID && pAlloc->m_side == nSide)
-			{
-				bFoundAlloc = true;
-				break;
-			}
-		}
-
-		if (bFoundAlloc)
-		{
-			uint32 nID = pBlockPack->GetBlockInfo(pAlloc->m_blockID, nX1, nY1, nX2, nY2);
-
-			int nFrameCompare = (currFrame - pAlloc->m_frameID) % 256;
-
-			if (nID == 0xFFFFFFFF)
-			{
-				bNeedsUpdate = true;
-			}
-			else
-			{
-				if (firstFrustum.nShadowPoolUpdateRate == 0)  // forced update, always do this
-				{
-					bNeedsUpdate = true;
-				}
-				else if (firstFrustum.nShadowPoolUpdateRate < (uint8) nFrameCompare)
-				{
-					if (nUpdatedThisFrame < CRenderer::CV_r_ShadowPoolMaxTimeslicedUpdatesPerFrame)
-					{
-						bNeedsUpdate = true;
-						nUpdatedThisFrame++;
-					}
-				}
-#if CRY_PLATFORM_WINDOWS // AFR support
-				else if (rd->GetActiveGPUCount() > 1)
-				{
-					if (gRenDev->GetActiveGPUCount() > nFrameCompare)
-					{
-						bNeedsUpdate = true;
-						nMGPUUpdate = pAlloc->m_frameID;
-					}
-				}
-#endif
-			}
-
-			if (!bNeedsUpdate)
-			{
-				if (nX1 != 0xFFFFFFFF && nBlockW == (nX2 - nX1))   // ignore Y, is square
-				{
-					pBlockPack->GetBlockInfo(nID, nX1, nY1, nX2, nY2);
-					firstFrustum.packX[nSide] = nX1 << TEX_POOL_BLOCKLOGSIZE;
-					firstFrustum.packY[nSide] = nY1 << TEX_POOL_BLOCKLOGSIZE;
-					firstFrustum.packWidth[nSide] = (nX2 - nX1) << TEX_POOL_BLOCKLOGSIZE;
-					firstFrustum.packHeight[nSide] = (nY2 - nY1) << TEX_POOL_BLOCKLOGSIZE;
-					firstFrustum.nShadowGenID[m_nThreadID][nSide] = 0xFFFFFFFF; // turn off shadow gen for this side
-
-					nUpdateMask &= ~(1 << nSide);
-					continue; // All currently valid, skip
-				}
-			}
-
-			if (nID != 0xFFFFFFFF && nX1 != 0xFFFFFFFF) // Valid block, realloc
-			{
-				pBlockPack->RemoveBlock(nID);
-				pAlloc->Clear();
-			}
-		}
-
-		uint32 nID = pBlockPack->AddBlock(nLogBlockW, nLogBlockH);
-		bool isAllocated = (nID != 0xFFFFFFFF) ? true : false;
-
-#if defined(ENABLE_PROFILING_CODE)
-		SRenderStatistics::Write().m_NumShadowPoolAllocsThisFrame++;
-#endif
-
-		if (isAllocated)
-		{
-			bNeedsUpdate = true;
-
-			if (!bFoundAlloc)
-			{
-				pAlloc = NULL;
-				nAllocs = m_shadowPoolAlloc.Num();
-				for (uint32 i = 0; i < nAllocs; i++)
-				{
-					if (m_shadowPoolAlloc[i].isFree())
-					{
-						pAlloc = &m_shadowPoolAlloc[i];
-						break;
-					}
-				}
-
-				if (!pAlloc)
-					pAlloc = m_shadowPoolAlloc.AddIndex(1);
-			}
-
-			pAlloc->m_blockID = nID;
-			pAlloc->m_lightID = lightID;
-			pAlloc->m_side = nSide;
-#if CRY_PLATFORM_WINDOWS
-			pAlloc->m_frameID = (nMGPUUpdate == -1) ? pRenderView->GetFrameId() & 0xFF : nMGPUUpdate;
-#else
-			pAlloc->m_frameID = pRenderView->GetFrameId() & 0xFF;
-#endif
-			bClearPool = true;
-		}
-		else
-		{
-
-#if defined(ENABLE_PROFILING_CODE)
-			if (CRenderer::CV_r_ShadowPoolMaxFrames != 0 || CRenderer::CV_r_DeferredShadingTiled > 1)
-				SRenderStatistics::Write().m_NumShadowPoolAllocsThisFrame |= 0x80000000;
-#endif
-
-			return false;
-		}
-
-		pBlockPack->GetBlockInfo(nID, nX1, nY1, nX2, nY2);
-		firstFrustum.packX[nSide] = nX1 << TEX_POOL_BLOCKLOGSIZE;
-		firstFrustum.packY[nSide] = nY1 << TEX_POOL_BLOCKLOGSIZE;
-		firstFrustum.packWidth[nSide] = (nX2 - nX1) << TEX_POOL_BLOCKLOGSIZE;
-		firstFrustum.packHeight[nSide] = (nY2 - nY1) << TEX_POOL_BLOCKLOGSIZE;
-
-	}
-
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	//  next step is to use these values in shadowgen
-
-	//////////////////////////////////////////////////////////////////////////
-
-	return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

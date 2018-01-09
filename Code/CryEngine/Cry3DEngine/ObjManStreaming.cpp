@@ -1093,7 +1093,7 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 	ctx.lod = nLod;
 	ctx.bFullUpdate = bFullUpdate;
 
-	if (auto pTempData = pObj->m_pTempData.load())
+	if (const auto pTempData = pObj->m_pTempData.load())
 	{
 		if (GetFloatCVar(e_StreamCgfGridUpdateDistance) != 0.0f || GetFloatCVar(e_StreamPredictionAhead) != 0.0f || GetFloatCVar(e_StreamPredictionMinFarZoneDistance) != 0.0f)
 		{

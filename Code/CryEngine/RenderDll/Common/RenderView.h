@@ -140,7 +140,7 @@ public:
 	virtual CryJobState*         GetWriteMutex() override { return &m_jobstate_Write; };
 
 	virtual void                 AddRenderObject(CRenderElement* pRenderElement, SShaderItem& pShaderItem, CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo, int list, int afterWater) threadsafe final;
-	virtual void                 AddPermanentObject(CRenderObject* pObject, const SRenderingPassInfo& passInfo) final;
+	virtual void                 AddPermanentObject(CRenderObject* pObject, const SInstanceUpdateInfo& pInstanceUpdateInfo, bool instanceDataDirty, const SRenderingPassInfo& passInfo) final;
 
 	virtual void                 SetGlobalFog(const SRenderGlobalFogDescription& fogDescription) final { m_globalFogDescription = fogDescription; };
 
@@ -206,7 +206,7 @@ public:
 	                           SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward) threadsafe;
 
 	bool       CheckPermanentRenderObjects() const { return !m_permanentObjects.empty(); }
-	void       AddPermanentObjectInline(CPermanentRenderObject* pObject, SRendItemSorter sorter, int shadowFrustumSide);
+	void       AddPermanentObjectImpl(CPermanentRenderObject* pObject, const SInstanceUpdateInfo& pInstanceUpdateInfo, bool instanceDataDirty, SRendItemSorter sorter, int shadowFrustumSide);
 
 	ItemsRange GetItemsRange(ERenderListID renderList);
 
@@ -452,7 +452,13 @@ private:
 	uint32           m_skinningPoolIndex = 0;
 
 	// Render objects modified by this view.
-	lockfree_add_vector<CPermanentRenderObject*> m_permanentRenderObjectsToCompile;
+	struct SPermanentRenderObjectCompilationData
+	{
+		CPermanentRenderObject* pObject;
+		SInstanceUpdateInfo     instanceUpdateInfo;
+		bool                    updateInstanceDataOnly;
+	};
+	lockfree_add_vector<SPermanentRenderObjectCompilationData> m_permanentRenderObjectsToCompile;
 
 	// Temporary compiled objects for this frame
 	struct SCompiledPair { CRenderObject* pRenderObject; CCompiledRenderObject* pCompiledObject; };
@@ -467,6 +473,8 @@ private:
 		CPermanentRenderObject* pRenderObject;
 		uint32                  itemSorter;
 		int                     shadowFrustumSide;
+		SInstanceUpdateInfo     instanceUpdateInfo;
+		bool                    requiresInstanceDataUpdate;
 	};
 	lockfree_add_vector<SPermanentObjectRecord> m_permanentObjects;
 

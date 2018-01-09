@@ -14,7 +14,7 @@ struct SInternalControls
 	using SwitchState = std::pair<ControlId const, SwitchStateId const>;
 
 	std::map<SwitchState, IAudioSwitchStateImpl const*> m_switchStates;
-	std::map<ControlId, IParameterImpl*>                m_parameters;
+	std::map<ControlId, CATLTriggerImpl const*>         m_triggers;
 };
 
 class COcclusionObstructionState final : public IAudioSwitchStateImpl

@@ -43,7 +43,7 @@ public:
 
 	virtual bool                  NetSerializeEntity(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override;
 
-	virtual void                  RmiRegister(SRmiHandler& handler) override;
+	virtual void                  RmiRegister(const SRmiHandler& handler) override;
 	virtual SRmiIndex             RmiByDecoder(SRmiHandler::DecoderF decoder, SRmiHandler** handler) override;
 	virtual SRmiHandler::DecoderF RmiByIndex(const SRmiIndex idx) override;
 

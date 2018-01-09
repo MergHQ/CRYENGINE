@@ -1220,6 +1220,8 @@ struct IRenderer//: public IRendererCallbackServer
 
 	virtual void EF_InvokeShadowMapRenderJobs(const SRenderingPassInfo& passInfo, const int nFlags) = 0;
 	virtual IRenderView* GetNextAvailableShadowsView(IRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum) = 0;
+	virtual void PrepareShadowFrustumForShadowPool(ShadowMapFrustum* pFrustum, uint32 frameID, const SRenderLight& light, uint32 *timeSlicedShadowsUpdated) = 0;
+	virtual void PrepareShadowPool(CRenderView* pRenderView) const = 0;
 
 	// Dynamic lights.
 	virtual bool EF_IsFakeDLight(const SRenderLight* Source) = 0;

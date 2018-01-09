@@ -69,7 +69,7 @@ void CClipVolumeManager::UpdateEntityClipVolume(const Vec3& pos, IRenderNode* pR
 
 	if (!pRenderNode)
 		return;
-	auto pTempData = pRenderNode->m_pTempData.load();
+	const auto pTempData = pRenderNode->m_pTempData.load();
 	if (!pTempData)
 		return;
 
@@ -112,7 +112,7 @@ void CClipVolumeManager::UnregisterRenderNode(IRenderNode* pRenderNode)
 	for (size_t i = 0; i < m_ClipVolumes.size(); ++i)
 		m_ClipVolumes[i].m_pVolume->UnregisterRenderNode(pRenderNode);
 
-	if (auto pTempData = pRenderNode->m_pTempData.load())
+	if (const auto pTempData = pRenderNode->m_pTempData.load())
 		pTempData->userData.m_pClipVolume = NULL;
 }
 
@@ -123,9 +123,9 @@ bool CClipVolumeManager::IsClipVolumeRequired(IRenderNode* pRenderNode) const
 	const bool bForwardObject = (pRenderNode->m_nInternalFlags & IRenderNode::REQUIRES_FORWARD_RENDERING) != 0;
 	const EERType ertype = pRenderNode->GetRenderNodeType();
 	const bool bIsValidLight = ertype == eERType_Light &&
-	                           (static_cast<CLightEntity*>(pRenderNode)->GetLightProperties().m_Flags & NoClipVolumeLights) == 0;
+		(static_cast<CLightEntity*>(pRenderNode)->GetLightProperties().m_Flags & NoClipVolumeLights) == 0;
 	const bool bIsValidFogVolume = (ertype == eERType_FogVolume) &&
-	                               static_cast<CFogVolumeRenderNode*>(pRenderNode)->IsAffectsThisAreaOnly();
+		static_cast<CFogVolumeRenderNode*>(pRenderNode)->IsAffectsThisAreaOnly();
 
 	return bIsValidLight || bForwardObject || bIsValidFogVolume;
 }

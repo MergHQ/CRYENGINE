@@ -780,6 +780,8 @@ void CD3D9Renderer::BeginFrame(CryDisplayContextHandle hWnd)
 		m_currentAuxGeomCBCollector->SetCamera(camera);
 		m_currentAuxGeomCBCollector->SetDisplayContextHandle(hWnd);
 
+		m_nTimeSlicedShadowsUpdatedThisFrame = 0;
+
 	}, ERenderCommandFlags::None);
 
 	m_pRT->RC_BeginFrame(hWnd);

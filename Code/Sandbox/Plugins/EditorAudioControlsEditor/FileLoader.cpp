@@ -74,6 +74,8 @@ void CFileLoader::LoadAll()
 //////////////////////////////////////////////////////////////////////////
 void CFileLoader::LoadControls()
 {
+	CreateInternalControls();
+
 	// load the global controls
 	LoadAllLibrariesInFolder(m_assetsManager.GetConfigFolderPath(), "");
 
@@ -329,6 +331,57 @@ std::set<string> CFileLoader::GetLoadedFilenamesList()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CFileLoader::CreateInternalControls()
+{
+	// Create internal default controls.
+	// These controls are hidden in the ACE and don't get written to XML!
+	CSystemAsset* const pLibrary = static_cast<CSystemAsset*>(m_assetsManager.CreateLibrary(CryAudio::s_szInternalLibraryName));
+
+	if (pLibrary != nullptr)
+	{
+		pLibrary->SetInternalControl(true);
+
+		CreateInternalControl(pLibrary, CryAudio::s_szDoNothingTriggerName, ESystemItemType::Trigger);
+
+		SwitchStates const occlStates{ CryAudio::s_szIgnoreStateName, CryAudio::s_szAdaptiveStateName, CryAudio::s_szLowStateName, CryAudio::s_szMediumStateName, CryAudio::s_szHighStateName };
+		CreateInternalSwitch(pLibrary, CryAudio::s_szOcclCalcSwitchName, occlStates);
+
+		SwitchStates const onOffStates{ CryAudio::s_szOnStateName, CryAudio::s_szOffStateName };
+		CreateInternalSwitch(pLibrary, CryAudio::s_szAbsoluteVelocityTrackingSwitchName, onOffStates);
+		CreateInternalSwitch(pLibrary, CryAudio::s_szRelativeVelocityTrackingSwitchName, onOffStates);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CFileLoader::CreateInternalControl(CSystemAsset* const pLibrary, char const* const szName, ESystemItemType const type)
+{
+	CSystemControl* const pControl = m_assetsManager.CreateControl(szName, type, pLibrary);
+
+	if (pControl != nullptr)
+	{
+		pControl->SetDefaultControl(true);
+		pControl->SetInternalControl(true);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CFileLoader::CreateInternalSwitch(CSystemAsset* const pLibrary, char const* const szSwitchName, SwitchStates const& stateNames)
+{
+	CSystemControl* const pSwitch = m_assetsManager.CreateControl(szSwitchName, ESystemItemType::Switch, pLibrary);
+
+	if (pSwitch != nullptr)
+	{
+		for (auto const& szStateName : stateNames)
+		{
+			m_assetsManager.CreateControl(szStateName, ESystemItemType::State, pSwitch);
+		}
+
+		pSwitch->SetDefaultControl(true);
+		pSwitch->SetInternalControl(true);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CFileLoader::CreateDefaultControls()
 {
 	// Create default controls if they don't exist.
@@ -390,19 +443,6 @@ void CFileLoader::CreateDefaultControls()
 			pControl->SetDefaultControl(true);
 		}
 
-		pControl = m_assetsManager.FindControl(CryAudio::s_szDoNothingTriggerName, ESystemItemType::Trigger);
-
-		if (pControl == nullptr)
-		{
-			pControl = m_assetsManager.CreateControl(CryAudio::s_szDoNothingTriggerName, ESystemItemType::Trigger, pLibrary);
-			wasModified = true;
-		}
-
-		if (pControl != nullptr)
-		{
-			pControl->SetDefaultControl(true);
-		}
-
 		pControl = m_assetsManager.FindControl(CryAudio::s_szAbsoluteVelocityParameterName, ESystemItemType::Parameter);
 
 		if (pControl == nullptr)
@@ -429,28 +469,6 @@ void CFileLoader::CreateDefaultControls()
 			pControl->SetDefaultControl(true);
 		}
 
-		{
-			SwitchStates const states{ CryAudio::s_szIgnoreStateName, CryAudio::s_szAdaptiveStateName, CryAudio::s_szLowStateName, CryAudio::s_szMediumStateName, CryAudio::s_szHighStateName };
-			
-			if (CreateDefaultSwitch(pLibrary, CryAudio::s_szOcclCalcSwitchName, CryAudio::s_szOcclCalcSwitchRequestName, states))
-			{
-				wasModified = true;
-			}
-		}
-
-		{
-			SwitchStates const states{ CryAudio::s_szOnStateName, CryAudio::s_szOffStateName };
-
-			if (CreateDefaultSwitch(pLibrary, CryAudio::s_szAbsoluteVelocityTrackingSwitchName, CryAudio::s_szAbsoluteVelocityTrackingSwitchName, states))
-			{
-				wasModified = true;
-			}
-			if (CreateDefaultSwitch(pLibrary, CryAudio::s_szRelativeVelocityTrackingSwitchName, CryAudio::s_szRelativeVelocityTrackingSwitchName, states))
-			{
-				wasModified = true;
-			}
-		}
-
 		if (pLibrary->ChildCount() == 0)
 		{
 			m_assetsManager.DeleteItem(pLibrary);
@@ -460,86 +478,6 @@ void CFileLoader::CreateDefaultControls()
 			pLibrary->SetModified(true, true);
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CFileLoader::CreateDefaultSwitch(CSystemAsset* const pLibrary, char const* const szExternalName, char const* const szInternalName, SwitchStates const& states)
-{
-	bool wasModified = false;
-	CSystemControl* pSwitch = m_assetsManager.FindControl(szExternalName, ESystemItemType::Switch);
-
-	if (pSwitch != nullptr)
-	{
-		// Remove any states that shouldn't be part of the default control
-		size_t childIndex = 0;
-		size_t childCount = pSwitch->ChildCount();
-
-		while (childIndex < childCount)
-		{
-			CSystemAsset const* const pChild = pSwitch->GetChild(childIndex);
-
-			if (pChild != nullptr)
-			{
-				bool shouldRemoveChild = true;
-
-				for (auto const& szStateName : states)
-				{
-					if (strcmp(pChild->GetName().c_str(), szStateName) == 0)
-					{
-						++childIndex;
-						shouldRemoveChild = false;
-						break;
-					}
-				}
-
-				if (shouldRemoveChild)
-				{
-					pSwitch->RemoveChild(pChild);
-					childCount = pSwitch->ChildCount();
-					wasModified = true;
-				}
-			}
-		}
-	}
-	else
-	{
-		pSwitch = m_assetsManager.CreateControl(szExternalName, ESystemItemType::Switch, pLibrary);
-		wasModified = true;
-	}
-
-	for (auto const& szStateName : states)
-	{
-		CSystemControl* pState = nullptr;
-
-		size_t const stateCount = pSwitch->ChildCount();
-
-		for (size_t i = 0; i < stateCount; ++i)
-		{
-			CSystemControl* pChild = static_cast<CSystemControl*>(pSwitch->GetChild(i));
-			if ((pChild != nullptr) && (strcmp(pChild->GetName().c_str(), szStateName) == 0) && (pChild->GetType() == ESystemItemType::State))
-			{
-				pState = pChild;
-				break;
-			}
-		}
-
-		if (pState == nullptr)
-		{
-			pState = m_assetsManager.CreateControl(szStateName, ESystemItemType::State, pSwitch);
-
-			XmlNodeRef const pRequestNode = GetISystem()->CreateXmlNode(CryAudio::s_szSwitchRequestTag);
-			pRequestNode->setAttr(CryAudio::s_szNameAttribute, szInternalName);
-			XmlNodeRef const pValueNode = pRequestNode->createNode(CryAudio::s_szValueTag);
-			pValueNode->setAttr(CryAudio::s_szNameAttribute, szStateName);
-			pRequestNode->addChild(pValueNode);
-
-			pState->AddRawXMLConnection(pRequestNode, false);
-		}
-	}
-
-	pSwitch->SetDefaultControl(true);
-	pSwitch->SetHiddenDefault(true);
-	return wasModified;
 }
 
 //////////////////////////////////////////////////////////////////////////

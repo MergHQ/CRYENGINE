@@ -515,13 +515,24 @@ inline CheckConvert<D> check_convert(D& d)
 	return d;
 }
 
-//! Use NoCopy as a base class to easily prevent copy init & assign for any class.
+//! Use NoCopy as a base class to easily prevent copy ctor & operator for any class.
 struct NoCopy
 {
-	NoCopy() {}
-private:
-	NoCopy(const NoCopy&);
-	NoCopy& operator=(const NoCopy&);
+	NoCopy() = default;
+	NoCopy(const NoCopy&) = delete;
+	NoCopy& operator=(const NoCopy&) = delete;
+	NoCopy(NoCopy&&) = default;
+	NoCopy& operator=(NoCopy&&) = default;
+};
+
+//! Use NoMove as a base class to easily prevent move ctor & operator for any class.
+struct NoMove
+{
+	NoMove() = default;
+	NoMove(const NoMove&) = default;
+	NoMove& operator=(const NoMove&) = default;
+	NoMove(NoMove&&) = delete;
+	NoMove& operator=(NoMove&&) = delete;
 };
 
 //! ZeroInit: base class to zero the memory of the derived class before initialization, so local objects initialize the same as static.

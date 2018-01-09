@@ -11,16 +11,21 @@
 template<class T>
 struct SElementPool
 {
+	using AllocFunctionType = std::function<T*()>;
+	using FreeFunctionType = std::function<void(T*)>;
+
 	CryCriticalSection         availableFreeElementsLock;
 	std::list<T*>              allocatedElements;
 	ConcQueue<UnboundMPSC, T*> availableFreeElements;
 
-	std::function<void(T*)>    freeElementFunction;
+	AllocFunctionType        allocElementFunction = nullptr;
+	FreeFunctionType         freeElementFunction = nullptr;
 
-	SElementPool(std::function<void(T*)> freeFunction)
-	{
-		freeElementFunction = freeFunction;
-	}
+	SElementPool() = default;
+
+	template <typename AllocFuncType, typename FreeFuncType>
+	SElementPool(AllocFuncType&& allocFunc, FreeFuncType&& freeFunc) :
+		allocElementFunction(std::forward<AllocFuncType>(allocFunc)), freeElementFunction(std::forward<FreeFuncType>(freeFunc)) {}
 
 	T* GetOrCreateOneElement()
 	{
@@ -29,7 +34,8 @@ struct SElementPool
 		AUTO_LOCK(availableFreeElementsLock);
 		if (!availableFreeElements.dequeue(pElement))
 		{
-			pElement = new T;
+			CRY_ASSERT_MESSAGE(allocElementFunction, "Allocate element function is not provided.");
+			pElement = allocElementFunction();
 			allocatedElements.emplace_back(pElement);
 		}
 
@@ -41,20 +47,29 @@ struct SElementPool
 		if (pElement)
 		{
 			AUTO_LOCK(availableFreeElementsLock);
-			freeElementFunction(pElement);
+			CRY_ASSERT_MESSAGE(freeElementFunction, "Free element function is not provided.");
+			if (freeElementFunction != nullptr)
+			{
+				freeElementFunction(pElement);
+			}
 			availableFreeElements.enqueue(pElement);
 		}
 	}
 
 	void ShutDown()
 	{
+		CRY_ASSERT_MESSAGE(freeElementFunction, "Free element function is not provided.");
+
 		// Release all elements
 		T* pElement;
 		while (availableFreeElements.dequeue(pElement));
 
 		while (allocatedElements.size())
 		{
-			freeElementFunction(allocatedElements.back());
+			if (freeElementFunction != nullptr)
+			{
+				freeElementFunction(allocatedElements.back());
+			}
 			delete allocatedElements.back();
 			allocatedElements.pop_back();
 		}

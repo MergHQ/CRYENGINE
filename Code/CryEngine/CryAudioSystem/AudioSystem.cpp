@@ -803,7 +803,6 @@ void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 		cry_vsprintf(buffer, szFormat, ArgList);
 		va_end(ArgList);
 
-		float const currentTime = gEnv->pTimer->GetAsyncCurTime();
 		ELoggingOptions const loggingOptions = static_cast<ELoggingOptions>(m_loggingOptions);
 
 		switch (type)
@@ -812,7 +811,7 @@ void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 			{
 				if ((loggingOptions& ELoggingOptions::Warnings) != 0)
 				{
-					gEnv->pSystem->Warning(VALIDATOR_MODULE_AUDIO, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio> <%.3f>: %s", currentTime, buffer);
+					gEnv->pSystem->Warning(VALIDATOR_MODULE_AUDIO, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio>: %s", buffer);
 				}
 
 				break;
@@ -821,7 +820,7 @@ void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 			{
 				if ((loggingOptions& ELoggingOptions::Errors) != 0)
 				{
-					gEnv->pSystem->Warning(VALIDATOR_MODULE_AUDIO, VALIDATOR_ERROR, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio> <%.3f>: %s", currentTime, buffer);
+					gEnv->pSystem->Warning(VALIDATOR_MODULE_AUDIO, VALIDATOR_ERROR, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio>: %s", buffer);
 				}
 
 				break;
@@ -830,14 +829,14 @@ void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 			{
 				if ((gEnv->pLog != nullptr) && (gEnv->pLog->GetVerbosityLevel() >= 4) && ((loggingOptions& ELoggingOptions::Comments) != 0))
 				{
-					CryLogAlways("<Audio> <%.3f>: %s", currentTime, buffer);
+					CryLogAlways("<Audio>: %s", buffer);
 				}
 
 				break;
 			}
 		case ELogType::Always:
 			{
-				CryLogAlways("<Audio> <%.3f>: %s", currentTime, buffer);
+				CryLogAlways("<Audio>: %s", buffer);
 
 				break;
 			}

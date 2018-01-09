@@ -4790,6 +4790,10 @@ SRenderNodeTempData* C3DEngine::CheckAndCreateRenderNodeTempData(IRenderNode* pR
 	// The algorithm only needs to protect from races across this function, and not against
 	// races of this functions with other functions.
 	const int currentFrame = passInfo.GetFrameID();
+	SRenderNodeTempData* pTempData = nullptr;
+
+	// Synchronizes-with the release fence after writing the m_manipulationFrame
+	std::atomic_thread_fence(std::memory_order_acquire);
 	if (pRNode->m_manipulationFrame != currentFrame)
 	{
 		pRNode->m_manipulationLock.WLock();
@@ -4797,12 +4801,13 @@ SRenderNodeTempData* C3DEngine::CheckAndCreateRenderNodeTempData(IRenderNode* pR
 		if (pRNode->m_manipulationFrame != currentFrame)
 		{
 			// The code inside this scope is only executed by the first thread in this frame
-			SRenderNodeTempData* pTempData = pRNode->m_pTempData.load();
+			pTempData = pRNode->m_pTempData.load();
 
 			// No TempData seen yet
 			if (!pTempData)
 			{
 				pRNode->m_pTempData = (pTempData = CreateRenderNodeTempData(pRNode, passInfo));
+				CRY_ASSERT(pTempData && "CreateRenderNodeTempData() failed!");
 			}
 			// Manual invalidation of TempData occurred
 			else if (pTempData->invalidRenderObjects)
@@ -4824,21 +4829,26 @@ SRenderNodeTempData* C3DEngine::CheckAndCreateRenderNodeTempData(IRenderNode* pR
 
 			// Allow other threads to bypass this outer scope only after all operations finished
 			pRNode->m_manipulationFrame = currentFrame;
+			// Synchronizes-with the acquire fence before reading the m_manipulationFrame
+			std::atomic_thread_fence(std::memory_order_release);
 		}
 
 		pRNode->m_manipulationLock.WUnlock();
 	}
+	if (!pTempData)
+		pTempData = pRNode->m_pTempData.load();
 
-	SRenderNodeTempData* pTempData = pRNode->m_pTempData.load();
+	CRY_ASSERT(pTempData);
+	if (!pTempData)
+		return nullptr;
+
 	CRY_ASSERT(!pTempData->invalidRenderObjects);
 
 	// Technically this function is unsafe if the same node is hit (non-atomic read-modify-write)
 	// The assumption is that the same node can not be contended for the same condition(s), which is
 	// approximately the "distinct" passes used. For as long as different passes contend the node it's fine.
 	if (!m_visibleNodesManager.SetLastSeenFrame(pTempData, passInfo))
-	{
 		pTempData = nullptr;
-	}
 
 	return pTempData;
 }

@@ -84,18 +84,20 @@ void ShadowCache::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod, int nFir
 
 void ShadowCache::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::ShadowCacheData::eUpdateStrategy nUpdateStrategy, int nLod, int nTexSize, const Vec3& vLightPos, const AABB& projectionBoundsLS, const SRenderingPassInfo& passInfo)
 {
+	const auto frameID = passInfo.GetFrameID();
+
 	pFr->ResetCasterLists();
 	pFr->nTexSize = nTexSize;
 
 	if (nUpdateStrategy != ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate)
 	{
 		pFr->pShadowCacheData->Reset();
-		pFr->nShadowGenMask = 1;
+		pFr->GetSideSampleMask().store(1);
 
 		assert(m_pLightEntity->GetLightProperties().m_pOwner);
 		pFr->pLightOwner = m_pLightEntity->GetLightProperties().m_pOwner;
 		pFr->m_Flags = m_pLightEntity->GetLightProperties().m_Flags;
-		pFr->nUpdateFrameId = passInfo.GetFrameID();
+		pFr->nUpdateFrameId = frameID;
 		pFr->nShadowMapLod = nLod;
 		pFr->vProjTranslation = pFr->aabbCasters.GetCenter();
 		pFr->vLightSrcRelPos = vLightPos - pFr->aabbCasters.GetCenter();
@@ -126,7 +128,7 @@ void ShadowCache::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::
 
 	pFr->pShadowCacheData->mProcessedCasters.insert(pFr->castersList.begin(), pFr->castersList.end());
 	pFr->pShadowCacheData->mProcessedCasters.insert(pFr->jobExecutedCastersList.begin(), pFr->jobExecutedCastersList.end());
-	pFr->RequestUpdate();
+	pFr->Invalidate();
 	pFr->bIncrementalUpdate = nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate && !pFr->pShadowCacheData->mProcessedCasters.empty();
 }
 

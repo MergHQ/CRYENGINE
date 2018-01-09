@@ -652,7 +652,7 @@ struct AllocAlign : A
 {
 	AllocArray alloc(AllocArray a, size_t nSize, size_t nAlign = 1, bool bSlack = false)
 	{
-		return A::alloc(a, Align(nSize, nAlignment), max(nAlign, nAlignment), bSlack);
+		return A::alloc(a, Align(nSize, nAlignment), std::max(nAlign, nAlignment), bSlack);
 	}
 };
 

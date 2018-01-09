@@ -788,8 +788,8 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 
 		pOD->m_LightVolumeId = PRParams.m_nDeferredLightVolumeId;
 
-		if (auto pTempData = GetMain().m_pTempData.load())
-			*((Vec4f*)&pOD->m_fTempVars[0]) = (const Vec4f&)(pTempData->userData.vEnvironmentProbeMults);
+		if (const auto pTempData = GetMain().m_pTempData.load())
+			*((Vec4f*)&pOD->m_fTempVars[0]) = Vec4f(pTempData->userData.vEnvironmentProbeMults);
 		else
 			*((Vec4f*)&pOD->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
 		;
@@ -815,6 +815,8 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 
 		passInfo.GetIRenderView()->AddPermanentObject(
 			pRenderObject,
+			IRenderView::SInstanceUpdateInfo{ pRenderObject->m_II.m_Matrix },
+			pRenderObject->m_bInstanceDataDirty,
 			passInfo);
 	}
 }

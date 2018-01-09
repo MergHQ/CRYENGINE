@@ -281,7 +281,7 @@ void CResourceSelectorDialog::OnContextMenu(QPoint const& pos)
 
 		if ((pAsset != nullptr) && (pAsset->GetType() == ESystemItemType::Trigger))
 		{
-			pContextMenu->addAction(tr("Execute Trigger"), [&]()
+			pContextMenu->addAction(tr("Execute Trigger"), [=]()
 			{
 				CAudioControlsEditorPlugin::ExecuteTrigger(pAsset->GetName());
 			});

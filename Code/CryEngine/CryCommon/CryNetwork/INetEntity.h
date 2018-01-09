@@ -217,7 +217,7 @@ struct INetEntity
 	};
 
 	//! Internal use.
-	virtual void                  RmiRegister(SRmiHandler& handler) = 0;
+	virtual void                  RmiRegister(const SRmiHandler& handler) = 0;
 	//! Internal use.
 	virtual SRmiIndex             RmiByDecoder(SRmiHandler::DecoderF decoder, SRmiHandler** handler) = 0;
 	//! Internal use.

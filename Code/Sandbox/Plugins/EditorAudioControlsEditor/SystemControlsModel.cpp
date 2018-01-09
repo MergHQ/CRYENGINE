@@ -1228,9 +1228,9 @@ bool CSystemFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex const&
 		{
 			CSystemAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(index, static_cast<int>(SystemModelUtils::EColumns::Name));
 
-			if ((pAsset != nullptr) && pAsset->IsHiddenDefault())
+			if ((pAsset != nullptr) && pAsset->IsInternalControl())
 			{
-				// Hide default controls that should not be connected to any middleware control.
+				// Hide internal controls.
 				matchesFilter = false;
 			}
 			else

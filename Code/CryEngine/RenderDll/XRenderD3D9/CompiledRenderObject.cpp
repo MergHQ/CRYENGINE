@@ -151,7 +151,7 @@ void CCompiledRenderObject::UpdatePerInstanceCB(void* pData, size_t size)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject)
+void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject, const IRenderView::SInstanceUpdateInfo& instanceInfo)
 {
 	const CCompiledRenderObject* pRootCompiled = pRenderObject->m_pCompiledObject;
 	if (pRootCompiled && pRootCompiled != this && pRootCompiled->m_perInstanceCB)
@@ -162,7 +162,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		m_rootConstants = pRootCompiled->m_rootConstants;
 		return;
 	}
-
+	
 	m_bDynamicInstancingPossible = CRendererCVars::CV_r_geominstancing != 0;
 	if (!pRenderObject->m_Instances.empty())
 		m_bDynamicInstancingPossible = false;
@@ -200,7 +200,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		m_bDynamicInstancingPossible = false;
 
 	// Common shader per instance data.
-	m_instanceShaderData.matrix = pRenderObject->m_II.m_Matrix;
+	m_instanceShaderData.matrix = instanceInfo.objectMatrix;
 	m_instanceShaderData.dissolve = dissolve;
 	m_instanceShaderData.tesselationPatchId = tessellationPatchIDOffset;
 	m_instanceShaderData.vegetationBendingRadius = pRenderObject->m_vegetationBendingData.verticalRadius;
@@ -214,7 +214,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 		CryStackAllocWithSize(HLSL_PerInstanceConstantBuffer_TerrainVegetation, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		cb->PerInstanceWorldMatrix = pRenderObject->m_II.m_Matrix;
+		cb->PerInstanceWorldMatrix = instanceInfo.objectMatrix;
 		cb->PerInstancePrevWorldMatrix = Matrix34(objPrevMatr);
 
 		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
@@ -250,7 +250,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 		CryStackAllocWithSizeCleared(HLSL_PerInstanceConstantBuffer_Skin, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		cb->PerInstanceWorldMatrix = pRenderObject->m_II.m_Matrix;
+		cb->PerInstanceWorldMatrix = instanceInfo.objectMatrix;
 		cb->PerInstancePrevWorldMatrix = Matrix34(objPrevMatr);
 
 		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
@@ -292,7 +292,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 		CryStackAllocWithSize(HLSL_PerInstanceConstantBuffer_Base, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		cb->PerInstanceWorldMatrix = pRenderObject->m_II.m_Matrix;
+		cb->PerInstanceWorldMatrix = instanceInfo.objectMatrix;
 		cb->PerInstancePrevWorldMatrix = Matrix34(objPrevMatr);
 		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
 		cb->PerInstanceCustomData =
@@ -478,20 +478,21 @@ void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTR
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView)
+bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const IRenderView::SInstanceUpdateInfo& instanceInfo, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
+
 	//int nFrameId = gEnv->pRenderer->GetFrameID(false);
 	//{ char buf[1024]; cry_sprintf(buf,"compiled: %p : frame(%d) \r\n", pRenderObject, nFrameId); OutputDebugString(buf); }
 
 	m_pRO = pRenderObject;
 	const bool bMuteWarnings = true;  // @TODO: Remove later
 
-	m_bIncomplete = true;
 	m_bCustomRenderElement = false;
 
 	// Optimization to only update per instance constant buffer and not recompile PSO,
 	// Object must be fully compiled already for this flag to have a per instance only effect.
-	const bool bInstanceDataUpdateOnly = !m_bIncomplete && pRenderObject->m_bInstanceDataDirty;
+	const bool bInstanceDataUpdateOnly = !m_bIncomplete && updateInstanceDataOnly;
 
 	// Only objects with RenderElements can be compiled
 	if (!m_pRenderElement)
@@ -510,8 +511,8 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, CRenderView *p
 		// Compile render element specific data.
 		m_bCustomRenderElement = true;
 		const bool bCompiled = m_pRenderElement->Compile(pRenderObject,pRenderView);
-		if (bCompiled)
-			m_bIncomplete = false;
+		m_bIncomplete = !bCompiled;
+
 		return bCompiled;
 	}
 
@@ -525,12 +526,16 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, CRenderView *p
 		if (!m_pRenderElement->GetGeometryInfo(geomInfo, bSupportTessellation))
 		{
 			if (!bMuteWarnings) Warning("[CCompiledRenderObject] Compile failed, GetGeometryInfo failed");
+			m_bIncomplete = true;
+
 			return true;
 		}
 
 		if (!(geomInfo.CalcStreamMask() & 1))
 		{
 			if (!bMuteWarnings) Warning("[CCompiledRenderObject] General stream missing");
+			m_bIncomplete = true;
+
 			return true;
 		}
 
@@ -541,12 +546,13 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, CRenderView *p
 		m_pTessellationAdjacencyBuffer = reinterpret_cast<CGpuBuffer*>(geomInfo.pTessellationAdjacencyBuffer);
 	}
 
-	CompilePerInstanceConstantBuffer(pRenderObject);
+	CompilePerInstanceConstantBuffer(pRenderObject, instanceInfo);
 	CompilePerInstanceExtraResources(pRenderObject);
 
 	// Data may come in later
 	if (!m_perInstanceExtraResources || !m_perInstanceExtraResources->IsValid())
 	{
+		m_bIncomplete = true;
 		return true;
 	}
 
@@ -570,6 +576,8 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, CRenderView *p
 	if (!pResources || !pResources->m_pCompiledResourceSet)
 	{
 		if (!bMuteWarnings) Warning("[CCompiledRenderObject] Compile failed, invalid resource set");
+		m_bIncomplete = true;
+
 		return true;
 	}
 	m_materialResourceSet = pResources->m_pCompiledResourceSet;
@@ -622,6 +630,8 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, CRenderView *p
 
 	if (!gcpRendD3D->GetGraphicsPipeline().CreatePipelineStates(m_pso, psoDescription, pResources->m_pipelineStateCache.get()))
 	{
+		m_bIncomplete = true;
+
 		if (!CRenderer::CV_r_shadersAllowCompilation)
 		{
 			if (!bMuteWarnings) Warning("[CCompiledRenderObject] Compile failed, PSO creation failed");

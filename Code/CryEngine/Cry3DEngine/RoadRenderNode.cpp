@@ -479,19 +479,19 @@ void CRoadRenderNode::Render(const SRendParams& RendParams, const SRenderingPass
 	if (!passInfo.RenderRoads())
 		return; // false;
 
-	CRenderObject* pObj = 0;
+	// Prepare object model matrix
+	Vec3 vWSBoxCenter = m_serializedData.worldSpaceBBox.GetCenter();
+	vWSBoxCenter.z += 0.01f;
+	const auto objMat = Matrix34::CreateTranslationMat(vWSBoxCenter);
 
-	SRenderNodeTempData* pTempData = m_pTempData.load();
-	if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pObj, NULL, passInfo))
+	CRenderObject* pObj = nullptr;
+	if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData.load(), pObj, nullptr, IRenderView::SInstanceUpdateInfo{ objMat }, passInfo))
 		return;
 
 	pObj->m_pRenderNode = this;
 	pObj->m_ObjFlags |= RendParams.dwFObjFlags;
 	pObj->m_II.m_AmbColor = RendParams.AmbientColor;
-	Vec3 vWSBoxCenter = m_serializedData.worldSpaceBBox.GetCenter();
 	pObj->m_editorSelectionID = m_nEditorSelectionID;
-	vWSBoxCenter.z += 0.01f;
-	pObj->m_II.m_Matrix.SetTranslation(vWSBoxCenter);
 
 	//RendParams.nRenderList = EFSLIST_DECAL;
 
@@ -655,7 +655,7 @@ void CRoadRenderNode::GetClipPlanes(Plane* pPlanes, int nPlanesNum, int nVertId)
 
 void CRoadRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_serializedData.worldSpaceBBox.Move(delta);
 }
 

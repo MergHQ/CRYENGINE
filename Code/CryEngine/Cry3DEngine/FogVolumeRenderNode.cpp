@@ -509,7 +509,7 @@ void CFogVolumeRenderNode::GetMemoryUsage(ICrySizer* pSizer) const
 
 void CFogVolumeRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_pos += delta;
 	m_matNodeWS.SetTranslation(m_matNodeWS.GetTranslation() + delta);
 	m_matWS.SetTranslation(m_matWS.GetTranslation() + delta);
@@ -567,7 +567,7 @@ void CFogVolumeRenderNode::TraceFogVolumes(const Vec3& worldPos, ColorF& fogColo
 
 					color.a = 1.0f - color.a;   // 0 = transparent, 1 = opaque
 
-																			// blend fog colors
+					// blend fog colors
 					localFogColor.r = Lerp(localFogColor.r, color.r, color.a);
 					localFogColor.g = Lerp(localFogColor.g, color.g, color.a);
 					localFogColor.b = Lerp(localFogColor.b, color.b, color.a);
