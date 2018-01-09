@@ -632,11 +632,13 @@ private:
 
 	// Aux Geometry Collector Pool
 	SElementPool<CAuxGeomCBCollector> m_auxGeometryCollectorPool{
+		[] { return new CAuxGeomCBCollector; }, 
 		[](CAuxGeomCBCollector* pAuxGeomCBCollector) { pAuxGeomCBCollector->FreeMemory(); }
 	};
 
 	// Aux Geometry Command Buffer Pool
 	SElementPool<CAuxGeomCB> m_auxGeomCBPool{
+		[] { return new CAuxGeomCB; }, 
 		[](CAuxGeomCB* pAuxGeomCB) { pAuxGeomCB->FreeMemory(); }
 	};
 

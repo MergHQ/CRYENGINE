@@ -10,6 +10,7 @@
 #include "RenderThread.h"                             // SRenderThread
 #include "../Scaleform/ScaleformRender.h"
 #include "../XRenderD3D9/DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h" // CSubmissionQueue_DX11
+#include "ElementPool.h"
 
 typedef void (PROCRENDEF)(SShaderPass* l, int nPrimType);
 
@@ -1578,8 +1579,8 @@ protected:
 	Vec4  m_highlightParams;
 
 	// Separate render views per recursion
-	std::list             <CRenderView*> m_pRenderViewsRequested  [IRenderView::eViewType_Count];
-	ConcQueue<UnboundMPSC, CRenderView*> m_pRenderViewsRequestable[IRenderView::eViewType_Count];
+	SElementPool<CRenderView> m_pRenderViewPool[IRenderView::eViewType_Count];
+	void InitRenderViewPool();
 
 	// Temporary render objects storage
 	struct STempObjects

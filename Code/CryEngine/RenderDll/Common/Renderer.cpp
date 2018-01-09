@@ -130,7 +130,9 @@ CRenderer::CRenderer()
 	: m_bEditor(false)
 	, m_beginFrameCount(0)
 	, m_bStopRendererAtFrameEnd(false)
-{}
+{
+	InitRenderViewPool();
+}
 
 void CRenderer::InitRenderer()
 {
@@ -673,42 +675,19 @@ void CRenderView::DeleteThis() const
 
 CRenderView* CRenderer::GetOrCreateRenderView(IRenderView::EViewType Type)
 {
-	CRenderView* pRenderView;
-
-	if (!m_pRenderViewsRequestable[Type].dequeue(pRenderView))
-	{
-		AUTO_LOCK(gs_RenderViewLock);
-
-		pRenderView = new CRenderView(cc_RenderViewName[Type], IRenderView::EViewType(Type));
-		pRenderView->SetManaged();
-
-		m_pRenderViewsRequested[Type].emplace_back(pRenderView);
-	}
-
-	return pRenderView;
+	return m_pRenderViewPool[Type].GetOrCreateOneElement();
 }
 
 void CRenderer::ReturnRenderView(CRenderView* pRenderView)
 {
 	pRenderView->Clear();
-
-	m_pRenderViewsRequestable[pRenderView->GetType()].enqueue(pRenderView);
+	m_pRenderViewPool[pRenderView->GetType()].ReturnToPool(pRenderView);
 }
 
 void CRenderer::DeleteRenderViews()
 {
-	// Release render views
-	CRenderView* pRenderView;
 	for (int type = 0; type < IRenderView::eViewType_Count; ++type)
-	{
-		while (m_pRenderViewsRequestable[type].dequeue(pRenderView));
-
-		while (m_pRenderViewsRequested[type].size())
-		{
-			delete m_pRenderViewsRequested[type].back();
-			m_pRenderViewsRequested[type].pop_back();
-		}
-	}
+		m_pRenderViewPool[type].ShutDown();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4501,6 +4480,21 @@ void CRenderer::RT_DelayedDeleteResources(bool bAllResources)
 			delete m_resourcesToDelete[buffer][i];
 		}
 		m_resourcesToDelete[buffer].clear();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CRenderer::InitRenderViewPool()
+{
+	for (int type = 0; type < IRenderView::eViewType_Count; ++type)
+	{
+		m_pRenderViewPool[type].allocElementFunction = [type]() -> CRenderView*
+		{
+			CRenderView* pRenderView = new CRenderView(cc_RenderViewName[type], IRenderView::EViewType(type));
+			pRenderView->SetManaged();
+			return pRenderView;
+		};
+		m_pRenderViewPool[type].freeElementFunction = [](CRenderView*) {};
 	}
 }
 
