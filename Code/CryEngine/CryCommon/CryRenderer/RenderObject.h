@@ -228,9 +228,10 @@ public:
 	float m_fAlpha;                    //!< Object alpha.
 	float m_fDistance;                 //!< Distance to the object.
 
+	//!< Custom sort value.
 	union
 	{
-		float  m_fSort;                  //!< Custom sort value.
+		float  m_fSort;
 		uint16 m_nSort;
 	};
 
@@ -250,18 +251,18 @@ public:
 
 	uint32 m_nMaterialLayers;          //!< Which mtl layers active and how much to blend them
 
-	IRenderNode* m_pRenderNode;         //!< Will define instance id.
-	IMaterial* m_pCurrMaterial;         //!< Parent material used for render object.
-	CRenderElement* m_pRE;            //!< RenderElement used by this CRenderObject
+	IRenderNode* m_pRenderNode;        //!< Will define instance id.
+	IMaterial* m_pCurrMaterial;        //!< Parent material used for render object.
+	CRenderElement* m_pRE;             //!< RenderElement used by this CRenderObject
 
 	// Linked list of compiled objects, one per mesh subset (Chunk).
 	CCompiledRenderObject* m_pCompiledObject;
 
 	// Common flags
-	uint32 m_bWasDeleted        : 1;   //!< Object was deleted and in unusable state
-	uint32 m_bPermanent         : 1;   //!< Object is permanent and persistent across multiple frames
-	uint32 m_bInstanceDataDirty : 1;   //!< Object per instance data dirty and needs to be recompiled, (When only the instance data need recompilation)
-	uint32 m_bAllCompiledValid  : 1;   //!< Set to true when compiled successfully.
+	bool m_bWasDeleted;                //!< Object was deleted and in unusable state
+	bool m_bPermanent;                 //!< Object is permanent and persistent across multiple frames
+	bool m_bInstanceDataDirty;         //!< Object per instance data dirty and needs to be recompiled, (When only the instance data need recompilation)
+	bool m_bAllCompiledValid;          //!< Set to true when compiled successfully.
 
 	volatile uint32 m_passReadyMask;   //!< For Persistent Render Objects, This render object will be submitted for filling once for every not ready pass (should be 32 bit for atomic operation to work on it)
 

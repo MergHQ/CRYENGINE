@@ -273,9 +273,9 @@ public:
 
 	uint16 CheckCachedNearestCubeProbe(IRenderNode* pEnt, Vec4* pEnvProbMults = nullptr)
 	{
-		if (SRenderNodeTempData* pTempData = pEnt->m_pTempData.load())
+		if (const auto tempDataPtr = pEnt->m_pTempData.load())
 		{
-			SRenderNodeTempData::SUserData& pUserDataRN = pTempData->userData;
+			SRenderNodeTempData::SUserData& pUserDataRN = tempDataPtr->userData;
 
 			const uint16 nCacheClearThreshold = 32;
 			++pUserDataRN.nCubeMapIdCacheClearCounter;
@@ -453,7 +453,7 @@ public:
 	void         EndOcclusionCulling();
 	void         RenderNonJobObjects(const SRenderingPassInfo& passInfo);
 	uint32       GetResourcesModificationChecksum(IRenderNode* pOwnerNode) const;
-	bool         AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const SRenderingPassInfo& passInfo) const;
+	bool         AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const IRenderView::SInstanceUpdateInfo&, const SRenderingPassInfo& passInfo) const;
 	IRenderMesh* GetBillboardRenderMesh(IMaterial* pMaterial);
 
 public:

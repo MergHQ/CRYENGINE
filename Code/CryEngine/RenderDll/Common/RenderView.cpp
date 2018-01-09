@@ -871,14 +871,19 @@ uint32 CRenderView::GetBatchFlags(int nRenderList) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderView::AddPermanentObjectInline(CPermanentRenderObject* pObject, SRendItemSorter sorter, int shadowFrustumSide)
+void CRenderView::AddPermanentObjectImpl(CPermanentRenderObject* pObject, const SInstanceUpdateInfo& instanceUpdateInfo, bool instanceDataDirty, SRendItemSorter sorter, int shadowFrustumSide)
 {
+	CRY_ASSERT(!pObject->m_bInstanceDataDirty || instanceDataDirty);
+
 	SPermanentObjectRecord rec;
 	rec.pRenderObject = pObject;
 	rec.itemSorter = sorter.GetValue();
 	rec.shadowFrustumSide = shadowFrustumSide;
+	rec.instanceUpdateInfo = instanceUpdateInfo;
+	rec.requiresInstanceDataUpdate = instanceDataDirty;
+		
 	m_permanentObjects.push_back(rec);
-
+	
 	if (IsShadowGenView())
 	{
 		for (CPermanentRenderObject* pCurObj = pObject; pCurObj; pCurObj = pCurObj->m_pNextPermanent)
@@ -890,25 +895,29 @@ void CRenderView::AddPermanentObjectInline(CPermanentRenderObject* pObject, SRen
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderView::AddPermanentObject(CRenderObject* pObject, const SRenderingPassInfo& passInfo)
+void CRenderView::AddPermanentObject(CRenderObject* pObject, const SInstanceUpdateInfo& instanceUpdateInfo, bool instanceDataDirty, const SRenderingPassInfo& passInfo)
 {
 	assert(pObject->m_bPermanent);
 
 #ifndef NDEBUG
 	// Expand normal render items
-	for (int obj = 0, numObj = m_permanentObjects.size(); obj < numObj; obj++)
+	for (const auto& record : m_permanentObjects)
 	{
-		const SPermanentObjectRecord& RESTRICT_REFERENCE record = m_permanentObjects[obj];
 		CPermanentRenderObject* RESTRICT_POINTER pRenderObject = record.pRenderObject;
 		assert(pRenderObject->m_bPermanent);
 
 		CRY_ASSERT_MESSAGE(pRenderObject != pObject, "Adding RenderObject twice is suspicious!");
 		if (pRenderObject == pObject)
+		{
+			// Record already exists, update instance data.
+			record.instanceUpdateInfo = instanceUpdateInfo;
+			record.requiresInstanceDataUpdate = instanceDataDirty;
 			return;
+		}
 	}
 #endif
 
-	AddPermanentObjectInline(static_cast<CPermanentRenderObject*>(pObject), passInfo.GetRendItemSorter(), passInfo.ShadowFrustumSide());
+	AddPermanentObjectImpl(static_cast<CPermanentRenderObject*>(pObject), instanceUpdateInfo, instanceDataDirty, passInfo.GetRendItemSorter(), passInfo.ShadowFrustumSide());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1590,13 +1599,12 @@ void CRenderView::ExpandPermanentRenderObjects()
 	uint32 passMask = 1 << passId;
 
 	// Expand normal render items
-	for (int obj = 0, numObj = m_permanentObjects.size(); obj < numObj; obj++)
+	for (auto record : m_permanentObjects)
 	{
-		const SPermanentObjectRecord& RESTRICT_REFERENCE record = m_permanentObjects[obj];
-		CPermanentRenderObject* RESTRICT_POINTER pRenderObject = record.pRenderObject;
+		auto* pRenderObject = record.pRenderObject;
 		assert(pRenderObject->m_bPermanent);
 
-		bool bInvalidateChildObjects = false;
+		bool bInvalidateChildObjects = false; // TODO: investigate dependencies which require child object invalidation
 
 		// Submit all valid objects (skip not ready and helper objects), TODO: release helper objects
 		while (pRenderObject)
@@ -1611,7 +1619,11 @@ void CRenderView::ExpandPermanentRenderObjects()
 			}
 #endif
 
-			bool bRecompile = (pRenderObject->m_passReadyMask != pRenderObject->m_compiledReadyMask) && (pRenderObject->m_passReadyMask & passMask);
+			bool needsCompilation =
+				((pRenderObject->m_passReadyMask != pRenderObject->m_compiledReadyMask) &&
+				(pRenderObject->m_passReadyMask & passMask)) ||
+				!pRenderObject->m_bAllCompiledValid ||
+				 bInvalidateChildObjects;
 
 			auto& permanent_items = pRenderObject->m_permanentRenderItems[renderPassType];
 			auto& RESTRICT_REFERENCE shadow_items = pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_Shadows];
@@ -1645,8 +1657,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 							if (((volatile CCompiledRenderObject*)pri.m_pCompiledObject) == nullptr)
 							{
 								pri.m_pCompiledObject = AllocCompiledObject(pRenderObject, pri.m_pRenderElement, shaderItem); // Allocate new CompiledRenderObject.
-								pRenderObject->m_bInstanceDataDirty = false;                                                  // In this case everything need to be recompiled, not only instance data.
-								bRecompile = true;
+								needsCompilation = true;
 							}
 						}
 					}
@@ -1682,18 +1693,17 @@ void CRenderView::ExpandPermanentRenderObjects()
 
 				if (pri.m_pRenderElement && pri.m_pRenderElement->m_Flags & (FCEF_DIRTY | FCEF_SKINNED | FCEF_UPDATEALWAYS))
 				{
-					pRenderObject->m_bInstanceDataDirty = false; // In this case everything need to be recompiled, not only instance data.
-					bRecompile = true;
+					needsCompilation = true;
 				}
 			}
 
-			if (bRecompile ||
-			     pRenderObject->m_bInstanceDataDirty ||
-			    !pRenderObject->m_bAllCompiledValid ||
-			    bInvalidateChildObjects)
+			const auto needsInstanceDataUpdateOnly = !needsCompilation && record.requiresInstanceDataUpdate;
+			if (needsCompilation ||
+				needsInstanceDataUpdateOnly ||
+			    !pRenderObject->m_bAllCompiledValid)
 			{
-				CPermanentRenderObject* pNonRestrict = pRenderObject;
-				m_permanentRenderObjectsToCompile.push_back(pNonRestrict);
+				SPermanentRenderObjectCompilationData compilationData{ pRenderObject, record.instanceUpdateInfo, needsInstanceDataUpdateOnly };
+				m_permanentRenderObjectsToCompile.push_back(compilationData);
 				pRenderObject->m_compiledReadyMask &= ~passMask;      // This compiled masks invalid
 				bInvalidateChildObjects = true;
 			}
@@ -1723,14 +1733,13 @@ void CRenderView::CompileModifiedRenderObjects()
 	uint32 passId = IsShadowGenView() ? 1 : 0;
 	uint32 passMask = 1 << passId;
 
-	int numObjects = m_permanentRenderObjectsToCompile.size();
+	const auto numObjects = m_permanentRenderObjectsToCompile.size();
+	const auto nFrameId = gEnv->pRenderer->GetFrameID(false);
 
-	int nFrameId = gEnv->pRenderer->GetFrameID(false);
-	//{ char buf[1024]; cry_sprintf(buf, "CRenderView::CompileModifiedRenderObjects: frame(%d) numObjects(%d) \r\n", nFrameId,numObjects); OutputDebugString(buf); }
-
-	for (int obj = 0; obj < numObjects; obj++)
+	for (const auto &compilationData : m_permanentRenderObjectsToCompile)
 	{
-		CPermanentRenderObject* pRenderObject = m_permanentRenderObjectsToCompile[obj];
+		auto* pRenderObject = compilationData.pObject;
+		const auto &updateInfo = compilationData.instanceUpdateInfo;
 
 		//if (pRenderObject->m_compiledReadyMask == pRenderObject->m_passReadyMask &&	pRenderObject->m_lastCompiledFrame == nFrameId)
 		if (pRenderObject->m_compiledReadyMask == pRenderObject->m_passReadyMask)
@@ -1746,18 +1755,16 @@ void CRenderView::CompileModifiedRenderObjects()
 		bool bAllCompiled = true;
 
 		// compile items
-		auto& RESTRICT_REFERENCE shadow_items = pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_Shadows];
-		auto& RESTRICT_REFERENCE general_items = pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_General];
+		auto& shadow_items = pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_Shadows];
+		auto& general_items = pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_General];
 
 		for (int i = 0, num = general_items.size(); i < num; i++)
 		{
 			auto& pri = general_items[i];
 			if (!pri.m_pCompiledObject)
 				continue;
-			if (!pri.m_pCompiledObject->Compile(pRenderObject,this))
-			{
+			if (!pri.m_pCompiledObject->Compile(pRenderObject, updateInfo, this, compilationData.updateInstanceDataOnly))
 				bAllCompiled = false;
-			}
 		}
 
 		for (int i = 0, num = shadow_items.size(); i < num; i++)
@@ -1765,7 +1772,7 @@ void CRenderView::CompileModifiedRenderObjects()
 			auto& pri = shadow_items[i];
 			if (!pri.m_pCompiledObject || pri.m_pCompiledObject->m_bSharedWithShadow) // This compiled object must be already compiled with the general items
 				continue;
-			if (!pri.m_pCompiledObject->Compile(pRenderObject,this))
+			if (!pri.m_pCompiledObject->Compile(pRenderObject, updateInfo, this, compilationData.updateInstanceDataOnly))
 				bAllCompiled = false;
 		}
 
@@ -1785,7 +1792,8 @@ void CRenderView::CompileModifiedRenderObjects()
 	for (int i = 0; i < numTempObjects; i++)
 	{
 		auto& pair = m_temporaryCompiledObjects[i]; // first=CRenderObject, second=CCompiledObject
-		pair.pCompiledObject->Compile(pair.pRenderObject,this);
+		SInstanceUpdateInfo instanceInfo = { pair.pRenderObject->m_II.m_Matrix };
+		pair.pCompiledObject->Compile(pair.pRenderObject, instanceInfo, this, false);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1820,7 +1828,7 @@ void CRenderView::UpdateModifiedShaderItems()
 	}
 
 	m_shaderItemsToUpdate.CoalesceMemory();
-
+	 
 	for (auto& item : m_shaderItemsToUpdate)
 	{
 		auto pShaderResources = item.first;

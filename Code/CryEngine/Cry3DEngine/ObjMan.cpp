@@ -1155,19 +1155,14 @@ void CObjManager::UnregisterForGarbage(CStatObj* pObject)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const SRenderingPassInfo& passInfo) const
+bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const IRenderView::SInstanceUpdateInfo& instanceUpdateInfo, const SRenderingPassInfo& passInfo) const
 {
 	CRY_ASSERT(pRenderObject == nullptr);
 
-	if (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0 && (!pLodValue || !pLodValue->DissolveRefA()))
+	const auto shouldCreatePermanentObject = (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0 && (!pLodValue || !pLodValue->DissolveRefA())) &&
+		!(passInfo.IsRecursivePass() || (pTempData && (pTempData->userData.m_pFoliage || (pTempData->userData.pOwnerNode && (pTempData->userData.pOwnerNode->GetRndFlags() & ERF_SELECTED)))));
+	if (shouldCreatePermanentObject)
 	{
-		if (passInfo.IsRecursivePass() || (pTempData && (pTempData->userData.m_pFoliage || (pTempData->userData.pOwnerNode && (pTempData->userData.pOwnerNode->GetRndFlags() & ERF_SELECTED)))))
-		{
-			// Recursive and Debug passes do not support permanent render objects now...
-			pRenderObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
-			return false;
-		}
-
 		if (pLodValue && pLodValue->LodA() == -1 && pLodValue->LodB() == -1)
 			return true;
 
@@ -1182,12 +1177,23 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 		uint32 passId = passInfo.IsShadowPass() ? 1 : 0;
 		uint32 passMask = 1 << passId;
 
-		passInfo.GetIRenderView()->AddPermanentObject(pRenderObject = pTempData->GetRenderObject(nLod), passInfo);
+		pRenderObject = pTempData->GetRenderObject(nLod);
+
+		// Update instance only for dirty objects
+		const auto instanceDataDirty = pRenderObject->m_bInstanceDataDirty;
+		passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, instanceUpdateInfo, instanceDataDirty, passInfo);
 
 		// Has this object already been filled?
 		int previousMask = CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);
 		if (previousMask & passMask) // Object drawn once => fast path.
 		{
+			if (instanceDataDirty)
+			{
+				// Update instance matrix
+				pRenderObject->m_II.m_Matrix = instanceUpdateInfo.objectMatrix;
+				pRenderObject->m_bInstanceDataDirty = false;
+			}
+
 			if (GetCVars()->e_BBoxes && pTempData && pTempData->userData.pOwnerNode)
 				GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pRenderObject->m_fDistance, passInfo);
 
@@ -1195,12 +1201,19 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 		}
 
 		// Permanent object needs to be filled first time,
-		if (pTempData) pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
-
-		return false;
+		if (pTempData && pTempData->userData.pOwnerNode)
+			pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
+	}
+	else
+	{
+		// Fallback to temporary render object
+		pRenderObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 	}
 
-	pRenderObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
+	// We do not have a persistant render object
+	// Always update instance matrix
+	pRenderObject->m_II.m_Matrix = instanceUpdateInfo.objectMatrix;
+
 	return false;
 }
 

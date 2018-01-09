@@ -713,7 +713,7 @@ IRenderMesh* CBrush::GetRenderMesh(int nLod)
 
 void CBrush::OffsetPosition(const Vec3& delta)
 {
-	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_Matrix.SetTranslation(m_Matrix.GetTranslation() + delta);
 	InvalidatePermanentRenderObjectMatrix();
 	m_WSBBox.Move(delta);
@@ -803,7 +803,6 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	 */
 
 	Matrix34 transformMatrix = m_Matrix;
-
 	if (GetRndFlags() & ERF_FOB_NEAREST)
 	{
 		if (passInfo.IsRecursivePass()) // Nearest objects are not rendered in the recursive passes.
@@ -813,29 +812,28 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		CalcNearestTransform(transformMatrix, passInfo);
 	}
 
-	CRenderObject* pObj = 0;
-
 	auto pTempData = m_pTempData.load();
+	if (!pTempData)
+	{
+		CRY_ASSERT(false);
+		return;
+	}
+
+	CRenderObject* pObj = nullptr;
 	if (m_pFoliage || m_pDeform || (m_dwRndFlags & ERF_HUD))
 	{
 		// Foliage and deform do not support permanent render objects
 		// HUD is managed in custom render-lists and also doesn't support it
 		pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
+		pObj->m_II.m_Matrix = transformMatrix;
 	}
-
 	if (!pObj)
 	{
-		if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pObj, &lodValue, passInfo))
-		{
-			if (pObj && pObj->m_bInstanceDataDirty)
-			{
-				pObj->m_II.m_Matrix = transformMatrix;
-			}
+		if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pObj, &lodValue, IRenderView::SInstanceUpdateInfo{ transformMatrix }, passInfo))
 			return;
-		}
 	}
 
-	SRenderNodeTempData::SUserData& userData = pTempData->userData;
+	const auto& userData = pTempData->userData;
 
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	const Vec3 vObjCenter = CBrush::GetBBox().GetCenter();
@@ -844,7 +842,6 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	pObj->m_fDistance = pObj->m_bPermanent ? 0 : sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
 
 	pObj->m_pRenderNode = this;
-	pObj->m_II.m_Matrix = transformMatrix;
 	pObj->m_fAlpha = 1.f;
 	IF (!m_bDrawLast, 1)
 		pObj->m_nSort = fastround_positive(pObj->m_fDistance * 2.0f);
@@ -1042,7 +1039,7 @@ void CBrush::InvalidatePermanentRenderObjectMatrix()
 		// Compound unmerged stat objects create duplicate sub render objects and do not support fast matrix only instance update for PermanentRenderObject
 		InvalidatePermanentRenderObject();
 	}
-	else if (auto pTempData = m_pTempData.load())
+	else if (const auto pTempData = m_pTempData.load())
 	{
 		// Special optimization when only matrix change, we invalidate render object instance data flag
 		pTempData->InvalidateRenderObjectsInstanceData();

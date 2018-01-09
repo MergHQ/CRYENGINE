@@ -397,9 +397,12 @@ void CTerrainNode::SetupTexGenParams(SSurfaceType* pSurfaceType, float* pOutPara
 
 void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 {
-	SRenderNodeTempData* pTempData = Get3DEngine()->CheckAndCreateRenderNodeTempData(this, passInfo);
+	const auto pTempData = Get3DEngine()->CheckAndCreateRenderNodeTempData(this, passInfo);
 	if (!pTempData)
+	{
+		CRY_ASSERT(false);
 		return;
+	}
 
 	// Use mesh instancing for distant low-lod sectors and during shadow map generation
 	if (passInfo.IsShadowPass() || (m_nTreeLevel >= GetCVars()->e_TerrainMeshInstancingMinLod))
@@ -411,19 +414,20 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 
 		IRenderMesh* pRenderMesh = GetSharedRenderMesh(int(sectorSize / stepSize));
 
-		CRenderObject* pTerrainRenderObject = 0;
+		CRenderObject* pTerrainRenderObject = nullptr;
 
-		CLodValue dymmyLod(3, 0, 3);
-		if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &dymmyLod, passInfo))
+		// Prepare mesh model matrix
+		Vec3 vScale = GetBBox().GetSize();
+		vScale.z = 1.f;
+		const auto objMat = Matrix34::CreateScale(vScale, Vec3{ static_cast<float>(m_nOriginX), static_cast<float>(m_nOriginY), 0.0f });
+
+		CLodValue lodValue(3, 0, 3);
+		if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &lodValue, IRenderView::SInstanceUpdateInfo{ objMat }, passInfo))
 		{
-			pTerrainRenderObject->m_pRenderNode = 0;
+			pTerrainRenderObject->m_pRenderNode = nullptr;
 			pTerrainRenderObject->m_II.m_AmbColor = Get3DEngine()->GetSkyColor();
 			pTerrainRenderObject->m_fDistance = m_arrfDistance[passInfo.GetRecursiveLevel()];
 
-			Vec3 vScale = GetBBox().GetSize();
-			vScale.z = 1.f;
-			pTerrainRenderObject->m_II.m_Matrix.SetIdentity();
-			pTerrainRenderObject->m_II.m_Matrix.SetScale(vScale, Vec3(m_nOriginX, m_nOriginY, 0));
 			pTerrainRenderObject->m_ObjFlags |= FOB_TRANS_TRANSLATE | FOB_TRANS_SCALE;
 
 			pTerrainRenderObject->m_nTextureID = -(int)m_nTexSet.nSlot0 - 1;
@@ -440,20 +444,20 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 
 	_smart_ptr<IRenderMesh>& pRenderMesh = GetLeafData()->m_pRenderMesh;
 
-	CRenderObject* pTerrainRenderObject = 0;
+	CRenderObject* pTerrainRenderObject = nullptr;
 
-	CLodValue dymmyLod(0, 0, 0);
-	if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &dymmyLod, passInfo))
+	// Prepare mesh model matrix
+	Vec3 vOrigin = { static_cast<float>(m_nOriginX), static_cast<float>(m_nOriginY), 0.0f };
+	const auto objMat = Matrix34::CreateTranslationMat(vOrigin);
+
+	CLodValue lodValue(0, 0, 0);
+	if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &lodValue, IRenderView::SInstanceUpdateInfo{ objMat }, passInfo))
 	{
-		pTerrainRenderObject->m_pRenderNode = 0;
+		pTerrainRenderObject->m_pRenderNode = nullptr;
 		pTerrainRenderObject->m_II.m_AmbColor = Get3DEngine()->GetSkyColor();
 		pTerrainRenderObject->m_fDistance = m_arrfDistance[passInfo.GetRecursiveLevel()];
 
-		pTerrainRenderObject->m_II.m_Matrix.SetIdentity();
-		Vec3 vOrigin(m_nOriginX, m_nOriginY, 0);
-		pTerrainRenderObject->m_II.m_Matrix.SetTranslation(vOrigin);
 		pTerrainRenderObject->m_ObjFlags |= FOB_TRANS_TRANSLATE;
-
 		if (!passInfo.IsShadowPass() && passInfo.RenderShadows())
 			pTerrainRenderObject->m_ObjFlags |= FOB_INSHADOW;
 
@@ -504,22 +508,18 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 			{
 				CRenderObject* pDetailObj = nullptr;
 
-				CLodValue dymmyLod(1 + nP, 0, 1 + nP);
-				if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pDetailObj, &dymmyLod, passInfo))
+				CLodValue detailLodValue(1 + nP, 0, 1 + nP);
+				if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pDetailObj, &detailLodValue, IRenderView::SInstanceUpdateInfo{ objMat }, passInfo))
 					continue;
-				;
 
-				pDetailObj->m_pRenderNode = 0;
-				pDetailObj->m_ObjFlags |= (((passInfo.IsGeneralPass()) ? FOB_NO_FOG : 0)); // enable fog on recursive rendering (per-vertex)
+				pDetailObj->m_pRenderNode = nullptr;
 				pDetailObj->m_II.m_AmbColor = Get3DEngine()->GetSkyColor();
 				pDetailObj->m_fDistance = m_arrfDistance[passInfo.GetRecursiveLevel()];
-				pDetailObj->m_II.m_Matrix = pTerrainRenderObject->m_II.m_Matrix;
-				pDetailObj->m_ObjFlags |= FOB_TRANS_TRANSLATE | FOB_TERRAIN_LAYER;
 
+				pDetailObj->m_ObjFlags |= passInfo.IsGeneralPass() ? FOB_NO_FOG : 0; // enable fog on recursive rendering (per-vertex)
+				pDetailObj->m_ObjFlags |= FOB_TRANS_TRANSLATE | FOB_TERRAIN_LAYER;
 				if (passInfo.RenderShadows())
-				{
 					pDetailObj->m_ObjFlags |= FOB_INSHADOW;
-				}
 
 				pDetailObj->m_nTextureID = -(int)m_nTexSet.nSlot0 - 1;
 				pDetailObj->m_data.m_pTerrainSectorTextureInfo = &m_nTexSet;

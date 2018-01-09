@@ -2928,14 +2928,21 @@ void CMergedMeshRenderNode::RenderRenderMesh(
   , const SRenderingPassInfo& passInfo
   )
 {
-	CRenderObject* ro = 0;
+	const auto pTempData = m_pTempData.load();
+	if (!pTempData)
+	{
+		CRY_ASSERT(false);
+		return;
+	}
 
-	auto pTempData = m_pTempData.load();
-	if (GetObjManager()->AddOrCreatePersistentRenderObject((type == RUT_STATIC) ? pTempData : NULL, ro, NULL, passInfo))
+	// Prepare object model matrix
+	const auto objMat = Matrix34::CreateTranslationMat(m_pos);
+
+	CRenderObject* ro = nullptr;
+	if (GetObjManager()->AddOrCreatePersistentRenderObject(type == RUT_STATIC ? pTempData : nullptr, ro, nullptr, IRenderView::SInstanceUpdateInfo{ objMat }, passInfo))
 		return;
 
-	std::vector<SMMRM>& renderMeshes = m_renderMeshes[type];
-	SSectorTextureSet* pTerrainTexInfo = NULL;
+	SSectorTextureSet* pTerrainTexInfo = nullptr;
 	byte ucSunDotTerrain = 255;
 	const float fRenderQuality = min(1.f, max(1.f - distance / (GetCVars()->e_MergedMeshesActiveDist * 0.3333f), 0.f));
 
@@ -2952,15 +2959,13 @@ void CMergedMeshRenderNode::RenderRenderMesh(
 		float fRadius = GetBBox().GetRadius();
 		Vec3 vTerrainNormal = GetTerrain()->GetTerrainSurfaceNormal(GetBBox().GetCenter(), fRadius);
 		ucSunDotTerrain = (uint8)(CLAMP((vTerrainNormal.Dot(Get3DEngine()->GetSunDirNormalized())) * 255.f, 0, 255));
-		GetObjManager()->FillTerrainTexInfo(
-		  static_cast<COctreeNode*>(m_pOcNode)
-		  , distance
-		  , pTerrainTexInfo
-		  , static_cast<COctreeNode*>(m_pOcNode)->GetObjectsBBox());
+		GetObjManager()->FillTerrainTexInfo(static_cast<COctreeNode*>(m_pOcNode),
+			distance,
+			pTerrainTexInfo,
+			static_cast<COctreeNode*>(m_pOcNode)->GetObjectsBBox());
 	}
 
 	ro->m_II.m_AmbColor = m_rendParams.AmbientColor;
-	ro->m_II.m_Matrix.SetTranslationMat(m_pos);
 	ro->m_fAlpha = m_rendParams.fAlpha;
 	ro->m_ObjFlags = FOB_TRANS_MASK | FOB_INSHADOW | FOB_DYNAMIC_OBJECT;
 	if (pTerrainTexInfo)
@@ -2993,22 +2998,22 @@ void CMergedMeshRenderNode::RenderRenderMesh(
 	if (Get3DEngine()->IsTessellationAllowed(ro, passInfo))
 		ro->m_ObjFlags |= FOB_ALLOW_TESSELLATION;
 
-	for (size_t i = 0; i < renderMeshes.size(); ++i)
+	bool first = true;
+	for (const auto& mesh : m_renderMeshes[type])
 	{
-		SMMRM& mesh = renderMeshes[i];
-
-		CRenderObject* roMat = i ? GetRenderer()->EF_DuplicateRO(ro, passInfo) : ro;
+		CRenderObject* roMat = first ? ro : GetRenderer()->EF_DuplicateRO(ro, passInfo);
 
 		roMat->m_pCurrMaterial = mesh.mat;
 
-		for (size_t j = 0; j < mesh.rms.size(); ++j)
+		for (auto& rm : mesh.rms)
 		{
-			IRenderMesh* rm = mesh.rms[j];
 			IF (!rm, 0)
 				continue;
 
 			rm->Render(roMat, passInfo);
 		}
+
+		first = false;
 	}
 }
 

@@ -265,8 +265,8 @@ public:
 		m_fWSMaxViewDist = 0;
 		m_nInternalFlags = 0;
 		m_nMaterialLayers = 0;
-		m_pTempData = nullptr;
-		m_pPrev = m_pNext = NULL;
+		m_pTempData.store(nullptr);
+		m_pPrev = m_pNext = nullptr;
 		m_cShadowLodBias = 0;
 		m_cStaticShadowLod = 0;
 		m_nEditorSelectionID = 0;
@@ -442,7 +442,7 @@ public:
 	ILINE void SetDrawFrame(int nFrameID, int nRecursionLevel)
 	{
 		// If we can get a pointer atomically it must be valid [until the end of the frame] and we can access it
-		SRenderNodeTempData* pTempData = m_pTempData.load();
+		const auto pTempData = m_pTempData.load();
 		CRY_ASSERT(pTempData);
 
 		int* pDrawFrames = pTempData->userData.lastSeenFrame;
@@ -452,7 +452,7 @@ public:
 	ILINE int GetDrawFrame(int nRecursionLevel = 0) const
 	{
 		// If we can get a pointer atomically it must be valid [until the end of the frame] and we can access it
-		SRenderNodeTempData* pTempData = m_pTempData.load();
+		const auto pTempData = m_pTempData.load();
 		IF (!pTempData, 0) return 0;
 
 		int* pDrawFrames = pTempData->userData.lastSeenFrame;

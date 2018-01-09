@@ -2015,7 +2015,7 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 			m_light.m_nStencilRef[1] = m_light.m_pClipVolumes[1]->GetStencilRef();
 
 		m_light.m_nStencilRef[0] = 0;
-		if (SRenderNodeTempData* pTempData = m_pTempData.load())
+		if (const auto pTempData = m_pTempData.load())
 		{
 			m_light.m_nStencilRef[0] = pTempData->userData.m_pClipVolume ? pTempData->userData.m_pClipVolume->GetStencilRef() : 0;
 		}
@@ -2136,7 +2136,7 @@ void CLightEntity::SetOwnerEntity(IEntity* pEnt)
 
 void CLightEntity::OffsetPosition(const Vec3& delta)
 {
-	if (auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_light.m_Origin += delta;
 	m_light.m_BaseOrigin += delta;
 	m_Matrix.SetTranslation(m_Matrix.GetTranslation() + delta);

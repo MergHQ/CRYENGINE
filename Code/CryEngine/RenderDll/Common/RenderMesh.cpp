@@ -3105,14 +3105,14 @@ void CRenderMesh::AddRenderElements(IMaterial *pIMatInfo, CRenderObject *pObj, c
 //    if (nTechniqueID > 0)
   //    shaderItem.m_nTechnique = shaderItem.m_pShader->GetTechniqueID(shaderItem.m_nTechnique, nTechniqueID);
 
-		if (shaderItem.m_pShader && pOrigRE)// && pMat->nNumIndices)
+	if (shaderItem.m_pShader && pOrigRE)// && pMat->nNumIndices)
     {
-      TArray<CRenderElement *> *pREs = shaderItem.m_pShader->GetREs(shaderItem.m_nTechnique);
+		 TArray<CRenderElement *> *pREs = shaderItem.m_pShader->GetREs(shaderItem.m_nTechnique);
 
-      if (!pREs || !pREs->Num())
-				passInfo.GetRenderView()->AddRenderObject(pOrigRE, shaderItem, pObj, passInfo, nList, nAW);
-      else
-				passInfo.GetRenderView()->AddRenderObject(pREs->Get(0), shaderItem, pObj, passInfo, nList, nAW);
+		 if (!pREs || !pREs->Num())
+			passInfo.GetRenderView()->AddRenderObject(pOrigRE, shaderItem, pObj, passInfo, nList, nAW);
+		 else
+			passInfo.GetRenderView()->AddRenderObject(pREs->Get(0), shaderItem, pObj, passInfo, nList, nAW);
     }
   } //i
 }
