@@ -256,9 +256,9 @@ public:
 	void         AcquireMutex();
 	void         ReleaseMutex();
 
-	// INetEntity-specific, not needed for CGameObject.
-	virtual void      RmiRegister(SRmiHandler& handler) override {};
-	virtual SRmiIndex RmiByDecoder(SRmiHandler::DecoderF decoder, SRmiHandler** handler) override
+	// INetEntity-specific, not needed for CGameObject. 
+	virtual void      RmiRegister(const SRmiHandler& handler) override {};
+	virtual SRmiIndex RmiByDecoder(SRmiHandler::DecoderF decoder, SRmiHandler **handler) override
 	{
 		return SRmiIndex(0);
 	};

@@ -480,7 +480,7 @@ inline const char* constchar_cast(const string& type)
 
 //! Case sensetive less key for any type convertable to const char*.
 template<class Type>
-struct less_strcmp : public std::binary_function<Type, Type, bool>
+struct less_strcmp
 {
 	bool operator()(const Type& left, const Type& right) const
 	{
@@ -490,7 +490,7 @@ struct less_strcmp : public std::binary_function<Type, Type, bool>
 
 //! Case insensetive less key for any type convertable to const char*.
 template<class Type>
-struct less_stricmp : public std::binary_function<Type, Type, bool>
+struct less_stricmp
 {
 	bool operator()(const Type& left, const Type& right) const
 	{
