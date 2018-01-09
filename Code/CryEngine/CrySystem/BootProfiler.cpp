@@ -113,13 +113,14 @@ class CBootProfilerSession;
 class CBootProfilerRecord
 {
 public:
+
+	unsigned int          m_threadIndex;
+	EProfileDescription   m_type;
+	string                m_args;
+
 	const char*           m_label;
 	LARGE_INTEGER         m_startTimeStamp;
 	LARGE_INTEGER         m_stopTimeStamp;
-
-	unsigned int          m_threadIndex;
-
-	EProfileDescription   m_type;
 
 	CBootProfilerRecord*  m_pParent;
 
@@ -128,7 +129,6 @@ public:
 	CBootProfilerRecord*  m_pNextSibling;
 	CBootProfilerSession* m_pSession;
 
-	CryFixedStringT<256> m_args;
 
 	ILINE CBootProfilerRecord(const char* label, LARGE_INTEGER timestamp, unsigned int threadIndex, const char* args, CBootProfilerSession* pSession,EProfileDescription type)
 		:	m_label(label)
@@ -368,10 +368,7 @@ CBootProfilerRecord* CBootProfilerSession::StartBlock(const char* name, const ch
 		CBootProfilerRecord* rec = pPool->allocateRecord();
 		entry.m_pRootRecord = entry.m_pCurrentRecord = new(rec) CBootProfilerRecord("root", m_startTimeStamp, threadIndex, args, this,type);
 	}
-
-	LARGE_INTEGER time;
-	QueryPerformanceCounter(&time);
-
+	
 	assert(entry.m_pRootRecord);
 
 	CRecordPool* pPool = entry.m_pRecordsPool;
@@ -385,6 +382,9 @@ CBootProfilerRecord* CBootProfilerSession::StartBlock(const char* name, const ch
 		entry.m_pRecordsPool = pPool;
 		rec = pPool->allocateRecord();
 	}
+
+	LARGE_INTEGER time;
+	QueryPerformanceCounter(&time);
 
 	CBootProfilerRecord* pNewRecord = new(rec) CBootProfilerRecord(name, time, threadIndex, args, this,type);
 	entry.m_pCurrentRecord->AddChild(pNewRecord);
