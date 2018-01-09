@@ -546,6 +546,8 @@ public:
 	void FX_DeferredShadowsNearFrustum(int maskRTWidth, int maskRTHeight);
 	void FX_SetDeferredShadows();
 
+	void PrepareShadowPool(CRenderView* pRenderView) const override final;
+
 	bool FX_HDRScene(CRenderView *pRenderView, bool bEnable, bool bClear = true);
 
 	// Performance queries
@@ -879,6 +881,8 @@ private:
 	CAuxGeomCB_Null            m_renderAuxGeomNull;
 
 	CShadowTextureGroupManager m_ShadowTextureGroupManager;           // to combine multiple shadowmaps into one texture
+
+	uint32                     m_nTimeSlicedShadowsUpdatedThisFrame;
 
 #ifdef ENABLE_BENCHMARK_SENSOR
 public:

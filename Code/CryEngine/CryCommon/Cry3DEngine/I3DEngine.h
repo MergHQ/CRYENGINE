@@ -2393,8 +2393,6 @@ struct SRendItemSorter
 	void   IncreaseParticleCounter() { nValue += eParticleCounter; }
 	uint32 ParticleCounter() const   { return nValue & ~eRecursivePassMask; }
 
-	uint32 ShadowFrustumID() const   { return nValue & ~eRecursivePassMask; }
-
 	uint32 GetValue() const          { return nValue; }
 
 	bool   operator<(const SRendItemSorter& rOther) const
@@ -2479,7 +2477,7 @@ struct SRenderingPassInfo
 	//! Creating function for RenderingPassInfo, the create functions will fetch all other necessary information like thread id/frame id, etc.
 	static SRenderingPassInfo CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS, bool bAuxWindow = false, uintptr_t displayContextHandle = 0);
 	static SRenderingPassInfo CreateRecursivePassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_RECURSIVE_FLAGS);
-	static SRenderingPassInfo CreateShadowPassRenderingInfo(IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32* pShadowGenMask, uint32 nSide, uint32 nShadowFrustumID, uint32 nRenderingFlags = DEFAULT_SHADOWS_FLAGS);
+	static SRenderingPassInfo CreateShadowPassRenderingInfo(IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32 nSide, uint32 nRenderingFlags = DEFAULT_SHADOWS_FLAGS);
 	static SRenderingPassInfo CreateBillBoardGenPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS);
 	static SRenderingPassInfo CreateTempRenderingInfo(const CCamera& rCamera, const SRenderingPassInfo& rPassInfo);
 	static SRenderingPassInfo CreateTempRenderingInfo(uint32 nRenderingFlags, const SRenderingPassInfo& rPassInfo);
@@ -2531,8 +2529,6 @@ struct SRenderingPassInfo
 
 	bool                    IsRenderingCubemap() const;
 
-	uint32*                 ShadowGenMaskAddress() const;
-	uint32                  ShadowFrustumID() const;
 	uint8                   ShadowFrustumSide() const;
 	uint8                   ShadowFrustumLod() const;
 
@@ -2594,8 +2590,6 @@ private:
 	IRenderViewPtr m_pRenderView;
 
 	// members used only in shadow pass
-	uint32* pShadowGenMask = nullptr;
-	uint32  nShadowFrustumId = 0;
 	uint8   nShadowSide : 4;
 	uint8   nShadowLod  : 4;
 	uint8   m_nZoomInProgress = false;
@@ -2823,19 +2817,6 @@ inline bool SRenderingPassInfo::IsDisableRenderChunkMerge() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-inline uint32* SRenderingPassInfo::ShadowGenMaskAddress() const
-{
-	assert(pShadowGenMask);
-	return pShadowGenMask;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-inline uint32 SRenderingPassInfo::ShadowFrustumID() const
-{
-	return nShadowFrustumId;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 inline uint8 SRenderingPassInfo::ShadowFrustumSide() const
 {
 	return nShadowSide;
@@ -3021,16 +3002,13 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateRecursivePassRenderingInfo(c
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32* pShadowGenMask, uint32 nSide, uint32 nShadowFrustumID, uint32 nRenderingFlags)
+inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32 nSide, uint32 nRenderingFlags)
 {
 	SRenderingPassInfo passInfo;
 
 	passInfo.SetCamera(rCamera);
 	passInfo.InitRenderingFlags(nRenderingFlags);
 	passInfo.SetRenderView(pRenderView);
-
-	passInfo.m_renderItemSorter.nValue = passInfo.ShadowFrustumID();
-	//	passInfo.m_renderItemSorter.nValue |= passInfo.IsRecursivePass() ? SRendItemSorter::eRecursivePassMask : 0;
 
 	// set correct shadow map type
 	if (nLightFlags & DLF_SUN)
@@ -3046,10 +3024,8 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(IRen
 	else
 		passInfo.m_eShadowMapRendering = static_cast<uint8>(SHADOW_MAP_NONE);
 
-	passInfo.pShadowGenMask = pShadowGenMask;
 	passInfo.nShadowSide = nSide;
 	passInfo.nShadowLod = nShadowMapLod;
-	passInfo.nShadowFrustumId = nShadowFrustumID;
 
 	return passInfo;
 }
@@ -3060,10 +3036,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateTempRenderingInfo(const CCam
 	SRenderingPassInfo passInfo = rPassInfo;
 
 	passInfo.SetCamera(rCamera);
-
-	passInfo.pShadowGenMask = NULL;
 	passInfo.nShadowSide = 0;
-	passInfo.nShadowFrustumId = 0;
 
 	return passInfo;
 }

@@ -1229,8 +1229,6 @@ void CRenderer::EF_StartEf (const SRenderingPassInfo& passInfo)
 	assert(nR < 2);
 	if (!passInfo.IsRecursivePass())
 	{
-		m_nShadowGenId[nThreadID] = 0;
-
 		ClearSkinningDataPool();
 	}
 

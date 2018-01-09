@@ -229,10 +229,6 @@ public:
 
 	PodArray<StatInstGroup> m_lstStaticTypes;
 
-	uint64 GetShadowFrustumsList(PodArray<SRenderLight*>* pAffectingLights, const AABB& aabbReceiver,
-	                             float fObjDistance, uint32 nDLightMask, bool bIncludeNearFrustums,
-	                             const SRenderingPassInfo& passInfo);
-
 	CThreadSafeRendererContainer<SVegetationSpriteInfo> m_arrVegetationSprites[MAX_RECURSION_LEVELS][nThreadsNum];
 
 	void MakeShadowCastersList(CVisArea* pReceiverArea, const AABB& aabbReceiver,

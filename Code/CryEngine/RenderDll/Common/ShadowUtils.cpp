@@ -770,10 +770,10 @@ Matrix44 CShadowUtils::GetClipToTexSpaceMatrix(const ShadowMapFrustum* pFrustum,
 		const int texHeight = max(pFrustum->pDepthTex->GetHeight(), 1);
 
 		Matrix44 mCropView(IDENTITY);
-		mCropView.m00 = pFrustum->packWidth[0]  / float(texWidth);
-		mCropView.m11 = pFrustum->packHeight[0] / float(texHeight);
-		mCropView.m30 = pFrustum->packX[0]      / float(texWidth);
-		mCropView.m31 = pFrustum->packY[0]      / float(texHeight);
+		mCropView.m00 = pFrustum->shadowPoolPack[0].GetDim().x / float(texWidth);
+		mCropView.m11 = pFrustum->shadowPoolPack[0].GetDim().y / float(texHeight);
+		mCropView.m30 = pFrustum->shadowPoolPack[0].Min.x      / float(texWidth);
+		mCropView.m31 = pFrustum->shadowPoolPack[0].Min.y      / float(texHeight);
 
 		mClipToTexSpace = mClipToTexSpace * mCropView;
 	}
@@ -809,12 +809,13 @@ CShadowUtils::SShadowSamplingInfo CShadowUtils::GetDeferredShadowSamplingInfo(Sh
 		blendInfo.x = fBlendVal;
 		blendInfo.y = 1.0f / (1.0f - fBlendVal);
 
-		if (pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance && pFr->packWidth[0] > 0.0f && pFr->packHeight[0] > 0.0f)
+		if (pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance && 
+			pFr->shadowPoolPack[0].GetDim().x > 0 && pFr->shadowPoolPack[0].GetDim().y > 0)
 		{
-			blendTcNormalize.x =  pFr->pDepthTex->GetWidth() / float(pFr->packWidth[0]);
-			blendTcNormalize.y =  pFr->pDepthTex->GetHeight() / float(pFr->packHeight[0]);
-			blendTcNormalize.z = -pFr->packX[0] / float(pFr->packWidth[0]);
-			blendTcNormalize.w = -pFr->packY[0] / float(pFr->packHeight[0]);
+			blendTcNormalize.x =  pFr->pDepthTex->GetWidth()                       / float(pFr->shadowPoolPack[0].GetDim().x);
+			blendTcNormalize.y =  pFr->pDepthTex->GetHeight()                      / float(pFr->shadowPoolPack[0].GetDim().y);
+			blendTcNormalize.z = -static_cast<float>(pFr->shadowPoolPack[0].Min.x) / float(pFr->shadowPoolPack[0].GetDim().x);
+			blendTcNormalize.w = -static_cast<float>(pFr->shadowPoolPack[0].Min.y) / float(pFr->shadowPoolPack[0].GetDim().y);
 		}
 
 		if (const ShadowMapFrustum* pPrevFr = pFr->pPrevFrustum)
@@ -1061,32 +1062,6 @@ void CShadowUtils::GetIrregKernel(float sData[][4], int nSamplesNum)
 
 #undef PACKED_SAMPLES
 
-}
-
-ShadowMapFrustum* CShadowUtils::GetFrustum(CRenderView* pRenderView, ShadowFrustumID nFrustumID)
-{
-	int nLOD = 0;
-	const int nLightID = GetShadowLightID(nLOD, nFrustumID);
-
-	auto& SMFrustums = pRenderView->GetShadowFrustumsForLight(nLightID);
-	for (auto pFrustumToRender : SMFrustums)
-	{
-		if (pFrustumToRender->pFrustum->nShadowMapLod == nLOD)
-			return pFrustumToRender->pFrustum;
-	}
-	assert(0);
-	return NULL;
-}
-
-ShadowMapFrustum& CShadowUtils::GetFirstFrustum(CRenderView* pRenderView, int nLightID)
-{
-	const int nDLights = pRenderView->GetDynamicLightsCount();
-	const int nFrustumIdx = nLightID + nDLights;
-
-	auto& SMFrustums = pRenderView->GetShadowFrustumsForLight(nFrustumIdx);
-	assert(!SMFrustums.empty());
-	ShadowMapFrustum& firstFrustum = *SMFrustums.front()->pFrustum;
-	return firstFrustum;
 }
 
 void ShadowMapFrustum::GetMemoryUsage(ICrySizer* pSizer) const

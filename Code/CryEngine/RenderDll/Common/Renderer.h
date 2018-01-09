@@ -1009,6 +1009,7 @@ public:
 
 	virtual void EF_InvokeShadowMapRenderJobs(const SRenderingPassInfo& passInfo, const int nFlags) override {}
 	virtual IRenderView* GetNextAvailableShadowsView(IRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum) override;
+	void PrepareShadowFrustumForShadowPool(ShadowMapFrustum* pFrustum, uint32 frameID, const SRenderLight& light, uint32 *timeSlicedShadowsUpdated) override final;
 
 	// 2d interface for shaders
 	virtual void EF_EndEf2D(const bool bSort) override = 0;
@@ -1547,7 +1548,6 @@ protected:
 
 	CSkinningDataPool                          m_SkinningDataPool[3];        // Tripple Buffered for motion blur
 	std::array<std::vector<SSkinningData*>, 3> m_computeSkinningData;
-	uint32                                     m_nShadowGenId[RT_COMMAND_BUF_COUNT];
 
 	int                                        m_cloudShadowTexId;
 	Vec3                                       m_cloudShadowSpeed;

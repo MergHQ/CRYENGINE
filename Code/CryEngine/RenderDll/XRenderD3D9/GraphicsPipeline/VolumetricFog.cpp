@@ -1053,10 +1053,6 @@ void CVolumetricFogStage::GenerateLightList()
 		CRenderer::CV_r_DeferredShadingLights ? &defLights : nullptr,
 	};
 
-	// TODO: if removing this dependency, this PrepareLightList function can be called from anywhere before calling CTiledShading::PrepareLightList.
-	const uint32 firstShadowLight = CDeferredShading::Instance().m_nFirstShadowPoolLight;
-	const uint32 curShadowPoolLight = CDeferredShading::Instance().m_nLastShadowPoolLight;
-
 	const Vec3 worldViewPos = viewInfo.cameraOrigin;
 
 	const bool areaLights = (CRenderer::CV_r_DeferredShadingAreaLights > 0);
@@ -1330,7 +1326,7 @@ void CVolumetricFogStage::GenerateLightList()
 				}
 
 				// Handle shadow casters
-				if (!ambientLight && lightIdx >= firstShadowLight && lightIdx < curShadowPoolLight)
+				if (!ambientLight && (renderLight.m_Flags & DLF_CASTSHADOW_MAPS))
 				{
 					int32 numDLights = pRenderView->GetDynamicLightsCount();
 					int32 frustumIdx = lightIdx + numDLights;
@@ -1380,7 +1376,7 @@ void CVolumetricFogStage::GenerateLightList()
 							Vec3 coneDir = Vec3(-spotParamsVS.x, -spotParamsVS.y, -spotParamsVS.z);
 							AABB coneBounds = AABB::CreateAABBfromCone(Cone(coneTip, coneDir, renderLight.m_fRadius, spotParamsVS.w));
 							Vec2 depthBoundsVS = Vec2(coneBounds.min.z, coneBounds.max.z);
-							Vec2 sideShadowParams = (firstFrustum.nShadowGenMask & (1 << side)) ? shadowParams : Vec2(ZERO);
+							Vec2 sideShadowParams = firstFrustum.ShouldSampleSide(side) ? shadowParams : Vec2(ZERO);
 
 							if (side == 0)
 							{

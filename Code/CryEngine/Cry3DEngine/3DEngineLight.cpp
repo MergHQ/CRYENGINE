@@ -464,8 +464,6 @@ void C3DEngine::PrepareLightSourcesForRendering_0(const SRenderingPassInfo& pass
 					if (pLightEntity->GetShadowMapInfo())
 					{
 						pLight->m_pShadowMapFrustums = reinterpret_cast<ShadowMapFrustum**>(pLightEntity->GetShadowMapInfo()->pGSM);
-						for (int nLod = 0; nLod < MAX_GSM_LODS_NUM && pLight->m_pShadowMapFrustums[nLod]; nLod++)
-							pLight->m_pShadowMapFrustums[nLod]->nDLightId = pLight->m_Id;
 					}
 				}
 
@@ -620,8 +618,6 @@ void C3DEngine::InitShadowFrustums(const SRenderingPassInfo& passInfo)
 			if (pLightEntity->GetShadowMapInfo())
 			{
 				pLight->m_pShadowMapFrustums = reinterpret_cast<ShadowMapFrustum**>(pLightEntity->GetShadowMapInfo()->pGSM);
-				for (int nLod = 0; nLod < MAX_GSM_LODS_NUM && pLight->m_pShadowMapFrustums[nLod]; nLod++)
-					pLight->m_pShadowMapFrustums[nLod]->nDLightId = pLight->m_Id;
 			}
 		}
 

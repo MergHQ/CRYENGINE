@@ -901,7 +901,7 @@ void CRenderView::AddPermanentObject(CRenderObject* pObject, const SInstanceUpda
 
 #ifndef NDEBUG
 	// Expand normal render items
-	for (const auto& record : m_permanentObjects)
+	for (auto& record : m_permanentObjects)
 	{
 		CPermanentRenderObject* RESTRICT_POINTER pRenderObject = record.pRenderObject;
 		assert(pRenderObject->m_bPermanent);
@@ -1966,7 +1966,8 @@ void CRenderView::Job_PostWrite()
 	ExpandPermanentRenderObjects();
 	SortLights();
 
-	for (int renderList = 0; renderList < EFSLIST_NUM; renderList++)
+	const auto listCount = m_viewType == eViewType_Shadow ? OMNI_SIDES_NUM : EFSLIST_NUM;
+	for (int renderList = 0; renderList < listCount; renderList++)
 	{
 		if (renderList == EFSLIST_PREPROCESS && m_viewType != eViewType_Shadow)
 		{
@@ -1978,7 +1979,7 @@ void CRenderView::Job_PostWrite()
 
 		if (!renderItems.empty())
 		{
-			auto lambda_job = [ = ]
+			auto lambda_job = [=]
 			{
 				Job_SortRenderItemsInList((ERenderListID)renderList);
 			};
@@ -2021,7 +2022,11 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID list)
 		// Sort Shadow render items differently
 		//assert(m_shadows.m_frustums.size() == 1);// Should only have one current frustum.
 		if (m_shadows.m_pShadowFrustumOwner)
-			m_shadows.m_pShadowFrustumOwner->SortRenderItemsForFrustumAsync(list, &renderItems[0], renderItems.size());
+		{
+			const auto side = list;
+			CRY_ASSERT(side >= 0 && side < OMNI_SIDES_NUM);
+			m_shadows.m_pShadowFrustumOwner->SortRenderItemsForFrustumAsync(side, &renderItems[0], renderItems.size());
+		}
 		return;
 	}
 
@@ -2348,7 +2353,7 @@ void CRenderView::SShadows::CreateFrustumGroups()
 			break;
 		case ShadowMapFrustum::e_Nearest:
 		case ShadowMapFrustum::e_PerObject:
-			if (fr.pFrustum->nShadowGenMask)
+			if (fr.pFrustum->ShouldSample())
 			{
 				m_frustumsByType[eShadowFrustumRenderType_Custom].push_back(&fr);
 			}
@@ -2409,11 +2414,10 @@ void CRenderView::SShadows::PrepareNearestShadows()
 
 	if (pNearestFrustum)
 	{
-		CRenderView* pNearestShadowsView = reinterpret_cast<CRenderView*>(pNearestFrustum->pShadowsView.get());
-		RenderItems& nearestRenderItems = pNearestShadowsView->m_renderItems[0]; // NOTE: rend items go in list 0
+		auto* pNearestShadowsView = reinterpret_cast<CRenderView*>(pNearestFrustum->pShadowsView.get());
+		auto& nearestRenderItems = pNearestShadowsView->m_renderItems[0]; // NOTE: rend items go in list 0
 
 		pNearestFrustum->pFrustum->aabbCasters.Reset();
-		pNearestFrustum->pFrustum->nShadowGenMask = 0;
 
 		for (auto& fr : m_renderFrustums)
 		{
@@ -2432,7 +2436,7 @@ void CRenderView::SShadows::PrepareNearestShadows()
 		}
 
 		nearestRenderItems.CoalesceMemory();
-		pNearestFrustum->pFrustum->nShadowGenMask = nearestRenderItems.empty() ? 0 : 1;
+		pNearestFrustum->pFrustum->GetSideSampleMask().store(nearestRenderItems.empty() ? 0 : 1);
 		pNearestShadowsView->SwitchUsageMode(CRenderView::eUsageModeReading);
 	}
 }

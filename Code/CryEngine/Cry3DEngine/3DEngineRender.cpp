@@ -1641,19 +1641,19 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Collect shadow passes
 	////////////////////////////////////////////////////////////////////////////////////////
-	std::vector<SRenderingPassInfo> shadowPassInfo; // shadow passes used in scene
-	uint32 passCullMask = kPassCullMainMask;        // initialize main view bit as visible
+	std::vector<SRenderingPassInfo> shadowPassInfo;                                 // Shadow passes used in scene
+	std::vector<std::pair<ShadowMapFrustum*, const CLightEntity*>> shadowFrustums;  // Shadow frustums and lights used in scene
+	uint32 passCullMask = kPassCullMainMask;                                        // initialize main view bit as visible
 
 	if (GetCVars()->e_OnePassOctreeTraversal && passInfo.RenderShadows() && !passInfo.IsRecursivePass())
 	{
 		// Collect shadow passes used in scene and allocate render view for each of them
-		PrepareShadowPasses(passInfo, shadowPassInfo);
+		uint32 nTimeSlicedShadowsUpdatedThisFrame = 0;
+		PrepareShadowPasses(passInfo, nTimeSlicedShadowsUpdatedThisFrame, shadowFrustums, shadowPassInfo);
 
 		// initialize shadow view bits
 		for (uint32 p = 0; p < shadowPassInfo.size(); p++)
-		{
 			passCullMask |= BIT(p + 1);
-		}
 
 		// store ptr to collected shadow passes into main view pass
 		const_cast<SRenderingPassInfo&>(passInfo).SetShadowPasses(&shadowPassInfo);
@@ -1827,9 +1827,11 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (GetCVars()->e_OnePassOctreeTraversal)
 	{
 		// all shadow casters are submitted, switch render views into eUsageModeWritingDone mode
-		for (uint32 p = 0; p < shadowPassInfo.size(); p++)
+		for (const auto& pair : shadowFrustums)
 		{
-			shadowPassInfo[p].GetIRenderView()->GetShadowFrustumOwner()->pOnePassShadowView->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
+			auto &shadowFrustum = pair.first;
+			CRY_ASSERT(shadowFrustum->pOnePassShadowView);
+			shadowFrustum->pOnePassShadowView->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
 		}
 	}
 
@@ -1929,9 +1931,11 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (GetCVars()->e_OnePassOctreeTraversal)
 	{
 		// release shadow views (from now only renderer owns it)
-		for (uint32 p = 0; p < shadowPassInfo.size(); p++)
+		for (const auto& pair : shadowFrustums)
 		{
-			shadowPassInfo[p].GetIRenderView()->GetShadowFrustumOwner()->pOnePassShadowView = nullptr;
+			auto &shadowFrustum = pair.first;
+			CRY_ASSERT(shadowFrustum->pOnePassShadowView);
+			shadowFrustum->pOnePassShadowView = nullptr;
 		}
 		const_cast<SRenderingPassInfo&>(passInfo).SetShadowPasses(nullptr);
 	}
@@ -3841,10 +3845,8 @@ void C3DEngine::FillDebugFPSInfo(SDebugFPSInfo& info)
 	info.fMaxFPS = max / (float)maxc;
 }
 
-void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, std::vector<SRenderingPassInfo>& shadowPassInfo)
+void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& nTimeSlicedShadowsUpdatedThisFrame, std::vector<std::pair<ShadowMapFrustum*, const CLightEntity*>>& shadowFrustums, std::vector<SRenderingPassInfo>& shadowPassInfo)
 {
-	std::vector<ShadowMapFrustum*> shadowFrustums;
-
 	// enable collection of all accessed frustums
 	CLightEntity::SetShadowFrustumsCollector(&shadowFrustums);
 
@@ -3869,23 +3871,38 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, std::vec
 
 	// disable collection of frustums
 	CLightEntity::SetShadowFrustumsCollector(nullptr);
+
+	// Prepare shadowpools
+	GetRenderer()->PrepareShadowPool(passInfo.GetRenderView());
+
+	// Limit frustums to kMaxShadowPassesNum
+	if (shadowFrustums.size() > kMaxShadowPassesNum)
+		shadowFrustums.resize(kMaxShadowPassesNum);
 	m_onePassShadowFrustumsCount = shadowFrustums.size();
 
 	shadowPassInfo.reserve(kMaxShadowPassesNum);
 	CRenderView* pMainRenderView = passInfo.GetRenderView();
-	for (uint32 i = 0; i < shadowFrustums.size() && i < kMaxShadowPassesNum; ++i)
+	for (const auto& pair : shadowFrustums)
 	{
-		auto* pFr = shadowFrustums[i];
-		const auto nThreadID = passInfo.ThreadID();
+		auto *pFr = pair.first;
+		auto *light = pair.second;
 
 		assert(!pFr->pOnePassShadowView);
 
-		const auto &pShadowsView = GetRenderer()->GetNextAvailableShadowsView((IRenderView*)pMainRenderView, pFr);
+		// Prepare time-sliced shadow frustum updates
+		GetRenderer()->PrepareShadowFrustumForShadowPool(pFr,
+			static_cast<uint32>(passInfo.GetFrameID()),
+			light->GetLightProperties(),
+			&nTimeSlicedShadowsUpdatedThisFrame);
 
+		const auto &pShadowsView = GetRenderer()->GetNextAvailableShadowsView((IRenderView*)pMainRenderView, pFr);
 		for (int cubeSide = 0; cubeSide < pFr->GetNumSides(); ++cubeSide)
 		{
-			if (pFr->nShadowGenID[nThreadID][cubeSide] == 0xFFFFFFFF)
+			if (pFr->ShouldCacheSideHint(cubeSide))
+			{
+				pFr->MarkShadowGenMaskForSide(cubeSide);
 				continue;
+			}
 
 			// create a matching rendering pass info for shadows
 			auto pass = SRenderingPassInfo::CreateShadowPassRenderingInfo(
@@ -3895,9 +3912,7 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, std::vec
 				pFr->nShadowMapLod,
 				pFr->IsCached(),
 				pFr->bIsMGPUCopy,
-				&pFr->nShadowGenMask,
 				cubeSide,
-				pFr->nShadowGenID[nThreadID][cubeSide],
 				SRenderingPassInfo::DEFAULT_SHADOWS_FLAGS);
 			shadowPassInfo.push_back(std::move(pass));
 		}

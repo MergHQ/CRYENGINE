@@ -629,9 +629,6 @@ void CTiledLightVolumesStage::GenerateLightList()
 
 	int nThreadID = gRenDev->GetRenderThreadID();
 
-	uint32 firstShadowLight = CDeferredShading::Instance().m_nFirstShadowPoolLight;
-	uint32 curShadowPoolLight = CDeferredShading::Instance().m_nLastShadowPoolLight;
-
 	uint32 numTileLights = 0;
 	uint32 numRenderLights = 0;
 	uint32 numValidRenderLights = 0;
@@ -824,7 +821,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 				}
 
 				// Handle shadow casters
-				if (!ambientLight && lightIdx >= firstShadowLight && lightIdx < curShadowPoolLight)
+				if (!ambientLight && (renderLight.m_Flags & DLF_CASTSHADOW_MAPS))
 				{
 					int numDLights = pRenderView->GetDynamicLightsCount();
 					int frustumIdx = lightIdx + numDLights;
@@ -841,8 +838,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 						if (numTileLights + numSides > MaxNumTileLights)
 							continue;  // Skip light
 
-						static ICVar* pShadowAtlasResCVar = iConsole->GetCVar("e_ShadowsPoolSize");
-						const Vec2 shadowParams = Vec2(kernelSize * ((float)firstFrustum.nTexSize / (float)pShadowAtlasResCVar->GetIVal()), firstFrustum.fDepthConstBias);
+						const Vec2 shadowParams = Vec2(kernelSize * ((float)firstFrustum.nTexSize / (float)CDeferredShading::Instance().m_nShadowPoolSize), firstFrustum.fDepthConstBias);
 
 						const Vec3 cubeDirs[6] = { Vec3(-1, 0, 0), Vec3(1, 0, 0), Vec3(0, -1, 0), Vec3(0, 1, 0), Vec3(0, 0, -1), Vec3(0, 0, 1) };
 
@@ -861,7 +857,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 							Vec3 coneDirVS = Vec3(Vec4(-spotParams.x, -spotParams.y, -spotParams.z, 0) * matView);
 							AABB coneBounds = AABB::CreateAABBfromCone(Cone(coneTipVS, coneDirVS, renderLight.m_fRadius, spotParams.w));
 							Vec2 depthBoundsVS = Vec2(coneBounds.min.z, coneBounds.max.z) * invCameraFar;
-							Vec2 sideShadowParams = (firstFrustum.nShadowGenMask & (1 << side)) ? shadowParams : Vec2(ZERO);
+							Vec2 sideShadowParams = firstFrustum.ShouldSampleSide(side) ? shadowParams : Vec2(ZERO);
 
 							if (side == 0)
 							{

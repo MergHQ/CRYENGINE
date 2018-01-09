@@ -156,7 +156,7 @@ private:
 	typedef std::pair<SShadowFrustumToRender*, Vec4>      FrustumCoveragePair;
 	typedef std::vector<std::vector<FrustumCoveragePair>> FrustumListByMaskSlice;
 
-	int                    PreparePrimitivesForLight(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bScreenSpaceShadows, SShadowFrustumToRender* pFrustumToRender, uint64 qualityFlags);
+	int                    PreparePrimitivesForLight(const CRenderView* pRenderView, CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bScreenSpaceShadows, SShadowFrustumToRender* pFrustumToRender, uint64 qualityFlags);
 	void                   PrepareConstantBuffersForPrimitives(SLocalLightPrimitives& primitives, SShadowFrustumToRender* pFrustumToRender, int side, bool bVolumePrimitive) const;
 	FrustumListByMaskSlice SortFrustumsByScreenspaceOverlap(bool bSkipFirstSlice, CRenderView* pRenderView) const;
 
@@ -202,7 +202,7 @@ void CShadowMaskStage::Prepare()
 	// get rendertarget and initialize passes
 	{
 		m_pShadowMaskRT = CRendererResources::s_ptexShadowMask;
-		CTexture* pZTexture = RenderView()->GetDepthTarget();
+		CTexture* pZTexture = pRenderView->GetDepthTarget();
 
 		// workaround for vector::resize requiring copy constructor on ps4
 		while (m_maskGenPasses.size() < CRendererResources::s_ptexShadowMask->StreamGetNumSlices())
@@ -286,7 +286,7 @@ void CShadowMaskStage::Prepare()
 
 		SResourceView firstSliceDesc = SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(m_pShadowMaskRT->GetDstFormat()), 0, 1);
 		D3DSurface* pFirstSliceSRV = m_pShadowMaskRT->GetDevTexture()->GetOrCreateRTV(firstSliceDesc);
-		D3DDepthSurface* pAllSliceDSV = RenderView()->GetDepthTarget()->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
+		D3DDepthSurface* pAllSliceDSV = pRenderView->GetDepthTarget()->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
 
 		commandList.GetGraphicsInterface()->ClearSurface(pFirstSliceSRV, Clr_Transparent);
 		commandList.GetGraphicsInterface()->ClearSurface(pAllSliceDSV, CLEAR_STENCIL, Clr_Unused.r, 0);
@@ -1069,11 +1069,12 @@ int CLocalLightShadows::PreparePrimitives(std::vector<CPrimitiveRenderPass>& mas
 				if (currentSlice < maxSliceCount)
 				{
 					PreparePrimitivesForLight(
-					  maskGenPasses[currentSlice],
-					  firstUnusedStencilValue,
-					  bScreenSpaceShadows,
-					  pFrustumToRender,
-					  qualityFlags);
+						pRenderView,
+						maskGenPasses[currentSlice],
+						firstUnusedStencilValue,
+						bScreenSpaceShadows,
+						pFrustumToRender,
+						qualityFlags);
 
 					// TODO: don't write this into the light-info: it will prevent making a large
 					// function-chain "const", and it also races when used in multiple locations
@@ -1081,7 +1082,7 @@ int CLocalLightShadows::PreparePrimitives(std::vector<CPrimitiveRenderPass>& mas
 				}
 				else
 				{
-					pFrustumToRender->pFrustum->nShadowGenMask = 0;
+					pFrustumToRender->pFrustum->GetSideSampleMask().store(0);
 				}
 			}
 		}
@@ -1093,7 +1094,7 @@ int CLocalLightShadows::PreparePrimitives(std::vector<CPrimitiveRenderPass>& mas
 	return (volumePrimitiveCount + quadPrimitiveCount) * 3;
 }
 
-int CLocalLightShadows::PreparePrimitivesForLight(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bScreenSpaceShadows, SShadowFrustumToRender* pFrustumToRender, uint64 qualityFlags)
+int CLocalLightShadows::PreparePrimitivesForLight(const CRenderView* pRenderView, CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bScreenSpaceShadows, SShadowFrustumToRender* pFrustumToRender, uint64 qualityFlags)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
@@ -1105,7 +1106,7 @@ int CLocalLightShadows::PreparePrimitivesForLight(CPrimitiveRenderPass& sliceGen
 	bool bStencilMask = true;
 	bool bUseLightVolumes = false;
 	EShapeMeshType meshType = SHAPE_PROJECTOR;
-	CDeferredShading::Instance().GetLightRenderSettings(pLight, bStencilMask, bUseLightVolumes, meshType);
+	CDeferredShading::Instance().GetLightRenderSettings(pRenderView, pLight, bStencilMask, bUseLightVolumes, meshType);
 
 	CRY_ASSERT(meshType >= SHAPE_PROJECTOR && meshType <= SHAPE_PROJECTOR2);
 	const CRenderPrimitive::EPrimitiveType meshToPrimtype[] =
@@ -1117,7 +1118,7 @@ int CLocalLightShadows::PreparePrimitivesForLight(CPrimitiveRenderPass& sliceGen
 
 	CRenderPrimitive::EPrimitiveType primitiveType = meshToPrimtype[meshType];
 
-	const int nSides = pFrustum->bOmniDirectionalShadow ? 6 : 1;
+	const int nSides = pFrustum->GetNumSides();
 	const bool bAreaLight = (pLight->m_Flags & DLF_AREA_LIGHT) && pLight->m_fAreaWidth && pLight->m_fAreaHeight && pLight->m_fLightFrustumAngle;
 	const bool bReverseDepth = (viewInfo.flags & SRenderViewInfo::eFlags_ReverseDepth) != 0;
 
@@ -1137,7 +1138,7 @@ int CLocalLightShadows::PreparePrimitivesForLight(CPrimitiveRenderPass& sliceGen
 
 	for (int nS = 0; nS < nSides; nS++)
 	{
-		if (pFrustum->nShadowGenMask & (1 << nS))
+		if (pFrustum->ShouldSampleSide(nS))
 		{
 			SLocalLightPrimitives& primitives = bUseLightVolumes ? volumePrimitives[volumePrimitiveCount++] : quadPrimitives[quadPrimitiveCount++];
 

@@ -50,9 +50,6 @@ class CRenderView;
 class CShadowUtils
 {
 public:
-	typedef uint16                    ShadowFrustumID;
-	typedef PodArray<ShadowFrustumID> ShadowFrustumIDs;
-
 	static const int32 MaxCascadesNum = 4;
 
 	// Bit flags for forward shadows.
@@ -128,19 +125,9 @@ public:
 
 	static void              GetIrregKernel(float sData[][4], int nSamplesNum);
 
-	static ShadowMapFrustum* GetFrustum(CRenderView* pRenderView, ShadowFrustumID nFrustumID);
-	static ShadowMapFrustum& GetFirstFrustum(CRenderView* pRenderView, int nLightID);
+	static bool              GetSubfrustumMatrix(Matrix44A& result, const ShadowMapFrustum* pFullFrustum, const ShadowMapFrustum* pSubFrustum);
 
-	// Get light id and LOD id from encoded id in shadow frustum cache
-	static int32                   GetShadowLightID(int32& nLod, ShadowFrustumID nFrustumID)
-	{
-		nLod = int32((nFrustumID >> 8) & 0xFF);
-		return int32(nFrustumID & 0xFF);
-	}
-
-	static bool     GetSubfrustumMatrix(Matrix44A& result, const ShadowMapFrustum* pFullFrustum, const ShadowMapFrustum* pSubFrustum);
-
-	static Matrix44 GetClipToTexSpaceMatrix(const ShadowMapFrustum* pFrustum, int nSide);
+	static Matrix44          GetClipToTexSpaceMatrix(const ShadowMapFrustum* pFrustum, int nSide);
 
 	// setup shader constants, return the validity of the textures for forward sun shadow, and return the textures and the shader runtime flags.
 	static bool SetupShadowsForFog(SShadowCascades& shadowCascades, const CRenderView* pRenderView);

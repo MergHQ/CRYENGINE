@@ -656,10 +656,14 @@ struct TRect_tpl
 
 	Vec Min, Max;
 
-	inline TRect_tpl() {}
-	inline TRect_tpl(Num x1, Num y1, Num x2, Num y2) : Min(x1, y1), Max(x2, y2) {}
-	inline TRect_tpl(const TRect_tpl<Num>& rc) : Min(rc.Min), Max(rc.Max) {}
-	inline TRect_tpl(const Vec& min, const Vec& max) : Min(min), Max(max) {}
+	TRect_tpl() = default;
+	TRect_tpl(Num x1, Num y1, Num x2, Num y2) : Min(x1, y1), Max(x2, y2) {}
+	TRect_tpl(const Vec& min, const Vec& max) : Min(min), Max(max) {}
+
+	TRect_tpl(const TRect_tpl& rc) = default;
+	TRect_tpl(TRect_tpl&& rc) = default;
+	TRect_tpl &operator=(const TRect_tpl& rc) = default;
+	TRect_tpl &operator=(TRect_tpl&& rc) = default;
 
 	inline TRect_tpl<Num> operator*(Num k) const
 	{
@@ -689,6 +693,9 @@ struct TRect_tpl
 		else if (pt.y > Max.y) pt.y = Max.y;
 		return pt;
 	}
+
+	inline bool operator==(const TRect_tpl& rc)const { return this->IsEqual(rc); }
+	inline bool operator!=(const TRect_tpl& rc)const { return !this->IsEqual(rc); }
 
 	inline bool Intersects(const TRect_tpl<Num>& rc) const
 	{
