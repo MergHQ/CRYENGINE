@@ -409,6 +409,70 @@ static void CmdDumpJobManagerJobList(IConsoleCmdArgs* pArgs)
 }
 
 //////////////////////////////////////////////////////////////////////////
+static void CmdDumpCvars(IConsoleCmdArgs* pArgs)
+{
+	struct CCVarSink : public ICVarDumpSink
+	{
+		CCVarSink()
+		{
+			m_cvars.reserve(4000);
+		}
+
+		~CCVarSink()
+		{
+		}
+
+		void OnElementFound(ICVar *pCVar)
+		{
+			if (!pCVar)
+			{
+				return;
+			}
+
+			const char* name = pCVar->GetName();
+			const char* val = pCVar->GetString();
+			m_cvars.push_back({ name, val });
+		}
+
+		void LogToFile()
+		{
+			const char* file_path = "%USER%/dumped_cvars.cfg";
+			FILE* pFile = fxopen(file_path, "w");
+			if (!pFile)
+			{
+				return;
+			}
+
+			std::sort(m_cvars.begin(), m_cvars.end(), [](const std::pair<const char*, const char*> & rA, const std::pair<const char*, const char*>& rB) -> bool { return strcmp(rA.first, rB.first) < 0; });
+
+			for (const auto& cvar : m_cvars)
+			{
+				fprintf(pFile, "%s=%s\n", cvar.first,cvar.second);
+			}
+
+			if (gEnv && gEnv->pCryPak)
+			{
+				char path[_MAX_PATH];
+				const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(file_path, path, 0);
+				CryLogAlways("\n=================\n CVars dumped to file: \"%s\" \n=================\n", szAdjustedPath);
+			}
+
+			fclose(pFile);
+		}
+
+		std::vector<std::pair<const char*, const char* > > m_cvars;
+	};
+
+	if (gEnv && gEnv->pConsole)
+	{
+		
+		CCVarSink sink;
+		gEnv->pConsole->DumpCVars(&sink);
+		sink.LogToFile();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 static void CmdDumpThreadConfigList(IConsoleCmdArgs* pArgs)
 {
 #if !defined(RELEASE)
@@ -5065,6 +5129,7 @@ void CSystem::CreateSystemVars()
 	                                           "Set to 0 to create as many threads as cores are available");
 
 	REGISTER_COMMAND("sys_job_system_dump_job_list", CmdDumpJobManagerJobList, VF_CHEAT, "Show a list of all registered job in the console");
+	REGISTER_COMMAND("sys_dump_cvars", CmdDumpCvars, VF_CHEAT, "Dump all cvars to file");
 
 	m_sys_spec = REGISTER_INT_CB("sys_spec", CONFIG_CUSTOM, VF_ALWAYSONCHANGE,    // starts with CONFIG_CUSTOM so callback is called when setting initial value
 	                             "Tells the system cfg spec. (0=custom, 1=low, 2=med, 3=high, 4=very high, 5=XBoxOne, 6=PS4)",
