@@ -4095,6 +4095,14 @@ void CStatsToExcelExporter::ExportFPSBuckets()
 static void SaveLevelStats(IConsoleCmdArgs* pArgs)
 {
 	#if !defined(_RELEASE)
+
+	auto levelName = gEnv->pGameFramework->GetLevelName();
+	if (!levelName || !*levelName)
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Cannot save level statistics because level is not loaded.");
+		return;
+	}
+
 	CryLog("Execute SaveLevelStats");
 
 	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
