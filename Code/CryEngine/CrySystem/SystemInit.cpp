@@ -2416,13 +2416,14 @@ void CSystem::OpenBasicPaks(bool bLoadGamePaks)
 		// After game paks to have same search order as with files on disk
 		{
 			const char* szBindRoot = m_env.pCryPak->GetAlias("%ENGINE%", false);
-			if (buildFolder.empty())
+			string paksFolder = PathUtil::Make(buildFolder.empty() ? "%ENGINEROOT%" : buildFolder, "Engine");
+
+			const unsigned int numOpenPacksBeforeEngine = m_env.pCryPak->GetPakInfo()->numOpenPaks;
+			m_env.pCryPak->OpenPacks(szBindRoot, PathUtil::Make(paksFolder, "*.pak"));
+
+			if (g_cvars.pakVars.nPriority == ePakPriorityPakOnly && numOpenPacksBeforeEngine == m_env.pCryPak->GetPakInfo()->numOpenPaks)
 			{
-				m_env.pCryPak->OpenPacks(szBindRoot, "%ENGINEROOT%/Engine/*.pak");
-			}
-			else
-			{
-				m_env.pCryPak->OpenPacks(szBindRoot, buildFolder + "Engine/*.pak");
+				CryFatalError("Engine initialization failed: Engine assets are required to be in pak files and cannot be read from the directory structure");
 			}
 		}
 
@@ -3049,7 +3050,9 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		{
 			ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
-			LoadConfiguration("system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit); // We have to load this file again since first time we did it without devmode
+
+			// We have to load this file again since first time we did it without devmode
+			LoadConfiguration("%ENGINEROOT%/system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit);
 			LoadConfiguration("user.cfg", pCVarsWhiteListConfigSink);
 
 #if defined(ENABLE_STATS_AGENT)
