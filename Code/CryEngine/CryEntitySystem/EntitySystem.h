@@ -112,7 +112,7 @@ public:
 	virtual EntityId                          ReserveUnknownEntityId() final;
 	virtual void                              RemoveEntity(EntityId entity, bool bForceRemoveNow = false) final;
 	virtual uint32                            GetNumEntities() const final;
-	virtual IEntityIt*                        GetEntityIterator() final;
+	virtual IEntityItPtr                      GetEntityIterator() final;
 	virtual void                              SendEventToAll(SEntityEvent& event) final;
 	virtual void                              OnEditorSimulationModeChanged(EEditorSimulationMode mode) final;
 	virtual void                              OnLevelLoaded() final;

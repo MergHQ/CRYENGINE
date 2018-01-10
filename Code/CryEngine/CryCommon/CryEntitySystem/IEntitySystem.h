@@ -417,7 +417,7 @@ struct IEntitySystem
 
 	//! Gets a entity iterator.
 	//! This iterator interface can be used to traverse all the entities in this entity system.
-	virtual IEntityIt* GetEntityIterator() = 0;
+	virtual IEntityItPtr GetEntityIterator() = 0;
 
 	//! Sends the same event to all entities in Entity System.
 	//! \param event Event to send.

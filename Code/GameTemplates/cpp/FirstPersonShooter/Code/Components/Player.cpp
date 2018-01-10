@@ -323,7 +323,7 @@ void CPlayerComponent::SpawnAtSpawnPoint()
 		return;
 
 	// Spawn at first default spawner
-	auto *pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
+	IEntityItPtr pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
 	pEntityIterator->MoveFirst();
 
 	while (!pEntityIterator->IsEnd())
