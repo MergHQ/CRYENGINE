@@ -753,7 +753,7 @@ void CParticleEmitter::Register()
 	m_visEnviron.Update(GetPos(), m_bounds);
 	m_physEnviron.GetPhysAreas(
 		CParticleManager::Instance()->GetPhysEnviron(), m_bounds,
-		m_visEnviron.OriginIndoors(), ENV_GRAVITY | ENV_WIND | ENV_WATER, true, 0);
+		m_visEnviron.OriginIndoors(), m_pEffect->GetEnvironFlags() | ENV_WATER, true, 0);
 }
 
 void CParticleEmitter::Unregister()

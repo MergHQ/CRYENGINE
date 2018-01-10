@@ -360,10 +360,7 @@ private:
 		CParticleManager::Instance()->OnPhysAreaChange(pEvent);
 		return 0;
 	}
-	void OnPhysAreaChange(const EventPhys* pEvent)
-	{
-		m_PhysEnv.OnPhysAreaChange(static_cast<const EventPhysAreaChange&>(*pEvent));
-	}
+	void OnPhysAreaChange(const EventPhys* pEvent);
 
 	CParticleEffect* FindLoadedEffect(cstr sEffectName);
 	void             EraseEmitter(CParticleEmitter* pEmitter);

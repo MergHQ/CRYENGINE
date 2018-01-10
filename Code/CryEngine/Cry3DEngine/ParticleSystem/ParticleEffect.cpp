@@ -43,6 +43,7 @@ void CParticleEffect::Compile()
 		return;
 
 	m_numRenderObjects = 0;
+	m_environFlags = 0;
 	for (auto& component : m_components)
 	{
 		component->m_pEffect = this;
