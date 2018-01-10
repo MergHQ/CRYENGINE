@@ -350,6 +350,7 @@ pixout_cl DeferredShadowPS(float4 WPos : SV_POSITION)
 ///////////////// cloud shadows  //////////////////
 Texture2D cloudShadowTex          : register(t0) = TS_CloudShadow;
 Texture3D volCloudShadowTex       : register(t0) = TS_VolCloudShadow;
+Texture2D svoShadowTex            : register(t3);
 SamplerState ssCloudShadow        : register(s0) = SS_MaterialBilinearWrap;
 SamplerState ssVolCloudShadow     : register(s0) = SS_MaterialTrilinearBorder;
 
@@ -361,12 +362,17 @@ pixout_cl CloudsShadowPS(float4 WPos : SV_POSITION)
 	float3 WorldP = ReconstructWorldPos(WPos.xy, sceneDepthTexture);
 
 #if %_RT_SAMPLE3
-	visibility = 1 - GetVolumetricCloudShadow(volCloudShadowTex, ssVolCloudShadow, WorldP.xyz, CV_SunLightDir.xyz, c_CloudShadowConstants.params, c_CloudShadowConstants.animParams);
+	visibility = GetVolumetricCloudShadow(volCloudShadowTex, ssVolCloudShadow, WorldP.xyz, CV_SunLightDir.xyz, c_CloudShadowConstants.params, c_CloudShadowConstants.animParams);
 #elif %_RT_SAMPLE2
-	visibility = 1 - GetCloudShadowCommon(WorldP, cloudShadowTex, ssCloudShadow, c_CloudShadowConstants.animParams, c_CloudShadowConstants.params);
+	visibility = GetCloudShadowCommon(WorldP, cloudShadowTex, ssCloudShadow, c_CloudShadowConstants.animParams, c_CloudShadowConstants.params);
 #endif
 
-	OUT.Color = visibility;
+#if %_RT_SAMPLE4
+	// combine with SVO sun shadow
+	visibility *= svoShadowTex.Load(int3(WPos.xy, 0)).a;
+#endif
+
+	OUT.Color = 1 - visibility;
 
 	return OUT;
 }

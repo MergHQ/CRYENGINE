@@ -136,6 +136,7 @@
       <SunRSMInject type="Int" value="0" min="0" max="16" TipCVar="e_svoTI_*"/>
       <SSDepthTrace type="Float" value="0" min="0" max="1.4" TipCVar="e_svoTI_*"/>
       <HighGlossOcclusion type="Float" value="0" min="-100" max="1" TipCVar="e_svoTI_*"/>
+      <ShadowsFromSun type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <Troposphere_Active type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <Troposphere_Density type="Float" value="1" TipCVar="e_svoTI_*"/>
       <Troposphere_Brightness type="Float" value="1.0" TipCVar="e_svoTI_*"/>

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*=============================================================================
 
@@ -12,8 +12,8 @@
 
 #if defined(FEATURE_SVO_GI)
 
-#include "GraphicsPipeline/Common/ComputeRenderPass.h"
-#include "GraphicsPipeline/Common/FullscreenPass.h"
+	#include "GraphicsPipeline/Common/ComputeRenderPass.h"
+	#include "GraphicsPipeline/Common/FullscreenPass.h"
 
 class CSvoComputePass : public CComputeRenderPass
 {
@@ -21,7 +21,7 @@ public:
 
 	CSvoComputePass()
 		: CComputeRenderPass::CComputeRenderPass(CSvoComputePass::eFlags_ReflectConstantBuffersFromShader)
-	{ 
+	{
 	}
 
 	int nPrevTargetSize = 0;
@@ -36,22 +36,19 @@ public:
 
 struct SSvoTargetsSet
 {
-	_smart_ptr<CTexture>
-		// tracing targets
-		pRT_RGB_0, pRT_ALD_0,
-		pRT_RGB_1, pRT_ALD_1,
-		// de-mosaic targets
-		pRT_RGB_DEM_MIN_0, pRT_ALD_DEM_MIN_0,
-		pRT_RGB_DEM_MAX_0, pRT_ALD_DEM_MAX_0,
-		pRT_RGB_DEM_MIN_1, pRT_ALD_DEM_MIN_1,
-		pRT_RGB_DEM_MAX_1, pRT_ALD_DEM_MAX_1,
-		// output
-		pRT_FIN_OUT_0,
-		pRT_FIN_OUT_1;
+	// tracing targets
+	_smart_ptr<CTexture> pRT_RGB_0, pRT_ALD_0, pRT_RGB_1, pRT_ALD_1;
 
-	CSvoFullscreenPass passConeTrace;
-	CSvoFullscreenPass passDemosaic;
-	CSvoFullscreenPass passUpscale;
+	// de-mosaic targets
+	_smart_ptr<CTexture> pRT_RGB_DEM_MIN_0, pRT_ALD_DEM_MIN_0, pRT_RGB_DEM_MAX_0, pRT_ALD_DEM_MAX_0;
+	_smart_ptr<CTexture> pRT_RGB_DEM_MIN_1, pRT_ALD_DEM_MIN_1, pRT_RGB_DEM_MAX_1, pRT_ALD_DEM_MAX_1;
+
+	// output
+	_smart_ptr<CTexture> pRT_FIN_OUT_0, pRT_FIN_OUT_1;
+
+	CSvoFullscreenPass   passConeTrace;
+	CSvoFullscreenPass   passDemosaic;
+	CSvoFullscreenPass   passUpscale;
 };
 
 class CSvoRenderer : public ISvoRenderer
@@ -65,7 +62,7 @@ public:
 	static CSvoRenderer* GetInstance(bool bCheckAlloce = false);
 	static bool          IsActive();
 	void                 UpdateCompute(CRenderView* pRenderView);
-	void                 UpdateRender(CRenderView *pRenderView);
+	void                 UpdateRender(CRenderView* pRenderView);
 	int                  GetIntegratioMode();
 	int                  GetIntegratioMode(bool& bSpecTracingInUse);
 	bool                 GetUseLightProbes() { return e_svoTI_SkyColorMultiplier >= 0; }
@@ -78,6 +75,7 @@ public:
 	CTexture*            GetTroposphereMinRT();
 	CTexture*            GetTroposphereMaxRT();
 	CTexture*            GetTroposphereShadRT();
+	CTexture*            GetTracedSunShadowsRT();
 	CTexture*            GetDiffuseFinRT();
 	CTexture*            GetSpecularFinRT();
 	float                GetSsaoAmount()           { return IsActive() ? e_svoTI_SSAOAmount : 1.f; }
@@ -85,7 +83,7 @@ public:
 	CTexture*            GetRsmPoolCol()           { return IsActive() ? s_pRsmPoolCol.get() : NULL; }
 	CTexture*            GetRsmPoolNor()           { return IsActive() ? s_pRsmPoolNor.get() : NULL; }
 	static void          GetRsmTextures(_smart_ptr<CTexture>& pRsmColorMap, _smart_ptr<CTexture>& pRsmNormlMap, _smart_ptr<CTexture>& pRsmPoolCol, _smart_ptr<CTexture>& pRsmPoolNor);
-	ColorF               GetSkyColor() { return m_texInfo.vSkyColorTop; }
+	ColorF               GetSkyColor()             { return m_texInfo.vSkyColorTop; }
 
 protected:
 
@@ -93,52 +91,53 @@ protected:
 	virtual ~CSvoRenderer() {}
 
 	// ISvoRenderer
-	void             SetEditingHelper(const Sphere& sp) final;
-	bool             IsShaderItemUsedForVoxelization(SShaderItem& rShaderItem, IRenderNode* pRN) final;
+	void                   SetEditingHelper(const Sphere& sp) final;
+	bool                   IsShaderItemUsedForVoxelization(SShaderItem& rShaderItem, IRenderNode* pRN) final;
 
-	static CTexture* GetGBuffer(int nId);
-	void             UpscalePass(SSvoTargetsSet* pTS);
-	void             DemosaicPass(SSvoTargetsSet* pTS);
-	void             ConeTracePass(SSvoTargetsSet* pTS);
+	static CTexture*       GetGBuffer(int nId);
+	void                   UpscalePass(SSvoTargetsSet* pTS);
+	void                   DemosaicPass(SSvoTargetsSet* pTS);
+	void                   ConeTracePass(SSvoTargetsSet* pTS);
 
-	template<class T> void SetupCommonSamplers(T &rp);
-	template<class T> void SetupCommonConstants(SSvoTargetsSet* pTS, T &rp, CTexture * pRT);
-	template<class T> void SetupRsmSunTextures(T & rp);
-	template<class T> void SetupRsmSunConstants(T & rp);
+	template<class T> void SetupCommonSamplers(T& rp);
+	template<class T> void SetupCommonConstants(SSvoTargetsSet* pTS, T& rp, CTexture* pRT);
+	template<class T> void SetupRsmSunTextures(T& rp);
+	template<class T> void SetupRsmSunConstants(T& rp);
 
-	void             TropospherePass();
+	void                   TropospherePass();
+	void                   TraceSunShadowsPass();
 
-	void SetupGBufferTextures(CSvoFullscreenPass &rp);
+	void                   SetupGBufferTextures(CSvoFullscreenPass& rp);
 
-	void             CheckCreateUpdateRT(_smart_ptr<CTexture>& pTex, int nWidth, int nHeight, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szName);
+	void                   CheckCreateUpdateRT(_smart_ptr<CTexture>& pTex, int nWidth, int nHeight, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szName);
 
-	void UpdateGpuVoxParams(I3DEngine::SSvoNodeInfo& nodeInfo);
-	void ExecuteComputeShader(const char* szTechFinalName, CSvoComputePass & rp, int* nNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate);
-	uint64 GetRunTimeFlags(bool bDiffuseMode = true, bool bPixelShader = true);
-	template<class T> void SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo, T & rp, int nStage, int nStageOpa = 0, int nStageNorm = 0);
-	void SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate, CSvoComputePass & rp);
-	void CheckAllocateRT(bool bSpecPass);
-	template<class T> void SetupLightSources(PodArray<I3DEngine::SLightTI>& lightsTI, T & rp);
-	template<class T> void BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, T & rp);
-	void DrawPonts(PodArray<SVF_P3F_C4B_T2F>& arrVerts);
-	void VoxelizeRE();
-	bool VoxelizeMeshes(CShader* ef, SShaderPass* sfm);
+	void                   UpdateGpuVoxParams(I3DEngine::SSvoNodeInfo& nodeInfo);
+	void                   ExecuteComputeShader(const char* szTechFinalName, CSvoComputePass& rp, int* nNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate);
+	uint64                 GetRunTimeFlags(bool bDiffuseMode = true, bool bPixelShader = true);
+	template<class T> void SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo, T& rp, int nStage, int nStageOpa = 0, int nStageNorm = 0);
+	void                   SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate, CSvoComputePass& rp);
+	void                   CheckAllocateRT(bool bSpecPass);
+	template<class T> void SetupLightSources(PodArray<I3DEngine::SLightTI>& lightsTI, T& rp);
+	template<class T> void BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, T& rp);
+	void                   DrawPonts(PodArray<SVF_P3F_C4B_T2F>& arrVerts);
+	void                   VoxelizeRE();
+	bool                   VoxelizeMeshes(CShader* ef, SShaderPass* sfm);
 
-	CRenderView* RenderView() const { return m_pRenderView; };
+	CRenderView*           RenderView() const { return m_pRenderView; };
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	_smart_ptr<CTexture>
-		m_pRT_NID_0,
-		m_pRT_AIR_MIN,
-		m_pRT_AIR_MAX,
-		m_pRT_AIR_SHAD;
+	_smart_ptr<CTexture> m_pRT_NID_0;
+	_smart_ptr<CTexture> m_pRT_AIR_MIN;
+	_smart_ptr<CTexture> m_pRT_AIR_MAX;
+	_smart_ptr<CTexture> m_pRT_SHAD_MIN_MAX;
+	_smart_ptr<CTexture> m_pRT_SHAD_FIN_0, m_pRT_SHAD_FIN_1;
 	#endif
 
-	Matrix44A m_matReproj;
-	Matrix44A m_matViewProjPrev;
-	CShader*  m_pShader;
-	_smart_ptr<CTexture> m_pNoiseTex;
-	_smart_ptr<CTexture> m_pCloudShadowTex;
+	Matrix44A                   m_matReproj;
+	Matrix44A                   m_matViewProjPrev;
+	CShader*                    m_pShader;
+	_smart_ptr<CTexture>        m_pNoiseTex;
+	_smart_ptr<CTexture>        m_pCloudShadowTex;
 	static _smart_ptr<CTexture> s_pRsmColorMap;
 	static _smart_ptr<CTexture> s_pRsmNormlMap;
 	static _smart_ptr<CTexture> s_pRsmPoolCol;
@@ -152,21 +151,21 @@ protected:
 	{
 		SVoxPool() { nTexId = 0; pUAV = 0; pSRV = 0; }
 		void Init(ITexture* pTex);
-		int     nTexId;
-		D3DUAV* pUAV;
+		int                nTexId;
+		D3DUAV*            pUAV;
 		D3DShaderResource* pSRV;
-		CTexture* pTex;
+		CTexture*          pTex;
 	};
 
-	SVoxPool vp_OPAC;
-	SVoxPool vp_RGB0;
-	SVoxPool vp_RGB1;
-	SVoxPool vp_DYNL;
-	SVoxPool vp_RGB2;
-	SVoxPool vp_RGB3;
-	SVoxPool vp_RGB4;
-	SVoxPool vp_NORM;
-	SVoxPool vp_ALDI;
+	SVoxPool             vp_OPAC;
+	SVoxPool             vp_RGB0;
+	SVoxPool             vp_RGB1;
+	SVoxPool             vp_DYNL;
+	SVoxPool             vp_RGB2;
+	SVoxPool             vp_RGB3;
+	SVoxPool             vp_RGB4;
+	SVoxPool             vp_NORM;
+	SVoxPool             vp_ALDI;
 
 	_smart_ptr<CTexture> m_pTexTexA;
 	_smart_ptr<CTexture> m_pTexTriA;
@@ -191,7 +190,7 @@ protected:
 	static CSvoRenderer*              s_pInstance;
 	PodArray<I3DEngine::SSvoNodeInfo> m_arrNodeInfo;
 
-	SSvoTargetsSet m_tsDiff, m_tsSpec;
+	SSvoTargetsSet                    m_tsDiff, m_tsSpec;
 
 	// passes
 	CSvoComputePass    m_passClearBricks;
@@ -234,6 +233,7 @@ protected:
 	  INIT_SVO_CVAR(int, e_svoTI_Specular_Reproj);                  \
 	  INIT_SVO_CVAR(int, e_svoTI_Specular_FromDiff);                \
 	  INIT_SVO_CVAR(int, e_svoTI_DynLights);                        \
+	  INIT_SVO_CVAR(int, e_svoTI_ShadowsFromSun);                   \
 	  INIT_SVO_CVAR(int, e_svoTI_Troposphere_Active);               \
 	  INIT_SVO_CVAR(float, e_svoTI_Troposphere_Brightness);         \
 	  INIT_SVO_CVAR(float, e_svoTI_Troposphere_Ground_Height);      \
@@ -273,15 +273,15 @@ protected:
 	  INIT_SVO_CVAR(float, e_svoTI_MinReflectance);                 \
 	  INIT_SVO_CVAR(int, e_svoTI_DualTracing);                      \
 	  INIT_SVO_CVAR(int, e_svoTI_AnalyticalOccluders);              \
-		INIT_SVO_CVAR(int, e_svoTI_RsmUseColors);											\
-		INIT_SVO_CVAR(float, e_svoTI_AnalyticalOccludersRange);				\
-		INIT_SVO_CVAR(float, e_svoTI_AnalyticalOccludersSoftness);		\
-		INIT_SVO_CVAR(int, e_svoTI_AnalyticalGI);		                  \
-		INIT_SVO_CVAR(int, e_svoTI_TraceVoxels);		                  \
-		INIT_SVO_CVAR(int, e_svoTI_AsyncCompute);		                  \
-		INIT_SVO_CVAR(float, e_svoTI_SkyLightBottomMultiplier);		    \
-		INIT_SVO_CVAR(float, e_svoTI_VoxelOpacityMultiplier);         \
-		INIT_SVO_CVAR(float, e_svoTI_PointLightsBias);      \
+	  INIT_SVO_CVAR(int, e_svoTI_RsmUseColors);                     \
+	  INIT_SVO_CVAR(float, e_svoTI_AnalyticalOccludersRange);       \
+	  INIT_SVO_CVAR(float, e_svoTI_AnalyticalOccludersSoftness);    \
+	  INIT_SVO_CVAR(int, e_svoTI_AnalyticalGI);                     \
+	  INIT_SVO_CVAR(int, e_svoTI_TraceVoxels);                      \
+	  INIT_SVO_CVAR(int, e_svoTI_AsyncCompute);                     \
+	  INIT_SVO_CVAR(float, e_svoTI_SkyLightBottomMultiplier);       \
+	  INIT_SVO_CVAR(float, e_svoTI_VoxelOpacityMultiplier);         \
+	  INIT_SVO_CVAR(float, e_svoTI_PointLightsBias);                \
 	  // INIT_ALL_SVO_CVARS
 
 	#define INIT_SVO_CVAR(_type, _var) _type _var = 0;

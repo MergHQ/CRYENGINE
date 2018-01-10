@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*=============================================================================
 
@@ -27,7 +27,7 @@ CSvoRenderer* CSvoRenderer::s_pInstance = 0;
 
 CSvoRenderer::CSvoRenderer()
 {
-//	InitCVarValues();
+	//	InitCVarValues();
 
 	ZeroStruct(m_texInfo.arrAnalyticalOccluders);
 
@@ -243,7 +243,7 @@ void CSvoRenderer::UpdateGpuVoxParams(I3DEngine::SSvoNodeInfo& nodeInfo)
 	m_mGpuVoxViewProj[2] = VoxelizationView[2] * m_mOrthoProjection;
 }
 
-void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoComputePass & rp, int* pnNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate)
+void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoComputePass& rp, int* pnNodesForUpdateStartIndex, int nObjPassId, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate)
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 
@@ -257,7 +257,7 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoCompute
 	{
 		// update OPAC
 		rp.SetOutputUAV(2, vp_RGB0.pTex);
-		if(vp_OPAC.pUAV)
+		if (vp_OPAC.pUAV)
 			rp.SetOutputUAV(7, vp_OPAC.pTex);
 
 		rp.SetTexture(15, m_pNoiseTex);
@@ -269,8 +269,6 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoCompute
 		SetupCommonConstants(NULL, rp, NULL);
 		SetupLightSources(m_arrLightsStatic, rp);
 		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
-
-
 	}
 	else if (&rp == &m_passInjectStaticLights)
 	{
@@ -278,7 +276,8 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoCompute
 		rp.SetOutputUAV(2, vp_RGB0.pTex);
 		rp.SetOutputUAV(7, vp_RGB1.pTex);
 
-		if (vp_DYNL.pUAV) rp.SetOutputUAV(6, vp_DYNL.pTex);
+		if (vp_DYNL.pUAV)
+			rp.SetOutputUAV(6, vp_DYNL.pTex);
 
 		SetupSvoTexturesForRead(m_texInfo, rp, 0);
 		SetupRsmSunTextures(rp);
@@ -290,7 +289,6 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoCompute
 		SetupRsmSunConstants(rp);
 		SetupLightSources(m_arrLightsStatic, rp);
 		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
-
 	}
 	else if (&rp == &m_passInjectDynamicLights)
 	{
@@ -312,23 +310,26 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoCompute
 		SetupSvoTexturesForRead(m_texInfo, rp, 0);
 		SetupRsmSunTextures(rp);
 		SetupCommonSamplers(rp);
-		
+
 		rp.BeginConstantUpdate();
 
 		SetupRsmSunConstants(rp);
 		SetupCommonConstants(NULL, rp, NULL);
 		SetupLightSources(m_arrLightsDynamic, rp);
 		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
-
 	}
 	else if (&rp == &m_passPropagateLighting_1to2)
 	{
 		// update RGB2
-		if (vp_RGB0.pUAV) rp.SetOutputUAV(0, vp_RGB0.pTex);
+		if (vp_RGB0.pUAV)
+			rp.SetOutputUAV(0, vp_RGB0.pTex);
 		SetupSvoTexturesForRead(m_texInfo, rp, 1); // input
-		if (vp_RGB2.pUAV) rp.SetOutputUAV(5, vp_RGB2.pTex);
-		if (vp_ALDI.pUAV) rp.SetOutputUAV(6, vp_ALDI.pTex);
-		if (vp_DYNL.pUAV) rp.SetOutputUAV(7, vp_DYNL.pTex);
+		if (vp_RGB2.pUAV)
+			rp.SetOutputUAV(5, vp_RGB2.pTex);
+		if (vp_ALDI.pUAV)
+			rp.SetOutputUAV(6, vp_ALDI.pTex);
+		if (vp_DYNL.pUAV)
+			rp.SetOutputUAV(7, vp_DYNL.pTex);
 
 		SetupCommonSamplers(rp);
 
@@ -337,16 +338,19 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoCompute
 		SetupCommonConstants(NULL, rp, NULL);
 		SetupLightSources(m_arrLightsStatic, rp);
 		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
-
 	}
 	else if (&rp == &m_passPropagateLighting_2to3)
 	{
 		// update RGB3
-		if (vp_RGB0.pUAV) rp.SetOutputUAV(0, vp_RGB0.pTex);
-		if (vp_RGB1.pUAV) rp.SetOutputUAV(1, vp_RGB1.pTex);
+		if (vp_RGB0.pUAV)
+			rp.SetOutputUAV(0, vp_RGB0.pTex);
+		if (vp_RGB1.pUAV)
+			rp.SetOutputUAV(1, vp_RGB1.pTex);
 		SetupSvoTexturesForRead(m_texInfo, rp, 2); // input
-		if (vp_RGB3.pUAV) rp.SetOutputUAV(5, vp_RGB3.pTex);
-		if (vp_DYNL.pUAV) rp.SetOutputUAV(7, vp_DYNL.pTex);
+		if (vp_RGB3.pUAV)
+			rp.SetOutputUAV(5, vp_RGB3.pTex);
+		if (vp_DYNL.pUAV)
+			rp.SetOutputUAV(7, vp_DYNL.pTex);
 
 		SetupCommonSamplers(rp);
 
@@ -355,16 +359,21 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoCompute
 		SetupCommonConstants(NULL, rp, NULL);
 		SetupLightSources(m_arrLightsStatic, rp);
 		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
-
 	}
 	else if (&rp == &m_passClearBricks)
 	{
-		if (vp_RGB4.pUAV) rp.SetOutputUAV(3, vp_RGB4.pTex);
-		if (vp_OPAC.pUAV) rp.SetOutputUAV(4, vp_OPAC.pTex);
-		if (vp_RGB3.pUAV) rp.SetOutputUAV(6, vp_RGB3.pTex);
-		if(vp_RGB1.pUAV)  rp.SetOutputUAV(7, vp_RGB1.pTex);
-		if(vp_RGB2.pUAV)  rp.SetOutputUAV(5, vp_RGB2.pTex);
-		if(vp_ALDI.pUAV)  rp.SetOutputUAV(0, vp_ALDI.pTex);
+		if (vp_RGB4.pUAV)
+			rp.SetOutputUAV(3, vp_RGB4.pTex);
+		if (vp_OPAC.pUAV)
+			rp.SetOutputUAV(4, vp_OPAC.pTex);
+		if (vp_RGB3.pUAV)
+			rp.SetOutputUAV(6, vp_RGB3.pTex);
+		if (vp_RGB1.pUAV)
+			rp.SetOutputUAV(7, vp_RGB1.pTex);
+		if (vp_RGB2.pUAV)
+			rp.SetOutputUAV(5, vp_RGB2.pTex);
+		if (vp_ALDI.pUAV)
+			rp.SetOutputUAV(0, vp_ALDI.pTex);
 
 		SetupCommonSamplers(rp);
 
@@ -372,7 +381,6 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoCompute
 
 		SetupCommonConstants(NULL, rp, NULL);
 		SetupNodesForUpdate(*pnNodesForUpdateStartIndex, arrNodesForUpdate, rp);
-
 	}
 
 	{
@@ -407,7 +415,7 @@ void CSvoRenderer::TropospherePass()
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 
-	CSvoFullscreenPass & rp = m_passTroposphere;
+	CSvoFullscreenPass& rp = m_passTroposphere;
 
 	if (m_texInfo.bSvoFreeze || !m_texInfo.pTexTree)
 		return;
@@ -419,7 +427,7 @@ void CSvoRenderer::TropospherePass()
 	rp.SetState(GS_NODEPTHTEST);
 
 	rp.SetRenderTarget(0, m_pRT_AIR_MIN);
-	rp.SetRenderTarget(1, m_pRT_AIR_SHAD);
+	rp.SetRenderTarget(1, m_pRT_SHAD_MIN_MAX);
 	rp.SetRenderTarget(2, m_pRT_AIR_MAX);
 	rp.SetRequireWorldPos(true);
 	rp.SetRequirePerViewConstantBuffer(true);
@@ -432,23 +440,57 @@ void CSvoRenderer::TropospherePass()
 
 	SetupCommonConstants(NULL, rp, rp.GetRenderTarget(0));
 	SetupLightSources(m_arrLightsStatic, rp);
-	
+
 	rp.Execute();
 
 	#endif
 }
 
-void CSvoRenderer::SetupGBufferTextures(CSvoFullscreenPass &rp)
+void CSvoRenderer::TraceSunShadowsPass()
 {
-	rp.SetTexture( 4, CRendererResources::s_ptexLinearDepth);
+	#ifdef FEATURE_SVO_GI_ALLOW_HQ
+
+	CSvoFullscreenPass& rp = m_passTroposphere;
+
+	if (m_texInfo.bSvoFreeze || !m_texInfo.pTexTree)
+		return;
+
+	const char* szTechFinalName = "TraceSunShadows";
+
+	rp.SetTechnique(m_pShader, szTechFinalName, GetRunTimeFlags(0));
+	rp.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+	rp.SetState(GS_NODEPTHTEST);
+
+	rp.SetRenderTarget(0, m_pRT_SHAD_MIN_MAX);
+
+	rp.SetRequireWorldPos(true);
+	rp.SetRequirePerViewConstantBuffer(true);
+
+	SetupCommonSamplers(rp);
+	SetupSvoTexturesForRead(m_texInfo, rp, e_svoTI_NumberOfBounces, 0, 0);
+	SetupGBufferTextures(rp);
+
+	rp.BeginConstantUpdate();
+
+	SetupCommonConstants(NULL, rp, rp.GetRenderTarget(0));
+	SetupLightSources(m_arrLightsStatic, rp);
+
+	rp.Execute();
+
+	#endif
+}
+
+void CSvoRenderer::SetupGBufferTextures(CSvoFullscreenPass& rp)
+{
+	rp.SetTexture(4, CRendererResources::s_ptexLinearDepth);
 	rp.SetTexture(14, GetGBuffer(0));
-	rp.SetTexture( 5, GetGBuffer(1));
-	rp.SetTexture( 7, GetGBuffer(2));
+	rp.SetTexture(5, GetGBuffer(1));
+	rp.SetTexture(7, GetGBuffer(2));
 }
 
 void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 {
-	CSvoFullscreenPass & rp = pTS->passConeTrace;
+	CSvoFullscreenPass& rp = pTS->passConeTrace;
 
 	CheckAllocateRT(pTS == &m_tsSpec);
 
@@ -476,14 +518,14 @@ void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 
 	SetupGBufferTextures(rp);
 
-#ifdef FEATURE_SVO_GI_ALLOW_HQ
+	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 	if (m_pTexIndA)
 	{
 		rp.SetTexture(8, m_pTexTexA);
 		rp.SetTexture(9, m_pTexTriA);
 		rp.SetTexture(13, m_pTexIndA);
 	}
-#endif
+	#endif
 
 	if (bBindDynamicLights)
 	{
@@ -531,13 +573,13 @@ void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 }
 
 template<class T>
-void CSvoRenderer::SetupCommonConstants(SSvoTargetsSet* pTS, T &rp, CTexture * pRT)
+void CSvoRenderer::SetupCommonConstants(SSvoTargetsSet* pTS, T& rp, CTexture* pRT)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	CRenderView* pRenderView = RenderView();
 
-	const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
+	const int32 renderWidth = pRenderView->GetRenderResolution()[0];
 	const int32 renderHeight = pRenderView->GetRenderResolution()[1];
 
 	const SRenderViewInfo& viewInfo = pRenderView->GetViewInfo(CCamera::eEye_Left);
@@ -598,14 +640,14 @@ void CSvoRenderer::SetupCommonConstants(SSvoTargetsSet* pTS, T &rp, CTexture * p
 		rp.SetConstantArray(paramNamePrev, alias_cast<Vec4*>(&m_matViewProjPrev), 4);
 	}
 
-	if(pRT)
+	if (pRT)
 	{
-		int nTargetSize = pRT->GetWidth() + pRT->GetHeight() + int(e_svoTI_SkyColorMultiplier > 0) + e_svoTI_Diffuse_Cache;
+		int nTargetSize = pRT->GetWidth() + pRT->GetHeight() + int(e_svoTI_SkyColorMultiplier > 0) + e_svoTI_Diffuse_Cache + e_svoTI_ShadowsFromSun;
 		bool bNoReprojection = (rp.nPrevTargetSize != nTargetSize) || (pRenderView->GetShaderRenderingFlags() & SHDF_CUBEMAPGEN) || (rd->GetActiveGPUCount() > 1);
 		rp.nPrevTargetSize = nTargetSize;
 
 		static CCryNameR paramName("SVO_TargetResScale");
-		float fSizeRatioW = float(renderWidth ) / pRT->GetWidth();
+		float fSizeRatioW = float(renderWidth) / pRT->GetWidth();
 		float fSizeRatioH = float(renderHeight) / pRT->GetHeight();
 		Vec4 vData(fSizeRatioW, fSizeRatioH, e_svoTI_TemporalFilteringBase, (float)bNoReprojection);
 		rp.SetConstantArray(paramName, (Vec4*)&vData, 1);
@@ -678,7 +720,7 @@ void CSvoRenderer::SetupCommonConstants(SSvoTargetsSet* pTS, T &rp, CTexture * p
 		rp.SetConstantArray(paramName, (Vec4*)&vData, 1);
 	}
 
-	if(pTS)
+	if (pTS)
 	{
 		static CCryNameR paramName("SVO_SrcPixSize");
 		Vec4 vData(0, 0, 0, 0);
@@ -695,8 +737,8 @@ void CSvoRenderer::SetupCommonConstants(SSvoTargetsSet* pTS, T &rp, CTexture * p
 	}
 }
 
-template<class T> 
-void CSvoRenderer::SetupCommonSamplers(T &rp)
+template<class T>
+void CSvoRenderer::SetupCommonSamplers(T& rp)
 {
 	rp.SetSampler(0, EDefaultSamplerStates::PointClamp);
 	rp.SetSampler(1, EDefaultSamplerStates::LinearClamp);
@@ -714,7 +756,7 @@ void CSvoRenderer::DrawPonts(PodArray<SVF_P3F_C4B_T2F>& arrVerts)
 	//gRenDev->DrawPrimitivesInternal(&strip, arrVerts.Count() / max(1, e_svoRender), eptPointList);
 }
 
-void CSvoRenderer::UpdateRender(CRenderView *pRenderView)
+void CSvoRenderer::UpdateRender(CRenderView* pRenderView)
 {
 	m_pRenderView = pRenderView;
 	int nPrevAsync = CRenderer::CV_r_shadersasynccompiling;
@@ -728,6 +770,13 @@ void CSvoRenderer::UpdateRender(CRenderView *pRenderView)
 
 		if (e_svoTI_DiffuseAmplifier || e_svoTI_SpecularAmplifier || !e_svoTI_DiffuseBias)
 			TropospherePass();
+	}
+
+	if (e_svoEnabled && e_svoTI_Active && e_svoTI_Apply && m_texInfo.bSvoReady && e_svoTI_ShadowsFromSun && m_pRT_SHAD_MIN_MAX)
+	{
+		PROFILE_LABEL_SCOPE("TI_GEN_SHAD");
+
+		TraceSunShadowsPass();
 	}
 	#endif
 
@@ -782,7 +831,7 @@ void CSvoRenderer::UpdateRender(CRenderView *pRenderView)
 
 void CSvoRenderer::DemosaicPass(SSvoTargetsSet* pTS)
 {
-	CSvoFullscreenPass & rp = pTS->passDemosaic;
+	CSvoFullscreenPass& rp = pTS->passDemosaic;
 
 	const char* szTechFinalName = "DemosaicPass";
 
@@ -824,7 +873,7 @@ void CSvoRenderer::DemosaicPass(SSvoTargetsSet* pTS)
 }
 
 template<class T>
-void CSvoRenderer::SetupLightSources(PodArray<I3DEngine::SLightTI>& lightsTI, T & rp)
+void CSvoRenderer::SetupLightSources(PodArray<I3DEngine::SLightTI>& lightsTI, T& rp)
 {
 	const int nLightGroupsNum = 2;
 
@@ -865,7 +914,7 @@ void CSvoRenderer::SetupLightSources(PodArray<I3DEngine::SLightTI>& lightsTI, T 
 	}
 }
 
-void CSvoRenderer::SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate, CSvoComputePass & rp)
+void CSvoRenderer::SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<I3DEngine::SSvoNodeInfo>& arrNodesForUpdate, CSvoComputePass& rp)
 {
 	static CCryNameR paramNames[SVO_MAX_NODE_GROUPS] =
 	{
@@ -903,7 +952,7 @@ void CSvoRenderer::SetupNodesForUpdate(int& nNodesForUpdateStartIndex, PodArray<
 }
 
 template<class T>
-void CSvoRenderer::SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo, T & rp, int nStage, int nStageOpa, int nStageNorm)
+void CSvoRenderer::SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo, T& rp, int nStage, int nStageOpa, int nStageNorm)
 {
 	rp.SetTexture(0, (static_cast<CTexture*>(texInfo.pTexTree.get())));
 
@@ -977,7 +1026,12 @@ void CSvoRenderer::CheckAllocateRT(bool bSpecPass)
 			CheckCreateUpdateRT(m_pRT_NID_0, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_NID");
 			CheckCreateUpdateRT(m_pRT_AIR_MIN, nAirW, nAirH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_AIR_MIN");
 			CheckCreateUpdateRT(m_pRT_AIR_MAX, nAirW, nAirH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_AIR_MAX");
-			CheckCreateUpdateRT(m_pRT_AIR_SHAD, nAirW, nAirH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_AIR_SHAD");
+		}
+		if (e_svoTI_ShadowsFromSun)
+		{
+			CheckCreateUpdateRT(m_pRT_SHAD_MIN_MAX, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SHAD_MIN_MAX");
+			CheckCreateUpdateRT(m_pRT_SHAD_FIN_0, nWidth, nHeight, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SHAD_FIN");
+			CheckCreateUpdateRT(m_pRT_SHAD_FIN_1, nWidth, nHeight, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SHAD_FIN");
 		}
 	#endif
 
@@ -1021,6 +1075,10 @@ void CSvoRenderer::CheckAllocateRT(bool bSpecPass)
 		std::swap(m_tsSpec.pRT_RGB_DEM_MAX_0, m_tsSpec.pRT_RGB_DEM_MAX_1);
 		std::swap(m_tsSpec.pRT_ALD_DEM_MAX_0, m_tsSpec.pRT_ALD_DEM_MAX_1);
 		std::swap(m_tsSpec.pRT_FIN_OUT_0, m_tsSpec.pRT_FIN_OUT_1);
+
+	#ifdef FEATURE_SVO_GI_ALLOW_HQ
+		std::swap(m_pRT_SHAD_FIN_0, m_pRT_SHAD_FIN_1);
+	#endif
 	}
 }
 
@@ -1194,7 +1252,7 @@ bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* 
 			while (nWS > pSR->e_svoMinNodeSize)
 			{
 				nWS /= 2;
-				fDepth ++;
+				fDepth++;
 			}
 			sData[0].f[3] = 0.1f + fDepth;
 
@@ -1290,22 +1348,22 @@ bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* 
 		}
 
 	case ECGP_PB_SvoParams8:
-	{
-		sData[0].f[0] = pSR->e_svoTI_VoxelOpacityMultiplier;
-		sData[0].f[1] = pSR->e_svoTI_SkyLightBottomMultiplier;
-		sData[0].f[2] = pSR->e_svoTI_PointLightsBias;
-		sData[0].f[3] = 0;
-		break;
-	}
+		{
+			sData[0].f[0] = pSR->e_svoTI_VoxelOpacityMultiplier;
+			sData[0].f[1] = pSR->e_svoTI_SkyLightBottomMultiplier;
+			sData[0].f[2] = pSR->e_svoTI_PointLightsBias;
+			sData[0].f[3] = 0;
+			break;
+		}
 
 	case ECGP_PB_SvoParams9:
-	{
-		sData[0].f[0] = 0;
-		sData[0].f[1] = 0;
-		sData[0].f[2] = 0;
-		sData[0].f[3] = 0;
-		break;
-	}
+		{
+			sData[0].f[0] = 0;
+			sData[0].f[1] = 0;
+			sData[0].f[2] = 0;
+			sData[0].f[3] = 0;
+			break;
+		}
 
 	default:
 		bRes = false;
@@ -1319,13 +1377,13 @@ void CSvoRenderer::DebugDrawStats(const RPProfilerStats* pBasicStats, float& ypo
 	ColorF color = Col_Yellow;
 	const EDrawTextFlags txtFlags = (EDrawTextFlags)(eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Monospace);
 
-	#define SVO_Draw2dLabel(labelName)                                                                                                      \
-	  IRenderAuxText::Draw2dLabel(60, ypos += ystep, 2, &color.r, false, (const char*)(((const char*)( # labelName)) + 10));                \
-	  if (pBasicStats[labelName].gpuTimeMax > 0.01)                                                                                         \
-	    IRenderAuxText::Draw2dLabelEx(xposms, ypos, 2, color, txtFlags, "%5.2f Aver=%5.2f Max=%5.2f",                                       \
-	                           pBasicStats[labelName].gpuTime, pBasicStats[labelName].gpuTimeSmoothed, pBasicStats[labelName].gpuTimeMax);  \
-	  else                                                                                                                                  \
-	    IRenderAuxText::Draw2dLabelEx(xposms, ypos, 2, color, txtFlags, "%5.2f", pBasicStats[labelName].gpuTime);                           \
+	#define SVO_Draw2dLabel(labelName)                                                                                                             \
+	  IRenderAuxText::Draw2dLabel(60, ypos += ystep, 2, &color.r, false, (const char*)(((const char*)( # labelName)) + 10));                       \
+	  if (pBasicStats[labelName].gpuTimeMax > 0.01)                                                                                                \
+	    IRenderAuxText::Draw2dLabelEx(xposms, ypos, 2, color, txtFlags, "%5.2f Aver=%5.2f Max=%5.2f",                                              \
+	                                  pBasicStats[labelName].gpuTime, pBasicStats[labelName].gpuTimeSmoothed, pBasicStats[labelName].gpuTimeMax);  \
+	  else                                                                                                                                         \
+	    IRenderAuxText::Draw2dLabelEx(xposms, ypos, 2, color, txtFlags, "%5.2f", pBasicStats[labelName].gpuTime);                                  \
 
 	SVO_Draw2dLabel(eRPPSTATS_TI_INJECT_CLEAR);
 	SVO_Draw2dLabel(eRPPSTATS_TI_VOXELIZE);
@@ -1372,9 +1430,9 @@ uint64 CSvoRenderer::GetRunTimeFlags(bool bDiffuseMode, bool bPixelShader)
 		rtFlags |= g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
 
 	// Added because of the vulkan shader limitation for immediate constant array size (shaders will fail as more than 1024 registers are used)
-#if CRY_RENDERER_VULKAN
+	#if CRY_RENDERER_VULKAN
 	rtFlags |= g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
-#endif
+	#endif
 
 	if (bPixelShader && !GetIntegratioMode() && e_svoTI_InjectionMultiplier) // read sun light and shadow map during final cone tracing
 		rtFlags |= g_HWSR_MaskBit[HWSR_LIGHT_TEX_PROJ];
@@ -1406,10 +1464,13 @@ uint64 CSvoRenderer::GetRunTimeFlags(bool bDiffuseMode, bool bPixelShader)
 	if (!bPixelShader && e_svoTI_SunRSMInject)
 		rtFlags |= g_HWSR_MaskBit[HWSR_AMBIENT_OCCLUSION];
 
-#if !CRY_PLATFORM_CONSOLE
+	#if !CRY_PLATFORM_CONSOLE
 	if (bPixelShader && e_svoTI_RsmUseColors > 0)
 		rtFlags |= g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG];
-#endif
+	#endif
+
+	if (e_svoTI_ShadowsFromSun && bDiffuseMode)
+		rtFlags |= g_HWSR_MaskBit[HWSR_REVERSE_DEPTH];
 
 	return rtFlags;
 }
@@ -1463,8 +1524,17 @@ CTexture* CSvoRenderer::GetTroposphereMaxRT()
 CTexture* CSvoRenderer::GetTroposphereShadRT()
 {
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	if (IsActive() && e_svoTI_Troposphere_Active && m_pRT_AIR_SHAD)
-		return m_pRT_AIR_SHAD;
+	if (IsActive() && e_svoTI_Troposphere_Active && m_pRT_SHAD_MIN_MAX)
+		return m_pRT_SHAD_MIN_MAX;
+	#endif
+	return NULL;
+}
+
+CTexture* CSvoRenderer::GetTracedSunShadowsRT()
+{
+	#ifdef FEATURE_SVO_GI_ALLOW_HQ
+	if (IsActive() && e_svoTI_ShadowsFromSun && m_pRT_SHAD_FIN_0)
+		return m_pRT_SHAD_FIN_0;
 	#endif
 	return NULL;
 }
@@ -1481,7 +1551,7 @@ CTexture* CSvoRenderer::GetSpecularFinRT()
 
 void CSvoRenderer::UpscalePass(SSvoTargetsSet* pTS)
 {
-	CSvoFullscreenPass & rp = pTS->passUpscale;
+	CSvoFullscreenPass& rp = pTS->passUpscale;
 
 	const char* szTechFinalName = "UpScalePass";
 
@@ -1491,8 +1561,14 @@ void CSvoRenderer::UpscalePass(SSvoTargetsSet* pTS)
 	rp.SetTechnique(m_pShader, szTechFinalName, GetRunTimeFlags(pTS == &m_tsDiff));
 	rp.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 	rp.SetState(GS_NODEPTHTEST);
-	
+
 	rp.SetRenderTarget(0, pTS->pRT_FIN_OUT_0);
+
+	#ifdef FEATURE_SVO_GI_ALLOW_HQ
+	if (pTS == &m_tsDiff && m_pRT_SHAD_FIN_0 && e_svoTI_ShadowsFromSun)
+		rp.SetRenderTarget(1, m_pRT_SHAD_FIN_0);
+	#endif
+
 	rp.SetRequireWorldPos(true);
 	rp.SetRequirePerViewConstantBuffer(true);
 
@@ -1506,9 +1582,24 @@ void CSvoRenderer::UpscalePass(SSvoTargetsSet* pTS)
 	rp.SetTexture(9, pTS->pRT_FIN_OUT_1);
 
 	if (pTS == &m_tsSpec && m_tsDiff.pRT_FIN_OUT_0)
+	{
 		rp.SetTexture(15, m_tsDiff.pRT_FIN_OUT_0);
+	}
+	#ifdef FEATURE_SVO_GI_ALLOW_HQ
+	else if (pTS == &m_tsDiff && m_pRT_SHAD_MIN_MAX && e_svoTI_ShadowsFromSun)
+	{
+		rp.SetTexture(15, m_pRT_SHAD_MIN_MAX);
+	}
+	#endif
 	else
+	{
 		rp.SetTexture(15, CRendererResources::s_ptexBlack);
+	}
+
+	#ifdef FEATURE_SVO_GI_ALLOW_HQ
+	if (pTS == &m_tsDiff && m_pRT_SHAD_FIN_1 && e_svoTI_ShadowsFromSun)
+		rp.SetTexture(16, m_pRT_SHAD_FIN_1);
+	#endif
 
 	rp.SetTexture(8, GetUtils().GetVelocityObjectRT(RenderView()));
 
@@ -1522,14 +1613,14 @@ void CSvoRenderer::UpscalePass(SSvoTargetsSet* pTS)
 }
 
 template<class T>
-void CSvoRenderer::SetupRsmSunTextures(T & rp)
+void CSvoRenderer::SetupRsmSunTextures(T& rp)
 {
 	const int rsmDepthTexSlot = 29;
 	const int rsmColorTexSlot = 30;
 	const int rsmNormlTexSlot = 31;
 
-	CTexture* pRsmDepthMap  = CRendererResources::s_ptexBlack;
-	CTexture* pRsmColorMap  = CRendererResources::s_ptexBlack;
+	CTexture* pRsmDepthMap = CRendererResources::s_ptexBlack;
+	CTexture* pRsmColorMap = CRendererResources::s_ptexBlack;
 	CTexture* pRsmNormalMap = CRendererResources::s_ptexBlack;
 
 	if (ShadowMapFrustum* pRsmFrustum = GetRsmSunFrustum(RenderView()))
@@ -1551,7 +1642,7 @@ void CSvoRenderer::SetupRsmSunTextures(T & rp)
 }
 
 template<class T>
-void CSvoRenderer::SetupRsmSunConstants(T & rp)
+void CSvoRenderer::SetupRsmSunConstants(T& rp)
 {
 	static CCryNameR lightProjParamName("SVO_RsmSunShadowProj");
 	static CCryNameR rsmSunColparamName("SVO_RsmSunCol");
@@ -1600,7 +1691,7 @@ ISvoRenderer* CD3D9Renderer::GetISvoRenderer()
 }
 
 template<class T>
-void CSvoRenderer::BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, T & rp)
+void CSvoRenderer::BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, T& rp)
 {
 	auto* tiledLights = gcpRendD3D.GetGraphicsPipeline().GetTiledLightVolumesStage();
 
@@ -1710,17 +1801,19 @@ CTexture* CSvoRenderer::GetRsmNormlMap(const ShadowMapFrustum& rFr, bool bCheckU
 
 void CSvoRenderer::GetRsmTextures(_smart_ptr<CTexture>& pRsmColorMap, _smart_ptr<CTexture>& pRsmNormlMap, _smart_ptr<CTexture>& pRsmPoolCol, _smart_ptr<CTexture>& pRsmPoolNor)
 {
-	// *INDENT-OFF*
-	if (!s_pRsmColorMap) s_pRsmColorMap = CTexture::GetOrCreateTextureObjectPtr("SVO_SUN_RSM_COLOR",  0, 0, 1, eTT_2D, FT_STATE_CLAMP, eTF_R8G8B8A8);
-	if (!s_pRsmNormlMap) s_pRsmNormlMap = CTexture::GetOrCreateTextureObjectPtr("SVO_SUN_RSM_NORMAL", 0, 0, 1, eTT_2D, FT_STATE_CLAMP, eTF_R8G8B8A8);
-	if (!s_pRsmPoolCol)  s_pRsmPoolCol  = CTexture::GetOrCreateTextureObjectPtr("SVO_PRJ_RSM_COLOR",  0, 0, 1, eTT_2D, FT_STATE_CLAMP, eTF_R8G8B8A8);
-	if (!s_pRsmPoolNor)  s_pRsmPoolNor  = CTexture::GetOrCreateTextureObjectPtr("SVO_PRJ_RSM_NORMAL", 0, 0, 1, eTT_2D, FT_STATE_CLAMP, eTF_R8G8B8A8);
+	if (!s_pRsmColorMap)
+		s_pRsmColorMap = CTexture::GetOrCreateTextureObjectPtr("SVO_SUN_RSM_COLOR", 0, 0, 1, eTT_2D, FT_STATE_CLAMP, eTF_R8G8B8A8);
+	if (!s_pRsmNormlMap)
+		s_pRsmNormlMap = CTexture::GetOrCreateTextureObjectPtr("SVO_SUN_RSM_NORMAL", 0, 0, 1, eTT_2D, FT_STATE_CLAMP, eTF_R8G8B8A8);
+	if (!s_pRsmPoolCol)
+		s_pRsmPoolCol = CTexture::GetOrCreateTextureObjectPtr("SVO_PRJ_RSM_COLOR", 0, 0, 1, eTT_2D, FT_STATE_CLAMP, eTF_R8G8B8A8);
+	if (!s_pRsmPoolNor)
+		s_pRsmPoolNor = CTexture::GetOrCreateTextureObjectPtr("SVO_PRJ_RSM_NORMAL", 0, 0, 1, eTT_2D, FT_STATE_CLAMP, eTF_R8G8B8A8);
 
 	pRsmColorMap = s_pRsmColorMap;
 	pRsmNormlMap = s_pRsmNormlMap;
-	pRsmPoolCol  = s_pRsmPoolCol;
-	pRsmPoolNor  = s_pRsmPoolNor;
-	// *INDENT-ON*
+	pRsmPoolCol = s_pRsmPoolCol;
+	pRsmPoolNor = s_pRsmPoolNor;
 }
 
 void CSvoRenderer::CheckCreateUpdateRT(_smart_ptr<CTexture>& pTex, int nWidth, int nHeight, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szName)
@@ -1728,7 +1821,7 @@ void CSvoRenderer::CheckCreateUpdateRT(_smart_ptr<CTexture>& pTex, int nWidth, i
 	if (!CTexture::IsTextureExist(pTex) || pTex->GetWidth() != nWidth || pTex->GetHeight() != nHeight || pTex->GetTextureDstFormat() != eTF)
 	{
 		const bool bNeedsDecRef = !CTexture::IsTextureExist(pTex); // NOTE: SD3DPostEffectsUtils::GetOrCreateRenderTarget adds ref when !CTexture::IsTextureExist only
-		
+
 		CTexture* pTexRaw = pTex;
 		if (SD3DPostEffectsUtils::GetOrCreateRenderTarget(szName, pTexRaw, nWidth, nHeight, Clr_Unknown, 0, false, eTF))
 		{
@@ -1738,8 +1831,6 @@ void CSvoRenderer::CheckCreateUpdateRT(_smart_ptr<CTexture>& pTex, int nWidth, i
 			if (bNeedsDecRef)
 				pTex->Release();
 		}
-
-		//iLog->Log("Realloc RT %dx%d, %s, %s", nWidth, nHeight, CTexture::NameForTextureFormat(eTF), szName);
 	}
 }
 
@@ -1753,7 +1844,7 @@ void CSvoRenderer::SVoxPool::Init(ITexture* _pTex)
 	{
 		if (CSvoRenderer::s_pInstance && CSvoRenderer::s_pInstance->GetIntegratioMode())
 		{
-			if(pTex->GetFlags() & FT_USAGE_UAV_RWTEXTURE)
+			if (pTex->GetFlags() & FT_USAGE_UAV_RWTEXTURE)
 				pUAV = pTex->GetDevTexture()->LookupUAV(EDefaultResourceViews::UnorderedAccess);
 			else
 				pSRV = pTex->GetDevTexture()->LookupSRV(EDefaultResourceViews::Default);

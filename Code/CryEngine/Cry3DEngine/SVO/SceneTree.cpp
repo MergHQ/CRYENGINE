@@ -2267,6 +2267,7 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 	GetCVars()->e_svoTI_SunRSMInject = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SunRSMInject", "0"));
 	GetCVars()->e_svoTI_SSDepthTrace = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SSDepthTrace", "0"));
 
+	GetCVars()->e_svoTI_ShadowsFromSun = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ShadowsFromSun", "0"));
 	GetCVars()->e_svoTI_Troposphere_Active = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Active", "0"));
 	GetCVars()->e_svoTI_Troposphere_Brightness = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Brightness", "0"));
 	GetCVars()->e_svoTI_Troposphere_Ground_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Ground_Height", "0"));
