@@ -4449,28 +4449,11 @@ void CRenderer::ScheduleResourceForDelete(CBaseResource* pResource)
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::RT_DelayedDeleteResources(bool bAllResources)
 {
-	int buffer = m_currentResourceDeleteBuffer;
-	buffer++;
-	if (buffer >= RT_COMMAND_BUF_COUNT)
-		buffer = 0;
-	m_currentResourceDeleteBuffer = buffer;
-	buffer++;
-	if (buffer >= RT_COMMAND_BUF_COUNT)
-		buffer = 0;
+	m_currentResourceDeleteBuffer = (m_currentResourceDeleteBuffer + 1) % RT_COMMAND_BUF_COUNT;
+	int buffer = bAllResources ? 0 : m_currentResourceDeleteBuffer;
+	const int bufferEnd = bAllResources ? RT_COMMAND_BUF_COUNT : buffer + 1;
 
-	if (bAllResources)
-	{
-		for (buffer = 0; buffer < RT_COMMAND_BUF_COUNT; buffer++)
-		{
-			m_resourcesToDelete[buffer].CoalesceMemory();
-			for (size_t i = 0, num = m_resourcesToDelete[buffer].size(); i < num; i++)
-			{
-				delete m_resourcesToDelete[buffer][i];
-			}
-			m_resourcesToDelete[buffer].clear();
-		}
-	}
-	else
+	for (buffer = 0; buffer < bufferEnd; ++buffer)
 	{
 		m_resourcesToDelete[buffer].CoalesceMemory();
 		for (size_t i = 0, num = m_resourcesToDelete[buffer].size(); i < num; i++)
