@@ -603,15 +603,22 @@ function(CryGameModule target)
 		set(SHARED_MODULES ${SHARED_MODULES} ${THIS_PROJECT} CACHE INTERNAL "Shared modules for APK creation" FORCE)
 		target_link_libraries(${THIS_PROJECT} PRIVATE m log c android)
 	endif()
+	message(STATUS ${game_folder})
 	add_metadata()
-
+	message(STATUS ${game_folder})
 	if(OPTION_DEDICATED_SERVER)
 		target_compile_definitions( ${THIS_PROJECT} PRIVATE "-DDEDICATED_SERVER")
 	endif()
-
+	message(STATUS ${game_folder})
 	if (NOT DEFINED PROJECT_BUILD_CRYENGINE OR PROJECT_BUILD_CRYENGINE)
 		install(TARGETS ${target} LIBRARY DESTINATION bin RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
 	endif()
+
+	message(STATUS ${game_folder})
+	if(EXISTS "${game_folder}/CVarOverrides.h")
+		file(WRITE "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h" "#include \"${game_folder}/CVarOverrides.h\"")
+	endif()
+
 endfunction()
 
 function(CreateDynamicModule target)
@@ -881,7 +888,7 @@ macro(remove_files_from_list filelist filepattern)
 endmacro()
 
 # For Windows, an argument may be provided to specify the location of an icon for the executable
-macro(add_metadata)
+function(add_metadata)
 	if (WIN32 OR WIN64)
 		get_target_property(project_type ${THIS_PROJECT} TYPE)
 		set(valid_types EXECUTABLE MODULE_LIBRARY SHARED_LIBRARY)
@@ -1048,7 +1055,7 @@ macro(add_metadata)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE EXE_VERSION_INFO_2=${VERSION_REVISION}) 
 		target_compile_definitions(${THIS_PROJECT} PRIVATE EXE_VERSION_INFO_3=${VERSION_BUILD})
 	endif()
-endmacro()
+endfunction()
 
 macro(use_scaleform)
 	if (OPTION_SCALEFORMHELPER)

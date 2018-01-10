@@ -28,6 +28,8 @@
 #include <CryExtension/ICryUnknown.h>
 #include <CrySystem/IManualFrameStepController.h>
 
+#include <CrySystem/CVarOverride.h>
+
 struct ILog;
 struct IProfileLogSystem;
 struct IEntitySystem;
@@ -1951,13 +1953,13 @@ struct SDummyCVar : ICVar
 	  } while (0)
 
 	#define CONSOLE_CONST_CVAR_MODE
-	#define DeclareConstIntCVar(name, defaultValue)                          enum : int { name = (defaultValue) }
-	#define DeclareStaticConstIntCVar(name, defaultValue)                    enum : int { name = (defaultValue) }
-	#define DefineConstIntCVarName(strname, name, defaultValue, flags, help) { static_assert(static_cast<int>(defaultValue) == static_cast<int>(name), "Unexpected value!"); REGISTER_DUMMY_CVAR(int, strname, defaultValue); }
-	#define DefineConstIntCVar(name, defaultValue, flags, help)              { static_assert(static_cast<int>(defaultValue) == static_cast<int>(name), "Unexpected value!"); REGISTER_DUMMY_CVAR(int, ( # name), defaultValue); }
+	#define DeclareConstIntCVar(name, defaultValue)                          enum : int { name = GetCVarOverride(#name, defaultValue) }
+	#define DeclareStaticConstIntCVar(name, defaultValue)                    enum : int { name = GetCVarOverride(#name, defaultValue) }
+	#define DefineConstIntCVarName(strname, name, defaultValue, flags, help) { static_assert(static_cast<int>(GetCVarOverride(#name, defaultValue)) == static_cast<int>(name), "Unexpected value!"); REGISTER_DUMMY_CVAR(int, strname, GetCVarOverride(#name, defaultValue)); }
+	#define DefineConstIntCVar(name, defaultValue, flags, help)              { static_assert(static_cast<int>(GetCVarOverride(#name, defaultValue)) == static_cast<int>(name), "Unexpected value!"); REGISTER_DUMMY_CVAR(int, ( # name), GetCVarOverride(#name, defaultValue)); }
 
 //! DefineConstIntCVar2 is deprecated, any such instance can be converted to the 3 variant by removing the quotes around the first parameter.
-	#define DefineConstIntCVar3(name, _var_, defaultValue, flags, help) { static_assert(static_cast<int>(defaultValue) == static_cast<int>(_var_), "Unexpected value!"); REGISTER_DUMMY_CVAR(int, name, defaultValue); }
+	#define DefineConstIntCVar3(name, _var_, defaultValue, flags, help) { static_assert(static_cast<int>(GetCVarOverride(#name, defaultValue)) == static_cast<int>(_var_), "Unexpected value!"); REGISTER_DUMMY_CVAR(int, name, GetCVarOverride(#name, defaultValue)); }
 	#define AllocateConstIntCVar(scope, name)
 
 	#define DefineConstFloatCVar(name, flags, help) { REGISTER_DUMMY_CVAR(float, ( # name), name ## Default); }

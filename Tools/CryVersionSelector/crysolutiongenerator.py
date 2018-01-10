@@ -184,9 +184,16 @@ include("$${TOOLS_CMAKE_DIR}/Configure.cmake")"""
 
 sources_platform(ALL)
 $sources
+if(EXISTS "$${CMAKE_CURRENT_SOURCE_DIR}/CVarOverrides.h")
+    add_sources("NoUberFile"
+        PROJECTS Game
+        SOURCE_GROUP "Root"
+            "CVarOverrides.h"
+    )
+endif()
 end_sources()
 
-CryEngineModule($project_name PCH "StdAfx.cpp" SOLUTION_FOLDER "Project")
+CryGameModule($project_name PCH "StdAfx.cpp" SOLUTION_FOLDER "Project")
 
 target_include_directories($${THIS_PROJECT}
 PRIVATE
