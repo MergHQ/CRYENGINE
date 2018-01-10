@@ -32,6 +32,9 @@ struct IFactionMap
 		Now,
 	};
 
+	//! \typedef Typedef for callback called when faction reaction has changed
+	typedef Functor3<uint8 /*firstFactionId*/, uint8 /*secondFactionId*/, ReactionType /*reactionType*/> FactionReactionChangedCallback;
+
 	// <interfuscator:shuffle>
 	virtual ~IFactionMap(){}
 
@@ -88,5 +91,11 @@ struct IFactionMap
 
 	//! Reloads the data from the current data source.
 	virtual void Reload() = 0;
+	
+	//! Register to faction reaction callback.
+	virtual void RegisterFactionReactionChangedCallback(const FactionReactionChangedCallback& callback) = 0;
+	
+	//! Unregister from faction reaction callback.
+	virtual void UnregisterFactionReactionChangedCallback(const FactionReactionChangedCallback& callback) = 0;
 	// </interfuscator:shuffle>
 };

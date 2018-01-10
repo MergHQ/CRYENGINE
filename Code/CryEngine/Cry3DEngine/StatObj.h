@@ -502,7 +502,7 @@ public:
 	virtual AABB GetAABB() const final                  { return m_AABB; }
 
 	virtual float GetExtent(EGeomForm eForm) final;
-	virtual void GetRandomPos(PosNorm & ran, CRndGen & seed, EGeomForm eForm) const final;
+	virtual void GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const final;
 
 	virtual Vec3 GetHelperPos(const char* szHelperName) final;
 	virtual const Matrix34& GetHelperTM(const char* szHelperName) final;
@@ -595,7 +595,7 @@ public:
 	virtual bool      IsSubObject() const final          { return m_bSubObject; };
 	virtual bool CopySubObject(int nToIndex, IStatObj * pFromObj, int nFromIndex) final;
 	virtual int PhysicalizeSubobjects(IPhysicalEntity * pent, const Matrix34 * pMtx, float mass, float density = 0.0f, int id0 = 0,
-	                                  strided_pointer<int> pJointsIdMap = 0, const char* szPropsOverride = 0) final;
+	                                  strided_pointer<int> pJointsIdMap = 0, const char* szPropsOverride = 0, int idbodyArtic = -1) final;
 	virtual IStatObj::SSubObject& AddSubObject(IStatObj* pStatObj) final;
 	virtual int Physicalize(IPhysicalEntity * pent, pe_geomparams * pgp, int id = -1, const char* szPropsOverride = 0) final;
 	//////////////////////////////////////////////////////////////////////////

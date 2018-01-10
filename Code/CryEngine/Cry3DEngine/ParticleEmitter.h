@@ -15,10 +15,6 @@
 #define __particleemitter_h__
 #pragma once
 
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
-	#pragma warning(disable: 4355)
-#endif
-
 #include "ParticleEffect.h"
 #include "ParticleEnviron.h"
 #include "ParticleContainer.h"
@@ -107,7 +103,6 @@ public:
 	const SpawnParams&           GetSpawnParams() const                { return m_SpawnParams; }
 
 	virtual bool                 IsAlive() const;
-	virtual bool                 IsInstant() const;
 	virtual void                 Activate(bool bActive);
 	virtual void                 Kill();
 	virtual void                 Restart();
@@ -213,23 +208,31 @@ public:
 		return GetAge() - m_fAgeLastRendered;
 	}
 
-	void GetCounts(SParticleCounts& counts) const
+	void GetCounts(SParticleCounts& counts, bool bClear = false) const
 	{
+		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
+		counts.emitters.alloc += 1.f;
+		if (IsActive())
+		{
+			counts.emitters.alive += 1.f;
+			counts.emitters.updated += 1.f;
+		}
+		if (TimeNotRendered() == 0.f)
+			counts.emitters.rendered += 1.f;
+
 		for (const auto& c : m_Containers)
 		{
 			c.GetCounts(counts);
+			if (bClear)
+				non_const(c).ClearCounts();
 		}
 	}
 	void GetAndClearCounts(SParticleCounts& counts)
 	{
-		FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
-		for (auto& c : m_Containers)
-		{
-			c.GetCounts(counts);
-			c.ClearCounts();
-		}
+		GetCounts(counts, true);
 	}
-
+	
 	ParticleList<CParticleContainer> const& GetContainers() const
 	{
 		return m_Containers;
@@ -266,7 +269,6 @@ public:
 		m_Containers.clear();
 
 		// Release and remove external geom refs.
-		GeomRef::Release();
 		GeomRef::operator=(GeomRef());
 	}
 

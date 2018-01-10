@@ -1,27 +1,13 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:	This is the interface which the launcher.exe will interact
-                with to start the game framework. For an implementation of
-                this interface refer to CryAction.
-
-   -------------------------------------------------------------------------
-   History:
-   - 20:7:2004   10:34 : Created by Marco Koegler
-   - 3:8:2004		11:29 : Taken-over by Márcio Martins
-
-*************************************************************************/
-
 #pragma once
 
 #include <CryEntitySystem/IEntityComponent.h>
-#include <CryGame/IGameStartup.h> // <> required for Interfuscator
 #include <CryGame/IGameFrameworkExtension.h>
 #include <CryMath/Cry_Color.h>
 #include <CrySystem/TimeValue.h>
+#include <CryLobby/CommonICryMatchMaking.h>
+#include <CryNetwork/INetwork.h>
 
 struct pe_explosion;
 struct IPhysicalEntity;
@@ -37,6 +23,10 @@ struct ICustomActionManager;
 struct ICustomEventManager;
 struct ISerializeHelper;
 struct IGameVolumes;
+struct IGame;
+struct IGameServerNub;
+struct IGameClientNub;
+struct INetworkedClientListener;
 
 //! Define to control the logging of breakability code.
 #define BREAK_LOGGING 0
@@ -509,6 +499,12 @@ struct IBreakEventListener
 	virtual void OnSetSubObjHideMask(IEntity* pEntity, int nSlot, hidemask nSubObjHideMask) = 0;
 };
 
+// Interface for the CryAction engine module
+struct IGameFrameworkEngineModule : public Cry::IDefaultModule
+{
+	CRYINTERFACE_DECLARE_GUID(IGameFrameworkEngineModule, "CE1E93CB-2665-4F76-809D-070F11418EB9"_cry_guid);
+};
+
 //! Interface which exposes the CryAction subsystems.
 struct IGameFramework
 {
@@ -528,27 +524,29 @@ struct IGameFramework
 	// <interfuscator:shuffle>
 	virtual ~IGameFramework(){}
 
-	//! Entry function to the game framework.
-	//! Entry function used to create a new instance of the game framework from outside its own DLL.
-	//! \return New instance of the game framework.
-	typedef IGameFramework*(* TEntryFunction)();
+	//! Called when the engine is shutting down to finalize the game framework
+	virtual void ShutDown() = 0;
 
-	//! Initializes the engine and starts the main engine loop
-	//! Only returns after the engine loop has been terminated!
-	//! The game framework is automatically shut down before returning
-	//! \param startupParams Pointer to SSystemInitParams structure containing system initialization setup!
-	//! \return 0 if something went wrong with initialization, non-zero otherwise.
-	virtual bool StartEngine(SSystemInitParams& startupParams) = 0;
+	//! Called just before calling ISystem::RenderBegin, after the renderer has been notified to prepare for a new frame
+	virtual void PreSystemUpdate() = 0;
 
-	virtual void ShutdownEngine() = 0;
+	//! Updates the main game systems
+	//! Called immediately after ISystem::Update, when core engine systems have been updated
+	//! \return True if the engine should continue running, otherwise false.
+	virtual bool PostSystemUpdate(bool hasFocus, CEnumFlags<ESystemUpdateFlags> updateFlags) = 0;
 
-	//! Manually starts update of the engine, aka starts a new frame
-	//! This is automatically handled in the game loop inside StartEngine
-	//! Currently this is used by the Editor since it manages its own update loop.
-	//! \param[in] haveFocus true if the game has the input focus.
-	//! \param[in] updateFlags - Flags specifying how to update.
-	//! \return 0 if something went wrong with initialization, non-zero otherwise.
-	virtual int ManualFrameUpdate(bool bHaveFocus, unsigned int updateFlags) = 0;
+	//! Called when systems depending on rendering have been updated, and we are about to use the system camera
+	//! This is the final chance to modify the camera before it is passed to the 3D engine for occlusion culling
+	virtual void PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags) = 0;
+
+	//! Called just before ISystem::Render
+	virtual void PreRender() = 0;
+
+	//! Called after ISystem::Render, when the renderer should now have started rendering
+	virtual void PostRender(CEnumFlags<ESystemUpdateFlags> updateFlags) = 0;
+
+	//! Called after ISystem::RenderEnd, when the renderer has been notified that the frame is final
+	virtual void PostRenderSubmit() = 0;
 
 	//! Used to notify the framework that we're switching between single and multi player.
 	virtual void InitGameType(bool multiplayer, bool fromInit) = 0;
@@ -678,6 +676,9 @@ struct IGameFramework
 
 	// Get game implementation, if any
 	virtual IGame* GetIGame() = 0;
+
+	// Gets the handle for the Game DLL
+	virtual void* GetGameModuleHandle() const = 0;
 
 	//! Initialises a game context.
 	//! \param pGameStartParams Parameters for configuring the game.
@@ -847,7 +848,9 @@ struct IGameFramework
 	virtual void                  UnregisterListener(IGameFrameworkListener* pGameFrameworkListener) = 0;
 
 	virtual INetNub*              GetServerNetNub() = 0;
+	virtual IGameServerNub*       GetIGameServerNub() = 0;
 	virtual INetNub*              GetClientNetNub() = 0;
+	virtual IGameClientNub*       GetIGameClientNub() = 0;
 
 	virtual void                  SetGameGUID(const char* gameGUID) = 0;
 	virtual const char*           GetGameGUID() = 0;

@@ -28,8 +28,6 @@ public:
 	virtual const char*                 GetSubTrackName(int nIndex) const override             { return NULL; };
 	virtual void                        SetSubTrackName(int nIndex, const char* name) override { assert(0); }
 
-	virtual void                        Release() override                                     { if (--m_nRefCounter <= 0) { delete this; } }
-
 	virtual int                         GetNumKeys() const override                            { return m_keys.size(); }
 	virtual bool                        HasKeys() const override                               { return !m_keys.empty(); }
 	virtual void                        RemoveKey(int num) override;
@@ -296,7 +294,8 @@ inline bool TAnimTrack<KeyType >::SerializeKeys(XmlNodeRef& xmlNode, bool bLoadi
 		{
 			XmlNodeRef keyNode = xmlNode->getChild(i);
 			m_keys[numCur + i].m_time.Serialize(keyNode, bLoading, "timeTicks", "time");
-			if (i == 0)
+			if ((i == 0) && (numNew == 1))		//numNew == 1 condition means: place a new key under mouse only during single key selection
+												//during multiple selection - place key as it is
 			{
 				timeOffset = (time - m_keys[numCur + i].m_time);
 			}

@@ -196,7 +196,7 @@ class DebugTree
 public:
 	void Push(const INode* node)
 	{
-		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+		CRY_PROFILE_FUNCTION(PROFILE_AI);
 		DebugNodePtr debugNode(new DebugNode(node));
 
 		if (!m_firstDebugNode)
@@ -210,7 +210,7 @@ public:
 
 	void Pop(Status s)
 	{
-		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+		CRY_PROFILE_FUNCTION(PROFILE_AI);
 		IF_UNLIKELY (s == Failure || s == Success)
 		{
 			m_succeededAndFailedNodes.push_back(m_debugNodeStack.back());
@@ -729,6 +729,9 @@ DECLARE_SHARED_POINTERS(BehaviorTreeInstance);
 struct IBehaviorTreeManager
 {
 	virtual ~IBehaviorTreeManager() {}
+
+	virtual void Update() = 0;
+
 	virtual struct IMetaExtensionFactory&  GetMetaExtensionFactory() = 0;
 	virtual struct INodeFactory&           GetNodeFactory() = 0;
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
@@ -888,7 +891,7 @@ public:
 
 	virtual void* AllocateRuntimeData(const RuntimeDataID runtimeDataID) override
 	{
-		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+		CRY_PROFILE_FUNCTION(PROFILE_AI);
 		void* pointer = m_nodeFactory->AllocateRuntimeDataMemory(sizeof(RuntimeDataType));
 		RuntimeDataType* runtimeData = new(pointer) RuntimeDataType;
 		assert(runtimeData != NULL);
@@ -898,7 +901,7 @@ public:
 
 	virtual void* GetRuntimeData(const RuntimeDataID runtimeDataID) const override
 	{
-		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+		CRY_PROFILE_FUNCTION(PROFILE_AI);
 		typename RuntimeDataCollection::const_iterator it = m_runtimeDataCollection.find(runtimeDataID);
 		if (it != m_runtimeDataCollection.end())
 		{
@@ -910,7 +913,7 @@ public:
 
 	virtual void FreeRuntimeData(const RuntimeDataID runtimeDataID) override
 	{
-		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+		CRY_PROFILE_FUNCTION(PROFILE_AI);
 		typename RuntimeDataCollection::iterator it = m_runtimeDataCollection.find(runtimeDataID);
 		assert(it != m_runtimeDataCollection.end());
 		if (it != m_runtimeDataCollection.end())

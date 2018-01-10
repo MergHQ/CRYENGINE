@@ -74,9 +74,9 @@ struct CCachedFileData : public _i_reference_target_t
 		pSizer->AddObject(m_pFileEntry);
 	}
 
-	// need to overload addref and release to prevent a race condition in
-	virtual void AddRef();
-	virtual void Release();
+	// override addref and release to prevent a race condition
+	virtual void AddRef() const override;
+	virtual void Release() const override;
 
 public:
 	void* m_pFileData;
@@ -383,7 +383,7 @@ public:
 	static char* BeautifyPath(char* dst, bool bMakeLowercase);
 	static void  RemoveRelativeParts(char* dst);
 
-	CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes, const IGameStartup* pGameStartup);
+	CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes);
 	~CCryPak();
 
 	const PakVars* GetPakVars() const { return m_pPakVars; }
@@ -394,6 +394,8 @@ public:
 		m_pAssetManager = mgr;
 	}
 #endif
+
+	void SetDecryptionKey(const uint8* pKeyData, uint32 keyLength);
 
 public: // ---------------------------------------------------------------------------------------
 

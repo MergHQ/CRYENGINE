@@ -43,11 +43,10 @@ void CLightVolumeBuffer::UpdateContent()
 	PROFILE_FRAME(DLightsInfo_UpdateSRV);
 
 	CD3D9Renderer* pRenderer = gcpRendD3D;
-	SRenderPipeline& RESTRICT_REFERENCE rp = gRenDev->m_RP;
 
 	struct SLightVolume* pLightVols;
 	uint32 numVols;
-	gEnv->p3DEngine->GetLightVolumes(rp.m_nProcessThreadID, pLightVols, numVols);
+	gEnv->p3DEngine->GetLightVolumes(gRenDev->GetRenderThreadID(), pLightVols, numVols);
 
 	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 	CryStackAllocWithSizeVectorCleared(SLightVolumeInfo, maxNumLightInfos, gpuStageInfos, CDeviceBufferManager::AlignBufferSizeForStreaming);

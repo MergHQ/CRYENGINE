@@ -970,7 +970,7 @@ namespace UQS
 				const int32 resultCount = (int32)pair.second.pQueryResultSet->GetResultCount();
 				const SQueryFinishedSignal signal(queryID, resultCount);
 				if (GetEntity()->GetSchematycObject())
-					GetEntity()->GetSchematycObject()->ProcessSignal(signal);
+					GetEntity()->GetSchematycObject()->ProcessSignal(signal, GetGUID());
 			}
 
 			// fire signals for all queries that finished with an exception
@@ -980,7 +980,7 @@ namespace UQS
 				const Schematyc::CSharedString exceptionMessage(pair.second.c_str());
 				const SQueryExceptionSignal signal(queryID, exceptionMessage);
 				if (GetEntity()->GetSchematycObject())
-					GetEntity()->GetSchematycObject()->ProcessSignal(signal);
+					GetEntity()->GetSchematycObject()->ProcessSignal(signal, GetGUID());
 			}
 
 			m_succeededQueries.clear();

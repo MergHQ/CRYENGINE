@@ -162,7 +162,7 @@ bool CResFileLookupDataMan::LoadData(
 	}
 
 	CCryNameTSCRC name;
-	SDirEntry dirEntry;
+	CDirEntry dirEntry;
 	CCryNameTSCRC dirEntryName;
 	unsigned int ui;
 	for (ui = 0; ui < uiCount; ++ui)
@@ -211,7 +211,7 @@ bool CResFileLookupDataMan::LoadData(
 			dirData.m_resdir.reserve(uiDirSize);
 			for (unsigned int uj = 0; uj < uiDirSize; ++uj)
 			{
-				gEnv->pCryPak->FReadRaw(&dirEntry, sizeof(SDirEntry), 1, handle);
+				gEnv->pCryPak->FReadRaw(&dirEntry, sizeof(CDirEntry), 1, handle);
 				if (bSwapEndianRead)
 				{
 					SwapEndian(dirEntry, eBigEndian);
@@ -341,12 +341,12 @@ void CResFileLookupDataMan::SaveData(
 
 			for (ResDir::const_iterator it2 = header.m_resdir.begin(); it2 != header.m_resdir.end(); ++it2)
 			{
-				SDirEntry dirEntry = *it2;
+				CDirEntry dirEntry = *it2;
 				if (bSwapEndianWrite)
 				{
 					SwapEndian(dirEntry, eBigEndian);
 				}
-				gEnv->pCryPak->FWrite(&dirEntry, sizeof(SDirEntry), 1, handle);
+				gEnv->pCryPak->FWrite(&dirEntry, sizeof(CDirEntry), 1, handle);
 			}
 		}
 		else
@@ -426,7 +426,7 @@ void CResFileLookupDataMan::AddData(const CResFile* pResFile, uint32 CRC)
 		   {
 		   data.m_resdir.push_back(pResFile->m_Dir[0]);
 		   }
-		   memcpy(&data.m_resdir[0], &pResFile->m_Dir[0], sizeof(SDirEntry) * pResFile->m_Dir.size());
+		   memcpy(&data.m_resdir[0], &pResFile->m_Dir[0], sizeof(CDirEntry) * pResFile->m_Dir.size());
 		 */
 	}
 	else
@@ -434,7 +434,7 @@ void CResFileLookupDataMan::AddData(const CResFile* pResFile, uint32 CRC)
 		data.m_ContainsResDir = false;
 
 		unsigned int entries = 0;
-		unsigned int entriesPerSlice = MAX_DIR_BUFFER_SIZE / sizeof(SDirEntry);
+		unsigned int entriesPerSlice = MAX_DIR_BUFFER_SIZE / sizeof(CDirEntry);
 		while ((entries * entriesPerSlice) < pResFile->m_Dir.size())
 		{
 			data.m_resdirlookup.push_back(pResFile->m_Dir[entries * entriesPerSlice].Name);

@@ -473,9 +473,9 @@ void CInventory::SerializeInventoryForLevelChange(TSerialize ser)
 }
 
 //------------------------------------------------------------------------
-void CInventory::ProcessEvent(SEntityEvent& event)
+void CInventory::ProcessEvent(const SEntityEvent& event)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ACTION);
+	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 
 	if (event.event == ENTITY_EVENT_RESET)
 	{
@@ -495,6 +495,12 @@ void CInventory::ProcessEvent(SEntityEvent& event)
 			}
 		}
 	}
+}
+
+//------------------------------------------------------------------------
+uint64 CInventory::GetEventMask() const 
+{
+	return BIT64(ENTITY_EVENT_RESET);
 }
 
 //------------------------------------------------------------------------

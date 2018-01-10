@@ -360,13 +360,15 @@ namespace EditorSubstance {
 			QObject::connect(newAct, &QAction::triggered, this, &CManager::OnCreateInstance);
 		}
 		QAction* rebuild = menu->CreateAction("Rebuild All Instances");
-		QObject::connect(rebuild, &QAction::triggered, this, [=]() {
-			for (CAsset* depAsset : CAssetManager::GetInstance()->GetReverseDependencies(*asset))
+		QObject::connect(rebuild, &QAction::triggered, this, [=]() 
+		{
+			for (auto& item : CAssetManager::GetInstance()->GetReverseDependencies(*asset))
 			{
-				string dependantAssetTypeName(depAsset->GetType()->GetTypeName());
+				CAsset* pDepAsset = item.first;
+				string dependantAssetTypeName(pDepAsset->GetType()->GetTypeName());
 				if (dependantAssetTypeName == "SubstanceInstance")
 				{
-					ForcePresetRegeneration(depAsset);
+					ForcePresetRegeneration(pDepAsset);
 				}
 			}
 		});
@@ -436,12 +438,13 @@ namespace EditorSubstance {
 			string typeName(asset.GetType()->GetTypeName());
 			if (typeName == "Texture" /*|| typeName == "SubstanceDefinition"*/)
 			{
-				for (CAsset* depAsset : CAssetManager::GetInstance()->GetReverseDependencies(asset))
+				for (auto& item : CAssetManager::GetInstance()->GetReverseDependencies(asset))
 				{
-					string dependantAssetTypeName(depAsset->GetType()->GetTypeName());
+					CAsset* pDepAsset = item.first;
+					string dependantAssetTypeName(pDepAsset->GetType()->GetTypeName());
 					if (dependantAssetTypeName == "SubstanceInstance")
 					{
-						ForcePresetRegeneration(depAsset);
+						ForcePresetRegeneration(pDepAsset);
 					}
 				}
 			

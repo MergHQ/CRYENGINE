@@ -875,7 +875,7 @@ namespace
 				// We translate this to a relative path to the .dae file to be easier to debug it in the future
 				if (!properties.customExportPath.empty())
 				{
-					const string customExportPath = PathHelpers::GetShortestRelativeAsciiPath(source.GetExportDirectory(), properties.customExportPath);
+					const string customExportPath = StringHelpers::ConvertAnsiToAscii(PathHelpers::GetShortestRelativePath(source.GetExportDirectory(), properties.customExportPath).c_str(), '_');
 					props += std::string("\r\n") + std::string("CustomExportPath=") + customExportPath;
 				}
 

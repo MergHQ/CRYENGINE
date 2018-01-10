@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   cvars.cpp
@@ -17,6 +17,7 @@
 #include <CryRenderer/IRenderer.h>
 #include <Cry3DEngine/IStatObj.h>  // MAX_STATOBJ_LODS_NUM
 #include <Cry3DEngine/ITimeOfDay.h>
+#include <VisAreas.h>
 
 //////////////////////////////////////////////////////////////////////////
 void OnTimeOfDayVarChange(ICVar* pArgs)
@@ -42,28 +43,39 @@ void OnCGFStreamingChange(ICVar* pArgs)
 
 void OnPerCharacterShadowsChange(ICVar* pArgs)
 {
-	Cry3DEngineBase::Get3DEngine()->ObjectsTreeMarkAsUncompiled(NULL);
+	if (Cry3DEngineBase::Get3DEngine()->GetObjectsTree())
+	{
+		Cry3DEngineBase::Get3DEngine()->GetObjectsTree()->MarkAsUncompiled();
+	}
+
+	if (Cry3DEngineBase::GetVisAreaManager())
+	{
+		Cry3DEngineBase::GetVisAreaManager()->MarkAllSectorsAsUncompiled();
+	}
 }
 
 void OnGsmLodsNumChange(ICVar* pArgs)
 {
-	Cry3DEngineBase::GetRenderer()->UpdateCachedShadowsLodCount(pArgs->GetIVal());
+	if (Cry3DEngineBase::GetRenderer())
+	{
+		Cry3DEngineBase::GetRenderer()->UpdateCachedShadowsLodCount(pArgs->GetIVal());
+	}
 }
 
 void OnDynamicDistanceShadowsVarChange(ICVar* pArgs)
 {
-	Cry3DEngineBase::Get3DEngine()->ObjectsTreeMarkAsUncompiled(NULL);
+	if (Cry3DEngineBase::Get3DEngine()->GetObjectsTree())
+	{
+		Cry3DEngineBase::Get3DEngine()->GetObjectsTree()->MarkAsUncompiled();
+	}
+
 	Cry3DEngineBase::Get3DEngine()->SetRecomputeCachedShadows(ShadowMapFrustum::ShadowCacheData::eFullUpdate);
 }
 
 void OnVegetationVisibleChange(ICVar* pArgs)
 {
-	if (Cry3DEngineBase::Get3DEngine()->m_pObjectsTree.empty())
-	{
-		return;
-	}
+	COctreeNode* pObjectsTree = Cry3DEngineBase::Get3DEngine()->m_pObjectsTree;
 
-	COctreeNode* pObjectsTree = Cry3DEngineBase::Get3DEngine()->m_pObjectsTree[0];
 	if (pObjectsTree && !pObjectsTree->IsEmpty())
 	{
 		if (pArgs->GetIVal() != 0)
@@ -118,7 +130,7 @@ void CVars::Init()
 	                   " 5: Display color coded number of render materials\n"
 	                   " 6: Display ambient color\n"
 	                   " 7: Display tri count, number of render materials, texture memory\n"
-	                   " 8: Free slot\n"
+	                   " 8: Display per object editor MaxViewDistance\n"
 	                   " 9: Free slot\n"
 	                   "10: Render geometry with simple lines and triangles\n"
 	                   "11: Free slot\n"
@@ -133,6 +145,7 @@ void CVars::Init()
 	                   "21: Display animated object distance to camera\n"
 	                   "22: Display object's current LOD vertex count\n"
 	                   "23: Display shadow casters in red\n"
+	                   "24: Show LOD info for characters\n"
 	                   "----------------debug draw list values. Any of them enable 2d on-screen listing type info debug. Specific values define the list sorting-----------\n"
 	                   " 100: tri count\n"
 	                   " 101: verts count\n"
@@ -238,32 +251,26 @@ void CVars::Init()
 	              "Memory Size of Index Pool between Particle and Render Thread");
 
 	REGISTER_CVAR(e_ParticlesProfile, 0, VF_NULL,
-                  "PFx1 only:\n"
+	              "PFx1 only:\n"
 	              "1 - always show statistics about particle pools usage\n"
 	              "2 - disable the warning message when running out of pool memory");
 	REGISTER_CVAR(e_ParticlesProfiler, 0, VF_BITFIELD,
-		          "Wavicle only:\n"
-                  "1 - Display performance profiler on screen\n"
-                  "2 - Display memory profiler on screen\n"
-		          "f - Output statistics to a csv file");
+	              "Wavicle only:\n"
+	              "1 - Display performance profiler on screen\n"
+	              "2 - Display memory profiler on screen\n"
+	              "f - Output statistics to a csv file");
 	e_ParticlesProfilerOutputFolder = REGISTER_STRING("e_ParticlesProfilerOutputFolder", "%USER%/ParticlesProfiler/", VF_NULL,
-		"Folder to output particle profiler");
+	                                                  "Folder to output particle profiler");
 	e_ParticlesProfilerOutputName = REGISTER_STRING("e_ParticlesProfilerOutputName", "frame", VF_NULL,
-		"Name of the particle statistics file name");
+	                                                "Name of the particle statistics file name");
 	REGISTER_CVAR(e_ParticlesProfilerCountBudget, 80000, VF_NULL,
-		"Particle counts budget to be shown during profiling");
+	              "Particle counts budget to be shown during profiling");
 	REGISTER_CVAR(e_ParticlesProfilerTimingBudget, 10000, VF_NULL,
-		"Particle processing time budget (in nanoseconds) to be shown during profiling");
-
-	DefineConstFloatCVar(e_ParticlesLightMinRadiusThreshold, VF_NULL,
-	                     "Threshold for minimum particle light radius");
-
-	DefineConstFloatCVar(e_ParticlesLightMinColorThreshold, VF_NULL,
-	                     "Threshold for minumum particle light color");
+	              "Particle processing time budget (in nanoseconds) to be shown during profiling");
 
 	REGISTER_CVAR(e_ParticlesForceSeed, 0, VF_NULL,
-		"0 - every emitter is random unless a seed is specified\n"
-		"n - uses this value as seed for all emitters without specified seed");
+	              "0 - every emitter is random unless a seed is specified\n"
+	              "n - uses this value as seed for all emitters without specified seed");
 
 	DefineConstIntCVar(e_Roads, 1, VF_CHEAT | VF_CHEAT_ALWAYS_CHECK,
 	                   "Activates drawing of road objects");
@@ -294,12 +301,12 @@ void CVars::Init()
 	                   "Combine pieces of decals into one render call");
 	DefineConstIntCVar(e_DecalsPreCreate, 1, VF_NULL,
 	                   "Pre-create decals at load time");
-	DefineConstIntCVar(e_DecalsScissor, 1, VF_NULL,
-	                   "Enable decal rendering optimization by using scissor");
 	DefineConstIntCVar(e_DecalsClip, 1, VF_NULL,
 	                   "Clip decal geometry by decal bbox");
 	DefineConstFloatCVar(e_DecalsRange, VF_NULL,
 	                     "Less precision for decals outside this range");
+	DefineConstFloatCVar(e_MinMassDistanceCheckRenderMeshCollision, VF_NULL,
+	                     "Minimum mass to check for e_DecalsRange as distance in a RenderMesh Collision check");
 	REGISTER_CVAR(e_DecalsLifeTimeScale, 1.f, VF_NULL,
 	              "Allows to increase or reduce decals life time for different specs");
 	REGISTER_CVAR(e_DecalsNeighborMaxLifeTime, 4.f, VF_NULL,
@@ -310,11 +317,14 @@ void CVars::Init()
 	                   "Number of frames after which not visible static decals are removed");
 	REGISTER_CVAR(e_DecalsMaxUpdatesPerFrame, 4, VF_NULL,
 	              "Maximum number of static decal render mesh updates per frame");
+	REGISTER_CVAR(e_DecalsSpawnDistRatio, 4.f, VF_NULL,
+	              "Max distance ratio for spawning dynamic decals.\n"
+	              "This will be applied on top of e_ViewDistRatio");
 	DefineConstIntCVar(e_VegetationBending, 2, VF_NULL,
 	                   "Enable vegetation bending (does not affect merged grass)");
 	REGISTER_CVAR(e_VegetationBillboards, 0, VF_NULL,
-								"Allow replacing distant vegetation with billboards\n"
-								"Billboard textures must be prepared by ed_GenerateBillboardTextures command in the editor");
+	              "Allow replacing distant vegetation with billboards\n"
+	              "Billboard textures must be prepared by ed_GenerateBillboardTextures command in the editor");
 	REGISTER_CVAR(e_VegetationUseTerrainColor, 1, VF_NULL,
 	              "Allow blend with terrain color for vegetations");
 	REGISTER_CVAR(e_VegetationUseTerrainColorDistance, 0, VF_NULL,
@@ -390,7 +400,9 @@ void CVars::Init()
 	DefineConstIntCVar(e_ShadowsFrustums, 0, VF_CHEAT,
 	                   "Debug");
 	DefineConstIntCVar(e_ShadowsDebug, 0, VF_CHEAT,
-	                   "0=off, 2=visualize shadow maps on the screen");
+	                   "0=off,\n"
+	                   "2=visualize shadow maps on the screen,\n"
+	                   "4=visualize shadow frustums as spheres and cones\n");
 	REGISTER_CVAR(e_ShadowsCacheUpdate, 0, VF_NULL,
 	              "Trigger updates of the shadow cache: 0=no update, 1=one update, 2=continuous updates");
 	REGISTER_CVAR(e_ShadowsCacheObjectLod, 0, VF_NULL,
@@ -398,9 +410,9 @@ void CVars::Init()
 	REGISTER_CVAR_CB(e_ShadowsCacheRenderCharacters, 0, VF_NULL,
 	                 "Render characters into the shadow cache. 0=disabled, 1=enabled", OnDynamicDistanceShadowsVarChange);
 	REGISTER_CVAR_CB(e_DynamicDistanceShadows, 1, VF_NULL,
-	                 "Enable dynamic distance shadows, 0=disable, 1=enable, -1=don't render dynamic distance shadows", OnDynamicDistanceShadowsVarChange);
+	                 "Enable dynamic distance shadows, 0 = disable, 1 = enable only for movable object types, 2 = enable for all object types, -1 = don't render dynamic distance shadows", OnDynamicDistanceShadowsVarChange);
 	DefineConstIntCVar(e_ShadowsCascadesCentered, 0, VF_NULL,
-		               "Force shadow cascades to be centered 0=disable 1=enable ");
+	                   "Force shadow cascades to be centered 0=disable 1=enable ");
 	DefineConstIntCVar(e_ShadowsCascadesDebug, 0, VF_CHEAT,
 	                   "0=off, 1=visualize sun shadow cascades on screen");
 	REGISTER_CVAR_CB(e_ShadowsPerObject, 1, VF_NULL,
@@ -426,6 +438,11 @@ void CVars::Init()
 	              "Shadows slope bias for shadowgen");
 	REGISTER_CVAR(e_ShadowsConstBiasHQ, 0.05f, VF_NULL,
 	              "Shadows slope bias for shadowgen (high quality mode)");
+	REGISTER_CVAR(e_ShadowsAutoBias, 0.0f, VF_NULL,
+	              "Attempts to compute an optimal shadow bias, ignoring all other bias settings (Experimental)\n"
+	              "  0: Deactivated\n"
+	              "  1.0: Good default value\n"
+	              "  Other values scale bias relative to default\n");
 
 	DefineConstIntCVar(e_ShadowsMasksLimit, 0, VF_NULL,
 	                   "Maximum amount of allocated shadow mask textures\n"
@@ -455,11 +472,15 @@ void CVars::Init()
 
 	REGISTER_CVAR(e_Terrain, 1, VF_CHEAT | VF_CHEAT_ALWAYS_CHECK,
 	              "Activates drawing of terrain ground");
+	REGISTER_CVAR(e_TerrainAutoGenerateBaseTexture, 0, VF_NULL,
+	              "Instead of manually painting the base texture - just build it automatically based on terrain materials info painted");
+	REGISTER_CVAR(e_TerrainAutoGenerateBaseTextureTiling, 1.f / 16.f, VF_NULL,
+	              "Controls tiling of baked diffuse textures");
 	REGISTER_CVAR(e_TerrainIntegrateObjectsMaxVertices, 30000, VF_NULL,
 	              "Preallocate specified number of vertices to be used for objects integration into terrain (per terrain sector)\n"
 	              "0 - disable the feature completelly");
 	REGISTER_CVAR(e_TerrainIntegrateObjectsMaxHeight, 32.f, VF_NULL,
-		            "Take only trianglses close to terrain for objects integration");
+	              "Take only trianglses close to terrain for objects integration");
 	DefineConstIntCVar(e_TerrainDeformations, 0, VF_CHEAT,
 	                   "Allows in-game terrain surface deformations");
 	DefineConstIntCVar(e_AutoPrecacheCameraJumpDist, 16, VF_CHEAT,
@@ -478,14 +499,14 @@ void CVars::Init()
 	DefineConstFloatCVar(e_TerrainOcclusionCullingStepSizeDelta, VF_CHEAT,
 	                     "Step size scale on every next step (for version 1)");
 	REGISTER_CVAR(e_TerrainOcclusionCullingMaxDist, 200.f, VF_NULL,
-		"Max length of ray (for version 1)");
+	              "Max length of ray (for version 1)");
 	REGISTER_CVAR(e_TerrainMeshInstancingMinLod, 3, VF_NULL,
-		"Mesh instancing is used for distant terrain sectors and for shadow map generation");
+	              "Mesh instancing is used for distant terrain sectors and for shadow map generation");
 	REGISTER_CVAR(e_TerrainMeshInstancingShadowLodRatio, 0.3f, VF_NULL,
-		"Smaller values produce less draw calls and less polygons for terrain shadow map generation");
+	              "Smaller values produce less draw calls and less polygons for terrain shadow map generation");
 	REGISTER_CVAR(e_TerrainMeshInstancingShadowBias, 0.5f, VF_NULL,
-		"During shadow map generation render distant terrain sectors little lower for less problems with terrain self-shadowing");
-	REGISTER_CVAR(e_StreamPredictionUpdateTimeSlice, 0.4f, VF_NULL,
+	              "During shadow map generation render distant terrain sectors little lower for less problems with terrain self-shadowing");
+	REGISTER_CVAR(e_StreamPredictionUpdateTimeSlice, 0.3f, VF_NULL,
 	              "Maximum amount of time to spend for scene streaming priority update in milliseconds");
 	REGISTER_CVAR(e_StreamAutoMipFactorSpeedThreshold, 0.f, VF_NULL,
 	              "Debug");
@@ -532,8 +553,8 @@ void CVars::Init()
 	              "1 - camera culling only\n"
 	              "2 - camera culling and light-to-object check");
 	REGISTER_CVAR(e_CoverageBufferCullIndividualBrushesMaxNodeSize, 16, VF_CHEAT,
-	                   "128 - cull only nodes of scene tree and very big brushes\n"
-	                   "0 - cull all brushes individually");
+	              "128 - cull only nodes of scene tree and very big brushes\n"
+	              "0 - cull all brushes individually");
 	DefineConstIntCVar(e_CoverageBufferTerrain, 0, VF_NULL,
 	                   "Activates usage of coverage buffer for terrain");
 	DefineConstIntCVar(e_CoverageBufferDebug, 0, VF_CHEAT,
@@ -742,12 +763,14 @@ void CVars::Init()
 	                   "Debug draw of object tree bboxes");
 	REGISTER_CVAR(e_ObjectsTreeNodeMinSize, 8.f, VF_CHEAT,
 	              "Controls objects tree balancing");
-	REGISTER_CVAR(e_ObjectsTreeNodeSizeRatio, 1.f / 8.f, VF_CHEAT,
+	REGISTER_CVAR(e_ObjectsTreeNodeSizeRatio, 1.f / 16.f, VF_CHEAT,
 	              "Controls objects tree balancing");
-	/*  REGISTER_CVAR(e_obj_tree_min_node_size, 0, VF_CHEAT,
-	    "Debug draw of object tree bboxes");
-	   REGISTER_CVAR(e_obj_tree_max_node_size, 0, VF_CHEAT,
-	    "Debug draw of object tree bboxes");*/
+	REGISTER_CVAR(e_OnePassOctreeTraversal, 1, VF_CHEAT,
+	              "If enabled - use new unified way of scene graph traversal");
+	REGISTER_CVAR(e_ExecuteRenderAsJobMask, BIT(eERType_Brush) | BIT(eERType_Vegetation) | BIT(eERType_Road) | BIT(eERType_WaterVolume), VF_NULL,
+	              "Each bit specifies object type to render it in jobs");
+	REGISTER_CVAR(e_ObjectsTreeLevelsDebug, 0, VF_CHEAT,
+	              "If non 0 - render only octree nodes of specified size");
 	REGISTER_CVAR(e_StatObjBufferRenderTasks, 1, VF_NULL,
 	              "1 - occlusion test on render node level, 2 - occlusion test on render mesh level");
 	REGISTER_CVAR(e_CheckOcclusion, 1, VF_NULL, "Perform a visible check in check occlusion job");
@@ -823,9 +846,9 @@ void CVars::Init()
 	                   "Turns On/Off the memory usage icon rendering: 1 on, 0 off.");
 
 	REGISTER_CVAR(e_LodRatio, 6.0f, VF_NULL,
-								"LOD distance ratio for objects");
+	              "LOD distance ratio for objects");
 	REGISTER_CVAR(e_LodTransitionTime, 0.5f, VF_NULL,
-								"If non 0 - use dissolve for smooth LOD transition");
+	              "If non 0 - use dissolve for smooth LOD transition");
 	REGISTER_CVAR(e_LodFaceAreaTargetSize, 0.005f, VF_NULL,
 	              "Threshold used for LOD computation.");
 	DefineConstFloatCVar(e_LodCompMaxSize, VF_NULL,
@@ -840,10 +863,17 @@ void CVars::Init()
 	              "View distance ratio for detail objects");
 	REGISTER_CVAR(e_ViewDistRatioVegetation, 30.0f, VF_CVARGRP_IGNOREINREALVAL | VF_LIVE_CREATE_SYNCED,
 	              "View distance ratio for vegetation");
+	REGISTER_CVAR(e_ViewDistRatioModifierGameDecals, 4.0f, VF_NULL | VF_LIVE_CREATE_SYNCED,
+	              "View distance ratio for dynamically generated decals"
+	              "This will be applied on top of e_ViewDistRatio");
 	REGISTER_CVAR(e_ViewDistRatioLights, 50.0f, VF_NULL | VF_LIVE_CREATE_SYNCED,
 	              "View distance ratio for light sources");
+	REGISTER_CVAR(e_LightIlluminanceThreshold, ILLUMINANCE_THRESHOLD, VF_NULL | VF_LIVE_CREATE_SYNCED,
+	              "Min illuminance to determine light effect radius");
 	REGISTER_CVAR(e_ViewDistRatioCustom, 60.0f, VF_NULL | VF_LIVE_CREATE_SYNCED,
 	              "View distance ratio for special marked objects (Players,AI,Vehicles)");
+	REGISTER_CVAR(e_ViewDistRatio3Planar, 0.5f, VF_NULL,
+	              "If not 0 - adjusts object max view distance depending on the area of visible AABB sides, values between 0 to 1 control how strong this effect is applied");
 	REGISTER_CVAR(e_ViewDistMin, 0.0f, VF_NULL | VF_LIVE_CREATE_SYNCED,
 	              "Min distance on what far objects will be culled out");
 	REGISTER_CVAR(e_LodMin, 0, VF_NULL,
@@ -1174,6 +1204,9 @@ void CVars::Init()
 	DefineConstIntCVar(e_GeomCacheLerpBetweenFrames, 1, VF_CHEAT, "Interpolate between geometry cache frames. Default: 1");
 
 #if defined(FEATURE_SVO_GI)
-	RegisterTICVars();
+	if (!gEnv->IsDedicated())
+	{
+		RegisterTICVars();
+	}
 #endif
 }

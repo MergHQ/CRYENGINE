@@ -21,8 +21,8 @@ namespace UQS
 		struct IItemList
 		{
 			virtual                                ~IItemList() {}
-			virtual void                           SetItemFactory(Client::IItemFactory& itemFactory) = 0;
 			virtual void                           CreateItemsByItemFactory(size_t numItemsToCreate) = 0;
+			virtual void                           CloneItems(const void* pOriginalItems, size_t numItemsToClone) = 0;
 			virtual size_t                         GetItemCount() const = 0;
 			virtual Client::IItemFactory&          GetItemFactory() const = 0;
 			virtual void*                          GetItems() const = 0;

@@ -13,7 +13,7 @@
 #include "IPlugin.h"
 #include "IEditorClassFactory.h"
 
-#include "../EditorCommon/QtViewPane.h"
+#include "QtViewPane.h"
 
 #include "Editor/MainEditorWindow.h"
 

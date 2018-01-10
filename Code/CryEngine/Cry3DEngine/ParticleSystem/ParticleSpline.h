@@ -7,11 +7,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef PARTICLESPLINE_H
-#define PARTICLESPLINE_H
-
 #pragma once
 
+#include "ParticleMath.h"
 #include <CryMath/ISplines.h>
 #include <CrySerialization/IArchive.h>
 #include <CryMath/Range.h>
@@ -150,4 +148,3 @@ SERIALIZATION_WITH_MEMBER_FUNCTION(CParticleColorSpline)
 
 #include "ParticleSplineImpl.h"
 
-#endif

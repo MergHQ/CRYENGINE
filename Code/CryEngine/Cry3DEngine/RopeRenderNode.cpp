@@ -9,6 +9,7 @@
 
 #include <CryEntitySystem/IEntity.h>
 
+#pragma warning(push)
 #pragma warning(disable: 4244)
 
 class TubeSurface : public _i_reference_target_t
@@ -816,6 +817,9 @@ void CRopeRenderNode::GetLocalBounds(AABB& bbox)
 //////////////////////////////////////////////////////////////////////////
 void CRopeRenderNode::SetMatrix(const Matrix34& mat)
 {
+	if (m_worldTM == mat)
+		return;
+
 	m_worldTM = mat;
 	m_InvWorldTM = m_worldTM.GetInverted();
 	m_pos = mat.GetTranslation();
@@ -894,7 +898,7 @@ void CRopeRenderNode::Render(const SRendParams& rParams, const SRenderingPassInf
 
 	IRenderer* pRend = GetRenderer();
 
-	CRenderObject* pObj = pRend->EF_GetObject_Temp(passInfo.ThreadID());
+	CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 	if (!pObj)
 		return; // false;
 	pObj->m_pRenderNode = this;
@@ -1888,7 +1892,7 @@ void CRopeRenderNode::SetAudioParams(SRopeAudioParams const& audioParams)
 ///////////////////////////////////////////////////////////////////////////////
 void CRopeRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (m_pTempData) m_pTempData->OffsetPosition(delta);
+	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_pos += delta;
 	m_worldTM.SetTranslation(m_pos);
 	m_InvWorldTM = m_worldTM.GetInverted();
@@ -1938,3 +1942,5 @@ IMaterial* CRopeRenderNode::GetMaterial(Vec3* pHitPos) const
 {
 	return m_pMaterial;
 }
+
+#pragma warning(pop)

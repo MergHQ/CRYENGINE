@@ -115,4 +115,12 @@ Vec3 PolarCoordToVec3(float azimuth, float altitude);
 
 }
 
+// Cry_Math_SSE extension
+template<> struct SIMD_traits<UCol>
+{
+	using scalar_t  = UCol;
+	using vector4_t = pfx2::UColv;
+};
+
+
 #include "ParticleMathImpl.h"

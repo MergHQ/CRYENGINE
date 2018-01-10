@@ -38,8 +38,6 @@
 // The class is implemented using a HeapAllocator.
 //---------------------------------------------------------------------------
 
-#pragma warning(disable: 4355)  // 'this' : used in base member initializer list
-
 #include "HeapAllocator.h"
 
 namespace stl

@@ -118,7 +118,6 @@ private:
 	Ang3	m_controllerAccumulatedAngles;
 	int		m_cutsceneRunningCount;
 	int		m_cutscenesNoPlayerRunningCount;
-	bool	m_bMutedAudioForCutscene;
 	bool	m_bPlayerIsThirdPerson;
 	bool	m_bPlayerWasInvisible;
 	bool	m_bCutsceneDisabledUISystem;

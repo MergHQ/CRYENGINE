@@ -101,6 +101,9 @@ int CMFCPropertyTree::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	QEvent e(QEvent::EmbeddingControl);
 	QCoreApplication::sendEvent(m_propertyTree, &e);
 	m_propertyTree->setUndoEnabled(true);
+	PropertyTreeStyle treeStyle(QPropertyTree::defaultTreeStyle());
+	treeStyle.propertySplitter = false;
+	m_propertyTree->setTreeStyle(treeStyle);
 	m_propertyTree->show();
 	return 0;
 }

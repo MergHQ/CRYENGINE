@@ -31,6 +31,8 @@
 
 #define ENABLE_ORIGIN_MOVE_WITH_CAMERA
 
+#define ENABLE_SPHERICAL_CLOUD_LAYER
+
 
 float Script : STANDARDSGLOBAL
 <
@@ -109,7 +111,7 @@ float2 vcGetIntersectionWithCloudLayer(
 	in float sphereRadius,
 	in float3 centerSphere)
 {
-#if !%_RT_SAMPLE2
+#if !ENABLE_SPHERICAL_CLOUD_LAYER
 	// intersect with cloud layer's bottom and top plane.
 	float4 cloudPlaneBottom = float4(0.0f, 0.0f, 1.0f, cloudAltitude);
 	float4 cloudPlaneTop = float4(0.0f, 0.0f, 1.0f, cloudAltitude + cloudThickness);
@@ -1584,7 +1586,7 @@ void RenderCloudMonolithicCS(uint3 GroupID : SV_GroupID,
 
 		float3 samplePosWS = camDir.xyz * d + cameraPos.xyz;
 
-#ifdef %_RT_SAMPLE2
+#ifdef ENABLE_SPHERICAL_CLOUD_LAYER
 		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
 #endif
 
@@ -1736,7 +1738,7 @@ void RenderCloudMonolithicCS(uint3 GroupID : SV_GroupID,
 	{
 		float3 samplePosWS = camDir.xyz * distCirrus + cameraPos.xyz;
 
-#ifdef %_RT_SAMPLE2
+#ifdef ENABLE_SPHERICAL_CLOUD_LAYER
 		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
 #endif
 
@@ -2058,7 +2060,7 @@ void InjectCloudDensityAndShadowCS(uint3 GroupID : SV_GroupID,
 
 		float3 samplePosWS = camDir.xyz * d + cameraPos.xyz;
 
-#ifdef %_RT_SAMPLE2
+#ifdef ENABLE_SPHERICAL_CLOUD_LAYER
 		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
 #endif
 
@@ -2455,7 +2457,7 @@ void RenderCloudCS(uint3 GroupID : SV_GroupID,
 
 		float3 samplePosWS = camDir.xyz * d + cameraPos.xyz;
 
-#ifdef %_RT_SAMPLE2
+#ifdef ENABLE_SPHERICAL_CLOUD_LAYER
 		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
 #endif
 
@@ -2609,7 +2611,7 @@ void RenderCloudCS(uint3 GroupID : SV_GroupID,
 	{
 		float3 samplePosWS = camDir.xyz * distCirrus + cameraPos.xyz;
 
-#ifdef %_RT_SAMPLE2
+#ifdef ENABLE_SPHERICAL_CLOUD_LAYER
 		samplePosWS = vcTranslateWorldPosToCloudPos(samplePosWS, centerSphere, sphereRadius, cloudAltitude);
 #endif
 

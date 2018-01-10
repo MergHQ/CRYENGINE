@@ -97,7 +97,7 @@ void CStatObj::StreamOnComplete(IReadStream* pStream, unsigned nError)
 		//////////////////////////////////////////////////////////////////////////
 		for (int nSID = 0; nSID < m_pObjManager->m_lstStaticTypes.Count(); nSID++)
 		{
-			PodArray<StatInstGroup>& rGroupTable = m_pObjManager->m_lstStaticTypes[nSID];
+			PodArray<StatInstGroup>& rGroupTable = m_pObjManager->m_lstStaticTypes;
 			for (int nGroupId = 0, nGroups = rGroupTable.Count(); nGroupId < nGroups; nGroupId++)
 			{
 				StatInstGroup& rGroup = rGroupTable[nGroupId];
@@ -469,6 +469,8 @@ void CStatObj::DisableStreaming()
 			{
 				IReadStream_AutoPtr readStream;
 				pParentObject->StartStreaming(true, &readStream);
+				if (!(GetSystem()->GetStreamEngine()->GetPauseMask() & 1 << eStreamTaskTypeGeometry))
+					readStream->Wait();
 			}
 		}
 	}

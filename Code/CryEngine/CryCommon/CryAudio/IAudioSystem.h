@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -28,57 +28,92 @@
  */
 namespace CryAudio
 {
-static constexpr char const* RelativeVelocityTrackingSwitchName = "relative_velocity_tracking";
-static constexpr char const* RelativeVelocityParameterName = "relative_velocity";
-static constexpr char const* AbsoluteVelocityTrackingSwitchName = "absolute_velocity_tracking";
-static constexpr char const* AbsoluteVelocityParameterName = "absolute_velocity";
-static constexpr char const* LoseFocusTriggerName = "lose_focus";
-static constexpr char const* GetFocusTriggerName = "get_focus";
-static constexpr char const* MuteAllTriggerName = "mute_all";
-static constexpr char const* UnmuteAllTriggerName = "unmute_all";
-static constexpr char const* DoNothingTriggerName = "do_nothing";
-static constexpr char const* OcclusionCalcSwitchName = "ObstructionOcclusionCalculationType";
-static constexpr char const* IgnoreStateName = "ignore";
-static constexpr char const* AdaptiveStateName = "adaptive";
-static constexpr char const* LowStateName = "low";
-static constexpr char const* MediumStateName = "medium";
-static constexpr char const* HighStateName = "high";
-static constexpr char const* OnStateName = "on";
-static constexpr char const* OffStateName = "off";
-static constexpr char const* GlobalPreloadRequestName = "global_atl_preloads";
+static constexpr char* s_szRelativeVelocityTrackingSwitchName = "relative_velocity_tracking";
+static constexpr char* s_szRelativeVelocityParameterName = "relative_velocity";
+static constexpr char* s_szAbsoluteVelocityTrackingSwitchName = "absolute_velocity_tracking";
+static constexpr char* s_szAbsoluteVelocityParameterName = "absolute_velocity";
+static constexpr char* s_szLoseFocusTriggerName = "lose_focus";
+static constexpr char* s_szGetFocusTriggerName = "get_focus";
+static constexpr char* s_szMuteAllTriggerName = "mute_all";
+static constexpr char* s_szUnmuteAllTriggerName = "unmute_all";
+static constexpr char* s_szDoNothingTriggerName = "do_nothing";
+static constexpr char* s_szOcclCalcSwitchName = "occlusion_calculation_type";
+static constexpr char* s_szIgnoreStateName = "ignore";
+static constexpr char* s_szAdaptiveStateName = "adaptive";
+static constexpr char* s_szLowStateName = "low";
+static constexpr char* s_szMediumStateName = "medium";
+static constexpr char* s_szHighStateName = "high";
+static constexpr char* s_szOnStateName = "on";
+static constexpr char* s_szOffStateName = "off";
+static constexpr char* s_szGlobalPreloadRequestName = "global_audio_system_preload";
+static constexpr char* s_szDefaultLibraryName = "default_controls";
+static constexpr char* s_szInternalLibraryName = "internal_default_controls";
+
+static constexpr char* s_szRootNodeTag = "AudioSystemData";
+static constexpr char* s_szEditorDataTag = "EditorData";
+static constexpr char* s_szTriggersNodeTag = "Triggers";
+static constexpr char* s_szParametersNodeTag = "Parameters";
+static constexpr char* s_szSwitchesNodeTag = "Switches";
+static constexpr char* s_szPreloadsNodeTag = "Preloads";
+static constexpr char* s_szEnvironmentsNodeTag = "Environments";
+
+static constexpr char* s_szTriggerTag = "Trigger";
+static constexpr char* s_szParameterTag = "Parameter";
+static constexpr char* s_szSwitchTag = "Switch";
+static constexpr char* s_szStateTag = "State";
+static constexpr char* s_szEnvironmentTag = "Environment";
+static constexpr char* s_szPlatformTag = "Platform";
+static constexpr char* s_szEventTag = "Event";
+
+static constexpr char* s_szTriggerRequestTag = "TriggerRequest";
+static constexpr char* s_szSwitchRequestTag = "SwitchRequest";
+static constexpr char* s_szValueTag = "Value";
+static constexpr char* s_szParameterRequestTag = "ParameterRequest";
+static constexpr char* s_szPreloadRequestTag = "PreloadRequest";
+static constexpr char* s_szEnvironmentRequestTag = "EnvironmentRequest";
+
+static constexpr char* s_szNameAttribute = "name";
+static constexpr char* s_szVersionAttribute = "version";
+static constexpr char* s_szTypeAttribute = "type";
+static constexpr char* s_szRadiusAttribute = "radius";
+
+static constexpr char* s_szDataLoadType = "autoload";
+
+static constexpr char* s_szConfigFolderName = "ace";
+static constexpr char* s_szAssetsFolderName = "assets";
+static constexpr char* s_szLevelsFolderName = "levels";
 
 /**
-* A utility function to convert a string value to an Id.
-* @param szSource - string to convert
-* @return a 32bit CRC computed on the lower case version of the passed string
-*/
+ * A utility function to convert a string value to an Id.
+ * @param szSource - string to convert
+ * @return a 32bit CRC computed on the lower case version of the passed string
+ */
 static constexpr uint32 StringToId(char const* const szSource)
 {
 	return CCrc32::ComputeLowercase_CompileTime(szSource);
 }
 
-static constexpr ControlId RelativeVelocityTrackingSwitchId = StringToId(RelativeVelocityTrackingSwitchName);
-static constexpr ControlId RelativeVelocityParameterId = StringToId(RelativeVelocityParameterName);
-static constexpr ControlId AbsoluteVelocityTrackingSwitchId = StringToId(AbsoluteVelocityTrackingSwitchName);
-static constexpr ControlId AbsoluteVelocityParameterId = StringToId(AbsoluteVelocityParameterName);
-static constexpr ControlId LoseFocusTriggerId = StringToId(LoseFocusTriggerName);
-static constexpr ControlId GetFocusTriggerId = StringToId(GetFocusTriggerName);
-static constexpr ControlId MuteAllTriggerId = StringToId(MuteAllTriggerName);
-static constexpr ControlId UnmuteAllTriggerId = StringToId(UnmuteAllTriggerName);
-static constexpr ControlId DoNothingTriggerId = StringToId(DoNothingTriggerName);
-static constexpr ControlId OcclusionCalcSwitchId = StringToId(OcclusionCalcSwitchName);
-static constexpr SwitchStateId IgnoreStateId = StringToId(IgnoreStateName);
-static constexpr SwitchStateId AdaptiveStateId = StringToId(AdaptiveStateName);
-static constexpr SwitchStateId LowStateId = StringToId(LowStateName);
-static constexpr SwitchStateId MediumStateId = StringToId(MediumStateName);
-static constexpr SwitchStateId HighStateId = StringToId(HighStateName);
-static constexpr SwitchStateId OnStateId = StringToId(OnStateName);
-static constexpr SwitchStateId OffStateId = StringToId(OffStateName);
-static constexpr PreloadRequestId GlobalPreloadRequestId = StringToId(GlobalPreloadRequestName);
+static constexpr ControlId RelativeVelocityTrackingSwitchId = StringToId(s_szRelativeVelocityTrackingSwitchName);
+static constexpr ControlId RelativeVelocityParameterId = StringToId(s_szRelativeVelocityParameterName);
+static constexpr ControlId AbsoluteVelocityTrackingSwitchId = StringToId(s_szAbsoluteVelocityTrackingSwitchName);
+static constexpr ControlId AbsoluteVelocityParameterId = StringToId(s_szAbsoluteVelocityParameterName);
+static constexpr ControlId LoseFocusTriggerId = StringToId(s_szLoseFocusTriggerName);
+static constexpr ControlId GetFocusTriggerId = StringToId(s_szGetFocusTriggerName);
+static constexpr ControlId MuteAllTriggerId = StringToId(s_szMuteAllTriggerName);
+static constexpr ControlId UnmuteAllTriggerId = StringToId(s_szUnmuteAllTriggerName);
+static constexpr ControlId DoNothingTriggerId = StringToId(s_szDoNothingTriggerName);
+static constexpr ControlId OcclusionCalcSwitchId = StringToId(s_szOcclCalcSwitchName);
+static constexpr SwitchStateId IgnoreStateId = StringToId(s_szIgnoreStateName);
+static constexpr SwitchStateId AdaptiveStateId = StringToId(s_szAdaptiveStateName);
+static constexpr SwitchStateId LowStateId = StringToId(s_szLowStateName);
+static constexpr SwitchStateId MediumStateId = StringToId(s_szMediumStateName);
+static constexpr SwitchStateId HighStateId = StringToId(s_szHighStateName);
+static constexpr SwitchStateId OnStateId = StringToId(s_szOnStateName);
+static constexpr SwitchStateId OffStateId = StringToId(s_szOffStateName);
+static constexpr PreloadRequestId GlobalPreloadRequestId = StringToId(s_szGlobalPreloadRequestName);
 
 // Forward declarations.
 struct IListener;
-struct IProfileData;
 namespace Impl
 {
 struct IImpl;
@@ -116,6 +151,24 @@ enum class EOcclusionType : EnumFlagsType
 	Count,
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EOcclusionType);
+
+/**
+ * @enum CryAudio::ELogType
+ * @brief is a strongly typed enum class representing different audio specific log types
+ * @var CryAudio::ELogType::None
+ * @var CryAudio::ELogType::Comment
+ * @var CryAudio::ELogType::Warning
+ * @var CryAudio::ELogType::Error
+ * @var CryAudio::ELogType::Always
+ */
+enum class ELogType : EnumFlagsType
+{
+	None,    /**< used to initialize variables of this type and to determine whether users forgot to set a type for logging */
+	Comment, /**< message will be displayed in standard color but verbosity level must be set to at least 4 */
+	Warning, /**< message will be displayed in orange color */
+	Error,   /**< message will be displayed in red color */
+	Always,  /**< message will be displayed in standard color and always printed regardless of verbosity level */
+};
 
 struct SRequestInfo
 {
@@ -163,12 +216,12 @@ struct SCreateObjectData
 	  EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
 	  CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
 	  EntityId const entityId_ = INVALID_ENTITYID,
-	  bool const bSetCurrentEnvironments_ = false)
+	  bool const setCurrentEnvironments_ = false)
 		: szName(szName_)
 		, occlusionType(occlusionType_)
 		, transformation(transformation_)
 		, entityId(entityId_)
-		, bSetCurrentEnvironments(bSetCurrentEnvironments_)
+		, setCurrentEnvironments(setCurrentEnvironments_)
 	{}
 
 	static SCreateObjectData const& GetEmptyObject() { static SCreateObjectData const emptyInstance; return emptyInstance; }
@@ -183,19 +236,20 @@ struct SCreateObjectData
 	CObjectTransformation const transformation;
 
 	EntityId const              entityId;
-	bool const                  bSetCurrentEnvironments;
+	bool const                  setCurrentEnvironments;
 };
 
 struct SExecuteTriggerData : public SCreateObjectData
 {
 	explicit SExecuteTriggerData(
-	  char const* const _szName,
-	  EOcclusionType const _occlusionType,
-	  CObjectTransformation const& _transformation,
-	  bool const _bSetCurrentEnvironments,
-	  ControlId const _triggerId)
-		: SCreateObjectData(_szName, _occlusionType, _transformation, _bSetCurrentEnvironments)
-		, triggerId(_triggerId)
+	  ControlId const triggerId_,
+	  char const* const szName_ = nullptr,
+	  EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
+	  CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
+	  EntityId const entityId_ = INVALID_ENTITYID,
+	  bool const setCurrentEnvironments_ = false)
+		: triggerId(triggerId_)
+		, SCreateObjectData(szName_, occlusionType_, transformation_, entityId_, setCurrentEnvironments_)
 	{}
 
 	ControlId const triggerId;
@@ -251,8 +305,9 @@ struct IAudioSystem
 	virtual void UnloadTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Performs the actions passed in the "triggerData" parameter on an audio object and then executes the passed trigger ID.
+	 * Performs the actions passed in the "triggerData" parameter. This is used for 3D type events exclusively. For 2D type events refer to ExecuteTrigger.
 	 * For convenience and efficiency this is used as a "fire and forget" type action where the user does not need to explicitly handle an audio object.
+	 * Make sure to only start non-looped type events this way otherwise they will turn into runaway loops.
 	 * @param triggerData - reference to an object that holds all of the data necessary for the trigger execution.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
@@ -260,7 +315,7 @@ struct IAudioSystem
 	virtual void ExecuteTriggerEx(SExecuteTriggerData const& triggerData, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Executes the passed trigger ID. This is used for "fire and forget" type operations and for 2D type events exclusively.
+	 * Executes the passed trigger ID. This is used for 2D type events exclusively. For 3D type events refer to ExecuteTriggerEx.
 	 * @param triggerId - ID of the trigger to execute.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
@@ -523,10 +578,20 @@ struct IAudioSystem
 	virtual void OnLanguageChanged() = 0;
 
 	/**
-	 * Retrieve ProfileData interface which gives access to various methods retrieving audio system internal data.
+	 * Retrieve information about the current middleware implementation.
+	 * @param[out] implInfo - a reference to an instance of SImplInfo
 	 * @return void
 	 */
-	virtual IProfileData* GetProfileData() const = 0;
+	virtual void GetImplInfo(SImplInfo& implInfo) = 0;
+
+	/**
+	 * Logs an audio specific message and adds an audio tag plus time stamp to the string.
+	 * Note: Don't use this method directly, instead use Cry::Audio::Log()!
+	 * @param type - log message type (ELogType)
+	 * @param szFormat, ... - printf-style format string and its argument
+	 * @return void
+	 */
+	virtual void Log(ELogType const type, char const* const szFormat, ...) = 0;
 	// </interfuscator:shuffle>
 };
 } // namespace CryAudio

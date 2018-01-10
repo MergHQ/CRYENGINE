@@ -81,6 +81,7 @@ def delete_previous_build(export_path):
     """
     if os.path.exists(export_path):
         shutil.rmtree(export_path, onerror = on_rm_error)
+
 def delete_temp_folders(engine_path, project_path):
     delete_temp_engine_folder(engine_path)
     delete_temp_assets_folder(project_path)

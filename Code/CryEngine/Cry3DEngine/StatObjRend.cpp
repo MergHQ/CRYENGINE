@@ -43,33 +43,8 @@ void CStatObj::Render(const SRendParams& rParams, const SRenderingPassInfo& pass
 	}
 #endif // _RELEASE
 
-	CRenderObject* pObj = GetRenderer()->EF_GetObject_Temp(passInfo.ThreadID());
+	CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 	FillRenderObject(rParams, rParams.pRenderNode, m_pMaterial, NULL, pObj, passInfo);
-
-#ifdef SEG_WORLD
-	if (GetISystem()->GetIConsole()->GetCVar("sw_debugInfo")->GetIVal() == 4)
-	{
-		//////////////////////////////////////////////////////////////////////////
-		// Show colored sw object.
-		//////////////////////////////////////////////////////////////////////////
-
-		ColorB clr = ColorB(0, 255, 0, 255);
-		if (rParams.nCustomFlags & COB_SW_GLOBAL)
-		{
-			clr = ColorB(255, 0, 0, 255);
-		}
-		else if (rParams.nCustomFlags & COB_SW_CROSSSEG)
-		{
-			clr = ColorB(0, 0, 255, 255);
-		}
-
-		if (pObj)
-		{
-			pObj->m_II.m_AmbColor = ColorF(clr.r / 155.0f, clr.g / 155.0f, clr.b / 155.0f, 1);
-			pObj->m_nMaterialLayers = 0;
-		}
-	}
-#endif //SEG_WORLD
 
 	RenderInternal(pObj, rParams.nSubObjHideMask, rParams.lodValue, passInfo);
 }
@@ -325,7 +300,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 	// Convert "camera space" to "world space"
 	if (pObj->m_ObjFlags & FOB_NEAREST)
 	{
-		tm.AddTranslation(gEnv->pRenderer->GetCamera().GetPosition());
+		tm.AddTranslation(passInfo.GetCamera().GetPosition());
 	}
 
 	bool bOnlyBoxes = GetCVars()->e_DebugDraw == -1;
@@ -578,6 +553,29 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 			{
 				int nTexMemUsage = m_pRenderMesh->GetTextureMemoryUsage(pMaterial);
 				IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d,%d,%d", m_nRenderTrisCount, nRenderMats, nTexMemUsage / 1024);
+			}
+			break;
+		case 8:
+			{
+				if (pObj && pObj->m_pRenderNode)
+				{
+					IRenderNode* pRenderNode = (IRenderNode*)pObj->m_pRenderNode;
+					float perObjectMaxViewDist = pRenderNode->m_ucViewDistRatio;
+
+					ColorF clr = ColorF(0.f, 1.f, 0.f, 1.0f);
+					Vec3 red, green;
+					ColorF(1.f, 0.f, 0.f, 1.0f).toHSV(red.x, red.y, red.z);
+					ColorF(0.f, 1.f, 0.f, 1.0f).toHSV(green.x, green.y, green.z);
+
+					float interpValue = perObjectMaxViewDist / 255.0f;
+					Vec3 c = Vec3::CreateLerp(green, red, interpValue);
+					clr.fromHSV(c.x, c.y, c.z);
+
+					float fontSize = 1.3f;
+					fontSize = LERP(fontSize, 2.3f, interpValue);
+
+					IRenderAuxText::DrawLabelExF(pos, fontSize, clr, true, true, "%.1f", perObjectMaxViewDist);
+				}
 			}
 			break;
 
@@ -841,25 +839,31 @@ float CStatObj::GetExtent(EGeomForm eForm)
 	return ext.TotalExtent();
 }
 
-void CStatObj::GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const
+void CStatObj::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const
 {
 	if (!m_subObjects.empty())
 	{
 		CGeomExtent const& ext = m_Extents[eForm];
-		int iSubObj = ext.RandomPart(seed);
-		if (iSubObj-- > 0)
+		for (auto part : ext.RandomPartsAliasSum(points, seed))
 		{
-			IStatObj::SSubObject const* pSub = &m_subObjects[iSubObj];
-			assert(pSub && pSub->pStatObj);
-			pSub->pStatObj->GetRandomPos(ran, seed, eForm);
-			ran <<= pSub->tm;
-			return;
+			if (part.iPart > 0)
+			{
+				IStatObj::SSubObject const* pSub = &m_subObjects[part.iPart - 1];
+				assert(pSub && pSub->pStatObj);
+				pSub->pStatObj->GetRandomPoints(part.aPoints, seed, eForm);
+				for (auto& point : part.aPoints)
+					point <<= pSub->tm;
+			}
+			else if (m_pRenderMesh)
+				m_pRenderMesh->GetRandomPoints(part.aPoints, seed, eForm);
+			else
+				part.aPoints.fill(ZERO);
 		}
 	}
 	if (m_pRenderMesh)
-		m_pRenderMesh->GetRandomPos(ran, seed, eForm);
+		m_pRenderMesh->GetRandomPoints(points, seed, eForm);
 	else
-		ran.zero();
+		points.fill(ZERO);
 }
 
 SMeshLodInfo CStatObj::ComputeAndStoreLodDistances()
@@ -1027,13 +1031,6 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 		}
 	}
 
-#ifdef SEG_WORLD
-	if (GetISystem()->GetIConsole()->GetCVar("sw_debugInfo")->GetIVal() == 4)
-	{
-		pRenderObject->m_ObjFlags |= FOB_SELECTED;
-	}
-#endif //SEG_WORLD
-
 	if ((m_nFlags & STATIC_OBJECT_COMPOUND) && !m_bMerged)
 	{
 		//////////////////////////////////////////////////////////////////////////
@@ -1095,7 +1092,7 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 						
 						if (lodValue.LodA() >= 0)
 						{
-						RenderSubObject(pRenderObject, lodValue.LodA(), i, renderTM, passInfo);
+							RenderSubObject(pRenderObject, lodValue.LodA(), i, renderTM, passInfo);
 						}
 
 						if (pRenderObjectB && lodValue.LodB()>=0)
@@ -1124,10 +1121,10 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 		// draw mesh, don't even try to render childs
 		if (lodValue.LodA() >= 0)
 		{
-		RenderObjectInternal(pRenderObject, lodValue.LodA(), lodValue.DissolveRefA(), true, passInfo);
+			RenderObjectInternal(pRenderObject, lodValue.LodA(), lodValue.DissolveRefA(), true, passInfo);
 		}
 
-		if (lodValue.DissolveRefB() != 255 && lodValue.LodB()>=0) // check here since we're passing in A's ref.
+		if (lodValue.DissolveRefB() != 255 && lodValue.LodB() >= 0) // check here since we're passing in A's ref.
 		{
 			pRenderObject = GetRenderer()->EF_DuplicateRO(pRenderObject, passInfo);
 			RenderObjectInternal(pRenderObject, lodValue.LodB(), lodValue.DissolveRefA(), false, passInfo);
@@ -1159,17 +1156,22 @@ void CStatObj::RenderSubObject(CRenderObject* pRenderObject, int nLod,
 
 	if (subObj.bIdentityMatrix)
 	{
-		pStatObj->RenderSubObjectInternal(pRenderObject, nLod, passInfo);
+		if ((pRenderObject->m_ObjFlags & FOB_DYNAMIC_OBJECT) && (pRenderObject->m_ObjFlags & FOB_NEAREST))
+		{
+			SRenderObjData* pRenderObjectData = pRenderObject->GetObjData();
+			pRenderObjectData->m_uniqueObjectId = pRenderObjectData->m_uniqueObjectId + nSubObjId;
+		}
 	}
 	else
 	{
 		pRenderObject = GetRenderer()->EF_DuplicateRO(pRenderObject, passInfo);
 		pRenderObject->m_II.m_Matrix = renderTM * subObj.tm;
+
 		SRenderObjData* pRenderObjectData = pRenderObject->GetObjData();
 		pRenderObjectData->m_uniqueObjectId = pRenderObjectData->m_uniqueObjectId + nSubObjId;
-
-		pStatObj->RenderSubObjectInternal(pRenderObject, nLod, passInfo);
 	}
+
+	pStatObj->RenderSubObjectInternal(pRenderObject, nLod, passInfo);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1187,7 +1189,7 @@ void CStatObj::RenderSubObjectInternal(CRenderObject* pRenderObject, int nLod, c
 	assert(!(m_nFlags & STATIC_OBJECT_COMPOUND));
 
 	nLod = CLAMP(nLod, GetMinUsableLod(), (int)m_nMaxUsableLod);
-	assert(nLod < MAX_STATOBJ_LODS_NUM);
+	CRY_ASSERT(nLod >= 0 && nLod < MAX_STATOBJ_LODS_NUM);
 
 	// Skip rendering of this suboject if it is marked as deformable
 	if (GetCVars()->e_MergedMeshes == 1 && nLod == 0 && m_isDeformable)
@@ -1237,7 +1239,7 @@ void CStatObj::RenderObjectInternal(CRenderObject* pRenderObject, int nTargetLod
 	}
 
 	int nLod = CLAMP(nTargetLod, GetMinUsableLod(), (int)m_nMaxUsableLod);
-	assert(nLod < MAX_STATOBJ_LODS_NUM);
+	CRY_ASSERT(nLod >= 0 && nLod < MAX_STATOBJ_LODS_NUM);
 
 	// Skip rendering of this suboject if it is marked as deformable
 	if (GetCVars()->e_MergedMeshes == 1 && nTargetLod == 0 && m_isDeformable)
@@ -1382,15 +1384,21 @@ void CStatObj::RenderRenderMesh(CRenderObject* pRenderObject, SInstancingInfo* p
 ///////////////////////////////////////////////////////////////////////////////
 int CStatObj::GetMaxUsableLod()
 {
+	auto lodMax = GetCVars()->e_LodMax;
+	lodMax = CLAMP(lodMax, 0, MAX_STATOBJ_LODS_NUM - 1);
+
 	int maxUsable = m_pLod0 ? max((int)m_nMaxUsableLod, (int)m_pLod0->m_nMaxUsableLod) : (int)m_nMaxUsableLod;
-	return min(maxUsable, GetCVars()->e_LodMax);
+	return min(maxUsable, lodMax);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 int CStatObj::GetMinUsableLod()
 {
+	auto lodMin = GetCVars()->e_LodMin;
+	lodMin = CLAMP(lodMin, 0, MAX_STATOBJ_LODS_NUM - 1);
+
 	int minUsable = m_pLod0 ? max((int)m_nMinUsableLod0, (int)m_pLod0->m_nMinUsableLod0) : (int)m_nMinUsableLod0;
-	return max(minUsable, GetCVars()->e_LodMin);
+	return max(minUsable, lodMin);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

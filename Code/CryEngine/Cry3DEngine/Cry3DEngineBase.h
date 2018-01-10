@@ -128,8 +128,6 @@ struct Cry3DEngineBase
 	ILINE static bool IsRenderNodeTypeEnabled(EERType rnType)                 { return m_bRenderTypeEnabled[(int)rnType]; }
 	ILINE static void SetRenderNodeTypeEnabled(EERType rnType, bool bEnabled) { m_bRenderTypeEnabled[(int)rnType] = bEnabled; }
 
-	inline static int GetDefSID()                                             { return DEFAULT_SID; };
-
 	static float      GetCurTimeSec();
 	static float      GetCurAsyncTimeSec();
 
@@ -142,9 +140,9 @@ struct Cry3DEngineBase
 	static void    Error(const char* format, ...) PRINTF_PARAMS(1, 2);
 	static void    FileWarning(int flags, const char* file, const char* format, ...) PRINTF_PARAMS(3, 4);
 
-	CRenderObject* GetIdentityCRenderObject(int nThreadID)
+	CRenderObject* GetIdentityCRenderObject(const SRenderingPassInfo &passInfo)
 	{
-		CRenderObject* pCRenderObject = GetRenderer()->EF_GetObject_Temp(nThreadID);
+		CRenderObject* pCRenderObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 		if (!pCRenderObject)
 			return NULL;
 		pCRenderObject->m_II.m_Matrix.SetIdentity();

@@ -68,7 +68,8 @@ public:
 	Status                   GetLastStatus() const { return m_lastStatus; }
 
 private:
-	typedef std::vector<std::shared_ptr<Block>> Blocks;
+	typedef std::vector<BlockPtr> Blocks;
+
 	Blocks            m_blocks;
 	uint32            m_current;
 	MovementRequestID m_requestId;

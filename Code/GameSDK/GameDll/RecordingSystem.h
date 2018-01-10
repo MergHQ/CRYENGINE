@@ -130,11 +130,10 @@ public:
 	virtual void OnSpawn(IEntity *pEntity, SEntitySpawnParams &params);
 	virtual bool OnRemove(IEntity *pEntity);
 	virtual void OnReused(IEntity *pEntity, SEntitySpawnParams &params);
-	virtual void OnEvent(IEntity *pEntity, SEntityEvent &event);
 	//~IEntitySystemSink
 
 	// IEntityEventListener
-	virtual void OnEntityEvent(IEntity *pEntity, SEntityEvent &event);
+	virtual void OnEntityEvent(IEntity *pEntity, const SEntityEvent &event);
 	//~IEntityEventListener
 
 	// IParticleEffectListener

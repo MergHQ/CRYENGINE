@@ -80,7 +80,6 @@ public:
 	void              CharacterChanged();
 	void              PlaybackLayersChanged(bool continuous);
 	void              LayerActivated();
-	void              MotionParametersChanged(bool continuousChange);
 	AimParameters&    GetAimParameters();
 	AimParameters&    GetLookParameters();
 	MotionParameters& GetMotionParameters();

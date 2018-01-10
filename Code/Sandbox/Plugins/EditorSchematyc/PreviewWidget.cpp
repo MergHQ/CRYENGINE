@@ -5,7 +5,6 @@
 
 #include <QBoxLayout>
 #include <QVBoxLayout>
-#include <QParentWndWidget.h>
 #include <QPushButton>
 #include <QSplitter>
 #include <QViewport.h>

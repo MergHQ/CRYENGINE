@@ -254,7 +254,6 @@ uint64 GetRTMask(const VCCloudRenderContext& context)
 	rtMask |= context.renderFogShadow ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 #if 0 // temporarily disabled until these features are implemented.
 	rtMask |= context.bUseLightning ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
-	rtMask |= context.sphericalCloudLayer ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
 #endif
 	rtMask |= context.bReprojectionFromLeftToRight ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
 	rtMask |= context.bCloudVolTex ? g_HWSR_MaskBit[HWSR_SAMPLE3] : 0;
@@ -322,7 +321,7 @@ bool CVolumetricCloudsStage::IsRenderable()
 	return renderClouds && (CRenderer::CV_r_VolumetricClouds > 0);
 }
 
-Vec4 CVolumetricCloudsStage::GetVolumetricCloudShadowParams(const CRenderCamera& rc, const Vec2& cloudOffset, const Vec2& vTiling)
+Vec4 CVolumetricCloudsStage::GetVolumetricCloudShadowParams(const CCamera& camera, const Vec2& cloudOffset, const Vec2& vTiling)
 {
 	const int32 shadowTexSize = VCGetCloudShadowTexSize();
 	const Vec2 texSize((f32)shadowTexSize, (f32)shadowTexSize);
@@ -331,7 +330,7 @@ Vec4 CVolumetricCloudsStage::GetVolumetricCloudShadowParams(const CRenderCamera&
 	const Vec2 invVoxelLength(1.0f / voxelLength.x, 1.0f / voxelLength.y);
 
 	// don't need to take care of stereo multi-GPU rendering here because of no effect for the result.
-	const Vec3& camPos = rc.vOrigin;
+	const Vec3& camPos = camera.GetPosition();
 
 	// shift world position along with camera movement, which is aligned to certain interval.
 	Vec2 worldAlignmentOffset;
@@ -464,16 +463,20 @@ void CVolumetricCloudsStage::Init()
 	m_pReprojectionConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SReprojectionParam));
 }
 
-void CVolumetricCloudsStage::Prepare(CRenderView* pRenderView)
+void CVolumetricCloudsStage::Update()
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	const int32 screenWidth = rd->GetWidth();
-	const int32 screenHeight = rd->GetHeight();
+	const bool bVolumetricClouds = rd->m_bVolumetricCloudsEnabled;
+	if (!bVolumetricClouds)
+		return;
+
+	const int32 screenWidth  = CRendererResources::s_renderWidth;
+	const int32 screenHeight = CRendererResources::s_renderHeight;
 	const bool bStereo = rd->IsStereoEnabled();
 	const bool stereoReproj = bStereo && CRenderer::CV_r_VolumetricCloudsStereoReprojection != 0;
 
 	// TODO: move this texture to view-dependent structure if volumetric clouds is rendered in multiple view ports such as split screens.
-	if (CTexture::s_ptexVolCloudShadow)
+	if (CRendererResources::s_ptexVolCloudShadow)
 	{
 		const int shadowTexSize = VCGetCloudShadowTexSize();
 		const int w = shadowTexSize;
@@ -482,13 +485,13 @@ void CVolumetricCloudsStage::Prepare(CRenderView* pRenderView)
 		const ETEX_Format shadowTexFormat = eTF_R11G11B10F;
 		const int nRTFlags = FT_NOMIPS | FT_USAGE_UNORDERED_ACCESS;
 
-		const int width = CTexture::s_ptexVolCloudShadow->GetWidth();
-		const int height = CTexture::s_ptexVolCloudShadow->GetHeight();
-		const bool exist = CTexture::IsTextureExist(CTexture::s_ptexVolCloudShadow);
+		const int width = CRendererResources::s_ptexVolCloudShadow->GetWidth();
+		const int height = CRendererResources::s_ptexVolCloudShadow->GetHeight();
+		const bool exist = CTexture::IsTextureExist(CRendererResources::s_ptexVolCloudShadow);
 
 		if (w != width || h != height || !exist)
 		{
-			if (!CTexture::s_ptexVolCloudShadow->Create3DTexture(w, h, d, 1, nRTFlags, nullptr, shadowTexFormat))
+			if (!CRendererResources::s_ptexVolCloudShadow->Create3DTexture(w, h, d, 1, nRTFlags, nullptr, shadowTexFormat))
 			{
 				CryFatalError("Couldn't allocate texture.");
 			}
@@ -608,18 +611,14 @@ void CVolumetricCloudsStage::Prepare(CRenderView* pRenderView)
 void CVolumetricCloudsStage::ExecuteShadowGen()
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
-	auto& gp = rd->GetGraphicsPipeline();
-	const int32 nCurrentFrameID = rd->GetFrameID(false);
-	const int32 currEye = rd->m_CurRenderEye;
-	const bool bLeftEye = (nCurrentFrameID != m_nUpdateFrameID[currEye]) && (currEye == StereoEye::LEFT_EYE);
-	const bool bRightEye = (nCurrentFrameID != m_nUpdateFrameID[currEye]) && (currEye == StereoEye::RIGHT_EYE);
 	const bool bVolumetricClouds = rd->m_bVolumetricCloudsEnabled;
-
 	if (!bVolumetricClouds)
 		return;
 
-	Prepare(RenderView());
+	const int64 nCurrentFrameID = RenderView()->GetFrameId();
+	const int32 currEye = static_cast<int32>(RenderView()->GetCurrentEye());
+	const bool bLeftEye = (nCurrentFrameID != m_nUpdateFrameID[currEye]) && (currEye == StereoEye::LEFT_EYE);
+	const bool bRightEye = (nCurrentFrameID != m_nUpdateFrameID[currEye]) && (currEye == StereoEye::RIGHT_EYE);
 
 	if (!AreTexturesValid())
 		return;
@@ -628,15 +627,15 @@ void CVolumetricCloudsStage::ExecuteShadowGen()
 	{
 		++m_tick;
 
-		BuildCloudBlockerList();
-		BuildCloudBlockerSSList();
+		GenerateCloudBlockerList();
+		GenerateCloudBlockerSSList();
 	}
 
 	// update previous view-projection matrix
 	if (bLeftEye || bRightEye)
 	{
-		CStandardGraphicsPipeline::SViewInfo viewInfos[2];
-		const int32 viewInfoCount = gp.GetViewInfo(viewInfos);
+		SRenderViewInfo viewInfos[2];
+		const size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfos);
 
 		const int32 currentFrameIndex = GetCurrentFrameIndex();
 
@@ -669,7 +668,6 @@ void CVolumetricCloudsStage::ExecuteShadowGen()
 void CVolumetricCloudsStage::Execute()
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	SRenderPipeline& rp(rd->m_RP);
 	const bool bVolumetricClouds = rd->m_bVolumetricCloudsEnabled;
 
 	if (!bVolumetricClouds)
@@ -681,16 +679,14 @@ void CVolumetricCloudsStage::Execute()
 	PROFILE_LABEL_SCOPE("VOLUMETRIC_CLOUDS");
 
 	VCCloudRenderContext context;
-	UpdateCloudShaderParam(context);
+	GenerateCloudShaderParam(context);
 
 	ExecuteComputeDensityAndShadow(context);
-
 	ExecuteRenderClouds(context);
 
 	{
-		const int32 curEye = rd->m_CurRenderEye;
+		const int32 curEye = static_cast<int32>(RenderView()->GetCurrentEye());
 		const int32 gpuCount = rd->GetActiveGPUCount();
-		CTexture* depthBuffer = rd->m_pZTexture;
 		auto* pVolFogStage = rd->GetGraphicsPipeline().GetVolumetricFogStage();
 
 		CShader* pShader = CShaderMan::s_ShaderClouds;
@@ -751,7 +747,7 @@ void CVolumetricCloudsStage::Execute()
 				pass.SetTexture(1, context.scaledTarget);
 				pass.SetTexture(2, prevMaxTex);
 				pass.SetTexture(3, m_pCloudDepthTex);
-				pass.SetTexture(4, bNewTemporalFilter ? CTexture::s_ptexBlack : prevScaledDepth);
+				pass.SetTexture(4, bNewTemporalFilter ? CRendererResources::s_ptexBlack : prevScaledDepth);
 
 				pass.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
 
@@ -796,7 +792,7 @@ void CVolumetricCloudsStage::Execute()
 				pass.SetTexture(1, m_pDownscaledMinTempTex);
 				pass.SetTexture(2, prevMinTex);
 				pass.SetTexture(3, m_pCloudDepthTex);
-				pass.SetTexture(4, bNewTemporalFilter ? CTexture::s_ptexBlack : prevScaledDepth);
+				pass.SetTexture(4, bNewTemporalFilter ? CRendererResources::s_ptexBlack : prevScaledDepth);
 
 				pass.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
 
@@ -845,15 +841,15 @@ void CVolumetricCloudsStage::Execute()
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 				pass.SetTechnique(pShader, shaderName, rtMask);
 
-				pass.SetRenderTarget(0, CTexture::s_ptexHDRTarget);
-				pass.SetDepthTarget(depthBuffer);
+				pass.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
+				pass.SetDepthTarget(RenderView()->GetDepthTarget());
 
 				// using GS_BLDST_SRCALPHA because GS_BLDST_ONEMINUSSRCALPHA causes banding artifact when alpha value is very low.
 				pass.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_SRCALPHA);
 				
 				pass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 
-				pass.SetTexture(0, CTexture::s_ptexZTarget);
+				pass.SetTexture(0, CRendererResources::s_ptexLinearDepth);
 				pass.SetTexture(1, context.scaledZTarget);
 				pass.SetTexture(2, currMaxTex);
 				pass.SetTexture(3, currMinTex);
@@ -870,7 +866,7 @@ void CVolumetricCloudsStage::Execute()
 	#if defined(VOLUMETRIC_FOG_SHADOWS)
 				else if (context.renderFogShadow)
 				{
-					pass.SetTexture(8, CTexture::s_ptexVolFogShadowBuf[0]);
+					pass.SetTexture(8, CRendererResources::s_ptexVolFogShadowBuf[0]);
 					pass.SetSampler(2, EDefaultSamplerStates::TrilinearClamp);
 				}
 	#endif
@@ -900,12 +896,12 @@ void CVolumetricCloudsStage::ExecuteVolumetricCloudShadowGen()
 	CShader* pShader = CShaderMan::s_ShaderClouds;
 	auto& pass = m_passGenerateCloudShadow;
 
-	assert(CTexture::s_ptexVolCloudShadow != nullptr);
-	const int32 widthVolShadowTex = CTexture::s_ptexVolCloudShadow->GetWidth();
-	const int32 heightVolShadowTex = CTexture::s_ptexVolCloudShadow->GetHeight();
-	const int32 depthVolShadowTex = CTexture::s_ptexVolCloudShadow->GetDepth();
+	assert(CRendererResources::s_ptexVolCloudShadow != nullptr);
+	const int32 widthVolShadowTex = CRendererResources::s_ptexVolCloudShadow->GetWidth();
+	const int32 heightVolShadowTex = CRendererResources::s_ptexVolCloudShadow->GetHeight();
+	const int32 depthVolShadowTex = CRendererResources::s_ptexVolCloudShadow->GetDepth();
 
-	CTexture* cloudVolumeTex = CTexture::s_ptexBlack;
+	CTexture* cloudVolumeTex = CRendererResources::s_ptexBlack;
 	if (texInfo.cloudTexId > 0)
 	{
 		CTexture* pTex = CTexture::GetByID(texInfo.cloudTexId);
@@ -953,7 +949,7 @@ void CVolumetricCloudsStage::ExecuteVolumetricCloudShadowGen()
 		static CCryNameTSCRC shaderName = "CloudShadowGen";
 		pass.SetTechnique(pShader, shaderName, rtMask);
 
-		pass.SetOutputUAV(0, CTexture::s_ptexVolCloudShadow);
+		pass.SetOutputUAV(0, CRendererResources::s_ptexVolCloudShadow);
 
 		pass.SetTexture(0, cloudNoiseTex);
 		pass.SetTexture(1, cloudEdgeNoiseTex);
@@ -965,7 +961,7 @@ void CVolumetricCloudsStage::ExecuteVolumetricCloudShadowGen()
 	}
 
 	const Vec3 texSize((f32)widthVolShadowTex, (f32)heightVolShadowTex, (f32)depthVolShadowTex);
-	UpdateCloudShadowGenShaderParam(texSize);
+	GenerateCloudShadowGenShaderParam(texSize);
 
 	pass.SetInlineConstantBuffer(3, m_pCloudShadowConstantBuffer);
 
@@ -993,11 +989,9 @@ void CVolumetricCloudsStage::ExecuteVolumetricCloudShadowGen()
 	}
 }
 
-void CVolumetricCloudsStage::UpdateCloudShadowGenShaderParam(const Vec3& texSize)
+void CVolumetricCloudsStage::GenerateCloudShadowGenShaderParam(const Vec3& texSize)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	SRenderPipeline& rp(rd->m_RP);
-	SCGParamsPF& PF = rd->m_cEF.m_PF[rp.m_nProcessThreadID];
+	SRenderViewShaderConstants& PF = RenderView()->GetShaderConstants();
 
 	// Fetch the cloud parameters.
 	Vec3 cloudGenParams;
@@ -1088,7 +1082,7 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 #endif
 
 		CD3D9Renderer* const __restrict rd = gcpRendD3D;
-		const int32 currentRenderEye = rd->m_CurRenderEye;
+		const int32 currentRenderEye = static_cast<int32>(RenderView()->GetCurrentEye());
 
 		CShader* pShader = CShaderMan::s_ShaderClouds;
 
@@ -1098,7 +1092,7 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 		const uint64 rtMask = GetRTMask(context);
 
 		// set cloud base texture.
-		CTexture* cloudVolumeTex = CTexture::s_ptexBlack;
+		CTexture* cloudVolumeTex = CRendererResources::s_ptexBlack;
 		if (context.bCloudVolTex)
 		{
 			CTexture* pTex = CTexture::GetByID(context.cloudVolumeTexId);
@@ -1122,9 +1116,9 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 			pass.SetTexture(0, context.scaledZTarget);
 
 			const bool bLtoR = context.bReprojectionFromLeftToRight;
-			pass.SetTexture(2, bLtoR ? m_pScaledPrevDepthTex[StereoEye::LEFT_EYE].get() : CTexture::s_ptexBlack);
+			pass.SetTexture(2, bLtoR ? m_pScaledPrevDepthTex[StereoEye::LEFT_EYE].get() : CRendererResources::s_ptexBlack);
 
-			pass.SetTexture(5, CTexture::s_ptexVolCloudShadow);
+			pass.SetTexture(5, CRendererResources::s_ptexVolCloudShadow);
 
 			pass.SetSampler(0, EDefaultSamplerStates::BilinearBorder_Black);
 			pass.SetSampler(1, EDefaultSamplerStates::TrilinearWrap);
@@ -1202,7 +1196,7 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 #endif
 
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	const int32 currentRenderEye = rd->m_CurRenderEye;
+	const int32 currentRenderEye = static_cast<int32>(RenderView()->GetCurrentEye());
 	auto* pVolFogStage = rd->GetGraphicsPipeline().GetVolumetricFogStage();
 
 	CShader* pShader = CShaderMan::s_ShaderClouds;
@@ -1217,7 +1211,7 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 	inputFlag |= (CRenderer::CV_r_VolumetricCloudsPipeline & 0xF) << 4;
 
 	// set cloud base texture.
-	CTexture* cloudVolumeTex = CTexture::s_ptexBlack;
+	CTexture* cloudVolumeTex = CRendererResources::s_ptexBlack;
 	if (context.bCloudVolTex)
 	{
 		CTexture* pTex = CTexture::GetByID(context.cloudVolumeTexId);
@@ -1245,13 +1239,13 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 		pass.SetTexture(0, context.scaledZTarget);
 
 		const bool bLtoR = context.bReprojectionFromLeftToRight;
-		pass.SetTexture(1, bLtoR ? m_pDownscaledLeftEyeTex.get() : CTexture::s_ptexBlack);
-		pass.SetTexture(2, bLtoR ? m_pScaledPrevDepthTex[StereoEye::LEFT_EYE].get() : CTexture::s_ptexBlack);
+		pass.SetTexture(1, bLtoR ? m_pDownscaledLeftEyeTex.get() : CRendererResources::s_ptexBlack);
+		pass.SetTexture(2, bLtoR ? m_pScaledPrevDepthTex[StereoEye::LEFT_EYE].get() : CRendererResources::s_ptexBlack);
 
-		pass.SetTexture(3, bMono ? CTexture::s_ptexBlack : m_pCloudDensityTex.get());
-		pass.SetTexture(4, bMono ? CTexture::s_ptexBlack : m_pCloudShadowTex.get());
+		pass.SetTexture(3, bMono ? CRendererResources::s_ptexBlack : m_pCloudDensityTex.get());
+		pass.SetTexture(4, bMono ? CRendererResources::s_ptexBlack : m_pCloudShadowTex.get());
 
-		pass.SetTexture(5, CTexture::s_ptexVolCloudShadow);
+		pass.SetTexture(5, CRendererResources::s_ptexVolCloudShadow);
 		pass.SetTexture(12, m_pCloudMiePhaseFuncTex);
 
 		pass.SetSampler(0, EDefaultSamplerStates::BilinearBorder_Black);
@@ -1265,7 +1259,7 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 		else if (context.renderFogShadow)
 		{
-			pass.SetTexture(8, CTexture::s_ptexVolFogShadowBuf[0]);
+			pass.SetTexture(8, CRendererResources::s_ptexVolFogShadowBuf[0]);
 			pass.SetSampler(3, EDefaultSamplerStates::PointClamp);
 		}
 #endif
@@ -1339,27 +1333,25 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 	m_pVolCloudEdgeNoiseTex = cloudEdgeNoiseTex;
 }
 
-void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& context)
+void CVolumetricCloudsStage::GenerateCloudShaderParam(::VCCloudRenderContext& context)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	SRenderPipeline& rp(rd->m_RP);
-	SCGParamsPF& PF = rd->m_cEF.m_PF[rp.m_nProcessThreadID];
-	const int32 nThreadID = rp.m_nProcessThreadID;
-	const SThreadInfo& ti = rp.m_TI[nThreadID];
+
+	SRenderViewShaderConstants& PF = RenderView()->GetShaderConstants();
 
 	auto& gp = rd->GetGraphicsPipeline();
 	auto* pVolFogStage = gp.GetVolumetricFogStage();
 	CRY_ASSERT(pVolFogStage);
 
-	CStandardGraphicsPipeline::SViewInfo viewInfos[2];
-	const int32 viewInfoCount = gp.GetViewInfo(viewInfos);
+	SRenderViewInfo viewInfos[2];
+	const size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfos);
 
-	const int32 width = rd->GetWidth();
-	const int32 height = rd->GetHeight();
+	const int32 width  = CRendererResources::s_renderWidth;
+	const int32 height = CRendererResources::s_renderHeight;
 	const bool bStereo = rd->IsStereoEnabled();
-	const bool bReverseDepth = (ti.m_PersFlags & RBPF_REVERSE_DEPTH) != 0;
-	const f32 time = ti.m_RealTime;
-	const int32 curEye = rd->m_CurRenderEye;
+	const bool bReverseDepth = true;
+	const f32 time = GetGraphicsPipeline().GetAnimationTime().GetSeconds();
+	const int32 curEye = static_cast<int32>(RenderView()->GetCurrentEye());
 	const int32 gpuCount = rd->GetActiveGPUCount();
 
 	SVolumetricCloudTexInfo texInfo;
@@ -1369,7 +1361,8 @@ void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& cont
 	context.cloudNoiseTexId = texInfo.cloudNoiseTexId;
 	context.edgeNoiseTexId = texInfo.edgeNoiseTexId;
 	context.bRightEye = (curEye == StereoEye::RIGHT_EYE);
-	context.bFog = (ti.m_FS.m_bEnable && !(rp.m_PersFlags2 & RBPF2_NOSHADERFOG));
+	context.bFog = (RenderView()->IsGlobalFogEnabled() && !(GetGraphicsPipeline().IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG)));
+
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 	context.renderFogShadow = rd->m_bVolFogShadowsEnabled;
 #else
@@ -1434,7 +1427,7 @@ void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& cont
 	{
 		context.scaledTarget = m_pDownscaledLeftEyeTex; // left eye is re-projected to right eye.
 	}
-	context.scaledZTarget = (downscaleIndex == 0) ? CTexture::s_ptexZTargetScaled : CTexture::s_ptexZTargetScaled2;
+	context.scaledZTarget = CRendererResources::s_ptexLinearDepthScaled[downscaleIndex > 0];
 
 	// enable fast path when clouds are always rendered in low shading mode, and viewable region is covered by cloud shadow map.
 	const f32 shadingLOD = cloudMiscParams.y;
@@ -1456,20 +1449,17 @@ void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& cont
 			const auto& viewInfo = viewInfos[i];
 			SVolumetricCloudsShaderParam& cb = bufferData[i];
 
-			CRY_ASSERT(viewInfo.pRenderCamera);
-			const CRenderCamera& rc = *(viewInfo.pRenderCamera);
-
 			cb.shadeColorFromSun = PF.pCloudShadingColorSun;
 			cb.waterLevel = PF.vWaterLevel.x; // static water ocean level
 
-			cb.cameraPos = rc.vOrigin;
-			cb.cameraFrontVector = rc.vZ.GetNormalized();
+			cb.cameraPos = viewInfo.cameraOrigin;
+			cb.cameraFrontVector = viewInfo.cameraVZ.GetNormalized();
 
 			cb.sunLightDirection = PF.pSunDirection;
 
-			cb.nearClipDist = rc.fNear;
-			cb.farClipDist = rc.fFar;
-			cb.reciprocalFarClipDist = 1.0f / rc.fFar;
+			cb.nearClipDist = viewInfo.nearClipPlane;
+			cb.farClipDist = viewInfo.farClipPlane;
+			cb.reciprocalFarClipDist = 1.0f / viewInfo.farClipPlane;
 
 			cb.cloudShadowAnimParams = PF.pCloudShadowAnimParams;
 
@@ -1478,8 +1468,8 @@ void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& cont
 			cb.screenSize = Vec4(fScreenWidth, fScreenHeight, 1.0f / fScreenWidth, 1.0f / fScreenHeight);
 
 			Vec3 vRT, vLT, vLB, vRB;
-			const bool bMirrorCull = (viewInfo.flags & CStandardGraphicsPipeline::SViewInfo::eFlags_MirrorCull) != 0;
-			SD3DPostEffectsUtils::GetFrustumCorners(vRT, vLT, vLB, vRB, rc, bMirrorCull);
+			const bool bMirrorCull = (viewInfo.flags & SRenderViewInfo::eFlags_MirrorCull) != 0;
+			SD3DPostEffectsUtils::GetFrustumCorners(vRT, vLT, vLB, vRB, *viewInfo.pCamera, bMirrorCull);
 			cb.frustumTL = Vec4(vLT.x, vLT.y, vLT.z, 0.0f);
 			cb.frustumTR = Vec4(vRT.x, vRT.y, vRT.z, 0.0f);
 			cb.frustumBL = Vec4(vLB.x, vLB.y, vLB.z, 0.0f);
@@ -1512,8 +1502,8 @@ void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& cont
 
 			cb.multiScatterAttenuation = cloudScatteringMulti.x;
 			cb.multiScatterPreservation = cloudScatteringMulti.y;
-			const f64 zn = rc.fNear;
-			const f64 zf = rc.fFar;
+			const f64 zn = viewInfo.nearClipPlane;
+			const f64 zf = viewInfo.farClipPlane;
 			cb.projRatio0 = static_cast<f32>(bReverseDepth ? zn / (zn - zf) : zf / (zf - zn));
 			cb.projRatio1 = static_cast<f32>(bReverseDepth ? zn / (zf - zn) : zn / (zn - zf));
 
@@ -1637,9 +1627,6 @@ void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& cont
 			const auto& viewInfo = viewInfos[i];
 			SReprojectionParam& cb = bufferData[i];
 
-			CRY_ASSERT(viewInfo.pRenderCamera);
-			const CRenderCamera& rc = *(viewInfo.pRenderCamera);
-
 			const int32 eyeIndex = context.bStereoMultiGPURendering ? i : curEye;
 
 			const Matrix44 matReproj = VCGetReprojectionMatrix(
@@ -1647,8 +1634,8 @@ void CVolumetricCloudsStage::UpdateCloudShaderParam(::VCCloudRenderContext& cont
 			  m_projMatrix[eyeIndex][previousFrameIndex],
 			  viewInfo.viewMatrix,
 			  viewInfo.projMatrix);
-			const f64 zn = rc.fNear;
-			const f64 zf = rc.fFar;
+			const f64 zn = viewInfo.nearClipPlane;
+			const f64 zf = viewInfo.farClipPlane;
 			const f32 projRatio0 = static_cast<f32>(bReverseDepth ? zn / (zn - zf) : zf / (zf - zn));
 			const f32 projRatio1 = static_cast<f32>(bReverseDepth ? zn / (zf - zn) : zn / (zn - zf));
 			const f32 fScreenWidth = static_cast<f32>(context.screenWidth);
@@ -1727,10 +1714,10 @@ bool CVolumetricCloudsStage::AreTexturesValid() const
 		bDownscaledRTs = bDownscaledRTs && CTexture::IsTextureExist(m_pCloudShadowTex);
 	}
 
-	return (CTexture::IsTextureExist(CTexture::s_ptexVolCloudShadow) && bDownscaledRTs);
+	return (CTexture::IsTextureExist(CRendererResources::s_ptexVolCloudShadow) && bDownscaledRTs);
 }
 
-void CVolumetricCloudsStage::BuildCloudBlockerList()
+void CVolumetricCloudsStage::GenerateCloudBlockerList()
 {
 	CRenderView* pRenderView = RenderView();
 	CRY_ASSERT(pRenderView);
@@ -1758,7 +1745,7 @@ void CVolumetricCloudsStage::BuildCloudBlockerList()
 	}
 }
 
-void CVolumetricCloudsStage::BuildCloudBlockerSSList()
+void CVolumetricCloudsStage::GenerateCloudBlockerSSList()
 {
 	CRenderView* pRenderView = RenderView();
 	CRY_ASSERT(pRenderView);

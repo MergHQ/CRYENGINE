@@ -7,9 +7,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef PARTICLECOMMON_H
-#define PARTICLECOMMON_H
-
 #pragma once
 
 #include <CryParticleSystem/IParticlesPfx2.h>
@@ -17,14 +14,14 @@
 
 // compile options
 #ifdef _DEBUG
-	#define CRY_DEBUG_PARTICLE_SYSTEM    // enable debugging on all particle source code
+	#define CRY_PFX2_DEBUG    // enable debugging on all particle source code
 #endif
 // #define CRY_PFX1_BAIL_UNSUPPORTED	// disable pfx1 features that not yet supported by pfx2 for precision profiling
 // #define CRY_PFX2_LOAD_PRIORITY		// when trying to load a pfx1 effect, try to load pfx2 effect with the same name first
 #define CRY_PFX2_PROFILE_DETAILS        // more in detail profile of pfx2. Individual features and sub update parts will appear here.
 // ~compile options
 
-#if defined(CRY_DEBUG_PARTICLE_SYSTEM) && CRY_PLATFORM_WINDOWS
+#if defined(CRY_PFX2_DEBUG) && CRY_PLATFORM_WINDOWS
 	#pragma optimize("", off)
 	#pragma inline_depth(0)
 	#undef ILINE
@@ -38,14 +35,14 @@
 	#define CRY_PFX2_ASSERT(cond)
 #endif
 
-#ifdef CRY_DEBUG_PARTICLE_SYSTEM
-#	define CRY_PFX2_DEBUG_ONLY_ASSERT(cond) CRY_PFX2_ASSERT(cond);
+#ifdef CRY_PFX2_DEBUG
+#	define CRY_PFX2_DEBUG_ASSERT(cond) CRY_PFX2_ASSERT(cond);
 #else
-#	define CRY_PFX2_DEBUG_ONLY_ASSERT(cond)
+#	define CRY_PFX2_DEBUG_ASSERT(cond)
 #endif
 
 #ifdef CRY_PFX2_PROFILE_DETAILS
-	#define CRY_PFX2_PROFILE_DETAIL FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	#define CRY_PFX2_PROFILE_DETAIL CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 #else
 	#define CRY_PFX2_PROFILE_DETAIL
 #endif
@@ -68,7 +65,7 @@ namespace pfx2
 {
 
 const uint gMinimumVersion = 1;
-const uint gCurrentVersion = 9;
+const uint gCurrentVersion = 11;
 
 class CParticleSystem;
 class CParticleEffect;
@@ -92,9 +89,8 @@ template<typename T> using THeapArray  = TParticleHeap::Array<T, uint, CRY_PFX2_
 using TParticleIdArray                 = THeapArray<TParticleId>;
 using TFloatArray                      = THeapArray<float>;
 
-template<typename T> using TDynArray   = DynArray<T, uint>;
-template<typename T> using TVarArray   = Array<T, uint>;
-template<typename T> using TConstArray = Array<const T, uint>;
+template<typename T> using TDynArray   = FastDynArray<T, uint, NAlloc::ModuleAlloc>;
+template<typename T> using TSmartArray = TDynArray<_smart_ptr<T>>;
 
 
 #ifdef CRY_PFX2_USE_SSE
@@ -110,7 +106,6 @@ public:
 	friend bool                       operator>=(const TParticleGroupId a, const TParticleGroupId b) { return a.id >= b.id; }
 	friend bool                       operator==(const TParticleGroupId a, const TParticleGroupId b) { return a.id == b.id; }
 	friend bool                       operator!=(const TParticleGroupId a, const TParticleGroupId b) { return a.id != b.id; }
-	TParticleGroupId&                 operator++()                                                   { ++id; return *this; }
 	TParticleGroupId                  operator++(int)                                                { id++; return *this; }
 	TParticleGroupId&                 operator+=(int stride)                                         { id += stride; return *this; }
 	template<class type> friend type* operator+(type* ptr, TParticleGroupId id)                      { return ptr + id.id; }
@@ -132,6 +127,7 @@ typedef TParticleId TParticleGroupId;
 
 #define CRY_PFX2_PARTICLESGROUP_LOWER(id) ((id) & ~((CRY_PFX2_PARTICLESGROUP_STRIDE - 1)))
 #define CRY_PFX2_PARTICLESGROUP_UPPER(id) ((id) | ((CRY_PFX2_PARTICLESGROUP_STRIDE - 1)))
+#define CRY_PFX2_PARTICLESGROUP_ALIGN(id) Align(id, CRY_PFX2_PARTICLESGROUP_STRIDE)
 
 
 struct SRenderContext
@@ -152,6 +148,8 @@ struct SRenderContext
 template<typename TIndex, int nStride = 1>
 struct TIndexRange
 {
+	using TInt = decltype(+TIndex());
+
 	struct iterator
 	{
 		TIndex i;
@@ -165,7 +163,7 @@ struct TIndexRange
 
 	iterator begin() const { return iterator(m_begin); }
 	iterator end() const   { return iterator(m_end); }
-	TIndex size() const    { return m_end - m_begin; }
+	TInt size() const      { return +m_end - +m_begin; }
 
 	explicit TIndexRange(TIndex b = 0, TIndex e = 0)
 		: m_begin(+b & ~(nStride - 1))
@@ -174,7 +172,7 @@ struct TIndexRange
 
 	template<typename TIndex2, int nStride2>
 	TIndexRange(TIndexRange<TIndex2, nStride2> range)
-		: TIndexRange(range.m_begin, range.m_end) {}
+		: TIndexRange(+range.m_begin, +range.m_end) {}
 };
 
 typedef TIndexRange<TParticleId> SUpdateRange;
@@ -183,13 +181,15 @@ typedef TIndexRange<TParticleGroupId, CRY_PFX2_PARTICLESGROUP_STRIDE> SGroupRang
 enum EFeatureType
 {
 	EFT_Generic = 0x0,        // this feature does nothing in particular. Can have many of this per component.
-	EFT_Spawn   = BIT(0),     // this feature is capable of spawning particles. At least one is needed in a component.
-	EFT_Size    = BIT(2),     // this feature changes particles sizes. At least one is required per component.
-	EFT_Life    = BIT(3),     // this feature changes particles life time. At least one is required per component.
-	EFT_Render  = BIT(4),     // this feature renders particles. Each component can only have either none or just one of this.
-	EFT_Motion  = BIT(5),     // this feature moved particles around. Each component can only have either none or just one of this.
+	EFT_Spawn   = BIT(0),     // this feature spawns particles. At least one is needed in a component.
+	EFT_Size    = BIT(1),     // this feature changes particles sizes. At least one is required per component.
+	EFT_Life    = BIT(2),     // this feature changes particles life time. At least one is required per component.
+	EFT_Render  = BIT(3),     // this feature renders particles. Each component can only have either none or just one of this.
+	EFT_Motion  = BIT(4),     // this feature moves particles around. Each component can only have either none or just one of this.
+	EFT_Child   = BIT(5),     // this feature spawns instances from parent particles. At least one is needed for child components
+
+	EFT_END     = BIT(6)
 };
 
 }
 
-#endif // PARTICLECOMMON_H

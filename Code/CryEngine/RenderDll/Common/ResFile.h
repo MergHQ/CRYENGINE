@@ -44,35 +44,60 @@ struct SFileResHeader
 struct SDirEntryOpen
 {
 	CCryNameTSCRC Name;
-	uint32 curOffset;
-	void*  pData;
-	int nSize;
-
-	SDirEntryOpen()
-	{
-		pData = NULL;
-		nSize = 0;
-	}
+	uint32        curOffset;
+	void*         pData = nullptr;
+	int           nSize = 0;
 
 	void GetMemoryUsage(ICrySizer* pSizer) const {}
 };
 
 // Internal file entry
-struct SDirEntry
+class CDirEntry
 {
-	CCryNameTSCRC Name;
-	uint32 size  : 24;
-	uint32 flags : 8;        // RF_
-	int32  offset;
+	friend class CResFile;
 
-	SDirEntry()
-	{
-		size   = 0;
-		flags  = 0;
-		offset = 0;
-	}
+private:
+	CCryNameTSCRC Name;
+	uint32        size  : 24;
+	uint32        flags : 8;        // RF_
+	int32         offset = 0;
+
+public:
+	CDirEntry() : size(0), flags(0) {}
+	CDirEntry(CCryNameTSCRC Name, uint32 size, uint32 flags = 0) : Name(Name), size(size), flags(flags) {}
+	CDirEntry(CCryNameTSCRC Name, uint32 size, uint32 offset, uint32 flags) : Name(Name), size(size), flags(flags), offset(offset) {}
+
+	CDirEntry(CDirEntry&&) = default;
+	CDirEntry &operator=(CDirEntry&&) = default;
+	CDirEntry(const CDirEntry&) = default;
+	CDirEntry &operator=(const CDirEntry&) = default;
 
 	void GetMemoryUsage(ICrySizer* pSizer) const {}
+
+	// IsValid() returns true if entry content was flushed
+	bool IsValid() const { return size > 0 && offset >= 0 && offset < 0x10000000; }
+
+	const CCryNameTSCRC& GetName() const { return Name; }
+
+	uint32 GetSize() const   { return size; }
+	uint32 GetFlags() const  { return flags; }
+	// Only meaningful for valid entries
+	uint32 GetOffset() const 
+	{
+		if (IsValid())
+			return static_cast<uint32>(offset);
+		return 0;
+	}
+
+	void MarkNotSaved()
+	{
+		offset = -abs(offset);
+		flags |= RF_NOTSAVED;
+	}
+	void MarkTemp()
+	{
+		flags |= RF_TEMPDATA;
+	}
 
 	AUTO_STRUCT_INFO;
 };
@@ -104,7 +129,7 @@ struct SDirEntryRef
 #define RO_SORT_ALPHA_DESC 0x10
 
 #define MAX_OPEN_RESFILES 64
-typedef std::vector<SDirEntry> ResDir;
+typedef std::vector<CDirEntry> ResDir;
 typedef ResDir::iterator ResDirIt;
 
 typedef std::vector<SDirEntryRef> ResDirRef;
@@ -238,45 +263,45 @@ public:
 
 	int mfGetNumFiles() { return m_Dir.size(); }
 
-	byte* mfFileReadCompressed(SDirEntry* de, uint32& nSizeDecomp, uint32& nSizeComp);
+	byte* mfFileReadCompressed(CDirEntry* de, uint32& nSizeDecomp, uint32& nSizeComp);
 
-	int mfFileRead(SDirEntry* de);
+	int mfFileRead(CDirEntry* de);
 	int mfFileRead(const char* name);
 	int mfFileRead(CCryNameTSCRC name);
 
 	int mfFileWrite(CCryNameTSCRC name, void* data);
 
-	void mfFileRead2(SDirEntry* de, int size, void* buf);
+	void mfFileRead2(CDirEntry* de, int size, void* buf);
 	void mfFileRead2(CCryNameTSCRC name, int size, void* buf);
 
-	void* mfFileGetBuf(SDirEntry* de);
+	void* mfFileGetBuf(CDirEntry* de);
 	void* mfFileGetBuf(CCryNameTSCRC name);
 
-	int mfFileSeek(SDirEntry* de, int offs, int type);
+	int mfFileSeek(CDirEntry* de, int offs, int type);
 	int mfFileSeek(CCryNameTSCRC name, int offs, int type);
 	int mfFileSeek(char* name, int offs, int type);
 
-	int mfFileLength(SDirEntry* de);
+	int mfFileLength(CDirEntry* de);
 	int mfFileLength(CCryNameTSCRC name);
 	int mfFileLength(char* name);
 
-	int mfFileAdd(SDirEntry* de);
+	int mfFileAdd(CDirEntry* de);
 
 	bool mfIsDirty()        { return m_bDirty; }
 	bool mfIsDirStreaming() { return m_bDirStreaming; }
 
-	//int mfFileDelete(SDirEntry *de);
+	//int mfFileDelete(CDirEntry *de);
 	//int mfFileDelete(CCryNameTSCRC name);
 	//int mfFileDelete(char* name);
 
 	bool mfFileExist(CCryNameTSCRC name);
 	bool mfFileExist(const char* name);
 
-	int            mfFileClose(SDirEntry* de);
-	bool           mfCloseEntry(SDirEntry* de, bool bEraseOpenEntry = true);
-	SDirEntryOpen* mfOpenEntry(SDirEntry* de);
-	SDirEntryOpen* mfGetOpenEntry(SDirEntry* de);
-	SDirEntry*     mfGetEntry(CCryNameTSCRC name, bool* bAsync = NULL);
+	int            mfFileClose(const CCryNameTSCRC &Name, uint32 flags);
+	bool           mfCloseEntry(const CCryNameTSCRC &Name, uint32 flags, bool bEraseOpenEntry = true);
+	SDirEntryOpen* mfOpenEntry(const CCryNameTSCRC &Name);
+	SDirEntryOpen* mfGetOpenEntry(const CCryNameTSCRC &Name);
+	CDirEntry*     mfGetEntry(const CCryNameTSCRC &name, bool* bAsync = NULL);
 	ResDir*        mfGetDirectory();
 
 	FILE* mfGetHandle() { return m_handle; }
@@ -286,6 +311,9 @@ public:
 
 	int  Size();
 	void GetMemoryUsage(ICrySizer* pSizer) const;
+
+	bool RequiresSwapEndianOnRead() const { return m_bSwapEndianRead; }
+	bool RequiresSwapEndianOnWrite() const { return m_bSwapEndianWrite; }
 
 	static void Tick();
 	static bool IsStreaming();

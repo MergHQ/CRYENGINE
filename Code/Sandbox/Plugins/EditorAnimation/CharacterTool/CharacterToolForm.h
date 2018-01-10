@@ -11,7 +11,6 @@ class QViewport;
 class QMainWindow;
 class QSplitter;
 class QToolButton;
-class QTreeView;
 class QPropertyTree;
 class QBoxLayout;
 class QToolBar;
@@ -99,6 +98,7 @@ public slots:
 	void                OnCharacterLoaded();
 	void                OnPanelDestroyed(QObject* obj);
 	void				OnFocusChanged(QWidget *old, QWidget *now);
+	void                OnClearProxiesButton();
 
 	void                OnAnimEventPresetPanelPutEvent();
 
@@ -106,6 +106,8 @@ public slots:
 
 	IViewportMode*      ViewportMode() const { return m_mode; }
 	PlaybackPanel*      GetPlaybackPanel()   { return m_playbackPanel; }
+	bool 								ProxyMakingMode()    { return m_createProxyModeButton->isChecked(); }
+	PropertiesPanel*    GetPropertiesPanel() { return m_propertiesPanel; }
 protected:
 	bool                event(QEvent* ev) override;
 	void                closeEvent(QCloseEvent* ev);
@@ -147,9 +149,11 @@ private:
 	SceneParametersPanel*                      m_sceneParametersPanel;
 	DisplayParametersPanel*                    m_displayParametersPanel;
 	AnimEventPresetPanel*                      m_animEventPresetPanel;
-	QTreeView*                                 m_characterTree;
 	QToolBar*                                  m_modeToolBar;
 	QToolButton*                               m_displayParametersButton;
+	QToolButton* 															 m_createProxyModeButton;
+	QToolButton* 															 m_clearProxiesButton;
+	QToolButton*                               m_testRagdollButton;
 	TransformPanel*                            m_transformPanel;
 
 	QMenu*                                     m_menuView;

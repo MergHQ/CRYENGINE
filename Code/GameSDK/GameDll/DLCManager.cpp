@@ -95,7 +95,10 @@ CDLCManager::CDLCManager()
 
 CDLCManager::~CDLCManager()
 {
-	gEnv->pSystem->GetPlatformOS()->RemoveListener(this);
+	if (IPlatformOS* pPlatformOS = gEnv->pSystem->GetPlatformOS())
+	{
+		gEnv->pSystem->GetPlatformOS()->RemoveListener(this);
+	}
 }
 
 void CDLCManager::LoadDownloadableContent( uint32 userIdOveride /*= INVALID_CONTROLLER_INDEX*/ )

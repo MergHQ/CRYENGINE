@@ -47,12 +47,6 @@ public:
 	virtual bool                  PrepareNavigateSmartObject(CSmartObject* pSmartObject, OffMeshLink_SmartObject* pSmartObjectLink) override;
 	virtual void                  InvalidateSmartObjectLink(CSmartObject* pSmartObject, OffMeshLink_SmartObject* pSmartObjectLink) override;
 
-	virtual void                  SetInCover(const bool inCover) override;
-	virtual void                  UpdateCoverLocations() override;
-	virtual void                  InstallInLowCover(const bool inCover) override;
-	virtual void                  SetupCoverInformation() override;
-	virtual bool                  IsInCover() const override;
-
 	virtual bool                  GetDesignedPath(SShape& pathShape) const override;
 	virtual void                  CancelRequestedPath() override;
 	virtual void                  ConfigurePathfollower(const MovementStyle& style) override;

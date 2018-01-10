@@ -57,7 +57,7 @@ void CBoidsProxy::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBoidsProxy::ProcessEvent(SEntityEvent &event)
+void CBoidsProxy::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event) {
 	case ENTITY_EVENT_XFORM:
@@ -134,15 +134,11 @@ void CBoidsProxy::SetFlock(CFlock *pFlock)
 
 	pArea->SetFlags(pArea->GetFlags() & IEntityAreaComponent::FLAG_NOT_SERIALIZE);
 	pArea->SetSphere(Vec3(0, 0, 0), fMaxDist);
-	if (gEnv->pEntitySystem->EntitiesUseGUIDs())
-		pArea->AddEntity(m_pEntity->GetGuid());
-	else
-		pArea->AddEntity(m_pEntity->GetId()); // add itself.
-
+	pArea->AddEntity(m_pEntity->GetId()); // add itself.
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBoidsProxy::OnTrigger(bool bEnter, SEntityEvent &event)
+void CBoidsProxy::OnTrigger(bool bEnter, const SEntityEvent &event)
 {
 	EntityId whoId = (EntityId)event.nParam[0];
 	IEntity *pEntity = gEnv->pEntitySystem->GetEntity(whoId);
@@ -189,7 +185,7 @@ void CBoidObjectProxy::Initialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBoidObjectProxy::ProcessEvent(SEntityEvent &event)
+void CBoidObjectProxy::ProcessEvent(const SEntityEvent& event)
 {
 	if (m_pBoid)
 		m_pBoid->OnEntityEvent(event);

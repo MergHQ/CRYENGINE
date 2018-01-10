@@ -42,8 +42,8 @@ namespace CryEngine
 			_info = null;
 			_info = new AudioRequestInfo(requestInfo, true); // requestInfo created natively , C++ will handle destruction so only a copy is needed
 			uint ctrlId = _info.ControlId;
-			uint requestResult = _info.RequestResult;
-			uint enumFlagsType = _info.FlagsType;
+			var requestResult = _info.RequestResult;
+			var enumFlagsType = _info.SystemEvents;
 			
 			AudioStateType audioState = AudioStateType.Unknown;
 			switch ((ESystemEvents)enumFlagsType)
@@ -59,7 +59,7 @@ namespace CryEngine
 						break;
 					}
 			}
-			string triggerName = AudioManager.GetTriggerName(ctrlId);
+			string triggerName = GetTriggerName(ctrlId);
 			Audio.ManagedAudioStateListenerDelegate audioStateListenerDelegate = AudioManager.GetAudioStateListener(triggerName);
 			audioStateListenerDelegate?.Invoke(audioState, triggerName);
 		}

@@ -37,7 +37,8 @@ public:
 public:
 	CSceneForwardStage();
 
-	virtual void Init() override;
+	void Init() final;
+	void Update() final;
 
 	bool         CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 	bool         CreatePipelineState(const SGraphicsPipelineStateDescription& desc,
@@ -45,20 +46,23 @@ public:
 	                                 EPass passId = ePass_Forward,
 	                                 std::function<void(CDeviceGraphicsPSODesc& psoDesc, const SGraphicsPipelineStateDescription& desc)> customState = nullptr);
 
-	void         Execute_Opaque();
-	void         Execute_TransparentBelowWater();
-	void         Execute_TransparentAboveWater();
-	void         Execute_AfterPostProcess();
-	void         Execute_Minimum();
+	void         ExecuteOpaque();
+	void         ExecuteTransparentBelowWater();
+	void         ExecuteTransparentAboveWater();
+	void         ExecuteTransparentDepthFixup();
+	void         ExecuteTransparentLoRes(int subRes);
+	void         ExecuteAfterPostProcessHDR();
+	void         ExecuteAfterPostProcessLDR();
+	void         ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex);
 
 	void         SetSkyRE(CRESky* pSkyRE, CREHDRSky* pHDRSkyRE);
 
 private:
-	bool PreparePerPassResources(CRenderView* pRenderView, bool bOnInit, bool bShadowMask = true, bool bFog = true);
-	void Execute_Transparent(bool bBelowWater);
+	bool PreparePerPassResources(bool bOnInit, bool bShadowMask = true, bool bFog = true);
+	void ExecuteTransparent(bool bBelowWater);
 
-	void SetupHDRSkyParameters();
-	void Execute_SkyPass();
+	void SetHDRSkyParameters();
+	void ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex);
 
 
 private:
@@ -82,6 +86,8 @@ private:
 	CSceneRenderPass         m_forwardOverlayPass;
 	CSceneRenderPass         m_forwardTransparentBWPass;
 	CSceneRenderPass         m_forwardTransparentAWPass;
+	CSceneRenderPass         m_forwardTransparentLoResPass;
+	CSceneRenderPass         m_forwardHDRPass;
 	CSceneRenderPass         m_forwardLDRPass;
 	CSceneRenderPass         m_forwardEyeOverlayPass;
 
@@ -92,12 +98,15 @@ private:
 	CStretchRectPass         m_copySceneTargetBWPass;
 	CStretchRectPass         m_copySceneTargetAWPass;
 
-	CFullscreenPass          m_skyPass;
-	CRenderPrimitive         m_starsPrimitive;
-	CPrimitiveRenderPass     m_starsPass;
-	CRESky*                  m_pSkyRE = nullptr;
-	CREHDRSky*               m_pHDRSkyRE = nullptr;
-	Vec4                     m_paramMoonTexGenRight;
-	Vec4                     m_paramMoonTexGenUp;
-	Vec4                     m_paramMoonDirSize;
+	CFullscreenPass           m_depthFixupPass;
+	CFullscreenPass           m_depthCopyPass;
+	CNearestDepthUpsamplePass m_depthUpscalePass;
+	CFullscreenPass           m_skyPass;
+	CRenderPrimitive          m_starsPrimitive;
+	CPrimitiveRenderPass      m_starsPass;
+	CRESky*                   m_pSkyRE = nullptr;
+	CREHDRSky*                m_pHDRSkyRE = nullptr;
+	Vec4                      m_paramMoonTexGenRight;
+	Vec4                      m_paramMoonTexGenUp;
+	Vec4                      m_paramMoonDirSize;
 };

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioCVars.h"
@@ -24,15 +24,13 @@ namespace CryAudio
 {
 // Define global objects.
 CCVars g_cvars;
-CLogger g_logger;
-CTimeValue g_lastMainThreadFrameStartTime;
 
 //////////////////////////////////////////////////////////////////////////
-class CSystemEventListner_Sound : public ISystemEventListener
+class CSystemEventListener_Sound : public ISystemEventListener
 {
 public:
 
-	CSystemEventListner_Sound() = default;
+	CSystemEventListener_Sound() = default;
 
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override
 	{
@@ -86,7 +84,7 @@ private:
 	SRequestUserData const m_requestUserData;
 };
 
-static CSystemEventListner_Sound g_system_event_listener_sound;
+static CSystemEventListener_Sound g_system_event_listener_sound;
 
 ///////////////////////////////////////////////////////////////////////////
 bool CreateAudioSystem(SSystemGlobalEnvironment& env)
@@ -104,10 +102,6 @@ bool CreateAudioSystem(SSystemGlobalEnvironment& env)
 
 		env.pAudioSystem = static_cast<IAudioSystem*>(pSystem);
 		bSuccess = pSystem->Initialize();
-	}
-	else
-	{
-		g_logger.Log(ELogType::Error, "Could not create an instance of CAudioSystem! Keeping the default AudioSystem!\n");
 	}
 
 	return bSuccess;
@@ -148,12 +142,7 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 	CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_CryAudioSystem, "EngineModule_CryAudioSystem", "ec73cf43-62ca-4a7f-8b45-1076dc6fdb8b"_cry_guid)
 
 	CEngineModule_CryAudioSystem();
-
-	virtual ~CEngineModule_CryAudioSystem() override
-	{
-		SAFE_RELEASE(gEnv->pAudioSystem);
-		gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str());
-	}
+	virtual ~CEngineModule_CryAudioSystem() override;
 
 	virtual const char* GetName() const override     { return "CryAudioSystem"; }
 	virtual const char* GetCategory() const override { return "CryEngine"; }
@@ -195,14 +184,10 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 				static_cast<CSystem*>(env.pAudioSystem)->SetImpl(nullptr, data);
 			}
 
-			env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_sound, "CSystemEventListner_Sound");
+			env.pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_sound, "CSystemEventListener_Sound");
 
 			// As soon as the audio system was created we consider this a success (even if the NULL implementation was used)
 			bSuccess = true;
-		}
-		else
-		{
-			g_logger.Log(ELogType::Error, "Could not create AudioSystem!");
 		}
 
 		return bSuccess;
@@ -245,7 +230,8 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 			if (!levelName.empty() && levelName.compareNoCase("Untitled") != 0)
 			{
 				string levelPath(gEnv->pAudioSystem->GetConfigPath());
-				levelPath += "levels" CRY_NATIVE_PATH_SEPSTR;
+				levelPath += s_szLevelsFolderName;
+				levelPath += CRY_NATIVE_PATH_SEPSTR;
 				levelPath += levelName;
 
 				// Needs to be blocking so data is available for next preloading request!
@@ -298,8 +284,17 @@ CEngineModule_CryAudioSystem::CEngineModule_CryAudioSystem()
 	                                          "Usage: s_AudioImplName <name of the library without extension>\n"
 	                                          "Default: CryAudioImplSDLMixer\n",
 	                                          CEngineModule_CryAudioSystem::OnAudioImplChanged);
+}
 
-	g_cvars.RegisterVariables();
+//////////////////////////////////////////////////////////////////////////
+CEngineModule_CryAudioSystem::~CEngineModule_CryAudioSystem()
+{
+	SAFE_RELEASE(gEnv->pAudioSystem);
+
+	if (gEnv->pSystem != nullptr)
+	{
+		gEnv->pSystem->UnloadEngineModule(s_currentModuleName.c_str());
+	}
 }
 } // namespace CryAudio
 #include <CryCore/CrtDebugStats.h>

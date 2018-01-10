@@ -66,6 +66,11 @@ void CGameClientNub::FailedActiveConnect(EDisconnectionCause cause, const char* 
 	CCryAction::GetCryAction()->OnActionEvent(SActionEvent(eAE_connectFailed, int(cause), description));
 }
 
+INetChannel* CGameClientNub::GetNetChannel()
+{
+	return m_pClientChannel != nullptr ? m_pClientChannel->GetNetChannel() : nullptr; 
+}
+
 void CGameClientNub::Disconnect(EDisconnectionCause cause, const char* msg)
 {
 	if (m_pClientChannel)

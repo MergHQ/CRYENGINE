@@ -27,7 +27,7 @@ void CryAssertTrace(const char* szFormat, ...)
 		return;
 	}
 
-	if (!gEnv->bIgnoreAllAsserts || gEnv->bTesting)
+	if (!gEnv->ignoreAllAsserts || gEnv->bTesting)
 	{
 		if (szFormat == NULL)
 		{
@@ -61,7 +61,7 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 	static char gs_command_str[4096];
 	static CryLockT<CRYLOCK_RECURSIVE> lock;
 
-	if (!gEnv->bNoAssertDialog && !gEnv->bIgnoreAllAsserts)
+	if (!gEnv->bUnattendedMode && !gEnv->ignoreAllAsserts)
 	{
 
 		CryAutoLock<CryLockT<CRYLOCK_RECURSIVE>> lk(lock);
@@ -111,7 +111,7 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 			*pIgnore = true;
 			break;
 		case 2:
-			gEnv->bIgnoreAllAsserts = true;
+			gEnv->ignoreAllAsserts = true;
 			break;
 		case 3:
 			return true;

@@ -14,7 +14,7 @@
 #include <Controls/EditorDialog.h>
 #include <IPostRenderer.h>
 
-#include <CryUQS/Interfaces/InterfacesIncludes.h>
+#include <CryUQS/Shared/SharedIncludes.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
 
 struct SQuery;
@@ -72,6 +72,7 @@ private:
 	void OnTreeViewCurrentChanged(const QModelIndex &current, const QModelIndex &previous);
 
 private:
+	string                           m_windowTitle;
 	UQS::Core::IQueryHistoryManager* m_pQueryHistoryManager;
 	SQuery*                          m_pFreshlyAddedOrUpdatedQuery;
 	CHistoricQueryTreeView*          m_pTreeView;

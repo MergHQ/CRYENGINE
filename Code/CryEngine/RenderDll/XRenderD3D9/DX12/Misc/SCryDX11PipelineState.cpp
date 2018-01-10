@@ -7,11 +7,11 @@
 #include "DX12/API/DX12RootSignature.hpp"
 #include "DX12/Device/CCryDX12DeviceContext.hpp"
 
-static D3D12_SHADER_BYTECODE g_EmptyShader = { NULL, 0 };
 
 const D3D12_SHADER_BYTECODE& SCryDX11ShaderStageState::GetD3D12ShaderBytecode() const
 {
-	return Shader.m_Value ? Shader.m_Value->GetD3D12ShaderBytecode() : g_EmptyShader;
+	static D3D12_SHADER_BYTECODE emptyShader = { nullptr, 0 };
+	return Shader.m_Value ? Shader.m_Value->GetD3D12ShaderBytecode() : emptyShader;
 }
 
 //---------------------------------------------------------------------------------------------------------------------

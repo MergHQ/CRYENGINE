@@ -98,7 +98,7 @@ static void RegisterFunctions(IEnvRegistrar& registrar)
 		scope.Register(pFunction);
 	}
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&NotEqual, "v"_cry_guid, "NotEqual");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&NotEqual, "{C40AFA65-409B-4C69-922E-88F119DE18F4}"_cry_guid, "NotEqual");
 		pFunction->SetDescription("Checks whether A and B are not equal");
 		pFunction->BindInput(1, 'a', "A");
 		pFunction->BindInput(2, 'b', "B");

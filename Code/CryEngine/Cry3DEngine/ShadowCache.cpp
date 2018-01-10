@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "ShadowCache.h"
@@ -64,7 +64,7 @@ void ShadowCache::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod, int nFir
 	}
 
 	// finally init frustum
-	InitCachedFrustum(pFr, nUpdateStrategy, nLod, nTexRes, m_pLightEntity->m_light.m_Origin, projectionBoundsLS, passInfo);
+	InitCachedFrustum(pFr, nUpdateStrategy, nLod, nTexRes, m_pLightEntity->GetLightProperties().m_Origin, projectionBoundsLS, passInfo);
 	pFr->m_eFrustumType = ShadowMapFrustum::e_GsmCached;
 	pFr->bBlendFrustum = GetCVars()->e_ShadowsBlendCascades > 0;
 	pFr->fBlendVal = pFr->bBlendFrustum ? GetCVars()->e_ShadowsBlendCascadesVal : 1.0f;
@@ -84,18 +84,20 @@ void ShadowCache::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod, int nFir
 
 void ShadowCache::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::ShadowCacheData::eUpdateStrategy nUpdateStrategy, int nLod, int nTexSize, const Vec3& vLightPos, const AABB& projectionBoundsLS, const SRenderingPassInfo& passInfo)
 {
+	const auto frameID = passInfo.GetFrameID();
+
 	pFr->ResetCasterLists();
 	pFr->nTexSize = nTexSize;
 
 	if (nUpdateStrategy != ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate)
 	{
 		pFr->pShadowCacheData->Reset();
-		pFr->nShadowGenMask = 1;
+		pFr->GetSideSampleMask().store(1);
 
-		assert(m_pLightEntity->m_light.m_pOwner);
-		pFr->pLightOwner = m_pLightEntity->m_light.m_pOwner;
-		pFr->m_Flags = m_pLightEntity->m_light.m_Flags;
-		pFr->nUpdateFrameId = passInfo.GetFrameID();
+		assert(m_pLightEntity->GetLightProperties().m_pOwner);
+		pFr->pLightOwner = m_pLightEntity->GetLightProperties().m_pOwner;
+		pFr->m_Flags = m_pLightEntity->GetLightProperties().m_Flags;
+		pFr->nUpdateFrameId = frameID;
 		pFr->nShadowMapLod = nLod;
 		pFr->vProjTranslation = pFr->aabbCasters.GetCenter();
 		pFr->vLightSrcRelPos = vLightPos - pFr->aabbCasters.GetCenter();
@@ -104,7 +106,7 @@ void ShadowCache::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::
 		pFr->fRendNear = pFr->fNearDist;
 		pFr->fFOV = (float)RAD2DEG(atan_tpl(0.5 * projectionBoundsLS.GetSize().y / pFr->fNearDist)) * 2.f;
 		pFr->fProjRatio = projectionBoundsLS.GetSize().x / projectionBoundsLS.GetSize().y;
-		pFr->fRadius = m_pLightEntity->m_light.m_fRadius;
+		pFr->fRadius = m_pLightEntity->GetLightProperties().m_fRadius;
 		pFr->fRendNear = pFr->fNearDist;
 		pFr->fFrustrumSize = 1.0f / (Get3DEngine()->m_fGsmRange * pFr->aabbCasters.GetRadius() * 2.0f);
 
@@ -119,14 +121,14 @@ void ShadowCache::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::
 	                             ? MAX_RENDERNODES_PER_FRAME* GetRenderer()->GetActiveGPUCount()
 	                             : std::numeric_limits<int>::max();
 
-	m_pObjManager->MakeStaticShadowCastersList(((CLightEntity*)m_pLightEntity->m_light.m_pOwner)->m_pNotCaster, pFr,
+	m_pObjManager->MakeStaticShadowCastersList(((CLightEntity*)m_pLightEntity->GetLightProperties().m_pOwner)->GetCastingException(), pFr,
 	                                           bUseCastersHull ? &m_pLightEntity->GetCastersHull() : nullptr,
 	                                           bExcludeDynamicDistanceShadows ? ERF_DYNAMIC_DISTANCESHADOWS : 0, maxNodesPerFrame, passInfo);
 	AddTerrainCastersToFrustum(pFr, passInfo);
 
 	pFr->pShadowCacheData->mProcessedCasters.insert(pFr->castersList.begin(), pFr->castersList.end());
 	pFr->pShadowCacheData->mProcessedCasters.insert(pFr->jobExecutedCastersList.begin(), pFr->jobExecutedCastersList.end());
-	pFr->RequestUpdate();
+	pFr->Invalidate();
 	pFr->bIncrementalUpdate = nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate && !pFr->pShadowCacheData->mProcessedCasters.empty();
 }
 
@@ -168,7 +170,7 @@ void ShadowCache::InitHeightMapAOFrustum(ShadowMapFrustumPtr& pFr, int nLod, con
 		Matrix34 topDownView(IDENTITY);
 		topDownView.m03 = -passInfo.GetCamera().GetPosition().x;
 		topDownView.m13 = -passInfo.GetCamera().GetPosition().y;
-		topDownView.m23 = -passInfo.GetCamera().GetPosition().z - m_pLightEntity->m_light.m_Origin.GetLength();
+		topDownView.m23 = -passInfo.GetCamera().GetPosition().z - m_pLightEntity->GetLightProperties().m_Origin.GetLength();
 
 		GetCasterBox(pFr->aabbCasters, projectionBoundsLS, pHeightMapAORange->GetFVal() / 2.0f, topDownView, passInfo);
 
@@ -188,12 +190,12 @@ void ShadowCache::InitHeightMapAOFrustum(ShadowMapFrustumPtr& pFr, int nLod, con
 		pFr->mLightViewMatrix.SetIdentity();
 		pFr->mLightViewMatrix.m30 = -pFr->aabbCasters.GetCenter().x;
 		pFr->mLightViewMatrix.m31 = -pFr->aabbCasters.GetCenter().y;
-		pFr->mLightViewMatrix.m32 = -pFr->aabbCasters.GetCenter().z - m_pLightEntity->m_light.m_Origin.GetLength();
+		pFr->mLightViewMatrix.m32 = -pFr->aabbCasters.GetCenter().z - m_pLightEntity->GetLightProperties().m_Origin.GetLength();
 
 		mathMatrixOrtho(&pFr->mLightProjMatrix, projectionBoundsLS.GetSize().x, projectionBoundsLS.GetSize().y, -projectionBoundsLS.max.z, -projectionBoundsLS.min.z);
 	}
 
-	const Vec3 lightPos = pFr->aabbCasters.GetCenter() + Vec3(0, 0, 1) * m_pLightEntity->m_light.m_Origin.GetLength();
+	const Vec3 lightPos = pFr->aabbCasters.GetCenter() + Vec3(0, 0, 1) * m_pLightEntity->GetLightProperties().m_Origin.GetLength();
 
 	// finally init frustum
 	const int nTexRes = (int)clamp_tpl(pHeightMapAORes->GetFVal(), 0.f, 16384.f);
@@ -209,22 +211,25 @@ void ShadowCache::GetCasterBox(AABB& BBoxWS, AABB& BBoxLS, float fRadius, const 
 	BBoxLS = AABB(matView.TransformPoint(passInfo.GetCamera().GetPosition()), fRadius);
 
 	// try to get tighter near/far plane from casters
-	AABB casterBoxLS(AABB::RESET);
-	for (int nSID = 0; nSID < Get3DEngine()->m_pObjectsTree.Count(); nSID++)
-	{
-		if (Get3DEngine()->IsSegmentSafeToUse(nSID))
-			casterBoxLS.Add(Get3DEngine()->m_pObjectsTree[nSID]->GetShadowCastersBox(&BBoxWS, &matView));
-	}
+	AABB casterBoxLS = Get3DEngine()->m_pObjectsTree->GetShadowCastersBox(&BBoxWS, &matView);
 
 	if (CVisAreaManager* pVisAreaManager = GetVisAreaManager())
 	{
 		for (int i = 0; i < pVisAreaManager->m_lstVisAreas.Count(); ++i)
-			if (pVisAreaManager->m_lstVisAreas[i] && pVisAreaManager->m_lstVisAreas[i]->m_pObjectsTree)
-				casterBoxLS.Add(pVisAreaManager->m_lstVisAreas[i]->m_pObjectsTree->GetShadowCastersBox(&BBoxWS, &matView));
+		{
+			if (pVisAreaManager->m_lstVisAreas[i] && pVisAreaManager->m_lstVisAreas[i]->IsObjectsTreeValid())
+			{
+				casterBoxLS.Add(pVisAreaManager->m_lstVisAreas[i]->GetObjectsTree()->GetShadowCastersBox(&BBoxWS, &matView));
+			}
+		}
 
 		for (int i = 0; i < pVisAreaManager->m_lstPortals.Count(); ++i)
-			if (pVisAreaManager->m_lstPortals[i] && pVisAreaManager->m_lstPortals[i]->m_pObjectsTree)
-				casterBoxLS.Add(pVisAreaManager->m_lstPortals[i]->m_pObjectsTree->GetShadowCastersBox(&BBoxWS, &matView));
+		{
+			if (pVisAreaManager->m_lstPortals[i] && pVisAreaManager->m_lstPortals[i]->IsObjectsTreeValid())
+			{
+				casterBoxLS.Add(pVisAreaManager->m_lstPortals[i]->GetObjectsTree()->GetShadowCastersBox(&BBoxWS, &matView));
+			}
+		}
 	}
 
 	if (!casterBoxLS.IsReset() && casterBoxLS.GetSize().z < 2 * fRadius)
@@ -241,7 +246,7 @@ Matrix44 ShadowCache::GetViewMatrix(const SRenderingPassInfo& passInfo)
 	const Vec3 yAxis(0.f, 1.f, 0.f);
 
 	Vec3 At = passInfo.GetCamera().GetPosition();
-	Vec3 Eye = m_pLightEntity->m_light.m_Origin;
+	Vec3 Eye = m_pLightEntity->GetLightProperties().m_Origin;
 	Vec3 Up = fabsf((Eye - At).GetNormalized().Dot(zAxis)) > 0.9995f ? yAxis : zAxis;
 
 	Matrix44 result;
@@ -257,7 +262,7 @@ void ShadowCache::AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, const SRende
 	if ((Get3DEngine()->m_bSunShadowsFromTerrain || pFr->m_eFrustumType == ShadowMapFrustum::e_HeightMapAO) && !pFr->bIsMGPUCopy)
 	{
 		PodArray<CTerrainNode*> lstTerrainNodes;
-		GetTerrain()->IntersectWithBox(pFr->aabbCasters, &lstTerrainNodes, GetDefSID());
+		GetTerrain()->IntersectWithBox(pFr->aabbCasters, &lstTerrainNodes);
 
 		for (int s = 0; s < lstTerrainNodes.Count(); s++)
 		{

@@ -714,7 +714,7 @@ namespace BehaviorTree
 			// Check if target is in navigation mesh
 			if (m_failIfTargetNotInNavigationMesh)
 			{
-				if (!gEnv->pAISystem->GetNavigationSystem()->IsLocationContainedWithinTriangleInNavigationMesh(agent.GetAIActor()->GetNavigationTypeID(), targetPosition, 5.0f, 0.5f))
+				if (!gEnv->pAISystem->GetNavigationSystem()->IsLocationValidInNavigationMesh(agent.GetAIActor()->GetNavigationTypeID(), targetPosition, 5.0f, 0.5f))
 				{
 					return false;
 				}
@@ -1105,7 +1105,7 @@ namespace BehaviorTree
 			// Please read the description above for an overview of what the
 			// code below is trying to accomplish.
 
-			FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
+			CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 			CActor* actor = static_cast<CActor*>(g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(context.entityId));
 			IF_UNLIKELY (!actor)

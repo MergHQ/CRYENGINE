@@ -27,6 +27,7 @@
 
 #include "FileUtil.h"                       // GetFileSize()
 
+#include <CryString/CryPath.h>
 #include "StringHelpers.h"
 
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
@@ -160,8 +161,14 @@ static string AutoselectPreset(const ConvertContext& CC, const uint32 width, con
 bool CSubstanceCompiler::ProcessImplementation()
 {
 	const string sourceFile = m_CC.GetSourcePath();
-	ISubstancePreset* currentPreset = ISubstancePreset::Load(sourceFile);
-	ISubstanceManager::Instance()->GenerateOutputs(currentPreset, m_pConverter->GetRenderer());
+	ISubstancePreset* pCurrentPreset = ISubstancePreset::Load(sourceFile);
+	if (!pCurrentPreset || pCurrentPreset->GetSubstanceArchive().empty())
+	{
+		RCLogError("Can't load substance preset: %s", sourceFile.c_str());
+		return false;
+	}
+
+	ISubstanceManager::Instance()->GenerateOutputs(pCurrentPreset, m_pConverter->GetRenderer());
 	return true;
 }
 
@@ -191,16 +198,16 @@ string CSubstanceCompiler::GetOutputFileNameOnly() const
 	const string sourceFileFinal = m_CC.config->GetAsString("overwritefilename", m_CC.sourceFileNameOnly.c_str(), m_CC.sourceFileNameOnly.c_str());
 
 	const bool bUseTiffExtension = 
-		StringHelpers::EqualsIgnoreCase(PathHelpers::FindExtension(m_CC.sourceFileNameOnly), "tif") &&
+		StringHelpers::EqualsIgnoreCase(PathUtil::GetExt(m_CC.sourceFileNameOnly), "tif") &&
 		(m_CC.config->GetAsBool("cleansettings", false, true) || 
 		m_CC.config->HasKey("savesettings") || 
 		m_CC.config->HasKey("savepreset"));
 	const char* szExtension = "tif";
 
-	return PathHelpers::ReplaceExtension(sourceFileFinal, szExtension);
+	return PathUtil::ReplaceExtension(sourceFileFinal, szExtension);
 }
 
 string CSubstanceCompiler::GetOutputPath() const
 {
-	return PathHelpers::Join(m_CC.GetOutputFolder(), GetOutputFileNameOnly());
+	return PathUtil::Make(m_CC.GetOutputFolder(), GetOutputFileNameOnly());
 }

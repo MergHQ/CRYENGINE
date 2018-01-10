@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -22,10 +22,6 @@ enum class EInternalStates : EnumFlagsType
 CRY_CREATE_ENUM_FLAG_OPERATORS(EInternalStates);
 
 class CSystem;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-class CProfileData;
-#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 class CAudioTranslationLayer final : public IInputEventListener
 {
@@ -60,6 +56,8 @@ public:
 	void           IncrementGlobalObjectSyncCallbackCounter();
 	void           DecrementGlobalObjectSyncCallbackCounter();
 
+	char const*    GetConfigPath() const;
+
 private:
 
 	ERequestStatus ProcessAudioManagerRequest(CAudioRequest const& request);
@@ -71,8 +69,11 @@ private:
 
 	ERequestStatus RefreshAudioSystem(char const* const szLevelName);
 	void           SetImplLanguage();
-	void           InitInternalControls();
+	void           CreateInternalControls();
 	void           SetCurrentEnvironmentsOnObject(CATLAudioObject* const pObject, EntityId const entityToIgnore, Vec3 const& position);
+
+	void           CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId);
+	void           CreateInternalSwitch(char const* const szSwitchName, ControlId const switchId, std::vector<char const*> const& stateNames);
 
 	// ATLObject containers
 	AudioTriggerLookup        m_triggers;
@@ -95,24 +96,22 @@ private:
 	SInternalControls           m_internalControls;
 
 	// Utility members
-	uint32          m_lastMainThreadFrameId = 0;
-	EInternalStates m_flags = EInternalStates::None;
-	Impl::IImpl*    m_pIImpl = nullptr;
+	EInternalStates                    m_flags = EInternalStates::None;
+	Impl::IImpl*                       m_pIImpl = nullptr;
+	SImplInfo                          m_implInfo;
+	CryFixedStringT<MaxFilePathLength> m_configPath;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:
 
-	void          DrawAudioSystemDebugInfo();
-	void          GetAudioTriggerData(ControlId const audioTriggerId, STriggerData& audioTriggerData) const;
-	CProfileData* GetProfileData() const;
+	void DrawAudioSystemDebugInfo();
+	void GetAudioTriggerData(ControlId const audioTriggerId, STriggerData& audioTriggerData) const;
 
 private:
 
 	void DrawAudioObjectDebugInfo(IRenderAuxGeom& auxGeom);
 	void DrawATLComponentDebugInfo(IRenderAuxGeom& auxGeom, float posX, float const posY);
 	void RetriggerAudioControls();
-
-	CProfileData* m_pProfileData = nullptr;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 };
 } // namespace CryAudio

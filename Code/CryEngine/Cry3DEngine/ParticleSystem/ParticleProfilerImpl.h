@@ -7,6 +7,8 @@ namespace pfx2
 
 ILINE void CParticleProfiler::AddEntry(CParticleComponentRuntime* pRuntime, EProfileStat type, uint value)
 {
+	if (!IsEnabled())
+		return;
 	const uint32 threadId = JobManager::GetWorkerThreadId();
 	SEntry entry;
 	entry.m_pRuntime = pRuntime;

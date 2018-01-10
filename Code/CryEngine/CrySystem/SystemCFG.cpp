@@ -41,6 +41,9 @@
 
 #if CRY_PLATFORM_DURANGO
 	#include <xdk.h>
+#if _XDK_EDITION < 171100
+	#error "Outdated XDK, please update to at least XDK edition November 2017"
+#endif // #if _XDK_EDITION
 #endif // #if CRY_PLATFORM_DURANGO
 
 //////////////////////////////////////////////////////////////////////////
@@ -373,6 +376,7 @@ bool CSystemConfiguration::ParseSystemConfig()
 
 	{
 		string filenameLog;
+
 		int flags = ICryPak::FOPEN_HINT_QUIET | ICryPak::FOPEN_ONDISK;
 
 		if (!OpenFile(filename, file, flags))

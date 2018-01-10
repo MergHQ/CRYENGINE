@@ -581,7 +581,7 @@ void CAnimatedCharacter::PostSerialize()
 
 void CAnimatedCharacter::Update(SEntityUpdateContext& ctx, int slot)
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
+	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 
 	//assert(!m_simplifyMovement); // If we have simplified movement, the this GameObject extension should not be updated here.
 
@@ -1153,9 +1153,9 @@ void CAnimatedCharacter::UpdateCharacterPtrs()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAnimatedCharacter::ProcessEvent(SEntityEvent& event)
+void CAnimatedCharacter::ProcessEvent(const SEntityEvent& event)
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ACTION);
+	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 
 	switch (event.event)
 	{
@@ -1277,6 +1277,11 @@ void CAnimatedCharacter::ProcessEvent(SEntityEvent& event)
 		}
 		break;
 	}
+}
+
+uint64 CAnimatedCharacter::GetEventMask() const
+{
+	return BIT64(ENTITY_EVENT_PRE_SERIALIZE) | BIT64(ENTITY_EVENT_ANIM_EVENT) | BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_SCRIPT_REQUEST_COLLIDERMODE) | BIT64(ENTITY_EVENT_DONE) | BIT64(ENTITY_EVENT_INIT) | BIT64(ENTITY_EVENT_RESET);
 }
 
 float CAnimatedCharacter::FilterView(SViewParams& viewParams) const

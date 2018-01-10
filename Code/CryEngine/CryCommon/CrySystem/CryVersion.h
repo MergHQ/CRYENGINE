@@ -14,6 +14,8 @@
 #ifndef __cryversion_h__
 #define __cryversion_h__
 
+#include <CryString/CryFixedString.h>
+
 //////////////////////////////////////////////////////////////////////////
 /** This class keeps file version information.
  */
@@ -103,6 +105,14 @@ struct SFileVersion
 	void ToString(char* s) const
 	{
 		sprintf(s, "%d.%d.%d.%d", v[3], v[2], v[1], v[0]);
+	}
+
+	CryFixedStringT<32> ToString() const
+	{
+		CryFixedStringT<32> str;
+		str.Format("%d.%d.%d.%d", v[3], v[2], v[1], v[0]);
+
+		return str;
 	}
 };
 

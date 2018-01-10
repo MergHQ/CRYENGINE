@@ -45,6 +45,9 @@
 		#undef GetCharWidth
 		#undef GetUserName
 		#undef LoadLibrary
+#if !defined(RESOURCE_COMPILER)
+		#undef MessageBox // Disable usage of MessageBox, we want CryMessageBox to be used instead
+#endif
 	#endif
 
 	#ifdef CRY_PLATFORM_DURANGO

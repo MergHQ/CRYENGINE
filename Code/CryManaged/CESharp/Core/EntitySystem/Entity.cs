@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -271,7 +271,7 @@ namespace CryEngine
 
 		internal IEntity NativeHandle { get; set; }
 
-		private IntPtr NativeEntityPointer { get; set; }
+		internal IntPtr NativeEntityPointer { get; set; }
 
 
 		#endregion
@@ -487,11 +487,11 @@ namespace CryEngine
 		{
 			var entity = NativeHandle;
 
-			var flags = !keepWorldTransform ? 0 : (int)IEntity.EAttachmentFlags.ATTACHMENT_KEEP_TRANSFORMATION;
+            uint flags = !keepWorldTransform ? 0 : (uint)IEntity.EAttachmentFlags.ATTACHMENT_KEEP_TRANSFORMATION;
 			entity.DetachThis(flags);
 			if(parent != null)
 			{
-				parent.AttachChild(this, new SChildAttachParams(flags));
+				parent.AttachChild(this, new SChildAttachParams((int)flags));
 			}
 		}
 
@@ -615,6 +615,11 @@ namespace CryEngine
 			return new Character(nativeCharacter);
 		}
 
+		/// <summary>
+		/// Set the flags for a specific slot.
+		/// </summary>
+		/// <param name="slot"></param>
+		/// <param name="flags"></param>
 		public void SetSlotFlag(int slot, EntitySlotFlags flags)
 		{
 			NativeHandle.SetSlotFlags(slot, (uint)flags);

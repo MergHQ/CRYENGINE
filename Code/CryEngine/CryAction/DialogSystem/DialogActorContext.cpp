@@ -157,7 +157,6 @@ void CDialogActorContext::BeginSession()
 	ResetState();
 
 	IEntitySystem* pES = gEnv->pEntitySystem;
-	pES->AddEntityEventListener(m_entityID, ENTITY_EVENT_AI_DONE, this);
 	pES->AddEntityEventListener(m_entityID, ENTITY_EVENT_DONE, this);
 	pES->AddEntityEventListener(m_entityID, ENTITY_EVENT_RESET, this);
 
@@ -917,7 +916,6 @@ void CDialogActorContext::CancelCurrent(bool bResetStates)
 	}
 
 	IEntitySystem* pES = gEnv->pEntitySystem;
-	pES->RemoveEntityEventListener(m_entityID, ENTITY_EVENT_AI_DONE, this);
 	pES->RemoveEntityEventListener(m_entityID, ENTITY_EVENT_DONE, this);
 	pES->RemoveEntityEventListener(m_entityID, ENTITY_EVENT_RESET, this);
 
@@ -1226,7 +1224,7 @@ bool CDialogActorContext::IsStillPlaying() const
 }
 
 // IEntityEventListener
-void CDialogActorContext::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+void CDialogActorContext::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	switch (event.event)
 	{

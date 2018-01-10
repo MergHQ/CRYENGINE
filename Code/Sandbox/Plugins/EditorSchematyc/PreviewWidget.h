@@ -14,7 +14,6 @@ struct SRenderContext;
 struct SMouseEvent;
 // Forward declare classes.
 class QBoxLayout;
-class QParentWndWidget;
 class QAdvancedPropertyTree;
 class QPushButton;
 class QSplitter;

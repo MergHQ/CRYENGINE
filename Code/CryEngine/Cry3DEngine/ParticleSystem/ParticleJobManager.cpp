@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2015-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 // -------------------------------------------------------------------------
 //  Created:     13/03/2015 by Filipe amim
@@ -8,90 +8,21 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
+#include "ParticleJobManager.h"
 #include "ParticleManager.h"
 #include "ParticleEmitter.h"
 #include "ParticleComponentRuntime.h"
 #include "ParticleSystem.h"
 #include "ParticleProfiler.h"
-#include "ParticleJobManager.h"
 #include <CryRenderer/IGpuParticles.h>
 
-CRY_PFX2_DBG
+static const uint MaxJobsPerThread = 16;
 
-DECLARE_JOB("Particles : AddRemoveParticles", TAddRemoveJob, pfx2::CParticleJobManager::Job_AddRemoveParticles);
-DECLARE_JOB("Particles : UpdateParticles", TUpdateParticlesJob_, pfx2::CParticleJobManager::Job_UpdateParticles);
-DECLARE_JOB("Particles : PostUpdateParticles", TPostUpdateParticlesJob, pfx2::CParticleJobManager::Job_PostUpdateParticles);
-DECLARE_JOB("Particles : CalculateBounds", TCalculateBoundsJob, pfx2::CParticleJobManager::Job_CalculateBounds);
+DECLARE_JOB("Particles : ScheduleUpdates"    , TScheduleUpdatesJob    , pfx2::CParticleJobManager::Job_ScheduleUpdates);
+DECLARE_JOB("Particles : UpdateEmitters"     , TUpdateEmittersJob     , pfx2::CParticleJobManager::Job_UpdateEmitters);
 
 namespace pfx2
 {
-
-stl::TPoolAllocator<TPostUpdateParticlesJob>& GetPostJobPool()
-{
-	static stl::TPoolAllocator<TPostUpdateParticlesJob> pool;
-	return pool;
-}
-
-void CParticleJobManager::AddEmitter(CParticleEmitter* pEmitter)
-{
-	CRY_PFX2_ASSERT(!m_updateState.IsRunning());
-
-	const auto& runtimeRefs = pEmitter->GetRuntimes();
-
-	for (uint i = 0; i < runtimeRefs.size(); ++i)
-	{
-		auto pCpuRuntime = runtimeRefs[i].pRuntime->GetCpuRuntime();
-		if (!pCpuRuntime)
-			continue;
-		const SComponentParams& params = pCpuRuntime->GetComponentParams();
-		const bool isActive = pCpuRuntime->IsActive();
-		const bool isSecondGen = params.IsSecondGen();
-		if (isActive && !isSecondGen)
-		{
-			size_t refIdx = m_componentRefs.size();
-			m_firstGenComponentsRef.push_back(refIdx);
-			m_componentRefs.push_back(SComponentRef(pCpuRuntime));
-			SComponentRef& componentRef = m_componentRefs.back();
-			componentRef.m_firstChild = m_componentRefs.size();
-			componentRef.m_pPostSubUpdates = GetPostJobPool().New(m_componentRefs.size() - 1);
-			componentRef.m_pPostSubUpdates->SetClassInstance(this);
-			AddComponentRecursive(pEmitter, refIdx);
-		}
-	}
-}
-
-void CParticleJobManager::AddComponentRecursive(CParticleEmitter* pEmitter, size_t parentRefIdx)
-{
-	const CParticleComponentRuntime* pParentComponentRuntime = m_componentRefs[parentRefIdx].m_pComponentRuntime;
-	const SComponentParams& parentParams = pParentComponentRuntime->GetComponentParams();
-	const auto& runtimeRefs = pEmitter->GetRuntimes();
-
-	for (auto& childComponentId : parentParams.m_subComponentIds)
-	{
-		auto pChildComponent = runtimeRefs[childComponentId].pRuntime->GetCpuRuntime();
-		if (!pChildComponent)
-			continue;
-		const bool isActive = pChildComponent->IsActive();
-		if (isActive)
-		{
-			const SComponentParams& childParams = pChildComponent->GetComponentParams();
-			m_componentRefs.push_back(SComponentRef(pChildComponent));
-			SComponentRef& componentRef = m_componentRefs.back();
-			componentRef.m_pPostSubUpdates = GetPostJobPool().New(m_componentRefs.size() - 1);
-			componentRef.m_pPostSubUpdates->SetClassInstance(this);
-			++m_componentRefs[parentRefIdx].m_numChildren;
-		}
-	}
-
-	size_t numChildrend = m_componentRefs[parentRefIdx].m_numChildren;
-	size_t firstChild = m_componentRefs[parentRefIdx].m_firstChild;
-	for (size_t i = 0; i < numChildrend; ++i)
-	{
-		size_t childRefIdx = firstChild + i;
-		m_componentRefs[childRefIdx].m_firstChild = m_componentRefs.size();
-		AddComponentRecursive(pEmitter, childRefIdx);
-	}
-}
 
 void CParticleJobManager::AddDeferredRender(CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
 {
@@ -99,7 +30,7 @@ void CParticleJobManager::AddDeferredRender(CParticleComponentRuntime* pRuntime,
 	m_deferredRenders.push_back(render);
 }
 
-void CParticleJobManager::ScheduleComputeVertices(ICommonParticleComponentRuntime* pComponentRuntime, CRenderObject* pRenderObject, const SRenderContext& renderContext)
+void CParticleJobManager::ScheduleComputeVertices(CParticleComponentRuntime* pComponentRuntime, CRenderObject* pRenderObject, const SRenderContext& renderContext)
 {
 	CParticleManager* pPartManager = static_cast<CParticleManager*>(gEnv->pParticleManager);
 
@@ -115,57 +46,53 @@ void CParticleJobManager::ScheduleComputeVertices(ICommonParticleComponentRuntim
 	job.nCustomTexId = renderContext.m_renderParams.nTextureID;
 }
 
-void CParticleJobManager::KernelUpdateAll()
+#pragma optimize("", off)
+
+void CParticleJobManager::ScheduleUpdates()
 {
-	if (m_firstGenComponentsRef.empty())
+	if (m_emitterRefs.empty())
 		return;
 
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PFX2_PROFILE_DETAIL;
 
-	  CRY_PFX2_ASSERT(!m_updateState.IsRunning());
-
-	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
-
-	if (pCVars->e_ParticlesThread)
+	CRY_PFX2_ASSERT(!m_updateState.IsRunning());
+	if (!Cry3DEngineBase::GetCVars()->e_ParticlesThread)
 	{
-		for (size_t i = 0; i < m_componentRefs.size(); ++i)
-			m_updateState.SetRunning();
-		for (size_t idx : m_firstGenComponentsRef)
-		{
-			SComponentRef& componentRef = m_componentRefs[idx];
-			TAddRemoveJob job(idx);
-			job.SetClassInstance(this);
-			job.Run();
-		}
+		for (auto pEmitter : m_emitterRefs)
+			pEmitter->UpdateAll();
+		return;
 	}
-	else
+
+	m_updateState.SetRunning();
+
+	// Split emitter list into jobs
+	const uint maxJobs = gEnv->pJobManager->GetNumWorkerThreads() * MaxJobsPerThread;
+	const uint numJobs = min(m_emitterRefs.size(), maxJobs);
+
+	m_updateState.SetRunning(numJobs);
+	uint e = 0;
+
+	for (uint j = 0; j < numJobs; ++j)
 	{
-		for (auto& componentRef : m_componentRefs)
-		{
-			SUpdateContext context = SUpdateContext(componentRef.m_pComponentRuntime);
-			componentRef.m_pComponentRuntime->AddRemoveNewBornsParticles(context);
-		}
-		for (auto& componentRef : m_componentRefs)
-		{
-			SUpdateContext context = SUpdateContext(componentRef.m_pComponentRuntime);
-			if (context.m_container.GetLastParticleId() != 0)
-				componentRef.m_pComponentRuntime->UpdateParticles(context);
-			componentRef.m_pComponentRuntime->CalculateBounds();
-		}
+		uint e2 = (j+1) * m_emitterRefs.size() / numJobs;
+		TUpdateEmittersJob job(m_emitterRefs(e, e2 - e));
+		e = e2;
+		job.SetClassInstance(this);
+		job.Run();
 	}
+	CRY_PFX2_ASSERT(e == m_emitterRefs.size());
+	m_updateState.SetStopped();
 }
 
-void CParticleJobManager::SynchronizeUpdate()
+void CParticleJobManager::SynchronizeUpdates()
 {
-	if (m_firstGenComponentsRef.empty())
-		return;
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	CRY_PFX2_PROFILE_DETAIL;
 	gEnv->pJobManager->WaitForJob(m_updateState);
 }
 
 void CParticleJobManager::DeferredRender()
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	CRY_PFX2_PROFILE_DETAIL;
 
 	for (const SDeferredRender& render : m_deferredRenders)
 	{
@@ -176,113 +103,26 @@ void CParticleJobManager::DeferredRender()
 		renderContext.m_distance = render.m_distance;
 		renderContext.m_lightVolumeId = render.m_lightVolumeId;
 		renderContext.m_fogVolumeId = render.m_fogVolumeId;
-		pComponent->RenderDeferred(pEmitter, pRuntime, renderContext);
+		pRuntime->GetComponent()->RenderDeferred(pEmitter, pRuntime, pComponent, renderContext);
 	}
 
 	ClearAll();
 }
 
-void CParticleJobManager::Job_AddRemoveParticles(uint componentRefIdx)
+void CParticleJobManager::Job_UpdateEmitters(TVarArray<CParticleEmitter*> emitters)
 {
-	CParticleProfiler& profiler = GetPSystem()->GetProfiler();
-	CParticleComponentRuntime* pRuntime = m_componentRefs[componentRefIdx].m_pComponentRuntime;
-	GetPSystem()->GetProfiler().AddEntry(pRuntime, EPS_Jobs);
-
-	DoAddRemove(m_componentRefs[componentRefIdx]);
-	ScheduleUpdateParticles(componentRefIdx);
-}
-
-void CParticleJobManager::Job_UpdateParticles(uint componentRefIdx, SUpdateRange updateRange)
-{
-	CParticleProfiler& profiler = GetPSystem()->GetProfiler();
-	CParticleComponentRuntime* pRuntime = m_componentRefs[componentRefIdx].m_pComponentRuntime;
-	GetPSystem()->GetProfiler().AddEntry(pRuntime, EPS_Jobs);
-
-	SUpdateContext context = SUpdateContext(pRuntime, updateRange);
-	pRuntime->UpdateParticles(context);
-}
-
-void CParticleJobManager::Job_PostUpdateParticles(uint componentRefIdx)
-{
-	CParticleProfiler& profiler = GetPSystem()->GetProfiler();
-	CParticleComponentRuntime* pRuntime = m_componentRefs[componentRefIdx].m_pComponentRuntime;
-	GetPSystem()->GetProfiler().AddEntry(pRuntime, EPS_Jobs);
-
-	ScheduleChildrenComponents(m_componentRefs[componentRefIdx]);
-	ScheduleCalculateBounds(componentRefIdx);
-}
-
-void CParticleJobManager::Job_CalculateBounds(uint componentRefIdx)
-{
-	CParticleProfiler& profiler = GetPSystem()->GetProfiler();
-	CParticleComponentRuntime* pRuntime = m_componentRefs[componentRefIdx].m_pComponentRuntime;
-	GetPSystem()->GetProfiler().AddEntry(pRuntime, EPS_Jobs);
-
-	pRuntime->CalculateBounds();
+	for (auto pEmitter : emitters)
+		pEmitter->UpdateAll();
 	m_updateState.SetStopped();
-}
-
-void CParticleJobManager::ScheduleUpdateParticles(uint componentRefIdx)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-
-	SComponentRef& componentRef = m_componentRefs[componentRefIdx];
-	componentRef.m_subUpdateState.SetRunning();
-
-	componentRef.m_subUpdateState.RegisterPostJob(componentRef.m_pPostSubUpdates);
-
-	const size_t particleCountThreshold = 1024 * 8;
-	const CParticleContainer& container = componentRef.m_pComponentRuntime->GetContainer();
-	const TParticleId lastParticleId = container.GetLastParticleId();
-
-	for (TParticleId pId = 0; pId < lastParticleId; pId += particleCountThreshold)
-	{
-		SUpdateRange range(pId, min<TParticleId>(pId + particleCountThreshold, lastParticleId));
-
-		TUpdateParticlesJob_ job(componentRefIdx, range);
-		job.RegisterJobState(&componentRef.m_subUpdateState);
-		job.SetClassInstance(this);
-		job.Run();
-	}
-
-	componentRef.m_subUpdateState.SetStopped();
-}
-
-void CParticleJobManager::ScheduleChildrenComponents(SComponentRef& componentRef)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-
-	for (size_t i = 0; i < componentRef.m_numChildren; ++i)
-	{
-		TAddRemoveJob job(componentRef.m_firstChild + i);
-		job.SetClassInstance(this);
-		job.Run();
-	}
-}
-
-void CParticleJobManager::ScheduleCalculateBounds(uint componentRefIdx)
-{
-	TCalculateBoundsJob calculateBoundsJob(componentRefIdx);
-	calculateBoundsJob.SetClassInstance(this);
-	calculateBoundsJob.Run();
-}
-
-void CParticleJobManager::DoAddRemove(const SComponentRef& componentRef)
-{
-	SUpdateContext context = SUpdateContext(componentRef.m_pComponentRuntime);
-	componentRef.m_pComponentRuntime->AddRemoveNewBornsParticles(context);
 }
 
 void CParticleJobManager::ClearAll()
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	CRY_PFX2_PROFILE_DETAIL;
 
 	CRY_PFX2_ASSERT(!m_updateState.IsRunning());
-	for (auto& componentRef : m_componentRefs)
-		GetPostJobPool().Delete(componentRef.m_pPostSubUpdates);
 	m_deferredRenders.clear();
-	m_firstGenComponentsRef.clear();
-	m_componentRefs.clear();
+	m_emitterRefs.clear();
 }
 
 }

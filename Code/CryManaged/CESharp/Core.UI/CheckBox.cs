@@ -17,7 +17,7 @@ namespace CryEngine.UI
 		/// <summary>
 		/// Called by framework. Do not call directly.
 		/// </summary>
-		public override void OnAwake()
+		protected override void OnAwake()
 		{
 			RectTransform.Size = new Point(16, 16);
 			RectTransform.ClampMode = ClampMode.Full;

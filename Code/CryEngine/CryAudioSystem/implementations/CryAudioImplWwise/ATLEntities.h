@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -14,9 +14,6 @@ namespace Impl
 {
 namespace Wwise
 {
-static AkGameObjectID g_listenerId = AK_INVALID_GAME_OBJECT; // To be removed once multi-listener support is implemented.
-static AkGameObjectID s_globalObjectId = AK_INVALID_GAME_OBJECT;
-
 class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone>
 {
 public:
@@ -42,8 +39,8 @@ public:
 	virtual ERequestStatus SetObstructionOcclusion(float const obstruction, float const occlusion) override;
 	virtual ERequestStatus ExecuteTrigger(ITrigger const* const pITrigger, IEvent* const pIEvent) override;
 	virtual ERequestStatus StopAllTriggers() override;
-	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) override { return ERequestStatus::Success; }
-	virtual ERequestStatus StopFile(IStandaloneFile* const pIStandaloneFile) override { return ERequestStatus::Success; }
+	virtual ERequestStatus PlayFile(IStandaloneFile* const pIStandaloneFile) override { return ERequestStatus::Failure; }
+	virtual ERequestStatus StopFile(IStandaloneFile* const pIStandaloneFile) override { return ERequestStatus::Failure; }
 	virtual ERequestStatus SetName(char const* const szName) override;
 	// ~CryAudio::Impl::IObject
 

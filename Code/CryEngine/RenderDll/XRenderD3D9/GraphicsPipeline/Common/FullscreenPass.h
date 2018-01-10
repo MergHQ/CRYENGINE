@@ -82,9 +82,14 @@ public:
 		m_clipZ = clipSpaceZ;
 	}
 
-	void SetConstant(const CCryNameR& paramName, const Vec4 param, EHWShaderClass shaderClass = eHWSC_Pixel)
+	void SetConstant(const CCryNameR& paramName, const Vec4 &param, EHWShaderClass shaderClass = eHWSC_Pixel)
 	{
 		m_primitive.GetConstantManager().SetNamedConstant(paramName, param, shaderClass);
+	}
+
+	void SetConstant(const CCryNameR& paramName, const Matrix44 &param, EHWShaderClass shaderClass = eHWSC_Pixel)
+	{
+		SetConstantArray(paramName, reinterpret_cast<const Vec4*>(param.GetData()), 4, shaderClass);
 	}
 
 	void SetConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams, EHWShaderClass shaderClass = eHWSC_Pixel)
@@ -118,6 +123,8 @@ public:
 	}
 
 	bool Execute();
+
+	bool IsDirty() const { return m_primitive.IsDirty(); }
 
 private:
 	void                     UpdatePrimitive();

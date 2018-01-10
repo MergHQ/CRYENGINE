@@ -8,6 +8,8 @@
 #include <CrySchematyc/CoreAPI.h>
 #endif
 
+#include <CrySchematyc/Utils/EnumFlags.h>
+
 #include "shared/TypeInfo.h"
 #include "shared/DataTypeHelper.h"
 #include "shared/IUqsString.h"
@@ -90,5 +92,6 @@
 #include "core/IItemSerializationSupport.h"
 #include "core/IEditorService.h"
 #include "core/IUtils.h"
+#include "core/ISettingsManager.h"
 #include "core/IHub.h"
 #include "core/IHubPlugin.h"

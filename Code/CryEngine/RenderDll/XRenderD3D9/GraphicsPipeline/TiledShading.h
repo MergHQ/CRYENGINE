@@ -14,11 +14,6 @@ public:
 
 	void Init();
 	void Execute();
-	void PrepareResources();
-
-private:
-	void PrepareLightVolumeInfo();
-	bool ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispatchSizeY);
 
 private:
 	enum EVolumeTypes

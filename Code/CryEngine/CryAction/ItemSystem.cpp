@@ -135,7 +135,7 @@ void CItemSystem::RegisterItemClass(const char* name, IGameFramework::IItemCreat
 //------------------------------------------------------------------------
 void CItemSystem::Update()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
+	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 
 	ITimer* pTimer = gEnv->pTimer;
 	IActor* pActor = m_pGameFramework->GetClientActor();
@@ -1032,7 +1032,7 @@ void CItemSystem::ClearGeometryCache()
 //------------------------------------------------------------------------
 void CItemSystem::PrecacheLevel()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
+	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 
 	IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
 
@@ -1882,7 +1882,7 @@ void CItemSystem::ItemSystemErrorMessage(const char* fileName, const char* error
 
 	if (displayErrorDialog)
 	{
-		gEnv->pSystem->ShowMessage(messageBuffer.c_str(), "Error", eMB_Error);
+		CryMessageBox(messageBuffer.c_str(), "Error", eMB_Error);
 	}
 }
 

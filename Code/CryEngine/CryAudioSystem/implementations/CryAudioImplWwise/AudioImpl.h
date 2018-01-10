@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -17,12 +17,10 @@ public:
 
 	CImpl();
 	CImpl(CImpl const&) = delete;
-	CImpl(CImpl&&) = delete;
 	CImpl& operator=(CImpl const&) = delete;
-	CImpl& operator=(CImpl&&) = delete;
 
 	// CryAudio::Impl::IImpl
-	virtual void                Update(float const deltaTime) override;
+	virtual void                Update() override;
 	virtual ERequestStatus      Init(uint32 const objectPoolSize, uint32 const eventPoolSize) override;
 	virtual ERequestStatus      OnBeforeShutDown() override;
 	virtual ERequestStatus      ShutDown() override;
@@ -41,6 +39,7 @@ public:
 	virtual ERequestStatus      ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const pFileInfo) override;
 	virtual void                DestructFile(IFile* const pIFile) override;
 	virtual char const* const   GetFileLocation(SFileInfo* const pFileInfo) override;
+	virtual void                GetInfo(SImplInfo& implInfo) const override;
 	virtual ITrigger const*     ConstructTrigger(XmlNodeRef const pRootNode) override;
 	virtual void                DestructTrigger(ITrigger const* const pITrigger) override;
 	virtual IParameter const*   ConstructParameter(XmlNodeRef const pRootNode) override;
@@ -60,26 +59,11 @@ public:
 	virtual void                DestructStandaloneFile(IStandaloneFile const* const pIStandaloneFile) override;
 
 	// Below data is only used when INCLUDE_WWISE_IMPL_PRODUCTION_CODE is defined!
-	virtual char const* const GetName() const override;
-	virtual void              GetMemoryInfo(SMemoryInfo& memoryInfo) const override;
-	virtual void              GetFileData(char const* const szName, SFileData& fileData) const override;
+	virtual void GetMemoryInfo(SMemoryInfo& memoryInfo) const override;
+	virtual void GetFileData(char const* const szName, SFileData& fileData) const override;
 	// ~CryAudio::Impl::IImpl
 
 private:
-
-	static char const* const s_szWwiseEventTag;
-	static char const* const s_szWwiseRtpcTag;
-	static char const* const s_szWwiseSwitchTag;
-	static char const* const s_szWwiseStateTag;
-	static char const* const s_szWwiseRtpcSwitchTag;
-	static char const* const s_szWwiseFileTag;
-	static char const* const s_szWwiseAuxBusTag;
-	static char const* const s_szWwiseValueTag;
-	static char const* const s_szWwiseNameAttribute;
-	static char const* const s_szWwiseValueAttribute;
-	static char const* const s_szWwiseMutiplierAttribute;
-	static char const* const s_szWwiseShiftAttribute;
-	static char const* const s_szWwiseLocalisedAttribute;
 
 	bool                ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& outStateOrSwitchGroupId, AkUInt32& outStateOrSwitchId);
 	SSwitchState const* ParseWwiseRtpcSwitch(XmlNodeRef pNode);
@@ -103,7 +87,7 @@ private:
 #endif  // !WWISE_FOR_RELEASE
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	CryFixedStringT<MaxFilePathLength> m_name;
+	CryFixedStringT<MaxInfoStringLength> m_name;
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
 #if defined(WWISE_USE_OCULUS)

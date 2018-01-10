@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "../ParticleCommon.h"
+
 namespace pfx2
 {
 
@@ -14,7 +16,8 @@ SERIALIZATION_DECLARE_ENUM(EAlignType,
 	Screen,
 	Camera,
 	Velocity,
-	Parent
+	Parent,
+	World
 	)
 
 SERIALIZATION_DECLARE_ENUM(EAlignView,

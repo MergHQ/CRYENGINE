@@ -58,6 +58,9 @@ void CEnvironmentProbeEntity::OnResetState()
 	if (m_bIgnoreVisAreas)
 		m_light.m_Flags |= DLF_IGNORES_VISAREAS;
 
+	if (m_bLinkToSkyColor)
+		m_light.m_Flags |= DLF_LINK_TO_SKY_COLOR;
+
 	if (m_bBoxProjection)
 		m_light.m_Flags |= DLF_BOX_PROJECTED_CM;
 

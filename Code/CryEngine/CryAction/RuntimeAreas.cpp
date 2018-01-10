@@ -166,7 +166,7 @@ void CRuntimeAreaManager::CreateAreas()
 					  cluster.boundary_points[j].y,
 					  areaSpawnParams.vPosition.z) - areaSpawnParams.vPosition;
 
-				pAreaProxy->SetPoints(&points[0], &abObstructSound[0], points.size(), cluster.extents.GetSize().z);
+				pAreaProxy->SetPoints(&points[0], &abObstructSound[0], points.size(), true, cluster.extents.GetSize().z);
 				pAreaProxy->SetID(11001100 + i);
 				pAreaProxy->SetPriority(100);
 				pAreaProxy->SetGroup(110011);

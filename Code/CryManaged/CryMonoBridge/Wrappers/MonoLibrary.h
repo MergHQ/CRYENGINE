@@ -25,6 +25,7 @@ public:
 	~CMonoLibrary();
 	
 	bool IsLoaded() const { return m_pAssembly != nullptr; }
+	virtual bool WasCompiledAtRuntime() { return false; }
 
 	const char* GetFilePath();
 
@@ -60,7 +61,8 @@ public:
 	MonoInternals::MonoObject* GetManagedObject();
 
 protected:
-	bool Load();
+	virtual bool Load(int loadIndex = -1);
+	bool LoadLibraryFile(string& assemblyPath, int loadIndex = -1);
 	void Unload();
 	void Reload();
 
@@ -72,7 +74,14 @@ protected:
 	const char* GetPath() const { return m_assemblyPath; }
 	const char* GetImageName() const;
 
-private:
+	// Removes the file at targetFile, and copies the sourceFile to targetFile.
+	// Returns false if copying failed.
+	bool RemoveAndCopyFile(string& sourceFile, string& targetFile) const;
+	
+	// Returns true if fileA is newer that fileB, false otherwise.
+	bool IsFileNewer(string& fileA, string& fileB) const;
+
+protected:
 	MonoInternals::MonoAssembly* m_pAssembly;
 	MonoInternals::MonoImage* m_pImage;
 

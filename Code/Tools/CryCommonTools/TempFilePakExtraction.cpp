@@ -11,6 +11,7 @@
 #include "PathHelpers.h"
 #include "IPakSystem.h"
 
+#include <CryString/CryPath.h>
 
 TempFilePakExtraction::TempFilePakExtraction(const char* filename, const char* tempPath, IPakSystem* pPakSystem)
 	: m_strOriginalFileName(filename)
@@ -59,7 +60,7 @@ TempFilePakExtraction::TempFilePakExtraction(const char* filename, const char* t
 			{
 				tempName = m_strOriginalFileName;
 			}
-			tempName = PathHelpers::GetFilename(tempName);
+			tempName = PathUtil::GetFile(tempName);
 		}
 
 		int tryCount = 2000;

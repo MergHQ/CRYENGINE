@@ -13,7 +13,6 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
-#include <QParentWndWidget.h>
 #include <QPushButton.h>
 #include <QSortFilterProxyModel>
 #include <QSplitter>
@@ -382,7 +381,7 @@ CEnvBrowserWidget::CEnvBrowserWidget(QWidget* pParent)
 	m_pMainLayout = new QBoxLayout(QBoxLayout::TopToBottom);
 	m_pFilterLayout = new QBoxLayout(QBoxLayout::LeftToRight);
 	m_pSearchFilter = new QLineEdit(this);
-	m_pTreeView = new QTreeView(this);
+	m_pTreeView = new QAdvancedTreeView(QAdvancedTreeView::Behavior(QAdvancedTreeView::PreserveExpandedAfterReset | QAdvancedTreeView::PreserveSelectionAfterReset), this);
 	m_pModel = new CEnvBrowserModel(this);
 	m_pFilter = new CEnvBrowserFilter(this, *m_pModel);
 

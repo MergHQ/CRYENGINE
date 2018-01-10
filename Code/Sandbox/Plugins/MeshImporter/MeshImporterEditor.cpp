@@ -161,7 +161,7 @@ CEditorAdapter::CEditorAdapter(std::unique_ptr<MeshImporter::CBaseDialog> pDialo
 
 void CEditorAdapter::Host_AddMenu(const char* menu)
 {
-	GetMenu()->CreateMenu(menu);
+	GetRootMenu()->CreateMenu(menu);
 }
 
 void CEditorAdapter::Host_AddToMenu(const char* menu, const char* command)
@@ -183,10 +183,7 @@ void CEditorAdapter::customEvent(QEvent* pEvent)
 		const string& command = commandEvent->GetCommand();
 		if (command == "meshimporter.import")
 		{
-			if (m_pDialog->OnImportFile())
-			{
-				OnCloseAsset();
-			}
+			m_pDialog->OnImportFile();
 			pEvent->accept();
 		}
 		else if (command == "meshimporter.reimport")

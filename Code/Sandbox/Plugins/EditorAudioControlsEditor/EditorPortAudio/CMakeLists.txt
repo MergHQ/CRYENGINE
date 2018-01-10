@@ -6,10 +6,13 @@ start_sources()
 sources_platform(ALL)
 add_sources("EditorPortAudio_uber_0.cpp"
 	SOURCE_GROUP "Root"
-		"AudioSystemControl.cpp"
-		"AudioSystemControl.h"
-		"AudioSystemEditor.cpp"
-		"AudioSystemEditor.h"
+		"EditorImpl.cpp"
+		"EditorImpl.h"
+		"ImplConnections.cpp"
+		"ImplConnections.h"
+		"ImplControls.cpp"
+		"ImplControls.h"
+		"ImplTypes.h"
 		"main.cpp"
 		"ProjectLoader.h"
 		"ProjectLoader.cpp"
@@ -20,6 +23,6 @@ add_sources("EditorPortAudio_uber_0.cpp"
 end_sources()
 #END-FILE-LIST
 
-CreateDynamicModule(EditorCryAudioImplPortAudio SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl" OUTDIR EditorPlugins/ace)
-target_include_directories(${THIS_PROJECT} PRIVATE ../common GeneratedFiles)
-target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOT_USE_CRY_MEMORY_MANAGER -DPLUGIN_EXPORTS)
+CryEditorPlugin(EditorCryAudioImplPortAudio SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl" OUTDIR EditorPlugins/ace)
+target_include_directories(${THIS_PROJECT} PRIVATE ../common "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations")
+target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOT_USE_CRY_MEMORY_MANAGER -DPLUGIN_EXPORTS -DUSE_BACKWARDS_COMPATIBILITY)

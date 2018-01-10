@@ -1,4 +1,6 @@
-﻿using System;
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,21 +18,45 @@ namespace CryEngine.Serialization
 
 			Reader = new BinaryReader(stream);
 			Converter = new FormatterConverter();
+			PopulateGuidLookup();
 		}
 
 		BinaryReader Reader { get; set; }
 		FormatterConverter Converter { get; set; }
 
 		Dictionary<Type, Dictionary<int, object>> _typeObjects = new Dictionary<Type, Dictionary<int, object>>();
+		Dictionary<string, Type> _guidLookup = new Dictionary<string, Type>();
 
 		Type _deserializationCallbackType = typeof(IDeserializationCallback);
 		MethodInfo _deserializationMethod = typeof(IDeserializationCallback).GetMethod("OnDeserialization", BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
+
+		private void PopulateGuidLookup()
+		{
+			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+			foreach(var assembly in assemblies)
+			{
+				var types = assembly.GetTypes();
+				foreach(var type in types)
+				{
+					if(!type.IsClass)
+					{
+						continue;
+					}
+
+					var guid = ObjectWriter.GetGuid(type);
+					if(guid != null)
+					{
+						_guidLookup.Add(guid, type);
+					}
+				}
+			}
+		}
 
 		public object Read()
 		{
 			var objectType = (SerializedObjectType)Reader.ReadByte();
 
-			switch (objectType)
+			switch(objectType)
 			{
 				case SerializedObjectType.Null:
 					return null;
@@ -61,7 +87,7 @@ namespace CryEngine.Serialization
 				case SerializedObjectType.Decimal:
 					return Reader.ReadDecimal();
 				case SerializedObjectType.IntPtr:
-					return new IntPtr(Reader.ReadInt64()); ;
+					return new IntPtr(Reader.ReadInt64());
 				case SerializedObjectType.UIntPtr:
 					return new UIntPtr(Reader.ReadUInt64());
 				case SerializedObjectType.Enum:
@@ -72,8 +98,8 @@ namespace CryEngine.Serialization
 					return ReadObject();
 				case SerializedObjectType.Array:
 					return ReadArray();
-                case SerializedObjectType.Assembly:
-                    return ReadAssembly();
+				case SerializedObjectType.Assembly:
+					return ReadAssembly();
 				case SerializedObjectType.Type:
 					return ReadTypeWithReference();
 				case SerializedObjectType.String:
@@ -82,6 +108,8 @@ namespace CryEngine.Serialization
 					return ReadMemberInfo();
 				case SerializedObjectType.ISerializable:
 					return ReadISerializable();
+				case SerializedObjectType.EntityComponent:
+					return ReadEntityComponent();
 			}
 
 			throw new ArgumentException("Tried to deserialize unknown object type!");
@@ -93,16 +121,16 @@ namespace CryEngine.Serialization
 
 			var fieldFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
-			for (var i = 0; i < numTypes; i++)
+			for(var i = 0; i < numTypes; i++)
 			{
-				if (!Reader.ReadBoolean())
+				if(!Reader.ReadBoolean())
 				{
 					continue;
 				}
 
 				var type = ReadType();
 
-				ReadObjectMembers(null, type, fieldFlags);
+				ReadObjectBaseTypeMembers(null, type, fieldFlags);
 			}
 		}
 
@@ -119,13 +147,22 @@ namespace CryEngine.Serialization
 			var referenceId = Reader.ReadInt32();
 			var type = ReadType();
 
-			return _typeObjects[type][referenceId];
+			Dictionary<int, object> dict;
+			if(_typeObjects.TryGetValue(type, out dict))
+			{
+				object obj;
+				if(dict.TryGetValue(referenceId, out obj))
+				{
+					return obj;
+				}
+			}
+			return null;
 		}
 
 		void AddReference(Type type, object obj, int referenceId)
 		{
 			Dictionary<int, object> objects;
-			if (!_typeObjects.TryGetValue(type, out objects))
+			if(!_typeObjects.TryGetValue(type, out objects))
 			{
 				objects = new Dictionary<int, object>();
 				_typeObjects.Add(type, objects);
@@ -135,80 +172,97 @@ namespace CryEngine.Serialization
 		}
 
 		#region Reference types
-		object ReadObject()
+		object ReadEntityComponent()
 		{
 			var referenceId = Reader.ReadInt32();
-			var numTypes = Reader.ReadInt32();
+			var componentTypeGuid = (EntityComponent.GUID)Read();
 
-			object obj = null;
-
-			var fieldFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-
-			bool hasDeserializeCallback = false;
-
-			for (var i = 0; i < numTypes; i++)
+			var type = EntityComponent.GetComponentTypeByGUID(componentTypeGuid);
+			var obj = type != null ? FormatterServices.GetUninitializedObject(type) : null;
+			if(type != null)
 			{
-				var type = ReadType();
-
-				if (obj == null)
-				{
-					// Create the object, first type is the actual implementation
-					obj = FormatterServices.GetUninitializedObject(type);
-
-					AddReference(type, obj, referenceId);
-
-					hasDeserializeCallback = _deserializationCallbackType.IsAssignableFrom(type);
-				}
-
-				ReadObjectMembers(obj, type, fieldFlags);
+				AddReference(type, obj, referenceId);
 			}
 
-			if (hasDeserializeCallback)
-			{
-				_deserializationMethod.Invoke(obj, new object[] { this });
-			}
+			ReadObjectMembers(obj, type);
 
 			return obj;
 		}
 
-		void ReadObjectMembers(object obj, Type objectType, BindingFlags flags)
+		object ReadObject()
+		{
+			var referenceId = Reader.ReadInt32();
+			var type = ReadType();
+
+			var obj = type != null ? FormatterServices.GetUninitializedObject(type) : null;
+			if(type != null)
+			{
+				AddReference(type, obj, referenceId);
+			}
+
+			ReadObjectMembers(obj, type);
+
+			return obj;
+		}
+
+		void ReadObjectMembers(object obj, Type type)
+		{
+			var numBaseTypes = Reader.ReadInt32();
+			var fieldFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+
+			ReadObjectBaseTypeMembers(obj, type, fieldFlags);
+
+			for(var i = 0; i < numBaseTypes; i++)
+			{
+				var baseType = ReadType();
+
+				ReadObjectBaseTypeMembers(obj, baseType, fieldFlags);
+			}
+
+			if(_deserializationCallbackType.IsAssignableFrom(type))
+			{
+				_deserializationMethod.Invoke(obj, new object[] { this });
+			}
+		}
+
+		void ReadObjectBaseTypeMembers(object obj, Type objectType, BindingFlags flags)
 		{
 			var numFields = Reader.ReadInt32();
-			for (var iField = 0; iField < numFields; iField++)
+			for(var iField = 0; iField < numFields; iField++)
 			{
 				var fieldName = Reader.ReadString();
 				var fieldValue = Read();
 
-                if (objectType != null)
-                {
-                    var fieldInfo = objectType.GetField(fieldName, flags);
-                    if (fieldInfo != null && !fieldInfo.IsLiteral)
-                    {
-                        fieldInfo.SetValue(obj, fieldValue);
-                    }
-                }
+				if(objectType != null)
+				{
+					var fieldInfo = objectType.GetField(fieldName, flags);
+					if(fieldInfo != null && !fieldInfo.IsLiteral && (obj == null) == fieldInfo.IsStatic)
+					{
+						fieldInfo.SetValue(obj, fieldValue);
+					}
+				}
 			}
 
 			var numEvents = Reader.ReadInt32();
-			for (var iEvent = 0; iEvent < numEvents; iEvent++)
+			for(var iEvent = 0; iEvent < numEvents; iEvent++)
 			{
 				var eventName = Reader.ReadString();
-				
-				if (Reader.ReadBoolean())
+
+				if(Reader.ReadBoolean())
 				{
 					var delegateType = ReadType();
 					var functionCount = Reader.ReadInt32();
 
-                    EventInfo eventInfo = objectType != null ? objectType.GetEvent(eventName, flags) : null;
+					EventInfo eventInfo = objectType != null ? objectType.GetEvent(eventName, flags) : null;
 
-                    for (int i = 0; i < functionCount; i++)
+					for(int i = 0; i < functionCount; i++)
 					{
 						var methodInfo = Read() as MethodInfo;
 						var target = Read();
 
 						Delegate parsedDelegate;
 
-						if (target != null)
+						if(target != null)
 						{
 							parsedDelegate = Delegate.CreateDelegate(delegateType, target, methodInfo);
 						}
@@ -217,47 +271,47 @@ namespace CryEngine.Serialization
 							parsedDelegate = Delegate.CreateDelegate(delegateType, methodInfo);
 						}
 
-                        if (eventInfo != null)
-                        {
-                            var addMethod = eventInfo.GetAddMethod(true);
-                            addMethod.Invoke(obj, new[] { parsedDelegate });
-                        }
+						if(eventInfo != null)
+						{
+							var addMethod = eventInfo.GetAddMethod(true);
+							addMethod.Invoke(obj, new[] { parsedDelegate });
+						}
 					}
 				}
 			}
 
-            if (objectType != null)
-            {
-                // Special case, always get native pointers for SWIG director types
-                var swigCPtr = objectType.GetField("swigCPtr", flags);
-                if (swigCPtr != null)
-                {
-                    // Start with director handling, aka support for cross-language polymorphism
-                    var swigDirectorConnect = objectType.GetMethod("SwigDirectorConnect", flags);
-                    if (swigDirectorConnect != null)
-                    {
-                        var swigCMemOwn = objectType.GetField("swigCMemOwn", flags);
+			if(objectType != null)
+			{
+				// Special case, always get native pointers for SWIG director types
+				var swigCPtr = objectType.GetField("swigCPtr", flags);
+				if(swigCPtr != null)
+				{
+					// Start with director handling, aka support for cross-language polymorphism
+					var swigDirectorConnect = objectType.GetMethod("SwigDirectorConnect", flags);
+					if(swigDirectorConnect != null)
+					{
+						var swigCMemOwn = objectType.GetField("swigCMemOwn", flags);
 
-                        // Should not be null, if it is we need to check if something is wrong
-                        var constructor = objectType.GetConstructor(Type.EmptyTypes);
+						// Should not be null, if it is we need to check if something is wrong
+						var constructor = objectType.GetConstructor(Type.EmptyTypes);
 
-                        var newObj = constructor.Invoke(null);
+						var newObj = constructor.Invoke(null);
 
-                        swigCMemOwn.SetValue(newObj, false);
-                        swigCMemOwn.SetValue(obj, true);
+						swigCMemOwn.SetValue(newObj, false);
+						swigCMemOwn.SetValue(obj, true);
 
-                        var handleReference = new HandleRef(obj, ((HandleRef)swigCPtr.GetValue(newObj)).Handle);
+						var handleReference = new HandleRef(obj, ((HandleRef)swigCPtr.GetValue(newObj)).Handle);
 
-                        swigCPtr.SetValue(obj, handleReference);
-                        swigDirectorConnect.Invoke(obj, null);
-                    }
-                    else // Support for other types, such as Vec3 (where we should simply take ownership of the native pointer
-                    {
-                        var handleReference = new HandleRef(obj, ((HandleRef)swigCPtr.GetValue(obj)).Handle);
-                        swigCPtr.SetValue(obj, handleReference);
-                    }
-                }
-            }
+						swigCPtr.SetValue(obj, handleReference);
+						swigDirectorConnect.Invoke(obj, null);
+					}
+					else // Support for other types, such as Vec3 (where we should simply take ownership of the native pointer
+					{
+						var handleReference = new HandleRef(obj, ((HandleRef)swigCPtr.GetValue(obj)).Handle);
+						swigCPtr.SetValue(obj, handleReference);
+					}
+				}
+			}
 		}
 
 		object ReadString()
@@ -281,7 +335,7 @@ namespace CryEngine.Serialization
 
 			AddReference(array.GetType(), array, referenceId);
 
-			for (var i = 0; i < arrayLength; i++)
+			for(var i = 0; i < arrayLength; i++)
 			{
 				array.SetValue(Read(), i);
 			}
@@ -300,7 +354,7 @@ namespace CryEngine.Serialization
 
 			var isStatic = Reader.ReadBoolean();
 			var bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic;
-			if (isStatic)
+			if(isStatic)
 			{
 				bindingFlags |= BindingFlags.Static;
 			}
@@ -311,14 +365,14 @@ namespace CryEngine.Serialization
 
 			MemberInfo memberInfo = null;
 
-			switch (memberType)
+			switch(memberType)
 			{
 				case MemberTypes.Method:
 					{
 						var parameterCount = Reader.ReadInt32();
 						var parameters = new Type[parameterCount];
 
-						for (int i = 0; i < parameterCount; i++)
+						for(int i = 0; i < parameterCount; i++)
 							parameters[i] = ReadType();
 
 						memberInfo = declaringType.GetMethod(memberName, bindingFlags, null, parameters, null);
@@ -345,22 +399,22 @@ namespace CryEngine.Serialization
 
 			var serInfo = new SerializationInfo(type, Converter);
 
-			for (var i = 0; i < memberCount; i++)
+			for(var i = 0; i < memberCount; i++)
 			{
 				var memberName = Reader.ReadString();
 				var memberType = ReadType();
 				var memberValue = Read();
-                
-                if (memberType != null)
-                {
-                    serInfo.AddValue(memberName, memberValue, memberType);
-                }
+
+				if(memberType != null)
+				{
+					serInfo.AddValue(memberName, memberValue, memberType);
+				}
 			}
 
 			var constructor = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(SerializationInfo), typeof(StreamingContext) }, null);
 			var obj = constructor.Invoke(new object[] { serInfo, new StreamingContext(StreamingContextStates.CrossAppDomain) });
 
-			if (_deserializationCallbackType.IsAssignableFrom(type))
+			if(_deserializationCallbackType.IsAssignableFrom(type))
 			{
 				_deserializationMethod.Invoke(obj, new object[] { this });
 			}
@@ -376,10 +430,10 @@ namespace CryEngine.Serialization
 			var type = ReadType();
 
 #pragma warning disable RECS0035 // Possible mistaken call to 'object.GetType()'
-            if (type != null)
-            {
-                AddReference(type.GetType(), type, referenceId);
-            }
+			if(type != null)
+			{
+				AddReference(type.GetType(), type, referenceId);
+			}
 #pragma warning restore RECS0035 // Possible mistaken call to 'object.GetType()'
 
 			return type;
@@ -387,15 +441,30 @@ namespace CryEngine.Serialization
 
 		Type ReadType()
 		{
+			Type type = null;
 			if(Reader.ReadBoolean())
 			{
 				var elementType = ReadType();
 				return elementType.MakeArrayType();
 			}
+			else if(Reader.ReadBoolean())
+			{
+				string guid = Reader.ReadString();
+				_guidLookup.TryGetValue(guid, out type);
+			}
 
 			var isGeneric = Reader.ReadBoolean();
 
-			var type = GetType(Reader.ReadString());
+			// Only set the type if it isn't set yet.
+			// The GUID lookup type is prioritized.
+			if(type == null)
+			{
+				type = GetType(Reader.ReadString());
+			}
+			else
+			{
+				GetType(Reader.ReadString());
+			}
 
 			if(isGeneric)
 			{
@@ -404,10 +473,10 @@ namespace CryEngine.Serialization
 				for(int i = 0; i < numGenericArgs; i++)
 					genericArgs[i] = ReadType();
 
-                if (type != null)
-                {
-                    type = type.MakeGenericType(genericArgs);
-                }
+				if(type != null)
+				{
+					type = type.MakeGenericType(genericArgs);
+				}
 			}
 
 			return type;
@@ -415,17 +484,17 @@ namespace CryEngine.Serialization
 
 		Type GetType(string typeName)
 		{
-			if (typeName == null)
+			if(typeName == null)
 			{
 				throw new ArgumentNullException(nameof(typeName));
 			}
 
-			if (typeName.Length == 0)
+			if(typeName.Length == 0)
 			{
 				throw new ArgumentException(string.Format("{0} cannot have zero length!", nameof(typeName)));
 			}
 
-			if (typeName.Contains('+'))
+			if(typeName.Contains('+'))
 			{
 				var splitString = typeName.Split('+');
 				var ownerType = GetType(splitString.FirstOrDefault());
@@ -434,30 +503,30 @@ namespace CryEngine.Serialization
 			}
 
 			var type = Type.GetType(typeName);
-			if (type != null)
+			if(type != null)
 				return type;
 
-			foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+			foreach(var assembly in AppDomain.CurrentDomain.GetAssemblies())
 			{
 				type = assembly.GetType(typeName);
-				if (type != null)
+				if(type != null)
 					return type;
 			}
 
-            return null;
+			return null;
 		}
 
-        Assembly ReadAssembly()
-        {
-            var referenceId = Reader.ReadInt32();
-            var assembly = Assembly.LoadFrom(Reader.ReadString());
-            if(assembly != null)
-            {
-                AddReference(assembly.GetType(), assembly, referenceId);
-            }
+		Assembly ReadAssembly()
+		{
+			var referenceId = Reader.ReadInt32();
+			var assembly = Assembly.LoadFrom(Reader.ReadString());
+			if(assembly != null)
+			{
+				AddReference(assembly.GetType(), assembly, referenceId);
+			}
 
-            return assembly;
-        }
-        #endregion
-    }
+			return assembly;
+		}
+		#endregion
+	}
 }

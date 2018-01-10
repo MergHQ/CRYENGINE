@@ -16,13 +16,35 @@ else()
 	set(OPTION_SCALEFORMHELPER ON)
 endif()
 
+if(OPTION_DEDICATED_SERVER)
+	set(OPTION_SCALEFORMHELPER OFF)
+endif()
+
+option(OPTION_DEVELOPER_CONSOLE_IN_RELEASE "Enables the developer console in Release builds" ON)
+
 #Plugins
 option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)
 if(WIN32 OR WIN64)
 	option(PLUGIN_USERANALYTICS "Enable User Analytics" ON)
-	option(PLUGIN_VR_OCULUS "Oculus support" ON)
-	option(PLUGIN_VR_OSVR "OSVR support" ON)
-	option(PLUGIN_VR_OPENVR "OpenVR support" ON)
+	
+	if(EXISTS "${SDK_DIR}/OculusSDK")
+		option(PLUGIN_VR_OCULUS "Oculus support" ON)
+	else()
+		option(PLUGIN_VR_OCULUS "Oculus support" OFF)
+	endif()
+
+	if(EXISTS "${SDK_DIR}/OSVR")
+		option(PLUGIN_VR_OSVR "OSVR support" ON)
+	else()
+		option(PLUGIN_VR_OSVR "OSVR support" OFF)
+	endif()
+
+	if(EXISTS "${SDK_DIR}/OpenVR")
+		option(PLUGIN_VR_OPENVR "OpenVR support" ON)
+	else()
+		option(PLUGIN_VR_OPENVR "OpenVR support" OFF)
+	endif()
+
 	option(OPTION_CRYMONO "C# support" OFF)
 	
 	if (OPTION_CRYMONO)
@@ -39,16 +61,8 @@ if(WIN64 AND EXISTS "${CRYENGINE_DIR}/Code/Sandbox/EditorQt")
 	if (EXISTS "${SDK_DIR}/SubstanceEngines")
 		option(OPTION_SANDBOX_SUBSTANCE "Enable Sandbox Substance Integration" ON)
 	endif()
-	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-		set(OPTION_SANDBOX OFF)
-	endif()
-	if(OPTION_SANDBOX)
-		# Sandbox cannot be built in release mode
-		set(CMAKE_CONFIGURATION_TYPES Debug Profile CACHE STRING "Reset the configurations to what we need" FORCE)
-	else()
-		if(OPTION_SANDBOX_SUBSTANCE)
-			set(OPTION_SANDBOX_SUBSTANCE OFF)
-		endif()
+	if(NOT OPTION_SANDBOX AND OPTION_SANDBOX_SUBSTANCE)
+		set(OPTION_SANDBOX_SUBSTANCE OFF)
 	endif()
 endif()
 
@@ -316,6 +330,7 @@ endif()
 
 if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
 	add_subdirectory ("Code/CryEngine/CrySystem")
+	add_subdirectory ("Code/CryEngine/CryReflection")
 	add_subdirectory ("Code/CryEngine/CryCommon")
 	add_subdirectory ("Code/CryEngine/RenderDll/XRenderD3D9")
 	
@@ -337,7 +352,9 @@ if (OPTION_ENGINE)
 	add_subdirectory ("Code/CryEngine/CryInput")
 	add_subdirectory ("Code/CryEngine/CryMovie")
 	add_subdirectory ("Code/CryEngine/CryNetwork")
+	#add_subdirectory ("Code/CryEngine/CryReflection")
 	add_subdirectory ("Code/CryEngine/CrySchematyc")
+	add_subdirectory ("Code/CryEngine/CrySchematyc2")
 	add_subdirectory ("Code/CryEngine/CryScriptSystem")
 	add_subdirectory ("Code/CryEngine/CryFlowGraph")
 
@@ -376,6 +393,11 @@ if (OPTION_ENGINE)
 
 	#libs
 	add_subdirectory ("Code/Libs/bigdigits")
+	
+	if(PLUGIN_VR_OCULUS)
+		add_subdirectory("Code/Libs/oculus")
+	endif()
+	
 	if (WIN32)
 		add_subdirectory ("Code/Libs/curl")
 	endif ()

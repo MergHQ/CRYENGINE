@@ -28,6 +28,7 @@ namespace detail {
 // function to manipulate the per thread fallback job freelist
 void                    PushToFallbackJobList(JobManager::SInfoBlock* pInfoBlock);
 JobManager::SInfoBlock* PopFromFallbackJobList();
+constexpr int    GetFallbackJobListSize() { return 4096; }
 
 // functions to access the per thread worker thread id
 void   SetWorkerThreadId(uint32 nWorkerThreadId);

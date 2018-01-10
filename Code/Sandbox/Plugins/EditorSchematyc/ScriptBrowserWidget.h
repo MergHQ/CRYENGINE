@@ -19,7 +19,6 @@ class QBoxLayout;
 class QItemSelection;
 class QLineEdit;
 class QMenu;
-class QParentWndWidget;
 class QPushButton;
 class QSplitter;
 class QToolBar;

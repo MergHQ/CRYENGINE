@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <atomic>
 #include "../CryAudio/IAudioSystem.h"
 
 #define SUPP_HMAP_OCCL
@@ -93,6 +94,58 @@ struct OcclusionTestClient
 #endif
 };
 
+struct SRenderNodeTempData
+{
+	struct SUserData
+	{
+		int                             lastSeenFrame[MAX_RECURSION_LEVELS]; // must be first, see IRenderNode::SetDrawFrame()
+		int                             lastSeenShadowFrame;                 // When was last rendered to shadow
+		CRenderObject*                  arrPermanentRenderObjects[MAX_STATOBJ_LODS_NUM];
+		float                           arrLodLastTimeUsed[MAX_STATOBJ_LODS_NUM];
+		Matrix34                        objMat;
+		OcclusionTestClient             m_OcclState;
+		struct IFoliage*                m_pFoliage;
+		struct IClipVolume*             m_pClipVolume;
+
+		Vec4                            vEnvironmentProbeMults;
+		uint32                          nCubeMapId                  : 16;
+		uint32                          nCubeMapIdCacheClearCounter : 16;
+		uint32                          nWantedLod                  : 8;
+		uint32                          bTerrainColorWasUsed        : 1;
+		IRenderNode*                    pOwnerNode;
+		uint32                          nStatObjLastModificationId;
+	};
+
+public:
+	SUserData userData;
+
+	CryRWLock arrPermanentObjectLock[MAX_STATOBJ_LODS_NUM];
+
+	std::atomic<uint32> hasValidRenderObjects;
+	std::atomic<uint32> invalidRenderObjects;
+
+public:
+	SRenderNodeTempData() { ZeroStruct(userData); hasValidRenderObjects = invalidRenderObjects = false; }
+	~SRenderNodeTempData() { Free(); };
+
+	CRenderObject* GetRenderObject(int nLod); /* thread-safe */
+	void Free();
+	void FreeRenderObjects(); /* non-thread-safe */
+	void InvalidateRenderObjectsInstanceData();
+
+	void OffsetPosition(const Vec3& delta)
+	{
+		userData.objMat.SetTranslation(userData.objMat.GetTranslation() + delta);
+	}
+
+	void MarkForAutoDelete()
+	{
+		userData.lastSeenFrame[0] =
+		userData.lastSeenFrame[1] =
+		userData.lastSeenShadowFrame = 0;
+	}
+};
+
 // RenderNode flags
 enum ERenderNodeFlags : uint64
 {
@@ -167,22 +220,18 @@ struct IShadowCaster
 struct IOctreeNode
 {
 public:
-	struct CTerrainNode* GetTerrainNode() const                    { return (CTerrainNode*) (m_pTerrainNode & ~0x1); }
-	void                 SetTerrainNode(struct CTerrainNode* node) { m_pTerrainNode = (m_pTerrainNode & 0x1) | ((INT_PTR) node); }
+	struct CTerrainNode* GetTerrainNode() const { return m_pTerrainNode; }
+	struct CVisArea*     GetVisArea() const     { return m_pVisArea; }
+	virtual void         MarkAsUncompiled(const ERNListType eListType) = 0;
 
-	// If true - this node needs to be recompiled for example update nodes max view distance.
-	bool IsCompiled() const         { return (bool) (m_pTerrainNode & 0x1); }
-	void SetCompiled(bool compiled) { m_pTerrainNode = ((int) compiled) | (m_pTerrainNode & ~0x1); }
-
-	struct CVisArea* m_pVisArea;
-
-private:
-	INT_PTR m_pTerrainNode;
+protected:
+	struct CVisArea*     m_pVisArea;
+	struct CTerrainNode* m_pTerrainNode;
 };
 
 struct IRenderNode : public IShadowCaster
 {
-	enum EInternalFlags
+	enum EInternalFlags : uint8
 	{
 		DECAL_OWNER                = BIT(0),   //!< Owns some decals.
 		REQUIRES_NEAREST_CUBEMAP   = BIT(1),   //!< Pick nearest cube map.
@@ -192,7 +241,6 @@ struct IRenderNode : public IShadowCaster
 		WAS_IN_VISAREA             = BIT(5),   //!< Was inside vis-ares last frame.
 		WAS_FARAWAY                = BIT(6),   //!< Was considered 'far away' for the purposes of physics deactivation.
 		HAS_OCCLUSION_PROXY        = BIT(7),   //!< This node has occlusion proxy.
-		PERMANENT_RO_INVALID       = BIT(8)    //!< If this node uses permanent render object, it is not valid anymore and must be recreated.
 	};
 	typedef uint64 RenderFlagsType;
 
@@ -217,9 +265,8 @@ public:
 		m_fWSMaxViewDist = 0;
 		m_nInternalFlags = 0;
 		m_nMaterialLayers = 0;
-		m_pTempData = NULL;
-		m_pPrev = m_pNext = NULL;
-		m_nSID = 0;
+		m_pTempData.store(nullptr);
+		m_pPrev = m_pNext = nullptr;
 		m_cShadowLodBias = 0;
 		m_cStaticShadowLod = 0;
 		m_nEditorSelectionID = 0;
@@ -302,7 +349,7 @@ public:
 	virtual struct IFoliage* GetFoliage(int nSlot = 0) { return 0; }
 
 	//! Make sure I3DEngine::FreeRenderNodeState(this) is called in destructor of derived class.
-	virtual ~IRenderNode() { assert(!m_pTempData); };
+	virtual ~IRenderNode() { CRY_ASSERT(!m_pTempData.load()); };
 
 	//! Set override material for this instance.
 	virtual void SetMaterial(IMaterial* pMat) = 0;
@@ -336,7 +383,7 @@ public:
 
 	//! Called immediately when render node becomes visible from any thread.
 	//! Not reentrant, multiple simultaneous calls to this method on the same rendernode from multiple threads is not supported and should not happen
-	virtual void OnRenderNodeBecomeVisibleAsync(const SRenderingPassInfo& passInfo) {}
+	virtual void OnRenderNodeBecomeVisibleAsync(SRenderNodeTempData* pTempData, const SRenderingPassInfo& passInfo) {}
 
 	//! Called when RenderNode becomes visible or invisible, can only be called from the Main thread
 	virtual void  OnRenderNodeVisible(bool bBecomeVisible) {}
@@ -362,7 +409,7 @@ public:
 		return (EGIMode)(((m_dwRndFlags & ERF_GI_MODE_BIT0) ? 1 : 0) | ((m_dwRndFlags & ERF_GI_MODE_BIT1) ? 2 : 0) | ((m_dwRndFlags & ERF_GI_MODE_BIT2) ? 4 : 0));
 	}
 
-	virtual void SetMinSpec(int nMinSpec) { m_dwRndFlags &= ~ERF_SPEC_BITS_MASK; m_dwRndFlags |= (nMinSpec << ERF_SPEC_BITS_SHIFT) & ERF_SPEC_BITS_MASK; };
+	virtual void SetMinSpec(RenderFlagsType nMinSpec) { m_dwRndFlags &= ~ERF_SPEC_BITS_MASK; m_dwRndFlags |= (nMinSpec << ERF_SPEC_BITS_SHIFT) & ERF_SPEC_BITS_MASK; };
 
 	//! Allows to adjust default max view distance settings.
 	//! If fMaxViewDistRatio is 100 - default max view distance is used.
@@ -394,25 +441,29 @@ public:
 	//! Object draw frames (set if was drawn).
 	ILINE void SetDrawFrame(int nFrameID, int nRecursionLevel)
 	{
-		assert(m_pTempData);
-		int* pDrawFrames = (int*)m_pTempData;
+		// If we can get a pointer atomically it must be valid [until the end of the frame] and we can access it
+		const auto pTempData = m_pTempData.load();
+		CRY_ASSERT(pTempData);
+
+		int* pDrawFrames = pTempData->userData.lastSeenFrame;
 		pDrawFrames[nRecursionLevel] = nFrameID;
 	}
 
 	ILINE int GetDrawFrame(int nRecursionLevel = 0) const
 	{
-		IF (!m_pTempData, 0)
-			return 0;
+		// If we can get a pointer atomically it must be valid [until the end of the frame] and we can access it
+		const auto pTempData = m_pTempData.load();
+		IF (!pTempData, 0) return 0;
 
-		int* pDrawFrames = (int*)m_pTempData;
+		int* pDrawFrames = pTempData->userData.lastSeenFrame;
 		return pDrawFrames[nRecursionLevel];
 	}
 
 	//! \return Current VisArea or null if in outdoors or entity was not registered in 3Dengine.
-	ILINE IVisArea* GetEntityVisArea() const { return m_pOcNode ? (IVisArea*)(m_pOcNode->m_pVisArea) : NULL; }
+	ILINE IVisArea* GetEntityVisArea() const { return m_pOcNode ? (IVisArea*)(m_pOcNode->GetVisArea()) : NULL; }
 
 	//! \return Current VisArea or null if in outdoors or entity was not registered in 3Dengine.
-	struct CTerrainNode* GetEntityTerrainNode() const { return (m_pOcNode && !m_pOcNode->m_pVisArea) ? m_pOcNode->GetTerrainNode() : NULL; }
+	struct CTerrainNode* GetEntityTerrainNode() const { return (m_pOcNode && !m_pOcNode->GetVisArea()) ? m_pOcNode->GetTerrainNode() : NULL; }
 
 	//! Makes object visible at any distance.
 	ILINE void SetViewDistUnlimited() { SetViewDistRatio(255); }
@@ -471,7 +522,7 @@ public:
 	}
 
 	//! Inform 3d engine that permanent render object that captures drawing state of this node is not valid and must be recreated.
-	ILINE void   InvalidatePermanentRenderObject() { CryInterlockedExchangeOr((volatile LONG*)&m_nInternalFlags, uint32(PERMANENT_RO_INVALID)); };
+	ILINE void   InvalidatePermanentRenderObject() { if (auto pTempData = m_pTempData.load()) pTempData->invalidRenderObjects = pTempData->hasValidRenderObjects.load(); };
 
 	virtual void SetEditorObjectId(uint32 nEditorObjectId)
 	{
@@ -495,6 +546,17 @@ public:
 	// Variables
 	//////////////////////////////////////////////////////////////////////////
 
+	void RemoveAndMarkForAutoDeleteTempData()
+	{
+		// Remove pointer atomically
+		SRenderNodeTempData* pTempData = nullptr;
+		m_pTempData.exchange(pTempData);
+
+		// Keep the contents of the object valid, but schedule it for removal at the end of the frame
+		if (pTempData)
+			pTempData->MarkForAutoDelete();
+	}
+
 public:
 
 	//! Every sector has linked list of IRenderNode objects.
@@ -504,7 +566,9 @@ public:
 	IOctreeNode* m_pOcNode;
 
 	//! Pointer to temporary data allocated only for currently visible objects.
-	struct SRenderNodeTempData* m_pTempData;
+	std::atomic<SRenderNodeTempData*> m_pTempData;
+	int                               m_manipulationFrame = -1;
+	CryRWLock                         m_manipulationLock;
 
 	//! Hud silhouette parameter, default is black with alpha zero
 	uint32 m_nHUDSilhouettesParam;
@@ -515,11 +579,8 @@ public:
 	//! Render flags (@see ERenderNodeFlags)
 	RenderFlagsType m_dwRndFlags;
 
-	//! Segment Id.
-	int m_nSID;
-
 	//! Flags for render node internal usage, one or more bits from EInternalFlags.
-	uint32 m_nInternalFlags;
+	uint8 m_nInternalFlags;
 
 	//! Max view distance settings.
 	uint8 m_ucViewDistRatio;
@@ -550,7 +611,7 @@ inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)
 	{
 		m_ucViewDistRatio = nViewDistRatio;
 		if (m_pOcNode)
-			m_pOcNode->SetCompiled(false);
+			m_pOcNode->MarkAsUncompiled(GetRenderNodeListId(GetRenderNodeType()));
 	}
 }
 
@@ -632,8 +693,8 @@ private:
 struct ILightSource : public IRenderNode
 {
 	// <interfuscator:shuffle>
-	virtual void                     SetLightProperties(const CDLight& light) = 0;
-	virtual CDLight&                 GetLightProperties() = 0;
+	virtual void                     SetLightProperties(const SRenderLight& light) = 0;
+	virtual SRenderLight&                 GetLightProperties() = 0;
 	virtual const Matrix34&          GetMatrix() = 0;
 	virtual struct ShadowMapFrustum* GetShadowFrustum(int nId = 0) = 0;
 	virtual bool                     IsLightAreasVisible() = 0;
@@ -843,8 +904,8 @@ struct IWaterVolumeRenderNode : public IRenderNode
 	virtual void             SetAuxPhysParams(pe_params_area*) = 0;
 
 	virtual void             CreateOcean(uint64 volumeID, /* TBD */ bool keepSerializationParams = false) = 0;
-	virtual void             CreateArea(uint64 volumeID, const Vec3* pVertices, unsigned int numVertices, const Vec2& surfUVScale, const Plane& fogPlane, bool keepSerializationParams = false, int nSID = -1) = 0;
-	virtual void             CreateRiver(uint64 volumeID, const Vec3* pVertices, unsigned int numVertices, float uTexCoordBegin, float uTexCoordEnd, const Vec2& surfUVScale, const Plane& fogPlane, bool keepSerializationParams = false, int nSID = -1) = 0;
+	virtual void             CreateArea(uint64 volumeID, const Vec3* pVertices, unsigned int numVertices, const Vec2& surfUVScale, const Plane& fogPlane, bool keepSerializationParams = false) = 0;
+	virtual void             CreateRiver(uint64 volumeID, const Vec3* pVertices, unsigned int numVertices, float uTexCoordBegin, float uTexCoordEnd, const Vec2& surfUVScale, const Plane& fogPlane, bool keepSerializationParams = false) = 0;
 
 	virtual void             SetAreaPhysicsArea(const Vec3* pVertices, unsigned int numVertices, bool keepSerializationParams = false) = 0;
 	virtual void             SetRiverPhysicsArea(const Vec3* pVertices, unsigned int numVertices, bool keepSerializationParams = false) = 0;
@@ -1078,5 +1139,4 @@ struct IGeomCacheRenderNode : public IRenderNode
 struct ICharacterRenderNode : public IRenderNode
 {
 	virtual void SetCharacter(struct ICharacterInstance* pCharacter) = 0;
-	virtual void SetCharacterRenderOffset(const QuatTS& renderOffset) = 0;
 };

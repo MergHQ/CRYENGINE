@@ -4,7 +4,7 @@
 #include "Core.h"
 
 #include <CryCore/Platform/platform_impl.inl>
-#include <CryExtension/ICryPluginManager.h>
+#include <CrySystem/ICryPluginManager.h>
 #include <CryGame/IGameFramework.h>
 
 #include <CrySchematyc/Env/EnvPackage.h>
@@ -70,7 +70,9 @@ CCore::CCore()
 	, m_pLogRecorder(new CLogRecorder())
 	, m_pSettingsManager(new CSettingsManager())
 	, m_pUpdateScheduler(new CUpdateScheduler())
-{}
+{
+	gEnv->pSchematyc = this;
+}
 
 CCore::~CCore()
 {
@@ -85,6 +87,7 @@ CCore::~CCore()
 	Schematyc::CVars::Unregister();
 
 	s_pInstance = nullptr;
+	gEnv->pSchematyc = nullptr;
 }
 
 const char* CCore::GetName() const

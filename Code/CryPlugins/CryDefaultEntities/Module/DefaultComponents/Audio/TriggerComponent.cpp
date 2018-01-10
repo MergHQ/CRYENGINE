@@ -57,7 +57,7 @@ void CTriggerComponent::ReflectType(Schematyc::CTypeDesc<CTriggerComponent>& des
 	desc.SetEditorCategory("Audio");
 	desc.SetLabel("Trigger");
 	desc.SetDescription("Allows for execution of an audio trigger at provided transformation.");
-	desc.SetIcon("icons:Audio/trigger.ico");
+	desc.SetIcon("icons:Audio/component_trigger.ico");
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
 
 	desc.AddMember(&CTriggerComponent::m_playTrigger, 'tri1', "playTrigger", "PlayTrigger", "This trigger gets executed when Play is called.", STriggerSerializeHelper());
@@ -136,7 +136,7 @@ uint64 CTriggerComponent::GetEventMask() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerComponent::ProcessEvent(SEntityEvent& event)
+void CTriggerComponent::ProcessEvent(const SEntityEvent& event)
 {
 	if (m_pIEntityAudioComponent != nullptr)
 	{

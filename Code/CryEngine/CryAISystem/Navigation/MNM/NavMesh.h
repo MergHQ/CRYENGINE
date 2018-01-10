@@ -13,6 +13,7 @@
 #include <CryCore/Containers/VectorMap.h>
 
 #include <CryAISystem/NavigationSystem/MNMNavMesh.h>
+#include <CryAISystem/NavigationSystem/INavigationQuery.h>
 
 class OffMeshNavigationManager;
 
@@ -166,9 +167,9 @@ public:
 
 	struct WayQueryRequest
 	{
-		WayQueryRequest(const IAIPathAgent* pRequester, TriangleID _from, const vector3_t& _fromLocation, TriangleID _to,
+		WayQueryRequest(EntityId _requesterEntityId, TriangleID _from, const vector3_t& _fromLocation, TriangleID _to,
 		                const vector3_t& _toLocation, const OffMeshNavigation& _offMeshNavigation, const OffMeshNavigationManager& _offMeshNavigationManager,
-		                const DangerousAreasList& dangerousAreas)
+		                const DangerousAreasList& dangerousAreas, const INavMeshQueryFilter* pFilter, const MNMCustomPathCostComputerSharedPtr& _pCustomPathCostComputer)
 			: m_from(_from)
 			, m_to(_to)
 			, m_fromLocation(_fromLocation)
@@ -176,7 +177,9 @@ public:
 			, m_offMeshNavigation(_offMeshNavigation)
 			, m_offMeshNavigationManager(_offMeshNavigationManager)
 			, m_dangerousAreas(dangerousAreas)
-			, m_pRequester(pRequester)
+			, m_pCustomPathCostComputer(_pCustomPathCostComputer)
+			, m_requesterEntityId(_requesterEntityId)
+			, m_pFilter(pFilter)
 		{}
 
 		virtual ~WayQueryRequest(){}
@@ -190,6 +193,8 @@ public:
 		ILINE const DangerousAreasList& GetDangersInfos()            { return m_dangerousAreas; }
 		ILINE const vector3_t&          GetFromLocation() const      { return m_fromLocation; };
 		ILINE const vector3_t&          GetToLocation() const        { return m_toLocation; };
+		ILINE const MNMCustomPathCostComputerSharedPtr& GetCustomPathCostComputer() const { return m_pCustomPathCostComputer; }  // might be nullptr (which is totally OK)
+		ILINE const INavMeshQueryFilter* GetFilter() const        { return m_pFilter; }
 
 	private:
 		const TriangleID                m_from;
@@ -199,8 +204,10 @@ public:
 		const OffMeshNavigation&        m_offMeshNavigation;
 		const OffMeshNavigationManager& m_offMeshNavigationManager;
 		DangerousAreasList              m_dangerousAreas;
+		MNMCustomPathCostComputerSharedPtr m_pCustomPathCostComputer;
+		const INavMeshQueryFilter*   m_pFilter;
 	protected:
-		const IAIPathAgent*             m_pRequester;
+		const EntityId                  m_requesterEntityId;
 	};
 
 	struct WayQueryWorkingSet
@@ -228,12 +235,12 @@ public:
 			: m_wayMaxSize(wayMaxSize)
 			, m_waySize(0)
 		{
-			m_pWayTriData.reset(new WayTriangleData[m_wayMaxSize]);
+			Reset();
 		}
 
-		~WayQueryResult()
-		{
-		}
+		WayQueryResult(WayQueryResult&&) = default;
+		WayQueryResult(const WayQueryResult&) = delete;
+		~WayQueryResult() = default;
 
 		void Reset()
 		{
@@ -248,11 +255,15 @@ public:
 		ILINE void             SetWaySize(const size_t waySize) { m_waySize = waySize; }
 
 		ILINE void             Clear()                          { m_waySize = 0; }
+
+		WayQueryResult& operator=(WayQueryResult&&) = default;
+		WayQueryResult& operator=(const WayQueryResult&) = delete;
+
 	private:
 
-		std::shared_ptr<WayTriangleData> m_pWayTriData;
-		size_t                           m_wayMaxSize;
-		size_t                           m_waySize;
+		std::unique_ptr<WayTriangleData[]> m_pWayTriData;
+		size_t                             m_wayMaxSize;
+		size_t                             m_waySize;
 	};
 
 	enum EWayQueryResult
@@ -280,13 +291,11 @@ public:
 		z = (tileName >> (x_bits + y_bits)) & ((1 << z_bits) - 1);
 	}
 
-	size_t     GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriCount, float minIslandArea = 0.f) const;
-	TriangleID GetTriangleAt(const vector3_t& location, const real_t verticalDownwardRange, const real_t verticalUpwardRange, float minIslandArea = 0.f) const;
-	TriangleID GetClosestTriangle(const vector3_t& location, real_t vrange, real_t hrange, real_t* distance = 0, vector3_t* closest = 0, float minIslandArea = 0.f) const;
+	size_t     GetTriangles(aabb_t aabb, TriangleID* triangles, size_t maxTriCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const;
+	TriangleID GetTriangleAt(const vector3_t& location, const real_t verticalDownwardRange, const real_t verticalUpwardRange, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const;
+	TriangleID GetClosestTriangle(const vector3_t& location, real_t vrange, real_t hrange, const INavMeshQueryFilter* pFilter, real_t* distance = nullptr, vector3_t* closest = nullptr, float minIslandArea = 0.f) const;
+	TriangleID GetClosestTriangle(const vector3_t& location, const aabb_t& aroundLocationAABB, const INavMeshQueryFilter* pFilter, real_t* distance = nullptr, vector3_t* closest = nullptr, float minIslandArea = 0.f) const;
 
-	TriangleID GetTriangleEdgeAlongLine(const vector3_t& startLocation, const vector3_t& endLocation,
-	                                    const real_t verticalDownwardRange, const real_t verticalUpwardRange,
-	                                    vector3_t& hit, float minIslandArea = 0.f) const;
 	bool IsTriangleAcceptableForLocation(const vector3_t& location, TriangleID triangleID) const;
 
 	bool GetVertices(TriangleID triangleID, vector3_t& v0, vector3_t& v1, vector3_t& v2) const;
@@ -295,6 +304,8 @@ public:
 	// Bit 0: v0->v1, Bit 1: v1->v2, Bit 2: v2->v0
 	bool          GetLinkedEdges(TriangleID triangleID, size_t& linkedEdges) const;
 	bool          GetTriangle(TriangleID triangleID, Tile::STriangle& triangle) const;
+
+	size_t        GetMeshBorders(const aabb_t& aabb, const INavMeshQueryFilter* pFilter, Vec3* pBorders, size_t maxBorderCount, float minIslandArea = 0.f) const;
 
 	bool          PushPointInsideTriangle(const TriangleID triangleID, vector3_t& location, real_t amount) const;
 
@@ -311,7 +322,9 @@ public:
 	void                      RemoveOffMeshLinkFromTile(const TileID tileID, const TriangleID triangleID);
 
 	CNavMesh::EWayQueryResult FindWay(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, WayQueryResult& result) const;
+
 	real_t                    CalculateHeuristicCostForDangers(const vector3_t& locationToEval, const vector3_t& startingLocation, const Vec3& meshOrigin, const DangerousAreasList& dangersInfos) const;
+	real_t                    CalculateHeuristicCostForCustomRules(const vector3_t& locationComingFrom, const vector3_t& locationGoingTo, const Vec3& meshOrigin, const IMNMCustomPathCostComputer* pCustomPathCostComputer) const;
 	void                      PullString(const vector3_t& from, const TriangleID fromTriID, const vector3_t& to, const TriangleID toTriID, vector3_t& middlePoint) const;
 
 	struct RayHit
@@ -374,11 +387,13 @@ public:
 	// ********************************************************************************************
 
 	ERayCastResult RayCast(const vector3_t& from, TriangleID fromTri, const vector3_t& to, TriangleID toTri,
-	                       RaycastRequestBase& wayRequest) const;
+	                       RaycastRequestBase& wayRequest, const INavMeshQueryFilter* filter) const;
 
 	ERayCastResult RayCast_v1(const vector3_t& from, TriangleID fromTri, const vector3_t& to, TriangleID toTri, RaycastRequestBase& wayRequest) const;
 	ERayCastResult RayCast_v2(const vector3_t& from, TriangleID fromTriangleID, const vector3_t& to, TriangleID toTriangleID, RaycastRequestBase& wayRequest) const;
-	ERayCastResult RayCast_v3(const vector3_t& from, TriangleID fromTriangleID, const vector3_t& to, RaycastRequestBase& wayRequest) const;
+	
+	template<typename TFilter>
+	ERayCastResult RayCast_v3(const vector3_t& from, TriangleID fromTriangleID, const vector3_t& to, const TFilter& filter, RaycastRequestBase& wayRequest) const;
 
 	TileID         SetTile(size_t x, size_t y, size_t z, STile& tile);
 	void           ClearTile(TileID tileID, bool clearNetwork = true);
@@ -418,7 +433,7 @@ public:
 		m_params.origin += offset;
 	}
 
-	void Draw(size_t drawFlags, TileID excludeID = 0) const;
+	void Draw(size_t drawFlags, const ITriangleColorSelector& colorSelector, TileID excludeID = 0) const;
 
 	bool CalculateMidEdge(const TriangleID triangleID1, const TriangleID triangleID2, Vec3& result) const;
 
@@ -473,13 +488,17 @@ public:
 	void   ComputeStaticIslandsAndConnections(const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager, MNM::IslandConnections& islandConnections);
 
 	TileID GetNeighbourTileID(size_t x, size_t y, size_t z, size_t side) const;
+	void SetTrianglesAnnotation(const MNM::TriangleID* pTrianglesArray, const size_t trianglesCount, const MNM::AreaAnnotation areaAnnotation, std::vector<TileID>& affectedTiles);
+	bool SnapPosition(const vector3_t& position, const aabb_t& aroundPositionAABB, const SSnapToNavMeshRulesInfo& snappingRules, const INavMeshQueryFilter* pFilter, vector3_t& snappedPosition, MNM::TriangleID* pTriangleId) const;
 
 	// MNM::INavMesh
 	virtual void       GetMeshParams(NavMesh::SParams& outParams) const override;
 	virtual TileID     FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const override;
-	virtual size_t     QueryTriangles(const aabb_t& queryAabbWorld, MNM::NavMesh::IQueryTrianglesFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const override;
+	virtual size_t     QueryTriangles(const aabb_t& queryAabbWorld, INavMeshQueryFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const override;
 	virtual TriangleID FindClosestTriangle(const vector3_t& queryPosWorld, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestPosWorld, float* pOutClosestDistanceSq) const override;
 	virtual bool       GetTileData(const TileID tileId, Tile::STileData& outTileData) const override;
+	virtual const AreaAnnotation* GetTriangleAnnotation(TriangleID triangleID) const override;
+	virtual bool CanTrianglePassFilter(const TriangleID triangleID, const INavMeshQueryFilter& filter) const override;
 	// ~MNM::INavMesh
 
 private:
@@ -502,6 +521,9 @@ private:
 	void    SearchForIslandConnectionsToRefresh(const TileID tileID);
 	void    ComputeStaticIslands();
 
+	template<typename TFilter>
+	CNavMesh::EWayQueryResult FindWayInternal(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, const TFilter& filter, WayQueryResult& result) const;
+
 	void    PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangleID, const vector3_t& startPosition, const TriangleID nextTriangleID, const unsigned int vertexIndex, const vector3_t& finalLocation, vector3_t& outPosition) const;
 
 	//! Function provides next triangle edge through with the ray is leaving the triangle and returns whether the ray ends in the triangle or not.
@@ -509,19 +531,25 @@ private:
 	bool FindNextIntersectingTriangleEdge(const vector3_t& rayStartPos, const vector3_t& rayEndPos, const vector2_t pVertices[3], real_t& rayIntersectionParam, uint16& intersectingEdgeIndex) const;
 
 	//! Returns id of the neighbour triangle corresponding to the edge index of the current triangle or InvalidTriangleID if the edge is on navmesh boundaries
-	TriangleID StepOverEdgeToNeighbourTriangle(const vector3_t& rayStart, const vector3_t& rayEnd, const TileID currentTileID, const TriangleID currentTriangleID, const uint16 edgeIndex) const;
+	template<typename TFilter>
+	TriangleID StepOverEdgeToNeighbourTriangle(const vector3_t& rayStart, const vector3_t& rayEnd, const TileID currentTileID, const TriangleID currentTriangleID, const uint16 edgeIndex, const TFilter& filter) const;
 
 	//! Filter for QueryTriangles, which accepts all triangles.
-	//! Note, that the signature of Check() function is same as IQueryTrianglesFilter::Check(), but it's not virtual.
+	//! Note, that the signature of PassFilter() function is same as INavMeshQueryFilter::PassFilter(), but it's not virtual.
 	//! This way, templated implementation functions can avoid unnecessary checks and virtual calls.
 	struct SAcceptAllQueryTrianglesFilter
 	{
-		NavMesh::IQueryTrianglesFilter::EResult Check(TriangleID) { return NavMesh::IQueryTrianglesFilter::EResult::Accepted; }
+		inline bool PassFilter(const Tile::STriangle&) const { return true; }
+		inline float GetCostMultiplier(const MNM::Tile::STriangle& triangle) const { return 1.0f; }
+		inline MNM::real_t GetCost(const MNM::vector3_t& fromPos, const MNM::vector3_t& toPos,
+			const MNM::Tile::STriangle& currentTriangle, const MNM::Tile::STriangle& nextTriangle,
+			const MNM::TriangleID currentTriangleId, const MNM::TriangleID nextTriangleId) const
+		{
+			return (fromPos - toPos).lenNoOverflow();
+		}
 	};
 
 	struct SMinIslandAreaQueryTrianglesFilter;
-
-	size_t QueryTrianglesNoFilterInternal(const aabb_t& queryAabbWorld, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const;
 
 	template<typename TFilter>
 	size_t QueryTrianglesWithFilterInternal(const aabb_t& queryAabbWorld, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const;
@@ -534,6 +562,9 @@ private:
 	size_t     QueryTileTrianglesBV(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const;
 
 	TriangleID FindClosestTriangleInternal(const vector3_t& queryPosWorld, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestPosWorld, real_t::unsigned_overflow_type* pOutClosestDistanceSq) const;
+
+	size_t     GetTrianglesBordersNoFilter(const TriangleID* triangleIDs, const size_t triangleCount, Vec3* pBorders, const size_t maxBorderCount) const;
+	size_t     GetTrianglesBordersWithFilter(const TriangleID* triangleIDs, const size_t triangleCount, const INavMeshQueryFilter& filter, Vec3* pBorders, const size_t maxBorderCount) const;
 
 protected:
 	void ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile);
@@ -619,6 +650,14 @@ protected:
 		typedef std::vector<size_t> FreeIndexes;    // dynamically-resizing array of indexes pointing to unused elements in m_tiles[]
 		FreeIndexes m_freeIndexes;
 	};
+
+	inline Tile::STriangle& GetTriangleUnsafe(const TileID tileID, const uint16 triangleIdx) const
+	{
+		const TileContainer& container = m_tiles[tileID - 1];
+
+		CRY_ASSERT(triangleIdx < container.tile.triangleCount);
+		return container.tile.triangles[triangleIdx];
+	}
 
 	TileContainerArray m_tiles;
 	size_t             m_triangleCount;

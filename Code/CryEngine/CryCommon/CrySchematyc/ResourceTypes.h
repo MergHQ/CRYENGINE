@@ -116,6 +116,15 @@ inline void ReflectType(CTypeDesc<CharacterFileName>& desc)
 	desc.SetDescription("Character file name");
 }
 
+typedef SerializationUtils::SResourceNameSelector<&Serialization::ModelFilename<string>> AnyModelFileName;
+
+inline void ReflectType(CTypeDesc<AnyModelFileName>& desc)
+{
+	desc.SetGUID("{51398F30-C0DD-41F6-9391-8F70755442C0}"_cry_guid);
+	desc.SetLabel("Model Filename");
+	desc.SetDescription("Model file name");
+}
+
 typedef SerializationUtils::SResourceNameSelector<&Serialization::AnimationPath<string>> LowLevelAnimationName;
 
 inline void ReflectType(CTypeDesc<LowLevelAnimationName>& desc)
@@ -132,6 +141,34 @@ inline void ReflectType(CTypeDesc<ParticleEffectName>& desc)
 	desc.SetGUID("a6f326e7-d3d3-428a-92c9-97185f003bec"_cry_guid);
 	desc.SetLabel("ParticleEffectName");
 	desc.SetDescription("Particle effect name");
+}
+
+// Audio
+typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioEnvironment<string>> AudioEnvironmentName;
+
+inline void ReflectType(CTypeDesc<AudioEnvironmentName>& desc)
+{
+	desc.SetGUID("C312E1D3-D31F-4509-A92F-644965E2BD6F"_cry_guid);
+	desc.SetLabel("AudioEnvironmentName");
+	desc.SetDescription("Audio Environment name");
+}
+
+typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioPreloadRequest<string>> AudioPreloadRequestName;
+
+inline void ReflectType(CTypeDesc<AudioPreloadRequestName>& desc)
+{
+	desc.SetGUID("A1AD3BA1-FCD0-4CE0-99FB-A77736E897FE"_cry_guid);
+	desc.SetLabel("AudioPreloadRequestName");
+	desc.SetDescription("Audio Preload Request name");
+}
+
+typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioRTPC<string>> AudioRtpcName;
+
+inline void ReflectType(CTypeDesc<AudioRtpcName>& desc)
+{
+	desc.SetGUID("730c191c-531f-48ae-bba9-5c1d8216b701"_cry_guid);
+	desc.SetLabel("AudioRtpcName");
+	desc.SetDescription("Audio Rtpc name");
 }
 
 typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioSwitch<string>> AudioSwitchName;
@@ -152,14 +189,15 @@ inline void ReflectType(CTypeDesc<AudioSwitchStateName>& desc)
 	desc.SetDescription("Audio switch state name");
 }
 
-typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioRTPC<string>> AudioRtpcName;
+typedef SerializationUtils::SResourceNameSelector<&Serialization::AudioTrigger<string>> AudioTriggerName;
 
-inline void ReflectType(CTypeDesc<AudioRtpcName>& desc)
+inline void ReflectType(CTypeDesc<AudioTriggerName>& desc)
 {
-	desc.SetGUID("730c191c-531f-48ae-bba9-5c1d8216b701"_cry_guid);
-	desc.SetLabel("AudioRtpcName");
-	desc.SetDescription("Audio Rtpc name");
+	desc.SetGUID("A4A3C724-3A78-4F10-9184-3ECEB03C55BA"_cry_guid);
+	desc.SetLabel("AudioTriggerName");
+	desc.SetDescription("Audio Trigger name");
 }
+// ~Audio
 
 typedef SerializationUtils::SResourceNameSelector<&Serialization::DialogName<string>> DialogName;
 

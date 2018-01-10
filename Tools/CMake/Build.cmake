@@ -13,6 +13,12 @@ if(OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_SCALEFORMHELPER OR OPTION_SA
 	include ("${TOOLS_CMAKE_DIR}/BuildEngine.cmake")
 endif()
 
+# Sandbox Editor
+if (OPTION_SANDBOX AND OPTION_STATIC_LINKING)
+	message(STATUS "Disabling Sandbox - requires dynamic linking")
+	set(OPTION_SANDBOX OFF)
+endif()
+
 if (OPTION_SANDBOX AND WIN64)
 	# Find Qt before including any plugin subdirectories
 	if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
@@ -26,40 +32,38 @@ if (OPTION_SANDBOX AND WIN64)
 	endif()
 	set(Qt5_DIR "${QT_DIR}")
 
-	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}")
+	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}" NO_DEFAULT_PATH)
 
 	set(QT_DIR "${QT_DIR}" CACHE INTERNAL "QT directory" FORCE)
 	set(Qt5_DIR "${Qt5_DIR}" CACHE INTERNAL "QT directory" FORCE)
 
 	set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER  "${VS_FOLDER_PREFIX}/Sandbox/AUTOGEN")
+
+	message(STATUS "Include Sandbox Editor")
+	include ("${TOOLS_CMAKE_DIR}/BuildSandbox.cmake")
 endif()
 	
-# Only allow building legacy GameDLL's with the engine
-if(OPTION_ENGINE)
+# Only allow building legacy GameDLL's with the engine, assuming that we're not using the project system
+if(OPTION_ENGINE AND NOT PROJECT_BUILD)
 	# 2. Games
 	add_subdirectories_glob("Code/Game*")
 endif()
 	
-# 3. Plugins
-include ("${TOOLS_CMAKE_DIR}/BuildPlugins.cmake")
+# 3. Extensions (deprecated / legacy)
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Code/CryExtensions")
+	add_subdirectory(Code/CryExtensions)
+endif()
 
-# 4. Launchers
+if(OPTION_ENGINE)
+	# 4. Plug-ins
+	add_subdirectory(Code/CryPlugins)
+endif()
+
+# 5. Launchers
 include ("${TOOLS_CMAKE_DIR}/BuildLaunchers.cmake")
 
 if (OPTION_CRYMONO)
-	add_subdirectory(Code/CryManaged/CryMonoBridge)
-	add_subdirectory(Code/CryManaged/CESharp)
-endif()
-
-# Sandbox Editor
-if(OPTION_SANDBOX AND OPTION_STATIC_LINKING)
-	message(STATUS "Disabling Sandbox - requires dynamic linking")
-	set(OPTION_SANDBOX OFF)
-endif()
-
-if (OPTION_SANDBOX AND WIN64)
-	MESSAGE(STATUS "Include Sandbox Editor")
-	include ("${TOOLS_CMAKE_DIR}/BuildSandbox.cmake")
+	add_subdirectory(Code/CryManaged)
 endif()
 
 macro(generate_unit_test_targets target_name using_runner_target_name)

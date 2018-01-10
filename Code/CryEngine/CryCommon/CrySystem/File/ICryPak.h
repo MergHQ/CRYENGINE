@@ -636,13 +636,36 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 	{
 		gEnv->pCryPak->CheckFileAccessDisabled(file, mode);
 	}
-	bool bWriteAccess = false;
+
+	bool hasWriteAccess = false;
+	bool hasReadAccess = false;
+	bool isAppend = false;
+	bool isTextMode = false;
+	bool isBinaryMode = false;
+
 	for (const char* s = mode; *s; s++)
 	{
 		if (*s == 'w' || *s == 'W' || *s == 'a' || *s == 'A' || *s == '+')
 		{
-			bWriteAccess = true;
-			break;
+			hasWriteAccess = true;
+		}
+		if (*s == 'r' || *s == 'R' || *s == '+')
+		{
+			hasReadAccess = true;
+		}
+		if (*s == 'a' || *s == 'A')
+		{
+			isAppend = true;
+		}
+		if (*s == 't') // 'T' == temporary mode
+		{
+			isBinaryMode = false;
+			isTextMode = true;
+		}
+		if (*s == 'b' || *s == 'B')
+		{
+			isBinaryMode = true;
+			isTextMode = false;
 		}
 	}
 
@@ -651,8 +674,10 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 	{
 		int nAdjustFlags = 0;
 		if (!bGameRelativePath)
+		{
 			nAdjustFlags |= ICryPak::FLAGS_PATH_REAL;
-		if (bWriteAccess)
+		}
+		if (hasWriteAccess)
 		{
 			nAdjustFlags |= ICryPak::FLAGS_FOR_WRITING;
 		}
@@ -660,16 +685,69 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 		const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(file, path, nAdjustFlags);
 
 #if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_APPLE
-		if (bWriteAccess)
+		if (hasWriteAccess)
 		{
 			// Make sure folder is created.
 			gEnv->pCryPak->MakeDir(PathUtil::GetParentDirectory(szAdjustedPath).c_str());
 		}
 #endif
+
+#if CRY_PLATFORM_WINDOWS
+		DWORD winAccessFlags = 0;
+		DWORD winCreationMode = 0;
+		int cOpenFlags = 0;
+		if (hasWriteAccess && hasReadAccess)
+		{
+			winAccessFlags = (GENERIC_READ | GENERIC_WRITE);
+			winCreationMode = CREATE_ALWAYS;
+			cOpenFlags |= O_RDWR;
+		}
+		else if (hasWriteAccess)
+		{
+			winAccessFlags = GENERIC_WRITE;
+			winCreationMode = CREATE_ALWAYS;
+			cOpenFlags |= O_WRONLY;
+		}
+		else if (hasReadAccess)
+		{
+			winAccessFlags = GENERIC_READ;
+			winCreationMode = OPEN_EXISTING;
+			cOpenFlags |= O_RDONLY;
+		}
+		if (isTextMode)
+		{
+			cOpenFlags |= O_TEXT;
+		}
+		else if (isBinaryMode)
+		{
+			cOpenFlags |= O_BINARY;
+		}
+		if (isAppend)
+		{
+			winCreationMode = OPEN_ALWAYS;
+			cOpenFlags |= O_APPEND;
+		}
+
+		HANDLE winFile = CreateFile(szAdjustedPath, winAccessFlags, FILE_SHARE_READ, 0, winCreationMode, FILE_ATTRIBUTE_NORMAL, 0);
+		if (winFile == INVALID_HANDLE_VALUE)
+		{
+			return 0;
+		}
+		
+		int cHandle = _open_osfhandle(reinterpret_cast<intptr_t>(winFile), cOpenFlags);
+		if (cHandle == -1)
+		{
+			return 0;
+		}
+		return _fdopen(cHandle, mode);
+#else
 		return fopen(szAdjustedPath, mode);
+#endif
 	}
 	else
+	{
 		return 0;
+	}
 }
 
 class CScopedAllowFileAccessFromThisThread
@@ -677,6 +755,7 @@ class CScopedAllowFileAccessFromThisThread
 public:
 #if defined(_RELEASE)
 	CScopedAllowFileAccessFromThisThread() = default;
+	~CScopedAllowFileAccessFromThisThread()	{}
 	void End() {}
 #else
 	CScopedAllowFileAccessFromThisThread()

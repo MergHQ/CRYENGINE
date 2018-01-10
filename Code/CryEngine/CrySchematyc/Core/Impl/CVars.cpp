@@ -18,7 +18,7 @@ ICVar* CVars::sc_LogFileMessageTypes = nullptr;
 #ifdef _RELEASE
 int CVars::sc_DisplayCriticalErrors = 0;
 #else //_RELEASE
-int CVars::sc_DisplayCriticalErrors = 1;
+int CVars::sc_DisplayCriticalErrors = 0;
 #endif
 
 int CVars::sc_RunUnitTests = 0;

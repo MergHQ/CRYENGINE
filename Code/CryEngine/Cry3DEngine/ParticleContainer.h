@@ -25,7 +25,6 @@
 class CParticleEmitter;
 class CParticleSubEmitter;
 struct SParticleVertexContext;
-struct SContainerCounts;
 
 typedef ParticleList<CParticle>::Node TParticleElem;
 

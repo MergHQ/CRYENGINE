@@ -733,7 +733,7 @@ void CSmartMineBehavior::UpdateVisualState( CSmartMine& smartMine, const EVisual
 		const SmartMinePersistantProperties::ELightType lightType = (visualState == eVisualState_Armed) ? SmartMinePersistantProperties::eLightType_Armed : SmartMinePersistantProperties::eLightType_Disarmed;
 		const SmartMinePersistantProperties::LightProperties& properties = m_properties.m_lightProperties[lightType];
 
-		CDLight& lightProperties = pLightSource->GetLightProperties();
+		SRenderLight& lightProperties = pLightSource->GetLightProperties();
 
 		const Vec3 diffuseColor = properties.diffuseColor * properties.diffuseMultiplier;
 		const float specularMultiplier = (float)__fsel( -properties.diffuseMultiplier, properties.specularMultiplier, (properties.specularMultiplier / (properties.diffuseMultiplier + FLT_EPSILON)));
@@ -742,7 +742,7 @@ void CSmartMineBehavior::UpdateVisualState( CSmartMine& smartMine, const EVisual
 		lightProperties.SetSpecularMult( specularMultiplier );
 
 		const float radius = smartMine.NeedsToKeepTracking() ? m_properties.m_detonationRadius : (m_properties.m_detonationRadius * SMART_MINE_NONACTIVE_LIGHT_SCALE);
-		lightProperties.m_fRadius = radius;
+		lightProperties.SetRadius(radius);
 	}
 
 }

@@ -154,7 +154,7 @@ string CChunkCompiler::GetOutputFileNameOnly() const
 
 string CChunkCompiler::GetOutputPath() const
 {
-	return PathHelpers::Join(m_CC.GetOutputFolder(), GetOutputFileNameOnly());
+	return PathUtil::Make(m_CC.GetOutputFolder(), GetOutputFileNameOnly());
 }
 
 

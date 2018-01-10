@@ -29,7 +29,8 @@ LINK_SYSTEM_LIBRARY("version.lib")
 	#include <CryCore/Platform/CryWindows.h>
 	#include <dbghelp.h> // requires <windows.h>
 	#pragma comment( lib, "dbghelp" )
-	#pragma warning(disable: 4244)
+	#pragma warning(push)
+	#pragma warning(disable: 4244) //conversion' conversion from 'type1' to 'type2', possible loss of data
 
 	#ifdef CRY_USE_CRASHRPT
 		#include <CrashRpt.h>
@@ -535,9 +536,59 @@ void DebugCallStack::doneSymbols()
 
 void DebugCallStack::RemoveOldFiles()
 {
-	RemoveFile("error.log");
-	RemoveFile("error.jpg");
-	RemoveFile("error.dmp");
+	string baseName;
+
+	struct stat fileStat;
+	if (stat("error.log", &fileStat)>=0 && fileStat.st_mtime)
+	{
+		tm* today = localtime(&fileStat.st_mtime);
+		if (today)
+		{
+			char s[128];
+			strftime(s, 128, "%d %b %y (%H %M %S)", today);
+			baseName = "error_" + string(s);
+		}
+		else
+		{
+			baseName = "error";
+		}
+	}
+	else
+	{
+		baseName = "error";
+	}
+
+	baseName = PathUtil::Make("LogBackups", baseName);
+	string logDest = baseName + ".log";
+	string jpgDest = baseName + ".jpg";
+	string dmpDest = baseName + ".dmp";
+
+	MoveFile("error.log", logDest.c_str());
+	MoveFile("error.jpg", jpgDest.c_str());
+	MoveFile("error.dmp", dmpDest.c_str());
+}
+
+void DebugCallStack::MoveFile(const char* szFileNameOld, const char* szFileNameNew)
+{
+	FILE* const pFile = fopen(szFileNameOld, "r");
+
+	if (pFile)
+	{
+		fclose(pFile);
+
+		RemoveFile(szFileNameNew);
+
+		WriteLineToLog("Moving file \"%s\" to \"%s\"...", szFileNameOld, szFileNameNew);
+		if (rename(szFileNameOld, szFileNameNew) == 0)
+		{
+			WriteLineToLog("File successfully moved.");
+		}
+		else
+		{
+			WriteLineToLog("Couldn't move file!");
+			RemoveFile(szFileNameOld);
+		}
+	}
 }
 
 void DebugCallStack::RemoveFile(const char* szFileName)
@@ -883,7 +934,10 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 		return EXCEPTION_EXECUTE_HANDLER;
 	}
 
-	gEnv->bIgnoreAllAsserts = true;
+#ifdef USE_CRY_ASSERT
+	gEnv->ignoreAllAsserts = true;
+#endif
+
 	gEnv->pLog->FlushAndClose();
 
 	ResetFPU(exception_pointer);
@@ -1101,9 +1155,7 @@ void ReportJiraBug()
 
 	if (!CJiraClient::ReportBug())
 	{
-	#ifndef _RELEASE
-		MessageBox(NULL, "Error running jira crash handler: bug submission failed.", "Bug submission failed", MB_OK | MB_ICONWARNING);
-	#endif
+		CryMessageBox("Error running jira crash handler: bug submission failed.", "Bug submission failed", eMB_Error);
 	}
 }
 
@@ -1267,10 +1319,9 @@ void DebugCallStack::LogExceptionInfo(EXCEPTION_POINTERS* pex)
 
 	cry_strcat(errorString, errs);
 
-	stack_string errorlogFilename(m_outputPath.c_str());
-	errorlogFilename += "error.log";
+	stack_string errorlogFilename = PathUtil::Make(stack_string(m_outputPath), stack_string("error.log"));
 
-	WriteErrorLog(errorlogFilename.c_str(),errorString);
+	WriteErrorLog(errorlogFilename.c_str(), errorString);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1281,9 +1332,12 @@ void DebugCallStack::MinimalExceptionReport(EXCEPTION_POINTERS* exception_pointe
 
 	int prev_sys_no_crash_dialog = g_cvars.sys_no_crash_dialog;
 
-	gEnv->bIgnoreAllAsserts = true;
+#ifdef USE_CRY_ASSERT
+	gEnv->ignoreAllAsserts = true;
+	gEnv->cryAssertLevel = ECryAssertLevel::Disabled;
+#endif
+
 	g_cvars.sys_no_crash_dialog = 1;
-	g_cvars.sys_asserts = 0;
 
 	CrySpinLock(&s_exception_handler_lock, 0, 1);
 
@@ -1837,6 +1891,8 @@ int DebugCallStack::PrintException(EXCEPTION_POINTERS* exception_pointer)
 {
 	return DialogBoxParam(gDLLHandle, MAKEINTRESOURCE(IDD_CRITICAL_ERROR), NULL, DebugCallStack::ExceptionDialogProc, (LPARAM)exception_pointer);
 }
+
+	#pragma warning(pop)
 
 #else
 void MarkThisThreadForDebugging(const char*) {}

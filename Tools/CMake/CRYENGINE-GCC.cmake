@@ -41,7 +41,12 @@ set(GCC_COMMON_FLAGS
 
 	-Wno-address
 
-	-fno-exceptions 
+	-fno-exceptions
+
+	# upgrade gcc 4.9 -> 7
+	-Wno-stringop-overflow
+	-Wno-misleading-indentation
+	-Wno-logical-not-parentheses
 )
 
 set(GCC_CPP_COMMON_FLAGS
@@ -53,6 +58,11 @@ set(GCC_CPP_COMMON_FLAGS
 	-Wno-overloaded-virtual
 	-Wno-c++0x-compat
 	-Wno-non-template-friend
+
+	# upgrade gcc 4.9 -> 7
+	-Wno-int-in-bool-context
+	-Wno-aligned-new
+	-Wno-ignored-attributes
 )
 
 string(REPLACE ";" " " GCC_COMMON_FLAGS "${GCC_COMMON_FLAGS}")

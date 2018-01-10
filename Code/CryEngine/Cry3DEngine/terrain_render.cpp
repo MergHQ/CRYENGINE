@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   terrain_render.cpp
@@ -40,7 +40,7 @@ private:
 
 float GetPointToBoxDistance(Vec3 vPos, AABB bbox);
 
-int   CTerrain::GetDetailTextureMaterials(IMaterial* materials[], int nSID)
+int   CTerrain::GetDetailTextureMaterials(IMaterial* materials[])
 {
 	int materialNumber = 0;
 	//vector<IMaterial*> materials;
@@ -49,7 +49,7 @@ int   CTerrain::GetDetailTextureMaterials(IMaterial* materials[], int nSID)
 
 	for (int s = 0; s < SRangeInfo::e_hole; s++)
 	{
-		SSurfaceType* pSurf = &m_SSurfaceType[nSID][s];
+		SSurfaceType* pSurf = &m_SSurfaceType[s];
 
 		if (pSurf->HasMaterial())
 		{
@@ -83,10 +83,7 @@ void CTerrain::DrawVisibleSectors(const SRenderingPassInfo& passInfo)
 
 	for (CTerrainNode* pNode : m_lstVisSectors)
 	{
-		if (!pNode->RenderNodeHeightmap(passInfo))
-		{
-			m_pTerrainUpdateDispatcher->QueueJob(pNode, passInfo);
-		}
+		pNode->RenderNodeHeightmap(passInfo);
 	}
 }
 

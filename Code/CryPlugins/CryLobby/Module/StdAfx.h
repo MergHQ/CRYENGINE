@@ -10,7 +10,7 @@
 //#define NOT_USE_CRY_MEMORY_MANAGER
 
 #include <CryCore/Project/CryModuleDefs.h>
-#define eCryModule eCryM_Lobby
+#define eCryModule eCryM_EnginePlugin
 #define CRYLOBBY_EXPORTS
 #include <CryCore/Platform/platform.h>
 
@@ -35,8 +35,10 @@
 #include <CryMath/Cry_Math.h>
 #include <CryMemory/CrySizer.h>
 #include <CryCore/StlUtils.h>
+#include <CryCore/CryVariant.h>
 
 #include <CryRenderer/IRenderer.h>
+
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 	#include <unistd.h>

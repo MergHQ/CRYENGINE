@@ -1,10 +1,12 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioImpl.h"
 #include "AudioImplCVars.h"
 #include "SoundEngineUtil.h"
 #include "SoundEngineTypes.h"
+#include "GlobalData.h"
+#include <Logger.h>
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
 #include <CryAudio/IAudioSystem.h>
@@ -19,20 +21,6 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-char const* const CImpl::s_szSDLFileTag = "SDLMixerSample";
-char const* const CImpl::s_szSDLCommonAttribute = "sdl_name";
-char const* const CImpl::s_szSDLPathAttribute = "sdl_path";
-char const* const CImpl::s_szSDLEventIdTag = "event_id";
-char const* const CImpl::s_szSDLEventTag = "SDLMixerEvent";
-char const* const CImpl::s_szSDLSoundLibraryPath = CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "sdlmixer" CRY_NATIVE_PATH_SEPSTR;
-char const* const CImpl::s_szSDLEventTypeTag = "event_type";
-char const* const CImpl::s_szSDLEventPanningEnabledTag = "enable_panning";
-char const* const CImpl::s_szSDLEventAttenuationEnabledTag = "enable_distance_attenuation";
-char const* const CImpl::s_szSDLEventAttenuationMinDistanceTag = "attenuation_dist_min";
-char const* const CImpl::s_szSDLEventAttenuationMaxDistanceTag = "attenuation_dist_max";
-char const* const CImpl::s_szSDLEventVolumeTag = "volume";
-char const* const CImpl::s_szSDLEventLoopCountTag = "loop_count";
-
 ///////////////////////////////////////////////////////////////////////////
 void OnEventFinished(CATLEvent& audioEvent)
 {
@@ -54,12 +42,15 @@ CImpl::CImpl()
 
 	if (strlen(szAssetDirectory) == 0)
 	{
-		g_implLogger.Log(ELogType::Error, "<Audio - SDL_mixer>: No asset folder set!");
+		Cry::Audio::Log(ELogType::Error, "<Audio - SDL_mixer>: No asset folder set!");
 		szAssetDirectory = "no-asset-folder-set";
 	}
 
+	string libraryPath = CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
+	libraryPath += s_szImplFolderName;
+
 	m_name = "SDL Mixer 2.0.1 (";
-	m_name += szAssetDirectory + PathUtil::RemoveSlash(s_szSDLSoundLibraryPath) + ")";
+	m_name += szAssetDirectory + libraryPath + ")";
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
 #if CRY_PLATFORM_WINDOWS
@@ -78,7 +69,7 @@ CImpl::CImpl()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::Update(float const deltaTime)
+void CImpl::Update()
 {
 	SoundEngine::Update();
 }
@@ -192,7 +183,7 @@ ERequestStatus CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 		}
 		else
 		{
-			g_implLogger.Log(ELogType::Error, "Invalid AudioFileEntryData passed to the SDL Mixer implementation of RegisterInMemoryFile");
+			Cry::Audio::Log(ELogType::Error, "Invalid AudioFileEntryData passed to the SDL Mixer implementation of RegisterInMemoryFile");
 		}
 	}
 
@@ -215,7 +206,7 @@ ERequestStatus CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 		}
 		else
 		{
-			g_implLogger.Log(ELogType::Error, "Invalid AudioFileEntryData passed to the SDL Mixer implementation of UnregisterInMemoryFile");
+			Cry::Audio::Log(ELogType::Error, "Invalid AudioFileEntryData passed to the SDL Mixer implementation of UnregisterInMemoryFile");
 		}
 	}
 	return result;
@@ -226,10 +217,10 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	if ((_stricmp(pRootNode->getTag(), s_szSDLFileTag) == 0) && (pFileInfo != nullptr))
+	if ((_stricmp(pRootNode->getTag(), s_szFileTag) == 0) && (pFileInfo != nullptr))
 	{
-		char const* const szFileName = pRootNode->getAttr(s_szSDLCommonAttribute);
-		char const* const szPath = pRootNode->getAttr(s_szSDLPathAttribute);
+		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szPath = pRootNode->getAttr(s_szPathAttribute);
 		CryFixedStringT<MaxFilePathLength> fullFilePath;
 		if (szPath)
 		{
@@ -274,9 +265,24 @@ char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 {
 	static CryFixedStringT<MaxFilePathLength> s_path;
 	s_path = PathUtil::GetGameFolder().c_str();
-	s_path += s_szSDLSoundLibraryPath;
+	s_path += CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
+	s_path += s_szImplFolderName;
+	s_path += CRY_NATIVE_PATH_SEPSTR;
+	s_path += s_szAssetsFolderName;
+	s_path += CRY_NATIVE_PATH_SEPSTR;
 
 	return s_path.c_str();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::GetInfo(SImplInfo& implInfo) const
+{
+#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
+	implInfo.name = m_name.c_str();
+#else
+	implInfo.name = "name-not-present-in-release-mode";
+#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
+	implInfo.folderName = s_szImplFolderName;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -284,14 +290,14 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 {
 	CTrigger* pTrigger = nullptr;
 
-	if (_stricmp(pRootNode->getTag(), s_szSDLEventTag) == 0)
+	if (_stricmp(pRootNode->getTag(), s_szEventTag) == 0)
 	{
 		pTrigger = SoundEngine::CreateTrigger();
 
 		if (pTrigger != nullptr)
 		{
-			char const* const szFileName = pRootNode->getAttr(s_szSDLCommonAttribute);
-			char const* const szPath = pRootNode->getAttr(s_szSDLPathAttribute);
+			char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
+			char const* const szPath = pRootNode->getAttr(s_szPathAttribute);
 			string fullFilePath;
 
 			if (szPath != nullptr && szPath[0] != '\0')
@@ -306,16 +312,16 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 			}
 
 			pTrigger->m_sampleId = SoundEngine::LoadSample(fullFilePath, true);
-			pTrigger->m_bStartEvent = (_stricmp(pRootNode->getAttr(s_szSDLEventTypeTag), "stop") != 0);
+			pTrigger->m_bStartEvent = (_stricmp(pRootNode->getAttr(s_szTypeAttribute), s_szStopValue) != 0);
 
 			if (pTrigger->m_bStartEvent)
 			{
-				pTrigger->m_bPanningEnabled = (_stricmp(pRootNode->getAttr(s_szSDLEventPanningEnabledTag), "true") == 0);
-				bool bAttenuationEnabled = (_stricmp(pRootNode->getAttr(s_szSDLEventAttenuationEnabledTag), "true") == 0);
+				pTrigger->m_bPanningEnabled = (_stricmp(pRootNode->getAttr(s_szPanningEnabledAttribute), s_szTrueValue) == 0);
+				bool bAttenuationEnabled = (_stricmp(pRootNode->getAttr(s_szAttenuationEnabledAttribute), s_szTrueValue) == 0);
 				if (bAttenuationEnabled)
 				{
-					pRootNode->getAttr(s_szSDLEventAttenuationMinDistanceTag, pTrigger->m_attenuationMinDistance);
-					pRootNode->getAttr(s_szSDLEventAttenuationMaxDistanceTag, pTrigger->m_attenuationMaxDistance);
+					pRootNode->getAttr(s_szAttenuationMinDistanceAttribute, pTrigger->m_attenuationMinDistance);
+					pRootNode->getAttr(s_szAttenuationMaxDistanceAttribute, pTrigger->m_attenuationMaxDistance);
 				}
 				else
 				{
@@ -326,10 +332,10 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 				// Translate decibel to normalized value.
 				static const int maxVolume = 128;
 				float volume = 0.0f;
-				pRootNode->getAttr(s_szSDLEventVolumeTag, volume);
+				pRootNode->getAttr(s_szVolumeAttribute, volume);
 				pTrigger->m_volume = static_cast<int>(pow_tpl(10.0f, volume / 20.0f) * maxVolume);
 
-				pRootNode->getAttr(s_szSDLEventLoopCountTag, pTrigger->m_numLoops);
+				pRootNode->getAttr(s_szLoopCountAttribute, pTrigger->m_numLoops);
 			}
 		}
 	}
@@ -482,15 +488,6 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 void CImpl::SetLanguage(char const* const szLanguage)
 {
 	m_language = szLanguage;
-}
-
-///////////////////////////////////////////////////////////////////////////
-char const* const CImpl::GetName() const
-{
-#if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	return m_name.c_str();
-#endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
-	return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////

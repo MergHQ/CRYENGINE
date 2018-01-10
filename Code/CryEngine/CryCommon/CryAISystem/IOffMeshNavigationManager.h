@@ -24,9 +24,13 @@ struct SOffMeshOperationCallbackData
 {
 	const MNM::OffMeshLinkID linkID;
 	const bool               operationSucceeded;
+	const MNM::TriangleID    startTriangleID;
+	const MNM::TriangleID    endTriangleID;
 
-	SOffMeshOperationCallbackData(const MNM::OffMeshLinkID _linkID, const bool _operationSucceeded)
+	SOffMeshOperationCallbackData(const MNM::OffMeshLinkID _linkID, const MNM::TriangleID _startTriangleID, const MNM::TriangleID _endTriangleID, const bool _operationSucceeded)
 		: linkID(_linkID)
+		, startTriangleID(_startTriangleID)
+		, endTriangleID(_endTriangleID)
 		, operationSucceeded(_operationSucceeded)
 	{}
 };

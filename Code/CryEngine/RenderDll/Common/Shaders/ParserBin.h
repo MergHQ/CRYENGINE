@@ -497,7 +497,6 @@ enum EToken
 	eT_Glass,
 	eT_Vegetation,
 	eT_Particle,
-	eT_GenerateSprites,
 	eT_GenerateClouds,
 	eT_ScanWater,
 
@@ -510,7 +509,6 @@ enum EToken
 	eT_TechniqueCustomRender,
 	eT_TechniqueEffectLayer,
 	eT_TechniqueDebug,
-	eT_TechniqueSoftAlphaTest,
 	eT_TechniqueWaterRefl,
 	eT_TechniqueWaterCaustic,
 	eT_TechniqueZPrepass,
@@ -985,13 +983,7 @@ public:
 	static uint32        NextToken(char*& buf, char* com, bool& bKey);
 	static void          Init();
 	static void          RemovePlatformDefines();
-	static void          SetupForOrbis();
-	static void          SetupForD3D9();
-	static void          SetupForD3D11();
-	static void          SetupForGL4();
-	static void          SetupForGLES3();
-	static void          SetupForDurango();
-	static void          SetupForVulkan();
+	static void          SetupForPlatform(uint32 nPlatform);
 	static void          SetupFeatureDefines();
 	static CCryNameTSCRC GetPlatformSpecName(CCryNameTSCRC orgName);
 	static const char*   GetPlatformShaderlistName();

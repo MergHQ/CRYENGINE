@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -76,7 +76,8 @@ public:
 	virtual void                OffsetPosition(const Vec3& delta);
 	virtual void                GetClipPlanes(Plane* pPlanes, int nPlanesNum, int nVertId);
 	virtual void                GetTexCoordInfo(float* pTexCoordInfo);
-	virtual uint8               GetSortPriority()           { return m_sortPrio; }
+	virtual uint8               GetSortPriority() { return m_sortPrio; }
+	virtual bool                CanExecuteRenderAsJob() final;
 
 	virtual void                SetLayerId(uint16 nLayerId) { m_nLayerId = nLayerId; Get3DEngine()->C3DEngine::UpdateObjectsLayerAABB(this); }
 	virtual uint16              GetLayerId()                { return m_nLayerId; }

@@ -44,7 +44,7 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 	m_pScrollBox = new QScrollableBox();
 
 	
-	m_pSubstanceMenu = GetMenu()->CreateMenu("Substance Preset");
+	m_pSubstanceMenu = GetMenu("Substance Preset");
 	QAction* const pAction = m_pSubstanceMenu->CreateAction("Reset Inputs");
 	connect(pAction, &QAction::triggered, [=]()
 	{
@@ -226,10 +226,13 @@ bool CSubstancePresetEditor::OnOpenAsset(CAsset* pAsset)
 bool CSubstancePresetEditor::OnSaveAsset(CEditableAsset& editAsset)
 {
 	m_pPreset->Save();
-	std::vector<string> dependencies;
-	dependencies.push_back(m_pPreset->GetSubstanceArchive());
+	std::vector<SAssetDependencyInfo> dependencies;
+	dependencies.emplace_back(m_pPreset->GetSubstanceArchive(), 1);
 	const std::vector<string> images = m_pPreset->GetInputImages();
-	dependencies.insert(dependencies.end(), images.begin(), images.end());
+	for( const string& image : images)
+	{
+		dependencies.emplace_back(image, 1);
+	}
 	editAsset.SetDependencies(dependencies);
 
 	GetAssetBeingEdited()->SetModified(false);
@@ -240,16 +243,6 @@ void CSubstancePresetEditor::OnCloseAsset()
 {
 	CManager::Instance()->PresetEditEnded(m_pPreset);
 	m_pResolutionWidget->hide();
-}
-
-
-bool CSubstancePresetEditor::CanQuit(std::vector<string>& unsavedChanges)
-{
-	if (GetAssetBeingEdited())
-	{
-		GetAssetBeingEdited()->IsModified();
-	}
-	return true;
 }
 
 void CSubstancePresetEditor::PushPresetToRender()

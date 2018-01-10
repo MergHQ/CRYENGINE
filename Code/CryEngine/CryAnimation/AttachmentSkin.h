@@ -89,7 +89,7 @@ public:
 
 	// Vertex Transformation
 public:
-	SSkinningData*          GetVertexTransformationData(const bool bVertexAnimation, uint8 nRenderLOD);
+	SSkinningData*          GetVertexTransformationData(bool useSwSkinningCpu, uint8 nRenderLOD, const SRenderingPassInfo& passInfo);
 	bool                    ShouldSwSkin() const     { return (m_AttFlags & FLAGS_ATTACH_SW_SKINNING) != 0; }
 	bool                    ShouldSkinLinear() const { return (m_AttFlags & FLAGS_ATTACH_LINEAR_SKINNING) != 0; }
 	_smart_ptr<IRenderMesh> CreateVertexAnimationRenderMesh(uint lod, uint id);
@@ -107,7 +107,7 @@ public:
 	virtual IVertexAnimation* GetIVertexAnimation() override { return &m_vertexAnimation; }
 	virtual ISkin*            GetISkin() override            { return m_pModelSkin; };
 	virtual float             GetExtent(EGeomForm eForm) override;
-	virtual void              GetRandomPos(PosNorm& ran, CRndGen& seed, EGeomForm eForm) const override;
+	virtual void              GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const override;
 	virtual SMeshLodInfo      ComputeGeometricMean() const override;
 
 	int                       GetGuid() const;

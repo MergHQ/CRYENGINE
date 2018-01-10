@@ -9,7 +9,7 @@
 #include <IEditor.h>
 #include <CrySerialization/Forward.h>
 
-#include "../EditorCommon/Explorer/ExplorerDataProvider.h"
+#include "Explorer/ExplorerDataProvider.h"
 
 class QDockWidget;
 class QToolBar;
@@ -67,6 +67,7 @@ public:
 	QPropertyTree* PropertyTree()                     { return m_propertyTree; }
 	void           Serialize(Serialization::IArchive& ar);
 	void           SetDockWidget(QDockWidget* widget) {}
+	void           OnChanged()                        { OnPropertyTreeChanged(); }
 
 protected:
 	void OnEditorNotifyEvent(EEditorNotifyEvent event) override;

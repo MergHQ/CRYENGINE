@@ -28,6 +28,7 @@ struct IMannequinEditorManager;
 struct IMannequinGameListener;
 class CAnimationDatabase;
 struct AnimEventInstance;
+struct IMannequinWriter;
 
 struct IProceduralParams;
 DECLARE_SHARED_POINTERS(IProceduralParams);
@@ -686,6 +687,12 @@ struct SAnimationContext
 		state(_controllerDef.m_tags)
 	{
 		subStates.resize(_controllerDef.m_subContextIDs.GetNum(), state);
+
+		if (gEnv->pTimer)
+		{
+			const uint32 seed = static_cast<uint32>(gEnv->pTimer->GetAsyncTime().GetValue());
+			randGenerator.Seed(seed);
+		}
 	}
 
 	const SControllerDef& controllerDef;
@@ -996,6 +1003,7 @@ public:
 	virtual const IAnimationDatabase* Load(const char* filename) = 0;
 	virtual const SControllerDef*     LoadControllerDef(const char* filename) = 0;
 	virtual const CTagDefinition*     LoadTagDefs(const char* filename, bool isTags) = 0;
+	virtual void					  SaveAll(IMannequinWriter* pWriter) const = 0;
 
 	virtual const SControllerDef*     FindControllerDef(const uint32 crcFilename) const = 0;
 	virtual const SControllerDef*     FindControllerDef(const char* filename) const = 0;

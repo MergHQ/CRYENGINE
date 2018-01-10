@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -18,39 +18,6 @@ class CATLAudioObject;
 struct SATLXMLTags
 {
 	static char const* const szPlatform;
-
-	static char const* const szRootNodeTag;
-	static char const* const szEditorDataTag;
-	static char const* const szTriggersNodeTag;
-	static char const* const szParametersNodeTag;
-	static char const* const szSwitchesNodeTag;
-	static char const* const szPreloadsNodeTag;
-	static char const* const szEnvironmentsNodeTag;
-
-	static char const* const szATLTriggerTag;
-	static char const* const szATLSwitchTag;
-	static char const* const szATLParametersTag;
-	static char const* const szATLSwitchStateTag;
-	static char const* const szATLEnvironmentTag;
-	static char const* const szATLPlatformsTag;
-	static char const* const szATLConfigGroupTag;
-
-	static char const* const szATLTriggerRequestTag;
-	static char const* const szATLSwitchRequestTag;
-	static char const* const szATLValueTag;
-	static char const* const szATLParametersRequestTag;
-	static char const* const szATLPreloadRequestTag;
-	static char const* const szATLEnvironmentRequestTag;
-
-	static char const* const szATLVersionAttribute;
-	static char const* const szATLNameAttribute;
-	static char const* const szATLInternalNameAttribute;
-	static char const* const szATLTypeAttribute;
-	static char const* const szATLConfigGroupAttribute;
-	static char const* const szATLRadiusAttribute;
-	static char const* const szATLOcclusionFadeOutDistanceAttribute;
-
-	static char const* const szATLDataLoadType;
 };
 
 namespace Impl
@@ -70,13 +37,12 @@ struct IImpl;
 enum class EObjectFlags : EnumFlagsType
 {
 	None                            = 0,
-	TrackDoppler                    = BIT(0),
-	TrackVelocity                   = BIT(1),
-	NeedsDopplerUpdate              = BIT(2),
-	NeedsVelocityUpdate             = BIT(3),
-	InUse                           = BIT(4),
-	Virtual                         = BIT(5),
-	WaitingForInitialTransformation = BIT(6),
+	MovingOrDecaying                = BIT(0),
+	TrackAbsoluteVelocity           = BIT(1),
+	TrackRelativeVelocity           = BIT(2),
+	InUse                           = BIT(3),
+	Virtual                         = BIT(4),
+	WaitingForInitialTransformation = BIT(5),
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
 
@@ -146,14 +112,14 @@ public:
 
 	explicit CATLListener(Impl::IListener* const pImplData)
 		: m_pImplData(pImplData)
-		, m_bNeedsFinalSetPosition(false)
+		, m_isMovingOrDecaying(false)
 	{}
 
 	// CryAudio::IListener
 	virtual void SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	// ~CryAudio::IListener
 
-	void                             Update();
+	void                             Update(float const deltaTime);
 	ERequestStatus                   HandleSetTransformation(CObjectTransformation const& transformation);
 	Impl::SObject3DAttributes const& Get3DAttributes() const { return m_attributes; }
 
@@ -165,11 +131,9 @@ public:
 
 private:
 
-	bool                      m_bNeedsFinalSetPosition;
+	bool                      m_isMovingOrDecaying;
 	Impl::SObject3DAttributes m_attributes;
 	Impl::SObject3DAttributes m_previousAttributes;
-	CTimeValue                m_previousTime;
-
 };
 
 class CATLControlImpl
@@ -216,17 +180,14 @@ public:
 	  ControlId const audioTriggerId,
 	  EDataScope const dataScope,
 	  ImplPtrVec const& implPtrs,
-	  float const maxRadius,
-	  float const occlusionFadeOutDistance)
+	  float const maxRadius)
 		: ATLControl(audioTriggerId, dataScope)
 		, m_implPtrs(implPtrs)
 		, m_maxRadius(maxRadius)
-		, m_occlusionFadeOutDistance(occlusionFadeOutDistance)
 	{}
 
 	ImplPtrVec const m_implPtrs;
 	float const      m_maxRadius;
-	float const      m_occlusionFadeOutDistance;
 };
 
 // Base class for a parameter implementation
@@ -375,8 +336,7 @@ class CATLStandaloneFile final : public CPoolObject<CATLStandaloneFile, stl::PSy
 {
 public:
 
-	explicit CATLStandaloneFile()
-	{}
+	explicit CATLStandaloneFile() = default;
 
 	bool IsPlaying() const { return (m_state == EAudioStandaloneFileState::Playing) || (m_state == EAudioStandaloneFileState::Stopping); }
 
@@ -399,6 +359,7 @@ public:
 class CATLEvent final : public CPoolObject<CATLEvent, stl::PSyncNone>
 {
 public:
+
 	ERequestStatus Reset();
 	ERequestStatus Stop();
 	void           SetDataScope(EDataScope const dataScope) { m_dataScope = dataScope; }
@@ -458,7 +419,8 @@ public:
 class CATLPreloadRequest final : public CATLEntity<PreloadRequestId>
 {
 public:
-	typedef std::vector<FileEntryId> FileEntryIds;
+
+	using FileEntryIds = std::vector<FileEntryId>;
 
 	explicit CATLPreloadRequest(
 	  PreloadRequestId const audioPreloadRequestId,

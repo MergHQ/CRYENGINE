@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "RopeProxy.h"
@@ -34,7 +34,7 @@ void CEntityComponentRope::Initialize()
 {
 	m_pRopeRenderNode = (IRopeRenderNode*)gEnv->p3DEngine->CreateRenderNode(eERType_Rope);
 	int nSlot = GetOrMakeEntitySlotId();
-	GetEntity()->SetSlotRenderNode(nSlot,m_pRopeRenderNode);
+	GetEntity()->SetSlotRenderNode(nSlot, m_pRopeRenderNode);
 	m_nSegmentsOrg = -1;
 }
 
@@ -44,7 +44,7 @@ void CEntityComponentRope::Update(SEntityUpdateContext& ctx)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityComponentRope::ProcessEvent(SEntityEvent& event)
+void CEntityComponentRope::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{

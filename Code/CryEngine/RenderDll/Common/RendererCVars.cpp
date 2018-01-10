@@ -6,6 +6,7 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 #include "DriverD3D.h"
+#include "GraphicsPipeline/DebugRenderTargets.h"
 
 #if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
 	#define RENDERER_DEFAULT_MESHPOOLSIZE         (64U << 10)
@@ -54,21 +55,14 @@ AllocateConstIntCVar(CRendererCVars, CV_r_statsMinDrawcalls);
 AllocateConstIntCVar(CRendererCVars, CV_r_stats);
 AllocateConstIntCVar(CRendererCVars, CV_r_profiler);
 float CRendererCVars::CV_r_profilerTargetFPS;
+float CRendererCVars::CV_r_profilerSmoothingWeight;
 AllocateConstIntCVar(CRendererCVars, CV_r_log);
 AllocateConstIntCVar(CRendererCVars, CV_r_logTexStreaming);
 AllocateConstIntCVar(CRendererCVars, CV_r_logShaders);
 int CRendererCVars::CV_r_logVBuffers;
 AllocateConstIntCVar(CRendererCVars, CV_r_logVidMem);
-AllocateConstIntCVar(CRendererCVars, CV_r_predicatedtiling);
 AllocateConstIntCVar(CRendererCVars, CV_r_useESRAM);
 int CRendererCVars::CV_r_DeferredShadingSortLights;
-int CRendererCVars::CV_r_DeferredShadingAmbientSClear;
-int CRendererCVars::CV_r_msaa;
-int CRendererCVars::CV_r_msaa_samples;
-int CRendererCVars::CV_r_msaa_quality;
-int CRendererCVars::CV_r_msaa_debug;
-float CRendererCVars::CV_r_msaa_threshold_normal;
-float CRendererCVars::CV_r_msaa_threshold_depth;
 
 int CRendererCVars::CV_r_BreakOnError;
 int CRendererCVars::CV_r_durango_async_dips;
@@ -103,7 +97,6 @@ AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreaming);
 AllocateConstIntCVar(CRendererCVars, CV_r_TexturesStreamingDebug);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingnoupload);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingonlyvideo);
-int CRendererCVars::CV_r_texturesstreamingsync;
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingUpdateType);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingPrecacheRounds);
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingSuppress);
@@ -129,7 +122,6 @@ int CRendererCVars::CV_r_TexturesStreamPoolSecondarySize;
 int CRendererCVars::CV_r_texturesstreampooldefragmentation;
 int CRendererCVars::CV_r_texturesstreampooldefragmentationmaxmoves;
 int CRendererCVars::CV_r_texturesstreampooldefragmentationmaxamount;
-int CRendererCVars::CV_r_texturesskiplowermips;
 int CRendererCVars::CV_r_rendertargetpoolsize;
 float CRendererCVars::CV_r_TexturesStreamingMaxRequestedMB;
 int CRendererCVars::CV_r_TexturesStreamingMaxRequestedJobs;
@@ -183,7 +175,6 @@ AllocateConstIntCVar(CRendererCVars, CV_r_deferredshadingDBTstencil);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingScissor);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingLBuffersFmt);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingDepthBoundsTest);
-AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingDebug);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingDebugGBuffer);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingAmbient);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingEnvProbes);
@@ -300,6 +291,7 @@ int CRendererCVars::CV_r_shadersasynccompiling;
 int CRendererCVars::CV_r_shadersasyncactivation;
 int CRendererCVars::CV_r_shadersasyncmaxthreads;
 int CRendererCVars::CV_r_shaderscachedeterministic;
+int CRendererCVars::CV_r_shaderscacheinmemory;
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersprecachealllights);
 AllocateConstIntCVar(CRendererCVars, CV_r_ReflectTextureSlots);
 int CRendererCVars::CV_r_shaderssubmitrequestline;
@@ -318,7 +310,6 @@ int CRendererCVars::CV_r_usezpass;
 AllocateConstIntCVar(CRendererCVars, CV_r_TransparentPasses);
 AllocateConstIntCVar(CRendererCVars, CV_r_TranspDepthFixup);
 AllocateConstIntCVar(CRendererCVars, CV_r_SkipAlphaTested);
-AllocateConstIntCVar(CRendererCVars, CV_r_SoftAlphaTest);
 AllocateConstIntCVar(CRendererCVars, CV_r_usehwskinning);
 AllocateConstIntCVar(CRendererCVars, CV_r_usemateriallayers);
 AllocateConstIntCVar(CRendererCVars, CV_r_ParticlesSoftIsec);
@@ -473,6 +464,7 @@ int CRendererCVars::CV_r_flares = FLARES_DEFAULT_VAL;
 AllocateConstIntCVar(CRendererCVars, CV_r_flareHqShafts);
 float CRendererCVars::CV_r_FlaresChromaShift;
 int CRendererCVars::CV_r_FlaresIrisShaftMaxPolyNum;
+int CRendererCVars::CV_r_FlaresEnableColorGrading;
 float CRendererCVars::CV_r_FlaresTessellationRatio;
 
 int CRendererCVars::CV_r_envcmresolution;
@@ -506,7 +498,7 @@ AllocateConstIntCVar(CRendererCVars, CV_r_reloadshaders);
 AllocateConstIntCVar(CRendererCVars, CV_r_detailtextures);
 float CRendererCVars::CV_r_detaildistance;
 AllocateConstIntCVar(CRendererCVars, CV_r_texbindmode);
-AllocateConstIntCVar(CRendererCVars, CV_r_nodrawshaders);
+
 int CRendererCVars::CV_r_nodrawnear;
 float CRendererCVars::CV_r_DrawNearZRange;
 float CRendererCVars::CV_r_DrawNearFarPlane;
@@ -762,7 +754,8 @@ void CRendererCVars::OnChange_CachedShadows(ICVar* pCVar)
 {
 	if (gEnv->p3DEngine)  // 3DEngine not initialized during ShaderCacheGen
 	{
-		CTexture::GenerateCachedShadowMaps();
+		CRendererResources::CreateCachedShadowMaps();
+
 		gEnv->p3DEngine->SetShadowsGSMCache(true);
 		gEnv->p3DEngine->SetRecomputeCachedShadows(ShadowMapFrustum::ShadowCacheData::eFullUpdate);
 	}
@@ -788,209 +781,11 @@ void CRendererCVars::OnChange_GeomInstancingThreshold(ICVar* pVar)
 
 	iLog->Log(" Used GeomInstancingThreshold is %d", CRenderer::m_iGeomInstancingThreshold);
 }
-
-static const char* showRenderTargetHelp =
-  "Displays render targets - for debug purpose\n"
-  "[Usage]\n"
-  "r_ShowRenderTarget -l : list all available render targets\n"
-  "r_ShowRenderTarget -l hdr : list all available render targets whose name contain 'hdr'\n"
-  "r_ShowRenderTarget -nf zpass : show any render targets whose name contain 'zpass' with no filtering in 2x2(default) table\n"
-  "r_ShowRenderTarget -c:3 pass : show any render targets whose name contain 'pass' in 3x3 table\n"
-  "r_ShowRenderTarget z hdr : show any render targets whose name contain either 'z' or 'hdr'\n"
-  "r_ShowRenderTarget scene:rg scene:b : show any render targets whose name contain 'scene' first with red-green channels only and then with a blue channel only\n"
-  "r_ShowRenderTarget scenetarget:rgba:2 : show any render targets whose name contain 'scenetarget' with all channels multiplied by 2\n"
-  "r_ShowRenderTarget scene:b hdr:a : show any render targets whose name contain 'scene' with a blue channel only and ones whose name contain 'hdr' with an alpha channel only\n"
-  "r_ShowRenderTarget -e $ztarget : show a render target whose name exactly matches '$ztarget'\n"
-  "r_ShowRenderTarget -s scene : separately shows each channel of any 'scene' render targets\n"
-  "r_ShowRenderTarget -k scene : shows any 'scene' render targets with RGBK decoding\n"
-  "r_ShowRenderTarget -a scene : shows any 'scene' render targets with 101110/8888 aliasing";
-
 void CRendererCVars::Cmd_ShowRenderTarget(IConsoleCmdArgs* pArgs)
 {
-	int argCount = pArgs->GetArgCount();
-
-	gRenDev->m_showRenderTargetInfo.Reset();
-
-	if (argCount <= 1)
+	if (gcpRendD3D)
 	{
-		string help = showRenderTargetHelp;
-		int curPos = 0;
-		string line = help.Tokenize("\n", curPos);
-		while (false == line.empty())
-		{
-			gEnv->pLog->Log("%s", line.c_str());
-			line = help.Tokenize("\n", curPos);
-		}
-		return;
-	}
-
-	// Check for '-l'.
-	for (int i = 1; i < argCount; ++i)
-	{
-		if (strcmp(pArgs->GetArg(i), "-l") == 0)
-		{
-			gRenDev->m_showRenderTargetInfo.bShowList = true;
-			break;
-		}
-	}
-
-	// Check for '-c:*'.
-	for (int i = 1; i < argCount; ++i)
-	{
-		if (strlen(pArgs->GetArg(i)) > 3 && strncmp(pArgs->GetArg(i), "-c:", 3) == 0)
-		{
-			gRenDev->m_showRenderTargetInfo.col = atoi(pArgs->GetArg(i) + 3);
-			if (gRenDev->m_showRenderTargetInfo.col <= 0)
-				gRenDev->m_showRenderTargetInfo.col = 2;
-		}
-	}
-
-	// Now gather all render targets.
-	std::vector<CTexture*> allRTs;
-	SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
-	ResourcesMapItor it;
-	for (it = pRL->m_RMap.begin(); it != pRL->m_RMap.end(); ++it)
-	{
-		CTexture* tp = (CTexture*)it->second;
-		if (tp && !tp->IsNoTexture())
-		{
-			if ((tp->GetFlags() & (FT_USAGE_RENDERTARGET | FT_USAGE_DYNAMIC)) && tp->GetDevTexture())
-				allRTs.push_back(tp);
-		}
-	}
-
-	// Process actual arguments with possible '-nf', '-f', '-e' options.
-	bool bNoRegularArgs = true;
-	bool bFiltered = true;
-	bool bExactMatch = false;
-	bool bRGBKEncoded = false;
-	bool bAliased = false;
-	bool bWeightedChannels = false;
-	bool bSplitChannels = false;
-
-	for (int i = 1; i < argCount; ++i)
-	{
-		const char* pCurArg = pArgs->GetArg(i);
-
-		bool bColOption = strlen(pCurArg) > 3 && strncmp(pCurArg, "-c:", 3) == 0;
-		if (strcmp(pCurArg, "-l") == 0 || bColOption)
-			continue;
-
-		if (strcmp(pCurArg, "-nf") == 0)
-		{
-			bFiltered = false;
-		}
-		else if (strcmp(pCurArg, "-f") == 0)
-		{
-			bFiltered = true;
-		}
-		else if (strcmp(pCurArg, "-e") == 0)
-		{
-			bExactMatch = true;
-		}
-		else if (strcmp(pCurArg, "-k") == 0)
-		{
-			bRGBKEncoded = true;
-		}
-		else if (strcmp(pCurArg, "-a") == 0)
-		{
-			bAliased = true;
-		}
-		else if (strcmp(pCurArg, "-s") == 0)
-		{
-			bSplitChannels = true;
-		}
-		else
-		{
-			bNoRegularArgs = false;
-			string argTxt = pCurArg, nameTxt, channelTxt, mulTxt;
-			argTxt.MakeLower();
-			float multiplier = 1.0f;
-			size_t pos = argTxt.find(':');
-			if (pos == string::npos)
-			{
-				nameTxt = argTxt;
-				channelTxt = "rgba";
-			}
-			else
-			{
-				nameTxt = argTxt.substr(0, pos);
-				channelTxt = argTxt.substr(pos + 1, string::npos);
-				pos = channelTxt.find(':');
-				if (pos != string::npos)
-				{
-					mulTxt = channelTxt.substr(pos + 1, string::npos);
-					multiplier = static_cast<float>(atof(mulTxt.c_str()));
-					if (multiplier <= 0)
-						multiplier = 1.0f;
-				}
-				bWeightedChannels = true;
-			}
-
-			Vec4 channelWeight(0, 0, 0, 0);
-			if (channelTxt.find('r') != string::npos)
-				channelWeight.x = 1.0f;
-			if (channelTxt.find('g') != string::npos)
-				channelWeight.y = 1.0f;
-			if (channelTxt.find('b') != string::npos)
-				channelWeight.z = 1.0f;
-			if (channelTxt.find('a') != string::npos)
-				channelWeight.w = 1.0f;
-
-			channelWeight *= multiplier;
-
-			for (size_t k = 0; k < allRTs.size(); ++k)
-			{
-				string texName = allRTs[k]->GetName();
-				texName.MakeLower();
-				bool bMatch = false;
-				if (bExactMatch)
-					bMatch = texName == nameTxt;
-				else
-					bMatch = texName.find(nameTxt.c_str()) != string::npos;
-				if (bMatch)
-				{
-					SShowRenderTargetInfo::RT rt;
-					rt.bFiltered = bFiltered;
-					rt.bRGBKEncoded = bRGBKEncoded;
-					rt.bAliased = bAliased;
-					rt.pTexture = allRTs[k];
-					rt.channelWeight = channelWeight;
-
-					if (bSplitChannels)
-					{
-						const Vec4 channels[4] = { Vec4(1, 0, 0, 0), Vec4(0, 1, 0, 0), Vec4(0, 0, 1, 0), Vec4(0, 0, 0, 1) };
-
-						for (int j = 0; j < 4; ++j)
-						{
-							rt.channelWeight = bWeightedChannels ? channelWeight : Vec4(1, 1, 1, 1);
-							rt.channelWeight.x *= channels[j].x;
-							rt.channelWeight.y *= channels[j].y;
-							rt.channelWeight.z *= channels[j].z;
-							rt.channelWeight.w *= channels[j].w;
-
-							if (rt.channelWeight[j] > 0.0f)
-								gRenDev->m_showRenderTargetInfo.rtList.push_back(rt);
-						}
-					}
-					else
-					{
-						gRenDev->m_showRenderTargetInfo.rtList.push_back(rt);
-					}
-				}
-			}
-		}
-	}
-
-	if (bNoRegularArgs && gRenDev->m_showRenderTargetInfo.bShowList) // This means showing all items.
-	{
-		for (size_t k = 0; k < allRTs.size(); ++k)
-		{
-			SShowRenderTargetInfo::RT rt;
-			rt.bFiltered = true; // Doesn't matter, actually.
-			rt.pTexture = allRTs[k];
-			gRenDev->m_showRenderTargetInfo.rtList.push_back(rt);
-		}
+		gcpRendD3D->GetGraphicsPipeline().GetDebugRenderTargetsStage()->OnShowRenderTargetsCmd(pArgs);
 	}
 }
 
@@ -1067,41 +862,41 @@ static void ShadersOptimise(IConsoleCmdArgs* Cmd)
 {
 	if (CRenderer::CV_r_shadersdx11)
 	{
-		CParserBin::SetupForD3D11();
+		CParserBin::SetupForPlatform(SF_D3D11);
 		CryLogAlways("\nStarting shaders optimizing for DX11...");
-		string str = string("%USER%/") + string(gRenDev->m_cEF.m_ShadersCache);
+		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
 		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
 		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
 	}
 	if (CRenderer::CV_r_shadersGL4)
 	{
-		CParserBin::SetupForGL4();
+		CParserBin::SetupForPlatform(SF_GL4);
 		CryLogAlways("\nStarting shaders optimizing for GLSL 4...");
-		string str = string("%USER%/") + string(gRenDev->m_cEF.m_ShadersCache);
+		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
 		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
 		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
 	}
 	if (CRenderer::CV_r_shadersGLES3)
 	{
-		CParserBin::SetupForGLES3();
+		CParserBin::SetupForPlatform(SF_GLES3);
 		CryLogAlways("\nStarting shaders optimizing for GLSL-ES 3...");
-		string str = string("%USER%/") + string(gRenDev->m_cEF.m_ShadersCache);
+		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
 		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
 		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
 	}
 	if (CRenderer::CV_r_shadersdurango)
 	{
-		CParserBin::SetupForDurango();
+		CParserBin::SetupForPlatform(SF_DURANGO);
 		CryLogAlways("\nStarting shaders optimizing for Durango...");
-		string str = string("%USER%/") + string(gRenDev->m_cEF.m_ShadersCache);
+		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
 		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
 		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
 	}
 	if (CRenderer::CV_r_shadersorbis)
 	{
-		CParserBin::SetupForOrbis();
+		CParserBin::SetupForPlatform(SF_ORBIS);
 		CryLogAlways("\nStarting shaders optimizing for Orbis...");
-		string str = string("%USER%/") + string(gRenDev->m_cEF.m_ShadersCache);
+		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
 		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
 		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
 	}
@@ -1202,13 +997,6 @@ void CRendererCVars::InitCVars()
 	                    "Usage: r_DeferredShadingDBTstencil [0/1]\n"
 	                    "Default is 1 (enabled)");
 
-	DefineConstIntCVar3("r_DeferredShadingDebug", CV_r_DeferredShadingDebug, 0, VF_DUMPTODISK,
-	                    "Toggles deferred shading debug.\n"
-	                    "Usage: r_DeferredShadingDebug [0/1]\n"
-	                    "  0 disabled (Default)\n"
-	                    "  1: Visualize g-buffer and l-buffers\n"
-	                    "  2: Debug deferred lighting fillrate (brighter colors means more expensive)\n");
-
 	DefineConstIntCVar3("r_DebugGBuffer", CV_r_DeferredShadingDebugGBuffer, 0, VF_NULL,
 	                    "Debug view for gbuffer attributes\n"
 	                    "  0 - Disabled\n"
@@ -1259,9 +1047,6 @@ void CRendererCVars::InitCVars()
 	               "Sorts light by influence\n"
 	               "Usage: r_DeferredShadingSortLights [0/1]\n"
 	               "Default is 0 (off)");
-
-	REGISTER_CVAR3("r_DeferredShadingAmbientSClear", CV_r_DeferredShadingAmbientSClear, 1, VF_NULL,
-	               "Clear stencil buffer after ambient pass (prevents artifacts on Nvidia hw)\n");
 
 	REGISTER_CVAR3_CB("r_HDRRendering", CV_r_HDRRendering, 1, VF_DUMPTODISK,
 	                  "Toggles HDR rendering.\n"
@@ -1315,7 +1100,7 @@ void CRendererCVars::InitCVars()
 	               "Usage: r_HDRRangeAdaptLBufferMaxRange [Value]\n"
 	               "Default is 2.0f");
 
-	DefineConstIntCVar3("r_HDRTexFormat", CV_r_HDRTexFormat, 1, VF_DUMPTODISK,
+	DefineConstIntCVar3("r_HDRTexFormat", CV_r_HDRTexFormat, 1, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART,
 	                    "Sets HDR render target precision. Default is 1.\n"
 	                    "Usage: r_HDRTexFormat [Value]\n"
 											"  0: (lower precision)\n"
@@ -1423,11 +1208,6 @@ void CRendererCVars::InitCVars()
 	DefineConstIntCVar3("r_SkipAlphaTested", CV_r_SkipAlphaTested, 0, VF_CHEAT,
 	                    "Disables rendering of alpha-tested objects.\n");
 
-	DefineConstIntCVar3("r_SoftAlphaTest", CV_r_SoftAlphaTest, 1, VF_NULL,
-	                    "Toggles post processed soft alpha test for shaders supporting this\n"
-	                    "Usage: r_SoftAlphaTest [0/1]\n"
-	                    "Default is 1 (enabled)\n");
-
 	DefineConstIntCVar3("r_UseHWSkinning", CV_r_usehwskinning, 1, VF_NULL,
 	                    "Toggles HW skinning.\n"
 	                    "Usage: r_UseHWSkinning [0/1]\n"
@@ -1464,34 +1244,6 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_ParticlesAmountGI", CV_r_ParticlesAmountGI, 0.15f, VF_NULL,
 	               "Global illumination amount for particles without material.\n"
 	               "Usage: r_ParticlesAmountGI [n]");
-
-	REGISTER_CVAR3("r_MSAA", CV_r_msaa, 0, VF_NULL,
-	               "Enables hw multisampling antialiasing.\n"
-	               "Usage: r_MSAA [0/1]\n"
-	               "Default: 0 (off).\n"
-	               "1: enabled + default reference quality mode\n");
-	REGISTER_CVAR3("r_MSAA_samples", CV_r_msaa_samples, 0, VF_NULL,
-	               "Number of subsamples used when hw multisampled antialiasing is enabled.\n"
-	               "Usage: r_MSAA_samples N (where N is a number >= 0). Attention, N must be supported by given video hardware!\n"
-	               "Default: 0. Please note that various hardware implements special MSAA modes via certain combinations of\n"
-	               "r_MSAA_quality and r_MSAA_samples.");
-	REGISTER_CVAR3("r_MSAA_quality", CV_r_msaa_quality, 0, VF_NULL,
-	               "Quality level used when multisampled antialiasing is enabled.\n"
-	               "Usage: r_MSAA_quality N (where N is a number >= 0). Attention, N must be supported by given video hardware!\n"
-	               "Default: 0. Please note that various hardware implements special MSAA modes via certain combinations of\n"
-	               "r_MSAA_quality and r_MSAA_samples.");
-	REGISTER_CVAR3("r_MSAA_debug", CV_r_msaa_debug, 0, VF_NULL,
-	               "Enable debugging mode for msaa.\n"
-	               "Usage: r_MSAA_debug N (where N is debug mode > 0)\n"
-	               "Default: 0. disabled. Note debug modes share target with post processing, disable post processing for correct visualization. \n"
-	               "1 disable sample frequency pass\n"
-	               "2 visualize sample frequency mask\n");
-
-	// This values seem a good performance/quality balance for a Crysis style level (note that they might need re-adjust for different projects)
-	REGISTER_CVAR3("r_MSAA_threshold_depth", CV_r_msaa_threshold_depth, 0.1f, VF_NULL,
-	               "Set depth threshold to be used for custom resolve sub-samples masking\n");
-	REGISTER_CVAR3("r_MSAA_threshold_normal", CV_r_msaa_threshold_normal, 0.9f, VF_NULL,
-	               "Set normals threshold to be used for custom resolve sub-samples masking\n");
 
 	static string aaModesDesc = "Enables post process based anti-aliasing modes.\nUsage: r_AntialiasingMode [n]\n";
 
@@ -1875,9 +1627,9 @@ void CRendererCVars::InitCVars()
 	                                             "Usage: r_ShowDynTexturesFilter start*\n"
 	                                             "Default is *. Set to 'pattern' to show only specific textures (activate r_ShowDynTextures)");
 
-	CV_r_ShaderCompilerServer = REGISTER_STRING("r_ShaderCompilerServer", "0.0.0.0", VF_NULL,
-	                                            "Usage: r_ShaderCompilerServer localhost \n"
-	                                            "Default is 0.0.0.0 ");
+	CV_r_ShaderCompilerServer = REGISTER_STRING("r_ShaderCompilerServer", "localhost", VF_NULL,
+	                                            "Usage: r_ShaderCompilerServer <ip;ip;ip;...> \n"
+	                                            "Default is localhost ");
 																							
 	CV_r_ShaderCompilerFolderName = REGISTER_STRING("r_ShaderCompilerFolderName", "", VF_NULL,
 	                                             "Usage: r_ShaderCompilerFolderName foldername \n"
@@ -2155,10 +1907,6 @@ void CRendererCVars::InitCVars()
 	               "Default is 50(MB).");
 
 	int nDefaultDefragState = 0;
-
-	REGISTER_CVAR3("r_texturesskiplowermips", CV_r_texturesskiplowermips, 0, VF_NULL,
-	               "Enabled skipping lower mips for X360.\n");
-
 	int nDefaultTexPoolSize = 1024;
 
 	REGISTER_CVAR3("r_TexturesStreamPoolSize", CV_r_TexturesStreamPoolSize, nDefaultTexPoolSize, VF_NULL,
@@ -2173,12 +1921,6 @@ void CRendererCVars::InitCVars()
 	               "Specify the maximum number of blocks to move per defragmentation update");
 	REGISTER_CVAR3("r_texturesstreampooldefragmentationmaxamount", CV_r_texturesstreampooldefragmentationmaxamount, 512 * 1024, VF_NULL,
 	               "Specify the limit (in bytes) that defrag update will stop");
-
-	REGISTER_CVAR3("r_TexturesStreamingSync", CV_r_texturesstreamingsync, 0, VF_RENDERER_CVAR,
-	               "Force only synchronous texture streaming.\n"
-	               "All textures will be streamed in the main thread. Useful for debug purposes.\n"
-	               "Usage: r_TexturesStreamingSync [0/1]\n"
-	               "Default is 0 (off).");
 
 	REGISTER_CVAR3("r_TexturesStreamingMaxRequestedMB", CV_r_TexturesStreamingMaxRequestedMB, 2.f, VF_NULL,
 	               "Maximum amount of texture data requested from streaming system in MB.\n"
@@ -2445,6 +2187,7 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_ShadersAsyncMaxThreads", CV_r_shadersasyncmaxthreads, 1, VF_DUMPTODISK, "");
 	REGISTER_CVAR3("r_ShadersCacheDeterministic", CV_r_shaderscachedeterministic, 1, VF_NULL, "Ensures that 2 shaderCaches built from the same source are binary equal");
+	REGISTER_CVAR3("r_ShadersCacheInMemory", CV_r_shaderscacheinmemory, 1, VF_NULL, "Caches compressed compiled shaders in memory");
 	DefineConstIntCVar3("r_ShadersPrecacheAllLights", CV_r_shadersprecachealllights, 1, VF_NULL, "");
 	REGISTER_CVAR3("r_ShadersSubmitRequestline", CV_r_shaderssubmitrequestline, 1, VF_NULL, "");
 
@@ -2462,7 +2205,7 @@ void CRendererCVars::InitCVars()
 	               "0 off, 1 import and allow fallback to getBinShader, 2 import, no fallback if import fails (optimal).");
 
 	REGISTER_CVAR3("r_ShadersExport", CV_r_shadersExport, 1, VF_NULL,
-	               "0 off, 1 allow shader export during shader cache generation - Currently 360 only.");
+	               "0 off, 1 allow shader export during shader cache generation - Currently unavailable.");
 
 	DefineConstIntCVar3("r_DebugRenderMode", CV_r_debugrendermode, 0, VF_CHEAT, "");
 	DefineConstIntCVar3("r_DebugRefraction", CV_r_debugrefraction, 0, VF_CHEAT,
@@ -2651,10 +2394,7 @@ void CRendererCVars::InitCVars()
 	                    "\t11 - Force white diffuse map and flat normal map\n"
 	                    "\t12 - Visualise textures that have more or less mips in memory than needed\n"
 	                    "Default is 0 (disabled).");
-	DefineConstIntCVar3("r_NoDrawShaders", CV_r_nodrawshaders, 0, VF_CHEAT,
-	                    "Disable entire render pipeline.\n"
-	                    "Usage: r_NoDrawShaders [0/1]\n"
-	                    "Default is 0 (render pipeline enabled). Used for debugging and profiling.");
+	
 	REGISTER_CVAR3("r_DrawNearShadows", CV_r_DrawNearShadows, 0, VF_NULL,
 	               "Enable shadows for near objects.\n"
 	               "Usage: r_DrawNearShadows [0/1]\n");
@@ -2692,6 +2432,11 @@ void CRendererCVars::InitCVars()
 	               "Usage : r_FlaresIrisShaftMaxPolyNum [n]\n"
 	               "Default is 200\n"
 	               "0 Infinite");
+
+	REGISTER_CVAR3("r_FlaresEnableColorGrading", CV_r_FlaresEnableColorGrading, 1, VF_NULL,
+				   "Toggles color grading on lens flares.\n"
+				   "Usage : r_FlaresEnableColorGrading [n]\n"
+				   "Default is 1 (on).");
 
 	REGISTER_CVAR3_CB("r_FlaresTessellationRatio", CV_r_FlaresTessellationRatio, 1, VF_NULL,
 	                  "Set the tessellation rate of flares. 1 is the original mesh.\n"
@@ -2769,11 +2514,15 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_profilerTargetFPS", CV_r_profilerTargetFPS, 30.0f, VF_NULL,
 	               "Target framerate for application.");
 
+	REGISTER_CVAR3("r_profilerSmoothingWeight", CV_r_profilerSmoothingWeight, 0.1f, VF_NULL,
+		"Set how much the current time measurement weights into the previous one.\n"
+		"  Single Exponential Smoothing -> (1-a)*oldVal + a*newVal\n"
+		"  Range: [0.0, 1.0]");
+
 	REGISTER_CVAR3("r_VSync", CV_r_vsync, 1, VF_RESTRICTEDMODE | VF_DUMPTODISK,
 	               "Toggles vertical sync.\n"
 	               "0: Disabled\n"
-	               "1: Enabled\n"
-	               "2: Enabled, use asynchronous swaps on X360");
+	               "1: Enabled\n");
 
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
 	REGISTER_CVAR3("r_overrideRefreshRate", CV_r_overrideRefreshRate, 0, VF_RESTRICTEDMODE | VF_DUMPTODISK,
@@ -2794,9 +2543,6 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_FullscreenPreemption", CV_r_FullscreenPreemption, 1, VF_NULL,
 	               "While in fullscreen activities like notification pop ups of other applications won't cause a mode switch back into windowed mode.");
 #endif
-	DefineConstIntCVar3("r_PredicatedTiling", CV_r_predicatedtiling, 0, VF_REQUIRE_APP_RESTART,
-	                    "Toggles predicated tiling mode (X360 only)\n"
-	                    "Usage: r_PredicatedTiling [0/1]");
 	DefineConstIntCVar3("r_UseESRAM", CV_r_useESRAM, 1, VF_REQUIRE_APP_RESTART,
 	                    "Toggles using ESRAM for render targets (Durango only)\n"
 	                    "Usage: r_UseESRAM [0/1]");
@@ -2821,7 +2567,7 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_VegetationSpritesTexRes", CV_r_VegetationSpritesTexRes, 128, VF_DEPRECATED, "[DEPRECATED]");
 
 	REGISTER_CVAR3("r_ShowVideoMemoryStats", CV_r_ShowVideoMemoryStats, 0, VF_NULL, "");
-	REGISTER_COMMAND("r_ShowRenderTarget", &Cmd_ShowRenderTarget, VF_CHEAT, showRenderTargetHelp);
+	REGISTER_COMMAND("r_ShowRenderTarget", &Cmd_ShowRenderTarget, VF_CHEAT, CDebugRenderTargetsStage::showRenderTargetHelp);
 
 	REGISTER_CVAR3("r_BreakOnError", CV_r_BreakOnError, 0, VF_NULL, "calls debugbreak on illegal behaviour");
 	REGISTER_CVAR3("r_durango_async_dips", CV_r_durango_async_dips, 0, VF_NULL, "enables async dip submission on durango");
@@ -2875,7 +2621,7 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_ReverseDepth", CV_r_ReverseDepth, 1, VF_NULL, "Use 1-z depth rendering for increased depth precision");
 
 	REGISTER_CVAR3("r_EnableDebugLayer", CV_r_EnableDebugLayer, 0, VF_NULL, "DX12: Enable Debug Layer");
-	REGISTER_CVAR3("r_NoDraw", CV_r_NoDraw, 0, VF_NULL, "Disable submitting of certain draw operations: 1-(Do not process render objects at all), 2-(Do not submit individual render objects), 3-(No DrawIndexed)");
+	REGISTER_CVAR3("r_NoDraw", CV_r_NoDraw, 0, VF_NULL, "Disable submitting of certain draw operations: 1-(Do not process render objects at all), 2-(Do not submit individual render objects), 3-(No DrawIndexed) 4-Disable entire GraphicsPipeline execution.");
 	REGISTER_CVAR3("r_UpdateInstances", CV_r_UpdateInstances, 0, VF_NULL, "Enabling runtime instancing CB updatings each frame");
 
 	// show texture debug routine + auto completion
@@ -2929,7 +2675,7 @@ void CRendererCVars::InitCVars()
 	               "Usage: r_StereoOutput [0=off/1/2/3/4/5/6/...]\n"
 	               "0: Standard\n"
 	               "1: Side by Side Squeezed\n"
-	               "2: Checkerboard (not supported on X360)\n"
+	               "2: Checkerboard\n"
 	               "3: Above and Below (not supported)\n"
 	               "4: Side by Side\n"
 	               "5: Line by Line (Interlaced)\n"
@@ -3262,9 +3008,9 @@ void CRendererCVars::InitCVars()
 #endif
 
 	// compute skinning cvars
-	DefineConstIntCVar(r_ComputeSkinning, 1, VF_NULL, "Activate skinning via compute shaders");
-	DefineConstIntCVar(r_ComputeSkinningMorphs, 1, VF_NULL, "Apply morphs before skinning");
-	DefineConstIntCVar(r_ComputeSkinningTangents, 1, VF_NULL, "Calculate new tangents after skinning is computed");
+	DefineConstIntCVar(r_ComputeSkinning, 1, VF_NULL, "Activate skinning via compute shaders (0=disabled, 1=enabled, 2=forced)");
+	DefineConstIntCVar(r_ComputeSkinningMorphs, 1, VF_NULL, "Apply morphs before skinning (0=disabled, 1=enabled, 2=forced)");
+	DefineConstIntCVar(r_ComputeSkinningTangents, 1, VF_NULL, "Calculate new tangents after skinning is computed (0=disabled, 1=enabled, 2=forced)");
 	DefineConstIntCVar(r_ComputeSkinningDebugDraw, 0, VF_NULL, "Enable debug draw mode for geometry deformation");
 
 	//////////////////////////////////////////////////////////////////////////
@@ -3275,7 +3021,7 @@ void CRendererCVars::InitExternalCVars()
 {
 	m_CVWidth = iConsole->GetCVar("r_Width");
 	m_CVHeight = iConsole->GetCVar("r_Height");
-	m_CVFullScreen = iConsole->GetCVar("r_Fullscreen");
+	m_CVWindowType = iConsole->GetCVar("r_WindowType");
 	m_CVDisplayInfo = iConsole->GetCVar("r_DisplayInfo");
 	m_CVColorBits = iConsole->GetCVar("r_ColorBits");
 }
@@ -3331,7 +3077,7 @@ CCVarUpdateRecorder::~CCVarUpdateRecorder()
 
 void CCVarUpdateRecorder::OnAfterVarChange(ICVar* pVar) 
 { 
-	m_updatedCVars[gcpRendD3D->m_RP.m_nFillThreadID].emplace_back(pVar);
+	m_updatedCVars[gRenDev->GetMainThreadID()].emplace_back(pVar);
 }
 
 void CCVarUpdateRecorder::OnVarUnregister(ICVar* pVar)
@@ -3346,17 +3092,17 @@ void CCVarUpdateRecorder::OnVarUnregister(ICVar* pVar)
 
 void CCVarUpdateRecorder::Reset() 
 { 
-	m_updatedCVars[gcpRendD3D->m_RP.m_nProcessThreadID].clear(); 
+	m_updatedCVars[gRenDev->GetRenderThreadID()].clear(); 
 }
 
 const CCVarUpdateRecorder::CVarList& CCVarUpdateRecorder::GetCVars() const
 { 
-	return m_updatedCVars[gcpRendD3D->m_RP.m_nProcessThreadID];
+	return m_updatedCVars[gRenDev->GetRenderThreadID()];
 }
 
 const CCVarUpdateRecorder::SUpdateRecord* CCVarUpdateRecorder::GetCVar(const char* cvarName) const
 {
-	for (auto& cvar : m_updatedCVars[gcpRendD3D->m_RP.m_nProcessThreadID])
+	for (auto& cvar : m_updatedCVars[gRenDev->GetRenderThreadID()])
 	{
 		if (cry_strcmp(cvar.name, cvarName) == 0)
 			return &cvar;

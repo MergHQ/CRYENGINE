@@ -36,11 +36,48 @@ namespace CryEngine
 			A = a;
 		}
 
+		public static implicit operator ColorB(Color value)
+		{
+			return new ColorB
+			{
+				r = (byte)MathHelpers.Clamp(255.0f * value.R, 0.0f, 255.0f),
+				g = (byte)MathHelpers.Clamp(255.0f * value.G, 0.0f, 255.0f),
+				b = (byte)MathHelpers.Clamp(255.0f * value.B, 0.0f, 255.0f),
+				a = (byte)MathHelpers.Clamp(255.0f * value.A, 0.0f, 255.0f),
+			};
+		}
+
+		public static implicit operator Color(ColorB value)
+		{
+			if(value == null)
+			{
+				return new Color();
+			}
+
+			return new Color
+			{
+				R = 255.0f / value.r,
+				G = 255.0f / value.g,
+				B = 255.0f / value.b,
+				A = 255.0f / value.a
+			};
+		}
+
+		/// <summary>
+		/// Implicitly converts the <see cref="Color"/> to a <see cref="ColorF"/>.
+		/// </summary>
+		/// <returns>The implicit.</returns>
+		/// <param name="value">Value.</param>
 		public static implicit operator ColorF(Color value)
 		{
 			return new ColorF(value.R, value.G, value.B, value.A);
 		}
 
+		/// <summary>
+		/// Implicitly converts the <see cref="ColorF"/> to a <see cref="Color"/>.
+		/// </summary>
+		/// <returns>The implicit.</returns>
+		/// <param name="value">Value.</param>
 		public static implicit operator Color(ColorF value)
 		{
 			if(value == null)

@@ -5,7 +5,7 @@
 #include <memory>
 #include <QWidget>
 #include "DisplayParameters.h"
-#include "../EditorCommon/QPropertyTree/ContextList.h"
+#include "QPropertyTree/ContextList.h"
 
 class QPropertyTree;
 

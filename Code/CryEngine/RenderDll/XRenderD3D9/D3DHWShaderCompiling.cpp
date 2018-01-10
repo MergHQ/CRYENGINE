@@ -3,6 +3,9 @@
 #include "StdAfx.h"
 #include "DriverD3D.h"
 
+#include <lzss/LZSS.H>
+#include <lzma/Lzma86.h>
+
 #if !CRY_PLATFORM_ORBIS && !CRY_RENDERER_OPENGL && !CRY_RENDERER_OPENGLES && !CRY_RENDERER_VULKAN
 	#if CRY_PLATFORM_DURANGO
 		#include <D3D11Shader_x.h>
@@ -34,8 +37,16 @@ SShaderAsyncInfo& CAsyncShaderTask::BuildList()    { return g_BuildList; }
 
 CryEvent SShaderAsyncInfo::s_RequestEv;
 
-int CHWShader_D3D::s_nDevicePSDataSize;
-int CHWShader_D3D::s_nDeviceVSDataSize;
+int CHWShader_D3D::s_nDevicePSDataSize = 0;
+int CHWShader_D3D::s_nDeviceVSDataSize = 0;
+
+namespace
+{
+	inline int GetCurrentFrameID()
+	{
+		return (gRenDev->m_pRT->IsRenderThread()) ? gRenDev->GetRenderFrameID() : gRenDev->GetMainFrameID();
+	};
+}
 
 class CSpinLock
 {
@@ -44,7 +55,7 @@ public:
 	{
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 		while (CryInterlockedCompareExchange(&s_locked, 1L, 0L) == 1L)
-			Sleep(0);
+			CrySleep(0);
 #endif
 	}
 
@@ -527,7 +538,9 @@ void CHWShader_D3D::mfGatherFXParameters(SHWSInstance* pInst, std::vector<SCGBin
 				continue;
 			assert(!smp.m_pDynTexSource);
 			if (smp.m_bGlobal)
-				mfAddGlobalSampler(smp);
+			{
+				//mfAddGlobalSampler(smp);
+			}
 			else
 				pInst->m_pSamplers.push_back(smp);
 		}
@@ -938,8 +951,8 @@ void CHWShader::mfValidateTokenData(CResFile* pRes)
 	ResDir* Dir = pRes->mfGetDirectory();
 	for (unsigned int i = 0; i < Dir->size(); i++)
 	{
-		SDirEntry* pDE = &(*Dir)[i];
-		if (pDE->flags & RF_RES_$TOKENS)
+		CDirEntry* pDE = &(*Dir)[i];
+		if (pDE->GetFlags() & RF_RES_$TOKENS)
 		{
 			uint32 nSize = pRes->mfFileRead(pDE);
 			byte* pData = (byte*)pRes->mfFileGetBuf(pDE);
@@ -966,7 +979,7 @@ void CHWShader::mfValidateTokenData(CResFile* pRes)
 				break;
 			}
 
-			pRes->mfCloseEntry(pDE);
+			pRes->mfCloseEntry(pDE->GetName(), pDE->GetFlags());
 		}
 	}
 
@@ -1008,20 +1021,18 @@ bool CHWShader_D3D::mfStoreCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*&
 	}
 	if (!Data.size())
 		return false;
-	SDirEntry de;
-	de.Name = szName;
-	de.flags = RF_RES_$TOKENS;
-	de.size = Data.size();
+
+	CDirEntry de(szName, Data.size(), RF_RES_$TOKENS);
 	m_pGlobalCache->m_pRes[CACHE_USER]->mfFileAdd(&de);
-	SDirEntryOpen* pOE = m_pGlobalCache->m_pRes[CACHE_USER]->mfOpenEntry(&de);
+	SDirEntryOpen* pOE = m_pGlobalCache->m_pRes[CACHE_USER]->mfOpenEntry(de.GetName());
 	pOE->pData = &Data[0];
 	m_pGlobalCache->m_pRes[CACHE_USER]->mfFlush();
-	m_pGlobalCache->m_pRes[CACHE_USER]->mfCloseEntry(&de);
+	m_pGlobalCache->m_pRes[CACHE_USER]->mfCloseEntry(de.GetName(), de.GetFlags());
 
 	return true;
 }
 
-void CHWShader_D3D::mfGetTokenMap(CResFile* pRes, SDirEntry* pDE, FXShaderToken*& Table, TArray<uint32>*& pSHData)
+void CHWShader_D3D::mfGetTokenMap(CResFile* pRes, CDirEntry* pDE, FXShaderToken*& Table, TArray<uint32>*& pSHData)
 {
 	uint32 i;
 	int nSize = pRes->mfFileRead(pDE);
@@ -1117,8 +1128,8 @@ bool CHWShader_D3D::mfGetCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& p
 		}
 		return true;
 	}
-	SDirEntry* pDE = NULL;
-	CResFile* pRes = NULL;
+	CDirEntry* pDE = nullptr;
+	CResFile* pRes = nullptr;
 	for (int i = 0; i < 2; i++)
 	{
 		pRes = m_pGlobalCache->m_pRes[i];
@@ -1135,7 +1146,7 @@ bool CHWShader_D3D::mfGetCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& p
 		return false;
 	}
 	mfGetTokenMap(pRes, pDE, Table, pSHData);
-	pRes->mfFileClose(pDE);
+	pRes->mfFileClose(pDE->GetName(), pDE->GetFlags());
 
 	return true;
 }
@@ -1213,7 +1224,8 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vec
 	if (nSFlags & HWSG_GS_MULTIRES)
 	{
 		// Generate script vor VS first;
-		pInst = s_pCurInstVS;
+		//@TODO: Do this without global variable
+		//pInst = s_pCurInstVS;
 		assert(pInst);
 
 		CHWShader_D3D* curVS = (CHWShader_D3D *)s_pCurHWVS;
@@ -2035,7 +2047,7 @@ void CHWShader_D3D::mfGenName(SHWSInstance* pInst, char* dstname, int nSize, byt
 
 void CHWShader_D3D::mfGetDstFileName(SHWSInstance* pInst, CHWShader_D3D* pSH, char* dstname, int nSize, byte bType)
 {
-	cry_strcpy(dstname, nSize, gRenDev->m_cEF.m_ShadersCache);
+	cry_strcpy(dstname, nSize, gRenDev->m_cEF.m_ShadersCache.c_str());
 
 	if (pSH->m_eSHClass == eHWSC_Vertex)
 	{
@@ -2179,6 +2191,106 @@ void SShaderCache::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(m_pRes[1]);
 }
 
+bool SShaderCache::ReadResource(CResFile* rf, int i)
+{
+	CryLog("SShaderCache: Caching \"%s\"...", rf->mfGetFileName());
+
+	const auto librarySize = rf->mfGetResourceSize();
+	const auto handle = rf->mfGetHandle();
+	if (librarySize > 0)
+	{
+		m_pBinary[i] = std::unique_ptr<byte[]>(new byte[librarySize]);
+		gEnv->pCryPak->FSeek(handle, 0, SEEK_SET);
+		const auto readBytes = gEnv->pCryPak->FReadRaw(m_pBinary[i].get(), librarySize, 1, handle);
+		if (readBytes != 1)
+		{
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING, "SShaderCache: \"%s\" invalid!", rf->mfGetFileName());
+			m_pBinary[i] = nullptr;
+
+			return false;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+std::pair<std::unique_ptr<byte[]>, uint32> SShaderCache::DecompressResource(int resVersion, int i, size_t offset, size_t size, bool swapEndian)
+{
+	using ReturnType = std::pair<std::unique_ptr<byte[]>, size_t>;
+
+	uint32 decompressedSize = 0;
+	std::unique_ptr<byte[]> pData = nullptr;
+
+	const auto buf = m_pBinary[i].get() + offset;
+
+	switch(resVersion)
+	{
+	case RESVERSION_LZSS:
+		decompressedSize = *reinterpret_cast<uint32*>(buf);
+		if (size >= 10000000)
+			return ReturnType{};
+		if (swapEndian)
+			SwapEndian(decompressedSize, eBigEndian);
+		pData = std::unique_ptr<byte[]>(new byte[decompressedSize]);
+		if (!pData)
+		{
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - Allocation fault");
+			return ReturnType{};
+		}
+		if (!Decodem(&buf[4], pData.get(), size - 4, decompressedSize))
+		{
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - Decodem fault");
+			return ReturnType{};
+		}
+
+		break;
+		
+	case RESVERSION_LZMA:
+		uint64 outSize64;
+		if (Lzma86_GetUnpackSize(buf, size, &outSize64) != 0)
+		{
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - data error");
+			return ReturnType{};
+		}
+		decompressedSize = static_cast<uint32>(outSize64);
+		if (decompressedSize != 0)
+		{
+			pData = std::unique_ptr<byte[]>(new byte[decompressedSize]);
+			if (!pData)
+			{
+				CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - can't allocate");
+				return ReturnType{};
+			}
+			size_t sizeOut = decompressedSize;
+			const auto res = Lzma86_Decode(pData.get(), &sizeOut, buf, &size);
+			decompressedSize = static_cast<uint32_t>(sizeOut);
+			if (res != 0)
+			{
+				CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - LzmaDecoder error");
+				return ReturnType{};
+			}
+		}
+
+		break;
+
+	case RESVERSION_DEBUG:
+		decompressedSize = size - 20;
+		if (decompressedSize < 0 || decompressedSize > 128 * 1024 * 1024)
+		{
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - Corrupt DirEntiy size");
+			return ReturnType{};
+		}
+		pData = std::unique_ptr<byte[]>(new byte[decompressedSize]);
+		memcpy(pData.get(), &buf[10], decompressedSize);
+
+		break;
+	}
+
+	return std::make_pair(std::move(pData), decompressedSize);
+}
+
 void SShaderDevCache::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
@@ -2202,16 +2314,16 @@ SShaderDevCache* CHWShader::mfInitDevCache(const char* name, CHWShader* pSH)
 	return pCache;
 }
 
-SShaderCacheHeaderItem* CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSize)
+std::unique_ptr<byte[]> CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSize)
 {
 	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
 	SHWSInstance* pInst = m_pCurInst;
-	byte* pData = NULL;
+	std::unique_ptr<byte[]> pData;
 	nSize = 0;
 	if (!m_pGlobalCache || !m_pGlobalCache->isValid())
 		return NULL;
 	CResFile* rf = NULL;
-	SDirEntry* de = NULL;
+	CDirEntry* de = NULL;
 	int i;
 	bool bAsync = false;
 	int n = CRenderer::CV_r_shadersAllowCompilation == 0 ? 1 : 2;
@@ -2229,30 +2341,54 @@ SShaderCacheHeaderItem* CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSi
 	if (de)
 	{
 		if (CRenderer::CV_r_shadersdebug == 3 || CRenderer::CV_r_shadersdebug == 4)
-			iLog->Log("---Cache: LoadedFromGlobal %s': 0x%x", rf->mfGetFileName(), de->Name.get());
+			iLog->Log("---Cache: LoadedFromGlobal %s': 0x%x", rf->mfGetFileName(), de->GetName().get());
 		pInst->m_nCache = i;
-		SShaderCacheHeaderItem* pIt = NULL;
-		nSize = rf->mfFileRead(de);
-		pInst->m_bAsyncActivating = (nSize == -1);
-		pData = (byte*)rf->mfFileGetBuf(de);
+
+		pInst->m_bAsyncActivating = false;
+
+		// Attempt to cache the whole entry
+		if (!m_pGlobalCache->m_pBinary[i] && CRenderer::CV_r_shaderscacheinmemory != 0)
+			m_pGlobalCache->ReadResource(rf, i);
+
+		if (m_pGlobalCache->m_pBinary[i] && CRenderer::CV_r_shaderscacheinmemory != 0)
+		{
+			if (de->IsValid())
+			{
+				// Decompress from library
+				auto pair = m_pGlobalCache->DecompressResource(rf->mfGetVersion(), i, de->GetOffset(), de->GetSize(), rf->RequiresSwapEndianOnRead());
+				nSize = static_cast<int32>(pair.second);
+				pData = std::move(pair).first;
+			}
+		}
+		else
+		{
+			nSize = rf->mfFileRead(de);
+			pInst->m_bAsyncActivating = (nSize == -1);
+			byte* pD = (byte*)rf->mfFileGetBuf(de);
+
+			if (pD && nSize > 0)
+			{
+				pData = std::unique_ptr<byte[]>(new byte[nSize]);
+				std::memcpy(pData.get(), pD, nSize);
+			}
+
+			rf->mfFileClose(de->GetName(), de->GetFlags());
+		}
+
 		if (pData && nSize > 0)
 		{
-			byte* pD = new byte[nSize];
-			memcpy(pD, pData, nSize);
-			pIt = (SShaderCacheHeaderItem*)pD;
 			if (CParserBin::m_bEndians)
-				SwapEndian(*pIt, eBigEndian);
-			pInst->m_DeviceObjectID = de->Name.get();
-			rf->mfFileClose(de);
+				SwapEndian(*reinterpret_cast<SShaderCacheHeaderItem*>(pData.get()), eBigEndian);
+			pInst->m_DeviceObjectID = de->GetName().get();
 		}
 		if (i == CACHE_USER)
 			nFlags |= HWSG_CACHE_USER;
-		return pIt;
+		return pData;
 	}
 	else
 	{
 		pInst->m_bAsyncActivating = bAsync;
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -2270,8 +2406,6 @@ bool CHWShader_D3D::mfAddCacheItem(SShaderCache* pCache, SShaderCacheHeaderItem*
 	//CryLog("Size: %d: CRC: %x", nLen, pItem->m_CRC32);
 
 	byte* pNew = new byte[sizeof(SShaderCacheHeaderItem) + nLen];
-	SDirEntry de;
-	de.offset = 0;
 	if (CParserBin::m_bEndians)
 	{
 		SShaderCacheHeaderItem IT = *pItem;
@@ -2281,34 +2415,35 @@ bool CHWShader_D3D::mfAddCacheItem(SShaderCache* pCache, SShaderCacheHeaderItem*
 	else
 		memcpy(pNew, pItem, sizeof(SShaderCacheHeaderItem));
 	memcpy(&pNew[sizeof(SShaderCacheHeaderItem)], pData, nLen);
-	de.Name = Name;
-	de.flags = RF_COMPRESS | RF_TEMPDATA;
-	de.size = nLen + sizeof(SShaderCacheHeaderItem);
+
+	CDirEntry de(Name, nLen + sizeof(SShaderCacheHeaderItem), RF_COMPRESS | RF_TEMPDATA);
 	pCache->m_pRes[CACHE_USER]->mfFileAdd(&de);
-	SDirEntryOpen* pOE = pCache->m_pRes[CACHE_USER]->mfOpenEntry(&de);
+	SDirEntryOpen* pOE = pCache->m_pRes[CACHE_USER]->mfOpenEntry(de.GetName());
 	pOE->pData = pNew;
 	if (bFlush)
+	{
 		pCache->m_pRes[CACHE_USER]->mfFlush();
+
+		// Also evict in-memory image of user cache
+		pCache->m_pBinary[CACHE_USER] = nullptr;
+	}
 
 	return true;
 }
 
 std::vector<SEmptyCombination> SEmptyCombination::s_Combinations;
 
-bool CHWShader_D3D::mfAddEmptyCombination(CShader* pSH, uint64 nRT, uint64 nGL, uint32 nLT)
+bool CHWShader_D3D::mfAddEmptyCombination(CShader* pSH, uint64 nRT, uint64 nGL, uint32 nLT, const SCacheCombination& cmbSaved)
 {
-	CD3D9Renderer* rd = gcpRendD3D;
-	SRenderPipeline& RESTRICT_REFERENCE rRP = rd->m_RP;
-
 	SEmptyCombination Comb;
 	Comb.nGLNew = m_nMaskGenShader;
-	Comb.nRTNew = rRP.m_FlagsShader_RT & m_nMaskAnd_RT | m_nMaskOr_RT;
-	Comb.nLTNew = rRP.m_FlagsShader_LT;
+	Comb.nRTNew = cmbSaved.Ident.m_RTMask & m_nMaskAnd_RT | m_nMaskOr_RT;
+	Comb.nLTNew = cmbSaved.Ident.m_LightMask;
 	Comb.nGLOrg = nGL;
 	Comb.nRTOrg = nRT & m_nMaskAnd_RT | m_nMaskOr_RT;
 	Comb.nLTOrg = nLT;
-	Comb.nMD = rRP.m_FlagsShader_MD;
-	Comb.nMDV = rRP.m_FlagsShader_MDV;
+	Comb.nMD = cmbSaved.Ident.m_MDMask;
+	Comb.nMDV = cmbSaved.Ident.m_MDVMask;
 	if (m_eSHClass == eHWSC_Pixel)
 	{
 		Comb.nMD &= ~HWMD_TEXCOORD_FLAG_MASK;
@@ -2324,7 +2459,7 @@ bool CHWShader_D3D::mfAddEmptyCombination(CShader* pSH, uint64 nRT, uint64 nGL, 
 	return true;
 }
 
-bool CHWShader_D3D::mfStoreEmptyCombination(SEmptyCombination& Comb)
+bool CHWShader_D3D::mfStoreEmptyCombination(CShader* pSH, SEmptyCombination& Comb)
 {
 	if (!m_pGlobalCache || !m_pGlobalCache->m_pRes[CACHE_USER])
 		return false;
@@ -2338,9 +2473,9 @@ bool CHWShader_D3D::mfStoreEmptyCombination(SEmptyCombination& Comb)
 	Ident.m_LightMask = Comb.nLTNew;
 	Ident.m_MDMask = Comb.nMD;
 	Ident.m_MDVMask = Comb.nMDV;
-	SHWSInstance* pInstNew = mfGetInstance(gRenDev->m_RP.m_pShader, Ident, 0);
+	SHWSInstance* pInstNew = mfGetInstance(pSH, Ident, 0);
 	mfGenName(pInstNew, nameNew, 128, 1);
-	SDirEntry* deNew = rf->mfGetEntry(nameNew);
+	CDirEntry* deNew = rf->mfGetEntry(nameNew);
 	//assert(deNew);
 	if (!deNew)
 		return false;
@@ -2350,23 +2485,21 @@ bool CHWShader_D3D::mfStoreEmptyCombination(SEmptyCombination& Comb)
 	Ident.m_LightMask = Comb.nLTOrg;
 	Ident.m_MDMask = Comb.nMD;
 	Ident.m_MDVMask = Comb.nMDV;
-	SHWSInstance* pInstOrg = mfGetInstance(gRenDev->m_RP.m_pShader, Ident, 0);
+	SHWSInstance* pInstOrg = mfGetInstance(pSH, Ident, 0);
 	mfGenName(pInstOrg, nameOrg, 128, 1);
-	SDirEntry* deOrg = rf->mfGetEntry(nameOrg);
+	CDirEntry* deOrg = rf->mfGetEntry(nameOrg);
 	if (deOrg)
 	{
-		if (deOrg->offset != deNew->offset)
-		{
-			deOrg->offset = -abs(deNew->offset);
-			deOrg->flags |= RF_NOTSAVED;
-		}
+		if (deOrg->GetOffset() != deNew->GetOffset())
+			deOrg->MarkNotSaved();
+
+		// Also evict in-memory image of user cache
+		m_pGlobalCache->m_pBinary[CACHE_USER] = nullptr;
+
 		return true;
 	}
-	SDirEntry de;
-	de.Name = CCryNameTSCRC(nameOrg);
-	de.flags = deNew->flags;
-	de.size = deNew->size;
-	de.offset = -abs(deNew->offset);
+	CDirEntry de(nameOrg, deNew->GetSize(), deNew->GetOffset(), deNew->GetFlags());
+	de.MarkNotSaved();
 	rf->mfFileAdd(&de);
 
 	return true;
@@ -2384,6 +2517,11 @@ bool CHWShader_D3D::mfFlushCacheFile()
 			pInst->m_Handle.SetShader(NULL);
 		}
 	}
+
+	// Also evict in-memory image of user cache
+	if (m_pGlobalCache)
+		m_pGlobalCache->m_pBinary[CACHE_USER] = nullptr;
+
 	return m_pGlobalCache && m_pGlobalCache->m_pRes[CACHE_USER] && m_pGlobalCache->m_pRes[CACHE_USER]->mfFlush();
 }
 
@@ -2414,10 +2552,10 @@ bool CHWShader::mfOptimiseCacheFile(SShaderCache* pCache, bool bForce, SOptimise
 	#ifdef _DEBUG
 	/*for (i=0; i<Dir->size(); i++)
 	   {
-	   SDirEntry *pDE = &(*Dir)[i];
+	   CDirEntry *pDE = &(*Dir)[i];
 	   for (j=i+1; j<Dir->size(); j++)
 	   {
-	    SDirEntry *pDE1 = &(*Dir)[j];
+	    CDirEntry *pDE1 = &(*Dir)[j];
 	    assert(pDE->Name != pDE1->Name);
 	   }
 	   }
@@ -2431,10 +2569,13 @@ bool CHWShader::mfOptimiseCacheFile(SShaderCache* pCache, bool bForce, SOptimise
 		pStats->nEntries += Dir->size();
 	for (i = 0; i < Dir->size(); i++)
 	{
-		SDirEntry* pDE = &(*Dir)[i];
-		if (pDE->flags & RF_RES_$)
+		CDirEntry* pDE = &(*Dir)[i];
+		if (!pDE->IsValid())
+			continue;
+
+		if (pDE->GetFlags() & RF_RES_$)
 		{
-			if (pDE->Name == CShaderMan::s_cNameHEAD)
+			if (pDE->GetName() == CShaderMan::s_cNameHEAD)
 				continue;
 
 			SData d;
@@ -2446,26 +2587,26 @@ bool CHWShader::mfOptimiseCacheFile(SShaderCache* pCache, bool bForce, SOptimise
 			if (pStats)
 				pStats->nTokenDataSize += d.nSizeDecomp;
 			d.bProcessed = 3;
-			d.Name = pDE->Name;
+			d.Name = pDE->GetName();
 			//d.CRC = 0;
 			d.nOffset = 0;
-			d.flags = (short)pDE->flags;
+			d.flags = (short)pDE->GetFlags();
 			Data.push_back(d);
 			continue;
 		}
 		SData d;
-		d.flags = pDE->flags;
+		d.flags = pDE->GetFlags();
 		d.nSizeComp = d.nSizeDecomp = 0;
 		d.pData = pRes->mfFileReadCompressed(pDE, d.nSizeDecomp, d.nSizeComp);
 		assert(d.pData && d.nSizeComp && d.nSizeDecomp);
 		if (!d.pData || !d.nSizeComp || !d.nSizeDecomp)
 			continue;
-		d.nOffset = pDE->offset;
+		d.nOffset = pDE->GetOffset();
 		d.bProcessed = 0;
-		d.Name = pDE->Name;
+		d.Name = pDE->GetName();
 		//d.CRC = 0;
 		Data.push_back(d);
-		pRes->mfCloseEntry(pDE);
+		pRes->mfCloseEntry(pDE->GetName(), pDE->GetFlags());
 	}
 	//FILE *fp = NULL;
 	int nDevID = 0x10000000;
@@ -2549,14 +2690,10 @@ bool CHWShader::mfOptimiseCacheFile(SShaderCache* pCache, bool bForce, SOptimise
 		for (i = 0; i < Data.size(); i++)
 		{
 			SData* pD = &Data[i];
+			CDirEntry de;
 
-			SDirEntry de;
-			de.Name = pD->Name;
-			de.flags = pD->flags;
 			if (pD->bProcessed == 1)
 			{
-				de.offset = pD->nOffset;
-				de.flags |= RF_COMPRESS | RF_COMPRESSED;
 				if (pStats)
 				{
 					pStats->nSizeUncompressed += pD->nSizeDecomp;
@@ -2566,30 +2703,31 @@ bool CHWShader::mfOptimiseCacheFile(SShaderCache* pCache, bool bForce, SOptimise
 				assert(pD->pData);
 				if (pD->pData)
 				{
-					de.size = pD->nSizeComp + 4;
-					SDirEntryOpen* pOE = pRes->mfOpenEntry(&de);
-					byte* pData = new byte[de.size];
+					de = CDirEntry(pD->Name, pD->nSizeComp + 4, pD->nOffset, pD->flags | RF_TEMPDATA | RF_COMPRESS | RF_COMPRESSED);
+
+					SDirEntryOpen* pOE = pRes->mfOpenEntry(pD->Name);
+					byte* pData = new byte[de.GetSize()];
 					int nSize = pD->nSizeDecomp;
 					*(int*)pData = nSize;
 					memcpy(&pData[4], pD->pData, pD->nSizeComp);
-					de.flags |= RF_TEMPDATA;
 					pOE->pData = pData;
 					SAFE_DELETE_ARRAY(pD->pData);
 				}
 			}
 			else if (pD->bProcessed != 3)
 			{
-				de.size = pD->nSizeComp + 4;
-				de.flags |= RF_COMPRESS;
-				de.offset = -pD->nOffset;
+				de = CDirEntry(pD->Name, pD->nSizeComp + 4, pD->nOffset, pD->flags | RF_COMPRESS);
+				de.MarkNotSaved();
 				SAFE_DELETE_ARRAY(pD->pData);
 			}
 			else
 			{
-				SDirEntryOpen* pOE = pRes->mfOpenEntry(&de);
+				SDirEntryOpen* pOE = pRes->mfOpenEntry(pD->Name);
 				pOE->pData = pD->pData;
-				de.size = pD->nSizeDecomp;
+
+				de = CDirEntry(pD->Name, pD->nSizeDecomp, pD->flags);
 			}
+
 			pRes->mfFileAdd(&de);
 		}
 	}
@@ -2623,13 +2761,13 @@ bool CHWShader::mfOptimiseCacheFile(SShaderCache* pCache, bool bForce, SOptimise
 
 int __cdecl sSort(const VOID* arg1, const VOID* arg2)
 {
-	SDirEntry** pi1 = (SDirEntry**)arg1;
-	SDirEntry** pi2 = (SDirEntry**)arg2;
-	SDirEntry* ti1 = *pi1;
-	SDirEntry* ti2 = *pi2;
-	if (ti1->Name < ti2->Name)
+	CDirEntry** pi1 = (CDirEntry**)arg1;
+	CDirEntry** pi2 = (CDirEntry**)arg2;
+	CDirEntry* ti1 = *pi1;
+	CDirEntry* ti2 = *pi2;
+	if (ti1->GetName() < ti2->GetName())
 		return -1;
-	if (ti1->Name == ti2->Name)
+	if (ti1->GetName() == ti2->GetName())
 		return 0;
 	return 1;
 }
@@ -2741,6 +2879,7 @@ bool CHWShader::mfOpenCacheFile(const char* szName, float fVersion, SShaderCache
 	if ((!bReadOnly || gRenDev->IsShaderCacheGenMode()) && !pCache->m_pRes[CACHE_USER])
 	{
 		stack_string szUser = stack_string(gRenDev->m_cEF.m_szUserPath.c_str()) + stack_string(szName);
+		szUser.replace("%ENGINE%/", "");
 		CResFile* rfUser = new CResFile(szUser.c_str());
 		bValidUser = _OpenCacheFile(fVersion, pCache, pSH, bCheckValid, CRC32, CACHE_USER, rfUser, bReadOnly);
 	}
@@ -2753,8 +2892,7 @@ SShaderCache* CHWShader::mfInitCache(const char* name, CHWShader* pSH, bool bChe
 	//	LOADING_TIME_PROFILE_SECTION(iSystem);
 
 	CHWShader_D3D* pSHHW = (CHWShader_D3D*)pSH;
-	char nameCache[256];
-
+	
 	if (!CRenderer::CV_r_shadersAllowCompilation)
 		bCheckValid = false;
 
@@ -2765,9 +2903,8 @@ SShaderCache* CHWShader::mfInitCache(const char* name, CHWShader* pSH, bool bChe
 	{
 		char namedst[256];
 		pSHHW->mfGetDstFileName(pSHHW->m_pCurInst, pSHHW, namedst, 256, 0);
-		fpStripExtension(namedst, nameCache);
-		fpAddExtension(nameCache, ".fxcb");
-		name = nameCache;
+		PathUtil::ReplaceExtension(namedst, "fxcb");
+		name = namedst;
 	}
 
 	SShaderCache* pCache = NULL;
@@ -2904,6 +3041,8 @@ bool CHWShader_D3D::mfUploadHW(SHWSInstance* pInst, byte* pBuf, uint32 nSize, CS
 	HRESULT hr = S_OK;
 	if (!pInst->m_Handle.m_pShader)
 		pInst->m_Handle.SetShader(new SD3DShader);
+
+	assert(pInst->m_Handle.m_pShader != nullptr);
 
 	if ((m_eSHClass == eHWSC_Vertex) && (!(nFlags & HWSF_PRECACHE)) && !pInst->m_bFallback)
 		mfUpdateFXVertexFormat(pInst, pSH);
@@ -3357,7 +3496,7 @@ Start:
 				SShaderAsyncInfo::FlushPendingShaders();
 			}
 			else
-				Sleep(1);
+				CrySleep(1);
 		}
 		// Compile FXC shaders or next iteration of internal shaders
 		SShaderAsyncInfo::FlushPendingShaders();
@@ -3381,15 +3520,9 @@ int CHWShader_D3D::mfAsyncCompileReady(SHWSInstance* pInst)
 	gRenDev->m_cEF.m_ShaderCacheStats.m_nNumShaderAsyncCompiles = SShaderAsyncInfo::s_nPendingAsyncShaders;
 
 	SShaderAsyncInfo* pAsync = pInst->m_pAsync;
-	int nFrame = gRenDev->GetFrameID(false);
-	if (pAsync->m_nFrame == nFrame)
+	int nFrame = GetCurrentFrameID();
+	if (pAsync->m_nFrame != nFrame)
 	{
-		if (pAsync->m_fMinDistance > gRenDev->m_RP.m_fMinDistance)
-			pAsync->m_fMinDistance = gRenDev->m_RP.m_fMinDistance;
-	}
-	else
-	{
-		pAsync->m_fMinDistance = gRenDev->m_RP.m_fMinDistance;
 		pAsync->m_nFrame = nFrame;
 	}
 
@@ -3401,11 +3534,19 @@ int CHWShader_D3D::mfAsyncCompileReady(SHWSInstance* pInst)
 	bool bResult = true;
 	int nRefCount;
 
-	SShaderTechnique* pTech = gRenDev->m_RP.m_pCurTechnique;
+	SShaderTechnique* pTech = nullptr;//gRenDev->m_RP.m_pCurTechnique;
 	CShader* pSH = pAsync->m_pFXShader;
 	{
 		if (pAsync->m_bPending)
 			return 0;
+
+		if (pSH)
+		{
+			if (pSH->m_fMinVisibleDistance < pAsync->m_fMinDistance)
+				pAsync->m_fMinDistance = pSH->m_fMinVisibleDistance;
+		}
+
+		mfPrintCompileInfo(pInst);
 
 		mfGetDstFileName(pInst, this, nmDst, 256, 3);
 		gEnv->pCryPak->AdjustFileName(nmDst, nameSrc, 0);
@@ -3414,7 +3555,7 @@ int CHWShader_D3D::mfAsyncCompileReady(SHWSInstance* pInst)
 		if ((pAsync->m_pErrors && !pAsync->m_Errors.empty()) || !pAsync->m_pDevShader)
 		{
 			if (CRenderer::CV_r_logShaders)
-				gcpRendD3D->LogShv("Async %d: **Failed to compile 0x%x '%s' shader\n", gRenDev->GetFrameID(false), pInst, nameSrc);
+				gcpRendD3D->LogShv("Async %d: **Failed to compile 0x%x '%s' shader\n", GetCurrentFrameID(), pInst, nameSrc);
 			string Errors = pAsync->m_Errors;
 			string Text = pAsync->m_Text;
 			CShader* pFXShader = pAsync->m_pFXShader;
@@ -3435,7 +3576,7 @@ int CHWShader_D3D::mfAsyncCompileReady(SHWSInstance* pInst)
 			bResult = false;
 		}
 		else if (CRenderer::CV_r_logShaders)
-			gcpRendD3D->LogShv("Async %d: Finished compiling 0x%x '%s' shader\n", gRenDev->GetFrameID(false), pInst, nameSrc);
+			gcpRendD3D->LogShv("Async %d: Finished compiling 0x%x '%s' shader\n", GetCurrentFrameID(), pInst, nameSrc);
 		pShader = pAsync->m_pDevShader;
 		pErrorMsgs = pAsync->m_pErrors;
 		strErr = pAsync->m_Errors;
@@ -3512,8 +3653,7 @@ bool CHWShader_D3D::mfRequestAsync(CShader* pSH, SHWSInstance* pInst, std::vecto
 	}
 
 	pInst->m_pAsync = new SShaderAsyncInfo;
-	pInst->m_pAsync->m_fMinDistance = gRenDev->m_RP.m_fMinDistance;
-	pInst->m_pAsync->m_nFrame = gRenDev->GetFrameID(false);
+	pInst->m_pAsync->m_nFrame = GetCurrentFrameID();
 	pInst->m_pAsync->m_InstBindVars = InstBindVars;
 	pInst->m_pAsync->m_pShader = this;
 	pInst->m_pAsync->m_pShader->AddRef();
@@ -3533,6 +3673,11 @@ bool CHWShader_D3D::mfRequestAsync(CShader* pSH, SHWSInstance* pInst, std::vecto
 	pInst->m_pAsync->m_Name = szEntry;
 	pInst->m_pAsync->m_Profile = szProfile;
 
+	if (pSH)
+	{
+		pInst->m_pAsync->m_fMinDistance = pSH->m_fMinVisibleDistance;
+	}
+
 	// Generate request line text to store on the shaderlist for next shader cache gen
 	{
 		char szShaderGenName[512];
@@ -3551,7 +3696,7 @@ bool CHWShader_D3D::mfRequestAsync(CShader* pSH, SHWSInstance* pInst, std::vecto
 	CAsyncShaderTask::InsertPendingShader(pInst->m_pAsync);
 
 	if (CRenderer::CV_r_logShaders)
-		gcpRendD3D->LogShv("Async %d: Requested compiling 0x%x '%s' shader\n", gRenDev->GetFrameID(false), pInst, nameSrc);
+		gcpRendD3D->LogShv("Async %d: Requested compiling 0x%x '%s' shader\n", GetCurrentFrameID(), pInst, nameSrc);
 #endif
 	return false;
 }
@@ -3718,7 +3863,7 @@ bool CHWShader_D3D::mfCompileHLSL_Int(CShader* pSH, char* prog_text, D3DBlob** p
 		hr = D3DCompile(prog_text, strlen(prog_text), GetName(), NULL, NULL, pFunCCryName, szProfile, nFlags, 0, (ID3DBlob**) ppShader, (ID3DBlob**) ppErrorMsgs);
 		if (FAILED(hr) || !*ppShader)
 		{
-			if (*ppErrorMsgs)
+			if (ppErrorMsgs && *ppErrorMsgs)
 			{
 				const char* err = (const char*)ppErrorMsgs[0]->GetBufferPointer();
 				strErr += err;
@@ -3864,7 +4009,7 @@ void CHWShader_D3D::mfPrintCompileInfo(SHWSInstance* pInst)
 		string pName;
 		SShaderCombIdent Ident(m_nMaskGenFX, pInst->m_Ident);
 		gRenDev->m_cEF.mfInsertNewCombination(Ident, pInst->m_eClass, szGenName, 0, &pName, false);
-		CryLog(" Compile %s (%d instructions, %d tempregs, %d/%d constants) ... ", pName.c_str(), pInst->m_nInstructions, pInst->m_nTempRegs, nParams, nConsts);
+		CryLog(" Compile (FX:0x%I64x, GL:0x%I64x) %s (%d instructions, %d tempregs, %d/%d constants) ... ", m_nMaskGenFX, pInst->m_Ident.m_GLMask, pName.c_str(), pInst->m_nInstructions, pInst->m_nTempRegs, nParams, nConsts);
 		int nSize = strlen(szGenName);
 		mfGenName(pInst, &szGenName[nSize], 512 - nSize, 1);
 		CryLog("           --- Cache entry: %s", szGenName);
@@ -3959,10 +4104,6 @@ bool CHWShader_D3D::mfCreateShaderEnv(int nThread, SHWSInstance* pInst, D3DBlob*
 				       mfProfileString(pInst->m_eClass), pSH->GetName(), nCombination, gRenDev->m_cEF.m_nCombinationsProcessOverall);
 			}
 		}
-		else
-		{
-			pSH->mfPrintCompileInfo(pInst);
-		}
 	}
 
 	mfGatherFXParameters(pInst, &pInst->m_pBindVars, &InstBindVars, pSH, bShaderThread ? 1 : 0, pFXShader);
@@ -4016,67 +4157,58 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 		    return false;
 		   }*/
 		mfGetDstFileName(pInst, this, nameCacheUnstripped, 256, 0);
-		fpStripExtension(nameCacheUnstripped, nameCache);
-		fpAddExtension(nameCache, ".fxcb");
+
+		cry_strcpy(nameCache, nameCacheUnstripped);
+		PathUtil::ReplaceExtension(nameCache, "fxcb");
 		if (!m_pDevCache)
 			m_pDevCache = mfInitDevCache(nameCache, this);
 
-		int32 nSize;
-		SShaderCacheHeaderItem* pCacheItem = NULL;
 		{
-			// if shader compiling is enabled, make sure the user folder shader caches are also available
-			bool bReadOnly = CRenderer::CV_r_shadersAllowCompilation == 0;
-			if (!m_pGlobalCache || m_pGlobalCache->m_nPlatform != CParserBin::m_nPlatform ||
-			    (!bReadOnly && !m_pGlobalCache->m_pRes[CACHE_USER]))
+			int32 nSize;
+			std::unique_ptr<byte[]> pCacheItemBuffer = nullptr;
 			{
-				SAFE_RELEASE(m_pGlobalCache);
-				bool bAsync = CRenderer::CV_r_shadersasyncactivation != 0;
-				if (nFlags & HWSF_PRECACHE)
-					bAsync = false;
-				m_pGlobalCache = mfInitCache(nameCache, this, true, m_CRC32, bReadOnly, bAsync);
+				// if shader compiling is enabled, make sure the user folder shader caches are also available
+				bool bReadOnly = CRenderer::CV_r_shadersAllowCompilation == 0;
+				if (!m_pGlobalCache || m_pGlobalCache->m_nPlatform != CParserBin::m_nPlatform ||
+					(!bReadOnly && !m_pGlobalCache->m_pRes[CACHE_USER]))
+				{
+					SAFE_RELEASE(m_pGlobalCache);
+					bool bAsync = CRenderer::CV_r_shadersasyncactivation != 0;
+					if (nFlags & HWSF_PRECACHE)
+						bAsync = false;
+					m_pGlobalCache = mfInitCache(nameCache, this, true, m_CRC32, bReadOnly, bAsync);
+				}
+				if (gRenDev->m_cEF.m_nCombinationsProcess >= 0)
+				{
+					mfGetDstFileName(pInst, this, nameCache, 256, 0);
+					PathUtil::ReplaceExtension(nameCache, "fxcb");
+					FXShaderCacheNamesItor it = m_ShaderCacheList.find(nameCache);
+					if (it == m_ShaderCacheList.end())
+						m_ShaderCacheList.insert(FXShaderCacheNamesItor::value_type(nameCache, m_CRC32));
+				}
+				pCacheItemBuffer = mfGetCacheItem(nFlags, nSize);
 			}
-			if (gRenDev->m_cEF.m_nCombinationsProcess >= 0)
+
+			auto pCacheItem = reinterpret_cast<SShaderCacheHeaderItem*>(pCacheItemBuffer.get());
+			if (pCacheItem && pCacheItem->m_Class != 255)
 			{
-				mfGetDstFileName(pInst, this, nameCache, 256, 0);
-				fpStripExtension(nameCache, nameCache);
-				fpAddExtension(nameCache, ".fxcb");
-				FXShaderCacheNamesItor it = m_ShaderCacheList.find(nameCache);
-				if (it == m_ShaderCacheList.end())
-					m_ShaderCacheList.insert(FXShaderCacheNamesItor::value_type(nameCache, m_CRC32));
+				if (Table && CRenderer::CV_r_shadersAllowCompilation)
+					mfGetCacheTokenMap(Table, pSHData, m_nMaskGenShader);
+				if (((m_Flags & HWSG_PRECACHEPHASE) || gRenDev->m_cEF.m_nCombinationsProcess >= 0))
+				{
+					return true;
+				}
+				bool bRes = mfActivateCacheItem(pSH, pCacheItem, nSize, nFlags);
+
+				if (bRes)
+					return (pInst->m_Handle.m_pShader != NULL);
 			}
-			pCacheItem = mfGetCacheItem(nFlags, nSize);
-		}
-		if (pCacheItem && pCacheItem->m_Class != 255)
-		{
-			if (Table && CRenderer::CV_r_shadersAllowCompilation)
-				mfGetCacheTokenMap(Table, pSHData, m_nMaskGenShader);
-			if (((m_Flags & HWSG_PRECACHEPHASE) || gRenDev->m_cEF.m_nCombinationsProcess >= 0))
+			else if (pCacheItem && pCacheItem->m_Class == 255 && (nFlags & HWSF_PRECACHE) == 0)
 			{
-				byte* pData = (byte*)pCacheItem;
-				SAFE_DELETE_ARRAY(pData);
-				return true;
+				return false;
 			}
-			bool bRes = mfActivateCacheItem(pSH, pCacheItem, nSize, nFlags);
-			byte* pData = (byte*)pCacheItem;
-			SAFE_DELETE_ARRAY(pData);
-			pCacheItem = NULL;
-			if (bRes)
-				return (pInst->m_Handle.m_pShader != NULL);
-			pCacheItem = NULL;
 		}
-		else if (pCacheItem && pCacheItem->m_Class == 255 && (nFlags & HWSF_PRECACHE) == 0)
-		{
-			byte* pData = (byte*)pCacheItem;
-			SAFE_DELETE_ARRAY(pData);
-			pCacheItem = NULL;
-			return false;
-		}
-		if (pCacheItem)
-		{
-			byte* pData = (byte*)pCacheItem;
-			SAFE_DELETE_ARRAY(pData);
-			pCacheItem = NULL;
-		}
+		
 		//assert(!m_TokenData.empty());
 
 		TArray<char> newScr;
@@ -4446,9 +4578,9 @@ void CAsyncShaderTask::CShaderThread::ThreadEntry()
 	{
 		m_task->FlushPendingShaders();
 		if (!CRenderer::CV_r_shadersasynccompiling)
-			Sleep(250);
+			CrySleep(250);
 		else
-			Sleep(25);
+			CrySleep(25);
 	}
 }
 

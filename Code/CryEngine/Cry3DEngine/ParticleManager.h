@@ -177,7 +177,7 @@ public:
 	void PrintParticleMemory();
 
 	typedef VectorMap<const IParticleEffect*, SParticleCounts> TEffectStats;
-	void CollectEffectStats(TEffectStats& mapEffectStats, float SParticleCounts::* pSortField) const;
+	void CollectEffectStats(TEffectStats& mapEffectStats, size_t iSortField) const;
 
 	//PerfHUD
 	virtual void CreatePerfHUDWidget();
@@ -360,10 +360,7 @@ private:
 		CParticleManager::Instance()->OnPhysAreaChange(pEvent);
 		return 0;
 	}
-	void OnPhysAreaChange(const EventPhys* pEvent)
-	{
-		m_PhysEnv.OnPhysAreaChange(static_cast<const EventPhysAreaChange&>(*pEvent));
-	}
+	void OnPhysAreaChange(const EventPhys* pEvent);
 
 	CParticleEffect* FindLoadedEffect(cstr sEffectName);
 	void             EraseEmitter(CParticleEmitter* pEmitter);
@@ -483,7 +480,7 @@ protected:
 
 #else
 
-	#define FUNCTION_PROFILER_CONTAINER(pCont) FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE)
+	#define FUNCTION_PROFILER_CONTAINER(pCont) CRY_PROFILE_FUNCTION(PROFILE_PARTICLE)
 
 #endif
 

@@ -337,9 +337,6 @@ struct INetBreakageSimplePlayback : public CMultiThreadRefCount
 };
 typedef _smart_ptr<INetBreakageSimplePlayback> INetBreakageSimplePlaybackPtr;
 
-struct ISerializableInfo : public CMultiThreadRefCount, public ISerializable {};
-typedef _smart_ptr<ISerializableInfo> ISerializableInfoPtr;
-
 struct INetSendableSink
 {
 	// <interfuscator:shuffle>
@@ -660,7 +657,7 @@ struct SBandwidthStatsSubset
 struct SBandwidthStats
 {
 	SBandwidthStats()
-		: m_total(), m_prev(), m_1secAvg(), m_10secAvg()
+		: m_total(), m_prev(), m_1secAvg(), m_10secAvg(), m_numChannels()
 	{
 	}
 
@@ -1420,6 +1417,16 @@ struct IGameNub
 	// </interfuscator:shuffle>
 };
 
+struct IGameServerNub : public IGameNub
+{
+	virtual void AddSendableToRemoteClients(INetSendablePtr pMsg, int numAfterHandle, const SSendableHandle* afterHandle, SSendableHandle* handle) = 0;
+};
+
+struct IGameClientNub : public IGameNub
+{
+	virtual INetChannel* GetNetChannel() = 0;
+};
+
 struct IGameChannel : public INetMessageSink
 {
 	// <interfuscator:shuffle>
@@ -1751,6 +1758,8 @@ struct INetChannel : public INetMessageSink
 	virtual void SetMigratingChannel(bool bIsMigrating) = 0;
 	virtual bool IsMigratingChannel() const = 0;
 	// </interfuscator:shuffle>
+
+	virtual bool GetRemoteNetAddress(uint32& uip, uint16& port, bool firstLocal = true) = 0;
 
 #ifndef OLD_VOICE_SYSTEM_DEPRECATED
 	virtual CTimeValue TimeSinceVoiceTransmission() = 0;

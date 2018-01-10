@@ -8,7 +8,6 @@
 #include <CrySerialization/DynArray.h>
 #include <CrySerialization/CryExtension.h>
 #include <CrySerialization/Decorators/JointName.h>
-#include <CrySerialization/Decorators/Slider.h>
 #include <CrySerialization/Decorators/Range.h>
 #include <CrySerialization/Decorators/LocalFrame.h>
 #include <CrySerialization/ClassFactory.h>

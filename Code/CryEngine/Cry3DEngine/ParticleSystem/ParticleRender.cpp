@@ -10,7 +10,7 @@
 #include "StdAfx.h"
 #include "ParticleRender.h"
 #include "ParticleManager.h"
-#include "ParticleEmitter.h"
+#include "ParticleSystem.h"
 
 namespace pfx2
 {
@@ -18,14 +18,6 @@ namespace pfx2
 struct CRY_ALIGN(CRY_PFX2_PARTICLES_ALIGNMENT) SCachedRenderObject
 {
 };
-
-CParticleRenderBase::CParticleRenderBase(gpu_pfx2::EGpuFeatureType type)
-	: CParticleFeature(type)
-	, m_renderObjectBeforeWaterId(-1)
-	, m_renderObjectAfterWaterId(-1)
-	, m_waterCulling(false)
-{
-}
 
 EFeatureType CParticleRenderBase::GetFeatureType()
 {
@@ -35,7 +27,9 @@ EFeatureType CParticleRenderBase::GetFeatureType()
 void CParticleRenderBase::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
 	CParticleEffect* pEffect = pComponent->GetEffect();
-	pComponent->AddToUpdateList(EUL_Render, this);
+	pComponent->PrepareRenderObjects.add(this);
+	pComponent->Render.add(this);
+	pComponent->ComputeVertices.add(this);
 	m_waterCulling = SupportsWaterCulling();
 	if (m_waterCulling)
 		m_renderObjectBeforeWaterId = pEffect->AddRenderObjectId();
@@ -43,7 +37,7 @@ void CParticleRenderBase::AddToComponent(CParticleComponent* pComponent, SCompon
 	pParams->m_requiredShaderType = eST_Particle;
 }
 
-void CParticleRenderBase::PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)
+void CParticleRenderBase::PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent, bool bPrepare)
 {
 	const SComponentParams& params = pComponent->GetComponentParams();
 
@@ -52,25 +46,24 @@ void CParticleRenderBase::PrepareRenderObjects(CParticleEmitter* pEmitter, CPart
 
 	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
 	{
-		const uint64 objFlags = params.m_renderObjectFlags;
-		if (m_waterCulling)
-			PrepareRenderObject(pEmitter, pComponent, m_renderObjectBeforeWaterId, threadId, objFlags);
-		PrepareRenderObject(pEmitter, pComponent, m_renderObjectAfterWaterId, threadId, objFlags);
+		if (bPrepare)
+		{
+			const uint64 objFlags = params.m_renderObjectFlags;
+			if (m_waterCulling)
+				PrepareRenderObject(pEmitter, pComponent, m_renderObjectBeforeWaterId, threadId, objFlags);
+			PrepareRenderObject(pEmitter, pComponent, m_renderObjectAfterWaterId, threadId, objFlags);
+		}
+		else
+		{
+			ResetRenderObject(pEmitter, pComponent, m_renderObjectBeforeWaterId, threadId);
+			ResetRenderObject(pEmitter, pComponent, m_renderObjectAfterWaterId, threadId);
+		}
 	}
 }
 
-void CParticleRenderBase::ResetRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent)
+void CParticleRenderBase::Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
 {
-	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
-	{
-		ResetRenderObject(pEmitter, pComponent, m_renderObjectBeforeWaterId, threadId);
-		ResetRenderObject(pEmitter, pComponent, m_renderObjectAfterWaterId, threadId);
-	}
-}
-
-void CParticleRenderBase::Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_PARTICLE);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	const SComponentParams& params = pComponent->GetComponentParams();
 	const uint threadId = renderContext.m_passInfo.ThreadID();
@@ -133,7 +126,7 @@ void CParticleRenderBase::ResetRenderObject(CParticleEmitter* pEmitter, CParticl
 	pEmitter->SetRenderObject(nullptr, threadId, renderObjectId);
 }
 
-void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags)
+void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags)
 {
 	const SComponentParams& params = pComponent->GetComponentParams();
 	CRenderObject* pRenderObject = pEmitter->GetRenderObject(threadId, renderObjectId);
@@ -146,8 +139,8 @@ void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, ICommonPar
 	pRenderObject->m_fDistance = renderContext.m_distance - sortBias;
 	pObjData->m_FogVolumeContribIdx = renderContext.m_fogVolumeId;
 	pObjData->m_LightVolumeId = renderContext.m_lightVolumeId;
-	if (pEmitter->m_pTempData)
-		*((Vec4f*)&pObjData->m_fTempVars[0]) = (const Vec4f&)pEmitter->m_pTempData->userData.vEnvironmentProbeMults;
+	if (const auto p = pEmitter->m_pTempData.load())
+		*((Vec4f*)&pObjData->m_fTempVars[0]) = Vec4f(p->userData.vEnvironmentProbeMults);
 	else
 		*((Vec4f*)&pObjData->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -156,6 +149,8 @@ void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, ICommonPar
 
 	renderContext.m_passInfo.GetIRenderView()->AddPermanentObject(
 		pRenderObject,
+		IRenderView::SInstanceUpdateInfo{ pRenderObject->m_II.m_Matrix },
+		pRenderObject->m_bInstanceDataDirty,
 		renderContext.m_passInfo);
 }
 

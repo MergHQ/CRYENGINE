@@ -133,8 +133,8 @@ public:
 		return result;
 	}
 
-	static bool SelectSaveFile(const char* fileFilter, const char* defaulExtension, const char* startFolder, string& fileName, bool bAllowCreateFolder = false);
-	static bool SelectSaveFile(const CString& fileFilter, const CString& defaulExtension, const CString& startFolder, CString& fileName, bool bAllowCreateFolder = false);
+	static bool SelectSaveFile(const char* fileFilter, const char* defaulExtension, const char* startFolder, string& fileName);
+	static bool SelectSaveFile(const CString& fileFilter, const CString& defaulExtension, const CString& startFolder, CString& fileName);
 
 	//! If file is read-only ask user if he wants to overwrite it.
 	//! If yes file is deleted.

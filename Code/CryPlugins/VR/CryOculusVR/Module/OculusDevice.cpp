@@ -993,7 +993,7 @@ void Device::SubmitFrame(const SHmdSubmitFrameData pData)
 		}
 	}
 
-	FRAME_PROFILER("OculusDevice::ovrSubmitFrame", gEnv->pSystem, PROFILE_SYSTEM);
+	CRY_PROFILE_REGION(PROFILE_SYSTEM, "OculusDevice::ovrSubmitFrame");
 	// Submit all active layers to Oculus runtime
 	ovrResult result = ovr_SubmitFrame(m_pSession, frameParams.frameId, &frameParams.viewScaleDesc, activeLayers, numActiveLayers);
 	if (!OVR_SUCCESS(result))
@@ -1028,7 +1028,7 @@ int Device::GetControllerCount() const
 	return m_controller.IsConnected(eHmdController_OculusRightHand) ? cnt + 1 : cnt;
 }
 
-void Device::SetAsynCameraCallback(IAsyncCameraCallback* pCallback)
+void Device::SetAsyncCameraCallback(IAsyncCameraCallback* pCallback)
 {
 	m_pAsyncCameraCallback = pCallback;
 }

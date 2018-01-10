@@ -250,6 +250,9 @@ void CFogVolumeRenderNode::GetLocalBounds(AABB& bbox)
 
 void CFogVolumeRenderNode::SetMatrix(const Matrix34& mat)
 {
+	if (m_matNodeWS == mat)
+		return;
+
 	m_matNodeWS = mat;
 
 	// get translation and rotational part of fog volume from entity matrix
@@ -447,15 +450,15 @@ void CFogVolumeRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 	m_pFogVolumeRenderElement[fillThreadID]->m_noiseElapsedTime = m_noiseElapsedTime;
 	m_pFogVolumeRenderElement[fillThreadID]->m_emission = m_emission;
 
+	IRenderView* pRenderView = passInfo.GetIRenderView();
 	if (bVolFog)
 	{
-		IRenderView* pRenderView = passInfo.GetIRenderView();
 		pRenderView->AddFogVolume(m_pFogVolumeRenderElement[fillThreadID]);
 	}
 	else
 	{
 		IRenderer* pRenderer = GetRenderer();
-		CRenderObject* pRenderObject = pRenderer->EF_GetObject_Temp(fillThreadID);
+		CRenderObject* pRenderObject = pRenderView->AllocateTemporaryRenderObject();
 
 		if (!pRenderObject)
 			return;
@@ -481,7 +484,7 @@ void CFogVolumeRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 		pRenderObject->m_pCurrMaterial = pMaterial;
 
 		// add to renderer
-		GetRenderer()->EF_AddEf(m_pFogVolumeRenderElement[fillThreadID], shaderItem, pRenderObject, passInfo, EFSLIST_TRANSP, nAfterWater);
+		pRenderView->AddRenderObject(m_pFogVolumeRenderElement[fillThreadID], shaderItem, pRenderObject, passInfo, EFSLIST_TRANSP, nAfterWater);
 	}
 }
 
@@ -506,7 +509,7 @@ void CFogVolumeRenderNode::GetMemoryUsage(ICrySizer* pSizer) const
 
 void CFogVolumeRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (m_pTempData) m_pTempData->OffsetPosition(delta);
+	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
 	m_pos += delta;
 	m_matNodeWS.SetTranslation(m_matNodeWS.GetTranslation() + delta);
 	m_matWS.SetTranslation(m_matWS.GetTranslation() + delta);
@@ -564,7 +567,7 @@ void CFogVolumeRenderNode::TraceFogVolumes(const Vec3& worldPos, ColorF& fogColo
 
 					color.a = 1.0f - color.a;   // 0 = transparent, 1 = opaque
 
-																			// blend fog colors
+					// blend fog colors
 					localFogColor.r = Lerp(localFogColor.r, color.r, color.a);
 					localFogColor.g = Lerp(localFogColor.g, color.g, color.a);
 					localFogColor.b = Lerp(localFogColor.b, color.b, color.a);

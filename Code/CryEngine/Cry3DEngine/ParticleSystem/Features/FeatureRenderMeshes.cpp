@@ -3,9 +3,7 @@
 #include "StdAfx.h"
 #include <CrySerialization/Decorators/Resources.h>
 #include <CrySerialization/Math.h>
-#include "ParticleSystem/ParticleFeature.h"
-
-CRY_PFX2_DBG
+#include "ParticleSystem/ParticleSystem.h"
 
 namespace pfx2
 {
@@ -65,11 +63,16 @@ public:
 
 	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pParams->m_pMesh = m_pStaticObject = Get3DEngine()->LoadStatObj(m_meshName.c_str(), NULL, NULL, m_piecesMode == EPiecesMode::Whole);
+		if (!(m_pStaticObject = Get3DEngine()->FindStatObjectByFilename(m_meshName)))
+		{
+			GetPSystem()->CheckFileAccess(m_meshName);
+			m_pStaticObject = Get3DEngine()->LoadStatObj(m_meshName, NULL, NULL, m_piecesMode == EPiecesMode::Whole);
+		}
+		pParams->m_pMesh = m_pStaticObject;
 		pParams->m_meshCentered = m_originMode == EOriginMode::Center;
 		if (m_pStaticObject)
 		{
-			pComponent->AddToUpdateList(EUL_RenderDeferred, this);
+			pComponent->RenderDeferred.add(this);
 			pComponent->AddParticleData(EPVF_Position);
 			pComponent->AddParticleData(EPQF_Orientation);
 
@@ -92,7 +95,7 @@ public:
 				{
 					// Require per-particle sub-objects
 					assert(m_aSubObjects.size() < 256);
-					pComponent->AddToUpdateList(EUL_InitUpdate, this);
+					pComponent->InitParticles.add(this);
 					pComponent->AddParticleData(EPDT_MeshGeometry);
 					if (m_piecesMode == EPiecesMode::AllPieces)
 					{
@@ -117,7 +120,7 @@ public:
 		uint pieceCount = m_aSubObjects.size();
 		Vec3 center = m_pStaticObject->GetAABB().GetCenter();
 
-		CRY_PFX2_FOR_SPAWNED_PARTICLES(context)
+		for (auto particleId : context.GetSpawnedRange())
 		{
 			uint piece;
 			if (m_piecesMode == EPiecesMode::RandomPiece)
@@ -161,10 +164,9 @@ public:
 				orientations.Store(particleId, orientation);
 			}
 		}
-		CRY_PFX2_FOR_END;
 	}
 
-	virtual void Render(CParticleEmitter* pEmitter, ICommonParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
+	virtual void RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pCommonComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
@@ -193,7 +195,7 @@ public:
 
 		renderParams.dwFObjFlags |= FOB_TRANS_MASK;
 
-		CRY_PFX2_FOR_ACTIVE_PARTICLES(context)
+		for (auto particleId : context.GetUpdateRange())
 		{
 			const Vec3 position = positions.Load(particleId);
 			const Quat orientation = orientations.Load(particleId);
@@ -224,7 +226,6 @@ public:
 			renderParams.pInstance = &non_const(*this);
 			pMeshObj->Render(renderParams, passInfo);
 		}
-		CRY_PFX2_FOR_END;
 	}
 
 	virtual uint GetNumResources() const override
