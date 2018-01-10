@@ -331,7 +331,7 @@ int PhysXEnt::GetParams(pe_params* _params) const
 
 	if (_params->type==pe_params_part::type_id) {
 		pe_params_part *params = (pe_params_part*)_params;
-		int i;
+		int i = 0;
 		if (!is_unused(params->partid))
 			i = idxPart(params->partid);
 		else if (!is_unused(params->ipart))
@@ -354,6 +354,7 @@ int PhysXEnt::GetParams(pe_params* _params) const
 			g_pPhysWorld->AddRefGeometry(params->pPhysGeom);	
 		params->pMatMapping = 0;
 		params->nMats = 0;
+		params->pLattice = 0;
 		return 1;
 	}
 

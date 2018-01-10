@@ -2553,7 +2553,7 @@ void CTriMesh::PrepareForRayTest(float raylen)
 }
 
 
-void CTriMesh::HashTrianglesToPlane(const coord_plane &hashplane, const Vec2 &hashsize, grid &hashgrid,index_t *&pHashGrid,index_t *&pHashData,
+void CTriMesh::HashTrianglesToPlane(const coord_plane &hashplane, const Vec2 &hashsize, grid &hashgrid,index_t *&pHashGrid,index_t *&pHashDataRet,
 																		float rcellsize, float pad, const index_t* pIndices, int nTris, int maxhash)
 {
 	float maxsz,tsx,tex,tsy,tey,ts,te;
@@ -2586,7 +2586,7 @@ void CTriMesh::HashTrianglesToPlane(const coord_plane &hashplane, const Vec2 &ha
 	step.set(sz.x/isz.x, sz.y/isz.y);
 	rstep.set(isz.x/sz.x, isz.y/sz.y);
 	origin = hashplane.origin - hashplane.axes[0]*(step.x*isz.x*0.5f)-hashplane.axes[1]*(step.y*isz.y*0.5f);
-	pHashData = &dummy;
+	index_t* pHashData = &dummy;
 
 	for(ipass=0;ipass<2;ipass++) {
 		for(itri=nTris-1;itri>=0;itri--) { // iterate tris in reversed order to get them in accending order in grid (since the algorithm reverses order)
@@ -2639,6 +2639,7 @@ void CTriMesh::HashTrianglesToPlane(const coord_plane &hashplane, const Vec2 &ha
 	hashgrid.stepr = rstep;
 	hashgrid.size = isz;
 	hashgrid.stride.set(1,isz.x);
+	pHashDataRet = pHashData;
 }
 
 
