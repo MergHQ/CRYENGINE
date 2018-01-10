@@ -82,11 +82,12 @@ namespace Schematyc2
 
 			CFileOutput(LogMessageSignal& messageSignal, const char* szFileName)
 				: m_pFile(nullptr)
-				, m_fileName(szFileName)
 				, m_bErrorObserverRegistered(false)
 				, m_bWriteToFile(true)
 				, m_bForwardToStandardLog(false)
 			{
+				m_fileName = PathUtil::Make(gEnv->pSystem->GetRootFolder(), szFileName);
+
 				Initialize();
 				messageSignal.Connect(LogMessageSignal::Delegate::FromMemberFunction<CFileOutput, &CFileOutput::OnLogMessage>(*this), m_connectionScope);
 			}
@@ -223,8 +224,14 @@ namespace Schematyc2
 #endif
 					}
 
-					m_pFile = fxopen(m_fileName.c_str(), "wtc");
-					setvbuf(m_pFile, m_writeBuffer, _IOFBF, s_writeBufferSize);
+					if (m_pFile = fxopen(m_fileName.c_str(), "wtc"))
+					{
+						setvbuf(m_pFile, m_writeBuffer, _IOFBF, s_writeBufferSize);
+					}
+					else
+					{
+						CryWarning(VALIDATOR_MODULE_UNKNOWN, VALIDATOR_WARNING, "Failed to write Schematyc2 log to disk!");
+					}
 
 					m_messagQueue.reserve(100);
 				}

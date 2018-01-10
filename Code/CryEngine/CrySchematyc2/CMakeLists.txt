@@ -269,4 +269,4 @@ CryEngineModule(CrySchematyc2 PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 target_compile_definitions(${THIS_PROJECT} INTERFACE "USE_SCHEMATYC_LEGACY_CORE")
 target_compile_definitions(${THIS_PROJECT} INTERFACE "USE_SCHEMATYC_LEGACY_BASE_ENV")
 
-target_link_libraries(${THIS_PROJECT} PUBLIC CryAction)
+target_include_directories( ${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryAction" )
