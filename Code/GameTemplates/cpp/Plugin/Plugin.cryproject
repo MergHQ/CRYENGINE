@@ -10,6 +10,6 @@
         ]
     },
     "require": {
-        "engine": "engine-dev"
+        "engine": "engine-5.5"
     }
 }

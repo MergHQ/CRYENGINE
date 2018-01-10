@@ -29,7 +29,7 @@
         "name": "Rolling Ball Game Template"
     },
     "require": {
-        "engine": "engine-dev",
+        "engine": "engine-5.5",
         "plugins": [
             {
                 "path": "CryDefaultEntities",

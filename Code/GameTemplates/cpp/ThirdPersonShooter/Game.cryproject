@@ -13,7 +13,7 @@
         ]
     },
     "require": {
-        "engine": "engine-dev",
+        "engine": "engine-5.5",
         "plugins": [
             {
                 "type": "EPluginType::Native",
