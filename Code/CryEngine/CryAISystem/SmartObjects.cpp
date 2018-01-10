@@ -1174,7 +1174,7 @@ void CSmartObjectManager::SoftReset()
 	//m_SmartObjects.clear();
 
 	// re-register entities with the smart objects system
-	IEntityIt* it = gEnv->pEntitySystem->GetEntityIterator();
+	IEntityItPtr it = gEnv->pEntitySystem->GetEntityIterator();
 	while (!it->IsEnd())
 	{
 		IEntity* pEntity = it->Next();
@@ -1183,7 +1183,6 @@ void CSmartObjectManager::SoftReset()
 		SEntitySpawnParams params;
 		OnSpawn(pEntity, params);
 	}
-	it->Release();
 
 	RebuildNavigation();
 	m_bRecalculateUserSize = true;

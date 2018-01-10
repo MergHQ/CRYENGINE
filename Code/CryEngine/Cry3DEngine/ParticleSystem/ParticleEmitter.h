@@ -101,7 +101,7 @@ public:
 	const GeomRef&            GetEmitterGeometry() const   { return m_emitterGeometry; }
 	QuatTS                    GetEmitterGeometryLocation() const;
 	const CAttributeInstance& GetAttributeInstance() const { return m_attributeInstance; }
-	pfx2::TParticleFeatures&  GetFeatures()                { return m_emitterFeatures; }
+	TParticleFeatures&        GetFeatures()                { return m_emitterFeatures; }
 	const ParticleTarget&     GetTarget() const            { return m_target; }
 	float                     GetViewDistRatio() const     { return m_viewDistRatio; }
 	float                     GetTimeScale() const         { return Cry3DEngineBase::GetCVars()->e_ParticlesDebug & AlphaBit('z') ? 0.0f : m_spawnParams.fTimeScale; }
@@ -141,7 +141,7 @@ private:
 	SPhysEnviron                m_physEnviron;
 	SpawnParams                 m_spawnParams;
 	CAttributeInstance          m_attributeInstance;
-	pfx2::TParticleFeatures     m_emitterFeatures;
+	TParticleFeatures           m_emitterFeatures;
 	AABB                        m_realBounds;
 	AABB                        m_bounds;
 	CParticleContainer          m_parentContainer;

@@ -1647,9 +1647,9 @@ void CEntitySystem::CheckInternalConsistency() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-IEntityIt* CEntitySystem::GetEntityIterator()
+IEntityItPtr CEntitySystem::GetEntityIterator()
 {
-	return new CEntityItMap();
+	return IEntityItPtr(new CEntityItMap());
 }
 
 //////////////////////////////////////////////////////////////////////////

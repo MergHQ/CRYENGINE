@@ -61,6 +61,8 @@
       <Button guid="guidCryEngineDebugPackageCmdSet" id="GameLauncherCommandId" priority="0x0100" type="Button">
         <Parent guid="guidCryEngineDebugPackageCmdSet" id="CryEngineDebugTargetsGroup" />
         <Icon guid="guidImages" id="bmpPicStart" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Debug GameLauncher</ButtonText>
         </Strings>
@@ -69,6 +71,8 @@
       <Button guid="guidCryEngineDebugPackageCmdSet" id="SandboxCommandId" priority="0x0100" type="Button">
         <Parent guid="guidCryEngineDebugPackageCmdSet" id="CryEngineDebugTargetsGroup" />
         <Icon guid="guidImages" id="bmpPicStart" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Debug Sandbox</ButtonText>
         </Strings>
@@ -77,6 +81,8 @@
       <Button guid="guidCryEngineDebugPackageCmdSet" id="ServerCommandId" priority="0x0100" type="Button">
         <Parent guid="guidCryEngineDebugPackageCmdSet" id="CryEngineDebugTargetsGroup" />
         <Icon guid="guidImages" id="bmpPicStart" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Debug Server</ButtonText>
         </Strings>
@@ -102,6 +108,8 @@
       <Button guid="guidDebugTargetHandlerCmdSet" id="GameLauncherCommandId" priority="0x1000" type="Button">
         <Parent guid="guidDebugTargetHandlerCmdSet" id="DebugTargetMenuControllerGroup"/>
         <Icon guid="guidImages" id="bmpPicStart" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Debug GameLauncher</ButtonText>
         </Strings>
@@ -110,6 +118,8 @@
       <Button guid="guidDebugTargetHandlerCmdSet" id="SandboxCommandId" priority="0x1000" type="Button">
         <Parent guid="guidDebugTargetHandlerCmdSet" id="DebugTargetMenuControllerGroup"/>
         <Icon guid="guidImages" id="bmpPicStart" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Debug Sandbox</ButtonText>
         </Strings>
@@ -118,6 +128,8 @@
       <Button guid="guidDebugTargetHandlerCmdSet" id="ServerCommandId" priority="0x1000" type="Button">
         <Parent guid="guidDebugTargetHandlerCmdSet" id="DebugTargetMenuControllerGroup"/>
         <Icon guid="guidImages" id="bmpPicStart" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Debug Server</ButtonText>
         </Strings>
@@ -133,9 +145,9 @@
     <!-- This is the guid used to group the menu commands together -->
     <GuidSymbol name="guidCryEngineDebugPackageCmdSet" value="{5f0ed1f6-570c-4a93-a2d0-bf15e7054a90}">
       <IDSymbol name="CryEngineDebugTargetsGroup" value="0x1020" />
-      <IDSymbol name="GameLauncherCommandId" value="0x0201" />
-      <IDSymbol name="SandboxCommandId" value="0x0202" />
-      <IDSymbol name="ServerCommandId" value="0x0203" />
+      <IDSymbol name="GameLauncherCommandId" value="0x02001" />
+      <IDSymbol name="SandboxCommandId" value="0x02002" />
+      <IDSymbol name="ServerCommandId" value="0x02003" />
     </GuidSymbol>
 
     <GuidSymbol name="guidDebugTargetHandlerCmdSet" value="{6E87CFAD-6C05-4adf-9CD7-3B7943875B7C}">
@@ -143,9 +155,9 @@
       <IDSymbol name="DebugTargetMenuControllerFooterGroup" value="0x2000" />
       <IDSymbol name="DebugTargetMenuController" value="0x0100" />
       <IDSymbol name="cmdidDebugTargetAnchorItem" value="0x0101" />
-      <IDSymbol name="GameLauncherCommandId" value="0x0201" />
-      <IDSymbol name="SandboxCommandId" value="0x0202" />
-      <IDSymbol name="ServerCommandId" value="0x0203" />
+      <IDSymbol name="GameLauncherCommandId" value="0x02001" />
+      <IDSymbol name="SandboxCommandId" value="0x02002" />
+      <IDSymbol name="ServerCommandId" value="0x02003" />
     </GuidSymbol>
 
     <GuidSymbol name="guidImages" value="{94f36f14-d8dd-4801-8b8d-d8473a417947}" >

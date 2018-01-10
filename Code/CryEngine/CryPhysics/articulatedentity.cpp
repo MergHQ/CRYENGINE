@@ -3181,6 +3181,6 @@ void CArticulatedEntity::GetMemoryStatistics(ICrySizer *pSizer) const
 	CRigidEntity::GetMemoryStatistics(pSizer);
 	pSizer->AddObject(m_joints, m_nJointsAlloc*sizeof(m_joints[0]));
 	for(int i=0; i<m_nJoints; i++) if (m_joints[i].fsbuf)
-		pSizer->AddObject(m_joints[i].fsbuf, sizeof(sizeof(featherstone_data)+16));
+		pSizer->AddObject(m_joints[i].fsbuf, sizeof(featherstone_data)+16);
 	pSizer->AddObject(m_infos, m_nPartsAlloc*sizeof(m_infos[0]));
 }

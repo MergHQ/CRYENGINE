@@ -127,6 +127,10 @@ set(WINSDK_SDK_DIR "${SDK_DIR}/Microsoft Windows SDK")
 set(WINSDK_SDK_LIB_DIR "${WINSDK_SDK_DIR}/V8.0/Lib/Win8/um")
 set(WINSDK_SDK_INCLUDE_DIR "${WINSDK_SDK_DIR}/V8.0/Include/um")
 
+
+file(WRITE "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h" "")
+list(APPEND global_defines "CRY_CVAR_OVERRIDE_FILE=\"${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h\"")
+
 # custom defines
 list(APPEND global_defines "CRYENGINE_DEFINE")
 
@@ -231,14 +235,14 @@ endif()
 include("${TOOLS_CMAKE_DIR}/modules/Boost.cmake")
 include("${TOOLS_CMAKE_DIR}/modules/ncurses.cmake")
 
+# Apply global defines
 set_property(DIRECTORY "${CRYENGINE_DIR}" PROPERTY COMPILE_DEFINITIONS ${global_defines})
 set_property(DIRECTORY "${CRYENGINE_DIR}" PROPERTY INCLUDE_DIRECTORIES ${global_includes})
 set_property(DIRECTORY "${CRYENGINE_DIR}" PROPERTY LINK_DIRECTORIES ${global_links})
-
 # Used by game project when they share the solution with the engine.
-set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY COMPILE_DEFINITIONS ${global_defines})
-set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES ${global_includes})
-set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY LINK_DIRECTORIES ${global_links}) 
+set_property(DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY COMPILE_DEFINITIONS ${global_defines})
+set_property(DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY INCLUDE_DIRECTORIES ${global_includes})
+set_property(DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY LINK_DIRECTORIES ${global_links})
 
 if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
 	set(MSVC_LIB_PREFIX vc140)

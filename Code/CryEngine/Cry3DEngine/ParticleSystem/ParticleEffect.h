@@ -76,6 +76,8 @@ public:
 	uint                      AddRenderObjectId();
 	uint                      GetNumRenderObjectIds() const;
 	float                     GetEquilibriumTime() const;
+	uint                      GetEnvironFlags() const                                       { return m_environFlags; }
+	void                      AddEnvironFlags(uint flags)                                   { m_environFlags |= flags; }
 	string                    GetShortName() const;
 	int                       GetEditVersion() const;
 
@@ -93,6 +95,7 @@ private:
 	TAttributeTablePtr m_pAttributes;
 	TComponents        m_components;
 	uint               m_numRenderObjects;
+	uint               m_environFlags;
 	int                m_editVersion;
 	bool               m_dirty;
 	bool               m_substitutedPfx1;

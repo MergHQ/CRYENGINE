@@ -11,14 +11,13 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef __particleeffect_h__
-#define __particleeffect_h__
 #pragma once
 
 #include <CryParticleSystem/IParticles.h>
 #include "Cry3DEngineBase.h"
 #include <CryParticleSystem/ParticleParams.h>
 #include "ParticleUtils.h"
+#include "ParticleEnviron.h"
 #include <CryCore/Containers/CryPtrArray.h>
 #include <CryParticleSystem/Options.h>
 #include <CrySystem/ICryMiniGUI.h>
@@ -67,25 +66,7 @@ struct TrinaryFlags
 // Requirements and attributes of particle effects
 enum EEffectFlags
 {
-	EFF_LOADED = BIT(0),
-
-	// Environmental requirements.
-	ENV_GRAVITY   = BIT(1),
-	ENV_WIND      = BIT(2),
-	ENV_WATER     = BIT(3),
-
-	ENV_PHYS_AREA = ENV_GRAVITY | ENV_WIND | ENV_WATER,
-
-	// Collision targets.
-	ENV_TERRAIN         = BIT(4),
-	ENV_STATIC_ENT      = BIT(5),
-	ENV_DYNAMIC_ENT     = BIT(6),
-	ENV_COLLIDE_INFO    = BIT(7),
-
-	ENV_COLLIDE_ANY     = ENV_TERRAIN | ENV_STATIC_ENT | ENV_DYNAMIC_ENT,
-	ENV_COLLIDE_PHYSICS = ENV_STATIC_ENT | ENV_DYNAMIC_ENT,
-	ENV_COLLIDE_CACHE   = ENV_TERRAIN | ENV_STATIC_ENT,
-
+	// also uses EEnvironFlags
 	// Additional effects.
 	EFF_AUDIO = BIT(8),           // Ensures execution of audio relevant code.
 	EFF_FORCE = BIT(9),           // Produces physical force.
@@ -114,36 +95,6 @@ struct STileInfo
 	Vec2  vSize;                      // Size of texture tile UVs.
 	float fTileCount, fTileStart;     // Range of tiles in texture for emitter.
 };
-
-struct SPhysForces
-{
-	Vec3  vAccel;
-	Vec3  vWind;
-	Plane plWater;
-
-	SPhysForces()
-	{}
-
-	SPhysForces(type_zero)
-		: vAccel(ZERO), vWind(ZERO), plWater(Vec3(0, 0, 1), -WATER_LEVEL_UNKNOWN)
-	{}
-
-	void Add(SPhysForces const& other, uint32 nEnvFlags)
-	{
-		if (nEnvFlags & ENV_GRAVITY)
-			vAccel = other.vAccel;
-		if (nEnvFlags & ENV_WIND)
-			vWind += other.vWind;
-		if (nEnvFlags & ENV_WATER)
-			if (other.plWater.d < plWater.d)
-				plWater = other.plWater;
-	}
-};
-
-inline bool HasWater(const Plane& pl)
-{
-	return pl.d < -WATER_LEVEL_UNKNOWN;
-}
 
 // Helper structures for emitter functions
 
@@ -480,5 +431,3 @@ float TravelVolume(const AABB& bbSource, const AABB& bbTravel, float fDist, floa
 
 IStatObj::SSubObject* GetSubGeometry(IStatObj* pParent, int i);
 int                   GetSubGeometryCount(IStatObj* pParent);
-
-#endif //__particleeffect_h__

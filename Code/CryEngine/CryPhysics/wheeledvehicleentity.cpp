@@ -204,7 +204,6 @@ int CWheeledVehicleEntity::GetParams(pe_params *_params) const
 		params->engineIdleRPM = m_engineIdlew*(60.0/(2*g_PI));
 		params->engineShiftUpRPM = m_engineShiftUpw*(60.0/(2*g_PI));
 		params->engineShiftDownRPM = m_engineShiftDownw*(60.0/(2*g_PI));
-		params->engineIdleRPM = m_engineIdlew*(60.0/(2*g_PI));
 		params->engineStartRPM = m_engineStartw*(60.0/(2*g_PI));
 		params->clutchSpeed = m_clutchSpeed;
 		params->nGears = m_nGears;

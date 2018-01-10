@@ -324,7 +324,11 @@ namespace CryEngine.Debugger.Mono
 #if DEBUG
 						catch (Exception ex)
 						{
-							AddLogMessage(MessageType.Message, ex.Message);
+							// Prevent log-spam if connecting failed but there are still connection attempts left.
+							if(!(ex is SocketException) && _connectionAttempts < Constants.ConnectionAttempts)
+							{
+								AddLogMessage(MessageType.Message, ex.Message);
+							}
 						}
 #else
 						catch (System.Exception){ }

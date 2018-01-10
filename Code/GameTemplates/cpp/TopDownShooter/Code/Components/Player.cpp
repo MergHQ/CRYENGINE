@@ -318,7 +318,7 @@ void CPlayerComponent::Revive()
 void CPlayerComponent::SpawnAtSpawnPoint()
 {
 	// Spawn at first default spawner
-	auto *pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
+	IEntityItPtr pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
 	pEntityIterator->MoveFirst();
 
 	while (!pEntityIterator->IsEnd())

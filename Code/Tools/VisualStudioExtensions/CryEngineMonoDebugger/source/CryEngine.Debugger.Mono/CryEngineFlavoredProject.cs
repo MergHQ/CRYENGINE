@@ -51,5 +51,11 @@ namespace CryEngine.Debugger.Mono
 			base.SetInnerProject(innerIUnknown);
 		}
 
+		protected override void Close()
+		{
+			base.Close();
+
+			LauncherCommands.HideCommands();
+		}
 	}
 }

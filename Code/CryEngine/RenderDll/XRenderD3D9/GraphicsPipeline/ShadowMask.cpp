@@ -7,6 +7,10 @@
 #include "../Common/PostProcess/PostProcessUtils.h"
 #include "../Common/Include_HLSL_CPP_Shared.h"
 
+#if defined(FEATURE_SVO_GI)
+#include "D3D_SVO.h"
+#endif
+
 namespace ShadowMaskInternal
 {
 
@@ -73,7 +77,7 @@ public:
 
 	void InitPrimitives();
 	void ResetPrimitives();
-	int  PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bCloudShadows, bool bScreenSpaceShadows,
+	int  PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bCloudShadows, bool bScreenSpaceShadows, bool bSvoShadows,
 	                       bool bTexelRelativeBias, CPrimitiveRenderPass* pDebugCascadesPass, CRenderView* pRenderView, uint64 qualityFlags);
 
 	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater);
@@ -85,7 +89,7 @@ private:
 
 	void PreparePerObjectPrimitives(CRenderPrimitive& primStencil0, CRenderPrimitive& primStencil1, CRenderPrimitive& primSampling, int& firstUnusedStencilValue, const SCustomPrimitiveContext& context);
 	void PrepareNearestPrimitive(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum, uint64 rtFlags);
-	void PrepareCloudShadowPrimitive(CRenderPrimitive& primitive, _smart_ptr<CTexture>& pCloudShadowTex) const;
+	void PrepareCloudAndSvoShadowPrimitive(CRenderPrimitive& primitive, _smart_ptr<CTexture>& pCloudShadowTex) const;
 	bool PrepareDebugPrimitive(CPrimitiveRenderPass& debugPass, CRenderPrimitive& primitive, const ShadowMapFrustum* pFrustum, int stencilRef) const;
 
 	void PrepareStencilPassConstants(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum) const;
@@ -99,7 +103,7 @@ private:
 	std::array<CRenderPrimitive, MaxCustomFrustums* 3> cachedCustomPrimitives;
 
 	int                     customPrimitiveCount;
-	CRenderPrimitive        cloudShadowPrimitive;
+	CRenderPrimitive        cloudAndSvoShadowPrimitive;
 	CRenderPrimitive        nearestShadowPrimitive;
 
 	buffer_handle_t         m_nearestFullscreenTri;
@@ -197,6 +201,12 @@ void CShadowMaskStage::Prepare()
 	const bool bDebugCascades = pDebugCascadesCVar && pDebugCascadesCVar->GetIVal() > 0;
 	const bool bCloudShadows = rd->GetCloudShadowsEnabled() || rd->m_bVolumetricCloudsEnabled;
 	const bool bScreenSpaceShadows = CRendererCVars::CV_r_ShadowsScreenSpace != 0;
+#if defined(FEATURE_SVO_GI)
+	CSvoRenderer* pSR = CSvoRenderer::GetInstance();
+	const bool bSvoShadows = (pSR && pSR->GetTracedSunShadowsRT());
+#else
+	const bool bSvoShadows = false;
+#endif
 	const bool bTexelRelativeBias = pAutoBiasCVar && pAutoBiasCVar->GetFVal() > 0;
 
 	// get rendertarget and initialize passes
@@ -264,6 +274,7 @@ void CShadowMaskStage::Prepare()
 		  firstUnusedStencilValue,
 		  bCloudShadows,
 		  bScreenSpaceShadows,
+			bSvoShadows,
 		  bTexelRelativeBias,
 		  bDebugCascades ? &m_debugCascadesPass : nullptr,
 		  pRenderView,
@@ -356,7 +367,7 @@ void CSunShadows::InitPrimitives()
 	for (auto& prim : cachedDebugPrimitives)    prim.SetFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 
 	nearestShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
-	cloudShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SCloudShadowConstants), EShaderStage_Pixel);
+	cloudAndSvoShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SCloudShadowConstants), EShaderStage_Pixel);
 }
 
 void CSunShadows::ResetPrimitives()
@@ -367,7 +378,7 @@ void CSunShadows::ResetPrimitives()
 	for (auto& prim : cachedCustomPrimitives)   prim.Reset();
 
 	nearestShadowPrimitive.Reset();
-	cloudShadowPrimitive.Reset();
+	cloudAndSvoShadowPrimitive.Reset();
 }
 
 void CSunShadows::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
@@ -384,7 +395,7 @@ CSunShadows::~CSunShadows()
 	gcpRendD3D->m_DevBufMan.Destroy(m_nearestFullscreenTri);
 }
 
-int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bCloudShadows, bool bScreenSpaceShadows,
+int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool bCloudShadows, bool bScreenSpaceShadows, bool bSvoShadows,
                                    bool bTexelRelativeBias, CPrimitiveRenderPass* pDebugCascadesPass, CRenderView* pRenderView, uint64 qualityFlags)
 {
 	const bool bPrepareCascadePrimitives = !pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic).empty();
@@ -455,12 +466,16 @@ int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firs
 		}
 	}
 
-	if (bCloudShadows)
+	if (bCloudShadows || bSvoShadows)
 	{
-		PrepareCloudShadowPrimitive(cloudShadowPrimitive, m_pCloudShadowTex);
+		_smart_ptr<CTexture> pCloudShadowTex = CRendererResources::s_ptexBlack;
+		if (bCloudShadows)
+			pCloudShadowTex = m_pCloudShadowTex;
 
-		cloudShadowPrimitive.Compile(sliceGenPass);
-		sliceGenPass.AddPrimitive(&cloudShadowPrimitive);
+		PrepareCloudAndSvoShadowPrimitive(cloudAndSvoShadowPrimitive, pCloudShadowTex);
+
+		cloudAndSvoShadowPrimitive.Compile(sliceGenPass);
+		sliceGenPass.AddPrimitive(&cloudAndSvoShadowPrimitive);
 	}
 
 	return sliceGenPass.GetPrimitiveCount() - previousPrimitiveCount;
@@ -925,7 +940,7 @@ void CSunShadows::PrepareConstantBuffers(CRenderPrimitive& primitive, ShadowMapF
 	constantManager.EndTypedConstantUpdate(constants);
 }
 
-void CSunShadows::PrepareCloudShadowPrimitive(CRenderPrimitive& primitive, _smart_ptr<CTexture>& pCloudShadowTex) const
+void CSunShadows::PrepareCloudAndSvoShadowPrimitive(CRenderPrimitive& primitive, _smart_ptr<CTexture>& pCloudShadowTex) const
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
@@ -943,11 +958,27 @@ void CSunShadows::PrepareCloudShadowPrimitive(CRenderPrimitive& primitive, _smar
 		cloudSamplerState = EDefaultSamplerStates::TrilinearBorder_Black;
 	}
 
+#if defined(FEATURE_SVO_GI)
+	CSvoRenderer* pSR = CSvoRenderer::GetInstance();
+	if (pSR && pSR->GetTracedSunShadowsRT())
+	{
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE4];
+	}
+#endif
+
 	primitive.SetTechnique(pShader, techCloudShadow, rtFlags);
 	primitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLEND_OP_MAX);
 	primitive.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	primitive.SetTexture(0, pCloudShadowTex);
 	primitive.SetTexture(2, CRendererResources::s_ptexLinearDepth);
+
+#if defined(FEATURE_SVO_GI)
+	if (pSR && pSR->GetTracedSunShadowsRT())
+	{
+		primitive.SetTexture(3, pSR->GetTracedSunShadowsRT());
+	}
+#endif
+
 	primitive.SetSampler(0, cloudSamplerState);
 	primitive.SetDrawInfo(eptTriangleList, 0, 0, 3);
 

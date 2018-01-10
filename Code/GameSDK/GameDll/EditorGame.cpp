@@ -917,7 +917,7 @@ bool CEditorGame::BuildEntitySerializationList(XmlNodeRef output)
 
 	// build the all-entity list, and keep a record of those entities
 	//	which have a flowgraph attached
-	IEntityIt* pIt = gEnv->pEntitySystem->GetEntityIterator();
+	IEntityItPtr pIt = gEnv->pEntitySystem->GetEntityIterator();
 	while (IEntity* pEntity = pIt->Next())
 	{
 		IEntityFlowGraphComponent* pFGProxy = static_cast<IEntityFlowGraphComponent*>(pEntity->GetProxy(ENTITY_PROXY_FLOWGRAPH));

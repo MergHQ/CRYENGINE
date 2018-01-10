@@ -200,6 +200,12 @@ class CFeatureProjectWater : public CFeatureProjectBase
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
+	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
+	{
+		CFeatureProjectBase::AddToComponent(pComponent, pParams);
+		pComponent->GetEffect()->AddEnvironFlags(ENV_WATER);
+	}
+
 private:
 	virtual void FillSamples(const SUpdateContext& context, const SUpdateRange& range, TPosNormArray& samples) override
 	{

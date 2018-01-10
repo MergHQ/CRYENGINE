@@ -13,7 +13,7 @@ namespace CryEngine.Debugger.Mono
 	[PackageRegistration(UseManagedResourcesOnly = true)]
 	[InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
 	[Guid(PackageGuidString)]
-	[ProvideProjectFactory(typeof(CryEngineProjectFactory), "CryEngine.Debugger.Mono", null, null, null, null, LanguageVsTemplate = "CSharp", TemplateGroupIDsVsTemplate = "CryEngine.Debugger.Mono")]
+	[ProvideProjectFactory(typeof(CryEngineProjectFactory), "CryEngine.Debugger.Mono", null, "csproj", "csproj", "", LanguageVsTemplate = "CSharp")]
 	[SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
 	[ProvideMenuResource("Menus.ctmenu", 1)]
 	public sealed class CryEngineDebugPackage : Package

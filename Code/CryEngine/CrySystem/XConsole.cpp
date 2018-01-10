@@ -888,8 +888,8 @@ ICVar* CXConsole::Register(const char* sName, int* src, int iValue, int nFlags, 
 
 	if (!allowModify)
 		nFlags |= VF_CONST_CVAR;
+	*src = iValue; // Needs to be done before creating the CVar due to default overriding
 	pCVar = new CXConsoleVariableIntRef(this, sName, src, nFlags, help);
-	*src = iValue;
 	RegisterVar(pCVar, pChangeFunc);
 	return pCVar;
 }
@@ -946,8 +946,8 @@ ICVar* CXConsole::Register(const char* sName, float* src, float fValue, int nFla
 	}
 	if (!allowModify)
 		nFlags |= VF_CONST_CVAR;
+	*src = fValue; // Needs to be done before creating the CVar due to default overriding
 	pCVar = new CXConsoleVariableFloatRef(this, sName, src, nFlags, help);
-	*src = fValue;
 	RegisterVar(pCVar, pChangeFunc);
 	return pCVar;
 }

@@ -115,9 +115,5 @@ set(CMAKE_SHARED_LINKER_FLAGS_PROFILE ${CMAKE_SHARED_LINKER_FLAGS_DEBUG} CACHE S
 set(CMAKE_EXE_LINKER_FLAGS_PROFILE ${CMAKE_EXE_LINKER_FLAGS_DEBUG} CACHE STRING "Linker Executable Profile Flags" FORCE)
 
 function (wrap_whole_archive project target source)
-	if(ORBIS)
-		set(${target} "--whole-archive;${${source}};--no-whole-archive" PARENT_SCOPE)
-	else()
-		set(${target} "-Wl,--whole-archive;${${source}};-Wl,--no-whole-archive" PARENT_SCOPE)
-	endif()
+	set(${target} "-Wl,--whole-archive;${${source}};-Wl,--no-whole-archive" PARENT_SCOPE)
 endfunction()

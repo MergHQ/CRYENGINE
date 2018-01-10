@@ -1651,6 +1651,32 @@ CParticleManager::SEffectsKey::SEffectsKey(const cstr& sName)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CParticleManager::OnPhysAreaChange(const EventPhys* pEvent)
+{
+	m_PhysEnv.OnPhysAreaChange();
+
+	auto const& event = static_cast<const EventPhysAreaChange&>(*pEvent);
+	EventPhysAreaChange* pepac = (EventPhysAreaChange*)&event;
+
+	SAreaChangeRecord rec;
+	rec.boxAffected = AABB(pepac->boxAffected[0], pepac->boxAffected[1]);
+	rec.uPhysicsMask = Area_Other;
+
+	// Determine area medium types
+	if (pepac->pEntity)
+	{
+		pe_simulation_params psim;
+		if (pepac->pEntity->GetParams(&psim) && !is_unused(psim.gravity))
+			rec.uPhysicsMask |= Area_Gravity;
+
+		pe_params_buoyancy pbuoy;
+		if (pepac->pEntity->GetParams(&pbuoy) && pbuoy.iMedium >= 0 && pbuoy.iMedium < 14)
+			rec.uPhysicsMask |= 1 << pbuoy.iMedium;
+	}
+	AddUpdatedPhysArea(rec);
+}
+
+//////////////////////////////////////////////////////////////////////////
 uint32 CParticleManager::GetPhysAreaChangedProxy(CParticleEmitter* pEmitter, uint16 uPhysicsMask)
 {
 	size_t nIndex = ~0;
