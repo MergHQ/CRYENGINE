@@ -15,9 +15,9 @@ namespace CryEngine.Debugger.Mono
 	{
 		public static readonly int[] CommandIds = new int[]
 		{
-			0x0201,
-			0x0202,
-			0x0203
+			0x02001,
+			0x02002,
+			0x02003
 		};
 
 		/// <summary>
@@ -68,20 +68,12 @@ namespace CryEngine.Debugger.Mono
 
 			if (ServiceProvider.GetService(typeof(IMenuCommandService)) is OleMenuCommandService commandService)
 			{
-				var ids = new int[]
-				{
-					(int)Microsoft.VisualStudio.VSConstants.DebugTargetHandler.cmdidDebugTargetAnchorItem,
-					(int)Microsoft.VisualStudio.VSConstants.DebugTargetHandler.cmdidDebugTargetAnchorItemNoAttachToProcess,
-					(int)Microsoft.VisualStudio.VSConstants.DebugTargetHandler.cmdidDebugTypeCombo,
-					(int)Microsoft.VisualStudio.VSConstants.DebugTargetHandler.cmdidDebugTypeItemHandler,
-					(int)Microsoft.VisualStudio.VSConstants.DebugTargetHandler.cmdidGenericDebugTarget
-				};
-				
 				var values = Enum.GetValues(typeof(LauncherType)).Cast<LauncherType>();
 				foreach(var value in values)
 				{
 					var menuCommandID = new CommandID(CommandSet, CommandIds[(int)value]);
 					var menuItem = new MenuCommand(commandCallbacks[value], menuCommandID);
+					menuItem.Visible = true;
 					commandService.AddCommand(menuItem);
 				}
 			}
@@ -94,6 +86,30 @@ namespace CryEngine.Debugger.Mono
 		public static void Initialize(Package package)
 		{
 			Instance = new LauncherCommands(package);
+		}
+
+		public static void HideCommands()
+		{
+			if(Instance == null)
+			{
+				return;
+			}
+
+			if (Instance.ServiceProvider.GetService(typeof(IMenuCommandService)) is OleMenuCommandService commandService)
+			{
+				var values = Enum.GetValues(typeof(LauncherType)).Cast<LauncherType>();
+				foreach (var value in values)
+				{
+					var id = CommandIds[(int)value];
+					var menuCommandID = new CommandID(CommandSet, id);
+					
+					var menuItem = commandService.FindCommand(menuCommandID);
+					if(menuItem != null)
+					{
+						menuItem.Visible = false;
+					}
+				}
+			}
 		}
 
 		/// <summary>

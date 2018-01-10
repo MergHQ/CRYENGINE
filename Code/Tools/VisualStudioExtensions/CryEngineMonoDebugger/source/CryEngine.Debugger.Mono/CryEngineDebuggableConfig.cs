@@ -19,7 +19,7 @@ namespace CryEngine.Debugger.Mono
 	{
 		private const string DebugTargetGuidString = "6E87CFAD-6C05-4adf-9CD7-3B7943875B7C";
 
-		private static readonly uint[] DebugTargetCommandIds = new uint[] { 0x0201, 0x0202, 0x0203 };
+		private static readonly uint[] DebugTargetCommandIds = new uint[] { 0x02001, 0x02002, 0x02003 };
 		private static readonly string[] DebugTargetNames = new string[] { "Debug GameLauncher", "Debug Sandbox", "Debug Server" };
 		private static readonly Guid DebugTargetGuid = new Guid(DebugTargetGuidString);
 

@@ -22,5 +22,4 @@ namespace CryEngine.Debugger.Mono
 			return new CryEngineFlavoredProject(package);
 		}
 	}
-
 }
