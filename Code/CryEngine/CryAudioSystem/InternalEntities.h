@@ -22,7 +22,10 @@ class COcclusionObstructionState final : public IAudioSwitchStateImpl
 public:
 
 	explicit COcclusionObstructionState(SwitchStateId const stateId, CAudioListenerManager const& audioListenerManager, CATLAudioObject const& globalAudioObject);
+
+	// IAudioSwitchStateImpl
 	virtual ERequestStatus Set(CATLAudioObject& audioObject) const override;
+	// ~IAudioSwitchStateImpl
 
 	COcclusionObstructionState(COcclusionObstructionState const&) = delete;
 	COcclusionObstructionState(COcclusionObstructionState&&) = delete;
@@ -41,7 +44,10 @@ class CRelativeVelocityTrackingState final : public IAudioSwitchStateImpl
 public:
 
 	explicit CRelativeVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject);
+
+	// IAudioSwitchStateImpl
 	virtual ERequestStatus Set(CATLAudioObject& audioObject) const override;
+	// ~IAudioSwitchStateImpl
 
 	CRelativeVelocityTrackingState(CRelativeVelocityTrackingState const&) = delete;
 	CRelativeVelocityTrackingState(CRelativeVelocityTrackingState&&) = delete;
@@ -59,7 +65,10 @@ class CAbsoluteVelocityTrackingState final : public IAudioSwitchStateImpl
 public:
 
 	explicit CAbsoluteVelocityTrackingState(SwitchStateId const stateId, CATLAudioObject const& globalAudioObject);
+
+	// IAudioSwitchStateImpl
 	virtual ERequestStatus Set(CATLAudioObject& audioObject) const override;
+	// ~IAudioSwitchStateImpl
 
 	CAbsoluteVelocityTrackingState(CAbsoluteVelocityTrackingState const&) = delete;
 	CAbsoluteVelocityTrackingState(CAbsoluteVelocityTrackingState&&) = delete;
@@ -70,5 +79,16 @@ private:
 
 	SwitchStateId const    m_stateId;
 	CATLAudioObject const& m_globalAudioObject;
+};
+
+class CDoNothingTrigger final : public CATLTriggerImpl
+{
+public:
+
+	explicit CDoNothingTrigger(TriggerImplId const id);
+
+	// CATLTriggerImpl
+	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
+	// ~CATLTriggerImpl
 };
 } // namespace CryAudio

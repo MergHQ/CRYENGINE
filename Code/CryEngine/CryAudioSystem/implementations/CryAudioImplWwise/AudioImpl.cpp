@@ -1062,6 +1062,10 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 			CRY_ASSERT(false);
 		}
 	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag: %s", pRootNode->getTag());
+	}
 
 	return static_cast<ITrigger*>(pTrigger);
 }
@@ -1129,8 +1133,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 	}
 	else
 	{
-		// Unknown Wwise switch tag!
-		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise switch tag! (%s)", szTag);
+		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag: %s", szTag);
 	}
 
 	return static_cast<ISwitchState const*>(pSwitchState);
@@ -1176,8 +1179,12 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 		}
 		else
 		{
-			CRY_ASSERT(false); // Unknown RTPC
+			CRY_ASSERT(false); // Unknown parameter
 		}
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag: %s", szTag);
 	}
 
 	return static_cast<IEnvironment const*>(pEnvironment);
@@ -1310,13 +1317,13 @@ void CImpl::ParseRtpcImpl(XmlNodeRef const pNode, AkRtpcID& rtpcId, float& multi
 		else
 		{
 			// Invalid Wwise RTPC name!
-			Cry::Audio::Log(ELogType::Warning, "Invalid Wwise RTPC name %s", szName);
+			Cry::Audio::Log(ELogType::Warning, "Invalid Wwise parameter name %s", szName);
 		}
 	}
 	else
 	{
 		// Unknown Wwise RTPC tag!
-		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise RTPC tag %s", pNode->getTag());
+		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag %s", pNode->getTag());
 	}
 }
 

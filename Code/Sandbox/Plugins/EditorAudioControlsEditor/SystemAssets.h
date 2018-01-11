@@ -125,7 +125,7 @@ public:
 	void                    RemoveConnection(ConnectionPtr const pConnection);
 	void                    RemoveConnection(CImplItem* const pImplControl);
 	void                    ClearConnections();
-	ConnectionPtr           GetConnectionAt(int const index) const;
+	ConnectionPtr           GetConnectionAt(size_t const index) const;
 	ConnectionPtr           GetConnection(CID const id) const;
 	ConnectionPtr           GetConnection(CImplItem const* const pImplControl) const;
 	void                    ReloadConnections();

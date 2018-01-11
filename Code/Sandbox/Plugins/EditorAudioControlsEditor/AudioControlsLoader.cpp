@@ -247,7 +247,11 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 			string const name = pNode->getAttr("atl_name");
 			ESystemItemType const controlType = TagToType_BackwardsComp(pNode->getTag());
 
-			if (!((controlType == ESystemItemType::Switch) && (name == "ObstrOcclCalcType")) &&
+			if (!((controlType == ESystemItemType::Switch) && ((name == "ObstrOcclCalcType") ||
+				(name == "object_velocity_tracking") ||
+				(name == "object_doppler_tracking") ||
+				(name == CryAudio::s_szAbsoluteVelocityTrackingSwitchName) ||
+				(name == CryAudio::s_szRelativeVelocityTrackingSwitchName))) &&
 				!((controlType == ESystemItemType::Trigger) && (name == CryAudio::s_szDoNothingTriggerName)))
 			{
 				pControl = m_pAssetsManager->FindControl(name, controlType);
@@ -325,6 +329,7 @@ CSystemControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode,
 						pNode->getAttr("atl_radius", radius);
 						pControl->SetRadius(radius);
 						LoadConnections(pNode, pControl);
+						pControl->SetModified(true, true);
 					}
 				}
 			}
@@ -348,6 +353,8 @@ CSystemControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode,
 						{
 							pControl->SetName(CryAudio::s_szRelativeVelocityParameterName);
 						}
+
+						pControl->SetModified(true, true);
 					}
 				}
 			}

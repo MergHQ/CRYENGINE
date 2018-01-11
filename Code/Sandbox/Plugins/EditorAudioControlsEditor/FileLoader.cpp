@@ -21,6 +21,9 @@
 
 namespace ACE
 {
+static constexpr char* s_szDefaultLibraryName = "default_controls";
+static constexpr char* s_szInternalLibraryName = "internal_default_controls";
+
 //////////////////////////////////////////////////////////////////////////
 ESystemItemType TagToType(string const& tag)
 {
@@ -335,7 +338,7 @@ void CFileLoader::CreateInternalControls()
 {
 	// Create internal default controls.
 	// These controls are hidden in the ACE and don't get written to XML!
-	CSystemAsset* const pLibrary = static_cast<CSystemAsset*>(m_assetsManager.CreateLibrary(CryAudio::s_szInternalLibraryName));
+	CSystemAsset* const pLibrary = static_cast<CSystemAsset*>(m_assetsManager.CreateLibrary(s_szInternalLibraryName));
 
 	if (pLibrary != nullptr)
 	{
@@ -387,7 +390,7 @@ void CFileLoader::CreateDefaultControls()
 	// Create default controls if they don't exist.
 	// These controls need to always exist in your project!
 	bool wasModified = false;
-	CSystemAsset* const pLibrary = static_cast<CSystemAsset*>(m_assetsManager.CreateLibrary(CryAudio::s_szDefaultLibraryName));
+	CSystemAsset* const pLibrary = static_cast<CSystemAsset*>(m_assetsManager.CreateLibrary(s_szDefaultLibraryName));
 
 	if (pLibrary != nullptr)
 	{
