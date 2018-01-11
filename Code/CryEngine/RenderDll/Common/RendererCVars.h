@@ -46,8 +46,6 @@ public:
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
 	static float CV_r_overrideRefreshRate;
 	static int   CV_r_overrideScanlineOrder;
-	static int   CV_r_overrideDXGIOutput;
-	static int   CV_r_overrideDXGIOutputFS;
 #endif
 #if CRY_PLATFORM_WINDOWS
 	static int CV_r_FullscreenPreemption;

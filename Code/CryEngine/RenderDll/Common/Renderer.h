@@ -763,8 +763,7 @@ public:
 
 	virtual WIN_HWND    Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, WIN_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) override = 0;
 
-	virtual WIN_HWND    GetCurrentContextHWND() override  { return GetHWND(); }
-	virtual bool        IsCurrentContextMainVP() override { return true; }
+	virtual WIN_HWND    GetCurrentContextHWND() { return GetHWND(); }
 
 	virtual int         CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF = eTF_R8G8B8A8) override = 0;
 	virtual bool        DestroyRenderTarget(int nHandle) override = 0;
@@ -784,10 +783,6 @@ public:
 	virtual void SetDebugRenderNode(IRenderNode* pRenderNode) override;
 
 	virtual bool IsDebugRenderNode(IRenderNode* pRenderNode) const override;
-
-	//! Fills array of all supported video formats (except low resolution formats)
-	//! Returns number of formats, also when called with NULL
-	virtual int EnumDisplayFormats(SDispFormat* formats) override = 0;
 
 	virtual bool         CheckDeviceLost() { return false; };
 
@@ -1373,7 +1368,6 @@ public:
 	int                  m_nGPU;
 	int                  m_VSync;
 	int                  m_Predicated;
-	int                  m_deskwidth, m_deskheight;
 	int                  m_nHDRType;
 
 	int                  m_nGraphicsPipeline;
@@ -1381,10 +1375,6 @@ public:
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
 	float m_overrideRefreshRate;
 	int   m_overrideScanlineOrder;
-#endif
-
-#if CRY_PLATFORM_WINDOWS
-	int m_prefMonX, m_prefMonY, m_prefMonWidth, m_prefMonHeight;
 #endif
 
 	int       m_nStencilMaskRef;

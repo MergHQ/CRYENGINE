@@ -272,7 +272,7 @@ void CD3D9Renderer::ChangeViewport(CRenderDisplayContext* pDC, unsigned int view
 
 	// This change will propagate to the other dimensions (output and render)
 	// when HandleDisplayPropertyChanges() is called just before rendering
-	pDC->ChangeDisplayResolution(viewPortOffsetX + viewportWidth, viewPortOffsetY + viewportHeight);
+	pDC->ChangeDisplayResolution(viewPortOffsetX + viewportWidth, viewPortOffsetY + viewportHeight, IsFullscreen());
 	pDC->SetViewport(SRenderViewport(viewPortOffsetX, viewPortOffsetY, viewportWidth, viewportHeight));
 
 	CRendererResources::OnDisplayResolutionChanged(pDC->GetDisplayResolution()[0], pDC->GetDisplayResolution()[1]);
@@ -498,8 +498,10 @@ void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayH
 			*pDisplayHeight = 720;
 		}
 	#elif CRY_PLATFORM_WINDOWS
-		*pDisplayWidth  = bUseNativeRes ? m_prefMonWidth  : displayWidthRequested;
-		*pDisplayHeight = bUseNativeRes ? m_prefMonHeight : displayHeightRequested;
+		RectI monitorBounds = pDC->GetCurrentMonitorBounds();
+
+		*pDisplayWidth  = bUseNativeRes ? monitorBounds.w : displayWidthRequested;
+		*pDisplayHeight = bUseNativeRes ? monitorBounds.h : displayHeightRequested;
 	#endif
 	}
 
@@ -532,7 +534,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 	bool bChangedRendering = false;
 	bool bChangedOutputting = false;
 	bool bResizeSwapchain = false;
-	bool bRecreateSwapchain = (pDC->m_pSwapChain == nullptr);
+	bool bRecreateSwapchain = !pDC->IsValid();
 	bool bNativeRes = false;
 	bool wasFullscreen = IsFullscreen();
 
@@ -3298,24 +3300,23 @@ void CD3D9Renderer::RT_EndFrame()
 #if CRY_RENDERER_GNM
 			auto* const pCommandList = GnmCommandList(GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterfaceImpl());
 			const CGnmSwapChain::EFlipMode flipMode = m_VSync ? CGnmSwapChain::kFlipModeSequential : CGnmSwapChain::kFlipModeImmediate;
-			pDC->m_pSwapChain->GnmPresent(pCommandList, flipMode);
+			pDC->GetSwapChain()->GnmPresent(pCommandList, flipMode);
 #elif CRY_PLATFORM_ORBIS
-			hReturn = pDC->m_pSwapChain->Present(m_VSync ? 1 : 0, 0);
+			hReturn = pDC->GetSwapChain()->Present(m_VSync ? 1 : 0, 0);
 #elif CRY_PLATFORM_DURANGO
 	#if DURANGO_ENABLE_ASYNC_DIPS
 			WaitForAsynchronousDevice();
 	#endif
-			hReturn = pDC->m_pSwapChain->Present(m_VSync ? 1 : 0, 0);
+			hReturn = pDC->GetSwapChain()->Present(m_VSync ? 1 : 0, 0);
 	#if DURANGO_ENABLE_ASYNC_DIPS
 			WaitForAsynchronousDevice();
 	#endif
 #elif defined(SUPPORT_DEVICE_INFO)
 	#if CRY_PLATFORM_WINDOWS && !CRY_RENDERER_VULKAN
-			m_devInfo.EnforceFullscreenPreemption();
+			pDC->EnforceFullscreenPreemption();
 	#endif
-			DWORD syncInterval = ComputePresentInterval(m_devInfo.SyncInterval() != 0, m_devInfo.RefreshRate().Numerator, m_devInfo.RefreshRate().Denominator);
-			DWORD presentFlags = m_devInfo.PresentFlags();
-			hReturn = pDC->m_pSwapChain->Present(syncInterval, presentFlags);
+			DWORD syncInterval = ComputePresentInterval(pDC->GetSyncInterval() != 0, pDC->GetRefreshRateNumerator(), pDC->GetRefreshRateDemoninator());
+			hReturn = pDC->GetSwapChain()->Present(syncInterval, 0);
 
 			if (IHmdRenderer* pHmdRenderer = GetS3DRend().GetIHmdRenderer())
 			{
@@ -3374,12 +3375,12 @@ void CD3D9Renderer::RT_EndFrame()
 			if (m_dwPresentStatus & (epsOccluded | epsNonExclusive))
 				dwFlags = DXGI_PRESENT_TEST;
 			else
-				dwFlags = m_devInfo.PresentFlags();
-			//hReturn = m_pSwapChain->Present(0, dwFlags);
-			if (pDC && pDC->m_pSwapChain)
+				dwFlags = 0;
+			//hReturn = GetSwapChain()->Present(0, dwFlags);
+			if (pDC && pDC->GetSwapChain())
 			{
 				pDC->PrePresent();
-				hReturn = pDC->m_pSwapChain->Present(0, dwFlags);
+				hReturn = pDC->GetSwapChain()->Present(0, dwFlags);
 				if (hReturn == DXGI_ERROR_INVALID_CALL)
 				{
 					assert(0);
@@ -3517,24 +3518,22 @@ void CD3D9Renderer::RT_PresentFast()
 	#if DURANGO_ENABLE_ASYNC_DIPS
 	WaitForAsynchronousDevice();
 	#endif
-	hReturn = pDC->m_pSwapChain->Present(m_VSync ? 1 : 0, 0);
+	hReturn = pDC->GetSwapChain()->Present(m_VSync ? 1 : 0, 0);
 #elif CRY_RENDERER_GNM
 	auto* const pCommandList = GnmCommandList(GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterfaceImpl());
 	const CGnmSwapChain::EFlipMode flipMode = m_VSync ? CGnmSwapChain::kFlipModeSequential : CGnmSwapChain::kFlipModeImmediate;
-	pDC->m_pSwapChain->GnmPresent(pCommandList, flipMode);
+	pDC->GetSwapChain()->GnmPresent(pCommandList, flipMode);
 #elif CRY_PLATFORM_ORBIS
-	hReturn = pDC->m_pSwapChain->Present(m_VSync ? 1 : 0, 0);
+	hReturn = pDC->GetSwapChain()->Present(m_VSync ? 1 : 0, 0);
 #elif defined(SUPPORT_DEVICE_INFO)
 
 	GetS3DRend().DisplayStereo();
 	GetS3DRend().NotifyFrameFinished();
 
 	#if CRY_PLATFORM_WINDOWS
-	m_devInfo.EnforceFullscreenPreemption();
+	pDC->EnforceFullscreenPreemption();
 	#endif
-	DWORD syncInterval = m_devInfo.SyncInterval();
-	DWORD presentFlags = m_devInfo.PresentFlags();
-	hReturn = pDC->m_pSwapChain->Present(syncInterval, presentFlags);
+	hReturn = pDC->GetSwapChain()->Present(pDC->GetSyncInterval(), 0);
 #endif
 	assert(hReturn == S_OK);
 
@@ -5237,25 +5236,6 @@ public:
 			if (gRenDev && !gRenDev->IsEditorMode())
 				EnableCloseButton(gRenDev->GetHWND(), true);
 			break;
-
-#if CRY_PLATFORM_WINDOWS
-		case ESYSTEM_EVENT_MOVE:
-			{
-				// When moving the window, update the preferred monitor dimensions so full-screen will pick the closest monitor
-				HWND hWnd = (HWND) gcpRendD3D->GetHWND();
-				HMONITOR hMonitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
-
-				MONITORINFO monitorInfo;
-				monitorInfo.cbSize = sizeof(MONITORINFO);
-				GetMonitorInfo(hMonitor, &monitorInfo);
-
-				gcpRendD3D->m_prefMonX = monitorInfo.rcMonitor.left;
-				gcpRendD3D->m_prefMonY = monitorInfo.rcMonitor.top;
-				gcpRendD3D->m_prefMonWidth = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
-				gcpRendD3D->m_prefMonHeight = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
-			}
-			break;
-#endif
 		}
 		bInside = false;
 	}
@@ -5379,7 +5359,7 @@ void CD3D9Renderer::BeginRenderDocCapture()
 		if (pRENDERDOC_StartFrameCapture fpStartFrameCap = (pRENDERDOC_StartFrameCapture)GetProcAddress(rdocDll, "RENDERDOC_StartFrameCapture"))
 		{
 			DXGI_SWAP_CHAIN_DESC desc = { 0 };
-			gcpRendD3D->GetActiveDisplayContext()->m_pSwapChain->GetDesc(&desc);
+			gcpRendD3D->GetActiveDisplayContext()->GetSwapChain()->GetDesc(&desc);
 			fpStartFrameCap(desc.OutputWindow);
 			CryLogAlways("Started RenderDoc capture");
 		}
@@ -5398,7 +5378,7 @@ void CD3D9Renderer::EndRenderDocCapture()
 		if (pRENDERDOC_EndFrameCapture fpEndFrameCap = (pRENDERDOC_EndFrameCapture)GetProcAddress(rdocDll, "RENDERDOC_EndFrameCapture"))
 		{
 			DXGI_SWAP_CHAIN_DESC desc = { 0 };
-			gcpRendD3D->GetActiveDisplayContext()->m_pSwapChain->GetDesc(&desc);
+			gcpRendD3D->GetActiveDisplayContext()->GetSwapChain()->GetDesc(&desc);
 			fpEndFrameCap(desc.OutputWindow);
 			CryLogAlways("Finished RenderDoc capture");
 		}

@@ -948,8 +948,10 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual bool     CreateContext(const SDisplayContextDescription& desc) = 0;
 	virtual void     ResizeContext(CryDisplayContextHandle hWnd, int width, int height) = 0;
 	virtual bool     DeleteContext(CryDisplayContextHandle hWnd) = 0;
-	virtual WIN_HWND GetCurrentContextHWND() = 0;
-	virtual bool     IsCurrentContextMainVP() = 0;
+
+#if CRY_PLATFORM_WINDOWS
+	virtual RectI    GetDefaultContextWindowCoordinates() = 0;
+#endif
 	/////////////////////////////////////////////////////////////////////////////////
 
 #if CRY_PLATFORM_DURANGO
