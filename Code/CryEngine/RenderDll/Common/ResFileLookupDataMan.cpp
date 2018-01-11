@@ -11,7 +11,6 @@
 SResFileLookupDataDisk::SResFileLookupDataDisk(const struct SResFileLookupData& inLookup)
 {
 	m_NumOfFilesUnique = inLookup.m_NumOfFilesUnique;
-	m_NumOfFilesRef = inLookup.m_NumOfFilesRef;
 	m_OffsetDir = inLookup.m_OffsetDir;
 	m_CRC32 = inLookup.m_CRC32;
 	m_CacheMajorVer = inLookup.m_CacheMajorVer;
@@ -74,9 +73,13 @@ CResFileLookupDataMan::~CResFileLookupDataMan()
 CCryNameTSCRC CResFileLookupDataMan::AdjustName(const char* szName)
 {
 	char acTmp[1024];
-	int nSize = gRenDev->m_cEF.m_szUserPath.size();
-	if (!strnicmp(szName, gRenDev->m_cEF.m_szUserPath.c_str(), nSize))
-		cry_strcpy(acTmp, &szName[nSize]);
+	int userPathSize = gRenDev->m_cEF.m_szUserPath.size();
+	int enginePathSize = strlen("%ENGINE%/");
+
+	if (!strnicmp(szName, gRenDev->m_cEF.m_szUserPath.c_str(), userPathSize))
+		cry_strcpy(acTmp, &szName[userPathSize]);
+	else if (!strnicmp(szName, "%ENGINE%/", enginePathSize))
+		cry_strcpy(acTmp, &szName[enginePathSize]);
 	else if (!strnicmp(szName, "Levels", 6))
 	{
 		const char* acNewName = strstr(szName, "ShaderCache");
@@ -400,7 +403,6 @@ void CResFileLookupDataMan::AddData(const CResFile* pResFile, uint32 CRC)
 	// store the dir data
 	data.m_OffsetDir = pResFile->m_nOffsDir;
 	data.m_NumOfFilesUnique = pResFile->m_nNumFilesUnique;
-	data.m_NumOfFilesRef = pResFile->m_nNumFilesRef;
 
 	float fVersion = (float)FX_CACHE_VER;
 	uint32 nMinor = (int)(((float)fVersion - (float)(int)fVersion) * 10.1f);
@@ -500,18 +502,6 @@ SResFileLookupData* CResFileLookupDataMan::GetData(
 {
 	TFileResDirDataMap::iterator it = m_Data.find(name);
 	if (it == m_Data.end())
-		return 0;
-
-	return &it->second;
-}
-SCFXLookupData* CResFileLookupDataMan::GetDataCFX(
-  const char* szPath)
-{
-	char nm[256];
-	_splitpath(szPath, NULL, NULL, nm, NULL);
-	CCryNameTSCRC name = nm;
-	TFileCFXDataMap::iterator it = m_CFXData.find(name);
-	if (it == m_CFXData.end())
 		return 0;
 
 	return &it->second;

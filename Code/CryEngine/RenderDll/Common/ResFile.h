@@ -14,12 +14,13 @@
 #define RES_COMPRESSION RESVERSION_LZSS
 
 // Resource files flags
-#define RF_NOTSAVED 1
-#define RF_COMPRESS 4
-#define RF_TEMPDATA 8
-#define RF_COMPRESSED 0x80
-#define RF_RES_$TOKENS 0x20
+#define RF_NOTSAVED    BIT(0)
+#define RF_DUPLICATE   BIT(1)
+#define RF_COMPRESS    BIT(2)
+#define RF_TEMPDATA    BIT(3)
+#define RF_RES_$TOKENS BIT(5)
 #define RF_RES_$ (RF_RES_$TOKENS)
+#define RF_COMPRESSED  BIT(7)
 
 class  CResFileLookupDataMan;
 struct SResFileLookupData;
@@ -33,7 +34,6 @@ struct SFileResHeader
 	int num_files;
 	//int num_files_ref;
 	uint32 ofs_dir;
-	uint32 num_files_ref;
 	AUTO_STRUCT_INFO;
 };
 
@@ -60,7 +60,7 @@ private:
 	CCryNameTSCRC Name;
 	uint32        size  : 24;
 	uint32        flags : 8;        // RF_
-	int32         offset = 0;
+	uint32        offset = 0;
 
 public:
 	CDirEntry() : size(0), flags(0) {}
@@ -75,7 +75,7 @@ public:
 	void GetMemoryUsage(ICrySizer* pSizer) const {}
 
 	// IsValid() returns true if entry content was flushed
-	bool IsValid() const { return size > 0 && offset >= 0 && offset < 0x10000000; }
+	bool IsValid() const { return size > 0; }
 
 	const CCryNameTSCRC& GetName() const { return Name; }
 
@@ -84,30 +84,17 @@ public:
 	// Only meaningful for valid entries
 	uint32 GetOffset() const 
 	{
-		if (IsValid())
-			return static_cast<uint32>(offset);
-		return 0;
+		return offset;
 	}
 
 	void MarkNotSaved()
 	{
-		offset = -abs(offset);
 		flags |= RF_NOTSAVED;
 	}
 	void MarkTemp()
 	{
 		flags |= RF_TEMPDATA;
 	}
-
-	AUTO_STRUCT_INFO;
-};
-
-struct SDirEntryRef
-{
-	CCryNameTSCRC Name;
-	uint32 ref;
-
-	void GetMemoryUsage(ICrySizer* pSizer) const {}
 
 	AUTO_STRUCT_INFO;
 };
@@ -130,10 +117,7 @@ struct SDirEntryRef
 
 #define MAX_OPEN_RESFILES 64
 typedef std::vector<CDirEntry> ResDir;
-typedef ResDir::iterator ResDirIt;
-
-typedef std::vector<SDirEntryRef> ResDirRef;
-typedef ResDirRef::iterator ResDirRefIt;
+typedef ResDir::iterator       ResDirIt;
 
 typedef std::vector<SDirEntryOpen> ResDirOpen;
 typedef ResDirOpen::iterator ResDirOpenIt;
@@ -152,12 +136,10 @@ private:
 	char*  m_szAccess;
 	FILE*  m_handle;
 	ResDir m_Dir;
-	ResDirRef  m_DirRef;
 	ResDirOpen m_DirOpen;
 	byte*  m_pCompressedDir;
 	int    m_typeaccess;
 	uint32 m_nNumFilesUnique;
-	uint32 m_nNumFilesRef;
 	uint32 m_nOffsDir;
 	uint32 m_nComprDirSize;
 	int32  m_nOffset;
@@ -255,8 +237,8 @@ public:
 
 	int  mfOpen(int type, CResFileLookupDataMan* pMan, SResStreamInfo* pStreamInfo = NULL);
 	bool mfClose();
-	int  mfFlush(bool bCompressDir = false);
-	int  mfFlushDir(long nSeek, bool bOptimise);
+	int  mfFlush();
+	int  mfFlushDir(long nSeek);
 	bool mfPrepareDir();
 	int  mfLoadDir(SResStreamInfo* pStreamInfo);
 	void mfReleaseDir();

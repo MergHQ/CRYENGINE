@@ -134,20 +134,27 @@ bool CShaderSerialize::_OpenSResource(float fVersion, SSShaderRes* pSR, CShader*
 
 bool CShaderSerialize::OpenSResource(const char* szName, SSShaderRes* pSR, CShader* pSH, bool bDontUseUserFolder, bool bReadOnly)
 {
-	CResFile* rfRO = new CResFile(szName);
-	float fVersion = (float)FX_CACHE_VER + (float)(FX_SER_CACHE_VER);
-	bool bValidRO = _OpenSResource(fVersion, pSR, pSH, bDontUseUserFolder ? CACHE_READONLY : CACHE_USER, rfRO, bReadOnly);
-
+	bool bValidRO   = false;
 	bool bValidUser = false;
-	#if !defined(SHADER_NO_SOURCES)
-	CResFile* rfUser;
+
+	float fVersion = (float)FX_CACHE_VER + (float)(FX_SER_CACHE_VER);
+
+	// check %ENGINE% first
+	{
+		stack_string szEngine = stack_string("%ENGINE%/") + stack_string(szName);
+		CResFile* rfRO = new CResFile(szEngine.c_str());
+		bValidRO = _OpenSResource(fVersion, pSR, pSH, bDontUseUserFolder ? CACHE_READONLY : CACHE_USER, rfRO, bReadOnly);
+	}
+
+	// now %USER%
+#if !defined(SHADER_NO_SOURCES)
 	if (!bDontUseUserFolder)
 	{
 		stack_string szUser = stack_string(gRenDev->m_cEF.m_szUserPath.c_str()) + stack_string(szName);
-		rfUser = new CResFile(szUser.c_str());
+		CResFile* rfUser = new CResFile(szUser.c_str());
 		bValidUser = _OpenSResource(fVersion, pSR, pSH, CACHE_USER, rfUser, bReadOnly);
 	}
-	#endif
+#endif
 
 	return (bValidRO || bValidUser);
 }
@@ -156,12 +163,7 @@ bool CShaderSerialize::CreateSResource(CShader* pSH, SSShaderRes* pSR, CCryNameT
 {
 	string dstName;
 	dstName.reserve(512);
-
-	if (m_customSerialisePath.size())
-	{
-		dstName = m_customSerialisePath.c_str();
-	}
-	dstName += gRenDev->m_cEF.m_ShadersCache;
+	dstName  = gRenDev->m_cEF.m_ShadersCache;
 	dstName += pSH->GetName();
 	dstName += ".fxb";
 

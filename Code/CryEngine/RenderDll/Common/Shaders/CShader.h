@@ -293,8 +293,8 @@ public:
 	string                     m_ShadersGameExtPath;
 	const char*                m_ShadersPath;
 	const char*                m_ShadersExtPath;
-	string                     m_ShadersCache;
-	string                     m_ShadersFilter;
+	const char*                m_ShadersCache;
+	const char*                m_ShadersFilter;
 	const char*                m_ShadersMergeCachePath;
 	string                     m_szUserPath;
 
@@ -538,8 +538,6 @@ public:
 	void mfPrecacheShaders(bool bStatsOnly);
 	void _PrecacheShaderList(bool bStatsOnly);
 	void mfOptimiseShaders(const char* szFolder, bool bForce);
-	void mfMergeShaders();
-	void _MergeShaders();
 	void mfAddRTCombinations(FXShaderCacheCombinations& CmbsMapSrc, FXShaderCacheCombinations& CmbsMapDst, CHWShader* pSH, bool bListOnly);
 	void mfAddRTCombination_r(int nComb, FXShaderCacheCombinations& CmbsMapDst, SCacheCombination* cmb, CHWShader* pSH, bool bAutoPrecache);
 	void mfAddLTCombinations(SCacheCombination* cmb, FXShaderCacheCombinations& CmbsMapDst);
