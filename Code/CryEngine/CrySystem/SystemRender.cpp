@@ -69,6 +69,15 @@ void OnFullscreenStateChanged(ICVar* pFullscreenCVar)
 	}
 }
 
+// Reflect r_windowType changes to the legacy r_fullscreen CVar
+void OnWindowStateChanged(ICVar* pCVar)
+{
+	if (ICVar* pFullscreenCVar = gEnv->pConsole->GetCVar("r_Fullscreen"))
+	{
+		pFullscreenCVar->Set(pCVar->GetIVal() == 3 ? 1 : 0);
+	}
+}
+
 /////////////////////////////////////////////////////////////////////////////////
 void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 {
@@ -144,9 +153,9 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 		"Toggles fullscreen mode. Default is 1 in normal game and 0 in DevMode.\n"
 		"Usage: r_Fullscreen [0=window/1=fullscreen]", OnFullscreenStateChanged);
 
-	m_rWindowState = REGISTER_INT("r_WindowType", 0, VF_DUMPTODISK,
+	m_rWindowState = REGISTER_INT_CB("r_WindowType", m_rFullscreen->GetIVal() != 0 ? 3 : 0, VF_DUMPTODISK,
 		"Changes the type of window for the rendered viewport.\n"
-		"Usage: r_WindowType [0=normal window/1=borderless window/2=borderless full screen/3=exclusive full screen]");
+		"Usage: r_WindowType [0=normal window/1=borderless window/2=borderless full screen/3=exclusive full screen]", OnWindowStateChanged);
 
 	m_rFullsceenNativeRes = REGISTER_INT("r_FullscreenNativeRes", 0, VF_DUMPTODISK,
 		"Toggles native resolution upscaling.\n"

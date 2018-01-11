@@ -41,8 +41,6 @@ int CRendererCVars::CV_r_vsync;
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
 float CRendererCVars::CV_r_overrideRefreshRate = 0;
 int CRendererCVars::CV_r_overrideScanlineOrder = 0;
-int CRendererCVars::CV_r_overrideDXGIOutput = 0;
-int CRendererCVars::CV_r_overrideDXGIOutputFS = 0;
 #endif
 #if CRY_PLATFORM_WINDOWS
 int CRendererCVars::CV_r_FullscreenPreemption = 1;
@@ -2527,10 +2525,6 @@ void CRendererCVars::InitCVars()
 	               "2=interlaced (upper field first),\n"
 	               "3=interlaced (lower field first)\n"
 	               "Usage: r_overrideScanlineOrder [0/1/2/3]");
-	REGISTER_CVAR3("r_overrideDXGIOutput", CV_r_overrideDXGIOutput, 0, VF_REQUIRE_APP_RESTART,
-	               "Specifies index of display to use for output (0=primary display).");
-	REGISTER_CVAR3("r_overrideDXGIOutputFS", CV_r_overrideDXGIOutputFS, 0, VF_NULL,
-	               "Specifies index of display to use for full screen output (0=primary display).");
 #endif
 #if CRY_PLATFORM_WINDOWS
 	REGISTER_CVAR3("r_FullscreenPreemption", CV_r_FullscreenPreemption, 1, VF_NULL,
