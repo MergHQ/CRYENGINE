@@ -14,6 +14,7 @@ CNetCVars* CNetCVars::s_pThis;
 void DumpMessageApproximations(IConsoleCmdArgs* pArgs);
 #endif
 
+#if USE_NETID_PACKING
 static void OnNetIDBitsChanged(ICVar* pCVar)
 {
 	CNetCVars& netCVars = CNetCVars::Get();
@@ -25,6 +26,7 @@ static void OnNetIDBitsChanged(ICVar* pCVar)
 	netCVars.net_numNetIDs = netCVars.net_netIDHighBitStart + netCVars.net_numNetIDHighBitIDs;
 	netCVars.net_invalidNetID = netCVars.net_numNetIDLowBitIDs;
 }
+#endif // USE_NETID_PACKING
 
 CNetCVars::CNetCVars()
 {
@@ -265,11 +267,13 @@ CNetCVars::CNetCVars()
 	REGISTER_COMMAND_DEV_ONLY("net_DumpMessageApproximations", DumpMessageApproximations, VF_NULL, "Dumps the statistics used for message queue limit avoidance");
 #endif
 
+#if USE_NETID_PACKING
 	REGISTER_CVAR_CB(net_numNetIDLowBitBits, 5, VF_CHEAT, "Number of bits used for low bit NetIDs. By default players start allocating from low bit NetIDs.", OnNetIDBitsChanged);
 	REGISTER_CVAR_CB(net_numNetIDMediumBitBits, 9, VF_CHEAT, "Number of bits used for medium bit NetIDs. By default dynamic entities start allocating from medium bit NetIDs.", OnNetIDBitsChanged);
 	REGISTER_CVAR_CB(net_numNetIDHighBitBits, 13, VF_CHEAT, "Number of bits used for high bit NetIDs. By default static entities start allocating from high bit NetIDs.", OnNetIDBitsChanged);
 
 	OnNetIDBitsChanged(NULL);
+#endif // USE_NETID_PACKING
 
 	REGISTER_CVAR2_DEDI_ONLY("net_dedi_scheduler_server_port", &net_dedi_scheduler_server_port, 47264, VF_NULL, "Dedi scheduler server port");
 	REGISTER_CVAR2_DEDI_ONLY("net_dedi_scheduler_client_base_port", &net_dedi_scheduler_client_base_port, 47265, VF_NULL, "Dedi scheduler client base port");
