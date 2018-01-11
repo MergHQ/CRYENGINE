@@ -457,11 +457,11 @@ void CShaderResources::PostLoad(CShader* pSH)
 			if (size)
 			{
 				m_pSky = new SSkyInfo;
-				cry_sprintf(path, "%s_12%s", sky, ext);
+				cry_sprintf(path, "%s_12.%s", sky, ext);
 				m_pSky->m_SkyBox[0] = CTexture::ForName(path, 0, eTF_Unknown);
-				cry_sprintf(path, "%s_34%s", sky, ext);
+				cry_sprintf(path, "%s_34.%s", sky, ext);
 				m_pSky->m_SkyBox[1] = CTexture::ForName(path, 0, eTF_Unknown);
-				cry_sprintf(path, "%s_5%s", sky, ext);
+				cry_sprintf(path, "%s_5.%s", sky, ext);
 				m_pSky->m_SkyBox[2] = CTexture::ForName(path, 0, eTF_Unknown);
 			}
 		}
