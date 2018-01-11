@@ -415,6 +415,8 @@ struct CVars : public Cry3DEngineBase
 	float e_RenderMeshCollisionTolerance;
 	DeclareConstIntCVar(e_ShadowsMasksLimit, 0);
 	int   e_ShadowsCacheUpdate;
+	int   e_ShadowsCacheExtendLastCascade;
+	int   e_ShadowsCacheMaxNodesPerFrame;
 	int   e_ShadowsCacheObjectLod;
 	int   e_ShadowsCacheRenderCharacters;
 	int   e_ShadowsPerObject;

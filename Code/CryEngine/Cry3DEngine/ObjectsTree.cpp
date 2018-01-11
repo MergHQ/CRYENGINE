@@ -1646,7 +1646,7 @@ bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMap
 		--totalRemainingNodes;
 	}
 
-	for (int i = pFrustum->pShadowCacheData->mOctreePath[nCurLevel]; i < 8; ++i)
+	for (int i = pFrustum->pShadowCacheData->mOctreePath[nCurLevel]; i < 8; ++i, ++pFrustum->pShadowCacheData->mOctreePath[nCurLevel])
 	{
 		if (m_arrChilds[i] && (m_arrChilds[i]->m_renderFlags & ERF_CASTSHADOWMAPS))
 		{
@@ -1656,8 +1656,6 @@ bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMap
 				return false;
 
 		}
-
-		pFrustum->pShadowCacheData->mOctreePath[nCurLevel] = i;
 	}
 
 	// this subtree is fully processed: reset traversal state

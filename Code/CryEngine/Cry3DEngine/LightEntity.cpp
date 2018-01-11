@@ -250,7 +250,10 @@ void CLightEntity::UpdateGSMLightSourceShadowFrustum(const SRenderingPassInfo& p
 		if (nFirstCachedLod >= 0)
 		{
 			nDynamicLodCount = clamp_tpl(nFirstCachedLod, 0, nMaxLodCount);
-			nCachedLodCount = nMaxLodCount - nDynamicLodCount;
+			const auto& cacheResolutions = GetRenderer()->GetCachedShadowsResolution();
+
+			while (nCachedLodCount + nDynamicLodCount < nMaxLodCount && cacheResolutions[nCachedLodCount] > 0)
+				++nCachedLodCount;
 		}
 	}
 

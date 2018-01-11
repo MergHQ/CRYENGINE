@@ -118,7 +118,7 @@ void ShadowCache::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::
 	const bool bExcludeDynamicDistanceShadows = GetCVars()->e_DynamicDistanceShadows != 0;
 	const bool bUseCastersHull = (nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eFullUpdateTimesliced);
 	const int maxNodesPerFrame = (nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate)
-	                             ? MAX_RENDERNODES_PER_FRAME* GetRenderer()->GetActiveGPUCount()
+	                             ? GetCVars()->e_ShadowsCacheMaxNodesPerFrame * GetRenderer()->GetActiveGPUCount()
 	                             : std::numeric_limits<int>::max();
 
 	m_pObjManager->MakeStaticShadowCastersList(((CLightEntity*)m_pLightEntity->GetLightProperties().m_pOwner)->GetCastingException(), pFr,
