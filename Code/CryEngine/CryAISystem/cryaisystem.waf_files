@@ -277,7 +277,6 @@
             "Cover/DynamicCoverManager.cpp", 
             "Cover/EntityCoverSampler.cpp", 
             "Cover/CoverSystemSchematyc.cpp", 
-            "Cover/CoverSystemUQS.cpp", 
             "Cover/Cover.h", 
             "Cover/CoverSampler.h", 
             "Cover/CoverScorer.h", 
@@ -286,8 +285,7 @@
             "Cover/CoverUser.h", 
             "Cover/DynamicCoverManager.h", 
             "Cover/EntityCoverSampler.h", 
-            "Cover/CoverSystemSchematyc.h", 
-            "Cover/CoverSystemUQS.h"
+            "Cover/CoverSystemSchematyc.h"
         ], 
         "Factions": [
             "Factions/FactionMap.cpp", 
