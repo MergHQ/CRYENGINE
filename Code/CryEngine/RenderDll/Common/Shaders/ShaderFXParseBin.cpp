@@ -269,7 +269,7 @@ SShaderBin* CShaderManBin::SaveBinShader(
 	//pBin->CryptTable();
 
 	char nameFile[256];
-	cry_sprintf(nameFile, "%s%s.%s", m_pCEF->m_ShadersCache.c_str(), szName, bInclude ? "cfib" : "cfxb");
+	cry_sprintf(nameFile, "%s%s.%s", m_pCEF->m_ShadersCache, szName, bInclude ? "cfib" : "cfxb");
 	stack_string szDst = stack_string(m_pCEF->m_szUserPath.c_str()) + stack_string(nameFile);
 	const char* szFileName = szDst;
 
@@ -1013,7 +1013,7 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 	if (!fpSrc)
 	{
 		// Second look in Engine folder
-		nameFile.Format("%sCryFX/%s.%s", gRenDev->m_cEF.m_ShadersPath, szName, szExt);
+		nameFile.Format("%s/%sCryFX/%s.%s", "%ENGINE%", gRenDev->m_cEF.m_ShadersPath, szName, szExt);
 #if !defined(_RELEASE)
 		{
 			fpSrc = gEnv->pCryPak->FOpen(nameFile.c_str(), "rb");
@@ -1023,7 +1023,7 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 	}
 	//char szPath[1024];
 	//getcwd(szPath, 1024);
-	nameBin.Format("%s%s.%s", m_pCEF->m_ShadersCache.c_str(), szName, bInclude ? "cfib" : "cfxb");
+	nameBin.Format("%s/%s%s.%s", "%ENGINE%", m_pCEF->m_ShadersCache, szName, bInclude ? "cfib" : "cfxb");
 	FILE* fpDst = NULL;
 	int i = 0, n = 2;
 
@@ -1031,7 +1031,7 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 	if (CRenderer::CV_r_shadersediting)
 		i = 1;
 
-	string szDst = m_pCEF->m_szUserPath + nameBin;
+	string szDst = m_pCEF->m_szUserPath + (nameBin.c_str() + 9); // skip '%ENGINE%/'
 	byte bValid = 0;
 	float fVersion = (float)FX_CACHE_VER;
 	for (; i < n; i++)
@@ -1105,15 +1105,15 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 
 			if (bValid & 2)
 			{
-				cry_sprintf(acTemp, "WARNING: Bin FXShader USER '%s' source crc mismatch", nameBin.c_str());
+				cry_sprintf(acTemp, "WARNING: Bin FXShader USER '%s' source crc mismatch", szDst.c_str());
 			}
 			if (bValid & 8)
 			{
-				cry_sprintf(acTemp, "WARNING: Bin FXShader USER '%s' version mismatch (Cache: %u.%u, Expected: %.1f)", nameBin.c_str(), Header[1].m_VersionHigh, Header[1].m_VersionLow, fVersion);
+				cry_sprintf(acTemp, "WARNING: Bin FXShader USER '%s' version mismatch (Cache: %u.%u, Expected: %.1f)", szDst.c_str(), Header[1].m_VersionHigh, Header[1].m_VersionLow, fVersion);
 			}
 			if (bValid & 0x20)
 			{
-				cry_sprintf(acTemp, "WARNING: Bin FXShader USER '%s' CRC mismatch", nameBin.c_str());
+				cry_sprintf(acTemp, "WARNING: Bin FXShader USER '%s' CRC mismatch", szDst.c_str());
 			}
 
 			if (bValid)

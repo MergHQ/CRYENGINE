@@ -10,7 +10,6 @@ typedef std::vector<CCryNameTSCRC> TResDirNames;
 struct SResFileLookupDataDisk
 {
 	int    m_NumOfFilesUnique;
-	int    m_NumOfFilesRef;
 	uint32 m_OffsetDir;
 	uint32 m_CRC32;
 	uint16 m_CacheMajorVer;
@@ -24,7 +23,6 @@ struct SResFileLookupDataDisk
 struct SResFileLookupData
 {
 	int    m_NumOfFilesUnique;
-	int    m_NumOfFilesRef;
 	uint32 m_OffsetDir;
 	uint32 m_CRC32;
 	uint16 m_CacheMajorVer;
@@ -33,7 +31,6 @@ struct SResFileLookupData
 	SResFileLookupData() {}
 	SResFileLookupData(const SResFileLookupDataDisk& inLookup)
 		: m_NumOfFilesUnique(inLookup.m_NumOfFilesUnique)
-		, m_NumOfFilesRef(inLookup.m_NumOfFilesRef)
 		, m_OffsetDir(inLookup.m_OffsetDir)
 		, m_CRC32(inLookup.m_CRC32)
 		, m_CacheMajorVer(inLookup.m_CacheMajorVer)
@@ -101,7 +98,6 @@ public:
 	void                RemoveData(uint32 CRC);
 
 	SResFileLookupData* GetData(const CCryNameTSCRC& name);
-	SCFXLookupData*     GetDataCFX(const char* szPath);
 	void                MarkDirty(bool bDirty) { m_bDirty = bDirty; }
 
 protected:
