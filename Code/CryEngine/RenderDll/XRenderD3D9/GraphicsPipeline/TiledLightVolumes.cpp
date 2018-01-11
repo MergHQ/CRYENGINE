@@ -289,9 +289,10 @@ void CTiledLightVolumesStage::Update()
 
 	if (CRenderer::CV_r_DeferredShadingTiled >= 3)
 	{
-		uint clearNull[4] = { 0 };
-		GetDeviceObjectFactory().GetCoreCommandList().GetComputeInterface()->ClearUAV(m_tileOpaqueLightMaskBuf.GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), clearNull, 0, nullptr);
-		GetDeviceObjectFactory().GetCoreCommandList().GetComputeInterface()->ClearUAV(m_tileTranspLightMaskBuf.GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), clearNull, 0, nullptr);
+		const ColorI nulls = { 0, 0, 0, 0 };
+
+		CClearSurfacePass::Execute(&m_tileOpaqueLightMaskBuf, nulls);
+		CClearSurfacePass::Execute(&m_tileTranspLightMaskBuf, nulls);
 	}
 }
 

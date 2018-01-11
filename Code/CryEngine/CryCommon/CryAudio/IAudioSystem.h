@@ -46,8 +46,6 @@ static constexpr char* s_szHighStateName = "high";
 static constexpr char* s_szOnStateName = "on";
 static constexpr char* s_szOffStateName = "off";
 static constexpr char* s_szGlobalPreloadRequestName = "global_audio_system_preload";
-static constexpr char* s_szDefaultLibraryName = "default_controls";
-static constexpr char* s_szInternalLibraryName = "internal_default_controls";
 
 static constexpr char* s_szRootNodeTag = "AudioSystemData";
 static constexpr char* s_szEditorDataTag = "EditorData";
@@ -62,15 +60,9 @@ static constexpr char* s_szParameterTag = "Parameter";
 static constexpr char* s_szSwitchTag = "Switch";
 static constexpr char* s_szStateTag = "State";
 static constexpr char* s_szEnvironmentTag = "Environment";
+static constexpr char* s_szPreloadRequestTag = "PreloadRequest";
 static constexpr char* s_szPlatformTag = "Platform";
 static constexpr char* s_szEventTag = "Event";
-
-static constexpr char* s_szTriggerRequestTag = "TriggerRequest";
-static constexpr char* s_szSwitchRequestTag = "SwitchRequest";
-static constexpr char* s_szValueTag = "Value";
-static constexpr char* s_szParameterRequestTag = "ParameterRequest";
-static constexpr char* s_szPreloadRequestTag = "PreloadRequest";
-static constexpr char* s_szEnvironmentRequestTag = "EnvironmentRequest";
 
 static constexpr char* s_szNameAttribute = "name";
 static constexpr char* s_szVersionAttribute = "version";

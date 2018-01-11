@@ -438,9 +438,13 @@ private:
 	CChangeList<SNetObjectAspectChange>    m_vGameChangedObjects;
 	std::vector<SChannelChange>            m_vNetChangeLog;
 	std::vector<SChannelChange>            m_vNetChangeLogUnique;
+#if USE_NETID_PACKING
 	std::priority_queue<uint16, std::vector<uint16>, std::greater<uint16>> m_freeLowBitObjects;
 	std::priority_queue<uint16, std::vector<uint16>, std::greater<uint16>> m_freeMediumBitObjects;
 	std::priority_queue<uint16, std::vector<uint16>, std::greater<uint16>> m_freeHighBitObjects;
+#else // USE_NETID_PACKING
+	std::priority_queue<uint16, std::vector<uint16>, std::greater<uint16>> m_freeObjects;
+#endif // USE_NETID_PACKING
 	TChangedProfiles          m_changedProfiles;
 	std::vector<EntityId>     m_removedStaticEntities;
 #if RESERVE_UNBOUND_ENTITIES
@@ -464,6 +468,7 @@ private:
 	mutable SContextObjectRef m_cacheObjectRef;
 	void ClearContextObjectCache() { m_cacheObjectID = SNetObjectID(); m_cacheObjectRef = SContextObjectRef(); }
 
+	SNetObjectID AllocateNetObjectID(ESpawnType spawnType, EntityId userID);
 	void AddToFreeObjects(uint16 id);
 	void ClearFreeObjects();
 

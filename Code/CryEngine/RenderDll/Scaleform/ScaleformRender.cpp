@@ -309,7 +309,7 @@ CTexture* SSF_ResourcesD3D::GetColorSurface(CD3D9Renderer* pRenderer, int nWidth
 	if (i == m_renderTargets.size())
 	{
 		//allocate new RT
-		int texID = pRenderer->CreateRenderTarget(nWidth, nHeight, Clr_Transparent, eFormat);
+		int texID = CRendererResources::CreateRenderTarget(nWidth, nHeight, Clr_Transparent, eFormat);
 		pTex = static_cast<CTexture*>(pRenderer->EF_GetTextureByID(texID));
 
 		CClearSurfacePass::Execute(pTex, Clr_Transparent);

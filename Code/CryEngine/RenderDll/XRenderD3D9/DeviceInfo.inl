@@ -4,65 +4,15 @@
 
 #include <CryCore/CryCustomTypes.h>
 
-enum
-{
-#if (CRY_RENDERER_DIRECT3D >= 120)
-	DefaultBufferCount = 4
-#else
-	DefaultBufferCount = 2
-#endif
-};
-
-static void FillSwapChainDesc(DXGI_SWAP_CHAIN_DESC& desc, UINT width, UINT height, HWND hWnd, BOOL windowed)
-{
-	const bool bWaitable = (CRenderer::CV_r_D3D12WaitableSwapChain && windowed);
-
-	desc.BufferDesc.Width = width;
-	desc.BufferDesc.Height = height;
-	desc.BufferDesc.RefreshRate.Numerator = 0;
-	desc.BufferDesc.RefreshRate.Denominator = 0;
-#if defined(USE_SDL2_VIDEO)
-	desc.BufferDesc.Format = DXGI_FORMAT_B8G8R8X8_UNORM;
-#else
-	desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-#endif
-	desc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	desc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.BufferUsage = DXGI_USAGE_SHADER_INPUT | DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	desc.BufferCount = (CRenderer::CV_r_minimizeLatency > 0 || bWaitable) ? MAX_FRAMES_IN_FLIGHT : DefaultBufferCount;
-	desc.OutputWindow = hWnd;
-	desc.Windowed = windowed ? 1 : 0;
-	desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-	desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-
-#if (CRY_RENDERER_DIRECT3D >= 120)
-	if (bWaitable)
-	{
-		// Set this flag to create a waitable object you can use to ensure rendering does not begin while a
-		// frame is still being presented. When this flag is used, the swapchain's latency must be set with
-		// the IDXGISwapChain2::SetMaximumFrameLatency API instead of IDXGIDevice1::SetMaximumFrameLatency.
-		desc.BufferCount = MAX_FRAMES_IN_FLIGHT + 1;
-		desc.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-	}
-#endif
-}
-
 DeviceInfo::DeviceInfo()
 	: m_pFactory(0)
 	, m_pAdapter(0)
-	, m_pOutput(0)
 	, m_pDevice(0)
 	, m_pContext(0)
-	, m_pSwapChain(0)
 	, m_driverType(D3D_DRIVER_TYPE_NULL)
 	, m_creationFlags(0)
 	, m_featureLevel(D3D_FEATURE_LEVEL_9_1)
 	, m_autoDepthStencilFmt(DXGI_FORMAT_R24G8_TYPELESS)
-	, m_outputIndex(0)
-	, m_syncInterval(0)
-	, m_presentFlags(0)
 	, m_activated(true)
 	, m_activatedMT(true)
 #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
@@ -71,9 +21,6 @@ DeviceInfo::DeviceInfo()
 #endif
 {
 	memset(&m_adapterDesc, 0, sizeof(m_adapterDesc));
-	memset(&m_swapChainDesc, 0, sizeof(m_swapChainDesc));
-	memset(&m_refreshRate, 0, sizeof(m_refreshRate));
-	memset(&m_desktopRefreshRate, 0, sizeof(m_desktopRefreshRate));
 
 #if !CRY_RENDERER_OPENGL && !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
 #if CRY_RENDERER_DIRECT3D >= 120
@@ -101,41 +48,11 @@ DeviceInfo::DeviceInfo()
 void DeviceInfo::Release()
 {
 	memset(&m_adapterDesc, 0, sizeof(m_adapterDesc));
-	memset(&m_swapChainDesc, 0, sizeof(m_swapChainDesc));
-	memset(&m_refreshRate, 0, sizeof(m_refreshRate));
-	memset(&m_desktopRefreshRate, 0, sizeof(m_desktopRefreshRate));
 
-	if (m_pSwapChain)
-		m_pSwapChain->SetFullscreenState(FALSE, 0);
-	SAFE_RELEASE(m_pSwapChain);
 	SAFE_RELEASE(m_pContext);
 	SAFE_RELEASE(m_pDevice);
-	SAFE_RELEASE(m_pOutput);
 	SAFE_RELEASE(m_pAdapter);
 	SAFE_RELEASE(m_pFactory);
-}
-
-static void SetupPreferredMonitorDimensions(HMONITOR hMonitor)
-{
-#if CRY_PLATFORM_WINDOWS
-	MONITORINFO monitorInfo;
-	monitorInfo.cbSize = sizeof(monitorInfo);
-	if (GetMonitorInfo(hMonitor, &monitorInfo))
-	{
-		gcpRendD3D->m_prefMonX = monitorInfo.rcMonitor.left;
-		gcpRendD3D->m_prefMonY = monitorInfo.rcMonitor.top;
-		gcpRendD3D->m_prefMonWidth = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
-		gcpRendD3D->m_prefMonHeight = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
-	}
-#endif
-}
-
-static void SetupMonitorAndGetAdapterDesc(DXGIOutput* pOutput, DXGIAdapter* pAdapter, DXGI_ADAPTER_DESC1& adapterDesc)
-{
-	DXGI_OUTPUT_DESC outputDesc;
-	if (SUCCEEDED(pOutput->GetDesc(&outputDesc)))
-		SetupPreferredMonitorDimensions(outputDesc.Monitor);
-	pAdapter->GetDesc1(&adapterDesc);
 }
 
 static int GetDXGIAdapterOverride()
@@ -198,7 +115,7 @@ bool GetForcedFeatureLevel(D3D_FEATURE_LEVEL* pForcedFeatureLevel)
 }
 #endif // !defined(_RELEASE)
 
-bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbufferHeight, int zbpp, OnCreateDeviceCallback pCreateDeviceCallback, CreateWindowCallback pCreateWindowCallback)
+bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCallback, CreateWindowCallback pCreateWindowCallback)
 {
 #if CRY_RENDERER_VULKAN
 	m_autoDepthStencilFmt = zbpp == 32 ? DXGI_FORMAT_R32G8X24_TYPELESS : zbpp == 24 ? DXGI_FORMAT_R24G8_TYPELESS : DXGI_FORMAT_R16G8X8_TYPELESS;
@@ -248,30 +165,15 @@ bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbuffer
 			HRESULT hr = D3D11CreateDeviceAndSwapChain(m_pAdapter, driverType, 0, m_creationFlags, aFeatureLevels, uNumFeatureLevels, D3D11_SDK_VERSION, &m_swapChainDesc, &m_pSwapChain, &m_pDevice, &m_featureLevel, &m_pContext);
 			if (SUCCEEDED(hr) && m_pDevice && m_pSwapChain)
 			{
-#if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
-				const uint32 outputIdx = gRenDev->CV_r_overrideDXGIOutput > 0 ? gRenDev->CV_r_overrideDXGIOutput : 0;
-				if (outputIdx)
+				if (SUCCEEDED(m_pAdapter->EnumOutputs(0, &pOutput)) && pOutput)
 				{
-					if (SUCCEEDED(m_pAdapter->EnumOutputs(outputIdx, &m_pOutput)) && m_pOutput)
-					{
-						SetupMonitorAndGetAdapterDesc(m_pOutput, m_pAdapter, m_adapterDesc);
-						break;
-					}
-
-					SAFE_RELEASE(m_pOutput);
-					CryLogAlways("Failed to resolve DXGI display for override index %d. Falling back to primary display.", outputIdx);
-				}
-#endif
-				if (SUCCEEDED(m_pAdapter->EnumOutputs(0, &m_pOutput)) && m_pOutput)
-				{
-					SetupMonitorAndGetAdapterDesc(m_pOutput, m_pAdapter, m_adapterDesc);
+					m_pAdapter->GetDesc1(&m_adapterDesc);
 					break;
 				}
 				else if (r_overrideDXGIAdapter >= 0)
 					CryLogAlways("No display connected to DXGI adapter override %d. Adapter cannot be used for rendering.", r_overrideDXGIAdapter);
 			}
 
-			SAFE_RELEASE(m_pOutput);
 			SAFE_RELEASE(m_pContext);
 			SAFE_RELEASE(m_pDevice);
 			SAFE_RELEASE(m_pSwapChain);
@@ -285,12 +187,8 @@ bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbuffer
 		return false;
 	}
 
-	{
-		m_pFactory->MakeWindowAssociation(m_swapChainDesc.OutputWindow, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
-
-		if (pCreateDeviceCallback)
-			pCreateDeviceCallback(m_pDevice);
-	}
+	if (pCreateDeviceCallback)
+		pCreateDeviceCallback(m_pDevice);
 
 	#if !DXGL_FULL_EMULATION
 		#if OGL_SINGLE_CONTEXT
@@ -343,26 +241,8 @@ bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbuffer
 			HRESULT hr = VKCreateDevice(m_pAdapter, driverType, 0, m_creationFlags, aFeatureLevels, uNumFeatureLevels, D3D11_SDK_VERSION, hWnd, &m_pDevice, &m_featureLevel, &m_pContext);
 			if (SUCCEEDED(hr) && m_pDevice)
 			{
-#if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
-				const uint32 outputIdx = gRenDev->CV_r_overrideDXGIOutput > 0 ? gRenDev->CV_r_overrideDXGIOutput : 0;
-				if (outputIdx)
-				{
-					if (SUCCEEDED(m_pAdapter->EnumOutputs(outputIdx, &m_pOutput)) && m_pOutput)
-					{
-						SetupMonitorAndGetAdapterDesc(m_pOutput, m_pAdapter, m_adapterDesc);
-						break;
-					}
-
-					CryLogAlways("Failed to resolve DXGI display for override index %d. Falling back to primary display.", outputIdx);
-				}
-#endif
-				if (SUCCEEDED(m_pAdapter->EnumOutputs(0, &m_pOutput)) && m_pOutput)
-				{
-					SetupMonitorAndGetAdapterDesc(m_pOutput, m_pAdapter, m_adapterDesc);
-					break;
-				}
-				else if (r_overrideDXGIAdapter >= 0)
-					CryLogAlways("No display connected to DXGI adapter override %d. Adapter cannot be used for rendering.", r_overrideDXGIAdapter);
+				m_pAdapter->GetDesc1(&m_adapterDesc);
+				break;
 			}
 		}
 
@@ -372,38 +252,13 @@ bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbuffer
 		++nAdapterOrdinal;
 	}
 
-	if (!m_pDevice || !m_pAdapter || !m_pOutput)
+	if (!m_pDevice || !m_pAdapter)
 	{
 		Release();
 		return false;
 	}
 
 	{
-		FillSwapChainDesc(m_swapChainDesc, backbufferWidth, backbufferHeight, hWnd, windowed);
-		
-		if (!windowed)
-		{
-			DXGI_MODE_DESC match;
-			if (SUCCEEDED(m_pOutput->FindClosestMatchingMode(&m_swapChainDesc.BufferDesc, &match, m_pDevice)))
-			{
-				m_swapChainDesc.BufferDesc = match;
-			}
-		}
-
-		m_refreshRate = !windowed ? m_swapChainDesc.BufferDesc.RefreshRate : m_desktopRefreshRate;
-
-		HRESULT hr = m_pFactory->CreateSwapChain(m_pDevice, &m_swapChainDesc, &m_pSwapChain);
-
-		if (FAILED(hr) || !m_pSwapChain)
-		{
-			Release();
-			return false;
-		}
-	}
-
-	{
-		m_pFactory->MakeWindowAssociation(m_swapChainDesc.OutputWindow, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
-
 		if (pCreateDeviceCallback)
 			pCreateDeviceCallback(m_pDevice);
 	}
@@ -420,7 +275,6 @@ bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbuffer
 	#endif
 
 	IDXGIAdapter1* pAdapter = nullptr;
-	IDXGIOutput* pOutput = nullptr;
 	ID3D11Device* pDevice = nullptr;
 	ID3D11DeviceContext* pContext = nullptr;
 
@@ -512,28 +366,10 @@ bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbuffer
 							SAFE_RELEASE(pDXGIDevice);
 						}
 
-	#if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
-						m_outputIndex = gRenDev->CV_r_overrideDXGIOutput > 0 ? gRenDev->CV_r_overrideDXGIOutput : 0;
-						if (m_outputIndex)
-						{
-							if (SUCCEEDED(pAdapter->EnumOutputs(m_outputIndex, &pOutput)) && pOutput)
-							{
-								// Promote interfaces to the required level
-								pOutput->QueryInterface(__uuidof(DXGIOutput), (void**)&m_pOutput);
-								SetupMonitorAndGetAdapterDesc(m_pOutput, m_pAdapter, m_adapterDesc);
-								break;
-							}
-
-							SAFE_RELEASE(pOutput);
-							CryLogAlways("Failed to resolve DXGI display for override index %d. Falling back to primary display.", m_outputIndex);
-							m_outputIndex = 0;
-						}
-	#endif
+						IDXGIOutput* pOutput = nullptr;
 						if (SUCCEEDED(pAdapter->EnumOutputs(0, &pOutput)) && pOutput)
 						{
-							// Promote interfaces to the required level
-							pOutput->QueryInterface(__uuidof(DXGIOutput), (void**)&m_pOutput);
-							SetupMonitorAndGetAdapterDesc(m_pOutput, m_pAdapter, m_adapterDesc);
+							m_pAdapter->GetDesc1(&m_adapterDesc);
 							break;
 						}
 						else if (r_overrideDXGIAdapter >= 0)
@@ -541,13 +377,11 @@ bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbuffer
 					}
 
 					// Decrement QueryInterface() increment
-					SAFE_RELEASE(m_pOutput);
 					SAFE_RELEASE(m_pContext);
 					SAFE_RELEASE(m_pDevice);
 					SAFE_RELEASE(m_pAdapter);
 
 					// Decrement Create() increment
-					SAFE_RELEASE(pOutput);
 					SAFE_RELEASE(pContext);
 					SAFE_RELEASE(pDevice);
 					SAFE_RELEASE(pAdapter);
@@ -561,7 +395,7 @@ bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbuffer
 		}
 	}
 
-	if (!m_pFactory || !m_pAdapter || !m_pDevice || !m_pContext || !m_pOutput)
+	if (!m_pFactory || !m_pAdapter || !m_pDevice || !m_pContext)
 	{
 		CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR, "DeviceInfo::CreateDevice() failed");
 		Release();
@@ -569,7 +403,6 @@ bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbuffer
 	}
 
 	// Decrement Create() increment
-	SAFE_RELEASE(pOutput);
 	SAFE_RELEASE(pContext);
 	SAFE_RELEASE(pDevice);
 	SAFE_RELEASE(pAdapter);
@@ -586,23 +419,6 @@ bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbuffer
 		SAFE_RELEASE(pDebugDevice);
 	}
 #endif
-
-	{
-		DXGI_MODE_DESC desc;
-		memset(&desc, 0, sizeof(desc));
-		desc.Width = gcpRendD3D->m_prefMonWidth;
-		desc.Height = gcpRendD3D->m_prefMonHeight;
-		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-
-		DXGI_MODE_DESC match;
-
-		// disable floating point exceptions due to driver bug with floating point exceptions
-		SCOPED_DISABLE_FLOAT_EXCEPTIONS();
-		if (SUCCEEDED(m_pOutput->FindClosestMatchingMode(&desc, &match, m_pDevice)))
-		{
-			m_desktopRefreshRate = match.RefreshRate;
-		}
-	}
 	#endif
 
 	HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
@@ -614,53 +430,8 @@ bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbuffer
 
 	ProcessWindowMessages(hWnd);
 
-	{
-		FillSwapChainDesc(m_swapChainDesc, backbufferWidth, backbufferHeight, hWnd, windowed);
-
-		if (!windowed)
-		{
-			DXGI_MODE_DESC match;
-			if (SUCCEEDED(m_pOutput->FindClosestMatchingMode(&m_swapChainDesc.BufferDesc, &match, m_pDevice)))
-			{
-				m_swapChainDesc.BufferDesc = match;
-			}
-		}
-
-		m_refreshRate = !windowed ? m_swapChainDesc.BufferDesc.RefreshRate : m_desktopRefreshRate;
-
-		IDXGISwapChain* pSwapChain;
-		HRESULT hr = m_pFactory->CreateSwapChain(m_pDevice, &m_swapChainDesc, &pSwapChain);
-		if (FAILED(hr) || !pSwapChain)
-		{
-			Release();
-			return false;
-		}
-
-		// Promote interfaces to the required level
-		hr = pSwapChain->QueryInterface(__uuidof(DXGISwapChain), (void**)&m_pSwapChain);
-		if (FAILED(hr) || !m_pSwapChain)
-		{
-			Release();
-			return false;
-		}
-
-		// Decrement Create() increment
-		SAFE_RELEASE(pSwapChain);
-
-#if (CRY_RENDERER_DIRECT3D >= 120)
-		if (m_swapChainDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)
-		{
-			m_pSwapChain->SetMaximumFrameLatency(MAX_FRAME_LATENCY);
-		}
-#endif
-	}
-
-	{
-		m_pFactory->MakeWindowAssociation(m_swapChainDesc.OutputWindow, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
-
-		if (pCreateDeviceCallback)
-			pCreateDeviceCallback(m_pDevice);
-	}
+	if (pCreateDeviceCallback)
+		pCreateDeviceCallback(m_pDevice);
 
 	ProcessWindowMessages(hWnd);
 
@@ -670,35 +441,6 @@ bool DeviceInfo::CreateDevice(bool windowed, int backbufferWidth, int backbuffer
 	#pragma message("DeviceInfo::CreateDevice not implemented on this platform")
 	return false;
 #endif
-}
-
-void DeviceInfo::SnapSettings()
-{
-	if (m_swapChainDesc.Windowed)
-	{
-		m_swapChainDesc.BufferDesc.RefreshRate.Denominator = 0;
-		m_swapChainDesc.BufferDesc.RefreshRate.Numerator = 0;
-		m_swapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-		m_swapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-
-		m_refreshRate = m_desktopRefreshRate;
-	}
-	else
-	{
-		DXGI_MODE_DESC desc;
-		memset(&desc, 0, sizeof(desc));
-		desc.Width = m_swapChainDesc.BufferDesc.Width;
-		desc.Height = m_swapChainDesc.BufferDesc.Height;
-		desc.Format = m_swapChainDesc.BufferDesc.Format;
-
-		DXGI_MODE_DESC match;
-		if (SUCCEEDED(m_pOutput->FindClosestMatchingMode(&desc, &match, m_pDevice)))
-		{
-			m_swapChainDesc.BufferDesc = match;
-
-			m_refreshRate = match.RefreshRate;
-		}
-	}
 }
 
 #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
@@ -763,18 +505,10 @@ void DeviceInfo::ProcessSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PT
 			const bool activate = LOWORD(wParam) != 0;
 			if (m_activated != activate)
 			{
-				HWND hWnd = (HWND) gcpRendD3D->GetHWND();
-
-				// TODO: Select the DisplayContext associated with hWnd and limit the full-screen transition to that
 				const bool isFullscreen = gcpRendD3D->IsFullscreen();
 				if (isFullscreen)
 				{
-					CD3D9Renderer::OnRecreateBaseSwapChain(m_pDevice, activate);
-
-					if (activate)
-					{
-						gEnv->pHardwareMouse->GetSystemEventListener()->OnSystemEvent(event, wParam, lParam);
-					}
+					gEnv->pHardwareMouse->GetSystemEventListener()->OnSystemEvent(event, wParam, lParam);
 				}
 
 				m_activated = activate;
@@ -788,21 +522,5 @@ void DeviceInfo::ProcessSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PT
 	}
 }
 #endif // #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
-
-#if CRY_PLATFORM_WINDOWS
-void DeviceInfo::EnforceFullscreenPreemption()
-{
-	if (gRenDev->CV_r_FullscreenPreemption && gcpRendD3D->IsFullscreen())
-	{
-		HRESULT hr = m_pSwapChain->Present(0, DXGI_PRESENT_TEST);
-		if (hr == DXGI_STATUS_OCCLUDED)
-		{
-			HWND hWnd = (HWND) gcpRendD3D->GetHWND();
-			if (m_activated)
-				BringWindowToTop(hWnd);
-		}
-	}
-}
-#endif // #if CRY_PLATFORM_WINDOWS
 
 #endif // #if defined(SUPPORT_DEVICE_INFO)

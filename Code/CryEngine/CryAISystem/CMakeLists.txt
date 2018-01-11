@@ -264,7 +264,6 @@ add_sources("CryAISystem_uber_1.cpp"
 		"Cover/DynamicCoverManager.cpp"
 		"Cover/EntityCoverSampler.cpp"
 		"Cover/CoverSystemSchematyc.cpp"
-		"Cover/CoverSystemUQS.cpp"
 		"Cover/Cover.h"
 		"Cover/CoverSampler.h"
 		"Cover/CoverScorer.h"
@@ -274,7 +273,6 @@ add_sources("CryAISystem_uber_1.cpp"
 		"Cover/DynamicCoverManager.h"
 		"Cover/EntityCoverSampler.h"
 		"Cover/CoverSystemSchematyc.h"
-		"Cover/CoverSystemUQS.h"
 	SOURCE_GROUP "Factions"
 		"Factions/FactionMap.cpp"
 		"Factions/FactionSystem.cpp"
@@ -483,8 +481,3 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineModule(CryAISystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
-
-# path to CryPlugins for #including <CryUQS/...h>
-target_include_directories(${THIS_PROJECT}
-	PRIVATE "${CRYENGINE_DIR}/Code/CryPlugins"
-)

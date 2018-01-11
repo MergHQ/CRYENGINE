@@ -578,9 +578,9 @@ void CSystemAssetsManager::UpdateAssetConnectionStates(CSystemAsset* const pAsse
 				
 				bool hasPlaceholder = false;
 				bool hasConnection = false;
-				int const connectionCount = pControl->GetConnectionCount();
+				size_t const connectionCount = pControl->GetConnectionCount();
 
-				for (int i = 0; i < connectionCount; ++i)
+				for (size_t i = 0; i < connectionCount; ++i)
 				{
 					hasConnection = true;
 					IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();

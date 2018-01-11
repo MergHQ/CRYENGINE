@@ -92,7 +92,7 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView)
 		if (pRenderView)
 		{
 			// This scope is the only one allowed to produce HDR data, all the rest is LDR
-			m_pDisplayContext->ToggleHDRRendering(pRenderView->IsHDRModeEnabled());
+			m_pDisplayContext->BeginRendering(pRenderView->IsHDRModeEnabled());
 			m_pDisplayContext->SetLastCamera(CCamera::eEye_Left, pRenderView->GetCamera(CCamera::eEye_Left));
 			m_pDisplayContext->SetLastCamera(CCamera::eEye_Right, pRenderView->GetCamera(CCamera::eEye_Right));
 
@@ -203,7 +203,7 @@ void CRenderOutput::EndRendering(CRenderView* pRenderView)
 
 	if (m_outputType == EOutputType::DisplayContext)
 	{
-		m_pDisplayContext->ToggleHDRRendering(false);
+		m_pDisplayContext->EndRendering();
 	}
 }
 

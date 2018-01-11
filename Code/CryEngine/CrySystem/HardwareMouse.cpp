@@ -193,12 +193,7 @@ void CHardwareMouse::ConfineCursor(bool confine)
 		return;
 
 #if CRY_PLATFORM_WINDOWS
-	HWND hWnd = 0;
-
-	if (gEnv->IsEditor())
-		hWnd = (HWND) gEnv->pRenderer->GetCurrentContextHWND();
-	else
-		hWnd = (HWND) gEnv->pRenderer->GetHWND();
+	HWND hWnd = (HWND) gEnv->pRenderer->GetHWND();
 
 	if (hWnd)
 	{
@@ -208,17 +203,16 @@ void CHardwareMouse::ConfineCursor(bool confine)
 		{
 			if (m_debugHardwareMouse)
 				gEnv->pLog->Log("HM:   Confining cursor");
-			RECT rcClient;
-			::GetClientRect(hWnd, &rcClient);
-			::ClientToScreen(hWnd, (LPPOINT)&rcClient.left);
-			::ClientToScreen(hWnd, (LPPOINT)&rcClient.right);
+			
+			RectI coordinates = gEnv->pRenderer->GetDefaultContextWindowCoordinates();
+			RECT rcClient = { coordinates.x, coordinates.y, coordinates.w + coordinates.x, coordinates.h + coordinates.y };
 			::ClipCursor(&rcClient);
 		}
 		else
 		{
 			if (m_debugHardwareMouse)
 				gEnv->pLog->Log("HM:   Releasing cursor");
-			::ClipCursor(NULL);
+			::ClipCursor(nullptr);
 		}
 	}
 #elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_MAC
@@ -539,7 +533,7 @@ void CHardwareMouse::SetHardwareMousePosition(float fX, float fY)
 #if CRY_PLATFORM_WINDOWS
 	if (gEnv->pRenderer)
 	{
-		HWND hWnd = (HWND)gEnv->pRenderer->GetCurrentContextHWND();
+		HWND hWnd = (HWND)gEnv->pRenderer->GetHWND();
 		if (hWnd == ::GetFocus() && m_allowConfine)
 		{
 			// Move cursor position only if our window is focused.
@@ -584,7 +578,7 @@ void CHardwareMouse::GetHardwareMouseClientPosition(float* pfX, float* pfY)
 	if (gEnv == NULL || gEnv->pRenderer == NULL)
 		return;
 
-	HWND hWnd = (HWND) gEnv->pRenderer->GetCurrentContextHWND();
+	HWND hWnd = (HWND) gEnv->pRenderer->GetHWND();
 	CRY_ASSERT_MESSAGE(hWnd, "Impossible to get client coordinates from a non existing window!");
 
 	if (hWnd)
@@ -611,7 +605,7 @@ void CHardwareMouse::GetHardwareMouseClientPosition(float* pfX, float* pfY)
 void CHardwareMouse::SetHardwareMouseClientPosition(float fX, float fY)
 {
 #if CRY_PLATFORM_WINDOWS
-	HWND hWnd = (HWND) gEnv->pRenderer->GetCurrentContextHWND();
+	HWND hWnd = (HWND) gEnv->pRenderer->GetHWND();
 	CRY_ASSERT_MESSAGE(hWnd, "Impossible to set position of the mouse relative to client coordinates from a non existing window!");
 
 	if (hWnd)

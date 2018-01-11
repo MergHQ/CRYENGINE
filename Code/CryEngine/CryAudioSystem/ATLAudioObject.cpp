@@ -307,7 +307,7 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 	for (auto const pTriggerImpl : pTrigger->m_implPtrs)
 	{
 		CATLEvent* const pEvent = s_pEventManager->ConstructAudioEvent();
-		ERequestStatus const activateResult = m_pImplData->ExecuteTrigger(pTriggerImpl->m_pImplData, pEvent->m_pImplData);
+		ERequestStatus const activateResult = pTriggerImpl->Execute(m_pImplData, pEvent->m_pImplData);
 
 		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
 		{
@@ -1502,7 +1502,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 				{
 
 					CATLEvent* const pEvent = s_pEventManager->ConstructAudioEvent();
-					ERequestStatus activateResult = m_pImplData->ExecuteTrigger(pTriggerImpl->m_pImplData, pEvent->m_pImplData);
+					ERequestStatus const activateResult = pTriggerImpl->Execute(m_pImplData, pEvent->m_pImplData);
 
 					if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
 					{

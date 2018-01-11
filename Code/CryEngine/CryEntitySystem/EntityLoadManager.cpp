@@ -309,18 +309,28 @@ bool CEntityLoadManager::ExtractCommonEntityLoadParams(XmlNodeRef& entityNode, S
 				if (!componentNode->haveAttr("typeId"))
 				{
 					CryGUID typeGUID;
-					if (componentNode->getAttr("TypeGUID", typeGUID))
+					// Read format we currently save to
+					if (!componentNode->getAttr("TypeGUID", typeGUID))
 					{
-						if (const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(typeGUID))
+						// Fall back to reading legacy setup as child
+						if (XmlNodeRef typeGUIDNode = componentNode->findChild("TypeGUID"))
 						{
-							size_t componentSize = pEnvComponent->GetSize();
-
-							// Ensure alignment of component is consistent with CEntity (likely 16, very important due to the SIMD Matrix used for world transformation
-							uint32 remainder = componentSize % alignof(CEntity);
-							uint32 adjustedSize = remainder != 0 ? componentSize + alignof(CEntity) - remainder : componentSize;
-
-							outLoadParams.allocationSize += adjustedSize;
+							typeGUIDNode->getAttr("value", typeGUID);
 						}
+					}
+
+					// Ensure that type GUID was read
+					CRY_ASSERT(!typeGUID.IsNull());
+
+					if (const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(typeGUID))
+					{
+						size_t componentSize = pEnvComponent->GetSize();
+
+						// Ensure alignment of component is consistent with CEntity (likely 16, very important due to the SIMD Matrix used for world transformation
+						uint32 remainder = componentSize % alignof(CEntity);
+						uint32 adjustedSize = remainder != 0 ? componentSize + alignof(CEntity) - remainder : componentSize;
+
+						outLoadParams.allocationSize += adjustedSize;
 					}
 				}
 			}

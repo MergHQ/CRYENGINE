@@ -204,7 +204,9 @@ public:
 	virtual ~CClearSurfacePass();
 
 	static void Execute(const CTexture* pDepthTex, const int nFlags, const float cDepth, const uint8 cStencil);
-	static void Execute(const CTexture* pTex, const ColorF& cClear);
+	static void Execute(const CTexture* pColorTex, const ColorF& cClear);
+	static void Execute(const CGpuBuffer* pBuf, const ColorF& cClear);
+	static void Execute(const CGpuBuffer* pBuf, const ColorI& cClear);
 
 	static EPassId GetPassId() { return EPassId::ClearSurfacePass; }
 
@@ -221,7 +223,9 @@ public:
 	virtual ~CClearRegionPass();
 
 	void Execute(CTexture* pDepthTex, const int nFlags, const float cDepth, const uint8 cStencil, const uint numRects, const RECT* pRects);
-	void Execute(CTexture* pTex, const ColorF& cClear, const uint numRects, const RECT* pRects);
+	void Execute(CTexture* pColorTex, const ColorF& cClear, const uint numRects, const RECT* pRects);
+	void Execute(CGpuBuffer* pBuf, const ColorF& cClear, const uint numRanges, const RECT* pRanges);
+	void Execute(CGpuBuffer* pBuf, const ColorI& cClear, const uint numRanges, const RECT* pRanges);
 
 	static EPassId GetPassId() { return EPassId::ClearRegionPass; }
 

@@ -1029,7 +1029,6 @@ private:
 	bool         CheckFXBExists(CShader* pSH);
 
 	FXSShaderRes m_SShaderResources;
-	string       m_customSerialisePath;
 };
 
 inline const char* sString(int nOffs, TArray<char>& Strings)

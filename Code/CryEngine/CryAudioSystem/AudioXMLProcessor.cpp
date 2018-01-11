@@ -360,7 +360,7 @@ void CAudioXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, E
 				audioPreloadRequestId = static_cast<PreloadRequestId>(StringToId(szAudioPreloadRequestName));
 			}
 
-			if (audioPreloadRequestId != CryAudio::InvalidPreloadRequestId)
+			if (audioPreloadRequestId != InvalidPreloadRequestId)
 			{
 				XmlNodeRef pFileListParentNode = nullptr;
 				size_t const platformCount = pPreloadRequestNode->getChildCount();
@@ -388,7 +388,7 @@ void CAudioXMLProcessor::ParseAudioPreloads(XmlNodeRef const pPreloadDataRoot, E
 					{
 						FileEntryId const id = m_fileCacheMgr.TryAddFileCacheEntry(pFileListParentNode->getChild(k), dataScope, bAutoLoad);
 
-						if (id != CryAudio::InvalidFileEntryId)
+						if (id != InvalidFileEntryId)
 						{
 							cFileEntryIDs.push_back(id);
 						}
@@ -471,7 +471,7 @@ void CAudioXMLProcessor::ParseAudioEnvironments(XmlNodeRef const pAudioEnvironme
 			char const* const szAudioEnvironmentName = pAudioEnvironmentNode->getAttr(s_szNameAttribute);
 			EnvironmentId const audioEnvironmentId = static_cast<EnvironmentId const>(StringToId(szAudioEnvironmentName));
 
-			if ((audioEnvironmentId != CryAudio::InvalidControlId) && (stl::find_in_map(m_environments, audioEnvironmentId, nullptr) == nullptr))
+			if ((audioEnvironmentId != InvalidControlId) && (stl::find_in_map(m_environments, audioEnvironmentId, nullptr) == nullptr))
 			{
 				//there is no entry yet with this ID in the container
 				size_t const numAudioEnvironmentChildren = static_cast<size_t>(pAudioEnvironmentNode->getChildCount());
@@ -485,25 +485,12 @@ void CAudioXMLProcessor::ParseAudioEnvironments(XmlNodeRef const pAudioEnvironme
 
 					if (pEnvironmentImplNode)
 					{
-						Impl::IEnvironment const* pIEnvironment = nullptr;
-
-						if (_stricmp(pEnvironmentImplNode->getTag(), s_szEnvironmentRequestTag) == 0)
-						{
-							pIEnvironment = NewInternalAudioEnvironment(pEnvironmentImplNode);
-						}
-						else
-						{
-							pIEnvironment = m_pIImpl->ConstructEnvironment(pEnvironmentImplNode);
-						}
+						Impl::IEnvironment const* const pIEnvironment = m_pIImpl->ConstructEnvironment(pEnvironmentImplNode);
 
 						if (pIEnvironment != nullptr)
 						{
 							CATLEnvironmentImpl* pEnvirnomentImpl = new CATLEnvironmentImpl(pIEnvironment);
 							implPtrs.push_back(pEnvirnomentImpl);
-						}
-						else
-						{
-							Cry::Audio::Log(ELogType::Warning, "Could not parse an Environment Implementation with XML tag %s", pEnvironmentImplNode->getTag());
 						}
 					}
 				}
@@ -512,7 +499,7 @@ void CAudioXMLProcessor::ParseAudioEnvironments(XmlNodeRef const pAudioEnvironme
 
 				if (!implPtrs.empty())
 				{
-					CATLAudioEnvironment* pNewEnvironment = new CATLAudioEnvironment(audioEnvironmentId, dataScope, implPtrs);
+					CATLAudioEnvironment* const pNewEnvironment = new CATLAudioEnvironment(audioEnvironmentId, dataScope, implPtrs);
 
 					if (pNewEnvironment != nullptr)
 					{
@@ -526,8 +513,7 @@ void CAudioXMLProcessor::ParseAudioEnvironments(XmlNodeRef const pAudioEnvironme
 			}
 			else
 			{
-				Cry::Audio::Log(ELogType::Error, R"(AudioEnvironment "%s" already exists!)", szAudioEnvironmentName);
-				CRY_ASSERT(false);
+				Cry::Audio::Log(ELogType::Error, R"(Environment "%s" already exists!)", szAudioEnvironmentName);
 			}
 		}
 	}
@@ -547,7 +533,7 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, ED
 			char const* const szAudioTriggerName = pAudioTriggerNode->getAttr(s_szNameAttribute);
 			ControlId const audioTriggerId = static_cast<ControlId const>(StringToId(szAudioTriggerName));
 
-			if ((audioTriggerId != CryAudio::InvalidControlId) && (stl::find_in_map(m_triggers, audioTriggerId, nullptr) == nullptr))
+			if ((audioTriggerId != InvalidControlId) && (stl::find_in_map(m_triggers, audioTriggerId, nullptr) == nullptr))
 			{
 				size_t const numAudioTriggerChildren = static_cast<size_t>(pAudioTriggerNode->getChildCount());
 				CATLTrigger::ImplPtrVec implPtrs;
@@ -562,32 +548,19 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, ED
 
 					if (pTriggerImplNode)
 					{
-						Impl::ITrigger const* pITrigger = nullptr;
-
-						if (_stricmp(pTriggerImplNode->getTag(), s_szTriggerRequestTag) == 0)
-						{
-							pITrigger = NewInternalAudioTrigger(pTriggerImplNode);
-						}
-						else
-						{
-							pITrigger = m_pIImpl->ConstructTrigger(pTriggerImplNode);
-						}
+						Impl::ITrigger const* const pITrigger = m_pIImpl->ConstructTrigger(pTriggerImplNode);
 
 						if (pITrigger != nullptr)
 						{
 							CATLTriggerImpl* pTriggerImpl = new CATLTriggerImpl(++m_triggerImplIdCounter, pITrigger);
 							implPtrs.push_back(pTriggerImpl);
 						}
-						else
-						{
-							Cry::Audio::Log(ELogType::Warning, "Could not parse a Trigger Implementation with XML tag %s", pTriggerImplNode->getTag());
-						}
 					}
 				}
 
 				implPtrs.shrink_to_fit();
 
-				CATLTrigger* pNewTrigger = new CATLTrigger(audioTriggerId, dataScope, implPtrs, maxRadius);
+				CATLTrigger* const pNewTrigger = new CATLTrigger(audioTriggerId, dataScope, implPtrs, maxRadius);
 
 				if (pNewTrigger != nullptr)
 				{
@@ -600,8 +573,7 @@ void CAudioXMLProcessor::ParseAudioTriggers(XmlNodeRef const pXMLTriggerRoot, ED
 			}
 			else
 			{
-				Cry::Audio::Log(ELogType::Error, R"(trigger "%s" already exists!)", szAudioTriggerName);
-				CRY_ASSERT(false);
+				Cry::Audio::Log(ELogType::Error, R"(Trigger "%s" already exists!)", szAudioTriggerName);
 			}
 		}
 	}
@@ -621,9 +593,9 @@ void CAudioXMLProcessor::ParseAudioSwitches(XmlNodeRef const pXMLSwitchRoot, EDa
 			char const* const szAudioSwitchName = pATLSwitchNode->getAttr(s_szNameAttribute);
 			ControlId const audioSwitchId = static_cast<ControlId const>(StringToId(szAudioSwitchName));
 
-			if ((audioSwitchId != CryAudio::InvalidControlId) && (stl::find_in_map(m_switches, audioSwitchId, nullptr) == nullptr))
+			if ((audioSwitchId != InvalidControlId) && (stl::find_in_map(m_switches, audioSwitchId, nullptr) == nullptr))
 			{
-				CATLSwitch* pNewSwitch = new CATLSwitch(audioSwitchId, dataScope);
+				CATLSwitch* const pNewSwitch = new CATLSwitch(audioSwitchId, dataScope);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				pNewSwitch->m_name = szAudioSwitchName;
 #endif    // INCLUDE_AUDIO_PRODUCTION_CODE
@@ -639,7 +611,7 @@ void CAudioXMLProcessor::ParseAudioSwitches(XmlNodeRef const pXMLSwitchRoot, EDa
 						char const* const szAudioSwitchStateName = pATLSwitchStateNode->getAttr(s_szNameAttribute);
 						SwitchStateId const audioSwitchStateId = static_cast<SwitchStateId const>(StringToId(szAudioSwitchStateName));
 
-						if (audioSwitchStateId != CryAudio::InvalidSwitchStateId)
+						if (audioSwitchStateId != InvalidSwitchStateId)
 						{
 							size_t const numAudioSwitchStateImpl = static_cast<size_t>(pATLSwitchStateNode->getChildCount());
 
@@ -652,30 +624,18 @@ void CAudioXMLProcessor::ParseAudioSwitches(XmlNodeRef const pXMLSwitchRoot, EDa
 
 								if (pStateImplNode)
 								{
-									char const* const szStateImplNodeTag = pStateImplNode->getTag();
-									if (_stricmp(szStateImplNodeTag, s_szSwitchRequestTag) == 0)
-									{
-										IAudioSwitchStateImpl const* pSwitchStateImpl = NewInternalAudioSwitchState(pStateImplNode);
-										if (pSwitchStateImpl != nullptr)
-										{
-											switchStateImplVec.push_back(pSwitchStateImpl);
-										}
-									}
-									else
-									{
-										Impl::ISwitchState const* const pISwitchState = m_pIImpl->ConstructSwitchState(pStateImplNode);
+									Impl::ISwitchState const* const pISwitchState = m_pIImpl->ConstructSwitchState(pStateImplNode);
 
-										if (pISwitchState != nullptr)
-										{
-											// Only add the connection if the middleware recognizes the control
-											CExternalAudioSwitchStateImpl* pExternalSwitchStateImpl = new CExternalAudioSwitchStateImpl(pISwitchState);
-											switchStateImplVec.push_back(pExternalSwitchStateImpl);
-										}
+									if (pISwitchState != nullptr)
+									{
+										// Only add the connection if the middleware recognizes the control
+										CExternalAudioSwitchStateImpl* pExternalSwitchStateImpl = new CExternalAudioSwitchStateImpl(pISwitchState);
+										switchStateImplVec.push_back(pExternalSwitchStateImpl);
 									}
 								}
 							}
 
-							CATLSwitchState* pNewState = new CATLSwitchState(audioSwitchId, audioSwitchStateId, switchStateImplVec);
+							CATLSwitchState* const pNewState = new CATLSwitchState(audioSwitchId, audioSwitchStateId, switchStateImplVec);
 							pNewSwitch->audioSwitchStates[audioSwitchStateId] = pNewState;
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 							pNewState->m_name = szAudioSwitchStateName;
@@ -685,6 +645,10 @@ void CAudioXMLProcessor::ParseAudioSwitches(XmlNodeRef const pXMLSwitchRoot, EDa
 				}
 
 				m_switches[audioSwitchId] = pNewSwitch;
+			}
+			else
+			{
+				Cry::Audio::Log(ELogType::Error, R"(Switch "%s" already exists!)", szAudioSwitchName);
 			}
 		}
 	}
@@ -704,7 +668,7 @@ void CAudioXMLProcessor::ParseAudioParameters(XmlNodeRef const pXMLParameterRoot
 			char const* const szAudioParameterName = pAudioParameterNode->getAttr(s_szNameAttribute);
 			ControlId const audioParameterId = static_cast<ControlId const>(StringToId(szAudioParameterName));
 
-			if ((audioParameterId != CryAudio::InvalidControlId) && (stl::find_in_map(m_parameters, audioParameterId, nullptr) == nullptr))
+			if ((audioParameterId != InvalidControlId) && (stl::find_in_map(m_parameters, audioParameterId, nullptr) == nullptr))
 			{
 				size_t const numParameterNodeChildren = static_cast<size_t>(pAudioParameterNode->getChildCount());
 				CParameter::ImplPtrVec implPtrs;
@@ -716,32 +680,19 @@ void CAudioXMLProcessor::ParseAudioParameters(XmlNodeRef const pXMLParameterRoot
 
 					if (pParameterImplNode)
 					{
-						char const* const szParameterImplNodeTag = pParameterImplNode->getTag();
+						Impl::IParameter const* const pExternalParameterImpl = m_pIImpl->ConstructParameter(pParameterImplNode);
 
-						if (_stricmp(szParameterImplNodeTag, s_szParameterRequestTag) == 0)
+						if (pExternalParameterImpl != nullptr)
 						{
-							IParameterImpl const* pParameterImpl = NewInternalAudioParameter(pParameterImplNode);
-							if (pParameterImpl != nullptr)
-							{
-								implPtrs.push_back(pParameterImpl);
-							}
-						}
-						else
-						{
-							Impl::IParameter const* pExternalParameterImpl = m_pIImpl->ConstructParameter(pParameterImplNode);
-
-							if (pExternalParameterImpl != nullptr)
-							{
-								CParameterImpl* pParameterImpl = new CParameterImpl(pExternalParameterImpl);
-								implPtrs.push_back(pParameterImpl);
-							}
+							CParameterImpl* pParameterImpl = new CParameterImpl(pExternalParameterImpl);
+							implPtrs.push_back(pParameterImpl);
 						}
 					}
 				}
 
 				implPtrs.shrink_to_fit();
 
-				CParameter* pParameter = new CParameter(audioParameterId, dataScope, implPtrs);
+				CParameter* const pParameter = new CParameter(audioParameterId, dataScope, implPtrs);
 
 				if (pParameter != nullptr)
 				{
@@ -752,63 +703,12 @@ void CAudioXMLProcessor::ParseAudioParameters(XmlNodeRef const pXMLParameterRoot
 #endif      // INCLUDE_AUDIO_PRODUCTION_CODE
 				}
 			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-Impl::ITrigger const* CAudioXMLProcessor::NewInternalAudioTrigger(XmlNodeRef const pXMLTriggerRoot)
-{
-	//TODO: implement
-	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-IParameterImpl const* CAudioXMLProcessor::NewInternalAudioParameter(XmlNodeRef const pXMLParameterRoot)
-{
-	//TODO: implement
-	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-IAudioSwitchStateImpl const* CAudioXMLProcessor::NewInternalAudioSwitchState(XmlNodeRef const pXMLSwitchRoot)
-{
-	IAudioSwitchStateImpl const* pSwitchStateImpl = nullptr;
-
-	char const* const szInternalSwitchNodeName = pXMLSwitchRoot->getAttr(s_szNameAttribute);
-
-	if ((szInternalSwitchNodeName != nullptr) && (szInternalSwitchNodeName[0] != 0) && (pXMLSwitchRoot->getChildCount() == 1))
-	{
-		XmlNodeRef const pValueNode(pXMLSwitchRoot->getChild(0));
-
-		if (pValueNode && _stricmp(pValueNode->getTag(), s_szValueTag) == 0)
-		{
-			char const* const szInternalSwitchStateName = pValueNode->getAttr(s_szNameAttribute);
-
-			if ((szInternalSwitchStateName != nullptr) && (szInternalSwitchStateName[0] != 0))
+			else
 			{
-				ControlId const switchId = static_cast<ControlId>(StringToId(szInternalSwitchNodeName));
-				SwitchStateId const stateId = static_cast<SwitchStateId>(StringToId(szInternalSwitchStateName));
-				pSwitchStateImpl = stl::find_in_map(m_internalControls.m_switchStates, std::make_pair(switchId, stateId), nullptr);
+				Cry::Audio::Log(ELogType::Error, R"(Parameter "%s" already exists!)", szAudioParameterName);
 			}
 		}
 	}
-	else
-	{
-		Cry::Audio::Log(
-		  ELogType::Warning,
-		  "An ATLSwitchRequest %s inside ATLSwitchState needs to have exactly one ATLValue.",
-		  szInternalSwitchNodeName);
-	}
-
-	return pSwitchStateImpl;
-}
-
-//////////////////////////////////////////////////////////////////////////
-Impl::IEnvironment const* CAudioXMLProcessor::NewInternalAudioEnvironment(XmlNodeRef const pXMLEnvironmentRoot)
-{
-	// TODO: implement
-	return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////

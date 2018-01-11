@@ -73,36 +73,12 @@
 #include "Navigation/NavigationSystemSchematyc.h"
 #include "Factions/FactionSystemSchematyc.h"
 #include "Cover/CoverSystemSchematyc.h"
-#include "Cover/CoverSystemUQS.h"
 #include "Perception/PerceptionSystemSchematyc.h"
 
 #include "Components/BehaviorTree/BehaviorTreeComponent.h"
 
 #include <algorithm>  // std::min()
 
-#include <CryUQS/Client/ClientIncludes.h>
-
-class CAiUqsHubEventListener : public UQS::Core::IHubEventListener
-{
-public:
-	virtual void OnUQSHubEvent(UQS::Core::EHubEvent ev) override
-	{
-		if (ev == UQS::Core::EHubEvent::RegisterYourFactoriesNow)
-		{
-			CoverSystemUQS::InstantiateFactories();
-
-#ifndef CRY_IS_MONOLITHIC_BUILD
-			UQS::Client::CFactoryRegistrationHelper::RegisterAllFactoryInstancesInHub(UQS::Core::IHubPlugin::GetHub());
-#endif
-		}
-	}
-
-	static CAiUqsHubEventListener& GetInstance()
-	{
-		static CAiUqsHubEventListener instance;
-		return instance;
-	}
-};
 
 FlyHelpers::CTacticalPointLanguageExtender g_flyHelpersTacticalLanguageExtender;
 
@@ -2498,12 +2474,6 @@ void CAISystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lpar
 				"8bdb92e7-cf17-4773-99d2-92a18a86dcb6"_cry_guid,
 				"AISystem", Schematyc::g_szCrytek, "AI System",
 				SCHEMATYC_MEMBER_DELEGATE(&CAISystem::RegisterSchematycEnvPackage, *this)));
-
-		if (UQS::Core::IHub* pHub = UQS::Core::IHubPlugin::GetHubPtr())
-		{
-			pHub->RegisterHubEventListener(&CAiUqsHubEventListener::GetInstance());
-		}
-
 		break;
 	}
 	}

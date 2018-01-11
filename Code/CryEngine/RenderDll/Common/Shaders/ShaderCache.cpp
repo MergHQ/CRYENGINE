@@ -2090,189 +2090,11 @@ static int snCurListID;
 typedef std::map<CCryNameTSCRC, SMgData> ShaderData;
 typedef ShaderData::iterator             ShaderDataItor;
 
-static void sAddToList(SShaderCache* pCache, ShaderData& Data)
-{
-	uint32 i;
-	CResFile* pRes = pCache->m_pRes[CACHE_USER];
-	ResDir* Dir = pRes->mfGetDirectory();
-	for (i = 0; i < Dir->size(); i++)
-	{
-		CDirEntry* pDE = &(*Dir)[i];
-		if (pDE->GetName() == CShaderMan::s_cNameHEAD)
-			continue;
-		ShaderDataItor it = Data.find(pDE->GetName());
-		if (it == Data.end())
-		{
-			SMgData d;
-			d.nSize = pRes->mfFileRead(pDE);
-			SDirEntryOpen* pOE = pRes->mfGetOpenEntry(pDE->GetName());
-			assert(pOE);
-			if (!pOE)
-				continue;
-			d.flags = pDE->GetFlags();
-			if (pDE->GetFlags() & RF_RES_$)
-			{
-				d.pData = new byte[d.nSize];
-				memcpy(d.pData, pOE->pData, d.nSize);
-				d.bProcessed = 0;
-				d.Name = pDE->GetName();
-				d.CRC = 0;
-				d.nID = snCurListID++;
-				Data.insert(ShaderDataItor::value_type(d.Name, d));
-				continue;
-			}
-			if (d.nSize < sizeof(SShaderCacheHeaderItem))
-			{
-				assert(0);
-				continue;
-			}
-			d.pData = new byte[d.nSize];
-			memcpy(d.pData, pOE->pData, d.nSize);
-			SShaderCacheHeaderItem* pItem = (SShaderCacheHeaderItem*)d.pData;
-			d.bProcessed = 0;
-			d.Name = pDE->GetName();
-			d.CRC = pItem->m_CRC32;
-			d.nID = snCurListID++;
-			Data.insert(ShaderDataItor::value_type(d.Name, d));
-		}
-	}
-}
-
 struct SNameData
 {
 	CCryNameR Name;
 	bool      bProcessed;
 };
-
-void CShaderMan::_MergeShaders()
-{
-	float t0 = gEnv->pTimer->GetAsyncCurTime();
-	SShaderCache* pCache;
-	uint32 i, j;
-
-	std::vector<CCryNameR> NM;
-	std::vector<SNameData> Names;
-	mfGatherFilesList(m_ShadersMergeCachePath, NM, 0, true);
-	for (i = 0; i < NM.size(); i++)
-	{
-		SNameData dt;
-		dt.bProcessed = false;
-		dt.Name = NM[i];
-		Names.push_back(dt);
-	}
-
-	uint32 CRC32 = 0;
-	for (i = 0; i < Names.size(); i++)
-	{
-		if (Names[i].bProcessed)
-			continue;
-		Names[i].bProcessed = true;
-		const char* szNameA = Names[i].Name.c_str();
-		iLog->Log(" Merging shader resource '%s'...", szNameA);
-		char szDrv[16], szDir[256], szName[256], szExt[32], szName1[256], szName2[256];
-		_splitpath(szNameA, szDrv, szDir, szName, szExt);
-		cry_sprintf(szName1, "%s%s", szName, szExt);
-		uint32 nLen = strlen(szName1);
-		pCache = CHWShader::mfInitCache(szNameA, NULL, false, CRC32, false);
-		assert(pCache);
-		SResFileLookupData* pData;
-		if (pCache->m_pRes[CACHE_USER] && (pData = pCache->m_pRes[CACHE_USER]->GetLookupData(false, 0, 0)))
-			CRC32 = pData->m_CRC32;
-		else if (pCache->m_pRes[CACHE_READONLY] && (pData = pCache->m_pRes[CACHE_READONLY]->GetLookupData(false, 0, 0)))
-			CRC32 = pData->m_CRC32;
-		else
-		{
-			assert(0);
-		}
-		ShaderData Data;
-		snCurListID = 0;
-		sAddToList(pCache, Data);
-		SAFE_RELEASE(pCache);
-		for (j = i + 1; j < Names.size(); j++)
-		{
-			if (Names[j].bProcessed)
-				continue;
-			const char* szNameB = Names[j].Name.c_str();
-			_splitpath(szNameB, szDrv, szDir, szName, szExt);
-			cry_sprintf(szName2, "%s%s", szName, szExt);
-			if (!stricmp(szName1, szName2))
-			{
-				Names[j].bProcessed = true;
-				SShaderCache* pCache1 = CHWShader::mfInitCache(szNameB, NULL, false, 0, false);
-				pData = pCache1->m_pRes[CACHE_USER]->GetLookupData(false, 0, 0);
-				assert(pData && pData->m_CRC32 == CRC32);
-				if (!pData || pData->m_CRC32 != CRC32)
-				{
-					Warning("WARNING: CRC mismatch for %s", szNameB);
-				}
-				sAddToList(pCache1, Data);
-				SAFE_RELEASE(pCache1);
-			}
-		}
-		char szDest[256];
-		cry_strcpy(szDest, m_ShadersCache.c_str());
-		const char* p = &szNameA[strlen(szNameA) - nLen - 2];
-		while (*p != '/' && *p != '\\')
-		{
-			p--;
-		}
-		cry_strcat(szDest, p + 1);
-		pCache = CHWShader::mfInitCache(szDest, NULL, true, CRC32, false);
-		assert(pCache);
-		CResFile* pRes = pCache->m_pRes[CACHE_USER];
-		pRes->mfClose();
-		pRes->mfOpen(RA_CREATE, &gRenDev->m_cEF.m_ResLookupDataMan[CACHE_USER]);
-
-		SResFileLookupData* pLookup = pRes->GetLookupData(true, CRC32, (float)FX_CACHE_VER);
-		pRes->mfFlush();
-
-		int nDeviceShadersCounter = 0x10000000;
-		ShaderDataItor it;
-		for (it = Data.begin(); it != Data.end(); it++)
-		{
-			SMgData* pD = &it->second;
-			uint32 flags = pD->flags;
-			uint32 offset = 0;
-			if (pD->flags & RF_RES_$)
-				flags &= ~RF_COMPRESS;
-			else
-			{
-				flags |= RF_COMPRESS;
-				offset = nDeviceShadersCounter++;
-			}
-			byte* pNew = new byte[pD->nSize];
-			memcpy(pNew, pD->pData, pD->nSize);
-			flags |= RF_TEMPDATA;
-
-			CDirEntry de(pD->Name, pD->nSize, offset, flags);
-			pRes->mfFileAdd(&de);
-			SDirEntryOpen* pOE = pRes->mfOpenEntry(de.GetName());
-			pOE->pData = pNew;
-		}
-		for (it = Data.begin(); it != Data.end(); it++)
-		{
-			SMgData* pD = &it->second;
-			delete[] pD->pData;
-		}
-		Data.clear();
-		pRes->mfFlush();
-		iLog->Log(" ...%d result items...", pRes->mfGetNumFiles());
-		pCache->Release();
-	}
-
-	mfOptimiseShaders(gRenDev->m_cEF.m_ShadersCache.c_str(), true);
-
-	float t1 = gEnv->pTimer->GetAsyncCurTime();
-	CryLog("All shaders files merged in %.2f seconds", t1 - t0);
-}
-
-void CShaderMan::mfMergeShaders()
-{
-	CHWShader::mfFlushPendedShadersWait(-1);
-
-	CParserBin::SetupForPlatform(SF_D3D11);
-	_MergeShaders();
-}
 
 //////////////////////////////////////////////////////////////////////////
 bool CShaderMan::CheckAllFilesAreWritable(const char* szDir) const
@@ -2358,10 +2180,10 @@ bool CShaderMan::mfPreloadBinaryShaders()
 #ifndef _RELEASE
 	// also load shaders pak file to memory because shaders are also read, when data not found in bin, and to check the CRC
 	// of the source shaders against the binary shaders in non release mode
-	iSystem->GetIPak()->LoadPakToMemory("Engine/Shaders.pak", ICryPak::eInMemoryPakLocale_CPU);
+	iSystem->GetIPak()->LoadPakToMemory("%ENGINE%/Shaders.pak", ICryPak::eInMemoryPakLocale_CPU);
 #endif
 
-	string szPath = m_ShadersCache;
+	stack_string szPath = stack_string("%ENGINE%/") + m_ShadersCache;
 
 	struct _finddata_t fileinfo;
 	intptr_t handle;
@@ -2429,7 +2251,7 @@ bool CShaderMan::mfPreloadBinaryShaders()
 	//iSystem->GetIPak()->LoadPakToMemory("Engine/ShadersBin.pak", ICryPak::eInMemoryPakLocale_Unload);
 
 #ifndef _RELEASE
-	iSystem->GetIPak()->LoadPakToMemory("Engine/Shaders.pak", ICryPak::eInMemoryPakLocale_Unload);
+	iSystem->GetIPak()->LoadPakToMemory("%ENGINE%/Shaders.pak", ICryPak::eInMemoryPakLocale_Unload);
 #endif
 
 	m_Bin.m_bBinaryShadersLoaded = true;

@@ -109,4 +109,16 @@ ERequestStatus CAbsoluteVelocityTrackingState::Set(CATLAudioObject& audioObject)
 
 	return ERequestStatus::Success;
 }
+
+//////////////////////////////////////////////////////////////////////////
+CDoNothingTrigger::CDoNothingTrigger(TriggerImplId const id)
+	: CATLTriggerImpl(id)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CDoNothingTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
+{
+	return ERequestStatus::SuccessfullyStopped;
+}
 } // namespace CryAudio

@@ -767,25 +767,10 @@ void CParserBin::Init()
 	}
 }
 
-string GetShaderCachePath()
-{
-	if (gEnv->pSystem->IsShaderCacheGenMode())
-	{
-		return string("Shaders/Cache/");
-	}
-	else
-	{
-		return string("%ENGINE%/Shaders/Cache/");
-	}
-}
-
 void CParserBin::SetupForPlatform(uint32 nPlatform)
 {
 	CleanPlatformMacros();
 	uint32 nMacro[1] = { eT_1 };
-
-	string ShaderCacheSubFolder;
-	string ShaderFilter;
 
 	switch (nPlatform)
 	{
@@ -793,14 +778,14 @@ void CParserBin::SetupForPlatform(uint32 nPlatform)
 #if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
 		AddMacro(CParserBin::fxToken("PCDX11"), nMacro, 1, 0, m_StaticMacros);
 #endif
-		ShaderCacheSubFolder = string("D3D11/");
-		ShaderFilter = string("D3D11");
+		gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/D3D11/";
+		gRenDev->m_cEF.m_ShadersFilter = "D3D11";
 		break;
 
 	case SF_ORBIS:
 		AddMacro(CParserBin::fxToken("ORBIS"), nMacro, 1, 0, m_StaticMacros);
-		ShaderCacheSubFolder = string("Orbis/");
-		ShaderFilter = string("Orbis");
+		gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/Orbis/";
+		gRenDev->m_cEF.m_ShadersFilter = "Orbis";
 		break;
 
 	case SF_GL4:
@@ -808,39 +793,38 @@ void CParserBin::SetupForPlatform(uint32 nPlatform)
 		AddMacro(CParserBin::fxToken("PCDX11"), nMacro, 1, 0, m_StaticMacros);
 		AddMacro(CParserBin::fxToken("OPENGL"), nMacro, 1, 0, m_StaticMacros);
 #endif
-		ShaderCacheSubFolder = string("GL4/");
-		ShaderFilter = string("GL4");
+		gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/GL4/";
+		gRenDev->m_cEF.m_ShadersFilter = "GL4";
 		break;
 
 	case SF_DURANGO:
 		AddMacro(CParserBin::fxToken("DURANGO"), nMacro, 1, 0, m_StaticMacros);
-		ShaderCacheSubFolder = string("Durango/");
-		ShaderFilter = string("Durango");
+		gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/Durango/";
+		gRenDev->m_cEF.m_ShadersFilter = "Durango";
 		break;
 
 	case SF_GLES3:
 #if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
 		AddMacro(CParserBin::fxToken("PCDX11"), nMacro, 1, 0, m_StaticMacros);
 #endif
-		ShaderCacheSubFolder = string("GLES3/");
-		ShaderFilter = string("GLES3");
+		gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/GLES3/";
+		gRenDev->m_cEF.m_ShadersFilter = "GLES3";
 		break;
 
 	case SF_VULKAN:
 		AddMacro(CParserBin::fxToken("VULKAN"), nMacro, 1, 0, m_StaticMacros);
-		ShaderCacheSubFolder = string("Vulkan/");
-		ShaderFilter = string("Vulkan");
+		gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/Vulkan/";
+		gRenDev->m_cEF.m_ShadersFilter = "Vulkan";
 		break;
 
 	default:
 		CRY_ASSERT_MESSAGE(false, "Unknown platform.");
-		ShaderCacheSubFolder = string("INVALIDPATH/");
-		ShaderFilter = string("INVALIDFILTER");
+		gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/INVALIDPATH/";
+		gRenDev->m_cEF.m_ShadersFilter = "INVALIDFILTER";
 	}
 
 	m_nPlatform = nPlatform;
-	gRenDev->m_cEF.m_ShadersCache = GetShaderCachePath() + ShaderCacheSubFolder;
-	gRenDev->m_cEF.m_ShadersFilter = ShaderFilter;
+
 	SetupFeatureDefines();
 	gRenDev->m_cEF.m_Bin.InvalidateCache();
 	gRenDev->m_cEF.mfInitLookups();

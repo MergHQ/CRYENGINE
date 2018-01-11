@@ -112,6 +112,10 @@ private:
 
 	void ReadPolygonsForAreaSolid(CCryFile& file, int numberOfPolygons, bool bObstruction);
 
+#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
+	bool IsValid(stack_string& errorMessageOut) const;
+#endif
+
 private:
 	static std::vector<Vec3> s_tmpWorldPoints;
 

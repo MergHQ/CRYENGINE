@@ -250,7 +250,6 @@ private:
 	void                    PostDeviceReset();
 
 public:
-	static HRESULT CALLBACK OnRecreateBaseSwapChain(D3DDevice* pd3dDevice, bool activate);
 	static HRESULT CALLBACK OnD3D11PostCreateDevice(D3DDevice* pd3dDevice);
 
 public:
@@ -290,21 +289,22 @@ public:
 	/////////////////////////////////////////////////////////////////////////////////
 	CRenderDisplayContext* GetActiveDisplayContext() const;
 	CRenderDisplayContext* GetBaseDisplayContext() const;
+	CRenderDisplayContext* GetDefaultDisplayContext() const;
 	CRenderDisplayContext* FindDisplayContext(CryDisplayContextHandle context) threadsafe const;
-
+	
 	void             MakeMainContextActive() threadsafe;
 	bool             SetCurrentContext(CryDisplayContextHandle hWnd) threadsafe;
+	virtual WIN_HWND         GetCurrentContextHWND() override;
 
 	virtual bool     CreateContext(const SDisplayContextDescription& desc) threadsafe final;
 	virtual void     ResizeContext(CryDisplayContextHandle hWnd,int width,int height) threadsafe final;
 	virtual bool     DeleteContext(CryDisplayContextHandle hWnd) threadsafe final;
 
-	virtual WIN_HWND GetCurrentContextHWND() override;
-	virtual bool     IsCurrentContextMainVP() override;
+#ifdef CRY_PLATFORM_WINDOWS
+	virtual RectI    GetDefaultContextWindowCoordinates() final;
+#endif
+	bool             IsCurrentContextMainVP();
 	/////////////////////////////////////////////////////////////////////////////////
-
-	virtual int  CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF = eTF_R8G8B8A8) override;
-	virtual bool DestroyRenderTarget(int nHandle) override;
 
 	//! Changes resolution of the window/device (doesn't require to reload the level)
 	bool         ChangeRenderResolution(int nNewRenderWidth, int nNewRenderHeight, CRenderView* pRenderView);
@@ -783,8 +783,6 @@ public:
 	uint32                                              m_uniqueRContextId = 0;
 	std::vector<std::shared_ptr<CRenderDisplayContext>> m_RContexts;
 	std::shared_ptr<CRenderDisplayContext>              m_pActiveContext;
-
-	std::vector<CTexture*>   m_RTargets;
 
 	static const int         MAX_RT_STACK = 8;
 

@@ -457,11 +457,11 @@ void CShaderResources::PostLoad(CShader* pSH)
 			if (size)
 			{
 				m_pSky = new SSkyInfo;
-				cry_sprintf(path, "%s_12%s", sky, ext);
+				cry_sprintf(path, "%s_12.%s", sky, ext);
 				m_pSky->m_SkyBox[0] = CTexture::ForName(path, 0, eTF_Unknown);
-				cry_sprintf(path, "%s_34%s", sky, ext);
+				cry_sprintf(path, "%s_34.%s", sky, ext);
 				m_pSky->m_SkyBox[1] = CTexture::ForName(path, 0, eTF_Unknown);
-				cry_sprintf(path, "%s_5%s", sky, ext);
+				cry_sprintf(path, "%s_5.%s", sky, ext);
 				m_pSky->m_SkyBox[2] = CTexture::ForName(path, 0, eTF_Unknown);
 			}
 		}
@@ -934,12 +934,12 @@ void CShaderMan::mfInitCommonGlobalFlags(void)
 void CShaderMan::mfInitLookups()
 {
 	m_ResLookupDataMan[CACHE_READONLY].Clear();
-	string dirdatafilename(m_ShadersCache);
+	string dirdatafilename("%ENGINE%/" + string(m_ShadersCache));
 	dirdatafilename += "lookupdata.bin";
 	m_ResLookupDataMan[CACHE_READONLY].LoadData(dirdatafilename.c_str(), CParserBin::m_bEndians, true);
 
 	m_ResLookupDataMan[CACHE_USER].Clear();
-	dirdatafilename = m_szUserPath + m_ShadersCache;
+	dirdatafilename = m_szUserPath + string(m_ShadersCache);
 	dirdatafilename += "lookupdata.bin";
 	m_ResLookupDataMan[CACHE_USER].LoadData(dirdatafilename.c_str(), CParserBin::m_bEndians, false);
 }
@@ -1150,8 +1150,9 @@ void CShaderMan::mfInit(void)
 		if (!CRenderer::CV_r_shadersAllowCompilation)
 		{
 			// make sure we can write to the shader cache
-			if (!CheckAllFilesAreWritable((m_ShadersCache + "cgpshaders").c_str())
-			    || !CheckAllFilesAreWritable((m_ShadersCache + "cgvshaders").c_str()))
+			if (!CheckAllFilesAreWritable((string(m_ShadersCache) + "cgpshaders").c_str())
+				|| !CheckAllFilesAreWritable((string(m_ShadersCache) + "cgvshaders").c_str()))
+
 			{
 				// message box causes problems in fullscreen
 				//			MessageBox(0,"WARNING: Shader cache cannot be updated\n\n"
@@ -1598,7 +1599,7 @@ void CShaderMan::mfGatherFilesList(const char* szPath, std::vector<CCryNameR>& N
 			continue;
 		if (fileinfo.attrib & _A_SUBDIR)
 		{
-			if (!bUseFilter || nLevel != 1 || (m_ShadersFilter.size() > 0 && !stricmp(fileinfo.name, m_ShadersFilter.c_str())))
+			if (!bUseFilter || nLevel != 1 || !m_ShadersFilter && !stricmp(fileinfo.name, m_ShadersFilter))
 			{
 				char ddd[256];
 				cry_sprintf(ddd, "%s%s/", szPath, fileinfo.name);

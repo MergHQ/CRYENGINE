@@ -230,6 +230,10 @@ void CNetOutputSerializeImpl::WriteNetId(SNetObjectID id)
 {
 	debugPacketDataSizeStartNetIDData(id, GetBitSize());
 
+#if !USE_NETID_PACKING 
+#error Requires USE_NETID_PACKING
+#endif
+
 	if (m_multiplayer)
 	{
 		CNetCVars& netCVars = CNetCVars::Get();
@@ -514,6 +518,10 @@ ESerializeChunkResult CNetInputSerializeImpl::SerializeChunk(ChunkID chunk, uint
 
 SNetObjectID CNetInputSerializeImpl::ReadNetId()
 {
+#if !USE_NETID_PACKING 
+#error Requires USE_NETID_PACKING
+#endif
+
 	SNetObjectID id;
 
 	if (m_multiplayer)

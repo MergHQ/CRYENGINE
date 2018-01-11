@@ -339,6 +339,10 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 			}
 		}
 	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Warning, "Unknown SDL Mixer tag: %s", pRootNode->getTag());
+	}
 
 	return static_cast<ITrigger*>(pTrigger);
 }

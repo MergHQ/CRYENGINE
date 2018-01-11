@@ -467,9 +467,9 @@ void CConnectionModel::ResetCache()
 
 	if (m_pControl != nullptr)
 	{
-		int const size = m_pControl->GetConnectionCount();
+		size_t const size = m_pControl->GetConnectionCount();
 
-		for (int i = 0; i < size; ++i)
+		for (size_t i = 0; i < size; ++i)
 		{
 			ConnectionPtr const pConnection = m_pControl->GetConnectionAt(i);
 

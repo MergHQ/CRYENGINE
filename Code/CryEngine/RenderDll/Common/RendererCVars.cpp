@@ -41,8 +41,6 @@ int CRendererCVars::CV_r_vsync;
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
 float CRendererCVars::CV_r_overrideRefreshRate = 0;
 int CRendererCVars::CV_r_overrideScanlineOrder = 0;
-int CRendererCVars::CV_r_overrideDXGIOutput = 0;
-int CRendererCVars::CV_r_overrideDXGIOutputFS = 0;
 #endif
 #if CRY_PLATFORM_WINDOWS
 int CRendererCVars::CV_r_FullscreenPreemption = 1;
@@ -860,52 +858,45 @@ static void ShadersStatsList(IConsoleCmdArgs* Cmd)
 
 static void ShadersOptimise(IConsoleCmdArgs* Cmd)
 {
+	string userFolderCache = PathUtil::Make(gRenDev->m_cEF.m_szUserPath.c_str(), gRenDev->m_cEF.m_ShadersCache);
+
 	if (CRenderer::CV_r_shadersdx11)
 	{
 		CParserBin::SetupForPlatform(SF_D3D11);
 		CryLogAlways("\nStarting shaders optimizing for DX11...");
-		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
-		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
-		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
+		iLog->Log("Optimize user folder: '%s'", userFolderCache.c_str());
+		gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
 	}
 	if (CRenderer::CV_r_shadersGL4)
 	{
 		CParserBin::SetupForPlatform(SF_GL4);
 		CryLogAlways("\nStarting shaders optimizing for GLSL 4...");
-		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
-		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
-		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
+		iLog->Log("Optimize user folder: '%s'", userFolderCache.c_str());
+		gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
 	}
 	if (CRenderer::CV_r_shadersGLES3)
 	{
 		CParserBin::SetupForPlatform(SF_GLES3);
 		CryLogAlways("\nStarting shaders optimizing for GLSL-ES 3...");
-		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
-		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
-		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
+		iLog->Log("Optimize user folder: '%s'", userFolderCache);
+		gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
 	}
 	if (CRenderer::CV_r_shadersdurango)
 	{
 		CParserBin::SetupForPlatform(SF_DURANGO);
 		CryLogAlways("\nStarting shaders optimizing for Durango...");
-		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
-		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
-		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
+		iLog->Log("Optimize user folder: '%s'", userFolderCache);
+		gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
 	}
 	if (CRenderer::CV_r_shadersorbis)
 	{
 		CParserBin::SetupForPlatform(SF_ORBIS);
 		CryLogAlways("\nStarting shaders optimizing for Orbis...");
-		string str = string("%USER%/") + gRenDev->m_cEF.m_ShadersCache;
-		iLog->Log("Optimize user folder: '%s'", gRenDev->m_cEF.m_ShadersCache);
-		gRenDev->m_cEF.mfOptimiseShaders(str.c_str(), false);
+		iLog->Log("Optimize user folder: '%s'", userFolderCache.c_str());
+		gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
 	}
 }
 
-static void ShadersMerge(IConsoleCmdArgs* Cmd)
-{
-	gRenDev->m_cEF.mfMergeShaders();
-}
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -2534,10 +2525,6 @@ void CRendererCVars::InitCVars()
 	               "2=interlaced (upper field first),\n"
 	               "3=interlaced (lower field first)\n"
 	               "Usage: r_overrideScanlineOrder [0/1/2/3]");
-	REGISTER_CVAR3("r_overrideDXGIOutput", CV_r_overrideDXGIOutput, 0, VF_REQUIRE_APP_RESTART,
-	               "Specifies index of display to use for output (0=primary display).");
-	REGISTER_CVAR3("r_overrideDXGIOutputFS", CV_r_overrideDXGIOutputFS, 0, VF_NULL,
-	               "Specifies index of display to use for full screen output (0=primary display).");
 #endif
 #if CRY_PLATFORM_WINDOWS
 	REGISTER_CVAR3("r_FullscreenPreemption", CV_r_FullscreenPreemption, 1, VF_NULL,
