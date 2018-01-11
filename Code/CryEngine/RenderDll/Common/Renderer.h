@@ -765,9 +765,6 @@ public:
 
 	virtual WIN_HWND    GetCurrentContextHWND() { return GetHWND(); }
 
-	virtual int         CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF = eTF_R8G8B8A8) override = 0;
-	virtual bool        DestroyRenderTarget(int nHandle) override = 0;
-
 	virtual int         GetFeatures() override { return m_Features; }
 
 	virtual int         GetNumGeomInstances() override;

@@ -111,6 +111,7 @@ public:
 
 public:
 	static tempTexturePool_t m_TempDepths;
+	static std::vector<CTexture*> m_RTargets;
 
 	static CTempTexture   GetTempDepthSurface(int currentFrameID, int nWidth, int nHeight, bool bExactMatch = true);
 	static size_t         SizeofTempDepthSurfaces();
@@ -132,6 +133,8 @@ public:
 	}
 
 	static SDepthTexture CreateDepthSurface(int nWidth, int nHeight, bool bAA);
+	static int           CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
+	static bool          ReleaseRenderTarget(int nHandle);
 
 public:
 	static bool m_bLoadedSystem;

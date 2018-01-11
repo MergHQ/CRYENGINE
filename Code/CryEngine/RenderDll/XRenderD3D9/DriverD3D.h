@@ -306,9 +306,6 @@ public:
 	bool             IsCurrentContextMainVP();
 	/////////////////////////////////////////////////////////////////////////////////
 
-	virtual int  CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF = eTF_R8G8B8A8) override;
-	virtual bool DestroyRenderTarget(int nHandle) override;
-
 	//! Changes resolution of the window/device (doesn't require to reload the level)
 	bool         ChangeRenderResolution(int nNewRenderWidth, int nNewRenderHeight, CRenderView* pRenderView);
 	bool         ChangeOutputResolution(int nNewOutputWidth, int nNewOutputHeight, CRenderOutput* pRenderOutput);
@@ -786,8 +783,6 @@ public:
 	uint32                                              m_uniqueRContextId = 0;
 	std::vector<std::shared_ptr<CRenderDisplayContext>> m_RContexts;
 	std::shared_ptr<CRenderDisplayContext>              m_pActiveContext;
-
-	std::vector<CTexture*>   m_RTargets;
 
 	static const int         MAX_RT_STACK = 8;
 
