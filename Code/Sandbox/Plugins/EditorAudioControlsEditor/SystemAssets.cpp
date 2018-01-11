@@ -374,7 +374,7 @@ void CSystemControl::SetRadius(float const radius)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CSystemControl::GetConnectionAt(int const index) const
+ConnectionPtr CSystemControl::GetConnectionAt(size_t const index) const
 {
 	ConnectionPtr pConnection = nullptr;
 

@@ -689,6 +689,10 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 			Cry::Audio::Log(ELogType::Warning, "Unknown Fmod snapshot: %s", path.c_str());
 		}
 	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Warning, "Unknown Fmod tag: %s", szTag);
+	}
 
 	return static_cast<IEnvironment*>(pEnvironment);
 }

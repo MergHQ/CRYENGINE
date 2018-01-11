@@ -395,9 +395,9 @@ void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* 
 		}
 	}
 
-	int const size = pControl->GetConnectionCount();
+	size_t const size = pControl->GetConnectionCount();
 
-	for (int i = 0; i < size; ++i)
+	for (size_t i = 0; i < size; ++i)
 	{
 		ConnectionPtr const pConnection = pControl->GetConnectionAt(i);
 

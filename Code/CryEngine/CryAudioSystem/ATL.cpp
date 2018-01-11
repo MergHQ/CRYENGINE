@@ -1413,7 +1413,7 @@ void CAudioTranslationLayer::CreateInternalControls()
 	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OffStateId)] = pAbsoluteVelocityTrackingOff;
 
 	// Do Nothing
-	CATLTriggerImpl const* const pDoNothingTrigger = new CATLTriggerImpl(DoNothingTriggerId);
+	CDoNothingTrigger const* const pDoNothingTrigger = new CDoNothingTrigger(DoNothingTriggerId);
 	m_internalControls.m_triggers[DoNothingTriggerId] = pDoNothingTrigger;
 
 	// Create internal controls.
@@ -1434,7 +1434,7 @@ void CAudioTranslationLayer::CreateInternalControls()
 //////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId)
 {
-	if ((triggerId != CryAudio::InvalidControlId) && (stl::find_in_map(m_triggers, triggerId, nullptr) == nullptr))
+	if ((triggerId != InvalidControlId) && (stl::find_in_map(m_triggers, triggerId, nullptr) == nullptr))
 	{
 		CATLTrigger::ImplPtrVec implPtrs;
 		implPtrs.reserve(1);
@@ -1458,7 +1458,7 @@ void CAudioTranslationLayer::CreateInternalTrigger(char const* const szTriggerNa
 //////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::CreateInternalSwitch(char const* const szSwitchName, ControlId const switchId, std::vector<char const*> const& stateNames)
 {
-	if ((switchId != CryAudio::InvalidControlId) && (stl::find_in_map(m_switches, switchId, nullptr) == nullptr))
+	if ((switchId != InvalidControlId) && (stl::find_in_map(m_switches, switchId, nullptr) == nullptr))
 	{
 		CATLSwitch* const pNewSwitch = new CATLSwitch(switchId, EDataScope::Global);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -1469,7 +1469,7 @@ void CAudioTranslationLayer::CreateInternalSwitch(char const* const szSwitchName
 		{
 			SwitchStateId const stateId = static_cast<SwitchStateId const>(StringToId(szStateName));
 
-			if (stateId != CryAudio::InvalidSwitchStateId)
+			if (stateId != InvalidSwitchStateId)
 			{
 				CATLSwitchState::ImplPtrVec switchStateImplVec;
 				switchStateImplVec.reserve(1);

@@ -125,6 +125,12 @@ CATLTriggerImpl::~CATLTriggerImpl()
 }
 
 //////////////////////////////////////////////////////////////////////////
+ERequestStatus CATLTriggerImpl::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
+{
+	return pImplObject->ExecuteTrigger(m_pImplData, pImplEvent);
+}
+
+//////////////////////////////////////////////////////////////////////////
 CATLEnvironmentImpl::~CATLEnvironmentImpl()
 {
 	CRY_ASSERT(s_pIImpl != nullptr);

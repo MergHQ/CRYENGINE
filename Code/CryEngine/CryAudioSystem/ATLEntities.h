@@ -93,7 +93,7 @@ private:
 	IDType const m_id;
 };
 
-typedef CATLEntity<ControlId> ATLControl;
+using ATLControl = CATLEntity<ControlId>;
 
 struct SATLSoundPropagationData
 {
@@ -153,7 +153,7 @@ protected:
 	static Impl::IImpl* s_pIImpl;
 };
 
-class CATLTriggerImpl final : public CATLControlImpl
+class CATLTriggerImpl : public CATLControlImpl
 {
 public:
 
@@ -164,7 +164,9 @@ public:
 		, m_pImplData(pImplData)
 	{}
 
-	~CATLTriggerImpl();
+	virtual ~CATLTriggerImpl();
+
+	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const;
 
 	TriggerImplId const         m_audioTriggerImplId;
 	Impl::ITrigger const* const m_pImplData;
@@ -174,7 +176,7 @@ class CATLTrigger final : public ATLControl
 {
 public:
 
-	typedef std::vector<CATLTriggerImpl const*> ImplPtrVec;
+	using ImplPtrVec = std::vector<CATLTriggerImpl const*>;
 
 	explicit CATLTrigger(
 	  ControlId const audioTriggerId,
@@ -221,7 +223,7 @@ class CParameter final : public ATLControl
 {
 public:
 
-	typedef std::vector<IParameterImpl const*> ImplPtrVec;
+	using ImplPtrVec = std::vector<IParameterImpl const*>;
 
 	explicit CParameter(ControlId const parameterId, EDataScope const dataScope, ImplPtrVec const& cImplPtrs)
 		: ATLControl(parameterId, dataScope)
@@ -262,7 +264,7 @@ class CATLSwitchState final
 {
 public:
 
-	typedef std::vector<IAudioSwitchStateImpl const*> ImplPtrVec;
+	using ImplPtrVec = std::vector<IAudioSwitchStateImpl const*>;
 
 	explicit CATLSwitchState(
 	  ControlId const audioSwitchId,
@@ -301,7 +303,7 @@ public:
 		: ATLControl(audioSwitchId, dataScope)
 	{}
 
-	typedef std::map<SwitchStateId, CATLSwitchState const*> AudioStates;
+	using AudioStates = std::map<SwitchStateId, CATLSwitchState const*>;
 	AudioStates audioSwitchStates;
 };
 
@@ -322,7 +324,7 @@ class CATLAudioEnvironment final : public CATLEntity<EnvironmentId>
 {
 public:
 
-	typedef std::vector<CATLEnvironmentImpl const*> ImplPtrVec;
+	using ImplPtrVec = std::vector<CATLEnvironmentImpl const*>;
 
 	explicit CATLAudioEnvironment(EnvironmentId const audioEnvironmentId, EDataScope const dataScope, ImplPtrVec const& implPtrs)
 		: CATLEntity<EnvironmentId>(audioEnvironmentId, dataScope)
@@ -437,9 +439,9 @@ public:
 };
 
 //-------------------- ATLObject container typedefs --------------------------
-typedef std::map<ControlId, CATLTrigger const*>              AudioTriggerLookup;
-typedef std::map<ControlId, CParameter const*>               AudioParameterLookup;
-typedef std::map<ControlId, CATLSwitch const*>               AudioSwitchLookup;
-typedef std::map<PreloadRequestId, CATLPreloadRequest*>      AudioPreloadRequestLookup;
-typedef std::map<EnvironmentId, CATLAudioEnvironment const*> AudioEnvironmentLookup;
+using AudioTriggerLookup = std::map<ControlId, CATLTrigger const*>;
+using AudioParameterLookup = std::map<ControlId, CParameter const*>;
+using AudioSwitchLookup = std::map<ControlId, CATLSwitch const*>;
+using AudioPreloadRequestLookup = std::map<PreloadRequestId, CATLPreloadRequest*>;
+using AudioEnvironmentLookup = std::map<EnvironmentId, CATLAudioEnvironment const*>;
 } // namespace CryAudio
