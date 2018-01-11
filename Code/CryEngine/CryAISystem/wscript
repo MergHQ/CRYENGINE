@@ -11,8 +11,5 @@ def build(bld):
 
 
 		use_module    = [ 		
-			'CryUQS_Client', 
-			'CryUQS_DataSource_XML',
-			'CryUQS_StdLib'
 		],
 	)	
