@@ -27,3 +27,4 @@ add_subdirectory(CryUQS)
 
 add_subdirectory(CryHTTP/Module)
 add_subdirectory(CryGamePlatform/Module)
+add_subdirectory(CryPerceptionSystem/Module)
