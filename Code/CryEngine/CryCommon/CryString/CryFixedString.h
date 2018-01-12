@@ -516,7 +516,8 @@ inline void CryStackStringT<T, S >::_Assign(const_str sStr, size_type nLen)
 		_AllocData(nLen);
 	}
 	// Copy characters from new string to this buffer.
-	CharTraits<T>::_copy(m_str, sStr, nLen);
+	// Use move to handle self intersections
+	CharTraits<T>::_move(m_str, sStr, nLen);
 
 	// Set new length.
 	m_nLength = nLen;

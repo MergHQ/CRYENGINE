@@ -341,7 +341,7 @@ protected:
 			memcpy(memFunc, mf, sz);
 			if (sz < MEM_FUNC_SIZE)  //zero-out the rest, if any, so comparisons work
 			{
-				memset(memFunc + sz, 0, MEM_FUNC_SIZE - sz);
+				std::fill(memFunc + sz, memFunc + MEM_FUNC_SIZE * 2, '\0');
 			}
 		}
 		else  //must be ptr-to-func

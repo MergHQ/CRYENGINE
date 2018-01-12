@@ -2104,12 +2104,11 @@ template<class T, int N>
 class CCyclicStatsBuffer
 {
 public:
-	CCyclicStatsBuffer() : m_count(0), m_total(T())
+	CCyclicStatsBuffer()
+		: m_count(0)
+		, m_total(T())
+		, m_index(N - 1)
 	{
-		for (size_t index = 0; index < N; ++index)
-		{
-			m_values[index] = T();
-		}
 	}
 
 	void Clear()
@@ -2175,7 +2174,7 @@ public:
 private:
 	size_t m_count;
 	size_t m_index;
-	T      m_values[N];
+	T      m_values[N]{};
 	T      m_total;
 };
 #else

@@ -316,9 +316,9 @@ struct IEntityComponent : public ICryUnknown, ISimpleEntityEventListener
 
 		IEntity*                           pEntity;
 		const CryGUID                      guid;
-		const string&                      name;
+		const string                       name;
 		const CEntityComponentClassDesc*   classDesc;
-		const CryTransform::CTransformPtr& transform;
+		const CryTransform::CTransformPtr  transform;
 		IEntityComponent*                  pParent = nullptr;
 		INetworkSpawnParams*               pNetworkSpawnParams = nullptr;
 		EntityComponentFlags               flags;

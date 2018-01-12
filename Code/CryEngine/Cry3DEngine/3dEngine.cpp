@@ -135,6 +135,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 C3DEngine::C3DEngine(ISystem* pSystem)
+	: m_nStreamingFramesSinceLevelStart(0)
+	, m_bPreCacheEndEventSent(false)
 {
 	m_renderNodeStatusListenersArray.resize(EERType::eERType_TypesNum, TRenderNodeStatusListeners(0));
 
@@ -232,6 +234,7 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_bSunShadows = m_bShowTerrainSurface = true;
 	m_bSunShadowsFromTerrain = false;
 	m_nSunAdditionalCascades = 0;
+	m_nGsmCache = 0;
 	m_CachedShadowsBounds.Reset();
 	m_nCachedShadowsUpdateStrategy = ShadowMapFrustum::ShadowCacheData::eFullUpdate;
 

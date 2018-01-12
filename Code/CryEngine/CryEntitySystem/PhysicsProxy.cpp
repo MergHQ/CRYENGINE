@@ -165,10 +165,13 @@ void CEntityPhysics::UpdateParamsFromRenderMaterial(int nSlot, IPhysicalEntity* 
 		pMtl = pIEntityRender->GetRenderMaterial(nSlot);
 	}
 
+	// Do not move it under if block
+	// this memory may be used in the next 'SetParams' call
+	int surfaceTypesId[MAX_SUB_MATERIALS];
+
 	if (pMtl)
 	{
 		// Assign custom material to physics.
-		int surfaceTypesId[MAX_SUB_MATERIALS];
 		memset(surfaceTypesId, 0, sizeof(surfaceTypesId));
 		int numIds = pMtl->FillSurfaceTypeIds(surfaceTypesId);
 
@@ -1124,10 +1127,13 @@ int CEntityPhysics::AddSlotGeometry(int nSlot, SEntityPhysicalizeParams& params,
 	partpos.density = params.density;
 	partpos.mass = params.mass;
 
+	// Do not move it under if block
+	// this memory may be used in the next 'SetParams' call
+	int surfaceTypesId[MAX_SUB_MATERIALS];
+
 	if (IMaterial* pMaterial = GetEntity()->GetEntityRender()->GetRenderMaterial(nSlot))
 	{
 		// Assign custom material to physics.
-		int surfaceTypesId[MAX_SUB_MATERIALS];
 		memset(surfaceTypesId, 0, sizeof(surfaceTypesId));
 		int numIds = pMaterial->FillSurfaceTypeIds(surfaceTypesId);
 
