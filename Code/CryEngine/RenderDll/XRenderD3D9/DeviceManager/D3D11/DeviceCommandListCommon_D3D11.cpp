@@ -731,8 +731,8 @@ void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const FLOAT
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-#if (CRY_RENDERER_DIRECT3D >= 111)
-	gcpRendD3D->GetDeviceContext().ClearUnorderedAccessViewFloat(pView, Values, numRects, pRects);
+#if (CRY_RENDERER_DIRECT3D >= 120)
+	gcpRendD3D->GetDeviceContext().ClearRectsUnorderedAccessViewFloat(pView, Values, NumRects, pRects);
 #else
 	CRY_ASSERT(NumRects == 0); // not supported on dx11
 	gcpRendD3D->GetDeviceContext().ClearUnorderedAccessViewFloat(pView, Values);
@@ -743,8 +743,8 @@ void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const UINT 
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-#if (CRY_RENDERER_DIRECT3D >= 111)
-	gcpRendD3D->GetDeviceContext().ClearUnorderedAccessViewUint(pView, Values, numRects, pRects);
+#if (CRY_RENDERER_DIRECT3D >= 120)
+	gcpRendD3D->GetDeviceContext().ClearRectsUnorderedAccessViewUint(pView, Values, NumRects, pRects);
 #else
 	CRY_ASSERT(NumRects == 0); // not supported on dx11
 	gcpRendD3D->GetDeviceContext().ClearUnorderedAccessViewUint(pView, Values);
