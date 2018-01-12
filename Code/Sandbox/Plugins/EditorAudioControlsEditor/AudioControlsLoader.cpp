@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "AudioControlsLoader.h"
 
+#include "FileLoader.h"
 #include "SystemAssetsManager.h"
 #include "SystemControlsModel.h"
 #include "AudioControlsEditorPlugin.h"
@@ -240,7 +241,15 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 
 	if (pNode != nullptr)
 	{
-		CSystemAsset* const pFolderItem = AddUniqueFolderPath(pParentItem, QtUtil::ToQString(pNode->getAttr("path")));
+		bool const isInDefaultLibrary = (pParentItem->GetName() == s_szDefaultLibraryName);
+		QString pathName = "";
+
+		if (!isInDefaultLibrary)
+		{
+			pathName = QtUtil::ToQString(pNode->getAttr("path"));
+		}
+
+		CSystemAsset* const pFolderItem = AddUniqueFolderPath(pParentItem, pathName);
 
 		if (pFolderItem != nullptr)
 		{
@@ -294,6 +303,17 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 						pControl->SetModified(true, true);
 					}
 				}
+
+				if (isInDefaultLibrary &&
+					(!((controlType == ESystemItemType::Trigger) && (m_defaultTriggerNames.find(name) != m_defaultTriggerNames.end())) &&
+					!((controlType == ESystemItemType::Parameter) && (m_defaultParameterNames.find(name) != m_defaultParameterNames.end()))))
+				{
+					CSystemLibrary* const pLibrary = m_pAssetsManager->CreateLibrary("_default_controls_old");
+					pControl->GetParent()->RemoveChild(pControl);
+					pLibrary->AddChild(pControl);
+					pControl->SetParent(pLibrary);
+					pLibrary->SetModified(true, true);
+				}
 			}
 		}
 	}
@@ -308,54 +328,49 @@ CSystemControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode,
 
 	if (pNode != nullptr)
 	{
-		CSystemAsset* const pFolderItem = AddUniqueFolderPath(pParentItem, QtUtil::ToQString(pNode->getAttr("path")));
+		string const name = pNode->getAttr("atl_name");
+		ESystemItemType const controlType = TagToType_BackwardsComp(pNode->getTag());
 
-		if (pFolderItem != nullptr)
+		if ((controlType == ESystemItemType::Trigger) && (m_defaultTriggerNames.find(name) != m_defaultTriggerNames.end()))
 		{
-			string const name = pNode->getAttr("atl_name");
-			ESystemItemType const controlType = TagToType_BackwardsComp(pNode->getTag());
+			pControl = m_pAssetsManager->FindControl(name, controlType);
 
-			if ((controlType == ESystemItemType::Trigger) && (m_defaultTriggerNames.find(name) != m_defaultTriggerNames.end()))
+			if (pControl == nullptr)
 			{
-				pControl = m_pAssetsManager->FindControl(name, controlType);
+				pControl = m_pAssetsManager->CreateControl(name, controlType, pParentItem);
 
-				if (pControl == nullptr)
+				if (pControl != nullptr)
 				{
-					pControl = m_pAssetsManager->CreateControl(name, controlType, pFolderItem);
-
-					if (pControl != nullptr)
-					{
-						float radius = 0.0f;
-						pNode->getAttr("atl_radius", radius);
-						pControl->SetRadius(radius);
-						LoadConnections(pNode, pControl);
-						pControl->SetModified(true, true);
-					}
+					float radius = 0.0f;
+					pNode->getAttr("atl_radius", radius);
+					pControl->SetRadius(radius);
+					LoadConnections(pNode, pControl);
+					pControl->SetModified(true, true);
 				}
 			}
-			else if ((controlType == ESystemItemType::Parameter) && (m_defaultParameterNames.find(name) != m_defaultParameterNames.end()))
+		}
+		else if ((controlType == ESystemItemType::Parameter) && (m_defaultParameterNames.find(name) != m_defaultParameterNames.end()))
+		{
+			pControl = m_pAssetsManager->FindControl(name, controlType);
+
+			if (pControl == nullptr)
 			{
-				pControl = m_pAssetsManager->FindControl(name, controlType);
+				pControl = m_pAssetsManager->CreateControl(name, controlType, pParentItem);
 
-				if (pControl == nullptr)
+				if (pControl != nullptr)
 				{
-					pControl = m_pAssetsManager->CreateControl(name, controlType, pFolderItem);
+					LoadConnections(pNode, pControl);
 
-					if (pControl != nullptr)
+					if (pControl->GetName() == "object_speed")
 					{
-						LoadConnections(pNode, pControl);
-
-						if (pControl->GetName() == "object_speed")
-						{
-							pControl->SetName(CryAudio::s_szAbsoluteVelocityParameterName);
-						}
-						else if (pControl->GetName() == "object_doppler")
-						{
-							pControl->SetName(CryAudio::s_szRelativeVelocityParameterName);
-						}
-
-						pControl->SetModified(true, true);
+						pControl->SetName(CryAudio::s_szAbsoluteVelocityParameterName);
 					}
+					else if (pControl->GetName() == "object_doppler")
+					{
+						pControl->SetName(CryAudio::s_szRelativeVelocityParameterName);
+					}
+
+					pControl->SetModified(true, true);
 				}
 			}
 		}
@@ -537,7 +552,7 @@ void CAudioControlsLoader::LoadLibraryEditorData(XmlNodeRef const pLibraryNode, 
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsLoader::LoadAllFolders(XmlNodeRef const pFoldersNode, CSystemAsset& library)
 {
-	if (pFoldersNode != nullptr)
+	if ((pFoldersNode != nullptr) && (library.GetName() != s_szDefaultLibraryName))
 	{
 		int const size = pFoldersNode->getChildCount();
 

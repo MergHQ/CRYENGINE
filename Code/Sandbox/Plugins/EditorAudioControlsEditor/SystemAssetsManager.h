@@ -21,23 +21,21 @@ public:
 	void Initialize();
 	void Clear();
 
-	// Libraries
 	CSystemLibrary* CreateLibrary(string const& name);
 	CSystemLibrary* GetLibrary(size_t const index) const { return m_systemLibraries[index]; }
 	size_t          GetLibraryCount() const              { return m_systemLibraries.size(); }
 
-	//
 	CSystemAsset*   CreateFolder(string const& name, CSystemAsset* const pParent = nullptr);
-	CSystemControl* CreateControl(string const& controlName, ESystemItemType const type, CSystemAsset* const pParent = nullptr);
+	CSystemControl* CreateControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent = nullptr);
+	void            CreateDefaultControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent, bool& wasModified);
 	void            DeleteItem(CSystemAsset* const pItem);
 
 	CSystemControl* GetControlByID(CID const id) const;
-	CSystemControl* FindControl(string const& controlName, ESystemItemType const type, CSystemAsset* const pParent = nullptr) const;
+	CSystemControl* FindControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent = nullptr) const;
 
 	using Controls = std::vector<CSystemControl*>;
 	Controls const& GetControls() const { return m_controls; }
 
-	// Scope
 	void            ClearScopes();
 	void            AddScope(string const& name, bool const isLocalOnly = false);
 	bool            ScopeExists(string const& name) const;
@@ -45,7 +43,6 @@ public:
 	SScopeInfo      GetScopeInfo(Scope const id) const;
 	void            GetScopeInfoList(ScopeInfoList& scopeList) const;
 
-	// Helper functions
 	void            ClearAllConnections();
 	void            ReloadAllConnections();
 	void            MoveItems(CSystemAsset* const pParent, std::vector<CSystemAsset*> const& items);
@@ -76,22 +73,16 @@ public:
 	using ModifiedLibraryNames = std::set<string>;
 	ModifiedLibraryNames GetModifiedLibraries() const { return m_modifiedLibraryNames; }
 
-	// Dirty flags signal
 	CCrySignal<void(bool)>                         SignalIsDirty;
-
-	// Library signals
 	CCrySignal<void()>                             SignalLibraryAboutToBeAdded;
 	CCrySignal<void(CSystemLibrary*)>              SignalLibraryAdded;
 	CCrySignal<void(CSystemLibrary*)>              SignalLibraryAboutToBeRemoved;
 	CCrySignal<void()>                             SignalLibraryRemoved;
-
-	// Items signals
 	CCrySignal<void(CSystemAsset*)>                SignalItemAboutToBeAdded;
 	CCrySignal<void(CSystemAsset*)>                SignalItemAdded;
 	CCrySignal<void(CSystemAsset*)>                SignalItemAboutToBeRemoved;
 	CCrySignal<void(CSystemAsset*, CSystemAsset*)> SignalItemRemoved;
 	CCrySignal<void()>                             SignalAssetRenamed;
-
 	CCrySignal<void(CSystemControl*)>              SignalControlModified;
 	CCrySignal<void(CSystemControl*)>              SignalConnectionAdded;
 	CCrySignal<void(CSystemControl*)>              SignalConnectionRemoved;
