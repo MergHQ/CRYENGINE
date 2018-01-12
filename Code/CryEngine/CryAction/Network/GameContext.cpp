@@ -1114,7 +1114,7 @@ void CGameContext::OnSpawn(IEntity* pEntity, SEntitySpawnParams& params)
 	bool calledBindToNetwork = false;
 	if (m_isInLevelLoad && gEnv->bMultiplayer)
 	{
-		if (pEntity->GetScriptTable())
+		if (pEntity->GetScriptTable() && !pEntity->GetProxy(ENTITY_PROXY_USER))
 		{
 			//CryLog("Forcibly binding %s to network", params.sName);
 			calledBindToNetwork = true;
