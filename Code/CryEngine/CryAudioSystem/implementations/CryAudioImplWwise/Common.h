@@ -2,8 +2,13 @@
 
 #pragma once
 
-#include "AK/SoundEngine/Common/AkTypes.h"
 #include "AK/AkWwiseSDKVersion.h"
+
+#if AK_WWISESDK_VERSION_MAJOR <= 2017 && AK_WWISESDK_VERSION_MINOR < 2
+	#error This version of Wwise is not supported, the minimum supported version is 2017.2.0
+#endif
+
+#include "AK/SoundEngine/Common/AkTypes.h"
 #include <CryAudio/IAudioSystem.h>
 
 #define WWISE_IMPL_INFO_STRING "Wwise " AK_WWISESDK_VERSIONNAME

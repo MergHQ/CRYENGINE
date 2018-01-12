@@ -99,11 +99,11 @@ if (AUDIO_WWISE)
 		AkSilenceSource
 		AkSineSource
 		AkSoundSeedImpactFX
-		AkSoundSeedWind
-		AkSoundSeedWoosh
+		AkSoundSeedWindSource
+		AkSoundSeedWooshSource
 		AkSpatialAudio
 		AkStereoDelayFX
-		AkSynthOne
+		AkSynthOneSource
 		AkTimeStretchFX
 		AkToneSource
 		AkTremoloFX
@@ -130,20 +130,21 @@ if (AUDIO_WWISE)
 	make_library(COMMON_WWISE_LIBS "${WWISE_LIB_PATH}")
 	make_library(COMM_CENTRAL_LIBS "${WWISE_LIB_PATH}")
 
-	set( WIN_LIBS Ole32 dxguid ws2_32 Dsound XINPUT9_1_0 Msacm32 )
-	set( WIN_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} AkMotionGenerator AkRumble )
+	# TODO: ws2_32 is not needed in release builds (Wwise profiling)
+	set( WIN_LIBS Ole32 Msacm32 dinput8 Winmm dsound dxguid ws2_32 xinput )
+	set( WIN_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} AkMotionGeneratorSource AkMotionSink )
 	make_library(WIN_WWISE_LIBS "${WWISE_LIB_PATH}")
 	set( WIN_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${WIN_WWISE_LIBS} ${WIN_LIBS} )
 	set( WIN_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${WIN_RELEASE_LIBS} "${WWISE_LIB_PATH}SFLib.lib" )
 
 	set( DURANGO_LIBS MMDevApi Ws2_32 combase kernelx SmartGlassInterop d3dcompiler dxguid xg_x uuid xaudio2 acphal )
-	set( DURANGO_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} AkMotionGenerator AkRumble )
+	set( DURANGO_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} AkMotionGeneratorSource AkMotionSink )
 	make_library(DURANGO_WWISE_LIBS "${WWISE_LIB_PATH}")
 	set( DURANGO_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${DURANGO_WWISE_LIBS} ${DURANGO_LIBS} )
 	set( DURANGO_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${DURANGO_RELEASE_LIBS} )
 
 	set( ORBIS_LIBS SceAudioOut_stub_weak SceAjm_stub_weak SceAudio3d_stub_weak SceMove_Stub_weak)
-	set( ORBIS_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} SceAudio3dEngine AkMotionGenerator AkRumble )
+	set( ORBIS_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} SceAudio3dEngine AkMotionGeneratorSource AkMotionSink )
 	make_library(ORBIS_WWISE_LIBS "${WWISE_LIB_PATH}")
 	set( ORBIS_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${ORBIS_WWISE_LIBS} ${ORBIS_LIBS} )
 	set( ORBIS_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${ORBIS_RELEASE_LIBS} )
@@ -165,7 +166,6 @@ if (AUDIO_WWISE)
 	set( ANDROID_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${ANDROID_WWISE_LIBS} )
 	set( ANDROID_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${ANDROID_RELEASE_LIBS} )
 
-	
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -DWWISE_FOR_$<UPPER_CASE:$<CONFIG>>)
 	
 	if( ${WWISE_PLATFORM_PREFIX}_RELEASE_LIBS )
