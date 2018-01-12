@@ -62,7 +62,7 @@ void CSystemAssetsManager::Initialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CSystemControl* CSystemAssetsManager::CreateControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent)
+CSystemControl* CSystemAssetsManager::CreateControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent /*= nullptr*/)
 {
 	CSystemControl* pControl = nullptr;
 
@@ -106,6 +106,30 @@ CSystemControl* CSystemAssetsManager::CreateControl(string const& name, ESystemI
 	}
 
 	return pControl;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemAssetsManager::CreateDefaultControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent, bool& wasModified)
+{
+	CSystemControl* pControl = FindControl(name, type);
+
+	if (pControl == nullptr)
+	{
+		pControl = CreateControl(name, type, pParent);
+		wasModified = true;
+	}
+	else if (pControl->GetParent() != pParent)
+	{
+		pControl->GetParent()->RemoveChild(pControl);
+		pParent->AddChild(pControl);
+		pControl->SetParent(pParent);
+		wasModified = true;
+	}
+
+	if (pControl != nullptr)
+	{
+		pControl->SetDefaultControl(true);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -195,7 +219,7 @@ void CSystemAssetsManager::ClearScopes()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemAssetsManager::AddScope(string const& name, bool const isLocalOnly)
+void CSystemAssetsManager::AddScope(string const& name, bool const isLocalOnly /*= false*/)
 {
 	m_scopes[CryAudio::StringToId(name.c_str())] = SScopeInfo(name, isLocalOnly);
 }
@@ -277,7 +301,7 @@ CSystemLibrary* CSystemAssetsManager::CreateLibrary(string const& name)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CSystemAsset* CSystemAssetsManager::CreateFolder(string const& name, CSystemAsset* const pParent)
+CSystemAsset* CSystemAssetsManager::CreateFolder(string const& name, CSystemAsset* const pParent /*= nullptr*/)
 {
 	CSystemAsset* pAsset = nullptr;
 	bool foundFolder = false;
@@ -442,7 +466,7 @@ void CSystemAssetsManager::ClearDirtyFlags()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CSystemControl* CSystemAssetsManager::FindControl(string const& controlName, ESystemItemType const type, CSystemAsset* const pParent) const
+CSystemControl* CSystemAssetsManager::FindControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent /*= nullptr*/) const
 {
 	CSystemControl* pSystemControl = nullptr;
 
@@ -450,7 +474,7 @@ CSystemControl* CSystemAssetsManager::FindControl(string const& controlName, ESy
 	{
 		for (auto const pControl : m_controls)
 		{
-			if ((pControl != nullptr) && (pControl->GetName() == controlName) && (pControl->GetType() == type))
+			if ((pControl != nullptr) && (pControl->GetName() == name) && (pControl->GetType() == type))
 			{
 				pSystemControl = pControl;
 				break;
@@ -465,7 +489,7 @@ CSystemControl* CSystemAssetsManager::FindControl(string const& controlName, ESy
 		{
 			CSystemControl* const pControl = static_cast<CSystemControl*>(pParent->GetChild(i));
 
-			if ((pControl != nullptr) && (pControl->GetName() == controlName) && (pControl->GetType() == type))
+			if ((pControl != nullptr) && (pControl->GetName() == name) && (pControl->GetType() == type))
 			{
 				pSystemControl = pControl;
 				break;

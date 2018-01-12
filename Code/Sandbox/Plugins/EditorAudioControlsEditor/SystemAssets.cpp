@@ -252,7 +252,16 @@ void CSystemAsset::Serialize(Serialization::IArchive& ar)
 	if (ar.openBlock("properties", "Properties"))
 	{
 		string const name = m_name;
-		ar(name, "name", "Name");
+
+		if (IsDefaultControl())
+		{
+			ar(name, "name", "!Name");
+		}
+		else
+		{
+			ar(name, "name", "Name");
+		}
+
 		ar.doc(name);
 
 		string const description = m_description;
