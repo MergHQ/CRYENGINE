@@ -131,6 +131,28 @@ public:
 
 CCaptureCrashScreenShot g_screenShotThread;
 
+MINIDUMP_TYPE GetMiniDumpType()
+{
+	switch (g_cvars.sys_dump_type)
+	{
+	case 0:
+		return (MINIDUMP_TYPE)(MiniDumpValidTypeFlags + 1); // guaranteed to be invalid
+		break;
+	case 1:
+		return MiniDumpNormal;
+		break;
+	case 2:
+		return (MINIDUMP_TYPE)(MiniDumpWithIndirectlyReferencedMemory | MiniDumpWithDataSegs);
+		break;
+	case 3:
+		return MiniDumpWithFullMemory;
+		break;
+	default:
+		return (MINIDUMP_TYPE)g_cvars.sys_dump_type;
+		break;
+	}
+}
+
 	#ifdef CRY_USE_CRASHRPT
 struct CCrashRptCVars
 {
@@ -170,6 +192,11 @@ bool CCrashRpt::InstallHandler()
 	info.cb = sizeof(CR_INSTALL_INFO);
 	info.pszAppName = NULL; //NULL == Use exe filname _T("CRYENGINE");
 	info.pszAppVersion = NULL; //NULL == Extract from the executable  _T("1.0.0");
+	MINIDUMP_TYPE mdumpType = GetMiniDumpType();
+	if (mdumpType == (MINIDUMP_TYPE)(mdumpType & MiniDumpValidTypeFlags))
+	{
+		info.uMiniDumpType = mdumpType;
+	}
 	if (g_crashrpt_cvars.sys_crashrpt_appname && 0 != strlen(g_crashrpt_cvars.sys_crashrpt_appname->GetString()))
 	{
 		info.pszAppName = g_crashrpt_cvars.sys_crashrpt_appname->GetString();
@@ -1513,9 +1540,33 @@ void DebugCallStack::GenerateCrashReport()
 //////////////////////////////////////////////////////////////////////////
 void DebugCallStack::RegisterCVars()
 {
+	#if defined DEDICATED_SERVER
+		const int DEFAULT_DUMP_TYPE = 3;
+	#else
+		const int DEFAULT_DUMP_TYPE = 1;
+	#endif
+
 	#ifdef CRY_USE_CRASHRPT
 	CCrashRpt::RegisterCVars();
+	REGISTER_CVAR2_CB("sys_dump_type", &g_cvars.sys_dump_type, DEFAULT_DUMP_TYPE, VF_NULL,
+		"Specifies type of crash dump to create - see MINIDUMP_TYPE in dbghelp.h for full list of values\n"
+		"0: Do not create a minidump (not valid if using CrashRpt)\n"
+		"1: Create a small minidump (stacktrace)\n"
+		"2: Create a medium minidump (+ some variables)\n"
+		"3: Create a full minidump (+ all memory)\n", 
+		&CCrashRpt::ReInstallCrashRptHandler
+	);
+	#else
+	REGISTER_CVAR2("sys_dump_type", &g_cvars.sys_dump_type, DEFAULT_DUMP_TYPE, VF_NULL,
+		"Specifies type of crash dump to create - see MINIDUMP_TYPE in dbghelp.h for full list of values\n"
+		"0: Do not create a minidump (not valid if using CrashRpt)\n"
+		"1: Create a small minidump (stacktrace)\n"
+		"2: Create a medium minidump (+ some variables)\n"
+		"3: Create a full minidump (+ all memory)\n"
+	);
 	#endif
+
+
 }
 
 INT_PTR CALLBACK DebugCallStack::ExceptionDialogProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -1650,27 +1701,9 @@ int DebugCallStack::SubmitBug(EXCEPTION_POINTERS* exception_pointer)
 
 	if (exception_pointer)
 	{
-		MINIDUMP_TYPE mdumpValue;
-		bool bDump = true;
-		switch (g_cvars.sys_dump_type)
-		{
-		case 0:
-			bDump = false;
-			break;
-		case 1:
-			mdumpValue = MiniDumpNormal;
-			break;
-		case 2:
-			mdumpValue = (MINIDUMP_TYPE)(MiniDumpWithIndirectlyReferencedMemory | MiniDumpWithDataSegs);
-			break;
-		case 3:
-			mdumpValue = MiniDumpWithFullMemory;
-			break;
-		default:
-			mdumpValue = (MINIDUMP_TYPE)g_cvars.sys_dump_type;
-			break;
-		}
-		if (bDump)
+		MINIDUMP_TYPE mdumpType = GetMiniDumpType();
+
+		if (mdumpType == (MINIDUMP_TYPE)(mdumpType & MiniDumpValidTypeFlags))
 		{
 			stack_string fileName = "error.dmp";
 #if defined(DEDICATED_SERVER)
@@ -1690,7 +1723,7 @@ int DebugCallStack::SubmitBug(EXCEPTION_POINTERS* exception_pointer)
 			}
 #endif // defined(DEDICATED_SERVER)
 
-			CryEngineExceptionFilterMiniDump(exception_pointer, fileName.c_str(), mdumpValue);
+			CryEngineExceptionFilterMiniDump(exception_pointer, fileName.c_str(), mdumpType);
 		}
 	}
 
