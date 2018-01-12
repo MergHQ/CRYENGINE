@@ -372,68 +372,34 @@ ERequestStatus CObject::PostEnvironmentAmounts()
 
 	if (numEnvironments > 0)
 	{
-		AkAuxSendValue auxValues[AK_MAX_AUX_PER_OBJ];
-		uint32 auxIndex = 0;
+		std::vector<AkAuxSendValue> auxValues;
+		auxValues.reserve(numEnvironments);
 
-		CObject::EnvironmentImplMap::iterator iEnvPair = m_environmentImplAmounts.begin();
-		CObject::EnvironmentImplMap::const_iterator const iEnvStart = m_environmentImplAmounts.begin();
-		CObject::EnvironmentImplMap::const_iterator const iEnvEnd = m_environmentImplAmounts.end();
+		auto iter(m_environmentImplAmounts.cbegin());
+		auto const iterEnd(m_environmentImplAmounts.cend());
 
-		if (numEnvironments <= AK_MAX_AUX_PER_OBJ)
+		while (iter != iterEnd)
 		{
-			for (; iEnvPair != iEnvEnd; ++auxIndex)
-			{
-				float const amount = iEnvPair->second;
-				AkAuxSendValue& auxValue = auxValues[auxIndex];
-				auxValue.auxBusID = iEnvPair->first;
-				auxValue.fControlValue = amount;
-				auxValue.listenerID = g_listenerId;
+			float const amount = iter->second;
+			auxValues.emplace_back();
+			AkAuxSendValue& auxValue = auxValues.back();
+			auxValue.auxBusID = iter->first;
+			auxValue.fControlValue = amount;
+			auxValue.listenerID = g_listenerId;
 
-				// If an amount is zero, we still want to send it to the middleware, but we also want to remove it from the map.
-				if (amount == 0.0f)
-				{
-					m_environmentImplAmounts.erase(iEnvPair++);
-				}
-				else
-				{
-					++iEnvPair;
-				}
+			// If an amount is zero, we still want to send it to the middleware, but we also want to remove it from the map.
+			if (amount == 0.0f)
+			{
+				m_environmentImplAmounts.erase(iter++);
 			}
-		}
-		else
-		{
-			// sort the environments in order of decreasing amounts and take the first AK_MAX_AUX_PER_OBJ worth
-			using TEnvPairSet = std::set<std::pair<AkAuxBusID, float>, SEnvPairCompare>;
-			TEnvPairSet cEnvPairs(iEnvStart, iEnvEnd);
-
-			TEnvPairSet::const_iterator iSortedEnvPair = cEnvPairs.begin();
-			TEnvPairSet::const_iterator const iSortedEnvEnd = cEnvPairs.end();
-
-			for (; (iSortedEnvPair != iSortedEnvEnd) && (auxIndex < AK_MAX_AUX_PER_OBJ); ++iSortedEnvPair, ++auxIndex)
+			else
 			{
-				AkAuxSendValue& auxValue = auxValues[auxIndex];
-				auxValue.auxBusID = iSortedEnvPair->first;
-				auxValue.fControlValue = iSortedEnvPair->second;
-				auxValue.listenerID = g_listenerId;
-			}
-
-			//remove all Environments with 0.0 amounts
-			while (iEnvPair != iEnvEnd)
-			{
-				if (iEnvPair->second == 0.0f)
-				{
-					m_environmentImplAmounts.erase(iEnvPair++);
-				}
-				else
-				{
-					++iEnvPair;
-				}
+				++iter;
 			}
 		}
 
-		CRY_ASSERT(auxIndex <= AK_MAX_AUX_PER_OBJ);
-
-		AKRESULT const wwiseResult = AK::SoundEngine::SetGameObjectAuxSendValues(m_id, auxValues, auxIndex);
+		CRY_ASSERT_MESSAGE(numEnvironments == auxValues.size(), "Number of environments after preparing the list for Wwise don't match!");
+		AKRESULT const wwiseResult = AK::SoundEngine::SetGameObjectAuxSendValues(m_id, &auxValues[0], static_cast<AkUInt32>(numEnvironments));
 
 		if (IS_WWISE_OK(wwiseResult))
 		{
