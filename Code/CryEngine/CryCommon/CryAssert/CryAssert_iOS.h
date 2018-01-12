@@ -88,7 +88,7 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 
 	size_t file_len = strlen(szFile);
 
-	if (!gEnv->bUnattendedMode && !gEnv->ignoreAllAsserts)
+	if (!gEnv->bUnattendedMode && !gEnv->ignoreAllAsserts && !gEnv->noAssertDialog)
 	{
 		CryLogAlways("!!ASSERT!!\n\tCondition: %s\n\tMessage  : %s\n\tFile     : %s\n\tLine     : %d", szCondition, gs_szMessage, szFile, line);
 	}

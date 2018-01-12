@@ -893,6 +893,7 @@ struct SSystemGlobalEnvironment
 
 #if defined(USE_CRY_ASSERT)
 	bool ignoreAllAsserts = false;
+	bool noAssertDialog   = false;
 	bool stoppedOnAssert = false;
 	ECryAssertLevel cryAssertLevel = ECryAssertLevel::Enabled;
 #endif
