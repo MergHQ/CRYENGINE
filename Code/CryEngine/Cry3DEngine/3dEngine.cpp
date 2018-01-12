@@ -6552,17 +6552,6 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 		}
 	}
 
-	// update clip volume: use vis area if we have one, otherwise check if we're in the same volume as before. check other volumes as last resort only
-	if (SRenderNodeTempData* pTempData = pEnt->m_pTempData.load())
-	{
-		Vec3 vEntCenter = GetEntityRegisterPoint(pEnt);
-
-		if (IVisArea* pVisArea = pEnt->GetEntityVisArea())
-			pTempData->userData.m_pClipVolume = pVisArea;
-		else if (GetClipVolumeManager()->IsClipVolumeRequired(pEnt))
-			GetClipVolumeManager()->UpdateEntityClipVolume(vEntCenter, pEnt);
-	}
-
 	// register decals, to clean up longer not renders decals and their render meshes
 	if (eERType == eERType_Decal)
 	{
