@@ -987,9 +987,6 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& SH, CRenderObjec
 
 		pObj->m_ObjFlags |= (nFlags & FB_ZPREPASS) ? FOB_ZPREPASS : 0;
 
-		if (pTech->m_nTechnique[TTYPE_DEBUG] > 0 && 0 != (ObjFlags & FOB_SELECTED))
-			nFlags |= FB_DEBUG;
-
 		const uint32 nMaterialLayers = pObj->m_nMaterialLayers;
 		const uint32 DecalFlags = pS->m_Flags & EF_DECAL;
 
