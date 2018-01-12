@@ -1790,7 +1790,7 @@ int CLivingEntity::Step(float time_interval)
 						if (!bFlying && inrange(ncontact*axis, 0.85f,-0.1f) && (unsigned int)pentmin->m_iSimClass-1u<2u && 
 							pentmin->GetMassInv()>m_massinv*0.25f)
 							ncontact.z=0, ncontact.normalize();
-						int bPush = pentmin->m_iSimClass>0 || isneg(min(m_slopeClimb-ncontact*axis, ncontact*axis+m_slopeFall)) | bFlying;
+						int bPush = pentmin->m_iSimClass>0 || isneg(min(m_slopeClimb-ncontact*axis, ncontact*axis+m_slopeFall));
 						int bUnmovable = isneg(-pentmin->m_iSimClass>>31 & ~(-((int)m_flags & pef_pushable_by_players)>>31));
 						bPush &= bUnmovable^1;
 						{
