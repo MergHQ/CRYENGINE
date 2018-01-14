@@ -6,6 +6,8 @@
 
 namespace ACE
 {
+static constexpr char* s_szDefaultLibraryName = "default_controls";
+
 class CSystemAssetsManager;
 
 class CFileLoader
@@ -14,6 +16,7 @@ public:
 
 	CFileLoader(CSystemAssetsManager& assetsManager);
 	std::set<string> GetLoadedFilenamesList();
+	void             CreateInternalControls();
 	void             LoadAll();
 	void             LoadControls();
 	void             LoadScopes();
@@ -30,7 +33,6 @@ private:
 	void            LoadPreloadConnections(XmlNodeRef const pNode, CSystemControl* const pControl, uint32 const version);
 	void            LoadConnections(XmlNodeRef const root, CSystemControl* const pControl);
 
-	void            CreateInternalControls();
 	void            CreateInternalControl(CSystemAsset* const pLibrary, char const* const szName, ESystemItemType const type);
 	void            CreateInternalSwitch(CSystemAsset* const pLibrary, char const* const szSwitchName, SwitchStates const& StateNames);
 	void            CreateDefaultControls();

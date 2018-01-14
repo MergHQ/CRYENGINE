@@ -136,7 +136,7 @@ public:
 protected:
 	pthread_mutex_t m_posix_mutex;
 #ifndef _RELEASE
-	volatile uint   m_LockCount;
+	volatile uint   m_LockCount = 0;
 #endif
 };
 

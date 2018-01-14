@@ -89,7 +89,7 @@ bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, b
 
 	size_t file_len = strlen(szFile);
 
-	if (!gEnv->bUnattendedMode && !gEnv->ignoreAllAsserts)
+	if (!gEnv->bUnattendedMode && !gEnv->ignoreAllAsserts && !gEnv->noAssertDialog)
 	{
 
 		CryAutoLock<CryLockT<CRYLOCK_RECURSIVE>> lk(lock);

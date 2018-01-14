@@ -1124,7 +1124,7 @@ bool CCryPak::AdjustAliases(char* dst)
 		{
 			if (pos[tTemp->nLen1] == g_cNativeSlash && pos[-1] == g_cNativeSlash)
 			{
-				strcpy(pos, &pos[tTemp->nLen1+1]);
+				memmove(pos, &pos[tTemp->nLen1 + 1], strlen(pos + tTemp->nLen1 + 1));
 			}
 			searchIdx = pos + 1;
 		}

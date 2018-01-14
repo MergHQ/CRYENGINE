@@ -56,7 +56,7 @@ public:
 
 private:
 	DynArray<SSoftwareVertexFrame> m_frames;
-	uint                           m_numVertexDeltas;
+	uint                           m_numVertexDeltas = 0;
 };
 
 class CSoftwareMesh

@@ -428,110 +428,117 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 
 	if (pLibrary != nullptr)
 	{
-		switch (index.column())
+		if (role == static_cast<int>(SystemModelUtils::ERoles::IsDefaultControl))
 		{
-		case static_cast<int>(SystemModelUtils::EColumns::Notification):
+			variant = pLibrary->IsDefaultControl();
+		}
+		else
+		{
+			switch (index.column())
 			{
-				switch (role)
+			case static_cast<int>(SystemModelUtils::EColumns::Notification) :
 				{
-				case Qt::DecorationRole:
-					if (pLibrary->HasPlaceholderConnection())
+					switch (role)
 					{
-						variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder));
+					case Qt::DecorationRole:
+						if (pLibrary->HasPlaceholderConnection())
+						{
+							variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder));
+						}
+						else if (!pLibrary->HasConnection())
+						{
+							variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
+						}
+						else if (!pLibrary->HasControl())
+						{
+							variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoControl));
+						}
+						break;
+					case Qt::ToolTipRole:
+						if (pLibrary->HasPlaceholderConnection())
+						{
+							variant = tr("Contains item whose connection was not found in middleware project");
+						}
+						else if (!pLibrary->HasConnection())
+						{
+							variant = tr("Contains item that is not connected to any middleware control");
+						}
+						else if (!pLibrary->HasControl())
+						{
+							variant = tr("Contains no audio control");
+						}
+						break;
 					}
-					else if (!pLibrary->HasConnection())
-					{
-						variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
-					}
-					else if (!pLibrary->HasControl())
-					{
-						variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoControl));
-					}
-					break;
-				case Qt::ToolTipRole:
-					if (pLibrary->HasPlaceholderConnection())
-					{
-						variant = tr("Contains item whose connection was not found in middleware project");
-					}
-					else if (!pLibrary->HasConnection())
-					{
-						variant = tr("Contains item that is not connected to any middleware control");
-					}
-					else if (!pLibrary->HasControl())
-					{
-						variant = tr("Contains no audio control");
-					}
-					break;
 				}
-			}
-			break;
-		case static_cast<int>(SystemModelUtils::EColumns::Placeholder):
-			{
-				if (role == Qt::CheckStateRole)
+				break;
+			case static_cast<int>(SystemModelUtils::EColumns::Placeholder) :
 				{
-					variant = (!pLibrary->HasPlaceholderConnection()) ? Qt::Checked : Qt::Unchecked;
+					if (role == Qt::CheckStateRole)
+					{
+						variant = (!pLibrary->HasPlaceholderConnection()) ? Qt::Checked : Qt::Unchecked;
+					}
 				}
-			}
-			break;
-		case static_cast<int>(SystemModelUtils::EColumns::NoConnection):
-			{
-				if (role == Qt::CheckStateRole)
+				break;
+			case static_cast<int>(SystemModelUtils::EColumns::NoConnection) :
 				{
-					variant = (pLibrary->HasConnection()) ? Qt::Checked : Qt::Unchecked;
+					if (role == Qt::CheckStateRole)
+					{
+						variant = (pLibrary->HasConnection()) ? Qt::Checked : Qt::Unchecked;
+					}
 				}
-			}
-			break;
-		case static_cast<int>(SystemModelUtils::EColumns::NoControl):
-			{
-				if (role == Qt::CheckStateRole)
+				break;
+			case static_cast<int>(SystemModelUtils::EColumns::NoControl) :
 				{
-					variant = (!pLibrary->HasControl()) ? Qt::Checked : Qt::Unchecked;
+					if (role == Qt::CheckStateRole)
+					{
+						variant = (!pLibrary->HasControl()) ? Qt::Checked : Qt::Unchecked;
+					}
 				}
-			}
-			break;
-		case static_cast<int>(SystemModelUtils::EColumns::Name):
-			{
-				switch (role)
+				break;
+			case static_cast<int>(SystemModelUtils::EColumns::Name) :
 				{
-				case Qt::DecorationRole:
-					variant = GetItemTypeIcon(ESystemItemType::Library);
-					break;
-				case Qt::DisplayRole:
+					switch (role)
+					{
+					case Qt::DecorationRole:
+						variant = GetItemTypeIcon(ESystemItemType::Library);
+						break;
+					case Qt::DisplayRole:
 
-					if (pLibrary->IsModified())
-					{
-						variant = static_cast<char const*>(pLibrary->GetName() + " *");
-					}
-					else
-					{
+						if (pLibrary->IsModified())
+						{
+							variant = static_cast<char const*>(pLibrary->GetName() + " *");
+						}
+						else
+						{
+							variant = static_cast<char const*>(pLibrary->GetName());
+						}
+						break;
+					case Qt::EditRole:
 						variant = static_cast<char const*>(pLibrary->GetName());
-					}
-					break;
-				case Qt::EditRole:
-					variant = static_cast<char const*>(pLibrary->GetName());
-					break;
-				case Qt::ToolTipRole:
-					if (!pLibrary->GetDescription().IsEmpty())
-					{
-						variant = tr(pLibrary->GetName() + ": " + pLibrary->GetDescription());
-					}
-					else
-					{
+						break;
+					case Qt::ToolTipRole:
+						if (!pLibrary->GetDescription().IsEmpty())
+						{
+							variant = tr(pLibrary->GetName() + ": " + pLibrary->GetDescription());
+						}
+						else
+						{
+							variant = static_cast<char const*>(pLibrary->GetName());
+						}
+						break;
+					case static_cast<int>(SystemModelUtils::ERoles::ItemType) :
+						variant = static_cast<int>(ESystemItemType::Library);
+						break;
+					case static_cast<int>(SystemModelUtils::ERoles::Name) :
 						variant = static_cast<char const*>(pLibrary->GetName());
+						break;
+					case static_cast<int>(SystemModelUtils::ERoles::InternalPointer) :
+						variant = reinterpret_cast<intptr_t>(pLibrary);
+						break;
 					}
-					break;
-				case static_cast<int>(SystemModelUtils::ERoles::ItemType):
-					variant = static_cast<int>(ESystemItemType::Library);
-					break;
-				case static_cast<int>(SystemModelUtils::ERoles::Name):
-					variant = static_cast<char const*>(pLibrary->GetName());
-					break;
-				case static_cast<int>(SystemModelUtils::ERoles::InternalPointer):
-					variant = reinterpret_cast<intptr_t>(pLibrary);
-					break;
 				}
+				break;
 			}
-			break;
 		}
 	}
 
@@ -590,7 +597,11 @@ Qt::ItemFlags CSystemSourceModel::flags(QModelIndex const& index) const
 
 	if (index.isValid())
 	{
-		if (index.column() == m_nameColumn)
+		if (index.data(static_cast<int>(SystemModelUtils::ERoles::IsDefaultControl)).toBool())
+		{
+			flags = QAbstractItemModel::flags(index) | Qt::ItemIsSelectable;
+		}
+		else if (index.column() == m_nameColumn)
 		{
 			flags = QAbstractItemModel::flags(index) | Qt::ItemIsDropEnabled | Qt::ItemIsEditable;
 		}
@@ -830,162 +841,166 @@ QVariant CSystemLibraryModel::data(QModelIndex const& index, int role) const
 
 		if (pItem != nullptr)
 		{
-			ESystemItemType const itemType = pItem->GetType();
-
-			switch (index.column())
+			if (role == static_cast<int>(SystemModelUtils::ERoles::IsDefaultControl))
 			{
-			case static_cast<int>(SystemModelUtils::EColumns::Notification) :
-				{
-					switch (role)
-					{
-					case Qt::DecorationRole:
-						if (pItem->HasPlaceholderConnection())
-						{
-							variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder));
-						}
-						else if (!pItem->HasConnection())
-						{
-							variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
-						}
-						else if (((itemType == ESystemItemType::Folder) || (itemType == ESystemItemType::Switch)) && !pItem->HasControl())
-						{
-							variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoControl));
-						}
-						break;
-					case Qt::ToolTipRole:
-						if (pItem->HasPlaceholderConnection())
-						{
-							if ((itemType == ESystemItemType::Folder) || (itemType == ESystemItemType::Switch))
-							{
-								variant = tr("Contains item whose connection was not found in middleware project");
-							}
-							else
-							{
-								variant = tr("Item connection was not found in middleware project");
-							}
-						}
-						else if (!pItem->HasConnection())
-						{
-							if ((itemType == ESystemItemType::Folder) || (itemType == ESystemItemType::Switch))
-							{
-								variant = tr("Contains item that is not connected to any middleware control");
-							}
-							else
-							{
-								variant = tr("Item is not connected to any middleware control");
-							}
-						}
-						else if ((itemType == ESystemItemType::Folder) && !pItem->HasControl())
-						{
-							variant = tr("Contains no audio control");
-						}
-						else if ((itemType == ESystemItemType::Switch) && !pItem->HasControl())
-						{
-							variant = tr("Contains no state");
-						}
-						break;
-					case static_cast<int>(SystemModelUtils::ERoles::Id) :
-						if (itemType != ESystemItemType::Folder)
-						{
-							CSystemControl const* const pControl = static_cast<CSystemControl*>(pItem);
+				variant = pItem->IsDefaultControl();
+			}
+			else
+			{
+				ESystemItemType const itemType = pItem->GetType();
 
-							if (pControl != nullptr)
-							{
-								variant = pControl->GetId();
-							}
-						}
-						break;
-					}
-				}
-				break;
-			case static_cast<int>(SystemModelUtils::EColumns::Type) :
+				switch (index.column())
 				{
+				case static_cast<int>(SystemModelUtils::EColumns::Notification) :
+					{
+						switch (role)
+						{
+						case Qt::DecorationRole:
+							if (pItem->HasPlaceholderConnection())
+							{
+								variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder));
+							}
+							else if (!pItem->HasConnection())
+							{
+								variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
+							}
+							else if (((itemType == ESystemItemType::Folder) || (itemType == ESystemItemType::Switch)) && !pItem->HasControl())
+							{
+								variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoControl));
+							}
+							break;
+						case Qt::ToolTipRole:
+							if (pItem->HasPlaceholderConnection())
+							{
+								if ((itemType == ESystemItemType::Folder) || (itemType == ESystemItemType::Switch))
+								{
+									variant = tr("Contains item whose connection was not found in middleware project");
+								}
+								else
+								{
+									variant = tr("Item connection was not found in middleware project");
+								}
+							}
+							else if (!pItem->HasConnection())
+							{
+								if ((itemType == ESystemItemType::Folder) || (itemType == ESystemItemType::Switch))
+								{
+									variant = tr("Contains item that is not connected to any middleware control");
+								}
+								else
+								{
+									variant = tr("Item is not connected to any middleware control");
+								}
+							}
+							else if ((itemType == ESystemItemType::Folder) && !pItem->HasControl())
+							{
+								variant = tr("Contains no audio control");
+							}
+							else if ((itemType == ESystemItemType::Switch) && !pItem->HasControl())
+							{
+								variant = tr("Contains no state");
+							}
+							break;
+						case static_cast<int>(SystemModelUtils::ERoles::Id) :
+							if (itemType != ESystemItemType::Folder)
+							{
+								CSystemControl const* const pControl = static_cast<CSystemControl*>(pItem);
+
+								if (pControl != nullptr)
+								{
+									variant = pControl->GetId();
+								}
+							}
+							break;
+						}
+					}
+					break;
+				case static_cast<int>(SystemModelUtils::EColumns::Type) :
+					{
+						if ((role == Qt::DisplayRole) && (itemType != ESystemItemType::Folder))
+						{
+							variant = QString(pItem->GetTypeName());
+						}
+					}
+					break;
+				case static_cast<int>(SystemModelUtils::EColumns::Placeholder) :
+					{
+						if (role == Qt::CheckStateRole)
+						{
+							variant = (!pItem->HasPlaceholderConnection()) ? Qt::Checked : Qt::Unchecked;
+						}
+					}
+					break;
+				case static_cast<int>(SystemModelUtils::EColumns::NoConnection) :
+					{
+						if (role == Qt::CheckStateRole)
+						{
+							variant = (pItem->HasConnection()) ? Qt::Checked : Qt::Unchecked;
+						}
+					}
+					break;
+				case static_cast<int>(SystemModelUtils::EColumns::NoControl) :
+					{
+						if ((role == Qt::CheckStateRole) && ((itemType == ESystemItemType::Folder) || (itemType == ESystemItemType::Switch)))
+						{
+							variant = (!pItem->HasControl()) ? Qt::Checked : Qt::Unchecked;
+						}
+					}
+					break;
+				case static_cast<int>(SystemModelUtils::EColumns::Scope) :
 					if ((role == Qt::DisplayRole) && (itemType != ESystemItemType::Folder))
 					{
-						variant = QString(pItem->GetTypeName());
-					}
-				}
-				break;
-			case static_cast<int>(SystemModelUtils::EColumns::Placeholder) :
-				{
-					if (role == Qt::CheckStateRole)
-					{
-						variant = (!pItem->HasPlaceholderConnection()) ? Qt::Checked : Qt::Unchecked;
-					}
-				}
-				break;
-			case static_cast<int>(SystemModelUtils::EColumns::NoConnection) :
-				{
-					if (role == Qt::CheckStateRole)
-					{
-						variant = (pItem->HasConnection()) ? Qt::Checked : Qt::Unchecked;
-					}
-				}
-				break;
-			case static_cast<int>(SystemModelUtils::EColumns::NoControl) :
-				{
-					if ((role == Qt::CheckStateRole) && ((itemType == ESystemItemType::Folder) || (itemType == ESystemItemType::Switch)))
-					{
-						variant = (!pItem->HasControl()) ? Qt::Checked : Qt::Unchecked;
-					}
-				}
-				break;
-			case static_cast<int>(SystemModelUtils::EColumns::Scope) :
-				if ((role == Qt::DisplayRole) && (itemType != ESystemItemType::Folder))
-				{
-					CSystemControl const* const pControl = static_cast<CSystemControl*>(pItem);
+						CSystemControl const* const pControl = static_cast<CSystemControl*>(pItem);
 
-					if (pControl != nullptr)
-					{
-						variant = QString(m_pAssetsManager->GetScopeInfo(pControl->GetScope()).name);
+						if (pControl != nullptr)
+						{
+							variant = QString(m_pAssetsManager->GetScopeInfo(pControl->GetScope()).name);
+						}
 					}
-				}
-				break;
-			case static_cast<int>(SystemModelUtils::EColumns::Name) :
-				{
-					switch (role)
+					break;
+				case static_cast<int>(SystemModelUtils::EColumns::Name) :
 					{
-					case Qt::DecorationRole:
-						variant = GetItemTypeIcon(itemType);
-						break;
-					case Qt::DisplayRole:
-						if (pItem->IsModified())
+						switch (role)
 						{
-							variant = static_cast<char const*>(pItem->GetName() + " *");
-						}
-						else
-						{
+						case Qt::DecorationRole:
+							variant = GetItemTypeIcon(itemType);
+							break;
+						case Qt::DisplayRole:
+							if (pItem->IsModified())
+							{
+								variant = static_cast<char const*>(pItem->GetName() + " *");
+							}
+							else
+							{
+								variant = static_cast<char const*>(pItem->GetName());
+							}
+							break;
+						case Qt::EditRole:
 							variant = static_cast<char const*>(pItem->GetName());
-						}
-						break;
-					case Qt::EditRole:
-						variant = static_cast<char const*>(pItem->GetName());
-						break;
-					case Qt::ToolTipRole:
-						if (!pItem->GetDescription().IsEmpty())
-						{
-							variant = tr(pItem->GetName() + ": " + pItem->GetDescription());
-						}
-						else
-						{
+							break;
+						case Qt::ToolTipRole:
+							if (!pItem->GetDescription().IsEmpty())
+							{
+								variant = tr(pItem->GetName() + ": " + pItem->GetDescription());
+							}
+							else
+							{
+								variant = static_cast<char const*>(pItem->GetName());
+							}
+							break;
+						case static_cast<int>(SystemModelUtils::ERoles::ItemType) :
+							variant = static_cast<int>(itemType);
+							break;
+						case static_cast<int>(SystemModelUtils::ERoles::Name) :
 							variant = static_cast<char const*>(pItem->GetName());
+							break;
+						case static_cast<int>(SystemModelUtils::ERoles::InternalPointer) :
+							variant = reinterpret_cast<intptr_t>(pItem);
+							break;
 						}
-						break;
-					case static_cast<int>(SystemModelUtils::ERoles::ItemType) :
-						variant = static_cast<int>(itemType);
-						break;
-					case static_cast<int>(SystemModelUtils::ERoles::Name) :
-						variant = static_cast<char const*>(pItem->GetName());
-						break;
-					case static_cast<int>(SystemModelUtils::ERoles::InternalPointer) :
-						variant = reinterpret_cast<intptr_t>(pItem);
-						break;
-					case static_cast<int>(SystemModelUtils::ERoles::IsDefaultControl) :
-						variant = pItem->IsDefaultControl();
-						break;
 					}
+					break;
 				}
-				break;
 			}
 		}
 	}
@@ -1063,7 +1078,11 @@ Qt::ItemFlags CSystemLibraryModel::flags(QModelIndex const& index) const
 
 	if (index.isValid())
 	{
-		if ((index.column() == m_nameColumn) && !(index.data(static_cast<int>(SystemModelUtils::ERoles::IsDefaultControl)).toBool()))
+		if (index.data(static_cast<int>(SystemModelUtils::ERoles::IsDefaultControl)).toBool())
+		{
+			flags = QAbstractItemModel::flags(index) | Qt::ItemIsSelectable;
+		}
+		else if (index.column() == m_nameColumn)
 		{
 			flags = QAbstractItemModel::flags(index) | Qt::ItemIsDropEnabled | Qt::ItemIsDragEnabled | Qt::ItemIsEditable;
 		}

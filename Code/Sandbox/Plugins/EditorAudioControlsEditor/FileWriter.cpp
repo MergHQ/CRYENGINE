@@ -88,142 +88,154 @@ void CFileWriter::WriteAll()
 //////////////////////////////////////////////////////////////////////////
 void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 {
-	if (!library.IsInternalControl()) // Don't write internal controls library to XML.
+	if (library.IsModified())
 	{
-		if (library.IsModified())
-		{
-			LibraryStorage libraryXmlNodes;
-			size_t const itemCount = library.ChildCount();
+		LibraryStorage libraryXmlNodes;
+		size_t const itemCount = library.ChildCount();
 
+		if (library.IsDefaultControl())
+		{
 			for (size_t i = 0; i < itemCount; ++i)
 			{
-				WriteItem(library.GetChild(i), "", libraryXmlNodes);
-			}
+				CSystemAsset* const pAsset = library.GetChild(i);
 
-			// If empty, force it to write an empty library at the root
-			if (libraryXmlNodes.empty())
-			{
-				libraryXmlNodes[Utils::GetGlobalScope()].isDirty = true;
-			}
-
-			for (auto const& libraryPair : libraryXmlNodes)
-			{
-				string libraryPath = m_assetsManager.GetConfigFolderPath();
-				Scope const scope = libraryPair.first;
-
-				if (scope == Utils::GetGlobalScope())
+				if ((pAsset != nullptr) && !pAsset->IsInternalControl())
 				{
-					// no scope, file at the root level
-					libraryPath += library.GetName();
-				}
-				else
-				{
-					// with scope, inside level folder
-					libraryPath += CryAudio::s_szLevelsFolderName;
-					libraryPath += CRY_NATIVE_PATH_SEPSTR + m_assetsManager.GetScopeInfo(scope).name + CRY_NATIVE_PATH_SEPSTR + library.GetName();
-				}
-
-				m_foundLibraryPaths.insert(libraryPath.MakeLower() + ".xml");
-
-				SLibraryScope const& libScope = libraryPair.second;
-
-				if (libScope.isDirty)
-				{
-					XmlNodeRef pFileNode = GetISystem()->CreateXmlNode(CryAudio::s_szRootNodeTag);
-					pFileNode->setAttr(CryAudio::s_szNameAttribute, library.GetName());
-					pFileNode->setAttr(CryAudio::s_szVersionAttribute, s_currentFileVersion);
-
-					int const numTypes = static_cast<int>(ESystemItemType::NumTypes);
-
-					for (int i = 0; i < numTypes; ++i)
-					{
-						if (i != static_cast<int>(ESystemItemType::State))   // switch_states are written inside the switches
-						{
-							XmlNodeRef node = libScope.GetXmlNode((ESystemItemType)i);
-
-							if ((node != nullptr) && (node->getChildCount() > 0))
-							{
-								pFileNode->addChild(node);
-							}
-						}
-					}
-
-					// Editor data
-					XmlNodeRef const pEditorData = pFileNode->createNode(CryAudio::s_szEditorDataTag);
-
-					if (pEditorData != nullptr)
-					{
-						XmlNodeRef const pLibraryNode = pEditorData->createNode(s_szLibraryNodeTag);
-
-						if (pLibraryNode != nullptr)
-						{
-							WriteLibraryEditorData(library, pLibraryNode);
-							pEditorData->addChild(pLibraryNode);
-						}
-
-						XmlNodeRef const pFoldersNode = pEditorData->createNode(s_szFoldersNodeTag);
-
-						if (pFoldersNode != nullptr)
-						{
-							WriteFolderEditorData(library, pFoldersNode);
-							pEditorData->addChild(pFoldersNode);
-						}
-
-						XmlNodeRef const pControlsNode = pEditorData->createNode(s_szControlsNodeTag);
-
-						if (pControlsNode != nullptr)
-						{
-							WriteControlsEditorData(library, pControlsNode);
-							pEditorData->addChild(pControlsNode);
-						}
-
-						pFileNode->addChild(pEditorData);
-					}
-
-					string const fullFilePath = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + libraryPath + ".xml";
-
-					DWORD const fileAttributes = GetFileAttributesA(fullFilePath.c_str());
-
-					if (fileAttributes & FILE_ATTRIBUTE_READONLY)
-					{
-						// file is read-only
-						SetFileAttributesA(fullFilePath.c_str(), FILE_ATTRIBUTE_NORMAL);
-					}
-
-					// TODO: Check out firlin source control.
-					pFileNode->saveToFile(fullFilePath);
+					WriteItem(pAsset, "", libraryXmlNodes);
 				}
 			}
 		}
 		else
 		{
-			std::unordered_set<Scope> scopes;
-			size_t const numChildren = library.ChildCount();
-
-			for (size_t i = 0; i < numChildren; ++i)
+			for (size_t i = 0; i < itemCount; ++i)
 			{
-				CSystemAsset* const pItem = library.GetChild(i);
-				GetScopes(pItem, scopes);
+				WriteItem(library.GetChild(i), "", libraryXmlNodes);
+			}
+		}
+
+		// If empty, force it to write an empty library at the root
+		if (libraryXmlNodes.empty())
+		{
+			libraryXmlNodes[Utils::GetGlobalScope()].isDirty = true;
+		}
+
+		for (auto const& libraryPair : libraryXmlNodes)
+		{
+			string libraryPath = m_assetsManager.GetConfigFolderPath();
+			Scope const scope = libraryPair.first;
+
+			if (scope == Utils::GetGlobalScope())
+			{
+				// no scope, file at the root level
+				libraryPath += library.GetName();
+			}
+			else
+			{
+				// with scope, inside level folder
+				libraryPath += CryAudio::s_szLevelsFolderName;
+				libraryPath += CRY_NATIVE_PATH_SEPSTR + m_assetsManager.GetScopeInfo(scope).name + CRY_NATIVE_PATH_SEPSTR + library.GetName();
 			}
 
-			for (auto const scope : scopes)
+			m_foundLibraryPaths.insert(libraryPath.MakeLower() + ".xml");
+
+			SLibraryScope const& libScope = libraryPair.second;
+
+			if (libScope.isDirty)
 			{
-				string libraryPath = m_assetsManager.GetConfigFolderPath();
+				XmlNodeRef pFileNode = GetISystem()->CreateXmlNode(CryAudio::s_szRootNodeTag);
+				pFileNode->setAttr(CryAudio::s_szNameAttribute, library.GetName());
+				pFileNode->setAttr(CryAudio::s_szVersionAttribute, s_currentFileVersion);
 
-				if (scope == Utils::GetGlobalScope())
+				int const numTypes = static_cast<int>(ESystemItemType::NumTypes);
+
+				for (int i = 0; i < numTypes; ++i)
 				{
-					// no scope, file at the root level
-					libraryPath += library.GetName();
-				}
-				else
-				{
-					// with scope, inside level folder
-					libraryPath += CryAudio::s_szLevelsFolderName;
-					libraryPath += CRY_NATIVE_PATH_SEPSTR + m_assetsManager.GetScopeInfo(scope).name + CRY_NATIVE_PATH_SEPSTR + library.GetName();
+					if (i != static_cast<int>(ESystemItemType::State))   // switch_states are written inside the switches
+					{
+						XmlNodeRef node = libScope.GetXmlNode((ESystemItemType)i);
+
+						if ((node != nullptr) && (node->getChildCount() > 0))
+						{
+							pFileNode->addChild(node);
+						}
+					}
 				}
 
-				m_foundLibraryPaths.insert(libraryPath.MakeLower() + ".xml");
+				// Editor data
+				XmlNodeRef const pEditorData = pFileNode->createNode(CryAudio::s_szEditorDataTag);
+
+				if (pEditorData != nullptr)
+				{
+					XmlNodeRef const pLibraryNode = pEditorData->createNode(s_szLibraryNodeTag);
+
+					if (pLibraryNode != nullptr)
+					{
+						WriteLibraryEditorData(library, pLibraryNode);
+						pEditorData->addChild(pLibraryNode);
+					}
+
+					XmlNodeRef const pFoldersNode = pEditorData->createNode(s_szFoldersNodeTag);
+
+					if (pFoldersNode != nullptr)
+					{
+						WriteFolderEditorData(library, pFoldersNode);
+						pEditorData->addChild(pFoldersNode);
+					}
+
+					XmlNodeRef const pControlsNode = pEditorData->createNode(s_szControlsNodeTag);
+
+					if (pControlsNode != nullptr)
+					{
+						WriteControlsEditorData(library, pControlsNode);
+						pEditorData->addChild(pControlsNode);
+					}
+
+					pFileNode->addChild(pEditorData);
+				}
+
+				string const fullFilePath = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + libraryPath + ".xml";
+
+				DWORD const fileAttributes = GetFileAttributesA(fullFilePath.c_str());
+
+				if (fileAttributes & FILE_ATTRIBUTE_READONLY)
+				{
+					// file is read-only
+					SetFileAttributesA(fullFilePath.c_str(), FILE_ATTRIBUTE_NORMAL);
+				}
+
+				// TODO: Check out firlin source control.
+				pFileNode->saveToFile(fullFilePath);
 			}
+		}
+	}
+	else
+	{
+		std::unordered_set<Scope> scopes;
+		size_t const numChildren = library.ChildCount();
+
+		for (size_t i = 0; i < numChildren; ++i)
+		{
+			CSystemAsset* const pItem = library.GetChild(i);
+			GetScopes(pItem, scopes);
+		}
+
+		for (auto const scope : scopes)
+		{
+			string libraryPath = m_assetsManager.GetConfigFolderPath();
+
+			if (scope == Utils::GetGlobalScope())
+			{
+				// no scope, file at the root level
+				libraryPath += library.GetName();
+			}
+			else
+			{
+				// with scope, inside level folder
+				libraryPath += CryAudio::s_szLevelsFolderName;
+				libraryPath += CRY_NATIVE_PATH_SEPSTR + m_assetsManager.GetScopeInfo(scope).name + CRY_NATIVE_PATH_SEPSTR + library.GetName();
+			}
+
+			m_foundLibraryPaths.insert(libraryPath.MakeLower() + ".xml");
 		}
 	}
 }

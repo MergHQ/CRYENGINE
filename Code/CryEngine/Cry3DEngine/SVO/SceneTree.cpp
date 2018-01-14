@@ -906,9 +906,9 @@ Vec3* GeneratePointsOnHalfSphere(int n)
 	return p;
 }
 
-CSvoEnv::CSvoEnv(const AABB& worldBox)	
+CSvoEnv::CSvoEnv(const AABB& worldBox)
 {
-	gSvoEnv = this;	
+	gSvoEnv = this;
 
 	m_vSvoOriginAndSize = Vec4(worldBox.min, worldBox.max.x - worldBox.min.x);
 	m_debugDrawVoxelsCounter = 0;
@@ -2378,7 +2378,11 @@ void CSvoEnv::CollectLights()
 	FUNCTION_PROFILER_3DENGINE;
 
 	float areaRange = 128.f;
-	AABB nodeBox(gEnv->pSystem->GetViewCamera().GetPosition() - Vec3(areaRange), gEnv->pSystem->GetViewCamera().GetPosition() + Vec3(areaRange));
+	if (!GetCVars()->e_svoTI_IntegrationMode)
+		areaRange = GetCVars()->e_svoTI_PointLightsMaxDistance;
+
+	auto& camera = GetISystem()->GetViewCamera();
+	AABB nodeBox(camera.GetPosition() - Vec3(areaRange), camera.GetPosition() + Vec3(areaRange));
 
 	m_lightsTI_S.Clear();
 	m_lightsTI_D.Clear();
@@ -2406,15 +2410,34 @@ void CSvoEnv::CollectLights()
 
 				IRenderNode::EGIMode eVoxMode = pRN->GetGIMode();
 
-				if (eVoxMode)
+				if (eVoxMode == IRenderNode::eGM_DynamicVoxelization || eVoxMode == IRenderNode::eGM_StaticVoxelization)
 				{
 					lightTI.vPosR = Vec4(rLight.m_Origin, rLight.m_fRadius);
 
-					if ((rLight.m_Flags & DLF_PROJECT) && (rLight.m_fLightFrustumAngle < 90.f) && rLight.m_pLightImage)
-						lightTI.vDirF = Vec4(pRN->GetMatrix().GetColumn(0), rLight.m_fLightFrustumAngle * 2);
-					else
-						lightTI.vDirF = Vec4(0, 0, 0, 0);
+					bool bProjector = (rLight.m_Flags & DLF_PROJECT) && (rLight.m_fLightFrustumAngle < 90.f) && rLight.m_pLightImage;
+					Vec3 vLitAreaCenter;
+					float litAreaRadius;
 
+					// set direction info
+					if (bProjector)
+					{
+						lightTI.vDirF = Vec4(pRN->GetMatrix().GetColumn(0), rLight.m_fLightFrustumAngle * 2);
+						vLitAreaCenter = rLight.m_Origin + pRN->GetMatrix().GetColumn(0) * rLight.m_fRadius * 0.5f;
+						litAreaRadius = rLight.m_fRadius * 0.5f + GetCVars()->e_svoTI_RsmConeMaxLength * 0.5f;
+					}
+					else
+					{
+						lightTI.vDirF = Vec4(0, 0, 0, 0);
+						vLitAreaCenter = rLight.m_Origin;
+						litAreaRadius = rLight.m_fRadius + GetCVars()->e_svoTI_RsmConeMaxLength * 0.5f;
+					}
+
+					// frustum culling
+					Sphere sp(vLitAreaCenter, litAreaRadius);
+					if (!camera.IsSphereVisible_F(sp))
+						continue;
+
+					// set color
 					if (eVoxMode == IRenderNode::eGM_DynamicVoxelization)
 						lightTI.vCol = rLight.m_Color.toVec4();
 					else
@@ -2422,10 +2445,21 @@ void CSvoEnv::CollectLights()
 
 					lightTI.vCol.w = (rLight.m_Flags & DLF_CASTSHADOW_MAPS) ? 1.f : 0.f;
 
+					// set sort value
 					if (rLight.m_Flags & DLF_SUN)
+					{
 						lightTI.fSortVal = -1;
+					}
 					else
-						lightTI.fSortVal = vCamPos.GetDistance(rLight.m_Origin) / max(24.f, rLight.m_fRadius);
+					{
+						float distance = vCamPos.GetDistance(vLitAreaCenter);
+
+						if (distance > GetCVars()->e_svoTI_PointLightsMaxDistance)
+							continue;
+
+						lightTI.fSortVal = distance / max(1.f, rLight.m_fRadius);
+						lightTI.fSortVal *= 1.f / max(0.01f, rLight.m_BaseColor.Luminance());
+					}
 
 					if (eVoxMode == IRenderNode::eGM_DynamicVoxelization || (eVoxMode == IRenderNode::eGM_StaticVoxelization && !GetCVars()->e_svoTI_IntegrationMode && !(rLight.m_Flags & DLF_SUN)))
 					{
@@ -2436,7 +2470,9 @@ void CSvoEnv::CollectLights()
 						}
 					}
 					else
+					{
 						m_lightsTI_S.Add(lightTI);
+					}
 				}
 			}
 

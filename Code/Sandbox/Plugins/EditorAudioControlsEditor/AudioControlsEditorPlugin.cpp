@@ -99,11 +99,13 @@ void CAudioControlsEditorPlugin::ReloadModels(bool const reloadImplementation)
 			pEditorImpl->Reload();
 		}
 
+		CFileLoader loader(s_assetsManager);
+		loader.CreateInternalControls();
+
 		// CAudioControlsLoader is deprecated and only used for backwards compatibility. It will be removed before March 2019.
 		CAudioControlsLoader loaderForBackwardsCompatibility(&s_assetsManager);
 		loaderForBackwardsCompatibility.LoadAll(true);
 
-		CFileLoader loader(s_assetsManager);
 		loader.LoadAll();
 		s_currentFilenames = loader.GetLoadedFilenamesList();
 		s_loadingErrorMask = loader.GetErrorCodeMask();

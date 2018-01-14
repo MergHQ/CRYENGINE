@@ -14,7 +14,6 @@
 #include <CryThreading/IThreadConfigManager.h>
 
 #include <AK/SoundEngine/Common/AkSoundEngine.h>     // Sound engine
-#include <AK/MotionEngine/Common/AkMotionEngine.h>   // Motion Engine
 #include <AK/MusicEngine/Common/AkMusicEngine.h>     // Music Engine
 #include <AK/SoundEngine/Common/AkMemoryMgr.h>       // Memory Manager
 #include <AK/SoundEngine/Common/AkModule.h>          // Default memory and stream managers
@@ -989,58 +988,35 @@ void CImpl::DestructStandaloneFile(IStandaloneFile const* const pIStandaloneFile
 //////////////////////////////////////////////////////////////////////////
 void CImpl::GamepadConnected(DeviceId const deviceUniqueID)
 {
-#if defined(AK_MOTION)
-	AudioInputDevices::const_iterator Iter(m_mapInputDevices.find(deviceUniqueID));
-
-	if (Iter == m_mapInputDevices.end())
-	{
-		AkUInt8 const deviceID = static_cast<AkUInt8>(m_mapInputDevices.size());
-		Iter = m_mapInputDevices.insert(std::make_pair(deviceUniqueID, deviceID)).first;
-		CRY_ASSERT(m_mapInputDevices.size() < 5); // Wwise does not allow for more than 4 motion devices.
-	}
-
-	AkUInt8 const deviceID = Iter->second;
-	AKRESULT wwiseResult = AK::MotionEngine::AddPlayerMotionDevice(deviceID, AKCOMPANYID_AUDIOKINETIC, AKMOTIONDEVICEID_RUMBLE);
+	CRY_ASSERT(m_mapInputDevices.find(deviceUniqueID) == m_mapInputDevices.end()); // Mustn't exist yet!
+	AkOutputSettings settings("Wwise_Motion", static_cast<AkUniqueID>(deviceUniqueID));
+	AkOutputDeviceID deviceID = AK_INVALID_OUTPUT_DEVICE_ID;
+	AKRESULT const wwiseResult = AK::SoundEngine::AddOutput(settings, &deviceID, &g_listenerId, 1);
 
 	if (IS_WWISE_OK(wwiseResult))
 	{
-		AK::MotionEngine::SetPlayerListener(deviceID, deviceID);
-		wwiseResult = AK::SoundEngine::SetListenerPipeline(static_cast<AkUInt32>(deviceID), true, true);
-
-		if (!IS_WWISE_OK(wwiseResult))
-		{
-			Cry::Audio::Log(ELogType::Error, "SetListenerPipeline failed in GamepadConnected! (%u : %u)", deviceUniqueID, deviceID);
-		}
+		m_mapInputDevices[deviceUniqueID] = deviceID;
 	}
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "AddPlayerMotionDevice failed! (%u : %u)", deviceUniqueID, deviceID);
+		Cry::Audio::Log(ELogType::Error, "AK::SoundEngine::AddOutput failed! (%u : %u)", deviceUniqueID, deviceID);
 	}
-#endif  // AK_MOTION
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 {
-#if defined(AK_MOTION)
+	CRY_ASSERT(m_mapInputDevices.find(deviceUniqueID) != m_mapInputDevices.end()); // Must exist!
 	AudioInputDevices::const_iterator const Iter(m_mapInputDevices.find(deviceUniqueID));
+	AkOutputDeviceID const deviceID = Iter->second;
+	AKRESULT const wwiseResult = AK::SoundEngine::RemoveOutput(deviceID);
 
-	if (Iter != m_mapInputDevices.end())
+	if (!IS_WWISE_OK(wwiseResult))
 	{
-		AkUInt8 const deviceID = Iter->second;
-		AK::MotionEngine::RemovePlayerMotionDevice(deviceID, AKCOMPANYID_AUDIOKINETIC, AKMOTIONDEVICEID_RUMBLE);
-		AKRESULT const wwiseResult = AK::SoundEngine::SetListenerPipeline(static_cast<AkUInt32>(deviceID), true, false);
+		Cry::Audio::Log(ELogType::Error, "AK::SoundEngine::RemoveOutput failed in GamepadDisconnected! (%u : %u)", deviceUniqueID, deviceID);
+	}
 
-		if (!IS_WWISE_OK(wwiseResult))
-		{
-			Cry::Audio::Log(ELogType::Error, "SetListenerPipeline failed in GamepadDisconnected! (%u : %u)", deviceUniqueID, deviceID);
-		}
-	}
-	else
-	{
-		CRY_ASSERT(m_mapInputDevices.empty());
-	}
-#endif  // AK_MOTION
+	m_mapInputDevices.erase(Iter);
 }
 
 ///////////////////////////////////////////////////////////////////////////

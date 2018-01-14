@@ -21,9 +21,6 @@
 
 namespace ACE
 {
-static constexpr char* s_szDefaultLibraryName = "default_controls";
-static constexpr char* s_szInternalLibraryName = "internal_default_controls";
-
 //////////////////////////////////////////////////////////////////////////
 ESystemItemType TagToType(string const& tag)
 {
@@ -77,8 +74,6 @@ void CFileLoader::LoadAll()
 //////////////////////////////////////////////////////////////////////////
 void CFileLoader::LoadControls()
 {
-	CreateInternalControls();
-
 	// load the global controls
 	LoadAllLibrariesInFolder(m_assetsManager.GetConfigFolderPath(), "");
 
@@ -338,11 +333,11 @@ void CFileLoader::CreateInternalControls()
 {
 	// Create internal default controls.
 	// These controls are hidden in the ACE and don't get written to XML!
-	CSystemAsset* const pLibrary = static_cast<CSystemAsset*>(m_assetsManager.CreateLibrary(s_szInternalLibraryName));
+	CSystemAsset* const pLibrary = static_cast<CSystemAsset*>(m_assetsManager.CreateLibrary(s_szDefaultLibraryName));
 
 	if (pLibrary != nullptr)
 	{
-		pLibrary->SetInternalControl(true);
+		pLibrary->SetDefaultControl(true);
 
 		CreateInternalControl(pLibrary, CryAudio::s_szDoNothingTriggerName, ESystemItemType::Trigger);
 
@@ -394,89 +389,16 @@ void CFileLoader::CreateDefaultControls()
 
 	if (pLibrary != nullptr)
 	{
-		CSystemControl* pControl = m_assetsManager.FindControl(CryAudio::s_szGetFocusTriggerName, ESystemItemType::Trigger);
+		pLibrary->SetDefaultControl(true);
 
-		if (pControl == nullptr)
-		{
-			pControl = m_assetsManager.CreateControl(CryAudio::s_szGetFocusTriggerName, ESystemItemType::Trigger, pLibrary);
-			wasModified = true;
-		}
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szGetFocusTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szLoseFocusTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szMuteAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szUnmuteAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szAbsoluteVelocityParameterName, ESystemItemType::Parameter, pLibrary, wasModified);
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szRelativeVelocityParameterName, ESystemItemType::Parameter, pLibrary, wasModified);
 
-		if (pControl != nullptr)
-		{
-			pControl->SetDefaultControl(true);
-		}
-
-		pControl = m_assetsManager.FindControl(CryAudio::s_szLoseFocusTriggerName, ESystemItemType::Trigger);
-
-		if (pControl == nullptr)
-		{
-			pControl = m_assetsManager.CreateControl(CryAudio::s_szLoseFocusTriggerName, ESystemItemType::Trigger, pLibrary);
-			wasModified = true;
-		}
-
-		if (pControl != nullptr)
-		{
-			pControl->SetDefaultControl(true);
-		}
-
-		pControl = m_assetsManager.FindControl(CryAudio::s_szMuteAllTriggerName, ESystemItemType::Trigger);
-
-		if (pControl == nullptr)
-		{
-			pControl = m_assetsManager.CreateControl(CryAudio::s_szMuteAllTriggerName, ESystemItemType::Trigger, pLibrary);
-			wasModified = true;
-		}
-
-		if (pControl != nullptr)
-		{
-			pControl->SetDefaultControl(true);
-		}
-
-		pControl = m_assetsManager.FindControl(CryAudio::s_szUnmuteAllTriggerName, ESystemItemType::Trigger);
-
-		if (pControl == nullptr)
-		{
-			pControl = m_assetsManager.CreateControl(CryAudio::s_szUnmuteAllTriggerName, ESystemItemType::Trigger, pLibrary);
-			wasModified = true;
-		}
-
-		if (pControl != nullptr)
-		{
-			pControl->SetDefaultControl(true);
-		}
-
-		pControl = m_assetsManager.FindControl(CryAudio::s_szAbsoluteVelocityParameterName, ESystemItemType::Parameter);
-
-		if (pControl == nullptr)
-		{
-			pControl = m_assetsManager.CreateControl(CryAudio::s_szAbsoluteVelocityParameterName, ESystemItemType::Parameter, pLibrary);
-			wasModified = true;
-		}
-
-		if (pControl != nullptr)
-		{
-			pControl->SetDefaultControl(true);
-		}
-
-		pControl = m_assetsManager.FindControl(CryAudio::s_szRelativeVelocityParameterName, ESystemItemType::Parameter);
-
-		if (pControl == nullptr)
-		{
-			pControl = m_assetsManager.CreateControl(CryAudio::s_szRelativeVelocityParameterName, ESystemItemType::Parameter, pLibrary);
-			wasModified = true;
-		}
-
-		if (pControl != nullptr)
-		{
-			pControl->SetDefaultControl(true);
-		}
-
-		if (pLibrary->ChildCount() == 0)
-		{
-			m_assetsManager.DeleteItem(pLibrary);
-		}
-		else if (wasModified)
+		if (wasModified)
 		{
 			pLibrary->SetModified(true, true);
 		}

@@ -52,6 +52,7 @@ REGISTER_CVAR_AUTO(float, e_svoTI_AnalyticalOccludersRange, 4.f, VF_NULL, "Shado
 REGISTER_CVAR_AUTO(float, e_svoTI_AnalyticalOccludersSoftness, 0.5f, VF_NULL, "Shadow softness");
 REGISTER_CVAR_AUTO(int, e_svoRootless, !gEnv->IsEditor(), VF_NULL, "Limits the area covered by SVO. Limits number of tree levels and speedup the tracing.");
 REGISTER_CVAR_AUTO(float, e_svoTI_DistantSsaoAmount, 0.5f, VF_NULL, "Large scale SSAO intensity in the distance");
+REGISTER_CVAR_AUTO(float, e_svoTI_PointLightsMaxDistance, 20.f, VF_NULL, "Maximum distance at which point lights produce light bounces");
 
 #ifdef CVAR_CPP
 m_arrVars.Clear();

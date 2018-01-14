@@ -135,6 +135,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 C3DEngine::C3DEngine(ISystem* pSystem)
+	: m_nStreamingFramesSinceLevelStart(0)
+	, m_bPreCacheEndEventSent(false)
 {
 	m_renderNodeStatusListenersArray.resize(EERType::eERType_TypesNum, TRenderNodeStatusListeners(0));
 
@@ -232,6 +234,7 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_bSunShadows = m_bShowTerrainSurface = true;
 	m_bSunShadowsFromTerrain = false;
 	m_nSunAdditionalCascades = 0;
+	m_nGsmCache = 0;
 	m_CachedShadowsBounds.Reset();
 	m_nCachedShadowsUpdateStrategy = ShadowMapFrustum::ShadowCacheData::eFullUpdate;
 
@@ -6547,17 +6550,6 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 		{
 			m_pObjectsTree->InsertObject(pEnt, aabb, fObjRadiusSqr, aabb.GetCenter());
 		}
-	}
-
-	// update clip volume: use vis area if we have one, otherwise check if we're in the same volume as before. check other volumes as last resort only
-	if (SRenderNodeTempData* pTempData = pEnt->m_pTempData.load())
-	{
-		Vec3 vEntCenter = GetEntityRegisterPoint(pEnt);
-
-		if (IVisArea* pVisArea = pEnt->GetEntityVisArea())
-			pTempData->userData.m_pClipVolume = pVisArea;
-		else if (GetClipVolumeManager()->IsClipVolumeRequired(pEnt))
-			GetClipVolumeManager()->UpdateEntityClipVolume(vEntCenter, pEnt);
 	}
 
 	// register decals, to clean up longer not renders decals and their render meshes
