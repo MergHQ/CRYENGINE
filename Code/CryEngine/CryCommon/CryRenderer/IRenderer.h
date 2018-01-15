@@ -892,7 +892,7 @@ struct IRendererEngineModule : public Cry::IDefaultModule
 	CRYINTERFACE_DECLARE_GUID(IRendererEngineModule, "516d044b-d626-4283-b08d-9ad9558204e0"_cry_guid);
 };
 
-//////////////////////////////////////////////////////////////////////
+//! Main interface to the renderer implementation, wrapping the low-level graphics API
 struct IRenderer//: public IRendererCallbackServer
 {
 	enum EViewportType : uint8

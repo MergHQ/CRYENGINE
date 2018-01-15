@@ -952,6 +952,7 @@ struct IVoiceContext
 	// </interfuscator:shuffle>
 };
 #endif
+//! \endcond
 
 //! An INetContext manages the list of objects synchronized over the network.
 //! \note Only to be implemented in CryNetwork.
@@ -1124,6 +1125,7 @@ struct INetContext
 #endif
 };
 
+//! \cond INTERNAL
 struct INetSender
 {
 	INetSender(TSerialize sr, uint32 nCurrentSeq, uint32 nBasisSeq, uint32 timeFraction32, bool isServer) : ser(sr)

@@ -3225,6 +3225,8 @@ struct IPhysicalEntityIt
 	// </interfuscator:shuffle>
 };
 
+//! Main interface to the physics implementation
+//! \see IPhysicalEntity
 struct IPhysicalWorld
 {
 	//! RayWorldIntersection - steps through the entity grid and raytraces entities
