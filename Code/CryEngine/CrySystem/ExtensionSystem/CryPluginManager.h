@@ -69,7 +69,7 @@ public:
 				{ 1, SPluginDefinition { EType::Native, "CrySensorSystem" } },
 				{ 1, SPluginDefinition { EType::Native, "CryPerceptionSystem" } },
 				// Plug-ins made default with version 3
-				{ 3, SPluginDefinition { EType::Native, "CryGamePlatform", { EPlatform::Windows, EPlatform::PS4 } } }
+				{ 3, SPluginDefinition{ EType::Native, "CryGamePlatform",{ EPlatform::PS4 } } }
 			}
 		};
 	}
