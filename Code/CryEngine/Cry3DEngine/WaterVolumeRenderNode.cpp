@@ -6,6 +6,7 @@
 #include "MatMan.h"
 #include "TimeOfDay.h"
 #include <CryMath/Cry_Geo.h>
+#include <CryMath/Cry_GeoOverlap.h>
 #include <CryThreading/IJobManager_JobDelegator.h>
 
 DECLARE_JOB("CWaterVolume_Render", TCWaterVolume_Render, CWaterVolumeRenderNode::Render_JobEntry);
@@ -887,21 +888,6 @@ float CWaterVolumeRenderNode::GetCameraDistSqToWaterVolumeAABB(const SRenderingP
 	return m_WSBBox.GetDistanceSqr(camPos);
 }
 
-namespace
-{
-
-	// aabb check - only for xy-axis
-	bool IsPointInsideAABB_2d(const AABB& aabb, const Vec3& pos)
-	{
-		if (pos.x < aabb.min.x) return false;
-		if (pos.y < aabb.min.y) return false;
-		if (pos.x > aabb.max.x) return false;
-		if (pos.y > aabb.max.y) return false;
-		return true;
-	}
-
-}
-
 bool CWaterVolumeRenderNode::IsCameraInsideWaterVolumeSurface2D(const SRenderingPassInfo& passInfo) const
 {
 	const CCamera& cam(passInfo.GetCamera());
@@ -918,7 +904,7 @@ bool CWaterVolumeRenderNode::IsCameraInsideWaterVolumeSurface2D(const SRendering
 	}
 
 	// bounding box test in world space to abort early
-	if (!IsPointInsideAABB_2d(m_WSBBox, camPosWS)) return false;
+	if (!Overlap::Point_AABB2D(camPosWS, m_WSBBox)) return false;
 
 	// check triangles in entity space (i.e., water volume space), to avoid transformation of each single water volume vertex - thus, transform camera pos into entity space
 	const Vec3 camPos_entitySpace = m_parentEntityWorldTM.GetInvertedFast() * camPosWS;
