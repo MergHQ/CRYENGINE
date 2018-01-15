@@ -83,6 +83,7 @@ struct IHardwareMouse
 	virtual IHardwareMouseEventListener* GetCurrentExclusiveEventListener() = 0;
 
 	//! Called only in Editor when switching from editing to game mode.
+	virtual void SetConfinedWnd(HWND wnd) = 0;
 	virtual void SetGameMode(bool bGameMode) = 0;
 
 	//! Increment when you want to show the cursor, decrement otherwise.

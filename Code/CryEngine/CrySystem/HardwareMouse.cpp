@@ -56,6 +56,7 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 #endif // !defined(_RELEASE)
 	, m_shouldUseSystemCursor(gEnv->IsEditor())
 	, m_usingSystemCursor(true)
+	, m_confinedWnd(nullptr)
 #if CRY_PLATFORM_WINDOWS
 	, m_hCursor(nullptr)
 	, m_nCurIDCCursorId(~0)
@@ -193,7 +194,24 @@ void CHardwareMouse::ConfineCursor(bool confine)
 		return;
 
 #if CRY_PLATFORM_WINDOWS
-	HWND hWnd = (HWND) gEnv->pRenderer->GetHWND();
+	RECT rcClient;
+	HWND hWnd = nullptr;
+	
+	if (m_confinedWnd)
+	{
+		hWnd = m_confinedWnd;
+
+		::GetClientRect(hWnd, &rcClient);
+		::ClientToScreen(hWnd, (LPPOINT)&rcClient.left);
+		::ClientToScreen(hWnd, (LPPOINT)&rcClient.right);
+	}
+	else
+	{
+		hWnd = (HWND)gEnv->pRenderer->GetHWND();
+
+		RectI coordinates = gEnv->pRenderer->GetDefaultContextWindowCoordinates();
+		rcClient = { coordinates.x, coordinates.y, coordinates.w + coordinates.x, coordinates.h + coordinates.y };
+	}
 
 	if (hWnd)
 	{
@@ -203,15 +221,14 @@ void CHardwareMouse::ConfineCursor(bool confine)
 		{
 			if (m_debugHardwareMouse)
 				gEnv->pLog->Log("HM:   Confining cursor");
-			
-			RectI coordinates = gEnv->pRenderer->GetDefaultContextWindowCoordinates();
-			RECT rcClient = { coordinates.x, coordinates.y, coordinates.w + coordinates.x, coordinates.h + coordinates.y };
+
 			::ClipCursor(&rcClient);
 		}
 		else
 		{
 			if (m_debugHardwareMouse)
 				gEnv->pLog->Log("HM:   Releasing cursor");
+
 			::ClipCursor(nullptr);
 		}
 	}
@@ -467,6 +484,13 @@ void CHardwareMouse::AddListener(IHardwareMouseEventListener* pHardwareMouseEven
 void CHardwareMouse::RemoveListener(IHardwareMouseEventListener* pHardwareMouseEventListener)
 {
 	stl::find_and_erase(m_listHardwareMouseEventListeners, pHardwareMouseEventListener);
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void CHardwareMouse::SetConfinedWnd(HWND wnd)
+{
+	m_confinedWnd = wnd;
 }
 
 //-----------------------------------------------------------------------------------------------------
