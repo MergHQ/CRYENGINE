@@ -516,6 +516,7 @@ struct SAAFormat
 	int  nQuality;
 };
 
+//! \cond INTERNAL
 //! Info about Terrain sector texturing.
 struct SSectorTextureSet
 {
@@ -529,6 +530,7 @@ struct SSectorTextureSet
 	unsigned short nTex0, nTex1, nTex2, nSlot0, nSlot1, nSlot2;
 	float          fTexOffsetX, fTexOffsetY, fTexScale;
 };
+//! \endcond
 
 struct IRenderNode;
 struct SShaderItem;
@@ -663,6 +665,7 @@ enum ERefractionPartialResolvesDebugViews
 };
 #endif
 
+//! \cond INTERNAL
 //! This structure used in DrawText method of renderer.
 //! It provide all necessary information of how to render text on screen.
 struct SDrawTextInfo
@@ -683,6 +686,7 @@ struct SDrawTextInfo
 		pFont = nullptr;
 	}
 };
+//! \endcond
 
 #define UIDRAW_TEXTSIZEFACTOR (12.0f)
 
@@ -848,6 +852,7 @@ struct ISvoRenderer
 	virtual void InitCVarValues()                                                            {}
 };
 
+//! \cond INTERNAL
 //! Describes rendering viewport dimensions
 struct SRenderViewport
 {
@@ -878,6 +883,7 @@ struct SRenderViewport
 		return !(*this == v);
 	}
 };
+//! \endcond
 
 #include "IRenderView.h"
 
@@ -1644,6 +1650,7 @@ private:
 };
 
 //! Util class to change wireframe mode.
+//! \cond INTERNAL
 class CScopedWireFrameMode
 {
 public:
@@ -1718,6 +1725,7 @@ struct SRendererQueryGetAllTexturesParam
 	_smart_ptr<ITexture>* pTextures;
 	uint32                numTextures;
 };
+//! \endcond
 
 //////////////////////////////////////////////////////////////////////
 
@@ -1783,6 +1791,7 @@ private:
 	uint8 m_nDissolveRef;
 };
 
+//! \cond INTERNAL
 //! Structure used to pass render parameters to Render() functions of IStatObj and ICharInstance.
 struct SRendParams
 {
@@ -1852,6 +1861,7 @@ struct SRendParams
 
 	uint32                    nEditorSelectionID; //!< Selection ID and information for editor
 };
+//! \endcond
 
 struct SRendererCloakParams
 {

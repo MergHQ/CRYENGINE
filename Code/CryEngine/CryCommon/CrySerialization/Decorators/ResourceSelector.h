@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 #include <CrySerialization/IArchive.h>
@@ -87,3 +89,5 @@ inline bool Serialize(IArchive& ar, ResourceSelectorWithId& value, const char* n
 }
 
 }
+
+//! \endcond

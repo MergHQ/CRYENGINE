@@ -1,17 +1,6 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  File name:   AnimationPoseModifier.h
-//  Version:     v1.00
-//  Created:     30/7/2009 by Ivo Frey
-//  Compilers:   Visual Studio.NET
-//  Description: CryAnimation interfaces
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-#ifndef AnimationPoseModifier_h
-#define AnimationPoseModifier_h
+#pragma once
 
 #include <CryExtension/ICryUnknown.h>
 
@@ -170,6 +159,7 @@ struct IAnimationPoseData
 
 //
 
+//! Interface used for modifying the animated pose of a character, for example for Inverse Kinematics 
 struct IAnimationPoseModifier :
 	public ICryUnknown
 {
@@ -211,6 +201,7 @@ DECLARE_SHARED_POINTERS(IAnimationPoseModifierSetup);
 
 //
 
+//! Animation pose modifier that allows for overriding the orientation of individual joints
 struct IAnimationOperatorQueue :
 	public IAnimationPoseModifier
 {
@@ -350,5 +341,3 @@ struct IAnimationPoseAligner :
 };
 
 DECLARE_SHARED_POINTERS(IAnimationPoseAligner);
-
-#endif // AnimationPoseModifier_h

@@ -222,6 +222,7 @@ enum ESubsystem
 	ESubsys_Script   = 4
 };
 
+//! \cond INTERNAL
 //! Collates cycles taken per update.
 struct sUpdateTimes
 {
@@ -233,6 +234,7 @@ struct sUpdateTimes
 	uint64 streamingWaitTime;
 	uint64 animationWaitTime;
 };
+//! \endcond
 
 enum ESystemGlobalState
 {
@@ -716,6 +718,7 @@ struct SSystemInitParams
 //! Typedef for frame profile callback function.
 typedef void (* FrameProfilerSectionCallback)(class CFrameProfilerSection* pSection);
 
+//! \cond INTERNAL
 //! \note Can be used for LoadConfiguration().
 struct ILoadConfigurationEntrySink
 {
@@ -725,6 +728,7 @@ struct ILoadConfigurationEntrySink
 	virtual void OnLoadConfigurationEntry_End() {}
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 enum ELoadConfigurationType
 {
@@ -773,6 +777,7 @@ struct SPlatformInfo
 #define CPUF_AVX2         0x200
 #define CPUF_FMA          0x400
 
+//! \cond INTERNAL
 //! Holds info about system update stats over perior of time (cvar-tweakable)
 struct SSystemUpdateStats
 {
@@ -794,6 +799,7 @@ union UAsyncDipState
 	};
 	uint32 nValue;
 };
+//! \endcond
 
 //!	Global environment. Contains pointers to all global often needed interfaces.
 //!	This is a faster way to get interface pointer then calling ISystem interface to retrieve one.

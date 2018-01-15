@@ -446,6 +446,7 @@ public:
 	// </interfuscator:shuffle>
 };
 
+//! \cond INTERNAL
 //! Animating Texture sequence definition.
 struct STexAnim
 {
@@ -527,5 +528,6 @@ struct STexAnim
 		return *this;
 	}
 };
+//! \endcond
 
 #endif// _ITEXTURE_H_

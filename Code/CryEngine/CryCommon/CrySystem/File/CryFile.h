@@ -1,18 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  File name:   cryfile.h
-//  Version:     v1.00
-//  Created:     3/7/2003 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description: File wrapper.
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
+//! \cond INTERNAL
 
-#ifndef __cryfile_h__
-#define __cryfile_h__
 #pragma once
 
 #include <CrySystem/ISystem.h>
@@ -363,4 +352,4 @@ inline const char* CCryFile::GetAdjustedFilename() const
 	return szAdjustedFile;
 }
 
-#endif // __cryfile_h__
+//! \endcond

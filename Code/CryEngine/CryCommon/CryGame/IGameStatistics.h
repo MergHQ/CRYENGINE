@@ -1,11 +1,8 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-#ifndef   __IGAMESTATISTICS_H__
-#define   __IGAMESTATISTICS_H__
+//! \cond INTERNAL
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CryScriptSystem/IScriptSystem.h> // <> required for Interfuscator
 
@@ -726,6 +723,4 @@ struct IGameStatistics
 	// </interfuscator:shuffle>
 };
 
-//////////////////////////////////////////////////////////////////////////
-
-#endif
+//! \endcond

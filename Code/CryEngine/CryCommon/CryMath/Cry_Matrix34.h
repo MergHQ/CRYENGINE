@@ -1,15 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-//
-//	File:Cry_Matrix.h
-//	Description: Common matrix class
-//
-//	History:
-//	-Feb 27,2003: Created by Ivo Herzeg
-//
-//
-//////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 template<typename F> struct Quat_tpl;
@@ -19,6 +9,8 @@ template<typename F> struct QuatTNS_tpl;
 template<typename F> struct DualQuat_tpl;
 template<typename F> struct Matrix34H;
 
+//! Represents a 3x4 matrix
+//! \see Matrix34
 template<typename F> struct Matrix34_tpl
 	: INumberArray<F, 12>
 {

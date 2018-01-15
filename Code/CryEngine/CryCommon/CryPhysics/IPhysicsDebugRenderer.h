@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 struct IPhyicalWorld;
@@ -16,3 +18,5 @@ struct IPhysicsDebugRenderer
 	virtual void Flush(float dt) = 0;
 	// </interfuscator:shuffle>
 };
+
+//! \endcond

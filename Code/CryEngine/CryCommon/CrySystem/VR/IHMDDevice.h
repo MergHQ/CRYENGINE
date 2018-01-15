@@ -192,6 +192,7 @@ protected:
 	virtual ~IHmdController() {}
 };
 
+//! Represents a head-mounted device (Virtual Reality) connected to the system
 struct IHmdDevice
 {
 	enum EInternalUpdate

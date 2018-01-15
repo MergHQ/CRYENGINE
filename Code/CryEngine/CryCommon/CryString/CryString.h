@@ -23,6 +23,9 @@ class CConstCharWrapper;  //forward declaration for special const char * without
 //#define CRY_STRING_DEBUG(s) { if (*s) CryDebugStr( "[%6d] %s",_usedMemory(0),(s) );}
 	#define CRY_STRING_DEBUG(s)
 
+//! Reference-tracked string implementation, historically used to avoid string duplication across memory
+//! Enforced for use in the engine codebase as opposed to std::string
+//! \see string and wstring
 template<class T>
 class CryStringT
 {
@@ -407,6 +410,7 @@ protected:
 	value_type* m_str; //!< Pointer to ref counted string data.
 
 	//! String header. Actual string data starts immediately after this header in memory.
+	//! \cond INTERNAL
 	struct StrHeader
 	{
 
@@ -418,6 +422,8 @@ protected:
 		void            AddRef()   { nRefCount++; /*InterlockedIncrement(&_header()->nRefCount);*/ }
 		int             Release()  { return --nRefCount; }
 	};
+	//! \endcond
+
 	static StrHeader* _emptyHeader()
 	{
 		// Define 2 static buffers in a row. The 2nd is a dummy object to hold a single empty char string.
@@ -443,6 +449,7 @@ protected:
 	static void _set(value_type* dest, value_type ch, size_type count);
 };
 
+//! \cond INTERNAL
 //! Wrapper class for creation of strings without memory allocation.
 //! It creates a string with pointer pointing to const char* location.
 //! Destructor sets the string to empty.
@@ -465,6 +472,7 @@ private:
 
 	friend class CryStringT<char>;  //!< Both are bidirectional friends to avoid any other accesses.
 };
+//! \endcond
 
 //! Macro needed because compiler somehow cannot find the cast operator when not invoked directly.
 	#define CONST_TEMP_STRING(a) ((const string&)CConstCharWrapper(a))

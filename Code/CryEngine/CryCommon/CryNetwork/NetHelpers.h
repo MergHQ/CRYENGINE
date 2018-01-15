@@ -1,17 +1,6 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:  contains helpers for implementing INetwork.h interfaces
-   -------------------------------------------------------------------------
-   History:
-   - 26/07/2004   10:34 : Created by Craig Tiller
-*************************************************************************/
-
-#ifndef __NET_HELPERS_H__
-#define __NET_HELPERS_H__
+//! \cond INTERNAL
 
 #include <CryNetwork/INetwork.h> // <> required for Interfuscator
 
@@ -506,4 +495,4 @@ void AddCallMemberFunction(IContextEstablisher* pEst, EContextViewState state, T
 	pEst->AddTask(state, new CCET_CallMemberFunction<T>(pObj, memberFunc, name));
 }
 
-#endif
+//! \endcond

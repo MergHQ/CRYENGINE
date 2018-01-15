@@ -257,6 +257,7 @@ struct IImplModule : public Cry::IDefaultModule
 	CRYINTERFACE_DECLARE_GUID(IImplModule, "5c4adbec-a343-49ce-b799-2a856cdd553b"_cry_guid);
 };
 
+//! Main interface to the audio system, allowing access to audio playback via implementation plug-ins.
 struct IAudioSystem
 {
 	// <interfuscator:shuffle>

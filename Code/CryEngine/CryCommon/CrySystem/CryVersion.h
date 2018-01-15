@@ -1,18 +1,8 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  File name:   cryversion.h
-//  Version:     v1.00
-//  Created:     27/8/2003 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description: Defines File version structure.
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
+//! \cond INTERNAL
 
-#ifndef __cryversion_h__
-#define __cryversion_h__
+#pragma once
 
 #include <CryString/CryFixedString.h>
 
@@ -116,4 +106,4 @@ struct SFileVersion
 	}
 };
 
-#endif // __cryversion_h__
+//! \endcond

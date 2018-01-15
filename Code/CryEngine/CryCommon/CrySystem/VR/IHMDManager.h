@@ -10,6 +10,7 @@ struct IHmdEventListener
 	virtual void OnRecentered() = 0;
 };
 
+//! Main interface to the engine's head-mounted device manager, responsible for maintaining VR devices connected to the system
 struct IHmdManager
 {
 public:

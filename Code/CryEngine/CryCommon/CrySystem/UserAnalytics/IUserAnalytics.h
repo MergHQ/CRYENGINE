@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 namespace UserAnalytics
@@ -88,3 +90,5 @@ struct IUserAnalyticsSystem
 	#define USER_ANALYTICS_EVENT(event)
 	#define USER_ANALYTICS_EVENT_ARG(event, attributes)
 #endif
+
+//! \endcond

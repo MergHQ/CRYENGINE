@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 #include <CryCore/CryVariant.h>
@@ -1255,3 +1257,5 @@ extern "C"
 	CRYSCRIPTSYSTEM_API IScriptSystem* CreateScriptSystem(ISystem* pSystem, bool bStdLibs);
 }
 typedef IScriptSystem*(* CREATESCRIPTSYSTEM_FNCPTR)(ISystem* pSystem, bool bStdLibs);
+
+//! \endcond

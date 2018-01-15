@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 #if !defined(_RELEASE) && CRY_PLATFORM_WINDOWS
@@ -972,3 +974,5 @@ private:
 #endif
 
 }
+
+//! \endcond

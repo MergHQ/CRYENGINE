@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 struct ILog;
@@ -67,3 +69,5 @@ struct ITestSystem
 	virtual CryUnitTest::IUnitTestManager* GetIUnitTestManager() = 0;
 	// </interfuscator:shuffle>
 };
+
+//! \endcond

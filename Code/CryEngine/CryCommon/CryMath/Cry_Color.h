@@ -13,7 +13,8 @@ template<class T> struct Color_tpl;
 typedef Color_tpl<uint8> ColorB; //!< [0, 255]
 typedef Color_tpl<float> ColorF; //!< [0.0, 1.0]
 
-//! RGBA Color structure.
+//! RGBA Color structure
+//! \see ColorB and ColorF
 template<class T> struct Color_tpl
 {
 	T r, g, b, a;

@@ -148,6 +148,7 @@ struct IEntityComponentPreviewer
 	virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext& context) const = 0;
 };
 
+//! \cond INTERNAL
 //////////////////////////////////////////////////////////////////////////
 //!
 //! A class that describe and reflect members of the entity component
@@ -212,6 +213,7 @@ private:
 	EntityComponentFlags                   m_flags;
 	DynArray<SEntityComponentRequirements> m_interactions;
 };
+//! \endcond
 
 namespace Schematyc
 {

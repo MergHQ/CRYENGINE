@@ -562,6 +562,7 @@ struct IParticleEmitter : public IRenderNode, public CMultiThreadRefCount
 };
 
 //////////////////////////////////////////////////////////////////////////
+//! \cond INTERNAL
 //! A callback interface for a class that wants to be aware when particle emitters are being created/deleted.
 struct IParticleEffectListener
 {
@@ -579,6 +580,7 @@ struct IParticleEffectListener
 	virtual void OnDeleteEmitter(IParticleEmitter* pEmitter) = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 //////////////////////////////////////////////////////////////////////////
 

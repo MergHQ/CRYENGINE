@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 #include <CrySystem/IConsole.h>     // <> required for Interfuscator
@@ -1026,3 +1028,5 @@ inline bool Serialize(Serialization::IArchive& ar, _smart_ptr<IAnimKeyWrapper>& 
 #define SERIALIZATION_ANIM_KEY(type)                     \
   typedef SAnimKeyWrapper<type> SAnimKeyWrapper ## type; \
   REGISTER_IN_INTRUSIVE_FACTORY(IAnimKeyWrapper, SAnimKeyWrapper ## type);
+
+//! \endcond
