@@ -1,7 +1,6 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-#ifndef _CRE_BREAKABLE_GLASS_
-#define _CRE_BREAKABLE_GLASS_
+//! \cond INTERNAL
 
 #pragma once
 
@@ -291,4 +290,4 @@ private:
 	volatile uint32 m_geomUpdateFrame;
 };
 
-#endif // _CRE_BREAKABLE_GLASS_
+//! \endcond

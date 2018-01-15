@@ -301,6 +301,7 @@ protected:
 	virtual ~IFlashVariableObject() {}
 };
 
+//! \cond INTERNAL
 //! Bootstrapper to efficiently instantiate Flash assets on demand with minimal file IO.
 struct IFlashPlayerBootStrapper
 {
@@ -326,6 +327,7 @@ struct IFlashPlayerBootStrapper
 protected:
 	virtual ~IFlashPlayerBootStrapper() {}
 };
+//! \endcond
 
 //! Clients of IFlashPlayer implement this interface to receive action script events.
 struct IFSCommandHandler
@@ -336,6 +338,7 @@ protected:
 	virtual ~IFSCommandHandler() {}
 };
 
+//! \cond INTERNAL
 //! Clients of IFlashPlayer implement this interface to expose external interface calls.
 struct IExternalInterfaceHandler
 {
@@ -414,6 +417,7 @@ struct IFlashLoadMovieHandler
 protected:
 	virtual ~IFlashLoadMovieHandler() {}
 };
+//! \endcond
 
 //! Variant type to pass values to flash variables.
 struct SFlashVarValue
@@ -591,6 +595,7 @@ protected:
 	}
 };
 
+//! \cond INTERNAL
 //! Color transformation to control flash movie clips.
 struct SFlashCxform
 {
@@ -732,6 +737,7 @@ private:
 
 	unsigned short m_varsSet;
 };
+//! \endcond
 
 //! Cursor input event sent to flash.
 struct SFlashCursorEvent

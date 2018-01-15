@@ -229,6 +229,11 @@ protected:
 	struct CTerrainNode* m_pTerrainNode;
 };
 
+/*! \brief Represents a rendered object in the world
+ *
+ * To visualize objects in a world CRYENGINE defines the concept of render nodes and render elements. Render nodes represent general objects in the 3D engine. Among other things they are used to build a hierarchy for visibility culling, allow physics interactions (optional) and rendering.
+ * For actual rendering they add themselves to the renderer (with the help of render objects as you can see in the sample code below) passing an appropriate render element which implements the actual drawing of the object.
+*/
 struct IRenderNode : public IShadowCaster
 {
 	enum EInternalFlags : uint8
@@ -639,6 +644,7 @@ struct IBrush : public IRenderNode
 	virtual void SetSubObjectHideMask(hidemask subObjHideMask) {};
 };
 
+//! \cond INTERNAL
 struct SVegetationSpriteInfo
 {
 	Sphere                             sp;
@@ -689,6 +695,7 @@ private:
 
 	Vec3 m_vSunDir;                //!< Normalized sun direction.
 };
+//! \endcond
 
 struct ILightSource : public IRenderNode
 {
@@ -915,6 +922,7 @@ struct IWaterVolumeRenderNode : public IRenderNode
 };
 
 //! Interface to the Water Wave Render Node object.
+//! \cond INTERNAL
 struct SWaterWaveParams
 {
 	SWaterWaveParams() : m_fSpeed(5.0f), m_fSpeedVar(2.0f), m_fLifetime(8.0f), m_fLifetimeVar(2.0f),
@@ -944,7 +952,9 @@ struct IWaterWaveRenderNode : public IRenderNode
 	virtual const SWaterWaveParams& GetParams() const = 0;
 	// </interfuscator:shuffle>
 };
+// \endcond
 
+//! \cond INTERNAL
 //! Interface to the Distance Cloud Render Node object.
 struct SDistanceCloudProperties
 {
@@ -954,6 +964,7 @@ struct SDistanceCloudProperties
 	float       m_rotationZ;
 	const char* m_pMaterialName;
 };
+//! \endcond INTERNAL
 
 struct IDistanceCloudRenderNode : public IRenderNode
 {

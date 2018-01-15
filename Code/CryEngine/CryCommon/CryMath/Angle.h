@@ -13,8 +13,8 @@
 namespace CryTransform
 {
 
-// Specialized class to represent an angle, used to avoid converting back and forth between radians and degrees
-// The type stores the angle in radians internally, since this is what the majority of engine systems need
+//! Specialized class to represent an angle, used to avoid converting back and forth between radians and degrees
+//! The type stores the angle in radians internally, since this is what the majority of engine systems need
 class CAngle
 {
 public:

@@ -54,6 +54,7 @@ public:
 	virtual bool                         SetExclusiveEventListener(IHardwareMouseEventListener* pExclusiveEventListener);
 	virtual void                         RemoveExclusiveEventListener(IHardwareMouseEventListener* pExclusiveEventListener);
 	virtual IHardwareMouseEventListener* GetCurrentExclusiveEventListener() { return m_pExclusiveEventListener; }
+	virtual void                         SetConfinedWnd(HWND wnd);
 	virtual void                         SetGameMode(bool bGameMode);
 	virtual void                         IncrementCounter();
 	virtual void                         DecrementCounter();
@@ -106,6 +107,9 @@ private:
 
 	bool                             m_shouldUseSystemCursor;
 	bool                             m_usingSystemCursor;
+
+	HWND                             m_confinedWnd;;
+
 #if CRY_PLATFORM_WINDOWS
 	HCURSOR                          m_hCursor;
 	int                              m_nCurIDCCursorId;

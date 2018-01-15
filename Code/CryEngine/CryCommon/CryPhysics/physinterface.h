@@ -147,6 +147,7 @@ IPhysicalEntity* const WORLD_ENTITY = (IPhysicalEntity*)-10;
 //////////////////////////// IPhysicsStreamer Interface /////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 
+//! \cond INTERNAL
 //! This is a callback interface for on-demand physicalization, physics gets a pointer to an implementation.
 struct IPhysicsStreamer
 {
@@ -203,6 +204,7 @@ struct IPhysRenderer
 	virtual void DrawFrame(const Vec3& pnt, const Vec3* axes, const float scale, const Vec3* limits, const int axes_locked) = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 //! For "fastload" serialization.
 class CMemStream
@@ -320,6 +322,7 @@ public:
 	bool  bSwapEndian;
 	int   bMeasureOnly;
 };
+//! \endcond
 
 // Workaround for bug in GCC 4.8. The kind of access patterns here leads to an internal
 // compiler error in GCC 4.8 when optimizing with debug symbols. Two possible solutions
@@ -333,6 +336,8 @@ public:
 #else
 	#define CRY_GCC48_AVOID_OPTIMIZE
 #endif
+
+//! \cond INTERNAL
 //! Unused_marker deliberately fills a variable with invalid data.
 //! This is so that later is_unused() can check whether it was initialized (this is used in all physics params/status/action structures)
 class unused_marker
@@ -358,6 +363,8 @@ public:
 	template<class F> unused_marker&   operator,(Quat_tpl<F>& x)                 { return *this, x.w; }
 	template<class F> unused_marker&   operator,(strided_pointer<F>& x)          { return *this, x.data; }
 };
+//! \endcond
+
 inline unused_marker& unused_marker::operator,(float& x)        { *alias_cast<int*>(&x) = 0xFFBFFFFF; return *this; }
 inline unused_marker& unused_marker::operator,(double& x)       { (alias_cast<int*>(&x))[false ? 1 : 0] = 0xFFF7FFFF; return *this; }
 inline unused_marker& unused_marker::operator,(int& x)          { x = 1 << 31; return *this; }
@@ -468,6 +475,7 @@ struct pe_params_pos : pe_params
 	VALIDATORS_END
 };
 
+//! Sets or gets the bounding box of a physical entity
 struct pe_params_bbox : pe_params
 {
 	enum entype { type_id = ePE_params_bbox };
@@ -2119,6 +2127,7 @@ struct pe_tetrlattice_params : pe_params
 //////////////////////////// IGeometry Interface ////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 
+//! \cond INTERNAL
 struct geom_world_data   //!< geometry orientation for Intersect() requests
 {
 	geom_world_data()
@@ -2138,6 +2147,7 @@ struct geom_world_data   //!< geometry orientation for Intersect() requests
 	Vec3     centerOfMass; //!< w is rotation around this point
 	int      iStartNode;   //!< for warm-starting (checks collisions in this node first)
 };
+//! \endcond
 
 struct intersection_params
 {
@@ -2524,6 +2534,7 @@ struct SBVTreeParams : SMeshBVParams
 	float favorAABB;       //!< when several BV trees are requested in CreateMesh, it selects the one with the smallest volume; favorAABB scales AABB's volume down
 };
 
+//! \cond INTERNAL
 //! Voxel grid is a regular 3d grid collision test acceleration structure.
 struct SVoxGridParams : SMeshBVParams
 {
@@ -2564,6 +2575,7 @@ struct IBreakableGrid2d
 	virtual void              GetMemoryStatistics(ICrySizer* pSizer) const = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 struct IGeomManager
 {
@@ -2645,6 +2657,8 @@ struct IPhysUtils
 
 enum snapshot_flags { ssf_compensate_time_diff = 1, ssf_checksum_only = 2, ssf_no_update = 4 };
 
+//! Represents a physical entity instance in the world
+//! Note that this is independent of entities (IEntity), but physical entities can be attached to entities via the entity system.
 struct IPhysicalEntity
 {
 	// <interfuscator:shuffle>
@@ -2697,6 +2711,7 @@ struct IPhysicalEntity
 //////////////////////////// IPhysicsEventClient Interface //////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 
+//! \cond INTERNAL
 //! Obsolete, replaced with event system (EventPhys...).
 struct IPhysicsEventClient
 {
@@ -2709,6 +2724,7 @@ struct IPhysicsEventClient
 	virtual void OnPostStep(IPhysicalEntity* pEntity, void* pForeignData, int iForeignData, float dt) = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 /////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////// IPhysicalWorld Interface //////////////////////////////
@@ -3209,6 +3225,8 @@ struct IPhysicalEntityIt
 	// </interfuscator:shuffle>
 };
 
+//! Main interface to the physics implementation
+//! \see IPhysicalEntity
 struct IPhysicalWorld
 {
 	//! RayWorldIntersection - steps through the entity grid and raytraces entities

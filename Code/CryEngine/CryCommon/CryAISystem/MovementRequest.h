@@ -1,13 +1,12 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
-#ifndef MovementRequest_h
-	#define MovementRequest_h
-
-	#include <CryAISystem/MovementRequestID.h>
-	#include <CryAISystem/MovementStyle.h>
-	#include "IPathfinder.h" // MNMDangersFlags, MNMCustomPathCostComputerSharedPtr
+#include <CryAISystem/MovementRequestID.h>
+#include <CryAISystem/MovementStyle.h>
+#include "IPathfinder.h" // MNMDangersFlags, MNMCustomPathCostComputerSharedPtr
 
 //! Passed along as a parameter to movement request callbacks.
 struct MovementRequestResult
@@ -220,4 +219,4 @@ inline void ConstructHumanReadableText(IN const MovementRequestStatus& status, O
 }
 #endif // COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG
 
-#endif // MovementRequest_h
+//! \endcond

@@ -76,26 +76,6 @@ struct IAreaManagerEventListener
 	// </interfuscator:shuffle>
 };
 
-//! Structure for additional AreaManager queries.
-struct SAreaManagerResult
-{
-public:
-	SAreaManagerResult()
-	{
-		pArea = NULL;
-		fDistanceSq = 0.0f;
-		vPosOnHull = Vec3(0);
-		bInside = false;
-		bNear = false;
-	}
-
-	IArea* pArea;
-	float  fDistanceSq;
-	Vec3   vPosOnHull;
-	bool   bInside;
-	bool   bNear;
-};
-
 //! Structure for AudioArea AreaManager queries.
 struct SAudioAreaInfo
 {

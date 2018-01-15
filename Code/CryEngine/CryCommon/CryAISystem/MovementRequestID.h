@@ -1,9 +1,8 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-#pragma once
+//! \cond INTERNAL
 
-#ifndef MovementRequestID_h
-	#define MovementRequestID_h
+#pragma once
 
 //! When you queue a movement request you will get a request id back.
 //! This ID is used when you want to cancel a queued request.
@@ -23,4 +22,4 @@ struct MovementRequestID
 	static MovementRequestID Invalid() { return MovementRequestID(); }
 };
 
-#endif // MovementRequestID_h
+//! \endcond

@@ -1,9 +1,8 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-#pragma once
+//! \cond INTERNAL
 
-#ifndef IMAGEEXTENSIONHELPER_H
-	#define IMAGEEXTENSIONHELPER_H
+#pragma once
 
 	#include <CryRenderer/ITexture.h>
 	#include <CryCore/CryEndian.h>
@@ -1461,4 +1460,4 @@ inline const char* NameForDesc(const DDS_PIXELFORMAT& ddspf, DWORD /*DXGI_FORMAT
 }
 };
 
-#endif // IMAGEEXTENSIONHELPER
+//! \endcond

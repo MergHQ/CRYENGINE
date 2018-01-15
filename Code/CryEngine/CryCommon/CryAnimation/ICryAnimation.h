@@ -327,6 +327,7 @@ struct ICharacterManager
 #endif
 };
 
+//! \cond INTERNAL
 //! This struct defines the interface for a class that listens to AnimLoaded, AnimUnloaded and AnimReloaded events
 struct IAnimationStreamingListener
 {
@@ -343,6 +344,7 @@ struct IAnimationStreamingListener
 	virtual void NotifyAnimReloaded(const int32 globalID) = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 struct SJointProperty
 {
@@ -368,6 +370,7 @@ struct SBoneShadowCapsule
 //////////////////////////////////////////////////////////////////////////
 typedef unsigned int LimbIKDefinitionHandle;
 
+//! Represents the skeleton tied to a character, and all the default properties it contains.
 struct IDefaultSkeleton
 {
 	// <interfuscator:shuffle>
@@ -415,6 +418,7 @@ struct IDefaultSkeleton
 };
 
 //////////////////////////////////////////////////////////////////////////
+//! Represents a .skin mesh type
 struct ISkin
 {
 	// <interfuscator:shuffle>
@@ -615,6 +619,7 @@ struct ICharacterInstance : IMeshObj
 #define SKELETON_ANIMATION_LAYER_COUNT 32
 #endif
 
+//! Main interface to handle low-level animation processing on a character instance
 struct ISkeletonAnim
 {
 	// <interfuscator:shuffle>
@@ -718,6 +723,7 @@ struct ISkeletonAnim
 
 struct IAnimationPoseBlenderDir;
 
+//! Interface for maintaining the physical state of a character's skeleton, for example to generate physical parts for each joint
 struct ISkeletonPhysics
 {
 	// <interfuscator:shuffle>
@@ -755,6 +761,7 @@ struct ISkeletonPhysics
 	// </interfuscator:shuffle>
 };
 
+//! Represents the current pose of a character instance, allowing retrieval of the latest animation pose.
 struct ISkeletonPose : public ISkeletonPhysics
 {
 	static const int32 kForceSkeletonUpdatesInfinitely = 0x8000;
@@ -829,6 +836,7 @@ struct ISkeletonPose : public ISkeletonPhysics
 	// </interfuscator:shuffle>
 };
 
+//! \cond INTERNAL
 //! Holds description of a set of animations.
 //! This interface holds a set of animations in which each animation is described as properties.
 struct IAnimationSet
@@ -929,6 +937,7 @@ struct IAnimationSet
 
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 struct IAnimationSetListener
 {
@@ -1055,6 +1064,7 @@ private:
 	#define ANIMATION_LIGHT_SYNC_PROFILER()
 #endif
 
+//! \cond INTERNAL
 //! Utility class to automatically start loading & lock a CAF file.
 //! Either it is 'empty' or it holds a reference to a CAF file.
 //! It asserts gEnv->pCharacterManager exists when it isn't empty.
@@ -1143,6 +1153,7 @@ private:
 
 	uint32 m_filePathCRC;
 };
+//! \endcond
 
 inline void ICharacterInstance::SpawnSkeletonEffect(int animID, const char* animName, const char* effectName, const char* boneName, const Vec3& offset, const Vec3& dir, const QuatTS& entityLoc)
 {

@@ -14,6 +14,7 @@
 ////////////////////////////////////////// UI variant data /////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//! \cond INTERNAL
 typedef CryVariant<
 	int,
 	float,
@@ -509,6 +510,7 @@ template<> struct SUIParamTypeHelper<TUIData>
 		return (EUIDataTypes) d.GetType();
 	}
 };
+//! \endcond
 
 struct SUIArguments
 {
@@ -886,6 +888,7 @@ typedef SUIArguments SUIArgumentsRet;
 
 /////////////////////////////////////////// Lookup Table ///////////////////////////////////////////
 
+//! \cond INTERNAL
 //! This type is not implemented!
 template<class T> struct SUIItemLookupIDD
 {
@@ -1050,6 +1053,9 @@ typedef SUIItemLookupSet<SUIEventDesc>     TUIEventsLookup;
 //! Since those are not shared between DLL boundaries we can use the impl directly.
 typedef SUIItemLookupSet_Impl<IUIElement> TUIElementsLookup;
 typedef SUIItemLookupSet_Impl<IUIAction>  TUIActionsLookup;
+
+//! \endcond
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////// UI Descriptions /////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1836,6 +1842,7 @@ enum EUIObjectType
 	eUOT_Events,
 };
 
+//! \cond INTERNAL
 template<EUIObjectType type> struct SUIDescTypeOf
 {
 	typedef int TType;
@@ -2017,6 +2024,7 @@ template<> struct SUIGetTypeStr<eUOT_Events>
 		return "event";
 	}
 };
+//! \endcond
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////// UIEvent Dispatch helper //////////////////////////////////////
@@ -2135,6 +2143,7 @@ template<> inline bool SUIEventArgumentCheck<string        >::Check(SUIParameter
 template<> inline bool SUIEventArgumentCheck<wstring       >::Check(SUIParameterDesc::EUIParameterType type) { return type == SUIParameterDesc::eUIPT_WString; }
 template<> inline bool SUIEventArgumentCheck<TUIData       >::Check(SUIParameterDesc::EUIParameterType type) { return true; }
 
+//! \cond INTERNAL
 //! Dispatcher function interface.
 struct IUIEventDispatchFct
 {
@@ -2885,3 +2894,4 @@ struct SPerInstanceCall4
 private:
 	void _cb(IUIElement* pInstance, const SCallData& data) { data.cb(pInstance, data.arg1, data.arg2, data.arg3, data.arg4); }
 };
+//! \endcond

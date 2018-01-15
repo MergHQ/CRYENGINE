@@ -1,13 +1,6 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-//
-//	File: GeomQuery.h
-//	Description: Facility for efficiently generating random positions on geometry
-//
-//	History:
-//		2006-05-24:		Created by J Scott Peter
-//
-//////////////////////////////////////////////////////////////////////
+//! \cond INTERNAL
 
 #pragma once
 
@@ -523,3 +516,4 @@ protected:
 	}
 };
 
+//! \endcond

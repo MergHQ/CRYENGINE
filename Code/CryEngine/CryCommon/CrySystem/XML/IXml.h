@@ -71,6 +71,7 @@ public:
 
 };
 
+//! \cond INTERNAL
 //! XML string data.
 struct IXmlStringData
 {
@@ -82,6 +83,7 @@ struct IXmlStringData
 	virtual size_t      GetStringLength() = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 class IXmlNode;
 
@@ -476,6 +478,7 @@ struct IXmlSerializer
 #if !defined(RESOURCE_COMPILER)
 //////////////////////////////////////////////////////////////////////////
 //! XML Parser interface.
+//! \cond INTERNAL
 struct IXmlParser
 {
 	// <interfuscator:shuffle>
@@ -534,6 +537,7 @@ struct IXmlTableReader
 	virtual bool ReadCell(int& columnIndex, const char*& pContent, size_t& contentSize) = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 #endif
 
 //////////////////////////////////////////////////////////////////////////

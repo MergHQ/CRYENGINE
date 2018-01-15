@@ -7,7 +7,8 @@
 
 const float RAD_EPSILON = 0.01f;
 
-//! Quaternion.
+//! General-purpose quaternion implementation
+//! \see Quat
 template<typename F> struct Quat_tpl
 	: INumberVector<F, 4, Quat_tpl<F>>
 {

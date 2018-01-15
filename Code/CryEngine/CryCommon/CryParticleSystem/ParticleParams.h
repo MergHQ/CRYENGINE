@@ -66,6 +66,7 @@ struct ETrinary : ETrinaryNames
 	}
 };
 
+//! \cond INTERNAL
 //! Pseudo-random number generation, from a key.
 class CChaosKey
 {
@@ -138,6 +139,7 @@ private:
 		return (u >> n) | (u << (32 - n));
 	}
 };
+//! \endcond
 
 // Float storage
 typedef TRangedType<float>            SFloat;
@@ -571,12 +573,14 @@ struct TRangeParam
 
 ///////////////////////////////////////////////////////////////////////
 //! Special surface type enum.
+//! \cond INTERNAL
 struct CSurfaceTypeIndex
 {
 	uint16 nIndex;
 
 	STRUCT_INFO;
 };
+//! \endcond
 
 ///////////////////////////////////////////////////////////////////////
 //! Particle system parameters.

@@ -13,7 +13,7 @@
 template<typename F> struct Matrix44H;
 
 ///////////////////////////////////////////////////////////////////////////////
-// General-purpose 3x4 matrix using SIMD types
+//! General-purpose 3x4 matrix using SIMD types
 template<typename F> struct Matrix34H
 	: INumberArray<vector4_t<F>, 3>
 {

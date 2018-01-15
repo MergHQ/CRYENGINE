@@ -1,7 +1,6 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-#ifndef _CREGameEffect_
-#define _CREGameEffect_
+//! \cond INTERNAL
 
 #pragma once
 
@@ -34,5 +33,3 @@ private:
 	IREGameEffect* m_pImpl; //!< Implementation of of render element.
 
 };
-
-#endif // #ifndef _CREGameEffect_

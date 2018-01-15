@@ -12,6 +12,7 @@ struct IArea;
 //////////////////////////////////////////////////////////////////////////
 //! Reference to one visual or physical geometry, for particle attachment.
 
+//! \cond INTERNAL
 struct GeomRef
 {
 	_smart_ptr<IMeshObj>        m_pMeshObj;      //!< Render object attachment.
@@ -64,3 +65,4 @@ struct GeomRef
 		return GetRandomPoints({&ran, 1}, seed, eAttachType, eForm, &tWorld, bCentered);
 	}
 };
+//! \endcond

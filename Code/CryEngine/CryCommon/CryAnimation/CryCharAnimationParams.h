@@ -1,7 +1,6 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-#ifndef _CRY_COMMON_CRY_CHAR_ANIMATION_PARAMS_HDR_
-#define _CRY_COMMON_CRY_CHAR_ANIMATION_PARAMS_HDR_
+#pragma once
 
 #include <CryRenderer/Tarray.h>
 #include <CryNetwork/ISerialize.h> // <> required for Interfuscator
@@ -692,5 +691,3 @@ protected:
 #endif //!defined(USE_PROTOTYPE_ABS_BLENDING)
 
 };
-
-#endif

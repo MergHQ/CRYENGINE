@@ -1,16 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  File name:   IMaterial.h
-//  Version:     v1.00
-//  Created:     16/9/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description: IMaterial interface declaration.
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 struct ISurfaceType;
@@ -235,6 +224,7 @@ struct IMaterialLayer
 	// </interfuscator:shuffle>
 };
 
+//! Represents an .mtl instance that can be applied to geometry in the scene
 struct IMaterial
 {
 	// TODO: Remove it!
@@ -390,6 +380,7 @@ struct IMaterial
 #endif
 };
 
+//! \cond INTERNAL
 //! IMaterialManagerListener is a callback interface to listen for special events of material manager, (used by Editor).
 struct IMaterialManagerListener
 {
@@ -403,6 +394,7 @@ struct IMaterialManagerListener
 	virtual void       OnDeleteMaterial(IMaterial* pMaterial) = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 //! IMaterialManager interface provide access to the material manager implemented in 3DEngine.
 struct IMaterialManager

@@ -1,9 +1,8 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-#pragma once
+//! \cond INTERNAL
 
-#ifndef BehaviorTreeNode_h
-	#define BehaviorTreeNode_h
+#pragma once
 
 	#include "IBehaviorTree.h"
 
@@ -324,4 +323,4 @@ private:
 };
 }
 
-#endif // BehaviorTreeNode_h
+//! \endcond

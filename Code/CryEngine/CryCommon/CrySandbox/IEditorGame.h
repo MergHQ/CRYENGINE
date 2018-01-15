@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 #include <CryEntitySystem/IEntityBasicTypes.h>
@@ -118,3 +120,4 @@ struct IEditorGame
 	virtual IGamePhysicsSettings* GetIGamePhysicsSettings() = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond

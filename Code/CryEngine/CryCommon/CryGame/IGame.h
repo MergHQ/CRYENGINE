@@ -1,16 +1,6 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:
-
-   -------------------------------------------------------------------------
-   History:
-   - 2:8:2004   10:53 : Created by Márcio Martins
-
-*************************************************************************/
+//! \cond INTERNAL
 
 #pragma once
 
@@ -176,3 +166,5 @@ struct IGame
 	virtual IGameWebDebugService* GetIWebDebugService() { return nullptr; };
 	// </interfuscator:shuffle>
 };
+
+//! \endcond

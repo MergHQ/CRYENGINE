@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 #include <CrySystem/ISystem.h>
@@ -38,3 +40,5 @@ struct CRY_DEPRECATED_GAME_DLL IGameStartup
 	virtual const uint8* GetRSAKey(uint32* pKeySize) const {* pKeySize = 0; return NULL; }
 	// </interfuscator:shuffle>
 };
+
+//! \endcond

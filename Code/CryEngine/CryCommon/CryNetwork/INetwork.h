@@ -1,18 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:  Message definition to id management
-   -------------------------------------------------------------------------
-   History:
-   - 07/25/2001   : Alberto Demichelis, Created
-   - 07/20/2002   : Martin Mittring, Cleaned up
-   - 09/08/2004   : Craig Tiller, Refactored
-   - 17/09/2004   : Craig Tiller, Introduced contexts
-*************************************************************************/
-
 #pragma once
 
 #ifdef CRYNETWORK_EXPORTS
@@ -233,6 +220,7 @@ static const char* LOCAL_CONNECTION_STRING = "<local>";
 static const char* NULL_CONNECTION_STRING = "<null>";
 static const size_t MaxProfilesPerAspect = 8;
 
+//! \cond INTERNAL
 //! Represents a message that has been added to the message queue.
 //! These cannot be shared between channels.
 struct SSendableHandle
@@ -336,6 +324,7 @@ struct INetBreakageSimplePlayback : public CMultiThreadRefCount
 	// </interfuscator:shuffle>
 };
 typedef _smart_ptr<INetBreakageSimplePlayback> INetBreakageSimplePlaybackPtr;
+//! \endcond
 
 struct INetSendableSink
 {
@@ -889,6 +878,7 @@ struct INetwork
 	// </interfuscator:shuffle>
 };
 
+//! \cond INTERNAL
 //! This interface is implemented by CryNetwork, and is used by INetMessageSink::DefineProtocol to find all of the message sinks that should be attached to a channel.
 struct IProtocolBuilder
 {
@@ -962,6 +952,7 @@ struct IVoiceContext
 	// </interfuscator:shuffle>
 };
 #endif
+//! \endcond
 
 //! An INetContext manages the list of objects synchronized over the network.
 //! \note Only to be implemented in CryNetwork.
@@ -1134,6 +1125,7 @@ struct INetContext
 #endif
 };
 
+//! \cond INTERNAL
 struct INetSender
 {
 	INetSender(TSerialize sr, uint32 nCurrentSeq, uint32 nBasisSeq, uint32 timeFraction32, bool isServer) : ser(sr)
@@ -1337,6 +1329,7 @@ enum ESynchObjectResult
 	eSOR_Failed,
 	eSOR_Skip,
 };
+//! \endcond
 
 //! Interface for a channel to call in order to create/destroy objects, and when changing context, to properly configure that context.
 struct IGameContext
@@ -1813,6 +1806,7 @@ struct IGameSecurity
 	// </interfuscator:shuffle>
 };
 
+//! \cond INTERNAL
 //! This interface defines what goes into a CTP message.
 class INetMessage : public INetSendable
 {
@@ -2047,6 +2041,7 @@ struct ILanQueryListener : public INetQueryListener
 	virtual void                GetMemoryStatistics(ICrySizer* pSizer) = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 struct SContextEstablishState
 {

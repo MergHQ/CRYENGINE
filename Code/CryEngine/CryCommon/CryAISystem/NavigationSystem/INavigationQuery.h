@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
+//! \cond INTERNAL
+
 #pragma once
 
 #include "MNMTile.h"
@@ -128,3 +130,5 @@ struct SNavMeshQueryFilterDefault final : public SNavMeshQueryFilterDefaultBase
 			&& !memcmp(costs, other.costs, sizeof(costs[0]) * MaxAreasCount);
 	}
 };
+
+//! \endcond

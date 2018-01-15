@@ -4607,7 +4607,6 @@ void CPhysicalWorld::GetMemoryStatistics(ICrySizer *pSizer)
 #endif*/
 
 	{ SIZER_COMPONENT_NAME(pSizer,"world structures");
-		ReadLock lockGeo(m_lockGeoman);
 		pSizer->AddObject(this, sizeof(CPhysicalWorld));
 		pSizer->AddObject(m_pTmpEntList, m_nEntsAlloc*sizeof(m_pTmpEntList[0]));
 		pSizer->AddObject(m_pTmpEntList1, m_nEntsAlloc*sizeof(m_pTmpEntList1[0]));
@@ -4668,6 +4667,7 @@ void CPhysicalWorld::GetMemoryStatistics(ICrySizer *pSizer)
 	}
 
 	{ SIZER_COMPONENT_NAME(pSizer,"geometries");
+		ReadLock lockGeo(m_lockGeoman);
 		if (m_pHeightfield[0]) m_pHeightfield[0]->m_parts[0].pPhysGeom->pGeom->GetMemoryStatistics(pSizer);
 		if (m_pHeightfield[1]) m_pHeightfield[1]->m_parts[0].pPhysGeom->pGeom->GetMemoryStatistics(pSizer);
 		pSizer->AddObject(m_pGeoms, m_nGeomChunks*sizeof(m_pGeoms[0]));

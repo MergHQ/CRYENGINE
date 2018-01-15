@@ -35,6 +35,7 @@ struct IFontEngineModule : public Cry::IDefaultModule
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////
+//! Main interface to the engine's font rendering implementation, allowing retrieval of fonts for run-time rendering
 struct ICryFont
 {
 	// <interfuscator:shuffle>
@@ -141,6 +142,7 @@ struct STextDrawContext
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////
+//! Main interface for a type of font in the engine, allowing drawing onto the 2D viewport and textures
 struct IFFont
 {
 	// <interfuscator:shuffle>

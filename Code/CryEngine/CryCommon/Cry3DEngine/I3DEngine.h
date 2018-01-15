@@ -1,16 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   i3dengine.h
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description: 3dengine interface
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 //! The maximum number of unique surface types that can be used per node.
@@ -176,6 +165,7 @@ enum EShadowMode
 	ESM_HIGHQUALITY
 };
 
+//! \cond INTERNAL
 //! This structure is filled and passed by the caller to the DebugDraw functions of the stat object or entity.
 struct SGeometryDebugDrawInfo
 {
@@ -190,6 +180,7 @@ struct SGeometryDebugDrawInfo
 
 	SGeometryDebugDrawInfo() : color(255, 0, 255, 255), lineColor(255, 255, 0, 255), bNoLines(0), bNoCull(0) { tm.SetIdentity(); }
 };
+//! \endcond
 
 struct SFrameLodInfo
 {
@@ -251,6 +242,7 @@ struct SMeshLodInfo
 	}
 };
 
+//! \cond INTERNAL
 //! Physics material enumerator, allows for 3dengine to get material id from game code.
 struct IPhysMaterialEnumerator
 {
@@ -262,6 +254,7 @@ struct IPhysMaterialEnumerator
 	virtual const char* GetMaterialNameByIndex(int index) = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 //! Physics foreign data flags.
 enum EPhysForeignFlags
@@ -283,6 +276,7 @@ enum EOceanRenderFlags
 	OCR_OCEANVOLUME_VISIBLE = 1 << 1,
 };
 
+//! \cond INTERNAL
 //! Structure to pass vegetation group properties.
 struct IStatInstGroup
 {
@@ -393,6 +387,7 @@ struct IStatInstGroup
 	//! Flags similar to entity render flags.
 	int m_dwRndFlags;
 };
+//! \endcond
 
 //! Interface to water volumes.
 //! Water volumes should usually be created by I3DEngine::CreateWaterVolume.
@@ -684,6 +679,7 @@ struct SHotUpdateInfo
 	AUTO_STRUCT_INFO;
 };
 
+//! \cond INTERNAL
 //! This structure is used by the editor for storing and editing of terrain surface types
 struct SSurfaceTypeItem
 {
@@ -746,6 +742,7 @@ struct SSurfaceTypeItem
 	//! Not used for now
 	uint8 dummy = 0;
 };
+//! \endcond
 
 //! Interface to terrain engine
 struct ITerrain
@@ -836,6 +833,7 @@ struct ITerrain
 	virtual void OnTerrainPaintActionComplete() = 0;
 };
 
+//! \cond INTERNAL
 //! Callbacks interface for higher level segments management.
 //! Warning: deprecated Segmented World implementation is not supported by CryEngine anymore
 struct ISegmentsManager
@@ -864,6 +862,7 @@ struct ISegmentsManager
 	virtual bool PushEntityToSegment(unsigned int id, bool bLocal = true)                            { return false; }
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 struct IVisAreaCallback
 {
@@ -913,6 +912,7 @@ struct IVisAreaManager
 	// </interfuscator:shuffle>
 };
 
+//! \cond INTERNAL
 //! Manages simple pre-merged mesh instances into pre-baked sectors.
 struct IMergedMeshesManager
 {
@@ -1011,6 +1011,7 @@ struct IMergedMeshesManager
 	virtual size_t VisibleInstances() const = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 struct IFoliage
 {
@@ -2312,6 +2313,7 @@ struct I3DEngine : public IProcess
 
 //==============================================================================================
 
+//! \cond INTERNAL
 //! Types of binary files used by 3dengine.
 enum EFileTypes
 {
@@ -2431,6 +2433,7 @@ private:
 
 	uint32 nValue;
 };
+//! \endcond
 
 //! State of 3dengine during rendering.
 //! Used to prevent global state.

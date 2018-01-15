@@ -1,4 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+
+// \cond INTERNAL
+
 #pragma once
 
 #include <CryNetwork/INetwork.h>
@@ -187,3 +190,5 @@ public:
 };
 
 #define RMI_WRAP(x) decltype(x),x
+
+//! \endcond

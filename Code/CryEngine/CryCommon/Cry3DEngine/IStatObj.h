@@ -78,6 +78,7 @@ enum EStaticObjectFlags
 #define HIT_OBJ_TYPE_TERRAIN 1
 #define HIT_OBJ_TYPE_VISAREA 2
 
+//! \cond INTERNAL
 //! Used for on-CPU voxelization.
 struct SRayHitTriangle
 {
@@ -91,6 +92,7 @@ struct SRayHitTriangle
 	uint8      nOpacity;
 	uint8      nHitObjType;
 };
+//! \endcond
 
 struct SRayHitInfo
 {

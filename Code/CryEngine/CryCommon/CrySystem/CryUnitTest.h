@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 //! Defines interfaces and macros for Cry Unit Tests.
 //! CRY_UNIT_TEST_SUITE:           A suite name to group tests locally together.
 //! CRY_UNIT_TEST_FIXTURE:         A fixture (intermediate base class) as the container of variables and methods shared by tests.
@@ -368,3 +370,5 @@ ILINE bool AreInequal(const char(&str1)[M], const char(&str2)[N]) { return strcm
     }                                                                                                                 \
   } while (0)
 //The last line must exist to compile on gcc!
+
+//! \endcond

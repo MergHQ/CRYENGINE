@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Cry_Vector3.h"
-
+	
 template<typename F> struct Vec4_tpl
 	: INumberVector<F, 4, Vec4_tpl<F>>
 {
