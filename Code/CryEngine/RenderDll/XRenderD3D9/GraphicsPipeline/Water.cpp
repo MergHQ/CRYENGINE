@@ -160,6 +160,7 @@ CWaterStage::CWaterStage()
 	: m_rainRippleTexIndex(0)
 	, m_frameIdWaterSim(0)
 	, m_bWaterNormalGen(false)
+	, m_bOceanMaskGen(false)
 	, m_defaultPerInstanceResources()
 	, m_perPassResources()
 {
@@ -276,35 +277,24 @@ void CWaterStage::Update()
 		CRendererResources::s_ptexWaterOcean->Create2DTexture(nGridSize, nGridSize, 1, FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD, nullptr, eTF_R32G32B32A32F);
 	}
 
+	// Activate normal generation
+	m_bWaterNormalGen = (gRenDev->EF_GetRenderQuality() >= eRQ_Medium && !isEmpty) ? true : false;
+	m_bOceanMaskGen   = (gRenDev->EF_GetRenderQuality() >= eRQ_High) ? true : false;
+
+	if (m_pOceanMaskTex)
 	{
-		bool bOceanMask = false;
+		if (!m_bOceanMaskGen && CTexture::IsTextureExist(m_pOceanMaskTex))
+			m_pOceanMaskTex->ReleaseDeviceTexture(false);
 
-		CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-		switch ((rd->GetShaderProfile(eST_Water)).GetShaderQuality())
+		const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
+		const ETEX_Format format = eTF_R8;
+		if (m_bOceanMaskGen && (!CTexture::IsTextureExist(m_pOceanMaskTex) || m_pOceanMaskTex->Invalidate(pDepthTarget->GetWidth(), pDepthTarget->GetHeight(), format)))
 		{
-		case eSQ_High:
-		case eSQ_VeryHigh:
-			// ocean surface can be displaced in these settings.
-			bOceanMask = true;
-			break;
-		}
-
-		if (m_pOceanMaskTex) 
-		{
-			if (!bOceanMask && CTexture::IsTextureExist(m_pOceanMaskTex))
-				m_pOceanMaskTex->ReleaseDeviceTexture(false);
-
-			const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
-			const ETEX_Format format = eTF_R8;
-			if (bOceanMask && (!CTexture::IsTextureExist(m_pOceanMaskTex) || m_pOceanMaskTex->Invalidate(pDepthTarget->GetWidth(), pDepthTarget->GetHeight(), format)))
-				m_pOceanMaskTex->Create2DTexture(pDepthTarget->GetWidth(), pDepthTarget->GetHeight(), 1, flags, nullptr, format);
+			m_pOceanMaskTex->Create2DTexture(pDepthTarget->GetWidth(), pDepthTarget->GetHeight(), 1, flags, nullptr, format);
+			m_passOceanMaskGen.SetRenderTargets(pDepthTarget, m_pOceanMaskTex);
 		}
 	}
 
-	// Activate normal generation
-	m_bWaterNormalGen = (gRenDev->EF_GetRenderQuality() > eRQ_Low && !isEmpty) ? true : false;
-
-	m_passOceanMaskGen.SetRenderTargets(pDepthTarget, m_pOceanMaskTex);
 	m_passWaterFogVolumeBeforeWater.SetRenderTargets(pDepthTarget, pRenderTarget);
 	m_passWaterSurface.SetRenderTargets(pDepthTarget, pRenderTarget);
 	m_passWaterFogVolumeAfterWater.SetRenderTargets(pDepthTarget, pRenderTarget);
@@ -1277,12 +1267,7 @@ void CWaterStage::ExecuteOceanMaskGen()
 	N3DEngineCommon::SOceanInfo& OceanInfo = gcpRendD3D->m_p3DEngineCommon.m_OceanInfo;
 	const bool bOceanVolumeVisible = (OceanInfo.m_nOceanRenderFlags & OCR_OCEANVOLUME_VISIBLE) != 0;
 
-	if (!bOceanVolumeVisible)
-	{
-		return;
-	}
-
-	if (!CTexture::IsTextureExist(m_pOceanMaskTex))
+	if (!m_bOceanMaskGen || !bOceanVolumeVisible)
 	{
 		return;
 	}
