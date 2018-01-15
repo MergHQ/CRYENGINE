@@ -65,7 +65,23 @@ if (AUDIO_WWISE)
 	endif()
 
 	if ((WIN64 OR WIN32 OR DURANGO) AND MSVC)
-		set(WWISE_LIB_PATH "${SDK_DIR}/Audio/wwise/SDK/${WWISE_PLATFORM_PATH}_${MSVC_LIB_PREFIX}/$<CONFIG>/lib/")
+		if (MSVC_VERSION EQUAL 1700)
+			# Visual Studio 2012
+			set(MSVC_LIB_PREFIX_WWISE "vc110")
+		elseif (MSVC_VERSION EQUAL 1800)
+			# Visual Studio 2013
+			set(MSVC_LIB_PREFIX_WWISE "vc120")
+		elseif (MSVC_VERSION EQUAL 1900)
+			# Visual Studio 2015
+			set(MSVC_LIB_PREFIX_WWISE "vc140")
+		elseif ((MSVC_VERSION GREATER 1900) AND (MSVC_VERSION LESS_EQUAL 1919))
+			# Visual Studio 2017
+			set(MSVC_LIB_PREFIX_WWISE "vc150")
+		elseif (MSVC_VERSION GREATER 1919)
+			# Visual Studio 20??
+			set(MSVC_LIB_PREFIX_WWISE "vc150")
+		endif()
+		set(WWISE_LIB_PATH "${SDK_DIR}/Audio/wwise/SDK/${WWISE_PLATFORM_PATH}_${MSVC_LIB_PREFIX_WWISE}/$<CONFIG>/lib/")
 	else()
 		set(WWISE_LIB_PATH "${SDK_DIR}/Audio/wwise/SDK/${WWISE_PLATFORM_PATH}/$<CONFIG>/lib/")
 	endif()
