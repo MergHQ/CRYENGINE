@@ -595,6 +595,7 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
+//! The material effects system is responsible for triggering effects (such as particles) when the surface types of two materials interact (typically due to a physical collision).
 struct IMaterialEffects
 {
 	// <interfuscator:shuffle>

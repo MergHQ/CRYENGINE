@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 #include <CryCore/BaseTypes.h>  // uint32, uint64
@@ -94,3 +96,5 @@ public:
 private:
 	uint64 m_state;
 };
+
+//! \endcond

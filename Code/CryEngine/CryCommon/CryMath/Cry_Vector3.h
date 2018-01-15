@@ -24,6 +24,8 @@ template<typename T> struct Vec3Constants
 	static const Vec3_tpl<T> fVec3_One;
 };
 
+//! General-purpose 3D vector implementation
+//! \see Vec3, Vec3i
 template<typename F> struct Vec3_tpl
 	: INumberVector<F, 3, Vec3_tpl<F>>
 {

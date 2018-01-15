@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 #include <CryCore/Platform/platform.h>
@@ -715,3 +717,5 @@ public:
 #define LOADING_TIME_PROFILE_AUTO_SESSION(sessionName)
 
 #endif ////ENABLE_LOADING_PROFILER
+
+//! \endcond

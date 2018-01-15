@@ -1,15 +1,6 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  File name:   ITacticalPointSystem.h
-//  Created:     11/07/2007 by Matthew Jack
-//  Description: Interface to the TPS
-//    The TPS manages and executes queries for points of tactical interest
-//    in the environment, primarily for the AI system
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
+//! \cond INTERNAL
 
 #pragma once
 
@@ -607,3 +598,5 @@ private:
 		//std::vector<Vec3> *m_pResultsVector;
 	} m_Results;
 };
+
+//! \cond INTERNAL

@@ -474,6 +474,7 @@ protected:
 	virtual ICVar* Register(ICVar* pVar) = 0;
 };
 
+//! \cond INTERNAL
 //! This interface for the remote console.
 struct IRemoteConsoleListener
 {
@@ -503,6 +504,7 @@ struct IRemoteConsole
 	virtual void RegisterListener(IRemoteConsoleListener* pListener, const char* name) = 0;
 	virtual void UnregisterListener(IRemoteConsoleListener* pListener) = 0;
 };
+//! \endcond
 
 //! This interface is the 1:1 "C++ representation" of a console variable.
 //! \note A console variable is accessible in C++ trough this interface and in all

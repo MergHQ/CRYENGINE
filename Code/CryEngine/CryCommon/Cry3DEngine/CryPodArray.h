@@ -1,17 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   CryPodArray.h
-//  Created:     28/5/2002 by Vladimir Kajalin
-//  Description: Simple POD types container
-// -------------------------------------------------------------------------
-//  History:
-//      Refactored 07/03/2007 by Timur.
-//
-////////////////////////////////////////////////////////////////////////////
+//! \cond INTERNAL
 
-#ifndef __CRY_POD_ARRAY_H__
-#define __CRY_POD_ARRAY_H__
 #pragma once
 
 //! POD Array.
@@ -310,4 +300,4 @@ private:
 
 };
 
-#endif // __CRY_POD_ARRAY_H__
+//! \endcond

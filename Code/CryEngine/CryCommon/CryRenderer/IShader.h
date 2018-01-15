@@ -329,6 +329,7 @@ struct SShaderParam
 	}
 };
 
+//! \cond INTERNAL
 //! IShaderPublicParams can be used to hold a collection of the shader public params.
 //! Manipulate this collection, and use them during rendering by submit to the SRendParams.
 struct IShaderPublicParams : public _i_multithread_reference_target_t
@@ -379,6 +380,7 @@ struct IShaderPublicParams : public _i_multithread_reference_target_t
 	virtual const DynArray<SShaderParam>* GetShaderParams() const = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 //=================================================================================
 
@@ -430,6 +432,7 @@ class CTexture;
 #define MDV_WIND              0x800
 #define MDV_DEPTH_OFFSET      0x2000
 
+//! \cond INTERNAL
 //! Deformations/Morphing types.
 enum EDeformType
 {
@@ -673,6 +676,7 @@ enum EResClassName
 	eRCN_Texture,
 	eRCN_Shader,
 };
+//! \endcond
 
 #include "IRenderer.h"
 
@@ -894,6 +898,7 @@ struct IRenderTarget
 
 //==================================================================================================================
 
+//! \cond INTERNAL
 //! FX shader texture sampler (description).
 struct STexSamplerFX
 {
@@ -1100,6 +1105,7 @@ struct STexSamplerRT
 		return false;
 	}
 };
+//! \endcond
 
 //===============================================================================================================================
 
@@ -2022,6 +2028,7 @@ struct SShaderItem
 
 //////////////////////////////////////////////////////////////////////
 //! Define this before including <IRenderMesh.h>
+//! \cond INTERNAL
 struct CRenderChunk
 {
 	bool     m_bUsesBones;
@@ -2062,6 +2069,7 @@ struct CRenderChunk
 	{
 	}
 };
+//! \endcond
 
 typedef DynArray<CRenderChunk> TRenderChunkArray;
 

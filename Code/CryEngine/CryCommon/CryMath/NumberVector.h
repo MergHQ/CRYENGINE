@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 const float VEC_EPSILON = 0.05f;
@@ -248,3 +250,5 @@ struct INumberVector: INumberArray<T, N>
 	NUMBER_VECTOR_BINARY_OP(*)
 	NUMBER_VECTOR_BINARY_OP(/)
 };
+
+//! \endcond

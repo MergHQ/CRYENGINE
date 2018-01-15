@@ -1,9 +1,8 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-#pragma once
+//! \cond INTERNAL
 
-#ifndef HidespotQueryContext_h
-	#define HidespotQueryContext_h
+#pragma once
 
 //! Contains information about what hide spots you want the AI system to return.
 struct HidespotQueryContext
@@ -36,4 +35,4 @@ struct HidespotQueryContext
 	Vec3*        pCoverObjDir;
 };
 
-#endif // HidespotQueryContext_h
+//! \endcond

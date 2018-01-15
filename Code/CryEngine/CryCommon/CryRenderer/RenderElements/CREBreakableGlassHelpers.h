@@ -1,7 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-#ifndef _CRE_BREAKABLE_GLASS_HELPERS_
-#define _CRE_BREAKABLE_GLASS_HELPERS_
+//! \cond INTERNAL
+
 #pragma once
 
 #include "CREBreakableGlassConfig.h"
@@ -286,4 +286,4 @@ struct SBreakableGlassCVars
 	float m_particleFXScale;
 };
 
-#endif // _CRE_BREAKABLE_GLASS_HELPERS_
+//! \endcond

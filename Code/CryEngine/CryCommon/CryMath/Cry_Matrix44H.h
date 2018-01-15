@@ -13,7 +13,7 @@
 	#include "Cry_Matrix34H.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-// General-purpose 4x4 matrix using SIMD types
+//! General-purpose 4x4 matrix using SIMD types
 template<typename F> struct Matrix44H
 	: INumberArray<vector4_t<F>, 4>
 {

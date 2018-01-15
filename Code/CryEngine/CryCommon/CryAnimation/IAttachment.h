@@ -351,6 +351,7 @@ struct RowSimulationParams
 	};
 };
 
+//! Interface for a character instance's attachment manager, responsible for keeping track of the various object attachments tied to a character
 struct IAttachmentManager
 {
 	// <interfuscator:shuffle>
@@ -395,6 +396,7 @@ struct IAttachmentManager
 	// </interfuscator:shuffle>
 };
 
+//! Represents an attachment attached to a character, usually loaded from the .CDF file - but can also be created at run-time
 struct IAttachment
 {
 	// <interfuscator:shuffle>
@@ -520,7 +522,7 @@ struct IAttachmentSkin
 #endif
 };
 
-//! This interface define a way to allow an object to be bound to a character.
+//! Represents an instance of an attachment on a character, managing the updating of the contained object (for example an IStatObj).
 struct IAttachmentObject
 {
 	enum EType
@@ -597,6 +599,7 @@ struct IAttachmentMerger
 
 //
 
+//! Represents a static (IStatObj) object instance tied to a character
 struct CCGFAttachment : public IAttachmentObject
 {
 	virtual EType GetAttachmentType() override                          { return eAttachment_StatObj; };
@@ -638,6 +641,7 @@ inline IMaterial* CCGFAttachment::GetBaseMaterial(uint32 nLOD) const
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+//! Represents a skeleton (.skel, .chr) attached to a character
 struct CSKELAttachment : public IAttachmentObject
 {
 	CSKELAttachment()
@@ -687,6 +691,7 @@ inline IMaterial* CSKELAttachment::GetBaseMaterial(uint32 nLOD) const
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+//! Represents a skin file (.skin) attached to a character
 struct CSKINAttachment : public IAttachmentObject
 {
 	CSKINAttachment()
@@ -720,6 +725,7 @@ inline IMaterial* CSKINAttachment::GetBaseMaterial(uint32 nLOD) const
 	return m_pReplacementMaterial[nLOD] ? m_pReplacementMaterial[nLOD].get() : (m_pIAttachmentSkin ? m_pIAttachmentSkin->GetISkin()->GetIMaterial(nLOD) : NULL);
 }
 
+//! Used for attaching entities to attachment slots on a character, continuously overriding the child entities transformation in the scene to match the animated joint
 struct CEntityAttachment : public IAttachmentObject
 {
 public:
@@ -781,6 +787,7 @@ inline IMaterial* CEntityAttachment::GetBaseMaterial(uint32 nLOD) const
 	return 0;
 }
 
+//! Allows for attaching a light source to a character
 struct CLightAttachment : public IAttachmentObject
 {
 public:
@@ -845,6 +852,7 @@ inline IMaterial* CLightAttachment::GetBaseMaterial(uint32 nLOD) const
 	return 0;
 }
 
+//! Allows for attaching particle effects to characters
 struct CEffectAttachment : public IAttachmentObject
 {
 	struct SParameter

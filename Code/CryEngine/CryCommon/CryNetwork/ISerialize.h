@@ -10,6 +10,7 @@
 #include <CryCore/StlUtils.h>
 #include <CrySystem/TimeValue.h>
 
+//! \cond INTERNAL
 template<class T, class U>
 class InterpolatedValue_tpl;
 
@@ -168,6 +169,7 @@ struct SSerializeString
 private:
 	string m_str;
 };
+//! \endcond
 
 //! ISerialize is intended to be implemented by objects that need to read and write from various data sources in such a way that
 //! different tradeoffs can be balanced by the object that is being serialized, and so that objects being serialized need only write
@@ -235,6 +237,7 @@ struct ISerialize
 	void ValueWithDefault(const char* name, B& x, const B& defaultValue);
 };
 
+//! \cond INTERNAL
 //! Provide a wrapper around ISerialize to allow easy changing of our Interface, and easy implementation of our details.
 //! It is a template so that we can wrap a more specific ISerialize implementation if necessary.
 //! Some of the wrappers are trivial, however for consistency, they have been made to follow the trend.
@@ -949,6 +952,7 @@ public:
 private:
 	TISerialize* m_pSerialize;
 };
+//! \endcond
 
 //! Default serialize class to use.
 typedef CSerializeWrapper<ISerialize> TSerialize;
@@ -985,6 +989,7 @@ void ISerialize::ValueWithDefault(const char* name, B& x, const B& defaultValue)
 	}
 }
 
+//! \cond INTERNAL
 //! Used to automatically Begin/End group in serialization stream.
 struct SSerializeScopedBeginGroup
 {
@@ -1000,3 +1005,4 @@ struct SSerializeScopedBeginGroup
 private:
 	TSerialize* m_pSer;
 };
+//! \endcond

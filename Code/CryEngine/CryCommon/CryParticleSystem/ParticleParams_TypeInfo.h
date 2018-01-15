@@ -27,6 +27,7 @@
 ///////////////////////////////////////////////////////////////////////
 // Implementation of TCurve<> functions.
 
+//! \cond INTERNAL
 //! Helper class for serialization.
 template<class T, class V>
 struct SplineElem
@@ -41,6 +42,7 @@ struct SplineElem
 	VAR_INFO(flags)
 	STRUCT_INFO_END(SplineElem)
 };
+//! \endcond
 
 template<class S>
 string TCurve<S >::ToString(FToString flags) const

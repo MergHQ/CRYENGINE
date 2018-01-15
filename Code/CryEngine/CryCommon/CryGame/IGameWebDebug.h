@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 typedef uint32 TGameWebDebugClientId;
@@ -45,3 +47,5 @@ struct IGameWebDebugEntityChannel
 	virtual void Subscribe(const TGameWebDebugClientId clientId, const EntityId entityId) = 0;
 	virtual void Unsubscribe(const TGameWebDebugClientId clientId) = 0;
 };
+
+//! \endcond

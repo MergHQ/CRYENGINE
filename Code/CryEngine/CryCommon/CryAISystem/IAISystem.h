@@ -69,6 +69,7 @@ struct ISequenceManager;
 
 typedef CryFixedArray<IPhysicalEntity*, 32> PhysSkipList;
 
+//! \cond INTERNAL
 //! If this is changed be sure to change the table aiCollisionEntitiesTable in AICollision.cpp.
 enum EAICollisionEntities
 {
@@ -420,6 +421,7 @@ enum EAIFilterType
 	eAIFT_Faction,
 	eAIFT_None,
 };
+//! \endcond
 
 struct IAIEngineModule : public Cry::IDefaultModule
 {
@@ -781,6 +783,7 @@ struct IAISystem
 };
 
 #if defined(ENABLE_LW_PROFILERS)
+//! \cond INTERNAL
 class CAILightProfileSection
 {
 public:
@@ -802,6 +805,7 @@ public:
 private:
 	uint64 m_nTicks;
 };
+//! \endcond
 
 	#define AISYSTEM_LIGHT_PROFILER() CAILightProfileSection _aiLightProfileSection;
 #else

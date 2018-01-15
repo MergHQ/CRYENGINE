@@ -6,6 +6,7 @@
 template<typename F> struct Matrix44H;
 template<typename F> struct Matrix44HR;
 
+//! General-purpose 4x4 matrix
 template<typename F> struct Matrix44_tpl
 	: INumberArray<F, 16>
 {

@@ -301,6 +301,7 @@ struct IGameWarningsListener
 	// </interfuscator:shuffle>
 };
 
+//! \cond INTERNAL
 //! SRenderNodeCloneLookup is used to associate original IRenderNodes (used in the game) with cloned IRenderNodes, to allow breaks to be played back.
 struct SRenderNodeCloneLookup
 {
@@ -346,6 +347,7 @@ struct IGameStatsConfig
 	virtual const char* GetValueNameByCode(const char* cat, int id) = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 struct IBreakReplicator
 {

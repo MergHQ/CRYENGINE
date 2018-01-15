@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 /*!
@@ -114,3 +116,4 @@ public:
 
 //! Range if just TRange for floats..
 typedef TRange<float> Range;
+//! \endcond

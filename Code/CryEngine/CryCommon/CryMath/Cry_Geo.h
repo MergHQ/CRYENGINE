@@ -183,6 +183,7 @@ struct Cone
 		: mTip(tip), mDir(dir), mBase(tip + dir * height), mHeight(height), mBaseRadius(baseRadius) {}
 };
 
+//! Represents an axis-aligned bounding box
 struct AABB
 {
 
@@ -534,6 +535,7 @@ ILINE bool IsEquivalent(const AABB& a, const AABB& b, float epsilon = VEC_EPSILO
 	return IsEquivalent(a.min, b.min, epsilon) && IsEquivalent(a.max, b.max, epsilon);
 }
 
+//! Exposes oriented bounding box functionality
 template<typename F> struct OBB_tpl
 {
 

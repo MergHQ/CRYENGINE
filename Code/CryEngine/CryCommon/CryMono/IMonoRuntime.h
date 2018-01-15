@@ -13,6 +13,7 @@ struct IMonoNativeToManagedInterface;
 
 namespace BehaviorTree { class Node; }
 
+//! Represents a C# plug-in dll, used by Cry::IPluginManager to communicate with Mono
 struct IManagedPlugin
 {
 	virtual ~IManagedPlugin() {}
@@ -47,6 +48,7 @@ struct IManagedNodeCreator
 	virtual BehaviorTree::Node* Create() = 0;
 };
 
+//! Main interface for the Mono/C# engine module, responsible for initializing and managing the Mono API and interacting with C# code
 struct IMonoEngineModule : public Cry::IDefaultModule
 {
 	CRYINTERFACE_DECLARE_GUID(IMonoEngineModule, "ae47c989-0ffa-4876-b0b5-fbb833c2b4ef"_cry_guid);

@@ -1,24 +1,8 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:	Pathfinder Interface.
+//! \cond INTERNAL
 
-   -------------------------------------------------------------------------
-   History:
-   - 15:1:2009   18:01 : Created by Márcio Martins
-   - 4 May 2009        : Evgeny Adamenkov: Removed IRenderer
-
-*************************************************************************/
-
-#ifndef __IPATHFINDER_H__
-#define __IPATHFINDER_H__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 class CAIActor;
 
@@ -731,4 +715,4 @@ struct IMNMPathfinder
 	// </interfuscator:shuffle>
 };
 
-#endif //__IPATHFINDER_H__
+//! \endcond

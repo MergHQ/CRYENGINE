@@ -13,6 +13,7 @@
 #include <wctype.h>
 #include <type_traits>  // std::is_same<>
 
+//! \cond INTERNAL
 #ifndef CRY_STRING_DEBUG
 	#define CRY_STRING_DEBUG(s)
 #endif
@@ -224,6 +225,7 @@ public:
 		wmemset(dest, ch, count);
 	}
 };
+//! \endcond
 
 template<class T, size_t S>
 class CryStackStringT : public CharTraits<T>
@@ -1961,6 +1963,7 @@ public:
 	void GetMemoryUsage(class ICrySizer* pSizer) const {}
 };
 
+//! \cond INTERNAL
 //! Template specialization for a fixed list of CryFixedString.
 template<size_t maxElements, size_t stringSize>
 class CCryFixedStringListT
@@ -2002,6 +2005,7 @@ private:
 	CryFixedStringT<stringSize> m_data[NUM_MAX_ELEMENTS];
 	int32                       m_currentAmount;
 };
+// \endcond
 
 //! A template specialization for wchar_t.
 template<size_t S> class CryFixedWStringT : public CryStackStringT<wchar_t, S>

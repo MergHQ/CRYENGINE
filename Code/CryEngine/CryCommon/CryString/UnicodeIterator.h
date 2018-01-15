@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 #include "UnicodeBinding.h"
 namespace Unicode
@@ -580,3 +582,5 @@ inline typename Detail::SIteratorSpecializer<StringType>::type MakeIterator(cons
 	return typename Detail::SIteratorSpecializer<StringType>::type(str.begin(), str.end());
 }
 }
+
+//! \endcond

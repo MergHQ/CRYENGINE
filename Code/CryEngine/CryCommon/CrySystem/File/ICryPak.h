@@ -11,6 +11,7 @@ struct IResourceList;
 struct _finddata_t;
 struct IMemoryBlock;
 
+//! \cond INTERNAL
 //! This represents one particular archive filcare.
 struct ICryArchive : public _reference_target_t
 {
@@ -187,6 +188,7 @@ struct ICryPakFileAcesssSink
 	virtual void ReportFileOpen(FILE* in, const char* szFullPath) = 0;
 	// </interfuscator:shuffle>
 };
+//! \endcond
 
 //! This special flag is used for findfirst/findnext routines to mark the files that were actually found in Archive.
 enum  : uint32 {_A_IN_CRYPAK = 0x80000000};
@@ -596,6 +598,7 @@ struct ICryPak
 	static const ICryPak::SignedFileSize FILE_NOT_PRESENT = -1;
 };
 
+//! \cond INTERNAL
 //! The IResourceList provides an access to the collection of the resource`s file names.
 //! Client can add a new file names to the resource list and check if resource already in the list.
 struct IResourceList : public _reference_target_t
@@ -1030,3 +1033,5 @@ private:
 	}
 };
 #endif // !RESOURCE_COMPILER
+
+//! \endcond

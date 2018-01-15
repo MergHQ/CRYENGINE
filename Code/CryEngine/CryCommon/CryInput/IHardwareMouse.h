@@ -1,24 +1,6 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:
-
-   System "Hardware mouse" cursor with reference counter.
-   This is needed because Menus / HUD / Profiler / or whatever
-   can use the cursor not at the same time be successively
-   => We need to know when to enable/disable the cursor.
-
-   -------------------------------------------------------------------------
-   History:
-   - 18:12:2006   Created by Julien Darré
-
-*************************************************************************/
-
-#ifndef __IHARDWAREMOUSE_H__
-#define __IHARDWAREMOUSE_H__
+#pragma once
 
 //-----------------------------------------------------------------------------------------------------
 /*
@@ -57,6 +39,7 @@ struct IHardwareMouseEventListener
 
 //-----------------------------------------------------------------------------------------------------
 
+/*! Interface for managing the main OS cursor's state */
 struct IHardwareMouse
 {
 	// <interfuscator:shuffle>
@@ -118,9 +101,3 @@ struct IHardwareMouse
 
 	virtual ISystemEventListener* GetSystemEventListener() = 0;
 };
-
-//-----------------------------------------------------------------------------------------------------
-
-#endif
-
-//-----------------------------------------------------------------------------------------------------

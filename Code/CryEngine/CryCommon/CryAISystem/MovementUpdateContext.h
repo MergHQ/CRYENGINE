@@ -1,9 +1,8 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-#pragma once
+//! \cond INTERNAL
 
-#ifndef MovementUpdateContext_h
-	#define MovementUpdateContext_h
+#pragma once
 
 struct IMovementActor;
 struct IMovementSystem;
@@ -43,4 +42,4 @@ struct MovementUpdateContext
 	const float         updateTime;
 };
 
-#endif // MovementUpdateContext_h
+//! \endcond

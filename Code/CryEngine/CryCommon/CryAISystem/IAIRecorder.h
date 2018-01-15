@@ -1,5 +1,7 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
+//! \cond INTERNAL
+
 #pragma once
 
 // These lines will enable AI signal profiling
@@ -158,3 +160,5 @@ struct IAIDebugRecord
 	virtual IAIDebugStream* GetStream(IAIRecordable::e_AIDbgEvent streamTag) = 0;
 	// </interfuscator:shuffle>
 };
+
+//! \endcond
