@@ -647,6 +647,10 @@ void CSystem::ShutDown()
 	//////////////////////////////////////////////////////////////////////////
 	// Release Game.
 	//////////////////////////////////////////////////////////////////////////
+
+	if (m_env.pGameFramework)
+		m_env.pGameFramework->ShutDown();
+
 	if (m_env.pEntitySystem)
 		m_env.pEntitySystem->Unload();
 
@@ -657,11 +661,6 @@ void CSystem::ShutDown()
 	}
 
 	UnloadSchematycModule();
-
-	if (gEnv->pGameFramework != nullptr)
-	{
-		gEnv->pGameFramework->ShutDown();
-	}
 
 	UnloadEngineModule("CryAction");
 	UnloadEngineModule("CryFlowGraph");
