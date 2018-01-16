@@ -33,7 +33,6 @@ namespace Schematyc2
 	////////////////////////////////////////////////////////////////
 	CRelevanceGrid::~CRelevanceGrid()
 	{
-		gEnv->pGameFramework->GetILevelSystem()->RemoveListener(this);
 		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 	}
 
@@ -87,6 +86,11 @@ namespace Schematyc2
 		case ESYSTEM_EVENT_GAME_FRAMEWORK_INIT_DONE:
 			gEnv->pGameFramework->GetILevelSystem()->AddListener(this);
 			break;
+
+		case ESYSTEM_EVENT_GAME_FRAMEWORK_ABOUT_TO_SHUTDOWN:
+			gEnv->pGameFramework->GetILevelSystem()->RemoveListener(this);
+			break;
+
 		default:
 			break;
 		}
