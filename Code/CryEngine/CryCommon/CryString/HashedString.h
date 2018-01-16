@@ -5,6 +5,8 @@
    Plus: It can store a copy of the original string for debug purposes
    /************************************************************************/
 
+//! \cond INTERNAL
+
 #pragma once
 
 #include <CryCore/CryCrc32.h>
@@ -252,3 +254,5 @@ inline bool Serialize(Serialization::IArchive& ar, CHashedString& str, const cha
 #endif
 	return true;
 }
+
+//! \endcond

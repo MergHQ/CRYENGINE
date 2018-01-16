@@ -204,7 +204,6 @@ struct IPhysRenderer
 	virtual void DrawFrame(const Vec3& pnt, const Vec3* axes, const float scale, const Vec3* limits, const int axes_locked) = 0;
 	// </interfuscator:shuffle>
 };
-//! \endcond
 
 //! For "fastload" serialization.
 class CMemStream
@@ -2319,6 +2318,7 @@ struct mesh_island
 	int   bProcessed; //!< for internal use
 };
 
+//! \cond INTERNAL
 //! Maintains a linked triangle list inside an island.
 struct tri2isle
 {
@@ -2326,6 +2326,7 @@ struct tri2isle
 	unsigned int isle  : 15;
 	unsigned int bFree : 1;
 };
+//! \endcond
 
 struct mesh_data : primitives::primitive
 {
@@ -2939,6 +2940,7 @@ struct ray_hit
 	ray_hit*         next;     //!< reserved for internal use, do not change
 };
 
+//! \cond INTERNAL
 struct ray_hit_cached   //!< used in conjunction with rwi_reuse_last_hit
 {
 	ray_hit_cached() { pCollider = 0; ipart = 0; }
@@ -2949,6 +2951,7 @@ struct ray_hit_cached   //!< used in conjunction with rwi_reuse_last_hit
 	int              ipart;
 	int              iNode;
 };
+//! \endcond
 
 #ifndef PWI_NAME_TAG
 	#define PWI_NAME_TAG "PrimitiveWorldIntersection"
