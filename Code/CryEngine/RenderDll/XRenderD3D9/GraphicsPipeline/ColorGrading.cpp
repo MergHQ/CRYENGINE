@@ -115,7 +115,7 @@ void CColorGradingStage::PreparePrimitives(CColorGradingController& controller, 
 
 	m_pChartToUse = GetStaticColorChart();
 	if (m_pChartToUse != nullptr)
-			return;
+		return;
 
 	// init passes
 	m_mergePass.BeginAddingPrimitives();

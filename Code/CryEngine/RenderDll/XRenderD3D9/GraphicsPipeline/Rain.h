@@ -16,7 +16,6 @@ public:
 	void Init() final;
 	void Update() final;
 	void Destroy();
-	void Prepare();
 
 	void ExecuteRainOcclusion();
 	void ExecuteDeferredRainGBuffer();
@@ -56,5 +55,4 @@ private:
 	buffer_handle_t                                m_rainVertexBuffer = ~0u;
 
 	SRainParams                                    m_RainVolParams;
-
 };

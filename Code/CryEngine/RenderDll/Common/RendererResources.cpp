@@ -1188,11 +1188,6 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion0", s_ptexRainSSOcclusion[0], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8G8B8A8);
 		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion1", s_ptexRainSSOcclusion[1], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8G8B8A8);
 
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainOcclusion", s_ptexRainOcclusion, RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_Unknown, false, false, eTF_R8G8B8A8, -1, FT_DONT_RELEASE);
-
-		SPostEffectsUtils::GetOrCreateRenderTarget("$WaterVolumeDDN", s_ptexWaterVolumeDDN, 64, 64, Clr_Unknown, 1, true, eTF_R16G16B16A16F, TO_WATERVOLUMEMAP);
-		//s_ptexWaterVolumeDDN->DisableMgpuSync();
-
 		if (CRenderer::CV_r_watervolumecaustics && CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred)
 		{
 			const int nCausticRes = clamp_tpl(CRenderer::CV_r_watervolumecausticsresolution, 256, 4096);
@@ -1221,6 +1216,20 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 
 		SPostEffectsUtils::GetOrCreateRenderTarget("$FlaresGather", s_ptexFlaresGather, CFlareSoftOcclusionQuery::s_nGatherTextureWidth, CFlareSoftOcclusionQuery::s_nGatherTextureHeight, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE);
 	}
+
+	/*
+	 *	The following textures do not need to be recreated on resize
+	 */
+
+	if (!CTexture::IsTextureExist(s_ptexRainOcclusion))
+		SPostEffectsUtils::GetOrCreateRenderTarget("$RainOcclusion", s_ptexRainOcclusion, RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_Unknown, false, false, eTF_R8G8B8A8, -1, FT_DONT_RELEASE);
+
+	if (!CTexture::IsTextureExist(s_ptexWaterVolumeDDN))
+	{
+		SPostEffectsUtils::GetOrCreateRenderTarget("$WaterVolumeDDN", s_ptexWaterVolumeDDN, 64, 64, Clr_Unknown, 1, true, eTF_R16G16B16A16F, TO_WATERVOLUMEMAP);
+		//s_ptexWaterVolumeDDN->DisableMgpuSync();
+	}
+
 
 	return 1;
 }
