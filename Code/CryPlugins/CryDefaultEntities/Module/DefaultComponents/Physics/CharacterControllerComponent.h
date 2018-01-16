@@ -3,7 +3,6 @@
 #include "DefaultComponents/Geometry/AdvancedAnimationComponent.h"
 #include "DefaultComponents/Physics/RigidBodyComponent.h"
 #include "DefaultComponents/Physics/AreaComponent.h"
-#include "DefaultComponents/Physics/Vehicles/VehicleComponent.h"
 
 class CPlugin_CryDefaultEntities;
 
