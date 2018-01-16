@@ -1471,22 +1471,22 @@ struct INetNub
 	// </interfuscator:shuffle>
 };
 
-// Listener that allows for listening to client connection and disconnect events
+//! Listener that allows for listening to client connection and disconnect events
 struct INetworkedClientListener
 {
-	// Sent to the local client on disconnect
+	//! Sent to the local client on disconnect
 	virtual void OnLocalClientDisconnected(EDisconnectionCause cause, const char* description) = 0;
 
-	// Sent to the server when a new client has started connecting
-	// Return false to disallow the connection
+	//! Sent to the server when a new client has started connecting
+	//! Return false to disallow the connection
 	virtual bool OnClientConnectionReceived(int channelId, bool bIsReset) = 0;
-	// Sent to the server when a new client has finished connecting and is ready for gameplay
-	// Return false to disallow the connection and kick the player
+	//! Sent to the server when a new client has finished connecting and is ready for gameplay
+	//! Return false to disallow the connection and kick the player
 	virtual bool OnClientReadyForGameplay(int channelId, bool bIsReset) = 0;
-	// Sent to the server when a client is disconnected
+	//! Sent to the server when a client is disconnected
 	virtual void OnClientDisconnected(int channelId, EDisconnectionCause cause, const char* description, bool bKeepClient) = 0;
-	// Sent to the server when a client is timing out (no packets for X seconds)
-	// Return true to allow disconnection, otherwise false to keep client.
+	//! Sent to the server when a client is timing out (no packets for X seconds)
+	//! Return true to allow disconnection, otherwise false to keep client.
 	virtual bool OnClientTimingOut(int channelId, EDisconnectionCause cause, const char* description) = 0;
 };
 

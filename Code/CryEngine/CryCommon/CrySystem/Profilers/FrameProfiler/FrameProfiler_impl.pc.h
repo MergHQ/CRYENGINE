@@ -1,17 +1,6 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  File name:   FrameProfiler_impl.pc.h
-//  Version:     v1.00
-//  Created:     11/12/2002 by Christopher Bolte.
-//  Compilers:   Visual Studio.NET
-//  Description: Platform Profiling Marker Implementation for PC using GPA marker
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-#if !defined(CRY_PROFILE_MARKER_IMPL_PC_H_)
-#define CRY_PROFILE_MARKER_IMPL_PC_H_
+#pragma once
 
 #if defined(CRY_PROFILE_MARKERS_USE_GPA)
 	#include <ittnotify.h>
@@ -193,5 +182,3 @@ void ProfilerFrameEnd(int nFrameId)
 
 } // namespace detail
 } // namespace CryProfile
-
-#endif // CRY_PROFILE_MARKER_IMPL_PC_H_

@@ -2071,6 +2071,7 @@ template<> struct SUIGetTypeStr<eUOT_Events>
 #define UIEVENT_ASSERT_ARG(index) \
   CRY_ASSERT_MESSAGE(SUIEventArgumentCheck<T ## index>::Check(event.InputParams.Params[index].eType), "Template argument not compatible! Index: " # index);
 
+//! \cond INTERNAL
 //! Deref for T&, const T& and special case for const char* and const wchar_t*.
 template<class T> struct deref_t
 {
@@ -2108,6 +2109,7 @@ template<class T> struct deref_t<const T*>
 		return v.c_str();
 	}
 };
+//! \endcond
 
 // Argument check
 template<class T> struct SUIEventArgumentCheck
