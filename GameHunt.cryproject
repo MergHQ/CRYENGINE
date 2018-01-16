@@ -34,7 +34,6 @@
 
 		{ "name": "ca_PreloadAllCAFs", "value": "1" },
 		{ "name": "ca_SampleQuatHemisphereFromCurrentPose", "value": "1" },
-		{ "name": "ca_useIMG_CAF", "value": "0" },
 		{ "name": "ca_ResetCulledJointsToBindPose", "value": "1" },
 		{ "name": "ca_ForceAnimationLod", "value": "0" },
 		
