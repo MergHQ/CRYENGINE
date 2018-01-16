@@ -64,6 +64,9 @@ public:
 	virtual void AddDeferredEvaluatorName(const char* szDeferredEvaluatorName) override;
 	// ~IQueryHistoryConsumer
 
+protected:
+	void customEvent(QEvent* event) override;
+
 private:
 	void OnHistoryOriginComboBoxSelectionChanged(int index);
 	void OnClearHistoryButtonClicked(bool checked);

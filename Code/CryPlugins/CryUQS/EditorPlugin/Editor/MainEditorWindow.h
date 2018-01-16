@@ -92,6 +92,9 @@ public:
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent ev) override;
 	// ~IEditorNotifyListener
 
+protected:
+	void customEvent(QEvent* event) override;
+
 private:
 
 	void                     CreateNewDocument();
