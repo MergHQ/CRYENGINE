@@ -112,6 +112,7 @@ protected:
 	bool                event(QEvent* ev) override;
 	void                closeEvent(QCloseEvent* ev);
 	bool                eventFilter(QObject* sender, QEvent* ev) override;
+	void                customEvent(QEvent* event) override;
 private:
 
 	virtual QRect       GetPaneRect() override;

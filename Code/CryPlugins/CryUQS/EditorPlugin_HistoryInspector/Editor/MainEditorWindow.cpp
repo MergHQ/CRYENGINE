@@ -26,6 +26,7 @@
 
 #include <Serialization/QPropertyTree/QPropertyTree.h>
 #include <Controls/QuestionDialog.h>
+#include <EditorFramework/Events.h>
 
 // UQS 3d rendering
 #include <IViewportManager.h>
@@ -795,6 +796,26 @@ void CMainEditorWindow::AddDeferredEvaluatorName(const char* szDeferredEvaluator
 	string label;
 	label.Format("DE #%i: %s", (int)m_pFreshlyAddedOrUpdatedQuery->deferredEvaluatorLabelsForUI.size(), szDeferredEvaluatorName);
 	m_pFreshlyAddedOrUpdatedQuery->deferredEvaluatorLabelsForUI.push_back(label);
+}
+
+void CMainEditorWindow::customEvent(QEvent* event)
+{
+	// TODO: This handler should be removed whenever this editor is refactored to be a CDockableEditor
+	if (event->type() == SandboxEvent::Command)
+	{
+		CommandEvent* commandEvent = static_cast<CommandEvent*>(event);
+
+		const string& command = commandEvent->GetCommand();
+		if (command == "general.help")
+		{
+			event->setAccepted(EditorUtils::OpenHelpPage(GetPaneTitle()));
+		}
+	}
+
+	if (!event->isAccepted())
+	{
+		QWidget::customEvent(event);
+	}
 }
 
 void CMainEditorWindow::OnHistoryOriginComboBoxSelectionChanged(int index)

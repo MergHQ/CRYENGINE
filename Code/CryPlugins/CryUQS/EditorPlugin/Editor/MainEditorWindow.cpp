@@ -21,6 +21,8 @@
 #include <QtUtil.h>
 
 #include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Util/EditorUtils.h>
+#include <EditorFramework/Events.h>
 #include <Controls/QuestionDialog.h>
 
 #include "Document.h"
@@ -148,6 +150,26 @@ const char* CMainEditorWindow::GetPaneTitle() const
 
 void CMainEditorWindow::OnEditorNotifyEvent(EEditorNotifyEvent ev)
 {
+}
+
+void CMainEditorWindow::customEvent(QEvent* event)
+{
+	// TODO: This handler should be removed whenever this editor is refactored to be a CDockableEditor
+	if (event->type() == SandboxEvent::Command)
+	{
+		CommandEvent* commandEvent = static_cast<CommandEvent*>(event);
+
+		const string& command = commandEvent->GetCommand();
+		if (command == "general.help")
+		{
+			event->setAccepted(EditorUtils::OpenHelpPage(GetPaneTitle()));
+		}
+	}
+
+	if (!event->isAccepted())
+	{
+		QWidget::customEvent(event);
+	}
 }
 
 void CMainEditorWindow::CreateNewDocument()
