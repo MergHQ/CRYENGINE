@@ -328,7 +328,8 @@ void CSceneCustomStage::ExecuteDebugger()
 	}
 
 	CTexture* pTargetTex = pRenderView->GetColorTarget();
-	CTexture* pDepthTex = pRenderView->GetDepthTarget();
+	CTexture* pDepthTex = gcpRendD3D->GetTempDepthSurface(gcpRendD3D->GetFrameID(), pTargetTex->GetWidth(), pTargetTex->GetHeight(), true)->texture.pTexture;
+
 
 	m_debugViewPass.ExchangeRenderTarget(0, pTargetTex);
 	m_debugViewPass.ExchangeDepthTarget(pDepthTex);
@@ -377,7 +378,7 @@ void CSceneCustomStage::ExecuteDebugOverlay()
 	}
 
 	CTexture* pTargetTex = pRenderView->GetRenderOutput()->GetColorTarget();
-	CTexture* pDepthTex = pRenderView->GetRenderOutput()->GetDepthTarget();
+	CTexture* pDepthTex = gcpRendD3D->GetTempDepthSurface(gcpRendD3D->GetFrameID(), pTargetTex->GetWidth(), pTargetTex->GetHeight(), true)->texture.pTexture;
 
 	m_debugViewPass.ExchangeRenderTarget(0, pTargetTex);
 	m_debugViewPass.ExchangeDepthTarget(pDepthTex);
@@ -419,7 +420,7 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 
 	// update our depth texture here
 	CTexture* pTargetRT = CRendererResources::s_ptexSceneSelectionIDs;
-	CTexture* pTargetDS = RenderView()->GetDepthTarget();
+	CTexture* pTargetDS = pRenderer->GetTempDepthSurface(pRenderer->GetFrameID(), pTargetRT->GetWidth(), pTargetRT->GetHeight(), true)->texture.pTexture;
 
 	m_selectionIDPass.SetLabel("EDITOR_SELECTION_HIGHLIGHT");
 	m_selectionIDPass.SetViewport(D3DViewPort{
