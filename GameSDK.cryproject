@@ -24,7 +24,6 @@
 		]
 	},
 	"console_variables": [
-		{ "name": "ca_useIMG_CAF", "value": "0" },
 		{ "name": "sys_ime", "value": "1" },
 		{ "name": "sys_target_platforms", "value": "pc,ps4,xboxone,linux" },
 		{ "name": "sys_splashscreen", "value": "Libs/UI/textures/startscreen.tif" },

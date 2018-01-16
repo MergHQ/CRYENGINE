@@ -47,9 +47,10 @@ CShader* CShaderMan::s_shPostEffectsRenderModes;
 CShader* CShaderMan::s_shPostAA;
 CShader* CShaderMan::s_ShaderCommon;
 CShader* CShaderMan::s_ShaderOcclTest;
-CShader* CShaderMan::s_ShaderDXTCompress = NULL;
-CShader* CShaderMan::s_ShaderStereo = NULL;
-CShader* CShaderMan::s_ShaderClouds = NULL;
+CShader* CShaderMan::s_ShaderDXTCompress = nullptr;
+CShader* CShaderMan::s_ShaderStereo = nullptr;
+CShader* CShaderMan::s_ShaderClouds = nullptr;
+CShader* CShaderMan::s_ShaderGpuParticles = nullptr;
 CShader* CShaderMan::s_ShaderMobileComposition = nullptr;
 CCryNameTSCRC CShaderMan::s_cNameHEAD;
 
@@ -1421,6 +1422,7 @@ void CShaderMan::mfReleaseSystemShaders()
 	SAFE_RELEASE_FORCE(s_ShaderDXTCompress);
 	SAFE_RELEASE_FORCE(s_ShaderStereo);
 	SAFE_RELEASE_FORCE(s_ShaderClouds);
+	SAFE_RELEASE_FORCE(s_ShaderGpuParticles);
 	SAFE_RELEASE_FORCE(s_ShaderMobileComposition);
 	m_bLoadedSystem = false;
 
@@ -1494,6 +1496,7 @@ void CShaderMan::mfLoadDefaultSystemShaders()
 		mfRefreshSystemShader("ShadowBlur", CShaderMan::s_ShaderShadowBlur);
 		mfRefreshSystemShader("Sunshafts", CShaderMan::s_shPostSunShafts);
 		mfRefreshSystemShader("Clouds", CShaderMan::s_ShaderClouds);
+		mfRefreshSystemShader("GpuParticles", CShaderMan::s_ShaderGpuParticles);
 	}
 
 }

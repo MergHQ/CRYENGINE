@@ -1214,7 +1214,15 @@ void CRenderAuxGeomD3D::SMatrices::UpdateMatrices(const CCamera& camera)
 		-1, 1, 0, 1
 	);
 	*/
-	mathMatrixOrthoOffCenterLH(&m_matTrans2D, 0.0f, (float)resolution.x, (float)resolution.y,0.0f, 0.0f, 1.0f);
+
+	if (depthreversed)
+	{
+		mathMatrixOrthoOffCenterLHReverseDepth(&m_matTrans2D, 0.0f, (float)resolution.x, (float)resolution.y, 0.0f, 0.0f, 1.0f);
+	}
+	else
+	{
+		mathMatrixOrthoOffCenterLH(&m_matTrans2D, 0.0f, (float)resolution.x, (float)resolution.y, 0.0f, 0.0f, 1.0f);
+	}
 
 	//m_matProj = ReverseDepthHelper::Convert(m_matProj);
 

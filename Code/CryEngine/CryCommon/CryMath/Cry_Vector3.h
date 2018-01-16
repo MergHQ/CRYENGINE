@@ -491,6 +491,8 @@ template<typename F> struct Matrix33_tpl;
 template<typename F> struct Matrix34_tpl;
 template<typename F> struct Matrix44_tpl;
 
+//! General-purpose 3D Euler angle container
+//! \see Ang3
 template<typename F> struct Ang3_tpl
 	: INumberVector<F, 3, Ang3_tpl<F>>
 {

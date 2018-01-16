@@ -346,6 +346,7 @@ public:
 	static CShader*              s_ShaderStereo;
 	static CShader*              s_ShaderClouds;
 	static CShader*              s_ShaderMobileComposition;
+	static CShader*              s_ShaderGpuParticles;
 
 	const SInputShaderResources* m_pCurInputResources;
 	SShaderGen*                  m_pGlobalExt;

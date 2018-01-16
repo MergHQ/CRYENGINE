@@ -258,7 +258,7 @@ void CharacterToolForm::Initialize()
 
 			m_testRagdollButton = new QToolButton();
 			m_testRagdollButton->setText("Test Ragdoll");
-			EXPECTED(connect(m_testRagdollButton, &QToolButton::pressed, [this](){ ((ModeCharacter*)m_modeCharacter.data())->CommenceRagdollTest(); } ));
+			EXPECTED(connect(m_testRagdollButton, &QToolButton::pressed, [this](){ ((ModeCharacter*)m_modeCharacter.data())->CommenceRagdollTest(); }));
 			topLayout->addWidget(m_testRagdollButton);
 
 			centralLayout->addLayout(topLayout, 0);
@@ -386,13 +386,14 @@ void CharacterToolForm::OnPanelDestroyed(QObject* obj)
 	}
 }
 
-void CharacterToolForm::OnFocusChanged(QWidget *old, QWidget *now)
+void CharacterToolForm::OnFocusChanged(QWidget* old, QWidget* now)
 {
 	m_bHasFocus = false;
 	QWidget* parent = parentWidget();
 	if (parent)
 	{
-		while (parent->parentWidget()) parent = parent->parentWidget();
+		while (parent->parentWidget())
+			parent = parent->parentWidget();
 		m_bHasFocus = parent->isAncestorOf(now);
 	}
 }
@@ -513,7 +514,8 @@ void CharacterToolForm::OnIdleUpdate()
 	{
 		// determine, if CT or any related widget has keyboard focus or is active window
 		bool hasCharacterToolOrAnyAccordingWidgetFocus = m_bHasFocus || m_blendSpacePreview->hasFocus() || m_blendSpacePreview->isActiveWindow();
-		for (auto const& it : m_dockWidgets) hasCharacterToolOrAnyAccordingWidgetFocus = hasCharacterToolOrAnyAccordingWidgetFocus || it->hasFocus() || it->isActiveWindow();
+		for (auto const& it : m_dockWidgets)
+			hasCharacterToolOrAnyAccordingWidgetFocus = hasCharacterToolOrAnyAccordingWidgetFocus || it->hasFocus() || it->isActiveWindow();
 
 		if (!hasCharacterToolOrAnyAccordingWidgetFocus) return;
 	}
@@ -554,9 +556,9 @@ void CharacterToolForm::OnExportAnimationLayers()
 	{
 		prevDir = GetDirectoryFromPath(fileName);
 		GetIEditor()->GetSystem()->GetArchiveHost()->SaveXmlFile(
-			fileName.toStdString().c_str(),
-			Serialization::SStruct(m_system->scene->layers),
-			"AnimationLayers");
+		  fileName.toStdString().c_str(),
+		  Serialization::SStruct(m_system->scene->layers),
+		  "AnimationLayers");
 	}
 }
 
@@ -574,8 +576,8 @@ void CharacterToolForm::OnImportAnimationLayers()
 	{
 		prevDir = GetDirectoryFromPath(fileName);
 		GetIEditor()->GetSystem()->GetArchiveHost()->LoadXmlFile(
-			Serialization::SStruct(m_system->scene->layers),
-			fileName.toStdString().c_str());
+		  Serialization::SStruct(m_system->scene->layers),
+		  fileName.toStdString().c_str());
 		m_system->scene->PlaybackLayersChanged(false);
 		m_system->scene->SignalChanged(false);
 		// fire the signal twice, because CharacterDocument::OnScenePlaybackLayersChanged
@@ -1102,8 +1104,8 @@ void CharacterToolForm::closeEvent(QCloseEvent* ev)
 			const auto& entries = it.second;
 
 			const auto& handler = std::find(filenamesToSave.begin(), filenamesToSave.end(), filename) != filenamesToSave.end()
-				? std::function<void(ExplorerEntry*)>([&](ExplorerEntry* entry) { m_system->explorerData->SaveEntry(&saveOutput, entry); })
-				: std::function<void(ExplorerEntry*)>([&](ExplorerEntry* entry) { m_system->explorerData->Revert(entry); });
+			                      ? std::function<void(ExplorerEntry*)>([&](ExplorerEntry* entry) { m_system->explorerData->SaveEntry(&saveOutput, entry); })
+			                      : std::function<void(ExplorerEntry*)>([&](ExplorerEntry* entry) { m_system->explorerData->Revert(entry); });
 
 			std::for_each(entries.begin(), entries.end(), handler);
 		}
@@ -1172,6 +1174,26 @@ bool CharacterToolForm::eventFilter(QObject* sender, QEvent* ev)
 #endif
 	}
 	return false;
+}
+
+void CharacterToolForm::customEvent(QEvent* event)
+{
+	// TODO: This handler should be removed whenever this editor is refactored to be a CDockableEditor
+	if (event->type() == SandboxEvent::Command)
+	{
+		CommandEvent* commandEvent = static_cast<CommandEvent*>(event);
+
+		const string& command = commandEvent->GetCommand();
+		if (command == "general.help")
+		{
+			event->setAccepted(EditorUtils::OpenHelpPage(GetPaneTitle()));
+		}
+	}
+
+	if (!event->isAccepted())
+	{
+		QWidget::customEvent(event);
+	}
 }
 
 void CharacterToolForm::OnFileRecent()

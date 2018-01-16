@@ -198,6 +198,7 @@ struct contact
 
 const int NPRIMS = 8; //!< Since plane is currently not supported in collision checks.
 
+//! \cond INTERNAL
 //! Used in qhull2d.
 struct ptitem2d
 {
@@ -205,6 +206,8 @@ struct ptitem2d
 	ptitem2d* next, * prev;
 	int       iContact;
 };
+//! \endcond
+
 struct edgeitem
 {
 	ptitem2d* pvtx;

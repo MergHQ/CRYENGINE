@@ -23,6 +23,7 @@ inline char toUpperAscii(char c)
 }
 }
 
+//! \cond INTERNAL
 //! cry_sXXX()/cry_vsXXX() and CryStringUtils_Internal::strXXX()/vsprintfXXX():
 //! The functions copy characters from src to dst one by one until any of
 //! the following conditions is met:
@@ -281,6 +282,7 @@ static inline bool MatchesWildcards_Tpl(const CharType* pStr, const CharType* pW
 }
 
 } // namespace CryStringUtils_Internal
+//! \endcond
 
 //////////////////////////////////////////////////////////////////////////
 // cry_strcpy(), cry_strcpy_wchar()

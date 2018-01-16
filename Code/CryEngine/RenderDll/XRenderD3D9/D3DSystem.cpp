@@ -522,9 +522,9 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 
 	if (IsFullscreen())
 	{
-		constexpr auto fullscreenStyle = WS_POPUP | WS_VISIBLE;
 		if (previousWindowState != EWindowState::Fullscreen)
 		{
+			constexpr auto fullscreenStyle = WS_POPUP | WS_VISIBLE;
 			SetWindowLongPtrW(m_hWnd, GWL_STYLE, fullscreenStyle);
 		}
 			
@@ -532,10 +532,10 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 	}
 	else if (m_windowState == EWindowState::BorderlessWindow || m_windowState == EWindowState::BorderlessFullscreen)
 	{
-		constexpr auto fullscreenWindowStyle = WS_POPUP | WS_VISIBLE;
 		if (previousWindowState != EWindowState::BorderlessWindow)
 		{
 			// Set fullscreen-mode style
+			constexpr auto fullscreenWindowStyle = WS_POPUP | WS_VISIBLE;
 			SetWindowLongPtrW(m_hWnd, GWL_STYLE, fullscreenWindowStyle);
 		}
 
@@ -545,7 +545,12 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 	}
 	else
 	{
-		constexpr auto windowedStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+		const ICVar* disableResizeableWindow = gEnv->pConsole->GetCVar("r_disableResizableWindow");
+		auto windowedStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+		if (disableResizeableWindow && disableResizeableWindow->GetIVal() != 0)
+		{
+			windowedStyle &= ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
+		}
 		if (previousWindowState != EWindowState::Windowed)
 		{
 			SetWindowLongPtrW(m_hWnd, GWL_STYLE, windowedStyle);
@@ -554,13 +559,12 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 		RECT windowRect;
 		GetWindowRect(m_hWnd, &windowRect);
 
-		int x = windowRect.left;
-		int y = windowRect.top;
-
 		windowRect.right = windowRect.left + displayWidth;
 		windowRect.bottom = windowRect.top + displayHeight;
 		AdjustWindowRectEx(&windowRect, windowedStyle, FALSE, WS_EX_APPWINDOW);
 
+		const int x = windowRect.left;
+		const int y = windowRect.top;
 		const int width = windowRect.right - windowRect.left;
 		const int height = windowRect.bottom - windowRect.top;
 		SetWindowPos(m_hWnd, HWND_NOTOPMOST, x, y, width, height, SWP_SHOWWINDOW);
@@ -1028,6 +1032,11 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 	{
 		exstyle = WS_EX_APPWINDOW;
 		style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+		const ICVar* disableResizeableWindow = gEnv->pConsole->GetCVar("r_disableResizableWindow");
+		if (disableResizeableWindow && disableResizeableWindow->GetIVal() != 0)
+		{
+			style &= ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
+		}
 
 		RECT wndrect;
 		SetRect(&wndrect, 0, 0, width, height);
@@ -1363,6 +1372,8 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	                   "Sets the image (dds file) to be displayed as the mouse cursor",
 	                   SetMouseCursorIconCVar);
 #endif
+
+	REGISTER_INT("r_disableResizableWindow", 0, VF_NULL, "Turn off resizable window borders. Changes are only applied after changing the window style once.");
 
 #if (CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES) && !DXGL_FULL_EMULATION
 	#if OGL_SINGLE_CONTEXT
@@ -2058,6 +2069,10 @@ bool CD3D9Renderer::CreateDevice()
 	return true;
 }
 
+#if (CRY_RENDERER_DIRECT3D >= 110) && NTDDI_WIN10 && (WDK_NTDDI_VERSION >= NTDDI_WIN10) && defined(SUPPORT_DEVICE_INFO)
+	#include "dxgi1_4.h"
+#endif
+
 void CD3D9Renderer::GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t& vidMemUsedRecently, bool bGetPoolsSizes)
 {
 
@@ -2067,20 +2082,32 @@ void CD3D9Renderer::GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t
 	}
 	else
 	{
-#if (CRY_RENDERER_DIRECT3D >= 120) && defined(SUPPORT_DEVICE_INFO)
+#if (CRY_RENDERER_DIRECT3D >= 110) && NTDDI_WIN10 && (WDK_NTDDI_VERSION >= NTDDI_WIN10) && defined(SUPPORT_DEVICE_INFO)
 		CD3D9Renderer* rd = gcpRendD3D;
-		DXGI_QUERY_VIDEO_MEMORY_INFO videoMemoryInfoA;
-		DXGI_QUERY_VIDEO_MEMORY_INFO videoMemoryInfoB;
+		IDXGIAdapter3* pAdapter = nullptr;
 
-		rd->m_devInfo.Adapter()->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &videoMemoryInfoA);
-		rd->m_devInfo.Adapter()->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &videoMemoryInfoB);
+	#if (CRY_RENDERER_DIRECT3D >= 120)
+		pAdapter = rd->m_devInfo.Adapter();
+	#else
+		rd->m_devInfo.Adapter()->QueryInterface(__uuidof(IDXGIAdapter3), (void**)&pAdapter);
+	#endif
+
+		DXGI_QUERY_VIDEO_MEMORY_INFO videoMemoryInfoA = {};
+		DXGI_QUERY_VIDEO_MEMORY_INFO videoMemoryInfoB = {};
+
+		if (pAdapter)
+		{
+			pAdapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &videoMemoryInfoA);
+			pAdapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &videoMemoryInfoB);
+			pAdapter->Release();
+		}
+#else
+		struct { SIZE_T CurrentUsage; } videoMemoryInfoA = {};
+		struct { SIZE_T CurrentUsage; } videoMemoryInfoB = {};
+#endif
 
 		vidMemUsedThisFrame = size_t(videoMemoryInfoA.CurrentUsage);
 		vidMemUsedRecently = 0;
-#else
-		assert("CD3D9Renderer::GetVideoMemoryUsageStats() not implemented for this platform yet!");
-		vidMemUsedThisFrame = vidMemUsedRecently = 0;
-#endif
 	}
 }
 

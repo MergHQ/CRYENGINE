@@ -243,6 +243,7 @@ void CD3D9Renderer::RT_PrecacheDefaultShaders()
 	m_cEF.s_ShaderShadowBlur->mfPrecache(cmb, true, nullptr);
 	m_cEF.s_shPostSunShafts->mfPrecache(cmb, true, nullptr);
 	m_cEF.s_ShaderClouds->mfPrecache(cmb, true, nullptr);
+	m_cEF.s_ShaderGpuParticles->mfPrecache(cmb, true, nullptr);
 
 #if RENDERER_SUPPORT_SCALEFORM
 	SF_PrecacheShaders();

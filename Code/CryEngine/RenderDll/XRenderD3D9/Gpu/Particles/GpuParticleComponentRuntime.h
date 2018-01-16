@@ -153,7 +153,6 @@ private:
 	std::unique_ptr<gpu_physics::CParticleFluidSimulation> m_pFluidSimulation;
 	std::unique_ptr<gpu::CMergeSort>                       m_pMergeSort;
 
-	_smart_ptr<CShader>      m_pShader;
 	_smart_ptr<CShader>      m_pInitShader;
 	_smart_ptr<CShader>      m_pUpdateShader;
 

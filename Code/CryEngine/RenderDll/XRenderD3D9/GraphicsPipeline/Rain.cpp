@@ -148,19 +148,15 @@ void CRainStage::Destroy()
 void CRainStage::Update()
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	const CRenderView* pRenderView = RenderView();
+	const auto shouldApplyOcclusion = rd->m_bDeferredRainOcclusionEnabled;
 
-	if (!rd->m_bDeferredRainOcclusionEnabled && CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
-	{
+	// Create/release the occlusion texture on demand
+	if (!shouldApplyOcclusion && CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
 		CRendererResources::s_ptexRainOcclusion->ReleaseDeviceTexture(false);
-	}
-
-	if (rd->m_bDeferredRainOcclusionEnabled && !CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
-	{
+	else if (shouldApplyOcclusion && !CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
 		CRendererResources::s_ptexRainOcclusion->Create2DTexture(RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, 1, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, nullptr, eTF_R8G8B8A8);
-	}
 
-	if (pRenderView->GetCurrentEye() != CCamera::eEye_Right)
+	if (RenderView()->GetCurrentEye() != CCamera::eEye_Right)
 	{
 		// TODO: improve this dependency and make it double-buffer.
 		// copy rain info to member variable every frame.
@@ -173,9 +169,7 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 	if (!rd->m_bDeferredRainEnabled)
-	{
 		return;
-	}
 
 	PROFILE_LABEL_SCOPE("DEFERRED_RAIN_GBUFFER");
 
@@ -191,24 +185,21 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 
 	const auto& viewInfo = GetCurrentViewInfo();
 
-	SRainParams& rainVolParams = m_RainVolParams;
+	const auto& rainVolParams = m_RainVolParams;
+	const auto shouldApplyOcclusion = rd->m_bDeferredRainOcclusionEnabled;
 
 	CTexture* pDepthStencilTex = RenderView()->GetDepthTarget();
-	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion) ? CRendererResources::s_ptexRainOcclusion : CRendererResources::s_ptexBlack;
+	CTexture* pOcclusionTex = shouldApplyOcclusion ? CRendererResources::s_ptexRainOcclusion : CRendererResources::s_ptexBlack;
 
 	uint64 rtMask = 0;
-	if (rainVolParams.bApplyOcclusion)
-	{
+	if (shouldApplyOcclusion)
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE0]; // Occlusion
-	}
 	if (rainVolParams.fSplashesAmount > 0.001f && rainVolParams.fRainDropsAmount > 0.001f)
-	{
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE1]; // Splashes
-	}
 
 	auto& pass = m_passDeferredRainGBuffer;
 
-	if (pass.InputChanged((rtMask & 0xFFFFFFFF), ((rtMask >> 32) & 0xFFFFFFFF), pDepthStencilTex->GetID()))
+	if (pass.InputChanged((rtMask & 0xFFFFFFFF), ((rtMask >> 32) & 0xFFFFFFFF), pDepthStencilTex->GetID(), pOcclusionTex->GetID()))
 	{
 		static CCryNameTSCRC techName("DeferredRainGBuffer");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -294,7 +285,7 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 	vRainColorMultipliers.w = -10.0f / vRainColorMultipliers.w;
 	pass.SetConstant(colorMulParamName, vRainColorMultipliers);
 
-	if (rainVolParams.bApplyOcclusion)
+	if (shouldApplyOcclusion)
 	{
 		// Occlusion buffer matrix
 		static CCryNameR occTransMatParamName("g_RainOcc_TransMat");
@@ -316,26 +307,20 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 
 void CRainStage::Execute()
 {
-	if ((CRenderer::CV_r_rain < 1) || !CRenderer::CV_r_PostProcess || !CRendererResources::s_ptexBackBuffer || !CRendererResources::s_ptexSceneTarget)
-	{
-		return;
-	}
-
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	SRainParams& rainVolParams = m_RainVolParams;
+
+	if ((CRenderer::CV_r_rain < 1) || !CRenderer::CV_r_PostProcess || !CRendererResources::s_ptexBackBuffer || !CRendererResources::s_ptexSceneTarget)
+		return;
+
+	const auto& rainVolParams = m_RainVolParams;
+	const auto shouldApplyOcclusion = rd->m_bDeferredRainOcclusionEnabled;
 
 	// this emulates FX_DeferredRainOcclusion()'s return value condition.
-	if (rd->m_bDeferredRainOcclusionEnabled)
+	if (shouldApplyOcclusion)
 	{
-		if (rainVolParams.areaAABB.IsReset())
-		{
+		if (rainVolParams.areaAABB.IsReset() ||
+			!CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
 			return;
-		}
-
-		if (!CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
-		{
-			return;
-		}
 
 		if (!(CTexture::IsTextureExist(CRendererResources::s_ptexRainSSOcclusion[0]) && CTexture::IsTextureExist(CRendererResources::s_ptexRainSSOcclusion[1])))
 		{
@@ -346,16 +331,13 @@ void CRainStage::Execute()
 	}
 
 	const bool bActive = rd->m_bDeferredRainEnabled && rainVolParams.fRainDropsAmount > 0.01f;
-
 	if (!bActive)
-	{
 		return;
-	}
 
 	PROFILE_LABEL_SCOPE("RAIN");
 
 	// Generate screen-space rain occlusion
-	if (rainVolParams.bApplyOcclusion)
+	if (shouldApplyOcclusion)
 	{
 		PROFILE_LABEL_SCOPE("RAIN_DISTANT_OCCLUSION");
 
@@ -364,7 +346,9 @@ void CRainStage::Execute()
 
 			auto& pass = m_passRainOcclusionAccumulation;
 
-			if (pass.InputChanged())
+			CTexture* pOcclusionTex = CRendererResources::s_ptexRainOcclusion;
+
+			if (pass.InputChanged(pOcclusionTex->GetID()))
 			{
 				static CCryNameTSCRC pSceneRainOccAccTechName("SceneRainOccAccumulate");
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_VS);
@@ -376,8 +360,8 @@ void CRainStage::Execute()
 				pass.SetRequirePerViewConstantBuffer(true);
 				pass.SetRequireWorldPos(true);
 
-				pass.SetTexture(0, CRendererResources::s_ptexLinearDepth);
-				pass.SetTexture(1, CRendererResources::s_ptexRainOcclusion);
+				pass.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[2]);
+				pass.SetTexture(1, pOcclusionTex);
 				pass.SetTexture(2, m_pHighFreqNoiseTex);
 
 				pass.SetSampler(0, EDefaultSamplerStates::PointClamp);
@@ -430,7 +414,7 @@ void CRainStage::Execute()
 	const float fSizeMult = max(CRenderer::CV_r_rainDistMultiplier, 1e-3f) * 0.5f;
 
 	uint64 rtMask = 0;
-	rtMask |= rainVolParams.bApplyOcclusion ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
+	rtMask |= shouldApplyOcclusion ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 
 	auto pPerViewCB = rd->GetGraphicsPipeline().GetMainViewConstantBuffer();
 
@@ -446,7 +430,7 @@ void CRainStage::Execute()
 		prim.SetTexture(2, m_pRainfallNormalTex);
 		prim.SetTexture(3, CRendererResources::s_ptexHDRFinalBloom);
 
-		auto* pSSOcclusionTex = rainVolParams.bApplyOcclusion ? CRendererResources::s_ptexRainSSOcclusion[0] : CRendererResources::s_ptexBlack;
+		auto* pSSOcclusionTex = shouldApplyOcclusion ? CRendererResources::s_ptexRainSSOcclusion[0] : CRendererResources::s_ptexBlack;
 		prim.SetTexture(4, pSSOcclusionTex);
 
 		// Bind average luminance
@@ -492,36 +476,28 @@ void CRainStage::ExecuteRainOcclusion()
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 	if (!rd->m_bDeferredRainOcclusionEnabled)
-	{
 		return;
-	}
 
 	// TODO: m_RainInfo needs to be unique for each view-port if the engine supports multi view-port rendering.
 	SRainParams& rainVolParams = rd->m_p3DEngineCommon.m_RainInfo;
 	const auto gpuId = rd->RT_GetCurrGpuID();
 
-	if (rainVolParams.areaAABB.IsReset())
-	{
+	if (rainVolParams.areaAABB.IsReset() ||
+		rd->m_p3DEngineCommon.m_RainOccluders.m_bProcessed[gpuId])
 		return;
-	}
-
-	if (rd->m_p3DEngineCommon.m_RainOccluders.m_bProcessed[gpuId])
-	{
-		return;
-	}
 
 	const auto& arrOccluders = rd->m_p3DEngineCommon.m_RainOccluders.m_arrCurrOccluders[gRenDev->GetRenderThreadID()];
-	if (!arrOccluders.empty())
-	{
-		ExecuteRainOcclusionGen();
+	if (arrOccluders.empty()) 
+		return;
 
-		rd->m_p3DEngineCommon.m_RainOccluders.m_bProcessed[gpuId] = true;
+	ExecuteRainOcclusionGen();
 
-		// store occlusion transformation matrix when occlusion map is updated.
-		// TODO: make this variable class member variable after porting all rain features to new graphics pipeline.
-		rainVolParams.matOccTransRender = rainVolParams.matOccTrans;
-		m_RainVolParams.matOccTransRender = m_RainVolParams.matOccTrans;
-	}
+	rd->m_p3DEngineCommon.m_RainOccluders.m_bProcessed[gpuId] = true;
+
+	// store occlusion transformation matrix when occlusion map is updated.
+	// TODO: make this variable class member variable after porting all rain features to new graphics pipeline.
+	rainVolParams.matOccTransRender = rainVolParams.matOccTrans;
+	m_RainVolParams.matOccTransRender = m_RainVolParams.matOccTrans;
 }
 
 void CRainStage::ExecuteRainOcclusionGen()
