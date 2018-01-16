@@ -200,8 +200,8 @@ void Console::Init()
 	DefineConstIntCVar(ca_DebugADIKTargets, 0, VF_CHEAT, "If 1, then it will show if there are animation-driven IK-Targets for this model.");
 	DefineConstIntCVar(ca_SaveAABB, 0, 0, "if the AABB is invalid, replace it by the default AABB");
 	DefineConstIntCVar(ca_DebugCriticalErrors, 0, VF_CHEAT, "if 1, then we stop with a Fatal-Error if we detect a serious issue");
-	DefineConstIntCVar(ca_UseIMG_CAF, 1, VF_CHEAT, "if 1, then we use the IMG file. In development mode it is suppose to be off");
-	DefineConstIntCVar(ca_UseIMG_AIM, 1, VF_CHEAT, "if 1, then we use the IMG file. In development mode it is suppose to be off");
+	DefineConstIntCVar(ca_UseIMG_CAF, 0, VF_CHEAT, "if 1, then we use the IMG file. In development mode it is suppose to be off");
+	DefineConstIntCVar(ca_UseIMG_AIM, 0, VF_CHEAT, "if 1, then we use the IMG file. In development mode it is suppose to be off");
 	DefineConstIntCVar(ca_UnloadAnimationCAF, 1, VF_DUMPTODISK, "unloading streamed CAFs as soon as they are not used");
 	DefineConstIntCVar(ca_UnloadAnimationDBA, 1, VF_NULL, "if 1, then unload DBA if not used");
 	DefineConstIntCVar(ca_MinInPlaceCAFStreamSize, 128 * 1024, VF_CHEAT, "min size a caf should be for in-place streaming");
