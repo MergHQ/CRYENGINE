@@ -13,7 +13,7 @@
 		]
 	},
 	"require": {
-		"engine": "5.5",
+		"engine": "engine-5.5",
 		"plugins": [
 			{ "type": "EPluginType::Native", "path": "CryDefaultEntities" },
 			{ "type": "EPluginType::Native", "path": "CrySensorSystem" },
