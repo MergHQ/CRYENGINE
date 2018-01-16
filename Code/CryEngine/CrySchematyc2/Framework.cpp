@@ -105,6 +105,7 @@ namespace Schematyc2
 			}
 			m_pLogFileOutput = m_log.CreateFileOutput(logFileName.c_str());
 			SCHEMATYC2_SYSTEM_ASSERT(m_pLogFileOutput);
+			RefreshLogFileConfiguration();
 			CVars::sc_LogToFile->SetOnChangeCallback(OnLogToFileChange);
 			RefreshLogFileStreams();
 			CVars::sc_LogFileStreams->SetOnChangeCallback(OnLogFileStreamsChange);
@@ -292,6 +293,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CFramework::RefreshLogFileSettings()
 	{
+		RefreshLogFileConfiguration();
 		RefreshLogFileStreams();
 		RefreshLogFileMessageTypes();
 	}
