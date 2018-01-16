@@ -2069,7 +2069,7 @@ bool CD3D9Renderer::CreateDevice()
 	return true;
 }
 
-#if (CRY_RENDERER_DIRECT3D >= 110)
+#if (CRY_RENDERER_DIRECT3D >= 110) && NTDDI_WIN10 && (WDK_NTDDI_VERSION >= NTDDI_WIN10) && defined(SUPPORT_DEVICE_INFO)
 	#include "dxgi1_4.h"
 #endif
 
@@ -2082,7 +2082,7 @@ void CD3D9Renderer::GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t
 	}
 	else
 	{
-#if (CRY_RENDERER_DIRECT3D >= 110) && defined(SUPPORT_DEVICE_INFO)
+#if (CRY_RENDERER_DIRECT3D >= 110) && NTDDI_WIN10 && (WDK_NTDDI_VERSION >= NTDDI_WIN10) && defined(SUPPORT_DEVICE_INFO)
 		CD3D9Renderer* rd = gcpRendD3D;
 		IDXGIAdapter3* pAdapter = nullptr;
 
