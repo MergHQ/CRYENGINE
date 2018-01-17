@@ -156,6 +156,7 @@ public:
 	Vec4                      m_vSvoOriginAndSize;
 	AABB                      m_aabbLightsTI_D;
 	SRenderLight*             m_pGlobalEnvProbe;
+	CryCriticalSection        m_csLockGlobalEnvProbe;
 	CVoxStreamEngine*         m_pStreamEngine;
 	CSvoNode*                 m_pSvoRoot;
 	bool                      m_bReady;

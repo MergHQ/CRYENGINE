@@ -99,6 +99,8 @@ bool CSvoEnv::Render()
 	{
 		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_FindProbe");
 
+		AUTO_LOCK(m_csLockGlobalEnvProbe);
+
 		m_pGlobalEnvProbe = nullptr;
 
 		PodArray<IRenderNode*> arrObjects;
@@ -2734,6 +2736,8 @@ void CSvoEnv::AddAnalyticalOccluder(IRenderNode* pRN, Vec3 camPos)
 
 void CSvoEnv::GetGlobalEnvProbeProperties(_smart_ptr<ITexture>& specEnvCM, float& mult)
 {
+	AUTO_LOCK(m_csLockGlobalEnvProbe);
+
 	if (!m_pGlobalEnvProbe)
 	{
 		specEnvCM = nullptr;

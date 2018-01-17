@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   terrain_compile.cpp
@@ -360,9 +360,9 @@ void CTerrain::GetStatObjAndMatTables(DynArray<IStatObj*>* pStatObjTable, DynArr
 
 	if (Get3DEngine() && Get3DEngine()->m_pObjectsTree)
 		Get3DEngine()->m_pObjectsTree->GenerateStatObjAndMatTables((pStatObjTable != NULL) ? &statObjTable : NULL,
-		                                                                 (pMatTable != NULL) ? &matTable : NULL,
-		                                                                 (pStatInstGroupTable != NULL) ? &statInstGroupTable : NULL,
-		                                                                 &exportInfo);
+		                                                           (pMatTable != NULL) ? &matTable : NULL,
+		                                                           (pStatInstGroupTable != NULL) ? &statInstGroupTable : NULL,
+		                                                           &exportInfo);
 
 	if (GetVisAreaManager())
 		GetVisAreaManager()->GenerateStatObjAndMatTables((pStatObjTable != NULL) ? &statObjTable : NULL,
@@ -485,7 +485,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 	EEndian eEndian = (pTerrainChunkHeader->nFlags & SERIALIZATION_FLAG_BIG_ENDIAN) ? eBigEndian : eLittleEndian;
 	bool bSectorPalettes = (pTerrainChunkHeader->nFlags & SERIALIZATION_FLAG_SECTOR_PALETTES) != 0;
 
-bool bHMap(!pExportInfo || pExportInfo->nHeigtmap);
+	bool bHMap(!pExportInfo || pExportInfo->nHeigtmap);
 	bool bObjs(!pExportInfo || pExportInfo->nObjTypeMask);
 	AABB* pBox = (pExportInfo && !pExportInfo->areaBox.IsReset()) ? &pExportInfo->areaBox : NULL;
 
@@ -798,6 +798,9 @@ bool CTerrain::Load(FILE* f, int nDataSize, STerrainChunkHeader* pTerrainChunkHe
 			OpenTerrainTextureFile(m_arrBaseTexInfos.m_hdrDiffTexHdr, m_arrBaseTexInfos.m_hdrDiffTexInfo,
 			                       COMPILED_TERRAIN_TEXTURE_FILE_NAME, m_arrBaseTexInfos.m_ucpDiffTexTmpBuffer, m_arrBaseTexInfos.m_nDiffTexIndexTableSize);
 	}
+
+	// make sure physics is updated
+	InitHeightfieldPhysics();
 
 	return bRes;
 }

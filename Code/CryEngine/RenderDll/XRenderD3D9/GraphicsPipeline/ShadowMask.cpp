@@ -98,7 +98,7 @@ private:
 
 	void PreparePerObjectPrimitives(CRenderPrimitive& primStencil0, CRenderPrimitive& primStencil1, CRenderPrimitive& primSampling, int& firstUnusedStencilValue, const SCustomPrimitiveContext& context);
 	void PrepareNearestPrimitive(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum, uint64 rtFlags);
-	void PrepareCloudAndSvoShadowPrimitive(CRenderPrimitive& primitive, _smart_ptr<CTexture>& pCloudShadowTex) const;
+	void PrepareCustomShadowsPrimitive(CRenderPrimitive& primitive, _smart_ptr<CTexture>& pCloudShadowTex) const;
 	bool PrepareDebugPrimitive(CPrimitiveRenderPass& debugPass, CRenderPrimitive& primitive, const ShadowMapFrustum* pFrustum, int stencilRef) const;
 
 	void PrepareStencilPassConstants(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum) const;
@@ -112,7 +112,7 @@ private:
 	std::array<CRenderPrimitive,  MaxCustomFrustums  * 3> cachedCustomPrimitives;
 
 	int                     customPrimitiveCount;
-	CRenderPrimitive        cloudAndSvoShadowPrimitive;
+	CRenderPrimitive        customShadowPrimitive;
 	CRenderPrimitive        nearestShadowPrimitive;
 
 	buffer_handle_t         m_nearestFullscreenTri;
@@ -284,7 +284,7 @@ void CShadowMaskStage::Prepare()
 		  m_maskGenPasses.front(),
 		  firstUnusedStencilValue,
 		  bCloudShadows,
-		  bScreenSpaceShadows,
+			bScreenSpaceShadows,
 		  bSvoShadows,
 		  bTexelRelativeBias,
 		  extendLastCachedCascade,
@@ -298,7 +298,7 @@ void CShadowMaskStage::Prepare()
 		m_localLightPrimitives = m_pLocalLightShadows->PreparePrimitives(
 		  m_maskGenPasses,
 		  firstUnusedStencilValue,
-		  bScreenSpaceShadows,
+			bScreenSpaceShadows,
 		  pRenderView,
 		  rtFlagsByQuality[shaderQuality]);
 	}
@@ -379,7 +379,7 @@ void CSunShadows::InitPrimitives()
 	for (auto& prim : cachedDebugPrimitives)    prim.SetFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 
 	nearestShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(STypedConstants), EShaderStage_Vertex | EShaderStage_Pixel);
-	cloudAndSvoShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SCloudShadowConstants), EShaderStage_Pixel);
+	customShadowPrimitive.AllocateTypedConstantBuffer(eConstantBufferShaderSlot_PerBatch, sizeof(SCloudShadowConstants), EShaderStage_Pixel);
 }
 
 void CSunShadows::ResetPrimitives()
@@ -390,7 +390,7 @@ void CSunShadows::ResetPrimitives()
 	for (auto& prim : cachedCustomPrimitives)   prim.Reset();
 
 	nearestShadowPrimitive.Reset();
-	cloudAndSvoShadowPrimitive.Reset();
+	customShadowPrimitive.Reset();
 }
 
 void CSunShadows::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
@@ -421,7 +421,7 @@ int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firs
 
 	if (bPrepareCascadePrimitives)
 	{
-		SCascadePrimitiveContext context(pRenderView, renderScreenSpaceShadows, useTexelRelativeBias, extendLastCachedCascade, rtFlags);
+		SCascadePrimitiveContext context(pRenderView, false, useTexelRelativeBias, extendLastCachedCascade, rtFlags);
 		ShadowMapFrustum* pFirstFrustum = !context.frustums.empty() ? context.frustums.front()->pFrustum : nullptr;
 		const bool bCascadeBlending = pFirstFrustum && pFirstFrustum->bBlendFrustum && !pDebugCascadesPass;
 		const bool bStencilPrepass = CRendererCVars::CV_r_ShadowMaskStencilPrepass != 0 || pDebugCascadesPass;
@@ -479,16 +479,16 @@ int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firs
 		}
 	}
 
-	if (renderCloudShadows || renderSvoShadows)
+	if (renderCloudShadows || renderSvoShadows || renderScreenSpaceShadows)
 	{
 		_smart_ptr<CTexture> pCloudShadowTex = CRendererResources::s_ptexBlack;
 		if (renderCloudShadows)
 			pCloudShadowTex = m_pCloudShadowTex;
 
-		PrepareCloudAndSvoShadowPrimitive(cloudAndSvoShadowPrimitive, pCloudShadowTex);
+		PrepareCustomShadowsPrimitive(customShadowPrimitive, pCloudShadowTex);
 
-		cloudAndSvoShadowPrimitive.Compile(sliceGenPass);
-		sliceGenPass.AddPrimitive(&cloudAndSvoShadowPrimitive);
+		customShadowPrimitive.Compile(sliceGenPass);
+		sliceGenPass.AddPrimitive(&customShadowPrimitive);
 	}
 
 	return sliceGenPass.GetPrimitiveCount() - previousPrimitiveCount;
@@ -953,12 +953,13 @@ void CSunShadows::PrepareConstantBuffers(CRenderPrimitive& primitive, ShadowMapF
 	constantManager.EndTypedConstantUpdate(constants);
 }
 
-void CSunShadows::PrepareCloudAndSvoShadowPrimitive(CRenderPrimitive& primitive, _smart_ptr<CTexture>& pCloudShadowTex) const
+// apply cloud shadows, SVO shadows, screen space shadows
+void CSunShadows::PrepareCustomShadowsPrimitive(CRenderPrimitive& primitive, _smart_ptr<CTexture>& pCloudShadowTex) const
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	CShader* pShader = CShaderMan::s_ShaderShadowMaskGen;
-	static CCryNameTSCRC techCloudShadow = "CloudShadow";
+	static CCryNameTSCRC techCustomShadows = "CustomShadows";
 
 	uint64 rtFlags = g_HWSR_MaskBit[HWSR_SAMPLE2];
 	pCloudShadowTex = rd->GetCloudShadowTextureId() > 0 ? CTexture::GetByID(rd->GetCloudShadowTextureId()) : CRendererResources::s_ptexWhite;
@@ -979,7 +980,11 @@ void CSunShadows::PrepareCloudAndSvoShadowPrimitive(CRenderPrimitive& primitive,
 	}
 #endif
 
-	primitive.SetTechnique(pShader, techCloudShadow, rtFlags);
+	// apply screen space shadows on entire screen
+	if (CRenderer::CV_r_ShadowsScreenSpace == 1)
+		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE5];
+
+	primitive.SetTechnique(pShader, techCustomShadows, rtFlags);
 	primitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLEND_OP_MAX);
 	primitive.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	primitive.SetTexture(0, pCloudShadowTex);
@@ -991,6 +996,9 @@ void CSunShadows::PrepareCloudAndSvoShadowPrimitive(CRenderPrimitive& primitive,
 		primitive.SetTexture(3, pSR->GetTracedSunShadowsRT());
 	}
 #endif
+
+	// we need transmittance info for SS shadows
+	primitive.SetTexture(4, CRendererResources::s_ptexSceneNormalsMap);
 
 	primitive.SetSampler(0, cloudSamplerState);
 	primitive.SetDrawInfo(eptTriangleList, 0, 0, 3);
