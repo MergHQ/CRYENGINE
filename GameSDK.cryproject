@@ -19,12 +19,11 @@
 			{ "type": "EPluginType::Native", "path": "CrySensorSystem" },
 			{ "type": "EPluginType::Native", "path": "CryPerceptionSystem" },
 			{ "type": "EPluginType::Native", "path": "CryUQS_Core" },
-			{ "type": "EPluginType::Native", "path": "CryGamePlatform", "platforms": [ "Windows", "PS4" ] },
+			{ "type": "EPluginType::Native", "path": "CryGamePlatform", "platforms": [ "PS4" ] },
 			{ "type": "EPluginType::Native", "path": "CryLobby" }
 		]
 	},
 	"console_variables": [
-		{ "name": "ca_useIMG_CAF", "value": "0" },
 		{ "name": "sys_ime", "value": "1" },
 		{ "name": "sys_target_platforms", "value": "pc,ps4,xboxone,linux" },
 		{ "name": "sys_splashscreen", "value": "Libs/UI/textures/startscreen.tif" },
