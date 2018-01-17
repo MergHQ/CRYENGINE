@@ -6,8 +6,6 @@
 CFullscreenPass::CFullscreenPass(CRenderPrimitive::EPrimitiveFlags primitiveFlags)
 : m_primitiveFlags(CRenderPrimitive::eFlags_None)
 {
-	m_inputVars[0] = m_inputVars[1] = m_inputVars[2] = m_inputVars[3] = 0;
-
 	m_bRequirePerViewCB = false;
 	m_bRequireWorldPos = false;
 	m_bPendingConstantUpdate = false;

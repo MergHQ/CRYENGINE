@@ -17,7 +17,6 @@ CComputeRenderPass::CComputeRenderPass(EPassFlags flags)
 	, m_bCompiled(false)
 	, m_resourceDesc()
 {
-	m_inputVars[0] = m_inputVars[1] = m_inputVars[2] = m_inputVars[3] = 0;
 	m_pResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 
 	SetLabel("COMPUTE_PASS");
@@ -205,7 +204,6 @@ void CComputeRenderPass::Reset()
 	m_flags = eFlags_None;
 	m_dirtyMask = eDirty_All;
 
-	ZeroArray(m_inputVars);
 	m_bPendingConstantUpdate = true;
 	m_bCompiled = false;
 

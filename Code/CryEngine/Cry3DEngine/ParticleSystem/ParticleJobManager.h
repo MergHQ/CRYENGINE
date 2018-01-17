@@ -77,7 +77,7 @@ public:
 	void DeferredRender();
 
 	// job entry points
-	void Job_ScheduleUpdates(TVarArray<CParticleEmitter*> emitters);
+	void Job_ScheduleUpdates();
 	void Job_UpdateEmitters(TVarArray<CParticleEmitter*> emitters);
 	// ~job entry points
 

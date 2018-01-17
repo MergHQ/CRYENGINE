@@ -530,7 +530,7 @@ bool CShadowUtils::GetSubfrustumMatrix(Matrix44A& result, const ShadowMapFrustum
 	  crop.y = fSnap * int(srcClipPosTL.y / fSnap),
 	  crop.z = 2.0f * pSubFrustum->nTextureWidth / float(pFullFrustum->nTextureWidth),
 	  crop.w = 2.0f * pSubFrustum->nTextureHeight / float(pFullFrustum->nTextureHeight)
-	  );
+	);
 
 	Matrix44 cropMatrix(IDENTITY);
 	cropMatrix.m00 = 2.f / crop.z;
@@ -539,7 +539,7 @@ bool CShadowUtils::GetSubfrustumMatrix(Matrix44A& result, const ShadowMapFrustum
 	cropMatrix.m31 = -(1.0f + cropMatrix.m11 * crop.y);
 
 	result = pFullFrustum->mLightViewMatrix * cropMatrix;
-	return abs(crop.x) <= 1.0f && abs(crop.x + crop.z) <= 1.0f && abs(crop.y) <= 1.0f && abs(crop.y + crop.w) <= 1.0f;
+	return !(crop.x < -1.0f || crop.z > 1.0f || crop.y < -1.0f || crop.w > 1.0f);
 }
 
 bool CShadowUtils::SetupShadowsForFog(SShadowCascades& shadowCascades, const CRenderView* pRenderView)

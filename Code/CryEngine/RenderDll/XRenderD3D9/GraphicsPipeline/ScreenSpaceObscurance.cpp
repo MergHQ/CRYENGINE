@@ -140,7 +140,7 @@ void CScreenSpaceObscuranceStage::Execute()
 		const int32 srcSizeX = CRendererResources__s_ptexSceneSpecular->GetWidth();
 		const int32 srcSizeY = CRendererResources__s_ptexSceneSpecular->GetHeight();
 
-		if (m_passFilter.InputChanged((int)bLowResOutput))
+		if (m_passFilter.InputChanged(bLowResOutput))
 		{
 			static CCryNameTSCRC techFilter("SSDO_Filter");
 			m_passFilter.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);

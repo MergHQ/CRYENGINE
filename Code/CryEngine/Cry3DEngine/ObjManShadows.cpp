@@ -158,6 +158,7 @@ void CObjManager::MakeShadowCastersList(CVisArea* pArea, const AABB& aabbReceive
 
 int CObjManager::MakeStaticShadowCastersList(IRenderNode* pIgnoreNode, ShadowMapFrustum* pFrustum, const PodArray<struct SPlaneObject>* pShadowHull, int renderNodeExcludeFlags, int nMaxNodes, const SRenderingPassInfo& passInfo)
 {
+	const int curLevel = 0;
 	int nRemainingNodes = nMaxNodes;
 
 	int nNumTrees = Get3DEngine()->m_pObjectsTree ? 1 : 0;
@@ -165,48 +166,44 @@ int CObjManager::MakeStaticShadowCastersList(IRenderNode* pIgnoreNode, ShadowMap
 		nNumTrees += pVisAreaManager->m_lstVisAreas.size() + pVisAreaManager->m_lstPortals.size();
 
 	// objects tree first
+	if (pFrustum->pShadowCacheData->mOctreePath[curLevel] == 0)
 	{
-		Get3DEngine()->m_pObjectsTree->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, pShadowHull, renderNodeExcludeFlags, nRemainingNodes, 1, passInfo);
-
-		if (nRemainingNodes <= 0)
+		if (!Get3DEngine()->m_pObjectsTree->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, pShadowHull, renderNodeExcludeFlags, nRemainingNodes, curLevel + 1, passInfo))
 			return nRemainingNodes;
 
-		pFrustum->pShadowCacheData->mOctreePath[0]++;
+		++pFrustum->pShadowCacheData->mOctreePath[curLevel];
 	}
 
 	// Vis Areas
-	CVisAreaManager* pVisAreaManager = GetVisAreaManager();
-	if (pVisAreaManager)
+	if (CVisAreaManager* pVisAreaManager = GetVisAreaManager())
 	{
-		PodArray<CVisArea*>* lstAreaTypes[] =
+		auto gatherCastersForVisAreas = [=, &nRemainingNodes](PodArray<CVisArea*>& visAreas)
 		{
-			&pVisAreaManager->m_lstVisAreas,
-			&pVisAreaManager->m_lstPortals
+			for (int i = pFrustum->pShadowCacheData->mOctreePath[curLevel] - 1; i < visAreas.Count(); ++i, ++pFrustum->pShadowCacheData->mOctreePath[curLevel])
+			{
+				if (visAreas[i]->IsAffectedByOutLights() && visAreas[i]->IsObjectsTreeValid())
+				{
+					if (pFrustum->aabbCasters.IsReset() || Overlap::AABB_AABB(pFrustum->aabbCasters, *visAreas[i]->GetAABBox()))
+					{
+						if (!visAreas[i]->GetObjectsTree()->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, pShadowHull, renderNodeExcludeFlags, nRemainingNodes, curLevel + 1, passInfo))
+							return false;
+					}
+				}
+			}
+
+			return true;
 		};
 
-		const int nNumAreaTypes = CRY_ARRAY_COUNT(lstAreaTypes);
-		for (int nAreaType = 0; nAreaType < nNumAreaTypes; ++nAreaType)
-		{
-			PodArray<CVisArea*>& lstAreas = *lstAreaTypes[nAreaType];
+		if (!gatherCastersForVisAreas(pVisAreaManager->m_lstVisAreas))
+			return nRemainingNodes;
 
-			for (int i = 0; i < lstAreas.Count(); i++)
-			{
-				if (lstAreas[i]->IsAffectedByOutLights() && lstAreas[i]->IsObjectsTreeValid())
-				{
-					if (pFrustum->aabbCasters.IsReset() || Overlap::AABB_AABB(pFrustum->aabbCasters, *lstAreas[i]->GetAABBox()))
-						lstAreas[i]->GetObjectsTree()->GetShadowCastersTimeSliced(pIgnoreNode, pFrustum, pShadowHull, renderNodeExcludeFlags, nRemainingNodes, 0, passInfo);
-				}
-
-				if (nRemainingNodes <= 0)
-					return nRemainingNodes;
-
-				pFrustum->pShadowCacheData->mOctreePath[0]++;
-			}
-		}
+		if (!gatherCastersForVisAreas(pVisAreaManager->m_lstPortals))
+			return nRemainingNodes;
 	}
 
 	// if we got here we processed every tree, so reset tree index
-	pFrustum->pShadowCacheData->mOctreePath[0] = 0;
+	pFrustum->pShadowCacheData->mOctreePath[curLevel] = 0;
+
 	return nRemainingNodes;
 }
 

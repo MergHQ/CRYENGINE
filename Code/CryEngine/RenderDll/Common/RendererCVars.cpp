@@ -715,14 +715,7 @@ static void OnChange_CV_r_HDRRendering(ICVar* pCVar)
 
 	// MSAA requires HDR mode on
 	// search for #LABEL_MSAA_HDR
-	if (!pCVar->GetIVal())
-	{
-		// HDR was switched off
-		ICVar* pMSAA = gEnv->pConsole->GetCVar("r_MSAA");
-
-		if (pMSAA->GetIVal())
-			pMSAA->Set(0);      // switch off MSAA
-	}
+	// cvar r_MSAA is no longer available
 }
 
 static void OnChange_CV_r_ShadersAllowCompiliation(ICVar* pCVar)

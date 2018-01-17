@@ -182,9 +182,15 @@ namespace Cry
 			return bitFlags;
 		}
 
-		void CAdvancedAnimationComponent::SetCharacterFile(const char* szPath)
+		void CAdvancedAnimationComponent::SetCharacterFile(const char* szPath, bool applyImmediately)
 		{
 			m_characterFile = szPath;
+			LoadFromDisk();
+
+			if (applyImmediately)
+			{
+				ResetCharacter();
+			}
 		}
 
 		void CAdvancedAnimationComponent::SetMannequinAnimationDatabaseFile(const char* szPath)

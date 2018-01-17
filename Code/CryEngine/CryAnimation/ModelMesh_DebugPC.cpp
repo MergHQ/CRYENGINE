@@ -207,6 +207,10 @@ void CModelMesh::DrawDebugInfo(CDefaultSkeleton* pCSkel, int nLOD, const Matrix3
 	if (m_pIRenderMesh == 0)
 		return;
 
+	const float cvar_e_debugDrawMaxDistance = gEnv->pConsole->GetCVar("e_DebugDrawMaxDistance")->GetFVal();
+	if (pObj->m_fDistance > cvar_e_debugDrawMaxDistance)
+		return;
+
 	bool bNoText = DebugMode < 0;
 
 	const SFrameLodInfo frameLodInfo = gEnv->p3DEngine->GetFrameLodInfo();

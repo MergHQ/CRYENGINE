@@ -113,9 +113,7 @@ void CTiledShadingStage::Execute()
 	}
 #endif
 
-	static int s_prevTexAOColorBleed = pTexAOColorBleed->GetID();
-
-	if (m_passCullingShading.InputChanged(int(rtFlags >> 32), int(rtFlags), pTexCaustics->GetID(), pTexGiDiff->GetID()) || s_prevTexAOColorBleed != pTexAOColorBleed->GetID())
+	if (m_passCullingShading.InputChanged(rtFlags, pTexCaustics->GetID(), pTexGiDiff->GetID(), pTexAOColorBleed->GetID()))
 	{
 		static CCryNameTSCRC techTiledShading("TiledDeferredShading");
 		m_passCullingShading.SetTechnique(CShaderMan::s_shDeferredShading, techTiledShading, rtFlags);
@@ -147,7 +145,6 @@ void CTiledShadingStage::Execute()
 		m_passCullingShading.SetTexture(20, tiledLights->GetDiffuseProbeAtlas());
 		m_passCullingShading.SetTexture(21, tiledLights->GetProjectedLightAtlas());
 
-		s_prevTexAOColorBleed = pTexAOColorBleed->GetID();
 		m_pTexGiDiff = pTexGiDiff;
 		m_pTexGiSpec = pTexGiSpec;
 	}

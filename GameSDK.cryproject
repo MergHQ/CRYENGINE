@@ -19,7 +19,7 @@
 			{ "type": "EPluginType::Native", "path": "CrySensorSystem" },
 			{ "type": "EPluginType::Native", "path": "CryPerceptionSystem" },
 			{ "type": "EPluginType::Native", "path": "CryUQS_Core" },
-			{ "type": "EPluginType::Native", "path": "CryGamePlatform", "platforms": [ "Windows", "PS4" ] },
+			{ "type": "EPluginType::Native", "path": "CryGamePlatform", "platforms": [ "PS4" ] },
 			{ "type": "EPluginType::Native", "path": "CryLobby" }
 		]
 	},

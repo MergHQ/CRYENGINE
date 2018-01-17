@@ -199,7 +199,7 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 
 	auto& pass = m_passDeferredRainGBuffer;
 
-	if (pass.InputChanged((rtMask & 0xFFFFFFFF), ((rtMask >> 32) & 0xFFFFFFFF), pDepthStencilTex->GetID(), pOcclusionTex->GetID()))
+	if (pass.InputChanged(rtMask, pDepthStencilTex->GetID(), pOcclusionTex->GetID()))
 	{
 		static CCryNameTSCRC techName("DeferredRainGBuffer");
 		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);

@@ -116,6 +116,9 @@ void CVars::Init()
 	DefineConstIntCVar(e_WaterRipplesDebug, 0, VF_CHEAT,
 	                   "Draw water hits that affect water ripple simulation");
 
+	REGISTER_CVAR(e_DebugDrawMaxDistance, 1000.0f, VF_NULL, 
+				  "Draw distance for e_debugDraw text");
+
 	DefineConstIntCVar(e_DebugDrawShowOnlyCompound, 0, VF_NULL,
 	                   "e_DebugDraw shows only Compound (less efficient) static meshes");
 	DefineConstIntCVar(e_DebugDrawShowOnlyLod, -1, VF_NULL,
@@ -409,6 +412,10 @@ void CVars::Init()
 	              "The lod used for rendering objects into the shadow cache. Set to -1 to disable");
 	REGISTER_CVAR_CB(e_ShadowsCacheRenderCharacters, 0, VF_NULL,
 	                 "Render characters into the shadow cache. 0=disabled, 1=enabled", OnDynamicDistanceShadowsVarChange);
+	REGISTER_CVAR(e_ShadowsCacheExtendLastCascade, 0, VF_NULL,
+	                 "Always render full extent of last cached shadow cascade. 0=disabled, 1=enabled");
+	REGISTER_CVAR(e_ShadowsCacheMaxNodesPerFrame, 50, VF_NULL,
+	                 "Maximum number of octree nodes to visit during incremental update. default: 50");
 	REGISTER_CVAR_CB(e_DynamicDistanceShadows, 1, VF_NULL,
 	                 "Enable dynamic distance shadows, 0 = disable, 1 = enable only for movable object types, 2 = enable for all object types, -1 = don't render dynamic distance shadows", OnDynamicDistanceShadowsVarChange);
 	DefineConstIntCVar(e_ShadowsCascadesCentered, 0, VF_NULL,

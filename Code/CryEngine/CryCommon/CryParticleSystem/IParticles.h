@@ -543,8 +543,6 @@ struct IParticleEmitter : public IRenderNode, public CMultiThreadRefCount
 		EmitParticle(&data);
 	}
 
-	virtual bool UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, IRenderNode* pRenderNode, float fEntDistance, bool bFullUpdate, int nLod) = 0;
-
 	//! Get the Entity ID that this particle emitter is attached to.
 	virtual unsigned int GetAttachedEntityId() = 0;
 

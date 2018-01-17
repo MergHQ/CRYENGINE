@@ -1413,7 +1413,7 @@ pixout SceneRainOccAccumulatePS(vtxOutRainOcc IN)
 {
 	pixout OUT = (pixout)0;
 
-	const float fDepth = CV_NearFarClipDist.y * roDepthTex.Load(int3(IN.HPosition.xy, 0)).x;
+	const float fDepth = CV_NearFarClipDist.y * roDepthTex.Load(int3(IN.HPosition.xy, 0)).y;
 	const half fNoise = roNoiseTex.SampleLevel(roTrilinearWrapSampler, IN.baseTC.zw, 0.0f).x;
 
 	const int nNumSamples = 40;

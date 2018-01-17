@@ -50,6 +50,7 @@ public:
 	virtual void             ReleaseNode(bool bImmediate) override;
 	virtual void             SetOwnerEntity(IEntity* pEntity) override { SetEntity(pEntity, m_entitySlot); }
 	virtual IEntity*         GetOwnerEntity() const override { return m_entityOwner; }
+	virtual void             UpdateStreamingPriority(const SUpdateStreamingPriorityContext& streamingContext) override;
 	// ~IRenderNode
 
 	// pfx2 IParticleEmitter
@@ -65,7 +66,6 @@ public:
 	virtual void                   SetEntity(IEntity* pEntity, int nSlot) override;
 	virtual void                   InvalidateCachedEntityData() override;
 	virtual void                   SetTarget(const ParticleTarget& target) override;
-	virtual bool                   UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, IRenderNode* pRenderNode, float fEntDistance, bool bFullUpdate, int nLod) override;
 	// ~pfx2 IParticleEmitter
 
 	// pfx1 IParticleEmitter

@@ -991,9 +991,7 @@ void CObjManager::PrecacheStatObjMaterial(IMaterial* pMaterial, const float fEnt
 void CObjManager::PrecacheStatObj(CStatObj* pStatObj, int nLod, const Matrix34A& statObjMatrix, IMaterial* pMaterial, float fImportance, float fEntDistance, bool bFullUpdate, bool bHighPriority)
 {
 	if (!pStatObj)
-	{
 		return;
-	}
 
 	const int minLod = pStatObj->GetMinUsableLod();
 	const int maxLod = (int)pStatObj->m_nMaxUsableLod;
@@ -1082,7 +1080,6 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 		break;
 	}
 
-	float fInvObjScale = 1.0f / fObjScale;
 	int nLod = CObjManager::GetObjectLOD(pObj, fEntDistanceReal);
 	IMaterial* pRenderNodeMat = pObj->GetMaterialOverride();
 
@@ -1099,7 +1096,7 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 		{
 			float fDistanceToCam = sqrt_tpl(Distance::Point_AABBSq(passInfo.GetCamera().GetPosition(), objBox)) * passInfo.GetZoomFactor();
 
-			if (pObj->GetRenderNodeType() == eERType_Vegetation && ((CVegetation*)pObj)->m_pInstancingInfo)
+			if (nodeType == eERType_Vegetation && ((CVegetation*)pObj)->m_pInstancingInfo)
 			{
 				// for instance groups compute distance to the center of bbox
 				AABB objBoxS = AABB(objBox.GetCenter() - Vec3(.1f, .1f, .1f), objBox.GetCenter() + Vec3(.1f, .1f, .1f));
@@ -1114,53 +1111,16 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 		}
 	}
 
-	if (nodeType == eERType_Brush || nodeType == eERType_Vegetation)
-	{
-		Matrix34A brushMatrix;
-		IStatObj* pStatObj = pObj->GetEntityStatObj(0, &brushMatrix);
-		if (pStatObj)
-		{
-			IMaterial* pStatObjMat = pStatObj->GetMaterial();
-			PrecacheStatObj(static_cast<CStatObj*>(pStatObj), nLod, brushMatrix, pRenderNodeMat ? pRenderNodeMat : pStatObjMat, fImportance, fEntDistanceReal * fInvObjScale, bFullUpdate, bHighPriority);
-		}
-		return;
-	}
-	else if (nodeType == eERType_ParticleEmitter)
-	{
-		IParticleEmitter* pEmitter = (IParticleEmitter*)pObj;
-		Matrix34A tm34A;
-		tm34A.SetIdentity();
-		tm34A.SetTranslation(pEmitter->GetPos());
-		pEmitter->UpdateStreamableComponents(fImportance, tm34A, pObj, fEntDistance, bFullUpdate, nLod);
-		return;
-	}
-	else if (nodeType == eERType_MergedMesh)
-	{
-		CMergedMeshRenderNode* pMMRM = static_cast<CMergedMeshRenderNode*>(pObj);
-		pMMRM->UpdateStreamableComponents(fImportance, fEntDistance, bFullUpdate);
-		return;
-	}
-	else if (nodeType == eERType_Character)
-	{
-		pObj->UpdateStreamingPriority(ctx);
-		return;
-	}
-	else if (nodeType == eERType_GeomCache)
-	{
-		pObj->UpdateStreamingPriority(ctx);
-		return;
-	}
-
 	Matrix34A matParent;
-	CStatObj* pStatObj = (CStatObj*)pObj->GetEntityStatObj(0, &matParent, false);
-	if (pStatObj)
+	if (CStatObj* pStatObj = (CStatObj*)pObj->GetEntityStatObj(0, &matParent, false))
 	{
-		IMaterial* pStatObjMat = pStatObj->GetMaterial();
-		PrecacheStatObj(pStatObj, nLod, matParent, pRenderNodeMat ? pRenderNodeMat : pStatObjMat, fImportance, fEntDistanceReal * fInvObjScale, bFullUpdate, bHighPriority);
+		PrecacheStatObj(pStatObj, nLod, matParent, pRenderNodeMat ? pRenderNodeMat : pStatObj->GetMaterial(), fImportance, fEntDistanceReal / fObjScale, bFullUpdate, bHighPriority);
 	}
 	else if (pRenderNodeMat)
 	{
-		// If not any of the known render nodes try to pre-cache only the override material
-		pRenderNodeMat->PrecacheMaterial(fEntDistance * fInvObjScale, pObj->GetRenderMesh(nLod), bFullUpdate, bHighPriority);
+		pRenderNodeMat->PrecacheMaterial(fEntDistance / fObjScale, pObj->GetRenderMesh(nLod), bFullUpdate, bHighPriority);
 	}
+
+	// Additional precaching for RenderNode types.
+	pObj->UpdateStreamingPriority(ctx);
 }

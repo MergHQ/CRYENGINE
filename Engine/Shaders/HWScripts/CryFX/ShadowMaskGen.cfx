@@ -320,12 +320,6 @@ pixout_cl DeferredShadowPS(float4 WPos : SV_POSITION)
 	half2 fDist = 2.0*abs(P0.xy-half2(0.5,0.5));
 	half fFadeF = 1.0 - (c_ShadowMaskConstants.fShadowFadingDist.x * pow(max(fDist.x,fDist.y),8));
 
-#if %_RT_SAMPLE2
-	// Apply sun SS shadows
-	float3 WorldP = ReconstructWorldPos(WPos.xy, SceneDepth);
-	CalculateDetailSSShadow(sceneDepthTexture, SceneDepth, WorldP, WorldP + CV_SunLightDir.xyz, CV_ViewProjMatr, fInShadow, true );
-#endif
-
 	// Apply POM self-shadowing
 	uint2 pixelCoord = int2(WPos.xy);
 	OUT.Color = 1 - fInShadow * (1 - DecodeSunSelfShadowing(sceneGBufferA[pixelCoord], sceneGBufferB[pixelCoord], sceneGBufferC[pixelCoord]));
@@ -354,7 +348,7 @@ Texture2D svoShadowTex            : register(t3);
 SamplerState ssCloudShadow        : register(s0) = SS_MaterialBilinearWrap;
 SamplerState ssVolCloudShadow     : register(s0) = SS_MaterialTrilinearBorder;
 
-pixout_cl CloudsShadowPS(float4 WPos : SV_POSITION)
+pixout_cl CustomShadowsPS(float4 WPos : SV_POSITION)
 {
 	pixout_cl OUT = (pixout_cl) 1;
 	float visibility = 1;
@@ -370,6 +364,12 @@ pixout_cl CloudsShadowPS(float4 WPos : SV_POSITION)
 #if %_RT_SAMPLE4
 	// combine with SVO sun shadow
 	visibility *= svoShadowTex.Load(int3(WPos.xy, 0)).a;
+#endif
+
+#if %_RT_SAMPLE5
+	// combine with SS shadows
+	float sceneDepth = sceneDepthTexture.Load(int3(WPos.xy, 0)).x;
+	CalculateDetailSSShadow(sceneGBufferA, sceneDepthTexture, sceneDepth, WorldP, WorldP + CV_SunLightDir.xyz, CV_ViewProjMatr, visibility);
 #endif
 
 	OUT.Color = 1 - visibility;
@@ -467,12 +467,12 @@ technique ShadowMaskVolume
   }
 }
 
-technique CloudShadow
+technique CustomShadows
 {
   pass p0
   {
     VertexShader = FullscreenTriVS() ShadowMaskGenVS;
     GeometryShader = $AutoGS_MultiRes();
-    PixelShader  = CloudsShadowPS()  ShadowMaskGenPS;
+    PixelShader  = CustomShadowsPS()  ShadowMaskGenPS;
   }
 }
