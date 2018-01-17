@@ -48,17 +48,23 @@ class CATLEvent;
 class CATLStandaloneFile;
 
 /**
- * An enum listing flags that can be passed into methods via the SRequestUserData parameter.
- * These flags control how an internally generated request behaves.
+ * @enum CryAudio::ERequestFlags
+ * @brief A strongly typed enum class representing flags that can be passed into methods via the SRequestUserData parameter that control how an internally generated request behaves or what to do along with it.
+ * @var CryAudio::ERequestFlags::None
+ * @var CryAudio::ERequestFlags::ExecuteBlocking
+ * @var CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread
+ * @var CryAudio::ERequestFlags::CallbackOnAudioThread
+ * @var CryAudio::ERequestFlags::DoneCallbackOnExternalThread
+ * @var CryAudio::ERequestFlags::DoneCallbackOnAudioThread
  */
 enum class ERequestFlags : EnumFlagsType
 {
-	None,
-	ExecuteBlocking                   = BIT(0), // Blocks the calling thread until the request has been processed.
-	CallbackOnExternalOrCallingThread = BIT(1), // Blocking requests will issue a callback on the calling thread, non-blocking requests will issue a callback on the external thread.
-	CallbackOnAudioThread             = BIT(2), // Issues a callback on the audio thread.
-	DoneCallbackOnExternalThread      = BIT(3), // Issues a callback on the external thread once a trigger instance finished playback of all its events.
-	DoneCallbackOnAudioThread         = BIT(4), // Issues a callback on the audio thread once a trigger instance finished playback of all its events.
+	None,                                       /**< Used to initialize variables of this type. */
+	ExecuteBlocking                   = BIT(0), /**< Blocks the calling thread until the request has been processed. */
+	CallbackOnExternalOrCallingThread = BIT(1), /**< Invokes a callback on the calling thread for blocking requests or invokes a callback on the external thread for non-blocking requests. */
+	CallbackOnAudioThread             = BIT(2), /**< Invokes a callback on the audio thread informing of the outcome of the request. */
+	DoneCallbackOnExternalThread      = BIT(3), /**< Invokes a callback on the external thread once a trigger instance finished playback of all its events. */
+	DoneCallbackOnAudioThread         = BIT(4), /**< Invokes a callback on the audio thread once a trigger instance finished playback of all its events. */
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ERequestFlags);
 
@@ -67,25 +73,42 @@ CRY_CREATE_ENUM_FLAG_OPERATORS(ERequestFlags);
  * Used as a return type for many methods used by the AudioSystem internally,
  * and also for most of the CryAudio::Impl::IImpl calls.
  */
+
+/**
+ * @enum CryAudio::ERequestStatus
+ * @brief A strongly typed enum class representing a list of possible statuses of an internally generated audio request. Used as a return type for many methods used by the AudioSystem internally and also for most of the CryAudio::Impl::IImpl calls.
+ * @var CryAudio::ERequestStatus::None
+ * @var CryAudio::ERequestStatus::ExecuteBlocking
+ * @var CryAudio::ERequestStatus::CallbackOnExternalOrCallingThread
+ * @var CryAudio::ERequestStatus::CallbackOnAudioThread
+ * @var CryAudio::ERequestStatus::DoneCallbackOnExternalThread
+ * @var CryAudio::ERequestStatus::DoneCallbackOnAudioThread
+ */
 enum class ERequestStatus : EnumFlagsType
 {
-	None,
-	Success,
-	SuccessfullyStopped,
-	SuccessNeedsRefresh,
-	PartialSuccess,
-	Failure,
-	Pending,
-	FailureInvalidObjectId,
-	FailureInvalidControlId,
-	FailureInvalidRequest,
+	None,                    /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
+	Success,                 /**< Returned if the request processed successfully. */
+	SuccessfullyStopped,     /**< Audio middleware implementations return this if during ExecuteTrigger an event was actually stopped so that internal data can be immediately freed. */
+	SuccessNeedsRefresh,     /**< Audio middleware implementations return this if after an action they require to be refreshed. */
+	PartialSuccess,          /**< Returned if the outcome of the request wasn't a complete success but also not complete failure. */
+	Failure,                 /**< Returned if the request failed to process. */
+	Pending,                 /**< Returned if the request was delivered but final execution is pending. It's then kept in the system until its status changed. */
+	FailureInvalidControlId, /**< Returned if the request referenced a non-existing audio control. */
+	FailureInvalidRequest,   /**< Returned if the request type is unknown/unhandled. */
 };
 
+/**
+ * @enum CryAudio::ERequestResult
+ * @brief A strongly typed enum class representing a list of possible outcomes of a request which gets communicated via the callbacks if the user decided to be informed of the outcome of a particular request.
+ * @var CryAudio::ERequestResult::None
+ * @var CryAudio::ERequestResult::Success
+ * @var CryAudio::ERequestResult::Failure
+ */
 enum class ERequestResult : EnumFlagsType
 {
-	None,
-	Success,
-	Failure,
+	None,    /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
+	Success, /**< Set if the request processed successfully. */
+	Failure, /**< Set if the request failed to process. */
 };
 
 class CObjectTransformation
