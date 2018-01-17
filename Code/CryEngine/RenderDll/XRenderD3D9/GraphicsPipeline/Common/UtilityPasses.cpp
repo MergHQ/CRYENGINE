@@ -463,7 +463,7 @@ void CStableDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bK
 	if (!pSrcRT || !pDestRT)
 		return;
 
-	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), (int)bKillFireflies))
+	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), bKillFireflies))
 	{
 		m_pass.Execute();
 		return;
@@ -492,7 +492,7 @@ void CDepthDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bLi
 	if (!pSrcRT || !pDestRT)
 		return;
 
-	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), (int)bLinearizeSrcDepth, (int)bFromSingleChannel))
+	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), bLinearizeSrcDepth, bFromSingleChannel))
 	{
 		m_pass.Execute();
 		return;

@@ -408,7 +408,6 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 	CTexture* pTexLensOptics = CRendererResources::s_ptexSceneTargetR11G11B10F[0];
 	CRY_ASSERT(pCurrRT != pDestRT);
 
-	static uint64 prevRTMask = 0;
 	uint64 rtMask = 0;
 	if (aaMode & (eAT_SMAA_2TX_MASK | eAT_TSAA_MASK))
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2];
@@ -433,7 +432,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		}
 	}
 
-	if (m_passComposition.InputChanged(pCurrRT->GetID(), pDestRT->GetID(), CRendererResources::s_ptexCurLumTexture->GetID(), pColorChartTex->GetID()) || rtMask != prevRTMask)
+	if (m_passComposition.InputChanged(pCurrRT->GetID(), pDestRT->GetID(), CRendererResources::s_ptexCurLumTexture->GetID(), pColorChartTex->GetID(), rtMask))
 	{
 		static CCryNameTSCRC techComposition("PostAAComposites");
 
@@ -452,8 +451,6 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		m_passComposition.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 		m_passComposition.SetSampler(1, EDefaultSamplerStates::PointClamp);
 		m_passComposition.SetSampler(2, EDefaultSamplerStates::PointWrap);
-
-		prevRTMask = rtMask;
 	}
 
 	m_passComposition.BeginConstantUpdate();

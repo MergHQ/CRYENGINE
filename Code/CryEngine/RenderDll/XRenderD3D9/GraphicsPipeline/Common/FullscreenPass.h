@@ -10,23 +10,11 @@ public:
 	CFullscreenPass(CRenderPrimitive::EPrimitiveFlags primitiveFlags = CRenderPrimitive::eFlags_ReflectShaderConstants);
 	~CFullscreenPass();
 
-	bool InputChanged(int var0 = 0, int var1 = 0, int var2 = 0, int var3 = 0)
+	bool InputChanged() const override final
 	{
-		bool bChanged = IsOutputDirty() || 
-		                m_primitive.IsDirty() ||
-		                var0 != m_inputVars[0] || var1 != m_inputVars[1] ||
-		                var2 != m_inputVars[2] || var3 != m_inputVars[3];
-
-		if (bChanged)
-		{
-			m_inputVars[0] = var0;
-			m_inputVars[1] = var1;
-			m_inputVars[2] = var2;
-			m_inputVars[3] = var3;
-		}
-
-		return bChanged;
+		return IsDirty();
 	}
+	using CRenderPassBase::InputChanged;
 
 	void SetPrimitiveFlags(CRenderPrimitive::EPrimitiveFlags flags);
 
@@ -128,8 +116,6 @@ public:
 
 private:
 	void                     UpdatePrimitive();
-
-	int                      m_inputVars[4];
 
 	bool                     m_bRequirePerViewCB;
 	bool                     m_bRequireWorldPos;

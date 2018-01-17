@@ -466,7 +466,7 @@ void CUnderwaterGodRaysPass::Execute(const CPostEffectContext& context)
 		{
 			auto& pass = m_passUnderwaterGodRaysGen[r];
 
-			if (pass.InputChanged((rtMask & 0xFFFFFFFF), ((rtMask >> 32) & 0xFFFFFFFF)), pSrcBackBufferTexture->GetID())
+			if (pass.InputChanged(rtMask, pSrcBackBufferTexture->GetID()))
 			{
 				static CCryNameTSCRC techName("UnderwaterGodRays");
 				pass.SetTechnique(CShaderMan::s_shPostEffects, techName, rtMask);

@@ -1102,8 +1102,7 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 			}
 		}
 
-		if (pass.InputChanged((rtMask & 0xFFFFFFFF),
-		                      ((rtMask >> 32) & 0xFFFFFFFF),
+		if (pass.InputChanged(rtMask,
 		                      CRenderer::CV_r_VolumetricClouds,
 		                      cloudVolumeTex->GetID()))
 		{
@@ -1221,8 +1220,7 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 		}
 	}
 
-	if (pass.InputChanged((rtMask & 0xFFFFFFFF),
-	                      ((rtMask >> 32) & 0xFFFFFFFF),
+	if (pass.InputChanged(rtMask,
 	                      inputFlag,
 	                      cloudVolumeTex->GetID()))
 	{
