@@ -46,14 +46,10 @@ void CParticleJobManager::ScheduleComputeVertices(CParticleComponentRuntime* pCo
 	job.nCustomTexId = renderContext.m_renderParams.nTextureID;
 }
 
-#pragma optimize("", off)
-
 void CParticleJobManager::ScheduleUpdates()
 {
 	if (m_emitterRefs.empty())
 		return;
-
-	CRY_PFX2_PROFILE_DETAIL;
 
 	CRY_PFX2_ASSERT(!m_updateState.IsRunning());
 	if (!Cry3DEngineBase::GetCVars()->e_ParticlesThread)
@@ -64,14 +60,22 @@ void CParticleJobManager::ScheduleUpdates()
 	}
 
 	m_updateState.SetRunning();
+	TScheduleUpdatesJob job;
+	job.SetClassInstance(this);
+	job.Run();
+}
+
+void CParticleJobManager::Job_ScheduleUpdates()
+{
+	CRY_PFX2_PROFILE_DETAIL;
 
 	// Split emitter list into jobs
 	const uint maxJobs = gEnv->pJobManager->GetNumWorkerThreads() * MaxJobsPerThread;
 	const uint numJobs = min(m_emitterRefs.size(), maxJobs);
 
 	m_updateState.SetRunning(numJobs);
-	uint e = 0;
 
+	uint e = 0;
 	for (uint j = 0; j < numJobs; ++j)
 	{
 		uint e2 = (j+1) * m_emitterRefs.size() / numJobs;
