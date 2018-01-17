@@ -29,6 +29,9 @@ struct INavMeshQueryFilter
 	//! Release method used for destroying the object
 	virtual void Release() const = 0;
 
+	//! Returns false if the annotation isn't passable
+	virtual bool PassFilter(const MNM::AreaAnnotation annotation) const = 0;
+
 	//! Returns false if the triangle isn't passable
 	virtual bool PassFilter(const MNM::Tile::STriangle& triangle) const = 0;
 
@@ -65,6 +68,11 @@ struct SNavMeshQueryFilterDefaultBase : public INavMeshQueryFilter
 		, excludeFlags(other.excludeFlags)
 	{
 		memcpy(costs, other.costs, sizeof(costs[0]) * MaxAreasCount);
+	}
+
+	virtual bool PassFilter(const MNM::AreaAnnotation annotation) const override
+	{
+		return (annotation.GetFlags() & includeFlags) && !(annotation.GetFlags() & excludeFlags);
 	}
 
 	virtual bool PassFilter(const MNM::Tile::STriangle& triangle) const override

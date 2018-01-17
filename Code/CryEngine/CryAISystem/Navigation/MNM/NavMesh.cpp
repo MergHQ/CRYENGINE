@@ -4,7 +4,6 @@
 #include "NavMesh.h"
 #include "OffGridLinks.h"
 #include "Tile.h"
-#include "IslandConnections.h"
 #include "../NavigationSystem/OffMeshNavigationManager.h"
 
 #if defined(min)
@@ -216,7 +215,6 @@ const real_t CNavMesh::kAdjecencyCalculationToleranceSq = square(real_t(0.02f));
 CNavMesh::CNavMesh()
 	: m_triangleCount(0)
 {
-	m_islands.reserve(32);
 }
 
 CNavMesh::~CNavMesh()
@@ -240,7 +238,7 @@ struct CNavMesh::SMinIslandAreaQueryTrianglesFilter
 
 	bool PassFilter(const Tile::STriangle& triangle) const
 	{
-		return navMesh.GetIslandArea(triangle.islandID) >= minIslandArea;
+		return navMesh.GetIslands().GetIslandArea(triangle.islandID) >= minIslandArea;
 	}
 
 	const CNavMesh& navMesh;
@@ -258,7 +256,7 @@ struct SNavigationQueryFilterWithMinIslandFilter
 
 	bool PassFilter(const Tile::STriangle& triangle) const
 	{
-		return filter.PassFilter(triangle) && (navMesh.GetIslandArea(triangle.islandID) >= minIslandArea);
+		return filter.PassFilter(triangle) && (navMesh.GetIslands().GetIslandArea(triangle.islandID) >= minIslandArea);
 	}
 
 	const INavMeshQueryFilter& filter;
@@ -854,6 +852,9 @@ void CNavMesh::SetTrianglesAnnotation(const MNM::TriangleID* pTrianglesArray, co
 		{
 			const uint16 triangleIndex = MNM::ComputeTriangleIndex(triangleId);
 			MNM::Tile::STriangle& triangle = GetTriangleUnsafe(tileId, triangleIndex);
+			if (triangle.areaAnnotation == areaAnnotation)
+				continue;
+
 			triangle.areaAnnotation = areaAnnotation;
 
 			stl::push_back_unique(affectedTiles, MNM::ComputeTileID(triangleId));
@@ -941,191 +942,6 @@ bool CNavMesh::PushPointInsideTriangle(const TriangleID triangleID, vector3_t& l
 	}
 
 	return false;
-}
-
-void CNavMesh::ResetConnectedIslandsIDs()
-{
-	for (TileMap::iterator tileIt = m_tileMap.begin(); tileIt != m_tileMap.end(); ++tileIt)
-	{
-		STile& tile = m_tiles[tileIt->second - 1].tile;
-
-		for (uint16 i = 0; i < tile.triangleCount; ++i)
-		{
-			Tile::STriangle& triangle = tile.triangles[i];
-			triangle.islandID = MNM::Constants::eStaticIsland_InvalidIslandID;
-		}
-	}
-
-	m_islands.clear();
-}
-
-void CNavMesh::ComputeStaticIslandsAndConnections(const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager, MNM::IslandConnections& islandConnections)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	ResetConnectedIslandsIDs();
-	ComputeStaticIslands();
-	ResolvePendingIslandConnectionRequests(meshID, offMeshNavigationManager, islandConnections);
-}
-
-void CNavMesh::ComputeStaticIslands()
-{
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	typedef std::vector<TriangleID> Triangles;
-	Triangles trianglesToVisit;
-	trianglesToVisit.reserve(4096);
-
-	// The idea is to iterate through the existing tiles and then finding the triangles from which
-	// start the assigning of the different island ids.
-	for (TileMap::iterator tileIt = m_tileMap.begin(); tileIt != m_tileMap.end(); ++tileIt)
-	{
-		const TileID tileID = tileIt->second;
-		STile& tile = m_tiles[tileID - 1].tile;
-		for (uint16 triangleIndex = 0; triangleIndex < tile.triangleCount; ++triangleIndex)
-		{
-			Tile::STriangle& sourceTriangle = tile.triangles[triangleIndex];
-			if (sourceTriangle.islandID == MNM::Constants::eStaticIsland_InvalidIslandID)
-			{
-				Island& newIsland = GetNewIsland();
-				sourceTriangle.islandID = newIsland.id;
-				const TriangleID triangleID = ComputeTriangleID(tileID, triangleIndex);
-
-				newIsland.area = tile.GetTriangleArea(triangleID).as_float();
-
-				trianglesToVisit.push_back(triangleID);
-
-				// We now have another triangle to start from to assign the new island ids to all the connected
-				// triangles
-				size_t totalTrianglesToVisit = 1;
-				for (size_t index = 0; index < totalTrianglesToVisit; ++index)
-				{
-					// Get next triangle to start the evaluation from
-					const MNM::TriangleID currentTriangleID = trianglesToVisit[index];
-
-					const TileID currentTileId = ComputeTileID(currentTriangleID);
-					CRY_ASSERT_MESSAGE(currentTileId > 0, "ComputeStaticIslands is trying to access a triangle ID associated with an invalid tile id.");
-
-					const TileContainer& container = m_tiles[currentTileId - 1];
-					const STile& currentTile = container.tile;
-					const Tile::STriangle& currentTriangle = currentTile.triangles[ComputeTriangleIndex(currentTriangleID)];
-
-					// Calc area of this triangle
-					float farea = currentTile.GetTriangleArea(currentTriangleID).as_float();
-
-					for (uint16 l = 0; l < currentTriangle.linkCount; ++l)
-					{
-						const Tile::SLink& link = currentTile.links[currentTriangle.firstLink + l];
-						if (link.side == Tile::SLink::Internal)
-						{
-							Tile::STriangle& nextTriangle = currentTile.triangles[link.triangle];
-							if (nextTriangle.islandID == MNM::Constants::eGlobalIsland_InvalidIslandID)
-							{
-								++totalTrianglesToVisit;
-								nextTriangle.islandID = newIsland.id;
-								newIsland.area += farea;
-								trianglesToVisit.push_back(ComputeTriangleID(currentTileId, link.triangle));
-							}
-						}
-						else if (link.side == Tile::SLink::OffMesh)
-						{
-							QueueIslandConnectionSetup(currentTriangle.islandID, currentTriangleID, link.triangle);
-						}
-						else
-						{
-							const TileID neighbourTileID = GetNeighbourTileID(container.x, container.y, container.z, link.side);
-							CRY_ASSERT_MESSAGE(neighbourTileID > 0, "ComputeStaticIslands is trying to access an invalid neighbour tile.");
-
-							const STile& neighbourTile = m_tiles[neighbourTileID - 1].tile;
-							Tile::STriangle& nextTriangle = neighbourTile.triangles[link.triangle];
-							if (nextTriangle.islandID == MNM::Constants::eGlobalIsland_InvalidIslandID)
-							{
-								++totalTrianglesToVisit;
-								nextTriangle.islandID = newIsland.id;
-								newIsland.area += farea;
-								trianglesToVisit.push_back(ComputeTriangleID(neighbourTileID, link.triangle));
-							}
-						}
-					}
-				}
-				trianglesToVisit.clear();
-			}
-		}
-	}
-}
-
-CNavMesh::Island& CNavMesh::GetNewIsland()
-{
-	assert(m_islands.size() != std::numeric_limits<StaticIslandID>::max());
-
-	// Generate new id (NOTE: Invalid is 0)
-	StaticIslandID id = (m_islands.size() + 1);
-
-	m_islands.push_back(Island(id));
-	return m_islands.back();
-}
-
-void CNavMesh::QueueIslandConnectionSetup(const StaticIslandID islandID, const TriangleID startingTriangleID, const uint16 offMeshLinkIndex)
-{
-	m_islandConnectionRequests.push_back(IslandConnectionRequest(islandID, startingTriangleID, offMeshLinkIndex));
-}
-
-void CNavMesh::ResolvePendingIslandConnectionRequests(const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager,
-                                                      MNM::IslandConnections& islandConnections)
-{
-	const OffMeshNavigation& offMeshNavigation = offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
-
-	while (!m_islandConnectionRequests.empty())
-	{
-		IslandConnectionRequest& request = m_islandConnectionRequests.back();
-		OffMeshNavigation::QueryLinksResult links = offMeshNavigation.GetLinksForTriangle(request.startingTriangleID, request.offMeshLinkIndex);
-		while (WayTriangleData nextTri = links.GetNextTriangle())
-		{
-			Tile::STriangle endTriangle;
-			if (GetTriangle(nextTri.triangleID, endTriangle))
-			{
-				const OffMeshLink* pLink = offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID);
-				assert(pLink);
-				MNM::IslandConnections::Link link(nextTri.triangleID, nextTri.offMeshLinkID, GlobalIslandID(meshID, endTriangle.islandID), pLink->GetEntityIdForOffMeshLink());
-				islandConnections.SetOneWayConnectionBetweenIsland(GlobalIslandID(meshID, request.startingIslandID), link);
-			}
-		}
-		m_islandConnectionRequests.pop_back();
-	}
-}
-
-void CNavMesh::SearchForIslandConnectionsToRefresh(const TileID tileID)
-{
-	STile& tile = m_tiles[tileID - 1].tile;
-	for (uint16 triangleIndex = 0; triangleIndex < tile.triangleCount; ++triangleIndex)
-	{
-		Tile::STriangle& triangle = tile.triangles[triangleIndex];
-		for (uint16 l = 0; l < triangle.linkCount; ++l)
-		{
-			const Tile::SLink& link = tile.links[triangle.firstLink + l];
-			if (link.side == Tile::SLink::OffMesh)
-			{
-				QueueIslandConnectionSetup(triangle.islandID, ComputeTriangleID(tileID, triangleIndex), link.triangle);
-			}
-		}
-	}
-}
-
-float CNavMesh::GetIslandArea(StaticIslandID islandID) const
-{
-	bool isValid = (islandID >= MNM::Constants::eStaticIsland_FirstValidIslandID && islandID <= m_islands.size());
-	return (isValid) ? m_islands[islandID - 1].area : -1.f;
-}
-
-float CNavMesh::GetIslandAreaForTriangle(TriangleID triangleID) const
-{
-	Tile::STriangle triangle;
-	if (GetTriangle(triangleID, triangle))
-	{
-		return GetIslandArea(triangle.islandID);
-	}
-
-	return -1.f;
 }
 
 void CNavMesh::PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangleID,
@@ -2594,11 +2410,11 @@ void CNavMesh::Draw(size_t drawFlags, const ITriangleColorSelector& colorSelecto
 	const float maxDistanceToRenderSqr = sqr(gAIEnv.CVars.NavmeshTileDistanceDraw);
 
 	// collect areas
-	// TODO: Clean this up!  Temprorary to get up and running.
-	std::vector<float> islandAreas(m_islands.size());
-	for (size_t i = 0; i < m_islands.size(); ++i)
+	// TODO: Clean this up! Temporary to get up and running.
+	std::vector<float> islandAreas(m_islands.GetTotalIslands());
+	for (size_t i = 0; i < m_islands.GetTotalIslands(); ++i)
 	{
-		islandAreas[i] = m_islands[i].area;
+		islandAreas[i] = m_islands.GetIslandArea(i + 1);
 	}
 
 	TileMap::const_iterator it = m_tileMap.begin();

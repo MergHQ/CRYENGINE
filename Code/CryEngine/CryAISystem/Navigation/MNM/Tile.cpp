@@ -618,7 +618,11 @@ void STile::ValidateTriangles() const
 vector3_t::value_type STile::GetTriangleArea(const TriangleID triangleID) const
 {
 	const Tile::STriangle& triangle = triangles[ComputeTriangleIndex(triangleID)];
+	return GetTriangleArea(triangle);
+}
 
+vector3_t::value_type STile::GetTriangleArea(const Tile::STriangle& triangle) const
+{
 	const vector3_t v0 = vector3_t(vertices[triangle.vertex[0]]);
 	const vector3_t v1 = vector3_t(vertices[triangle.vertex[1]]);
 	const vector3_t v2 = vector3_t(vertices[triangle.vertex[2]]);
