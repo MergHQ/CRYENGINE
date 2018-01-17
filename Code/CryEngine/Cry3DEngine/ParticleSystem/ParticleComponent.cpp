@@ -405,7 +405,7 @@ IMaterial* CParticleComponent::MakeMaterial()
 	{
 		const char* shaderName = UsesGPU() ? "Particles.ParticlesGpu" : "Particles";
 		const string& diffuseMap = m_componentParams.m_diffuseMap;
-		const uint32 textureLoadFlags = FT_DONT_STREAM;
+		static uint32 textureLoadFlags = 0;//FT_DONT_STREAM;
 		ITexture* pTexture = gEnv->pRenderer->EF_GetTextureByName(diffuseMap.c_str(), textureLoadFlags);
 		if (!pTexture)
 		{
@@ -427,7 +427,6 @@ IMaterial* CParticleComponent::MakeMaterial()
 	float defaultOpacity = 1.0f;
 	pMaterial->SetGetMaterialParamVec3("diffuse", white, false);
 	pMaterial->SetGetMaterialParamFloat("opacity", defaultOpacity, false);
-	pMaterial->RequestTexturesLoading(0.0f);
 
 	return m_componentParams.m_pMaterial = pMaterial;
 }

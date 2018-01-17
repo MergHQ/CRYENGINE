@@ -61,6 +61,7 @@ public:
 	}
 	ILINE float              GetViewDistRatioFloat() const { return m_fViewDistRatio; }
 	virtual float            GetMaxViewDist();
+	virtual void             UpdateStreamingPriority(const SUpdateStreamingPriorityContext& context);
 
 	virtual void             SetMatrix(Matrix34 const& mat)    { if (mat.IsValid()) SetLocation(QuatTS(mat)); }
 
@@ -112,7 +113,6 @@ public:
 	virtual void                 SetEntity(IEntity* pEntity, int nSlot);
 	virtual void                 InvalidateCachedEntityData() final;
 	virtual void                 OffsetPosition(const Vec3& delta);
-	virtual bool                 UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, IRenderNode* pRenderNode, float fEntDistance, bool bFullUpdate, int nLod);
 	virtual EntityId             GetAttachedEntityId();
 	virtual int                  GetAttachedEntitySlot()
 	{ return m_nEntitySlot; }
