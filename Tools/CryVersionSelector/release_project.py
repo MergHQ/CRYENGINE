@@ -596,7 +596,7 @@ def copy_libs(project, project_path, export_path, include_symbols):
 
     export_bin = os.path.join(export_path, "bin")
 
-    exclude = ["*.mdb", "*.pdb", "*.xml", "*.ilk"]
+    exclude = ["*.mdb", "*.xml", "*.ilk"]
     if not include_symbols:
         exclude.append("*.pdb")
 
