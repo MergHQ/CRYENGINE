@@ -116,6 +116,9 @@ void CVars::Init()
 	DefineConstIntCVar(e_WaterRipplesDebug, 0, VF_CHEAT,
 	                   "Draw water hits that affect water ripple simulation");
 
+	REGISTER_CVAR(e_DebugDrawMaxDistance, 1000.0f, VF_NULL, 
+				  "Draw distance for e_debugDraw text");
+
 	DefineConstIntCVar(e_DebugDrawShowOnlyCompound, 0, VF_NULL,
 	                   "e_DebugDraw shows only Compound (less efficient) static meshes");
 	DefineConstIntCVar(e_DebugDrawShowOnlyLod, -1, VF_NULL,

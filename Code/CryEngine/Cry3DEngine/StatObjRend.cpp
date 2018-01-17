@@ -321,6 +321,9 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 		bFiltered = name.find(e_DebugDrawFilter) == string::npos;
 	}
 
+	if (pObj->m_fDistance > GetCVars()->e_DebugDrawMaxDistance)
+		return false;
+
 	if ((GetCVars()->e_DebugDraw == 1 || bOnlyBoxes) && !bFiltered)
 	{
 		if (!m_bMerged)
@@ -380,15 +383,54 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 		{
 		case 1:
 			{
+				float fontSize = 1.3f;
+				ColorB clr;
+
+				if (nLod == 0)
+				{
+					clr = ColorB(255, 0, 0, 255);
+					fontSize = 1.3f;
+				}
+				else if (nLod == 1)
+				{
+					clr = ColorB(0, 255, 0, 255);
+					fontSize = 1.5f;
+				}
+				else if (nLod == 2)
+				{
+					clr = ColorB(200, 100, 255, 255);
+					fontSize = 1.7f;
+				}
+				else if (nLod == 3)
+				{
+					clr = ColorB(0, 255, 255, 255);
+					fontSize = 1.9f;
+				}
+				else if (nLod == 4)
+				{
+					clr = ColorB(255, 255, 0, 255);
+					fontSize = 2.1f;
+				}
+				else if (nLod == 5)
+				{
+					clr = ColorB(255, 0, 255, 255);
+					fontSize = 2.3f;
+				}
+				else
+				{
+					clr = ColorB(255, 255, 255, 255);
+					fontSize = 2.5f;
+				}
+				
 				const char* shortName = "";
 				if (!m_szGeomName.empty())
 					shortName = m_szGeomName.c_str();
 				else
 					shortName = PathUtil::GetFile(m_szFileName.c_str());
 				if (nNumLods > 1)
-					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%s\n%d (LOD %d/%d)", shortName, m_nRenderTrisCount, nLod, nNumLods);
+					IRenderAuxText::DrawLabelExF(pos, fontSize, clr, true, true, "%s\n%d (LOD %d/%d)", shortName, m_nRenderTrisCount, nLod, nNumLods);
 				else
-					IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%s\n%d", shortName, m_nRenderTrisCount);
+					IRenderAuxText::DrawLabelExF(pos, fontSize, clr, true, true, "%s\n%d", shortName, m_nRenderTrisCount);
 			}
 			break;
 
