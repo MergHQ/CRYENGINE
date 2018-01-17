@@ -497,7 +497,7 @@ def create_config(project_file, export_path):
     use_config = True
     # If possible put the project file in a pak. Otherwise rename the project file's extension to crygame
     # so it won't show all the cryproject options on right-click.
-    if create_config_pak(export_path, project_name) and os.path.isfile(dst_file):
+    if create_config_pak(export_path, dst_file) and os.path.isfile(dst_file):
         os.remove(dst_file)
     else:
         os.rename(dst_file, os.path.join(export_path, alt_project_name))
