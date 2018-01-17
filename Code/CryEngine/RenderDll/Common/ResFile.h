@@ -75,7 +75,8 @@ public:
 	void GetMemoryUsage(ICrySizer* pSizer) const {}
 
 	// IsValid() returns true if entry content was flushed
-	bool IsValid() const { return size > 0; }
+	bool IsValid()     const { return size > 0; }
+	bool IsDuplicate() const { return (flags & RF_DUPLICATE) != 0; }
 
 	const CCryNameTSCRC& GetName() const { return Name; }
 

@@ -1594,17 +1594,36 @@ int CResFile::mfFlush()
 	long nSeek = m_nOffsDir;
 	const int nFiles = m_Dir.size();
 
+	// store list of all duplicates: pair.first = original entry, pair.second = duplicate entry
+	std::vector<std::pair<int, int>> duplicates;
+	duplicates.reserve(nFiles);
+
+	for (int i = 0; i < nFiles; ++i)
+	{
+		const CDirEntry& curDir = m_Dir[i];
+		for (int j = i + 1; j < nFiles; ++j)
+		{
+			const CDirEntry& otherDir = m_Dir[j];
+			if (curDir.GetOffset() == otherDir.GetOffset())
+			{
+				if (!curDir.IsDuplicate() && otherDir.IsDuplicate())
+					duplicates.emplace_back(i, j);
+				else if (curDir.IsDuplicate() && !otherDir.IsDuplicate())
+					duplicates.emplace_back(j, i);
+			}
+		}
+	}
+
 	for (size_t i = 0; i < nFiles; i++)
 	{
 		CDirEntry& curDir = m_Dir[i];
-		int originalOffset = curDir.GetOffset();
 
 		if (curDir.flags & RF_NOTSAVED)
 		{
 			SDirEntryOpen* pOE = mfGetOpenEntry(curDir.GetName());
 			CRY_ASSERT(pOE);
 
-			if (!(curDir.flags & RF_DUPLICATE))
+			if (!curDir.IsDuplicate())
 			{
 				assert(pOE && pOE->pData);
 				if (!pOE || !pOE->pData)
@@ -1691,23 +1710,20 @@ int CResFile::mfFlush()
 			curDir.flags &= ~RF_NOTSAVED;
 			updateCount++;
 		}
+	}
 
-		// Update reference entries of all duplicates
-		if (!(curDir.flags & RF_DUPLICATE))
-		{
-			for (size_t j = 0; j < nFiles; j++)
-			{
-				CDirEntry& otherDir = m_Dir[j];
-				if ((otherDir.GetFlags() & RF_DUPLICATE) && otherDir.GetOffset() == originalOffset)
-				{
-					otherDir.offset = curDir.GetOffset();
-					otherDir.size   = curDir.GetSize();
-					otherDir.flags  = curDir.GetFlags() | RF_DUPLICATE;
+	for (const auto& it : duplicates)
+	{
+		const CDirEntry& originalEntry = m_Dir[it.first];
+		CDirEntry& duplicateEntry      = m_Dir[it.second];
 
-					updateCount++;
-				}
-			}
-		}
+		CRY_ASSERT(!originalEntry.IsDuplicate() && duplicateEntry.IsDuplicate());
+	
+		duplicateEntry.offset = originalEntry.GetOffset();
+		duplicateEntry.size   = originalEntry.GetSize();
+		duplicateEntry.flags  = originalEntry.GetFlags() | RF_DUPLICATE;
+
+		updateCount++;
 	}
 
 	if (updateCount > 0)
