@@ -211,7 +211,7 @@ public:
 		{
 			if (*state)
 			{
-				std::pair<MapSmartObjectStateIds::iterator, bool> pr = g_mapStateIds.insert(std::make_pair(state, g_mapStates.size()));
+				std::pair<MapSmartObjectStateIds::iterator, bool> pr = g_mapStateIds.insert(std::make_pair(state, static_cast<int>(g_mapStates.size())));
 				if (pr.second)   // was insertion made?
 					g_mapStates.push_back(pr.first->first.c_str());
 				m_StateId = pr.first->second;
