@@ -2024,8 +2024,6 @@ void C3DEngine::FreeRenderNodeState(IRenderNode* pEnt)
 		}
 	}
 
-	m_visibleNodesManager.OnRenderNodeDeleted(pEnt);
-
 	UnRegisterEntityImpl(pEnt);
 
 	pEnt->RemoveAndMarkForAutoDeleteTempData();
@@ -6677,4 +6675,5 @@ Vec3 C3DEngine::GetSunDirNormalized() const
 ///////////////////////////////////////////////////////////////////////////////
 void C3DEngine::OnEntityDeleted(IEntity* pEntity)
 {
+	m_visibleNodesManager.OnEntityDeleted(pEntity);
 }
