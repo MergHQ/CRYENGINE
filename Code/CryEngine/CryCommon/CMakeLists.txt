@@ -163,6 +163,23 @@ add_sources("NoUberFile"
 		"CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.pc.h"
 )
 
+sources_platform(ALL)
+add_sources("NoUberFile"
+	PROJECTS CryCommon
+	SOURCE_GROUP "CryEntitySystem"
+		"CryEntitySystem/IEntityBasicTypes.h"
+		"CryEntitySystem/IEntityComponent.h"
+		"CryEntitySystem/IEntitySystem.h"
+		"CryEntitySystem/IEntity.h"
+		"CryEntitySystem/IEntityClass.h"
+		"CryEntitySystem/IEntityLayer.h"
+		"CryEntitySystem/IEntitySerialize.h"
+		"CryEntitySystem/EntityDesc.h"
+		"CryEntitySystem/IBitStream.h"
+		"CryEntitySystem/IBreakableManager.h"
+		"CryEntitySystem/IBreakableGlassSystem.h"
+)
+
 # -- crycommon.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
@@ -388,18 +405,6 @@ add_sources("NoUberFile"
 		"CryDynamicResponseSystem/IDynamicResponseSystem.h"
 		"CryDynamicResponseSystem/IDynamicResponseAction.h"
 		"CryDynamicResponseSystem/IDynamicResponseCondition.h"
-	SOURCE_GROUP "CryEntitySystem"
-		"CryEntitySystem/IEntityBasicTypes.h"
-		"CryEntitySystem/IEntityComponent.h"
-		"CryEntitySystem/IEntitySystem.h"
-		"CryEntitySystem/IEntity.h"
-		"CryEntitySystem/IEntityClass.h"
-		"CryEntitySystem/IEntityLayer.h"
-		"CryEntitySystem/IEntitySerialize.h"
-		"CryEntitySystem/EntityDesc.h"
-		"CryEntitySystem/IBitStream.h"
-		"CryEntitySystem/IBreakableManager.h"
-		"CryEntitySystem/IBreakableGlassSystem.h"
 	SOURCE_GROUP "CryExtension"
 		"CryExtension/CryCreateClassInstance.h"
 		"CryExtension/CryGUID.h"
@@ -1135,3 +1140,16 @@ install_headers(CryMemory CryMono CryMovie CryNetwork CryParticleSystem CryPhysi
 install_headers(CryRenderer CrySandbox CryScriptSystem CrySerialization CryString)
 install_headers(CrySystem CryThreading)
 
+	add_sources("CryEntitySystem_Examples.cpp"
+		PROJECTS CryAPIExamples
+		SOURCE_GROUP "CryEntitySystem"
+			"CryEntitySystem/Examples/SpawnEntity.cpp"
+	)
+	
+if(OPTION_DOXYGEN_EXAMPLES)
+	CryEngineStaticModule(CryAPIExamples SOLUTION_FOLDER Common)
+	# Disable memory manager so that we don't need to define eCryModule in the examples
+	target_compile_definitions(CryAPIExamples PRIVATE NOT_USE_CRY_MEMORY_MANAGER=1)
+else()
+	CryFileContainer(CryAPIExamples SOLUTION_FOLDER Common)
+endif()

@@ -6,6 +6,8 @@ option(PLUGIN_SCHEMATYC "Enables compilation of the Schematyc plugin" ON)
 option(OPTION_PAKTOOLS "Build .pak encryption tools" OFF)
 option(OPTION_RC "Include RC in the build" OFF)
 
+option(OPTION_DOXYGEN_EXAMPLES "Build Doxygen examples with the engine" OFF)
+
 if (WIN32 OR WIN64)
 	option(OPTION_ENABLE_CRASHRPT "Enable CrashRpt crash reporting library" ON)
 endif()

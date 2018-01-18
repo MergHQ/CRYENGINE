@@ -360,7 +360,8 @@ struct IEntitySystem
 	//! Spawns a new entity according to the data in the Entity Descriptor.
 	//! \param params		Entity descriptor structure that describes what kind of entity needs to be spawned.
 	//! \param bAutoInit	If true, automatically initialize entity.
-	//! \return If successful, the spawned entity, otherwise NULL.
+	//! \return If successful, the spawned entity, otherwise nullptr.
+	//! \include CryEntitySystem/Examples/SpawnEntity.cpp
 	virtual IEntity* SpawnEntity(SEntitySpawnParams& params, bool bAutoInit = true) = 0;
 
 	//! Initialize entity if entity was spawned not initialized (with bAutoInit false in SpawnEntity).
@@ -369,7 +370,6 @@ struct IEntitySystem
 	//! \param params  Entity descriptor structure that describes what kind of entity needs to be spawned.
 	//! \return true if successfully initialized entity.
 	virtual bool InitEntity(IEntity* pEntity, SEntitySpawnParams& params) = 0;
-
 	//! Retrieves entity from its unique id.
 	//! \param id Unique ID of the entity required.
 	//! \return Entity if one with such an ID exists, and NULL if no entity could be matched with the id
