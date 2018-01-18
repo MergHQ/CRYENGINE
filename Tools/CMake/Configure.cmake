@@ -127,8 +127,9 @@ set(WINSDK_SDK_DIR "${SDK_DIR}/Microsoft Windows SDK")
 set(WINSDK_SDK_LIB_DIR "${WINSDK_SDK_DIR}/V8.0/Lib/Win8/um")
 set(WINSDK_SDK_INCLUDE_DIR "${WINSDK_SDK_DIR}/V8.0/Include/um")
 
-
-file(WRITE "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h" "")
+if (NOT EXISTS "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h")
+	file(WRITE "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h" "")
+endif ()
 list(APPEND global_defines "CRY_CVAR_OVERRIDE_FILE=\"${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h\"")
 
 # custom defines

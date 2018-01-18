@@ -7,6 +7,8 @@
 #include "DebugDrawContext.h"
 #include "MNMPathfinder.h"
 
+#include "Components/Navigation/NavigationComponent.h"
+
 #include <CryThreading/IJobManager_JobDelegator.h>
 #include <CryCore/Platform/CryWindows.h>
 #include <CryInput/IHardwareMouse.h>
@@ -900,7 +902,11 @@ void NavigationSystem::SetAnnotationForMarkupTriangles(NavigationVolumeID markup
 }
 
 void NavigationSystem::ApplyAnnotationChanges()
-{
+{	
+	// We are assuming here that every triangle can be owned by at most one markup volume. 
+	// Otherwise we would need to use something else then std::vector to store changed triangles.
+	std::unordered_map<NavigationMeshID, std::vector<MNM::TriangleID>> changedTrianglesPerNavmeshMap;
+	
 	for (const auto& markupAnnotationChange : m_markupAnnotationChangesToApply)
 	{
 		if (!m_markupsData.validate(markupAnnotationChange.first))
@@ -914,6 +920,9 @@ void NavigationSystem::ApplyAnnotationChanges()
 			NavigationMesh& mesh = m_meshes[meshTriangles.meshId];
 			mesh.navMesh.SetTrianglesAnnotation(meshTriangles.triangleIds.data(), meshTriangles.triangleIds.size(), areaAnnotation, affectedTiles);
 
+			auto& changedTriangles = changedTrianglesPerNavmeshMap[meshTriangles.meshId];
+			changedTriangles.insert(changedTriangles.end(), meshTriangles.triangleIds.begin(), meshTriangles.triangleIds.end());
+
 			AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
 			for (MNM::TileID tileId : affectedTiles)
 			{
@@ -921,8 +930,17 @@ void NavigationSystem::ApplyAnnotationChanges()
 			}
 		}
 	}
-
 	m_markupAnnotationChangesToApply.clear();
+
+	// Update NavMesh islands
+	MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
+	for (auto it = changedTrianglesPerNavmeshMap.begin(); it != changedTrianglesPerNavmeshMap.end(); ++it)
+	{
+		const auto& changedTriangles = it->second;
+		NavigationMesh& mesh = m_meshes[it->first];
+
+		mesh.navMesh.GetIslands().UpdateIslandsForTriangles(mesh.navMesh, NavigationMeshID(it->first), changedTriangles.data(), changedTriangles.size(), islandConnections);
+	}
 }
 
 /*
@@ -1634,7 +1652,7 @@ void NavigationSystem::ComputeIslands()
 				NavigationMeshID meshID = itMesh->id;
 				MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
 				NavigationMesh& mesh = m_meshes[meshID];
-				mesh.navMesh.ComputeStaticIslandsAndConnections(meshID, m_offMeshNavigationManager, islandConnections);
+				mesh.navMesh.GetIslands().ComputeStaticIslandsAndConnections(mesh.navMesh, meshID, m_offMeshNavigationManager, islandConnections);
 			}
 		}
 	}
@@ -1673,9 +1691,9 @@ void NavigationSystem::AddIslandConnectionsBetweenTriangles(const NavigationMesh
 							{
 								const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID);
 								assert(pLink);
-								MNM::IslandConnections::Link islandLink(nextTri.triangleID, nextTri.offMeshLinkID, endingIslandID, pLink->GetEntityIdForOffMeshLink());
+								MNM::IslandConnections::Link islandLink(nextTri.triangleID, nextTri.offMeshLinkID, endingIslandID, endingTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
 								MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-								islandConnections.SetOneWayConnectionBetweenIsland(startingIslandID, islandLink);
+								islandConnections.SetOneWayOffmeshConnectionBetweenIslands(startingIslandID, islandLink);
 							}
 						}
 					}
@@ -1727,9 +1745,9 @@ void NavigationSystem::RemoveIslandsConnectionBetweenTriangles(const NavigationM
 							{
 								const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID);
 								assert(pLink);
-								MNM::IslandConnections::Link islandLink(nextTri.triangleID, nextTri.offMeshLinkID, endingIslandID, pLink->GetEntityIdForOffMeshLink());
+								MNM::IslandConnections::Link islandLink(nextTri.triangleID, nextTri.offMeshLinkID, endingIslandID, endingTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
 								MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-								islandConnections.RemoveOneWayConnectionBetweenIsland(startingIslandID, islandLink);
+								islandConnections.RemoveOneWayConnectionBetweenIslands(startingIslandID, islandLink);
 							}
 						}
 					}
@@ -1814,9 +1832,9 @@ void NavigationSystem::AddOffMeshLinkIslandConnectionsBetweenTriangles(
 				const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(linkID);
 				if (pLink)
 				{
-					const MNM::IslandConnections::Link islandLink(endingTriangleID, linkID, endingIslandID, pLink->GetEntityIdForOffMeshLink());
+					const MNM::IslandConnections::Link islandLink(endingTriangleID, linkID, endingIslandID, endingTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
 					MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-					islandConnections.SetOneWayConnectionBetweenIsland(startingIslandID, islandLink);
+					islandConnections.SetOneWayOffmeshConnectionBetweenIslands(startingIslandID, islandLink);
 				}
 			}
 		}
@@ -1898,9 +1916,9 @@ void NavigationSystem::RemoveOffMeshLinkIslandsConnectionBetweenTriangles(
 				const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(linkID);
 				if (pLink)
 				{
-					const MNM::IslandConnections::Link islandLink(endingTriangleID, linkID, endingIslandID, pLink->GetEntityIdForOffMeshLink());
+					const MNM::IslandConnections::Link islandLink(endingTriangleID, linkID, endingIslandID, endingTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
 					MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-					islandConnections.RemoveOneWayConnectionBetweenIsland(startingIslandID, islandLink);
+					islandConnections.RemoveOneWayConnectionBetweenIslands(startingIslandID, islandLink);
 				}
 			}
 		}
@@ -2687,7 +2705,7 @@ bool NavigationSystem::GetClosestPointInNavigationMesh(const NavigationAgentType
 	return false;
 }
 
-bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation) const
+bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation, const INavMeshQueryFilter* pFilter) const
 {
 	const float horizontalRange = 1.0f;
 	const float verticalRange = 1.0f;
@@ -2720,7 +2738,7 @@ bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID 
 		}
 	}
 
-	return m_islandConnectionsManager.AreIslandsConnected(pEntityToTestOffGridLinks, startingIslandID, endingIslandID);
+	return m_islandConnectionsManager.AreIslandsConnected(pEntityToTestOffGridLinks, startingIslandID, endingIslandID, pFilter);
 }
 
 MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location)
@@ -3376,7 +3394,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 #endif
 					mesh.markups = markups;
 					mesh.exclusions = exclusions;
-					mesh.navMesh.SetTotalIslands(totalIslands);
+					mesh.navMesh.GetIslands().SetTotalIslands(totalIslands);
 					for (uint32 j = 0; j < tilesCount; ++j)
 					{
 						// Reading Tile indexes
@@ -3504,6 +3522,9 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 	UpdateAllListener(navigationEvent);
 
 	m_offMeshNavigationManager.OnNavigationLoadedComplete();
+
+	//TODO: consider saving island connectivity in the navmesh
+	ComputeIslands();
 
 	m_pEditorBackgroundUpdate->Pause(false);
 
@@ -3772,7 +3793,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 				file.Write(mesh.name.c_str(), sizeof(char) * meshNameLength);
 
 				// Saving total islands
-				uint32 totalIslands = mesh.navMesh.GetTotalIslands();
+				uint32 totalIslands = mesh.navMesh.GetIslands().GetTotalIslands();
 				file.Write(&totalIslands, sizeof(totalIslands));
 
 				uint32 totalMeshMemory = 0;
@@ -4493,10 +4514,9 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 	MNM::vector3_t end = MNM::vector3_t(
 		MNM::real_t(endLoc.x), MNM::real_t(endLoc.y), MNM::real_t(endLoc.z)) - origin;
 
-	//TODO: use global filter for debugging
-	SNavMeshQueryFilterDefault filter;
+	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
 
-	MNM::TriangleID triStart = navMesh.GetTriangleAt(start, range, range, &filter);
+	MNM::TriangleID triStart = navMesh.GetTriangleAt(start, range, range, pDebugQueryFilter);
 	if (!triStart)
 		return;
 
@@ -4508,10 +4528,10 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 		renderFlags.SetAlphaBlendMode(e_AlphaBlended);
 		renderAuxGeom->SetRenderFlags(renderFlags);
 
-		MNM::TriangleID triEnd = navMesh.GetTriangleAt(end, range, range, &filter);
+		MNM::TriangleID triEnd = navMesh.GetTriangleAt(end, range, range, pDebugQueryFilter);
 
 		MNM::CNavMesh::RayCastRequest<512> raycastRequest;
-		MNM::CNavMesh::ERayCastResult result = navMesh.RayCast(start, triStart, end, triEnd, raycastRequest, &filter);
+		MNM::CNavMesh::ERayCastResult result = navMesh.RayCast(start, triStart, end, triEnd, raycastRequest, pDebugQueryFilter);
 
 		for (size_t i = 0; i < raycastRequest.wayTriCount; ++i)
 		{
@@ -4588,12 +4608,11 @@ void NavigationSystemDebugDraw::DebugDrawClosestPoint(NavigationSystem& navigati
 	const MNM::vector3_t fixedPointStartLoc(MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z));
 	const MNM::real_t range = MNM::real_t(5.0f);
 
-	//TODO: use global filter for debugging
-	SNavMeshQueryFilterDefault filter;
+	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
 
 	MNM::real_t distance(.0f);
 	MNM::vector3_t closestPosition;
-	if (MNM::TriangleID closestTriangle = navMesh.GetClosestTriangle(fixedPointStartLoc, range, range, &filter, &distance, &closestPosition))
+	if (MNM::TriangleID closestTriangle = navMesh.GetClosestTriangle(fixedPointStartLoc, range, range, pDebugQueryFilter, &distance, &closestPosition))
 	{
 		IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);
@@ -4646,9 +4665,11 @@ void NavigationSystemDebugDraw::DebugDrawSnapToNavmesh(NavigationSystem& navigat
 	snappingRules.bVerticalSearch = true;
 	snappingRules.bBoxSearch = true;
 
+	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
+
 	Vec3 snappedPosition;
 	MNM::TriangleID triangleId;
-	if (navigationSystem.SnapToNavMesh(m_agentTypeID, debugObject.objectPos, nullptr, snappingRules, snappedPosition, &triangleId))
+	if (navigationSystem.SnapToNavMesh(m_agentTypeID, debugObject.objectPos, pDebugQueryFilter, snappingRules, snappedPosition, &triangleId))
 	{
 		IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);
@@ -4737,13 +4758,11 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 	const MNM::real_t hrange = MNM::real_t(1.0f);
 	const MNM::real_t vrange = MNM::real_t(1.0f);
 
-	//TODO: use global filter for debugging
-	SNavMeshQueryFilterDefault filter;
-	filter.SetExcludeFlags(BIT(1));
+	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
 
 	MNM::vector3_t fixedPointStartLoc;
 	const MNM::TriangleID triStart = navMesh.GetClosestTriangle(
-		MNM::vector3_t(startLoc) - origin, vrange, hrange, &filter, nullptr, &fixedPointStartLoc);
+		MNM::vector3_t(startLoc) - origin, vrange, hrange, pDebugQueryFilter, nullptr, &fixedPointStartLoc);
 	//fixedPointStartLoc += origin;
 
 	if (triStart)
@@ -4756,7 +4775,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 
 	MNM::vector3_t fixedPointEndLoc;
 	const MNM::TriangleID triEnd = navMesh.GetClosestTriangle(
-		MNM::vector3_t(endLoc) - origin, vrange, hrange, &filter, nullptr, &fixedPointEndLoc);
+		MNM::vector3_t(endLoc) - origin, vrange, hrange, pDebugQueryFilter, nullptr, &fixedPointEndLoc);
 
 	if (triEnd)
 	{
@@ -4802,7 +4821,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 			debugObjectStart.entityId,
 			triStart, startLoc, triEnd, endLoc,
 			offMeshNavigation, *offMeshNavigationManager, 
-			dangersInfo, &filter, MNMCustomPathCostComputerSharedPtr());  // no custom cost-computer (where should we get it from!?));
+			dangersInfo, pDebugQueryFilter, MNMCustomPathCostComputerSharedPtr());  // no custom cost-computer (where should we get it from!?));
 
 		MNM::CNavMesh::WayQueryResult result(k_MaxWaySize);
 
@@ -4880,7 +4899,7 @@ static bool FindObjectToTestIslandConnectivity(const char* szName, Vec3& outPos,
 
 		if (ppOutEntityToTestOffGridLinks)
 		{
-			gEnv->pEntitySystem->GetEntity(debugObjectParams.entityId);
+			*ppOutEntityToTestOffGridLinks = gEnv->pEntitySystem->GetEntity(debugObjectParams.entityId);
 		}
 		return true;
 	}
@@ -4890,7 +4909,7 @@ static bool FindObjectToTestIslandConnectivity(const char* szName, Vec3& outPos,
 
 		if (ppOutEntityToTestOffGridLinks)
 		{
-			(*ppOutEntityToTestOffGridLinks) = pEntity;
+			*ppOutEntityToTestOffGridLinks = pEntity;
 		}
 		return true;
 	}
@@ -4923,7 +4942,9 @@ void NavigationSystemDebugDraw::DebugDrawIslandConnection(NavigationSystem& navi
 		return;
 	}
 
-	const bool isReachable = gAIEnv.pNavigationSystem->IsPointReachableFromPosition(m_agentTypeID, pEntityToTestOffGridLinksOrNull, startPos, endPos);
+	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
+
+	const bool isReachable = gAIEnv.pNavigationSystem->IsPointReachableFromPosition(m_agentTypeID, pEntityToTestOffGridLinksOrNull, startPos, endPos, pDebugQueryFilter);
 
 	CDebugDrawContext dc;
 	dc->Draw2dLabel(10.0f, 250.0f, 1.6f, isReachable ? Col_ForestGreen : Col_VioletRed, false, isReachable ? "The two islands ARE connected" : "The two islands ARE NOT connected");
@@ -5255,6 +5276,19 @@ void NavigationSystemDebugDraw::DebugDrawMemoryStats(NavigationSystem& navigatio
 
 		pSizer->Release();
 	}
+}
+
+const INavMeshQueryFilter* NavigationSystemDebugDraw::GetDebugQueryFilter(const char* szName) const
+{
+	IEntity* pEntity = gEnv->pEntitySystem->FindEntityByName(szName);
+	if (!pEntity)
+		return nullptr;
+
+	CEntityAINavigationComponent* pNavigationComponent = pEntity->GetComponent<CEntityAINavigationComponent>();
+	if (!pNavigationComponent)
+		return nullptr;
+
+	return pNavigationComponent->GetNavigationQueryFilter();
 }
 
 NavigationSystemDebugDraw::DebugDrawSettings NavigationSystemDebugDraw::GetDebugDrawSettings(NavigationSystem& navigationSystem)

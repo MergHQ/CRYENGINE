@@ -28,7 +28,7 @@ enum class ESystemItemType
 using ItemType = unsigned int;
 static const ItemType AUDIO_SYSTEM_INVALID_TYPE = 0;
 
-using CID = unsigned int; // TOdo: do we need this?
+using CID = uint32;
 static const CID ACE_INVALID_ID = 0;
 
 class CImplConnection;
@@ -47,7 +47,7 @@ struct SScopeInfo
 	bool isLocalOnly;
 };
 
-typedef uint32                  Scope;
+typedef uint32 Scope;
 using ScopeInfoList = std::vector<SScopeInfo>;
 
 enum class EErrorCode

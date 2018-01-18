@@ -236,6 +236,7 @@ struct IMaterial
 	virtual ~IMaterial() {};
 
 	// Reference counting.
+	virtual bool              IsValid() const = 0;
 	virtual void              AddRef() = 0;
 	virtual void              Release() = 0;
 	virtual int               GetNumRefs() = 0;
@@ -256,9 +257,9 @@ struct IMaterial
 	virtual int  GetFlags() const = 0;
 
 	//! Returns true if this is the default material.
-	virtual bool IsDefault() = 0;
+	virtual bool IsDefault() const = 0;
 
-	virtual int  GetSurfaceTypeId() = 0;
+	virtual int  GetSurfaceTypeId() const = 0;
 
 	//! Assign a different surface type to this material.
 	virtual void          SetSurfaceType(const char* sSurfaceTypeName) = 0;

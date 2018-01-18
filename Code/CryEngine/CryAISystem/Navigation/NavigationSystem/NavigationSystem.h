@@ -140,6 +140,8 @@ private:
 		return (a + b + c) / 3.f;
 	}
 
+	const INavMeshQueryFilter* GetDebugQueryFilter(const char* szName) const;
+
 	NavigationAgentTypeID           m_agentTypeID;
 	NavigationSystemWorkingProgress m_progress;
 };
@@ -250,12 +252,12 @@ public:
 typedef MNM::BoundingVolume NavigationBoundingVolume;
 
 struct NavigationMesh
-{
+{	
 	NavigationMesh(NavigationAgentTypeID _agentTypeID)
 		: agentTypeID(_agentTypeID)
 		, version(0)
 	{
-	};
+	}
 
 #if DEBUG_MNM_ENABLED
 	struct ProfileMemoryStats
@@ -283,7 +285,7 @@ struct NavigationMesh
 	typedef std::vector<NavigationVolumeID> Markups;
 	Markups markups;
 
-	typedef std::unordered_map<uint32, MNM::SMarkupVolumeData> MarkupsData;
+	typedef std::unordered_map<NavigationVolumeID, MNM::SMarkupVolumeData> MarkupsData;
 	MarkupsData markupsData;
 
 #ifdef SW_NAVMESH_USE_GUID
@@ -500,7 +502,7 @@ public:
 
 	virtual bool                             GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, float minIslandArea = 0.f) const override;
 
-	virtual bool                             IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation) const override;
+	virtual bool                             IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation, const INavMeshQueryFilter* pFilter) const override;
 	virtual bool                             IsLocationValidInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float downRange = 1.0f, float upRange = 1.0f) const override;
 
 	virtual size_t                           GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, float minIslandArea = 0.f) const override;
@@ -713,7 +715,7 @@ private:
 	typedef id_map<uint32, MNM::SMarkupVolume> MarkupVolumes;
 	MarkupVolumes                                   m_markupVolumes;
 	id_map<uint32, MNM::SMarkupVolumeData>          m_markupsData;
-	std::unordered_map<uint32, MNM::AreaAnnotation> m_markupAnnotationChangesToApply;
+	std::unordered_map<NavigationVolumeID, MNM::AreaAnnotation> m_markupAnnotationChangesToApply;
 
 #ifdef SW_NAVMESH_USE_GUID
 	typedef std::map<NavigationMeshGUID, NavigationMeshID> MeshMap;

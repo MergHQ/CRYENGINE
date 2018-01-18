@@ -93,15 +93,14 @@ void CParticleRenderBase::Render(CParticleEmitter* pEmitter, CParticleComponentR
 
 void CParticleRenderBase::PrepareRenderObject(CParticleEmitter* pEmitter, CParticleComponent* pComponent, uint renderObjectId, uint threadId, uint64 objFlags)
 {
-	CRenderObject* pRenderObject = gEnv->pRenderer->EF_GetObject();
-	pEmitter->SetRenderObject(pRenderObject, threadId, renderObjectId);
-
 	const SComponentParams& params = pComponent->GetComponentParams();
-	const SParticleShaderData& rData = params.m_shaderData;
+
+	CRenderObject* pRenderObject = gEnv->pRenderer->EF_GetObject();
+	auto particleMaterial = params.m_pMaterial;
 
 	pRenderObject->m_II.m_Matrix.SetIdentity();
 	pRenderObject->m_fAlpha = 1.0f;
-	pRenderObject->m_pCurrMaterial = params.m_pMaterial;
+	pRenderObject->m_pCurrMaterial = particleMaterial;
 	pRenderObject->m_pRenderNode = pEmitter;
 	pRenderObject->m_RState = params.m_renderStateFlags;
 	pRenderObject->m_fSort = 0;
@@ -110,6 +109,8 @@ void CParticleRenderBase::PrepareRenderObject(CParticleEmitter* pEmitter, CParti
 
 	SRenderObjData* pObjData = pRenderObject->GetObjData();
 	pObjData->m_pParticleShaderData = &params.m_shaderData;
+
+	pEmitter->SetRenderObject(pRenderObject, std::move(particleMaterial), threadId, renderObjectId);
 }
 
 void CParticleRenderBase::ResetRenderObject(CParticleEmitter* pEmitter, CParticleComponent* pComponent, uint renderObjectId, uint threadId)
@@ -123,7 +124,7 @@ void CParticleRenderBase::ResetRenderObject(CParticleEmitter* pEmitter, CParticl
 	if (pRenderObject->m_pRE != nullptr)
 		pRenderObject->m_pRE->Release();
 	gEnv->pRenderer->EF_FreeObject(pRenderObject);
-	pEmitter->SetRenderObject(nullptr, threadId, renderObjectId);
+	pEmitter->SetRenderObject(nullptr, nullptr, threadId, renderObjectId);
 }
 
 void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags)

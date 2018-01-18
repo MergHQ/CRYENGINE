@@ -473,7 +473,7 @@ int CLightEntity::UpdateGSMLightSourceNearestShadowFrustum(int nFrustumIndex, co
 
 bool CLightEntity::IsOnePassTraversalFrustum(const ShadowMapFrustum* pFr)
 {
-	return pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic && GetCVars()->e_OnePassOctreeTraversal;
+	return (pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic || pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance) && GetCVars()->e_OnePassOctreeTraversal;
 }
 
 bool CLightEntity::ProcessFrustum(int nLod, float fGSMBoxSize, float fDistanceFromView, PodArray<SPlaneObject>& lstCastersHull, const SRenderingPassInfo& passInfo)

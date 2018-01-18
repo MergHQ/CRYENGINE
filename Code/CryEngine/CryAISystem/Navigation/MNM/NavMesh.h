@@ -8,6 +8,7 @@
 #include "MNM.h"
 #include "Tile.h"
 #include "MNMProfiler.h"
+#include "Islands.h"
 
 #include <CryMath/SimpleHashLookUp.h>
 #include <CryCore/Containers/VectorMap.h>
@@ -20,7 +21,6 @@ class OffMeshNavigationManager;
 namespace MNM
 {
 struct OffMeshNavigation;
-class IslandConnections;
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -131,6 +131,8 @@ typedef CryFixedArray<MNM::DangerAreaConstPtr, max_danger_amount> DangerousAreas
 
 class CNavMesh : public MNM::INavMesh
 {
+	friend class CIslands;
+
 public:
 	enum { x_bits = 11, };   // must add up to a 32 bit - the "tileName"
 	enum { y_bits = 11, };
@@ -309,8 +311,6 @@ public:
 
 	bool          PushPointInsideTriangle(const TriangleID triangleID, vector3_t& location, real_t amount) const;
 
-	void          IncrementCountOfPathsPassingThroughTriangleId(TriangleID triangleID);
-	void          DecrementCountOfPathsPassingThroughTriangleId(TriangleID triangleID);
 
 	inline size_t GetTriangleCount() const
 	{
@@ -398,11 +398,6 @@ public:
 	TileID         SetTile(size_t x, size_t y, size_t z, STile& tile);
 	void           ClearTile(TileID tileID, bool clearNetwork = true);
 
-	ILINE void     SetTotalIslands(uint32 totalIslands) { m_islands.resize(totalIslands); }
-	ILINE uint32   GetTotalIslands() const              { return m_islands.size(); }
-	float          GetIslandArea(StaticIslandID islandID) const;
-	float          GetIslandAreaForTriangle(TriangleID triangle) const;
-
 	void           CreateNetwork();
 	void           ConnectToNetwork(TileID tileID);
 
@@ -484,8 +479,8 @@ public:
 	void ComputeAccessibility(const AccessibilityRequest& inputRequest);
 #endif
 
-	void   ResetConnectedIslandsIDs();
-	void   ComputeStaticIslandsAndConnections(const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager, MNM::IslandConnections& islandConnections);
+	CIslands& GetIslands() { return m_islands; }
+	const CIslands& GetIslands() const { return m_islands; }
 
 	TileID GetNeighbourTileID(size_t x, size_t y, size_t z, size_t side) const;
 	void SetTrianglesAnnotation(const MNM::TriangleID* pTrianglesArray, const size_t trianglesCount, const MNM::AreaAnnotation areaAnnotation, std::vector<TileID>& affectedTiles);
@@ -502,24 +497,6 @@ public:
 	// ~MNM::INavMesh
 
 private:
-
-	struct Island
-	{
-		Island() {}
-		Island(StaticIslandID _id)
-			: id(_id)
-			, area(0.f)
-		{}
-
-		StaticIslandID id;
-		float          area;
-	};
-
-	Island& GetNewIsland();
-	void    QueueIslandConnectionSetup(const StaticIslandID islandID, const TriangleID startingTriangleID, const uint16 offMeshLinkIndex);
-	void    ResolvePendingIslandConnectionRequests(const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager, MNM::IslandConnections& islandConnections);
-	void    SearchForIslandConnectionsToRefresh(const TileID tileID);
-	void    ComputeStaticIslands();
 
 	template<typename TFilter>
 	CNavMesh::EWayQueryResult FindWayInternal(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, const TFilter& filter, WayQueryResult& result) const;
@@ -667,22 +644,7 @@ protected:
 	typedef std::map<uint32, uint32> TileMap;
 	TileMap             m_tileMap;
 
-	std::vector<Island> m_islands;
-
-	struct IslandConnectionRequest
-	{
-		IslandConnectionRequest(const StaticIslandID _startingIslandID, const TriangleID _startingTriangleID, const uint16 _offMeshLinkIndex)
-			: startingIslandID(_startingIslandID)
-			, startingTriangleID(_startingTriangleID)
-			, offMeshLinkIndex(_offMeshLinkIndex)
-		{
-		}
-
-		StaticIslandID startingIslandID;
-		TriangleID     startingTriangleID;
-		uint16         offMeshLinkIndex;
-	};
-	std::vector<IslandConnectionRequest> m_islandConnectionRequests;
+	CIslands            m_islands;
 
 	SGridParams                          m_params;
 	ProfilerType                         m_profiler;

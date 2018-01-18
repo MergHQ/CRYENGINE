@@ -118,6 +118,9 @@ public:
 	void        SetRequestedVelocity(const Vec3& velocity);
 	void        SetStateUpdatedCallback(StateUpdatedCallback callback) { m_stateUpdatedCallback = callback; }
 
+	NavigationAgentTypeID      GetNavigationTypeId() const { return m_movementAdapter.GetNavigationAgentTypeID(); }
+	const INavMeshQueryFilter* GetNavigationQueryFilter() const { return &m_navigationQueryFilter; }
+
 	static void ReflectType(Schematyc::CTypeDesc<CEntityAINavigationComponent>& desc);
 	static void Register(Schematyc::IEnvRegistrar& registrar);
 
@@ -149,9 +152,6 @@ private:
 
 	Vec3                                 GetVelocity() const;
 	Vec3                                 GetPosition() const;
-
-	NavigationAgentTypeID                GetNavigationTypeId() const             { return m_movementAdapter.GetNavigationAgentTypeID(); }
-	const INavMeshQueryFilter*        GetNavigationQueryFilter() const { return &m_navigationQueryFilter; }
 
 	const SMovementProperties&           GetMovementProperties() const           { return m_movementProperties; }
 	const SCollisionAvoidanceProperties& GetCollisionAvoidanceProperties() const { return m_collisionAvoidanceProperties; }

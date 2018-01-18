@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -60,20 +60,6 @@ class CTrigger final : public ITrigger
 {
 public:
 
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	explicit CTrigger(
-	  uint32 const eventPathId,
-	  EEventType const eventType,
-	  FMOD::Studio::EventDescription* const pEventDescription,
-	  FMOD_GUID const guid,
-	  char const* const szEventPath)
-		: m_eventPathId(eventPathId)
-		, m_eventType(eventType)
-		, m_pEventDescription(pEventDescription)
-		, m_guid(guid)
-		, m_eventPath(szEventPath)
-	{}
-#else
 	explicit CTrigger(
 	  uint32 const eventPathId,
 	  EEventType const eventType,
@@ -84,7 +70,6 @@ public:
 		, m_pEventDescription(pEventDescription)
 		, m_guid(guid)
 	{}
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 	virtual ~CTrigger() override = default;
 
@@ -100,14 +85,17 @@ public:
 	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
 	// ~CryAudio::Impl::ITrigger
 
+	uint32                          GetEventPathId() const      { return m_eventPathId; }
+	EEventType                      GetEventType() const        { return m_eventType; }
+	FMOD::Studio::EventDescription* GetEventDescription() const { return m_pEventDescription; }
+	FMOD_GUID                       GetGuid() const             { return m_guid; }
+
+private:
+
 	uint32 const                          m_eventPathId;
 	EEventType const                      m_eventType;
 	FMOD::Studio::EventDescription* const m_pEventDescription;
 	FMOD_GUID const                       m_guid;
-
-#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-	CryFixedStringT<512> const m_eventPath;
-#endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 };
 
 class CParameter final : public IParameter
@@ -115,11 +103,11 @@ class CParameter final : public IParameter
 public:
 
 	explicit CParameter(
-	  uint32 const eventPathId,
+	  uint32 const id,
 	  float const multiplier,
 	  float const shift,
 	  char const* const szName)
-		: m_eventPathId(eventPathId)
+		: m_id(id)
 		, m_multiplier(multiplier)
 		, m_shift(shift)
 		, m_name(szName)
@@ -129,20 +117,20 @@ public:
 
 	CParameter(CParameter const&) = delete;
 	CParameter(CParameter&&) = delete;
-	CParameter&                                           operator=(CParameter const&) = delete;
-	CParameter&                                           operator=(CParameter&&) = delete;
+	CParameter&                                            operator=(CParameter const&) = delete;
+	CParameter&                                            operator=(CParameter&&) = delete;
 
-	uint32                                                GetEventPathId() const     { return m_eventPathId; }
-	float                                                 GetValueMultiplier() const { return m_multiplier; }
-	float                                                 GetValueShift() const      { return m_shift; }
-	CryFixedStringT<CryAudio::MaxObjectNameLength> const& GetName() const            { return m_name; }
+	uint32                                                 GetId() const              { return m_id; }
+	float                                                  GetValueMultiplier() const { return m_multiplier; }
+	float                                                  GetValueShift() const      { return m_shift; }
+	CryFixedStringT<CryAudio::MaxControlNameLength> const& GetName() const            { return m_name; }
 
 private:
 
-	uint32 const m_eventPathId;
+	uint32 const m_id;
 	float const  m_multiplier;
 	float const  m_shift;
-	CryFixedStringT<CryAudio::MaxObjectNameLength> const m_name;
+	CryFixedStringT<CryAudio::MaxControlNameLength> const m_name;
 };
 
 class CSwitchState final : public ISwitchState
@@ -150,24 +138,30 @@ class CSwitchState final : public ISwitchState
 public:
 
 	explicit CSwitchState(
-	  uint32 const eventPathId_,
-	  float const value_,
-	  char const* const szName_)
-		: eventPathId(eventPathId_)
-		, value(value_)
-		, name(szName_)
+	  uint32 const id,
+	  float const value,
+	  char const* const szName)
+		: m_id(id)
+		, m_value(value)
+		, m_name(szName)
 	{}
 
 	virtual ~CSwitchState() override = default;
 
 	CSwitchState(CSwitchState const&) = delete;
 	CSwitchState(CSwitchState&&) = delete;
-	CSwitchState& operator=(CSwitchState const&) = delete;
-	CSwitchState& operator=(CSwitchState&&) = delete;
+	CSwitchState&                                          operator=(CSwitchState const&) = delete;
+	CSwitchState&                                          operator=(CSwitchState&&) = delete;
 
-	uint32 const eventPathId;
-	float const  value;
-	CryFixedStringT<CryAudio::MaxObjectNameLength> const name;
+	uint32                                                 GetId() const    { return m_id; }
+	float                                                  GetValue() const { return m_value; }
+	CryFixedStringT<CryAudio::MaxControlNameLength> const& GetName() const  { return m_name; }
+
+private:
+
+	uint32 const m_id;
+	float const  m_value;
+	CryFixedStringT<CryAudio::MaxControlNameLength> const m_name;
 };
 
 class CEnvironment final : public IEnvironment
@@ -175,21 +169,26 @@ class CEnvironment final : public IEnvironment
 public:
 
 	explicit CEnvironment(
-	  FMOD::Studio::EventDescription* const pEventDescription_,
-	  FMOD::Studio::Bus* const pBus_)
-		: pEventDescription(pEventDescription_)
-		, pBus(pBus_)
+	  FMOD::Studio::EventDescription* const pEventDescription,
+	  FMOD::Studio::Bus* const pBus)
+		: m_pEventDescription(pEventDescription)
+		, m_pBus(pBus)
 	{}
 
 	virtual ~CEnvironment() override = default;
 
 	CEnvironment(CEnvironment const&) = delete;
 	CEnvironment(CEnvironment&&) = delete;
-	CEnvironment& operator=(CEnvironment const&) = delete;
-	CEnvironment& operator=(CEnvironment&&) = delete;
+	CEnvironment&                   operator=(CEnvironment const&) = delete;
+	CEnvironment&                   operator=(CEnvironment&&) = delete;
 
-	FMOD::Studio::EventDescription* const pEventDescription;
-	FMOD::Studio::Bus* const              pBus;
+	FMOD::Studio::EventDescription* GetEventDescription() const { return m_pEventDescription; }
+	FMOD::Studio::Bus*              GetBus() const              { return m_pBus; }
+
+private:
+
+	FMOD::Studio::EventDescription* const m_pEventDescription;
+	FMOD::Studio::Bus* const              m_pBus;
 };
 
 class CFile final : public IFile
@@ -279,8 +278,8 @@ class CObjectBase;
 using Objects = std::vector<CObjectBase*>;
 using Events = std::vector<CEvent*>;
 using StandaloneFiles = std::vector<CStandaloneFile*>;
-using ParameterToIndexMap = std::map<CParameter const* const, int>;
-using SwitchToIndexMap = std::map<CSwitchState const* const, int>;
+using ParameterIdToIndex = std::map<uint32, int>;
+using TriggerToParameterIndexes = std::map<CTrigger const* const, ParameterIdToIndex>;
 } // namespace Fmod
 } // namespace Impl
 } // namespace CryAudio

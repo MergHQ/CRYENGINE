@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -27,6 +27,7 @@ namespace Fmod
 {
 class CEnvironment;
 class CObjectBase;
+class CTrigger;
 
 class CEvent final : public IEvent, public CPoolObject<CEvent, stl::PSyncNone>
 {
@@ -54,6 +55,9 @@ public:
 	void                         SetObject(CObjectBase* const pAudioObject)                { m_pObject = pAudioObject; }
 	void                         TrySetEnvironment(CEnvironment const* const pEnvironment, float const value);
 
+	void                         SetTrigger(CTrigger const* const pTrigger) { m_pTrigger = pTrigger; }
+	CTrigger const*              GetTrigger() const                         { return m_pTrigger; }
+
 	// CryAudio::Impl::IEvent
 	virtual ERequestStatus Stop() override;
 	// ~CryAudio::Impl::IEvent
@@ -71,6 +75,7 @@ private:
 	FMOD::DSP*                       m_pLowpass = nullptr;
 	FMOD::Studio::ParameterInstance* m_pOcclusionParameter = nullptr;
 	CObjectBase*                     m_pObject = nullptr;
+	CTrigger const*                  m_pTrigger = nullptr;
 };
 } // namespace Fmod
 } // namespace Impl

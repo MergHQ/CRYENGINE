@@ -632,7 +632,7 @@ void CParticleEmitter::ResetRenderObjects()
 
 	const uint numROs = m_pEffect->GetNumRenderObjectIds();
 	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
-		m_pRenderObjects[threadId].resize(numROs, nullptr);
+		m_pRenderObjects[threadId].resize(numROs, { nullptr, nullptr });
 
 	for (auto& pRuntime : m_componentRuntimes)
 	{
@@ -698,13 +698,13 @@ CRenderObject* CParticleEmitter::GetRenderObject(uint threadId, uint renderObjec
 	CRY_PFX2_ASSERT(threadId < RT_COMMAND_BUF_COUNT);
 	if (m_pRenderObjects[threadId].empty())
 		return nullptr;
-	return m_pRenderObjects[threadId][renderObjectIdx];
+	return m_pRenderObjects[threadId][renderObjectIdx].first;
 }
 
-void CParticleEmitter::SetRenderObject(CRenderObject* pRenderObject, uint threadId, uint renderObjectIdx)
+void CParticleEmitter::SetRenderObject(CRenderObject* pRenderObject, _smart_ptr<IMaterial>&& material, uint threadId, uint renderObjectIdx)
 {
 	CRY_PFX2_ASSERT(threadId < RT_COMMAND_BUF_COUNT);
-	m_pRenderObjects[threadId][renderObjectIdx] = pRenderObject;
+	m_pRenderObjects[threadId][renderObjectIdx] = std::make_pair(pRenderObject, std::move(material));
 }
 
 void CParticleEmitter::UpdateTargetFromEntity(IEntity* pEntity)

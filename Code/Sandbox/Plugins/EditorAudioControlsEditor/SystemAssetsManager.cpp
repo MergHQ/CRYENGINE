@@ -43,22 +43,22 @@ void CSystemAssetsManager::Initialize()
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.Connect([&]()
 		{
 			ClearAllConnections();
-		}, reinterpret_cast<uintptr_t>(this));
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
 		{
 			ReloadAllConnections();
-		}, reinterpret_cast<uintptr_t>(this));
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::SignalAboutToLoad.Connect([&]()
 		{
 			m_isLoading = true;
-		}, reinterpret_cast<uintptr_t>(this));
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::SignalLoaded.Connect([&]()
 		{
 			m_isLoading = false;
-		}, reinterpret_cast<uintptr_t>(this));
+	  }, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -258,7 +258,7 @@ void CSystemAssetsManager::Clear()
 		DeleteItem(pLibrary);
 	}
 
-	CRY_ASSERT_MESSAGE(m_controls.empty(),"m_controls is not empty.");
+	CRY_ASSERT_MESSAGE(m_controls.empty(), "m_controls is not empty.");
 	CRY_ASSERT_MESSAGE(m_systemLibraries.empty(), "m_systemLibraries is not empty.");
 	ClearScopes();
 	ClearDirtyFlags();
@@ -525,7 +525,7 @@ void CSystemAssetsManager::ReloadAllConnections()
 			pControl->ReloadConnections();
 		}
 	}
-	
+
 	m_isLoading = false;
 }
 
@@ -581,7 +581,7 @@ void CSystemAssetsManager::UpdateAssetConnectionStates(CSystemAsset* const pAsse
 				{
 					hasNoConnection = true;
 				}
-				
+
 				if (pChild->HasControl())
 				{
 					hasControl = true;
@@ -599,7 +599,7 @@ void CSystemAssetsManager::UpdateAssetConnectionStates(CSystemAsset* const pAsse
 			if (pControl != nullptr)
 			{
 				pControl->SetHasControl(true);
-				
+
 				bool hasPlaceholder = false;
 				bool hasConnection = false;
 				size_t const connectionCount = pControl->GetConnectionCount();
@@ -752,7 +752,7 @@ string GenerateUniqueName(string const& name, ESystemItemType const type, CSyste
 
 		for (size_t i = 0; i < size; ++i)
 		{
-			CSystemAsset* const pChild = pParent->GetChild(i);
+			CSystemAsset const* const pChild = pParent->GetChild(i);
 
 			if ((pChild != nullptr) && (pChild->GetType() == type))
 			{
@@ -775,7 +775,7 @@ string GenerateUniqueLibraryName(string const& name, CSystemAssetsManager const&
 
 	for (size_t i = 0; i < size; ++i)
 	{
-		CSystemLibrary* const pLibrary = assetManager.GetLibrary(i);
+		CSystemLibrary const* const pLibrary = assetManager.GetLibrary(i);
 
 		if (pLibrary != nullptr)
 		{
@@ -793,9 +793,12 @@ string GenerateUniqueControlName(string const& name, ESystemItemType const type,
 	std::vector<string> names;
 	names.reserve(controls.size());
 
-	for (auto const pControl : controls)
+	for (auto const* const pControl : controls)
 	{
-		names.emplace_back(pControl->GetName());
+		if (type == pControl->GetType())
+		{
+			names.emplace_back(pControl->GetName());
+		}
 	}
 
 	return PathUtil::GetUniqueName(name, names);

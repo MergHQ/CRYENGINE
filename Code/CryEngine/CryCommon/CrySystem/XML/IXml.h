@@ -99,7 +99,8 @@ public:
 	XmlNodeRef(XmlNodeRef&& other);
 
 	~XmlNodeRef();
-
+	
+	bool     isValid() const   { return p != nullptr; }
 	operator IXmlNode*() const { return p; }
 
 	IXmlNode&   operator*() const      { return *p; }

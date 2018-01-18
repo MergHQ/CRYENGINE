@@ -152,7 +152,7 @@ void CMatInfo::Release()
 
 //////////////////////////////////////////////////////////////////////////
 
-bool CMatInfo::IsValid()
+bool CMatInfo::IsValid() const
 {
 	return !m_bDeletePending && !m_bDeleted;
 }
@@ -227,7 +227,7 @@ void CMatInfo::SetName(const char* sName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CMatInfo::IsDefault()
+bool CMatInfo::IsDefault() const
 {
 	return this == GetMatMan()->GetDefaultMaterial();
 }
