@@ -411,7 +411,7 @@ bool CEntityAINavigationComponent::TestRaycastHit(const Vec3& toPositon, Vec3& h
 
 bool CEntityAINavigationComponent::IsDestinationReachable(const Vec3& destination) const
 {
-	return gEnv->pAISystem->GetNavigationSystem()->IsPointReachableFromPosition(m_agentTypeId, GetEntity(), GetPosition(), destination);
+	return gEnv->pAISystem->GetNavigationSystem()->IsPointReachableFromPosition(m_agentTypeId, GetEntity(), GetPosition(), destination, &m_navigationQueryFilter);
 }
 
 void CEntityAINavigationComponent::StopMovement()

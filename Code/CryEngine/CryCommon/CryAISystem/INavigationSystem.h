@@ -244,7 +244,7 @@ struct INavigationSystem
 	virtual bool                             GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, float minIslandArea = 0.f) const = 0;
 
 	//! A cheap test to see if two points are connected, without the expense of computing a full path between them.
-	virtual bool   IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation) const = 0;
+	virtual bool   IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation, const INavMeshQueryFilter* pFilter) const = 0;
 
 	virtual bool   IsLocationValidInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float downRange = 1.0f, float upRange = 1.0f) const = 0;
 	virtual size_t GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, float minIslandArea = 0.f) const = 0;

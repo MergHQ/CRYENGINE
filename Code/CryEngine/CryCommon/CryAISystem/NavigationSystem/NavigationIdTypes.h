@@ -35,3 +35,16 @@ typedef TNavigationID<VolumeIDTag>                 NavigationVolumeID;
 typedef TNavigationID<TileGeneratorExtensionIDTag> TileGeneratorExtensionID;
 typedef TNavigationID<AreaTypeIDTag, -1>           NavigationAreaTypeID;
 typedef TNavigationID<AreaFlagIDTag, -1>           NavigationAreaFlagID;
+
+namespace std
+{
+template <ENavigationIDTag T, uint32 valueInvalid>
+struct hash<TNavigationID<T, valueInvalid>>
+{
+	size_t operator () (const TNavigationID<T, valueInvalid>& value) const
+	{
+		std::hash<uint32> hasher;
+		return hasher(value);
+	}
+};
+}

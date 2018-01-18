@@ -55,10 +55,12 @@ enum Edges { InvalidEdgeIndex = ~0u };
 enum TileIdConstants { InvalidTileID = 0, };
 enum TriangleIDConstants { InvalidTriangleID = 0, };
 
-enum EStaticIsland
+enum EStaticIsland : uint32
 {
 	eStaticIsland_InvalidIslandID    = 0,
 	eStaticIsland_FirstValidIslandID = 1,
+	eStaticIsland_VisitedFlag        = 0x40000000,
+	eStaticIsland_UpdatingFlag       = 0x80000000,
 };
 enum EGlobalIsland
 {

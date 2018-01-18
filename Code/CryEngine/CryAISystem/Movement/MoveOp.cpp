@@ -214,7 +214,7 @@ Vec3               MoveOp::DestinationPositionFor(CPipeUser& pipeUser)
 							const float lookAheadDistance = 6.0f; // experimental value
 							const Vec3 positionToMoveTo = m_formationInfo.positionInFormation + dir * lookAheadDistance;
 
-							if (gAIEnv.pNavigationSystem->IsPointReachableFromPosition(pipeUser.GetNavigationTypeID(), pipeUser.GetPathAgentEntity(), pipeUser.GetEntity()->GetPos(), positionToMoveTo))
+							if (gAIEnv.pNavigationSystem->IsPointReachableFromPosition(pipeUser.GetNavigationTypeID(), pipeUser.GetPathAgentEntity(), pipeUser.GetEntity()->GetPos(), positionToMoveTo, nullptr))
 							{
 								m_formationInfo.positionInFormationIsReachable = true;
 								return positionToMoveTo;

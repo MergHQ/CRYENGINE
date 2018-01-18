@@ -15,6 +15,7 @@ struct STile
 {
 	// #MNM_TODO pavloi 2016.07.22: CNavMesh is friend for time being, so I don't have to fix data access in lot's of places right now.
 	friend class CNavMesh;
+	friend class CIslands;
 
 	STile();
 
@@ -52,6 +53,7 @@ struct STile
 	void                   Destroy();
 
 	vector3_t::value_type  GetTriangleArea(const TriangleID triangleID) const;
+	vector3_t::value_type  GetTriangleArea(const Tile::STriangle& triangle) const;
 
 #if MNM_USE_EXPORT_INFORMATION
 	void        ResetConnectivity(uint8 accessible);
