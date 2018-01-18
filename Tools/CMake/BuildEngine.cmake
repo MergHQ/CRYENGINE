@@ -330,10 +330,13 @@ if (OPTION_SCALEFORMHELPER AND NOT (OPTION_ENGINE OR OPTION_SHADERCACHEGEN))
 	add_subdirectory ("Code/CryEngine/CrySystem/Scaleform")
 endif()
 
+if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_DOXYGEN_EXAMPLES)
+	add_subdirectory ("Code/CryEngine/CryCommon")
+endif()
+	
 if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
 	add_subdirectory ("Code/CryEngine/CrySystem")
 	add_subdirectory ("Code/CryEngine/CryReflection")
-	add_subdirectory ("Code/CryEngine/CryCommon")
 	add_subdirectory ("Code/CryEngine/RenderDll/XRenderD3D9")
 	
 	# Shaders custom project
