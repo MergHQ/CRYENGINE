@@ -69,12 +69,6 @@ enum class ERequestFlags : EnumFlagsType
 CRY_CREATE_ENUM_FLAG_OPERATORS(ERequestFlags);
 
 /**
- * An enum that lists possible statuses of an internally generated audio request.
- * Used as a return type for many methods used by the AudioSystem internally,
- * and also for most of the CryAudio::Impl::IImpl calls.
- */
-
-/**
  * @enum CryAudio::ERequestStatus
  * @brief A strongly typed enum class representing a list of possible statuses of an internally generated audio request. Used as a return type for many methods used by the AudioSystem internally and also for most of the CryAudio::Impl::IImpl calls.
  * @var CryAudio::ERequestStatus::None
