@@ -19,8 +19,7 @@ namespace Impl
 {
 namespace Fmod
 {
-ParameterToIndexMap g_parameterToIndex;
-SwitchToIndexMap g_switchToIndex;
+TriggerToParameterIndexes g_triggerToParameterIndexes;
 
 char const* const CImpl::s_szFmodEventPrefix = "event:/";
 char const* const CImpl::s_szFmodSnapshotPrefix = "snapshot:/";
@@ -447,7 +446,7 @@ IStandaloneFile* CImpl::ConstructStandaloneFile(CATLStandaloneFile& standaloneFi
 
 	if (pITrigger != nullptr)
 	{
-		pFile = new CProgrammerSoundFile(filePath, static_cast<CTrigger const* const>(pITrigger)->m_guid, standaloneFile);
+		pFile = new CProgrammerSoundFile(filePath, static_cast<CTrigger const* const>(pITrigger)->GetGuid(), standaloneFile);
 	}
 	else
 	{
@@ -491,16 +490,12 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 			EEventType eventType = EEventType::Start;
 			char const* const szEventType = pRootNode->getAttr(s_szTypeAttribute);
 
-			if (szEventType != nullptr && szEventType[0] != '\0' && _stricmp(szEventType, s_szStopValue) == 0)
+			if ((szEventType != nullptr) && (szEventType[0] != '\0') && (_stricmp(szEventType, s_szStopValue) == 0))
 			{
 				eventType = EEventType::Stop;
 			}
 
-#if defined (INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-			pTrigger = new CTrigger(StringToId(path.c_str()), eventType, nullptr, guid, path.c_str());
-#else
 			pTrigger = new CTrigger(StringToId(path.c_str()), eventType, nullptr, guid);
-#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 		}
 		else
 		{
@@ -518,9 +513,7 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 			EEventType eventType = EEventType::Start;
 			char const* const szFmodEventType = pRootNode->getAttr(s_szTypeAttribute);
 
-			if (szFmodEventType != nullptr &&
-			    szFmodEventType[0] != '\0' &&
-			    _stricmp(szFmodEventType, s_szStopValue) == 0)
+			if ((szFmodEventType != nullptr) && (szFmodEventType[0] != '\0') && (_stricmp(szFmodEventType, s_szStopValue) == 0))
 			{
 				eventType = EEventType::Stop;
 			}
@@ -528,11 +521,7 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 			FMOD::Studio::EventDescription* pEventDescription = nullptr;
 			m_pSystem->getEventByID(&guid, &pEventDescription);
 
-#if defined (INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
-			pTrigger = new CTrigger(StringToId(path.c_str()), eventType, pEventDescription, guid, path.c_str());
-#else
 			pTrigger = new CTrigger(StringToId(path.c_str()), eventType, pEventDescription, guid);
-#endif      // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 		}
 		else
 		{
@@ -550,7 +539,9 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructTrigger(ITrigger const* const pITrigger)
 {
-	delete pITrigger;
+	CTrigger const* const pTrigger = static_cast<CTrigger const* const>(pITrigger);
+	g_triggerToParameterIndexes.erase(pTrigger);
+	delete pTrigger;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -558,27 +549,16 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 {
 	CParameter* pParameter = nullptr;
 	char const* const szTag = pRootNode->getTag();
-	stack_string path;
 
 	if (_stricmp(szTag, s_szParameterTag) == 0)
 	{
-		path = s_szFmodEventPrefix;
-	}
-
-	if (!path.empty())
-	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
-		char const* const szPath = pRootNode->getAttr(s_szPathAttribute);
-		path += szPath;
-		uint32 const pathId = StringToId(path.c_str());
-
 		float multiplier = 1.0f;
 		float shift = 0.0f;
 		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
 		pRootNode->getAttr(s_szShiftAttribute, shift);
 
-		pParameter = new CParameter(pathId, multiplier, shift, szName);
-		g_parameterToIndex.emplace(std::piecewise_construct, std::make_tuple(pParameter), std::make_tuple(FMOD_IMPL_INVALID_INDEX));
+		pParameter = new CParameter(StringToId(szName), multiplier, shift, szName);
 	}
 	else
 	{
@@ -598,7 +578,6 @@ void CImpl::DestructParameter(IParameter const* const pIParameter)
 		pObject->RemoveParameter(pParameter);
 	}
 
-	g_parameterToIndex.erase(pParameter);
 	delete pParameter;
 }
 
@@ -607,23 +586,13 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 {
 	CSwitchState* pSwitchState = nullptr;
 	char const* const szTag = pRootNode->getTag();
-	stack_string path;
 
 	if (_stricmp(szTag, s_szParameterTag) == 0)
 	{
-		path = s_szFmodEventPrefix;
-	}
-
-	if (!path.empty())
-	{
-		char const* const szFmodParameterName = pRootNode->getAttr(s_szNameAttribute);
-		char const* const szFmodPath = pRootNode->getAttr(s_szPathAttribute);
-		char const* const szFmodParameterValue = pRootNode->getAttr(s_szValueAttribute);
-		path += szFmodPath;
-		uint32 const pathId = StringToId(path.c_str());
-		float const value = static_cast<float>(atof(szFmodParameterValue));
-		pSwitchState = new CSwitchState(pathId, value, szFmodParameterName);
-		g_switchToIndex.emplace(std::piecewise_construct, std::make_tuple(pSwitchState), std::make_tuple(FMOD_IMPL_INVALID_INDEX));
+		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szValue = pRootNode->getAttr(s_szValueAttribute);
+		float const value = static_cast<float>(atof(szValue));
+		pSwitchState = new CSwitchState(StringToId(szName), value, szName);
 	}
 	else
 	{
@@ -643,7 +612,6 @@ void CImpl::DestructSwitchState(ISwitchState const* const pISwitchState)
 		pObject->RemoveSwitch(pSwitchState);
 	}
 
-	g_switchToIndex.erase(pSwitchState);
 	delete pSwitchState;
 }
 
