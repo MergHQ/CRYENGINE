@@ -106,9 +106,18 @@ void CSystemAsset::SetName(string const& name)
 {
 	if ((!name.IsEmpty()) && (name != m_name))
 	{
-		m_name = Utils::GenerateUniqueControlName(name, m_type, *CAudioControlsEditorPlugin::GetAssetsManager());
-		SetModified(true);
-		CAudioControlsEditorPlugin::GetAssetsManager()->OnAssetRenamed();
+		if (m_type == ESystemItemType::Library)
+		{
+			m_name = Utils::GenerateUniqueLibraryName(name, *CAudioControlsEditorPlugin::GetAssetsManager());
+			SetModified(true);
+			CAudioControlsEditorPlugin::GetAssetsManager()->OnAssetRenamed();
+		}
+		else if (m_type == ESystemItemType::Folder)
+		{
+			m_name = Utils::GenerateUniqueName(name, m_type, m_pParent);
+			SetModified(true);
+			CAudioControlsEditorPlugin::GetAssetsManager()->OnAssetRenamed();
+		}
 	}
 }
 
@@ -298,7 +307,16 @@ void CSystemControl::SetName(string const& name)
 	if ((!name.IsEmpty()) && (name != m_name))
 	{
 		SignalControlAboutToBeModified();
-		m_name = Utils::GenerateUniqueControlName(name, m_type, *CAudioControlsEditorPlugin::GetAssetsManager());
+
+		if (m_type != ESystemItemType::State)
+		{
+			m_name = Utils::GenerateUniqueControlName(name, m_type, *CAudioControlsEditorPlugin::GetAssetsManager());
+		}
+		else
+		{
+			m_name = Utils::GenerateUniqueName(name, m_type, m_pParent);
+		}
+
 		SignalControlModified();
 		CAudioControlsEditorPlugin::GetAssetsManager()->OnAssetRenamed();
 	}
@@ -661,7 +679,7 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 		{
 			ar(name, "name", "Name");
 		}
-		
+
 		ar.doc(name);
 
 		// Description
@@ -803,7 +821,7 @@ void CSystemLibrary::SetModified(bool const isModified, bool const isForced /* =
 	if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() || isForced)
 	{
 		CAudioControlsEditorPlugin::GetAssetsManager()->SetAssetModified(this, isModified);
-		
+
 		if (isModified)
 		{
 			m_flags |= ESystemAssetFlags::IsModified;
