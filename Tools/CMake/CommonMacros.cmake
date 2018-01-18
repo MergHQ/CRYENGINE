@@ -298,6 +298,7 @@ function(enable_unity_build UB_FILENAME SOURCE_VARIABLE_NAME)
 		# Group Uber files in solution project
 		source_group("UBER FILES" FILES "${unit_build_file}")
 		set_source_files_properties("${unit_build_file}" PROPERTIES GENERATED true)
+		set_source_files_properties("${unit_build_file}" PROPERTIES SKIP_AUTOMOC true)
 
 		# Turn off precompiled header
 		if (WIN32 OR DURANGO)
