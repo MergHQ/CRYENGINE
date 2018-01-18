@@ -8,10 +8,10 @@ set(LINUX64 1)
 set(OUTPUT_DIRECTORY_NAME "linux_x64_clang")
 
 if(NOT CMAKE_C_COMPILER)
-	set(CMAKE_C_COMPILER clang-3.8)
+	set(CMAKE_C_COMPILER clang-3.9)
 endif()
 if(NOT CMAKE_CXX_COMPILER)
-	set(CMAKE_CXX_COMPILER clang++-3.8)
+	set(CMAKE_CXX_COMPILER clang++-3.9)
 endif()
 
 message(STATUS "CMAKE_C_COMPILER = ${CMAKE_C_COMPILER}")
