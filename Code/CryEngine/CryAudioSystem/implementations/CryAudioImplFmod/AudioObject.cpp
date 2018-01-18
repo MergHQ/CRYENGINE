@@ -15,8 +15,7 @@ namespace Impl
 {
 namespace Fmod
 {
-extern SwitchToIndexMap g_switchToIndex;
-extern ParameterToIndexMap g_parameterToIndex;
+extern TriggerToParameterIndexes g_triggerToParameterIndexes;
 
 FMOD::Studio::System* CObjectBase::s_pSystem = nullptr;
 FMOD::Studio::System* CListener::s_pSystem = nullptr;
@@ -105,65 +104,82 @@ bool CObjectBase::SetEvent(CEvent* const pEvent)
 		m_events.push_back(pEvent);
 		FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
-		for (auto const& parameterPair : m_parameters)
+		FMOD::Studio::EventInstance* const pEventInstance = pEvent->GetInstance();
+		CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist.");
+		CTrigger const* const pTrigger = pEvent->GetTrigger();
+		CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist.");
+
+		FMOD::Studio::EventDescription* pEventDescription = nullptr;
+		fmodResult = pEventInstance->getDescription(&pEventDescription);
+		ASSERT_FMOD_OK;
+
+		if (g_triggerToParameterIndexes.find(pTrigger) != g_triggerToParameterIndexes.end())
 		{
-			ParameterToIndexMap::iterator const iter(g_parameterToIndex.find(parameterPair.first));
+			ParameterIdToIndex& parameters = g_triggerToParameterIndexes[pTrigger];
 
-			if (iter != g_parameterToIndex.end())
+			for (auto const& parameterPair : m_parameters)
 			{
-				if (pEvent->GetEventPathId() == iter->first->GetEventPathId())
-				{
-					if (iter->second != FMOD_IMPL_INVALID_INDEX)
-					{
-						FMOD::Studio::ParameterInstance* pParameterInstance = nullptr;
-						pEvent->GetInstance()->getParameterByIndex(iter->second, &pParameterInstance);
+				uint32 const parameterId = parameterPair.first->GetId();
 
-						if (pParameterInstance != nullptr)
-						{
-							fmodResult = pParameterInstance->setValue(parameterPair.second);
-							ASSERT_FMOD_OK;
-						}
-					}
-					else
+				if (parameters.find(parameterId) != parameters.end())
+				{
+					fmodResult = pEventInstance->setParameterValueByIndex(parameters[parameterId], parameterPair.second);
+					ASSERT_FMOD_OK;
+				}
+				else
+				{
+					int parameterCount = 0;
+					fmodResult = pEventInstance->getParameterCount(&parameterCount);
+					ASSERT_FMOD_OK;
+
+					for (int index = 0; index < parameterCount; ++index)
 					{
-						SetParameter(iter->first, parameterPair.second);
+						FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
+						fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
+						ASSERT_FMOD_OK;
+
+						if (parameterId == StringToId(parameterDescription.name))
+						{
+							parameters.emplace(parameterId, index);
+							fmodResult = pEventInstance->setParameterValueByIndex(index, parameterPair.second);
+							ASSERT_FMOD_OK;
+							break;
+						}
 					}
 				}
 			}
-			else
-			{
-				Cry::Audio::Log(ELogType::Warning, "Trying to set an unknown Fmod parameter during \"SetEvent\": %s", parameterPair.first->GetName().c_str());
-			}
-		}
 
-		for (auto const& switchPair : m_switches)
-		{
-			SwitchToIndexMap::iterator const iter(g_switchToIndex.find(switchPair.second));
-
-			if (iter != g_switchToIndex.end())
+			for (auto const& switchPair : m_switches)
 			{
-				if (pEvent->GetEventPathId() == iter->first->eventPathId)
+				CSwitchState const* const pSwitchState = switchPair.second;
+				uint32 const parameterId = pSwitchState->GetId();
+
+				if (parameters.find(parameterId) != parameters.end())
 				{
-					if (iter->second != FMOD_IMPL_INVALID_INDEX)
-					{
-						FMOD::Studio::ParameterInstance* pParameterInstance = nullptr;
-						pEvent->GetInstance()->getParameterByIndex(iter->second, &pParameterInstance);
+					fmodResult = pEventInstance->setParameterValueByIndex(parameters[parameterId], pSwitchState->GetValue());
+					ASSERT_FMOD_OK;
+				}
+				else
+				{
+					int parameterCount = 0;
+					fmodResult = pEventInstance->getParameterCount(&parameterCount);
+					ASSERT_FMOD_OK;
 
-						if (pParameterInstance != nullptr)
+					for (int index = 0; index < parameterCount; ++index)
+					{
+						FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
+						fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
+						ASSERT_FMOD_OK;
+
+						if (parameterId == StringToId(parameterDescription.name))
 						{
-							fmodResult = pParameterInstance->setValue(switchPair.second->value);
+							parameters.emplace(parameterId, index);
+							fmodResult = pEventInstance->setParameterValueByIndex(index, pSwitchState->GetValue());
 							ASSERT_FMOD_OK;
+							break;
 						}
 					}
-					else
-					{
-						SetSwitchState(switchPair.second);
-					}
 				}
-			}
-			else
-			{
-				Cry::Audio::Log(ELogType::Warning, "Trying to set an unknown Fmod switch during \"SetEvent\": %s", switchPair.second->name.c_str());
 			}
 		}
 
@@ -192,7 +208,7 @@ void CObjectBase::RemoveParameter(CParameter const* const pParameter)
 //////////////////////////////////////////////////////////////////////////
 void CObjectBase::RemoveSwitch(CSwitchState const* const pSwitch)
 {
-	m_switches.erase(pSwitch->eventPathId);
+	m_switches.erase(pSwitch->GetId());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -277,14 +293,17 @@ ERequestStatus CObjectBase::ExecuteTrigger(ITrigger const* const pITrigger, IEve
 
 	if ((pTrigger != nullptr) && (pEvent != nullptr))
 	{
-		if (pTrigger->m_eventType == EEventType::Start)
+		pEvent->SetTrigger(pTrigger);
+
+		if (pTrigger->GetEventType() == EEventType::Start)
 		{
 			FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
-			FMOD::Studio::EventDescription* pEventDescription = pTrigger->m_pEventDescription;
+			FMOD::Studio::EventDescription* pEventDescription = pTrigger->GetEventDescription();
 
 			if (pEventDescription == nullptr)
 			{
-				fmodResult = s_pSystem->getEventByID(&pTrigger->m_guid, &pEventDescription);
+				FMOD_GUID const guid = pTrigger->GetGuid();
+				fmodResult = s_pSystem->getEventByID(&guid, &pEventDescription);
 				ASSERT_FMOD_OK;
 			}
 
@@ -304,7 +323,7 @@ ERequestStatus CObjectBase::ExecuteTrigger(ITrigger const* const pITrigger, IEve
 				ASSERT_FMOD_OK;
 
 				CRY_ASSERT(pEvent->GetEventPathId() == InvalidCRC32);
-				pEvent->SetEventPathId(pTrigger->m_eventPathId);
+				pEvent->SetEventPathId(pTrigger->GetEventPathId());
 				pEvent->SetObject(this);
 
 				CRY_ASSERT_MESSAGE(std::find(m_pendingEvents.begin(), m_pendingEvents.end(), pEvent) == m_pendingEvents.end(), "Event was already in the pending list");
@@ -314,7 +333,7 @@ ERequestStatus CObjectBase::ExecuteTrigger(ITrigger const* const pITrigger, IEve
 		}
 		else
 		{
-			StopEvent(pTrigger->m_eventPathId);
+			StopEvent(pTrigger->GetEventPathId());
 			requestResult = ERequestStatus::SuccessfullyStopped;
 		}
 	}
@@ -532,60 +551,70 @@ ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float 
 
 	if (pParameter != nullptr)
 	{
+		uint32 const parameterId = pParameter->GetId();
 		FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
 		for (auto const pEvent : m_events)
 		{
-			if (pEvent->GetEventPathId() == pParameter->GetEventPathId())
+			FMOD::Studio::EventInstance* const pEventInstance = pEvent->GetInstance();
+			CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist.");
+			CTrigger const* const pTrigger = pEvent->GetTrigger();
+			CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist.");
+
+			FMOD::Studio::EventDescription* pEventDescription = nullptr;
+			fmodResult = pEventInstance->getDescription(&pEventDescription);
+			ASSERT_FMOD_OK;
+
+			if (g_triggerToParameterIndexes.find(pTrigger) != g_triggerToParameterIndexes.end())
 			{
-				FMOD::Studio::ParameterInstance* pParameterInstance = nullptr;
-				ParameterToIndexMap::iterator const iter(g_parameterToIndex.find(pParameter));
+				ParameterIdToIndex& parameters = g_triggerToParameterIndexes[pTrigger];
 
-				if (iter != g_parameterToIndex.end())
+				if (parameters.find(parameterId) != parameters.end())
 				{
-					if (iter->second != FMOD_IMPL_INVALID_INDEX)
-					{
-						pEvent->GetInstance()->getParameterByIndex(iter->second, &pParameterInstance);
-
-						if (pParameterInstance != nullptr)
-						{
-							fmodResult = pParameterInstance->setValue(pParameter->GetValueMultiplier() * value + pParameter->GetValueShift());
-							ASSERT_FMOD_OK;
-						}
-						else
-						{
-							Cry::Audio::Log(ELogType::Warning, "Unknown Fmod parameter index (%d) for (%s)", iter->second, pParameter->GetName().c_str());
-						}
-					}
-					else
-					{
-						int parameterCount = 0;
-						fmodResult = pEvent->GetInstance()->getParameterCount(&parameterCount);
-						ASSERT_FMOD_OK;
-
-						for (int index = 0; index < parameterCount; ++index)
-						{
-							fmodResult = pEvent->GetInstance()->getParameterByIndex(index, &pParameterInstance);
-							ASSERT_FMOD_OK;
-
-							FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
-							fmodResult = pParameterInstance->getDescription(&parameterDescription);
-							ASSERT_FMOD_OK;
-
-							if (pParameter->GetName().compareNoCase(parameterDescription.name) == 0)
-							{
-								iter->second = index;
-								fmodResult = pParameterInstance->setValue(pParameter->GetValueMultiplier() * value + pParameter->GetValueShift());
-								ASSERT_FMOD_OK;
-
-								break;
-							}
-						}
-					}
+					fmodResult = pEventInstance->setParameterValueByIndex(parameters[parameterId], pParameter->GetValueMultiplier() * value + pParameter->GetValueShift());
+					ASSERT_FMOD_OK;
 				}
 				else
 				{
-					Cry::Audio::Log(ELogType::Warning, "Trying to set an unknown Fmod parameter: %s", pParameter->GetName().c_str());
+					int parameterCount = 0;
+					fmodResult = pEventInstance->getParameterCount(&parameterCount);
+					ASSERT_FMOD_OK;
+
+					for (int index = 0; index < parameterCount; ++index)
+					{
+						FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
+						fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
+						ASSERT_FMOD_OK;
+
+						if (parameterId == StringToId(parameterDescription.name))
+						{
+							parameters.emplace(parameterId, index);
+							fmodResult = pEventInstance->setParameterValueByIndex(index, pParameter->GetValueMultiplier() * value + pParameter->GetValueShift());
+							ASSERT_FMOD_OK;
+							break;
+						}
+					}
+				}
+			}
+			else
+			{
+				int parameterCount = 0;
+				fmodResult = pEventInstance->getParameterCount(&parameterCount);
+				ASSERT_FMOD_OK;
+
+				for (int index = 0; index < parameterCount; ++index)
+				{
+					FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
+					fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
+					ASSERT_FMOD_OK;
+
+					if (parameterId == StringToId(parameterDescription.name))
+					{
+						g_triggerToParameterIndexes[pTrigger].emplace(std::make_pair(parameterId, index));
+						fmodResult = pEventInstance->setParameterValueByIndex(index, pParameter->GetValueMultiplier() * value + pParameter->GetValueShift());
+						ASSERT_FMOD_OK;
+						break;
+					}
 				}
 			}
 		}
@@ -603,7 +632,7 @@ ERequestStatus CObject::SetParameter(IParameter const* const pIParameter, float 
 	}
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "Invalid AudioObjectData or RtpcData passed to the Fmod implementation of SetRtpc");
+		Cry::Audio::Log(ELogType::Error, "Invalid AudioObjectData or ParameterData passed to the Fmod implementation of SetParameter");
 		result = ERequestStatus::Failure;
 	}
 
@@ -618,61 +647,75 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 
 	if (pSwitchState != nullptr)
 	{
+		uint32 const parameterId = pSwitchState->GetId();
 		FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
 		for (auto const pEvent : m_events)
 		{
-			if (pEvent->GetEventPathId() == pSwitchState->eventPathId)
+			FMOD::Studio::EventInstance* const pEventInstance = pEvent->GetInstance();
+			CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "Event instance doesn't exist.");
+			CTrigger const* const pTrigger = pEvent->GetTrigger();
+			CRY_ASSERT_MESSAGE(pTrigger != nullptr, "Trigger doesn't exist.");
+
+			FMOD::Studio::EventDescription* pEventDescription = nullptr;
+			fmodResult = pEventInstance->getDescription(&pEventDescription);
+			ASSERT_FMOD_OK;
+
+			if (g_triggerToParameterIndexes.find(pTrigger) != g_triggerToParameterIndexes.end())
 			{
-				FMOD::Studio::ParameterInstance* pParameterInstance = nullptr;
-				SwitchToIndexMap::iterator const iter(g_switchToIndex.find(pSwitchState));
+				ParameterIdToIndex& parameters = g_triggerToParameterIndexes[pTrigger];
 
-				if (iter != g_switchToIndex.end())
+				if (parameters.find(parameterId) != parameters.end())
 				{
-					if (iter->second != FMOD_IMPL_INVALID_INDEX)
-					{
-						pEvent->GetInstance()->getParameterByIndex(iter->second, &pParameterInstance);
-
-						if (pParameterInstance != nullptr)
-						{
-							fmodResult = pParameterInstance->setValue(pSwitchState->value);
-							ASSERT_FMOD_OK;
-						}
-					}
-					else
-					{
-						int parameterCount = 0;
-						fmodResult = pEvent->GetInstance()->getParameterCount(&parameterCount);
-						ASSERT_FMOD_OK;
-
-						for (int index = 0; index < parameterCount; ++index)
-						{
-							fmodResult = pEvent->GetInstance()->getParameterByIndex(index, &pParameterInstance);
-							ASSERT_FMOD_OK;
-
-							FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
-							fmodResult = pParameterInstance->getDescription(&parameterDescription);
-							ASSERT_FMOD_OK;
-
-							if (pSwitchState->name.compareNoCase(parameterDescription.name) == 0)
-							{
-								iter->second = index;
-								fmodResult = pParameterInstance->setValue(pSwitchState->value);
-								ASSERT_FMOD_OK;
-
-								break;
-							}
-						}
-					}
+					fmodResult = pEventInstance->setParameterValueByIndex(parameters[parameterId], pSwitchState->GetValue());
+					ASSERT_FMOD_OK;
 				}
 				else
 				{
-					Cry::Audio::Log(ELogType::Warning, "Trying to set an unknown Fmod switch: %s", pSwitchState->name.c_str());
+					int parameterCount = 0;
+					fmodResult = pEventInstance->getParameterCount(&parameterCount);
+					ASSERT_FMOD_OK;
+
+					for (int index = 0; index < parameterCount; ++index)
+					{
+						FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
+						fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
+						ASSERT_FMOD_OK;
+
+						if (parameterId == StringToId(parameterDescription.name))
+						{
+							parameters.emplace(parameterId, index);
+							fmodResult = pEventInstance->setParameterValueByIndex(index, pSwitchState->GetValue());
+							ASSERT_FMOD_OK;
+							break;
+						}
+					}
+				}
+			}
+			else
+			{
+				int parameterCount = 0;
+				fmodResult = pEventInstance->getParameterCount(&parameterCount);
+				ASSERT_FMOD_OK;
+
+				for (int index = 0; index < parameterCount; ++index)
+				{
+					FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
+					fmodResult = pEventDescription->getParameterByIndex(index, &parameterDescription);
+					ASSERT_FMOD_OK;
+
+					if (parameterId == StringToId(parameterDescription.name))
+					{
+						g_triggerToParameterIndexes[pTrigger].emplace(std::make_pair(parameterId, index));
+						fmodResult = pEventInstance->setParameterValueByIndex(index, pSwitchState->GetValue());
+						ASSERT_FMOD_OK;
+						break;
+					}
 				}
 			}
 		}
 
-		auto const iter(m_switches.find(pSwitchState->eventPathId));
+		auto const iter(m_switches.find(pSwitchState->GetId()));
 
 		if (iter != m_switches.end())
 		{
@@ -680,7 +723,7 @@ ERequestStatus CObject::SetSwitchState(ISwitchState const* const pISwitchState)
 		}
 		else
 		{
-			m_switches.emplace(pSwitchState->eventPathId, pSwitchState);
+			m_switches.emplace(pSwitchState->GetId(), pSwitchState);
 		}
 	}
 	else

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioEvent.h"
@@ -103,7 +103,7 @@ void CEvent::TrySetEnvironment(CEnvironment const* const pEnvironment, float con
 	if (m_pInstance != nullptr && m_pMasterTrack != nullptr)
 	{
 		FMOD::ChannelGroup* pChannelGroup = nullptr;
-		FMOD_RESULT fmodResult = pEnvironment->pBus->getChannelGroup(&pChannelGroup);
+		FMOD_RESULT fmodResult = pEnvironment->GetBus()->getChannelGroup(&pChannelGroup);
 		ASSERT_FMOD_OK;
 
 		if (pChannelGroup != nullptr)
