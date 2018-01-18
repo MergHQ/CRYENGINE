@@ -603,16 +603,22 @@ function(CryGameModule target)
 		set(SHARED_MODULES ${SHARED_MODULES} ${THIS_PROJECT} CACHE INTERNAL "Shared modules for APK creation" FORCE)
 		target_link_libraries(${THIS_PROJECT} PRIVATE m log c android)
 	endif()
+
 	add_metadata()
+
 	if(OPTION_DEDICATED_SERVER)
 		target_compile_definitions( ${THIS_PROJECT} PRIVATE "-DDEDICATED_SERVER")
 	endif()
+
 	if (NOT DEFINED PROJECT_BUILD_CRYENGINE OR PROJECT_BUILD_CRYENGINE)
 		install(TARGETS ${target} LIBRARY DESTINATION bin RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
 	endif()
 
 	if(EXISTS "${game_folder}/CVarOverrides.h")
-		file(WRITE "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h" "#include \"${game_folder}/CVarOverrides.h\"")
+		file(READ "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h" project_cvar_overrides_h_content)
+		if(NOT project_cvar_overrides_h_content STREQUAL "#include \"${game_folder}/CVarOverrides.h\"")
+			file(WRITE "${CMAKE_BINARY_DIR}/ProjectCVarOverrides.h" "#include \"${game_folder}/CVarOverrides.h\"")
+		endif()
 	endif()
 
 endfunction()
