@@ -3675,10 +3675,7 @@ void CMergedMeshRenderNode::OverrideLodRatio(float value)
 
 }
 
-bool CMergedMeshRenderNode::UpdateStreamableComponents(
-  float fImportance
-  , float fEntDistance
-  , bool bFullUpdate)
+void CMergedMeshRenderNode::UpdateStreamingPriority(const SUpdateStreamingPriorityContext& context)
 {
 	CObjManager* pObjManager = GetObjManager();
 	IF (m_usedMaterials.size() == 0u, 0)
@@ -3706,11 +3703,10 @@ bool CMergedMeshRenderNode::UpdateStreamableComponents(
 	{
 		pObjManager->PrecacheStatObjMaterial(
 		  m_usedMaterials[i].first
-		  , fEntDistance
+		  , context.distance
 		  , m_usedMaterials[i].second
-		  , bFullUpdate, false);
+		  , context.bFullUpdate, false);
 	}
-	return true;
 }
 
 bool CMergedMeshRenderNode::SyncAllJobs()

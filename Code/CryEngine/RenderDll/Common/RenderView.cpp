@@ -466,7 +466,6 @@ RenderLightIndex CRenderView::AddLight(eDeferredLightType lightType, const SRend
 		SRenderLight* pLight = &m_lights[lightType].back();
 
 		pLight->m_Id = nLightId;
-		pLight->AcquireResources();
 	}
 
 	return nLightId;
@@ -501,7 +500,6 @@ SRenderLight* CRenderView::AddLightAtIndex(eDeferredLightType lightType, const S
 	}
 
 	pLight->m_Id = nLightId;
-	pLight->AcquireResources();
 
 	return pLight;
 }

@@ -26,6 +26,7 @@
 #include "DecalManager.h"
 #include "ObjectsTree.h"
 #include "Brush.h"
+#include "ClipVolumeManager.h"
 
 void CObjManager::RenderDecalAndRoad(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffectingLights,
                                      const Vec3& vAmbColor, const AABB& objBox,
@@ -345,6 +346,13 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 	}
 
 	DrawParams.m_pVisArea = pVisArea;
+
+	// Update clip volume
+	Vec3 vEntCenter = Get3DEngine()->GetEntityRegisterPoint(pEnt);
+	if (pVisArea)
+		pTempData->userData.m_pClipVolume = pVisArea;
+	else if (Get3DEngine()->GetClipVolumeManager()->IsClipVolumeRequired(pEnt))
+		Get3DEngine()->GetClipVolumeManager()->UpdateEntityClipVolume(vEntCenter, pEnt);
 
 	DrawParams.nClipVolumeStencilRef = 0;
 	if (pTempData->userData.m_pClipVolume)

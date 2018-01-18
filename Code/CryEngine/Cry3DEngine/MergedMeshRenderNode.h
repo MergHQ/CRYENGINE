@@ -478,7 +478,7 @@ public:
 	bool StreamedIn() const { return m_State == STREAMED_IN; }
 
 	// Update streamable components
-	bool UpdateStreamableComponents(float fImportance, float fEntDistance, bool bFullUpdate);
+	void UpdateStreamingPriority(const SUpdateStreamingPriorityContext& streamingContext);
 
 	Vec3 GetSamplePos(size_t, size_t) const;
 	AABB GetSampleAABB(size_t, size_t) const;

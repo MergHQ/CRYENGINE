@@ -1321,26 +1321,27 @@ void CParticleEmitter::GetMemoryUsage(ICrySizer* pSizer) const
 	m_PhysEnviron.GetMemoryUsage(pSizer);
 }
 
-bool CParticleEmitter::UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, IRenderNode* pRenderNode, float fEntDistance, bool bFullUpdate, int nLod)
+void CParticleEmitter::UpdateStreamingPriority(const SUpdateStreamingPriorityContext& context)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	IRenderer* pRenderer = GetRenderer();
 	for (const auto& c : m_Containers)
 	{
 		ResourceParticleParams const& params = c.GetParams();
-		if (params.pStatObj)
+		const float normalizedDist = context.distance * crymath::rcp_safe(params.fSize.GetMaxValue());
+		if (CMatInfo* pMatInfo  = static_cast<CMatInfo*>(params.pMaterial.get()))
 		{
-			CStatObj* pStatObj = static_cast<CStatObj*>(params.pStatObj.get());
-			IMaterial* pMaterial = pStatObj->GetMaterial();
-			m_pObjManager->PrecacheStatObj(pStatObj, nLod, objMatrix, pMaterial, fImportance, fEntDistance, bFullUpdate, false);
+			const float adjustedDist = normalizedDist
+				* min(params.ShaderData.m_tileSize[0], params.ShaderData.m_tileSize[1]);
+			pMatInfo->PrecacheMaterial(adjustedDist, nullptr, context.bFullUpdate, params.bDrawNear);
 		}
 
-		if (CMatInfo* pMatInfo = (CMatInfo*)(IMaterial*)params.pMaterial)
-			pMatInfo->PrecacheMaterial(fEntDistance, NULL, bFullUpdate);
+		if (CStatObj* pStatObj = static_cast<CStatObj*>(params.pStatObj.get()))
+		{
+			m_pObjManager->PrecacheStatObj(pStatObj, context.lod, Matrix34A(m_Loc), pStatObj->GetMaterial(),
+				context.importance, normalizedDist, context.bFullUpdate, params.bDrawNear);
+		}
 	}
-
-	return true;
 }
 
 EntityId CParticleEmitter::GetAttachedEntityId()

@@ -429,16 +429,12 @@ void CParticleComponentRuntime::EvolveParticles(CDeviceCommandListRef RESTRICT_R
 
 void CParticleComponentRuntime::InitializePasses()
 {
-	m_pShader.reset();
-	CShader* pShader = gcpRendD3D.m_cEF.mfForName("GpuParticles", 0, 0, 0);
-	m_pShader.Assign_NoAddRef(pShader);
-
 	// set up compute passes that dont have varying material flags
-	m_passCalcBounds.SetTechnique(m_pShader, CCryNameTSCRC("CalculateBounds"), 0);
-	m_passSwapToEnd.SetTechnique(m_pShader, CCryNameTSCRC("SwapToEnd"), 0);
-	m_passFillKillList.SetTechnique(m_pShader, CCryNameTSCRC("FillKillList"), 0);
-	m_passPrepareSort.SetTechnique(m_pShader, CCryNameTSCRC("PrepareSort"), 0);
-	m_passReorderParticles.SetTechnique(m_pShader, CCryNameTSCRC("ReorderParticles"), 0);
+	m_passCalcBounds.SetTechnique(CShaderMan::s_ShaderGpuParticles, CCryNameTSCRC("CalculateBounds"), 0);
+	m_passSwapToEnd.SetTechnique(CShaderMan::s_ShaderGpuParticles, CCryNameTSCRC("SwapToEnd"), 0);
+	m_passFillKillList.SetTechnique(CShaderMan::s_ShaderGpuParticles, CCryNameTSCRC("FillKillList"), 0);
+	m_passPrepareSort.SetTechnique(CShaderMan::s_ShaderGpuParticles, CCryNameTSCRC("PrepareSort"), 0);
+	m_passReorderParticles.SetTechnique(CShaderMan::s_ShaderGpuParticles, CCryNameTSCRC("ReorderParticles"), 0);
 }
 
 void CParticleComponentRuntime::Initialize()

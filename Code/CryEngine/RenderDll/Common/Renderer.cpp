@@ -3344,23 +3344,9 @@ void S3DEngineCommon::UpdateRainInfo(const SRenderingPassInfo& passInfo)
 {
 	gEnv->p3DEngine->GetRainParams(m_RainInfo);
 
-	bool bProcessedAll   = true;
-	const uint32 numGPUs = gRenDev->GetActiveGPUCount();
-	for (uint32 i = 0; i < numGPUs; ++i)
-		bProcessedAll &= m_RainOccluders.m_bProcessed[i];
-	const bool bUpdateOcc = bProcessedAll;
-	if (bUpdateOcc)
-		m_RainOccluders.Release();
-
 	const Vec3  vCamPos          = passInfo.GetCamera().GetPosition();
 	const float fUnderWaterAtten = clamp_tpl(vCamPos.z - m_OceanInfo.m_fWaterLevel + 1.f, 0.f, 1.f);
 	m_RainInfo.fCurrentAmount *= fUnderWaterAtten;
-
-	//#define RAIN_DEBUG
-#ifndef RAIN_DEBUG
-	if (m_RainInfo.fCurrentAmount < 0.05f)
-		return;
-#endif
 
 #ifdef RAIN_DEBUG
 	m_RainInfo.fAmount               = 1.f;
@@ -3391,198 +3377,209 @@ void S3DEngineCommon::UpdateSnowInfo(const SRenderingPassInfo& passInfo)
 	gEnv->p3DEngine->GetSnowSurfaceParams(m_SnowInfo.m_vWorldPos, m_SnowInfo.m_fRadius, m_SnowInfo.m_fSnowAmount, m_SnowInfo.m_fFrostAmount, m_SnowInfo.m_fSurfaceFreezing);
 	gEnv->p3DEngine->GetSnowFallParams(m_SnowInfo.m_nSnowFlakeCount, m_SnowInfo.m_fSnowFlakeSize, m_SnowInfo.m_fSnowFallBrightness, m_SnowInfo.m_fSnowFallGravityScale, m_SnowInfo.m_fSnowFallWindScale, m_SnowInfo.m_fSnowFallTurbulence, m_SnowInfo.m_fSnowFallTurbulenceFreq);
 
-	//#define RAIN_DEBUG
-#ifndef RAIN_DEBUG
-	if (m_SnowInfo.m_fSnowAmount < 0.05f && m_SnowInfo.m_fFrostAmount < 0.05f)
-		return;
-#endif
-
 	UpdateRainOccInfo(passInfo);
 }
 
 void S3DEngineCommon::UpdateRainOccInfo(const SRenderingPassInfo& passInfo)
 {
-	bool bSnowEnabled = (m_SnowInfo.m_fSnowAmount > 0.05f || m_SnowInfo.m_fFrostAmount > 0.05f) && m_SnowInfo.m_fRadius > 0.05f;
+	static constexpr auto amountThreshold = 0.05f;
+	static constexpr auto rainBBHalfSize = 18.0f;
 
-	bool bProcessedAll   = true;
+	const bool bSnowEnabled = (m_SnowInfo.m_fSnowAmount > amountThreshold || m_SnowInfo.m_fFrostAmount > amountThreshold) && m_SnowInfo.m_fRadius > amountThreshold;
+	const bool bRainEnabled = m_RainInfo.fCurrentAmount > amountThreshold;
+	const bool rainOrSnowEnabled = bSnowEnabled || bRainEnabled;
+
+	const float fViewerArea = bSnowEnabled ? 128.f : 32.f;   // Snow requires further view distance, otherwise obvious "unoccluded" snow regions become visible.
+	const unsigned int nMaxOccluders = 512 * (bSnowEnabled ? 3 : 2);
+
+	// Choose world position and radius.
+	// Snow takes priority since occlusion has a much stronger impact on it.
+	Vec3  vWorldPos = bSnowEnabled ? m_SnowInfo.m_vWorldPos : m_RainInfo.vWorldPos;
+	float fRadius = bSnowEnabled ? m_SnowInfo.m_fRadius : m_RainInfo.fRadius;
+	float fOccArea = fViewerArea;
+	static bool oldRainOrSnowEnabled = false;
+
+	// Bail early if rain/snow is not enabled
+#ifndef RAIN_DEBUG
+	if (!rainOrSnowEnabled)
+	{
+		oldRainOrSnowEnabled = false;
+		return;
+	}
+#endif
+
+	bool bProcessedAll = true;
 	const uint32 numGPUs = gRenDev->GetActiveGPUCount();
 	for (uint32 i = 0; i < numGPUs; ++i)
 		bProcessedAll &= m_RainOccluders.m_bProcessed[i];
-	const bool bUpdateOcc = bProcessedAll;                 // there is no field called bForecedUpdate in RainOccluders - m_RainOccluders.bForceUpdate || bProcessedAll;
+
+	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
+	bool bDisableOcclusion = m_RainInfo.bDisableOcclusion;
+
+	// Rain volume BB
+	AABB bbRainVol(fRadius);
+	bbRainVol.Move(vWorldPos);
+
+	// Visible area BB (Expanded to BB diagonal length to allow rotation)
+	AABB bbViewer(fViewerArea);
+	bbViewer.Move(vCamPos);
+
+	// Area around viewer/rain source BB
+	AABB bbArea(bbViewer);
+	bbArea.ClipToBox(bbRainVol);
+
+	// Snap BB to grid
+	Vec3 vSnapped = bbArea.min / rainBBHalfSize;
+	bbArea.min.Set(floor_tpl(vSnapped.x), floor_tpl(vSnapped.y), floor_tpl(vSnapped.z));
+	bbArea.min *= rainBBHalfSize;
+	vSnapped = bbArea.max / rainBBHalfSize;
+	bbArea.max.Set(ceil_tpl(vSnapped.x), ceil_tpl(vSnapped.y), ceil_tpl(vSnapped.z));
+	bbArea.max *= rainBBHalfSize;
+
+	static bool bOldDisableOcclusion = true;               // set to true to allow update at first run
+	static float fOccTreshold = CRenderer::CV_r_rainOccluderSizeTreshold;
+	static float fOldRadius = .0f;
+	const AABB&  oldAreaBounds = m_RainInfo.areaAABB;
+
+	// Update occluders if properties changed
+	bool bUpdateOcc = bProcessedAll;                 // there is no field called bForecedUpdate in RainOccluders - m_RainOccluders.bForceUpdate || bProcessedAll;
+	bUpdateOcc &= !oldAreaBounds.min.IsEquivalent(bbArea.min)
+		|| !oldAreaBounds.max.IsEquivalent(bbArea.max)
+		|| fOldRadius           != fRadius        //m_RainInfo.fRadius
+		|| bOldDisableOcclusion != bDisableOcclusion
+		|| fOccTreshold         != CRenderer::CV_r_rainOccluderSizeTreshold
+		|| !oldRainOrSnowEnabled;
+	oldRainOrSnowEnabled = true;
+
 	if (bUpdateOcc)
 		m_RainOccluders.Release();
 
-	const Vec3 vCamPos               = passInfo.GetCamera().GetPosition();
-	bool bDisableOcclusion           = m_RainInfo.bDisableOcclusion;
-	static bool bOldDisableOcclusion = true;               // set to true to allow update at first run
+	// Set to new values, will be needed for other rain passes
+	m_RainInfo.areaAABB = bbArea;
 
 	if (CRenderer::CV_r_rain == 2 && !bDisableOcclusion)
 	{
 		N3DEngineCommon::ArrOccluders& arrOccluders = m_RainOccluders.m_arrOccluders;
-		static const unsigned int nMAX_OCCLUDERS    = bSnowEnabled ? 768 : 512;
-		static const float rainBBHalfSize           = 18.f;
 
 		if (bUpdateOcc)
 		{
+			// Get occluders inside area
+			unsigned int nOccluders(0);
 
-			// Choose world position and radius.
-			// Snow takes priority since occlusion has a much stronger impact on it.
-			Vec3  vWorldPos   = bSnowEnabled ? m_SnowInfo.m_vWorldPos : m_RainInfo.vWorldPos;
-			float fRadius     = bSnowEnabled ? m_SnowInfo.m_fRadius : m_RainInfo.fRadius;
-			float fViewerArea = bSnowEnabled ? 128.f : 32.f;   // Snow requires further view distance, otherwise obvious "unoccluded" snow regions become visible.
-			float fOccArea    = fViewerArea;
+			EERType eFilterType = eERType_Brush;
+			nOccluders = gEnv->p3DEngine->GetObjectsByTypeInBox(eFilterType, bbArea);
+			std::vector<IRenderNode*> occluders(nOccluders, NULL);
+			if (nOccluders)
+				gEnv->p3DEngine->GetObjectsByTypeInBox(eFilterType, bbArea, &occluders.front());
+			fOccTreshold        = CRenderer::CV_r_rainOccluderSizeTreshold;
+			fOldRadius          = fRadius;
 
-			// Rain volume BB
-			AABB bbRainVol(fRadius);
-			bbRainVol.Move(vWorldPos);
-
-			// Visible area BB (Expanded to BB diagonal length to allow rotation)
-			AABB bbViewer(fViewerArea);
-			bbViewer.Move(vCamPos);
-
-			// Area around viewer/rain source BB
-			AABB bbArea(bbViewer);
-			bbArea.ClipToBox(bbRainVol);
-
-			// Snap BB to grid
-			Vec3 vSnapped = bbArea.min / rainBBHalfSize;
-			bbArea.min.Set(floor_tpl(vSnapped.x), floor_tpl(vSnapped.y), floor_tpl(vSnapped.z));
-			bbArea.min *= rainBBHalfSize;
-			vSnapped    = bbArea.max / rainBBHalfSize;
-			bbArea.max.Set(ceil_tpl(vSnapped.x), ceil_tpl(vSnapped.y), ceil_tpl(vSnapped.z));
-			bbArea.max *= rainBBHalfSize;
-
-			// If occlusion map info dirty
-			static float fOccTreshold  = CRenderer::CV_r_rainOccluderSizeTreshold;
-			static float fOldRadius    = fRadius;
-			const AABB&  oldAreaBounds = m_RainInfo.areaAABB;
-			if (!oldAreaBounds.min.IsEquivalent(bbArea.min)
-			  || !oldAreaBounds.max.IsEquivalent(bbArea.max)
-			  || fOldRadius != fRadius        //m_RainInfo.fRadius
-			  || bOldDisableOcclusion != bDisableOcclusion
-			  || fOccTreshold != CRenderer::CV_r_rainOccluderSizeTreshold)
+			AABB geomBB(AABB::RESET);
+			const size_t occluderLimit = min(nOccluders, nMaxOccluders);
+			arrOccluders.resize(occluderLimit);
+			// Filter occluders and get bounding box
+			for (std::vector<IRenderNode*>::const_iterator it = occluders.begin();
+				it != occluders.end() && m_RainOccluders.m_nNumOccluders < occluderLimit;
+				++it)
 			{
-				// Get occluders inside area
-				unsigned int nOccluders(0);
-
-				EERType eFilterType = eERType_Brush;
-				nOccluders = gEnv->p3DEngine->GetObjectsByTypeInBox(eFilterType, bbArea);
-				std::vector<IRenderNode*> occluders(nOccluders, NULL);
-				if (nOccluders)
-					gEnv->p3DEngine->GetObjectsByTypeInBox(eFilterType, bbArea, &occluders.front());
-
-				// Set to new values, will be needed for other rain passes
-				m_RainInfo.areaAABB = bbArea;
-				fOccTreshold        = CRenderer::CV_r_rainOccluderSizeTreshold;
-				fOldRadius          = fRadius;
-
-				AABB geomBB(AABB::RESET);
-				const size_t occluderLimit = min(nOccluders, nMAX_OCCLUDERS);
-				arrOccluders.resize(occluderLimit);
-				// Filter occluders and get bounding box
-				for (std::vector<IRenderNode*>::const_iterator it = occluders.begin();
-				  it != occluders.end() && m_RainOccluders.m_nNumOccluders < occluderLimit;
-				  ++it)
+				IRenderNode* pRndNode = *it;
+				if (pRndNode)
 				{
-					IRenderNode* pRndNode = *it;
-					if (pRndNode)
+					const AABB& aabb                                 = pRndNode->GetBBox();
+					const Vec3  vDiag                                = aabb.max - aabb.min;
+					const float fSqrFlatRadius                       = Vec2(vDiag.x, vDiag.y).GetLength2();
+					auto nRndNodeFlags = pRndNode->GetRndFlags();
+					// TODO: rainoccluder should be the only flag tested
+					// (ie. enabled ONLY for small subset of geometry assets - means going through all assets affected by rain)
+					if ((fSqrFlatRadius < CRenderer::CV_r_rainOccluderSizeTreshold)
+						|| !(nRndNodeFlags & ERF_RAIN_OCCLUDER)
+						|| (nRndNodeFlags & (ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | ERF_HIDDEN | ERF_PICKABLE)))
+						continue;
+
+					N3DEngineCommon::SRainOccluder rainOccluder;
+					IStatObj* pObj = pRndNode->GetEntityStatObj(0, &rainOccluder.m_WorldMat);
+					if (pObj)
 					{
-						const AABB& aabb                                 = pRndNode->GetBBox();
-						const Vec3  vDiag                                = aabb.max - aabb.min;
-						const float fSqrFlatRadius                       = Vec2(vDiag.x, vDiag.y).GetLength2();
-						auto nRndNodeFlags = pRndNode->GetRndFlags();
-						// TODO: rainoccluder should be the only flag tested
-						// (ie. enabled ONLY for small subset of geometry assets - means going through all assets affected by rain)
-						if ((fSqrFlatRadius < CRenderer::CV_r_rainOccluderSizeTreshold)
-						  || !(nRndNodeFlags & ERF_RAIN_OCCLUDER)
-						  || (nRndNodeFlags & (ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | ERF_HIDDEN | ERF_PICKABLE)))
-							continue;
-
-						N3DEngineCommon::SRainOccluder rainOccluder;
-						IStatObj* pObj = pRndNode->GetEntityStatObj(0, &rainOccluder.m_WorldMat);
-						if (pObj)
+						const size_t nPrevIdx = m_RainOccluders.m_nNumOccluders;
+						if (pObj->GetFlags() & STATIC_OBJECT_COMPOUND)
 						{
-							const size_t nPrevIdx = m_RainOccluders.m_nNumOccluders;
-							if (pObj->GetFlags() & STATIC_OBJECT_COMPOUND)
+							const Matrix34A matParentTM = rainOccluder.m_WorldMat;
+							int nSubCount               = pObj->GetSubObjectCount();
+							for (int nSubId = 0; nSubId < nSubCount && m_RainOccluders.m_nNumOccluders < occluderLimit; nSubId++)
 							{
-								const Matrix34A matParentTM = rainOccluder.m_WorldMat;
-								int nSubCount               = pObj->GetSubObjectCount();
-								for (int nSubId = 0; nSubId < nSubCount && m_RainOccluders.m_nNumOccluders < occluderLimit; nSubId++)
-								{
-									IStatObj::SSubObject* pSubObj = pObj->GetSubObject(nSubId);
-									if (pSubObj->bIdentityMatrix)
-										rainOccluder.m_WorldMat = matParentTM;
-									else
-										rainOccluder.m_WorldMat = matParentTM * pSubObj->localTM;
+								IStatObj::SSubObject* pSubObj = pObj->GetSubObject(nSubId);
+								if (pSubObj->bIdentityMatrix)
+									rainOccluder.m_WorldMat = matParentTM;
+								else
+									rainOccluder.m_WorldMat = matParentTM * pSubObj->localTM;
 
-									IStatObj* pSubStatObj = pSubObj->pStatObj;
-									if (pSubStatObj && pSubStatObj->GetRenderMesh())
-									{
-										rainOccluder.m_RndMesh = pSubStatObj->GetRenderMesh();
-										arrOccluders[m_RainOccluders.m_nNumOccluders++] = rainOccluder;
-									}
+								IStatObj* pSubStatObj = pSubObj->pStatObj;
+								if (pSubStatObj && pSubStatObj->GetRenderMesh())
+								{
+									rainOccluder.m_RndMesh = pSubStatObj->GetRenderMesh();
+									arrOccluders[m_RainOccluders.m_nNumOccluders++] = rainOccluder;
 								}
 							}
-							else if (pObj->GetRenderMesh())
-							{
-								rainOccluder.m_RndMesh = pObj->GetRenderMesh();
-								arrOccluders[m_RainOccluders.m_nNumOccluders++] = rainOccluder;
-							}
-
-							if (m_RainOccluders.m_nNumOccluders > nPrevIdx)
-								geomBB.Add(pRndNode->GetBBox());
 						}
+						else if (pObj->GetRenderMesh())
+						{
+							rainOccluder.m_RndMesh = pObj->GetRenderMesh();
+							arrOccluders[m_RainOccluders.m_nNumOccluders++] = rainOccluder;
+						}
+
+						if (m_RainOccluders.m_nNumOccluders > nPrevIdx)
+							geomBB.Add(pRndNode->GetBBox());
 					}
 				}
-				const bool bProcess = m_RainOccluders.m_nNumOccluders == 0;
-				for (uint32 i = 0; i < numGPUs; ++i)
-					m_RainOccluders.m_bProcessed[i] = bProcess;
-				m_RainInfo.bApplyOcclusion = m_RainOccluders.m_nNumOccluders > 0;
-
-				geomBB.ClipToBox(bbArea);
-				// Clip to ocean level
-				geomBB.min.z = max(geomBB.min.z, gEnv->p3DEngine->GetWaterLevel()) - 0.5f;
-
-				float fWaterOffset = m_OceanInfo.m_fWaterLevel - geomBB.min.z;
-				fWaterOffset = (float)__fsel(fWaterOffset, fWaterOffset, 0.0f);
-
-				geomBB.min.z += fWaterOffset - 0.5f;
-				geomBB.max.z += fWaterOffset;
-
-				Vec3 vSnappedCenter = bbArea.GetCenter() / rainBBHalfSize;
-				vSnappedCenter.Set(floor_tpl(vSnappedCenter.x), floor_tpl(vSnappedCenter.y), floor_tpl(vSnappedCenter.z));
-				vSnappedCenter *= rainBBHalfSize;
-
-				AABB occBB(fOccArea);
-				occBB.Move(vSnappedCenter);
-				occBB.min.z = max(occBB.min.z, geomBB.min.z);
-				occBB.max.z = min(occBB.max.z, geomBB.max.z);
-
-				// Generate rotation matrix part-way from identity
-				//	- Typical shadow filtering issues at grazing angles
-				Quat qOcc = m_RainInfo.qRainRotation;
-				qOcc.SetSlerp(qOcc, Quat::CreateIdentity(), 0.75f);
-				Matrix44 matRot(Matrix33(qOcc.GetInverted()));
-
-				// Get occlusion transformation matrix
-				Matrix44& matOccTrans = m_RainInfo.matOccTrans;
-				Matrix44  matScale;
-				matOccTrans.SetIdentity();
-				matOccTrans.SetTranslation(-occBB.min);
-				matScale.SetIdentity();
-				const Vec3 vScale(occBB.max - occBB.min);
-				matScale.m00 = 1.f / vScale.x;
-				matScale.m11 = 1.f / vScale.y;
-				matScale.m22 = 1.f / vScale.z;
-				matOccTrans  = matRot * matScale * matOccTrans;
 			}
+			const bool bProcess = m_RainOccluders.m_nNumOccluders == 0;
+			for (uint32 i = 0; i < numGPUs; ++i)
+				m_RainOccluders.m_bProcessed[i] = bProcess;
+			m_RainInfo.bApplyOcclusion = m_RainOccluders.m_nNumOccluders > 0;
+
+			geomBB.ClipToBox(bbArea);
+			// Clip to ocean level
+			geomBB.min.z = max(geomBB.min.z, gEnv->p3DEngine->GetWaterLevel()) - 0.5f;
+
+			float fWaterOffset = m_OceanInfo.m_fWaterLevel - geomBB.min.z;
+			fWaterOffset = (float)__fsel(fWaterOffset, fWaterOffset, 0.0f);
+
+			geomBB.min.z += fWaterOffset - 0.5f;
+			geomBB.max.z += fWaterOffset;
+
+			Vec3 vSnappedCenter = bbArea.GetCenter() / rainBBHalfSize;
+			vSnappedCenter.Set(floor_tpl(vSnappedCenter.x), floor_tpl(vSnappedCenter.y), floor_tpl(vSnappedCenter.z));
+			vSnappedCenter *= rainBBHalfSize;
+
+			AABB occBB(fOccArea);
+			occBB.Move(vSnappedCenter);
+			occBB.min.z = max(occBB.min.z, geomBB.min.z);
+			occBB.max.z = min(occBB.max.z, geomBB.max.z);
+
+			// Generate rotation matrix part-way from identity
+			//	- Typical shadow filtering issues at grazing angles
+			Quat qOcc = m_RainInfo.qRainRotation;
+			qOcc.SetSlerp(qOcc, Quat::CreateIdentity(), 0.75f);
+			Matrix44 matRot(Matrix33(qOcc.GetInverted()));
+
+			// Get occlusion transformation matrix
+			Matrix44& matOccTrans = m_RainInfo.matOccTrans;
+			Matrix44  matScale;
+			matOccTrans.SetIdentity();
+			matOccTrans.SetTranslation(-occBB.min);
+			matScale.SetIdentity();
+			const Vec3 vScale(occBB.max - occBB.min);
+			matScale.m00 = 1.f / vScale.x;
+			matScale.m11 = 1.f / vScale.y;
+			matScale.m22 = 1.f / vScale.z;
+			matOccTrans  = matRot * matScale * matOccTrans;
 		}
 
 #if CRY_PLATFORM_WINDOWS && !defined(_RELEASE)
-		if (m_RainOccluders.m_nNumOccluders >= nMAX_OCCLUDERS)
+		if (m_RainOccluders.m_nNumOccluders >= nMaxOccluders)
 		{
 			CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_WARNING,
-			  "Reached max rain occluder limit (Max: %i), some objects may have been discarded!", nMAX_OCCLUDERS);
+			  "Reached max rain occluder limit (Max: %i), some objects may have been discarded!", nMaxOccluders);
 		}
 #endif
 

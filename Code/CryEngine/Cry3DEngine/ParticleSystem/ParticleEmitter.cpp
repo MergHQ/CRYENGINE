@@ -503,7 +503,7 @@ void CParticleEmitter::SetTarget(const ParticleTarget& target)
 		m_target = target;
 }
 
-bool CParticleEmitter::UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, IRenderNode* pRenderNode, float fEntDistance, bool bFullUpdate, int nLod)
+void CParticleEmitter::UpdateStreamingPriority(const SUpdateStreamingPriorityContext& context)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -511,22 +511,20 @@ bool CParticleEmitter::UpdateStreamableComponents(float fImportance, const Matri
 	{
 		const auto* pComponent = pRuntime->GetComponent();
 		const SComponentParams& params = pComponent->GetComponentParams();
+		const float normalizedDist = context.distance * rcp_safe(params.m_maxParticleSize);
+		const bool bHighPriority = !!(params.m_renderObjectFlags & FOB_NEAREST);
 
-		IMaterial* pMaterial = params.m_pMaterial;
-		CMatInfo*  pMatInfo  = reinterpret_cast<CMatInfo*>(pMaterial);
-		if (pMatInfo)
-			pMatInfo->PrecacheMaterial(fEntDistance, nullptr, bFullUpdate);
-
-		IMeshObj* pMesh = params.m_pMesh;
-		if (pMesh)
+		if (CMatInfo* pMatInfo  = static_cast<CMatInfo*>(params.m_pMaterial.get()))
 		{
-			CStatObj* pStatObj = static_cast<CStatObj*>(pMesh);
-			IMaterial* pMaterial = pStatObj->GetMaterial();
-			m_pObjManager->PrecacheStatObj(pStatObj, nLod, objMatrix, pMaterial, fImportance, fEntDistance, bFullUpdate, false);
+			const float adjustedDist = normalizedDist
+				* min(params.m_shaderData.m_tileSize[0], params.m_shaderData.m_tileSize[1]);
+			pMatInfo->PrecacheMaterial(adjustedDist, nullptr, context.bFullUpdate, bHighPriority);
 		}
-	}
 
-	return true;
+		if (CStatObj* pStatObj = static_cast<CStatObj*>(params.m_pMesh.get()))
+			m_pObjManager->PrecacheStatObj(pStatObj, context.lod, Matrix34A(m_location),
+				pStatObj->GetMaterial(), context.importance, normalizedDist, context.bFullUpdate, bHighPriority);
+	}
 }
 
 void CParticleEmitter::GetSpawnParams(SpawnParams& spawnParams) const
@@ -634,7 +632,7 @@ void CParticleEmitter::ResetRenderObjects()
 
 	const uint numROs = m_pEffect->GetNumRenderObjectIds();
 	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
-		m_pRenderObjects[threadId].resize(numROs, nullptr);
+		m_pRenderObjects[threadId].resize(numROs, { nullptr, nullptr });
 
 	for (auto& pRuntime : m_componentRuntimes)
 	{
@@ -700,13 +698,13 @@ CRenderObject* CParticleEmitter::GetRenderObject(uint threadId, uint renderObjec
 	CRY_PFX2_ASSERT(threadId < RT_COMMAND_BUF_COUNT);
 	if (m_pRenderObjects[threadId].empty())
 		return nullptr;
-	return m_pRenderObjects[threadId][renderObjectIdx];
+	return m_pRenderObjects[threadId][renderObjectIdx].first;
 }
 
-void CParticleEmitter::SetRenderObject(CRenderObject* pRenderObject, uint threadId, uint renderObjectIdx)
+void CParticleEmitter::SetRenderObject(CRenderObject* pRenderObject, _smart_ptr<IMaterial>&& material, uint threadId, uint renderObjectIdx)
 {
 	CRY_PFX2_ASSERT(threadId < RT_COMMAND_BUF_COUNT);
-	m_pRenderObjects[threadId][renderObjectIdx] = pRenderObject;
+	m_pRenderObjects[threadId][renderObjectIdx] = std::make_pair(pRenderObject, std::move(material));
 }
 
 void CParticleEmitter::UpdateTargetFromEntity(IEntity* pEntity)

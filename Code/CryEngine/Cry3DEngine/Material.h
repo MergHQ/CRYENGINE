@@ -107,7 +107,7 @@ public:
 	~CMatInfo();
 
 	void         ShutDown();
-	bool         IsValid();
+	virtual bool IsValid() const;
 
 	virtual void AddRef();
 	virtual void Release();
@@ -128,9 +128,9 @@ public:
 	virtual int               GetFlags() const    { return m_Flags; };
 
 	// Returns true if this is the default material.
-	virtual bool          IsDefault();
+	virtual bool          IsDefault() const;
 
-	virtual int           GetSurfaceTypeId() { return m_nSurfaceTypeId; };
+	virtual int           GetSurfaceTypeId() const { return m_nSurfaceTypeId; };
 
 	virtual void          SetSurfaceType(const char* sSurfaceTypeName);
 	virtual ISurfaceType* GetSurfaceType();

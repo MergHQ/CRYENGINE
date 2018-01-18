@@ -42,6 +42,7 @@ void CRenderer::RefreshSystemShaders()
 	gRenDev->m_cEF.mfRefreshSystemShader("Stereo", CShaderMan::s_ShaderStereo);
 	gRenDev->m_cEF.mfRefreshSystemShader("Sunshafts", CShaderMan::s_shPostSunShafts);
 	gRenDev->m_cEF.mfRefreshSystemShader("Clouds", CShaderMan::s_ShaderClouds);
+	gRenDev->m_cEF.mfRefreshSystemShader("GpuParticles", CShaderMan::s_ShaderGpuParticles);
 	gRenDev->m_cEF.mfRefreshSystemShader("Stars", CShaderMan::s_ShaderStars);
 	gRenDev->m_cEF.mfRefreshSystemShader("MobileComposition", CShaderMan::s_ShaderMobileComposition);
 }

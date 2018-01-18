@@ -21,6 +21,9 @@ namespace pfx2
 class CParticleEmitter : public IParticleEmitter, public Cry3DEngineBase
 {
 public:
+	using SRenderObjectMaterialPair = std::pair<CRenderObject*, _smart_ptr<IMaterial>>;
+
+public:
 	CParticleEmitter(CParticleEffect* pEffect, uint emitterId);
 	~CParticleEmitter();
 
@@ -50,6 +53,7 @@ public:
 	virtual void             ReleaseNode(bool bImmediate) override;
 	virtual void             SetOwnerEntity(IEntity* pEntity) override { SetEntity(pEntity, m_entitySlot); }
 	virtual IEntity*         GetOwnerEntity() const override { return m_entityOwner; }
+	virtual void             UpdateStreamingPriority(const SUpdateStreamingPriorityContext& streamingContext) override;
 	// ~IRenderNode
 
 	// pfx2 IParticleEmitter
@@ -65,7 +69,6 @@ public:
 	virtual void                   SetEntity(IEntity* pEntity, int nSlot) override;
 	virtual void                   InvalidateCachedEntityData() override;
 	virtual void                   SetTarget(const ParticleTarget& target) override;
-	virtual bool                   UpdateStreamableComponents(float fImportance, const Matrix34A& objMatrix, IRenderNode* pRenderNode, float fEntDistance, bool bFullUpdate, int nLod) override;
 	// ~pfx2 IParticleEmitter
 
 	// pfx1 IParticleEmitter
@@ -106,7 +109,7 @@ public:
 	float                     GetViewDistRatio() const     { return m_viewDistRatio; }
 	float                     GetTimeScale() const         { return Cry3DEngineBase::GetCVars()->e_ParticlesDebug & AlphaBit('z') ? 0.0f : m_spawnParams.fTimeScale; }
 	CRenderObject*            GetRenderObject(uint threadId, uint renderObjectIdx);
-	void                      SetRenderObject(CRenderObject* pRenderObject, uint threadId, uint renderObjectIdx);
+	void                      SetRenderObject(CRenderObject* pRenderObject, _smart_ptr<IMaterial>&& material, uint threadId, uint renderObjectIdx);
 	float                     GetDeltaTime() const         { return m_deltaTime; }
 	float                     GetTime() const              { return m_time; }
 	float                     GetAge() const               { return m_time - m_timeCreated; }
@@ -134,41 +137,41 @@ private:
 	void     ResetRenderObjects();
 
 private:
-	_smart_ptr<CParticleEffect> m_pEffect;
-	_smart_ptr<CParticleEffect> m_pEffectOriginal;
-	std::vector<CRenderObject*> m_pRenderObjects[RT_COMMAND_BUF_COUNT];
-	SVisEnviron                 m_visEnviron;
-	SPhysEnviron                m_physEnviron;
-	SpawnParams                 m_spawnParams;
-	CAttributeInstance          m_attributeInstance;
-	TParticleFeatures           m_emitterFeatures;
-	AABB                        m_realBounds;
-	AABB                        m_bounds;
-	CParticleContainer          m_parentContainer;
-	TRuntimes                   m_componentRuntimes;
-	TRuntimes                   m_componentRuntimesFor;
-	QuatTS                      m_location;
-	IEntity*                    m_entityOwner;
-	int                         m_entitySlot;
-	ParticleTarget              m_target;
-	GeomRef                     m_emitterGeometry;
-	int                         m_emitterGeometrySlot;
-	ColorF                      m_profilerColor;
-	float                       m_viewDistRatio;
-	float                       m_time;
-	float                       m_deltaTime;
-	float                       m_primeTime;
-	float                       m_timeCreated;
-	float                       m_timeLastRendered;
-	int                         m_emitterEditVersion;
-	int                         m_effectEditVersion;
-	uint                        m_initialSeed;
-	uint                        m_currentSeed;
-	uint                        m_emitterId;
-	bool                        m_registered;
-	bool                        m_reRegister;
-	bool                        m_active;
-	bool                        m_alive;
+	_smart_ptr<CParticleEffect>            m_pEffect;
+	_smart_ptr<CParticleEffect>            m_pEffectOriginal;
+	std::vector<SRenderObjectMaterialPair> m_pRenderObjects[RT_COMMAND_BUF_COUNT];
+	SVisEnviron                            m_visEnviron;
+	SPhysEnviron                           m_physEnviron;
+	SpawnParams                            m_spawnParams;
+	CAttributeInstance                     m_attributeInstance;
+	TParticleFeatures                      m_emitterFeatures;
+	AABB                                   m_realBounds;
+	AABB                                   m_bounds;
+	CParticleContainer                     m_parentContainer;
+	TRuntimes                              m_componentRuntimes;
+	TRuntimes                              m_componentRuntimesFor;
+	QuatTS                                 m_location;
+	IEntity*                               m_entityOwner;
+	int                                    m_entitySlot;
+	ParticleTarget                         m_target;
+	GeomRef                                m_emitterGeometry;
+	int                                    m_emitterGeometrySlot;
+	ColorF                                 m_profilerColor;
+	float                                  m_viewDistRatio;
+	float                                  m_time;
+	float                                  m_deltaTime;
+	float                                  m_primeTime;
+	float                                  m_timeCreated;
+	float                                  m_timeLastRendered;
+	int                                    m_emitterEditVersion;
+	int                                    m_effectEditVersion;
+	uint                                   m_initialSeed;
+	uint                                   m_currentSeed;
+	uint                                   m_emitterId;
+	bool                                   m_registered;
+	bool                                   m_reRegister;
+	bool                                   m_active;
+	bool                                   m_alive;
 };
 
 typedef TSmartArray<CParticleEmitter> TParticleEmitters;
