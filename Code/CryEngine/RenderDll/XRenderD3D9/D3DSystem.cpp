@@ -2088,6 +2088,7 @@ void CD3D9Renderer::GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t
 
 	#if (CRY_RENDERER_DIRECT3D >= 120)
 		pAdapter = rd->m_devInfo.Adapter();
+		pAdapter->AddRef();
 	#else
 		rd->m_devInfo.Adapter()->QueryInterface(__uuidof(IDXGIAdapter3), (void**)&pAdapter);
 	#endif

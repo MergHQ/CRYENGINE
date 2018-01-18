@@ -409,19 +409,19 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 #if (CRY_RENDERER_DIRECT3D >= 110)
 	if (m_pAdapter)
 	{
-		IDXGIAdapter3* pAdapter3 = nullptr;
 
+		const auto memoryReservationLimit = m_adapterDesc.DedicatedVideoMemory * 7 / 8;
 #if (CRY_RENDERER_DIRECT3D >= 120)
-		pAdapter3 = m_pAdapter;
+		m_pAdapter->SetVideoMemoryReservation(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, memoryReservationLimit);
 #else
+		IDXGIAdapter3* pAdapter3 = nullptr;
 		m_pAdapter->QueryInterface(__uuidof(IDXGIAdapter3), (void**)&pAdapter3);
-#endif
-
 		if (pAdapter3)
 		{
-			pAdapter3->SetVideoMemoryReservation(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, m_adapterDesc.DedicatedVideoMemory * 7 / 8);
+			pAdapter3->SetVideoMemoryReservation(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, memoryReservationLimit);
 			pAdapter3->Release();
 		}
+#endif
 	}
 #endif
 
