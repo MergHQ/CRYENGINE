@@ -1,7 +1,5 @@
 #pragma once
 
-#include "StdAfx.h"
-
 #include "Log.h"
 
 #include <CryCore/Platform/platform.h>

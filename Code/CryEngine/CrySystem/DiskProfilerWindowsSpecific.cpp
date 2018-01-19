@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "DiskProfilerWindowsSpecific.h"
 
 #if CRY_PLATFORM_WINDOWS
