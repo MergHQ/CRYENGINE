@@ -34,7 +34,6 @@ struct IRenderAuxGeom
 	virtual SAuxGeomRenderFlags GetRenderFlags() = 0;
 
 	//! Assign current rendering camera to the Aux renderer, used for correctly projecting 3D elements
-	virtual void                SetCamera(const CCamera& camera) {}
 	virtual const CCamera&      GetCamera() const = 0;
 
 	//! Set current display context for the following auxiliary rendering.

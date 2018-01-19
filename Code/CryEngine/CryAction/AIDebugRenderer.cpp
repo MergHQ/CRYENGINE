@@ -10,7 +10,7 @@
 CAIDebugRenderer::CAIDebugRenderer(IRenderer* pRenderer)
 	: m_pRenderer(pRenderer)
 {
-	m_pRenderAuxGeom = gEnv->pAuxGeomRenderer;
+	m_pRenderAuxGeom = nullptr;
 }
 
 //===================================================================
@@ -739,6 +739,8 @@ unsigned int CAIDebugRenderer::PopState()
 {
 	if (m_pRenderAuxGeom)
 	{
+		m_pRenderer->SubmitAuxGeom(m_pRenderAuxGeom, false);
+		m_pRenderAuxGeom = m_pRenderer->GetOrCreateIRenderAuxGeom();
 		m_pRenderAuxGeom->SetRenderFlags(m_FlagsStack.top());
 	}
 	m_FlagsStack.pop();
@@ -747,7 +749,10 @@ unsigned int CAIDebugRenderer::PopState()
 
 unsigned int CAIDebugRenderer::PushState()
 {
-	m_FlagsStack.push(m_pRenderAuxGeom ?
-	                  m_pRenderAuxGeom->GetRenderFlags() : SAuxGeomRenderFlags());
+	if (!m_pRenderAuxGeom)
+	{
+		m_pRenderAuxGeom = m_pRenderer->GetOrCreateIRenderAuxGeom();
+	}
+	m_FlagsStack.push(m_pRenderAuxGeom->GetRenderFlags());
 	return m_FlagsStack.size();
 }

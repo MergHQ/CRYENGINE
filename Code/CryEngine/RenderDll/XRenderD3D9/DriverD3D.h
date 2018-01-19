@@ -618,9 +618,10 @@ public:
 #endif
 	
 	IRenderAuxGeom*      GetIRenderAuxGeom() override;
-	IRenderAuxGeom*      GetOrCreateIRenderAuxGeom() override;
+	IRenderAuxGeom*      GetOrCreateIRenderAuxGeom(const CCamera* pCustomCamera = nullptr) override;
+	void                 UpdateAuxDefaultCamera(const CCamera& systemCamera) override;
 	void                 DeleteAuxGeom(IRenderAuxGeom* pRenderAuxGeom) override;
-	void                 SubmitAuxGeom(IRenderAuxGeom* pRenderAuxGeom) override;
+	void                 SubmitAuxGeom(IRenderAuxGeom* pRenderAuxGeom, bool merge = true) override;
 	void                 DeleteAuxGeomCBs();
 	void                 SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector);
 	
@@ -644,7 +645,7 @@ private:
 		[](CAuxGeomCB* pAuxGeomCB) { pAuxGeomCB->FreeMemory(); }
 	};
 
-	CAuxGeomCB	renderThreadAuxGeom;	
+	CAuxGeomCB	m_renderThreadAuxGeom;	
 
 public:
 	

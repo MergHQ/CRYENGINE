@@ -108,6 +108,20 @@ const CCamera& CAuxGeomCB::GetCamera() const
 	return m_rawData->m_camera;
 };
 
+void CAuxGeomCB::SetUsingCustomCamera(bool isUsingCustomCam)
+{
+	m_rawData->m_usingCustomCamera = isUsingCustomCam;
+	if (!isUsingCustomCam)
+	{
+		m_rawData->m_camera = gEnv->pSystem->GetViewCamera();
+	}
+}
+
+bool CAuxGeomCB::IsUsingCustomCamera() const
+{
+	return m_rawData->m_usingCustomCamera;
+}
+
 void CAuxGeomCB::DrawPoint(const Vec3& v, const ColorB& col, uint8 size)
 {
 	CRY_ASSERT(size > 0);
