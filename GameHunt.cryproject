@@ -29,7 +29,7 @@
 		
 		{ "name": "net_availableBandwidthClient", "value": "512" },
 		{ "name": "net_availableBandwidthServer", "value": "8192" },
-		{ "name": "net_numNetIDHighBitBits", "value": "13" },
+		{ "name": "net_numNetIDHighBitBits", "value": "15" },
 		{ "name": "net_sim_loadprofiles", "value": "SimProfiles_HUNT.xml" },
 
 		{ "name": "ca_PreloadAllCAFs", "value": "1" },
