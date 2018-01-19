@@ -1144,6 +1144,13 @@ install_headers(CrySystem CryThreading)
 		PROJECTS CryAPIExamples
 		SOURCE_GROUP "CryEntitySystem"
 			"CryEntitySystem/Examples/SpawnEntity.cpp"
+			"CryEntitySystem/Examples/GetEntity.cpp"
+			"CryEntitySystem/Examples/FindEntityByName.cpp"
+			"CryEntitySystem/Examples/MinimalEntityComponent.cpp"
+			"CryEntitySystem/Examples/TraverseEntities.cpp"
+			"CryEntitySystem/Examples/ComponentEvents.cpp"
+			"CryEntitySystem/Examples/ComponentNetReplicate.cpp"
+			"CryEntitySystem/Examples/ComponentNetSerialize.cpp"
 	)
 	
 if(OPTION_DOXYGEN_EXAMPLES)

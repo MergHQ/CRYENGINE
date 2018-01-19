@@ -651,6 +651,8 @@ public:
 
 	//! Used to update the stored mask for a certain component, from IEntityComponent::GetEventMask
 	//! For example, changing IEntityComponent::GetEventMask to return ENTITY_EVENT_UPDATE and then calling GetEventMask will result in the component and its entity being updated the next frame.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/ComponentEvents.cpp
 	virtual void UpdateComponentEventMask(const IEntityComponent* pComponent) = 0;
 
 	//! Checks whether the entity is set to be updated this / next frame.
@@ -904,7 +906,7 @@ public:
 		// Static cast all types from IEntityComponent* to ComponentType*
 		for (auto it = pRawComponents->begin(); it != pRawComponents->end(); ++it)
 		{
-			* it = static_cast<ComponentType*>((IEntityComponent*)(void*)*it);
+			*it = static_cast<ComponentType*>((IEntityComponent*)(void*)*it);
 		}
 	}
 
@@ -1146,7 +1148,7 @@ public:
 	//! \param mass New mass of the slot, negative value to keep the current.
 	//! \return Integer which refer to the slot index which used
 	virtual int SetStatObj(IStatObj* pStatObj, int nSlot, bool bUpdatePhysics, float mass = -1.0f) = 0;
-
+	
 	//! Loads static geometry to the specified slot, or to next available slot.
 	//! If same object is already loaded in this slot, operation is ignored.
 	//! If this slot number is occupied by different kind of object it is overwritten with static object.
@@ -1183,10 +1185,12 @@ public:
 	virtual INetEntity* AssignNetEntityLegacy(INetEntity* ptr) = 0;
 
 	//! Loads a new particle emitter to the specified slot, or to next available slot.
-	//! If same character is already loaded in this slot, operation is ignored.
 	//! If this slot number is occupied by different kind of object it is overwritten.
 	//! \return Slot id where the particle emitter was loaded, or -1 if loading failed.
 	virtual int LoadParticleEmitter(int nSlot, IParticleEffect* pEffect, SpawnParams const* params = NULL, bool bPrime = false, bool bSerialize = false) = 0;
+	//! Sets an existing particle emitter to the specified slot, or the next available slot.
+	//! If this slot number is occupied by different kind of object it is overwritten.
+	//! \return Slot id where the particle emitter was loaded, or -1 if loading failed.
 	virtual int SetParticleEmitter(int nSlot, IParticleEmitter* pEmitter, bool bSerialize = false) = 0;
 
 	//! Loads a light source to the specified slot, or to next available slot.
