@@ -16,7 +16,7 @@ void COmniCameraStage::Execute()
 	{
 		CRY_ASSERT(0 && "I doubt this function actually works");
 
-		uint32 totalPixel = CRendererResources::s_renderWidth * CRendererResources::s_renderHeight;
+		uint32 totalPixel = CRendererResources::s_renderArea;
 		int cubeSize = 1;
 		while (cubeSize * cubeSize * 6 < totalPixel)
 			cubeSize *= 2;

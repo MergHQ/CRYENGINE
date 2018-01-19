@@ -1407,6 +1407,7 @@ void CRendererResources::DestroyNearestShadowMap()
 
 int CRendererResources::s_resourceWidth = 0, CRendererResources::s_resourceHeight = 0;
 int CRendererResources::s_renderWidth   = 0, CRendererResources::s_renderHeight   = 0;
+int CRendererResources::s_renderMinDim  = 0, CRendererResources::s_renderArea     = 0;
 int CRendererResources::s_outputWidth   = 0, CRendererResources::s_outputHeight   = 0;
 int CRendererResources::s_displayWidth  = 0, CRendererResources::s_displayHeight  = 0;
 
@@ -1420,6 +1421,8 @@ void CRendererResources::OnRenderResolutionChanged(int renderWidth, int renderHe
 
 		s_renderWidth  = renderWidth;
 		s_renderHeight = renderHeight;
+		s_renderMinDim = std::min(renderWidth, renderHeight);
+		s_renderArea   = renderWidth * renderHeight;
 	}
 }
 

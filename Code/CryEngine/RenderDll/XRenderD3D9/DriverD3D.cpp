@@ -2501,7 +2501,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 		const ColorF textColor = Col_Yellow;
 		const bool bCentre = false;
 
-		float fInvScreenArea = 1.0f / ((float)CRendererResources::s_renderWidth * (float)CRendererResources::s_renderHeight);
+		float fInvScreenArea = 1.0f / ((float)CRendererResources::s_renderArea);
 
 		IRenderAuxText::Draw2dLabel(xPos, yPos, size, &titleColor.r, bCentre, "Partial Resolves");
 		yPos += textYSpacing;

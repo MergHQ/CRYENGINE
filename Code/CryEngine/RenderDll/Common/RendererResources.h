@@ -171,7 +171,7 @@ public:
 	static void OnDisplayResolutionChanged(int displayWidth, int displayHeight);
 	
 	static int s_resourceWidth, s_resourceHeight;
-	static int s_renderWidth, s_renderHeight;
+	static int s_renderWidth, s_renderHeight, s_renderMinDim, s_renderArea;
 	static int s_outputWidth, s_outputHeight;
 	static int s_displayWidth, s_displayHeight;
 	static ETEX_Format s_eTFZ;
