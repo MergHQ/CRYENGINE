@@ -140,16 +140,6 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 
 std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromPool() const
 {
-	return CreateFromBuffer(CryModuleMalloc(GetSize()));
-}
-
-size_t CManagedEntityComponentFactory::GetSize() const
-{
-	return sizeof(CManagedEntityComponent) + sizeof(SPropertyValue) * m_properties.size();
-}
-
-std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromBuffer(void* pBuffer) const
-{
 	// We allocate extra memory for entity components in order to support getting properties from the Schematyc callbacks at the end of this file.
 	// This allows us to get both the property being processed and the component itself from one pointer currently being handled by Schematyc
 	// Otherwise we would need to refactor Schematyc to utilize std::function, introducing extra overhead in terms of both memory and performance.
@@ -172,8 +162,49 @@ std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromBuff
 		}
 	};
 
-	std::shared_ptr<CManagedEntityComponent> pComponent = std::shared_ptr<CManagedEntityComponent>(new(pBuffer) CManagedEntityComponent(*this), CustomDeleter());
+	void* pComponentBuffer = CryModuleMalloc(GetSize());
+	std::shared_ptr<CManagedEntityComponent> pComponent = std::shared_ptr<CManagedEntityComponent>(new(pComponentBuffer) CManagedEntityComponent(*this), CustomDeleter());
 
+	InitializeComponent(pComponent);
+
+	return pComponent;
+}
+
+size_t CManagedEntityComponentFactory::GetSize() const
+{
+	return sizeof(CManagedEntityComponent) + sizeof(SPropertyValue) * m_properties.size();
+}
+
+std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromBuffer(void* pComponentBuffer) const
+{
+	// We allocate extra memory for entity components in order to support getting properties from the Schematyc callbacks at the end of this file.
+	// This allows us to get both the property being processed and the component itself from one pointer currently being handled by Schematyc
+	// Otherwise we would need to refactor Schematyc to utilize std::function, introducing extra overhead in terms of both memory and performance.
+	struct CustomDeleter
+	{
+		void operator()(CManagedEntityComponent* p)
+		{
+			// Explicitly call destructors of properties
+			for (size_t i = 0, n = p->GetPropertyCount(); i < n; ++i)
+			{
+				SPropertyValue* pPropertyValue = reinterpret_cast<SPropertyValue*>(reinterpret_cast<uintptr_t>(p) + sizeof(CManagedEntityComponent) + i * sizeof(SPropertyValue));
+				pPropertyValue->~SPropertyValue();
+			}
+
+			// Explicit call to the destructor
+			p->~CManagedEntityComponent();
+		}
+	};
+
+	std::shared_ptr<CManagedEntityComponent> pComponent = std::shared_ptr<CManagedEntityComponent>(new(pComponentBuffer) CManagedEntityComponent(*this), CustomDeleter());
+
+	InitializeComponent(pComponent);
+
+	return pComponent;
+}
+
+void CManagedEntityComponentFactory::InitializeComponent(std::shared_ptr<CManagedEntityComponent> pComponent) const
+{
 	// Keep a weak reference to all objects, this allows us to reallocate components on deserialization
 	const_cast<CManagedEntityComponentFactory*>(this)->m_componentInstances.emplace_back(pComponent);
 
@@ -181,12 +212,10 @@ std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromBuff
 	for (auto it = m_properties.begin(); it != m_properties.end(); ++it)
 	{
 		size_t offsetFromParent = sizeof(CManagedEntityComponent) + std::distance(m_properties.begin(), it) * sizeof(SPropertyValue);
-		SPropertyValue* pPropertyValue = reinterpret_cast<SPropertyValue*>((reinterpret_cast<uintptr_t>(pBuffer) + offsetFromParent));
+		SPropertyValue* pPropertyValue = reinterpret_cast<SPropertyValue*>((reinterpret_cast<uintptr_t>(pComponent.get()) + offsetFromParent));
 
 		new(pPropertyValue) SPropertyValue(*it->get(), nullptr, pComponent->GetObject());
 	}
-
-	return pComponent;
 }
 
 void CManagedEntityComponentFactory::OnClassDeserialized(MonoInternals::MonoClass* pMonoClass, const Schematyc::SSourceFileInfo& managedSourceFileInfo, const char* szName, const char* szUiCategory, const char* szUiDescription, const char* szIcon)
