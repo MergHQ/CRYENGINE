@@ -6,7 +6,6 @@ public:
 	static void ReflectType(Schematyc::CTypeDesc<CMyReplicatedComponent>& desc) { /* Reflect the component GUID in here. */}
 
 	// Implement NetReplicateSerialize, called on the server when an entity with the component is spawned
-	// 
 	virtual void NetReplicateSerialize(TSerialize ser) override 
 	{
 		ser.Value("health", m_health);

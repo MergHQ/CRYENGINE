@@ -1146,11 +1146,21 @@ install_headers(CrySystem CryThreading)
 			"CryEntitySystem/Examples/SpawnEntity.cpp"
 			"CryEntitySystem/Examples/GetEntity.cpp"
 			"CryEntitySystem/Examples/FindEntityByName.cpp"
-			"CryEntitySystem/Examples/MinimalEntityComponent.cpp"
 			"CryEntitySystem/Examples/TraverseEntities.cpp"
+		SOURCE_GROUP "CryEntitySystem\\\\Slots"
+			"CryEntitySystem/Examples/LoadCharacter.cpp"
+			"CryEntitySystem/Examples/LoadFogVolume.cpp"
+			"CryEntitySystem/Examples/LoadGeomCache.cpp"
+			"CryEntitySystem/Examples/LoadGeometry.cpp"
+			"CryEntitySystem/Examples/LoadLight.cpp"
+			"CryEntitySystem/Examples/LoadParticleEmitter.cpp"
+		SOURCE_GROUP "CryEntitySystem\\\\Components"
 			"CryEntitySystem/Examples/ComponentEvents.cpp"
 			"CryEntitySystem/Examples/ComponentNetReplicate.cpp"
 			"CryEntitySystem/Examples/ComponentNetSerialize.cpp"
+			"CryEntitySystem/Examples/MinimalEntityComponent.cpp"
+		SOURCE_GROUP "CryAnimation"
+			"CryAnimation/Examples/StartAnimation.cpp"
 	)
 	
 if(OPTION_DOXYGEN_EXAMPLES)

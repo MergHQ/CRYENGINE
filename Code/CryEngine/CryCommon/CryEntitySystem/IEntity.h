@@ -1155,12 +1155,16 @@ public:
 	//! \param nLoadFlags See ELoadFlags
 	//! \see ELoadFlags
 	//! \return Slot id where the object was loaded, or -1 if loading failed.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/LoadGeometry.cpp
 	virtual int LoadGeometry(int nSlot, const char* sFilename, const char* sGeomName = NULL, int nLoadFlags = 0) = 0;
 
 	//! Loads character to the specified slot, or to next available slot.
 	//! If same character is already loaded in this slot, operation is ignored.
 	//! If this slot number is occupied by different kind of object it is overwritten.
 	//! \return Slot id where the object was loaded, or -1 if loading failed.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/LoadCharacter.cpp
 	virtual int LoadCharacter(int nSlot, const char* sFilename, int nLoadFlags = 0) = 0;
 
 #if defined(USE_GEOM_CACHES)
@@ -1168,6 +1172,8 @@ public:
 	//! If same geometry cache is already loaded in this slot, operation is ignored.
 	//! If this slot number is occupied by different kind of object it is overwritten.
 	//! \return Slot id where the object was loaded, or -1 if loading failed.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/LoadGeomCache.cpp
 	virtual int LoadGeomCache(int nSlot, const char* sFilename) = 0;
 #endif
 
@@ -1187,6 +1193,8 @@ public:
 	//! Loads a new particle emitter to the specified slot, or to next available slot.
 	//! If this slot number is occupied by different kind of object it is overwritten.
 	//! \return Slot id where the particle emitter was loaded, or -1 if loading failed.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/LoadParticleEmitter.cpp
 	virtual int LoadParticleEmitter(int nSlot, IParticleEffect* pEffect, SpawnParams const* params = NULL, bool bPrime = false, bool bSerialize = false) = 0;
 	//! Sets an existing particle emitter to the specified slot, or the next available slot.
 	//! If this slot number is occupied by different kind of object it is overwritten.
@@ -1195,10 +1203,14 @@ public:
 
 	//! Loads a light source to the specified slot, or to next available slot.
 	//! \return Slot id where the light source was loaded, or -1 if loading failed.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/LoadLight.cpp
 	virtual int LoadLight(int nSlot, SRenderLight* pLight) = 0;
 
 	//! Loads a fog volume to the specified slot, or to the next available slot.
 	//! \return Slot id where the fog volume was loaded, or -1 if loading failed.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/LoadFogVolume.cpp
 	virtual int LoadFogVolume(int nSlot, const SFogVolumeProperties& properties) = 0;
 
 	//! Invalidates the entity's and all its children's transformation matrices!

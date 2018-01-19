@@ -641,10 +641,19 @@ struct ISkeletonAnim
 	virtual void   SetTrackViewMixingWeight(uint32 layer, f32 weight) = 0;
 	virtual uint32 GetTrackViewStatus() const = 0;
 
-	// Motion playback and blending
-	virtual bool StartAnimation(const char* szAnimName0, const CryCharAnimationParams& Params) = 0;
+	//! Starts playing back the specified animation in the layer specified in the provided parameters.
+	//! \param szAnimName0 Name of the animation we want to play back, without the .caf or .i_caf suffixes.
+	//! \param params Parameters that describe how the animation should be started, such as playback speed.
+	//! \par Example
+	//! \include CryAnimation/Examples/StartAnimation.cpp
+	virtual bool StartAnimation(const char* szAnimName0, const CryCharAnimationParams& params) = 0;
+	//! Starts playing back the specified animation in the layer specified in the provided parameters.
+	//! \param id Unique animation identifier, useful to avoid looking up animation by name on every playback
+	//! \param params Parameters that describe how the animation should be started, such as playback speed.
 	virtual bool StartAnimationById(int32 id, const CryCharAnimationParams& Params) = 0;
+	//! Stops playback of the current animation in the specified layer, and specifies the time during which we will blend out
 	virtual bool StopAnimationInLayer(int32 nLayer, f32 BlendOutTime) = 0;
+	//! Seizes playback of animations in all layers
 	virtual bool StopAnimationsAllLayers() = 0;
 
 	//! Find an animation with a given user token.
