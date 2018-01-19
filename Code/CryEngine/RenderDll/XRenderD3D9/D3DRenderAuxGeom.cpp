@@ -1412,7 +1412,7 @@ CAuxGeomCBCollector::AUXJobs CAuxGeomCBCollector::SubmitAuxGeomsAndPrepareForRen
 		pTmpThread->m_rwlLocal.RLock();
 		for (CAuxGeomCBCollector::SThread::AUXJobMap::const_iterator job = pTmpThread->m_auxJobMap.begin(); job != pTmpThread->m_auxJobMap.end(); ++job)
 		{
-			auxJobs.push_back(job->second);
+			auxJobs.push_back(*job);
 		}
 		pTmpThread->m_rwlLocal.RUnlock();
 	}
@@ -1427,13 +1427,13 @@ CAuxGeomCBCollector::AUXJobs CAuxGeomCBCollector::SubmitAuxGeomsAndPrepareForRen
 	return auxJobs;
 }
 
-void CAuxGeomCBCollector::SetCamera(const CCamera& camera)
+void CAuxGeomCBCollector::SetDefaultCamera(const CCamera& camera)
 {
 	m_camera = camera;
 
 	for (AUXThreadMap::iterator it = m_auxThreadMap.begin(); it != m_auxThreadMap.end(); ++it)
 	{
-		it->second->SetCamera(camera);
+		it->second->SetDefaultCamera(camera);
 	}
 }
 
@@ -1467,7 +1467,7 @@ void CAuxGeomCBCollector::FreeMemory()
 	m_rwGlobal.WUnlock();
 }
 
-CAuxGeomCB* CAuxGeomCBCollector::Get(void* jobID)
+CAuxGeomCB* CAuxGeomCBCollector::Get(int jobID)
 {
 	threadID tid = CryGetCurrentThreadId();
 
@@ -1481,7 +1481,8 @@ CAuxGeomCB* CAuxGeomCBCollector::Get(void* jobID)
 	if (auxThread == nullptr)
 	{
 		auxThread = new SThread;
-		auxThread->SetCamera(m_camera);
+		auxThread->SetDefaultCamera(m_camera);
+		auxThread->SetDisplayContextHandle(m_hWnd);
 
 		m_rwGlobal.WLock();
 		m_auxThreadMap.insert(AUXThreadMap::value_type(tid, auxThread));
@@ -1489,6 +1490,34 @@ CAuxGeomCB* CAuxGeomCBCollector::Get(void* jobID)
 	}
 
 	return auxThread->Get(jobID, tid);
+}
+
+void CAuxGeomCBCollector::Add(CAuxGeomCB* newAuxGeomCB)
+{
+	threadID tid = CryGetCurrentThreadId();
+
+	m_rwGlobal.RLock();
+
+	AUXThreadMap::const_iterator it = m_auxThreadMap.find(tid);
+	SThread* auxThread = m_auxThreadMap.end() != it ? it->second : nullptr;
+
+	m_rwGlobal.RUnlock();
+
+	if (auxThread == nullptr)
+	{
+		auxThread = new SThread;
+		auxThread->SetDefaultCamera(m_camera);
+		auxThread->SetDisplayContextHandle(m_hWnd);
+
+		m_rwGlobal.WLock();
+		m_auxThreadMap.insert(AUXThreadMap::value_type(tid, auxThread));
+		m_rwGlobal.WUnlock();
+	}
+
+	m_rwGlobal.WLock();
+	newAuxGeomCB->SetCurrentDisplayContext(m_hWnd);
+	m_auxThreadMap[tid]->Add(newAuxGeomCB);
+	m_rwGlobal.WUnlock();
 }
 
 CAuxGeomCBCollector::~CAuxGeomCBCollector()
@@ -1507,18 +1536,19 @@ void CAuxGeomCBCollector::SThread::GetMemoryUsage(ICrySizer* pSizer) const
 	{
 		// MUST BE called after final CAuxGeomCB::Commit()
 		// adding data (issuing render commands) is not thread safe !!!
-		job.second->GetMemoryUsage(pSizer);
+		job->GetMemoryUsage(pSizer);
 	}
 	m_rwlLocal.RUnlock();
 }
 
-void CAuxGeomCBCollector::SThread::SetCamera(const CCamera & camera)
+void CAuxGeomCBCollector::SThread::SetDefaultCamera(const CCamera & camera)
 {
 	m_camera = camera;
 
 	for (auto& auxGeomCB : m_auxJobMap)
 	{
-		auxGeomCB.second->SetCamera(camera);
+		if(!auxGeomCB->IsUsingCustomCamera())
+			auxGeomCB->SetCamera(camera);
 	}
 }
 
@@ -1528,7 +1558,7 @@ void CAuxGeomCBCollector::SThread::SetDisplayContextHandle(CryDisplayContextHand
 
 	for (auto& auxGeomCB : m_auxJobMap)
 	{
-		auxGeomCB.second->SetCurrentDisplayContext(hWnd);
+		auxGeomCB->SetCurrentDisplayContext(hWnd);
 	}
 }
 
@@ -1540,8 +1570,10 @@ void CAuxGeomCBCollector::SThread::FreeMemory()
 	{
 		// MUST BE called after final CAuxGeomCB::Commit()
 		// adding data (issuing render commands) is not thread safe !!!
-		job->second->FreeMemory();
+		(*job)->FreeMemory();
+		gEnv->pRenderer->DeleteAuxGeom(*job);
 	}
+	m_auxJobMap.resize(0);
 	m_rwlLocal.WUnlock();
 }
 
@@ -1549,16 +1581,15 @@ CAuxGeomCBCollector::SThread::~SThread()
 {
 	for (auto const& cbit : m_auxJobMap)
 	{
-		delete cbit.second;
+		delete cbit;
 	}
 }
 
-CAuxGeomCB* CAuxGeomCBCollector::SThread::Get(void* jobID, threadID tid)
+CAuxGeomCB* CAuxGeomCBCollector::SThread::Get(int jobID, threadID tid)
 {
 	m_rwlLocal.RLock();
 
-	AUXJobMap::const_iterator it = m_auxJobMap.find(jobID);
-	CAuxGeomCB* pAuxGeomCB = m_auxJobMap.end() != it ? it->second : nullptr;
+	CAuxGeomCB* pAuxGeomCB = jobID < m_auxJobMap.size() ? m_auxJobMap[jobID] : nullptr;
 
 	m_rwlLocal.RUnlock();
 
@@ -1567,15 +1598,24 @@ CAuxGeomCB* CAuxGeomCBCollector::SThread::Get(void* jobID, threadID tid)
 		threadID mainThreadID, renderThreadID;
 		gRenDev->GetThreadIDs(mainThreadID, renderThreadID);
 
-		pAuxGeomCB = new CAuxGeomCB;
+		pAuxGeomCB = static_cast<CAuxGeomCB*>(gEnv->pRenderer->GetOrCreateIRenderAuxGeom());
 		pAuxGeomCB->SetCamera(m_camera);
+		pAuxGeomCB->SetUsingCustomCamera(false);
+		pAuxGeomCB->SetCurrentDisplayContext(m_hWnd);
 
 		m_rwlLocal.WLock();
-		m_auxJobMap.insert(AUXJobMap::value_type(jobID, pAuxGeomCB));
+		m_auxJobMap.push_back(pAuxGeomCB);
 		m_rwlLocal.WUnlock();
 	}
 
 	return pAuxGeomCB;
+}
+
+void CAuxGeomCBCollector::SThread::Add(CAuxGeomCB* newAuxGeomCB)
+{
+	m_rwlLocal.WLock();
+	m_auxJobMap.push_back(newAuxGeomCB);
+	m_rwlLocal.WUnlock();
 }
 
 CAuxGeomCBCollector::SThread::SThread() : m_cbCurrent()

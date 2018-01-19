@@ -1279,6 +1279,8 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 			PrintMessage("C3DEngine::RegisterEntity__GetObjManager()->UpdateRenderNodeStreamingPriority %s", pRenderNode->GetName());
 	}
 	m_deferredRenderProxyStreamingPriorityUpdates.resize(0);
+
+	gEnv->pRenderer->UpdateAuxDefaultCamera(m_RenderingCamera);
 }
 
 void C3DEngine::PrepareOcclusion(const CCamera& rCamera)

@@ -1807,9 +1807,9 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				rCamera.GetFarPlane(),
 				fNewAspectRatio);
 
-			if (auto pAux = gEnv->pAuxGeomRenderer)
+			if (auto pRenderer = gEnv->pRenderer)
 			{
-				pAux->SetCamera(rCamera);
+				pRenderer->UpdateAuxDefaultCamera(rCamera);
 			}
 		}
 	}
@@ -2470,10 +2470,9 @@ void CSystem::SetViewCamera(CCamera& Camera)
 	m_ViewCamera = Camera;
 	m_ViewCamera.CalculateRenderMatrices();
 
-	IRenderAuxGeom* pAuxGeom = IRenderAuxGeom::GetAux();
-	if (pAuxGeom)
+	if (gEnv && gEnv->pRenderer)
 	{
-		pAuxGeom->SetCamera(Camera);
+		gEnv->pRenderer->UpdateAuxDefaultCamera(m_ViewCamera);
 	}
 }
 

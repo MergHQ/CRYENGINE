@@ -82,8 +82,7 @@ private:
 	class SThread
 	{
 		friend class CAuxGeomCBCollector;
-
-		using AUXJobMap = std::map<void*, CAuxGeomCB*>;
+		using AUXJobMap = std::vector<CAuxGeomCB*>;
 		CAuxGeomCB*       m_cbCurrent;
 		AUXJobMap         m_auxJobMap;
 		CCamera			  m_camera;
@@ -92,10 +91,11 @@ private:
 	public:
 		SThread();
 		~SThread();
-		CAuxGeomCB* Get(void* jobID, threadID tid);
+		CAuxGeomCB* Get(int jobID, threadID tid);
+		void Add(CAuxGeomCB* newAuxGeomCB);
 		//void AppendJob(AUXJobs& auxJobs);
 		void FreeMemory();
-		void SetCamera(const CCamera& camera);
+		void SetDefaultCamera(const CCamera& camera);
 		void SetDisplayContextHandle(CryDisplayContextHandle hWnd);
 		void GetMemoryUsage(ICrySizer* pSizer) const;
 	};
@@ -105,10 +105,11 @@ private:
 	CryDisplayContextHandle m_hWnd;
 public:
 	~CAuxGeomCBCollector();
-	CAuxGeomCB* Get(void* jobID);
+	CAuxGeomCB* Get(int jobID);
+	void Add(CAuxGeomCB* newAuxGeomCB);
 	void FreeMemory();
 	AUXJobs SubmitAuxGeomsAndPrepareForRendering();
-	void SetCamera(const CCamera& camera);
+	void SetDefaultCamera(const CCamera& camera);
 	void SetDisplayContextHandle(CryDisplayContextHandle hWnd);
 	CCamera                 GetCamera() const;
 	CryDisplayContextHandle GetDisplayContextHandle() const;

@@ -840,21 +840,25 @@ void CharacterToolForm::OnClearProxiesButton()
 
 void CharacterToolForm::OnPreRenderCompressed(const SRenderContext& context)
 {
+	m_system->document->SetAuxRenderer(context.pAuxGeom);
 	m_system->document->PreRender(context);
 }
 
 void CharacterToolForm::OnRenderCompressed(const SRenderContext& context)
 {
+	m_system->document->SetAuxRenderer(context.pAuxGeom);
 	m_system->document->Render(context);
 }
 
 void CharacterToolForm::OnPreRenderOriginal(const SRenderContext& context)
 {
+	m_system->document->SetAuxRenderer(context.pAuxGeom);
 	m_system->document->PreRenderOriginal(context);
 }
 
 void CharacterToolForm::OnRenderOriginal(const SRenderContext& context)
 {
+	m_system->document->SetAuxRenderer(context.pAuxGeom);
 	m_system->document->RenderOriginal(context);
 }
 

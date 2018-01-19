@@ -1054,6 +1054,11 @@ void CharacterDocument::GetEntriesActiveInDocument(ExplorerEntries* entries) con
 		entries->push_back(animationEntry);
 }
 
+void CharacterDocument::SetAuxRenderer(IRenderAuxGeom* pAuxRenderer)
+{
+	m_pAuxRenderer = pAuxRenderer;
+}
+
 ExplorerEntry* CharacterDocument::GetActivePhysicsEntry() const
 {
 	SEntry<CharacterContent>* character = m_system->characterList->GetEntryByPath<CharacterContent>(m_loadedCharacterFilename.c_str());
@@ -1442,7 +1447,7 @@ void CharacterDocument::IdleUpdate()
 	}
 }
 
-static void DrawAnimationStateText(IRenderer* renderer, const vector<StateText>& lines)
+static void DrawAnimationStateText(IRenderer* renderer, IRenderAuxGeom* pAuxRenderer,  const vector<StateText>& lines)
 {
 	int y = 30;
 
@@ -1457,11 +1462,11 @@ static void DrawAnimationStateText(IRenderer* renderer, const vector<StateText>&
 		bool singleLine = l.animation.empty();
 		if (!singleLine)
 		{
-			IRenderAuxText::Draw2dLabel(20, y, 1.5f, ColorF(color), false, "%s", l.animation.c_str());
+			pAuxRenderer->Draw2dLabel(20, y, 1.5f, ColorF(color), false, "%s", l.animation.c_str());
 			y += 18;
 		}
 
-		IRenderAuxText::Draw2dLabel(singleLine ? 20 : 40, y, singleLine ? 1.5f : 1.2f, ColorF(color), false, "%s", l.text.c_str());
+		pAuxRenderer->Draw2dLabel(singleLine ? 20 : 40, y, singleLine ? 1.5f : 1.2f, ColorF(color), false, "%s", l.text.c_str());
 		y += singleLine ? 18 : 16;
 	}
 }
@@ -1910,7 +1915,7 @@ void CharacterDocument::Render(const SRenderContext& context)
 	}
 
 	IRenderer* renderer = gEnv->pRenderer;
-	DrawAnimationStateText(renderer, m_compressedStateTextCache);
+	DrawAnimationStateText(renderer, m_pAuxRenderer, m_compressedStateTextCache);
 
 	if (m_system->scene->animEventPlayer)
 		m_system->scene->animEventPlayer->Update(m_compressedCharacter, QuatT(m_PhysicalLocation.q, m_PhysicalLocation.t), context.camera->GetMatrix());
@@ -1931,7 +1936,7 @@ void CharacterDocument::RenderOriginal(const SRenderContext& context)
 	IRenderer* renderer = gEnv->pRenderer;
 
 	m_compressionMachine->GetAnimationStateText(&m_uncompressedStateTextCache, false);
-	DrawAnimationStateText(renderer, m_uncompressedStateTextCache);
+	DrawAnimationStateText(renderer, m_pAuxRenderer, m_uncompressedStateTextCache);
 }
 
 void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const SRenderContext& context)
@@ -1939,8 +1944,7 @@ void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const S
 	using namespace Private_CharacterDocument;
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
-	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
-	pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
+	m_pAuxRenderer->SetRenderFlags(e_Def3DPublicRenderflags);
 
 	f32 FrameTime = GetIEditor()->GetSystem()->GetITimer()->GetFrameTime();
 	int yPos = 162;
@@ -1961,7 +1965,10 @@ void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const S
 				continue;
 
 			QuatT jointTM = QuatT(m_PhysicalLocation * skeletonPose.GetAbsJointByID(j));
-			IRenderAuxText::DrawLabel(jointTM.t, m_displayOptions->skeleton.showJointNamesFontSize, pJointName);
+			SDrawTextInfo ti;
+			ti.scale = Vec2(m_displayOptions->skeleton.showJointNamesFontSize);
+			ti.flags = EDrawTextFlags::eDrawText_FixedSize;
+			m_pAuxRenderer->RenderText(jointTM.t, ti, "%s", (va_list)pJointName);
 		}
 	}
 
@@ -1969,7 +1976,7 @@ void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const S
 	if (m_displayOptions->animation.showTrail && (m_displayOptions->animation.movement == CHARACTER_MOVEMENT_CONTINUOUS))
 	{
 		m_animDrivenSamples.Add(FrameTime, m_PhysicalLocation.t);
-		m_animDrivenSamples.Draw(pAuxGeom);
+		m_animDrivenSamples.Draw(m_pAuxRenderer);
 	}
 	else
 		m_animDrivenSamples.Reset();
@@ -2008,7 +2015,7 @@ void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const S
 
 			const QuatT dccToolOrigin = dccToolOriginInv.GetInverted();
 
-			DrawFrame(pAuxGeom, dccToolOrigin, .3f);
+			DrawFrame(m_pAuxRenderer, dccToolOrigin, .3f);
 
 			IRenderAuxText::Draw2dLabel(12, 50, 1.6f, Col_White, false, "DCC Tool Origin: rot = %f (%f %f %f)", dccToolOrigin.q.w, dccToolOrigin.q.v.x, dccToolOrigin.q.v.y, dccToolOrigin.q.v.z);
 			IRenderAuxText::Draw2dLabel(12, 65, 1.6f, Col_White, false, "DCC Tool Origin: pos = %f %f %f", dccToolOrigin.t.x, dccToolOrigin.t.y, dccToolOrigin.t.z);
@@ -2018,7 +2025,7 @@ void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const S
 	// draw physics
 	if (m_displayOptions->physics.showPhysicalProxies != DisplayPhysicsOptions::DISABLED || m_displayOptions->physics.showRagdollJointLimits != DisplayPhysicsOptions::NONE)
 	{
-		pAuxGeom->SetRenderFlags(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeNone | e_DepthWriteOff | e_DepthTestOn);
+		m_pAuxRenderer->SetRenderFlags(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeNone | e_DepthWriteOff | e_DepthTestOn);
 		IPhysicsDebugRenderer* pPhysRender = GetIEditor()->GetSystem()->GetIPhysicsDebugRenderer();
 		pPhysRender->UpdateCamera(*context.camera);
 		int iDrawHelpers = 0;
@@ -2046,7 +2053,7 @@ void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const S
 	pInstanceBase->SetCharEditMode(flags);
 
 	if (m_displayOptions->skeleton.showJoints)
-		DrawSkeleton(pAuxGeom, &pInstanceBase->GetIDefaultSkeleton(), pInstanceBase->GetISkeletonPose(), QuatT(m_PhysicalLocation), m_displayOptions->skeleton.jointFilter, m_viewportState->cameraTarget);
+		DrawSkeleton(m_pAuxRenderer, &pInstanceBase->GetIDefaultSkeleton(), pInstanceBase->GetISkeletonPose(), QuatT(m_PhysicalLocation), m_displayOptions->skeleton.jointFilter, m_viewportState->cameraTarget);
 
 	if (pInstanceBase == m_compressedCharacter)
 	{
@@ -2072,7 +2079,7 @@ void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const S
 	}
 
 	if (m_displayOptions->skeleton.showSkeletonBoundingBox)
-		DrawSkeletonBoundingBox(pAuxGeom, pInstanceBase, QuatT(m_PhysicalLocation));
+		DrawSkeletonBoundingBox(m_pAuxRenderer, pInstanceBase, QuatT(m_PhysicalLocation));
 }
 
 void CharacterDocument::CreateShaderParamCallbacks()

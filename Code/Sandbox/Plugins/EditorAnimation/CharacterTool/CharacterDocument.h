@@ -174,6 +174,8 @@ public:
 	CharacterDefinition* GetLoadedCharacterDefinition() const;
 	void                 GetEntriesActiveInDocument(ExplorerEntries* entries) const;
 
+	void                 SetAuxRenderer(IRenderAuxGeom* pAuxRenderer);
+
 	enum { SELECT_DO_NOT_REWIND = 1 << 0 };
 	void                            SetSelectedExplorerEntries(const ExplorerEntries& entries, int selectOptions);
 	bool                            HasModifiedExporerEntriesSelected() const;
@@ -311,6 +313,8 @@ private:
 	PlaybackOptions                            m_playbackOptions;
 	PlaybackState                              m_playbackState;
 	const char*                                m_playbackBlockReason;
+
+	IRenderAuxGeom*                            m_pAuxRenderer;
 
 };
 

@@ -26,11 +26,14 @@ public:
 };
 
 class CRenderAuxGeomD3D;
+class CAuxGeomCBCollector;
 
 class CAuxGeomCB : public IRenderAuxGeom
 {
 public:
 	friend class CRenderAuxGeomD3D;
+	friend class CD3D9Renderer;
+	friend class CAuxGeomCBCollector;
 	using SAux2DImages = std::vector<SRender2DImageDescription>;
 
 	void Merge(const CAuxGeomCB* pAuxGeomCB);
@@ -39,7 +42,6 @@ public:
 	SAuxGeomRenderFlags SetRenderFlags(const SAuxGeomRenderFlags& renderFlags) final;
 	SAuxGeomRenderFlags GetRenderFlags() final;
 
-	void                SetCamera(const CCamera& camera) final;
 	const CCamera&      GetCamera() const final;
 
 	void                SetCurrentDisplayContext(CryDisplayContextHandle context) override;
@@ -95,6 +97,14 @@ public:
 
 	void                Draw2dImages(SAux2DImages& images, bool reset);
 	void                DrawTextMessages(CTextMessages& tMessages, bool reset);
+
+private:
+	// These functions are private so that aux geom command buffer cannot be changed.
+	// In ideal case, the camera must be set during construction and everything should be rendered/created relative to it.
+	// SetCamera is only accessible to the AuxGeomCBCollector so that it can update AuxGeomCBs.
+	void                SetCamera(const CCamera& camera);
+	void                SetUsingCustomCamera(bool isUsing);
+	bool                IsUsingCustomCamera() const;
 
 public:
 	enum EPrimType
@@ -221,6 +231,7 @@ public:
 			, m_curWorldMatIdx(-1)
 			, m_textureID(-1)
 			, m_uCount(0)
+			, m_usingCustomCamera(false)
 		{}
 
 		void GetSortedPushBuffer(size_t begin, size_t end, AuxSortedPushBuffer& auxSortedPushBuffer) const;
@@ -283,6 +294,7 @@ public:
 		
 		// Camera used for 3D->2D elements projection
 		CCamera                 m_camera;
+		bool                    m_usingCustomCamera;
 	};
 
 public:
@@ -577,7 +589,6 @@ public:
 	SAuxGeomRenderFlags SetRenderFlags(const SAuxGeomRenderFlags& renderFlags) final                                                                         { return SAuxGeomRenderFlags(); }
 	SAuxGeomRenderFlags GetRenderFlags() final                                                                                                               { return SAuxGeomRenderFlags(); }
 
-	void                SetCamera(const CCamera& camera) final                                                                                               {}
 	const CCamera&      GetCamera() const final                                                                                                              { static CCamera camera; return camera; }
 
 	void                SetCurrentDisplayContext(CryDisplayContextHandle context) final                                                                      {};

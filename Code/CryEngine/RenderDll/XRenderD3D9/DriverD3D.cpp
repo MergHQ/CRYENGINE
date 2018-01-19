@@ -694,7 +694,7 @@ const char* CD3D9Renderer::GetWindowStateName() const
 
 void CD3D9Renderer::BeginFrame(CryDisplayContextHandle hWnd)
 {
-	renderThreadAuxGeom.SetCurrentDisplayContext(hWnd);
+	m_renderThreadAuxGeom.SetCurrentDisplayContext(hWnd);
 	//////////////////////////////////////////////////////////////////////
 	// Set up everything so we can start rendering
 	//////////////////////////////////////////////////////////////////////
@@ -769,22 +769,26 @@ void CD3D9Renderer::BeginFrame(CryDisplayContextHandle hWnd)
 		gRenDev->FlushRTCommands(true, true, true);
 	}
 
-	const CCamera& camera = gEnv->pSystem->GetViewCamera();
-	
-	m_pRT->ExecuteRenderThreadCommand(
-	[=]
-	{
-		// Initialize render thread's aux geometry command buffer's camera
-		GetIRenderAuxGeom()->SetCamera(camera);
+	const CCamera camera = gEnv->pSystem->GetViewCamera();
 
+	if (auto pCurrAuxGeomCBCollector = m_currentAuxGeomCBCollector)
+	{
 		// Setting all aux geometries command buffers of the collector to the new camera.
 		// Technically this may not be correct but for now it fixes the issues.
-		m_currentAuxGeomCBCollector->SetCamera(camera);
-		m_currentAuxGeomCBCollector->SetDisplayContextHandle(hWnd);
+		pCurrAuxGeomCBCollector->SetDefaultCamera(camera);
 
-		m_nTimeSlicedShadowsUpdatedThisFrame = 0;
+		m_pRT->ExecuteRenderThreadCommand(
+		[=]
+		{
+			// Initialize render thread's aux geometry command buffer's camera
+			m_renderThreadAuxGeom.SetCamera(camera);
 
-	}, ERenderCommandFlags::None);
+			pCurrAuxGeomCBCollector->SetDisplayContextHandle(hWnd);
+
+			m_nTimeSlicedShadowsUpdatedThisFrame = 0;
+
+		}, ERenderCommandFlags::None);
+	}
 
 	m_pRT->RC_BeginFrame(hWnd);
 }
@@ -3077,7 +3081,7 @@ void CD3D9Renderer::EndFrame()
 		
 		// Setting the current main thread's aux geometry command buffer to the collector and all containing aux geometry command buffers' camera.
 		// Technically this is not correct but it fixes current issues.
-		m_currentAuxGeomCBCollector->SetCamera(pCurrentCollector->Get(0)->GetCamera());
+		m_currentAuxGeomCBCollector->SetDefaultCamera(pCurrentCollector->Get(0)->GetCamera());
 		gEnv->pAuxGeomRenderer = m_currentAuxGeomCBCollector->Get(0);
 
 		auto renderData = pCurrentCollector->SubmitAuxGeomsAndPrepareForRendering();
@@ -3086,7 +3090,7 @@ void CD3D9Renderer::EndFrame()
 		// Render Thread will commit it's own buffer right before final rendering
 		m_pRT->ExecuteRenderThreadCommand(
 			[=]
-			{	 
+			{
 				// Renders the aux geometries collected with the collector assigned to the renderer between begin and end.
 				m_pRenderAuxGeomD3D->RT_Render(renderData);
 				m_pRenderAuxGeomD3D->FreeMemory();
@@ -3191,9 +3195,9 @@ void CD3D9Renderer::RT_EndFrame()
 		gEnv->pHardwareMouse->Render();
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
-	renderThreadAuxGeom.Submit();
-	m_pRenderAuxGeomD3D->RT_Render(std::vector<CAuxGeomCB*>{ &renderThreadAuxGeom });
-	renderThreadAuxGeom.FreeMemory();
+	m_renderThreadAuxGeom.Submit();
+	m_pRenderAuxGeomD3D->RT_Render(std::vector<CAuxGeomCB*>{ &m_renderThreadAuxGeom });
+	m_renderThreadAuxGeom.FreeMemory();
 #endif
 	//////////////////////////////////////////////////////////////////////////
 
@@ -5008,16 +5012,30 @@ IRenderAuxGeom* CD3D9Renderer::GetIRenderAuxGeom()
 #if defined(ENABLE_RENDER_AUX_GEOM)
 	// Separate aux geometry primitive for render thread
 	if (m_pRT->IsRenderThread())
-		return &renderThreadAuxGeom;
+		return &m_renderThreadAuxGeom;
 
 	return m_currentAuxGeomCBCollector->Get(0);
 #endif
 	return &m_renderAuxGeomNull;
 }
 
-IRenderAuxGeom* CD3D9Renderer::GetOrCreateIRenderAuxGeom()
+IRenderAuxGeom* CD3D9Renderer::GetOrCreateIRenderAuxGeom(const CCamera* pCustomCamera)
 {
-	return m_auxGeomCBPool.GetOrCreateOneElement();
+	auto auxGeom = m_auxGeomCBPool.GetOrCreateOneElement();
+
+	bool usesDefaultCamera = true;
+	if (pCustomCamera)
+		usesDefaultCamera = false;
+
+	auxGeom->SetUsingCustomCamera(usesDefaultCamera);
+	auxGeom->SetCamera(!usesDefaultCamera ? *pCustomCamera : m_currentAuxGeomCBCollector->GetCamera());
+
+	return auxGeom;
+}
+
+void CD3D9Renderer::UpdateAuxDefaultCamera(const CCamera & systemCamera)
+{
+	m_currentAuxGeomCBCollector->SetDefaultCamera(systemCamera);
 }
 
 void CD3D9Renderer::DeleteAuxGeom(IRenderAuxGeom* pRenderAuxGeom)
@@ -5025,9 +5043,16 @@ void CD3D9Renderer::DeleteAuxGeom(IRenderAuxGeom* pRenderAuxGeom)
 	m_auxGeomCBPool.ReturnToPool(static_cast<CAuxGeomCB*>(pRenderAuxGeom));
 }
 
-void CD3D9Renderer::SubmitAuxGeom(IRenderAuxGeom* pIRenderAuxGeom)
+void CD3D9Renderer::SubmitAuxGeom(IRenderAuxGeom* pIRenderAuxGeom, bool merge)
 {
-	m_currentAuxGeomCBCollector->Get(0)->Merge(static_cast<const CAuxGeomCB*>(pIRenderAuxGeom));
+	if (merge)
+	{
+		m_currentAuxGeomCBCollector->Get(0)->Merge(static_cast<const CAuxGeomCB*>(pIRenderAuxGeom));
+	}
+	else
+	{
+		m_currentAuxGeomCBCollector->Add(static_cast<CAuxGeomCB*>(pIRenderAuxGeom));
+	}
 }
 
 void CD3D9Renderer::DeleteAuxGeomCBs()

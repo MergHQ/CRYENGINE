@@ -1338,9 +1338,10 @@ struct IRenderer//: public IRendererCallbackServer
 	//////////////////////////////////////////////////////////////////////
 	//! Interface for auxiliary geometry (for debugging, editor purposes, etc.)
 	virtual IRenderAuxGeom* GetIRenderAuxGeom() = 0;
-	virtual IRenderAuxGeom* GetOrCreateIRenderAuxGeom() = 0;
+	virtual IRenderAuxGeom* GetOrCreateIRenderAuxGeom(const CCamera* pCustomCamera = nullptr) = 0;
 	virtual void            DeleteAuxGeom(IRenderAuxGeom* pRenderAuxGeom) = 0;
-	virtual void            SubmitAuxGeom(IRenderAuxGeom* pRenderAuxGeom) = 0;
+	virtual void            SubmitAuxGeom(IRenderAuxGeom* pRenderAuxGeom, bool merge = true) = 0;
+	virtual void            UpdateAuxDefaultCamera(const CCamera& systemCamera) = 0;
 	//////////////////////////////////////////////////////////////////////
 
 	//! Interface for renderer side SVO.
