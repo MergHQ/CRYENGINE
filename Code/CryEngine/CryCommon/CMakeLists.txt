@@ -307,6 +307,12 @@ add_sources("NoUberFile"
 		"CryAnimation/CryCharAnimationParams.h"
 		"CryAnimation/CryCharMorphParams.h"
 		"CryAnimation/IVertexAnimation.h"
+		"CryAnimation/ICryMannequin.h"
+		"CryAnimation/ICryMannequinDefs.h"
+		"CryAnimation/ICryMannequinEditor.h"
+		"CryAnimation/ICryMannequinProceduralClipFactory.h"
+		"CryAnimation/ICryMannequinTagDefs.h"
+		"CryAnimation/ICryMannequinUserParams.h"
 	SOURCE_GROUP "CryAudio"
 		"CryAudio/IAudioInterfacesCommonData.h"
 		"CryAudio/IAudioSystem.h"
@@ -1161,6 +1167,10 @@ install_headers(CrySystem CryThreading)
 			"CryEntitySystem/Examples/MinimalEntityComponent.cpp"
 		SOURCE_GROUP "CryAnimation"
 			"CryAnimation/Examples/StartAnimation.cpp"
+			"CryAnimation/Examples/CreateActionController.cpp"
+			"CryAnimation/Examples/QueueFragment.cpp"
+			"CryAnimation/Examples/SetTag.cpp"
+			"CryAnimation/Examples/ControllerAnimationEvents.cpp"
 	)
 	
 if(OPTION_DOXYGEN_EXAMPLES)
