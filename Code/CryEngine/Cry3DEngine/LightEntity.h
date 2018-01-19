@@ -30,7 +30,7 @@ public:
 	virtual IMaterial*                   GetMaterialOverride()                   { return m_pMaterial; }
 	virtual float                        GetMaxViewDist();
 	virtual void                         SetLightProperties(const SRenderLight& light);
-	virtual SRenderLight&                GetLightProperties() { return m_light; };
+	virtual SRenderLight&                GetLightProperties()       { return m_light; };
 	virtual const SRenderLight&          GetLightProperties() const { return m_light; };
 	virtual void                         Release(bool);
 	virtual void                         SetMatrix(const Matrix34& mat);
@@ -58,6 +58,7 @@ public:
 	int                                  UpdateGSMLightSourceCachedShadowFrustum(int nFirstLod, int nLodCount, float& fDistFromViewDynamicLod, float fRadiusDynamicLod, const SRenderingPassInfo& passInfo);
 	int                                  UpdateGSMLightSourceNearestShadowFrustum(int nFrustumIndex, const SRenderingPassInfo& passInfo);
 	bool                                 ProcessFrustum(int nLod, float fCamBoxSize, float fDistanceFromView, PodArray<struct SPlaneObject>& lstCastersHull, const SRenderingPassInfo& passInfo);
+	void                                 CollectShadowCascadeForOnePassTraversal(ShadowMapFrustum* pFr);
 	static bool                          IsOnePassTraversalFrustum(const ShadowMapFrustum* pFr);
 	static void                          SetShadowFrustumsCollector(std::vector<std::pair<ShadowMapFrustum*, const CLightEntity*>>* p) { s_pShadowFrustumsCollector = p; }
 	static void                          ProcessPerObjectFrustum(ShadowMapFrustum* pFr, struct SPerObjectShadow* pPerObjectShadow, ILightSource* pLightSource, const SRenderingPassInfo& passInfo);
@@ -83,16 +84,16 @@ public:
 	ShadowMapInfo*                       GetShadowMapInfo() { return m_pShadowMapInfo; }
 
 private:
-	static PodArray<SPlaneObject>          s_lstTmpCastersHull;
-	IEntity*                               m_pOwnerEntity = 0;
-	_smart_ptr<IMaterial>                  m_pMaterial;
-	Matrix34                               m_Matrix;
-	ShadowMapInfo*                         m_pShadowMapInfo;
-	SRenderLight                           m_light;
-	IRenderNode*                           m_pNotCaster;
-	AABB   m_WSBBox;
-	uint16 m_layerId;
-	bool   m_bShadowCaster : 1;
+	static PodArray<SPlaneObject> s_lstTmpCastersHull;
+	IEntity*                      m_pOwnerEntity = 0;
+	_smart_ptr<IMaterial>         m_pMaterial;
+	Matrix34                      m_Matrix;
+	ShadowMapInfo*                m_pShadowMapInfo;
+	SRenderLight                  m_light;
+	IRenderNode*                  m_pNotCaster;
+	AABB                          m_WSBBox;
+	uint16                        m_layerId;
+	bool                          m_bShadowCaster : 1;
 
 	static std::vector<std::pair<ShadowMapFrustum*, const CLightEntity*>>* s_pShadowFrustumsCollector;
 };

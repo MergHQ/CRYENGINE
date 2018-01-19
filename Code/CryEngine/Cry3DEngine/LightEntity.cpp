@@ -376,6 +376,8 @@ int CLightEntity::UpdateGSMLightSourceCachedShadowFrustum(int nFirstLod, int nLo
 			ShadowMapFrustum* pFr = m_pShadowMapInfo->pGSM[firstCachedFrustumIndex + nLod];
 			*pFr = *pFrustumCache->m_staticShadowMapFrustums[nLod];
 			pFr->bIsMGPUCopy = true;
+
+			CollectShadowCascadeForOnePassTraversal(pFr);
 		}
 
 		if (bHeightMapAO)
@@ -385,6 +387,8 @@ int CLightEntity::UpdateGSMLightSourceCachedShadowFrustum(int nFirstLod, int nLo
 			ShadowMapFrustum* pFr = m_pShadowMapInfo->pGSM[firstCachedFrustumIndex + nLod];
 			*pFr = *pFrustumCache->m_pHeightMapAOFrustum;
 			pFr->bIsMGPUCopy = true;
+
+			CollectShadowCascadeForOnePassTraversal(pFr);
 
 			++nLod;
 		}
@@ -420,6 +424,8 @@ int CLightEntity::UpdateGSMLightSourceCachedShadowFrustum(int nFirstLod, int nLo
 			Vec3 vEdgeScreen = GSM_GetNextScreenEdge(fRadiusDynamicLod, fDistFromViewDynamicLod, passInfo);
 			fRadiusDynamicLod *= Get3DEngine()->m_fGsmRangeStep;
 			fDistFromViewDynamicLod = GSM_GetLODProjectionCenter(vEdgeScreen, fRadiusDynamicLod);
+
+			CollectShadowCascadeForOnePassTraversal(pFr);
 		}
 
 		if (bHeightMapAO)
@@ -430,6 +436,8 @@ int CLightEntity::UpdateGSMLightSourceCachedShadowFrustum(int nFirstLod, int nLo
 			pFr->bIsMGPUCopy = false;
 			if (GetRenderer()->GetActiveGPUCount() > 1 && pFrustumCache->m_pHeightMapAOFrustum)
 				*pFrustumCache->m_pHeightMapAOFrustum = *pFr;
+
+			CollectShadowCascadeForOnePassTraversal(pFr);
 
 			++nLod;
 		}
@@ -473,7 +481,11 @@ int CLightEntity::UpdateGSMLightSourceNearestShadowFrustum(int nFrustumIndex, co
 
 bool CLightEntity::IsOnePassTraversalFrustum(const ShadowMapFrustum* pFr)
 {
-	return (pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic || pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance) && GetCVars()->e_OnePassOctreeTraversal;
+	return GetCVars()->e_OnePassOctreeTraversal && (
+	  pFr->m_eFrustumType == ShadowMapFrustum::e_GsmCached ||
+	  pFr->m_eFrustumType == ShadowMapFrustum::e_HeightMapAO ||
+	  pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic ||
+	  pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance);
 }
 
 bool CLightEntity::ProcessFrustum(int nLod, float fGSMBoxSize, float fDistanceFromView, PodArray<SPlaneObject>& lstCastersHull, const SRenderingPassInfo& passInfo)
@@ -482,12 +494,7 @@ bool CLightEntity::ProcessFrustum(int nLod, float fGSMBoxSize, float fDistanceFr
 
 	assert(pFr);
 
-	// collect shadow cascades for one-pass octree traversal
-	if (IsOnePassTraversalFrustum(pFr) && CLightEntity::s_pShadowFrustumsCollector)
-	{
-		assert(m_light.m_Flags & DLF_CASTSHADOW_MAPS && !pFr->pOnePassShadowView);
-		CLightEntity::s_pShadowFrustumsCollector->emplace_back(pFr, this);
-	}
+	CollectShadowCascadeForOnePassTraversal(pFr);
 
 	bool bDoGSM = fGSMBoxSize != 0;
 	bool bDoNextLod = false;
@@ -517,6 +524,16 @@ bool CLightEntity::ProcessFrustum(int nLod, float fGSMBoxSize, float fDistanceFr
 		pFr->DrawFrustum(GetRenderer(), (GetCVars()->e_ShadowsFrustums == 1) ? 1000 : 1);
 
 	return bDoGSM;
+}
+
+void CLightEntity::CollectShadowCascadeForOnePassTraversal(ShadowMapFrustum* pFr)
+{
+	// collect shadow cascades for one-pass octree traversal
+	if (IsOnePassTraversalFrustum(pFr) && CLightEntity::s_pShadowFrustumsCollector)
+	{
+		assert(m_light.m_Flags & DLF_CASTSHADOW_MAPS && !pFr->pOnePassShadowView);
+		CLightEntity::s_pShadowFrustumsCollector->emplace_back(pFr, this);
+	}
 }
 
 float frac_my(float fVal, float fSnap)

@@ -20,23 +20,21 @@ struct CustomShadowMapFrustumData
 	AABB aabb;
 };
 
-
 struct SShadowAllocData
 {
-	int     m_lightID = -1;
-	uint16  m_blockID = 0xFFFF;
-	uint8   m_side;
+	int    m_lightID = -1;
+	uint16 m_blockID = 0xFFFF;
+	uint8  m_side;
 
-	void Clear() { m_blockID = 0xFFFF; m_lightID = -1; }
+	void Clear()        { m_blockID = 0xFFFF; m_lightID = -1; }
 	bool isFree() const { return m_blockID == 0xFFFF; }
 };
-
 
 struct ShadowMapFrustum : public CMultiThreadRefCount
 {
 	enum eFrustumType // NOTE: Be careful when modifying the enum as it is used for sorting frustums in SCompareByLightIds
 	{
-		e_GsmDynamic         = 0,
+		e_GsmDynamic         = 0, // normal sun shadow cascade or shadow from local light
 		e_GsmDynamicDistance = 1,
 		e_GsmCached          = 2,
 		e_HeightMapAO        = 3,
@@ -75,26 +73,26 @@ struct ShadowMapFrustum : public CMultiThreadRefCount
 
 public:
 	eFrustumType m_eFrustumType; // NOTE: adjust constructor if you add any variable before this
-
+	uint32       m_cachedShadowFrameId = 0;
 	Matrix44A    mLightProjMatrix;
 	Matrix44A    mLightViewMatrix;
 	Vec4         vFrustInfo;
 
 	//packer params
-	uint                            nPackID[OMNI_SIDES_NUM];
-	TRect_tpl<uint32>               shadowPoolPack[OMNI_SIDES_NUM];
+	uint              nPackID[OMNI_SIDES_NUM];
+	TRect_tpl<uint32> shadowPoolPack[OMNI_SIDES_NUM];
 
-	uint8                           nShadowPoolUpdateRate;                     // For time-sliced updates: Update rate in frames count
+	uint8             nShadowPoolUpdateRate;                                   // For time-sliced updates: Update rate in frames count
 
 	// Only one side in case of directional lights
-	std::bitset<OMNI_SIDES_NUM>     nOmniFrustumMask;                          // Mask of enabled sides
-	uint32                          nSideSampleMask = 0;                       // Mask of sides that participate in shadow casting
-	uint8                           nSideDrawnOnFrame[OMNI_SIDES_NUM] = { 0 }; // Congruence class of FrameID upon which side was last rendererd (modulo 255).
-	std::bitset<OMNI_SIDES_NUM>     nSideCacheMask;                            // In case of time-sliced updates: Bit-mask indicating whether or not a frusutm side is cached and valid and does not require updates.
-	std::bitset<OMNI_SIDES_NUM>     nOutdatedSideMask = 0xff;                  // Mask of out-of-date frustum sides
-	std::bitset<OMNI_SIDES_NUM>     nSideInvalidatedMask = 0xff;               // Mask of invalidated frustum sides for each GPU
+	std::bitset<OMNI_SIDES_NUM> nOmniFrustumMask;                              // Mask of enabled sides
+	uint32                      nSideSampleMask = 0;                           // Mask of sides that participate in shadow casting
+	uint8                       nSideDrawnOnFrame[OMNI_SIDES_NUM] = { 0 };     // Congruence class of FrameID upon which side was last rendererd (modulo 255).
+	std::bitset<OMNI_SIDES_NUM> nSideCacheMask;                                // In case of time-sliced updates: Bit-mask indicating whether or not a frusutm side is cached and valid and does not require updates.
+	std::bitset<OMNI_SIDES_NUM> nOutdatedSideMask = 0xff;                      // Mask of out-of-date frustum sides
+	std::bitset<OMNI_SIDES_NUM> nSideInvalidatedMask = 0xff;                   // Mask of invalidated frustum sides for each GPU
 
-	std::atomic<uint32>& GetSideSampleMask() { return *reinterpret_cast<std::atomic<uint32>*>(&this->nSideSampleMask); }
+	std::atomic<uint32>&       GetSideSampleMask()       { return *reinterpret_cast<std::atomic<uint32>*>(&this->nSideSampleMask); }
 	const std::atomic<uint32>& GetSideSampleMask() const { return *reinterpret_cast<const std::atomic<uint32>*>(&this->nSideSampleMask); }
 
 	// flags
@@ -102,11 +100,11 @@ public:
 
 	// if set to true - castersList contains all casters in light radius
 	// and all other members related only to single frustum projection case are undefined
-	bool   bOmniDirectionalShadow;
-	bool   bBlendFrustum;
-	float  fBlendVal;
+	bool  bOmniDirectionalShadow;
+	bool  bBlendFrustum;
+	float fBlendVal;
 
-	bool   bIsMGPUCopy;
+	bool  bIsMGPUCopy;
 
 	//sampling parameters
 	f32 fWidthS, fWidthT;
@@ -134,9 +132,9 @@ public:
 
 	//shadow renderer parameters - should be in separate structure
 	//atlas parameters
-	int  nTextureWidth;
-	int  nTextureHeight;
-	int  nShadowMapSize;
+	int                             nTextureWidth;
+	int                             nTextureHeight;
+	int                             nShadowMapSize;
 
 	int                             nResetID;
 	float                           fFrustrumSize;
@@ -239,8 +237,8 @@ public:
 	{
 		if (bUseShadowsPool)
 		{
-			pScale[0]  = float(nShadowMapSize)              / nTextureWidth; //SHADOWS_POOL_SZ 1024
-			pScale[1]  = float(nShadowMapSize)              / nTextureHeight;
+			pScale[0] = float(nShadowMapSize) / nTextureWidth;               //SHADOWS_POOL_SZ 1024
+			pScale[1] = float(nShadowMapSize) / nTextureHeight;
 			pOffset[0] = float(shadowPoolPack[nSide].Min.x) / nTextureWidth;
 			pOffset[1] = float(shadowPoolPack[nSide].Min.y) / nTextureHeight;
 		}
@@ -325,6 +323,11 @@ public:
 		return m_eFrustumType == e_GsmCached || m_eFrustumType == e_HeightMapAO;
 	}
 
+	bool IsDynamicGsmCascade() const
+	{
+		return (m_Flags & DLF_SUN) && (m_eFrustumType == e_GsmDynamic || m_eFrustumType == e_GsmDynamicDistance);
+	}
+
 	ILINE bool IntersectAABB(const AABB& bbox, bool* pAllIn) const
 	{
 		if (bOmniDirectionalShadow)
@@ -344,7 +347,7 @@ public:
 	{
 		if (bOmniDirectionalShadow)
 			return Distance::Point_PointSq(sp.center, vLightSrcRelPos + vProjTranslation) < sqr(fFarDist + sp.radius);
-		
+
 		uint8 res = 0;
 		if (bBlendFrustum)
 		{
@@ -368,10 +371,10 @@ public:
 		//FIX remove float arrays
 		Vec3 vert;
 		pRend->UnProject(sx, sy, sz,
-			&vert.x, &vert.y, &vert.z,
-			(float*)&mLightViewMatrix,
-			(float*)&mIden,
-			shadowViewport);
+		                 &vert.x, &vert.y, &vert.z,
+		                 (float*)&mLightViewMatrix,
+		                 (float*)&mIden,
+		                 shadowViewport);
 
 		return vert;
 	}
@@ -416,39 +419,39 @@ public:
 		ColorB c0 = cCascadeColors[nShadowMapLod % nColorCount];
 		{
 			pRendAux->DrawLine(
-				UnProject(0.0f, 0.0f, 0.0f, pRend), c0,
-				UnProject(0.0f, 0.0f, 1.0f, pRend), c0);
+			  UnProject(0.0f, 0.0f, 0.0f, pRend), c0,
+			  UnProject(0.0f, 0.0f, 1.0f, pRend), c0);
 
 			pRendAux->DrawLine(
-				UnProject(1.0f, 0.0f, 0.0f, pRend), c0,
-				UnProject(1.0f, 0.0f, 1.0f, pRend), c0);
+			  UnProject(1.0f, 0.0f, 0.0f, pRend), c0,
+			  UnProject(1.0f, 0.0f, 1.0f, pRend), c0);
 
 			pRendAux->DrawLine(
-				UnProject(1.0f, 1.0f, 0.0f, pRend), c0,
-				UnProject(1.0f, 1.0f, 1.0f, pRend), c0);
+			  UnProject(1.0f, 1.0f, 0.0f, pRend), c0,
+			  UnProject(1.0f, 1.0f, 1.0f, pRend), c0);
 
 			pRendAux->DrawLine(
-				UnProject(0.0f, 1.0f, 0.0f, pRend), c0,
-				UnProject(0.0f, 1.0f, 1.0f, pRend), c0);
+			  UnProject(0.0f, 1.0f, 0.0f, pRend), c0,
+			  UnProject(0.0f, 1.0f, 1.0f, pRend), c0);
 		}
 
 		for (int i = 0; i <= 1; i++)
 		{
 			pRendAux->DrawLine(
-				UnProject(0.0f, 0.0f, static_cast<float>(i), pRend), c0,
-				UnProject(1.0f, 0.0f, static_cast<float>(i), pRend), c0);
+			  UnProject(0.0f, 0.0f, static_cast<float>(i), pRend), c0,
+			  UnProject(1.0f, 0.0f, static_cast<float>(i), pRend), c0);
 
 			pRendAux->DrawLine(
-				UnProject(1.0f, 0.0f, static_cast<float>(i), pRend), c0,
-				UnProject(1.0f, 1.0f, static_cast<float>(i), pRend), c0);
+			  UnProject(1.0f, 0.0f, static_cast<float>(i), pRend), c0,
+			  UnProject(1.0f, 1.0f, static_cast<float>(i), pRend), c0);
 
 			pRendAux->DrawLine(
-				UnProject(1.0f, 1.0f, static_cast<float>(i), pRend), c0,
-				UnProject(0.0f, 1.0f, static_cast<float>(i), pRend), c0);
+			  UnProject(1.0f, 1.0f, static_cast<float>(i), pRend), c0,
+			  UnProject(0.0f, 1.0f, static_cast<float>(i), pRend), c0);
 
 			pRendAux->DrawLine(
-				UnProject(0.0f, 1.0f, static_cast<float>(i), pRend), c0,
-				UnProject(0.0f, 0.0f, static_cast<float>(i), pRend), c0);
+			  UnProject(0.0f, 1.0f, static_cast<float>(i), pRend), c0,
+			  UnProject(0.0f, 0.0f, static_cast<float>(i), pRend), c0);
 		}
 	}
 
@@ -474,12 +477,12 @@ public:
 		return bOmniDirectionalShadow ? FrustumPlanes[side] : gEnv->p3DEngine->GetRenderingCamera();
 	}
 
-	void                         GetMemoryUsage(ICrySizer* pSizer) const;
+	void GetMemoryUsage(ICrySizer* pSizer) const;
 
-	void                         SortRenderItemsForFrustumAsync(int side, struct SRendItem* pFirst, size_t nNumRendItems);
+	void SortRenderItemsForFrustumAsync(int side, struct SRendItem* pFirst, size_t nNumRendItems);
 
 	// Reserves a shadowpool slot
-	void                         PrepareForShadowPool(uint32 frameID, uint32 &numShadowPoolAllocsThisFrame, CPowerOf2BlockPacker& blockPack, TArray<SShadowAllocData>& shadowPoolAlloc, const SRenderLight& light, uint32 timeSlicedShadowUpdatesLimit = ~0, uint32 *timeSlicedShadowsUpdated = nullptr);
+	void                         PrepareForShadowPool(uint32 frameID, uint32& numShadowPoolAllocsThisFrame, CPowerOf2BlockPacker& blockPack, TArray<SShadowAllocData>& shadowPoolAlloc, const SRenderLight& light, uint32 timeSlicedShadowUpdatesLimit = ~0, uint32* timeSlicedShadowsUpdated = nullptr);
 	// For time-sliced updates: Returns a mask of per-side flags that hint whether or not the side should be updated
 	std::bitset<6>               GenerateTimeSlicedUpdateCacheMask(uint32 frameID) const;
 
