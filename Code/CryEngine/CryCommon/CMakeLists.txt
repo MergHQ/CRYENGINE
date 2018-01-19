@@ -1171,6 +1171,10 @@ install_headers(CrySystem CryThreading)
 			"CryAnimation/Examples/QueueFragment.cpp"
 			"CryAnimation/Examples/SetTag.cpp"
 			"CryAnimation/Examples/ControllerAnimationEvents.cpp"
+			"CryAnimation/Examples/AimIK.cpp"
+			"CryAnimation/Examples/LookIK.cpp"
+			"CryAnimation/Examples/OperatorQueue.cpp"
+			"CryAnimation/Examples/SetDesiredMotionParam.cpp"
 	)
 	
 if(OPTION_DOXYGEN_EXAMPLES)
