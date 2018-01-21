@@ -53,6 +53,7 @@ REGISTER_CVAR_AUTO(float, e_svoTI_AnalyticalOccludersSoftness, 0.5f, VF_NULL, "S
 REGISTER_CVAR_AUTO(int, e_svoRootless, !gEnv->IsEditor(), VF_NULL, "Limits the area covered by SVO. Limits number of tree levels and speedup the tracing.");
 REGISTER_CVAR_AUTO(float, e_svoTI_DistantSsaoAmount, 0.5f, VF_NULL, "Large scale SSAO intensity in the distance");
 REGISTER_CVAR_AUTO(float, e_svoTI_PointLightsMaxDistance, 20.f, VF_NULL, "Maximum distance at which point lights produce light bounces");
+REGISTER_CVAR_AUTO(float, e_svoTI_MaxSyncUpdateTime, 2.f, VF_NULL, "Limit the time (in seconds) allowed for synchronous voxelization (usually happens on level start)");
 
 #ifdef CVAR_CPP
 m_arrVars.Clear();
@@ -213,7 +214,8 @@ REGISTER_CVAR_AUTO(int, e_svoTI_Specular_FromDiff, 0, VF_NULL, "Compute specular
 REGISTER_CVAR_AUTO(int, e_svoTI_DynLights, 1, VF_NULL, "Allow single real-time indirect bounce from marked dynamic lights");
 REGISTER_CVAR_AUTO(int, e_svoTI_ForceGIForAllLights, 0, VF_NULL, "Force dynamic GI for all lights except ambient lights and sun\nThis allows to quickly get dynamic GI working in unprepared scenes");
 REGISTER_CVAR_AUTO(float, e_svoTI_ConstantAmbientDebug, 0, VF_NULL, "Replace GI computations with constant ambient color for GI debugging");
-REGISTER_CVAR_AUTO(int, e_svoTI_ShadowsFromSun, 0, VF_NULL, "Calculate sun shadows using SVO ray tracing\nNormally supposed to be used in combination with normal shadow maps");
+REGISTER_CVAR_AUTO(int, e_svoTI_ShadowsFromSun, 0, VF_NULL, "Calculate sun shadows using SVO ray tracing\nNormally supposed to be used in combination with normal shadow maps and screen space shadows");
+REGISTER_CVAR_AUTO(float, e_svoTI_ShadowsSoftness, 1.25f, VF_NULL, "Controls softness of ray traced shadows");
 REGISTER_CVAR_AUTO(int, e_svoTI_Troposphere_Active, 0, VF_EXPERIMENTAL, "Activates SVO atmospheric effects (completely replaces default fog computations)\nIt is necessary to re-voxelize the scene after activation");
 REGISTER_CVAR_AUTO(float, e_svoTI_Troposphere_Brightness, 0, VF_EXPERIMENTAL, "Controls intensity of atmospheric effects.");
 REGISTER_CVAR_AUTO(float, e_svoTI_Troposphere_Ground_Height, 0, VF_EXPERIMENTAL, "Minimum height for atmospheric effects");
@@ -242,7 +244,6 @@ REGISTER_CVAR_AUTO(int, e_svoTI_Reflect_Vox_Max, 100, VF_NULL, "Controls amount 
 REGISTER_CVAR_AUTO(int, e_svoTI_Reflect_Vox_MaxEdit, 10000, VF_NULL, "Controls amount of voxels allowed to refresh every frame during lights editing");
 REGISTER_CVAR_AUTO(int, e_svoTI_Reflect_Vox_Max_Overhead, 50, VF_NULL, "Controls amount of voxels allowed to refresh every frame");
 REGISTER_CVAR_AUTO(float, e_svoTI_RT_MaxDist, 0, VF_NULL, "Maximum distance for detailed mesh ray tracing prototype; applied only in case of maximum glossiness");
-REGISTER_CVAR_AUTO(float, e_svoTI_Shadow_Sev, 0.75f, VF_NULL, "Controls severity of shadow cones; smaller value gives softer shadows, but tends to over-occlusion");
 REGISTER_CVAR_AUTO(float, e_svoTI_Specular_Sev, 1, VF_NULL, "Controls severity of specular cones; this value limits the material glossiness");
 REGISTER_CVAR_AUTO(float, e_svoVoxDistRatio, 14.f, VF_NULL, "Limits the distance where real-time GPU voxelization used");
 REGISTER_CVAR_AUTO(int, e_svoVoxGenRes, 512, VF_NULL, "GPU voxelization dummy render target resolution");

@@ -25,7 +25,6 @@ public:
 	SAuxGeomRenderFlags SetRenderFlags(const SAuxGeomRenderFlags& renderFlags) final                                                                         { return SAuxGeomRenderFlags(); }
 	SAuxGeomRenderFlags GetRenderFlags() final                                                                                                               { return SAuxGeomRenderFlags(); }
 	
-	void                SetCamera(const CCamera& camera) final                                                                                               {}
 	const CCamera&      GetCamera() const final                                                                                                              { static CCamera camera; return camera; }
 
 	//! Set current display context for the following auxiliary rendering.

@@ -641,10 +641,19 @@ struct ISkeletonAnim
 	virtual void   SetTrackViewMixingWeight(uint32 layer, f32 weight) = 0;
 	virtual uint32 GetTrackViewStatus() const = 0;
 
-	// Motion playback and blending
-	virtual bool StartAnimation(const char* szAnimName0, const CryCharAnimationParams& Params) = 0;
+	//! Starts playing back the specified animation in the layer specified in the provided parameters.
+	//! \param szAnimName0 Name of the animation we want to play back, without the .caf or .i_caf suffixes.
+	//! \param params Parameters that describe how the animation should be started, such as playback speed.
+	//! \par Example
+	//! \include CryAnimation/Examples/StartAnimation.cpp
+	virtual bool StartAnimation(const char* szAnimName0, const CryCharAnimationParams& params) = 0;
+	//! Starts playing back the specified animation in the layer specified in the provided parameters.
+	//! \param id Unique animation identifier, useful to avoid looking up animation by name on every playback
+	//! \param params Parameters that describe how the animation should be started, such as playback speed.
 	virtual bool StartAnimationById(int32 id, const CryCharAnimationParams& Params) = 0;
+	//! Stops playback of the current animation in the specified layer, and specifies the time during which we will blend out
 	virtual bool StopAnimationInLayer(int32 nLayer, f32 BlendOutTime) = 0;
+	//! Seizes playback of animations in all layers
 	virtual bool StopAnimationsAllLayers() = 0;
 
 	//! Find an animation with a given user token.
@@ -676,7 +685,9 @@ struct ISkeletonAnim
 	//! \note This does NOT override the overall animation speed, but it multiplies it.
 	virtual f32 GetLayerPlaybackScale(uint32 nLayer) const = 0;
 
-	//! Updates the given parameter (will perform clamping and clearing as needed).
+	//! Updates the given motion parameter in order to select / blend between animations in blend spaces. Will perform clamping and clearing as needed.
+	//! \par Example
+	//! \include CryAnimation/Examples/SetDesiredMotionParam.cpp
 	virtual void SetDesiredMotionParam(EMotionParamID id, f32 value, f32 frametime) = 0;
 	virtual bool GetDesiredMotionParam(EMotionParamID id, float& value) const = 0;
 
@@ -706,6 +717,7 @@ struct ISkeletonAnim
 
 	virtual f32                            GetUserData(int i) const = 0;
 
+	//! Pushes a pose modifier into the specified layer, ensuring that it will be executed next frame
 	virtual bool                           PushPoseModifier(uint32 layer, IAnimationPoseModifierPtr poseModifier, const char* name = NULL) = 0;
 
 	virtual IAnimationPoseModifierSetupPtr      GetPoseModifierSetup() = 0;
@@ -826,9 +838,21 @@ struct ISkeletonPose : public ISkeletonPhysics
 	// -------------------------------------------------------------------------
 	// Pose Modifiers (soon obsolete)
 	// -------------------------------------------------------------------------
+	//! Gets the pose modifier used to target gun aiming at a specific world coordinate
+	//! \par Example (Aim-IK)
+	//! \include CryAnimation/Examples/AimIK.cpp
 	virtual IAnimationPoseBlenderDir*       GetIPoseBlenderAim() = 0;
+	//! Gets the pose modifier used to target gun aiming at a specific world coordinate
+	//! \par Example (Aim-IK)
+	//! \include CryAnimation/Examples/AimIK.cpp
 	virtual const IAnimationPoseBlenderDir* GetIPoseBlenderAim() const = 0;
+	//! Gets the pose modifier used to target look aim at a specific world coordinate
+	//! \par Example (Look-IK)
+	//! \include CryAnimation/Examples/LookIK.cpp
 	virtual IAnimationPoseBlenderDir*       GetIPoseBlenderLook() = 0;
+	//! Gets the pose modifier used to target look aim at a specific world coordinate
+	//! \par Example (Look-IK)
+	//! \include CryAnimation/Examples/LookIK.cpp
 	virtual const IAnimationPoseBlenderDir* GetIPoseBlenderLook() const = 0;
 	virtual void                            ApplyRecoilAnimation(f32 fDuration, f32 fKinematicImpact, f32 fKickIn, uint32 arms = 3) = 0;
 	virtual uint32                          SetHumanLimbIK(const Vec3& wgoal, const char* limb) = 0;

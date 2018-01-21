@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -98,28 +98,28 @@ struct SRenderNodeTempData
 {
 	struct SUserData
 	{
-		int                             lastSeenFrame[MAX_RECURSION_LEVELS]; // must be first, see IRenderNode::SetDrawFrame()
-		int                             lastSeenShadowFrame;                 // When was last rendered to shadow
-		CRenderObject*                  arrPermanentRenderObjects[MAX_STATOBJ_LODS_NUM];
-		float                           arrLodLastTimeUsed[MAX_STATOBJ_LODS_NUM];
-		Matrix34                        objMat;
-		OcclusionTestClient             m_OcclState;
-		struct IFoliage*                m_pFoliage;
-		struct IClipVolume*             m_pClipVolume;
+		int                 lastSeenFrame[MAX_RECURSION_LEVELS];             // must be first, see IRenderNode::SetDrawFrame()
+		int                 lastSeenShadowFrame;                             // When was last rendered to shadow
+		CRenderObject*      arrPermanentRenderObjects[MAX_STATOBJ_LODS_NUM];
+		float               arrLodLastTimeUsed[MAX_STATOBJ_LODS_NUM];
+		Matrix34            objMat;
+		OcclusionTestClient m_OcclState;
+		struct IFoliage*    m_pFoliage;
+		struct IClipVolume* m_pClipVolume;
 
-		Vec4                            vEnvironmentProbeMults;
-		uint32                          nCubeMapId                  : 16;
-		uint32                          nCubeMapIdCacheClearCounter : 16;
-		uint32                          nWantedLod                  : 8;
-		uint32                          bTerrainColorWasUsed        : 1;
-		IRenderNode*                    pOwnerNode;
-		uint32                          nStatObjLastModificationId;
+		Vec4                vEnvironmentProbeMults;
+		uint32              nCubeMapId                  : 16;
+		uint32              nCubeMapIdCacheClearCounter : 16;
+		uint32              nWantedLod                  : 8;
+		uint32              bTerrainColorWasUsed        : 1;
+		IRenderNode*        pOwnerNode;
+		uint32              nStatObjLastModificationId;
 	};
 
 public:
-	SUserData userData;
+	SUserData           userData;
 
-	CryRWLock arrPermanentObjectLock[MAX_STATOBJ_LODS_NUM];
+	CryRWLock           arrPermanentObjectLock[MAX_STATOBJ_LODS_NUM];
 
 	std::atomic<uint32> hasValidRenderObjects;
 	std::atomic<uint32> invalidRenderObjects;
@@ -129,11 +129,11 @@ public:
 	~SRenderNodeTempData() { Free(); };
 
 	CRenderObject* GetRenderObject(int nLod); /* thread-safe */
-	void Free();
-	void FreeRenderObjects(); /* non-thread-safe */
-	void InvalidateRenderObjectsInstanceData();
+	void           Free();
+	void           FreeRenderObjects(); /* non-thread-safe */
+	void           InvalidateRenderObjectsInstanceData();
 
-	void OffsetPosition(const Vec3& delta)
+	void           OffsetPosition(const Vec3& delta)
 	{
 		userData.objMat.SetTranslation(userData.objMat.GetTranslation() + delta);
 	}
@@ -141,8 +141,8 @@ public:
 	void MarkForAutoDelete()
 	{
 		userData.lastSeenFrame[0] =
-		userData.lastSeenFrame[1] =
-		userData.lastSeenShadowFrame = 0;
+		  userData.lastSeenFrame[1] =
+		    userData.lastSeenShadowFrame = 0;
 	}
 };
 
@@ -233,7 +233,7 @@ protected:
  *
  * To visualize objects in a world CRYENGINE defines the concept of render nodes and render elements. Render nodes represent general objects in the 3D engine. Among other things they are used to build a hierarchy for visibility culling, allow physics interactions (optional) and rendering.
  * For actual rendering they add themselves to the renderer (with the help of render objects as you can see in the sample code below) passing an appropriate render element which implements the actual drawing of the object.
-*/
+ */
 struct IRenderNode : public IShadowCaster
 {
 	enum EInternalFlags : uint8
@@ -314,8 +314,8 @@ public:
 	virtual void Hide(bool bHide) { SetRndFlags(ERF_HIDDEN, bHide); }
 
 	//! Gives access to object components.
-	virtual IStatObj*  GetEntityStatObj(unsigned int nSubPartId = 0, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false);
-	virtual void       SetEntityStatObj(IStatObj* pStatObj, const Matrix34A* pMatrix = NULL) {}
+	virtual IStatObj* GetEntityStatObj(unsigned int nSubPartId = 0, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false);
+	virtual void      SetEntityStatObj(IStatObj* pStatObj, const Matrix34A* pMatrix = NULL) {}
 
 	//! Retrieve access to the character instance of the the RenderNode
 	virtual ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) { return 0; }
@@ -543,9 +543,9 @@ public:
 		InvalidatePermanentRenderObject();
 	}
 	// Set a new owner entity
-	virtual void   SetOwnerEntity(IEntity* pEntity) { assert(!"Not supported by this object type");  }
+	virtual void     SetOwnerEntity(IEntity* pEntity) { assert(!"Not supported by this object type");  }
 	// Retrieve a pointer to the entity who owns this render node.
-	virtual IEntity* GetOwnerEntity() const         { return nullptr; }
+	virtual IEntity* GetOwnerEntity() const           { return nullptr; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Variables
@@ -607,6 +607,9 @@ public:
 	//! The high 24 bits store the actual ID of the object. This need not be the same as CryGUID,
 	//! though the CryGUID could be used to generate it
 	uint32 m_nEditorSelectionID;
+
+	//! Used to request rendering of the object into cached shadow map
+	uint32 m_cachedShadowFrameId = 0;
 };
 
 inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)
@@ -701,7 +704,7 @@ struct ILightSource : public IRenderNode
 {
 	// <interfuscator:shuffle>
 	virtual void                     SetLightProperties(const SRenderLight& light) = 0;
-	virtual SRenderLight&                 GetLightProperties() = 0;
+	virtual SRenderLight&            GetLightProperties() = 0;
 	virtual const Matrix34&          GetMatrix() = 0;
 	virtual struct ShadowMapFrustum* GetShadowFrustum(int nId = 0) = 0;
 	virtual bool                     IsLightAreasVisible() = 0;
@@ -781,39 +784,7 @@ struct IVoxelObject : public IRenderNode
 	// </interfuscator:shuffle>
 };
 
-//! IFogVolumeRenderNode is an interface to the Fog Volume Render Node object.
-struct SFogVolumeProperties
-{
-	// Common parameters.
-	// Center position & rotation values are taken from the entity matrix.
-
-	int    m_volumeType;
-	Vec3   m_size;
-	ColorF m_color;
-	bool   m_useGlobalFogColor;
-	bool   m_ignoresVisAreas;
-	bool   m_affectsThisAreaOnly;
-	float  m_globalDensity;
-	float  m_densityOffset;
-	float  m_softEdges;
-	float  m_fHDRDynamic;               //!< 0 to get the same results in LDR, <0 to get darker, >0 to get brighter.
-	float  m_nearCutoff;
-
-	float  m_heightFallOffDirLong;        //!< Height based fog specifics.
-	float  m_heightFallOffDirLati;        //!< Height based fog specifics.
-	float  m_heightFallOffShift;          //!< Height based fog specifics.
-	float  m_heightFallOffScale;          //!< Height based fog specifics.
-
-	float  m_rampStart;
-	float  m_rampEnd;
-	float  m_rampInfluence;
-	float  m_windInfluence;
-	float  m_densityNoiseScale;
-	float  m_densityNoiseOffset;
-	float  m_densityNoiseTimeFrequency;
-	Vec3   m_densityNoiseFrequency;
-	Vec3   m_emission;
-};
+struct SFogVolumeProperties;
 
 struct IFogVolumeRenderNode : public IRenderNode
 {
@@ -831,6 +802,40 @@ struct IFogVolumeRenderNode : public IRenderNode
 
 	virtual void            FadeGlobalDensity(float fadeTime, float newGlobalDensity) = 0;
 	// </interfuscator:shuffle>
+};
+
+//! IFogVolumeRenderNode is an interface to the Fog Volume Render Node object.
+struct SFogVolumeProperties
+{
+	// Common parameters.
+	// Center position & rotation values are taken from the entity matrix.
+
+	int m_volumeType = IFogVolumeRenderNode::eFogVolumeType_Box;
+	Vec3   m_size = Vec3(1.f);
+	ColorF m_color = ColorF(1, 1, 1, 1);
+	bool   m_useGlobalFogColor = false;
+	bool   m_ignoresVisAreas = false;
+	bool   m_affectsThisAreaOnly = true;
+	float  m_globalDensity = 1.f;
+	float  m_densityOffset = 0.f;
+	float  m_softEdges = 1.f;
+	float  m_fHDRDynamic = 0.f;               //!< 0 to get the same results in LDR, <0 to get darker, >0 to get brighter.
+	float  m_nearCutoff = 0.f;
+
+	float  m_heightFallOffDirLong = 0.f;        //!< Height based fog specifics.
+	float  m_heightFallOffDirLati = 0.f;        //!< Height based fog specifics.
+	float  m_heightFallOffShift = 0.f;          //!< Height based fog specifics.
+	float  m_heightFallOffScale = 1.f;          //!< Height based fog specifics.
+
+	float  m_rampStart = 0.f;
+	float  m_rampEnd = 50.f;
+	float  m_rampInfluence = 0.f;
+	float  m_windInfluence = 1.f;
+	float  m_densityNoiseScale = 0.f;
+	float  m_densityNoiseOffset = 0.f;
+	float  m_densityNoiseTimeFrequency = 0.f;
+	Vec3   m_densityNoiseFrequency = Vec3(1.f);
+	Vec3   m_emission = Vec3(1.f);
 };
 
 struct SDecalProperties

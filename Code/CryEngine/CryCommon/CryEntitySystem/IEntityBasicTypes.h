@@ -194,6 +194,7 @@ enum EEntityEvent
 
 	//! Called when an animation event (placed on animations in editor) is encountered.
 	//! nParam[0] = AnimEventInstance* pEventParameters.
+	//! nParam[1] = ICharacterInstance* that this event occurred on
 	ENTITY_EVENT_ANIM_EVENT,
 
 	//! Called from ScriptBind_Entity when script requests to set collidermode.

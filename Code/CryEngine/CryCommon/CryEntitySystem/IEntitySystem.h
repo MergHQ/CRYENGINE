@@ -361,6 +361,7 @@ struct IEntitySystem
 	//! \param params		Entity descriptor structure that describes what kind of entity needs to be spawned.
 	//! \param bAutoInit	If true, automatically initialize entity.
 	//! \return If successful, the spawned entity, otherwise nullptr.
+	//! \par Example
 	//! \include CryEntitySystem/Examples/SpawnEntity.cpp
 	virtual IEntity* SpawnEntity(SEntitySpawnParams& params, bool bAutoInit = true) = 0;
 
@@ -373,11 +374,15 @@ struct IEntitySystem
 	//! Retrieves entity from its unique id.
 	//! \param id Unique ID of the entity required.
 	//! \return Entity if one with such an ID exists, and NULL if no entity could be matched with the id
+	//! \par Example
+	//! \include CryEntitySystem/Examples/GetEntity.cpp
 	virtual IEntity* GetEntity(EntityId id) const = 0;
 
 	//! Find first entity with given name.
 	//! \param sEntityName Name to look for.
 	//! \return The entity if found, 0 if failed.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/FindEntityByName.cpp
 	virtual IEntity* FindEntityByName(const char* sEntityName) const = 0;
 
 	//! \note Might be needed to call before loading of entities to be sure we get the requested IDs.
@@ -397,6 +402,8 @@ struct IEntitySystem
 
 	//! Gets a entity iterator.
 	//! This iterator interface can be used to traverse all the entities in this entity system.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/TraverseEntities.cpp
 	virtual IEntityItPtr GetEntityIterator() = 0;
 
 	//! Sends the same event to all entities in Entity System.

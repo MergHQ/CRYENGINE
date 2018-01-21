@@ -10,6 +10,7 @@ void SpawnEntity(const Matrix34& initialWorldTransformation)
 	spawnParameters.qRotation = Quat(initialWorldTransformation);
 	// Specify scale
 	spawnParameters.vScale = initialWorldTransformation.GetScale();
+
 	// Now spawn the entity in the world
 	if (IEntity* pEntity = gEnv->pEntitySystem->SpawnEntity(spawnParameters))
 	{

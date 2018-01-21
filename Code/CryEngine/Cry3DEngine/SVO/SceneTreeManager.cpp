@@ -217,10 +217,18 @@ void CSvoManager::Render()
 
 			if (gSvoEnv->m_svoFreezeTime > 0)
 			{
+				// perform synchronous SVO update, usually happens in first frames after level loading
 				while (gSvoEnv->m_svoFreezeTime > 0)
 				{
 					gSvoEnv->Render();
 					gEnv->pSystem->GetStreamEngine()->Update();
+
+					if ((gEnv->pTimer->GetAsyncCurTime() - gSvoEnv->m_svoFreezeTime) > GetCVars()->e_svoTI_MaxSyncUpdateTime)
+					{
+						// prevent possible freeze in case of SVO pool overflow
+						break;
+					}
+
 					CrySleep(5);
 				}
 

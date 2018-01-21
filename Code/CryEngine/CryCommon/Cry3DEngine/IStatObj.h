@@ -201,8 +201,7 @@ struct IStreamable
 	uint32                m_nStatsInUse      : 1;
 };
 
-// Summary:
-//     Interface to hold static object data
+//! Represents a static object that can be rendered in the scene, represented by the .CGF format
 struct IStatObj : IMeshObj, IStreamable
 {
 	//! Loading flags.
