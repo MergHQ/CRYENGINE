@@ -252,7 +252,7 @@ protected:
 	  INIT_SVO_CVAR(float, e_svoTI_Troposphere_CloudGenTurb_Scale); \
 	  INIT_SVO_CVAR(float, e_svoTI_Troposphere_Density);            \
 	  INIT_SVO_CVAR(float, e_svoTI_RT_MaxDist);                     \
-	  INIT_SVO_CVAR(float, e_svoTI_Shadow_Sev);                     \
+	  INIT_SVO_CVAR(float, e_svoTI_ShadowsSoftness);                \
 	  INIT_SVO_CVAR(float, e_svoTI_Specular_Sev);                   \
 	  INIT_SVO_CVAR(float, e_svoTI_SSAOAmount);                     \
 	  INIT_SVO_CVAR(float, e_svoTI_PortalsDeform);                  \

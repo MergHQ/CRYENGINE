@@ -508,7 +508,7 @@ void CalculateDetailSSShadow(
 		const float sceneTransmittance = 0;
 #endif
 
-		float surfaceDensity = saturate((rayDepth - sceneDepth) / lerp(0.005f, .25f, sceneTransmittance > 0)) * saturate(rayDepth < sceneDepth + rayDepth * .03);
+		float surfaceDensity = saturate((rayDepth - sceneDepth) / lerp(0.005f, .25f, sceneTransmittance > 0)) * saturate(rayDepth < sceneDepth + rayDepth * .03) * (sceneTransmittance ? .75f : 1.f);
 
 		fInSSS = min(fInSSS, 1 - surfaceDensity);
 

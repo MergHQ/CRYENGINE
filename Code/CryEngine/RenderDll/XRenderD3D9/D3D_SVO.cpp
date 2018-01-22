@@ -1243,7 +1243,7 @@ bool CSvoRenderer::SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* 
 
 	case ECGP_PB_SvoParams0:
 		{
-			sData[0].f[0] = pSR->e_svoTI_Shadow_Sev;
+			sData[0].f[0] = 1.f / max(pSR->e_svoTI_ShadowsSoftness, 0.01f);
 			sData[0].f[1] = pSR->e_svoTI_Diffuse_Spr;
 			sData[0].f[2] = pSR->e_svoTI_DiffuseBias;
 
