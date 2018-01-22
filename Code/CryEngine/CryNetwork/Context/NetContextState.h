@@ -477,7 +477,7 @@ private:
 #else
 	typedef std::unordered_map<EntityId, SNetObjectID, stl::hash_uint32, std::equal_to<uint32>, STLMementoAllocator<std::pair<const EntityId, SNetObjectID>>> TNetIDMap;
 #endif
-	std::auto_ptr<TNetIDMap> m_pNetIDs;
+	std::unique_ptr<TNetIDMap> m_pNetIDs;
 
 	CTimeValue               m_localPhysicsTime;
 
@@ -492,7 +492,7 @@ private:
 	EntityId m_spawnedObjectId;
 
 	typedef std::list<SNetIntBreakDescription, STLMementoAllocator<SNetIntBreakDescription>> TNetIntBreakDescriptionList;
-	std::auto_ptr<TNetIntBreakDescriptionList> m_pLoggedBreakage;
+	std::unique_ptr<TNetIntBreakDescriptionList> m_pLoggedBreakage;
 
 	// called by the view when the object is really destroyed remotely
 	// (so we can wait for all objects before resetting)

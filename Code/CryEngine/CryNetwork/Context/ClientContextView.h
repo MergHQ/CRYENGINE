@@ -207,7 +207,7 @@ private:
 	std::set<EntityId> m_predictedSpawns;
 
 #if ENABLE_DEBUG_KIT
-	std::auto_ptr<CNetVis> m_pNetVis;
+	std::unique_ptr<CNetVis> m_pNetVis;
 	float                  m_startUpdate;
 	Vec3                   m_curWorldPos;
 #endif

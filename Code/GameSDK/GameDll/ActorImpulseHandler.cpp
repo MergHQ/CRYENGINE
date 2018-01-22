@@ -66,7 +66,7 @@ bool CActorImpulseHandler::SImpulseSet::MatchesHitInfo(const HitInfo& hitInfo) c
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-struct CActorImpulseHandler::SFindMatchingSet : public std::unary_function<bool, const SImpulseSet&>
+struct CActorImpulseHandler::SFindMatchingSet
 {
 	SFindMatchingSet(const HitInfo& hitInfo) : hitInfo(hitInfo) {}
 

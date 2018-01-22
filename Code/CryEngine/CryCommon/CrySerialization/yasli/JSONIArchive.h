@@ -76,7 +76,7 @@ private:
 	typedef std::vector<Level> Stack;
 	Stack stack_;
 
-	std::auto_ptr<MemoryReader> reader_;
+	std::unique_ptr<MemoryReader> reader_;
 	Token token_;
 	std::vector<char> unescapeBuffer_;
 	string filename_;

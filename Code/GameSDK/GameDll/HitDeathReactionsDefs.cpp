@@ -227,7 +227,7 @@ void SReactionParams::SReactionAnim::RequestNextAnim(const IAnimationSet* pAnimS
 				// the random generator. Should be deterministic across the network.
 				// This shuffling avoids playing the same animation twice in sequence
 				SRandomGeneratorFunct randomFunctor(g_pGame->GetHitDeathReactionsSystem().GetRandomGenerator());
-				std::random_shuffle(animCRCs.begin(), animCRCs.end() - 1, randomFunctor);
+				std::shuffle(animCRCs.begin(), animCRCs.end() - 1, randomFunctor);
 				std::iter_swap(animCRCs.begin(), animCRCs.end() - 1);
 
 				m_iNextAnimIndex = 0;

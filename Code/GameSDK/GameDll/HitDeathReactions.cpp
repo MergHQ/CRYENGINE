@@ -264,7 +264,7 @@ protected:
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-struct CHitDeathReactions::SPredFindValidReaction : public std::unary_function<bool, const SReactionParams&>
+struct CHitDeathReactions::SPredFindValidReaction
 {
 	SPredFindValidReaction(const CHitDeathReactions& owner, const HitInfo& hitInfo, float fCausedDamage = 0.0f) : m_owner(owner), m_hitInfo(hitInfo), m_fCausedDamage(fCausedDamage) {}
 

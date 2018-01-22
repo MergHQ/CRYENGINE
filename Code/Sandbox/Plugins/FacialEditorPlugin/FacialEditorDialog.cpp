@@ -1105,7 +1105,7 @@ struct LoadGroupFileSkeletonAnimationEntry
 	string animationName;
 	float  time;
 };
-struct LoadGroupFileSoundEntryExistingPositionOrderingPredicate : public std::binary_function<bool, LoadGroupFileSoundEntry, LoadGroupFileSoundEntry>
+struct LoadGroupFileSoundEntryExistingPositionOrderingPredicate
 {
 	bool operator()(const LoadGroupFileSoundEntry& left, const LoadGroupFileSoundEntry& right) const
 	{

@@ -583,7 +583,7 @@ void NSH::NTransfer::CInterreflectionTransfer::ComputeDirectPassMultipleThreadin
 	for(std::vector<TRayResultVec, CSHAllocator<TRayResultVec> >::iterator rayIter = threadRayResults.begin(); rayIter != cThreadEnd; ++rayIter)
 		(*rayIter).reserve(50);//reserve for 50 hits for each thread
 	//clone configurators for processing ray casting results
-	std::vector<ITransferConfiguratorPtr, CSHAllocator<> > threadConfigurators(crParameters.rayCastingThreads);	
+	std::vector<ITransferConfiguratorPtr, CSHAllocator<ITransferConfiguratorPtr> > threadConfigurators(crParameters.rayCastingThreads);	
 	for(int i=0; i<crParameters.rayCastingThreads; ++i)
 		threadConfigurators[i] = crConfigurator.Clone();
 

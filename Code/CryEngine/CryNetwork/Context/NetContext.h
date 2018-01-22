@@ -233,8 +233,8 @@ private:
 	INetContextListenerPtr       m_pAspectBandwidthDebugger;
 
 #if SERVER_FILE_SYNC_MODE
-	std::auto_ptr<CSyncedFileSet> m_pFileSet;
-	std::auto_ptr<CSyncedFilePak> m_pFilePak;
+	std::unique_ptr<CSyncedFileSet> m_pFileSet;
+	std::unique_ptr<CSyncedFilePak> m_pFilePak;
 #endif
 
 	// this context's session id

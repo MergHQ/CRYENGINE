@@ -41,7 +41,7 @@ void CRandomNumberDeck::Shuffle()
 
 	if(!m_deck.empty())
 	{
-		std::random_shuffle(m_deck.begin(), m_deck.end(), m_randomIntGenerator);
+		std::shuffle(m_deck.begin(), m_deck.end(), m_randomIntGenerator);
 	}
 }
 

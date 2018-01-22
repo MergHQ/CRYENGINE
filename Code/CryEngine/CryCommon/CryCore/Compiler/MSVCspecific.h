@@ -50,7 +50,8 @@
 #endif
 
 #if _MSVC_LANG > 201402L
-#define CRY_DEPRECATED(message) [[deprecated(message)]]
+//#define CRY_DEPRECATED(message) [[deprecated(message)]] // This declaration still doesn't compile always on C++17
+#define CRY_DEPRECATED(message) __declspec(deprecated(message))
 #else
 #define CRY_DEPRECATED(message) __declspec(deprecated(message))
 #endif

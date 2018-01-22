@@ -15,6 +15,7 @@
  *********************************************************************/
 
 #include "StdAfx.h"
+#include <random>
 #include "ScriptBind_AI.h"
 #include <CrySystem/ISystem.h>
 #include <CryAISystem/IAISystem.h>
@@ -3584,7 +3585,9 @@ int CScriptBind_AI::FindObjectOfType(IFunctionHandler* pH)
 
 		if (chooseRandom && !randomObjs.empty())
 		{
-			std::random_shuffle(randomObjs.begin(), randomObjs.end());
+			static std::mt19937 urng(std::random_device{}());
+			std::shuffle(randomObjs.begin(), randomObjs.end(), urng);
+
 			pFoundObject = randomObjs[0];
 		}
 
