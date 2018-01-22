@@ -510,7 +510,7 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const IRenderV
 
 		// Compile render element specific data.
 		m_bCustomRenderElement = true;
-		const bool bCompiled = m_pRenderElement->Compile(pRenderObject,pRenderView);
+		const bool bCompiled = m_pRenderElement->Compile(pRenderObject, pRenderView, updateInstanceDataOnly);
 		m_bIncomplete = !bCompiled;
 
 		return bCompiled;

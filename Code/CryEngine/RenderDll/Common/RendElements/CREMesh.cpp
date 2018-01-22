@@ -140,7 +140,7 @@ InputLayoutHandle CREMeshImpl::GetVertexFormat() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CREMeshImpl::Compile(CRenderObject* pObj,CRenderView *pRenderView)
+bool CREMeshImpl::Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	if (!m_pRenderMesh)
 		return false;

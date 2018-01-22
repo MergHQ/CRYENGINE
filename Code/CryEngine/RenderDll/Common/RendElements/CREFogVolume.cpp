@@ -158,7 +158,7 @@ CREFogVolume::~CREFogVolume()
 	}
 }
 
-bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView)
+bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	if (!m_pCompiledObject)
 	{
