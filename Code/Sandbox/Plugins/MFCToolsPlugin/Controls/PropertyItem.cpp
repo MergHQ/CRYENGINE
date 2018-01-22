@@ -2351,7 +2351,7 @@ void CPropertyItem::SetValue(const char* sValue, bool bRecordUndo, bool bForceMo
 	bool bModified = m_bForceModified || bForceModified || m_value.Compare(value) != 0;
 	bool bStoreUndo = (m_value.Compare(value) != 0 || bForceModified) && bRecordUndo;
 
-	std::auto_ptr<CUndo> undo;
+	std::unique_ptr<CUndo> undo;
 	if (bStoreUndo && !CUndo::IsRecording())
 	{
 		if (!m_propertyCtrl->CallUndoFunc(this))

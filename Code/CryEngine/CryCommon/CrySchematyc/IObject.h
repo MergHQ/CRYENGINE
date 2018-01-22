@@ -155,7 +155,7 @@ struct IObject
 	virtual void*                         GetCustomData() const = 0;
 	virtual ESimulationMode               GetSimulationMode() const = 0;
 
-	virtual bool                          SetSimulationMode(ESimulationMode simulationMode, EObjectSimulationUpdatePolicy updatePolicy, bool bStartSimulation) = 0;
+	virtual bool                          SetSimulationMode(ESimulationMode simulationMode, EObjectSimulationUpdatePolicy updatePolicy) = 0;
 	virtual void                          ProcessSignal(const SObjectSignal& signal) = 0;
 	virtual void                          StopAction(CAction& action) = 0; // #SchematycTODO : We need a better way for actions to signal that they're done! Perhaps it would be best to pass a callback?
 

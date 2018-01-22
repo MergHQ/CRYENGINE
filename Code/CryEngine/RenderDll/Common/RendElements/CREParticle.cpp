@@ -499,8 +499,15 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, int& nList,
 		nList = EFSLIST_GENERAL;
 }
 
-bool CREParticle::Compile(CRenderObject* pRenderObject,CRenderView *pRenderView)
+bool CREParticle::Compile(CRenderObject* pRenderObject, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
+	if (updateInstanceDataOnly)
+	{
+		// Fast path
+		PrepareDataToRender(pRenderView, pRenderObject);
+		return true;
+	}
+
 	const bool isPulledVertices = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_USE_VERTEX_PULL_MODEL) != 0;
 	const bool isPointSprites = (pRenderObject->m_ObjFlags & FOB_POINT_SPRITE) != 0;
 	const bool bVolumeFog = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_VOLUME_FOG) != 0;
@@ -543,10 +550,10 @@ bool CREParticle::Compile(CRenderObject* pRenderObject,CRenderView *pRenderView)
 		stateDesc.primitiveType = eptTriangleList;
 	}
 	else if (isPulledVertices)
-		{
+	{
 		stateDesc.vertexFormat = EDefaultInputLayouts::Empty;
 		if (isPointSprites)
-			{
+		{
 			stateDesc.primitiveType = eptTriangleList;
 			stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_SPRITE];
 		}
@@ -621,7 +628,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject,CRenderView *pRenderView)
 		if (desc.renderState & OS_NODEPTH_TEST)
 			psoDesc.m_RenderState |= GS_NODEPTHTEST;
 	};
-	
+
 	bool bCompiled = true;
 	bCompiled &= graphicsPipeline.GetSceneForwardStage()->CreatePipelineState(stateDesc, pGraphicsPSO, CSceneForwardStage::ePass_Forward, customForwardState);
 	m_pCompiledParticle->m_pGraphicsPSOs[uint(EParticlePSOMode::NoLigthing)] = pGraphicsPSO;
@@ -647,9 +654,12 @@ bool CREParticle::Compile(CRenderObject* pRenderObject,CRenderView *pRenderView)
 	bCompiled &= graphicsPipeline.GetSceneCustomStage()->CreatePipelineState(stateDesc, CSceneCustomStage::ePass_DebugViewWireframe, pGraphicsPSO);
 	m_pCompiledParticle->m_pGraphicsPSOs[uint(EParticlePSOMode::DebugWireframe)] = pGraphicsPSO;
 
+	if (!bCompiled)
+		return false;
+
 	if (bVolumeFog)
 	{
-		stateDesc.objectRuntimeMask &= ~(g_HWSR_MaskBit[HWSR_LIGHTVOLUME0]|g_HWSR_MaskBit[HWSR_DEBUG0]); // remove unneeded flags.
+		stateDesc.objectRuntimeMask &= ~(g_HWSR_MaskBit[HWSR_LIGHTVOLUME0] | g_HWSR_MaskBit[HWSR_DEBUG0]); // remove unneeded flags.
 
 		stateDesc.shaderItem.m_nTechnique = TECHNIQUE_VOL_FOG; // particles are always rendered with vol fog technique in vol fog pass.
 
@@ -660,7 +670,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject,CRenderView *pRenderView)
 	const ColorF glowParam = pShaderResources->GetFinalEmittance();
 	const SRenderObjData& objectData = *pRenderObject->GetObjData();
 	m_pCompiledParticle->m_glowParams = Vec4(glowParam.r, glowParam.g, glowParam.b, 0.0f);
-	
+
 	m_pCompiledParticle->m_pShaderDataCB->UpdateBuffer(objectData.m_pParticleShaderData, sizeof(*objectData.m_pParticleShaderData));
 
 	CDeviceResourceSetDesc perInstanceExtraResources(graphicsPipeline.GetDefaultInstanceExtraResources(), nullptr, nullptr);
@@ -670,7 +680,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject,CRenderView *pRenderView)
 		shaderDataIdx, m_pCompiledParticle->m_pShaderDataCB,
 		EShaderStage_Vertex | EShaderStage_Hull | EShaderStage_Domain | EShaderStage_Pixel);
 	if (isGpuParticles)
-	{		
+	{
 		perInstanceExtraResources.SetBuffer(
 			EReservedTextureSlot_GpuParticleStream,
 			&m_pGpuRuntime->GetContainer()->GetDefaultParticleDataBuffer(),
@@ -681,7 +691,9 @@ bool CREParticle::Compile(CRenderObject* pRenderObject,CRenderView *pRenderView)
 	commandInterface.PrepareResourcesForUse(EResourceLayoutSlot_PerMaterialRS, pShaderResources->m_pCompiledResourceSet.get());
 	commandInterface.PrepareResourcesForUse(EResourceLayoutSlot_PerInstanceExtraRS, m_pCompiledParticle->m_pPerInstanceExtraRS.get());
 
-	return bCompiled;
+	PrepareDataToRender(pRenderView, pRenderObject);
+
+	return true;
 }
 
 void CREParticle::DrawToCommandList(CRenderObject* pRenderObject, const struct SGraphicsPipelinePassContext& context)
@@ -696,7 +708,6 @@ void CREParticle::DrawToCommandList(CRenderObject* pRenderObject, const struct S
 	const bool isLegacy = m_pGpuRuntime == nullptr && (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_USE_VERTEX_PULL_MODEL) == 0;
 
 	CDeviceGraphicsCommandInterface& commandInterface = *context.pCommandList->GetGraphicsInterface();
-	PrepareDataToRender(context.pRenderView,pRenderObject);
 	BindPipeline(pRenderObject, commandInterface, pGraphicsPSO);
 	if (isLegacy)
 		DrawParticlesLegacy(pRenderObject, commandInterface);

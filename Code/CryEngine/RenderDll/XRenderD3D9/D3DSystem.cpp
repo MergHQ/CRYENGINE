@@ -559,12 +559,13 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 		RECT windowRect;
 		GetWindowRect(m_hWnd, &windowRect);
 
+		const int x = windowRect.left;
+		const int y = windowRect.top;
+
 		windowRect.right = windowRect.left + displayWidth;
 		windowRect.bottom = windowRect.top + displayHeight;
 		AdjustWindowRectEx(&windowRect, windowedStyle, FALSE, WS_EX_APPWINDOW);
 
-		const int x = windowRect.left;
-		const int y = windowRect.top;
 		const int width = windowRect.right - windowRect.left;
 		const int height = windowRect.bottom - windowRect.top;
 		SetWindowPos(m_hWnd, HWND_NOTOPMOST, x, y, width, height, SWP_SHOWWINDOW);

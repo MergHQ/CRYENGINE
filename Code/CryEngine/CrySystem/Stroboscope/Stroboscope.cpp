@@ -10,6 +10,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 #include "StdAfx.h"
+#include <random>
 
 #if defined(ENABLE_PROFILING_CODE)
 
@@ -126,6 +127,8 @@ void CStroboscope::ProfileThreads()
 	int64 curr, prev, start;
 	curr = prev = start = CryGetTicks();
 
+	std::mt19937 urng(std::random_device{}());
+
 	int frameId = -1;
 	m_sampling.StartFrame = -1;
 	while (m_run)
@@ -134,7 +137,7 @@ void CStroboscope::ProfileThreads()
 		frameId = gEnv->pRenderer->GetFrameID();
 		if (m_sampling.StartFrame == -1)
 			m_sampling.StartFrame = frameId;
-		std::random_shuffle(threads.begin(), threads.end());
+		std::shuffle(threads.begin(), threads.end(),urng);
 		curr = CryGetTicks();
 		if (!SampleThreads(threads, (float)(curr - prev) / (float)freq, frameId) || (m_endTime > 0 && gEnv->pTimer->GetAsyncCurTime() > m_endTime))
 			m_run = false;

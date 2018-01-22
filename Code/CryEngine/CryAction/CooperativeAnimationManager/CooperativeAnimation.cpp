@@ -119,8 +119,7 @@ bool CCooperativeAnimation::AreActorsValid() const
 		return false;
 
 	TCharacterParams::const_iterator itEnd = m_paramsList.end();
-	TCharacterParams::const_iterator it = std::find_if(m_paramsList.begin(), itEnd,
-	                                                   std::not1(std::mem_fun_ref(&SCharacterParams::IsActorValid)));
+	TCharacterParams::const_iterator it = std::find_if(m_paramsList.begin(), itEnd,[](const SCharacterParams& p) { return !p.IsActorValid(); } );
 
 	return (it == itEnd);
 }

@@ -783,6 +783,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		}
 		
 		job.pRenderObject->m_ObjFlags = (nObjFlags & ~0xFF) | RenParams.dwFObjFlags;
+		job.pRenderObject->m_bInstanceDataDirty = true;
 
 		pOD->m_FogVolumeContribIdx = PRParams.m_nFogVolumeContribIdx;
 
@@ -792,7 +793,6 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 			*((Vec4f*)&pOD->m_fTempVars[0]) = Vec4f(pTempData->userData.vEnvironmentProbeMults);
 		else
 			*((Vec4f*)&pOD->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
-		;
 
 		// Set sort distance based on params and bounding box.
 		if (pParams->fSortBoundsScale == PRParams.m_fMainBoundsScale)

@@ -259,7 +259,7 @@ struct CHitDeathReactionsSystem::SPredGetMemoryUsage
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 #ifndef _RELEASE
-struct CHitDeathReactionsSystem::SPredGetAnims : public std::unary_function<void, const ReactionsContainer::value_type&>
+struct CHitDeathReactionsSystem::SPredGetAnims
 {
 	typedef std::set<uint32> AnimCRCsContainer;
 
@@ -388,7 +388,7 @@ public:
 	}
 
 private:
-	struct SPredPrintStreamingStats : public std::unary_function<void, const ProfilesContainersItem&>
+	struct SPredPrintStreamingStats
 	{
 		SPredPrintStreamingStats(CHitDeathReactionsDebugWidget& widget) : m_widget(widget) {}
 
@@ -498,7 +498,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-struct CHitDeathReactionsSystem::SPredRequestAnims : public std::unary_function<void, const ReactionsContainer::value_type&>
+struct CHitDeathReactionsSystem::SPredRequestAnims
 {
 	SPredRequestAnims(bool bRequest, EntityId entityId, const IAnimationDatabase* piAnimDB)
 		: m_bRequest(bRequest)
@@ -2231,7 +2231,7 @@ void CHitDeathReactionsSystem::GetReactionAnimParamsFromScript(const CActor& act
 
 					// Shuffle IDs
 					SRandomGeneratorFunct randomFunctor(m_pseudoRandom);
-					std::random_shuffle(reactionAnim.animCRCs.begin(), reactionAnim.animCRCs.end(), randomFunctor);
+					std::shuffle(reactionAnim.animCRCs.begin(), reactionAnim.animCRCs.end(), randomFunctor);
 				}
 			}
 		}

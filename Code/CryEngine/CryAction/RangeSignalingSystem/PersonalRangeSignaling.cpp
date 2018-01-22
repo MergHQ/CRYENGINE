@@ -114,7 +114,7 @@ namespace std
 {
 
 template<>
-struct less<CRange*> : public binary_function<CRange*, CRange*, bool>
+struct less<CRange*>
 {
 	bool operator()(const CRange* pRange1, const CRange* pRange2) const
 	{

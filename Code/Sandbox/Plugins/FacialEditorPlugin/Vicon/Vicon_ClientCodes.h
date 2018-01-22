@@ -55,7 +55,7 @@ public:
 		return v;
 	}
 
-	struct CompareNames : std::binary_function<string, string, bool>
+	struct CompareNames
 	{
 		bool operator()(const string& a_S1, const string& a_S2) const
 		{

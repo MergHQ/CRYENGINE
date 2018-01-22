@@ -88,7 +88,7 @@ public:
 
 private:
 
-	struct LessStrCmpi : std::binary_function<const char*, const char*, bool>
+	struct LessStrCmpi
 	{
 		bool operator()(const char* l, const char* r) const { return strcmpi(l, r) < 0; }
 	};

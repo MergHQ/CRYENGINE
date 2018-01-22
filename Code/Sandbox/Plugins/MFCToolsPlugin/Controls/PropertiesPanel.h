@@ -102,7 +102,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 protected:
-	std::auto_ptr<CPropertyCtrl> m_pWndProps;
+	std::unique_ptr<CPropertyCtrl> m_pWndProps;
 	XmlNodeRef                   m_template;
 	bool                         m_multiSelect;
 	_smart_ptr<CVarBlock>        m_varBlock;

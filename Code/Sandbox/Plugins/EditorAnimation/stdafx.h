@@ -27,7 +27,7 @@
 namespace physics_editor {
 using std::vector;
 using std::pair;
-using std::auto_ptr;
+using std::unique_ptr;
 };
 
 /////////////////////////////////////////////////////////////////////////////

@@ -29,7 +29,7 @@ namespace
 }
 
 //-----------------------------------------------------------------------
-struct CSpectacularKill::SPredNotValidAnim : public std::unary_function<bool, const SSpectacularKillAnimation&>
+struct CSpectacularKill::SPredNotValidAnim
 {
 	SPredNotValidAnim(const CSpectacularKill& spectacularKill, const CActor* pTarget) : m_spectacularKill(spectacularKill), m_pTarget(pTarget) {}
 

@@ -3204,7 +3204,8 @@ void CTriMesh::GetMemoryStatistics(ICrySizer *pSizer)
 {
 	if (GetType()==GEOM_TRIMESH)
 		pSizer->AddObject(this, sizeof(CTriMesh));
-	m_pTree->GetMemoryStatistics(pSizer);
+	if (m_pTree)
+		m_pTree->GetMemoryStatistics(pSizer);
 	int i, ivtx0; for(i=0,ivtx0=m_nVertices;i<m_nTris*3;i++) ivtx0=min(ivtx0,(int)m_pIndices[i]);
 
 	{ SIZER_COMPONENT_NAME(pSizer, "mesh data");

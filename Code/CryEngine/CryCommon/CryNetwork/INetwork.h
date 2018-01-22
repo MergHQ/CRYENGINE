@@ -1051,6 +1051,8 @@ struct INetContext
 	//! \param id The id of a *bound* object to change authority for.
 	//! \param pControlling	Channel who will now control the object (or NULL if we wish to take control).
 	//! \note Only those aspects marked as eAF_Delegatable are passed on.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/AspectDelegation.cpp
 	virtual void DelegateAuthority(EntityId id, INetChannel* pControlling) = 0;
 
 	//! Changes the game context.

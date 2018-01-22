@@ -237,7 +237,6 @@ void CWaterStage::Init()
 	m_passWaterCausticsSrcGen.SetPassResources(m_pResourceLayout, m_pPerPassResourceSets[ePass_CausticsGen]);
 	m_passWaterCausticsSrcGen.SetRenderTargets(nullptr, pDummyRenderTarget);
 
-
 	m_passWaterFogVolumeBeforeWater.SetLabel("WATER_FOG_VOLUME_BEFORE_WATER");
 	m_passWaterFogVolumeBeforeWater.SetupPassContext(m_stageID, ePass_FogVolume, TTYPE_GENERAL, FB_BELOW_WATER, EFSLIST_WATER_VOLUMES, 0, false);
 	m_passWaterFogVolumeBeforeWater.SetPassResources(m_pResourceLayout, m_pPerPassResourceSets[ePass_FogVolume]);
@@ -819,6 +818,9 @@ bool CWaterStage::CreatePipelineState(
 
 	if (!(ePass_ReflectionGen <= passID && passID <= ePass_Count))
 		return true; // psssID doesn't exit in water stage.
+
+	if (!m_bOceanMaskGen && (passID == ePass_OceanMaskGen))
+		return true; // OceanMaskGen is not needed (low/medium spec)
 
 	auto shaderType = desc.shaderItem.m_pShader->GetShaderType();
 	if (shaderType != eST_Water)

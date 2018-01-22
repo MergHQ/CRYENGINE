@@ -118,7 +118,7 @@ static vector<string> LoadJointNames(const char* skeletonPath)
 	CLoaderCGF cgfLoader;
 
 	CChunkFile chunkFile;
-	std::auto_ptr<CContentCGF> cgf(cgfLoader.LoadCGF(skeletonPath, chunkFile, 0));
+	std::unique_ptr<CContentCGF> cgf(cgfLoader.LoadCGF(skeletonPath, chunkFile, 0));
 	if (!cgf.get())
 		return vector<string>();
 

@@ -135,7 +135,7 @@ ESimulationMode CObject::GetSimulationMode() const
 	return m_simulationMode;
 }
 
-bool CObject::SetSimulationMode(ESimulationMode simulationMode, EObjectSimulationUpdatePolicy updatePolicy, bool bStartSimulation)
+bool CObject::SetSimulationMode(ESimulationMode simulationMode, EObjectSimulationUpdatePolicy updatePolicy)
 {
 	if (simulationMode != m_simulationMode || updatePolicy == EObjectSimulationUpdatePolicy::Always)
 	{
@@ -171,21 +171,18 @@ bool CObject::SetSimulationMode(ESimulationMode simulationMode, EObjectSimulatio
 		}
 	}
 
-	if (bStartSimulation)
+	switch (simulationMode)
 	{
-		switch (simulationMode)
+	case ESimulationMode::Game:
 		{
-		case ESimulationMode::Game:
-			{
-				ExecuteSignalReceivers(SObjectSignal::FromSignalClass(SStartSignal()));
+			ExecuteSignalReceivers(SObjectSignal::FromSignalClass(SStartSignal()));
 
-				StartStateMachines(simulationMode);
-				StartTimers(simulationMode);
-			}
-			break;
-		default:
-			break;
+			StartStateMachines(simulationMode);
+			StartTimers(simulationMode);
 		}
+		break;
+	default:
+		break;
 	}
 
 	return true;

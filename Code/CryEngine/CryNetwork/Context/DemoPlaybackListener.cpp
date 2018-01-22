@@ -250,13 +250,13 @@ CDemoPlaybackListener::CDemoPlaybackListener(CNetContext* pContext, const char* 
 	m_bInGame = false;
 	m_bIsDead = false;
 
-	std::auto_ptr<CCompressingInputStream> pComp;
+	std::unique_ptr<CCompressingInputStream> pComp;
 	pComp.reset(new CCompressingInputStream());
 	string path = string(NDemo::TopLevelDemoFilesFolder) + filename;
 	if (!pComp->Init(path.c_str()))
 		pComp.reset();
 	else
-		m_pInput = pComp;
+		m_pInput = std::move(pComp);
 
 	if (!m_pInput.get())
 	{
