@@ -597,10 +597,6 @@ SSurfaceTypeItem CHeightMap::GetSurfTypeItemfromUnits(uint32 x, uint32 y) const
 
 				return es;
 			}
-			else
-			{
-				assert(!"Sector has no heightmap data");
-			}
 		}
 		else
 		{
