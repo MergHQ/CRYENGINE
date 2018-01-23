@@ -831,7 +831,7 @@ private:
 	bool                    m_bDeleted = false;
 
 public:
-	static CryCriticalSection s_cResLock;
+	static CryRWLock        s_cResLock;
 
 private:
 	void UnregisterAndDelete();
@@ -887,13 +887,13 @@ public:
 	// Destructor.
 	virtual ~CBaseResource() { };
 
-	CCryNameTSCRC GetNameCRC() { return m_NameCRC; }
+	CCryNameTSCRC GetNameCRC() const { return m_NameCRC; }
 	//inline const char *GetName() const { return m_Name.c_str(); }
 	//inline const char *GetClassName() const { return m_ClassName.c_str(); }
 	inline int                 GetID() const  { return m_nID; }
 	inline void                SetID(int nID) { m_nID = nID; }
 
-	virtual bool               IsValid();
+	virtual bool               IsValid() const;
 
 	static ILINE int           RListIndexFromId(int id)  { return id - 1; }
 	static ILINE int           IdFromRListIndex(int idx) { return idx + 1; }

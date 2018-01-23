@@ -1344,7 +1344,7 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 
 		ITexture* pTex = 0;
 		if (cloudShadowTexture[0] != '\0' && GetRenderer())
-			pTex = GetRenderer()->EF_LoadTexture(cloudShadowTexture);
+			pTex = GetRenderer()->EF_LoadTexture(cloudShadowTexture, FT_DONT_STREAM);
 
 		m_nCloudShadowTexId = pTex ? pTex->GetTextureID() : 0;
 
@@ -1411,20 +1411,20 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 			cry_strcpy(cloudVolumeTexture, GetXMLAttribText(pInputNode, "VolumetricCloud", "CloudVolumeTexture", ""));
 			ITexture* pTex = nullptr;
 			if (cloudVolumeTexture[0] != '\0')
-				pTex = GetRenderer()->EF_LoadTexture(cloudVolumeTexture);
+				pTex = GetRenderer()->EF_LoadTexture(cloudVolumeTexture, FT_DONT_STREAM);
 			int volCloudTexId = pTex ? pTex->GetTextureID() : 0;
 			GetRenderer()->SetVolumetricCloudParams(volCloudTexId);
 
 			cry_strcpy(cloudVolumeTexture, GetXMLAttribText(pInputNode, "VolumetricCloud", "GlobalCloudNoiseVolumeTexture", ""));
 			pTex = nullptr;
 			if (cloudVolumeTexture[0] != '\0')
-				pTex = GetRenderer()->EF_LoadTexture(cloudVolumeTexture);
+				pTex = GetRenderer()->EF_LoadTexture(cloudVolumeTexture, FT_DONT_STREAM);
 			int volCloudNoiseTexId = pTex ? pTex->GetTextureID() : 0;
 
 			cry_strcpy(cloudVolumeTexture, GetXMLAttribText(pInputNode, "VolumetricCloud", "EdgeTurbulenceNoiseVolumeTexture", ""));
 			pTex = nullptr;
 			if (cloudVolumeTexture[0] != '\0')
-				pTex = GetRenderer()->EF_LoadTexture(cloudVolumeTexture);
+				pTex = GetRenderer()->EF_LoadTexture(cloudVolumeTexture, FT_DONT_STREAM);
 			int volCloudEdgeNoiseTexId = pTex ? pTex->GetTextureID() : 0;
 
 			GetRenderer()->SetVolumetricCloudNoiseTex(volCloudNoiseTexId, volCloudEdgeNoiseTexId);

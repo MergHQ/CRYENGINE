@@ -1589,19 +1589,8 @@ void CTexture::InitStreaming()
 
 	// re-init all textures
 	iLog->Log("  Reloading all textures...");
-	{
-		AUTO_LOCK(CBaseResource::s_cResLock);
-		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
-		if (pRL)
-		{
-			for (ResourcesMapItor itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); ++itor)
-			{
-				CTexture* tp = (CTexture*)itor->second;
-				if (!tp) continue;
-				tp->ToggleStreaming(CRenderer::CV_r_texturesstreaming != 0);
-			}
-		}
-	}
+	CTexture::ToggleTexturesStreaming();
+
 	iLog->Log("  Finished reloading textures...");
 	iLog->Log("  Finished initializing textures streaming...");
 
