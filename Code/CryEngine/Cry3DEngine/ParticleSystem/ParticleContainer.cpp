@@ -62,7 +62,7 @@ void CParticleContainer::Resize(uint32 newSize)
 	auto prevBuffers = m_pData;
 	for (auto type : EParticleDataType::indices())
 	{
-		const size_t stride = type.info().typeSize();
+		const size_t stride = type.info().typeSize;
 		if (m_useData[type] && newMaxParticles > 0)
 		{
 			void* pNew = ParticleAlloc(newMaxParticles * stride);
@@ -93,13 +93,15 @@ void CParticleContainer::AddParticleData(EParticleDataType type)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	const size_t allocSize = m_maxParticles * type.info().typeSize();
+	const size_t allocSize = m_maxParticles * type.info().typeSize;
 	uint dim = type.info().dimension;
 	for (uint i = 0; i < dim; ++i)
 	{
 		m_useData[type + i] = true;
 		if (!m_pData[type + i])
 			m_pData[type + i] = ParticleAlloc(allocSize);
+		else if (type.info().needsClear)
+			memset(m_pData[type + i], 0, allocSize);
 	}
 }
 
@@ -255,7 +257,7 @@ void CParticleContainer::RemoveParticles(TVarArray<TParticleId> toRemove, TVarAr
 			continue;
 
 		void* pData = m_pData[dataTypeId];
-		const uint stride = dataTypeId.info().typeSize();
+		const uint stride = dataTypeId.info().typeSize;
 		switch (stride)
 		{
 		case 1:
@@ -312,7 +314,7 @@ void CParticleContainer::ResetSpawnedParticles()
 	{
 		for (auto dataTypeId : EParticleDataType::indices())
 		{
-			const size_t stride = dataTypeId.info().typeSize();
+			const size_t stride = dataTypeId.info().typeSize;
 			byte* pBytes = reinterpret_cast<byte*>(m_pData[dataTypeId]);
 			if (!pBytes)
 				continue;

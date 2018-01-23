@@ -474,7 +474,7 @@ void CParticleProfiler::DrawMemoryStats()
 			{
 				if (!container.HasData(type))
 					continue;
-				const size_t stride = type.info().typeSize();
+				const size_t stride = type.info().typeSize;
 				totalBytes += totalNumParticles * stride;
 				usedBytes += usedNumParticles * stride;
 			}

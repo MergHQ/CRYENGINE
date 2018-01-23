@@ -21,22 +21,22 @@
 namespace pfx2
 {
 
-EParticleDataType PDT(EPDT_SpawnId, TParticleId);
-EParticleDataType PDT(EPDT_ParentId, TParticleId);
-EParticleDataType PDT(EPDT_State, uint8);
-EParticleDataType PDT(EPDT_SpawnFraction, float);
-EParticleDataType PDT(EPDT_NormalAge, float);
-EParticleDataType PDT(EPDT_LifeTime, float);
-EParticleDataType PDT(EPDT_InvLifeTime, float);
-EParticleDataType PDT(EPDT_Random, float);
+EParticleDataType PDT(EPDT_SpawnId,          TParticleId);
+EParticleDataType PDT(EPDT_ParentId,         TParticleId);
+EParticleDataType PDT(EPDT_State,            uint8);
+EParticleDataType PDT(EPDT_SpawnFraction,    float);
+EParticleDataType PDT(EPDT_NormalAge,        float);
+EParticleDataType PDT(EPDT_LifeTime,         float);
+EParticleDataType PDT(EPDT_InvLifeTime,      float);
+EParticleDataType PDT(EPDT_Random,           float);
 
-EParticleDataType PDT(EPVF_Position, float, 3);
-EParticleDataType PDT(EPVF_Velocity, float, 3);
-EParticleDataType PDT(EPQF_Orientation, float, 4);
-EParticleDataType PDT(EPVF_AngularVelocity, float, 3);
-EParticleDataType PDT(EPVF_LocalPosition, float, 3);
-EParticleDataType PDT(EPVF_LocalVelocity, float, 3);
-EParticleDataType PDT(EPQF_LocalOrientation, float, 4);
+EParticleDataType PDT(EPVF_Position,         float[3]);
+EParticleDataType PDT(EPVF_Velocity,         float[3]);
+EParticleDataType PDT(EPQF_Orientation,      float[4]);
+EParticleDataType PDT(EPVF_AngularVelocity,  float[3]);
+EParticleDataType PDT(EPVF_LocalPosition,    float[3]);
+EParticleDataType PDT(EPVF_LocalVelocity,    float[3]);
+EParticleDataType PDT(EPQF_LocalOrientation, float[4]);
 
 
 
@@ -105,7 +105,7 @@ void SComponentParams::Serialize(Serialization::IArchive& ar)
 			else
 				cry_sprintf(buffer, "%s, %s", buffer, type.name());
 			first = false;
-			bytesPerParticle += type.info().typeSize() * type.info().step();
+			bytesPerParticle += type.info().typeSize * type.info().step();
 		}
 	}
 	ar(string(buffer), "", "!Fields used:");
@@ -405,7 +405,7 @@ IMaterial* CParticleComponent::MakeMaterial()
 	{
 		const char* shaderName = UsesGPU() ? "Particles.ParticlesGpu" : "Particles";
 		const string& diffuseMap = m_componentParams.m_diffuseMap;
-		const uint32 textureLoadFlags = 0;//FT_DONT_STREAM;
+		static uint32 textureLoadFlags = 0;//FT_DONT_STREAM;
 		ITexture* pTexture = gEnv->pRenderer->EF_GetTextureByName(diffuseMap.c_str(), textureLoadFlags);
 		if (!pTexture)
 		{
