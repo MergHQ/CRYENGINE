@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "ConnectionsModel.h"
@@ -38,45 +38,45 @@ CConnectionModel::~CConnectionModel()
 void CConnectionModel::ConnectSignals()
 {
 	m_pAssetsManager->SignalItemAdded.Connect([&]()
-	{
-		if (!m_pAssetsManager->IsLoading())
 		{
-			ResetModelAndCache();
-		}
-	}, reinterpret_cast<uintptr_t>(this));
+			if (!m_pAssetsManager->IsLoading())
+			{
+			  ResetModelAndCache();
+			}
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	m_pAssetsManager->SignalItemRemoved.Connect([&]()
-	{
-		if (!m_pAssetsManager->IsLoading())
 		{
-			ResetModelAndCache();
-		}
-	}, reinterpret_cast<uintptr_t>(this));
+			if (!m_pAssetsManager->IsLoading())
+			{
+			  ResetModelAndCache();
+			}
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	m_pAssetsManager->SignalControlModified.Connect([&]()
-	{
-		if (!m_pAssetsManager->IsLoading())
 		{
-			ResetModelAndCache();
-		}
-	}, reinterpret_cast<uintptr_t>(this));
+			if (!m_pAssetsManager->IsLoading())
+			{
+			  ResetModelAndCache();
+			}
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.Connect([&]()
-	{
-		beginResetModel();
-		m_pEditorImpl = nullptr;
-		m_pControl = nullptr;
-		m_connectionsCache.clear();
-		endResetModel();
-	}, reinterpret_cast<uintptr_t>(this));
+		{
+			beginResetModel();
+			m_pEditorImpl = nullptr;
+			m_pControl = nullptr;
+			m_connectionsCache.clear();
+			endResetModel();
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
-	{
-		m_pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-		beginResetModel();
-		ResetCache();
-		endResetModel();
-	}, reinterpret_cast<uintptr_t>(this));
+		{
+			m_pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
+			beginResetModel();
+			ResetCache();
+			endResetModel();
+	  }, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -239,7 +239,7 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 										variant = tr("Item is localized");
 									}
 									break;
-								case static_cast<int>(ERoles::Id) :
+								case static_cast<int>(ERoles::Id):
 									variant = pImplItem->GetId();
 									break;
 								}
@@ -427,6 +427,7 @@ bool CConnectionModel::dropMimeData(QMimeData const* pData, Qt::DropAction actio
 	if ((m_pEditorImpl != nullptr) && (m_pControl != nullptr))
 	{
 		std::vector<CID> ids;
+		CID lastConnectedId = ACE_INVALID_ID;
 		DecodeMimeData(pData, ids);
 
 		for (auto const id : ids)
@@ -444,10 +445,16 @@ bool CConnectionModel::dropMimeData(QMimeData const* pData, Qt::DropAction actio
 					if (pConnection != nullptr)
 					{
 						m_pControl->AddConnection(pConnection);
+						lastConnectedId = pConnection->GetID();
 						wasDropped = true;
 					}
 				}
 			}
+		}
+
+		if (wasDropped)
+		{
+			SignalConnectionAdded(lastConnectedId);
 		}
 	}
 

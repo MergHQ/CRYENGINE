@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioObject.h"
@@ -322,8 +322,8 @@ ERequestStatus CObjectBase::ExecuteTrigger(ITrigger const* const pITrigger, IEve
 				fmodResult = pEvent->GetInstance()->set3DAttributes(&m_attributes);
 				ASSERT_FMOD_OK;
 
-				CRY_ASSERT(pEvent->GetEventPathId() == InvalidCRC32);
-				pEvent->SetEventPathId(pTrigger->GetEventPathId());
+				CRY_ASSERT(pEvent->GetId() == InvalidCRC32);
+				pEvent->SetId(pTrigger->GetId());
 				pEvent->SetObject(this);
 
 				CRY_ASSERT_MESSAGE(std::find(m_pendingEvents.begin(), m_pendingEvents.end(), pEvent) == m_pendingEvents.end(), "Event was already in the pending list");
@@ -333,7 +333,7 @@ ERequestStatus CObjectBase::ExecuteTrigger(ITrigger const* const pITrigger, IEve
 		}
 		else
 		{
-			StopEvent(pTrigger->GetEventPathId());
+			StopEvent(pTrigger->GetId());
 			requestResult = ERequestStatus::SuccessfullyStopped;
 		}
 	}
@@ -406,13 +406,13 @@ ERequestStatus CObjectBase::SetName(char const* const szName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectBase::StopEvent(uint32 const eventPathId)
+void CObjectBase::StopEvent(uint32 const id)
 {
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
 	for (auto const pEvent : m_events)
 	{
-		if (pEvent->GetEventPathId() == eventPathId)
+		if (pEvent->GetId() == id)
 		{
 			fmodResult = pEvent->GetInstance()->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT);
 			ASSERT_FMOD_OK;

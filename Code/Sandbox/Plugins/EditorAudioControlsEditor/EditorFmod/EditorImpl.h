@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -21,13 +21,13 @@ public:
 	CImplSettings();
 
 	// IImplSettings
-	virtual char const* GetAssetsPath() const override { return m_assetsPath.c_str(); }
-	virtual char const* GetProjectPath() const override { return m_projectPath.c_str(); }
+	virtual char const* GetAssetsPath() const override         { return m_assetsPath.c_str(); }
+	virtual char const* GetProjectPath() const override        { return m_projectPath.c_str(); }
 	virtual void        SetProjectPath(char const* szPath) override;
 	virtual bool        IsProjectPathEditable() const override { return true; }
 	// ~IImplSettings
 
-	void                Serialize(Serialization::IArchive& ar);
+	void Serialize(Serialization::IArchive& ar);
 
 private:
 
@@ -64,10 +64,7 @@ private:
 	void       Clear();
 	void       CreateControlCache(CImplItem const* const pParent);
 
-	CImplItem* CreateItem(EImpltemType const type, CImplItem* const pParent, string const& name);
-	CID        GetId(EImpltemType const type, string const& name, CImplItem* const pParent) const;
-	string     GetPathName(CImplItem const* const pImplItem) const;
-	string     GetTypeName(EImpltemType const type) const;
+	CImplItem* CreateItem(string const& name, EImpltemType const type, CImplItem* const pParent);
 
 	CImplItem* GetItemFromPath(string const& fullpath);
 	CImplItem* CreatePlaceholderFolderPath(string const& path);
