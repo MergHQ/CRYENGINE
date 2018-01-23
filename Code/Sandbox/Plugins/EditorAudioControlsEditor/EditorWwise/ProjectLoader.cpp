@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "ProjectLoader.h"
@@ -69,7 +69,7 @@ EImpltemType TagToItemType(string const& tag)
 	{
 		type = EImpltemType::Invalid;
 	}
-	
+
 	return type;
 }
 
@@ -122,13 +122,13 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 
 	char const* const szLanguage = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
 	string const locaFolder =
-		PathUtil::GetLocalizationFolder() +
-		CRY_NATIVE_PATH_SEPSTR +
-		szLanguage +
-		CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR +
-		CryAudio::Impl::Wwise::s_szImplFolderName +
-		CRY_NATIVE_PATH_SEPSTR +
-		CryAudio::s_szAssetsFolderName;
+	  PathUtil::GetLocalizationFolder() +
+	  CRY_NATIVE_PATH_SEPSTR +
+	  szLanguage +
+	  CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR +
+	  CryAudio::Impl::Wwise::s_szImplFolderName +
+	  CRY_NATIVE_PATH_SEPSTR +
+	  CryAudio::s_szAssetsFolderName;
 	LoadSoundBanks(locaFolder, true, *pSoundBanks);
 
 	if (pSoundBanks->ChildCount() == 0)
@@ -352,7 +352,7 @@ CImplItem* CProjectLoader::CreateItem(const string& name, EImpltemType const typ
 				pImplControl->SetFilePath(m_projectPath + fullPathName);
 			}
 		}
-		else if (type == EImpltemType::VirtualFolder)
+		else if ((type == EImpltemType::VirtualFolder) || (type == EImpltemType::SwitchGroup) || (type == EImpltemType::StateGroup))
 		{
 			pImplControl->SetContainer(true);
 		}
