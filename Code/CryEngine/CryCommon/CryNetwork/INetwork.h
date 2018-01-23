@@ -1586,6 +1586,8 @@ struct SRMIBenchmarkParams
 
 #endif
 
+//! Main interface for a connection to another engine instance
+//! i.e. The server has one net channel per client, each client has a single net channel for the server.
 struct INetChannel : public INetMessageSink
 {
 	//! \note See CNetCVars - net_defaultChannel<xxx> for defaults.
