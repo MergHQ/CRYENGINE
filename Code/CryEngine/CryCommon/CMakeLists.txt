@@ -1155,6 +1155,7 @@ install_headers(CrySystem CryThreading)
 			"CryEntitySystem/Examples/TraverseEntities.cpp"
 			"CryEntitySystem/Examples/ComponentEvents.cpp"
 			"CryEntitySystem/Examples/MinimalEntityComponent.cpp"
+			"CryEntitySystem/Examples/PreviewComponent.cpp"
 		SOURCE_GROUP "CryEntitySystem\\\\Slots"
 			"CryEntitySystem/Examples/LoadCharacter.cpp"
 			"CryEntitySystem/Examples/LoadFogVolume.cpp"

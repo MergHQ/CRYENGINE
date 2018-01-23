@@ -106,12 +106,8 @@ enum class EEntityComponentFlags : uint32
 };
 typedef CEnumFlags<EEntityComponentFlags> EntityComponentFlags;
 
-//////////////////////////////////////////////////////////////////////////
-//!
 //! Structure that describes how one entity component
 //! interacts with another entity component.
-//!
-//////////////////////////////////////////////////////////////////////////
 struct SEntityComponentRequirements
 {
 	enum class EType : uint32
@@ -130,11 +126,10 @@ struct SEntityComponentRequirements
 	CryGUID guid;
 };
 
-//////////////////////////////////////////////////////////////////////////
-//!
 //! Interface used by the editor to Preview Render of the entity component
-//!
-//////////////////////////////////////////////////////////////////////////
+//! This can be used to draw helpers or preview elements in the sandbox
+//! \par Example
+//! \include CryEntitySystem/Examples/PreviewComponent.cpp
 struct IEntityComponentPreviewer
 {
 	virtual ~IEntityComponentPreviewer() {}
@@ -145,17 +140,17 @@ struct IEntityComponentPreviewer
 	//! Override this method to Render a preview of the Entity Component
 	//! This method is not used when entity is normally rendered
 	//! But only used for previewing the entity in the Sandbox Editor
+	//! \param entity Entity which gets drawn
+	//! \param component Component which is gets drawn
+	//! \param context PreviewContext contains information and settings for the rendering
+	//! \see IEntity::SEntityPreviewContext
 	virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext& context) const = 0;
 };
 
 //! \cond INTERNAL
-//////////////////////////////////////////////////////////////////////////
-//!
 //! A class that describe and reflect members of the entity component
 //! Properties of the component are reflected using run-time class
 //! reflection system, and stored in here.
-//!
-//////////////////////////////////////////////////////////////////////////
 class CEntityComponentClassDesc : public Schematyc::CClassDesc
 {
 public:

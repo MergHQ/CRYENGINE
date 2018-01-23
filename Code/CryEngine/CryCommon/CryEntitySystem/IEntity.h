@@ -384,17 +384,24 @@ struct SEntitySlotInfo
 	IMaterial* pMaterial;
 };
 
-//! Parameters passed to the IEntity::PreviewRender
+//! Parameters passed to the preview render function
+//! \see IEntity::PreviewRender
 struct SEntityPreviewContext
 {
 	SEntityPreviewContext(SGeometryDebugDrawInfo& debugDrawInfo_) : debugDrawInfo(debugDrawInfo_) {}
 
+	//! Defines if the entity has any render nodes
 	bool                             bNoRenderNodes = false;
+	//! Is the entity currently selected in the sandbox
 	bool                             bSelected = false;
+	//! Defines if the render slots should get previewed too
 	bool                             bRenderSlots = true;
 
+	//! \see I3DEngine::SGeometryDebugDrawInfo
 	SGeometryDebugDrawInfo&          debugDrawInfo;
+	//! \see IRenderer::SRendParams
 	const struct SRendParams*        pRenderParams = nullptr;
+	//! \see IRenderer::SRenderingPassInfo
 	const struct SRenderingPassInfo* pPassInfo = nullptr;
 };
 
