@@ -76,7 +76,7 @@ if HAS_TK:
             self.parent = master
             self.parent.title("CRYENGINE Project packager")
             self.parent.minsize(400, 200)
-            self.pack()
+            self.pack(expand=True, fill=tk.BOTH)
             self.export_path = export_path
             self.configurations = configurations
             center_window(self.parent)
