@@ -33,7 +33,7 @@ CAudioXMLProcessor::CAudioXMLProcessor(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioXMLProcessor::Init(Impl::IImpl* const pIImpl)
+void CAudioXMLProcessor::SetImpl(Impl::IImpl* const pIImpl)
 {
 	m_pIImpl = pIImpl;
 }

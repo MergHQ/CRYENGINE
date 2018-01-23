@@ -25,7 +25,7 @@ CAudioListenerManager::~CAudioListenerManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioListenerManager::Init(Impl::IImpl* const pIImpl)
+void CAudioListenerManager::SetImpl(Impl::IImpl* const pIImpl)
 {
 	m_pIImpl = pIImpl;
 

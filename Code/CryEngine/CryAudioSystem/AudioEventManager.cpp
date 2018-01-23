@@ -13,7 +13,7 @@
 namespace CryAudio
 {
 //////////////////////////////////////////////////////////////////////////
-CAudioEventManager::~CAudioEventManager()
+CEventManager::~CEventManager()
 {
 	if (m_pIImpl != nullptr)
 	{
@@ -22,62 +22,86 @@ CAudioEventManager::~CAudioEventManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEventManager::Init(Impl::IImpl* const pIImpl)
+void CEventManager::Init(uint32 const poolSize)
 {
-	m_pIImpl = pIImpl;
-	CRY_ASSERT(m_constructedAudioEvents.empty());
+	m_constructedEvents.reserve(static_cast<std::size_t>(poolSize));
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEventManager::Release()
+void CEventManager::SetImpl(Impl::IImpl* const pIImpl)
+{
+	m_pIImpl = pIImpl;
+	CRY_ASSERT(m_constructedEvents.empty());
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEventManager::Release()
 {
 	// Events cannot survive a middleware switch because we cannot
 	// know which event types the new middleware backend will support so
 	// the existing ones have to be destroyed now and new ones created
 	// after the switch.
-	if (!m_constructedAudioEvents.empty())
+	if (!m_constructedEvents.empty())
 	{
-		for (auto const pEvent : m_constructedAudioEvents)
+		for (auto const pEvent : m_constructedEvents)
 		{
 			m_pIImpl->DestructEvent(pEvent->m_pImplData);
+			pEvent->Release();
 			delete pEvent;
 		}
 
-		m_constructedAudioEvents.clear();
+		m_constructedEvents.clear();
 	}
 
 	m_pIImpl = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
-CATLEvent* CAudioEventManager::ConstructAudioEvent()
+CATLEvent* CEventManager::ConstructEvent()
 {
-	CATLEvent* pEvent = new CATLEvent();
+	auto const pEvent = new CATLEvent;
 	pEvent->m_pImplData = m_pIImpl->ConstructEvent(*pEvent);
-	m_constructedAudioEvents.push_back(pEvent);
+	m_constructedEvents.push_back(pEvent);
 
 	return pEvent;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioEventManager::ReleaseEvent(CATLEvent* const pEvent)
+void CEventManager::DestructEvent(CATLEvent* const pEvent)
 {
-	CRY_ASSERT(pEvent != nullptr);
+	CRY_ASSERT(pEvent != nullptr && pEvent->m_pImplData != nullptr);
 
-	m_constructedAudioEvents.remove(pEvent);
+	auto iter(m_constructedEvents.begin());
+	auto const iterEnd(m_constructedEvents.cend());
+
+	for (; iter != iterEnd; ++iter)
+	{
+		if ((*iter) == pEvent)
+		{
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = m_constructedEvents.back();
+			}
+
+			m_constructedEvents.pop_back();
+			break;
+		}
+	}
+
 	m_pIImpl->DestructEvent(pEvent->m_pImplData);
+	pEvent->Release();
 	delete pEvent;
 }
 
 //////////////////////////////////////////////////////////////////////////
-size_t CAudioEventManager::GetNumConstructed() const
+size_t CEventManager::GetNumConstructed() const
 {
-	return m_constructedAudioEvents.size();
+	return m_constructedEvents.size();
 }
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float const posX, float posY) const
+void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float const posX, float posY) const
 {
 	static float const headerColor[4] = { 1.0f, 0.5f, 0.0f, 0.7f };
 	static float const itemPlayingColor[4] = { 0.1f, 0.7f, 0.1f, 0.9f };
@@ -88,10 +112,10 @@ void CAudioEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& list
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
 
-	auxGeom.Draw2dLabel(posX, posY, 1.5f, headerColor, false, "Audio Events [%" PRISIZE_T "]", m_constructedAudioEvents.size());
+	auxGeom.Draw2dLabel(posX, posY, 1.5f, headerColor, false, "Audio Events [%" PRISIZE_T "]", m_constructedEvents.size());
 	posY += 16.0f;
 
-	for (auto const pEvent : m_constructedAudioEvents)
+	for (auto const pEvent : m_constructedEvents)
 	{
 		if (pEvent->m_pTrigger != nullptr)
 		{

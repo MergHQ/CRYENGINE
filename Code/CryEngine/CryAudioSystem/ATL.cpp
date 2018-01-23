@@ -53,8 +53,7 @@ inline ERequestResult ConvertToRequestResult(ERequestStatus const eAudioRequestS
 
 ///////////////////////////////////////////////////////////////////////////
 CAudioTranslationLayer::CAudioTranslationLayer()
-	: m_audioObjectMgr(m_audioEventMgr, m_audioStandaloneFileMgr, m_audioListenerMgr)
-	, m_fileCacheMgr(m_preloadRequests)
+	: m_fileCacheMgr(m_preloadRequests)
 	, m_xmlProcessor(m_triggers, m_parameters, m_switches, m_environments, m_preloadRequests, m_fileCacheMgr, m_internalControls)
 {
 	if (g_cvars.m_audioObjectPoolSize < 1)
@@ -92,7 +91,7 @@ CAudioTranslationLayer::~CAudioTranslationLayer()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-bool CAudioTranslationLayer::Initialize(CSystem* const pAudioSystem)
+void CAudioTranslationLayer::Initialize(CSystem* const pSystem)
 {
 	// Add the callback for the obstruction calculation.
 	gEnv->pPhysicalWorld->AddEventClient(
@@ -100,11 +99,16 @@ bool CAudioTranslationLayer::Initialize(CSystem* const pAudioSystem)
 	  &CPropagationProcessor::OnObstructionTest,
 	  1);
 
-	CATLAudioObject::s_pEventManager = &m_audioEventMgr;
-	CATLAudioObject::s_pAudioSystem = pAudioSystem;
+	CATLAudioObject::s_pEventManager = &m_eventMgr;
+	CATLAudioObject::s_pAudioSystem = pSystem;
 	CATLAudioObject::s_pStandaloneFileManager = &m_audioStandaloneFileMgr;
 
-	return true;
+	m_objectPoolSize = std::max<uint32>(g_cvars.m_audioObjectPoolSize, 1);
+	m_eventPoolSize = std::max<uint32>(g_cvars.m_audioEventPoolSize, 1);
+
+	m_objectMgr.Init(m_objectPoolSize);
+	m_eventMgr.Init(m_eventPoolSize);
+	m_fileCacheMgr.Init();
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -174,7 +178,7 @@ void CAudioTranslationLayer::Update(float const deltaTime)
 	{
 		m_audioListenerMgr.Update(deltaTime);
 		m_pGlobalAudioObject->GetImplDataPtr()->Update();
-		m_audioObjectMgr.Update(deltaTime, m_audioListenerMgr.GetActiveListenerAttributes());
+		m_objectMgr.Update(deltaTime, m_audioListenerMgr.GetActiveListenerAttributes());
 		m_pIImpl->Update();
 	}
 }
@@ -549,14 +553,14 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			RetriggerAudioControls();
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 			result = ERequestStatus::Success;
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
 			break;
 		}
 	case EAudioManagerRequestType::ReleasePendingRays:
 		{
-			m_audioObjectMgr.ReleasePendingRays();
+			m_objectMgr.ReleasePendingRays();
 			result = ERequestStatus::Success;
 
 			break;
@@ -565,13 +569,13 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 		{
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			SAudioManagerRequestData<EAudioManagerRequestType::ReloadControlsData> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::ReloadControlsData> const*>(request.GetData());
-			for (auto pAudioObject : m_audioObjectMgr.GetAudioObjects())
+			for (auto const pObject : m_objectMgr.GetAudioObjects())
 			{
-				for (auto pEvent : pAudioObject->GetActiveEvents())
+				for (auto const pEvent : pObject->GetActiveEvents())
 				{
 					if (pEvent != nullptr)
 					{
-						result = pEvent->Reset();
+						pEvent->Release();
 					}
 				}
 			}
@@ -585,16 +589,16 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 						if (ParseControlsData(pRequestData->folderPath + pRequestData->levelName, EDataScope::LevelSpecific) == ERequestStatus::Success)
 						{
 							RetriggerAudioControls();
-							result = ERequestStatus::Success;
 						}
 					}
 					else
 					{
 						RetriggerAudioControls();
-						result = ERequestStatus::Success;
 					}
 				}
 			}
+
+			result = ERequestStatus::Success;
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 			break;
 		}
@@ -658,7 +662,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 
 			if (audioEvent.m_pAudioObject != m_pGlobalAudioObject)
 			{
-				m_audioObjectMgr.ReportStartedEvent(&audioEvent);
+				m_objectMgr.ReportStartedEvent(&audioEvent);
 			}
 			else
 			{
@@ -677,14 +681,14 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 
 			if (event.m_pAudioObject != m_pGlobalAudioObject)
 			{
-				m_audioObjectMgr.ReportFinishedEvent(&event, pRequestData->bSuccess);
+				m_objectMgr.ReportFinishedEvent(&event, pRequestData->bSuccess);
 			}
 			else
 			{
 				m_pGlobalAudioObject->ReportFinishedEvent(&event, pRequestData->bSuccess);
 			}
 
-			m_audioEventMgr.ReleaseEvent(&event);
+			m_eventMgr.DestructEvent(&event);
 
 			result = ERequestStatus::Success;
 
@@ -719,7 +723,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 
 			CATLStandaloneFile& audioStandaloneFile = pRequestData->audioStandaloneFile;
 
-			m_audioObjectMgr.GetStartedStandaloneFileRequestData(&audioStandaloneFile, request);
+			m_objectMgr.GetStartedStandaloneFileRequestData(&audioStandaloneFile, request);
 			audioStandaloneFile.m_state = (pRequestData->bSuccess) ? EAudioStandaloneFileState::Playing : EAudioStandaloneFileState::None;
 
 			result = (pRequestData->bSuccess) ? ERequestStatus::Success : ERequestStatus::Failure;
@@ -733,11 +737,11 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(CAudio
 
 			CATLStandaloneFile& audioStandaloneFile = pRequestData->audioStandaloneFile;
 
-			m_audioObjectMgr.GetStartedStandaloneFileRequestData(&audioStandaloneFile, request);
+			m_objectMgr.GetStartedStandaloneFileRequestData(&audioStandaloneFile, request);
 
 			if (audioStandaloneFile.m_pAudioObject != m_pGlobalAudioObject)
 			{
-				m_audioObjectMgr.ReportFinishedStandaloneFile(&audioStandaloneFile);
+				m_objectMgr.ReportFinishedStandaloneFile(&audioStandaloneFile);
 			}
 			else
 			{
@@ -880,8 +884,8 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			if (pTrigger != nullptr)
 			{
-				CATLAudioObject* const pNewObject = new CATLAudioObject;
-				m_audioObjectMgr.RegisterObject(pNewObject);
+				auto const pNewObject = new CATLAudioObject;
+				m_objectMgr.RegisterObject(pNewObject);
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 				pNewObject->Init(pRequestData->name.c_str(), m_pIImpl->ConstructObject(pRequestData->name.c_str()), m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(), pRequestData->entityId);
@@ -1071,7 +1075,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 				}
 			}
 
-			m_audioObjectMgr.RegisterObject(pObject);
+			m_objectMgr.RegisterObject(pObject);
 			result = ERequestStatus::Success;
 			break;
 		}
@@ -1206,7 +1210,7 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 		m_pIImpl = static_cast<Impl::IImpl*>(pImpl);
 	}
 
-	result = m_pIImpl->Init(g_cvars.m_audioObjectPoolSize, g_cvars.m_audioEventPoolSize);
+	result = m_pIImpl->Init(m_objectPoolSize, m_eventPoolSize);
 
 	m_pIImpl->GetInfo(m_implInfo);
 	m_configPath = (PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR).c_str();
@@ -1240,12 +1244,12 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 	CRY_ASSERT(m_pGlobalAudioObject->GetImplDataPtr() == nullptr);
 	m_pGlobalAudioObject->SetImplDataPtr(m_pIImpl->ConstructGlobalObject());
 
-	m_audioObjectMgr.Init(m_pIImpl);
-	m_audioEventMgr.Init(m_pIImpl);
-	m_audioStandaloneFileMgr.Init(m_pIImpl);
-	m_audioListenerMgr.Init(m_pIImpl);
-	m_xmlProcessor.Init(m_pIImpl);
-	m_fileCacheMgr.Init(m_pIImpl);
+	m_objectMgr.SetImpl(m_pIImpl);
+	m_eventMgr.SetImpl(m_pIImpl);
+	m_audioStandaloneFileMgr.SetImpl(m_pIImpl);
+	m_audioListenerMgr.SetImpl(m_pIImpl);
+	m_xmlProcessor.SetImpl(m_pIImpl);
+	m_fileCacheMgr.SetImpl(m_pIImpl);
 
 	CATLControlImpl::SetImpl(m_pIImpl);
 
@@ -1264,8 +1268,8 @@ void CAudioTranslationLayer::ReleaseImpl()
 	m_pIImpl->OnBeforeShutDown();
 
 	m_audioStandaloneFileMgr.Release();
-	m_audioEventMgr.Release();
-	m_audioObjectMgr.Release();
+	m_eventMgr.Release();
+	m_objectMgr.Release();
 	m_audioListenerMgr.Release();
 
 	m_pIImpl->DestructObject(m_pGlobalAudioObject->GetImplDataPtr());
@@ -1618,9 +1622,9 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 			Vec3 const& listenerPosition = m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition();
 			Vec3 const& listenerDirection = m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetForward();
 			float const listenerVelocity = m_audioListenerMgr.GetActiveListenerAttributes().velocity.GetLength();
-			size_t const numObjects = m_audioObjectMgr.GetNumAudioObjects();
-			size_t const numActiveObjects = m_audioObjectMgr.GetNumActiveAudioObjects();
-			size_t const numEvents = m_audioEventMgr.GetNumConstructed();
+			size_t const numObjects = m_objectMgr.GetNumAudioObjects();
+			size_t const numActiveObjects = m_objectMgr.GetNumActiveAudioObjects();
+			size_t const numEvents = m_eventMgr.GetNumConstructed();
 			size_t const numListeners = m_audioListenerMgr.GetNumActiveListeners();
 			size_t const numEventListeners = m_audioEventListenerMgr.GetNumEventListeners();
 			syncRays += (CPropagationProcessor::s_totalSyncPhysRays - syncRays) * SMOOTHING_ALPHA;
@@ -1769,13 +1773,13 @@ void CAudioTranslationLayer::DrawATLComponentDebugInfo(IRenderAuxGeom& auxGeom, 
 
 	if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowActiveObjects) != 0)
 	{
-		m_audioObjectMgr.DrawDebugInfo(auxGeom, listenerPosition, posX, posY);
+		m_objectMgr.DrawDebugInfo(auxGeom, listenerPosition, posX, posY);
 		posX += 300.0f;
 	}
 
 	if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowActiveEvents) != 0)
 	{
-		m_audioEventMgr.DrawDebugInfo(auxGeom, listenerPosition, posX, posY);
+		m_eventMgr.DrawDebugInfo(auxGeom, listenerPosition, posX, posY);
 		posX += 600.0f;
 	}
 
@@ -1788,7 +1792,7 @@ void CAudioTranslationLayer::DrawATLComponentDebugInfo(IRenderAuxGeom& auxGeom, 
 //////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::RetriggerAudioControls()
 {
-	auto const& registeredAudioObjects = m_audioObjectMgr.GetAudioObjects();
+	auto const& registeredAudioObjects = m_objectMgr.GetAudioObjects();
 
 	for (auto const pAudioObject : registeredAudioObjects)
 	{
@@ -1801,7 +1805,7 @@ void CAudioTranslationLayer::RetriggerAudioControls()
 ///////////////////////////////////////////////////////////////////////////
 void CAudioTranslationLayer::DrawAudioObjectDebugInfo(IRenderAuxGeom& auxGeom)
 {
-	m_audioObjectMgr.DrawPerObjectDebugInfo(
+	m_objectMgr.DrawPerObjectDebugInfo(
 	  auxGeom,
 	  m_audioListenerMgr.GetActiveListenerAttributes().transformation.GetPosition(),
 	  m_triggers,

@@ -25,9 +25,14 @@ CFileCacheManager::CFileCacheManager(AudioPreloadRequestLookup& preloadRequests)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileCacheManager::Init(Impl::IImpl* const pIImpl)
+void CFileCacheManager::SetImpl(Impl::IImpl* const pIImpl)
 {
 	m_pIImpl = pIImpl;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CFileCacheManager::Init()
+{
 	AllocateHeap(static_cast<size_t>(g_cvars.m_fileCacheManagerSize), "AudioFileCacheManager");
 }
 
@@ -58,7 +63,7 @@ void CFileCacheManager::AllocateHeap(size_t const size, char const* const szUsag
 //////////////////////////////////////////////////////////////////////////
 FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, EDataScope const dataScope, bool const bAutoLoad)
 {
-	FileEntryId fileEntryId = CryAudio::InvalidFileEntryId;
+	FileEntryId fileEntryId = InvalidFileEntryId;
 	Impl::SFileInfo fileInfo;
 
 	if (m_pIImpl->ConstructFile(pFileNode, &fileInfo) == ERequestStatus::Success)

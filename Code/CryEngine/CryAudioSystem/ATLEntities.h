@@ -362,10 +362,12 @@ class CATLEvent final : public CPoolObject<CATLEvent, stl::PSyncNone>
 {
 public:
 
-	ERequestStatus Reset();
-	ERequestStatus Stop();
-	void           SetDataScope(EDataScope const dataScope) { m_dataScope = dataScope; }
-	bool           IsPlaying() const                        { return m_state == EEventState::Playing || m_state == EEventState::PlayingDelayed; }
+	CATLEvent() = default;
+
+	void Release();
+	void Stop();
+	void SetDataScope(EDataScope const dataScope) { m_dataScope = dataScope; }
+	bool IsPlaying() const                        { return m_state == EEventState::Playing || m_state == EEventState::PlayingDelayed; }
 
 	EDataScope         m_dataScope = EDataScope::None;
 	CATLAudioObject*   m_pAudioObject = nullptr;

@@ -16,28 +16,29 @@ namespace Impl
 struct IImpl;
 } // namespace Impl
 
-class CAudioEventManager final
+class CEventManager final
 {
 public:
 
-	CAudioEventManager() = default;
-	~CAudioEventManager();
+	CEventManager() = default;
+	~CEventManager();
 
-	CAudioEventManager(CAudioEventManager const&) = delete;
-	CAudioEventManager& operator=(CAudioEventManager const&) = delete;
+	CEventManager(CEventManager const&) = delete;
+	CEventManager& operator=(CEventManager const&) = delete;
 
-	void                Init(Impl::IImpl* const pIImpl);
-	void                Release();
+	void           Init(uint32 const poolSize);
+	void           SetImpl(Impl::IImpl* const pIImpl);
+	void           Release();
 
-	CATLEvent*          ConstructAudioEvent();
-	void                ReleaseEvent(CATLEvent* const pEvent);
+	CATLEvent*     ConstructEvent();
+	void           DestructEvent(CATLEvent* const pEvent);
 
-	size_t              GetNumConstructed() const;
+	size_t         GetNumConstructed() const;
 
 private:
 
-	std::list<CATLEvent*> m_constructedAudioEvents;
-	Impl::IImpl*          m_pIImpl = nullptr;
+	Impl::IImpl*            m_pIImpl = nullptr;
+	std::vector<CATLEvent*> m_constructedEvents;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 public:

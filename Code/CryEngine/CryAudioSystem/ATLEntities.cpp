@@ -78,17 +78,16 @@ ERequestStatus CATLListener::HandleSetTransformation(CObjectTransformation const
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CATLEvent::Stop()
+void CATLEvent::Stop()
 {
-	return m_pImplData->Stop();
+	m_pImplData->Stop();
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CATLEvent::Reset()
+void CATLEvent::Release()
 {
-	ERequestStatus const result = Stop();
 	m_pTrigger = nullptr;
-	return result;
+	m_pImplData = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
