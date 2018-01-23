@@ -463,14 +463,14 @@ float ShadowDepthTest(
 
 void CalculateDetailSSShadow(
 #if %_RT_SAMPLE5 // use transmittance if sun shadows
-  Texture2D sceneGBufferA,
+	Texture2D sceneGBufferA,
 #endif
-  Texture2D sceneDepthTex,
-  const float fDepth0,
-  const float3 vPosWS,
-  const float3 vPosLight,
-  const float4x4 matComosite,
-  inout float fInShadow)
+	Texture2D sceneDepthTex,
+	const float fDepth0,
+	const float3 vPosWS,
+	const float3 vPosLight,
+	const float4x4 matComosite,
+	inout float fInShadow)
 {
 	float4 vTC0 = mul(matComosite, float4(vPosWS, 1));
 
@@ -484,15 +484,11 @@ void CalculateDetailSSShadow(
 
 	vTC0 += vTCStep;
 
-	float fInSSS = 1;
+	float lightAmountMax = 0;
 
 	for (int s = 0; s < maxSteps; s++)
 	{
 		float4 vTC = vTC0 / vTC0.w;
-
-		if (vTC.x < -1 || vTC.x > 1 || vTC.y < -1 || vTC.y > 1)
-			break;
-
 		vTC.y = -vTC.y;
 		vTC.xy = vTC.xy * 0.5f + 0.5f;
 
@@ -500,20 +496,24 @@ void CalculateDetailSSShadow(
 
 		float sceneDepth = sceneDepthTex.Load(tcInt).x * CV_NearFarClipDist.y;
 		float rayDepth = GetLinearDepth(CV_ProjRatio.y / (vTC.z - CV_ProjRatio.x)) * CV_NearFarClipDist.y;
-		rayDepth -= rayDepth * .001; // bias
+		rayDepth -= rayDepth * .002; // bias
 
-#if %_RT_SAMPLE5 // take into account transmittance for sun shadows, TODO: support transmittance also for local lights
-		const float sceneTransmittance = DecodeGBufferTransmittanceLum(sceneGBufferA.Load(tcInt));
+#if %_RT_SAMPLE5 // take into account transmittance near the camera, TODO: support transmittance also for local lights
+		const float sceneTransmittance = DecodeGBufferTransmittanceLum(sceneGBufferA.Load(tcInt)) * saturate(1.25f - rayDepth * .01f);
 #else
 		const float sceneTransmittance = 0;
 #endif
 
-		float surfaceDensity = saturate((rayDepth - sceneDepth) / lerp(0.005f, .25f, sceneTransmittance > 0)) * saturate(rayDepth < sceneDepth + rayDepth * .03) * (sceneTransmittance ? .75f : 1.f);
+		float surfaceOpacity = 1.f - sceneTransmittance * .9f;  // transparent shadows from grass & leaves
+		float surfaceThickness = 0.035f + rayDepth * .035f;
+		float depthTestHardness = 0.005f;                       // helps with z - fighting on the slopes
 
-		fInSSS = min(fInSSS, 1 - surfaceDensity);
+		float lightAmount = saturate((rayDepth - sceneDepth) / depthTestHardness) * saturate((sceneDepth + surfaceThickness - rayDepth) / depthTestHardness) * surfaceOpacity;
+
+		lightAmountMax = max(lightAmountMax, lightAmount);
 
 		vTC0 += vTCStep;
 	}
 
-	fInShadow = min(fInSSS, fInShadow);
+	fInShadow *= 1.f - lightAmountMax;
 }
