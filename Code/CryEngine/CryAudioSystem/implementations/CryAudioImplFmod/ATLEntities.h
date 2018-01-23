@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -61,11 +61,11 @@ class CTrigger final : public ITrigger
 public:
 
 	explicit CTrigger(
-	  uint32 const eventPathId,
+	  uint32 const id,
 	  EEventType const eventType,
 	  FMOD::Studio::EventDescription* const pEventDescription,
 	  FMOD_GUID const guid)
-		: m_eventPathId(eventPathId)
+		: m_id(id)
 		, m_eventType(eventType)
 		, m_pEventDescription(pEventDescription)
 		, m_guid(guid)
@@ -85,14 +85,14 @@ public:
 	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
 	// ~CryAudio::Impl::ITrigger
 
-	uint32                          GetEventPathId() const      { return m_eventPathId; }
+	uint32                          GetId() const               { return m_id; }
 	EEventType                      GetEventType() const        { return m_eventType; }
 	FMOD::Studio::EventDescription* GetEventDescription() const { return m_pEventDescription; }
 	FMOD_GUID                       GetGuid() const             { return m_guid; }
 
 private:
 
-	uint32 const                          m_eventPathId;
+	uint32 const                          m_id;
 	EEventType const                      m_eventType;
 	FMOD::Studio::EventDescription* const m_pEventDescription;
 	FMOD_GUID const                       m_guid;

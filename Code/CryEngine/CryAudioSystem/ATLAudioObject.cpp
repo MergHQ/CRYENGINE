@@ -20,7 +20,7 @@ namespace CryAudio
 {
 TriggerInstanceId CryAudio::CATLAudioObject::s_triggerInstanceIdCounter = 1;
 CSystem* CryAudio::CATLAudioObject::s_pAudioSystem = nullptr;
-CAudioEventManager* CryAudio::CATLAudioObject::s_pEventManager = nullptr;
+CEventManager* CryAudio::CATLAudioObject::s_pEventManager = nullptr;
 CAudioStandaloneFileManager* CryAudio::CATLAudioObject::s_pStandaloneFileManager = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
@@ -306,7 +306,7 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 
 	for (auto const pTriggerImpl : pTrigger->m_implPtrs)
 	{
-		CATLEvent* const pEvent = s_pEventManager->ConstructAudioEvent();
+		CATLEvent* const pEvent = s_pEventManager->ConstructEvent();
 		ERequestStatus const activateResult = pTriggerImpl->Execute(m_pImplData, pEvent->m_pImplData);
 
 		if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
@@ -333,7 +333,7 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 		}
 		else
 		{
-			s_pEventManager->ReleaseEvent(pEvent);
+			s_pEventManager->DestructEvent(pEvent);
 
 			if (activateResult == ERequestStatus::SuccessfullyStopped)
 			{
@@ -360,17 +360,15 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CATLAudioObject::HandleStopTrigger(CATLTrigger const* const pTrigger)
 {
-	ERequestStatus result = ERequestStatus::Failure;
-
 	for (auto const pEvent : m_activeEvents)
 	{
 		if ((pEvent != nullptr) && pEvent->IsPlaying() && (pEvent->m_pTrigger == pTrigger))
 		{
-			result = pEvent->Stop();
+			pEvent->Stop();
 		}
 	}
 
-	return result;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -483,7 +481,7 @@ ERequestStatus CATLAudioObject::LoadTriggerAsync(CATLTrigger const* const pTrigg
 		{
 			triggerStatus = iPlace->second.flags;
 		}
-		CATLEvent* const pEvent = s_pEventManager->ConstructAudioEvent();
+		CATLEvent* const pEvent = s_pEventManager->ConstructEvent();
 		ERequestStatus prepUnprepResult = ERequestStatus::Failure;
 
 		if (bLoad)
@@ -517,7 +515,7 @@ ERequestStatus CATLAudioObject::LoadTriggerAsync(CATLTrigger const* const pTrigg
 		}
 		else
 		{
-			s_pEventManager->ReleaseEvent(pEvent);
+			s_pEventManager->DestructEvent(pEvent);
 		}
 	}
 
@@ -1501,7 +1499,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 				for (auto const pTriggerImpl : pTrigger->m_implPtrs)
 				{
 
-					CATLEvent* const pEvent = s_pEventManager->ConstructAudioEvent();
+					CATLEvent* const pEvent = s_pEventManager->ConstructEvent();
 					ERequestStatus const activateResult = pTriggerImpl->Execute(m_pImplData, pEvent->m_pImplData);
 
 					if (activateResult == ERequestStatus::Success || activateResult == ERequestStatus::Pending)
@@ -1525,7 +1523,7 @@ void CATLAudioObject::ForceImplementationRefresh(
 					else
 					{
 						Cry::Audio::Log(ELogType::Warning, R"(TriggerImpl "%s" failed during audio middleware switch on AudioObject "%s")", pTrigger->m_name.c_str(), m_name.c_str());
-						s_pEventManager->ReleaseEvent(pEvent);
+						s_pEventManager->DestructEvent(pEvent);
 					}
 				}
 			}

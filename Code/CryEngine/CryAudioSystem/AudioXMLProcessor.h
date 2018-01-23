@@ -26,7 +26,7 @@ public:
 	CAudioXMLProcessor& operator=(CAudioXMLProcessor const&) = delete;
 	CAudioXMLProcessor& operator=(CAudioXMLProcessor&&) = delete;
 
-	void                Init(Impl::IImpl* const pIImpl);
+	void                SetImpl(Impl::IImpl* const pIImpl);
 	void                Release();
 
 	void                ParseControlsData(char const* const szFolderPath, EDataScope const dataScope);

@@ -8,7 +8,7 @@
 namespace pfx2
 {
 
-EParticleDataType PDT(EPDT_MeshGeometry, IMeshObj*);
+EParticleDataType PDT(EPDT_MeshGeometry, IMeshObj*, EDataFlags::BNeedsClear); // Submesh pointers must be cleared on edit to avoid referencing freed parent mesh
 
 extern EParticleDataType EPDT_Alpha, EPDT_Color;
 

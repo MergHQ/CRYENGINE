@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioStandaloneFileManager.h"
@@ -23,7 +23,7 @@ CAudioStandaloneFileManager::~CAudioStandaloneFileManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioStandaloneFileManager::Init(Impl::IImpl* const pIImpl)
+void CAudioStandaloneFileManager::SetImpl(Impl::IImpl* const pIImpl)
 {
 	m_pIImpl = pIImpl;
 }
@@ -105,8 +105,8 @@ void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 co
 			lowerCaseObjectName.MakeLower();
 
 			bool const bDraw = bIsFilterNotSet ||
-				(lowerCaseStandaloneFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos) ||
-				(lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+			                   (lowerCaseStandaloneFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos) ||
+			                   (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 
 			if (bDraw)
 			{
@@ -115,31 +115,25 @@ void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 co
 				switch (pStandaloneFile->m_state)
 				{
 				case EAudioStandaloneFileState::Playing:
-				{
 					pColor = itemPlayingColor;
-
 					break;
-				}
 				case EAudioStandaloneFileState::Loading:
-				{
 					pColor = itemLoadingColor;
-
 					break;
-				}
 				case EAudioStandaloneFileState::Stopping:
-				{
 					pColor = itemStoppingColor;
-
 					break;
-				}
+				default:
+					CRY_ASSERT_MESSAGE(false, "Standalone file is in an unknown state.");
+					break;
 				}
 
 				auxGeom.Draw2dLabel(posX, posY, 1.2f,
-					pColor,
-					false,
-					"%s on %s",
-					szStandaloneFileName,
-					szObjectName);
+				                    pColor,
+				                    false,
+				                    "%s on %s",
+				                    szStandaloneFileName,
+				                    szObjectName);
 
 				posY += 11.0f;
 			}

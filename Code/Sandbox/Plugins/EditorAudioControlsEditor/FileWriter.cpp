@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "FileWriter.h"
@@ -74,7 +74,7 @@ void CFileWriter::WriteAll()
 	// Delete libraries that don't exist anymore from disk
 	std::set<string> librariesToDelete;
 	std::set_difference(m_previousLibraryPaths.begin(), m_previousLibraryPaths.end(), m_foundLibraryPaths.begin(), m_foundLibraryPaths.end(),
-		std::inserter(librariesToDelete, librariesToDelete.begin()));
+	                    std::inserter(librariesToDelete, librariesToDelete.begin()));
 
 	for (auto const& name : librariesToDelete)
 	{
@@ -194,10 +194,9 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 				}
 
 				string const fullFilePath = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + libraryPath + ".xml";
-
 				DWORD const fileAttributes = GetFileAttributesA(fullFilePath.c_str());
 
-				if (fileAttributes & FILE_ATTRIBUTE_READONLY)
+				if ((fileAttributes & FILE_ATTRIBUTE_READONLY) != 0)
 				{
 					// file is read-only
 					SetFileAttributesA(fullFilePath.c_str(), FILE_ATTRIBUTE_NORMAL);
@@ -434,6 +433,12 @@ void CFileWriter::DeleteLibraryFile(string const& filepath)
 {
 	// TODO: Mark for delete in source control.
 	DWORD const fileAttributes = GetFileAttributesA(filepath.c_str());
+
+	if ((fileAttributes & FILE_ATTRIBUTE_READONLY) != 0)
+	{
+		// file is read-only
+		SetFileAttributesA(filepath.c_str(), FILE_ATTRIBUTE_NORMAL);
+	}
 
 	if ((fileAttributes == INVALID_FILE_ATTRIBUTES) || !DeleteFile(filepath.c_str()))
 	{

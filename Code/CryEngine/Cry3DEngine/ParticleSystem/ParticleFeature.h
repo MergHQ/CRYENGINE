@@ -66,6 +66,8 @@ public:
 
 	virtual void KillParticles(const SUpdateContext& context, TConstArray<TParticleId> particleIds) {}
 
+	virtual void DestroyParticles(const SUpdateContext& context) {}
+
 	// Particle update
 	virtual void PreUpdateParticles(const SUpdateContext& context) {}
 
@@ -110,6 +112,7 @@ struct SFeatureDispatchers
 	TFeatureDispatcher<const SUpdateContext&> InitParticles { &CParticleFeature::InitParticles };
 	TFeatureDispatcher<const SUpdateContext&> PostInitParticles { &CParticleFeature::PostInitParticles };
 	TFeatureDispatcher<const SUpdateContext&, TConstArray<TParticleId>> KillParticles { &CParticleFeature::KillParticles };
+	TFeatureDispatcher<const SUpdateContext&> DestroyParticles { &CParticleFeature::DestroyParticles };
 
 	TFeatureDispatcher<const SUpdateContext&> PreUpdateParticles { &CParticleFeature::PreUpdateParticles };
 	TFeatureDispatcher<const SUpdateContext&> UpdateParticles { &CParticleFeature::UpdateParticles };

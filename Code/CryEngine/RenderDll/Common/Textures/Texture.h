@@ -1567,9 +1567,11 @@ public:
 	static void                 RT_FlushStreaming(bool bAbort);
 	static void                 ShutDown();
 
-	static bool                 ReloadFile(const char* szFileName);
+	static bool                 ReloadFile(const char* szFileName) threadsafe;
 	static bool                 ReloadFile_Request(const char* szFileName);
-	static void                 ReloadTextures();
+	static void                 ReloadTextures() threadsafe;
+	static void                 ToggleTexturesStreaming() threadsafe;
+	static void                 LogTextures(ILog* pLog) threadsafe;
 	static void                 Update();
 	static void                 RT_LoadingUpdate();
 	static void                 RLT_LoadingUpdate();

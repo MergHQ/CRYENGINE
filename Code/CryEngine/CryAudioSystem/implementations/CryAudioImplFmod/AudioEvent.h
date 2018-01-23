@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -47,8 +47,8 @@ public:
 	bool                         PrepareForOcclusion();
 	void                         SetObstructionOcclusion(float const obstruction, float const occlusion);
 	CATLEvent&                   GetATLEvent() const                                       { return *m_pEvent; }
-	uint32                       GetEventPathId() const                                    { return m_eventPathId; }
-	void                         SetEventPathId(uint32 const eventPathId)                  { m_eventPathId = eventPathId; }
+	uint32                       GetId() const                                             { return m_id; }
+	void                         SetId(uint32 const id)                                    { m_id = id; }
 	FMOD::Studio::EventInstance* GetInstance() const                                       { return m_pInstance; }
 	void                         SetInstance(FMOD::Studio::EventInstance* const pInstance) { m_pInstance = pInstance; }
 	CObjectBase* const           GetObject()                                               { return m_pObject; }
@@ -65,7 +65,7 @@ public:
 private:
 
 	CATLEvent*                       m_pEvent = nullptr;
-	uint32                           m_eventPathId = InvalidCRC32;
+	uint32                           m_id = InvalidCRC32;
 
 	float                            m_lowpassFrequencyMax = 0.0f;
 	float                            m_lowpassFrequencyMin = 0.0f;

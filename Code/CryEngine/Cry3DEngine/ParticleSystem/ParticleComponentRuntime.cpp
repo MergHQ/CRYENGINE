@@ -33,6 +33,12 @@ CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter,
 	}
 }
 
+CParticleComponentRuntime::~CParticleComponentRuntime()
+{
+	if (GetComponent()->DestroyParticles.size() && m_container.GetNumParticles())
+		GetComponent()->DestroyParticles(SUpdateContext(this));
+}
+
 bool CParticleComponentRuntime::IsValidForComponent() const
 {
 	if (!m_pComponent->UsesGPU())

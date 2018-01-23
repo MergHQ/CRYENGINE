@@ -39,7 +39,7 @@ public:
 	virtual bool OnInputEvent(SInputEvent const& event) override;
 	// ~IInputEventListener
 
-	bool           Initialize(CSystem* const pAudioSystem);
+	void           Initialize(CSystem* const pSystem);
 	bool           ShutDown();
 	void           ProcessRequest(CAudioRequest& request);
 	void           Update(float const deltaTime);
@@ -86,14 +86,17 @@ private:
 
 	// Components
 	CAudioStandaloneFileManager m_audioStandaloneFileMgr;
-	CAudioEventManager          m_audioEventMgr;
-	CAudioObjectManager         m_audioObjectMgr;
+	CEventManager               m_eventMgr;
+	CObjectManager              m_objectMgr;
 	CAudioListenerManager       m_audioListenerMgr;
 	CFileCacheManager           m_fileCacheMgr;
 	CAudioEventListenerManager  m_audioEventListenerMgr;
 	CAudioXMLProcessor          m_xmlProcessor;
 
 	SInternalControls           m_internalControls;
+
+	uint32                      m_objectPoolSize = 0;
+	uint32                      m_eventPoolSize = 0;
 
 	// Utility members
 	EInternalStates                    m_flags = EInternalStates::None;

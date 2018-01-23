@@ -29,6 +29,7 @@ class CParticleComponentRuntime : public _i_reference_target_t, public IParticle
 {
 public:
 	CParticleComponentRuntime(CParticleEmitter* pEmitter, CParticleComponent* pComponent);
+	~CParticleComponentRuntime();
 
 	CParticleComponentRuntime*    GetCpuRuntime()      { return !m_pGpuRuntime ? this : nullptr; }
 	gpu_pfx2::IParticleComponentRuntime* GetGpuRuntime()      { return m_pGpuRuntime; }

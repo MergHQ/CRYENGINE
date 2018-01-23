@@ -74,7 +74,7 @@ public:
 			: fInterp(fT), vHit(vH), vNorm(vN), pMaterial(pM)
 		{}
 	};
-	bool RayTrace(Vec3 const& vStart, Vec3 const& vEnd, SRayTrace* prt);
+	bool RayTrace(Vec3 const& vStart, Vec3 const& vEnd, SRayTrace* prt, bool bClampAbove = true);
 
 	CHeightMap()
 	{

@@ -12,11 +12,11 @@ void OffsetJointPosition(ICharacterInstance& character)
 	const char* szJointName = "Bip01 L Hand";
 	// Look up the identifier of the joint we want to manipulate
 	// This id can be cached, to spare the run-time lookup
-	const int jointId = pCharacter->GetIDefaultSkeleton().GetJointIDByName(szJointName);
+	const int jointId = character.GetIDefaultSkeleton().GetJointIDByName(szJointName);
 
 	// Start per-frame actions, should be executed in an update loop
 	// Offset the joint upwards by 0.1m
 	pOperatorQueue->PushPosition(jointId, IAnimationOperatorQueue::eOp_Additive, Vec3(0, 0, 0.1f));
 	// Now push the operator queue into the character for processing next frame
-	pCharacter->GetISkeletonAnim()->PushPoseModifier(0, pOperatorQueue);
+	character.GetISkeletonAnim()->PushPoseModifier(0, pOperatorQueue);
 }

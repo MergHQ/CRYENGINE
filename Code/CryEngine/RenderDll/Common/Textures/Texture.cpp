@@ -445,13 +445,12 @@ bool CTexture::CreateRenderTarget(ETEX_Format eFormat, const ColorF& cClear)
 		m_eSrcFormat = eFormat;
 	if (m_eSrcFormat == eTF_Unknown)
 		return false;
-	const void** pData = nullptr;
 
 	SetClosestFormatSupported();
 	m_eFlags |= FT_USAGE_RENDERTARGET;
 	m_cClearColor = cClear;
 	m_nMips = m_eFlags & FT_FORCE_MIPS ? CTexture::CalcNumMips(m_nWidth, m_nHeight) : m_nMips;
-	bool bRes = CreateDeviceTexture(pData);
+	bool bRes = CreateDeviceTexture(nullptr);
 	PostCreate();
 
 	return bRes;
@@ -463,13 +462,12 @@ bool CTexture::CreateDepthStencil(ETEX_Format eFormat, const ColorF& cClear)
 		m_eSrcFormat = eFormat;
 	if (m_eSrcFormat == eTF_Unknown)
 		return false;
-	const void** pData = nullptr;
 
 	SetClosestFormatSupported();
 	m_eFlags |= FT_USAGE_DEPTHSTENCIL;
 	m_cClearColor = cClear;
 	m_nMips = m_eFlags & FT_FORCE_MIPS ? CTexture::CalcNumMips(m_nWidth, m_nHeight) : m_nMips;
-	bool bRes = CreateDeviceTexture(pData);
+	bool bRes = CreateDeviceTexture(nullptr);
 	PostCreate();
 
 	return bRes;
@@ -754,8 +752,7 @@ bool CTexture::Reload()
 	}
 	else if (m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL))
 	{
-		const void** pData = nullptr;
-		bOK = CreateDeviceTexture(pData);
+		bOK = CreateDeviceTexture(nullptr);
 		assert(bOK);
 	}
 
@@ -880,70 +877,74 @@ void CTexture::RT_Precache()
 	CryLog("-- Precaching textures...");
 	iLog->UpdateLoadingScreen(0);
 
-	std::vector<CTexture*> TexturesForPrecaching;
+	if (!gEnv->IsEditor())
+		CryLog("=============================== Loading textures ================================");
 
-	bool bTextureCacheExists = false;
+	// Search texture(s) in a thread-safe manner, and protect the found texture(s) from deletion
+	// Loop should block the resource-library as briefly as possible (don't call heavy stuff in the loop)
+	std::forward_list<_smart_ptr<CTexture>> pFoundTextures;
+	size_t countableTextures = 0;
 
 	{
-		AUTO_LOCK(CBaseResource::s_cResLock);
+		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
 
 		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
 		if (pRL)
 		{
-			TexturesForPrecaching.reserve(pRL->m_RMap.size());
-
 			ResourcesMapItor itor;
 			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
 			{
-				CTexture* tp = (CTexture*)itor->second;
-				if (!tp)
+				CTexture* pTexture = (CTexture*)itor->second;
+				if (!pTexture || !pTexture->CTexture::IsPostponed())
 					continue;
-				if (tp->CTexture::IsPostponed())
-				{
-					TexturesForPrecaching.push_back(tp);
-				}
+
+				pFoundTextures.emplace_front(pTexture);
+				countableTextures++;
 			}
 		}
 	}
 
 	// Preload all the post poned textures
 	{
-		if (!gEnv->IsEditor())
-			CryLog("=============================== Loading textures ================================");
-
-		std::vector<CTexture*>& Textures = TexturesForPrecaching;
-		std::sort(Textures.begin(), Textures.end(), CompareTextures());
+		pFoundTextures.sort(CompareTextures());
 
 		gEnv->pSystem->GetStreamEngine()->PauseStreaming(false, 1 << eStreamTaskTypeTexture);
 
-		int numTextures = Textures.size();
-		int prevProgress = 0;
-
-		for (uint32 i = 0; i < Textures.size(); i++)
+		// Trigger the texture(s)'s load without holding the resource-library lock to evade dead-locks
 		{
-			CTexture* tp = Textures[i];
+			int countedTextures = 0;
+			int numTextures = countableTextures;
+			int prevProgress = 0;
 
-			if (!CRenderer::CV_r_texturesstreaming || !tp->m_bStreamPrepared)
+			// TODO: jobbable
+			pFoundTextures.remove_if([&, numTextures](_smart_ptr<CTexture>& pTexture)
 			{
-				tp->m_bPostponed = false;
-				tp->Load(tp->m_eDstFormat);
-			}
-			int progress = (i * 10) / numTextures;
-			if (progress != prevProgress)
-			{
-				prevProgress = progress;
-				gEnv->pLog->UpdateLoadingScreen("Precaching progress: %d", progress);
-			}
+				if (!CRenderer::CV_r_texturesstreaming || !pTexture->m_bStreamPrepared)
+				{
+					pTexture->m_bPostponed = false;
+					pTexture->Load(pTexture->m_eDstFormat);
+				}
+
+				int progress = (++countedTextures * 10) / numTextures;
+				if (progress != prevProgress)
+				{
+					prevProgress = progress;
+					gEnv->pLog->UpdateLoadingScreen("Precaching progress: %d0.0%% (%d of %d)", progress, countedTextures, countableTextures);
+				}
+
+				// Only keep texture which really need Precache()
+				return !(pTexture->m_bStreamed && pTexture->m_bForceStreamHighRes);
+			});
 		}
 
 		while (s_StreamPrepTasks.GetNumLive())
 		{
-			if (gRenDev->m_pRT->IsRenderThread() && !gRenDev->m_pRT->IsRenderLoadingThread())
+			if (gRenDev->m_pRT->IsRenderThread() && !gRenDev->m_pRT->IsRenderLoadingThread() && !gRenDev->m_pRT->IsLevelLoadingThread())
 			{
 				StreamState_Update();
 				StreamState_UpdatePrep();
 			}
-			else if (gRenDev->m_pRT->IsRenderLoadingThread())
+			else if (gRenDev->m_pRT->IsRenderLoadingThread() || gRenDev->m_pRT->IsLevelLoadingThread())
 			{
 				StreamState_UpdatePrep();
 			}
@@ -951,26 +952,23 @@ void CTexture::RT_Precache()
 			CrySleep(1);
 		}
 
-		for (uint32 i = 0; i < Textures.size(); i++)
+		// Trigger the texture(s)'s load without holding the resource-library lock to evade dead-locks
 		{
-			CTexture* tp = Textures[i];
-
-			if (tp->m_bStreamed && tp->m_bForceStreamHighRes)
+			// TODO: jobbable
+			pFoundTextures.remove_if([](_smart_ptr<CTexture>& pTexture)
 			{
-				tp->m_bStreamHighPriority |= 1;
-				tp->m_fpMinMipCur = 0;
-				s_pTextureStreamer->Precache(tp);
-			}
+				pTexture->m_bStreamHighPriority |= 1;
+				pTexture->m_fpMinMipCur = 0;
+
+				s_pTextureStreamer->Precache(pTexture);
+
+				return true;
+			});
 		}
-
-		if (!gEnv->IsEditor())
-			CryLog("========================== Finished loading textures ============================");
 	}
 
-	if (bTextureCacheExists)
-	{
-		//GetISystem()->GetIResourceManager()->UnloadLevelCachePak( TEXTURE_LEVEL_CACHE_PAK );
-	}
+	if (!gEnv->IsEditor())
+		CryLog("========================== Finished loading textures ============================");
 
 	CTimeValue t1 = gEnv->pTimer->GetAsyncTime();
 	float dt = (t1 - t0).GetSeconds();
@@ -1094,7 +1092,7 @@ bool CTexture::Load(CImageFile* pImage)
 	if (!pImage || pImage->mfGetFormat() == eTF_Unknown)
 		return false;
 
-	LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CTexture::Load(CImageFile* pImage)", pImage->mfGet_filename().c_str());
+	//LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CTexture::Load(CImageFile* pImage)", pImage->mfGet_filename().c_str());
 
 	if ((m_eFlags & FT_ALPHA) && !pImage->mfIs_image(0))
 	{
@@ -1826,6 +1824,7 @@ void CTexture::Update()
 		s_vTexReloadRequests.swap(queue);
 		s_xTexReloadLock.Unlock();
 
+		// TODO: jobbable
 		for (std::set<string>::iterator i = queue.begin(); i != queue.end(); ++i)
 			ReloadFile(*i);
 	}
@@ -1842,19 +1841,21 @@ void CTexture::Update()
 
 	SDynTexture::Tick();
 
-	SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
-	ResourcesMapItor itor;
-
 	if ((s_nStreamingMode != CRenderer::CV_r_texturesstreaming) || (s_nStreamingUpdateMode != CRenderer::CV_r_texturesstreamingUpdateType))
 	{
 		InitStreaming();
 	}
 
-	if (pRL)
-	{
 #ifndef CONSOLE_CONST_CVAR_MODE
+	if (CRenderer::CV_r_texlog)
+	{
+		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
+		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
+		ResourcesMapItor itor;
+
 		uint32 i;
-		if (CRenderer::CV_r_texlog == 2 || CRenderer::CV_r_texlog == 3 || CRenderer::CV_r_texlog == 4)
+		if (pRL && (CRenderer::CV_r_texlog == 2 || CRenderer::CV_r_texlog == 3 || CRenderer::CV_r_texlog == 4))
 		{
 			FILE* fp = NULL;
 			TArray<CTexture*> Texs;
@@ -2027,7 +2028,7 @@ void CTexture::Update()
 			if (CRenderer::CV_r_texlog != 4)
 				CRenderer::CV_r_texlog = 0;
 		}
-		else if (CRenderer::CV_r_texlog == 1)
+		else if (pRL && (CRenderer::CV_r_texlog == 1))
 		{
 			//char *str = GetTexturesStatusText();
 
@@ -2155,8 +2156,8 @@ void CTexture::Update()
 			cry_sprintf(buf, "Current tex. objects: %u (Size: %.3fMb, Dyn. Atlases: %.3f, Dyn. Separated: %.3f, Loaded: %.3f, NonStreamed: %.3f)", Texs.Num(), Size / (1024.0f * 1024.0f), SizeDynAtl / (1024.0f * 1024.0f), SizeDynCom / (1024.0f * 1024.0f), PartSize / (1024.0f * 1024.0f), NonStrSize / (1024.0f * 1024.0f));
 			IRenderAuxText::TextToScreenColor(4, 27, 1, 0, 0, 1, buf);
 		}
-#endif
 	}
+#endif
 }
 
 void CTexture::RT_LoadingUpdate()
@@ -2221,8 +2222,10 @@ bool CTexture::ReloadFile_Request(const char* szFileName)
 	return true;
 }
 
-bool CTexture::ReloadFile(const char* szFileName)
+bool CTexture::ReloadFile(const char* szFileName) threadsafe
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	char gameFolderPath[256];
 	cry_strcpy(gameFolderPath, PathUtil::GetGameFolder());
 	PREFAST_SUPPRESS_WARNING(6054); // it is nullterminated
@@ -2241,64 +2244,152 @@ bool CTexture::ReloadFile(const char* szFileName)
 	if (realName.size() >= (uint32)gameFolderPathLength && memcmp(realName.data(), gameFolderPath, gameFolderPathLength) == 0)
 		realName += gameFolderPathLength;
 
+	_smart_ptr<CTexture> pFoundTexture = nullptr;
 	bool bStatus = true;
 
-	SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
-	if (pRL)
 	{
-		AUTO_LOCK(CBaseResource::s_cResLock);
+		CryAutoReadLock<CryRWLock> lock(s_cResLock);
 
-		ResourcesMapItor itor;
-		for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
+		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
+		if (pRL)
 		{
-			CTexture* tp = (CTexture*)itor->second;
-			if (!tp)
-				continue;
-
-			if (!(tp->m_eFlags & FT_FROMIMAGE))
-				continue;
-			string srcName = PathUtil::ToUnixPath(tp->m_SrcName);
-			if (strlen(srcName) >= (uint32)gameFolderPathLength && _strnicmp(srcName, gameFolderPath, gameFolderPathLength) == 0)
-				srcName += gameFolderPathLength;
-			//CryLogAlways("realName = %s srcName = %s gameFolderPath = %s szFileName = %s", realName, srcName, gameFolderPath, szFileName);
-			if (!stricmp(realName, srcName))
+			// Search texture in a thread-safe manner, and protect the found texture from deletion
+			// Loop should block the resource-library as briefly as possible (don't call heavy stuff in the loop)
+			ResourcesMapItor itor;
+			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
 			{
-				if (!tp->Reload())
+				CTexture* pTexture = (CTexture*)itor->second;
+				if (!pTexture || !(pTexture->m_eFlags & FT_FROMIMAGE))
+					continue;
+
+				string srcName = PathUtil::ToUnixPath(pTexture->m_SrcName);
+				if (strlen(srcName) >= (uint32)gameFolderPathLength && _strnicmp(srcName, gameFolderPath, gameFolderPathLength) == 0)
+					srcName += gameFolderPathLength;
+
+				//CryLogAlways("realName = %s srcName = %s gameFolderPath = %s szFileName = %s", realName, srcName, gameFolderPath, szFileName);
+				if (!stricmp(realName, srcName))
 				{
-					bStatus = false;
+					pFoundTexture = pTexture;
+					break;
 				}
 			}
 		}
 	}
 
+	// Trigger the texture's reload without holding the resource-library lock to evade dead-locks
+	if (pFoundTexture)
+	{
+		bStatus = pFoundTexture->Reload();
+	}
+
 	return bStatus;
 }
 
-void CTexture::ReloadTextures()
+void CTexture::ReloadTextures() threadsafe
 {
-	LOADING_TIME_PROFILE_SECTION;
+	FUNCTION_PROFILER_RENDERER();
 
 	// Flush any outstanding texture requests before reloading
 	gEnv->pRenderer->FlushPendingTextureTasks();
 
-	SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
-	if (pRL)
+	std::forward_list<_smart_ptr<CTexture>> pFoundTextures;
+
+	// Search texture(s) in a thread-safe manner, and protect the found texture(s) from deletion
+	// Loop should block the resource-library as briefly as possible (don't call heavy stuff in the loop)
 	{
-		ResourcesMapItor itor;
-		int nID = 0;
-		for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); nID++)
+		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
+		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
+		if (pRL)
 		{
-			ResourcesMapItor itCurrent = itor++;
-			CTexture* tp = (CTexture*)itCurrent->second;
-			if (!tp)
-				continue;
-			if (!(tp->m_eFlags & FT_FROMIMAGE))
-				continue;
-			tp->Reload();
+			ResourcesMapItor itor;
+			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
+			{
+				CTexture* pTexture = (CTexture*)itor->second;
+				if (!pTexture || !(pTexture->m_eFlags & FT_FROMIMAGE))
+					continue;
+
+				pFoundTextures.emplace_front(pTexture);
+			}
 		}
 	}
+
+	// Trigger the texture(s)'s reload without holding the resource-library lock to evade dead-locks
+	{
+		// TODO: jobbable
+		pFoundTextures.remove_if([](_smart_ptr<CTexture>& pTexture) { pTexture->Reload(); return true; });
+	}
 }
- 
+
+void CTexture::ToggleTexturesStreaming() threadsafe
+{
+	FUNCTION_PROFILER_RENDERER();
+
+	// Flush any outstanding texture requests before reloading
+	gEnv->pRenderer->FlushPendingTextureTasks();
+
+	std::forward_list<_smart_ptr<CTexture>> pFoundTextures;
+
+	// Search texture(s) in a thread-safe manner, and protect the found texture(s) from deletion
+	// Loop should block the resource-library as briefly as possible (don't call heavy stuff in the loop)
+	{
+		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
+		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
+		if (pRL)
+		{
+			ResourcesMapItor itor;
+			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
+			{
+				CTexture* pTexture = (CTexture*)itor->second;
+				if (!pTexture || !(pTexture->m_eFlags & FT_FROMIMAGE))
+					continue;
+
+				pFoundTextures.emplace_front(pTexture);
+			}
+		}
+	}
+
+	// Trigger the texture(s)'s reload without holding the resource-library lock to evade dead-locks
+	{
+		// TODO: jobbable
+		pFoundTextures.remove_if([](_smart_ptr<CTexture>& pTexture) { pTexture->ToggleStreaming(CRenderer::CV_r_texturesstreaming != 0); return true; });
+	}
+}
+
+void CTexture::LogTextures(ILog* pLog) threadsafe
+{
+	std::forward_list<_smart_ptr<CTexture>> pFoundTextures;
+
+	// Search texture(s) in a thread-safe manner, and protect the found texture(s) from deletion
+	// Loop should block the resource-library as briefly as possible (don't call heavy stuff in the loop)
+	{
+		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
+		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
+		if (pRL)
+		{
+			ResourcesMapItor itor;
+			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
+			{
+				CTexture* pTexture = (CTexture*)itor->second;
+				if (!pTexture)
+					continue;
+				const char* pName = pTexture->GetName();
+				if (!pName || strchr(pName, '/'))
+					continue;
+
+				pFoundTextures.emplace_front(pTexture);
+			}
+		}
+	}
+
+	// Trigger the texture(s)'s reload without holding the resource-library lock to evade dead-locks
+	{
+		pFoundTextures.remove_if([](_smart_ptr<CTexture>& pTexture) { iLog->Log("\t%s -- fmt: %s, dim: %d x %d\n", pTexture->GetName(), pTexture->GetFormatName(), pTexture->GetWidth(), pTexture->GetHeight()); return true; });
+	}
+}
+
 bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 {
 	if (pDefaultTexture)

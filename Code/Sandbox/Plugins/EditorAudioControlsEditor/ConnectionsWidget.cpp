@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "ConnectionsWidget.h"
@@ -55,17 +55,16 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 	m_pTreeView->installEventFilter(this);
 	m_pTreeView->header()->setMinimumSectionSize(25);
 	m_pTreeView->header()->setSectionResizeMode(static_cast<int>(CConnectionModel::EColumns::Notification), QHeaderView::ResizeToContents);
-	m_pTreeView->header()->setSectionResizeMode(m_nameColumn, QHeaderView::ResizeToContents);
 	m_pTreeView->SetNameColumn(m_nameColumn);
 	m_pTreeView->SetNameRole(static_cast<int>(CConnectionModel::ERoles::Name));
 	m_pTreeView->TriggerRefreshHeaderColumns();
 
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CConnectionsWidget::OnContextMenu);
 	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, [this]()
-	{
-		RefreshConnectionProperties();
-		UpdateSelectedConnections();
-	});
+		{
+			RefreshConnectionProperties();
+			UpdateSelectedConnections();
+	  });
 
 	QSplitter* const pSplitter = new QSplitter(Qt::Vertical, this);
 	pSplitter->addWidget(m_pTreeView);
@@ -81,20 +80,22 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 	setHidden(true);
 
 	CAudioControlsEditorPlugin::GetAssetsManager()->SignalConnectionRemoved.Connect([&](CSystemControl* pControl)
-	{
-		if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() && (m_pControl == pControl))
 		{
-			// clear the selection if a connection is removed
-			m_pTreeView->selectionModel()->clear();
-			RefreshConnectionProperties();
-		}
-	}, reinterpret_cast<uintptr_t>(this));
+			if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() && (m_pControl == pControl))
+			{
+			  // clear the selection if a connection is removed
+			  m_pTreeView->selectionModel()->clear();
+			  RefreshConnectionProperties();
+			}
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.Connect([&]()
-	{
-		m_pTreeView->selectionModel()->clear();
-		RefreshConnectionProperties();
-	}, reinterpret_cast<uintptr_t>(this));
+		{
+			m_pTreeView->selectionModel()->clear();
+			RefreshConnectionProperties();
+	  }, reinterpret_cast<uintptr_t>(this));
+
+	QObject::connect(m_pConnectionModel, &CConnectionModel::SignalConnectionAdded, this, &CConnectionsWidget::OnConnectionAdded);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -163,14 +164,30 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 				{
 					pContextMenu->addSeparator();
 					pContextMenu->addAction(tr("Select in Middleware Data"), [=]()
-					{
-						SignalSelectConnectedImplItem(itemId);
-					});
+						{
+							SignalSelectConnectedImplItem(itemId);
+					  });
 				}
 			}
 		}
 
 		pContextMenu->exec(QCursor::pos());
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CConnectionsWidget::OnConnectionAdded(CID const id)
+{
+	if (m_pControl != nullptr)
+	{
+		auto const& matches = m_pConnectionModel->match(m_pConnectionModel->index(0, 0, QModelIndex()), static_cast<int>(CConnectionModel::ERoles::Id), id, 1, Qt::MatchRecursive);
+
+		if (!matches.isEmpty())
+		{
+			m_pTreeView->selectionModel()->select(matches.first(), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+		}
+
+		m_pTreeView->resizeColumnToContents(m_nameColumn);
 	}
 }
 
@@ -221,6 +238,8 @@ void CConnectionsWidget::RemoveSelectedConnection()
 						}
 					}
 				}
+
+				m_pTreeView->resizeColumnToContents(m_nameColumn);
 			}
 		}
 	}
@@ -244,7 +263,7 @@ void CConnectionsWidget::SetControl(CSystemControl* const pControl)
 
 				for (auto const itemId : selectedConnections)
 				{
-					auto const matches = m_pConnectionModel->match(m_pConnectionModel->index(0, 0, QModelIndex()), static_cast<int>(CConnectionModel::ERoles::Id), itemId, 1, Qt::MatchRecursive);
+					auto const& matches = m_pConnectionModel->match(m_pConnectionModel->index(0, 0, QModelIndex()), static_cast<int>(CConnectionModel::ERoles::Id), itemId, 1, Qt::MatchRecursive);
 
 					if (!matches.isEmpty())
 					{
@@ -263,6 +282,8 @@ void CConnectionsWidget::SetControl(CSystemControl* const pControl)
 				m_pTreeView->setCurrentIndex(m_pTreeView->model()->index(0, m_nameColumn));
 			}
 		}
+
+		m_pTreeView->resizeColumnToContents(m_nameColumn);
 	}
 }
 

@@ -780,7 +780,7 @@ public:
 			return s_sClassNamePS;
 	}
 
-	static const char*      GetCurrentShaderCombinations(bool bForLevel);
+	static const char*      GetCurrentShaderCombinations(bool bForLevel) threadsafe;
 
 	static byte*            mfIgnoreRemapsFromCache(int nRemaps, byte* pP);
 	static byte*            mfIgnoreBindsFromCache(int nParams, byte* pP);

@@ -25,8 +25,7 @@ static constexpr SwitchStateId OcclusionTypeStateIds[IntegralValue(EOcclusionTyp
 };
 
 class CSystem;
-class CAudioEventManager;
-class CAudioListenerManager;
+class CEventManager;
 class CAudioStandaloneFileManager;
 
 enum class ETriggerStatus : EnumFlagsType
@@ -152,7 +151,7 @@ public:
 	void DecrementSyncCallbackCounter() { CRY_ASSERT(m_numPendingSyncCallbacks >= 1); CryInterlockedDecrement(&m_numPendingSyncCallbacks); }
 
 	static CSystem*                     s_pAudioSystem;
-	static CAudioEventManager*          s_pEventManager;
+	static CEventManager*               s_pEventManager;
 	static CAudioStandaloneFileManager* s_pStandaloneFileManager;
 
 private:

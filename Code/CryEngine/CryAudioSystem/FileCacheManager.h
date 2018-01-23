@@ -36,7 +36,8 @@ public:
 	CFileCacheManager& operator=(CFileCacheManager&&) = delete;
 
 	// Public methods
-	void           Init(Impl::IImpl* const pIImpl);
+	void           Init();
+	void           SetImpl(Impl::IImpl* const pIImpl);
 	void           Release();
 	FileEntryId    TryAddFileCacheEntry(XmlNodeRef const pFileNode, EDataScope const dataScope, bool const bAutoLoad);
 	bool           TryRemoveFileCacheEntry(FileEntryId const audioFileEntryId, EDataScope const dataScope);
