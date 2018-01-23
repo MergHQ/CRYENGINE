@@ -2497,12 +2497,6 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 		}
 		m_grpProfileData[14].nTicksLast = CryGetTicks()-timer;
 	}
-	{ 
-	WriteLockCond lock1(m_lockCaller[MAX_PHYS_THREADS], flags & ent_flagged_only);
-	WriteLock lock(m_lockStep);
-	if (time_interval>0 && !(flags & ent_flagged_only))
-		MarkAsPhysThread();
-	volatile int64 timer=CryGetTicks();
 
 	if (time_interval > m_vars.maxWorldStep)
 		time_interval = time_interval_org = m_vars.maxWorldStep;
@@ -2516,6 +2510,20 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 		m_timePhysics += time_interval;
 	if (m_vars.fixedTimestep>0 && time_interval>0)
 		time_interval = m_vars.fixedTimestep;
+
+	if (!(flags & ent_flagged_only)) {
+		EventPhysWorldStepStart epwss;
+		epwss.dt = time_interval;
+		SignalEvent(&epwss,0);
+	}
+
+	{ 
+	WriteLockCond lock1(m_lockCaller[MAX_PHYS_THREADS], flags & ent_flagged_only);
+	WriteLock lock(m_lockStep);
+	if (time_interval>0 && !(flags & ent_flagged_only))
+		MarkAsPhysThread();
+	volatile int64 timer=CryGetTicks();
+
 	m_bUpdateOnlyFlagged = flags & ent_flagged_only;
 	bSkipFlagged = flags>>1 & pef_update;
 	m_bWorldStep = 1;
