@@ -1298,7 +1298,7 @@ void CD3D9Renderer::PrintResourcesLeaks()
 #ifndef _RELEASE
 	iLog->Log("\n \n");
 
-	AUTO_LOCK(CBaseResource::s_cResLock);
+	CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
 
 	CCryNameTSCRC Name;
 	SResourceContainer* pRL;
@@ -1438,6 +1438,8 @@ static int DebugIndexBufferSize(D3DIndexBuffer* pIB)
 void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 {
 #if !defined(EXCLUDE_RARELY_USED_R_STATS) && defined(ENABLE_PROFILING_CODE)
+	CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
 	const int nYstep = 10;
 	uint32 i;
 	int nY = 30; // initial Y pos
@@ -1844,6 +1846,8 @@ void CD3D9Renderer::DebugDrawStats1(const SRenderStatistics& RStats)
 void CD3D9Renderer::DebugVidResourcesBars(int nX, int nY)
 {
 #if !defined(EXCLUDE_RARELY_USED_R_STATS)
+	CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
 	int i;
 	int nYst = 15;
 	float fFSize = 1.4f;
@@ -2142,6 +2146,8 @@ void CD3D9Renderer::VidMemLog()
 #if !defined(_RELEASE) && !defined(CONSOLE_CONST_CVAR_MODE)
 	if (!CV_r_logVidMem)
 		return;
+
+	CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
 
 	SResourceContainer* pRL = 0;
 
@@ -2941,27 +2947,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 			{
 				// print all entries in the index book
 				iLog->Log("All entries:\n");
-
-				AUTO_LOCK(CBaseResource::s_cResLock);
-
-				const CCryNameTSCRC& resClass = CTexture::mfGetClassName();
-				const SResourceContainer* pRes = CBaseResource::GetResourcesForClass(resClass);
-				if (pRes)
-				{
-					const size_t size = pRes->m_RList.size();
-					for (size_t i = 0; i < size; ++i)
-					{
-						CTexture* pTex = (CTexture*) pRes->m_RList[i];
-						if (pTex)
-						{
-							const char* pName = pTex->GetName();
-							if (pName && !strchr(pName, '/'))
-							{
-								iLog->Log("\t%" PRISIZE_T " %s -- fmt: %s, dim: %d x %d\n", i, pName, pTex->GetFormatName(), pTex->GetWidth(), pTex->GetHeight());
-							}
-						}
-					}
-				}
+				CTexture::LogTextures(iLog);
 
 				// reset after done  (revert to previous argument set)
 				CV_r_ShowTexture->ForceSet(r_showTexture_prevString);
@@ -4928,6 +4914,8 @@ void CD3D9Renderer::GetMemoryUsage(ICrySizer* Sizer)
 			Sizer->AddObject(CHWShader::m_ShaderCache);
 		}
 		{
+			CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
 			SIZER_COMPONENT_NAME(Sizer, "HW Shaders");
 
 			Name = CHWShader::mfGetClassName(eHWSC_Vertex);
@@ -4949,6 +4937,8 @@ void CD3D9Renderer::GetMemoryUsage(ICrySizer* Sizer)
 			Sizer->AddObject(CLightStyle::s_LStyles);
 		}
 		{
+			CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
 			SIZER_COMPONENT_NAME(Sizer, "SResourceContainer");
 			Name = CShader::mfGetClassName();
 			pRL = CBaseResource::GetResourcesForClass(Name);
@@ -4980,6 +4970,8 @@ void CD3D9Renderer::GetMemoryUsage(ICrySizer* Sizer)
 		}
 	}
 	{
+		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
 		SIZER_COMPONENT_NAME(Sizer, "Texture Objects");
 		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
 		if (pRL)

@@ -543,7 +543,8 @@ void CShaderMan::mfReleaseShaders()
 {
 	CCryNameTSCRC Name = CShader::mfGetClassName();
 
-	AUTO_LOCK(CBaseResource::s_cResLock);
+	// TODO: If Release() doesn't manipulate the resource-library, make it a RLock
+	CryAutoWriteLock<CryRWLock> lock(CBaseResource::s_cResLock);
 
 	SResourceContainer* pRL = CBaseResource::GetResourcesForClass(Name);
 	if (pRL)
@@ -2880,7 +2881,7 @@ void CShaderMan::mfSortResources()
 	iLog->Log("--- %u Resources, %d Resource groups.", CShader::s_ShaderResources_known.Num(), nGroups - 20000);
 
 	{
-		AUTO_LOCK(CBaseResource::s_cResLock);
+		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
 
 		SResourceContainer* pRL = CShaderMan::s_pContainer;
 		assert(pRL);

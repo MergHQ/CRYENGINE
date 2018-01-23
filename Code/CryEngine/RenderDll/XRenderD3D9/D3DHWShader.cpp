@@ -2012,7 +2012,8 @@ void CHWShader::mfLazyUnload()
 		return;
 	}
 
-	AUTO_LOCK(CBaseResource::s_cResLock);
+	// TODO: make it a RLock if resource-library isn't manipulated
+	CryAutoWriteLock<CryRWLock> lock(CBaseResource::s_cResLock);
 
 	CCryNameTSCRC Name = CHWShader::mfGetClassName(eHWSC_Pixel);
 	SResourceContainer* pRL = CBaseResource::GetResourcesForClass(Name);

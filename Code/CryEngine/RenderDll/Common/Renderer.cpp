@@ -1884,7 +1884,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 
 	case EFQ_GetAllTextures:
 	{
-		AUTO_LOCK(CBaseResource::s_cResLock);
+		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
 
 		SRendererQueryGetAllTexturesParam* pParam = (SRendererQueryGetAllTexturesParam*)(pInOut0);
 		pParam->pTextures   = NULL;
@@ -2096,7 +2096,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 				stats->nRequiredStreamedTexturesCount = 0;
 				stats->nRequiredStreamedTexturesSize  = 0;
 
-				AUTO_LOCK(CBaseResource::s_cResLock);
+				CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
 
 				// compute all sizes
 				SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());

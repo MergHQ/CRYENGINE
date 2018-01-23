@@ -5113,8 +5113,10 @@ const char* CHWShader_D3D::mfGetActivatedCombinations(bool bForLevel)
 	return pPtr;
 }
 
-const char* CHWShader::GetCurrentShaderCombinations(bool bForLevel)
+const char* CHWShader::GetCurrentShaderCombinations(bool bForLevel) threadsafe
 {
+	CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
 	TArray<char> Combinations;
 	char* pPtr = NULL;
 	CCryNameTSCRC Name;
