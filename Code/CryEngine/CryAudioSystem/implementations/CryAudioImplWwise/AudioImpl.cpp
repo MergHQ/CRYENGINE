@@ -864,20 +864,20 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
+	g_globalObjectId = m_gameObjectId++;
+
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
-	AKRESULT const wwiseResult = AK::SoundEngine::RegisterGameObj(m_gameObjectId, "GlobalObject");
+	AKRESULT const wwiseResult = AK::SoundEngine::RegisterGameObj(g_globalObjectId, "GlobalObject");
 
 	if (!IS_WWISE_OK(wwiseResult))
 	{
 		Cry::Audio::Log(ELogType::Warning, "Wwise ConstructGlobalObject failed with AKRESULT: %d", wwiseResult);
 	}
 #else
-	AK::SoundEngine::RegisterGameObj(m_gameObjectId);
+	AK::SoundEngine::RegisterGameObj(g_globalObjectId);
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	g_globalObjectId = m_gameObjectId++;
-
-	return static_cast<IObject*>(new CObject(AK_INVALID_GAME_OBJECT));
+	return static_cast<IObject*>(new CObject(g_globalObjectId));
 }
 
 ///////////////////////////////////////////////////////////////////////////
