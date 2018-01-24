@@ -77,6 +77,9 @@ struct SLivingEntityNetSerialize {
 	Vec3 pos;
 	Vec3 vel;
 	Vec3 velRequested;
+	bool bFlying;
+	bool bJumpRequested;
+	float dh, dhSpeed, stablehTime;
 	void Serialize( TSerialize ser );
 };
 
