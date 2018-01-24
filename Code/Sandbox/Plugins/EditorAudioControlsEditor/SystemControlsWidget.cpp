@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "SystemControlsWidget.h"
@@ -91,45 +91,45 @@ CSystemControlsWidget::CSystemControlsWidget(CSystemAssetsManager* const pAssets
 	QObject::connect(m_pMountingProxyModel, &CMountingProxyModel::rowsInserted, this, &CSystemControlsWidget::SelectNewAsset);
 
 	m_pAssetsManager->SignalLibraryAboutToBeRemoved.Connect([&](CSystemLibrary* const pLibrary)
-	{
-		int const libCount = m_pAssetsManager->GetLibraryCount();
-
-		for (int i = 0; i < libCount; ++i)
 		{
-			if (m_pAssetsManager->GetLibrary(i) == pLibrary)
+			int const libCount = m_pAssetsManager->GetLibraryCount();
+
+			for (int i = 0; i < libCount; ++i)
 			{
-				m_libraryModels[i]->DisconnectSignals();
-				m_libraryModels[i]->deleteLater();
-				m_libraryModels.erase(m_libraryModels.begin() + i);
-				break;
+			  if (m_pAssetsManager->GetLibrary(i) == pLibrary)
+			  {
+			    m_libraryModels[i]->DisconnectSignals();
+			    m_libraryModels[i]->deleteLater();
+			    m_libraryModels.erase(m_libraryModels.begin() + i);
+			    break;
+			  }
 			}
-		}
-	}, reinterpret_cast<uintptr_t>(this));
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	m_pAssetsManager->SignalAssetRenamed.Connect([&]()
-	{
-		if (!m_pAssetsManager->IsLoading())
 		{
-			m_pSystemFilterProxyModel->invalidate();
-			m_pTreeView->scrollTo(m_pTreeView->currentIndex());
-		}
-	}, reinterpret_cast<uintptr_t>(this));
+			if (!m_pAssetsManager->IsLoading())
+			{
+			  m_pSystemFilterProxyModel->invalidate();
+			  m_pTreeView->scrollTo(m_pTreeView->currentIndex());
+			}
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::SignalAboutToLoad.Connect([&]()
-	{
-		StopControlExecution();
-	}, reinterpret_cast<uintptr_t>(this));
+		{
+			StopControlExecution();
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.Connect([&]()
-	{
-		StopControlExecution();
-	}, reinterpret_cast<uintptr_t>(this));
+		{
+			StopControlExecution();
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
-	{
-		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-		setEnabled(pEditorImpl != nullptr);
-	}, reinterpret_cast<uintptr_t>(this));
+		{
+			IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
+			setEnabled(pEditorImpl != nullptr);
+	  }, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -150,15 +150,15 @@ void CSystemControlsWidget::InitAddControlWidget(QVBoxLayout* const pLayout)
 {
 	QPushButton* const pAddButton = new QPushButton(tr("Add"), this);
 	pAddButton->setToolTip(tr("Add new library, folder or control"));
-	
+
 	QMenu* const pAddButtonMenu = new QMenu(pAddButton);
 	QObject::connect(pAddButtonMenu, &QMenu::aboutToShow, this, &CSystemControlsWidget::OnUpdateCreateButtons);
 
 	pAddButtonMenu->addAction(GetItemTypeIcon(ESystemItemType::Library), tr("Library"), [&]()
-	{
-		m_isCreatedFromMenu = true;
-		m_pAssetsManager->CreateLibrary(Utils::GenerateUniqueLibraryName("new_library", *m_pAssetsManager));
-	});
+		{
+			m_isCreatedFromMenu = true;
+			m_pAssetsManager->CreateLibrary(Utils::GenerateUniqueLibraryName("new_library", *m_pAssetsManager));
+	  });
 
 	pAddButtonMenu->addSeparator();
 
@@ -316,10 +316,10 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 	pContextMenu->addSeparator();
 
 	pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::Library), tr("Library"), [&]()
-	{
-		m_isCreatedFromMenu = true;
-		m_pAssetsManager->CreateLibrary(Utils::GenerateUniqueLibraryName("new_library", *m_pAssetsManager));
-	});
+		{
+			m_isCreatedFromMenu = true;
+			m_pAssetsManager->CreateLibrary(Utils::GenerateUniqueLibraryName("new_library", *m_pAssetsManager));
+	  });
 
 	pAddMenu->addSeparator();
 
@@ -373,9 +373,9 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 							if (pParent->GetType() == ESystemItemType::Library)
 							{
 								pContextMenu->addAction(tr("Open Containing Folder"), [&]()
-								{
-									QtUtil::OpenInExplorer(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), m_pAssetsManager->GetConfigFolderPath() + pParent->GetName() + ".xml").c_str());
-								});
+									{
+										QtUtil::OpenInExplorer(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), m_pAssetsManager->GetConfigFolderPath() + pParent->GetName() + ".xml").c_str());
+								  });
 
 								pContextMenu->addSeparator();
 							}
@@ -437,20 +437,20 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 					QAction* const pLoadAction = new QAction(tr("Load Global Preload Requests"), pContextMenu);
 					QAction* const pUnloadAction = new QAction(tr("Unload Global Preload Requests"), pContextMenu);
 					QObject::connect(pLoadAction, &QAction::triggered, [&]()
-					{
-						for (auto const pControl : controls)
 						{
-							gEnv->pAudioSystem->PreloadSingleRequest(CryAudio::StringToId(pControl->GetName()), false);
-						}
-					});
+							for (auto const pControl : controls)
+							{
+							  gEnv->pAudioSystem->PreloadSingleRequest(CryAudio::StringToId(pControl->GetName()), false);
+							}
+					  });
 
 					QObject::connect(pUnloadAction, &QAction::triggered, [&]()
-					{
-						for (auto const pControl : controls)
 						{
-							gEnv->pAudioSystem->UnloadSingleRequest(CryAudio::StringToId(pControl->GetName()));
-						}
-					});
+							for (auto const pControl : controls)
+							{
+							  gEnv->pAudioSystem->UnloadSingleRequest(CryAudio::StringToId(pControl->GetName()));
+							}
+					  });
 
 					pContextMenu->insertSeparator(pContextMenu->actions().at(0));
 					pContextMenu->insertAction(pContextMenu->actions().at(0), pUnloadAction);
@@ -461,10 +461,10 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 			if (selection.size() == 1)
 			{
 				pContextMenu->addAction(tr("Rename"), [&]()
-				{
-					QModelIndex const& nameColumnIndex = m_pTreeView->currentIndex().sibling(m_pTreeView->currentIndex().row(), m_nameColumn);
-					m_pTreeView->edit(nameColumnIndex);
-				});
+					{
+						QModelIndex const& nameColumnIndex = m_pTreeView->currentIndex().sibling(m_pTreeView->currentIndex().row(), m_nameColumn);
+						m_pTreeView->edit(nameColumnIndex);
+				  });
 			}
 		}
 
@@ -795,11 +795,13 @@ bool CSystemControlsWidget::IsEditing() const
 void CSystemControlsWidget::SelectConnectedSystemControl(CSystemControl& systemControl, CID const itemId)
 {
 	ClearFilters();
-	auto const matches = m_pSystemFilterProxyModel->match(m_pSystemFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(SystemModelUtils::ERoles::Id), systemControl.GetId(), 1, Qt::MatchRecursive);
+	auto const& matches = m_pSystemFilterProxyModel->match(m_pSystemFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(SystemModelUtils::ERoles::Id), systemControl.GetId(), 1, Qt::MatchRecursive);
 
 	if (!matches.isEmpty())
 	{
-		std::vector<CID> selectedConnection{ itemId };
+		std::vector<CID> selectedConnection {
+			itemId
+		};
 		systemControl.SetSelectedConnections(selectedConnection);
 		m_pTreeView->setFocus();
 		m_pTreeView->selectionModel()->setCurrentIndex(matches.first(), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
