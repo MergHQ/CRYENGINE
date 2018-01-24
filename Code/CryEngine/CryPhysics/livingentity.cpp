@@ -965,7 +965,7 @@ int CLivingEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 		float distance = m_pos.GetDistance(helper.pos);
 		setpos.pos = helper.pos;
 
-		SetParams( &setpos,0 );
+		SetParams( &setpos, (m_flags & pef_update)!=0 || get_iCaller()<MAX_PHYS_THREADS);	// apply changes immediately for custom-step entities	or if called from a phys thread
 
 		WriteLock lock1(m_lockLiving);
 		m_vel = helper.vel;
