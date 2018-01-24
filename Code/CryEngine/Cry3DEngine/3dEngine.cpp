@@ -214,8 +214,6 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_pRESky = 0;
 	m_pREHDRSky = 0;
 
-	m_pFarTreeSprites = 0;
-
 	m_pPhysMaterialEnumerator = 0;
 
 	m_fMaxViewDistHighSpec = 8000;

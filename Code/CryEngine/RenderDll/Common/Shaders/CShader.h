@@ -324,7 +324,6 @@ public:
 
 	static CShader*              s_ShaderFPEmu;
 	static CShader*              s_ShaderFallback;
-	static CShader*              s_ShaderTreeSprites;
 	static CShader*              s_ShaderScaleForm;
 	static CShader*              s_ShaderStars;
 	static CShader*              s_ShaderShadowBlur;

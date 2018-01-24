@@ -1152,7 +1152,7 @@ technique AnisotropicVertical
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Dilate technique for sprites ///////////////////////////////////////////////////////////////////
 
-// todo: moving to outside post process, into specific shader (eg: FarTreeSprites.cfx )
+// todo: moving to outside post process, into specific shader
 
 /// Specific data ////////////////////////
 
@@ -1252,8 +1252,6 @@ pixout DilatePS(vtxOutDilate IN)
 	}
 
 	OUT.Color = cColor;
-
-	//OUT.Color *= 0.1h;//vDilateParams.x; //Temporary: adjust HDR values to LDR range (10x multiply on read in fartreesprites.cfx). Need to revisit range adaption code.
 
 	const half SpriteAlphaRef=0; // 1.0h/255.0h;
 
