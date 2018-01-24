@@ -17,11 +17,11 @@ void ILocalEffector::Serialize(Serialization::IArchive& ar)
 //////////////////////////////////////////////////////////////////////////
 // CFeatureMotionPhysics
 
-EParticleDataType PDT(EPDT_Gravity, float, 1, BHasInit(true));
-EParticleDataType PDT(EPDT_Drag, float, 1, BHasInit(true));
-EParticleDataType PDT(EPVF_Acceleration, float, 3);
-EParticleDataType PDT(EPVF_VelocityField, float, 3);
-EParticleDataType PDT(EPVF_PositionPrev, float, 3);
+EParticleDataType PDT(EPDT_Gravity,       float, EDataFlags::BHasInit);
+EParticleDataType PDT(EPDT_Drag,          float, EDataFlags::BHasInit);
+EParticleDataType PDT(EPVF_Acceleration,  float[3]);
+EParticleDataType PDT(EPVF_VelocityField, float[3]);
+EParticleDataType PDT(EPVF_PositionPrev,  float[3]);
 extern EParticleDataType EPDT_MeshGeometry;
 
 CFeatureMotionPhysics::CFeatureMotionPhysics()
@@ -363,10 +363,10 @@ void CFeatureMotionPhysics::Integrate(const SUpdateContext& context)
 	const Vec3v uniformWind = ToVec3v(uniformForces.vWind * m_windMultiplier + m_uniformWind);
 
 	floatv coeffsv[3];
-	if (m_environFlags & ENV_WIND)
+	const float maxDragFactor = m_drag.GetValueRange(context).end * context.m_deltaTime;
+	if (maxDragFactor)
 	{
 		// Approximate e^(-d t) with b/(d t + a) + c
-		const float maxDragFactor = m_drag.GetValueRange(context).end * context.m_deltaTime;
 		float coeffs[3];
 		DragAdjustCoeffs(coeffs, maxDragFactor);
 		for (int i = 0; i < 3; ++i)
@@ -389,14 +389,13 @@ void CFeatureMotionPhysics::Integrate(const SUpdateContext& context)
 			continue;
 		}
 
-		Vec3v partGravity = uniformGravity;
-		if (effectorFlags & ENV_GRAVITY)
-			partGravity += accelerations.Load(particleGroupId);
 		const floatv gravMult = gravities.SafeLoad(particleGroupId);
-		Vec3v accel = MAdd(partGravity, gravMult, uniformAccel);
+		Vec3v accel = MAdd(uniformGravity, gravMult, uniformAccel);
+		if (effectorFlags & ENV_GRAVITY)
+			accel += accelerations.Load(particleGroupId);
 
 		Vec3v v1, p1;
-		if (m_environFlags & ENV_WIND)
+		if (maxDragFactor)
 		{
 			// Fast approximation using acceleration and drag
 			const floatv drag = drags.SafeLoad(particleGroupId);
@@ -404,7 +403,7 @@ void CFeatureMotionPhysics::Integrate(const SUpdateContext& context)
 
 			Vec3v vWind = uniformWind;
 			if (effectorFlags & ENV_WIND)
-				vWind += velocityField.Load(particleGroupId) * ToFloatv(m_windMultiplier);
+				vWind += velocityField.Load(particleGroupId);
 			accel += (vWind - v0) * drag;
 
 			floatv dv, da; DragAdjust(dv, da, dragT, coeffsv);
@@ -565,6 +564,7 @@ void CFeatureMotionCryPhysics::AddToComponent(CParticleComponent* pComponent, SC
 {
 	pComponent->PostInitParticles.add(this);
 	pComponent->UpdateParticles.add(this);
+	pComponent->DestroyParticles.add(this);
 	pComponent->AddParticleData(EPDT_PhysicalEntity);
 	pComponent->AddParticleData(EPVF_Position);
 	pComponent->AddParticleData(EPVF_Velocity);
@@ -732,6 +732,16 @@ void CFeatureMotionCryPhysics::UpdateParticles(const SUpdateContext& context)
 			pPhysicalWorld->DestroyPhysicalEntity(pPhysicalEntity);
 			physicalEntities.Store(particleId, 0);
 		}
+	}
+}
+
+void CFeatureMotionCryPhysics::DestroyParticles(const SUpdateContext& context)
+{
+	auto physicalEntities = context.m_container.GetTIStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
+	for (auto particleId : context.GetUpdateRange())
+	{
+		if (auto pPhysicalEntity = physicalEntities.Load(particleId))
+			gEnv->pPhysicalWorld->DestroyPhysicalEntity(pPhysicalEntity);
 	}
 }
 

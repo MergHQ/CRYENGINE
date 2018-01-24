@@ -192,7 +192,7 @@ float CHeightMap::GetZMax(float x0, float y0, float x1, float y1) const
 	return GetZMaxFromUnits(nX0, nY0, nX1, nY1);
 }
 
-bool CHeightMap::RayTrace(Vec3 const& vStart, Vec3 const& vEnd, SRayTrace* prt)
+bool CHeightMap::RayTrace(Vec3 const& vStart, Vec3 const& vEnd, SRayTrace* prt, bool bClampAbove)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -308,7 +308,7 @@ bool CHeightMap::RayTrace(Vec3 const& vStart, Vec3 const& vEnd, SRayTrace* prt)
 					}
 
 					// Check for end point below terrain, to correct for leaks.
-					if (nX == nEndX && nY == nEndY)
+					if (bClampAbove && nX == nEndX && nY == nEndY)
 					{
 						if (fET1 < 0.f)
 						{

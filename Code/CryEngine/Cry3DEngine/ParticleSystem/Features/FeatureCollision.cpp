@@ -54,8 +54,6 @@ int CFeatureCollision::GetRayTraceFilter() const
 		filter |= ent_static;
 	if (m_dynamicObjects)
 		filter |= ent_rigid | ent_sleeping_rigid | ent_living | ent_independent;
-	if (C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('t'))
-		filter |= ent_sort_by_mass;
 	return filter;
 }
 
@@ -222,11 +220,12 @@ bool RayWorldIntersection(SContactPoint& contact, const Vec3& startIn, const Vec
 	start -= ray * kExpandBack;
 	ray *= (1.0f + kExpandBack + kExpandFront);
 
-	if ((objectFilter & ent_terrain) && !(objectFilter & ent_sort_by_mass))
+	// Use more reliable Terrain::Raytrace, controllable by debug cvar
+	if ((objectFilter & ent_terrain) && !(C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('t')))
 	{
 		objectFilter &= ~ent_terrain;
 		CHeightMap::SRayTrace rt;
-		if (Cry3DEngineBase::GetTerrain()->RayTrace(start, start + ray, &rt))
+		if (Cry3DEngineBase::GetTerrain()->RayTrace(start, start + ray, &rt, false))
 		{
 			contact.m_point = rt.vHit;
 			contact.m_normal = rt.vNorm;
@@ -236,7 +235,6 @@ bool RayWorldIntersection(SContactPoint& contact, const Vec3& startIn, const Vec
 		}
 	}
 
-	objectFilter &= ~ent_sort_by_mass;
 	if (objectFilter)
 	{
 		ray_hit rayHit;

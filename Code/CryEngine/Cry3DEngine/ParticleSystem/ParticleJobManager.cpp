@@ -92,6 +92,7 @@ void CParticleJobManager::SynchronizeUpdates()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 	gEnv->pJobManager->WaitForJob(m_updateState);
+	m_emitterRefs.clear();
 }
 
 void CParticleJobManager::DeferredRender()
@@ -109,8 +110,7 @@ void CParticleJobManager::DeferredRender()
 		renderContext.m_fogVolumeId = render.m_fogVolumeId;
 		pRuntime->GetComponent()->RenderDeferred(pEmitter, pRuntime, pComponent, renderContext);
 	}
-
-	ClearAll();
+	m_deferredRenders.clear();
 }
 
 void CParticleJobManager::Job_UpdateEmitters(TVarArray<CParticleEmitter*> emitters)
@@ -118,15 +118,6 @@ void CParticleJobManager::Job_UpdateEmitters(TVarArray<CParticleEmitter*> emitte
 	for (auto pEmitter : emitters)
 		pEmitter->UpdateAll();
 	m_updateState.SetStopped();
-}
-
-void CParticleJobManager::ClearAll()
-{
-	CRY_PFX2_PROFILE_DETAIL;
-
-	CRY_PFX2_ASSERT(!m_updateState.IsRunning());
-	m_deferredRenders.clear();
-	m_emitterRefs.clear();
 }
 
 }

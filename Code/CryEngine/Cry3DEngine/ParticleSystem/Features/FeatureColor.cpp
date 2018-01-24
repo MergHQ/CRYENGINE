@@ -17,7 +17,7 @@
 namespace pfx2
 {
 
-EParticleDataType PDT(EPDT_Color, UCol, 1, BHasInit(true));
+EParticleDataType PDT(EPDT_Color, UCol, EDataFlags::BHasInit);
 
 void IColorModifier::Serialize(Serialization::IArchive& ar)
 {

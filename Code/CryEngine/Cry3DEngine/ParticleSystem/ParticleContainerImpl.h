@@ -7,9 +7,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef PARTICLECONTAINERIMPL_H
-#define PARTICLECONTAINERIMPL_H
-
 #pragma once
 
 namespace pfx2
@@ -65,7 +62,7 @@ ILINE void CParticleContainer::CopyData(EParticleDataType dstType, EParticleData
 	CRY_PFX2_ASSERT(dstType.info().type == srcType.info().type);
 	if (HasData(dstType) && HasData(srcType))
 	{
-		size_t stride = dstType.info().typeSize();
+		size_t stride = dstType.info().typeSize;
 		size_t count = range.size();
 		uint dim = dstType.info().dimension;
 		for (uint i = 0; i < dim; ++i)
@@ -168,5 +165,3 @@ ILINE TIOStream<T> CParticleContainer::GetTIOStream(EParticleDataType type)
 }
 
 }
-
-#endif

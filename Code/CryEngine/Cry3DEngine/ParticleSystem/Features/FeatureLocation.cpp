@@ -1142,7 +1142,7 @@ CRY_UNIT_TEST(WrapRotationTest)
 };
 }
 
-EParticleDataType PDT(EPVF_AuxPosition, float, 3);
+EParticleDataType PDT(EPVF_AuxPosition, float[3]);
 
 class CFeatureLocationOmni : public CParticleFeature
 {

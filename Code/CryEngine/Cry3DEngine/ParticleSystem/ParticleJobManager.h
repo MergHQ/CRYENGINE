@@ -82,8 +82,6 @@ public:
 	// ~job entry points
 
 private:
-	void ClearAll();
-
 	TDynArray<CParticleEmitter*> m_emitterRefs;
 	TDynArray<SDeferredRender>   m_deferredRenders;
 	JobManager::SJobState        m_updateState;

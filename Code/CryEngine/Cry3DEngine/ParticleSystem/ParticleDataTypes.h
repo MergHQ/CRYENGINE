@@ -7,9 +7,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-#ifndef PARTICLEDATATYPES_H
-#define PARTICLEDATATYPES_H
-
 #pragma once
 
 #include <CryMath/FinalizingSpline.h>
@@ -96,43 +93,43 @@ enum EState
 // Implement EParticleDataTypes (size, position, etc) with DynamicEnum.
 // Data type entries can be declared in multiple source files, with info about the data type (float, Vec3, etc)
 
-enum BHasInit {}; // boolean argument indicating data type has an extra init field
+enum EDataFlags
+{
+	BHasInit    = 1, // indicates data type has an extra init field
+	BNeedsClear = 2  // indicates data type requires clearing after editing
+};
 
 //! Info associated with each EParticleDataType
-struct SParticleDataInfo
+struct SDataInfo
 {
 	typedef yasli::TypeID TypeID;
 
-	TypeID   type;
-	size_t   sizeOf    = 0;
-	uint     dimension = 0;
-	BHasInit hasInit   = BHasInit(false);
+	TypeID     type;
+	size_t     typeSize   = 0;
+	uint       dimension  = 0;
+	bool       hasInit    = false;
+	bool       needsClear = false;
 
-	SParticleDataInfo() {}
-
-	template<typename T>
-	SParticleDataInfo(T*, uint dim = 1, BHasInit init = BHasInit(false))
-		: type(TypeID::get<T>()), sizeOf(sizeof(T)), dimension(dim), hasInit(init) {}
+	SDataInfo() {}
 
 	template<typename T>
-	bool isType() const { return type == TypeID::get<T>(); }
+	SDataInfo(T*, uint dim = 1, EDataFlags flags = EDataFlags(0))
+		: type(TypeID::get<T>())
+		, typeSize(sizeof(T)), dimension(dim)
+		, hasInit(!!(flags & BHasInit)), needsClear(!!(flags & BNeedsClear))
+	{}
 
 	template<typename T>
-	bool   isType(uint dim) const { return type == TypeID::get<T>() && dimension == dim; }
+	bool isType() const         { return type == TypeID::get<T>(); }
 
-	uint   step() const           { return dimension * (1 + hasInit); }
-	size_t typeSize() const       { return sizeOf; }
+	template<typename T>
+	bool isType(uint dim) const { return type == TypeID::get<T>() && dimension == dim; }
+
+	uint step() const           { return dimension * (1 + hasInit); }
 };
 
-template<typename T = float, uint dim = 1, BHasInit init = BHasInit(false)>
-struct TParticleDataInfo : SParticleDataInfo
-{
-	TParticleDataInfo()
-		: SParticleDataInfo((T*)0, dim, init) {}
-};
-
-//! EParticleDataType implemented as a DynamicEnum, with SParticleDataInfo
-typedef DynamicEnum<SParticleDataInfo, uint, SParticleDataInfo>
+//! EParticleDataType implemented as a DynamicEnum, with SDataInfo
+typedef DynamicEnum<SDataInfo, uint, SDataInfo>
   EParticleDataType;
 
 ILINE EParticleDataType InitType(EParticleDataType type)
@@ -141,11 +138,13 @@ ILINE EParticleDataType InitType(EParticleDataType type)
 }
 
 // Convenient initialization of EParticleDataType
-//  EParticleDataType PDT(EPDT_SpawnID, TParticleID, 1)
-//  EParticleDataType PDT(EPVF_Velocity, float, 3)
+//  EParticleDataType PDT(EPDT_SpawnID, TParticleID)
+//  EParticleDataType PDT(EPVF_Velocity, float[3])
 
-#define PDT(Name, ...) \
-  Name(SkipPrefix( # Name), 0, TParticleDataInfo<__VA_ARGS__>())
+inline EDataFlags PDT_FLAGS(EDataFlags flags = EDataFlags(0)) { return flags; } // Helper function for variadic macro
+
+#define PDT(Name, T, ...) \
+  Name(SkipPrefix(#Name), 0, SDataInfo((typename std::remove_extent<T>::type*)0, std::max<uint>(std::extent<T>::value, 1), PDT_FLAGS(__VA_ARGS__)))
 
 inline cstr SkipPrefix(cstr name)
 {
@@ -182,5 +181,3 @@ extern EParticleDataType
 }
 
 #include "ParticleDataTypesImpl.h"
-
-#endif // PARTICLEDATATYPES_H
