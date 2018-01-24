@@ -696,9 +696,9 @@ void ModeCharacter::CommenceRagdollTest()
 		tri[i].Set(i, i + 1 & tess - 1, tess);
 	}
 	pgeom = pGeoman->RegisterGeometry(pGeoman->CreateMesh(vtx, &tri[0].x, nullptr, nullptr, tess, mesh_OBB | mesh_multicontact1 | mesh_no_filter | mesh_no_vtx_merge, 0));
-	delete[] tri; delete[] vtx;
 	pgeom->pGeom->Release(); pgeom->nMats |= pef_update;
 	gp.pos = -vtx[tess];
+	delete[] tri; delete[] vtx;
 	gp.q = Quat::CreateRotationAA(DEG2RAD(-20), Vec3(1, 0, 0));
 	pp.pos = pos0 - Vec3(0, 0, h * 3);
 	pents[4] = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_STATIC, &pp);
