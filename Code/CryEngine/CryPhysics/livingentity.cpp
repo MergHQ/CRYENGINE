@@ -813,6 +813,11 @@ void SLivingEntityNetSerialize::Serialize( TSerialize ser )
 	ser.Value( "pos", pos, 'wrld');
 	ser.Value( "vel", vel, 'pLVl');
 	ser.Value( "velRequested", velRequested, 'pLVl');
+	ser.Value( "bFlying", bFlying);
+	ser.Value( "bJumpRequested", bJumpRequested);
+	ser.Value( "dh", dh);
+	ser.Value( "dhSpeed", dhSpeed);
+	ser.Value( "stablehTime", stablehTime);
 }
 
 int CLivingEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
@@ -823,6 +828,9 @@ int CLivingEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
 		m_pos,
 		m_vel,
 		m_velRequested,
+		m_bFlying,
+		m_bJumpRequested,
+		m_dh, m_dhSpeed, m_stablehTime
 	};
 	helper.Serialize( ser );
 
@@ -957,11 +965,16 @@ int CLivingEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 		float distance = m_pos.GetDistance(helper.pos);
 		setpos.pos = helper.pos;
 
-		SetParams( &setpos,0 );
+		SetParams( &setpos, (m_flags & pef_update)!=0 || get_iCaller()<MAX_PHYS_THREADS);	// apply changes immediately for custom-step entities	or if called from a phys thread
 
 		WriteLock lock1(m_lockLiving);
 		m_vel = helper.vel;
 		m_velRequested = helper.velRequested;
+		m_bFlying = helper.bFlying;
+		m_bJumpRequested = helper.bJumpRequested;
+		m_dh = helper.dh;
+		m_dhSpeed = helper.dhSpeed;
+		m_stablehTime = helper.stablehTime;
 	}
 
 	return 1;

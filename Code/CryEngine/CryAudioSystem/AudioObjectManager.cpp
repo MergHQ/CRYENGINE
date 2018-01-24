@@ -55,15 +55,11 @@ void CObjectManager::SetImpl(Impl::IImpl* const pIImpl)
 //////////////////////////////////////////////////////////////////////////
 void CObjectManager::Release()
 {
-	if (!m_constructedObjects.empty())
+	// Don't clear m_constructedObjects here as we need the objects to survive a middleware switch!
+	for (auto const pObject : m_constructedObjects)
 	{
-		for (auto const pObject : m_constructedObjects)
-		{
-			m_pIImpl->DestructObject(pObject->GetImplDataPtr());
-			pObject->Release();
-		}
-
-		m_constructedObjects.clear();
+		m_pIImpl->DestructObject(pObject->GetImplDataPtr());
+		pObject->Release();
 	}
 
 	m_pIImpl = nullptr;

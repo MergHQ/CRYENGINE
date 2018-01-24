@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "ResourceSelectorDialog.h"
@@ -79,9 +79,9 @@ CResourceSelectorDialog::CResourceSelectorDialog(ESystemItemType const type, Sco
 	QObject::connect(m_pDialogButtons, &QDialogButtonBox::rejected, this, &CResourceSelectorDialog::reject);
 
 	m_pSearchBox->signalOnFiltered.Connect([&]()
-	{
-		m_pTreeView->scrollTo(m_pTreeView->currentIndex());
-	}, reinterpret_cast<uintptr_t>(this));
+		{
+			m_pTreeView->scrollTo(m_pTreeView->currentIndex());
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	if (s_previousControlType != type)
 	{
@@ -189,11 +189,11 @@ QModelIndex CResourceSelectorDialog::FindItem(string const& sControlName)
 {
 	QModelIndex modelIndex = QModelIndex();
 
-	QModelIndexList const indexes = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(sControlName), -1, Qt::MatchRecursive);
-	
-	if (!indexes.empty())
+	auto const& matches = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(sControlName), 1, Qt::MatchRecursive);
+
+	if (!matches.empty())
 	{
-		CSystemAsset* const pAsset = SystemModelUtils::GetAssetFromIndex(indexes[0], 0);
+		CSystemAsset* const pAsset = SystemModelUtils::GetAssetFromIndex(matches[0], 0);
 
 		if (pAsset != nullptr)
 		{
@@ -205,7 +205,7 @@ QModelIndex CResourceSelectorDialog::FindItem(string const& sControlName)
 
 				if (scope == Utils::GetGlobalScope() || scope == m_scope)
 				{
-					modelIndex = indexes[0];
+					modelIndex = matches[0];
 				}
 			}
 		}
@@ -282,16 +282,16 @@ void CResourceSelectorDialog::OnContextMenu(QPoint const& pos)
 		if ((pAsset != nullptr) && (pAsset->GetType() == ESystemItemType::Trigger))
 		{
 			pContextMenu->addAction(tr("Execute Trigger"), [=]()
-			{
-				CAudioControlsEditorPlugin::ExecuteTrigger(pAsset->GetName());
-			});
+				{
+					CAudioControlsEditorPlugin::ExecuteTrigger(pAsset->GetName());
+			  });
 
 			pContextMenu->addSeparator();
-			
+
 		}
 
-		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(QModelIndexList{ index }); });
-		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(QModelIndexList{ index }); });
+		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(QModelIndexList { index }); });
+		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(QModelIndexList { index }); });
 		pContextMenu->addSeparator();
 	}
 

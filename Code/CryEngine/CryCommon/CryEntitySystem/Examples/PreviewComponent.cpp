@@ -1,4 +1,5 @@
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 class CMyPreviewComponent : public IEntityComponent, public IEntityComponentPreviewer
 {

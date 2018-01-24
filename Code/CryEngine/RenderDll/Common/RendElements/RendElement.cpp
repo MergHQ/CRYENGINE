@@ -179,8 +179,6 @@ const char*        CRenderElement::mfTypeString()
 		return "Mesh";
 	case eDATA_LensOptics:
 		return "LensOptics";
-	case eDATA_FarTreeSprites:
-		return "FarTreeSprites";
 	case eDATA_OcclusionQuery:
 		return "OcclusionQuery";
 	case eDATA_Particle:

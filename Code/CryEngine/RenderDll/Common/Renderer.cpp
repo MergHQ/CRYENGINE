@@ -1313,10 +1313,6 @@ CRenderElement* CRenderer::EF_CreateRE(EDataType edt)
 		re = new CREHDRSky;
 		break;
 
-	case eDATA_FarTreeSprites:
-		assert( 0 && "eDATA_FarTreeSprites not supported" );
-		break;
-
 	case eDATA_FogVolume:
 		re = new CREFogVolume;
 		break;

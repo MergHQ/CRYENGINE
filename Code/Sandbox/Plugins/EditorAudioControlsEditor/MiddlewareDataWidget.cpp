@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "MiddlewareDataWidget.h"
@@ -71,26 +71,26 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* const pAssets
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CMiddlewareDataWidget::OnContextMenu);
 
 	m_pAssetsManager->SignalConnectionAdded.Connect([&]()
-	{
-		if (!m_pAssetsManager->IsLoading())
 		{
-			m_pMiddlewareFilterProxyModel->invalidate();
-		}
-	}, reinterpret_cast<uintptr_t>(this));
+			if (!m_pAssetsManager->IsLoading())
+			{
+			  m_pMiddlewareFilterProxyModel->invalidate();
+			}
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	m_pAssetsManager->SignalConnectionRemoved.Connect([&]()
-	{
-		if (!m_pAssetsManager->IsLoading())
 		{
-			m_pMiddlewareFilterProxyModel->invalidate();
-		}
-	}, reinterpret_cast<uintptr_t>(this));
+			if (!m_pAssetsManager->IsLoading())
+			{
+			  m_pMiddlewareFilterProxyModel->invalidate();
+			}
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
-	{
-		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-		setEnabled(pEditorImpl != nullptr);
-	}, reinterpret_cast<uintptr_t>(this));
+		{
+			IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
+			setEnabled(pEditorImpl != nullptr);
+	  }, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -132,9 +132,9 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 						if (pControl->GetConnection(pImplControl) != nullptr)
 						{
 							pConnectionsMenu->addAction(GetItemTypeIcon(pControl->GetType()), tr(pControl->GetName()), [=]()
-							{
-								SignalSelectConnectedSystemControl(*pControl, pImplControl->GetId());
-							});
+								{
+									SignalSelectConnectedSystemControl(*pControl, pImplControl->GetId());
+							  });
 
 							++count;
 						}
@@ -151,9 +151,9 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 				if ((pImplControl != nullptr) && !pImplControl->GetFilePath().IsEmpty())
 				{
 					pContextMenu->addAction(tr("Open Containing Folder"), [&]()
-					{
-						QtUtil::OpenInExplorer(PathUtil::Make(GetISystem()->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), pImplControl->GetFilePath()).c_str());
-					});
+						{
+							QtUtil::OpenInExplorer(PathUtil::Make(GetISystem()->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), pImplControl->GetFilePath()).c_str());
+					  });
 
 					pContextMenu->addSeparator();
 				}
@@ -175,7 +175,7 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 void CMiddlewareDataWidget::SelectConnectedImplItem(CID const itemId)
 {
 	ClearFilters();
-	auto const matches = m_pMiddlewareFilterProxyModel->match(m_pMiddlewareFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(CMiddlewareDataModel::ERoles::Id), itemId, 1, Qt::MatchRecursive);
+	auto const& matches = m_pMiddlewareFilterProxyModel->match(m_pMiddlewareFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(CMiddlewareDataModel::ERoles::Id), itemId, 1, Qt::MatchRecursive);
 
 	if (!matches.isEmpty())
 	{

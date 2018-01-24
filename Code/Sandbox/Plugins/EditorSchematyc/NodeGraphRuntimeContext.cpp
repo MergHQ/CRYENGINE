@@ -336,6 +336,7 @@ void AddNodeStyle(CryGraphEditor::CNodeGraphViewStyle& viewStyle, const char* sz
 		  });
 		headerStyle.SetNodeIcon(icon);
 	}
+	// cppcheck-suppress memleak
 }
 
 void AddConnectionStyle(CryGraphEditor::CNodeGraphViewStyle& viewStyle, const char* szStyleId, float width)

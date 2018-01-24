@@ -917,15 +917,12 @@ public:
 	_smart_ptr<IMaterial> m_pMatFogVolEllipsoid;
 	_smart_ptr<IMaterial> m_pMatFogVolBox;
 
-	_smart_ptr<IShader>   m_pFarTreeSprites;
-
 	void CleanLevelShaders()
 	{
 		m_pTerrainWaterMat = 0;
 		m_pSkyMat = 0;
 		m_pSkyLowSpecMat = 0;
 		m_pSunMat = 0;
-		m_pFarTreeSprites = 0;
 
 		m_pMatFogVolEllipsoid = 0;
 		m_pMatFogVolBox = 0;
