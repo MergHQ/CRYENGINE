@@ -270,6 +270,7 @@ struct IEntityLink
 };
 
 //! Parameters used to determine how an entity should be physicalized when IEntity::Physicalize is called
+//! \see IEntity::Physicalize
 struct SEntityPhysicalizeParams
 {
 	//////////////////////////////////////////////////////////////////////////
@@ -978,6 +979,9 @@ public:
 	// Physics.
 	//////////////////////////////////////////////////////////////////////////
 	//! Physicalize entity by creating a PhysicalEntity based on a specified physical parameters
+	//! \see IEntity::PhysicalizeSlot
+	//! \par Example
+	//! \include CryEntitySystem/Examples/PhysicalizeEntity.cpp
 	virtual void Physicalize(SEntityPhysicalizeParams& params) = 0;
 
 	//! Enable/Disable physics by flag.
@@ -994,6 +998,11 @@ public:
 	virtual IPhysicalEntity* GetPhysics() const = 0;
 	IPhysicalEntity*         GetPhysicalEntity() const { return GetPhysics(); };
 
+	//! Adds physical geometry to the physical entity tied to this entity, based on the slot (if present)
+	//! Entity has to have been physicalized with IEntity::Physicalize first.
+	//! \see IEntity::Physicalize
+	//! \par Example
+	//! \include CryEntitySystem/Examples/PhysicalizeEntitySlot.cpp
 	virtual int              PhysicalizeSlot(int slot, SEntityPhysicalizeParams& params) = 0;
 	virtual void             UnphysicalizeSlot(int slot) = 0;
 	virtual void             UpdateSlotPhysics(int slot) = 0;
