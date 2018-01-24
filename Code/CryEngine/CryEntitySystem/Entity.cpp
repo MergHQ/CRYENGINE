@@ -2835,12 +2835,14 @@ IEntityLink* CEntity::GetEntityLinks()
 //////////////////////////////////////////////////////////////////////////
 IEntityLink* CEntity::AddEntityLink(const char* szLinkName, EntityId entityId, EntityGUID entityGuid)
 {
+	CRY_ASSERT_MESSAGE(entityId != INVALID_ENTITYID, "Can't create a link with an invalid EntityId");
+	CRY_ASSERT_MESSAGE(!entityGuid.IsNull(), "Can't create a link with an invalid EntityGUID");
+	CRY_ASSERT_MESSAGE(entityId != m_id, "Entity can't be linked with itself");
+
 	if (szLinkName == nullptr)
 		return nullptr;
 
-	IEntityLink* pNewLink = new IEntityLink {
-		szLinkName, entityId, entityGuid, nullptr
-	};
+	IEntityLink* pNewLink = new IEntityLink { szLinkName, entityId, entityGuid, nullptr };
 
 	if (m_pEntityLinks)
 	{
