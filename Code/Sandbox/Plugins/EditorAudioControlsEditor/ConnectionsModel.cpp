@@ -11,9 +11,11 @@
 #include <IEditorImpl.h>
 #include <ImplItem.h>
 #include <CrySystem/File/CryFile.h>
+#include <QtUtil.h>
 #include <CryIcon.h>
-
 #include <DragDrop.h>
+
+#include <QApplication>
 
 namespace ACE
 {
@@ -391,6 +393,7 @@ bool CConnectionModel::canDropMimeData(QMimeData const* pData, Qt::DropAction ac
 	{
 		std::vector<CID> ids;
 		DecodeMimeData(pData, ids);
+		QString dragText = tr("Connect to ") + QtUtil::ToQString(m_pControl->GetName());
 
 		for (auto const id : ids)
 		{
@@ -401,11 +404,14 @@ bool CConnectionModel::canDropMimeData(QMimeData const* pData, Qt::DropAction ac
 				// is the type being dragged compatible?
 				if (!(m_pEditorImpl->IsTypeCompatible(m_pControl->GetType(), pImplItem)))
 				{
+					dragText = tr("Control types are not compatible.");
 					canDrop = false;
 					break;
 				}
 			}
 		}
+
+		CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), dragText);
 	}
 
 	return canDrop;

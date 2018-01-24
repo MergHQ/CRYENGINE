@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "SystemControlsModel.h"
@@ -9,8 +9,9 @@
 
 #include <ImplItem.h>
 #include <QtUtil.h>
-
 #include <DragDrop.h>
+
+#include <QApplication>
 
 namespace ACE
 {
@@ -597,11 +598,7 @@ Qt::ItemFlags CSystemSourceModel::flags(QModelIndex const& index) const
 
 	if (index.isValid())
 	{
-		if (index.data(static_cast<int>(SystemModelUtils::ERoles::IsDefaultControl)).toBool())
-		{
-			flags = QAbstractItemModel::flags(index) | Qt::ItemIsSelectable;
-		}
-		else if (index.column() == m_nameColumn)
+		if ((index.column() == m_nameColumn) && !(index.data(static_cast<int>(SystemModelUtils::ERoles::IsDefaultControl)).toBool()))
 		{
 			flags = QAbstractItemModel::flags(index) | Qt::ItemIsDropEnabled | Qt::ItemIsEditable;
 		}
@@ -637,14 +634,29 @@ QModelIndex CSystemSourceModel::parent(QModelIndex const& index) const
 bool CSystemSourceModel::canDropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const
 {
 	bool canDrop = false;
+	QString dragText = tr("Invalid operation");
 
 	if (parent.isValid())
 	{
 		CSystemLibrary const* const pParent = static_cast<CSystemLibrary*>(parent.internalPointer());
 		CRY_ASSERT_MESSAGE(pParent != nullptr, "Parent is null pointer.");
-		canDrop = CanDropMimeData(pData, *pParent);
+
+		if (pParent != nullptr)
+		{
+			canDrop = !pParent->IsDefaultControl() && CanDropMimeData(pData, *pParent);
+
+			if (canDrop)
+			{
+				dragText = tr("Add to ") + QtUtil::ToQString(pParent->GetName());
+			}
+			else if (pParent->IsDefaultControl())
+			{
+				dragText = tr("Cannot add items to the default controls library.");
+			}
+		}
 	}
 
+	CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), dragText);
 	return canDrop;
 }
 
@@ -657,8 +669,12 @@ bool CSystemSourceModel::dropMimeData(QMimeData const* pData, Qt::DropAction act
 	{
 		CSystemLibrary* const pLibrary = static_cast<CSystemLibrary*>(parent.internalPointer());
 		CRY_ASSERT_MESSAGE(pLibrary != nullptr, "Library is null pointer.");
-		DropMimeData(pData, pLibrary);
-		wasDropped = true;
+
+		if (pLibrary != nullptr)
+		{
+			DropMimeData(pData, pLibrary);
+			wasDropped = true;
+		}
 	}
 
 	return wasDropped;
@@ -1152,19 +1168,43 @@ QModelIndex CSystemLibraryModel::parent(QModelIndex const& index) const
 bool CSystemLibraryModel::canDropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const
 {
 	bool canDrop = false;
+	QString dragText = tr("Invalid operation");
 
 	if (parent.isValid())
 	{
 		CSystemAsset const* const pParent = static_cast<CSystemAsset*>(parent.internalPointer());
 		CRY_ASSERT_MESSAGE(pParent != nullptr, "Parent is null pointer.");
-		canDrop = CanDropMimeData(pData, *pParent);
+
+		if (pParent != nullptr)
+		{
+			canDrop = CanDropMimeData(pData, *pParent);
+
+			if (canDrop)
+			{
+				dragText = tr("Add to ") + QtUtil::ToQString(pParent->GetName());
+			}
+		}
 	}
 	else
 	{
 		CRY_ASSERT_MESSAGE(m_pLibrary != nullptr, "Library is null pointer.");
-		canDrop = CanDropMimeData(pData, *m_pLibrary);
+
+		if (m_pLibrary != nullptr)
+		{
+			canDrop = !m_pLibrary->IsDefaultControl() && CanDropMimeData(pData, *m_pLibrary);
+
+			if (canDrop)
+			{
+				dragText = tr("Add to ") + QtUtil::ToQString(m_pLibrary->GetName());
+			}
+			else if (m_pLibrary->IsDefaultControl())
+			{
+				dragText = tr("Cannot add items to the default controls library.");
+			}
+		}
 	}
 
+	CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), dragText);
 	return canDrop;
 }
 

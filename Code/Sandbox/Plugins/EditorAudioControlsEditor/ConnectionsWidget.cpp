@@ -180,7 +180,7 @@ void CConnectionsWidget::OnConnectionAdded(CID const id)
 {
 	if (m_pControl != nullptr)
 	{
-		auto const& matches = m_pConnectionModel->match(m_pConnectionModel->index(0, 0, QModelIndex()), static_cast<int>(CConnectionModel::ERoles::Id), id, 1, Qt::MatchRecursive);
+		auto const& matches = m_pAttributeFilterProxyModel->match(m_pAttributeFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(CConnectionModel::ERoles::Id), id, 1, Qt::MatchRecursive);
 
 		if (!matches.isEmpty())
 		{
@@ -263,7 +263,7 @@ void CConnectionsWidget::SetControl(CSystemControl* const pControl)
 
 				for (auto const itemId : selectedConnections)
 				{
-					auto const& matches = m_pConnectionModel->match(m_pConnectionModel->index(0, 0, QModelIndex()), static_cast<int>(CConnectionModel::ERoles::Id), itemId, 1, Qt::MatchRecursive);
+					auto const& matches = m_pAttributeFilterProxyModel->match(m_pAttributeFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(CConnectionModel::ERoles::Id), itemId, 1, Qt::MatchRecursive);
 
 					if (!matches.isEmpty())
 					{
