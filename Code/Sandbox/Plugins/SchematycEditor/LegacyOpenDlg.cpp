@@ -18,8 +18,8 @@ namespace SchematycEd {
 
 CLegacyOpenDlg::CLegacyOpenDlg()
 	: CEditorDialog("OpenLegacy", nullptr, false)
-	, m_dialogDict(new CLegacyOpenDlgModel)
-	, m_dialogDictWidget(new CDictionaryWidget)
+	, m_pDialogDict(new CLegacyOpenDlgModel)
+	, m_pDialogDictWidget(new CDictionaryWidget)
 {
 	QVBoxLayout* layout = new QVBoxLayout();
 	setLayout(layout);
@@ -27,21 +27,21 @@ CLegacyOpenDlg::CLegacyOpenDlg()
 	QPushButton* closeBtn = new QPushButton(tr("&Close"));
 	connect(closeBtn, &QPushButton::clicked, [this]() { close(); });
 
-	layout->addWidget(m_dialogDictWidget);
+	layout->addWidget(m_pDialogDictWidget);
 	layout->addWidget(closeBtn);
 
-	m_dialogDictWidget->SetDictionary(*m_dialogDict);
+	m_pDialogDictWidget->AddDictionary(*m_pDialogDict);
 }
 
 CLegacyOpenDlg::~CLegacyOpenDlg()
 {
-	delete m_dialogDict;
-	m_dialogDictWidget->deleteLater();
+	delete m_pDialogDict;
+	m_pDialogDictWidget->deleteLater();
 }
 
 CDictionaryWidget* CLegacyOpenDlg::GetDialogDictWidget() const
 {
-	return m_dialogDictWidget;
+	return m_pDialogDictWidget;
 }
 
 } //namespace SchematycEd

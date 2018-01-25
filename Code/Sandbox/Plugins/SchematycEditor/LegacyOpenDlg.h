@@ -27,8 +27,8 @@ public:
 	CDictionaryWidget* GetDialogDictWidget() const;
 
 private:
-	CLegacyOpenDlgModel* m_dialogDict;
-	CDictionaryWidget*   m_dialogDictWidget;
+	CLegacyOpenDlgModel* m_pDialogDict;
+	CDictionaryWidget*   m_pDialogDictWidget;
 };
 
 } // namespace SchematycEd
