@@ -143,7 +143,6 @@ void CParticleEmitter::Update()
 		m_pEffectOriginal->Compile();
 		m_attributeInstance.Reset(m_pEffectOriginal->GetAttributeTable());
 		UpdateRuntimes();
-		m_effectEditVersion = m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion;
 	}
 
 	UpdateFromEntity();
@@ -175,6 +174,7 @@ void CParticleEmitter::UpdateBoundingBox(const float frameTime)
 	if (m_realBounds.IsReset())
 	{
 		m_bounds.Reset();
+		m_reRegister = true;
 		return;
 	}
 
@@ -601,6 +601,8 @@ void CParticleEmitter::UpdateRuntimes()
 
 	m_componentRuntimes = newRuntimes;
 
+	m_effectEditVersion = m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion;
+
 	m_parentContainer.AddParticle();
 
 	for (auto& pRuntime : m_componentRuntimes)
@@ -739,6 +741,9 @@ void CParticleEmitter::Register()
 
 	if (m_registered)
 		return;
+	if (m_bounds.IsEmpty() || m_bounds.IsReset())
+		return;
+
 	bool posContained = GetBBox().IsContainPoint(GetPos());
 	SetRndFlags(ERF_REGISTER_BY_POSITION, posContained);
 	SetRndFlags(ERF_REGISTER_BY_BBOX, m_spawnParams.bRegisterByBBox);

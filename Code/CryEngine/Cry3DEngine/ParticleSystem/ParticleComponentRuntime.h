@@ -82,7 +82,7 @@ private:
 	void UpdateLocalSpace(SUpdateRange range);
 	void DebugStabilityCheck();
 
-	CParticleComponent*                             m_pComponent;
+	_smart_ptr<CParticleComponent>                  m_pComponent;
 	CParticleEmitter*                               m_pEmitter;
 	CParticleContainer                              m_container;
 	TDynArray<SInstance>                            m_subInstances;
