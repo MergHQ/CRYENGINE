@@ -267,7 +267,11 @@ namespace Schematyc2
 			CryGUID cryGUID;
 			SysGUID sysGUID;
 		};
+
+		static_assert(sizeof(CryGUID) == sizeof(SysGUID), "CryGUID and SysGUID have different sizes");
+		static_assert(sizeof(CryGUID) == 16, "CryGUID has unexpected size");
 	};
+	static_assert(sizeof(SGUID) == 16, "SGUID has unexpected size");
 
 	inline bool Serialize(Serialization::IArchive& archive, SGUID& value, const char* szName, const char* szLabel)
 	{
