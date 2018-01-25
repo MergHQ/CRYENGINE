@@ -1860,7 +1860,7 @@ void CharacterManager::UpdateStreaming_SKEL(std::vector<CDefaultSkeletonReferenc
 					else
 						estp = estpNormal;
 
-					si.pStreamer = new CryCHRLoader;
+					si.pStreamer = std::make_shared<CryCHRLoader>();
 					si.pStreamer->BeginLoadCHRRenderMesh(pSkel, it->m_RefByInstances, estp);
 				}
 			}
@@ -1907,7 +1907,7 @@ void CharacterManager::UpdateStreaming_SKIN(std::vector<CDefaultSkinningReferenc
 						else
 							estp = estpNormal;
 
-						si.pStreamer = new CryCHRLoader;
+						si.pStreamer = std::make_shared<CryCHRLoader>();
 						si.pStreamer->BeginLoadSkinRenderMesh(pSkin, i, estp);
 					}
 				}

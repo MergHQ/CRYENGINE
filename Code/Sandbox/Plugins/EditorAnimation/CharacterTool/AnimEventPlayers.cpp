@@ -174,7 +174,7 @@ TSerializeParameterFunc g_atlEventFunctions[sizeof(g_atlEvents) / sizeof(g_atlEv
 static Vec3 GetBonePosition(ICharacterInstance* character, const QuatTS& physicalLocation, const char* boneName)
 {
 	int jointId = -1;
-	if (boneName != '\0')
+	if (boneName && boneName[0] != '\0')
 		jointId = character->GetIDefaultSkeleton().GetJointIDByName(boneName);
 	if (jointId != -1)
 		return (physicalLocation * character->GetISkeletonPose()->GetAbsJointByID(jointId)).t;

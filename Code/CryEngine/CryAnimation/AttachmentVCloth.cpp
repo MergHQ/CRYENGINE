@@ -2154,9 +2154,8 @@ bool CClothSimulator::CheckCameraDistanceLessThan(float dist) const
 
 bool CClothSimulator::CheckForceSkinningByFpsThreshold()
 {
-	bool forceSkinning = false;
 	float fps = gEnv->pTimer->GetFrameRate();
-	forceSkinning = fps < m_config.forceSkinningFpsThreshold;
+	bool forceSkinning = fps < m_config.forceSkinningFpsThreshold;
 
 	// force skinning only after n-th frame with framerate below threshold
 	if (forceSkinning && (m_forceSkinningAfterNFramesCounter < Console::GetInst().ca_ClothForceSkinningAfterNFrames))

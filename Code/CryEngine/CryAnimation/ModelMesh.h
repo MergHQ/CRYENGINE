@@ -41,9 +41,14 @@ struct RChunk
 
 struct MeshStreamInfo
 {
-	MeshStreamInfo()
+	MeshStreamInfo() : 
+		nRoundIds(),
+		nFrameId(0),
+		nKeepResidentRefs(0),
+		bHasMeshFile(false),
+		bIsUrgent(false),
+		pStreamer(nullptr)
 	{
-		memset(this, 0, sizeof(*this));
 	}
 
 	uint32        nRoundIds[MAX_STREAM_PREDICTION_ZONES];
@@ -51,7 +56,7 @@ struct MeshStreamInfo
 	uint32        nKeepResidentRefs;
 	bool          bHasMeshFile;
 	bool          bIsUrgent;
-	CryCHRLoader* pStreamer;
+	std::shared_ptr<CryCHRLoader> pStreamer;
 };
 
 //////////////////////////////////////////////////////////////////////////

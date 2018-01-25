@@ -866,6 +866,9 @@ CIkCCD::CIkCCD() :
 	m_endNodeIndex(-1),
 	m_targetNodeIndex(-1),
 	m_weightNodeIndex(-1),
+	m_nIterations(0),
+	m_fStepSize(0),
+	m_fThreshold(0),
 	m_bInitialized(false),
 	m_bDraw(false)
 {
