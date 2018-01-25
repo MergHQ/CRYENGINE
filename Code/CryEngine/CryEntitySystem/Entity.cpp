@@ -3062,7 +3062,7 @@ void CEntity::CreateSchematycObject(const SEntitySpawnParams& spawnParams)
 		{
 			if (m_simulationMode != EEntitySimulationMode::Idle)
 			{
-				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, m_simulationMode == EEntitySimulationMode::Game);
+				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly);
 			}
 		}
 	}
@@ -3074,7 +3074,7 @@ void CEntity::SetSimulationMode(EEntitySimulationMode mode)
 	m_simulationMode = mode;
 	if (m_pSchematycObject != nullptr)
 	{
-		m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, m_simulationMode == EEntitySimulationMode::Game);
+		m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly);
 	}
 }
 
@@ -3100,7 +3100,7 @@ void CEntity::OnEditorGameModeChanged(bool bEnterGameMode)
 	// We only want to reset when we return from game mode to editor mode.
 	if (m_pSchematycObject != nullptr)
 	{
-		m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly, false);
+		m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly);
 	}
 }
 
