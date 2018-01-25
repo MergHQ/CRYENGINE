@@ -2378,6 +2378,20 @@ bool CD3D9Renderer::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			}
 		}
 		break;
+
+	case WM_ACTIVATE:
+		{
+			// Toggle DXGI fullscreen state when user alt-tabs out
+			// This is required since we explicitly set the DXGI_MWA_NO_WINDOW_CHANGES, forbidding DXGI from handling this itself
+			if (IsFullscreen())
+			{
+				gcpRendD3D->ExecuteRenderThreadCommand([wParam]()
+				{
+					gcpRendD3D->GetBaseDisplayContext()->SetFullscreenState(wParam != 0);
+				}, ERenderCommandFlags::FlushAndWait);
+			}
+		}
+		break;
 	}
 	return false;
 }
