@@ -716,11 +716,13 @@ namespace Schematyc2
 				gotoLabel.Format("Goto %s", pNodeImpl->GetOutputName(nodeOutputIdx));
 				popupMenu.AppendMenu(MF_STRING, EPopupMenuItemEx::DEFINITION, gotoLabel.c_str());
 				popupMenu.AppendMenu(MF_STRING, EPopupMenuItemEx::REFERENCES, "Find references");
+				popupMenu.AppendMenu(MF_STRING, EPopupMenuItemEx::REFERENCES_ALL, "Find All references");
 			}
 
 			if (Schematyc2::NodeUtils::CanGoToNodeType(nodeType))
 			{
 				popupMenu.AppendMenu(MF_STRING, EPopupMenuItemEx::REFERENCES, "Find references");
+				popupMenu.AppendMenu(MF_STRING, EPopupMenuItemEx::REFERENCES_ALL, "Find All references");
 				popupMenu.AppendMenu(MF_MENUBARBREAK);
 			}
 
@@ -812,6 +814,34 @@ namespace Schematyc2
 					}
 					
 					Schematyc2::LibUtils::FindAndLogReferences(refGuid, refGoBack, name.c_str(), &file);
+				}
+				break;
+			}
+			case EPopupMenuItemEx::REFERENCES_ALL:
+			{
+				if (pNode)
+				{
+					CDocGraphViewNodePtr	pNodeImpl = std::static_pointer_cast<CDocGraphViewNode>(pNode);
+					const TScriptFile& file = pNodeImpl->GetScriptFile();
+
+					SGUID refGuid = pNodeImpl->GetRefGUID();
+					SGUID refGoBack = pNodeImpl->GetGraphGUID();
+
+					stack_string name = pNodeImpl->GetName();
+
+					if (pNodeImpl->GetType() == EScriptGraphNodeType::State && nodeOutputIdx != INVALID_INDEX)
+					{
+						refGuid = pNodeImpl->GetOutputTypeId(nodeOutputIdx).AsScriptTypeGUID();
+						name = pNodeImpl->GetOutputName(nodeOutputIdx);
+					}
+
+					stack_string::size_type pos = name.rfind(' ');
+					if (pos != stack_string::npos)
+					{
+						name = name.substr(pos);
+					}
+
+					Schematyc2::LibUtils::FindAndLogReferences(refGuid, refGoBack, name.c_str(), &file, true);
 				}
 				break;
 			}
@@ -1164,7 +1194,7 @@ namespace Schematyc2
 		m_pLayout->addWidget(m_pPropertyTree, 1);
 
 		m_pPropertyTree->setSizeHint(QSize(250, 400));
-		m_pPropertyTree->setExpandLevels(1);
+		m_pPropertyTree->setExpandLevels(5);
 		m_pPropertyTree->setSliderUpdateDelay(5);
 		m_pPropertyTree->setValueColumnWidth(0.6f);
 		m_pPropertyTree->attach(Serialization::SStruct(*this));

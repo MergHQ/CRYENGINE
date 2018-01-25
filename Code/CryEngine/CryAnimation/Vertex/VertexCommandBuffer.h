@@ -106,7 +106,7 @@ struct SVertexAnimationJob
 	_smart_ptr<IRenderMesh> m_previousRenderMesh;
 
 public:
-	SVertexAnimationJob() : pRenderMeshSyncVariable(nullptr) {}
+	SVertexAnimationJob() : commandBufferLength(0), pRenderMeshSyncVariable(nullptr), commandBuffer() {}
 
 	void Begin(JobManager::SJobState* pJob);
 	void Execute(int);

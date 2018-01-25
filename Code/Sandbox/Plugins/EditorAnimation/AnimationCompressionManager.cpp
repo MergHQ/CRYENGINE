@@ -86,7 +86,8 @@ class CAnimationCompressionManager::CBackgroundTaskUpdateLocalAnimations : publi
 {
 public:
 	CBackgroundTaskUpdateLocalAnimations(CAnimationCompressionManager* pManager)
-		: m_pManager(pManager)
+		: m_pManager(pManager),
+		m_totalFileCount(0)
 	{
 	}
 

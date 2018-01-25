@@ -153,6 +153,21 @@ CNodesDictionary::~CNodesDictionary()
 	Clear();
 }
 
+void CNodesDictionary::ClearEntries()
+{
+	for (CNodesDictionaryCategoryEntry* pCategoryEntry : m_categories)
+	{
+		delete pCategoryEntry;
+	}
+	m_categories.clear();
+
+	for (CNodesDictionaryNodeEntry* pNodeEntry : m_nodes)
+	{
+		delete pNodeEntry;
+	}
+	m_nodes.clear();
+}
+
 const CAbstractDictionaryEntry* CNodesDictionary::GetEntry(int32 index) const
 {
 	if (index < m_categories.size())
@@ -288,21 +303,6 @@ void CNodesDictionary::LoadLoadsFromScriptGraph(Schematyc::IScriptGraph& scriptG
 {
 	CNodesDictionaryCreator creator(*this);
 	scriptGraph.PopulateNodeCreationMenu(creator);
-}
-
-void CNodesDictionary::Clear()
-{
-	for (CNodesDictionaryCategoryEntry* pCategoryEntry : m_categories)
-	{
-		delete pCategoryEntry;
-	}
-	m_categories.clear();
-
-	for (CNodesDictionaryNodeEntry* pNodeEntry : m_nodes)
-	{
-		delete pNodeEntry;
-	}
-	m_nodes.clear();
 }
 
 void AddNodeStyle(CryGraphEditor::CNodeGraphViewStyle& viewStyle, const char* szStyleId, const char* szIcon, QColor color, bool coloredHeaderIconText = true)

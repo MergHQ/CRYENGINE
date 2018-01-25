@@ -601,6 +601,11 @@ CSubstancePreset::~CSubstancePreset()
 void CSubstancePreset::LoadGraphInstance()
 {
 	m_pGraphInstance = CSubstanceManager::Instance()->InstantiateGraph(m_substanceArchive, m_graphName);
+	if (!m_pGraphInstance)
+	{
+		return;
+	}
+
 	for each (SubstanceAir::InputInstanceBase* inputInstance in m_pGraphInstance->getInputs())
 	{
 		if (inputInstance->mDesc.mIdentifier == "$outputsize")

@@ -243,7 +243,7 @@ struct SParticleHot
 	float lraDist;       //!< distance to closest constraint
 	int   lraNextParent; //!< index of next parent on path to closest constraint
 
-	SParticleHot() : collisionExist(false), timer(0), alpha(0), lraIdx(-1), lraDist(0), lraNextParent(-1), collisionNormal(ZERO), pos(ZERO)
+	SParticleHot() : pos(ZERO), alpha(0), factorAttached(0), timer(0), collisionExist(false), collisionNormal(ZERO), lraIdx(-1), lraDist(0), lraNextParent(-1)
 	{
 	}
 };
@@ -282,6 +282,7 @@ public:
 		, m_links(nullptr)
 		, m_gravity(0, 0, -9.8f)
 		, m_time(0.0f)
+		, m_timeInterval(0.0f)
 		, m_dt(0.0f)
 		, m_dtPrev(-1)
 		, m_dtNormalize(100.0f) // i.e. normalize substep to 1/dt with dt = 0.01
@@ -294,6 +295,7 @@ public:
 		, m_bUseDijkstraForLRA(true)
 		, m_bIsInitialized(false)
 		, m_bIsGpuSkinning(false)
+		, m_debugCollidableSubsteppingId(0)
 	{
 	}
 

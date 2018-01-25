@@ -360,7 +360,9 @@ void CRenderDisplayContext::AllocateSwapChain()
 	scDesc.BufferCount = (isMainContext && (CRenderer::CV_r_minimizeLatency > 0 || bWaitable)) ? MAX_FRAMES_IN_FLIGHT : defaultBufferCount;
 	scDesc.OutputWindow = (HWND)m_hWnd;
 
-	scDesc.Windowed = windowed ? 1 : 0;
+	// Always create a swapchain for windowed mode as per Microsoft recommendations here: https://msdn.microsoft.com/en-us/library/windows/desktop/bb174579(v=vs.85).aspx
+	// Specifically: "We recommend that you create a windowed swap chain and allow the end user to change the swap chain to full screen through SetFullscreenState; that is, do not set the Windowed member of DXGI_SWAP_CHAIN_DESC to FALSE to force the swap chain to be full screen."
+	scDesc.Windowed = 1;
 	scDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	scDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 

@@ -819,7 +819,7 @@ bool AttachmentVClothPreProcess::CreateLinks(std::vector<Vec3> const& vtx, std::
 	}
 
 	// for each vertex, trace ccw fan around it and store in m_pVtxEdges
-	STopology* pTopologyCCW = new STopology[vtx.size()];
+	std::vector<STopology> pTopologyCCW(vtx.size());
 	int nVtxEdges = 0;
 	for (int i = 0; i < nTris; i++)
 	{

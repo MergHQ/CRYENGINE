@@ -421,7 +421,10 @@ namespace EditorSubstance {
 
 	void CManager::OnCreatorAccepted()
 	{
-		CreateInstance(m_pPresetCreator->GetSubstanceArchive(), m_pPresetCreator->GetTargetFileName(), m_pPresetCreator->GetGraphName(), m_pPresetCreator->GetOutputs(), m_pPresetCreator->GetResolution());
+		if (!m_pPresetCreator->GetSubstanceArchive().empty())
+		{
+			CreateInstance(m_pPresetCreator->GetSubstanceArchive(), m_pPresetCreator->GetTargetFileName(), m_pPresetCreator->GetGraphName(), m_pPresetCreator->GetOutputs(), m_pPresetCreator->GetResolution());
+		}
 		OnCreatorRejected();
 	}
 

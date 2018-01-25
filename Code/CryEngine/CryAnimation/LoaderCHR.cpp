@@ -152,25 +152,25 @@ void CryCHRLoader::StreamOnComplete(IReadStream* pStream, unsigned nError)
 		pModelMesh->InitRenderMeshSync(m_arrNewRenderChunks, m_pNewRenderMesh);
 		m_pNewRenderMesh = nullptr;
 		m_arrNewRenderChunks.clear();
-
-		pModelMesh->m_stream.pStreamer = nullptr;
 	}
 	else if (m_pModelSkin)
 	{
 		EndStreamSkinSync(pStream);
 
 		int nRenderLod = (int)pStream->GetParams().dwUserData;
-		m_pModelSkin->m_arrModelMeshes[nRenderLod].m_stream.pStreamer = NULL;
 	}
-	m_pStream = NULL;
-	delete this;
+
+	ClearModel();
 }
 
 // cleans up the resources allocated during load
 void CryCHRLoader::ClearModel()
 {
 	m_strGeomFileNameNoExt = "";
-	//	m_animListIDs.clear();
+	m_pStream = nullptr;
+	m_arrNewRenderChunks.clear();
+	m_pNewRenderMesh = nullptr;
+	m_RefByInstances.clear();
 }
 
 //----------------------------------------------------------------------------------

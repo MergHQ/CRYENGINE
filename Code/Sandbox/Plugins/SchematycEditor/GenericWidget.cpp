@@ -86,7 +86,7 @@ QToolBar* CGenericWidget::CreateToolBar()
 //////////////////////////////////////////////////////////////////////////
 void CGenericWidget::AddCategory(CAbstractDictionary& category)
 {
-	m_pDictionaryWidget->SetDictionary(category);
+	m_pDictionaryWidget->AddDictionary(category);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -107,7 +107,7 @@ void CGenericWidget::ReloadCategory(CAbstractDictionary& category, bool checked)
 			categoryImpl.BuildFromScriptClass(pScriptFile, m_classGUID);
 		}
 	}
-	m_pDictionaryWidget->SetDictionary(categoryImpl);
+	m_pDictionaryWidget->AddDictionary(categoryImpl);
 }
 
 } //namespace SchematycEd

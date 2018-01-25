@@ -608,8 +608,8 @@ public:
 	//! though the CryGUID could be used to generate it
 	uint32 m_nEditorSelectionID;
 
-	//! Used to request rendering of the object into cached shadow map
-	uint32 m_cachedShadowFrameId = 0;
+	//! Used to request visiting of the node during one-pass traversal
+	uint32 m_onePassTraversalFrameId = 0;
 };
 
 inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)
@@ -810,7 +810,7 @@ struct SFogVolumeProperties
 	// Common parameters.
 	// Center position & rotation values are taken from the entity matrix.
 
-	int m_volumeType = IFogVolumeRenderNode::eFogVolumeType_Box;
+	int    m_volumeType = IFogVolumeRenderNode::eFogVolumeType_Box;
 	Vec3   m_size = Vec3(1.f);
 	ColorF m_color = ColorF(1, 1, 1, 1);
 	bool   m_useGlobalFogColor = false;

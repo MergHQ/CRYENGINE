@@ -482,6 +482,7 @@ int CLightEntity::UpdateGSMLightSourceNearestShadowFrustum(int nFrustumIndex, co
 bool CLightEntity::IsOnePassTraversalFrustum(const ShadowMapFrustum* pFr)
 {
 	return GetCVars()->e_OnePassOctreeTraversal && (
+	  pFr->m_eFrustumType == ShadowMapFrustum::e_PerObject ||
 	  pFr->m_eFrustumType == ShadowMapFrustum::e_GsmCached ||
 	  pFr->m_eFrustumType == ShadowMapFrustum::e_HeightMapAO ||
 	  pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic ||
@@ -532,6 +533,8 @@ void CLightEntity::CollectShadowCascadeForOnePassTraversal(ShadowMapFrustum* pFr
 	if (IsOnePassTraversalFrustum(pFr) && CLightEntity::s_pShadowFrustumsCollector)
 	{
 		assert(m_light.m_Flags & DLF_CASTSHADOW_MAPS && !pFr->pOnePassShadowView);
+		assert(stl::find_index(*CLightEntity::s_pShadowFrustumsCollector, std::pair<ShadowMapFrustum*, const CLightEntity*>(pFr, this)) < 0);
+
 		CLightEntity::s_pShadowFrustumsCollector->emplace_back(pFr, this);
 	}
 }
@@ -2170,6 +2173,12 @@ void CLightEntity::ProcessPerObjectFrustum(ShadowMapFrustum* pFr, struct SPerObj
 	pFr->ResetCasterLists();
 	pFr->castersList.Add(pPerObjectShadow->pCaster);
 
+	if (pPerObjectShadow->pCaster->GetRenderNodeType() == eERType_MovableBrush || pPerObjectShadow->pCaster->GetRenderNodeType() == eERType_Character)
+	{
+		// mark the object to be rendered into shadow map
+		COctreeNode::SetTraversalFrameId((IRenderNode*)pPerObjectShadow->pCaster, passInfo.GetMainFrameID());
+	}
+
 	// get caster's bounding box and scale
 	AABB objectBBox;
 	pPerObjectShadow->pCaster->FillBBox(objectBBox);
@@ -2202,6 +2211,8 @@ void CLightEntity::ProcessPerObjectFrustum(ShadowMapFrustum* pFr, struct SPerObj
 	pFr->fWidthT = pPerObjectShadow->fJitter;
 	pFr->fBlurS = 0.0f;
 	pFr->fBlurT = 0.0f;
+
+	((CLightEntity*)pLightSource)->CollectShadowCascadeForOnePassTraversal(pFr);
 
 	if (GetCVars()->e_ShadowsFrustums)
 	{

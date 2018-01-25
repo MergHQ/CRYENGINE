@@ -373,10 +373,11 @@ inline void* MultiBuffer<TTypeList >::GetBuffer()
 template<typename TTypeList>
 inline void* MultiBuffer<TTypeList >::GetField(size_t index)
 {
-	assert(GetBuffer());
+	void* pBuffer = GetBuffer();
+	assert(pBuffer);
 
 	const size_t offset = (index > 0) ? (m_offsets[index - 1]) : (0);
-	return static_cast<char*>(GetBuffer()) + offset;
+	return static_cast<char*>(pBuffer) + offset;
 }
 
 template<typename TTypeList>

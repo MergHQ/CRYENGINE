@@ -148,7 +148,8 @@ namespace Schematyc2
 				ADD_OUTPUT = EPopupMenuItem::CUSTOM,
 				REMOVE_OUTPUT,
 				REFERENCES,
-				DEFINITION
+				DEFINITION,
+				REFERENCES_ALL
 			};
 		};
 
