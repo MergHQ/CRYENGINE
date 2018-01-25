@@ -400,14 +400,13 @@ namespace CryEngine
 			Engine.StartReload += OnEngineUnload;
 			Engine.EndReload += OnEngineReload;
 
-
 			HitEntityId = 0;
 			HitEntityUV = new Vector2();
 		}
 
 		private void OnEngineUnload()
 		{
-			_mouseListener.Dispose();
+			_mouseListener?.Dispose();
 			_mouseListener = null;
 		}
 
