@@ -1187,7 +1187,7 @@ IDynTextureSource* CRenderer::EF_LoadDynTexture(const char* dynsourceName, bool 
 
 bool SShaderItem::Update()
 {
-	if (!(m_pShader->GetFlags() & EF_LOADED))
+	if (!m_pShader || !(m_pShader->GetFlags() & EF_LOADED))
 		return false;
 	if ((uint32)m_nTechnique > 1000 && m_nTechnique != -1) // HACK HACK HACK
 	{
