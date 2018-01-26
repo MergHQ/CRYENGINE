@@ -915,7 +915,7 @@ void CEntityPhysics::Physicalize(SEntityPhysicalizeParams& params)
 	if (GetEntity()->GetParent())
 	{
 		eea.nParam[0] = GetEntity()->GetId();
-		static_cast<CEntity*>(GetEntity()->GetParent())->GetPhysicalProxy()->ProcessEvent(eed);
+		static_cast<CEntity*>(GetEntity()->GetParent())->GetPhysicalProxy()->ProcessEvent(eea);
 	}
 
 	if (params.type != PE_NONE) // are actually physicalizing
