@@ -364,13 +364,15 @@ int tri_cylinder_lin_unprojection(unprojection_mode *pmode, const triangle *ptri
 		nlen = n.len();
 		i = isneg(pcyl->axis*ptri->n); // choose cap closest to the triangle face
 		center = pcyl->center + pcyl->axis*(pcyl->hh*((i<<1)-1));
-		t.set(((center-ptri->pt[0])*nlen+n*pcyl->r)*ptri->n, ptri->n*pmode->dir).fixsign();
-		ptcyl = center*(t.y*nlen) + n*(pcyl->r*t.y) - pmode->dir*t.x; t.y *= nlen;
-		bContact = 1^(isneg((ptri->pt[1]-ptri->pt[0]^ptcyl-ptri->pt[0]*t.y)*ptri->n) | 
-									isneg((ptri->pt[2]-ptri->pt[1]^ptcyl-ptri->pt[1]*t.y)*ptri->n) | 
-									isneg((ptri->pt[0]-ptri->pt[2]^ptcyl-ptri->pt[2]*t.y)*ptri->n));
-		bBest = bContact & isneg(tmax-t) & isneg(t.x-pmode->tmax*t.y);
-		UPDATE_IDBEST(tmax,i);
+		if (nlen>1e-4f) {
+			t.set(((center-ptri->pt[0])*nlen+n*pcyl->r)*ptri->n, ptri->n*pmode->dir).fixsign();
+			ptcyl = center*(t.y*nlen) + n*(pcyl->r*t.y) - pmode->dir*t.x; t.y *= nlen;
+			bContact = 1^(isneg((ptri->pt[1]-ptri->pt[0]^ptcyl-ptri->pt[0]*t.y)*ptri->n) | 
+										isneg((ptri->pt[2]-ptri->pt[1]^ptcyl-ptri->pt[1]*t.y)*ptri->n) | 
+										isneg((ptri->pt[0]-ptri->pt[2]^ptcyl-ptri->pt[2]*t.y)*ptri->n));
+			bBest = bContact & isneg(tmax-t) & isneg(t.x-pmode->tmax*t.y);
+			UPDATE_IDBEST(tmax,i);
+		}
 
 		// triangle vertices - cylinder cap faces
 		j = (isnonneg(pcyl->axis*pmode->dir)<<1)-1; // choose cap that lies farther along unprojection direction
