@@ -69,6 +69,9 @@ string GetTypeName(EImpltemType const type)
 	case EImpltemType::Return:
 		name = "return:";
 		break;
+	case EImpltemType::VCA:
+		name = "vca:";
+		break;
 	case EImpltemType::MixerGroup:
 		name = "group:";
 		break;

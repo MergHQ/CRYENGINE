@@ -67,9 +67,10 @@ public:
 
 private:
 
-	static char const* const s_szFmodEventPrefix;
-	static char const* const s_szFmodSnapshotPrefix;
-	static char const* const s_szFmodBusPrefix;
+	static char const* const s_szEventPrefix;
+	static char const* const s_szSnapshotPrefix;
+	static char const* const s_szBusPrefix;
+	static char const* const s_szVcaPrefix;
 
 	void           CreateVersionString(CryFixedStringT<MaxInfoStringLength>& stringOut) const;
 	bool           LoadMasterBanks();

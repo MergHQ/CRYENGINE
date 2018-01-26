@@ -12,6 +12,7 @@ enum class EImpltemType
 	Bank,
 	Snapshot,
 	Return,
+	VCA,
 	Parameter,
 	Event,
 	MixerGroup,

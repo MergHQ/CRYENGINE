@@ -153,6 +153,32 @@ CSystemAsset* GetAssetFromIndex(QModelIndex const& index, int const column)
 }
 
 //////////////////////////////////////////////////////////////////////////
+QMimeData* GetDragDropData(QModelIndexList const& list)
+{
+	CDragDropData* const pDragDropData = new CDragDropData();
+	QByteArray byteArray;
+	QDataStream stream(&byteArray, QIODevice::ReadWrite);
+
+	QModelIndexList nameIndexes;
+	int const nameColumn = static_cast<int>(EColumns::Name);
+
+	for (auto const& index : list)
+	{
+		nameIndexes.append(index.sibling(index.row(), nameColumn));
+	}
+
+	nameIndexes.erase(std::unique(nameIndexes.begin(), nameIndexes.end()), nameIndexes.end());
+
+	for (auto const& index : nameIndexes)
+	{
+		stream << reinterpret_cast<intptr_t>(index.internalPointer());
+	}
+
+	pDragDropData->SetCustomData(ModelUtils::s_szSystemMimeType, byteArray);
+	return pDragDropData;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void DecodeImplMimeData(const QMimeData* pData, std::vector<CImplItem*>& outItems)
 {
 	CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
@@ -194,7 +220,7 @@ bool IsParentValid(CSystemAsset const& parent, ESystemItemType const type)
 		isValid = (type != ESystemItemType::State);
 		break;
 	case ESystemItemType::Switch:
-		isValid = (type == ESystemItemType::State);
+		isValid = (type == ESystemItemType::State) || (type == ESystemItemType::Parameter);
 		break;
 	default:
 		isValid = false;
@@ -352,7 +378,7 @@ void CSystemSourceModel::ConnectSignals()
 		{
 			if (!m_ignoreLibraryUpdates)
 			{
-			  int const row = m_pAssetsManager->GetLibraryCount();
+			  int const row = static_cast<int>(m_pAssetsManager->GetLibraryCount());
 			  beginInsertRows(QModelIndex(), row, row);
 			}
 	  }, reinterpret_cast<uintptr_t>(this));
@@ -369,13 +395,14 @@ void CSystemSourceModel::ConnectSignals()
 		{
 			if (!m_ignoreLibraryUpdates)
 			{
-			  int const libCount = m_pAssetsManager->GetLibraryCount();
+			  size_t const libCount = m_pAssetsManager->GetLibraryCount();
 
-			  for (int i = 0; i < libCount; ++i)
+			  for (size_t i = 0; i < libCount; ++i)
 			  {
 			    if (m_pAssetsManager->GetLibrary(i) == pLibrary)
 			    {
-			      beginRemoveRows(QModelIndex(), i, i);
+			      int const index = static_cast<int>(i);
+			      beginRemoveRows(QModelIndex(), index, index);
 			      break;
 			    }
 			  }
@@ -718,7 +745,7 @@ void CSystemLibraryModel::ConnectSignals()
 		{
 			if (Utils::GetParentLibrary(pParent) == m_pLibrary)
 			{
-			  int const row = pParent->ChildCount();
+			  int const row = static_cast<int>(pParent->ChildCount());
 
 			  if (pParent->GetType() == ESystemItemType::Library)
 			  {
@@ -749,21 +776,23 @@ void CSystemLibraryModel::ConnectSignals()
 
 			  if (pParent != nullptr)
 			  {
-			    int const childCount = pParent->ChildCount();
+			    size_t const childCount = pParent->ChildCount();
 
-			    for (int i = 0; i < childCount; ++i)
+			    for (size_t i = 0; i < childCount; ++i)
 			    {
 			      if (pParent->GetChild(i) == pAsset)
 			      {
+			        int const index = static_cast<int>(i);
+
 			        if (pParent->GetType() == ESystemItemType::Library)
 			        {
 			          CRY_ASSERT_MESSAGE(pParent == m_pLibrary, "Parent is not the current library.");
-			          beginRemoveRows(QModelIndex(), i, i);
+			          beginRemoveRows(QModelIndex(), index, index);
 			        }
 			        else
 			        {
 			          QModelIndex const& parent = IndexFromItem(pParent);
-			          beginRemoveRows(parent, i, i);
+			          beginRemoveRows(parent, index, index);
 			        }
 
 			        break;
@@ -802,13 +831,13 @@ QModelIndex CSystemLibraryModel::IndexFromItem(CSystemAsset const* const pItem) 
 
 		if (pParent != nullptr)
 		{
-			int const size = pParent->ChildCount();
+			size_t const size = pParent->ChildCount();
 
-			for (int i = 0; i < size; ++i)
+			for (size_t i = 0; i < size; ++i)
 			{
 				if (pParent->GetChild(i) == pItem)
 				{
-					modelIndex = createIndex(i, 0, reinterpret_cast<quintptr>(pItem));
+					modelIndex = createIndex(static_cast<int>(i), 0, reinterpret_cast<quintptr>(pItem));
 					break;
 				}
 			}
@@ -825,7 +854,7 @@ int CSystemLibraryModel::rowCount(QModelIndex const& parent) const
 
 	if (!parent.isValid())
 	{
-		rowCount = m_pLibrary->ChildCount();
+		rowCount = static_cast<int>(m_pLibrary->ChildCount());
 	}
 	else
 	{
@@ -833,7 +862,7 @@ int CSystemLibraryModel::rowCount(QModelIndex const& parent) const
 
 		if (pAsset != nullptr)
 		{
-			rowCount = pAsset->ChildCount();
+			rowCount = static_cast<int>(pAsset->ChildCount());
 		}
 	}
 
@@ -1118,13 +1147,15 @@ QModelIndex CSystemLibraryModel::index(int row, int column, QModelIndex const& p
 
 	if ((row >= 0) && (column >= 0))
 	{
+		size_t const childIndex = static_cast<size_t>(row);
+
 		if (parent.isValid())
 		{
 			CSystemAsset const* const pParent = static_cast<CSystemAsset*>(parent.internalPointer());
 
-			if ((pParent != nullptr) && (row < pParent->ChildCount()))
+			if ((pParent != nullptr) && (childIndex < pParent->ChildCount()))
 			{
-				CSystemAsset const* const pChild = pParent->GetChild(row);
+				CSystemAsset const* const pChild = pParent->GetChild(childIndex);
 
 				if (pChild != nullptr)
 				{
@@ -1132,9 +1163,9 @@ QModelIndex CSystemLibraryModel::index(int row, int column, QModelIndex const& p
 				}
 			}
 		}
-		else if (row < m_pLibrary->ChildCount())
+		else if (childIndex < m_pLibrary->ChildCount())
 		{
-			modelIndex = createIndex(row, column, reinterpret_cast<quintptr>(m_pLibrary->GetChild(row)));
+			modelIndex = createIndex(row, column, reinterpret_cast<quintptr>(m_pLibrary->GetChild(childIndex)));
 		}
 	}
 
@@ -1233,24 +1264,7 @@ bool CSystemLibraryModel::dropMimeData(QMimeData const* pData, Qt::DropAction ac
 //////////////////////////////////////////////////////////////////////////
 QMimeData* CSystemLibraryModel::mimeData(QModelIndexList const& indexes) const
 {
-	CDragDropData* const pDragDropData = new CDragDropData();
-	QByteArray byteArray;
-	QDataStream stream(&byteArray, QIODevice::ReadWrite);
-
-	QModelIndexList nameIndexes;
-
-	for (QModelIndex const& index : indexes)
-	{
-		nameIndexes.append(index.sibling(index.row(), m_nameColumn));
-	}
-
-	for (auto const& index : nameIndexes)
-	{
-		stream << reinterpret_cast<intptr_t>(index.internalPointer());
-	}
-
-	pDragDropData->SetCustomData(ModelUtils::s_szSystemMimeType, byteArray);
-	return pDragDropData;
+	return SystemModelUtils::GetDragDropData(indexes);
 }
 
 //////////////////////////////////////////////////////////////////////////

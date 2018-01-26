@@ -21,9 +21,10 @@ namespace Fmod
 {
 TriggerToParameterIndexes g_triggerToParameterIndexes;
 
-char const* const CImpl::s_szFmodEventPrefix = "event:/";
-char const* const CImpl::s_szFmodSnapshotPrefix = "snapshot:/";
-char const* const CImpl::s_szFmodBusPrefix = "bus:/";
+char const* const CImpl::s_szEventPrefix = "event:/";
+char const* const CImpl::s_szSnapshotPrefix = "snapshot:/";
+char const* const CImpl::s_szBusPrefix = "bus:/";
+char const* const CImpl::s_szVcaPrefix = "vca:/";
 
 struct SFmodFileData
 {
@@ -217,7 +218,7 @@ ERequestStatus CImpl::UnmuteAll()
 ERequestStatus CImpl::StopAllSounds()
 {
 	FMOD::Studio::Bus* pMasterBus = nullptr;
-	FMOD_RESULT fmodResult = m_pSystem->getBus(s_szFmodBusPrefix, &pMasterBus);
+	FMOD_RESULT fmodResult = m_pSystem->getBus(s_szBusPrefix, &pMasterBus);
 	ASSERT_FMOD_OK;
 
 	if (pMasterBus != nullptr)
@@ -481,7 +482,7 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 
 	if (_stricmp(szTag, s_szEventTag) == 0)
 	{
-		stack_string path(s_szFmodEventPrefix);
+		stack_string path(s_szEventPrefix);
 		path += pRootNode->getAttr(s_szNameAttribute);
 		FMOD_GUID guid = { 0 };
 
@@ -504,7 +505,7 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 	}
 	else if (_stricmp(szTag, s_szSnapshotTag) == 0)
 	{
-		stack_string path(s_szFmodSnapshotPrefix);
+		stack_string path(s_szSnapshotPrefix);
 		path += pRootNode->getAttr(s_szNameAttribute);
 		FMOD_GUID guid = { 0 };
 
@@ -558,7 +559,32 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
 		pRootNode->getAttr(s_szShiftAttribute, shift);
 
-		pParameter = new CParameter(StringToId(szName), multiplier, shift, szName);
+		pParameter = new CParameter(StringToId(szName), multiplier, shift, szName, EParameterType::Parameter);
+	}
+	else if (_stricmp(szTag, s_szVcaTag) == 0)
+	{
+		stack_string fullName(s_szVcaPrefix);
+		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		fullName += szName;
+		FMOD_GUID guid = { 0 };
+
+		if (m_pSystem->lookupID(fullName.c_str(), &guid) == FMOD_OK)
+		{
+			FMOD::Studio::VCA* pVca = nullptr;
+			FMOD_RESULT const fmodResult = m_pSystem->getVCAByID(&guid, &pVca);
+			ASSERT_FMOD_OK;
+
+			float multiplier = 1.0f;
+			float shift = 0.0f;
+			pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
+			pRootNode->getAttr(s_szShiftAttribute, shift);
+
+			pParameter = new CVcaParameter(StringToId(fullName.c_str()), multiplier, shift, szName, pVca);
+		}
+		else
+		{
+			Cry::Audio::Log(ELogType::Warning, "Unknown Fmod VCA: %s", fullName.c_str());
+		}
 	}
 	else
 	{
@@ -592,7 +618,30 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
 		char const* const szValue = pRootNode->getAttr(s_szValueAttribute);
 		float const value = static_cast<float>(atof(szValue));
-		pSwitchState = new CSwitchState(StringToId(szName), value, szName);
+		pSwitchState = new CSwitchState(StringToId(szName), value, szName, EStateType::State);
+	}
+	else if (_stricmp(szTag, s_szVcaTag) == 0)
+	{
+		stack_string fullName(s_szVcaPrefix);
+		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		fullName += szName;
+		FMOD_GUID guid = { 0 };
+
+		if (m_pSystem->lookupID(fullName.c_str(), &guid) == FMOD_OK)
+		{
+			FMOD::Studio::VCA* pVca = nullptr;
+			FMOD_RESULT const fmodResult = m_pSystem->getVCAByID(&guid, &pVca);
+			ASSERT_FMOD_OK;
+
+			char const* const szValue = pRootNode->getAttr(s_szValueAttribute);
+			float const value = static_cast<float>(atof(szValue));
+
+			pSwitchState = new CVcaState(StringToId(fullName.c_str()), value, szName, pVca);
+		}
+		else
+		{
+			Cry::Audio::Log(ELogType::Warning, "Unknown Fmod VCA: %s", fullName.c_str());
+		}
 	}
 	else
 	{
@@ -623,7 +672,7 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 
 	if (_stricmp(szTag, s_szBusTag) == 0)
 	{
-		stack_string path(s_szFmodBusPrefix);
+		stack_string path(s_szBusPrefix);
 		path += pRootNode->getAttr(s_szNameAttribute);
 		FMOD_GUID guid = { 0 };
 
@@ -641,7 +690,7 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 	}
 	else if (_stricmp(szTag, s_szSnapshotTag) == 0)
 	{
-		stack_string path(s_szFmodSnapshotPrefix);
+		stack_string path(s_szSnapshotPrefix);
 		path += pRootNode->getAttr(s_szNameAttribute);
 		FMOD_GUID guid = { 0 };
 
@@ -958,7 +1007,7 @@ void CImpl::UnloadMasterBanks()
 ERequestStatus CImpl::MuteMasterBus(bool const bMute)
 {
 	FMOD::Studio::Bus* pMasterBus = nullptr;
-	FMOD_RESULT fmodResult = m_pSystem->getBus(s_szFmodBusPrefix, &pMasterBus);
+	FMOD_RESULT fmodResult = m_pSystem->getBus(s_szBusPrefix, &pMasterBus);
 	ASSERT_FMOD_OK;
 
 	if (pMasterBus != nullptr)

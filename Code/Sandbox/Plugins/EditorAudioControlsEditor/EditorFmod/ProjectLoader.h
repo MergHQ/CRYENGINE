@@ -25,6 +25,7 @@ private:
 	void       LoadBanks(string const& folderPath, bool const isLocalized, CImplItem& parent);
 	void       ParseFolder(string const& folderPath, string const& folderName, CImplItem& parent);
 	void       ParseFile(string const& filepath, CImplItem& parent);
+	void       RemoveEmptyMixerGroups();
 
 	CImplItem* GetContainer(string const& id, EImpltemType const type, CImplItem& parent);
 	CImplItem* LoadContainer(XmlNodeRef const pNode, EImpltemType const type, string const& relationshipParamName, CImplItem& parent);
@@ -37,15 +38,17 @@ private:
 	CImplItem* LoadSnapshot(XmlNodeRef const pNode, CImplItem& parent);
 	CImplItem* LoadReturn(XmlNodeRef const pNode, CImplItem& parent);
 	CImplItem* LoadParameter(XmlNodeRef const pNode, CImplItem& parent);
+	CImplItem* LoadVca(XmlNodeRef const pNode, CImplItem& parent);
 
 	using ControlsCache = std::map<CID, CImplItem*>;
 	using ItemIds = std::map<string, CImplItem*>;
 
-	CImplItem&    m_root;
-	ControlsCache m_controlsCache;
-	ItemIds       m_containerIds;
-	ItemIds       m_snapshotGroupItems;
-	string const  m_projectPath;
+	CImplItem&                    m_root;
+	ControlsCache                 m_controlsCache;
+	ItemIds                       m_containerIds;
+	ItemIds                       m_snapshotGroupItems;
+	std::vector<CImplMixerGroup*> m_emptyMixerGroups;
+	string const                  m_projectPath;
 };
 } // namespace Fmod
 } // namespace ACE
