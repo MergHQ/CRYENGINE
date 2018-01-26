@@ -8614,7 +8614,11 @@ const QuatT& CPlayer::GetLastSTAPCameraDelta() const
 void CPlayer::UpdateFPIKTorso(float fFrameTime, IItem * pCurrentItem, const Vec3& cameraPosition)
 {
 	CRY_ASSERT(IsClient());
-	m_pPlayerTypeComponent->UpdateFPIKTorso(fFrameTime, pCurrentItem, cameraPosition);	
+
+	if (m_pPlayerTypeComponent)
+	{
+		m_pPlayerTypeComponent->UpdateFPIKTorso(fFrameTime, pCurrentItem, cameraPosition);
+	}
 }
 
 void CPlayer::HasJumped(const Vec3 &jumpVel)
@@ -9873,9 +9877,12 @@ void CPlayer::RefillAmmoDone()
 
 void CPlayer::UpdateClient( const float frameTime )
 {
-	CRY_ASSERT(m_isClient);
+	CRY_ASSERT(IsClient());
 
-	m_pPlayerTypeComponent->Update( frameTime );
+	if (m_pPlayerTypeComponent)
+	{
+		m_pPlayerTypeComponent->Update(frameTime);
+	}
 }
 
 float CPlayer::GetBaseHeat() const
