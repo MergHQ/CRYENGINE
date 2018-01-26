@@ -2670,9 +2670,27 @@ struct IPhysUtils
 	//! center is a pre-calculated geometrical center of pt's
 	//! outputs data into centers and radii arrays, which use global buffers; returns the number of circles
 	virtual int  CoverPolygonWithCircles(strided_pointer<Vec2> pt, int npt, bool bConsecutive, const Vec2& center, Vec2*& centers, float*& radii, float minCircleRadius) = 0;
+	//! qhull - computes convex hull of a set of 3d points. returns the number of triangles in pTris
+	//! pts - point list
+	//! npts - number of points
+	//! pTris - will receive an internally allocated pointer to the triangles (recommended to be deleted via DeletePointer)
+	//! qmalloc - optional custom allocator for pTris 
 	virtual int  qhull(strided_pointer<Vec3> pts, int npts, index_t*& pTris, qhullmalloc qmalloc = 0) = 0;
+	//! qhull2d - computes convex hull of a set of 2d points. returns the number of edges (linked via edgeitem.next)
+	//! pts - source points (only pt needs to be set in ptitem; next/prev are used internally; iContact can be used to store some relevant index)
+	//! nVtx - number of source points
+	//! edges - pre-allocated destination array of edges (pvtx and next are the output fields)
+	//! nMaxEdges - if >0, the function will chop vertices with the least associated "ear" area until the limit is satisfied
+	//              in this case the first edge of the hull will not necessarily be in edges[0] - it'll be the first item with non-0 next
 	virtual int  qhull2d(ptitem2d* pts, int nVtx, edgeitem* edges, int nMaxEdges = 0) = 0;
+	//! DeletePointer - deletes any pointer allocated by the physics
 	virtual void DeletePointer(void* pdata) = 0; //!< should be used to free data allocated in physics
+	//! Triangulates a 2d polygon, returns the number of triangles
+	//! pVtx - source points of the polygon. polygons can have several unconnected contours. counter-clockwise contours have polygon area inside them, 
+	//         clockwise - outside. each contour must have a terminator point with MARK_UNUSED pt[i].x (even if there's only one contour)
+	//! nVtx - the number of source points, including terminators
+	//! pTris - pointer to a pre-allocated destination index buffer; (nVtx+nContours*2)*3 is a conservative upper limit
+	//! szTriBuf - size of the index buffer (assuming 3 indices per tri)
 	virtual int  TriangulatePoly(Vec2* pVtx, int nVtx, int* pTris, int szTriBuf) = 0;
 	// </interfuscator:shuffle>
 };
