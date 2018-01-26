@@ -1745,7 +1745,7 @@ CNavMesh::ERayCastResult CNavMesh::RayCast_v3(const vector3_t& fromPos, Triangle
 			{
 				// Triangle was already visited, we have a loop
 				// This shouldn't happen in normal circumstances and it can mean that we have e.g. degenerate triangle
-				neighbourTriangleID = MNM::Constants::InvalidEdgeIndex;
+				neighbourTriangleID = MNM::Constants::InvalidTriangleID;
 			}
 		}
 		currentTriangleID = neighbourTriangleID;
