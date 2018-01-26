@@ -2057,24 +2057,6 @@ static bool FinalizeMesh(CMesh* pMesh, const char*& szError)
 	return pMesh->Validate(&szError);
 }
 
-static SShaderItem SetBumpMap(const SShaderItem& shaderItem)
-{
-	SInputShaderResources* inputShaderResources = gEnv->pRenderer->EF_CreateInputShaderResource(shaderItem.m_pShaderResources);
-
-	const EEfResTextures texId = MaterialHelpers::FindTexSlot("Bumpmap");
-	inputShaderResources->m_Textures[texId].m_Name = "Objects/pbs_reference/gloss0_ddna.tif";
-
-	const char* const szShaderName = shaderItem.m_pShader->GetName();
-	const uint64 shaderGenMask = shaderItem.m_pShader->GetGenerationMask();
-
-	SShaderItem newShaderItem = gEnv->pRenderer->EF_LoadShaderItem(
-	  szShaderName, false, 0, inputShaderResources, shaderGenMask);
-
-	gEnv->pRenderer->UpdateShaderItem(&newShaderItem, NULL);
-
-	return newShaderItem;
-}
-
 void CMainDialog::AssignScene(const MeshImporter::SImportScenePayload* pPayload)
 {
 	m_bMaterialNameWasRelative = false;
@@ -2130,11 +2112,6 @@ void CMainDialog::AssignScene(const MeshImporter::SImportScenePayload* pPayload)
 		for (int i = 0; i < materialCount; ++i)
 		{
 			m_materials[i] = pMaterialManager->CloneMaterial(pReferenceMaterial);
-
-			const EEfResTextures texId = MaterialHelpers::FindTexSlot("Bumpmap");
-
-			SShaderItem shaderItem = SetBumpMap(m_materials[i]->GetShaderItem());
-			m_materials[i]->AssignShaderItem(shaderItem);
 		}
 
 		// Create uber-materials.
