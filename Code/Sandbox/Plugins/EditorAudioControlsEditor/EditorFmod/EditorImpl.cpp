@@ -43,6 +43,10 @@ EImpltemType TagToType(string const& tag)
 	{
 		type = EImpltemType::Return;
 	}
+	else if (tag == CryAudio::Impl::Fmod::s_szVcaTag)
+	{
+		type = EImpltemType::VCA;
+	}
 
 	// Backwards compatibility will be removed before March 2019.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
@@ -102,6 +106,9 @@ char const* TypeToTag(EImpltemType const type)
 	case EImpltemType::Return:
 		tag = CryAudio::Impl::Fmod::s_szBusTag;
 		break;
+	case EImpltemType::VCA:
+		tag = CryAudio::Impl::Fmod::s_szVcaTag;
+		break;
 	default:
 		tag = nullptr;
 		break;
@@ -131,6 +138,9 @@ string TypeToEditorFolderName(EImpltemType const type)
 		break;
 	case EImpltemType::Return:
 		folderName = g_returnsFolderName + "/";
+		break;
+	case EImpltemType::VCA:
+		folderName = g_vcasFolderName + "/";
 		break;
 	default:
 		folderName = "";
@@ -279,6 +289,9 @@ char const* CEditorImpl::GetTypeIcon(CImplItem const* const pImplItem) const
 	case EImpltemType::Return:
 		szIconPath = "icons:audio/fmod/return.ico";
 		break;
+	case EImpltemType::VCA:
+		szIconPath = "icons:audio/fmod/vca.ico";
+		break;
 	case EImpltemType::MixerGroup:
 		szIconPath = "icons:audio/fmod/group.ico";
 		break;
@@ -317,13 +330,13 @@ bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, CImplItem c
 		isCompatible = (implType == EImpltemType::Event) || (implType == EImpltemType::Snapshot);
 		break;
 	case ESystemItemType::Parameter:
-		isCompatible = (implType == EImpltemType::Parameter);
+		isCompatible = (implType == EImpltemType::Parameter) || (implType == EImpltemType::VCA);
 		break;
 	case ESystemItemType::Preload:
 		isCompatible = (implType == EImpltemType::Bank);
 		break;
 	case ESystemItemType::State:
-		isCompatible = (implType == EImpltemType::Parameter);
+		isCompatible = (implType == EImpltemType::Parameter) || (implType == EImpltemType::VCA);
 		break;
 	case ESystemItemType::Environment:
 		isCompatible = (implType == EImpltemType::Return);
@@ -359,6 +372,9 @@ ESystemItemType CEditorImpl::ImplTypeToSystemType(CImplItem const* const pImplIt
 	case EImpltemType::Return:
 		systemType = ESystemItemType::Environment;
 		break;
+	case EImpltemType::VCA:
+		systemType = ESystemItemType::Parameter;
+		break;
 	default:
 		systemType = ESystemItemType::Invalid;
 		break;
@@ -380,7 +396,7 @@ ConnectionPtr CEditorImpl::CreateConnectionToControl(ESystemItemType const contr
 		{
 			pConnection = std::make_shared<CEventConnection>(pImplItem->GetId());
 		}
-		else if (type == EImpltemType::Parameter)
+		else if ((type == EImpltemType::Parameter) || (type == EImpltemType::VCA))
 		{
 			if (controlType == ESystemItemType::Parameter)
 			{
@@ -478,11 +494,12 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 					}
 #endif        // USE_BACKWARDS_COMPATIBILITY
 					auto const pConnection = std::make_shared<CEventConnection>(pImplItem->GetId());
-					pConnection->m_type = (eventType == CryAudio::Impl::Fmod::s_szStopValue) ? EEventType::Stop : EEventType::Start;
+					pConnection->SetType((eventType == CryAudio::Impl::Fmod::s_szStopValue) ? EEventType::Stop : EEventType::Start);
 					pConnectionPtr = pConnection;
 				}
 				break;
 			case EImpltemType::Parameter:
+			case EImpltemType::VCA:
 				{
 					if (controlType == ESystemItemType::Parameter)
 					{
@@ -514,8 +531,8 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 							shift = (float)std::atof(value.c_str());
 						}
 #endif          // USE_BACKWARDS_COMPATIBILITY
-						pConnection->m_mult = mult;
-						pConnection->m_shift = shift;
+						pConnection->SetMultiplier(mult);
+						pConnection->SetShift(shift);
 						pConnectionPtr = pConnection;
 					}
 					else if (controlType == ESystemItemType::State)
@@ -528,7 +545,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 							value = pNode->getAttr("fmod_value");
 						}
 #endif
-						pConnection->m_value = (float)std::atof(value.c_str());
+						pConnection->SetValue((float)std::atof(value.c_str()));
 						pConnectionPtr = pConnection;
 					}
 				}
@@ -566,7 +583,7 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, Utils::GetPathName(pImplControl, m_rootControl));
 				auto const pEventConnection = static_cast<const CEventConnection*>(pConnection.get());
 
-				if ((pEventConnection != nullptr) && (pEventConnection->m_type == EEventType::Stop))
+				if ((pEventConnection != nullptr) && (pEventConnection->GetType() == EEventType::Stop))
 				{
 					pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::s_szStopValue);
 				}
@@ -578,6 +595,7 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 			}
 			break;
 		case EImpltemType::Parameter:
+		case EImpltemType::VCA:
 			{
 				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pImplControl->GetName());
 
@@ -587,21 +605,21 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 
 					if (pStateConnection != nullptr)
 					{
-						pConnectionNode->setAttr(CryAudio::Impl::Fmod::s_szValueAttribute, pStateConnection->m_value);
+						pConnectionNode->setAttr(CryAudio::Impl::Fmod::s_szValueAttribute, pStateConnection->GetValue());
 					}
 				}
 				else if (controlType == ESystemItemType::Parameter)
 				{
 					auto const pParamConnection = static_cast<const CParamConnection*>(pConnection.get());
 
-					if (pParamConnection->m_mult != 1.0f)
+					if (pParamConnection->GetMultiplier() != 1.0f)
 					{
-						pConnectionNode->setAttr(CryAudio::Impl::Fmod::s_szMutiplierAttribute, pParamConnection->m_mult);
+						pConnectionNode->setAttr(CryAudio::Impl::Fmod::s_szMutiplierAttribute, pParamConnection->GetMultiplier());
 					}
 
-					if (pParamConnection->m_shift != 0.0f)
+					if (pParamConnection->GetShift() != 0.0f)
 					{
-						pConnectionNode->setAttr(CryAudio::Impl::Fmod::s_szShiftAttribute, pParamConnection->m_shift);
+						pConnectionNode->setAttr(CryAudio::Impl::Fmod::s_szShiftAttribute, pParamConnection->GetShift());
 					}
 				}
 			}

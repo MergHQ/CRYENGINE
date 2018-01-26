@@ -98,7 +98,14 @@ private:
 	FMOD_GUID const                       m_guid;
 };
 
-class CParameter final : public IParameter
+enum class EParameterType : EnumFlagsType
+{
+	None,
+	Parameter,
+	VCA,
+};
+
+class CParameter : public IParameter
 {
 public:
 
@@ -106,11 +113,13 @@ public:
 	  uint32 const id,
 	  float const multiplier,
 	  float const shift,
-	  char const* const szName)
+	  char const* const szName,
+	  EParameterType const type)
 		: m_id(id)
 		, m_multiplier(multiplier)
 		, m_shift(shift)
 		, m_name(szName)
+		, m_type(type)
 	{}
 
 	virtual ~CParameter() override = default;
@@ -123,27 +132,59 @@ public:
 	uint32                                                 GetId() const              { return m_id; }
 	float                                                  GetValueMultiplier() const { return m_multiplier; }
 	float                                                  GetValueShift() const      { return m_shift; }
+	EParameterType                                         GetType() const            { return m_type; }
 	CryFixedStringT<CryAudio::MaxControlNameLength> const& GetName() const            { return m_name; }
 
 private:
 
-	uint32 const m_id;
-	float const  m_multiplier;
-	float const  m_shift;
+	uint32 const         m_id;
+	float const          m_multiplier;
+	float const          m_shift;
+	EParameterType const m_type;
 	CryFixedStringT<CryAudio::MaxControlNameLength> const m_name;
 };
 
-class CSwitchState final : public ISwitchState
+class CVcaParameter final : public CParameter
+{
+public:
+
+	explicit CVcaParameter(
+	  uint32 const id,
+	  float const multiplier,
+	  float const shift,
+	  char const* const szName,
+	  FMOD::Studio::VCA* const vca)
+		: CParameter(id, multiplier, shift, szName, EParameterType::VCA)
+		, m_vca(vca)
+	{}
+
+	FMOD::Studio::VCA* GetVca() const { return m_vca; }
+
+private:
+
+	FMOD::Studio::VCA* const m_vca;
+};
+
+enum class EStateType : EnumFlagsType
+{
+	None,
+	State,
+	VCA,
+};
+
+class CSwitchState : public ISwitchState
 {
 public:
 
 	explicit CSwitchState(
 	  uint32 const id,
 	  float const value,
-	  char const* const szName)
+	  char const* const szName,
+	  EStateType const type)
 		: m_id(id)
 		, m_value(value)
 		, m_name(szName)
+		, m_type(type)
 	{}
 
 	virtual ~CSwitchState() override = default;
@@ -155,13 +196,35 @@ public:
 
 	uint32                                                 GetId() const    { return m_id; }
 	float                                                  GetValue() const { return m_value; }
+	EStateType                                             GetType() const  { return m_type; }
 	CryFixedStringT<CryAudio::MaxControlNameLength> const& GetName() const  { return m_name; }
 
 private:
 
-	uint32 const m_id;
-	float const  m_value;
+	uint32 const     m_id;
+	float const      m_value;
+	EStateType const m_type;
 	CryFixedStringT<CryAudio::MaxControlNameLength> const m_name;
+};
+
+class CVcaState final : public CSwitchState
+{
+public:
+
+	explicit CVcaState(
+	  uint32 const id,
+	  float const value,
+	  char const* const szName,
+	  FMOD::Studio::VCA* const vca)
+		: CSwitchState(id, value, szName, EStateType::VCA)
+		, m_vca(vca)
+	{}
+
+	FMOD::Studio::VCA* GetVca() const { return m_vca; }
+
+private:
+
+	FMOD::Studio::VCA* const m_vca;
 };
 
 class CEnvironment final : public IEnvironment

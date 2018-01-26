@@ -26,6 +26,7 @@ string const g_eventsPath = "/metadata/event/";
 string const g_parametersPath = "/metadata/parameterpreset/";
 string const g_snapshotsPath = "/metadata/snapshot/";
 string const g_returnsPath = "/metadata/return/";
+string const g_vcasPath = "/metadata/vca/";
 
 //////////////////////////////////////////////////////////////////////////
 CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& root)
@@ -35,14 +36,17 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 	CImplItem* const pSoundBanks = CreateItem(g_soundBanksFolderName, EImpltemType::EditorFolder, &m_root);
 	LoadBanks(soundbanksPath, false, *pSoundBanks);
 
-	ParseFolder(projectPath + g_eventFoldersPath, g_eventsFolderName, root);          // event folders
-	ParseFolder(projectPath + g_parametersFoldersPath, g_parametersFolderName, root); // parameter folders
-	ParseFolder(projectPath + g_snapshotGroupsPath, g_snapshotsFolderName, root);     // snapshot groups
-	ParseFolder(projectPath + g_mixerGroupsPath, g_returnsFolderName, root);          // mixer groups
-	ParseFolder(projectPath + g_eventsPath, g_eventsFolderName, root);                // events
-	ParseFolder(projectPath + g_parametersPath, g_parametersFolderName, root);        // parameters
-	ParseFolder(projectPath + g_snapshotsPath, g_snapshotsFolderName, root);          // snapshots
-	ParseFolder(projectPath + g_returnsPath, g_returnsFolderName, root);              // returns
+	ParseFolder(projectPath + g_eventFoldersPath, g_eventsFolderName, root);          // Event folders
+	ParseFolder(projectPath + g_parametersFoldersPath, g_parametersFolderName, root); // Parameter folders
+	ParseFolder(projectPath + g_snapshotGroupsPath, g_snapshotsFolderName, root);     // Snapshot groups
+	ParseFolder(projectPath + g_mixerGroupsPath, g_returnsFolderName, root);          // Mixer groups
+	ParseFolder(projectPath + g_eventsPath, g_eventsFolderName, root);                // Events
+	ParseFolder(projectPath + g_parametersPath, g_parametersFolderName, root);        // Parameters
+	ParseFolder(projectPath + g_snapshotsPath, g_snapshotsFolderName, root);          // Snapshots
+	ParseFolder(projectPath + g_returnsPath, g_returnsFolderName, root);              // Returns
+	ParseFolder(projectPath + g_vcasPath, g_vcasFolderName, root);                    // VCAs
+
+	RemoveEmptyMixerGroups();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -167,6 +171,10 @@ void CProjectLoader::ParseFile(string const& filepath, CImplItem& parent)
 					else if (className == "MixerGroup")
 					{
 						LoadMixerGroup(pChild, parent);
+					}
+					else if (className == "MixerVCA")
+					{
+						LoadVca(pChild, parent);
 					}
 				}
 			}
@@ -398,13 +406,33 @@ CImplItem* CProjectLoader::LoadSnapshot(XmlNodeRef const pNode, CImplItem& paren
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::LoadReturn(XmlNodeRef const pNode, CImplItem& parent)
 {
-	return LoadItem(pNode, EImpltemType::Return, parent);
+	CImplItem* const pReturn = LoadItem(pNode, EImpltemType::Return, parent);
+
+	if (pReturn != nullptr)
+	{
+		auto pParent = pReturn->GetParent();
+		auto const mixerGroupType = static_cast<ItemType>(EImpltemType::MixerGroup);
+
+		while ((pParent != nullptr) && (pParent->GetType() == mixerGroupType))
+		{
+			m_emptyMixerGroups.erase(std::remove(m_emptyMixerGroups.begin(), m_emptyMixerGroups.end(), pParent), m_emptyMixerGroups.end());
+			pParent = pParent->GetParent();
+		}
+	}
+
+	return pReturn;
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::LoadParameter(XmlNodeRef const pNode, CImplItem& parent)
 {
 	return LoadItem(pNode, EImpltemType::Parameter, parent);
+}
+
+//////////////////////////////////////////////////////////////////////////
+CImplItem* CProjectLoader::LoadVca(XmlNodeRef const pNode, CImplItem& parent)
+{
+	return LoadItem(pNode, EImpltemType::VCA, parent);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -436,6 +464,7 @@ CImplItem* CProjectLoader::CreateItem(string const& name, EImpltemType const typ
 		else if (type == EImpltemType::MixerGroup)
 		{
 			pImplItem = new CImplMixerGroup(name, id);
+			m_emptyMixerGroups.emplace_back(static_cast<CImplMixerGroup*>(pImplItem));
 		}
 		else
 		{
@@ -474,6 +503,51 @@ CImplItem* CProjectLoader::GetControl(CID const id) const
 	}
 
 	return pImplItem;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CProjectLoader::RemoveEmptyMixerGroups()
+{
+	auto iter = m_emptyMixerGroups.begin();
+	auto iterEnd = m_emptyMixerGroups.end();
+
+	while (iter != iterEnd)
+	{
+		auto const pMixerGroup = *iter;
+
+		if (pMixerGroup != nullptr)
+		{
+			auto const pParent = pMixerGroup->GetParent();
+
+			if (pParent != nullptr)
+			{
+				pParent->RemoveChild(pMixerGroup);
+			}
+
+			size_t const childCount = pMixerGroup->ChildCount();
+
+			for (size_t i = 0; i < childCount; ++i)
+			{
+				auto const pChild = pMixerGroup->GetChildAt(i);
+
+				if (pChild != nullptr)
+				{
+					pMixerGroup->RemoveChild(pChild);
+				}
+			}
+		}
+
+		delete pMixerGroup;
+
+		if (iter != (iterEnd - 1))
+		{
+			(*iter) = m_emptyMixerGroups.back();
+		}
+
+		m_emptyMixerGroups.pop_back();
+		iter = m_emptyMixerGroups.begin();
+		iterEnd = m_emptyMixerGroups.end();
+	}
 }
 } // namespace Fmod
 } // namespace ACE

@@ -15,6 +15,7 @@ static constexpr char* s_szSnapshotTag = "Snapshot";
 static constexpr char* s_szParameterTag = "Parameter";
 static constexpr char* s_szFileTag = "File";
 static constexpr char* s_szBusTag = "Bus";
+static constexpr char* s_szVcaTag = "VCA";
 
 // XML attributes
 static constexpr char* s_szValueAttribute = "value";

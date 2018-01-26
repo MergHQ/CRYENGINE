@@ -57,25 +57,27 @@ public:
 	string          GetName() const { return m_name; }
 	virtual void    SetName(string const& name);
 
+	void            UpdateNameOnMove(CSystemAsset* const pParent);
+
 	string          GetDescription() const { return m_description; }
 	virtual void    SetDescription(string const& description);
 
-	bool            IsDefaultControl() const { return (m_flags & ESystemAssetFlags::IsDefaultControl) != 0; }
+	bool            IsDefaultControl() const { return (m_flags& ESystemAssetFlags::IsDefaultControl) != 0; }
 	void            SetDefaultControl(bool const isDefaultControl);
 
-	bool            IsInternalControl() const { return (m_flags & ESystemAssetFlags::IsInternalControl) != 0; }
+	bool            IsInternalControl() const { return (m_flags& ESystemAssetFlags::IsInternalControl) != 0; }
 	void            SetInternalControl(bool const isInternal);
 
-	virtual bool    IsModified() const { return (m_flags & ESystemAssetFlags::IsModified) != 0; }
+	virtual bool    IsModified() const { return (m_flags& ESystemAssetFlags::IsModified) != 0; }
 	virtual void    SetModified(bool const isModified, bool const isForced = false);
 
-	bool            HasPlaceholderConnection() const { return (m_flags & ESystemAssetFlags::HasPlaceholderConnection) != 0; }
+	bool            HasPlaceholderConnection() const { return (m_flags& ESystemAssetFlags::HasPlaceholderConnection) != 0; }
 	void            SetHasPlaceholderConnection(bool const hasPlaceholder);
-	
-	bool            HasConnection() const { return (m_flags & ESystemAssetFlags::HasConnection) != 0; }
+
+	bool            HasConnection() const { return (m_flags& ESystemAssetFlags::HasConnection) != 0; }
 	void            SetHasConnection(bool const hasConnection);
-	
-	bool            HasControl() const { return (m_flags & ESystemAssetFlags::HasControl) != 0; }
+
+	bool            HasControl() const { return (m_flags& ESystemAssetFlags::HasControl) != 0; }
 	void            SetHasControl(bool const hasControl);
 
 	string          GetFullHierarchyName() const;
@@ -102,7 +104,7 @@ public:
 	CSystemControl(string const& name, CID const id, ESystemItemType const type);
 	~CSystemControl();
 
-	CID                     GetId() const            { return m_id; }
+	CID                     GetId() const { return m_id; }
 
 	virtual void            SetName(string const& name) override;
 
@@ -117,10 +119,10 @@ public:
 	float                   GetRadius() const { return m_radius; }
 	void                    SetRadius(float const radius);
 
-	std::vector<CID> const& GetSelectedConnections() const { return m_selectedConnectionIds; }
+	std::vector<CID> const& GetSelectedConnections() const                                 { return m_selectedConnectionIds; }
 	void                    SetSelectedConnections(std::vector<CID> selectedConnectionIds) { m_selectedConnectionIds = selectedConnectionIds; }
 
-	size_t                  GetConnectionCount() const { return m_connectedControls.size(); }
+	size_t                  GetConnectionCount() const                                     { return m_connectedControls.size(); }
 	void                    AddConnection(ConnectionPtr const pConnection);
 	void                    RemoveConnection(ConnectionPtr const pConnection);
 	void                    RemoveConnection(CImplItem* const pImplControl);
@@ -136,8 +138,8 @@ public:
 	virtual void            Serialize(Serialization::IArchive& ar) override;
 
 	// All the raw connection nodes. Used for reloading the data when switching middleware.
-	void                    AddRawXMLConnection(XmlNodeRef const xmlNode, bool const isValid, int const platformIndex = -1);
-	XMLNodeList&            GetRawXMLConnections(int const platformIndex = -1);
+	void         AddRawXMLConnection(XmlNodeRef const xmlNode, bool const isValid, int const platformIndex = -1);
+	XMLNodeList& GetRawXMLConnections(int const platformIndex = -1);
 
 private:
 

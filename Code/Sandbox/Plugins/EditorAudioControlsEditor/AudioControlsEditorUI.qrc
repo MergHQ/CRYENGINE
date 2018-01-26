@@ -8,6 +8,7 @@
         <file alias="audio/fmod/return.ico">Icons/fmod/return.ico</file>
         <file alias="audio/fmod/snapshot.ico">Icons/fmod/snapshot.ico</file>
         <file alias="audio/fmod/tag.ico">Icons/fmod/tag.ico</file>
+        <file alias="audio/fmod/vca.ico">Icons/fmod/vca.ico</file>
         <file alias="audio/notifications/localized.ico">Icons/notifications/localized.ico</file>
         <file alias="audio/notifications/no_connection.ico">Icons/notifications/no_connection.ico</file>
         <file alias="audio/notifications/no_control.ico">Icons/notifications/no_control.ico</file>

@@ -13,6 +13,7 @@ static string const g_eventsFolderName = "Events";
 static string const g_parametersFolderName = "Parameters";
 static string const g_snapshotsFolderName = "Snapshots";
 static string const g_returnsFolderName = "Returns";
+static string const g_vcasFolderName = "VCAs";
 
 namespace Utils
 {

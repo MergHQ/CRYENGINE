@@ -9,9 +9,6 @@
 #include <IEditor.h>
 #include <ImplItem.h>
 #include <CrySerialization/StringList.h>
-#include <CrySerialization/Decorators/Range.h>
-#include <Serialization/Decorators/EditorActionButton.h>
-#include <Serialization/Decorators/ToggleButton.h>
 #include <CryMath/Cry_Geo.h>
 #include <Util/Math.h>
 #include <ConfigurationManager.h>
@@ -119,6 +116,12 @@ void CSystemAsset::SetName(string const& name)
 			CAudioControlsEditorPlugin::GetAssetsManager()->OnAssetRenamed();
 		}
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemAsset::UpdateNameOnMove(CSystemAsset* const pParent)
+{
+	m_name = Utils::GenerateUniqueName(m_name, m_type, pParent);
 }
 
 //////////////////////////////////////////////////////////////////////////
