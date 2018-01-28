@@ -54,6 +54,10 @@ struct SSvoTargetsSet
 class CSvoRenderer : public ISvoRenderer
 {
 public:
+	struct SForwardParams
+	{
+		Vec4 IntegrationMode;
+	};
 
 	// ISvoRenderer
 	void                 Release() final;
@@ -63,9 +67,9 @@ public:
 	static bool          IsActive();
 	void                 UpdateCompute(CRenderView* pRenderView);
 	void                 UpdateRender(CRenderView* pRenderView);
-	int                  GetIntegratioMode();
-	int                  GetIntegratioMode(bool& bSpecTracingInUse);
-	bool                 GetUseLightProbes() { return e_svoTI_SkyColorMultiplier >= 0; }
+	int                  GetIntegratioMode() const;
+	int                  GetIntegratioMode(bool& bSpecTracingInUse) const;
+	bool                 GetUseLightProbes() const { return e_svoTI_SkyColorMultiplier >= 0; }
 	void                 DebugDrawStats(const RPProfilerStats* pBasicStats, float& ypos, const float ystep, float xposms);
 
 	static bool          SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* sData);
@@ -84,6 +88,8 @@ public:
 	CTexture*            GetRsmPoolNor()           { return IsActive() ? s_pRsmPoolNor.get() : NULL; }
 	static void          GetRsmTextures(_smart_ptr<CTexture>& pRsmColorMap, _smart_ptr<CTexture>& pRsmNormlMap, _smart_ptr<CTexture>& pRsmPoolCol, _smart_ptr<CTexture>& pRsmPoolNor);
 	ColorF               GetSkyColor()             { return m_texInfo.vSkyColorTop; }
+
+	void                 FillForwardParams(SForwardParams& svogiParams, bool enable = true) const;
 
 protected:
 

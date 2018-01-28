@@ -13,6 +13,13 @@ class CREHDRSky;
 
 class CSceneForwardStage : public CGraphicsPipelineStage
 {
+public:
+	struct SCloudShadingParams
+	{
+		Vec4 CloudShadingColorSun;
+		Vec4 CloudShadingColorSky;
+	};
+
 	enum EPerPassTexture
 	{
 		ePerPassTexture_PerlinNoiseMap = 25,
@@ -56,6 +63,8 @@ public:
 	void         ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex);
 
 	void         SetSkyRE(CRESky* pSkyRE, CREHDRSky* pHDRSkyRE);
+
+	void FillCloudShadingParams(SCloudShadingParams& cloudParams, bool enable = true) const;
 
 private:
 	bool PreparePerPassResources(bool bOnInit, bool bShadowMask = true, bool bFog = true);

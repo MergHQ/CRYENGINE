@@ -651,6 +651,14 @@ void CSystemAssetsManager::MoveItems(CSystemAsset* const pParent, std::vector<CS
 				}
 
 				SignalItemAboutToBeAdded(pParent);
+				ESystemItemType const type = pItem->GetType();
+
+				if ((type == ESystemItemType::State) || (type == ESystemItemType::Folder))
+				{
+					// To prevent duplicated names of states and folders.
+					pItem->UpdateNameOnMove(pParent);
+				}
+
 				pParent->AddChild(pItem);
 				pItem->SetParent(pParent);
 				SignalItemAdded(pItem);
@@ -679,11 +687,17 @@ CSystemAsset* CSystemAssetsManager::CreateAndConnectImplItemsRecursively(CImplIt
 	IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
 
 	string name = pImplItem->GetName();
-	ESystemItemType const type = pEditorImpl->ImplTypeToSystemType(pImplItem);
+	ESystemItemType type = pEditorImpl->ImplTypeToSystemType(pImplItem);
 
 	if (type != ESystemItemType::Invalid)
 	{
 		PathUtil::RemoveExtension(name);
+
+		if ((type == ESystemItemType::Parameter) && (pParent->GetType() == ESystemItemType::Switch))
+		{
+			// Create a state instead of a parameter if the parent is a switch.
+			type = ESystemItemType::State;
+		}
 
 		if (type != ESystemItemType::State)
 		{

@@ -407,8 +407,8 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 		m_bHasPhysics2 = true;
 	}
 
-	IStatObj *pSkelCGF = gEnv->p3DEngine->LoadStatObj(string(filename) + ".cgf", nullptr, nullptr, false);
-	if (!pSkelCGF->IsDefaultObject())
+	IStatObj *pSkelCGF = gEnv->p3DEngine->LoadStatObj(string(filename) + ".cgf", nullptr, nullptr, false, IStatObj::ELoadingFlagsNoErrorIfFail);
+	if (pSkelCGF && !pSkelCGF->IsDefaultObject())
 	{
 		std::map<uint32,int> mapJoints;
 		for(uint32 i = 0; i < numJoints; i++)

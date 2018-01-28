@@ -661,7 +661,8 @@ struct IEntityTriggerComponent : public IEntityComponent
 	virtual void InvalidateTrigger() = 0;
 };
 
-//! Entity Audio component interface.
+//! Helper component for playing back audio on the current world-space position of an entity.
+//! Wraps low-level CryAudio logic.
 struct IEntityAudioComponent : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_GUID(IEntityAudioComponent, "9824845c-fe37-7889-b172-4a63f331d8a2"_cry_guid)
@@ -673,15 +674,33 @@ struct IEntityAudioComponent : public IEntityComponent
 	virtual float                   GetGreatestFadeDistance() const = 0;
 	virtual void                    SetEnvironmentId(CryAudio::EnvironmentId const environmentId) = 0;
 	virtual CryAudio::EnvironmentId GetEnvironmentId() const = 0;
+	//! Creates an additional audio object managed by this component, allowing individual handling of effects
+	//! IEntityAudioComponent will always create an audio object by default where audio will be played unless otherwise specified.
 	virtual CryAudio::AuxObjectId   CreateAudioAuxObject() = 0;
 	virtual bool                    RemoveAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId) = 0;
 	virtual void                    SetAudioAuxObjectOffset(Matrix34 const& offset, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual Matrix34 const&         GetAudioAuxObjectOffset(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual bool                    PlayFile(CryAudio::SPlayFileInfo const& playbackInfo, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
 	virtual void                    StopFile(char const* const szFile, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	//! Executes the specified trigger on the entity
+	//! \param audioTriggerId The trigger we want to execute
+	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
+	//! \par Example
+	//! \include CryEntitySystem/Audio/ExecuteTrigger.cpp
 	virtual bool                    ExecuteTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
 	virtual void                    StopTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	//! Sets the current state of a switch in the entity
+	//! \param audioSwitchId Identifier of the switch whose state we want to change
+	//! \param audioStateId Identifier of the switch state we want to set to
+	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
+	//! \par Example
+	//! \include CryEntitySystem/Audio/SetSwitchState.cpp
 	virtual void                    SetSwitchState(CryAudio::ControlId const audioSwitchId, CryAudio::SwitchStateId const audioStateId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	//! Sets the value of the specified parameter on the entity
+	//! \param parameterId Identifier of the parameter we want to modify the value of
+	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
+	//! \par Example
+	//! \include CryEntitySystem/Audio/SetParameterValue.cpp
 	virtual void                    SetParameter(CryAudio::ControlId const parameterId, float const value, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual void                    SetObstructionCalcType(CryAudio::EOcclusionType const occlusionType, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual void                    SetEnvironmentAmount(CryAudio::EnvironmentId const audioEnvironmentId, float const amount, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;

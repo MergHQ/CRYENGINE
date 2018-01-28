@@ -46,6 +46,7 @@ CSystemControlsWidget::CSystemControlsWidget(CSystemAssetsManager* const pAssets
 	m_pMountingProxyModel = new CMountingProxyModel(WrapMemberFunction(this, &CSystemControlsWidget::CreateLibraryModelFromIndex));
 	m_pMountingProxyModel->SetHeaderDataCallbacks(static_cast<int>(SystemModelUtils::EColumns::Count), &SystemModelUtils::GetHeaderData, Attributes::s_getAttributeRole);
 	m_pMountingProxyModel->SetSourceModel(m_pSourceModel);
+	m_pMountingProxyModel->SetDragCallback(&SystemModelUtils::GetDragDropData);
 
 	m_pSystemFilterProxyModel->setSourceModel(m_pMountingProxyModel);
 	m_pSystemFilterProxyModel->setFilterKeyColumn(m_nameColumn);

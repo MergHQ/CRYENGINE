@@ -469,7 +469,8 @@ CStatObj* CObjManager::LoadStatObj(const char* __szFileName
 
 	if (!pObject->LoadCGF(sFilename, strstr(sFilename, "_lod") != NULL, nLoadingFlags, pData, nDataSize))
 	{
-		Error("Failed to load cgf: %s", __szFileName);
+		if (!(nLoadingFlags & IStatObj::ELoadingFlagsNoErrorIfFail))
+			Error("Failed to load cgf: %s", __szFileName);
 		// object not found
 		// if geom name is specified - just return 0
 		if (_szGeomName && _szGeomName[0])

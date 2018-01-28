@@ -46,6 +46,7 @@ QVariant             GetHeaderData(int const section, Qt::Orientation const orie
 void                 GetAssetsFromIndexesSeparated(QModelIndexList const& list, std::vector<CSystemLibrary*>& outLibraries, std::vector<CSystemFolder*>& outFolders, std::vector<CSystemControl*>& outControls);
 void                 GetAssetsFromIndexesCombined(QModelIndexList const& list, std::vector<CSystemAsset*>& outAssets);
 CSystemAsset*        GetAssetFromIndex(QModelIndex const& index, int const column);
+QMimeData*           GetDragDropData(QModelIndexList const& list);
 void                 DecodeImplMimeData(const QMimeData* pData, std::vector<CImplItem*>& outItems);
 } // namespace SystemModelUtils
 

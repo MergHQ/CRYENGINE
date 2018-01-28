@@ -604,6 +604,9 @@ void CRenderDisplayContext::ResizeSwapChain(bool bResizeTarget)
 //////////////////////////////////////////////////////////////////////////
 void CRenderDisplayContext::SetFullscreenState(bool isFullscreen)
 {
+	if (m_pSwapChain == nullptr)
+		return;
+
 #if (CRY_RENDERER_DIRECT3D >= 110) || (CRY_RENDERER_VULKAN >= 10)
 	if (isFullscreen)
 	{
