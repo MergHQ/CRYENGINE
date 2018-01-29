@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -36,8 +36,6 @@ private:
 	void            CreateInternalControl(CSystemAsset* const pLibrary, char const* const szName, ESystemItemType const type);
 	void            CreateInternalSwitch(CSystemAsset* const pLibrary, char const* const szSwitchName, SwitchStates const& StateNames);
 	void            CreateDefaultControls();
-
-	void            LoadScopesImpl(string const& path);
 
 	void            LoadEditorData(XmlNodeRef const pEditorDataNode, CSystemAsset& library);
 	void            LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CSystemAsset& library);
