@@ -71,7 +71,7 @@ public:
 
 	void ClearSequenceBehavior() const
 	{
-		if (!ValidateAgent() && m_aiActor->IsEnabled())
+		if (!ValidateAgent() || !m_aiActor->IsEnabled())
 			return;
 
 		m_aiActor->SetBehaviorVariable("ExecuteSequence", false);
