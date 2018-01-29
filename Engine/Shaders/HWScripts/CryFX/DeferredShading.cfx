@@ -36,6 +36,7 @@ float4 g_ScreenScale < psregister = c15; >;
 
 float4x4 g_mDecalTS <  psregister = c25; > ;
 float4x4 g_mViewProjPrev;
+float4   g_mSSRParams;
 
 float4 g_TextureRect[2];	// x, y, w, h
 
@@ -406,7 +407,7 @@ pixout SSRRaytracePS( vtxOutWPOS IN )
 	
 	MaterialAttribsCommon attribs = DecodeGBuffer( GetTexture2D( SSRRay_Norms, SSRRay_Norms_Sampler, ScreenTC + halfTexel ), 0, GetTexture2D( SSRRay_Spec, SSRRay_Norms_Sampler, ScreenTC + halfTexel ) );
 	
-	const float fDepth = GetLinearDepth( SSRRay_LinDepth, int2(IN.WPos.xy));
+	const float fDepth = GetLinearDepth( SSRRay_LinDepth, int2(ScreenTC * g_mSSRParams.xy * g_ScreenSize.xy) ); // read from full size buffer even in halfres mode
 	float3 vPositionWS = GetWorldPos( fDepth, IN.CamVec );
 	float3 viewVec = normalize( vPositionWS );
 	vPositionWS += CV_WorldViewPosition.xyz;
