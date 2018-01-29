@@ -34,11 +34,6 @@ class CModCurve : public CFTimeSource
 public:
 	CModCurve() {}
 
-	virtual bool CanCreate(const IParamModContext& context) const
-	{
-		return context.HasInit();
-	}
-
 	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
 	{
 		if (m_spline.HasKeys())
@@ -107,11 +102,6 @@ class CModDoubleCurve : public CFTimeSource
 public:
 	CModDoubleCurve() {}
 
-	virtual bool CanCreate(const IParamModContext& context) const
-	{
-		return context.HasInit();
-	}
-
 	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
 	{
 		if (m_spline.HasKeys())
@@ -178,11 +168,6 @@ public:
 		: m_amount(amount)
 	{}
 
-	virtual bool CanCreate(const IParamModContext& context) const
-	{
-		return context.HasInit();
-	}
-
 	virtual EModDomain GetDomain() const
 	{
 		return EMD_PerParticle;
@@ -243,11 +228,6 @@ public:
 		: m_amount(0.0f)
 		, m_pulseWidth(0.5f)
 		, m_mode(EParamNoiseMode::Smooth) {}
-
-	virtual bool CanCreate(const IParamModContext& context) const
-	{
-		return context.HasInit();
-	}
 
 	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
 	{
@@ -405,11 +385,6 @@ public:
 		, m_bias(0.5f)
 		, m_inverse(false) {}
 
-	virtual bool CanCreate(const IParamModContext& context) const
-	{
-		return context.HasInit();
-	}
-
 	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
 	{
 		CDomain::AddToParam(pComponent, pParam, this);
@@ -555,82 +530,12 @@ private:
 SERIALIZATION_CLASS_NAME(IModifier, CModWave, "Wave", "Wave");
 
 //////////////////////////////////////////////////////////////////////////
-// CModInherit
-
-class CModInherit : public IModifier
-{
-public:
-	CModInherit()
-		: m_spawnOnly(true) {}
-
-	virtual bool CanCreate(const IParamModContext& context) const
-	{
-		return context.GetDomain() >= EMD_PerParticle && context.CanInheritParent();
-	}
-
-	virtual EModDomain GetDomain() const
-	{
-		return EMD_PerParticle;
-	}
-
-	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
-	{
-		if (m_spawnOnly)
-			pParam->AddToInitParticles(this);
-		else
-			pParam->AddToUpdate(this);
-	}
-
-	virtual void Serialize(Serialization::IArchive& ar)
-	{
-		IModifier::Serialize(ar);
-		ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
-	}
-
-	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-
-		CParticleContainer& container = context.m_container;
-		CParticleContainer& parentContainer = context.m_parentContainer;
-		if (!parentContainer.HasData(streamType))
-			return;
-		IPidStream parentIds = context.m_container.GetIPidStream(EPDT_ParentId);
-		IFStream parentStream = parentContainer.GetIFStream(streamType);
-
-		for (auto particleGroupId : SGroupRange(range))
-		{
-			const TParticleIdv parentId = parentIds.Load(particleGroupId);
-			const floatv input = stream.Load(particleGroupId);
-			const floatv parent = parentStream.SafeLoad(parentId);
-			const floatv output = Mul(input, parent);
-			stream.Store(particleGroupId, output);
-		}
-	}
-
-	virtual Range GetMinMax() const
-	{
-		// PFX2_TODO: Wrong! Depends on inherited value
-		return Range(0.0f, 1.0f);
-	}
-private:
-	bool m_spawnOnly;
-};
-
-SERIALIZATION_CLASS_NAME(IModifier, CModInherit, "Inherit", "Inherit");
-
-//////////////////////////////////////////////////////////////////////////
 // CModLinear
 
 class CModLinear : public CFTimeSource
 {
 public:
 	CModLinear() {}
-
-	virtual bool CanCreate(const IParamModContext& context) const
-	{
-		return true;
-	}
 
 	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
 	{
@@ -734,7 +639,7 @@ public:
 		for (uint i = 1; i < gNumConfigSpecs; ++i)
 			m_range = Range(min(m_range.start, m_specMultipliers[1]), max(m_range.end, m_specMultipliers[0]));
 
-		const auto& context = GetContext(ar);
+		const auto& context = *ar.context<IParamModContext>();
 		if (context.GetDomain() == EMD_PerInstance)
 			m_spawnOnly = false;
 		else if (!context.HasUpdate())
@@ -768,13 +673,6 @@ public:
 	}
 
 private:
-	ILINE IParamModContext& GetContext(Serialization::IArchive& ar) const
-	{
-		IParamModContext* pContext = ar.context<IParamModContext>();
-		CRY_PFX2_ASSERT(pContext != nullptr);
-		return *pContext;
-	}
-
 	float m_specMultipliers[gNumConfigSpecs];
 	Range m_range;
 	bool  m_spawnOnly;
@@ -841,5 +739,87 @@ private:
 };
 
 SERIALIZATION_CLASS_NAME(IModifier, CModAttribute, "Attribute", "Attribute");
+
+//////////////////////////////////////////////////////////////////////////
+// Copy factory creators from base class to derived class
+template<typename BaseType, typename Type>
+struct ClassFactoryInheritor
+{
+	using BaseFactory = Serialization::ClassFactory<BaseType>;
+	using TypeFactory = Serialization::ClassFactory<Type>;
+
+	ClassFactoryInheritor()
+	{
+		auto creators = BaseFactory::the().creatorChain();
+		TypeFactory::the().registerChain(reinterpret_cast<typename TypeFactory::CreatorBase*>(creators));
+	}
+};
+
+#define SERIALIZATION_INHERIT_CREATORS(BaseType, Type) \
+	static ClassFactoryInheritor<BaseType, Type> ClassFactoryInherit_ ## Type;
+
+//////////////////////////////////////////////////////////////////////////
+SERIALIZATION_INHERIT_CREATORS(IModifier, IFieldModifier);
+
+//////////////////////////////////////////////////////////////////////////
+// CModInherit
+
+class CModInherit : public IFieldModifier
+{
+public:
+	CModInherit()
+		: m_spawnOnly(true) {}
+
+	virtual EModDomain GetDomain() const
+	{
+		return EMD_PerParticle;
+	}
+
+	virtual void AddToParam(CParticleComponent* pComponent, IParamMod* pParam)
+	{
+		if (m_spawnOnly)
+			pParam->AddToInitParticles(this);
+		else
+			pParam->AddToUpdate(this);
+	}
+
+	virtual void Serialize(Serialization::IArchive& ar)
+	{
+		IModifier::Serialize(ar);
+		ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
+	}
+
+	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const
+	{
+		CRY_PFX2_PROFILE_DETAIL;
+
+		CParticleContainer& container = context.m_container;
+		CParticleContainer& parentContainer = context.m_parentContainer;
+		if (!parentContainer.HasData(streamType))
+			return;
+		IPidStream parentIds = context.m_container.GetIPidStream(EPDT_ParentId);
+		IFStream parentStream = parentContainer.GetIFStream(streamType);
+
+		for (auto particleGroupId : SGroupRange(range))
+		{
+			const TParticleIdv parentId = parentIds.Load(particleGroupId);
+			const floatv input = stream.Load(particleGroupId);
+			const floatv parent = parentStream.SafeLoad(parentId);
+			const floatv output = Mul(input, parent);
+			stream.Store(particleGroupId, output);
+		}
+	}
+
+	virtual Range GetMinMax() const
+	{
+		// PFX2_TODO: Wrong! Depends on inherited value
+		return Range(0.0f, 1.0f);
+	}
+private:
+	bool m_spawnOnly;
+};
+
+SERIALIZATION_CLASS_NAME(IFieldModifier, CModInherit, "Inherit", "Inherit");
+
 
 }

@@ -71,7 +71,6 @@ protected:
 
 private:
 	float             GetGlobalValue(EDomainGlobal source) const;
-	IParamModContext& GetContext(Serialization::IArchive& ar) const;
 
 private:
 	CAttributeReference m_attribute;
