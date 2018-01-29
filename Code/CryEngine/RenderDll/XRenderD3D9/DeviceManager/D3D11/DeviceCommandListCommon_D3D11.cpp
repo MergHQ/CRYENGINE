@@ -468,7 +468,7 @@ void CDeviceGraphicsCommandInterfaceImpl::ApplyRasterizerState()
 			rsDesc.DepthBiasClamp = m_graphicsState.custom.depthBiasClamp;
 
 			uint32 newRasterizerStateIndex = CDeviceStatesManagerDX11::GetInstance()->GetOrCreateRasterState(rsDesc);
-			if (newRasterizerStateIndex >= 0)
+			if (newRasterizerStateIndex != uint32(-1))
 			{
 				pRasterizerState = CDeviceStatesManagerDX11::GetInstance()->m_StatesRS[newRasterizerStateIndex].pState;
 			}
