@@ -323,9 +323,10 @@ ILINE void CDomain::Dispatch(const SUpdateContext& context, const SUpdateRange& 
 			detail::CViewAngleSampler(context, domain));
 		break;
 	case EDomain::CameraDistance:
-		((TBase*)this)->DoModify(
-			context, range, stream,
-			detail::CCameraDistanceSampler(context, domain));
+		if (!(C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('u')))
+			((TBase*)this)->DoModify(
+				context, range, stream,
+				detail::CCameraDistanceSampler(context, domain));
 		break;
 	case EDomain::Speed:
 		if (m_sourceOwner == EDomainOwner::Self || domain == EMD_PerInstance)
@@ -351,13 +352,6 @@ ILINE void CDomain::Dispatch(const SUpdateContext& context, const SUpdateRange& 
 				context, range, stream,
 				detail::CParentStreamSampler(context, GetDataType()));
 	}
-}
-
-ILINE IParamModContext& CDomain::GetContext(Serialization::IArchive& ar) const
-{
-	IParamModContext* pContext = ar.context<IParamModContext>();
-	CRY_PFX2_ASSERT(pContext != nullptr);
-	return *pContext;
 }
 
 }

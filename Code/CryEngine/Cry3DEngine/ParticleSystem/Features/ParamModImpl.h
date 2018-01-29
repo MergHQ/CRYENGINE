@@ -13,43 +13,9 @@
 namespace pfx2
 {
 
-template<typename TPointer, typename TContext>
-FilteredClassFactory<TPointer, TContext>::FilteredClassFactory()
-{
-	TContext context;
-	auto& baseFactory = BaseClass::the();
-	auto pCreator = baseFactory.creatorChain();
-	for (; pCreator; pCreator = pCreator->next)
-	{
-		std::unique_ptr<TPointer> obj(pCreator->create());
-		if (obj->CanCreate(context))
-			this->BaseClass::registerCreator(pCreator);
-	}
-}
-
-template<typename TPointer, typename TContext>
-FilteredClassFactory<TPointer, TContext>& FilteredClassFactory<TPointer, TContext >::the()
-{
-	static FilteredClassFactory<TPointer, TContext> factory;
-	return factory;
-}
-
-template<typename TPointer, typename T>
-bool Serialize(Serialization::IArchive& ar, _context_smart_ptr<TPointer, T>& ptr, const char* name, const char* label)
-{
-	FilteredSmartPtrSerializer<TPointer, T> serializer(ptr);
-	return ar(static_cast<Serialization::IPointer&>(serializer), name, label);
-}
-
 ILINE void IModifier::Serialize(Serialization::IArchive& ar)
 {
 	ar(m_enabled);
-}
-
-ILINE IParamModContext& IModifier::GetContext(Serialization::IArchive& ar) const
-{
-	IParamModContext* pContext = ar.context<IParamModContext>();
-	return *pContext;
 }
 
 template<typename TParamModContext, typename T>
@@ -104,7 +70,7 @@ void CParamMod<TParamModContext, T >::Serialize(Serialization::IArchive& ar)
 		{
 			if (!pMod)
 				continue;
-			if (IModifier* pNewMod = pMod->VersionFixReplace())
+			if (TModifier* pNewMod = pMod->VersionFixReplace())
 			{
 				pMod.reset(pNewMod);
 			}
@@ -121,7 +87,7 @@ void CParamMod<TParamModContext, T >::InitParticles(const SUpdateContext& contex
 	if (container.GetMaxParticles() == 0 || !container.HasData(dataType))
 		return;
 
-	IOFStream dataStream = container.GetIOFStream(dataType);
+	TIOStream<TType> dataStream = container.GetTIOStream<TType>(dataType);
 	SUpdateRange spawnRange = container.GetSpawnedRange();
 
 	dataStream.Fill(spawnRange, m_baseValue);
@@ -140,7 +106,7 @@ void CParamMod<TParamModContext, T >::Update(const SUpdateContext& context, EPar
 	if (container.GetMaxParticles() == 0 || !container.HasData(dataType))
 		return;
 
-	IOFStream stream = container.GetIOFStream(dataType);
+	TIOStream<TType> stream = container.GetTIOStream<TType>(dataType);
 	for (auto& pModifier : m_modUpdate)
 		pModifier->Modify(context, context.m_updateRange, stream, dataType, EMD_PerParticle);
 }
@@ -149,7 +115,7 @@ template<typename TParamModContext, typename T>
 void CParamMod<TParamModContext, T >::ModifyInit(const SUpdateContext& context, TType* data, SUpdateRange range) const
 {
 	CRY_PFX2_PROFILE_DETAIL;
-	IOFStream dataStream(data);
+	TIOStream<TType> dataStream(data);
 
 	dataStream.Fill(range, m_baseValue);
 
@@ -162,7 +128,7 @@ template<typename TParamModContext, typename T>
 void CParamMod<TParamModContext, T >::ModifyUpdate(const SUpdateContext& context, TType* data, SUpdateRange range) const
 {
 	CRY_PFX2_PROFILE_DETAIL;
-	IOFStream dataStream(data);
+	TIOStream<TType> dataStream(data);
 
 	const EModDomain domain = Context().GetDomain();
 	for (auto& pModifier : m_modUpdate)
@@ -173,7 +139,7 @@ template<typename TParamModContext, typename T>
 TRange<typename T::TType> CParamMod<TParamModContext, T >::GetValues(const SUpdateContext& context, TType* data, SUpdateRange range, EModDomain domain, bool updating) const
 {
 	TRange<TType> minmax(1);
-	IOFStream stream(data);
+	TIOStream<TType> stream(data);
 
 	stream.Fill(range, m_baseValue);
 
@@ -236,7 +202,7 @@ TRange<typename T::TType> CParamMod<TParamModContext, T >::GetValueRange() const
 template<typename TParamModContext, typename T>
 void pfx2::CParamMod<TParamModContext, T >::Sample(TType* samples, int numSamples) const
 {
-	IOFStream stream(samples);
+	TIOStream<TType> stream(samples);
 	stream.Fill(SUpdateRange(0, numSamples), m_baseValue);
 
 	for (auto& pModifier : m_modifiers)

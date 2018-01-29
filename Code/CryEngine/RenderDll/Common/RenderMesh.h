@@ -319,6 +319,7 @@ public:
   inline int GetStreamSize(int nStream, int nVerts=0) const { return GetStreamStride(nStream) * (nVerts ? nVerts : m_nVerts); }
   inline const buffer_handle_t _GetVBStream(int nStream) const { if (!m_VBStream[nStream]) return ~0u; return m_VBStream[nStream]->m_nID; }
   inline const buffer_handle_t _GetIBStream() const { return m_IBStream.m_nID; }
+  inline bool _NeedsVBStream(int nStream) const { return m_VBStream[nStream] && m_VBStream[nStream]->m_pUpdateData && (m_VBStream[nStream]->m_nFrameRequest != -1) && (m_VBStream[nStream]->m_nFrameUpdate == -1); }
   inline bool _HasVBStream(int nStream) const { return m_VBStream[nStream] && m_VBStream[nStream]->m_nID!=~0u; }
   inline bool _HasIBStream() const { return m_IBStream.m_nID!=~0u; }
   inline int _IsVBStreamLocked(int nStream) const { if (!m_VBStream[nStream]) return 0; return (m_VBStream[nStream]->m_nLockFlags & FSL_LOCKED); }

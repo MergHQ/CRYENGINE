@@ -1160,7 +1160,8 @@ void CLog::CreateBackupFile() const
 	const string srcFilePath = m_szFilename;
 	const string srcFileName = PathUtil::GetFileName(srcFilePath);
 	const string srcFileExt = PathUtil::GetExt(srcFilePath);
-	const string logBackupFolder = "LogBackups";
+	const string srcFileDir = PathUtil::GetParentDirectory(srcFilePath);
+	const string logBackupFolder = PathUtil::Make(srcFileDir, "LogBackups");
 	gEnv->pCryPak->MakeDir(logBackupFolder);
 
 	LockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
@@ -1248,9 +1249,16 @@ bool CLog::SetFileName(const char* filename)
 		return false;
 	}
 
-	string temp = PathUtil::Make(m_pSystem->GetRootFolder(), PathUtil::GetFile(filename));
+	string temp = filename;
 	if (temp.empty() || temp.size() >= sizeof(m_szFilename))
 		return false;
+
+#if !defined(CRY_PLATFORM_CONSOLE)
+	if (PathUtil::IsRelativePath(filename))
+	{
+		temp = PathUtil::Make(PathUtil::GetProjectFolder(), filename);
+	}
+#endif
 
 	cry_strcpy(m_szFilename, temp.c_str());
 

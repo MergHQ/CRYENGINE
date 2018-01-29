@@ -100,6 +100,20 @@ inline string ToDosPath(const char* szPath)
 	return ToDosPath(string(szPath));
 }
 
+inline bool IsStrValid(const char* str)
+{
+	return str && *str;
+}
+
+inline bool IsRelativePath(const char* p)
+{
+	if (!IsStrValid(p))
+	{
+		return true;
+	}
+	return p[0] != '/' && p[0] != '\\' && !strchr(p, ':');
+}
+
 //! Split full file name to path and filename.
 //! \param[in] filepath Full file name including path.
 //! \param[out] path Extracted file path.
@@ -797,6 +811,7 @@ inline /*void*/ UnifyFilePath(TString& path)
 
 #ifndef CRY_COMMON_HELPERS_ONLY
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ICmdLine.h>
 
 namespace PathUtil
 {
@@ -804,6 +819,23 @@ inline string GetGameFolder()
 {
 	CRY_ASSERT(gEnv && gEnv->pCryPak);
 	return gEnv->pCryPak->GetGameFolder();
+}
+
+inline string GetProjectFolder()
+{
+	static bool checkedForCmdLineProjectArg = false;
+	static string cmdLineProjectPath;
+	if (cmdLineProjectPath.IsEmpty() && !checkedForCmdLineProjectArg)
+	{
+		CRY_ASSERT_MESSAGE(gEnv && gEnv->pSystem && gEnv->pSystem->GetICmdLine(), "PathUtil::GetProjectFolder() was called before system was initialized");
+		const ICmdLineArg* project = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
+		if (project)
+		{
+			cmdLineProjectPath = PathUtil::GetParentDirectory(project->GetValue());
+		}
+		checkedForCmdLineProjectArg = true;
+	}
+	return cmdLineProjectPath;
 }
 
 inline string GetLocalizationFolder()

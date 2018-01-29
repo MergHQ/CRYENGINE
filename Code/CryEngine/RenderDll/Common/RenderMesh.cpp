@@ -4692,6 +4692,7 @@ bool CRenderMesh::GetRemappedSkinningData(uint32 guid, SStreamInfo& streamInfo)
 bool CRenderMesh::FillGeometryInfo(CRenderElement::SGeometryInfo& geom)
 {
 	CRenderMesh* pRenderMeshForVertices = _GetVertexContainer();
+	bool streamsMissing = false;
 
 	if (!_HasIBStream())
 		return false;
@@ -4709,16 +4710,20 @@ bool CRenderMesh::FillGeometryInfo(CRenderElement::SGeometryInfo& geom)
 		{
 			geom.vertexStreams[geom.nNumVertexStreams].hStream = pRenderMeshForVertices->_GetVBStream(nStream);
 			geom.vertexStreams[geom.nNumVertexStreams].nStride = pRenderMeshForVertices->GetStreamStride(nStream);
-			geom.vertexStreams[geom.nNumVertexStreams].nSlot   = nStream;
+			geom.vertexStreams[geom.nNumVertexStreams].nSlot = nStream;
 
 			geom.nNumVertexStreams++;
-			}
 		}
+		else if (pRenderMeshForVertices->_NeedsVBStream(nStream))
+		{
+			streamsMissing = true;
+		}
+	}
 
 	if (GetRemappedSkinningData(geom.bonesRemapGUID, geom.vertexStreams[geom.nNumVertexStreams]))
 	{
 		geom.nNumVertexStreams++;
-		}
+	}
 
 	geom.pSkinningExtraBonesBuffer = &m_extraBonesBuffer;
 #ifdef MESH_TESSELLATION_RENDERER
@@ -4727,7 +4732,7 @@ bool CRenderMesh::FillGeometryInfo(CRenderElement::SGeometryInfo& geom)
 	geom.pTessellationAdjacencyBuffer = nullptr;
 #endif
 
-	return true;
+	return !streamsMissing;
 }
 
 CThreadSafeRendererContainer<CRenderMesh*> CRenderMesh::m_deferredSubsetGarbageCollection[RT_COMMAND_BUF_COUNT];

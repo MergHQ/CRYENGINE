@@ -184,8 +184,6 @@ public:
 	static int CV_r_VkHardwareComputeQueue;
 	static int CV_r_VkHardwareCopyQueue;
 	static int CV_r_ReverseDepth;
-
-	// DX12 related cvars
 	static int CV_r_EnableDebugLayer;
 	static int CV_r_NoDraw;
 	static int CV_r_UpdateInstances;
