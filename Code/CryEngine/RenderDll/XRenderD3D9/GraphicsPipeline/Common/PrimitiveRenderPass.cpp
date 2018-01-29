@@ -77,7 +77,8 @@ CRenderPrimitive::CRenderPrimitive(CRenderPrimitive&& other)
 {}
 
 CRenderPrimitive::CRenderPrimitive(EPrimitiveFlags flags)
-	: m_flags(flags)
+	: SCompiledRenderPrimitive(SCompiledRenderPrimitive::eType_RenderPrimitive)
+	, m_flags(flags)
 	, m_dirtyMask(eDirty_All)
 	, m_renderState(0)
 	, m_stencilState(STENC_FUNC(FSS_STENCFUNC_ALWAYS) | STENCOP_FAIL(FSS_STENCOP_KEEP) | STENCOP_ZFAIL(FSS_STENCOP_KEEP) | STENCOP_PASS(FSS_STENCOP_KEEP))
@@ -612,6 +613,7 @@ void CPrimitiveRenderPass::Prepare(CDeviceCommandListRef RESTRICT_REFERENCE comm
 
 		CRY_ASSERT(pPrimitive->m_pPipelineState->IsValid());
 		CRY_ASSERT(pPrimitive->m_pResourceLayout);
+		CRY_ASSERT_MESSAGE(pPrimitive->m_type == SCompiledRenderPrimitive::eType_RenderPrimitive ? !static_cast<CRenderPrimitive*>(pPrimitive)->IsDirty() : true, "Render primitive of the current render pass is dirty!");
 
 		if (pPrimitive->m_pResources)
 		{

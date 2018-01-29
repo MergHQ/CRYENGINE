@@ -28,6 +28,8 @@ public:
 	const std::array<_smart_ptr<CTexture>, 2>& GetMergeLayers() const { return m_pMergeLayers;  }
 	CVertexBuffer                              GetSlicesVB()    const;
 
+	bool IsRenderPassesDirty() ;
+
 private:
 	void PreparePrimitives(CColorGradingController& controller, const SColorGradingMergeParams& mergeParams);
 

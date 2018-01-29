@@ -246,7 +246,7 @@ void CColorGradingStage::Execute()
 		SColorGradingMergeParams mergeParams;
 		pColorGrading->UpdateParams(mergeParams, false);
 		
-		if (gEnv->IsCutscenePlaying() || (RenderView()->GetFrameId() % max(1, CRenderer::CV_r_ColorgradingChartsCache)) == 0)
+		if (gEnv->IsCutscenePlaying() || (RenderView()->GetFrameId() % max(1, CRenderer::CV_r_ColorgradingChartsCache)) == 0 || IsRenderPassesDirty())
 		{
 			PreparePrimitives(*gcpRendD3D->m_pColorGradingControllerD3D, mergeParams);
 		}
@@ -263,4 +263,20 @@ CVertexBuffer CColorGradingStage::GetSlicesVB() const
 { 
 	CVertexBuffer result((void*)&m_vecSlicesData[0], EDefaultInputLayouts::P3F_C4B_T2F, m_vecSlicesData.size());
 	return result;
+}
+
+bool CColorGradingStage::IsRenderPassesDirty()
+{
+	bool isDirty = false;
+	if (m_colorGradingPrimitive.IsDirty())
+		isDirty = true;
+	for (auto& prim : m_mergeChartsPrimitives)
+	{
+		if (prim.IsDirty())
+		{
+			isDirty = true;
+			break;
+		}
+	}
+	return isDirty;
 }
