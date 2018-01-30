@@ -261,7 +261,8 @@ void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMesh
 		const STile& currentTile = currentContainer.tile;
 		Tile::STriangle& currentTriangle = currentTile.triangles[ComputeTriangleIndex(triangleID)];
 
-		CRY_ASSERT(currentTriangle.islandID != MNM::Constants::eStaticIsland_InvalidIslandID);
+		if (currentTriangle.islandID == MNM::Constants::eStaticIsland_InvalidIslandID)
+			continue; // This may currently happen when the tile is regenerated and islands aren't recomputed from scratch yet
 
 		const StaticIslandID currentIslandId = GetIslandID(currentTriangle.islandID);
 		currentTriangle.islandID = MNM::Constants::eStaticIsland_InvalidIslandID;
