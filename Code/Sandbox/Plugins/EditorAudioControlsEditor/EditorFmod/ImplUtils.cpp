@@ -14,7 +14,7 @@ namespace Fmod
 namespace Utils
 {
 //////////////////////////////////////////////////////////////////////////
-CID GetId(EImpltemType const type, string const& name, CImplItem* const pParent, CImplItem const& rootControl)
+CID GetId(EImplItemType const type, string const& name, CImplItem* const pParent, CImplItem const& rootControl)
 {
 	string const fullname = Utils::GetTypeName(type) + Utils::GetPathName(pParent, rootControl) + CRY_NATIVE_PATH_SEPSTR + name;
 	return CryAudio::StringToId(fullname.c_str());
@@ -24,7 +24,7 @@ CID GetId(EImpltemType const type, string const& name, CImplItem* const pParent,
 string GetPathName(CImplItem const* const pImplItem, CImplItem const& rootControl)
 {
 	string pathName = "";
-	auto const editorFolderType = static_cast<ItemType>(EImpltemType::EditorFolder);
+	auto const editorFolderType = static_cast<ItemType>(EImplItemType::EditorFolder);
 
 	if (pImplItem != nullptr)
 	{
@@ -45,37 +45,37 @@ string GetPathName(CImplItem const* const pImplItem, CImplItem const& rootContro
 }
 
 //////////////////////////////////////////////////////////////////////////
-string GetTypeName(EImpltemType const type)
+string GetTypeName(EImplItemType const type)
 {
 	string name = "";
 
 	switch (type)
 	{
-	case EImpltemType::Folder:
+	case EImplItemType::Folder:
 		name = "folder:";
 		break;
-	case EImpltemType::Event:
+	case EImplItemType::Event:
 		name = "event:";
 		break;
-	case EImpltemType::Parameter:
+	case EImplItemType::Parameter:
 		name = "parameter:";
 		break;
-	case EImpltemType::Snapshot:
+	case EImplItemType::Snapshot:
 		name = "snapshot:";
 		break;
-	case EImpltemType::Bank:
+	case EImplItemType::Bank:
 		name = "bank:";
 		break;
-	case EImpltemType::Return:
+	case EImplItemType::Return:
 		name = "return:";
 		break;
-	case EImpltemType::VCA:
+	case EImplItemType::VCA:
 		name = "vca:";
 		break;
-	case EImpltemType::MixerGroup:
+	case EImplItemType::MixerGroup:
 		name = "group:";
 		break;
-	case EImpltemType::EditorFolder:
+	case EImplItemType::EditorFolder:
 		name = "editorfolder:";
 		break;
 	default:

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -14,7 +14,6 @@ static constexpr char* s_szImplFolderName = "wwise";
 static constexpr char* s_szParameterTag = "Parameter";
 static constexpr char* s_szSwitchGroupTag = "SwitchGroup";
 static constexpr char* s_szStateGroupTag = "StateGroup";
-static constexpr char* s_szParameterSwitchTag = "Parameter";
 static constexpr char* s_szFileTag = "File";
 static constexpr char* s_szAuxBusTag = "AuxBus";
 static constexpr char* s_szValueTag = "Value";

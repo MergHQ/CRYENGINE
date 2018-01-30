@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "ImplConnections.h"
@@ -13,6 +13,15 @@ namespace SDLMixer
 //////////////////////////////////////////////////////////////////////////
 void CConnection::Serialize(Serialization::IArchive& ar)
 {
+	EConnectionType const type = m_type;
+	float const minAttenuation = m_minAttenuation;
+	float const maxAttenuation = m_maxAttenuation;
+	float const volume = m_volume;
+	uint32 const loopCount = m_loopCount;
+	bool const isPanningEnabled = m_isPanningEnabled;
+	bool const isAttenuationEnabled = m_isAttenuationEnabled;
+	bool const isInfiniteLoop = m_isInfiniteLoop;
+
 	ar(m_type, "action", "Action");
 
 	if (m_type == EConnectionType::Start)
@@ -31,6 +40,9 @@ void CConnection::Serialize(Serialization::IArchive& ar)
 					float maxAtt = m_maxAttenuation;
 					ar(minAtt, "min_att", "Min Distance");
 					ar(maxAtt, "max_att", "Max Distance");
+
+					minAtt = std::max(0.0f, minAtt);
+					maxAtt = std::max(0.0f, maxAtt);
 
 					if (minAtt > maxAtt)
 					{
@@ -63,6 +75,7 @@ void CConnection::Serialize(Serialization::IArchive& ar)
 		}
 
 		ar(Serialization::Range(m_volume, -96.0f, 0.0f), "vol", "Volume (dB)");
+		m_volume = crymath::clamp(m_volume, -96.0f, 0.0f);
 
 		if (ar.openBlock("Looping", "+Looping"))
 		{
@@ -83,7 +96,17 @@ void CConnection::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
-		SignalConnectionChanged();
+		if (type != m_type ||
+		    minAttenuation != m_minAttenuation ||
+		    maxAttenuation != m_maxAttenuation ||
+		    volume != m_volume ||
+		    loopCount != m_loopCount ||
+		    isPanningEnabled != m_isPanningEnabled ||
+		    isAttenuationEnabled != m_isAttenuationEnabled ||
+		    isInfiniteLoop != m_isInfiniteLoop)
+		{
+			SignalConnectionChanged();
+		}
 	}
 }
 

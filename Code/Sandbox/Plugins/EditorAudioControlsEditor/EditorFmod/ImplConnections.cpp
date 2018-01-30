@@ -1,9 +1,10 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "ImplConnections.h"
 
 #include <CrySerialization/Enum.h>
+#include <CrySerialization/Decorators/Range.h>
 
 namespace ACE
 {
@@ -12,34 +13,58 @@ namespace Fmod
 //////////////////////////////////////////////////////////////////////////
 void CEventConnection::Serialize(Serialization::IArchive& ar)
 {
+	EEventType const type = m_type;
+
 	ar(m_type, "action", "Action");
 
 	if (ar.isInput())
 	{
-		SignalConnectionChanged();
+		if (type != m_type)
+		{
+			SignalConnectionChanged();
+		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CParamConnection::Serialize(Serialization::IArchive& ar)
 {
+	float const mult = m_mult;
+	float const shift = m_shift;
+
 	ar(m_mult, "mult", "Multiply");
 	ar(m_shift, "shift", "Shift");
 
 	if (ar.isInput())
 	{
-		SignalConnectionChanged();
+		if ((mult != m_mult) || (shift != m_shift))
+		{
+			SignalConnectionChanged();
+		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CParamToStateConnection::Serialize(Serialization::IArchive& ar)
 {
-	ar(m_value, "value", "Value");
+	float const value = m_value;
+
+	if (m_type == EImplItemType::Parameter)
+	{
+		ar(m_value, "value", "Value");
+	}
+	else if (m_type == EImplItemType::VCA)
+	{
+		ar(Serialization::Range<float>(m_value, 0.0f, 1.0f), "value", "Value");
+		m_value = crymath::clamp(m_value, 0.0f, 1.0f);
+	}
 
 	if (ar.isInput())
 	{
-		SignalConnectionChanged();
+		if (value != m_value)
+		{
+			SignalConnectionChanged();
+		}
 	}
 }
 

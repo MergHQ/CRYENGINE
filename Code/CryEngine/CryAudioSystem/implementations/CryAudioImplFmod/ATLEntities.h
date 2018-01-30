@@ -227,23 +227,48 @@ private:
 	FMOD::Studio::VCA* const m_vca;
 };
 
-class CEnvironment final : public IEnvironment
+enum class EEnvironmentType : EnumFlagsType
+{
+	None,
+	Bus,
+	Parameter,
+};
+
+class CEnvironment : public IEnvironment
 {
 public:
 
-	explicit CEnvironment(
-	  FMOD::Studio::EventDescription* const pEventDescription,
-	  FMOD::Studio::Bus* const pBus)
-		: m_pEventDescription(pEventDescription)
-		, m_pBus(pBus)
+	explicit CEnvironment(EEnvironmentType const type)
+		: m_type(type)
 	{}
 
 	virtual ~CEnvironment() override = default;
 
 	CEnvironment(CEnvironment const&) = delete;
 	CEnvironment(CEnvironment&&) = delete;
-	CEnvironment&                   operator=(CEnvironment const&) = delete;
-	CEnvironment&                   operator=(CEnvironment&&) = delete;
+	CEnvironment&    operator=(CEnvironment const&) = delete;
+	CEnvironment&    operator=(CEnvironment&&) = delete;
+
+	EEnvironmentType GetType() const { return m_type; }
+
+private:
+
+	EEnvironmentType const m_type;
+};
+
+class CEnvironmentBus final : public CEnvironment
+{
+public:
+
+	explicit CEnvironmentBus(
+	  FMOD::Studio::EventDescription* const pEventDescription,
+	  FMOD::Studio::Bus* const pBus)
+		: CEnvironment(EEnvironmentType::Bus)
+		, m_pEventDescription(pEventDescription)
+		, m_pBus(pBus)
+	{}
+
+	virtual ~CEnvironmentBus() override = default;
 
 	FMOD::Studio::EventDescription* GetEventDescription() const { return m_pEventDescription; }
 	FMOD::Studio::Bus*              GetBus() const              { return m_pBus; }
@@ -252,6 +277,37 @@ private:
 
 	FMOD::Studio::EventDescription* const m_pEventDescription;
 	FMOD::Studio::Bus* const              m_pBus;
+};
+
+class CEnvironmentParameter final : public CEnvironment
+{
+public:
+
+	explicit CEnvironmentParameter(
+	  uint32 const id,
+	  float const multiplier,
+	  float const shift,
+	  char const* const szName)
+		: CEnvironment(EEnvironmentType::Parameter)
+		, m_id(id)
+		, m_multiplier(multiplier)
+		, m_shift(shift)
+		, m_name(szName)
+	{}
+
+	virtual ~CEnvironmentParameter() override = default;
+
+	uint32                                                 GetId() const              { return m_id; }
+	float                                                  GetValueMultiplier() const { return m_multiplier; }
+	float                                                  GetValueShift() const      { return m_shift; }
+	CryFixedStringT<CryAudio::MaxControlNameLength> const& GetName() const            { return m_name; }
+
+private:
+
+	uint32 const m_id;
+	float const  m_multiplier;
+	float const  m_shift;
+	CryFixedStringT<CryAudio::MaxControlNameLength> const m_name;
 };
 
 class CFile final : public IFile

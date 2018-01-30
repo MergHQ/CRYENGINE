@@ -17,9 +17,9 @@ static string const g_vcasFolderName = "VCAs";
 
 namespace Utils
 {
-CID    GetId(EImpltemType const type, string const& name, CImplItem* const pParent, CImplItem const& rootControl);
+CID    GetId(EImplItemType const type, string const& name, CImplItem* const pParent, CImplItem const& rootControl);
 string GetPathName(CImplItem const* const pImplItem, CImplItem const& rootControl);
-string GetTypeName(EImpltemType const type);
+string GetTypeName(EImplItemType const type);
 } // namespace Utils
 } // namespace Fmod
 } // namespace ACE

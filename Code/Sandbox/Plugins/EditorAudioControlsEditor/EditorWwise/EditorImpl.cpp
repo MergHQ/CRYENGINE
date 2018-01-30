@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "EditorImpl.h"
@@ -16,7 +16,7 @@ namespace ACE
 {
 namespace Wwise
 {
-string  const g_userSettingsFile = "%USER%/audiocontrolseditor_wwise.user";
+string const g_userSettingsFile = "%USER%/audiocontrolseditor_wwise.user";
 
 //////////////////////////////////////////////////////////////////////////
 EImpltemType TagToType(string const& tag)
@@ -48,7 +48,7 @@ EImpltemType TagToType(string const& tag)
 		type = EImpltemType::AuxBus;
 	}
 
-// Backwards compatibility will be removed before March 2019.
+	// Backwards compatibility will be removed before March 2019.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 	else if (tag == "WwiseEvent")
 	{
@@ -155,12 +155,12 @@ CImplItem* SearchForControl(CImplItem* const pImplItem, string const& name, Item
 CImplSettings::CImplSettings()
 	: m_projectPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise_project")
 	, m_assetsPath(PathUtil::GetGameFolder() +
-		CRY_NATIVE_PATH_SEPSTR
-		AUDIO_SYSTEM_DATA_ROOT
-		CRY_NATIVE_PATH_SEPSTR +
-		CryAudio::Impl::Wwise::s_szImplFolderName +
-		CRY_NATIVE_PATH_SEPSTR +
-		CryAudio::s_szAssetsFolderName)
+	               CRY_NATIVE_PATH_SEPSTR
+	               AUDIO_SYSTEM_DATA_ROOT
+	               CRY_NATIVE_PATH_SEPSTR +
+	               CryAudio::Impl::Wwise::s_szImplFolderName +
+	               CRY_NATIVE_PATH_SEPSTR +
+	               CryAudio::s_szAssetsFolderName)
 {
 }
 
@@ -317,7 +317,7 @@ bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, CImplItem c
 		isCompatible = (implType == EImpltemType::Switch) || (implType == EImpltemType::State) || (implType == EImpltemType::Parameter);
 		break;
 	case ESystemItemType::Environment:
-		isCompatible = (implType == EImpltemType::AuxBus) || (implType == EImpltemType::Switch) || (implType == EImpltemType::State) || (implType == EImpltemType::Parameter);
+		isCompatible = (implType == EImpltemType::AuxBus) || (implType == EImpltemType::Parameter);
 		break;
 	case ESystemItemType::Preload:
 		isCompatible = (implType == EImpltemType::SoundBank);
@@ -375,6 +375,7 @@ ConnectionPtr CEditorImpl::CreateConnectionToControl(ESystemItemType const contr
 			switch (controlType)
 			{
 			case ESystemItemType::Parameter:
+			case ESystemItemType::Environment:
 				pConnection = std::make_shared<CParameterConnection>(pImplItem->GetId());
 				break;
 			case ESystemItemType::State:
@@ -419,7 +420,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 			{
 				localizedAttribute = pNode->getAttr("wwise_localised");
 			}
-#endif // USE_BACKWARDS_COMPATIBILITY
+#endif    // USE_BACKWARDS_COMPATIBILITY
 			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::Wwise::s_szTrueValue) == 0);
 
 			CImplItem* pImplControl = SearchForControl(&m_rootControl, name, static_cast<ItemType>(type));
@@ -453,7 +454,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 						{
 							childName = pNode->getAttr("wwise_name");
 						}
-#endif // USE_BACKWARDS_COMPATIBILITY
+#endif          // USE_BACKWARDS_COMPATIBILITY
 
 						CImplItem* pStateControl = nullptr;
 						size_t const count = pImplControl->ChildCount();
@@ -496,33 +497,44 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 					switch (controlType)
 					{
 					case ESystemItemType::Parameter:
+					case ESystemItemType::Environment:
 						{
 							ParameterConnectionPtr const pConnection = std::make_shared<CParameterConnection>(pImplControl->GetId());
-							pNode->getAttr(CryAudio::Impl::Wwise::s_szMutiplierAttribute, pConnection->m_mult);
-							pNode->getAttr(CryAudio::Impl::Wwise::s_szShiftAttribute, pConnection->m_shift);
+							float mult = pConnection->GetMultiplier();
+							float shift = pConnection->GetShift();
+
+							pNode->getAttr(CryAudio::Impl::Wwise::s_szMutiplierAttribute, mult);
+							pNode->getAttr(CryAudio::Impl::Wwise::s_szShiftAttribute, shift);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 							if (pNode->haveAttr("wwise_value_multiplier"))
 							{
-								pNode->getAttr("wwise_value_multiplier", pConnection->m_mult);
+								pNode->getAttr("wwise_value_multiplier", mult);
 							}
 							if (pNode->haveAttr("wwise_value_shift"))
 							{
-								pNode->getAttr("wwise_value_shift", pConnection->m_shift);
+								pNode->getAttr("wwise_value_shift", shift);
 							}
-#endif // USE_BACKWARDS_COMPATIBILITY
+#endif            // USE_BACKWARDS_COMPATIBILITY
+							pConnection->SetMultiplier(mult);
+							pConnection->SetShift(shift);
+
 							pConnectionPtr = pConnection;
 						}
 						break;
 					case ESystemItemType::State:
 						{
 							StateConnectionPtr const pConnection = std::make_shared<CStateToParameterConnection>(pImplControl->GetId());
-							pNode->getAttr(CryAudio::Impl::Wwise::s_szValueAttribute, pConnection->m_value);
+							float value = pConnection->GetValue();
+
+							pNode->getAttr(CryAudio::Impl::Wwise::s_szValueAttribute, value);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 							if (pNode->haveAttr("wwise_value"))
 							{
-								pNode->getAttr("wwise_value", pConnection->m_value);
+								pNode->getAttr("wwise_value", value);
 							}
-#endif // USE_BACKWARDS_COMPATIBILITY
+#endif            // USE_BACKWARDS_COMPATIBILITY
+							pConnection->SetValue(value);
+
 							pConnectionPtr = pConnection;
 						}
 						break;
@@ -581,23 +593,29 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 				pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
 				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pImplControl->GetName());
 
-				if (controlType == ESystemItemType::Parameter)
+				if ((controlType == ESystemItemType::Parameter) || (controlType == ESystemItemType::Environment))
 				{
 					std::shared_ptr<const CParameterConnection> pParameterConnection = std::static_pointer_cast<const CParameterConnection>(pConnection);
-					if (pParameterConnection->m_mult != 1.0f)
+
+					float const mult = pParameterConnection->GetMultiplier();
+
+					if (mult != 1.0f)
 					{
-						pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szMutiplierAttribute, pParameterConnection->m_mult);
+						pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szMutiplierAttribute, mult);
 					}
-					if (pParameterConnection->m_shift != 0.0f)
+
+					float const shift = pParameterConnection->GetShift();
+
+					if (shift != 0.0f)
 					{
-						pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szShiftAttribute, pParameterConnection->m_shift);
+						pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szShiftAttribute, shift);
 					}
 
 				}
 				else if (controlType == ESystemItemType::State)
 				{
 					std::shared_ptr<const CStateToParameterConnection> pStateConnection = std::static_pointer_cast<const CStateToParameterConnection>(pConnection);
-					pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szValueAttribute, pStateConnection->m_value);
+					pConnectionNode->setAttr(CryAudio::Impl::Wwise::s_szValueAttribute, pStateConnection->GetValue());
 				}
 
 				pNode = pConnectionNode;

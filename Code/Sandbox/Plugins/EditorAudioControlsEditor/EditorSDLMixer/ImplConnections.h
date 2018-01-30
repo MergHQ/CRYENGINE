@@ -32,6 +32,8 @@ public:
 	{
 	}
 
+	CConnection() = delete;
+
 	// CImplConnection
 	virtual bool HasProperties() const override { return true; }
 	virtual void Serialize(Serialization::IArchive& ar) override;

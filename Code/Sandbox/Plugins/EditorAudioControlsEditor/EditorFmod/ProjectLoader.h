@@ -19,7 +19,7 @@ public:
 
 private:
 
-	CImplItem* CreateItem(string const& name, EImpltemType const type, CImplItem* const pParent);
+	CImplItem* CreateItem(string const& name, EImplItemType const type, CImplItem* const pParent);
 	CImplItem* GetControl(CID const id) const;
 
 	void       LoadBanks(string const& folderPath, bool const isLocalized, CImplItem& parent);
@@ -27,13 +27,13 @@ private:
 	void       ParseFile(string const& filepath, CImplItem& parent);
 	void       RemoveEmptyMixerGroups();
 
-	CImplItem* GetContainer(string const& id, EImpltemType const type, CImplItem& parent);
-	CImplItem* LoadContainer(XmlNodeRef const pNode, EImpltemType const type, string const& relationshipParamName, CImplItem& parent);
+	CImplItem* GetContainer(string const& id, EImplItemType const type, CImplItem& parent);
+	CImplItem* LoadContainer(XmlNodeRef const pNode, EImplItemType const type, string const& relationshipParamName, CImplItem& parent);
 	CImplItem* LoadSnapshotGroup(XmlNodeRef const pNode, CImplItem& parent);
 	CImplItem* LoadFolder(XmlNodeRef const pNode, CImplItem& parent);
 	CImplItem* LoadMixerGroup(XmlNodeRef const pNode, CImplItem& parent);
 
-	CImplItem* LoadItem(XmlNodeRef const pNode, EImpltemType const type, CImplItem& parent);
+	CImplItem* LoadItem(XmlNodeRef const pNode, EImplItemType const type, CImplItem& parent);
 	CImplItem* LoadEvent(XmlNodeRef const pNode, CImplItem& parent);
 	CImplItem* LoadSnapshot(XmlNodeRef const pNode, CImplItem& parent);
 	CImplItem* LoadReturn(XmlNodeRef const pNode, CImplItem& parent);

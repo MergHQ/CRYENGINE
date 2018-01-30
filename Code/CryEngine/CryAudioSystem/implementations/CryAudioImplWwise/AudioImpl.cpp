@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioImpl.h"
@@ -1103,7 +1103,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 			pSwitchState = new SSwitchState(ESwitchType::SwitchGroup, stateOrSwitchGroupId, stateOrSwitchId);
 		}
 	}
-	else if (_stricmp(szTag, s_szParameterSwitchTag) == 0)
+	else if (_stricmp(szTag, s_szParameterTag) == 0)
 	{
 		pSwitchState = ParseWwiseRtpcSwitch(pRootNode);
 	}

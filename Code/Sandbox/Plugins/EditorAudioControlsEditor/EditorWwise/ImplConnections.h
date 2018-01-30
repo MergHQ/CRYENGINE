@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -18,16 +18,25 @@ public:
 		, m_shift(0.0f)
 	{}
 
+	CParameterConnection() = delete;
+
 	// CImplConnection
 	virtual bool HasProperties() const override { return true; }
 	virtual void Serialize(Serialization::IArchive& ar) override;
 	// ~CImplConnection
 
+	void  SetMultiplier(float const mult) { m_mult = mult; }
+	float GetMultiplier() const           { return m_mult; }
+	void  SetShift(float const shift)     { m_shift = shift; }
+	float GetShift() const                { return m_shift; }
+
+private:
+
 	float m_mult;
 	float m_shift;
 };
 
-typedef std::shared_ptr<CParameterConnection> ParameterConnectionPtr;
+using ParameterConnectionPtr = std::shared_ptr<CParameterConnection>;
 
 class CStateToParameterConnection final : public CImplConnection
 {
@@ -38,14 +47,21 @@ public:
 		, m_value(0.0f)
 	{}
 
+	CStateToParameterConnection() = delete;
+
 	// CImplConnection
 	virtual bool HasProperties() const override { return true; }
 	virtual void Serialize(Serialization::IArchive& ar) override;
 	// ~CImplConnection
 
+	void  SetValue(float const value) { m_value = value; }
+	float GetValue() const            { return m_value; }
+
+private:
+
 	float m_value;
 };
 
-typedef std::shared_ptr<CStateToParameterConnection> StateConnectionPtr;
+using StateConnectionPtr = std::shared_ptr<CStateToParameterConnection>;
 } // namespace Wwise
 } // namespace ACE

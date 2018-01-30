@@ -19,94 +19,94 @@ namespace Fmod
 const string g_userSettingsFile = "%USER%/audiocontrolseditor_fmod.user";
 
 //////////////////////////////////////////////////////////////////////////
-EImpltemType TagToType(string const& tag)
+EImplItemType TagToType(string const& tag)
 {
-	EImpltemType type = EImpltemType::Invalid;
+	EImplItemType type = EImplItemType::Invalid;
 
 	if (tag == CryAudio::s_szEventTag)
 	{
-		type = EImpltemType::Event;
+		type = EImplItemType::Event;
 	}
 	else if (tag == CryAudio::Impl::Fmod::s_szParameterTag)
 	{
-		type = EImpltemType::Parameter;
+		type = EImplItemType::Parameter;
 	}
 	else if (tag == CryAudio::Impl::Fmod::s_szSnapshotTag)
 	{
-		type = EImpltemType::Snapshot;
+		type = EImplItemType::Snapshot;
 	}
 	else if (tag == CryAudio::Impl::Fmod::s_szFileTag)
 	{
-		type = EImpltemType::Bank;
+		type = EImplItemType::Bank;
 	}
 	else if (tag == CryAudio::Impl::Fmod::s_szBusTag)
 	{
-		type = EImpltemType::Return;
+		type = EImplItemType::Return;
 	}
 	else if (tag == CryAudio::Impl::Fmod::s_szVcaTag)
 	{
-		type = EImpltemType::VCA;
+		type = EImplItemType::VCA;
 	}
 
 	// Backwards compatibility will be removed before March 2019.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 	else if (tag == "FmodEvent")
 	{
-		type = EImpltemType::Event;
+		type = EImplItemType::Event;
 	}
 	else if (tag == "FmodEventParameter")
 	{
-		type = EImpltemType::Parameter;
+		type = EImplItemType::Parameter;
 	}
 	else if (tag == "FmodSnapshot")
 	{
-		type = EImpltemType::Snapshot;
+		type = EImplItemType::Snapshot;
 	}
 	else if (tag == "FmodSnapshotParameter")
 	{
-		type = EImpltemType::Parameter;
+		type = EImplItemType::Parameter;
 	}
 	else if (tag == "FmodFile")
 	{
-		type = EImpltemType::Bank;
+		type = EImplItemType::Bank;
 	}
 	else if (tag == "FmodBus")
 	{
-		type = EImpltemType::Return;
+		type = EImplItemType::Return;
 	}
 #endif // USE_BACKWARDS_COMPATIBILITY
 
 	else
 	{
-		type = EImpltemType::Invalid;
+		type = EImplItemType::Invalid;
 	}
 
 	return type;
 }
 
 //////////////////////////////////////////////////////////////////////////
-char const* TypeToTag(EImpltemType const type)
+char const* TypeToTag(EImplItemType const type)
 {
 	char const* tag = nullptr;
 
 	switch (type)
 	{
-	case EImpltemType::Event:
+	case EImplItemType::Event:
 		tag = CryAudio::s_szEventTag;
 		break;
-	case EImpltemType::Parameter:
+	case EImplItemType::Parameter:
 		tag = CryAudio::Impl::Fmod::s_szParameterTag;
 		break;
-	case EImpltemType::Snapshot:
+	case EImplItemType::Snapshot:
 		tag = CryAudio::Impl::Fmod::s_szSnapshotTag;
 		break;
-	case EImpltemType::Bank:
+	case EImplItemType::Bank:
 		tag = CryAudio::Impl::Fmod::s_szFileTag;
 		break;
-	case EImpltemType::Return:
+	case EImplItemType::Return:
 		tag = CryAudio::Impl::Fmod::s_szBusTag;
 		break;
-	case EImpltemType::VCA:
+	case EImplItemType::VCA:
 		tag = CryAudio::Impl::Fmod::s_szVcaTag;
 		break;
 	default:
@@ -118,28 +118,28 @@ char const* TypeToTag(EImpltemType const type)
 }
 
 //////////////////////////////////////////////////////////////////////////
-string TypeToEditorFolderName(EImpltemType const type)
+string TypeToEditorFolderName(EImplItemType const type)
 {
 	string folderName = "";
 
 	switch (type)
 	{
-	case EImpltemType::Event:
+	case EImplItemType::Event:
 		folderName = g_eventsFolderName + "/";
 		break;
-	case EImpltemType::Parameter:
+	case EImplItemType::Parameter:
 		folderName = g_parametersFolderName + "/";
 		break;
-	case EImpltemType::Snapshot:
+	case EImplItemType::Snapshot:
 		folderName = g_snapshotsFolderName + "/";
 		break;
-	case EImpltemType::Bank:
+	case EImplItemType::Bank:
 		folderName = g_soundBanksFolderName + "/";
 		break;
-	case EImpltemType::Return:
+	case EImplItemType::Return:
 		folderName = g_returnsFolderName + "/";
 		break;
-	case EImpltemType::VCA:
+	case EImplItemType::VCA:
 		folderName = g_vcasFolderName + "/";
 		break;
 	default:
@@ -267,35 +267,35 @@ CImplItem* CEditorImpl::GetControl(CID const id) const
 char const* CEditorImpl::GetTypeIcon(CImplItem const* const pImplItem) const
 {
 	char const* szIconPath = "icons:Dialogs/dialog-error.ico";
-	auto const type = static_cast<EImpltemType>(pImplItem->GetType());
+	auto const type = static_cast<EImplItemType>(pImplItem->GetType());
 
 	switch (type)
 	{
-	case EImpltemType::Folder:
+	case EImplItemType::Folder:
 		szIconPath = "icons:audio/fmod/folder_closed.ico";
 		break;
-	case EImpltemType::Event:
+	case EImplItemType::Event:
 		szIconPath = "icons:audio/fmod/event.ico";
 		break;
-	case EImpltemType::Parameter:
+	case EImplItemType::Parameter:
 		szIconPath = "icons:audio/fmod/tag.ico";
 		break;
-	case EImpltemType::Snapshot:
+	case EImplItemType::Snapshot:
 		szIconPath = "icons:audio/fmod/snapshot.ico";
 		break;
-	case EImpltemType::Bank:
+	case EImplItemType::Bank:
 		szIconPath = "icons:audio/fmod/bank.ico";
 		break;
-	case EImpltemType::Return:
+	case EImplItemType::Return:
 		szIconPath = "icons:audio/fmod/return.ico";
 		break;
-	case EImpltemType::VCA:
+	case EImplItemType::VCA:
 		szIconPath = "icons:audio/fmod/vca.ico";
 		break;
-	case EImpltemType::MixerGroup:
+	case EImplItemType::MixerGroup:
 		szIconPath = "icons:audio/fmod/group.ico";
 		break;
-	case EImpltemType::EditorFolder:
+	case EImplItemType::EditorFolder:
 		szIconPath = "icons:General/Folder.ico";
 		break;
 	default:
@@ -322,24 +322,24 @@ string const& CEditorImpl::GetFolderName() const
 bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const
 {
 	bool isCompatible = false;
-	auto const implType = static_cast<EImpltemType>(pImplItem->GetType());
+	auto const implType = static_cast<EImplItemType>(pImplItem->GetType());
 
 	switch (systemType)
 	{
 	case ESystemItemType::Trigger:
-		isCompatible = (implType == EImpltemType::Event) || (implType == EImpltemType::Snapshot);
+		isCompatible = (implType == EImplItemType::Event) || (implType == EImplItemType::Snapshot);
 		break;
 	case ESystemItemType::Parameter:
-		isCompatible = (implType == EImpltemType::Parameter) || (implType == EImpltemType::VCA);
-		break;
-	case ESystemItemType::Preload:
-		isCompatible = (implType == EImpltemType::Bank);
+		isCompatible = (implType == EImplItemType::Parameter) || (implType == EImplItemType::VCA);
 		break;
 	case ESystemItemType::State:
-		isCompatible = (implType == EImpltemType::Parameter) || (implType == EImpltemType::VCA);
+		isCompatible = (implType == EImplItemType::Parameter) || (implType == EImplItemType::VCA);
 		break;
 	case ESystemItemType::Environment:
-		isCompatible = (implType == EImpltemType::Return);
+		isCompatible = (implType == EImplItemType::Return) || (implType == EImplItemType::Parameter);
+		break;
+	case ESystemItemType::Preload:
+		isCompatible = (implType == EImplItemType::Bank);
 		break;
 	default:
 		isCompatible = false;
@@ -353,27 +353,25 @@ bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, CImplItem c
 ESystemItemType CEditorImpl::ImplTypeToSystemType(CImplItem const* const pImplItem) const
 {
 	ESystemItemType systemType = ESystemItemType::Invalid;
-	auto const implType = static_cast<EImpltemType>(pImplItem->GetType());
+	auto const implType = static_cast<EImplItemType>(pImplItem->GetType());
 
 	switch (implType)
 	{
-	case EImpltemType::Event:
+	case EImplItemType::Event:
 		systemType = ESystemItemType::Trigger;
 		break;
-	case EImpltemType::Parameter:
+	case EImplItemType::Parameter:
+	case EImplItemType::VCA:
 		systemType = ESystemItemType::Parameter;
 		break;
-	case EImpltemType::Snapshot:
+	case EImplItemType::Snapshot:
 		systemType = ESystemItemType::Trigger;
 		break;
-	case EImpltemType::Bank:
+	case EImplItemType::Bank:
 		systemType = ESystemItemType::Preload;
 		break;
-	case EImpltemType::Return:
+	case EImplItemType::Return:
 		systemType = ESystemItemType::Environment;
-		break;
-	case EImpltemType::VCA:
-		systemType = ESystemItemType::Parameter;
 		break;
 	default:
 		systemType = ESystemItemType::Invalid;
@@ -390,21 +388,21 @@ ConnectionPtr CEditorImpl::CreateConnectionToControl(ESystemItemType const contr
 
 	if (pImplItem != nullptr)
 	{
-		auto const type = static_cast<EImpltemType>(pImplItem->GetType());
+		auto const type = static_cast<EImplItemType>(pImplItem->GetType());
 
-		if ((type == EImpltemType::Event) || (type == EImpltemType::Snapshot))
+		if ((type == EImplItemType::Event) || (type == EImplItemType::Snapshot))
 		{
 			pConnection = std::make_shared<CEventConnection>(pImplItem->GetId());
 		}
-		else if ((type == EImpltemType::Parameter) || (type == EImpltemType::VCA))
+		else if ((type == EImplItemType::Parameter) || (type == EImplItemType::VCA))
 		{
-			if (controlType == ESystemItemType::Parameter)
+			if ((controlType == ESystemItemType::Parameter) || (controlType == ESystemItemType::Environment))
 			{
 				pConnection = std::make_shared<CParamConnection>(pImplItem->GetId());
 			}
 			else if (controlType == ESystemItemType::State)
 			{
-				pConnection = std::make_shared<CParamToStateConnection>(pImplItem->GetId());
+				pConnection = std::make_shared<CParamToStateConnection>(pImplItem->GetId(), type);
 			}
 			else
 			{
@@ -429,7 +427,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 	{
 		auto const type = TagToType(pNode->getTag());
 
-		if (type != EImpltemType::Invalid)
+		if (type != EImplItemType::Invalid)
 		{
 			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
 			string localizedAttribute = pNode->getAttr(CryAudio::Impl::Fmod::s_szLocalizedAttribute);
@@ -448,7 +446,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 
 			CImplItem* pImplItem = nullptr;
 
-			if (type != EImpltemType::Parameter)
+			if (type != EImplItemType::Parameter)
 			{
 				pImplItem = GetItemFromPath(TypeToEditorFolderName(type) + name);
 			}
@@ -457,7 +455,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 				pImplItem = SearchForControl(&m_rootControl, name, static_cast<ItemType>(type));
 			}
 
-			if ((pImplItem == nullptr) || (type != static_cast<EImpltemType>(pImplItem->GetType())))
+			if ((pImplItem == nullptr) || (type != static_cast<EImplItemType>(pImplItem->GetType())))
 			{
 				// If control not found, create a placeholder.
 				// We want to keep that connection even if it's not in the middleware as the user could
@@ -482,8 +480,8 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 
 			switch (type)
 			{
-			case EImpltemType::Event:
-			case EImpltemType::Snapshot:
+			case EImplItemType::Event:
+			case EImplItemType::Snapshot:
 				{
 					string eventType = pNode->getAttr(CryAudio::s_szTypeAttribute);
 
@@ -498,10 +496,10 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 					pConnectionPtr = pConnection;
 				}
 				break;
-			case EImpltemType::Parameter:
-			case EImpltemType::VCA:
+			case EImplItemType::Parameter:
+			case EImplItemType::VCA:
 				{
-					if (controlType == ESystemItemType::Parameter)
+					if ((controlType == ESystemItemType::Parameter) || (controlType == ESystemItemType::Environment))
 					{
 						std::shared_ptr<CParamConnection> const pConnection = std::make_shared<CParamConnection>(pImplItem->GetId());
 						float mult = 1.0f;
@@ -537,7 +535,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 					}
 					else if (controlType == ESystemItemType::State)
 					{
-						std::shared_ptr<CParamToStateConnection> const pConnection = std::make_shared<CParamToStateConnection>(pImplItem->GetId());
+						std::shared_ptr<CParamToStateConnection> const pConnection = std::make_shared<CParamToStateConnection>(pImplItem->GetId(), type);
 						string value = pNode->getAttr(CryAudio::Impl::Fmod::s_szValueAttribute);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 						if (value.IsEmpty() && pNode->haveAttr("fmod_value"))
@@ -550,8 +548,8 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 					}
 				}
 				break;
-			case EImpltemType::Bank:
-			case EImpltemType::Return:
+			case EImplItemType::Bank:
+			case EImplItemType::Return:
 				{
 					pConnectionPtr = std::make_shared<CImplConnection>(pImplItem->GetId());
 				}
@@ -572,13 +570,13 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 
 	if (pImplControl != nullptr)
 	{
-		auto const type = static_cast<EImpltemType>(pImplControl->GetType());
+		auto const type = static_cast<EImplItemType>(pImplControl->GetType());
 		pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(type));
 
 		switch (type)
 		{
-		case EImpltemType::Event:
-		case EImpltemType::Snapshot:
+		case EImplItemType::Event:
+		case EImplItemType::Snapshot:
 			{
 				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, Utils::GetPathName(pImplControl, m_rootControl));
 				auto const pEventConnection = static_cast<const CEventConnection*>(pConnection.get());
@@ -589,13 +587,13 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 				}
 			}
 			break;
-		case EImpltemType::Return:
+		case EImplItemType::Return:
 			{
 				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, Utils::GetPathName(pImplControl, m_rootControl));
 			}
 			break;
-		case EImpltemType::Parameter:
-		case EImpltemType::VCA:
+		case EImplItemType::Parameter:
+		case EImplItemType::VCA:
 			{
 				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pImplControl->GetName());
 
@@ -608,7 +606,7 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 						pConnectionNode->setAttr(CryAudio::Impl::Fmod::s_szValueAttribute, pStateConnection->GetValue());
 					}
 				}
-				else if (controlType == ESystemItemType::Parameter)
+				else if ((controlType == ESystemItemType::Parameter) || (controlType == ESystemItemType::Environment))
 				{
 					auto const pParamConnection = static_cast<const CParamConnection*>(pConnection.get());
 
@@ -624,7 +622,7 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 				}
 			}
 			break;
-		case EImpltemType::Bank:
+		case EImplItemType::Bank:
 			{
 				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pImplControl->GetName());
 
@@ -712,7 +710,7 @@ void CEditorImpl::CreateControlCache(CImplItem const* const pParent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CImplItem* CEditorImpl::CreateItem(string const& name, EImpltemType const type, CImplItem* const pParent)
+CImplItem* CEditorImpl::CreateItem(string const& name, EImplItemType const type, CImplItem* const pParent)
 {
 	CID const id = Utils::GetId(type, name, pParent, m_rootControl);
 
@@ -734,11 +732,11 @@ CImplItem* CEditorImpl::CreateItem(string const& name, EImpltemType const type, 
 	}
 	else
 	{
-		if (type == EImpltemType::Folder)
+		if (type == EImplItemType::Folder)
 		{
 			pImplItem = new CImplFolder(name, id);
 		}
-		else if (type == EImpltemType::MixerGroup)
+		else if (type == EImplItemType::MixerGroup)
 		{
 			pImplItem = new CImplMixerGroup(name, id);
 		}
@@ -746,7 +744,7 @@ CImplItem* CEditorImpl::CreateItem(string const& name, EImpltemType const type, 
 		{
 			pImplItem = new CImplItem(name, id, static_cast<ItemType>(type));
 
-			if (type == EImpltemType::EditorFolder)
+			if (type == EImplItemType::EditorFolder)
 			{
 				pImplItem->SetContainer(true);
 			}
@@ -833,7 +831,7 @@ CImplItem* CEditorImpl::CreatePlaceholderFolderPath(string const& path)
 
 		if (pFoundChild == nullptr)
 		{
-			pFoundChild = CreateItem(token, EImpltemType::Folder, pImplItem);
+			pFoundChild = CreateItem(token, EImplItemType::Folder, pImplItem);
 			pFoundChild->SetPlaceholder(true);
 		}
 
