@@ -728,7 +728,7 @@ bool CTexture::RenderEnvironmentCMHDR(int size, Vec3& Pos, TArray<unsigned short
 
 	bool bFullScreen = gcpRendD3D->IsFullscreen();
 
-	CTexture* ptexGenEnvironmentCM = CTexture::GetOrCreate2DTexture("$GenEnvironmentCM", size, size, 1, FT_DONT_STREAM, nullptr, eTF_R16G16B16A16F);
+	CTexture* ptexGenEnvironmentCM = CTexture::GetOrCreate2DTexture("$GenEnvironmentCM", size, size, 1, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, nullptr, eTF_R16G16B16A16F);
 	if (!ptexGenEnvironmentCM || !ptexGenEnvironmentCM->GetDevTexture())
 	{
 		iLog->Log("Failed generating a cubemap: out of video memory");
