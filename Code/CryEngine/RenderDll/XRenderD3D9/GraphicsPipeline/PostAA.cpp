@@ -414,6 +414,8 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 	if (CRenderer::CV_r_colorRangeCompression)
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE4];
+	if (CRenderer::CV_r_GrainEnableExposureThreshold) // enable legacy grain/exposure interaction
+		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE0];
 
 	if (GetStdGraphicsPipeline().GetLensOpticsStage()->HasContent())
 	{
@@ -481,6 +483,8 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		const Vec4 v = Vec4(0, 0, 0, max(grainAmount, max(hdrSetupParams[1].w, CRenderer::CV_r_HDRGrainAmount)));
 
 		m_passComposition.SetConstant(hdrParamsName, v, eHWSC_Pixel);
+		// This sets exposure clamping max,min, causing weird interaction between between Exp. min/max params and grain (CE-13325)
+		// it will be ignored if CV_r_GrainEnableExposureThreshold is 0
 		m_passComposition.SetConstant(hdrEyeAdaptationName, hdrSetupParams[4], eHWSC_Pixel);
 	}
 

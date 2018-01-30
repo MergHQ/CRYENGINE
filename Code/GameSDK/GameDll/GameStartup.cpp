@@ -141,6 +141,7 @@ bool CCVarsWhiteList::IsWhiteListed(const string& command, bool silent)
   WHITELIST("r_ChromaticAberration");
 	WHITELIST("r_HDRChromaShift");
 	WHITELIST("r_HDRGrainAmount");
+	WHITELIST("r_GrainEnableExposureThreshold");
 	WHITELIST("r_HDRBloomRatio");
 	WHITELIST("r_HDRBrightLevel");
   WHITELIST("r_Sharpening");
