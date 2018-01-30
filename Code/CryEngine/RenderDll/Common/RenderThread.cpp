@@ -303,20 +303,23 @@ void SRenderThread::RC_ResumeDevice()
 }
 #endif
 
-void SRenderThread::RC_BeginFrame(CryDisplayContextHandle hWnd)
+void SRenderThread::RC_BeginFrame(const IRenderer::SDisplayContextKey& displayContextKey)
 {
 	if (IsRenderThread())
 	{
-		gRenDev->RT_BeginFrame(hWnd);
+		gRenDev->RT_BeginFrame(displayContextKey);
 		return;
 	}
 
 	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_BeginFrame, sizeof(CryDisplayContextHandle));
-	if (sizeof(CryDisplayContextHandle) == 4)
-		AddDWORD(p, (uint32)hWnd);
-	else if (sizeof(CryDisplayContextHandle) == 8)
-		AddQWORD(p, (uint64)hWnd);
+	byte* p = AddCommand(eRC_BeginFrame, sizeof(displayContextKey));
+	if (sizeof(displayContextKey) == 8)
+		AddQWORD(p, *reinterpret_cast<const uint64*>(&displayContextKey));
+	else if (sizeof(displayContextKey) == 16)
+	{
+		AddQWORD(p, *reinterpret_cast<const uint64*>(&displayContextKey));
+		AddQWORD(p, *(reinterpret_cast<const uint64*>(&displayContextKey) + 1));
+	}
 	else
 		__debugbreak();
 	EndCommand(p);
@@ -546,10 +549,10 @@ void SRenderThread::ProcessCommands()
 
 		case eRC_BeginFrame:
 			{
-				m_hWnd = ReadCommand<CryDisplayContextHandle>(n);
+				m_displayContextKey = ReadCommand<IRenderer::SDisplayContextKey>(n);
 				if (m_eVideoThreadMode == eVTM_Disabled)
 				{
-					gRenDev->RT_BeginFrame(m_hWnd);
+					gRenDev->RT_BeginFrame(m_displayContextKey);
 					m_bBeginFrameCalled = false;
 				}
 				else
@@ -770,7 +773,7 @@ void SRenderThread::Process()
 			if (m_bBeginFrameCalled)
 			{
 				m_bBeginFrameCalled = false;
-				gRenDev->RT_BeginFrame(m_hWnd);
+				gRenDev->RT_BeginFrame(m_displayContextKey);
 			}
 			if (m_bEndFrameCalled)
 			{

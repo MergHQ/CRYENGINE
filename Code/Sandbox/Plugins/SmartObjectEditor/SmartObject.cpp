@@ -83,7 +83,7 @@ void CSmartObject::Display(DisplayContext& dc)
 			rp.dwFObjFlags |= FOB_TRANS_MASK;
 			//rp.nShaderTemplate = EFT_HELPER;
 
-			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(GetIEditor()->GetSystem()->GetViewCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextHandle());
+			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(GetIEditor()->GetSystem()->GetViewCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
 			m_pStatObj->Render(rp, passInfo);
 		}
 	}

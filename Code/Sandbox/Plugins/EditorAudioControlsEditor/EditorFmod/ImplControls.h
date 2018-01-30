@@ -22,7 +22,7 @@ class CImplFolder final : public CImplItem
 public:
 
 	CImplFolder(string const& name, CID const id)
-		: CImplItem(name, id, static_cast<ItemType>(EImpltemType::Folder))
+		: CImplItem(name, id, static_cast<ItemType>(EImplItemType::Folder))
 	{
 		SetContainer(true);
 	}
@@ -33,7 +33,7 @@ class CImplMixerGroup final : public CImplItem
 public:
 
 	CImplMixerGroup(string const& name, CID const id)
-		: CImplItem(name, id, static_cast<ItemType>(EImpltemType::MixerGroup))
+		: CImplItem(name, id, static_cast<ItemType>(EImplItemType::MixerGroup))
 	{
 		SetContainer(true);
 	}

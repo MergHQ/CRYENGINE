@@ -254,7 +254,7 @@ public:
 
 public:
 	// Multithreading support
-	virtual void RT_BeginFrame(CryDisplayContextHandle hWnd) override;
+	virtual void RT_BeginFrame(const SDisplayContextKey& displayContextKey) override;
 	virtual void RT_EndFrame() override;
 
 	virtual void RT_Init() override;
@@ -289,16 +289,14 @@ public:
 	/////////////////////////////////////////////////////////////////////////////////
 	CRenderDisplayContext* GetActiveDisplayContext() const;
 	CRenderDisplayContext* GetBaseDisplayContext() const;
-	CRenderDisplayContext* GetDefaultDisplayContext() const;
-	CRenderDisplayContext* FindDisplayContext(CryDisplayContextHandle context) threadsafe const;
+	CRenderDisplayContext* FindDisplayContext(const SDisplayContextKey& key) threadsafe const;
 	
-	void             MakeMainContextActive() threadsafe;
-	bool             SetCurrentContext(CryDisplayContextHandle hWnd) threadsafe;
-	virtual WIN_HWND         GetCurrentContextHWND() override;
+	bool             SetCurrentContext(const SDisplayContextKey& key) threadsafe;
+	virtual WIN_HWND GetCurrentContextHWND() override;
 
-	virtual bool     CreateContext(const SDisplayContextDescription& desc) threadsafe final;
-	virtual void     ResizeContext(CryDisplayContextHandle hWnd,int width,int height) threadsafe final;
-	virtual bool     DeleteContext(CryDisplayContextHandle hWnd) threadsafe final;
+	virtual SDisplayContextKey CreateContext(const SDisplayContextDescription& desc) threadsafe final;
+	virtual void               ResizeContext(const SDisplayContextKey& key,int width,int height) threadsafe final;
+	virtual bool               DeleteContext(const SDisplayContextKey& key) threadsafe final;
 
 #ifdef CRY_PLATFORM_WINDOWS
 	virtual RectI    GetDefaultContextWindowCoordinates() final;
@@ -309,7 +307,8 @@ public:
 	//! Changes resolution of the window/device (doesn't require to reload the level)
 	bool         ChangeRenderResolution(int nNewRenderWidth, int nNewRenderHeight, CRenderView* pRenderView);
 	bool         ChangeOutputResolution(int nNewOutputWidth, int nNewOutputHeight, CRenderOutput* pRenderOutput);
-	bool         ChangeDisplayResolution(int nNewDisplayWidth, int nNewHDisplayeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, CryDisplayContextHandle hContext);
+	bool         ChangeDisplayResolution(int nNewDisplayWidth, int nNewHDisplayeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, CRenderDisplayContext* displayContext);
+	bool         ChangeDisplayResolution(int nNewDisplayWidth, int nNewHDisplayeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, const IRenderer::SDisplayContextKey& displayContextKey);
 
 	void         CalculateResolutions(int displayWidthRequested, int displayHeightRequested, bool bUseNativeRes, int* pRenderWidth, int* pRenderHeight, int* pOutputWidth, int* pOutputHeight, int* pDisplayWidth, int* pDisplayHeight);
 
@@ -322,7 +321,7 @@ public:
 
 	virtual void Reset(void) override;
 
-	virtual void BeginFrame(CryDisplayContextHandle hWnd) override;
+	virtual void BeginFrame(const SDisplayContextKey& displayContextKey) override;
 	virtual void FillFrame(ColorF clearColor) override;
 	virtual void ShutDown(bool bReInit = false) override;
 	virtual void ShutDownFast() override;
@@ -471,7 +470,9 @@ public:
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Single frame capture interface
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
-	virtual bool ScreenShot(const char* filename = NULL, CryDisplayContextHandle displayContext = 0) override;
+	bool ScreenShot(const char* filename = NULL);
+	bool ScreenShot(const char* filename, CRenderDisplayContext *pDC);
+	virtual bool ScreenShot(const char* filename = NULL, const SDisplayContextKey& displayContextKey = {}) override;
 	void         CaptureFrameBuffer();
 	virtual bool ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight) override;
 
@@ -586,7 +587,7 @@ public:
 private:
 	//friend class CStandardGraphicsPipeline;
 
-	bool RT_ScreenShot(const char* filename, CryDisplayContextHandle displayContext = 0);
+	bool RT_ScreenShot(const char* filename, CRenderDisplayContext*);
 
 public:
 	bool        ShouldTrackStats();
@@ -765,7 +766,7 @@ public:
 
 	CCryNameTSCRC               m_LevelShaderCacheMissIcon;
 
-	CColorGradingController* m_pColorGradingControllerD3D;
+	CColorGradingController*    m_pColorGradingControllerD3D;
 
 	CRenderPipelineProfiler*    m_pPipelineProfiler;
 
@@ -781,16 +782,18 @@ public:
 	EWindowState             m_windowState = EWindowState::Windowed;
 	bool                     m_isChangingResolution = false;
 
-	uint32                                              m_uniqueRContextId = 0;
-	std::vector<std::shared_ptr<CRenderDisplayContext>> m_RContexts;
-	std::shared_ptr<CRenderDisplayContext>              m_pActiveContext;
+	std::map<SDisplayContextKey, std::shared_ptr<CRenderDisplayContext>> m_displayContexts;
 
-	static const int         MAX_RT_STACK = 8;
+	uint32                                              m_uniqueDisplayContextId = 0;
+	std::shared_ptr<CRenderDisplayContext>              m_pActiveContext;
+	std::shared_ptr<CRenderDisplayContext>              m_pBaseDisplayContext;
+
+	static constexpr int         MAX_RT_STACK = 8;
 
 #if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
-	static const int       RT_STACK_WIDTH = D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT;
+	static constexpr int         RT_STACK_WIDTH = D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT;
 #else
-	static const int       RT_STACK_WIDTH = 4;
+	static constexpr int         RT_STACK_WIDTH = 4;
 #endif
 
 private:
@@ -812,8 +815,6 @@ private:
 	uint32                           m_uLastBlendFlagsPassGroup;
 
 	CD3DStereoRenderer*              m_pStereoRenderer;
-
-	std::shared_ptr<CRenderDisplayContext> m_pBaseDisplayContext;
 
 	volatile int                     m_lockCharCB;
 	util::list<SCharacterInstanceCB> m_CharCBFreeList;

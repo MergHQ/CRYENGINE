@@ -1,10 +1,9 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "ImplConnections.h"
 
 #include <CrySerialization/Enum.h>
-#include <CrySerialization/Decorators/Range.h>
 
 namespace ACE
 {
@@ -13,6 +12,10 @@ namespace PortAudio
 //////////////////////////////////////////////////////////////////////////
 void CConnection::Serialize(Serialization::IArchive& ar)
 {
+	EConnectionType const type = m_type;
+	uint32 const loopCount = m_loopCount;
+	bool const isInfiniteLoop = m_isInfiniteLoop;
+
 	ar(m_type, "action", "Action");
 
 	if (m_type == EConnectionType::Start)
@@ -36,7 +39,12 @@ void CConnection::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
-		SignalConnectionChanged();
+		if (type != m_type ||
+		    loopCount != m_loopCount ||
+		    isInfiniteLoop != m_isInfiniteLoop)
+		{
+			SignalConnectionChanged();
+		}
 	}
 }
 

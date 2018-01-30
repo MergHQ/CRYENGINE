@@ -177,9 +177,9 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 	if (nFlags & FRR_TEXTURES)
 	{
 		// Must also delete back buffers from Display Contexts
-		for (auto& pCtx : m_RContexts)
+		for (auto& pCtx : m_displayContexts)
 		{
-			pCtx->ShutDown();
+			pCtx.second->ShutDown();
 		}
 
 		CTexture::ShutDown();
@@ -321,7 +321,7 @@ void CD3D9Renderer::StopLoadtimeFlashPlayback()
 
 		m_pRT->m_pLoadtimeCallback = 0;
 
-		m_pRT->RC_BeginFrame(0);
+		m_pRT->RC_BeginFrame({});
 		FillFrame(Col_Black);
 
 #if !defined(STRIP_RENDER_THREAD)

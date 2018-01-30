@@ -62,7 +62,6 @@ CTargetTrackGroup::CTargetTrackGroup(TargetTrackHelpers::ITargetTrackPoolProxy* 
 #ifdef TARGET_TRACK_DEBUG
 	m_fLastGraphUpdate = 0.0f;
 	m_pDebugHistoryManager = gEnv->pGameFramework->CreateDebugHistoryManager();
-	assert(m_pDebugHistoryManager);
 
 	memset(m_bDebugGraphOccupied, 0, sizeof(m_bDebugGraphOccupied));
 #endif //TARGET_TRACK_DEBUG
@@ -99,7 +98,8 @@ void CTargetTrackGroup::Reset()
 	m_bNeedSort = false;
 
 #ifdef TARGET_TRACK_DEBUG
-	m_pDebugHistoryManager->Clear();
+	if (m_pDebugHistoryManager)
+		m_pDebugHistoryManager->Clear();
 #endif //TARGET_TRACK_DEBUG
 }
 
@@ -259,11 +259,13 @@ CTargetTrack* CTargetTrackGroup::GetTargetTrack(tAIObjectID aiTargetId)
 				m_bDebugGraphOccupied[uDebugGraphIndex] = true;
 				pTrack->SetDebugGraphIndex(uDebugGraphIndex);
 
-				IDebugHistory* pDebugHistory = m_pDebugHistoryManager->CreateHistory(pTarget->GetName());
-				if (pDebugHistory)
+				if (m_pDebugHistoryManager)
 				{
-					pDebugHistory->SetVisibility(false);
-					pDebugHistory->SetupScopeExtent(-360.0f, 360.0f, 0.0f, 200.0f);
+					if (IDebugHistory* pDebugHistory = m_pDebugHistoryManager->CreateHistory(pTarget->GetName()))
+					{
+						pDebugHistory->SetVisibility(false);
+						pDebugHistory->SetupScopeExtent(-360.0f, 360.0f, 0.0f, 200.0f);
+					}
 				}
 			}
 		}
@@ -649,12 +651,14 @@ void CTargetTrackGroup::DebugDrawTracks(TargetTrackHelpers::ITargetTrackConfigPr
 				const uint32 uGraphY = uDebugGraphIndex / 4;
 
 				// Debug graph update
-				IDebugHistory* pDebugHistory = m_pDebugHistoryManager->GetHistory(pTarget->GetName());
-				if (pDebugHistory)
+				if (m_pDebugHistoryManager)
 				{
-					pDebugHistory->SetupLayoutAbs(fColumnGraphX + (fGraphWidth + fGraphMargin) * uGraphX, fColumnGraphY + (fGraphHeight + fGraphMargin) * uGraphY, fGraphWidth, fGraphHeight, fGraphMargin);
-					pDebugHistory->AddValue(pTrack->GetTrackValue());
-					pDebugHistory->SetVisibility(!bLastDraw);
+					if (IDebugHistory* pDebugHistory = m_pDebugHistoryManager->GetHistory(pTarget->GetName()))
+					{
+						pDebugHistory->SetupLayoutAbs(fColumnGraphX + (fGraphWidth + fGraphMargin) * uGraphX, fColumnGraphY + (fGraphHeight + fGraphMargin) * uGraphY, fGraphWidth, fGraphHeight, fGraphMargin);
+						pDebugHistory->AddValue(pTrack->GetTrackValue());
+						pDebugHistory->SetVisibility(!bLastDraw);
+					}
 				}
 			}
 		}

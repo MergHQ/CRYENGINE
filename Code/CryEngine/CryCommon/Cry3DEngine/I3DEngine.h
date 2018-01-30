@@ -2478,7 +2478,7 @@ struct SRenderingPassInfo
 	};
 
 	//! Creating function for RenderingPassInfo, the create functions will fetch all other necessary information like thread id/frame id, etc.
-	static SRenderingPassInfo CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS, bool bAuxWindow = false, uintptr_t displayContextHandle = 0);
+	static SRenderingPassInfo CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS, bool bAuxWindow = false, IRenderer::SDisplayContextKey displayContextKey = {});
 	static SRenderingPassInfo CreateRecursivePassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_RECURSIVE_FLAGS);
 	static SRenderingPassInfo CreateShadowPassRenderingInfo(IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32 nSide, uint32 nRenderingFlags = DEFAULT_SHADOWS_FLAGS);
 	static SRenderingPassInfo CreateBillBoardGenPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS);
@@ -2541,7 +2541,7 @@ struct SRenderingPassInfo
 	SRendItemSorter&        GetRendItemSorter() const                   { return m_renderItemSorter; };
 	void                    OverrideRenderItemSorter(SRendItemSorter s) { m_renderItemSorter = s; }
 
-	CryDisplayContextHandle GetDisplayContextHandle() const             { return m_displayContextHandle; }
+	const IRenderer::SDisplayContextKey& GetDisplayContextKey() const   { return m_displayContextKey; }
 
 	// Job state associated with rendering to this view
 	void                             SetWriteMutex(void* jobState)                             { m_pJobState = jobState; }
@@ -2603,7 +2603,7 @@ private:
 	void* m_pJobState = nullptr;
 
 	// Windows handle of the target Display Context in the multi-context rendering (in Editor)
-	CryDisplayContextHandle m_displayContextHandle = 0;
+	IRenderer::SDisplayContextKey m_displayContextKey;
 
 	// Optional render target clear color.
 	ColorB m_clearColor = { 0, 0, 0, 0 };
@@ -2936,14 +2936,14 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateBillBoardGenPassRenderingInf
 	passInfo.SetRenderView(passInfo.ThreadID(), IRenderView::eViewType_BillboardGen);
 
 	passInfo.m_bAuxWindow = false;
-	passInfo.m_displayContextHandle = 0;
+	passInfo.m_displayContextKey = {};
 	passInfo.m_renderItemSorter.nValue = 0;
 
 	return passInfo;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags, bool bAuxWindow, CryDisplayContextHandle displayContextHandle)
+inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags, bool bAuxWindow, IRenderer::SDisplayContextKey displayContextKey)
 {
 	static ICVar* pCameraFreeze = gEnv->pConsole->GetCVar("e_CameraFreeze");
 
@@ -2957,7 +2957,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(con
 	passInfo.SetRenderView(passInfo.ThreadID(), IRenderView::eViewType_Default);
 
 	passInfo.m_bAuxWindow = bAuxWindow;
-	passInfo.m_displayContextHandle = displayContextHandle;
+	passInfo.m_displayContextKey = displayContextKey;
 	passInfo.m_renderItemSorter.nValue = 0;
 
 	// update general pass zoom factor
@@ -2994,7 +2994,6 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateRecursivePassRenderingInfo(c
 	passInfo.SetRenderView(passInfo.ThreadID(), IRenderView::eViewType_Recursive);
 
 	//	passInfo.m_bAuxWindow = bAuxWindow;
-	//	passInfo.m_displayContextHandle = displayContextHandle;
 	passInfo.m_renderItemSorter.nValue = SRendItemSorter::eRecursivePassMask;
 	passInfo.m_nRenderStackLevel = 1;
 

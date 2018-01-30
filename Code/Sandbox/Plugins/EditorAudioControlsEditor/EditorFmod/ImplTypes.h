@@ -6,7 +6,7 @@ namespace ACE
 {
 namespace Fmod
 {
-enum class EImpltemType
+enum class EImplItemType
 {
 	Invalid,
 	Bank,

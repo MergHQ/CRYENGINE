@@ -175,7 +175,7 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::RenderBegin(uintptr_t hWnd)
+void CSystem::RenderBegin(HWND hWnd)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
@@ -190,7 +190,10 @@ void CSystem::RenderBegin(uintptr_t hWnd)
 	//start the rendering pipeline
 	if (rndAvail)
 	{
-		m_env.pRenderer->BeginFrame(hWnd);
+		IRenderer::SDisplayContextKey displayContextKey;
+		displayContextKey.key.emplace<HWND>(hWnd);
+
+		m_env.pRenderer->BeginFrame(displayContextKey);
 		gEnv->nMainFrameID = m_env.pRenderer->GetFrameID(false);
 	}
 	else

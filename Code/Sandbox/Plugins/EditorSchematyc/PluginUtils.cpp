@@ -304,9 +304,9 @@ static dll_string MannequinFragmentName(const SResourceSelectorContext& context,
 REGISTER_RESOURCE_SELECTOR("EntityClass", EntityClassNameSelector, "")
 REGISTER_RESOURCE_SELECTOR("ActionMap", ActionMapNameSelector, "")
 REGISTER_RESOURCE_SELECTOR("ActionMapAction", ActionMapActionNameSelector, "")
-REGISTER_RESOURCE_SELECTOR("SurfaceType", SurfaceTypeNameSelector, "")
-REGISTER_RESOURCE_SELECTOR("MannequinScopeContext", MannequinScopeContextName, "")
-REGISTER_RESOURCE_SELECTOR("MannequinFragment", MannequinFragmentName, "")
+REGISTER_RESOURCE_SELECTOR("SurfaceTypeName", SurfaceTypeNameSelector, "")
+REGISTER_RESOURCE_SELECTOR("MannequinScopeContextName", MannequinScopeContextName, "")
+REGISTER_RESOURCE_SELECTOR("MannequinFragmentName", MannequinFragmentName, "")
 }
 
 namespace CrySchematycEditor {

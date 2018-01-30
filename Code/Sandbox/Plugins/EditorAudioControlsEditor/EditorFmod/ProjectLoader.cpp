@@ -33,7 +33,7 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 	: m_root(root)
 	, m_projectPath(projectPath)
 {
-	CImplItem* const pSoundBanks = CreateItem(g_soundBanksFolderName, EImpltemType::EditorFolder, &m_root);
+	CImplItem* const pSoundBanks = CreateItem(g_soundBanksFolderName, EImplItemType::EditorFolder, &m_root);
 	LoadBanks(soundbanksPath, false, *pSoundBanks);
 
 	ParseFolder(projectPath + g_eventFoldersPath, g_eventsFolderName, root);          // Event folders
@@ -88,7 +88,7 @@ void CProjectLoader::LoadBanks(string const& folderPath, bool const isLocalized,
 		{
 			if (filename.compare(0, masterBankName.length(), masterBankName) != 0)
 			{
-				CImplItem* const pSoundBank = CreateItem(filename, EImpltemType::Bank, &parent);
+				CImplItem* const pSoundBank = CreateItem(filename, EImplItemType::Bank, &parent);
 				pSoundBank->SetFilePath(folderPath + CRY_NATIVE_PATH_SEPSTR + filename);
 			}
 		}
@@ -106,7 +106,7 @@ void CProjectLoader::ParseFolder(string const& folderPath, string const& folderN
 
 	if (handle != -1)
 	{
-		CImplItem* const pEditorFolder = CreateItem(folderName, EImpltemType::EditorFolder, &parent);
+		CImplItem* const pEditorFolder = CreateItem(folderName, EImplItemType::EditorFolder, &parent);
 
 		do
 		{
@@ -183,7 +183,7 @@ void CProjectLoader::ParseFile(string const& filepath, CImplItem& parent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CImplItem* CProjectLoader::GetContainer(string const& id, EImpltemType const type, CImplItem& parent)
+CImplItem* CProjectLoader::GetContainer(string const& id, EImplItemType const type, CImplItem& parent)
 {
 	CImplItem* pImplItem = &parent;
 	auto folder = m_containerIds.find(id);
@@ -195,12 +195,12 @@ CImplItem* CProjectLoader::GetContainer(string const& id, EImpltemType const typ
 	else
 	{
 		// If folder not found parse the file corresponding to it and try looking for it again
-		if (type == EImpltemType::Folder)
+		if (type == EImplItemType::Folder)
 		{
 			ParseFile(m_projectPath + g_eventFoldersPath + id + ".xml", parent);
 			ParseFile(m_projectPath + g_parametersFoldersPath + id + ".xml", parent);
 		}
-		else if (type == EImpltemType::MixerGroup)
+		else if (type == EImplItemType::MixerGroup)
 		{
 			ParseFile(m_projectPath + g_mixerGroupsPath + id + ".xml", parent);
 		}
@@ -217,7 +217,7 @@ CImplItem* CProjectLoader::GetContainer(string const& id, EImpltemType const typ
 }
 
 //////////////////////////////////////////////////////////////////////////
-CImplItem* CProjectLoader::LoadContainer(XmlNodeRef const pNode, EImpltemType const type, string const& relationshipParamName, CImplItem& parent)
+CImplItem* CProjectLoader::LoadContainer(XmlNodeRef const pNode, EImplItemType const type, string const& relationshipParamName, CImplItem& parent)
 {
 	CImplItem* pImplItem = nullptr;
 	string name = "";
@@ -296,7 +296,7 @@ CImplItem* CProjectLoader::LoadSnapshotGroup(XmlNodeRef const pNode, CImplItem& 
 		}
 	}
 
-	CImplItem* const pImplItem = CreateItem(name, EImpltemType::Folder, &parent);
+	CImplItem* const pImplItem = CreateItem(name, EImplItemType::Folder, &parent);
 
 	if (!snapshotsItems.empty())
 	{
@@ -312,17 +312,17 @@ CImplItem* CProjectLoader::LoadSnapshotGroup(XmlNodeRef const pNode, CImplItem& 
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::LoadFolder(XmlNodeRef const pNode, CImplItem& parent)
 {
-	return LoadContainer(pNode, EImpltemType::Folder, "folder", parent);
+	return LoadContainer(pNode, EImplItemType::Folder, "folder", parent);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::LoadMixerGroup(XmlNodeRef const pNode, CImplItem& parent)
 {
-	return LoadContainer(pNode, EImpltemType::MixerGroup, "output", parent);
+	return LoadContainer(pNode, EImplItemType::MixerGroup, "output", parent);
 }
 
 //////////////////////////////////////////////////////////////////////////
-CImplItem* CProjectLoader::LoadItem(XmlNodeRef const pNode, EImpltemType const type, CImplItem& parent)
+CImplItem* CProjectLoader::LoadItem(XmlNodeRef const pNode, EImplItemType const type, CImplItem& parent)
 {
 	CImplItem* pImplItem = nullptr;
 	string itemName = "";
@@ -374,7 +374,7 @@ CImplItem* CProjectLoader::LoadItem(XmlNodeRef const pNode, EImpltemType const t
 		}
 	}
 
-	if (type == EImpltemType::Snapshot)
+	if (type == EImplItemType::Snapshot)
 	{
 		string const id = pNode->getAttr("id");
 
@@ -394,24 +394,24 @@ CImplItem* CProjectLoader::LoadItem(XmlNodeRef const pNode, EImpltemType const t
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::LoadEvent(XmlNodeRef const pNode, CImplItem& parent)
 {
-	return LoadItem(pNode, EImpltemType::Event, parent);
+	return LoadItem(pNode, EImplItemType::Event, parent);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::LoadSnapshot(XmlNodeRef const pNode, CImplItem& parent)
 {
-	return LoadItem(pNode, EImpltemType::Snapshot, parent);
+	return LoadItem(pNode, EImplItemType::Snapshot, parent);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::LoadReturn(XmlNodeRef const pNode, CImplItem& parent)
 {
-	CImplItem* const pReturn = LoadItem(pNode, EImpltemType::Return, parent);
+	CImplItem* const pReturn = LoadItem(pNode, EImplItemType::Return, parent);
 
 	if (pReturn != nullptr)
 	{
 		auto pParent = pReturn->GetParent();
-		auto const mixerGroupType = static_cast<ItemType>(EImpltemType::MixerGroup);
+		auto const mixerGroupType = static_cast<ItemType>(EImplItemType::MixerGroup);
 
 		while ((pParent != nullptr) && (pParent->GetType() == mixerGroupType))
 		{
@@ -426,17 +426,17 @@ CImplItem* CProjectLoader::LoadReturn(XmlNodeRef const pNode, CImplItem& parent)
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::LoadParameter(XmlNodeRef const pNode, CImplItem& parent)
 {
-	return LoadItem(pNode, EImpltemType::Parameter, parent);
+	return LoadItem(pNode, EImplItemType::Parameter, parent);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImplItem* CProjectLoader::LoadVca(XmlNodeRef const pNode, CImplItem& parent)
 {
-	return LoadItem(pNode, EImpltemType::VCA, parent);
+	return LoadItem(pNode, EImplItemType::VCA, parent);
 }
 
 //////////////////////////////////////////////////////////////////////////
-CImplItem* CProjectLoader::CreateItem(string const& name, EImpltemType const type, CImplItem* const pParent)
+CImplItem* CProjectLoader::CreateItem(string const& name, EImplItemType const type, CImplItem* const pParent)
 {
 	CID const id = Utils::GetId(type, name, pParent, m_root);
 	CImplItem* pImplItem = GetControl(id);
@@ -457,11 +457,11 @@ CImplItem* CProjectLoader::CreateItem(string const& name, EImpltemType const typ
 	}
 	else
 	{
-		if (type == EImpltemType::Folder)
+		if (type == EImplItemType::Folder)
 		{
 			pImplItem = new CImplFolder(name, id);
 		}
-		else if (type == EImpltemType::MixerGroup)
+		else if (type == EImplItemType::MixerGroup)
 		{
 			pImplItem = new CImplMixerGroup(name, id);
 			m_emptyMixerGroups.emplace_back(static_cast<CImplMixerGroup*>(pImplItem));
@@ -470,7 +470,7 @@ CImplItem* CProjectLoader::CreateItem(string const& name, EImpltemType const typ
 		{
 			pImplItem = new CImplItem(name, id, static_cast<ItemType>(type));
 
-			if (type == EImpltemType::EditorFolder)
+			if (type == EImplItemType::EditorFolder)
 			{
 				pImplItem->SetContainer(true);
 			}

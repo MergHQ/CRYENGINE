@@ -18,7 +18,7 @@ public:
 	// Unique id to identify each context
 	uint32                  m_uniqueId = 0;
 	// Handle and a pointer to WIN32 window
-	CryDisplayContextHandle m_hWnd = 0;
+	HWND                    m_hWnd = 0;
 
 	std::vector<TexSmartPtr> m_backBuffersArray;
 	CTexture*                m_pBackBufferPresented = nullptr;
@@ -58,8 +58,8 @@ public:
 
 	bool                     NeedsDepthStencil() const { return (m_desc.renderFlags & (FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL)) != 0; }
 
-	void                     SetHWND(CryDisplayContextHandle hWnd);
-	CryDisplayContextHandle  GetHandle() const { return m_hWnd; }
+	void                     SetHWND(HWND hWnd);
+	HWND                     GetHandle() const { return m_hWnd; }
 
 	OutputSmartPtr           GetRenderOutput() const { return m_pRenderOutput; };
 	void                     BeginRendering(bool isHighDynamicRangeEnabled);

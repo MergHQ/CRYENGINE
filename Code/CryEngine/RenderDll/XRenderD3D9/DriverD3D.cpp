@@ -108,7 +108,11 @@ void CD3D9Renderer::InitRenderer()
 	gRenDev = this;
 
 	m_pBaseDisplayContext = std::make_shared<CRenderDisplayContext>();
-	m_RContexts.push_back(m_pBaseDisplayContext);
+	{
+		IRenderer::SDisplayContextKey baseContextKey;
+		baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetHandle());
+		m_displayContexts.emplace(std::make_pair(std::move(baseContextKey), m_pBaseDisplayContext));
+	}
 
 	m_pStereoRenderer = new CD3DStereoRenderer(*this, (EStereoDevice)CRenderer::CV_r_StereoDevice);
 	m_pGraphicsPipeline.reset(new CStandardGraphicsPipeline);
@@ -642,7 +646,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 
 		if (bResizeSwapchain | bRecreateSwapchain)
 		{
-			ChangeDisplayResolution(displayWidth, displayHeight, colorBits, 75, previousWindowState, bResizeSwapchain | bRecreateSwapchain, pDC->GetHandle());
+			ChangeDisplayResolution(displayWidth, displayHeight, colorBits, 75, previousWindowState, bResizeSwapchain | bRecreateSwapchain, pDC);
 
 			CRendererResources::OnDisplayResolutionChanged(displayWidth, displayHeight);
 		}
@@ -692,9 +696,9 @@ const char* CD3D9Renderer::GetWindowStateName() const
 	}
 }
 
-void CD3D9Renderer::BeginFrame(CryDisplayContextHandle hWnd)
+void CD3D9Renderer::BeginFrame(const IRenderer::SDisplayContextKey& displayContextKey)
 {
-	m_renderThreadAuxGeom.SetCurrentDisplayContext(hWnd);
+	m_renderThreadAuxGeom.SetCurrentDisplayContext(displayContextKey);
 	//////////////////////////////////////////////////////////////////////
 	// Set up everything so we can start rendering
 	//////////////////////////////////////////////////////////////////////
@@ -783,14 +787,14 @@ void CD3D9Renderer::BeginFrame(CryDisplayContextHandle hWnd)
 			// Initialize render thread's aux geometry command buffer's camera
 			m_renderThreadAuxGeom.SetCamera(camera);
 
-			pCurrAuxGeomCBCollector->SetDisplayContextHandle(hWnd);
+			pCurrAuxGeomCBCollector->SetDisplayContextKey(displayContextKey);
 
 			m_nTimeSlicedShadowsUpdatedThisFrame = 0;
 
 		}, ERenderCommandFlags::None);
 	}
 
-	m_pRT->RC_BeginFrame(hWnd);
+	m_pRT->RC_BeginFrame(displayContextKey);
 }
 
 void CD3D9Renderer::FillFrame(ColorF clearColor)
@@ -808,7 +812,7 @@ void CD3D9Renderer::FillFrame(ColorF clearColor)
 	}, ERenderCommandFlags::SkipDuringLoading);
 }
 
-void CD3D9Renderer::RT_BeginFrame(CryDisplayContextHandle hWnd)
+void CD3D9Renderer::RT_BeginFrame(const IRenderer::SDisplayContextKey& displayContextKey)
 {
 	PROFILE_FRAME(RT_BeginFrame);
 
@@ -816,7 +820,7 @@ void CD3D9Renderer::RT_BeginFrame(CryDisplayContextHandle hWnd)
 	m_devInfo.ProcessSystemEventQueue();
 #endif
 
-	SetCurrentContext(hWnd);
+	SetCurrentContext(displayContextKey);
 
 	HandleDisplayPropertyChanges();
 
@@ -2494,7 +2498,9 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 	const SRenderStatistics& RStats = SRenderStatistics::Write();
 
 	CRenderDisplayContext* pDC = GetActiveDisplayContext();
-	gEnv->pRenderer->GetIRenderAuxGeom(/*eType*/)->SetCurrentDisplayContext(pDC->GetHandle());
+	IRenderer::SDisplayContextKey displayContextKey;
+	displayContextKey.key.emplace<HWND>(pDC->GetHandle());
+	gEnv->pRenderer->GetIRenderAuxGeom(/*eType*/)->SetCurrentDisplayContext(displayContextKey);
 
 	#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
 	if (CV_r_RefractionPartialResolvesDebug)
@@ -3413,7 +3419,7 @@ void CD3D9Renderer::RT_EndFrame()
 #if !defined(_RELEASE) || CRY_PLATFORM_WINDOWS || defined(ENABLE_LW_PROFILERS)
 	if (CV_r_GetScreenShot)
 	{
-		ScreenShot(nullptr, (IsEditorMode() ? GetActiveDisplayContext()->GetHandle() : 0));
+		ScreenShot(nullptr, IsEditorMode() ? GetActiveDisplayContext() : GetBaseDisplayContext());
 		CV_r_GetScreenShot = 0;
 	}
 #endif
@@ -3532,7 +3538,7 @@ void CD3D9Renderer::RT_PresentFast()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CD3D9Renderer::RT_ScreenShot(const char* filename, CryDisplayContextHandle displayContext)
+bool CD3D9Renderer::RT_ScreenShot(const char* filename, CRenderDisplayContext* pDisplayContext)
 {
 	// ignore invalid file access for screenshots
 	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
@@ -3541,7 +3547,7 @@ bool CD3D9Renderer::RT_ScreenShot(const char* filename, CryDisplayContextHandle 
 #if !defined(_RELEASE) || CRY_PLATFORM_WINDOWS || defined(ENABLE_LW_PROFILERS)
 
 	CTexture* pPresentedBackBuffer = nullptr;
-	if (CRenderDisplayContext* pDisplayContext = FindDisplayContext(displayContext))
+	if (pDisplayContext)
 		pPresentedBackBuffer = pDisplayContext->GetPresentedBackBuffer();
 
 	if (!gEnv || !gEnv->pSystem || gEnv->pSystem->IsQuitting() || gEnv->bIsOutOfMemory || !pPresentedBackBuffer)
@@ -3659,16 +3665,24 @@ bool CD3D9Renderer::ShouldTrackStats()
 	return bShouldTrackStats;
 }
 
-bool CD3D9Renderer::ScreenShot(const char* filename, CryDisplayContextHandle displayContext)
+bool CD3D9Renderer::ScreenShot(const char* filename)
+{
+	return ScreenShot(filename, SDisplayContextKey{});
+}
+
+bool CD3D9Renderer::ScreenShot(const char* filename, CRenderDisplayContext *pDC)
 {
 	bool bResult = false;
 
-	ExecuteRenderThreadCommand(
-		[=, &bResult] { bResult = RT_ScreenShot(filename, displayContext); },
-		ERenderCommandFlags::FlushAndWait
-	);
+	ExecuteRenderThreadCommand([=, &bResult] { bResult = RT_ScreenShot(filename, pDC); },
+		ERenderCommandFlags::FlushAndWait);
 
 	return bResult;
+}
+
+bool CD3D9Renderer::ScreenShot(const char* filename, const SDisplayContextKey& displayContextKey)
+{
+	return ScreenShot(filename, FindDisplayContext(displayContextKey));
 }
 
 bool CD3D9Renderer::ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight)

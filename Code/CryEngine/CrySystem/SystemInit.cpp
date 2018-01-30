@@ -3376,7 +3376,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 					// make sure it's rendered in full screen mode when triple buffering is enabled as well
 					for (size_t n = 0; n < 3; n++)
 					{
-						m_env.pRenderer->BeginFrame(0);
+						m_env.pRenderer->BeginFrame({});
 						IRenderAuxImage::Draw2dImage(x, y, w, h, pTex->GetTextureID(), 0.0f, 1.0f, 1.0f, 0.0f);
 						m_env.pRenderer->EndFrame();
 					}

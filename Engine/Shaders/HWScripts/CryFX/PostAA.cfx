@@ -930,15 +930,19 @@ float Time = {PB_time};
 // Grain technique was moved out of HDR post process, since TAA filters pixel sized noise out
 void ApplyFilmGrain(inout half4 cScene, in half3 cColor, float4 baseTC)
 {
+	// Film grain simulation
+	half fFilmGrain = PostAA_Grain.Sample(PostAA_GrainSS, float4(baseTC.xy * 4.0f * float2(PS_ScreenSize.x / PS_ScreenSize.y, 1.0f), Time * 3, 0)).x;
+	fFilmGrain = lerp(0.5h, fFilmGrain, HDRParams.w);
+
+#if %_RT_SAMPLE0
+	// Enable an exposure clamp which will completely hide grain when the result is 1.0, which is really often (CE-13325)
+	// This should be legacy problem now enabled by r_GrainEnableExposureThreshold for pre-5.5 compatibility
 	const float fSceneLum = GetTexture2D(PAAComp_LumTex, PAAComp_LLSS, baseTC).x;
 	const half fSceneKey = 1.03h - 2.0h / (2.0h + log2(fSceneLum + 1.0));
 	const half fExposure = clamp(fSceneKey / fSceneLum, HDREyeAdaptation.y, HDREyeAdaptation.z);
 
-	// Film grain simulation
-	half fFilmGrain = PostAA_Grain.Sample(PostAA_GrainSS, float4(baseTC.xy * 4.0f * float2(PS_ScreenSize.x / PS_ScreenSize.y, 1.0f), Time * 3, 0)).x;
-	fFilmGrain = lerp(0.5h, fFilmGrain, HDRParams.w);
-	fFilmGrain = lerp(fFilmGrain, 0.5h, sqrt(fExposure));
-
+	fFilmGrain = lerp(fFilmGrain, 0.5h, sqrt(fExposure)); 
+#endif
 	// Overlay blending
 	cScene.xyz = step(0.5, cColor.xyz);
 	cScene.xyz = lerp((cColor.xyz * fFilmGrain * 2.h), (1.h - (2.h * (1.h - cColor.xyz) * (1.h - fFilmGrain))), cScene.xyz);

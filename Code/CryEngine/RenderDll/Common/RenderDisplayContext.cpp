@@ -34,7 +34,7 @@ CRenderDisplayContext::~CRenderDisplayContext()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderDisplayContext::SetHWND(CryDisplayContextHandle hWnd)
+void CRenderDisplayContext::SetHWND(HWND hWnd)
 {
 	if (hWnd == m_hWnd)
 		return;
