@@ -64,7 +64,7 @@ private:
 	void       Clear();
 	void       CreateControlCache(CImplItem const* const pParent);
 
-	CImplItem* CreateItem(string const& name, EImpltemType const type, CImplItem* const pParent);
+	CImplItem* CreateItem(string const& name, EImplItemType const type, CImplItem* const pParent);
 
 	CImplItem* GetItemFromPath(string const& fullpath);
 	CImplItem* CreatePlaceholderFolderPath(string const& path);

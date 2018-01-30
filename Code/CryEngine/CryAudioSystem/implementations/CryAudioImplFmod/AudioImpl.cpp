@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioImpl.h"
@@ -681,30 +681,23 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 			FMOD::Studio::Bus* pBus = nullptr;
 			FMOD_RESULT const fmodResult = m_pSystem->getBusByID(&guid, &pBus);
 			ASSERT_FMOD_OK;
-			pEnvironment = new CEnvironment(nullptr, pBus);
+			pEnvironment = new CEnvironmentBus(nullptr, pBus);
 		}
 		else
 		{
 			Cry::Audio::Log(ELogType::Warning, "Unknown Fmod bus: %s", path.c_str());
 		}
 	}
-	else if (_stricmp(szTag, s_szSnapshotTag) == 0)
+	else if (_stricmp(szTag, s_szParameterTag) == 0)
 	{
-		stack_string path(s_szSnapshotPrefix);
-		path += pRootNode->getAttr(s_szNameAttribute);
-		FMOD_GUID guid = { 0 };
 
-		if (m_pSystem->lookupID(path.c_str(), &guid) == FMOD_OK)
-		{
-			FMOD::Studio::EventDescription* pEventDescription = nullptr;
-			FMOD_RESULT const fmodResult = m_pSystem->getEventByID(&guid, &pEventDescription);
-			ASSERT_FMOD_OK;
-			pEnvironment = new CEnvironment(pEventDescription, nullptr);
-		}
-		else
-		{
-			Cry::Audio::Log(ELogType::Warning, "Unknown Fmod snapshot: %s", path.c_str());
-		}
+		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
+		float multiplier = 1.0f;
+		float shift = 0.0f;
+		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
+		pRootNode->getAttr(s_szShiftAttribute, shift);
+
+		pEnvironment = new CEnvironmentParameter(StringToId(szName), multiplier, shift, szName);
 	}
 	else
 	{
