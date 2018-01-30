@@ -205,6 +205,7 @@ int CRendererCVars::CV_r_HDREyeAdaptationMode;
 
 float CRendererCVars::CV_r_HDRRangeAdaptationSpeed;
 float CRendererCVars::CV_r_HDRGrainAmount;
+AllocateConstIntCVar(CRendererCVars, CV_r_GrainEnableExposureThreshold);
 
 float CRendererCVars::CV_r_Sharpening;
 float CRendererCVars::CV_r_ChromaticAberration;
@@ -1109,6 +1110,13 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_HDRGrainAmount", CV_r_HDRGrainAmount, 0.0f, VF_NULL,
 	               "HDR camera grain amount\n"
 	               "Usage: r_HDRGrainAmount [Value]");
+
+
+	DefineConstIntCVar3("r_GrainEnableExposureThreshold", CV_r_GrainEnableExposureThreshold, 0, VF_DUMPTODISK,
+			"Enable/Disable Legacy Exposure-based grain threshold\n"
+			"Usage: r_GrainEnableExposureThreshold [Value]\n"
+			"Default is 0");
+
 
 	REGISTER_CVAR3("r_ChromaticAberration", CV_r_ChromaticAberration, 0.0f, VF_NULL,
 	               "Chromatic aberration amount\n"
