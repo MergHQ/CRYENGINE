@@ -783,6 +783,8 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 
 			pEntity->PrepareForDeletion();
 
+			pEntity->ClearComponentEventListeners();
+
 			if (!(pEntity->m_flags & ENTITY_FLAG_UNREMOVABLE) && pEntity->m_keepAliveCounter == 0)
 			{
 				pEntity->m_flags |= ENTITY_FLAG_REMOVED;
@@ -803,7 +805,7 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 
 				pEntity->m_flags |= ENTITY_FLAG_REMOVED;
 
-				// remember kept alive entities to ged rid of them as soon as they are no longer needed
+				// remember kept alive entities to get rid of them as soon as they are no longer needed
 				if (pEntity->m_keepAliveCounter > 0 && !(pEntity->m_flags & ENTITY_FLAG_UNREMOVABLE))
 				{
 					m_deferredUsedEntities.push_back(pEntity);

@@ -184,6 +184,20 @@ void CEntity::AddSimpleEventListeners(EntityEventMask events, ISimpleEntityEvent
 }
 
 /////////////////////////////////////////////////////////////////////////
+void CEntity::ClearComponentEventListeners()
+{
+	m_components.ForEach([this](SEntityComponentRecord& record) -> bool
+	{
+		EntityEventMask prevMask = record.registeredEventsMask;
+		record.registeredEventsMask = 0;
+
+		OnComponentMaskChanged(record, prevMask);
+
+		return true;
+	});
+}
+
+/////////////////////////////////////////////////////////////////////////
 void CEntity::AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority)
 {
 	SEventListener eventListener = SEventListener {
@@ -3090,6 +3104,17 @@ void CEntity::OnEditorGameModeChanged(bool bEnterGameMode)
 	if (IsGarbage())
 	{
 		m_flags &= ~ENTITY_FLAG_REMOVED;
+
+		// Re-add the component event listener which where removed
+		m_components.ForEach([this](SEntityComponentRecord& record) -> bool
+		{
+			EntityEventMask prevMask = record.registeredEventsMask;
+			record.registeredEventsMask = record.pComponent->GetEventMask();
+
+			OnComponentMaskChanged(record, prevMask);
+
+			return true;
+		});
 
 		// If entity was deleted in game, resurrect it.
 		SEntityEvent entevnt;
