@@ -525,17 +525,17 @@ buffer_handle_t CRenderAuxGeomD3D::CBufferManager::fill(buffer_handle_t buf, BUF
 	return size ? update(type, data, size) : ~0u;
 }
 
-bool CRenderAuxGeomD3D::PreparePass(const CCamera& camera, CPrimitiveRenderPass& pass, SRenderViewport* getViewport)
+bool CRenderAuxGeomD3D::PreparePass(const CCamera& camera, const IRenderer::SDisplayContextKey& displayContextKey, CPrimitiveRenderPass& pass, SRenderViewport* getViewport)
 {
-	CryDisplayContextHandle displayContext = m_currentDisplayHandle;
-
-	if (!m_pCurrentDisplayContext || displayContext != m_pCurrentDisplayContext->GetHandle())
+	if (!m_pCurrentDisplayContext || displayContextKey != m_currentDisplayKey)
 	{
-		m_pCurrentDisplayContext = gcpRendD3D.FindDisplayContext(displayContext);
+		m_pCurrentDisplayContext = gcpRendD3D.FindDisplayContext(displayContextKey);
+		m_currentDisplayKey = displayContextKey;
 	}
 
 	if (!m_pCurrentDisplayContext || !m_pCurrentDisplayContext->IsValid())
 	{
+		m_currentDisplayKey = {};
 		return false;
 	}
 
@@ -871,8 +871,7 @@ bool CRenderAuxGeomD3D::PrepareRendering(CAuxGeomCB::SAuxGeomCBRawData *pAuxGeom
 	// reset current prim type
 	m_curPrimType = CAuxGeomCB::e_PrimTypeInvalid;
 
-	m_currentDisplayHandle = pAuxGeomData->m_displayContextHandle;
-	if (!PreparePass(pAuxGeomData->m_camera, m_geomPass))
+	if (!PreparePass(pAuxGeomData->m_camera, pAuxGeomData->displayContextKey, m_geomPass))
 	{
 		return false;
 	}
@@ -927,7 +926,7 @@ void CRenderAuxGeomD3D::ClearCaches()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderAuxGeomD3D::Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44A& mat, CryDisplayContextHandle displayContext)
+void CRenderAuxGeomD3D::Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44A& mat, const IRenderer::SDisplayContextKey& displayContextKey)
 {
 	// mode 2D/3D -- set new transformation matrix
 	const Matrix44A* pNewTransMat(&GetCurrentTrans3D());
@@ -1044,7 +1043,7 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data)
 			// get current render flags
 			const SAuxGeomRenderFlags& curRenderFlags((*it)->m_renderFlags);
 			int curTexture = (*it)->m_textureID;
-			CryDisplayContextHandle curDisplayContext = (*it)->m_displayContextHandle;
+			const IRenderer::SDisplayContextKey& displayContextKey = (*it)->m_displayContextKey;
 			m_curTransMatrixIdx = (*it)->m_transMatrixIdx;
 			m_curWorldMatrixIdx = (*it)->m_worldMatrixIdx;
 
@@ -1060,7 +1059,7 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data)
 					((*it)->m_transMatrixIdx != m_curTransMatrixIdx) ||
 					((*it)->m_worldMatrixIdx != m_curWorldMatrixIdx) ||
 					((*it)->m_textureID != curTexture) ||
-					((*it)->m_displayContextHandle != curDisplayContext)
+					((*it)->m_displayContextKey != displayContextKey)
 					)
 				{
 					break;
@@ -1068,7 +1067,7 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data)
 			}
 
 			// set appropriate rendering data
-			Prepare(curRenderFlags, mViewProj, curDisplayContext);
+			Prepare(curRenderFlags, mViewProj, displayContextKey);
 
 			if (!CAuxGeomCB::IsTextured(curRenderFlags))
 			{
@@ -1437,14 +1436,12 @@ void CAuxGeomCBCollector::SetDefaultCamera(const CCamera& camera)
 	}
 }
 
-void CAuxGeomCBCollector::SetDisplayContextHandle(CryDisplayContextHandle hWnd)
+void CAuxGeomCBCollector::SetDisplayContextKey(const IRenderer::SDisplayContextKey &displayContextKey)
 {
-	m_hWnd = hWnd;
+	m_displayContextKey = displayContextKey;
 
 	for (AUXThreadMap::iterator it = m_auxThreadMap.begin(); it != m_auxThreadMap.end(); ++it)
-	{
-		it->second->SetDisplayContextHandle(hWnd);
-	}
+		it->second->SetDisplayContextKey(displayContextKey);
 }
 
 CCamera CAuxGeomCBCollector::GetCamera() const
@@ -1452,9 +1449,9 @@ CCamera CAuxGeomCBCollector::GetCamera() const
 	return m_camera;
 }
 
-CryDisplayContextHandle CAuxGeomCBCollector::GetDisplayContextHandle() const
+const IRenderer::SDisplayContextKey& CAuxGeomCBCollector::GetDisplayContextKey() const
 {
-	return m_hWnd;
+	return m_displayContextKey;
 }
 
 void CAuxGeomCBCollector::FreeMemory()
@@ -1482,7 +1479,7 @@ CAuxGeomCB* CAuxGeomCBCollector::Get(int jobID)
 	{
 		auxThread = new SThread;
 		auxThread->SetDefaultCamera(m_camera);
-		auxThread->SetDisplayContextHandle(m_hWnd);
+		auxThread->SetDisplayContextKey(m_displayContextKey);
 
 		m_rwGlobal.WLock();
 		m_auxThreadMap.insert(AUXThreadMap::value_type(tid, auxThread));
@@ -1507,7 +1504,7 @@ void CAuxGeomCBCollector::Add(CAuxGeomCB* newAuxGeomCB)
 	{
 		auxThread = new SThread;
 		auxThread->SetDefaultCamera(m_camera);
-		auxThread->SetDisplayContextHandle(m_hWnd);
+		auxThread->SetDisplayContextKey(m_displayContextKey);
 
 		m_rwGlobal.WLock();
 		m_auxThreadMap.insert(AUXThreadMap::value_type(tid, auxThread));
@@ -1515,7 +1512,7 @@ void CAuxGeomCBCollector::Add(CAuxGeomCB* newAuxGeomCB)
 	}
 
 	m_rwGlobal.WLock();
-	newAuxGeomCB->SetCurrentDisplayContext(m_hWnd);
+	newAuxGeomCB->SetCurrentDisplayContext(m_displayContextKey);
 	m_auxThreadMap[tid]->Add(newAuxGeomCB);
 	m_rwGlobal.WUnlock();
 }
@@ -1552,14 +1549,12 @@ void CAuxGeomCBCollector::SThread::SetDefaultCamera(const CCamera & camera)
 	}
 }
 
-void CAuxGeomCBCollector::SThread::SetDisplayContextHandle(CryDisplayContextHandle hWnd)
+void CAuxGeomCBCollector::SThread::SetDisplayContextKey(const IRenderer::SDisplayContextKey& displayContextKey)
 {
-	m_hWnd = hWnd;
+	this->displayContextKey = displayContextKey;
 
 	for (auto& auxGeomCB : m_auxJobMap)
-	{
-		auxGeomCB->SetCurrentDisplayContext(hWnd);
-	}
+		auxGeomCB->SetCurrentDisplayContext(displayContextKey);
 }
 
 
@@ -1601,7 +1596,7 @@ CAuxGeomCB* CAuxGeomCBCollector::SThread::Get(int jobID, threadID tid)
 		pAuxGeomCB = static_cast<CAuxGeomCB*>(gEnv->pRenderer->GetOrCreateIRenderAuxGeom());
 		pAuxGeomCB->SetCamera(m_camera);
 		pAuxGeomCB->SetUsingCustomCamera(false);
-		pAuxGeomCB->SetCurrentDisplayContext(m_hWnd);
+		pAuxGeomCB->SetCurrentDisplayContext(displayContextKey);
 
 		m_rwlLocal.WLock();
 		m_auxJobMap.push_back(pAuxGeomCB);

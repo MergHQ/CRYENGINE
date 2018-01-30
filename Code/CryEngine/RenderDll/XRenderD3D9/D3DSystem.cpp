@@ -103,87 +103,41 @@ void CD3D9Renderer::DisplaySplash()
 
 static CryCriticalSection gs_contextLock;
 
-CRenderDisplayContext* CD3D9Renderer::FindDisplayContext(CryDisplayContextHandle context) threadsafe const
+CRenderDisplayContext* CD3D9Renderer::FindDisplayContext(const SDisplayContextKey& key) threadsafe const
 {
-	if (!IsEditorMode())
-	{
-		if (!context || (context == GetBaseDisplayContext()->m_hWnd))
-		{
-			return GetBaseDisplayContext();
-		}
-	}
+	if (key == SDisplayContextKey{})
+		return GetBaseDisplayContext();
 
 	AUTO_LOCK(gs_contextLock); // Not thread safe without this
 
-	if (!context && !m_RContexts.empty())
-	{
-		return m_RContexts[0].get();
-	}
-
-	for (auto &ctx : m_RContexts)
-	{
-		if (ctx->m_hWnd == context)
-			return ctx.get();
-	}
+	auto it = m_displayContexts.find(key);
+	if (it != m_displayContexts.end())
+		return it->second.get();
 
 	return nullptr;
 }
 
-void CD3D9Renderer::MakeMainContextActive() threadsafe
+bool CD3D9Renderer::SetCurrentContext(const SDisplayContextKey &key) threadsafe
 {
-	AUTO_LOCK(gs_contextLock); // Not thread safe without this
-
-	if (m_RContexts.empty() || m_pActiveContext == m_RContexts[0])
-		return;
-
-	m_pActiveContext = m_RContexts[0];
-}
-
-bool CD3D9Renderer::SetCurrentContext(CryDisplayContextHandle context) threadsafe
-{
-	if (!IsEditorMode())
+	if (key == SDisplayContextKey{})
 	{
-		if (!context || (context == GetBaseDisplayContext()->m_hWnd))
-		{
-			m_pActiveContext = m_pBaseDisplayContext;
-			return true;
-		}
-	}
-
-	AUTO_LOCK(gs_contextLock); // Not thread safe without this
-
-	if (!context && !m_RContexts.empty())
-	{
-		m_pActiveContext = m_RContexts[0];
+		m_pActiveContext = m_pBaseDisplayContext;
 		return true;
 	}
 
-	uint32 i;
-	for (i = 0; i < m_RContexts.size(); i++)
-	{
-		if (m_RContexts[i]->m_hWnd == context)
-			break;
-	}
+	AUTO_LOCK(gs_contextLock); // Not thread safe without this
 
-	if (i == m_RContexts.size())
+	auto it = m_displayContexts.find(key);
+	if (it == m_displayContexts.end())
 		return false;
 
-	if (m_pActiveContext == m_RContexts[i])
-		return true;
-
-	m_pActiveContext = m_RContexts[i];
+	m_pActiveContext = it->second;
 	return true;
 }
 
-bool CD3D9Renderer::CreateContext(const SDisplayContextDescription& desc) threadsafe
-	//WIN_HWND hWnd, bool bMainViewport, int SSX, int SSY)
+IRenderer::SDisplayContextKey CD3D9Renderer::CreateContext(const SDisplayContextDescription& desc) threadsafe
 {
 	LOADING_TIME_PROFILE_SECTION;
-
-	if (FindDisplayContext(desc.handle))
-		return true;
-
-	AUTO_LOCK(gs_contextLock); // Not thread safe without this
 
 	const int windowWidth  = desc.screenResolution.x;
 	const int windowHeight = desc.screenResolution.y;
@@ -201,22 +155,29 @@ bool CD3D9Renderer::CreateContext(const SDisplayContextDescription& desc) thread
 	pDC->m_nSSSamplesX = pDC->m_desc.superSamplingFactor.x;
 	pDC->m_nSSSamplesY = pDC->m_desc.superSamplingFactor.y;
 
-	pDC->m_uniqueId = m_uniqueRContextId++;
+	pDC->m_uniqueId = m_uniqueDisplayContextId++;
 	pDC->SetHWND(desc.handle);
 
-	m_RContexts.push_back(pDC);
+	SDisplayContextKey key;
+	if (desc.handle != 0)
+		key.key.emplace<HWND>(desc.handle);
+	else
+		key.key.emplace<uint32_t>(pDC->m_uniqueId);
 
-	if (windowWidth * windowHeight)
 	{
-		ResizeContext(desc.handle, windowWidth, windowHeight);
+		AUTO_LOCK(gs_contextLock); // Not thread safe without this
+		m_displayContexts.emplace(std::make_pair(key, pDC));
 	}
 
-	return true;
+	if (windowWidth * windowHeight)
+		ResizeContext(key, windowWidth, windowHeight);
+
+	return key;
 }
 
-void CD3D9Renderer::ResizeContext(CryDisplayContextHandle hWnd, int windowWidth, int windowHeight) threadsafe
+void CD3D9Renderer::ResizeContext(const SDisplayContextKey& key, int windowWidth, int windowHeight) threadsafe
 {
-	CRenderDisplayContext* pDC = FindDisplayContext(hWnd);
+	CRenderDisplayContext* pDC = FindDisplayContext(key);
 	if (pDC)
 	{
 		if (pDC->m_desc.screenResolution.x != windowWidth ||
@@ -237,41 +198,24 @@ void CD3D9Renderer::ResizeContext(CryDisplayContextHandle hWnd, int windowWidth,
 	}
 }
 
-bool CD3D9Renderer::DeleteContext(CryDisplayContextHandle hWnd) threadsafe
+bool CD3D9Renderer::DeleteContext(const SDisplayContextKey& key) threadsafe
 {
 	// Make sure there are no outstanding render commands which use the current viewport
 	FlushRTCommands(true, true, true);
 
 	AUTO_LOCK(gs_contextLock); // Not thread safe without this
 
-	uint32 i, j;
-
-	for (i = 0; i < m_RContexts.size(); i++)
-	{
-		if (m_RContexts[i]->m_hWnd == hWnd)
-			break;
-	}
-
-	if (i == m_RContexts.size())
+	auto it = m_displayContexts.find(key);
+	if (it == m_displayContexts.end())
 		return false;
 
-	if (m_pActiveContext == m_RContexts[i])
-	{
-		for (j = 0; j < m_RContexts.size(); j++)
-		{
-			if (m_RContexts[j]->m_hWnd != hWnd)
-			{
-				m_pActiveContext = m_RContexts[j];
-				break;
-			}
-		}
+	auto deletedContext = std::move(it->second);
+	m_displayContexts.erase(it);
 
-		if (j == m_RContexts.size())
-			m_pActiveContext = nullptr;
-	}
-
-	m_RContexts[i]->ShutDown();
-	m_RContexts.erase(m_RContexts.begin()+i);
+	// If deleting active context, set active context to some other context
+	if (m_pActiveContext == deletedContext)
+		m_pActiveContext = m_displayContexts.size() ? m_displayContexts.begin()->second : nullptr;
+	deletedContext->ShutDown();
 
 	return true;
 }
@@ -286,19 +230,6 @@ CRenderDisplayContext* CD3D9Renderer::GetBaseDisplayContext() const
 	return m_pBaseDisplayContext.get();
 }
 
-CRenderDisplayContext* CD3D9Renderer::GetDefaultDisplayContext() const
-{
-	for (const std::shared_ptr<CRenderDisplayContext>& pContext : m_RContexts)
-	{
-		if (pContext->m_bMainViewport)
-		{
-			return pContext.get();
-		}
-	}
-
-	return nullptr;
-}
-
 WIN_HWND CD3D9Renderer::GetCurrentContextHWND()
 {
 	return m_pActiveContext ? (WIN_HWND)m_pActiveContext->m_hWnd : m_hWnd;
@@ -307,7 +238,16 @@ WIN_HWND CD3D9Renderer::GetCurrentContextHWND()
 #ifdef CRY_PLATFORM_WINDOWS
 RectI CD3D9Renderer::GetDefaultContextWindowCoordinates()
 {
-	HWND hWnd = reinterpret_cast<HWND>(GetDefaultDisplayContext()->GetHandle());
+	HWND hWnd = reinterpret_cast<HWND>(m_pBaseDisplayContext->GetHandle());
+	{
+		AUTO_LOCK(gs_contextLock); // Not thread safe without this
+
+		for (const auto& pair : m_displayContexts)
+		{
+			if (pair.second->m_bMainViewport && stl::holds_alternative<HWND>(pair.first.key))
+				hWnd = stl::get<HWND>(pair.first.key);
+		}
+	}
 
 	RECT rcClient;
 	::GetClientRect(hWnd, &rcClient);
@@ -359,18 +299,9 @@ bool CD3D9Renderer::ChangeOutputResolution(int nNewOutputWidth, int nNewOutputHe
 	return true;
 }
 
-bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDisplayHeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, CryDisplayContextHandle hContext)
+bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDisplayHeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, CRenderDisplayContext* pDC)
 {
-	if (m_bDeviceLost)
-		return true;
-
-#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
-	if (m_pRT && !m_pRT->IsRenderThread()) __debugbreak();
-#endif
-
 	CRenderDisplayContext* pBC = GetBaseDisplayContext();
-	CRenderDisplayContext* pDC = pBC;
-	if (hContext) pDC = FindDisplayContext(hContext);
 
 	iLog->Log("Changing resolution...");
 
@@ -385,9 +316,9 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 	bool wasFullscreen = previousWindowState == EWindowState::Fullscreen;
 
 	// Save the new dimensions
-	m_cbpp        = nNewColDepth;
+	m_cbpp = nNewColDepth;
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
-	m_overrideRefreshRate   = CV_r_overrideRefreshRate;
+	m_overrideRefreshRate = CV_r_overrideRefreshRate;
 	m_overrideScanlineOrder = CV_r_overrideScanlineOrder;
 #endif
 
@@ -417,10 +348,10 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 		GetS3DRend().ReleaseBuffers();
 
 #if defined(SUPPORT_DEVICE_INFO)
-	#if CRY_PLATFORM_WINDOWS
+#if CRY_PLATFORM_WINDOWS
 		// disable floating point exceptions due to driver bug when switching to fullscreen
 		SCOPED_DISABLE_FLOAT_EXCEPTIONS();
-	#endif
+#endif
 		if (m_CVWidth)
 			m_CVWidth->Set(nNewDisplayWidth);
 		if (m_CVHeight)
@@ -432,9 +363,9 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 		pBC->ChangeOutputIfNecessary(IsFullscreen());
 
-	#if DURANGO_ENABLE_ASYNC_DIPS
+#if DURANGO_ENABLE_ASYNC_DIPS
 		WaitForAsynchronousDevice();
-	#endif
+#endif
 
 		OnD3D11PostCreateDevice(m_devInfo.Device());
 
@@ -476,6 +407,23 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 	m_isChangingResolution = false;
 
 	return true;
+}
+
+bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDisplayHeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, const IRenderer::SDisplayContextKey& displayContextKey)
+{
+	if (m_bDeviceLost)
+		return true;
+
+#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
+	if (m_pRT && !m_pRT->IsRenderThread()) __debugbreak();
+#endif
+
+	CRenderDisplayContext* pBC = GetBaseDisplayContext();
+	CRenderDisplayContext* pDC = pBC;
+	if (displayContextKey != IRenderer::SDisplayContextKey{})
+		pDC = FindDisplayContext(displayContextKey);
+
+	return ChangeDisplayResolution(nNewDisplayWidth, nNewDisplayHeight, nNewColDepth, nNewRefreshHZ, previousWindowState, bForceReset, pDC);
 }
 
 void CD3D9Renderer::PostDeviceReset()
@@ -894,9 +842,10 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 #endif
 
 	// Shut Down all contexts.
-	for (auto &pDisplayContext : m_RContexts)
 	{
-		pDisplayContext->ShutDown();
+		AUTO_LOCK(gs_contextLock); // Not thread safe without this
+		for (auto &pDisplayContext : m_displayContexts)
+			pDisplayContext.second->ShutDown();
 	}
 
 #if !CRY_PLATFORM_ORBIS && !CRY_RENDERER_OPENGL
@@ -937,10 +886,13 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 
 
 	// Release Display Contexts, freeing Swap Channels.
-	m_pBaseDisplayContext.reset();
-	m_pActiveContext.reset();
+	m_pBaseDisplayContext = nullptr;
+	m_pActiveContext = nullptr;
 
-	m_RContexts.clear();
+	{
+		AUTO_LOCK(gs_contextLock); // Not thread safe without this
+		m_displayContexts.clear();
+	}
 
 	SAFE_DELETE(m_pRT);
 
@@ -1125,6 +1077,18 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 			SetFocus(m_hWnd);
 			SetForegroundWindow(m_hWnd);
 		}
+	}
+
+	// Update base context hWnd and key
+	IRenderer::SDisplayContextKey baseContextKey;
+	baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetHandle());
+	m_pBaseDisplayContext->SetHWND(m_hWnd);
+	{
+		AUTO_LOCK(gs_contextLock);
+		m_displayContexts.erase(baseContextKey);
+
+		baseContextKey.key.emplace<HWND>(m_hWnd);
+		m_displayContexts.emplace(std::make_pair(std::move(baseContextKey), m_pBaseDisplayContext));
 	}
 
 	if (!m_hWnd)
@@ -1418,8 +1382,7 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	CalculateResolutions(width, height, bNativeResolution, &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
 
 	pDC->InitializeDisplayResolution(displayWidth, displayHeight);
-	pDC->m_uniqueId = m_uniqueRContextId;
-	++m_uniqueRContextId;
+	pDC->m_uniqueId = m_uniqueDisplayContextId++;
 	CRY_ASSERT_MESSAGE(pDC->m_uniqueId == 0, "BaseDisplayContext's unique id is expected to be zero");
 
 	// only create device if we are not in shader cache generation mode
@@ -2280,7 +2243,7 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	pDC->m_nSSSamplesX = CV_r_Supersampling;
 	pDC->m_nSSSamplesY = CV_r_Supersampling;
 	pDC->m_bMainViewport = true;
-	pDC->SetHWND((CryDisplayContextHandle)rd->m_hWnd);
+	pDC->SetHWND(rd->m_hWnd);
 
 #if DX11_WRAPPABLE_INTERFACE && CAPTURE_REPLAY_LOG
 	rd->MemReplayWrapD3DDevice();

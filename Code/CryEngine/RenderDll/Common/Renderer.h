@@ -718,7 +718,7 @@ public:
 	virtual void RT_PresentFast() = 0;
 
 	virtual int  CurThreadList() override;
-	virtual void RT_BeginFrame(CryDisplayContextHandle hWnd) = 0;
+	virtual void RT_BeginFrame(const IRenderer::SDisplayContextKey& displayContextKey) = 0;
 	virtual void RT_EndFrame() = 0;
 
 	virtual void RT_Init() = 0;
@@ -791,7 +791,7 @@ public:
 	virtual void         FreeSystemResources(int nFlags) override;
 	virtual void         InitSystemResources(int nFlags) override;
 
-	virtual void         BeginFrame(CryDisplayContextHandle hWnd) override = 0;
+	virtual void         BeginFrame(const IRenderer::SDisplayContextKey& displayContextKey) override = 0;
 	virtual void         FillFrame(ColorF clearColor) override = 0;
 	virtual void         RenderDebug(bool bRenderStats = true) override = 0;
 	virtual void         EndFrame() override = 0;
@@ -907,7 +907,7 @@ public:
 	Vec4&   GetHighlightParams()        { return m_highlightParams; }
 
 	//misc
-	virtual bool                ScreenShot(const char* filename = NULL, CryDisplayContextHandle displayContext = 0) override = 0;
+	virtual bool                ScreenShot(const char* filename = NULL, const IRenderer::SDisplayContextKey& displayContextKey = {}) override = 0;
 	virtual bool                ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight) override = 0;
 
 	virtual int                 GetColorBpp() override   { return m_cbpp; }

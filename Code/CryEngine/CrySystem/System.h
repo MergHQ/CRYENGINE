@@ -255,13 +255,13 @@ public:
 
 	const char*                       GetRootFolder() const override  { return m_root.c_str(); }
 
-	virtual bool                        DoFrame(uintptr_t hWnd = 0, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
+	virtual bool                        DoFrame(HWND hWnd = 0, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
 	virtual IManualFrameStepController* GetManualFrameStepController() const override;
 
 	virtual bool                      UpdateLoadtime() override;
 
 	//! Begin rendering frame.
-	virtual void RenderBegin(uintptr_t hWnd) override;
+	virtual void RenderBegin(HWND hWnd) override;
 	//! Render subsystems.
 	void Render();
 	//! End rendering frame and swap back buffer.

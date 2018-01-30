@@ -1513,7 +1513,7 @@ void CSystem::RunMainLoop()
 }
 
 //////////////////////////////////////////////////////////////////////
-bool CSystem::DoFrame(uintptr_t hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags)
+bool CSystem::DoFrame(HWND hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
 	// The frame profile system already creates an "overhead" profile label
 	// in StartFrame(). Hence we have to set the FRAMESTART before.
@@ -1555,7 +1555,7 @@ bool CSystem::DoFrame(uintptr_t hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags
 		m_env.pNetwork->SyncWithGame(eNGS_SleepNetwork);
 	}
 
-	RenderBegin(hWnd != 0 ? hWnd : reinterpret_cast<uintptr_t>(m_hWnd));
+	RenderBegin(hWnd != 0 ? hWnd : static_cast<HWND>(m_hWnd));
 
 	bool continueRunning = true;
 

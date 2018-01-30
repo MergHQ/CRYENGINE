@@ -17,6 +17,7 @@
 
 #include <CryExtension/ClassWeaver.h>
 #include <CrySystem/IEngineModule.h>
+#include <CryCore/CryVariant.h>
 #include "IRenderView.h"
 
 // forward declarations
@@ -58,8 +59,6 @@ typedef void* WIN_HWND;
 typedef void* WIN_HINSTANCE;
 typedef void* WIN_HDC;
 typedef void* WIN_HGLRC;
-
-typedef uintptr_t CryDisplayContextHandle;
 
 class CREMesh;
 class CMesh;
@@ -901,9 +900,29 @@ struct IRenderer//: public IRendererCallbackServer
 		eViewportType_Secondary,
 	};
 
+	struct SDisplayContextKey
+	{
+		struct SInvalidKey
+		{
+			bool operator<(const SInvalidKey&) const { return false; }
+			bool operator==(const SInvalidKey&) const { return true; }
+			bool operator!=(const SInvalidKey&) const { return false; }
+		};
+
+		CryVariant<SInvalidKey, uint32_t, HWND> key;
+		bool operator<(const SDisplayContextKey &o) const { return key < o.key; }
+		bool operator==(const SDisplayContextKey &o) const { return key == o.key; }
+		bool operator!=(const SDisplayContextKey &o) const { return !(*this == o); }
+
+		bool operator==(const uint32_t &o) const { return key == o; }
+		bool operator!=(const uint32_t &o) const { return !(*this == o); }
+		bool operator==(const HWND &o) const { return key == o; }
+		bool operator!=(const HWND &o) const { return !(*this == o); }
+	};
+
 	struct SDisplayContextDescription
 	{
-		CryDisplayContextHandle handle  = 0; // WIN_HWND
+		HWND handle  = 0; // WIN_HWND
 
 		ColorF clearColor               = Clr_Empty;
 		ColorF clearDepthStencil        = Clr_FarPlane;
@@ -951,9 +970,10 @@ struct IRenderer//: public IRendererCallbackServer
 	/////////////////////////////////////////////////////////////////////////////////
 	// Render-context management
 	/////////////////////////////////////////////////////////////////////////////////
-	virtual bool     CreateContext(const SDisplayContextDescription& desc) = 0;
-	virtual void     ResizeContext(CryDisplayContextHandle hWnd, int width, int height) = 0;
-	virtual bool     DeleteContext(CryDisplayContextHandle hWnd) = 0;
+	// Returns a pair, a success flag and key.
+	virtual SDisplayContextKey CreateContext(const SDisplayContextDescription& desc) = 0;
+	virtual void               ResizeContext(const SDisplayContextKey& key, int width, int height) = 0;
+	virtual bool               DeleteContext(const SDisplayContextKey& key) = 0;
 
 #if CRY_PLATFORM_WINDOWS
 	virtual RectI    GetDefaultContextWindowCoordinates() = 0;
@@ -974,7 +994,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual int EnumDisplayFormats(SDispFormat* Formats) = 0;
 
 	//! Should be called at the beginning of every frame.
-	virtual void BeginFrame(CryDisplayContextHandle hWnd) = 0;
+	virtual void BeginFrame(const SDisplayContextKey& key) = 0;
 
 	//! Should be called at the beginning of every frame.
 	virtual void FillFrame(ColorF clearColor) = 0;
@@ -1415,7 +1435,7 @@ struct IRenderer//: public IRendererCallbackServer
 
 	//! Take a screenshot and save it to a file
 	//! \return true on success
-	virtual bool ScreenShot(const char* filename = nullptr, CryDisplayContextHandle displayContext = 0) = 0;
+	virtual bool ScreenShot(const char* filename = nullptr, const IRenderer::SDisplayContextKey& displayContextKey = {}) = 0;
 
 	//! Copy frame buffer into destination memory buffer.
 	virtual bool ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight) = 0;
