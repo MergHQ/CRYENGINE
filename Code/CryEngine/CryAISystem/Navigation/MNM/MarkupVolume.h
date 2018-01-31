@@ -23,6 +23,17 @@ struct SMarkupVolumeData
 struct SMarkupVolume : public MNM::BoundingVolume
 {
 	void Swap(SMarkupVolume& other);
+	
+	bool operator== (const SMarkupVolume& other) const
+	{
+		return IsEquivalent(aabb, other.aabb)
+			&& height == other.height
+			&& verticesCount == other.verticesCount
+			&& areaAnnotation == other.areaAnnotation
+			&& bStoreTriangles == other.bStoreTriangles
+			&& bExpandByAgentRadius == other.bExpandByAgentRadius
+			&& GetBoundaryVertices() == other.GetBoundaryVertices();
+	}
 
 	// Properties
 	AreaAnnotation areaAnnotation;

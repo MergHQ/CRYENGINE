@@ -58,7 +58,7 @@ void CEntityAIObserverComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIObser
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 	desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, cryiidof<CEntityAIFactionComponent>());
 
-	desc.AddMember(&CEntityAIObserverComponent::m_visionMapType, 'vmt', "visionMapType", "Vision Map Type", "", Perception::ComponentHelpers::SVisionMapType());
+	desc.AddMember(&CEntityAIObserverComponent::m_visionMapType, 'vmt', "visionMapType", "Vision Map Type", "Combination of flags to identify type of the observer.", Perception::ComponentHelpers::SVisionMapType());
 	desc.AddMember(&CEntityAIObserverComponent::m_visionProperties, 'vpt', "visionProps", "Vision", "Configuration of the vision sensor with which the entity can observe the world.", ObserverProperties::SVisionProperties());
 	desc.AddMember(&CEntityAIObserverComponent::m_typesToObserve, 'tto', "typesToObserve", "Types To Observe", "Only entities that belong to these vision map types will be processed for sight.", Perception::ComponentHelpers::SVisionMapType());
 	desc.AddMember(&CEntityAIObserverComponent::m_factionsToObserve, 'fto', "factionsToObserve", "Factions To Observe", "Only entities that belong to these factions will be processed for sight.", SFactionFlagsMask());
