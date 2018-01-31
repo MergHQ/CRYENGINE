@@ -216,7 +216,7 @@ typedef void (*RenderFunc)(void);
 	#define EXCLUDE_SQUISH_SDK
 #endif
 
-#if USE_SDL2 && (CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS || CRY_PLATFORM_LINUX)
+#if defined(USE_SDL2) && (CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS || CRY_PLATFORM_LINUX)
 	#define USE_SDL2_VIDEO	1
 	#include <SDL.h>
 	#include <SDL_syswm.h>
