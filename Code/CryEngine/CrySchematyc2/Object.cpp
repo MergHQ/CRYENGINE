@@ -1673,8 +1673,8 @@ namespace Schematyc2
 						{
 							const SVMCallLibFunctionOp*	pCallLibFunctionOp = static_cast<const SVMCallLibFunctionOp*>(pOp);
 							const ILibFunction*					pLibFunction = m_pLibClass->GetFunction(pCallLibFunctionOp->functionId);
-							CRY_ASSERT(pLibFunction != NULL);
-							if(pLibFunction != NULL)
+							CRY_ASSERT(pLibFunction != nullptr);
+							if(pLibFunction != nullptr && pLibFunction->IsGraphExecutionAllowed())
 							{
 								size_t				stackSize = stack.GetSize();
 								const size_t	functionInputSize = pLibFunction->GetVariantInputs().size();

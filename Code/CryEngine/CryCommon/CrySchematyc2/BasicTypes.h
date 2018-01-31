@@ -57,6 +57,15 @@ namespace Schematyc2
 		Game             // Object is in game.
 	};
 
+	enum class EGraphExecutionFilter
+	{
+		Always,
+		DevModeOrLoggingEnabled,
+		DevModeOnly,
+		Count
+	};
+
+
 	WRAP_TYPE(EntityId, ExplicitEntityId, 0) // Strongly typed entity id.
 	WRAP_TYPE(uint32,   ObjectId,         0)
 	WRAP_TYPE(uint32,   LibFunctionId,    0) // #SchematycTODO : Remove!!!

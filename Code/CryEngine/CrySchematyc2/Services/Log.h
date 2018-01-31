@@ -36,6 +36,7 @@ namespace Schematyc2
 		virtual void FatalError(const LogStreamId& streamId, CLogMessageMetaInfo metaInfo, const char* szFormat, ...) override;
 		virtual void Update() override;
 		virtual SLogSignals& Signals() override;
+		virtual bool IsLoggingEnabled() const override;
 		// ~ILog
 
 	private:

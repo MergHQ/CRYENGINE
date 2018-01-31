@@ -257,6 +257,7 @@ struct ILibFunction
 	virtual ActionMemberFunctionConstTable    GetActionMemberFunctionTable() const = 0;
 	virtual size_t                            GetSize() const = 0;
 	virtual const SVMOp*                      GetOp(size_t pos) const = 0;
+	virtual bool                              IsGraphExecutionAllowed() const = 0;
 };
 
 // The following type exists only for backwards compatibility in Hunt and can be removed once all levels have been re-exported.

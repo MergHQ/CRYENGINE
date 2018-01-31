@@ -1114,6 +1114,7 @@ namespace Schematyc2
 					docGraphSequence.pLibFunction->SetName(docGraphSequence.pDocGraph->GetName());
 					docGraphSequence.pLibFunction->SetScope(docGraphSequence.pLibClass->GetName());
 					docGraphSequence.pLibFunction->SetFileName(scriptFile.GetFileName());
+					docGraphSequence.pLibFunction->SetGraphExecutionFilter(docGraphSequence.pDocGraph->GetExecutionFilter());
 					CDocGraphSequencePreCompiler sequencePreCompiler(*docGraphSequence.pLibClass, docGraphSequence.libFunctionId, *docGraphSequence.pLibFunction);
 					sequencePreCompiler.PrecompileSequence(*docGraphSequence.pScriptGraphNode, docGraphSequence.iDocGraphNodeOutput);
 				}

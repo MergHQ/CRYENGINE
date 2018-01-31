@@ -447,6 +447,7 @@ namespace Schematyc2
 		virtual ActionMemberFunctionConstTable GetActionMemberFunctionTable() const override;
 		virtual size_t GetSize() const override;
 		virtual const SVMOp* GetOp(size_t pos) const override;
+		virtual bool IsGraphExecutionAllowed() const override;
 		// ~ILibFunction
 
 		void SetGUID(const SGUID& guid);
@@ -458,7 +459,8 @@ namespace Schematyc2
 		size_t AddOp(const SVMOp& op);
 		SVMOp* GetOp(size_t pos);
 		SVMOp* GetLastOp();
-		
+		void SetGraphExecutionFilter(EGraphExecutionFilter filter);
+
 	private:
 
 		struct SParam
@@ -498,6 +500,7 @@ namespace Schematyc2
 		size_t												m_size;
 		size_t												m_lastOpPos;
 		uint8*												m_pBegin;
+		EGraphExecutionFilter         m_executionFilter;
 	};
 
 	// Library class properties.
