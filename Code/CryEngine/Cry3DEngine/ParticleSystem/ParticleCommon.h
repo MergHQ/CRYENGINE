@@ -28,7 +28,7 @@
 	#define ILINE inline
 #endif
 #define CRY_PFX2_DBG	// obsolete
-#
+
 #ifndef _RELEASE
 	#define CRY_PFX2_ASSERT(cond) { CRY_ASSERT(cond); }
 #else
@@ -79,8 +79,6 @@ struct SComponentParams;
 
 typedef _smart_ptr<CParticleFeature> TParticleFeaturePtr;
 
-typedef uint32                       TInstanceDataOffset;
-
 const TParticleId gInvalidId           = -1;
 const float gInfinity                  = std::numeric_limits<float>::infinity();
 
@@ -97,7 +95,6 @@ template<typename T> using TSmartArray = TDynArray<_smart_ptr<T>>;
 
 struct TParticleGroupId
 {
-public:
 	TParticleGroupId() {}
 	TParticleGroupId(uint32 i) { id = i; }
 	friend bool                       operator<(const TParticleGroupId a, const TParticleGroupId b)  { return a.id < b.id; }

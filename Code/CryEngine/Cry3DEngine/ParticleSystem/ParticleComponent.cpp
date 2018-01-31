@@ -197,11 +197,11 @@ void CParticleComponent::SetNodePosition(Vec2 position)
 	m_nodePosition = position;
 }
 
-TInstanceDataOffset CParticleComponent::AddInstanceData(size_t size)
+uint CParticleComponent::AddInstanceData(uint size)
 {
 	CRY_PFX2_ASSERT(size > 0);        // instance data of 0 bytes makes no sense
 	SetChanged();
-	TInstanceDataOffset offset = TInstanceDataOffset(m_componentParams.m_instanceDataStride);
+	uint offset = m_componentParams.m_instanceDataStride;
 	m_componentParams.m_instanceDataStride += size;
 	return offset;
 }

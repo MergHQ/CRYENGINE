@@ -3464,7 +3464,7 @@ void CArea::GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm
 			if (!m_bClosed && (n == 0 || n == m_areaPoints.size() - 1))
 				point.vNorm = Vec3(m_areaSegments[n]->normal);
 			else
-				point.vNorm = Vec3(m_areaSegments[n]->normal + m_areaSegments[PrevPoint(n)]->normal).GetNormalizedFast();
+				point.vNorm = Vec3(m_areaSegments[n]->normal + m_areaSegments[PrevPoint(n)]->normal).GetNormalized();
 		};
 		auto SetSegmentPoint = [=](PosNorm& point, int n, float th, float tv)
 		{
