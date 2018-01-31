@@ -115,7 +115,7 @@ SamplerState smpAux : register(s0);
 float4
 AuxGeomTexturePS( SAuxGeomApp2VS IN ) : SV_Target0
 {
-  float4 col = GetInputColor(IN.col);
+  float4 col = IN.col;
   float4 tex = GetTexture2D(texAux, smpAux, IN.tex.xy);
   return col.rgba * tex.rgba;
 }
