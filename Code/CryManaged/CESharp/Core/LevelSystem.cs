@@ -109,6 +109,7 @@ namespace CryEngine
 			AddListener();
 
 			Engine.EndReload += AddListener;
+			Engine.StartReload += RemoveListener;
 		}
 
 		private void AddListener()
@@ -116,16 +117,21 @@ namespace CryEngine
 			Engine.GameFramework?.GetILevelSystem()?.AddListener(this);
 		}
 
-		/// <summary>
-		/// Disposes of this instance.
-		/// </summary>
-		public override void Dispose()
+		private void RemoveListener()
 		{
 			var levelSystem = Engine.GameFramework?.GetILevelSystem();
 			if(levelSystem != null)
 			{
 				levelSystem.RemoveListener(this);
 			}
+		}
+
+		/// <summary>
+		/// Disposes of this instance.
+		/// </summary>
+		public override void Dispose()
+		{
+			RemoveListener();
 
 			base.Dispose();
 		}

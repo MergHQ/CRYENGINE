@@ -80,6 +80,7 @@ namespace CryEngine
 				Input.Initialize();
 				Renderer.Instance = new Renderer();
 				Mouse.Instance = new Mouse();
+				AudioManager.Initialize();
 			}
 
 			CryEngine.GameFramework.Instance = new GameFramework();
