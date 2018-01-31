@@ -58,7 +58,7 @@ public:
 	virtual void GetEmitOffset(const SUpdateContext& context, TParticleId parentId, Vec3& offset) {}
 
 	// Particle initialization
-	virtual void SpawnParticles(const SUpdateContext& context) {}
+	virtual void SpawnParticles(const SUpdateContext& context, TDynArray<SSpawnEntry>& spawnEntries) {}
 
 	virtual void InitParticles(const SUpdateContext& context) {}
 
@@ -104,7 +104,7 @@ struct SFeatureDispatchers
 	TFeatureDispatcher<CParticleComponentRuntime*> MainPreUpdate { &CParticleFeature::MainPreUpdate };
 
 	TFeatureDispatcher<const SUpdateContext&, SUpdateRange> InitSubInstances { &CParticleFeature::InitSubInstances };
-	TFeatureDispatcher<const SUpdateContext&> SpawnParticles { &CParticleFeature::SpawnParticles };
+	TFeatureDispatcher<const SUpdateContext&, TDynArray<SSpawnEntry>&> SpawnParticles { &CParticleFeature::SpawnParticles };
 
 	TFeatureDispatcher<const SUpdateContext&, TConstArray<float>, TVarArray<float>> GetSpatialExtents { &CParticleFeature::GetSpatialExtents };
 	TFeatureDispatcher<const SUpdateContext&, TParticleId, Vec3&> GetEmitOffset { &CParticleFeature::GetEmitOffset };

@@ -148,6 +148,15 @@ struct SComponentParams
 	void GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 };
 
+template<typename T> struct TDataOffset
+{
+	TDataOffset(uint offset = 0) : m_offset(offset) {}
+	operator uint() const { return m_offset; }
+
+private:
+	uint m_offset;
+};
+
 class CParticleComponent : public IParticleComponent, public SFeatureDispatchers
 {
 public:
@@ -187,7 +196,7 @@ public:
 	CParticleEffect*                      GetEffect() const                     { return m_pEffect; }
 	void                                  SetEffect(CParticleEffect* pEffect)   { m_pEffect = pEffect; }
 
-	TInstanceDataOffset                   AddInstanceData(size_t size);
+	template<typename T> TDataOffset<T>   AddInstanceData()                     { return AddInstanceData(sizeof(T)); }
 	void                                  AddParticleData(EParticleDataType type);
 
 	bool                                  UsesGPU() const                       { return m_componentParams.m_usesGPU; }
@@ -210,7 +219,10 @@ public:
 	bool                    CanMakeRuntime(CParticleEmitter* pEmitter) const;
 
 private:
+	uint AddInstanceData(uint size);
+
 	friend class CParticleEffect;
+
 	string                                   m_name;
 	CParticleEffect*                         m_pEffect;
 	uint                                     m_componentId;

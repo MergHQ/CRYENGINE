@@ -49,7 +49,7 @@ CImpl::CImpl()
 	string libraryPath = CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
 	libraryPath += s_szImplFolderName;
 
-	m_name = "SDL Mixer 2.0.1 (";
+	m_name = "SDL Mixer 2.0.2 (";
 	m_name += szAssetDirectory + libraryPath + ")";
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 

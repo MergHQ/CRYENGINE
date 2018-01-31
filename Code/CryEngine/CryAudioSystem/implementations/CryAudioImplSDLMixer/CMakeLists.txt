@@ -41,10 +41,11 @@ if(AUDIO_SDL_MIXER)
 		timidity
 		native_midi
 		flac_static
+		libogg_static
 		libmikmod_static
 		libvorbis_static
 		libvorbisfile
-	)
+		)
 
 	if(LINUX OR ANDROID)
 		target_link_libraries(${THIS_PROJECT} PRIVATE libmodplug_static)

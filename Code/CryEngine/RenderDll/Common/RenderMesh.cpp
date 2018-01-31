@@ -3906,6 +3906,9 @@ void CRenderMesh::FreeSystemBuffers()
 
   FreeMeshData(m_pCachePos);
   m_pCachePos = NULL;
+
+  FreeMeshData(m_pCacheUVs);
+  m_pCacheUVs = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4098,12 +4101,21 @@ bool CRenderMesh::ClearStaleMemory(bool bAcquireLock, int threadId)
 
 		bKeepSystem = pRM->m_keepSysMesh;
 
-		if (!bKeepSystem && pRM->m_pCachePos)
-    {
-      FreeMeshData(pRM->m_pCachePos);
-      pRM->m_pCachePos = NULL;
-			cleared = true;
-    }
+		if (!bKeepSystem)
+		{
+			if (pRM->m_pCachePos)
+			{
+				FreeMeshData(pRM->m_pCachePos);
+				pRM->m_pCachePos = nullptr;
+				cleared = true;
+			}
+			if (pRM->m_pCacheUVs)
+			{
+				FreeMeshData(pRM->m_pCacheUVs);
+				pRM->m_pCacheUVs = nullptr;
+				cleared = true;
+			}
+		}
 
 		// In DX11 we cannot lock device buffers efficiently from the MT, 
 		// so we have to keep system copy. On UMA systems we can clear the buffer

@@ -35,6 +35,12 @@
 #include "Deprecated/DocGraphNodes/DocGraphSetNode.h"
 #include "Deprecated/DocGraphNodes/DocGraphSwitchNode.h"
 
+SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc2, EGraphExecutionFilter, "Graph Execution Filter")
+	SERIALIZATION_ENUM(Schematyc2::EGraphExecutionFilter::Always, "Always", "Always")
+	SERIALIZATION_ENUM(Schematyc2::EGraphExecutionFilter::DevModeOrLoggingEnabled, "DevModeOrLoggingEnabled", "Dev Mode Or Logging Enabled")
+	SERIALIZATION_ENUM(Schematyc2::EGraphExecutionFilter::DevModeOnly, "DevModeOnly", "Dev Mode Only")
+SERIALIZATION_ENUM_END()
+
 namespace Schematyc2
 {
 	namespace DocLogicGraphUtils
@@ -175,6 +181,7 @@ namespace Schematyc2
 	CDocLogicGraph::CDocLogicGraph(IScriptFile& file, const SGUID& guid, const SGUID& scopeGUID, const char* szName, EScriptGraphType type, const SGUID& contextGUID)
 		: CDocGraphBase(file, guid, scopeGUID, szName, type, contextGUID)
 		, m_accessor(EAccessor::Private)
+		, m_executionFilter(EGraphExecutionFilter::Always)
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -225,6 +232,7 @@ namespace Schematyc2
 				if((type == EScriptGraphType::Function) || (type == EScriptGraphType::Condition))
 				{
 					archive(m_accessor, "accessor", "Accessor");
+					archive(m_executionFilter, "executionFilter", "Execution Filter");
 				}
 				break;
 			}
@@ -490,6 +498,7 @@ namespace Schematyc2
 		if((type == EScriptGraphType::Function) || (type == EScriptGraphType::Condition))
 		{
 			archive(graph.m_accessor, "accessor", "Accessor");
+			archive(graph.m_executionFilter, "executionFilter", "Execution Filter");
 		}
 	}
 
@@ -818,3 +827,4 @@ namespace Schematyc2
 		domainContext.VisitDocGraphs(DocGraphConstVisitor::FromLambdaFunction(visitGraph), EDomainScope::Derived);
 	}
 }
+

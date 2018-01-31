@@ -11,6 +11,7 @@
 #include <CrySchematyc2/Deprecated/IGlobalFunction.h>
 #include <CrySchematyc2/Env/IEnvRegistry.h>
 #include <CrySchematyc2/Utils/StringUtils.h>
+#include "CVars.h"
 
 SERIALIZATION_ENUM_BEGIN_NESTED2(Schematyc2, CLibClassProperties, EInternalOverridePolicy, "Schematyc Library Class Property Override Policy")
 	SERIALIZATION_ENUM(Schematyc2::CLibClassProperties::EInternalOverridePolicy::UseDefault, "UseDefault", "Default")
@@ -756,6 +757,7 @@ namespace Schematyc2
 		, m_size(0)
 		, m_lastOpPos(INVALID_INDEX)
 		, m_pBegin(NULL)
+		, m_executionFilter(EGraphExecutionFilter::Always)
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1015,6 +1017,32 @@ namespace Schematyc2
 			m_actionMemberFunctionTable.push_back(pActionMemberFunction);
 			return m_actionMemberFunctionTable.size() - 1;
 		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CLibFunction::SetGraphExecutionFilter(EGraphExecutionFilter filter)
+	{
+		m_executionFilter = filter;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	bool CLibFunction::IsGraphExecutionAllowed() const
+	{
+		switch (m_executionFilter)
+		{
+		case EGraphExecutionFilter::Always:
+			return true;
+
+		case EGraphExecutionFilter::DevModeOrLoggingEnabled:
+			return gEnv->pSystem->IsDevMode() || CVars::sc_LogToFile != 0;
+
+		case EGraphExecutionFilter::DevModeOnly:
+			return gEnv->pSystem->IsDevMode();
+
+		default:
+			CRY_ASSERT_MESSAGE(false, "Wrong execution filter value in schematyc function.");
+		}
+		return false;
 	}
 
 	//////////////////////////////////////////////////////////////////////////

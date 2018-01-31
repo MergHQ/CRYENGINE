@@ -478,7 +478,7 @@ private:
 		// A fallback solution, should never happen.
 		if (files.empty())
 		{
-			CRY_ASSERT_MESSAGE(0, "Cryasset has no data files: %s", cryasset.c_str());
+			iLog->LogError("Cryasset has no data files: %s", cryasset.c_str());
 			files.push_back(PathUtil::GetFile(srcFile));
 		}
 

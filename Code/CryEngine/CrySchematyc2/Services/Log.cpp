@@ -555,6 +555,12 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	bool CLog::IsLoggingEnabled() const
+	{
+		return CVars::sc_LogToFile != nullptr && CVars::sc_LogToFile->GetIVal() != 0;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	CLog::SSettings::SSettings(const SettingsModifiedCallback& _modifiedCallback)
 		: modifiedCallback(_modifiedCallback)
 	{}

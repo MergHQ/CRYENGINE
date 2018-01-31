@@ -201,7 +201,7 @@ endif()
 endfunction(try_to_enable_portaudio)
 
 function(try_to_enable_sdl_mixer)
-if (ANDROID OR WIN32 OR WIN64)
+if (LINUX OR ANDROID OR WIN32 OR WIN64)
 	# We build SDL_mixer ourselves for these platforms.
 	option(AUDIO_SDL_MIXER "SDL_mixer support" ON)
 	

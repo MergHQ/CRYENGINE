@@ -614,9 +614,10 @@ void CProjectManager::RegenerateCSharpSolution(const char* szDirectory) const
 		}
 	}
 
-	string csProjName = "Game.csproj";
+	string csProjName = "Game";
+	string csProjFilename = csProjName + ".csproj";
 
-	string projectFilePath = PathUtil::Make(m_project.rootDirectory, csProjName.c_str());
+	string projectFilePath = PathUtil::Make(m_project.rootDirectory, csProjFilename.c_str());
 	CCryFile projectFile(projectFilePath.c_str(), "wb", ICryPak::FLAGS_NO_LOWCASE);
 	if (projectFile.GetHandle() != nullptr)
 	{
@@ -667,22 +668,24 @@ void CProjectManager::RegenerateCSharpSolution(const char* szDirectory) const
 		CCryFile solutionFile(solutionFilePath.c_str(), "wb", ICryPak::FLAGS_NO_LOWCASE);
 		if (solutionFile.GetHandle() != nullptr)
 		{
-			string solutionFileContents = LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedSolutionTemplate.sln.txt", [this, csProjName](const char* szAlias) -> string
+			string solutionFileContents = LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedSolutionTemplate.sln.txt", [this, csProjFilename, csProjName](const char* szAlias) -> string
 			{
 				if (!strcmp(szAlias, "project_name"))
 				{
-					return m_project.name;
+					return csProjName;
 				}
 				else  if (!strcmp(szAlias, "csproject_name"))
 				{
-					return csProjName;
+					return csProjFilename;
 				}
 				else if (!strcmp(szAlias, "csproject_guid"))
 				{
-					char buff[40];
-					m_project.guid.ToString(buff);
-
-					return buff;
+					return m_project.guid.ToString().MakeUpper();
+				}
+				else if (!strcmp(szAlias, "solution_guid"))
+				{
+					// Normally the solution guid would be a GUID that is deterministic but unique to the build tree.
+					return "0C7CC5CD-410D-443B-8223-108F849EAA5C";
 				}
 
 				CRY_ASSERT_MESSAGE(false, "Unhandled alias!");

@@ -466,13 +466,10 @@ void CParticleEmitter::SetLocation(const QuatTS& loc)
 void CParticleEmitter::EmitParticle(const EmitParticleData* pData)
 {
 	// #PFX2_TODO : handle EmitParticleData (create new instances)
-	SSpawnEntry spawn = {1, m_parentContainer.GetLastParticleId()};
 	for (auto pRuntime: m_componentRuntimes)
 	{
 		if (!pRuntime->IsChild())
-		{
-			pRuntime->AddSpawnEntry(spawn);
-		}
+			pRuntime->EmitParticle();
 	}
 }
 

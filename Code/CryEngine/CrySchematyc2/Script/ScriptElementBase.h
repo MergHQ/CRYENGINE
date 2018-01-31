@@ -7,6 +7,7 @@
 #include <CrySchematyc2/Services/ILog.h>
 
 #include "Script/ScriptExtensionMap.h"
+#include <CrySchematyc2/BasicTypes.h>
 
 namespace Schematyc2
 {
@@ -57,6 +58,11 @@ namespace Schematyc2
 		virtual const IScriptFile& GetFile() const override
 		{
 			return m_file;
+		}
+
+		virtual EGraphExecutionFilter GetExecutionFilter() const override
+		{
+			return EGraphExecutionFilter::Always;
 		}
 
 		virtual void SetElementFlags(EScriptElementFlags flags) override

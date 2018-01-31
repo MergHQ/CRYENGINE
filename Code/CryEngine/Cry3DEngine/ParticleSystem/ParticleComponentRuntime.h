@@ -32,7 +32,7 @@ public:
 	~CParticleComponentRuntime();
 
 	CParticleComponentRuntime*    GetCpuRuntime()      { return !m_pGpuRuntime ? this : nullptr; }
-	gpu_pfx2::IParticleComponentRuntime* GetGpuRuntime()      { return m_pGpuRuntime; }
+	gpu_pfx2::IParticleComponentRuntime* GetGpuRuntime() { return m_pGpuRuntime; }
 	CParticleComponent*           GetComponent() const { return m_pComponent; }
 	bool                          IsValidForComponent() const;
 	const AABB&                   GetBounds() const    { return m_pGpuRuntime ? m_pGpuRuntime->GetBounds() : m_bounds; }
@@ -63,8 +63,16 @@ public:
 	const SInstance&          GetInstance(uint idx) const   { return m_subInstances[idx]; }
 	SInstance&                GetInstance(uint idx)         { return m_subInstances[idx]; }
 	TParticleId               GetParentId(uint idx) const   { return GetInstance(idx).m_parentId; }
-	template<typename T> T*   GetSubInstanceData(uint instanceId, TInstanceDataOffset offset);
-	void                      AddSpawnEntry(const SSpawnEntry& entry);
+	template<typename T> T&   GetInstanceData(uint idx, TDataOffset<T> offset)
+	{
+		const auto stride = GetComponentParams().m_instanceDataStride;
+		CRY_PFX2_ASSERT(offset + sizeof(T) <= stride);
+		CRY_PFX2_ASSERT(idx < m_subInstances.size());
+		byte* addr = m_subInstanceData.data() + stride * idx + offset;
+		return *reinterpret_cast<T*>(addr);
+	}
+	void                      GetEmitLocations(TVarArray<QuatTS> locations) const;
+	void                      EmitParticle();
 	SChaosKey                 MakeSeed(TParticleId id = 0) const;
 	SChaosKey                 MakeParentSeed(TParticleId id = 0) const;
 
@@ -87,7 +95,6 @@ private:
 	CParticleContainer                              m_container;
 	TDynArray<SInstance>                            m_subInstances;
 	TDynArray<byte>                                 m_subInstanceData;
-	TDynArray<SSpawnEntry>                          m_spawnEntries;
 	AABB                                            m_bounds;
 	SParticleStats::ParticleStats                   m_particleStats;
 	bool                                            m_alive;
@@ -96,6 +103,4 @@ private:
 };
 
 }
-
-#include "ParticleComponentImpl.h"
 
