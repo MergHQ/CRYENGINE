@@ -31,7 +31,7 @@ namespace CryEngine.Compilation
 			compileException = null;
 			try
 			{
-				assembly = CompileSourceFiles(CodeDomProvider.CreateProvider("CSharp"), assemblyPath, sourceFiles, managedPlugins);
+				assembly = CompileSourceFiles("CSharp", assemblyPath, sourceFiles, managedPlugins);
 			}
 			catch(CompilationFailedException ex)
 			{
@@ -44,21 +44,27 @@ namespace CryEngine.Compilation
 			return assembly;
 		}
 
-		public static Assembly CompileSourceFiles(CodeDomProvider provider, string assemblyPath, string[] sourceFiles, string[] managedPlugins)
+		public static Assembly CompileSourceFiles(string language, string assemblyPath, string[] sourceFiles, string[] managedPlugins)
 		{
-			using(provider)
+			if(!CodeDomProvider.IsDefinedLanguage(language))
+			{
+				throw new NotSupportedException(string.Format("Unable to compile source files because the language \"{0}\" is not supported!", language));
+			}
+
+			using(var provider = CodeDomProvider.CreateProvider(language))
 			{
 				var compilerParameters = new CompilerParameters();
-
 				compilerParameters.GenerateExecutable = false;
-
-				// Necessary for stack trace line numbers etc
-				compilerParameters.IncludeDebugInformation = true;
-				compilerParameters.GenerateInMemory = false;
 
 #if RELEASE
 				compilerParameters.GenerateInMemory = true;
 				compilerParameters.IncludeDebugInformation = false;
+				compilerParameters.CompilerOptions = "/optimize";
+#else
+				// Necessary for stack trace line numbers etc. IncludeDebugInformation can be false as long as /debug is in the CompilerOptions
+				compilerParameters.IncludeDebugInformation = false;
+				compilerParameters.CompilerOptions = "/optimize /debug:portable";
+				compilerParameters.GenerateInMemory = false;
 #endif
 
 				if(!compilerParameters.GenerateInMemory)

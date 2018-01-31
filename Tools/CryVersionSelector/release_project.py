@@ -580,6 +580,26 @@ def copy_project_plugins(project, project_path, export_path, config_path, config
         else:
             print("Failed to copy plugin file '{}' from {}!".format(path, src_file))
 
+    # Also copy the assembly generated from C# assets
+    asset_assembly = os.path.join("bin", "CRYENGINE.CSharp.dll")
+    src_file = os.path.join(project_path, asset_assembly)
+    if os.path.isfile(src_file):
+        dst_file = os.path.join(export_path, asset_assembly)
+        os.makedirs(os.path.dirname(dst_file), exist_ok=True)
+        shutil.copyfile(src_file, dst_file)
+
+        if include_symbols:
+            src_file = "{}.pdb".format(os.path.splitext(src_file)[0])
+            if os.path.isfile(src_file):
+                dst_file = "{}.pdb".format(os.path.splitext(dst_file)[0])
+                shutil.copyfile(src_file, dst_file)
+            else:
+                src_file = "{}.dll.mdb".format(os.path.splitext(src_file)[0])
+                if os.path.isfile(src_file):
+                    dst_file = "{}.dll.mdb".format(os.path.splitext(dst_file)[0])
+                    shutil.copyfile(src_file, dst_file)
+
+
 def copy_libs(project, project_path, export_path, include_symbols):
     """
     Searches the bin folder for files that fit the name of the shared libs,
