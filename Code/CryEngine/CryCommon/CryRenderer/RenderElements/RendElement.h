@@ -25,7 +25,6 @@ enum EDataType
 	eDATA_SkyZone,
 	eDATA_Mesh,
 	eDATA_LensOptics,
-	eDATA_FarTreeSprites,
 	eDATA_OcclusionQuery,
 	eDATA_Particle,
 	eDATA_HDRSky,

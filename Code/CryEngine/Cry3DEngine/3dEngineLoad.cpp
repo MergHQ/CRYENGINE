@@ -114,11 +114,6 @@ void C3DEngine::LoadDefaultAssets()
 			m_pREHDRSky = (CREHDRSky*)GetRenderer()->EF_CreateRE(eDATA_HDRSky);
 		}
 
-		if (!m_pFarTreeSprites)
-		{
-			m_pFarTreeSprites = GetRenderer()->EF_LoadShader("FarTreeSprites", 0);
-		}
-
 		if (!m_ptexIconLowMemoryUsage)
 		{
 			m_ptexIconLowMemoryUsage = GetRenderer()->EF_LoadTexture("%ENGINE%/EngineAssets/Icons/LowMemoryUsage.tif", FT_DONT_STREAM);

@@ -232,7 +232,6 @@ void CD3D9Renderer::RT_PrecacheDefaultShaders()
 	m_cEF.s_shDeferredShading->mfPrecache(cmb, true, nullptr);
 	m_cEF.s_shPostDepthOfField->mfPrecache(cmb, true, nullptr);
 	m_cEF.s_ShaderDXTCompress->mfPrecache(cmb, true, nullptr);
-	m_cEF.s_ShaderTreeSprites->mfPrecache(cmb, true, nullptr);
 	m_cEF.s_ShaderLensOptics->mfPrecache(cmb, true, nullptr);
 	m_cEF.s_ShaderSoftOcclusionQuery->mfPrecache(cmb, true, nullptr);
 	m_cEF.s_shPostMotionBlur->mfPrecache(cmb, true, nullptr);
