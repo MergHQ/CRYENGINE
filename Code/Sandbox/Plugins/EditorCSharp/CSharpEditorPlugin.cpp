@@ -39,6 +39,10 @@ CCSharpEditorPlugin::CCSharpEditorPlugin()
 		OnCompileFinished(gEnv->pMonoRuntime->GetLatestCompileMessage());
 	}
 
+	// Regenerate the plugins in case the files were changed when the Sandbox was closed
+	RegenerateSolution();
+	ReloadPlugins();
+
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CCSharpEditorPlugin");
 }
 
@@ -56,15 +60,36 @@ CCSharpEditorPlugin::~CCSharpEditorPlugin()
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 }
 
-void CCSharpEditorPlugin::OnFileChange(const char* sFilename, EChangeType eType)
+void CCSharpEditorPlugin::OnFileChange(const char* szFilename, EChangeType type)
 {
-	if (m_sandboxInFocus)
+	switch (type)
 	{
-		UpdateSourceFiles();
-	}
-	else
+	case IFileChangeListener::eChangeType_Created:
+	case IFileChangeListener::eChangeType_RenamedNewName:
+	case IFileChangeListener::eChangeType_Modified:
 	{
+		// If a file was deleted and created again remove it from the changed list. It's probably only modified.
+		stl::find_and_erase(m_changedFiles, szFilename);
 		m_reloadPlugins = true;
+		break;
+	}
+
+	case IFileChangeListener::eChangeType_RenamedOldName:
+	case IFileChangeListener::eChangeType_Deleted:
+	{
+		m_changedFiles.emplace_back(szFilename);
+		m_reloadPlugins = true;
+		break;
+	}
+	
+	case IFileChangeListener::eChangeType_Unknown:
+	default:
+		break;
+	}
+
+	if (m_isSandboxInFocus)
+	{
+		UpdatePluginsAndSolution();
 	}
 }
 
@@ -176,29 +201,42 @@ void CCSharpEditorPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UIN
 		if (wparam == 0)
 		{
 			// Lost focus
-			m_sandboxInFocus = false;
+			m_isSandboxInFocus = false;
 		}
 		else
 		{
 			// Got focus back
-			m_sandboxInFocus = true;
-
-			if (m_reloadPlugins)
-			{
-				UpdateSourceFiles();
-				m_reloadPlugins = false;
-			}
+			m_isSandboxInFocus = true;
+			UpdatePluginsAndSolution();
 		}
 	}
 }
 
-void CCSharpEditorPlugin::UpdateSourceFiles() const
+void CCSharpEditorPlugin::UpdatePluginsAndSolution()
+{
+	if (!m_changedFiles.empty())
+	{
+		RegenerateSolution();
+		m_changedFiles.clear();
+	}
+
+	if (m_reloadPlugins)
+	{
+		ReloadPlugins();
+		m_reloadPlugins = false;
+	}
+}
+
+void CCSharpEditorPlugin::RegenerateSolution() const
 {
 	if (IProjectManager* pProjectManager = gEnv->pSystem->GetIProjectManager())
 	{
 		pProjectManager->RegenerateCSharpSolution(pProjectManager->GetCurrentAssetDirectoryRelative());
 	}
+}
 
+void CCSharpEditorPlugin::ReloadPlugins() const
+{
 	if (gEnv->pMonoRuntime != nullptr)
 	{
 		gEnv->pMonoRuntime->ReloadPluginDomain();

@@ -6,6 +6,7 @@
 #include <CryMono/IMonoRuntime.h>
 #include <CrySchematyc/CoreAPI.h>
 #include <CryCore/Containers/CryListenerSet.h>
+#include <vector>
 
 #include <IPlugin.h>
 
@@ -69,12 +70,18 @@ public:
 private:
 	HANDLE                 m_textEditorHandle;
 	string                 m_createdTextEditor;
+	std::vector<string>    m_changedFiles;
 	bool                   m_reloadPlugins = false;
-	bool                   m_sandboxInFocus = true;
+	bool                   m_isSandboxInFocus = true;
 	string                 m_compileMessage;
 	CSharpMessageListeners m_messageListeners;
 
-	void UpdateSourceFiles() const;
+	// Updates the plugins and solutions if required.
+	void UpdatePluginsAndSolution();
+	// Reloads the managed plugings.
+	void ReloadPlugins() const;
+	// Regenerates the .sln and .csproj files of the Sandbox C# files.
+	void RegenerateSolution() const;
 	// Checks if m_textEditorHandle refers to a valid application, and focuses the window if it does.
 	bool HasExistingTextEditor() const;
 	// Opens the specified file in the C# solution based. Returns false if the file couldn't be opened.
