@@ -200,6 +200,7 @@ namespace CryEngine
 			AddListener();
 
 			Engine.EndReload += AddListener;
+			Engine.StartReload += RemoveListener;
 		}
 
 		private void AddListener()
@@ -207,12 +208,17 @@ namespace CryEngine
 			Engine.GameFramework.RegisterListener(this, "MonoGameFramework", EFRAMEWORKLISTENERPRIORITY.FRAMEWORKLISTENERPRIORITY_DEFAULT);
 		}
 
+		private void RemoveListener()
+		{
+			Engine.GameFramework?.UnregisterListener(this);
+		}
+
 		/// <summary>
 		/// Disposes of this instance.
 		/// </summary>
 		public override void Dispose()
 		{
-			Engine.GameFramework?.UnregisterListener(this);
+			RemoveListener();
 			_updateReceivers.Clear();
 			_renderReceivers.Clear();
 

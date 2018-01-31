@@ -23,18 +23,32 @@ namespace CryEngine
 		private static AudioRequestInfo _info;
 		private static bool _isDisposed;
 
-		static AudioManager()
+		internal static void Initialize()
 		{
-			_requestListener = OnAudioEvent;
-
-			//bind listener to c++
-			IntPtr fnPtr = System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(_requestListener);
-			NativeAudioSystem.AddAudioRequestListener(fnPtr);
+			AddListener();
+			Engine.StartReload += RemoveListener;
+			Engine.EndReload += AddListener;
 		}
 
 		~AudioManager()
 		{
 			Dispose(false);
+		}
+
+		private static void AddListener()
+		{
+			// Bind listener to c++
+			_requestListener = OnAudioEvent;
+			IntPtr fnPtr = System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(_requestListener);
+			NativeAudioSystem.AddAudioRequestListener(fnPtr);
+		}
+
+		private static void RemoveListener()
+		{
+			// Remove listener from c++
+			IntPtr fnPtr = System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(_requestListener);
+			NativeAudioSystem.RemoveAudioRequestListener(fnPtr);
+			_requestListener = null;
 		}
 
 		private static void OnAudioEvent(IntPtr requestInfo)
@@ -44,9 +58,9 @@ namespace CryEngine
 			uint ctrlId = _info.ControlId;
 			var requestResult = _info.RequestResult;
 			var enumFlagsType = _info.SystemEvents;
-			
+
 			AudioStateType audioState = AudioStateType.Unknown;
-			switch ((ESystemEvents)enumFlagsType)
+			switch((ESystemEvents)enumFlagsType)
 			{
 				case ESystemEvents.TriggerExecuted:
 					{
@@ -60,13 +74,16 @@ namespace CryEngine
 					}
 			}
 			string triggerName = GetTriggerName(ctrlId);
-			Audio.ManagedAudioStateListenerDelegate audioStateListenerDelegate = AudioManager.GetAudioStateListener(triggerName);
-			audioStateListenerDelegate?.Invoke(audioState, triggerName);
+			if (triggerName != null)
+			{
+				Audio.ManagedAudioStateListenerDelegate audioStateListenerDelegate = AudioManager.GetAudioStateListener(triggerName);
+				audioStateListenerDelegate?.Invoke(audioState, triggerName);
+			}
 		}
 
 		private void Dispose(bool isDisposing)
 		{
-			if (_isDisposed) return;
+			if(_isDisposed) return;
 
 			if(isDisposing)
 			{
@@ -79,11 +96,8 @@ namespace CryEngine
 				_triggerByName.Clear();
 				_triggerByName = null;
 			}
-			
-			//remove listener from c++
-			IntPtr fnPtr = System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(_requestListener);
-			NativeAudioSystem.RemoveAudioRequestListener(fnPtr);
-			_requestListener = null;
+
+			RemoveListener();
 
 			_isDisposed = true;
 		}
@@ -101,7 +115,7 @@ namespace CryEngine
 			if(!_triggerByName.TryGetValue(triggerName, out triggerId))
 			{
 				triggerId = NativeAudioSystem.GetAudioTriggerId(triggerName);
-				if (ret=(triggerId != Audio.InvalidControlId))
+				if(ret = (triggerId != Audio.InvalidControlId))
 				{
 					_triggerByName[triggerName] = triggerId;
 					_indexTriggerIdToName[triggerId] = triggerName;
@@ -124,11 +138,11 @@ namespace CryEngine
 		{
 			bool ret = false;
 			uint triggerId = Audio.InvalidControlId;
-			if (_triggerByName.TryGetValue(triggerName, out triggerId))
+			if(_triggerByName.TryGetValue(triggerName, out triggerId))
 			{
 				NativeAudioSystem.StopTrigger(triggerId, false);
 				ret = (triggerId != Audio.InvalidControlId);
-				
+
 				//update entries
 				_triggerByName.Remove(triggerName);
 				_indexTriggerIdToName.Remove(triggerId);
@@ -180,7 +194,7 @@ namespace CryEngine
 		public static bool AddAudioStateListener(string triggerName, Audio.ManagedAudioStateListenerDelegate requestListener)
 		{
 			bool ret = false;
-			if (!_requestListenersDelegates.ContainsKey(triggerName))
+			if(!_requestListenersDelegates.ContainsKey(triggerName))
 			{
 				_requestListenersDelegates.Add(triggerName, requestListener);
 				ret = true;
@@ -196,7 +210,7 @@ namespace CryEngine
 		public static bool RemoveAudioStateListener(string triggerName)
 		{
 			bool ret = false;
-			if (_requestListenersDelegates.ContainsKey(triggerName))
+			if(_requestListenersDelegates.ContainsKey(triggerName))
 			{
 				_requestListenersDelegates.Remove(triggerName);
 				ret = true;
