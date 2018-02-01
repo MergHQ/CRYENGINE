@@ -408,6 +408,32 @@ class NavigationSystem : public INavigationSystem
 	friend class CMNMUpdatesManager;
 
 public:
+	// BAI navigation file version history
+	// Changes in version 12
+	// - Saving Markups entity guids and names
+	// Changes in version 11
+	// - Fixed saving/loading markups when its' container is dynamic
+	// Changes in version 10
+	// - Navigation markup volumes and markup volumes data are stored
+	// Changes in version 9
+	//  - Navigation volumes storage is changed:
+	//    * all used navigation volumes are saved (including exclusion volumes, which were missing before);
+	//    * navigation area names saved together with volume data;
+	//    * volumes stored only onces, instead of storing them together with each mesh.
+	// Changes in version 8
+	//  - struct MNM::Tile::STriangle layout is changed - now it has triangle flags
+
+	enum eBAINavigationFileVersion : uint16
+	{
+		INCOMPATIBLE = 10,
+		FIRST_COMPATIBLE,
+		ENTITY_MARKUP_GUIDS,
+
+		// Add new versions before NEXT
+		NEXT,
+		CURRENT = NEXT - 1,
+	};
+
 	NavigationSystem(const char* configName);
 	~NavigationSystem();
 
@@ -526,6 +552,9 @@ public:
 	virtual void                             SetAreaId(const char* shapeName, NavigationVolumeID id) override;
 	virtual void                             UpdateAreaNameForId(const NavigationVolumeID id, const char* newShapeName) override;
 	virtual void                             RemoveLoadedMeshesWithoutRegisteredAreas() override;
+
+	virtual bool                             RegisterEntityMarkups(const IEntity& owningEntity, const char** shapeNamesArray, const size_t count, NavigationVolumeID* pOutIdsArray) override;
+	virtual void                             UnregisterEntityMarkups(const IEntity& owningEntity) override;
 
 	virtual void                             StartWorldMonitoring() override;
 	virtual void                             StopWorldMonitoring() override;

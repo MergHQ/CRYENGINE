@@ -217,6 +217,9 @@ struct INavigationSystem
 	//! Remove navigation meshes and volumes which don't have corresponding registered Navigation Areas. This may happen in editor, when the exported level data is older that the saved level.
 	virtual void               RemoveLoadedMeshesWithoutRegisteredAreas() = 0;
 
+	virtual bool               RegisterEntityMarkups(const IEntity& owningEntity, const char** shapeNamesArray, const size_t count, NavigationVolumeID* pOutIdsArray) = 0;
+	virtual void               UnregisterEntityMarkups(const IEntity& owningEntity) = 0;
+
 	virtual void               StartWorldMonitoring() = 0;
 	virtual void               StopWorldMonitoring() = 0;
 
