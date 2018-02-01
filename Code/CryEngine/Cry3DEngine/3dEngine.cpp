@@ -427,6 +427,8 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_pLevelStatObjTable = NULL;
 	m_pLevelMaterialsTable = NULL;
 	m_bLevelFilesEndian = false;
+
+	ClearPrecacheInfo();
 }
 
 //////////////////////////////////////////////////////////////////////

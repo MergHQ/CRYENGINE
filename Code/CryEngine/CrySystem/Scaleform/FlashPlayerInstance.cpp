@@ -907,7 +907,7 @@ public:
 		, m_capture(capture)
 	{
 		assert(m_pRenderer);
-		IF(m_capture, 0)
+		IF (m_capture, 0)
 		{
 			GRenderer::Stats stats;
 			m_pRenderer->GetRenderStats(&stats, false);
@@ -918,7 +918,7 @@ public:
 
 	~CCaptureDrawStats()
 	{
-		IF(m_capture, 0)
+		IF (m_capture, 0)
 		{
 			GRenderer::Stats stats;
 			m_pRenderer->GetRenderStats(&stats, false);
@@ -931,10 +931,10 @@ public:
 
 private:
 	IScaleformRecording* m_pRenderer;
-	SFlashProfilerData* m_pProfilerData;
-	uint32              m_drawCallsPrev;
-	uint32              m_triCountPrev;
-	bool                m_capture;
+	SFlashProfilerData*  m_pProfilerData;
+	uint32               m_drawCallsPrev;
+	uint32               m_triCountPrev;
+	bool                 m_capture;
 };
 
 		#define CAPTURE_DRAW_STATS_BEGIN \
@@ -944,20 +944,20 @@ private:
 		#define CAPTURE_DRAW_STATS_END \
 		  }
 
-		#define FREEZE_VAROBJ(defRet)                                     \
-		  IF(ms_sys_flash_info && SFlashProfilerData::DisplayFrozen(), 0) \
-		  return defRet;
+		#define FREEZE_VAROBJ(defRet)                                      \
+		  IF (ms_sys_flash_info && SFlashProfilerData::DisplayFrozen(), 0) \
+		    return defRet;
 
-		#define FLASH_PROFILE_FUNC_PRECOND(defRet, funcID)                                                                      \
-		  IF((funcID != eFncDisplay) && !IsFlashEnabled() || ms_sys_flash_info && m_pProfilerData &&                            \
-		     (m_pProfilerData->PreventFunctionExectution() || funcID != eFncDisplay && SFlashProfilerData::DisplayFrozen()), 0) \
-		  return defRet;
+		#define FLASH_PROFILE_FUNC_PRECOND(defRet, funcID)                                                                       \
+		  IF ((funcID != eFncDisplay) && !IsFlashEnabled() || ms_sys_flash_info && m_pProfilerData &&                            \
+		      (m_pProfilerData->PreventFunctionExectution() || funcID != eFncDisplay && SFlashProfilerData::DisplayFrozen()), 0) \
+		    return defRet;
 
 		#define FLASH_PROFILE_FUNC_BUILDPROFILER_BEGIN(numArgs)                \
 		  CFlashFunctionProfiler * pProfiler(0);                               \
 		  char memFlashProfiler[sizeof(CFlashFunctionProfiler)];               \
 		  char memFuncArgs[(numArgs > 0 ? numArgs : 1) * sizeof(SPODVariant)]; \
-		  IF(ms_sys_flash_info, 0)                                             \
+		  IF (ms_sys_flash_info, 0)                                            \
 		  {                                                                    \
 		    int numArgsInit(0);                                                \
 		    SPODVariant* pArg((SPODVariant*)memFuncArgs);
@@ -1087,8 +1087,8 @@ public:
 		while (true)
 		{
 			const uint32 curAccum = ms_deltaTicksAccum;
-			IF(curAccum == (uint32) CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&ms_deltaTicksAccum), (LONG) (curAccum + delta), (LONG) curAccum), 1)
-			break;
+			IF (curAccum == (uint32) CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&ms_deltaTicksAccum), (LONG) (curAccum + delta), (LONG) curAccum), 1)
+				break;
 		}
 		#else
 		ms_deltaTicksAccum += delta;
@@ -1105,8 +1105,8 @@ public:
 		while (true)
 		{
 			const uint32 curAccum = ms_deltaTicksAccum;
-			IF(curAccum == (uint32) CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&ms_deltaTicksAccum), 0, (LONG) curAccum), 1)
-			break;
+			IF (curAccum == (uint32) CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&ms_deltaTicksAccum), 0, (LONG) curAccum), 1)
+				break;
 		}
 		#else
 		ms_deltaTicksAccum = 0;
@@ -1188,8 +1188,8 @@ private:
 
 static CryCriticalSection s_displaySync;
 
-	#define SYNC_DISPLAY_BEGIN       \
-	  IF(s_displaySync.TryLock(), 1) \
+	#define SYNC_DISPLAY_BEGIN        \
+	  IF (s_displaySync.TryLock(), 1) \
 	  {
 
 	#define SYNC_DISPLAY_END  \
@@ -1343,6 +1343,7 @@ public:
 	virtual void                  VisitMembers(ObjectVisitor* pVisitor) const;
 	virtual bool                  DeleteMember(const char* pMemberName);
 	virtual bool                  Invoke(const char* pMethodName, const SFlashVarValue* pArgs, unsigned int numArgs, SFlashVarValue* pResult = 0);
+	virtual bool                  Invoke(const char* szMethodName, const IFlashVariableObject** pArgs, unsigned int numArgs, SFlashVarValue* pResult = 0);
 
 	virtual unsigned int          GetArraySize() const;
 	virtual bool                  SetArraySize(unsigned int size);
@@ -1621,6 +1622,49 @@ bool CFlashVariableObject::Invoke(const char* pMethodName, const SFlashVarValue*
 			for (unsigned int i(0); i < numArgs; ++i)
 				pTranslatedArgs[i].~GFxValue();
 		}
+	}
+	return res;
+}
+
+bool CFlashVariableObject::Invoke(const char* szMethodName, const IFlashVariableObject** pArgs, unsigned int numArgs, SFlashVarValue* pResult)
+{
+	FLASH_PROFILER_LIGHT;
+
+	SYNC_THREADS;
+
+	SET_LOG_CONTEXT(m_refFilePath);
+	m_retValRefHolder = GFxValue();
+	bool res(false);
+	if (m_value.IsObject() && pArgs)
+	{
+		assert(!pArgs || numArgs);
+		GFxValue* pTranslatedArgs(0);
+
+		if (pArgs && numArgs)
+		{
+			PREFAST_SUPPRESS_WARNING(6255)
+			pTranslatedArgs = (GFxValue*)alloca(numArgs * sizeof(GFxValue));
+			if (pTranslatedArgs)
+			{
+				for (unsigned int i(0); i < numArgs; ++i)
+				{
+					GFxValue inputObject = static_cast<const CFlashVariableObject*>(pArgs[i])->GetGFxValue();
+					new(&pTranslatedArgs[i])GFxValue(inputObject);
+				}
+			}
+		}
+
+		GFxValue retVal;
+		res = m_value.Invoke(szMethodName, &retVal, pTranslatedArgs, numArgs);
+		if (pResult)
+		{
+			if (retVal.IsString() || retVal.IsStringW())
+				m_retValRefHolder = retVal;
+			*pResult = ConvertValue(retVal);
+		}
+
+		for (unsigned int i(0); i < numArgs; ++i)
+			pTranslatedArgs[i].~GFxValue();
 	}
 	return res;
 }
@@ -2446,6 +2490,7 @@ int CFlashPlayer::ms_sys_flash_address_space_kb(DEFAULT_VA_SPACE_IN_KB);
 int CFlashPlayer::ms_sys_flash_allow_mesh_cache_reset(1);
 int CFlashPlayer::ms_sys_flash_reset_mesh_cache(0);
 int CFlashPlayer::ms_sys_flash_check_filemodtime(0);
+int CFlashPlayer::ms_sys_flash_mipmaps(0);
 
 CFlashPlayer::PlayerList CFlashPlayer::ms_playerList;
 IFlashLoadMovieHandler* CFlashPlayer::ms_pLoadMovieHandler(0);
@@ -2552,12 +2597,12 @@ void CFlashPlayer::Release()
 
 	LONG refCount(CryInterlockedDecrement(&m_refCount));
 	assert(refCount >= 0);
-	IF(refCount == 0, 0)
+	IF (refCount == 0, 0)
 	{
 	#if !defined(_RELEASE)
 		{
 			const int curRelaseGuardCount = m_releaseGuardCount;
-			IF(0 != CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&m_releaseGuardCount), (LONG) curRelaseGuardCount, (LONG) curRelaseGuardCount), 0)
+			IF (0 != CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&m_releaseGuardCount), (LONG) curRelaseGuardCount, (LONG) curRelaseGuardCount), 0)
 			{
 				SET_LOG_CONTEXT(m_filePath);
 				CryGFxLog::GetAccess().LogError("Releasing flash player object while in a guarded section (AS callbacks into C++ code, etc)! Enforce breaking into the debugger...");
@@ -2662,7 +2707,9 @@ void CFlashPlayer::InitCVars()
 	               "Cached resources with same filepath but different file modification time are treated as unique entities.");
 	#endif
 
-//	CScaleformRecording::InitCVars();
+	REGISTER_CVAR2("sys_flash_mipmaps", &ms_sys_flash_mipmaps, 0, 0, "Enables/disables mipmap support for flash ui icons");
+
+	//	CScaleformRecording::InitCVars();
 	#if defined(USE_GFX_VIDEO)
 	GFxVideoWrapper::InitCVars();
 	#endif
@@ -3190,7 +3237,7 @@ void CFlashPlayer::Advance(float deltaTime)
 	}
 }
 
-void CFlashPlayer::Render(bool stereo)
+void CFlashPlayer::Render(bool stereo, int textureId)
 {
 	//FLASH_PROFILER_LIGHT; // don't add profiling macro to this dispatch function (cost is neglectable and would be double counted if MT rendering is off), callback will measure real cost
 
@@ -3198,7 +3245,7 @@ void CFlashPlayer::Render(bool stereo)
 		return;
 
 	AddRef();
-	gEnv->pRenderer->FlashRender(this, stereo);
+	gEnv->pRenderer->FlashRender(this, stereo,textureId);
 }
 
 IScaleformPlayback* CFlashPlayer::GetPlayback()
@@ -3289,8 +3336,8 @@ void CFlashPlayer::RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool
 
 			if (finalPlayback)
 			{
-				IF(devLost, 0)
-				cmdBuf.DropResourceRefs();
+				IF (devLost, 0)
+					cmdBuf.DropResourceRefs();
 				cmdBuf.Reset(0);
 			}
 
@@ -3584,6 +3631,11 @@ void CFlashPlayer::SetImeFocus()
 	CSharedFlashPlayerResources::GetAccess().SetImeFocus(m_pMovieView, true);
 }
 
+bool CFlashPlayer::HitTest(float x, float y) const
+{
+	return m_pMovieView && m_pMovieView->HitTest(x, y, GFxMovieView::HitTest_ShapesNoInvisible);
+}
+
 void CFlashPlayer::SetVisible(bool visible)
 {
 	FLASH_PROFILER_LIGHT;
@@ -3629,8 +3681,8 @@ bool CFlashPlayer::SetOverrideTexture(const char* pResourceName, ITexture* pText
 		{
 			GImageInfoBase* pPrev = pimageRes->GetImageInfo();
 			GImageInfoBase* pimageInfo = resize
-				? new GImageInfoTextureXRender(pTexture, pPrev->GetWidth(), pPrev->GetHeight())
-				: new GImageInfoTextureXRender(pTexture);	
+			                             ? new GImageInfoTextureXRender(pTexture, pPrev->GetWidth(), pPrev->GetHeight())
+			                             : new GImageInfoTextureXRender(pTexture);
 			pimageRes->SetImageInfo(pimageInfo);
 			return true;
 		}
@@ -3931,6 +3983,12 @@ struct FunctionHandlerAdaptor : public GFxFunctionHandler
 
 		~ReturnValue()
 		{
+		}
+
+		void Set(const IFlashVariableObject* value)
+		{
+			assert(value);
+			m_value = GetGFxValue(value);
 		}
 
 		void Set(const SFlashVarValue& value, bool createManagedValue = true)
@@ -4262,7 +4320,7 @@ size_t CFlashPlayer::GetCommandBufferSize() const
 
 	#if defined(ENABLE_FLASH_INFO)
 
-#include <CryRenderer/IRenderAuxGeom.h>
+		#include <CryRenderer/IRenderAuxGeom.h>
 
 static void Draw2dLabel(float x, float y, float fontSize, const float* pColor, const char* pText)
 {
@@ -4552,7 +4610,7 @@ void CFlashPlayer::RenderFlashInfo()
 
 	if (ms_sys_flash_info)
 	{
-		IF(ms_sys_flash_info == 3, 0)
+		IF (ms_sys_flash_info == 3, 0)
 		{
 			int fontCacheTexId = GTextureXRenderBase::GetFontCacheTextureID();
 			if (pRenderer->EF_GetTextureByID(fontCacheTexId))
@@ -4589,7 +4647,7 @@ void CFlashPlayer::RenderFlashInfo()
 		float xAdj = 0.0f;
 		float yAdj = 0.0f;
 
-		IF(ms_sys_flash_info == 4 || ms_sys_flash_info == 5, 0)
+		IF (ms_sys_flash_info == 4 || ms_sys_flash_info == 5, 0)
 		{
 			struct PrintHeapInfo : public GMemoryHeap::HeapVisitor
 			{

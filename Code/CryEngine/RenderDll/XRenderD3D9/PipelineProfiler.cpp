@@ -37,10 +37,10 @@ void CRenderPipelineProfiler::BeginFrame()
 		return;
 
 	m_frameDataIndex = (m_frameDataIndex + 1) % kNumPendingFrames;
-	
+
 	SFrameData& frameData = m_frameData[m_frameDataIndex];
 	frameData.m_numSections = 0;
-	
+
 	frameData.m_timestampGroup.BeginMeasurement();
 
 	BeginSection("FRAME");
@@ -52,7 +52,7 @@ void CRenderPipelineProfiler::EndFrame()
 {
 	if (!m_recordData)
 		return;
-	
+
 	EndSection("FRAME");
 
 	SFrameData& frameData = m_frameData[m_frameDataIndex];
@@ -95,7 +95,7 @@ bool CRenderPipelineProfiler::FilterLabel(const char* name)
 	  (strcmp(name, "STRETCHRECT") == 0) ||
 	  (strcmp(name, "STENCIL_VOLUME") == 0) ||
 	  (strcmp(name, "DRAWSTRINGW") == 0) ||
-		(strcmp(name, "DRAWSTRINGU") == 0);
+	  (strcmp(name, "DRAWSTRINGU") == 0);
 }
 
 uint32 CRenderPipelineProfiler::InsertSection(const char* name, uint32 profileSectionFlags)
@@ -106,7 +106,7 @@ uint32 CRenderPipelineProfiler::InsertSection(const char* name, uint32 profileSe
 		m_recordData = false;
 
 	if (!m_recordData || FilterLabel(name))
-			return ~0u;
+		return ~0u;
 
 	SProfilerSection& section = frameData.m_sections[frameData.m_numSections++];
 
@@ -116,14 +116,14 @@ uint32 CRenderPipelineProfiler::InsertSection(const char* name, uint32 profileSe
 	section.recLevel = static_cast<int8>(m_stack.size() + 1);
 	section.numDIPs = 0;
 	section.numPolys = 0;
-	
+
 	if (!(profileSectionFlags & eProfileSectionFlags_MultithreadedSection))
 	{
-	#if defined(ENABLE_PROFILING_CODE)	
+#if defined(ENABLE_PROFILING_CODE)
 		// Note: Stats from multithreaded sections need to be subtracted, they get handled later
 		section.numDIPs = gcpRendD3D->GetCurrentNumberOfDrawCalls() - SRenderStatistics::Write().m_nScenePassDIPs;
 		section.numPolys = gcpRendD3D->RT_GetPolyCount() - SRenderStatistics::Write().m_nScenePassPolygons;
-	#endif
+#endif
 		section.startTimeCPU = gEnv->pTimer->GetAsyncTime();
 		section.startTimestamp = frameData.m_timestampGroup.IssueTimestamp(nullptr);
 	}
@@ -172,10 +172,10 @@ void CRenderPipelineProfiler::EndSection(const char* name)
 
 		if (!(section.flags & eProfileSectionFlags_MultithreadedSection))
 		{
-		#if defined(ENABLE_PROFILING_CODE)		
+#if defined(ENABLE_PROFILING_CODE)
 			section.numDIPs = (gcpRendD3D->GetCurrentNumberOfDrawCalls() - SRenderStatistics::Write().m_nScenePassDIPs) - section.numDIPs;
 			section.numPolys = (gcpRendD3D->RT_GetPolyCount() - SRenderStatistics::Write().m_nScenePassPolygons) - section.numPolys;
-		#endif
+#endif
 			section.endTimeCPU = gEnv->pTimer->GetAsyncTime();
 			section.endTimestamp = frameData.m_timestampGroup.IssueTimestamp(nullptr);
 		}
@@ -197,7 +197,7 @@ void CRenderPipelineProfiler::UpdateMultithreadedSection(uint32 index, bool bSec
 	{
 		static CryCriticalSection s_lock;
 		AUTO_LOCK(s_lock);
-		
+
 		SFrameData& frameData = m_frameData[m_frameDataIndex];
 		SProfilerSection& section = frameData.m_sections[index];
 
@@ -214,14 +214,13 @@ void CRenderPipelineProfiler::UpdateMultithreadedSection(uint32 index, bool bSec
 	}
 }
 
-
 void CRenderPipelineProfiler::UpdateGPUTimes(uint32 frameDataIndex)
 {
 	SFrameData& frameData = m_frameData[frameDataIndex];
 	for (uint32 i = 0; i < frameData.m_numSections; ++i)
 	{
 		SProfilerSection& section = frameData.m_sections[i];
-		
+
 		if (section.startTimestamp != ~0u && section.endTimestamp != ~0u)
 			section.gpuTime = frameData.m_timestampGroup.GetTimeMS(section.startTimestamp, section.endTimestamp);
 		else
@@ -237,12 +236,12 @@ void CRenderPipelineProfiler::UpdateGPUTimes(uint32 frameDataIndex)
 	{
 		SProfilerSection& section = frameData.m_sections[i];
 
-		if (section.recLevel >= CRY_ARRAY_COUNT(drawcallSum))
+		if (section.recLevel >= static_cast<int8>(CRY_ARRAY_COUNT(drawcallSum)))
 		{
 			assert(0);
 			continue;
 		}
-		
+
 		if (section.recLevel < curRecLevel)
 		{
 			for (uint32 j = curRecLevel; j < CRY_ARRAY_COUNT(drawcallSum); j++)
@@ -257,7 +256,7 @@ void CRenderPipelineProfiler::UpdateGPUTimes(uint32 frameDataIndex)
 		}
 
 		if (section.flags & eProfileSectionFlags_MultithreadedSection)
-		{	
+		{
 			drawcallSum[section.recLevel] += section.numDIPs;
 			polygonSum[section.recLevel] += section.numPolys;
 		}
@@ -560,7 +559,7 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 #ifndef _RELEASE
 	if (gEnv->pConsole->IsOpened())
 		return;
-	
+
 	CD3D9Renderer* rd = gcpRendD3D;
 	CRenderDisplayContext* pDC = rd->GetActiveDisplayContext();
 	SFrameData& frameData = m_frameData[frameDataIndex];
@@ -572,7 +571,7 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 
 	// Dim background to make text more readable
 	IRenderAuxImage::Draw2dImage(0, 0, sx, sy, CRendererResources::s_ptexWhite->GetID(), 0, 0, 1, 1, 0, ColorF(0.05f, 0.05f, 0.05f, 0.5f));
-	
+
 	ColorF color = frameData.m_numSections >= SFrameData::kMaxNumSections ? Col_Red : ColorF(1.0f, 1.0f, 0.2f, 1);
 	m_avgFrameTime = 0.8f * gEnv->pTimer->GetRealFrameTime() + 0.2f * m_avgFrameTime; // exponential moving average for frame time
 
@@ -624,7 +623,7 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 	}
 
 	float frameTimeGPU = max(m_threadTimings.gpuFrameTime * 1000.0f, 0.0f);
-	
+
 	for (uint32 i = 0; i < frameData.m_numSections; ++i)
 	{
 		SProfilerSection& section = frameData.m_sections[i];
@@ -644,8 +643,8 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 		float cpuTimeSmoothed = section.cpuTimeSmoothed;
 		float ypos = 30.0f + (it->second.nPos % elemsPerColumn) * 16.0f;
 		float xpos = 20.0f + ((int)(it->second.nPos / elemsPerColumn)) * 600.0f;
-		
-		if (section.recLevel < 0)  // Label stack error
+
+		if (section.recLevel < 0)   // Label stack error
 		{
 			color = ColorF(1, 0, 0);
 		}
@@ -656,7 +655,7 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 			// Tint items which are expensive relative to the overall frame time
 			color.b *= clamp_tpl(1.2f - (gpuTimeSmoothed / frameTimeGPU) * 8.0f, 0.0f, 1.0f);
 		}
-		
+
 		IRenderAuxText::Draw2dLabel(xpos + max((int)(abs(section.recLevel) - 2), 0) * 15.0f, ypos, 1.5f, &color.r, false, "%s", section.name);
 		IRenderAuxText::Draw2dLabel(xpos + 300, ypos, 1.5f, &color.r, false, "%.2fms", gpuTimeSmoothed);
 		if (!(section.flags & eProfileSectionFlags_MultithreadedSection))
@@ -672,7 +671,6 @@ void CRenderPipelineProfiler::DisplayDetailedPassStats(uint32 frameDataIndex)
 	}
 #endif
 }
-
 
 namespace DebugUI
 {
@@ -817,5 +815,5 @@ void CRenderPipelineProfiler::DisplayOverviewStats()
 
 bool CRenderPipelineProfiler::IsEnabled()
 {
-	return m_enabled || CRenderer::CV_r_profiler || gcpRendD3D->m_CVDisplayInfo->GetIVal() == 3;
+	return m_enabled || CRenderer::CV_r_profiler;
 }

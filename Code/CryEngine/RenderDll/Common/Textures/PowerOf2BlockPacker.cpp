@@ -51,8 +51,6 @@ uint32 CPowerOf2BlockPacker::GetBlockInfo(const uint32 dwBlockID, uint32& dwMinX
 
 void CPowerOf2BlockPacker::UpdateSize(int nW, int nH)
 {
-	assert(m_nUsedBlocks == 0);
-
 	m_dwWidth = nW;
 	m_dwHeight = nH;
 

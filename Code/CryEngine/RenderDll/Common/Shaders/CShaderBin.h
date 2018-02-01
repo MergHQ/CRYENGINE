@@ -71,7 +71,7 @@ struct SParamCacheInfo
 	}
 };
 
-#define MAX_FXBIN_CACHE 32
+#define MAX_FXBIN_CACHE 200
 
 struct SShaderBin
 {

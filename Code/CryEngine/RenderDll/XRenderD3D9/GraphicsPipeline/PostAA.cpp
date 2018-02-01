@@ -408,12 +408,22 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 	CTexture* pTexLensOptics = CRendererResources::s_ptexSceneTargetR11G11B10F[0];
 	CRY_ASSERT(pCurrRT != pDestRT);
 
+	Vec4 hdrSetupParams[5];
+	gEnv->p3DEngine->GetHDRSetupParams(hdrSetupParams);
+
+	// Calculate grain amount
+	CEffectParam* pParamGrainAmount = PostEffectMgr()->GetByName("FilterGrain_Amount");
+	CEffectParam* pParamArtifactsGrain = PostEffectMgr()->GetByName("FilterArtifacts_Grain");
+	const float paramGrainAmount = max(pParamGrainAmount->GetParam(), pParamArtifactsGrain->GetParam());
+	const float environmentGrainAmount = max(hdrSetupParams[1].w, CRenderer::CV_r_HDRGrainAmount);
+	const float grainAmount = max(paramGrainAmount, environmentGrainAmount);
+
 	uint64 rtMask = 0;
 	if (aaMode & (eAT_SMAA_2TX_MASK | eAT_TSAA_MASK))
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 	if (CRenderer::CV_r_colorRangeCompression)
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE4];
-	if (CRenderer::CV_r_GrainEnableExposureThreshold) // enable legacy grain/exposure interaction
+	if (grainAmount && CRenderer::CV_r_GrainEnableExposureThreshold) // enable legacy grain/exposure interaction
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE0];
 
 	if (GetStdGraphicsPipeline().GetLensOpticsStage()->HasContent())
@@ -471,13 +481,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		m_passComposition.SetConstant(lensOpticsParamsName, lensOpticsParams, eHWSC_Pixel);
 
 		// Apply grain (final luminance texture doesn't get its final value baked, so we have to replicate the entire hdr eye adaption)
-		Vec4 hdrSetupParams[5];
-		gEnv->p3DEngine->GetHDRSetupParams(hdrSetupParams);
-
-		CEffectParam* pParamGrainAmount = PostEffectMgr()->GetByName("FilterGrain_Amount");
-		CEffectParam* pParamArtifactsGrain = PostEffectMgr()->GetByName("FilterArtifacts_Grain");
-		const float grainAmount = max(pParamGrainAmount->GetParam(), pParamArtifactsGrain->GetParam());
-		const Vec4 v = Vec4(0, 0, 0, max(grainAmount, max(hdrSetupParams[1].w, CRenderer::CV_r_HDRGrainAmount)));
+		const Vec4 v = Vec4(0, 0, 0, grainAmount);
 
 		m_passComposition.SetConstant(hdrParamsName, v, eHWSC_Pixel);
 		// This sets exposure clamping max,min, causing weird interaction between between Exp. min/max params and grain (CE-13325)

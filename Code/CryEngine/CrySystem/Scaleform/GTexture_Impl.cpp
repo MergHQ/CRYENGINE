@@ -145,7 +145,10 @@ bool GTextureXRender::InitTextureFromFile(const char* pFilename)
 	sFile.replace("//", "/");
 
 	IRenderer* pRenderer(gEnv->pRenderer);
-	ITexture* pTexture(pRenderer->EF_LoadTexture(sFile.c_str(), FT_DONT_STREAM | FT_NOMIPS));
+	ICVar* pMipmapsCVar = gEnv->pConsole->GetCVar("sys_flash_mipmaps");
+	uint32 mips_flag = pMipmapsCVar && pMipmapsCVar->GetIVal() ? 0 : FT_NOMIPS;
+
+	ITexture* pTexture(pRenderer->EF_LoadTexture(sFile.c_str(), FT_DONT_STREAM | mips_flag));
 	if (pTexture)
 	{
 	#ifndef RELEASE
