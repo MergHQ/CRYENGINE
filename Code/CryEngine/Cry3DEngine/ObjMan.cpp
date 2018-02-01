@@ -720,60 +720,47 @@ CObjManager::~CObjManager()
 int CObjManager::ComputeDissolve(const CLodValue &lodValueIn, SRenderNodeTempData* pTempData, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2])
 {
 	int nLodMain = CLAMP(0, lodValueIn.LodA(), MAX_STATOBJ_LODS_NUM - 1);
-	int nLodMin = max(nLodMain - 1, 0);
-	int nLodMax = min(nLodMain + 1, MAX_STATOBJ_LODS_NUM - 1);
+	int nLodMin = std::max(nLodMain - 1, 0);
+	int nLodMax = std::min(nLodMain + 1, MAX_STATOBJ_LODS_NUM - 1);
 
 	float prevLodLastTimeUsed = 0;
-	float * arrLodLastTimeUsed = pTempData->userData.arrLodLastTimeUsed;
+	float* arrLodLastTimeUsed = pTempData->userData.arrLodLastTimeUsed;
 
 	// Find when previous lod was used as primary lod last time and update last time used for current primary lod
+	arrLodLastTimeUsed[nLodMain] = GetCurTimeSec();
 	for (int nLO = nLodMin; nLO <= nLodMax; nLO++)
 	{
-		if (nLodMain != nLO)
-		{
-			if (arrLodLastTimeUsed[nLO] > prevLodLastTimeUsed)
-			{
-				prevLodLastTimeUsed = arrLodLastTimeUsed[nLO];
-			}
-		}
-
-		if (nLodMain == nLO)
-			arrLodLastTimeUsed[nLO] = GetCurTimeSec();
+		if (nLO != nLodMain)
+			prevLodLastTimeUsed = std::max(prevLodLastTimeUsed, arrLodLastTimeUsed[nLO]);
 	}
 
 	float fDissolveRef = 1.f - SATURATE((GetCurTimeSec() - prevLodLastTimeUsed) / GetCVars()->e_LodTransitionTime);
-
-	prevLodLastTimeUsed = max(prevLodLastTimeUsed, GetCurTimeSec() - GetCVars()->e_LodTransitionTime);
+	prevLodLastTimeUsed = std::max(prevLodLastTimeUsed, GetCurTimeSec() - GetCVars()->e_LodTransitionTime);
 
 	// Compute also max view distance fading
 	const float fDistFadeInterval = 2.f;
 	float fDistFadeRef = SATURATE(min(fEntDistance / pEnt->m_fWSMaxViewDist * 5.f - 4.f, ((fEntDistance - pEnt->m_fWSMaxViewDist) / fDistFadeInterval + 1.f)));
 
+	CLodValue lodSubValue;
 	int nLodsNum = 0;
 
 	// Render current lod and (if needed) previous lod
-	for (int nLO = nLodMin; nLO <= nLodMax && nLodsNum<2; nLO++)
+	for (int nLO = nLodMin; nLO <= nLodMax && nLodsNum < 2; nLO++)
 	{
 		if (arrLodLastTimeUsed[nLO] < prevLodLastTimeUsed)
 			continue;
 
-		CLodValue lodSubValue;
-
 		if (nLodMain == nLO)
 		{
 			// Incoming LOD
-
-			float fDissolveMaxDistRef = max(fDissolveRef, fDistFadeRef);
-
-			lodSubValue = CLodValue(nLO, int(fDissolveMaxDistRef*255.f), -1);
+			float fDissolveMaxDistRef = std::max(fDissolveRef, fDistFadeRef);
+			lodSubValue = CLodValue(nLO, int(fDissolveMaxDistRef * 255.f), -1);
 		}
 		else
 		{
-			// Out-coming LOD
-
-			float fDissolveMaxDistRef = min(fDissolveRef, 1.f - fDistFadeRef);
-
-			lodSubValue = CLodValue(-1, int(fDissolveMaxDistRef*255.f), nLO);
+			// Outgoing LOD
+			float fDissolveMaxDistRef = std::min(fDissolveRef, 1.f - fDistFadeRef);
+			lodSubValue = CLodValue(-1, int(fDissolveMaxDistRef * 255.f), nLO);
 		}
 
 		arrlodValuesOut[nLodsNum] = lodSubValue;
