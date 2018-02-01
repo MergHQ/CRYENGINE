@@ -627,7 +627,11 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 	}
 	if (!bLoaded)
 	{
-		FileWarning(0, filename, "CGF Loading Failed: %s", cgfLoader.GetLastError());
+		if (!(nLoadingFlags & IStatObj::ELoadingFlagsNoErrorIfFail))
+		{
+			FileWarning(0, filename, "CGF Loading Failed: %s", cgfLoader.GetLastError());
+		}
+
 		return false;
 	}
 	//////////////////////////////////////////////////////////////////////////

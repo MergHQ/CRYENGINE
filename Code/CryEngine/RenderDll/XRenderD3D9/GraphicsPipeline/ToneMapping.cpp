@@ -28,13 +28,17 @@ void CToneMappingStage::Execute()
 	bool bHighQualitySunshafts = false;
 	bool bColorGrading = false;
 	bool bBloomEnabled = CRenderer::CV_r_HDRBloom && CRenderer::CV_r_PostProcess;
+	bool bApplyDithering = CRenderer::CV_r_HDRDithering && CRenderer::CV_r_PostProcess;
+	bool bVignettingEnabled = CRenderer::CV_r_HDRVignetting && CRenderer::CV_r_PostProcess;
 
 	CShader* pShader = CShaderMan::s_shHDRPostProcess;
 	CTexture* pSunShaftsTex = CRendererResources::s_ptexBlack;
 	CTexture* pColorChartTex = CRendererResources::s_ptexBlack;
 
 	bSunShafts = pSunShaftsStage->IsActive();
-	pSunShaftsTex = pSunShaftsStage->GetFinalOutputRT();
+
+	if (bSunShafts)
+		pSunShaftsTex = pSunShaftsStage->GetFinalOutputRT();
 
 	if (CTexture* pColorChartTexTentative = pColorGradingStage->GetColorChart())
 	{
@@ -52,6 +56,14 @@ void CToneMappingStage::Execute()
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE4];
 		if (bColorGrading)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE1];
+		if (bVignettingEnabled)
+			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2];
+		if (bBloomEnabled)
+			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE3];
+		if (bSunShafts)
+			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE5];
+		if (bApplyDithering)
+			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE6];
 
 		static CCryNameTSCRC techToneMapping("HDRFinalPass");
 		m_passToneMapping.SetTechnique(pShader, techToneMapping, rtMask);
@@ -61,7 +73,7 @@ void CToneMappingStage::Execute()
 		m_passToneMapping.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);	// Enables reflection constants addition in the shader
 
 		CTexture* pBloomTex = bBloomEnabled ? CRendererResources::s_ptexHDRFinalBloom : CRendererResources::s_ptexBlack;
-		
+
 		m_passToneMapping.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 		m_passToneMapping.SetTexture(0, CRendererResources::s_ptexHDRTarget);
 		m_passToneMapping.SetTexture(1, CRendererResources::s_ptexCurLumTexture);

@@ -2228,7 +2228,7 @@ void CAuxGeomCB::Draw2dImages(SAux2DImages& images, bool reset)
 
 		pAux->SetTexture(img.textureId);
 		UCol color;
-		color.dcolor = img.color.pack_abgr8888();
+		color.dcolor = PackColor(img.color);
 
 		float parallax = 0;
 		/*TODO@ implement

@@ -380,7 +380,7 @@ struct IStatObj : IMeshObj, IStreamable
 	virtual IStatObj* GetLodObject(int nLodLevel, bool bReturnNearest = false) = 0;
 	virtual void      SetLodObject(int nLodLevel, IStatObj* pLod) = 0;
 	virtual IStatObj* GetLowestLod() = 0;
-	virtual int       FindNearesLoadedLOD(int nLodIn, bool bSearchUp = false) = 0;
+	virtual int       FindNearestLoadedLOD(int nLodIn, bool bSearchUp = false) = 0;
 	virtual int       FindHighestLOD(int nBias) = 0;
 
 	//! Returns the filename of the object.

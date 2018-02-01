@@ -5229,12 +5229,9 @@ void CCryAction::StartNetworkStallTicker(bool includeMinimalUpdate)
 void CCryAction::StopNetworkStallTicker()
 {
 #ifdef USE_NETWORK_STALL_TICKER_THREAD
-	if (gEnv->bMultiplayer)
+	if (m_networkStallTickerReferences > 0)
 	{
-		if (m_networkStallTickerReferences > 0)
-		{
-			m_networkStallTickerReferences--;
-		}
+		m_networkStallTickerReferences--;
 
 		if (m_networkStallTickerReferences == 0)
 		{

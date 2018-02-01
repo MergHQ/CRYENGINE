@@ -5,7 +5,7 @@
 #include "../Common/Renderer.h"
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderer::FlashRender(IFlashPlayer_RenderProxy* pPlayer, bool stereo)
+void CRenderer::FlashRender(IFlashPlayer_RenderProxy* pPlayer, bool stereo, int textureId)
 {
 	m_pRT->RC_FlashRender(pPlayer, stereo);
 }

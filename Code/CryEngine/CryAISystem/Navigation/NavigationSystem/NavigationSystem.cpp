@@ -13,20 +13,6 @@
 #include <CryCore/Platform/CryWindows.h>
 #include <CryInput/IHardwareMouse.h>
 
-// BAI navigation file version history
-// Changes in version 11
-// - Fixed saving/loading markups when its' container is dynamic
-// Changes in version 10
-// - Navigation markup volumes and markup volumes data are stored
-// Changes in version 9
-//  - Navigation volumes storage is changed:
-//    * all used navigation volumes are saved (including exclusion volumes, which were missing before);
-//    * navigation area names saved together with volume data;
-//    * volumes stored only onces, instead of storing them together with each mesh.
-// Changes in version 8
-//  - struct MNM::Tile::STriangle layout is changed - now it has triangle flags
-#define BAI_NAVIGATION_FILE_VERSION 11
-
 #define MAX_NAME_LENGTH             512
 #if defined(SW_NAVMESH_USE_GUID)
 	#define BAI_NAVIGATION_GUID_FLAG  (1 << 31)
@@ -814,6 +800,9 @@ void NavigationSystem::SetMarkupVolume(
 
 	MNM::SMarkupVolume& volume = m_markupVolumes[volumeID];
 
+	if (volume == newVolume)
+		return; // No need to update
+
 	for (AgentType& agentType : m_agentTypes)
 	{
 		stl::find_and_erase(agentType.markups, volumeID);
@@ -1515,6 +1504,9 @@ void NavigationSystem::CommitMarkupData(const TileTaskResult& result, const MNM:
 	for (const MNM::CTileGenerator::SMetaData::SMarkupTriangles& markupTriangles : result.metaData.markupTriangles)
 	{
 		NavigationVolumeID markupID = def.markupIds[markupTriangles.markupIdx];
+
+		if(!m_markupVolumes.validate(markupID))
+			continue; // Markup volume was removed before tile generation finished
 
 		if (!m_markupsData.validate(markupID))
 		{
@@ -2651,6 +2643,16 @@ void NavigationSystem::RemoveLoadedMeshesWithoutRegisteredAreas()
 	m_volumesManager.ClearLoadedAreas();
 }
 
+bool NavigationSystem::RegisterEntityMarkups(const IEntity& owningEntity, const char** shapeNamesArray, const size_t count, NavigationVolumeID* pOutIdsArray)
+{
+	return m_volumesManager.RegisterEntityMarkups(*this, owningEntity, shapeNamesArray, count, pOutIdsArray);
+}
+
+void NavigationSystem::UnregisterEntityMarkups(const IEntity& owningEntity)
+{
+	m_volumesManager.UnregisterEntityMarkups(*this, owningEntity);
+}
+
 void NavigationSystem::StartWorldMonitoring()
 {
 	m_worldMonitor.Start();
@@ -3030,14 +3032,14 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 	{
 		bool fileVersionCompatible = true;
 
-		uint16 nFileVersion = BAI_NAVIGATION_FILE_VERSION;
+		uint16 nFileVersion = eBAINavigationFileVersion::CURRENT;
 		file.ReadType(&nFileVersion);
 
 		//Verify version of exported file in first place
-		if (nFileVersion != BAI_NAVIGATION_FILE_VERSION)
+		if (nFileVersion < eBAINavigationFileVersion::FIRST_COMPATIBLE)
 		{
-			AIWarning("Wrong BAI file version (found %d expected %d)!! Regenerate Navigation data in the editor.",
-			          nFileVersion, BAI_NAVIGATION_FILE_VERSION);
+			AIWarning("Wrong BAI file version (found %d expected at least %d)!! Regenerate Navigation data in the editor.",
+			          nFileVersion, eBAINavigationFileVersion::FIRST_COMPATIBLE);
 
 			fileVersionCompatible = false;
 		}
@@ -3510,6 +3512,8 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 				}
 			}
 
+			m_volumesManager.LoadData(file, nFileVersion);
+
 			fileLoaded = true;
 		}
 
@@ -3661,7 +3665,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 		MNM::Tile::SLink linkBuffer[maxLinks];
 
 		// Saving file data version
-		uint16 nFileVersion = BAI_NAVIGATION_FILE_VERSION;
+		uint16 nFileVersion = eBAINavigationFileVersion::CURRENT;
 		file.Write(&nFileVersion, sizeof(nFileVersion));
 		file.Write(&m_configurationVersion, sizeof(m_configurationVersion));
 	#ifdef SW_NAVMESH_USE_GUID
@@ -4017,6 +4021,8 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 				}
 			}
 		}
+
+		m_volumesManager.SaveData(file, nFileVersion);
 
 		file.Close();
 	}

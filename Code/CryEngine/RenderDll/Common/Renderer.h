@@ -734,7 +734,7 @@ public:
 	virtual void RT_PrecacheDefaultShaders() = 0;
 	virtual bool RT_ReadTexture(void* pDst, int destinationWidth, int destinationHeight, EReadTextureFormat dstFormat, CTexture* pSrc) = 0;
 	virtual bool RT_StoreTextureToFile(const char* szFilePath, CTexture* pSrc) = 0;
-	virtual void FlashRender(IFlashPlayer_RenderProxy* pPlayer, bool stereo) override;
+	virtual void FlashRender(IFlashPlayer_RenderProxy* pPlayer, bool stereo, int textureId=0) override;
 	virtual void FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool stereo, bool finalPlayback) override;
 	virtual void FlashRemoveTexture(ITexture* pTexture) override;
 
@@ -742,6 +742,7 @@ public:
 
 	virtual void RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool stereo, bool doRealRender) = 0;
 	virtual void RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool stereo, bool finalPlayback, bool doRealRender) = 0;
+
 	virtual bool FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce) override;
 	virtual bool ForceFlushRTCommands();
 	virtual void WaitForParticleBuffer() = 0;

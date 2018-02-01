@@ -1090,7 +1090,10 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 			gEnv->pThreadManager->ForEachOtherThread(ResumeAnyThread);
 
 		// Resume render thread
-		gEnv->pRenderer->ResumeRendererFromFrameEnd();
+		if (gEnv->pRenderer)
+		{
+			gEnv->pRenderer->ResumeRendererFromFrameEnd();
+		}
 
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
@@ -1134,7 +1137,7 @@ void DebugCallStack::LogMemCallstackFile(int memSize)
 	CryFixedStringT<64> temp("*** Memory allocation for ");
 	temp.append(buffer);
 	temp.append(" bytes ");
-	int frame = gEnv->pRenderer->GetFrameID(false);
+	int frame = gEnv->nMainFrameID;
 	itoa(frame, buffer, 10);
 	temp.append("in frame ");
 	temp.append(buffer);

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*=============================================================================
    Texture.cpp : Common texture manager implementation.
@@ -374,7 +374,7 @@ void CTexture::RefDevTexture(CDeviceTexture* pDeviceTex)
 
 void CTexture::SetDevTexture(CDeviceTexture* pDeviceTex)
 {
-	if (m_pDevTexture) 
+	if (m_pDevTexture)
 		m_pDevTexture->SetOwner(NULL);
 	SAFE_RELEASE(m_pDevTexture);
 
@@ -639,7 +639,8 @@ CTexture* CTexture::GetOrCreateTextureArray(const char* name, uint32 nWidth, uin
 	pTex->SetWidth(nWidth);
 	pTex->SetHeight(nHeight);
 	pTex->m_nMips = nFlags & FT_FORCE_MIPS ? CTexture::CalcNumMips(pTex->m_nWidth, pTex->m_nHeight) : pTex->m_nMips;
-	pTex->m_nArraySize = nArraySize; assert((eType != eTT_CubeArray) || !(nArraySize % 6));
+	pTex->m_nArraySize = nArraySize;
+	assert((eType != eTT_CubeArray) || !(nArraySize % 6));
 	pTex->m_nDepth = 1;
 
 	bool bRes;
@@ -826,7 +827,6 @@ _smart_ptr<CTexture> CTexture::ForNamePtr(const char* name, uint32 nFlags, ETEX_
 
 	return result;
 }
-
 
 struct CompareTextures
 {
@@ -1115,7 +1115,7 @@ bool CTexture::Load(CImageFile* pImage)
 	}
 
 	if (!(m_eFlags & FT_ALPHA) && !(
-	      pImage->mfGetFormat() == eTF_BC5U     || pImage->mfGetFormat() == eTF_BC5S || pImage->mfGetFormat() == eTF_BC7 ||
+	      pImage->mfGetFormat() == eTF_BC5U || pImage->mfGetFormat() == eTF_BC5S || pImage->mfGetFormat() == eTF_BC7 ||
 	      pImage->mfGetFormat() == eTF_EAC_RG11 || pImage->mfGetFormat() == eTF_EAC_RG11S
 	      ) && CryStringUtils::stristr(name, "_ddn") != 0 && GetDevTexture()) // improvable code
 	{
@@ -1132,11 +1132,11 @@ bool CTexture::Load(CImageFile* pImage)
 	m_eSrcTileMode = pImage->mfGetTileMode();
 	m_nArraySize = pImage->mfGet_NumSides();
 	m_eTT =
-		 (pImage->mfGet_depth   () >  1) ? eTT_3D :
-		 (pImage->mfGet_NumSides() == 6) ? eTT_Cube :
-		!(pImage->mfGet_NumSides() %  6) ? eTT_CubeArray :
-		 (pImage->mfGet_NumSides() == 1) ? eTT_2D :
-		                                   eTT_2DArray;
+	  (pImage->mfGet_depth() > 1) ? eTT_3D :
+	  (pImage->mfGet_NumSides() == 6) ? eTT_Cube :
+	  !(pImage->mfGet_NumSides() % 6) ? eTT_CubeArray :
+	  (pImage->mfGet_NumSides() == 1) ? eTT_2D :
+	  eTT_2DArray;
 
 	STexData td;
 	td.m_nFlags = pImage->mfGet_Flags();
@@ -1183,7 +1183,7 @@ bool CTexture::Load(CImageFile* pImage)
 	return bRes;
 }
 
-void CTexture::UpdateData(STexData &td, int flags)
+void CTexture::UpdateData(STexData& td, int flags)
 {
 	m_eFlags = flags;
 	m_eDstFormat = td.m_eFormat;
@@ -1321,9 +1321,9 @@ int CTexture::CalcNumMips(int nWidth, int nHeight)
 	int nMips = 0;
 	while (nWidth || nHeight)
 	{
-		if (!nWidth ) nWidth  = 1;
-		if (!nHeight) nHeight = 1;
-		nWidth  >>= 1;
+		if (!nWidth)   nWidth = 1;
+		if (!nHeight)  nHeight = 1;
+		nWidth >>= 1;
 		nHeight >>= 1;
 		nMips++;
 	}
@@ -1341,9 +1341,9 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 		return 0;
 
 	const bool bIsBlockCompressed = IsBlockCompressed(eTF);
-	nWidth  = max(1U, nWidth );
+	nWidth = max(1U, nWidth);
 	nHeight = max(1U, nHeight);
-	nDepth  = max(1U, nDepth );
+	nDepth = max(1U, nDepth);
 
 	if (eTM != eTM_None)
 	{
@@ -1355,7 +1355,7 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 #if CRY_PLATFORM_ORBIS
 		if (bIsBlockCompressed)
 		{
-			nWidth  = ((nWidth  + 3) & (-4));
+			nWidth = ((nWidth + 3) & (-4));
 			nHeight = ((nHeight + 3) & (-4));
 		}
 #endif
@@ -1374,9 +1374,9 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 		uint32 nSize = 0;
 		while ((nWidth || nHeight || nDepth) && nMips)
 		{
-			nWidth  = max(1U, nWidth );
+			nWidth = max(1U, nWidth);
 			nHeight = max(1U, nHeight);
-			nDepth  = max(1U, nDepth );
+			nDepth = max(1U, nDepth);
 
 			uint32 nU = nWidth;
 			uint32 nV = nHeight;
@@ -1385,15 +1385,15 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 			if (bIsBlockCompressed)
 			{
 				// depth is not 4x4x4 compressed, but 4x4x1
-				nU = ((nWidth  + 3) / (4));
+				nU = ((nWidth + 3) / (4));
 				nV = ((nHeight + 3) / (4));
 			}
 
 			nSize += nU * nV * nW * nBytesPerElement;
 
-			nWidth  >>= 1;
+			nWidth >>= 1;
 			nHeight >>= 1;
-			nDepth  >>= 1;
+			nDepth >>= 1;
 
 			--nMips;
 		}
@@ -1546,8 +1546,8 @@ void CTexture::ExpandMipFromFile(byte* pSrcData, const int dstSize, const byte* 
 			for (int i = srcSize / 2 - 1; i >= 0; --i)
 			{
 				const uint16 rgb5551 = uint16((src[i * 2 + 0] << 8) + src[i * 2 + 1]);
-				pSrcData[i * 4 + 0] = ((rgb5551 >>  0) * 33) >> 2;
-				pSrcData[i * 4 + 1] = ((rgb5551 >>  5) * 33) >> 2;
+				pSrcData[i * 4 + 0] = ((rgb5551 >> 0) * 33) >> 2;
+				pSrcData[i * 4 + 1] = ((rgb5551 >> 5) * 33) >> 2;
 				pSrcData[i * 4 + 2] = ((rgb5551 >> 10) * 33) >> 2;
 				pSrcData[i * 4 + 3] = ((rgb5551 >> 15) ? 255 : 0);
 			}
@@ -1559,8 +1559,8 @@ void CTexture::ExpandMipFromFile(byte* pSrcData, const int dstSize, const byte* 
 			for (int i = srcSize / 2 - 1; i >= 0; --i)
 			{
 				const uint16 rgb565 = uint16((src[i * 2 + 0] << 8) + src[i * 2 + 1]);
-				pSrcData[i * 4 + 0] = ((rgb565 >>  0) * 33) >> 2;
-				pSrcData[i * 4 + 1] = ((rgb565 >>  5) * 65) >> 4;
+				pSrcData[i * 4 + 0] = ((rgb565 >> 0) * 33) >> 2;
+				pSrcData[i * 4 + 1] = ((rgb565 >> 5) * 65) >> 4;
 				pSrcData[i * 4 + 2] = ((rgb565 >> 11) * 33) >> 2;
 				pSrcData[i * 4 + 3] = 255;
 			}
@@ -1744,11 +1744,11 @@ const int CTexture::GetSize(bool bIncludePool) const
 	nSize += m_SrcName.capacity();
 
 	// TODO: neccessary?
-//	if (m_pRenderTargetData)
-//	{
-//		nSize += sizeof(*m_pRenderTargetData);
-//		nSize += m_pRenderTargetData->m_DirtyRects.capacity() * sizeof(RECT);
-//	}
+	//	if (m_pRenderTargetData)
+	//	{
+	//		nSize += sizeof(*m_pRenderTargetData);
+	//		nSize += m_pRenderTargetData->m_DirtyRects.capacity() * sizeof(RECT);
+	//	}
 
 	if (m_pFileTexMips)
 	{

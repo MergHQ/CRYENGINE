@@ -99,8 +99,8 @@ struct IFlashPlayer
 	virtual void           SetScissorRect(int x0, int y0, int width, int height) = 0;
 	virtual void           GetScissorRect(int& x0, int& y0, int& width, int& height) const = 0;
 	virtual void           Advance(float deltaTime) = 0;
-	virtual void           Render(bool stereo = false) = 0;
 	virtual void           SetClearFlags(uint32 clearFlags, ColorF clearColor = Clr_Transparent) = 0;
+	virtual void           Render(bool stereo = false, int textureId = -1) = 0;
 	virtual void           SetCompositingDepth(float depth) = 0;
 	virtual void           StereoEnforceFixedProjectionDepth(bool enforce) = 0;
 	virtual void           StereoSetCustomMaxParallax(float maxParallax = -1.0f) = 0;
@@ -125,6 +125,8 @@ struct IFlashPlayer
 	virtual void SendKeyEvent(const SFlashKeyEvent& keyEvent) = 0;
 	virtual void SendCharEvent(const SFlashCharEvent& charEvent) = 0;
 	//! ##@}
+
+	virtual bool HitTest(float x, float y) const = 0;
 
 	virtual void SetVisible(bool visible) = 0;
 	virtual bool GetVisible() const = 0;
@@ -240,6 +242,7 @@ struct IFlashVariableObject
 	virtual void VisitMembers(ObjectVisitor* pVisitor) const = 0;
 	virtual bool DeleteMember(const char* pMemberName) = 0;
 	virtual bool Invoke(const char* pMethodName, const SFlashVarValue* pArgs, unsigned int numArgs, SFlashVarValue* pResult = 0) = 0;
+	virtual bool Invoke(const char* pMethodName, const IFlashVariableObject** pArgs, unsigned int numArgs, SFlashVarValue* pResult = 0) = 0;
 
 	//! AS Array support. These methods are only valid for Array type.
 	virtual unsigned int GetArraySize() const = 0;
@@ -282,7 +285,7 @@ struct IFlashVariableObject
 	// </interfuscator:shuffle>
 	bool         Invoke0(const char* pMethodName, SFlashVarValue* pResult = 0)
 	{
-		return Invoke(pMethodName, 0, 0, pResult);
+		return Invoke(pMethodName, static_cast<SFlashVarValue*>(0), 0, pResult);
 	}
 	bool Invoke1(const char* pMethodName, const SFlashVarValue& arg, SFlashVarValue* pResult = 0)
 	{
@@ -369,7 +372,7 @@ struct IActionScriptFunction
 		//! as the (pointer to the) string will still be valid after Call() returns. However, if a pointer to a string on the stack is being
 		//! passed, "createManagedValue" must be set to true!
 		virtual void Set(const SFlashVarValue& value, bool createManagedValue = true) = 0;
-
+		virtual void Set(const IFlashVariableObject* value) = 0;
 	protected:
 		virtual ~IReturnValue() {}
 	};

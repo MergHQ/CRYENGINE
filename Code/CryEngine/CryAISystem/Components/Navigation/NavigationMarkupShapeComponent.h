@@ -18,8 +18,6 @@ public:
 		return id;
 	}
 
-	CAINavigationMarkupShapeComponent();
-
 	// IEntityComponent
 	virtual void          Initialize() override;
 	virtual void          OnShutDown() override;
@@ -37,25 +35,71 @@ public:
 
 	void RenderVolume() const;
 
+public:
+	struct SMarkupShapeProperties
+	{
+		typedef Schematyc::CStringHashWrapper<Schematyc::CFastStringHash, Schematyc::CEmptyStringConversion, string> Name;
+		
+		static void ReflectType(Schematyc::CTypeDesc<SMarkupShapeProperties>& desc);
+		void Serialize(Serialization::IArchive& archive);
+		bool operator==(const SMarkupShapeProperties& other) const
+		{
+			return position == other.position
+				&& position == other.rotation
+				&& areaTypeId == other.areaTypeId
+				&& affectedAgentTypesMask == other.affectedAgentTypesMask
+				&& size == other.size
+				&& bIsStatic == other.bIsStatic
+				&& bExpandByAgentRadius == other.bExpandByAgentRadius
+				&& name == other.name;
+		}
+
+		Vec3 position = ZERO;
+		Ang3 rotation = ZERO;
+		NavigationAreaTypeID areaTypeId;
+		NavigationComponentHelpers::SAgentTypesMask affectedAgentTypesMask;
+		Vec3 size = Vec3(2.0f, 2.0f, 2.0f);
+		bool bIsStatic = false;
+		bool bExpandByAgentRadius = false;
+		Name name;
+	};
+
+	struct SShapesArray
+	{
+		static void ReflectType(Schematyc::CTypeDesc<SShapesArray>& typeInfo)
+		{
+			typeInfo.SetGUID("AFCBE3EC-7A62-4233-8E88-BB5768498DF2"_cry_guid);
+		}
+		bool operator==(const SShapesArray& other) const { return shapes == other.shapes; }
+
+		std::vector<SMarkupShapeProperties> shapes;
+	};
+
 private:
-	void UpdateAnnotation();
-	void UpdateVolume();
+	struct SRuntimeData
+	{
+		MNM::AreaAnnotation m_defaultAreaAnotation;
+		MNM::AreaAnnotation m_currentAreaAnotation;
 
-	void SetAnnotationFlag(const NavigationAreaFlagID& flagId, bool bEnable);
+		NavigationVolumeID m_volumeId;
+	};
 
-	//////////////////////////////////////////////////////////////////////////
-	void ChangeAreaAnotation(const NavigationComponentHelpers::SAnnotationFlagsMask& flags);
-	void ResetAnotation();
-	//////////////////////////////////////////////////////////////////////////
+	void RegisterAndUpdateComponent();
+	void UpdateAnnotations();
+	void UpdateVolumes();
 
-	NavigationAreaTypeID m_areaTypeId;
-	NavigationComponentHelpers::SAgentTypesMask m_affectedAgentTypesMask;
-	Vec3 m_size;
-	bool m_bStoreTriangles = false;
-	bool m_bExpandByAgentRadius = false;
+	void SetAnnotationFlag(const Schematyc::CSharedString& shapeName, const NavigationAreaFlagID& flagId, bool bEnable);
 
-	MNM::AreaAnnotation m_defaultAreaAnotation;
-	MNM::AreaAnnotation m_currentAreaAnotation;
+	void ToggleAnnotationFlags(const Schematyc::CSharedString& shapeName, const NavigationComponentHelpers::SAnnotationFlagsMask& flags);
+	void ResetAnotations();
 
-	NavigationVolumeID m_volumeId;
+	SShapesArray m_shapesProperties;
+	bool m_isGeometryIgnoredInNavMesh = true;
+
+	std::vector<SRuntimeData> m_runtimeData;
 };
+
+inline bool Serialize(Serialization::IArchive& archive, CAINavigationMarkupShapeComponent::SShapesArray& value, const char* szName, const char* szLabel)
+{
+	return archive(value.shapes, szName, szLabel);
+}

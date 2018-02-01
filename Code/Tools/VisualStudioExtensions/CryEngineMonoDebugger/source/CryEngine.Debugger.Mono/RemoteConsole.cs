@@ -169,6 +169,7 @@ namespace CryEngine.Debugger.Mono
 			{
 				_running = true;
 				_consoleThread = new Thread(RemoteConsoleLoop);
+				_consoleThread.Name = nameof(RemoteConsoleLoop);
 				_consoleThread.Start();
 			}
 		}
@@ -187,7 +188,7 @@ namespace CryEngine.Debugger.Mono
 						_clientSocket = new TcpClient();
 					}
 				}
-				while (_stopping)
+				while (_stopping && _consoleThread.IsAlive)
 					Thread.Sleep(10);
 				_consoleThread = null;
 			}
@@ -347,10 +348,20 @@ namespace CryEngine.Debugger.Mono
 				}
 				else
 				{
-					_isConnected = ProcessClient();
+					try
+					{
+						_isConnected = ProcessClient();
+
+						// Pump the events immediately since they will be logged thread-safe later on.
+						PumpEvents();
+					}
+					catch(Exception ex)
+					{
+						string message = string.Format("Disconnecting the remote console because it ran into the following exception: {0}{1}{2}", ex.Message, Environment.NewLine, ex.StackTrace);
+						AddLogMessage(MessageType.Error, message);
+						break;
+					}
 					
-					// Pump the events immediatly since they will be logged thread-safe later on.
-					PumpEvents();
 				}
 			}
 			_stopping = false;

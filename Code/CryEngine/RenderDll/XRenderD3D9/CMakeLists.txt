@@ -1184,7 +1184,7 @@ endif()
 
 if (RENDERER_DX11)
 	CryEngineModule(CryRenderD3D11 FORCE_SHARED_WIN PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
-
+	
 	target_include_directories(${THIS_PROJECT} PRIVATE .. "${SDK_DIR}/squish-ccr")
 	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
 
@@ -1261,7 +1261,7 @@ if (RENDERER_DX12)
 	target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib)
 
 	if (WIN32 OR WIN64)
-		set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
+	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS /NODEFAULTLIB:libcmt.lib)
 		target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32 png16 tiff)
 	elseif(DURANGO)
 		target_link_libraries(${THIS_PROJECT} PRIVATE ws2_32 SmartGlassInterop d3d12_x d3dcompiler dxguid xg_x uuid kernelx)

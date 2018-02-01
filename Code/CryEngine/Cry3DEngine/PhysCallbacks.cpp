@@ -453,7 +453,7 @@ void CDeferredCollisionEventOnPhysCollision::TestCollisionWithRenderMesh()
 	}
 
 	if (pStatObj)
-		if (int nMinLod = ((CStatObj*)pStatObj)->GetMinUsableLod())
+		if (int nMinLod = GetCVars()->e_RenderMeshCollisionLod)
 			if (IStatObj* pLodObj = pStatObj->GetLodObject(nMinLod))
 				pStatObj = pLodObj;
 
