@@ -438,6 +438,7 @@ inline XmlNodeRef& XmlNodeRef::operator=(XmlNodeRef&& other)
 {
 	if (this != &other)
 	{
+		if (p) p->Release();
 		p = other.p;
 		other.p = nullptr;
 	}
