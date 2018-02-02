@@ -12,7 +12,13 @@ class CPrimitiveRenderPass;
 
 struct SCompiledRenderPrimitive : private NoCopy
 {
-	SCompiledRenderPrimitive() {};
+	enum EType : uint8
+	{
+		eType_Base = 0,
+		eType_RenderPrimitive,
+	};
+
+	SCompiledRenderPrimitive(SCompiledRenderPrimitive::EType type = eType_Base) : m_type(type) {};
 	SCompiledRenderPrimitive(SCompiledRenderPrimitive&& other);
 
 	void Reset();
@@ -34,6 +40,7 @@ struct SCompiledRenderPrimitive : private NoCopy
 	std::array<SDeviceObjectHelpers::SConstantBufferBindInfo,3> m_inlineConstantBuffers;
 
 	uint8                      m_stencilRef = 0;
+	EType                      m_type = eType_Base;
 	SDrawInfo                  m_drawInfo;
 };
 

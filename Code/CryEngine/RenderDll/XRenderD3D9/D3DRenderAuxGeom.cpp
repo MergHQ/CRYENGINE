@@ -630,8 +630,11 @@ CDeviceGraphicsPSOPtr CRenderAuxGeomD3D::GetGraphicsPSO(const SAuxGeomRenderFlag
 //////////////////////////////////////////////////////////////////////////
 void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& rawData,CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj, int texID)
 {
-	ERenderPrimitiveType topology = eptTriangleList;
+	CryStackAllocWithSize(HLSL_AuxGeomObjectConstantBuffer, cbObj, CDeviceBufferManager::AlignBufferSizeForStreaming);
+	CryStackAllocWithSize(HLSL_AuxGeomConstantBuffer, cbPrimObj, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
+	ERenderPrimitiveType topology = eptTriangleList;
+	
 	const SAuxGeomRenderFlags& flags = (*itBegin)->m_renderFlags;
 	CAuxGeomCB::EPrimType primType(CAuxGeomCB::GetPrimType(flags));
 
@@ -700,10 +703,9 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& r
 	{
 		pCB = m_auxConstantBufferHeap.GetUsableConstantBuffer();
 		{
-			CryStackAllocWithSize(HLSL_AuxGeomConstantBuffer, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
-			cb->matViewProj = mViewProj;
-			cb->invScreenDim = m_screenResolutionInverse;
-			pCB->UpdateBuffer(cb, cbSize);
+			cbPrimObj->matViewProj = mViewProj;
+			cbPrimObj->invScreenDim = m_screenResolutionInverse;
+			pCB->UpdateBuffer(cbPrimObj, cbPrimObjSize);
 		}
 	}
 
@@ -840,12 +842,11 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& r
 				lightLocalSpace.Normalize();
 
 				{
-					CryStackAllocWithSize(HLSL_AuxGeomObjectConstantBuffer, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
-					cb->matViewProj = matWorldViewProj;
-					cb->auxGeomObjColor = Vec4(col.b, col.g, col.r, col.a); // need to flip r/b as drawParams.m_color was originally argb
-					cb->globalLightLocal = lightLocalSpace;  // normalize light vector (matWorld could contain non-uniform scaling)
-					cb->auxGeomObjShading = Vec2(drawParams.m_shaded ? 0.4f : 0, drawParams.m_shaded ? 0.6f : 1); // set shading flag
-					pCB->UpdateBuffer(cb, cbSize);
+					cbObj->matViewProj = matWorldViewProj;
+					cbObj->auxGeomObjColor = Vec4(col.b, col.g, col.r, col.a); // need to flip r/b as drawParams.m_color was originally argb
+					cbObj->globalLightLocal = lightLocalSpace;  // normalize light vector (matWorld could contain non-uniform scaling)
+					cbObj->auxGeomObjShading = Vec2(drawParams.m_shaded ? 0.4f : 0, drawParams.m_shaded ? 0.6f : 1); // set shading flag
+					pCB->UpdateBuffer(cbObj, cbObjSize);
 				}
 			}
 
