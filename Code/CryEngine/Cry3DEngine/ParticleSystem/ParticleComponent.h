@@ -231,6 +231,7 @@ private:
 	Vec2                                     m_nodePosition;
 	SComponentParams                         m_componentParams;
 	std::vector<TParticleFeaturePtr>         m_features;
+	std::vector<TParticleFeaturePtr>         m_defaultFeatures;
 	StaticEnumArray<bool, EParticleDataType> m_useParticleData;
 	SEnable                                  m_enabled;
 	SEnable                                  m_visible;
