@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -55,10 +55,6 @@ public:
 	virtual void        ReportStartedFile(CATLStandaloneFile& standaloneFile, bool const bSuccessfullyStarted, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override  {}
 	virtual void        ReportStoppedFile(CATLStandaloneFile& standaloneFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                   {}
 	virtual void        ReportFinishedEvent(CATLEvent& event, bool const bSuccess, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                              {}
-	virtual void        LostFocus(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                                               {}
-	virtual void        GotFocus(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                                                {}
-	virtual void        MuteAll(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                                                 {}
-	virtual void        UnmuteAll(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                                               {}
 	virtual void        StopAllSounds(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                                           {}
 	virtual void        Refresh(char const* const szLevelName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                  {}
 	virtual void        PreloadSingleRequest(PreloadRequestId const id, bool const bAutoLoadOnly, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override               {}

@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "EditorImpl.h"
@@ -20,13 +20,13 @@ namespace SDLMixer
 //////////////////////////////////////////////////////////////////////////
 CImplSettings::CImplSettings()
 	: m_assetAndProjectPath(
-		PathUtil::GetGameFolder() +
-		CRY_NATIVE_PATH_SEPSTR
-		AUDIO_SYSTEM_DATA_ROOT
-		CRY_NATIVE_PATH_SEPSTR +
-		CryAudio::Impl::SDL_mixer::s_szImplFolderName +
-		CRY_NATIVE_PATH_SEPSTR +
-		CryAudio::s_szAssetsFolderName)
+	  PathUtil::GetGameFolder() +
+	  CRY_NATIVE_PATH_SEPSTR
+	  AUDIO_SYSTEM_DATA_ROOT
+	  CRY_NATIVE_PATH_SEPSTR +
+	  CryAudio::Impl::SDL_mixer::s_szImplFolderName +
+	  CRY_NATIVE_PATH_SEPSTR +
+	  CryAudio::s_szAssetsFolderName)
 {
 }
 
@@ -180,7 +180,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 		{
 			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
 			string path = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute);
-// Backwards compatibility will be removed before March 2019.
+			// Backwards compatibility will be removed before March 2019.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 			if (name.IsEmpty() && pNode->haveAttr("sdl_name"))
 			{
@@ -191,7 +191,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 			{
 				path = pNode->getAttr("sdl_path");
 			}
-#endif // USE_BACKWARDS_COMPATIBILITY
+#endif    // USE_BACKWARDS_COMPATIBILITY
 			CID id;
 
 			if (path.empty())
@@ -221,8 +221,23 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 				{
 					connectionType = pNode->getAttr("event_type");
 				}
-#endif // USE_BACKWARDS_COMPATIBILITY
-				pConnection->m_type = connectionType == CryAudio::Impl::SDL_mixer::s_szStopValue ? EConnectionType::Stop : EConnectionType::Start;
+#endif      // USE_BACKWARDS_COMPATIBILITY
+				if (connectionType == CryAudio::Impl::SDL_mixer::s_szStopValue)
+				{
+					pConnection->m_type = EConnectionType::Stop;
+				}
+				else if (connectionType == CryAudio::Impl::SDL_mixer::s_szPauseValue)
+				{
+					pConnection->m_type = EConnectionType::Pause;
+				}
+				else if (connectionType == CryAudio::Impl::SDL_mixer::s_szResumeValue)
+				{
+					pConnection->m_type = EConnectionType::Resume;
+				}
+				else
+				{
+					pConnection->m_type = EConnectionType::Start;
+				}
 
 				string enablePanning = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szPanningEnabledAttribute);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
@@ -230,7 +245,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 				{
 					enablePanning = pNode->getAttr("enable_panning");
 				}
-#endif // USE_BACKWARDS_COMPATIBILITY
+#endif      // USE_BACKWARDS_COMPATIBILITY
 				pConnection->m_isPanningEnabled = enablePanning == CryAudio::Impl::SDL_mixer::s_szTrueValue ? true : false;
 
 				string enableDistAttenuation = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationEnabledAttribute);
@@ -239,7 +254,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 				{
 					enableDistAttenuation = pNode->getAttr("enable_distance_attenuation");
 				}
-#endif // USE_BACKWARDS_COMPATIBILITY
+#endif      // USE_BACKWARDS_COMPATIBILITY
 				pConnection->m_isAttenuationEnabled = enableDistAttenuation == CryAudio::Impl::SDL_mixer::s_szTrueValue ? true : false;
 
 				pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMinDistanceAttribute, pConnection->m_minAttenuation);
@@ -266,7 +281,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 				{
 					pNode->getAttr("loop_count", pConnection->m_loopCount);
 				}
-#endif // USE_BACKWARDS_COMPATIBILITY
+#endif      // USE_BACKWARDS_COMPATIBILITY
 
 				if (pConnection->m_loopCount == -1)
 				{
@@ -318,27 +333,38 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 
 		pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, path);
 
-		if (pImplConnection->m_type == EConnectionType::Start)
-		{
-			pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szStartValue);
-			pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPanningEnabledAttribute, pImplConnection->m_isPanningEnabled ? CryAudio::Impl::SDL_mixer::s_szTrueValue : CryAudio::Impl::SDL_mixer::s_szFalseValue);
-			pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationEnabledAttribute, pImplConnection->m_isAttenuationEnabled ? CryAudio::Impl::SDL_mixer::s_szTrueValue : CryAudio::Impl::SDL_mixer::s_szFalseValue);
-			pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMinDistanceAttribute, pImplConnection->m_minAttenuation);
-			pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMaxDistanceAttribute, pImplConnection->m_maxAttenuation);
-			pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szVolumeAttribute, pImplConnection->m_volume);
+		EConnectionType const type = pImplConnection->m_type;
 
-			if (pImplConnection->m_isInfiniteLoop)
-			{
-				pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLoopCountAttribute, -1);
-			}
-			else
-			{
-				pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLoopCountAttribute, pImplConnection->m_loopCount);
-			}
-		}
-		else
+		switch (type)
 		{
+		case EConnectionType::Start:
+			{
+				pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szStartValue);
+				pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPanningEnabledAttribute, pImplConnection->m_isPanningEnabled ? CryAudio::Impl::SDL_mixer::s_szTrueValue : CryAudio::Impl::SDL_mixer::s_szFalseValue);
+				pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationEnabledAttribute, pImplConnection->m_isAttenuationEnabled ? CryAudio::Impl::SDL_mixer::s_szTrueValue : CryAudio::Impl::SDL_mixer::s_szFalseValue);
+				pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMinDistanceAttribute, pImplConnection->m_minAttenuation);
+				pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMaxDistanceAttribute, pImplConnection->m_maxAttenuation);
+				pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szVolumeAttribute, pImplConnection->m_volume);
+
+				if (pImplConnection->m_isInfiniteLoop)
+				{
+					pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLoopCountAttribute, -1);
+				}
+				else
+				{
+					pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLoopCountAttribute, pImplConnection->m_loopCount);
+				}
+			}
+			break;
+		case EConnectionType::Stop:
 			pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szStopValue);
+			break;
+		case EConnectionType::Pause:
+			pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szPauseValue);
+			break;
+		case EConnectionType::Resume:
+			pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szResumeValue);
+			break;
 		}
 	}
 

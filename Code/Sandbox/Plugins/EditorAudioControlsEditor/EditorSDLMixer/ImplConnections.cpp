@@ -113,6 +113,8 @@ void CConnection::Serialize(Serialization::IArchive& ar)
 SERIALIZATION_ENUM_BEGIN(EConnectionType, "Event Type")
 SERIALIZATION_ENUM(EConnectionType::Start, "start", "Start")
 SERIALIZATION_ENUM(EConnectionType::Stop, "stop", "Stop")
+SERIALIZATION_ENUM(EConnectionType::Pause, "pause", "Pause")
+SERIALIZATION_ENUM(EConnectionType::Resume, "resume", "Resume")
 SERIALIZATION_ENUM_END()
 } // namespace SDLMixer
-} //namespace ACE
+} // namespace ACE

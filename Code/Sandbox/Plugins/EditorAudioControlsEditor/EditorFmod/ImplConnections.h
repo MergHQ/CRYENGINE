@@ -14,6 +14,8 @@ enum class EEventType
 {
 	Start,
 	Stop,
+	Pause,
+	Resume,
 };
 
 class CEventConnection final : public CImplConnection
@@ -38,6 +40,36 @@ public:
 private:
 
 	EEventType m_type;
+};
+
+enum class ESnapshotType
+{
+	Start,
+	Stop,
+};
+
+class CSnapshotConnection final : public CImplConnection
+{
+public:
+
+	explicit CSnapshotConnection(CID const nID)
+		: CImplConnection(nID)
+		, m_type(ESnapshotType::Start)
+	{}
+
+	CSnapshotConnection() = delete;
+
+	// CImplConnection
+	virtual bool HasProperties() const override { return true; }
+	virtual void Serialize(Serialization::IArchive& ar) override;
+	// ~CImplConnection
+
+	void          SetType(ESnapshotType const type) { m_type = type; }
+	ESnapshotType GetType() const                   { return m_type; }
+
+private:
+
+	ESnapshotType m_type;
 };
 
 class CParamConnection final : public CImplConnection

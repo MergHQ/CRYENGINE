@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -101,6 +101,20 @@ struct IImpl
 	 * @see MuteAll
 	 */
 	virtual ERequestStatus UnmuteAll() = 0;
+
+	/**
+	 * Pauses playback of all audio events.
+	 * @return ERequestStatus::Success if the action was successful, ERequestStatus::Failure otherwise.
+	 * @see ResumeAll
+	 */
+	virtual ERequestStatus PauseAll() = 0;
+
+	/**
+	 * Resumes playback of all audio events.
+	 * @return ERequestStatus::Success if the action was successful, ERequestStatus::Failure otherwise.
+	 * @see PauseAll
+	 */
+	virtual ERequestStatus ResumeAll() = 0;
 
 	/**
 	 * Stop all currently playing sounds. Has no effect on anything triggered after this method is called.

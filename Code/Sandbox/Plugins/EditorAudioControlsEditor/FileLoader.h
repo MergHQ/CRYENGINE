@@ -6,8 +6,6 @@
 
 namespace ACE
 {
-static constexpr char* s_szDefaultLibraryName = "default_controls";
-
 class CSystemAssetsManager;
 
 class CFileLoader

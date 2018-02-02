@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioImpl.h"
@@ -135,14 +135,22 @@ void CImpl::OnRefresh()
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::OnLoseFocus()
 {
-	SoundEngine::Pause();
+	if (!m_isMuted)
+	{
+		SoundEngine::Mute();
+	}
+
 	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::OnGetFocus()
 {
-	SoundEngine::Resume();
+	if (!m_isMuted)
+	{
+		SoundEngine::UnMute();
+	}
+
 	return ERequestStatus::Success;
 }
 
@@ -150,6 +158,7 @@ ERequestStatus CImpl::OnGetFocus()
 ERequestStatus CImpl::MuteAll()
 {
 	SoundEngine::Mute();
+	m_isMuted = true;
 	return ERequestStatus::Success;
 }
 
@@ -157,6 +166,21 @@ ERequestStatus CImpl::MuteAll()
 ERequestStatus CImpl::UnmuteAll()
 {
 	SoundEngine::UnMute();
+	m_isMuted = false;
+	return ERequestStatus::Success;
+}
+
+///////////////////////////////////////////////////////////////////////////
+ERequestStatus CImpl::PauseAll()
+{
+	SoundEngine::Pause();
+	return ERequestStatus::Success;
+}
+
+///////////////////////////////////////////////////////////////////////////
+ERequestStatus CImpl::ResumeAll()
+{
+	SoundEngine::Resume();
 	return ERequestStatus::Success;
 }
 
@@ -311,31 +335,55 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 				fullFilePath = szFileName;
 			}
 
-			pTrigger->m_sampleId = SoundEngine::LoadSample(fullFilePath, true);
-			pTrigger->m_bStartEvent = (_stricmp(pRootNode->getAttr(s_szTypeAttribute), s_szStopValue) != 0);
+			pTrigger->SetSampleId(SoundEngine::LoadSample(fullFilePath, true));
 
-			if (pTrigger->m_bStartEvent)
+			if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), s_szStopValue) == 0)
 			{
-				pTrigger->m_bPanningEnabled = (_stricmp(pRootNode->getAttr(s_szPanningEnabledAttribute), s_szTrueValue) == 0);
+				pTrigger->SetType(EEventType::Stop);
+			}
+			else if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), s_szPauseValue) == 0)
+			{
+				pTrigger->SetType(EEventType::Pause);
+			}
+			else if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), s_szResumeValue) == 0)
+			{
+				pTrigger->SetType(EEventType::Resume);
+			}
+			else
+			{
+				pTrigger->SetType(EEventType::Start);
+			}
+
+			if (pTrigger->GetType() == EEventType::Start)
+			{
+				pTrigger->SetPanningEnabled(_stricmp(pRootNode->getAttr(s_szPanningEnabledAttribute), s_szTrueValue) == 0);
 				bool bAttenuationEnabled = (_stricmp(pRootNode->getAttr(s_szAttenuationEnabledAttribute), s_szTrueValue) == 0);
+
 				if (bAttenuationEnabled)
 				{
-					pRootNode->getAttr(s_szAttenuationMinDistanceAttribute, pTrigger->m_attenuationMinDistance);
-					pRootNode->getAttr(s_szAttenuationMaxDistanceAttribute, pTrigger->m_attenuationMaxDistance);
+					float minDistance = 0.0f;
+					pRootNode->getAttr(s_szAttenuationMinDistanceAttribute, minDistance);
+					pTrigger->SetAttenuationMinDistance(minDistance);
+
+					float maxDistance = 0.0f;
+					pRootNode->getAttr(s_szAttenuationMaxDistanceAttribute, maxDistance);
+					pTrigger->SetAttenuationMaxDistance(maxDistance);
 				}
 				else
 				{
-					pTrigger->m_attenuationMinDistance = -1.0f;
-					pTrigger->m_attenuationMaxDistance = -1.0f;
+					pTrigger->SetAttenuationMinDistance(-1.0f);
+					pTrigger->SetAttenuationMaxDistance(-1.0f);
 				}
 
 				// Translate decibel to normalized value.
 				static const int maxVolume = 128;
 				float volume = 0.0f;
 				pRootNode->getAttr(s_szVolumeAttribute, volume);
-				pTrigger->m_volume = static_cast<int>(pow_tpl(10.0f, volume / 20.0f) * maxVolume);
+				pTrigger->SetVolume(static_cast<int>(pow_tpl(10.0f, volume / 20.0f) * maxVolume));
 
-				pRootNode->getAttr(s_szLoopCountAttribute, pTrigger->m_numLoops);
+				int numLoops = 0;
+				pRootNode->getAttr(s_szLoopCountAttribute, numLoops);
+				pTrigger->SetNumLoops(numLoops);
 			}
 		}
 	}

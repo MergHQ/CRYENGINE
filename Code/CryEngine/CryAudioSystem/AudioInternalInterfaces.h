@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -34,10 +34,6 @@ enum class EAudioManagerRequestType : EnumFlagsType
 	SetAudioImpl,
 	ReleaseAudioImpl,
 	RefreshAudioSystem,
-	LoseFocus,
-	GetFocus,
-	MuteAll,
-	UnmuteAll,
 	StopAllSounds,
 	ParseControlsData,
 	ParsePreloadsData,

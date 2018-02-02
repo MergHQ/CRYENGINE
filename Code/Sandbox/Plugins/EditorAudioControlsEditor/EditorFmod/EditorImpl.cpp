@@ -390,9 +390,13 @@ ConnectionPtr CEditorImpl::CreateConnectionToControl(ESystemItemType const contr
 	{
 		auto const type = static_cast<EImplItemType>(pImplItem->GetType());
 
-		if ((type == EImplItemType::Event) || (type == EImplItemType::Snapshot))
+		if (type == EImplItemType::Event)
 		{
 			pConnection = std::make_shared<CEventConnection>(pImplItem->GetId());
+		}
+		else if (type == EImplItemType::Snapshot)
+		{
+			pConnection = std::make_shared<CSnapshotConnection>(pImplItem->GetId());
 		}
 		else if ((type == EImplItemType::Parameter) || (type == EImplItemType::VCA))
 		{
@@ -481,7 +485,6 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 			switch (type)
 			{
 			case EImplItemType::Event:
-			case EImplItemType::Snapshot:
 				{
 					string eventType = pNode->getAttr(CryAudio::s_szTypeAttribute);
 
@@ -492,7 +495,39 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 					}
 #endif        // USE_BACKWARDS_COMPATIBILITY
 					auto const pConnection = std::make_shared<CEventConnection>(pImplItem->GetId());
-					pConnection->SetType((eventType == CryAudio::Impl::Fmod::s_szStopValue) ? EEventType::Stop : EEventType::Start);
+
+					if (eventType == CryAudio::Impl::Fmod::s_szStopValue)
+					{
+						pConnection->SetType(EEventType::Stop);
+					}
+					else if (eventType == CryAudio::Impl::Fmod::s_szPauseValue)
+					{
+						pConnection->SetType(EEventType::Pause);
+					}
+					else if (eventType == CryAudio::Impl::Fmod::s_szResumeValue)
+					{
+						pConnection->SetType(EEventType::Resume);
+					}
+					else
+					{
+						pConnection->SetType(EEventType::Start);
+					}
+
+					pConnectionPtr = pConnection;
+				}
+				break;
+			case EImplItemType::Snapshot:
+				{
+					string eventType = pNode->getAttr(CryAudio::s_szTypeAttribute);
+
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+					if (eventType.IsEmpty() && pNode->haveAttr("fmod_event_type"))
+					{
+						eventType = pNode->getAttr("fmod_event_type");
+					}
+#endif        // USE_BACKWARDS_COMPATIBILITY
+					auto const pConnection = std::make_shared<CSnapshotConnection>(pImplItem->GetId());
+					pConnection->SetType((eventType == CryAudio::Impl::Fmod::s_szStopValue) ? ESnapshotType::Stop : ESnapshotType::Start);
 					pConnectionPtr = pConnection;
 				}
 				break;
@@ -576,12 +611,33 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 		switch (type)
 		{
 		case EImplItemType::Event:
-		case EImplItemType::Snapshot:
 			{
 				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, Utils::GetPathName(pImplControl, m_rootControl));
 				auto const pEventConnection = static_cast<const CEventConnection*>(pConnection.get());
 
-				if ((pEventConnection != nullptr) && (pEventConnection->GetType() == EEventType::Stop))
+				if (pEventConnection != nullptr)
+				{
+					if (pEventConnection->GetType() == EEventType::Stop)
+					{
+						pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::s_szStopValue);
+					}
+					else if (pEventConnection->GetType() == EEventType::Pause)
+					{
+						pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::s_szPauseValue);
+					}
+					else if (pEventConnection->GetType() == EEventType::Resume)
+					{
+						pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::s_szResumeValue);
+					}
+				}
+			}
+			break;
+		case EImplItemType::Snapshot:
+			{
+				pConnectionNode->setAttr(CryAudio::s_szNameAttribute, Utils::GetPathName(pImplControl, m_rootControl));
+				auto const pEventConnection = static_cast<const CSnapshotConnection*>(pConnection.get());
+
+				if ((pEventConnection != nullptr) && (pEventConnection->GetType() == ESnapshotType::Stop))
 				{
 					pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::Fmod::s_szStopValue);
 				}

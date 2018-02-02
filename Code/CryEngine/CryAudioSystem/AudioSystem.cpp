@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioSystem.h"
@@ -506,54 +506,6 @@ void CSystem::ReportFinishedEvent(
   SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SAudioCallbackManagerRequestData<EAudioCallbackManagerRequestType::ReportFinishedEvent> requestData(event, bSuccess);
-	CAudioRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
-	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::LostFocus(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SAudioManagerRequestData<EAudioManagerRequestType::LoseFocus> requestData;
-	CAudioRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
-	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::GotFocus(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SAudioManagerRequestData<EAudioManagerRequestType::GetFocus> requestData;
-	CAudioRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
-	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::MuteAll(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SAudioManagerRequestData<EAudioManagerRequestType::MuteAll> requestData;
-	CAudioRequest request(&requestData);
-	request.flags = userData.flags;
-	request.pOwner = userData.pOwner;
-	request.pUserData = userData.pUserData;
-	request.pUserDataOwner = userData.pUserDataOwner;
-	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::UnmuteAll(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
-{
-	SAudioManagerRequestData<EAudioManagerRequestType::UnmuteAll> requestData;
 	CAudioRequest request(&requestData);
 	request.flags = userData.flags;
 	request.pOwner = userData.pOwner;

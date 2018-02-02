@@ -38,6 +38,7 @@ CImpl::CImpl()
 	, m_pLowLevelSystem(nullptr)
 	, m_pMasterBank(nullptr)
 	, m_pStringsBank(nullptr)
+	, m_isMuted(false)
 {
 	m_constructedObjects.reserve(256);
 }
@@ -193,25 +194,53 @@ ERequestStatus CImpl::Release()
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::OnLoseFocus()
 {
-	return MuteMasterBus(true);
+	if (!m_isMuted)
+	{
+		MuteMasterBus(true);
+	}
+
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::OnGetFocus()
 {
-	return MuteMasterBus(false);
+	if (!m_isMuted)
+	{
+		MuteMasterBus(false);
+	}
+
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::MuteAll()
 {
-	return MuteMasterBus(true);
+	MuteMasterBus(true);
+	m_isMuted = true;
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::UnmuteAll()
 {
-	return MuteMasterBus(false);
+	MuteMasterBus(false);
+	m_isMuted = false;
+	return ERequestStatus::Success;
+}
+
+///////////////////////////////////////////////////////////////////////////
+ERequestStatus CImpl::PauseAll()
+{
+	PauseMasterBus(true);
+	return ERequestStatus::Success;
+}
+
+///////////////////////////////////////////////////////////////////////////
+ERequestStatus CImpl::ResumeAll()
+{
+	PauseMasterBus(false);
+	return ERequestStatus::Success;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -491,9 +520,20 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 			EEventType eventType = EEventType::Start;
 			char const* const szEventType = pRootNode->getAttr(s_szTypeAttribute);
 
-			if ((szEventType != nullptr) && (szEventType[0] != '\0') && (_stricmp(szEventType, s_szStopValue) == 0))
+			if ((szEventType != nullptr) && (szEventType[0] != '\0'))
 			{
-				eventType = EEventType::Stop;
+				if (_stricmp(szEventType, s_szStopValue) == 0)
+				{
+					eventType = EEventType::Stop;
+				}
+				else if (_stricmp(szEventType, s_szPauseValue) == 0)
+				{
+					eventType = EEventType::Pause;
+				}
+				else if (_stricmp(szEventType, s_szResumeValue) == 0)
+				{
+					eventType = EEventType::Resume;
+				}
 			}
 
 			pTrigger = new CTrigger(StringToId(path.c_str()), eventType, nullptr, guid);
@@ -997,7 +1037,7 @@ void CImpl::UnloadMasterBanks()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::MuteMasterBus(bool const bMute)
+void CImpl::MuteMasterBus(bool const shouldMute)
 {
 	FMOD::Studio::Bus* pMasterBus = nullptr;
 	FMOD_RESULT fmodResult = m_pSystem->getBus(s_szBusPrefix, &pMasterBus);
@@ -1005,11 +1045,23 @@ ERequestStatus CImpl::MuteMasterBus(bool const bMute)
 
 	if (pMasterBus != nullptr)
 	{
-		fmodResult = pMasterBus->setMute(bMute);
+		fmodResult = pMasterBus->setMute(shouldMute);
 		ASSERT_FMOD_OK;
 	}
+}
 
-	return (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
+//////////////////////////////////////////////////////////////////////////
+void CImpl::PauseMasterBus(bool const shouldPause)
+{
+	FMOD::Studio::Bus* pMasterBus = nullptr;
+	FMOD_RESULT fmodResult = m_pSystem->getBus(s_szBusPrefix, &pMasterBus);
+	ASSERT_FMOD_OK;
+
+	if (pMasterBus != nullptr)
+	{
+		fmodResult = pMasterBus->setPaused(shouldPause);
+		ASSERT_FMOD_OK;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

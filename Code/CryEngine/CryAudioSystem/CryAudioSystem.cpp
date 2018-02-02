@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioCVars.h"
@@ -49,12 +49,12 @@ public:
 					if (wparam == 0 || lparam != 0)
 					{
 						// lost focus
-						gEnv->pAudioSystem->LostFocus(m_requestUserData);
+						gEnv->pAudioSystem->ExecuteTrigger(LoseFocusTriggerId);
 					}
 					else
 					{
 						// got focus
-						gEnv->pAudioSystem->GotFocus(m_requestUserData);
+						gEnv->pAudioSystem->ExecuteTrigger(GetFocusTriggerId);
 					}
 
 					break;
@@ -65,12 +65,12 @@ public:
 					if (wparam == 0)
 					{
 						// lost focus
-						gEnv->pAudioSystem->LostFocus(m_requestUserData);
+						gEnv->pAudioSystem->ExecuteTrigger(LoseFocusTriggerId);
 					}
 					else
 					{
 						// got focus
-						gEnv->pAudioSystem->GotFocus(m_requestUserData);
+						gEnv->pAudioSystem->ExecuteTrigger(GetFocusTriggerId);
 					}
 
 					break;
@@ -78,10 +78,6 @@ public:
 			}
 		}
 	}
-
-private:
-
-	SRequestUserData const m_requestUserData;
 };
 
 static CSystemEventListener_Sound g_system_event_listener_sound;

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "AudioInternalInterfaces.h"
@@ -37,10 +37,6 @@ SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestDa
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::SetAudioImpl)
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::ReleaseAudioImpl)
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::RefreshAudioSystem)
-				AM_REQUEST_BLOCK(EAudioManagerRequestType::LoseFocus)
-				AM_REQUEST_BLOCK(EAudioManagerRequestType::GetFocus)
-				AM_REQUEST_BLOCK(EAudioManagerRequestType::MuteAll)
-				AM_REQUEST_BLOCK(EAudioManagerRequestType::UnmuteAll)
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::StopAllSounds)
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::ParseControlsData)
 				AM_REQUEST_BLOCK(EAudioManagerRequestType::ParsePreloadsData)

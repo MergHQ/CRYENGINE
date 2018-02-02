@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -31,6 +31,8 @@ public:
 	virtual ERequestStatus      OnGetFocus() override;
 	virtual ERequestStatus      MuteAll() override;
 	virtual ERequestStatus      UnmuteAll() override;
+	virtual ERequestStatus      PauseAll() override;
+	virtual ERequestStatus      ResumeAll() override;
 	virtual ERequestStatus      StopAllSounds() override;
 	virtual ERequestStatus      RegisterInMemoryFile(SFileInfo* const pFileInfo) override;
 	virtual ERequestStatus      UnregisterInMemoryFile(SFileInfo* const pFileInfo) override;
@@ -72,10 +74,13 @@ private:
 	static char const* const s_szBusPrefix;
 	static char const* const s_szVcaPrefix;
 
-	void           CreateVersionString(CryFixedStringT<MaxInfoStringLength>& stringOut) const;
-	bool           LoadMasterBanks();
-	void           UnloadMasterBanks();
-	ERequestStatus MuteMasterBus(bool const bMute);
+	void CreateVersionString(CryFixedStringT<MaxInfoStringLength>& stringOut) const;
+	bool LoadMasterBanks();
+	void UnloadMasterBanks();
+	void MuteMasterBus(bool const shouldMute);
+	void PauseMasterBus(bool const shouldPause);
+
+	bool                                  m_isMuted;
 
 	Objects                               m_constructedObjects;
 
