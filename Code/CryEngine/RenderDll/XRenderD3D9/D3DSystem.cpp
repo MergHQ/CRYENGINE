@@ -476,7 +476,7 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 			SetWindowLongPtrW(m_hWnd, GWL_STYLE, fullscreenStyle);
 		}
 			
-		SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, displayWidth, displayWidth, SWP_SHOWWINDOW | SWP_NOMOVE);
+		SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, displayWidth, displayHeight, SWP_SHOWWINDOW | SWP_NOMOVE);
 	}
 	else if (m_windowState == EWindowState::BorderlessWindow || m_windowState == EWindowState::BorderlessFullscreen)
 	{
@@ -1074,7 +1074,11 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 		if (m_hWnd)
 		{
 			ShowWindow(m_hWnd, SW_SHOWNORMAL);
-			SetFocus(m_hWnd);
+			const bool wasFocusSet = SetFocus(m_hWnd) != nullptr;
+			CRY_ASSERT(wasFocusSet);
+			// Attempt to move the window to the foreground and activate it
+			// Note that this will fail if the user alt-tabbed away to another application while the engine was starting
+			// See https://msdn.microsoft.com/en-us/library/windows/desktop/ms633539(v=vs.85).aspx
 			SetForegroundWindow(m_hWnd);
 		}
 	}

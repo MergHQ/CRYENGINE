@@ -607,6 +607,22 @@ void CRenderDisplayContext::SetFullscreenState(bool isFullscreen)
 	if (m_pSwapChain == nullptr)
 		return;
 
+#if CRY_PLATFORM_WINDOWS
+	if (isFullscreen)
+	{
+		// Attempt to move the window to the foreground and activate it
+		// If this failed, chances are that the user alt-tabbed to another window and started working there
+		// In that case it is not possible to activate the window, so we opt to minimize and let the user return to fullscreen when they want
+		// See https://msdn.microsoft.com/en-us/library/windows/desktop/ms633539(v=vs.85).aspx
+		const bool wasActivated = SetForegroundWindow(reinterpret_cast<HWND>(m_hWnd)) != 0;
+		if (!wasActivated)
+		{
+			isFullscreen = false;
+			ShowWindow(reinterpret_cast<HWND>(m_hWnd), SW_MINIMIZE);
+		}
+	}
+#endif
+
 #if (CRY_RENDERER_DIRECT3D >= 110) || (CRY_RENDERER_VULKAN >= 10)
 	if (isFullscreen)
 	{
