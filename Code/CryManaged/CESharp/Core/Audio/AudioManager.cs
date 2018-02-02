@@ -45,6 +45,11 @@ namespace CryEngine
 
 		private static void RemoveListener()
 		{
+			if(_requestListener == null)
+			{
+				return;
+			}
+
 			// Remove listener from c++
 			IntPtr fnPtr = System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(_requestListener);
 			NativeAudioSystem.RemoveAudioRequestListener(fnPtr);
