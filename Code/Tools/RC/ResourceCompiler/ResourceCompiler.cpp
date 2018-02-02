@@ -43,7 +43,7 @@
 
 #include <psapi.h> // GetProcessMemoryInfo()
 #include <cctype> // tolower
-#include <locale>
+#include <Shellapi.h>
 
 #pragma comment( lib, "Version.lib" )
 
@@ -1792,78 +1792,20 @@ static void EnableCrtMemoryChecks()
 }
 
 
-static void GetCommandLineArguments(std::vector<string>& resArgs, const string& cmdLine)
+static void GetCommandLineArguments(std::vector<string>& resArgs)
 {
+	LPWSTR *argv;
+	int argc;
+
+	argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+
 	resArgs.clear();
-
-	const char* src = cmdLine.data();
-
-	auto next = [](const char*& src) -> string
+	resArgs.reserve(argc);
+	for (int i = 0; i < argc; ++i)
 	{
-		char ch = 0;
-		const char* org = src;
-
-		while (ch = *src++)
-		{
-			switch (ch)
-			{
-				case '\'':
-				case '\"':
-					org = src;
-
-					while ((*src++ != ch) && *src)
-						;
-
-					return string(org, src - 1);
-
-				case '[':
-					org = src;
-					while ((*src++ != ']') && *src)
-						;
-					return string(org, src - 1);
-
-				case ' ':
-					continue;
-				default:
-					org = src - 1;
-					for (; *src != ' ' && *src != '\t' && *src; ++src)
-						;
-
-					return string(org, src);
-			}
-		}
-
-		return string();
-	};
-
-	for (;; )
-	{
-		if (*src == '\0')
-			break;
-
-		string arg = next(src);
-
-		if (resArgs.empty())
-		{
-			// this is the filename, convert backslash to forward slash
-			arg.replace('\\', '/');
-			resArgs.push_back(arg.c_str());
-		}
-		else if (!arg.empty())
-		{
-			resArgs.emplace_back();
-
-			for(char c : arg)
-			{
-				if (c != '"')
-				{
-					resArgs.back() += c;
-				}
-			}
-		}
+		resArgs.push_back(CryStringUtils::WStrToUTF8(argv[i]));
 	}
 }
-
 
 static void AddCommandLineArgumentsFromFile(std::vector<string>& args, const char* const pFilename)
 {
@@ -1976,7 +1918,7 @@ static void GetFileSizeAndCrc32(int64& size, uint32& crc32, const char* pFilenam
 static CrashHandler s_crashHandler;
 
 //////////////////////////////////////////////////////////////////////////
-int __cdecl main(int argCount, char** argv, char** envp)
+int __cdecl main(int argCount, char** argv)
 {
 #if 0
 	EnableCrtMemoryChecks();
@@ -1995,12 +1937,9 @@ int __cdecl main(int argCount, char** argv, char** envp)
 		return eRcExitCode_Success;
 	}
 
-	// Note: lpCmdLine does not contain the filename.
-	string cmdLine = CryStringUtils::ANSIToUTF8(GetCommandLineA());
-
 	std::vector<string> args;
 	{
-		GetCommandLineArguments(args, cmdLine);
+		GetCommandLineArguments(args);
 
 		const string filename = string(rc.GetExePath()) + rc.m_filenameOptions;
 		AddCommandLineArgumentsFromFile(args, filename.c_str());
