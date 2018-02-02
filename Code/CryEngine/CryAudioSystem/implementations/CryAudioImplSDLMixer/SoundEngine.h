@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -43,6 +43,9 @@ bool           StopFile(CObject* const pObject, CStandaloneFile* const pStandalo
 bool StopEvent(CEvent const* const pEvent);
 // stops all the events associated with this trigger
 bool StopTrigger(CTrigger const* const pTrigger);
+
+bool PauseEvent(CEvent const* const pEvent);
+bool ResumeEvent(CEvent const* const pEvent);
 
 // Listeners
 bool SetListenerPosition(ListenerId const listenerId, CObjectTransformation const& transformation);

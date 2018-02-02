@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "ATLAudioObject.h"
@@ -335,9 +335,9 @@ ERequestStatus CATLAudioObject::HandleExecuteTrigger(
 		{
 			s_pEventManager->ReleaseEvent(pEvent);
 
-			if (activateResult == ERequestStatus::SuccessfullyStopped)
+			if (activateResult == ERequestStatus::SuccessDoNotTrack)
 			{
-				// An event which was successfully stopped is a success.
+				// An event which should not get tracked is a success.
 				result = ERequestStatus::Success;
 			}
 		}

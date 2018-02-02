@@ -54,6 +54,8 @@ enum class EEventType : EnumFlagsType
 	None,
 	Start,
 	Stop,
+	Pause,
+	Resume,
 };
 
 class CTrigger final : public ITrigger

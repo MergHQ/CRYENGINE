@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -22,6 +22,7 @@ using TriggerImplId = IdType;
 using TriggerInstanceId = IdType;
 using EnumFlagsType = IdType;
 using AuxObjectId = IdType;
+using LibraryId = IdType;
 
 static constexpr ControlId InvalidControlId = 0;
 static constexpr SwitchStateId InvalidSwitchStateId = 0;
@@ -71,7 +72,7 @@ enum class ERequestStatus : EnumFlagsType
 {
 	None,
 	Success,
-	SuccessfullyStopped,
+	SuccessDoNotTrack,
 	SuccessNeedsRefresh,
 	PartialSuccess,
 	Failure,

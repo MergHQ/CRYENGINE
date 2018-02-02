@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -38,34 +38,31 @@ public:
 	virtual ~CImplItem() = default;
 
 	// unique id for this control
-	CID           GetId() const                            { return m_id; }
-	void          SetId(CID const id)                      { m_id = id; }
+	CID           GetId() const                        { return m_id; }
 
-	ItemType      GetType() const                          { return m_type; }
-	void          SetType(ItemType const type)             { m_type = type; }
+	ItemType      GetType() const                      { return m_type; }
 
-	string        GetName() const                          { return m_name; }
-	void          SetName(string const& name)              { m_name = name; }
+	string        GetName() const                      { return m_name; }
 
-	string const& GetFilePath() const                      { return m_filePath; }
-	void          SetFilePath(string const& filePath)      { m_filePath = filePath; }
+	string const& GetFilePath() const                  { return m_filePath; }
+	void          SetFilePath(string const& filePath)  { m_filePath = filePath; }
 
-	size_t        ChildCount() const                       { return m_children.size(); }
-	void          AddChild(CImplItem* const pChild)        { m_children.emplace_back(pChild); pChild->SetParent(this); }
-	void          RemoveChild(CImplItem* const pChild)     { stl::find_and_erase(m_children, pChild); pChild->SetParent(nullptr); }
-	CImplItem*    GetChildAt(size_t const index) const     { return m_children[index]; }
-	CImplItem*    GetParent() const                        { return m_pParent; }
-	void          SetParent(CImplItem* const pParent)      { m_pParent = pParent; }
+	size_t        ChildCount() const                   { return m_children.size(); }
+	void          AddChild(CImplItem* const pChild)    { m_children.emplace_back(pChild); pChild->SetParent(this); }
+	void          RemoveChild(CImplItem* const pChild) { stl::find_and_erase(m_children, pChild); pChild->SetParent(nullptr); }
+	CImplItem*    GetChildAt(size_t const index) const { return m_children[index]; }
+	CImplItem*    GetParent() const                    { return m_pParent; }
+	void          SetParent(CImplItem* const pParent)  { m_pParent = pParent; }
 
-	float         GetRadius() const                        { return m_radius; }
-	void          SetRadius(float const radius)            { m_radius = radius; }
+	float         GetRadius() const                    { return m_radius; }
+	void          SetRadius(float const radius)        { m_radius = radius; }
 
-	bool          IsPlaceholder() const                    { return (m_flags & EImplItemFlags::IsPlaceHolder) != 0; }
-	bool          IsLocalised() const                      { return (m_flags & EImplItemFlags::IsLocalized) != 0; }
-	bool          IsConnected() const                      { return (m_flags & EImplItemFlags::IsConnected) != 0; }
-	bool          IsContainer() const                      { return (m_flags & EImplItemFlags::IsContainer) != 0; }
+	bool          IsPlaceholder() const                { return (m_flags& EImplItemFlags::IsPlaceHolder) != 0; }
+	bool          IsLocalised() const                  { return (m_flags& EImplItemFlags::IsLocalized) != 0; }
+	bool          IsConnected() const                  { return (m_flags& EImplItemFlags::IsConnected) != 0; }
+	bool          IsContainer() const                  { return (m_flags& EImplItemFlags::IsContainer) != 0; }
 
-	void SetPlaceholder(bool const isPlaceholder)
+	void          SetPlaceholder(bool const isPlaceholder)
 	{
 		if (isPlaceholder)
 		{

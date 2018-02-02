@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "SoundEngine.h"
@@ -439,7 +439,7 @@ void SoundEngine::UnMute()
 					ChannelList::const_iterator channelEnd = pEventInstance->m_channels.end();
 					for (; channelIt != channelEnd; ++channelIt)
 					{
-						Mix_Volume(*channelIt, pEventInstance->m_pTrigger->m_volume);
+						Mix_Volume(*channelIt, pEventInstance->m_pTrigger->GetVolume());
 					}
 				}
 			}
@@ -451,8 +451,8 @@ void SoundEngine::UnMute()
 void SetChannelPosition(const CTrigger* pStaticData, const int channelID, const float distance, const float angle)
 {
 	static const uint8 sdlMaxDistance = 255;
-	const float min = pStaticData->m_attenuationMinDistance;
-	const float max = pStaticData->m_attenuationMaxDistance;
+	const float min = pStaticData->GetAttenuationMinDistance();
+	const float max = pStaticData->GetAttenuationMaxDistance();
 	if (min <= max)
 	{
 		uint8 nDistance = 0;
@@ -472,7 +472,7 @@ void SetChannelPosition(const CTrigger* pStaticData, const int channelID, const 
 		//Temp code, to be reviewed during the SetChannelPosition rewrite:
 		Mix_SetDistance(channelID, nDistance);
 
-		if (pStaticData->m_bPanningEnabled)
+		if (pStaticData->IsPanningEnabled())
 		{
 			//Temp code, to be reviewed during the SetChannelPosition rewrite:
 			float const absAngle = fabs(angle);
@@ -496,11 +496,49 @@ bool SoundEngine::StopEvent(CEvent const* const pEvent)
 	{
 		// need to make a copy because the callback
 		// registered with Mix_ChannelFinished can edit the list
-		ChannelList channels = pEvent->m_channels;
-		for (int channel : channels)
+		ChannelList const channels = pEvent->m_channels;
+
+		for (int const channel : channels)
 		{
 			Mix_HaltChannel(channel);
 		}
+
+		return true;
+	}
+	return false;
+}
+
+bool SoundEngine::PauseEvent(CEvent const* const pEvent)
+{
+	if (pEvent != nullptr)
+	{
+		// need to make a copy because the callback
+		// registered with Mix_ChannelFinished can edit the list
+		ChannelList const channels = pEvent->m_channels;
+
+		for (int const channel : channels)
+		{
+			Mix_Pause(channel);
+		}
+
+		return true;
+	}
+	return false;
+}
+
+bool SoundEngine::ResumeEvent(CEvent const* const pEvent)
+{
+	if (pEvent != nullptr)
+	{
+		// need to make a copy because the callback
+		// registered with Mix_ChannelFinished can edit the list
+		ChannelList channels = pEvent->m_channels;
+
+		for (int const channel : channels)
+		{
+			Mix_Resume(channel);
+		}
+
 		return true;
 	}
 	return false;
@@ -512,22 +550,24 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 
 	if (pObject != nullptr && pTrigger != nullptr && pEvent != nullptr)
 	{
-		if (pTrigger->m_bStartEvent)
+		EEventType const type = pTrigger->GetType();
+
+		if (type == EEventType::Start)
 		{
 			// Start playing samples
 			pEvent->m_pTrigger = pTrigger;
 
-			Mix_Chunk* pSample = stl::find_in_map(g_sampleData, pTrigger->m_sampleId, nullptr);
+			Mix_Chunk* pSample = stl::find_in_map(g_sampleData, pTrigger->GetSampleId(), nullptr);
 
 			if (pSample == nullptr)
 			{
 				// Trying to play sample that hasn't been loaded yet, load it in place
 				// NOTE: This should be avoided as it can cause lag in audio playback
-				string const& samplePath = g_samplePaths[pTrigger->m_sampleId];
+				string const& samplePath = g_samplePaths[pTrigger->GetSampleId()];
 
-				if (LoadSampleImpl(pTrigger->m_sampleId, samplePath))
+				if (LoadSampleImpl(pTrigger->GetSampleId(), samplePath))
 				{
-					pSample = stl::find_in_map(g_sampleData, pTrigger->m_sampleId, nullptr);
+					pSample = stl::find_in_map(g_sampleData, pTrigger->GetSampleId(), nullptr);
 				}
 
 				if (pSample == nullptr)
@@ -536,7 +576,7 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 				}
 			}
 
-			int loopCount = pTrigger->m_numLoops;
+			int loopCount = pTrigger->GetNumLoops();
 
 			if (loopCount > 0)
 			{
@@ -551,7 +591,7 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 				if (channelID >= 0)
 				{
 					g_freeChannels.pop();
-					Mix_Volume(channelID, g_bMuted ? 0 : pTrigger->m_volume);
+					Mix_Volume(channelID, g_bMuted ? 0 : pTrigger->GetVolume());
 
 					// Get distance and angle from the listener to the audio object
 					float distance = 0.0f;
@@ -581,18 +621,28 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 		}
 		else
 		{
-			// Stop event in audio object.
-			SampleId const sampleId = pTrigger->m_sampleId;
+			SampleId const sampleId = pTrigger->GetSampleId();
 
-			for (auto const pEventToStop : pObject->m_events)
+			for (auto const pEventToProcess : pObject->m_events)
 			{
-				if (pEventToStop->m_pTrigger->m_sampleId == sampleId)
+				if (pEventToProcess->m_pTrigger->GetSampleId() == sampleId)
 				{
-					SoundEngine::StopEvent(pEventToStop);
+					switch (type)
+					{
+					case EEventType::Stop:
+						SoundEngine::StopEvent(pEventToProcess);
+						break;
+					case EEventType::Pause:
+						SoundEngine::PauseEvent(pEventToProcess);
+						break;
+					case EEventType::Resume:
+						SoundEngine::ResumeEvent(pEventToProcess);
+						break;
+					}
 				}
 			}
 
-			requestStatus = ERequestStatus::SuccessfullyStopped;
+			requestStatus = ERequestStatus::SuccessDoNotTrack;
 		}
 	}
 

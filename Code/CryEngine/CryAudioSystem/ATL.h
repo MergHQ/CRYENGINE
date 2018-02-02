@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -16,8 +16,7 @@ namespace CryAudio
 enum class EInternalStates : EnumFlagsType
 {
 	None                        = 0,
-	IsMuted                     = BIT(0),
-	AudioMiddlewareShuttingDown = BIT(1),
+	AudioMiddlewareShuttingDown = BIT(0),
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EInternalStates);
 
@@ -72,7 +71,7 @@ private:
 	void           CreateInternalControls();
 	void           SetCurrentEnvironmentsOnObject(CATLAudioObject* const pObject, EntityId const entityToIgnore, Vec3 const& position);
 
-	void           CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId);
+	void           CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId, CATLTriggerImpl const* const pTriggerImpl);
 	void           CreateInternalSwitch(char const* const szSwitchName, ControlId const switchId, std::vector<char const*> const& stateNames);
 
 	// ATLObject containers

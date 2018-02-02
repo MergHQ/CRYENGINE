@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "SystemAssetsManager.h"
@@ -601,7 +601,7 @@ void CSystemAssetsManager::UpdateAssetConnectionStates(CSystemAsset* const pAsse
 				pControl->SetHasControl(true);
 
 				bool hasPlaceholder = false;
-				bool hasConnection = false;
+				bool hasConnection = pControl->IsDefaultControl();
 				size_t const connectionCount = pControl->GetConnectionCount();
 
 				for (size_t i = 0; i < connectionCount; ++i)

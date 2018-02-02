@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "ATL.h"
@@ -373,105 +373,6 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioManagerRequest(CAudioRequest 
 		{
 			SAudioManagerRequestData<EAudioManagerRequestType::RefreshAudioSystem> const* const pRequestData = static_cast<SAudioManagerRequestData<EAudioManagerRequestType::RefreshAudioSystem> const*>(request.GetData());
 			result = RefreshAudioSystem(pRequestData->levelName);
-
-			break;
-		}
-	case EAudioManagerRequestType::LoseFocus:
-		{
-			if (
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			  (g_cvars.m_ignoreWindowFocus == 0) &&
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-			  (m_flags& EInternalStates::IsMuted) == 0)
-			{
-				CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, LoseFocusTriggerId, nullptr);
-
-				if (pTrigger != nullptr)
-				{
-					m_pGlobalAudioObject->HandleExecuteTrigger(pTrigger);
-				}
-				else
-				{
-					Cry::Audio::Log(ELogType::Warning, "Could not find definition of lose focus trigger");
-				}
-
-				result = m_pIImpl->OnLoseFocus();
-			}
-
-			break;
-		}
-	case EAudioManagerRequestType::GetFocus:
-		{
-			if (
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-			  (g_cvars.m_ignoreWindowFocus == 0) &&
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-			  (m_flags& EInternalStates::IsMuted) == 0)
-			{
-				result = m_pIImpl->OnGetFocus();
-				CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, GetFocusTriggerId, nullptr);
-
-				if (pTrigger != nullptr)
-				{
-					m_pGlobalAudioObject->HandleExecuteTrigger(pTrigger);
-				}
-				else
-				{
-					Cry::Audio::Log(ELogType::Warning, "Could not find definition of get focus trigger");
-				}
-			}
-
-			break;
-		}
-	case EAudioManagerRequestType::MuteAll:
-		{
-			CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, MuteAllTriggerId, nullptr);
-
-			if (pTrigger != nullptr)
-			{
-				m_pGlobalAudioObject->HandleExecuteTrigger(pTrigger);
-			}
-			else
-			{
-				Cry::Audio::Log(ELogType::Warning, "Could not find definition of mute all trigger");
-			}
-
-			result = m_pIImpl->MuteAll();
-
-			if (result == ERequestStatus::Success)
-			{
-				m_flags |= EInternalStates::IsMuted;
-			}
-			else
-			{
-				m_flags &= ~EInternalStates::IsMuted;
-			}
-
-			break;
-		}
-	case EAudioManagerRequestType::UnmuteAll:
-		{
-			result = m_pIImpl->UnmuteAll();
-
-			if (result != ERequestStatus::Success)
-			{
-				m_flags |= EInternalStates::IsMuted;
-			}
-			else
-			{
-				m_flags &= ~EInternalStates::IsMuted;
-			}
-
-			CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, UnmuteAllTriggerId, nullptr);
-
-			if (pTrigger != nullptr)
-			{
-				m_pGlobalAudioObject->HandleExecuteTrigger(pTrigger);
-			}
-			else
-			{
-				Cry::Audio::Log(ELogType::Warning, "Could not find definition of unmute trigger");
-			}
 
 			break;
 		}
@@ -1380,9 +1281,10 @@ bool CAudioTranslationLayer::OnInputEvent(SInputEvent const& event)
 void CAudioTranslationLayer::CreateInternalControls()
 {
 	m_internalControls.m_switchStates.clear();
-	m_internalControls.m_triggers.clear();
+	m_internalControls.m_triggerConnections.clear();
+	m_internalControls.m_parameterConnections.clear();
 
-	// Occlusion
+	// Occlusion switch
 	COcclusionObstructionState const* const pOcclusionIgnore = new COcclusionObstructionState(IgnoreStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, IgnoreStateId)] = pOcclusionIgnore;
 
@@ -1398,23 +1300,54 @@ void CAudioTranslationLayer::CreateInternalControls()
 	COcclusionObstructionState const* const pOcclusionHigh = new COcclusionObstructionState(HighStateId, m_audioListenerMgr, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(OcclusionCalcSwitchId, HighStateId)] = pOcclusionHigh;
 
-	// Relative Velocity Tracking
+	// Relative Velocity Tracking switch
 	CRelativeVelocityTrackingState const* const pRelativeVelocityTrackingOn = new CRelativeVelocityTrackingState(OnStateId, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(RelativeVelocityTrackingSwitchId, OnStateId)] = pRelativeVelocityTrackingOn;
 
 	CRelativeVelocityTrackingState const* const pRelativeVelocityTrackingOff = new CRelativeVelocityTrackingState(OffStateId, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(RelativeVelocityTrackingSwitchId, OffStateId)] = pRelativeVelocityTrackingOff;
 
-	// Absolute Velocity Tracking
+	// Absolute Velocity Tracking switch
 	CAbsoluteVelocityTrackingState const* const pAbsoluteVelocityTrackingOn = new CAbsoluteVelocityTrackingState(OnStateId, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OnStateId)] = pAbsoluteVelocityTrackingOn;
 
 	CAbsoluteVelocityTrackingState const* const pAbsoluteVelocityTrackingOff = new CAbsoluteVelocityTrackingState(OffStateId, *m_pGlobalAudioObject);
 	m_internalControls.m_switchStates[std::make_pair(AbsoluteVelocityTrackingSwitchId, OffStateId)] = pAbsoluteVelocityTrackingOff;
 
-	// Do Nothing
+	// Do Nothing trigger
 	CDoNothingTrigger const* const pDoNothingTrigger = new CDoNothingTrigger(DoNothingTriggerId);
-	m_internalControls.m_triggers[DoNothingTriggerId] = pDoNothingTrigger;
+
+	// Lose focus trigger
+	CLoseFocusTrigger const* const pLoseFocusTrigger = new CLoseFocusTrigger(LoseFocusTriggerId, *m_pIImpl);
+	m_internalControls.m_triggerConnections[LoseFocusTriggerId] = pLoseFocusTrigger;
+
+	// Get focus trigger
+	CGetFocusTrigger const* const pGetFocusTrigger = new CGetFocusTrigger(GetFocusTriggerId, *m_pIImpl);
+	m_internalControls.m_triggerConnections[GetFocusTriggerId] = pGetFocusTrigger;
+
+	// Mute all trigger
+	CMuteAllTrigger const* const pMuteAllTrigger = new CMuteAllTrigger(MuteAllTriggerId, *m_pIImpl);
+	m_internalControls.m_triggerConnections[MuteAllTriggerId] = pMuteAllTrigger;
+
+	// Unmute all trigger
+	CUnmuteAllTrigger const* const pUnmuteAllTrigger = new CUnmuteAllTrigger(UnmuteAllTriggerId, *m_pIImpl);
+	m_internalControls.m_triggerConnections[UnmuteAllTriggerId] = pUnmuteAllTrigger;
+
+	// Pause all trigger
+	CPauseAllTrigger const* const pPauseAllTrigger = new CPauseAllTrigger(PauseAllTriggerId, *m_pIImpl);
+	m_internalControls.m_triggerConnections[PauseAllTriggerId] = pPauseAllTrigger;
+
+	// Resume all trigger
+	CResumeAllTrigger const* const pResumeAllTrigger = new CResumeAllTrigger(ResumeAllTriggerId, *m_pIImpl);
+	m_internalControls.m_triggerConnections[ResumeAllTriggerId] = pResumeAllTrigger;
+
+	// Absolute Velocity parameter
+	CAbsoluteVelocityParameter const* const pAbsoluteVelocityParameter = new CAbsoluteVelocityParameter();
+	m_internalControls.m_parameterConnections[AbsoluteVelocityParameterId] = pAbsoluteVelocityParameter;
+
+	// Relative Velocity parameter
+	CRelativeVelocityParameter const* const pRelativeVelocityParameter = new CRelativeVelocityParameter();
+	m_internalControls.m_parameterConnections[RelativeVelocityParameterId] = pRelativeVelocityParameter;
 
 	// Create internal controls.
 	std::vector<char const*> const occlStates {
@@ -1428,31 +1361,21 @@ void CAudioTranslationLayer::CreateInternalControls()
 	CreateInternalSwitch(s_szRelativeVelocityTrackingSwitchName, RelativeVelocityTrackingSwitchId, onOffStates);
 	CreateInternalSwitch(s_szAbsoluteVelocityTrackingSwitchName, AbsoluteVelocityTrackingSwitchId, onOffStates);
 
-	CreateInternalTrigger(s_szDoNothingTriggerName, DoNothingTriggerId);
+	CreateInternalTrigger(s_szDoNothingTriggerName, DoNothingTriggerId, pDoNothingTrigger);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioTranslationLayer::CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId)
+void CAudioTranslationLayer::CreateInternalTrigger(char const* const szTriggerName, ControlId const triggerId, CATLTriggerImpl const* const pTriggerImpl)
 {
-	if ((triggerId != InvalidControlId) && (stl::find_in_map(m_triggers, triggerId, nullptr) == nullptr))
-	{
-		CATLTrigger::ImplPtrVec implPtrs;
-		implPtrs.reserve(1);
+	CATLTrigger::ImplPtrVec implPtrs;
+	implPtrs.push_back(pTriggerImpl);
 
-		CATLTriggerImpl const* const pTriggerImpl = stl::find_in_map(m_internalControls.m_triggers, triggerId, nullptr);
-
-		if (pTriggerImpl != nullptr)
-		{
-			implPtrs.push_back(pTriggerImpl);
-		}
-
-		CATLTrigger* const pNewTrigger = new CATLTrigger(triggerId, EDataScope::Global, implPtrs, 0.0f);
+	CATLTrigger* const pNewTrigger = new CATLTrigger(triggerId, EDataScope::Global, implPtrs, 0.0f);
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-		pNewTrigger->m_name = szTriggerName;
+	pNewTrigger->m_name = szTriggerName;
 #endif  // INCLUDE_AUDIO_PRODUCTION_CODE
 
-		m_triggers[triggerId] = pNewTrigger;
-	}
+	m_triggers[triggerId] = pNewTrigger;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -294,47 +294,99 @@ ERequestStatus CObjectBase::ExecuteTrigger(ITrigger const* const pITrigger, IEve
 	if ((pTrigger != nullptr) && (pEvent != nullptr))
 	{
 		pEvent->SetTrigger(pTrigger);
+		auto const type = pTrigger->GetEventType();
 
-		if (pTrigger->GetEventType() == EEventType::Start)
+		switch (type)
 		{
-			FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
-			FMOD::Studio::EventDescription* pEventDescription = pTrigger->GetEventDescription();
-
-			if (pEventDescription == nullptr)
+		case EEventType::Start:
 			{
-				FMOD_GUID const guid = pTrigger->GetGuid();
-				fmodResult = s_pSystem->getEventByID(&guid, &pEventDescription);
-				ASSERT_FMOD_OK;
-			}
+				FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
+				FMOD::Studio::EventDescription* pEventDescription = pTrigger->GetEventDescription();
 
-			if (pEventDescription != nullptr)
+				if (pEventDescription == nullptr)
+				{
+					FMOD_GUID const guid = pTrigger->GetGuid();
+					fmodResult = s_pSystem->getEventByID(&guid, &pEventDescription);
+					ASSERT_FMOD_OK;
+				}
+
+				if (pEventDescription != nullptr)
+				{
+					CRY_ASSERT(pEvent->GetInstance() == nullptr);
+
+					FMOD::Studio::EventInstance* pInstance = nullptr;
+					fmodResult = pEventDescription->createInstance(&pInstance);
+					ASSERT_FMOD_OK;
+					pEvent->SetInstance(pInstance);
+					fmodResult = pEvent->GetInstance()->setCallback(EventCallback, FMOD_STUDIO_EVENT_CALLBACK_START_FAILED | FMOD_STUDIO_EVENT_CALLBACK_STOPPED);
+					ASSERT_FMOD_OK;
+					fmodResult = pEvent->GetInstance()->setUserData(pEvent);
+					ASSERT_FMOD_OK;
+					fmodResult = pEvent->GetInstance()->set3DAttributes(&m_attributes);
+					ASSERT_FMOD_OK;
+
+					CRY_ASSERT(pEvent->GetId() == InvalidCRC32);
+					pEvent->SetId(pTrigger->GetId());
+					pEvent->SetObject(this);
+
+					CRY_ASSERT_MESSAGE(std::find(m_pendingEvents.begin(), m_pendingEvents.end(), pEvent) == m_pendingEvents.end(), "Event was already in the pending list");
+					m_pendingEvents.push_back(pEvent);
+					requestResult = ERequestStatus::Success;
+				}
+			}
+			break;
+		case EEventType::Stop:
 			{
-				CRY_ASSERT(pEvent->GetInstance() == nullptr);
-
-				FMOD::Studio::EventInstance* pInstance = nullptr;
-				fmodResult = pEventDescription->createInstance(&pInstance);
-				ASSERT_FMOD_OK;
-				pEvent->SetInstance(pInstance);
-				fmodResult = pEvent->GetInstance()->setCallback(EventCallback, FMOD_STUDIO_EVENT_CALLBACK_START_FAILED | FMOD_STUDIO_EVENT_CALLBACK_STOPPED);
-				ASSERT_FMOD_OK;
-				fmodResult = pEvent->GetInstance()->setUserData(pEvent);
-				ASSERT_FMOD_OK;
-				fmodResult = pEvent->GetInstance()->set3DAttributes(&m_attributes);
-				ASSERT_FMOD_OK;
-
-				CRY_ASSERT(pEvent->GetId() == InvalidCRC32);
-				pEvent->SetId(pTrigger->GetId());
-				pEvent->SetObject(this);
-
-				CRY_ASSERT_MESSAGE(std::find(m_pendingEvents.begin(), m_pendingEvents.end(), pEvent) == m_pendingEvents.end(), "Event was already in the pending list");
-				m_pendingEvents.push_back(pEvent);
-				requestResult = ERequestStatus::Success;
+				StopEvent(pTrigger->GetId());
+				requestResult = ERequestStatus::SuccessDoNotTrack;
 			}
-		}
-		else
-		{
-			StopEvent(pTrigger->GetId());
-			requestResult = ERequestStatus::SuccessfullyStopped;
+			break;
+		case EEventType::Pause:
+		case EEventType::Resume:
+			{
+				FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
+				FMOD::Studio::EventDescription* pEventDescription = pTrigger->GetEventDescription();
+
+				if (pEventDescription == nullptr)
+				{
+					FMOD_GUID const guid = pTrigger->GetGuid();
+					fmodResult = s_pSystem->getEventByID(&guid, &pEventDescription);
+					ASSERT_FMOD_OK;
+				}
+
+				if (pEventDescription != nullptr)
+				{
+					CRY_ASSERT(pEvent->GetInstance() == nullptr);
+
+					bool const shouldPause = (type == EEventType::Pause);
+					int const capacity = 32;
+					int count = 0;
+
+#if defined(INCLUDE_FMOD_IMPL_PRODUCTION_CODE)
+					fmodResult = pEventDescription->getInstanceCount(&count);
+					ASSERT_FMOD_OK;
+					CRY_ASSERT_MESSAGE(count < capacity, "Instance count (%d) is higher or equal than array capacity (%d).", count, capacity);
+#endif          // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
+
+					FMOD::Studio::EventInstance* eventInstances[capacity];
+					fmodResult = pEventDescription->getInstanceList(eventInstances, capacity, &count);
+					ASSERT_FMOD_OK;
+
+					for (int i = 0; i < count; ++i)
+					{
+						auto const pInstance = eventInstances[i];
+
+						if (pInstance != nullptr)
+						{
+							fmodResult = pInstance->setPaused(shouldPause);
+							ASSERT_FMOD_OK;
+						}
+					}
+
+					requestResult = ERequestStatus::SuccessDoNotTrack;
+				}
+			}
+			break;
 		}
 	}
 	else

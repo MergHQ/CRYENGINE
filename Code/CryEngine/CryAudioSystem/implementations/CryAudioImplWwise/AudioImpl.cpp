@@ -701,7 +701,6 @@ ERequestStatus CImpl::OnGetFocus()
 ERequestStatus CImpl::MuteAll()
 {
 	// With Wwise we drive this via events.
-	// Note: Still, make sure to return eARS_SUCCESS to signal the ATL.
 	return ERequestStatus::Success;
 }
 
@@ -709,7 +708,20 @@ ERequestStatus CImpl::MuteAll()
 ERequestStatus CImpl::UnmuteAll()
 {
 	// With Wwise we drive this via events.
-	// Note: Still, make sure to return eARS_SUCCESS to signal the ATL.
+	return ERequestStatus::Success;
+}
+
+///////////////////////////////////////////////////////////////////////////
+ERequestStatus CImpl::PauseAll()
+{
+	// With Wwise we drive this via events.
+	return ERequestStatus::Success;
+}
+
+///////////////////////////////////////////////////////////////////////////
+ERequestStatus CImpl::ResumeAll()
+{
+	// With Wwise we drive this via events.
 	return ERequestStatus::Success;
 }
 

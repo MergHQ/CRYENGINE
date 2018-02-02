@@ -26,6 +26,8 @@ static constexpr char* s_szLocalizedAttribute = "localized";
 // XML values
 static constexpr char* s_szTrueValue = "true";
 static constexpr char* s_szStopValue = "stop";
+static constexpr char* s_szPauseValue = "pause";
+static constexpr char* s_szResumeValue = "resume";
 } // namespace Fmod
 } // namespace Impl
 } // namespace CryAudio
