@@ -12,11 +12,13 @@
 #include "IEditor.h"
 #include <AssetSystem/AssetEditor.h>
 #include <AssetSystem/AssetManager.h>
+#include "Notifications/NotificationCenter.h"
 #include <FilePathUtil.h>
 #include "Util/FileUtil.h"
 #include "ThreadingUtils.h"
 #include "Util/Image.h"
 #include "Util/ImageUtil.h"
+#include "QtUtil.h"
 
 #include "SubstanceCommon.h"
 #include "SubstancePreset.h"
@@ -63,7 +65,10 @@ namespace EditorSubstance {
 
 			if (changeType == IFileChangeListener::eChangeType_Created || changeType == IFileChangeListener::eChangeType_Modified || changeType == IFileChangeListener::eChangeType_RenamedNewName)
 			{
-				ThreadingUtils::Async([assetPath]() {
+				ThreadingUtils::AsyncQueue([assetPath]() 
+				{
+					CProgressNotification notification(tr("Saving substance textures"), QString(QtUtil::ToQString(assetPath)));
+
 					const string gameFolderPath = PathUtil::AddSlash(PathUtil::GetGameProjectAssetsPath());
 					string additionalSettings;
 					// TODO for now it looks like sandbox isn't reloading the texture when tif is not existent and dd

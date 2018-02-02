@@ -235,9 +235,9 @@ void CPlanningTextureStreamer::Job_UpdateMip(CTexture* pTexture, const float fMi
 
 	const int nZoneId = (nFlags & FPR_SINGLE_FRAME_PRIORITY_UPDATE) ? 0 : 1;
 
-	STexStreamingInfo* pStrmInfo = pTexture->m_pFileTexMips;
+	STexStreamingInfo* const pStrmInfo = pTexture->m_pFileTexMips;
 
-	if (fMipFactor < pStrmInfo->m_fMinMipFactor)
+	if (pStrmInfo && (fMipFactor < pStrmInfo->m_fMinMipFactor))
 	{
 		STexStreamZoneInfo& rZoneInfo = pStrmInfo->m_arrSPInfo[nZoneId];
 		STexStreamRoundInfo& rRoundInfo = pTexture->m_streamRounds[nZoneId];
