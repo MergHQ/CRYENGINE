@@ -429,10 +429,7 @@ int BakeScaleIntoGeometry(phys_geometry *&pgeom,IGeomManager *pGeoman, const Vec
 		if (bReleaseOld)
 			pGeoman->UnregisterGeometry(pgeom);
 		pGeomScaled->SetForeignData(pgeom,DATA_UNSCALED_GEOM);
-		int *pMatMapping = 0;
-		if (pgeom->nMats)
-			memcpy(pMatMapping = new int[pgeom->nMats], pgeom->pMatMapping, pgeom->nMats*sizeof(int));
-		pgeom = pGeoman->RegisterGeometry(pGeomScaled, pgeom->surface_idx,pMatMapping,pgeom->nMats);
+		pgeom = pGeoman->RegisterGeometry(pGeomScaled, pgeom->surface_idx, pgeom->pMatMapping,pgeom->nMats);
 		pgeom->nRefCount = 0;	pGeomScaled->Release();
 		return 1;
 	}
