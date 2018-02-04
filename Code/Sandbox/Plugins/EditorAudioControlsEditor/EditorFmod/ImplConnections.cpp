@@ -27,6 +27,22 @@ void CEventConnection::Serialize(Serialization::IArchive& ar)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CSnapshotConnection::Serialize(Serialization::IArchive& ar)
+{
+	ESnapshotType const type = m_type;
+
+	ar(m_type, "action", "Action");
+
+	if (ar.isInput())
+	{
+		if (type != m_type)
+		{
+			SignalConnectionChanged();
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CParamConnection::Serialize(Serialization::IArchive& ar)
 {
 	float const mult = m_mult;
@@ -71,6 +87,13 @@ void CParamToStateConnection::Serialize(Serialization::IArchive& ar)
 SERIALIZATION_ENUM_BEGIN(EEventType, "Event Type")
 SERIALIZATION_ENUM(EEventType::Start, "start", "Start")
 SERIALIZATION_ENUM(EEventType::Stop, "stop", "Stop")
+SERIALIZATION_ENUM(EEventType::Pause, "pause", "Pause")
+SERIALIZATION_ENUM(EEventType::Resume, "resume", "Resume")
+SERIALIZATION_ENUM_END()
+
+SERIALIZATION_ENUM_BEGIN(ESnapshotType, "Snapshot Type")
+SERIALIZATION_ENUM(ESnapshotType::Start, "start", "Start")
+SERIALIZATION_ENUM(ESnapshotType::Stop, "stop", "Stop")
 SERIALIZATION_ENUM_END()
 } // namespace Fmod
 } // namespace ACE

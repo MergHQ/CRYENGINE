@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -21,13 +21,13 @@ public:
 	CImplSettings();
 
 	// IImplSettings
-	virtual char const* GetAssetsPath() const override { return m_assetsPath.c_str(); }
-	virtual char const* GetProjectPath() const override { return m_projectPath.c_str(); }
+	virtual char const* GetAssetsPath() const override         { return m_assetsPath.c_str(); }
+	virtual char const* GetProjectPath() const override        { return m_projectPath.c_str(); }
 	virtual void        SetProjectPath(char const* szPath) override;
 	virtual bool        IsProjectPathEditable() const override { return true; }
 	// ~IImplSettings
 
-	void                Serialize(Serialization::IArchive& ar);
+	void Serialize(Serialization::IArchive& ar);
 
 private:
 
@@ -65,11 +65,11 @@ private:
 	void CreateControlCache(CImplItem const* const pParent);
 
 	// Generates the ID of the control given its full path name.
-	CID  GenerateID(string const& controlName, bool isLocalized, CImplItem* pParent) const;
+	CID GenerateID(string const& controlName, bool isLocalized, CImplItem* pParent) const;
 	// Convenience function to form the full path name.
 	// Controls can have the same name if they're under different parents so knowledge of the parent name is needed.
 	// Localized controls live in different areas of disk so we also need to know if its localized.
-	CID  GenerateID(string const& fullPathName) const;
+	CID GenerateID(string const& fullPathName) const;
 
 	using ControlsCache = std::map<CID, CImplItem*>;
 	using ConnectionsMap = std::map<CID, int>;

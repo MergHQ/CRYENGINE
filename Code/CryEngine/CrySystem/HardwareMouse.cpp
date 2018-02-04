@@ -667,11 +667,9 @@ bool CHardwareMouse::SetCursor(int idc_cursor_id)
 
 		if (m_hCursor)
 		{
-			if (HCURSOR ret = ::SetCursor(m_hCursor))
-			{
-				m_nCurIDCCursorId = idc_cursor_id;
-				m_curCursorPath.clear();
-			}
+			::SetCursor(m_hCursor);
+			m_nCurIDCCursorId = idc_cursor_id;
+			m_curCursorPath.clear();
 		}
 	}
 	else // SW cursor
@@ -721,11 +719,9 @@ bool CHardwareMouse::SetCursor(const char* path)
 		// Set cursor
 		if (m_hCursor)
 		{
-			if (HCURSOR ret = ::SetCursor(m_hCursor))
-			{
-				m_nCurIDCCursorId = 0;
-				m_curCursorPath.assign(path);
-			}
+			::SetCursor(m_hCursor);
+			m_nCurIDCCursorId = 0;
+			m_curCursorPath.assign(path);
 		}
 		return m_hCursor != nullptr;
 #else

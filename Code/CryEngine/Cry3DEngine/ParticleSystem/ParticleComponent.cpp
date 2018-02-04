@@ -364,10 +364,19 @@ void CParticleComponent::Compile()
 
 	// add default features
 	for (uint b = 1; b < EFT_END; b <<= 1)
+	{
 		if (!(featureMask & b))
+		{
 			if (auto* params = GetPSystem()->GetDefaultFeatureParam(EFeatureType(b)))
+			{
 				if (auto* feature = params->m_pFactory())
+				{
+					m_defaultFeatures.push_back(pfx2::TParticleFeaturePtr(static_cast<CParticleFeature*>(feature)));
 					static_cast<CParticleFeature*>(feature)->AddToComponent(this, &m_componentParams);
+				}
+			}
+		}
+	}
 }
 
 void CParticleComponent::FinalizeCompile()

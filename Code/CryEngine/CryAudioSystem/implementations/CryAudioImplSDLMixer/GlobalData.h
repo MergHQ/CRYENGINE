@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -27,6 +27,8 @@ static constexpr char* s_szTrueValue = "true";
 static constexpr char* s_szFalseValue = "false";
 static constexpr char* s_szStartValue = "start";
 static constexpr char* s_szStopValue = "stop";
+static constexpr char* s_szPauseValue = "pause";
+static constexpr char* s_szResumeValue = "resume";
 } // namespace SDL_mixer
 } // namespace Impl
 } // namespace CryAudio

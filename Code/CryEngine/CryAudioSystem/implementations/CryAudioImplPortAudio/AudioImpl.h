@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -33,6 +33,8 @@ public:
 	virtual ERequestStatus      OnGetFocus() override;
 	virtual ERequestStatus      MuteAll() override;
 	virtual ERequestStatus      UnmuteAll() override;
+	virtual ERequestStatus      PauseAll() override;
+	virtual ERequestStatus      ResumeAll() override;
 	virtual ERequestStatus      StopAllSounds() override;
 	virtual ERequestStatus      RegisterInMemoryFile(SFileInfo* const pFileInfo) override;
 	virtual ERequestStatus      UnregisterInMemoryFile(SFileInfo* const pFileInfo) override;

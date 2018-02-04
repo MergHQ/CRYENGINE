@@ -307,7 +307,7 @@ void CFileLoader::CreateInternalControls()
 {
 	// Create internal default controls.
 	// These controls are hidden in the ACE and don't get written to XML!
-	CSystemAsset* const pLibrary = static_cast<CSystemAsset*>(m_assetsManager.CreateLibrary(s_szDefaultLibraryName));
+	CSystemAsset* const pLibrary = static_cast<CSystemAsset*>(m_assetsManager.CreateLibrary(CryAudio::s_szDefaultLibraryName));
 
 	if (pLibrary != nullptr)
 	{
@@ -363,7 +363,7 @@ void CFileLoader::CreateDefaultControls()
 	// Create default controls if they don't exist.
 	// These controls need to always exist in your project!
 	bool wasModified = false;
-	CSystemAsset* const pLibrary = static_cast<CSystemAsset*>(m_assetsManager.CreateLibrary(s_szDefaultLibraryName));
+	CSystemAsset* const pLibrary = static_cast<CSystemAsset*>(m_assetsManager.CreateLibrary(CryAudio::s_szDefaultLibraryName));
 
 	if (pLibrary != nullptr)
 	{
@@ -373,6 +373,8 @@ void CFileLoader::CreateDefaultControls()
 		m_assetsManager.CreateDefaultControl(CryAudio::s_szLoseFocusTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
 		m_assetsManager.CreateDefaultControl(CryAudio::s_szMuteAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
 		m_assetsManager.CreateDefaultControl(CryAudio::s_szUnmuteAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szPauseAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szResumeAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
 		m_assetsManager.CreateDefaultControl(CryAudio::s_szAbsoluteVelocityParameterName, ESystemItemType::Parameter, pLibrary, wasModified);
 		m_assetsManager.CreateDefaultControl(CryAudio::s_szRelativeVelocityParameterName, ESystemItemType::Parameter, pLibrary, wasModified);
 

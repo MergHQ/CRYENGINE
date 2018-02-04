@@ -1748,7 +1748,7 @@ namespace Schematyc2
 					serializedStateIdx = m_stateNetIdxMapper.Encode(stateMachine.iCurrentState);
 				}
 
-				serialize.EnumValue(m_pLibClass->GetStateMachine(stateMachineIdx)->GetName(), serializedStateIdx, invalidStateIdx, statesCount);
+				serialize.IntegerWithRangeValue(m_pLibClass->GetStateMachine(stateMachineIdx)->GetName(), serializedStateIdx, invalidStateIdx, statesCount);
 
 				if(isReading)
 				{

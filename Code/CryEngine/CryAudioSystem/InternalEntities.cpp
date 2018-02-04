@@ -1,9 +1,11 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "InternalEntities.h"
 #include "AudioListenerManager.h"
 #include "ATLAudioObject.h"
+#include "AudioCVars.h"
+#include <IAudioImpl.h>
 
 namespace CryAudio
 {
@@ -119,6 +121,122 @@ CDoNothingTrigger::CDoNothingTrigger(TriggerImplId const id)
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CDoNothingTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
 {
-	return ERequestStatus::SuccessfullyStopped;
+	return ERequestStatus::SuccessDoNotTrack;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CLoseFocusTrigger::CLoseFocusTrigger(TriggerImplId const id, Impl::IImpl& iImpl)
+	: CATLTriggerImpl(id)
+	, m_iImpl(iImpl)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CLoseFocusTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
+{
+	ERequestStatus result = ERequestStatus::SuccessDoNotTrack;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	if (g_cvars.m_ignoreWindowFocus == 0)
+	{
+		result = m_iImpl.OnLoseFocus();
+	}
+#else
+	result = m_iImpl.OnLoseFocus();
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	return result == ERequestStatus::Success ? ERequestStatus::SuccessDoNotTrack : result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CGetFocusTrigger::CGetFocusTrigger(TriggerImplId const id, Impl::IImpl& iImpl)
+	: CATLTriggerImpl(id)
+	, m_iImpl(iImpl)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CGetFocusTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
+{
+	ERequestStatus result = ERequestStatus::SuccessDoNotTrack;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	if (g_cvars.m_ignoreWindowFocus == 0)
+	{
+		result = m_iImpl.OnGetFocus();
+	}
+#else
+	result = m_iImpl.OnGetFocus();
+#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
+
+	return result == ERequestStatus::Success ? ERequestStatus::SuccessDoNotTrack : result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CMuteAllTrigger::CMuteAllTrigger(TriggerImplId const id, Impl::IImpl& iImpl)
+	: CATLTriggerImpl(id)
+	, m_iImpl(iImpl)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CMuteAllTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
+{
+	ERequestStatus const result = m_iImpl.MuteAll();
+	return result == ERequestStatus::Success ? ERequestStatus::SuccessDoNotTrack : result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CUnmuteAllTrigger::CUnmuteAllTrigger(TriggerImplId const id, Impl::IImpl& iImpl)
+	: CATLTriggerImpl(id)
+	, m_iImpl(iImpl)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CUnmuteAllTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
+{
+	ERequestStatus const result = m_iImpl.UnmuteAll();
+	return result == ERequestStatus::Success ? ERequestStatus::SuccessDoNotTrack : result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CPauseAllTrigger::CPauseAllTrigger(TriggerImplId const id, Impl::IImpl& iImpl)
+	: CATLTriggerImpl(id)
+	, m_iImpl(iImpl)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CPauseAllTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
+{
+	ERequestStatus const result = m_iImpl.PauseAll();
+	return result == ERequestStatus::Success ? ERequestStatus::SuccessDoNotTrack : result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CResumeAllTrigger::CResumeAllTrigger(TriggerImplId const id, Impl::IImpl& iImpl)
+	: CATLTriggerImpl(id)
+	, m_iImpl(iImpl)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CResumeAllTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
+{
+	ERequestStatus const result = m_iImpl.ResumeAll();
+	return result == ERequestStatus::Success ? ERequestStatus::SuccessDoNotTrack : result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CAbsoluteVelocityParameter::Set(CATLAudioObject& audioObject, float const value) const
+{
+	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus CRelativeVelocityParameter::Set(CATLAudioObject& audioObject, float const value) const
+{
+	return ERequestStatus::Success;
 }
 } // namespace CryAudio

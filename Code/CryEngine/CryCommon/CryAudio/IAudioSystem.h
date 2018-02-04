@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -36,6 +36,8 @@ static constexpr char* s_szLoseFocusTriggerName = "lose_focus";
 static constexpr char* s_szGetFocusTriggerName = "get_focus";
 static constexpr char* s_szMuteAllTriggerName = "mute_all";
 static constexpr char* s_szUnmuteAllTriggerName = "unmute_all";
+static constexpr char* s_szPauseAllTriggerName = "pause_all";
+static constexpr char* s_szResumeAllTriggerName = "resume_all";
 static constexpr char* s_szDoNothingTriggerName = "do_nothing";
 static constexpr char* s_szOcclCalcSwitchName = "occlusion_calculation_type";
 static constexpr char* s_szIgnoreStateName = "ignore";
@@ -47,6 +49,7 @@ static constexpr char* s_szOnStateName = "on";
 static constexpr char* s_szOffStateName = "off";
 static constexpr char* s_szGlobalPreloadRequestName = "global_audio_system_preload";
 
+static constexpr char* s_szDefaultLibraryName = "default_controls";
 static constexpr char* s_szRootNodeTag = "AudioSystemData";
 static constexpr char* s_szEditorDataTag = "EditorData";
 static constexpr char* s_szTriggersNodeTag = "Triggers";
@@ -80,9 +83,9 @@ static constexpr char* s_szLevelsFolderName = "levels";
  * @param szSource - string to convert
  * @return a 32bit CRC computed on the lower case version of the passed string
  */
-static constexpr uint32 StringToId(char const* const szSource)
+static constexpr IdType StringToId(char const* const szSource)
 {
-	return CCrc32::ComputeLowercase_CompileTime(szSource);
+	return static_cast<IdType>(CCrc32::ComputeLowercase_CompileTime(szSource));
 }
 
 static constexpr ControlId RelativeVelocityTrackingSwitchId = StringToId(s_szRelativeVelocityTrackingSwitchName);
@@ -93,6 +96,8 @@ static constexpr ControlId LoseFocusTriggerId = StringToId(s_szLoseFocusTriggerN
 static constexpr ControlId GetFocusTriggerId = StringToId(s_szGetFocusTriggerName);
 static constexpr ControlId MuteAllTriggerId = StringToId(s_szMuteAllTriggerName);
 static constexpr ControlId UnmuteAllTriggerId = StringToId(s_szUnmuteAllTriggerName);
+static constexpr ControlId PauseAllTriggerId = StringToId(s_szPauseAllTriggerName);
+static constexpr ControlId ResumeAllTriggerId = StringToId(s_szResumeAllTriggerName);
 static constexpr ControlId DoNothingTriggerId = StringToId(s_szDoNothingTriggerName);
 static constexpr ControlId OcclusionCalcSwitchId = StringToId(s_szOcclCalcSwitchName);
 static constexpr SwitchStateId IgnoreStateId = StringToId(s_szIgnoreStateName);
@@ -103,13 +108,14 @@ static constexpr SwitchStateId HighStateId = StringToId(s_szHighStateName);
 static constexpr SwitchStateId OnStateId = StringToId(s_szOnStateName);
 static constexpr SwitchStateId OffStateId = StringToId(s_szOffStateName);
 static constexpr PreloadRequestId GlobalPreloadRequestId = StringToId(s_szGlobalPreloadRequestName);
+static constexpr LibraryId DefaultLibraryId = StringToId(s_szDefaultLibraryName);
 
 // Forward declarations.
 struct IListener;
 namespace Impl
 {
 struct IImpl;
-}
+} // namespace Impl
 
 /**
  * @enum CryAudio::ESystemEvents
@@ -419,38 +425,6 @@ struct IAudioSystem
 	 * @return void
 	 */
 	virtual void ReportFinishedEvent(CATLEvent& event, bool const bSuccess, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Used by the engine to inform the AudioSystem that the application window lost focus.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see GotFocus
-	 */
-	virtual void LostFocus(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Used by the engine to inform the AudioSystem that the application window got focus.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see LostFocus
-	 */
-	virtual void GotFocus(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Used to instruct the AudioSystem that it should mute all active sounds.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see UnmuteAll
-	 */
-	virtual void MuteAll(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Used to instruct the AudioSystem that it should unmute all active sounds.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see MuteAll
-	 */
-	virtual void UnmuteAll(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Used to instruct the AudioSystem that it should stop all playing sounds.

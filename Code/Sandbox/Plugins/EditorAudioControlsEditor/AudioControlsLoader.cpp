@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "AudioControlsLoader.h"
@@ -195,7 +195,7 @@ CSystemAsset* CAudioControlsLoader::AddUniqueFolderPath(CSystemAsset* pParent, Q
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint32 const version)
 {
-  // Always create a library file, even if no proper formatting is present.
+	// Always create a library file, even if no proper formatting is present.
 	CSystemLibrary* const pLibrary = m_pAssetsManager->CreateLibrary(filename);
 
 	if (pLibrary != nullptr)
@@ -241,7 +241,7 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 
 	if (pNode != nullptr)
 	{
-		bool const isInDefaultLibrary = (pParentItem->GetName() == s_szDefaultLibraryName);
+		bool const isInDefaultLibrary = (pParentItem->GetName() == CryAudio::s_szDefaultLibraryName);
 		QString pathName = "";
 
 		if (!isInDefaultLibrary)
@@ -257,11 +257,11 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 			ESystemItemType const controlType = TagToType_BackwardsComp(pNode->getTag());
 
 			if (!((controlType == ESystemItemType::Switch) && ((name == "ObstrOcclCalcType") ||
-				(name == "object_velocity_tracking") ||
-				(name == "object_doppler_tracking") ||
-				(name == CryAudio::s_szAbsoluteVelocityTrackingSwitchName) ||
-				(name == CryAudio::s_szRelativeVelocityTrackingSwitchName))) &&
-				!((controlType == ESystemItemType::Trigger) && (name == CryAudio::s_szDoNothingTriggerName)))
+			                                                   (name == "object_velocity_tracking") ||
+			                                                   (name == "object_doppler_tracking") ||
+			                                                   (name == CryAudio::s_szAbsoluteVelocityTrackingSwitchName) ||
+			                                                   (name == CryAudio::s_szRelativeVelocityTrackingSwitchName))) &&
+			    !((controlType == ESystemItemType::Trigger) && (name == CryAudio::s_szDoNothingTriggerName)))
 			{
 				pControl = m_pAssetsManager->FindControl(name, controlType);
 
@@ -274,23 +274,23 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 						switch (controlType)
 						{
 						case ESystemItemType::Trigger:
-						{
-							float radius = 0.0f;
-							pNode->getAttr("atl_radius", radius);
-							pControl->SetRadius(radius);
-							LoadConnections(pNode, pControl);
-						}
-						break;
-						case ESystemItemType::Switch:
-						{
-							int const stateCount = pNode->getChildCount();
-
-							for (int i = 0; i < stateCount; ++i)
 							{
-								LoadControl(pNode->getChild(i), scope, version, pControl);
+								float radius = 0.0f;
+								pNode->getAttr("atl_radius", radius);
+								pControl->SetRadius(radius);
+								LoadConnections(pNode, pControl);
 							}
-						}
-						break;
+							break;
+						case ESystemItemType::Switch:
+							{
+								int const stateCount = pNode->getChildCount();
+
+								for (int i = 0; i < stateCount; ++i)
+								{
+									LoadControl(pNode->getChild(i), scope, version, pControl);
+								}
+							}
+							break;
 						case ESystemItemType::Preload:
 							LoadPreloadConnections(pNode, pControl, version);
 							break;
@@ -305,8 +305,8 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 				}
 
 				if (isInDefaultLibrary &&
-					(!((controlType == ESystemItemType::Trigger) && (m_defaultTriggerNames.find(name) != m_defaultTriggerNames.end())) &&
-					!((controlType == ESystemItemType::Parameter) && (m_defaultParameterNames.find(name) != m_defaultParameterNames.end()))))
+				    (!((controlType == ESystemItemType::Trigger) && (m_defaultTriggerNames.find(name) != m_defaultTriggerNames.end())) &&
+				     !((controlType == ESystemItemType::Parameter) && (m_defaultParameterNames.find(name) != m_defaultParameterNames.end()))))
 				{
 					CSystemLibrary* const pLibrary = m_pAssetsManager->CreateLibrary("_default_controls_old");
 					pControl->GetParent()->RemoveChild(pControl);
@@ -552,7 +552,7 @@ void CAudioControlsLoader::LoadLibraryEditorData(XmlNodeRef const pLibraryNode, 
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsLoader::LoadAllFolders(XmlNodeRef const pFoldersNode, CSystemAsset& library)
 {
-	if ((pFoldersNode != nullptr) && (library.GetName() != s_szDefaultLibraryName))
+	if ((pFoldersNode != nullptr) && (library.GetName() != CryAudio::s_szDefaultLibraryName))
 	{
 		int const size = pFoldersNode->getChildCount();
 
@@ -612,7 +612,7 @@ void CAudioControlsLoader::LoadControlsEditorData(XmlNodeRef const pParentNode)
 
 		if ((controlType != ESystemItemType::Invalid) && !description.IsEmpty())
 		{
-			 CSystemControl* const pControl = m_pAssetsManager->FindControl(pParentNode->getAttr("name"), controlType);
+			CSystemControl* const pControl = m_pAssetsManager->FindControl(pParentNode->getAttr("name"), controlType);
 
 			if (pControl != nullptr)
 			{

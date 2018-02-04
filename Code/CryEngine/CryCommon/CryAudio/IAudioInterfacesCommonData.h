@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -22,6 +22,7 @@ using TriggerImplId = IdType;
 using TriggerInstanceId = IdType;
 using EnumFlagsType = IdType;
 using AuxObjectId = IdType;
+using LibraryId = IdType;
 
 static constexpr ControlId InvalidControlId = 0;
 static constexpr SwitchStateId InvalidSwitchStateId = 0;
@@ -82,7 +83,7 @@ enum class ERequestStatus : EnumFlagsType
 {
 	None,                    /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
 	Success,                 /**< Returned if the request processed successfully. */
-	SuccessfullyStopped,     /**< Audio middleware implementations return this if during ExecuteTrigger an event was actually stopped so that internal data can be immediately freed. */
+	SuccessDoNotTrack,       /**< Audio middleware implementations return this if during ExecuteTrigger an event was actually stopped so that internal data can be immediately freed. */
 	SuccessNeedsRefresh,     /**< Audio middleware implementations return this if after an action they require to be refreshed. */
 	PartialSuccess,          /**< Returned if the outcome of the request wasn't a complete success but also not complete failure. */
 	Failure,                 /**< Returned if the request failed to process. */

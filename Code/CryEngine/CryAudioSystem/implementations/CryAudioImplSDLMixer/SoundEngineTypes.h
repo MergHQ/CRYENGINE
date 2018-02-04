@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -14,6 +14,15 @@ namespace SDL_mixer
 using SampleId = uint;
 using ListenerId = uint;
 using ChannelList = std::vector<int>;
+
+enum class EEventType : EnumFlagsType
+{
+	None,
+	Start,
+	Stop,
+	Pause,
+	Resume,
+};
 
 class CTrigger final : public ITrigger
 {
@@ -32,13 +41,36 @@ public:
 	virtual ERequestStatus UnloadAsync(IEvent* const pIEvent) const override { return ERequestStatus::Success; }
 	// ~CryAudio::Impl::ITrigger
 
-	SampleId m_sampleId = 0;
-	float    m_attenuationMinDistance = 0.0f;
-	float    m_attenuationMaxDistance = 100.0f;
-	int      m_volume = 128;
-	int      m_numLoops = 1;
-	bool     m_bPanningEnabled = true;
-	bool     m_bStartEvent = true;
+	EEventType GetType() const                                    { return m_type; }
+	void       SetType(EEventType const type)                     { m_type = type; }
+
+	SampleId   GetSampleId() const                                { return m_sampleId; }
+	void       SetSampleId(SampleId const id)                     { m_sampleId = id; }
+
+	float      GetAttenuationMinDistance() const                  { return m_attenuationMinDistance; }
+	void       SetAttenuationMinDistance(float const minDistance) { m_attenuationMinDistance = minDistance; }
+
+	float      GetAttenuationMaxDistance() const                  { return m_attenuationMaxDistance; }
+	void       SetAttenuationMaxDistance(float const maxDistance) { m_attenuationMaxDistance = maxDistance; }
+
+	int        GetVolume() const                                  { return m_volume; }
+	void       SetVolume(int const volume)                        { m_volume = volume; }
+
+	int        GetNumLoops() const                                { return m_numLoops; }
+	void       SetNumLoops(int const numLoops)                    { m_numLoops = numLoops; }
+
+	bool       IsPanningEnabled() const                           { return m_isPanningEnabled; }
+	void       SetPanningEnabled(bool const isEnabled)            { m_isPanningEnabled = isEnabled; }
+
+private:
+
+	EEventType m_type = EEventType::Start;
+	SampleId   m_sampleId = 0;
+	float      m_attenuationMinDistance = 0.0f;
+	float      m_attenuationMaxDistance = 100.0f;
+	int        m_volume = 128;
+	int        m_numLoops = 1;
+	bool       m_isPanningEnabled = true;
 };
 
 struct SParameter final : public IParameter
