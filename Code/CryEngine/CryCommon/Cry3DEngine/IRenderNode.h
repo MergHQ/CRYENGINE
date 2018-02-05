@@ -781,39 +781,7 @@ struct IVoxelObject : public IRenderNode
 	// </interfuscator:shuffle>
 };
 
-//! IFogVolumeRenderNode is an interface to the Fog Volume Render Node object.
-struct SFogVolumeProperties
-{
-	// Common parameters.
-	// Center position & rotation values are taken from the entity matrix.
-
-	int    m_volumeType;
-	Vec3   m_size;
-	ColorF m_color;
-	bool   m_useGlobalFogColor;
-	bool   m_ignoresVisAreas;
-	bool   m_affectsThisAreaOnly;
-	float  m_globalDensity;
-	float  m_densityOffset;
-	float  m_softEdges;
-	float  m_fHDRDynamic;               //!< 0 to get the same results in LDR, <0 to get darker, >0 to get brighter.
-	float  m_nearCutoff;
-
-	float  m_heightFallOffDirLong;        //!< Height based fog specifics.
-	float  m_heightFallOffDirLati;        //!< Height based fog specifics.
-	float  m_heightFallOffShift;          //!< Height based fog specifics.
-	float  m_heightFallOffScale;          //!< Height based fog specifics.
-
-	float  m_rampStart;
-	float  m_rampEnd;
-	float  m_rampInfluence;
-	float  m_windInfluence;
-	float  m_densityNoiseScale;
-	float  m_densityNoiseOffset;
-	float  m_densityNoiseTimeFrequency;
-	Vec3   m_densityNoiseFrequency;
-	Vec3   m_emission;
-};
+struct SFogVolumeProperties;
 
 struct IFogVolumeRenderNode : public IRenderNode
 {
@@ -831,6 +799,40 @@ struct IFogVolumeRenderNode : public IRenderNode
 
 	virtual void            FadeGlobalDensity(float fadeTime, float newGlobalDensity) = 0;
 	// </interfuscator:shuffle>
+};
+
+//! IFogVolumeRenderNode is an interface to the Fog Volume Render Node object.
+struct SFogVolumeProperties
+{
+	// Common parameters.
+	// Center position & rotation values are taken from the entity matrix.
+
+	int m_volumeType = IFogVolumeRenderNode::eFogVolumeType_Box;
+	Vec3   m_size = Vec3(1.f);
+	ColorF m_color = ColorF(1, 1, 1, 1);
+	bool   m_useGlobalFogColor = false;
+	bool   m_ignoresVisAreas = false;
+	bool   m_affectsThisAreaOnly = true;
+	float  m_globalDensity = 1.f;
+	float  m_densityOffset = 0.f;
+	float  m_softEdges = 1.f;
+	float  m_fHDRDynamic = 0.f;               //!< 0 to get the same results in LDR, <0 to get darker, >0 to get brighter.
+	float  m_nearCutoff = 0.f;
+
+	float  m_heightFallOffDirLong = 0.f;        //!< Height based fog specifics.
+	float  m_heightFallOffDirLati = 0.f;        //!< Height based fog specifics.
+	float  m_heightFallOffShift = 0.f;          //!< Height based fog specifics.
+	float  m_heightFallOffScale = 1.f;          //!< Height based fog specifics.
+
+	float  m_rampStart = 0.f;
+	float  m_rampEnd = 50.f;
+	float  m_rampInfluence = 0.f;
+	float  m_windInfluence = 1.f;
+	float  m_densityNoiseScale = 0.f;
+	float  m_densityNoiseOffset = 0.f;
+	float  m_densityNoiseTimeFrequency = 0.f;
+	Vec3   m_densityNoiseFrequency = Vec3(1.f);
+	Vec3   m_emission = Vec3(1.f);
 };
 
 struct SDecalProperties

@@ -32,7 +32,6 @@ inline ERequestResult ConvertToRequestResult(ERequestStatus const eAudioRequestS
 			break;
 		}
 	case ERequestStatus::Failure:
-	case ERequestStatus::FailureInvalidObjectId:
 	case ERequestStatus::FailureInvalidControlId:
 	case ERequestStatus::FailureInvalidRequest:
 	case ERequestStatus::PartialSuccess:

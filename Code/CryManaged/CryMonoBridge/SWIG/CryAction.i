@@ -20,11 +20,6 @@
 #include <CryAction/IMaterialEffects.h>
 #include <IEffectSystem.h>
 
-#include <ICryMannequinDefs.h>
-#define MannGenCRC CCrc32::ComputeLowercase
-#include <ICryMannequinTagDefs.h>
-#include <ICryMannequin.h>
-
 #include <ICheckpointSystem.h>
 #include <IAnimationGraph.h>
 #include <ICooperativeAnimationManager.h>
@@ -64,26 +59,6 @@
 %csconstvalue("0xFFFFFFFF") eEA_All;
 %typemap(csbase) EEntityAspects "uint"
 %ignore GameWarning;
-
-%ignore SAnimationContext::randGenerator;
-%include "../../../CryEngine/CryAction/ICryMannequinTagDefs.h"
-%extend CTagDefinition {
-		STagState<12U> GenerateMaskManaged(STagStateBase tagState){
-			return $self->GenerateMask(tagState);
-	
-	}
-}
-
-%include "../../../CryEngine/CryAction/ICryMannequin.h"
-%extend TAction {
-	static TAction* CreateSAnimationContext(int priority, int fragmentID, STagState<12U> fragTags, uint flags, ulong scopeMask, uint userToken){
-		return new TAction<SAnimationContext>(priority, fragmentID, fragTags, flags, scopeMask, userToken);
-	}
-}
-%include "../../../CryEngine/CryAction/ICryMannequinProceduralClipFactory.h"
-%include "../../../CryEngine/CryAction/ICryMannequinDefs.h"
-%template(AnimationContextActionList) TAction<SAnimationContext>;
-%template(TagState) STagState<12U>;
 
 %feature("director") ILevelSystemListener;
 %include "../../../CryEngine/CryAction/ILevelSystem.h"

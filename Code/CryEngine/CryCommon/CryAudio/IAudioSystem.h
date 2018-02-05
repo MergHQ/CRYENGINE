@@ -117,42 +117,73 @@ namespace Impl
 struct IImpl;
 } // namespace Impl
 
+/**
+ * @enum CryAudio::ESystemEvents
+ * @brief A strongly typed enum class representing different audio system events that can be listened to.
+ * @var CryAudio::ESystemEvents::None
+ * @var CryAudio::ESystemEvents::ImplSet
+ * @var CryAudio::ESystemEvents::TriggerExecuted
+ * @var CryAudio::ESystemEvents::TriggerFinished
+ * @var CryAudio::ESystemEvents::FilePlay
+ * @var CryAudio::ESystemEvents::FileStarted
+ * @var CryAudio::ESystemEvents::FileStopped
+ * @var CryAudio::ESystemEvents::All
+ */
 enum class ESystemEvents : EnumFlagsType
 {
-	None            = 0,
-	ImplSet         = BIT(0),
-	TriggerExecuted = BIT(1),
-	TriggerFinished = BIT(2),
-	FilePlay        = BIT(3),
-	FileStarted     = BIT(4),
-	FileStopped     = BIT(5),
-	All             = 0xFFFFFFFF,
+	None            = 0,          /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
+	ImplSet         = BIT(0),     /**< Invoked once the audio middleware implementation has been set. */
+	TriggerExecuted = BIT(1),     /**< Invoked once a trigger finished starting all of its event connections. */
+	TriggerFinished = BIT(2),     /**< Invoked once all of the spawned event instances finished playing. */
+	FilePlay        = BIT(3),     /**< Invoked once playback of a standalone file is issued. */
+	FileStarted     = BIT(4),     /**< Invoked once playback of a standalone file has started. */
+	FileStopped     = BIT(5),     /**< Invoked once playback of a standalone file has stopped. */
+	All             = 0xFFFFFFFF, /**< Listen to all supported audio system events. */
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ESystemEvents);
 
+/**
+ * @enum CryAudio::EDataScope
+ * @brief A strongly typed enum class representing different audio specific data scopes. This is used on data such as the audio controls for example to limit their presence to a specific time frame of the program.
+ * @var CryAudio::EDataScope::None
+ * @var CryAudio::EDataScope::Global
+ * @var CryAudio::EDataScope::LevelSpecific
+ * @var CryAudio::EDataScope::All
+ */
 enum class EDataScope : EnumFlagsType
 {
-	None,
-	Global,
-	LevelSpecific,
-	All,
+	None,          /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
+	Global,        /**< Data exists globally. */
+	LevelSpecific, /**< Data exists only while the corresponding level is loaded. */
+	All,           /**< Used when the data scope is of no significance for the executing code. */
 };
 
+/**
+ * @enum CryAudio::EOcclusionType
+ * @brief A strongly typed enum class representing different audio occlusion types that can be set on audio objects.
+ * @var CryAudio::EOcclusionType::None
+ * @var CryAudio::EOcclusionType::Ignore
+ * @var CryAudio::EOcclusionType::Adaptive
+ * @var CryAudio::EOcclusionType::Low
+ * @var CryAudio::EOcclusionType::Medium
+ * @var CryAudio::EOcclusionType::High
+ * @var CryAudio::EOcclusionType::Count
+ */
 enum class EOcclusionType : EnumFlagsType
 {
-	None,
-	Ignore,
-	Adaptive,
-	Low,
-	Medium,
-	High,
-	Count,
+	None,     /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
+	Ignore,   /**< The audio object does not calculate occlusion against level geometry. */
+	Adaptive, /**< The audio object switches between occlusion types depending on its distance to the audio listener. */
+	Low,      /**< The audio object uses a coarse grained occlusion plane for calculation. */
+	Medium,   /**< The audio object uses a medium grained occlusion plane for calculation. */
+	High,     /**< The audio object uses a fine grained occlusion plane for calculation. */
+	Count,    /**< Used to initialize arrays to this size. */
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EOcclusionType);
 
 /**
  * @enum CryAudio::ELogType
- * @brief is a strongly typed enum class representing different audio specific log types
+ * @brief A strongly typed enum class representing different audio specific log types.
  * @var CryAudio::ELogType::None
  * @var CryAudio::ELogType::Comment
  * @var CryAudio::ELogType::Warning
@@ -161,11 +192,11 @@ CRY_CREATE_ENUM_FLAG_OPERATORS(EOcclusionType);
  */
 enum class ELogType : EnumFlagsType
 {
-	None,    /**< used to initialize variables of this type and to determine whether users forgot to set a type for logging */
-	Comment, /**< message will be displayed in standard color but verbosity level must be set to at least 4 */
-	Warning, /**< message will be displayed in orange color */
-	Error,   /**< message will be displayed in red color */
-	Always,  /**< message will be displayed in standard color and always printed regardless of verbosity level */
+	None,    /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
+	Comment, /**< The message will be displayed in standard color but verbosity level must be set to at least 4. */
+	Warning, /**< The message will be displayed in orange color. */
+	Error,   /**< The message will be displayed in red color. */
+	Always,  /**< The message will be displayed in standard color and always printed regardless of verbosity level. */
 };
 
 struct SRequestInfo

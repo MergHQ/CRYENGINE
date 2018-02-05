@@ -10,11 +10,11 @@
 #include <CryCore/StlUtils.h>
 #include <CrySystem/TimeValue.h>
 
-//! \cond INTERNAL
 template<class T, class U>
 class InterpolatedValue_tpl;
 
-// Unfortunately this needs to be here - should be in CryNetwork somewhere.
+//! Network identifier for an object that has been bound to the network
+//! Each application instance will maintain a map to look up entity identifiers to their networked identifiers.
 struct SNetObjectID
 {
 	static const uint16 InvalidId = ~uint16(0);
@@ -88,6 +88,7 @@ struct SNetObjectID
 	AUTO_STRUCT_INFO;
 };
 
+//! \cond INTERNAL
 //! This enumeration details what "kind" of serialization we are performing.
 //! It does this so that classes can (if they want to) tailor the data they present
 //! depending on to where the data is being written.

@@ -443,6 +443,8 @@ struct pe_params
 };
 
 //! Sets position and orientation of entity.
+//! \par Example
+//! \include CryPhysics/Examples/SetPhysicalEntityPosition.cpp
 struct pe_params_pos : pe_params
 {
 	enum entype { type_id = ePE_params_pos };
@@ -555,6 +557,9 @@ struct pe_params_sensors : pe_params
 	const Vec3* pDirections;    //!< Sensor's directions (dir*ray length) in entity CS.
 };
 
+//! Used to set or get simulation parameters such as gravity and mass
+//! \par Example
+//! \include CryPhysics/Examples/GetSimulationParams.cpp
 struct pe_simulation_params : pe_params
 {
 	enum entype { type_id = ePE_simulation_params };
@@ -886,6 +891,9 @@ struct pe_params_articulated_body : pe_params
 
 ////////// living entity params
 
+//! Determines the dimensions of the main capsule (or cylinder) of a living / walking entity
+//! \par Example
+//! \include CryEntitySystem/Examples/PhysicalizeLiving.cpp
 struct pe_player_dimensions : pe_params
 {
 	enum entype { type_id = ePE_player_dimensions };
@@ -913,6 +921,9 @@ struct pe_player_dimensions : pe_params
 	VALIDATORS_END
 };
 
+//! Determines the dynamics of a living / walking entity
+//! \par Example
+//! \include CryEntitySystem/Examples/PhysicalizeLiving.cpp
 struct pe_player_dynamics : pe_params
 {
 	enum entype { type_id = ePE_player_dynamics };
@@ -1252,6 +1263,9 @@ struct pe_action
 	int type;
 };
 
+//! Used to apply an impulse on a physical entity
+//! \par Example
+//! \include CryPhysics/Examples/ActionImpulse.cpp
 struct pe_action_impulse : pe_action
 {
 	enum entype { type_id = ePE_action_impulse };
@@ -1299,6 +1313,9 @@ enum constrflags
 	constraint_no_tears       = 0x8000  //!< constraint is not deleted when force limit is reached
 };
 
+//! Adds a physical constraint on an entity
+//! \par Example
+//! \include CryPhysics/Examples/AddConstraint.cpp
 struct pe_action_add_constraint : pe_action
 {
 	enum entype { type_id = ePE_action_add_constraint };
@@ -1469,6 +1486,8 @@ struct pe_action_slice : pe_action
 ////////// living entity actions
 
 //! Movement request for living entities.
+//! \par Example
+//! \include CryEntitySystem/Examples/PhysicalizeLiving.cpp
 struct pe_action_move : pe_action
 {
 	enum entype { type_id = ePE_action_move };
@@ -1539,6 +1558,9 @@ struct pe_status
 
 enum status_pos_flags { status_local = 1, status_thread_safe = 2, status_addref_geoms = 4 };
 
+//! Gets the world-space position of an entity
+//! \par Example
+//! \include CryPhysics/Examples/GetPhysicalEntityPosition.cpp
 struct pe_status_pos : pe_status
 {
 	enum entype { type_id = ePE_status_pos };
@@ -1605,6 +1627,9 @@ struct pe_status_sensors : pe_status
 	unsigned int flags;    //!< bitmask of flags, bit==1 - sensor touched environment
 };
 
+//! Gets the dynamic state of an entity, such as its velocity, mass and angular velocity
+//! \par Example
+//! \include CryPhysics/Examples/GetDynamicsStatus.cpp
 struct pe_status_dynamics : pe_status
 {
 	enum entype { type_id = ePE_status_dynamics };
@@ -2645,9 +2670,27 @@ struct IPhysUtils
 	//! center is a pre-calculated geometrical center of pt's
 	//! outputs data into centers and radii arrays, which use global buffers; returns the number of circles
 	virtual int  CoverPolygonWithCircles(strided_pointer<Vec2> pt, int npt, bool bConsecutive, const Vec2& center, Vec2*& centers, float*& radii, float minCircleRadius) = 0;
+	//! qhull - computes convex hull of a set of 3d points. returns the number of triangles in pTris
+	//! pts - point list
+	//! npts - number of points
+	//! pTris - will receive an internally allocated pointer to the triangles (recommended to be deleted via DeletePointer)
+	//! qmalloc - optional custom allocator for pTris 
 	virtual int  qhull(strided_pointer<Vec3> pts, int npts, index_t*& pTris, qhullmalloc qmalloc = 0) = 0;
+	//! qhull2d - computes convex hull of a set of 2d points. returns the number of edges (linked via edgeitem.next)
+	//! pts - source points (only pt needs to be set in ptitem; next/prev are used internally; iContact can be used to store some relevant index)
+	//! nVtx - number of source points
+	//! edges - pre-allocated destination array of edges (pvtx and next are the output fields)
+	//! nMaxEdges - if >0, the function will chop vertices with the least associated "ear" area until the limit is satisfied
+	//              in this case the first edge of the hull will not necessarily be in edges[0] - it'll be the first item with non-0 next
 	virtual int  qhull2d(ptitem2d* pts, int nVtx, edgeitem* edges, int nMaxEdges = 0) = 0;
+	//! DeletePointer - deletes any pointer allocated by the physics
 	virtual void DeletePointer(void* pdata) = 0; //!< should be used to free data allocated in physics
+	//! Triangulates a 2d polygon, returns the number of triangles
+	//! pVtx - source points of the polygon. polygons can have several unconnected contours. counter-clockwise contours have polygon area inside them, 
+	//         clockwise - outside. each contour must have a terminator point with MARK_UNUSED pt[i].x (even if there's only one contour)
+	//! nVtx - the number of source points, including terminators
+	//! pTris - pointer to a pre-allocated destination index buffer; (nVtx+nContours*2)*3 is a conservative upper limit
+	//! szTriBuf - size of the index buffer (assuming 3 indices per tri)
 	virtual int  TriangulatePoly(Vec2* pVtx, int nVtx, int* pTris, int szTriBuf) = 0;
 	// </interfuscator:shuffle>
 };
@@ -2669,12 +2712,25 @@ struct IPhysicalEntity
 	virtual int     AddRef() = 0;
 	virtual int     Release() = 0;
 
-	//! SetParams - changes parameters; can be queued and executed later if the physics is busy (unless bThreadSafe is flagged)
+	//! Sets / changes parameters on a physical entity; can be queued and executed later if the physics is busy (unless bThreadSafe is flagged)
 	//! \return !0 if successful.
+	//! \par Example
+	//! \include CryPhysics/Examples/SetPhysicalEntityPosition.cpp
 	virtual int SetParams(pe_params* params, int bThreadSafe = 0) = 0;
-	virtual int GetParams(pe_params* params) const = 0;      //!< uses the same structures as SetParams; returns !0 if successful
-	virtual int GetStatus(pe_status* status) const = 0;      //!< generally returns >0 if successful, but some pe_status'es have special meaning
-	virtual int Action(pe_action*, int bThreadSafe = 0) = 0; //!< like SetParams, can get queued
+	//! Gets the parameters of a physical entity, uses the same structures as SetParams;
+	//! \return  !0 if successful
+	//! \par Example
+	//! \include CryPhysics/Examples/GetSimulationParams.cpp
+	virtual int GetParams(pe_params* params) const = 0;
+	//! Gets the status of a physical entity, using the pe_status structure.
+	//! \return In most cases, >0 if successful - with special exception for some pe_status implementations.
+	//! \par Example
+	//! \include CryPhysics/Examples/GetPhysicalEntityPosition.cpp
+	virtual int GetStatus(pe_status* status) const = 0;
+	//! Performs an action such as applying an impulse on an entity.
+	//! \par Example
+	//! \include CryPhysics/Examples/ActionImpulse.cpp
+	virtual int Action(pe_action*, int bThreadSafe = 0) = 0;
 
 	//! AddGeometry - add a new entity part, containing pgeom; request can get queued
 	//! params can be specialized depending on the entity type
@@ -3228,6 +3284,8 @@ struct IPhysicalEntityIt
 	// </interfuscator:shuffle>
 };
 
+//! Main interface to the physics implementation
+//! \see IPhysicalEntity
 struct IPhysicalWorld
 {
 	//! RayWorldIntersection - steps through the entity grid and raytraces entities
@@ -3406,6 +3464,9 @@ struct IPhysicalWorld
 	//! returns the number of entities
 	virtual int GetEntitiesInBox(Vec3 ptmin, Vec3 ptmax, IPhysicalEntity**& pList, int objtypes, int szListPrealloc = 0) = 0;
 
+	//! Performs a raycast through the physical world, returning possible hits into the provided hits structure
+	//! \par Example
+	//! \include CryPhysics/Examples/RayWorldIntersection.cpp
 	virtual int RayWorldIntersection(const SRWIParams& rp, const char* pNameTag = RWI_NAME_TAG, int iCaller = MAX_PHYS_THREADS) = 0;
 	//! Traces ray requests (rwi calls with rwi_queue set); logs and calls EventPhysRWIResult for each
 	//! returns the number of rays traced
@@ -3423,6 +3484,9 @@ struct IPhysicalWorld
 
 	virtual IPhysicalEntityIt* GetEntitiesIterator() = 0;
 
+	//! Simulates an explosion in the world, affecting entities near the epicenter (and within the specified radius)
+	//! \par Example
+	//! \include CryPhysics/Examples/SimulateExplosion.cpp
 	virtual void               SimulateExplosion(pe_explosion* pexpl, IPhysicalEntity** pSkipEnts = 0, int nSkipEnts = 0, int iTypes = ent_rigid | ent_sleeping_rigid | ent_living | ent_independent, int iCaller = MAX_PHYS_THREADS) = 0;
 
 	//! RasterizeEntities - builds a depth map from physical gometries in a box specified by grid; only updates area affected by offsBBox +/- sizeBBox
@@ -3519,6 +3583,9 @@ struct IPhysicalWorld
 	virtual void*			 GetInternalImplementation(int type, void* object = nullptr) = 0; // get native data from actual physics implementation
 	// </interfuscator:shuffle>
 
+	//! Performs a raycast through the physical world, returning possible hits into the provided hits structure
+	//! \par Example
+	//! \include CryPhysics/Examples/RayWorldIntersection.cpp
 	inline int RayWorldIntersection(const Vec3& org, const Vec3& dir, int objtypes, unsigned int flags, ray_hit* hits, int nMaxHits,
 	                                IPhysicalEntity** pSkipEnts = 0, int nSkipEnts = 0, void* pForeignData = 0, int iForeignData = 0,
 	                                const char* pNameTag = RWI_NAME_TAG, ray_hit_cached* phitLast = 0, int iCaller = MAX_PHYS_THREADS)
@@ -3537,6 +3604,9 @@ struct IPhysicalWorld
 		rp.nSkipEnts = nSkipEnts;
 		return RayWorldIntersection(rp, pNameTag, iCaller);
 	}
+	//! Performs a raycast through the physical world, returning possible hits into the provided hits structure
+	//! \par Example
+	//! \include CryPhysics/Examples/RayWorldIntersection.cpp
 	int RayWorldIntersection(const Vec3& org, const Vec3& dir, int objtypes, unsigned int flags, ray_hit* hits, int nMaxHits,
 	                         IPhysicalEntity* pSkipEnt, IPhysicalEntity* pSkipEntAux = 0, void* pForeignData = 0, int iForeignData = 0)
 	{

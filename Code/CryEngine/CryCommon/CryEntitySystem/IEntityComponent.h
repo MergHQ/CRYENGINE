@@ -106,12 +106,8 @@ enum class EEntityComponentFlags : uint32
 };
 typedef CEnumFlags<EEntityComponentFlags> EntityComponentFlags;
 
-//////////////////////////////////////////////////////////////////////////
-//!
 //! Structure that describes how one entity component
 //! interacts with another entity component.
-//!
-//////////////////////////////////////////////////////////////////////////
 struct SEntityComponentRequirements
 {
 	enum class EType : uint32
@@ -130,11 +126,10 @@ struct SEntityComponentRequirements
 	CryGUID guid;
 };
 
-//////////////////////////////////////////////////////////////////////////
-//!
 //! Interface used by the editor to Preview Render of the entity component
-//!
-//////////////////////////////////////////////////////////////////////////
+//! This can be used to draw helpers or preview elements in the sandbox
+//! \par Example
+//! \include CryEntitySystem/Examples/PreviewComponent.cpp
 struct IEntityComponentPreviewer
 {
 	virtual ~IEntityComponentPreviewer() {}
@@ -145,17 +140,17 @@ struct IEntityComponentPreviewer
 	//! Override this method to Render a preview of the Entity Component
 	//! This method is not used when entity is normally rendered
 	//! But only used for previewing the entity in the Sandbox Editor
+	//! \param entity Entity which gets drawn
+	//! \param component Component which is gets drawn
+	//! \param context PreviewContext contains information and settings for the rendering
+	//! \see IEntity::SEntityPreviewContext
 	virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext& context) const = 0;
 };
 
 //! \cond INTERNAL
-//////////////////////////////////////////////////////////////////////////
-//!
 //! A class that describe and reflect members of the entity component
 //! Properties of the component are reflected using run-time class
 //! reflection system, and stored in here.
-//!
-//////////////////////////////////////////////////////////////////////////
 class CEntityComponentClassDesc : public Schematyc::CClassDesc
 {
 public:
@@ -237,25 +232,11 @@ class CTypeDesc<TYPE, typename std::enable_if<std::is_convertible<TYPE, IEntityC
 
 } // Schematyc
 
-//! Represents a component that can be attached to an individual entity instance
+//! \brief Represents a component that can be attached to an individual entity instance
 //! Allows for populating entities with custom game logic
-//! Minimal example:
-//! class CMyComponent final : public IEntityComponent
-//! {
-//! public:
-//!   CMyComponent() = default;
-//!   virtual ~CMyComponent() {}
-//!
-//!   // Reflect type to set a unique identifier for this component
-//!   // and provide additional information to expose it in the sandbox
-//!   static void ReflectType(Schematyc::CTypeDesc<CMyComponent>& desc)
-//!   {
-//!			// Provide a globally unique identifier for the component, can be generated in Visual Studio via Tools -> Create GUID (in registry format).
-//!     desc.SetGUID("{35EC6526-3D24-4376-9509-806908FF4698}"_cry_guid);
-//!     desc.SetEditorCategory("MyComponents");
-//!     desc.SetLabel("MyComponent");
-//!   }
-//! };
+//! \anchor MinimalEntityComponent
+//! \par Example
+//! \include CryEntitySystem/Examples/MinimalEntityComponent.cpp
 struct IEntityComponent : public ICryUnknown, ISimpleEntityEventListener
 {
 	// Helper to serialize both legacy and Schematyc properties of an entity
@@ -409,12 +390,16 @@ protected:
 	//! By overriding this function component will be able to handle events sent from the host Entity.
 	//! Requires returning the desired event flag in GetEventMask.
 	//! \param event Event structure, contains event id and parameters.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/ComponentEvents.cpp
 	virtual void ProcessEvent(const SEntityEvent& event) {}
 
 public:
 	//! Return bit mask of the EEntityEvent flags that we want to receive in ProcessEvent
-	//! (ex: BIT64(ENTITY_EVENT_HIDE)|BIT64(ENTITY_EVENT_UNHIDE))
+	//! (ex: BIT64(ENTITY_EVENT_HIDE) | BIT64(ENTITY_EVENT_UNHIDE))
 	//! Only events matching the returned bit mask will be sent to the ProcessEvent method
+	//! \par Example
+	//! \include CryEntitySystem/Examples/ComponentEvents.cpp
 	virtual uint64 GetEventMask() const { return 0; }
 
 	//! Determines the order in which this component will receive entity events (including update). Lower number indicates a higher priority.
@@ -422,6 +407,8 @@ public:
 
 	//! \brief Network serialization. Override to provide a mask of active network aspects
 	//! used by this component. Called once during binding to network.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/ComponentNetSerialize.cpp
 	virtual NetworkAspectType GetNetSerializeAspectMask() const { return 0; }
 
 	//! \brief Network serialization. Will be called for each active aspect for both reading and writing.
@@ -430,6 +417,8 @@ public:
 	//! @param[in] profile Can be ignored, used by CryPhysics only.
 	//! @param[in] flags Can be ignored, used by CryPhysics only.
 	//! \see ISerialize::Value()
+	//! \par Example
+	//! \include CryEntitySystem/Examples/ComponentNetSerialize.cpp
 	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; };
 
 	//! Used to match an entity's state when it is replicated onto a remote machine.
@@ -437,10 +426,14 @@ public:
 	//! Deserialization will always occur *before* IEntityComponent::Initialize is called.
 	//! @param[in,out] ser Serializer for reading / writing values.
 	//! \see ISerialize::Value()
+	//! \par Example
+	//! \include CryEntitySystem/Examples/ComponentNetReplicate.cpp
 	virtual void NetReplicateSerialize(TSerialize ser) {}
 
 	//! \brief Call this to trigger aspect synchronization over the network. A shortcut.
 	//! \see INetEntity::MarkAspectsDirty()
+	//! \par Example
+	//! \include CryEntitySystem/Examples/ComponentNetSerialize.cpp
 	virtual void NetMarkAspectsDirty(const NetworkAspectType aspects); // The definition is in IEntity.h
 
 	//! \brief Override this to return preview render interface for the component.
@@ -668,7 +661,8 @@ struct IEntityTriggerComponent : public IEntityComponent
 	virtual void InvalidateTrigger() = 0;
 };
 
-//! Entity Audio component interface.
+//! Helper component for playing back audio on the current world-space position of an entity.
+//! Wraps low-level CryAudio logic.
 struct IEntityAudioComponent : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_GUID(IEntityAudioComponent, "9824845c-fe37-7889-b172-4a63f331d8a2"_cry_guid)
@@ -680,15 +674,33 @@ struct IEntityAudioComponent : public IEntityComponent
 	virtual float                   GetGreatestFadeDistance() const = 0;
 	virtual void                    SetEnvironmentId(CryAudio::EnvironmentId const environmentId) = 0;
 	virtual CryAudio::EnvironmentId GetEnvironmentId() const = 0;
+	//! Creates an additional audio object managed by this component, allowing individual handling of effects
+	//! IEntityAudioComponent will always create an audio object by default where audio will be played unless otherwise specified.
 	virtual CryAudio::AuxObjectId   CreateAudioAuxObject() = 0;
 	virtual bool                    RemoveAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId) = 0;
 	virtual void                    SetAudioAuxObjectOffset(Matrix34 const& offset, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual Matrix34 const&         GetAudioAuxObjectOffset(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual bool                    PlayFile(CryAudio::SPlayFileInfo const& playbackInfo, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
 	virtual void                    StopFile(char const* const szFile, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	//! Executes the specified trigger on the entity
+	//! \param audioTriggerId The trigger we want to execute
+	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
+	//! \par Example
+	//! \include CryEntitySystem/Audio/ExecuteTrigger.cpp
 	virtual bool                    ExecuteTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
 	virtual void                    StopTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	//! Sets the current state of a switch in the entity
+	//! \param audioSwitchId Identifier of the switch whose state we want to change
+	//! \param audioStateId Identifier of the switch state we want to set to
+	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
+	//! \par Example
+	//! \include CryEntitySystem/Audio/SetSwitchState.cpp
 	virtual void                    SetSwitchState(CryAudio::ControlId const audioSwitchId, CryAudio::SwitchStateId const audioStateId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	//! Sets the value of the specified parameter on the entity
+	//! \param parameterId Identifier of the parameter we want to modify the value of
+	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
+	//! \par Example
+	//! \include CryEntitySystem/Audio/SetParameterValue.cpp
 	virtual void                    SetParameter(CryAudio::ControlId const parameterId, float const value, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual void                    SetObstructionCalcType(CryAudio::EOcclusionType const occlusionType, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual void                    SetEnvironmentAmount(CryAudio::EnvironmentId const audioEnvironmentId, float const amount, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
