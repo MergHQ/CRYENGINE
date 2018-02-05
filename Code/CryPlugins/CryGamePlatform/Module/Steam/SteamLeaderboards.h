@@ -23,6 +23,7 @@ namespace Cry
 					ELeaderboardUploadScoreMethod method;
 					int score;
 					EScoreType scoreType;
+					string name;
 				};
 
 				virtual ~CLeaderboards() = default;
@@ -37,6 +38,7 @@ namespace Cry
 
 			private:
 				void FindOrCreateLeaderboard(const char* name, ELeaderboardSortMethod sortMethod = k_ELeaderboardSortMethodDescending, ELeaderboardDisplayType displayType = k_ELeaderboardDisplayTypeNumeric);
+				void FindNextLeaderboardToUpdateScore();
 
 				void OnFindLeaderboard(LeaderboardFindResult_t* pResult, bool bIOFailure);
 				CCallResult<CLeaderboards, LeaderboardFindResult_t> m_callResultFindLeaderboard;
@@ -46,7 +48,7 @@ namespace Cry
 
 			protected:
 				std::unique_ptr<SQueuedEntryRequest> m_pQueuedEntryRequest;
-				std::unique_ptr<SQueuedUpdateRequest> m_pQueuedUpdateRequest;
+				std::vector<SQueuedUpdateRequest> m_queuedUpdateRequests;
 
 				std::vector<IListener*> m_listeners;
 			};

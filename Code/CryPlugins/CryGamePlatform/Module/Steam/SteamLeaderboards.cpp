@@ -44,12 +44,14 @@ namespace Cry
 					m_pQueuedEntryRequest.reset();
 				}
 
-				if (m_pQueuedUpdateRequest != nullptr)
+				if (!m_queuedUpdateRequests.empty())
 				{
-					int scoreDetails[1] = { static_cast<int>(m_pQueuedUpdateRequest->scoreType) };
-					SteamAPICall_t hSteamAPICall = pSteamUserStats->UploadLeaderboardScore(pResult->m_hSteamLeaderboard, m_pQueuedUpdateRequest->method, m_pQueuedUpdateRequest->score, scoreDetails, 1);
+					const SQueuedUpdateRequest& request = m_queuedUpdateRequests[0];
+					int scoreDetails[1] = { static_cast<int>(request.scoreType) };
+					SteamAPICall_t hSteamAPICall = pSteamUserStats->UploadLeaderboardScore(pResult->m_hSteamLeaderboard, request.method, request.score, scoreDetails, 1);
 
-					m_pQueuedUpdateRequest.reset();
+					m_queuedUpdateRequests.erase( m_queuedUpdateRequests.begin() );
+					FindNextLeaderboardToUpdateScore();
 				}
 			}
 
@@ -114,16 +116,29 @@ namespace Cry
 					return;
 				}
 
-				m_pQueuedUpdateRequest = stl::make_unique<SQueuedUpdateRequest>();
-				m_pQueuedUpdateRequest->method = bForce ? k_ELeaderboardUploadScoreMethodForceUpdate : k_ELeaderboardUploadScoreMethodKeepBest;
-				m_pQueuedUpdateRequest->score = score;
-				m_pQueuedUpdateRequest->scoreType = scoreType;
+				SQueuedUpdateRequest request;
+				request.method = bForce ? k_ELeaderboardUploadScoreMethodForceUpdate : k_ELeaderboardUploadScoreMethodKeepBest;
+				request.score = score;
+				request.scoreType = scoreType;
+				request.name = leaderboardId.szName;
+				m_queuedUpdateRequests.push_back( request );
+				if (m_queuedUpdateRequests.size()==1)
+					FindNextLeaderboardToUpdateScore();
+			}
 
-				// If score is time based then sort leaderboard ascending and display in milliseconds, otherwise descending and numeric.
-				ELeaderboardSortMethod sortMethod = (scoreType == EScoreType::Time) ? k_ELeaderboardSortMethodAscending : k_ELeaderboardSortMethodDescending;
-				ELeaderboardDisplayType displayType = (scoreType == EScoreType::Time) ? k_ELeaderboardDisplayTypeTimeMilliSeconds : k_ELeaderboardDisplayTypeNumeric;
 
-				FindOrCreateLeaderboard(leaderboardId.szName, sortMethod, displayType);
+			void CLeaderboards::FindNextLeaderboardToUpdateScore()
+			{
+				if (!m_queuedUpdateRequests.empty())
+				{
+					const SQueuedUpdateRequest& request = m_queuedUpdateRequests[0];
+
+					// If score is time based then sort leaderboard ascending and display in milliseconds, otherwise descending and numeric.
+					ELeaderboardSortMethod sortMethod = (request.scoreType == EScoreType::Time) ? k_ELeaderboardSortMethodAscending : k_ELeaderboardSortMethodDescending;
+					ELeaderboardDisplayType displayType = (request.scoreType == EScoreType::Time) ? k_ELeaderboardDisplayTypeTimeMilliSeconds : k_ELeaderboardDisplayTypeNumeric;
+
+					FindOrCreateLeaderboard(request.name.c_str(), sortMethod, displayType);
+				}
 			}
 		}
 	}
