@@ -332,7 +332,7 @@ public:
 	virtual IScriptTable* GetScriptTable() const final;
 
 	// Load/Save entity parameters in XML node.
-	virtual void         SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptProxy = true) final;
+	virtual void         SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptProxy = true, bool bExcludeSchematycProperties = false) final;
 
 	virtual IEntityLink* GetEntityLinks() final;
 	virtual IEntityLink* AddEntityLink(const char* sLinkName, EntityId entityId, EntityGUID entityGuid) final;

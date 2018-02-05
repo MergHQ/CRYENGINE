@@ -1448,7 +1448,7 @@ void CEntity::SaveComponentLegacy(CryGUID typeId, XmlNodeRef& entityNode, XmlNod
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptProxy)
+void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptProxy, bool bExcludeSchematycProperties)
 {
 	m_physics.SerializeXML(node, bLoading);
 
@@ -1549,7 +1549,7 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 			return true;
 		});
 
-		if (m_pSchematycProperties)
+		if (m_pSchematycProperties && !bExcludeSchematycProperties)
 		{
 			// Save Schematyc object properties from the Entity Node XML data
 			XmlNodeRef schematycPropsNode = node->newChild("SchematycProperties");
