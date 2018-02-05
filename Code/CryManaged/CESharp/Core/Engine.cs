@@ -187,7 +187,6 @@ namespace CryEngine
 			else
 			{
 				Console.ExecuteString("ed_disable_game_mode", false, true);
-				OnUnloadStart();
 			}
 		}
 

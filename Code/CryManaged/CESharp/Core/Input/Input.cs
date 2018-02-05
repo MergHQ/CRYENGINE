@@ -76,22 +76,22 @@ namespace CryEngine
 
 		static Input()
 		{
-			Engine.StartReload += UnloadListener;
-			Engine.EndReload += LoadListener;
+			Engine.StartReload += RemoveListener;
+			Engine.EndReload += AddListener;
 		}
 
-		private static void LoadListener()
+		private static void AddListener()
 		{
 			if(_listener != null)
 			{
-				UnloadListener();
+				RemoveListener();
 			}
 
 			_listener = new InputListener();
 			_listener.OnInputReceived += OnInput;
 		}
 
-		private static void UnloadListener()
+		private static void RemoveListener()
 		{
 			_listener?.Dispose();
 			_listener = null;
@@ -102,7 +102,7 @@ namespace CryEngine
 		/// </summary>
 		internal static void Initialize()
 		{
-			LoadListener();
+			AddListener();
 
 			if(_listener == null)
 			{
