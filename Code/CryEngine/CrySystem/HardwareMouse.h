@@ -88,6 +88,7 @@ private:
 	void        EvaluateCursorConfinement();
 	//! respond to focus-in, focus-out events
 	void        HandleFocusEvent(bool bFocus);
+	HWND        GetConfinedWindowHandle() const;
 
 	typedef std::list<IHardwareMouseEventListener*> TListHardwareMouseEventListeners;
 	TListHardwareMouseEventListeners m_listHardwareMouseEventListeners;
