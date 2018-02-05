@@ -2884,12 +2884,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		//here we should be good to ask Crypak to do something
 
-		//notify test system to init logs (since file system is setup).
-		if (m_pTestSystem)
-		{
-			m_pTestSystem->InitLog();
-		}
-
 		//#define GEN_PAK_CDR_CRC
 #ifdef GEN_PAK_CDR_CRC
 
@@ -2911,11 +2905,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		// Check hard minimum CPU requirements
 		if (!CheckCPURequirements(m_pCpu, this))
 			return false;
-
-		if (m_env.pConsole != nullptr)
-		{
-			CTestSystemLegacy::InitCommands();
-		}
 
 		m_env.pLog->RegisterConsoleVariables();
 
@@ -2943,6 +2932,17 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		InitFileSystem_LoadEngineFolders();
 		//////////////////////////////////////////////////////////////////////////
+
+		//notify test system to init logs (since file system is setup).
+		if (m_pTestSystem)
+		{
+			m_pTestSystem->InitLog();
+		}
+
+		if (m_env.pConsole != nullptr)
+		{
+			CTestSystemLegacy::InitCommands();
+		}
 
 		// Initialise after pLog and CPU feature initialization
 		// AND after console creation (Editor only)
