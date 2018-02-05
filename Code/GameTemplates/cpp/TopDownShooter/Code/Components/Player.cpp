@@ -98,8 +98,11 @@ void CPlayerComponent::Initialize()
 	// Bind the shoot action to left mouse click
 	m_pInputComponent->BindAction("player", "shoot", eAID_KeyboardMouse, EKeyId::eKI_Mouse1);
 
-	// Spawn the cursor
-	SpawnCursorEntity();
+	// Spawn the cursor if not in sandbox
+	if (!gEnv->IsEditor())
+	{
+		SpawnCursorEntity();
+	}
 
 	Revive();
 }
@@ -217,6 +220,11 @@ void CPlayerComponent::UpdateAnimation(float frameTime)
 
 	// Update the Mannequin tags
 	m_pAnimationComponent->SetTagWithId(m_walkTagId, m_pCharacterController->IsWalking());
+
+	if (m_pCursorEntity == nullptr)
+	{
+		return;
+	}
 
 	Vec3 dir = m_pCursorEntity->GetWorldPos() - m_pEntity->GetWorldPos();
 	dir = dir.Normalize();

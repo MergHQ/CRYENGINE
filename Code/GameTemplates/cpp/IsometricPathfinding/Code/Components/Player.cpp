@@ -101,8 +101,11 @@ void CPlayerComponent::Initialize()
 	// Bind the shoot action to the space bar
 	m_pInputComponent->BindAction("player", "shoot", eAID_KeyboardMouse, EKeyId::eKI_Space);
 
-	// Spawn the cursor
-	SpawnCursorEntity();
+	// Spawn the cursor if not in sandbox
+	if (!gEnv->IsEditor())
+	{
+		SpawnCursorEntity();
+	}
 
 	Revive();
 }
