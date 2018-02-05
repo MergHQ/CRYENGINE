@@ -217,9 +217,6 @@ bool CSubstancePresetEditor::OnOpenAsset(CAsset* pAsset)
 	});
 	SetPreviewResolution();
 
-	signalAssetClosed.DisconnectObject(CManager::Instance());
-	signalAssetClosed.Connect(CManager::Instance(), &CManager::ForcePresetRegeneration);
-
 	return true;
 }
 
