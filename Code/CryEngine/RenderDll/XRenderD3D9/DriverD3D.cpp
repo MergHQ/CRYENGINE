@@ -673,6 +673,11 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 
 EWindowState CD3D9Renderer::CalculateWindowState() const
 {
+	if (gEnv->IsEditor())
+	{
+		return EWindowState::Windowed;
+	}
+
 	return static_cast<EWindowState>(m_CVWindowType->GetIVal());
 }
 
