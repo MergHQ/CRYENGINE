@@ -1636,7 +1636,6 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 	CryGUID componentTypeID;
 
 	// First look for a unified Schematyc / Entity component type
-	// TODO: Search hierarchy
 	const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(interfaceId);
 	ICryFactory* pLegacyComponentFactory = nullptr;
 	if (pEnvComponent != nullptr)
@@ -1645,30 +1644,49 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 		componentTypeID = pEnvComponent->GetGUID();
 		pClassDescription = &pEnvComponent->GetDesc();
 	}
-	// Fall back to legacy 5.3 creation
-	else if (ICryFactoryRegistry* pFactoryRegistry = gEnv->pSystem->GetCryFactoryRegistry())
-	{
-		size_t numFactories = 1;
-		pFactoryRegistry->IterateFactories(interfaceId, &pLegacyComponentFactory, numFactories);
-		if (numFactories == 0 || pLegacyComponentFactory == nullptr)
-		{
-			// Nothing found by interface, check by implementation id
-			pLegacyComponentFactory = pFactoryRegistry->GetFactory(interfaceId);
-		}
-
-		if (pLegacyComponentFactory == nullptr || !pLegacyComponentFactory->ClassSupports(cryiidof<IEntityComponent>()))
-		{
-			CRY_ASSERT_MESSAGE(0, "No component implementation registered for the given component interface");
-			return nullptr;
-		}
-
-		// Resolve to implementation id, since we may have queried by interface
-		componentTypeID = pLegacyComponentFactory->GetClassID();
-	}
 	else
 	{
-		CRY_ASSERT_MESSAGE("Tried to create unregistered component with type id %s!", interfaceId.ToDebugString());
-		return nullptr;
+		auto visitComponentsLambda = [interfaceId, &pEnvComponent](const Schematyc::IEnvComponent& component)
+		{
+			if (component.GetDesc().FindBaseByTypeID(interfaceId) != nullptr)
+			{
+				pEnvComponent = &component;
+				return Schematyc::EVisitStatus::Stop;
+			}
+
+			return Schematyc::EVisitStatus::Continue;
+		};
+
+		gEnv->pSchematyc->GetEnvRegistry().VisitComponents(visitComponentsLambda);
+	}
+
+	// Fall back to legacy 5.3 creation
+	if (pEnvComponent == nullptr)
+	{
+		if (ICryFactoryRegistry* pFactoryRegistry = gEnv->pSystem->GetCryFactoryRegistry())
+		{
+			size_t numFactories = 1;
+			pFactoryRegistry->IterateFactories(interfaceId, &pLegacyComponentFactory, numFactories);
+			if (numFactories == 0 || pLegacyComponentFactory == nullptr)
+			{
+				// Nothing found by interface, check by implementation id
+				pLegacyComponentFactory = pFactoryRegistry->GetFactory(interfaceId);
+			}
+
+			if (pLegacyComponentFactory == nullptr || !pLegacyComponentFactory->ClassSupports(cryiidof<IEntityComponent>()))
+			{
+				CRY_ASSERT_MESSAGE(0, "No component implementation registered for the given component interface");
+				return nullptr;
+			}
+
+			// Resolve to implementation id, since we may have queried by interface
+			componentTypeID = pLegacyComponentFactory->GetClassID();
+		}
+		else
+		{
+			CRY_ASSERT_MESSAGE("Tried to create unregistered component with type id %s!", interfaceId.ToDebugString());
+			return nullptr;
+		}
 	}
 
 	// All pre-checks successful, we can now create the component
