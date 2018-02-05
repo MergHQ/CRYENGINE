@@ -376,9 +376,8 @@ namespace CryEngine
 			}
 
 			HitEntityId = 0;
-			var mouseDir = Camera.Unproject(x, y);
-			RaycastHit hit;
-			if(Physics.Raycast(Camera.Position, mouseDir, 100, out hit))
+			if(Camera.ScreenPointToDirection(x, y, out Vector3 direction)
+				&& Physics.Raycast(Camera.Position, direction, 100, out RaycastHit hit))
 			{
 				HitEntityId = hit.EntityId;
 				_hitEntityUV = hit.UvPoint;
@@ -388,7 +387,6 @@ namespace CryEngine
 				_hitEntityUV.x = 0;
 				_hitEntityUV.y = 0;
 			}
-			
 		}
 
 		/// <summary>

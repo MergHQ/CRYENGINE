@@ -6,19 +6,54 @@ using CryEngine.Common;
 namespace CryEngine.EntitySystem
 {
 	/// <summary>
-	/// Contains the source and target object of a collision event.
+	/// Contains the data a collision event. If the data is an array the first element will always be the <see cref="EntityComponent"/> that received the <see cref="EntityComponent.OnCollision(CollisionEvent)"/> call.
 	/// </summary>
 	public struct CollisionEvent
 	{
 		/// <summary>
-		/// The source object of the collision.
+		/// The objects involved in the collision. The first element will always be the <see cref="EntityComponent"/> that received the <see cref="EntityComponent.OnCollision(CollisionEvent)"/> call.
 		/// </summary>
-		public PhysicsObject Source { get; set; }
+		public PhysicsObject[] PhysicsObjects { get; internal set; }
+
+		/// <summary>
+		/// Contact point in world space.
+		/// </summary>
+		public Vector3 Point { get; internal set; }
+
+		/// <summary>
+		/// Contact point normal.
+		/// </summary>
+		public Vector3 Normal { get; internal set; }
 		
 		/// <summary>
-		/// The target object of the collision.
+		/// Velocities at the contact point.
 		/// </summary>
-		public PhysicsObject Target { get; set; }
+		public Vector3[] Velocities { get; internal set; }
+
+		/// <summary>
+		/// The mass of each <see cref="PhysicsObject"/>.
+		/// </summary>
+		public float[] Masses { get; internal set; }
+
+		/// <summary>
+		/// Contact's penetration depth.
+		/// </summary>
+		public float PenetrationDepth { get; internal set; }
+
+		/// <summary>
+		/// Impulse applied by the solver to resolve the collision.
+		/// </summary>
+		public float ResolvingImpulse { get; internal set; }
+
+		/// <summary>
+		/// Characteristic size of the contact area.
+		/// </summary>
+		public float Radius { get; internal set; }
+
+		/// <summary>
+		/// Maximum allowed size of decals caused by this collision.
+		/// </summary>
+		public float MaxDecalSize { get; internal set; }
 	}
 
 	/// <summary>
@@ -37,7 +72,8 @@ namespace CryEngine.EntitySystem
 		public PhysicalizationType PhysicsType{ get; set;} = PhysicalizationType.None;
 
 		/// <summary>
-		/// Gets the Entity that this <see cref="PhysicsObject"/> belongs to.
+		/// Gets the Entity that this <see cref="PhysicsObject"/> belongs to. 
+		/// It's possible for this to be null if the owner is not an Entity but a Brush or Terrain.
 		/// </summary>
 		public virtual Entity OwnerEntity
 		{
