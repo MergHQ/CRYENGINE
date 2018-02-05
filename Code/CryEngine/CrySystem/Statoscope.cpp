@@ -1790,7 +1790,7 @@ CStatoscope::CStatoscope()
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CStatoscope");
 
-	CryCreateDirectory("%USER%/statoscope");
+	gEnv->pCryPak->MakeDir("%USER%/statoscope");
 
 	m_pServer = new CStatoscopeServer(this);
 

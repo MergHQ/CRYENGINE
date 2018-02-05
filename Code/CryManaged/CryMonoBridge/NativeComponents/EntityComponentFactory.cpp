@@ -112,7 +112,7 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 
 	if (!m_pClass->FindMethodWithDescInInheritedClasses("OnCollision(CollisionEvent)", pEntityComponentClass).expired())
 	{
-		m_pCollisionMethod = pEntityComponentClass->FindMethod("OnCollisionInternal", 2);
+		m_pCollisionMethod = pEntityComponentClass->FindMethod("OnCollisionInternal", 12);
 		if (!m_pCollisionMethod.expired())
 		{
 			m_pCollisionMethod.lock()->GetSignatureDescription(true, true);

@@ -1750,22 +1750,14 @@ void CRenderView::CompileModifiedRenderObjects()
 		bool bAllCompiled = true;
 
 		// compile items
-		auto& shadow_items = pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_Shadows];
-		auto& general_items = pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_General];
+		auto& items = (passId == 0) ? 
+			pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_General] : 
+			pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_Shadows];
 
-		for (int i = 0, num = general_items.size(); i < num; i++)
+		for (int i = 0, num = items.size(); i < num; i++)
 		{
-			auto& pri = general_items[i];
+			auto& pri = items[i];
 			if (!pri.m_pCompiledObject)
-				continue;
-			if (!pri.m_pCompiledObject->Compile(pRenderObject, updateInfo, this, compilationData.updateInstanceDataOnly))
-				bAllCompiled = false;
-		}
-
-		for (int i = 0, num = shadow_items.size(); i < num; i++)
-		{
-			auto& pri = shadow_items[i];
-			if (!pri.m_pCompiledObject || pri.m_pCompiledObject->m_bSharedWithShadow) // This compiled object must be already compiled with the general items
 				continue;
 			if (!pri.m_pCompiledObject->Compile(pRenderObject, updateInfo, this, compilationData.updateInstanceDataOnly))
 				bAllCompiled = false;

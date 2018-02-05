@@ -544,7 +544,7 @@ public:
 	virtual string GetEntityTextDescription() const = 0;
 
 	//! Serializes entity parameters to/from XML.
-	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bIncludeScriptProxy = true) = 0;
+	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bIncludeScriptProxy = true, bool bExcludeSchematycProperties = false) = 0;
 
 	//! \retval true if this entity was loaded from level file.
 	//! \retval false for entities created dynamically.

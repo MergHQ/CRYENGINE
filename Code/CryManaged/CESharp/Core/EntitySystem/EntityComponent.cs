@@ -154,11 +154,25 @@ namespace CryEngine
 
 		protected virtual void OnCollision(CollisionEvent collisionEvent) { }
 
-		private void OnCollisionInternal(IntPtr sourceEntityPhysics, IntPtr targetEntityPhysics)
+		private void OnCollisionInternal(IntPtr sourceEntityPhysics, IntPtr targetEntityPhysics, Vector3 point, Vector3 normal, Vector3 ownVelocity, Vector3 otherVelocity, float ownMass, float otherMass, float penetrationDepth, float normImpulse, float radius, float decalMaxSize)
 		{
-			var collisionEvent = new CollisionEvent();
-			collisionEvent.Source = new PhysicsObject(new IPhysicalEntity(sourceEntityPhysics, false));
-			collisionEvent.Target = new PhysicsObject(new IPhysicalEntity(targetEntityPhysics, false));
+			
+			var collisionEvent = new CollisionEvent()
+			{
+				MaxDecalSize = decalMaxSize,
+				Normal = normal,
+				ResolvingImpulse = normImpulse,
+				PenetrationDepth = penetrationDepth,
+				Point = point,
+				Radius = radius,
+				Masses = new float[] { ownMass, otherMass },
+				Velocities = new Vector3[] { ownVelocity, otherVelocity },
+				PhysicsObjects = new PhysicsObject[]
+				{
+					new PhysicsObject(new IPhysicalEntity(sourceEntityPhysics, false)),
+					new PhysicsObject(new IPhysicalEntity(targetEntityPhysics, false))
+				}
+			};
 			OnCollision(collisionEvent);
 		}
 
