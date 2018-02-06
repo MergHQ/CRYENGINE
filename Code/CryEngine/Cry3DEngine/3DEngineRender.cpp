@@ -3896,7 +3896,7 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 			&nTimeSlicedShadowsUpdatedThisFrame);
 
 		const auto &pShadowsView = GetRenderer()->GetNextAvailableShadowsView((IRenderView*)pMainRenderView, pFr);
-		for (int cubeSide = 0; cubeSide < pFr->GetNumSides(); ++cubeSide)
+		for (int cubeSide = 0; cubeSide < pFr->GetNumSides() && shadowPassInfo.size() < kMaxShadowPassesNum; ++cubeSide)
 		{
 			if (pFr->ShouldCacheSideHint(cubeSide))
 			{
