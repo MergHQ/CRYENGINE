@@ -666,6 +666,10 @@ ERequestStatus CATLAudioObject::HandleSetTransformation(CObjectTransformation co
 	{
 		m_attributes.transformation = transformation;
 		m_flags |= EObjectFlags::MovingOrDecaying;
+
+		// Immediately propagate the new transformation down to the middleware to prevent executing a trigger before its transformation was set.
+		// Calculation of potentially tracked absolute and relative velocities can be safely delayed to next audio frame.
+		m_pImplData->Set3DAttributes(m_attributes);
 	}
 
 	return ERequestStatus::Success;
