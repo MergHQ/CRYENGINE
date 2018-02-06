@@ -359,7 +359,7 @@ bool CSvoEnv::Render()
 	}
 	else if (GetCVars()->e_svoDVR > 1)
 	{
-		auto& camera = GetISystem()->GetViewCamera();
+		const CCamera& camera = GetISystem()->GetViewCamera();
 
 		SVF_P3F_C4B_T2F arrVerts[4];
 		ZeroStruct(arrVerts);
@@ -2384,7 +2384,7 @@ void CSvoEnv::CollectLights()
 	if (!GetCVars()->e_svoTI_IntegrationMode)
 		areaRange = GetCVars()->e_svoTI_PointLightsMaxDistance;
 
-	auto& camera = GetISystem()->GetViewCamera();
+	const CCamera& camera = GetISystem()->GetViewCamera();
 	AABB nodeBox(camera.GetPosition() - Vec3(areaRange), camera.GetPosition() + Vec3(areaRange));
 
 	m_lightsTI_S.Clear();

@@ -716,7 +716,7 @@ void PhysXWorld::TimeStep(float dt, int flags)
 	}
 
 	if (PxPvdSceneClient *dbg = g_cryPhysX.Scene()->getScenePvdClient()) {
-		CCamera &cam = gEnv->pSystem->GetViewCamera();
+		const CCamera &cam = gEnv->pSystem->GetViewCamera();
 		dbg->updateCamera("CryCamera", V(cam.GetPosition()), V(cam.GetUp()), V(cam.GetPosition()+cam.GetViewdir()));
 		//if (PhysXEnt* player = (PhysXEnt*)GetPhysicalEntityById(0x7777))
 		//	player->m_actor->setActorFlag(PxActorFlag::eVISUALIZATION, false);//!player->m_actor->getWorldBounds().contains(V(cam.GetPosition())));

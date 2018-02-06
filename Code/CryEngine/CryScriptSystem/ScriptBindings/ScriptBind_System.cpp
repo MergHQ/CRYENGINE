@@ -1947,36 +1947,38 @@ int CScriptBind_System::SetWaterVolumeOffset(IFunctionHandler* pH)
 /////////////////////////////////////////////////////////////////////////////////
 int CScriptBind_System::SetViewCameraFov(IFunctionHandler* pH, float fov)
 {
-	CCamera& Camera = m_pSystem->GetViewCamera();
+	CCamera Camera = m_pSystem->GetViewCamera();
 	Camera.SetFrustum(Camera.GetViewSurfaceX(), Camera.GetViewSurfaceZ(), fov, DEFAULT_NEAR, DEFAULT_FAR, Camera.GetPixelAspectRatio());
+	m_pSystem->SetViewCamera(Camera);
+
 	return pH->EndFunction();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 int CScriptBind_System::GetViewCameraFov(IFunctionHandler* pH)
 {
-	CCamera& Camera = m_pSystem->GetViewCamera();
+	const CCamera& Camera = m_pSystem->GetViewCamera();
 	return pH->EndFunction(Camera.GetFov());
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 int CScriptBind_System::IsPointVisible(IFunctionHandler* pH, Vec3 point)
 {
-	CCamera& Camera = m_pSystem->GetViewCamera();
+	const CCamera& Camera = m_pSystem->GetViewCamera();
 	return pH->EndFunction(Camera.IsPointVisible(point));
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 int CScriptBind_System::GetViewCameraPos(IFunctionHandler* pH)
 {
-	CCamera& Camera = m_pSystem->GetViewCamera();
+	const CCamera& Camera = m_pSystem->GetViewCamera();
 	return pH->EndFunction(Script::SetCachedVector(Camera.GetPosition(), pH, 1));
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 int CScriptBind_System::GetViewCameraDir(IFunctionHandler* pH)
 {
-	CCamera& Camera = m_pSystem->GetViewCamera();
+	const CCamera& Camera = m_pSystem->GetViewCamera();
 	Matrix34 cameraMatrix = Camera.GetMatrix();
 	return pH->EndFunction(Script::SetCachedVector(cameraMatrix.GetColumn(1), pH, 1));
 }
@@ -1984,7 +1986,7 @@ int CScriptBind_System::GetViewCameraDir(IFunctionHandler* pH)
 /////////////////////////////////////////////////////////////////////////////////
 int CScriptBind_System::GetViewCameraUpDir(IFunctionHandler* pH)
 {
-	CCamera& Camera = m_pSystem->GetViewCamera();
+	const CCamera& Camera = m_pSystem->GetViewCamera();
 	Matrix34 cameraMatrix = Camera.GetMatrix();
 	return pH->EndFunction(Script::SetCachedVector(cameraMatrix.GetColumn(2), pH, 1));
 }
@@ -1993,7 +1995,7 @@ int CScriptBind_System::GetViewCameraUpDir(IFunctionHandler* pH)
 int CScriptBind_System::GetViewCameraAngles(IFunctionHandler* pH)
 {
 	SCRIPT_CHECK_PARAMETERS(0);
-	CCamera& Camera = m_pSystem->GetViewCamera();
+	const CCamera& Camera = m_pSystem->GetViewCamera();
 	return pH->EndFunction(Vec3(RAD2DEG(Ang3::GetAnglesXYZ(Matrix33(Camera.GetMatrix())))));
 }
 

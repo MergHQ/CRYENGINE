@@ -26,7 +26,7 @@ static bool IsOnScreen(const Vec3& worldPos, Vec2& outScreenPos)
 	{
 		if ((z >= 0.0f) && (z <= 1.0f))
 		{
-			auto& camera = GetISystem()->GetViewCamera();
+			const CCamera& camera = GetISystem()->GetViewCamera();
 
 			outScreenPos.x = x * 0.01f * camera.GetViewSurfaceX();
 			outScreenPos.y = y * 0.01f * camera.GetViewSurfaceZ();

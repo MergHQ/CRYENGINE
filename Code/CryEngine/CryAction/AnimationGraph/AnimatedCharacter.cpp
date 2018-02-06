@@ -1661,9 +1661,9 @@ bool CAnimatedCharacter::StartAnimationProcessing(const QuatT& entityLocation) c
 	if ((m_pCharacter != NULL) && (m_lastAnimationUpdateFrameId != currentFrameId))
 	{
 		// calculate the approximate distance from camera
-		CCamera* pCamera = &GetISystem()->GetViewCamera();
-		const float fDistance = ((pCamera ? pCamera->GetPosition() : entityLocation.t) - entityLocation.t).GetLength();
-		const float fZoomFactor = 0.001f + 0.999f * (RAD2DEG((pCamera ? pCamera->GetFov() : 60.0f)) / 60.f);
+		const CCamera& camera = GetISystem()->GetViewCamera();
+		const float fDistance = (camera.GetPosition() - entityLocation.t).GetLength();
+		const float fZoomFactor = 0.001f + 0.999f * (RAD2DEG(camera.GetFov()) / 60.f);
 
 		SAnimationProcessParams params;
 		params.locationAnimation = entityLocation;
@@ -1781,7 +1781,7 @@ void CAnimatedCharacter::UpdateGroundAlignment()
 		else
 		{
 			//check if player is close enough
-			CCamera& camera = gEnv->pSystem->GetViewCamera();
+			const CCamera& camera = gEnv->pSystem->GetViewCamera();
 			const float fDistanceSq = (camera.GetPosition() - m_entLocation.t).GetLengthSquared();
 
 			// check if the character is using an animAction

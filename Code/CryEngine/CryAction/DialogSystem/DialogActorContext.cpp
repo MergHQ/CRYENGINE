@@ -1186,7 +1186,7 @@ bool CDialogActorContext::DoLocalPlayerChecks(const float dt)
 			}
 
 			const float distanceSq = pThisEntity->GetWorldPos().GetSquaredDistance(groupBounds.GetCenter());
-			CCamera& camera = gEnv->pSystem->GetViewCamera();
+			const CCamera& camera = gEnv->pSystem->GetViewCamera();
 			const bool bIsInAABB = camera.IsAABBVisible_F(groupBounds);
 			const bool bIsInRange = distanceSq <= awareDistanceSq;
 			const bool bIsLooking = contextMap.empty() || lookingAt.NumActors() > 0;
