@@ -95,7 +95,7 @@ namespace Cry
 			// IEntityComponentPreviewer
 			virtual void SerializeProperties(Serialization::IArchive& archive) final {}
 
-			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const final
+			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const
 			{
 				if (context.bSelected)
 				{
