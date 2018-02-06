@@ -397,9 +397,10 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 
 				int numLoops = 0;
 				pRootNode->getAttr(s_szLoopCountAttribute, numLoops);
-				// --numLoops because for SDL Mixer 0 loops means play only once, 1 loop play twice, etc ...
+				// --numLoops because -1: play infinite, 0: play once, 1: play twice, etc...
+				--numLoops;
 				// Max to -1 to stay backwards compatible.
-				numLoops = std::max(-1, --numLoops);
+				numLoops = std::max(-1, numLoops);
 				pTrigger->SetNumLoops(numLoops);
 
 				float fadeInTime = 0.0f;

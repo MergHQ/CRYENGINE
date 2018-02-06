@@ -315,9 +315,10 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 
 				int numLoops = 0;
 				pRootNode->getAttr(s_szLoopCountAttribute, numLoops);
-				// --numLoops because -1 == infinite, 0 == once, 1 == twice etc
+				// --numLoops because -1: play infinite, 0: play once, 1: play twice, etc...
+				--numLoops;
 				// Max to -1 to stay backwards compatible.
-				numLoops = std::max(-1, --numLoops);
+				numLoops = std::max(-1, numLoops);
 
 				PaStreamParameters streamParameters;
 				streamParameters.device = Pa_GetDefaultOutputDevice();
