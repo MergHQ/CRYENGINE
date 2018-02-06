@@ -551,8 +551,6 @@ void CSystem::ShutDown()
 	CLoadingProfilerSystem::ShutDown();
 #endif
 
-	m_pPlatformOS.reset();
-
 	if (m_pSystemEventDispatcher)
 	{
 		m_pSystemEventDispatcher->RemoveListener(this);
@@ -665,6 +663,8 @@ void CSystem::ShutDown()
 	UnloadEngineModule("CryAction");
 	UnloadEngineModule("CryFlowGraph");
 	SAFE_DELETE(m_pPluginManager);
+
+	m_pPlatformOS.reset();
 
 	if (gEnv->pMonoRuntime != nullptr)
 	{
