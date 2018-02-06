@@ -153,12 +153,10 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 
 		if (selectionCount == 1)
 		{
-			IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-			if (pEditorImpl != nullptr)
+			if (g_pEditorImpl != nullptr)
 			{
 				CID const itemId = selection[0].data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt();
-				CImplItem const* const pImplControl = pEditorImpl->GetControl(itemId);
+				CImplItem const* const pImplControl = g_pEditorImpl->GetControl(itemId);
 
 				if ((pImplControl != nullptr) && !pImplControl->IsPlaceholder())
 				{
@@ -217,9 +215,7 @@ void CConnectionsWidget::RemoveSelectedConnection()
 
 			if (messageBox->Execute() == QDialogButtonBox::Yes)
 			{
-				IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-				if (pEditorImpl != nullptr)
+				if (g_pEditorImpl != nullptr)
 				{
 					std::vector<CImplItem*> implItems;
 					implItems.reserve(selectedIndexes.size());
@@ -227,7 +223,7 @@ void CConnectionsWidget::RemoveSelectedConnection()
 					for (QModelIndex const& index : selectedIndexes)
 					{
 						CID const id = index.data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt();
-						implItems.emplace_back(pEditorImpl->GetControl(id));
+						implItems.emplace_back(g_pEditorImpl->GetControl(id));
 					}
 
 					for (CImplItem* const pImplItem : implItems)

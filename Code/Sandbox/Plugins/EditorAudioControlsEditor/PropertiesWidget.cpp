@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "PropertiesWidget.h"
@@ -41,53 +41,50 @@ CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* const pAssetsManager,
 	m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
 	m_pConnectionsLabel->setWordWrap(true);
 	pMainLayout->addWidget(m_pConnectionsLabel);
-	
+
 	pMainLayout->addWidget(m_pConnectionsWidget);
 
-	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-	if (pEditorImpl == nullptr)
+	if (g_pEditorImpl == nullptr)
 	{
 		setEnabled(false);
 	}
 
 	m_pAssetsManager->SignalItemAdded.Connect([&]()
-	{
-		if (!m_pAssetsManager->IsLoading())
 		{
-			RevertPropertyTree();
-		}
-	}, reinterpret_cast<uintptr_t>(this));
+			if (!m_pAssetsManager->IsLoading())
+			{
+			  RevertPropertyTree();
+			}
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	m_pAssetsManager->SignalItemRemoved.Connect([&]()
-	{
-		if (!m_pAssetsManager->IsLoading())
 		{
-			RevertPropertyTree();
-		}
-	}, reinterpret_cast<uintptr_t>(this));
+			if (!m_pAssetsManager->IsLoading())
+			{
+			  RevertPropertyTree();
+			}
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	m_pAssetsManager->SignalControlModified.Connect([&]()
-	{
-		if (!m_pAssetsManager->IsLoading())
 		{
-			RevertPropertyTree();
-		}
-	}, reinterpret_cast<uintptr_t>(this));
+			if (!m_pAssetsManager->IsLoading())
+			{
+			  RevertPropertyTree();
+			}
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	m_pAssetsManager->SignalAssetRenamed.Connect([&]()
-	{
-		if (!m_pAssetsManager->IsLoading())
 		{
-			RevertPropertyTree();
-		}
-	}, reinterpret_cast<uintptr_t>(this));
+			if (!m_pAssetsManager->IsLoading())
+			{
+			  RevertPropertyTree();
+			}
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
-	{
-		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-		setEnabled(pEditorImpl != nullptr);
-	}, reinterpret_cast<uintptr_t>(this));
+		{
+			setEnabled(g_pEditorImpl != nullptr);
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	QObject::connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_supressUpdates = true; });
 	QObject::connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_supressUpdates = false; });

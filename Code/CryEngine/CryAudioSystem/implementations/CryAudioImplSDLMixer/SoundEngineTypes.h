@@ -59,6 +59,12 @@ public:
 	int        GetNumLoops() const                                { return m_numLoops; }
 	void       SetNumLoops(int const numLoops)                    { m_numLoops = numLoops; }
 
+	int        GetFadeInTime() const                              { return m_fadeInTime; }
+	void       SetFadeInTime(int const fadeInTime)                { m_fadeInTime = fadeInTime; }
+
+	int        GetFadeOutTime() const                             { return m_fadeOutTime; }
+	void       SetFadeOutTime(int const fadeOutTime)              { m_fadeOutTime = fadeOutTime; }
+
 	bool       IsPanningEnabled() const                           { return m_isPanningEnabled; }
 	void       SetPanningEnabled(bool const isEnabled)            { m_isPanningEnabled = isEnabled; }
 
@@ -70,6 +76,8 @@ private:
 	float      m_attenuationMaxDistance = 100.0f;
 	int        m_volume = 128;
 	int        m_numLoops = 1;
+	int        m_fadeInTime = 0;
+	int        m_fadeOutTime = 0;
 	bool       m_isPanningEnabled = true;
 };
 

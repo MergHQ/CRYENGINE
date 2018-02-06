@@ -261,32 +261,36 @@ bool CSystemAsset::HasDefaultControlChildren(std::vector<string>& names) const
 //////////////////////////////////////////////////////////////////////////
 void CSystemAsset::Serialize(Serialization::IArchive& ar)
 {
-	if (ar.openBlock("properties", "Properties"))
+	string const name = m_name;
+
+	if (IsDefaultControl())
 	{
-		string const name = m_name;
+		ar(name, "name", "!Name");
+	}
+	else
+	{
+		ar(name, "name", "Name");
+	}
 
-		if (IsDefaultControl())
-		{
-			ar(name, "name", "!Name");
-		}
-		else
-		{
-			ar(name, "name", "Name");
-		}
+	ar.doc(name);
 
-		ar.doc(name);
+	string const description = m_description;
 
-		string const description = m_description;
+	if (IsDefaultControl())
+	{
+		ar(description, "description", "!Description");
+	}
+	else
+	{
 		ar(description, "description", "Description");
-		ar.doc(description);
+	}
 
-		if (ar.isInput())
-		{
-			SetName(name);
-			SetDescription(description);
-		}
+	ar.doc(description);
 
-		ar.closeBlock();
+	if (ar.isInput())
+	{
+		SetName(name);
+		SetDescription(description);
 	}
 }
 
@@ -444,16 +448,13 @@ void CSystemControl::AddConnection(ConnectionPtr const pConnection)
 {
 	if (pConnection != nullptr)
 	{
-		IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-
-		if (pEditorImpl != nullptr)
+		if (g_pEditorImpl != nullptr)
 		{
-			CImplItem* const pImplControl = pEditorImpl->GetControl(pConnection->GetID());
+			CImplItem* const pImplControl = g_pEditorImpl->GetControl(pConnection->GetID());
 
 			if (pImplControl != nullptr)
 			{
-				pEditorImpl->EnableConnection(pConnection);
-
+				g_pEditorImpl->EnableConnection(pConnection);
 				pConnection->SignalConnectionChanged.Connect(this, &CSystemControl::SignalConnectionModified);
 				m_connectedControls.emplace_back(pConnection);
 				MatchRadiusToAttenuation();
@@ -473,15 +474,13 @@ void CSystemControl::RemoveConnection(ConnectionPtr const pConnection)
 
 		if (it != m_connectedControls.end())
 		{
-			IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-
-			if (pEditorImpl != nullptr)
+			if (g_pEditorImpl != nullptr)
 			{
-				CImplItem* const pImplControl = pEditorImpl->GetControl(pConnection->GetID());
+				CImplItem* const pImplControl = g_pEditorImpl->GetControl(pConnection->GetID());
 
 				if (pImplControl != nullptr)
 				{
-					pEditorImpl->DisableConnection(pConnection);
+					g_pEditorImpl->DisableConnection(pConnection);
 					m_connectedControls.erase(it);
 					MatchRadiusToAttenuation();
 					SignalConnectionRemoved(pImplControl);
@@ -497,14 +496,12 @@ void CSystemControl::ClearConnections()
 {
 	if (!m_connectedControls.empty())
 	{
-		IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-
-		if (pEditorImpl != nullptr)
+		if (g_pEditorImpl != nullptr)
 		{
 			for (ConnectionPtr const& connection : m_connectedControls)
 			{
-				pEditorImpl->DisableConnection(connection);
-				CImplItem* const pImplControl = pEditorImpl->GetControl(connection->GetID());
+				g_pEditorImpl->DisableConnection(connection);
+				CImplItem* const pImplControl = g_pEditorImpl->GetControl(connection->GetID());
 
 				if (pImplControl != nullptr)
 				{
@@ -527,15 +524,14 @@ void CSystemControl::RemoveConnection(CImplItem* const pImplControl)
 		CID const id = pImplControl->GetId();
 		auto it = m_connectedControls.begin();
 		auto const end = m_connectedControls.end();
-		IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 
 		for (; it != end; ++it)
 		{
 			if ((*it)->GetID() == id)
 			{
-				if (pEditorImpl != nullptr)
+				if (g_pEditorImpl != nullptr)
 				{
-					pEditorImpl->DisableConnection(*it);
+					g_pEditorImpl->DisableConnection(*it);
 				}
 
 				m_connectedControls.erase(it);
@@ -589,9 +585,7 @@ void CSystemControl::SignalConnectionModified()
 //////////////////////////////////////////////////////////////////////////
 void CSystemControl::ReloadConnections()
 {
-	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-
-	if (pEditorImpl != nullptr)
+	if (g_pEditorImpl != nullptr)
 	{
 		std::map<int, XMLNodeList> connectionNodes;
 		std::swap(connectionNodes, m_connectionNodes);
@@ -609,11 +603,9 @@ void CSystemControl::ReloadConnections()
 //////////////////////////////////////////////////////////////////////////
 void CSystemControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex)
 {
-	IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-
-	if (pEditorImpl != nullptr)
+	if (g_pEditorImpl != nullptr)
 	{
-		ConnectionPtr pConnection = pEditorImpl->CreateConnectionFromXMLNode(xmlNode, m_type);
+		ConnectionPtr pConnection = g_pEditorImpl->CreateConnectionFromXMLNode(xmlNode, m_type);
 
 		if (pConnection != nullptr)
 		{
@@ -669,100 +661,102 @@ void CSystemControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const p
 //////////////////////////////////////////////////////////////////////////
 void CSystemControl::Serialize(Serialization::IArchive& ar)
 {
-	if (ar.openBlock("properties", "Properties"))
+	// Name
+	string const name = m_name;
+
+	if (IsDefaultControl())
 	{
-		// Name
-		string const name = m_name;
+		ar(name, "name", "!Name");
+	}
+	else
+	{
+		ar(name, "name", "Name");
+	}
 
-		if (IsDefaultControl())
-		{
-			ar(name, "name", "!Name");
-		}
-		else
-		{
-			ar(name, "name", "Name");
-		}
+	ar.doc(name);
 
-		ar.doc(name);
+	// Description
+	string const description = m_description;
 
-		// Description
-		string const description = m_description;
+	if (IsDefaultControl())
+	{
+		ar(description, "description", "!Description");
+	}
+	else
+	{
 		ar(description, "description", "Description");
-		ar.doc(description);
+	}
 
-		// Scope
-		Scope scope = m_scope;
+	ar.doc(description);
 
-		if (!IsDefaultControl() && (m_type != ESystemItemType::State))
+	// Scope
+	Scope scope = m_scope;
+
+	if (!IsDefaultControl() && (m_type != ESystemItemType::State))
+	{
+		Serialization::StringList scopeList;
+		ScopeInfoList scopeInfoList;
+		CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfoList(scopeInfoList);
+
+		for (auto const& scopeInfo : scopeInfoList)
 		{
-			Serialization::StringList scopeList;
-			ScopeInfoList scopeInfoList;
-			CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfoList(scopeInfoList);
-
-			for (auto const& scopeInfo : scopeInfoList)
-			{
-				scopeList.emplace_back(scopeInfo.name);
-			}
-
-			Serialization::StringListValue const selectedScope(scopeList, CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfo(m_scope).name);
-			ar(selectedScope, "scope", "Scope");
-			scope = CAudioControlsEditorPlugin::GetAssetsManager()->GetScope(scopeList[selectedScope.index()]);
+			scopeList.emplace_back(scopeInfo.name);
 		}
 
-		// Auto Load
-		bool isAutoLoad = m_isAutoLoad;
+		Serialization::StringListValue const selectedScope(scopeList, CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfo(m_scope).name);
+		ar(selectedScope, "scope", "Scope");
+		scope = CAudioControlsEditorPlugin::GetAssetsManager()->GetScope(scopeList[selectedScope.index()]);
+	}
 
-		if (m_type == ESystemItemType::Preload)
+	// Auto Load
+	bool isAutoLoad = m_isAutoLoad;
+
+	if (m_type == ESystemItemType::Preload)
+	{
+		ar(isAutoLoad, "auto_load", "Auto Load");
+	}
+
+	// Max Radius
+	float radius = m_radius;
+
+	if (!IsDefaultControl() && (m_type == ESystemItemType::Trigger))
+	{
+		if (g_pEditorImpl != nullptr)
 		{
-			ar(isAutoLoad, "auto_load", "Auto Load");
-		}
+			bool hasPlaceholderConnections = false;
+			float connectionMaxRadius = 0.0f;
 
-		// Max Radius
-		float radius = m_radius;
-
-		if (!IsDefaultControl() && (m_type == ESystemItemType::Trigger))
-		{
-			IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-
-			if (pEditorImpl != nullptr)
+			for (auto const& connection : m_connectedControls)
 			{
-				bool hasPlaceholderConnections = false;
-				float connectionMaxRadius = 0.0f;
+				CImplItem const* const pImplControl = g_pEditorImpl->GetControl(connection->GetID());
 
-				for (auto const& connection : m_connectedControls)
+				if ((pImplControl != nullptr) && !pImplControl->IsPlaceholder())
 				{
-					CImplItem const* const pImplControl = pEditorImpl->GetControl(connection->GetID());
-
-					if ((pImplControl != nullptr) && !pImplControl->IsPlaceholder())
-					{
-						connectionMaxRadius = std::max(connectionMaxRadius, pImplControl->GetRadius());
-					}
-					else
-					{
-						// If control has placeholder connection we cannot enforce the link between activity radius
-						// and attenuation as the user could be missing the middleware project.
-						hasPlaceholderConnections = true;
-						break;
-					}
+					connectionMaxRadius = std::max(connectionMaxRadius, pImplControl->GetRadius());
 				}
-
-				if (!hasPlaceholderConnections)
+				else
 				{
-					radius = connectionMaxRadius;
+					// If control has placeholder connection we cannot enforce the link between activity radius
+					// and attenuation as the user could be missing the middleware project.
+					hasPlaceholderConnections = true;
+					break;
 				}
 			}
-		}
 
-		if (ar.isInput())
-		{
-			SetName(name);
-			SetDescription(description);
-			SetScope(scope);
-			SetAutoLoad(isAutoLoad);
-			SetRadius(radius);
+			if (!hasPlaceholderConnections)
+			{
+				radius = connectionMaxRadius;
+			}
 		}
+	}
 
-		ar.closeBlock();
+	if (ar.isInput())
+	{
+		SetName(name);
+		SetDescription(description);
+		SetScope(scope);
+		SetAutoLoad(isAutoLoad);
+		SetRadius(radius);
 	}
 }
 
@@ -781,16 +775,14 @@ XMLNodeList& CSystemControl::GetRawXMLConnections(int const platformIndex /*= -1
 //////////////////////////////////////////////////////////////////////////
 void CSystemControl::MatchRadiusToAttenuation()
 {
-	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-
-	if (pEditorImpl != nullptr)
+	if (g_pEditorImpl != nullptr)
 	{
 		float radius = 0.0f;
 		bool isPlaceHolder = false;
 
 		for (auto const& connection : m_connectedControls)
 		{
-			CImplItem const* const pImplControl = pEditorImpl->GetControl(connection->GetID());
+			CImplItem const* const pImplControl = g_pEditorImpl->GetControl(connection->GetID());
 
 			if ((pImplControl != nullptr) && !pImplControl->IsPlaceholder())
 			{

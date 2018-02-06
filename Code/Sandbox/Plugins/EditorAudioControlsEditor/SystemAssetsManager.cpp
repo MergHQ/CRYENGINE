@@ -109,7 +109,7 @@ CSystemControl* CSystemAssetsManager::CreateControl(string const& name, ESystemI
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemAssetsManager::CreateDefaultControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent, bool& wasModified)
+void CSystemAssetsManager::CreateDefaultControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent, bool& wasModified, string const& description)
 {
 	CSystemControl* pControl = FindControl(name, type);
 
@@ -128,6 +128,7 @@ void CSystemAssetsManager::CreateDefaultControl(string const& name, ESystemItemT
 
 	if (pControl != nullptr)
 	{
+		pControl->SetDescription(description);
 		pControl->SetDefaultControl(true);
 	}
 }
@@ -380,11 +381,10 @@ void CSystemAssetsManager::OnAssetRenamed()
 void CSystemAssetsManager::UpdateFolderPaths()
 {
 	string const& rootPath = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
-	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 
-	if (pEditorImpl != nullptr)
+	if (g_pEditorImpl != nullptr)
 	{
-		string const& implFolderPath = rootPath + pEditorImpl->GetFolderName() + CRY_NATIVE_PATH_SEPSTR;
+		string const& implFolderPath = rootPath + g_pEditorImpl->GetFolderName() + CRY_NATIVE_PATH_SEPSTR;
 
 		m_configFolderPath = implFolderPath;
 		m_configFolderPath += CryAudio::s_szConfigFolderName;
@@ -607,11 +607,10 @@ void CSystemAssetsManager::UpdateAssetConnectionStates(CSystemAsset* const pAsse
 				for (size_t i = 0; i < connectionCount; ++i)
 				{
 					hasConnection = true;
-					IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 
-					if (pEditorImpl != nullptr)
+					if (g_pEditorImpl != nullptr)
 					{
-						CImplItem const* const pImpleControl = pEditorImpl->GetControl(pControl->GetConnectionAt(i)->GetID());
+						CImplItem const* const pImpleControl = g_pEditorImpl->GetControl(pControl->GetConnectionAt(i)->GetID());
 
 						if (pImpleControl != nullptr)
 						{
@@ -684,10 +683,8 @@ CSystemAsset* CSystemAssetsManager::CreateAndConnectImplItemsRecursively(CImplIt
 	CSystemAsset* pItem = nullptr;
 
 	// Create the new control and connect it to the one dragged in externally
-	IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
 	string name = pImplItem->GetName();
-	ESystemItemType type = pEditorImpl->ImplTypeToSystemType(pImplItem);
+	ESystemItemType type = g_pEditorImpl->ImplTypeToSystemType(pImplItem);
 
 	if (type != ESystemItemType::Invalid)
 	{
@@ -713,7 +710,7 @@ CSystemAsset* CSystemAssetsManager::CreateAndConnectImplItemsRecursively(CImplIt
 		pParent->AddChild(pControl);
 		m_controls.emplace_back(pControl);
 
-		ConnectionPtr const pAudioConnection = pEditorImpl->CreateConnectionToControl(pControl->GetType(), pImplItem);
+		ConnectionPtr const pAudioConnection = g_pEditorImpl->CreateConnectionToControl(pControl->GetType(), pImplItem);
 
 		if (pAudioConnection != nullptr)
 		{

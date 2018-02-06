@@ -31,8 +31,8 @@ private:
 	void            LoadPreloadConnections(XmlNodeRef const pNode, CSystemControl* const pControl, uint32 const version);
 	void            LoadConnections(XmlNodeRef const root, CSystemControl* const pControl);
 
-	void            CreateInternalControl(CSystemAsset* const pLibrary, char const* const szName, ESystemItemType const type);
-	void            CreateInternalSwitch(CSystemAsset* const pLibrary, char const* const szSwitchName, SwitchStates const& StateNames);
+	void            CreateInternalControl(CSystemAsset* const pLibrary, char const* const szName, ESystemItemType const type, char const* const szDescription);
+	void            CreateInternalSwitch(CSystemAsset* const pLibrary, char const* const szSwitchName, SwitchStates const& StateNames, char const* const szDescription);
 	void            CreateDefaultControls();
 
 	void            LoadEditorData(XmlNodeRef const pEditorDataNode, CSystemAsset& library);

@@ -1,9 +1,10 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include "PreferencesDialog.h"
+
 #include "AudioControlsEditorPlugin.h"
+#include "ImplementationManager.h"
 
 #include <IEditorImpl.h>
 #include <QtUtil.h>
@@ -23,11 +24,9 @@ namespace ACE
 CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 	: CEditorDialog("AudioSystemPreferencesDialog", pParent)
 {
-	IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-	if (pEditorImpl != nullptr)
+	if (g_pEditorImpl != nullptr)
 	{
-		IImplSettings const* const pImplSettings = pEditorImpl->GetSettings();
+		IImplSettings const* const pImplSettings = g_pEditorImpl->GetSettings();
 
 		if (pImplSettings != nullptr)
 		{
@@ -41,7 +40,7 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 			Qt::Alignment const labelAlignment = static_cast<Qt::Alignment>(Qt::AlignLeft | Qt::AlignVCenter);
 
 			pLayout->addWidget(new QLabel(tr("Audio Middleware") + ":"), 0, 0, labelAlignment);
-			pLayout->addWidget(new QLabel(QtUtil::ToQString(pEditorImpl->GetName())), 0, 1, labelAlignment);
+			pLayout->addWidget(new QLabel(QtUtil::ToQString(g_pEditorImpl->GetName())), 0, 1, labelAlignment);
 
 			pLayout->addWidget(new QLabel(tr("Assets Path") + ":"), 1, 0, labelAlignment);
 			pLayout->addWidget(new QLabel(pImplSettings->GetAssetsPath()), 1, 1);
@@ -59,26 +58,24 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 			if (pImplSettings->IsProjectPathEditable())
 			{
 				QObject::connect(pLineEdit, &QLineEdit::textChanged, [=](QString const& projectPath)
-				{
-					SignalEnableSaveButton(m_projectPath.toLower().replace("/", R"(\)") != projectPath.toLower().replace("/", R"(\)"));
-				});
+					{
+						SignalEnableSaveButton(m_projectPath.toLower().replace("/", R"(\)") != projectPath.toLower().replace("/", R"(\)"));
+				  });
 
 				QObject::connect(pBrowseButton, &QToolButton::clicked, [=]()
-				{
-					IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-					if (pEditorImpl != nullptr)
 					{
-						CSystemFileDialog::RunParams runParams;
-						runParams.initialDir = pLineEdit->text();
-						QString const& path = CSystemFileDialog::RunSelectDirectory(runParams, this);
-
-						if (!path.isEmpty())
+						if (g_pEditorImpl != nullptr)
 						{
-							pLineEdit->setText(path);
+						  CSystemFileDialog::RunParams runParams;
+						  runParams.initialDir = pLineEdit->text();
+						  QString const& path = CSystemFileDialog::RunSelectDirectory(runParams, this);
+
+						  if (!path.isEmpty())
+						  {
+						    pLineEdit->setText(path);
+						  }
 						}
-					}
-				});
+				  });
 			}
 			else
 			{
@@ -86,7 +83,6 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 				pBrowseButton->setEnabled(false);
 			}
 
-			
 			pProjectPathLayout->addWidget(pLineEdit);
 			pProjectPathLayout->addWidget(pBrowseButton);
 
@@ -99,27 +95,25 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 			pButtons->button(QDialogButtonBox::Save)->setEnabled(false);
 			QObject::connect(this, &CPreferencesDialog::SignalEnableSaveButton, pButtons->button(QDialogButtonBox::Save), &QPushButton::setEnabled);
 			QObject::connect(pButtons, &QDialogButtonBox::accepted, [=]()
-			{
-				IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-				if (pEditorImpl != nullptr)
 				{
-					IImplSettings* const pImplSettings = pEditorImpl->GetSettings();
-
-					if (pImplSettings != nullptr)
+					if (g_pEditorImpl != nullptr)
 					{
-						pImplSettings->SetProjectPath(QtUtil::ToString(pLineEdit->text()));
-						SignalImplementationSettingsAboutToChange();
-						// clear all connections to the middleware since we are reloading everything
-						CAudioControlsEditorPlugin::GetAssetsManager()->ClearAllConnections();
-						pEditorImpl->Reload();
-						CAudioControlsEditorPlugin::GetAssetsManager()->ReloadAllConnections();
-						SignalImplementationSettingsChanged();
-					}
-				}
+					  IImplSettings* const pImplSettings = g_pEditorImpl->GetSettings();
 
-				accept();
-			});
+					  if (pImplSettings != nullptr)
+					  {
+					    pImplSettings->SetProjectPath(QtUtil::ToString(pLineEdit->text()));
+					    SignalImplementationSettingsAboutToChange();
+					    // clear all connections to the middleware since we are reloading everything
+					    CAudioControlsEditorPlugin::GetAssetsManager()->ClearAllConnections();
+					    g_pEditorImpl->Reload();
+					    CAudioControlsEditorPlugin::GetAssetsManager()->ReloadAllConnections();
+					    SignalImplementationSettingsChanged();
+					  }
+					}
+
+					accept();
+			  });
 
 			QObject::connect(pButtons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 			pMainLayout->addWidget(pButtons, 0);

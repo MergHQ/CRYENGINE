@@ -21,6 +21,8 @@ static constexpr char* s_szAttenuationMinDistanceAttribute = "attenuation_dist_m
 static constexpr char* s_szAttenuationMaxDistanceAttribute = "attenuation_dist_max";
 static constexpr char* s_szVolumeAttribute = "volume";
 static constexpr char* s_szLoopCountAttribute = "loop_count";
+static constexpr char* s_szFadeInTimeAttribute = "fade_in_time";
+static constexpr char* s_szFadeOutTimeAttribute = "fade_out_time";
 
 // XML values
 static constexpr char* s_szTrueValue = "true";

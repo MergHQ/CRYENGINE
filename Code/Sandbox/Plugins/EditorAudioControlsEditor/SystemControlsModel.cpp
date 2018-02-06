@@ -4,6 +4,7 @@
 #include "SystemControlsModel.h"
 
 #include "AudioControlsEditorPlugin.h"
+#include "ImplementationManager.h"
 #include "SystemControlsIcons.h"
 #include "ModelUtils.h"
 
@@ -185,7 +186,6 @@ void DecodeImplMimeData(const QMimeData* pData, std::vector<CImplItem*>& outItem
 
 	if (pDragDropData->HasCustomData(ModelUtils::s_szImplMimeType))
 	{
-		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
 		QByteArray const byteArray = pDragDropData->GetCustomData(ModelUtils::s_szImplMimeType);
 		QDataStream stream(byteArray);
 
@@ -196,7 +196,7 @@ void DecodeImplMimeData(const QMimeData* pData, std::vector<CImplItem*>& outItem
 
 			if (id != ACE_INVALID_ID)
 			{
-				CImplItem* const pImplControl = pEditorImpl->GetControl(id);
+				CImplItem* const pImplControl = g_pEditorImpl->GetControl(id);
 
 				if (pImplControl != nullptr)
 				{
@@ -261,11 +261,9 @@ bool CanDropMimeData(QMimeData const* const pData, CSystemAsset const& parent)
 
 	if (!implItems.empty())
 	{
-		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
 		for (CImplItem const* const pImplItem : implItems)
 		{
-			if (!IsParentValid(parent, pEditorImpl->ImplTypeToSystemType(pImplItem)))
+			if (!IsParentValid(parent, g_pEditorImpl->ImplTypeToSystemType(pImplItem)))
 			{
 				hasValidParent = false;
 				break;

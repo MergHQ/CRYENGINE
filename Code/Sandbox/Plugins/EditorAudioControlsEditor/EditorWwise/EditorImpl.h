@@ -49,7 +49,8 @@ public:
 	virtual char const*     GetTypeIcon(CImplItem const* const pImplItem) const override;
 	virtual string const&   GetName() const override;
 	virtual string const&   GetFolderName() const override;
-	virtual IImplSettings*  GetSettings() override { return &m_implSettings; }
+	virtual IImplSettings*  GetSettings() override                                                 { return &m_implSettings; }
+	virtual bool            IsSystemTypeSupported(ESystemItemType const systemType) const override { return true; }
 	virtual bool            IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const override;
 	virtual ESystemItemType ImplTypeToSystemType(CImplItem const* const pImplItem) const override;
 	virtual ConnectionPtr   CreateConnectionToControl(ESystemItemType const controlType, CImplItem* const pImplItem) override;

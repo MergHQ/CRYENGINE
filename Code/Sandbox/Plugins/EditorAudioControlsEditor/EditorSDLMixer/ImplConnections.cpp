@@ -10,6 +10,8 @@ namespace ACE
 {
 namespace SDLMixer
 {
+static float const g_precision = 0.0001f;
+
 //////////////////////////////////////////////////////////////////////////
 void CConnection::Serialize(Serialization::IArchive& ar)
 {
@@ -17,6 +19,8 @@ void CConnection::Serialize(Serialization::IArchive& ar)
 	float const minAttenuation = m_minAttenuation;
 	float const maxAttenuation = m_maxAttenuation;
 	float const volume = m_volume;
+	float const fadeInTime = m_fadeInTime;
+	float const fadeOutTime = m_fadeOutTime;
 	uint32 const loopCount = m_loopCount;
 	bool const isPanningEnabled = m_isPanningEnabled;
 	bool const isAttenuationEnabled = m_isAttenuationEnabled;
@@ -26,80 +30,63 @@ void CConnection::Serialize(Serialization::IArchive& ar)
 
 	if (m_type == EConnectionType::Start)
 	{
-		ar(m_isPanningEnabled, "panning", "Enable Panning");
-
-		if (ar.openBlock("DistanceAttenuation", "+Distance Attenuation"))
-		{
-			ar(m_isAttenuationEnabled, "attenuation", "Enable");
-
-			if (m_isAttenuationEnabled)
-			{
-				if (ar.isInput())
-				{
-					float minAtt = m_minAttenuation;
-					float maxAtt = m_maxAttenuation;
-					ar(minAtt, "min_att", "Min Distance");
-					ar(maxAtt, "max_att", "Max Distance");
-
-					minAtt = std::max(0.0f, minAtt);
-					maxAtt = std::max(0.0f, maxAtt);
-
-					if (minAtt > maxAtt)
-					{
-						if (minAtt != m_minAttenuation)
-						{
-							maxAtt = minAtt;
-						}
-						else
-						{
-							minAtt = maxAtt;
-						}
-					}
-
-					m_minAttenuation = minAtt;
-					m_maxAttenuation = maxAtt;
-				}
-				else
-				{
-					ar(m_minAttenuation, "min_att", "Min Distance");
-					ar(m_maxAttenuation, "max_att", "Max Distance");
-				}
-			}
-			else
-			{
-				ar(m_minAttenuation, "min_att", "!Min Distance");
-				ar(m_maxAttenuation, "max_att", "!Max Distance");
-			}
-
-			ar.closeBlock();
-		}
-
-		ar(Serialization::Range(m_volume, -96.0f, 0.0f), "vol", "Volume (dB)");
+		ar(Serialization::Range(m_volume, -96.0f, 0.0f, 1.0f), "vol", "Volume (dB)");
 		m_volume = crymath::clamp(m_volume, -96.0f, 0.0f);
 
-		if (ar.openBlock("Looping", "+Looping"))
-		{
-			ar(m_isInfiniteLoop, "infinite", "Infinite");
+		ar(Serialization::Range(m_fadeInTime, 0.0f, 60.0f, 0.5f), "fade_in_time", "Fade-In Time (sec)");
+		m_fadeInTime = crymath::clamp(m_fadeInTime, 0.0f, 60.0f);
 
-			if (m_isInfiniteLoop)
+		ar(Serialization::Range(m_fadeOutTime, 0.0f, 60.0f, 0.5f), "fade_out_time", "Fade-Out Time (sec)");
+		m_fadeOutTime = crymath::clamp(m_fadeOutTime, 0.0f, 60.0f);
+
+		ar(m_isPanningEnabled, "panning", "Enable Panning");
+		ar(m_isAttenuationEnabled, "attenuation", "Enable Attenuation");
+
+		if (m_isAttenuationEnabled)
+		{
+			if (ar.isInput())
 			{
-				ar(m_loopCount, "loop_count", "!Count");
+				float minAtt = m_minAttenuation;
+				float maxAtt = m_maxAttenuation;
+				ar(minAtt, "min_att", "Min Distance");
+				ar(maxAtt, "max_att", "Max Distance");
+
+				minAtt = std::max(0.0f, minAtt);
+				maxAtt = std::max(0.0f, maxAtt);
+
+				if ((minAtt > maxAtt) || (fabs(minAtt - maxAtt) < g_precision))
+				{
+					minAtt = m_minAttenuation;
+					maxAtt = m_maxAttenuation;
+				}
+
+				m_minAttenuation = minAtt;
+				m_maxAttenuation = maxAtt;
 			}
 			else
 			{
-				ar(m_loopCount, "loop_count", "Count");
+				ar(m_minAttenuation, "min_att", "Min Distance");
+				ar(m_maxAttenuation, "max_att", "Max Distance");
 			}
+		}
 
-			ar.closeBlock();
+		ar(m_isInfiniteLoop, "infinite_loop", "Infinite Loop");
+
+		if (!m_isInfiniteLoop)
+		{
+			ar(m_loopCount, "loop_count", " Loop Count");
+			m_loopCount = std::max<uint32>(1, m_loopCount);
 		}
 	}
 
 	if (ar.isInput())
 	{
 		if (type != m_type ||
-		    minAttenuation != m_minAttenuation ||
-		    maxAttenuation != m_maxAttenuation ||
-		    volume != m_volume ||
+		    fabs(minAttenuation - m_minAttenuation) > g_precision ||
+		    fabs(maxAttenuation - m_maxAttenuation) > g_precision ||
+		    fabs(volume - m_volume) > g_precision ||
+		    fabs(fadeInTime - m_fadeInTime) > g_precision ||
+		    fabs(fadeOutTime - m_fadeOutTime) > g_precision ||
 		    loopCount != m_loopCount ||
 		    isPanningEnabled != m_isPanningEnabled ||
 		    isAttenuationEnabled != m_isAttenuationEnabled ||

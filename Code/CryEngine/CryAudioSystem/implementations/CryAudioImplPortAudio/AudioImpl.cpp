@@ -313,9 +313,12 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 				CryFixedStringT<16> const eventTypeString(pRootNode->getAttr(s_szTypeAttribute));
 				EEventType const eventType = eventTypeString.compareNoCase(s_szStartValue) == 0 ? EEventType::Start : EEventType::Stop;
 
-				// numLoops -1 == infinite, 0 == once, 1 == twice etc
 				int numLoops = 0;
 				pRootNode->getAttr(s_szLoopCountAttribute, numLoops);
+				// --numLoops because -1 == infinite, 0 == once, 1 == twice etc
+				// Max to -1 to stay backwards compatible.
+				numLoops = std::max(-1, --numLoops);
+
 				PaStreamParameters streamParameters;
 				streamParameters.device = Pa_GetDefaultOutputDevice();
 				streamParameters.channelCount = sfInfo.channels;
