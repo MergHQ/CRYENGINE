@@ -244,7 +244,6 @@ float CRendererCVars::CV_r_ShadowsParticleNormalEffect;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowGenMode);
 
-AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsUseClipVolume);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadowtexformat);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsMaskResolution);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsMaskDownScale);
@@ -252,7 +251,6 @@ AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsStencilPrePass);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowMaskStencilPrepass);
 int CRendererCVars::CV_r_ShadowsDepthBoundNV;
 int CRendererCVars::CV_r_ShadowsPCFiltering;
-float CRendererCVars::CV_r_shadowbluriness;
 float CRendererCVars::CV_r_shadow_jittering;
 int CRendererCVars::CV_r_ShadowPoolMaxTimeslicedUpdatesPerFrame;
 int CRendererCVars::CV_r_ShadowCastingLightsMaxCount;
@@ -1526,10 +1524,6 @@ void CRendererCVars::InitCVars()
 	               "Helps reducing artifacts caused by limited shadow map resolution and biasing\n"
 	               "Applied only in the near range and supposed to be used mostly in the cutscenes for better shadows on character faces");
 
-	DefineConstIntCVar3("r_ShadowsUseClipVolume", CV_r_ShadowsUseClipVolume, SHADOWS_CLIP_VOL_DEFAULT_VAL, VF_DUMPTODISK,
-	                    ".\n"
-	                    "Usage: r_ShadowsUseClipVolume [0=Disable/1=Enable");
-
 	DefineConstIntCVar3("r_ShadowTexFormat", CV_r_shadowtexformat, 0, VF_NULL,
 	                    "0=use D32 texture format for depth map\n"
 	                    "1=use D16 texture format for depth map\n"
@@ -1561,9 +1555,6 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_ShadowsPCFiltering", CV_r_ShadowsPCFiltering, 1, VF_NULL,
 	               "1=use PCF for shadows\n"
 	               "Usage: r_ShadowsPCFiltering [0/1]");
-	REGISTER_CVAR3("r_ShadowBluriness", CV_r_shadowbluriness, 1.0f, VF_DUMPTODISK,
-	               "Select shadow map blurriness if r_ShadowBlur is activated.\n"
-	               "Usage: r_ShadowBluriness [0.1 - 16]");
 	REGISTER_CVAR3_CB("r_ShadowJittering", CV_r_shadow_jittering, 3.4f, VF_NULL,
 	                  "Shadow map jittering radius.\n"
 	                  "In PC the only use of this cvar is to instantly see the effects of diferent jittering values,\n"
