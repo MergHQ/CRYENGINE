@@ -39,12 +39,11 @@ namespace Cry
 				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
 				desc.AddMember(&CPlaneConstraintComponent::m_bActive, 'actv', "Active", "Active", "Whether or not the constraint should be added on component reset", true);
-				desc.AddMember(&CPlaneConstraintComponent::m_axis, 'axis', "Axis", "Axis", "Axis around which the physical entity is constrained", Vec3(0.f, 0.f, 1.f));
+				desc.AddMember(&CPlaneConstraintComponent::m_axis, 'axis', "Axis", "Axis", "Axis around which the physical entity is constrained, as well as the plane's normal", Vec3(0.f, 0.f, 1.f));
 
-				desc.AddMember(&CPlaneConstraintComponent::m_limitMin, 'lmin', "LimitMinX", "Minimum Limit X", nullptr, 0.f);
-				desc.AddMember(&CPlaneConstraintComponent::m_limitMax, 'lmax', "LimitMaxX", "Maximum Limit X", nullptr, 1.f);
-				desc.AddMember(&CPlaneConstraintComponent::m_limitMinY, 'lmiy', "LimitMinY", "Minimum Limit Y", nullptr, 0.f);
-				desc.AddMember(&CPlaneConstraintComponent::m_limitMaxY, 'lmay', "LimitMaxY", "Maximum Limit Y", nullptr, 1.f);
+				desc.AddMember(&CPlaneConstraintComponent::m_limitMin, 'lmin', "LimitMinX", "Twist rotation min angle", nullptr, -360.0_degrees);
+				desc.AddMember(&CPlaneConstraintComponent::m_limitMax, 'lmax', "LimitMaxX", "Twist rotation max angle", nullptr, 360.0_degrees);
+				desc.AddMember(&CPlaneConstraintComponent::m_limitMaxY, 'lmay', "LimitMaxY", "Bend max angle", nullptr, 0.0_degrees);
 
 				desc.AddMember(&CPlaneConstraintComponent::m_damping, 'damp', "Damping", "Damping", nullptr, 0.f);
 			}
@@ -107,10 +106,10 @@ namespace Cry
 					constraint.flags = world_frames | constraint_no_tears | constraint_plane;
 					constraint.pt[0] = constraint.pt[1] = slotTransform.GetTranslation();
 					constraint.qframe[0] = constraint.qframe[1] = Quat(slotTransform) * Quat::CreateRotationV0V1(Vec3(1, 0, 0), m_axis);
-					constraint.xlimits[0] = m_limitMin;
-					constraint.xlimits[1] = m_limitMax;
-					constraint.yzlimits[0] = m_limitMinY;
-					constraint.yzlimits[1] = m_limitMaxY;
+					constraint.xlimits[0] = m_limitMin.ToRadians();
+					constraint.xlimits[1] = m_limitMax.ToRadians();
+					constraint.yzlimits[0] = 0;
+					constraint.yzlimits[1] = m_limitMaxY.ToRadians();
 					constraint.damping = m_damping;
 
 					if (!bAllowRotation)
@@ -158,13 +157,12 @@ namespace Cry
 			}
 			bool IsActive() const { return m_bActive; }
 
-			virtual void SetLimitsX(float minLimit, float maxLimit) { m_limitMin = minLimit; m_limitMax = maxLimit; }
-			float GetMinimumLimitX() const { return m_limitMin; }
-			float GetMaximumLimitX() const { return m_limitMax; }
+			virtual void SetLimitsX(CryTransform::CAngle minLimit, CryTransform::CAngle maxLimit) { m_limitMin = minLimit; m_limitMax = maxLimit; }
+			CryTransform::CAngle GetMinimumLimitX() const { return m_limitMin; }
+			CryTransform::CAngle GetMaximumLimitX() const { return m_limitMax; }
 
-			virtual void SetLimitsY(float minLimit, float maxLimit) { m_limitMinY = minLimit; m_limitMaxY = maxLimit; }
-			float GetMinimumLimitY() const { return m_limitMinY; }
-			float GetMaximumLimitY() const { return m_limitMaxY; }
+			virtual void SetLimitsY(CryTransform::CAngle maxLimit) { m_limitMaxY = maxLimit; }
+			CryTransform::CAngle GetMaximumLimitY() const { return m_limitMaxY; }
 
 			virtual void SetDamping(float damping) { m_damping = damping; }
 			float GetDamping() const { return m_damping; }
@@ -176,10 +174,9 @@ namespace Cry
 			bool m_bActive = true;
 			Vec3 m_axis = Vec3(0, 0, 1);
 
-			Schematyc::Range<-10000, 10000> m_limitMin = 0.f;
-			Schematyc::Range<-10000, 10000> m_limitMax = 1.f;
-			Schematyc::Range<-10000, 10000> m_limitMinY = 0.f;
-			Schematyc::Range<-10000, 10000> m_limitMaxY = 1.f;
+			CryTransform::CClampedAngle<-360, 360>  m_limitMin = -360.0_degrees;
+			CryTransform::CClampedAngle<-360, 360>  m_limitMax = 360.0_degrees;
+			CryTransform::CClampedAngle<0, 180>  m_limitMaxY = 0.0_degrees;
 
 			Schematyc::Range<-10000, 10000> m_damping = 0.f;
 

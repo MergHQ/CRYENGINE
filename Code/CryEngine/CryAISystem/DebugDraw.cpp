@@ -1466,7 +1466,7 @@ void CAISystem::DebugDrawRadar()
 
 	Matrix34 worldToScreen;
 	worldToScreen.SetIdentity();
-	CCamera& cam = GetISystem()->GetViewCamera();
+	const CCamera& cam = GetISystem()->GetViewCamera();
 	Vec3 camPos = cam.GetPosition();
 	Vec3 camForward = cam.GetMatrix().TransformVector(FORWARD_DIRECTION);
 	float rot(atan2f(camForward.x, camForward.y));
@@ -3446,7 +3446,7 @@ void CAISystem::DebugDrawStatsTarget(const char* pName)
 	dc2->SetAlphaBlended(true);
 	dc2->SetDepthWrite(false);
 
-	CCamera& cam = GetISystem()->GetViewCamera();
+	const CCamera& cam = GetISystem()->GetViewCamera();
 	Vec3 axisx = cam.GetMatrix().TransformVector(Vec3(1, 0, 0));
 	Vec3 axisy = cam.GetMatrix().TransformVector(Vec3(0, 0, 1));
 

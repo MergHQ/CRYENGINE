@@ -2673,9 +2673,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	m_bPreviewMode = startupParams.bPreview;
 	m_bUIFrameworkMode = startupParams.bUIFramework;
 	m_pUserCallback = startupParams.pUserCallback;
-#if defined(CVARS_WHITELIST)
-	m_pCVarsWhitelist = startupParams.pCVarsWhitelist;
-#endif // defined(CVARS_WHITELIST)
 
 #if !defined(_RELEASE)
 	if (!startupParams.bDedicatedServer)
@@ -3728,6 +3725,10 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		{
 			InitGameFramework(startupParams);
 		}
+
+#if defined(CVARS_WHITELIST)
+		m_pCVarsWhitelist = startupParams.pCVarsWhitelist;
+#endif // defined(CVARS_WHITELIST)
 
 		//////////////////////////////////////////////////////////////////////////
 		// Create PerfHUD

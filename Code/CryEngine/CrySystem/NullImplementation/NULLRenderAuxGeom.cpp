@@ -441,12 +441,14 @@ bool CNULLRenderAuxGeom::EnableOpenGL()
 		return false;
 	}
 
-	CCamera& camera = gEnv->pSystem->GetViewCamera();
+	CCamera camera = gEnv->pSystem->GetViewCamera();
 	camera.SetFrustum(static_cast<int>(W), static_cast<int>(H));
 
 	const float FOV = camera.GetFov() / PI * 180.0f;
 	const float PNR = camera.GetNearPlane();
 	const float PFR = camera.GetFarPlane();
+
+	gEnv->pSystem->SetViewCamera(camera);
 
 	PIXELFORMATDESCRIPTOR pfd;
 	int format;
@@ -597,7 +599,9 @@ void CNULLRenderAuxGeom::BeginFrame()
 		if (m_updateSystemView)
 		{
 			Matrix34 m(Matrix33::CreateOrientation(m_dir, m_up, 0), m_eye);
-			gEnv->pSystem->GetViewCamera().SetMatrix(m);
+			CCamera cam = gEnv->pSystem->GetViewCamera();
+			cam.SetMatrix(m);
+			gEnv->pSystem->SetViewCamera(cam);
 		}
 		else
 		{

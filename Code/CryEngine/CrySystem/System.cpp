@@ -551,8 +551,6 @@ void CSystem::ShutDown()
 	CLoadingProfilerSystem::ShutDown();
 #endif
 
-	m_pPlatformOS.reset();
-
 	if (m_pSystemEventDispatcher)
 	{
 		m_pSystemEventDispatcher->RemoveListener(this);
@@ -665,6 +663,8 @@ void CSystem::ShutDown()
 	UnloadEngineModule("CryAction");
 	UnloadEngineModule("CryFlowGraph");
 	SAFE_DELETE(m_pPluginManager);
+
+	m_pPlatformOS.reset();
 
 	if (gEnv->pMonoRuntime != nullptr)
 	{
@@ -1787,7 +1787,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 
 	if (!gEnv->IsEditor() && gEnv->pRenderer)
 	{
-		CCamera& rCamera = GetViewCamera();
+		CCamera rCamera = GetViewCamera();
 
 		// if aspect ratio changes or is different from default we need to update camera
 		const float fNewAspectRatio = gEnv->pRenderer->GetPixelAspectRatio();
@@ -1807,9 +1807,9 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				fNewAspectRatio);
 
 			if (auto pRenderer = gEnv->pRenderer)
-			{
 				pRenderer->UpdateAuxDefaultCamera(rCamera);
-			}
+
+			SetViewCamera(rCamera);
 		}
 	}
 

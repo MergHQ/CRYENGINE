@@ -410,9 +410,9 @@ void SPostEffectsUtils::GetFrustumCorners(Vec3& vRT, Vec3& vLT, Vec3& vLB, Vec3&
 void SPostEffectsUtils::UpdateFrustumCorners()
 {
 	int64 nFrameID = gRenDev->GetRenderFrameID();
-	const auto& camera = gcpRendD3D.GetGraphicsPipeline().GetCurrentRenderView()->GetCamera(CCamera::eEye_Left);
+	const CCamera& camera = gcpRendD3D.GetGraphicsPipeline().GetCurrentRenderView()->GetCamera(CCamera::eEye_Left);
 
-	if (m_nFrustrumFrameID != nFrameID || CRenderer::CV_r_StereoMode == 1 || !CompareRenderCamera(camera, m_cachedRenderCamera))
+	if (m_nFrustrumFrameID != nFrameID || gcpRendD3D->GetS3DRend().GetStereoMode() == EStereoMode::STEREO_MODE_DUAL_RENDERING || !CompareRenderCamera(camera, m_cachedRenderCamera))
 	{
 		bool bMirrorCull = gcpRendD3D.GetGraphicsPipeline().GetCurrentRenderView()->IsViewFlag(SRenderViewInfo::eFlags_MirrorCull);
 		GetFrustumCorners(m_vRT, m_vLT, m_vLB, m_vRB, camera, bMirrorCull);
