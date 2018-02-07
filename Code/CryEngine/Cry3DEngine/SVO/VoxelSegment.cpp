@@ -34,6 +34,7 @@
 	#define SVO_NODES_POOL_DIM_XY  (SVO_NODE_BRICK_SIZE * SVO_ATLAS_DIM_MAX_XY)
 	#define SVO_NODES_POOL_DIM_Z   (SVO_NODE_BRICK_SIZE * SVO_ATLAS_DIM_MAX_Z)
 	#define SVO_MAX_TRIS_PER_VOXEL 512
+	#define SVO_PACK_TO_16_BIT     false // disabled because causes not enough occlusion
 
 CBlockPacker3D* CVoxelSegment::m_pBlockPacker = 0;
 CCamera CVoxelSegment::m_voxCam;
@@ -79,7 +80,7 @@ DECLARE_JOB("VoxelSegmentBuildVoxels", TBuildVoxelsJob, CVoxelSegment::BuildVoxe
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CVoxStreamEngine::CVoxStreamEngineThread::CVoxStreamEngineThread(CVoxStreamEngine* pStreamingEngine) : m_pStreamingEngine(pStreamingEngine)
-, m_bRun(true)
+	, m_bRun(true)
 {
 }
 
@@ -125,8 +126,8 @@ void CVoxStreamEngine::CVoxStreamEngineThread::SignalStopWork()
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CVoxStreamEngine::CVoxStreamEngine() : m_arrForFileRead(512)
-, m_arrForSyncCallBack(512)
-, m_fileReadSemaphore(512)
+	, m_arrForSyncCallBack(512)
+	, m_fileReadSemaphore(512)
 {
 	const int numThreads = gEnv->pConsole->GetCVar("e_svoTI_NumStreamingThreads")->GetIVal();
 	for (int i = 0; i < numThreads; ++i)
@@ -179,7 +180,6 @@ void CVoxStreamEngine::ProcessSyncCallBacks()
 bool CVoxStreamEngine::StartRead(CVoxelSegment* pObj, int64 fileOffset, int bytesToRead)
 {
 	FUNCTION_PROFILER_3DENGINE;
-
 
 	if (m_arrForFileRead.enqueue({ pObj, GetCurrPassMainFrameID() / 10 }))
 	{
@@ -349,11 +349,9 @@ bool CVoxelSegment::LoadVoxels(byte* pDataRead, int dataSize)
 	m_vCropBoxMin.y = pHeader->cropBoxMin.y;
 	m_vCropBoxMin.z = pHeader->cropBoxMin.z;
 
-	bool bUnpackFrom16bit = true;
-
 	int texDataSize = (m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z * sizeof(ColorB));
 
-	if (bUnpackFrom16bit)
+	if (SVO_PACK_TO_16_BIT)
 	{
 		texDataSize /= 2;
 	}
@@ -383,16 +381,18 @@ bool CVoxelSegment::LoadVoxels(byte* pDataRead, int dataSize)
 			{
 				CheckAllocateBrick(voxData.pData[s], dataSize / sizeof(ColorB));
 
-				if (bUnpackFrom16bit)
+				if (SVO_PACK_TO_16_BIT)
 				{
 					byte* pDataOut = (byte*)voxData.pData[s];
 
 					for (int i = 0; i < texDataSize; i++)
 					{
 						(*pDataOut) = (((*pData) >> 0) & 15) << 4;
+						(*pDataOut) = SATURATEB(int(powf(float((*pDataOut)) / 255.f, 2.f) * 255.f));
 						pDataOut++;
 
 						(*pDataOut) = (((*pData) >> 4) & 15) << 4;
+						(*pDataOut) = SATURATEB(int(powf(float((*pDataOut)) / 255.f, 2.f) * 255.f));
 						pDataOut++;
 
 						pData++;
@@ -697,7 +697,7 @@ bool CVoxelSegment::StartStreaming(CVoxStreamEngine* pVoxStreamEngine)
 		if (!pVoxStreamEngine->StartRead(this, m_fileStreamOffset64, m_fileStreamSize))
 		{
 			return false;
-	}
+		}
 	}
 
 	m_eStreamingStatus = ecss_InProgress;
@@ -1404,40 +1404,40 @@ void CVoxelSegment::VoxelizeMeshes(int threadId, bool bUseMT)
 			m_objLayerMap[kAllObjectLayersId] = m_voxData;
 		}
 
-		if (bUseMT)
-		{
-			const int VOX_THREADS_NUM = 8;
+		/*if (bUseMT) // commented because causes not enough occlusion error
+		   {
+		   const int VOX_THREADS_NUM = 8;
 
-			JobManager::SJobState jobState[VOX_THREADS_NUM];
-			PodArray<int> arrTrisInt[VOX_THREADS_NUM];
+		   JobManager::SJobState jobState[VOX_THREADS_NUM];
+		   PodArray<int> arrTrisInt[VOX_THREADS_NUM];
 
-			for (int t = 0; t < VOX_THREADS_NUM; t++)
-			{
-				int x0 = t * SVO_VOX_BRICK_MAX_SIZE / VOX_THREADS_NUM;
-				int x1 = x0 + SVO_VOX_BRICK_MAX_SIZE / VOX_THREADS_NUM;
+		   for (int t = 0; t < VOX_THREADS_NUM; t++)
+		   {
+		    int x0 = t * SVO_VOX_BRICK_MAX_SIZE / VOX_THREADS_NUM;
+		    int x1 = x0 + SVO_VOX_BRICK_MAX_SIZE / VOX_THREADS_NUM;
 
-				SBuildVoxelsParams params;
-				params.X0 = x0;
-				params.X1 = x1;
-				params.pNodeTrisXYZ = pNodeTrisXYZ;
-				params.arrPortals = &arrPortals;
+		    SBuildVoxelsParams params;
+		    params.X0 = x0;
+		    params.X1 = x1;
+		    params.pNodeTrisXYZ = pNodeTrisXYZ;
+		    params.arrPortals = &arrPortals;
 
-				arrTrisInt[t].PreAllocate(SVO_MAX_TRIS_PER_VOXEL);
-				params.pTrisInt = &arrTrisInt[t];
+		    arrTrisInt[t].PreAllocate(SVO_MAX_TRIS_PER_VOXEL);
+		    params.pTrisInt = &arrTrisInt[t];
 
-				TBuildVoxelsJob job(params);
-				job.SetClassInstance(this);
-				job.SetPriorityLevel(JobManager::eHighPriority);
-				job.RegisterJobState(&jobState[t]);
-				job.Run();
-			}
+		    TBuildVoxelsJob job(params);
+		    job.SetClassInstance(this);
+		    job.SetPriorityLevel(JobManager::eHighPriority);
+		    job.RegisterJobState(&jobState[t]);
+		    job.Run();
+		   }
 
-			for (int t = 0; t < VOX_THREADS_NUM; t++)
-			{
-				gEnv->GetJobManager()->WaitForJob(jobState[t]);
-			}
-		}
-		else
+		   for (int t = 0; t < VOX_THREADS_NUM; t++)
+		   {
+		    gEnv->GetJobManager()->WaitForJob(jobState[t]);
+		   }
+		   }
+		   else*/
 		{
 			SBuildVoxelsParams params;
 			params.X0 = 0;
@@ -3266,9 +3266,7 @@ void CVoxelSegment::SaveVoxels(PodArray<byte>& arrData)
 {
 	int texDataSize = m_voxData.pData[SVoxBrick::OPA3D] ? (m_vCropTexSize.x * m_vCropTexSize.y * m_vCropTexSize.z * sizeof(ColorB)) : 0;
 
-	bool bPackTo16bit = true;
-
-	if (bPackTo16bit && texDataSize)
+	if (SVO_PACK_TO_16_BIT && texDataSize)
 	{
 		texDataSize /= 2;
 	}
@@ -3325,12 +3323,18 @@ void CVoxelSegment::SaveVoxels(PodArray<byte>& arrData)
 					CompressToDxt((ColorB*)it.second.pData[s], pDataIn, 0);
 				}
 
-				if (bPackTo16bit)
+				if (SVO_PACK_TO_16_BIT)
 				{
 					for (int i = 0; i < texDataSize; i++)
 					{
-						byte b0 = (*(pDataIn + 0)) >> 4;
-						byte b1 = (*(pDataIn + 1)) >> 4;
+						byte val0 = *(pDataIn + 0);
+						byte val1 = *(pDataIn + 1);
+
+						val0 = SATURATEB(int(powf(float(val0) / 255.f, 1.f / 2.f) * 255.f));
+						val1 = SATURATEB(int(powf(float(val1) / 255.f, 1.f / 2.f) * 255.f));
+
+						byte b0 = val0 >> 4;
+						byte b1 = val1 >> 4;
 
 						(*pDataPtr) = b0 | (b1 << 4);
 
