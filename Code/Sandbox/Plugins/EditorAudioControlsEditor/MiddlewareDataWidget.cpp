@@ -61,9 +61,7 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* const pAssets
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
 	pMainLayout->addWidget(m_pFilteringPanel);
 
-	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-	if (pEditorImpl == nullptr)
+	if (g_pEditorImpl == nullptr)
 	{
 		setEnabled(false);
 	}
@@ -88,8 +86,7 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* const pAssets
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
 		{
-			IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-			setEnabled(pEditorImpl != nullptr);
+			setEnabled(g_pEditorImpl != nullptr);
 	  }, reinterpret_cast<uintptr_t>(this));
 }
 
@@ -114,12 +111,10 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 	{
 		if ((selection.count() == 1) && (m_pAssetsManager != nullptr))
 		{
-			IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-			if (pEditorImpl != nullptr)
+			if (g_pEditorImpl != nullptr)
 			{
 				CID const itemId = selection[0].data(static_cast<int>(CMiddlewareDataModel::ERoles::Id)).toInt();
-				CImplItem const* const pImplControl = pEditorImpl->GetControl(itemId);
+				CImplItem const* const pImplControl = g_pEditorImpl->GetControl(itemId);
 
 				if ((pImplControl != nullptr) && pImplControl->IsConnected())
 				{

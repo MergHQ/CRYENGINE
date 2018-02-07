@@ -497,10 +497,18 @@ bool SoundEngine::StopEvent(CEvent const* const pEvent)
 		// need to make a copy because the callback
 		// registered with Mix_ChannelFinished can edit the list
 		ChannelList const channels = pEvent->m_channels;
+		int const fadeOutTime = pEvent->m_pTrigger->GetFadeOutTime();
 
 		for (int const channel : channels)
 		{
-			Mix_HaltChannel(channel);
+			if (fadeOutTime == 0)
+			{
+				Mix_HaltChannel(channel);
+			}
+			else
+			{
+				Mix_FadeOutChannel(channel, fadeOutTime);
+			}
 		}
 
 		return true;
@@ -576,22 +584,26 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 				}
 			}
 
-			int loopCount = pTrigger->GetNumLoops();
-
-			if (loopCount > 0)
-			{
-				// For SDL Mixer 0 loops means play only once, 1 loop play twice, etc ...
-				--loopCount;
-			}
-
 			if (!g_freeChannels.empty())
 			{
-				int const channelID = Mix_PlayChannel(g_freeChannels.front(), pSample, loopCount);
+				int const channelID = g_freeChannels.front();
 
 				if (channelID >= 0)
 				{
 					g_freeChannels.pop();
 					Mix_Volume(channelID, g_bMuted ? 0 : pTrigger->GetVolume());
+
+					int const fadeInTime = pTrigger->GetFadeInTime();
+					int const loopCount = pTrigger->GetNumLoops();
+
+					if (fadeInTime > 0)
+					{
+						Mix_FadeInChannel(channelID, pSample, loopCount, fadeInTime);
+					}
+					else
+					{
+						Mix_PlayChannel(channelID, pSample, loopCount);
+					}
 
 					// Get distance and angle from the listener to the audio object
 					float distance = 0.0f;
@@ -813,12 +825,12 @@ CTrigger* SoundEngine::CreateTrigger()
 
 void SoundEngine::Update()
 {
-	ProcessChannelFinishedRequests(g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Two)]);
-
 	{
 		CryAutoLock<CryCriticalSection> lock(g_channelFinishedCriticalSection);
 		g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::One)].swap(g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Two)]);
 	}
+
+	ProcessChannelFinishedRequests(g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Two)]);
 
 	for (auto const pObject : g_objects)
 	{

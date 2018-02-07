@@ -180,6 +180,15 @@ float3 SkyDome_NightMoonColor;
 float4 SkyDome_NightMoonInnerCoronaColorScale;
 float4 SkyDome_NightMoonOuterCoronaColorScale;
 
+float4 SkyDome_SkyBoxParams; // x: angle, y: stretching, z: multiplier
+
+float2 GetSkyUV(float3 skyDir, float angleOffset, float stretching)
+{
+	float2 langlatTC = float2((atan2(-skyDir.y, -skyDir.x) + angleOffset) / PI * 0.5 + 0.5, asin(skyDir.z) / PI + 0.5);
+	langlatTC.y = (1 - langlatTC.y) * stretching;
+	return langlatTC;
+}
+
 vtxOut SkyPassVS(vtxIn IN)
 {
 	vtxOut OUT = (vtxOut)0;
@@ -195,16 +204,14 @@ pixout SkyPassPS(vtxOut IN)
 
 	const float3 cameraToWorldPos = ReconstructWorldPos(IN.WPos.xy, 1.0f, true);
 	const float3 worldPos = GetWorldViewPos() + cameraToWorldPos;
-
 	const float3 skyDir = normalize(cameraToWorldPos);
-	float2 langlatTC = float2(atan2(-skyDir.y, -skyDir.x) / PI * 0.5 + 0.5, asin(skyDir.z) / PI + 0.5);
-	langlatTC.y = (1 - langlatTC.y) * 2;
-
+	
 #if %_RT_SAMPLE0
 	// Static skydome
-	OUT.Color.rgb = GetTexture2D(SkyDome_Tex, SkyDome_TexSS, langlatTC);
-	return OUT;
-#endif
+	float2 langlatTC = GetSkyUV(skyDir, SkyDome_SkyBoxParams.x, SkyDome_SkyBoxParams.y);
+	OUT.Color.rgb = SkyDome_SkyBoxParams.z * GetTexture2DLod(SkyDome_Tex, SkyDome_ScatSS, float4(langlatTC, 0, 0));
+#else
+	float2 langlatTC = GetSkyUV(skyDir, 0, 2.0);
 
 	// Day sky gradient
 	{
@@ -242,7 +249,8 @@ pixout SkyPassPS(vtxOut IN)
 		OUT.Color.xyz += SkyDome_NightMoonInnerCoronaColorScale.xyz * (1.0 / (1.05 + m * SkyDome_NightMoonInnerCoronaColorScale.w));
 		OUT.Color.xyz += SkyDome_NightMoonOuterCoronaColorScale.xyz * (1.0 / (1.05 + m * SkyDome_NightMoonOuterCoronaColorScale.w));
 	}
-
+#endif
+	
 	Fwd_ApplyFog(worldPos, cameraToWorldPos, IN.WPos, OUT.Color.xyz);
 
 	return OUT;

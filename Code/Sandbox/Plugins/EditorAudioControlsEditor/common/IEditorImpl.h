@@ -89,6 +89,17 @@ struct IEditorImpl
 	//      Gets the settings for this implementation
 	virtual IImplSettings* GetSettings() = 0;
 
+	// <title IsSystemTypeSupported>
+	// Description:
+	//      Checks if the given audio system control type is supported by the middleware implementation.
+	// Arguments:
+	//      systemType - An audio system control type.
+	// Returns:
+	//      A bool if the type is supported or not.
+	// See Also:
+	//
+	virtual bool IsSystemTypeSupported(ESystemItemType const systemType) const = 0;
+
 	// <title IsTypeCompatible>
 	// Description:
 	//      Checks if the given audio system control type and middleware control are compatible.

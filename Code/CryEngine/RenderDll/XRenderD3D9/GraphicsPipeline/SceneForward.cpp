@@ -993,6 +993,19 @@ void CSceneForwardStage::SetSkyRE(CRESky* pSkyRE, CREHDRSky* pHDRSkyRE)
 	m_pHDRSkyRE = pHDRSkyRE;
 }
 
+void CSceneForwardStage::SetSkyParameters()
+{
+	if (!m_pSkyRE)
+		return;
+
+	static CCryNameR skyBoxParamName("SkyDome_SkyBoxParams");
+	const float skyBoxAngle = m_pSkyRE->m_fSkyBoxAngle;
+	const float skyBoxScaling = 1.0f / std::max(0.0001f, m_pSkyRE->m_fSkyBoxStretching);
+	const float skyBoxMultiplier = gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SKYBOX_MULTIPLIER);
+	const Vec4 skyBoxParams(skyBoxAngle, skyBoxScaling, skyBoxMultiplier, 0);
+	m_skyPass.SetConstant(skyBoxParamName, skyBoxParams, eHWSC_Pixel);
+}
+
 void CSceneForwardStage::SetHDRSkyParameters()
 {
 	if (!m_pHDRSkyRE)
@@ -1191,6 +1204,7 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 
 	m_skyPass.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPass, m_pPerPassCB, EShaderStage_AllWithoutCompute);
 	m_skyPass.BeginConstantUpdate();
+	SetSkyParameters();
 	SetHDRSkyParameters();
 	m_skyPass.Execute();
 

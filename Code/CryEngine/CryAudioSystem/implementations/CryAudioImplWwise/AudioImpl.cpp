@@ -889,7 +889,7 @@ IObject* CImpl::ConstructGlobalObject()
 	AK::SoundEngine::RegisterGameObj(g_globalObjectId);
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 
-	return static_cast<IObject*>(new CObject(g_globalObjectId));
+	return static_cast<IObject*>(new CObject(AK_INVALID_GAME_OBJECT));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -913,7 +913,8 @@ IObject* CImpl::ConstructObject(char const* const szName /*= nullptr*/)
 void CImpl::DestructObject(IObject const* const pIObject)
 {
 	CObject const* pObject = static_cast<CObject const*>(pIObject);
-	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(pObject->m_id);
+	AkGameObjectID const objectID = pObject->m_id == AK_INVALID_GAME_OBJECT ? g_globalObjectId : pObject->m_id;
+	AKRESULT const wwiseResult = AK::SoundEngine::UnregisterGameObj(objectID);
 
 	if (!IS_WWISE_OK(wwiseResult))
 	{

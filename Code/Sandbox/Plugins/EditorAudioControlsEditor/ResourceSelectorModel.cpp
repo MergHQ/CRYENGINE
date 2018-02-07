@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "ResourceSelectorModel.h"
@@ -44,16 +44,25 @@ QVariant CResourceSourceModel::data(QModelIndex const& index, int role) const
 		switch (role)
 		{
 		case Qt::DisplayRole:
-		case Qt::ToolTipRole:
 			variant = QtUtil::ToQStringSafe(pLibrary->GetName());
+			break;
+		case Qt::ToolTipRole:
+			if (!pLibrary->GetDescription().IsEmpty())
+			{
+				variant = QtUtil::ToQStringSafe(pLibrary->GetName() + ": " + pLibrary->GetDescription());
+			}
+			else
+			{
+				variant = QtUtil::ToQStringSafe(pLibrary->GetName());
+			}
 			break;
 		case Qt::DecorationRole:
 			variant = GetItemTypeIcon(ESystemItemType::Library);
 			break;
-		case static_cast<int>(SystemModelUtils::ERoles::ItemType) :
+		case static_cast<int>(SystemModelUtils::ERoles::ItemType):
 			variant = static_cast<int>(ESystemItemType::Library);
 			break;
-		case static_cast<int>(SystemModelUtils::ERoles::InternalPointer) :
+		case static_cast<int>(SystemModelUtils::ERoles::InternalPointer):
 			variant = reinterpret_cast<intptr_t>(pLibrary);
 			break;
 		default:
@@ -95,7 +104,7 @@ Qt::ItemFlags CResourceSourceModel::flags(QModelIndex const& index) const
 
 	if (index.isValid())
 	{
-		flags =  QAbstractItemModel::flags(index) | Qt::ItemIsSelectable;
+		flags = QAbstractItemModel::flags(index) | Qt::ItemIsSelectable;
 	}
 
 	return flags;
@@ -141,16 +150,25 @@ QVariant CResourceLibraryModel::data(QModelIndex const& index, int role) const
 			switch (role)
 			{
 			case Qt::DisplayRole:
-			case Qt::ToolTipRole:
 				variant = QtUtil::ToQStringSafe(pItem->GetName());
+				break;
+			case Qt::ToolTipRole:
+				if (!pItem->GetDescription().IsEmpty())
+				{
+					variant = QtUtil::ToQStringSafe(pItem->GetName() + ": " + pItem->GetDescription());
+				}
+				else
+				{
+					variant = QtUtil::ToQStringSafe(pItem->GetName());
+				}
 				break;
 			case Qt::DecorationRole:
 				variant = GetItemTypeIcon(itemType);
 				break;
-			case static_cast<int>(SystemModelUtils::ERoles::ItemType) :
+			case static_cast<int>(SystemModelUtils::ERoles::ItemType):
 				variant = static_cast<int>(itemType);
 				break;
-			case static_cast<int>(SystemModelUtils::ERoles::InternalPointer) :
+			case static_cast<int>(SystemModelUtils::ERoles::InternalPointer):
 				variant = reinterpret_cast<intptr_t>(pItem);
 				break;
 			default:

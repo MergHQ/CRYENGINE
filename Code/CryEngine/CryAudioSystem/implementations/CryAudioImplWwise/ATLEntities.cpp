@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "ATLEntities.h"
@@ -306,12 +306,16 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 
 	if ((pTrigger != nullptr) && (pEvent != nullptr))
 	{
-		if (m_id != g_globalObjectId)
+		// If the user executes a trigger on the global object we want to post events only to that particular object and not globally!
+		AkGameObjectID objectId = g_globalObjectId;
+
+		if (m_id != AK_INVALID_GAME_OBJECT)
 		{
+			objectId = m_id;
 			PostEnvironmentAmounts();
 		}
 
-		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, m_id, AK_EndOfEvent, &EndEventCallback, pEvent);
+		AkPlayingID const id = AK::SoundEngine::PostEvent(pTrigger->m_id, objectId, AK_EndOfEvent, &EndEventCallback, pEvent);
 
 		if (id != AK_INVALID_PLAYING_ID)
 		{
@@ -336,7 +340,9 @@ ERequestStatus CObject::ExecuteTrigger(ITrigger const* const pITrigger, IEvent* 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::StopAllTriggers()
 {
-	AK::SoundEngine::StopAll(m_id);
+	// If the user wants to stop all triggers on the global object we want to stop them only on that particular object and not globally!
+	AkGameObjectID const objectId = (m_id != AK_INVALID_GAME_OBJECT) ? m_id : g_globalObjectId;
+	AK::SoundEngine::StopAll(objectId);
 	return ERequestStatus::Success;
 }
 

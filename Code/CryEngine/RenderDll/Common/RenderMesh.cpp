@@ -4793,7 +4793,7 @@ void CRenderMesh::Render(CRenderObject* pObj, const SRenderingPassInfo& passInfo
 
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
-	IF(!CanRender(), 0)
+	IF(!CanUpdate(), 0)
 	return;
 
 	CRenderer* RESTRICT_POINTER rd = gRenDev;

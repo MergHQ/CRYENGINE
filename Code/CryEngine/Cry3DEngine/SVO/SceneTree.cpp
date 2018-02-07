@@ -2317,7 +2317,8 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 
 	GetCVars()->e_svoTI_ConstantAmbientDebug = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ConstantAmbientDebug", "0"));
 
-	GetCVars()->e_svoStreamVoxels = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "StreamVoxels", "0"));
+	if (Cry3DEngineBase::GetCVars()->e_svoStreamVoxels != 2)
+		GetCVars()->e_svoStreamVoxels = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "StreamVoxels", "0"));
 
 	// fall back to run-time voxelization if voxel file data is not prepared
 	if (CSvoNode::IsStreamingActive())
@@ -2752,7 +2753,7 @@ void CSvoEnv::GetGlobalEnvProbeProperties(_smart_ptr<ITexture>& specEnvCM, float
 
 bool CSvoNode::IsStreamingActive()
 {
-	return !gEnv->IsEditor() && Cry3DEngineBase::GetCVars()->e_svoStreamVoxels;
+	return (!gEnv->IsEditor() && Cry3DEngineBase::GetCVars()->e_svoStreamVoxels) || Cry3DEngineBase::GetCVars()->e_svoStreamVoxels == 2;
 }
 
 void CSvoNode::CheckAllocateChilds()

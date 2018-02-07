@@ -129,6 +129,41 @@ const SRenderViewShaderConstants& CRenderView::GetShaderConstants() const
 
 void CRenderView::Clear()
 {
+	CRY_ASSERT(m_usageMode == IRenderView::eUsageModeReadingDone || 
+	           m_usageMode == IRenderView::eUsageModeWritingDone || 
+	           m_usageMode == IRenderView::eUsageModeUndefined);
+
+	if (m_usageMode == IRenderView::eUsageModeWritingDone)
+	{
+		CRY_ASSERT(!m_jobstate_Write.IsRunning());
+
+		m_jobstate_Sort.Wait();
+		m_jobstate_PostWrite.Wait();
+		m_jobstate_ShadowGen.Wait();
+	}
+
+	m_usageMode = IRenderView::eUsageModeUndefined;
+	m_name.clear();
+	m_frameId = -1;
+	m_frameTime = CTimeValue();
+	m_pParentView = nullptr;
+
+	m_RenderWidth  = -1;
+	m_RenderHeight = -1;
+
+	ZeroStruct(m_viewport);
+	m_bTrackUncompiledItems = true;
+	m_bAddingClientPolys = false;
+	m_skinningPoolIndex = 0;
+	m_shaderItemsToUpdate.CoalesceMemory();
+	m_shaderItemsToUpdate.clear();
+	ZeroArray(m_camera);
+	ZeroArray(m_previousCamera);
+	ZeroArray(m_viewInfo);
+	m_viewInfoCount = 0;
+	m_bPostWriteExecuted = false;
+	m_vProjMatrixSubPixoffset = Vec2(ZERO);
+
 	m_viewFlags = SRenderViewInfo::eFlags_None;
 	m_viewInfoCount = 1;
 	m_numUsedClientPolygons = 0;
@@ -380,7 +415,7 @@ void CRenderView::SwitchUsageMode(EUsageMode mode)
 		}
 
 		//Job_PostWrite();
-		assert(m_bPostWriteExecuted);
+		CRY_ASSERT(m_bPostWriteExecuted);
 
 		CRY_ASSERT(m_usageMode == IRenderView::eUsageModeWritingDone);
 
@@ -1937,6 +1972,8 @@ void CRenderView::Job_PostWrite()
 {
 	CRY_PROFILE_FUNCTION_ARG(PROFILE_RENDERER, m_name.c_str());
 
+	CRY_ASSERT(!m_bPostWriteExecuted);
+
 	// Prevent double entering this
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_lock_PostWrite);
 
@@ -2410,14 +2447,7 @@ void CRenderView::SShadows::CreateFrustumGroups()
 //////////////////////////////////////////////////////////////////////////
 void CRenderView::SShadows::Clear()
 {
-	// Force clear call on all dependent shadow views.
-	for (auto& fr : m_renderFrustums)
-	{
-		CRenderView* pShadowView = reinterpret_cast<CRenderView*>(fr.pShadowsView.get());
-		pShadowView->Clear();
-	}
-	m_renderFrustums.resize(0);
-
+	m_renderFrustums.clear();
 	m_frustumsByLight.clear();
 	for (auto& frustumList : m_frustumsByType)
 		frustumList.resize(0);

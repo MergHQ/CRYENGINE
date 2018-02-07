@@ -1,12 +1,13 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "FileMonitor.h"
 
-#include "IEditorImpl.h"
 #include "SystemAssetsManager.h"
 #include "AudioControlsEditorPlugin.h"
+#include "ImplementationManager.h"
 
+#include <IEditorImpl.h>
 #include <CryString/CryPath.h>
 
 namespace ACE
@@ -44,7 +45,7 @@ void CFileMonitor::Disable()
 //////////////////////////////////////////////////////////////////////////
 CFileMonitorSystem::CFileMonitorSystem(int const delay, CSystemAssetsManager const& assetsManager, QObject* const pParent)
 	: CFileMonitor(delay, assetsManager, pParent)
-	, m_monitorFolder (assetsManager.GetConfigFolderPath())
+	, m_monitorFolder(assetsManager.GetConfigFolderPath())
 	, m_delayTimer(new QTimer(this))
 {
 	m_delayTimer->setSingleShot(true);
@@ -74,11 +75,9 @@ CFileMonitorMiddleware::CFileMonitorMiddleware(int const delay, CSystemAssetsMan
 //////////////////////////////////////////////////////////////////////////
 void CFileMonitorMiddleware::Enable()
 {
-	IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-	if (pEditorImpl != nullptr)
+	if (g_pEditorImpl != nullptr)
 	{
-		IImplSettings const* const pImplSettings = pEditorImpl->GetSettings();
+		IImplSettings const* const pImplSettings = g_pEditorImpl->GetSettings();
 
 		if (pImplSettings != nullptr)
 		{

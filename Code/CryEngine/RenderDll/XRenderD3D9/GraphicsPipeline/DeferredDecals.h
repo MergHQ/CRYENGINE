@@ -9,7 +9,7 @@
 class CDeferredDecalsStage : public CGraphicsPipelineStage
 {
 public:
-	enum { MaxPersistentDecals = 512 };
+	enum { MaxPersistentDecals = 1024 };
 	
 public:
 	CDeferredDecalsStage();

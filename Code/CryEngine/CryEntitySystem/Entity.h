@@ -403,6 +403,7 @@ public:
 	void                     AddSimpleEventListeners(EntityEventMask events, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority);
 	void                     AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority);
 	void                     RemoveSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener);
+	void                     ClearComponentEventListeners();
 
 	void                     SetInternalFlag(EInternalFlag flag, bool set)
 	{

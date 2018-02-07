@@ -122,6 +122,26 @@ string const& CEditorImpl::GetFolderName() const
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CEditorImpl::IsSystemTypeSupported(ESystemItemType const systemType) const
+{
+	bool isSupported = false;
+
+	switch (systemType)
+	{
+	case ESystemItemType::Trigger:
+	case ESystemItemType::Folder:
+	case ESystemItemType::Library:
+		isSupported = true;
+		break;
+	default:
+		isSupported = false;
+		break;
+	}
+
+	return isSupported;
+}
+
+//////////////////////////////////////////////////////////////////////////
 bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const
 {
 	bool isCompatible = false;
@@ -237,15 +257,11 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 				else
 				{
 					pConnection->m_type = EConnectionType::Start;
+					pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szFadeInTimeAttribute, pConnection->m_fadeInTime);
+					pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szFadeOutTimeAttribute, pConnection->m_fadeOutTime);
 				}
 
-				string enablePanning = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szPanningEnabledAttribute);
-#if defined (USE_BACKWARDS_COMPATIBILITY)
-				if (enablePanning.IsEmpty() && pNode->haveAttr("enable_panning"))
-				{
-					enablePanning = pNode->getAttr("enable_panning");
-				}
-#endif      // USE_BACKWARDS_COMPATIBILITY
+				string const enablePanning = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szPanningEnabledAttribute);
 				pConnection->m_isPanningEnabled = enablePanning == CryAudio::Impl::SDL_mixer::s_szTrueValue ? true : false;
 
 				string enableDistAttenuation = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationEnabledAttribute);
@@ -260,30 +276,13 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 				pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMinDistanceAttribute, pConnection->m_minAttenuation);
 				pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMaxDistanceAttribute, pConnection->m_maxAttenuation);
 				pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szVolumeAttribute, pConnection->m_volume);
-				pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szLoopCountAttribute, pConnection->m_loopCount);
-#if defined (USE_BACKWARDS_COMPATIBILITY)
-				if (pNode->haveAttr("attenuation_dist_min"))
-				{
-					pNode->getAttr("attenuation_dist_min", pConnection->m_minAttenuation);
-				}
 
-				if (pNode->haveAttr("attenuation_dist_max"))
-				{
-					pNode->getAttr("attenuation_dist_max", pConnection->m_maxAttenuation);
-				}
+				int loopCount = 0;
+				pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szLoopCountAttribute, loopCount);
+				loopCount = std::max(0, loopCount);
+				pConnection->m_loopCount = static_cast<uint32>(loopCount);
 
-				if (pNode->haveAttr("volume"))
-				{
-					pNode->getAttr("volume", pConnection->m_volume);
-				}
-
-				if (pNode->haveAttr("loop_count"))
-				{
-					pNode->getAttr("loop_count", pConnection->m_loopCount);
-				}
-#endif      // USE_BACKWARDS_COMPATIBILITY
-
-				if (pConnection->m_loopCount == -1)
+				if (pConnection->m_loopCount == 0)
 				{
 					pConnection->m_isInfiniteLoop = true;
 				}
@@ -345,10 +344,12 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 				pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMinDistanceAttribute, pImplConnection->m_minAttenuation);
 				pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMaxDistanceAttribute, pImplConnection->m_maxAttenuation);
 				pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szVolumeAttribute, pImplConnection->m_volume);
+				pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szFadeInTimeAttribute, pImplConnection->m_fadeInTime);
+				pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szFadeOutTimeAttribute, pImplConnection->m_fadeOutTime);
 
 				if (pImplConnection->m_isInfiniteLoop)
 				{
-					pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLoopCountAttribute, -1);
+					pConnectionNode->setAttr(CryAudio::Impl::SDL_mixer::s_szLoopCountAttribute, 0);
 				}
 				else
 				{
