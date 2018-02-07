@@ -45,8 +45,8 @@ CDeferredDecalsStage::~CDeferredDecalsStage()
 
 void CDeferredDecalsStage::Init()
 {
-	// Preallocate 64 decals
-	ResizeDecalBuffers(64);
+	// Preallocate 512 decals
+	ResizeDecalBuffers(512);
 }
 
 void CDeferredDecalsStage::ResizeDecalBuffers(size_t requiredDecalCount)
