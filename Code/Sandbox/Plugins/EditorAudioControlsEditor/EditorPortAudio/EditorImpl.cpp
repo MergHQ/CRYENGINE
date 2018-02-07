@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "EditorImpl.h"
@@ -20,13 +20,13 @@ namespace PortAudio
 //////////////////////////////////////////////////////////////////////////
 CImplSettings::CImplSettings()
 	: m_assetAndProjectPath(
-		PathUtil::GetGameFolder() +
-		CRY_NATIVE_PATH_SEPSTR
-		AUDIO_SYSTEM_DATA_ROOT
-		CRY_NATIVE_PATH_SEPSTR +
-		CryAudio::Impl::PortAudio::s_szImplFolderName +
-		CRY_NATIVE_PATH_SEPSTR +
-		CryAudio::s_szAssetsFolderName)
+	  PathUtil::GetGameFolder() +
+	  CRY_NATIVE_PATH_SEPSTR
+	  AUDIO_SYSTEM_DATA_ROOT
+	  CRY_NATIVE_PATH_SEPSTR +
+	  CryAudio::Impl::PortAudio::s_szImplFolderName +
+	  CRY_NATIVE_PATH_SEPSTR +
+	  CryAudio::s_szAssetsFolderName)
 {
 }
 
@@ -122,6 +122,26 @@ string const& CEditorImpl::GetFolderName() const
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CEditorImpl::IsSystemTypeSupported(ESystemItemType const systemType) const
+{
+	bool isSupported = false;
+
+	switch (systemType)
+	{
+	case ESystemItemType::Trigger:
+	case ESystemItemType::Folder:
+	case ESystemItemType::Library:
+		isSupported = true;
+		break;
+	default:
+		isSupported = false;
+		break;
+	}
+
+	return isSupported;
+}
+
+//////////////////////////////////////////////////////////////////////////
 bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const
 {
 	bool isCompatible = false;
@@ -180,7 +200,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 		{
 			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
 			string path = pNode->getAttr(CryAudio::Impl::PortAudio::s_szPathAttribute);
-// Backwards compatibility will be removed before March 2019.
+			// Backwards compatibility will be removed before March 2019.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 			if (name.IsEmpty() && pNode->haveAttr("portaudio_name"))
 			{
@@ -191,7 +211,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 			{
 				path = pNode->getAttr("portaudio_path");
 			}
-#endif // USE_BACKWARDS_COMPATIBILITY
+#endif    // USE_BACKWARDS_COMPATIBILITY
 			CID id;
 
 			if (path.empty())
@@ -221,18 +241,15 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 				{
 					connectionType = pNode->getAttr("event_type");
 				}
-#endif // USE_BACKWARDS_COMPATIBILITY
+#endif      // USE_BACKWARDS_COMPATIBILITY
 				pConnection->m_type = connectionType == CryAudio::Impl::PortAudio::s_szStopValue ? EConnectionType::Stop : EConnectionType::Start;
 
-				pNode->getAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, pConnection->m_loopCount);
-#if defined (USE_BACKWARDS_COMPATIBILITY)
-				if (pNode->haveAttr("loop_count"))
-				{
-					pNode->getAttr("loop_count", pConnection->m_loopCount);
-				}
-#endif // USE_BACKWARDS_COMPATIBILITY
+				int loopCount = 0;
+				pNode->getAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, loopCount);
+				loopCount = std::max(0, loopCount);
+				pConnection->m_loopCount = static_cast<uint32>(loopCount);
 
-				if (pConnection->m_loopCount == -1)
+				if (pConnection->m_loopCount == 0)
 				{
 					pConnection->m_isInfiniteLoop = true;
 				}
@@ -288,7 +305,7 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 
 			if (pImplConnection->m_isInfiniteLoop)
 			{
-				pConnectionNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, -1);
+				pConnectionNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, 0);
 			}
 			else
 			{

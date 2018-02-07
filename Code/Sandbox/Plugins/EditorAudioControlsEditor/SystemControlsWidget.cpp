@@ -79,9 +79,7 @@ CSystemControlsWidget::CSystemControlsWidget(CSystemAssetsManager* const pAssets
 	InitAddControlWidget(pMainLayout);
 	pMainLayout->addWidget(m_pFilteringPanel);
 
-	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-	if (pEditorImpl == nullptr)
+	if (g_pEditorImpl == nullptr)
 	{
 		setEnabled(false);
 	}
@@ -128,8 +126,7 @@ CSystemControlsWidget::CSystemControlsWidget(CSystemAssetsManager* const pAssets
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
 		{
-			IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-			setEnabled(pEditorImpl != nullptr);
+			setEnabled(g_pEditorImpl != nullptr);
 	  }, reinterpret_cast<uintptr_t>(this));
 }
 
@@ -366,10 +363,29 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 							pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::Folder), tr("Folder"), [&]() { CreateFolder(pParent); });
 							pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::Trigger), tr("Trigger"), [&]() { CreateControl("new_trigger", ESystemItemType::Trigger, pParent); });
-							pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::Parameter), tr("Parameter"), [&]() { CreateControl("new_parameter", ESystemItemType::Parameter, pParent); });
-							pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::Switch), tr("Switch"), [&]() { CreateControl("new_switch", ESystemItemType::Switch, pParent); });
-							pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::Environment), tr("Environment"), [&]() { CreateControl("new_environment", ESystemItemType::Environment, pParent); });
-							pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::Preload), tr("Preload"), [&]() { CreateControl("new_preload", ESystemItemType::Preload, pParent); });
+
+							if (g_pEditorImpl != nullptr)
+							{
+								if (g_pEditorImpl->IsSystemTypeSupported(ESystemItemType::Parameter))
+								{
+									pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::Parameter), tr("Parameter"), [&]() { CreateControl("new_parameter", ESystemItemType::Parameter, pParent); });
+								}
+
+								if (g_pEditorImpl->IsSystemTypeSupported(ESystemItemType::Switch))
+								{
+									pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::Switch), tr("Switch"), [&]() { CreateControl("new_switch", ESystemItemType::Switch, pParent); });
+								}
+
+								if (g_pEditorImpl->IsSystemTypeSupported(ESystemItemType::Environment))
+								{
+									pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::Environment), tr("Environment"), [&]() { CreateControl("new_environment", ESystemItemType::Environment, pParent); });
+								}
+
+								if (g_pEditorImpl->IsSystemTypeSupported(ESystemItemType::Preload))
+								{
+									pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::Preload), tr("Preload"), [&]() { CreateControl("new_preload", ESystemItemType::Preload, pParent); });
+								}
+							}
 
 							if (pParent->GetType() == ESystemItemType::Library)
 							{
@@ -398,7 +414,10 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 					}
 					else if (controlType == ESystemItemType::Switch)
 					{
-						pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::State), tr("State"), [&]() { CreateControl("new_state", ESystemItemType::State, pControl); });
+						if ((g_pEditorImpl != nullptr) && g_pEditorImpl->IsSystemTypeSupported(ESystemItemType::State))
+						{
+							pAddMenu->addAction(GetItemTypeIcon(ESystemItemType::State), tr("State"), [&]() { CreateControl("new_state", ESystemItemType::State, pControl); });
+						}
 					}
 					else if (controlType == ESystemItemType::Preload)
 					{
@@ -467,6 +486,17 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 						m_pTreeView->edit(nameColumnIndex);
 				  });
 			}
+		}
+		else if ((libraries.size() == 1) && controls.empty() && folders.empty())
+		{
+			CSystemAsset const* const pDefaultLibrary = static_cast<CSystemAsset*>(libraries[0]);
+
+			pContextMenu->addAction(tr("Open Containing Folder"), [&]()
+				{
+					QtUtil::OpenInExplorer(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), m_pAssetsManager->GetConfigFolderPath() + pDefaultLibrary->GetName() + ".xml").c_str());
+			  });
+
+			pContextMenu->addSeparator();
 		}
 
 		pContextMenu->addAction(tr("Delete"), [&]() { OnDeleteSelectedControl(); });
@@ -672,11 +702,31 @@ void CSystemControlsWidget::OnUpdateCreateButtons()
 
 					m_pCreateFolderAction->setVisible(isLibraryOrFolder);
 					m_pCreateTriggerAction->setVisible(isLibraryOrFolder);
-					m_pCreateParameterAction->setVisible(isLibraryOrFolder);
-					m_pCreateSwitchAction->setVisible(isLibraryOrFolder);
-					m_pCreateStateAction->setVisible(itemType == ESystemItemType::Switch);
-					m_pCreateEnvironmentAction->setVisible(isLibraryOrFolder);
-					m_pCreatePreloadAction->setVisible(isLibraryOrFolder);
+
+					if (g_pEditorImpl != nullptr)
+					{
+						if (g_pEditorImpl->IsSystemTypeSupported(ESystemItemType::Parameter))
+						{
+							m_pCreateParameterAction->setVisible(isLibraryOrFolder);
+						}
+
+						if (g_pEditorImpl->IsSystemTypeSupported(ESystemItemType::Switch))
+						{
+							m_pCreateSwitchAction->setVisible(isLibraryOrFolder);
+							m_pCreateStateAction->setVisible(itemType == ESystemItemType::Switch);
+						}
+
+						if (g_pEditorImpl->IsSystemTypeSupported(ESystemItemType::Environment))
+						{
+							m_pCreateEnvironmentAction->setVisible(isLibraryOrFolder);
+						}
+
+						if (g_pEditorImpl->IsSystemTypeSupported(ESystemItemType::Preload))
+						{
+							m_pCreatePreloadAction->setVisible(isLibraryOrFolder);
+						}
+					}
+
 					isActionVisible = true;
 				}
 			}

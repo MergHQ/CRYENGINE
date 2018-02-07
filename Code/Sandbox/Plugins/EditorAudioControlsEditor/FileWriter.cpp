@@ -451,7 +451,7 @@ void CFileWriter::WriteLibraryEditorData(CSystemAsset const& library, XmlNodeRef
 {
 	string const description = library.GetDescription();
 
-	if (!description.IsEmpty())
+	if (!description.IsEmpty() && !library.IsDefaultControl())
 	{
 		pParentNode->setAttr(s_szDescriptionAttribute, description);
 	}
@@ -475,7 +475,7 @@ void CFileWriter::WriteFolderEditorData(CSystemAsset const& library, XmlNodeRef 
 				pFolderNode->setAttr(CryAudio::s_szNameAttribute, pAsset->GetName());
 				string const description = pAsset->GetDescription();
 
-				if (!description.IsEmpty())
+				if (!description.IsEmpty() && !pAsset->IsDefaultControl())
 				{
 					pFolderNode->setAttr(s_szDescriptionAttribute, description);
 				}
@@ -506,7 +506,7 @@ void CFileWriter::WriteControlsEditorData(CSystemAsset const& parentAsset, XmlNo
 			{
 				string const description = asset.GetDescription();
 
-				if (!description.IsEmpty())
+				if (!description.IsEmpty() && !asset.IsDefaultControl())
 				{
 					pControlNode->setAttr(CryAudio::s_szNameAttribute, asset.GetName());
 					pControlNode->setAttr(s_szDescriptionAttribute, description);

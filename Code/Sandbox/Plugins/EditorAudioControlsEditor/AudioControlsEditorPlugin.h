@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -28,9 +28,9 @@ public:
 	virtual ~CAudioControlsEditorPlugin() override;
 
 	// IPlugin
-	virtual int32                  GetPluginVersion() override     { return 1; }
-	virtual char const*            GetPluginName() override        { return "Audio Controls Editor"; }
-	virtual char const*            GetPluginDescription() override { return "The Audio Controls Editor enables browsing and configuring audio events exposed from the audio middleware"; }
+	virtual int32       GetPluginVersion() override     { return 1; }
+	virtual char const* GetPluginName() override        { return "Audio Controls Editor"; }
+	virtual char const* GetPluginDescription() override { return "The Audio Controls Editor enables browsing and configuring audio events exposed from the audio middleware"; }
 	// ~IPlugin
 
 	static void                    SaveModels();
@@ -38,15 +38,14 @@ public:
 	static void                    ReloadScopes();
 	static CSystemAssetsManager*   GetAssetsManager();
 	static CImplementationManager* GetImplementationManger();
-	static IEditorImpl*            GetImplEditor();
 	static void                    ExecuteTrigger(string const& sTriggerName);
 	static void                    StopTriggerExecution();
 	static EErrorCode              GetLoadingErrorMask() { return s_loadingErrorMask; }
 
-	static CCrySignal<void()>      SignalAboutToLoad;
-	static CCrySignal<void()>      SignalLoaded;
-	static CCrySignal<void()>      SignalAboutToSave;
-	static CCrySignal<void()>      SignalSaved;
+	static CCrySignal<void()> SignalAboutToLoad;
+	static CCrySignal<void()> SignalLoaded;
+	static CCrySignal<void()> SignalAboutToSave;
+	static CCrySignal<void()> SignalSaved;
 
 private:
 

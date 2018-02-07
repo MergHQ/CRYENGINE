@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 #include <QObject>
@@ -7,6 +7,7 @@
 namespace ACE
 {
 struct IEditorImpl;
+extern IEditorImpl* g_pEditorImpl;
 
 class CImplementationManager final : public QObject
 {
@@ -17,16 +18,14 @@ public:
 	CImplementationManager();
 	virtual ~CImplementationManager() override;
 
-	bool               LoadImplementation();
-	void               Release();
-	IEditorImpl*       GetImplementation();
+	bool LoadImplementation();
+	void Release();
 
 	CCrySignal<void()> SignalImplementationAboutToChange;
 	CCrySignal<void()> SignalImplementationChanged;
 
 private:
 
-	IEditorImpl* m_pEditorImpl;
-	HMODULE      m_hMiddlewarePlugin;
+	HMODULE m_hMiddlewarePlugin;
 };
 } // namespace ACE

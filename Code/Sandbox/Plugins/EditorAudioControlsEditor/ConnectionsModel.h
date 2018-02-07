@@ -70,7 +70,6 @@ private:
 
 	CSystemAssetsManager* const m_pAssetsManager;
 	CSystemControl*             m_pControl;
-	IEditorImpl*                m_pEditorImpl;
 	std::vector<ConnectionPtr>  m_connectionsCache;
 };
 } // namespace ACE

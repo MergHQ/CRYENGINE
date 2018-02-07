@@ -313,35 +313,41 @@ void CFileLoader::CreateInternalControls()
 	{
 		pLibrary->SetDefaultControl(true);
 
-		CreateInternalControl(pLibrary, CryAudio::s_szDoNothingTriggerName, ESystemItemType::Trigger);
+		CreateInternalControl(pLibrary, CryAudio::s_szDoNothingTriggerName, ESystemItemType::Trigger, "Used to bypass the default stop behavior of the audio system.");
 
 		SwitchStates const occlStates {
 			CryAudio::s_szIgnoreStateName, CryAudio::s_szAdaptiveStateName, CryAudio::s_szLowStateName, CryAudio::s_szMediumStateName, CryAudio::s_szHighStateName
 		};
-		CreateInternalSwitch(pLibrary, CryAudio::s_szOcclCalcSwitchName, occlStates);
+		CreateInternalSwitch(pLibrary, CryAudio::s_szOcclCalcSwitchName, occlStates, "Set the occlusion type of the object.");
 
 		SwitchStates const onOffStates {
 			CryAudio::s_szOnStateName, CryAudio::s_szOffStateName
 		};
-		CreateInternalSwitch(pLibrary, CryAudio::s_szAbsoluteVelocityTrackingSwitchName, onOffStates);
-		CreateInternalSwitch(pLibrary, CryAudio::s_szRelativeVelocityTrackingSwitchName, onOffStates);
+
+		string description;
+		description.Format(R"(If enabled on an object, its "%s" parameter gets updated.)", CryAudio::s_szAbsoluteVelocityParameterName);
+		CreateInternalSwitch(pLibrary, CryAudio::s_szAbsoluteVelocityTrackingSwitchName, onOffStates, description.c_str());
+
+		description.Format(R"(If enabled on an object, its "%s" parameter gets updated.)", CryAudio::s_szRelativeVelocityParameterName);
+		CreateInternalSwitch(pLibrary, CryAudio::s_szRelativeVelocityTrackingSwitchName, onOffStates, description.c_str());
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileLoader::CreateInternalControl(CSystemAsset* const pLibrary, char const* const szName, ESystemItemType const type)
+void CFileLoader::CreateInternalControl(CSystemAsset* const pLibrary, char const* const szName, ESystemItemType const type, char const* const szDescription)
 {
 	CSystemControl* const pControl = m_assetsManager.CreateControl(szName, type, pLibrary);
 
 	if (pControl != nullptr)
 	{
+		pControl->SetDescription(szDescription);
 		pControl->SetDefaultControl(true);
 		pControl->SetInternalControl(true);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileLoader::CreateInternalSwitch(CSystemAsset* const pLibrary, char const* const szSwitchName, SwitchStates const& stateNames)
+void CFileLoader::CreateInternalSwitch(CSystemAsset* const pLibrary, char const* const szSwitchName, SwitchStates const& stateNames, char const* const szDescription)
 {
 	CSystemControl* const pSwitch = m_assetsManager.CreateControl(szSwitchName, ESystemItemType::Switch, pLibrary);
 
@@ -352,6 +358,7 @@ void CFileLoader::CreateInternalSwitch(CSystemAsset* const pLibrary, char const*
 			m_assetsManager.CreateControl(szStateName, ESystemItemType::State, pSwitch);
 		}
 
+		pSwitch->SetDescription(szDescription);
 		pSwitch->SetDefaultControl(true);
 		pSwitch->SetInternalControl(true);
 	}
@@ -367,16 +374,21 @@ void CFileLoader::CreateDefaultControls()
 
 	if (pLibrary != nullptr)
 	{
+		pLibrary->SetDescription("Contains all engine default controls.");
 		pLibrary->SetDefaultControl(true);
 
-		m_assetsManager.CreateDefaultControl(CryAudio::s_szGetFocusTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
-		m_assetsManager.CreateDefaultControl(CryAudio::s_szLoseFocusTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
-		m_assetsManager.CreateDefaultControl(CryAudio::s_szMuteAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
-		m_assetsManager.CreateDefaultControl(CryAudio::s_szUnmuteAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
-		m_assetsManager.CreateDefaultControl(CryAudio::s_szPauseAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
-		m_assetsManager.CreateDefaultControl(CryAudio::s_szResumeAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified);
-		m_assetsManager.CreateDefaultControl(CryAudio::s_szAbsoluteVelocityParameterName, ESystemItemType::Parameter, pLibrary, wasModified);
-		m_assetsManager.CreateDefaultControl(CryAudio::s_szRelativeVelocityParameterName, ESystemItemType::Parameter, pLibrary, wasModified);
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szGetFocusTriggerName, ESystemItemType::Trigger, pLibrary, wasModified, "Unmutes all audio. Gets triggered when the editor window gets focus.");
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szLoseFocusTriggerName, ESystemItemType::Trigger, pLibrary, wasModified, "Mutes all audio. Gets triggered when the editor window loses focus.");
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szMuteAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified, "Mutes all audio. Gets triggered when the editor mute action is used.");
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szUnmuteAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified, "Unmutes all audio. Gets triggered when the editor unmute action is used.");
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szPauseAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified, "Pauses playback of all audio.");
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szResumeAllTriggerName, ESystemItemType::Trigger, pLibrary, wasModified, "Reumes playback of all audio.");
+
+		string description;
+		description.Format(R"(Updates the absolute velocity of an object, if its "%s" switch is enabled.)", CryAudio::s_szAbsoluteVelocityTrackingSwitchName);
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szAbsoluteVelocityParameterName, ESystemItemType::Parameter, pLibrary, wasModified, description.c_str());
+		description.Format(R"(Updates the absolute velocity of an object, if its "%s" switch is enabled.)", CryAudio::s_szRelativeVelocityTrackingSwitchName);
+		m_assetsManager.CreateDefaultControl(CryAudio::s_szRelativeVelocityParameterName, ESystemItemType::Parameter, pLibrary, wasModified, description.c_str());
 
 		if (wasModified)
 		{

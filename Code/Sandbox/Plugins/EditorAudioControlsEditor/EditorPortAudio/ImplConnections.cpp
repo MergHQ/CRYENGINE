@@ -20,20 +20,12 @@ void CConnection::Serialize(Serialization::IArchive& ar)
 
 	if (m_type == EConnectionType::Start)
 	{
-		if (ar.openBlock("Looping", "+Looping"))
+		ar(m_isInfiniteLoop, "infinite_loop", "Infinite Loop");
+
+		if (!m_isInfiniteLoop)
 		{
-			ar(m_isInfiniteLoop, "infinite", "Infinite");
-
-			if (m_isInfiniteLoop)
-			{
-				ar(m_loopCount, "loop_count", "!Count");
-			}
-			else
-			{
-				ar(m_loopCount, "loop_count", "Count");
-			}
-
-			ar.closeBlock();
+			ar(m_loopCount, "loop_count", "Loop Count");
+			m_loopCount = std::max<uint32>(1, m_loopCount);
 		}
 	}
 

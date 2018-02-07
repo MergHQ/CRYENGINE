@@ -36,6 +36,7 @@ void OnStandaloneFileFinished(CATLStandaloneFile& standaloneFile, const char* sz
 ///////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pCVarFileExtension(nullptr)
+	, m_isMuted(false)
 {
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
 	char const* szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
@@ -357,17 +358,30 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 			if (pTrigger->GetType() == EEventType::Start)
 			{
 				pTrigger->SetPanningEnabled(_stricmp(pRootNode->getAttr(s_szPanningEnabledAttribute), s_szTrueValue) == 0);
-				bool bAttenuationEnabled = (_stricmp(pRootNode->getAttr(s_szAttenuationEnabledAttribute), s_szTrueValue) == 0);
+				bool const isAttenuationEnabled = (_stricmp(pRootNode->getAttr(s_szAttenuationEnabledAttribute), s_szTrueValue) == 0);
 
-				if (bAttenuationEnabled)
+				if (isAttenuationEnabled)
 				{
 					float minDistance = 0.0f;
 					pRootNode->getAttr(s_szAttenuationMinDistanceAttribute, minDistance);
-					pTrigger->SetAttenuationMinDistance(minDistance);
 
 					float maxDistance = 0.0f;
 					pRootNode->getAttr(s_szAttenuationMaxDistanceAttribute, maxDistance);
-					pTrigger->SetAttenuationMaxDistance(maxDistance);
+
+					minDistance = std::max(0.0f, minDistance);
+					maxDistance = std::max(0.0f, maxDistance);
+
+					if (minDistance > maxDistance)
+					{
+						Cry::Audio::Log(ELogType::Warning, "Min distance (%f) was greater than max distance (%f) of %s", minDistance, maxDistance, szFileName);
+						pTrigger->SetAttenuationMinDistance(maxDistance);
+						pTrigger->SetAttenuationMaxDistance(minDistance);
+					}
+					else
+					{
+						pTrigger->SetAttenuationMinDistance(minDistance);
+						pTrigger->SetAttenuationMaxDistance(maxDistance);
+					}
 				}
 				else
 				{
@@ -383,7 +397,19 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 
 				int numLoops = 0;
 				pRootNode->getAttr(s_szLoopCountAttribute, numLoops);
+				// --numLoops because -1: play infinite, 0: play once, 1: play twice, etc...
+				--numLoops;
+				// Max to -1 to stay backwards compatible.
+				numLoops = std::max(-1, numLoops);
 				pTrigger->SetNumLoops(numLoops);
+
+				float fadeInTime = 0.0f;
+				pRootNode->getAttr(s_szFadeInTimeAttribute, fadeInTime);
+				pTrigger->SetFadeInTime(static_cast<int>(fadeInTime * 1000.0f));
+
+				float fadeOutTime = 0.0f;
+				pRootNode->getAttr(s_szFadeOutTimeAttribute, fadeOutTime);
+				pTrigger->SetFadeOutTime(static_cast<int>(fadeOutTime * 1000.0f));
 			}
 		}
 	}

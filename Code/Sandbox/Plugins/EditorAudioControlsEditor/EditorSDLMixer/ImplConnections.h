@@ -29,6 +29,8 @@ public:
 		, m_minAttenuation(0.0f)
 		, m_maxAttenuation(100.0f)
 		, m_volume(-14.0f)
+		, m_fadeInTime(0.0f)
+		, m_fadeOutTime(0.0f)
 		, m_loopCount(1)
 		, m_isInfiniteLoop(false)
 	{
@@ -45,6 +47,8 @@ public:
 	float           m_minAttenuation;
 	float           m_maxAttenuation;
 	float           m_volume;
+	float           m_fadeInTime;
+	float           m_fadeOutTime;
 	uint32          m_loopCount;
 	bool            m_isPanningEnabled;
 	bool            m_isAttenuationEnabled;

@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -61,8 +61,6 @@ private:
 	void        ConnectSignals();
 	CImplItem*  ItemFromIndex(QModelIndex const& index) const;
 	QModelIndex IndexFromItem(CImplItem const* const pImplItem) const;
-
-	IEditorImpl* m_pEditorImpl;
 };
 
 class CMiddlewareFilterProxyModel final : public QAttributeFilterProxyModel

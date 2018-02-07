@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 
@@ -15,13 +15,14 @@ string const g_sImplementationCVarName = "s_AudioImplName";
 
 namespace ACE
 {
-typedef void (WINAPI* PGNSI)();
-using TPfnGetAudioInterface = IEditorImpl* (*)(ISystem*);
+typedef void (WINAPI * PGNSI)();
+using TPfnGetAudioInterface = IEditorImpl * (*)(ISystem*);
+
+IEditorImpl* g_pEditorImpl = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
 CImplementationManager::CImplementationManager()
 	: m_hMiddlewarePlugin(nullptr)
-	, m_pEditorImpl(nullptr)
 {
 }
 
@@ -34,7 +35,7 @@ CImplementationManager::~CImplementationManager()
 		m_hMiddlewarePlugin = nullptr;
 	}
 
-	m_pEditorImpl = nullptr;
+	g_pEditorImpl = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -56,7 +57,7 @@ bool CImplementationManager::LoadImplementation()
 
 			FreeLibrary(m_hMiddlewarePlugin);
 			m_hMiddlewarePlugin = nullptr;
-			m_pEditorImpl = nullptr;
+			g_pEditorImpl = nullptr;
 		}
 
 		char szExecutableDirPath[_MAX_PATH];
@@ -84,12 +85,12 @@ bool CImplementationManager::LoadImplementation()
 			{
 				if (GetIEditor() != nullptr)
 				{
-					m_pEditorImpl = pfnAudioInterface(GetIEditor()->GetSystem());
+					g_pEditorImpl = pfnAudioInterface(GetIEditor()->GetSystem());
 
-					if (m_pEditorImpl != nullptr)
+					if (g_pEditorImpl != nullptr)
 					{
 						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");
-						m_pEditorImpl->Reload();
+						g_pEditorImpl->Reload();
 					}
 					else
 					{
@@ -117,11 +118,5 @@ void CImplementationManager::Release()
 	{
 		FreeLibrary(m_hMiddlewarePlugin);
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-IEditorImpl* CImplementationManager::GetImplementation()
-{
-	return m_pEditorImpl;
 }
 } // namespace ACE

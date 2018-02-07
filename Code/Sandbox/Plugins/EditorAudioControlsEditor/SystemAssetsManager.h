@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -18,8 +18,8 @@ public:
 	CSystemAssetsManager();
 	~CSystemAssetsManager();
 
-	void Initialize();
-	void Clear();
+	void            Initialize();
+	void            Clear();
 
 	CSystemLibrary* CreateLibrary(string const& name);
 	CSystemLibrary* GetLibrary(size_t const index) const { return m_systemLibraries[index]; }
@@ -27,7 +27,7 @@ public:
 
 	CSystemAsset*   CreateFolder(string const& name, CSystemAsset* const pParent = nullptr);
 	CSystemControl* CreateControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent = nullptr);
-	void            CreateDefaultControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent, bool& wasModified);
+	void            CreateDefaultControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent, bool& wasModified, string const& description);
 	void            DeleteItem(CSystemAsset* const pItem);
 
 	CSystemControl* GetControlByID(CID const id) const;

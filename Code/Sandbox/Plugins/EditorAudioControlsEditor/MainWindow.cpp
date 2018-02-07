@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "MainWindow.h"
@@ -39,8 +39,8 @@ CMainWindow::CMainWindow()
 	, m_pMiddlewareDataWidget(nullptr)
 	, m_pImplNameLabel(new QLabel(this))
 	, m_pToolBar(new QToolBar("ACE Tools", this))
-	, m_pMonitorSystem(new CFileMonitorSystem(500, *m_pAssetsManager, this))
-	, m_pMonitorMiddleware(new CFileMonitorMiddleware(500, *m_pAssetsManager, this))
+	, m_pMonitorSystem(new CFileMonitorSystem(1000, *m_pAssetsManager, this))
+	, m_pMonitorMiddleware(new CFileMonitorMiddleware(1000, *m_pAssetsManager, this))
 	, m_isModified(false)
 {
 	setAttribute(Qt::WA_DeleteOnClose);
@@ -85,32 +85,25 @@ CMainWindow::CMainWindow()
 	m_pAssetsManager->UpdateAllConnectionStates();
 	CheckErrorMask();
 	UpdateImplLabel();
-
-	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-	if (pEditorImpl == nullptr)
-	{
-		m_pToolBar->setEnabled(false);
-	}
+	m_pToolBar->setEnabled(g_pEditorImpl != nullptr);
 
 	QObject::connect(m_pMonitorSystem, &CFileMonitorSystem::SignalReloadData, this, &CMainWindow::ReloadSystemData);
 	QObject::connect(m_pMonitorMiddleware, &CFileMonitorMiddleware::SignalReloadData, this, &CMainWindow::ReloadMiddlewareData);
 
 	m_pAssetsManager->SignalIsDirty.Connect([&](bool const isDirty)
-	{
-		m_isModified = isDirty;
-		m_pSaveAction->setEnabled(isDirty);
-	}, reinterpret_cast<uintptr_t>(this));
+		{
+			m_isModified = isDirty;
+			m_pSaveAction->setEnabled(isDirty);
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.Connect(this, &CMainWindow::SaveBeforeImplementationChange);
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([this]()
-	{
-		UpdateImplLabel();
-		Reload();
+		{
+			UpdateImplLabel();
+			Reload();
 
-		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-		m_pToolBar->setEnabled(pEditorImpl != nullptr);
-	}, reinterpret_cast<uintptr_t>(this));
+			m_pToolBar->setEnabled(g_pEditorImpl != nullptr);
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	GetIEditor()->RegisterNotifyListener(this);
 }
@@ -198,13 +191,13 @@ CPropertiesWidget* CMainWindow::CreatePropertiesWidget()
 	}
 
 	QObject::connect(this, &CMainWindow::SignalSelectedSystemControlChanged, [&]()
-	{
-		if (m_pPropertiesWidget != nullptr)
 		{
-			m_pPropertiesWidget->OnSetSelectedAssets(GetSelectedSystemAssets());
-		}
-	});
-	
+			if (m_pPropertiesWidget != nullptr)
+			{
+			  m_pPropertiesWidget->OnSetSelectedAssets(GetSelectedSystemAssets());
+			}
+	  });
+
 	QObject::connect(pPropertiesWidget, &QObject::destroyed, this, &CMainWindow::OnPropertiesWidgetDestruction);
 	QObject::connect(pPropertiesWidget, &CPropertiesWidget::SignalSelectConnectedImplItem, this, &CMainWindow::SignalSelectConnectedImplItem);
 
@@ -314,11 +307,9 @@ void CMainWindow::keyPressEvent(QKeyEvent* pEvent)
 //////////////////////////////////////////////////////////////////////////
 void CMainWindow::UpdateImplLabel()
 {
-	IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-	if (pEditorImpl != nullptr)
+	if (g_pEditorImpl != nullptr)
 	{
-		m_pImplNameLabel->setText(QtUtil::ToQString(pEditorImpl->GetName()));
+		m_pImplNameLabel->setText(QtUtil::ToQString(g_pEditorImpl->GetName()));
 	}
 	else
 	{
@@ -415,17 +406,15 @@ void CMainWindow::CheckErrorMask()
 {
 	EErrorCode const errorCodeMask = CAudioControlsEditorPlugin::GetLoadingErrorMask();
 
-	if ((errorCodeMask & EErrorCode::UnkownPlatform) != 0)
+	if ((errorCodeMask& EErrorCode::UnkownPlatform) != 0)
 	{
 		CQuestionDialog::SWarning(tr(GetEditorName()), tr("Audio Preloads reference an unknown platform.\nSaving will permanently erase this data."));
 	}
-	else if ((errorCodeMask & EErrorCode::NonMatchedActivityRadius) != 0)
+	else if ((errorCodeMask& EErrorCode::NonMatchedActivityRadius) != 0)
 	{
-		IEditorImpl const* const pEditorImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
-
-		if (pEditorImpl != nullptr)
+		if (g_pEditorImpl != nullptr)
 		{
-			QString const middlewareName = pEditorImpl->GetName();
+			QString const middlewareName = g_pEditorImpl->GetName();
 			CQuestionDialog::SWarning(tr(GetEditorName()), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nActivity radius of triggers will be updated next time you save."));
 		}
 	}
@@ -559,18 +548,16 @@ void CMainWindow::ReloadMiddlewareData()
 	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 	BackupTreeViewStates();
 
-	IEditorImpl* const pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-
-	if (pEditorImpl != nullptr)
+	if (g_pEditorImpl != nullptr)
 	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");
-		pEditorImpl->Reload();
+		g_pEditorImpl->Reload();
 	}
 
 	m_pAssetsManager->ClearAllConnections();
 	m_pAssetsManager->ReloadAllConnections();
 	m_pAssetsManager->UpdateAllConnectionStates();
-	
+
 	if (m_pMiddlewareDataWidget != nullptr)
 	{
 		m_pMiddlewareDataWidget->Reset();
@@ -629,20 +616,20 @@ void CMainWindow::OnPreferencesDialog()
 	CPreferencesDialog* const pPreferencesDialog = new CPreferencesDialog(this);
 
 	QObject::connect(pPreferencesDialog, &CPreferencesDialog::SignalImplementationSettingsAboutToChange, [&]()
-	{
-		BackupTreeViewStates();
-	});
+		{
+			BackupTreeViewStates();
+	  });
 
 	QObject::connect(pPreferencesDialog, &CPreferencesDialog::SignalImplementationSettingsChanged, [&]()
-	{
-		if (m_pMiddlewareDataWidget != nullptr)
 		{
-			m_pMiddlewareDataWidget->Reset();
-		}
+			if (m_pMiddlewareDataWidget != nullptr)
+			{
+			  m_pMiddlewareDataWidget->Reset();
+			}
 
-		RestoreTreeViewStates();
-		m_pMonitorMiddleware->Enable();
-	});
+			RestoreTreeViewStates();
+			m_pMonitorMiddleware->Enable();
+	  });
 
 	pPreferencesDialog->exec();
 }

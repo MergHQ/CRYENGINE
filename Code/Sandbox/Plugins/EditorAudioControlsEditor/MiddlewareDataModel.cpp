@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 
@@ -20,7 +20,6 @@ namespace ACE
 //////////////////////////////////////////////////////////////////////////
 CMiddlewareDataModel::CMiddlewareDataModel(QObject* const pParent)
 	: QAbstractItemModel(pParent)
-	, m_pEditorImpl(CAudioControlsEditorPlugin::GetImplEditor())
 {
 	ConnectSignals();
 }
@@ -35,18 +34,16 @@ CMiddlewareDataModel::~CMiddlewareDataModel()
 void CMiddlewareDataModel::ConnectSignals()
 {
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.Connect([&]()
-	{
-		beginResetModel();
-		m_pEditorImpl = nullptr;
-		endResetModel();
-	}, reinterpret_cast<uintptr_t>(this));
+		{
+			beginResetModel();
+			endResetModel();
+	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
-	{
-		m_pEditorImpl = CAudioControlsEditorPlugin::GetImplEditor();
-		beginResetModel();
-		endResetModel();
-	}, reinterpret_cast<uintptr_t>(this));
+		{
+			beginResetModel();
+			endResetModel();
+	  }, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -136,19 +133,19 @@ int CMiddlewareDataModel::rowCount(QModelIndex const& parent) const
 {
 	int rowCount = 0;
 
-	if (m_pEditorImpl != nullptr)
+	if (g_pEditorImpl != nullptr)
 	{
 		CImplItem const* pImplItem = ItemFromIndex(parent);
 
 		if (pImplItem == nullptr)
 		{
 			// If not valid it must be a top level item, so get root.
-			pImplItem = m_pEditorImpl->GetRoot();
+			pImplItem = g_pEditorImpl->GetRoot();
 		}
 
 		if (pImplItem != nullptr)
 		{
-			rowCount =  pImplItem->ChildCount();
+			rowCount = pImplItem->ChildCount();
 		}
 	}
 
@@ -166,7 +163,7 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 {
 	QVariant variant;
 
-	if (m_pEditorImpl != nullptr)
+	if (g_pEditorImpl != nullptr)
 	{
 		if (index.isValid())
 		{
@@ -225,7 +222,7 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 						switch (role)
 						{
 						case Qt::DecorationRole:
-							variant = CryIcon(m_pEditorImpl->GetTypeIcon(pImplItem));
+							variant = CryIcon(g_pEditorImpl->GetTypeIcon(pImplItem));
 							break;
 						case Qt::DisplayRole:
 						case Qt::ToolTipRole:
@@ -267,11 +264,11 @@ Qt::ItemFlags CMiddlewareDataModel::flags(QModelIndex const& index) const
 {
 	Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 
-	if (index.isValid() && (m_pEditorImpl != nullptr))
+	if (index.isValid() && (g_pEditorImpl != nullptr))
 	{
 		CImplItem const* const pImplItem = ItemFromIndex(index);
 
-		if ((pImplItem != nullptr) && !pImplItem->IsPlaceholder() && (m_pEditorImpl->ImplTypeToSystemType(pImplItem) != ESystemItemType::NumTypes))
+		if ((pImplItem != nullptr) && !pImplItem->IsPlaceholder() && (g_pEditorImpl->ImplTypeToSystemType(pImplItem) != ESystemItemType::NumTypes))
 		{
 			flags |= Qt::ItemIsDragEnabled;
 		}
@@ -285,7 +282,7 @@ QModelIndex CMiddlewareDataModel::index(int row, int column, QModelIndex const& 
 {
 	QModelIndex modelIndex = QModelIndex();
 
-	if (m_pEditorImpl != nullptr)
+	if (g_pEditorImpl != nullptr)
 	{
 		if ((row >= 0) && (column >= 0))
 		{
@@ -293,7 +290,7 @@ QModelIndex CMiddlewareDataModel::index(int row, int column, QModelIndex const& 
 
 			if (pParent == nullptr)
 			{
-				pParent = m_pEditorImpl->GetRoot();
+				pParent = g_pEditorImpl->GetRoot();
 			}
 
 			if ((pParent != nullptr) && pParent->ChildCount() > row)
@@ -398,7 +395,7 @@ QModelIndex CMiddlewareDataModel::IndexFromItem(CImplItem const* const pImplItem
 
 		if (pParent == nullptr)
 		{
-			pParent = m_pEditorImpl->GetRoot();
+			pParent = g_pEditorImpl->GetRoot();
 		}
 
 		if (pParent != nullptr)
