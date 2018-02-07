@@ -261,12 +261,6 @@ void ShadowMapFrustum::RenderShadowFrustum(IRenderViewPtr pShadowsView, int side
 	  side,
 	  nRenderingFlags);
 
-	//if (!bJobCasters)
-	{
-		// Make sure no jobs used during rendering
-		passInfo.SetWriteMutex(nullptr);
-	}
-
 	auto lambda = [=]() { Job_RenderShadowCastersToView(passInfo, bJobCasters); };
 	if (!bJobCasters)
 	{
