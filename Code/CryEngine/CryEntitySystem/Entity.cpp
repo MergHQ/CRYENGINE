@@ -184,6 +184,20 @@ void CEntity::AddSimpleEventListeners(EntityEventMask events, ISimpleEntityEvent
 }
 
 /////////////////////////////////////////////////////////////////////////
+void CEntity::ClearComponentEventListeners()
+{
+	m_components.ForEach([this](SEntityComponentRecord& record) -> bool
+	{
+		EntityEventMask prevMask = record.registeredEventsMask;
+		record.registeredEventsMask = 0;
+
+		OnComponentMaskChanged(record, prevMask);
+
+		return true;
+	});
+}
+
+/////////////////////////////////////////////////////////////////////////
 void CEntity::AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority)
 {
 	SEventListener eventListener = SEventListener {
@@ -2835,12 +2849,14 @@ IEntityLink* CEntity::GetEntityLinks()
 //////////////////////////////////////////////////////////////////////////
 IEntityLink* CEntity::AddEntityLink(const char* szLinkName, EntityId entityId, EntityGUID entityGuid)
 {
+	CRY_ASSERT_MESSAGE(entityId != INVALID_ENTITYID, "Can't create a link with an invalid EntityId");
+	CRY_ASSERT_MESSAGE(!entityGuid.IsNull(), "Can't create a link with an invalid EntityGUID");
+	CRY_ASSERT_MESSAGE(entityId != m_id, "Entity can't be linked with itself");
+
 	if (szLinkName == nullptr)
 		return nullptr;
 
-	IEntityLink* pNewLink = new IEntityLink {
-		szLinkName, entityId, entityGuid, nullptr
-	};
+	IEntityLink* pNewLink = new IEntityLink { szLinkName, entityId, entityGuid, nullptr };
 
 	if (m_pEntityLinks)
 	{
@@ -3088,6 +3104,17 @@ void CEntity::OnEditorGameModeChanged(bool bEnterGameMode)
 	if (IsGarbage())
 	{
 		m_flags &= ~ENTITY_FLAG_REMOVED;
+
+		// Re-add the component event listener which where removed
+		m_components.ForEach([this](SEntityComponentRecord& record) -> bool
+		{
+			EntityEventMask prevMask = record.registeredEventsMask;
+			record.registeredEventsMask = record.pComponent->GetEventMask();
+
+			OnComponentMaskChanged(record, prevMask);
+
+			return true;
+		});
 
 		// If entity was deleted in game, resurrect it.
 		SEntityEvent entevnt;
