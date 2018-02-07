@@ -307,13 +307,19 @@ namespace Cry
 			{
 				case ESensorEventType::Entering:
 				{
-					GetEntity()->GetSchematycObject()->ProcessSignal(SEnteringSignal(otherVolumeParams.entityId), GetGUID());
+					if (Schematyc::IObject* pSchematycObject = GetEntity()->GetSchematycObject())
+					{
+						pSchematycObject->ProcessSignal(SEnteringSignal(otherVolumeParams.entityId), GetGUID());
+					}
 					break;
 				}
 				case ESensorEventType::Leaving:
 				{
-					GetEntity()->GetSchematycObject()->ProcessSignal(SLeavingSignal(otherVolumeParams.entityId), GetGUID());
-					break;
+					if (Schematyc::IObject* pSchematycObject = GetEntity()->GetSchematycObject())
+					{
+						pSchematycObject->ProcessSignal(SLeavingSignal(otherVolumeParams.entityId), GetGUID());
+						break;
+					}
 				}
 			}
 		}
