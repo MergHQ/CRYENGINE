@@ -15,6 +15,7 @@ public:
 
 	float m_fTerrainWaterLevel;
 	float m_fSkyBoxStretching;
+	float m_fSkyBoxAngle;
 	float m_fAlpha;
 	int   m_nSphereListId;
 
@@ -27,6 +28,7 @@ public:
 		m_fAlpha = 1;
 		m_nSphereListId = 0;
 		m_fSkyBoxStretching = 1.f;
+		m_fSkyBoxAngle = 0.0f;
 	}
 
 	virtual ~CRESky();

@@ -2087,6 +2087,7 @@ void C3DEngine::RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo
 
 			m_pRESky->m_fTerrainWaterLevel = max(0.0f, m_pTerrain->GetWaterLevel());
 			m_pRESky->m_fSkyBoxStretching = m_fSkyBoxStretching;
+			m_pRESky->m_fSkyBoxAngle = DEG2RAD(m_fSkyBoxAngle);
 
 			passInfo.GetIRenderView()->AddRenderObject(m_pRESky, pMat->GetShaderItem(), pObj, passInfo, EFSLIST_GENERAL, 1);
 		}

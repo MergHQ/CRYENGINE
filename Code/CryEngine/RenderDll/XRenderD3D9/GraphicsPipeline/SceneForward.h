@@ -70,6 +70,7 @@ private:
 	bool PreparePerPassResources(bool bOnInit, bool bShadowMask = true, bool bFog = true);
 	void ExecuteTransparent(bool bBelowWater);
 
+	void SetSkyParameters();
 	void SetHDRSkyParameters();
 	void ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex);
 
