@@ -221,9 +221,10 @@ CNavMesh::~CNavMesh()
 {
 }
 
-void CNavMesh::Init(const SGridParams& params)
+void CNavMesh::Init(const SGridParams& params, const SAgentSettings& agentSettings)
 {
 	m_params = params;
+	m_agentSettings = agentSettings;
 
 	m_tiles.Init(params.tileCount);
 }
@@ -873,18 +874,27 @@ bool CNavMesh::CanTrianglePassFilter(const TriangleID triangleID, const INavMesh
 	return false;
 }
 
-bool CNavMesh::SnapPosition(const vector3_t& position, const aabb_t& aroundPositionAABB, const SSnapToNavMeshRulesInfo& snappingRules, const INavMeshQueryFilter* pFilter, vector3_t& snappedPosition, MNM::TriangleID* pTriangleId) const
+bool CNavMesh::SnapPosition(const vector3_t& position, const SSnapToNavMeshRulesInfo& snappingRules, const INavMeshQueryFilter* pFilter, vector3_t& snappedPosition, MNM::TriangleID* pTriangleId) const
 {
-	// Note: GetClosestTriangle and GetTriangleAt are expecting input positions in navmesh's local space, but returned snapped position is in global space
-	// We'll keep the same behavior here for now
+	const MNM::real_t verticalDefaultRange = MNMUtils::CalculateMinVerticalRange(m_agentSettings.height, m_params.voxelSize.z);
+	const MNM::real_t verticalDownRange = snappingRules.verticalDownRange == FLT_MAX ? verticalDefaultRange : MNM::real_t(snappingRules.verticalDownRange);
+	const MNM::real_t horizontalRange = snappingRules.horizontalRange == -FLT_MAX ? MNMUtils::CalculateMinHorizontalRange(m_agentSettings.radius, m_params.voxelSize.x) : MNM::real_t(snappingRules.horizontalRange);
+
+	const MNM::vector3_t origin = vector3_t(m_params.origin);
 	
 	if (snappingRules.bVerticalSearch)
 	{
-		if (TriangleID triangleId = GetTriangleAt(position, -aroundPositionAABB.min.z, aroundPositionAABB.max.z, pFilter, 0.0f))
+		const MNM::real_t verticalUpRange = snappingRules.verticalUpRange == -FLT_MAX
+			? MNM::real_t(min(2u, m_agentSettings.height) * m_params.voxelSize.z) // This value computation was used for a long time when snapping points in Pathfinder
+			: MNM::real_t(snappingRules.verticalUpRange);
+
+		const MNM::aabb_t aroundPositionAABB(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
+		
+		if (TriangleID triangleId = GetTriangleAt(position - origin, -aroundPositionAABB.min.z, aroundPositionAABB.max.z, pFilter, 0.0f))
 		{
 			// TODO: get the position projected down on the triangle
 			// Using input position in global space for now
-			snappedPosition = position + vector3_t(m_params.origin);
+			snappedPosition = position;
 
 			if (pTriangleId)
 				*pTriangleId = triangleId;
@@ -893,7 +903,10 @@ bool CNavMesh::SnapPosition(const vector3_t& position, const aabb_t& aroundPosit
 	}
 	if (snappingRules.bBoxSearch)
 	{
-		if (TriangleID triangleId = GetClosestTriangle(position, aroundPositionAABB, pFilter, nullptr, &snappedPosition))
+		// In bBoxSearch, default verticalUpRange is using the same value as verticalDownRange
+		const MNM::real_t verticalUpRange = snappingRules.verticalUpRange == -FLT_MAX ? verticalDefaultRange : MNM::real_t(snappingRules.verticalUpRange);
+		const MNM::aabb_t aroundPositionAABB(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
+		if (TriangleID triangleId = GetClosestTriangle(position - origin, aroundPositionAABB, pFilter, nullptr, &snappedPosition))
 		{
 			if (pTriangleId)
 				*pTriangleId = triangleId;

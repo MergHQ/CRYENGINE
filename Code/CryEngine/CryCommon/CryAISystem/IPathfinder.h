@@ -623,8 +623,12 @@ struct SSnapToNavMeshRulesInfo
 	{}
 
 	//<! Rules will be checked/applied in this order:
-	bool bVerticalSearch;   //!< Tries to snap vertically
-	bool bBoxSearch;	//!< Tries to snap using a box horizontally+vertically.
+	bool bVerticalSearch;				//!< Tries to snap vertically
+	bool bBoxSearch;					//!< Tries to snap using a box horizontally+vertically.
+
+	float verticalUpRange = -FLT_MAX;	//!< Vertical upwards range for querying NavMesh triangles. Agent's height is used when not set.
+	float verticalDownRange = FLT_MAX;	//!< Vertical downwards range for querying NavMesh triangles. Agent's height is used when not set.
+	float horizontalRange = -FLT_MAX;	//!< Horizontal range (AABB) for querying NavMesh triangles. Agent's diameter is used when not set.
 };
 
 struct MNMPathRequest

@@ -277,7 +277,7 @@ public:
 	CNavMesh();
 	~CNavMesh();
 
-	void                 Init(const SGridParams& params);
+	void                 Init(const SGridParams& params, const SAgentSettings& agentSettings);
 
 	static inline size_t ComputeTileName(size_t x, size_t y, size_t z)
 	{
@@ -484,7 +484,7 @@ public:
 
 	TileID GetNeighbourTileID(size_t x, size_t y, size_t z, size_t side) const;
 	void SetTrianglesAnnotation(const MNM::TriangleID* pTrianglesArray, const size_t trianglesCount, const MNM::AreaAnnotation areaAnnotation, std::vector<TileID>& affectedTiles);
-	bool SnapPosition(const vector3_t& position, const aabb_t& aroundPositionAABB, const SSnapToNavMeshRulesInfo& snappingRules, const INavMeshQueryFilter* pFilter, vector3_t& snappedPosition, MNM::TriangleID* pTriangleId) const;
+	bool SnapPosition(const vector3_t& position, const SSnapToNavMeshRulesInfo& snappingRules, const INavMeshQueryFilter* pFilter, vector3_t& snappedPosition, MNM::TriangleID* pTriangleId) const;
 
 	// MNM::INavMesh
 	virtual void       GetMeshParams(NavMesh::SParams& outParams) const override;
@@ -647,6 +647,7 @@ protected:
 	CIslands            m_islands;
 
 	SGridParams                          m_params;
+	SAgentSettings                       m_agentSettings;
 	ProfilerType                         m_profiler;
 
 	static const real_t                  kMinPullingThreshold;
