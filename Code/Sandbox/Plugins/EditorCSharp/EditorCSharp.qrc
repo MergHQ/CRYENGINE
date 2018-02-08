@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/icons">
-      <file alias="csharp/assettype.ico">icons/assettype.ico</file>
+      <file alias="csharp/assets_csharp.ico">icons/assets_csharp.ico</file>
     </qresource>
 </RCC>
