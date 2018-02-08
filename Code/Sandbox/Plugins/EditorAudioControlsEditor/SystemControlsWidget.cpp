@@ -43,7 +43,7 @@ CSystemControlsWidget::CSystemControlsWidget(CSystemAssetsManager* const pAssets
 {
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-	m_pMountingProxyModel = new CMountingProxyModel(WrapMemberFunction(this, &CSystemControlsWidget::CreateLibraryModelFromIndex));
+	m_pMountingProxyModel = new CMountingProxyModel(WrapMemberFunction(this, &CSystemControlsWidget::CreateLibraryModelFromIndex), this);
 	m_pMountingProxyModel->SetHeaderDataCallbacks(static_cast<int>(SystemModelUtils::EColumns::Count), &SystemModelUtils::GetHeaderData, Attributes::s_getAttributeRole);
 	m_pMountingProxyModel->SetSourceModel(m_pSourceModel);
 	m_pMountingProxyModel->SetDragCallback(&SystemModelUtils::GetDragDropData);
@@ -70,7 +70,7 @@ CSystemControlsWidget::CSystemControlsWidget(CSystemAssetsManager* const pAssets
 	m_pTreeView->SetNameRole(static_cast<int>(SystemModelUtils::ERoles::Name));
 	m_pTreeView->TriggerRefreshHeaderColumns();
 
-	m_pFilteringPanel = new QFilteringPanel("ACESystemControls", m_pSystemFilterProxyModel);
+	m_pFilteringPanel = new QFilteringPanel("ACESystemControls", m_pSystemFilterProxyModel, this);
 	m_pFilteringPanel->SetContent(m_pTreeView);
 	m_pFilteringPanel->GetSearchBox()->SetAutoExpandOnSearch(m_pTreeView);
 

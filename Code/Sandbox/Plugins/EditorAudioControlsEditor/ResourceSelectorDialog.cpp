@@ -40,7 +40,7 @@ CResourceSelectorDialog::CResourceSelectorDialog(ESystemItemType const type, Sco
 {
 	setWindowTitle("Select Audio System Control");
 
-	m_pMountingProxyModel = new CMountingProxyModel(WrapMemberFunction(this, &CResourceSelectorDialog::CreateLibraryModelFromIndex));
+	m_pMountingProxyModel = new CMountingProxyModel(WrapMemberFunction(this, &CResourceSelectorDialog::CreateLibraryModelFromIndex), this);
 	m_pMountingProxyModel->SetHeaderDataCallbacks(1, &ResourceModelUtils::GetHeaderData);
 	m_pMountingProxyModel->SetSourceModel(m_pSourceModel);
 
@@ -272,7 +272,7 @@ void CResourceSelectorDialog::OnItemDoubleClicked(QModelIndex const& modelIndex)
 //////////////////////////////////////////////////////////////////////////
 void CResourceSelectorDialog::OnContextMenu(QPoint const& pos)
 {
-	QMenu* const pContextMenu = new QMenu();
+	QMenu* const pContextMenu = new QMenu(this);
 	QModelIndex const& index = m_pTreeView->currentIndex();
 
 	if (index.isValid())

@@ -513,29 +513,14 @@ bool CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID requestID, const 
 	const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
 	const MNM::CNavMesh& navMesh = mesh.navMesh;
 
-	const MNM::CNavMesh::SGridParams& gridParams = navMesh.GetGridParams();
-	const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(gridParams.origin.x), MNM::real_t(gridParams.origin.y), MNM::real_t(gridParams.origin.z));
-
-	AgentType agentTypeProperties;
-	const bool arePropertiesValid = gAIEnv.pNavigationSystem->GetAgentTypeProperties(request.agentTypeID, agentTypeProperties);
-	CRY_ASSERT(arePropertiesValid);
-
-	const MNM::vector3_t startLocation(MNM::real_t(request.requestParams.startLocation.x), MNM::real_t(request.requestParams.startLocation.y),
-	                                   MNM::real_t(request.requestParams.startLocation.z));
-	const MNM::vector3_t endLocation(MNM::real_t(request.requestParams.endLocation.x), MNM::real_t(request.requestParams.endLocation.y),
-	                                 MNM::real_t(request.requestParams.endLocation.z));
-
-	const MNM::real_t horizontalRange = MNMUtils::CalculateMinHorizontalRange(agentTypeProperties.settings.agent.radius, gridParams.voxelSize.x);
-	const MNM::real_t verticalDownRange = MNMUtils::CalculateMinVerticalRange(agentTypeProperties.settings.agent.height, gridParams.voxelSize.z);
-	const uint16 zOffsetMultiplier = min(uint16(2), (uint16)agentTypeProperties.settings.agent.height);
-	const MNM::real_t verticalUpRange = MNM::real_t(zOffsetMultiplier * gridParams.voxelSize.z);
+	const MNM::vector3_t startLocation(request.requestParams.startLocation);
+	const MNM::vector3_t endLocation(request.requestParams.endLocation);
 
 	const INavMeshQueryFilter* pFilter = request.pFilter.get();
-	const MNM::aabb_t aroundPositionAABB(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalDownRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalUpRange));
 
 	MNM::TriangleID triangleStartID;
 	MNM::vector3_t snappedPosition;
-	if (!navMesh.SnapPosition(startLocation - origin, aroundPositionAABB, request.requestParams.snappingRules, pFilter, snappedPosition, &triangleStartID))
+	if (!navMesh.SnapPosition(startLocation, request.requestParams.snappingRules, pFilter, snappedPosition, &triangleStartID))
 	{
 		const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
 		AIWarning("Navigation system couldn't find NavMesh triangle at path start point (%.2f, %2f, %2f) for agent '%s'.",
@@ -546,7 +531,7 @@ bool CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID requestID, const 
 	const Vec3 safeStartLocation = snappedPosition.GetVec3();
 	
 	MNM::TriangleID triangleEndID;
-	if (!navMesh.SnapPosition(endLocation - origin, aroundPositionAABB, request.requestParams.snappingRules, pFilter, snappedPosition, &triangleEndID))
+	if (!navMesh.SnapPosition(endLocation, request.requestParams.snappingRules, pFilter, snappedPosition, &triangleEndID))
 	{
 		const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
 		AIWarning("Navigation system couldn't find NavMesh triangle at path destination point (%.2f, %.2f, %.2f) for agent '%s'.",

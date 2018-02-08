@@ -27,10 +27,9 @@ void CListenerComponent::Initialize()
 {
 	if (m_pIListener == nullptr)
 	{
-		CryFixedStringT<64> name;
-		name.Format("%s(%d)", m_pEntity->GetName(), static_cast<int>(m_pEntity->GetId()));
-		SetName(name.c_str());
-
+		SetName("Audio Listener");
+		CryFixedStringT<CryAudio::MaxObjectNameLength> name;
+		name.Format("audio_listener_%s_%d", m_pEntity->GetName(), static_cast<int>(m_pEntity->GetId()));
 		m_pIListener = gEnv->pAudioSystem->CreateListener(name.c_str());
 
 		if (m_pIListener != nullptr)
@@ -60,7 +59,11 @@ void CListenerComponent::OnShutDown()
 //////////////////////////////////////////////////////////////////////////
 uint64 CListenerComponent::GetEventMask() const
 {
+#if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
+	return BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_SET_NAME);
+#else
 	return BIT64(ENTITY_EVENT_XFORM);
+#endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -91,6 +94,13 @@ void CListenerComponent::ProcessEvent(const SEntityEvent& event)
 
 				break;
 			}
+#if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
+		case ENTITY_EVENT_SET_NAME:
+			CryFixedStringT<CryAudio::MaxObjectNameLength> name;
+			name.Format("audio_listener_%s_%d", m_pEntity->GetName(), static_cast<int>(m_pEntity->GetId()));
+			m_pIListener->SetName(name.c_str());
+			break;
+#endif      // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 		}
 	}
 }

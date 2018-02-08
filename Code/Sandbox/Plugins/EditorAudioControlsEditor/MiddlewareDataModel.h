@@ -8,7 +8,6 @@ class CItemModelAttribute;
 
 namespace ACE
 {
-struct IEditorImpl;
 class CImplItem;
 
 class CMiddlewareDataModel final : public QAbstractItemModel

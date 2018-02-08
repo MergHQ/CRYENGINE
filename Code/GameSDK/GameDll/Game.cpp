@@ -5743,11 +5743,7 @@ void CGame::OnDedicatedConfigEntry(const char* szKey, const char* szValue)
 		m_variantOptions[szKey] = szValue;
 	}
 
-#if defined(CVARS_WHITELIST)
-	ICVarsWhitelist* pCVarsWhitelist = gEnv->pSystem->GetCVarsWhiteList();
-	bool execute = (pCVarsWhitelist) ? pCVarsWhitelist->IsWhiteListed(szKey, false) : true;
-	if (execute)
-#endif // defined(CVARS_WHITELIST)
+	if (gEnv->pSystem->IsCVarWhitelisted(szKey, false))
 	{
 		gEnv->pConsole->LoadConfigVar(szKey, szValue);
 	}

@@ -581,16 +581,6 @@ struct SCvarsDefault
 	const char* sz_r_DriverDef;
 };
 
-#if defined(CVARS_WHITELIST)
-struct ICVarsWhitelist
-{
-	// <interfuscator:shuffle>
-	virtual ~ICVarsWhitelist() {};
-	virtual bool IsWhiteListed(const string& command, bool silent) = 0;
-	// </interfuscator:shuffle>
-};
-#endif // defined(CVARS_WHITELIST)
-
 #if CRY_PLATFORM_DURANGO
 struct SControllerPairingChanged
 {
@@ -622,9 +612,6 @@ struct SSystemInitParams
 	ILog*                pLog;           //!< You can specify your own ILog to be used by System.
 	ILogCallback*        pLogCallback;   //!< You can specify your own ILogCallback to be added on log creation (used by Editor).
 	ISystemUserCallback* pUserCallback;
-#if defined(CVARS_WHITELIST)
-	ICVarsWhitelist*     pCVarsWhitelist;       //!< CVars whitelist callback.
-#endif                                        // defined(CVARS_WHITELIST)
 	const char*          sLogFileName;          //!< File name to use for log.
 	IValidator*          pValidator;            //!< You can specify different validator object to use by System.
 	IOutputPrintSink*    pPrintSync;            //!< Print Sync which can be used to catch all output from engine.
@@ -673,9 +660,6 @@ struct SSystemInitParams
 		pLog = nullptr;
 		pLogCallback = nullptr;
 		pUserCallback = nullptr;
-#if defined(CVARS_WHITELIST)
-		pCVarsWhitelist = nullptr;
-#endif // defined(CVARS_WHITELIST)
 		sLogFileName = nullptr;
 		pValidator = nullptr;
 		pPrintSync = nullptr;
@@ -1567,9 +1551,7 @@ struct ISystem
 	virtual void AsyncMemcpy(void* dst, const void* src, size_t size, int nFlags, volatile int* sync) = 0;
 	// </interfuscator:shuffle>
 
-#if defined(CVARS_WHITELIST)
-	virtual ICVarsWhitelist* GetCVarsWhiteList() const = 0;
-#endif // defined(CVARS_WHITELIST)
+	virtual bool IsCVarWhitelisted(const char* szName, bool silent) const = 0;
 
 #ifndef _RELEASE
 	virtual void GetCheckpointData(ICheckpointData& data) = 0;

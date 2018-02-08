@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -15,7 +15,7 @@ class CProjectLoader final
 {
 public:
 
-	CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& root);
+	CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& root, ControlsCache& controlsCache);
 
 private:
 
@@ -38,20 +38,19 @@ private:
 	};
 
 	using EventsInfoMap = std::map<uint32, SEventInfo>;
-	using ControlsCache = std::map<CID, CImplItem*>;
 	using FilesCache = std::map<uint32, string>;
 	using Items = std::map<uint32, CImplItem*>;
 
-	EventsInfoMap    m_eventsInfoMap;
-	CImplItem&       m_root;
-	ControlsCache    m_controlsCache;
-	string const     m_projectPath;
+	EventsInfoMap  m_eventsInfoMap;
+	CImplItem&     m_root;
+	ControlsCache& m_controlsCache;
+	string const   m_projectPath;
 
 	// This maps holds the items with the internal IDs given in the Wwise files.
-	Items            m_items;
+	Items m_items;
 
 	// Cache with the file path to each work unit file
-	FilesCache       m_filesCache;
+	FilesCache m_filesCache;
 
 	// List of already loaded work unit files
 	std::set<uint32> m_filesLoaded;

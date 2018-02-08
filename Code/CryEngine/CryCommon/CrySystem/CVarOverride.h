@@ -44,6 +44,25 @@ inline constexpr T GetCVarOverride(const char* szName, const T defaultValue)
 	return GetCVarOverride(CCrc32::ComputeLowercase_CompileTime(szName), defaultValue);
 }
 
+struct CVarWhitelistEntry
+{
+public:
+	using hash_type = uint32;
+
+	constexpr CVarWhitelistEntry(const char* szName)
+		: m_hash(CCrc32::ComputeLowercase_CompileTime(szName))
+	{
+	}
+
+	constexpr hash_type GetHashedName() const
+	{
+		return m_hash;
+	}
+
+private:
+	const hash_type m_hash;
+};
+
 #if defined(CRY_CVAR_OVERRIDE_FILE)
 #	include CRY_CVAR_OVERRIDE_FILE
 #endif
@@ -56,6 +75,13 @@ namespace detail
 		return index < numOverrides
 			? (pContainer[index].GetHashedName() == hashedName ? pContainer[index].GetValue() : GetCVarOverrideImpl(pContainer, numOverrides, hashedName, defaultValue, index + 1))
 			: defaultValue;
+	}
+
+	constexpr bool IsCVarWhitelistedImpl(const CVarWhitelistEntry* pContainer, const size_t numWhitelistEntries, const CVarWhitelistEntry::hash_type hashedName, const size_t index)
+	{
+		return index < numWhitelistEntries
+			? (pContainer[index].GetHashedName() == hashedName ? true : IsCVarWhitelistedImpl(pContainer, numWhitelistEntries, hashedName, index + 1))
+			: false;
 	}
 }
 #define GET_CVAR_IMPL(container, hashedName, defaultValue) \
@@ -86,3 +112,16 @@ inline constexpr const char* GetCVarOverride<const char*>(const typename CVarOve
 #endif // defined(CVAR_STRING_OVERRIDES)
 
 #undef GET_CVAR_IMPL
+
+constexpr bool IsCVarWhitelisted(const char* szName)
+{
+#if defined(CVARS_WHITELIST)
+#	if defined(CVAR_WHITELIST_ENTRIES)
+	return detail::IsCVarWhitelistedImpl(CVAR_WHITELIST_ENTRIES, CRY_ARRAY_COUNT(CVAR_WHITELIST_ENTRIES), CCrc32::ComputeLowercase_CompileTime(szName), 0);
+#	else
+	return false;
+#	endif // defined(CVAR_WHITELIST_ENTRIES)
+#else
+	return true;
+#endif // defined(CVARS_WHITELIST)
+}

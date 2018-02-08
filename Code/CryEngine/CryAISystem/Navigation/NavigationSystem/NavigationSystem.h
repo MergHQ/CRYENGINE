@@ -323,7 +323,7 @@ struct AgentType
 		{}
 
 		Vec3 voxelSize;
-		MNM::CTileGenerator::SAgentSettings agent;
+		MNM::SAgentSettings agent;
 	};
 
 	struct MeshInfo

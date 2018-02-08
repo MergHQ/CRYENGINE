@@ -4,6 +4,7 @@
 #include "FileWriter.h"
 
 #include "SystemAssetsManager.h"
+#include "ImplementationManager.h"
 
 #include <IEditorImpl.h>
 #include <ImplItem.h>
@@ -52,9 +53,8 @@ string TypeToTag(ESystemItemType const eType)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileWriter::CFileWriter(CSystemAssetsManager const& pAssetsManager, IEditorImpl* pEditorImpl, std::set<string>& previousLibraryPaths)
+CFileWriter::CFileWriter(CSystemAssetsManager const& pAssetsManager, std::set<string>& previousLibraryPaths)
 	: m_assetsManager(pAssetsManager)
-	, m_pEditorImpl(pEditorImpl)
 	, m_previousLibraryPaths(previousLibraryPaths)
 {
 }
@@ -416,7 +416,7 @@ void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* 
 		{
 			if ((pControl->GetType() != ESystemItemType::Preload) || (pConnection->IsPlatformEnabled(platformIndex)))
 			{
-				XmlNodeRef const pChild = m_pEditorImpl->CreateXMLNodeFromConnection(pConnection, pControl->GetType());
+				XmlNodeRef const pChild = g_pEditorImpl->CreateXMLNodeFromConnection(pConnection, pControl->GetType());
 
 				if (pChild != nullptr)
 				{

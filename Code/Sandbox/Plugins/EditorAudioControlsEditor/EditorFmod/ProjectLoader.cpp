@@ -29,8 +29,9 @@ string const g_returnsPath = "/metadata/return/";
 string const g_vcasPath = "/metadata/vca/";
 
 //////////////////////////////////////////////////////////////////////////
-CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& root)
+CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& root, ControlsCache& controlsCache)
 	: m_root(root)
+	, m_controlsCache(controlsCache)
 	, m_projectPath(projectPath)
 {
 	CImplItem* const pSoundBanks = CreateItem(g_soundBanksFolderName, EImplItemType::EditorFolder, &m_root);
@@ -464,7 +465,7 @@ CImplItem* CProjectLoader::CreateItem(string const& name, EImplItemType const ty
 		else if (type == EImplItemType::MixerGroup)
 		{
 			pImplItem = new CImplMixerGroup(name, id);
-			m_emptyMixerGroups.emplace_back(static_cast<CImplMixerGroup*>(pImplItem));
+			m_emptyMixerGroups.push_back(static_cast<CImplMixerGroup*>(pImplItem));
 		}
 		else
 		{
@@ -535,9 +536,17 @@ void CProjectLoader::RemoveEmptyMixerGroups()
 					pMixerGroup->RemoveChild(pChild);
 				}
 			}
-		}
 
-		delete pMixerGroup;
+			auto const id = pMixerGroup->GetId();
+			auto const cacheIter = m_controlsCache.find(id);
+
+			if (cacheIter != m_controlsCache.end())
+			{
+				m_controlsCache.erase(cacheIter);
+			}
+
+			delete pMixerGroup;
+		}
 
 		if (iter != (iterEnd - 1))
 		{
@@ -548,6 +557,8 @@ void CProjectLoader::RemoveEmptyMixerGroups()
 		iter = m_emptyMixerGroups.begin();
 		iterEnd = m_emptyMixerGroups.end();
 	}
+
+	m_emptyMixerGroups.clear();
 }
 } // namespace Fmod
 } // namespace ACE

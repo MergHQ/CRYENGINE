@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -69,7 +69,7 @@ class CFileWriter
 {
 public:
 
-	CFileWriter(CSystemAssetsManager const& assetsManager, IEditorImpl* const pEditorImpl, std::set<string>& previousLibraryPaths);
+	CFileWriter(CSystemAssetsManager const& assetsManager, std::set<string>& previousLibraryPaths);
 
 	void WriteAll();
 
@@ -86,7 +86,6 @@ private:
 	void DeleteLibraryFile(string const& filepath);
 
 	CSystemAssetsManager const& m_assetsManager;
-	IEditorImpl* const          m_pEditorImpl;
 
 	std::set<string>&           m_previousLibraryPaths;
 	std::set<string>            m_foundLibraryPaths;
@@ -94,4 +93,3 @@ private:
 	static uint32 const         s_currentFileVersion;
 };
 } // namespace ACE
-

@@ -63,14 +63,10 @@ public:
 private:
 
 	void       Clear();
-	void       CreateControlCache(CImplItem const* const pParent);
-
 	CImplItem* CreateItem(string const& name, EImplItemType const type, CImplItem* const pParent);
-
 	CImplItem* GetItemFromPath(string const& fullpath);
 	CImplItem* CreatePlaceholderFolderPath(string const& path);
 
-	using ControlsCache = std::map<CID, CImplItem*>;
 	using ConnectionsMap = std::map<CID, int>;
 
 	CImplItem           m_rootControl;

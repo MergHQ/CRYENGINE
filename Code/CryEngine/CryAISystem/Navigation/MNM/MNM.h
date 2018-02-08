@@ -31,6 +31,48 @@
 namespace MNM
 {
 
+//! Structure for storing agent setting used for NavMesh generation
+struct SAgentSettings
+{
+	SAgentSettings()
+		: radius(4)
+		, height(18)
+		, climbableHeight(4)
+		, maxWaterDepth(8)
+		, climbableInclineGradient(0.0f)
+		, climbableStepRatio(0.0f)
+	{}
+
+	//! Returns horizontal distance from any feature in voxels that could be affected during the generation process
+	size_t GetPossibleAffectedSizeH() const
+	{
+		// TODO pavloi 2016.03.16: inclineTestCount = (height + 1) comes from FilterWalkable
+		const size_t inclineTestCount = climbableHeight + 1;
+		return radius + inclineTestCount + 1;
+	}
+
+	//! Returns vertical distance from any feature in voxels that could be affected during the generation process
+	size_t GetPossibleAffectedSizeV() const
+	{
+		// TODO pavloi 2016.03.16: inclineTestCount = (height + 1) comes from FilterWalkable
+		const size_t inclineTestCount = climbableHeight + 1;
+		const size_t maxZDiffInWorstCase = inclineTestCount * climbableHeight;
+
+		// TODO pavloi 2016.03.16: agent.height is not applied here, because it's usually applied additionally in other places.
+		// Or such places just don't care.
+		// +1 just in case, I'm not fully tested this formula.
+		return maxZDiffInWorstCase + 1;
+	}
+
+	uint32 radius : 8; //!< Agent radius in voxels count
+	uint32 height : 8; //!< Agent height in voxels count
+	uint32 climbableHeight : 8; //!< Maximum step height that the agent can still walk through in voxels count
+	uint32 maxWaterDepth : 8; //!< Maximum walkable water depth in voxels count
+
+	float  climbableInclineGradient; //!< The steepness of a surface to still be climbable
+	float  climbableStepRatio;
+};
+
 struct WayTriangleData
 {
 	WayTriangleData()

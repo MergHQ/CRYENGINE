@@ -94,6 +94,7 @@ enum class EAudioListenerRequestType : EnumFlagsType
 	SetTransformation,
 	RegisterListener,
 	ReleaseListener,
+	SetName,
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1067,6 +1068,28 @@ struct SAudioListenerRequestData<EAudioListenerRequestType::ReleaseListener> fin
 	virtual ~SAudioListenerRequestData() override = default;
 
 	CATLListener* const pListener;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SAudioListenerRequestData<EAudioListenerRequestType::SetName> final : public SAudioListenerRequestDataBase
+{
+	explicit SAudioListenerRequestData(char const* const szName, CATLListener* const pListener_)
+		: SAudioListenerRequestDataBase(EAudioListenerRequestType::SetName)
+		, pListener(pListener_)
+		, name(szName)
+	{}
+
+	explicit SAudioListenerRequestData(SAudioListenerRequestData<EAudioListenerRequestType::SetName> const* const pALRData)
+		: SAudioListenerRequestDataBase(EAudioListenerRequestType::SetName)
+		, pListener(pALRData->pListener)
+		, name(pALRData->name)
+	{}
+
+	virtual ~SAudioListenerRequestData() override = default;
+
+	CATLListener* const                        pListener;
+	CryFixedStringT<MaxObjectNameLength> const name;
 };
 
 SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestData);

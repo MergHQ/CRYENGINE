@@ -37,7 +37,7 @@ CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* const pAssetsManager,
 
 	m_pUsageHint = std::make_unique<QString>(tr("Select an audio control from the left pane to see its properties!"));
 
-	m_pConnectionsLabel = new QLabel(*m_pUsageHint);
+	m_pConnectionsLabel = new QLabel(*m_pUsageHint, this);
 	m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
 	m_pConnectionsLabel->setWordWrap(true);
 	pMainLayout->addWidget(m_pConnectionsLabel);

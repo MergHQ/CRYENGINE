@@ -96,8 +96,9 @@ string BuildPath(CImplItem const* const pImplItem)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& root)
+CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& root, ControlsCache& controlsCache)
 	: m_root(root)
+	, m_controlsCache(controlsCache)
 	, m_projectPath(projectPath)
 {
 	LoadEventsMetadata(soundbanksPath);
@@ -171,7 +172,6 @@ void CProjectLoader::LoadSoundBanks(string const& folderPath, bool const isLocal
 						{
 							CImplControl* const pSoundBank = new CImplControl(name, id, static_cast<ItemType>(EImpltemType::SoundBank));
 							parent.AddChild(pSoundBank);
-							pSoundBank->SetParent(&parent);
 							pSoundBank->SetLocalised(isLocalized);
 
 							if (isLocalized)
@@ -358,7 +358,6 @@ CImplItem* CProjectLoader::CreateItem(const string& name, EImpltemType const typ
 		}
 
 		parent.AddChild(pImplControl);
-		pImplControl->SetParent(&parent);
 		m_controlsCache[id] = pImplControl;
 	}
 

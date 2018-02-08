@@ -72,7 +72,7 @@ void CAudioControlsEditorPlugin::SaveModels()
 
 	if (g_pEditorImpl != nullptr)
 	{
-		CFileWriter writer(s_assetsManager, g_pEditorImpl, s_currentFilenames);
+		CFileWriter writer(s_assetsManager, s_currentFilenames);
 		writer.WriteAll();
 	}
 

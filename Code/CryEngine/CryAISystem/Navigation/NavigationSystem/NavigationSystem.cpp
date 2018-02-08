@@ -347,7 +347,7 @@ NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentT
 		else
 			m_meshes.insert(requestedID, NavigationMesh(agentTypeID));
 		NavigationMesh& mesh = m_meshes[id];
-		mesh.navMesh.Init(paramsGrid);
+		mesh.navMesh.Init(paramsGrid, agentType.settings.agent);
 		mesh.name = name;
 		mesh.exclusions = agentType.exclusions;
 		mesh.markups = agentType.markups;
@@ -2822,20 +2822,9 @@ bool NavigationSystem::SnapToNavMesh(const NavigationAgentTypeID agentID, const 
 
 	const NavigationMesh& mesh = GetMesh(meshId);
 	const MNM::CNavMesh& navMesh = mesh.navMesh;
-	const MNM::CNavMesh::SGridParams& paramsGrid = navMesh.GetGridParams();
-
-	const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x), MNM::real_t(paramsGrid.origin.y), MNM::real_t(paramsGrid.origin.z));
-
-	AgentType agentTypeProperties;
-	const bool arePropertiesValid = GetAgentTypeProperties(agentID, agentTypeProperties);
-	CRY_ASSERT(arePropertiesValid);
-
-	const MNM::real_t horizontalRange = MNMUtils::CalculateMinHorizontalRange(agentTypeProperties.settings.agent.radius, paramsGrid.voxelSize.x);
-	const MNM::real_t verticalRange = MNMUtils::CalculateMinVerticalRange(agentTypeProperties.settings.agent.height, paramsGrid.voxelSize.z);
 
 	MNM::vector3_t navMeshPos;
-	MNM::aabb_t aroundPositionAABB(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalRange));
-	if (navMesh.SnapPosition(MNM::vector3_t(position) - origin, aroundPositionAABB, snappingRules, pFilter, navMeshPos, pTriangleId))
+	if (navMesh.SnapPosition(position, snappingRules, pFilter, navMeshPos, pTriangleId))
 	{
 		snappedPosition = navMeshPos.GetVec3();
 		return true;

@@ -1054,8 +1054,10 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioListenerRequest(SAudioRequest
 
 			if (pRequestData->pListener != nullptr)
 			{
-				result = pRequestData->pListener->HandleSetTransformation(pRequestData->transformation);
+				pRequestData->pListener->HandleSetTransformation(pRequestData->transformation);
 			}
+
+			result = ERequestStatus::Success;
 		}
 		break;
 	case EAudioListenerRequestType::RegisterListener:
@@ -1079,6 +1081,17 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioListenerRequest(SAudioRequest
 			}
 		}
 		break;
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	case EAudioListenerRequestType::SetName:
+		{
+			SAudioListenerRequestData<EAudioListenerRequestType::SetName> const* const pRequestData =
+			  static_cast<SAudioListenerRequestData<EAudioListenerRequestType::SetName> const* const>(pPassedRequestData);
+
+			pRequestData->pListener->HandleSetName(pRequestData->name.c_str());
+			result = ERequestStatus::Success;
+		}
+		break;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 	case EAudioListenerRequestType::None:
 		result = ERequestStatus::Success;
 		break;
