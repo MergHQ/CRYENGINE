@@ -2627,7 +2627,7 @@ done:
 				tgtBuf.data = (SPipTangents*)rm->GetTangentPtr(tgtBuf.iStride, FSL_CREATE_MODE);
 			idxBuf = rm->GetIndexPtr(FSL_CREATE_MODE);
 
-			if (!rm->CanRender() || !vtxBuf || !idxBuf ||
+			if (!rm->CanUpdate() || !vtxBuf || !idxBuf ||
 			    (mesh->hasNormals && !nrmBuf) ||
 			    (mesh->hasTangents && (!tgtBuf)))
 			{
