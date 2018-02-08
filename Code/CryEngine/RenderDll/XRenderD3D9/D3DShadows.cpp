@@ -258,6 +258,7 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 	const auto nThreadID = gRenDev->GetMainThreadID();
 	const auto frameID = pRenderView->GetFrameId();
 	const auto nSides = pCurFrustum->GetNumSides();
+	const auto allSidesMask = std::bitset<OMNI_SIDES_NUM>((1 << nSides) - 1);
 
 	PROFILE_FRAME(PrepareShadowGenForFrustum);
 
@@ -273,7 +274,7 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 		return false;
 	if (pCurFrustum->IsCached() && pCurFrustum->nTexSize == 0)
 		return false;
-	if (pCurFrustum->bOmniDirectionalShadow && pCurFrustum->nOmniFrustumMask.none())
+	if (pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic && pCurFrustum->nOmniFrustumMask.none())
 		return false;
 	//////////////////////////////////////////////////////////////////////////
 
@@ -332,9 +333,9 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 	// Enforce invalidation
 	pCurFrustum->nSideCacheMask &= ~pCurFrustum->nSideInvalidatedMask;
 	// Early bail
-	if (pCurFrustum->nSideCacheMask.all())
+	if ((pCurFrustum->nSideCacheMask | ~allSidesMask).all())
 		return true;
-	if (pCurFrustum->bOmniDirectionalShadow)
+	if (pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic)
 	{
 		const auto invalidatedOrOutdatedMask = pCurFrustum->nSideInvalidatedMask | pCurFrustum->nOutdatedSideMask;
 		if ((invalidatedOrOutdatedMask & pCurFrustum->nOmniFrustumMask).none())
@@ -355,7 +356,7 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 	{
 		// Update check for shadow frustums:
 		// We update if the side is invalidated, or if it out-of-date and isn't cached (in case of time-sliced updates).
-		const bool shouldRenderSide = (!pCurFrustum->bOmniDirectionalShadow || pCurFrustum->nOmniFrustumMask[nS]) &&
+		const bool shouldRenderSide = (pCurFrustum->m_eFrustumType != ShadowMapFrustum::e_GsmDynamic || pCurFrustum->nOmniFrustumMask[nS]) &&
 			(pCurFrustum->isSideInvalidated(nS) ||
 			(pCurFrustum->isSideOutdated(nS) && !pCurFrustum->nSideCacheMask[nS]));
 		if (!shouldRenderSide)

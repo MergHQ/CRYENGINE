@@ -571,6 +571,7 @@ void CLightEntity::InitShadowFrustum_SUN_Conserv(ShadowMapFrustum* pFr, int dwAl
 
 	pFr->Invalidate();
 
+	pFr->nOmniFrustumMask.set(0);
 	pFr->nShadowMapLod = nLod;
 	pFr->vLightSrcRelPos = m_light.m_Origin - passInfo.GetCamera().GetPosition();
 	pFr->fRadius = m_light.m_fRadius;
@@ -1371,6 +1372,7 @@ void CLightEntity::InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllo
 
 	pFr->fNearDist = 0.01f;
 	pFr->fFarDist = m_light.m_fRadius;
+	pFr->nOmniFrustumMask.set(0);
 
 	// set texture size
 	uint32 nTexSize = GetCVars()->e_ShadowsMaxTexRes;
