@@ -108,6 +108,7 @@ SAudioRequestData* AllocateRequestData(SAudioRequestData const* const pRequestDa
 				AL_REQUEST_BLOCK(EAudioListenerRequestType::SetTransformation)
 				AL_REQUEST_BLOCK(EAudioListenerRequestType::RegisterListener)
 				AL_REQUEST_BLOCK(EAudioListenerRequestType::ReleaseListener)
+				AL_REQUEST_BLOCK(EAudioListenerRequestType::SetName)
 			default:
 				{
 					Cry::Audio::Log(ELogType::Error, "Unknown audio listener request type (%u)", pBase->type);
