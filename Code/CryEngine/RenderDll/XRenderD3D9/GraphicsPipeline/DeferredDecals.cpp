@@ -327,12 +327,10 @@ void CDeferredDecalsStage::Execute()
 	pSceneSpecular = CRendererResources::s_ptexSceneSpecularESRAM;
 #endif
 
-	const auto tempDepthTexture = CRendererResources::GetTempDepthSurface(gRenDev->GetFrameID(), RenderView()->GetRenderResolution().x, RenderView()->GetRenderResolution().y);
-
 	m_decalPass.SetRenderTarget(0, CRendererResources::s_ptexSceneNormalsMap);
 	m_decalPass.SetRenderTarget(1, CRendererResources::s_ptexSceneDiffuse);
 	m_decalPass.SetRenderTarget(2, pSceneSpecular);
-	m_decalPass.SetDepthTarget(tempDepthTexture->texture.pTexture);
+	m_decalPass.SetDepthTarget(RenderView()->GetDepthTarget());
 	
 	m_decalPass.SetViewport(RenderView()->GetViewport());
 		
