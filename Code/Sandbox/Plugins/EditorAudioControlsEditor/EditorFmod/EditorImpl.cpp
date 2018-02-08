@@ -225,9 +225,7 @@ void CEditorImpl::Reload(bool const preserveConnectionStatus)
 {
 	Clear();
 
-	CProjectLoader(GetSettings()->GetProjectPath(), GetSettings()->GetAssetsPath(), m_rootControl);
-
-	CreateControlCache(&m_rootControl);
+	CProjectLoader(GetSettings()->GetProjectPath(), GetSettings()->GetAssetsPath(), m_rootControl, m_controlsCache);
 
 	if (preserveConnectionStatus)
 	{
@@ -743,26 +741,6 @@ void CEditorImpl::Clear()
 
 	// Clean up the root control
 	m_rootControl = CImplItem();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEditorImpl::CreateControlCache(CImplItem const* const pParent)
-{
-	if (pParent != nullptr)
-	{
-		size_t const count = pParent->ChildCount();
-
-		for (size_t i = 0; i < count; ++i)
-		{
-			CImplItem* const pChild = pParent->GetChildAt(i);
-
-			if (pChild != nullptr)
-			{
-				m_controlsCache[pChild->GetId()] = pChild;
-				CreateControlCache(pChild);
-			}
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

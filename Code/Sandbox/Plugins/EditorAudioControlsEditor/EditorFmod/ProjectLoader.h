@@ -15,7 +15,7 @@ class CProjectLoader final
 {
 public:
 
-	CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& root);
+	CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& root, ControlsCache& controlsCache);
 
 private:
 
@@ -40,11 +40,10 @@ private:
 	CImplItem* LoadParameter(XmlNodeRef const pNode, CImplItem& parent);
 	CImplItem* LoadVca(XmlNodeRef const pNode, CImplItem& parent);
 
-	using ControlsCache = std::map<CID, CImplItem*>;
 	using ItemIds = std::map<string, CImplItem*>;
 
 	CImplItem&                    m_root;
-	ControlsCache                 m_controlsCache;
+	ControlsCache&                m_controlsCache;
 	ItemIds                       m_containerIds;
 	ItemIds                       m_snapshotGroupItems;
 	std::vector<CImplMixerGroup*> m_emptyMixerGroups;

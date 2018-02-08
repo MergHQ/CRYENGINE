@@ -63,7 +63,6 @@ public:
 private:
 
 	void Clear();
-	void CreateControlCache(CImplItem const* const pParent);
 
 	// Generates the ID of the control given its full path name.
 	CID GenerateID(string const& controlName, bool isLocalized, CImplItem* pParent) const;

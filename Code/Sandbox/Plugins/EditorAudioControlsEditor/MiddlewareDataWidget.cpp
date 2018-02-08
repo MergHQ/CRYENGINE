@@ -53,7 +53,7 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* const pAssets
 	m_pTreeView->SetNameRole(static_cast<int>(CMiddlewareDataModel::ERoles::Name));
 	m_pTreeView->TriggerRefreshHeaderColumns();
 
-	m_pFilteringPanel = new QFilteringPanel("ACEMiddlewareData", m_pMiddlewareFilterProxyModel);
+	m_pFilteringPanel = new QFilteringPanel("ACEMiddlewareData", m_pMiddlewareFilterProxyModel, this);
 	m_pFilteringPanel->SetContent(m_pTreeView);
 	m_pFilteringPanel->GetSearchBox()->SetAutoExpandOnSearch(m_pTreeView);
 

@@ -84,7 +84,7 @@ CSystemControl* CSystemAssetsManager::CreateControl(string const& name, ESystemI
 
 				CSystemControl* const pNewControl = new CSystemControl(name, GenerateUniqueId(), type);
 
-				m_controls.emplace_back(pNewControl);
+				m_controls.push_back(pNewControl);
 
 				pNewControl->SetParent(pParent);
 				pParent->AddChild(pNewControl);
@@ -291,7 +291,7 @@ CSystemLibrary* CSystemAssetsManager::CreateLibrary(string const& name)
 		{
 			SignalLibraryAboutToBeAdded();
 			CSystemLibrary* const pLibrary = new CSystemLibrary(name);
-			m_systemLibraries.emplace_back(pLibrary);
+			m_systemLibraries.push_back(pLibrary);
 			SignalLibraryAdded(pLibrary);
 			pLibrary->SetModified(true);
 			pSystemLibrary = pLibrary;
@@ -708,7 +708,7 @@ CSystemAsset* CSystemAssetsManager::CreateAndConnectImplItemsRecursively(CImplIt
 		CSystemControl* const pControl = new CSystemControl(name, GenerateUniqueId(), type);
 		pControl->SetParent(pParent);
 		pParent->AddChild(pControl);
-		m_controls.emplace_back(pControl);
+		m_controls.push_back(pControl);
 
 		ConnectionPtr const pAudioConnection = g_pEditorImpl->CreateConnectionToControl(pControl->GetType(), pImplItem);
 
@@ -861,7 +861,7 @@ void SelectTopLevelAncestors(std::vector<CSystemAsset*> const& source, std::vect
 
 		if (!isAncestorAlsoSelected)
 		{
-			dest.emplace_back(pItem);
+			dest.push_back(pItem);
 		}
 	}
 }

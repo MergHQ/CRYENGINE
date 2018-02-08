@@ -48,7 +48,7 @@ public:
 	void          SetFilePath(string const& filePath)  { m_filePath = filePath; }
 
 	size_t        ChildCount() const                   { return m_children.size(); }
-	void          AddChild(CImplItem* const pChild)    { m_children.emplace_back(pChild); pChild->SetParent(this); }
+	void          AddChild(CImplItem* const pChild)    { m_children.push_back(pChild); pChild->SetParent(this); }
 	void          RemoveChild(CImplItem* const pChild) { stl::find_and_erase(m_children, pChild); pChild->SetParent(nullptr); }
 	CImplItem*    GetChildAt(size_t const index) const { return m_children[index]; }
 	CImplItem*    GetParent() const                    { return m_pParent; }
