@@ -209,7 +209,7 @@ pixout PostAA_PS(vtxOutAA IN)
 	half3 cMax = mean + 1.0 * stddev;
 	
 	half4 cHistory = GetTexture2D(PostAA_PrvTarg2, PostAA_CPSS, tc + v);
-	cHistory.rgb = FilterHistory(_tex5, tc + v, cbPostAA.screenSize);
+	cHistory.rgb = FilterHistory(PostAA_PrvTarg2, PostAA_CPSS, tc + v, cbPostAA.screenSize);
 	
 	bool offscreen = max(abs((tc.x + v.x) * 2 - 1), abs((tc.y + v.y) * 2 - 1)) >= 1.0;
 	float clipLength = 1;
