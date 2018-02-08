@@ -440,11 +440,11 @@ public:
 	virtual int DumpMMStats(bool log) override;
 
 #if defined(CVARS_WHITELIST)
-	virtual ICVarsWhitelist*             GetCVarsWhiteList() const                    { return m_pCVarsWhitelist; };
 	virtual ILoadConfigurationEntrySink* GetCVarsWhiteListConfigSink() const override { return m_pCVarsWhitelistConfigSink; }
 #else
 	virtual ILoadConfigurationEntrySink* GetCVarsWhiteListConfigSink() const override { return NULL; }
 #endif // defined(CVARS_WHITELIST)
+	virtual bool IsCVarWhitelisted(const char* szName, bool silent) const override { return ::IsCVarWhitelisted(szName); }
 
 	virtual ISystemUserCallback* GetUserCallback() const override { return m_pUserCallback; }
 
@@ -848,7 +848,6 @@ private: // ------------------------------------------------------
 #if defined(CVARS_WHITELIST)
 	//////////////////////////////////////////////////////////////////////////
 	//! User define callback for whitelisting cvars
-	ICVarsWhitelist*             m_pCVarsWhitelist;
 	ILoadConfigurationEntrySink* m_pCVarsWhitelistConfigSink;
 #endif // defined(CVARS_WHITELIST)
 

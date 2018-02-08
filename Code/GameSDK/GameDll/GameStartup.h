@@ -6,16 +6,6 @@
 #include <CryGame/IGameStartup.h>
 #include <CrySystem/IWindowMessageHandler.h>
 
-#if defined(CVARS_WHITELIST)
-class CCVarsWhiteList : public ICVarsWhitelist
-{
-public:
-	// ICVarsWhiteList
-	bool IsWhiteListed(const string& command, bool silent);
-	// ~ICVarsWhiteList
-};
-#endif // defined(CVARS_WHITELIST)
-
 class GameStartupErrorObserver : public IErrorObserver
 {
 public:

@@ -194,9 +194,7 @@ struct SCVarsWhitelistConfigSink : public ILoadConfigurationEntrySink
 {
 	virtual void OnLoadConfigurationEntry(const char* szKey, const char* szValue, const char* szGroup)
 	{
-		ICVarsWhitelist* pCVarsWhitelist = gEnv->pSystem->GetCVarsWhiteList();
-		bool whitelisted = (pCVarsWhitelist) ? pCVarsWhitelist->IsWhiteListed(szKey, false) : true;
-		if (whitelisted)
+		if (gEnv->pSystem->IsCVarWhitelisted(szKey, false))
 		{
 			gEnv->pConsole->LoadConfigVar(szKey, szValue);
 		}
@@ -302,7 +300,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	m_pUserCallback = nullptr;
 #if defined(CVARS_WHITELIST)
-	m_pCVarsWhitelist = nullptr;
 	m_pCVarsWhitelistConfigSink = &g_CVarsWhitelistConfigSink;
 #endif // defined(CVARS_WHITELIST)
 	m_sys_memory_debug = nullptr;
@@ -2927,9 +2924,7 @@ void CSystem::ExecuteCommandLine()
 		{
 			string sLine = pCmd->GetName();
 
-#if defined(CVARS_WHITELIST)
-			if (!GetCVarsWhiteList() || GetCVarsWhiteList()->IsWhiteListed(sLine, false))
-#endif
+			if (gEnv->pSystem->IsCVarWhitelisted(sLine.c_str(), false))
 			{
 				if (pCmd->GetValue())
 					sLine += string(" ") + pCmd->GetValue();
@@ -2938,12 +2933,10 @@ void CSystem::ExecuteCommandLine()
 				GetIConsole()->ExecuteString(sLine.c_str(), false, true);
 			}
 #if defined(DEDICATED_SERVER)
-	#if defined(CVARS_WHITELIST)
 			else
 			{
 				GetILog()->LogError("Failed to execute command: '%s' as it is not whitelisted\n", sLine.c_str());
 			}
-	#endif
 #endif
 		}
 	}

@@ -1969,11 +1969,7 @@ void CXConsole::AuditCVars(IConsoleCmdArgs* pArg)
 	int devOnlyMask = VF_DEV_ONLY;
 	int dediOnlyMask = VF_DEDI_ONLY;
 	int excludeMask = cheatMask | constMask | readOnlyMask | devOnlyMask | dediOnlyMask;
-	#if defined(CVARS_WHITELIST)
-	CSystem* pSystem = static_cast<CSystem*>(gEnv->pSystem);
-	ICVarsWhitelist* pCVarsWhitelist = pSystem->GetCVarsWhiteList();
 	bool excludeWhitelist = true;
-	#endif // defined(CVARS_WHITELIST)
 
 	if (numArgs > 1)
 	{
@@ -2030,10 +2026,8 @@ void CXConsole::AuditCVars(IConsoleCmdArgs* pArg)
 		int devOnlyFlags = (command.m_nFlags & devOnlyMask);
 		int dediOnlyFlags = (command.m_nFlags & dediOnlyMask);
 		bool shouldLog = ((cheatFlags | devOnlyFlags | dediOnlyFlags) == 0) || (((cheatFlags | devOnlyFlags | dediOnlyFlags) & ~excludeMask) != 0);
-	#if defined(CVARS_WHITELIST)
-		bool whitelisted = (pCVarsWhitelist) ? pCVarsWhitelist->IsWhiteListed(command.m_sName, true) : true;
+		bool whitelisted = gEnv->pSystem->IsCVarWhitelisted(command.m_sName.c_str(), true);
 		shouldLog &= (!whitelisted || (whitelisted & !excludeWhitelist));
-	#endif // defined(CVARS_WHITELIST)
 
 		if (shouldLog)
 		{
@@ -2042,11 +2036,7 @@ void CXConsole::AuditCVars(IConsoleCmdArgs* pArg)
 			             (cheatFlags != 0) ? " [VF_CHEAT]" : "",
 			             (devOnlyFlags != 0) ? " [VF_DEV_ONLY]" : "",
 			             (dediOnlyFlags != 0) ? " [VF_DEDI_ONLY]" : "",
-	#if defined(CVARS_WHITELIST)
 			             (whitelisted == true) ? " [WHITELIST]" : ""
-	#else
-			             ""
-	#endif // defined(CVARS_WHITELIST)
 			             );
 			++commandCount;
 		}
@@ -2064,7 +2054,7 @@ void CXConsole::AuditCVars(IConsoleCmdArgs* pArg)
 		int dediOnlyFlags = (flags & dediOnlyMask);
 		bool shouldLog = ((cheatFlags | constFlags | readOnlyFlags | devOnlyFlags | dediOnlyFlags) == 0) || (((cheatFlags | constFlags | readOnlyFlags | devOnlyFlags | dediOnlyFlags) & ~excludeMask) != 0);
 	#if defined(CVARS_WHITELIST)
-		bool whitelisted = (pCVarsWhitelist) ? pCVarsWhitelist->IsWhiteListed(pVariable->GetName(), true) : true;
+		bool whitelisted = gEnv->pSystem->IsCVarWhitelisted(pVariable->GetName());
 		shouldLog &= (!whitelisted || (whitelisted & !excludeWhitelist));
 	#endif // defined(CVARS_WHITELIST)
 
@@ -2728,10 +2718,6 @@ const char* CXConsole::ProcessCompletion(const char* szInputBuffer)
 	}
 	//try to search in command list
 
-#if defined(CVARS_WHITELIST)
-	CSystem* pSystem = static_cast<CSystem*>(gEnv->pSystem);
-	ICVarsWhitelist* pCVarsWhitelist = pSystem->GetCVarsWhiteList();
-#endif // defined(CVARS_WHITELIST)
 	bool bArgumentAutoComplete = false;
 	std::vector<string> matches;
 
@@ -2768,10 +2754,7 @@ const char* CXConsole::ProcessCompletion(const char* szInputBuffer)
 					string cmd = string(sVar) + " " + pArgumentAutoComplete->GetValue(i);
 					if (strnicmp(m_sPrevTab.c_str(), cmd.c_str(), m_sPrevTab.length()) == 0)
 					{
-#if defined(CVARS_WHITELIST)
-						bool whitelisted = (pCVarsWhitelist) ? pCVarsWhitelist->IsWhiteListed(cmd, true) : true;
-						if (whitelisted)
-#endif      // defined(CVARS_WHITELIST)
+						if (gEnv->pSystem->IsCVarWhitelisted(cmd.c_str(), true))
 						{
 							bArgumentAutoComplete = true;
 							matches.push_back(cmd);
@@ -2792,10 +2775,7 @@ const char* CXConsole::ProcessCompletion(const char* szInputBuffer)
 			if ((cmd.m_nFlags & VF_RESTRICTEDMODE) || !con_restricted)     // in restricted mode we allow only VF_RESTRICTEDMODE CVars&CCmd
 				if (strnicmp(m_sPrevTab.c_str(), itrCmds->first.c_str(), m_sPrevTab.length()) == 0)
 				{
-#if defined(CVARS_WHITELIST)
-					bool whitelisted = (pCVarsWhitelist) ? pCVarsWhitelist->IsWhiteListed(itrCmds->first, true) : true;
-					if (whitelisted)
-#endif    // defined(CVARS_WHITELIST)
+					if (gEnv->pSystem->IsCVarWhitelisted(itrCmds->first.c_str(), true))
 					{
 						matches.push_back((char* const)itrCmds->first.c_str());
 					}
@@ -2827,10 +2807,7 @@ const char* CXConsole::ProcessCompletion(const char* szInputBuffer)
 				//if(itrVars->first.compare(0,m_sPrevTab.length(),m_sPrevTab)==0)
 				if (strnicmp(m_sPrevTab.c_str(), itrVars->first, m_sPrevTab.length()) == 0)
 				{
-#if defined(CVARS_WHITELIST)
-					bool whitelisted = (pCVarsWhitelist) ? pCVarsWhitelist->IsWhiteListed(itrVars->first, true) : true;
-					if (whitelisted)
-#endif    // defined(CVARS_WHITELIST)
+					if (gEnv->pSystem->IsCVarWhitelisted(itrVars->first, true))
 					{
 						matches.push_back((char* const)itrVars->first);
 					}
@@ -3148,12 +3125,7 @@ void CXConsole::ExecuteInputBuffer()
 
 	AddCommandToHistory(sTemp.c_str());
 
-#if defined(CVARS_WHITELIST)
-	CSystem* pSystem = static_cast<CSystem*>(gEnv->pSystem);
-	ICVarsWhitelist* pCVarsWhitelist = pSystem->GetCVarsWhiteList();
-	bool execute = (pCVarsWhitelist) ? pCVarsWhitelist->IsWhiteListed(sTemp, false) : true;
-	if (execute)
-#endif // defined(CVARS_WHITELIST)
+	if (gEnv->pSystem->IsCVarWhitelisted(sTemp.c_str(), false))
 	{
 		ExecuteStringInternal(sTemp.c_str(), true);   // from console
 	}
