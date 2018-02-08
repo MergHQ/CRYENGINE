@@ -5403,15 +5403,15 @@ void CSystem::CreateSystemVars()
 
 #if defined(USE_CRY_ASSERT)
 	const bool defaultAsserts = 1;
-	REGISTER_CVAR2("sys_asserts", &m_env.cryAssertLevel, defaultAsserts, VF_CHEAT,
+	REGISTER_CVAR2("sys_asserts", &m_env.cryAssertLevel, defaultAsserts, VF_NULL,
 	               "0 = Disable Asserts\n"
 	               "1 = Enable Asserts\n"
 	               "2 = Fatal Error on Assert\n"
 	               "3 = Debug break on Assert\n"
 	               );
 
-	REGISTER_COMMAND("sys_ignore_asserts_from_module", CmdIgnoreAssertsFromModule, VF_CHEAT, "Disables asserts from the specified module");
-	REGISTER_CVAR2("sys_log_asserts", &g_cvars.sys_log_asserts, 1, VF_CHEAT, "Enable/Disable Asserts logging");
+	REGISTER_COMMAND("sys_ignore_asserts_from_module", CmdIgnoreAssertsFromModule, VF_NULL, "Disables asserts from the specified module");
+	REGISTER_CVAR2("sys_log_asserts", &g_cvars.sys_log_asserts, 1, VF_NULL, "Enable/Disable Asserts logging");
 #endif
 
 	REGISTER_CVAR2("sys_error_debugbreak", &g_cvars.sys_error_debugbreak, 0, VF_CHEAT, "__debugbreak() if a VALIDATOR_ERROR_DBGBREAK message is hit");
