@@ -9,6 +9,8 @@ namespace ACE
 {
 namespace Fmod
 {
+using ControlsCache = std::map<CID, CImplItem*>;
+
 class CImplControl final : public CImplItem
 {
 public:

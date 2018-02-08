@@ -485,7 +485,7 @@ void CConnectionModel::ResetCache()
 
 			if (pConnection != nullptr)
 			{
-				m_connectionsCache.emplace_back(pConnection);
+				m_connectionsCache.push_back(pConnection);
 			}
 		}
 	}

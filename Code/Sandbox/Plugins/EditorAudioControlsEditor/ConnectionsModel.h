@@ -11,7 +11,6 @@ namespace ACE
 {
 class CSystemAssetsManager;
 class CSystemControl;
-struct IEditorImpl;
 
 class CConnectionModel final : public QAbstractItemModel
 {
