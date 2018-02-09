@@ -216,7 +216,7 @@ void CDeferredCollisionEventOnPhysCollision::RayTraceVegetation()
 	pCollision->pEntity[1]->GetStatus(&sp);
 	mtx = mtxw * mtx;
 
-	if (pStatObj->m_nSpines && pCollision->n * pCollision->vloc[0] > 0)
+	if (pStatObj->m_nSpines && pCollision->n * pCollision->vloc[0] < 0)
 	{
 		ai.impulse = pCollision->vloc[0] * (pCollision->mass[0] * 0.5f);
 		pt = pt0 = pCollision->pt;
