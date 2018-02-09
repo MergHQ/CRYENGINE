@@ -70,12 +70,34 @@ void CATLListener::Update(float const deltaTime)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CATLListener::HandleSetTransformation(CObjectTransformation const& transformation)
+void CATLListener::HandleSetTransformation(CObjectTransformation const& transformation)
 {
 	m_attributes.transformation = transformation;
 	m_isMovingOrDecaying = true;
-	return ERequestStatus::Success;
+
+	// Immediately propagate the new transformation down to the middleware calculation of velocity can be safely delayed to next audio frame.
+	m_pImplData->Set3DAttributes(m_attributes);
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CATLListener::SetName(char const* const szName, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SAudioListenerRequestData<EAudioListenerRequestType::SetName> requestData(szName, this);
+	CAudioRequest request(&requestData);
+	request.flags = userData.flags;
+	request.pOwner = userData.pOwner;
+	request.pUserData = userData.pUserData;
+	request.pUserDataOwner = userData.pUserDataOwner;
+	CATLAudioObject::s_pAudioSystem->PushRequest(request);
+}
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+//////////////////////////////////////////////////////////////////////////
+void CATLListener::HandleSetName(char const* const szName)
+{
+	m_name = szName;
+}
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CATLEvent::Stop()

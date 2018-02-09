@@ -196,7 +196,6 @@ private:
 	EObjectFlags              m_flags;
 	float                     m_previousRelativeVelocity;
 	float                     m_previousAbsoluteVelocity;
-	Vec3                      m_velocity;
 	Impl::SObject3DAttributes m_attributes;
 	Impl::SObject3DAttributes m_previousAttributes;
 	CPropagationProcessor     m_propagationProcessor;

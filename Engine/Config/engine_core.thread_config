@@ -131,7 +131,7 @@ StackSizeKB:
 		<Thread name ="NetAddressSolver" Affinity="5" StackSizeKB="16" />
 		
 		<!-- [AUDIO] -->		
-		<Thread name ="MainAudioThread" Affinity="2,3,4,5" Priority="below_normal" StackSize="ignore"/>
+		<Thread name ="AudioMainThread" Affinity="2,3,4,5" Priority="below_normal" StackSize="ignore"/>
 		
 		<Thread name ="AuxWwiseAudioThread" Affinity="2,3,4,5" StackSize="ignore"/>
 		<Thread name ="Wwise_Device" Affinity="2,3,4,5" Priority="ignore" StackSize="ignore"/>
@@ -238,7 +238,7 @@ StackSizeKB:
 		<Thread name ="NavigationSystemBackgroundUpdate"/>
 
 		<!-- [AUDIO] -->
-		<Thread name ="MainAudioThread" Priority="below_normal" StackSize="ignore"/>
+		<Thread name ="AudioMainThread" Priority="below_normal" StackSize="ignore"/>
 
 		<Thread name ="AuxWwiseAudioThread" StackSize="ignore"/>
 		<Thread name ="Wwise_Device" Affinity="5" Priority="ignore" StackSize="ignore"/>
@@ -329,7 +329,7 @@ StackSizeKB:
 		<Thread name ="NetAddressSolver" StackSizeKB="16"/>
 		
 		<!-- [AUDIO] -->		
-		<Thread name ="MainAudioThread" Affinity="ignore" Priority="below_normal" StackSize="ignore"/>
+		<Thread name ="AudioMainThread" Affinity="ignore" Priority="below_normal" StackSize="ignore"/>
 		
 		<Thread name ="AuxWwiseAudioThread" Affinity="ignore" StackSize="ignore"/>
 		<Thread name ="Wwise_Device" Affinity="ignore" Priority="ignore" StackSize="ignore"/>
@@ -438,7 +438,7 @@ StackSizeKB:
 		<Thread name ="NetAddressSolver"/>
 
 		<!-- [AUDIO] -->
-		<Thread name ="MainAudioThread" Affinity="ignore" Priority="below_normal" StackSize="ignore"/>
+		<Thread name ="AudioMainThread" Affinity="ignore" Priority="below_normal" StackSize="ignore"/>
 
 		<Thread name ="AuxWwiseAudioThread" Affinity="ignore" StackSize="ignore"/>
 		<Thread name ="Wwise_Device" Affinity="ignore" Priority="99" StackSize="ignore"/>
@@ -498,7 +498,7 @@ StackSizeKB:
 		<Thread name ="SysCrashTestOnThread"/>
 
 		<!-- [AUDIO] -->
-		<Thread name ="MainAudioThread" Affinity="ignore" Priority="below_normal" StackSize="ignore"/>
+		<Thread name ="AudioMainThread" Affinity="ignore" Priority="below_normal" StackSize="ignore"/>
 
 		<Thread name ="AuxWwiseAudioThread" Affinity="ignore" StackSize="ignore"/>
 		<Thread name ="Wwise_Device" Affinity="ignore" Priority="99" StackSize="ignore"/>

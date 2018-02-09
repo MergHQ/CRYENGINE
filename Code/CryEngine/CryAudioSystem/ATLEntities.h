@@ -117,15 +117,17 @@ public:
 
 	// CryAudio::IListener
 	virtual void SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	// ~CryAudio::IListener
 
 	void                             Update(float const deltaTime);
-	ERequestStatus                   HandleSetTransformation(CObjectTransformation const& transformation);
+	void                             HandleSetTransformation(CObjectTransformation const& transformation);
 	Impl::SObject3DAttributes const& Get3DAttributes() const { return m_attributes; }
 
 	Impl::IListener* m_pImplData;
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
+	void HandleSetName(char const* const szName);
 	CryFixedStringT<MaxObjectNameLength> m_name;
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
