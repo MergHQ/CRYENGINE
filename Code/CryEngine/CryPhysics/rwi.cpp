@@ -185,6 +185,7 @@ struct entity_grid_checker {
 
 		for(; ithunk; pthunk=pgthunks+(ithunk=ithunk_next)) {
       const pe_gridthunk& thunk = *pthunk;
+			coord_block *coords;
       
 			ithunk_next = thunk.inext;
 			ithunk_prev = ithunk;
@@ -265,18 +266,24 @@ struct entity_grid_checker {
 							ipartSubst = -2-pGridEnt->m_id; ipartMask = -1;	nParts = 1;
 						pentList = (CPhysicalEntity*)pGridEnt;
 					}
+					coords = objtypes & ent_use_sync_coords ? pent->m_pSyncCoords : (coord_block*)&pent->m_pos;
 
 					for(i=ipartSubst; i<nParts+(ipartSubst+1-nParts & ipartMask); i++) {
 						if ((pent->m_parts[i].flags & flagsColliderAll)==flagsColliderAll && (pent->m_parts[i].flags & flagsColliderAny)) {
 							if (nParts>1) {
-								bbox.center = (pent->m_parts[i].BBox[0]+pent->m_parts[i].BBox[1])*0.5f;
+								bbox.center = (pent->m_parts[i].BBox[0]+pent->m_parts[i].BBox[1])*0.5f - aray.m_ray.origin;
 								bbox.size = (pent->m_parts[i].BBox[1]-pent->m_parts[i].BBox[0])*0.5f;
-								if (!box_ray_overlap_check(&bbox,&aray.m_ray))
+								ray rayloc; rayloc.origin.zero(); rayloc.dir=aray.m_ray.dir;
+								if (objtypes & ent_use_sync_coords && pent->m_pSyncCoords!=(coord_block*)&pent->m_pos) {
+									QuatT diff = QuatT(pent->m_qrot,pent->m_pos) * QuatT(pent->m_pSyncCoords->q,pent->m_pSyncCoords->pos).GetInverted();
+									rayloc.origin = diff.t;
+									rayloc.dir = diff.q*rayloc.dir;
+								}
+								if (!box_ray_overlap_check(&bbox,&rayloc))
 									continue;
 							}
-							gwd.offset = pent->m_pos + pent->m_qrot*pent->m_parts[i].pos;
-							//(pent->m_qrot*pent->m_parts[i].q).getmatrix(gwd.R);	//Q2M_IVO 
-							gwd.R = Matrix33(pent->m_qrot*pent->m_parts[i].q);
+							gwd.offset = coords->pos + coords->q*pent->m_parts[i].pos;
+							gwd.R = Matrix33(coords->q*pent->m_parts[i].q);
 							gwd.scale = pent->m_parts[i].scale;
 
 							pGeom = PrepGeom(pent->m_parts[i].pPhysGeom->pGeom,iCaller);
