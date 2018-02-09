@@ -1964,11 +1964,13 @@ void CharacterDocument::DrawCharacter(ICharacterInstance* pInstanceBase, const S
 			if (filtered && (strstri(pJointName, m_displayOptions->skeleton.jointFilter) == 0))
 				continue;
 
-			QuatT jointTM = QuatT(m_PhysicalLocation * skeletonPose.GetAbsJointByID(j));
+			const QuatT jointTM = QuatT(m_PhysicalLocation * skeletonPose.GetAbsJointByID(j));
+
 			SDrawTextInfo ti;
 			ti.scale = Vec2(m_displayOptions->skeleton.showJointNamesFontSize);
 			ti.flags = EDrawTextFlags::eDrawText_FixedSize;
-			m_pAuxRenderer->RenderText(jointTM.t, ti, "%s", (va_list)pJointName);
+
+			m_pAuxRenderer->RenderTextQueued(jointTM.t, ti, pJointName);
 		}
 	}
 
