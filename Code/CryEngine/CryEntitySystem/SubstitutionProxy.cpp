@@ -62,14 +62,6 @@ void CEntityComponentSubstitution::ProcessEvent(const SEntityEvent& event)
 	{
 	case ENTITY_EVENT_DONE:
 		Done();
-		break;
-	case ENTITY_EVENT_PHYSICAL_TYPE_CHANGED:
-	case ENTITY_EVENT_ENABLE_PHYSICS:
-		if (m_pEntity->GetPhysicalEntity() == nullptr)
-		{
-			m_pSubstitute = nullptr;
-		}
-		break;
 	}
 }
 
