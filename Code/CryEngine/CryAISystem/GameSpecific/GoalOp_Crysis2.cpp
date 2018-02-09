@@ -1184,7 +1184,7 @@ void COPCrysis2Hide::CreateHideTarget(CPipeUser* pPipeUser, const Vec3& pos, con
 			Vec3 fixedLoc;
 
 			const float radius = pPipeUser->GetPathAgentPassRadius(); // TODO: fix - this should use agent type settings from new navigation system
-			if (gAIEnv.pNavigationSystem->GetClosestMeshLocation(meshID, pos, 2.0f, radius + 0.25f, &fixedLoc, 0))
+			if (gAIEnv.pNavigationSystem->GetClosestMeshLocation(meshID, pos, 2.0f, radius + 0.25f, nullptr, &fixedLoc, nullptr))
 			{
 				hideTarget->SetPos(fixedLoc);
 				hideTarget->SetEntityDir(dir);

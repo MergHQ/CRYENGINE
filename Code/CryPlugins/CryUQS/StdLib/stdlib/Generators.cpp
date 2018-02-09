@@ -129,7 +129,10 @@ namespace UQS
 
 				const AABB aabb(m_params.pivot.value + m_params.localAABBMins.value, m_params.pivot.value + m_params.localAABBMaxs.value);
 				Vec3 triangleCenters[maxTrianglesToLookFor];
-				const size_t numTrianglesFound = pNavigationSystem->GetTriangleCenterLocationsInMesh(meshID, m_params.pivot.value, aabb, triangleCenters, maxTrianglesToLookFor);
+
+				//TODO: Get Navmesh query filter from somewhere
+				INavMeshQueryFilter* pQueryFilter = nullptr;
+				const size_t numTrianglesFound = pNavigationSystem->GetTriangleCenterLocationsInMesh(meshID, m_params.pivot.value, aabb, triangleCenters, maxTrianglesToLookFor, pQueryFilter);
 
 				if (numTrianglesFound > 0)
 				{
@@ -298,8 +301,10 @@ namespace UQS
 			// attempt to project the cell position onto navmesh
 			//
 
+			//TODO: Get Navmesh query filter from somewhere
+			INavMeshQueryFilter* pQueryFilter = nullptr;
 			Vec3 projectdPosOnNavMesh;
-			if (gEnv->pAISystem->GetNavigationSystem()->GetClosestPointInNavigationMesh(m_params.navigationAgentTypeID, cellPos.value, m_params.verticalTolerance, 0.0f, &projectdPosOnNavMesh))
+			if (gEnv->pAISystem->GetNavigationSystem()->GetClosestPointInNavigationMesh(m_params.navigationAgentTypeID, cellPos.value, m_params.verticalTolerance, 0.0f, &projectdPosOnNavMesh, pQueryFilter))
 			{
 				cellPos.value = projectdPosOnNavMesh;
 				m_successfullyProjectedPoints.push_back(cellPos);

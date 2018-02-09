@@ -523,18 +523,18 @@ public:
 	NavigationMesh&       GetMesh(const NavigationMeshID& meshID);
 	NavigationMeshID      GetEnclosingMeshID(NavigationAgentTypeID agentTypeID, const Vec3& location) const override;
 	bool                  IsLocationInMesh(NavigationMeshID meshID, const Vec3& location) const;
-	MNM::TriangleID       GetClosestMeshLocation(NavigationMeshID meshID, const Vec3& location, float vrange, float hrange,
+	MNM::TriangleID       GetClosestMeshLocation(NavigationMeshID meshID, const Vec3& location, float vrange, float hrange, const INavMeshQueryFilter* pFilter,
 	                                             Vec3* meshLocation, float* distance) const;
 
-	virtual bool                             GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, float minIslandArea = 0.f) const override;
+	virtual bool                             GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const override;
 
 	virtual bool                             IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation, const INavMeshQueryFilter* pFilter) const override;
-	virtual bool                             IsLocationValidInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float downRange = 1.0f, float upRange = 1.0f) const override;
+	virtual bool                             IsLocationValidInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter, float downRange = 1.0f, float upRange = 1.0f) const override;
 
-	virtual size_t                           GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, float minIslandArea = 0.f) const override;
+	virtual size_t                           GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const override;
 
 	virtual size_t                           GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBorders, size_t maxBorderCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const override;
-	virtual size_t                           GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t max_count, float minIslandArea = 0.f) const override;
+	virtual size_t                           GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t max_count, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const override;
 	virtual MNM::GlobalIslandID              GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location) override;
 
 	virtual bool                             ReadFromFile(const char* fileName, bool bAfterExporting) override;
@@ -573,9 +573,9 @@ public:
 	void                                     AddOffMeshLinkIslandConnectionsBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID, const MNM::TriangleID endingTriangleID, const MNM::OffMeshLinkID& linkID);
 	void                                     RemoveOffMeshLinkIslandsConnectionBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID, const MNM::TriangleID endingTriangleID, const MNM::OffMeshLinkID& linkID);
 
-	virtual MNM::TileID                      GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location) override;
+	virtual MNM::TileID                      GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location, const INavMeshQueryFilter* pFilter) override;
 	virtual void                             GetTileBoundsForMesh(NavigationMeshID meshID, MNM::TileID tileID, AABB& bounds) const override;
-	virtual MNM::TriangleID                  GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location) override;
+	virtual MNM::TriangleID                  GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter) override;
 	virtual bool                             SnapToNavMesh(const NavigationAgentTypeID agentID, const Vec3& position, const INavMeshQueryFilter* pFilter, const SSnapToNavMeshRulesInfo& snappingRules, Vec3& snappedPosition, MNM::TriangleID* pTriangleId) const override;
 
 

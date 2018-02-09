@@ -5006,7 +5006,7 @@ bool CPuppet::GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjuste
 		return false;
 
 	const Vec3 pushUp(.0f, .0f, .2f);
-	return gAIEnv.pNavigationSystem->IsLocationValidInNavigationMesh(GetNavigationTypeID(), adjustedPosition + pushUp);
+	return gAIEnv.pNavigationSystem->IsLocationValidInNavigationMesh(GetNavigationTypeID(), adjustedPosition + pushUp, nullptr);
 }
 
 //===================================================================
