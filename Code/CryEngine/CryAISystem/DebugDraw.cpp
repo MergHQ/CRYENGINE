@@ -2895,10 +2895,6 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 		}
 	}
 
-	// Display the readibilities.
-	if (gAIEnv.CVars.DrawReadibilities)
-		pAgent->GetProxy()->DebugDraw(2);
-
 	if (gAIEnv.CVars.DrawProbableTarget > 0)
 	{
 		if (pPipeUser)
