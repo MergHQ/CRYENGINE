@@ -619,8 +619,8 @@ pixout SSDO_Sampling_PS(vtxOut IN)
 	screenTC.xy = IN.WPos.xy * cbSSDO.screenSize.zw;	
 	screenTC.zw = IN.WPos.xy * 0.25;
 	
-	float fCenterDepth = GetLinearDepth(SSDOSamp_LinZ, int2(IN.WPos.xy));
-	float2 linearUV = IN.baseTC.xy;
+    float2 linearUV = IN.baseTC.xy;
+    float fCenterDepth = GetLinearDepth(SSDOSamp_LinZ, int2(linearUV * cbSSDO.screenSize.xy));
 
 	float3 vReceiverPos = float3( linearUV.xy * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fCenterDepth * cbSSDO.nearFarClipDist.y;
 	

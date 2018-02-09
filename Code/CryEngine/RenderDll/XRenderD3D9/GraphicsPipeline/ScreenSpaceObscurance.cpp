@@ -95,7 +95,7 @@ void CScreenSpaceObscuranceStage::Execute()
 			
 			auto constants = m_passObscurance.BeginTypedConstantUpdate<ObscuranceConstants>(eConstantBufferShaderSlot_PerBatch, EShaderStage_Pixel);
 
-			constants->screenSize = Vec4((float)CRendererResources__s_ptexSceneSpecular->GetWidth(), (float)CRendererResources__s_ptexSceneSpecular->GetHeight(), 1.0f / (float)CRendererResources__s_ptexSceneSpecular->GetWidth(), 1.0f / (float)CRendererResources__s_ptexSceneSpecular->GetHeight());
+			constants->screenSize = Vec4((float)CRendererResources::s_ptexLinearDepth->GetWidth(), (float)CRendererResources::s_ptexLinearDepth->GetHeight(), 1.0f / (float)CRendererResources__s_ptexSceneSpecular->GetWidth(), 1.0f / (float)CRendererResources__s_ptexSceneSpecular->GetHeight());
 			constants->nearFarClipDist = Vec4(viewInfo[0].nearClipPlane, viewInfo[0].farClipPlane, 0, 0);
 		
 			float radius = CRenderer::CV_r_ssdoRadius / viewInfo[0].farClipPlane;
