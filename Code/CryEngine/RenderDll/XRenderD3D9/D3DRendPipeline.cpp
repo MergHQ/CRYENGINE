@@ -556,7 +556,16 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags)
 
 	if (bAllowPostAA)
 	{
-		GetGraphicsPipeline().GetPostAAStage()->CalculateJitterOffsets(pRenderView);
+		if (GetS3DRend().IsStereoEnabled())
+		{
+			const CTexture* eye = GetS3DRend().GetEyeTarget(StereoEye::LEFT_EYE);
+			if (eye)
+				GetGraphicsPipeline().GetPostAAStage()->CalculateJitterOffsets(eye->GetWidth(), eye->GetHeight(), pRenderView);
+		}
+		else
+		{
+			GetGraphicsPipeline().GetPostAAStage()->CalculateJitterOffsets(pRenderView);
+		}
 	}
 
 	////////////////////////////////////////////////
