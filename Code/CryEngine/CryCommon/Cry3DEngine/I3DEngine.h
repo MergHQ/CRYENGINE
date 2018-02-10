@@ -2903,8 +2903,8 @@ inline void SRenderingPassInfo::SetRenderView(int nThreadID, IRenderView::EViewT
 
 inline void SRenderingPassInfo::SetRenderView(IRenderViewPtr pRenderView)
 {
-	m_pRenderView = pRenderView;
 	SetRenderView(pRenderView.get());
+	m_pRenderView = std::move(pRenderView);
 }
 
 inline void SRenderingPassInfo::SetRenderView(IRenderView* pRenderView)

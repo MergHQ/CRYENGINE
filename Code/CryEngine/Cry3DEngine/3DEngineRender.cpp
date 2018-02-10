@@ -1935,7 +1935,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		{
 			auto &shadowFrustum = pair.first;
 			CRY_ASSERT(shadowFrustum->pOnePassShadowView);
-			shadowFrustum->pOnePassShadowView = nullptr;
+			shadowFrustum->pOnePassShadowView.reset();
 		}
 		const_cast<SRenderingPassInfo&>(passInfo).SetShadowPasses(nullptr);
 	}
@@ -3896,7 +3896,7 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 			light->GetLightProperties(),
 			&nTimeSlicedShadowsUpdatedThisFrame);
 
-		const auto &pShadowsView = GetRenderer()->GetNextAvailableShadowsView((IRenderView*)pMainRenderView, pFr);
+		IRenderViewPtr pShadowsView = GetRenderer()->GetNextAvailableShadowsView((IRenderView*)pMainRenderView, pFr);
 		for (int cubeSide = 0; cubeSide < pFr->GetNumSides() && shadowPassInfo.size() < kMaxShadowPassesNum; ++cubeSide)
 		{
 			if (pFr->ShouldCacheSideHint(cubeSide))
@@ -3919,6 +3919,6 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 		}
 
 		pShadowsView->SwitchUsageMode(IRenderView::eUsageModeWriting);
-		pFr->pOnePassShadowView = pShadowsView;
+		pFr->pOnePassShadowView = std::move(pShadowsView);
 	}
 }

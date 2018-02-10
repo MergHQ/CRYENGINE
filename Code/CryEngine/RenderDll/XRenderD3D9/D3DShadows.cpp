@@ -106,20 +106,22 @@ void CD3D9Renderer::EF_PrepareShadowGenRenderList(const SRenderingPassInfo& pass
 		for (uint32 i = 0; i < nFrustumCount; ++i)
 		{
 			ShadowMapFrustum* pCurFrustum = arrCustomFrustums[i];
+			IRenderViewPtr pShadowView = pCurFrustum->pOnePassShadowView;
+
 			CRY_ASSERT(pCurFrustum && pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_PerObject);
 
 			if (PrepareShadowGenForFrustum(pRenderView, pCurFrustum, pSun, nSunID, 0))
 			{
 				ShadowMapFrustumPtr pFrustumForRenderer = pCurFrustum->Clone();
-				CRenderView* pShadowView = (CRenderView*)pCurFrustum->pOnePassShadowView;
 
 				if (!pShadowView)
 				{
 					// allocate view if was not prepared by 3dengine
 					pShadowView = pCurFrustum->GetNextAvailableShadowsView(pRenderView, pFrustumForRenderer.get());
+					pShadowView->SwitchUsageMode(IRenderView::eUsageModeWriting);
 				}
 
-				pRenderView->AddShadowFrustumToRender(SShadowFrustumToRender(pFrustumForRenderer, pSun, nSunID, pShadowView));
+				pRenderView->AddShadowFrustumToRender(SShadowFrustumToRender(pFrustumForRenderer, pSun, nSunID, std::move(pShadowView)));
 			}
 		}
 	}
@@ -170,21 +172,23 @@ bool CD3D9Renderer::EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRende
 	for (int nCaster = 0; *ppSMFrustumList && nCaster != MAX_GSM_LODS_NUM; ++ppSMFrustumList, ++nCaster)
 	{
 		ShadowMapFrustum* pCurFrustum = (*ppSMFrustumList);
+		IRenderViewPtr pShadowView = pCurFrustum->pOnePassShadowView;
+
 		//use pools
 		pCurFrustum->bUseShadowsPool = CV_r_UseShadowsPool && pLight->m_Flags & DLF_DEFERRED_LIGHT;
 
 		if (PrepareShadowGenForFrustum(pRenderView, pCurFrustum, pLight, nLightID, nCurLOD))
 		{
 			ShadowMapFrustumPtr pFrustumForRenderer = pCurFrustum->Clone();
-			IRenderView* pShadowView = pCurFrustum->pOnePassShadowView;
 
 			if (!pShadowView)
 			{
 				// allocate view if was not prepared by 3dengine
 				pShadowView = pCurFrustum->GetNextAvailableShadowsView(pRenderView, pFrustumForRenderer.get());
+				pShadowView->SwitchUsageMode(IRenderView::eUsageModeWriting);
 			}
 
-			pRenderView->AddShadowFrustumToRender(SShadowFrustumToRender(pFrustumForRenderer, pLight, nLightID, pShadowView));
+			pRenderView->AddShadowFrustumToRender(SShadowFrustumToRender(pFrustumForRenderer, pLight, nLightID, std::move(pShadowView)));
 			nCurLOD++;
 		}
 	}
@@ -275,6 +279,8 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 	if (pCurFrustum->IsCached() && pCurFrustum->nTexSize == 0)
 		return false;
 	if (pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic && pCurFrustum->nOmniFrustumMask.none())
+		return false;
+	if (pRenderView->GetFrustumsToRender().size() > kMaxShadowPassesNum)
 		return false;
 	//////////////////////////////////////////////////////////////////////////
 

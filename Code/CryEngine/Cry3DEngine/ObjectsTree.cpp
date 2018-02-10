@@ -722,6 +722,7 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, const IRender
 	}
 
 	const std::vector<SRenderingPassInfo>* shadowPasses = passInfo.GetShadowPasses();
+	CRY_ASSERT(!shadowPasses || shadowPasses->size() <= kMaxShadowPassesNum);
 
 	// cull all shadows completely if node is too far away form the camera
 	if (!shadowPasses || nodeDistance > nodeMaxViewDistance * GetCVars()->e_ShadowsCastViewDistRatio)
@@ -747,7 +748,7 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, const IRender
 					continue;
 				}
 
-				ShadowMapFrustum* pFr = (*shadowPasses)[n].GetIRenderView()->GetShadowFrustumOwner();
+				ShadowMapFrustum* pFr = shadowPasses->at(n).GetIRenderView()->GetShadowFrustumOwner();
 
 				if (pFr->IsCached() || pFr->m_eFrustumType == ShadowMapFrustum::e_PerObject)
 				{
@@ -772,7 +773,7 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, const IRender
 					{
 						while ((n + 1) < (uint32)shadowPasses->size())
 						{
-							pFr = (*shadowPasses)[n + 1].GetIRenderView()->GetShadowFrustumOwner();
+							pFr = shadowPasses->at(n + 1).GetIRenderView()->GetShadowFrustumOwner();
 
 							if (!pFr->IsDynamicGsmCascade())
 							{
