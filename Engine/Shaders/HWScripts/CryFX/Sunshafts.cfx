@@ -139,15 +139,10 @@ pixout SunShaftsMaskGenPS(vtxOut IN)
 {
     pixout OUT = (pixout) 0;
 
-    int nQuality = GetShaderQuality();
-
-    float2 sampleUV = MapViewportToRaster(IN.baseTC.xy);
-
-    // When using quality <2 we render to a smaller buffer
-    int downScaleMultiplier = nQuality >= 2 ? 1 : 2;
-    half sceneDepth = GetLinearDepth(SSHFTM_LDepth, int2(IN.WPos.xy) * downScaleMultiplier);
+    half sceneDepth = GetLinearDepth(SSHFTM_LDepth, int2(IN.WPos.xy));
     OUT.Color = half4(sceneDepth, sceneDepth, sceneDepth, 1 - sceneDepth.x);
-
+    
+    float2 sampleUV = MapViewportToRaster(IN.baseTC.xy);
     half3 sceneCol = GetTexture2D(SSHFTM_Target, SSHFTM_PCSampler, sampleUV); // comes straight from hdr scaled target
 	
     // cheaper and looks nicer

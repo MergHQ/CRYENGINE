@@ -18,6 +18,7 @@ public:
 
 private:
 	CTexture* GetTempOutputRT();
+	int       GetDownscaledTargetsIndex();
 
 private:
 	CFullscreenPass m_passShaftsMask;
