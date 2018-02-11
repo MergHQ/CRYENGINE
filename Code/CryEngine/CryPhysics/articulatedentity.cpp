@@ -97,8 +97,10 @@ CArticulatedEntity::~CArticulatedEntity()
 
 void CArticulatedEntity::AlertNeighbourhoodND(int mode)
 {
-	if (m_pHost)
+	if (m_pHost) {
+		m_pHost->RemoveCollider(this); --m_pHost->m_nSyncColliders;
 		m_pHost->Release();
+	}
 	m_pHost = 0;
 	CRigidEntity::AlertNeighbourhoodND(mode);
 }
@@ -641,10 +643,12 @@ int CArticulatedEntity::SetParams(pe_params *_params, int bThreadSafe)
 		int bRecalcPos = 0;
 		if (!is_unused(params->pHost)) { 
 			if (m_pHost) {
+				m_pHost->RemoveCollider(this); --m_pHost->m_nSyncColliders;
 				m_pHost->Release(); m_pHost = 0;
 			}
 			if (params->pHost) {
 				(m_pHost = ((CPhysicalPlaceholder*)params->pHost)->GetEntity())->AddRef(); 
+				m_pHost->AddCollider(this); ++m_pHost->m_nSyncColliders;
 				bRecalcPos = 1; 
 			}
 		}
@@ -1112,10 +1116,19 @@ void CArticulatedEntity::UpdateJointDyn()
 }
 
 
+void CArticulatedEntity::OnHostSync(CPhysicalEntity *pHost)
+{
+	if (m_pHost==pHost && m_pSyncCoords!=(coord_block*)&m_pos) {
+		m_pSyncCoords->pos = pHost->m_pSyncCoords->q*m_posHostPivot + pHost->m_pSyncCoords->pos - m_offsPivot;
+		m_pSyncCoords->q = pHost->m_pSyncCoords->q*m_qHostPivot;
+	}
+}
+
 int CArticulatedEntity::SyncWithHost(int bRecalcJoints, float time_interval)
 {
 	if (m_pHost) {
 		if (m_pHost->m_iSimClass==7) {
+			m_pHost->RemoveCollider(this); --m_pHost->m_nSyncColliders;
 			m_pHost->Release(); m_pHost=0; return 0;
 		}
 		int i,ipart;

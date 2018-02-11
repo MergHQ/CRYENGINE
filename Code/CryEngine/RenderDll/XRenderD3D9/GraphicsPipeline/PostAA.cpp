@@ -95,7 +95,7 @@ static const Vec2 vSGSSAA8x8[8] =
 	Vec2(5.0f / 7.0f, 6.0f / 7.0f) - Vec2(0.5f, 0.5f), Vec2(1.0f / 7.0f, 7.0f / 7.0f) - Vec2(0.5f, 0.5f)
 };
 
-void CPostAAStage::CalculateJitterOffsets(CRenderView* pRenderView)
+void CPostAAStage::CalculateJitterOffsets(int renderWidth, int renderHeight, CRenderView* pRenderView)
 {
 	pRenderView->m_vProjMatrixSubPixoffset = Vec2(0.0f, 0.0f);
 
@@ -156,9 +156,6 @@ void CPostAAStage::CalculateJitterOffsets(CRenderView* pRenderView)
 
 		const auto& downscaleFactor = gRenDev->GetRenderQuality().downscaleFactor;
 
-		const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
-		const int32 renderHeight = pRenderView->GetRenderResolution()[1];
-
 		pRenderView->m_vProjMatrixSubPixoffset.x = (vCurrSubSample.x * 2.0f / (float)renderWidth ) / downscaleFactor.x;
 		pRenderView->m_vProjMatrixSubPixoffset.y = (vCurrSubSample.y * 2.0f / (float)renderHeight) / downscaleFactor.y;
 	}
@@ -211,7 +208,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 	// Pass 1: Edge Detection
 	{
-		if (m_passSMAAEdgeDetection.InputChanged(pCurrRT->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
+		if (m_passSMAAEdgeDetection.InputChanged(pCurrRT->GetTextureID(), pZTexture->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
 		{
 			static CCryNameTSCRC techEdgeDetection("LumaEdgeDetectionSMAA");
 			m_passSMAAEdgeDetection.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -240,7 +237,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 
 	// Pass 2: Generate blend weight map
 	{
-		if (m_passSMAABlendWeights.InputChanged(CRenderer::CV_r_AntialiasingModeSCull))
+		if (m_passSMAABlendWeights.InputChanged(pZTexture->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
 		{
 			static CCryNameTSCRC techBlendWeights("BlendWeightSMAA");
 			m_passSMAABlendWeights.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);

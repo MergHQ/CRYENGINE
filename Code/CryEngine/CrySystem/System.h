@@ -444,7 +444,7 @@ public:
 #else
 	virtual ILoadConfigurationEntrySink* GetCVarsWhiteListConfigSink() const override { return NULL; }
 #endif // defined(CVARS_WHITELIST)
-	virtual bool IsCVarWhitelisted(const char* szName, bool silent) const override { return ::IsCVarWhitelisted(szName); }
+	virtual bool IsCVarWhitelisted(const char* szName, bool silent) const override;
 
 	virtual ISystemUserCallback* GetUserCallback() const override { return m_pUserCallback; }
 

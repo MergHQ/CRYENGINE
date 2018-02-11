@@ -15,7 +15,7 @@ REGISTER_ASSET_TYPE(CSharpSourcefileAssetType)
 
 CryIcon CSharpSourcefileAssetType::GetIconInternal() const
 {
-	return CryIcon("icons:csharp/assettype.ico");
+	return CryIcon("icons:csharp/assets_csharp.ico");
 }
 
 string CSharpSourcefileAssetType::GetCleanName(const string& name) const

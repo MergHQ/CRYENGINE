@@ -14,6 +14,8 @@
 
 #define OMNI_SIDES_NUM 6
 
+constexpr uint32 kMaxShadowPassesNum = sizeof(uint32) * CHAR_BIT - 1; // reserve first bit for main view
+
 // data used to compute a custom shadow frustum for near shadows
 struct CustomShadowMapFrustumData
 {
@@ -157,7 +159,7 @@ public:
 	IRenderNode*                    pLightOwner;
 	uint32                          uCastersListCheckSum;
 	int                             nShadowMapLod;                // currently use as GSMLod, can be used as cubemap side, -1 means this variable is not used
-	IRenderView*                    pOnePassShadowView = nullptr; // if one-pass octree traversal is used this view is allocated and filled by 3DEngine
+	IRenderViewPtr                  pOnePassShadowView;           // if one-pass octree traversal is used this view is allocated and filled by 3DEngine
 	uint32                          m_Flags;
 
 	// Render view that is used to accumulate items for this frustum.
@@ -587,11 +589,11 @@ struct SShadowFrustumToRender
 	IRenderViewPtr      pShadowsView;
 
 	SShadowFrustumToRender() : pFrustum(0), pLight(0), nLightID(0) {}
-	SShadowFrustumToRender(ShadowMapFrustum* pFrustum, SRenderLight* pLight, int nLightID, IRenderViewPtr pShadowsView)
-		: pFrustum(pFrustum)
-		, pLight(pLight)
-		, nLightID(nLightID)
-		, pShadowsView(pShadowsView)
+	SShadowFrustumToRender(ShadowMapFrustum* _pFrustum, SRenderLight* _pLight, int _nLightID, IRenderViewPtr _pShadowsView)
+		: pFrustum(_pFrustum)
+		, pLight(_pLight)
+		, nLightID(_nLightID)
+		, pShadowsView(std::move(_pShadowsView))
 	{
 		CRY_ASSERT(pFrustum->pDepthTex == nullptr);
 	}

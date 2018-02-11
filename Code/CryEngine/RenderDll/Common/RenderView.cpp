@@ -818,6 +818,7 @@ CTexture* CRenderView::GetDepthTarget() const
 void CRenderView::AssignRenderOutput(CRenderOutputPtr pRenderOutput)
 {
 	m_pRenderOutput = pRenderOutput;
+	InspectRenderOutput();
 }
 
 void CRenderView::InspectRenderOutput()

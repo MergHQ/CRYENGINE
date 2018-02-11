@@ -27,7 +27,7 @@ void CListenerComponent::Initialize()
 {
 	if (m_pIListener == nullptr)
 	{
-		SetName("Audio Listener");
+		SetName("Listener");
 		CryFixedStringT<CryAudio::MaxObjectNameLength> name;
 		name.Format("audio_listener_%s_%d", m_pEntity->GetName(), static_cast<int>(m_pEntity->GetId()));
 		m_pIListener = gEnv->pAudioSystem->CreateListener(name.c_str());

@@ -116,7 +116,7 @@ void CFogStage::Execute()
 		inputFlag |= bFogDepthTest ? BIT(3) : 0;
 		inputFlag |= bReverseDepth ? BIT(4) : 0;
 
-		if (m_passFog.InputChanged(inputFlag, CRendererResources::s_ptexHDRTarget->GetTextureID(), nSvoGiTexId))
+		if (m_passFog.InputChanged(inputFlag, CRendererResources::s_ptexHDRTarget->GetTextureID(), nSvoGiTexId, RenderView()->GetDepthTarget()->GetTextureID()))
 		{
 			uint64 rtMask = 0;
 			rtMask |= bVolFogShadow ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
@@ -137,6 +137,8 @@ void CFogStage::Execute()
 
 			m_passFog.SetTexture(0, CRendererResources::s_ptexLinearDepth);
 			m_passFog.SetSampler(0, EDefaultSamplerStates::PointClamp);
+
+			m_passFog.SetDepthTarget(RenderView()->GetDepthTarget());
 
 			if (bVolumtricFog)
 			{
@@ -174,8 +176,6 @@ void CFogStage::Execute()
 			// reverse depth operation is needed here because CFullscreenPass's internal reverse operation counteracts projMat's reverse operation.
 			clipZ = bReverseDepth ? (1.0f - clipZ) : clipZ;
 		}
-
-		m_passFog.SetDepthTarget(RenderView()->GetDepthTarget());
 
 		m_passFog.SetRequireWorldPos(true, clipZ); // don't forget if shader reconstructs world position.
 

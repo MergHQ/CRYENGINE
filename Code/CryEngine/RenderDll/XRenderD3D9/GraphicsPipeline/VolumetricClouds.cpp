@@ -824,7 +824,9 @@ void CVolumetricCloudsStage::Execute()
 			inputFlag |= context.renderFogShadow ? BIT(3) : 0;
 #endif
 
-			if (pass.InputChanged(inputFlag, CRenderer::CV_r_VolumetricClouds))
+			CTexture* zTarget = RenderView()->GetDepthTarget();
+
+			if (pass.InputChanged(inputFlag, CRenderer::CV_r_VolumetricClouds, zTarget->GetID()))
 			{
 				uint64 rtMask = 0;
 				rtMask |= context.bScreenSpaceCloudBlocker ? g_HWSR_MaskBit[HWSR_SAMPLE4] : 0;
@@ -842,7 +844,7 @@ void CVolumetricCloudsStage::Execute()
 				pass.SetTechnique(pShader, shaderName, rtMask);
 
 				pass.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
-				pass.SetDepthTarget(RenderView()->GetDepthTarget());
+				pass.SetDepthTarget(zTarget);
 
 				// using GS_BLDST_SRCALPHA because GS_BLDST_ONEMINUSSRCALPHA causes banding artifact when alpha value is very low.
 				pass.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_SRCALPHA);

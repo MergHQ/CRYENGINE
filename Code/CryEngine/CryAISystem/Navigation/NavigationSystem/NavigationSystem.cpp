@@ -2006,14 +2006,12 @@ bool NavigationSystem::IsInUse() const
 	return m_meshes.size() != 0;
 }
 
-MNM::TileID NavigationSystem::GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location)
+MNM::TileID NavigationSystem::GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location, const INavMeshQueryFilter* pFilter)
 {
-	//TODO: Use filter?
-
 	NavigationMesh& mesh = GetMesh(meshID);
 
 	const MNM::real_t range = MNM::real_t(1.0f);
-	MNM::TriangleID triangleID = mesh.navMesh.GetTriangleAt(location, range, range, nullptr);
+	MNM::TriangleID triangleID = mesh.navMesh.GetTriangleAt(location, range, range, pFilter);
 
 	return MNM::ComputeTileID(triangleID);
 }
@@ -2084,16 +2082,14 @@ bool NavigationSystem::IsLocationInMesh(NavigationMeshID meshID, const Vec3& loc
 }
 
 MNM::TriangleID NavigationSystem::GetClosestMeshLocation(NavigationMeshID meshID, const Vec3& location, float vrange,
-                                                         float hrange, Vec3* meshLocation, float* distance) const
+                                                         float hrange, const INavMeshQueryFilter* pFilter, Vec3* meshLocation, float* distance) const
 {
-	//TODO: Use filter?
-	
 	if (meshID && m_meshes.validate(meshID))
 	{
 		MNM::vector3_t loc(MNM::real_t(location.x), MNM::real_t(location.y), MNM::real_t(location.z));
 		const NavigationMesh& mesh = m_meshes[meshID];
 		MNM::real_t verticalRange(vrange);
-		if (const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(loc, verticalRange, verticalRange, nullptr))
+		if (const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(loc, verticalRange, verticalRange, pFilter))
 		{
 			if (meshLocation)
 				*meshLocation = location;
@@ -2108,7 +2104,7 @@ MNM::TriangleID NavigationSystem::GetClosestMeshLocation(NavigationMeshID meshID
 			MNM::real_t distanceFixed;
 			MNM::vector3_t closest;
 
-			if (const MNM::TriangleID closestTriID = mesh.navMesh.GetClosestTriangle(loc, MNM::real_t(vrange), MNM::real_t(hrange), nullptr, &distanceFixed, &closest))
+			if (const MNM::TriangleID closestTriID = mesh.navMesh.GetClosestTriangle(loc, MNM::real_t(vrange), MNM::real_t(hrange), pFilter, &distanceFixed, &closest))
 			{
 				if (meshLocation)
 					*meshLocation = closest.GetVec3();
@@ -2663,10 +2659,8 @@ void NavigationSystem::StopWorldMonitoring()
 	m_worldMonitor.Stop();
 }
 
-bool NavigationSystem::GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, float minIslandArea) const
+bool NavigationSystem::GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, const INavMeshQueryFilter* pFilter, float minIslandArea) const
 {
-	//TODO: use filter
-	
 	const NavigationMeshID meshID = GetEnclosingMeshID(agentID, location);
 	if (meshID && m_meshes.validate(meshID))
 	{
@@ -2675,7 +2669,7 @@ bool NavigationSystem::GetClosestPointInNavigationMesh(const NavigationAgentType
 		MNM::real_t verticalRange(vrange);
 
 		//first check vertical range, because if we are over navmesh, we want that one
-		if (const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(loc, verticalRange, verticalRange, nullptr, minIslandArea))
+		if (const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(loc, verticalRange, verticalRange, pFilter, minIslandArea))
 		{
 			MNM::vector3_t v0, v1, v2;
 			mesh.navMesh.GetVertices(enclosingTriID, v0, v1, v2);
@@ -2685,20 +2679,18 @@ bool NavigationSystem::GetClosestPointInNavigationMesh(const NavigationAgentType
 			{
 				*meshLocation = closest.GetVec3();
 			}
-
 			return true;
 		}
 		else
 		{
 			MNM::vector3_t closest;
 
-			if (const MNM::TriangleID closestTriID = mesh.navMesh.GetClosestTriangle(loc, MNM::real_t(vrange), MNM::real_t(hrange), nullptr, nullptr, &closest, minIslandArea))
+			if (const MNM::TriangleID closestTriID = mesh.navMesh.GetClosestTriangle(loc, MNM::real_t(vrange), MNM::real_t(hrange), pFilter, nullptr, &closest, minIslandArea))
 			{
 				if (meshLocation)
 				{
 					*meshLocation = closest.GetVec3();
 				}
-
 				return true;
 			}
 		}
@@ -2712,11 +2704,13 @@ bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID 
 	const float horizontalRange = 1.0f;
 	const float verticalRange = 1.0f;
 
+	// TODO: should we use filter in GetClosestMeshLocation functions too?
+
 	MNM::GlobalIslandID startingIslandID;
 	const NavigationMeshID startingMeshID = GetEnclosingMeshID(agentID, startLocation);
 	if (startingMeshID)
 	{
-		const MNM::TriangleID triangleID = GetClosestMeshLocation(startingMeshID, startLocation, verticalRange, horizontalRange, NULL, NULL);
+		const MNM::TriangleID triangleID = GetClosestMeshLocation(startingMeshID, startLocation, verticalRange, horizontalRange, nullptr, nullptr, nullptr);
 		const NavigationMesh& mesh = m_meshes[startingMeshID];
 		const MNM::CNavMesh& navMesh = mesh.navMesh;
 		MNM::Tile::STriangle triangle;
@@ -2730,7 +2724,7 @@ bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID 
 	const NavigationMeshID endingMeshID = GetEnclosingMeshID(agentID, endLocation);
 	if (endingMeshID)
 	{
-		const MNM::TriangleID triangleID = GetClosestMeshLocation(endingMeshID, endLocation, verticalRange, horizontalRange, NULL, NULL);
+		const MNM::TriangleID triangleID = GetClosestMeshLocation(endingMeshID, endLocation, verticalRange, horizontalRange, nullptr, nullptr, nullptr);
 		const NavigationMesh& mesh = m_meshes[endingMeshID];
 		const MNM::CNavMesh& navMesh = mesh.navMesh;
 		MNM::Tile::STriangle triangle;
@@ -2748,11 +2742,13 @@ MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const Navigati
 	const float horizontalRange = 1.0f;
 	const float verticalRange = 1.0f;
 
+	// TODO: should we use filter in GetClosestMeshLocation function too?
+
 	MNM::GlobalIslandID startingIslandID;
 	const NavigationMeshID startingMeshID = GetEnclosingMeshID(agentID, location);
 	if (startingMeshID)
 	{
-		const MNM::TriangleID triangleID = GetClosestMeshLocation(startingMeshID, location, verticalRange, horizontalRange, NULL, NULL);
+		const MNM::TriangleID triangleID = GetClosestMeshLocation(startingMeshID, location, verticalRange, horizontalRange, nullptr, nullptr, nullptr);
 		const NavigationMesh& mesh = m_meshes[startingMeshID];
 		const MNM::CNavMesh& navMesh = mesh.navMesh;
 		MNM::Tile::STriangle triangle;
@@ -2765,17 +2761,15 @@ MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const Navigati
 	return startingIslandID;
 }
 
-bool NavigationSystem::IsLocationValidInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float downRange, float upRange) const
+bool NavigationSystem::IsLocationValidInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter, float downRange, float upRange) const
 {
-	//TODO: Use filter?
-	
 	if (const NavigationMeshID meshID = GetEnclosingMeshID(agentID, location))
 	{
 		if (m_meshes.validate(meshID))
 		{
 			MNM::vector3_t loc(MNM::real_t(location.x), MNM::real_t(location.y), MNM::real_t(location.z));
 			const NavigationMesh& mesh = m_meshes[meshID];
-			const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(loc, MNM::real_t(downRange), MNM::real_t(upRange), nullptr);
+			const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(loc, MNM::real_t(downRange), MNM::real_t(upRange), pFilter);
 			return enclosingTriID != 0;
 		}
 	}
@@ -2783,10 +2777,8 @@ bool NavigationSystem::IsLocationValidInNavigationMesh(const NavigationAgentType
 	return false;
 }
 
-MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location)
+MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter)
 {
-	//TODO: Use filter?
-	
 	NavigationMeshID meshId = GetEnclosingMeshID(agentID, location);
 	if (meshId)
 	{
@@ -2807,7 +2799,7 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 		const uint16 zOffsetMultiplier = min(minZOffsetMultiplier, (uint16)agentTypeProperties.settings.agent.height);
 		const MNM::real_t verticalUpwardRange = arePropertiesValid ? MNM::real_t(zOffsetMultiplier * agentTypeProperties.settings.voxelSize.z) : MNM::real_t(.2f);
 
-		return mesh.navMesh.GetTriangleAt(location - paramsGrid.origin, verticalDownwardRange, verticalUpwardRange, nullptr);
+		return mesh.navMesh.GetTriangleAt(location - paramsGrid.origin, verticalDownwardRange, verticalUpwardRange, pFilter);
 	}
 
 	return MNM::TriangleID(0);
@@ -2896,10 +2888,8 @@ const MNM::INavMesh* NavigationSystem::GetMNMNavMesh(NavigationMeshID meshID) co
 	return nullptr;
 }
 
-size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, float minIslandArea) const
+size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, const INavMeshQueryFilter* pFilter, float minIslandArea) const
 {
-	//TODO: Use filter?
-	
 	if (m_meshes.validate(meshID))
 	{
 		const MNM::vector3_t min(MNM::real_t(searchAABB.min.x), MNM::real_t(searchAABB.min.y), MNM::real_t(searchAABB.min.z));
@@ -2908,7 +2898,7 @@ size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID
 		const MNM::aabb_t aabb(min, max);
 		const size_t maxTriangleCount = 4096;
 		MNM::TriangleID triangleIDs[maxTriangleCount];
-		const size_t triangleCount = mesh.navMesh.GetTriangles(aabb, triangleIDs, maxTriangleCount, nullptr, minIslandArea);
+		const size_t triangleCount = mesh.navMesh.GetTriangles(aabb, triangleIDs, maxTriangleCount, pFilter, minIslandArea);
 		MNM::Tile::STriangle triangle;
 
 		if (triangleCount > 0)
@@ -2948,10 +2938,8 @@ size_t NavigationSystem::GetTriangleBorders(const NavigationMeshID meshID, const
 	return mesh.navMesh.GetMeshBorders(mnmAABB, pFilter, pBorders, maxBorderCount, minIslandArea);
 }
 
-size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t max_count, float minIslandArea) const
+size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t max_count, const INavMeshQueryFilter* pFilter, float minIslandArea) const
 {
-	//TODO: Use filter?
-	
 	if (m_meshes.validate(meshID))
 	{
 		const MNM::vector3_t min(MNM::real_t(aabb.min.x), MNM::real_t(aabb.min.y), MNM::real_t(aabb.min.z));
@@ -2960,7 +2948,7 @@ size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AA
 		const MNM::aabb_t aabb(min, max);
 		const size_t maxTriangleCount = 4096;
 		MNM::TriangleID triangleIDs[maxTriangleCount];
-		const size_t triangleCount = mesh.navMesh.GetTriangles(aabb, triangleIDs, maxTriangleCount, nullptr, minIslandArea);
+		const size_t triangleCount = mesh.navMesh.GetTriangles(aabb, triangleIDs, maxTriangleCount, pFilter, minIslandArea);
 		MNM::Tile::STriangle triangle;
 
 		if (triangleCount > 0)
@@ -4639,8 +4627,10 @@ void NavigationSystemDebugDraw::DebugDrawGroundPoint(NavigationSystem& navigatio
 		MNM::real_t(paramsGrid.origin.y), MNM::real_t(paramsGrid.origin.z));
 	const Vec3& startLoc = debugObject.entityPos;
 
+	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
+
 	Vec3 closestPosition;
-	if (navigationSystem.GetClosestMeshLocation(meshID, startLoc, 100.0f, 0.25f, &closestPosition, nullptr))
+	if (navigationSystem.GetClosestMeshLocation(meshID, startLoc, 100.0f, 0.25f, pDebugQueryFilter, &closestPosition, nullptr))
 	{
 		IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);
@@ -5075,7 +5065,7 @@ void NavigationSystemDebugDraw::DebugDrawTriangleOnCursor(NavigationSystem& navi
 	{
 		if (NavigationMeshID meshID = navigationSystem.GetEnclosingMeshID(m_agentTypeID, hit.pt))
 		{
-			if (MNM::TriangleID triangleID = navigationSystem.GetClosestMeshLocation(meshID, hit.pt, 1.0f, 1.0f, nullptr, nullptr))
+			if (MNM::TriangleID triangleID = navigationSystem.GetClosestMeshLocation(meshID, hit.pt, 1.0f, 1.0f, nullptr, nullptr, nullptr))
 			{
 				const MNM::CNavMesh& navMesh = navigationSystem.GetMesh(meshID).navMesh;
 				const MNM::vector3_t tileCoords = navMesh.GetTileContainerCoordinates(MNM::ComputeTileID(triangleID));

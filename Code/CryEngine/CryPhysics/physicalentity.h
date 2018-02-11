@@ -223,6 +223,7 @@ public:
 	virtual float GetMaxFriction() { return 100.0f; }
 	virtual bool IgnoreCollisionsWith(const CPhysicalEntity *pent, int bCheckConstraints=0) const { return false; }
 	virtual void GetSleepSpeedChange(int ipart, Vec3 &v,Vec3 &w) { v.zero(); w.zero(); }
+	virtual void OnHostSync(CPhysicalEntity *pHost) {}
 
 	virtual int AddCollider(CPhysicalEntity *pCollider);
 	virtual int AddColliderNoLock(CPhysicalEntity *pCollider) { return AddCollider(pCollider); }
@@ -349,10 +350,11 @@ public:
 
 	Vec3 m_pos;
 	quaternionf m_qrot;
-	coord_block *m_pNewCoords;
+	coord_block *m_pNewCoords, *m_pSyncCoords;
 
 	CPhysicalEntity **m_pColliders;
 	int m_nColliders,m_nCollidersAlloc;
+	int m_nSyncColliders;
 	mutable volatile int m_lockColliders;
 
 	CPhysicalEntity *m_pOuterEntity;

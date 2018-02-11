@@ -3558,23 +3558,26 @@ void CXConsole::FindVar(const char* substr)
 	{
 		if (CryStringUtils::stristr(cmds[i], substr))
 		{
-			ICVar* pCvar = gEnv->pConsole->GetCVar(cmds[i]);
-			if (pCvar)
+			if (gEnv->pSystem->IsCVarWhitelisted(cmds[i], true))
 			{
-#ifdef _RELEASE
-				if (!gEnv->IsEditor())
+				ICVar* pCvar = gEnv->pConsole->GetCVar(cmds[i]);
+				if (pCvar)
 				{
-					const bool isCheat = (pCvar->GetFlags() & (VF_CHEAT | VF_CHEAT_NOCHECK | VF_CHEAT_ALWAYS_CHECK)) != 0;
-					if (isCheat)
-						continue;
-				}
+#ifdef _RELEASE
+					if (!gEnv->IsEditor())
+					{
+						const bool isCheat = (pCvar->GetFlags() & (VF_CHEAT | VF_CHEAT_NOCHECK | VF_CHEAT_ALWAYS_CHECK)) != 0;
+						if (isCheat)
+							continue;
+					}
 #endif  // _RELEASE
 
-				DisplayVarValue(pCvar);
-			}
-			else
-			{
-				ConsoleLogInputResponse("    $3%s $6(Command)", cmds[i]);
+					DisplayVarValue(pCvar);
+				}
+				else
+				{
+					ConsoleLogInputResponse("    $3%s $6(Command)", cmds[i]);
+				}
 			}
 		}
 	}

@@ -451,7 +451,7 @@ struct pe_params_pos : pe_params
 	pe_params_pos()
 	{
 		type = type_id;
-		MARK_UNUSED pos, scale, q, iSimClass, pGridRefEnt;
+		MARK_UNUSED pos, scale, q, iSimClass, pGridRefEnt, doubleBufCoords;
 		pMtx3x4 = 0;
 		pMtx3x3 = 0;
 		bRecalcBounds = 1;
@@ -466,6 +466,7 @@ struct pe_params_pos : pe_params
 	int         iSimClass;      //!< See the sim_class enum.
 	int         bRecalcBounds;  //!< Tells to recompute the bounding boxes.
 	bool        bEntGridUseOBB; //!< Whether or not to use part OBBs rather than object AABB when registering in the entity grid.
+	bool        doubleBufCoords;//!< Maintain pos and q from the last poststep sync, which can be used in world queries and pe_status_pos
 
 	const IPhysicalEntity* pGridRefEnt;	//!< New grid (set via a reference entity)
 
@@ -1556,7 +1557,7 @@ struct pe_status
 	int type;
 };
 
-enum status_pos_flags { status_local = 1, status_thread_safe = 2, status_addref_geoms = 4 };
+enum status_pos_flags { status_local = 1, status_thread_safe = 2, status_addref_geoms = 4, status_use_sync_coords = 8 };
 
 //! Gets the world-space position of an entity
 //! \par Example
@@ -2817,10 +2818,11 @@ enum entity_query_flags
 	ent_ignore_noncolliding    = 0x10000,
 	ent_sort_by_mass           = 0x20000,  //!< sort by mass in ascending order
 	ent_allocate_list          = 0x40000,  //!< if not set, the function will return an internal pointer
-	ent_addref_results         = 0x100000, //!< will call AddRef on each entity in the list (expecting the caller call Release)
 	ent_water                  = 0x200,    //!< can only be used in RayWorldIntersection
 	ent_no_ondemand_activation = 0x80000,  //!< can only be used in RayWorldIntersection
-	ent_delayed_deformations   = 0x80000   //!< queues procedural breakage requests; can only be used in SimulateExplosion
+	ent_delayed_deformations   = 0x80000,  //!< queues procedural breakage requests; can only be used in SimulateExplosion
+	ent_addref_results         = 0x100000, //!< will call AddRef on each entity in the list (expecting the caller call Release)
+	ent_use_sync_coords        = 0x200000, //<! use entity coords that are sync'ed to the last poststep event pump
 };
 enum phys_locks { PLOCK_WORLD_STEP = 1, PLOCK_QUEUE, PLOCK_TRACE_PENDING_RAYS, PLOCK_AREAS, PLOCK_CALLER0, PLOCK_CALLER1 };
 

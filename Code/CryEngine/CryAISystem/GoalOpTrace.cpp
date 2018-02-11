@@ -410,7 +410,7 @@ bool COPTrace::ExecuteTrace(CPipeUser* pPipeUser, bool bFullUpdate)
 	                             !pPipeUser->m_Path.GetParams().precalculatedPath &&
 	                             !pPipeUser->m_Path.GetParams().inhibitPathRegeneration))
 	{
-		if (gAIEnv.CVars.CrowdControlInPathfind != 0 || gAIEnv.CVars.AdjustPathsAroundDynamicObstacles != 0)
+		if (gAIEnv.CVars.AdjustPathsAroundDynamicObstacles != 0)
 		{
 			RegeneratePath(pPipeUser, &bForceRegeneratePath);
 		}

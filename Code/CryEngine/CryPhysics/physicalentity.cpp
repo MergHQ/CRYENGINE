@@ -73,6 +73,7 @@ CPhysicalEntity::CPhysicalEntity(CPhysicalWorld *pworld, IGeneralMemoryHeap* pHe
 	, m_pColliders(nullptr)
 	, m_nColliders(0)
 	, m_nCollidersAlloc(0)
+	, m_nSyncColliders(0)
 	, m_lockColliders(0)
 	, m_pOuterEntity(nullptr)
 	, m_bProcessed_aux(0)
@@ -110,7 +111,7 @@ CPhysicalEntity::CPhysicalEntity(CPhysicalWorld *pworld, IGeneralMemoryHeap* pHe
 	//CPhysicalEntity
 	m_parts = &m_defpart;
 	m_parts[0].pNewCoords = (coord_block_BBox*)&m_parts[0].pos;
-	m_pNewCoords = (coord_block*)&m_pos;
+	m_pNewCoords = m_pSyncCoords = (coord_block*)&m_pos;
 
 	m_collisionClass.type = m_collisionClass.ignore = 0;
 }
@@ -158,6 +159,7 @@ CPhysicalEntity::~CPhysicalEntity()
 		if (m_pStructure->Lexpl) delete[] m_pStructure->Lexpl;
 		delete m_pStructure; m_pStructure = 0;
 	}
+	if (m_pSyncCoords!=(coord_block*)&m_pos) delete m_pSyncCoords;
 	if(m_pOuterEntity && !m_pWorld->m_bMassDestruction)m_pOuterEntity->Release();
 	if(m_pWorld && !m_pWorld->m_bMassDestruction)assert(!m_nRefCount && !m_nRefCountPOD);
 }
@@ -305,10 +307,25 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 		if (!is_unused(params->pPhysGeomProxy) && params->pPhysGeomProxy && params->pPhysGeomProxy->pGeom)
 			m_pWorld->GetGeomManager()->AddRefGeometry(params->pPhysGeomProxy);
 	}
-	int bRecalcBounds = 0;
 	ChangeRequest<pe_params> req(this,m_pWorld,_params,bThreadSafe);
-	if (req.IsQueued() && !bRecalcBounds)
+	if (req.IsQueued())	{
+		if (_params->type==pe_params_pos::type_id && m_pSyncCoords!=(coord_block*)&m_pos) {
+			pe_params_pos *params = (pe_params_pos*)_params;
+			if (!is_unused(params->pos)) m_pSyncCoords->pos = params->pos;
+			if (!is_unused(params->q)) m_pSyncCoords->q = params->q;
+			Vec3 mcol[3]; int i=0;
+			if (!is_unused(params->pMtx3x3) && params->pMtx3x3) 
+				for(i=0;i<3;i++) mcol[i] = params->pMtx3x3->GetColumn(i);
+			if (!is_unused(params->pMtx3x4) && params->pMtx3x4) {
+				for(i=0;i<3;i++) mcol[i] = params->pMtx3x4->GetColumn(i);
+				m_pSyncCoords->pos = params->pMtx3x4->GetTranslation();
+			}
+			if (i)
+				m_pSyncCoords->q = Quat(fabs(mcol[0].len2()-1)+fabs(mcol[1].len2()-1)+fabs(mcol[2].len2()-1) < 0.01f ? 
+					Matrix33(mcol[0],mcol[1],mcol[2]) : Matrix33(mcol[0].normalized(),mcol[1].normalized(),mcol[2].normalized()));
+		}
 		return 1+(m_bProcessed>>PENT_QUEUED_BIT);
+	}
 
 	if (_params->type==pe_params_pos::type_id) {
 		pe_params_pos *params = (pe_params_pos*)_params;
@@ -371,6 +388,11 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 			m_iSimClass = params->iSimClass;
 			m_pWorld->RepositionEntity(this,2);
 		}
+		if (!is_unused(params->doubleBufCoords) && params->doubleBufCoords!=(m_pSyncCoords!=(coord_block*)&m_pos))
+			if (!params->doubleBufCoords) {
+				delete m_pSyncCoords; m_pSyncCoords = (coord_block*)&m_pos;
+			}	else
+				*(m_pSyncCoords = new coord_block) = { m_pos,m_qrot };
 
 		if (!is_unused(params->scale)) {
 			if (params->bRecalcBounds) {
@@ -415,6 +437,7 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 
 			{ WriteLock lock(m_lockUpdate);
 				m_pos=m_pNewCoords->pos = cnew.pos; m_qrot=m_pNewCoords->q = cnew.q;
+				m_pSyncCoords->pos = cnew.pos; m_pSyncCoords->q = cnew.q;
 				if (!is_unused(params->scale)) for(i=0;i<m_nParts;i++) {
 					float dscale = params->scale/m_parts[i].scale;
 					m_parts[i].mass *= cube(dscale);
@@ -888,6 +911,17 @@ int CPhysicalEntity::GetParams(pe_params *_params) const
 		return 1;
 	}
 
+	if (_params->type==pe_params_pos::type_id) {
+		pe_params_pos *params = (pe_params_pos*)_params;
+		params->pos = m_pos;
+		params->q = m_qrot;
+		params->scale = 1;
+		params->iSimClass = m_iSimClass;
+		params->pGridRefEnt = m_pWorld->GetGrid(this);
+		params->doubleBufCoords = m_pSyncCoords!=(coord_block*)&m_pos;
+		return 1;
+	}
+
 	if (_params->type==pe_params_part::type_id) {
 		pe_params_part *params = (pe_params_part*)_params;
 		ReadLockCond lock(m_lockUpdate,m_pWorld->m_vars.bLogStructureChanges);
@@ -1063,6 +1097,15 @@ int CPhysicalEntity::GetStatus(pe_status *_status) const
 			status->BBox[1] = m_parts[i].BBox[1]-respos;
 		}	else
 			return 0;
+
+		if (status->flags & status_use_sync_coords && m_pSyncCoords!=(coord_block*)&m_pos && (i<0 || !(status->flags & status_local))) {
+			QuatT diff = QuatT(m_pSyncCoords->q,m_pSyncCoords->pos) * QuatT(m_qrot,m_pos).GetInverted();
+			respos = diff*respos;
+			resq = diff.q*resq;
+			Vec3 center = diff*(status->BBox[0]+status->BBox[1])*0.5f;
+			Vec3 sz = Matrix33(diff.q).Fabs()*(status->BBox[1]-status->BBox[0])*0.5f;
+			status->BBox[0] = center-sz; status->BBox[1] = center+sz;
+		}
 
 		if (!is_unused(status->pGridRefEnt)) {
 			if (status->pGridRefEnt && m_pWorld->GetGrid(this)!=m_pWorld->GetGrid(status->pGridRefEnt) && (i<0 || !(status->flags & status_local)))

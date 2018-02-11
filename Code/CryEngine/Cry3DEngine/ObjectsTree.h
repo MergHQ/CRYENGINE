@@ -14,7 +14,6 @@
 
 constexpr uint32 kPassCullMainBitId = 0;
 constexpr uint32 kPassCullMainMask = BIT(kPassCullMainBitId);
-constexpr uint32 kMaxShadowPassesNum = sizeof(uint32) * CHAR_BIT - 1; // reserve first bit for main view
 
 enum ELoadObjectsMode { LOM_LOAD_ALL, LOM_LOAD_ONLY_NON_STREAMABLE, LOM_LOAD_ONLY_STREAMABLE };
 

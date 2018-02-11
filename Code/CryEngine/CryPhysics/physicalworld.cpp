@@ -1917,7 +1917,13 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 						CPhysicalPlaceholder *pGridEnt = m_gthunks[ithunk].pent;
 						int bContact;
 						{ ReadLock lock1(pGridEnt->m_lockUpdate);
-							bContact = AABB_overlap(ptmin,ptmax,pGridEnt->m_BBox[0],pGridEnt->m_BBox[1]);
+							if (objtypes & ent_use_sync_coords && pGridEnt->m_iSimClass && ((CPhysicalEntity*)pGridEnt)->m_pSyncCoords!=(coord_block*)&((CPhysicalEntity*)pGridEnt)->m_pos) {
+								CPhysicalEntity *pent = (CPhysicalEntity*)pGridEnt;
+								QuatT diff = QuatT(pent->m_pSyncCoords->q,pent->m_pSyncCoords->pos) * QuatT(pent->m_pos,pent->m_qrot);
+								Vec3 center = diff*((pent->m_BBox[0]+pent->m_BBox[1])*0.5f), size = Matrix33(diff.q).Fabs()*((pent->m_BBox[1]-pent->m_BBox[0])*0.5f);
+								bContact = AABB_overlap(ptmin,ptmax, center-size,center+size);
+							}	else
+								bContact = AABB_overlap(ptmin,ptmax,pGridEnt->m_BBox[0],pGridEnt->m_BBox[1]);
 						}
 
 						if (bContact) {
@@ -3123,7 +3129,19 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder *pobj, int flags, Vec3
 
 	if (flags&1 && pgrid->cells) {
 		i = -iszero((INT_PTR)BBox);
-		Vec3 *pBBox = (Vec3*)((INT_PTR)pobj->m_BBox & (INT_PTR)i | (INT_PTR)BBox & ~(INT_PTR)i);
+		Vec3 *pBBox = (Vec3*)((INT_PTR)pobj->m_BBox & (INT_PTR)i | (INT_PTR)BBox & ~(INT_PTR)i), BBoxSync[2];
+		if (pobj->m_iSimClass && BBox && BBox!=pobj->m_BBox && ((CPhysicalEntity*)pobj)->m_pSyncCoords!=(coord_block*)&((CPhysicalEntity*)pobj)->m_pos) {
+			CPhysicalEntity *pent = (CPhysicalEntity*)pobj;
+			QuatT diff = QuatT(pent->m_pSyncCoords->q,pent->m_pSyncCoords->pos) * QuatT(pent->m_pNewCoords->q,pent->m_pNewCoords->pos).GetInverted();
+			Vec3 size = (BBox[1]-BBox[0])*0.5f;
+			if ((pent->m_pSyncCoords->pos-pent->m_pNewCoords->pos).len2() < size.len2()*4) {
+				Vec3 center = diff*((BBox[0]+BBox[1])*0.5f);
+				size = Matrix33(diff.q).Fabs()*size;
+				BBoxSync[0] = min(BBox[0],center-size); 
+				BBoxSync[1] = max(BBox[1],center+size); 
+				pBBox = BBoxSync;
+			}
+		}
 		Vec3 gBBox[2]; pgrid->BBoxToGrid(pBBox[0],pBBox[1], gBBox);
 		for(i=0;i<2;i++) {
 			float x = gBBox[i].x*pgrid->stepr.x;
@@ -4421,8 +4439,9 @@ float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLock
 					(pents[i]->m_parts[j].flags & pp.geomFlagsAny) &&
 					((pents[i]->m_parts[j].BBox[1]-pents[i]->m_parts[j].BBox[0]).len2()==0 || AABB_overlap(pents[i]->m_parts[j].BBox,BBox)))
 			{
-				gwd[1].offset = pents[i]->m_pos + pents[i]->m_qrot*pents[i]->m_parts[j].pos;
-				gwd[1].R = Matrix33(pents[i]->m_qrot*pents[i]->m_parts[j].q);
+				coord_block *coords = pp.entTypes & ent_use_sync_coords ? pents[i]->m_pSyncCoords : (coord_block*)&pents[i]->m_pos;
+				gwd[1].offset = coords->pos + coords->q*pents[i]->m_parts[j].pos;
+				gwd[1].R = Matrix33(coords->q*pents[i]->m_parts[j].q);
 				gwd[1].scale = pents[i]->m_parts[j].scale;
 				if (ncont = pgeom->Intersect(pents[i]->m_parts[j].pPhysGeom->pGeom,gwd,gwd+1,&ip,pcontacts)) {
 					for(int ic=0;ic<ncont;ic++) {
@@ -4862,6 +4881,11 @@ void CPhysicalWorld::PumpLoggedEvents()
 								((CPhysicalPlaceholder*)pepps->pEntity)->m_bProcessed & PENT_SETPOSED ||
 								((CPhysicalEntity*)pepps->pEntity)->m_iDeletionTime)
 					continue;
+				CPhysicalEntity *pent = (CPhysicalEntity*)pepps->pEntity;
+				pent->m_pSyncCoords->pos = pent->m_pos;
+				pent->m_pSyncCoords->q = pent->m_qrot;
+				if (pent->m_nSyncColliders)	for(int i=0;i<pent->m_nColliders;i++)
+					pent->m_pColliders[i]->OnHostSync(pent);
 			}
 			int bRWIorPWI = iszero(pEvent->idval-EventPhysRWIResult::id)+iszero(pEvent->idval-EventPhysPWIResult::id);
 			if (bRWIorPWI && ((EventPhysRWIResult*)pEvent)->OnEvent)

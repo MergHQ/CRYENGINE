@@ -285,14 +285,6 @@ void SShadowRenderer::RenderFrustumsToView(CRenderView* pRenderView)
 
 	auto& frustumsToRender = pRenderView->GetFrustumsToRender();
 
-	for (SShadowFrustumToRender& rFrustumToRender : frustumsToRender)
-	{
-		if (rFrustumToRender.pFrustum->pOnePassShadowView)
-			continue; // already processed in 3dengine
-
-		rFrustumToRender.pShadowsView->SwitchUsageMode(IRenderView::eUsageModeWriting);
-	}
-
 	// First do a pass and submit to rendering with job enabled casters
 	// This will create multithreaded job for each rendering pass
 	for (SShadowFrustumToRender& rFrustumToRender : frustumsToRender)
