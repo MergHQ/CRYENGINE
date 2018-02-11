@@ -123,15 +123,8 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView)
 	//////////////////////////////////////////////////////////////////////////
 	// Set Depth Z Render Target
 	//////////////////////////////////////////////////////////////////////////
-	if (m_bUseTempDepthBuffer)
-	{
-		m_pTempDepthTexture = gcpRendD3D->FX_GetDepthSurface(m_OutputWidth, m_OutputHeight, true);
-		CRY_ASSERT(m_pTempDepthTexture);
-
-		m_pDepthTarget = m_pTempDepthTexture->texture.pTexture;
-		m_pDepthTarget->Lock();
-		m_pDepthTarget->m_nUpdateFrameID = gRenDev->GetRenderFrameID();
-	}
+	if (m_pTempDepthTexture && m_pTempDepthTexture->texture.pTexture)
+		m_pTempDepthTexture->texture.pTexture->Lock();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Clear render targets on demand.
@@ -186,14 +179,8 @@ void CRenderOutput::EndRendering(CRenderView* pRenderView)
 {
 	CRY_ASSERT(gcpRendD3D->m_pRT->IsRenderThread());
 
-	if (m_pTempDepthTexture)
-	{
-		if (m_pTempDepthTexture->texture.pTexture)
-		{
-			m_pTempDepthTexture->texture.pTexture->Unlock();
-		}
-		m_pTempDepthTexture = nullptr;
-	}
+	if (m_pTempDepthTexture && m_pTempDepthTexture->texture.pTexture)
+		m_pTempDepthTexture->texture.pTexture->Unlock();
 
 	if (pRenderView)
 	{
@@ -205,6 +192,8 @@ void CRenderOutput::EndRendering(CRenderView* pRenderView)
 	{
 		m_pDisplayContext->EndRendering();
 	}
+
+	m_hasBeenCleared = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -293,7 +282,7 @@ void CRenderOutput::ChangeOutputResolution(int outputWidth, int outputHeight)
 
 	// TODO: make color and/or depth|stencil optional (currently it's enforced to have all of them)
 	CRY_ASSERT(m_pColorTarget && CTexture::IsTextureExist(m_pColorTarget) || m_bUseEyeColorBuffer);
-	CRY_ASSERT(m_pDepthTarget && CTexture::IsTextureExist(m_pDepthTarget) || m_bUseTempDepthBuffer);
+	CRY_ASSERT(m_pDepthTarget && CTexture::IsTextureExist(m_pDepthTarget));
 }
 
 Vec2i CRenderOutput::GetDisplayResolution() const
@@ -322,9 +311,16 @@ void CRenderOutput::AllocateColorTarget()
 //////////////////////////////////////////////////////////////////////////
 void CRenderOutput::AllocateDepthTarget()
 {
-	m_pDepthTarget = nullptr;
 	if (m_bUseTempDepthBuffer)
+	{
+		// Generate temp surface
+		m_pTempDepthTexture = CRendererResources::GetTempDepthSurface(gRenDev->GetFrameID(), m_OutputWidth, m_OutputHeight);
+		CRY_ASSERT(m_pTempDepthTexture);
+
+		m_pDepthTarget = m_pTempDepthTexture->texture.pTexture;
+
 		return;
+	}
 
 	const ETEX_Format eZFormat =
 		gRenDev->GetDepthBpp() == 32 ? eTF_D32FS8 :
