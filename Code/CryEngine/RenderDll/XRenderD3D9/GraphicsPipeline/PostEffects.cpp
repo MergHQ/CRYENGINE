@@ -48,6 +48,13 @@ void CPostEffectContext::Setup(CPostEffectsMgr* pPostEffectsMgr)
 		m_shaderRTMask |= (quality | quality1);
 		break;
 	}
+
+	m_bUseAltBackBuffer = false;
+}
+
+void CPostEffectContext::EnableAltBackBuffer(bool enable)
+{
+	m_bUseAltBackBuffer = enable;
 }
 
 uint64 CPostEffectContext::GetShaderRTMask() const
@@ -62,6 +69,8 @@ CTexture* CPostEffectContext::GetSrcBackBufferTexture() const
 
 CTexture* CPostEffectContext::GetDstBackBufferTexture() const
 {
+	if (m_bUseAltBackBuffer)
+		return CRendererResources::s_ptexSceneDiffuse;
 	return GetRenderView()->GetColorTarget();
 }
 
@@ -202,8 +211,7 @@ bool CPostEffectStage::Execute()
 	m_context.Setup(pPostMgr);
 	m_context.SetRenderView(RenderView());
 
-	const auto tempRT = CRendererResources::s_ptexSceneDiffuse;
-	bool usingTempRTs = true;
+	m_context.EnableAltBackBuffer(true);
 
 	for (CPostEffectItor pItor = pPostMgr->GetEffects().begin(), pItorEnd = pPostMgr->GetEffects().end(); pItor != pItorEnd; ++pItor)
 	{
@@ -233,13 +241,13 @@ bool CPostEffectStage::Execute()
 			const auto id = pCurrEffect->GetID();
 
 			if (id >= EPostEffectID::PostAA)
-				usingTempRTs = false;
+				m_context.EnableAltBackBuffer(false);
 
 			uint32 nRenderFlags = pCurrEffect->GetRenderFlags();
 			if (nRenderFlags & PSP_UPDATE_BACKBUFFER)
 			{
 				CTexture* pDstTex = m_context.GetSrcBackBufferTexture();
-				CTexture* pSrcTex = usingTempRTs ? m_context.GetDstBackBufferTexture() : tempRT;
+				CTexture* pSrcTex = m_context.GetDstBackBufferTexture();
 
 				m_passCopyScreenToTex.Execute(pSrcTex, pDstTex);
 			}
@@ -1366,12 +1374,8 @@ void CHudSilhouettesPass::ExecuteDeferredSilhouettesOptimised(const CPostEffectC
 		// Down Sample
 		m_passStrechRect.Execute(CRendererResources::s_ptexSceneNormalsMap, CRendererResources::s_ptexBackBufferScaled[0]);
 
-		CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
 		auto& pass = m_passDeferredSilhouettesOptimised;
-
 		CTexture* pDstTex = context.GetDstBackBufferTexture();
-
 		if (pass.InputChanged(pDstTex->GetID(), CRendererResources::s_ptexBackBufferScaled[0]->GetID()))
 		{
 			static CCryNameTSCRC techName("DeferredSilhouettesOptimised");
