@@ -252,32 +252,33 @@ void CRenderOutput::ChangeOutputResolution(int outputWidth, int outputHeight)
 
 	// Custom resolution local targets are only allowed when a display-context is used.
 	// Otherwise color- and depth-target(s) need to be supplied by the constructor above.
-	if (CRenderDisplayContext* pDisplayContext = m_pDisplayContext)
+	if (m_outputType == EOutputType::DisplayContext)
 	{
-		Vec2i displayResolution = pDisplayContext->GetDisplayResolution();
-
-		if (outputWidth  == displayResolution[0] &&
-			outputHeight == displayResolution[1])
+		if (CRenderDisplayContext* pDisplayContext = m_pDisplayContext)
 		{
-			m_pDepthTarget = pDisplayContext->GetStorableDepthOutput();
-			m_pColorTarget = pDisplayContext->GetStorableColorOutput();
-		}
-		else
-		{
-			if (!m_pColorTarget || !CTexture::IsTextureExist(m_pColorTarget) ||
-				m_OutputWidth  != m_pColorTarget->GetWidth() ||
-				m_OutputHeight != m_pColorTarget->GetHeight())
-			{
-				AllocateColorTarget();
-			}
+			Vec2i displayResolution = pDisplayContext->GetDisplayResolution();
 
-			if (!m_pDepthTarget || !CTexture::IsTextureExist(m_pDepthTarget) ||
-				m_OutputWidth  != m_pDepthTarget->GetWidth() ||
-				m_OutputHeight != m_pDepthTarget->GetHeight())
+			if (outputWidth == displayResolution[0] &&
+				outputHeight == displayResolution[1])
 			{
-				AllocateDepthTarget();
+				m_pDepthTarget = pDisplayContext->GetStorableDepthOutput();
+				m_pColorTarget = pDisplayContext->GetStorableColorOutput();
 			}
 		}
+	}
+
+	if (!m_pColorTarget || !CTexture::IsTextureExist(m_pColorTarget) ||
+		m_OutputWidth != m_pColorTarget->GetWidth() ||
+		m_OutputHeight != m_pColorTarget->GetHeight())
+	{
+		AllocateColorTarget();
+	}
+
+	if (!m_pDepthTarget || !CTexture::IsTextureExist(m_pDepthTarget) ||
+		m_OutputWidth != m_pDepthTarget->GetWidth() ||
+		m_OutputHeight != m_pDepthTarget->GetHeight())
+	{
+		AllocateDepthTarget();
 	}
 
 	// TODO: make color and/or depth|stencil optional (currently it's enforced to have all of them)
