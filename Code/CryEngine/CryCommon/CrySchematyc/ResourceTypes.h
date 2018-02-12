@@ -217,6 +217,18 @@ inline void ReflectType(CTypeDesc<EntityClassName>& desc)
 	desc.SetDescription("Entity class name");
 }
 
+// WORKAROUND: Can't register the same ResourceSelector (EntityClassName) for both Schematyc versions.
+// Remove this in favor of EntityClassName when we finally have just one Schematyc.
+typedef SerializationUtils::SResourceNameSelector<&Serialization::EntityClass<string>> EntityClass;
+
+inline void ReflectType(CTypeDesc<EntityClass>&desc)
+{
+	desc.SetGUID("BAD6BD36-AC7D-428B-8A27-34EB064E2C29"_cry_guid);
+	desc.SetLabel("EntityClass");
+	desc.SetDescription("Entity class name");
+}
+// ~WORKAROUND
+
 typedef SerializationUtils::SResourceNameSerializer<&Serialization::MannequinAnimationDatabasePath> MannequinAnimationDatabasePath;
 
 inline void ReflectType(CTypeDesc<MannequinAnimationDatabasePath>& desc)

@@ -51,7 +51,11 @@ namespace Cry
 			void RemoveIgnoreConstraint();
 
 		protected:
-			Schematyc::EntityClassName m_className;
+			// WORKAROUND: Can't register the same ResourceSelector (EntityClassName) for both Schematyc versions.
+			// Change this to EntityClassName when we finally have just one Schematyc.
+			Schematyc::EntityClass m_className;
+			// ~WORKAROUND
+
 			bool m_bLinkTransformation = false;
 			bool m_bIgnoreContactsWithChild = true;
 			

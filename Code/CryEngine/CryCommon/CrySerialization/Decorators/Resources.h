@@ -52,6 +52,10 @@ template<class T> ResourceSelector<T> ActionMapName(T& s)                 { retu
 template<class T> ResourceSelector<T> ActionMapActionName(T& s)           { return ResourceSelector<T>(s, "ActionMapActionName"); }
 template<class T> ResourceSelector<T> SurfaceTypeName(T& s)               { return ResourceSelector<T>(s, "SurfaceTypeName"); }
 template<class T> ResourceSelector<T> EntityClassName(T& s)               { return ResourceSelector<T>(s, "EntityClassName"); }
+// WORKAROUND: Can't register the same ResourceSelector (EntityClassName) for both Schematyc versions.
+// Remove this in favor of EntityClassName when we finally have just one Schematyc.
+template<class T> ResourceSelector<T> EntityClass(T& s)                  { return ResourceSelector<T>(s, "EntityClass"); }
+// ~WORKAROUND
 
 inline Serialization::ResourceFilePath GeomPath(string& value)                          { return Serialization::ResourceFilePath(value, "Geometry (cgf, cga)|*.cgf;*.cga"); }
 inline Serialization::ResourceFilePath SkinName(string& value)                          { return Serialization::ResourceFilePath(value, "Attachment Geometry (skin)|*.skin"); }
