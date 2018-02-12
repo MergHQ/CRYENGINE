@@ -10,7 +10,7 @@
 #include "ConnectionsModel.h"
 
 #include <IEditorImpl.h>
-#include <ImplItem.h>
+#include <IImplItem.h>
 #include <IEditor.h>
 #include <QtUtil.h>
 #include <Controls/QuestionDialog.h>
@@ -140,7 +140,7 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 
 	if (selectionCount > 0)
 	{
-		QMenu* const pContextMenu = new QMenu(this);
+		auto const pContextMenu = new QMenu(this);
 
 		char const* actionName = "Remove Connection";
 
@@ -155,10 +155,10 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 		{
 			if (g_pEditorImpl != nullptr)
 			{
-				CID const itemId = selection[0].data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt();
-				CImplItem const* const pImplControl = g_pEditorImpl->GetControl(itemId);
+				CID const itemId = static_cast<CID>(selection[0].data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt());
+				IImplItem const* const pImplItem = g_pEditorImpl->GetImplItem(itemId);
 
-				if ((pImplControl != nullptr) && !pImplControl->IsPlaceholder())
+				if ((pImplItem != nullptr) && !pImplItem->IsPlaceholder())
 				{
 					pContextMenu->addSeparator();
 					pContextMenu->addAction(tr("Select in Middleware Data"), [=]()
@@ -217,16 +217,16 @@ void CConnectionsWidget::RemoveSelectedConnection()
 			{
 				if (g_pEditorImpl != nullptr)
 				{
-					std::vector<CImplItem*> implItems;
+					std::vector<IImplItem*> implItems;
 					implItems.reserve(selectedIndexes.size());
 
 					for (QModelIndex const& index : selectedIndexes)
 					{
-						CID const id = index.data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt();
-						implItems.emplace_back(g_pEditorImpl->GetControl(id));
+						CID const id = static_cast<CID>(index.data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt());
+						implItems.emplace_back(g_pEditorImpl->GetImplItem(id));
 					}
 
-					for (CImplItem* const pImplItem : implItems)
+					for (IImplItem* const pImplItem : implItems)
 					{
 						if (pImplItem != nullptr)
 						{
@@ -242,14 +242,14 @@ void CConnectionsWidget::RemoveSelectedConnection()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionsWidget::SetControl(CSystemControl* const pControl)
+void CConnectionsWidget::SetControl(CSystemControl* const pControl, bool const restoreSelection)
 {
 	if (m_pControl != pControl)
 	{
 		m_pControl = pControl;
 		Reload();
 
-		if (m_pControl != nullptr)
+		if ((m_pControl != nullptr) && restoreSelection)
 		{
 			auto const& selectedConnections = m_pControl->GetSelectedConnections();
 

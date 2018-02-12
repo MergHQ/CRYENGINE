@@ -54,7 +54,7 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 #else
 	, m_allowConfine(true)
 #endif // !defined(_RELEASE)
-	, m_shouldUseSystemCursor(gEnv->IsEditor())
+	, m_shouldUseSystemCursor(false)
 	, m_usingSystemCursor(true)
 	, m_confinedWnd(nullptr)
 #if CRY_PLATFORM_WINDOWS
@@ -64,6 +64,19 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 {
 #if CRY_PLATFORM_WINDOWS
 	atexit(ReleaseCursor);
+
+	if (gEnv->IsEditor())
+	{
+		m_shouldUseSystemCursor = true;
+	}
+	else if (gEnv->pConsole)
+	{
+		ICVar* pUseSystemCursorCVar = gEnv->pConsole->GetCVar("r_MouseUseSystemCursor");
+		if (pUseSystemCursorCVar)
+		{
+			m_shouldUseSystemCursor = pUseSystemCursorCVar->GetIVal() != 0;
+		}
+	}
 #endif
 
 	if (gEnv->pConsole)

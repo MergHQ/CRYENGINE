@@ -15,8 +15,10 @@ namespace
 enum
 {
 	eMAX_THREADS_TO_PROFILE = 64,
-	eNUM_RECORDS_PER_POOL   = 4680,   // so, eNUM_RECORDS_PER_POOL * sizeof(CBootProfilerRecord) == mem consumed by pool item
-	// poolmem ~= 1Mb for 1 pool per thread
+	eNUM_RECORDS_PER_POOL   = 6553,      // so, eNUM_RECORDS_PER_POOL * sizeof(CBootProfilerRecord) + sizeof(CMemoryPoolBucket) + alignmentPadding
+	// poolmem ~= 512 Kb for 1 pool bucket per thread
+
+	eSTRINGS_MEM_PER_POOL  = 64 * 1024   // actual available memory is a bit less due to header and padding
 };
 
 class CBootProfilerThreadsInterface
@@ -116,9 +118,9 @@ public:
 
 	unsigned int          m_threadIndex;
 	EProfileDescription   m_type;
-	string                m_args;
 
 	const char*           m_label;
+	const char*           m_args;
 	LARGE_INTEGER         m_startTimeStamp;
 	LARGE_INTEGER         m_stopTimeStamp;
 
@@ -131,19 +133,18 @@ public:
 
 
 	ILINE CBootProfilerRecord(const char* label, LARGE_INTEGER timestamp, unsigned int threadIndex, const char* args, CBootProfilerSession* pSession,EProfileDescription type)
-		:	m_label(label)
+		: m_threadIndex(threadIndex)
+		, m_type(type)
+		, m_label(label)
+		, m_args(args)
 		, m_startTimeStamp(timestamp)
-		, m_threadIndex(threadIndex)
 		, m_pParent(nullptr)
 		, m_pFirstChild(nullptr)
 		, m_pLastChild(nullptr)
 		, m_pNextSibling(nullptr)
 		, m_pSession(pSession)
-		, m_type(type)
 	{
 		memset(&m_stopTimeStamp, 0, sizeof(m_stopTimeStamp));
-		if (args)
-			m_args = args;
 	}
 
 	void AddChild(CBootProfilerRecord* pRecord)
@@ -185,17 +186,19 @@ public:
 			label.replace("\"", "&quot;");
 			label.replace("'", "&apos;");
 
-			if (m_args.size() > 0)
+			stack_string args;
+			if (m_args)
 			{
-				m_args.replace("&", "&amp;");
-				m_args.replace("<", "&lt;");
-				m_args.replace(">", "&gt;");
-				m_args.replace("\"", "&quot;");
-				m_args.replace("'", "&apos;");
+				args = m_args;
+				args.replace("&", "&amp;");
+				args.replace("<", "&lt;");
+				args.replace(">", "&gt;");
+				args.replace("\"", "&quot;");
+				args.replace("'", "&apos;");
 			}
 
 			cry_sprintf(buf, buf_size, "%s<block name=\"%s\" totalTimeMS=\"%f\" startTime=\"%" PRIu64 "\" stopTime=\"%" PRIu64 "\" args=\"%s\"> \n",
-			            tabs.c_str(), label.c_str(), time, m_startTimeStamp.QuadPart, m_stopTimeStamp.QuadPart, m_args.c_str());
+			            tabs.c_str(), label.c_str(), time, m_startTimeStamp.QuadPart, m_stopTimeStamp.QuadPart, args.c_str());
 			fprintf(file, "%s", buf);
 		}
 
@@ -211,27 +214,43 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-class CRecordPool
+class CMemoryPoolBucket
 {
 public:
-	CRecordPool() : m_baseAddr(nullptr), m_allocCounter(0), m_next(nullptr)
+	enum : size_t { eAlignment = 16 };
+	static constexpr size_t GetHeaderSize()
 	{
-		m_baseAddr = (CBootProfilerRecord*)CryModuleMemalign(eNUM_RECORDS_PER_POOL * sizeof(CBootProfilerRecord), 16);
+		return (sizeof(CMemoryPoolBucket) + (eAlignment - 1)) & ~(eAlignment - 1);
+	}
+	static constexpr size_t GetHeaderSizeWithAllocPadding()
+	{
+		// CryModuleMemalign internally pads allocation with alignment size
+		return GetHeaderSize() + eAlignment;
 	}
 
-	~CRecordPool()
+	static CMemoryPoolBucket* Create(size_t maxBucketSize)
 	{
-		CryModuleMemalignFree(m_baseAddr);
-		delete m_next;
+		// allocate both CMemoryPoolBucket and memory for pool data in single allocation
+		const size_t headerSize = GetHeaderSize();
+		const size_t fullSize = headerSize + maxBucketSize;
+
+		void* p = CryModuleMemalign(fullSize, eAlignment);
+		void* pBase = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(p) + headerSize);
+		return new(p) CMemoryPoolBucket(pBase);
 	}
 
-	ILINE CBootProfilerRecord* allocateRecord()
+	static void Destroy(CMemoryPoolBucket* pBucket)
 	{
-		if (m_allocCounter < eNUM_RECORDS_PER_POOL)
+		CryModuleMemalignFree(pBucket);
+	}
+
+	void* Allocate(size_t size, size_t maxBucketSize)
+	{
+		if (m_allocatedSize + size <= maxBucketSize)
 		{
-			CBootProfilerRecord* newRecord = m_baseAddr + m_allocCounter;
-			++m_allocCounter;
-			return newRecord;
+			void* pNewRecord = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(m_pBaseAddr) + m_allocatedSize);
+			m_allocatedSize += size;
+			return pNewRecord;
 		}
 		else
 		{
@@ -239,13 +258,102 @@ public:
 		}
 	}
 
-	ILINE void setNextPool(CRecordPool* pool) { m_next = pool; }
+	void SetNextBucket(CMemoryPoolBucket* pPool) { m_pNext = pPool; }
+	CMemoryPoolBucket* GetNextBucket() const { return m_pNext; }
 
 private:
-	CBootProfilerRecord* m_baseAddr;
-	uint32               m_allocCounter;
+	CMemoryPoolBucket(void* pBase)
+		: m_pBaseAddr(pBase)
+		, m_allocatedSize(0)
+		, m_pNext(nullptr)
+	{}
 
-	CRecordPool*         m_next;
+private:
+	void*                m_pBaseAddr;
+	size_t               m_allocatedSize;
+	CMemoryPoolBucket*   m_pNext;
+};
+
+template <size_t BucketSize>
+class CMemoryPool
+{
+public:
+	// NOTE pavloi 2018.02.10: can't have ctor or dtor, as CMemoryPool lives in union of SThreadEntry
+
+	void DestroyBuckets()
+	{
+		for (CMemoryPoolBucket* pBucket = m_pLastBucket; pBucket != nullptr; )
+		{
+			CMemoryPoolBucket* pNext = pBucket->GetNextBucket();
+			CMemoryPoolBucket::Destroy(pBucket);
+			pBucket = pNext;
+		}
+	}
+
+	void* Allocate(size_t size)
+	{
+		void* pRec = AllocateMem(size);
+		if (pRec == nullptr)
+		{
+			Grow();
+			pRec = AllocateMem(size);
+		}
+		return pRec;
+	}
+
+private:
+	void* AllocateMem(size_t size)
+	{
+		return m_pLastBucket
+			? m_pLastBucket->Allocate(size, BucketSize)
+			: nullptr;
+	}
+
+	void Grow()
+	{
+		CMemoryPoolBucket* pNewBucket = CMemoryPoolBucket::Create(BucketSize);
+		pNewBucket->SetNextBucket(m_pLastBucket);
+		m_pLastBucket = pNewBucket;
+	}
+
+private:
+	CMemoryPoolBucket* m_pLastBucket;
+};
+
+class CRecordPool : private CMemoryPool<eNUM_RECORDS_PER_POOL * sizeof(CBootProfilerRecord)>
+{
+public:
+	void Destroy() { DestroyBuckets(); }
+
+	CBootProfilerRecord* AllocateRecord()
+	{
+		return reinterpret_cast<CBootProfilerRecord*>(Allocate(sizeof(CBootProfilerRecord)));
+	}
+};
+
+class CStringPool : private CMemoryPool<eSTRINGS_MEM_PER_POOL - CMemoryPoolBucket::GetHeaderSizeWithAllocPadding()>
+{
+public:
+	void Destroy() { DestroyBuckets(); }
+
+	// Copies string into pool. For empty strings - returns nullptr
+	char* PutString(const char* szStr)
+	{
+		if (szStr)
+		{
+			size_t len = ::strlen(szStr);
+			if (len > 0)
+			{
+				char* szPoolStr = reinterpret_cast<char*>(Allocate(len + 1));
+				if (szPoolStr)
+				{
+					::memcpy(szPoolStr, szStr, len + 1);
+				}
+				return szPoolStr;
+			}
+		}
+		return nullptr;
+	}
 };
 
 class CBootProfilerSession : public CProfileBlockTimes
@@ -300,13 +408,15 @@ public:
 			{
 				CBootProfilerRecord* m_pRootRecord;
 				CBootProfilerRecord* m_pCurrentRecord;
-				CRecordPool*         m_pRecordsPool;
+				CRecordPool          m_recordsPool;
+				CStringPool          m_stringPool;
 				unsigned int         m_totalBlocks;
 				unsigned int         m_blocksStarted;
 			};
 			volatile char m_padding[CACHE_LINE_SIZE_BP_INTERNAL];
 		};
 	};
+	static_assert(sizeof(SThreadEntry) == CACHE_LINE_SIZE_BP_INTERNAL, "SThreadEntry is too big for one cache line, update padding size");
 
 	LARGE_INTEGER GetFrequency() const { return m_frequency; }
 	const SThreadEntry* GetThreadEntries() const { return m_threadEntry; }
@@ -322,7 +432,8 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-CBootProfilerSession::CBootProfilerSession(const char* szName) : m_name(szName)
+CBootProfilerSession::CBootProfilerSession(const char* szName)
+	: m_name(szName)
 {
 	memset(m_threadEntry, 0, sizeof(m_threadEntry));
 
@@ -334,7 +445,8 @@ CBootProfilerSession::~CBootProfilerSession()
 	for (unsigned int i = 0; i < eMAX_THREADS_TO_PROFILE; ++i)
 	{
 		SThreadEntry& entry = m_threadEntry[i];
-		delete entry.m_pRecordsPool;
+		entry.m_recordsPool.Destroy();
+		entry.m_stringPool.Destroy();
 	}
 }
 
@@ -360,33 +472,31 @@ CBootProfilerRecord* CBootProfilerSession::StartBlock(const char* name, const ch
 	++entry.m_totalBlocks;
 	++entry.m_blocksStarted;
 
+	const char* szArgsInPool = entry.m_stringPool.PutString(args);
+
 	if (!entry.m_pRootRecord)
 	{
-		CRecordPool* pPool = new CRecordPool;
-		entry.m_pRecordsPool = pPool;
+		CBootProfilerRecord* rec = entry.m_recordsPool.AllocateRecord();
+		if (!rec)
+		{
+			CryFatalError("Unable to allocate memory for new CBootProfilerRecord");
+		}
 
-		CBootProfilerRecord* rec = pPool->allocateRecord();
-		entry.m_pRootRecord = entry.m_pCurrentRecord = new(rec) CBootProfilerRecord("root", m_startTimeStamp, threadIndex, args, this,type);
+		entry.m_pRootRecord = entry.m_pCurrentRecord = new(rec) CBootProfilerRecord("root", m_startTimeStamp, threadIndex, szArgsInPool, this,type);
 	}
 	
 	assert(entry.m_pRootRecord);
 
-	CRecordPool* pPool = entry.m_pRecordsPool;
-	assert(pPool);
-	CBootProfilerRecord* rec = pPool->allocateRecord();
+	CBootProfilerRecord* rec = entry.m_recordsPool.AllocateRecord();
 	if (!rec)
 	{
-		//pool is full, create a new one
-		pPool = new CRecordPool;
-		pPool->setNextPool(entry.m_pRecordsPool);
-		entry.m_pRecordsPool = pPool;
-		rec = pPool->allocateRecord();
+		CryFatalError("Unable to allocate memory for new CBootProfilerRecord");
 	}
 
 	LARGE_INTEGER time;
 	QueryPerformanceCounter(&time);
 
-	CBootProfilerRecord* pNewRecord = new(rec) CBootProfilerRecord(name, time, threadIndex, args, this,type);
+	CBootProfilerRecord* pNewRecord = new(rec) CBootProfilerRecord(name, time, threadIndex, szArgsInPool, this,type);
 	entry.m_pCurrentRecord->AddChild(pNewRecord);
 	entry.m_pCurrentRecord = pNewRecord;
 
@@ -479,10 +589,12 @@ struct BootProfilerSessionSerializerToJSON
 			label.replace("\"", "&quot;");
 			label.replace("'", "&apos;");
 
-			if (pRecord->m_args.size() > 0)
+			string args;
+			if (pRecord->m_args)
 			{
-				pRecord->m_args.replace("\"", "&quot;");
-				pRecord->m_args.replace("'", "&apos;");
+				args = pRecord->m_args;
+				args.replace("\"", "&quot;");
+				args.replace("'", "&apos;");
 			}
 
 			{
@@ -559,9 +671,9 @@ struct BootProfilerSessionSerializerToJSON
 					ar(time, "dur");
 				}
 				
-				if (!pRecord->m_args.empty())
+				if (!args.empty())
 				{
-					ar(SSerializeFixedStringArg{pRecord->m_args,"arg"},"args");
+					ar(SSerializeFixedStringArg{args,"arg"},"args");
 				}
 			}
 		}

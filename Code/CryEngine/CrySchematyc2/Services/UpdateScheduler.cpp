@@ -48,6 +48,7 @@ namespace Schematyc2
 		m_dynamicObjects.clear();
 		m_relevantCells.clear();
 		m_grid.clear();
+		m_entityToGridCellIndexLookup.clear();
 
 		m_grid.resize(m_gridSize * m_gridSize);
 		for (SGridCell& cell : m_grid)
@@ -108,12 +109,12 @@ namespace Schematyc2
 	////////////////////////////////////////////////////////////////
 	bool CRelevanceGrid::Register(CUpdateScope* pScope, const UpdateCallback& callback, UpdateFrequency frequency, UpdatePriority priority, const UpdateFilter& filter)
 	{
-		if (pScope->GetEntity())
+		if (const IEntity* pEntity = pScope->GetEntity())
 		{
 			ushort x = 0;
 			ushort y = 0;
 			ushort cellIdx = 0;
-			GetCellCoordinates(pScope->GetEntity()->GetWorldPos(), x, y, cellIdx);
+			GetCellCoordinates(pEntity->GetWorldPos(), x, y, cellIdx);
 			
 			CRelevanceGrid::TUpdateCallbacks* pUpdateSlots = nullptr;
 			if (pScope->IsOnlyLocalGrid())
@@ -125,7 +126,16 @@ namespace Schematyc2
 				pUpdateSlots = &m_grid[cellIdx].globalUpdateCallbacks;
 			}
 
-			m_entityToGridCellIndexLookup.insert(std::make_pair(pScope->GetEntity()->GetId(), cellIdx));
+			m_entityToGridCellIndexLookup.insert(std::make_pair(pEntity->GetId(), cellIdx));
+
+#if DEBUG_RELEVANCE_GRID
+			{
+				TEntityToGridCell::const_iterator iter = m_entityToGridCellIndexLookup.find(pEntity->GetId());
+				// If this fires: either static entity have moved, or lookup was not cleaned up and has reference from previous level.
+				CRY_ASSERT_MESSAGE(iter->second == cellIdx, "m_entityToGridCellIndexLookup contains wrong cellIdx for entity %x", pEntity->GetId());
+			}
+#endif
+
 			pUpdateSlots->emplace_back(pScope, callback, frequency, priority, filter); 
 
 			if (m_grid[cellIdx].relevanceCounter > 0)
@@ -164,6 +174,12 @@ namespace Schematyc2
 				if (it != pUpdateSlots->end())
 				{
 					pUpdateSlots->erase(it);
+				}
+				else
+				{
+#if DEBUG_RELEVANCE_GRID
+					CRY_ASSERT_MESSAGE(false, "Unable to find scope for entity %x at cell %u", pScope->GetEntity()->GetId(), cellIdx);
+#endif
 				}
 			}
 		}

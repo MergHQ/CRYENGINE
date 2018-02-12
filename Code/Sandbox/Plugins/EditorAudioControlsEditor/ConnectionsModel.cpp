@@ -9,7 +9,7 @@
 #include "ModelUtils.h"
 
 #include <IEditorImpl.h>
-#include <ImplItem.h>
+#include <IImplItem.h>
 #include <CrySystem/File/CryFile.h>
 #include <QtUtil.h>
 #include <CryIcon.h>
@@ -206,11 +206,15 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 
 			if (pConnection != nullptr)
 			{
-				CImplItem const* const pImplItem = g_pEditorImpl->GetControl(pConnection->GetID());
+				IImplItem const* const pImplItem = g_pEditorImpl->GetImplItem(pConnection->GetID());
 
 				if (pImplItem != nullptr)
 				{
-					if (index.column() < static_cast<int>(EColumns::Count))
+					if (role == static_cast<int>(ERoles::Name))
+					{
+						variant = static_cast<char const*>(pImplItem->GetName());
+					}
+					else if (index.column() < static_cast<int>(EColumns::Count))
 					{
 						switch (index.column())
 						{
@@ -223,7 +227,7 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 									{
 										variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder));
 									}
-									else if (pImplItem->IsLocalised())
+									else if (pImplItem->IsLocalized())
 									{
 										variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized));
 									}
@@ -233,7 +237,7 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 									{
 										variant = tr("Item not found in middleware project");
 									}
-									else if (pImplItem->IsLocalised())
+									else if (pImplItem->IsLocalized())
 									{
 										variant = tr("Item is localized");
 									}
@@ -253,7 +257,6 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 									break;
 								case Qt::DisplayRole:
 								case Qt::ToolTipRole:
-								case static_cast<int>(ERoles::Name):
 									variant = static_cast<char const*>(pImplItem->GetName());
 									break;
 								case static_cast<int>(ERoles::Id):
@@ -270,7 +273,7 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 								case Qt::ToolTipRole:
 									{
 										QString path;
-										CImplItem const* pImplItemParent = pImplItem->GetParent();
+										IImplItem const* pImplItemParent = pImplItem->GetParent();
 
 										while (pImplItemParent != nullptr)
 										{
@@ -361,7 +364,7 @@ QModelIndex CConnectionModel::index(int row, int column, QModelIndex const& pare
 
 				if (pConnection != nullptr)
 				{
-					CImplItem const* const pImplItem = g_pEditorImpl->GetControl(pConnection->GetID());
+					IImplItem const* const pImplItem = g_pEditorImpl->GetImplItem(pConnection->GetID());
 
 					if (pImplItem != nullptr)
 					{
@@ -394,7 +397,7 @@ bool CConnectionModel::canDropMimeData(QMimeData const* pData, Qt::DropAction ac
 
 		for (auto const id : ids)
 		{
-			CImplItem const* const pImplItem = g_pEditorImpl->GetControl(id);
+			IImplItem const* const pImplItem = g_pEditorImpl->GetImplItem(id);
 
 			if (pImplItem != nullptr)
 			{
@@ -435,7 +438,7 @@ bool CConnectionModel::dropMimeData(QMimeData const* pData, Qt::DropAction actio
 
 		for (auto const id : ids)
 		{
-			CImplItem* const pImplItem = g_pEditorImpl->GetControl(id);
+			IImplItem* const pImplItem = g_pEditorImpl->GetImplItem(id);
 
 			if (pImplItem != nullptr)
 			{

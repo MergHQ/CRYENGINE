@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "ImplControls.h"
+#include "ImplItem.h"
 
 namespace ACE
 {
@@ -17,8 +17,8 @@ static string const g_vcasFolderName = "VCAs";
 
 namespace Utils
 {
-CID    GetId(EImplItemType const type, string const& name, CImplItem* const pParent, CImplItem const& rootControl);
-string GetPathName(CImplItem const* const pImplItem, CImplItem const& rootControl);
+CID    GetId(EImplItemType const type, string const& name, CImplItem* const pParent, CImplItem const& rootItem);
+string GetPathName(CImplItem const* const pImplItem, CImplItem const& rootItem);
 string GetTypeName(EImplItemType const type);
 } // namespace Utils
 } // namespace Fmod

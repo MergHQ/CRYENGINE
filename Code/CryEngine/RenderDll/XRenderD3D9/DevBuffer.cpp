@@ -3471,6 +3471,8 @@ void CDeviceBufferManager::UnlockDevMan()
 bool CDeviceBufferManager::Init()
 {
 	LOADING_TIME_PROFILE_SECTION;
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Device Buffer Manager");
+
 	MEMORY_SCOPE_CHECK_HEAP();
 	SREC_AUTO_LOCK(s_PoolManager.m_lock);
 	if (s_PoolManager.m_initialized == true)

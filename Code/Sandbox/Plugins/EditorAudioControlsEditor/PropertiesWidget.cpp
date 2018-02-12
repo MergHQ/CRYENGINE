@@ -28,7 +28,7 @@ CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* const pAssetsManager,
 
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-	QVBoxLayout* const pMainLayout = new QVBoxLayout(this);
+	auto const pMainLayout = new QVBoxLayout(this);
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
 
 	m_pPropertyTree->setSizeToContent(true);
@@ -108,7 +108,7 @@ void CPropertiesWidget::Reload()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropertiesWidget::OnSetSelectedAssets(std::vector<CSystemAsset*> const& selectedAssets)
+void CPropertiesWidget::OnSetSelectedAssets(std::vector<CSystemAsset*> const& selectedAssets, bool const restoreSelection)
 {
 	// Update property tree
 	m_pPropertyTree->detach();
@@ -129,11 +129,11 @@ void CPropertiesWidget::OnSetSelectedAssets(std::vector<CSystemAsset*> const& se
 
 		if ((type != ESystemItemType::Library) && (type != ESystemItemType::Folder))
 		{
-			CSystemControl* const pControl = static_cast<CSystemControl*>(selectedAssets[0]);
+			auto const pControl = static_cast<CSystemControl*>(selectedAssets[0]);
 
 			if (type != ESystemItemType::Switch)
 			{
-				m_pConnectionsWidget->SetControl(pControl);
+				m_pConnectionsWidget->SetControl(pControl, restoreSelection);
 				m_pConnectionsWidget->setHidden(false);
 				m_pConnectionsLabel->setAlignment(Qt::AlignLeft);
 				m_pConnectionsLabel->setText(tr("Connections"));
@@ -141,7 +141,7 @@ void CPropertiesWidget::OnSetSelectedAssets(std::vector<CSystemAsset*> const& se
 			else
 			{
 				m_pConnectionsWidget->setHidden(true);
-				m_pConnectionsWidget->SetControl(nullptr);
+				m_pConnectionsWidget->SetControl(nullptr, restoreSelection);
 				m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
 				m_pConnectionsLabel->setText(tr("Select a switch state to see its connections!"));
 			}
@@ -149,7 +149,7 @@ void CPropertiesWidget::OnSetSelectedAssets(std::vector<CSystemAsset*> const& se
 		else
 		{
 			m_pConnectionsWidget->setHidden(true);
-			m_pConnectionsWidget->SetControl(nullptr);
+			m_pConnectionsWidget->SetControl(nullptr, restoreSelection);
 			m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
 			m_pConnectionsLabel->setText(*m_pUsageHint);
 		}
@@ -157,7 +157,7 @@ void CPropertiesWidget::OnSetSelectedAssets(std::vector<CSystemAsset*> const& se
 	else
 	{
 		m_pConnectionsWidget->setHidden(true);
-		m_pConnectionsWidget->SetControl(nullptr);
+		m_pConnectionsWidget->SetControl(nullptr, restoreSelection);
 		m_pConnectionsLabel->setAlignment(Qt::AlignCenter);
 		m_pConnectionsLabel->setText(*m_pUsageHint);
 	}

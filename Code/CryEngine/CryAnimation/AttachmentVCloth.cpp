@@ -118,9 +118,32 @@ void CAttachmentVCLOTH::AddClothParams(const SVClothParams& clothParams)
 	m_clothPiece.SetClothParams(clothParams);
 }
 
-bool CAttachmentVCLOTH::InitializeCloth()
+bool CAttachmentVCLOTH::IsInitialized() const
 {
-	return m_clothPiece.Initialize(this);
+	return m_clothPiece.IsInitialized();
+}
+
+void CAttachmentVCLOTH::Initialize()
+{
+	if (IsInitialized()) return;
+
+	int expected = JOB_VCLOTH_INITIALIZATION_IS_NOT_RUNNING;
+	const int desired = JOB_VCLOTH_INITIALIZATION_IS_RUNNING;
+	if (m_jobVClothInitializeLockFree.compare_exchange_weak(expected, desired))
+	{
+		auto lambda_job = [=]
+		{
+			Job_VClothInitialize();
+		};
+
+		gEnv->pJobManager->AddLambdaJob("VClothInit", lambda_job, JobManager::eStreamPriority, &m_jobVClothInitialization);
+	}
+}
+
+void CAttachmentVCLOTH::Job_VClothInitialize()
+{
+	m_clothPiece.Initialize(this);
+	m_jobVClothInitializeLockFree.store(JOB_VCLOTH_INITIALIZATION_IS_NOT_RUNNING);
 }
 
 const SVClothParams& CAttachmentVCLOTH::GetClothParams()
@@ -397,6 +420,8 @@ void CAttachmentVCLOTH::ReleaseSimSkin()
 
 CAttachmentVCLOTH::~CAttachmentVCLOTH()
 {
+	if (m_jobVClothInitialization.IsRunning()) m_jobVClothInitialization.Wait();
+
 	const int nFrameID = gEnv->pRenderer ? gEnv->pRenderer->EF_GetSkinningPoolID() : 0;
 	const int nList = nFrameID % 3;
 	if (m_arrSkinningRendererData[nList].nFrameID == nFrameID && m_arrSkinningRendererData[nList].pSkinningData)
@@ -637,8 +662,43 @@ _smart_ptr<IRenderMesh> CAttachmentVCLOTH::CreateVertexAnimationRenderMesh(uint 
 	return m_pRenderMeshsSW[id];
 }
 
+bool CAttachmentVCLOTH::MapLogicalLODtoRenderLOD(int& nRenderLOD, const SRendParams& RendParams, const SRenderingPassInfo& passInfo)
+{
+	if (!m_pRenderSkin.get()) return false;
+	if (!m_pSimSkin.get()) return false;
+
+	// Map logical LOD to render LOD
+	int32 numLODs = m_pRenderSkin->m_arrModelMeshes.size();
+	if (numLODs == 0) return false;
+	int nDesiredRenderLOD = RendParams.lodValue.LodA();
+	if (nDesiredRenderLOD == -1)
+		nDesiredRenderLOD = RendParams.lodValue.LodB();
+	if (nDesiredRenderLOD >= numLODs)
+	{
+		if (m_AttFlags&FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD) return false; // Early exit, if LOD-file doesn't exist
+		nDesiredRenderLOD = numLODs - 1; // Render the last existing LOD-file
+	}
+	nRenderLOD = m_pRenderSkin->SelectNearestLoadedLOD(nDesiredRenderLOD); // Select only loaded LODs
+
+	m_pRenderSkin->m_arrModelMeshes[nRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
+	m_pSimSkin->m_arrModelMeshes[nRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
+	return true;
+}
+
 void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRenderingPassInfo &passInfo, const Matrix34& rWorldMat34, f32 fZoomFactor)
 {
+	// Map logical LOD to render LOD
+	// Additionally, early exit, if streaming of LODs is not finished yet (unfortunately, finished streams do not emit a signal or something on successful termination)
+	int nRenderLOD = 0;
+	if (!MapLogicalLODtoRenderLOD(nRenderLOD, RendParams, passInfo)) return;
+
+	// Lazy initialization, following approach in other attachments, i.e. unfortunately: inititialization check occurs here in DrawAttachment()
+	if (!IsInitialized())
+	{
+		Initialize();
+		return;
+	}
+
 	if (!m_clothPiece.GetSimulator().IsVisible() || Console::GetInst().ca_VClothMode == 0) return;
 
 	bool bNeedSWskinning = (m_pAttachmentManager->m_pSkelInstance->m_CharEditMode&CA_CharacterTool); // in character tool always use software skinning
@@ -647,26 +707,6 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 		m_clothPiece.GetSimulator().HandleCameraDistance();
 		bNeedSWskinning = !m_clothPiece.GetSimulator().IsGpuSkinning();
 	}
-
-	//-----------------------------------------------------------------------------
-	//---              map logical LOD to render LOD                            ---
-	//-----------------------------------------------------------------------------
-	int32 numLODs = m_pRenderSkin->m_arrModelMeshes.size();
-	if (numLODs == 0)
-		return;
-	int nDesiredRenderLOD = RendParams.lodValue.LodA();
-	if (nDesiredRenderLOD == -1)
-		nDesiredRenderLOD = RendParams.lodValue.LodB();
-	if (nDesiredRenderLOD >= numLODs)
-	{
-		if (m_AttFlags&FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD)
-			return;  //early exit, if LOD-file doesn't exist
-		nDesiredRenderLOD = numLODs - 1; //render the last existing LOD-file
-	}
-	int nRenderLOD = m_pRenderSkin->SelectNearestLoadedLOD(nDesiredRenderLOD);  //we can render only loaded LODs
-
-	m_pRenderSkin->m_arrModelMeshes[nRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
-	m_pSimSkin->m_arrModelMeshes[nRenderLOD].m_stream.nFrameId = passInfo.GetMainFrameID();
 
 	Matrix34 FinalMat34 = rWorldMat34;
 	RendParams.pMatrix = &FinalMat34;
@@ -3065,7 +3105,7 @@ bool CClothPiece::Initialize(const CAttachmentVCLOTH* pVClothAttachment)
 	pSimModelMesh->InitSWSkinBuffer();
 
 	m_clothGeom = g_pCharacterManager->LoadVClothGeometry(*m_pVClothAttachment, pRenderMeshes);
-	if (!m_clothGeom)
+	if (!m_clothGeom || !m_clothGeom->pPhysGeom)
 		return false;
 
 	// init simulator
@@ -3208,6 +3248,8 @@ void CClothPiece::UpdateSimulation(const DualQuat* pTransformations, const uint 
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
 
+	if (!IsInitialized())
+		return;
 	if (!m_simulator.IsVisible())
 		return;
 	if (m_pVClothAttachment->GetClothParams().hide)

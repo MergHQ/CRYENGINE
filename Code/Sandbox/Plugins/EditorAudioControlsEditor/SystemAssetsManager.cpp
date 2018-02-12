@@ -7,7 +7,7 @@
 #include "ImplementationManager.h"
 
 #include <IEditorImpl.h>
-#include <ImplItem.h>
+#include <IImplItem.h>
 
 #include <CryAudio/IAudioSystem.h>
 #include <CryString/StringUtils.h>
@@ -360,13 +360,13 @@ void CSystemAssetsManager::OnControlAboutToBeModified(CSystemControl* const pCon
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemAssetsManager::OnConnectionAdded(CSystemControl* const pControl, CImplItem* const pImplControl)
+void CSystemAssetsManager::OnConnectionAdded(CSystemControl* const pControl, IImplItem* const pImplItem)
 {
 	SignalConnectionAdded(pControl);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemAssetsManager::OnConnectionRemoved(CSystemControl* const pControl, CImplItem* const pImplControl)
+void CSystemAssetsManager::OnConnectionRemoved(CSystemControl* const pControl, IImplItem* const pImplItem)
 {
 	SignalConnectionRemoved(pControl);
 }
@@ -610,7 +610,7 @@ void CSystemAssetsManager::UpdateAssetConnectionStates(CSystemAsset* const pAsse
 
 					if (g_pEditorImpl != nullptr)
 					{
-						CImplItem const* const pImpleControl = g_pEditorImpl->GetControl(pControl->GetConnectionAt(i)->GetID());
+						IImplItem const* const pImpleControl = g_pEditorImpl->GetImplItem(pControl->GetConnectionAt(i)->GetID());
 
 						if (pImpleControl != nullptr)
 						{
@@ -670,7 +670,7 @@ void CSystemAssetsManager::MoveItems(CSystemAsset* const pParent, std::vector<CS
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemAssetsManager::CreateAndConnectImplItems(CImplItem* const pImplItem, CSystemAsset* const pParent)
+void CSystemAssetsManager::CreateAndConnectImplItems(IImplItem* const pImplItem, CSystemAsset* const pParent)
 {
 	SignalItemAboutToBeAdded(pParent);
 	CSystemAsset* pItem = CreateAndConnectImplItemsRecursively(pImplItem, pParent);
@@ -678,7 +678,7 @@ void CSystemAssetsManager::CreateAndConnectImplItems(CImplItem* const pImplItem,
 }
 
 //////////////////////////////////////////////////////////////////////////
-CSystemAsset* CSystemAssetsManager::CreateAndConnectImplItemsRecursively(CImplItem* const pImplItem, CSystemAsset* const pParent)
+CSystemAsset* CSystemAssetsManager::CreateAndConnectImplItemsRecursively(IImplItem* const pImplItem, CSystemAsset* const pParent)
 {
 	CSystemAsset* pItem = nullptr;
 
@@ -730,7 +730,7 @@ CSystemAsset* CSystemAssetsManager::CreateAndConnectImplItemsRecursively(CImplIt
 		pItem = pFolder;
 	}
 
-	size_t const size = pImplItem->ChildCount();
+	size_t const size = pImplItem->GetNumChildren();
 
 	for (size_t i = 0; i < size; ++i)
 	{

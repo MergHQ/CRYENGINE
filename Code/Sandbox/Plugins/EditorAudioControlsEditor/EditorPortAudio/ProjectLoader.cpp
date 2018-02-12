@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "ProjectLoader.h"
@@ -85,16 +85,11 @@ CImplItem* CProjectLoader::CreateItem(string const& name, string const& path, EI
 		filePath += (path + CRY_NATIVE_PATH_SEPSTR + name);
 	}
 
-	CImplControl* const pControl = new CImplControl(name, id, static_cast<ItemType>(type));
-	pControl->SetFilePath(filePath);
+	EImplItemFlags const flags = type == EImpltemType::Folder ? EImplItemFlags::IsContainer : EImplItemFlags::None;
+	auto const pImplItem = new CImplItem(name, id, static_cast<ItemType>(type), flags, filePath);
 
-	if (type == EImpltemType::Folder)
-	{
-		pControl->SetContainer(true);
-	}
-
-	rootItem.AddChild(pControl);
-	return pControl;
+	rootItem.AddChild(pImplItem);
+	return pImplItem;
 }
 } // namespace PortAudio
 } // namespace ACE

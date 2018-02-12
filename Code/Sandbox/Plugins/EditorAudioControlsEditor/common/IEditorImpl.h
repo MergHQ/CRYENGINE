@@ -15,14 +15,14 @@
 
 namespace ACE
 {
-class CImplItem;
+struct IImplItem;
 
 struct IImplSettings
 {
 	virtual char const* GetAssetsPath() const = 0;
 	virtual char const* GetProjectPath() const = 0;
 	virtual void        SetProjectPath(char const* szPath) = 0;
-	virtual bool        IsProjectPathEditable() const = 0;
+	virtual bool        SupportsProjects() const = 0;
 };
 
 struct IEditorImpl
@@ -46,7 +46,7 @@ struct IEditorImpl
 	//      A pointer to the root of the control tree.
 	// See Also:
 	//      GetControl
-	virtual CImplItem* GetRoot() = 0;
+	virtual IImplItem* GetRoot() = 0;
 
 	// <title GetControl>
 	// Description:
@@ -57,7 +57,7 @@ struct IEditorImpl
 	//      A pointer to the control that corresponds to the passed id. If none is found NULL is returned.
 	// See Also:
 	//      GetRoot
-	virtual CImplItem* GetControl(CID const id) const = 0;
+	virtual IImplItem* GetImplItem(CID const id) const = 0;
 
 	// <title GetTypeIcon>
 	// Description:
@@ -68,7 +68,7 @@ struct IEditorImpl
 	//      A string with the path to the icon corresponding to the control type
 	// See Also:
 	//
-	virtual char const* GetTypeIcon(CImplItem const* const pItem) const = 0;
+	virtual char const* GetTypeIcon(IImplItem const* const pItem) const = 0;
 
 	// <title GetName>
 	// Description:
@@ -110,7 +110,7 @@ struct IEditorImpl
 	//      A bool if the types are compatible or not.
 	// See Also:
 	//      ImplTypeToSystemType
-	virtual bool IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const = 0;
+	virtual bool IsTypeCompatible(ESystemItemType const systemType, IImplItem const* const pImplItem) const = 0;
 
 	// <title ImplTypeToSystemType>
 	// Description:
@@ -121,7 +121,7 @@ struct IEditorImpl
 	//      An audio system control type that corresponds to the middleware control type passed as argument.
 	// See Also:
 	//      GetCompatibleTypes
-	virtual ESystemItemType ImplTypeToSystemType(CImplItem const* const pItem) const = 0;
+	virtual ESystemItemType ImplTypeToSystemType(IImplItem const* const pItem) const = 0;
 
 	// <title CreateConnectionToControl>
 	// Description:
@@ -134,7 +134,7 @@ struct IEditorImpl
 	// See Also:
 	//      CreateConnectionFromXMLNode
 
-	virtual ConnectionPtr CreateConnectionToControl(ESystemItemType const controlType, CImplItem* const pMiddlewareControl) = 0;
+	virtual ConnectionPtr CreateConnectionToControl(ESystemItemType const controlType, IImplItem* const pMiddlewareControl) = 0;
 
 	// <title CreateConnectionFromXMLNode>
 	// Description:

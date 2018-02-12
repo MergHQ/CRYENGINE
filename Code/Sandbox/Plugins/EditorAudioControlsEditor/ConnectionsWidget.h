@@ -23,7 +23,7 @@ public:
 	CConnectionsWidget(QWidget* const pParent);
 	virtual ~CConnectionsWidget() override;
 
-	void SetControl(CSystemControl* const pControl);
+	void SetControl(CSystemControl* const pControl, bool const restoreSelection);
 	void Reload();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();

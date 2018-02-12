@@ -14,7 +14,7 @@
 //-------------------------------------------------------
 /// Cpu class
 //-------------------------------------------------------
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_64BIT
 	#define MAX_CPU 64
 #else
 	#define MAX_CPU 32
