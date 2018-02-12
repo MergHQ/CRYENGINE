@@ -601,7 +601,7 @@ private:
 		{
 			uint16 numUnsortedListeners = static_cast<uint16>(listeners.size() - firstUnsortedListenerIndex);
 
-			while (numUnsortedListeners > 0)
+			while (numUnsortedListeners > 0 && listeners.size() != 0)
 			{
 				// Temporarily remove item for sorting
 				auto listenerIt = --listeners.end();
