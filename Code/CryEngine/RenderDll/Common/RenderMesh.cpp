@@ -94,6 +94,7 @@ namespace
 
 	static void* AllocateMeshDataUnpooled(buffer_size_t nSize, buffer_size_t nAlign = MESH_DATA_DEFAULT_ALIGN)
 	{
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "RenderMesh::AllocateMeshDataUnpooled");
 		return CryModuleMemalign(nSize, std::min(nAlign, CDeviceBufferManager::GetBufferAlignmentForStreaming()));
 	}
 
@@ -183,6 +184,7 @@ namespace
 
 	static bool InitializePool()
 	{
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "RenderMesh::InitializePool");
 		if (gRenDev->CV_r_meshpoolsize > 0)
 		{
 			if (s_MeshPool.m_MeshDataPool || s_MeshPool.m_MeshDataMemory)
@@ -249,6 +251,7 @@ namespace
 
   static void* AllocateMeshInstanceData(size_t size, size_t align)
   {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "RenderMesh::AllocateMeshInstanceData");
     if (s_MeshPool.m_MeshInstancePool)
     {
       if (void* ptr = s_MeshPool.m_MeshInstancePool->Memalign(align, size, "rendermesh instance data"))

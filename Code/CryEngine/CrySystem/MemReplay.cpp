@@ -2010,6 +2010,7 @@ void CMemReplay::RecordFree(EMemReplayAllocClass::Class cls, uint16 subCls, int 
 
 void CMemReplay::RecordModules()
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "DLL Image Size (incl. Data Segment)");
 	m_modules.RefreshModules(RecordModuleLoad, RecordModuleUnload, this);
 }
 

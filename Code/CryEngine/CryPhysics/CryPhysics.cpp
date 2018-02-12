@@ -184,6 +184,7 @@ InitPhysicsGlobals Now;
 
 CRYPHYSICS_API IPhysicalWorld *CreatePhysicalWorld(ISystem *pSystem)
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "Create Physical World");
 	g_bHasSSE = pSystem && (pSystem->GetCPUFlags() & CPUF_SSE)!=0;
 
 	if (pSystem)

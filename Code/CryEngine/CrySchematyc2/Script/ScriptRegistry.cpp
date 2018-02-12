@@ -92,6 +92,7 @@ namespace Schematyc2
 
 	IScriptFile* CScriptRegistry::LoadFile(const char* szFileName)
 	{
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Load Script Registry File");
 		SCHEMATYC2_SYSTEM_ASSERT(szFileName);
 		if(szFileName)
 		{
@@ -396,6 +397,7 @@ namespace Schematyc2
 
 	bool CScriptRegistry::Load()
 	{
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Load Script Registry");
 		LOADING_TIME_PROFILE_SECTION;
 		// Load old script files.
 		{

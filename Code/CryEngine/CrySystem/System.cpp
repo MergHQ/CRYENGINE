@@ -212,6 +212,9 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	: m_gameLibrary(nullptr)
 #endif
 {
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Main");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::Construct");
+
 	m_pSystemEventDispatcher = new CSystemEventDispatcher(); // Must be first.
 	m_pSystemEventDispatcher->RegisterListener(this, "CSystem");
 
@@ -1515,6 +1518,8 @@ bool CSystem::DoFrame(HWND hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags)
 	// The frame profile system already creates an "overhead" profile label
 	// in StartFrame(). Hence we have to set the FRAMESTART before.
 	CRY_PROFILE_FRAMESTART("Main");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Main");
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem: DoFrame");
 
 	if (m_pManualFrameStepController != nullptr && m_pManualFrameStepController->Update() == EManualFrameStepResult::Block)
 	{

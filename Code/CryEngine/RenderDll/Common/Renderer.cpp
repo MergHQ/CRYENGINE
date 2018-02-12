@@ -354,6 +354,7 @@ void CRenderer::PostInit()
 void CRenderer::StartRenderIntroMovies()
 {
 	LOADING_TIME_PROFILE_SECTION;
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Staer Render Intro Movie");
 	assert(m_pIntroMovieRenderer == 0);
 
 #if USE_INTRO_MOVIES
@@ -688,6 +689,8 @@ void CRenderer::DeleteRenderViews()
 void CRenderer::InitSystemResources(int nFlags)
 {
 	LOADING_TIME_PROFILE_SECTION;
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init System Resources");
+
 	if (!m_bSystemResourcesInit || m_bDeviceLost == 2)
 	{
 		iLog->Log("*** Init system render resources ***");

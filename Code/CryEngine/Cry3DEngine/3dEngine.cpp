@@ -3600,6 +3600,8 @@ void C3DEngine::StartWindGridJob(const Vec3& vPos)
 		m_bWindJobRun = false;
 		return;
 	}
+	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Start Wind Grid Job");
+
 	SWindGrid& rWindGrid = m_WindGrid[m_nCurWind];
 	if (!rWindGrid.m_pData)
 	{
