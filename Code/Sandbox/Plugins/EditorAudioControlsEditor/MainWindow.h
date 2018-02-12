@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -73,21 +73,21 @@ private slots:
 
 private:
 
-	void InitMenuBar();
-	void InitToolbar(QVBoxLayout* const pWindowLayout);
-	void UpdateImplLabel();
-	void RegisterWidgets();
-	void Reload();
-	void Save();
-	void SaveBeforeImplementationChange();
-	void CheckErrorMask();
-	void UpdateAudioSystemData();
-	void ReloadSystemData();
-	void ReloadMiddlewareData();
-	void RefreshAudioSystem();
-	void BackupTreeViewStates();
-	void RestoreTreeViewStates();
-	bool TryClose();
+	void                       InitMenuBar();
+	void                       InitToolbar(QVBoxLayout* const pWindowLayout);
+	void                       UpdateImplLabel();
+	void                       RegisterWidgets();
+	void                       Reload();
+	void                       Save();
+	void                       SaveBeforeImplementationChange();
+	void                       CheckErrorMask();
+	void                       UpdateAudioSystemData();
+	void                       ReloadSystemData();
+	void                       ReloadMiddlewareData();
+	void                       RefreshAudioSystem();
+	void                       BackupTreeViewStates();
+	void                       RestoreTreeViewStates();
+	bool                       TryClose();
 
 	std::vector<CSystemAsset*> GetSelectedSystemAssets();
 
@@ -105,5 +105,6 @@ private:
 	CFileMonitorSystem* const     m_pMonitorSystem;
 	CFileMonitorMiddleware* const m_pMonitorMiddleware;
 	bool                          m_isModified;
+	bool                          m_isReloading;
 };
 } // namespace ACE

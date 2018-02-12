@@ -155,7 +155,7 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 		{
 			if (g_pEditorImpl != nullptr)
 			{
-				CID const itemId = selection[0].data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt();
+				CID const itemId = static_cast<CID>(selection[0].data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt());
 				IImplItem const* const pImplItem = g_pEditorImpl->GetImplItem(itemId);
 
 				if ((pImplItem != nullptr) && !pImplItem->IsPlaceholder())
@@ -222,7 +222,7 @@ void CConnectionsWidget::RemoveSelectedConnection()
 
 					for (QModelIndex const& index : selectedIndexes)
 					{
-						CID const id = index.data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt();
+						CID const id = static_cast<CID>(index.data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt());
 						implItems.emplace_back(g_pEditorImpl->GetImplItem(id));
 					}
 
@@ -242,14 +242,14 @@ void CConnectionsWidget::RemoveSelectedConnection()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionsWidget::SetControl(CSystemControl* const pControl)
+void CConnectionsWidget::SetControl(CSystemControl* const pControl, bool const restoreSelection)
 {
 	if (m_pControl != pControl)
 	{
 		m_pControl = pControl;
 		Reload();
 
-		if (m_pControl != nullptr)
+		if ((m_pControl != nullptr) && restoreSelection)
 		{
 			auto const& selectedConnections = m_pControl->GetSelectedConnections();
 

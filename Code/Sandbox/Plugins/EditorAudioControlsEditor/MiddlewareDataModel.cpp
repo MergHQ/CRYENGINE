@@ -171,80 +171,84 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 
 			if (pImplItem != nullptr)
 			{
-				switch (index.column())
+				if (role == static_cast<int>(ERoles::Name))
 				{
-				case static_cast<int>(EColumns::Notification):
+					variant = static_cast<char const*>(pImplItem->GetName());
+				}
+				else
+				{
+					switch (index.column())
 					{
-						switch (role)
+					case static_cast<int>(EColumns::Notification):
 						{
-						case Qt::DecorationRole:
-							if (!pImplItem->IsConnected() && !pImplItem->IsContainer())
+							switch (role)
 							{
-								variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
+							case Qt::DecorationRole:
+								if (!pImplItem->IsConnected() && !pImplItem->IsContainer())
+								{
+									variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
+								}
+								else if (pImplItem->IsLocalized())
+								{
+									variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized));
+								}
+								break;
+							case Qt::ToolTipRole:
+								if (!pImplItem->IsConnected() && !pImplItem->IsContainer())
+								{
+									variant = tr("Item is not connected to any audio system control");
+								}
+								else if (pImplItem->IsLocalized())
+								{
+									variant = tr("Item is localized");
+								}
+								break;
+							case static_cast<int>(ERoles::Id):
+								variant = pImplItem->GetId();
+								break;
+							default:
+								break;
 							}
-							else if (pImplItem->IsLocalized())
-							{
-								variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized));
-							}
-							break;
-						case Qt::ToolTipRole:
-							if (!pImplItem->IsConnected() && !pImplItem->IsContainer())
-							{
-								variant = tr("Item is not connected to any audio system control");
-							}
-							else if (pImplItem->IsLocalized())
-							{
-								variant = tr("Item is localized");
-							}
-							break;
-						case static_cast<int>(ERoles::Id):
-							variant = pImplItem->GetId();
-							break;
-						default:
-							break;
 						}
-					}
-					break;
-				case static_cast<int>(EColumns::Connected):
-					if ((role == Qt::CheckStateRole) && !pImplItem->IsContainer())
-					{
-						variant = pImplItem->IsConnected() ? Qt::Checked : Qt::Unchecked;
-					}
-					break;
-				case static_cast<int>(EColumns::Localized):
-					if ((role == Qt::CheckStateRole) && !pImplItem->IsContainer())
-					{
-						variant = pImplItem->IsLocalized() ? Qt::Checked : Qt::Unchecked;
-					}
-					break;
-				case static_cast<int>(EColumns::Name):
-					{
-						switch (role)
+						break;
+					case static_cast<int>(EColumns::Connected):
+						if ((role == Qt::CheckStateRole) && !pImplItem->IsContainer())
 						{
-						case Qt::DecorationRole:
-							variant = CryIcon(g_pEditorImpl->GetTypeIcon(pImplItem));
-							break;
-						case Qt::DisplayRole:
-						case Qt::ToolTipRole:
-						case static_cast<int>(ERoles::Name):
-							variant = static_cast<char const*>(pImplItem->GetName());
-							break;
-						case static_cast<int>(ERoles::Id):
-							variant = pImplItem->GetId();
-							break;
-						case static_cast<int>(ERoles::ItemType):
-							variant = pImplItem->GetType();
-							break;
-						case static_cast<int>(ERoles::IsPlaceholder):
-							variant = pImplItem->IsPlaceholder();
-							break;
-						default:
-							break;
+							variant = pImplItem->IsConnected() ? Qt::Checked : Qt::Unchecked;
 						}
+						break;
+					case static_cast<int>(EColumns::Localized):
+						if ((role == Qt::CheckStateRole) && !pImplItem->IsContainer())
+						{
+							variant = pImplItem->IsLocalized() ? Qt::Checked : Qt::Unchecked;
+						}
+						break;
+					case static_cast<int>(EColumns::Name):
+						{
+							switch (role)
+							{
+							case Qt::DecorationRole:
+								variant = CryIcon(g_pEditorImpl->GetTypeIcon(pImplItem));
+								break;
+							case Qt::DisplayRole:
+							case Qt::ToolTipRole:
+								variant = static_cast<char const*>(pImplItem->GetName());
+								break;
+							case static_cast<int>(ERoles::Id):
+								variant = pImplItem->GetId();
+								break;
+							case static_cast<int>(ERoles::ItemType):
+								variant = pImplItem->GetType();
+								break;
+							case static_cast<int>(ERoles::IsPlaceholder):
+								variant = pImplItem->IsPlaceholder();
+								break;
+							default:
+								break;
+							}
+						}
+						break;
 					}
-					break;
-				default:
-					break;
 				}
 			}
 		}
