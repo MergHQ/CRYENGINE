@@ -605,6 +605,9 @@ public:
 	static void      SetWindowIconCVar(ICVar* pVar);
 
 	static void      SetMouseCursorIconCVar(ICVar* pVar);
+#if CRY_PLATFORM_WINDOWS
+	static void      SetMouseUseSystemCursorCVar(ICVar* pVar);
+#endif //CRY_PLATFORM_WINDOWS
 
 	virtual bool     StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int nSrcHeight, int nDstWidth, int nDstHeight, ITexture* pDataD, ITexture* pDataN) override;
 
@@ -803,13 +806,14 @@ private:
 	bool m_bInitialized = false;
 
 	// Windows context
-	char   m_WinTitle[80];
-	HWND   m_hWnd;                 // The main app window
-	HWND   m_hWndDesktop;          // The desktop window
+	char    m_WinTitle[80];
+	HWND    m_hWnd;                 // The main app window
+	HWND    m_hWndDesktop;          // The desktop window
 #if CRY_PLATFORM_WINDOWS
-	HICON  m_hIconBig;             // Icon currently being used on the taskbar
-	HICON  m_hIconSmall;           // Icon currently being used on the window
-	string m_iconPath;             // Path to the icon currently loaded
+	HICON   m_hIconBig;             // Icon currently being used on the taskbar
+	HICON   m_hIconSmall;           // Icon currently being used on the window
+	HCURSOR m_hCursor;              // Cursor currently being used on the window
+	string  m_iconPath;             // Path to the icon currently loaded
 #endif
 
 	uint32                           m_uLastBlendFlagsPassGroup;

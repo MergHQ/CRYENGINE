@@ -618,6 +618,11 @@ void CD3D9Renderer::DestroyWindow(void)
 		::DestroyIcon(m_hIconSmall);
 		m_hIconSmall = NULL;
 	}
+	if (m_hCursor)
+	{
+		::DestroyCursor(m_hCursor);
+		m_hCursor = NULL;
+	}
 #endif
 }
 
@@ -1039,6 +1044,11 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 				SetWindowIcon(gEnv->pConsole->GetCVar("r_WindowIconTexture")->GetString());
 			}
 
+			if (m_hCursor == NULL && gEnv->pConsole->GetCVar("r_MouseUseSystemCursor")->GetIVal() != 0)
+			{
+				m_hCursor = CreateResourceFromTexture(this, gEnv->pConsole->GetCVar("r_MouseCursorTexture")->GetString(), eResourceType_Cursor);
+			}
+
 			// Moved from Game DLL
 			WNDCLASSEXW wc;
 			memset(&wc, 0, sizeof(WNDCLASSEXW));
@@ -1048,6 +1058,7 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 			wc.hInstance = CryGetCurrentModule();
 			wc.hIcon = m_hIconBig;
 			wc.hIconSm = m_hIconSmall;
+			wc.hCursor = m_hCursor;
 			wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 			wc.lpszClassName = pClassName;
 			if (!RegisterClassExW(&wc))
@@ -1340,7 +1351,14 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	REGISTER_STRING_CB("r_MouseCursorTexture", "%ENGINE%/EngineAssets/Textures/Cursor_Green.dds", VF_NULL,
 	                   "Sets the image (dds file) to be displayed as the mouse cursor",
 	                   SetMouseCursorIconCVar);
-#endif
+
+#if CRY_PLATFORM_WINDOWS
+	REGISTER_INT_CB("r_MouseUseSystemCursor", 0, VF_NULL,
+		"Should the game use the hardware mouse cursor?",
+		SetMouseUseSystemCursorCVar);
+#endif // CRY_PLATFORM_WINDOWS
+
+#endif // CRY_PLATFORM_DESKTOP
 
 	REGISTER_INT("r_resizableWindow", 1, VF_NULL, "Turn on resizable window borders. Changes are only applied after changing the window style once.");
 
