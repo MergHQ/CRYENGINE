@@ -639,7 +639,10 @@ struct IEntityScriptComponent : public IEntityComponent
 	virtual void EnableScriptUpdate(bool bEnable) = 0;
 };
 
-//! Proximity trigger component interface.
+//! Interface to the trigger component, exposing support for tracking enter / leave events for other entities entering a predefined trigger box
+//! An in-game example that uses this functionality is the ProximityTrigger entity
+//! \par Example
+//! \include CryEntitySystem/TriggerComponent.cpp
 struct IEntityTriggerComponent : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_GUID(IEntityTriggerComponent, "de73851b-7e35-419f-a509-51d204f555de"_cry_guid)
@@ -915,7 +918,9 @@ struct IEntityCameraComponent : public IEntityComponent
 	virtual CCamera& GetCamera() = 0;
 };
 
-//! Component for the entity rope.
+//! Interface to the rope component, providing support for creating a rendered and physical rope on the entity position
+//! \par Example
+//! \include CryEntitySystem/RopeComponent.cpp
 struct IEntityRopeComponent : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_GUID(IEntityRopeComponent, "368e5dcd-0d95-4101-b1f9-da514945f40c"_cry_guid)

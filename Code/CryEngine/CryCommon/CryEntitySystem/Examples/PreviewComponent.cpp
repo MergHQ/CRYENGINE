@@ -4,6 +4,7 @@
 class CMyPreviewComponent : public IEntityComponent, public IEntityComponentPreviewer
 {
 public:
+	virtual ~CMyPreviewComponent() = default;
 	static void ReflectType(Schematyc::CTypeDesc<CMyPreviewComponent>& desc) { /* Reflect the component GUID in here. */}
 	
 	// Override the interface function to return the previewer. This is needed by internal systems.

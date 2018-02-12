@@ -993,45 +993,45 @@ struct IRopeRenderNode : public IRenderNode
 	};
 	struct SRopeParams
 	{
-		int   nFlags; //!< ERopeParamFlags.
+		int   nFlags = eRope_CheckCollisinos; //!< ERopeParamFlags.
 
-		float fThickness;
+		float fThickness = 0.02f;
 
 		//! Radius for the end points anchors that bind rope to objects in world.
-		float fAnchorRadius;
+		float fAnchorRadius = 0.1f;
 
 		//////////////////////////////////////////////////////////////////////////
 		// Rendering/Tessellation.
-		int   nNumSegments;
-		int   nNumSides;
-		float fTextureTileU;
-		float fTextureTileV;
+		int   nNumSegments = 8;
+		int   nNumSides = 4;
+		float fTextureTileU = 1.f;
+		float fTextureTileV = 10.f;
 		//////////////////////////////////////////////////////////////////////////
 
 		//////////////////////////////////////////////////////////////////////////
 		// Rope Physical parameters.
-		int   nPhysSegments;
-		int   nMaxSubVtx;
+		int   nPhysSegments = 8;
+		int   nMaxSubVtx = 3;
 
-		float mass;        //!< Rope mass. if mass is 0 it will be static.
-		float tension;
-		float friction;
-		float frictionPull;
+		float mass = 1.f;        //!< Rope mass. if mass is 0 it will be static.
+		float tension = 0.5f;
+		float friction = 2.f;
+		float frictionPull = 2.f;
 
-		Vec3  wind;
-		float windVariance;
-		float airResistance;
-		float waterResistance;
+		Vec3  wind = ZERO;
+		float windVariance = 0.f;
+		float airResistance = 0.f;
+		float waterResistance = 0.f;
 
-		float jointLimit;
-		float maxForce;
+		float jointLimit = 0.f;
+		float maxForce = 0.f;
 
-		int   nMaxIters;
-		float maxTimeStep;
-		float stiffness;
-		float hardness;
-		float damping;
-		float sleepSpeed;
+		int   nMaxIters = 650;
+		float maxTimeStep = 0.25f;
+		float stiffness = 10.f;
+		float hardness = 20.f;
+		float damping = 0.2f;
+		float sleepSpeed = 0.04f;
 	};
 	struct SEndPointLink
 	{
