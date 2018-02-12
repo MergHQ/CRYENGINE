@@ -1977,6 +1977,12 @@ void CUNIXConsoleInputThread::ThreadEntry()
 {
 		#if !CRY_PLATFORM_WINDOWS
 	fd_set rdfds;
+
+	// If stdout is not a tty, we won't be accepting input, so just end the thread
+	if (!isatty(fileno(stdout)))
+	{
+		return;
+	}
 		#endif
 	bool interrupted = false;
 
