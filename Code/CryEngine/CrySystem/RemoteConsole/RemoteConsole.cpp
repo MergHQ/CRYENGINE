@@ -299,6 +299,7 @@ void SRemoteServer::SignalStopWork()
 	// Close socket here as server thread might be blocking on ::accept
 	if (m_socket != CRY_INVALID_SOCKET && m_socket != CRY_SOCKET_ERROR)
 	{
+		CrySock::shutdown(m_socket, SD_BOTH);
 		CrySock::closesocket(m_socket);
 	}
 	m_socket = CRY_SOCKET_ERROR;
