@@ -181,6 +181,7 @@ class CCryPakFindData : public _reference_target_t
 public:
 	// the directory wildcard must already be adjusted
 	CCryPakFindData();
+	explicit CCryPakFindData(const char* szNameFilter);
 	bool         empty() const;
 	bool         Fetch(_finddata_t* pfd);
 	virtual void Scan(CCryPak* pPak, const char* szDir, bool bAllowUseFS = false);
@@ -212,6 +213,7 @@ protected:
 	};
 	typedef std::map<string, FileDesc, CIStringOrder> FileMap;
 	FileMap m_mapFiles;
+	const char* m_szNameFilter;
 };
 
 TYPEDEF_AUTOPTR(CCryPakFindData);
@@ -571,7 +573,6 @@ public: // ---------------------------------------------------------------------
 	virtual bool                    RemoveFile(const char* pName) override;               // remove file from FS (if supported)
 	virtual bool                    RemoveDir(const char* pName, bool bRecurse) override; // remove directory from FS (if supported)
 	virtual bool                    IsAbsPath(const char* pPath) override;
-	virtual CCryPakFindData*        CreateFindData();
 
 	virtual bool                    CopyFileOnDisk(const char* source, const char* dest, bool bFailIfExist) override;
 

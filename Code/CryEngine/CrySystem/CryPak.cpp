@@ -2244,7 +2244,9 @@ intptr_t CCryPak::FindFirst(const char* pDir, _finddata_t* fd,
 	//m_pLog->Log("Scanning %s",pDir);
 	//const char *szFullPath = AdjustFileName(pDir, szFullPathBuf, 0);
 	const char* szFullPath = AdjustFileName(pDir, szFullPathBuf, nPathFlags);
-	CCryPakFindData_AutoPtr pFindData = CreateFindData();
+
+	// Prevent recursive data root folder scanning.
+	CCryPakFindData_AutoPtr pFindData = new CCryPakFindData(m_strDataRoot);
 	pFindData->Scan(this, szFullPath, bAllOwUseFileSystem);
 	if (pFindData->empty())
 	{
@@ -3232,6 +3234,12 @@ void CCryPakFindData::Scan(class CCryPak* pPak, const char* szDir, bool bAllowUs
 
 //////////////////////////////////////////////////////////////////////////
 CCryPakFindData::CCryPakFindData()
+	: m_szNameFilter(nullptr)
+{
+}
+
+CCryPakFindData::CCryPakFindData(const char* szNameFilter)
+	: m_szNameFilter(szNameFilter)
 {
 }
 
@@ -3296,7 +3304,10 @@ void CCryPakFindData::ScanFS(CCryPak* pPak, const char* szDirIn)
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Unable to get file handle%s: %s", bHasWildcard ? " (loaded using a wildcard)" : "", CryStringUtils::WStrToUTF8(szPath));
 			}
 		}
-		m_mapFiles.insert(FileMap::value_type(fd.name, FileDesc(&fd)));
+		if (!m_szNameFilter || cry_stricmp(m_szNameFilter, fd.name))
+		{
+			m_mapFiles.insert(FileMap::value_type(fd.name, FileDesc(&fd)));
+		}
 	}
 	while (0 == _wfindnext64(nFS, &fdw));
 
@@ -4316,11 +4327,6 @@ bool CCryPak::IsAbsPath(const char* pPath)
 	                  || IsDirSep(pPath[0])
 	                  )
 	        );
-}
-
-CCryPakFindData* CCryPak::CreateFindData()
-{
-	return new CCryPakFindData();
 }
 
 //////////////////////////////////////////////////////////////////////////
