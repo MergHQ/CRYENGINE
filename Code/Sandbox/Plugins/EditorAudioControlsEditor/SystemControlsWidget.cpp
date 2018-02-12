@@ -290,12 +290,12 @@ void CSystemControlsWidget::CreateParentFolder()
 
 	for (auto const pFolder : folders)
 	{
-		assetsToMove.emplace_back(static_cast<CSystemAsset*>(pFolder));
+		assetsToMove.push_back(static_cast<CSystemAsset*>(pFolder));
 	}
 
 	for (auto const pControl : controls)
 	{
-		assetsToMove.emplace_back(static_cast<CSystemAsset*>(pControl));
+		assetsToMove.push_back(static_cast<CSystemAsset*>(pControl));
 	}
 
 	auto const pParent = assetsToMove[0]->GetParent();

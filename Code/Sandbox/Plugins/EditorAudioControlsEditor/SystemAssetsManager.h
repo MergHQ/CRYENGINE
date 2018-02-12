@@ -9,7 +9,7 @@
 
 namespace ACE
 {
-class CImplItem;
+struct IImplItem;
 
 class CSystemAssetsManager
 {
@@ -46,7 +46,7 @@ public:
 	void            ClearAllConnections();
 	void            ReloadAllConnections();
 	void            MoveItems(CSystemAsset* const pParent, std::vector<CSystemAsset*> const& items);
-	void            CreateAndConnectImplItems(CImplItem* const pImplItem, CSystemAsset* const pParent);
+	void            CreateAndConnectImplItems(IImplItem* const pImplItem, CSystemAsset* const pParent);
 
 	bool            IsTypeDirty(ESystemItemType const type) const;
 	bool            IsDirty() const;
@@ -62,8 +62,8 @@ public:
 
 	void            OnControlAboutToBeModified(CSystemControl* const pControl);
 	void            OnControlModified(CSystemControl* const pControl);
-	void            OnConnectionAdded(CSystemControl* const pControl, CImplItem* const pImplControl);
-	void            OnConnectionRemoved(CSystemControl* const pControl, CImplItem* const pImplControl);
+	void            OnConnectionAdded(CSystemControl* const pControl, IImplItem* const pImplItem);
+	void            OnConnectionRemoved(CSystemControl* const pControl, IImplItem* const pImplItem);
 	void            OnAssetRenamed();
 
 	void            UpdateFolderPaths();
@@ -89,7 +89,7 @@ public:
 
 private:
 
-	CSystemAsset* CreateAndConnectImplItemsRecursively(CImplItem* const pImplItem, CSystemAsset* const pParent);
+	CSystemAsset* CreateAndConnectImplItemsRecursively(IImplItem* const pImplItem, CSystemAsset* const pParent);
 	CID           GenerateUniqueId() { return m_nextId++; }
 
 	using ScopesInfo = std::map<Scope, SScopeInfo>;

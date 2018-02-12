@@ -7,7 +7,7 @@
 #include "ImplementationManager.h"
 
 #include <IEditor.h>
-#include <ImplItem.h>
+#include <IImplItem.h>
 #include <CrySerialization/StringList.h>
 #include <CryMath/Cry_Geo.h>
 #include <Util/Math.h>
@@ -87,7 +87,7 @@ void CSystemAsset::SetParent(CSystemAsset* const pParent)
 //////////////////////////////////////////////////////////////////////////
 void CSystemAsset::AddChild(CSystemAsset* const pChildControl)
 {
-	m_children.emplace_back(pChildControl);
+	m_children.push_back(pChildControl);
 	SetModified(true);
 }
 
@@ -438,7 +438,7 @@ ConnectionPtr CSystemControl::GetConnection(CID const id) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CSystemControl::GetConnection(CImplItem const* const pAudioSystemControl) const
+ConnectionPtr CSystemControl::GetConnection(IImplItem const* const pAudioSystemControl) const
 {
 	return GetConnection(pAudioSystemControl->GetId());
 }
@@ -450,15 +450,15 @@ void CSystemControl::AddConnection(ConnectionPtr const pConnection)
 	{
 		if (g_pEditorImpl != nullptr)
 		{
-			CImplItem* const pImplControl = g_pEditorImpl->GetControl(pConnection->GetID());
+			IImplItem* const pImplItem = g_pEditorImpl->GetImplItem(pConnection->GetID());
 
-			if (pImplControl != nullptr)
+			if (pImplItem != nullptr)
 			{
 				g_pEditorImpl->EnableConnection(pConnection);
 				pConnection->SignalConnectionChanged.Connect(this, &CSystemControl::SignalConnectionModified);
-				m_connectedControls.emplace_back(pConnection);
+				m_connectedControls.push_back(pConnection);
 				MatchRadiusToAttenuation();
-				SignalConnectionAdded(pImplControl);
+				SignalConnectionAdded(pImplItem);
 				SignalControlModified();
 			}
 		}
@@ -476,14 +476,14 @@ void CSystemControl::RemoveConnection(ConnectionPtr const pConnection)
 		{
 			if (g_pEditorImpl != nullptr)
 			{
-				CImplItem* const pImplControl = g_pEditorImpl->GetControl(pConnection->GetID());
+				IImplItem* const pImplItem = g_pEditorImpl->GetImplItem(pConnection->GetID());
 
-				if (pImplControl != nullptr)
+				if (pImplItem != nullptr)
 				{
 					g_pEditorImpl->DisableConnection(pConnection);
 					m_connectedControls.erase(it);
 					MatchRadiusToAttenuation();
-					SignalConnectionRemoved(pImplControl);
+					SignalConnectionRemoved(pImplItem);
 					SignalControlModified();
 				}
 			}
@@ -501,11 +501,11 @@ void CSystemControl::ClearConnections()
 			for (ConnectionPtr const& connection : m_connectedControls)
 			{
 				g_pEditorImpl->DisableConnection(connection);
-				CImplItem* const pImplControl = g_pEditorImpl->GetControl(connection->GetID());
+				IImplItem* const pImplItem = g_pEditorImpl->GetImplItem(connection->GetID());
 
-				if (pImplControl != nullptr)
+				if (pImplItem != nullptr)
 				{
-					SignalConnectionRemoved(pImplControl);
+					SignalConnectionRemoved(pImplItem);
 				}
 			}
 		}
@@ -517,11 +517,11 @@ void CSystemControl::ClearConnections()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControl::RemoveConnection(CImplItem* const pImplControl)
+void CSystemControl::RemoveConnection(IImplItem* const pImplItem)
 {
-	if (pImplControl != nullptr)
+	if (pImplItem != nullptr)
 	{
-		CID const id = pImplControl->GetId();
+		CID const id = pImplItem->GetId();
 		auto it = m_connectedControls.begin();
 		auto const end = m_connectedControls.end();
 
@@ -536,7 +536,7 @@ void CSystemControl::RemoveConnection(CImplItem* const pImplControl)
 
 				m_connectedControls.erase(it);
 				MatchRadiusToAttenuation();
-				SignalConnectionRemoved(pImplControl);
+				SignalConnectionRemoved(pImplItem);
 				SignalControlModified();
 				break;
 			}
@@ -564,15 +564,15 @@ void CSystemControl::SignalControlAboutToBeModified()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControl::SignalConnectionAdded(CImplItem* const pImplControl)
+void CSystemControl::SignalConnectionAdded(IImplItem* const pImplItem)
 {
-	CAudioControlsEditorPlugin::GetAssetsManager()->OnConnectionAdded(this, pImplControl);
+	CAudioControlsEditorPlugin::GetAssetsManager()->OnConnectionAdded(this, pImplItem);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControl::SignalConnectionRemoved(CImplItem* const pImplControl)
+void CSystemControl::SignalConnectionRemoved(IImplItem* const pImplItem)
 {
-	CAudioControlsEditorPlugin::GetAssetsManager()->OnConnectionRemoved(this, pImplControl);
+	CAudioControlsEditorPlugin::GetAssetsManager()->OnConnectionRemoved(this, pImplItem);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -728,11 +728,11 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 
 			for (auto const& connection : m_connectedControls)
 			{
-				CImplItem const* const pImplControl = g_pEditorImpl->GetControl(connection->GetID());
+				IImplItem const* const pImplItem = g_pEditorImpl->GetImplItem(connection->GetID());
 
-				if ((pImplControl != nullptr) && !pImplControl->IsPlaceholder())
+				if ((pImplItem != nullptr) && !pImplItem->IsPlaceholder())
 				{
-					connectionMaxRadius = std::max(connectionMaxRadius, pImplControl->GetRadius());
+					connectionMaxRadius = std::max(connectionMaxRadius, pImplItem->GetRadius());
 				}
 				else
 				{
@@ -782,11 +782,11 @@ void CSystemControl::MatchRadiusToAttenuation()
 
 		for (auto const& connection : m_connectedControls)
 		{
-			CImplItem const* const pImplControl = g_pEditorImpl->GetControl(connection->GetID());
+			IImplItem const* const pImplItem = g_pEditorImpl->GetImplItem(connection->GetID());
 
-			if ((pImplControl != nullptr) && !pImplControl->IsPlaceholder())
+			if ((pImplItem != nullptr) && !pImplItem->IsPlaceholder())
 			{
-				radius = std::max(radius, pImplControl->GetRadius());
+				radius = std::max(radius, pImplItem->GetRadius());
 			}
 			else
 			{

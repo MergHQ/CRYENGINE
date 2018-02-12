@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -6,7 +6,7 @@
 
 namespace ACE
 {
-class CImplItem;
+struct IImplItem;
 
 namespace ModelUtils
 {
@@ -19,8 +19,8 @@ enum class EItemStatus
 	NotificationHeader,
 };
 
-void        GetPlatformNames();
-QStringList GetScopeNames();
+void               GetPlatformNames();
+QStringList        GetScopeNames();
 
 inline char const* GetItemNotificationIcon(EItemStatus const status)
 {
@@ -53,16 +53,18 @@ inline char const* GetItemNotificationIcon(EItemStatus const status)
 
 static char const* const s_szSystemMimeType = "AudioSystemItems";
 static char const* const s_szImplMimeType = "AudioImplItems";
-static QStringList const s_typeFilterList{ "Trigger","Parameter","Switch","State","Environment","Preload" };
+static QStringList const s_typeFilterList {
+	"Trigger", "Parameter", "Switch", "State", "Environment", "Preload"
+};
 
-static CItemModelAttribute              s_notificationAttribute("Notification", eAttributeType_String, CItemModelAttribute::Visible, false);
-static CItemModelAttribute              s_placeholderAttribute("Valid Connection", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Unchecked);
-static CItemModelAttribute              s_connectedAttribute("Connected", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Unchecked);
-static CItemModelAttribute              s_localizedAttribute("Localized", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Checked);
-static CItemModelAttribute              s_noControlAttribute("Empty", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Checked);
-static CItemModelAttribute              s_pathAttribute("Path", eAttributeType_String, CItemModelAttribute::Visible, false);
-static CItemModelAttributeEnum          s_typeAttribute("Type", s_typeFilterList, CItemModelAttribute::AlwaysHidden, true);
-static CItemModelAttributeEnumFunc      s_scopeAttribute("Scope", &GetScopeNames, CItemModelAttribute::StartHidden, true);
+static CItemModelAttribute s_notificationAttribute("Notification", eAttributeType_String, CItemModelAttribute::Visible, false);
+static CItemModelAttribute s_placeholderAttribute("Valid Connection", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Unchecked);
+static CItemModelAttribute s_connectedAttribute("Connected", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Unchecked);
+static CItemModelAttribute s_localizedAttribute("Localized", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Checked);
+static CItemModelAttribute s_noControlAttribute("Empty", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Checked);
+static CItemModelAttribute s_pathAttribute("Path", eAttributeType_String, CItemModelAttribute::Visible, false);
+static CItemModelAttributeEnum s_typeAttribute("Type", s_typeFilterList, CItemModelAttribute::AlwaysHidden, true);
+static CItemModelAttributeEnumFunc s_scopeAttribute("Scope", &GetScopeNames, CItemModelAttribute::StartHidden, true);
 static std::vector<CItemModelAttribute> s_platformModellAttributes;
 } // namespace ModelUtils
 } // namespace ACE

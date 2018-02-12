@@ -8,7 +8,7 @@
 #include "SystemControlsIcons.h"
 #include "ModelUtils.h"
 
-#include <ImplItem.h>
+#include <IImplItem.h>
 #include <QtUtil.h>
 #include <DragDrop.h>
 
@@ -180,7 +180,7 @@ QMimeData* GetDragDropData(QModelIndexList const& list)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DecodeImplMimeData(const QMimeData* pData, std::vector<CImplItem*>& outItems)
+void DecodeImplMimeData(const QMimeData* pData, std::vector<IImplItem*>& outItems)
 {
 	CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
 
@@ -196,11 +196,11 @@ void DecodeImplMimeData(const QMimeData* pData, std::vector<CImplItem*>& outItem
 
 			if (id != ACE_INVALID_ID)
 			{
-				CImplItem* const pImplControl = g_pEditorImpl->GetControl(id);
+				IImplItem* const pImplItem = g_pEditorImpl->GetImplItem(id);
 
-				if (pImplControl != nullptr)
+				if (pImplItem != nullptr)
 				{
-					outItems.emplace_back(pImplControl);
+					outItems.push_back(pImplItem);
 				}
 			}
 		}
@@ -256,12 +256,12 @@ bool CanDropMimeData(QMimeData const* const pData, CSystemAsset const& parent)
 	bool hasValidParent = true;
 
 	// Handle first if mime data is an external (from the implementation side) source.
-	std::vector<CImplItem*> implItems;
+	std::vector<IImplItem*> implItems;
 	SystemModelUtils::DecodeImplMimeData(pData, implItems);
 
 	if (!implItems.empty())
 	{
-		for (CImplItem const* const pImplItem : implItems)
+		for (IImplItem const* const pImplItem : implItems)
 		{
 			if (!IsParentValid(parent, g_pEditorImpl->ImplTypeToSystemType(pImplItem)))
 			{
@@ -317,16 +317,16 @@ bool CanDropMimeData(QMimeData const* const pData, CSystemAsset const& parent)
 void DropMimeData(QMimeData const* const pData, CSystemAsset* const pParent)
 {
 	// Handle first if mime data is an external (from the implementation side) source
-	std::vector<CImplItem*> implItems;
+	std::vector<IImplItem*> implItems;
 	SystemModelUtils::DecodeImplMimeData(pData, implItems);
 
 	if (!implItems.empty())
 	{
 		CSystemAssetsManager* const pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
 
-		for (CImplItem* const pImplControl : implItems)
+		for (IImplItem* const pImplItem : implItems)
 		{
-			pAssetsManager->CreateAndConnectImplItems(pImplControl, pParent);
+			pAssetsManager->CreateAndConnectImplItems(pImplItem, pParent);
 		}
 	}
 	else

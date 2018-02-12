@@ -23,6 +23,7 @@ string const g_eventsFolderName = "Events";
 string const g_environmentsFolderName = "Master-Mixer Hierarchy";
 string const g_soundBanksFolderName = "SoundBanks";
 string const g_soundBanksInfoFileName = "SoundbanksInfo.xml";
+CID g_soundBanksFolderId = ACE_INVALID_ID;
 
 //////////////////////////////////////////////////////////////////////////
 EImpltemType TagToItemType(string const& tag)
@@ -74,13 +75,13 @@ EImpltemType TagToItemType(string const& tag)
 }
 
 //////////////////////////////////////////////////////////////////////////
-string BuildPath(CImplItem const* const pImplItem)
+string BuildPath(IImplItem const* const pImplItem)
 {
 	string buildPath = "";
 
 	if (pImplItem != nullptr)
 	{
-		CImplItem const* const pParent = pImplItem->GetParent();
+		IImplItem const* const pParent = pImplItem->GetParent();
 
 		if (pParent != nullptr)
 		{
@@ -96,9 +97,9 @@ string BuildPath(CImplItem const* const pImplItem)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& root, ControlsCache& controlsCache)
-	: m_root(root)
-	, m_controlsCache(controlsCache)
+CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& rootItem, ItemCache& itemCache)
+	: m_rootItem(rootItem)
+	, m_itemCache(itemCache)
 	, m_projectPath(projectPath)
 {
 	LoadEventsMetadata(soundbanksPath);
@@ -112,13 +113,14 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 	BuildFileCache(g_eventsFolderName);
 	BuildFileCache(g_environmentsFolderName);
 
-	LoadFolder("", g_parametersFolderName, m_root);
-	LoadFolder("", g_statesFolderName, m_root);
-	LoadFolder("", g_switchesFolderName, m_root);
-	LoadFolder("", g_eventsFolderName, m_root);
-	LoadFolder("", g_environmentsFolderName, m_root);
+	LoadFolder("", g_parametersFolderName, m_rootItem);
+	LoadFolder("", g_statesFolderName, m_rootItem);
+	LoadFolder("", g_switchesFolderName, m_rootItem);
+	LoadFolder("", g_eventsFolderName, m_rootItem);
+	LoadFolder("", g_environmentsFolderName, m_rootItem);
 
-	CImplItem* const pSoundBanks = CreateItem(g_soundBanksFolderName, EImpltemType::PhysicalFolder, m_root);
+	CImplItem* const pSoundBanks = CreateItem(g_soundBanksFolderName, EImpltemType::PhysicalFolder, m_rootItem);
+	g_soundBanksFolderId = pSoundBanks->GetId();
 	LoadSoundBanks(soundbanksPath, false, *pSoundBanks);
 
 	char const* const szLanguage = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
@@ -132,14 +134,14 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 	  CryAudio::s_szAssetsFolderName;
 	LoadSoundBanks(locaFolder, true, *pSoundBanks);
 
-	if (pSoundBanks->ChildCount() == 0)
+	if (pSoundBanks->GetNumChildren() == 0)
 	{
-		m_root.RemoveChild(pSoundBanks);
-		ControlsCache::const_iterator const it(m_controlsCache.find(pSoundBanks->GetId()));
+		m_rootItem.RemoveChild(pSoundBanks);
+		ItemCache::const_iterator const it(m_itemCache.find(pSoundBanks->GetId()));
 
-		if (it != m_controlsCache.end())
+		if (it != m_itemCache.end())
 		{
-			m_controlsCache.erase(it);
+			m_itemCache.erase(it);
 		}
 
 		delete pSoundBanks;
@@ -166,24 +168,26 @@ void CProjectLoader::LoadSoundBanks(string const& folderPath, bool const isLocal
 					{
 						string const fullname = folderPath + CRY_NATIVE_PATH_SEPSTR + name;
 						CID const id = CryAudio::StringToId(fullname);
-						CImplItem* const pImplControl = stl::find_in_map(m_controlsCache, id, nullptr);
+						CImplItem* const pImplItem = stl::find_in_map(m_itemCache, id, nullptr);
 
-						if (pImplControl == nullptr)
+						if (pImplItem == nullptr)
 						{
-							CImplControl* const pSoundBank = new CImplControl(name, id, static_cast<ItemType>(EImpltemType::SoundBank));
-							parent.AddChild(pSoundBank);
-							pSoundBank->SetLocalised(isLocalized);
+							EImplItemFlags flags = EImplItemFlags::None;
+							string filePath;
 
 							if (isLocalized)
 							{
-								pSoundBank->SetFilePath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + fullname);
+								flags = EImplItemFlags::IsLocalized;
+								filePath = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + fullname;
 							}
 							else
 							{
-								pSoundBank->SetFilePath(fullname);
+								filePath = fullname;
 							}
 
-							m_controlsCache[id] = pSoundBank;
+							auto const pSoundBank = new CImplItem(name, id, static_cast<ItemType>(EImpltemType::SoundBank), flags, filePath);
+							parent.AddChild(pSoundBank);
+							m_itemCache[id] = pSoundBank;
 						}
 					}
 				}
@@ -265,7 +269,7 @@ void CProjectLoader::LoadWorkUnitFile(const string& filePath, CImplItem& parent)
 				}
 			}
 
-			// Each files starts with the type of controls and then the WorkUnit
+			// Each files starts with the type of item and then the WorkUnit
 			int const childCount = pRoot->getChildCount();
 
 			for (int i = 0; i < childCount; ++i)
@@ -283,7 +287,7 @@ void CProjectLoader::LoadXml(XmlNodeRef const pRoot, CImplItem& parent)
 {
 	if (pRoot != nullptr)
 	{
-		CImplItem* pControl = &parent;
+		CImplItem* pImplItem = &parent;
 		EImpltemType const type = TagToItemType(pRoot->getTag());
 
 		if (type != EImpltemType::Invalid)
@@ -297,12 +301,12 @@ void CProjectLoader::LoadXml(XmlNodeRef const pRoot, CImplItem& parent)
 
 			if (it != m_items.end())
 			{
-				pControl = it->second;
+				pImplItem = it->second;
 			}
 			else
 			{
-				pControl = CreateItem(name, type, parent);
-				m_items[itemId] = pControl;
+				pImplItem = CreateItem(name, type, parent);
+				m_items[itemId] = pImplItem;
 			}
 		}
 
@@ -313,7 +317,7 @@ void CProjectLoader::LoadXml(XmlNodeRef const pRoot, CImplItem& parent)
 			int const childCount = pChildren->getChildCount();
 			for (int i = 0; i < childCount; ++i)
 			{
-				LoadXml(pChildren->getChild(i), *pControl);
+				LoadXml(pChildren->getChild(i), *pImplItem);
 			}
 		}
 	}
@@ -325,43 +329,56 @@ CImplItem* CProjectLoader::CreateItem(const string& name, EImpltemType const typ
 	string const path = BuildPath(&parent);
 	string const fullPathName = path + CRY_NATIVE_PATH_SEPSTR + name;
 
-	// The id is always the path of the control from the root of the wwise project
+	// The id is always the path of the item from the root of the wwise project
 	CID const id = CryAudio::StringToId(fullPathName);
 
-	CImplItem* pImplControl = stl::find_in_map(m_controlsCache, id, nullptr);
+	CImplItem* pImplItem = stl::find_in_map(m_itemCache, id, nullptr);
 
-	if (pImplControl == nullptr)
+	if (pImplItem == nullptr)
 	{
-		pImplControl = new CImplControl(name, id, static_cast<ItemType>(type));
-
-		if (type == EImpltemType::Event)
+		switch (type)
 		{
-			pImplControl->SetRadius(m_eventsInfoMap[CryAudio::StringToId(name.c_str())].maxRadius);
-		}
-		else if (type == EImpltemType::WorkUnit)
-		{
-			pImplControl->SetContainer(true);
-			pImplControl->SetFilePath(m_projectPath + fullPathName + ".wwu");
-		}
-		else if (type == EImpltemType::PhysicalFolder)
-		{
-			pImplControl->SetContainer(true);
-
-			if (name != g_soundBanksFolderName)
+		case EImpltemType::WorkUnit:
 			{
-				pImplControl->SetFilePath(m_projectPath + fullPathName);
+				pImplItem = new CImplItem(name, id, static_cast<ItemType>(type), EImplItemFlags::IsContainer, m_projectPath + fullPathName + ".wwu");
 			}
-		}
-		else if ((type == EImpltemType::VirtualFolder) || (type == EImpltemType::SwitchGroup) || (type == EImpltemType::StateGroup))
-		{
-			pImplControl->SetContainer(true);
+			break;
+		case EImpltemType::PhysicalFolder:
+			{
+				if (id != g_soundBanksFolderId)
+				{
+					pImplItem = new CImplItem(name, id, static_cast<ItemType>(type), EImplItemFlags::IsContainer, m_projectPath + fullPathName);
+				}
+				else
+				{
+					pImplItem = new CImplItem(name, id, static_cast<ItemType>(type), EImplItemFlags::IsContainer);
+				}
+			}
+			break;
+		case EImpltemType::VirtualFolder:
+		case EImpltemType::SwitchGroup:
+		case EImpltemType::StateGroup:
+			{
+				pImplItem = new CImplItem(name, id, static_cast<ItemType>(type), EImplItemFlags::IsContainer);
+			}
+			break;
+		default:
+			{
+				pImplItem = new CImplItem(name, id, static_cast<ItemType>(type));
+
+				if (type == EImpltemType::Event)
+				{
+					pImplItem->SetRadius(m_eventsInfoMap[CryAudio::StringToId(name.c_str())].maxRadius);
+				}
+			}
+			break;
 		}
 
-		parent.AddChild(pImplControl);
-		m_controlsCache[id] = pImplControl;
+		parent.AddChild(pImplItem);
+		m_itemCache[id] = pImplItem;
 	}
 
-	return pImplControl;
+	return pImplItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -413,19 +430,6 @@ void CProjectLoader::LoadEventsMetadata(const string& soundbanksPath)
 			}
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-CImplItem* CProjectLoader::GetControlByName(string const& name, bool const isLocalised, CImplItem const* const pParent) const
-{
-	string fullName = (pParent != nullptr) ? (pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + name) : name;
-
-	if (isLocalised)
-	{
-		fullName = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + fullName;
-	}
-
-	return stl::find_in_map(m_controlsCache, CryAudio::StringToId(fullName), nullptr);
 }
 
 //////////////////////////////////////////////////////////////////////////

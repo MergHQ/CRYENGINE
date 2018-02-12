@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "ImplControls.h"
+#include "ImplItem.h"
 
 #include <CrySystem/XML/IXml.h>
 #include <SystemTypes.h>
@@ -15,7 +15,7 @@ class CProjectLoader final
 {
 public:
 
-	CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& root, ControlsCache& controlsCache);
+	CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& rootItem, ItemCache& itemCache);
 
 private:
 
@@ -25,8 +25,6 @@ private:
 	void       LoadXml(XmlNodeRef const root, CImplItem& parent);
 	CImplItem* CreateItem(string const& name, EImpltemType const type, CImplItem& pParent);
 	void       LoadEventsMetadata(string const& soundbanksPath);
-
-	CImplItem* GetControlByName(string const& name, bool const isLocalised = false, CImplItem const* const pParent = nullptr) const;
 
 	void       BuildFileCache(string const& folderPath);
 
@@ -41,10 +39,10 @@ private:
 	using FilesCache = std::map<uint32, string>;
 	using Items = std::map<uint32, CImplItem*>;
 
-	EventsInfoMap  m_eventsInfoMap;
-	CImplItem&     m_root;
-	ControlsCache& m_controlsCache;
-	string const   m_projectPath;
+	EventsInfoMap m_eventsInfoMap;
+	CImplItem&    m_rootItem;
+	ItemCache&    m_itemCache;
+	string const  m_projectPath;
 
 	// This maps holds the items with the internal IDs given in the Wwise files.
 	Items m_items;

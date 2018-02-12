@@ -1,11 +1,11 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 
 #include "ModelUtils.h"
 #include "AudioControlsEditorPlugin.h"
 
-#include <ImplItem.h>
+#include <IImplItem.h>
 #include <IEditorImpl.h>
 #include <ConfigurationManager.h>
 

@@ -8,7 +8,7 @@ add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
 		"IEditorImpl.h"
 		"ImplConnection.h"
-		"ImplItem.h"
+		"IImplItem.h"
 		"SystemTypes.h"
 )
 
