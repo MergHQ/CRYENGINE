@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,7 @@ class QMimeData;
 
 namespace ACE
 {
-class CImplItem;
+struct IImplItem;
 class CSystemControl;
 class CSystemLibrary;
 class CSystemFolder;
@@ -47,7 +47,7 @@ void                 GetAssetsFromIndexesSeparated(QModelIndexList const& list, 
 void                 GetAssetsFromIndexesCombined(QModelIndexList const& list, std::vector<CSystemAsset*>& outAssets);
 CSystemAsset*        GetAssetFromIndex(QModelIndex const& index, int const column);
 QMimeData*           GetDragDropData(QModelIndexList const& list);
-void                 DecodeImplMimeData(const QMimeData* pData, std::vector<CImplItem*>& outItems);
+void                 DecodeImplMimeData(const QMimeData* pData, std::vector<IImplItem*>& outItems);
 } // namespace SystemModelUtils
 
 class CSystemSourceModel : public QAbstractItemModel

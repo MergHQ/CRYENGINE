@@ -55,7 +55,7 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 			QToolButton* const pBrowseButton = new QToolButton(this);
 			pBrowseButton->setText("...");
 
-			if (pImplSettings->IsProjectPathEditable())
+			if (pImplSettings->SupportsProjects())
 			{
 				QObject::connect(pLineEdit, &QLineEdit::textChanged, [=](QString const& projectPath)
 					{
@@ -79,6 +79,7 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 			}
 			else
 			{
+				pLineEdit->setText(tr("The selected middleware doesn't support projects."));
 				pLineEdit->setEnabled(false);
 				pBrowseButton->setEnabled(false);
 			}

@@ -11,7 +11,7 @@
 
 namespace ACE
 {
-class CImplItem;
+struct IImplItem;
 
 struct SRawConnectionData
 {
@@ -125,11 +125,11 @@ public:
 	size_t                  GetConnectionCount() const                                     { return m_connectedControls.size(); }
 	void                    AddConnection(ConnectionPtr const pConnection);
 	void                    RemoveConnection(ConnectionPtr const pConnection);
-	void                    RemoveConnection(CImplItem* const pImplControl);
+	void                    RemoveConnection(IImplItem* const pImplItem);
 	void                    ClearConnections();
 	ConnectionPtr           GetConnectionAt(size_t const index) const;
 	ConnectionPtr           GetConnection(CID const id) const;
-	ConnectionPtr           GetConnection(CImplItem const* const pImplControl) const;
+	ConnectionPtr           GetConnection(IImplItem const* const pImplItem) const;
 	void                    ReloadConnections();
 	void                    LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex = -1);
 
@@ -145,8 +145,8 @@ private:
 
 	void SignalControlAboutToBeModified();
 	void SignalControlModified();
-	void SignalConnectionAdded(CImplItem* const pImplControl);
-	void SignalConnectionRemoved(CImplItem* const pImplControl);
+	void SignalConnectionAdded(IImplItem* const pImplItem);
+	void SignalConnectionRemoved(IImplItem* const pImplItem);
 	void SignalConnectionModified();
 
 	CID                        m_id = ACE_INVALID_ID;

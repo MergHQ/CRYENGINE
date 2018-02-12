@@ -8,7 +8,7 @@ class CItemModelAttribute;
 
 namespace ACE
 {
-class CImplItem;
+struct IImplItem;
 
 class CMiddlewareDataModel final : public QAbstractItemModel
 {
@@ -58,8 +58,8 @@ protected:
 private:
 
 	void        ConnectSignals();
-	CImplItem*  ItemFromIndex(QModelIndex const& index) const;
-	QModelIndex IndexFromItem(CImplItem const* const pImplItem) const;
+	IImplItem*  ItemFromIndex(QModelIndex const& index) const;
+	QModelIndex IndexFromItem(IImplItem const* const pImplItem) const;
 };
 
 class CMiddlewareFilterProxyModel final : public QAttributeFilterProxyModel

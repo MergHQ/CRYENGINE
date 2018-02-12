@@ -88,17 +88,16 @@ void CFileMonitorMiddleware::Enable()
 			int const gameFolderPathLength = (PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR).GetLength();
 
 			string const& soundBanksPath = pImplSettings->GetAssetsPath();
-			string const& soundBanksPathSubstr = (soundBanksPath).substr(gameFolderPathLength);
+			string const& soundBanksPathSubstr = soundBanksPath.substr(gameFolderPathLength);
 			m_monitorFolders.emplace_back(soundBanksPathSubstr.c_str());
 
 			string const& localizationPath = PathUtil::GetLocalizationFolder();
 			m_monitorFolders.emplace_back(localizationPath.c_str());
 
-			string const& projectPath = pImplSettings->GetProjectPath();
-
-			if (projectPath != soundBanksPath)
+			if (pImplSettings->SupportsProjects())
 			{
-				string const& projectPathSubstr = projectPath.substr(gameFolderPathLength);
+				string const projectPath = pImplSettings->GetProjectPath();
+				string const projectPathSubstr = projectPath.substr(gameFolderPathLength);
 				m_monitorFolders.emplace_back(projectPathSubstr.c_str());
 			}
 

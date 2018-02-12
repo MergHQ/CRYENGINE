@@ -14,14 +14,14 @@ namespace Fmod
 namespace Utils
 {
 //////////////////////////////////////////////////////////////////////////
-CID GetId(EImplItemType const type, string const& name, CImplItem* const pParent, CImplItem const& rootControl)
+CID GetId(EImplItemType const type, string const& name, CImplItem* const pParent, CImplItem const& rootItem)
 {
-	string const fullname = Utils::GetTypeName(type) + Utils::GetPathName(pParent, rootControl) + CRY_NATIVE_PATH_SEPSTR + name;
+	string const fullname = Utils::GetTypeName(type) + Utils::GetPathName(pParent, rootItem) + CRY_NATIVE_PATH_SEPSTR + name;
 	return CryAudio::StringToId(fullname.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////////
-string GetPathName(CImplItem const* const pImplItem, CImplItem const& rootControl)
+string GetPathName(CImplItem const* const pImplItem, CImplItem const& rootItem)
 {
 	string pathName = "";
 	auto const editorFolderType = static_cast<ItemType>(EImplItemType::EditorFolder);
@@ -29,9 +29,9 @@ string GetPathName(CImplItem const* const pImplItem, CImplItem const& rootContro
 	if (pImplItem != nullptr)
 	{
 		string fullname = pImplItem->GetName();
-		CImplItem const* pParent = pImplItem->GetParent();
+		IImplItem const* pParent = pImplItem->GetParent();
 
-		while ((pParent != nullptr) && (pParent->GetType() != editorFolderType) && (pParent != &rootControl))
+		while ((pParent != nullptr) && (pParent->GetType() != editorFolderType) && (pParent != &rootItem))
 		{
 			// The id needs to represent the full path, as we can have items with the same name in different folders
 			fullname = pParent->GetName() + "/" + fullname;

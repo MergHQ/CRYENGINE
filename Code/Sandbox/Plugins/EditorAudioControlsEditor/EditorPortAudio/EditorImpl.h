@@ -4,7 +4,7 @@
 
 #include <IEditorImpl.h>
 
-#include "ImplControls.h"
+#include "ImplItem.h"
 
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/File/CryFile.h>
@@ -26,7 +26,7 @@ public:
 	virtual char const* GetAssetsPath() const override              { return m_assetAndProjectPath.c_str(); }
 	virtual char const* GetProjectPath() const override             { return m_assetAndProjectPath.c_str(); }
 	virtual void        SetProjectPath(char const* szPath) override {}
-	virtual bool        IsProjectPathEditable() const override      { return false; }
+	virtual bool        SupportsProjects() const override           { return false; }
 	// ~IImplSettings
 
 private:
@@ -43,16 +43,16 @@ public:
 
 	// IEditorImpl
 	virtual void            Reload(bool const preserveConnectionStatus = true) override;
-	virtual CImplItem*      GetRoot() override { return &m_rootControl; }
-	virtual CImplItem*      GetControl(CID const id) const override;
-	virtual char const*     GetTypeIcon(CImplItem const* const pImplItem) const override;
+	virtual IImplItem*      GetRoot() override { return &m_rootItem; }
+	virtual IImplItem*      GetImplItem(CID const id) const override;
+	virtual char const*     GetTypeIcon(IImplItem const* const pImplItem) const override;
 	virtual string const&   GetName() const override;
 	virtual string const&   GetFolderName() const override;
 	virtual IImplSettings*  GetSettings() override { return &m_implSettings; }
 	virtual bool            IsSystemTypeSupported(ESystemItemType const systemType) const override;
-	virtual bool            IsTypeCompatible(ESystemItemType const systemType, CImplItem const* const pImplItem) const override;
-	virtual ESystemItemType ImplTypeToSystemType(CImplItem const* const pImplItem) const override;
-	virtual ConnectionPtr   CreateConnectionToControl(ESystemItemType const controlType, CImplItem* const pImplItem) override;
+	virtual bool            IsTypeCompatible(ESystemItemType const systemType, IImplItem const* const pImplItem) const override;
+	virtual ESystemItemType ImplTypeToSystemType(IImplItem const* const pImplItem) const override;
+	virtual ConnectionPtr   CreateConnectionToControl(ESystemItemType const controlType, IImplItem* const pImplItem) override;
 	virtual ConnectionPtr   CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystemItemType const controlType) override;
 	virtual XmlNodeRef      CreateXMLNodeFromConnection(ConnectionPtr const pConnection, ESystemItemType const controlType) override;
 	virtual void            EnableConnection(ConnectionPtr const pConnection) override;
@@ -62,7 +62,7 @@ public:
 private:
 
 	void Clear();
-	void CreateControlCache(CImplItem const* const pParent);
+	void CreateItemCache(CImplItem const* const pParent);
 	CID  GetId(string const& name) const;
 
 	static string const s_itemNameTag;
@@ -77,11 +77,11 @@ private:
 	static string const s_volumeTag;
 	static string const s_loopCountTag;
 
-	using ControlsCache = std::map<CID, CImplItem*>;
+	using ItemCache = std::map<CID, CImplItem*>;
 	using ConnectionsMap = std::map<CID, int>;
 
-	CImplItem           m_rootControl;
-	ControlsCache       m_controlsCache; // cache of the controls stored by id for faster access
+	CImplItem           m_rootItem { "", ACE_INVALID_ID, AUDIO_SYSTEM_INVALID_TYPE };
+	ItemCache           m_itemCache; // cache of the items stored by id for faster access
 	ConnectionsMap      m_connectionsByID;
 	CImplSettings       m_implSettings;
 	CryAudio::SImplInfo m_implInfo;
