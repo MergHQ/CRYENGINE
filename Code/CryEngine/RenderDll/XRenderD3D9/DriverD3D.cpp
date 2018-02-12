@@ -3873,12 +3873,23 @@ bool CD3D9Renderer::CaptureFrameBufferFast(unsigned char* pDstRGBA8, int destina
 			if (width  != pSourceTexture->GetWidth() ||
 				height != pSourceTexture->GetHeight())
 			{
+				RECT srcRct;
+				srcRct.left = srcRct.top = 0;
+				srcRct.right = pSourceTexture->GetWidth();
+				srcRct.bottom = pSourceTexture->GetHeight();
+			
+				RECT dstRct;
+				dstRct.left = dstRct.top = 0;
+				dstRct.right = width;
+				dstRct.bottom = height;
+
 				// reuse stereo left and right RTs to downscale
-				GetUtils().Downsample(
+				CStretchRegionPass().Execute(
 					pSourceTexture,
 					CRendererResources::s_ptexBackBuffer,
-					pSourceTexture->GetWidth(), pSourceTexture->GetHeight(),
-					width, height);
+					&srcRct, &dstRct,
+					true, ColorF(1,1,1,1), 0);
+
 
 				pCopySourceTexture = CRendererResources::s_ptexBackBuffer;
 			}
