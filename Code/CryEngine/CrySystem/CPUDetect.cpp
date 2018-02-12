@@ -1445,6 +1445,11 @@ void CCpuFeatures::Detect(void)
 			if (strncmp("processor", buffer, (index = strlen("processor"))) == 0)
 			{
 				++nCpu;
+				if (nCpu >= MAX_CPU)
+				{
+					assert(0);
+					break;
+				}
 			}
 			else if (strncmp("vendor_id", buffer, (index = strlen("vendor_id"))) == 0)
 			{
