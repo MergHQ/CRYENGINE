@@ -853,7 +853,11 @@ inline CryStringT<T>::CryStringT(const_iterator _First, const_iterator _Last)
 template<class T>
 inline CryStringT<T>::~CryStringT()
 {
-	_FreeData(_header());
+	// the empty header is static and should not be freed
+	if (_header() != _emptyHeader())
+	{
+		_FreeData(_header());
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
