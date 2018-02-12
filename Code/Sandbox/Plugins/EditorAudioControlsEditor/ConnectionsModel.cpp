@@ -210,7 +210,11 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 
 				if (pImplItem != nullptr)
 				{
-					if (index.column() < static_cast<int>(EColumns::Count))
+					if (role == static_cast<int>(ERoles::Name))
+					{
+						variant = static_cast<char const*>(pImplItem->GetName());
+					}
+					else if (index.column() < static_cast<int>(EColumns::Count))
 					{
 						switch (index.column())
 						{
@@ -253,7 +257,6 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 									break;
 								case Qt::DisplayRole:
 								case Qt::ToolTipRole:
-								case static_cast<int>(ERoles::Name):
 									variant = static_cast<char const*>(pImplItem->GetName());
 									break;
 								case static_cast<int>(ERoles::Id):

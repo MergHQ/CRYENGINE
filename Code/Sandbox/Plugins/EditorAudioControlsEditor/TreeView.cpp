@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "TreeView.h"
@@ -13,7 +13,7 @@ namespace ACE
 CTreeView::CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags /*= QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute)*/)
 	: QAdvancedTreeView(QAdvancedTreeView::BehaviorFlags(flags), pParent)
 {
-	QObject::connect(header(), &QHeaderView::sortIndicatorChanged, [this] () { scrollTo(currentIndex()); });
+	QObject::connect(header(), &QHeaderView::sortIndicatorChanged, [this]() { scrollTo(currentIndex()); });
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -80,7 +80,7 @@ uint32 CTreeView::GetItemId(QModelIndex const& index) const
 
 			while (parent.isValid())
 			{
-				itemName.prepend((parent.data(m_nameRole).toString()) + "/");
+				itemName.append("/" + (parent.data(m_nameRole).toString()));
 				parent = parent.parent();
 			}
 

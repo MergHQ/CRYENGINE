@@ -458,6 +458,10 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 		{
 			variant = pLibrary->IsDefaultControl();
 		}
+		else if (role == static_cast<int>(SystemModelUtils::ERoles::Name))
+		{
+			variant = static_cast<char const*>(pLibrary->GetName());
+		}
 		else
 		{
 			switch (index.column())
@@ -888,6 +892,10 @@ QVariant CSystemLibraryModel::data(QModelIndex const& index, int role) const
 			{
 				variant = pItem->IsDefaultControl();
 			}
+			else if (role == static_cast<int>(SystemModelUtils::ERoles::Name))
+			{
+				variant = static_cast<char const*>(pItem->GetName());
+			}
 			else
 			{
 				ESystemItemType const itemType = pItem->GetType();
@@ -1033,9 +1041,6 @@ QVariant CSystemLibraryModel::data(QModelIndex const& index, int role) const
 							break;
 						case static_cast<int>(SystemModelUtils::ERoles::ItemType):
 							variant = static_cast<int>(itemType);
-							break;
-						case static_cast<int>(SystemModelUtils::ERoles::Name):
-							variant = static_cast<char const*>(pItem->GetName());
 							break;
 						case static_cast<int>(SystemModelUtils::ERoles::InternalPointer):
 							variant = reinterpret_cast<intptr_t>(pItem);
