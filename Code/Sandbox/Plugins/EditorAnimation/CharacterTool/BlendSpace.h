@@ -260,16 +260,7 @@ struct CombinedBlendSpace
 	{
 	}
 
-	void Serialize(IArchive& ar)
-	{
-		ar(m_idleToMove, "idleToMove", "Idle To Move");
-		ar(m_dimensions, "dimensions", "Dimensions");
-		ar(m_additionalExtraction, "m_additionalExtraction", "Additional Extraction");
-		ar(m_blendSpaces, "blendSpaces", "Blend Spaces");
-		ar(m_motionCombinations, "motionCombinations", "Motion Combinations");
-		ar(m_joints, "joints", "Joints");
-	}
-
+	void       Serialize(IArchive& ar);
 	bool       LoadFromXml(string& errorMessage, XmlNodeRef root, IAnimationSet* pAnimationSet);
 	XmlNodeRef SaveToXml() const;
 };

@@ -1100,6 +1100,19 @@ void CombinedBlendSpaceDimension::Serialize(IArchive& ar)
 	ar(parameterScale, "parameterScale", ">^ x");
 }
 
+void CombinedBlendSpace::Serialize(IArchive& ar)
+{
+	SMotionParametersPool parameterPool;
+	Serialization::SContext parameterPoolContext(ar, &parameterPool);
+
+	ar(m_idleToMove, "idleToMove", "Idle To Move");
+	ar(m_dimensions, "dimensions", "Dimensions");
+	ar(m_additionalExtraction, "m_additionalExtraction", "Additional Extraction");
+	ar(m_blendSpaces, "blendSpaces", "Blend Spaces");
+	ar(m_motionCombinations, "motionCombinations", "Motion Combinations");
+	ar(m_joints, "joints", "Joints");
+}
+
 bool CombinedBlendSpace::LoadFromXml(string& errorMessage, XmlNodeRef root, IAnimationSet* pAnimationSet)
 {
 	bool result = false;
