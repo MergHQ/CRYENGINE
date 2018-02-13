@@ -80,6 +80,8 @@ public:
 	virtual ELogMode    GetLogMode() const;
 
 	virtual void        ThreadExclusiveLogAccess(bool state);
+	
+	void				SetLogFormat(const char* format);
 
 private: // -------------------------------------------------------------------
 
@@ -96,6 +98,7 @@ private: // -------------------------------------------------------------------
 
 	// will format the message into m_szTemp
 	void FormatMessage(const char* szCommand, ...) PRINTF_PARAMS(2, 3);
+	void FormatTimestampInternal(stack_string& timeStr, const string & logFormat);
 
 #if defined(SUPPORT_LOG_IDENTER)
 	void                Indent(CLogIndenter* indenter);
@@ -115,6 +118,7 @@ private: // -------------------------------------------------------------------
 	CryStackStringT<char, 32> m_LogMode;                            //mode m_pLogFile has been opened with
 	FILE*                     m_pErrFile;
 	int                       m_nErrCount;
+	string                    m_logFormat;                // Time logging format
 
 #if defined(SUPPORT_LOG_IDENTER)
 	uint8               m_indentation;

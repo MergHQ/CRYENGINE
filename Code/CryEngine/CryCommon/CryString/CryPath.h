@@ -279,7 +279,7 @@ inline /*void*/ RemoveExtension(TString& filepath)
 			return;
 		case '.':
 			// there's an extension in this file name
-			filepath = filepath.erase(p - szFilepath);
+			filepath.erase(p - szFilepath);
 			return;
 		}
 	}

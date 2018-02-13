@@ -665,32 +665,6 @@ static void OnSysSpecChange(ICVar* pVar)
 }
 
 //////////////////////////////////////////////////////////////////////////
-struct SCryEngineLanguageConfigLoader : public ILoadConfigurationEntrySink
-{
-	CSystem* m_pSystem;
-	string   m_language;
-	string   m_pakFile;
-
-	SCryEngineLanguageConfigLoader(CSystem* pSystem) { m_pSystem = pSystem; }
-	void Load(const char* sCfgFilename)
-	{
-		CSystemConfiguration cfg(sCfgFilename, m_pSystem, this, eLoadConfigInit); // Parse folders config file.
-	}
-	virtual void OnLoadConfigurationEntry(const char* szKey, const char* szValue, const char* szGroup)
-	{
-		if (stricmp(szKey, "Language") == 0)
-		{
-			m_language = szValue;
-		}
-		else if (stricmp(szKey, "PAK") == 0)
-		{
-			m_pakFile = szValue;
-		}
-	}
-	virtual void OnLoadConfigurationEntry_End() {}
-};
-
-//////////////////////////////////////////////////////////////////////////
 WIN_HMODULE CSystem::LoadDynamicLibrary(const char* szModulePath, bool bQuitIfNotFound, bool bLogLoadingInfo)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
@@ -1405,11 +1379,11 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 		m_env.pAuxGeomRenderer = m_env.pRenderer->GetIRenderAuxGeom();
 		InitPhysicsRenderer(startupParams);
 
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_ORBIS
+	#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_ORBIS
 		return true;
-#else
+	#else
 		return (startupParams.bUnattendedMode || startupParams.bShaderCacheGen || m_hWnd != 0);
-#endif
+	#endif
 	}
 	return true;
 }
@@ -1995,9 +1969,9 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 	ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
 #if CRY_PLATFORM_ANDROID && !defined(ANDROID_OBB)
 	string path = string(CryGetProjectStoragePath()) + "/system.cfg";
-	LoadConfiguration(path.c_str(), pCVarsWhiteListConfigSink, eLoadConfigInit);
+	LoadConfiguration(path.c_str(), pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
 #else
-	LoadConfiguration("%ENGINEROOT%/system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit);
+	LoadConfiguration("%ENGINEROOT%/system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
 #endif
 
 	if (!m_pProjectManager->ParseProjectFile())
@@ -2520,7 +2494,7 @@ void CSystem::OpenLanguageAudioPak(char const* const szLanguage)
 		pakFilePath = PathUtil::AddSlash(g_cvars.sys_build_folder->GetString()) + string(PathUtil::GetGameFolder()) + CRY_NATIVE_PATH_SEPSTR + localizedPath;
 	}
 
-	if (!m_env.pCryPak->OpenPack(bindingRoot.c_str(), pakFilePath))
+	if (!m_env.pCryPak->IsFileExist(pakFilePath) || !m_env.pCryPak->OpenPack(bindingRoot.c_str(), pakFilePath))
 	{
 		// make sure the localized language is found - not really necessary, for TC
 		CryLogAlways("Localized language content(%s) not available or modified from the original installation.", szLanguage);
@@ -3046,7 +3020,9 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		}
 
 		if (m_pCmdLine->FindArg(eCLAT_Pre, "ResetProfile") == 0)
-			LoadConfiguration("%USER%/game.cfg", 0, eLoadConfigGame);
+		{
+			LoadConfiguration("%USER%/game.cfg", 0, eLoadConfigGame, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
+		}
 
 		//if sys spec variable was specified, is not 0 and we are in devmode, restore the value from before loading game.cfg
 		//this enables setting of a specific sys_spec outaide menu and game.cfg
@@ -3067,8 +3043,8 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 			ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
 
 			// We have to load this file again since first time we did it without devmode
-			LoadConfiguration("%ENGINEROOT%/system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit);
-			LoadConfiguration("user.cfg", pCVarsWhiteListConfigSink);
+			LoadConfiguration("%ENGINEROOT%/system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
+			LoadConfiguration("user.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
 
 #if defined(ENABLE_STATS_AGENT)
 			if (m_pCmdLine->FindArg(eCLAT_Pre, "useamblecfg"))
@@ -5222,6 +5198,10 @@ void CSystem::CreateSystemVars()
 	                                                     "Usage: sys_localization_folder <folder name>\n"
 	                                                     "Default: Localization\n",
 	                                                     CSystem::OnLocalizationFolderCVarChanged);
+
+	g_cvars.sys_localization_pak_suffix = REGISTER_STRING("sys_localization_pak_suffix", "_xml", VF_CHEAT,
+	                                                      "Suffix added to the language name to form the filename of the localization pak.\n"
+	                                                      "Default is _xml");
 
 	REGISTER_CVAR2("sys_streaming_in_blocks", &g_cvars.sys_streaming_in_blocks, 1, VF_NULL,
 	               "Streaming of large files happens in blocks");

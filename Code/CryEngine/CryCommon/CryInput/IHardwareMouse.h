@@ -73,6 +73,9 @@ struct IHardwareMouse
 	virtual void IncrementCounter() = 0;
 	virtual void DecrementCounter() = 0;
 
+	//! Return true is cursor is currently actually visible.
+	virtual bool IsCursorVisible() const = 0;
+
 	//! Standard get/set functions, mainly for Gamepad emulation purpose.
 	virtual void GetHardwareMousePosition(float* pfX, float* pfY) = 0;
 	virtual void SetHardwareMousePosition(float fX, float fY) = 0;

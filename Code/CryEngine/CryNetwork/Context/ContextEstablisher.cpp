@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "ContextEstablisher.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 class CCET_ExecConsole : public CCET_Base
 {
