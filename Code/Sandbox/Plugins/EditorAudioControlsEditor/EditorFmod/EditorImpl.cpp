@@ -180,17 +180,9 @@ CImplItem* SearchForItem(CImplItem* const pImplItem, string const& name, ItemTyp
 
 //////////////////////////////////////////////////////////////////////////
 CImplSettings::CImplSettings()
-	: m_projectPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "fmod_project")
-	, m_assetsPath(
-	  PathUtil::GetGameFolder() +
-	  CRY_NATIVE_PATH_SEPSTR
-	  AUDIO_SYSTEM_DATA_ROOT
-	  CRY_NATIVE_PATH_SEPSTR +
-	  CryAudio::Impl::Fmod::s_szImplFolderName +
-	  CRY_NATIVE_PATH_SEPSTR +
-	  CryAudio::s_szAssetsFolderName)
-{
-}
+	: m_projectPath(AUDIO_SYSTEM_DATA_ROOT "/fmod_project")
+	, m_assetsPath(AUDIO_SYSTEM_DATA_ROOT "/" + string(CryAudio::Impl::Fmod::s_szImplFolderName) + "/" + string(CryAudio::s_szAssetsFolderName))
+{}
 
 //////////////////////////////////////////////////////////////////////////
 void CImplSettings::SetProjectPath(char const* szPath)

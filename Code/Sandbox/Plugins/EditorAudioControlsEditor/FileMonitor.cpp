@@ -45,7 +45,6 @@ void CFileMonitor::Disable()
 //////////////////////////////////////////////////////////////////////////
 CFileMonitorSystem::CFileMonitorSystem(int const delay, CSystemAssetsManager const& assetsManager, QObject* const pParent)
 	: CFileMonitor(delay, assetsManager, pParent)
-	, m_monitorFolder(assetsManager.GetConfigFolderPath())
 	, m_delayTimer(new QTimer(this))
 {
 	m_delayTimer->setSingleShot(true);
@@ -56,6 +55,7 @@ CFileMonitorSystem::CFileMonitorSystem(int const delay, CSystemAssetsManager con
 //////////////////////////////////////////////////////////////////////////
 void CFileMonitorSystem::Enable()
 {
+	m_monitorFolder = m_assetsManager.GetConfigFolderPath();
 	GetIEditor()->GetFileMonitor()->RegisterListener(this, m_monitorFolder, "xml");
 }
 
@@ -85,20 +85,12 @@ void CFileMonitorMiddleware::Enable()
 			m_monitorFolders.clear();
 			GetIEditor()->GetFileMonitor()->UnregisterListener(this);
 
-			int const gameFolderPathLength = (PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR).GetLength();
-
-			string const& soundBanksPath = pImplSettings->GetAssetsPath();
-			string const& soundBanksPathSubstr = soundBanksPath.substr(gameFolderPathLength);
-			m_monitorFolders.emplace_back(soundBanksPathSubstr.c_str());
-
-			string const& localizationPath = PathUtil::GetLocalizationFolder();
-			m_monitorFolders.emplace_back(localizationPath.c_str());
+			m_monitorFolders.emplace_back(pImplSettings->GetAssetsPath());
+			m_monitorFolders.emplace_back(PathUtil::GetLocalizationFolder().c_str());
 
 			if (pImplSettings->SupportsProjects())
 			{
-				string const projectPath = pImplSettings->GetProjectPath();
-				string const projectPathSubstr = projectPath.substr(gameFolderPathLength);
-				m_monitorFolders.emplace_back(projectPathSubstr.c_str());
+				m_monitorFolders.emplace_back(pImplSettings->GetProjectPath());
 			}
 
 			for (auto const& folder : m_monitorFolders)

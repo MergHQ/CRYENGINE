@@ -13,8 +13,6 @@
 #include <CryAudio/IAudioSystem.h>
 #include <CryAudio/IObject.h>
 #include <CryMath/Cry_Camera.h>
-#include <CrySystem/File/CryFile.h>
-#include <CryString/CryPath.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <IUndoManager.h>
 #include <QtViewPane.h>

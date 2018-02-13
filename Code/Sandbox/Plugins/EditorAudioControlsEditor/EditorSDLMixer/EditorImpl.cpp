@@ -19,14 +19,7 @@ namespace SDLMixer
 {
 //////////////////////////////////////////////////////////////////////////
 CImplSettings::CImplSettings()
-	: m_assetAndProjectPath(
-	  PathUtil::GetGameFolder() +
-	  CRY_NATIVE_PATH_SEPSTR
-	  AUDIO_SYSTEM_DATA_ROOT
-	  CRY_NATIVE_PATH_SEPSTR +
-	  CryAudio::Impl::SDL_mixer::s_szImplFolderName +
-	  CRY_NATIVE_PATH_SEPSTR +
-	  CryAudio::s_szAssetsFolderName)
+	: m_assetAndProjectPath(AUDIO_SYSTEM_DATA_ROOT "/" + string(CryAudio::Impl::SDL_mixer::s_szImplFolderName) + "/" + string(CryAudio::s_szAssetsFolderName))
 {}
 
 //////////////////////////////////////////////////////////////////////////
@@ -219,7 +212,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 			}
 			else
 			{
-				id = GetId(path + CRY_NATIVE_PATH_SEPSTR + name);
+				id = GetId(path + "/" + name);
 			}
 
 			auto pImplItem = static_cast<CImplItem*>(GetImplItem(id));
@@ -321,7 +314,7 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 				}
 				else
 				{
-					path = parentName + CRY_NATIVE_PATH_SEPSTR + path;
+					path = parentName + "/" + path;
 				}
 			}
 

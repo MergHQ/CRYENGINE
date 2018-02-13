@@ -211,7 +211,7 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 	if (m_pIImpl != nullptr)
 	{
 		rootFolderPath.TrimRight(R"(/\)");
-		CryFixedStringT<MaxFilePathLength + MaxFileNameLength> search(rootFolderPath + CRY_NATIVE_PATH_SEPSTR "*.xml");
+		CryFixedStringT<MaxFilePathLength + MaxFileNameLength> search(rootFolderPath + "/*.xml");
 		_finddata_t fd;
 		intptr_t const handle = gEnv->pCryPak->FindFirst(search.c_str(), &fd);
 
@@ -222,7 +222,7 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 			do
 			{
 				fileName = rootFolderPath.c_str();
-				fileName += CRY_NATIVE_PATH_SEPSTR;
+				fileName += "/";
 				fileName += fd.name;
 
 				XmlNodeRef const pRootNode(GetISystem()->LoadXmlFromFile(fileName));
@@ -246,7 +246,7 @@ void CAudioXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EData
 
 								if (_stricmp(szChildNodeTag, s_szPreloadsNodeTag) == 0)
 								{
-									size_t const lastSlashIndex = rootFolderPath.rfind(CRY_NATIVE_PATH_SEPSTR[0]);
+									size_t const lastSlashIndex = rootFolderPath.rfind("/"[0]);
 
 									if (rootFolderPath.npos != lastSlashIndex)
 									{

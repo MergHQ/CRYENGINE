@@ -694,7 +694,7 @@ void CSystem::OnLoadLevel(char const* const szLevelName)
 	// Requests need to be blocking so data is available for next preloading request!
 	CryFixedStringT<MaxFilePathLength> audioLevelPath(m_atl.GetConfigPath());
 	audioLevelPath += s_szLevelsFolderName;
-	audioLevelPath += CRY_NATIVE_PATH_SEPSTR;
+	audioLevelPath += "/";
 	audioLevelPath += szLevelName;
 	SAudioManagerRequestData<EAudioManagerRequestType::ParseControlsData> requestData1(audioLevelPath, EDataScope::LevelSpecific);
 	CAudioRequest request1(&requestData1);

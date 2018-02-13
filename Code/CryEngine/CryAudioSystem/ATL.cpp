@@ -9,7 +9,6 @@
 #include "Common/Logger.h"
 #include <CrySystem/ISystem.h>
 #include <CryPhysics/IPhysics.h>
-#include <CryString/CryPath.h>
 #include <CryEntitySystem/IEntitySystem.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -1127,8 +1126,8 @@ ERequestStatus CAudioTranslationLayer::SetImpl(Impl::IImpl* const pIImpl)
 	result = m_pIImpl->Init(m_objectPoolSize, m_eventPoolSize);
 
 	m_pIImpl->GetInfo(m_implInfo);
-	m_configPath = (PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR).c_str();
-	m_configPath += (m_implInfo.folderName + CRY_NATIVE_PATH_SEPSTR + s_szConfigFolderName + CRY_NATIVE_PATH_SEPSTR).c_str();
+	m_configPath = AUDIO_SYSTEM_DATA_ROOT "/";
+	m_configPath += (m_implInfo.folderName + "/" + s_szConfigFolderName + "/").c_str();
 
 	if (result != ERequestStatus::Success)
 	{
@@ -1243,7 +1242,7 @@ ERequestStatus CAudioTranslationLayer::RefreshAudioSystem(char const* const szLe
 	{
 		CryFixedStringT<MaxFilePathLength> levelPath = m_configPath;
 		levelPath += s_szLevelsFolderName;
-		levelPath += CRY_NATIVE_PATH_SEPSTR;
+		levelPath += "/";
 		levelPath += szLevelName;
 		result = ParseControlsData(levelPath.c_str(), EDataScope::LevelSpecific);
 		CRY_ASSERT(result == ERequestStatus::Success);

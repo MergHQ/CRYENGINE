@@ -82,7 +82,7 @@ void CFileLoader::LoadControls()
 	// load the level specific controls
 	_finddata_t fd;
 	ICryPak* pCryPak = gEnv->pCryPak;
-	intptr_t handle = pCryPak->FindFirst(m_assetsManager.GetConfigFolderPath() + CryAudio::s_szLevelsFolderName + CRY_NATIVE_PATH_SEPSTR + "*.*", &fd);
+	intptr_t handle = pCryPak->FindFirst(m_assetsManager.GetConfigFolderPath() + CryAudio::s_szLevelsFolderName + "/*.*", &fd);
 
 	if (handle != -1)
 	{
@@ -121,7 +121,7 @@ void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 
 	if (!level.empty())
 	{
-		path = path + CryAudio::s_szLevelsFolderName + CRY_NATIVE_PATH_SEPSTR + level + CRY_NATIVE_PATH_SEPSTR;
+		path = path + CryAudio::s_szLevelsFolderName + "/" + level + "/";
 	}
 
 	string const searchPath = path + "*.xml";

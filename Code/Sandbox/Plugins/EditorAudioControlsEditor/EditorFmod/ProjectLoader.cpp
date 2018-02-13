@@ -11,7 +11,6 @@
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ILocalizationManager.h>
-#include <CryString/CryPath.h>
 
 namespace ACE
 {
@@ -103,7 +102,7 @@ void CProjectLoader::LoadBanks(string const& folderPath, bool const isLocalized,
 		{
 			if (filename.compare(0, masterBankName.length(), masterBankName) != 0)
 			{
-				CImplItem* const pSoundBank = CreateItem(filename, EImplItemType::Bank, &parent, folderPath + CRY_NATIVE_PATH_SEPSTR + filename);
+				CImplItem* const pSoundBank = CreateItem(filename, EImplItemType::Bank, &parent, folderPath + "/" + filename);
 			}
 		}
 

@@ -10,7 +10,6 @@
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ILocalizationManager.h>
-#include <CryString/CryPath.h>
 
 namespace ACE
 {
@@ -85,7 +84,7 @@ string BuildPath(IImplItem const* const pImplItem)
 
 		if (pParent != nullptr)
 		{
-			buildPath = BuildPath(pParent) + CRY_NATIVE_PATH_SEPSTR + pImplItem->GetName();
+			buildPath = BuildPath(pParent) + "/" + pImplItem->GetName();
 		}
 		else
 		{
@@ -126,11 +125,11 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 	char const* const szLanguage = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
 	string const locaFolder =
 	  PathUtil::GetLocalizationFolder() +
-	  CRY_NATIVE_PATH_SEPSTR +
+	  "/" +
 	  szLanguage +
-	  CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR +
+	  "/" AUDIO_SYSTEM_DATA_ROOT "/" +
 	  CryAudio::Impl::Wwise::s_szImplFolderName +
-	  CRY_NATIVE_PATH_SEPSTR +
+	  "/" +
 	  CryAudio::s_szAssetsFolderName;
 	LoadSoundBanks(locaFolder, true, *pSoundBanks);
 
@@ -152,7 +151,7 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 void CProjectLoader::LoadSoundBanks(string const& folderPath, bool const isLocalized, CImplItem& parent)
 {
 	_finddata_t fd;
-	intptr_t const handle = gEnv->pCryPak->FindFirst(folderPath + CRY_NATIVE_PATH_SEPSTR + "*.*", &fd);
+	intptr_t const handle = gEnv->pCryPak->FindFirst(folderPath + "/*.*", &fd);
 
 	if (handle != -1)
 	{
@@ -166,26 +165,20 @@ void CProjectLoader::LoadSoundBanks(string const& folderPath, bool const isLocal
 				{
 					if ((name.find(".bnk") != string::npos) && (name.compareNoCase("Init.bnk") != 0))
 					{
-						string const fullname = folderPath + CRY_NATIVE_PATH_SEPSTR + name;
+						string const fullname = folderPath + "/" + name;
 						CID const id = CryAudio::StringToId(fullname);
 						CImplItem* const pImplItem = stl::find_in_map(m_itemCache, id, nullptr);
 
 						if (pImplItem == nullptr)
 						{
 							EImplItemFlags flags = EImplItemFlags::None;
-							string filePath;
 
 							if (isLocalized)
 							{
 								flags = EImplItemFlags::IsLocalized;
-								filePath = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + fullname;
-							}
-							else
-							{
-								filePath = fullname;
 							}
 
-							auto const pSoundBank = new CImplItem(name, id, static_cast<ItemType>(EImpltemType::SoundBank), flags, filePath);
+							auto const pSoundBank = new CImplItem(name, id, static_cast<ItemType>(EImpltemType::SoundBank), flags, fullname);
 							parent.AddChild(pSoundBank);
 							m_itemCache[id] = pSoundBank;
 						}
@@ -194,7 +187,7 @@ void CProjectLoader::LoadSoundBanks(string const& folderPath, bool const isLocal
 				else
 				{
 					CImplItem* const pParent = CreateItem(name, EImpltemType::PhysicalFolder, parent);
-					LoadSoundBanks(folderPath + CRY_NATIVE_PATH_SEPSTR + name, isLocalized, *pParent);
+					LoadSoundBanks(folderPath + "/" + name, isLocalized, *pParent);
 				}
 			}
 		}
@@ -209,7 +202,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, string const& folderNa
 {
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
-	intptr_t const handle = pCryPak->FindFirst(m_projectPath + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR + folderName + CRY_NATIVE_PATH_SEPSTR + "*.*", &fd);
+	intptr_t const handle = pCryPak->FindFirst(m_projectPath + "/" + folderPath + "/" + folderName + "/*.*", &fd);
 
 	if (handle != -1)
 	{
@@ -223,11 +216,11 @@ void CProjectLoader::LoadFolder(string const& folderPath, string const& folderNa
 			{
 				if ((fd.attrib & _A_SUBDIR) != 0)
 				{
-					LoadFolder(folderPath + CRY_NATIVE_PATH_SEPSTR + folderName, name, *pParent);
+					LoadFolder(folderPath + "/" + folderName, name, *pParent);
 				}
 				else
 				{
-					LoadWorkUnitFile(folderPath + CRY_NATIVE_PATH_SEPSTR + folderName + CRY_NATIVE_PATH_SEPSTR + name, *pParent);
+					LoadWorkUnitFile(folderPath + "/" + folderName + "/" + name, *pParent);
 				}
 			}
 		}
@@ -240,7 +233,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, string const& folderNa
 //////////////////////////////////////////////////////////////////////////
 void CProjectLoader::LoadWorkUnitFile(const string& filePath, CImplItem& parent)
 {
-	XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectPath + CRY_NATIVE_PATH_SEPSTR + filePath);
+	XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectPath + "/" + filePath);
 
 	if (pRoot != nullptr)
 	{
@@ -327,7 +320,7 @@ void CProjectLoader::LoadXml(XmlNodeRef const pRoot, CImplItem& parent)
 CImplItem* CProjectLoader::CreateItem(const string& name, EImpltemType const type, CImplItem& parent)
 {
 	string const path = BuildPath(&parent);
-	string const fullPathName = path + CRY_NATIVE_PATH_SEPSTR + name;
+	string const fullPathName = path + "/" + name;
 
 	// The id is always the path of the item from the root of the wwise project
 	CID const id = CryAudio::StringToId(fullPathName);
@@ -386,7 +379,7 @@ void CProjectLoader::LoadEventsMetadata(const string& soundbanksPath)
 {
 	m_eventsInfoMap.clear();
 	string path = soundbanksPath;
-	path += CRY_NATIVE_PATH_SEPSTR + g_soundBanksInfoFileName;
+	path += "/" + g_soundBanksInfoFileName;
 	XmlNodeRef const pRootNode = GetISystem()->LoadXmlFromFile(path.c_str());
 
 	if (pRootNode != nullptr)
@@ -437,7 +430,7 @@ void CProjectLoader::BuildFileCache(string const& folderPath)
 {
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
-	intptr_t const handle = pCryPak->FindFirst(m_projectPath + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR "*.*", &fd);
+	intptr_t const handle = pCryPak->FindFirst(m_projectPath + "/" + folderPath + "/*.*", &fd);
 
 	if (handle != -1)
 	{
@@ -449,12 +442,12 @@ void CProjectLoader::BuildFileCache(string const& folderPath)
 			{
 				if (fd.attrib & _A_SUBDIR)
 				{
-					BuildFileCache(folderPath + CRY_NATIVE_PATH_SEPSTR + name);
+					BuildFileCache(folderPath + "/" + name);
 				}
 				else
 				{
-					string const path = folderPath + CRY_NATIVE_PATH_SEPSTR + name;
-					XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectPath + CRY_NATIVE_PATH_SEPSTR + path);
+					string const path = folderPath + "/" + name;
+					XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectPath + "/" + path);
 
 					if (pRoot != nullptr)
 					{
