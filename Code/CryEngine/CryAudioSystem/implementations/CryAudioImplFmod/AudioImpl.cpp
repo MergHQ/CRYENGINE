@@ -11,7 +11,6 @@
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/IProjectManager.h>
 #include <CryAudio/IAudioSystem.h>
-#include <CryString/CryPath.h>
 
 namespace CryAudio
 {
@@ -63,20 +62,10 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Event Pool");
 	CEvent::CreateAllocator(eventPoolSize);
 
-	char const* szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
-
-	if (strlen(szAssetDirectory) == 0)
-	{
-		Cry::Audio::Log(ELogType::Error, "<Audio - Fmod>: No asset folder set!");
-		szAssetDirectory = "no-asset-folder-set";
-	}
-
-	m_regularSoundBankFolder = szAssetDirectory;
-	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
-	m_regularSoundBankFolder += AUDIO_SYSTEM_DATA_ROOT;
-	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+	m_regularSoundBankFolder = AUDIO_SYSTEM_DATA_ROOT;
+	m_regularSoundBankFolder += "/";
 	m_regularSoundBankFolder += s_szImplFolderName;
-	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+	m_regularSoundBankFolder += "/";
 	m_regularSoundBankFolder += s_szAssetsFolderName;
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
 
@@ -100,13 +89,8 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	m_name = FMOD_IMPL_INFO_STRING;
 	m_name += "System: ";
 	m_name += systemVersion;
-	m_name += " Header: ";
+	m_name += " - Header: ";
 	m_name += headerVersion;
-	m_name += " (";
-	m_name += szAssetDirectory;
-	m_name += CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
-	m_name += s_szImplFolderName;
-	m_name += ")";
 #endif  // INCLUDE_FMOD_IMPL_PRODUCTION_CODE
 
 	int sampleRate = 0;
@@ -459,8 +443,7 @@ void CImpl::DestructEvent(IEvent const* const pIEvent)
 //////////////////////////////////////////////////////////////////////////
 IStandaloneFile* CImpl::ConstructStandaloneFile(CATLStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
 {
-	static string s_localizedfilesFolder = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + m_language.c_str() + CRY_NATIVE_PATH_SEPSTR;
-	static string s_nonLocalizedfilesFolder = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR;
+	static string s_localizedfilesFolder = PathUtil::GetLocalizationFolder() + "/" + m_language.c_str() + "/";
 	string filePath;
 
 	if (bLocalized)
@@ -469,7 +452,7 @@ IStandaloneFile* CImpl::ConstructStandaloneFile(CATLStandaloneFile& standaloneFi
 	}
 	else
 	{
-		filePath = s_nonLocalizedfilesFolder + szFile + ".mp3";
+		filePath = string(szFile) + ".mp3";
 	}
 
 	CStandaloneFileBase* pFile = nullptr;
@@ -813,16 +796,14 @@ void CImpl::SetLanguage(char const* const szLanguage)
 	if (szLanguage != nullptr)
 	{
 		m_language = szLanguage;
-		m_localizedSoundBankFolder = PathUtil::GetGameFolder().c_str();
-		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
-		m_localizedSoundBankFolder += PathUtil::GetLocalizationFolder();
-		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+		m_localizedSoundBankFolder = PathUtil::GetLocalizationFolder().c_str();
+		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += m_language.c_str();
-		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += AUDIO_SYSTEM_DATA_ROOT;
-		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += s_szImplFolderName;
-		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += s_szAssetsFolderName;
 	}
 }
@@ -920,7 +901,7 @@ bool CImpl::LoadMasterBanks()
 	FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 	CryFixedStringT<MaxFileNameLength> masterBankPath;
 	CryFixedStringT<MaxFileNameLength> masterBankStringsPath;
-	CryFixedStringT<MaxFilePathLength + MaxFileNameLength> search(m_regularSoundBankFolder + CRY_NATIVE_PATH_SEPSTR "*.bank");
+	CryFixedStringT<MaxFilePathLength + MaxFileNameLength> search(m_regularSoundBankFolder + "/*.bank");
 	_finddata_t fd;
 	intptr_t const handle = gEnv->pCryPak->FindFirst(search.c_str(), &fd);
 
@@ -934,10 +915,10 @@ bool CImpl::LoadMasterBanks()
 			if (substrPos != masterBankStringsPath.npos)
 			{
 				masterBankPath = m_regularSoundBankFolder.c_str();
-				masterBankPath += CRY_NATIVE_PATH_SEPSTR;
+				masterBankPath += "/";
 				masterBankPath += masterBankStringsPath.substr(0, substrPos);
 				masterBankPath += ".bank";
-				masterBankStringsPath.insert(0, CRY_NATIVE_PATH_SEPSTR);
+				masterBankStringsPath.insert(0, "/");
 				masterBankStringsPath.insert(0, m_regularSoundBankFolder.c_str());
 				break;
 			}

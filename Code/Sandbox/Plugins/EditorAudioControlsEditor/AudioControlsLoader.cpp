@@ -21,8 +21,8 @@
 // This file is deprecated and only used for backwards compatibility. It will be removed before March 2019.
 namespace ACE
 {
-string const CAudioControlsLoader::s_controlsLevelsFolder = "levels" CRY_NATIVE_PATH_SEPSTR;
-string const CAudioControlsLoader::s_assetsFolderPath = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "ace" CRY_NATIVE_PATH_SEPSTR;
+string const CAudioControlsLoader::s_controlsLevelsFolder = "levels/";
+string const CAudioControlsLoader::s_assetsFolderPath = AUDIO_SYSTEM_DATA_ROOT "/ace/";
 
 //////////////////////////////////////////////////////////////////////////
 ESystemItemType TagToType_BackwardsComp(string const& tag)
@@ -123,7 +123,7 @@ void CAudioControlsLoader::LoadAllLibrariesInFolder(string const& folderPath, st
 
 	if (!level.empty())
 	{
-		path = path + s_controlsLevelsFolder + level + CRY_NATIVE_PATH_SEPSTR;
+		path = path + s_controlsLevelsFolder + level + "/";
 	}
 
 	string const searchPath = path + "*.xml";
@@ -392,7 +392,7 @@ void CAudioControlsLoader::LoadScopesImpl(string const& sLevelsFolder)
 
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
-	intptr_t const handle = pCryPak->FindFirst(sLevelsFolder + CRY_NATIVE_PATH_SEPSTR "*.*", &fd);
+	intptr_t const handle = pCryPak->FindFirst(sLevelsFolder + "/*.*", &fd);
 
 	if (handle != -1)
 	{
@@ -404,7 +404,7 @@ void CAudioControlsLoader::LoadScopesImpl(string const& sLevelsFolder)
 			{
 				if (fd.attrib & _A_SUBDIR)
 				{
-					LoadScopesImpl(sLevelsFolder + CRY_NATIVE_PATH_SEPSTR + name);
+					LoadScopesImpl(sLevelsFolder + "/" + name);
 				}
 				else
 				{

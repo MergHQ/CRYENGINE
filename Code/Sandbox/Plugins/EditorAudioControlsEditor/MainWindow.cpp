@@ -16,7 +16,6 @@
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
-#include <CryString/CryPath.h>
 #include <QtUtil.h>
 #include <CryIcon.h>
 #include <Controls/QuestionDialog.h>
@@ -455,7 +454,7 @@ void CMainWindow::Save()
 void CMainWindow::UpdateAudioSystemData()
 {
 	string levelPath = CryAudio::s_szLevelsFolderName;
-	levelPath += CRY_NATIVE_PATH_SEPSTR;
+	levelPath += "/";
 	levelPath += GetIEditor()->GetLevelName();
 	gEnv->pAudioSystem->ReloadControlsData(gEnv->pAudioSystem->GetConfigPath(), levelPath.c_str());
 }

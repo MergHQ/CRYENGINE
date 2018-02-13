@@ -227,7 +227,7 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 			{
 				string levelPath(gEnv->pAudioSystem->GetConfigPath());
 				levelPath += s_szLevelsFolderName;
-				levelPath += CRY_NATIVE_PATH_SEPSTR;
+				levelPath += "/";
 				levelPath += levelName;
 
 				// Needs to be blocking so data is available for next preloading request!

@@ -78,7 +78,7 @@ void CFileWriter::WriteAll()
 
 	for (auto const& name : librariesToDelete)
 	{
-		string const fullFilePath = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + name;
+		string const fullFilePath = PathUtil::GetGameFolder() + "/" + name;
 		DeleteLibraryFile(fullFilePath);
 	}
 
@@ -133,7 +133,7 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 			{
 				// with scope, inside level folder
 				libraryPath += CryAudio::s_szLevelsFolderName;
-				libraryPath += CRY_NATIVE_PATH_SEPSTR + m_assetsManager.GetScopeInfo(scope).name + CRY_NATIVE_PATH_SEPSTR + library.GetName();
+				libraryPath += "/" + m_assetsManager.GetScopeInfo(scope).name + "/" + library.GetName();
 			}
 
 			m_foundLibraryPaths.insert(libraryPath.MakeLower() + ".xml");
@@ -193,7 +193,7 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 					pFileNode->addChild(pEditorData);
 				}
 
-				string const fullFilePath = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + libraryPath + ".xml";
+				string const fullFilePath = PathUtil::GetGameFolder() + "/" + libraryPath + ".xml";
 				DWORD const fileAttributes = GetFileAttributesA(fullFilePath.c_str());
 
 				if ((fileAttributes & FILE_ATTRIBUTE_READONLY) != 0)
@@ -202,7 +202,7 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 					SetFileAttributesA(fullFilePath.c_str(), FILE_ATTRIBUTE_NORMAL);
 				}
 
-				// TODO: Check out firlin source control.
+				// TODO: Check out in source control.
 				pFileNode->saveToFile(fullFilePath);
 			}
 		}
@@ -231,7 +231,7 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 			{
 				// with scope, inside level folder
 				libraryPath += CryAudio::s_szLevelsFolderName;
-				libraryPath += CRY_NATIVE_PATH_SEPSTR + m_assetsManager.GetScopeInfo(scope).name + CRY_NATIVE_PATH_SEPSTR + library.GetName();
+				libraryPath += "/" + m_assetsManager.GetScopeInfo(scope).name + "/" + library.GetName();
 			}
 
 			m_foundLibraryPaths.insert(libraryPath.MakeLower() + ".xml");

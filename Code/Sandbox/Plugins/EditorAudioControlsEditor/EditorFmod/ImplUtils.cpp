@@ -5,7 +5,6 @@
 
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/File/CryFile.h>
-#include <CryString/CryPath.h>
 
 namespace ACE
 {
@@ -16,7 +15,7 @@ namespace Utils
 //////////////////////////////////////////////////////////////////////////
 CID GetId(EImplItemType const type, string const& name, CImplItem* const pParent, CImplItem const& rootItem)
 {
-	string const fullname = Utils::GetTypeName(type) + Utils::GetPathName(pParent, rootItem) + CRY_NATIVE_PATH_SEPSTR + name;
+	string const fullname = Utils::GetTypeName(type) + Utils::GetPathName(pParent, rootItem) + "/" + name;
 	return CryAudio::StringToId(fullname.c_str());
 }
 

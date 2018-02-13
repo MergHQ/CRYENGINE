@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 #include "FileCacheManager.h"
@@ -64,7 +64,7 @@ FileEntryId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, 
 	if (m_pIImpl->ConstructFile(pFileNode, &fileInfo) == ERequestStatus::Success)
 	{
 		CryFixedStringT<MaxFilePathLength> fullPath(m_pIImpl->GetFileLocation(&fileInfo));
-		fullPath += CRY_NATIVE_PATH_SEPSTR;
+		fullPath += "/";
 		fullPath += fileInfo.szFileName;
 		CATLAudioFileEntry* pFileEntry = new CATLAudioFileEntry(fullPath, fileInfo.pImplData);
 
@@ -638,7 +638,7 @@ void CFileCacheManager::UpdateLocalizedFileEntryData(CATLAudioFileEntry* const p
 	fileEntryInfo.szFileName = fileName.c_str();
 
 	pAudioFileEntry->m_path = m_pIImpl->GetFileLocation(&fileEntryInfo);
-	pAudioFileEntry->m_path += CRY_NATIVE_PATH_SEPSTR;
+	pAudioFileEntry->m_path += "/";
 	pAudioFileEntry->m_path += fileName.c_str();
 	pAudioFileEntry->m_path.MakeLower();
 

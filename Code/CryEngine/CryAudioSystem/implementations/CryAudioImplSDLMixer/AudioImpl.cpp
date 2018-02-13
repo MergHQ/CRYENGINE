@@ -8,7 +8,6 @@
 #include "GlobalData.h"
 #include <Logger.h>
 #include <CrySystem/File/CryFile.h>
-#include <CryString/CryPath.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/IProjectManager.h>
 
@@ -39,19 +38,7 @@ CImpl::CImpl()
 	, m_isMuted(false)
 {
 #if defined(INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE)
-	char const* szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
-
-	if (strlen(szAssetDirectory) == 0)
-	{
-		Cry::Audio::Log(ELogType::Error, "<Audio - SDL_mixer>: No asset folder set!");
-		szAssetDirectory = "no-asset-folder-set";
-	}
-
-	string libraryPath = CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
-	libraryPath += s_szImplFolderName;
-
-	m_name = "SDL Mixer 2.0.1 (";
-	m_name += szAssetDirectory + libraryPath + ")";
+	m_name = "SDL Mixer 2.0.2";
 #endif  // INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
 
 #if CRY_PLATFORM_WINDOWS
@@ -250,7 +237,7 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const
 		if (szPath)
 		{
 			fullFilePath = szPath;
-			fullFilePath += CRY_NATIVE_PATH_SEPSTR;
+			fullFilePath += "/";
 			fullFilePath += szFileName;
 		}
 		else
@@ -289,12 +276,11 @@ void CImpl::DestructFile(IFile* const pIFile)
 char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 {
 	static CryFixedStringT<MaxFilePathLength> s_path;
-	s_path = PathUtil::GetGameFolder().c_str();
-	s_path += CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
+	s_path = AUDIO_SYSTEM_DATA_ROOT "/";
 	s_path += s_szImplFolderName;
-	s_path += CRY_NATIVE_PATH_SEPSTR;
+	s_path += "/";
 	s_path += s_szAssetsFolderName;
-	s_path += CRY_NATIVE_PATH_SEPSTR;
+	s_path += "/";
 
 	return s_path.c_str();
 }
@@ -328,7 +314,7 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 			if (szPath != nullptr && szPath[0] != '\0')
 			{
 				fullFilePath = szPath;
-				fullFilePath += CRY_NATIVE_PATH_SEPSTR;
+				fullFilePath += "/";
 				fullFilePath += szFileName;
 			}
 			else
@@ -528,8 +514,7 @@ void CImpl::DestructEvent(IEvent const* const pIEvent)
 ///////////////////////////////////////////////////////////////////////////
 IStandaloneFile* CImpl::ConstructStandaloneFile(CATLStandaloneFile& standaloneFile, char const* const szFile, bool const bLocalized, ITrigger const* pITrigger /*= nullptr*/)
 {
-	static string s_localizedfilesFolder = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + m_language + CRY_NATIVE_PATH_SEPSTR;
-	static string s_nonLocalizedfilesFolder = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR;
+	static string s_localizedfilesFolder = PathUtil::GetLocalizationFolder() + "/" + m_language + "/";
 	static string filePath;
 
 	if (bLocalized)
@@ -538,7 +523,7 @@ IStandaloneFile* CImpl::ConstructStandaloneFile(CATLStandaloneFile& standaloneFi
 	}
 	else
 	{
-		filePath = s_nonLocalizedfilesFolder + szFile + m_pCVarFileExtension->GetString();
+		filePath = string(szFile) + m_pCVarFileExtension->GetString();
 	}
 
 	return static_cast<IStandaloneFile*>(new CStandaloneFile(filePath, standaloneFile));

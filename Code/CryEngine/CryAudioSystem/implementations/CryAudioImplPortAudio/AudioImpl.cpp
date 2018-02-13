@@ -14,7 +14,6 @@
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/IProjectManager.h>
 #include <CryAudio/IAudioSystem.h>
-#include <CryString/CryPath.h>
 
 namespace CryAudio
 {
@@ -33,18 +32,22 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 
 	char const* szAssetDirectory = gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
 
+#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
 	if (strlen(szAssetDirectory) == 0)
 	{
 		Cry::Audio::Log(ELogType::Error, "<Audio - PortAudio>: No asset folder set!");
 		szAssetDirectory = "no-asset-folder-set";
 	}
 
+	m_name = Pa_GetVersionText();
+#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
+
 	m_regularSoundBankFolder = szAssetDirectory;
-	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+	m_regularSoundBankFolder += "/";
 	m_regularSoundBankFolder += AUDIO_SYSTEM_DATA_ROOT;
-	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+	m_regularSoundBankFolder += "/";
 	m_regularSoundBankFolder += s_szImplFolderName;
-	m_regularSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+	m_regularSoundBankFolder += "/";
 	m_regularSoundBankFolder += s_szAssetsFolderName;
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
 
@@ -54,15 +57,6 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	{
 		Cry::Audio::Log(ELogType::Error, "Failed to initialize PortAudio: %s", Pa_GetErrorText(err));
 	}
-
-#if defined(INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE)
-	m_name = Pa_GetVersionText();
-	m_name += " (";
-	m_name += szAssetDirectory;
-	m_name += CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
-	m_name += s_szImplFolderName;
-	m_name += ")";
-#endif  // INCLUDE_PORTAUDIO_IMPL_PRODUCTION_CODE
 
 	return ERequestStatus::Success;
 }
@@ -298,7 +292,7 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 	if (_stricmp(szTag, s_szEventTag) == 0)
 	{
 		stack_string path = m_regularSoundBankFolder.c_str();
-		path += CRY_NATIVE_PATH_SEPSTR;
+		path += "/";
 		path += pRootNode->getAttr(s_szNameAttribute);
 
 		if (!path.empty())
@@ -453,16 +447,14 @@ void CImpl::SetLanguage(char const* const szLanguage)
 {
 	if (szLanguage != nullptr)
 	{
-		m_localizedSoundBankFolder = PathUtil::GetGameFolder().c_str();
-		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
-		m_localizedSoundBankFolder += PathUtil::GetLocalizationFolder();
-		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+		m_localizedSoundBankFolder = PathUtil::GetLocalizationFolder().c_str();
+		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += szLanguage;
-		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += AUDIO_SYSTEM_DATA_ROOT;
-		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += s_szImplFolderName;
-		m_localizedSoundBankFolder += CRY_NATIVE_PATH_SEPSTR;
+		m_localizedSoundBankFolder += "/";
 		m_localizedSoundBankFolder += s_szAssetsFolderName;
 	}
 }

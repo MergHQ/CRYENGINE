@@ -153,16 +153,9 @@ CImplItem* SearchForItem(CImplItem* const pImplItem, string const& name, ItemTyp
 
 //////////////////////////////////////////////////////////////////////////
 CImplSettings::CImplSettings()
-	: m_projectPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR "wwise_project")
-	, m_assetsPath(PathUtil::GetGameFolder() +
-	               CRY_NATIVE_PATH_SEPSTR
-	               AUDIO_SYSTEM_DATA_ROOT
-	               CRY_NATIVE_PATH_SEPSTR +
-	               CryAudio::Impl::Wwise::s_szImplFolderName +
-	               CRY_NATIVE_PATH_SEPSTR +
-	               CryAudio::s_szAssetsFolderName)
-{
-}
+	: m_projectPath(AUDIO_SYSTEM_DATA_ROOT "/wwise_project")
+	, m_assetsPath(AUDIO_SYSTEM_DATA_ROOT "/" + string(CryAudio::Impl::Wwise::s_szImplFolderName) + "/" + string(CryAudio::s_szAssetsFolderName))
+{}
 
 //////////////////////////////////////////////////////////////////////////
 void CImplSettings::SetProjectPath(char const* szPath)
@@ -711,11 +704,11 @@ CID CEditorImpl::GenerateID(string const& fullPathName) const
 //////////////////////////////////////////////////////////////////////////
 CID CEditorImpl::GenerateID(string const& name, bool isLocalized, CImplItem* pParent) const
 {
-	string pathName = (pParent != nullptr && !pParent->GetName().empty()) ? pParent->GetName() + CRY_NATIVE_PATH_SEPSTR + name : name;
+	string pathName = (pParent != nullptr && !pParent->GetName().empty()) ? pParent->GetName() + "/" + name : name;
 
 	if (isLocalized)
 	{
-		pathName = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + pathName;
+		pathName = PathUtil::GetLocalizationFolder() + "/" + pathName;
 	}
 
 	return GenerateID(pathName);
