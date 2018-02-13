@@ -188,7 +188,7 @@ void COctreeNode::Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRender
 	const bool bPushIntoOcclusionCuller = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass() && JobManager::InvokeAsJob("CheckOcclusion");
 
 	// check culling of all passes
-	passCullMask = UpdateCullMask(m_onePassTraversalFrameId, m_renderFlags, passInfo, m_objectsBox, nodeDistance, m_fObjectsMaxViewDist, !bPushIntoOcclusionCuller, bNodeCompletelyInFrustum, &m_occlusionTestClient, passCullMask);
+	passCullMask = UpdateCullMask(m_onePassTraversalFrameId, ~0, m_renderFlags, passInfo, m_objectsBox, nodeDistance, m_fObjectsMaxViewDist, !bPushIntoOcclusionCuller, bNodeCompletelyInFrustum, &m_occlusionTestClient, passCullMask);
 
 	// stop if no any passes see this node
 	if (!passCullMask)
@@ -653,7 +653,7 @@ bool IsAABBInsideHull(const SPlaneObject* pHullPlanes, int nPlanesNum, const AAB
 bool IsSphereInsideHull(const SPlaneObject* pHullPlanes, int nPlanesNum, const Sphere& objSphere);
 
 // single function for all possible culling types, used for octree nodes and for objects
-uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, const IRenderNode::RenderFlagsType renderFlags, const SRenderingPassInfo& passInfo, const AABB& nodeBox, const float nodeDistance, const float nodeMaxViewDistance, const bool bTestCoverageBuffer,
+uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePassTraversalShadowCascades, const IRenderNode::RenderFlagsType renderFlags, const SRenderingPassInfo& passInfo, const AABB& nodeBox, const float nodeDistance, const float nodeMaxViewDistance, const bool bTestCoverageBuffer,
                                    bool& bCompletelyInMainFrustum, OcclusionTestClient* occlusionTestClient, uint32 passCullMask)
 {
 	assert(nodeDistance >= 0 && _finite(nodeDistance));
@@ -732,8 +732,8 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, const IRender
 
 	if (passCullMask & ~kPassCullMainMask)
 	{
-		// test sun shadows hull
-		if (!IsAABBInsideHull(CLightEntity::GetCastersHull().GetElements(), CLightEntity::GetCastersHull().Count(), nodeBox))
+		// test sun shadows hull. for cached shadows also nodes outside hull need to be rendered
+		if (onePassTraversalFrameId < passInfo.GetMainFrameID() && !IsAABBInsideHull(CLightEntity::GetCastersHull().GetElements(), CLightEntity::GetCastersHull().Count(), nodeBox))
 		{
 			passCullMask &= kPassCullMainMask;   // cull all except main view
 		}
@@ -748,12 +748,12 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, const IRender
 					continue;
 				}
 
-				ShadowMapFrustum* pFr = shadowPasses->at(n).GetIRenderView()->GetShadowFrustumOwner();
+				const ShadowMapFrustum* pFr = shadowPasses->at(n).GetIRenderView()->GetShadowFrustumOwner();
 
 				if (pFr->IsCached() || pFr->m_eFrustumType == ShadowMapFrustum::e_PerObject)
 				{
 					// cull casters not marked for shadow cache sliced update
-					if (onePassTraversalFrameId < passInfo.GetMainFrameID())
+					if (onePassTraversalFrameId < passInfo.GetMainFrameID() || (onePassTraversalShadowCascades & BIT(pFr->nShadowMapLod)) == 0)
 					{
 						passCullMask &= ~BIT(passId);
 					}
@@ -812,7 +812,7 @@ void COctreeNode::Render_LightSources(bool bNodeCompletelyInFrustum, const SRend
 
 	float nodeDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, m_objectsBox) * sqr(passInfo.GetZoomFactor()));
 
-	uint32 passCullMask = UpdateCullMask(m_onePassTraversalFrameId, m_renderFlags, passInfo, m_objectsBox, nodeDistance, m_fObjectsMaxViewDist, false, bNodeCompletelyInFrustum, &m_occlusionTestClient, kPassCullMainMask);
+	uint32 passCullMask = UpdateCullMask(m_onePassTraversalFrameId, ~0, m_renderFlags, passInfo, m_objectsBox, nodeDistance, m_fObjectsMaxViewDist, false, bNodeCompletelyInFrustum, &m_occlusionTestClient, kPassCullMainMask);
 
 	if (bNodeCompletelyInFrustum || passInfo.GetCamera().IsAABBVisible_EH(m_objectsBox, &bNodeCompletelyInFrustum))
 	{
@@ -831,7 +831,7 @@ void COctreeNode::Render_LightSources(bool bNodeCompletelyInFrustum, const SRend
 				float entDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
 
 				bool bObjectCompletelyInFrustum = bNodeCompletelyInFrustum;
-				uint32 objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_dwRndFlags, passInfo, objBox, entDistance, pObj->m_fWSMaxViewDist, true, bObjectCompletelyInFrustum, nullptr, passCullMask);
+				uint32 objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_onePassTraversalShadowCascades, pObj->m_dwRndFlags, passInfo, objBox, entDistance, pObj->m_fWSMaxViewDist, true, bObjectCompletelyInFrustum, nullptr, passCullMask);
 
 				if (objCullMask)
 				{
@@ -1626,7 +1626,7 @@ bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMap
 						if (pFrustum->m_eFrustumType != ShadowMapFrustum::e_HeightMapAO && (pNode->GetRndFlags() & ERF_CASTSHADOWMAPS) == 0)
 							continue;
 
-						if (pFrustum->pShadowCacheData->mProcessedCasters.find(pNode) != pFrustum->pShadowCacheData->mProcessedCasters.end())
+						if (!pFrustum->NodeRequiresShadowCacheUpdate(pNode))
 							continue;
 
 						AABB objBox = pNode->GetBBox();
@@ -1668,7 +1668,7 @@ bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMap
 								pFrustum->castersList.Add(pNode);
 
 							// mark the object to be rendered into shadow map
-							COctreeNode::SetTraversalFrameId(pNode, passInfo.GetMainFrameID());
+							COctreeNode::SetTraversalFrameId(pNode, passInfo.GetMainFrameID(), pFrustum->nShadowMapLod);
 						}
 					}
 				}
@@ -2867,7 +2867,7 @@ void COctreeNode::RenderVegetations(TDoublyLinkedList<IRenderNode>* lstObjects, 
 
 		// check culling of all passes
 		bool bObjectCompletelyInFrustum = bOcNodeCompletelyInFrustum;
-		uint32 objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_dwRndFlags, passInfo, objBox, fEntDistance, pObj->m_fWSMaxViewDist, bCheckPerObjectOcclusion, bObjectCompletelyInFrustum, nullptr, passCullMask);
+		uint32 objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_onePassTraversalShadowCascades, pObj->m_dwRndFlags, passInfo, objBox, fEntDistance, pObj->m_fWSMaxViewDist, bCheckPerObjectOcclusion, bObjectCompletelyInFrustum, nullptr, passCullMask);
 
 		if (objCullMask)
 		{
@@ -2926,7 +2926,7 @@ void COctreeNode::RenderBrushes(TDoublyLinkedList<IRenderNode>* lstObjects, cons
 
 		// check culling of all passes
 		bool bObjectCompletelyInFrustum = bOcNodeCompletelyInFrustum;
-		uint32 objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_dwRndFlags, passInfo, objBox, fEntDistance, pObj->m_fWSMaxViewDist, bCheckPerObjectOcclusion, bObjectCompletelyInFrustum, nullptr, passCullMask);
+		uint32 objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_onePassTraversalShadowCascades, pObj->m_dwRndFlags, passInfo, objBox, fEntDistance, pObj->m_fWSMaxViewDist, bCheckPerObjectOcclusion, bObjectCompletelyInFrustum, nullptr, passCullMask);
 
 		if (objCullMask)
 		{
@@ -2974,13 +2974,13 @@ void COctreeNode::RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfo
 				continue;
 			}
 
+			const ShadowMapFrustum* pFr = passInfoShadow.GetIRenderView()->GetShadowFrustumOwner();
+
 			if (bMarkedForTraversal)
 			{
 				bool bHasPerObjectShadow = GetCVars()->e_ShadowsPerObject && gEnv->p3DEngine->GetPerObjectShadow(pObj);
 				bool bMarkedForPerObjectShadow = bHasPerObjectShadow;
 				bool bMarkedForCachedShadow = !bHasPerObjectShadow;
-
-				ShadowMapFrustum* pFr = passInfoShadow.GetIRenderView()->GetShadowFrustumOwner();
 
 				if (bMarkedForPerObjectShadow && (pFr->m_eFrustumType != ShadowMapFrustum::e_PerObject) && (pFr->m_Flags & DLF_SUN))
 				{
@@ -3014,7 +3014,6 @@ void COctreeNode::RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfo
 
 				if (nodeType == eERType_ParticleEmitter)
 				{
-					ShadowMapFrustum* pFr = passInfoShadow.GetIRenderView()->GetShadowFrustumOwner();
 					bool bParticleShadows = (pFr->m_Flags & DLF_SUN) && (pFr->nShadowMapLod < GetCVars()->e_ParticleShadowsNumGSMs);
 					if (!bParticleShadows)
 						continue;
@@ -3024,7 +3023,7 @@ void COctreeNode::RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfo
 				break;
 			}
 
-			passInfoShadow.GetIRenderView()->GetShadowFrustumOwner()->onePassCastersNum++;
+			pFr->GetOnePassCastersCount()++;
 
 			passId++;
 		}
@@ -3061,7 +3060,7 @@ void COctreeNode::RenderDecalsAndRoads(TDoublyLinkedList<IRenderNode>* lstObject
 
 		// check culling of all passes
 		bool bObjectCompletelyInFrustum = bOcNodeCompletelyInFrustum;
-		uint32 objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_dwRndFlags, passInfo, objBox, fEntDistance, pObj->m_fWSMaxViewDist, true, bObjectCompletelyInFrustum, nullptr, passCullMask & kPassCullMainMask);
+		uint32 objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_onePassTraversalShadowCascades, pObj->m_dwRndFlags, passInfo, objBox, fEntDistance, pObj->m_fWSMaxViewDist, true, bObjectCompletelyInFrustum, nullptr, passCullMask & kPassCullMainMask);
 
 		if (objCullMask)
 		{
@@ -3114,7 +3113,7 @@ void COctreeNode::RenderCommonObjects(TDoublyLinkedList<IRenderNode>* lstObjects
 
 		// check culling of all passes
 		bool bObjectCompletelyInFrustum = bOcNodeCompletelyInFrustum;
-		uint32 objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_dwRndFlags, passInfo, objBox, fEntDistance, pObj->m_fWSMaxViewDist, true, bObjectCompletelyInFrustum, nullptr, passCullMask);
+		uint32 objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_onePassTraversalShadowCascades, pObj->m_dwRndFlags, passInfo, objBox, fEntDistance, pObj->m_fWSMaxViewDist, true, bObjectCompletelyInFrustum, nullptr, passCullMask);
 
 		if (objCullMask)
 		{
@@ -4041,12 +4040,17 @@ bool CObjManager::IsBoxOccluded(const AABB& objBox,
 	return false;
 }
 
-void COctreeNode::SetTraversalFrameId(IRenderNode* pObj, uint32 onePassTraversalFrameId)
+void COctreeNode::SetTraversalFrameId(IRenderNode* pObj, uint32 onePassTraversalFrameId, int shadowFrustumLod)
 {
-	pObj->m_onePassTraversalFrameId = onePassTraversalFrameId;
+	if (pObj->m_onePassTraversalFrameId != onePassTraversalFrameId)
+	{
+		pObj->m_onePassTraversalShadowCascades = 0;
+		pObj->m_onePassTraversalFrameId = onePassTraversalFrameId;
+	}
+
+	pObj->m_onePassTraversalShadowCascades |= BIT(shadowFrustumLod);
 
 	// mark also the path to this object, m_onePassTraversalFrameId will be used to guide the tree traversal
-
 	COctreeNode* pOcNode = (COctreeNode*)pObj->m_pOcNode;
 
 	while (pOcNode && pOcNode->m_onePassTraversalFrameId != onePassTraversalFrameId)

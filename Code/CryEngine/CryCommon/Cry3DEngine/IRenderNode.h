@@ -214,7 +214,9 @@ struct IShadowCaster
 	virtual struct ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) = 0;
 	virtual EERType                    GetRenderNodeType() = 0;
 	// </interfuscator:shuffle>
-	uint8                              m_cStaticShadowLod;
+
+	uint32                             m_shadowCacheLastRendered[MAX_GSM_LODS_NUM];
+	uint8                              m_shadowCacheLod[MAX_GSM_LODS_NUM];
 };
 
 struct IOctreeNode
@@ -273,8 +275,10 @@ public:
 		m_pTempData.store(nullptr);
 		m_pPrev = m_pNext = nullptr;
 		m_cShadowLodBias = 0;
-		m_cStaticShadowLod = 0;
 		m_nEditorSelectionID = 0;
+
+		ZeroArray(m_shadowCacheLod);
+		ZeroArray(m_shadowCacheLastRendered);
 	}
 
 	virtual bool CanExecuteRenderAsJob() { return false; }
@@ -430,7 +434,8 @@ public:
 		pDest->m_ucViewDistRatio = m_ucViewDistRatio;
 		pDest->m_ucLodRatio = m_ucLodRatio;
 		pDest->m_cShadowLodBias = m_cShadowLodBias;
-		pDest->m_cStaticShadowLod = m_cStaticShadowLod;
+		memcpy(pDest->m_shadowCacheLod, m_shadowCacheLod, sizeof(m_shadowCacheLod));
+		ZeroArray(pDest->m_shadowCacheLastRendered);
 		pDest->m_nInternalFlags = m_nInternalFlags;
 		pDest->m_nMaterialLayers = m_nMaterialLayers;
 		//pDestBrush->m_pRNTmpData				//If this is copied from the source render node, there are two
@@ -610,6 +615,7 @@ public:
 
 	//! Used to request visiting of the node during one-pass traversal
 	uint32 m_onePassTraversalFrameId = 0;
+	uint32 m_onePassTraversalShadowCascades = 0;
 };
 
 inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)

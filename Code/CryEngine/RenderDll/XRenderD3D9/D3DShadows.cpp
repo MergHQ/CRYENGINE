@@ -117,7 +117,7 @@ void CD3D9Renderer::EF_PrepareShadowGenRenderList(const SRenderingPassInfo& pass
 				if (!pShadowView)
 				{
 					// allocate view if was not prepared by 3dengine
-					pShadowView = pCurFrustum->GetNextAvailableShadowsView(pRenderView, pFrustumForRenderer.get());
+					pShadowView = pCurFrustum->GetNextAvailableShadowsView(pRenderView);
 					pShadowView->SwitchUsageMode(IRenderView::eUsageModeWriting);
 				}
 
@@ -184,7 +184,7 @@ bool CD3D9Renderer::EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRende
 			if (!pShadowView)
 			{
 				// allocate view if was not prepared by 3dengine
-				pShadowView = pCurFrustum->GetNextAvailableShadowsView(pRenderView, pFrustumForRenderer.get());
+				pShadowView = pCurFrustum->GetNextAvailableShadowsView(pRenderView);
 				pShadowView->SwitchUsageMode(IRenderView::eUsageModeWriting);
 			}
 

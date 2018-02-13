@@ -3918,6 +3918,7 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 			shadowPassInfo.push_back(std::move(pass));
 		}
 
+		pShadowsView->SetShadowFrustumOwner(pFr);
 		pShadowsView->SwitchUsageMode(IRenderView::eUsageModeWriting);
 		pFr->pOnePassShadowView = std::move(pShadowsView);
 	}

@@ -357,7 +357,7 @@ public:
 	bool                     DeleteObject(IRenderNode* pObj);
 	void                     Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRenderMask, const Vec3& vAmbColor, uint32 passCullMask, const SRenderingPassInfo& passInfo);
 	void                     Render_LightSources(bool bNodeCompletelyInFrustum, const SRenderingPassInfo& passInfo);
-	static uint32            UpdateCullMask(uint32 onePassTraversalFrameId, const IRenderNode::RenderFlagsType renderFlags, const SRenderingPassInfo& passInfo, const AABB& nodeBox, const float nodeDistance, const float nodeMaxViewDist, const bool bTestCoverageBuffer,
+	static uint32            UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePassTraversalShadowCascades, const IRenderNode::RenderFlagsType renderFlags, const SRenderingPassInfo& passInfo, const AABB& nodeBox, const float nodeDistance, const float nodeMaxViewDist, const bool bTestCoverageBuffer,
 	                                        bool& bCompletelyInMainFrustum, OcclusionTestClient* occlusionTestClient, uint32 passCullMask);
 	void                     CheckUpdateStaticInstancing();
 	void                     RenderDebug();
@@ -455,7 +455,7 @@ public:
 	void                OffsetObjects(const Vec3& offset);
 	void                SetVisArea(CVisArea* pVisArea);
 	void                SetTerrainNode(struct CTerrainNode* node) { m_pTerrainNode = node; }
-	static void         SetTraversalFrameId(IRenderNode* pObj, uint32 onePassTraversalFrameId);
+	static void         SetTraversalFrameId(IRenderNode* pObj, uint32 onePassTraversalFrameId, int shadowFrustumLod);
 	static COctreeNode* Create(const AABB& box, struct CVisArea* pVisArea, COctreeNode* pParent = NULL);
 
 protected:

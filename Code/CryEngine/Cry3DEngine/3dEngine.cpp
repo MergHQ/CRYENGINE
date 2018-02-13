@@ -6341,7 +6341,7 @@ void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const 
 	if (passInfo.GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED)
 		nStaticObjectLod = GetCVars()->e_ShadowsCacheObjectLod;
 	else if (passInfo.GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED_MGPU_COPY)
-		nStaticObjectLod = pRenderNode->m_cStaticShadowLod;
+		nStaticObjectLod = pRenderNode->m_shadowCacheLod[passInfo.ShadowFrustumLod()];
 
 	SRenderNodeTempData* pTempData = Get3DEngine()->CheckAndCreateRenderNodeTempData(pRenderNode, passInfo);
 	if (!pTempData)

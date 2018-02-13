@@ -178,6 +178,9 @@ struct IRenderView : public CMultiThreadRefCount
 
 	//! Return associated shadow frustum
 	virtual ShadowMapFrustum* GetShadowFrustumOwner() const = 0;
+
+	//! Set associated shadow frustum
+	virtual void              SetShadowFrustumOwner(ShadowMapFrustum* pOwner) = 0;
 };
 
 typedef _smart_ptr<IRenderView> IRenderViewPtr;
