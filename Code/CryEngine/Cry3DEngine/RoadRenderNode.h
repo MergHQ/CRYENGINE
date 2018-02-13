@@ -52,7 +52,7 @@ public:
 	virtual void SetVertices(const Vec3* pVerts, int nVertsNum, float fTexCoordBegin, float fTexCoordEnd, float fTexCoordBeginGlobal, float fTexCoordEndGlobal);
 	virtual void SetSortPriority(uint8 sortPrio);
 	virtual void SetIgnoreTerrainHoles(bool bVal);
-	virtual void SetPhysicalize(bool bVal) { if (m_bPhysicalize != bVal) { m_bPhysicalize = bVal; ScheduleRebuild(false); } }
+	virtual void SetPhysicalize(bool bVal) { if (m_bPhysicalize != bVal) { m_bPhysicalize = bVal; ScheduleRebuild(true); } }
 
 	// IRenderNode implementation
 	virtual const char*         GetEntityClassName(void) const { return "RoadObjectClass"; }
