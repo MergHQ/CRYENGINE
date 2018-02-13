@@ -1172,6 +1172,9 @@ void CAttachmentSKIN::DrawWireframeStatic( const Matrix34& m34, int nLOD, uint32
 //////////////////////////////////////////////////////////////////////////
 void CAttachmentSKIN::SoftwareSkinningDQ_VS_Emulator( CModelMesh* pModelMesh, Matrix34 rRenderMat34, uint8 tang,uint8 binorm,uint8 norm,uint8 wire, const DualQuat* const pSkinningTransformations)
 {
+	// TODO: This method produces inaccurate results and should be replaced by a functionally equivalent
+	// debug visualization performed with geometry that has been deformed by the actual shader implementation.
+
 #ifdef DEFINE_PROFILER_FUNCTION
 	DEFINE_PROFILER_FUNCTION();
 #endif
@@ -1265,7 +1268,15 @@ void CAttachmentSKIN::SoftwareSkinningDQ_VS_Emulator( CModelMesh* pModelMesh, Ma
 			f32 w1 = hwWeights[1]/255.0f;
 			f32 w2 = hwWeights[2]/255.0f;
 			f32 w3 = hwWeights[3]/255.0f;
-			assert(fabsf((w0+w1+w2+w3)-1.0f)<0.0001f);
+
+			// Current skinning shader implementations support more than 4 weights per vertex.
+			// This function produces inaccurate results already due to implementations having drifted
+			// apart, so for the time being we ignore any extra weights and simply normalize the first 4.
+			const f32 weightSum = w0 + w1 + w2 + w3;
+			w0 = w0 / weightSum;
+			w1 = w1 / weightSum;
+			w2 = w2 / weightSum;
+			w3 = w3 / weightSum;
 
 			const DualQuat& q0=arrRemapSkinQuat[id0];
 			const DualQuat& q1=arrRemapSkinQuat[id1];
