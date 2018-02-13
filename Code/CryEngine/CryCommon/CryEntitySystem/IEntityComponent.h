@@ -642,7 +642,7 @@ struct IEntityScriptComponent : public IEntityComponent
 //! Interface to the trigger component, exposing support for tracking enter / leave events for other entities entering a predefined trigger box
 //! An in-game example that uses this functionality is the ProximityTrigger entity
 //! \par Example
-//! \include CryEntitySystem/TriggerComponent.cpp
+//! \include CryEntitySystem/Examples/TriggerComponent.cpp
 struct IEntityTriggerComponent : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_GUID(IEntityTriggerComponent, "de73851b-7e35-419f-a509-51d204f555de"_cry_guid)
@@ -689,7 +689,7 @@ struct IEntityAudioComponent : public IEntityComponent
 	//! \param audioTriggerId The trigger we want to execute
 	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
 	//! \par Example
-	//! \include CryEntitySystem/Audio/ExecuteTrigger.cpp
+	//! \include CryEntitySystem/Examples/Audio/ExecuteTrigger.cpp
 	virtual bool                    ExecuteTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
 	virtual void                    StopTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
 	//! Sets the current state of a switch in the entity
@@ -697,13 +697,13 @@ struct IEntityAudioComponent : public IEntityComponent
 	//! \param audioStateId Identifier of the switch state we want to set to
 	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
 	//! \par Example
-	//! \include CryEntitySystem/Audio/SetSwitchState.cpp
+	//! \include CryEntitySystem/Examples/Audio/SetSwitchState.cpp
 	virtual void                    SetSwitchState(CryAudio::ControlId const audioSwitchId, CryAudio::SwitchStateId const audioStateId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	//! Sets the value of the specified parameter on the entity
 	//! \param parameterId Identifier of the parameter we want to modify the value of
 	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
 	//! \par Example
-	//! \include CryEntitySystem/Audio/SetParameterValue.cpp
+	//! \include CryEntitySystem/Examples/Audio/SetParameterValue.cpp
 	virtual void                    SetParameter(CryAudio::ControlId const parameterId, float const value, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual void                    SetObstructionCalcType(CryAudio::EOcclusionType const occlusionType, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	virtual void                    SetEnvironmentAmount(CryAudio::EnvironmentId const audioEnvironmentId, float const amount, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
@@ -920,7 +920,7 @@ struct IEntityCameraComponent : public IEntityComponent
 
 //! Interface to the rope component, providing support for creating a rendered and physical rope on the entity position
 //! \par Example
-//! \include CryEntitySystem/RopeComponent.cpp
+//! \include CryEntitySystem/Examples/RopeComponent.cpp
 struct IEntityRopeComponent : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_GUID(IEntityRopeComponent, "368e5dcd-0d95-4101-b1f9-da514945f40c"_cry_guid)
