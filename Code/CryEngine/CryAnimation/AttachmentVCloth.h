@@ -739,7 +739,6 @@ public:
 
 #ifdef EDITOR_PCDEBUGCODE
 	void DrawWireframeStatic(const Matrix34& m34, int nLOD, uint32 color);
-	void SoftwareSkinningDQ_VS_Emulator(CModelMesh* pModelMesh, Matrix34 rRenderMat34, uint8 tang, uint8 binorm, uint8 norm, uint8 wire, const DualQuat* const pSkinningTransformations);
 #endif
 
 	virtual IVertexAnimation* GetIVertexAnimation() override { return &m_vertexAnimation; }

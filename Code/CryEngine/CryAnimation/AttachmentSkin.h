@@ -96,7 +96,6 @@ public:
 	void                    CullVertexFrames(const SRenderingPassInfo& passInfo, float fDistance);
 
 #ifdef EDITOR_PCDEBUGCODE
-	void DrawVertexDebug(IRenderMesh* pRenderMesh, const QuatT& location, const SVertexAnimationJob* pVertexAnimation, const SVertexSkinData& vertexSkinData);
 	void DrawWireframeStatic(const Matrix34& m34, int nLOD, uint32 color);
 	void SoftwareSkinningDQ_VS_Emulator(CModelMesh* pModelMesh, Matrix34 rRenderMat34, uint8 tang, uint8 binorm, uint8 norm, uint8 wire, const DualQuat* const pSkinningTransformations);
 #endif
