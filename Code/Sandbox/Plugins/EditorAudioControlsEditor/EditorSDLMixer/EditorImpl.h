@@ -8,7 +8,6 @@
 
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/File/CryFile.h>
-#include <CryString/CryPath.h>
 
 namespace ACE
 {

@@ -277,8 +277,8 @@ void CSystem::SaveConfiguration()
 //////////////////////////////////////////////////////////////////////////
 // system cfg
 //////////////////////////////////////////////////////////////////////////
-CSystemConfiguration::CSystemConfiguration(const string& strSysConfigFilePath, CSystem* pSystem, ILoadConfigurationEntrySink* pSink, ELoadConfigurationType configType)
-	: m_strSysConfigFilePath(strSysConfigFilePath), m_bError(false), m_pSink(pSink), m_configType(configType)
+CSystemConfiguration::CSystemConfiguration(const string& strSysConfigFilePath, CSystem* pSystem, ILoadConfigurationEntrySink* pSink, ELoadConfigurationType configType, ELoadConfigurationFlags flags)
+	: m_strSysConfigFilePath(strSysConfigFilePath), m_bError(false), m_pSink(pSink), m_configType(configType), m_flags(flags)
 {
 	assert(pSink);
 
@@ -381,7 +381,10 @@ bool CSystemConfiguration::ParseSystemConfig()
 
 		if (!OpenFile(filename, file, flags))
 		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Config file %s not found!", filename.c_str());
+			if (ELoadConfigurationFlags::None == (m_flags & ELoadConfigurationFlags::SuppressConfigNotFoundWarning))
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Config file %s not found!", filename.c_str());
+			}
 			return false;
 		}
 		filenameLog = file.GetAdjustedFilename();
@@ -511,7 +514,7 @@ void CSystem::OnLoadConfigurationEntry(const char* szKey, const char* szValue, c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::LoadConfiguration(const char* sFilename, ILoadConfigurationEntrySink* pSink, ELoadConfigurationType configType)
+void CSystem::LoadConfiguration(const char* sFilename, ILoadConfigurationEntrySink* pSink, ELoadConfigurationType configType, ELoadConfigurationFlags flags)
 {
 	ELoadConfigurationType lastType = m_env.pConsole->SetCurrentConfigType(configType);
 
@@ -520,7 +523,7 @@ void CSystem::LoadConfiguration(const char* sFilename, ILoadConfigurationEntrySi
 		if (!pSink)
 			pSink = this;
 
-		CSystemConfiguration tempConfig(sFilename, this, pSink, configType);
+		CSystemConfiguration tempConfig(sFilename, this, pSink, configType, flags);
 	}
 	m_env.pConsole->SetCurrentConfigType(lastType);
 }

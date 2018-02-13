@@ -147,7 +147,7 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 				{
 					pContextMenu->addAction(tr("Open Containing Folder"), [&]()
 						{
-							QtUtil::OpenInExplorer(PathUtil::Make(GetISystem()->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), pImplItem->GetFilePath().c_str()));
+							QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pImplItem->GetFilePath()).c_str());
 					  });
 
 					pContextMenu->addSeparator();

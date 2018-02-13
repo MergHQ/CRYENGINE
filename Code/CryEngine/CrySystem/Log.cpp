@@ -27,6 +27,10 @@
 	#include <time.h>
 #endif
 
+#if !defined(CRY_PLATFORM_ORBIS)
+#include <sys/timeb.h>
+#endif //!defined(CRY_PLATFORM_ORBIS)
+
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	#include <syslog.h>
 #endif
@@ -144,6 +148,7 @@ CLog::CLog(ISystem* pSystem)
 	, m_pLogSpamDelay(nullptr)
 	, m_pLogModule(nullptr)
 	, m_eLogMode(eLogMode_Normal)
+	, m_logFormat("%Y-%m-%dT%H:%M:%S:fffzzz")
 {
 	memset(m_szFilename, 0, MAX_FILENAME_SIZE);
 	memset(m_sBackupFilename, 0, MAX_FILENAME_SIZE);
@@ -165,6 +170,12 @@ void CLog::RegisterConsoleVariables()
 	#endif
 #else
 	#define DEFAULT_VERBOSITY 3
+#endif
+
+#if defined(DEDICATED_SERVER) && defined(CRY_PLATFORM_LINUX)
+	#define DEFAULT_LOG_INCLUDE_TIME (0)
+#else
+	#define DEFAULT_LOG_INCLUDE_TIME (1)
 #endif
 
 	if (console)
@@ -193,7 +204,7 @@ void CLog::RegisterConsoleVariables()
 		m_pLogVerbosityOverridesWriteToFile = REGISTER_INT("log_VerbosityOverridesWriteToFile", 1, VF_DUMPTODISK, "when enabled, setting log_verbosity to 0 will stop all logging including writing to file");
 
 		// put time into begin of the string if requested by cvar
-		m_pLogIncludeTime = REGISTER_INT("log_IncludeTime", 1, 0,
+		m_pLogIncludeTime = REGISTER_INT("log_IncludeTime", DEFAULT_LOG_INCLUDE_TIME, 0,
 		                                 "Toggles time stamping of log entries.\n"
 		                                 "Usage: log_IncludeTime [0/1/2/3/4/5]\n"
 		                                 "  0=off (default)\n"
@@ -201,7 +212,8 @@ void CLog::RegisterConsoleVariables()
 		                                 "  2=relative time\n"
 		                                 "  3=current+relative time\n"
 		                                 "  4=absolute time in seconds since this mode was started\n"
-		                                 "  5=current time+server time");
+		                                 "  5=current time+server time\n"
+		                                 "  6=ISO8601 time formatting");
 
 		m_pLogSpamDelay = REGISTER_FLOAT("log_SpamDelay", 0.0f, 0, "Sets the minimum time interval between messages classified as spam");
 
@@ -876,6 +888,60 @@ const char* CLog::GetAssetScopeString()
 };
 #endif
 
+void CLog::SetLogFormat(const char* format)
+{
+	m_logFormat.clear();
+	m_logFormat.assign(format);
+}
+
+void CLog::FormatTimestampInternal(stack_string& timeStr, const string& logFormat)
+{
+#if !defined(CRY_PLATFORM_ORBIS)
+	bool isUtC = logFormat.find("Z") != string::npos;
+
+	char sTime[128];
+	stack_string tmpStr;
+	stack_string formatStr;
+	struct timeb now;
+
+	ftime(&now);
+
+	time_t ltime = now.time;
+	struct tm* today = isUtC ? gmtime(&ltime) : localtime(&ltime);
+	size_t actualLength = strftime(sTime, 128, logFormat.c_str(), today);
+
+	timeStr.Format("%s", sTime);
+
+	int pos = timeStr.find("f");
+	if (pos != string::npos)
+	{
+		int count = strspn(&(timeStr.c_str()[pos]), "f");
+
+		formatStr.Format("%%0%iu", count);
+		tmpStr.Format(formatStr.c_str(), now.millitm);
+		timeStr.replace(pos, count, tmpStr.c_str());
+	}
+
+	if (!isUtC)
+	{
+		tmpStr.clear();
+		formatStr.clear();
+
+		int pos = timeStr.find("z");
+		if (pos != string::npos)
+		{
+			int count = strspn(&(timeStr.c_str()[pos]), "z");
+
+			short timezone = -(now.timezone / 60) + now.dstflag;
+
+			formatStr.Format(now.timezone > 0 ? "-%%0%ii" : "+%%0%ii", count - 1);
+			tmpStr.Format(formatStr.c_str(), timezone);
+			timeStr.replace(pos, count, tmpStr.c_str());
+		}
+	}
+#endif //!defined(CRY_PLATFORM_ORBIS)
+}
+
 //////////////////////////////////////////////////////////////////////
 #if !defined(EXCLUDE_NORMAL_LOG)
 void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
@@ -937,6 +1003,15 @@ void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
 	if (m_pLogIncludeTime && gEnv->pTimer)
 	{
 		uint32 dwCVarState = m_pLogIncludeTime->GetIVal();
+		if (dwCVarState == 6)
+		{
+			// ISO8601 date/time formatting
+			stack_string timeStr, formattedTimeStr;
+			FormatTimestampInternal(timeStr, m_logFormat);
+			formattedTimeStr.Format("<%s> ", timeStr.c_str());
+			tempString = LogStringType(formattedTimeStr.c_str()) + tempString;
+		}
+
 		char sTime[21];
 		if (dwCVarState == 5) // Log_IncludeTime
 		{

@@ -49,12 +49,11 @@ void ShadowMapFrustum::SortRenderItemsForFrustumAsync(int side, SRendItem* pFirs
 }
 
 //////////////////////////////////////////////////////////////////////////
-CRenderView* ShadowMapFrustum::GetNextAvailableShadowsView(CRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum)
+CRenderView* ShadowMapFrustum::GetNextAvailableShadowsView(CRenderView* pMainRenderView)
 {
 	CRenderView* pShadowsView = gcpRendD3D->GetOrCreateRenderView(CRenderView::eViewType_Shadow);
 	CRY_ASSERT(pShadowsView->GetUsageMode() == IRenderView::eUsageModeUndefined || pShadowsView->GetUsageMode() == IRenderView::eUsageModeReadingDone);
 
-	pShadowsView->SetShadowFrustumOwner(pOwnerFrustum);
 	pShadowsView->SetParentView(pMainRenderView);
 	pShadowsView->SetFrameId(pMainRenderView->GetFrameId());
 	pShadowsView->SetSkinningDataPools(pMainRenderView->GetSkinningDataPools());
@@ -66,7 +65,7 @@ CRenderView* ShadowMapFrustum::GetNextAvailableShadowsView(CRenderView* pMainRen
 
 IRenderView* CRenderer::GetNextAvailableShadowsView(IRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum)
 {
-	return pOwnerFrustum->GetNextAvailableShadowsView((CRenderView*)pMainRenderView, pOwnerFrustum);
+	return pOwnerFrustum->GetNextAvailableShadowsView((CRenderView*)pMainRenderView);
 }
 
 //////////////////////////////////////////////////////////////////////////

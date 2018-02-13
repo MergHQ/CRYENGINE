@@ -925,6 +925,14 @@ void CRenderView::AddPermanentObjectImpl(CPermanentRenderObject* pObject, const 
 			if (pCurObj->m_ObjFlags & FOB_NEAREST)
 				m_shadows.AddNearestCaster(pCurObj);
 		}
+
+		if (m_shadows.m_pShadowFrustumOwner->IsCached())
+		{
+			if (IRenderNode* pNode = pObject->m_pRenderNode)
+			{
+				m_shadows.m_pShadowFrustumOwner->MarkNodeAsCached(pNode);
+			}
+		}
 	}
 }
 
@@ -1803,6 +1811,11 @@ void CRenderView::CompileModifiedRenderObjects()
 		{
 			pRenderObject->m_compiledReadyMask |= passMask;
 		}
+		else if(IsShadowGenView() && m_shadows.m_pShadowFrustumOwner->IsCached())
+		{
+			// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
+			m_shadows.m_pShadowFrustumOwner->MarkNodeAsCached(pRenderObject->m_pRenderNode, false);
+		}
 
 		pRenderObject->m_lastCompiledFrame = nFrameId;
 		pRenderObject->m_bAllCompiledValid = bAllCompiled;
@@ -1816,7 +1829,13 @@ void CRenderView::CompileModifiedRenderObjects()
 	{
 		auto& pair = m_temporaryCompiledObjects[i]; // first=CRenderObject, second=CCompiledObject
 		SInstanceUpdateInfo instanceInfo = { pair.pRenderObject->m_II.m_Matrix };
-		pair.pCompiledObject->Compile(pair.pRenderObject, instanceInfo, this, false);
+		const bool isCompiled = pair.pCompiledObject->Compile(pair.pRenderObject, instanceInfo, this, false);
+
+		if (IsShadowGenView() && m_shadows.m_pShadowFrustumOwner->IsCached())
+		{
+			// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
+			m_shadows.m_pShadowFrustumOwner->MarkNodeAsCached(pair.pRenderObject->m_pRenderNode, isCompiled);
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1828,11 +1847,8 @@ void CRenderView::CompileModifiedRenderObjects()
 	
 	for (auto& fr : m_shadows.m_renderFrustums)
 	{
-		if (fr.pShadowsView)
-		{
-			CRenderView* pShadowView = (CRenderView*)fr.pShadowsView.get();
-			pShadowView->CompileModifiedRenderObjects();
-		}
+		CRenderView* pShadowView = (CRenderView*)fr.pShadowsView.get();
+		pShadowView->CompileModifiedRenderObjects();
 	}
 }
 

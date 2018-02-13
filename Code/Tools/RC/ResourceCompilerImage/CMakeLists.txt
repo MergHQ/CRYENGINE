@@ -205,6 +205,7 @@ set_libpath_flag()
 target_include_directories( ${THIS_PROJECT} PRIVATE 
 	"${CMAKE_SOURCE_DIR}/ResourceCompiler"
 	"${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools"
+	"${SDK_DIR}"
 	"${SDK_DIR}/squish-ccr")
 
 if(COMMAND use_orbis_sdk)

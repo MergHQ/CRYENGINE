@@ -6,8 +6,8 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
-		"../../SDKs/jsmn/jsmn.c"
-		"../../SDKs/jsmn/jsmn.h"
+		"${SDK_DIR}/jsmn/jsmn.c"
+		"${SDK_DIR}/jsmn/jsmn.h"
 		"jsmnutil.h"
 		"jsmnutil.c"
 )

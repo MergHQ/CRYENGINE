@@ -26,8 +26,8 @@ static ThreadUtils::CriticalSection s_squishLock;
 #define	SQUISH_USE_SSE	3
 #define SQUISH_USE_XSSE	0
 #define	SQUISH_USE_CCR
-#include "../../SDKs/squish-ccr/squish.h"
-#include "../../SDKs/squish-ccr/squish.inl"
+#include <squish.h>
+#include <squish.inl>
 
 // number of bytes per block per type
 #define BLOCKSIZE_BC1   8

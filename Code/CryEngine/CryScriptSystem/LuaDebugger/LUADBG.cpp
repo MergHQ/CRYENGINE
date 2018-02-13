@@ -539,6 +539,10 @@ LRESULT CLUADbg::OnCreate(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	string sUIFolder = "LIBS/UI/UIACTIONS/";
 	m_wFilesTree.ScanFiles((char*)sUIFolder.c_str());
+
+	string sUIScripts = "ui/";
+	m_wFilesTree.ScanFiles((char*)sUIScripts.c_str());
+
 	string sItemsFolder = "ITEMS/";
 	m_wFilesTree.ScanFiles((char*)sItemsFolder.c_str());
 
@@ -1509,7 +1513,7 @@ bool CLUADbg::InvokeDebugger(const char* pszSourceFile, int iLine, const char* p
 	::SetForegroundWindow(m_hWnd);
 	if (gEnv && gEnv->pSystem && gEnv->pSystem->GetIHardwareMouse())
 		gEnv->pSystem->GetIHardwareMouse()->IncrementCounter();
-	if (gEnv->IsDedicated())
+	if (gEnv->IsDedicated() && gEnv->pInput)
 		gEnv->pInput->ShowCursor(true);
 
 	if (pszSourceFile && pszSourceFile[0] == '@')

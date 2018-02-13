@@ -6,15 +6,15 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
-		"../../SDKs/BigDigits/bigd.c"
-		"../../SDKs/BigDigits/bigdigits.c"
-		"../../SDKs/BigDigits/bigdRand.c"
-		"../../SDKs/BigDigits/spBigdigits.c"
-		"../../SDKs/BigDigits/spRandom.c"
-		"../../SDKs/BigDigits/bigd.h"
-		"../../SDKs/BigDigits/bigdigits.h"
-		"../../SDKs/BigDigits/bigdRand.h"
-		"../../SDKs/BigDigits/spRandom.h"
+		"${SDK_DIR}/BigDigits/bigd.c"
+		"${SDK_DIR}/BigDigits/bigdigits.c"
+		"${SDK_DIR}/BigDigits/bigdRand.c"
+		"${SDK_DIR}/BigDigits/spBigdigits.c"
+		"${SDK_DIR}/BigDigits/spRandom.c"
+		"${SDK_DIR}/BigDigits/bigd.h"
+		"${SDK_DIR}/BigDigits/bigdigits.h"
+		"${SDK_DIR}/BigDigits/bigdRand.h"
+		"${SDK_DIR}/BigDigits/spRandom.h"
 )
 
 end_sources()

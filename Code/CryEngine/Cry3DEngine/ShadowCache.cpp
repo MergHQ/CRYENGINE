@@ -5,9 +5,10 @@
 #include "LightEntity.h"
 #include "VisAreas.h"
 
-const float ShadowCache::AO_FRUSTUM_SLOPE_BIAS = 0.5f;
+const float ShadowCacheGenerator::AO_FRUSTUM_SLOPE_BIAS = 0.5f;
+int  ShadowCacheGenerator::m_cacheGenerationId = 1;
 
-void ShadowCache::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod, int nFirstStaticLod, float fDistFromViewDynamicLod, float fRadiusDynamicLod, const SRenderingPassInfo& passInfo)
+void ShadowCacheGenerator::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod, int nFirstStaticLod, float fDistFromViewDynamicLod, float fRadiusDynamicLod, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 	assert(nLod >= 0);
@@ -64,25 +65,35 @@ void ShadowCache::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod, int nFir
 	}
 
 	// finally init frustum
-	InitCachedFrustum(pFr, nUpdateStrategy, nLod, nTexRes, m_pLightEntity->GetLightProperties().m_Origin, projectionBoundsLS, passInfo);
 	pFr->m_eFrustumType = ShadowMapFrustum::e_GsmCached;
 	pFr->bBlendFrustum = GetCVars()->e_ShadowsBlendCascades > 0;
 	pFr->fBlendVal = pFr->bBlendFrustum ? GetCVars()->e_ShadowsBlendCascadesVal : 1.0f;
+	InitCachedFrustum(pFr, nUpdateStrategy, nLod, nTexRes, m_pLightEntity->GetLightProperties().m_Origin, projectionBoundsLS, passInfo);
+
 
 	// frustum debug
+	if (GetCVars()->e_ShadowsCacheUpdate > 2 || GetCVars()->e_ShadowsFrustums > 0)
 	{
-		const ColorF cascadeColors[] = { Col_Red, Col_Green, Col_Blue, Col_Yellow, Col_Magenta, Col_Cyan };
-		const uint colorCount = CRY_ARRAY_COUNT(cascadeColors);
+		if (IRenderAuxGeom* pAux = GetRenderer()->GetIRenderAuxGeom())
+		{
+			SAuxGeomRenderFlags prevAuxFlags = pAux->GetRenderFlags();
+			pAux->SetRenderFlags(e_Mode3D | e_AlphaNone | e_DepthTestOn);
 
-		if (GetCVars()->e_ShadowsCacheUpdate > 2)
-			Get3DEngine()->DrawBBox(pFr->aabbCasters, cascadeColors[pFr->nShadowMapLod % colorCount]);
+			const ColorF cascadeColors[] = { Col_Red, Col_Green, Col_Blue, Col_Yellow, Col_Magenta, Col_Cyan };
+			const uint colorCount = CRY_ARRAY_COUNT(cascadeColors);
 
-		if (GetCVars()->e_ShadowsFrustums > 0)
-			pFr->DrawFrustum(GetRenderer(), std::numeric_limits<int>::max());
+			if (GetCVars()->e_ShadowsCacheUpdate > 2)
+				pAux->DrawAABB(pFr->aabbCasters, false, cascadeColors[pFr->nShadowMapLod % colorCount], eBBD_Faceted);
+
+			if (GetCVars()->e_ShadowsFrustums > 0)
+				pFr->DrawFrustum(GetRenderer(), std::numeric_limits<int>::max());
+
+			pAux->SetRenderFlags(prevAuxFlags);
+		}
 	}
 }
 
-void ShadowCache::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::ShadowCacheData::eUpdateStrategy nUpdateStrategy, int nLod, int nTexSize, const Vec3& vLightPos, const AABB& projectionBoundsLS, const SRenderingPassInfo& passInfo)
+void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::ShadowCacheData::eUpdateStrategy nUpdateStrategy, int nLod, int nTexSize, const Vec3& vLightPos, const AABB& projectionBoundsLS, const SRenderingPassInfo& passInfo)
 {
 	const auto frameID = passInfo.GetFrameID();
 
@@ -91,7 +102,7 @@ void ShadowCache::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::
 
 	if (nUpdateStrategy != ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate)
 	{
-		pFr->pShadowCacheData->Reset();
+		pFr->pShadowCacheData->Reset(GetNextGenerationID());
 		pFr->GetSideSampleMask().store(1);
 
 		assert(m_pLightEntity->GetLightProperties().m_pOwner);
@@ -115,24 +126,49 @@ void ShadowCache::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::
 		pFr->fBlurS = pFr->fBlurT = 0.0f;
 	}
 
+	// set up frustum planes for culling
+	const ShadowMapInfo* pShadowMapInfo = m_pLightEntity->GetShadowMapInfo();
+	const bool isExtendedFrustum = GetCVars()->e_ShadowsCacheExtendLastCascade && nLod == pShadowMapInfo->GetLodCount() - 1 && pFr->m_eFrustumType == ShadowMapFrustum::e_GsmCached;
+
+	if (isExtendedFrustum)
+	{
+		CCamera frustumCam;
+		Vec3 vLightDir = -pFr->vLightSrcRelPos.normalized();
+
+		Matrix34A mat = Matrix33::CreateRotationVDir(vLightDir);
+		mat.SetTranslation(pFr->vLightSrcRelPos + pFr->vProjTranslation);
+
+		frustumCam.SetMatrixNoUpdate(mat);
+		frustumCam.SetFrustum(256, 256, pFr->fFOV * (gf_PI / 180.0f), pFr->fNearDist, pFr->fFarDist);
+
+		pFr->FrustumPlanes[0] = pFr->FrustumPlanes[1] = frustumCam;
+	}
+	else
+	{
+		ShadowMapFrustum* pDynamicFrustum = m_pLightEntity->GetShadowFrustum(nLod);
+		CRY_ASSERT(pDynamicFrustum);
+
+		pFr->FrustumPlanes[0] = pDynamicFrustum->FrustumPlanes[0];
+		pFr->FrustumPlanes[1] = pDynamicFrustum->FrustumPlanes[1];
+	}
+
 	const bool bExcludeDynamicDistanceShadows = GetCVars()->e_DynamicDistanceShadows != 0;
 	const bool bUseCastersHull = (nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eFullUpdateTimesliced);
 	const int maxNodesPerFrame = (nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate)
-	                             ? GetCVars()->e_ShadowsCacheMaxNodesPerFrame * GetRenderer()->GetActiveGPUCount()
-	                             : std::numeric_limits<int>::max();
+		? GetCVars()->e_ShadowsCacheMaxNodesPerFrame * GetRenderer()->GetActiveGPUCount()
+		: std::numeric_limits<int>::max();
 
 	m_pObjManager->MakeStaticShadowCastersList(((CLightEntity*)m_pLightEntity->GetLightProperties().m_pOwner)->GetCastingException(), pFr,
-	                                           bUseCastersHull ? &m_pLightEntity->GetCastersHull() : nullptr,
-	                                           bExcludeDynamicDistanceShadows ? ERF_DYNAMIC_DISTANCESHADOWS : 0, maxNodesPerFrame, passInfo);
+		bUseCastersHull ? &m_pLightEntity->GetCastersHull() : nullptr,
+		bExcludeDynamicDistanceShadows ? ERF_DYNAMIC_DISTANCESHADOWS : 0, maxNodesPerFrame, passInfo);
 	AddTerrainCastersToFrustum(pFr, passInfo);
+	
 
-	pFr->pShadowCacheData->mProcessedCasters.insert(pFr->castersList.begin(), pFr->castersList.end());
-	pFr->pShadowCacheData->mProcessedCasters.insert(pFr->jobExecutedCastersList.begin(), pFr->jobExecutedCastersList.end());
 	pFr->Invalidate();
-	pFr->bIncrementalUpdate = nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate && !pFr->pShadowCacheData->mProcessedCasters.empty();
+	pFr->bIncrementalUpdate = nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate && pFr->pShadowCacheData->mObjectsRendered != 0;
 }
 
-void ShadowCache::InitHeightMapAOFrustum(ShadowMapFrustumPtr& pFr, int nLod, const SRenderingPassInfo& passInfo)
+void ShadowCacheGenerator::InitHeightMapAOFrustum(ShadowMapFrustumPtr& pFr, int nLod, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 	assert(nLod >= 0);
@@ -199,11 +235,11 @@ void ShadowCache::InitHeightMapAOFrustum(ShadowMapFrustumPtr& pFr, int nLod, con
 
 	// finally init frustum
 	const int nTexRes = (int)clamp_tpl(pHeightMapAORes->GetFVal(), 0.f, 16384.f);
-	InitCachedFrustum(pFr, nUpdateStrategy, nLod, nTexRes, lightPos, projectionBoundsLS, passInfo);
 	pFr->m_eFrustumType = ShadowMapFrustum::e_HeightMapAO;
+	InitCachedFrustum(pFr, nUpdateStrategy, nLod, nTexRes, lightPos, projectionBoundsLS, passInfo);
 }
 
-void ShadowCache::GetCasterBox(AABB& BBoxWS, AABB& BBoxLS, float fRadius, const Matrix34& matView, const SRenderingPassInfo& passInfo)
+void ShadowCacheGenerator::GetCasterBox(AABB& BBoxWS, AABB& BBoxLS, float fRadius, const Matrix34& matView, const SRenderingPassInfo& passInfo)
 {
 	AABB projectionBoundsLS;
 
@@ -240,7 +276,7 @@ void ShadowCache::GetCasterBox(AABB& BBoxWS, AABB& BBoxLS, float fRadius, const 
 	}
 }
 
-Matrix44 ShadowCache::GetViewMatrix(const SRenderingPassInfo& passInfo)
+Matrix44 ShadowCacheGenerator::GetViewMatrix(const SRenderingPassInfo& passInfo)
 {
 	const Vec3 zAxis(0.f, 0.f, 1.f);
 	const Vec3 yAxis(0.f, 1.f, 0.f);
@@ -255,7 +291,7 @@ Matrix44 ShadowCache::GetViewMatrix(const SRenderingPassInfo& passInfo)
 	return result;
 }
 
-void ShadowCache::AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, const SRenderingPassInfo& passInfo)
+void ShadowCacheGenerator::AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -275,35 +311,13 @@ void ShadowCache::AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, const SRende
 			if (!pNode->GetLeafData() || !pNode->GetLeafData()->m_pRenderMesh || pNode->m_cCurrGeomMML != pNode->m_cNewGeomMML)
 				continue;
 
-			uint64 nodeHash = HashTerrainNode(pNode, nLod);
-			if (pFr->pShadowCacheData->mProcessedTerrainCasters.find(nodeHash) != pFr->pShadowCacheData->mProcessedTerrainCasters.end())
+			if (!pFr->NodeRequiresShadowCacheUpdate(pNode))
 				continue;
 
-			pFr->pShadowCacheData->mProcessedTerrainCasters.insert(nodeHash);
 			pFr->castersList.Add(pNode);
 		}
 
 		if (!pFr->castersList.IsEmpty())
 			pFr->RequestUpdate();
 	}
-}
-
-ILINE uint64 ShadowCache::HashValue(uint64 value)
-{
-	uint64 hash = value * kHashMul;
-	hash ^= (hash >> 47);
-	hash *= kHashMul;
-	return hash;
-}
-
-ILINE uint64 ShadowCache::HashTerrainNode(const CTerrainNode* pNode, int lod)
-{
-	uint64 hashPointer = (uint64)HashValue(alias_cast<UINT_PTR>(pNode));
-	uint64 hashLod = HashValue(lod);
-
-	uint64 a = (hashLod ^ hashPointer) * kHashMul;
-	a ^= (a >> 47);
-	uint64 b = (hashPointer ^ a) * kHashMul;
-	b ^= (b >> 47);
-	return b * kHashMul;
 }

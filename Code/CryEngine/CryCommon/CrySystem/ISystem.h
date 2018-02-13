@@ -725,6 +725,13 @@ enum ELoadConfigurationType
 	eLoadConfigLevel
 };
 
+enum class ELoadConfigurationFlags : uint32
+{
+	None                          = 0,
+	SuppressConfigNotFoundWarning = BIT(0)
+};
+DEFINE_ENUM_FLAG_OPERATORS(ELoadConfigurationFlags);
+
 struct SPlatformInfo
 {
 	unsigned int numCoresAvailableToProcess;
@@ -764,13 +771,14 @@ struct SPlatformInfo
 #define CPUF_FMA          0x400
 
 //! \cond INTERNAL
-//! Holds info about system update stats over perior of time (cvar-tweakable)
+//! Holds info about system update stats over period of time (cvar-tweakable)
 struct SSystemUpdateStats
 {
-	SSystemUpdateStats() : avgUpdateTime(0.0f), minUpdateTime(0.0f), maxUpdateTime(0.0f){}
+	SSystemUpdateStats() : avgUpdateTime(0.0f), minUpdateTime(0.0f), maxUpdateTime(0.0f), avgUpdateRate(0.0f) {}
 	float avgUpdateTime;
 	float minUpdateTime;
 	float maxUpdateTime;
+	float avgUpdateRate;
 };
 
 //! Union to handle communication between the AsycDIP jobs and the general job system.
@@ -1413,7 +1421,9 @@ struct ISystem
 
 	//! Loads system configuration
 	//! \param pCallback 0 means normal LoadConfigVar behaviour is used.
-	virtual void LoadConfiguration(const char* sFilename, ILoadConfigurationEntrySink* pSink = 0, ELoadConfigurationType configType = eLoadConfigDefault) = 0;
+	//! \param bQuiet when set to true will suppress warning message if config file is not found.
+	virtual void LoadConfiguration(const char* sFilename, ILoadConfigurationEntrySink* pSink = 0, ELoadConfigurationType configType = eLoadConfigDefault,
+		ELoadConfigurationFlags flags = ELoadConfigurationFlags::None) = 0;
 
 	//! Retrieves current configuration specification for client or server.
 	//! \param bClient If true returns local client config spec, if false returns server config spec.

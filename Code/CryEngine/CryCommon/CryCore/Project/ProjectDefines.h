@@ -76,8 +76,9 @@ typedef uint32 vtx_idx;
 
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 	#if defined(DEDICATED_SERVER)
-//! Enable/disable map load slicing functionality from the build.
-		#define MAP_LOADING_SLICING
+		//! Map Loading Slicing is by default disabled.
+		//! Enable/disable map load slicing functionality from the ProjectDefinesInclude.h.
+		//#define MAP_LOADING_SLICING
 	#endif
 #endif
 

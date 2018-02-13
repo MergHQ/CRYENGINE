@@ -27,11 +27,16 @@ void CLightEntity::StaticReset()
 	stl::free_container(s_lstTmpCastersHull);
 }
 
-void CLightEntity::InitEntityShadowMapInfoStructure()
+void CLightEntity::InitEntityShadowMapInfoStructure(int dynamicLods, int cachedLods)
 {
 	// Init ShadowMapInfo structure
 	if (!m_pShadowMapInfo)
-		m_pShadowMapInfo = new ShadowMapInfo(); // leak
+	{
+		m_pShadowMapInfo = std::make_shared<ShadowMapInfo>();
+	}
+
+	m_pShadowMapInfo->dynamicLodCount = dynamicLods;
+	m_pShadowMapInfo->cachedLodCount = cachedLods;
 }
 
 CLightEntity::CLightEntity()
@@ -39,7 +44,6 @@ CLightEntity::CLightEntity()
 	m_layerId = ~0;
 
 	m_bShadowCaster = false;
-	m_pShadowMapInfo = nullptr;
 	m_pNotCaster = nullptr;
 
 	memset(&m_Matrix, 0, sizeof(m_Matrix));
@@ -57,17 +61,6 @@ CLightEntity::~CLightEntity()
 	((C3DEngine*)Get3DEngine())->FreeLightSourceComponents(&m_light, false);
 
 	((C3DEngine*)Get3DEngine())->RemoveEntityLightSources(this);
-
-	// delete shadow frustums
-	if (m_pShadowMapInfo)
-	{
-		for (auto& gsm : m_pShadowMapInfo->pGSM)
-		{
-			//TODO: after porting the sorting to jobs, add a sync point here to prevent deleting a ShadowFrustum which could still be used by a job
-			gsm.reset();
-		}
-	}
-	SAFE_DELETE(m_pShadowMapInfo);
 
 	GetInstCount(GetRenderNodeType())--;
 }
@@ -257,12 +250,14 @@ void CLightEntity::UpdateGSMLightSourceShadowFrustum(const SRenderingPassInfo& p
 		}
 	}
 
+	InitEntityShadowMapInfoStructure(nDynamicLodCount, nCachedLodCount);
+
 	// update dynamic and static frustums
 	float fDistFromView = 0;
 	float fRadiusLastLod = 0;
 
 	int nNextLod = 0;
-	nNextLod = UpdateGSMLightSourceDynamicShadowFrustum(nDynamicLodCount, nCachedLodCount, fDistFromView, fRadiusLastLod, nCachedLodCount == 0, passInfo);
+	nNextLod  = UpdateGSMLightSourceDynamicShadowFrustum(nDynamicLodCount, nCachedLodCount, fDistFromView, fRadiusLastLod, nCachedLodCount == 0, passInfo);
 	nNextLod += UpdateGSMLightSourceCachedShadowFrustum(nDynamicLodCount, nCachedLodCount, fDistFromView, fRadiusLastLod, passInfo);
 	nNextLod += UpdateGSMLightSourceNearestShadowFrustum(nNextLod, passInfo);
 
@@ -281,7 +276,6 @@ void CLightEntity::UpdateGSMLightSourceShadowFrustum(const SRenderingPassInfo& p
 int CLightEntity::UpdateGSMLightSourceDynamicShadowFrustum(int nDynamicLodCount, int nDistanceLodCount, float& fDistanceFromViewNextDynamicLod, float& fGSMBoxSizeNextDynamicLod, bool bFadeLastCascade, const SRenderingPassInfo& passInfo)
 {
 	assert(m_pTerrain);
-	InitEntityShadowMapInfoStructure();
 
 	float fGSMBoxSize = fGSMBoxSizeNextDynamicLod = (float)Get3DEngine()->m_fGsmRange;
 	Vec3 vCameraDir = passInfo.GetCamera().GetMatrix().GetColumn(1).GetNormalized();
@@ -407,7 +401,7 @@ int CLightEntity::UpdateGSMLightSourceCachedShadowFrustum(int nFirstLod, int nLo
 			MakeShadowCastersHull(s_lstTmpCastersHull, passInfo);
 		}
 
-		ShadowCache shadowCache(this, nUpdateStrategy);
+		ShadowCacheGenerator shadowCache(this, nUpdateStrategy);
 
 		for (nLod = 0; nLod < nLodCount; ++nLod)
 		{
@@ -1839,11 +1833,6 @@ void CLightEntity::OnCasterDeleted(IShadowCaster* pCaster)
 		if (ShadowMapFrustum* pFr = m_pShadowMapInfo->pGSM[nGsmId])
 		{
 			pFr->castersList.Delete(pCaster);
-
-			if (pFr->pShadowCacheData)
-			{
-				pFr->pShadowCacheData->mProcessedCasters.erase(pCaster);
-			}
 		}
 	}
 }
@@ -1856,7 +1845,7 @@ void CLightEntity::GetMemoryUsage(ICrySizer* pSizer) const
 
 	if (m_pShadowMapInfo)
 	{
-		pSizer->AddObject(m_pShadowMapInfo, sizeof(*m_pShadowMapInfo));
+		pSizer->AddObject(m_pShadowMapInfo.get(), sizeof(*m_pShadowMapInfo));
 
 		for (int n = 0; n < MAX_GSM_LODS_NUM; n++)
 		{
@@ -2178,7 +2167,7 @@ void CLightEntity::ProcessPerObjectFrustum(ShadowMapFrustum* pFr, struct SPerObj
 	if (pPerObjectShadow->pCaster->GetRenderNodeType() == eERType_MovableBrush || pPerObjectShadow->pCaster->GetRenderNodeType() == eERType_Character)
 	{
 		// mark the object to be rendered into shadow map
-		COctreeNode::SetTraversalFrameId((IRenderNode*)pPerObjectShadow->pCaster, passInfo.GetMainFrameID());
+		COctreeNode::SetTraversalFrameId((IRenderNode*)pPerObjectShadow->pCaster, passInfo.GetMainFrameID(), ~0);
 	}
 
 	// get caster's bounding box and scale

@@ -1920,6 +1920,7 @@ void CryGetExecutableFolder(unsigned int pathSize, char* szPath)
 	{
 		CryFatalError("Unexpected error encountered trying to get executable path. readlink(\"/proc/self/exe\") failed.");
 	}
+	szPath[nLen] = '\0';
 	if (char* strEnd = strrchr(szPath, '/'))
 	{
 		strEnd[1] = '\0';

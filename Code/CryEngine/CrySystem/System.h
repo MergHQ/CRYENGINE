@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -125,7 +125,8 @@ struct SSystemCVars
 	float  sys_streaming_debug_filter_min_time;
 	int    sys_streaming_use_optical_drive_thread;
 	ICVar* sys_streaming_debug_filter_file_name;
-	ICVar* sys_localization_folder;
+	ICVar* sys_localization_folder = nullptr;
+	ICVar* sys_localization_pak_suffix;
 	ICVar* sys_build_folder;
 	int    sys_streaming_in_blocks;
 
@@ -155,15 +156,15 @@ struct SSystemCVars
 	int sys_simple_http_base_port;
 #endif
 
-	int sys_log_asserts;
-	int sys_error_debugbreak;
+	int     sys_log_asserts;
+	int     sys_error_debugbreak;
 
-	int sys_enable_crash_handler;
+	int     sys_enable_crash_handler;
 
-	int sys_intromoviesduringinit;
-	ICVar* sys_splashscreen;
+	int     sys_intromoviesduringinit;
+	ICVar*  sys_splashscreen;
 
-	int sys_deferAudioUpdateOptim;
+	int     sys_deferAudioUpdateOptim;
 	int     sys_filesystemCaseSensitivity;
 
 	PakVars pakVars;
@@ -251,19 +252,19 @@ public:
 	///////////////////////////////////////////////////////////////////////////
 	//! @name ISystem implementation
 	//@{
-	virtual SSystemGlobalEnvironment* GetGlobalEnvironment() override { return &m_env; }
+	virtual SSystemGlobalEnvironment*   GetGlobalEnvironment() override { return &m_env; }
 
-	const char*                       GetRootFolder() const override  { return m_root.c_str(); }
+	const char*                         GetRootFolder() const override  { return m_root.c_str(); }
 
 	virtual bool                        DoFrame(HWND hWnd = 0, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
 	virtual IManualFrameStepController* GetManualFrameStepController() const override;
 
-	virtual bool                      UpdateLoadtime() override;
+	virtual bool                        UpdateLoadtime() override;
 
 	//! Begin rendering frame.
 	virtual void RenderBegin(HWND hWnd) override;
 	//! Render subsystems.
-	void Render();
+	void         Render();
 	//! End rendering frame and swap back buffer.
 	virtual void RenderEnd(bool bRenderStats = true) override;
 
@@ -404,35 +405,35 @@ public:
 	virtual IXmlUtils* GetXmlUtils() override;
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual Serialization::IArchiveHost* GetArchiveHost() const override         { return m_pArchiveHost; }
+	virtual Serialization::IArchiveHost* GetArchiveHost() const override { return m_pArchiveHost; }
 
 	void                                 SetViewCamera(CCamera& Camera) override;
 	const CCamera&                       GetViewCamera() const override          { return m_ViewCamera; }
 
-	virtual uint32                       GetCPUFlags() override                  { return m_pCpu ? m_pCpu->GetFeatures() : 0; }
-	virtual int                          GetLogicalCPUCount() override           { return m_pCpu ? m_pCpu->GetLogicalCPUCount() : 0; }
+	virtual uint32 GetCPUFlags() override               { return m_pCpu ? m_pCpu->GetFeatures() : 0; }
+	virtual int    GetLogicalCPUCount() override        { return m_pCpu ? m_pCpu->GetLogicalCPUCount() : 0; }
 
-	void                                 IgnoreUpdates(bool bIgnore) override    { m_bIgnoreUpdates = bIgnore; }
-	void                                 SetGCFrequency(const float fRate);
+	void           IgnoreUpdates(bool bIgnore) override { m_bIgnoreUpdates = bIgnore; }
+	void           SetGCFrequency(const float fRate);
 
-	void                                 SetIProcess(IProcess* process) override;
-	IProcess*                            GetIProcess() override { return m_pProcess; }
+	void           SetIProcess(IProcess* process) override;
+	IProcess*      GetIProcess() override { return m_pProcess; }
 	//@}
 
-	void                    SleepIfNeeded();
+	void         SleepIfNeeded();
 
-	virtual void            DisplayErrorMessage(const char* acMessage, float fTime, const float* pfColor = 0, bool bHardError = true) override;
+	virtual void DisplayErrorMessage(const char* acMessage, float fTime, const float* pfColor = 0, bool bHardError = true) override;
 
-	virtual void            FatalError(const char* format, ...) override PRINTF_PARAMS(2, 3);
-	virtual void            ReportBug(const char* format, ...) override  PRINTF_PARAMS(2, 3);
+	virtual void FatalError(const char* format, ...) override PRINTF_PARAMS(2, 3);
+	virtual void ReportBug(const char* format, ...) override  PRINTF_PARAMS(2, 3);
 	// Validator Warning.
-	void                    WarningV(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, va_list args) override;
-	void                    Warning(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) override;
-	void                    WarningOnce(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) override;
-	bool                    CheckLogVerbosity(int verbosity) override;
+	void         WarningV(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, va_list args) override;
+	void         Warning(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) override;
+	void         WarningOnce(EValidatorModule module, EValidatorSeverity severity, int flags, const char* file, const char* format, ...) override;
+	bool         CheckLogVerbosity(int verbosity) override;
 
-	virtual void            DebugStats(bool checkpoint, bool leaks) override;
-	void                    DumpWinHeaps() override;
+	virtual void DebugStats(bool checkpoint, bool leaks) override;
+	void         DumpWinHeaps() override;
 
 	// tries to log the call stack . for DEBUG purposes only
 	void        LogCallStack();
@@ -450,7 +451,8 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual void              SaveConfiguration() override;
-	virtual void              LoadConfiguration(const char* sFilename, ILoadConfigurationEntrySink* pSink = 0, ELoadConfigurationType configType = eLoadConfigDefault) override;
+	virtual void              LoadConfiguration(const char* sFilename, ILoadConfigurationEntrySink* pSink = 0, ELoadConfigurationType configType = eLoadConfigDefault,
+	                                            ELoadConfigurationFlags flags = ELoadConfigurationFlags::None) override;
 	virtual ESystemConfigSpec GetConfigSpec(bool bClient = true) override;
 	virtual void              SetConfigSpec(ESystemConfigSpec spec, bool bClient) override;
 	virtual ESystemConfigSpec GetMaxConfigSpec() const override;
@@ -487,15 +489,15 @@ public:
 	// if it's gathered to be dumped, then some different rules may be applied
 	enum MemStatsPurposeEnum {nMSP_ForDisplay, nMSP_ForDump, nMSP_ForCrashLog, nMSP_ForBudget};
 	// collects the whole memory statistics into the given sizer object
-	void         CollectMemStats(ICrySizer* pSizer, MemStatsPurposeEnum nPurpose = nMSP_ForDisplay, std::vector<SmallModuleInfo>* pStats = 0);
-	void         GetExeSizes(ICrySizer* pSizer, MemStatsPurposeEnum nPurpose = nMSP_ForDisplay);
+	void                 CollectMemStats(ICrySizer* pSizer, MemStatsPurposeEnum nPurpose = nMSP_ForDisplay, std::vector<SmallModuleInfo>* pStats = 0);
+	void                 GetExeSizes(ICrySizer* pSizer, MemStatsPurposeEnum nPurpose = nMSP_ForDisplay);
 	//! refreshes the m_pMemStats if necessary; creates it if it's not created
-	void         TickMemStats(MemStatsPurposeEnum nPurpose = nMSP_ForDisplay, IResourceCollector* pResourceCollector = 0);
+	void                 TickMemStats(MemStatsPurposeEnum nPurpose = nMSP_ForDisplay, IResourceCollector* pResourceCollector = 0);
 
-	void         SetVersionInfo(const char* const szVersion);
+	void                 SetVersionInfo(const char* const szVersion);
 
 	virtual ICryFactory* LoadModuleWithFactory(const char* dllName, const CryInterfaceID& moduleInterfaceId) override;
-	virtual bool UnloadEngineModule(const char* dllName) override;
+	virtual bool         UnloadEngineModule(const char* dllName) override;
 
 #if CRY_PLATFORM_WINDOWS
 	friend LRESULT WINAPI WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -718,7 +720,7 @@ private: // ------------------------------------------------------
 		WIN_HMODULE hLiveCreate;
 		WIN_HMODULE hInterface;
 	};
-	SDllHandles                        m_dll;
+	SDllHandles m_dll;
 
 	std::unordered_map<string, WIN_HMODULE, stl::hash_strcmp<string>> m_moduleDLLHandles;
 
@@ -943,7 +945,7 @@ public:
 	virtual const char*                   GetLoadingProfilerCallstack() override;
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual CBootProfilerRecord* StartBootSectionProfiler(const char* name, const char* args,EProfileDescription type) override;
+	virtual CBootProfilerRecord* StartBootSectionProfiler(const char* name, const char* args, EProfileDescription type) override;
 	virtual void                 StopBootSectionProfiler(CBootProfilerRecord* record) override;
 	virtual void                 StartBootProfilerSession(const char* szName) override;
 	virtual void                 StopBootProfilerSession(const char* szName) override;
@@ -963,7 +965,7 @@ public:
 	virtual bool AreAssertsEnabledForModule(uint32 moduleId) override;
 	virtual void DisableAssertionsForModule(uint32 moduleId) override;
 
-	virtual void         SetAssertVisible(bool bAssertVisble) override;
+	virtual void SetAssertVisible(bool bAssertVisble) override;
 #endif
 
 	virtual void ClearErrorMessages() override
@@ -1029,16 +1031,15 @@ protected: // -------------------------------------------------------------
 		bool   m_HardFailure;
 	};
 	typedef std::list<SErrorMessage> TErrorMessages;
-	TErrorMessages m_ErrorMessages;
-	bool           m_bHasRenderedErrorMessage;
-	bool           m_bNeedDoWorkDuringOcclusionChecks;
-
+	TErrorMessages                   m_ErrorMessages;
+	bool                             m_bHasRenderedErrorMessage;
+	bool                             m_bNeedDoWorkDuringOcclusionChecks;
 
 	std::unordered_map<uint32, bool> m_mapWarningOnceAlreadyPrinted;
-	CryMutex						 m_mapWarningOnceMutex;
+	CryMutex                         m_mapWarningOnceMutex;
 
 #if defined(USE_CRY_ASSERT)
-	bool m_isAsserting = false;
+	bool                   m_isAsserting = false;
 	// Used to check if CryAssert is enabled for a specific module
 	std::bitset<eCryM_Num> m_disabledAssertModules;
 #endif
@@ -1050,7 +1051,7 @@ protected: // -------------------------------------------------------------
 	std::vector<IWindowMessageHandler*> m_windowMessageHandlers;
 	IImeManager*                        m_pImeManager;
 
-	class CWatchdogThread*  m_pWatchdog = nullptr;
+	class CWatchdogThread*              m_pWatchdog = nullptr;
 	static void WatchDogTimeOutChanged(ICVar* cvar);
 };
 

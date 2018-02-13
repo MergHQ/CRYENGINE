@@ -192,7 +192,7 @@ public:
 			m_pSS->SetGlobalValue(sGlobalName, m_pMethodsTable);
 	}
 
-	IScriptTable* GetMethodsTable() { return m_pMethodsTable; };
+	IScriptTable* GetMethodsTable() const { return m_pMethodsTable; };
 
 protected:
 	CScriptableBase() { m_pSS = NULL; m_pMethodsTable = NULL; m_sGlobalName[0] = 0; }

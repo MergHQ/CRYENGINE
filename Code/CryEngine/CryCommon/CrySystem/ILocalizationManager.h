@@ -230,6 +230,7 @@ struct ILocalizationManager
 	virtual void LocalizeDuration(int seconds, string& outDurationString) = 0;
 	virtual void LocalizeNumber(int number, string& outNumberString) = 0;
 	virtual void LocalizeNumber(float number, int decimals, string& outNumberString) = 0;
+	virtual void AddLocalizationEntry(const string& token, const string& translation) = 0;
 	// </interfuscator:shuffle>
 
 	static ILINE TLocalizationBitfield LocalizationBitfieldFromPILID(EPlatformIndependentLanguageID pilid)

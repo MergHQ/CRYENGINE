@@ -266,6 +266,17 @@ bool CThreadManager::JoinThread(IThread* pThreadTask, EJoinMode eJoinMode)
 	pThreadImpl->m_threadExitMutex.Lock();
 	while (pThreadImpl->m_isRunning)
 	{
+		// Ensure thread is still alive.
+		// Handle special case where engine shutdown is using exit(1) e.g. CrashHandler.
+		// Exit(1) force terminates all threads so they don't reach the cleanup code at the end of the RunThread() function.		
+		// 1) Thread must be running as we hold the m_threadExitMutex and pThreadImpl->m_isRunning == true. 
+		// 2) If pThreadImpl->m_isRunning == false we would not be in this loop. Hence there is no double call of UnregisterThread()
+		if (!CryThreadUtil::CryIsThreadAlive(pThreadImpl->m_threadHandle))
+		{
+			pThreadImpl->m_threadExitMutex.Unlock();
+			pThreadImpl->m_pThreadMngr->UnregisterThread(pThreadImpl->m_pThreadTask);
+			break;
+		}
 		pThreadImpl->m_threadExitCondition.Wait(pThreadImpl->m_threadExitMutex);
 	}
 	pThreadImpl->m_threadExitMutex.Unlock();

@@ -408,6 +408,7 @@ private: // ----------------------------------------------------------
 
 	static int                     con_display_last_messages;
 	static int                     con_line_buffer_size;
+	static float                   con_font_size;
 	static int                     con_showonload;
 	static int                     con_debug;
 	static int                     con_restricted;

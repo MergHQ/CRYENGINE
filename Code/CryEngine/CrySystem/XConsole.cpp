@@ -24,6 +24,9 @@
 #include <CryString/StringUtils.h>
 #include "ConsoleHelpGen.h"     // CConsoleHelpGen
 
+#define BACKGROUND_SERVER_CHAR '/'
+
+
 //#define DEFENCE_CVAR_HASH_LOGGING
 
 static inline void AssertName(const char* szName)
@@ -249,6 +252,7 @@ void Bind(IConsoleCmdArgs* cmdArgs)
 //////////////////////////////////////////////////////////////////////////
 int CXConsole::con_display_last_messages = 0;
 int CXConsole::con_line_buffer_size = 500;
+float CXConsole::con_font_size = 14;
 int CXConsole::con_showonload = 0;
 int CXConsole::con_debug = 0;
 int CXConsole::con_restricted = 0;
@@ -433,6 +437,7 @@ void CXConsole::Init(CSystem* pSystem)
 
 	REGISTER_CVAR(con_display_last_messages, 0, VF_NULL, "");  // keep default at 1, needed for gameplay
 	REGISTER_CVAR(con_line_buffer_size, 1000, VF_NULL, "");
+	REGISTER_CVAR(con_font_size, 14, VF_NULL, "");
 	REGISTER_CVAR(con_showonload, 0, VF_NULL, "Show console on level loading");
 	REGISTER_CVAR(con_debug, 0, VF_CHEAT, "Log call stack on every GetCVar call");
 	REGISTER_CVAR(con_restricted, con_restricted, VF_RESTRICTEDMODE, "0=normal mode / 1=restricted access to the console");        // later on VF_RESTRICTEDMODE should be removed (to 0)
@@ -547,8 +552,7 @@ void CXConsole::LogChangeMessage(const char* name, const bool isConst, const boo
 
 	if (allowChange)
 	{
-		gEnv->pLog->LogWarning("%s", logMessage.c_str());
-		gEnv->pLog->LogWarning("Modifying marked variables will not be allowed in Release mode!");
+		gEnv->pLog->Log("%s", logMessage.c_str());
 	}
 	else
 	{
@@ -920,9 +924,9 @@ ICVar* CXConsole::RegisterCVarGroup(const char* szName, const char* szFileName)
 	/*
 	   #ifndef _RELEASE
 	   {
-	   string sInfo = pCVarGroup->GetDetailedInfo();
-	   gEnv->pLog->LogToFile("CVarGroup %s",sInfo.c_str());
-	   gEnv->pLog->LogToFile(" ");
+	    string sInfo = pCVarGroup->GetDetailedInfo();
+	    gEnv->pLog->LogToFile("CVarGroup %s",sInfo.c_str());
+	    gEnv->pLog->LogToFile(" ");
 	   }
 	   #endif
 	 */
@@ -1731,7 +1735,7 @@ void CXConsole::DrawBuffer(int nScrollPos, const char* szEffect)
 	if (m_pFont && m_pRenderer)
 	{
 		const int flags = eDrawText_Monospace | eDrawText_CenterV | eDrawText_2D;
-		const int fontSize = 14;
+		float fontSize = con_font_size;
 		float csize = 0.8f * fontSize;
 		float fCharWidth = 0.5f * fontSize;
 
@@ -1746,15 +1750,15 @@ void CXConsole::DrawBuffer(int nScrollPos, const char* szEffect)
 			   if(m_bDrawCursor)
 			   m_pRenderer->DrawString(xPos+nCharWidth*m_nCursorPos, yPos, false, "_");*/
 
-			IRenderAuxText::DrawText(Vec3(xPos - fCharWidth, yPos, 1), 1.16, nullptr, flags, ">");
-			IRenderAuxText::DrawText(Vec3(xPos, yPos, 1), 1.16, nullptr, flags, m_sInputBuffer.c_str());
+			IRenderAuxText::DrawText(Vec3(xPos - fCharWidth, yPos, 1), fontSize * 1.16f / 14, nullptr, flags, ">");
+			IRenderAuxText::DrawText(Vec3(xPos, yPos, 1), fontSize * 1.16f / 14, nullptr, flags, m_sInputBuffer.c_str());
 
 			if (m_bDrawCursor)
 			{
 				string szCursorLeft(m_sInputBuffer.c_str(), m_sInputBuffer.c_str() + m_nCursorPos);
 				int n = m_pFont->GetTextLength(szCursorLeft.c_str(), false);
 
-				IRenderAuxText::DrawText(Vec3(xPos + (fCharWidth * n), yPos, 1), 1.16, nullptr, flags, "_");
+				IRenderAuxText::DrawText(Vec3(xPos + (fCharWidth * n), yPos, 1), fontSize * 1.16f / 14, nullptr, flags, "_");
 			}
 		}
 
@@ -1772,7 +1776,7 @@ void CXConsole::DrawBuffer(int nScrollPos, const char* szEffect)
 				if (*buf > 0 && *buf < 32) buf++;    // to jump over verbosity level character
 
 				if (yPos + csize > 0)
-					IRenderAuxText::DrawText(Vec3(xPos, yPos, 1), 1.16, nullptr, flags, buf);
+					IRenderAuxText::DrawText(Vec3(xPos, yPos, 1), fontSize * 1.16f / 14, nullptr, flags, buf);
 				yPos -= csize;
 			}
 			nScroll++;
@@ -2268,6 +2272,17 @@ void CXConsole::ExecuteStringInternal(const char* command, const bool bFromConso
 
 #if !defined(RELEASE) || defined(ENABLE_DEVELOPER_CONSOLE_IN_RELEASE)
 	///////////////////////////
+	if (command[0] == BACKGROUND_SERVER_CHAR)
+	{
+		// Send to background server
+		if (!con_restricted || !bFromConsole)
+		{
+			ExecuteStringInternal(string("cmd_server_command ") + string(command + 1), bFromConsole, bSilentMode);
+			return;
+		}
+	}
+
+	///////////////////////////
 	//Execute as string
 	if (command[0] == '#' || command[0] == '@')
 	{
@@ -2687,6 +2702,12 @@ const char* CXConsole::ProcessCompletion(const char* szInputBuffer)
 {
 	m_sInputBuffer = szInputBuffer;
 
+	bool isBackgroundServer = szInputBuffer[0] == BACKGROUND_SERVER_CHAR;
+	if (isBackgroundServer)
+	{
+		m_sInputBuffer = szInputBuffer + 1;
+	}
+
 	int offset = (szInputBuffer[0] == '\\' ? 1 : 0);    // legacy support
 
 	if ((m_sPrevTab.size() > strlen(szInputBuffer + offset)) || strnicmp(m_sPrevTab.c_str(), (szInputBuffer + offset), m_sPrevTab.size()))
@@ -2844,6 +2865,10 @@ const char* CXConsole::ProcessCompletion(const char* szInputBuffer)
 			m_sInputBuffer = *i;
 			m_sInputBuffer += " ";
 			m_nTabCount = nMatch + 1;
+			if (isBackgroundServer)
+			{
+				m_sInputBuffer.insert(0, BACKGROUND_SERVER_CHAR);
+			}
 			return (char*)m_sInputBuffer.c_str();
 		}
 		nMatch++;
@@ -2854,6 +2879,11 @@ const char* CXConsole::ProcessCompletion(const char* szInputBuffer)
 		m_nTabCount = 0;
 		m_sInputBuffer = m_sPrevTab;
 		m_sInputBuffer = ProcessCompletion(m_sInputBuffer.c_str());
+	}
+
+	if (isBackgroundServer)
+	{
+		m_sInputBuffer.insert(0, BACKGROUND_SERVER_CHAR);
 	}
 
 	return (char*)m_sInputBuffer.c_str();
@@ -3083,7 +3113,7 @@ void CXConsole::AddLinePlus(const char* inputStr)
 	while ((nPos = str.find('\r')) != string::npos)
 		str.replace(nPos, 1, 1, ' ');
 
-	tmpStr = m_dqConsoleBuffer.back();// += str;
+	tmpStr = m_dqConsoleBuffer.back();  // += str;
 
 	m_dqConsoleBuffer.pop_back();
 

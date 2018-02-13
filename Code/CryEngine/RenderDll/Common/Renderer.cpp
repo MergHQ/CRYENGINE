@@ -2532,8 +2532,8 @@ static float LinearToGamma(float x)
 #pragma GCC diagnostic ignored "-Werror"
 #endif   // __GNUC__
 
-#include "../../../SDKs/squish-ccr/squish.h"
-#include "../../../SDKs/squish-ccr/squish.inl"
+#include <squish-ccr/squish.h>
+#include <squish-ccr/squish.inl>
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop

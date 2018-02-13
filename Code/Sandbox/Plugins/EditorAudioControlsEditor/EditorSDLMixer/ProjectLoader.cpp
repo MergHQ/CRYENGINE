@@ -7,7 +7,6 @@
 
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
-#include <CryString/CryPath.h>
 #include <CryCore/CryCrc32.h>
 
 namespace ACE
@@ -26,7 +25,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 {
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
-	intptr_t const handle = pCryPak->FindFirst(m_assetsPath + CRY_NATIVE_PATH_SEPSTR + folderPath + CRY_NATIVE_PATH_SEPSTR + "*.*", &fd);
+	intptr_t const handle = pCryPak->FindFirst(m_assetsPath + "/" + folderPath + "/*.*", &fd);
 
 	if (handle != -1)
 	{
@@ -44,7 +43,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 					}
 					else
 					{
-						LoadFolder(folderPath + CRY_NATIVE_PATH_SEPSTR + name, *CreateItem(name, folderPath, EImpltemType::Folder, parent));
+						LoadFolder(folderPath + "/" + name, *CreateItem(name, folderPath, EImpltemType::Folder, parent));
 					}
 				}
 				else
@@ -74,7 +73,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 CImplItem* CProjectLoader::CreateItem(string const& name, string const& path, EImpltemType const type, CImplItem& rootItem)
 {
 	CID id;
-	string filePath = m_assetsPath + CRY_NATIVE_PATH_SEPSTR;
+	string filePath = m_assetsPath + "/";
 
 	if (path.empty())
 	{
@@ -83,8 +82,8 @@ CImplItem* CProjectLoader::CreateItem(string const& name, string const& path, EI
 	}
 	else
 	{
-		id = CryAudio::StringToId(path + CRY_NATIVE_PATH_SEPSTR + name);
-		filePath += (path + CRY_NATIVE_PATH_SEPSTR + name);
+		id = CryAudio::StringToId(path + "/" + name);
+		filePath += (path + "/" + name);
 	}
 
 	EImplItemFlags const flags = type == EImpltemType::Folder ? EImplItemFlags::IsContainer : EImplItemFlags::None;

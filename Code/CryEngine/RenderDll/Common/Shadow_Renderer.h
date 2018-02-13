@@ -55,22 +55,22 @@ struct ShadowMapFrustum : public CMultiThreadRefCount
 			eIncrementalUpdate
 		};
 
-		ShadowCacheData() { Reset(); }
+		ShadowCacheData() { Reset(1); }
 
-		void Reset()
+		void Reset(uint32 cacheGeneration)
 		{
 			memset(mOctreePath, 0x0, sizeof(mOctreePath));
 			memset(mOctreePathNodeProcessed, 0x0, sizeof(mOctreePathNodeProcessed));
-			mProcessedCasters.clear();
-			mProcessedTerrainCasters.clear();
+			mGeneration = cacheGeneration;
+			mObjectsRendered = 0;
 		}
 
 		static const int                 MAX_TRAVERSAL_PATH_LENGTH = 32;
 		uint8                            mOctreePath[MAX_TRAVERSAL_PATH_LENGTH];
 		uint8                            mOctreePathNodeProcessed[MAX_TRAVERSAL_PATH_LENGTH];
 
-		VectorSet<struct IShadowCaster*> mProcessedCasters;
-		VectorSet<uint64>                mProcessedTerrainCasters;
+		uint32                           mGeneration;
+		uint32                           mObjectsRendered;
 	};
 
 public:
@@ -94,8 +94,9 @@ public:
 	std::bitset<OMNI_SIDES_NUM> nOutdatedSideMask = 0xff;                      // Mask of out-of-date frustum sides
 	std::bitset<OMNI_SIDES_NUM> nSideInvalidatedMask = 0xff;                   // Mask of invalidated frustum sides for each GPU
 
-	std::atomic<uint32>&       GetSideSampleMask()       { return *reinterpret_cast<std::atomic<uint32>*>(&this->nSideSampleMask); }
-	const std::atomic<uint32>& GetSideSampleMask() const { return *reinterpret_cast<const std::atomic<uint32>*>(&this->nSideSampleMask); }
+	std::atomic<uint32>&       GetSideSampleMask()             { return *reinterpret_cast<std::atomic<uint32>*>(&this->nSideSampleMask); }
+	const std::atomic<uint32>& GetSideSampleMask() const       { return *reinterpret_cast<const std::atomic<uint32>*>(&this->nSideSampleMask); }
+	std::atomic<uint32>&       GetOnePassCastersCount() const  { return *reinterpret_cast<std::atomic<uint32>*>(&this->onePassCastersNum); }
 
 	// flags
 	bool bIncrementalUpdate;
@@ -148,7 +149,7 @@ public:
 
 	PodArray<struct IShadowCaster*> castersList;
 	PodArray<struct IShadowCaster*> jobExecutedCastersList;
-	int                             onePassCastersNum = 0;                     // Contains number of casters if one-pass octree traversal is used for this frustum
+	mutable int                     onePassCastersNum = 0;        // Contains number of casters if one-pass octree traversal is used for this frustum
 
 	CCamera                         FrustumPlanes[OMNI_SIDES_NUM];
 	AABB                            aabbCasters;      //casters bbox in world space
@@ -330,37 +331,23 @@ public:
 		return (m_Flags & DLF_SUN) && (m_eFrustumType == e_GsmDynamic || m_eFrustumType == e_GsmDynamicDistance);
 	}
 
-	ILINE bool IntersectAABB(const AABB& bbox, bool* pAllIn) const
+	ILINE bool IntersectAABB(const AABB& bbox, bool* pAllIn, int side = -1) const
 	{
 		if (bOmniDirectionalShadow)
-			return bbox.IsOverlapSphereBounds(vLightSrcRelPos + vProjTranslation, fFarDist);
+		{
+			return (side < 0)
+				? bbox.IsOverlapSphereBounds(vLightSrcRelPos + vProjTranslation, fFarDist)
+				: FrustumPlanes[side].IsAABBVisible_EH(bbox, pAllIn) > 0;
+		}
 
-		bool bDummy = false;
 		if (bBlendFrustum)
 		{
 			if (FrustumPlanes[1].IsAABBVisible_EH(bbox, pAllIn) > 0)
 				return true;
 		}
 
+		bool bDummy = false;
 		return FrustumPlanes[0].IsAABBVisible_EH(bbox, bBlendFrustum ? &bDummy : pAllIn) > 0;
-	}
-
-	ILINE bool IntersectSphere(const Sphere& sp, bool* pAllIn) const
-	{
-		if (bOmniDirectionalShadow)
-			return Distance::Point_PointSq(sp.center, vLightSrcRelPos + vProjTranslation) < sqr(fFarDist + sp.radius);
-
-		uint8 res = 0;
-		if (bBlendFrustum)
-		{
-			res = FrustumPlanes[1].IsSphereVisible_FH(sp);
-			*pAllIn = (res == CULL_INCLUSION);
-			if (res != CULL_EXCLUSION)
-				return true;
-		}
-		res = FrustumPlanes[0].IsSphereVisible_FH(sp);
-		*pAllIn = bBlendFrustum ? false : (res == CULL_INCLUSION);
-		return res != CULL_EXCLUSION;
 	}
 
 	Vec3 UnProject(float sx, float sy, float sz, IRenderer* pRend) const
@@ -491,9 +478,25 @@ public:
 	void                         RenderShadowFrustum(IRenderViewPtr pShadowsView, int side, bool bJobCasters);
 	void                         Job_RenderShadowCastersToView(const SRenderingPassInfo& passInfo, bool bJobCasters);
 
-	CRenderView*                 GetNextAvailableShadowsView(CRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum);
+	CRenderView*                 GetNextAvailableShadowsView(CRenderView* pMainRenderView);
 
 	_smart_ptr<ShadowMapFrustum> Clone() const { return new ShadowMapFrustum(*this); }
+
+	bool NodeRequiresShadowCacheUpdate(const IRenderNode* pNode) const
+	{
+		CRY_ASSERT(IsCached());
+		return pNode->m_shadowCacheLastRendered[nShadowMapLod] < pShadowCacheData->mGeneration;
+	}
+
+	void MarkNodeAsCached(IRenderNode* pNode, bool isCached = true) const
+	{
+		CRY_ASSERT(this->IsCached());
+		if (pNode)
+		{
+			pNode->m_shadowCacheLastRendered[nShadowMapLod] = isCached ? pShadowCacheData->mGeneration : 0;
+			pShadowCacheData->mObjectsRendered++;
+		}
+	}
 };
 typedef _smart_ptr<ShadowMapFrustum> ShadowMapFrustumPtr;
 
@@ -595,6 +598,7 @@ struct SShadowFrustumToRender
 		, nLightID(_nLightID)
 		, pShadowsView(std::move(_pShadowsView))
 	{
+		pShadowsView->SetShadowFrustumOwner(pFrustum);
 		CRY_ASSERT(pFrustum->pDepthTex == nullptr);
 	}
 };

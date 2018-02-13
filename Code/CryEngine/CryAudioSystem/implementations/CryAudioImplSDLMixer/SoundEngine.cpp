@@ -18,8 +18,7 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-#define SDL_MIXER_PROJECT_PATH AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR + s_szImplFolderName + CRY_NATIVE_PATH_SEPSTR + s_szAssetsFolderName + CRY_NATIVE_PATH_SEPSTR
-
+static string const s_projectPath = string(AUDIO_SYSTEM_DATA_ROOT) + "/" + s_szImplFolderName + "/" + s_szAssetsFolderName + "/";
 static constexpr int s_supportedFormats = MIX_INIT_OGG | MIX_INIT_MP3;
 static constexpr int s_numMixChannels = 512;
 static constexpr SampleId s_invalidSampleId = 0;
@@ -209,7 +208,7 @@ void LoadMetadata(const string& path)
 			{
 				if (fd.attrib & _A_SUBDIR)
 				{
-					LoadMetadata(path + name + CRY_NATIVE_PATH_SEPSTR);
+					LoadMetadata(path + name + "/");
 				}
 				else
 				{
@@ -267,7 +266,7 @@ bool SoundEngine::Init()
 
 	Mix_ChannelFinished(ChannelFinishedPlaying);
 
-	g_sampleDataRootDir = PathUtil::GetPathWithoutFilename(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR SDL_MIXER_PROJECT_PATH);
+	g_sampleDataRootDir = PathUtil::GetPathWithoutFilename(s_projectPath);
 	LoadMetadata("");
 	g_bListenerPosChanged = false;
 
@@ -304,7 +303,7 @@ void SoundEngine::Release()
 void SoundEngine::Refresh()
 {
 	FreeAllSampleData();
-	LoadMetadata(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR SDL_MIXER_PROJECT_PATH);
+	LoadMetadata(s_projectPath);
 }
 
 const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, const size_t size, const string& samplePath, const SampleId overrideId)

@@ -6,8 +6,8 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
-		"../../SDKs/md5/md5.c"
-		"../../SDKs/md5/md5.h"
+		"${SDK_DIR}/md5/md5.c"
+		"${SDK_DIR}/md5/md5.h"
 )
 
 end_sources()

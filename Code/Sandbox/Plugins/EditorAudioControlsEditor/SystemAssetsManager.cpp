@@ -380,19 +380,13 @@ void CSystemAssetsManager::OnAssetRenamed()
 //////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::UpdateFolderPaths()
 {
-	string const& rootPath = AUDIO_SYSTEM_DATA_ROOT CRY_NATIVE_PATH_SEPSTR;
+	string const rootPath = AUDIO_SYSTEM_DATA_ROOT "/";
 
 	if (g_pEditorImpl != nullptr)
 	{
-		string const& implFolderPath = rootPath + g_pEditorImpl->GetFolderName() + CRY_NATIVE_PATH_SEPSTR;
-
-		m_configFolderPath = implFolderPath;
-		m_configFolderPath += CryAudio::s_szConfigFolderName;
-		m_configFolderPath += CRY_NATIVE_PATH_SEPSTR;
-
-		m_assetFolderPath = implFolderPath;
-		m_assetFolderPath += CryAudio::s_szAssetsFolderName;
-		m_assetFolderPath += CRY_NATIVE_PATH_SEPSTR;
+		string const& implFolderPath = rootPath + g_pEditorImpl->GetFolderName() + "/";
+		m_configFolderPath = implFolderPath + CryAudio::s_szConfigFolderName + "/";
+		m_assetFolderPath = implFolderPath + CryAudio::s_szAssetsFolderName + "/";
 	}
 	else
 	{

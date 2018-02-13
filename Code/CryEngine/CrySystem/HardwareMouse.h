@@ -58,6 +58,7 @@ public:
 	virtual void                         SetGameMode(bool bGameMode);
 	virtual void                         IncrementCounter();
 	virtual void                         DecrementCounter();
+	virtual bool                         IsCursorVisible() const;
 	virtual void                         GetHardwareMousePosition(float* pfX, float* pfY);
 	virtual void                         SetHardwareMousePosition(float fX, float fY);
 	virtual void                         GetHardwareMouseClientPosition(float* pfX, float* pfY);

@@ -6,10 +6,10 @@
 #include <CryCore/Platform/platform.h>
 #include "../RenderDll/Common/Shadow_Renderer.h"
 
-class ShadowCache : public Cry3DEngineBase
+class ShadowCacheGenerator : public Cry3DEngineBase
 {
 public:
-	ShadowCache(CLightEntity* pLightEntity, ShadowMapFrustum::ShadowCacheData::eUpdateStrategy nUpdateStrategy)
+	ShadowCacheGenerator(CLightEntity* pLightEntity, ShadowMapFrustum::ShadowCacheData::eUpdateStrategy nUpdateStrategy)
 		: m_pLightEntity(pLightEntity)
 		, m_nUpdateStrategy(nUpdateStrategy)
 	{}
@@ -20,7 +20,8 @@ public:
 private:
 	static const int    MAX_RENDERNODES_PER_FRAME = 50;
 	static const float  AO_FRUSTUM_SLOPE_BIAS;
-	static const uint64 kHashMul = 0x9ddfea08eb382d69ULL;
+
+	static int   m_cacheGenerationId;
 
 	void         InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::ShadowCacheData::eUpdateStrategy nUpdateStrategy, int nLod, int nTexSize, const Vec3& vLightPos, const AABB& projectionBoundsLS, const SRenderingPassInfo& passInfo);
 	void         AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, const SRenderingPassInfo& passInfo);
@@ -28,8 +29,7 @@ private:
 	void         GetCasterBox(AABB& BBoxWS, AABB& BBoxLS, float fRadius, const Matrix34& matView, const SRenderingPassInfo& passInfo);
 	Matrix44     GetViewMatrix(const SRenderingPassInfo& passInfo);
 
-	ILINE uint64 HashValue(uint64 value);
-	ILINE uint64 HashTerrainNode(const CTerrainNode* pNode, int lod);
+	int          GetNextGenerationID() { return m_cacheGenerationId++; }
 
 	CLightEntity* m_pLightEntity;
 	ShadowMapFrustum::ShadowCacheData::eUpdateStrategy m_nUpdateStrategy;

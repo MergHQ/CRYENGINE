@@ -12,7 +12,6 @@
 
 #include <CryAudio/IAudioSystem.h>
 #include <QtUtil.h>
-#include <FilePathUtil.h>
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
 #include <CryMath/Cry_Camera.h>
@@ -391,7 +390,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 							{
 								pContextMenu->addAction(tr("Open Containing Folder"), [&]()
 									{
-										QtUtil::OpenInExplorer(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), m_pAssetsManager->GetConfigFolderPath() + pParent->GetName() + ".xml").c_str());
+										QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + m_pAssetsManager->GetConfigFolderPath() + pParent->GetName() + ".xml").c_str());
 								  });
 
 								pContextMenu->addSeparator();
@@ -493,7 +492,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 			pContextMenu->addAction(tr("Open Containing Folder"), [&]()
 				{
-					QtUtil::OpenInExplorer(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), m_pAssetsManager->GetConfigFolderPath() + pDefaultLibrary->GetName() + ".xml").c_str());
+					QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + m_pAssetsManager->GetConfigFolderPath() + pDefaultLibrary->GetName() + ".xml").c_str());
 			  });
 
 			pContextMenu->addSeparator();
