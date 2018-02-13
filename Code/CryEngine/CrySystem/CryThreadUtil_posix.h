@@ -209,6 +209,30 @@ void CryThreadExitCall()
 	// A thread that was create with pthread_create implicitly calls pthread_exit when the thread returns from its start routine (the function that was first called after a thread was created).
 	// pthread_exit(NULL);
 }
+
+//////////////////////////////////////////////////////////////////////////
+bool CryIsThreadAlive(TThreadHandle pThreadHandle)
+{
+	const int ret = pthread_tryjoin_np(pThreadHandle, NULL);
+	switch (ret)
+	{
+	case 0:
+	case ESRCH: // Thread could not be found
+		return false;
+	case EBUSY: // Thread is alive			
+		break;
+	case EINVAL:
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "<ThreadInfo> CryIsThreadAlive: thread is not a joinable thread.");
+		break;
+	case EDEADLK:
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "<ThreadInfo> CryIsThreadAlive: A deadlock has occurred or thread is the calling thread.");
+		break;
+	default:
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "<ThreadInfo> CryIsThreadAlive: Unsupported error code: %i", ret);
+		break;
+	}
+	return true;
+}
 }
 
 //////////////////////////////////////////////////////////////////////////
