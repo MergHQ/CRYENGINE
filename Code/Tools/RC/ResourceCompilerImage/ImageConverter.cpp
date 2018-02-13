@@ -9,7 +9,7 @@
 #include "IAssetManager.h"
 #include "ImageDetails.h"
 
-#include "../../../SDKs/tiff-4.0.4/libtiff/tiffio.h"
+#include <tiff-4.0.4/libtiff/tiffio.h>
 
 static void TiffWarningHandler(const char* module, const char* fmt, va_list args)
 {

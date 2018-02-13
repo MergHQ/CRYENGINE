@@ -6,13 +6,13 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
-		"../../SDKs/szip/src/encoding.c"
-		"../../SDKs/szip/src/rice.c"
-		"../../SDKs/szip/src/sz_api.c"
-		"../../SDKs/szip/src/rice.h"
-		"../../SDKs/szip/src/ricehdf.h"
-		"../../SDKs/szip/src/szip_adpt.h"
-		"../../SDKs/szip/src/szlib.h"
+		"${SDK_DIR}/szip/src/encoding.c"
+		"${SDK_DIR}/szip/src/rice.c"
+		"${SDK_DIR}/szip/src/sz_api.c"
+		"${SDK_DIR}/szip/src/rice.h"
+		"${SDK_DIR}/szip/src/ricehdf.h"
+		"${SDK_DIR}/szip/src/szip_adpt.h"
+		"${SDK_DIR}/szip/src/szlib.h"
 		"SZconfig.h"
 )
 

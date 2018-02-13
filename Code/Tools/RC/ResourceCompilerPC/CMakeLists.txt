@@ -132,11 +132,11 @@ add_sources("NoUberFile"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/MeshCompiler.cpp"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/ForsythFaceReorderer.cpp"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/TangentSpaceCalculation.cpp"
-		"../../../SDKs/TangentBasisComputation/mikkelsen/mikktspace.cpp"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/MeshCompiler.h"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/TangentSpaceCalculation.h"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/ForsythFaceReorderer.h"
-		"../../../SDKs/TangentBasisComputation/mikkelsen/mikktspace.h"
+		"${SDK_DIR}/TangentBasisComputation/mikkelsen/mikktspace.cpp"
+		"${SDK_DIR}/TangentBasisComputation/mikkelsen/mikktspace.h"
 		"../../../CryEngine/CryAnimation/AttachmentVClothPreProcess.cpp"
 	SOURCE_GROUP "Root"
 		"../../../CryEngine/Cry3DEngine/CGF/CGFSaver.cpp"
@@ -201,7 +201,8 @@ target_include_directories(${THIS_PROJECT} PRIVATE
 	"${CRYENGINE_SOURCE_DIR}/Code/Sandbox" 
 	"${SDK_DIR}"
 	"${SDK_DIR}/Alembic/alembic-1.1.0/include" 
-	"${SDK_DIR}/Alembic/ilmbase-1.0.2/include")
+	"${SDK_DIR}/Alembic/ilmbase-1.0.2/include"
+	"${SDK_DIR}/TangentBasisComputation")
 target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR)
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRYTOOLS -DRESOURCECOMPILERPC_EXPORTS -DOFFLINE_COMPUTATION)
 if (OPTION_FBX_SDK)

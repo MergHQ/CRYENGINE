@@ -139,8 +139,6 @@ add_sources("Cry3DEngine_main_2_uber.cpp"
 		"MeshCompiler/MeshCompiler.h"
 		"MeshCompiler/TangentSpaceCalculation.h"
 		"MeshCompiler/TransformHelpers.h"
-		"../../SDKs/TangentBasisComputation/mikkelsen/mikktspace.cpp"
-		"../../SDKs/TangentBasisComputation/mikkelsen/mikktspace.h"
 )
 
 add_sources("Cry3DEngine_main_3_uber.cpp"
@@ -290,6 +288,9 @@ add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
 		"StdAfx.cpp"
 		"StdAfx.h"
+	SOURCE_GROUP "Mesh Compiler"
+		"${SDK_DIR}/TangentBasisComputation/mikkelsen/mikktspace.cpp"
+		"${SDK_DIR}/TangentBasisComputation/mikkelsen/mikktspace.h"
 )
 
 add_sources("ParticleFeatures_uber.cpp"
@@ -386,3 +387,5 @@ end_sources()
 
 CryEngineModule(Cry3DEngine PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 target_link_libraries( ${THIS_PROJECT} PRIVATE lz4 )
+
+target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/TangentBasisComputation")

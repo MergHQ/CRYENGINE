@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 #include "TangentSpaceCalculation.h"
-#include "../../SDKs/TangentBasisComputation/mikkelsen/mikktspace.h"
+#include <mikkelsen/mikktspace.h>
 
 struct SMikkVertex
 {
