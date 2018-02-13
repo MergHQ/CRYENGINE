@@ -23,8 +23,8 @@ def generate_solution (project_file, code_directory, engine_root_directory):
 
 def generate_csharp_solution (project_name, project_file, code_directory, engine_root_directory):
     solution_file_template = Template("""Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2003
 MinimumVisualStudioVersion = 10.0.40219.1
 $projects
 Global
@@ -303,7 +303,7 @@ def get_startup_and_launcher_projects(project_name, project_file, engine_root_di
     if not os.path.isfile(platform_file_path):
         print("File not found: {}".format(platform_file_path))
         return (project_name, "")
-	
+
     launcher_projects = Template('''
 if(OPTION_ENGINE)
     if(NOT EXISTS "$${CRYENGINE_DIR}/Code/Sandbox/EditorQt")
