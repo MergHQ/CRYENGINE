@@ -331,37 +331,23 @@ public:
 		return (m_Flags & DLF_SUN) && (m_eFrustumType == e_GsmDynamic || m_eFrustumType == e_GsmDynamicDistance);
 	}
 
-	ILINE bool IntersectAABB(const AABB& bbox, bool* pAllIn) const
+	ILINE bool IntersectAABB(const AABB& bbox, bool* pAllIn, int side = -1) const
 	{
 		if (bOmniDirectionalShadow)
-			return bbox.IsOverlapSphereBounds(vLightSrcRelPos + vProjTranslation, fFarDist);
+		{
+			return (side < 0)
+				? bbox.IsOverlapSphereBounds(vLightSrcRelPos + vProjTranslation, fFarDist)
+				: FrustumPlanes[side].IsAABBVisible_EH(bbox, pAllIn) > 0;
+		}
 
-		bool bDummy = false;
 		if (bBlendFrustum)
 		{
 			if (FrustumPlanes[1].IsAABBVisible_EH(bbox, pAllIn) > 0)
 				return true;
 		}
 
+		bool bDummy = false;
 		return FrustumPlanes[0].IsAABBVisible_EH(bbox, bBlendFrustum ? &bDummy : pAllIn) > 0;
-	}
-
-	ILINE bool IntersectSphere(const Sphere& sp, bool* pAllIn) const
-	{
-		if (bOmniDirectionalShadow)
-			return Distance::Point_PointSq(sp.center, vLightSrcRelPos + vProjTranslation) < sqr(fFarDist + sp.radius);
-
-		uint8 res = 0;
-		if (bBlendFrustum)
-		{
-			res = FrustumPlanes[1].IsSphereVisible_FH(sp);
-			*pAllIn = (res == CULL_INCLUSION);
-			if (res != CULL_EXCLUSION)
-				return true;
-		}
-		res = FrustumPlanes[0].IsSphereVisible_FH(sp);
-		*pAllIn = bBlendFrustum ? false : (res == CULL_INCLUSION);
-		return res != CULL_EXCLUSION;
 	}
 
 	Vec3 UnProject(float sx, float sy, float sz, IRenderer* pRend) const

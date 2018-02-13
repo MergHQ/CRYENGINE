@@ -748,7 +748,8 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePas
 					continue;
 				}
 
-				const ShadowMapFrustum* pFr = shadowPasses->at(n).GetIRenderView()->GetShadowFrustumOwner();
+				const SRenderingPassInfo& shadowPass = shadowPasses->at(n);
+				const ShadowMapFrustum* pFr          = shadowPass.GetIRenderView()->GetShadowFrustumOwner();
 
 				if (pFr->IsCached() || pFr->m_eFrustumType == ShadowMapFrustum::e_PerObject)
 				{
@@ -766,7 +767,7 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePas
 
 				// test shadow frustum
 				bool bCompletellyInShadowFrustum = false;
-				if (!bSkipCaster && pFr->IntersectAABB(nodeBox, &bCompletellyInShadowFrustum))
+				if (!bSkipCaster && pFr->IntersectAABB(nodeBox, &bCompletellyInShadowFrustum, shadowPass.ShadowFrustumSide()))
 				{
 					// if completely in frustum - cull all bigger dynamic cascades
 					if (bCompletellyInShadowFrustum && pFr->IsDynamicGsmCascade())
