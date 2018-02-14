@@ -138,8 +138,7 @@ public:
 	virtual void            Serialize(Serialization::IArchive& ar) override;
 
 	// All the raw connection nodes. Used for reloading the data when switching middleware.
-	void         AddRawXMLConnection(XmlNodeRef const xmlNode, bool const isValid, int const platformIndex = -1);
-	XMLNodeList& GetRawXMLConnections(int const platformIndex = -1);
+	void AddRawXMLConnection(XmlNodeRef const xmlNode, bool const isValid, int const platformIndex = -1);
 
 private:
 
