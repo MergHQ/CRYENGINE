@@ -24,9 +24,13 @@ size_t constexpr g_numRaySamplePositionsHigh = g_numberHigh * g_numberHigh;
 size_t constexpr g_numConcurrentRaysLow = 1;
 size_t constexpr g_numConcurrentRaysMedium = 2;
 size_t constexpr g_numConcurrentRaysHigh = 4;
+
+#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 uint32 constexpr g_numIndices = 6;
 vtx_idx constexpr g_auxIndices[g_numIndices] = { 2, 1, 0, 2, 3, 1 };
 uint32 constexpr g_numPoints = 4;
+#endif // INCLUDE_AUDIO_PRODUCTION_CODE
+
 float g_listenerHeadSize = 0.0f;
 float g_listenerHeadSizeHalf = 0.0f;
 
@@ -220,12 +224,13 @@ void CPropagationProcessor::SetOcclusionType(EOcclusionType const occlusionType,
 		                                        PHYS_FOREIGN_ID_SOUND_OBSTRUCTION));
 
 		rayInfo.numHits = std::min(rayInfo.numHits + 1, s_maxRayHits);
-		float totalOcclusion = 0.0f;
+		float finalOcclusion = 0.0f;
 
 		if (rayInfo.numHits > 0)
 		{
 			ISurfaceTypeManager* const pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
 			CRY_ASSERT(rayInfo.numHits <= s_maxRayHits);
+			bool const accumulate = g_cvars.m_accumulateOcclusion > 0;
 
 			for (size_t i = 0; i < rayInfo.numHits; ++i)
 			{
@@ -238,13 +243,26 @@ void CPropagationProcessor::SetOcclusionType(EOcclusionType const occlusionType,
 					if (pMat != nullptr)
 					{
 						ISurfaceType::SPhysicalParams const& physParams = pMat->GetPhyscalParams();
-						totalOcclusion += physParams.sound_obstruction;
+
+						if (accumulate)
+						{
+							finalOcclusion += physParams.sound_obstruction; // Not clamping b/w 0 and 1 for performance reasons.
+						}
+						else
+						{
+							finalOcclusion = std::max(finalOcclusion, physParams.sound_obstruction);
+						}
+
+						if (finalOcclusion >= 1.0f)
+						{
+							break;
+						}
 					}
 				}
 			}
 		}
 
-		m_occlusion = clamp_tpl(totalOcclusion, 0.0f, 1.0f);
+		m_occlusion = clamp_tpl(finalOcclusion, 0.0f, 1.0f);
 
 		for (auto& rayOcclusion : m_raysOcclusion)
 		{

@@ -421,7 +421,7 @@ inline int cry_strcmp(const char* string1, const char* string2)
 
 inline int cry_stricmp(const char* string1, const char* string2)
 {
-#if CRY_PLATFORM_WINDOWS
+#if CRY_PLATFORM_WINAPI
 	//_stricmp is deprecated according to MSDN
 	return _stricmp(string1, string2);
 #else
@@ -441,7 +441,7 @@ template<size_t STRING2_CHAR_COUNT> inline int cry_strncmp(const char* string1, 
 
 inline int cry_strnicmp(const char* string1, const char* string2, size_t count)
 {
-#if CRY_PLATFORM_WINDOWS
+#if CRY_PLATFORM_WINAPI
 	//strnicmp is deprecated according to MSDN
 	return _strnicmp(string1, string2, count);
 #else

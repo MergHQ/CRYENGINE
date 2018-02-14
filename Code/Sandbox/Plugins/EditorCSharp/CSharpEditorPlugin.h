@@ -40,6 +40,9 @@ public:
 	virtual void   UnregisterMessageListener(ICSharpMessageListener* pListener) { m_messageListeners.Remove(pListener); }
 	virtual string GetCompileMessage()                                          { return m_compileMessage; }
 
+	// Returns the path to the C# solution file.
+	const char* GetCSharpSolutionPath() const { return m_csharpSolutionPath; };
+
 	// Opens the specified file in the editor that's set in the preferences.
 	bool OpenCSharpFile(const string& filePath);
 	// Opens the specified file at the specified line in the editor that's set in the preferences.
@@ -75,6 +78,7 @@ private:
 	bool                   m_isSandboxInFocus = true;
 	string                 m_compileMessage;
 	CSharpMessageListeners m_messageListeners;
+	string                 m_csharpSolutionPath;
 
 	// Updates the plugins and solutions if required.
 	void UpdatePluginsAndSolution();
@@ -82,6 +86,8 @@ private:
 	void ReloadPlugins() const;
 	// Regenerates the .sln and .csproj files of the Sandbox C# files.
 	void RegenerateSolution() const;
+	// Find files with a specific extension in a folder recursively.
+	void FindSourceFilesInDirectoryRecursive(const char* szDirectory, const char* szExtension, std::vector<string>& sourceFiles) const;
 	// Checks if m_textEditorHandle refers to a valid application, and focuses the window if it does.
 	bool HasExistingTextEditor() const;
 	// Opens the specified file in the C# solution based. Returns false if the file couldn't be opened.

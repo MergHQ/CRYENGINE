@@ -1346,7 +1346,11 @@ struct ISystem
 	//! Interface to access different implementations of Serialization::IArchive in a centralized way.
 	virtual Serialization::IArchiveHost* GetArchiveHost() const = 0;
 
+	//! Sets the camera that will be used for main rendering next frame.
+	//! This has to be set before Cry::IEnginePlugin::UpdateBeforeFinalizeCamera is called in order to be set in time for occlusion culling and rendering.
 	virtual void                         SetViewCamera(CCamera& Camera) = 0;
+	//! Gets the camera that will be used for main rendering next frame
+	//! Note that the camera might be overridden by user code, and is only considered final after Cry::IEnginePlugin::UpdateBeforeFinalizeCamera has been executed.
 	virtual const CCamera&               GetViewCamera() const = 0;
 
 	//! When ignore update sets to true, system will ignore and updates and render calls.

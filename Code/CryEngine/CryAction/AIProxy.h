@@ -202,6 +202,11 @@ protected:
 	static Vec3      GetPointOnParabula(const Vec3& A, const Vec3& V, float t, float g);
 	static bool      IntersectSweptSphereWrapper(Vec3* hitPos, float& hitDist, const Lineseg& lineseg, float radius, IPhysicalEntity** pSkipEnts = 0, int nSkipEnts = 0, int additionalFilter = 0);
 
+private:
+	static EntityId GetActorCurrentWeapon(IActor& actor);
+	static IWeapon* GetWeaponByEntityId(EntityId eid);
+
+private:
 	// (MATT) We currently have no way to serialise this. It may be possible to recovery from the entity. Currently must keep between serialisations {2009/04/30}
 	IGameObject* m_pGameObject;
 

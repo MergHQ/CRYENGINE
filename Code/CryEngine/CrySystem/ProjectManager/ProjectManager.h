@@ -241,14 +241,13 @@ public:
 
 	virtual const char*                   GetCurrentAssetDirectoryRelative() const override;
 	virtual const char*                   GetCurrentAssetDirectoryAbsolute() const override;
-
-	virtual void                          RegenerateCSharpSolution(const char* szDirectory) const override;
+	virtual const char*                   GetProjectFilePath() const override;
 
 	virtual void                          StoreConsoleVariable(const char* szCVarName, const char* szValue) override;
 	virtual void                          SaveProjectChanges() override;
 
 	virtual const uint16                  GetPluginCount() const override { return static_cast<uint16>(m_project.plugins.size()); };
-	virtual void                          GetPluginInfo(uint16 index, Cry::IPluginManager::EType& typeOut, string& pathOut) const override;
+	virtual void                          GetPluginInfo(uint16 index, Cry::IPluginManager::EType& typeOut, string& pathOut, DynArray<EPlatform>& platformsOut) const override;
 
 	virtual string                        LoadTemplateFile(const char* szPath, std::function<string(const char* szAlias)> aliasReplacementFunc) const override;
 	// ~IProjectManager

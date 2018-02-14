@@ -20,12 +20,6 @@ namespace CryEngine.Game
 			}
 
 			Input.OnKey += OnKey;
-
-			//Only move to the map if we're not in the sandbox. The sandbox can open the map all by itself.
-			if(!Engine.IsSandbox)
-			{
-				Engine.Console.ExecuteString("map example", false, true);
-			}
 		}
 
 		public static void Initialize()

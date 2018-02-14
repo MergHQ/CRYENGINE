@@ -1637,7 +1637,7 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 
 	// First look for a unified Schematyc / Entity component type
 	// TODO: Search hierarchy
-	const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc->GetEnvRegistry().GetComponent(interfaceId);
+	const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc ? gEnv->pSchematyc->GetEnvRegistry().GetComponent(interfaceId) : nullptr;
 	ICryFactory* pLegacyComponentFactory = nullptr;
 	if (pEnvComponent != nullptr)
 	{

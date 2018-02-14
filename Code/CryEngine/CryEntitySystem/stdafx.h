@@ -56,12 +56,6 @@
 #endif // !_RELEASE
 
 //////////////////////////////////////////////////////////////////////////
-class CEntitySystem;
-extern CEntitySystem* g_pIEntitySystem;
-ILINE CEntitySystem* GetIEntitySystem() { return g_pIEntitySystem; }
-//////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
 //! Reports a Game Warning to validator with WARNING severity.
 inline void EntityWarning(const char* format, ...) PRINTF_PARAMS(1, 2);
 inline void EntityWarning(const char* format, ...)

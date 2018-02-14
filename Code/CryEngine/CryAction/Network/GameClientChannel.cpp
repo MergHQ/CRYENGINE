@@ -347,6 +347,10 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 	esp.id = GetGameContext()->GetNetContext()->RemoveReservedUnboundEntityMapEntry(netMID);
 #endif
 	esp.nFlags = (param.flags & ~ENTITY_FLAG_TRIGGER_AREAS);
+	if (param.bClientActor)
+	{
+		esp.nFlags = (param.flags | ENTITY_FLAG_LOCAL_PLAYER);
+	}
 	esp.pClass = pEntitySystem->GetClassRegistry()->FindClass(actorClass);
 	if (!esp.pClass)
 		return false;

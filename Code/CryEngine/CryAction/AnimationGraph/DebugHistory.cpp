@@ -563,6 +563,7 @@ void CDebugHistoryManager::SetupRenderer()
 	IRenderAuxGeom* pAux = gEnv->pRenderer->GetIRenderAuxGeom();
 	SAuxGeomRenderFlags flags = pAux->GetRenderFlags();
 	flags.SetMode2D3DFlag(e_Mode2D);
+	flags.SetDepthTestFlag(e_DepthTestOff);
 	pAux->SetRenderFlags(flags);
 }
 

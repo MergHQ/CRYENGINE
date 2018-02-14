@@ -3,6 +3,7 @@
 //! \cond INTERNAL
 
 #pragma once
+#include <limits>
 
 /*!
     Class TRange, can represent anything that is a range between two values.

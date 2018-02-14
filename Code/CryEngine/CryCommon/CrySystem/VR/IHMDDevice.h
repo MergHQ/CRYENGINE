@@ -204,9 +204,14 @@ struct IHmdDevice
 		int      frameId;
 		Matrix34 outputCameraMatrix;
 	};
+
+	//! Used to support asynchronous camera injection, called from the render thread to update the VR camera as late as possible to minimize HMD movement <-> rendered frame mismatch
+	//! \par Example
+	//! \include CrySystem/Examples/AsyncHMDCameraCallback.cpp
 	struct IAsyncCameraCallback
 	{
-		// If return false, it is not possible to accurately retrieve new camera matrix.
+		//! Called when a source (commonly the render thread) wants to receive the most up to date camera matrix
+		//! \return false if it is not possible to accurately retrieve new camera matrix, otherwise true.
 		virtual bool OnAsyncCameraCallback(const HmdTrackingState& state, AsyncCameraContext& context) = 0;
 	};
 
@@ -244,9 +249,9 @@ struct IHmdDevice
 	//Disables & Resets the tracking state to identity. Useful for benchmarking where we want the HMD to behave normally except that we want to force the direction of the camera.
 	virtual void DisableHMDTracking(bool disable) = 0;
 
-	// Assign a game side callback to be called asynchronously from any thread to update camera matrix
+	//! Assign a game side callback to be called asynchronously from any thread to update camera matrix
 	virtual void SetAsyncCameraCallback(IAsyncCameraCallback* pCallback) {};
-	// Can be called from any thread to retrieve most up to date camera transformation
+	//! Can be called from any thread to retrieve most up to date camera transformation
 	virtual bool RequestAsyncCameraUpdate(AsyncCameraContext& context)  { return false; };
 protected:
 	virtual ~IHmdDevice() {}

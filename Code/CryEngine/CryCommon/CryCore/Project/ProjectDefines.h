@@ -110,7 +110,9 @@ extern void SliceAndSleep(const char* pFunc, int line);
 	#define USE_HTTP_WEBSOCKETS 0
 #endif
 
-#if (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS || CRY_PLATFORM_DURANGO) && !defined(RESOURCE_COMPILER)
+#if (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS || CRY_PLATFORM_DURANGO) && \
+	!defined(RESOURCE_COMPILER) &&											\
+	!defined(NOT_USE_CRY_MEMORY_MANAGER)
 	#define CAPTURE_REPLAY_LOG 1
 #endif
 
@@ -323,7 +325,7 @@ extern void SliceAndSleep(const char* pFunc, int line);
 #include "ProjectDefinesInclude.h"
 
 #ifdef RELEASE
-// Forces the .cryproject and system.cfg file to be read from a .pak file instead of directly from disk.
+// Forces the .cryproject file to be read from a .pak file instead of directly from disk.
 #define CRY_FORCE_CRYPROJECT_IN_PAK
 #endif
 

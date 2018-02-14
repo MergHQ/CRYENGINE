@@ -25,13 +25,12 @@ namespace CryEngine.Compilation
 			}
 		}
 
-		public static Assembly CompileCSharpSourceFiles(string assemblyPath, string[] sourceFiles, string[] managedPlugins, out string compileException)
+		public static void CompileCSharpSourceFiles(string assemblyPath, string[] sourceFiles, string[] managedPlugins, out string compileException)
 		{
-			Assembly assembly = null;
 			compileException = null;
 			try
 			{
-				assembly = CompileSourceFiles("CSharp", assemblyPath, sourceFiles, managedPlugins);
+				CompileSourceFiles("CSharp", assemblyPath, sourceFiles, managedPlugins);
 			}
 			catch(CompilationFailedException ex)
 			{
@@ -41,10 +40,9 @@ namespace CryEngine.Compilation
 			{
 				throw (ex);
 			}
-			return assembly;
 		}
 
-		public static Assembly CompileSourceFiles(string language, string assemblyPath, string[] sourceFiles, string[] managedPlugins)
+		public static void CompileSourceFiles(string language, string assemblyPath, string[] sourceFiles, string[] managedPlugins)
 		{
 			if(!CodeDomProvider.IsDefinedLanguage(language))
 			{
@@ -76,9 +74,9 @@ namespace CryEngine.Compilation
 				AddReferencedAssembliesForSourceFiles(managedPlugins, ref compilerParameters);
 
 				var results = provider.CompileAssemblyFromFile(compilerParameters, sourceFiles);
-				if(!results.Errors.HasErrors && results.CompiledAssembly != null)
+				if(!results.Errors.HasErrors)
 				{
-					return results.CompiledAssembly;
+					return;
 				}
 
 				string compilationError = string.Format("Compilation failed; {0} errors: ", results.Errors.Count);

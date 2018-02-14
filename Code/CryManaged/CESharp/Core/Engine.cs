@@ -31,34 +31,34 @@ namespace CryEngine
 		public static IPhysicalWorld PhysicalWorld { get { return Global.gEnv.pPhysicalWorld; } }
 
 		/// <summary>
-		/// Indicates whether this <see cref="T:CryEngine.Engine"/> is running in the Sandbox.
+		/// Returns <c>true</c> if the application is currently simulating physics and AI.
 		/// </summary>
-		/// <value><c>true</c> if this is running in the Sandbox; otherwise, <c>false</c>.</value>
+		public static bool IsInSimulationMode { get { return Global.gEnv.IsEditorSimulationMode(); } }
+
+		/// <summary>
+		/// Returns <c>true</c> if the application currently running in the Sandbox.
+		/// </summary>
 		public static bool IsSandbox { get { return Global.gEnv.IsEditor(); } }
 
 		/// <summary>
-		/// True if the application is currently running in the sandbox and GameMode has been started.
+		/// Returns <c>true</c> if the application is currently running in the sandbox and GameMode has been started.
 		/// </summary>
-		/// <value><c>true</c> if in GameMode; otherwise, <c>false</c>.</value>
 		public static bool IsSandboxGameMode { get { return Global.gEnv.IsEditorGameMode(); } }
 
 		/// <summary>
-		/// True if the <see cref="T:CryEngine.Engine"/> is currently running as a dedicated server.
-		/// This means that certain systems like the <see cref="T:CryEngine.Renderer"/> and <see cref="T:CryEngine.Input"/> and input are not initialized.
+		/// Returns <c>true</c> if the application is currently running as a dedicated server.
+		/// This means that certain systems like the <see cref="T:CryEngine.Rendering.Renderer"/> and <see cref="T:CryEngine.Input"/> are not initialized.
 		/// </summary>
-		/// <value><c>true</c> if is dedicated server; otherwise, <c>false</c>.</value>
 		public static bool IsDedicatedServer { get { return Global.gEnv.IsDedicated(); } }
 
 		/// <summary>
 		/// Root directory of the engine.
 		/// </summary>
-		/// <value>The engine root directory.</value>
 		public static string EngineRootDirectory => Global.GetEnginePath().c_str();
 
 		/// <summary>
 		/// Path where application data should be stored.
 		/// </summary>
-		/// <value>The data directory.</value>
 		public static string DataDirectory => Global.GetGameFolder().c_str() + "/";
 
 		internal static string MonoDirectory => Path.Combine(EngineRootDirectory, "bin", "common", "Mono");

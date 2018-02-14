@@ -377,6 +377,9 @@ public:
 #endif //ENABLE_PROFILING_CODE
 };
 
+CRYENTITYDLL_API extern CEntitySystem* g_pIEntitySystem;
+ILINE CEntitySystem* GetIEntitySystem() { return g_pIEntitySystem; }
+
 //////////////////////////////////////////////////////////////////////////
 // Precache resources mode state.
 //////////////////////////////////////////////////////////////////////////

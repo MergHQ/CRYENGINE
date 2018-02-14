@@ -77,5 +77,6 @@ struct IMonoEngineModule : public Cry::IDefaultModule
 	virtual void                        RegisterCompileListener(IMonoCompileListener* pListener) = 0;
 	virtual void                        UnregisterCompileListener(IMonoCompileListener* pListener) = 0;
 
-	virtual const char*                 GetLatestCompileMessage() = 0;
+	virtual const char*                 GetLatestCompileMessage() const = 0;
+	virtual const char*                 GetGeneratedAssemblyName() const = 0;
 };
