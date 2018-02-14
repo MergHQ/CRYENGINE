@@ -68,7 +68,7 @@ CEntityAICoverUserComponent::~CEntityAICoverUserComponent()
 void CEntityAICoverUserComponent::ReflectType(Schematyc::CTypeDesc<CEntityAICoverUserComponent>& desc)
 {
 	desc.AddBase<IEntityCoverUserComponent>();
-	desc.SetGUID(cryiidof<CEntityAICoverUserComponent>());
+	desc.SetGUID("D3C6A814-DBEE-4CB1-9322-9AC6028A3EB8"_cry_guid);
 
 	desc.SetLabel("AI Cover User");
 	desc.SetDescription("Cover user component");
@@ -76,7 +76,7 @@ void CEntityAICoverUserComponent::ReflectType(Schematyc::CTypeDesc<CEntityAICove
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Singleton, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
-	desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, cryiidof<CEntityAINavigationComponent>());
+	desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, IEntity::SComponentType<CEntityAINavigationComponent>::GetGUID());
 
 	desc.AddMember(&CEntityAICoverUserComponent::m_effectiveCoverHeight, 'ech', "effectiveCoverHeight", "Min Effective Cover Height", nullptr, 0.85f);
 	desc.AddMember(&CEntityAICoverUserComponent::m_inCoverRadius, 'icr', "inCoverRadius", "In Cover Radius", nullptr, 0.3f);

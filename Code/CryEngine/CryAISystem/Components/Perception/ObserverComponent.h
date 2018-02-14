@@ -6,6 +6,7 @@
 
 #include <CrySerialization/Decorators/BitFlags.h>
 #include <CryAISystem/VisionMapTypes.h>
+#include <CryAISystem/Components/IEntityObserverComponent.h>
 
 namespace Schematyc
 {
@@ -78,16 +79,9 @@ struct SVisionProperties
 
 }
 
-class CEntityAIObserverComponent
-	: public IEntityComponent
+class CEntityAIObserverComponent : public IEntityObserverComponent
 {
 public:
-	static const CryGUID& IID()
-	{
-		static CryGUID id = "C8B964E9-31B8-4231-9454-BA7BFC877527"_cry_guid;
-		return id;
-	}
-
 	static void ReflectType(Schematyc::CTypeDesc<CEntityAIObserverComponent>& desc);
 	static void Register(Schematyc::IEnvRegistrar& registrar);
 

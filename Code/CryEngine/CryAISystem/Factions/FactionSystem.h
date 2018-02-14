@@ -47,9 +47,9 @@ public:
 	void SetEntityFaction(EntityId entityId, const SFactionID& newFactionId, const ReactionChangedCallback& reactionChangedCallback);
 	SFactionID GetEntityFaction(EntityId entityId) const;
 
-	void OnFactionReactionChanged(uint8 factionOne, uint8 factionTwo, IFactionMap::ReactionType reactionType);
+	void OnFactionReactionChanged(const uint8 factionOne, const uint8 factionTwo, const IFactionMap::ReactionType reactionType);
 
-	SFactionFlagsMask GetFactionMaskByReaction(const SFactionID& factionId, IFactionMap::ReactionType reactionType) const;
+	SFactionFlagsMask GetFactionMaskByReaction(const SFactionID& factionId, const IFactionMap::ReactionType reactionType) const;
 	
 private:
 	typedef std::set<std::pair<EntityId, ReactionChangedCallback>> EntitiesWithCallbackSet;

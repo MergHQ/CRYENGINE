@@ -4,6 +4,7 @@
 
 #include "NavigationSystem/NavigationSystem.h"
 #include <CryAISystem/Serialization/NavigationSerialize.h>
+#include <CryAISystem/Components/IEntityNavigationComponent.h>
 
 // Reflection of types defined elsewhere
 
@@ -61,6 +62,44 @@ inline void ReflectType(Schematyc::CTypeDesc<SNavMeshQueryFilterDefault>& desc)
 	desc.SetLabel("Navigation Query Filter");
 	desc.SetDescription("Navigation Query Filter");
 	desc.SetDefaultValue(SNavMeshQueryFilterDefault());
+}
+
+//////////////////////////////////////////////////////////////////////////
+inline void ReflectType(Schematyc::CTypeDesc<IEntityNavigationComponent::SMovementProperties>& desc)
+{
+	desc.SetGUID("44888426-aafa-472e-81ac-58bb1be18475"_cry_guid);
+
+	desc.SetLabel("Movement Properties");
+	desc.SetDescription("Movement Properties");
+	desc.SetDefaultValue(IEntityNavigationComponent::SMovementProperties());
+
+	desc.AddMember(&IEntityNavigationComponent::SMovementProperties::normalSpeed, 'nrsp', "normalSpeed", "Normal Speed", "Normal speed of the agent", 4.0f);
+	desc.AddMember(&IEntityNavigationComponent::SMovementProperties::minSpeed, 'mnsp', "minSpeed", "Min Speed", "Minimal speed of the agent", 0.0f);
+	desc.AddMember(&IEntityNavigationComponent::SMovementProperties::maxSpeed, 'mxsp', "maxSpeed", "Max Speed", "Maximal speed of the agent", 6.0f);
+
+	desc.AddMember(&IEntityNavigationComponent::SMovementProperties::maxAcceleration, 'mxac', "maxAcceleration", "Max Acceleration", "Maximal acceleration", 6.0f);
+	desc.AddMember(&IEntityNavigationComponent::SMovementProperties::maxDeceleration, 'mxdc', "maxDeceleration", "Max Deceleration", "Maximal deceleration", 10.0f);
+
+	desc.AddMember(&IEntityNavigationComponent::SMovementProperties::lookAheadDistance, 'lad', "lookAheadDistance", "Look Ahead Distance", "How far is point on path that the agent is following", 0.5f);
+	desc.AddMember(&IEntityNavigationComponent::SMovementProperties::bStopAtEnd, 'sae', "stopAtEnd", "Stop At End", "Should the agent stop when reaching end of the path", true);
+}
+
+//////////////////////////////////////////////////////////////////////////
+inline void ReflectType(Schematyc::CTypeDesc<IEntityNavigationComponent::SCollisionAvoidanceProperties::EType>& desc)
+{
+	desc.SetGUID("ff0a97c4-eb3f-44cb-b23a-1626fc073e4c"_cry_guid);
+
+	desc.AddConstant(IEntityNavigationComponent::SCollisionAvoidanceProperties::EType::None, "None", "None");
+	desc.AddConstant(IEntityNavigationComponent::SCollisionAvoidanceProperties::EType::Passive, "Passive", "Passive");
+	desc.AddConstant(IEntityNavigationComponent::SCollisionAvoidanceProperties::EType::Active, "Active", "Active");
+}
+
+inline void ReflectType(Schematyc::CTypeDesc<IEntityNavigationComponent::SCollisionAvoidanceProperties>& desc)
+{
+	desc.SetGUID("4086c4b2-2300-41ea-aa95-4f119fa4281b"_cry_guid);
+
+	desc.AddMember(&IEntityNavigationComponent::SCollisionAvoidanceProperties::type, 'type', "type", "Type", "How the agent is going to behave in collision avoidance system", IEntityNavigationComponent::SCollisionAvoidanceProperties::EType::Active);
+	desc.AddMember(&IEntityNavigationComponent::SCollisionAvoidanceProperties::radius, 'rad', "radius", "Radius", "Radius of the agent used in collision avoidance calculations", 0.3f);
 }
 
 //////////////////////////////////////////////////////////////////////////

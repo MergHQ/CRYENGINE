@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <CryAISystem/Components/IEntityFactionComponent.h>
 #include "Factions/FactionSystem.h"
 
 namespace Schematyc
@@ -12,15 +13,9 @@ struct IEnvRegistrar;
 struct SUpdateContext;
 }
 
-class CEntityAIFactionComponent final : public IEntityComponent
+class CEntityAIFactionComponent final : public IEntityFactionComponent
 {
 public:
-	static const CryGUID& IID()
-	{
-		static CryGUID id = "214527d9-156b-4a50-90a5-3dc4a362d800"_cry_guid;
-		return id;
-	}
-
 	struct SReactionChangedSignal
 	{
 		static void ReflectType(Schematyc::CTypeDesc<SReactionChangedSignal>& typeInfo);
@@ -39,15 +34,23 @@ public:
 	virtual void OnShutDown() override;
 	// ~IEntityComponent
 
-	SFactionID GetFactionId() const;
-	void SetFactionId(const SFactionID& factionId);
+	// IEntityComponent
+	virtual uint8 GetFactionId() const override;
+	virtual void SetFactionId(const uint8 factionId) override;
+	virtual IFactionMap::ReactionType GetReaction(const EntityId otherEntityId) const override;
+	virtual void SetReactionChangedCallback(std::function<void(const uint8, const IFactionMap::ReactionType)> callbackFunction) override;
+	// IEntityComponent
+
+private:
+	SFactionID GetFactionIdSchematyc() const;
+	void SetFactionIdSchematyc(const SFactionID& factionId);
 	bool IsReactionEqual(Schematyc::ExplicitEntityId otherEntity, IFactionMap::ReactionType reaction) const;
 	SFactionFlagsMask GetFactionMaskByReaction(IFactionMap::ReactionType reactionType) const;
 
 	void OnReactionChanged(uint8 factionId, IFactionMap::ReactionType reaction);
 
-private:
 	void RegisterFactionId(const SFactionID& factionId);
 
 	SFactionID m_factionId;
+	std::function<void(const uint8, const IFactionMap::ReactionType)> m_reactionChangedCallback;
 };

@@ -33,14 +33,15 @@ CEntityAIObservableComponent::~CEntityAIObservableComponent()
 
 void CEntityAIObservableComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIObservableComponent>& desc)
 {
-	desc.SetGUID(cryiidof<CEntityAIObservableComponent>());
+	desc.AddBase<IEntityObservableComponent>();
+	desc.SetGUID("5A32746A-9CEA-4877-B9E4-5C4E06EEE90C"_cry_guid);
 
 	desc.SetLabel("AI Observable");
 	desc.SetDescription("Observable component");
 	desc.SetEditorCategory("AI");
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
-	desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, cryiidof<CEntityAIFactionComponent>());
+	desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, IEntity::SComponentType<CEntityAIFactionComponent>::GetGUID());
 
 	desc.AddMember(&CEntityAIObservableComponent::m_visionMapType, 'vmt', "visionMapType", "Vision Map Type", "", Perception::ComponentHelpers::SVisionMapType());
 	desc.AddMember(&CEntityAIObservableComponent::m_observableLocations, 'oba', "observableLocations", "Observable Locations", "", Perception::ComponentHelpers::SLocationsArray());
@@ -115,7 +116,7 @@ void CEntityAIObservableComponent::RegisterToVisionMap()
 	m_params.typeMask = m_visionMapType.mask;
 
 	CEntityAIFactionComponent* pFactionComponent = pEntity->GetComponent<CEntityAIFactionComponent>();
-	m_params.faction = pFactionComponent ? pFactionComponent->GetFactionId().id : IFactionMap::InvalidFactionID;
+	m_params.faction = pFactionComponent ? pFactionComponent->GetFactionId() : IFactionMap::InvalidFactionID;
 
 	//	, userData(0)
 	//	, skipListSize(0)

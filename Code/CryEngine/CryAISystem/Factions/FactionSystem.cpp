@@ -13,7 +13,7 @@ CFactionSystem::~CFactionSystem()
 	m_factionMap.UnregisterFactionReactionChangedCallback(functor(*this, &CFactionSystem::OnFactionReactionChanged));
 }
 
-void CFactionSystem::OnFactionReactionChanged(uint8 factionOne, uint8 factionTwo, IFactionMap::ReactionType reactionType)
+void CFactionSystem::OnFactionReactionChanged(const uint8 factionOne, const uint8 factionTwo, const IFactionMap::ReactionType reactionType)
 {
 	const EntitiesWithCallbackSet& entitiesInFactionSet = m_entitiesInFactionsMap[factionOne];
 	for (const auto& entityWithCallback : entitiesInFactionSet)
@@ -68,7 +68,7 @@ SFactionID CFactionSystem::GetEntityFaction(EntityId entityId) const
 	return SFactionID();
 }
 
-SFactionFlagsMask CFactionSystem::GetFactionMaskByReaction(const SFactionID& factionId, IFactionMap::ReactionType reactionType) const
+SFactionFlagsMask CFactionSystem::GetFactionMaskByReaction(const SFactionID& factionId, const IFactionMap::ReactionType reactionType) const
 {
 	SFactionFlagsMask factionsMask{ 0 };
 

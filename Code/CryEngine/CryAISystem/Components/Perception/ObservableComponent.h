@@ -3,22 +3,16 @@
 #pragma once
 
 #include "PerceptionComponentHelpers.h"
+#include <CryAISystem/Components/IEntityObservableComponent.h>
 
 namespace Schematyc
 {
 	struct IEnvRegistrar;
 }
 
-class CEntityAIObservableComponent
-	: public IEntityComponent
+class CEntityAIObservableComponent : public IEntityObservableComponent
 {
 public:
-	static const CryGUID& IID()
-	{
-		static CryGUID id = "5A32746A-9CEA-4877-B9E4-5C4E06EEE90C"_cry_guid;
-		return id;
-	}
-
 	static void ReflectType(Schematyc::CTypeDesc<CEntityAIObservableComponent>& desc);
 	static void Register(Schematyc::IEnvRegistrar& registrar);
 

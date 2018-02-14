@@ -158,6 +158,7 @@ void CEntityAIBehaviorTreeComponent::ProcessEvent(const SEntityEvent& event)
 
 void CEntityAIBehaviorTreeComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIBehaviorTreeComponent>& desc)
 {
+	desc.AddBase<IEntityBehaviorTreeComponent>();
 	desc.SetGUID("c66c0266-b634-4dc4-9e69-899f69f9aabb"_cry_guid);
 	desc.SetLabel("AI Behavior Tree");
 	desc.SetDescription("Behavior Tree Component");
@@ -215,6 +216,15 @@ void CEntityAIBehaviorTreeComponent::EnsureBehaviorTreeIsStopped()
 	{
 		gAIEnv.pBehaviorTreeManager->StopModularBehaviorTree(GetEntityId());
 		m_bBehaviorTreeIsRunning = false;
+	}
+}
+
+void CEntityAIBehaviorTreeComponent::SendEvent(const char* szEventName)
+{
+	if (m_bBehaviorTreeIsRunning)
+	{
+		BehaviorTree::Event ev(szEventName);
+		gAIEnv.pBehaviorTreeManager->HandleEvent(GetEntityId(), ev);
 	}
 }
 

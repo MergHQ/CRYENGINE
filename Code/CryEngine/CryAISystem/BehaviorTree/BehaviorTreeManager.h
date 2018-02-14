@@ -41,6 +41,9 @@ public:
 
 	virtual void                                HandleEvent(const EntityId entityId, Event& event) override;
 
+	// Returns blackboard corresponding to behavior tree assigned to Entity with specified entityID.
+	virtual BehaviorTree::Blackboard* GetBehaviorTreeBlackboard(const EntityId entityId) override;
+
 	virtual Variables::Collection*              GetBehaviorVariableCollection_Deprecated(const EntityId entityId) const override;
 	virtual const Variables::Declarations*      GetBehaviorVariableDeclarations_Deprecated(const EntityId entityId) const override;
 	// ~IBehaviorTreeManager
@@ -56,9 +59,6 @@ public:
 
 	size_t                  GetTreeInstanceCount() const;
 	EntityId                GetTreeInstanceEntityIdByIndex(const size_t index) const;
-
-	// Returns blackboard corresponding to behavior tree assigned to Entity with specified entityID.
-	BehaviorTree::Blackboard* GetBehaviorTreeBlackboard(const EntityId entityId);
 
 	BehaviorTreeInstancePtr CreateBehaviorTreeInstanceFromXml(const char* behaviorTreeName, XmlNodeRef behaviorTreeXmlNode);
 

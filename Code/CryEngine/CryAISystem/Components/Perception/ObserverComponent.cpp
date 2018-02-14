@@ -49,14 +49,15 @@ CEntityAIObserverComponent::~CEntityAIObserverComponent()
 
 void CEntityAIObserverComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIObserverComponent>& desc)
 {
-	desc.SetGUID(cryiidof<CEntityAIObserverComponent>());
+	desc.AddBase<IEntityObserverComponent>();
+	desc.SetGUID("C8B964E9-31B8-4231-9454-BA7BFC877527"_cry_guid);
 
 	desc.SetLabel("AI Observer");
 	desc.SetDescription("Observer component");
 	desc.SetEditorCategory("AI");
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
-	desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, cryiidof<CEntityAIFactionComponent>());
+	desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, IEntity::SComponentType<CEntityAIFactionComponent>::GetGUID());
 
 	desc.AddMember(&CEntityAIObserverComponent::m_visionMapType, 'vmt', "visionMapType", "Vision Map Type", "Combination of flags to identify type of the observer.", Perception::ComponentHelpers::SVisionMapType());
 	desc.AddMember(&CEntityAIObserverComponent::m_visionProperties, 'vpt', "visionProps", "Vision", "Configuration of the vision sensor with which the entity can observe the world.", ObserverProperties::SVisionProperties());
@@ -152,7 +153,7 @@ void CEntityAIObserverComponent::RegisterToVisionMap()
 
 	//TODO: Remove faction and vision map types dependency from vision map
 	CEntityAIFactionComponent* pFactionComponent = pEntity->GetComponent<CEntityAIFactionComponent>();
-	m_params.faction = pFactionComponent ? pFactionComponent->GetFactionId().id : IFactionMap::InvalidFactionID;
+	m_params.faction = pFactionComponent ? pFactionComponent->GetFactionId() : IFactionMap::InvalidFactionID;
 
 	m_params.factionsToObserveMask = m_factionsToObserve.mask;
 	m_params.typeMask = m_visionMapType.mask;

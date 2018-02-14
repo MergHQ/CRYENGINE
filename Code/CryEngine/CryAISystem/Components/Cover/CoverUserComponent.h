@@ -43,12 +43,6 @@ public:
 		static void ReflectType(Schematyc::CTypeDesc<SRefreshEyesSignal>& typeInfo);
 	};
 
-	static const CryGUID& IID()
-	{
-		static CryGUID id = "D3C6A814-DBEE-4CB1-9322-9AC6028A3EB8"_cry_guid;
-		return id;
-	}
-
 	static void ReflectType(Schematyc::CTypeDesc<CEntityAICoverUserComponent>& desc);
 	static void Register(Schematyc::IEnvRegistrar& registrar);
 

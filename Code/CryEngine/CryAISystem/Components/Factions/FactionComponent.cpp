@@ -24,7 +24,8 @@ CEntityAIFactionComponent::~CEntityAIFactionComponent()
 
 void CEntityAIFactionComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIFactionComponent>& desc)
 {
-	desc.SetGUID(cryiidof<CEntityAIFactionComponent>());
+	desc.AddBase<IEntityFactionComponent>();
+	desc.SetGUID("214527d9-156b-4a50-90a5-3dc4a362d800"_cry_guid);
 
 	desc.SetLabel("AI Faction");
 	desc.SetDescription("Faction component");
@@ -43,14 +44,14 @@ void CEntityAIFactionComponent::Register(Schematyc::IEnvRegistrar& registrar)
 
 		// Functions
 		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAIFactionComponent::SetFactionId, "504e4eee-1633-4e17-92e8-0967edb4a3ae"_cry_guid, "SetFaction");
+			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAIFactionComponent::SetFactionIdSchematyc, "504e4eee-1633-4e17-92e8-0967edb4a3ae"_cry_guid, "SetFaction");
 			pFunction->SetDescription("Sets new faction for entity");
 			pFunction->SetFlags(Schematyc::EEnvFunctionFlags::Construction);
 			pFunction->BindInput(1, 'fid', "FactionId", "New faction", Vec3(ZERO));
 			componentScope.Register(pFunction);
 		}
 		{
-			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAIFactionComponent::GetFactionId, "d700b459-bada-4c65-9287-8a9e2feed7ff"_cry_guid, "GetFaction");
+			auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CEntityAIFactionComponent::GetFactionIdSchematyc, "d700b459-bada-4c65-9287-8a9e2feed7ff"_cry_guid, "GetFaction");
 			pFunction->SetDescription("Gets entity faction");
 			pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Construction , Schematyc::EEnvFunctionFlags::Const });
 			pFunction->BindOutput(0, 'fid', "FactionId", "New faction");
@@ -88,12 +89,34 @@ void CEntityAIFactionComponent::OnShutDown()
 	RegisterFactionId(SFactionID());
 }
 
-SFactionID CEntityAIFactionComponent::GetFactionId() const
+uint8 CEntityAIFactionComponent::GetFactionId() const
+{
+	return m_factionId.id;
+}
+
+void CEntityAIFactionComponent::SetFactionId(const uint8 factionId)
+{
+	m_factionId.id = factionId;
+}
+
+IFactionMap::ReactionType CEntityAIFactionComponent::GetReaction(const EntityId otherEntityId) const
+{
+	CFactionSystem* pFactionSystem = GetAISystem()->GetFactionSystem();
+	const SFactionID otherFaction = pFactionSystem->GetEntityFaction(otherEntityId);
+	return pFactionSystem->GetFactionMap()->GetReaction(m_factionId.id, otherFaction.id);
+}
+
+void CEntityAIFactionComponent::SetReactionChangedCallback(std::function<void(const uint8, const IFactionMap::ReactionType)> callbackFunction)
+{
+	m_reactionChangedCallback = callbackFunction;
+}
+
+SFactionID CEntityAIFactionComponent::GetFactionIdSchematyc() const
 {
 	return m_factionId;
 }
 
-void CEntityAIFactionComponent::SetFactionId(const SFactionID& factionId)
+void CEntityAIFactionComponent::SetFactionIdSchematyc(const SFactionID& factionId)
 {
 	if (factionId.id != m_factionId.id)
 	{
@@ -127,6 +150,11 @@ void CEntityAIFactionComponent::OnReactionChanged(uint8 factionId, IFactionMap::
 	if (GetEntity()->GetSchematycObject())
 	{
 		GetEntity()->GetSchematycObject()->ProcessSignal(SReactionChangedSignal{ factionId, reaction });
+	}
+
+	if (m_reactionChangedCallback)
+	{
+		m_reactionChangedCallback(factionId, reaction);
 	}
 }
 
