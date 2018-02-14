@@ -869,8 +869,13 @@ void CSystem::Quit()
 	if (m_pTextModeConsole)
 		m_pTextModeConsole->OnShutdown();
 
-	if (m_env.pRenderer)
+	if (m_env.pRenderer) 
+	{
+		ICVar* pCVarGamma = m_env.pConsole->GetCVar("r_Gamma");
+		if (pCVarGamma)
+			pCVarGamma->Set(1.0f); // prevent mysterious gamma snap back on quit (CE-15284)
 		m_env.pRenderer->RestoreGamma();
+	}
 
 	if (m_pCVarQuit && m_pCVarQuit->GetIVal() != 0)
 	{
