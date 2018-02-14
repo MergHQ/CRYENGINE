@@ -12,14 +12,16 @@ CCompiledMonoLibrary::CCompiledMonoLibrary(const char* szDirectory, CMonoDomain*
 	: CMonoLibrary(nullptr, "", pDomain)
 	, m_directory(szDirectory)
 {
-	m_assemblyPath = PathUtil::Make(PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "bin"), "CRYENGINE.CSharp.dll");
+	string assemblyName = GetMonoRuntime()->GetGeneratedAssemblyName();
+	m_assemblyPath = PathUtil::Make(PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "bin"), assemblyName + ".dll");
 	Load(-1);
 }
 
 CCompiledMonoLibrary::CCompiledMonoLibrary(CMonoDomain* pDomain)
 	: CMonoLibrary(nullptr, "", pDomain)
 {
-	m_assemblyPath = PathUtil::Make(PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "bin"), "CRYENGINE.CSharp.dll");
+	string assemblyName = GetMonoRuntime()->GetGeneratedAssemblyName();
+	m_assemblyPath = PathUtil::Make(PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "bin"), assemblyName + ".dll");
 	Load(-1);
 }
 
@@ -66,7 +68,8 @@ bool CCompiledMonoLibrary::Load(int loadIndex)
 		{
 			string path;
 			Cry::IPluginManager::EType type;
-			projectManager->GetPluginInfo(i, type, path);
+			DynArray<EPlatform> platforms;
+			projectManager->GetPluginInfo(i, type, path, platforms);
 			if (type == Cry::IPluginManager::EType::Managed)
 			{
 				pluginPaths.emplace_back(path);

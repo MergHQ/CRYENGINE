@@ -20,7 +20,7 @@ struct IProjectManager
 	virtual const char*  GetCurrentAssetDirectoryRelative() const = 0;
 	virtual const char*  GetCurrentAssetDirectoryAbsolute() const = 0;
 
-	virtual void         RegenerateCSharpSolution(const char* szDirectory) const = 0;
+	virtual const char*  GetProjectFilePath() const = 0;
 
 	//! Adds or updates the value of a CVar in the project configuration
 	virtual void         StoreConsoleVariable(const char* szCVarName, const char* szValue) = 0;
@@ -29,6 +29,6 @@ struct IProjectManager
 	virtual void         SaveProjectChanges() = 0;
 
 	virtual const uint16 GetPluginCount() const = 0;
-	virtual void         GetPluginInfo(uint16 index, Cry::IPluginManager::EType& typeOut, string& pathOut) const = 0;
+	virtual void         GetPluginInfo(uint16 index, Cry::IPluginManager::EType& typeOut, string& pathOut, DynArray<EPlatform>& platformsOut) const = 0;
 	virtual string       LoadTemplateFile(const char* szPath, std::function<string(const char* szAlias)> aliasReplacementFunc) const = 0;
 };

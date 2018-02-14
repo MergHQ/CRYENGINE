@@ -119,7 +119,8 @@ public:
 	virtual void                        RegisterCompileListener(IMonoCompileListener* pListener) override { m_compileListeners.Add(pListener); }
 	virtual void                        UnregisterCompileListener(IMonoCompileListener* pListener) override { m_compileListeners.Remove(pListener); }
 
-	virtual const char*                 GetLatestCompileMessage() override { return m_latestCompileMessage.c_str(); }
+	virtual const char*                 GetLatestCompileMessage() const override { return m_latestCompileMessage.c_str(); }
+	virtual const char*                 GetGeneratedAssemblyName() const override { return "CRYENGINE.CSharp"; }
 	// ~IMonoEngineModule
 
 	// IManagedConsoleCommandListener
