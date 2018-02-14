@@ -14,28 +14,13 @@ namespace Cry
 	//! Represents an engine plug-in that can be loaded as a dynamic library, or statically linked in.
 	//! Plug-ins are loaded from JSON in your .cryproject file on engine startup.
 	//! For a fully functional example, see Code\GameTemplates\cpp\Plugin.
-	//! Minimal example:
-	//! class CMyPlugin : public Cry::IEnginePlugin
-	//! {
-	//!		CRYINTERFACE_BEGIN()
-	//! 		CRYINTERFACE_ADD(Cry::IEnginePlugin)
-	//!		CRYINTERFACE_END()
-	//! 
-	//! 	CRYGENERATE_SINGLETONCLASS_GUID(CPlugin, "Plugin_GamePlatform", "{0C7B8742-5FBF-4C48-AE7C-6E70308538EC}"_cry_guid)
-	//! 
-	//!		virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override 
-	//!		{
-	//!			// Initialize plug-in here
-	//!			return true;
-	//!		}
-	//! };
-	//! Register static factory, has to be done in a source file (cpp, not header).
-	//! CRYREGISTER_SINGLETON_CLASS(CMyPlugin)
+	//! \par Example
+	//! \include CrySystem/Examples/MinimalPlugin.cpp
 	struct IEnginePlugin : public ICryUnknown
 	{
 		CRYINTERFACE_DECLARE_GUID(IEnginePlugin, "f491a0db-3863-4fca-b6e6-bcfe2d98eea2"_cry_guid);
 
-		//! Used to determine what type of updates a plug-in interested in, treated as bitflags
+		//! Used to determine what type of updates a plug-in interested in, treated as bit flags
 		//! This enumeration is ordered in the same order as the functions are called each frame
 		enum class EUpdateStep : uint8
 		{
@@ -93,6 +78,8 @@ namespace Cry
 
 	protected:
 		//! Enables a particular update step to be called each frame on this plug-in
+		//! \par Example
+		//! \include CrySystem/Examples/MinimalPlugin.cpp
 		void EnableUpdate(EUpdateStep step, bool enable)
 		{
 			if (enable)

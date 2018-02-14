@@ -1201,6 +1201,8 @@ install_headers(CrySystem CryThreading)
 			"CryAction/Examples/ReBindActionInput.cpp"
 		SOURCE_GROUP "CryNetwork"
 			"CryNetwork/Examples/NetworkedClientListener.cpp"
+		SOURCE_GROUP "CrySystem"
+			"CrySystem/Examples/MinimalPlugin.cpp"
 		SOURCE_GROUP "CrySystem\\\\VirtualReality"
 			"CrySystem/Examples/AsyncHMDCameraCallback.cpp"
 	)
