@@ -857,7 +857,7 @@ void CAudioXMLProcessor::ParseDefaultParameters(XmlNodeRef const pXMLParameterRo
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 			if (stl::find_in_map(m_parameters, parameterId, nullptr) != nullptr)
 			{
-				Cry::Audio::Log(ELogType::Error, R"(Parameter "%s" already exists!)", parameterId);
+				Cry::Audio::Log(ELogType::Error, R"(Parameter "%s" already exists!)", szParameterName);
 			}
 #endif      // INCLUDE_AUDIO_PRODUCTION_CODE
 
