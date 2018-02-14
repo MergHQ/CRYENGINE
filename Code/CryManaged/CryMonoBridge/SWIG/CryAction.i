@@ -13,7 +13,7 @@
 #include <CryEntitySystem/IEntityComponent.h>
 #include <GameObjects/GameObject.h>
 #include <ILevelSystem.h>
-#include <IActionMapManager.h>
+#include <CryAction/IActionMapManager.h>
 #include <IActorSystem.h>
 #include <IAnimatedCharacter.h>
 #include <CryAudio/Dialog/IDialogSystem.h>
@@ -68,7 +68,7 @@
 %template(IActionMapActionIteratorPtr) _smart_ptr<IActionMapActionIterator>;
 %template(IActionMapIteratorPtr) _smart_ptr<IActionMapIterator>;
 %template(IActorIteratorPtr) _smart_ptr<IActorIterator>;
-%include "../../../CryEngine/CryAction/IActionMapManager.h"
+%include "../../../CryEngine/CryCommon/CryAction/IActionMapManager.h"
 %include "../../../CryEngine/CryAction/IActorSystem.h"
 %csconstvalue("EMCMSlot.eMCMSlot_Game") eMCMSlotStack_Begin;
 %csconstvalue("EMCMSlot.eMCMSlot_Animation+1") eMCMSlotStack_End;

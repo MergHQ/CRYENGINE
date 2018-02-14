@@ -26,12 +26,12 @@ public:
 		if (event.event == ENTITY_EVENT_ENTERAREA)
 		{
 			// Get the entity identifier of the entity that just entered our shape
-			const EntityId enteredEntityId = event.nParam[0];
+			const EntityId enteredEntityId = static_cast<EntityId>(event.nParam[0]);
 		}
 		else if (event.event == ENTITY_EVENT_LEAVEAREA)
 		{
 			// Get the entity identifier of the entity that just left our shape
-			const EntityId leftEntityId = event.nParam[0];
+			const EntityId leftEntityId = static_cast<EntityId>(event.nParam[0]);
 		}
 	}
 

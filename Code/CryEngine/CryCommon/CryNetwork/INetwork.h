@@ -1474,6 +1474,8 @@ struct INetNub
 };
 
 //! Listener that allows for listening to client connection and disconnect events
+//! \par Example
+//! \include CryNetwork/Examples/NetworkedClientListener.cpp
 struct INetworkedClientListener
 {
 	//! Sent to the local client on disconnect
