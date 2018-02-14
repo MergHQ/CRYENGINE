@@ -318,7 +318,8 @@ void CCSharpEditorPlugin::RegenerateSolution() const
 		CryGUID guid = pProjectManager->GetCurrentProjectGUID();
 		string projectName = pProjectManager->GetCurrentProjectName();
 		string projectFilePath = pProjectManager->GetProjectFilePath();
-		string projectFileContents = pProjectManager->LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedProjectTemplate.csproj.txt", [guid, projectName, projectFilePath, szDirectory, includes, pluginReferences](const char* szAlias) -> string
+		string assemblyName = gEnv->pMonoRuntime->GetGeneratedAssemblyName();
+		string projectFileContents = pProjectManager->LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedProjectTemplate.csproj.txt", [guid, projectName, projectFilePath, szDirectory, assemblyName, includes, pluginReferences](const char* szAlias) -> string
 		{
 			if (!strcmp(szAlias, "csproject_guid"))
 			{
@@ -330,6 +331,10 @@ void CCSharpEditorPlugin::RegenerateSolution() const
 			else if (!strcmp(szAlias, "project_name"))
 			{
 				return projectName;
+			}
+			else if (!strcmp(szAlias, "assembly_name"))
+			{
+				return assemblyName;
 			}
 			else if (!strcmp(szAlias, "engine_bin_directory"))
 			{

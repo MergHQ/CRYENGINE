@@ -8,8 +8,8 @@
     <ProjectGuid>$csproject_guid</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CryEngine.Projects.$project_name</RootNamespace>
-    <AssemblyName>$project_name</AssemblyName>
+    <RootNamespace>CryEngine.Game</RootNamespace>
+    <AssemblyName>$assembly_name</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <UseMSBuildEngine>false</UseMSBuildEngine>
