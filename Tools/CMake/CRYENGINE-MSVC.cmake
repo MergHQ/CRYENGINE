@@ -14,6 +14,7 @@ set(MSVC_COMMON_FLAGS
 
 	/WX         # Treat warnings as errors
 	/wd4653     # Ignore PCH for any individual file that has different optimization settings
+    /wd4275     # non dll-interface class '' used as base for dll-interface class ''
 )
 string(REPLACE ";" " " MSVC_COMMON_FLAGS "${MSVC_COMMON_FLAGS}")
  

@@ -44,11 +44,44 @@ STRUCT_INFO_T_INSTANTIATE(Color_tpl, <uint8>)
 #endif
 
 #if CRY_PLATFORM_WINAPI && defined(CRY_IS_APPLICATION) 
+
+template<typename T>
+struct LazyInstance
+{
+	using storage_t = typename std::aligned_storage<sizeof(T), alignof(T)>::type;
+	storage_t storage;
+	bool initialized = false;
+
+	~LazyInstance()
+	{
+		if(initialized)
+		{
+			reinterpret_cast<T*>(&storage)->~T();
+		}
+	}
+
+	T* operator->() 
+	{
+		return static_cast<T*>(*this);
+	}
+
+	operator T* ()
+	{
+		IF_UNLIKELY(!initialized)
+		{
+			new (&storage)T;
+			initialized = true;
+		}
+		return reinterpret_cast<T*>(&storage);
+	}
+};
+
 // This belongs to the ClassFactoryManager::the() singleton in ClassFactory.h and must only exist in executables, not in DLLs.
 #include <CrySerialization/yasli/ClassFactory.h>
+
+#if defined(NOT_USE_CRY_MEMORY_MANAGER)
 extern "C" DLL_EXPORT yasli::ClassFactoryManager* GetYasliClassFactoryManager()
 {
-#if defined(NOT_USE_CRY_MEMORY_MANAGER)
 	// Cannot be used by code that uses CryMemoryManager as it might not be initialized yet.
 	static yasli::ClassFactoryManager* g_classFactoryManager = nullptr;
 	if (g_classFactoryManager == nullptr)
@@ -56,13 +89,21 @@ extern "C" DLL_EXPORT yasli::ClassFactoryManager* GetYasliClassFactoryManager()
 		g_classFactoryManager = new yasli::ClassFactoryManager();
 	}
 	return g_classFactoryManager;
+}
 #else
-	// Cannot be used in Sandbox due as we would create a static while creating a static. MSVC doesn't like that.
-	static yasli::ClassFactoryManager classFactoryManager;
-	return &classFactoryManager;
-#endif
+// We cannot initialize g_pClassFactoryManager as a local static because during certain 
+// scenarios we cannot be sure that the mutex guarding the function local static is initialized. 
+// Also we cannot instantiate the ClassFactoryManager as a global static because this function 
+// is called during global initialization of other other objects and the initialization order 
+// of globals is undefined.
+static LazyInstance<yasli::ClassFactoryManager> g_pClassFactoryManager;
+extern "C" DLL_EXPORT yasli::ClassFactoryManager* GetYasliClassFactoryManager()
+{
+	return g_pClassFactoryManager;
 }
 #endif
+
+#endif // CRY_PLATFORM_WINAPI && defined(CRY_IS_APPLICATION)
 
 #if (defined(_LAUNCHER) && defined(CRY_IS_MONOLITHIC_BUILD)) || !defined(_LIB)
 //The reg factory is used for registering the different modules along the whole project

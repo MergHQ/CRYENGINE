@@ -1080,7 +1080,7 @@ void CBootProfiler::StopSaveSessionsThread()
 		m_quitSaveThread = true;
 		m_saveThreadWakeUpEvent.Set();
 
-		if (gEnv)
+		if (gEnv && gEnv->pThreadManager)
 		{
 			gEnv->pThreadManager->JoinThread(this, eJM_Join);
 		}

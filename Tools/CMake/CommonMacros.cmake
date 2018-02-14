@@ -36,8 +36,8 @@ endmacro()
 
 function(USE_MSVC_PRECOMPILED_HEADER TargetProject PrecompiledHeader PrecompiledSource)
   if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
-    # Now only support precompiled headers for the Visual Studio projects
-    return()
+	# Now only support precompiled headers for the Visual Studio projects
+	return()
   endif()
 
 	if (OPTION_UNITY_BUILD AND UBERFILES AND UNITY_${TargetProject})
@@ -103,6 +103,28 @@ macro(set_solution_startup_target target)
 	endif()
 endmacro()
 
+macro(set_output_directory TargetProject)
+		get_target_property(libout ${TargetProject} LIBRARY_OUTPUT_DIRECTORY)
+		get_target_property(runout ${TargetProject} RUNTIME_OUTPUT_DIRECTORY)
+		if (NOT libout)
+			set(libout "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+		endif()
+		if (NOT runout)
+			set(runout "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+		endif()
+
+		# Iterate Debug/Release configs and adds _DEBUG or _RELEASE
+		foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
+			string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
+
+			string(REPLACE ${BASE_OUTPUT_DIRECTORY} ${BASE_OUTPUT_DIRECTORY_${OUTPUTCONFIG}} libout_config "${libout}")
+			string(REPLACE ${BASE_OUTPUT_DIRECTORY} ${BASE_OUTPUT_DIRECTORY_${OUTPUTCONFIG}} runout_config "${runout}")
+
+			set_target_properties(${TargetProject} PROPERTIES LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${libout_config})
+			set_target_properties(${TargetProject} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${runout_config})
+		endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
+endmacro()
+
 MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 	target_compile_definitions( ${THIS_PROJECT} PRIVATE "-DCODE_BASE_FOLDER=\"${CRYENGINE_DIR}/Code/\"")
 	target_link_libraries( ${THIS_PROJECT} PRIVATE ${COMMON_LIBS} )
@@ -137,25 +159,7 @@ MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 	endif()
 	
 	if(CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-		get_target_property(libout ${TargetProject} LIBRARY_OUTPUT_DIRECTORY)
-		get_target_property(runout ${TargetProject} RUNTIME_OUTPUT_DIRECTORY)
-		if (NOT libout)
-			set(libout "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-		endif()
-		if (NOT runout)
-			set(runout "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-		endif()
-
-		# Iterate Debug/Release configs and adds _DEBUG or _RELEASE
-		foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
-			string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
-
-			string(REPLACE ${BASE_OUTPUT_DIRECTORY} ${BASE_OUTPUT_DIRECTORY_${OUTPUTCONFIG}} libout_config "${libout}")
-			string(REPLACE ${BASE_OUTPUT_DIRECTORY} ${BASE_OUTPUT_DIRECTORY_${OUTPUTCONFIG}} runout_config "${runout}")
-
-			set_target_properties(${TargetProject} PROPERTIES LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${libout_config})
-			set_target_properties(${TargetProject} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${runout_config})
-		endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
+		set_output_directory(${TargetProject})
 	endif()
 
 	if (OPTION_SHOW_COMPILE_METRICS)
@@ -725,9 +729,78 @@ endfunction()
 function(CryConsoleApplication target)
 	prepare_project(${ARGN})
 	add_executable(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
-	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:CONSOLE")
+	if(WIN32)
+		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:CONSOLE")
+	endif()
 	apply_compile_settings()	
 endfunction()
+
+macro(CryUnitTestSuite target)
+	set(TEST_MODULES ${TEST_MODULES} ${target} CACHE INTERNAL "List of test modules being built" FORCE)	
+
+	if(ORBIS)
+		CryEngineStaticModule(${target} ${ARGN})
+	else()
+
+		if (DURANGO)
+			set(temp_old_output_directory ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+			set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/durango_test/${target}")
+			set(LAYOUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/durango_test/${target}_layout/")
+
+			configure_durango_game(
+				"GENERATE_DIRECTORY" "${CMAKE_CURRENT_BINARY_DIR}"
+				"app_id" "${target}.app"
+				"package_name" "${target}"
+				"executable_name" "${target}.exe"
+				"display_name" "${target}"
+				"publisher_name" "Crytek"
+				"description" "CRYENGINE ${target}"
+				"foreground_text" "light"
+				"background_color" "#6495ED"
+				"version" "1.0.0.0"
+				"logo" "placeholder.png"
+				"small_logo" "placeholder.png"
+				"wide_logo" "placeholder.png"
+				"splash_screen" "placeholder.png"
+				"store_logo" "placeholder.png"
+			)
+			add_sources("NoUberFile" SOURCE_GROUP "Generated" "${CMAKE_CURRENT_BINARY_DIR}/Package.appxmanifest")
+		endif()
+
+		CryConsoleApplication(${target} ${ARGN})
+		
+		target_sources(${target} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/UnitTest.h")
+		source_group("Imported" FILES "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/UnitTest.h")
+		if (DURANGO)
+			target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /ZW)
+			target_sources(${target} PRIVATE 
+				"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main_Durango.cpp"
+				"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/DurangoDebugHelper.h"
+			)
+			source_group("Imported" FILES 
+				"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main_Durango.cpp"
+				"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/DurangoDebugHelper.h"
+			)
+			set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${temp_old_output_directory})
+			if (LAYOUT_DIRECTORY)
+				file(TO_NATIVE_PATH "${LAYOUT_DIRECTORY}" NATIVE_LAYOUTDIR)
+				add_custom_command(TARGET ${THIS_PROJECT}	PRE_BUILD COMMAND rmdir /s /q "\"${NATIVE_LAYOUTDIR}\"")
+			endif()
+		else()
+			target_sources(${target} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main.cpp")
+			source_group("Imported" FILES "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main.cpp")
+		endif()
+
+        if (LINUX)
+        	target_link_libraries( ${THIS_PROJECT} PRIVATE dl pthread)
+        endif()
+	endif()
+	include_directories("${CRYENGINE_DIR}/Code/SDKs/googletest_CE_Support/googletest/include")
+	include_directories("${CRYENGINE_DIR}/Code/SDKs/googletest_CE_Support/googlemock/include")
+	include_directories("${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common")
+	target_link_libraries(${THIS_PROJECT} PUBLIC gtest gmock)
+endmacro()
+
 
 function(CryWindowsApplication target)
 	prepare_project(${ARGN})
