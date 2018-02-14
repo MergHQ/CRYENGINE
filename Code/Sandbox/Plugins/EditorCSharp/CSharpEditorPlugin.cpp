@@ -27,6 +27,8 @@ CCSharpEditorPlugin::CCSharpEditorPlugin()
 {
 	s_pInstance = this;
 
+	m_csharpSolutionPath = PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "Game.sln");
+
 	GetIEditor()->GetFileMonitor()->RegisterListener(this, "", "cs");
 
 	gEnv->pSchematyc->GetEnvRegistry().RegisterListener(this);
@@ -65,6 +67,17 @@ void CCSharpEditorPlugin::OnFileChange(const char* szFilename, EChangeType type)
 	switch (type)
 	{
 	case IFileChangeListener::eChangeType_Created:
+	{
+		// If a file was deleted and created at the same time, remove it from the changed list. It's probably only modified.
+		// Otherwise add it to the changed-files list, because the solution needs to be generated again.
+		if (!stl::find_and_erase(m_changedFiles, szFilename))
+		{
+			m_changedFiles.emplace_back(szFilename);
+		}
+		m_reloadPlugins = true;
+		break;
+	}
+
 	case IFileChangeListener::eChangeType_RenamedNewName:
 	case IFileChangeListener::eChangeType_Modified:
 	{
@@ -229,9 +242,203 @@ void CCSharpEditorPlugin::UpdatePluginsAndSolution()
 
 void CCSharpEditorPlugin::RegenerateSolution() const
 {
-	if (IProjectManager* pProjectManager = gEnv->pSystem->GetIProjectManager())
+	IProjectManager* pProjectManager = gEnv->pSystem->GetIProjectManager();
+	if (!pProjectManager)
 	{
-		pProjectManager->RegenerateCSharpSolution(pProjectManager->GetCurrentAssetDirectoryRelative());
+		return;
+	}
+
+	const char* szAssetsDirectory = pProjectManager->GetCurrentAssetDirectoryRelative();
+	const char* szDirectory = pProjectManager->GetCurrentProjectDirectoryAbsolute();
+	std::vector<string> sourceFiles;
+	FindSourceFilesInDirectoryRecursive(szAssetsDirectory, "*.cs", sourceFiles);
+	if (sourceFiles.size() == 0)
+	{
+		return;
+	}
+
+	string includes;
+	for (const string& sourceFile : sourceFiles)
+	{
+		string sourceFileRelativePath = sourceFile;
+
+		const auto fullpath = PathUtil::ToUnixPath(sourceFile.c_str());
+		const auto rootDataFolder = PathUtil::ToUnixPath(PathUtil::AddSlash(szDirectory));
+		if (fullpath.length() > rootDataFolder.length() && strnicmp(fullpath.c_str(), rootDataFolder.c_str(), rootDataFolder.length()) == 0)
+		{
+			sourceFileRelativePath = fullpath.substr(rootDataFolder.length(), fullpath.length() - rootDataFolder.length());
+		}
+
+		includes += "    <Compile Include=\"" + PathUtil::ToDosPath(sourceFileRelativePath) + "\" />\n";
+	}
+
+	string pluginReferences;
+	uint16 pluginCount = pProjectManager->GetPluginCount();
+	for(uint16 i = 0; i < pluginCount; ++i)
+	{
+		Cry::IPluginManager::EType type;
+		DynArray<EPlatform> platforms;
+		string pluginPath;
+		pProjectManager->GetPluginInfo(i, type, pluginPath, platforms);
+		if (type != Cry::IPluginManager::EType::Managed)
+		{
+			continue;
+		}
+
+		bool include = platforms.empty();
+		if (!include)
+		{
+			for (EPlatform platform : platforms)
+			{
+				include = platform == EPlatform::Current;
+				if (include)
+				{
+					break;
+				}
+			}
+		}
+
+		if (include)
+		{
+			string pluginName = PathUtil::GetFileName(pluginPath);
+			pluginReferences += "    <Reference Include=\"" + pluginName + "\">\n"
+				"      <HintPath>" + pluginPath + "</HintPath>\n"
+				"      <Private>False</Private>\n"
+				"    </Reference>\n";
+		}
+	}
+
+	string csProjName = "Game";
+	string csProjFilename = csProjName + ".csproj";
+
+	string projectFilePath = PathUtil::Make(szDirectory, csProjFilename.c_str());
+	CCryFile projectFile(projectFilePath.c_str(), "wb", ICryPak::FLAGS_NO_LOWCASE);
+	if (projectFile.GetHandle() != nullptr)
+	{
+		CryGUID guid = pProjectManager->GetCurrentProjectGUID();
+		string projectName = pProjectManager->GetCurrentProjectName();
+		string projectFilePath = pProjectManager->GetProjectFilePath();
+		string projectFileContents = pProjectManager->LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedProjectTemplate.csproj.txt", [guid, projectName, projectFilePath, szDirectory, includes, pluginReferences](const char* szAlias) -> string
+		{
+			if (!strcmp(szAlias, "csproject_guid"))
+			{
+				char buff[40];
+				guid.ToString(buff);
+
+				return buff;
+			}
+			else if (!strcmp(szAlias, "project_name"))
+			{
+				return projectName;
+			}
+			else if (!strcmp(szAlias, "engine_bin_directory"))
+			{
+				char szEngineExecutableFolder[_MAX_PATH];
+				CryGetExecutableFolder(CRY_ARRAY_COUNT(szEngineExecutableFolder), szEngineExecutableFolder);
+
+				return szEngineExecutableFolder;
+			}
+			else if (!strcmp(szAlias, "project_file"))
+			{
+				return projectFilePath;
+			}
+			else if (!strcmp(szAlias, "output_path"))
+			{
+				return PathUtil::Make(szDirectory, "bin");
+			}
+			else if (!strcmp(szAlias, "includes"))
+			{
+				return includes;
+			}
+			else if (!strcmp(szAlias, "managed_plugin_references"))
+			{
+				return pluginReferences;
+			}
+
+			CRY_ASSERT_MESSAGE(false, "Unhandled alias!");
+			return "";
+		});
+
+		projectFile.Write(projectFileContents.data(), projectFileContents.size());
+
+		string solutionFilePath = GetCSharpSolutionPath();
+		CCryFile solutionFile(solutionFilePath.c_str(), "wb", ICryPak::FLAGS_NO_LOWCASE);
+		if (solutionFile.GetHandle() != nullptr)
+		{
+			CryGUID guid = pProjectManager->GetCurrentProjectGUID();
+			string solutionFileContents = pProjectManager->LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedSolutionTemplate.sln.txt", [guid, csProjFilename, csProjName](const char* szAlias) -> string
+			{
+				if (!strcmp(szAlias, "project_name"))
+				{
+					return csProjName;
+				}
+				else  if (!strcmp(szAlias, "csproject_name"))
+				{
+					return csProjFilename;
+				}
+				else if (!strcmp(szAlias, "csproject_guid"))
+				{
+					return guid.ToString().MakeUpper();
+				}
+				else if (!strcmp(szAlias, "solution_guid"))
+				{
+					// Normally the solution guid would be a GUID that is deterministic but unique to the build tree.
+					return "0C7CC5CD-410D-443B-8223-108F849EAA5C";
+				}
+
+				CRY_ASSERT_MESSAGE(false, "Unhandled alias!");
+				return "";
+			});
+
+			solutionFile.Write(solutionFileContents.data(), solutionFileContents.size());
+		}
+		else
+		{
+			CRY_ASSERT_MESSAGE(false, "Unable to create C# solution file!");
+		}
+	}
+	else
+	{
+		CRY_ASSERT_MESSAGE(false, "Unable to create C# project file!");
+	}
+}
+
+void CCSharpEditorPlugin::FindSourceFilesInDirectoryRecursive(const char* szDirectory, const char* szExtension, std::vector<string>& sourceFiles) const
+{
+	string searchPath = PathUtil::Make(szDirectory, szExtension);
+
+	_finddata_t fd;
+	intptr_t handle = gEnv->pCryPak->FindFirst(searchPath, &fd, ICryPak::FLAGS_NEVER_IN_PAK);
+	if (handle != -1)
+	{
+		do
+		{
+			sourceFiles.emplace_back(PathUtil::Make(szDirectory, fd.name));
+		} while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
+
+		gEnv->pCryPak->FindClose(handle);
+	}
+
+	// Find additional directories
+	searchPath = PathUtil::Make(szDirectory, "*.*");
+
+	handle = gEnv->pCryPak->FindFirst(searchPath, &fd, ICryPak::FLAGS_NEVER_IN_PAK);
+	if (handle != -1)
+	{
+		do
+		{
+			if (fd.attrib & _A_SUBDIR)
+			{
+				if (strcmp(fd.name, ".") != 0 && strcmp(fd.name, "..") != 0)
+				{
+					string sDirectory = PathUtil::Make(szDirectory, fd.name);
+
+					FindSourceFilesInDirectoryRecursive(sDirectory, szExtension, sourceFiles);
+				}
+			}
+		} while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
+
+		gEnv->pCryPak->FindClose(handle);
 	}
 }
 
@@ -283,7 +490,7 @@ bool CCSharpEditorPlugin::OpenCSharpSolution()
 	// No active process found, so open the solution file with the selected text editor.
 	if (!textEditor.empty())
 	{
-		string solutionFile = PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "game.sln");
+		string solutionFile = GetCSharpSolutionPath();
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
@@ -319,7 +526,7 @@ bool CCSharpEditorPlugin::OpenFileInSolution(const string& filePath)
 	// No active process found, so open the solution file with the selected text editor.
 	if (!textEditor.empty())
 	{
-		string solutionFile = PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "game.sln");
+		string solutionFile = GetCSharpSolutionPath();
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
@@ -367,7 +574,7 @@ bool CCSharpEditorPlugin::OpenFileInSolution(const string& filePath, const int l
 	// No active process found, so open the solution file with the selected text editor.
 	if (!textEditor.empty())
 	{
-		string solutionFile = PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "game.sln");
+		string solutionFile = GetCSharpSolutionPath();
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
@@ -398,7 +605,7 @@ bool CCSharpEditorPlugin::OpenFileInTextEditor(const string& filePath) const
 	// No active process found, so open the solution file with the selected text editor.
 	if (!textEditor.empty())
 	{
-		string solutionFile = PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "game.sln");
+		string solutionFile = GetCSharpSolutionPath();
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
@@ -438,7 +645,7 @@ bool CCSharpEditorPlugin::OpenFileInTextEditor(const string& filePath, const int
 	// No active process found, so open the solution file with the selected text editor.
 	if (!textEditor.empty())
 	{
-		string solutionFile = PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "game.sln");
+		string solutionFile = GetCSharpSolutionPath();
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();

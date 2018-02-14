@@ -66,7 +66,8 @@ bool CCompiledMonoLibrary::Load(int loadIndex)
 		{
 			string path;
 			Cry::IPluginManager::EType type;
-			projectManager->GetPluginInfo(i, type, path);
+			DynArray<EPlatform> platforms;
+			projectManager->GetPluginInfo(i, type, path, platforms);
 			if (type == Cry::IPluginManager::EType::Managed)
 			{
 				pluginPaths.emplace_back(path);

@@ -59,6 +59,11 @@ const char* CProjectManager::GetCurrentAssetDirectoryAbsolute() const
 	return m_project.assetDirectoryFullPath;
 }
 
+const char* CProjectManager::GetProjectFilePath() const
+{
+	return m_project.filePath;
+}
+
 void CProjectManager::StoreConsoleVariable(const char* szCVarName, const char* szValue)
 {
 	for (auto it = m_project.consoleVariables.begin(); it != m_project.consoleVariables.end(); ++it)
@@ -557,196 +562,14 @@ string CProjectManager::LoadTemplateFile(const char* szPath, std::function<strin
 	return finalText;
 }
 
-void CProjectManager::RegenerateCSharpSolution(const char* szDirectory) const
-{
-	std::vector<string> sourceFiles;
-	FindSourceFilesInDirectoryRecursive(szDirectory, "*.cs", sourceFiles);
-	if (sourceFiles.size() == 0)
-	{
-		return;
-	}
-
-	string includes;
-	for (const string& sourceFile : sourceFiles)
-	{
-		string sourceFileRelativePath = sourceFile;
-
-		const auto fullpath = PathUtil::ToUnixPath(sourceFile.c_str());
-		const auto rootDataFolder = PathUtil::ToUnixPath(PathUtil::AddSlash(m_project.rootDirectory));
-		if (fullpath.length() > rootDataFolder.length() && strnicmp(fullpath.c_str(), rootDataFolder.c_str(), rootDataFolder.length()) == 0)
-		{
-			sourceFileRelativePath = fullpath.substr(rootDataFolder.length(), fullpath.length() - rootDataFolder.length());
-		}
-
-		includes += "    <Compile Include=\"" + PathUtil::ToDosPath(sourceFileRelativePath) + "\" />\n";
-	}
-
-	string pluginReferences;
-	const std::vector<SPluginDefinition> plugins = m_project.plugins;
-	for (const SPluginDefinition& plugin : plugins)
-	{
-		if (plugin.type != Cry::IPluginManager::EType::Managed)
-		{
-			continue;
-		}
-
-		bool include = plugin.platforms.empty();
-		if (!include)
-		{
-			for (EPlatform platform : plugin.platforms)
-			{
-				include = platform == EPlatform::Current;
-				if (include)
-				{
-					break;
-				}
-			}
-		}
-		
-		if (include)
-		{
-			string pluginName = PathUtil::GetFileName(plugin.path);
-			string path = plugin.path;
-			pluginReferences += "    <Reference Include=\"" + pluginName + "\">\n"
-			                    "      <HintPath>" + path + "</HintPath>\n"
-			                    "      <Private>False</Private>\n"
-			                    "    </Reference>\n";
-		}
-	}
-
-	string csProjName = "Game";
-	string csProjFilename = csProjName + ".csproj";
-
-	string projectFilePath = PathUtil::Make(m_project.rootDirectory, csProjFilename.c_str());
-	CCryFile projectFile(projectFilePath.c_str(), "wb", ICryPak::FLAGS_NO_LOWCASE);
-	if (projectFile.GetHandle() != nullptr)
-	{
-		string projectFileContents = LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedProjectTemplate.csproj.txt", [this, includes, pluginReferences](const char* szAlias) -> string
-		{
-			if (!strcmp(szAlias, "csproject_guid"))
-			{
-				char buff[40];
-				m_project.guid.ToString(buff);
-
-				return buff;
-			}
-			else if (!strcmp(szAlias, "project_name"))
-			{
-				return m_project.name;
-			}
-			else if (!strcmp(szAlias, "engine_bin_directory"))
-			{
-				char szEngineExecutableFolder[_MAX_PATH];
-				CryGetExecutableFolder(CRY_ARRAY_COUNT(szEngineExecutableFolder), szEngineExecutableFolder);
-
-				return szEngineExecutableFolder;
-			}
-			else if (!strcmp(szAlias, "project_file"))
-			{
-				return m_project.filePath;
-			}
-			else if (!strcmp(szAlias, "output_path"))
-			{
-				return PathUtil::Make(m_project.rootDirectory, "bin");
-			}
-			else if (!strcmp(szAlias, "includes"))
-			{
-				return includes;
-			}
-			else if (!strcmp(szAlias, "managed_plugin_references"))
-			{
-				return pluginReferences;
-			}
-
-			CRY_ASSERT_MESSAGE(false, "Unhandled alias!");
-			return "";
-		});
-
-		projectFile.Write(projectFileContents.data(), projectFileContents.size());
-
-		string solutionFilePath = PathUtil::Make(m_project.rootDirectory, "Game.sln");
-		CCryFile solutionFile(solutionFilePath.c_str(), "wb", ICryPak::FLAGS_NO_LOWCASE);
-		if (solutionFile.GetHandle() != nullptr)
-		{
-			string solutionFileContents = LoadTemplateFile("%ENGINE%/EngineAssets/Templates/ManagedSolutionTemplate.sln.txt", [this, csProjFilename, csProjName](const char* szAlias) -> string
-			{
-				if (!strcmp(szAlias, "project_name"))
-				{
-					return csProjName;
-				}
-				else  if (!strcmp(szAlias, "csproject_name"))
-				{
-					return csProjFilename;
-				}
-				else if (!strcmp(szAlias, "csproject_guid"))
-				{
-					return m_project.guid.ToString().MakeUpper();
-				}
-				else if (!strcmp(szAlias, "solution_guid"))
-				{
-					// Normally the solution guid would be a GUID that is deterministic but unique to the build tree.
-					return "0C7CC5CD-410D-443B-8223-108F849EAA5C";
-				}
-
-				CRY_ASSERT_MESSAGE(false, "Unhandled alias!");
-				return "";
-			});
-
-			solutionFile.Write(solutionFileContents.data(), solutionFileContents.size());
-		}
-		else
-		{
-			CRY_ASSERT_MESSAGE(false, "Unable to create C# solution file!");
-		}
-	}
-	else
-	{
-		CRY_ASSERT_MESSAGE(false, "Unable to create C# project file!");
-	}
-}
-
-void CProjectManager::FindSourceFilesInDirectoryRecursive(const char* szDirectory, const char* szExtension, std::vector<string>& sourceFiles) const
-{
-	string searchPath = PathUtil::Make(szDirectory, szExtension);
-
-	_finddata_t fd;
-	intptr_t handle = gEnv->pCryPak->FindFirst(searchPath, &fd, ICryPak::FLAGS_NEVER_IN_PAK);
-	if (handle != -1)
-	{
-		do
-		{
-			sourceFiles.emplace_back(PathUtil::Make(szDirectory, fd.name));
-		} while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
-
-		gEnv->pCryPak->FindClose(handle);
-	}
-
-	// Find additional directories
-	searchPath = PathUtil::Make(szDirectory, "*.*");
-
-	handle = gEnv->pCryPak->FindFirst(searchPath, &fd, ICryPak::FLAGS_NEVER_IN_PAK);
-	if (handle != -1)
-	{
-		do
-		{
-			if (fd.attrib & _A_SUBDIR)
-			{
-				if (strcmp(fd.name, ".") != 0 && strcmp(fd.name, "..") != 0)
-				{
-					string sDirectory = PathUtil::Make(szDirectory, fd.name);
-
-					FindSourceFilesInDirectoryRecursive(sDirectory, szExtension, sourceFiles);
-				}
-			}
-		} while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
-
-		gEnv->pCryPak->FindClose(handle);
-	}
-}
-
-void CProjectManager::GetPluginInfo(uint16 index, Cry::IPluginManager::EType& typeOut, string& pathOut) const
+void CProjectManager::GetPluginInfo(uint16 index, Cry::IPluginManager::EType& typeOut, string& pathOut, DynArray<EPlatform>& platformsOut) const
 {
 	auto plugin = m_project.plugins[index];
 	pathOut = plugin.path;
 	typeOut = plugin.type;
+	platformsOut.reserve(plugin.platforms.size());
+	for (EPlatform platform : plugin.platforms)
+	{
+		platformsOut.push_back(platform);
+	}
 }
