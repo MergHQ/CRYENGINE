@@ -767,12 +767,6 @@ void CSystemControl::AddRawXMLConnection(XmlNodeRef const xmlNode, bool const is
 }
 
 //////////////////////////////////////////////////////////////////////////
-XMLNodeList& CSystemControl::GetRawXMLConnections(int const platformIndex /*= -1*/)
-{
-	return m_connectionNodes[platformIndex];
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSystemControl::MatchRadiusToAttenuation()
 {
 	if (g_pEditorImpl != nullptr)

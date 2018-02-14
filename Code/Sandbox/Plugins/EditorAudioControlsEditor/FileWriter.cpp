@@ -363,52 +363,11 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CSystemControl* cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* const pControl, const int platformIndex)
+void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* const pControl, int const platformIndex)
 {
-	XMLNodeList& otherNodes = pControl->GetRawXMLConnections(platformIndex);
+	size_t const numConnections = pControl->GetConnectionCount();
 
-	XMLNodeList::const_iterator end = std::remove_if(otherNodes.begin(), otherNodes.end(), [](SRawConnectionData const& node) { return node.isValid; });
-	otherNodes.erase(end, otherNodes.end());
-
-	for (auto const& node : otherNodes)
-	{
-		// Don't add identical nodes!
-		bool shouldAddNode = true;
-		XmlNodeRef const tempNode = pNode->findChild(node.xmlNode->getTag());
-
-		if (tempNode != nullptr)
-		{
-			int const numAttributes1 = tempNode->getNumAttributes();
-			int const numAttributes2 = node.xmlNode->getNumAttributes();
-
-			if (numAttributes1 == numAttributes2)
-			{
-				char const* key1 = nullptr, * val1 = nullptr, * key2 = nullptr, * val2 = nullptr;
-				shouldAddNode = false;
-
-				for (int i = 0; i < numAttributes1; ++i)
-				{
-					tempNode->getAttributeByIndex(i, &key1, &val1);
-					node.xmlNode->getAttributeByIndex(i, &key2, &val2);
-
-					if ((_stricmp(key1, key2) != 0) || (_stricmp(val1, val2) != 0))
-					{
-						shouldAddNode = true;
-						break;
-					}
-				}
-			}
-		}
-
-		if (shouldAddNode)
-		{
-			pNode->addChild(node.xmlNode);
-		}
-	}
-
-	size_t const size = pControl->GetConnectionCount();
-
-	for (size_t i = 0; i < size; ++i)
+	for (size_t i = 0; i < numConnections; ++i)
 	{
 		ConnectionPtr const pConnection = pControl->GetConnectionAt(i);
 
@@ -420,8 +379,52 @@ void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* 
 
 				if (pChild != nullptr)
 				{
-					pNode->addChild(pChild);
-					pControl->AddRawXMLConnection(pChild, true, platformIndex);
+					// Don't add identical nodes!
+					bool shouldAddNode = true;
+					int const numNodeChilds = pNode->getChildCount();
+
+					for (int j = 0; j < numNodeChilds; ++j)
+					{
+						XmlNodeRef const pTempNode = pNode->getChild(j);
+
+						if ((pTempNode != nullptr) && (string(pTempNode->getTag()) == string(pChild->getTag())))
+						{
+							int const numAttributes1 = pTempNode->getNumAttributes();
+							int const numAttributes2 = pChild->getNumAttributes();
+
+							if (numAttributes1 == numAttributes2)
+							{
+								shouldAddNode = false;
+								char const* key1 = nullptr;
+								char const* val1 = nullptr;
+								char const* key2 = nullptr;
+								char const* val2 = nullptr;
+
+								for (int k = 0; k < numAttributes1; ++k)
+								{
+									pTempNode->getAttributeByIndex(k, &key1, &val1);
+									pChild->getAttributeByIndex(k, &key2, &val2);
+
+									if ((_stricmp(key1, key2) != 0) || (_stricmp(val1, val2) != 0))
+									{
+										shouldAddNode = true;
+										break;
+									}
+								}
+
+								if (!shouldAddNode)
+								{
+									break;
+								}
+							}
+						}
+					}
+
+					if (shouldAddNode)
+					{
+						pNode->addChild(pChild);
+						pControl->AddRawXMLConnection(pChild, true, platformIndex);
+					}
 				}
 			}
 		}
