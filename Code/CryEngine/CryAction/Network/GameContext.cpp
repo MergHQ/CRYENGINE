@@ -199,6 +199,7 @@ void CGameContext::Init(INetContext* pNetContext)
 	m_pNetContext->DeclareAspect("Script", eEA_Script, 0);
 
 	m_pNetContext->DeclareAspect("GameClientA", eEA_GameClientA, eAF_Delegatable);
+	m_pNetContext->DeclareAspect("eEA_Aspect30", eEA_Aspect30, eAF_Delegatable);
 	m_pNetContext->DeclareAspect("PlayerUpdate", eEA_Aspect31, eAF_Delegatable);
 	m_pNetContext->DeclareAspect("GameServerA", eEA_GameServerA, 0);
 	m_pNetContext->DeclareAspect("GameClientB", eEA_GameClientB, eAF_Delegatable);
@@ -626,7 +627,13 @@ bool CGameContext::InitChannelEstablishmentTasks(IContextEstablisher* pEst, INet
 	}
 
 	if (isClient && !gEnv->IsEditor() && !gEnv->bMultiplayer && !(m_flags & eGSF_DemoPlayback))
-		AddInitialSaveGame(pEst, eCVS_InGame);
+	{
+		ICVar* pCVar = gEnv->pConsole->GetCVar("g_EnableLoadSave");
+		if (pCVar && pCVar->GetIVal() == 1)
+		{
+			AddInitialSaveGame(pEst, eCVS_InGame);
+		}
+	}
 
 	if (isClient)
 	{
@@ -651,6 +658,7 @@ bool CGameContext::InitChannelEstablishmentTasks(IContextEstablisher* pEst, INet
 	if (pServerChannel)
 		pServerChannel->AddUpdateLevelLoaded(pEst);
 
+	AddGameChannelLoadingTasks(pEst, isServer);
 	return true;
 }
 

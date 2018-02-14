@@ -921,7 +921,11 @@ void CAnimatedCharacter::RequestPhysicalEntityMovement(const QuatT& wantedEntMov
 			{
 				m_entLocation.q = newRotation;
 
-				pEntity->SetRotation(newRotation, { ENTITY_XFORM_USER, ENTITY_XFORM_NOT_REREGISTER });
+				// don't call SetRotation() no change required since this call dirties eEA_Physics network aspect and produces unneeded spikes in network traffic
+				if (pEntity->GetRotation() != newRotation)
+				{
+					pEntity->SetRotation(newRotation, { ENTITY_XFORM_USER, ENTITY_XFORM_NOT_REREGISTER });
+				}
 			}
 		}
 

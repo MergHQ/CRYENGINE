@@ -507,6 +507,14 @@ struct IGameFrameworkEngineModule : public Cry::IDefaultModule
 	CRYINTERFACE_DECLARE_GUID(IGameFrameworkEngineModule, "CE1E93CB-2665-4F76-809D-070F11418EB9"_cry_guid);
 };
 
+struct IGameLevelLoadListener
+{
+	virtual ~IGameLevelLoadListener(){}
+	virtual EContextEstablishTaskResult OnLoadingStepClient(EContextViewState currentState) = 0;
+	virtual EContextEstablishTaskResult OnLoadingStepServer(EContextViewState currentState, uint16 channelId) = 0;
+	virtual void OnLoadingFailed(bool server, bool hasEntered) = 0;
+};
+
 //! Interface which exposes the CryAction subsystems.
 struct IGameFramework
 {
@@ -948,6 +956,8 @@ struct IGameFramework
 		return cryinterface_cast<ExtensionInterface>(QueryExtensionInterfaceById(interfaceId)).get();
 	}
 
+	// sets game level loader
+	virtual void SetGameLevelLoadListener(IGameLevelLoadListener* pTasks) = 0;
 	virtual void AddNetworkedClientListener(INetworkedClientListener& listener) = 0;
 	virtual void RemoveNetworkedClientListener(INetworkedClientListener& listener) = 0;
 

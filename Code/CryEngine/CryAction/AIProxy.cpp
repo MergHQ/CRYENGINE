@@ -216,6 +216,20 @@ bool CAIProxy::QueryBodyInfo(SAIBodyInfo& bodyInfo)
 
 		return true;
 	}
+	else
+	{
+		// hardcoded path for players to avoid creation of useless movement controller proxy in game code
+		// in the future AIProxy will be moved to game dll and this code should be implemented properly
+
+		const IActor* pActor = GetActor();
+		const Quat rot = pActor->GetEntity()->GetWorldRotation();
+		const Vec3 pos = pActor->GetEntity()->GetWorldPos();
+
+		bodyInfo.vEyeDir = rot.GetColumn1();
+		bodyInfo.vEyePos = pos + Vec3(0.0f, 0.0f, 1.7f);
+		bodyInfo.vFireDir = bodyInfo.vEyeDir;
+		bodyInfo.vFirePos = bodyInfo.vEyePos;
+	}
 	return false;
 }
 
@@ -310,14 +324,41 @@ IWeapon* CAIProxy::QueryCurrentWeapon(EntityId& currentWeaponId)
 	return GetCurrentWeapon(currentWeaponId);
 }
 
+EntityId CAIProxy::GetActorCurrentWeapon(IActor& actor)
+{
+	// try to extract actor extension first
+	IGameObject* pGameObject = actor.GetGameObject();
+	if (pGameObject)
+	{
+		if (pGameObject->QueryExtension("ActorExtension"))
+			return actor.GetGrabbedEntityId(); // use grabbed entity getter to avoid IActor interface patching
+	}
+
+	// if failed - fallback to GameSDK implementation
+	const IItem* pItem = actor.GetCurrentItem();
+	return pItem ? pItem->GetEntityId() : INVALID_ENTITYID;
+}
+
+IWeapon* CAIProxy::GetWeaponByEntityId(EntityId eid)
+{
+	// try to extract weapon proxy first
+	if (IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(eid))
+	{
+		IGameObjectExtension* pExtension = pGameObject->QueryExtension("WeaponProxyExtension");
+		IWeaponProxyExtension* pProxyExtension = static_cast<IWeaponProxyExtension*>(pExtension);
+		return static_cast<IWeapon*>(pProxyExtension);
+	}
+
+	// if failed - fallback to GameSDK implementation
+	const IItemSystem* pItemSystem = CCryAction::GetCryAction()->GetIItemSystem();
+	IItem* pItem = pItemSystem ? pItemSystem->GetItem(eid) : nullptr;
+	return pItem ? pItem->GetIWeapon() : nullptr;
+}
+
 IWeapon* CAIProxy::GetCurrentWeapon(EntityId& currentWeaponId) const
 {
 	currentWeaponId = m_currentWeaponId;
-
-	IItem* pItem = CCryAction::GetCryAction()->GetIItemSystem()->GetItem(m_currentWeaponId);
-	IWeapon* pWeapon = (pItem ? pItem->GetIWeapon() : NULL);
-
-	return pWeapon;
+	return GetWeaponByEntityId(m_currentWeaponId);
 }
 
 IWeapon* CAIProxy::GetSecWeapon(const ERequestedGrenadeType prefGrenadeType, ERequestedGrenadeType* pReturnedGrenadeType, EntityId* const pSecondaryWeaponId) const
@@ -394,12 +435,12 @@ IWeapon* CAIProxy::GetSecWeapon(const ERequestedGrenadeType prefGrenadeType, ERe
 	// Get weapon if we have something in our inventory
 	if (itemEntity)
 	{
-		if (IItem* pItem = CCryAction::GetCryAction()->GetIItemSystem()->GetItem(itemEntity))
+		if (IWeapon* pWeapon = GetWeaponByEntityId(itemEntity))
 		{
 			if (pSecondaryWeaponId)
-				*pSecondaryWeaponId = pItem->GetEntityId();
+				*pSecondaryWeaponId = itemEntity;
 
-			return pItem->GetIWeapon();
+			return pWeapon;
 		}
 	}
 
@@ -1038,31 +1079,27 @@ void CAIProxy::UpdateCurrentWeapon()
 	EntityId currentWeaponId = 0;
 	m_CurrentWeaponCanFire = true;
 
-	IItemSystem* pItemSystem = CCryAction::GetCryAction()->GetIItemSystem();
-	//assert(pItemSystem);
+	const IItemSystem* pItemSystem = CCryAction::GetCryAction()->GetIItemSystem();
 
 	IActor* pActor = GetActor();
 	if (pActor)
 	{
-		IItem* pItem = NULL;
-
 		if (IVehicle* pVehicle = pActor->GetLinkedVehicle())
 		{
 			// mounted weapon( gunner seat )
 			SVehicleWeaponInfo weaponInfo;
 			if (pVehicle->GetCurrentWeaponInfo(weaponInfo, m_pGameObject->GetEntityId(), m_UseSecondaryVehicleWeapon))
 			{
-				pItem = CCryAction::GetCryAction()->GetIItemSystem()->GetItem(weaponInfo.entityId);
+				currentWeaponId = weaponInfo.entityId;
 				m_CurrentWeaponCanFire = weaponInfo.bCanFire;
 			}
 		}
 		else
 		{
-			pItem = pActor->GetCurrentItem();
+			currentWeaponId = GetActorCurrentWeapon(*pActor);
 		}
 
-		pCurrentWeapon = pItem ? pItem->GetIWeapon() : NULL;
-		currentWeaponId = (pCurrentWeapon ? pItem->GetEntityId() : 0);
+		pCurrentWeapon = GetWeaponByEntityId(currentWeaponId);
 	}
 
 	bool updateCachedWeaponDescriptor = false;
@@ -1072,9 +1109,7 @@ void CAIProxy::UpdateCurrentWeapon()
 	{
 		updateCachedWeaponDescriptor = true;
 
-		IItem* pOldItem = pItemSystem->GetItem(m_currentWeaponId);
-		IWeapon* pOldWeapon = pOldItem ? pOldItem->GetIWeapon() : NULL;
-		if (pOldWeapon)
+		if (IWeapon* pOldWeapon = GetWeaponByEntityId(m_currentWeaponId))
 			pOldWeapon->StopFire();
 
 		m_currentWeaponId = currentWeaponId;
@@ -2035,9 +2070,10 @@ void CAIProxy::RemoveWeaponListener(IWeapon* pWeapon)
 
 IWeapon* CAIProxy::GetWeaponFromId(EntityId entityId)
 {
-	IItem* pItem = CCryAction::GetCryAction()->GetIItemSystem()->GetItem(entityId);
+	const IItemSystem* pItemSystem = CCryAction::GetCryAction()->GetIItemSystem();
+	IItem* pItem = pItemSystem ? pItemSystem->GetItem(entityId) : nullptr;
 
-	return pItem ? pItem->GetIWeapon() : NULL;
+	return pItem ? pItem->GetIWeapon() : nullptr;
 }
 
 bool CAIProxy::IsInCloseMeleeRange(IAIObject* aiObject, IAIActor* aiActor) const

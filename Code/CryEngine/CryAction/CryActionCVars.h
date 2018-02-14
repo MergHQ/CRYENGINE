@@ -70,6 +70,9 @@ public:
 
 	int g_enableMergedMeshRuntimeAreas;
 
+	int g_useProfileManager;
+	int g_legacyItemSystem;
+
 	// AI stances
 	ICVar* ag_defaultAIStance;
 

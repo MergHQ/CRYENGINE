@@ -322,6 +322,7 @@ void CAnimatedCharacter::InitVars()
 	m_bPendingRagdoll = false;
 	m_pMannequinAGState = NULL;
 	m_proxiesInitialized = false;
+	m_lastACFirstPerson = false;
 
 	for (int layer = 0; layer < eAnimationGraphLayer_COUNT; ++layer)
 	{
@@ -459,9 +460,18 @@ bool CAnimatedCharacter::InitializeMannequin()
 	if (m_pActionController)
 	{
 		IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
-		m_pAnimDatabase3P = mannequinSys.GetAnimationDatabaseManager().Load(mannequinSetup.animDatabase3P);
-		m_pAnimDatabase1P = mannequinSys.GetAnimationDatabaseManager().Load(mannequinSetup.animDatabase1P);
-		m_pSoundDatabase = mannequinSys.GetAnimationDatabaseManager().Load(mannequinSetup.soundDatabase);
+		if (!mannequinSetup.animDatabase3P.empty())
+		{
+			m_pAnimDatabase3P = mannequinSys.GetAnimationDatabaseManager().Load(mannequinSetup.animDatabase3P);
+		}
+		if (!mannequinSetup.animDatabase1P.empty())
+		{
+			m_pAnimDatabase1P = mannequinSys.GetAnimationDatabaseManager().Load(mannequinSetup.animDatabase1P);
+		}
+		if (!mannequinSetup.soundDatabase.empty())
+		{
+			m_pSoundDatabase = mannequinSys.GetAnimationDatabaseManager().Load(mannequinSetup.soundDatabase);
+		}
 	}
 
 	m_useMannequinAGState = mannequinSetup.useMannequinAGState;

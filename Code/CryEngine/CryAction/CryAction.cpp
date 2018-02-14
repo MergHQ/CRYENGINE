@@ -184,7 +184,7 @@
 #include <CryFlowGraph/IFlowBaseNode.h>
 
 #if defined(_LIB) && !defined(DISABLE_LEGACY_GAME_DLL)
-extern "C" IGameStartup* CreateGameStartup();
+extern "C" IGameStartup * CreateGameStartup();
 #endif //_LIB
 
 #define DEFAULT_BAN_TIMEOUT     (30.0f)
@@ -1788,7 +1788,7 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	m_pGFListeners->reserve(20);
 	m_validListeners.reserve(m_pGFListeners->capacity());
 
-	ModuleInitISystem(m_pSystem, "CryAction");  // Needed by GetISystem();
+	ModuleInitISystem(m_pSystem, "CryAction"); // Needed by GetISystem();
 
 	// Flow nodes are registered only when compiled as dynamic library
 	CryRegisterFlowNodes();
@@ -1874,8 +1874,14 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 
 	InlineInitializationProcessing("CCryAction::Init CLevelSystem");
 
+	m_pNetworkCVars = new CNetworkCVars();
+	m_pCryActionCVars = new CCryActionCVars();
+
 	m_pActorSystem = new CActorSystem(m_pSystem, m_pEntitySystem);
-	m_pItemSystem = new CItemSystem(this, m_pSystem);
+	if (CCryActionCVars::Get().g_legacyItemSystem)
+	{
+		m_pItemSystem = new CItemSystem(this, m_pSystem);
+	}
 	m_pActionMapManager = new CActionMapManager(gEnv->pInput);
 
 	InlineInitializationProcessing("CCryAction::Init CActionMapManager");
@@ -1888,9 +1894,6 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	m_pVehicleSystem = new CVehicleSystem(m_pSystem, m_pEntitySystem);
 
 	m_pSharedParamsManager = new CSharedParamsManager;
-
-	m_pNetworkCVars = new CNetworkCVars();
-	m_pCryActionCVars = new CCryActionCVars();
 
 	if (m_pCryActionCVars->g_gameplayAnalyst)
 		m_pGameplayAnalyst = new CGameplayAnalyst();
@@ -1927,22 +1930,25 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 		m_pCallbackTimer = new CallbackTimer();
 	m_pPersistantDebug = new CPersistantDebug();
 	m_pPersistantDebug->Init();
+	if (CCryActionCVars::Get().g_useProfileManager)
+	{
 #if !CRY_PLATFORM_DESKTOP
 	#if PROFILE_CONSOLE_NO_SAVE
-	// Used for demos
-	m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplNoSave());
+		// Used for demos
+		m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplNoSave());
 	#else
 		#if CRY_PLATFORM_DURANGO
-	m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplDurango());
+		m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplDurango());
 		#elif CRY_PLATFORM_ORBIS
-	m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplOrbis());
+		m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplOrbis());
 		#else
-	m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplConsole());
+		m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplConsole());
 		#endif
 	#endif
 #else
-	m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplFSDir());
+		m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplFSDir());
 #endif
+	}
 	m_pDialogSystem = new CDialogSystem();
 	m_pDialogSystem->Init();
 
@@ -1964,7 +1970,10 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 		m_pVehicleSystem->Init();
 	}
 
-	REGISTER_FACTORY((IGameFramework*)this, "Inventory", CInventory, false);
+	if (CCryActionCVars::Get().g_legacyItemSystem)
+	{
+		REGISTER_FACTORY((IGameFramework*)this, "Inventory", CInventory, false);
+	}
 
 	if (m_pLevelSystem && m_pItemSystem)
 	{
@@ -2327,7 +2336,10 @@ void CCryAction::InitScriptBinds()
 
 	m_pScriptNet = new CScriptBind_Network(m_pSystem, this);
 	m_pScriptA = new CScriptBind_Action(this);
-	m_pScriptIS = new CScriptBind_ItemSystem(m_pSystem, m_pItemSystem, this);
+	if (CCryActionCVars::Get().g_legacyItemSystem)
+	{
+		m_pScriptIS = new CScriptBind_ItemSystem(m_pSystem, m_pItemSystem, this);
+	}
 	m_pScriptAS = new CScriptBind_ActorSystem(m_pSystem, this);
 	m_pScriptAMM = new CScriptBind_ActionMapManager(m_pSystem, m_pActionMapManager);
 
@@ -2335,7 +2347,10 @@ void CCryAction::InitScriptBinds()
 	m_pScriptBindVehicle = new CScriptBind_Vehicle(m_pSystem, this);
 	m_pScriptBindVehicleSeat = new CScriptBind_VehicleSeat(m_pSystem, this);
 
-	m_pScriptInventory = new CScriptBind_Inventory(m_pSystem, this);
+	if (CCryActionCVars::Get().g_legacyItemSystem)
+	{
+		m_pScriptInventory = new CScriptBind_Inventory(m_pSystem, this);
+	}
 	m_pScriptBindDS = new CScriptBind_DialogSystem(m_pSystem, m_pDialogSystem);
 	m_pScriptBindUIAction = new CScriptBind_UIAction();
 }
@@ -4913,7 +4928,7 @@ void CCryAction::EnableVoiceRecording(const bool enable)
 
 IDebugHistoryManager* CCryAction::CreateDebugHistoryManager()
 {
-	return new CDebugHistoryManager();
+	return gEnv->pRenderer ? new CDebugHistoryManager() : nullptr;
 }
 
 void CCryAction::GetMemoryUsage(ICrySizer* s) const

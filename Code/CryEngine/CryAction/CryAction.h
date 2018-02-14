@@ -360,6 +360,8 @@ public:
 	void                    StopNetworkStallTicker();
 	void                    GoToSegment(int x, int y);
 
+	void SetGameLevelLoadListener(IGameLevelLoadListener* pLoader) { m_pGameLevelLoadListener = pLoader; }
+	IGameLevelLoadListener* GetGameLevelLoadListener() { return m_pGameLevelLoadListener; }
 	const std::vector<INetworkedClientListener*>& GetNetworkClientListeners() const { return m_networkClientListeners; }
 	void FastShutdown();
 
@@ -672,5 +674,6 @@ private:
 
 	CTimeValue                             m_levelStartTime;
 
+	IGameLevelLoadListener*                      m_pGameLevelLoadListener = nullptr;
 	std::vector<INetworkedClientListener*> m_networkClientListeners;
 };

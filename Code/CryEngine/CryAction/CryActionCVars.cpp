@@ -79,6 +79,9 @@ CCryActionCVars::CCryActionCVars()
 	REGISTER_COMMAND("g_dumpClassRegistry", DumpClassRegistry, 0, "Print to console the list of classes and their associated ids");
 
 	REGISTER_CVAR2("g_enableMergedMeshRuntimeAreas", &g_enableMergedMeshRuntimeAreas, 0, VF_CHEAT | VF_REQUIRE_APP_RESTART, "Enables the Merged Mesh cluster generation and density precalculations at game/level load");
+
+	REGISTER_CVAR(g_useProfileManager, 1, 0, "Use player profiles manager system. \nDefault is 1.\n");
+	REGISTER_CVAR(g_legacyItemSystem,  1, 0, "Initialize Legacy Item System from GameSDK. \nDefault is 1.\n");
 }
 
 CCryActionCVars::~CCryActionCVars()
@@ -110,6 +113,8 @@ CCryActionCVars::~CCryActionCVars()
 	pConsole->UnregisterVariable("sw_debugInfo");
 	pConsole->UnregisterVariable("sw_draw_bbox");
 	pConsole->UnregisterVariable("g_enableMergedMeshRuntimeAreas", true);
+	pConsole->UnregisterVariable("g_useProfileManager", true);
+	pConsole->UnregisterVariable("g_legacyItemSystem", true);
 }
 
 void CCryActionCVars::DumpEntitySerializationData(IConsoleCmdArgs* pArgs)
