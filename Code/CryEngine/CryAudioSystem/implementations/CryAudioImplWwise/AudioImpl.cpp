@@ -22,6 +22,7 @@
 #include <AK/SoundEngine/Common/AkCallback.h>
 
 #include <AK/Plugin/AllPluginsRegistrationHelpers.h>
+#include <AK/Plugin/AkConvolutionReverbFXFactory.h>
 
 #if defined(WWISE_USE_OCULUS)
 	#include <OculusSpatializer.h>
