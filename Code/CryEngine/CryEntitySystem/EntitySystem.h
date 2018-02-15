@@ -176,7 +176,9 @@ public:
 	virtual void                              EnableDefaultLayers(bool isSerialized = true) final;
 	virtual void                              EnableLayer(const char* layer, bool isEnable, bool isSerialized = true) final;
 	virtual void                              EnableLayerSet(const char* const* pLayers, size_t layerCount, bool bIsSerialized = true, IEntityLayerSetUpdateListener* pListener = nullptr) final;
-	virtual IEntityLayer*                     FindLayer(const char* szLayerName, const bool bCaseSensitive = true) const final;
+	// bCaseSensitive is set to false because it's not possible in Sandbox to create 2 layers with the same name but differs in casing
+	// The issue was: when switching game data files and folders to different case, FlowGraph would still reference old layer names.
+	virtual IEntityLayer*                     FindLayer(const char* szLayerName, const bool bCaseSensitive = false) const final;
 	virtual bool                              IsLayerEnabled(const char* layer, bool bMustBeLoaded, bool bCaseSensitive = true) const final;
 	virtual bool                              ShouldSerializedEntity(IEntity* pEntity) final;
 	virtual void                              RegisterPhysicCallbacks() final;
