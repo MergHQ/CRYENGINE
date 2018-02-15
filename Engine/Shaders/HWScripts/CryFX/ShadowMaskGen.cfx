@@ -60,6 +60,7 @@ cbuffer CBCloudShadows : register(b0)
 	{
 		float4   params;
 		float4   animParams;
+		float4   screenspaceShadowsParams;
 	} c_CloudShadowConstants;
 };
 
@@ -369,7 +370,7 @@ pixout_cl CustomShadowsPS(float4 WPos : SV_POSITION)
 #if %_RT_SAMPLE5
 	// combine with SS shadows
 	float sceneDepth = sceneDepthTexture.Load(int3(WPos.xy, 0)).x;
-	CalculateDetailSSShadow(sceneGBufferA, sceneDepthTexture, sceneDepth, WorldP, WorldP + CV_SunLightDir.xyz, CV_ViewProjMatr, visibility);
+	CalculateDetailSSShadow(sceneGBufferA, sceneDepthTexture, sceneDepth, WorldP, WorldP + CV_SunLightDir.xyz, CV_ViewProjMatr, visibility, c_CloudShadowConstants.screenspaceShadowsParams);
 #endif
 
 	OUT.Color = 1 - visibility;

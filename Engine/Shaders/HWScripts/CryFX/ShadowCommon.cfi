@@ -470,11 +470,12 @@ void CalculateDetailSSShadow(
 	const float3 vPosWS,
 	const float3 vPosLight,
 	const float4x4 matComosite,
-	inout float fInShadow)
+	inout float fInShadow,
+	const float4 shadowsParams = float4(0.03f, 0, 0, 0))
 {
 	float4 vTC0 = mul(matComosite, float4(vPosWS, 1));
 
-	float maxShadowLength = fDepth0 * CV_NearFarClipDist.y * 0.04;
+	float maxShadowLength = fDepth0 * CV_NearFarClipDist.y * shadowsParams.x;
 
 	float4 vTC1 = mul(matComosite, float4(vPosWS + normalize(vPosLight - vPosWS) * maxShadowLength, 1));
 
@@ -505,7 +506,7 @@ void CalculateDetailSSShadow(
 #endif
 
 		float surfaceOpacity = 1.f - sceneTransmittance * .9f;  // transparent shadows from grass & leaves
-		float surfaceThickness = 0.035f + rayDepth * .035f;
+		float surfaceThickness = 0.035f + rayDepth * shadowsParams.x;
 		float depthTestHardness = 0.005f;                       // helps with z - fighting on the slopes
 
 		float lightAmount = saturate((rayDepth - sceneDepth) / depthTestHardness) * saturate((sceneDepth + surfaceThickness - rayDepth) / depthTestHardness) * surfaceOpacity;

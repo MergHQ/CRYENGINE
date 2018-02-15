@@ -262,6 +262,7 @@ AllocateConstIntCVar(CRendererCVars, CV_r_ShadowPoolMaxFrames);
 int CRendererCVars::CV_r_ShadowsCache;
 int CRendererCVars::CV_r_ShadowsCacheFormat;
 int CRendererCVars::CV_r_ShadowsScreenSpace;
+float CRendererCVars::CV_r_ShadowsScreenSpaceLength;
 int CRendererCVars::CV_r_ShadowsNearestMapResolution;
 int CRendererCVars::CV_r_HeightMapAO;
 float CRendererCVars::CV_r_HeightMapAOAmount;
@@ -1259,7 +1260,6 @@ void CRendererCVars::InitCVars()
 	               "  1: optimal pattern for selected aa mode\n"
 	               "  2: 2x\n  3: 3x\n  4: regular 4x\n  5: rotated 4x\n  6: 8x\n  7: sparse grid 8x8\n  8: random\n  9: Halton 8x\n  10: Halton 16x\n  11: Halton random");
 
-
 	REGISTER_CVAR3("r_AntialiasingModeSCull", CV_r_AntialiasingModeSCull, 1, VF_NULL,
 	               "Enables post processed based aa modes stencil culling optimization\n");
 
@@ -1521,8 +1521,10 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_ShadowsScreenSpace", CV_r_ShadowsScreenSpace, 0, VF_NULL,
 	               "Include screen space tracing into shadow computations\n"
-	               "Helps reducing artifacts caused by limited shadow map resolution and biasing\n"
-	               "Applied only in the near range and supposed to be used mostly in the cutscenes for better shadows on character faces");
+	               "Helps reducing artifacts caused by limited shadow map resolution and biasing");
+
+	REGISTER_CVAR3("r_ShadowsScreenSpaceLength", CV_r_ShadowsScreenSpaceLength, 0.03f, VF_NULL,
+	               "Controls the tracing length of Screen Space Shadows");
 
 	DefineConstIntCVar3("r_ShadowTexFormat", CV_r_shadowtexformat, 0, VF_NULL,
 	                    "0=use D32 texture format for depth map\n"
@@ -3046,7 +3048,6 @@ void CRendererCVars::CacheCaptureCVars()
 		CV_capture_file_prefix = !CV_capture_file_prefix ? pConsole->GetCVar("capture_file_prefix") : CV_capture_file_prefix;
 	}
 }
-
 
 CCVarUpdateRecorder::SUpdateRecord::SUpdateRecord(ICVar* pCVar)
 {

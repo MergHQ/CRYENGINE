@@ -561,7 +561,7 @@ endif()
 CryEngineModule(CrySystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 setup_crysystem()
 
-if (OPTION_UNIT_TEST AND NOT ORBIS) #Currently an additional static lib is only used by unit testing under non-monolithic mode
+if (OPTION_UNIT_TEST AND NOT OPTION_STATIC_LINKING) #Currently an additional static lib is only used by unit testing under non-monolithic mode
 	CryEngineModule(CrySystemLib PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine" FORCE_STATIC)
 	setup_crysystem()
 endif()

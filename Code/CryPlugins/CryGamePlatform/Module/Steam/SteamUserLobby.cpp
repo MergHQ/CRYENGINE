@@ -147,7 +147,7 @@ namespace Cry
 			bool CUserLobby::SetData(const char* key, const char* value)
 			{
 				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
-				if (!pSteamMatchmaking)
+				if (pSteamMatchmaking)
 				{
 					return pSteamMatchmaking->SetLobbyData(m_steamLobbyId, key, value);
 				}
@@ -157,7 +157,7 @@ namespace Cry
 			const char* CUserLobby::GetData(const char* key) const
 			{
 				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
-				if (!pSteamMatchmaking)
+				if (pSteamMatchmaking)
 				{
 					return pSteamMatchmaking->GetLobbyData(m_steamLobbyId, key);
 				}
@@ -343,7 +343,7 @@ namespace Cry
 					const char* portString = GetData("port");
 					const char* serverIdString = GetData("serverid");
 
-					if (strlen(ipString) != 0 && strlen(portString) != 0 && strlen(serverIdString) != 0)
+					if (ipString && strlen(ipString) != 0 && portString && strlen(portString) != 0 && serverIdString && strlen(serverIdString) != 0)
 					{
 						ConnectToServer(atoi(ipString), atoi(portString), atoi(serverIdString));
 					}

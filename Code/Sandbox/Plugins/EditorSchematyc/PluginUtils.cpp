@@ -71,6 +71,7 @@ public:
 	virtual ~CStringListDictionary() {}
 
 	// CryGraphEditor::CAbstractDictionary
+	virtual void                            ResetEntries() override              { m_func(); }
 	virtual int32                           GetNumEntries() const override       { return m_names.size(); }
 	virtual const CAbstractDictionaryEntry* GetEntry(int32 index) const override { return (m_names.size() > index) ? &m_names[index] : nullptr; }
 
@@ -85,27 +86,25 @@ public:
 	virtual int32 GetDefaultFilterColumn() const override { return Column_Name; }
 	// ~CryGraphEditor::CAbstractDictionary
 
-	void Load(const Serialization::StringListStatic& names)
+	template <class StringList> void Load(const StringList& names)
 	{
-		for (string name : names)
+		m_func = std::bind([this, names]()
 		{
-			CStringListDictionaryEntry entry;
-			entry.m_name = name;
-			m_names.emplace_back(entry);
-		}
-	}
+			for (string name : names)
+			{
+				CStringListDictionaryEntry entry;
+				entry.m_name = name;
+				m_names.emplace_back(entry);
+			}
+		});
 
-	void Load(const Serialization::StringList& names)
-	{
-		for (string name : names)
-		{
-			CStringListDictionaryEntry entry;
-			entry.m_name = name;
-			m_names.emplace_back(entry);
-		}
+		Reset();
+
+		m_func = std::bind([]() {});
 	}
 
 private:
+	std::function<void()>                   m_func;
 	std::vector<CStringListDictionaryEntry> m_names;
 };
 

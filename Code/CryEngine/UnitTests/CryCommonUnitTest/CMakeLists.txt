@@ -10,4 +10,10 @@ add_sources("NoUberFile"
 end_sources()
 
 CryUnitTestSuite(CryCommonUnitTest SOLUTION_FOLDER "UnitTests")
-target_compile_definitions(${THIS_PROJECT} PRIVATE NOT_USE_CRY_MEMORY_MANAGER)
+if (NOT OPTION_STATIC_LINKING)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE NOT_USE_CRY_MEMORY_MANAGER)
+else()
+	use_scaleform()
+	target_compile_definitions(${THIS_PROJECT} PRIVATE _LIB CRY_IS_MONOLITHIC_BUILD _LAUNCHER)
+	target_link_libraries(${THIS_PROJECT} PRIVATE CrySystem)
+endif()

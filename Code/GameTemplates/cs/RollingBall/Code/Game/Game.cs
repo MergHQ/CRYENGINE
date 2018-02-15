@@ -13,7 +13,7 @@ namespace CryEngine.Game
 
 		private Game()
 		{
-			// The server doesn't support Input and doesn't need to load a map, so return early.
+			// The server doesn't support Input so return early.
 			if(Engine.IsDedicatedServer)
 			{
 				return;
