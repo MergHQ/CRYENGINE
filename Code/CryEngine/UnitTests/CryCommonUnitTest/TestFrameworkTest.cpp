@@ -3,6 +3,15 @@
 #include <UnitTest.h>
 #include <memory>
 
+#if defined(_LIB) && CRY_PLATFORM_DURANGO
+#include "CryPhysics/physinterface.h"
+//A hack due to the current dependency setup
+IPhysicalWorld *CreatePhysicalWorld(ISystem *pSystem)
+{
+	return nullptr;
+}
+#endif
+
 struct SInlineStaticExample
 { 
 	static const int var = 0; 
