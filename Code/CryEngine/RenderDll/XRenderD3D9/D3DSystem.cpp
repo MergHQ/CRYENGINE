@@ -2373,7 +2373,7 @@ bool CD3D9Renderer::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				gcpRendD3D->ExecuteRenderThreadCommand([wParam]()
 				{
 					gcpRendD3D->GetBaseDisplayContext()->SetFullscreenState(wParam != 0);
-				}, ERenderCommandFlags::FlushAndWait);
+				}, ERenderCommandFlags::None);
 			}
 		}
 		break;
