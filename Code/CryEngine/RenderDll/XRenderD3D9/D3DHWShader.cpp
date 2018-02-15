@@ -1424,6 +1424,9 @@ void CRenderer::ReadPerFrameShaderConstants(const SRenderingPassInfo& passInfo, 
 		PF.pCloudShadowAnimParams = Vec4(m_cloudShadowTiling / heightMapSize, -m_cloudShadowTiling / heightMapSize, cloudShadowOffset.x, -cloudShadowOffset.y);
 	}
 
+	// ECGP_PB_ScreenspaceShadowsParams
+	PF.pScreenspaceShadowsParams = Vec4(CRenderer::CV_r_ShadowsScreenSpaceLength * passInfo.GetCamera().GetFov() / DEG2RAD(60.f), 0, 0, 0);
+
 	// ECGP_PB_VolumetricFogSamplingParams
 	PF.pVolumetricFogSamplingParams = sGetVolumetricFogSamplingParams(camera);
 

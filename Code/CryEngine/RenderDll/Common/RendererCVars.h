@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -52,15 +52,15 @@ public:
 #endif
 	DeclareStaticConstIntCVar(CV_r_SyncToFrameFence, 1);
 
-	static int CV_r_GraphicsPipeline;
-	static int CV_r_GraphicsPipelineMobile;
-	static int CV_r_GraphicsPipelinePassScheduler;
+	static int   CV_r_GraphicsPipeline;
+	static int   CV_r_GraphicsPipelineMobile;
+	static int   CV_r_GraphicsPipelinePassScheduler;
 
-	static int CV_r_DeferredShadingTiled;
-	static int CV_r_DeferredShadingTiledDebug;
-	static int CV_r_DeferredShadingTiledHairQuality;
-	static int CV_r_DeferredShadingSSS;
-	static int CV_r_DeferredShadingFilterGBuffer;
+	static int   CV_r_DeferredShadingTiled;
+	static int   CV_r_DeferredShadingTiledDebug;
+	static int   CV_r_DeferredShadingTiledHairQuality;
+	static int   CV_r_DeferredShadingSSS;
+	static int   CV_r_DeferredShadingFilterGBuffer;
 
 	static int CV_r_MotionVectors;
 	static int   CV_r_MotionBlur;
@@ -250,10 +250,11 @@ public:
 	DeclareStaticConstIntCVar(CV_r_ShadowGen, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowGenDepthClip, 1);
 	DeclareStaticConstIntCVar(CV_r_ShadowGenMode, 1);
-	static int CV_r_ShadowsCache;
-	static int CV_r_ShadowsCacheFormat;
-	static int CV_r_ShadowsNearestMapResolution;
-	static int CV_r_ShadowsScreenSpace;
+	static int   CV_r_ShadowsCache;
+	static int   CV_r_ShadowsCacheFormat;
+	static int   CV_r_ShadowsNearestMapResolution;
+	static int   CV_r_ShadowsScreenSpace;
+	static float CV_r_ShadowsScreenSpaceLength;
 	DeclareStaticConstIntCVar(CV_r_debuglights, 0);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingDepthBoundsTest, DEF_SHAD_DBT_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_deferredshadingDBTstencil, DEF_SHAD_DBT_STENCIL_DEFAULT_VAL);
@@ -662,7 +663,7 @@ public:
 		};
 
 		const char* name;
-		int type;
+		int         type;
 
 		SUpdateRecord(ICVar* pCVar);
 		bool operator==(const SUpdateRecord& rhs)
@@ -678,16 +679,16 @@ public:
 	~CCVarUpdateRecorder();
 
 	// IConsoleVarSink
-	virtual bool OnBeforeVarChange(ICVar* pVar, const char* sNewValue) { return true; }
-	virtual void OnAfterVarChange(ICVar* pVar);
-	virtual void OnVarUnregister(ICVar* pVar);
+	virtual bool         OnBeforeVarChange(ICVar* pVar, const char* sNewValue) { return true; }
+	virtual void         OnAfterVarChange(ICVar* pVar);
+	virtual void         OnVarUnregister(ICVar* pVar);
 
-	void Reset(); 
-	const CVarList& GetCVars() const;
+	void                 Reset();
+	const CVarList&      GetCVars() const;
 	const SUpdateRecord* GetCVar(const char* cvarName) const;
 
 public:
-	CVarList m_updatedCVars[RT_COMMAND_BUF_COUNT];
+	CVarList  m_updatedCVars[RT_COMMAND_BUF_COUNT];
 	IConsole* m_pConsole;
 
 };

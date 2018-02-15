@@ -193,6 +193,7 @@ public:
 
 	Vec4     pCloudShadowParams;     //ECGP_PB_CloudShadowParams *
 	Vec4     pCloudShadowAnimParams; //ECGP_PB_CloudShadowAnimParams *
+	Vec4     pScreenspaceShadowsParams;
 
 	Vec4     post3DRendererAmbient;
 
