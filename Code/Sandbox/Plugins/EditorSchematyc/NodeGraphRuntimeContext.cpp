@@ -27,6 +27,115 @@
 
 namespace CrySchematycEditor {
 
+class CNodesDictionaryCreator : public Schematyc::IScriptGraphNodeCreationMenu
+{
+public:
+	CNodesDictionaryCreator(CNodesDictionary& dictionary)
+		: m_dictionary(dictionary)
+	{}
+
+	virtual bool AddCommand(const Schematyc::IScriptGraphNodeCreationCommandPtr& pCommand)
+	{
+		SCHEMATYC_EDITOR_ASSERT(pCommand);
+		if (pCommand)
+		{
+			const char* szBehavior = pCommand->GetBehavior();
+			const char* szSubject = pCommand->GetSubject();
+			const char* szDescription = pCommand->GetDescription();
+			const char* szStyleId = pCommand->GetStyleId();
+
+			m_fullName = szBehavior;
+			if (szSubject && (szSubject[0] != '\0'))
+			{
+				m_fullName.append("::");
+				m_fullName.append(szSubject);
+			}
+
+			QStringList categories = m_fullName.split("::");
+			const QString name = categories.back();
+			categories.removeLast();
+
+			m_ppCommand = &pCommand;
+			AddRecursive(name, categories, nullptr, szStyleId);
+
+			return true;
+		}
+		return false;
+	}
+
+	void AddRecursive(const QString& name, QStringList& categories, CNodesDictionaryCategoryEntry* pParentCategory, const char* szStyleId = nullptr)
+	{
+		const CryGraphEditor::CNodeGraphViewStyle* pStyle = m_dictionary.m_pStyle;
+
+		if (categories.size() > 0)
+		{
+			std::vector<CNodesDictionaryCategoryEntry*>* pCategoryItems = pParentCategory ? &pParentCategory->m_categories : &m_dictionary.m_categories;
+
+			for (CNodesDictionaryCategoryEntry* pCategoryItem : * pCategoryItems)
+			{
+				if (pCategoryItem->GetName() == categories.front())
+				{
+					categories.removeFirst();
+					AddRecursive(name, categories, pCategoryItem, szStyleId);
+					return;
+				}
+			}
+
+			const QIcon* pIcon = nullptr;
+			if (pStyle)
+			{
+				if (const CryGraphEditor::CNodeWidgetStyle* pNodeStyle = pStyle->GetNodeWidgetStyle(szStyleId))
+				{
+					pIcon = &pNodeStyle->GetMenuIcon();
+				}
+			}
+
+			CNodesDictionaryCategoryEntry* pNewCategory = nullptr;
+			for (const QString& categoryName : categories)
+			{
+				pNewCategory = new CNodesDictionaryCategoryEntry(categoryName, pParentCategory);
+				pCategoryItems->push_back(pNewCategory);
+				pCategoryItems = &pNewCategory->m_categories;
+				pParentCategory = pNewCategory;
+			}
+
+			if (pNewCategory)
+			{
+				CNodesDictionaryNodeEntry* pNode = new CNodesDictionaryNodeEntry(name, m_fullName, *m_ppCommand, pNewCategory, pIcon);
+				pNewCategory->m_nodes.push_back(pNode);
+			}
+		}
+		else
+		{
+			const QIcon* pIcon = nullptr;
+			if (pStyle)
+			{
+				if (const CryGraphEditor::CNodeWidgetStyle* pNodeStyle = pStyle->GetNodeWidgetStyle(szStyleId))
+				{
+					pIcon = &pNodeStyle->GetMenuIcon();
+				}
+			}
+
+			CNodesDictionaryNodeEntry* pNewNodeItem = new CNodesDictionaryNodeEntry(name, m_fullName, *m_ppCommand, pParentCategory, pIcon);
+			if (pParentCategory)
+			{
+				pParentCategory->m_nodes.push_back(pNewNodeItem);
+			}
+			else
+			{
+				m_dictionary.m_nodes.push_back(pNewNodeItem);
+			}
+		}
+	}
+
+private:
+	CNodesDictionary& m_dictionary;
+	QString           m_fullName;
+
+	const Schematyc::IScriptGraphNodeCreationCommandPtr* m_ppCommand;
+};
+
+
 const CItemModelAttribute CNodesDictionary::s_columnAttributes[] =
 {
 	CItemModelAttribute("Name",            eAttributeType_String, CItemModelAttribute::Visible,      false, ""),
@@ -144,6 +253,7 @@ const CAbstractDictionaryEntry* CNodesDictionaryCategoryEntry::GetParentEntry() 
 
 CNodesDictionary::CNodesDictionary()
 	: m_pStyle(nullptr)
+	, m_scriptGraph(nullptr)
 {
 
 }
@@ -166,6 +276,15 @@ void CNodesDictionary::ClearEntries()
 		delete pNodeEntry;
 	}
 	m_nodes.clear();
+}
+
+void CNodesDictionary::ResetEntries()
+{
+	if (m_scriptGraph)
+	{
+		CNodesDictionaryCreator creator(*this);
+		m_scriptGraph->PopulateNodeCreationMenu(creator);
+	}
 }
 
 const CAbstractDictionaryEntry* CNodesDictionary::GetEntry(int32 index) const
@@ -191,118 +310,11 @@ const CItemModelAttribute* CNodesDictionary::GetColumnAttribute(int32 index) con
 	return nullptr;
 }
 
-class CNodesDictionaryCreator : public Schematyc::IScriptGraphNodeCreationMenu
-{
-public:
-	CNodesDictionaryCreator(CNodesDictionary& dictionary)
-		: m_dictionary(dictionary)
-	{}
-
-	virtual bool AddCommand(const Schematyc::IScriptGraphNodeCreationCommandPtr& pCommand)
-	{
-		SCHEMATYC_EDITOR_ASSERT(pCommand);
-		if (pCommand)
-		{
-			const char* szBehavior = pCommand->GetBehavior();
-			const char* szSubject = pCommand->GetSubject();
-			const char* szDescription = pCommand->GetDescription();
-			const char* szStyleId = pCommand->GetStyleId();
-
-			m_fullName = szBehavior;
-			if (szSubject && (szSubject[0] != '\0'))
-			{
-				m_fullName.append("::");
-				m_fullName.append(szSubject);
-			}
-
-			QStringList categories = m_fullName.split("::");
-			const QString name = categories.back();
-			categories.removeLast();
-
-			m_ppCommand = &pCommand;
-			AddRecursive(name, categories, nullptr, szStyleId);
-
-			return true;
-		}
-		return false;
-	}
-
-	void AddRecursive(const QString& name, QStringList& categories, CNodesDictionaryCategoryEntry* pParentCategory, const char* szStyleId = nullptr)
-	{
-		const CryGraphEditor::CNodeGraphViewStyle* pStyle = m_dictionary.m_pStyle;
-
-		if (categories.size() > 0)
-		{
-			std::vector<CNodesDictionaryCategoryEntry*>* pCategoryItems = pParentCategory ? &pParentCategory->m_categories : &m_dictionary.m_categories;
-
-			for (CNodesDictionaryCategoryEntry* pCategoryItem : * pCategoryItems)
-			{
-				if (pCategoryItem->GetName() == categories.front())
-				{
-					categories.removeFirst();
-					AddRecursive(name, categories, pCategoryItem, szStyleId);
-					return;
-				}
-			}
-
-			const QIcon* pIcon = nullptr;
-			if (pStyle)
-			{
-				if (const CryGraphEditor::CNodeWidgetStyle* pNodeStyle = pStyle->GetNodeWidgetStyle(szStyleId))
-				{
-					pIcon = &pNodeStyle->GetMenuIcon();
-				}
-			}
-
-			CNodesDictionaryCategoryEntry* pNewCategory = nullptr;
-			for (const QString& categoryName : categories)
-			{
-				pNewCategory = new CNodesDictionaryCategoryEntry(categoryName, pParentCategory);
-				pCategoryItems->push_back(pNewCategory);
-				pCategoryItems = &pNewCategory->m_categories;
-				pParentCategory = pNewCategory;
-			}
-
-			if (pNewCategory)
-			{
-				CNodesDictionaryNodeEntry* pNode = new CNodesDictionaryNodeEntry(name, m_fullName, *m_ppCommand, pNewCategory, pIcon);
-				pNewCategory->m_nodes.push_back(pNode);
-			}
-		}
-		else
-		{
-			const QIcon* pIcon = nullptr;
-			if (pStyle)
-			{
-				if (const CryGraphEditor::CNodeWidgetStyle* pNodeStyle = pStyle->GetNodeWidgetStyle(szStyleId))
-				{
-					pIcon = &pNodeStyle->GetMenuIcon();
-				}
-			}
-
-			CNodesDictionaryNodeEntry* pNewNodeItem = new CNodesDictionaryNodeEntry(name, m_fullName, *m_ppCommand, pParentCategory, pIcon);
-			if (pParentCategory)
-			{
-				pParentCategory->m_nodes.push_back(pNewNodeItem);
-			}
-			else
-			{
-				m_dictionary.m_nodes.push_back(pNewNodeItem);
-			}
-		}
-	}
-
-private:
-	CNodesDictionary& m_dictionary;
-	QString           m_fullName;
-
-	const Schematyc::IScriptGraphNodeCreationCommandPtr* m_ppCommand;
-};
-
 void CNodesDictionary::LoadLoadsFromScriptGraph(Schematyc::IScriptGraph& scriptGraph)
 {
-	CNodesDictionaryCreator creator(*this);
-	scriptGraph.PopulateNodeCreationMenu(creator);
+	m_scriptGraph = &scriptGraph;
+	Reset();
+	m_scriptGraph = nullptr;
 }
 
 void AddNodeStyle(CryGraphEditor::CNodeGraphViewStyle& viewStyle, const char* szStyleId, const char* szIcon, QColor color, bool coloredHeaderIconText = true)
