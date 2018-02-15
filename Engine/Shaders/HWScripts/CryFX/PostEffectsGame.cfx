@@ -1098,44 +1098,6 @@ void SelectiveColor( inout half3 cImage )
   cImage =lerp( cImage, CMYKtoRGB( cmyk ), fColorPickRange);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-pixout ColorGradingPS(vtxOut IN)
-{
-  pixout OUT = (pixout) 0;
-
-  half4 cImage = half4( tex2D(screenMapSampler, IN.baseTC.xy).xyz, 1.0);
-
-
-#if %_RT_SAMPLE1 
-
-  // Unsharpening
-  half4 cImageScaledDown = tex2D( screenMapScaledSampler_d2, IN.baseTC.xy );
-  cImage = lerp(cImageScaledDown, cImage, ColorGradingParams3.w);
-
-  // Noise filter
-  AddNoise( IN.baseTC.xy, cImage.xyz );
-
-#endif
-
-	// Always using color charts
-	TexColorChart2D(chartSampler, cImage.xyz);
-
-  OUT.Color.xyz = cImage;
-  return OUT;
-}
-
-////////////////// technique /////////////////////
-
-technique ColorGrading
-{
-  pass p0
-  {
-    VertexShader = BaseVS() PostProcessGameVS;
-    PixelShader = ColorGradingPS() PostProcessGamePS;
-    CullMode = None;        
-  }
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Water volume texgen technique //////////////////////////////////////////////////////////////////////////
