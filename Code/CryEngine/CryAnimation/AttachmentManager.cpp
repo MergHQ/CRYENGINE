@@ -1929,6 +1929,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 			if (!(rParams.nCustomFlags & COB_POST_3D_RENDER) && fZoomDistanceSq > fRadiusSqr)
 				continue;   //too small to render. cancel the update
 
+			pCAttachmentVCloth->InitializeCloth();
 			pCAttachmentVCloth->DrawAttachment(rParams, passInfo, ((rParams.dwFObjFlags & FOB_NEAREST) != 0) ? *rParams.pNearestMatrix : rWorldMat34, fZoomFactor);
 
 #if !defined(_RELEASE)
