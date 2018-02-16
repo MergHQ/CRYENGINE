@@ -324,14 +324,19 @@ CryEngineStaticModule(alembic SOLUTION_FOLDER "Libs")
 target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/Alembic/lib" )
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOMINMAX) # No min/max macro (from Windows.h)
 target_compile_definitions(${THIS_PROJECT} PRIVATE -D_SCL_SECURE_NO_WARNINGS)  # Potentially unsafe use of std::copy
-target_compile_options(${THIS_PROJECT} PRIVATE /GR /EHsc ) # Enable exceptions.
-target_compile_options(${THIS_PROJECT} PRIVATE /W0 ) # Disable warnings from 3rdParty code.
-# Force-include <algorithm>, because some code uses std::min without including it (this is actually a bug).
-# This only is a problem with VS2015, previous VS versions std::min was pulled in via other headers as well.
-# Since the current version of this code relies on the old behavior, we will do this hack to make it work.
-# Hopefully this can be removed once Alembic code is updated to work better with VS2015.
-target_compile_options(${THIS_PROJECT} PRIVATE /FIalgorithm )
+
+if (WIN32)
+	target_compile_options(${THIS_PROJECT} PRIVATE /GR /EHsc ) # Enable exceptions.
+	target_compile_options(${THIS_PROJECT} PRIVATE /W0 ) # Disable warnings from 3rdParty code.
+
+	# Force-include <algorithm>, because some code uses std::min without including it (this is actually a bug).
+	# This only is a problem with VS2015, previous VS versions std::min was pulled in via other headers as well.
+	# Since the current version of this code relies on the old behavior, we will do this hack to make it work.
+	# Hopefully this can be removed once Alembic code is updated to work better with VS2015.
+	target_compile_options(${THIS_PROJECT} PRIVATE /FIalgorithm )
+elseif(LINUX)
+	target_compile_options(${THIS_PROJECT} PRIVATE -w -fexceptions -frtti) # Disable warnings from 3rdParty code.
+endif()
+
 target_link_libraries( ${THIS_PROJECT} PRIVATE hdf5 ilmbase )
 target_include_directories(${THIS_PROJECT} INTERFACE "${SDK_DIR}/Alembic/lib" )
-
-

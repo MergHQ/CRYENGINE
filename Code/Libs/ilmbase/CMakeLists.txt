@@ -3,11 +3,28 @@
 
 start_sources()
 # -- ilmbase.waf_files --
-sources_platform(ALL)
+sources_platform(WIN32)
 add_sources("NoUberFile"
 	PROJECTS ilmbase
 	SOURCE_GROUP "Configuration"
-		"${SDK_DIR}/ilmbase/config.windows/IlmBaseConfig.h"
+	    "${SDK_DIR}/ilmbase/config.windows/IlmBaseConfig.h"
+
+	SOURCE_GROUP "IlmThread"
+	    "${SDK_DIR}/ilmbase/IlmThread/IlmThreadMutexWin32.cpp"
+		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadSemaphoreWin32.cpp"
+		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadWin32.cpp"
+	)
+
+sources_platform(LINUX)
+add_sources("NoUberFile"
+	PROJECTS ilmbase
+	SOURCE_GROUP "Configuration"
+	    "${SDK_DIR}/ilmbase/config/IlmBaseConfig.h"
+		)
+
+sources_platform(ALL)
+add_sources("NoUberFile"
+	PROJECTS ilmbase
 	SOURCE_GROUP "Half"
 		"${SDK_DIR}/ilmbase/Half/half.cpp"
 		"${SDK_DIR}/ilmbase/Half/half.h"
@@ -38,14 +55,11 @@ add_sources("NoUberFile"
 		"${SDK_DIR}/ilmbase/IlmThread/IlmThread.cpp"
 		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadMutex.cpp"
 		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadMutexPosix.cpp"
-		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadMutexWin32.cpp"
 		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadPool.cpp"
 		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadPosix.cpp"
 		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadSemaphore.cpp"
 		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadSemaphorePosixCompat.cpp"
 		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadSemaphorePosix.cpp"
-		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadSemaphoreWin32.cpp"
-		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadWin32.cpp"
 		"${SDK_DIR}/ilmbase/IlmThread/IlmThread.h"
 		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadPool.h"
 		"${SDK_DIR}/ilmbase/IlmThread/IlmThreadSemaphore.h"
@@ -115,20 +129,34 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
+set(DEFAULT_DEFINITIONS "")
+if (WIN32)
+	set(DISABLE_WARNINGS /W0)  # Disable warnings from 3rdParty code.
+	set(DEFAULT_DEFINITIONS "-D_HAS_EXCEPTIONS=0")
+	set(CONFIG_DIR "${SDK_DIR}/ilmbase/config.windows")
+else()
+	set(DISABLE_WARNINGS -w)
+	set(CONFIG_DIR "${SDK_DIR}/ilmbase/config")
+endif()
+
 CryEngineStaticModule(ilmbase SOLUTION_FOLDER "Libs")
-target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/ilmbase/Half" "${SDK_DIR}/ilmbase/Iex" "${SDK_DIR}/ilmbase/IexMath" "${SDK_DIR}/ilmbase/Imath" "${SDK_DIR}/ilmbase/config.windows" )
+target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/ilmbase/Half" "${SDK_DIR}/ilmbase/Iex" "${SDK_DIR}/ilmbase/IexMath" "${SDK_DIR}/ilmbase/Imath" ${CONFIG_DIR} )
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOMINMAX)
-target_compile_options(${THIS_PROJECT} PRIVATE /GR /EHsc ) # Enable exceptions.
-target_compile_options(${THIS_PROJECT} PRIVATE /W0 ) # Disable warnings from 3rdParty code. 
-target_include_directories(${THIS_PROJECT} INTERFACE "${SDK_DIR}/ilmbase/Half" "${SDK_DIR}/ilmbase/Iex" "${SDK_DIR}/ilmbase/IexMath" "${SDK_DIR}/ilmbase/Imath" "${SDK_DIR}/ilmbase/config.windows" )
+if (WIN32)
+	target_compile_options(${THIS_PROJECT} PRIVATE ${DISABLE_WARNINGS} /GR /EHsc)  # Enable exceptions.
+else()
+	target_compile_options(${THIS_PROJECT} PRIVATE ${DISABLE_WARNINGS} -fexceptions) # Enable exceptions.
+endif()
+target_compile_options(${THIS_PROJECT} PRIVATE ${DEFAULT_FLAGS} )
+target_include_directories(${THIS_PROJECT} INTERFACE "${SDK_DIR}/ilmbase/Half" "${SDK_DIR}/ilmbase/Iex" "${SDK_DIR}/ilmbase/IexMath" "${SDK_DIR}/ilmbase/Imath" ${CONFIG_DIR} )
 
 # Tool to create toFloat.h
 CryConsoleApplication(toFloat SOLUTION_FOLDER "Tools/ilm")
-target_compile_options(${THIS_PROJECT} PRIVATE /W0)
-target_compile_definitions(${THIS_PROJECT} PRIVATE -D_HAS_EXCEPTIONS=0)
+target_compile_options(${THIS_PROJECT} PRIVATE ${DISABLE_WARNINGS} )
+target_compile_definitions(${THIS_PROJECT} PRIVATE ${DEFAULT_DEFINITIONS})
 
 # Tool to create eLut.h
 CryConsoleApplication(eLut SOLUTION_FOLDER "Tools/ilm")
-target_compile_options(${THIS_PROJECT} PRIVATE /W0)
-target_compile_definitions(${THIS_PROJECT} PRIVATE -D_HAS_EXCEPTIONS=0)
+target_compile_options(${THIS_PROJECT} PRIVATE ${DISABLE_WARNINGS} )
+target_compile_definitions(${THIS_PROJECT} PRIVATE ${DEFAULT_DEFINITIONS})
 

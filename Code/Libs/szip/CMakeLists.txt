@@ -19,8 +19,14 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
+if (WIN32)
+	set(DISABLE_WARNINGS /W0)  # Disable warnings from 3rdParty code.
+else()
+	set(DISABLE_WARNINGS -w)
+endif()
+
 CryEngineStaticModule(szip SOLUTION_FOLDER "Libs")
 target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}szip/src")
-target_compile_options(${THIS_PROJECT} PRIVATE /W0) # Disable warnings for 3rdParty code.
+target_compile_options(${THIS_PROJECT} PRIVATE ${DISABLE_WARNINGS})
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DHDF) # Because we want to support HDF in this library
 target_include_directories(${THIS_PROJECT} INTERFACE "${SDK_DIR}/szip/src")
