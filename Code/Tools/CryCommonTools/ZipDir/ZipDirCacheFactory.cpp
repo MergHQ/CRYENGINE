@@ -4,7 +4,7 @@
 #include <zlib.h>
 #include <CryCore/smartptr.h>
 #include "ZipFileFormat.h"
-#include "ZipDirStructures.h"
+#include "zipdirstructures.h"
 #include "ZipDirTree.h"
 #include "ZipDirCache.h"
 #include "ZipDirCacheRW.h"

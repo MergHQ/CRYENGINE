@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 #include "ZipFileFormat.h"
-#include "ZipDirStructures.h"
+#include "zipdirstructures.h"
 #include "ZipDirTree.h"
 
 
