@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -12,6 +12,8 @@
 
 namespace ACE
 {
+using PlatformIndexType = uint16;
+
 class CImplConnection
 {
 public:
@@ -19,7 +21,7 @@ public:
 	CImplConnection(CID const id)
 		: m_id(id)
 	{
-		m_configurationsMask = std::numeric_limits<uint32>::max();
+		m_configurationsMask = std::numeric_limits<PlatformIndexType>::max();
 	}
 
 	virtual ~CImplConnection() = default;
@@ -28,7 +30,7 @@ public:
 	virtual bool HasProperties() const                  { return false; }
 	virtual void Serialize(Serialization::IArchive& ar) {};
 
-	void EnableForPlatform(uint32 const platformIndex, bool const isEnabled)
+	void         EnableForPlatform(PlatformIndexType const platformIndex, bool const isEnabled)
 	{
 		if (isEnabled)
 		{
@@ -42,7 +44,7 @@ public:
 		SignalConnectionChanged();
 	}
 
-	bool IsPlatformEnabled(uint32 const platformIndex)
+	bool IsPlatformEnabled(PlatformIndexType const platformIndex)
 	{
 		return (m_configurationsMask & (1 << platformIndex)) > 0;
 	}
@@ -60,7 +62,7 @@ public:
 
 private:
 
-	CID    m_id;
-	uint32 m_configurationsMask;
+	CID const         m_id;
+	PlatformIndexType m_configurationsMask;
 };
 } // namespace ACE

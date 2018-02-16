@@ -44,6 +44,7 @@ public:
 	void            GetScopeInfoList(ScopeInfoList& scopeList) const;
 
 	void            ClearAllConnections();
+	void            BackupAndClearAllConnections();
 	void            ReloadAllConnections();
 	void            MoveItems(CSystemAsset* const pParent, std::vector<CSystemAsset*> const& items);
 	void            CreateAndConnectImplItems(IImplItem* const pImplItem, CSystemAsset* const pParent);
