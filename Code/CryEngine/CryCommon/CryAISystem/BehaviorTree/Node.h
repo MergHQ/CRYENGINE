@@ -49,6 +49,18 @@ public:
 
 		const Status status = Update(context);
 
+	#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
+	#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+		if (debugTree)
+		{
+			DebugNodePtr topNode = debugTree->GetTopNode();
+			assert(topNode);
+			assert(topNode->node == this);
+			GetCustomDebugText(context, topNode->customDebugText);	// FIXME: stack_string may suddenly switch to heap memory in a different DLL => bang! (GetCustomDebugText() would need refactoring to output to a string interface)
+		}
+	#endif // USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+	#endif // DEBUG_MODULAR_BEHAVIOR_TREE
+
 		if (status != Running)
 		{
 			OnTerminate(context);

@@ -84,6 +84,10 @@ void TreeVisualizer::Draw(
 
 void TreeVisualizer::DrawNode(const DebugNode& node, const uint32 depth)
 {
+	// only show currently running nodes
+	if (node.nodeStatus != Running)
+		return;
+
 	// Construct a nice readable debug text for this node
 	stack_string str;
 
@@ -111,17 +115,9 @@ void TreeVisualizer::DrawNode(const DebugNode& node, const uint32 depth)
 
 	#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
 	// Custom debug text from the node
-	stack_string customDebugText;
-
-	UpdateContext updateContext = m_updateContext;
-	const Node* nodeToDraw = static_cast<const Node*>(node.node);
-	const RuntimeDataID runtimeDataID = MakeRuntimeDataID(updateContext.entityId, nodeToDraw->m_id);
-	updateContext.runtimeData = nodeToDraw->GetCreator()->GetRuntimeData(runtimeDataID);
-
-	nodeToDraw->GetCustomDebugText(updateContext, customDebugText);
-	if (!customDebugText.empty())
+	if (!node.customDebugText.empty())
 	{
-		str += " - " + customDebugText;
+		str += " - " + node.customDebugText;
 		hasCustomText = true;
 	}
 	#endif // USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT

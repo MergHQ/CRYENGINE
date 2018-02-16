@@ -187,6 +187,10 @@ struct DebugNode
 	typedef DynArray<DebugNodePtr> Children;
 
 	const INode* node;
+	Status       nodeStatus = Invalid;
+#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+	stack_string customDebugText;
+#endif
 	Children     children;
 
 	DebugNode(const INode* _node) { node = _node; }
@@ -218,15 +222,13 @@ public:
 			m_succeededAndFailedNodes.push_back(m_debugNodeStack.back());
 		}
 
+		m_debugNodeStack.back()->nodeStatus = s;
 		m_debugNodeStack.pop_back();
+	}
 
-		if (s != Running)
-		{
-			if (!m_debugNodeStack.empty())
-				m_debugNodeStack.back()->children.pop_back();
-			else
-				m_firstDebugNode.reset();
-		}
+	DebugNodePtr GetTopNode() const
+	{
+		return m_debugNodeStack.empty() ? nullptr : m_debugNodeStack.back();
 	}
 
 	DebugNodePtr GetFirstNode() const
