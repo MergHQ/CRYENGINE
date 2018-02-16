@@ -305,7 +305,7 @@ CSystemControl::CSystemControl(string const& name, CID const id, ESystemItemType
 //////////////////////////////////////////////////////////////////////////
 CSystemControl::~CSystemControl()
 {
-	m_connectedControls.clear();
+	m_connections.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -412,9 +412,9 @@ ConnectionPtr CSystemControl::GetConnectionAt(size_t const index) const
 {
 	ConnectionPtr pConnection = nullptr;
 
-	if (index < m_connectedControls.size())
+	if (index < m_connections.size())
 	{
-		pConnection = m_connectedControls[index];
+		pConnection = m_connections[index];
 	}
 
 	return pConnection;
@@ -425,7 +425,7 @@ ConnectionPtr CSystemControl::GetConnection(CID const id) const
 {
 	ConnectionPtr pConnection = nullptr;
 
-	for (auto const& control : m_connectedControls)
+	for (auto const& control : m_connections)
 	{
 		if ((control != nullptr) && (control->GetID() == id))
 		{
@@ -456,7 +456,7 @@ void CSystemControl::AddConnection(ConnectionPtr const pConnection)
 			{
 				g_pEditorImpl->EnableConnection(pConnection);
 				pConnection->SignalConnectionChanged.Connect(this, &CSystemControl::SignalConnectionModified);
-				m_connectedControls.push_back(pConnection);
+				m_connections.push_back(pConnection);
 				MatchRadiusToAttenuation();
 				SignalConnectionAdded(pImplItem);
 				SignalControlModified();
@@ -470,9 +470,9 @@ void CSystemControl::RemoveConnection(ConnectionPtr const pConnection)
 {
 	if (pConnection != nullptr)
 	{
-		auto const it = std::find(m_connectedControls.begin(), m_connectedControls.end(), pConnection);
+		auto const it = std::find(m_connections.begin(), m_connections.end(), pConnection);
 
-		if (it != m_connectedControls.end())
+		if (it != m_connections.end())
 		{
 			if (g_pEditorImpl != nullptr)
 			{
@@ -481,7 +481,7 @@ void CSystemControl::RemoveConnection(ConnectionPtr const pConnection)
 				if (pImplItem != nullptr)
 				{
 					g_pEditorImpl->DisableConnection(pConnection);
-					m_connectedControls.erase(it);
+					m_connections.erase(it);
 					MatchRadiusToAttenuation();
 					SignalConnectionRemoved(pImplItem);
 					SignalControlModified();
@@ -494,11 +494,11 @@ void CSystemControl::RemoveConnection(ConnectionPtr const pConnection)
 //////////////////////////////////////////////////////////////////////////
 void CSystemControl::ClearConnections()
 {
-	if (!m_connectedControls.empty())
+	if (!m_connections.empty())
 	{
 		if (g_pEditorImpl != nullptr)
 		{
-			for (ConnectionPtr const& connection : m_connectedControls)
+			for (ConnectionPtr const& connection : m_connections)
 			{
 				g_pEditorImpl->DisableConnection(connection);
 				IImplItem* const pImplItem = g_pEditorImpl->GetImplItem(connection->GetID());
@@ -510,10 +510,74 @@ void CSystemControl::ClearConnections()
 			}
 		}
 
-		m_connectedControls.clear();
+		m_connections.clear();
 		MatchRadiusToAttenuation();
 		SignalControlModified();
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemControl::BackupAndClearConnections()
+{
+	m_rawConnections.clear();
+
+	// Raw connections are used to temporarily store connections in XML format
+	// when middleware data gets reloaded.
+	if (g_pEditorImpl != nullptr)
+	{
+		if (m_type != ESystemItemType::Preload)
+		{
+			for (auto const& connection : m_connections)
+			{
+				XmlNodeRef const pRawConnection = g_pEditorImpl->CreateXMLNodeFromConnection(connection, m_type);
+
+				if (pRawConnection != nullptr)
+				{
+					m_rawConnections[-1].push_back(pRawConnection);
+				}
+			}
+		}
+		else
+		{
+			std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
+			auto const numPlatforms = static_cast<int>(platforms.size());
+
+			for (auto const& connection : m_connections)
+			{
+				XmlNodeRef const pRawConnection = g_pEditorImpl->CreateXMLNodeFromConnection(connection, m_type);
+
+				if (pRawConnection != nullptr)
+				{
+					for (int i = 0; i < numPlatforms; ++i)
+					{
+						if (connection->IsPlatformEnabled(static_cast<PlatformIndexType>(i)))
+						{
+							m_rawConnections[i].push_back(pRawConnection);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	ClearConnections();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemControl::ReloadConnections()
+{
+	if (!m_rawConnections.empty() && (g_pEditorImpl != nullptr))
+	{
+		for (auto const& connectionPair : m_rawConnections)
+		{
+			for (auto const& connection : connectionPair.second)
+			{
+				LoadConnectionFromXML(connection, connectionPair.first);
+			}
+		}
+	}
+
+	m_rawConnections.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -522,8 +586,8 @@ void CSystemControl::RemoveConnection(IImplItem* const pImplItem)
 	if (pImplItem != nullptr)
 	{
 		CID const id = pImplItem->GetId();
-		auto it = m_connectedControls.begin();
-		auto const end = m_connectedControls.end();
+		auto it = m_connections.begin();
+		auto const end = m_connections.end();
 
 		for (; it != end; ++it)
 		{
@@ -534,7 +598,7 @@ void CSystemControl::RemoveConnection(IImplItem* const pImplItem)
 					g_pEditorImpl->DisableConnection(*it);
 				}
 
-				m_connectedControls.erase(it);
+				m_connections.erase(it);
 				MatchRadiusToAttenuation();
 				SignalConnectionRemoved(pImplItem);
 				SignalControlModified();
@@ -583,25 +647,7 @@ void CSystemControl::SignalConnectionModified()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControl::ReloadConnections()
-{
-	if (g_pEditorImpl != nullptr)
-	{
-		std::map<int, XMLNodeList> connectionNodes;
-		std::swap(connectionNodes, m_connectionNodes);
-
-		for (auto const& connectionPair : connectionNodes)
-		{
-			for (auto const& connection : connectionPair.second)
-			{
-				LoadConnectionFromXML(connection.xmlNode, connectionPair.first);
-			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystemControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex)
+void CSystemControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex /*= -1*/)
 {
 	if (g_pEditorImpl != nullptr)
 	{
@@ -620,6 +666,7 @@ void CSystemControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const p
 					{
 						pConnection->ClearPlatforms();
 					}
+
 					AddConnection(pConnection);
 				}
 				else
@@ -629,31 +676,13 @@ void CSystemControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const p
 
 				if (platformIndex != -1)
 				{
-					pConnection->EnableForPlatform(platformIndex, true);
+					pConnection->EnableForPlatform(static_cast<PlatformIndexType>(platformIndex), true);
 				}
 			}
 			else
 			{
 				AddConnection(pConnection);
 			}
-
-			AddRawXMLConnection(xmlNode, true, platformIndex);
-		}
-		else if ((m_type == ESystemItemType::Preload) && (platformIndex == -1))
-		{
-			// If it's a preload connection from another middleware and the platform
-			// wasn't found (old file format) fall back to adding them to all the platforms
-			std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
-			size_t const count = platforms.size();
-
-			for (size_t i = 0; i < count; ++i)
-			{
-				AddRawXMLConnection(xmlNode, false, i);
-			}
-		}
-		else
-		{
-			AddRawXMLConnection(xmlNode, false, platformIndex);
 		}
 	}
 }
@@ -726,7 +755,7 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 			bool hasPlaceholderConnections = false;
 			float connectionMaxRadius = 0.0f;
 
-			for (auto const& connection : m_connectedControls)
+			for (auto const& connection : m_connections)
 			{
 				IImplItem const* const pImplItem = g_pEditorImpl->GetImplItem(connection->GetID());
 
@@ -761,12 +790,6 @@ void CSystemControl::Serialize(Serialization::IArchive& ar)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControl::AddRawXMLConnection(XmlNodeRef const xmlNode, bool const isValid, int const platformIndex /*= -1*/)
-{
-	m_connectionNodes[platformIndex].emplace_back(xmlNode, isValid);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSystemControl::MatchRadiusToAttenuation()
 {
 	if (g_pEditorImpl != nullptr)
@@ -774,7 +797,7 @@ void CSystemControl::MatchRadiusToAttenuation()
 		float radius = 0.0f;
 		bool isPlaceHolder = false;
 
-		for (auto const& connection : m_connectedControls)
+		for (auto const& connection : m_connections)
 		{
 			IImplItem const* const pImplItem = g_pEditorImpl->GetImplItem(connection->GetID());
 

@@ -339,9 +339,9 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CSystemControl* cons
 		}
 
 		std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
-		size_t const count = platforms.size();
+		size_t const numPlatforms = platforms.size();
 
-		for (size_t i = 0; i < count; ++i)
+		for (size_t i = 0; i < numPlatforms; ++i)
 		{
 			XmlNodeRef pFileNode = pChildNode->createNode(CryAudio::s_szPlatformTag);
 			pFileNode->setAttr(CryAudio::s_szNameAttribute, platforms[i].c_str());
@@ -363,7 +363,7 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CSystemControl* cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* const pControl, int const platformIndex)
+void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* const pControl, int const platformIndex /*= -1*/)
 {
 	size_t const numConnections = pControl->GetConnectionCount();
 
@@ -373,7 +373,7 @@ void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* 
 
 		if (pConnection != nullptr)
 		{
-			if ((pControl->GetType() != ESystemItemType::Preload) || (pConnection->IsPlatformEnabled(platformIndex)))
+			if ((pControl->GetType() != ESystemItemType::Preload) || (pConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(platformIndex))))
 			{
 				XmlNodeRef const pChild = g_pEditorImpl->CreateXMLNodeFromConnection(pConnection, pControl->GetType());
 
@@ -423,7 +423,6 @@ void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* 
 					if (shouldAddNode)
 					{
 						pNode->addChild(pChild);
-						pControl->AddRawXMLConnection(pChild, true, platformIndex);
 					}
 				}
 			}

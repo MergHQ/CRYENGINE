@@ -303,7 +303,7 @@ QVariant CConnectionModel::data(QModelIndex const& index, int role) const
 					}
 					else if ((role == Qt::CheckStateRole) && (m_pControl->GetType() == ESystemItemType::Preload))
 					{
-						variant = pConnection->IsPlatformEnabled(index.column() - static_cast<int>(EColumns::Count)) ? Qt::Checked : Qt::Unchecked;
+						variant = pConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(index.column() - static_cast<int>(EColumns::Count))) ? Qt::Checked : Qt::Unchecked;
 					}
 				}
 			}
@@ -340,7 +340,7 @@ bool CConnectionModel::setData(QModelIndex const& index, QVariant const& value, 
 	if ((index.column() >= static_cast<int>(EColumns::Count)) && (role == Qt::CheckStateRole))
 	{
 		ConnectionPtr const pConnection = m_connectionsCache[index.row()];
-		pConnection->EnableForPlatform(index.column() - static_cast<int>(EColumns::Count), value == Qt::Checked);
+		pConnection->EnableForPlatform(static_cast<PlatformIndexType>(index.column() - static_cast<int>(EColumns::Count)), value == Qt::Checked);
 		QVector<int> roleVector(1, role);
 		dataChanged(index, index, roleVector);
 		wasDataChanged = true;

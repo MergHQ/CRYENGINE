@@ -39,7 +39,7 @@ CMainWindow::CMainWindow()
 	, m_pImplNameLabel(new QLabel(this))
 	, m_pToolBar(new QToolBar("ACE Tools", this))
 	, m_pMonitorSystem(new CFileMonitorSystem(1000, *m_pAssetsManager, this))
-	, m_pMonitorMiddleware(new CFileMonitorMiddleware(1000, *m_pAssetsManager, this))
+	, m_pMonitorMiddleware(new CFileMonitorMiddleware(500, *m_pAssetsManager, this))
 	, m_isModified(false)
 	, m_isReloading(false)
 {
@@ -528,37 +528,16 @@ void CMainWindow::ReloadSystemData()
 //////////////////////////////////////////////////////////////////////////
 void CMainWindow::ReloadMiddlewareData()
 {
-	if (m_pAssetsManager != nullptr)
-	{
-		if (m_isModified)
-		{
-			m_pMonitorMiddleware->Disable();
-
-			char const* messageText = "External changes have been made to middleware data.\n\nWarning: If middleware data gets refreshed without saving audio control files, unsaved connection changes will get lost!\n\nDo you want to save before refreshing middleware data?";
-			auto const messageBox = new CQuestionDialog();
-			messageBox->SetupQuestion(tr(GetEditorName()), tr(messageText), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::Yes);
-
-			if (messageBox->Execute() == QDialogButtonBox::Yes)
-			{
-				Save();
-			}
-
-			m_pMonitorMiddleware->Enable();
-		}
-	}
-
 	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 	BackupTreeViewStates();
 
-	if (g_pEditorImpl != nullptr)
+	if ((g_pEditorImpl != nullptr) && (m_pAssetsManager != nullptr))
 	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");
+		m_pAssetsManager->BackupAndClearAllConnections();
 		g_pEditorImpl->Reload();
+		m_pAssetsManager->ReloadAllConnections();
 	}
-
-	m_pAssetsManager->ClearAllConnections();
-	m_pAssetsManager->ReloadAllConnections();
-	m_pAssetsManager->UpdateAllConnectionStates();
 
 	if (m_pMiddlewareDataWidget != nullptr)
 	{
@@ -627,6 +606,11 @@ void CMainWindow::OnPreferencesDialog()
 			if (m_pMiddlewareDataWidget != nullptr)
 			{
 			  m_pMiddlewareDataWidget->Reset();
+			}
+
+			if (m_pPropertiesWidget != nullptr)
+			{
+			  m_pPropertiesWidget->Reload();
 			}
 
 			RestoreTreeViewStates();
