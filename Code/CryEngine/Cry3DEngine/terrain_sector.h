@@ -302,8 +302,6 @@ public:
 			m_lstFree.DeleteLast();
 			m_lstUsed.Add(pInst);
 		}
-		else
-			assert(!"TPool::GetObject: Out of free elements error");
 
 		return pInst;
 	}

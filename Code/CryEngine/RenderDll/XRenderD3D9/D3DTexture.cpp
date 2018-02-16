@@ -540,6 +540,7 @@ void CTexture::UpdateTextureRegion(byte* pSrcData, int nX, int nY, int nZ, int U
 void CTexture::RT_UpdateTextureRegion(byte* pSrcData, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat)
 {
 	PROFILE_FRAME(UpdateTextureRegion);
+	PROFILE_LABEL_SCOPE("UpdateTextureRegion");
 
 	if (m_eTT != eTT_1D && m_eTT != eTT_2D && m_eTT != eTT_3D)
 	{

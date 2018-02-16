@@ -39,6 +39,7 @@ class CSunShadows
 	{
 		Vec4 params;
 		Vec4 animParams;
+		Vec4 screenspaceShadowsParams;
 	};
 
 	struct SCascadePrimitiveContext
@@ -1014,6 +1015,10 @@ void CSunShadows::PrepareCustomShadowsPrimitive(CRenderPrimitive& primitive, _sm
 	auto constants = constantManager.BeginTypedConstantUpdate<SCloudShadowConstants>(eConstantBufferShaderSlot_PerBatch);
 	constants->params = PF.pCloudShadowParams;
 	constants->animParams = PF.pCloudShadowAnimParams;
+
+	// screen space shadows constants
+	constants->screenspaceShadowsParams = PF.pScreenspaceShadowsParams;
+
 	constantManager.EndTypedConstantUpdate(constants);
 }
 
