@@ -120,6 +120,7 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 		pFr->fRadius = m_pLightEntity->GetLightProperties().m_fRadius;
 		pFr->fRendNear = pFr->fNearDist;
 		pFr->fFrustrumSize = 1.0f / (Get3DEngine()->m_fGsmRange * pFr->aabbCasters.GetRadius() * 2.0f);
+		pFr->bUseShadowsPool = false;
 
 		const float arrWidthS[] = { 1.94f, 1.0f, 0.8f, 0.5f, 0.3f, 0.3f, 0.3f, 0.3f };
 		pFr->fWidthS = pFr->fWidthT = arrWidthS[nLod];

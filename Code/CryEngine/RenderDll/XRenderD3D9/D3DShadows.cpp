@@ -174,9 +174,6 @@ bool CD3D9Renderer::EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRende
 		ShadowMapFrustum* pCurFrustum = (*ppSMFrustumList);
 		IRenderViewPtr pShadowView = pCurFrustum->pOnePassShadowView;
 
-		//use pools
-		pCurFrustum->bUseShadowsPool = CV_r_UseShadowsPool && pLight->m_Flags & DLF_DEFERRED_LIGHT;
-
 		if (PrepareShadowGenForFrustum(pRenderView, pCurFrustum, pLight, nLightID, nCurLOD))
 		{
 			ShadowMapFrustumPtr pFrustumForRenderer = pCurFrustum->Clone();
