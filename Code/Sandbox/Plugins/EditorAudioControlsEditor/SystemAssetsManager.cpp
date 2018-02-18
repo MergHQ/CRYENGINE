@@ -47,7 +47,7 @@ void CSystemAssetsManager::Initialize()
 
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
 		{
-			ReloadAllConnections();
+			m_isLoading = false;
 	  }, reinterpret_cast<uintptr_t>(this));
 
 	CAudioControlsEditorPlugin::SignalAboutToLoad.Connect([&]()
@@ -509,18 +509,33 @@ void CSystemAssetsManager::ClearAllConnections()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CSystemAssetsManager::BackupAndClearAllConnections()
+{
+	m_isLoading = true;
+
+	for (auto const pControl : m_controls)
+	{
+		if (pControl != nullptr)
+		{
+			pControl->BackupAndClearConnections();
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystemAssetsManager::ReloadAllConnections()
 {
 	for (auto const pControl : m_controls)
 	{
 		if (pControl != nullptr)
 		{
-			pControl->ClearConnections();
 			pControl->ReloadConnections();
 		}
 	}
 
 	m_isLoading = false;
+
+	UpdateAllConnectionStates();
 }
 
 //////////////////////////////////////////////////////////////////////////

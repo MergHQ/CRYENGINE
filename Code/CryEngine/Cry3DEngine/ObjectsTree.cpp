@@ -2606,6 +2606,9 @@ void COctreeNode::ReleaseObjects(bool bReleaseOnlyStreamable)
 					if (IsObjectStreamable(pObj->GetRenderNodeType(), pObj->m_dwRndFlags))
 						m_nInstCounterLoaded--;
 
+					if (pObj->GetRndFlags() & ERF_PROCEDURAL && pObj->GetRenderNodeType() == eERType_Vegetation)
+						Get3DEngine()->UnRegisterEntityDirect(pObj); // procedural vegetation uses custom pooled allocator
+					else
 					pObj->ReleaseNode(true);
 				}
 			}
@@ -3000,30 +3003,14 @@ void COctreeNode::RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfo
 
 			passInfoShadow.GetRendItemSorter().IncreaseObjectCounter();
 
-			switch (nodeType)
+			if (nodeType == eERType_ParticleEmitter)
 			{
-			case eERType_Brush:
-			case eERType_MovableBrush:
-				((CBrush*)pObj)->CBrush::Render(*lodValue, passInfoShadow, pTerrainTexInfo, pAffectingLights);
-				break;
-
-			case eERType_Vegetation:
-				((CVegetation*)pObj)->CVegetation::Render(passInfoShadow, *lodValue, pTerrainTexInfo);
-				break;
-
-			default:
-
-				if (nodeType == eERType_ParticleEmitter)
-				{
-					bool bParticleShadows = (pFr->m_Flags & DLF_SUN) && (pFr->nShadowMapLod < GetCVars()->e_ParticleShadowsNumGSMs);
-					if (!bParticleShadows)
-						continue;
-				}
-
-				pObj->Render(*rendParams, passInfoShadow);
-				break;
+				bool bParticleShadows = (pFr->m_Flags & DLF_SUN) && (pFr->nShadowMapLod < GetCVars()->e_ParticleShadowsNumGSMs);
+				if (!bParticleShadows)
+					continue;
 			}
 
+			Get3DEngine()->RenderRenderNode_ShadowPass(pObj, passInfoShadow);
 			pFr->GetOnePassCastersCount()++;
 
 			passId++;

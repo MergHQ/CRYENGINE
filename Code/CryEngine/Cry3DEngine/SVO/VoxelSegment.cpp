@@ -998,14 +998,17 @@ bool CVoxelSegment::UpdateBrickRenderData()
 	Vec3i vOffset(m_pBlockInfo->m_dwMinX, m_pBlockInfo->m_dwMinY, m_pBlockInfo->m_dwMinZ);
 	m_allocatedAtlasOffset = vOffset.z * SVO_ATLAS_DIM_MAX_XY * SVO_ATLAS_DIM_MAX_XY + vOffset.y * SVO_ATLAS_DIM_MAX_XY + vOffset.x;
 
-	if (m_vCropTexSize.GetVolume() && m_voxData.pData[SVoxBrick::OPA3D])
+	if (GetCVars()->e_svoMaxBrickUpdates > 0)
 	{
-		UpdateVoxRenderData();
+		if (m_vCropTexSize.GetVolume() && m_voxData.pData[SVoxBrick::OPA3D])
+		{
+			UpdateVoxRenderData();
+		}
+
+		UpdateNodeRenderData();
+
+		UpdateMeshRenderData();
 	}
-
-	UpdateNodeRenderData();
-
-	UpdateMeshRenderData();
 
 	return true;
 }
@@ -2535,8 +2538,8 @@ void CVoxelSegment::AddTriangle(const SRayHitTriangleIndexed& tr, int trId, PodA
 	triBox.Add(arrV[2]);
 	triBox.Add(arrV[1]);
 
-	const float voxSize = GetBoxSize() / (float)SVO_VOX_BRICK_MAX_SIZE / 2.f;
-	triBox.Expand(Vec3(voxSize, voxSize, voxSize)); // for RT
+	const float voxSizeExpand = GetBoxSize() / (float)SVO_VOX_BRICK_MAX_SIZE / 8.f;
+	triBox.Expand(Vec3(voxSizeExpand, voxSizeExpand, voxSizeExpand)); // for RT
 
 	AABB nodeBoxWS = m_boxOS;
 	nodeBoxWS.min += m_vSegOrigin;

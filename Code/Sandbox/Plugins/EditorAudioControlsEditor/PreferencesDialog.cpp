@@ -106,7 +106,7 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 					    pImplSettings->SetProjectPath(QtUtil::ToString(pLineEdit->text()));
 					    SignalImplementationSettingsAboutToChange();
 					    // clear all connections to the middleware since we are reloading everything
-					    CAudioControlsEditorPlugin::GetAssetsManager()->ClearAllConnections();
+					    CAudioControlsEditorPlugin::GetAssetsManager()->BackupAndClearAllConnections();
 					    g_pEditorImpl->Reload();
 					    CAudioControlsEditorPlugin::GetAssetsManager()->ReloadAllConnections();
 					    SignalImplementationSettingsChanged();

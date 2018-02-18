@@ -13,18 +13,6 @@ namespace ACE
 {
 struct IImplItem;
 
-struct SRawConnectionData
-{
-	SRawConnectionData(XmlNodeRef const node, bool const isValid_)
-		: xmlNode(node)
-		, isValid(isValid_) {}
-
-	XmlNodeRef xmlNode;
-	bool       isValid; // indicates if the connection is valid for the currently loaded middle-ware
-};
-
-using XMLNodeList = std::vector<SRawConnectionData>;
-
 enum class ESystemAssetFlags
 {
 	None                     = 0,
@@ -122,7 +110,7 @@ public:
 	std::vector<CID> const& GetSelectedConnections() const                                 { return m_selectedConnectionIds; }
 	void                    SetSelectedConnections(std::vector<CID> selectedConnectionIds) { m_selectedConnectionIds = selectedConnectionIds; }
 
-	size_t                  GetConnectionCount() const                                     { return m_connectedControls.size(); }
+	size_t                  GetConnectionCount() const                                     { return m_connections.size(); }
 	void                    AddConnection(ConnectionPtr const pConnection);
 	void                    RemoveConnection(ConnectionPtr const pConnection);
 	void                    RemoveConnection(IImplItem* const pImplItem);
@@ -130,15 +118,13 @@ public:
 	ConnectionPtr           GetConnectionAt(size_t const index) const;
 	ConnectionPtr           GetConnection(CID const id) const;
 	ConnectionPtr           GetConnection(IImplItem const* const pImplItem) const;
+	void                    BackupAndClearConnections();
 	void                    ReloadConnections();
 	void                    LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex = -1);
 
 	void                    MatchRadiusToAttenuation();
 
 	virtual void            Serialize(Serialization::IArchive& ar) override;
-
-	// All the raw connection nodes. Used for reloading the data when switching middleware.
-	void AddRawXMLConnection(XmlNodeRef const xmlNode, bool const isValid, int const platformIndex = -1);
 
 private:
 
@@ -150,11 +136,12 @@ private:
 
 	CID                        m_id = ACE_INVALID_ID;
 	Scope                      m_scope = 0;
-	std::vector<ConnectionPtr> m_connectedControls;
+	std::vector<ConnectionPtr> m_connections;
 	float                      m_radius = 0.0f;
 	bool                       m_isAutoLoad = true;
 
-	std::map<int, XMLNodeList> m_connectionNodes;
+	using XMLNodeList = std::vector<XmlNodeRef>;
+	std::map<int, XMLNodeList> m_rawConnections;
 	std::vector<CID>           m_selectedConnectionIds;
 };
 

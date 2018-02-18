@@ -573,6 +573,7 @@ void CLightEntity::InitShadowFrustum_SUN_Conserv(ShadowMapFrustum* pFr, int dwAl
 	pFr->pLightOwner = m_light.m_pOwner;
 	pFr->m_Flags = m_light.m_Flags;
 	pFr->bIncrementalUpdate = false;
+	pFr->bUseShadowsPool = false;
 
 	const AABB& box = GetBBox();
 	const float fBoxRadius = max(0.00001f, box.GetRadius());
@@ -1367,6 +1368,7 @@ void CLightEntity::InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllo
 	pFr->fNearDist = 0.01f;
 	pFr->fFarDist = m_light.m_fRadius;
 	pFr->nOmniFrustumMask.set(0);
+	pFr->bUseShadowsPool = (m_light.m_Flags & DLF_DEFERRED_LIGHT) != 0;
 
 	// set texture size
 	uint32 nTexSize = GetCVars()->e_ShadowsMaxTexRes;

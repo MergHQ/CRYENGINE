@@ -829,10 +829,10 @@ namespace UQS
 
 				int hours, minutes, seconds, milliseconds;
 
-				UQS::Shared::CTimeValueUtil::Split(m_queryCreatedTimestamp, &hours, &minutes, &seconds, &milliseconds);
+				m_queryCreatedTimestamp.Split(&hours, &minutes, &seconds, &milliseconds);
 				consumer.AddTextLineToCurrentHistoricQuery(color, "timestamp query created:      %i:%02i:%02i:%03i", hours, minutes, seconds, milliseconds);
 
-				UQS::Shared::CTimeValueUtil::Split(m_queryDestroyedTimestamp, &hours, &minutes, &seconds, &milliseconds);
+				m_queryDestroyedTimestamp.Split(&hours, &minutes, &seconds, &milliseconds);
 				consumer.AddTextLineToCurrentHistoricQuery(color, "timestamp query destroyed:    %i:%02i:%02i:%03i", hours, minutes, seconds, milliseconds);
 			}
 

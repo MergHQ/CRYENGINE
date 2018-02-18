@@ -29,7 +29,7 @@ private:
 	ExecutionStackFileLogger(const ExecutionStackFileLogger&);
 	ExecutionStackFileLogger& operator=(const ExecutionStackFileLogger&);
 
-	void                      LogNodeRecursively(const DebugNode& debugNode, const UpdateContext& updateContext, const BehaviorTreeInstance& instance, const int indentLevel);
+	void                      LogNodeRecursively(const DebugNode& debugNode, const int indentLevel);
 
 	string           m_agentName;
 	char             m_logFilePath[ICryPak::g_nMaxPath];
