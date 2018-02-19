@@ -2025,6 +2025,12 @@ void CEntityPhysics::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 				GetEntity()->GetEntityRender()->SetSlotGeometry(0, pStatObjNew);
 			}
 			GetEntity()->GetEntityRender()->InvalidateLocalBounds();
+			// need to force BBox to the brush since it can skip BBox update from XForm if the matrix doesn't change
+			CEntitySlot *pSlot = GetEntity()->GetSlot(0);
+			AABB bbox, bboxLoc(AABB::RESET); 
+			pSlot->GetLocalBounds(bboxLoc);
+			bbox.SetTransformedAABB(pSlot->GetWorldTM(), bboxLoc);
+			pRenderNode->SetBBox(bbox);
 		}
 	}
 
