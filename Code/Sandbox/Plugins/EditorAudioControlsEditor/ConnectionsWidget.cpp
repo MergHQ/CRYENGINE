@@ -66,13 +66,15 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 			UpdateSelectedConnections();
 	  });
 
-	QSplitter* const pSplitter = new QSplitter(Qt::Vertical, this);
+	auto const pSplitter = new QSplitter(Qt::Vertical, this);
 	pSplitter->addWidget(m_pTreeView);
 	pSplitter->addWidget(m_pConnectionProperties);
 	pSplitter->setCollapsible(0, false);
 	pSplitter->setCollapsible(1, false);
+	pSplitter->setStretchFactor(0, 0);
+	pSplitter->setStretchFactor(1, 1);
 
-	QVBoxLayout* const pMainLayout = new QVBoxLayout(this);
+	auto const pMainLayout = new QVBoxLayout(this);
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
 	pMainLayout->addWidget(pSplitter);
 	setLayout(pMainLayout);
@@ -83,7 +85,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 		{
 			if (!CAudioControlsEditorPlugin::GetAssetsManager()->IsLoading() && (m_pControl == pControl))
 			{
-			  // clear the selection if a connection is removed
+			  // Clear the selection if a connection is removed.
 			  m_pTreeView->selectionModel()->clear();
 			  RefreshConnectionProperties();
 			}
@@ -194,7 +196,7 @@ void CConnectionsWidget::RemoveSelectedConnection()
 {
 	if (m_pControl != nullptr)
 	{
-		CQuestionDialog* const messageBox = new CQuestionDialog();
+		auto const messageBox = new CQuestionDialog();
 		QModelIndexList const& selectedIndexes = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
 
 		if (!selectedIndexes.empty())
@@ -294,34 +296,33 @@ void CConnectionsWidget::Reload()
 //////////////////////////////////////////////////////////////////////////
 void CConnectionsWidget::RefreshConnectionProperties()
 {
-	ConnectionPtr pConnection;
+	m_pConnectionProperties->detach();
+
+	Serialization::SStructs serializers;
+	bool showProperties = false;
 
 	if (m_pControl != nullptr)
 	{
 		QModelIndexList const& selectedIndexes = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
 
-		if (!selectedIndexes.empty())
+		for (auto const& index : selectedIndexes)
 		{
-			QModelIndex const& index = selectedIndexes[0];
-
 			if (index.isValid())
 			{
 				CID const id = index.data(static_cast<int>(CConnectionModel::ERoles::Id)).toInt();
-				pConnection = m_pControl->GetConnection(id);
+				ConnectionPtr const pConnection = m_pControl->GetConnection(id);
+
+				if ((pConnection != nullptr) && pConnection->HasProperties())
+				{
+					serializers.emplace_back(*pConnection);
+					showProperties = true;
+				}
 			}
 		}
 	}
 
-	if ((pConnection != nullptr) && pConnection->HasProperties())
-	{
-		m_pConnectionProperties->attach(Serialization::SStruct(*pConnection.get()));
-		m_pConnectionProperties->setHidden(false);
-	}
-	else
-	{
-		m_pConnectionProperties->detach();
-		m_pConnectionProperties->setHidden(true);
-	}
+	m_pConnectionProperties->attach(serializers);
+	m_pConnectionProperties->setHidden(!showProperties);
 }
 
 //////////////////////////////////////////////////////////////////////////
