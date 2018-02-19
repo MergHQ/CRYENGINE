@@ -42,9 +42,9 @@ namespace Cry
 					desc.AddMember(&CRigidBodyComponent::SBuoyancyParameters::resistance, 'rest', "Resistance", "Resistance", "Resistance of the fluid", 1000.f);
 				}
 
-				Schematyc::PositiveFloat damping = 1.f;
-				Schematyc::PositiveFloat density = 1.f;
-				Schematyc::PositiveFloat resistance = 1.f;
+				Schematyc::PositiveFloat damping = 0.0f;
+				Schematyc::PositiveFloat density = 1000.0f;
+				Schematyc::PositiveFloat resistance = 1000.0f;
 			};
 
 			static void ReflectType(Schematyc::CTypeDesc<CRigidBodyComponent>& desc)

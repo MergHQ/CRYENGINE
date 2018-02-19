@@ -81,6 +81,10 @@ class IBenchmarkRendererSensor;
 class CAsyncShaderTask;
 #endif
 
+#if !defined(ENABLE_RENDER_AUX_GEOM)
+class CAuxGeomCBCollector;
+#endif
+
 enum class EWindowState
 {
 	//! Normal window with borders
@@ -635,6 +639,7 @@ public:
 	
 
 private:
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	CAuxGeomCBCollector* m_currentAuxGeomCBCollector;
 
 	// Aux Geometry Collector Pool
@@ -650,6 +655,7 @@ private:
 	};
 
 	CAuxGeomCB	m_renderThreadAuxGeom;	
+#endif
 
 public:
 	
