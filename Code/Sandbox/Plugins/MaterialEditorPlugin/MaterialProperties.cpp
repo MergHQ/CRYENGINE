@@ -575,7 +575,8 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 			}
 				
 
-			ar.openBlock(m_textureSlotLabels[texId].c_str(), m_textureSlotLabels[texId].c_str());
+			if (!ar.openBlock(m_textureSlotLabels[texId].c_str(), m_textureSlotLabels[texId].c_str()))
+				continue;
 
 			string textureFilePath = shaderTexture.m_Name;
 
@@ -662,9 +663,8 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 				ar(ssao, "ssao", "SSAO Amount");
 				shaderResources.m_DetailDecalInfo.nSSAOAmount = (uint8)int_round(ssao / fUint8RatioToFloat);
 
+				if (ar.openBlock("top", "-Top Layer"))
 				{
-					ar.openBlock("top", "-Top Layer");
-
 					Vec2 tile(shaderResources.m_DetailDecalInfo.vTileOffs[0].x, shaderResources.m_DetailDecalInfo.vTileOffs[0].y);
 					ar(tile, "tile", "Tile");
 
@@ -686,9 +686,8 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 					ar.closeBlock();
 				}
 
+				if (ar.openBlock("bottom", "-Bottom Layer"))
 				{
-					ar.openBlock("bottom", "-Bottom Layer");
-
 					Vec2 tile(shaderResources.m_DetailDecalInfo.vTileOffs[1].x, shaderResources.m_DetailDecalInfo.vTileOffs[1].y);
 					ar(tile, "tile", "Tile");
 
@@ -716,9 +715,8 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 
 		if (pTexModifier)
 		{
+			if (ar.openBlock("tiling", "-Tiling"))
 			{
-				ar.openBlock("tiling", "-Tiling");
-
 				ar.openBlock("isTilingUV", "Is Tiling UV");
 				ar(shaderTexture.m_bUTile, "isTilingU", "^Is Tiling U");
 
@@ -748,9 +746,8 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 				ar.closeBlock();
 			}
 		
+			if (ar.openBlock("rotator", "-Rotator"))
 			{
-				ar.openBlock("rotator", "-Rotator");
-
 				ETexModRotateType type = (ETexModRotateType)pTexModifier->m_eRotType;
 				ar(type, "type", "Type");
 				pTexModifier->m_eRotType = (uint8)type;
@@ -769,9 +766,8 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 				ar.closeBlock();
 			}
 
+			if (ar.openBlock("oscillator", "-Oscillator"))
 			{
-				ar.openBlock("oscillator", "-Oscillator");
-
 				ar.openBlock("typeUV", "Type UV");
 
 				ETexModMoveType typeU = (ETexModMoveType)pTexModifier->m_eMoveType[0];

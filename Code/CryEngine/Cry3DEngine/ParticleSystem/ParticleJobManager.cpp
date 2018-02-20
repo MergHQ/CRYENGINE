@@ -1,12 +1,5 @@
 // Copyright 2015-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  Created:     13/03/2015 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "ParticleJobManager.h"
 #include "ParticleManager.h"
@@ -16,13 +9,23 @@
 #include "ParticleProfiler.h"
 #include <CryRenderer/IGpuParticles.h>
 
-static const uint MaxJobsPerThread = 16;
-
-DECLARE_JOB("Particles : ScheduleUpdates"    , TScheduleUpdatesJob    , pfx2::CParticleJobManager::Job_ScheduleUpdates);
-DECLARE_JOB("Particles : UpdateEmitters"     , TUpdateEmittersJob     , pfx2::CParticleJobManager::Job_UpdateEmitters);
-
 namespace pfx2
 {
+
+int e_ParticlesJobsPerThread = 16;
+
+CParticleJobManager::CParticleJobManager()
+{
+	REGISTER_CVAR(e_ParticlesJobsPerThread, 16, 0, "Maximum particle jobs to assign per worker thread");
+	if (gEnv && gEnv->pRenderer)
+		gEnv->pRenderer->RegisterSyncWithMainListener(this);
+}
+
+CParticleJobManager::~CParticleJobManager()
+{
+	if (gEnv && gEnv->pRenderer)
+		gEnv->pRenderer->RemoveSyncWithMainListener(this);
+}
 
 void CParticleJobManager::AddDeferredRender(CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
 {
@@ -52,58 +55,112 @@ void CParticleJobManager::ScheduleUpdates()
 		return;
 
 	CRY_PFX2_ASSERT(!m_updateState.IsRunning());
-	if (!Cry3DEngineBase::GetCVars()->e_ParticlesThread)
+	if (ThreadMode() == 0)
 	{
+		// Update synchronously in main thread
 		for (auto pEmitter : m_emitterRefs)
 			pEmitter->UpdateAll();
 		return;
 	}
 
-	m_updateState.SetRunning();
-	TScheduleUpdatesJob job;
-	job.SetClassInstance(this);
-	job.Run();
+	auto job = [this]()
+	{
+		Job_ScheduleUpdates();
+	};
+	gEnv->pJobManager->AddLambdaJob("job:pfx2:ScheduleUpdates", job, JobManager::eRegularPriority, &m_updateState);
 }
 
 void CParticleJobManager::Job_ScheduleUpdates()
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
+	JobManager::TPriorityLevel priority = JobManager::eRegularPriority;
+
+	if (ThreadMode() == 3)
+	{
+		// Split emitters into visible and hidden, schedule visible first
+		const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
+
+		TDynArray<CParticleEmitter*> visible, hidden;
+		for (auto pEmitter : m_emitterRefs)
+		{
+			if (camera.IsAABBVisible_F(pEmitter->GetBBox()))
+				visible.push_back(pEmitter);
+			else
+				hidden.push_back(pEmitter);
+		}
+
+		// Sort by camera Z
+		Vec3 sortDir = -camera.GetViewdir();
+		stl::sort(visible, [sortDir](const CParticleEmitter* pe)
+		{
+			return pe->GetLocation().t | sortDir;
+		});
+
+		for (auto pEmitter : visible)
+		{
+			auto job = [pEmitter]()
+			{
+				pEmitter->UpdateAll();
+			};
+			gEnv->pJobManager->AddLambdaJob("job:pfx2:UpdateEmitter", job, priority, &m_updateState);
+		}
+
+		std::swap(m_emitterRefs, hidden);
+		priority = JobManager::eStreamPriority;
+	}
 
 	// Split emitter list into jobs
-	const uint maxJobs = gEnv->pJobManager->GetNumWorkerThreads() * MaxJobsPerThread;
+	const uint maxJobs = gEnv->pJobManager->GetNumWorkerThreads() * e_ParticlesJobsPerThread;
 	const uint numJobs = min(m_emitterRefs.size(), maxJobs);
-
-	m_updateState.SetRunning(numJobs);
 
 	uint e = 0;
 	for (uint j = 0; j < numJobs; ++j)
 	{
-		uint e2 = (j+1) * m_emitterRefs.size() / numJobs;
-		TUpdateEmittersJob job(m_emitterRefs(e, e2 - e));
+		uint e2 = (j + 1) * m_emitterRefs.size() / numJobs;
+		auto emitters = m_emitterRefs(e, e2 - e);
 		e = e2;
-		job.SetClassInstance(this);
-		job.Run();
+
+		auto job = [emitters]()
+		{
+			for (auto pEmitter : emitters)
+				pEmitter->UpdateAll();
+		};
+		gEnv->pJobManager->AddLambdaJob("job:pfx2:UpdateEmitters", job, priority, &m_updateState);
 	}
 	CRY_PFX2_ASSERT(e == m_emitterRefs.size());
-	m_updateState.SetStopped();
 }
 
 void CParticleJobManager::SynchronizeUpdates()
 {
-	CRY_PFX2_PROFILE_DETAIL;
-	gEnv->pJobManager->WaitForJob(m_updateState);
-	m_emitterRefs.clear();
+	if (ThreadMode() == 1)
+	{
+		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+		m_updateState.Wait();
+		m_emitterRefs.clear();
+	}
+}
+
+void CParticleJobManager::SyncMainWithRender()
+{
+	if (ThreadMode() > 1)
+	{
+		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+		m_updateState.Wait();
+		m_emitterRefs.clear();
+	}
 }
 
 void CParticleJobManager::DeferredRender()
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	for (const SDeferredRender& render : m_deferredRenders)
 	{
 		CParticleComponentRuntime* pRuntime = render.m_pRuntime;
 		CParticleComponent* pComponent = pRuntime->GetComponent();
 		CParticleEmitter* pEmitter = pRuntime->GetEmitter();
+		pEmitter->SyncUpdate();
 		SRenderContext renderContext(render.m_rParam, render.m_passInfo);
 		renderContext.m_distance = render.m_distance;
 		renderContext.m_lightVolumeId = render.m_lightVolumeId;
@@ -113,11 +170,5 @@ void CParticleJobManager::DeferredRender()
 	m_deferredRenders.clear();
 }
 
-void CParticleJobManager::Job_UpdateEmitters(TVarArray<CParticleEmitter*> emitters)
-{
-	for (auto pEmitter : emitters)
-		pEmitter->UpdateAll();
-	m_updateState.SetStopped();
-}
 
 }

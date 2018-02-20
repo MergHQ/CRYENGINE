@@ -164,6 +164,17 @@ inline void set_to_vector(const Set& theSet, Vector& array)
 }
 
 //////////////////////////////////////////////////////////////////////////
+template<typename Container, typename KeyFunc>
+void sort(Container& cont, KeyFunc key)
+{
+	using Ref = typename Container::const_reference;
+	std::sort(cont.begin(), cont.end(), [key](Ref a, Ref b)
+	{
+		return key(a) < key(b);
+	});
+}
+
+//////////////////////////////////////////////////////////////////////////
 template<typename C, typename V>
 int find_index(const C& container, const V& value)
 {

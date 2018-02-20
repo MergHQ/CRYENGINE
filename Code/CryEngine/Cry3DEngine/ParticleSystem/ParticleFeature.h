@@ -1,12 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  Created:     24/09/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include "ParticleUpdate.h"
@@ -78,7 +71,6 @@ public:
 	virtual void ComputeBounds(CParticleComponentRuntime* pComponentRuntime, AABB& bounds) {}
 
 	// Rendering
-	virtual void PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent, bool bPrepare) {}
 	virtual void Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
 	virtual void RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
 	virtual void ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) {}
@@ -121,7 +113,6 @@ struct SFeatureDispatchers
 	TFeatureDispatcher<CParticleComponentRuntime*, AABB&> ComputeBounds { &CParticleFeature::ComputeBounds };
 	TFeatureDispatcher<const SUpdateContext&, gpu_pfx2::SUpdateParams&> UpdateGPUParams { &CParticleFeature::UpdateGPUParams };
 
-	TFeatureDispatcher<CParticleEmitter*, CParticleComponent*, bool> PrepareRenderObjects { &CParticleFeature::PrepareRenderObjects };
 	TFeatureDispatcher<CParticleEmitter*, CParticleComponentRuntime*, CParticleComponent*, const SRenderContext&> Render { &CParticleFeature::Render };
 	TFeatureDispatcher<CParticleEmitter*, CParticleComponentRuntime*, CParticleComponent*, const SRenderContext&> RenderDeferred { &CParticleFeature::RenderDeferred };
 	TFeatureDispatcher<CParticleComponentRuntime*, const SCameraInfo&, CREParticle*, uint64, float> ComputeVertices { &CParticleFeature::ComputeVertices };
