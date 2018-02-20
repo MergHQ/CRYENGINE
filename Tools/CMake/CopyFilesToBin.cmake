@@ -84,7 +84,19 @@ macro(add_optional_runtime_files)
 	endif()
 endmacro()
 
-macro(deploy_runtime_file source destination)
+macro(deploy_runtime_file source)
+	if(${ARGC} GREATER 1)
+		deploy_runtime_file_impl(${source} ${ARGV1})
+	else()
+		set_base_outdir()
+		get_filename_component(FILE_NAME "${source}" NAME)
+		# Ensure remainders of a generator expression get removed
+		string(REPLACE ">" "" FILE_NAME "${FILE_NAME}")
+		deploy_runtime_file_impl(${source} "${base_outdir}/${FILE_NAME}")
+	endif()
+endmacro()
+
+macro(deploy_runtime_file_impl source destination)
 	if(USE_CONFIG)
 		# HACK: This works on the assumption that any individual file is only used by *one* configuration, or *all* configurations. CMake will generate errors otherwise.
 		list(APPEND DEPLOY_FILES "$<$<CONFIG:${USE_CONFIG}>:${source}>")
