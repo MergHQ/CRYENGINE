@@ -241,22 +241,23 @@ class dlgMissingSDKs(tk.Frame):
         self.parent.destroy()
         sys.exit()
 
-iconfile = "icon.ico"
-if not hasattr(sys, "frozen"):
-    iconfile = os.path.join(os.path.dirname(__file__), iconfile)
-else:
-    iconfile = os.path.join(sys.prefix, iconfile)
+def main():
+    iconfile = "icon.ico"
+    if not hasattr(sys, "frozen"):
+        iconfile = os.path.join(os.path.dirname(__file__), iconfile)
+    else:
+        iconfile = os.path.join(sys.prefix, iconfile)
 
-# Check Code/SDKs folder exists before proceeding
-if not os.path.exists(os.path.join(CMAKE_DIR, 'Bootstrap.cmake')):
-    dlgRoot = tk.Tk()
-    dlgRoot.iconbitmap(iconfile)
-    dialog = dlgMissingSDKs(master=dlgRoot)
-    center_window(dlgRoot)
-    dialog.mainloop()
+    # Check if Code/SDKs folder should exist before proceeding
+    if not os.path.exists(os.path.join(CMAKE_DIR, 'Bootstrap.cmake')) and not os.path.isdir(CODE_SDKS_DIR):
+        dlgRoot = tk.Tk()
+        dlgRoot.iconbitmap(iconfile)
+        dialog = dlgMissingSDKs(master=dlgRoot)
+        center_window(dlgRoot)
+        dialog.mainloop()
 
-root = tk.Tk()
-root.iconbitmap(iconfile)
-app = Application(master=root)
-center_window(root)
-app.mainloop()
+    root = tk.Tk()
+    root.iconbitmap(iconfile)
+    app = Application(master=root)
+    center_window(root)
+    app.mainloop()
