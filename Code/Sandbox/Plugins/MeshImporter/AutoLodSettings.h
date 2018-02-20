@@ -71,7 +71,7 @@ public:
 
 	bool                IncludeNode(string name) const
 	{
-		for each (sNode node in m_nodeParams)
+		for(sNode node : m_nodeParams)
 		{
 			if (node.m_nodeName == name)
 				return true;
@@ -81,7 +81,7 @@ public:
 
 	sNodeParam GetNodeParam(string name) const
 	{
-		for each (sNode node in m_nodeParams)
+		for(sNode node : m_nodeParams)
 		{
 			if (node.m_nodeName == name)
 				return node.m_nodeParam;

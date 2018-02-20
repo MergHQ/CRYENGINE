@@ -7,10 +7,12 @@ set(LINUX 1)
 set(LINUX64 1)
 set(OUTPUT_DIRECTORY_NAME "linux_x64_gcc")
 
-if(NOT CMAKE_C_COMPILER)
+
+# QtCreator requires selection of a "kit", which includes these, so don't force them.
+if (NOT CMAKE_C_COMPILER)
 	set(CMAKE_C_COMPILER gcc-7)
 endif()
-if(NOT CMAKE_CXX_COMPILER)
+if (NOT CMAKE_CXX_COMPILER)
 	set(CMAKE_CXX_COMPILER g++-7)
 endif()
 
