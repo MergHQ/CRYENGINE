@@ -39,7 +39,7 @@ if (NOT TARGET redshellsdk)
 	set_target_properties(redshellsdk PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${RED_SHELL_SDK_INCLUDE_DIRS}")
 
 	# uses generator expressions; if we are compiling in debug, then this generator expression will insert /Debug to the path
-	deploy_runtime_files("${RED_SHELL_SDK_BIN_DIRS}$<$<CONFIG:Debug>:/Debug>/RedShell.dll")
+	deploy_runtime_file("${RED_SHELL_SDK_BIN_DIRS}$<$<CONFIG:Debug>:/Debug>/RedShell.dll")
 
 	find_package(PackageHandleStandardArgs)
 	FIND_PACKAGE_HANDLE_STANDARD_ARGS(redshellsdk DEFAULT_MSG
