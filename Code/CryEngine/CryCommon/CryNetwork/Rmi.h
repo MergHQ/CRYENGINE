@@ -189,6 +189,11 @@ public:
 	{
 		Invoke(this_user, std::forward<Param>(p), eRMI_ToServer, -1, dependentId);
 	}
+
+	static inline void InvokeOnOwnClient(User *this_user, Param&& p, const EntityId dependentId = 0)
+	{
+		Invoke(this_user, std::forward<Param>(p), eRMI_ToOwnClient, -1, dependentId);
+	}
 };
 
 #define RMI_WRAP(x) decltype(x),x
