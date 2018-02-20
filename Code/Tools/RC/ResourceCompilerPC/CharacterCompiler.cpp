@@ -33,7 +33,7 @@
 #include "FileUtil.h"
 #include "UpToDateFileHelpers.h"
 #include <CryAnimation/IAttachment.h>
-#include "CGF\CGFNodeMerger.h"
+#include "CGF/CGFNodeMerger.h"
 #include "RcFile.h"
 #include "../CryEngine/CryAnimation/AttachmentVClothPreProcess.h"
 
@@ -922,7 +922,7 @@ bool CharacterCompiler::LoadCDFAssets(const char * sourceFile, const char * fina
 			string newext;
 			newext.Format("_lod%d.skin", item->first);
 			PathUtil::RemoveExtension(fullpath);
-			newlodpath.Format("%s%s", fullpath, newext);
+			newlodpath.Format("%s%s", fullpath.c_str(), newext.c_str());
 		}
 
 		pContent = MakeMergedCGF(newlodpath.c_str(), pMaterial, item->second, config, item->first != 0, basematerial);

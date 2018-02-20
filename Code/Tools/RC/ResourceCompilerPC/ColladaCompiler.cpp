@@ -34,7 +34,7 @@
 
 #include <CrySystem/XML/IXml.h>
 #include "../../CryXML/IXMLSerializer.h"
-#include "../../CryXML/Xml/xml.h"
+#include "../../CryXML/XML/xml.h"
 
 #include <iterator>
 

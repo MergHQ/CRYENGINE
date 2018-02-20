@@ -23,9 +23,13 @@ add_sources("NoUberFile"
 		"../../CryCommonTools/StringHelpers.h"
 	SOURCE_GROUP "MeshCompiler (Cry3DEngine)"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/ForsythFaceReorderer.cpp"
+		"../../../CryEngine/Cry3DEngine/MeshCompiler/ForsythFaceReorderer.h"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/MeshCompiler.cpp"
+		"../../../CryEngine/Cry3DEngine/MeshCompiler/MeshCompiler.h"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/TangentSpaceCalculation.cpp"
+		"../../../CryEngine/Cry3DEngine/MeshCompiler/TangentSpaceCalculation.h"
 		"${SDK_DIR}/TangentBasisComputation/mikkelsen/mikktspace.cpp"
+		"${SDK_DIR}/TangentBasisComputation/mikkelsen/mikktspace.h"
 	SOURCE_GROUP "Source Files"
 		"ResourceCompilerABC.cpp"
 		"../ResourceCompiler/IConfig.cpp"
@@ -40,7 +44,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryResourceCompilerModule(ResourceCompilerABC PCH "StdAfx.cpp" SOLUTION_FOLDER "RC")
+CryResourceCompilerModule(ResourceCompilerABC PCH "stdafx.cpp" SOLUTION_FOLDER "RC")
 target_include_directories(${THIS_PROJECT} PRIVATE 
 	"${CMAKE_SOURCE_DIR}/ResourceCompiler"
 	"${CRYENGINE_SOURCE_DIR}/Code/Tools" 
