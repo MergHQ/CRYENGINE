@@ -502,7 +502,7 @@ void CRenderMesh::Cleanup()
 	for (size_t i=0,end=m_RemappedBoneIndices.size(); i<end; ++i)
 	{
 		if (m_RemappedBoneIndices[i].refcount && m_RemappedBoneIndices[i].guid != ~0u) 
-			CryLogAlways("remapped bone indices with refcount '%u' still around for '%s 0x%p\n", m_RemappedBoneIndices[i].refcount, m_sSource.c_str(), this);
+			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "remapped bone indices with refcount '%u' still around for '%s 0x%p\n", m_RemappedBoneIndices[i].refcount, m_sSource.c_str(), this);
 		if (m_RemappedBoneIndices[i].buffer != ~0u) 
 			gRenDev->m_DevBufMan.Destroy(m_RemappedBoneIndices[i].buffer);
 	}

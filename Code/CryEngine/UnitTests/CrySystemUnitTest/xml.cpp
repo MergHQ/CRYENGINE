@@ -5,13 +5,13 @@
 #include <CryMemory/CrySizer.h>
 #include <XML/xml.h>
 
-TEST(CryCXmlNode, Construction)
+TEST(CryCXmlNodeTest, Construction)
 {
 	CXmlNode n;
 	REQUIRE(n.GetRefCount() == 0);
 }
 
-TEST(CryCXmlNode, Construction2)
+TEST(CryCXmlNodeTest, Construction2)
 {
 	CXmlNode n{"???", true};
 	REQUIRE(n.GetRefCount() == 0);

@@ -2,7 +2,7 @@
 
 // ResourceCompiler.cpp: Defines the entry point for the console application.
 
-#include "stdafx.h"
+#include "StdAfx.h"
 
 // Must be included only once in DLL module.
 #include <CryCore/Assert/CryAssert_impl.h>
@@ -28,7 +28,7 @@
 #include "ListFile.h"
 #include "Util.h"
 #include "ICryXML.h"
-#include "IXmlSerializer.h"
+#include "IXMLSerializer.h"
 #include "MathHelpers.h"
 #include "NameConverter.h"
 #include <CryCore/CryCrc32.h>
@@ -265,7 +265,7 @@ struct RcThreadData
 };
 
 unsigned int WINAPI ThreadFunc(void* threadDataMemory);
-	
+
 static void CompileFilesMultiThreaded(
 	ResourceCompiler* pRC,
 	unsigned long a_tlsIndex_pThreadData,
@@ -824,7 +824,7 @@ bool ResourceCompiler::CompileFiles(const std::vector<RcFile>& files, const ICon
 
 		if (!converter)
 		{
-			RCLogWarning("Cannot find converter for %s", filenameForConverterSearch);
+			RCLogWarning("Cannot find converter for %s", filenameForConverterSearch.c_str());
 			filesToConvert.m_allFiles.erase(filesToConvert.m_allFiles.begin() + i);
 			--i;
 			continue;
@@ -1077,7 +1077,7 @@ bool ResourceCompiler::CompileFile(
 		RCLog("  sourceFullFileName: '%s'", sourceFullFileName);
 		RCLog("  targetLeftPath: '%s'", targetLeftPath);
 		RCLog("  sourceInnerPath: '%s'", sourceInnerPath);
-		RCLog("targetPath: '%s'", targetPath);
+		RCLog("targetPath: '%s'", targetPath.c_str());
 	}
 
 	// Setup conversion context.
@@ -1130,7 +1130,7 @@ bool ResourceCompiler::CompileFile(
 	if (GetVerbosityLevel() >= 2)
 	{
 		RCLog("sourceFullFileName: '%s'", sourceFullFileName);
-		RCLog("outputFolder: '%s'", outputFolder);
+		RCLog("outputFolder: '%s'", outputFolder.c_str());
 		RCLog("Path='%s'", PathHelpers::CanonicalizePath(sourceInnerPath).c_str());
 		RCLog("File='%s'", sourceFileName.c_str());
 	}
@@ -1467,7 +1467,6 @@ bool ResourceCompiler::RegisterConverters()
 			RCLogError("Error code: 0x%x (%s)", errCode, messageBuffer);
 			return false;
 		}
-		
 		FnRegisterConverters fnRegister = 
 			hPlugin 
 			? (FnRegisterConverters)GetProcAddress(hPlugin, "RegisterConverters") 
@@ -1528,7 +1527,7 @@ static string GetResourceCompilerGenericInfo(const ResourceCompiler& rc, const s
 	string s;
 	const SFileVersion& v = rc.GetFileVersion();
 
-#if defined(_WIN64)
+#if CRY_PLATFORM_64BIT
 	s += "ResourceCompiler  64-bit";
 #else
 	s += "ResourceCompiler  32-bit";
@@ -1677,7 +1676,6 @@ static void ShowWaitDialog(const ResourceCompiler& rc, const string& action, con
 	}
 }
 
-
 static string GetTimeAsString(const time_t tm)
 {
 	char buffer[40] = { 0 };
@@ -1701,7 +1699,7 @@ static void ShowResourceCompilerVersionInfo(const ResourceCompiler& rc)
 	StringHelpers::Split(info, newline, true, rows);
 	for (size_t i = 0; i < rows.size(); ++i)
 	{
-		RCLog("%s", rows[i]);
+		RCLog("%s", rows[i].c_str());
 	}
 }
 
@@ -1790,7 +1788,6 @@ static void EnableCrtMemoryChecks()
 	// Check heap every 
 	//_CrtSetBreakAlloc(2031);
 }
-
 
 static void GetCommandLineArguments(std::vector<string>& resArgs)
 {
@@ -2388,7 +2385,7 @@ void ResourceCompiler::InitPaths()
 {
 	if (m_exePath.empty())
 	{
-		printf("RC InitPaths(): internal error");
+		printf("RC InitPaths(): internal error\n");
 		exit(eRcExitCode_FatalError);
 	}
 
@@ -2415,7 +2412,7 @@ void ResourceCompiler::InitPaths()
 	m_initialCurrentDir = PathHelpers::GetAbsolutePath(".");
 	if (m_initialCurrentDir.empty())
 	{
-		printf("RC InitPaths(): internal error");
+		printf("RC InitPaths(): internal error\n");
 		exit(eRcExitCode_FatalError);
 	}
 	m_initialCurrentDir = PathUtil::AddSlash(m_initialCurrentDir);
@@ -2491,7 +2488,7 @@ void ResourceCompiler::TryToGetFilesFromCache(FilesToConvert & files, IConverter
 	files.m_inputFiles.clear();
 
 	const string progressString("Getting files from the cache");
-	RCLog("%s %s.", progressString, m_cacheFolder);
+	RCLog("%s %s.", progressString.c_str(), m_cacheFolder.c_str());
 
 	StartProgress();
 
@@ -2510,7 +2507,7 @@ void ResourceCompiler::TryToGetFilesFromCache(FilesToConvert & files, IConverter
 
 		FileUtil::EnsureDirectoryExists(outputFolder);
 
-		const string key = string().Format("%s-%s", sourceFileName, computeFileDigest(sourceFullFileName).c_str()).replace(".", "-");
+		const string key = string().Format("%s-%s", sourceFileName.c_str(), computeFileDigest(sourceFullFileName).c_str()).replace(".", "-");
 
 		std::vector<string> cachedFiles;
 
@@ -2553,7 +2550,7 @@ void ResourceCompiler::AddFilesToTheCache(const FilesToConvert & files)
 
 	const string progressString("Adding files to the cache");
 
-	RCLog("%s %s.", progressString, m_cacheFolder);
+	RCLog("%s %s.", progressString.c_str(), m_cacheFolder.c_str());
 
 	StartProgress();
 
@@ -2587,13 +2584,13 @@ void ResourceCompiler::AddFilesToTheCache(const FilesToConvert & files)
 
 		if (GetVerbosityLevel() >= 1)
 		{
-			RCLog("file='%s'", file.m_sourceInnerPathAndName);
+			RCLog("file='%s'", file.m_sourceInnerPathAndName.c_str());
 		}
 		if (GetVerbosityLevel() >= 1)
 		{
 			for (const string& outputFile : outputFiles)
 			{
-				RCLog("\t""output file='%s'", outputFile);
+				RCLog("\t""output file='%s'", outputFile.c_str());
 			}
 		}
 

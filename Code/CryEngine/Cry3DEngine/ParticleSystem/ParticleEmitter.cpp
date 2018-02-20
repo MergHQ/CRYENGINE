@@ -1,12 +1,5 @@
 // Copyright 2014-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  Created:     23/09/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "ParticleEmitter.h"
 #include "ParticleComponentRuntime.h"
@@ -27,7 +20,6 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	: m_pEffect(pEffect)
 	, m_pEffectOriginal(pEffect)
 	, m_registered(false)
-	, m_reRegister(false)
 	, m_realBounds(AABB::RESET)
 	, m_bounds(AABB::RESET)
 	, m_viewDistRatio(1.0f)
@@ -44,6 +36,7 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	, m_primeTime(0.0f)
 	, m_timeCreated(0.0f)
 	, m_timeLastRendered(0.0f)
+	, m_updateFrame(0)
 	, m_initialSeed(0)
 	, m_emitterId(emitterId)
 {
@@ -98,7 +91,7 @@ Vec3 CParticleEmitter::GetPos(bool bWorldOnly) const
 
 void CParticleEmitter::Render(const struct SRendParams& rParam, const SRenderingPassInfo& passInfo)
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
 
 	if (!passInfo.RenderParticles() || passInfo.IsRecursivePass())
@@ -130,7 +123,7 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 
 void CParticleEmitter::Update()
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	m_deltaTime = gEnv->pTimer->GetFrameTime() * GetTimeScale();
 	m_deltaTime = max(m_deltaTime, m_primeTime);
@@ -153,60 +146,56 @@ void CParticleEmitter::Update()
 			elem.pFeature->MainPreUpdate(pRuntime);
 	}
 
-	if (m_reRegister)
-	{
-		Unregister();
-		Register();
-		m_reRegister = false;
-	}
+	UpdateBoundingBox(m_deltaTime);
 }
 
 namespace Bounds
 {
-	static const float RoundOutPrecision = 1 / 32.0f;
-	static const float ShrinkThreshold   = 0.5f;
+	static const float Expansion       = 1.125f;
+	static const float ShrinkThreshold = 0.5f;
 }
 
 void CParticleEmitter::UpdateBoundingBox(const float frameTime)
 {
-	m_reRegister = false;
+	CRY_PFX2_PROFILE_DETAIL;
 
 	if (m_realBounds.IsReset())
 	{
 		m_bounds.Reset();
-		m_reRegister = true;
+		Unregister();
 		return;
 	}
 
-	if (!m_registered)
-		m_reRegister = true;
-	else if (!m_bounds.ContainsBox(m_realBounds))
-		m_reRegister = true;
-	else if (m_realBounds.GetVolume() < m_bounds.GetVolume() * Bounds::ShrinkThreshold)
-		m_reRegister = true;
-	if (m_reRegister)
-	{
-		// Expand bounds to rounded borders
-		m_bounds = m_realBounds;
-		for (int a = 0; a < 3; ++a)
-		{
-			const float sideLen = (m_bounds.max[a] - m_bounds.min[a]);
-			if (sideLen > 0.0f)
-			{
-				const float round = exp2(ceil(log2(sideLen))) * Bounds::RoundOutPrecision;
-				const float invRound = 1.0f / round;
+	bool reRegister = false;
 
-				m_bounds.min[a] = floor(m_bounds.min[a] * invRound) * round;
-				m_bounds.max[a] = ceil(m_bounds.max[a] * invRound) * round;
-			}
-		}
+	if (!m_registered)
+		reRegister = true;
+	else if (!m_bounds.ContainsBox(m_realBounds))
+		reRegister = true;
+	else if (m_realBounds.GetVolume() < m_bounds.GetVolume() * Bounds::ShrinkThreshold)
+		reRegister = true;
+	if (reRegister)
+	{
+		// Expand bounds to avoid re-registering
+		Vec3 center = m_realBounds.GetCenter();
+		Vec3 extent = m_realBounds.GetSize() * (Bounds::Expansion * 0.5f);
+		m_bounds = AABB(center - extent, center + extent);
+
+		Unregister();
+		Register();
 	}
 }
 
-void CParticleEmitter::UpdateAll()
+bool CParticleEmitter::UpdateAll()
 {
+	// Multithread support
+	stl::AutoLock<stl::PSyncMultiThread> lock(m_lock);
+	if (m_updateFrame >= gEnv->nMainFrameID)
+		return false;
+	m_updateFrame = gEnv->nMainFrameID;
+
 	// Update all components, and accumulate bounds and stats
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	m_alive = false;
 	m_realBounds = AABB::RESET;
@@ -218,8 +207,16 @@ void CParticleEmitter::UpdateAll()
 	}
 
 	PostUpdate();
-	UpdateBoundingBox(m_deltaTime);
-	CRY_PFX2_ASSERT(IsAlive() || !HasBounds());
+	return true;
+}
+
+void CParticleEmitter::SyncUpdate()
+{
+	if (CParticleJobManager::ThreadMode() >= 2)
+	{
+		UpdateAll();
+	}
+	CRY_PFX2_ASSERT(m_updateFrame == gEnv->nMainFrameID);
 }
 
 void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
@@ -611,11 +608,6 @@ void CParticleEmitter::UpdateRuntimes()
 			SInstance instance;
 			pRuntime->AddSubInstances({&instance, 1});
 		}
-		CParticleComponent* pComponent = pRuntime->GetComponent();
-		if (GetRenderer())
-		{
-			pComponent->PrepareRenderObjects(this, pComponent, true);
-		}
 	}
 
 	m_alive = true;
@@ -631,12 +623,18 @@ void CParticleEmitter::ResetRenderObjects()
 
 	const uint numROs = m_pEffect->GetNumRenderObjectIds();
 	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
-		m_pRenderObjects[threadId].resize(numROs, { nullptr, nullptr });
-
-	for (auto& pRuntime : m_componentRuntimes)
 	{
-		CParticleComponent* pComponent = pRuntime->GetComponent();
-		pComponent->PrepareRenderObjects(this, pComponent, false);
+		for (auto& object : m_pRenderObjects[threadId])
+		{
+			if (CRenderObject* pRO = object.first)
+			{
+				if (pRO->m_pRE)
+					pRO->m_pRE->Release();
+				gEnv->pRenderer->EF_FreeObject(pRO);
+			}
+			object = { nullptr, nullptr };
+		}
+		m_pRenderObjects[threadId].resize(numROs, { nullptr, nullptr });
 	}
 }
 

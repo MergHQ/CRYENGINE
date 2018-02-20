@@ -279,7 +279,6 @@ private:
 
 
 
-/*
 class CXmlNode : public IXmlNode
 {
 public:

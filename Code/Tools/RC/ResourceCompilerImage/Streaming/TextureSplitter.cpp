@@ -712,7 +712,7 @@ void CTextureSplitter::ProcessResource(
 	// adds file to pak
 	if (!SaveFile(sFullDestFileName, &vecChunkToWrite[0], vecChunkToWrite.size(), FileUtil::GetLastWriteFileTime(inFileName) ) )
 	{
-		RCLogError("Error: Cannot save file '%s' (source file is '%s')\n", sFullDestFileName, inFileName);
+		RCLogError("Error: Cannot save file '%s' (source file is '%s')\n", sFullDestFileName.c_str(), inFileName);
 	}
 }
 
@@ -796,15 +796,15 @@ bool CTextureSplitter::Process()
 	}
 
 	const string sInputFile = m_CC.GetSourcePath();
-	const string sDestFileName = PathUtil::GetFile(MakeFileName(PathUtil::GetFile(GetOutputPath()), 0, 0)); 
-	const string sFullDestFileName = PathUtil::Make(m_CC.GetOutputFolder(), sDestFileName); 
+	const string sDestFileName = PathUtil::GetFile(MakeFileName(PathUtil::GetFile(GetOutputPath()), 0, 0));
+	const string sFullDestFileName = PathUtil::Make(m_CC.GetOutputFolder(), sDestFileName);
 
 	// Compare time stamp of first chunk, all chunk have the same date always
 	if (!m_CC.bForceRecompiling && UpToDateFileHelpers::FileExistsAndUpToDate(sFullDestFileName, sInputFile))
 	{
 		if (m_CC.pRC->GetVerbosityLevel() > 0)
 		{
-			RCLog("Skipping %s: first chunk is up to date", sInputFile);
+			RCLog("Skipping %s: first chunk is up to date", sInputFile.c_str());
 		}
 		return true;
 	}

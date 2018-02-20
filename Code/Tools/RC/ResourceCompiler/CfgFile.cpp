@@ -18,7 +18,7 @@
 // Use format similar to windows .ini files.
 //
 #include "StdAfx.h"
-#include "cfgfile.h"
+#include "CfgFile.h"
 #include "Config.h"
 #include "IRCLog.h"
 

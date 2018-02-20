@@ -297,16 +297,19 @@ struct PathfindingFailedEvent
 	PathfindingFailedEvent()
 		: requestId(MNM::Constants::eQueuedPathID_InvalidID)
 		, request()
+		, result(EMNMPathResult::FailedUnknown)
 	{
 	}
 
-	PathfindingFailedEvent(const MNM::QueuedPathID& _requestId, const MNM::PathfinderUtils::QueuedRequest& _request)
+	PathfindingFailedEvent(const MNM::QueuedPathID& _requestId, const MNM::PathfinderUtils::QueuedRequest& _request, const EMNMPathResult& _result)
 		: requestId(_requestId)
 		, request(_request)
+		, result(_result)
 	{}
 
 	MNM::QueuedPathID                   requestId;
 	MNM::PathfinderUtils::QueuedRequest request;
+	EMNMPathResult						result;
 };
 
 struct IsPathfindingFailedEventRelatedToRequest
@@ -394,8 +397,8 @@ private:
 	void              ProcessPathRequest(MNM::PathfinderUtils::ProcessingContext& processingContext);
 	void              ConstructPathIfWayWasFound(MNM::PathfinderUtils::ProcessingContext& processingContext);
 
-	bool              SetupForNextPathRequest(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, MNM::PathfinderUtils::ProcessingContext& processingContext);
-	void              PathRequestFailed(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request);
+	EMNMPathResult    SetupForNextPathRequest(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, MNM::PathfinderUtils::ProcessingContext& processingContext);
+	void              PathRequestFailed(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, const EMNMPathResult result);
 
 	void              CancelResultDispatchingForRequest(MNM::QueuedPathID requestId);
 

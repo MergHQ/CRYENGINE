@@ -1,12 +1,5 @@
 // Copyright 2014-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  Created:     06/04/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <CryExtension/ClassWeaver.h>
@@ -89,7 +82,6 @@ public:
 
 private:
 	void              TrimEmitters(bool finished_only);
-	void              InvalidateCachedRenderObjects();
 	CParticleEffect*  CastEffect(const PParticleEffect& pEffect) const;
 	CParticleEmitter* CastEmitter(const PParticleEmitter& pEmitter) const;
 
@@ -111,7 +103,7 @@ private:
 	uint                     m_numClears      = 0;
 	uint                     m_numFrames      = 0;
 	uint                     m_nextEmitterId  = 0;
-	int32                    m_lastSysSpec    = END_CONFIG_SPEC_ENUM;
+	ESystemConfigSpec        m_lastSysSpec    = END_CONFIG_SPEC_ENUM;
 };
 
 ILINE CParticleSystem* GetPSystem()

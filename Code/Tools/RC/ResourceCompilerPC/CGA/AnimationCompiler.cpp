@@ -655,8 +655,8 @@ bool CAnimationConverter::RebuildDatabases()
 	}
 
 
-	const string sAnimationsImgFilename = PathUtil::Make(targetGameFolderPath, "Animations\\Animations.img");
-	RCLog("Saving %s...",sAnimationsImgFilename);
+	const string sAnimationsImgFilename = PathUtil::Make(targetGameFolderPath, "Animations/Animations.img");
+	RCLog("Saving %s...", sAnimationsImgFilename.c_str());
 	const FILETIME latest = FileUtil::GetLastWriteFileTime(targetGameFolderPath);
 	if (!animationManager.SaveCAFImage( sAnimationsImgFilename, latest, bigEndianOutput))
 	{
@@ -672,8 +672,8 @@ bool CAnimationConverter::RebuildDatabases()
 	// Check if it can be skipped so it won't accidentally log errors.
 	if (!animationManager.CanBeSkipped())
 	{
-		const string sDirectionalBlendsImgFilename = PathUtil::Make(targetGameFolderPath, "Animations\\DirectionalBlends.img");
-		RCLog("Saving %s...", sDirectionalBlendsImgFilename);
+		const string sDirectionalBlendsImgFilename = PathUtil::Make(targetGameFolderPath, "Animations/DirectionalBlends.img");
+		RCLog("Saving %s...", sDirectionalBlendsImgFilename.c_str());
 		if (!animationManager.SaveAIMImage(sDirectionalBlendsImgFilename, latest, bigEndianOutput))
 		{
 			RCLogError("Error saving DirectionalBlends.img");

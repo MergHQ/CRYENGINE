@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "XMLConverter.h"
 #include "IRCLog.h"
-#include "IXmlSerializer.h"
+#include "IXMLSerializer.h"
 #include <CrySystem/XML/XMLBinaryHeaders.h>
 #include "XMLBinaryReader.h"
 #include "XMLBinaryWriter.h"

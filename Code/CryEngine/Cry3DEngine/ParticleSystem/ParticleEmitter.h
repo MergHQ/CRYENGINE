@@ -1,12 +1,5 @@
 // Copyright 2014-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  Created:     23/09/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include "ParticleEffect.h"
@@ -85,9 +78,11 @@ public:
 	virtual int          GetAttachedEntitySlot() override { return m_entitySlot; }
 	// ~pfx1 CPArticleEmitter
 
+	// CParticleEmitter
 	void                      InitSeed();
 	void                      DebugRender(const SRenderingPassInfo& passInfo) const;
-	void                      UpdateAll();
+	bool                      UpdateAll();
+	void                      SyncUpdate();
 	void                      PostUpdate();
 	CParticleContainer&       GetParentContainer()         { return m_parentContainer; }
 	const CParticleContainer& GetParentContainer() const   { return m_parentContainer; }
@@ -97,6 +92,7 @@ public:
 	CParticleEffect*          GetCEffect()                 { return m_pEffect; }
 	void                      Register();
 	void                      Unregister();
+	void                      ResetRenderObjects();
 	void                      UpdateEmitGeomFromEntity();
 	const SVisEnviron&        GetVisEnv() const            { return m_visEnviron; }
 	const SPhysEnviron&       GetPhysicsEnv() const        { return m_physEnviron; }
@@ -114,7 +110,6 @@ public:
 	float                     GetTime() const              { return m_time; }
 	float                     GetAge() const               { return m_time - m_timeCreated; }
 	void                      SetAlive()                   { m_alive = true; }
-	bool                      WasRenderedLastFrame() const { return (m_timeLastRendered >= m_time) && ((GetRndFlags() & ERF_HIDDEN) == 0); }
 	uint32                    GetInitialSeed() const       { return m_initialSeed; }
 	uint32                    GetCurrentSeed() const       { return m_currentSeed; }
 	uint                      GetEmitterId() const         { return m_emitterId; }
@@ -126,7 +121,7 @@ public:
 	bool                      HasBounds() const            { return !m_bounds.IsReset(); }
 
 	void                      AccumStats(SParticleStats& statsCPU, SParticleStats& statsGPU);
-	
+
 private:
 	void     UpdateBoundingBox(const float frameTime);
 	void     UpdateRuntimes();
@@ -134,7 +129,6 @@ private:
 	void     UpdateFromEntity();
 	void     UpdateTargetFromEntity(IEntity* pEntity);
 	IEntity* GetEmitGeometryEntity() const;
-	void     ResetRenderObjects();
 
 private:
 	_smart_ptr<CParticleEffect>            m_pEffect;
@@ -148,8 +142,8 @@ private:
 	AABB                                   m_realBounds;
 	AABB                                   m_bounds;
 	CParticleContainer                     m_parentContainer;
-	TRuntimes                              m_componentRuntimes;
 	TRuntimes                              m_componentRuntimesFor;
+	TRuntimes                              m_componentRuntimes;
 	QuatTS                                 m_location;
 	IEntity*                               m_entityOwner;
 	int                                    m_entitySlot;
@@ -169,9 +163,10 @@ private:
 	uint                                   m_currentSeed;
 	uint                                   m_emitterId;
 	bool                                   m_registered;
-	bool                                   m_reRegister;
 	bool                                   m_active;
 	bool                                   m_alive;
+	uint32                                 m_updateFrame;
+	stl::PSyncMultiThread                  m_lock;
 };
 
 typedef TSmartArray<CParticleEmitter> TParticleEmitters;

@@ -73,7 +73,7 @@ void CParticleComponentRuntime::Initialize()
 
 void CParticleComponentRuntime::UpdateAll()
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	m_alive = false;
 
@@ -92,7 +92,7 @@ void CParticleComponentRuntime::UpdateAll()
 
 void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context)
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_NewBornTime);
 
 	m_container.RemoveNewBornFlags();
@@ -105,7 +105,7 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 
 void CParticleComponentRuntime::UpdateParticles(const SUpdateContext& context)
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_UpdateTime);
 
 	m_container.FillData(EPVF_Acceleration, 0.0f, context.m_updateRange);
@@ -131,7 +131,7 @@ void CParticleComponentRuntime::ComputeVertices(const SCameraInfo& camInfo, CREP
 {
 	if (GetComponent()->IsVisible())
 	{
-		CRY_PFX2_PROFILE_DETAIL;
+		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 		CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_ComputeVerticesTime);
 
 		GetComponent()->ComputeVertices(this, camInfo, pRE, uRenderFlags, fMaxPixels);
@@ -413,7 +413,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 
 void CParticleComponentRuntime::CalculateBounds()
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_UpdateTime);
 
 	if (HasParticles())
@@ -461,7 +461,7 @@ void CParticleComponentRuntime::CalculateBounds()
 		}
 	#endif
 
-		CRY_PFX2_ASSERT(m_bounds.GetRadius() < 10000.f);
+		CRY_PFX2_ASSERT(m_bounds.GetRadius() < 1000000.f);
 	}
 	else
 	{

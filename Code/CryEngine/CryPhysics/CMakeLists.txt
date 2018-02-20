@@ -128,4 +128,11 @@ if(NOT RESOURCE_COMPILER)
 	endif()
 else()
 	CryResourceCompilerModule(CryPhysicsRC PCH "StdAfx.cpp" SOLUTION_FOLDER "RC")
+	if(LINUX)
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-shift-negative-value
+			-Wno-writable-strings
+			-Wno-c++11-narrowing
+		)
+	endif()
 endif()

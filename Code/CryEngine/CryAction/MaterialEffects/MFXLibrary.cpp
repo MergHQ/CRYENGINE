@@ -20,7 +20,7 @@ CMFXContainer* CreateContainer()
 
 void CMFXLibrary::LoadFromXml(SLoadingEnvironment& loadingEnvironment)
 {
-	CryLogAlways("[MFX] Loading FXLib '%s' ...", loadingEnvironment.libraryName.c_str());
+	CryComment("[MFX] Loading FXLib '%s' ...", loadingEnvironment.libraryName.c_str());
 
 	INDENT_LOG_DURING_SCOPE();
 

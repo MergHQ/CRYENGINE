@@ -1,10 +1,13 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <stdafx.h>
+#include <StdAfx.h>
 #include "PakManager.h"
-#include <Shlwapi.h>  // PathRelativePathTo(), PathCanonicalize()
-#pragma message("Note: including Shlwapi.lib")
-#pragma comment(lib, "Shlwapi.lib")
+
+#if CRY_PLATFORM_WINDOWS
+	#include <Shlwapi.h>  // PathRelativePathTo(), PathCanonicalize()
+	#pragma message("Note: including Shlwapi.lib")
+	#pragma comment(lib, "Shlwapi.lib")
+#endif
 #include "IRCLog.h"
 #include "FileUtil.h"
 #include "ResourceCompiler.h"

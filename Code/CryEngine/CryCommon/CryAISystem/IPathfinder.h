@@ -382,10 +382,16 @@ public:
 
 DECLARE_SHARED_POINTERS(INavPath);
 
-enum EMNMPathResult
+enum class EMNMPathResult
 {
-	eMNMPR_NoPathFound = 0,
-	eMNMPR_Success,
+	Success = 0,
+	FailedNoPathFound,
+	FailedUnknown,
+	FailedToConstructPath,
+	FailedAgentOutsideNavigationVolume,
+	FailedToSnapStartPoint,
+	FailedToSnapEndPoint,
+	PathfinderReset,
 };
 
 struct MNMPathRequestResult
@@ -393,12 +399,12 @@ struct MNMPathRequestResult
 	MNMPathRequestResult()
 		: cost(0.f)
 		, id(0)
-		, result(eMNMPR_NoPathFound)
+		, result(EMNMPathResult::FailedUnknown)
 	{}
 
 	ILINE bool HasPathBeenFound() const
 	{
-		return result == eMNMPR_Success;
+		return result == EMNMPathResult::Success;
 	}
 
 	INavPathPtr    pPath;

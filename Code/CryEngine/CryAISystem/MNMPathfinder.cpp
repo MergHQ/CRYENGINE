@@ -184,7 +184,7 @@ void CMNMPathfinder::Reset()
 	// send failed to all requested paths before we clear this queue and leave all our callers with dangling ids that will be reused!
 	while (!m_requestedPathsQueue.empty())
 	{
-		PathRequestFailed(m_requestedPathsQueue.front_id(), m_requestedPathsQueue.front());
+		PathRequestFailed(m_requestedPathsQueue.front_id(), m_requestedPathsQueue.front(), EMNMPathResult::PathfinderReset);
 		m_requestedPathsQueue.pop_front();
 	}
 
@@ -306,12 +306,12 @@ void CMNMPathfinder::SetupNewValidPathRequests()
 			assert(processingContext.status == MNM::PathfinderUtils::ProcessingContext::Reserved);
 			processingContext.workingSet.aStarOpenList.SetFrameTimeQuota(gAIEnv.CVars.MNMPathFinderQuota);
 
-			bool hasSetupSucceeded = SetupForNextPathRequest(idQueuedRequest, requestToServe, processingContext);
-			if (!hasSetupSucceeded)
+			const EMNMPathResult pathResult = SetupForNextPathRequest(idQueuedRequest, requestToServe, processingContext);
+			if (pathResult != EMNMPathResult::Success)
 			{
 				m_processingContextsPool.ReleaseContext(id);
 
-				MNM::PathfinderUtils::PathfindingFailedEvent failedEvent(idQueuedRequest, requestToServe);
+				MNM::PathfinderUtils::PathfindingFailedEvent failedEvent(idQueuedRequest, requestToServe, pathResult);
 				m_pathfindingFailedEventsToDispatch.push_back(failedEvent);
 			}
 			else
@@ -408,7 +408,7 @@ void CMNMPathfinder::DispatchResults()
 		MNM::PathfinderUtils::PathfindingFailedEvent failedEvent;
 		while (m_pathfindingFailedEventsToDispatch.try_pop_back(failedEvent))
 		{
-			PathRequestFailed(failedEvent.requestId, failedEvent.request);
+			PathRequestFailed(failedEvent.requestId, failedEvent.request, failedEvent.result);
 		}
 	}
 
@@ -485,14 +485,15 @@ void CMNMPathfinder::OnNavigationMeshChanged(const NavigationMeshID meshId, cons
 		MNM::QueuedPathID requestId = processingRequest.queuedID;
 		MNM::PathfinderUtils::QueuedRequest requestParams = processingRequest.data;
 
-		if (!SetupForNextPathRequest(requestId, requestParams, processingContext))
+		const EMNMPathResult result = SetupForNextPathRequest(requestId, requestParams, processingContext);
+		if (result != EMNMPathResult::Success)
 		{
-			PathRequestFailed(requestId, requestParams);
+			PathRequestFailed(requestId, requestParams, result);
 		}
 	}
 }
 
-bool CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, MNM::PathfinderUtils::ProcessingContext& processingContext)
+EMNMPathResult CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, MNM::PathfinderUtils::ProcessingContext& processingContext)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 	
@@ -507,7 +508,7 @@ bool CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID requestID, const 
 	{
 		const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
 		AIWarning("[CMNMPathfinder::SetupForNextPathRequest] Agent %s is not inside a navigation volume.", pEntity ? pEntity->GetName() : "'missing entity'");
-		return false;
+		return EMNMPathResult::FailedAgentOutsideNavigationVolume;
 	}
 
 	const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
@@ -526,7 +527,7 @@ bool CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID requestID, const 
 		AIWarning("Navigation system couldn't find NavMesh triangle at path start point (%.2f, %2f, %2f) for agent '%s'.",
 			request.requestParams.startLocation.x, request.requestParams.startLocation.y, request.requestParams.startLocation.z,
 			pEntity ? pEntity->GetName() : "'missing entity'");
-		return false;
+		return EMNMPathResult::FailedToSnapStartPoint;
 	}
 	const Vec3 safeStartLocation = snappedPosition.GetVec3();
 	
@@ -537,7 +538,7 @@ bool CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID requestID, const 
 		AIWarning("Navigation system couldn't find NavMesh triangle at path destination point (%.2f, %.2f, %.2f) for agent '%s'.",
 			request.requestParams.endLocation.x, request.requestParams.endLocation.y, request.requestParams.endLocation.z,
 			pEntity ? pEntity->GetName() : "'missing entity'");
-		return false;
+		return EMNMPathResult::FailedToSnapEndPoint;
 	}
 
 	const Vec3 safeEndLocation = snappedPosition.GetVec3();
@@ -555,7 +556,7 @@ bool CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID requestID, const 
 	const MNM::real_t startToEndDist = (endLocation - startLocation).lenNoOverflow();
 	processingContext.workingSet.aStarOpenList.SetUpForPathSolving(mesh.navMesh.GetTriangleCount(), triangleStartID, startLocation, startToEndDist);
 
-	return true;
+	return EMNMPathResult::Success;
 }
 
 void CMNMPathfinder::ProcessPathRequest(MNM::PathfinderUtils::ProcessingContext& processingContext)
@@ -712,7 +713,7 @@ void CMNMPathfinder::ConstructPathIfWayWasFound(MNM::PathfinderUtils::Processing
 	if (bPathConstructed)
 	{
 		INavPathPtr navPath = resultData.pPath;
-		resultData.result = eMNMPR_Success;
+		resultData.result = EMNMPathResult::Success;
 		navPath->Clear("CMNMPathfinder::ProcessPathRequest");
 
 		outputPath.FillNavPath(*navPath);
@@ -727,7 +728,7 @@ void CMNMPathfinder::ConstructPathIfWayWasFound(MNM::PathfinderUtils::Processing
 	}
 	else
 	{
-		resultData.result = eMNMPR_NoPathFound;
+		resultData.result = bPathFound ? EMNMPathResult::FailedToConstructPath : EMNMPathResult::FailedNoPathFound;
 	}
 
 	successEvent.callback = processingRequest.data.requestParams.resultCallback;
@@ -754,10 +755,11 @@ void CMNMPathfinder::SpawnPathConstructionJob(MNM::PathfinderUtils::ProcessingCo
 	job.Run();
 }
 
-void CMNMPathfinder::PathRequestFailed(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request)
+void CMNMPathfinder::PathRequestFailed(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, const EMNMPathResult result)
 {
-	MNMPathRequestResult result;
-	request.requestParams.resultCallback(requestID, result);
+	MNMPathRequestResult requestResult;
+	requestResult.result = result;
+	request.requestParams.resultCallback(requestID, requestResult);
 }
 
 void CMNMPathfinder::DebugAllStatistics()

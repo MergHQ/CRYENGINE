@@ -25,8 +25,8 @@ struct SSpawnData
 
 	float DeltaTime(float dT) const
 	{
-		const float startTime = max(m_timer, 0.0f);
-		const float endTime = min(m_timer + dT, m_duration);
+		const float startTime = clamp(m_timer, 0.0f, m_duration);
+		const float endTime = clamp(m_timer + dT, 0.0f, m_duration);
 		return endTime - startTime;
 	}
 };
@@ -172,8 +172,8 @@ protected:
 		{
 			SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
 
-			const float startTime = max(spawnData.m_timer, 0.0f);
-			const float endTime = min(spawnData.m_timer + dT, spawnData.m_duration);
+			const float startTime = clamp(spawnData.m_timer, 0.0f, spawnData.m_duration);
+			const float endTime = clamp(spawnData.m_timer + dT, 0.0f, spawnData.m_duration);
 			const float spawnTime = endTime - startTime;
 			const float spawned = amounts[i] * countScale;
 			
@@ -259,10 +259,21 @@ protected:
 	TDataOffset<SSpawnData>                 m_offsetSpawnData;
 };
 
+SERIALIZATION_DECLARE_ENUM(ESpawnCountMode,
+	MaximumParticles, 
+	TotalParticles
+)
+
 class CFeatureSpawnCount : public CParticleFeatureSpawnBase
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
+
+	virtual void Serialize(Serialization::IArchive& ar) override
+	{
+		CParticleFeatureSpawnBase::Serialize(ar);
+		ar(m_mode, "Mode", "Mode");
+	}
 
 	virtual float DefaultDuration() const override { return 0.0f; }
 
@@ -283,13 +294,24 @@ public:
 		for (uint i = 0; i < amounts.size(); ++i)
 		{
 			SSpawnData& spawnData = context.m_runtime.GetInstanceData(i, m_offsetSpawnData);
-			const float spawnTime = min(context.m_params.m_maxParticleLifeTime, spawnData.m_duration);
-			if (spawnTime > 0.0f)
-				amounts[i] *= spawnData.DeltaTime(context.m_deltaTime) * rcp_fast(spawnTime);
+			const float dt = spawnData.DeltaTime(context.m_deltaTime);
+
+			if (m_mode == ESpawnCountMode::TotalParticles || spawnData.m_duration <= context.m_params.m_maxParticleLifeTime)
+			{
+				if (spawnData.m_duration > dt)
+					amounts[i] *= dt * rcp(spawnData.m_duration);
+				else
+					amounts[i] -= spawnData.m_spawned;
+			}
 			else
-				amounts[i] -= spawnData.m_spawned;
+			{
+				amounts[i] *= dt * rcp(context.m_params.m_maxParticleLifeTime);
+			}
 		}
 	}
+
+private:
+	ESpawnCountMode m_mode = ESpawnCountMode::MaximumParticles;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnCount, "Spawn", "Count", colorSpawn);

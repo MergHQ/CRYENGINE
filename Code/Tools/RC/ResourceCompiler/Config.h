@@ -17,7 +17,7 @@
 #define __config_h__
 #pragma once
 
-#include "iconfig.h"
+#include "IConfig.h"
 #include <CryCore/StlUtils.h>
 #include "StringHelpers.h"
 

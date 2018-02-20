@@ -373,7 +373,7 @@ void CFeatureMotionPhysics::Integrate(const SUpdateContext& context)
 			coeffsv[i] = ToFloatv(coeffs[i]);
 	}
 
-	const bool isLinear = !m_environFlags && !effectorFlags && m_uniformAcceleration.IsZero();
+	const bool isLinear = !(m_environFlags | effectorFlags) && !m_drag.GetBaseValue() && m_uniformAcceleration.IsZero();
 
 	// Integrate positions and velocities
 	for (auto particleGroupId : context.GetUpdateGroupRange())

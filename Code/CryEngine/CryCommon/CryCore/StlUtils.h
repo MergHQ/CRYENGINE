@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <CryMath/Range.h>
+#include <CryString/CryString.h>
 
 #include <map>
 #include <set>
@@ -161,6 +161,17 @@ inline void set_to_vector(const Set& theSet, Vector& array)
 	{
 		array.push_back(*it);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename Container, typename KeyFunc>
+void sort(Container& cont, KeyFunc key)
+{
+	using Ref = typename Container::const_reference;
+	std::sort(cont.begin(), cont.end(), [key](Ref a, Ref b)
+	{
+		return key(a) < key(b);
+	});
 }
 
 //////////////////////////////////////////////////////////////////////////

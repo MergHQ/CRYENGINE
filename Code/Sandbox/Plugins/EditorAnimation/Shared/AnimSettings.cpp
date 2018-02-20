@@ -14,8 +14,8 @@
 #include <CryString/CryPath.h>
 
 #ifdef RESOURCE_COMPILER
-	#include "../../../Tools/CryXml/ICryXML.h"
-	#include "../../../Tools/CryXml/IXMLSerializer.h"
+	#include "../../../Tools/CryXML/ICryXML.h"
+	#include "../../../Tools/CryXML/IXMLSerializer.h"
 	#include "../../../Tools/CryCommonTools/PakXmlFileBufferSource.h"
 #endif
 
@@ -80,7 +80,7 @@ string SAnimSettings::GetIntermediateFilename(const char* animationPath)
 
 bool SAnimSettings::Save(const char* filename) const
 {
-	string outputFilename = string(gEnv->pCryPak->GetGameFolder()) + "\\" + filename;
+	string outputFilename = string(gEnv->pCryPak->GetGameFolder()) + "/" + filename;
 	return SaveOutsideBuild(outputFilename.c_str());
 }
 

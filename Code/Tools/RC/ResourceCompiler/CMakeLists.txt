@@ -50,7 +50,7 @@ add_sources("NoUberFile"
 		"RcFile.h"
 		"resource.h"
 		"ResourceCompiler.h"
-		"stdafx.h"
+		"StdAfx.h"
 		"SwapEndianness.h"
 		"TextFileReader.h"
 		"UpToDateFileHelpers.h"
@@ -114,7 +114,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryResourceCompiler(ResourceCompiler PCH "StdAfx.cpp" SOLUTION_FOLDER "RC")
+CryResourceCompiler(ResourceCompiler PCH "stdafx.cpp" SOLUTION_FOLDER "RC")
 
 target_include_directories(${THIS_PROJECT} PRIVATE
 	"${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools" 

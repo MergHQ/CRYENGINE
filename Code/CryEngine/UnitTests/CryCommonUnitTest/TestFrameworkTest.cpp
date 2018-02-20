@@ -3,17 +3,8 @@
 #include <UnitTest.h>
 #include <memory>
 
-#if defined(_LIB) && CRY_PLATFORM_DURANGO
-#include "CryPhysics/physinterface.h"
-//A hack due to the current dependency setup
-IPhysicalWorld *CreatePhysicalWorld(ISystem *pSystem)
-{
-	return nullptr;
-}
-#endif
-
 struct SInlineStaticExample
-{ 
+{
 	static const int var = 0; 
 
 	enum { var2 = 3 };
@@ -41,10 +32,13 @@ enum EBitFlagEnum
 
 //Ensure these basic evaluations compile and work as intended
 //This is important when we touch the test framework itself
-TEST(CryGTestFramework, RequireMacroEvaluation)
+TEST(CryGTestFrameworkTest, RequireMacroEvaluation)
 {
 	//bool expression
 	REQUIRE(true);
+
+	//expression convertible to bool
+	REQUIRE(100);
 
 	//immediate value comparison
 	REQUIRE(1 == 1);
@@ -66,6 +60,11 @@ TEST(CryGTestFramework, RequireMacroEvaluation)
 	REQUIRE(3 % 2);
 	REQUIRE(!0);
 	REQUIRE(~0);
+
+	//logical && ||
+	REQUIRE(true && true);
+	REQUIRE(true || false);
+	REQUIRE(true && 1 > 0);
 
 	//expressions using bitwise operators has to be wrapped in parentheses but this needs to compile
 	int flag = EBitFlagEnumB | EBitFlagEnumC;
@@ -109,7 +108,7 @@ TEST(CryGTestFramework, RequireMacroEvaluation)
 	REQUIRE(SLessOnlyStruct{ 1 } < SLessOnlyStruct{ 2 });
 }
 
-TEST(CryGTestFramework, RequireMacroRobustness)
+TEST(CryGTestFrameworkTest, RequireMacroRobustness)
 {
 	//very long expression for testing the stability of test framework
 	//must not crash / hang
@@ -171,7 +170,7 @@ struct SNonDefaultConstructible
 	int i;
 };
 
-TEST(CryGTestFramework, RequireMacroSideEffect)
+TEST(CryGTestFrameworkTest, RequireMacroSideEffect)
 {
 	//static const without definition
 	//this must compile: no address is taken
