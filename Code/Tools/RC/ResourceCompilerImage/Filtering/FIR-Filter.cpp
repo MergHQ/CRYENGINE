@@ -20,7 +20,7 @@
 #include "StdAfx.h"
 #include <assert.h>                         // assert()
 
-#include "..\ImageObject.h"
+#include "../ImageObject.h"
 
 #include <math.h>
 #include "FIR-Weights.h"

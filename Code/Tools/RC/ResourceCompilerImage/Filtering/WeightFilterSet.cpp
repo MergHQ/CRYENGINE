@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 #include <assert.h>             // assert()
-#include "weightfilterset.h"    // CWeightFilter
+#include "WeightFilterSet.h"    // CWeightFilter
 #include "IRCLog.h"             // RCLog()
 #include "StringHelpers.h"
 #include <CryString/StringUtils.h>        // cry_strcpy()

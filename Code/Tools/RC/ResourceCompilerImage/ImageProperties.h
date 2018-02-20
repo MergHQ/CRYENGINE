@@ -147,7 +147,7 @@ public:
 	{
 		if (!m_pCC || !m_pCC->config)
 		{
-			return false;
+			return keyIsMissingValue;
 		}
 		return m_pCC->config->GetAsString(key, keyIsMissingValue, emptyOrBadValue, ePriMask);
 	}

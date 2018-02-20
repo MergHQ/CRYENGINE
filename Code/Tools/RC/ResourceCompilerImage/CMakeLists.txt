@@ -188,7 +188,7 @@ endif()
 end_sources()
 #END-FILE-LIST
 
-CryResourceCompilerModule(ResourceCompilerImage PCH "StdAfx.cpp" SOLUTION_FOLDER "RC")
+CryResourceCompilerModule(ResourceCompilerImage PCH "stdafx.cpp" SOLUTION_FOLDER "RC")
 
 if (OPTION_PCH)
 	# Disable precompiled header for AtiCubeMapGen *.cpp files which do not '#include "StdAfx.h"'.
