@@ -115,6 +115,7 @@ private:
 	void             UpdateParamsFromRenderMaterial(int nSlot, IPhysicalEntity* pPhysEntity);
 
 	void             AwakeOnRender(bool vRender);
+	void             OnTimer(int id);
 
 private:
 	CEntity* GetEntity() const;
