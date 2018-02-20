@@ -14,7 +14,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "config.h"
+#include "Config.h"
 #include "PropertyVars.h"
 #include "StringHelpers.h"
 #include "IRCLog.h"

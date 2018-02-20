@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <CrySystem\File\CryFile.h>  // Includes CryPath.h in correct order. 
+#include <CrySystem/File/CryFile.h>  // Includes CryPath.h in correct order.
 
 struct IResourceCompiler;
 class IConfig;
