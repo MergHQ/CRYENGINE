@@ -248,7 +248,7 @@ else:
     iconfile = os.path.join(sys.prefix, iconfile)
 
 # Check Code/SDKs folder exists before proceeding
-if not os.path.isdir(CODE_SDKS_DIR):
+if not os.path.exists(os.path.join(CMAKE_DIR, 'Bootstrap.cmake')):
     dlgRoot = tk.Tk()
     dlgRoot.iconbitmap(iconfile)
     dialog = dlgMissingSDKs(master=dlgRoot)
