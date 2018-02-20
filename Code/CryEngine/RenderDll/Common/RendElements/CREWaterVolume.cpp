@@ -290,6 +290,10 @@ bool CREWaterVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView)
 			return false;  // Shaders might still compile; try recompiling object later
 		}
 	}
+	if (m_pParams->m_numVertices == 0)
+	{
+		return false;
+	}
 
 	cro.m_pMaterialResourceSet = pResources->m_pCompiledResourceSet;
 	cro.m_bCaustics = bCaustics ? 1 : 0;
@@ -576,14 +580,16 @@ void CREWaterVolume::UpdateVertex(watervolume::SCompiledWaterVolume& compiledObj
 		// TODO: update only when water volume surface changes.
 		CRY_ASSERT(m_vertexBuffer.handle != watervolume::invalidBufferHandle);
 		CRY_ASSERT(gRenDev->m_DevBufMan.Size(m_vertexBuffer.handle) >= vertexBufferSize);
-		if (m_vertexBuffer.handle != watervolume::invalidBufferHandle)
+		CRY_ASSERT(m_pParams->m_pVertices!=nullptr);
+		if ((m_vertexBuffer.handle != watervolume::invalidBufferHandle)  && (m_pParams->m_pVertices != nullptr))
 		{
 			gRenDev->m_DevBufMan.UpdateBuffer(m_vertexBuffer.handle, m_pParams->m_pVertices, vertexBufferSize);
 		}
 
 		CRY_ASSERT(m_indexBuffer.handle != watervolume::invalidBufferHandle);
 		CRY_ASSERT(gRenDev->m_DevBufMan.Size(m_indexBuffer.handle) >= indexBufferSize);
-		if (m_indexBuffer.handle != watervolume::invalidBufferHandle)
+		CRY_ASSERT(m_pParams->m_pIndices != nullptr);
+		if ((m_indexBuffer.handle != watervolume::invalidBufferHandle) && (m_pParams->m_pIndices != nullptr))
 		{
 			gRenDev->m_DevBufMan.UpdateBuffer(m_indexBuffer.handle, m_pParams->m_pIndices, indexBufferSize);
 		}
