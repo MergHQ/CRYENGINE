@@ -10238,13 +10238,19 @@ int CScriptBind_AI::GetTacticalPoints(IFunctionHandler* pH)
 //
 int CScriptBind_AI::DestroyAllTPSQueries(IFunctionHandler* pH)
 {
-	gAIEnv.pTacticalPointSystem->DestroyAllQueries();
+	if (gAIEnv.pTacticalPointSystem)
+	{
+		gAIEnv.pTacticalPointSystem->DestroyAllQueries();
+	}
 
 	return(pH->EndFunction());
 }
 
 int CScriptBind_AI::CreateQueryFromTacticalSpec(SmartScriptTable specTable)
 {
+	if (!gAIEnv.pTacticalPointSystem)
+		return 0;
+
 	ITacticalPointSystem* pTPS = gAIEnv.pTacticalPointSystem;
 	int option = 0;
 	bool bOk = true, bAllTables = true, bAtLeastOneGenerationProvided = false, bAtLeastOneWeightProvided = false;
