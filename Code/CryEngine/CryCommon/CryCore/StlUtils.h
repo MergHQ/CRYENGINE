@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <CryMath/Range.h>
+#include <CryString/CryString.h>
 
 #include <map>
 #include <set>

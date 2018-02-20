@@ -26,6 +26,9 @@ namespace CryGTestDetails
 		GreaterEqual
 	};
 
+	//! Provides default-overloads for various operators, so when unsupported operators
+	//! are used in the expression, it rejects the compilation with a nice error message.
+	//! Expression template classes can themselves overload the operators again for support.
 	class CDisableOperators
 	{
 	protected:
@@ -197,7 +200,7 @@ namespace CryGTestDetails
 		}
 	};
 
-	// Utilities for determining whether the type is suitable for pass-by-value
+	//! Utilities for determining whether the type is suitable for pass-by-value
 	template<typename T>
 	struct FavorCopy
 	{
@@ -217,6 +220,15 @@ namespace CryGTestDetails
 	class CLeftHandSideExpression
 		: public CDisableOperators
 	{
+
+	// The data members have to go before member functions because of trailing return type deduction
+	private:
+
+		const char* m_msg;
+		const char* m_file;
+		int         m_line;
+		T           m_val;
+
 	public:
 		constexpr CLeftHandSideExpression(const char* msg, const char* file, int line, T val)
 			: m_msg(msg)
@@ -232,6 +244,39 @@ namespace CryGTestDetails
 			return {};
 		}
 
+		//! For convenience sometimes we want to use '&&' or '||' in the expression.
+		//! The expression is collapsed to the result of '&&' or '||'.
+		//! The output misses the nicer actual values, but then the user is 
+		//! responsible for using a simpler expression instead of '&&' or '||'.
+		template<typename U, EnableIfUnfavorCopy<U> = 0>
+		constexpr auto operator&&(const U& otherValue) const
+			-> CLeftHandSideExpression<decltype(m_val && otherValue)>
+		{
+			return { m_msg, m_file, m_line, m_val && otherValue };
+		}
+
+		template<typename U, EnableIfFavorCopy<U> = 0>
+		constexpr auto operator&&(U otherValue) const
+			-> CLeftHandSideExpression<decltype(m_val && otherValue)>
+		{
+			return { m_msg, m_file, m_line, m_val && otherValue };
+		}
+
+		template<typename U, EnableIfUnfavorCopy<U> = 0>
+		constexpr auto operator||(const U& otherValue) const
+			-> CLeftHandSideExpression<decltype(m_val || otherValue)>
+		{
+			return { m_msg, m_file, m_line, m_val || otherValue };
+		}
+
+		template<typename U, EnableIfFavorCopy<U> = 0>
+		constexpr auto operator||(U otherValue) const
+			-> CLeftHandSideExpression<decltype(m_val || otherValue)>
+		{
+			return { m_msg, m_file, m_line, m_val || otherValue };
+		}
+
+		//! Traps == != < > <= >= and creates comparison binary expressions
 		template<typename U, EnableIfUnfavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::Equal, T, const U&> operator==(const U& otherValue) const
 		{
@@ -308,13 +353,6 @@ namespace CryGTestDetails
 		{
 			GTEST_TEST_BOOLEAN_((m_val), m_msg, false, true, CRY_GTEST_MESSAGE);
 		}
-
-	private:
-
-		const char* m_msg;
-		const char* m_file;
-		int         m_line;
-		T           m_val;
 	};
 
 #undef CRY_GTEST_MESSAGE
