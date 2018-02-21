@@ -51,10 +51,7 @@ enum ECGParam
 {
 	ECGP_Unknown,
 
-	ECGP_SI_AmbientOpacity,
-
 	ECGP_Matr_PI_ObjOrigComposite,
-	ECGP_PI_Ambient,
 	ECGP_PI_VisionParams,
 	ECGP_PB_VisionMtlParams,
 	ECGP_PI_EffectLayerParams,
@@ -65,7 +62,6 @@ enum ECGParam
 	ECGP_PI_WrinklesMask0,
 	ECGP_PI_WrinklesMask1,
 	ECGP_PI_WrinklesMask2,
-	ECGP_PB_AmbientOpacity,
 
 	ECGP_PB_Scalar,
 	ECGP_PM_Tweakable,

@@ -92,11 +92,6 @@ static void sParseRuntimeShaderFlag(const char* szScr, const char* szAnnotations
 #define PARAM(a, b) # a, b
 static SParamDB sParams[] =
 {
-	SParamDB(PARAM(SI_AmbientOpacity,                        ECGP_SI_AmbientOpacity),                        0),
-
-	SParamDB(PARAM(PB_AmbientOpacity,                        ECGP_PB_AmbientOpacity),                        0),
-
-
 	SParamDB(PARAM(PM_MatChannelSB,                          ECGP_PM_MatChannelSB),                          0),
 	SParamDB(PARAM(PM_MatDiffuseColor,                       ECGP_PM_MatDiffuseColor),                       0),
 	SParamDB(PARAM(PM_MatSpecularColor,                      ECGP_PM_MatSpecularColor),                      0),
@@ -105,8 +100,6 @@ static SParamDB sParams[] =
 	SParamDB(PARAM(PM_MatDeformWave,                         ECGP_PM_MatDeformWave),                         0),
 	SParamDB(PARAM(PM_MatDetailTilingAndAlphaRef,            ECGP_PM_MatDetailTilingAndAlphaRef),            0),
 	SParamDB(PARAM(PM_MatSilPomDetailParams,                 ECGP_PM_MatSilPomDetailParams),                 0),
-
-	SParamDB(PARAM(PI_Ambient,                               ECGP_PI_Ambient),                               0),
 
 	SParamDB(PARAM(PB_HDRParams,                             ECGP_PB_HDRParams),                             0),
 	SParamDB(PARAM(PB_StereoParams,                          ECGP_PB_StereoParams),                          0),
