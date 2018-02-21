@@ -1066,6 +1066,8 @@ void CXConsole::UnregisterVariable(const char* sVarName, bool bDelete)
 	if (itor == m_mapVariables.end())
 		return;
 
+	UnRegisterAutoComplete(sVarName);
+
 	ICVar* pCVar = itor->second;
 	const int32 flags = pCVar->GetFlags();
 	if (flags & VF_CHEAT_ALWAYS_CHECK)
@@ -1084,8 +1086,6 @@ void CXConsole::UnregisterVariable(const char* sVarName, bool bDelete)
 	}
 
 	delete pCVar;
-
-	UnRegisterAutoComplete(sVarName);
 }
 
 void CXConsole::RemoveCheckedCVar(ConsoleVariablesVector& vector, const ConsoleVariablesVector::value_type& value)
