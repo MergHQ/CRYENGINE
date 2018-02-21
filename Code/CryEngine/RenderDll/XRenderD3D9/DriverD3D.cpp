@@ -110,7 +110,7 @@ void CD3D9Renderer::InitRenderer()
 	m_pBaseDisplayContext = std::make_shared<CRenderDisplayContext>();
 	{
 		IRenderer::SDisplayContextKey baseContextKey;
-		baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetHandle());
+		baseContextKey.key.emplace<HWND>((HWND)gEnv->pSystem->GetHWND());
 		m_displayContexts.emplace(std::make_pair(std::move(baseContextKey), m_pBaseDisplayContext));
 	}
 
