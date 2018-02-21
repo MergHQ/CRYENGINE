@@ -38,7 +38,7 @@ CConnectionModel::~CConnectionModel()
 //////////////////////////////////////////////////////////////////////////
 void CConnectionModel::ConnectSignals()
 {
-	m_pAssetsManager->SignalItemAdded.Connect([&]()
+	m_pAssetsManager->SignalConnectionAdded.Connect([&]()
 		{
 			if (!m_pAssetsManager->IsLoading())
 			{
@@ -46,15 +46,7 @@ void CConnectionModel::ConnectSignals()
 			}
 	  }, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->SignalItemRemoved.Connect([&]()
-		{
-			if (!m_pAssetsManager->IsLoading())
-			{
-			  ResetModelAndCache();
-			}
-	  }, reinterpret_cast<uintptr_t>(this));
-
-	m_pAssetsManager->SignalControlModified.Connect([&]()
+	m_pAssetsManager->SignalConnectionRemoved.Connect([&]()
 		{
 			if (!m_pAssetsManager->IsLoading())
 			{
@@ -81,9 +73,8 @@ void CConnectionModel::ConnectSignals()
 //////////////////////////////////////////////////////////////////////////
 void CConnectionModel::DisconnectSignals()
 {
-	m_pAssetsManager->SignalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->SignalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->SignalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->SignalConnectionAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pAssetsManager->SignalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
