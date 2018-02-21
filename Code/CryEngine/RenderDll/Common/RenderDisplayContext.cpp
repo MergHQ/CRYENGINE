@@ -169,19 +169,7 @@ CTexture* CRenderDisplayContext::GetStorableDepthOutput()
 void CRenderDisplayContext::ShutDown()
 {
 	ReleaseResources();
-
-#if (CRY_RENDERER_DIRECT3D >= 110) || (CRY_RENDERER_VULKAN >= 10)
-	if (m_pSwapChain)
-	{
-		m_pSwapChain->SetFullscreenState(FALSE, 0);
-	}
-#endif
-
-	SAFE_RELEASE(m_pSwapChain);
-
-#if CRY_PLATFORM_WINDOWS
-	SAFE_RELEASE(m_pOutput);
-#endif
+	ReleaseSwapChain();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -216,6 +204,29 @@ void CRenderDisplayContext::ReleaseResources()
 	}
 
 	m_bSwapProxy = true;
+}
+
+void CRenderDisplayContext::ReleaseSwapChain()
+{
+	if (m_pSwapChain != nullptr)
+	{
+#if (CRY_RENDERER_DIRECT3D >= 110) || (CRY_RENDERER_VULKAN >= 10)
+		m_pSwapChain->SetFullscreenState(FALSE, 0); // swapchain cannot be released in fullscreen state (DXGI restriction)
+#endif
+
+		unsigned long numRemainingReferences = m_pSwapChain->Release();
+		CRY_ASSERT(numRemainingReferences == 0);
+		m_pSwapChain = nullptr;
+	}
+
+#if CRY_PLATFORM_WINDOWS
+	if (m_pOutput != nullptr)
+	{
+		unsigned long numRemainingReferences = m_pOutput->Release();
+		CRY_ASSERT(numRemainingReferences == 0);
+		m_pOutput = nullptr;
+	}
+#endif
 }
 
 RectI CRenderDisplayContext::GetCurrentMonitorBounds() const
@@ -861,21 +872,7 @@ void CRenderDisplayContext::ChangeOutputIfNecessary(bool isFullscreen)
 	if(!isWindowOnExistingOutputMonitor && isFullscreen)
 	{
 		ReleaseBackBuffers();
-
-		// Swap chain needs to be recreated with the new output in mind
-		if (m_pSwapChain != nullptr)
-		{
-			unsigned long numRemainingReferences = m_pSwapChain->Release();
-			CRY_ASSERT(numRemainingReferences == 0);
-			m_pSwapChain = nullptr;
-		}
-
-		if (m_pOutput != nullptr)
-		{
-			unsigned long numRemainingReferences = m_pOutput->Release();
-			CRY_ASSERT(numRemainingReferences == 0);
-			m_pOutput = nullptr;
-		}
+		ReleaseSwapChain();
 	}
 
 	if (m_pOutput == nullptr)

@@ -156,6 +156,7 @@ private:
 private:
 	void ReleaseResources();
 	void ReleaseBackBuffers();
+	void ReleaseSwapChain();
 
 	void ResizeSwapChain(bool bResizeTarget = false);
 	void AllocateSwapChain();
