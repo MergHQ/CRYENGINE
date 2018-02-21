@@ -176,7 +176,9 @@ bool CProjectManager::ParseProjectFile()
 		// Does directory exist
 		if (!CryDirectoryExists(m_project.assetDirectoryFullPath.c_str()))
 		{
-			EQuestionResult result = CryMessageBox(string().Format("Attempting to start the engine with non-existent asset directory %s!\nDo you want to create it?", m_project.assetDirectoryFullPath.c_str()), "Non-existent asset directory", eMB_YesCancel);
+			EQuestionResult result = CryMessageBox(string().Format("Attempting to start the engine with non-existent asset directory %s!"
+				"\n\nPlease verify the asset directory in your .cryproject file, in case you expected the asset directory to exist!\n\nDo you want to create the directory?",
+				m_project.assetDirectoryFullPath.c_str()), "Non-existent asset directory", eMB_YesCancel);
 			if (result == eQR_Cancel)
 			{
 				CryLogAlways("\tNon-existent asset directory %s detected, user opted to quit", m_project.assetDirectoryFullPath.c_str());
