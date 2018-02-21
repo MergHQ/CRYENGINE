@@ -901,12 +901,13 @@ void CRopeRenderNode::Render(const SRendParams& rParams, const SRenderingPassInf
 	CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 	if (!pObj)
 		return; // false;
+
 	pObj->m_pRenderNode = this;
 	pObj->m_DissolveRef = rParams.nDissolveRef;
 	pObj->m_ObjFlags |= FOB_TRANS_MASK | rParams.dwFObjFlags;
 	pObj->m_fAlpha = rParams.fAlpha;
-	pObj->m_II.m_AmbColor = rParams.AmbientColor;
-	pObj->m_II.m_Matrix = m_worldTM;
+	pObj->SetAmbientColor(rParams.AmbientColor, passInfo);
+	pObj->SetMatrix(m_worldTM, passInfo);
 
 	pObj->m_ObjFlags |= FOB_INSHADOW;
 

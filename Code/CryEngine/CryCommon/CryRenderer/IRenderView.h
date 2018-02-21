@@ -86,14 +86,6 @@ struct IRenderView : public CMultiThreadRefCount
 		eUsageModeWritingDone,
 	};
 
-	struct SInstanceUpdateInfo
-	{
-		Matrix34 objectMatrix = Matrix34(IDENTITY);
-
-		SInstanceUpdateInfo() = default;
-		SInstanceUpdateInfo(const Matrix34 &m) : objectMatrix(m) {}
-	};
-
 	virtual void SetFrameId(int frameId) = 0;
 	virtual int  GetFrameId() const = 0;
 
@@ -150,7 +142,7 @@ struct IRenderView : public CMultiThreadRefCount
 	virtual CRenderObject* AllocateTemporaryRenderObject() = 0;
 
 	//! Add one the previously created permanent render object.
-	virtual void AddPermanentObject(CRenderObject* pRenderObject, const SInstanceUpdateInfo&, bool instanceDataDirty, const SRenderingPassInfo& passInfo) = 0;
+	virtual void AddPermanentObject(CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo) = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Clip Volumes

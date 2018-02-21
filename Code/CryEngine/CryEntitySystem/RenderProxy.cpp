@@ -434,18 +434,16 @@ void CEntityRender::ProcessEvent(const SEntityEvent& event)
 			if (pAnimEvent)
 			{
 				ICharacterInstance* pCharacter = reinterpret_cast<ICharacterInstance*>(event.nParam[1]);
-				//				const char* eventName = (pAnimEvent ? pAnimEvent->m_EventName : 0);
-
-				// If the event is an effect event, play the event.
 				ISkeletonAnim* pSkeletonAnim = (pCharacter ? pCharacter->GetISkeletonAnim() : 0);
-				ISkeletonPose* pSkeletonPose = (pCharacter ? pCharacter->GetISkeletonPose() : 0);
-				if (!GetEntity()->IsInvisible() && !GetEntity()->IsHidden() && pSkeletonAnim && pAnimEvent->m_EventName && stricmp(pAnimEvent->m_EventName, "effect") == 0 && pAnimEvent->m_CustomParameter)
+
+				// Spawn the event
+				if (!GetEntity()->IsInvisible() && !GetEntity()->IsHidden() && pSkeletonAnim && pAnimEvent->m_EventName && pAnimEvent->m_CustomParameter)
 				{
 					for (auto && pSlot : m_slots)
 					{
 						if (pSlot && pSlot->GetCharacter() == pCharacter)
 						{
-							pSlot->GetCharacter()->SpawnSkeletonEffect(pAnimEvent->m_CustomParameter, pAnimEvent->m_BonePathName, pAnimEvent->m_vOffset, pAnimEvent->m_vDir, QuatTS(pSlot->GetWorldTM()));
+							pSlot->GetCharacter()->SpawnSkeletonEffect(*pAnimEvent, QuatTS(pSlot->GetWorldTM()));
 						}
 					}
 				}

@@ -78,9 +78,9 @@ private:
 class CLevelTimeSampler
 {
 public:
-	CLevelTimeSampler(const SUpdateContext& context)
+	CLevelTimeSampler(const SUpdateContext& context, EModDomain domain)
 		: deltaTime(ToFloatv(context.m_deltaTime))
-		, selfAges(context.m_container.GetIFStream(EPDT_NormalAge))
+		, selfAges(GetContainer(context, domain).GetIFStream(EPDT_NormalAge))
 		, levelTime(ToFloatv(context.m_time))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
@@ -301,7 +301,7 @@ ILINE void CDomain::Dispatch(const SUpdateContext& context, const SUpdateRange& 
 		if (m_sourceGlobal == EDomainGlobal::LevelTime)
 			((TBase*)this)->DoModify(
 				context, range, stream,
-				detail::CLevelTimeSampler(context));
+				detail::CLevelTimeSampler(context, domain));
 		else
 			((TBase*)this)->DoModify(
 				context, range, stream,

@@ -648,8 +648,8 @@ public:
 
 	int GetMaxUsableLod();
 	int GetMinUsableLod();
-	void RenderStreamingDebugInfo(CRenderObject * pRenderObject);
-	void RenderCoverInfo(CRenderObject * pRenderObject);
+	void RenderStreamingDebugInfo(CRenderObject * pRenderObject, const SRenderingPassInfo& passInfo);
+	void RenderCoverInfo(CRenderObject * pRenderObject, const SRenderingPassInfo& passInfo);
 	int CountChildReferences();
 	void ReleaseStreamableContent() final;
 	int GetStreamableContentMemoryUsage(bool bJustForDebug = false) final;

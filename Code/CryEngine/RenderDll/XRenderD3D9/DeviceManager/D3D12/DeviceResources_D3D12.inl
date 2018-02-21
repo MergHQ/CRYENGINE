@@ -759,7 +759,10 @@ void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes, StagingHook cbTra
 		gcpRendD3D->GetDeviceContext_Unsynchronized().WaitStagingResource(pStagingResource);
 		gcpRendD3D->GetDeviceContext_Unsynchronized().MapStagingResource(pStagingResource, FALSE, &pStagingMemory);
 
-		cbTransfer(pStagingMemory, 0, 0);
+		D3D12_RESOURCE_DESC resourceDesc = m_pNativeResource->GetD3D12Resource()->GetDesc();
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
+		gcpRendD3D->GetDeviceContext_Unsynchronized().GetRealDeviceContext()->GetD3D12Device()->GetCopyableFootprints(&resourceDesc, nSubRes, 1, 0, &layout, nullptr, nullptr, nullptr);
+		cbTransfer(pStagingMemory, layout.Footprint.RowPitch, layout.Footprint.RowPitch * layout.Footprint.Width);
 
 		gcpRendD3D->GetDeviceContext_Unsynchronized().UnmapStagingResource(pStagingResource, FALSE);
 	}
@@ -797,7 +800,10 @@ void CDeviceTexture::UploadFromStagingResource(uint32 nSubRes, StagingHook cbTra
 	gcpRendD3D->GetDeviceContext_Unsynchronized().WaitStagingResource(pStagingResource);
 	gcpRendD3D->GetDeviceContext_Unsynchronized().MapStagingResource(pStagingResource, TRUE, &pStagingMemory);
 
-	if (cbTransfer(pStagingMemory, 0, 0))
+	D3D12_RESOURCE_DESC resourceDesc = m_pNativeResource->GetD3D12Resource()->GetDesc();
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
+	gcpRendD3D->GetDeviceContext_Unsynchronized().GetRealDeviceContext()->GetD3D12Device()->GetCopyableFootprints(&resourceDesc, nSubRes, 1, 0, &layout, nullptr, nullptr, nullptr);
+	if (cbTransfer(pStagingMemory, layout.Footprint.RowPitch, layout.Footprint.RowPitch * layout.Footprint.Width))
 	{
 		gcpRendD3D->GetDeviceContext_Unsynchronized().CopyStagingResource(pStagingResource, m_pNativeResource, nSubRes, TRUE);
 	}

@@ -110,7 +110,7 @@ void CD3D9Renderer::InitRenderer()
 	m_pBaseDisplayContext = std::make_shared<CRenderDisplayContext>();
 	{
 		IRenderer::SDisplayContextKey baseContextKey;
-		baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetHandle());
+		baseContextKey.key.emplace<HWND>((HWND)gEnv->pSystem->GetHWND());
 		m_displayContexts.emplace(std::make_pair(std::move(baseContextKey), m_pBaseDisplayContext));
 	}
 
@@ -3733,6 +3733,8 @@ bool CD3D9Renderer::RT_ReadTexture(void* pDst, int destinationWidth, int destina
 	// Copy the frame from our local surface to the requested buffer location
 	pSrc->GetDevTexture()->DownloadToStagingResource(0, [&](void* pData, uint32 rowPitch, uint32 slicePitch)
 	{
+		CRY_ASSERT(rowPitch);
+
 		const int srcStride = 4;
 		const int dstStride = dstFormat == EReadTextureFormat::RGBA8 ? 4 : 3;
 

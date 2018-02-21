@@ -45,8 +45,8 @@ public:
 	virtual int                mfGetMatId()                                                                            { return m_pSrc->mfGetMatId(); }
 	virtual void               mfReset()                                                                               { m_pSrc->mfReset(); }
 	virtual bool               mfIsHWSkinned()                                                                         { return m_pSrc->mfIsHWSkinned(); }
-	virtual CRenderElement*      mfCopyConstruct(void)                                                                   { return m_pSrc->mfCopyConstruct(); }
-	virtual void               mfCenter(Vec3& centr, CRenderObject* pObj)                                              { m_pSrc->mfCenter(centr, pObj); }
+	virtual CRenderElement*    mfCopyConstruct(void)                                                                   { return m_pSrc->mfCopyConstruct(); }
+	virtual void               mfCenter(Vec3& centr, CRenderObject* pObj, const SRenderingPassInfo& passInfo)          { m_pSrc->mfCenter(centr, pObj, passInfo); }
 	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs)                                                     { m_pSrc->mfGetBBox(vMins, vMaxs); }
 	virtual void               mfGetPlane(Plane& pl)                                                                   { m_pSrc->mfGetPlane(pl); }
 

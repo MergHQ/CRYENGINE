@@ -657,6 +657,9 @@ void CEntitySystem::DeleteEntity(CEntity* pEntity)
 
 	if (pEntity)
 	{
+		// Make sure 3dengine does not keep references to this entity
+		gEnv->p3DEngine->OnEntityDeleted(pEntity);
+
 		if (gEnv->pGameFramework)
 		{
 			INetContext* pContext = gEnv->pGameFramework->GetNetContext();
@@ -678,9 +681,6 @@ void CEntitySystem::DeleteEntity(CEntity* pEntity)
 
 		if (!pEntity->m_guid.IsNull())
 			UnregisterEntityGuid(pEntity->m_guid);
-
-		// Make sure 3dengine does not keep references to this entity
-		gEnv->p3DEngine->OnEntityDeleted(pEntity);
 
 		if ((pEntity->m_flags & ENTITY_FLAG_PREALLOCATED_COMPONENTS) == 0)
 		{

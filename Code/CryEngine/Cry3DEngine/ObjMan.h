@@ -449,7 +449,7 @@ public:
 	void         EndOcclusionCulling();
 	void         RenderNonJobObjects(const SRenderingPassInfo& passInfo);
 	uint32       GetResourcesModificationChecksum(IRenderNode* pOwnerNode) const;
-	bool         AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const IRenderView::SInstanceUpdateInfo&, const SRenderingPassInfo& passInfo) const;
+	bool         AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const Matrix34& transformationMatrix, const SRenderingPassInfo& passInfo) const;
 	IRenderMesh* GetBillboardRenderMesh(IMaterial* pMaterial);
 
 public:

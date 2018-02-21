@@ -63,6 +63,33 @@ XmlNodeRef CBinaryXmlNode::getParent() const
 	return XmlNodeRef();
 }
 
+XmlNodeRef CBinaryXmlNode::Convert(XmlNodeRef source)
+{
+	XmlNodeRef xmlNode = GetISystem()->CreateXmlNode(source->getTag());
+	xmlNode->setContent(source->getContent());
+
+	// Copy attributes.
+	const int attributeCount = source->getNumAttributes();
+	for (int i = 0; i < attributeCount; ++i)
+	{
+		const char* szKey = nullptr;
+		const char* szValue = nullptr;
+		if (source->getAttributeByIndex(i, &szKey, &szValue))
+		{
+			xmlNode->setAttr(szKey, szValue);
+		}
+	}
+
+	// Copy children.
+	const int childCount = source->getChildCount();
+	for (int i = 0; i < childCount; ++i)
+	{
+		xmlNode->addChild(Convert(source->getChild(i)));
+	}
+
+	return xmlNode;
+}
+
 XmlNodeRef CBinaryXmlNode::createNode(const char* tag)
 {
 	assert(0);

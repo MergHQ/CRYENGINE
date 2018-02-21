@@ -74,7 +74,8 @@ SComponentParams::SComponentParams()
 	m_renderObjectFlags    = 0;
 	m_instanceDataStride   = 0;
 	m_maxParticlesBurst    = 0;
-	m_maxParticleSpawnRate = 0;
+	m_maxParticlesPerFrame = 0;
+	m_maxParticleRate      = 0.0f;
 	m_scaleParticleCount   = 1.0f;
 	m_maxParticleLifeTime  = 0.0f;
 	m_renderStateFlags     = OS_ALPHA_BLEND;
@@ -116,18 +117,10 @@ void SComponentParams::Serialize(Serialization::IArchive& ar)
 
 void SComponentParams::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
 {
-	if (m_emitterLifeTime.end == 0.0f)
-		total = m_maxParticlesBurst;
-	else
-	{
-		float duration = min(m_emitterLifeTime.Length(), m_maxParticleLifeTime);
-		float rate = m_maxParticleSpawnRate + m_maxParticlesBurst * maxFPS;
-		float count = rate * duration;
-		total = int_ceil(count);
-	}
-	perFrame = max((int)m_maxParticlesBurst, int_ceil(m_maxParticleSpawnRate / minFPS));
-	total = int_ceil(total * m_scaleParticleCount * 1.1f);
-	perFrame = int_ceil(perFrame * m_scaleParticleCount * 1.1f);
+	float rate = m_maxParticleRate + m_maxParticlesPerFrame * maxFPS;
+	float extendedLife = m_maxParticleLifeTime + rcp(minFPS); // Particles stay 1 frame after death
+	total = m_maxParticlesBurst + int_ceil(rate * extendedLife);
+	perFrame = int(m_maxParticlesBurst + m_maxParticlesPerFrame) + int_ceil(m_maxParticleRate / minFPS);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -382,6 +375,8 @@ void CParticleComponent::Compile()
 void CParticleComponent::FinalizeCompile()
 {
 	GetMaxParticleCounts(m_GPUComponentParams.maxParticles, m_GPUComponentParams.maxNewBorns);
+	m_GPUComponentParams.maxParticles += m_GPUComponentParams.maxParticles >> 3;
+	m_GPUComponentParams.maxNewBorns  += m_GPUComponentParams.maxNewBorns  >> 3;
 	MakeMaterial();
 	m_dirty = false;
 }

@@ -133,7 +133,8 @@ struct SComponentParams
 	size_t                    m_instanceDataStride;
 	STextureAnimation         m_textureAnimation;
 	uint32                    m_maxParticlesBurst;
-	float                     m_maxParticleSpawnRate;
+	uint32                    m_maxParticlesPerFrame;
+	float                     m_maxParticleRate;
 	float                     m_scaleParticleCount;
 	Range                     m_emitterLifeTime;
 	float                     m_maxParticleLifeTime;

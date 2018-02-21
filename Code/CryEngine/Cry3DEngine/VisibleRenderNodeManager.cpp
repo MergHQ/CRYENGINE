@@ -74,7 +74,7 @@ void SRenderNodeTempData::InvalidateRenderObjectsInstanceData()
 
 		if (userData.arrPermanentRenderObjects[lod])
 		{
-			userData.arrPermanentRenderObjects[lod]->m_bInstanceDataDirty = true;
+			userData.arrPermanentRenderObjects[lod]->SetInstanceDataDirty();
 		}
 
 		arrPermanentObjectLock[lod].RUnlock();
@@ -290,22 +290,24 @@ CVisibleRenderNodesManager::Statistics CVisibleRenderNodesManager::GetStatistics
 	return stats;
 }
 
-void CVisibleRenderNodesManager::OnEntityDeleted(IEntity* pEntity)
+void CVisibleRenderNodesManager::OnRenderNodeDeleted(IRenderNode* pRenderNode)
 {
-#ifdef _DEBUG
-	LOADING_TIME_PROFILE_SECTION;
+	// Remove pointer atomically
+	SRenderNodeTempData* pNodeTempData = nullptr;
+	pRenderNode->m_pTempData.exchange(pNodeTempData);
 
-	for (auto* node : m_visibleNodes)
+	if (pNodeTempData)
 	{
-		const bool bEntityOwnerdeleted =
-		  node->userData.pOwnerNode &&
-		  node->userData.pOwnerNode->GetOwnerEntity() == pEntity;
-		if (bEntityOwnerdeleted)
+		LOADING_TIME_PROFILE_SECTION;
+
+		auto iter = std::partition(m_visibleNodes.begin(), m_visibleNodes.end(),
+			[pNodeTempData](SRenderNodeTempData* pTempData) { return pTempData != pNodeTempData; });
+
+		// Erase all duplicates, but only add it once (N:1 reduction)
+		if (iter != m_visibleNodes.end())
 		{
-			CryFatalError(
-			  "%s: Dangling IEntity pointer detected in render node: %s",
-			  __FUNCTION__, node->userData.pOwnerNode->GetEntityClassName());
+			m_visibleNodes.erase(iter, m_visibleNodes.end());
+			m_toDeleteNodes[m_currentNodesToDelete].push_back(pNodeTempData);
 		}
 	}
-#endif
 }

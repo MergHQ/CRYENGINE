@@ -14,13 +14,13 @@
 
 #include "XRenderD3D9/DriverD3D.h"
 
-void CREMeshImpl::mfCenter(Vec3& Pos, CRenderObject* pObj)
+void CREMeshImpl::mfCenter(Vec3& Pos, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
 {
 	Vec3 Mins = m_pRenderMesh->m_vBoxMin;
 	Vec3 Maxs = m_pRenderMesh->m_vBoxMax;
 	Pos = (Mins + Maxs) * 0.5f;
 	if (pObj)
-		Pos += pObj->GetTranslation();
+		Pos += pObj->GetMatrix(passInfo).GetTranslation();
 }
 
 void CREMeshImpl::mfGetBBox(Vec3& vMins, Vec3& vMaxs)
@@ -60,15 +60,13 @@ bool CREMeshImpl::mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTesse
 	// If no updates are pending it counts as having successfully "processed" them
 	bool bPendingUpdatesSucceeded = true;
 
-	CRenderMesh* pVContainer = m_pRenderMesh->_GetVertexContainer();
-
 	m_pRenderMesh->m_nFlags &= ~FRM_SKINNEDNEXTDRAW;
 
 	if (m_pRenderMesh->m_Modified[threadId].linked() || bTessellation) // TODO: use the modified list also for tessellated meshes
 	{
 		m_pRenderMesh->SyncAsyncUpdate(gRenDev->GetRenderThreadID());
 
-		bPendingUpdatesSucceeded = m_pRenderMesh->RT_CheckUpdate(pVContainer, eVertFormat, Flags | VSM_MASK, bTessellation);
+		bPendingUpdatesSucceeded = m_pRenderMesh->RT_CheckUpdate(m_pRenderMesh->_GetVertexContainer(), eVertFormat, Flags | VSM_MASK, bTessellation);
 		if (bPendingUpdatesSucceeded)
 		{
 			AUTO_LOCK(CRenderMesh::m_sLinkLock);

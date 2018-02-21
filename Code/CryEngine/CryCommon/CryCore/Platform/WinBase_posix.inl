@@ -89,8 +89,8 @@ ILINE void FS_READDIR(FS_DIR_TYPE pDir, FS_DIRENT_TYPE& kEnt, uint64_t& uEntSize
 	}
 	else
 	{
-		kEnt = *pDirent;
-		uEntSize = static_cast<uint64_t>(sizeof(FS_DIRENT_TYPE));
+		::memcpy(&kEnt, pDirent, pDirent->d_reclen);
+		uEntSize = kEnt.d_reclen;
 		rErr = 0;
 	}
 }

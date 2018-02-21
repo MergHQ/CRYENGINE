@@ -145,21 +145,22 @@ private:
 
 	struct SBoneIndexStreamRequest
 	{
-		SBoneIndexStreamRequest(uint32 _guid, SVF_W4B_I4S *_pStream, SMeshBoneMapping_uint16 *_pExtraStream) :
+		SBoneIndexStreamRequest(int _frameId, uint32 _guid, SVF_W4B_I4S *_pStream, SMeshBoneMapping_uint16 *_pExtraStream) :
 			pStream(_pStream), 
 			pExtraStream(_pExtraStream), 
-			guid(_guid), refcount(1) 
+			guid(_guid), refcount(1), frameId(_frameId)
 		{}
 
 		SVF_W4B_I4S *pStream;
 		SMeshBoneMapping_uint16 *pExtraStream;
 		uint32 guid; 
 		uint32 refcount; 
+		int    frameId;
 	};
 
 	std::vector<SBoneIndexStream> m_RemappedBoneIndices;
-	std::vector< SBoneIndexStreamRequest > m_CreatedBoneIndices[2];
-	std::vector< uint32 > m_DeletedBoneIndices[2];
+	std::vector<SBoneIndexStreamRequest> m_CreatedBoneIndices;
+	std::vector<uint32> m_DeletedBoneIndices;	// guid
 
 	uint32 m_nInds;
 	uint32 m_nVerts;
