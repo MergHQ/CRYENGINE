@@ -266,6 +266,8 @@ bool CSvoEnv::Render()
 					if (ppChilds[childId] == pSeg->m_pNode)
 					{
 						SAFE_DELETE(ppChilds[childId]); // this also deletes pSeg and unregister it from CVoxelSegment::m_arrLoadedSegments
+						// Do not read from pSeg after this point
+						break;
 					}
 				}
 
