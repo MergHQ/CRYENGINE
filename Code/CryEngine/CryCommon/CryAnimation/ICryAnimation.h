@@ -568,7 +568,7 @@ struct ICharacterInstance : IMeshObj
 	virtual uint32 IsCharacterVisible() const = 0;
 
 	// Skeleton effects interface.
-	virtual void  SpawnSkeletonEffect(const char* effectName, const char* boneName, const Vec3& offset, const Vec3& dir, const QuatTS& entityLoc) = 0;
+	virtual void  SpawnSkeletonEffect(const AnimEventInstance& animEvent, const QuatTS &entityLoc) = 0;
 	virtual void  KillAllSkeletonEffects() = 0;
 
 	virtual void  SetViewdir(const Vec3& rViewdir) = 0;
@@ -609,8 +609,6 @@ struct ICharacterInstance : IMeshObj
 	virtual void ReloadCHRPARAMS() = 0;
 #endif
 
-	//! Deprecated.
-	void SpawnSkeletonEffect(int animID, const char* animName, const char* effectName, const char* boneName, const Vec3& offset, const Vec3& dir, const QuatTS& entityLoc);
 };
 
 #include <CryAnimation/IAnimationPoseModifier.h>                                                    // <> required for Interfuscator
@@ -1179,9 +1177,3 @@ private:
 };
 //! \endcond
 
-inline void ICharacterInstance::SpawnSkeletonEffect(int animID, const char* animName, const char* effectName, const char* boneName, const Vec3& offset, const Vec3& dir, const QuatTS& entityLoc)
-{
-	(void)animID;
-	(void)animName;
-	SpawnSkeletonEffect(effectName, boneName, offset, dir, entityLoc);
-}
