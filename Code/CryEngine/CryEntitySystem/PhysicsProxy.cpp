@@ -439,6 +439,9 @@ void CEntityPhysics::ProcessEvent(const SEntityEvent& event)
 			AwakeOnRender(bVisible);
 		}
 		break;
+	case ENTITY_EVENT_TIMER:
+		OnTimer((int)event.nParam[0]);
+		break;
 	case ENTITY_EVENT_MATERIAL:
 		if (IMaterial* pMtl = reinterpret_cast<IMaterial*>(event.nParam[0]))
 		{
@@ -471,37 +474,42 @@ void CEntityPhysics::AwakeOnRender(bool bRender)
 				GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsAwakeOnRender, false);
 			}
 		}
-		else if (GetEntity()->HasInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender) && m_pPhysicalEntity)
+	}
+}
+
+void CEntityPhysics::OnTimer(int id)
+{
+	if (GetEntity()->HasInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender) && m_pPhysicalEntity)
+	{
+		for (int slot = 0; slot < GetEntity()->GetSlotCount(); slot++)
 		{
-			for (int slot = 0; slot < GetEntity()->GetSlotCount(); slot++)
+			IRenderMesh* pRM;
+			if (!GetEntity()->GetSlot(slot) || !GetEntity()->GetSlot(slot)->GetStatObj() || !(pRM = GetEntity()->GetSlot(slot)->GetStatObj()->GetRenderMesh()))
+				continue;
+			pe_params_foreign_data pfd;
+			m_pPhysicalEntity->GetParams(&pfd);
+			if (pfd.iForeignData == PHYS_FOREIGN_ID_USER)
 			{
-				IRenderMesh* pRM;
-				if (!GetEntity()->GetSlot(slot) || !GetEntity()->GetSlot(slot)->GetStatObj() || !(pRM = GetEntity()->GetSlot(slot)->GetStatObj()->GetRenderMesh()))
-					continue;
-				pe_params_foreign_data pfd;
-				m_pPhysicalEntity->GetParams(&pfd);
-				if (pfd.iForeignData == PHYS_FOREIGN_ID_USER)
+				IPhysicalEntity* pAttachTo = static_cast<IPhysicalEntity*>(pfd.pForeignData);
+				if (pAttachTo)
 				{
-					IPhysicalEntity* pAttachTo = static_cast<IPhysicalEntity*>(pfd.pForeignData);
-					if (pAttachTo)
-					{
-						pe_status_pos sp;
-						pAttachTo->GetStatus(&sp);
-						pAttachTo->Release();
-						if (1 << sp.iSimClass > ent_independent)
-							pAttachTo = 0;
-					}
-					AttachSoftVtx(pRM, pAttachTo, pfd.iForeignFlags);
+					pe_status_pos sp;
+					pAttachTo->GetStatus(&sp);
+					pAttachTo->Release();
+					if (1 << sp.iSimClass > ent_independent)
+						pAttachTo = 0;
 				}
-				pfd.pForeignData = GetEntity();
-				pfd.iForeignData = PHYS_FOREIGN_ID_ENTITY;
-				pfd.iForeignFlags = 0;
-				m_pPhysicalEntity->SetParams(&pfd);
-				GetEntity()->SetFlags(GetEntity()->GetFlags() & ~ENTITY_FLAG_SEND_RENDER_EVENT);
-				GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender, false);
-				break;
+				AttachSoftVtx(pRM, pAttachTo, pfd.iForeignFlags);
 			}
+			pfd.pForeignData = GetEntity();
+			pfd.iForeignData = PHYS_FOREIGN_ID_ENTITY;
+			pfd.iForeignFlags = 0;
+			m_pPhysicalEntity->SetParams(&pfd);
+			GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender, false);
+			GetEntity()->RemoveSimpleEventListener(ENTITY_EVENT_TIMER, this);
+			return;
 		}
+		GetEntity()->SetTimer(IEntity::CREATE_NEW_UNIQUE_TIMER_ID, 50);
 	}
 }
 
@@ -1447,8 +1455,9 @@ void CEntityPhysics::PhysicalizeSoft(SEntityPhysicalizeParams& params)
 			params.pAttachToEntity->AddRef();
 		pfd.iForeignFlags = params.nAttachToPart;
 		m_pPhysicalEntity->SetParams(&pfd);
-		GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
 		GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender, true);
+		GetEntity()->AddSimpleEventListener(ENTITY_EVENT_TIMER, this, 0);
+		GetEntity()->SetTimer(IEntity::CREATE_NEW_UNIQUE_TIMER_ID, 50);
 	}
 }
 
