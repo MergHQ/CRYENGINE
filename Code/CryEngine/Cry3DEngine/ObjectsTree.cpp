@@ -2950,6 +2950,8 @@ void COctreeNode::RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfo
                                               IRenderNode* pObj, const AABB& objBox, const uint32 passCullMask, const CLodValue* lodValue, const SRendParams* rendParams,
                                               PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo)
 {
+	CRY_ASSERT_MESSAGE(!passInfoGeneral.IsShadowPass(), "RenderObjectIntoShadowViews expects to get a general pass as input.");
+
 	auto skipShadowCastersRndFlags = ERF_HIDDEN | ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | ERF_STATIC_INSTANCING; // shadow casters with these render flags are ignored
 
 	auto renderFlags = pObj->GetRndFlags();

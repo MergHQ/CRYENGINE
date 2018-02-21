@@ -2439,6 +2439,11 @@ private:
 //! Used to prevent global state.
 struct SRenderingPassInfo
 {
+	operator SRenderObjectAccessThreadConfig() const
+	{
+		return SRenderObjectAccessThreadConfig(ThreadID());
+	}
+
 	enum EShadowMapType
 	{
 		SHADOW_MAP_NONE = 0,
@@ -2552,7 +2557,6 @@ struct SRenderingPassInfo
 	}
 
 private:
-
 	//! Private constructor, creation is only allowed with create functions.
 	SRenderingPassInfo()
 	{

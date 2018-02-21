@@ -169,7 +169,7 @@ void CDecal::Render(const float fCurTime, int nAfterWater, float fDistanceFading
 				}
 			}
 
-			pObj->m_II.m_Matrix = objMat;
+			pObj->SetMatrix(objMat, passInfo);
 			if (m_ownerInfo.pRenderNode)
 				pObj->m_ObjFlags |= FOB_TRANS_MASK;
 
@@ -262,7 +262,7 @@ void CDecal::Render(const float fCurTime, int nAfterWater, float fDistanceFading
 					SRenderObjData* pOD = pObj->GetObjData();
 					if (pOD)
 					{
-						pOD->m_pSkinningData = pFol->GetSkinningData(pObj->m_II.m_Matrix, passInfo);
+						pOD->m_pSkinningData = pFol->GetSkinningData(objMat, passInfo);
 					}
 				}
 				if (pBody && pBody->m_pRenderMesh)
@@ -274,7 +274,7 @@ void CDecal::Render(const float fCurTime, int nAfterWater, float fDistanceFading
 			// draw complex decal using new indices and original object vertices
 			pObj->m_fAlpha = fAlpha;
 			pObj->m_ObjFlags |= FOB_DECAL | FOB_DECAL_TEXGEN_2D | FOB_INSHADOW;
-			pObj->m_II.m_AmbColor = m_vAmbient;
+			pObj->SetAmbientColor(m_vAmbient, passInfo);
 
 			m_pRenderMesh->SetREUserData(m_arrBigDecalRMCustomData, 0, fAlpha);
 			m_pRenderMesh->AddRenderElements(m_pMaterial, pObj, passInfo, EFSLIST_GENERAL, nAfterWater);
@@ -388,13 +388,12 @@ void CDecal::RenderBigDecalOnTerrain(float fAlpha, float fScale, const SRenderin
 	CRenderObject* pObj = GetIdentityCRenderObject(passInfo);
 	if (!pObj)
 		return;
-
-	pObj->m_II.m_Matrix.SetTranslation(m_vPos);
+	pObj->SetMatrix(Matrix34::CreateTranslationMat(m_vPos), passInfo);
 	pObj->m_ObjFlags |= FOB_TRANS_TRANSLATE;
 
 	pObj->m_fAlpha = fAlpha;
 	pObj->m_ObjFlags |= FOB_DECAL | FOB_DECAL_TEXGEN_2D | FOB_INSHADOW;
-	pObj->m_II.m_AmbColor = m_vAmbient;
+	pObj->SetAmbientColor(m_vAmbient, passInfo);
 
 	pObj->m_nSort = m_sortPrio;
 
@@ -433,7 +432,7 @@ void CDecal::AddDecalToRenderView(float fDistance,
 	// prepare render object
 	pRenderObject->m_fDistance = fDistance;
 	pRenderObject->m_fAlpha = (float)ucResCol.bcolor[3] / 255.f;
-	pRenderObject->m_II.m_AmbColor = vAmbientColor;
+	pRenderObject->SetAmbientColor(vAmbientColor, passInfo);
 	pRenderObject->m_fSort = 0;
 	pRenderObject->m_ObjFlags |= FOB_DECAL | FOB_INSHADOW;
 	pRenderObject->m_nSort = sortPrio;
@@ -445,7 +444,7 @@ void CDecal::AddDecalToRenderView(float fDistance,
 		// transfer decal into object space
 		Matrix34A objMat;
 		IStatObj* pEntObject = pVegetation->GetEntityStatObj(0, &objMat);
-		pRenderObject->m_II.m_Matrix = objMat;
+		pRenderObject->SetMatrix(objMat, passInfo);
 		pRenderObject->m_ObjFlags |= FOB_TRANS_MASK;
 		pVegetation->FillBendingData(pRenderObject);
 		assert(pEntObject);

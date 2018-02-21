@@ -14,13 +14,13 @@
 
 #include "XRenderD3D9/DriverD3D.h"
 
-void CREMeshImpl::mfCenter(Vec3& Pos, CRenderObject* pObj)
+void CREMeshImpl::mfCenter(Vec3& Pos, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
 {
 	Vec3 Mins = m_pRenderMesh->m_vBoxMin;
 	Vec3 Maxs = m_pRenderMesh->m_vBoxMax;
 	Pos = (Mins + Maxs) * 0.5f;
 	if (pObj)
-		Pos += pObj->GetTranslation();
+		Pos += pObj->GetMatrix(passInfo).GetTranslation();
 }
 
 void CREMeshImpl::mfGetBBox(Vec3& vMins, Vec3& vMaxs)

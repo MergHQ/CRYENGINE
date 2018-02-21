@@ -47,7 +47,7 @@ void CLightningRenderNode::CTriStrip::Draw(const SRendParams& renderParams, cons
 
 	bool nAfterWater = true;
 
-	pRenderObject->m_II.m_Matrix = Matrix34(IDENTITY);
+	pRenderObject->SetMatrix(Matrix34::CreateIdentity(), passInfo);
 	pRenderObject->m_ObjFlags |= FOB_NO_FOG;
 	pRenderObject->m_ObjFlags &= ~FOB_ALLOW_TESSELLATION;
 	pRenderObject->m_nSort = fastround_positive(distanceToCamera * 2.0f);

@@ -74,7 +74,7 @@ void SRenderNodeTempData::InvalidateRenderObjectsInstanceData()
 
 		if (userData.arrPermanentRenderObjects[lod])
 		{
-			userData.arrPermanentRenderObjects[lod]->m_bInstanceDataDirty = true;
+			userData.arrPermanentRenderObjects[lod]->SetInstanceDataDirty();
 		}
 
 		arrPermanentObjectLock[lod].RUnlock();

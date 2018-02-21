@@ -198,12 +198,27 @@ struct SRenderObjData
 /// It can be compiled into the platform specific efficient rendering compiled object.
 ///
 //////////////////////////////////////////////////////////////////////
+struct SRenderObjectAccessThreadConfig
+{
+	const threadID objAccessorThreadId;
+	SRenderObjectAccessThreadConfig() = delete;
+	explicit SRenderObjectAccessThreadConfig(threadID tID) : objAccessorThreadId(tID) {}
+};
+
+
 class CRY_ALIGN(16) CRenderObject
 {
 public:
 	enum
 	{
 		MAX_INSTANCING_ELEMENTS = 800  //!< 4096 Vec4 entries max in DX11 (65536 bytes)
+	};
+
+	enum ERenderPassType
+	{
+		eRenderPass_General  = 0,
+		eRenderPass_Shadows  = 1,
+		eRenderPass_NumTypes = 2
 	};
 
 	struct SInstanceInfo
@@ -221,8 +236,34 @@ public:
 	};
 
 public:
-	//////////////////////////////////////////////////////////////////////////
-	SInstanceInfo m_II;                //!< Per instance data
+	ILINE void SetIdentityMatrix()
+	{
+		for (auto& II : m_II)
+		{
+			II.m_Matrix = Matrix34::CreateIdentity();
+		}
+	}
+
+	// The template is used to defer the function compilation as SRenderingPassInfo and gcpRendD3D are not defined at this point
+	ILINE void SetMatrix(const Matrix34& mat, const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg)
+	{
+		m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Matrix = mat;
+	}
+
+	ILINE void SetAmbientColor(const ColorF& ambColor, const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg)
+	{
+		m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_AmbColor = ambColor;
+	}
+
+	ILINE const Matrix34& GetMatrix(const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg) const
+	{
+		return m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Matrix;
+	}
+
+	ILINE const ColorF& GetAmbientColor(const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg) const
+	{
+		return m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_AmbColor;
+	}
 
 	uint64 m_ObjFlags;                 //!< Combination of FOB_ flags.
 	uint32 m_Id;
@@ -261,12 +302,12 @@ public:
 	CCompiledRenderObject* m_pCompiledObject;
 
 	// Common flags
-	bool m_bWasDeleted;                //!< Object was deleted and in unusable state
-	bool m_bPermanent;                 //!< Object is permanent and persistent across multiple frames
-	bool m_bInstanceDataDirty;         //!< Object per instance data dirty and needs to be recompiled, (When only the instance data need recompilation)
-	bool m_bAllCompiledValid;          //!< Set to true when compiled successfully.
+	bool m_bWasDeleted;                               //!< Object was deleted and in unusable state
+	bool m_bPermanent;                                //!< Object is permanent and persistent across multiple frames
+	bool m_bInstanceDataDirty[eRenderPass_NumTypes];  //!< Object per instance data dirty and needs to be recompiled, (When only the instance data need recompilation)
+	bool m_bAllCompiledValid;                         //!< Set to true when compiled successfully.
 
-	volatile uint32 m_passReadyMask;   //!< For Persistent Render Objects, This render object will be submitted for filling once for every not ready pass (should be 32 bit for atomic operation to work on it)
+	volatile uint32 m_passReadyMask;                  //!< For Persistent Render Objects, This render object will be submitted for filling once for every not ready pass (should be 32 bit for atomic operation to work on it)
 
 	//! Embedded SRenderObjData, optional data carried by CRenderObject
 	SRenderObjData m_data;
@@ -277,6 +318,11 @@ public:
 	SVegetationBendingData m_vegetationBendingData;        //!< Vegetation Bending parameters
 
 	uint32 m_editorSelectionID;                            //!< SelectionID for the editor
+
+protected:
+	//////////////////////////////////////////////////////////////////////////
+	// Double buffered since RT and main/job thread will access it simultaneously. One for RT and one for main/job thread 
+	SInstanceInfo m_II[RT_COMMAND_BUF_COUNT];             //!< Per instance data
 
 public:
 	//////////////////////////////////////////////////////////////////////////
@@ -298,14 +344,10 @@ public:
 
 	//=========================================================================================================
 
-	inline Vec3  GetTranslation() const { return m_II.m_Matrix.GetTranslation(); }
-	inline float GetScaleX() const      { return sqrt_tpl(m_II.m_Matrix(0, 0) * m_II.m_Matrix(0, 0) + m_II.m_Matrix(0, 1) * m_II.m_Matrix(0, 1) + m_II.m_Matrix(0, 2) * m_II.m_Matrix(0, 2)); }
-	inline float GetScaleZ() const      { return sqrt_tpl(m_II.m_Matrix(2, 0) * m_II.m_Matrix(2, 0) + m_II.m_Matrix(2, 1) * m_II.m_Matrix(2, 1) + m_II.m_Matrix(2, 2) * m_II.m_Matrix(2, 2)); }
-
 	inline void  Init()
 	{
 		m_ObjFlags = 0;
-		m_bInstanceDataDirty = false;
+		SetInstanceDataDirty(false);
 		m_bPermanent = false;
 		m_nRenderQuality = 65535;
 
@@ -319,7 +361,8 @@ public:
 		m_nMDV = 0;
 		m_fSort = 0;
 
-		m_II.m_AmbColor = Col_White;
+		m_II[0].m_AmbColor = Col_White;
+		m_II[1].m_AmbColor = Col_White;
 		m_fAlpha = 1.0f;
 		m_nTextureID = -1;
 		m_pCurrMaterial = nullptr;
@@ -338,7 +381,8 @@ public:
 
 		m_data.Init();
 
-		m_II.m_Matrix.SetIdentity();
+		m_II[0].m_Matrix.SetIdentity();
+		m_II[1].m_Matrix.SetIdentity();
 		m_vegetationBendingData = SVegetationBendingData();
 
 		m_editorSelectionID = 0;
@@ -346,7 +390,11 @@ public:
 
 	void                    AssignId(uint32 id) { m_Id = id; }
 
-	ILINE Matrix34A&        GetMatrix()         { return m_II.m_Matrix; }
+	ILINE void SetInstanceDataDirty(bool dirty = true)
+	{
+		for (uint32_t i = 0; i < eRenderPass_NumTypes; ++i)
+			m_bInstanceDataDirty[i] = dirty;
+	}
 
 	ILINE SRenderObjData*   GetObjData()        { return &m_data;  }
 

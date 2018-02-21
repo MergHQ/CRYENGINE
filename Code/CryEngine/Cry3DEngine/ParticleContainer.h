@@ -325,7 +325,7 @@ private:
 	void  UpdateParticleStates(SParticleUpdateContext& context);
 	void  SetScreenBounds(const CCamera& cam, uint8 aScreenBounds[4]);
 
-	CRenderObject* CreateRenderObject(uint64 nObjFlags);
+	CRenderObject* CreateRenderObject(uint64 nObjFlags, const SRenderingPassInfo& passInfo);
 };
 
 #endif // __particlecontainer_h__

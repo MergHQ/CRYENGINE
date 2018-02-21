@@ -422,10 +422,10 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 		const auto objMat = Matrix34::CreateScale(vScale, Vec3{ static_cast<float>(m_nOriginX), static_cast<float>(m_nOriginY), 0.0f });
 
 		CLodValue lodValue(3, 0, 3);
-		if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &lodValue, IRenderView::SInstanceUpdateInfo{ objMat }, passInfo))
+		if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &lodValue, objMat, passInfo))
 		{
 			pTerrainRenderObject->m_pRenderNode = nullptr;
-			pTerrainRenderObject->m_II.m_AmbColor = Get3DEngine()->GetSkyColor();
+			pTerrainRenderObject->SetAmbientColor(Get3DEngine()->GetSkyColor(), passInfo);
 			pTerrainRenderObject->m_fDistance = m_arrfDistance[passInfo.GetRecursiveLevel()];
 
 			pTerrainRenderObject->m_ObjFlags |= FOB_TRANS_TRANSLATE | FOB_TRANS_SCALE;
@@ -451,10 +451,10 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 	const auto objMat = Matrix34::CreateTranslationMat(vOrigin);
 
 	CLodValue lodValue(0, 0, 0);
-	if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &lodValue, IRenderView::SInstanceUpdateInfo{ objMat }, passInfo))
+	if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &lodValue, objMat, passInfo))
 	{
 		pTerrainRenderObject->m_pRenderNode = nullptr;
-		pTerrainRenderObject->m_II.m_AmbColor = Get3DEngine()->GetSkyColor();
+		pTerrainRenderObject->SetAmbientColor(Get3DEngine()->GetSkyColor(), passInfo);
 		pTerrainRenderObject->m_fDistance = m_arrfDistance[passInfo.GetRecursiveLevel()];
 
 		pTerrainRenderObject->m_ObjFlags |= FOB_TRANS_TRANSLATE;
@@ -509,11 +509,11 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 				CRenderObject* pDetailObj = nullptr;
 
 				CLodValue detailLodValue(1 + nP, 0, 1 + nP);
-				if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pDetailObj, &detailLodValue, IRenderView::SInstanceUpdateInfo{ objMat }, passInfo))
+				if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pDetailObj, &detailLodValue, objMat, passInfo))
 					continue;
 
 				pDetailObj->m_pRenderNode = nullptr;
-				pDetailObj->m_II.m_AmbColor = Get3DEngine()->GetSkyColor();
+				pDetailObj->SetAmbientColor(Get3DEngine()->GetSkyColor(), passInfo);
 				pDetailObj->m_fDistance = m_arrfDistance[passInfo.GetRecursiveLevel()];
 
 				pDetailObj->m_ObjFlags |= passInfo.IsGeneralPass() ? FOB_NO_FOG : 0; // enable fog on recursive rendering (per-vertex)
@@ -536,6 +536,7 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 							continue;
 
 						if (SSurfaceType* pSurf = m_lstSurfaceTypeInfo[i].pSurfaceType)
+						{
 							if (IMaterial* pMat = pSurf->GetMaterialOfProjection(szProj[p]))
 							{
 								pSurf->fMaxMatDistanceZ = float(GetFloatCVar(e_TerrainDetailMaterialsViewDistZ) * Get3DEngine()->m_fTerrainDetailMaterialsViewDistRatio);
@@ -561,6 +562,7 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 									}
 								}
 							}
+						}
 					}
 				}
 			}

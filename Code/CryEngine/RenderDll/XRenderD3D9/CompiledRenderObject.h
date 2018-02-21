@@ -63,13 +63,6 @@ private:
 class CPermanentRenderObject : public CRenderObject
 {
 public:
-	enum ERenderPassType
-	{
-		eRenderPass_General,
-		eRenderPass_Shadows,
-		eRenderPass_NumTypes
-	};
-public:
 	CPermanentRenderObject()
 		: m_pNextPermanent(nullptr)
 		, m_compiledReadyMask(0)
@@ -125,7 +118,7 @@ public:
 	CPermanentRenderObject* m_pNextPermanent;
 
 	//! Correspond to the m_passReadyMask, object considered compiled when m_compiledReadyMask == m_passReadyMask
-	volatile int m_compiledReadyMask;
+	int          m_compiledReadyMask;
 	int          m_lastCompiledFrame;
 
 	// Make a reference to a render mesh, to prevent it being deleted while permanent render object still exist.
@@ -167,6 +160,22 @@ private:
 	// Used to pool per instance constant buffers.
 	std::vector<CConstantBufferPtr> m_freeConstantBuffers;
 };
+
+enum EObjectCompilationOptions : uint8
+{
+	eObjCompilationOption_PipelineState             = BIT(0),
+	eObjCompilationOption_PerInstanceConstantBuffer = BIT(1),
+	eObjCompilationOption_PerInstanceExtraResources = BIT(2),
+	eObjCompilationOption_InputStreams              = BIT(3), // e.g. geometry streams (vertex, index buffers)
+
+	eObjCompilationOption_None                = 0,
+	eObjCompilationOption_PerInstanceDataOnly = eObjCompilationOption_PerInstanceConstantBuffer | eObjCompilationOption_PerInstanceExtraResources,
+	eObjCompilationOption_All                 = eObjCompilationOption_PipelineState             | 
+	                                            eObjCompilationOption_PerInstanceConstantBuffer | 
+	                                            eObjCompilationOption_PerInstanceExtraResources | 
+	                                            eObjCompilationOption_InputStreams
+};
+DEFINE_ENUM_FLAG_OPERATORS(EObjectCompilationOptions);
 
 // Used by Graphics Pass pipeline
 class CCompiledRenderObject
@@ -258,6 +267,8 @@ public:
 	// DrawCall parameters, store separate values for merged shadow-gen draw calls
 	SDrawParams m_drawParams[eDrawParam_Count];
 
+	EObjectCompilationOptions m_compiledFlags;
+
 private:
 	// These 2 members must be initialized prior to calling Compile
 	CRenderElement*     m_pRenderElement;
@@ -288,7 +299,7 @@ public:
 
 	// Compile(): Returns true if the compilation is fully finished, false if compilation should be retriggered later
 
-	bool Compile(CRenderObject* pRenderObject, const IRenderView::SInstanceUpdateInfo& instanceInfo, CRenderView *pRenderView, bool updateInstanceDataOnly);
+	bool Compile(CRenderObject* pRenderObject, const EObjectCompilationOptions& compilationOptions, CRenderView *pRenderView);
 	void PrepareForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
 
 	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 0) const;
@@ -308,7 +319,7 @@ public:
 	static void SetStaticPools(CRenderObjectsPools* pools) { s_pPools = pools; }
 
 private:
-	void CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject, const IRenderView::SInstanceUpdateInfo& instanceInfo);
+	void CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject);
 	void CompilePerInstanceExtraResources(CRenderObject* pRenderObject);
 	void CompileInstancingData(CRenderObject* pRenderObject, bool bForce);
 	void UpdatePerInstanceCB(void* pData, size_t size);

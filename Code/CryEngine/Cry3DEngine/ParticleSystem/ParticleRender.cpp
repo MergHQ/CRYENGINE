@@ -66,7 +66,7 @@ void CParticleRenderBase::PrepareRenderObject(CParticleEmitter* pEmitter, CParti
 	CRenderObject* pRenderObject = gEnv->pRenderer->EF_GetObject();
 	auto particleMaterial = params.m_pMaterial;
 
-	pRenderObject->m_II.m_Matrix.SetIdentity();
+	pRenderObject->SetIdentityMatrix();
 	pRenderObject->m_fAlpha = 1.0f;
 	pRenderObject->m_pCurrMaterial = particleMaterial;
 	pRenderObject->m_pRenderNode = pEmitter;
@@ -97,7 +97,7 @@ void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, CParticleC
 
 	pRenderObject->m_ObjFlags = objFlags;
 	pRenderObject->m_fDistance = renderContext.m_distance - sortBias;
-	pRenderObject->m_bInstanceDataDirty = true;
+	pRenderObject->SetInstanceDataDirty();
 	pObjData->m_FogVolumeContribIdx = renderContext.m_fogVolumeId;
 	pObjData->m_LightVolumeId = renderContext.m_lightVolumeId;
 	if (const auto p = pEmitter->m_pTempData.load())
@@ -107,11 +107,13 @@ void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, CParticleC
 
 	CParticleJobManager& kernel = GetPSystem()->GetJobManager();
 	kernel.ScheduleComputeVertices(pComponentRuntime, pRenderObject, renderContext);
+	
+	int passId = renderContext.m_passInfo.IsShadowPass() ? 1 : 0;
+	int passMask = BIT(passId);
+	pRenderObject->m_passReadyMask |= passMask;
 
 	renderContext.m_passInfo.GetIRenderView()->AddPermanentObject(
 		pRenderObject,
-		IRenderView::SInstanceUpdateInfo{ pRenderObject->m_II.m_Matrix },
-		pRenderObject->m_bInstanceDataDirty,
 		renderContext.m_passInfo);
 }
 
