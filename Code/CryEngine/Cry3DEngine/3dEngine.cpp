@@ -2028,7 +2028,7 @@ void C3DEngine::FreeRenderNodeState(IRenderNode* pEnt)
 
 	UnRegisterEntityImpl(pEnt);
 
-	pEnt->RemoveAndMarkForAutoDeleteTempData();
+	m_visibleNodesManager.OnRenderNodeDeleted(pEnt);
 }
 
 const char* C3DEngine::GetLevelFilePath(const char* szFileName)
@@ -6679,5 +6679,4 @@ Vec3 C3DEngine::GetSunDirNormalized() const
 ///////////////////////////////////////////////////////////////////////////////
 void C3DEngine::OnEntityDeleted(IEntity* pEntity)
 {
-	m_visibleNodesManager.OnEntityDeleted(pEntity);
 }
