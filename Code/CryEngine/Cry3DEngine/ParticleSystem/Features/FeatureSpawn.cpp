@@ -36,11 +36,6 @@ struct SSpawnData
 class CParticleFeatureSpawnBase : public CParticleFeature
 {
 public:
-	CParticleFeatureSpawnBase()
-	{
-		m_duration = DefaultDuration();
-	}
-
 	virtual EFeatureType GetFeatureType() override
 	{
 		return EFT_Spawn;
@@ -163,7 +158,7 @@ protected:
 		}
 
 		// Pad end of array, for vectorized modifiers
-		memset(amounts.end(), 0, (amounts.capacity() - amounts.size()) * sizeof(float));
+		std::fill(amounts.end(), amounts.begin() + amounts.capacity(), 0.0f);
 		m_amount.ModifyUpdate(context, amounts.data(), range);
 
 		GetSpawnCounts(context, amounts);
@@ -268,6 +263,11 @@ class CFeatureSpawnCount : public CParticleFeatureSpawnBase
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
+		
+	CFeatureSpawnCount()
+	{
+		m_duration = 0.0f;
+	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
@@ -281,12 +281,13 @@ public:
 	{
 		CParticleFeatureSpawnBase::AddToComponent(pComponent, pParams);
 
-		const float maxParticles = m_amount.GetValueRange().end;
-		const float spawnTime = min(pParams->m_maxParticleLifeTime, m_duration.GetValueRange().start);
+		const float amount = m_amount.GetValueRange().end;
+		const float spawnTime = m_mode == ESpawnCountMode::TotalParticles ? m_duration.GetValueRange().start
+			: min(pParams->m_maxParticleLifeTime, m_duration.GetValueRange().start);
 		if (spawnTime > 0.0f)
-			pParams->m_maxParticleSpawnRate += maxParticles / spawnTime;
+			pParams->m_maxParticleRate += amount / spawnTime;
 		else
-			pParams->m_maxParticlesBurst += int_ceil(maxParticles);
+			pParams->m_maxParticlesBurst += int_ceil(amount);
 	}
 
 	void GetSpawnCounts(const SUpdateContext& context, TVarArray<float> amounts) const override
@@ -335,9 +336,9 @@ public:
 
 		const auto amount = m_amount.GetValueRange();
 		if (m_mode == ESpawnRateMode::ParticlesPerFrame)
-			pParams->m_maxParticlesBurst += int_ceil(amount.end);
+			pParams->m_maxParticlesPerFrame += int_ceil(amount.end);
 		else
-			pParams->m_maxParticleSpawnRate += (m_mode == ESpawnRateMode::ParticlesPerSecond ? amount.end : rcp(amount.start));
+			pParams->m_maxParticleRate += (m_mode == ESpawnRateMode::ParticlesPerSecond ? amount.end : rcp(amount.start));
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
