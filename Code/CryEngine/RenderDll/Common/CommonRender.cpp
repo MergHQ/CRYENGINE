@@ -153,7 +153,9 @@ void CBaseResource::UnregisterAndDelete()
 	if (!m_bDeleted)
 	{
 		m_bDeleted = true;
-		gRenDev->ScheduleResourceForDelete(this);
+		CRY_ASSERT(gRenDev != nullptr);
+		if(gRenDev)
+			gRenDev->ScheduleResourceForDelete(this);
 	}
 }
 
