@@ -71,16 +71,19 @@ bool g_bMuted;
 SoundEngine::FnEventCallback g_fnEventFinishedCallback;
 SoundEngine::FnStandaloneFileCallback g_fnStandaloneFileFinishedCallback;
 
+//////////////////////////////////////////////////////////////////////////
 void SoundEngine::RegisterEventFinishedCallback(FnEventCallback pCallbackFunction)
 {
 	g_fnEventFinishedCallback = pCallbackFunction;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void SoundEngine::RegisterStandaloneFileFinishedCallback(FnStandaloneFileCallback pCallbackFunction)
 {
 	g_fnStandaloneFileFinishedCallback = pCallbackFunction;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void EventFinishedPlaying(CATLEvent& audioEvent)
 {
 	if (g_fnEventFinishedCallback)
@@ -89,6 +92,7 @@ void EventFinishedPlaying(CATLEvent& audioEvent)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void StandaloneFileFinishedPlaying(CATLStandaloneFile& standaloneFile, char const* const szFileName)
 {
 	if (g_fnStandaloneFileFinishedCallback)
@@ -97,6 +101,7 @@ void StandaloneFileFinishedPlaying(CATLStandaloneFile& standaloneFile, char cons
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void SoundEngine::UnloadSample(const SampleId nID)
 {
 	Mix_Chunk* pSample = stl::find_in_map(g_sampleData, nID, nullptr);
@@ -111,6 +116,7 @@ void SoundEngine::UnloadSample(const SampleId nID)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void ProcessChannelFinishedRequests(ChannelFinishedRequests& queue)
 {
 	if (!queue.empty())
@@ -185,6 +191,7 @@ void ProcessChannelFinishedRequests(ChannelFinishedRequests& queue)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void ChannelFinishedPlaying(int nChannel)
 {
 	if (nChannel >= 0 && nChannel < s_numMixChannels)
@@ -194,6 +201,7 @@ void ChannelFinishedPlaying(int nChannel)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 void LoadMetadata(const string& path)
 {
 	_finddata_t fd;
@@ -234,6 +242,7 @@ void LoadMetadata(const string& path)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::Init()
 {
 	if (SDL_Init(SDL_INIT_AUDIO) < 0)
@@ -278,6 +287,7 @@ bool SoundEngine::Init()
 	return true;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void FreeAllSampleData()
 {
 	Mix_HaltChannel(-1);
@@ -290,6 +300,7 @@ void FreeAllSampleData()
 	g_sampleData.clear();
 }
 
+//////////////////////////////////////////////////////////////////////////
 void SoundEngine::Release()
 {
 	FreeAllSampleData();
@@ -300,12 +311,14 @@ void SoundEngine::Release()
 	SDL_Quit();
 }
 
+//////////////////////////////////////////////////////////////////////////
 void SoundEngine::Refresh()
 {
 	FreeAllSampleData();
 	LoadMetadata(s_projectPath);
 }
 
+//////////////////////////////////////////////////////////////////////////
 const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, const size_t size, const string& samplePath, const SampleId overrideId)
 {
 	const SampleId id = (overrideId != 0) ? overrideId : GetIDFromString(samplePath);
@@ -337,6 +350,7 @@ const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, const size_t siz
 	return s_invalidSampleId;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool LoadSampleImpl(const SampleId id, const string& samplePath)
 {
 	bool bSuccess = true;
@@ -378,6 +392,7 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 	return bSuccess;
 }
 
+//////////////////////////////////////////////////////////////////////////
 const SampleId SoundEngine::LoadSample(const string& sampleFilePath, bool bOnlyMetadata)
 {
 	const SampleId id = GetIDFromString(sampleFilePath);
@@ -395,66 +410,88 @@ const SampleId SoundEngine::LoadSample(const string& sampleFilePath, bool bOnlyM
 	return id;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void SoundEngine::Pause()
 {
 	Mix_Pause(-1);
 	Mix_PauseMusic();
 }
 
+//////////////////////////////////////////////////////////////////////////
 void SoundEngine::Resume()
 {
 	Mix_Resume(-1);
 	Mix_ResumeMusic();
 }
 
+//////////////////////////////////////////////////////////////////////////
 void SoundEngine::Stop()
 {
 	Mix_HaltChannel(-1);
 }
 
+//////////////////////////////////////////////////////////////////////////
 void SoundEngine::Mute()
 {
 	Mix_Volume(-1, 0);
 	g_bMuted = true;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void SoundEngine::UnMute()
 {
 	Objects::const_iterator audioObjectIt = g_objects.begin();
-	const Objects::const_iterator audioObjectEnd = g_objects.end();
+	Objects::const_iterator const audioObjectEnd = g_objects.end();
+
 	for (; audioObjectIt != audioObjectEnd; ++audioObjectIt)
 	{
-		CObject* pAudioObject = *audioObjectIt;
-		if (pAudioObject)
+		CObject* const pAudioObject = *audioObjectIt;
+
+		if (pAudioObject != nullptr)
 		{
 			EventInstanceList::const_iterator eventIt = pAudioObject->m_events.begin();
-			const EventInstanceList::const_iterator eventEnd = pAudioObject->m_events.end();
+			EventInstanceList::const_iterator const eventEnd = pAudioObject->m_events.end();
+
 			for (; eventIt != eventEnd; ++eventIt)
 			{
-				CEvent* pEventInstance = *eventIt;
-				if (pEventInstance)
+				CEvent* const pEventInstance = *eventIt;
+
+				if (pEventInstance != nullptr)
 				{
-					ChannelList::const_iterator channelIt = pEventInstance->m_channels.begin();
-					ChannelList::const_iterator channelEnd = pEventInstance->m_channels.end();
-					for (; channelIt != channelEnd; ++channelIt)
+					auto const pTrigger = pEventInstance->m_pTrigger;
+
+					if (pTrigger != nullptr)
 					{
-						Mix_Volume(*channelIt, pEventInstance->m_pTrigger->GetVolume());
+						float const volumeMultiplier = GetVolumeMultiplier(pAudioObject, pTrigger->GetSampleId());
+						int const mixVolume = GetAbsoluteVolume(pTrigger->GetVolume(), volumeMultiplier);
+
+						ChannelList::const_iterator channelIt = pEventInstance->m_channels.begin();
+						ChannelList::const_iterator const channelEnd = pEventInstance->m_channels.end();
+
+						for (; channelIt != channelEnd; ++channelIt)
+						{
+							Mix_Volume(*channelIt, mixVolume);
+						}
 					}
 				}
 			}
 		}
 	}
+
 	g_bMuted = false;
 }
 
+//////////////////////////////////////////////////////////////////////////
 void SetChannelPosition(const CTrigger* pStaticData, const int channelID, const float distance, const float angle)
 {
 	static const uint8 sdlMaxDistance = 255;
 	const float min = pStaticData->GetAttenuationMinDistance();
 	const float max = pStaticData->GetAttenuationMaxDistance();
+
 	if (min <= max)
 	{
 		uint8 nDistance = 0;
+
 		if (max >= 0.0f && distance > min)
 		{
 			if (min != max)
@@ -489,6 +526,7 @@ void SetChannelPosition(const CTrigger* pStaticData, const int channelID, const 
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::StopEvent(CEvent const* const pEvent)
 {
 	if (pEvent != nullptr)
@@ -512,9 +550,11 @@ bool SoundEngine::StopEvent(CEvent const* const pEvent)
 
 		return true;
 	}
+
 	return false;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::PauseEvent(CEvent const* const pEvent)
 {
 	if (pEvent != nullptr)
@@ -533,6 +573,7 @@ bool SoundEngine::PauseEvent(CEvent const* const pEvent)
 	return false;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::ResumeEvent(CEvent const* const pEvent)
 {
 	if (pEvent != nullptr)
@@ -551,30 +592,31 @@ bool SoundEngine::ResumeEvent(CEvent const* const pEvent)
 	return false;
 }
 
+//////////////////////////////////////////////////////////////////////////
 ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const* const pTrigger, CEvent* const pEvent)
 {
 	ERequestStatus requestStatus = ERequestStatus::Failure;
 
-	if (pObject != nullptr && pTrigger != nullptr && pEvent != nullptr)
+	if ((pObject != nullptr) && (pTrigger != nullptr) && (pEvent != nullptr))
 	{
 		EEventType const type = pTrigger->GetType();
+		SampleId const sampleId = pTrigger->GetSampleId();
 
 		if (type == EEventType::Start)
 		{
 			// Start playing samples
 			pEvent->m_pTrigger = pTrigger;
-
-			Mix_Chunk* pSample = stl::find_in_map(g_sampleData, pTrigger->GetSampleId(), nullptr);
+			Mix_Chunk* pSample = stl::find_in_map(g_sampleData, sampleId, nullptr);
 
 			if (pSample == nullptr)
 			{
 				// Trying to play sample that hasn't been loaded yet, load it in place
 				// NOTE: This should be avoided as it can cause lag in audio playback
-				string const& samplePath = g_samplePaths[pTrigger->GetSampleId()];
+				string const& samplePath = g_samplePaths[sampleId];
 
-				if (LoadSampleImpl(pTrigger->GetSampleId(), samplePath))
+				if (LoadSampleImpl(sampleId, samplePath))
 				{
-					pSample = stl::find_in_map(g_sampleData, pTrigger->GetSampleId(), nullptr);
+					pSample = stl::find_in_map(g_sampleData, sampleId, nullptr);
 				}
 
 				if (pSample == nullptr)
@@ -590,7 +632,10 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 				if (channelID >= 0)
 				{
 					g_freeChannels.pop();
-					Mix_Volume(channelID, g_bMuted ? 0 : pTrigger->GetVolume());
+
+					float const volumeMultiplier = GetVolumeMultiplier(pObject, sampleId);
+					int const mixVolume = GetAbsoluteVolume(pTrigger->GetVolume(), volumeMultiplier);
+					Mix_Volume(channelID, g_bMuted ? 0 : mixVolume);
 
 					int const fadeInTime = pTrigger->GetFadeInTime();
 					int const loopCount = pTrigger->GetNumLoops();
@@ -632,8 +677,6 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 		}
 		else
 		{
-			SampleId const sampleId = pTrigger->GetSampleId();
-
 			for (auto const pEventToProcess : pObject->m_events)
 			{
 				if (pEventToProcess->m_pTrigger->GetSampleId() == sampleId)
@@ -660,6 +703,54 @@ ERequestStatus SoundEngine::ExecuteEvent(CObject* const pObject, CTrigger const*
 	return requestStatus;
 }
 
+//////////////////////////////////////////////////////////////////////////
+ERequestStatus SoundEngine::SetVolume(CObject* const pObject, SampleId const sampleId)
+{
+	if (!g_bMuted)
+	{
+		float const volumeMultiplier = GetVolumeMultiplier(pObject, sampleId);
+
+		for (auto const pEvent : pObject->m_events)
+		{
+			auto const pTrigger = pEvent->m_pTrigger;
+
+			if ((pTrigger != nullptr) && (pTrigger->GetSampleId() == sampleId))
+			{
+				int const mixVolume = GetAbsoluteVolume(pTrigger->GetVolume(), volumeMultiplier);
+
+				for (auto const channel : pEvent->m_channels)
+				{
+					Mix_Volume(channel, mixVolume);
+				}
+			}
+		}
+	}
+
+	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+float SoundEngine::GetVolumeMultiplier(CObject* const pObject, SampleId const sampleId)
+{
+	float volumeMultiplier = 1.0f;
+	auto const volumeMultiplierPair = pObject->m_volumeMultipliers.find(sampleId);
+
+	if (volumeMultiplierPair != pObject->m_volumeMultipliers.end())
+	{
+		volumeMultiplier = volumeMultiplierPair->second;
+	}
+
+	return volumeMultiplier;
+}
+
+//////////////////////////////////////////////////////////////////////////
+int SoundEngine::GetAbsoluteVolume(int const triggerVolume, float const multiplier)
+{
+	int absoluteVolume = static_cast<int>(static_cast<float>(triggerVolume) * multiplier);
+	absoluteVolume = crymath::clamp(absoluteVolume, 0, 128);
+	return absoluteVolume;
+}
+//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::PlayFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile)
 {
 	SampleId idForThisFile = pStandaloneFile->m_sampleId;
@@ -733,6 +824,7 @@ bool SoundEngine::PlayFile(CObject* const pObject, CStandaloneFile* const pStand
 	return true;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::StopFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile)
 {
 	bool bResult = false;
@@ -757,6 +849,7 @@ bool SoundEngine::StopFile(CObject* const pObject, CStandaloneFile* const pStand
 	return bResult;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::SetListenerPosition(ListenerId const listenerId, CObjectTransformation const& transformation)
 {
 	g_listenerTransformation = transformation;
@@ -764,6 +857,7 @@ bool SoundEngine::SetListenerPosition(ListenerId const listenerId, CObjectTransf
 	return true;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::RegisterObject(CObject* const pObject)
 {
 	if (pObject != nullptr)
@@ -774,6 +868,7 @@ bool SoundEngine::RegisterObject(CObject* const pObject)
 	return false;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::UnregisterObject(CObject const* const pObject)
 {
 	if (pObject != nullptr)
@@ -784,6 +879,7 @@ bool SoundEngine::UnregisterObject(CObject const* const pObject)
 	return false;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::SetObjectTransformation(CObject* const pObject, CObjectTransformation const& transformation)
 {
 	if (pObject != nullptr)
@@ -795,6 +891,7 @@ bool SoundEngine::SetObjectTransformation(CObject* const pObject, CObjectTransfo
 	return false;
 }
 
+//////////////////////////////////////////////////////////////////////////
 bool SoundEngine::StopTrigger(CTrigger const* const pTrigger)
 {
 	bool bResult = false;
@@ -817,11 +914,7 @@ bool SoundEngine::StopTrigger(CTrigger const* const pTrigger)
 	return bResult;
 }
 
-CTrigger* SoundEngine::CreateTrigger()
-{
-	return new CTrigger;
-}
-
+//////////////////////////////////////////////////////////////////////////
 void SoundEngine::Update()
 {
 	{

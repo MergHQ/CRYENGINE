@@ -714,14 +714,13 @@ void CVolumetricCloudsStage::Execute()
 			// enables less flicker temporal reprojection filter.
 			const bool bNewTemporalFilter = (CRenderer::CV_r_VolumetricCloudsTemporalReprojection != 0);
 
-			if (pass.InputChanged(CRenderer::CV_r_VolumetricClouds, CRenderer::CV_r_VolumetricCloudsTemporalReprojection))
+			uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0]; // activates using max-depth.
+			rtMask |= bNewTemporalFilter ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
+			// TODO: remove after old graphics pipeline is removed.
+			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
+
+			if (pass.InputChanged(rtMask, bNewTemporalFilter, currMaxTex->GetID(), prevMaxTex->GetID()))
 			{
-				uint64 rtMask = g_HWSR_MaskBit[HWSR_SAMPLE0]; // activates using max-depth.
-				rtMask |= bNewTemporalFilter ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
-
-				// TODO: remove after old graphics pipeline is removed.
-				rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
-
 				static CCryNameTSCRC shaderName = "ReprojectClouds";
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 				pass.SetTechnique(pShader, shaderName, rtMask);
@@ -760,12 +759,12 @@ void CVolumetricCloudsStage::Execute()
 			// enables less flicker temporal reprojection filter.
 			const bool bNewTemporalFilter = (CRenderer::CV_r_VolumetricCloudsTemporalReprojection != 0);
 
-			if (pass.InputChanged(CRenderer::CV_r_VolumetricClouds, CRenderer::CV_r_VolumetricCloudsTemporalReprojection))
-			{
-				uint64 rtMask = bNewTemporalFilter ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
+			uint64 rtMask = bNewTemporalFilter ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
+			// TODO: remove after old graphics pipeline is removed.
+			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
 
-				// TODO: remove after old graphics pipeline is removed.
-				rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2]; // enables explicit constant buffer.
+			if (pass.InputChanged(rtMask, bNewTemporalFilter, currMinTex->GetID(), prevMinTex->GetID()))
+			{
 
 				static CCryNameTSCRC shaderName = "ReprojectClouds";
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);

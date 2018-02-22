@@ -64,13 +64,12 @@ struct ShadowMapFrustum : public CMultiThreadRefCount
 			mGeneration = cacheGeneration;
 			mObjectsRendered = 0;
 		}
+		uint32                           mObjectsRendered;
+		uint8                            mGeneration;
 
 		static const int                 MAX_TRAVERSAL_PATH_LENGTH = 32;
 		uint8                            mOctreePath[MAX_TRAVERSAL_PATH_LENGTH];
 		uint8                            mOctreePathNodeProcessed[MAX_TRAVERSAL_PATH_LENGTH];
-
-		uint32                           mGeneration;
-		uint32                           mObjectsRendered;
 	};
 
 public:
@@ -158,9 +157,10 @@ public:
 	float                           fRadius;
 	int                             nUpdateFrameId;
 	IRenderNode*                    pLightOwner;
+	IRenderViewPtr                  pOnePassShadowView;           // if one-pass octree traversal is used this view is allocated and filled by 3DEngine
 	uint32                          uCastersListCheckSum;
 	int                             nShadowMapLod;                // currently use as GSMLod, can be used as cubemap side, -1 means this variable is not used
-	IRenderViewPtr                  pOnePassShadowView;           // if one-pass octree traversal is used this view is allocated and filled by 3DEngine
+	int                             nShadowCacheLod;
 	uint32                          m_Flags;
 
 	// Render view that is used to accumulate items for this frustum.
@@ -213,6 +213,7 @@ public:
 		, uCastersListCheckSum(0)
 		, nShadowMapLod(0)
 		, m_Flags(0)
+		, nShadowCacheLod(0)
 	{
 		ZeroArray(nPackID);
 	}
@@ -484,8 +485,8 @@ public:
 
 	bool NodeRequiresShadowCacheUpdate(const IRenderNode* pNode) const
 	{
-		CRY_ASSERT(IsCached());
-		return pNode->m_shadowCacheLastRendered[nShadowMapLod] < pShadowCacheData->mGeneration;
+		CRY_ASSERT(IsCached() && nShadowCacheLod>=0 && nShadowCacheLod < MAX_GSM_CACHED_LODS_NUM);
+		return pNode->m_shadowCacheLastRendered[nShadowCacheLod] != pShadowCacheData->mGeneration;
 	}
 
 	void MarkNodeAsCached(IRenderNode* pNode, bool isCached = true) const
@@ -495,6 +496,14 @@ public:
 		{
 			pNode->m_shadowCacheLastRendered[nShadowMapLod] = isCached ? pShadowCacheData->mGeneration : 0;
 			pShadowCacheData->mObjectsRendered++;
+		}
+	}
+
+	static void ForceMarkNodeAsUncached(IRenderNode* pNode)
+	{
+		if (pNode)
+		{
+			ZeroArray(pNode->m_shadowCacheLastRendered);
 		}
 	}
 };

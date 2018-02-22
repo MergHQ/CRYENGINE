@@ -818,6 +818,14 @@ void SLivingEntityNetSerialize::Serialize( TSerialize ser )
 	ser.Value( "dh", dh);
 	ser.Value( "dhSpeed", dhSpeed);
 	ser.Value( "stablehTime", stablehTime);
+	if (ser.BeginOptionalGroup("groundColl", idEntGroundCollider>0)) {
+		ser.Value("idEnt", idEntGroundCollider);
+		ser.Value("ipart", ipartGroundCollider);
+		ser.Value("posGround", posOnGroundCollider);
+	}	else {
+		idEntGroundCollider = -1;
+		posOnGroundCollider.zero();
+	}
 }
 
 int CLivingEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
@@ -830,7 +838,8 @@ int CLivingEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
 		m_velRequested,
 		m_bFlying,
 		m_bJumpRequested,
-		m_dh, m_dhSpeed, m_stablehTime
+		m_dh, m_dhSpeed, m_stablehTime,
+		m_pWorld->GetPhysicalEntityId(m_pLastGroundCollider), m_iLastGroundColliderPart, m_posLastGroundColl
 	};
 	helper.Serialize( ser );
 
@@ -975,6 +984,10 @@ int CLivingEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 		m_dh = helper.dh;
 		m_dhSpeed = helper.dhSpeed;
 		m_stablehTime = helper.stablehTime;
+
+		SetGroundCollider((CPhysicalEntity*)m_pWorld->GetPhysicalEntityById(helper.idEntGroundCollider));
+		m_iLastGroundColliderPart = helper.ipartGroundCollider;
+		m_posLastGroundColl = helper.posOnGroundCollider;
 	}
 
 	return 1;

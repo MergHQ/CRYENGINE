@@ -34,8 +34,10 @@ const SampleId LoadSampleFromMemory(void* pMemory, const size_t size, const stri
 void           UnloadSample(const SampleId id);
 
 // Events
-CTrigger*      CreateTrigger();
 ERequestStatus ExecuteEvent(CObject* const pObject, CTrigger const* const pTrigger, CEvent* const pEvent);
+ERequestStatus SetVolume(CObject* const pObject, SampleId const sampleId);
+float          GetVolumeMultiplier(CObject* const pObject, SampleId const sampleId);
+int            GetAbsoluteVolume(int const triggerVolume, float const multiplier);
 bool           PlayFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile);
 bool           StopFile(CObject* const pObject, CStandaloneFile* const pStandaloneFile);
 

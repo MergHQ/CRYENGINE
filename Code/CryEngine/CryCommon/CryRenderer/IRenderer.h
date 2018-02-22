@@ -698,6 +698,7 @@ struct SDrawTextInfo
 
 #define MAX_FRAME_ID_STEP_PER_FRAME 20
 const int MAX_GSM_LODS_NUM = 16;
+const int MAX_GSM_CACHED_LODS_NUM = 3;
 
 const f32 DRAW_NEAREST_MIN = 0.03f;
 const f32 DRAW_NEAREST_MAX = 40.0f;

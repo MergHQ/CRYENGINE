@@ -20,6 +20,25 @@ namespace Impl
 {
 namespace SDL_mixer
 {
+//////////////////////////////////////////////////////////////////////////
+string GetFullFilePath(char const* const szFileName, char const* const szPath)
+{
+	string fullFilePath;
+
+	if ((szPath != nullptr) && (szPath[0] != '\0'))
+	{
+		fullFilePath = szPath;
+		fullFilePath += "/";
+		fullFilePath += szFileName;
+	}
+	else
+	{
+		fullFilePath = szFileName;
+	}
+
+	return fullFilePath;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 void OnEventFinished(CATLEvent& audioEvent)
 {
@@ -303,100 +322,75 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 
 	if (_stricmp(pRootNode->getTag(), s_szEventTag) == 0)
 	{
-		pTrigger = SoundEngine::CreateTrigger();
+		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szPath = pRootNode->getAttr(s_szPathAttribute);
+		string const fullFilePath = GetFullFilePath(szFileName, szPath);
 
-		if (pTrigger != nullptr)
+		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true);
+		EEventType type = EEventType::Start;
+
+		if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), s_szStopValue) == 0)
 		{
-			char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
-			char const* const szPath = pRootNode->getAttr(s_szPathAttribute);
-			string fullFilePath;
+			type = EEventType::Stop;
+		}
+		else if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), s_szPauseValue) == 0)
+		{
+			type = EEventType::Pause;
+		}
+		else if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), s_szResumeValue) == 0)
+		{
+			type = EEventType::Resume;
+		}
 
-			if (szPath != nullptr && szPath[0] != '\0')
-			{
-				fullFilePath = szPath;
-				fullFilePath += "/";
-				fullFilePath += szFileName;
-			}
-			else
-			{
-				fullFilePath = szFileName;
-			}
+		if (type == EEventType::Start)
+		{
+			bool const isPanningEnabled = (_stricmp(pRootNode->getAttr(s_szPanningEnabledAttribute), s_szTrueValue) == 0);
+			bool const isAttenuationEnabled = (_stricmp(pRootNode->getAttr(s_szAttenuationEnabledAttribute), s_szTrueValue) == 0);
 
-			pTrigger->SetSampleId(SoundEngine::LoadSample(fullFilePath, true));
+			float minDistance = -1.0f;
+			float maxDistance = -1.0f;
 
-			if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), s_szStopValue) == 0)
+			if (isAttenuationEnabled)
 			{
-				pTrigger->SetType(EEventType::Stop);
-			}
-			else if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), s_szPauseValue) == 0)
-			{
-				pTrigger->SetType(EEventType::Pause);
-			}
-			else if (_stricmp(pRootNode->getAttr(s_szTypeAttribute), s_szResumeValue) == 0)
-			{
-				pTrigger->SetType(EEventType::Resume);
-			}
-			else
-			{
-				pTrigger->SetType(EEventType::Start);
-			}
+				pRootNode->getAttr(s_szAttenuationMinDistanceAttribute, minDistance);
+				pRootNode->getAttr(s_szAttenuationMaxDistanceAttribute, maxDistance);
 
-			if (pTrigger->GetType() == EEventType::Start)
-			{
-				pTrigger->SetPanningEnabled(_stricmp(pRootNode->getAttr(s_szPanningEnabledAttribute), s_szTrueValue) == 0);
-				bool const isAttenuationEnabled = (_stricmp(pRootNode->getAttr(s_szAttenuationEnabledAttribute), s_szTrueValue) == 0);
+				minDistance = std::max(0.0f, minDistance);
+				maxDistance = std::max(0.0f, maxDistance);
 
-				if (isAttenuationEnabled)
+				if (minDistance > maxDistance)
 				{
-					float minDistance = 0.0f;
-					pRootNode->getAttr(s_szAttenuationMinDistanceAttribute, minDistance);
-
-					float maxDistance = 0.0f;
-					pRootNode->getAttr(s_szAttenuationMaxDistanceAttribute, maxDistance);
-
-					minDistance = std::max(0.0f, minDistance);
-					maxDistance = std::max(0.0f, maxDistance);
-
-					if (minDistance > maxDistance)
-					{
-						Cry::Audio::Log(ELogType::Warning, "Min distance (%f) was greater than max distance (%f) of %s", minDistance, maxDistance, szFileName);
-						pTrigger->SetAttenuationMinDistance(maxDistance);
-						pTrigger->SetAttenuationMaxDistance(minDistance);
-					}
-					else
-					{
-						pTrigger->SetAttenuationMinDistance(minDistance);
-						pTrigger->SetAttenuationMaxDistance(maxDistance);
-					}
+					Cry::Audio::Log(ELogType::Warning, "Min distance (%f) was greater than max distance (%f) of %s", minDistance, maxDistance, szFileName);
+					std::swap(minDistance, maxDistance);
 				}
-				else
-				{
-					pTrigger->SetAttenuationMinDistance(-1.0f);
-					pTrigger->SetAttenuationMaxDistance(-1.0f);
-				}
-
-				// Translate decibel to normalized value.
-				static const int maxVolume = 128;
-				float volume = 0.0f;
-				pRootNode->getAttr(s_szVolumeAttribute, volume);
-				pTrigger->SetVolume(static_cast<int>(pow_tpl(10.0f, volume / 20.0f) * maxVolume));
-
-				int numLoops = 0;
-				pRootNode->getAttr(s_szLoopCountAttribute, numLoops);
-				// --numLoops because -1: play infinite, 0: play once, 1: play twice, etc...
-				--numLoops;
-				// Max to -1 to stay backwards compatible.
-				numLoops = std::max(-1, numLoops);
-				pTrigger->SetNumLoops(numLoops);
-
-				float fadeInTime = 0.0f;
-				pRootNode->getAttr(s_szFadeInTimeAttribute, fadeInTime);
-				pTrigger->SetFadeInTime(static_cast<int>(fadeInTime * 1000.0f));
-
-				float fadeOutTime = 0.0f;
-				pRootNode->getAttr(s_szFadeOutTimeAttribute, fadeOutTime);
-				pTrigger->SetFadeOutTime(static_cast<int>(fadeOutTime * 1000.0f));
 			}
+
+			// Translate decibel to normalized value.
+			static const int maxVolume = 128;
+			float volume = 0.0f;
+			pRootNode->getAttr(s_szVolumeAttribute, volume);
+			auto const normalizedVolume = static_cast<int>(pow_tpl(10.0f, volume / 20.0f) * maxVolume);
+
+			int numLoops = 0;
+			pRootNode->getAttr(s_szLoopCountAttribute, numLoops);
+			// --numLoops because -1: play infinite, 0: play once, 1: play twice, etc...
+			--numLoops;
+			// Max to -1 to stay backwards compatible.
+			numLoops = std::max(-1, numLoops);
+
+			float fadeInTimeSec = 0.0f;
+			pRootNode->getAttr(s_szFadeInTimeAttribute, fadeInTimeSec);
+			auto const fadeInTimeMs = static_cast<int>(fadeInTimeSec * 1000.0f);
+
+			float fadeOutTimeSec = 0.0f;
+			pRootNode->getAttr(s_szFadeOutTimeAttribute, fadeOutTimeSec);
+			auto const fadeOutTimeMs = static_cast<int>(fadeOutTimeSec * 1000.0f);
+
+			pTrigger = new CTrigger(type, sampleId, minDistance, maxDistance, normalizedVolume, numLoops, fadeInTimeMs, fadeOutTimeMs, isPanningEnabled);
+		}
+		else
+		{
+			pTrigger = new CTrigger(type, sampleId);
 		}
 	}
 	else
@@ -412,7 +406,7 @@ void CImpl::DestructTrigger(ITrigger const* const pITrigger)
 {
 	if (pITrigger != nullptr)
 	{
-		CTrigger const* const pTrigger = static_cast<CTrigger const* const>(pITrigger);
+		auto const pTrigger = static_cast<CTrigger const* const>(pITrigger);
 		SoundEngine::StopTrigger(pTrigger);
 		delete pTrigger;
 	}
@@ -421,7 +415,25 @@ void CImpl::DestructTrigger(ITrigger const* const pITrigger)
 ///////////////////////////////////////////////////////////////////////////
 IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 {
-	return static_cast<IParameter*>(new SParameter);
+	CParameter* pParameter = nullptr;
+
+	if (_stricmp(pRootNode->getTag(), s_szEventTag) == 0)
+	{
+		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szPath = pRootNode->getAttr(s_szPathAttribute);
+		string const fullFilePath = GetFullFilePath(szFileName, szPath);
+		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true);
+
+		float multiplier = 1.0f;
+		float shift = 0.0f;
+		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
+		multiplier = std::max(0.0f, multiplier);
+		pRootNode->getAttr(s_szShiftAttribute, shift);
+
+		pParameter = new CParameter(sampleId, multiplier, shift, szFileName);
+	}
+
+	return static_cast<IParameter*>(pParameter);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -433,7 +445,23 @@ void CImpl::DestructParameter(IParameter const* const pIParameter)
 ///////////////////////////////////////////////////////////////////////////
 ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 {
-	return static_cast<ISwitchState*>(new SSwitchState);
+	CSwitchState* pSwitchState = nullptr;
+
+	if (_stricmp(pRootNode->getTag(), s_szEventTag) == 0)
+	{
+		char const* const szFileName = pRootNode->getAttr(s_szNameAttribute);
+		char const* const szPath = pRootNode->getAttr(s_szPathAttribute);
+		string const fullFilePath = GetFullFilePath(szFileName, szPath);
+		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true);
+
+		float value = 0.0f;
+		pRootNode->getAttr(s_szValueAttribute, value);
+		value = crymath::clamp(value, 0.0f, 1.0f);
+
+		pSwitchState = new CSwitchState(sampleId, value, szFileName);
+	}
+
+	return static_cast<ISwitchState*>(pSwitchState);
 }
 
 ///////////////////////////////////////////////////////////////////////////

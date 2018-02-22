@@ -12,6 +12,7 @@
 class CNetCVars
 {
 public:
+	int   ProfileId;
 	int   TokenId;
 	int   CPU;
 	int   LogLevel;

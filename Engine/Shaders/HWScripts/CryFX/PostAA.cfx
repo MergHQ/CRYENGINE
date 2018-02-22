@@ -400,31 +400,31 @@ pixout LumaEdgeDetectionSMAA_PS(vtxOut IN)
 #if SMAA_MAX_SEARCH_STEPS_DIAG || SMAA_FORCE_DIAGONAL_DETECTION
 
 // These functions allows to perform diagonal pattern searches. 
-float SMAASearchDiag1(Texture2D<float4> edgesTex, SamplerState sampSt, float2 texcoord, float2 dir, float c)
+float SMAASearchDiag1(Texture2D<float4> edgesTex, SamplerState sampSt, float4 ScreenSize, float2 texcoord, float2 dir, float c)
 {
-  texcoord += dir * PS_ScreenSize.zw;
+  texcoord += dir * ScreenSize.zw;
   float2 e = 0;
   float i = 0;
   for (i = 0; i < SMAA_MAX_SEARCH_STEPS_DIAG; i++) 
 	{
       e.rg = GetTexture2DLod(edgesTex, sampSt, float4(texcoord, 0, 0) ).rg;
       [flatten] if (dot(e, 1.0) < 1.9) break;
-      texcoord += dir * PS_ScreenSize.zw;
+      texcoord += dir * ScreenSize.zw;
   }
   return i + float(e.g > 0.9) * c;
 }
 
-float SMAASearchDiag2(Texture2D<float4> edgesTex, SamplerState sampSt, float2 texcoord, float2 dir, float c) 
+float SMAASearchDiag2(Texture2D<float4> edgesTex, SamplerState sampSt, float4 ScreenSize, float2 texcoord, float2 dir, float c) 
 {
-  texcoord += dir * PS_ScreenSize.zw;
+  texcoord += dir * ScreenSize.zw;
   float2 e = 0;
   float i = 0;
   for (i = 0; i < SMAA_MAX_SEARCH_STEPS_DIAG; i++) 
 	{
       e.g = GetTexture2DLod(edgesTex, sampSt, float4(texcoord, 0, 0)).g;
-      e.r = GetTexture2DLod(edgesTex, sampSt, float4(texcoord + float2(1, 0)* PS_ScreenSize.zw, 0, 0)).r;
+      e.r = GetTexture2DLod(edgesTex, sampSt, float4(texcoord + float2(1, 0)* ScreenSize.zw, 0, 0)).r;
       [flatten] if (dot(e, 1.0) < 1.9) break;
-      texcoord += dir * PS_ScreenSize.zw;
+      texcoord += dir * ScreenSize.zw;
   }
   return i + float(e.g > 0.9) * c;
 }
@@ -448,43 +448,43 @@ float2 SMAAAreaDiag(Texture2D<float4> areaTex, SamplerState sampSt, float2 dista
 }
 
 //This searches for diagonal patterns and returns the corresponding weights.
-float2 SMAACalculateDiagWeights(Texture2D<float4>  edgesTex, SamplerState sampStE, Texture2D<float4>  areaTex, SamplerState sampStA, float2 texcoord, float2 e, half4 subsampleIndices) 
+float2 SMAACalculateDiagWeights(Texture2D<float4>  edgesTex, SamplerState sampStE, Texture2D<float4>  areaTex, SamplerState sampStA, float4 ScreenSize, float2 texcoord, float2 e, half4 subsampleIndices) 
 {
     float2 weights = 0.0;
 
     float2 d;
-    d.x = e.r? SMAASearchDiag1(edgesTex, sampStE, texcoord, float2(-1.0,  1.0), 1.0) : 0.0;
-    d.y = SMAASearchDiag1(edgesTex, sampStE, texcoord, float2(1.0, -1.0), 0.0);
+    d.x = e.r? SMAASearchDiag1(edgesTex, sampStE, ScreenSize, texcoord, float2(-1.0,  1.0), 1.0) : 0.0;
+    d.y = SMAASearchDiag1(edgesTex, sampStE, ScreenSize, texcoord, float2(1.0, -1.0), 0.0);
 
     [branch]
     if (d.r + d.g > 2)  // d.r + d.g + 1 > 3
 		{ 
-        float4 coords = mad(float4(-d.r, d.r, d.g, -d.g), PS_ScreenSize.zwzw, texcoord.xyxy);
+        float4 coords = mad(float4(-d.r, d.r, d.g, -d.g), ScreenSize.zwzw, texcoord.xyxy);
 
         float4 c;
-        c.x = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy + float2(-1,  0) * PS_ScreenSize.zw, 0, 0) ).g;
-        c.y = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy + float2( 0,  0) * PS_ScreenSize.zw, 0, 0) ).r;
-        c.z = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw + float2( 1,  0) * PS_ScreenSize.zw, 0, 0) ).g;
-        c.w = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw + float2( 1, -1) * PS_ScreenSize.zw, 0, 0) ).r;
+        c.x = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy + float2(-1,  0) * ScreenSize.zw, 0, 0) ).g;
+        c.y = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy + float2( 0,  0) * ScreenSize.zw, 0, 0) ).r;
+        c.z = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw + float2( 1,  0) * ScreenSize.zw, 0, 0) ).g;
+        c.w = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw + float2( 1, -1) * ScreenSize.zw, 0, 0) ).r;
         float2 e = 2.0 * c.xz + c.yw;
         e *= step(d.rg, SMAA_MAX_SEARCH_STEPS_DIAG - 1);
 
         weights += SMAAAreaDiag(areaTex, sampStA, d, e, subsampleIndices.z);
     }
 
-    d.x = SMAASearchDiag2(edgesTex, sampStE, texcoord, float2(-1.0, -1.0), 0.0);
-    float right = GetTexture2DLod(edgesTex, sampStE, float4(texcoord + float2(1, 0) * PS_ScreenSize.zw, 0, 0) ).r;
-    d.y = right? SMAASearchDiag2(edgesTex, sampStE, texcoord, float2(1.0, 1.0), 1.0) : 0.0;
+    d.x = SMAASearchDiag2(edgesTex, sampStE, ScreenSize, texcoord, float2(-1.0, -1.0), 0.0);
+    float right = GetTexture2DLod(edgesTex, sampStE, float4(texcoord + float2(1, 0) * ScreenSize.zw, 0, 0) ).r;
+    d.y = right? SMAASearchDiag2(edgesTex, sampStE, ScreenSize, texcoord, float2(1.0, 1.0), 1.0) : 0.0;
 
     [branch]
     if (d.r + d.g > 2)  // d.r + d.g + 1 > 3
 		{ 
-        float4 coords = mad(float4(-d.r, -d.r, d.g, d.g), PS_ScreenSize.zwzw, texcoord.xyxy);
+        float4 coords = mad(float4(-d.r, -d.r, d.g, d.g), ScreenSize.zwzw, texcoord.xyxy);
 
         float4 c;
-        c.x  = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy + float2(-1,  0)* PS_ScreenSize.zw, 0, 0) ).g;
-        c.y  = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy + float2( 0, -1)* PS_ScreenSize.zw, 0, 0) ).r;
-        c.zw = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw + float2( 1,  0)* PS_ScreenSize.zw, 0, 0) ).gr;
+        c.x  = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy + float2(-1,  0)* ScreenSize.zw, 0, 0) ).g;
+        c.y  = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy + float2( 0, -1)* ScreenSize.zw, 0, 0) ).r;
+        c.zw = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw + float2( 1,  0)* ScreenSize.zw, 0, 0) ).gr;
         float2 e = 2.0 * c.xz + c.yw;
         e *= step(d.rg, SMAA_MAX_SEARCH_STEPS_DIAG - 1);
 
@@ -503,30 +503,30 @@ float SMAASearchLength(Texture2D<float4> searchTex, SamplerState sampStS, float2
   return 255.0 * GetTexture2DLod(searchTex, sampStS, float4(e, 0, 0)).r;//r;
 }
 
-float SMAASearchXLeft(Texture2D<float4>  edgesTex, SamplerState sampStE, Texture2D<float4> searchTex, SamplerState sampStS, float2 texcoord, float end) 
+float SMAASearchXLeft(Texture2D<float4>  edgesTex, SamplerState sampStE, Texture2D<float4> searchTex, SamplerState sampStS, float4 ScreenSize, float2 texcoord, float end) 
 {   
   float2 e = float2(0.0, 1.0);
   while (texcoord.x > end && 
          e.g > 0.8281 && // Is there some edge not activated?
          e.r == 0.0) { // Or is there a crossing edge that breaks the line?
       e = GetTexture2DLod(edgesTex, sampStE, float4(texcoord, 0, 0)).rg;
-      texcoord -= float2(2.0, 0.0) * PS_ScreenSize.zw;
+      texcoord -= float2(2.0, 0.0) * ScreenSize.zw;
   }
 
   // We correct the previous (-0.25, -0.125) offset we applied:
-  texcoord.x += 0.25 * PS_ScreenSize.z;
+  texcoord.x += 0.25 * ScreenSize.z;
 
   // The searches are bias by 1, so adjust the coords accordingly:
-  texcoord.x += PS_ScreenSize.z;
+  texcoord.x += ScreenSize.z;
 
   // Disambiguate the length added by the last step:
-  texcoord.x += 2.0 * PS_ScreenSize.z; // Undo last step
-  texcoord.x -= PS_ScreenSize.z * SMAASearchLength(searchTex, sampStS, e, 0.0, 0.5);
+  texcoord.x += 2.0 * ScreenSize.z; // Undo last step
+  texcoord.x -= ScreenSize.z * SMAASearchLength(searchTex, sampStS, e, 0.0, 0.5);
 
   return texcoord.x;
 }
 
-float SMAASearchXRight(Texture2D<float4>  edgesTex, SamplerState sampStE, Texture2D<float4> searchTex, SamplerState sampStS, float2 texcoord, float end) 
+float SMAASearchXRight(Texture2D<float4>  edgesTex, SamplerState sampStE, Texture2D<float4> searchTex, SamplerState sampStS, float4 ScreenSize, float2 texcoord, float end) 
 {
 	//PS_ScreenSize.zw *= SCALE_PIXELSIZE;
 
@@ -535,47 +535,47 @@ float SMAASearchXRight(Texture2D<float4>  edgesTex, SamplerState sampStE, Textur
          e.g > 0.8281 && // Is there some edge not activated?
          e.r == 0.0) { // Or is there a crossing edge that breaks the line?
       e = GetTexture2DLod(edgesTex, sampStE, float4(texcoord, 0, 0)).rg;
-      texcoord += float2(2.0, 0.0) * PS_ScreenSize.zw;
+      texcoord += float2(2.0, 0.0) * ScreenSize.zw;
   }
 
-  texcoord.x -= 0.25 * PS_ScreenSize.z;
-  texcoord.x -= PS_ScreenSize.z;
-  texcoord.x -= 2.0 * PS_ScreenSize.z;
-  texcoord.x += PS_ScreenSize.z * SMAASearchLength(searchTex, sampStS, e, 0.5, 0.5);
+  texcoord.x -= 0.25 * ScreenSize.z;
+  texcoord.x -= ScreenSize.z;
+  texcoord.x -= 2.0 * ScreenSize.z;
+  texcoord.x += ScreenSize.z * SMAASearchLength(searchTex, sampStS, e, 0.5, 0.5);
   return texcoord.x;
 }
 
-float SMAASearchYUp(Texture2D<float4>  edgesTex, SamplerState sampStE, Texture2D<float4> searchTex, SamplerState sampStS, float2 texcoord, float end)
+float SMAASearchYUp(Texture2D<float4>  edgesTex, SamplerState sampStE, Texture2D<float4> searchTex, SamplerState sampStS, float4 ScreenSize, float2 texcoord, float end)
 {
   float2 e = float2(1.0, 0.0);
   while (texcoord.y > end && 
          e.r > 0.8281 && // Is there some edge not activated?
          e.g == 0.0) { // Or is there a crossing edge that breaks the line?
       e = GetTexture2DLod(edgesTex, sampStE, float4(texcoord, 0, 0)).rg;
-      texcoord -= float2(0.0, 2.0) * PS_ScreenSize.zw;
+      texcoord -= float2(0.0, 2.0) * ScreenSize.zw;
   }
 
-  texcoord.y += 0.25 * PS_ScreenSize.w;
-  texcoord.y += PS_ScreenSize.w;
-  texcoord.y += 2.0 * PS_ScreenSize.w;
-  texcoord.y -= PS_ScreenSize.w * SMAASearchLength(searchTex, sampStS, e.gr, 0.0, 0.5);
+  texcoord.y += 0.25 * ScreenSize.w;
+  texcoord.y += ScreenSize.w;
+  texcoord.y += 2.0 * ScreenSize.w;
+  texcoord.y -= ScreenSize.w * SMAASearchLength(searchTex, sampStS, e.gr, 0.0, 0.5);
   return texcoord.y;
 }
 
-float SMAASearchYDown(Texture2D<float4>  edgesTex, SamplerState sampStE, Texture2D<float4> searchTex, SamplerState sampStS, float2 texcoord, float end) 
+float SMAASearchYDown(Texture2D<float4>  edgesTex, SamplerState sampStE, Texture2D<float4> searchTex, SamplerState sampStS, float4 ScreenSize, float2 texcoord, float end) 
 {
   float2 e = float2(1.0, 0.0);
   while (texcoord.y < end && 
          e.r > 0.8281 && // Is there some edge not activated?
          e.g == 0.0) { // Or is there a crossing edge that breaks the line?
       e = GetTexture2DLod(edgesTex, sampStE, float4(texcoord, 0, 0)).rg;
-      texcoord += float2(0.0, 2.0) * PS_ScreenSize.zw;
+      texcoord += float2(0.0, 2.0) * ScreenSize.zw;
   }
   
-  texcoord.y -= 0.25 * PS_ScreenSize.w;
-  texcoord.y -= PS_ScreenSize.w;
-  texcoord.y -= 2.0 * PS_ScreenSize.w;
-  texcoord.y += PS_ScreenSize.w * SMAASearchLength(searchTex, sampStS, e.gr, 0.5, 0.5);
+  texcoord.y -= 0.25 * ScreenSize.w;
+  texcoord.y -= ScreenSize.w;
+  texcoord.y -= 2.0 * ScreenSize.w;
+  texcoord.y += ScreenSize.w * SMAASearchLength(searchTex, sampStS, e.gr, 0.5, 0.5);
   return texcoord.y;
 }
 
@@ -598,42 +598,42 @@ float2 SMAAArea(Texture2D<float4> areaTex, SamplerState sampStA, float2 distance
 }
 
 // Corner Detection Functions
-void SMAADetectHorizontalCornerPattern(Texture2D<float4>  edgesTex, SamplerState sampStE, inout float2 weights, float2 texcoord, float2 d) 
+void SMAADetectHorizontalCornerPattern(Texture2D<float4>  edgesTex, SamplerState sampStE, inout float2 weights, float4 ScreenSize, float2 texcoord, float2 d) 
 {
 #if SMAA_CORNER_ROUNDING || SMAA_FORCE_CORNER_DETECTION
 
     float4 coords = mad(float4(d.x, 0.0, d.y, 0.0),
-                        PS_ScreenSize.zwzw, texcoord.xyxy);
+                        ScreenSize.zwzw, texcoord.xyxy);
     float2 e;
-    e.r = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy + float2(0.0,  1.0) * PS_ScreenSize.zw, 0, 0) ).r;
+    e.r = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy + float2(0.0,  1.0) * ScreenSize.zw, 0, 0) ).r;
     bool left = abs(d.x) < abs(d.y);
-    e.g = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy + float2(0.0, -2.0)* PS_ScreenSize.zw, 0, 0) ).r;
+    e.g = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy + float2(0.0, -2.0)* ScreenSize.zw, 0, 0) ).r;
     if (left) 
 			weights *= saturate(SMAA_CORNER_ROUNDING / 100.0 + 1.0 - e);
 
-    e.r = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw + float2(1.0,  1.0)* PS_ScreenSize.zw, 0, 0) ).r;
-    e.g = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw + float2(1.0, -2.0)* PS_ScreenSize.zw, 0, 0) ).r;
+    e.r = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw + float2(1.0,  1.0)* ScreenSize.zw, 0, 0) ).r;
+    e.g = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw + float2(1.0, -2.0)* ScreenSize.zw, 0, 0) ).r;
     if (!left) 
 			weights *= saturate(SMAA_CORNER_ROUNDING / 100.0 + 1.0 - e);
 
 #endif
 }
 
-void SMAADetectVerticalCornerPattern(Texture2D<float4>  edgesTex, SamplerState sampStE, inout float2 weights, float2 texcoord, float2 d) 
+void SMAADetectVerticalCornerPattern(Texture2D<float4>  edgesTex, SamplerState sampStE, inout float2 weights, float4 ScreenSize, float2 texcoord, float2 d) 
 {
 #if SMAA_CORNER_ROUNDING || SMAA_FORCE_CORNER_DETECTION
 
     float4 coords = mad(float4(0.0, d.x, 0.0, d.y),
-                        PS_ScreenSize.zwzw, texcoord.xyxy);
+                        ScreenSize.zwzw, texcoord.xyxy);
     float2 e;
-    e.r = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy+float2( 1.0, 0.0)*PS_ScreenSize.zw, 0, 0) ).g;
+    e.r = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy+float2( 1.0, 0.0)*ScreenSize.zw, 0, 0) ).g;
     bool left = abs(d.x) < abs(d.y);
-    e.g = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy+float2(-2.0, 0.0)*PS_ScreenSize.zw, 0, 0) ).g;
+    e.g = GetTexture2DLod(edgesTex, sampStE, float4(coords.xy+float2(-2.0, 0.0)*ScreenSize.zw, 0, 0) ).g;
     if (left) 
 			weights *= saturate(SMAA_CORNER_ROUNDING / 100.0 + 1.0 - e);
 
-    e.r = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw+float2( 1.0, 1.0)*PS_ScreenSize.zw, 0, 0) ).g;
-    e.g = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw+float2(-2.0, 1.0)*PS_ScreenSize.zw, 0, 0) ).g;
+    e.r = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw+float2( 1.0, 1.0)*ScreenSize.zw, 0, 0) ).g;
+    e.g = GetTexture2DLod(edgesTex, sampStE, float4(coords.zw+float2(-2.0, 1.0)*ScreenSize.zw, 0, 0) ).g;
     if (!left) 
 			weights *= saturate(SMAA_CORNER_ROUNDING / 100.0 + 1.0 - e);
 
@@ -678,7 +678,7 @@ pixout BlendWeightSMAA_PS(vtxOut IN)
   if (e.g > 0.0h) // Edge at north
 	{ 
       #if SMAA_MAX_SEARCH_STEPS_DIAG || SMAA_FORCE_DIAGONAL_DETECTION
-      weights.rg = SMAACalculateDiagWeights(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, BlndWgtSMAA_Area, BlndWgtSMAA_EdSampler, IN.baseTC.xy, e, vSubSampleIndices);
+      weights.rg = SMAACalculateDiagWeights(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, BlndWgtSMAA_Area, BlndWgtSMAA_EdSampler, ScreenSize, IN.baseTC.xy, e, vSubSampleIndices);
 
       // We give priority to diagonals, so if we find a diagonal we skip 
       // horizontal/vertical processing.
@@ -691,7 +691,7 @@ pixout BlendWeightSMAA_PS(vtxOut IN)
 
       // Find the distance to the left:
       float2 coords;
-      coords.x = SMAASearchXLeft(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, BlndWgtSMAA_Srch, BlndWgtSMAA_SrSampler, offset[0].xy, offset[2].x);
+      coords.x = SMAASearchXLeft(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, BlndWgtSMAA_Srch, BlndWgtSMAA_SrSampler, ScreenSize, offset[0].xy, offset[2].x);
       coords.y = offset[1].y;
       d.x = coords.x;
 
@@ -701,7 +701,7 @@ pixout BlendWeightSMAA_PS(vtxOut IN)
       float e1 = GetTexture2DLod(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, float4(coords, 0, 0)).r; //IN.baseTC.xy
 
       // Find the distance to the right:
-      coords.x = SMAASearchXRight(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, BlndWgtSMAA_Srch, BlndWgtSMAA_SrSampler, offset[0].zw, offset[2].y);
+      coords.x = SMAASearchXRight(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, BlndWgtSMAA_Srch, BlndWgtSMAA_SrSampler, ScreenSize, offset[0].zw, offset[2].y);
       d.y = coords.x; //IN.baseTC.x;
 
       // We want the distances to be in pixel units (doing this here allow to
@@ -720,7 +720,7 @@ pixout BlendWeightSMAA_PS(vtxOut IN)
       weights.rg = SMAAArea(BlndWgtSMAA_Area, BlndWgtSMAA_EdSampler, sqrt_d, e1, e2, vSubSampleIndices.y);
 
       // Fix corners:
-      SMAADetectHorizontalCornerPattern(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, weights.rg, IN.baseTC.xy, d); //texcoord
+      SMAADetectHorizontalCornerPattern(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, weights.rg, ScreenSize, IN.baseTC.xy, d); //texcoord
 
       #if SMAA_MAX_SEARCH_STEPS_DIAG || SMAA_FORCE_DIAGONAL_DETECTION
 
@@ -740,7 +740,7 @@ pixout BlendWeightSMAA_PS(vtxOut IN)
 
       // Find the distance to the top:
       float2 coords;
-      coords.y = SMAASearchYUp(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, BlndWgtSMAA_Srch, BlndWgtSMAA_SrSampler, offset[1].xy, offset[2].z);
+      coords.y = SMAASearchYUp(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, BlndWgtSMAA_Srch, BlndWgtSMAA_SrSampler, ScreenSize, offset[1].xy, offset[2].z);
       coords.x = offset[0].x;
       d.x = coords.y;
 
@@ -748,7 +748,7 @@ pixout BlendWeightSMAA_PS(vtxOut IN)
       float e1 = GetTexture2DLod(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, float4(coords, 0, 0)).g;
 
       // Find the distance to the bottom:
-      coords.y = SMAASearchYDown(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, BlndWgtSMAA_Srch, BlndWgtSMAA_SrSampler, offset[1].zw, offset[2].w);
+      coords.y = SMAASearchYDown(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, BlndWgtSMAA_Srch, BlndWgtSMAA_SrSampler, ScreenSize, offset[1].zw, offset[2].w);
       d.y = coords.y;
 
       // We want the distances to be in pixel units:
@@ -765,7 +765,7 @@ pixout BlendWeightSMAA_PS(vtxOut IN)
       weights.ba = SMAAArea(BlndWgtSMAA_Area, BlndWgtSMAA_EdSampler, sqrt_d, e1, e2, vSubSampleIndices.x);
 
       // Fix corners:
-      SMAADetectVerticalCornerPattern(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, weights.ba, IN.baseTC.xy, d);
+      SMAADetectVerticalCornerPattern(BlndWgtSMAA_Edge, BlndWgtSMAA_EdSampler, weights.ba, ScreenSize, IN.baseTC.xy, d);
   }
 
 	OUT.Color = weights;//*10;

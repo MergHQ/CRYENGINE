@@ -1954,6 +1954,7 @@ struct I3DEngine : public IProcess
 	virtual void  SetShadowsGSMCache(bool bCache) = 0;
 	virtual void  SetCachedShadowBounds(const AABB& shadowBounds, float fAdditionalCascadesScale) = 0;
 	virtual void  SetRecomputeCachedShadows(uint nUpdateStrategy = 0) = 0;
+	virtual void  InvalidateShadowCacheData() = 0;
 
 	//! Physicalizes area if not physicalized yet.
 	virtual void CheckPhysicalized(const Vec3& vBoxMin, const Vec3& vBoxMax) = 0;

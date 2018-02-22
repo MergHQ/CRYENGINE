@@ -62,6 +62,7 @@
 #include <CryNetwork/IRemoteCommand.h>
 #include "CloudBlockerRenderNode.h"
 #include "WaterRippleManager.h"
+#include "ShadowCache.h"
 
 #if defined(FEATURE_SVO_GI)
 	#include "SVO/SceneTreeManager.h"
@@ -4738,6 +4739,16 @@ void C3DEngine::SetRecomputeCachedShadows(IRenderNode* pNode, uint updateStrateg
 
 			pNode->m_pOcNode->MarkAsUncompiled(nodeListType);
 		}
+	}
+}
+
+void C3DEngine::InvalidateShadowCacheData()
+{
+	ShadowCacheGenerator::ResetGenerationID();
+
+	if (m_pObjectsTree)
+	{
+		m_pObjectsTree->InvalidateCachedShadowData();
 	}
 }
 
