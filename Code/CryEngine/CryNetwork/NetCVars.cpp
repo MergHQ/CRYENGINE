@@ -43,7 +43,8 @@ CNetCVars::CNetCVars()
 	#endif
 #endif
 
-	REGISTER_CVAR2_DEV_ONLY("cl_tokenid", &TokenId, 0, 0, "Token id expected from client player during connection");
+	REGISTER_CVAR2("cl_profile", &ProfileId, 0, 0, "Profile id expected from client player during connection");
+	REGISTER_CVAR2("cl_tokenid", &TokenId, 0, 0, "Token id expected from client player during connection");
 
 	//	REGISTER_CVAR2( "sys_network_CPU", &CPU, 1, 0, "Run network multithreaded" );
 	REGISTER_CVAR2("net_log", &LogLevel, 0, 0, "Logging level of network system");
