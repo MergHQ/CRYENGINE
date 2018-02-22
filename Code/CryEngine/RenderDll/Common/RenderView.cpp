@@ -951,8 +951,6 @@ void CRenderView::AddPermanentObject(CRenderObject* pObject, const SRenderingPas
 		if (pRenderObject == pObject)
 		{
 			// Record already exists, update instance data.
-			record.instanceUpdateInfo = instanceUpdateInfo;
-			record.requiresInstanceDataUpdate = instanceDataDirty;
 			return;
 		}
 	}
