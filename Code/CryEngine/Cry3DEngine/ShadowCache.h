@@ -14,8 +14,10 @@ public:
 		, m_nUpdateStrategy(nUpdateStrategy)
 	{}
 
+	static void  ResetGenerationID() { m_cacheGenerationId = 0; }
+
 	void InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod, int nFirstStaticLod, float fDistFromViewDynamicLod, float fRadiusDynamicLod, const SRenderingPassInfo& passInfo);
-	void InitHeightMapAOFrustum(ShadowMapFrustumPtr& pFr, int nLod, const SRenderingPassInfo& passInfo);
+	void InitHeightMapAOFrustum(ShadowMapFrustumPtr& pFr, int nLod, int nFirstStaticLod, const SRenderingPassInfo& passInfo);
 
 private:
 	static const int    MAX_RENDERNODES_PER_FRAME = 50;
@@ -23,13 +25,13 @@ private:
 
 	static int   m_cacheGenerationId;
 
-	void         InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::ShadowCacheData::eUpdateStrategy nUpdateStrategy, int nLod, int nTexSize, const Vec3& vLightPos, const AABB& projectionBoundsLS, const SRenderingPassInfo& passInfo);
+	void         InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::ShadowCacheData::eUpdateStrategy nUpdateStrategy, int nLod, int cacheLod, int nTexSize, const Vec3& vLightPos, const AABB& projectionBoundsLS, const SRenderingPassInfo& passInfo);
 	void         AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, const SRenderingPassInfo& passInfo);
 
 	void         GetCasterBox(AABB& BBoxWS, AABB& BBoxLS, float fRadius, const Matrix34& matView, const SRenderingPassInfo& passInfo);
 	Matrix44     GetViewMatrix(const SRenderingPassInfo& passInfo);
 
-	int          GetNextGenerationID() { return m_cacheGenerationId++; }
+	uint8        GetNextGenerationID() const;
 
 	CLightEntity* m_pLightEntity;
 	ShadowMapFrustum::ShadowCacheData::eUpdateStrategy m_nUpdateStrategy;

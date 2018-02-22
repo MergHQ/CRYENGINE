@@ -611,6 +611,7 @@ public:
 	virtual void   SetShadowsGSMCache(bool bCache);
 	virtual void   SetCachedShadowBounds(const AABB& shadowBounds, float fAdditionalCascadesScale);
 	virtual void   SetRecomputeCachedShadows(uint nUpdateStrategy = 0);
+	virtual void   InvalidateShadowCacheData();
 	void           SetShadowsCascadesBias(const float* pCascadeConstBias, const float* pCascadeSlopeBias);
 	const float*   GetShadowsCascadesConstBias() const { return m_pShadowCascadeConstBias; }
 	const float*   GetShadowsCascadesSlopeBias() const { return m_pShadowCascadeSlopeBias; }

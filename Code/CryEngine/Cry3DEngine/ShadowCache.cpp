@@ -6,7 +6,18 @@
 #include "VisAreas.h"
 
 const float ShadowCacheGenerator::AO_FRUSTUM_SLOPE_BIAS = 0.5f;
-int  ShadowCacheGenerator::m_cacheGenerationId = 1;
+int  ShadowCacheGenerator::m_cacheGenerationId = 0;
+
+uint8 ShadowCacheGenerator::GetNextGenerationID() const
+{
+	// increase generation ID. Make sure we never return a value that 
+	// wraps around to 0 as this is used for invalidating render nodes
+	int nextID = m_cacheGenerationId++;
+	if (uint8(nextID) == 0)
+		nextID = m_cacheGenerationId++;
+
+	return uint8(nextID);
+}
 
 void ShadowCacheGenerator::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod, int nFirstStaticLod, float fDistFromViewDynamicLod, float fRadiusDynamicLod, const SRenderingPassInfo& passInfo)
 {
@@ -19,6 +30,9 @@ void ShadowCacheGenerator::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod,
 	if (!pFr->pShadowCacheData)
 		pFr->pShadowCacheData = std::make_shared<ShadowMapFrustum::ShadowCacheData>();
 
+	const int shadowCacheLod = nLod - nFirstStaticLod;
+	CRY_ASSERT(shadowCacheLod >= 0 && shadowCacheLod < MAX_GSM_CACHED_LODS_NUM);
+
 	// check if we have come too close to the border of the map
 	ShadowMapFrustum::ShadowCacheData::eUpdateStrategy nUpdateStrategy = m_nUpdateStrategy;
 	if (nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate && Get3DEngine()->m_CachedShadowsBounds.IsReset())
@@ -30,7 +44,7 @@ void ShadowCacheGenerator::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod,
 
 			if (!gEnv->IsEditing())
 			{
-				CryLog("Update required for cached shadow map %d.", nLod - nFirstStaticLod);
+				CryLog("Update required for cached shadow map %d.", shadowCacheLod);
 				CryLog("\tConsider increasing shadow cache resolution (r_ShadowsCacheResolutions) " \
 				  "or setting up manual bounds for cached shadows via flow graph if this happens too often");
 			}
@@ -38,7 +52,7 @@ void ShadowCacheGenerator::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod,
 	}
 
 	AABB projectionBoundsLS(AABB::RESET);
-	const int nTexRes = GetRenderer()->GetCachedShadowsResolution()[nLod - nFirstStaticLod];
+	const int nTexRes = GetRenderer()->GetCachedShadowsResolution()[shadowCacheLod];
 
 	// non incremental update: set new bounding box and estimate near/far planes
 	if (nUpdateStrategy != ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate)
@@ -47,7 +61,7 @@ void ShadowCacheGenerator::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod,
 
 		if (!Get3DEngine()->m_CachedShadowsBounds.IsReset())
 		{
-			float fBoxScale = powf(Get3DEngine()->m_fCachedShadowsCascadeScale, (float)nLod - nFirstStaticLod);
+			float fBoxScale = powf(Get3DEngine()->m_fCachedShadowsCascadeScale, float(shadowCacheLod));
 			Vec3 fBoxScaleXY(max(1.f, fBoxScale));
 			fBoxScaleXY.z = 1.f;
 
@@ -68,7 +82,7 @@ void ShadowCacheGenerator::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod,
 	pFr->m_eFrustumType = ShadowMapFrustum::e_GsmCached;
 	pFr->bBlendFrustum = GetCVars()->e_ShadowsBlendCascades > 0;
 	pFr->fBlendVal = pFr->bBlendFrustum ? GetCVars()->e_ShadowsBlendCascadesVal : 1.0f;
-	InitCachedFrustum(pFr, nUpdateStrategy, nLod, nTexRes, m_pLightEntity->GetLightProperties().m_Origin, projectionBoundsLS, passInfo);
+	InitCachedFrustum(pFr, nUpdateStrategy, nLod, shadowCacheLod, nTexRes, m_pLightEntity->GetLightProperties().m_Origin, projectionBoundsLS, passInfo);
 
 
 	// frustum debug
@@ -93,7 +107,7 @@ void ShadowCacheGenerator::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod,
 	}
 }
 
-void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::ShadowCacheData::eUpdateStrategy nUpdateStrategy, int nLod, int nTexSize, const Vec3& vLightPos, const AABB& projectionBoundsLS, const SRenderingPassInfo& passInfo)
+void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMapFrustum::ShadowCacheData::eUpdateStrategy nUpdateStrategy, int nLod, int cacheLod, int nTexSize, const Vec3& vLightPos, const AABB& projectionBoundsLS, const SRenderingPassInfo& passInfo)
 {
 	const auto frameID = passInfo.GetFrameID();
 
@@ -102,6 +116,8 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 
 	if (nUpdateStrategy != ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate)
 	{
+		CRY_ASSERT(cacheLod >= 0 && cacheLod < MAX_GSM_CACHED_LODS_NUM);
+
 		pFr->pShadowCacheData->Reset(GetNextGenerationID());
 		pFr->GetSideSampleMask().store(1);
 
@@ -110,6 +126,7 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 		pFr->m_Flags = m_pLightEntity->GetLightProperties().m_Flags;
 		pFr->nUpdateFrameId = frameID;
 		pFr->nShadowMapLod = nLod;
+		pFr->nShadowCacheLod = cacheLod;
 		pFr->vProjTranslation = pFr->aabbCasters.GetCenter();
 		pFr->vLightSrcRelPos = vLightPos - pFr->aabbCasters.GetCenter();
 		pFr->fNearDist = -projectionBoundsLS.max.z;
@@ -169,7 +186,7 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 	pFr->bIncrementalUpdate = nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate && pFr->pShadowCacheData->mObjectsRendered != 0;
 }
 
-void ShadowCacheGenerator::InitHeightMapAOFrustum(ShadowMapFrustumPtr& pFr, int nLod, const SRenderingPassInfo& passInfo)
+void ShadowCacheGenerator::InitHeightMapAOFrustum(ShadowMapFrustumPtr& pFr, int nLod, int nFirstStaticLod, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 	assert(nLod >= 0);
@@ -237,7 +254,7 @@ void ShadowCacheGenerator::InitHeightMapAOFrustum(ShadowMapFrustumPtr& pFr, int 
 	// finally init frustum
 	const int nTexRes = (int)clamp_tpl(pHeightMapAORes->GetFVal(), 0.f, 16384.f);
 	pFr->m_eFrustumType = ShadowMapFrustum::e_HeightMapAO;
-	InitCachedFrustum(pFr, nUpdateStrategy, nLod, nTexRes, lightPos, projectionBoundsLS, passInfo);
+	InitCachedFrustum(pFr, nUpdateStrategy, nLod, nLod - nFirstStaticLod, nTexRes, lightPos, projectionBoundsLS, passInfo);
 }
 
 void ShadowCacheGenerator::GetCasterBox(AABB& BBoxWS, AABB& BBoxLS, float fRadius, const Matrix34& matView, const SRenderingPassInfo& passInfo)

@@ -1024,6 +1024,31 @@ void COctreeNode::FillShadowMapCastersList(const ShadowMapFrustumParams& params,
 	}
 }
 
+void COctreeNode::InvalidateCachedShadowData()
+{
+	for (int l = 0; l < eRNListType_ListsNum; l++)
+	{
+		if (!IsCompiled((ERNListType)l))
+		{
+			CompileObjects((ERNListType)l);
+		}
+
+		for (auto& caster : m_lstCasters[l])
+		{
+			ZeroArray(caster.pNode->m_shadowCacheLastRendered);
+			ZeroArray(caster.pNode->m_shadowCacheLod);
+		}
+	}
+
+	for (int i = 0; i < 8; i++)
+	{
+		if (m_arrChilds[i])
+		{
+			m_arrChilds[i]->InvalidateCachedShadowData();
+		}
+	}
+}
+
 void COctreeNode::MarkAsUncompiled()
 {
 	m_compiledFlag = 0;

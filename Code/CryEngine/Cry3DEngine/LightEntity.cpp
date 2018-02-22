@@ -233,6 +233,10 @@ void CLightEntity::UpdateGSMLightSourceShadowFrustum(const SRenderingPassInfo& p
 	FUNCTION_PROFILER_3DENGINE;
 
 	const int nMaxLodCount = min(GetCVars()->e_GsmLodsNum, MAX_GSM_LODS_NUM - 1);
+
+	static ICVar* pHeightMapAOVar = GetConsole()->GetCVar("r_HeightMapAO");
+	const bool isHeightMapAOEnabled = Get3DEngine()->m_bHeightMapAoEnabled && pHeightMapAOVar && pHeightMapAOVar->GetIVal() > 0;
+
 	int nDynamicLodCount = nMaxLodCount;
 	int nCachedLodCount = 0;
 
@@ -248,6 +252,8 @@ void CLightEntity::UpdateGSMLightSourceShadowFrustum(const SRenderingPassInfo& p
 			while (nCachedLodCount + nDynamicLodCount < nMaxLodCount && cacheResolutions[nCachedLodCount] > 0)
 				++nCachedLodCount;
 		}
+
+		nCachedLodCount = min(nCachedLodCount, isHeightMapAOEnabled ? MAX_GSM_CACHED_LODS_NUM - 1 : MAX_GSM_CACHED_LODS_NUM);
 	}
 
 	InitEntityShadowMapInfoStructure(nDynamicLodCount, nCachedLodCount);
@@ -258,7 +264,7 @@ void CLightEntity::UpdateGSMLightSourceShadowFrustum(const SRenderingPassInfo& p
 
 	int nNextLod = 0;
 	nNextLod  = UpdateGSMLightSourceDynamicShadowFrustum(nDynamicLodCount, nCachedLodCount, fDistFromView, fRadiusLastLod, nCachedLodCount == 0, passInfo);
-	nNextLod += UpdateGSMLightSourceCachedShadowFrustum(nDynamicLodCount, nCachedLodCount, fDistFromView, fRadiusLastLod, passInfo);
+	nNextLod += UpdateGSMLightSourceCachedShadowFrustum(nDynamicLodCount, nCachedLodCount, isHeightMapAOEnabled, fDistFromView, fRadiusLastLod, passInfo);
 	nNextLod += UpdateGSMLightSourceNearestShadowFrustum(nNextLod, passInfo);
 
 	// free not used frustums
@@ -349,15 +355,13 @@ int CLightEntity::UpdateGSMLightSourceDynamicShadowFrustum(int nDynamicLodCount,
 	return nLod;
 }
 
-int CLightEntity::UpdateGSMLightSourceCachedShadowFrustum(int nFirstLod, int nLodCount, float& fDistFromViewDynamicLod, float fRadiusDynamicLod, const SRenderingPassInfo& passInfo)
+int CLightEntity::UpdateGSMLightSourceCachedShadowFrustum(int nFirstLod, int nLodCount, bool isHeightMapAOEnabled, float& fDistFromViewDynamicLod, float fRadiusDynamicLod, const SRenderingPassInfo& passInfo)
 {
 	ShadowFrustumMGPUCache* pFrustumCache = GetRenderer()->GetShadowFrustumMGPUCache();
 	assert(pFrustumCache);
 
-	static ICVar* pHeightMapAOVar = GetConsole()->GetCVar("r_HeightMapAO");
 	const int firstCachedFrustumIndex = nFirstLod + nLodCount;
 	const bool bRestoreFromCache = GetRenderer()->GetActiveGPUCount() > 1 && pFrustumCache->nUpdateMaskMT != 0 && m_pShadowMapInfo->pGSM[firstCachedFrustumIndex];
-	const bool bHeightMapAO = Get3DEngine()->m_bHeightMapAoEnabled && pHeightMapAOVar && pHeightMapAOVar->GetIVal() > 0 && (m_light.m_Flags & DLF_SUN);
 
 	int nLod = 0;
 
@@ -374,7 +378,7 @@ int CLightEntity::UpdateGSMLightSourceCachedShadowFrustum(int nFirstLod, int nLo
 			CollectShadowCascadeForOnePassTraversal(pFr);
 		}
 
-		if (bHeightMapAO)
+		if (isHeightMapAOEnabled)
 		{
 			assert(pFrustumCache->m_pHeightMapAOFrustum && m_pShadowMapInfo->pGSM[firstCachedFrustumIndex + nLod]);
 
@@ -422,11 +426,11 @@ int CLightEntity::UpdateGSMLightSourceCachedShadowFrustum(int nFirstLod, int nLo
 			CollectShadowCascadeForOnePassTraversal(pFr);
 		}
 
-		if (bHeightMapAO)
+		if (isHeightMapAOEnabled)
 		{
 			ShadowMapFrustumPtr& pFr = m_pShadowMapInfo->pGSM[firstCachedFrustumIndex + nLod];
 
-			shadowCache.InitHeightMapAOFrustum(pFr, nFirstLod + nLod, passInfo);
+			shadowCache.InitHeightMapAOFrustum(pFr, nFirstLod + nLod, nFirstLod, passInfo);
 			pFr->bIsMGPUCopy = false;
 			if (GetRenderer()->GetActiveGPUCount() > 1 && pFrustumCache->m_pHeightMapAOFrustum)
 				*pFrustumCache->m_pHeightMapAOFrustum = *pFr;

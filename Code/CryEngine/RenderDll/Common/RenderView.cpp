@@ -1848,10 +1848,10 @@ void CRenderView::CompileModifiedRenderObjects()
 		{
 			CryInterlockedExchangeOr((volatile LONG*)&pRenderObject->m_compiledReadyMask, passMask);
 		}
-		else if(IsShadowGenView() && m_shadows.m_pShadowFrustumOwner->IsCached())
+		else if(IsShadowGenView())
 		{
 			// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
-			m_shadows.m_pShadowFrustumOwner->MarkNodeAsCached(pRenderObject->m_pRenderNode, false);
+			ShadowMapFrustum::ForceMarkNodeAsUncached(pRenderObject->m_pRenderNode);
 		}
 
 		pRenderObject->m_lastCompiledFrame = nFrameId;
@@ -1867,10 +1867,10 @@ void CRenderView::CompileModifiedRenderObjects()
 		auto& pair = m_temporaryCompiledObjects[i]; // first=CRenderObject, second=CCompiledObject
 		const bool isCompiled = pair.pCompiledObject->Compile(pair.pRenderObject, eObjCompilationOption_All, this);
 
-		if (IsShadowGenView() && m_shadows.m_pShadowFrustumOwner->IsCached())
+		if (IsShadowGenView())
 		{
 			// NOTE: this can race with the the main thread but the worst outcome will be that the object is rendered multiple times into the shadow cache
-			m_shadows.m_pShadowFrustumOwner->MarkNodeAsCached(pair.pRenderObject->m_pRenderNode, isCompiled);
+			ShadowMapFrustum::ForceMarkNodeAsUncached(pair.pRenderObject->m_pRenderNode);
 		}
 	}
 

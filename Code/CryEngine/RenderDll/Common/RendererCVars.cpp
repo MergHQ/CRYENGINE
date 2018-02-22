@@ -754,6 +754,7 @@ void CRendererCVars::OnChange_CachedShadows(ICVar* pCVar)
 
 		gEnv->p3DEngine->SetShadowsGSMCache(true);
 		gEnv->p3DEngine->SetRecomputeCachedShadows(ShadowMapFrustum::ShadowCacheData::eFullUpdate);
+		gEnv->p3DEngine->InvalidateShadowCacheData();
 	}
 }
 
