@@ -39,11 +39,11 @@ void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 				{
 					if (folderPath.empty())
 					{
-						LoadFolder(name, *CreateItem(name, folderPath, EImpltemType::Folder, parent));
+						LoadFolder(name, *CreateItem(name, folderPath, EImplItemType::Folder, parent));
 					}
 					else
 					{
-						LoadFolder(folderPath + "/" + name, *CreateItem(name, folderPath, EImpltemType::Folder, parent));
+						LoadFolder(folderPath + "/" + name, *CreateItem(name, folderPath, EImplItemType::Folder, parent));
 					}
 				}
 				else
@@ -57,7 +57,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 						    (stricmp(name.data() + posExtension, ".wav") == 0))
 						{
 							// Create the event with the same name as the file
-							CreateItem(name, folderPath, EImpltemType::Event, parent);
+							CreateItem(name, folderPath, EImplItemType::Event, parent);
 						}
 					}
 				}
@@ -70,7 +70,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CImplItem* CProjectLoader::CreateItem(string const& name, string const& path, EImpltemType const type, CImplItem& rootItem)
+CImplItem* CProjectLoader::CreateItem(string const& name, string const& path, EImplItemType const type, CImplItem& rootItem)
 {
 	CID id;
 	string filePath = m_assetsPath + "/";
@@ -86,7 +86,7 @@ CImplItem* CProjectLoader::CreateItem(string const& name, string const& path, EI
 		filePath += (path + "/" + name);
 	}
 
-	EImplItemFlags const flags = type == EImpltemType::Folder ? EImplItemFlags::IsContainer : EImplItemFlags::None;
+	EImplItemFlags const flags = type == EImplItemType::Folder ? EImplItemFlags::IsContainer : EImplItemFlags::None;
 	auto const pImplItem = new CImplItem(name, id, static_cast<ItemType>(type), flags, filePath);
 
 	rootItem.AddChild(pImplItem);

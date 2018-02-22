@@ -13,7 +13,7 @@ namespace ACE
 {
 namespace SDLMixer
 {
-class CConnection;
+class CEventConnection;
 
 class CImplSettings final : public IImplSettings
 {

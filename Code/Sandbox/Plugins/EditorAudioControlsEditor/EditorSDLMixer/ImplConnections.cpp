@@ -13,22 +13,22 @@ namespace SDLMixer
 static float const g_precision = 0.0001f;
 
 //////////////////////////////////////////////////////////////////////////
-void CConnection::Serialize(Serialization::IArchive& ar)
+void CEventConnection::Serialize(Serialization::IArchive& ar)
 {
-	EConnectionType const type = m_type;
-	float const minAttenuation = m_minAttenuation;
-	float const maxAttenuation = m_maxAttenuation;
+	EEventType const type = m_type;
 	float const volume = m_volume;
 	float const fadeInTime = m_fadeInTime;
 	float const fadeOutTime = m_fadeOutTime;
-	uint32 const loopCount = m_loopCount;
+	float const minAttenuation = m_minAttenuation;
+	float const maxAttenuation = m_maxAttenuation;
 	bool const isPanningEnabled = m_isPanningEnabled;
 	bool const isAttenuationEnabled = m_isAttenuationEnabled;
 	bool const isInfiniteLoop = m_isInfiniteLoop;
+	uint32 const loopCount = m_loopCount;
 
 	ar(m_type, "action", "Action");
 
-	if (m_type == EConnectionType::Start)
+	if (m_type == EEventType::Start)
 	{
 		ar(Serialization::Range(m_volume, -96.0f, 0.0f, 1.0f), "vol", "Volume (dB)");
 		m_volume = crymath::clamp(m_volume, -96.0f, 0.0f);
@@ -82,26 +82,64 @@ void CConnection::Serialize(Serialization::IArchive& ar)
 	if (ar.isInput())
 	{
 		if (type != m_type ||
-		    fabs(minAttenuation - m_minAttenuation) > g_precision ||
-		    fabs(maxAttenuation - m_maxAttenuation) > g_precision ||
 		    fabs(volume - m_volume) > g_precision ||
 		    fabs(fadeInTime - m_fadeInTime) > g_precision ||
 		    fabs(fadeOutTime - m_fadeOutTime) > g_precision ||
-		    loopCount != m_loopCount ||
+		    fabs(minAttenuation - m_minAttenuation) > g_precision ||
+		    fabs(maxAttenuation - m_maxAttenuation) > g_precision ||
 		    isPanningEnabled != m_isPanningEnabled ||
 		    isAttenuationEnabled != m_isAttenuationEnabled ||
-		    isInfiniteLoop != m_isInfiniteLoop)
+		    isInfiniteLoop != m_isInfiniteLoop ||
+		    loopCount != m_loopCount)
 		{
 			SignalConnectionChanged();
 		}
 	}
 }
 
-SERIALIZATION_ENUM_BEGIN(EConnectionType, "Event Type")
-SERIALIZATION_ENUM(EConnectionType::Start, "start", "Start")
-SERIALIZATION_ENUM(EConnectionType::Stop, "stop", "Stop")
-SERIALIZATION_ENUM(EConnectionType::Pause, "pause", "Pause")
-SERIALIZATION_ENUM(EConnectionType::Resume, "resume", "Resume")
+//////////////////////////////////////////////////////////////////////////
+void CParameterConnection::Serialize(Serialization::IArchive& ar)
+{
+	float const mult = m_mult;
+	float const shift = m_shift;
+
+	ar(m_mult, "mult", "Multiply");
+	m_mult = std::max(0.0f, m_mult);
+
+	ar(m_shift, "shift", "Shift");
+
+	if (ar.isInput())
+	{
+		if (fabs(mult - m_mult) > g_precision ||
+		    fabs(shift - m_shift) > g_precision)
+		{
+			SignalConnectionChanged();
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CStateConnection::Serialize(Serialization::IArchive& ar)
+{
+	float const value = m_value;
+
+	ar(Serialization::Range(m_value, 0.0f, 1.0f, 0.1f), "value", "Volume (normalized)");
+	m_value = crymath::clamp(m_value, 0.0f, 1.0f);
+
+	if (ar.isInput())
+	{
+		if (fabs(value - m_value) > g_precision)
+		{
+			SignalConnectionChanged();
+		}
+	}
+}
+
+SERIALIZATION_ENUM_BEGIN(EEventType, "Event Type")
+SERIALIZATION_ENUM(EEventType::Start, "start", "Start")
+SERIALIZATION_ENUM(EEventType::Stop, "stop", "Stop")
+SERIALIZATION_ENUM(EEventType::Pause, "pause", "Pause")
+SERIALIZATION_ENUM(EEventType::Resume, "resume", "Resume")
 SERIALIZATION_ENUM_END()
 } // namespace SDLMixer
 } // namespace ACE

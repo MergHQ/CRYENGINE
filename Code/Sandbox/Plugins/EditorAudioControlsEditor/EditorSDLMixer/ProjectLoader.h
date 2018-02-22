@@ -19,7 +19,7 @@ public:
 
 private:
 
-	CImplItem* CreateItem(string const& name, string const& path, EImpltemType const type, CImplItem& rootItem);
+	CImplItem* CreateItem(string const& name, string const& path, EImplItemType const type, CImplItem& rootItem);
 	void       LoadFolder(string const& folderPath, CImplItem& parent);
 
 	string const m_assetsPath;
