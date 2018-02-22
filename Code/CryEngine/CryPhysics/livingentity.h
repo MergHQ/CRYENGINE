@@ -80,6 +80,9 @@ struct SLivingEntityNetSerialize {
 	bool bFlying;
 	bool bJumpRequested;
 	float dh, dhSpeed, stablehTime;
+	int idEntGroundCollider;
+	int ipartGroundCollider;
+	Vec3 posOnGroundCollider;
 	void Serialize( TSerialize ser );
 };
 
