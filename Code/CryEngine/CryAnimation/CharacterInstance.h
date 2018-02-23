@@ -76,7 +76,7 @@ public:
 	virtual void   SetPlaybackScale(f32 speed) override { m_fPlaybackScale = max(0.0f, speed); }
 	virtual f32    GetPlaybackScale() const override    { return m_fPlaybackScale; }
 	virtual uint32 IsCharacterVisible() const override  { return m_SkeletonPose.m_bInstanceVisible; };
-	virtual void SpawnSkeletonEffect(const char* effectName, const char* boneName, const Vec3 &offset, const Vec3 &dir, const QuatTS &entityLoc) override;
+	virtual void SpawnSkeletonEffect(const AnimEventInstance& animEvent, const QuatTS &entityLoc) override;
 	virtual void KillAllSkeletonEffects() override;
 	virtual void  SetViewdir(const Vec3& rViewdir) override                                     { m_Viewdir = rViewdir; }
 	virtual float GetUniformScale() const override                                              { return m_location.s; }
@@ -252,9 +252,9 @@ inline int CCharInstance::Release()
 	return m_nRefCounter;
 }
 
-inline void CCharInstance::SpawnSkeletonEffect(const char* effectName, const char* boneName, const Vec3& offset, const Vec3& dir, const QuatTS& entityLoc)
+inline void CCharInstance::SpawnSkeletonEffect(const AnimEventInstance& animEvent, const QuatTS &entityLoc)
 {
-	m_skeletonEffectManager.SpawnEffect(this, effectName, boneName, offset, dir, entityLoc);
+	m_skeletonEffectManager.SpawnEffect(this, animEvent, entityLoc);
 }
 
 inline void CCharInstance::KillAllSkeletonEffects()
