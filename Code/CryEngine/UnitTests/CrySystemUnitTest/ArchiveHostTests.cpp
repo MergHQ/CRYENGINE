@@ -1,17 +1,14 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
-
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
-#include "ArchiveHost.h"
-#include <CrySystem/CryUnitTest.h>
+#include <UnitTest.h>
 #include <CrySerialization/STL.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/StringList.h>
 #include <CrySerialization/SmartPtr.h>
 #include <memory>
+#include <CryCore/smartptr.h>
+#include <Serialization/ArchiveHost.h>
 
-#if defined(CRY_UNIT_TESTING)
-namespace Serialization
-{
 struct SMember
 {
 	string name;
@@ -22,8 +19,8 @@ struct SMember
 
 	void CheckEquality(const SMember& copy) const
 	{
-		CRY_UNIT_TEST_ASSERT(name == copy.name);
-		CRY_UNIT_TEST_ASSERT(weight == copy.weight);
+		REQUIRE(name == copy.name);
+		REQUIRE(weight == copy.weight);
 	}
 
 	void Change(int index)
@@ -33,7 +30,7 @@ struct SMember
 		weight = float(index);
 	}
 
-	void Serialize(IArchive& ar)
+	void Serialize(Serialization::IArchive& ar)
 	{
 		ar(name, "name");
 		ar(weight, "weight");
@@ -53,14 +50,14 @@ public:
 		baseMember = "Changed base member";
 	}
 
-	virtual void Serialize(IArchive& ar)
+	virtual void Serialize(Serialization::IArchive& ar)
 	{
 		ar(baseMember, "baseMember");
 	}
 
 	virtual void CheckEquality(const CPolyBase* copy) const
 	{
-		CRY_UNIT_TEST_ASSERT(baseMember == copy->baseMember);
+		REQUIRE(baseMember == copy->baseMember);
 	}
 
 	virtual bool IsDerivedA() const { return false; }
@@ -72,7 +69,7 @@ protected:
 class CPolyDerivedA : public CPolyBase
 {
 public:
-	void Serialize(IArchive& ar) override
+	void Serialize(Serialization::IArchive& ar) override
 	{
 		CPolyBase::Serialize(ar);
 		ar(derivedMember, "derivedMember");
@@ -82,9 +79,9 @@ public:
 
 	void CheckEquality(const CPolyBase* copyBase) const override
 	{
-		CRY_UNIT_TEST_ASSERT(copyBase->IsDerivedA());
+		REQUIRE(copyBase->IsDerivedA());
 		const CPolyDerivedA* copy = (CPolyDerivedA*)copyBase;
-		CRY_UNIT_TEST_ASSERT(derivedMember == copy->derivedMember);
+		REQUIRE(derivedMember == copy->derivedMember);
 
 		CPolyBase::CheckEquality(copyBase);
 	}
@@ -102,7 +99,7 @@ public:
 
 	bool IsDerivedB() const override { return true; }
 
-	void Serialize(IArchive& ar) override
+	void Serialize(Serialization::IArchive& ar) override
 	{
 		CPolyBase::Serialize(ar);
 		ar(derivedMember, "derivedMember");
@@ -110,9 +107,9 @@ public:
 
 	void CheckEquality(const CPolyBase* copyBase) const override
 	{
-		CRY_UNIT_TEST_ASSERT(copyBase->IsDerivedB());
+		REQUIRE(copyBase->IsDerivedB());
 		const CPolyDerivedB* copy = (const CPolyDerivedB*)copyBase;
-		CRY_UNIT_TEST_ASSERT(derivedMember == copy->derivedMember);
+		REQUIRE(derivedMember == copy->derivedMember);
 
 		CPolyBase::CheckEquality(copyBase);
 	}
@@ -154,7 +151,7 @@ struct SNumericTypes
 		m_double = -11.0;
 	}
 
-	void Serialize(IArchive& ar)
+	void Serialize(Serialization::IArchive& ar)
 	{
 		ar(m_bool, "bool");
 		ar(m_char, "char");
@@ -172,18 +169,18 @@ struct SNumericTypes
 
 	void CheckEquality(const SNumericTypes& rhs) const
 	{
-		CRY_UNIT_TEST_ASSERT(m_bool == rhs.m_bool);
-		CRY_UNIT_TEST_ASSERT(m_char == rhs.m_char);
-		CRY_UNIT_TEST_ASSERT(m_int8 == rhs.m_int8);
-		CRY_UNIT_TEST_ASSERT(m_uint8 == rhs.m_uint8);
-		CRY_UNIT_TEST_ASSERT(m_int16 == rhs.m_int16);
-		CRY_UNIT_TEST_ASSERT(m_uint16 == rhs.m_uint16);
-		CRY_UNIT_TEST_ASSERT(m_int32 == rhs.m_int32);
-		CRY_UNIT_TEST_ASSERT(m_uint32 == rhs.m_uint32);
-		CRY_UNIT_TEST_ASSERT(m_int64 == rhs.m_int64);
-		CRY_UNIT_TEST_ASSERT(m_uint64 == rhs.m_uint64);
-		CRY_UNIT_TEST_ASSERT(m_float == rhs.m_float);
-		CRY_UNIT_TEST_ASSERT(m_double == rhs.m_double);
+		REQUIRE(m_bool == rhs.m_bool);
+		REQUIRE(m_char == rhs.m_char);
+		REQUIRE(m_int8 == rhs.m_int8);
+		REQUIRE(m_uint8 == rhs.m_uint8);
+		REQUIRE(m_int16 == rhs.m_int16);
+		REQUIRE(m_uint16 == rhs.m_uint16);
+		REQUIRE(m_int32 == rhs.m_int32);
+		REQUIRE(m_uint32 == rhs.m_uint32);
+		REQUIRE(m_int64 == rhs.m_int64);
+		REQUIRE(m_uint64 == rhs.m_uint64);
+		REQUIRE(m_float == rhs.m_float);
+		REQUIRE(m_double == rhs.m_double);
 	}
 
 	bool   m_bool;
@@ -273,14 +270,14 @@ public:
 		stringToInt.push_back(std::make_pair("four", 4));
 	}
 
-	void Serialize(IArchive& ar)
+	void Serialize(Serialization::IArchive& ar)
 	{
 		ar(name, "name");
 		ar(polyPtr, "polyPtr");
 		ar(polyVector, "polyVector");
 		ar(members, "members");
 		{
-			StringListValue value(stringList, stringList[index]);
+			Serialization::StringListValue value(stringList, stringList[index]);
 			ar(value, "stringList");
 			index = value.index();
 			if (index == -1)
@@ -294,28 +291,28 @@ public:
 
 	void CheckEquality(const CComplexClass& copy) const
 	{
-		CRY_UNIT_TEST_ASSERT(name == copy.name);
-		CRY_UNIT_TEST_ASSERT(index == copy.index);
+		REQUIRE(name == copy.name);
+		REQUIRE(index == copy.index);
 
-		CRY_UNIT_TEST_ASSERT(polyPtr != 0);
-		CRY_UNIT_TEST_ASSERT(copy.polyPtr != 0);
+		REQUIRE(polyPtr != nullptr);
+		REQUIRE(copy.polyPtr != nullptr);
 		polyPtr->CheckEquality(copy.polyPtr);
 
-		CRY_UNIT_TEST_ASSERT(members.size() == copy.members.size());
+		REQUIRE(members.size() == copy.members.size());
 		for (size_t i = 0; i < members.size(); ++i)
 		{
 			members[i].CheckEquality(copy.members[i]);
 		}
 
-		CRY_UNIT_TEST_ASSERT(polyVector.size() == copy.polyVector.size());
+		REQUIRE(polyVector.size() == copy.polyVector.size());
 		for (size_t i = 0; i < polyVector.size(); ++i)
 		{
 			if (polyVector[i] == 0)
 			{
-				CRY_UNIT_TEST_ASSERT(copy.polyVector[i] == 0);
+				REQUIRE(copy.polyVector[i] == nullptr);
 				continue;
 			}
-			CRY_UNIT_TEST_ASSERT(copy.polyVector[i] != 0);
+			REQUIRE(copy.polyVector[i] != nullptr);
 			polyVector[i]->CheckEquality(copy.polyVector[i]);
 		}
 
@@ -327,10 +324,10 @@ public:
 
 		numericTypes.CheckEquality(copy.numericTypes);
 
-		CRY_UNIT_TEST_ASSERT(stringToInt.size() == copy.stringToInt.size());
+		REQUIRE(stringToInt.size() == copy.stringToInt.size());
 		for (size_t i = 0; i < stringToInt.size(); ++i)
 		{
-			CRY_UNIT_TEST_ASSERT(stringToInt[i] == copy.stringToInt[i]);
+			REQUIRE(stringToInt[i] == copy.stringToInt[i]);
 		}
 	}
 protected:
@@ -343,7 +340,7 @@ protected:
 	int32                               index;
 	SNumericTypes                       numericTypes;
 
-	StringListStatic                    stringList;
+	Serialization::StringListStatic     stringList;
 	std::vector<_smart_ptr<CPolyBase>>  polyVector;
 	_smart_ptr<CPolyBase>               polyPtr;
 
@@ -356,57 +353,52 @@ SERIALIZATION_CLASS_NAME(CPolyBase, CPolyBase, "base", "Base")
 SERIALIZATION_CLASS_NAME(CPolyBase, CPolyDerivedA, "derived_a", "Derived A")
 SERIALIZATION_CLASS_NAME(CPolyBase, CPolyDerivedB, "derived_b", "Derived B")
 
-CRY_UNIT_TEST_SUITE(ArchiveHost)
+TEST(ArchiveHostTest, JsonBasicTypes)
 {
-	CRY_UNIT_TEST(JsonBasicTypes)
+	std::unique_ptr<Serialization::IArchiveHost> host(Serialization::CreateArchiveHost());
+
+	DynArray<char> bufChanged;
+	CComplexClass objChanged;
+	objChanged.Change();
+	host->SaveJsonBuffer(bufChanged, Serialization::SStruct(objChanged));
+	REQUIRE(!bufChanged.empty());
+
+	DynArray<char> bufResaved;
 	{
-		std::unique_ptr<IArchiveHost> host(CreateArchiveHost());
+		CComplexClass obj;
 
-		DynArray<char> bufChanged;
-		CComplexClass objChanged;
-		objChanged.Change();
-		host->SaveJsonBuffer(bufChanged, SStruct(objChanged));
-		CRY_UNIT_TEST_ASSERT(!bufChanged.empty());
+		REQUIRE(host->LoadJsonBuffer(Serialization::SStruct(obj), bufChanged.data(), bufChanged.size()));
+		REQUIRE(host->SaveJsonBuffer(bufResaved, Serialization::SStruct(obj)));
+		REQUIRE(!bufResaved.empty());
 
-		DynArray<char> bufResaved;
-		{
-			CComplexClass obj;
-
-			CRY_UNIT_TEST_ASSERT(host->LoadJsonBuffer(SStruct(obj), bufChanged.data(), bufChanged.size()));
-			CRY_UNIT_TEST_ASSERT(host->SaveJsonBuffer(bufResaved, SStruct(obj)));
-			CRY_UNIT_TEST_ASSERT(!bufResaved.empty());
-
-			obj.CheckEquality(objChanged);
-		}
-		CRY_UNIT_TEST_ASSERT(bufChanged.size() == bufResaved.size());
-		for (size_t i = 0; i < bufChanged.size(); ++i)
-			CRY_UNIT_TEST_ASSERT(bufChanged[i] == bufResaved[i]);
+		obj.CheckEquality(objChanged);
 	}
+	REQUIRE(bufChanged.size() == bufResaved.size());
+	for (size_t i = 0; i < bufChanged.size(); ++i)
+		REQUIRE(bufChanged[i] == bufResaved[i]);
+}
 
-	CRY_UNIT_TEST(BinBasicTypes)
+TEST(ArchiveHostTest, BinBasicTypes)
+{
+	std::unique_ptr<Serialization::IArchiveHost> host(Serialization::CreateArchiveHost());
+
+	DynArray<char> bufChanged;
+	CComplexClass objChanged;
+	objChanged.Change();
+	host->SaveBinaryBuffer(bufChanged, Serialization::SStruct(objChanged));
+	REQUIRE(!bufChanged.empty());
+
+	DynArray<char> bufResaved;
 	{
-		std::unique_ptr<IArchiveHost> host(CreateArchiveHost());
+		CComplexClass obj;
 
-		DynArray<char> bufChanged;
-		CComplexClass objChanged;
-		objChanged.Change();
-		host->SaveBinaryBuffer(bufChanged, SStruct(objChanged));
-		CRY_UNIT_TEST_ASSERT(!bufChanged.empty());
+		REQUIRE(host->LoadBinaryBuffer(Serialization::SStruct(obj), bufChanged.data(), bufChanged.size()));
+		REQUIRE(host->SaveBinaryBuffer(bufResaved, Serialization::SStruct(obj)));
+		REQUIRE(!bufResaved.empty());
 
-		DynArray<char> bufResaved;
-		{
-			CComplexClass obj;
-
-			CRY_UNIT_TEST_ASSERT(host->LoadBinaryBuffer(SStruct(obj), bufChanged.data(), bufChanged.size()));
-			CRY_UNIT_TEST_ASSERT(host->SaveBinaryBuffer(bufResaved, SStruct(obj)));
-			CRY_UNIT_TEST_ASSERT(!bufResaved.empty());
-
-			obj.CheckEquality(objChanged);
-		}
-		CRY_UNIT_TEST_ASSERT(bufChanged.size() == bufResaved.size());
-		for (size_t i = 0; i < bufChanged.size(); ++i)
-			CRY_UNIT_TEST_ASSERT(bufChanged[i] == bufResaved[i]);
+		obj.CheckEquality(objChanged);
 	}
+	REQUIRE(bufChanged.size() == bufResaved.size());
+	for (size_t i = 0; i < bufChanged.size(); ++i)
+		REQUIRE(bufChanged[i] == bufResaved[i]);
 }
-}
-#endif

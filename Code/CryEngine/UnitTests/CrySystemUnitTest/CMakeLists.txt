@@ -3,6 +3,7 @@ sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Source Files"
         "xml.cpp"
+		"ArchiveHostTests.cpp"
 	SOURCE_GROUP "Root"
 		"StdAfx.cpp"
 		"StdAfx.h"
