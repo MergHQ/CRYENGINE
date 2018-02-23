@@ -7,7 +7,7 @@ struct INavMeshQueryFilter;
 namespace MNM
 {
 
-//! Structure used as output in navmesh raycast queries
+//! Structure used as output in NavMesh raycast queries
 struct SRayHitOutput
 {
 	Vec3 position;
@@ -29,6 +29,18 @@ struct SParams
 {
 	Vec3 originWorld;   //! Origin position of the NavMesh in the world coordinate space.
 };
+
+template<typename T>
+inline T ToMeshSpace(const T& worldPosition, const T& meshOrigin)
+{
+	return worldPosition - meshOrigin;
+}
+
+template<typename T>
+inline T ToWorldSpace(const T& localPosition, const T& meshOrigin)
+{
+	return localPosition + meshOrigin;
+}
 
 //! Returns the tile grid coordinate offset of the neighbor tile.
 //! \param side Side of the tile on which neighbor tile is. Also, \see MNM::Tile::SLink::side.
@@ -91,21 +103,21 @@ struct INavMesh
 	virtual TileID FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const = 0;
 
 	//! Queries NavMesh triangles inside a bounding box.
-	//! \param queryAabbWorld Bounding box for the query in a world coordinate space.
+	//! \param queryLocalAabb Bounding box for the query in a mesh coordinate space.
 	//! \param pOptionalFilter Pointer to the optional triangle filter. If provided, then it's called for each triangleId.
 	//! \param maxTrianglesCount Size of output buffer for result triangleId's.
 	//! \param pOutTriangles Array buffer for result triangleId's.
 	//! \return Count of found triangleId's.
-	virtual size_t QueryTriangles(const aabb_t& queryAabbWorld, INavMeshQueryFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const = 0;
+	virtual size_t QueryTriangles(const aabb_t& queryLocalAabb, INavMeshQueryFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const = 0;
 
 	//! Finds a single triangle closest to the point. /see QueryTriangles() for a way to get candidate triangles.
-	//! \param queryPosWorld Query point in a world coordinate space.
+	//! \param queryLocalPosition Query point in a mesh coordinate space.
 	//! \param pCandidateTriangles Array of triangleID to search.
 	//! \param candidateTrianglesCount Size of pCandidateTriangles array.
-	//! \param pOutClosestPosWorld Optional pointer for a return value of a snapped to the triangle point in the world coordinate space.
+	//! \param pOutClosestLocalPosition Optional pointer for a return value of a snapped to the triangle point in the mesh coordinate space.
 	//! \param pOutClosestDistanceSq Optional pointer for a return value of squared distance between query point and a snapped to the triangle point.
 	//! \return ID of a found closest triangle.
-	virtual TriangleID FindClosestTriangle(const vector3_t& queryPosWorld, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestPosWorld, float* pOutClosestDistanceSq) const = 0;
+	virtual TriangleID FindClosestTriangle(const vector3_t& queryLocalPosition, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestLocalPosition, float* pOutClosestDistanceSq) const = 0;
 
 	//! Fills a STileData structure for a read-only tile data access
 	//! \param tileId Id of tile

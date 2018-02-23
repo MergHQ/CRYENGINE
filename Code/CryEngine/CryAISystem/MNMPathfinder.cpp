@@ -269,20 +269,20 @@ bool CMNMPathfinder::CheckIfPointsAreOnStraightWalkableLine(const NavigationMesh
 	const MNM::CNavMesh& navMesh = mesh.navMesh;
 
 	const Vec3 raiseUp(0.0f, 0.0f, heightOffset);
-	Vec3 raisedSource = source + raiseUp;
+	const Vec3 raisedSource = source + raiseUp;
 
-	MNM::vector3_t startLoc = MNM::vector3_t(MNM::real_t(raisedSource.x), MNM::real_t(raisedSource.y), MNM::real_t(raisedSource.z));
-	MNM::vector3_t endLoc = MNM::vector3_t(MNM::real_t(destination.x), MNM::real_t(destination.y), MNM::real_t(destination.z));
+	const MNM::vector3_t startMeshLoc = navMesh.ToMeshSpace(raisedSource);
+	const MNM::vector3_t endMeshLoc = navMesh.ToMeshSpace(destination);
 
 	const MNM::real_t verticalRange(2.0f);
-	MNM::TriangleID triStart = navMesh.GetTriangleAt(startLoc, verticalRange, verticalRange, pFilter);
-	MNM::TriangleID triEnd = navMesh.GetTriangleAt(endLoc, verticalRange, verticalRange, pFilter);
+	MNM::TriangleID triStart = navMesh.GetTriangleAt(startMeshLoc, verticalRange, verticalRange, pFilter);
+	MNM::TriangleID triEnd = navMesh.GetTriangleAt(endMeshLoc, verticalRange, verticalRange, pFilter);
 
 	if (!triStart || !triEnd)
 		return false;
 
 	MNM::CNavMesh::RayCastRequest<512> raycastRequest;
-	if (navMesh.RayCast(startLoc, triStart, endLoc, triEnd, raycastRequest, pFilter) != MNM::CNavMesh::eRayCastResult_NoHit)
+	if (navMesh.RayCast(startMeshLoc, triStart, endMeshLoc, triEnd, raycastRequest, pFilter) != MNM::CNavMesh::eRayCastResult_NoHit)
 		return false;
 
 	return true;
@@ -521,7 +521,7 @@ EMNMPathResult CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID request
 
 	MNM::TriangleID triangleStartID;
 	MNM::vector3_t snappedPosition;
-	if (!navMesh.SnapPosition(startLocation, request.requestParams.snappingRules, pFilter, snappedPosition, &triangleStartID))
+	if (!navMesh.SnapPosition(navMesh.ToMeshSpace(startLocation), request.requestParams.snappingRules, pFilter, snappedPosition, &triangleStartID))
 	{
 		const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
 		AIWarning("Navigation system couldn't find NavMesh triangle at path start point (%.2f, %2f, %2f) for agent '%s'.",
@@ -529,10 +529,10 @@ EMNMPathResult CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID request
 			pEntity ? pEntity->GetName() : "'missing entity'");
 		return EMNMPathResult::FailedToSnapStartPoint;
 	}
-	const Vec3 safeStartLocation = snappedPosition.GetVec3();
+	const Vec3 safeStartLocation = navMesh.ToWorldSpace(snappedPosition).GetVec3();
 	
 	MNM::TriangleID triangleEndID;
-	if (!navMesh.SnapPosition(endLocation, request.requestParams.snappingRules, pFilter, snappedPosition, &triangleEndID))
+	if (!navMesh.SnapPosition(navMesh.ToMeshSpace(endLocation), request.requestParams.snappingRules, pFilter, snappedPosition, &triangleEndID))
 	{
 		const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(request.requesterEntityId);
 		AIWarning("Navigation system couldn't find NavMesh triangle at path destination point (%.2f, %.2f, %.2f) for agent '%s'.",
@@ -541,7 +541,7 @@ EMNMPathResult CMNMPathfinder::SetupForNextPathRequest(MNM::QueuedPathID request
 		return EMNMPathResult::FailedToSnapEndPoint;
 	}
 
-	const Vec3 safeEndLocation = snappedPosition.GetVec3();
+	const Vec3 safeEndLocation = navMesh.ToWorldSpace(snappedPosition).GetVec3();
 
 	// The data for MNM are good until this point so we can set up the path finding
 	processingRequest.meshID = meshID;
@@ -573,15 +573,14 @@ void CMNMPathfinder::ProcessPathRequest(MNM::PathfinderUtils::ProcessingContext&
 
 	const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(processingRequest.meshID);
 	const MNM::CNavMesh& navMesh = mesh.navMesh;
-	const MNM::CNavMesh::SGridParams& gridParams = navMesh.GetGridParams();
 	const OffMeshNavigationManager* offMeshNavigationManager = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager();
 	assert(offMeshNavigationManager);
 	const MNM::OffMeshNavigation& meshOffMeshNav = offMeshNavigationManager->GetOffMeshNavigationForMesh(processingRequest.meshID);
 
 	MNM::CNavMesh::WayQueryRequest inputParams(
 		processingRequest.data.requesterEntityId, processingRequest.fromTriangleID,
-		processingRequest.data.requestParams.startLocation - gridParams.origin, processingRequest.toTriangleID,
-		processingRequest.data.requestParams.endLocation - gridParams.origin, meshOffMeshNav, *offMeshNavigationManager,
+		navMesh.ToMeshSpace(processingRequest.data.requestParams.startLocation), processingRequest.toTriangleID,
+		navMesh.ToMeshSpace(processingRequest.data.requestParams.endLocation), meshOffMeshNav, *offMeshNavigationManager,
 		processingRequest.data.GetDangersInfos(),
 		processingRequest.data.pFilter.get(),
 		processingRequest.data.requestParams.pCustomPathCostComputer);
@@ -606,9 +605,6 @@ bool CMNMPathfinder::ConstructPathFromFoundWay(
 	const MNM::WayTriangleData* pWayData = way.GetWayData();
 	const size_t waySize = way.GetWaySize();
 
-	const MNM::CNavMesh::SGridParams& gridParams = navMesh.GetGridParams();
-	const MNM::vector3_t origin = MNM::vector3_t(gridParams.origin);
-
 	// NOTE: waypoints are in reverse order
 	for (size_t i = 0; i < waySize; ++i)
 	{
@@ -618,7 +614,7 @@ bool CMNMPathfinder::ConstructPathFromFoundWay(
 			Vec3 edgeMidPoint;
 			if (navMesh.CalculateMidEdge(pWayData[i - 1].triangleID, pWayData[i].triangleID, edgeMidPoint))
 			{
-				PathPointDescriptor pathPoint(IAISystem::NAV_UNSET, edgeMidPoint + origin.GetVec3());
+				PathPointDescriptor pathPoint(IAISystem::NAV_UNSET, navMesh.ToWorldSpace(edgeMidPoint).GetVec3());
 				pathPoint.iTriId = pWayData[i].triangleID;
 				outputPath.PushFront(pathPoint);
 			}

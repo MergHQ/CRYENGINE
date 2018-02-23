@@ -1084,11 +1084,11 @@ void CNavPath::TrimPath(float trimLength, bool twoD)
 	}
 }
 
-Vec3 GetSafePositionInMesh(const NavigationMesh& mesh, const Vec3& testLocation, const float verticalRange, const float horizontalRange, const INavMeshQueryFilter* pFilter)
+Vec3 GetSafePositionInMesh(const NavigationMesh& mesh, const Vec3& testPosition, const float verticalRange, const float horizontalRange, const INavMeshQueryFilter* pFilter)
 {
-	Vec3 safePosition = testLocation;
+	Vec3 safePosition = testPosition;
 
-	const MNM::vector3_t testLocationFixedPoint(MNM::real_t(testLocation.x), MNM::real_t(testLocation.y), MNM::real_t(testLocation.z));
+	const MNM::vector3_t testLocationFixedPoint = mesh.navMesh.ToMeshSpace(testPosition);
 
 	const MNM::real_t vRange(verticalRange);
 	const MNM::real_t hRange(horizontalRange);
@@ -1098,7 +1098,7 @@ Vec3 GetSafePositionInMesh(const NavigationMesh& mesh, const Vec3& testLocation,
 		MNM::vector3_t closestLocation;
 		if (mesh.navMesh.GetClosestTriangle(testLocationFixedPoint, vRange, hRange, pFilter, nullptr, &closestLocation))
 		{
-			safePosition = closestLocation.GetVec3();
+			safePosition = mesh.navMesh.ToWorldSpace(closestLocation).GetVec3();
 		}
 	}
 
@@ -1144,7 +1144,7 @@ void CNavPath::MovePathEndsOutOfObstacles(const CPathObstacles& obstacles, const
 			{
 				const float displacement = (newPosition - pathStart).len();
 
-				pathStart = GetSafePositionInMesh(mesh, newPosition - gridParams.origin, 2.0f, displacement / gridParams.voxelSize.x, pFilter);
+				pathStart = GetSafePositionInMesh(mesh, newPosition, 2.0f, displacement / gridParams.voxelSize.x, pFilter);
 			}
 		}
 
@@ -1157,7 +1157,7 @@ void CNavPath::MovePathEndsOutOfObstacles(const CPathObstacles& obstacles, const
 			{
 				const float displacement = (newPosition - pathEnd).len();
 
-				pathEnd = GetSafePositionInMesh(mesh, newPosition - gridParams.origin, 2.0f, displacement / gridParams.voxelSize.x, pFilter);
+				pathEnd = GetSafePositionInMesh(mesh, newPosition, 2.0f, displacement / gridParams.voxelSize.x, pFilter);
 			}
 		}
 	}
@@ -1194,8 +1194,6 @@ bool CNavPath::CheckPath(const TPathPoints& pathList, float radius, const INavMe
 		MNM::TriangleID way[MaxWayTriangleCount] = { 0 };
 
 		const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(GetMeshID());
-		const MNM::CNavMesh::SGridParams& gridParams = mesh.navMesh.GetGridParams();
-		const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(gridParams.origin.x), MNM::real_t(gridParams.origin.y), MNM::real_t(gridParams.origin.z));
 
 		const MNM::real_t verticalRange(3.0f);
 
@@ -1216,18 +1214,18 @@ bool CNavPath::CheckPath(const TPathPoints& pathList, float radius, const INavMe
 				if (triangleEndID)
 				{
 					startLocation = endLocation;
-					endLocation.Set(MNM::real_t(to.x), MNM::real_t(to.y), MNM::real_t(to.z));
+					endLocation = mesh.navMesh.ToMeshSpace(to);
 
 					triangleStartID = triangleEndID;
-					triangleEndID = mesh.navMesh.GetTriangleAt(endLocation - origin, verticalRange, verticalRange, pFilter);
+					triangleEndID = mesh.navMesh.GetTriangleAt(endLocation, verticalRange, verticalRange, pFilter);
 				}
 				else
 				{
-					startLocation.Set(MNM::real_t(from.x), MNM::real_t(from.y), MNM::real_t(from.z));
-					endLocation.Set(MNM::real_t(to.x), MNM::real_t(to.y), MNM::real_t(to.z));
+					startLocation = mesh.navMesh.ToMeshSpace(from);
+					endLocation = mesh.navMesh.ToMeshSpace(to);
 
-					triangleStartID = mesh.navMesh.GetTriangleAt(startLocation - origin, verticalRange, verticalRange, pFilter);
-					triangleEndID = mesh.navMesh.GetTriangleAt(endLocation - origin, verticalRange, verticalRange, pFilter);
+					triangleStartID = mesh.navMesh.GetTriangleAt(startLocation, verticalRange, verticalRange, pFilter);
+					triangleEndID = mesh.navMesh.GetTriangleAt(endLocation, verticalRange, verticalRange, pFilter);
 				}
 
 				if (!triangleStartID || !triangleEndID)

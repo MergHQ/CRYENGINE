@@ -1927,13 +1927,9 @@ void NavigationSystem::ComputeAccessibility(const Vec3& debugLocation, Navigatio
 		const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
 		const MNM::OffMeshNavigation& offMeshNavigation = GetOffMeshNavigationManager()->GetOffMeshNavigationForMesh(meshId);
 
-		const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x), MNM::real_t(paramsGrid.origin.y), MNM::real_t(paramsGrid.origin.z));
-		const Vec3& voxelSize = mesh.navMesh.GetGridParams().voxelSize;
-		const MNM::vector3_t seedLocation(MNM::real_t(debugLocation.x), MNM::real_t(debugLocation.y), MNM::real_t(debugLocation.z));
-
 		const uint16 agentHeightUnits = GetAgentHeightInVoxelUnits(agentTypeId);
 
-		const MNM::real_t verticalRange = MNMUtils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z);
+		const MNM::real_t verticalRange = MNMUtils::CalculateMinVerticalRange(agentHeightUnits, paramsGrid.voxelSize.z);
 		const MNM::real_t verticalDownwardRange(verticalRange);
 
 		AgentType agentTypeProperties;
@@ -1943,7 +1939,7 @@ void NavigationSystem::ComputeAccessibility(const Vec3& debugLocation, Navigatio
 		const uint16 zOffsetMultiplier = min(minZOffsetMultiplier, (uint16)agentTypeProperties.settings.agent.height);
 		const MNM::real_t verticalUpwardRange = arePropertiesValid ? MNM::real_t(zOffsetMultiplier * agentTypeProperties.settings.voxelSize.z) : MNM::real_t(.2f);
 
-		MNM::TriangleID seedTriangleID = mesh.navMesh.GetTriangleAt(seedLocation - origin, verticalDownwardRange, verticalUpwardRange, nullptr);
+		MNM::TriangleID seedTriangleID = mesh.navMesh.GetTriangleAt(mesh.navMesh.ToMeshSpace(debugLocation), verticalDownwardRange, verticalUpwardRange, nullptr);
 
 		if (seedTriangleID)
 		{
@@ -2008,10 +2004,9 @@ bool NavigationSystem::IsInUse() const
 
 MNM::TileID NavigationSystem::GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location, const INavMeshQueryFilter* pFilter)
 {
-	NavigationMesh& mesh = GetMesh(meshID);
-
+	const NavigationMesh& mesh = GetMesh(meshID);
 	const MNM::real_t range = MNM::real_t(1.0f);
-	MNM::TriangleID triangleID = mesh.navMesh.GetTriangleAt(location, range, range, pFilter);
+	MNM::TriangleID triangleID = mesh.navMesh.GetTriangleAt(mesh.navMesh.ToMeshSpace(location), range, range, pFilter);
 
 	return MNM::ComputeTileID(triangleID);
 }
@@ -2086,10 +2081,10 @@ MNM::TriangleID NavigationSystem::GetClosestMeshLocation(NavigationMeshID meshID
 {
 	if (meshID && m_meshes.validate(meshID))
 	{
-		MNM::vector3_t loc(MNM::real_t(location.x), MNM::real_t(location.y), MNM::real_t(location.z));
-		const NavigationMesh& mesh = m_meshes[meshID];
-		MNM::real_t verticalRange(vrange);
-		if (const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(loc, verticalRange, verticalRange, pFilter))
+		const MNM::CNavMesh& navMesh = m_meshes[meshID].navMesh;
+		const MNM::vector3_t mnmLocation = navMesh.ToMeshSpace(location);
+		const MNM::real_t verticalRange(vrange);
+		if (const MNM::TriangleID enclosingTriID = navMesh.GetTriangleAt(mnmLocation, verticalRange, verticalRange, pFilter))
 		{
 			if (meshLocation)
 				*meshLocation = location;
@@ -2104,10 +2099,10 @@ MNM::TriangleID NavigationSystem::GetClosestMeshLocation(NavigationMeshID meshID
 			MNM::real_t distanceFixed;
 			MNM::vector3_t closest;
 
-			if (const MNM::TriangleID closestTriID = mesh.navMesh.GetClosestTriangle(loc, MNM::real_t(vrange), MNM::real_t(hrange), pFilter, &distanceFixed, &closest))
+			if (const MNM::TriangleID closestTriID = navMesh.GetClosestTriangle(mnmLocation, verticalRange, MNM::real_t(hrange), pFilter, &distanceFixed, &closest))
 			{
 				if (meshLocation)
-					*meshLocation = closest.GetVec3();
+					*meshLocation = navMesh.ToWorldSpace(closest).GetVec3();
 
 				if (distance)
 					*distance = distanceFixed.as_float();
@@ -2664,32 +2659,32 @@ bool NavigationSystem::GetClosestPointInNavigationMesh(const NavigationAgentType
 	const NavigationMeshID meshID = GetEnclosingMeshID(agentID, location);
 	if (meshID && m_meshes.validate(meshID))
 	{
-		MNM::vector3_t loc(MNM::real_t(location.x), MNM::real_t(location.y), MNM::real_t(location.z));
-		const NavigationMesh& mesh = m_meshes[meshID];
-		MNM::real_t verticalRange(vrange);
+		const MNM::CNavMesh& navMesh = m_meshes[meshID].navMesh;
+		
+		const MNM::vector3_t mnmLocation = navMesh.ToMeshSpace(location);
+		const MNM::real_t verticalRange(vrange);
 
 		//first check vertical range, because if we are over navmesh, we want that one
-		if (const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(loc, verticalRange, verticalRange, pFilter, minIslandArea))
+		if (const MNM::TriangleID enclosingTriID = navMesh.GetTriangleAt(mnmLocation, verticalRange, verticalRange, pFilter, minIslandArea))
 		{
 			MNM::vector3_t v0, v1, v2;
-			mesh.navMesh.GetVertices(enclosingTriID, v0, v1, v2);
-			MNM::vector3_t closest = ClosestPtPointTriangle(loc, v0, v1, v2);
+			navMesh.GetVertices(enclosingTriID, v0, v1, v2);
+			const MNM::vector3_t closest = ClosestPtPointTriangle(mnmLocation, v0, v1, v2);
 
 			if (meshLocation)
 			{
-				*meshLocation = closest.GetVec3();
+				*meshLocation = navMesh.ToWorldSpace(closest).GetVec3();
 			}
 			return true;
 		}
 		else
 		{
 			MNM::vector3_t closest;
-
-			if (const MNM::TriangleID closestTriID = mesh.navMesh.GetClosestTriangle(loc, MNM::real_t(vrange), MNM::real_t(hrange), pFilter, nullptr, &closest, minIslandArea))
+			if (const MNM::TriangleID closestTriID = navMesh.GetClosestTriangle(mnmLocation, verticalRange, MNM::real_t(hrange), pFilter, nullptr, &closest, minIslandArea))
 			{
 				if (meshLocation)
 				{
-					*meshLocation = closest.GetVec3();
+					*meshLocation = navMesh.ToWorldSpace(closest).GetVec3();
 				}
 				return true;
 			}
@@ -2767,9 +2762,8 @@ bool NavigationSystem::IsLocationValidInNavigationMesh(const NavigationAgentType
 	{
 		if (m_meshes.validate(meshID))
 		{
-			MNM::vector3_t loc(MNM::real_t(location.x), MNM::real_t(location.y), MNM::real_t(location.z));
 			const NavigationMesh& mesh = m_meshes[meshID];
-			const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(loc, MNM::real_t(downRange), MNM::real_t(upRange), pFilter);
+			const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(mesh.navMesh.ToMeshSpace(location), MNM::real_t(downRange), MNM::real_t(upRange), pFilter);
 			return enclosingTriID != 0;
 		}
 	}
@@ -2783,7 +2777,6 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 	if (meshId)
 	{
 		NavigationMesh& mesh = GetMesh(meshId);
-		const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
 		const MNM::OffMeshNavigation& offMeshNavigation = GetOffMeshNavigationManager()->GetOffMeshNavigationForMesh(meshId);
 
 		const Vec3& voxelSize = mesh.navMesh.GetGridParams().voxelSize;
@@ -2799,7 +2792,7 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 		const uint16 zOffsetMultiplier = min(minZOffsetMultiplier, (uint16)agentTypeProperties.settings.agent.height);
 		const MNM::real_t verticalUpwardRange = arePropertiesValid ? MNM::real_t(zOffsetMultiplier * agentTypeProperties.settings.voxelSize.z) : MNM::real_t(.2f);
 
-		return mesh.navMesh.GetTriangleAt(location - paramsGrid.origin, verticalDownwardRange, verticalUpwardRange, pFilter);
+		return mesh.navMesh.GetTriangleAt(mesh.navMesh.ToMeshSpace(location), verticalDownwardRange, verticalUpwardRange, pFilter);
 	}
 
 	return MNM::TriangleID(0);
@@ -2816,9 +2809,9 @@ bool NavigationSystem::SnapToNavMesh(const NavigationAgentTypeID agentID, const 
 	const MNM::CNavMesh& navMesh = mesh.navMesh;
 
 	MNM::vector3_t navMeshPos;
-	if (navMesh.SnapPosition(position, snappingRules, pFilter, navMeshPos, pTriangleId))
+	if (navMesh.SnapPosition(navMesh.ToMeshSpace(position), snappingRules, pFilter, navMeshPos, pTriangleId))
 	{
-		snappedPosition = navMeshPos.GetVec3();
+		snappedPosition = navMesh.ToWorldSpace(navMeshPos).GetVec3();
 		return true;
 	}
 	return false;
@@ -2831,7 +2824,6 @@ bool NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, 
 		return false;
 
 	const NavigationMesh& mesh = GetMesh(meshId);
-	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
 	const MNM::OffMeshNavigation& offMeshNavigation = GetOffMeshNavigationManager()->GetOffMeshNavigationForMesh(meshId);
 
 	const Vec3& voxelSize = mesh.navMesh.GetGridParams().voxelSize;
@@ -2847,11 +2839,14 @@ bool NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, 
 	const uint16 zOffsetMultiplier = min(minZOffsetMultiplier, (uint16)agentTypeProperties.settings.agent.height);
 	const MNM::real_t verticalUpwardRange = arePropertiesValid ? MNM::real_t(zOffsetMultiplier * agentTypeProperties.settings.voxelSize.z) : MNM::real_t(.2f);
 
-	MNM::TriangleID startTriangle = mesh.navMesh.GetTriangleAt(startPos - paramsGrid.origin, verticalDownwardRange, verticalUpwardRange, pFilter);
-	MNM::TriangleID endTriangle = mesh.navMesh.GetTriangleAt(toPos - paramsGrid.origin, verticalDownwardRange, verticalUpwardRange, pFilter);
+	const MNM::vector3_t mnmStartPos = mesh.navMesh.ToMeshSpace(startPos);
+	const MNM::vector3_t mnmToPos = mesh.navMesh.ToMeshSpace(toPos);
+
+	const MNM::TriangleID startTriangle = mesh.navMesh.GetTriangleAt(mnmStartPos, verticalDownwardRange, verticalUpwardRange, pFilter);
+	const MNM::TriangleID endTriangle = mesh.navMesh.GetTriangleAt(mnmToPos, verticalDownwardRange, verticalUpwardRange, pFilter);
 	
 	MNM::CNavMesh::RayCastRequest<512> request;
-	MNM::CNavMesh::ERayCastResult result = mesh.navMesh.RayCast(startPos - paramsGrid.origin, startTriangle, toPos - paramsGrid.origin, endTriangle, request, pFilter);
+	MNM::CNavMesh::ERayCastResult result = mesh.navMesh.RayCast(mnmStartPos, startTriangle, mnmToPos, endTriangle, request, pFilter);
 	
 	bool isHit = result == MNM::CNavMesh::eRayCastResult_Hit;
 	if (isHit && pOutHit)
@@ -2892,85 +2887,75 @@ size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID
 {
 	if (m_meshes.validate(meshID))
 	{
-		const MNM::vector3_t min(MNM::real_t(searchAABB.min.x), MNM::real_t(searchAABB.min.y), MNM::real_t(searchAABB.min.z));
-		const MNM::vector3_t max(MNM::real_t(searchAABB.max.x), MNM::real_t(searchAABB.max.y), MNM::real_t(searchAABB.max.z));
 		const NavigationMesh& mesh = m_meshes[meshID];
-		const MNM::aabb_t aabb(min, max);
+		const MNM::aabb_t meshAabb = mesh.navMesh.ToMeshSpace(MNM::aabb_t(searchAABB.min, searchAABB.max));
 		const size_t maxTriangleCount = 4096;
 		MNM::TriangleID triangleIDs[maxTriangleCount];
-		const size_t triangleCount = mesh.navMesh.GetTriangles(aabb, triangleIDs, maxTriangleCount, pFilter, minIslandArea);
-		MNM::Tile::STriangle triangle;
+		const size_t foundTrianglesCount = mesh.navMesh.GetTriangles(meshAabb, triangleIDs, maxTriangleCount, pFilter, minIslandArea);
 
-		if (triangleCount > 0)
+		const size_t trianglesCount = min(foundTrianglesCount, maxCenterLocationCount);
+
+		MNM::vector3_t a, b, c;
+		for (size_t i = 0; i < trianglesCount; ++i)
 		{
-			MNM::vector3_t a, b, c;
-
-			size_t i = 0;
-			size_t num_tris = 0;
-			for (i = 0; i < triangleCount; ++i)
-			{
-				mesh.navMesh.GetVertices(triangleIDs[i], a, b, c);
-				centerLocations[num_tris] = ((a + b + c) * MNM::real_t(0.33333f)).GetVec3();
-				num_tris++;
-
-				if (num_tris == maxCenterLocationCount)
-					return num_tris;
-			}
-
-			return num_tris;
+			mesh.navMesh.GetVertices(triangleIDs[i], a, b, c);
+			centerLocations[i] = mesh.navMesh.ToWorldSpace((a + b + c) * MNM::real_t(0.33333f)).GetVec3();
 		}
+		return trianglesCount;
 	}
-
 	return 0;
 }
 
-size_t NavigationSystem::GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBorders, size_t maxBorderCount, const INavMeshQueryFilter* pFilter, float minIslandArea /*= 0.0f*/) const
+size_t NavigationSystem::GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBordersEdgesWithNormal, size_t maxBorderCount, const INavMeshQueryFilter* pFilter, float minIslandArea /*= 0.0f*/) const
 {
 	size_t numBorders = 0;
 	if (!m_meshes.validate(meshID))
 		return numBorders;
 
-	const MNM::vector3_t min(MNM::real_t(aabb.min.x), MNM::real_t(aabb.min.y), MNM::real_t(aabb.min.z));
-	const MNM::vector3_t max(MNM::real_t(aabb.max.x), MNM::real_t(aabb.max.y), MNM::real_t(aabb.max.z));
 	const NavigationMesh& mesh = m_meshes[meshID];
-	const MNM::aabb_t mnmAABB(min, max);
+	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
+	const Vec3 meshOrigin = paramsGrid.origin;
 
-	return mesh.navMesh.GetMeshBorders(mnmAABB, pFilter, pBorders, maxBorderCount, minIslandArea);
+	const MNM::aabb_t mnmAABB = mesh.navMesh.ToMeshSpace(MNM::aabb_t(aabb.min, aabb.max));
+
+	const size_t bordersCount = mesh.navMesh.GetMeshBorders(mnmAABB, pFilter, pBordersEdgesWithNormal, maxBorderCount, minIslandArea);
+	const size_t usedArraySize = bordersCount * 3;
+
+	// Transform edges to world coordinates (i + 2 index is for storing normals)
+	if (meshOrigin != ZERO)
+	{
+		for (size_t i = 0; i < usedArraySize; i += 3)
+		{
+			pBordersEdgesWithNormal[i] += meshOrigin;
+			pBordersEdgesWithNormal[i + 1] += meshOrigin;
+		}
+	}
+	return bordersCount;
 }
 
-size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t max_count, const INavMeshQueryFilter* pFilter, float minIslandArea) const
+size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t maxCount, const INavMeshQueryFilter* pFilter, float minIslandArea) const
 {
 	if (m_meshes.validate(meshID))
 	{
-		const MNM::vector3_t min(MNM::real_t(aabb.min.x), MNM::real_t(aabb.min.y), MNM::real_t(aabb.min.z));
-		const MNM::vector3_t max(MNM::real_t(aabb.max.x), MNM::real_t(aabb.max.y), MNM::real_t(aabb.max.z));
 		const NavigationMesh& mesh = m_meshes[meshID];
-		const MNM::aabb_t aabb(min, max);
+		const MNM::aabb_t meshAabb = mesh.navMesh.ToMeshSpace(MNM::aabb_t(aabb.min, aabb.max));
 		const size_t maxTriangleCount = 4096;
 		MNM::TriangleID triangleIDs[maxTriangleCount];
-		const size_t triangleCount = mesh.navMesh.GetTriangles(aabb, triangleIDs, maxTriangleCount, pFilter, minIslandArea);
+		const size_t foundTrianglesCount = mesh.navMesh.GetTriangles(meshAabb, triangleIDs, maxTriangleCount, pFilter, minIslandArea);
+		
+		const size_t trianglesCount = min(foundTrianglesCount, maxCount);
+
 		MNM::Tile::STriangle triangle;
+		MNM::vector3_t a, b, c;
 
-		if (triangleCount > 0)
+		for (size_t i = 0; i < trianglesCount; ++i)
 		{
-			MNM::vector3_t a, b, c;
-
-			size_t i = 0;
-			size_t num_tris = 0;
-			for (i = 0; i < triangleCount; ++i)
-			{
-				mesh.navMesh.GetTriangle(triangleIDs[i], triangle);
-				mesh.navMesh.GetVertices(triangleIDs[i], a, b, c);
-				centerLocations[num_tris] = ((a + b + c) * MNM::real_t(0.33333f)).GetVec3();
-				islandids[num_tris] = triangle.islandID;
-				num_tris++;
-
-				if (num_tris == max_count)
-					return num_tris;
-			}
-
-			return num_tris;
+			mesh.navMesh.GetTriangle(triangleIDs[i], triangle);
+			mesh.navMesh.GetVertices(triangleIDs[i], a, b, c);
+			centerLocations[i] = mesh.navMesh.ToWorldSpace((a + b + c) * MNM::real_t(0.33333f)).GetVec3();
+			islandids[i] = triangle.islandID;
 		}
+		return trianglesCount;
 	}
 
 	return 0;
@@ -4480,9 +4465,7 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
 	const MNM::CNavMesh& navMesh = mesh.navMesh;
 
-	const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x),
-		MNM::real_t(paramsGrid.origin.y),
-		MNM::real_t(paramsGrid.origin.z));
+	const MNM::vector3_t origin = MNM::vector3_t(paramsGrid.origin);
 	const MNM::vector3_t originOffset = origin + MNM::vector3_t(0, 0, MNM::real_t::fraction(725, 10000));
 
 	IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
@@ -4492,10 +4475,8 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 
 	const MNM::real_t range = MNM::real_t(1.0f);
 
-	MNM::vector3_t start = MNM::vector3_t(
-		MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z)) - origin;
-	MNM::vector3_t end = MNM::vector3_t(
-		MNM::real_t(endLoc.x), MNM::real_t(endLoc.y), MNM::real_t(endLoc.z)) - origin;
+	MNM::vector3_t start = MNM::vector3_t(startLoc) - origin;
+	MNM::vector3_t end = MNM::vector3_t(endLoc) - origin;
 
 	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
 
@@ -4580,26 +4561,20 @@ void NavigationSystemDebugDraw::DebugDrawClosestPoint(NavigationSystem& navigati
 
 	NavigationMesh& mesh = navigationSystem.m_meshes[meshID];
 	const MNM::CNavMesh& navMesh = mesh.navMesh;
-	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
-
-	const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x),
-		MNM::real_t(paramsGrid.origin.y),
-		MNM::real_t(paramsGrid.origin.z));
-	const MNM::vector3_t originOffset = origin + MNM::vector3_t(0, 0, MNM::real_t::fraction(725, 10000));
 
 	const Vec3& startLoc = debugObject.entityPos;
-	const MNM::vector3_t fixedPointStartLoc(MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z));
+	const MNM::vector3_t fixedPointStartLoc = MNM::vector3_t(startLoc);
 	const MNM::real_t range = MNM::real_t(5.0f);
 
 	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
 
 	MNM::real_t distance(.0f);
 	MNM::vector3_t closestPosition;
-	if (MNM::TriangleID closestTriangle = navMesh.GetClosestTriangle(fixedPointStartLoc, range, range, pDebugQueryFilter, &distance, &closestPosition))
+	if (MNM::TriangleID closestTriangle = navMesh.GetClosestTriangle(navMesh.ToMeshSpace(fixedPointStartLoc), range, range, pDebugQueryFilter, &distance, &closestPosition))
 	{
 		IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);
-		const Vec3 endPos(closestPosition.GetVec3() + origin.GetVec3());
+		const Vec3 endPos = navMesh.ToWorldSpace(closestPosition).GetVec3();
 		renderAuxGeom->DrawSphere(endPos + verticalOffset, 0.05f, ColorB(Col_Red));
 		renderAuxGeom->DrawSphere(fixedPointStartLoc.GetVec3() + verticalOffset, 0.05f, ColorB(Col_Black));
 
@@ -4619,12 +4594,6 @@ void NavigationSystemDebugDraw::DebugDrawGroundPoint(NavigationSystem& navigatio
 	IF_UNLIKELY(!meshID)
 		return;
 
-	NavigationMesh& mesh = navigationSystem.m_meshes[meshID];
-	const MNM::CNavMesh& navMesh = mesh.navMesh;
-	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
-
-	const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x),
-		MNM::real_t(paramsGrid.origin.y), MNM::real_t(paramsGrid.origin.z));
 	const Vec3& startLoc = debugObject.entityPos;
 
 	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
@@ -4634,8 +4603,7 @@ void NavigationSystemDebugDraw::DebugDrawGroundPoint(NavigationSystem& navigatio
 	{
 		IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);
-		const Vec3 endPos(closestPosition + origin.GetVec3());
-		renderAuxGeom->DrawSphere(endPos + verticalOffset, 0.05f, ColorB(Col_Red));
+		renderAuxGeom->DrawSphere(closestPosition + verticalOffset, 0.05f, ColorB(Col_Red));
 		renderAuxGeom->DrawSphere(startLoc, 0.05f, ColorB(Col_Black));
 	}
 }
@@ -4685,9 +4653,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 	assert(offMeshNavigationManager);
 	const MNM::OffMeshNavigation& offMeshNavigation = offMeshNavigationManager->GetOffMeshNavigationForMesh(meshID);
 
-	const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x),
-		MNM::real_t(paramsGrid.origin.y),
-		MNM::real_t(paramsGrid.origin.z));
+	const MNM::vector3_t origin = MNM::vector3_t(paramsGrid.origin);
 	const bool bOffsetTriangleUp = false;
 	const MNM::vector3_t originOffset = origin + MNM::vector3_t(0, 0, MNM::real_t::fraction(725, 10000));
 

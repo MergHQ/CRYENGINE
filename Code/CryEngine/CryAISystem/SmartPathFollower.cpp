@@ -613,13 +613,11 @@ bool CSmartPathFollower::CanReachTarget(float testIndex) const
 			const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
 			const MNM::CNavMesh& navMesh = mesh.navMesh;
 
-			const MNM::CNavMesh::SGridParams& gridParams = navMesh.GetGridParams();
-
 			const MNM::real_t horizontalRange(5.0f);
 			const MNM::real_t verticalRange(2.0f);
 
-			MNM::vector3_t startLocationInMeshCoordinates(raisedStartPos - gridParams.origin);
-			MNM::vector3_t endLocationInMeshCoordinates(raisedTestPos - gridParams.origin);
+			MNM::vector3_t startLocationInMeshCoordinates = navMesh.ToMeshSpace(raisedStartPos);
+			MNM::vector3_t endLocationInMeshCoordinates = navMesh.ToMeshSpace(raisedTestPos);
 
 			MNM::TriangleID triangleStartID = navMesh.GetTriangleAt(startLocationInMeshCoordinates, verticalRange, verticalRange, m_params.pQueryFilter);
 			if (!triangleStartID)
@@ -1488,7 +1486,7 @@ bool CSmartPathFollower::CheckWalkability(const Vec2* path, const size_t length)
 
 			Vec3 startLoc = m_curPos + raiseUp;
 
-			MNM::vector3_t mnmStartLoc = MNM::vector3_t(MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z));
+			MNM::vector3_t mnmStartLoc = navMesh.ToMeshSpace(startLoc);
 			MNM::TriangleID triStart = navMesh.GetTriangleAt(mnmStartLoc, verticalRange, verticalRange, m_params.pQueryFilter);
 			IF_UNLIKELY (!triStart)
 				return false;
@@ -1499,7 +1497,7 @@ bool CSmartPathFollower::CheckWalkability(const Vec2* path, const size_t length)
 				const Vec2& endLoc2D = path[i];
 				const Vec3 endLoc(endLoc2D.x, endLoc2D.y, currentZ);
 
-				const MNM::vector3_t mnmEndLoc = MNM::vector3_t(MNM::real_t(endLoc.x), MNM::real_t(endLoc.y), MNM::real_t(endLoc.z));
+				const MNM::vector3_t mnmEndLoc = navMesh.ToMeshSpace(endLoc);
 
 				const MNM::TriangleID triEnd = navMesh.GetTriangleAt(mnmEndLoc, verticalRange, verticalRange, m_params.pQueryFilter);
 
@@ -1593,15 +1591,14 @@ bool CSmartPathFollower::IsRemainingPathTraversableOnNavMesh() const
 
 		// - perform raycasts along all segments of the remaining path
 		// - as soon as a raycast fails we know that the segment can no longer be used to move along
+		const MNM::real_t verticalRange(2.0f);		
 		for (size_t i = static_cast<size_t>(index1) + 1; i < m_path.size(); i++)
 		{
 			const Vec3 segmentPos1 = m_path.GetPositionAtSegmentIndex(index1);
 			const Vec3 segmentPos2 = m_path.GetPositionAtSegmentIndex(index2);
 
-			const MNM::real_t verticalRange(2.0f);
-
-			const MNM::vector3_t mnmStartLoc = MNM::vector3_t(segmentPos1);
-			const MNM::vector3_t mnmEndLoc = MNM::vector3_t(segmentPos2);
+			const MNM::vector3_t mnmStartLoc = navMeshUsedByPath.ToMeshSpace(segmentPos1);
+			const MNM::vector3_t mnmEndLoc = navMeshUsedByPath.ToMeshSpace(segmentPos2);
 			const MNM::TriangleID triStart = navMeshUsedByPath.GetTriangleAt(mnmStartLoc, verticalRange, verticalRange, m_params.pQueryFilter);
 			const MNM::TriangleID triEnd = navMeshUsedByPath.GetTriangleAt(mnmEndLoc, verticalRange, verticalRange, m_params.pQueryFilter);
 

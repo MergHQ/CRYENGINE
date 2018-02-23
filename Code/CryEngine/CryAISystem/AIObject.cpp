@@ -725,6 +725,8 @@ const Vec3& CAIObject::GetPos() const
 
 const Vec3 CAIObject::GetPosInNavigationMesh(const uint32 agentTypeID) const
 {
+	//Note: this function is not taking into account mesh origin offset
+	
 	Vec3 outputLocation = GetPos();
 	NavigationMeshID meshID = gAIEnv.pNavigationSystem->GetEnclosingMeshID(static_cast<NavigationAgentTypeID>(agentTypeID), outputLocation);
 	if (meshID)
