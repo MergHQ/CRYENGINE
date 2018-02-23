@@ -477,6 +477,12 @@ enum ESystemEvent
 	//! while others would prefer to suspend their operation
 	ESYSTEM_EVENT_GAMEWINDOW_ACTIVATE,
 
+	//! Called when the display resolution has changed.
+	ESYSTEM_EVENT_DISPLAY_CHANGED,
+
+	//! Called when the hardware configuration has changed.
+	ESYSTEM_EVENT_DEVICE_CHANGED,
+
 	// Sent when flow nodes should be registered
 	ESYSTEM_EVENT_REGISTER_FLOWNODES,
 
