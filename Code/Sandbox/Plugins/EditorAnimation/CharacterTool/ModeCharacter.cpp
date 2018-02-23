@@ -296,6 +296,7 @@ void ModeCharacter::OnSceneUndo()
 		return;
 	m_system->explorerData->UndoInOrder(entries);
 	WriteTransformPanel();
+	m_scene->RefreshAllElements();
 }
 
 void ModeCharacter::OnSceneRedo()
@@ -306,6 +307,7 @@ void ModeCharacter::OnSceneRedo()
 		return;
 	m_system->explorerData->RedoInOrder(entries);
 	WriteTransformPanel();
+	m_scene->RefreshAllElements();
 }
 
 void ModeCharacter::OnScenePropertiesChanged()
