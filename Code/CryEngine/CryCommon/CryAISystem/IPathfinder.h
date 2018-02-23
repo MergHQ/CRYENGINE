@@ -519,8 +519,8 @@ public:
 
 	enum class EComputationType
 	{
-		Cost,                   // compute the cost it takes to move along the path-segment (-> SComputationOutput::cost)
-		StringPullingAllowed    // compute whether string-pulling is still allowed on given path-segment (-> SComputationOutput::bStringPullingAllowed)
+		Cost                  = BIT(0),  // compute the cost it takes to move along the path-segment (-> SComputationOutput::cost)
+		StringPullingAllowed  = BIT(1)   // compute whether string-pulling is still allowed on given path-segment (-> SComputationOutput::bStringPullingAllowed)
 	};
 	
 	typedef CEnumFlags<EComputationType> ComputationFlags;
