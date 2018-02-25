@@ -132,6 +132,7 @@ void CPostEffectStage::Init()
 //	m_postEffectArray[EPostEffectID::AlienInterference   ] = stl::make_unique<CAlienInterferencePass   >();
 	m_postEffectArray[EPostEffectID::PostStereo          ] = stl::make_unique<CPostStereoPass          >();
 	m_postEffectArray[EPostEffectID::HUD3D               ] = stl::make_unique<CHud3DPass               >();
+	m_postEffectArray[EPostEffectID::ScreenFader         ] = stl::make_unique<CScreenFaderPass         >();
 //	m_postEffectArray[EPostEffectID::Post3DRenderer      ] = stl::make_unique<CPost3DRendererPass      >();
 
 	for (auto& pPostEffect : m_postEffectArray)
@@ -1301,6 +1302,55 @@ void CScreenBloodPass::Execute(const CPostEffectContext& context)
 	Vec4 pParams = Vec4(overscanBorders.x, overscanBorders.y, alpha, borderScale);
 	static CCryNameR pParamName("psParams");
 	pass.SetConstant(pParamName, pParams);
+
+	pass.Execute();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void CScreenFaderPass::Init()
+{}
+
+void CScreenFaderPass::Execute(const CPostEffectContext& context)
+{
+	const CEffectParam* pColor = context.GetEffectParamByName("ScreenFader_Color");
+	CRY_ASSERT(pColor != nullptr);
+
+	if (!pColor)
+	{
+		return;
+	}
+
+	PROFILE_LABEL_SCOPE("SCREEN FADER");
+
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
+
+	auto& pass = m_passScreenFader;
+	const Vec4 &color = pColor->GetParamVec4();
+
+	CTexture* pDstTex = context.GetDstBackBufferTexture();
+
+	if (pass.InputChanged(pDstTex->GetID()))
+	{
+		static CCryNameTSCRC techTexToTex("TextureToTextureTinted");
+		pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
+		pass.SetTechnique(CShaderMan::s_shPostEffects, techTexToTex, 0);
+		pass.SetState(GS_NODEPTHTEST | GS_BLSRC_DSTCOL | GS_BLDST_ONEMINUSSRCALPHA);
+
+		pass.SetRenderTarget(0, pDstTex);
+
+		pass.SetTexture(0, CRendererResources::s_ptexWhite);
+
+		pass.SetSampler(0, EDefaultSamplerStates::PointClamp);
+
+		pass.SetRequirePerViewConstantBuffer(true);
+	}
+
+	pass.BeginConstantUpdate();
+
+	static CCryNameR paramName("texToTexParams2");
+	pass.SetConstant(paramName, color);
 
 	pass.Execute();
 }

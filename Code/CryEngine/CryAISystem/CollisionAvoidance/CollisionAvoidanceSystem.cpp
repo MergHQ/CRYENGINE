@@ -815,39 +815,38 @@ Vec2 CCollisionAvoidanceSystem::ClampSpeedWithNavigationMesh(const SNavigationPr
 			const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshID);
 			const MNM::CNavMesh& navMesh = mesh.navMesh;
 
-			MNM::vector3_t startLoc = MNM::vector3_t(MNM::real_t(from.x), MNM::real_t(from.y), MNM::real_t(from.z));
-			MNM::vector3_t endLoc = MNM::vector3_t(MNM::real_t(to.x), MNM::real_t(to.y), MNM::real_t(to.z));
+			const MNM::vector3_t startMeshLoc = navMesh.ToMeshSpace(from);
+			MNM::vector3_t endMeshLoc = navMesh.ToMeshSpace(to);
 
 			const MNM::real_t horizontalRange(5.0f);
 			const MNM::real_t verticalRange(1.0f);
 
 			const INavMeshQueryFilter* pFilter = agentNavProperties.pQueryFilter;
 
-			MNM::TriangleID triStart = navMesh.GetTriangleAt(startLoc, verticalRange, verticalRange, pFilter);
-
-			MNM::TriangleID triEnd = navMesh.GetTriangleAt(endLoc, verticalRange, verticalRange, pFilter);
+			const MNM::TriangleID triStart = navMesh.GetTriangleAt(startMeshLoc, verticalRange, verticalRange, pFilter);
+			MNM::TriangleID triEnd = navMesh.GetTriangleAt(endMeshLoc, verticalRange, verticalRange, pFilter);
 			if (!triEnd)
 			{
 				MNM::vector3_t closestEndLocation;
-				triEnd = navMesh.GetClosestTriangle(endLoc, verticalRange, horizontalRange, pFilter, nullptr, &closestEndLocation);
+				triEnd = navMesh.GetClosestTriangle(endMeshLoc, verticalRange, horizontalRange, pFilter, nullptr, &closestEndLocation);
 				navMesh.PushPointInsideTriangle(triEnd, closestEndLocation, MNM::real_t(.05f));
-				endLoc = closestEndLocation;
+				endMeshLoc = closestEndLocation;
 			}
 
 			if (triStart && triEnd)
 			{
 				MNM::CNavMesh::RayCastRequest<512> raycastRequest;
-				MNM::CNavMesh::ERayCastResult result = navMesh.RayCast(startLoc, triStart, endLoc, triEnd, raycastRequest, pFilter);
+				MNM::CNavMesh::ERayCastResult result = navMesh.RayCast(startMeshLoc, triStart, endMeshLoc, triEnd, raycastRequest, pFilter);
 				if (result == MNM::CNavMesh::eRayCastResult_Hit)
 				{
 					const float velocityMagnitude = min(TimeStep, raycastRequest.hit.distance.as_float());
-					const Vec3 newEndLoc = agentPosition + ((endLoc.GetVec3() - agentPosition) * velocityMagnitude);
+					const Vec3 newEndLoc = agentPosition + (navMesh.ToWorldSpace(endMeshLoc).GetVec3() - agentPosition) * velocityMagnitude;
 					const Vec3 newVelocity = newEndLoc - agentPosition;
 					outputVelocity = Vec2(newVelocity.x, newVelocity.y) * invTimeHorizon;
 				}
 				else if (result == MNM::CNavMesh::eRayCastResult_NoHit)
 				{
-					const Vec3 newVelocity = endLoc.GetVec3() - agentPosition;
+					const Vec3 newVelocity = navMesh.ToWorldSpace(endMeshLoc).GetVec3() - agentPosition;
 					outputVelocity = Vec2(newVelocity.x, newVelocity.y);
 				}
 				else

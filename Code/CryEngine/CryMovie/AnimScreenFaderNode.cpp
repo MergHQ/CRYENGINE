@@ -274,9 +274,7 @@ void CAnimScreenFaderNode::Render()
 
 	if (gEnv->pRenderer)
 	{
-		size_t const paramCount = m_tracks.size();
-
-		for (size_t paramIndex = 0; paramIndex < paramCount; ++paramIndex)
+		for (size_t paramIndex = 0; paramIndex < m_tracks.size(); ++paramIndex)
 		{
 			CScreenFaderTrack* pTrack = static_cast<CScreenFaderTrack*>(GetTrackForParameter(eAnimParamType_ScreenFader, paramIndex));
 
@@ -285,19 +283,23 @@ void CAnimScreenFaderNode::Render()
 				continue;
 			}
 
-			int textureId = -1;
-
 			if (pTrack->IsTextureVisible())
 			{
-				textureId = (pTrack->GetActiveTexture() != 0) ? pTrack->GetActiveTexture()->GetTextureID() : -1;
+				int textureId = (pTrack->GetActiveTexture() != 0) ? pTrack->GetActiveTexture()->GetTextureID() : -1;
+
+				gEnv->pRenderer->EF_SetPostEffectParamVec4("ScreenFader_Color", Vec4(0,0,0,0), true);
+
+				IRenderAuxGeom *pAux = gEnv->pRenderer->GetIRenderAuxGeom();
+				const CCamera& rCamera = pAux->GetCamera();
+
+				IRenderAuxGeom::GetAux()->SetRenderFlags(e_Mode2D | e_AlphaBlended | e_CullModeBack | e_DepthTestOff);
+				IRenderAuxImage::Draw2dImage(0, 0, float(rCamera.GetViewSurfaceX()), float(rCamera.GetViewSurfaceZ()), textureId, 0.0f, 0.0f, 1.0f, 1.0f, 0.f,
+					pTrack->GetDrawColor().x, pTrack->GetDrawColor().y, pTrack->GetDrawColor().z, pTrack->GetDrawColor().w, 0.f);
+
+				continue;
 			}
 
-			IRenderAuxGeom *pAux = gEnv->pRenderer->GetIRenderAuxGeom();
-			const CCamera& rCamera = pAux->GetCamera();
-
-			IRenderAuxGeom::GetAux()->SetRenderFlags(e_Mode2D | e_AlphaBlended | e_CullModeBack | e_DepthTestOff);
-			IRenderAuxImage::Draw2dImage(0, 0, float(rCamera.GetViewSurfaceX()), float(rCamera.GetViewSurfaceZ()), textureId, 0.0f, 0.0f, 1.0f, 1.0f, 0.f,
-			                             pTrack->GetDrawColor().x, pTrack->GetDrawColor().y, pTrack->GetDrawColor().z, pTrack->GetDrawColor().w, 0.f);
+			gEnv->pRenderer->EF_SetPostEffectParamVec4("ScreenFader_Color", pTrack->GetDrawColor(), true);
 		}
 	}
 }

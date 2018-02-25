@@ -1633,8 +1633,34 @@ public:
 
 private:
 
-	CEffectParam* m_pAmount;
+	CEffectParam * m_pAmount;
 	CEffectParam* m_pBorder;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class CScreenFader : public CPostEffect
+{
+public:
+	CScreenFader()
+	{
+		m_nRenderFlags = 0;
+		m_nID = EPostEffectID::ScreenFader;
+		AddParamVec4("ScreenFader_Color", m_pColor, Vec4(0.0f, 0.0f, 0.0f, 0.0f));  // Fader color
+	}
+
+	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
+	virtual void        Render();
+	virtual void        Reset(bool bOnSpecChange = false);
+	virtual const char* GetName() const
+	{
+		return "ScreenFader";
+	}
+
+private:
+
+	CEffectParam * m_pColor;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
