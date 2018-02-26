@@ -459,7 +459,8 @@ namespace CryEngine.Serialization
 			// The GUID lookup type is prioritized.
 			if(type == null)
 			{
-				type = GetType(Reader.ReadString());
+				string typeName = Reader.ReadString();
+				type = GetType(typeName);
 			}
 			else
 			{
@@ -471,7 +472,10 @@ namespace CryEngine.Serialization
 				var numGenericArgs = Reader.ReadInt32();
 				var genericArgs = new Type[numGenericArgs];
 				for(int i = 0; i < numGenericArgs; i++)
-					genericArgs[i] = ReadType();
+				{
+					Type genericType = ReadType();
+					genericArgs[i] = genericType;
+				}
 
 				if(type != null)
 				{
@@ -492,14 +496,6 @@ namespace CryEngine.Serialization
 			if(typeName.Length == 0)
 			{
 				throw new ArgumentException(string.Format("{0} cannot have zero length!", nameof(typeName)));
-			}
-
-			if(typeName.Contains('+'))
-			{
-				var splitString = typeName.Split('+');
-				var ownerType = GetType(splitString.FirstOrDefault());
-
-				return ownerType.Assembly.GetType(typeName);
 			}
 
 			var type = Type.GetType(typeName);

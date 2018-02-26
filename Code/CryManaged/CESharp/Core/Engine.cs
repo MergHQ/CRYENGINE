@@ -65,8 +65,29 @@ namespace CryEngine
 
 		internal static string GlobalAssemblyCacheDirectory => Path.Combine(MonoDirectory, "lib", "mono", "gac");
 
+		/// <summary>
+		/// Internal event before the assemblies are reloaded.
+		/// This is always called before the public event.
+		/// </summary>
 		internal static event Action StartReload;
+		
+		/// <summary>
+		/// Internal event after reloading the assemblies is done.
+		/// This is always called before the public event.
+		/// </summary>
 		internal static event Action EndReload;
+
+		/// <summary>
+		/// Event that's called when the engine starts unloading the assemblies. 
+		/// This happens whenever the Sandbox reloads the managed plugins, or when the <c>mono_reload</c> command is executed from the console.
+		/// </summary>
+		public static event Action EngineUnloading;
+
+		/// <summary>
+		/// Event that's called when the engine has reloaded the assemblies.
+		/// This happens after the Sandbox reloaded the managed plugins, or after the <c>mono_reload</c> command is executed from the console.
+		/// </summary>
+		public static event Action EngineReloaded;
 
 		/// <summary>
 		/// Called by C++ runtime. Do not call directly.
@@ -107,6 +128,7 @@ namespace CryEngine
 		internal static void OnUnloadStart()
 		{
 			StartReload?.Invoke();
+			EngineUnloading?.Invoke();
 		}
 
 		/// <summary>
@@ -116,6 +138,7 @@ namespace CryEngine
 		internal static void OnReloadDone()
 		{
 			EndReload?.Invoke();
+			EngineReloaded?.Invoke();
 		}
 
 		internal static void ScanEngineAssembly()

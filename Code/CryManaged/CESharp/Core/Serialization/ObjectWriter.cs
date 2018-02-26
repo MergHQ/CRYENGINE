@@ -185,7 +185,7 @@ namespace CryEngine.Serialization
 							break;
 						case SerializedObjectType.String:
 							{
-								Writer.Write((string)obj);
+								Write((string)obj);
 							}
 							break;
 						case SerializedObjectType.Array:
@@ -284,7 +284,7 @@ namespace CryEngine.Serialization
 			Writer.Write(fields.Count);
 			foreach(var field in fields)
 			{
-				Writer.Write(field.Name);
+				Write(field.Name);
 				var fieldValue = field.GetValue(obj);
 
 				if(fieldValue != null && CachedTypeInfo._delegateType.IsAssignableFrom(fieldValue.GetType()))
@@ -301,7 +301,7 @@ namespace CryEngine.Serialization
 			Writer.Write(events.Length);
 			foreach(var eventMember in events)
 			{
-				Writer.Write(eventMember.Name);
+				Write(eventMember.Name);
 				var eventField = objectType.GetField(eventMember.Name, flags);
 
 				var value = eventField.GetValue(obj);
@@ -353,7 +353,7 @@ namespace CryEngine.Serialization
 		{
 			var memberInfo = obj as MemberInfo;
 
-			Writer.Write(memberInfo.Name);
+			Write(memberInfo.Name);
 
 			bool isStatic = false;
 			var staticMembers = memberInfo.DeclaringType.GetMember(memberInfo.Name, BindingFlags.Static | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic);
@@ -399,7 +399,7 @@ namespace CryEngine.Serialization
 			var enumerator = serInfo.GetEnumerator();
 			while(enumerator.MoveNext())
 			{
-				Writer.Write(enumerator.Current.Name);
+				Write(enumerator.Current.Name);
 				WriteType(enumerator.Current.ObjectType);
 				WriteInstance(enumerator.Current.Value);
 			}
@@ -418,30 +418,34 @@ namespace CryEngine.Serialization
 				Writer.Write(guid != null);
 				if(guid != null)
 				{
-					Writer.Write(guid);
+					Write(guid);
 				}
 
 				Writer.Write(type.IsGenericType);
 
+				// Write the AssemblyQualifiedName instead of the FullName.
+				// This way we don't run into problems when deserializing types from other assemblies (eg. Cryengine.Core.UI).
 				if(type.IsGenericType)
 				{
-					Writer.Write(type.GetGenericTypeDefinition().FullName);
+					Write(type.GetGenericTypeDefinition().AssemblyQualifiedName);
 
 					var genericArgs = type.GetGenericArguments();
 					Writer.Write(genericArgs.Length);
 					foreach(var genericArg in genericArgs)
+					{
 						WriteType(genericArg);
+					}
 				}
 				else
 				{
-					Writer.Write(type.FullName);
+					Write(type.AssemblyQualifiedName);
 				}
 			}
 		}
 		
 		void WriteAssembly(Assembly assembly)
 		{
-			Writer.Write(assembly.Location);
+			Write(assembly.Location);
 		}
 
 		internal static string GetGuid(Type type)
@@ -466,6 +470,12 @@ namespace CryEngine.Serialization
 				}
 			}
 			return null;
+		}
+
+		private void Write(string text)
+		{
+			// Write strings here for easier debugging.
+			Writer.Write(text);
 		}
 	}
 }

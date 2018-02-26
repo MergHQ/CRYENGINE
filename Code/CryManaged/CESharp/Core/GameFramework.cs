@@ -144,8 +144,8 @@ namespace CryEngine
 		{
 			// Calculate time used to render last frame.
 			FrameTime.Delta = fDeltaTime;
-
-			if(!Global.gEnv.pGameFramework.GetILevelSystem().IsLevelLoaded())
+			
+			if(Global.gEnv.pGameFramework.IsInLevelLoad())
 			{
 				return;
 			}
@@ -178,6 +178,11 @@ namespace CryEngine
 		/// </summary>
 		public override void OnPreRender()
 		{
+			if(Global.gEnv.pGameFramework.IsInLevelLoad())
+			{
+				return;
+			}
+
 			if(_destroyActions.Count > 0)
 			{
 				var count = _destroyActions.Count;
