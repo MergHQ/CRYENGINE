@@ -3729,6 +3729,12 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		{
 			InitGameFramework(startupParams);
 		}
+		else
+		{
+			// Command line is otherwise executed in InitGameFramework
+			// Call it manually here to ensure that command line can still be used
+			ExecuteCommandLine();
+		}
 
 #if defined(CVARS_WHITELIST)
 		m_pCVarsWhitelist = startupParams.pCVarsWhitelist;
