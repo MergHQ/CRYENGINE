@@ -996,10 +996,11 @@ void CImpl::GamepadConnected(DeviceId const deviceUniqueID)
 
 	if (IS_WWISE_OK(wwiseResult))
 	{
-		m_mapInputDevices[deviceUniqueID] = deviceID;
+		m_mapInputDevices[deviceUniqueID] = { true, deviceID };
 	}
 	else
 	{
+		m_mapInputDevices[deviceUniqueID] = { false, deviceID };
 		Cry::Audio::Log(ELogType::Error, "AK::SoundEngine::AddOutput failed! (%u : %u)", deviceUniqueID, deviceID);
 	}
 }
@@ -1007,17 +1008,23 @@ void CImpl::GamepadConnected(DeviceId const deviceUniqueID)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 {
-	CRY_ASSERT(m_mapInputDevices.find(deviceUniqueID) != m_mapInputDevices.end()); // Must exist!
 	AudioInputDevices::const_iterator const Iter(m_mapInputDevices.find(deviceUniqueID));
-	AkOutputDeviceID const deviceID = Iter->second;
-	AKRESULT const wwiseResult = AK::SoundEngine::RemoveOutput(deviceID);
 
-	if (!IS_WWISE_OK(wwiseResult))
+	// If AK::SoundEngine::AddOutput failed, then the device is not in the list
+	if (Iter != m_mapInputDevices.end())
 	{
-		Cry::Audio::Log(ELogType::Error, "AK::SoundEngine::RemoveOutput failed in GamepadDisconnected! (%u : %u)", deviceUniqueID, deviceID);
-	}
+		if (Iter->second.akIsActiveOutputDevice)
+		{
+			AkOutputDeviceID const deviceID = Iter->second.akOutputDeviceID;
+			AKRESULT const wwiseResult = AK::SoundEngine::RemoveOutput(deviceID);
 
-	m_mapInputDevices.erase(Iter);
+			if (!IS_WWISE_OK(wwiseResult))
+			{
+				Cry::Audio::Log(ELogType::Error, "AK::SoundEngine::RemoveOutput failed in GamepadDisconnected! (%u : %u)", deviceUniqueID, deviceID);
+			}
+		}
+		m_mapInputDevices.erase(Iter);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
