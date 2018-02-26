@@ -110,8 +110,12 @@ def run(project_file, backup_location, silent):
 
     if not silent:
         set_title("100% Backup created successfully")
-        print("Backup created successfully")
-        input("Press Enter to exit")
+        message = "Backup created successfully"
+        if HAS_WIN_MODULES:
+            MESSAGEBOX(None, message, 'Backup created', win32con.MB_OK | win32con.MB_ICONINFORMATION)
+        else:
+            print(message)
+            input("Press Enter to exit")
 
 def set_title(title):
     """
