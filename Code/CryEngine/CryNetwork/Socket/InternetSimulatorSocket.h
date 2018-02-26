@@ -70,6 +70,7 @@ private:
 		float fLossMax;
 		float fLagMin;
 		float fLagMax;
+		string description;
 	};
 
 	IDatagramSocketPtr    m_pChild;
