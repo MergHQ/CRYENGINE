@@ -109,7 +109,7 @@ void CD3D9Renderer::InitRenderer()
 
 	m_pBaseDisplayContext = std::make_shared<CRenderDisplayContext>();
 	{
-		IRenderer::SDisplayContextKey baseContextKey;
+		SDisplayContextKey baseContextKey;
 		baseContextKey.key.emplace<HWND>((HWND)gEnv->pSystem->GetHWND());
 		m_displayContexts.emplace(std::make_pair(std::move(baseContextKey), m_pBaseDisplayContext));
 	}
@@ -702,7 +702,7 @@ const char* CD3D9Renderer::GetWindowStateName() const
 	}
 }
 
-void CD3D9Renderer::BeginFrame(const IRenderer::SDisplayContextKey& displayContextKey)
+void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 {
 #if defined(ENABLE_RENDER_AUX_GEOM)
 	m_renderThreadAuxGeom.SetCurrentDisplayContext(displayContextKey);
@@ -822,7 +822,7 @@ void CD3D9Renderer::FillFrame(ColorF clearColor)
 	}, ERenderCommandFlags::SkipDuringLoading);
 }
 
-void CD3D9Renderer::RT_BeginFrame(const IRenderer::SDisplayContextKey& displayContextKey)
+void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 {
 	PROFILE_FRAME(RT_BeginFrame);
 
@@ -2508,7 +2508,7 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 	const SRenderStatistics& RStats = SRenderStatistics::Write();
 
 	CRenderDisplayContext* pDC = GetActiveDisplayContext();
-	IRenderer::SDisplayContextKey displayContextKey;
+	SDisplayContextKey displayContextKey;
 	displayContextKey.key.emplace<HWND>(pDC->GetHandle());
 	gEnv->pRenderer->GetIRenderAuxGeom(/*eType*/)->SetCurrentDisplayContext(displayContextKey);
 

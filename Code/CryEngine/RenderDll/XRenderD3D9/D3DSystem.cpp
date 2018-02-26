@@ -135,7 +135,7 @@ bool CD3D9Renderer::SetCurrentContext(const SDisplayContextKey &key) threadsafe
 	return true;
 }
 
-IRenderer::SDisplayContextKey CD3D9Renderer::CreateContext(const SDisplayContextDescription& desc) threadsafe
+SDisplayContextKey CD3D9Renderer::CreateContext(const SDisplayContextDescription& desc) threadsafe
 {
 	LOADING_TIME_PROFILE_SECTION;
 
@@ -409,7 +409,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 	return true;
 }
 
-bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDisplayHeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, const IRenderer::SDisplayContextKey& displayContextKey)
+bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDisplayHeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, const SDisplayContextKey& displayContextKey)
 {
 	if (m_bDeviceLost)
 		return true;
@@ -420,7 +420,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 	CRenderDisplayContext* pBC = GetBaseDisplayContext();
 	CRenderDisplayContext* pDC = pBC;
-	if (displayContextKey != IRenderer::SDisplayContextKey{})
+	if (displayContextKey != SDisplayContextKey{})
 		pDC = FindDisplayContext(displayContextKey);
 
 	return ChangeDisplayResolution(nNewDisplayWidth, nNewDisplayHeight, nNewColDepth, nNewRefreshHZ, previousWindowState, bForceReset, pDC);
@@ -1095,7 +1095,7 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 	}
 
 	// Update base context hWnd and key
-	IRenderer::SDisplayContextKey baseContextKey;
+	SDisplayContextKey baseContextKey;
 	baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetHandle());
 	m_pBaseDisplayContext->SetHWND(m_hWnd);
 	{

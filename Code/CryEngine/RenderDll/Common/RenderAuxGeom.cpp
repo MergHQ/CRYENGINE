@@ -2462,7 +2462,7 @@ void CAuxGeomCB::SAuxGeomCBRawData::GetSortedPushBuffer(size_t begin, size_t end
 	std::sort(auxSortedPushBuffer.begin(), auxSortedPushBuffer.end(), PushBufferSortFunc());
 }
 
-void CAuxGeomCB::SetCurrentDisplayContext(const IRenderer::SDisplayContextKey& displayContextKey)
+void CAuxGeomCB::SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey)
 {
 	m_rawData->displayContextKey = displayContextKey;
 }

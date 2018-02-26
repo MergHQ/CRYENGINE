@@ -169,7 +169,7 @@ void CPreviewModelCtrl::InitDisplayContext(HWND hWnd)
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
 	// Draw all objects.
-	IRenderer::SDisplayContextKey displayContextKey;
+	SDisplayContextKey displayContextKey;
 	displayContextKey.key.emplace<HWND>(hWnd);
 
 	DisplayContext& dctx = m_displayContext;

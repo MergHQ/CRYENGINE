@@ -87,7 +87,7 @@ private:
 		AUXJobMap         m_auxJobMap;
 		CCamera			  m_camera;
 
-		IRenderer::SDisplayContextKey displayContextKey;
+		SDisplayContextKey displayContextKey;
 
 		mutable CryRWLock m_rwlLocal;
 	public:
@@ -98,14 +98,14 @@ private:
 		//void AppendJob(AUXJobs& auxJobs);
 		void FreeMemory();
 		void SetDefaultCamera(const CCamera& camera);
-		void SetDisplayContextKey(const IRenderer::SDisplayContextKey& displayContextKey);
+		void SetDisplayContextKey(const SDisplayContextKey& displayContextKey);
 		void GetMemoryUsage(ICrySizer* pSizer) const;
 	};
 	AUXThreadMap      m_auxThreadMap;
 	mutable CryRWLock m_rwGlobal;
 	CCamera           m_camera;
 
-	IRenderer::SDisplayContextKey m_displayContextKey;
+	SDisplayContextKey m_displayContextKey;
 public:
 	~CAuxGeomCBCollector();
 	CAuxGeomCB* Get(int jobID);
@@ -113,9 +113,9 @@ public:
 	void FreeMemory();
 	AUXJobs SubmitAuxGeomsAndPrepareForRendering();
 	void SetDefaultCamera(const CCamera& camera);
-	void SetDisplayContextKey(const IRenderer::SDisplayContextKey& displayContextKey);
+	void SetDisplayContextKey(const SDisplayContextKey& displayContextKey);
 	CCamera                 GetCamera() const;
-	const IRenderer::SDisplayContextKey& GetDisplayContextKey() const;
+	const SDisplayContextKey& GetDisplayContextKey() const;
 	void GetMemoryUsage(ICrySizer* pSizer) const;
 };
 
@@ -219,14 +219,14 @@ private:
 private:
 	CRenderAuxGeomD3D(CD3D9Renderer& renderer);
 
-	bool              PreparePass(const CCamera& camera, const IRenderer::SDisplayContextKey& displayContextKey, CPrimitiveRenderPass& pass, SRenderViewport* getViewport = nullptr);
+	bool              PreparePass(const CCamera& camera, const SDisplayContextKey& displayContextKey, CPrimitiveRenderPass& pass, SRenderViewport* getViewport = nullptr);
 
 	CDeviceGraphicsPSOPtr GetGraphicsPSO(const SAuxGeomRenderFlags& flags, const CCryNameTSCRC& techique, ERenderPrimitiveType topology, InputLayoutHandle format);
 
 	void              DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& rawData,CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj, int texID);
 
 	bool              PrepareRendering(CAuxGeomCB::SAuxGeomCBRawData* pAuxGeomData);
-	void              Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44A& mat, const IRenderer::SDisplayContextKey& displayContextKey);
+	void              Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44A& mat, const SDisplayContextKey& displayContextKey);
 	void              FinishRendering();
 	void              ClearCaches();
 
@@ -338,7 +338,7 @@ private:
 	int                                       m_curWorldMatrixIdx;
 
 	CRenderDisplayContext*                    m_pCurrentDisplayContext = nullptr;
-	IRenderer::SDisplayContextKey             m_currentDisplayKey;
+	SDisplayContextKey                        m_currentDisplayKey;
 
 	CShader*                                  m_pAuxGeomShader;
 	EAuxGeomPublicRenderflags_DrawInFrontMode m_curDrawInFrontMode;

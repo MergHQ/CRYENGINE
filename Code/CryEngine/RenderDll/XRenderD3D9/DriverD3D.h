@@ -312,7 +312,7 @@ public:
 	bool         ChangeRenderResolution(int nNewRenderWidth, int nNewRenderHeight, CRenderView* pRenderView);
 	bool         ChangeOutputResolution(int nNewOutputWidth, int nNewOutputHeight, CRenderOutput* pRenderOutput);
 	bool         ChangeDisplayResolution(int nNewDisplayWidth, int nNewHDisplayeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, CRenderDisplayContext* displayContext);
-	bool         ChangeDisplayResolution(int nNewDisplayWidth, int nNewHDisplayeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, const IRenderer::SDisplayContextKey& displayContextKey);
+	bool         ChangeDisplayResolution(int nNewDisplayWidth, int nNewHDisplayeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, const SDisplayContextKey& displayContextKey);
 
 	void         CalculateResolutions(int displayWidthRequested, int displayHeightRequested, bool bUseNativeRes, int* pRenderWidth, int* pRenderHeight, int* pOutputWidth, int* pOutputHeight, int* pDisplayWidth, int* pDisplayHeight);
 

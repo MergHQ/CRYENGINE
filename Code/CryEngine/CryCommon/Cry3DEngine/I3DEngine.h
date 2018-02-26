@@ -2484,7 +2484,7 @@ struct SRenderingPassInfo
 	};
 
 	//! Creating function for RenderingPassInfo, the create functions will fetch all other necessary information like thread id/frame id, etc.
-	static SRenderingPassInfo CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS, bool bAuxWindow = false, IRenderer::SDisplayContextKey displayContextKey = {});
+	static SRenderingPassInfo CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS, bool bAuxWindow = false, SDisplayContextKey displayContextKey = {});
 	static SRenderingPassInfo CreateRecursivePassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_RECURSIVE_FLAGS);
 	static SRenderingPassInfo CreateShadowPassRenderingInfo(IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, int nShadowCacheLod, bool bExtendedLod, bool bIsMGPUCopy, uint32 nSide, uint32 nRenderingFlags = DEFAULT_SHADOWS_FLAGS);
 	static SRenderingPassInfo CreateBillBoardGenPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS);
@@ -2548,7 +2548,7 @@ struct SRenderingPassInfo
 	SRendItemSorter&        GetRendItemSorter() const                   { return m_renderItemSorter; };
 	void                    OverrideRenderItemSorter(SRendItemSorter s) { m_renderItemSorter = s; }
 
-	const IRenderer::SDisplayContextKey& GetDisplayContextKey() const   { return m_displayContextKey; }
+	const SDisplayContextKey& GetDisplayContextKey() const   { return m_displayContextKey; }
 
 	void                             SetShadowPasses(class std::vector<SRenderingPassInfo>* p) { m_pShadowPasses = p; }
 	std::vector<SRenderingPassInfo>* GetShadowPasses() const                                   { return m_pShadowPasses; }
@@ -2603,7 +2603,7 @@ private:
 	uint8   m_bAuxWindow = false;
 
 	// Windows handle of the target Display Context in the multi-context rendering (in Editor)
-	IRenderer::SDisplayContextKey m_displayContextKey;
+	SDisplayContextKey m_displayContextKey;
 
 	// Optional render target clear color.
 	ColorB m_clearColor = { 0, 0, 0, 0 };
@@ -2947,7 +2947,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateBillBoardGenPassRenderingInf
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags, bool bAuxWindow, IRenderer::SDisplayContextKey displayContextKey)
+inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags, bool bAuxWindow, SDisplayContextKey displayContextKey)
 {
 	static ICVar* pCameraFreeze = gEnv->pConsole->GetCVar("e_CameraFreeze");
 

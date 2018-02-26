@@ -1512,7 +1512,6 @@ void CSystem::RunMainLoop()
 #if CRY_PLATFORM_DURANGO
 		Windows::UI::Core::CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
 #endif
-
 		if (!DoFrame())
 		{
 			break;
@@ -1521,7 +1520,7 @@ void CSystem::RunMainLoop()
 }
 
 //////////////////////////////////////////////////////////////////////
-bool CSystem::DoFrame(HWND hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags)
+bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
 	// The frame profile system already creates an "overhead" profile label
 	// in StartFrame(). Hence we have to set the FRAMESTART before.
@@ -1564,8 +1563,8 @@ bool CSystem::DoFrame(HWND hWnd, CEnumFlags<ESystemUpdateFlags> updateFlags)
 	{
 		m_env.pNetwork->SyncWithGame(eNGS_SleepNetwork);
 	}
-
-	RenderBegin(hWnd != 0 ? hWnd : static_cast<HWND>(m_hWnd));
+	
+	RenderBegin(displayContextKey);
 
 	bool continueRunning = true;
 

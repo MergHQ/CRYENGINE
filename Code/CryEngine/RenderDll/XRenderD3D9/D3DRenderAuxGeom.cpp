@@ -525,7 +525,7 @@ buffer_handle_t CRenderAuxGeomD3D::CBufferManager::fill(buffer_handle_t buf, BUF
 	return size ? update(type, data, size) : ~0u;
 }
 
-bool CRenderAuxGeomD3D::PreparePass(const CCamera& camera, const IRenderer::SDisplayContextKey& displayContextKey, CPrimitiveRenderPass& pass, SRenderViewport* getViewport)
+bool CRenderAuxGeomD3D::PreparePass(const CCamera& camera, const SDisplayContextKey& displayContextKey, CPrimitiveRenderPass& pass, SRenderViewport* getViewport)
 {
 	if (!m_pCurrentDisplayContext || displayContextKey != m_currentDisplayKey)
 	{
@@ -927,7 +927,7 @@ void CRenderAuxGeomD3D::ClearCaches()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderAuxGeomD3D::Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44A& mat, const IRenderer::SDisplayContextKey& displayContextKey)
+void CRenderAuxGeomD3D::Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44A& mat, const SDisplayContextKey& displayContextKey)
 {
 	// mode 2D/3D -- set new transformation matrix
 	const Matrix44A* pNewTransMat(&GetCurrentTrans3D());
@@ -1044,7 +1044,7 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data)
 			// get current render flags
 			const SAuxGeomRenderFlags& curRenderFlags((*it)->m_renderFlags);
 			int curTexture = (*it)->m_textureID;
-			const IRenderer::SDisplayContextKey& displayContextKey = (*it)->m_displayContextKey;
+			const SDisplayContextKey& displayContextKey = (*it)->m_displayContextKey;
 			m_curTransMatrixIdx = (*it)->m_transMatrixIdx;
 			m_curWorldMatrixIdx = (*it)->m_worldMatrixIdx;
 
@@ -1437,7 +1437,7 @@ void CAuxGeomCBCollector::SetDefaultCamera(const CCamera& camera)
 	}
 }
 
-void CAuxGeomCBCollector::SetDisplayContextKey(const IRenderer::SDisplayContextKey &displayContextKey)
+void CAuxGeomCBCollector::SetDisplayContextKey(const SDisplayContextKey &displayContextKey)
 {
 	m_displayContextKey = displayContextKey;
 
@@ -1450,7 +1450,7 @@ CCamera CAuxGeomCBCollector::GetCamera() const
 	return m_camera;
 }
 
-const IRenderer::SDisplayContextKey& CAuxGeomCBCollector::GetDisplayContextKey() const
+const SDisplayContextKey& CAuxGeomCBCollector::GetDisplayContextKey() const
 {
 	return m_displayContextKey;
 }
@@ -1550,7 +1550,7 @@ void CAuxGeomCBCollector::SThread::SetDefaultCamera(const CCamera & camera)
 	}
 }
 
-void CAuxGeomCBCollector::SThread::SetDisplayContextKey(const IRenderer::SDisplayContextKey& displayContextKey)
+void CAuxGeomCBCollector::SThread::SetDisplayContextKey(const SDisplayContextKey& displayContextKey)
 {
 	this->displayContextKey = displayContextKey;
 

@@ -44,7 +44,7 @@ public:
 
 	const CCamera&      GetCamera() const final;
 
-	void                SetCurrentDisplayContext(const IRenderer::SDisplayContextKey& displayContextKey) override;
+	void                SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey) override;
 
 	void                DrawPoint(const Vec3& v, const ColorB& col, uint8 size = 1) override;
 	void                DrawPoints(const Vec3* v, uint32 numPoints, const ColorB& col, uint8 size = 1) override;
@@ -160,7 +160,7 @@ public:
 		{
 		}
 
-		SAuxPushBufferEntry(uint32 numVertices, uint32 numIndices, uint32 vertexOffs, uint32 indexOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags, int texID = -1, const IRenderer::SDisplayContextKey& displayContextKey = {})
+		SAuxPushBufferEntry(uint32 numVertices, uint32 numIndices, uint32 vertexOffs, uint32 indexOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags, int texID = -1, const SDisplayContextKey& displayContextKey = {})
 			: m_numVertices(numVertices)
 			, m_numIndices(numIndices)
 			, m_vertexOffs(vertexOffs)
@@ -173,7 +173,7 @@ public:
 		{
 		}
 
-		SAuxPushBufferEntry(uint32 drawParamOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags, int texID = -1, const IRenderer::SDisplayContextKey& displayContextKey = {})
+		SAuxPushBufferEntry(uint32 drawParamOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags, int texID = -1, const SDisplayContextKey& displayContextKey = {})
 			: m_numVertices(0)
 			, m_numIndices(0)
 			, m_vertexOffs(drawParamOffs)
@@ -211,7 +211,7 @@ public:
 		int                     m_textureID;
 		SAuxGeomRenderFlags     m_renderFlags;
 
-		IRenderer::SDisplayContextKey m_displayContextKey;
+		SDisplayContextKey m_displayContextKey;
 	};
 
 	using AuxPushBuffer = std::vector<SAuxPushBufferEntry>;
@@ -292,7 +292,7 @@ public:
 		uint                    m_uCount;
 		bool                    m_isUsed = false;
 
-		IRenderer::SDisplayContextKey displayContextKey;
+		SDisplayContextKey displayContextKey;
 		
 		// Camera used for 3D->2D elements projection
 		CCamera                 m_camera;
@@ -593,7 +593,7 @@ public:
 
 	const CCamera&      GetCamera() const final                                                                                                              { static CCamera camera; return camera; }
 
-	void                SetCurrentDisplayContext(const IRenderer::SDisplayContextKey& displayContextKey) final                                               {};
+	void                SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey) final                                               {};
 
 	void                DrawPoint(const Vec3& v, const ColorB& col, uint8 size = 1) final                                                                    {}
 	void                DrawPoints(const Vec3* v, uint32 numPoints, const ColorB& col, uint8 size = 1) final                                                 {}

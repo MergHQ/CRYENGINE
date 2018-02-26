@@ -106,7 +106,7 @@ struct CRY_ALIGN(128) SRenderThread
 	bool m_bQuit;
 	bool m_bQuitLoading;
 	bool m_bSuccessful;
-	IRenderer::SDisplayContextKey m_displayContextKey;
+	SDisplayContextKey m_displayContextKey;
 	bool m_bBeginFrameCalled;
 	bool m_bEndFrameCalled;
 #ifndef STRIP_RENDER_THREAD
@@ -380,7 +380,7 @@ struct CRY_ALIGN(128) SRenderThread
 	void RC_FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy * pPlayer, int cbIdx, bool stereo, bool finalPlayback);
 
 	void RC_RenderScene(CRenderView * pRenderView, int nFlags);
-	void RC_BeginFrame(const IRenderer::SDisplayContextKey& displayContextKey);
+	void RC_BeginFrame(const SDisplayContextKey& displayContextKey);
 	void RC_EndFrame(bool bWait);
 	void RC_TryFlush();
 	void RC_StartVideoThread();
