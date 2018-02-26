@@ -494,7 +494,8 @@ public:
 		CRY_ASSERT(this->IsCached());
 		if (pNode)
 		{
-			pNode->m_shadowCacheLastRendered[nShadowMapLod] = isCached ? pShadowCacheData->mGeneration : 0;
+			CRY_ASSERT(nShadowCacheLod >= 0 && nShadowCacheLod < MAX_GSM_CACHED_LODS_NUM);
+			pNode->m_shadowCacheLastRendered[nShadowCacheLod] = isCached ? pShadowCacheData->mGeneration : 0;
 			pShadowCacheData->mObjectsRendered++;
 		}
 	}

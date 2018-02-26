@@ -6340,7 +6340,7 @@ bool C3DEngine::IsStatObjBufferRenderTasksAllowed() const
 ///////////////////////////////////////////////////////////////////////////////
 void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const SRenderingPassInfo& passInfo)
 {
-	assert(passInfo.IsShadowPass());
+	CRY_ASSERT(passInfo.IsShadowPass());
 
 	IRenderNode* pRenderNode = static_cast<IRenderNode*>(pShadowCaster);
 	if ((pRenderNode->m_dwRndFlags & ERF_HIDDEN) != 0)
@@ -6352,8 +6352,10 @@ void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const 
 	if (passInfo.GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED)
 		nStaticObjectLod = GetCVars()->e_ShadowsCacheObjectLod;
 	else if (passInfo.GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED_MGPU_COPY)
-		nStaticObjectLod = pRenderNode->m_shadowCacheLod[passInfo.ShadowFrustumLod()];
-
+	{
+		CRY_ASSERT(passInfo.ShadowCacheLod() < MAX_GSM_CACHED_LODS_NUM);
+		nStaticObjectLod = pRenderNode->m_shadowCacheLod[passInfo.ShadowCacheLod()];
+	}
 	SRenderNodeTempData* pTempData = Get3DEngine()->CheckAndCreateRenderNodeTempData(pRenderNode, passInfo);
 	if (!pTempData)
 		return;

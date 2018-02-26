@@ -1289,8 +1289,9 @@ void CStatObj::RenderObjectInternal(CRenderObject* pRenderObject, int nTargetLod
 
 	if (passInfo.IsShadowPass() && passInfo.GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED && pRenderObject->m_pRenderNode)
 	{
+		CRY_ASSERT(passInfo.ShadowCacheLod() < MAX_GSM_CACHED_LODS_NUM);
 		IShadowCaster* pCaster = static_cast<IShadowCaster*>(pRenderObject->m_pRenderNode);
-		pCaster->m_shadowCacheLod[passInfo.ShadowFrustumLod()] = nLod;
+		pCaster->m_shadowCacheLod[passInfo.ShadowCacheLod()] = nLod;
 	}
 
 	pRenderObject->m_DissolveRef = uLodDissolveRef;

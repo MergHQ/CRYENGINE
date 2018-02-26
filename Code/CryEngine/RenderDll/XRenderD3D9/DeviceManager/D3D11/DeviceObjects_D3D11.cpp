@@ -161,9 +161,9 @@ void CDeviceObjectFactory::AssignDevice(D3DDevice* pDevice)
 		;
 
 	m_texturePool.Init(
-		CRenderer::GetTexturesStreamPoolSize() * 1024 * 1024,
+		CRenderer::GetTexturesStreamPoolSize() * 1024ull * 1024ull,
 		512 * 1024 * 1024,
-		CRenderer::GetTexturesStreamPoolSize() * 1024 * 1024,
+		CRenderer::GetTexturesStreamPoolSize() * 1024ull * 1024ull,
 		poolMemModel,
 		false);
 

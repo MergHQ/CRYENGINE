@@ -255,6 +255,7 @@ void ShadowMapFrustum::RenderShadowFrustum(IRenderViewPtr pShadowsView, int side
 	  tmpCamera,
 	  m_Flags,
 	  nShadowMapLod,
+	  nShadowCacheLod,
 	  IsCached(),
 	  bIsMGPUCopy,
 	  side,
