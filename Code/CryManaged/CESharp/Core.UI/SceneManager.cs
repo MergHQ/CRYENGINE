@@ -21,21 +21,35 @@ namespace CryEngine.UI
 
 			public GameFrameworkListener()
 			{
+				RegisterListener();
+			}
+
+			public void RegisterListener()
+			{
 				Engine.GameFramework.RegisterListener(this, "MonoGameFrameworkUI", EFRAMEWORKLISTENERPRIORITY.FRAMEWORKLISTENERPRIORITY_HUD);
 			}
 
 			public void UnregisterListener()
 			{
-				PostUpdate = null;
 				Engine.GameFramework?.UnregisterListener(this);
 			}
 
 			public override void OnPostUpdate(float fDeltaTime)
 			{
+				if(Engine.GameFramework.IsInLevelLoad())
+				{
+					return;
+				}
+
 				PostUpdate?.Invoke();
 			}
 			public override void OnPreRender()
 			{
+				if(Engine.GameFramework.IsInLevelLoad())
+				{
+					return;
+				}
+
 				PreRender?.Invoke();
 			}
 
@@ -80,6 +94,8 @@ namespace CryEngine.UI
 
 		internal SceneManager()
 		{
+			Engine.EngineUnloading += OnEngineUnload;
+			Engine.EngineReloaded += OnEngineReload;
 			_rootObject = SceneObject.Instantiate(null, "Root");
 			_listener = new GameFrameworkListener();
 			_listener.PostUpdate += Update;
@@ -93,6 +109,16 @@ namespace CryEngine.UI
 		~SceneManager()
 		{
 			_listener.UnregisterListener();
+		}
+
+		private void OnEngineUnload()
+		{
+			_listener.UnregisterListener();
+		}
+
+		private void OnEngineReload()
+		{
+			_listener.RegisterListener();
 		}
 
 		/// <summary>

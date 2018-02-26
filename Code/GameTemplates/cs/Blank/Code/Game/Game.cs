@@ -25,6 +25,8 @@ namespace CryEngine.Game
 				return;
 			}
 
+			Engine.EngineUnloading += DestroyUI;
+			Engine.EngineReloaded += CreateUI;
 			CreateUI();
 
 			GameFramework.RegisterForUpdate(this);
@@ -59,6 +61,12 @@ namespace CryEngine.Game
 			_fpsText.Color = Color.Yellow.WithAlpha(0.5f);
 		}
 
+		private void DestroyUI()
+		{
+			_fpsText.Owner.Destroy();
+			_fpsText = null;
+		}
+
 		public void Dispose()
 		{
 			if(Engine.IsDedicatedServer)
@@ -89,8 +97,8 @@ namespace CryEngine.Game
 				Engine.Shutdown();
 			}
 
-			// Show/Hide FPS Label on F5.
-			if(e.KeyPressed(KeyId.F5))
+			// Show/Hide FPS Label on F4.
+			if(e.KeyPressed(KeyId.F4))
 			{
 				_fpsText.Active = !_fpsText.Active;
 			}

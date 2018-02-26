@@ -44,7 +44,6 @@ namespace CryEngine.UI
 		/// <param name="width">Intended Texture Width.</param>
 		/// <param name="height">Intended Texture Height.</param>
 		/// <param name="data">Image source data.</param>
-		/// <param name="isFiltered">If set to <c>true</c> texture is filtered.</param>
 		/// <param name="roundLocation">If set to <c>true</c> texture start location is rounded up on draw.</param>
 		/// <param name="isRendertarget">If set to <c>true</c> Texture can be rendered to.</param>
 		/// <param name="clamp">If set to <c>true</c> the Texture will clamp at the edges instead of wrapping around.</param>
