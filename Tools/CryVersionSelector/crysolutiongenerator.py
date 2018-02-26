@@ -186,7 +186,7 @@ sources_platform(ALL)
 $sources
 end_sources()
 
-CryEngineModule($project_name PCH "StdAfx.cpp" SOLUTION_FOLDER "Project")
+CryEngineModule($project_name FORCE_SHARED PCH "StdAfx.cpp" SOLUTION_FOLDER "Project")
 
 target_include_directories($${THIS_PROJECT}
 PRIVATE
