@@ -155,8 +155,8 @@ void CFeatureRenderSprites::ComputeVertices(CParticleComponentRuntime* pComponen
 	CParticleContainer& container = pComponentRuntime->GetContainer();
 	const CParticleEmitter* pEmitter = pComponentRuntime->GetEmitter();
 
-	TParticleId lastParticleId = container.GetLastParticleId();
-	if (lastParticleId == 0)
+	TParticleId numParticles = container.GetNumParticles();
+	if (numParticles == 0)
 		return;
 
 	const auto bounds = pComponentRuntime->GetBounds();
@@ -172,7 +172,7 @@ void CFeatureRenderSprites::ComputeVertices(CParticleComponentRuntime* pComponen
 	  pComponentRuntime, pComponentRuntime->GetComponentParams(),
 	  camInfo, pEmitter->GetVisEnv(),
 	  physEnv, pRE, memHeap,
-	  lastParticleId);
+		numParticles);
 	spritesContext.m_bounds = pEmitter->GetBBox();
 	spritesContext.m_renderFlags = uRenderFlags;
 
@@ -238,7 +238,6 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 	const bool culling = cullFrustum || cullNear || cullFar;
 
 	CParticleContainer& container = pSpritesContext->m_context.m_container;
-	TIOStream<uint8> states = container.GetTIOStream<uint8>(EPDT_State);
 	IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
 	IFStream sizes = container.GetIFStream(EPDT_Size);
 	IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
@@ -248,10 +247,6 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext* pSpritesContext)
 	// camera culling
 	for (auto particleId : context.GetUpdateRange())
 	{
-		const uint8 state = states.Load(particleId);
-		if (!(state & ESB_Alive))
-			continue;
-
 		float cull = 1.0f;
 		const float size = sizes.Load(particleId);
 		if (!cullFar)

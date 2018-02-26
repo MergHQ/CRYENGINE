@@ -129,9 +129,9 @@ private:
 		{
 			const Vec3v position = positions.Load(particleGroupId);
 			const Vec3v accel0 = localAccelerations.Load(particleGroupId);
-			const floatv keyX = context.m_updateRngv.RandSNorm();
-			const floatv keyY = context.m_updateRngv.RandSNorm();
-			const floatv keyZ = context.m_updateRngv.RandSNorm();
+			const floatv keyX = context.m_spawnRngv.RandSNorm();
+			const floatv keyY = context.m_spawnRngv.RandSNorm();
+			const floatv keyZ = context.m_spawnRngv.RandSNorm();
 			const Vec3v accel1 = MAdd(Vec3v(keyX, keyY, keyZ), speed, accel0);
 			localAccelerations.Store(particleGroupId, accel1);
 		}
@@ -488,7 +488,6 @@ public:
 		{
 			const Vec3 velocity = velocities.Load(particleId);
 			const float age = normAges.Load(particleId) * lifeTimes.Load(particleId);
-
 			const float angle = speed * (age + fTime);
 			const float rotateSin = sin_tpl(angle) * size;
 			const float rotateCos = cos_tpl(angle) * size;

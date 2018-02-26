@@ -124,7 +124,6 @@ void CFeatureRenderDecals::RenderDeferred(CParticleEmitter* pEmitter, CParticleC
 	const IFStream sizes = container.GetIFStream(EPDT_Size);
 	const IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
 	const IFStream angles = container.GetIFStream(EPDT_Angle2D);
-	const TIStream<uint8> states = container.GetTIStream<uint8>(EPDT_State);
 	const bool hasAngles2D = container.HasData(EPDT_Angle2D);
 	const bool hasBlending = params.m_textureAnimation.m_frameBlending;
 
@@ -136,10 +135,6 @@ void CFeatureRenderDecals::RenderDeferred(CParticleEmitter* pEmitter, CParticleC
 
 	for (auto particleId : context.GetUpdateRange())
 	{
-		const uint8 state = states.Load(particleId);
-		if (!(state & ESB_Alive))
-			continue;
-
 		const float size = sizes.Load(particleId);
 		if (size <= 0.0f)
 			continue;

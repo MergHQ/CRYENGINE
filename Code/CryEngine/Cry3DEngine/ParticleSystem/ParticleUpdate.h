@@ -35,8 +35,6 @@ struct SUpdateContext
 	const float                m_time;
 	mutable SChaosKey          m_spawnRng;
 	mutable SChaosKeyV         m_spawnRngv;
-	mutable SChaosKey          m_updateRng;
-	mutable SChaosKeyV         m_updateRngv;
 
 	SUpdateRange GetUpdateRange() const      { return m_updateRange; }
 	SGroupRange GetUpdateGroupRange() const  { return SGroupRange(m_updateRange); }

@@ -147,13 +147,13 @@ void CFeatureRenderRibbon::ComputeVertices(CParticleComponentRuntime* pComponent
 
 	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
 	const CParticleContainer& container = pComponentRuntime->GetContainer();
-	const TParticleId lastParticleId = container.GetLastParticleId();
+	const uint32 numParticles = container.GetNumParticles();
 
-	if (lastParticleId == 0)
+	if (numParticles == 0)
 		return;
 
 	uint numVertices;
-	TParticleIdArray sortEntries(memHeap, lastParticleId);
+	TParticleIdArray sortEntries(memHeap, numParticles);
 	TRibbons ribbons(memHeap);
 	MakeRibbons(pComponentRuntime, &sortEntries, &ribbons, &numVertices);
 	WriteToGPUMem(pComponentRuntime, camInfo, pRE, sortEntries, ribbons, numVertices);
@@ -174,22 +174,17 @@ void CFeatureRenderRibbon::MakeRibbons(CParticleComponentRuntime* pComponentRunt
 	const CParticleContainer& container = pComponentRuntime->GetContainer();
 	const IUintStream ribbonIds = container.GetIUintStream(EPDT_RibbonId);
 	const IUintStream spawnIds = container.GetIUintStream(EPDT_SpawnId);
-	const TIStream<uint8> states = container.GetTIStream<uint8>(EPDT_State);
-	const TParticleId lastParticleId = container.GetLastParticleId();
-	uint numValidParticles = 0;
+	const uint32 numParticles = container.GetNumParticles();
+	uint numValidParticles = context.GetUpdateRange().size();
 
 	{
-		const uint64 noKey = uint64(-1);
-		THeapArray<uint64> sortEntries(memHeap, lastParticleId);
+		THeapArray<uint64> sortEntries(memHeap, numParticles);
 		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId ribbonId = ribbonIds.Load(particleId);
 			const uint32 spawnId = spawnIds.Load(particleId);
 			const uint64 key = (uint64(ribbonId) << 32) | uint64(spawnId);
-			const uint8 state = states.Load(particleId);
-			const bool valid = (state & ESB_Dead) == 0;
-			numValidParticles += uint(valid);
-			sortEntries[particleId] = valid ? key : noKey;
+			sortEntries[particleId] = key;
 		}
 		RadixSort(
 		  pSortEntries->begin(), pSortEntries->end(),

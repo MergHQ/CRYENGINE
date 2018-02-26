@@ -193,7 +193,7 @@ if(EXISTS "$${CMAKE_CURRENT_SOURCE_DIR}/CVarOverrides.h")
 endif()
 end_sources()
 
-CryGameModule($project_name PCH "StdAfx.cpp" SOLUTION_FOLDER "Project")
+CryGameModule($project_name FORCE_SHARED PCH "StdAfx.cpp" SOLUTION_FOLDER "Project")
 
 target_include_directories($${THIS_PROJECT}
 PRIVATE

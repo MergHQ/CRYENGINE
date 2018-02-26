@@ -24,7 +24,7 @@ namespace CryEngine.UI
 		IMaterial _originalMaterial;
 
 		/// <summary>
-		/// True if the entity which is currently in focus is targetet by the mouse cursor.
+		/// True if the entity which is currently in focus is targeted by the mouse cursor.
 		/// </summary>
 		/// <value><c>true</c> if target in focus; otherwise, <c>false</c>.</value>
 		public bool TargetInFocus

@@ -423,6 +423,10 @@ if (OPTION_ENGINE)
 		    set(MSVC FALSE)
 	    endif()
 	    add_subdirectory ("${SDK_DIR}/googletest_CE_Support")
+		# Guard against wrongly setup bootstrap not finding gtest and gmock targets
+		if (NOT (TARGET gtest AND TARGET gmock))
+			message(FATAL_ERROR "Error adding google test. This could be caused by Bootstrap, please check Bootstrap.")
+		endif()
         mark_as_advanced(FORCE BUILD_GTEST BUILD_GMOCK BUILD_SHARED_LIBS INSTALL_GTEST INSTALL_GMOCK gtest_build_samples gtest_build_tests gtest_disable_pthreads gtest_force_shared_crt gtest_hide_internal_symbols gmock_build_tests)
 	    if(ORBIS)
 		    set(MSVC ${MSVC_TEMP})
@@ -441,10 +445,18 @@ if (OPTION_ENGINE)
 		    set(THIS_PROJECT gmock)
 		    SET_PLATFORM_TARGET_PROPERTIES(gmock)
 	    endif()
-        set_property(TARGET gmock_main PROPERTY EXCLUDE_FROM_DEFAULT_BUILD TRUE)
-        set_property(TARGET gmock_main PROPERTY EXCLUDE_FROM_ALL TRUE)
-	    set_property(TARGET gtest_main PROPERTY EXCLUDE_FROM_DEFAULT_BUILD TRUE)
-        set_property(TARGET gtest_main PROPERTY EXCLUDE_FROM_ALL TRUE)
+
+		# We want to hide gtest_main and gmock_main because we are not using these
+		# Only do so when these targets are defined
+		if (TARGET gmock_main)
+			set_property(TARGET gmock_main PROPERTY EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+			set_property(TARGET gmock_main PROPERTY EXCLUDE_FROM_ALL TRUE)	
+		endif()
+        
+		if (TARGET gtest_main)
+			set_property(TARGET gtest_main PROPERTY EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+			set_property(TARGET gtest_main PROPERTY EXCLUDE_FROM_ALL TRUE)
+		endif()
 
 	    add_subdirectory("${CRYENGINE_DIR}/Code/CryEngine/UnitTests/CryCommonUnitTest")
         add_subdirectory("${CRYENGINE_DIR}/Code/CryEngine/UnitTests/CrySystemUnitTest")

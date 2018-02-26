@@ -2484,9 +2484,9 @@ struct SRenderingPassInfo
 	};
 
 	//! Creating function for RenderingPassInfo, the create functions will fetch all other necessary information like thread id/frame id, etc.
-	static SRenderingPassInfo CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS, bool bAuxWindow = false, IRenderer::SDisplayContextKey displayContextKey = {});
+	static SRenderingPassInfo CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS, bool bAuxWindow = false, SDisplayContextKey displayContextKey = {});
 	static SRenderingPassInfo CreateRecursivePassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_RECURSIVE_FLAGS);
-	static SRenderingPassInfo CreateShadowPassRenderingInfo(IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32 nSide, uint32 nRenderingFlags = DEFAULT_SHADOWS_FLAGS);
+	static SRenderingPassInfo CreateShadowPassRenderingInfo(IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, int nShadowCacheLod, bool bExtendedLod, bool bIsMGPUCopy, uint32 nSide, uint32 nRenderingFlags = DEFAULT_SHADOWS_FLAGS);
 	static SRenderingPassInfo CreateBillBoardGenPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags = DEFAULT_FLAGS);
 	static SRenderingPassInfo CreateTempRenderingInfo(const CCamera& rCamera, const SRenderingPassInfo& rPassInfo);
 	static SRenderingPassInfo CreateTempRenderingInfo(uint32 nRenderingFlags, const SRenderingPassInfo& rPassInfo);
@@ -2540,6 +2540,7 @@ struct SRenderingPassInfo
 
 	uint8                   ShadowFrustumSide() const;
 	uint8                   ShadowFrustumLod() const;
+	uint8                   ShadowCacheLod() const;
 
 	CRenderView*            GetRenderView() const;
 	IRenderView*            GetIRenderView() const;
@@ -2547,7 +2548,7 @@ struct SRenderingPassInfo
 	SRendItemSorter&        GetRendItemSorter() const                   { return m_renderItemSorter; };
 	void                    OverrideRenderItemSorter(SRendItemSorter s) { m_renderItemSorter = s; }
 
-	const IRenderer::SDisplayContextKey& GetDisplayContextKey() const   { return m_displayContextKey; }
+	const SDisplayContextKey& GetDisplayContextKey() const   { return m_displayContextKey; }
 
 	void                             SetShadowPasses(class std::vector<SRenderingPassInfo>* p) { m_pShadowPasses = p; }
 	std::vector<SRenderingPassInfo>* GetShadowPasses() const                                   { return m_pShadowPasses; }
@@ -2594,14 +2595,15 @@ private:
 	IRenderViewPtr m_pRenderView;
 
 	// members used only in shadow pass
-	uint8   nShadowSide : 4;
-	uint8   nShadowLod  : 4;
+	uint8   nShadowSide;
+	uint8   nShadowLod;
+	uint8   nShadowCacheLod = 0;
 	uint8   m_nZoomInProgress = false;
 	uint8   m_nZoomMode = 0;
 	uint8   m_bAuxWindow = false;
 
 	// Windows handle of the target Display Context in the multi-context rendering (in Editor)
-	IRenderer::SDisplayContextKey m_displayContextKey;
+	SDisplayContextKey m_displayContextKey;
 
 	// Optional render target clear color.
 	ColorB m_clearColor = { 0, 0, 0, 0 };
@@ -2830,6 +2832,12 @@ inline uint8 SRenderingPassInfo::ShadowFrustumLod() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+inline uint8 SRenderingPassInfo::ShadowCacheLod() const
+{
+	return nShadowCacheLod;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 inline CRenderView* SRenderingPassInfo::GetRenderView() const
 {
 	return reinterpret_cast<CRenderView*>(m_pRenderView.get());
@@ -2939,7 +2947,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateBillBoardGenPassRenderingInf
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags, bool bAuxWindow, IRenderer::SDisplayContextKey displayContextKey)
+inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(const CCamera& rCamera, uint32 nRenderingFlags, bool bAuxWindow, SDisplayContextKey displayContextKey)
 {
 	static ICVar* pCameraFreeze = gEnv->pConsole->GetCVar("e_CameraFreeze");
 
@@ -3000,7 +3008,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateRecursivePassRenderingInfo(c
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, bool bExtendedLod, bool bIsMGPUCopy, uint32 nSide, uint32 nRenderingFlags)
+inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod, int nShadowCacheLod, bool bExtendedLod, bool bIsMGPUCopy, uint32 nSide, uint32 nRenderingFlags)
 {
 	SRenderingPassInfo passInfo;
 
@@ -3024,7 +3032,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(IRen
 
 	passInfo.nShadowSide = nSide;
 	passInfo.nShadowLod = nShadowMapLod;
-
+	passInfo.nShadowCacheLod = nShadowCacheLod;
 	return passInfo;
 }
 

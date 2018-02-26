@@ -303,7 +303,7 @@ void SRenderThread::RC_ResumeDevice()
 }
 #endif
 
-void SRenderThread::RC_BeginFrame(const IRenderer::SDisplayContextKey& displayContextKey)
+void SRenderThread::RC_BeginFrame(const SDisplayContextKey& displayContextKey)
 {
 	if (IsRenderThread())
 	{
@@ -549,7 +549,7 @@ void SRenderThread::ProcessCommands()
 
 		case eRC_BeginFrame:
 			{
-				m_displayContextKey = ReadCommand<IRenderer::SDisplayContextKey>(n);
+				m_displayContextKey = ReadCommand<SDisplayContextKey>(n);
 				if (m_eVideoThreadMode == eVTM_Disabled)
 				{
 					gRenDev->RT_BeginFrame(m_displayContextKey);

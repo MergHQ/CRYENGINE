@@ -35,7 +35,7 @@ public:
 		m_stopTrigger.Resolve();
 		if (GetNumResources())
 		{
-			pComponent->MainPreUpdate.add(this);
+			pComponent->RenderDeferred.add(this);
 			pComponent->AddParticleData(EPVF_Position);
 			if (m_followParticle || m_stopOnDeath)
 			{
@@ -76,7 +76,7 @@ public:
 		context.m_container.FillData(EPDT_AudioObject, (CryAudio::IObject*)0, context.GetSpawnedRange());
 	}
 
-	void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) override
+	void RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
 	{
 		CryStackStringT<char, 512> proxyName;
 		proxyName.append(pComponentRuntime->GetComponent()->GetEffect()->GetName());
@@ -139,16 +139,16 @@ private:
 		const SUpdateContext context(pComponentRuntime);
 		CParticleContainer& container = context.m_container;
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
-		const auto states = container.GetTIStream<uint8>(EPDT_State);
+		const auto normAges = container.GetIFStream(EPDT_NormalAge);
 
 		for (auto particleId : context.GetUpdateRange())
 		{
-			const uint8 state = states.Load(particleId);
-			if (m_playTrigger && state == ES_NewBorn)
+			const float age = normAges.Load(particleId);
+			if (m_playTrigger && container.IsNewBorn(particleId))
 			{
 				Trigger(m_playTrigger, proxyName, positions.Load(particleId));
 			}
-			else if (m_stopTrigger && state == ES_Expired)
+			if (m_stopTrigger && IsExpired(age))
 			{
 				Trigger(m_stopTrigger, proxyName, positions.Load(particleId));
 			}
@@ -162,36 +162,32 @@ private:
 		const SUpdateContext context(pComponentRuntime);
 		CParticleContainer& container = context.m_container;
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
-		const auto states = container.GetTIStream<uint8>(EPDT_State);
+		const auto normAges = container.GetIFStream(EPDT_NormalAge);
 		auto audioObjects = container.GetTIOStream<CryAudio::IObject*>(EPDT_AudioObject);
 
 		for (auto particleId : context.GetUpdateRange())
 		{
 			CryAudio::IObject* pIObject = audioObjects.Load(particleId);
-			const uint8 state = states.Load(particleId);
-			switch (state)
+			const float age = normAges.Load(particleId);
+			if (container.IsNewBorn(particleId))
 			{
-			case ES_NewBorn:
 				if (m_playTrigger && !pIObject)
 				{
 					pIObject = MakeAudioObject(proxyName, positions.Load(particleId));
 					audioObjects.Store(particleId, pIObject);
 					pIObject->ExecuteTrigger(m_playTrigger);
 				}
-				break;
-			case ES_Alive:
-				if (m_followParticle && pIObject)
+			}
+			if (pIObject)
+			{
+				if (m_followParticle)
 					pIObject->SetTransformation(positions.Load(particleId));
-				break;
-			case ES_Expired:
-				if (m_stopTrigger && pIObject)
-					pIObject->ExecuteTrigger(m_stopTrigger);
-				break;
-			case ES_Dead:
-				if (pIObject)
+				if (IsExpired(age))
 				{
 					if (m_stopOnDeath)
 						pIObject->StopTrigger(m_playTrigger);
+					if (m_stopTrigger)
+						pIObject->ExecuteTrigger(m_stopTrigger);
 					gEnv->pAudioSystem->ReleaseObject(pIObject);
 					audioObjects.Store(particleId, nullptr);
 				}
@@ -279,8 +275,7 @@ public:
 		for (auto particleId : context.GetUpdateRange())
 		{
 			const float value = values.m_stream.Load(particleId);
-			CryAudio::IObject* const pIObject = audioObjects.Load(particleId);
-			if (pIObject != nullptr)
+			if (CryAudio::IObject* const pIObject = audioObjects.Load(particleId))
 			{
 				pIObject->SetParameter(m_parameterId, value);
 			}

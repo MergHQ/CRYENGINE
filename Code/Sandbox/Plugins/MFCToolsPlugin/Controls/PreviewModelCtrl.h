@@ -184,7 +184,7 @@ protected:
 	int                      m_physHelpers0;
 
 private:
-	IRenderer::SDisplayContextKey m_displayContextKey;
+	SDisplayContextKey m_displayContextKey;
 
 protected:
 	virtual void PreSubclassWindow();

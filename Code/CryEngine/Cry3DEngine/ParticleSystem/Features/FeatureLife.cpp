@@ -86,15 +86,15 @@ public:
 		// Kill on parent death
 		CParticleContainer& container = context.m_container;
 		const CParticleContainer& parentContainer = context.m_parentContainer;
-		const auto parentStates = parentContainer.GetTIStream<uint8>(EPDT_State);
+		const auto parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
+
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		IOFStream ages = container.GetIOFStream(EPDT_NormalAge);
 
 		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
-			const uint8 parentState = (parentId != gInvalidId) ? parentStates.Load(parentId) : ES_Expired;
-			if (parentState & ESB_Dead)
+			if (parentId == gInvalidId || IsExpired(parentAges.Load(parentId)))
 				ages.Store(particleId, 1.0f);
 		}
 	}

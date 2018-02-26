@@ -853,6 +853,28 @@ struct ISvoRenderer
 };
 
 //! \cond INTERNAL
+//! Describes the key used to create display context
+struct SDisplayContextKey
+{
+	struct SInvalidKey
+	{
+		bool operator<(const SInvalidKey&) const { return false; }
+		bool operator==(const SInvalidKey&) const { return true; }
+		bool operator!=(const SInvalidKey&) const { return false; }
+	};
+
+	CryVariant<SInvalidKey, uint32_t, HWND> key;
+	bool operator<(const SDisplayContextKey &o) const { return key < o.key; }
+	bool operator==(const SDisplayContextKey &o) const { return key == o.key; }
+	bool operator!=(const SDisplayContextKey &o) const { return !(*this == o); }
+
+	bool operator==(const uint32_t &o) const { return key == o; }
+	bool operator!=(const uint32_t &o) const { return !(*this == o); }
+	bool operator==(const HWND &o) const { return key == o; }
+	bool operator!=(const HWND &o) const { return !(*this == o); }
+};
+
+//! \cond INTERNAL
 //! Describes rendering viewport dimensions
 struct SRenderViewport
 {
@@ -899,26 +921,6 @@ struct IRenderer//: public IRendererCallbackServer
 	{
 		eViewportType_Default,
 		eViewportType_Secondary,
-	};
-
-	struct SDisplayContextKey
-	{
-		struct SInvalidKey
-		{
-			bool operator<(const SInvalidKey&) const { return false; }
-			bool operator==(const SInvalidKey&) const { return true; }
-			bool operator!=(const SInvalidKey&) const { return false; }
-		};
-
-		CryVariant<SInvalidKey, uint32_t, HWND> key;
-		bool operator<(const SDisplayContextKey &o) const { return key < o.key; }
-		bool operator==(const SDisplayContextKey &o) const { return key == o.key; }
-		bool operator!=(const SDisplayContextKey &o) const { return !(*this == o); }
-
-		bool operator==(const uint32_t &o) const { return key == o; }
-		bool operator!=(const uint32_t &o) const { return !(*this == o); }
-		bool operator==(const HWND &o) const { return key == o; }
-		bool operator!=(const HWND &o) const { return !(*this == o); }
 	};
 
 	struct SDisplayContextDescription
@@ -1436,7 +1438,7 @@ struct IRenderer//: public IRendererCallbackServer
 
 	//! Take a screenshot and save it to a file
 	//! \return true on success
-	virtual bool ScreenShot(const char* filename = nullptr, const IRenderer::SDisplayContextKey& displayContextKey = {}) = 0;
+	virtual bool ScreenShot(const char* filename = nullptr, const SDisplayContextKey& displayContextKey = {}) = 0;
 
 	//! Copy frame buffer into destination memory buffer.
 	virtual bool ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight) = 0;
