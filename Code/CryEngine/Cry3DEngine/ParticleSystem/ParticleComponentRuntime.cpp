@@ -95,7 +95,6 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_NewBornTime);
 
-	m_container.RemoveNewBornFlags();
 	RemoveParticles(context);
 
 	AddParticles(context);
@@ -134,6 +133,7 @@ void CParticleComponentRuntime::ComputeVertices(const SCameraInfo& camInfo, CREP
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 		CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_ComputeVerticesTime);
 
+		GetEmitter()->SyncUpdate();
 		GetComponent()->ComputeVertices(this, camInfo, pRE, uRenderFlags, fMaxPixels);
 	}
 }
@@ -176,7 +176,7 @@ void CParticleComponentRuntime::ReparentParticles(TConstArray<TParticleId> swapI
 	const SComponentParams& params = GetComponentParams();
 	IOPidStream parentIds = m_container.GetIOPidStream(EPDT_ParentId);
 
-	for (TParticleId particleId = 0; particleId != m_container.GetLastParticleId(); ++particleId)
+	for (TParticleId particleId = 0; particleId != m_container.GetNumParticles(); ++particleId)
 	{
 		const TParticleId parentId = parentIds.Load(particleId);
 		if (parentId != gInvalidId)
@@ -228,8 +228,9 @@ void CParticleComponentRuntime::GetEmitLocations(TVarArray<QuatTS> locations) co
 
 void CParticleComponentRuntime::EmitParticle()
 {
-	SSpawnEntry spawn = {1, GetParentContainer().GetLastParticleId()};
+	SSpawnEntry spawn = {1, GetParentContainer().GetNumParticles()};
 	m_container.AddParticles({&spawn, 1});
+	m_container.ResetSpawnedParticles();
 }
 
 SChaosKey CParticleComponentRuntime::MakeSeed(TParticleId particleId) const
@@ -259,32 +260,15 @@ void CParticleComponentRuntime::RemoveParticles(const SUpdateContext& context)
 	CRY_PFX2_PROFILE_DETAIL;
 
 	const uint32 numParticles = m_container.GetNumParticles();
-	TIStream<uint8> states = m_container.GetTIStream<uint8>(EPDT_State);
-
-	if (GetComponent()->KillParticles.size())
-	{
-		TParticleIdArray particleIds(*context.m_pMemHeap);
-		particleIds.reserve(numParticles);
-
-		for (auto particleId : context.GetUpdateRange())
-		{
-			const uint8 state = states.Load(particleId);
-			if (state == ES_Expired)
-				particleIds.push_back(particleId);
-		}
-		if (!particleIds.empty())
-		{
-			GetComponent()->KillParticles(context, particleIds);
-		}
-	}
+	IOFStream normAges = m_container.GetIOFStream(EPDT_NormalAge);
 
 	TParticleIdArray removeIds(*context.m_pMemHeap);
 	removeIds.reserve(numParticles);
 
 	for (auto particleId : context.GetUpdateRange())
 	{
-		const uint8 state = states.Load(particleId);
-		if (state == ES_Dead)
+		const float normalAge = normAges.Load(particleId);
+		if (IsExpired(normalAge))
 			removeIds.push_back(particleId);
 	}
 
@@ -312,7 +296,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	if (!m_container.HasSpawnedParticles())
+	if (!m_container.HasNewBorns())
 		return;
 
 	const floatv deltaTime = ToFloatv(context.m_deltaTime);
@@ -376,7 +360,6 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 	}
 
 	// feature init particles
-	m_container.FillData(EPDT_State, uint8(ES_NewBorn), m_container.GetSpawnedRange());
 	GetComponent()->InitParticles(context);
 
 	// modify with spawn params
@@ -429,7 +412,7 @@ void CParticleComponentRuntime::CalculateBounds()
 		// PFX2_TODO : clean up this mess
 	#ifdef CRY_PFX2_USE_SSE
 		// vector part
-		const TParticleId lastParticleId = m_container.GetLastParticleId();
+		const TParticleId lastParticleId = m_container.GetNumParticles();
 		const TParticleGroupId lastParticleGroupId = CRY_PFX2_PARTICLESGROUP_LOWER(lastParticleId);
 		for (auto particleGroupId : SGroupRange(0, lastParticleGroupId))
 		{
@@ -491,16 +474,19 @@ void CParticleComponentRuntime::AgeUpdate(const SUpdateContext& context)
 		normAges.Store(particleGroupId, normalAge1);
 	}
 
-	TIOStream<uint8> states = m_container.GetTIOStream<uint8>(EPDT_State);
-	for (auto particleId : context.GetUpdateRange())
+	if (GetComponent()->KillParticles.size())
 	{
-		const float normalAge = normAges.Load(particleId);
-		uint8 state = states.Load(particleId);
-		if (normalAge >= 1.0f && state == ES_Alive)
-			state = ES_Expired;
-		else if (state == ES_Expired)
-			state = ES_Dead;
-		states.Store(particleId, state);
+		TParticleIdArray particleIds(*context.m_pMemHeap);
+		particleIds.reserve(m_container.GetNumParticles());
+
+		for (auto particleId : context.GetUpdateRange())
+		{
+			const float age = normAges.Load(particleId);
+			if (IsExpired(age))
+				particleIds.push_back(particleId);
+		}
+		if (!particleIds.empty())
+			GetComponent()->KillParticles(context, particleIds);
 	}
 }
 
@@ -518,7 +504,6 @@ void CParticleComponentRuntime::UpdateLocalSpace(SUpdateRange range)
 	const CParticleContainer& parentContainer = GetParentContainer();
 	const Quat defaultQuat = GetEmitter()->GetLocation().q;
 	const IPidStream parentIds = m_container.GetIPidStream(EPDT_ParentId);
-	const auto parentStates = parentContainer.GetTIStream<uint8>(EPDT_State);
 	const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
 	const IQuatStream parentOrientations = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 	const IVec3Stream worldPositions = m_container.GetIVec3Stream(EPVF_Position);
@@ -531,8 +516,7 @@ void CParticleComponentRuntime::UpdateLocalSpace(SUpdateRange range)
 	for (auto particleId : range)
 	{
 		const TParticleId parentId = parentIds.Load(particleId);
-		const uint8 parentState = (parentId != gInvalidId) ? parentStates.Load(parentId) : ES_Expired;
-		if (parentState == ES_Expired)
+		if (parentId == gInvalidId)
 			continue;
 
 		const Vec3 wParentPos = parentPositions.Load(parentId);
@@ -610,12 +594,12 @@ void CParticleComponentRuntime::UpdateGPURuntime(const SUpdateContext& context)
 
 void CParticleComponentRuntime::DebugStabilityCheck()
 {
-#if 0 // #ifdef CRY_PFX2_DEBUG
+#ifdef CRY_PFX2_DEBUG
 	const CParticleContainer& parentContainer = GetParentContainer();
-	const TParticleId parentCount = parentContainer.GetLastParticleId();
+	const TParticleId parentCount = parentContainer.GetRealNumParticles();
 	IPidStream parentIds = m_container.GetIPidStream(EPDT_ParentId);
 
-	if (!m_container.HasSpawnedParticles())
+	if (m_container.HasNewBorns())
 	{
 		for (auto particleId : m_container.GetSpawnedRange())
 		{
@@ -632,15 +616,14 @@ void CParticleComponentRuntime::DebugStabilityCheck()
 
 	for (auto instance : m_subInstances)
 	{
-		TParticleId parentId = instance.m_parentId;
-		CRY_PFX2_ASSERT(parentId < parentCount);    // this instance is not pointing to the correct parent
+		CRY_PFX2_ASSERT(instance.m_parentId < parentCount);    // this instance is not pointing to the correct parent
 	}
 #endif
 }
 
 bool CParticleComponentRuntime::HasParticles() const
 {
-	return m_pGpuRuntime ? m_pGpuRuntime->HasParticles() : m_container.GetLastParticleId() != 0; 
+	return m_pGpuRuntime ? m_pGpuRuntime->HasParticles() : m_container.GetRealNumParticles() != 0; 
 }
 
 void CParticleComponentRuntime::AccumStats()

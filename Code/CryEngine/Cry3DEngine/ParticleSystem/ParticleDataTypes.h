@@ -75,20 +75,6 @@ typedef SChaosKey SChaosKeyV;
 
 #endif
 
-enum EState
-{
-	ESB_Alive   = BIT(0),   // this particle is alive
-	ESB_Dead    = BIT(1),   // this particle is either dead or expired
-	ESB_NewBorn = BIT(2),   // this particle appeared this frame
-	ESB_Update  = BIT(7),   // this particle can be updated
-
-	ES_Empty    = 0,                                    // nobody home
-	ES_Dead     = ESB_Dead,                             // particle allocated but dead
-	ES_Alive    = ESB_Update | ESB_Alive,               // regular living particle
-	ES_Expired  = ESB_Update | ESB_Dead,                // passed the age time but will only be dead next frame
-	ES_NewBorn  = ESB_Update | ESB_NewBorn | ESB_Alive, // particle appeared this frame
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 // Implement EParticleDataTypes (size, position, etc) with DynamicEnum.
 // Data type entries can be declared in multiple source files, with info about the data type (float, Vec3, etc)
@@ -158,7 +144,6 @@ inline cstr SkipPrefix(cstr name)
 extern EParticleDataType
   EPDT_SpawnId,
   EPDT_ParentId,
-  EPDT_State,
   EPDT_NormalAge,
   EPDT_LifeTime,
   EPDT_InvLifeTime,
@@ -168,7 +153,7 @@ extern EParticleDataType
   EPDT_Angle2D,
   EPDT_Spin2D;
 
-// pose data types
+// Pose data types
 extern EParticleDataType
   EPVF_Position,
   EPVF_Velocity,
@@ -177,6 +162,10 @@ extern EParticleDataType
   EPVF_LocalPosition,
   EPVF_LocalVelocity,
   EPQF_LocalOrientation;
+
+// NormalAge functions
+inline bool IsAlive(float age)   { return age < 1.0f; }
+inline bool IsExpired(float age) { return age >= 1.0f; }
 
 }
 

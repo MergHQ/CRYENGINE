@@ -62,20 +62,19 @@ public:
 	template<typename T> TIOStream<T> GetTIOStream(EParticleDataType type);
 
 	bool                              Empty() const                   { return GetNumParticles() == 0; }
-	uint32                            GetNumParticles() const         { return m_lastId + GetNumSpawnedParticles(); }
-	bool                              HasSpawnedParticles() const     { return GetNumSpawnedParticles() != 0; }
-	TParticleId                       GetFirstSpawnParticleId() const { return TParticleId(m_firstSpawnId); }
-	TParticleId                       GetLastParticleId() const       { return TParticleId(m_lastSpawnId); }
+	uint32                            GetNumParticles() const         { CRY_ASSERT(!HasNewBorns()); return m_lastId; }
+	uint32                            GetRealNumParticles() const     { return m_lastId + HasNewBorns() * GetNumSpawnedParticles(); }
 	uint32                            GetMaxParticles() const         { return m_maxParticles; }
 	uint32                            GetNumSpawnedParticles() const  { return m_lastSpawnId - m_firstSpawnId; }
-	void                              ResetSpawnedParticles();
-	void                              RemoveNewBornFlags();
+	bool                              HasNewBorns() const             { return m_lastSpawnId > m_lastId; }
+	bool                              IsNewBorn(TParticleId id) const { return id >= m_firstSpawnId && id < m_lastSpawnId; }
 	TParticleId                       GetRealId(TParticleId pId) const;
-	uint32                            GetNextSpawnId() const          { return m_nextSpawnId; }
-	SUpdateRange                      GetFullRange() const            { return SUpdateRange(0, GetLastParticleId()); }
-	SUpdateRange                      GetSpawnedRange() const         { return SUpdateRange(GetFirstSpawnParticleId(), GetLastParticleId()); }
+	SUpdateRange                      GetFullRange() const            { CRY_ASSERT(!HasNewBorns()); return SUpdateRange(0, m_lastId); }
+	SUpdateRange                      GetSpawnedRange() const         { return SUpdateRange(m_firstSpawnId, m_lastSpawnId); }
+	SUpdateRange                      GetNonSpawnedRange() const      { CRY_ASSERT(!HasNewBorns()); return SUpdateRange(0, m_firstSpawnId); }
 
 	void                              AddParticles(TConstArray<SSpawnEntry> spawnEntries);
+	void                              ResetSpawnedParticles();
 	void                              RemoveParticles(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
 
 private:
@@ -83,12 +82,12 @@ private:
 	
 	StaticEnumArray<void*, EParticleDataType> m_pData;
 	StaticEnumArray<bool, EParticleDataType>  m_useData;
-	uint32 m_nextSpawnId;
-	uint32 m_maxParticles;
+	TParticleId m_nextSpawnId;
+	TParticleId m_maxParticles;
 
-	uint32 m_lastId;
-	uint32 m_firstSpawnId;
-	uint32 m_lastSpawnId;
+	TParticleId m_lastId;
+	TParticleId m_firstSpawnId;
+	TParticleId m_lastSpawnId;
 };
 
 }

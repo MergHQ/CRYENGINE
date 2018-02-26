@@ -23,7 +23,6 @@ namespace pfx2
 
 EParticleDataType PDT(EPDT_SpawnId,          TParticleId);
 EParticleDataType PDT(EPDT_ParentId,         TParticleId);
-EParticleDataType PDT(EPDT_State,            uint8);
 EParticleDataType PDT(EPDT_SpawnFraction,    float);
 EParticleDataType PDT(EPDT_NormalAge,        float);
 EParticleDataType PDT(EPDT_LifeTime,         float);
@@ -308,7 +307,6 @@ void CParticleComponent::PreCompile()
 	AddParticleData(EPDT_NormalAge);
 	AddParticleData(EPDT_InvLifeTime);
 	AddParticleData(EPDT_LifeTime);
-	AddParticleData(EPDT_State);
 }
 
 void CParticleComponent::ResolveDependencies()

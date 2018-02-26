@@ -640,7 +640,7 @@ void CParticleEmitter::ResetRenderObjects()
 
 void CParticleEmitter::AddInstance()
 {
-	SInstance instance(m_parentContainer.GetLastParticleId());
+	SInstance instance(m_parentContainer.GetNumParticles());
 
 	m_parentContainer.AddParticle();
 

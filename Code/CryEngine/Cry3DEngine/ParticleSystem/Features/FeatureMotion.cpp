@@ -704,7 +704,7 @@ void CFeatureMotionCryPhysics::UpdateParticles(const SUpdateContext& context)
 	IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 	IOVec3Stream angularVelocities = container.GetIOVec3Stream(EPVF_AngularVelocity);
 	IOQuatStream orientations = container.GetIOQuatStream(EPQF_Orientation);
-	auto states = container.GetTIStream<uint8>(EPDT_State);
+	const IFStream ages = container.GetIFStream(EPDT_NormalAge);
 
 	for (auto particleId : context.GetUpdateRange())
 	{
@@ -726,8 +726,7 @@ void CFeatureMotionCryPhysics::UpdateParticles(const SUpdateContext& context)
 			angularVelocities.Store(particleId, statusDynamics.w);
 		}
 
-		const uint8 state = states.Load(particleId);
-		if (state == ES_Expired)
+		if (IsExpired(ages.Load(particleId)))
 		{
 			pPhysicalWorld->DestroyPhysicalEntity(pPhysicalEntity);
 			physicalEntities.Store(particleId, 0);
@@ -799,7 +798,7 @@ public:
 		CParticleContainer& container = context.m_container;
 		const CParticleContainer& parentContainer = context.m_parentContainer;
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-		const auto parentStates = parentContainer.GetTIStream<uint8>(EPDT_State);
+		const IFStream parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
 		const IQuatStream parentOrientations = parentContainer.GetIQuatStream(EPQF_Orientation);
 		const IVec3Stream localPositions = container.GetIVec3Stream(EPVF_LocalPosition);
@@ -816,8 +815,7 @@ public:
 		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
-			const uint8 parentState = (parentId != gInvalidId) ? parentStates.Load(parentId) : ES_Dead;
-			if (parentState == ES_Dead)
+			if (parentId == gInvalidId || IsExpired(parentAges.Load(parentId)))
 				continue;
 
 			const Vec3 wParentPos = parentPositions.SafeLoad(parentId);
@@ -863,15 +861,14 @@ public:
 		CParticleContainer& container = context.m_container;
 		const CParticleContainer& parentContainer = context.m_parentContainer;
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-		const auto parentStates = parentContainer.GetTIStream<uint8>(EPDT_State);
+		const IFStream parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		const IVec3Stream parentVelocities = parentContainer.GetIVec3Stream(EPVF_Velocity);
 		IOVec3Stream worldVelocities = container.GetIOVec3Stream(EPVF_Velocity);
 
 		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
-			const uint8 parentState = (parentId != gInvalidId) ? parentStates.Load(parentId) : 0;
-			if (parentState == ES_Expired)
+			if (parentId != gInvalidId && IsExpired(parentAges.Load(parentId)))
 			{
 				const Vec3 wParentVelocity = parentVelocities.Load(parentId);
 				const Vec3 wVelocity0 = worldVelocities.Load(particleId);

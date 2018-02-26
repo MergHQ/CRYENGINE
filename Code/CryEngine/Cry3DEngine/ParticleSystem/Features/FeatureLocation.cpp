@@ -961,16 +961,11 @@ public:
 		const CParticleContainer& parentContainer = context.m_parentContainer;
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
-		const TIStream<uint8> states = container.GetTIStream<uint8>(EPDT_State);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 
-		for (auto particleId : context.GetUpdateRange())
+		for (auto particleId : container.GetNonSpawnedRange())
 		{
-			const uint8 state = states.Load(particleId);
-			if (state == ES_NewBorn)
-				continue;
-
 			const Vec3 wPosition0 = positions.Load(particleId);
 			const Vec3 cPosition0 = wPrevCameraPoseInv * wPosition0;
 			const Vec3 wPosition1 = wCurCameraPose * cPosition0;

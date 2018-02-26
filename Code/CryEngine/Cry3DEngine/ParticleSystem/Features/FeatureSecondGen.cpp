@@ -238,10 +238,10 @@ public:
 	{
 		CFeatureSecondGenBase::AddToComponent(pComponent, pParams);
 		if (GetNumConnectors() != 0)
-			pComponent->UpdateParticles.add(this);
+			pComponent->PostUpdateParticles.add(this);
 	}
 
-	virtual void UpdateParticles(const SUpdateContext& context) override
+	virtual void PostUpdateParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -251,7 +251,7 @@ public:
 
 		const TIStream<SContactPoint> contactPoints = container.GetTIStream<SContactPoint>(EPDT_ContactPoint);
 		TInstanceArray triggers(*context.m_pMemHeap);
-		triggers.reserve(container.GetLastParticleId());
+		triggers.reserve(container.GetNumParticles());
 
 		for (auto particleId : context.GetUpdateRange())
 		{
