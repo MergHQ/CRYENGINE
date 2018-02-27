@@ -54,5 +54,7 @@ protected:
 
 	TagID m_walkTagId;
 
+	const float m_movmentSpeed = 0.2f;
+
 	IEntity* m_pCursorEntity = nullptr;
 };

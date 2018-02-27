@@ -43,9 +43,15 @@ void CPlayerComponent::Initialize()
 	// Get and initialize the pathfinding component
 	m_pPathfindingComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CPathfindingComponent>();
 
-	m_pPathfindingComponent->SetMovementRecommendationCallback( [this](const Vec3& recommendedVelocity)
+	m_pPathfindingComponent->SetMovementRecommendationCallback([this](const Vec3& recommendedVelocity)
 	{
-		m_pCharacterController->SetVelocity(recommendedVelocity);
+		m_pCharacterController->AddVelocity(recommendedVelocity.GetNormalized() * m_movmentSpeed);
+
+		// Stop the player if we reached the target location.
+		if (recommendedVelocity == ZERO)
+		{
+			m_pCharacterController->SetVelocity(ZERO);
+		}
 	});
 
 	// Register the walk action
