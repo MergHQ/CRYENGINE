@@ -527,17 +527,9 @@ buffer_handle_t CRenderAuxGeomD3D::CBufferManager::fill(buffer_handle_t buf, BUF
 
 bool CRenderAuxGeomD3D::PreparePass(const CCamera& camera, const SDisplayContextKey& displayContextKey, CPrimitiveRenderPass& pass, SRenderViewport* getViewport)
 {
-	if (!m_pCurrentDisplayContext || displayContextKey != m_currentDisplayKey)
-	{
-		m_pCurrentDisplayContext = gcpRendD3D.FindDisplayContext(displayContextKey);
-		m_currentDisplayKey = displayContextKey;
-	}
-
-	if (!m_pCurrentDisplayContext || !m_pCurrentDisplayContext->IsValid())
-	{
-		m_currentDisplayKey = {};
+	CRenderDisplayContext* displayContext = gcpRendD3D.FindDisplayContext(displayContextKey);
+	if (!displayContext)
 		return false;
-	}
 
 	// get current window resolution and update aspect ratios
 	m_wndXRes = camera.GetViewSurfaceX();
@@ -545,23 +537,23 @@ bool CRenderAuxGeomD3D::PreparePass(const CCamera& camera, const SDisplayContext
 	m_screenResolutionInverse.x = 1.0f / m_wndXRes;
 	m_screenResolutionInverse.y = 1.0f / m_wndYRes;
 
-	m_aspect = m_pCurrentDisplayContext->GetAspectRatio();
+	m_aspect = displayContext->GetAspectRatio();
 	m_aspectInv = 1.0f / m_aspect;
 
 	// Toggle current back-buffer if the output is connected to a swap-chain
-	m_pCurrentDisplayContext->PostPresent();
+	displayContext->PostPresent();
 
 	// update transformation matrices
 	m_matrices.UpdateMatrices(camera);
 
-	const SRenderViewport& vp = m_pCurrentDisplayContext->GetViewport();
+	const SRenderViewport& vp = displayContext->GetViewport();
 	D3DViewPort viewport = { float(vp.x), float(vp.y), float(vp.x) + vp.width, float(vp.y) + vp.height, vp.zmin, vp.zmax };
 
 	if (getViewport)
 		*getViewport = vp;
 
-	CTexture* pTargetTexture = m_pCurrentDisplayContext->GetCurrentColorOutput();
-	CTexture* pDepthTexture  = m_pCurrentDisplayContext->GetCurrentDepthOutput();
+	CTexture* pTargetTexture = displayContext->GetCurrentColorOutput();
+	CTexture* pDepthTexture  = displayContext->GetCurrentDepthOutput();
 	
 	pass.SetRenderTarget(0, pTargetTexture);
 	pass.SetDepthTarget(pDepthTexture);
@@ -864,8 +856,6 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& r
 //////////////////////////////////////////////////////////////////////////
 bool CRenderAuxGeomD3D::PrepareRendering(CAuxGeomCB::SAuxGeomCBRawData *pAuxGeomData)
 {
-	m_pCurrentDisplayContext = nullptr;
-
 	// reset DrawInFront mode
 	m_curDrawInFrontMode = e_DrawInFrontOff;
 
