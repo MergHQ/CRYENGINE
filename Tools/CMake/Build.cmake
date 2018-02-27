@@ -128,7 +128,7 @@ if (OPTION_SANDBOX AND WIN64)
 	generate_unit_test_targets(run_unit_tests_sandbox Sandbox)
 endif()
 
-if(WIN64 AND EXISTS "Code/Tools/ShaderCacheGen/ShaderCacheGen")
+if(WIN64 AND EXISTS "${CRYENGINE_DIR}/Code/Tools/ShaderCacheGen/ShaderCacheGen")
 	option(OPTION_SHADERCACHEGEN "Build the shader cache generator." OFF)
 endif()
 

@@ -2958,7 +2958,7 @@ void CSystem::ExecuteCommandLine()
 					sLine += string(" ") + pCmd->GetValue();
 
 				GetILog()->Log("Executing command from command line: \n%s\n", sLine.c_str()); // - the actual command might be executed much later (e.g. level load pause)
-				GetIConsole()->ExecuteString(sLine.c_str(), false, true);
+				GetIConsole()->ExecuteString(sLine.c_str(), false, !m_bShaderCacheGenMode);
 			}
 #if defined(DEDICATED_SERVER)
 			else
