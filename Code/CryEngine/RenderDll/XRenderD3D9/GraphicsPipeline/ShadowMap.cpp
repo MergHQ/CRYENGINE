@@ -346,7 +346,10 @@ void CShadowMapStage::Prepare()
 		}
 
 		// clear the shadow maps we will use
-		ClearShadowMaps(m_ShadowMapPasses);
+		if (CRendererCVars::CV_r_ShadowMapsUpdate)
+		{
+			ClearShadowMaps(m_ShadowMapPasses);
+		}
 	}
 }
 
@@ -380,8 +383,8 @@ void CShadowMapStage::PrepareShadowPasses(SShadowFrustumToRender& frustumToRende
 				UpdateShadowFrustumFromPass(curPass, *pFrustum);
 
 				curPass.m_bRequiresRender =
-				  !pShadowView->GetRenderItems(side).empty() ||
-				  pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance ||
+				  (CRendererCVars::CV_r_ShadowMapsUpdate && !pShadowView->GetRenderItems(side).empty()) ||
+				   pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance ||
 				  (pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmCached && !pFrustum->bIncrementalUpdate);
 
 				cry_strcpy(curPass.m_ProfileLabel, profileLabel);

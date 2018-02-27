@@ -266,34 +266,43 @@ void CShadowMaskStage::Prepare()
 	// Prepare primitives
 	const EShaderQuality shaderQuality = rd->m_cEF.m_ShaderProfiles[eST_Shadow].GetShaderQuality();
 	int firstUnusedStencilValue = 1; // cannot use stencil ref 0 here
-	m_sunShadowPrimitives = m_pSunShadows->PreparePrimitives(
-		m_maskGenPasses.front(),
-		firstUnusedStencilValue,
-		usingCloudShadows,
-		usingScreenSpaceShadows,
-		usingSvoShadows,
-		texelRelativeBias,
-		extendLastCachedCascade,
-		debugCascades ? &m_debugCascadesPass : nullptr,
-		pRenderView,
-		rtFlagsByQuality[shaderQuality]);
-	m_localLightPrimitives = m_pLocalLightShadows->PreparePrimitives(
-		m_maskGenPasses,
-		firstUnusedStencilValue,
-		usingScreenSpaceShadows,
-		pRenderView,
-		rtFlagsByQuality[shaderQuality]);
+
+	if (CRendererCVars::CV_r_ShadowsMask == 1 || CRendererCVars::CV_r_ShadowsMask == 2)
+	{
+		m_sunShadowPrimitives = m_pSunShadows->PreparePrimitives(
+			m_maskGenPasses.front(),
+			firstUnusedStencilValue,
+			usingCloudShadows,
+			usingScreenSpaceShadows,
+			usingSvoShadows,
+			texelRelativeBias,
+			extendLastCachedCascade,
+			debugCascades ? &m_debugCascadesPass : nullptr,
+			pRenderView,
+			rtFlagsByQuality[shaderQuality]);
+	}
+
+	if (CRendererCVars::CV_r_ShadowsMask == 1 || CRendererCVars::CV_r_ShadowsMask == 3)
+	{
+		m_localLightPrimitives = m_pLocalLightShadows->PreparePrimitives(
+			m_maskGenPasses,
+			firstUnusedStencilValue,
+			usingScreenSpaceShadows,
+			pRenderView,
+			rtFlagsByQuality[shaderQuality]);
+	}
+
 	rd->m_nStencilMaskRef = firstUnusedStencilValue;
 
 	// Clear first rendertarget slice and stencil buffer
 	{
 		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
-		SResourceView firstSliceDesc = SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(m_pShadowMaskRT->GetDstFormat()), 0, 1);
-		D3DSurface* pFirstSliceSRV = m_pShadowMaskRT->GetDevTexture()->GetOrCreateRTV(firstSliceDesc);
+		SResourceView colorSlicesDesc = SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(m_pShadowMaskRT->GetDstFormat()), 0, CRendererCVars::CV_r_ShadowsMask == 1 ? 1 : -1);
+		D3DSurface* pColorRTV = m_pShadowMaskRT->GetDevTexture()->GetOrCreateRTV(colorSlicesDesc);
 		D3DDepthSurface* pAllSliceDSV = pRenderView->GetDepthTarget()->GetDevTexture()->LookupDSV(EDefaultResourceViews::DepthStencil);
 
-		commandList.GetGraphicsInterface()->ClearSurface(pFirstSliceSRV, Clr_Transparent);
+		commandList.GetGraphicsInterface()->ClearSurface(pColorRTV, Clr_Transparent);
 		commandList.GetGraphicsInterface()->ClearSurface(pAllSliceDSV, CLEAR_STENCIL, Clr_Unused.r, 0);
 	}
 }
