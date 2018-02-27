@@ -53,6 +53,8 @@ public:
 	// Particle initialization
 	virtual void SpawnParticles(const SUpdateContext& context, TDynArray<SSpawnEntry>& spawnEntries) {}
 
+	virtual void PreInitParticles(const SUpdateContext& context) {}
+
 	virtual void InitParticles(const SUpdateContext& context) {}
 
 	virtual void PostInitParticles(const SUpdateContext& context) {}
@@ -101,6 +103,7 @@ struct SFeatureDispatchers
 	TFeatureDispatcher<const SUpdateContext&, TConstArray<float>, TVarArray<float>> GetSpatialExtents { &CParticleFeature::GetSpatialExtents };
 	TFeatureDispatcher<const SUpdateContext&, TParticleId, Vec3&> GetEmitOffset { &CParticleFeature::GetEmitOffset };
 
+	TFeatureDispatcher<const SUpdateContext&> PreInitParticles { &CParticleFeature::PreInitParticles };
 	TFeatureDispatcher<const SUpdateContext&> InitParticles { &CParticleFeature::InitParticles };
 	TFeatureDispatcher<const SUpdateContext&> PostInitParticles { &CParticleFeature::PostInitParticles };
 	TFeatureDispatcher<const SUpdateContext&, TConstArray<TParticleId>> KillParticles { &CParticleFeature::KillParticles };

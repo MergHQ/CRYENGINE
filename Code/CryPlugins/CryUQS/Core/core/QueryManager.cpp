@@ -21,6 +21,7 @@ namespace UQS
 			: pQuery()
 			, pQueryBlueprint()
 			, pCallback(0)
+			, parentQueryID(CQueryID::CreateInvalid())
 		{}
 
 		//===================================================================================
@@ -29,11 +30,13 @@ namespace UQS
 		//
 		//===================================================================================
 
-		CQueryManager::SFinishedQueryInfo::SFinishedQueryInfo(const std::shared_ptr<CQueryBase>& _pQuery, const std::shared_ptr<const CQueryBlueprint>& _pQueryBlueprint, const Functor1<const SQueryResult&>& _pCallback, const CQueryID& _queryID, bool _bQueryFinishedWithSuccess, const string& _errorIfAny)
+		CQueryManager::SFinishedQueryInfo::SFinishedQueryInfo(const std::shared_ptr<CQueryBase>& _pQuery, const std::shared_ptr<const CQueryBlueprint>& _pQueryBlueprint, const Functor1<const SQueryResult&>& _pCallback, const CQueryID& _queryID, const CQueryID& _parentQueryID, const CTimeValue& _queryFinishedTimestamp, bool _bQueryFinishedWithSuccess, const string& _errorIfAny)
 			: pQuery(_pQuery)
 			, pQueryBlueprint(_pQueryBlueprint)
 			, pCallback(_pCallback)
 			, queryID(_queryID)
+			, parentQueryID(_parentQueryID)
+			, queryFinishedTimestamp(_queryFinishedTimestamp)
 			, bQueryFinishedWithSuccess(_bQueryFinishedWithSuccess)
 			, errorIfAny(_errorIfAny)
 		{}
@@ -110,7 +113,41 @@ namespace UQS
 			}
 		}
 
-		CQueryID CQueryManager::StartQueryInternal(const CQueryID& parentQueryID, std::shared_ptr<const CQueryBlueprint> pQueryBlueprint, const Shared::IVariantDict& runtimeParams, const char* szQuerierName, Functor1<const Core::SQueryResult&> pCallback, const std::shared_ptr<CItemList>& pPotentialResultingItemsFromPreviousQuery, Shared::IUqsString& errorMessage)
+		void CQueryManager::RegisterQueryFinishedListener(Client::IQueryFinishedListener* pListenerToRegister)
+		{
+			stl::push_back_unique(m_queryFinishedListeners, pListenerToRegister);
+		}
+
+		void CQueryManager::UnregisterQueryFinishedListener(Client::IQueryFinishedListener* pListenerToUnregister)
+		{
+			stl::find_and_erase_all(m_queryFinishedListeners, pListenerToUnregister);
+		}
+
+		void CQueryManager::VisitRunningQueries(Client::IQueryVisitor& visitor)
+		{
+			for (const auto& pair : m_queries)
+			{
+				const CQueryID& queryID = pair.first;
+				const SRunningQueryInfo& runningQueryInfo = pair.second;
+				CQueryBase::SStatistics stats;
+				runningQueryInfo.pQuery->GetStatistics(stats);
+
+				const Client::IQueryVisitor::SQueryInfo queryInfo(
+					queryID,
+					runningQueryInfo.parentQueryID,
+					stats.querierName.c_str(),
+					stats.queryBlueprintName.c_str(),
+					(int)stats.numGeneratedItems,
+					(int)stats.numRemainingItemsToInspect,
+					stats.queryCreatedTimestamp,
+					(int)stats.totalElapsedFrames,
+					stats.totalConsumedTime);
+
+				visitor.OnQueryVisited(queryInfo);
+			}
+		}
+
+		CQueryID CQueryManager::StartQueryInternal(const CQueryID& parentQueryID, std::shared_ptr<const CQueryBlueprint> pQueryBlueprint, const Shared::IVariantDict& runtimeParams, const char* szQuerierName, Functor1<const SQueryResult&> pCallback, const std::shared_ptr<CItemList>& pPotentialResultingItemsFromPreviousQuery, Shared::IUqsString& errorMessage)
 		{
 			// generate a new query ID (even if the query fails to start)
 			const CQueryID id = ++m_queryIDProvider;
@@ -130,16 +167,26 @@ namespace UQS
 			Shared::CUqsString error;
 			if (!q->InstantiateFromQueryBlueprint(pQueryBlueprint, runtimeParams, error))
 			{
+				SFinishedQueryInfo finishedQueryInfo(
+					std::move(q),		// unique_ptr -> shared_ptr conversion
+					pQueryBlueprint,
+					nullptr,
+					id,
+					parentQueryID,
+					gEnv->pTimer->GetAsyncTime(),
+					false,
+					error.c_str());
+				NotifyCallbacksOfFinishedQuery(finishedQueryInfo);
 				errorMessage.Format("CQueryManager::StartQueryInternal: %s", error.c_str());
 				return CQueryID::CreateInvalid();
 			}
 
 			// keep track of and update the new query from now on
-			SRunningQueryInfo newEntry;
+			SRunningQueryInfo& newEntry = m_queries[id];
 			newEntry.pQuery = std::move(q);
 			newEntry.pQueryBlueprint = pQueryBlueprint;
 			newEntry.pCallback = pCallback;
-			m_queries[id] = newEntry;
+			newEntry.parentQueryID = parentQueryID;
 
 			return id;
 		}
@@ -275,8 +322,9 @@ namespace UQS
 							const std::shared_ptr<const CQueryBlueprint>& pQueryBlueprint = it->second.pQueryBlueprint;
 							const Functor1<const SQueryResult&>& pCallback = it->second.pCallback;
 							const CQueryID& queryID = it->first;
+							const CQueryID& parentQueryID = it->second.parentQueryID;
 							const bool bQueryFinishedWithSuccess = true;
-							finishedOnes.emplace_back(pQuery, pQueryBlueprint, pCallback, queryID, bQueryFinishedWithSuccess, "");
+							finishedOnes.emplace_back(pQuery, pQueryBlueprint, pCallback, queryID, parentQueryID, timestampAfterQueryUpdate, bQueryFinishedWithSuccess, "");
 						}
 						break;
 
@@ -286,8 +334,9 @@ namespace UQS
 							const std::shared_ptr<const CQueryBlueprint>& pQueryBlueprint = it->second.pQueryBlueprint;
 							const Functor1<const SQueryResult&>& pCallback = it->second.pCallback;
 							const CQueryID& queryID = it->first;
+							const CQueryID& parentQueryID = it->second.parentQueryID;
 							const bool bQueryFinishedWithSuccess = false;
-							finishedOnes.emplace_back(pQuery, pQueryBlueprint, pCallback, queryID, bQueryFinishedWithSuccess, error.c_str());
+							finishedOnes.emplace_back(pQuery, pQueryBlueprint, pCallback, queryID, parentQueryID, timestampAfterQueryUpdate, bQueryFinishedWithSuccess, error.c_str());
 						}
 						break;
 
@@ -332,10 +381,7 @@ namespace UQS
 					// first, notify all listeners that these queries have finished
 					for (const SFinishedQueryInfo& entry : finishedOnes)
 					{
-						if (entry.pCallback)
-						{
-							NotifyCallbackOfFinishedQuery(entry);
-						}
+						NotifyCallbacksOfFinishedQuery(entry);
 
 						// add a new entry to the debug history for 2D on-screen rendering
 						if (SCvars::debugDraw)
@@ -360,21 +406,56 @@ namespace UQS
 			}
 		}
 
-		void CQueryManager::NotifyCallbackOfFinishedQuery(const SFinishedQueryInfo& finishedQueryInfo)
+		void CQueryManager::NotifyCallbacksOfFinishedQuery(const SFinishedQueryInfo& finishedQueryInfo) const
 		{
 			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, finishedQueryInfo.pQueryBlueprint->GetName());
 
-			if (finishedQueryInfo.bQueryFinishedWithSuccess)
+			//
+			// call the callback that is tied to given query
+			//
+
+			if (finishedQueryInfo.pCallback)
 			{
-				QueryResultSetUniquePtr pResultSet = finishedQueryInfo.pQuery->ClaimResultSet();
-				const SQueryResult result = SQueryResult::CreateSuccess(finishedQueryInfo.queryID, pResultSet);
-				finishedQueryInfo.pCallback(result);
+				if (finishedQueryInfo.bQueryFinishedWithSuccess)
+				{
+					QueryResultSetUniquePtr pResultSet = finishedQueryInfo.pQuery->ClaimResultSet();
+					const SQueryResult result = SQueryResult::CreateSuccess(finishedQueryInfo.queryID, pResultSet);
+					finishedQueryInfo.pCallback(result);
+				}
+				else
+				{
+					QueryResultSetUniquePtr pResultSetDummy;
+					const SQueryResult result = SQueryResult::CreateError(finishedQueryInfo.queryID, pResultSetDummy, finishedQueryInfo.errorIfAny.c_str());
+					finishedQueryInfo.pCallback(result);
+				}
 			}
-			else
+
+			//
+			// call all global callbacks (that are interested in *all* finished queries)
+			//
+
+			if (!m_queryFinishedListeners.empty())
 			{
-				QueryResultSetUniquePtr pResultSetDummy;
-				const SQueryResult result = SQueryResult::CreateError(finishedQueryInfo.queryID, pResultSetDummy, finishedQueryInfo.errorIfAny.c_str());
-				finishedQueryInfo.pCallback(result);
+				CQueryBase::SStatistics stats;
+				finishedQueryInfo.pQuery->GetStatistics(stats);
+
+				const Client::IQueryFinishedListener::SQueryInfo queryInfo(
+					finishedQueryInfo.queryID,
+					finishedQueryInfo.parentQueryID,
+					stats.querierName.c_str(), 
+					stats.queryBlueprintName.c_str(),
+					(int)stats.numGeneratedItems,
+					(int)stats.numItemsInFinalResultSet,
+					stats.queryCreatedTimestamp,
+					finishedQueryInfo.queryFinishedTimestamp,
+					(int)stats.totalElapsedFrames,
+					!finishedQueryInfo.bQueryFinishedWithSuccess,
+					finishedQueryInfo.errorIfAny.c_str());
+
+				for (Client::IQueryFinishedListener* pListener : m_queryFinishedListeners)
+				{
+					pListener->OnQueryFinished(queryInfo);
+				}
 			}
 		}
 

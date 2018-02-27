@@ -44,7 +44,7 @@ REGISTER_CVAR_AUTO(int, e_svoTI_DualTracing, 2, VF_NULL, "Double the number of r
 REGISTER_CVAR_AUTO(float, e_svoTI_PointLightsMultiplier, 1.f, VF_NULL, "Modulates point light injection (controls the intensity of bounce light)");
 REGISTER_CVAR_AUTO(float, e_svoTI_EmissiveMultiplier, 4.f, VF_NULL, "Modulates emissive materials light injection\nAllows controlling emission separately from post process glow");
 REGISTER_CVAR_AUTO(float, e_svoTI_VegetationMaxOpacity, .18f, VF_NULL, "Limits the opacity of vegetation voxels");
-REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizaionPostpone, 2, VF_NULL, "1 - Postpone voxelization until all needed meshes are streamed in\n2 - Postpone voxelization and request streaming of missing meshes\nUse e_svoDebug = 7 to visualize postponed nodes and not ready meshes");
+REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizationPostpone, 2, VF_NULL, "1 - Postpone voxelization until all needed meshes are streamed in\n2 - Postpone voxelization and request streaming of missing meshes\nUse e_svoDebug = 7 to visualize postponed nodes and not ready meshes");
 REGISTER_CVAR_AUTO(float, e_svoTI_MinVoxelOpacity, 0.1f, VF_NULL, "Voxelize only geometry with opacity higher than specified value");
 REGISTER_CVAR_AUTO(float, e_svoTI_MinReflectance, 0.2f, VF_NULL, "Controls light bouncing from very dark surfaces (and from surfaces missing in RSM)");
 REGISTER_CVAR_AUTO(int, e_svoTI_ObjectsLod, 1, VF_NULL, "Mesh LOD used for voxelization\nChanges are visible only after re-voxelization (click <Update geometry> or restart)");
@@ -127,8 +127,10 @@ REGISTER_CVAR_AUTO(int, e_svoTI_HalfresKernelSecondary, 0, VF_EXPERIMENTAL,
                    "Use less rays for secondary bounce\nThis gives faster update of cached lighting but may reduce the precision of secondary bounce\nDifference is only visible with number of bounces more than 1");
 REGISTER_CVAR_AUTO(int, e_svoTI_UseLightProbes, 0, VF_NULL,
                    "If enabled - environment probes lighting is multiplied with GI\nIf disabled - diffuse contribution of environment probes is replaced with GI\nIn modes 1-2 it enables usage of global env probe for sky light instead of TOD fog color");
-REGISTER_CVAR_AUTO(float, e_svoTI_VoxelizaionLODRatio, 0, VF_NULL,
+REGISTER_CVAR_AUTO(float, e_svoTI_VoxelizationLODRatio, 0, VF_NULL,
                    "Controls distance LOD ratio for voxelization\nBigger value helps getting more detailed lighting at distance but may work slower and will use more memory in pool\nIt may be necessary to increase VoxelPoolResolution parameter in order to prevent running out of voxel pool");
+REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizationMapBorder, 0.f, VF_EXPERIMENTAL,
+                   "Skip voxelization of geometry close to the edges of the map\nIn case of offline voxelization this will speedup the export process and reduce data size on disk.");
 REGISTER_CVAR_AUTO(int, e_svoVoxelPoolResolution, 0, VF_NULL,
                    "Size of volume textures (x,y,z dimensions) used for SVO data storage\nValid values are 128 and 256\nEngine has to be restarted if this value was modified\nToo big pool size may cause long stalls when some GI parameter was changed");
 REGISTER_CVAR_AUTO(float, e_svoTI_SSAOAmount, 0, VF_NULL,
@@ -149,7 +151,7 @@ REGISTER_CVAR_AUTO(int, e_svoTI_TraceVoxels, 1, VF_EXPERIMENTAL,
                    "Include voxels into tracing\nAllows to exclude voxel tracing if only proxies are needed");
 REGISTER_CVAR_AUTO(float, e_svoTI_TranslucentBrightness, 0, VF_NULL,
                    "Adjusts the brightness of semi translucent surfaces\nAffects mostly vegetation leaves and grass");
-REGISTER_CVAR_AUTO(int, e_svoStreamVoxels, 0, VF_NULL,
+REGISTER_CVAR_AUTO(int, e_svoStreamVoxels, 0, VF_EXPERIMENTAL,
                    "Enable steaming of voxel data from disk instead of run-time voxelization\n"
                    "Steaming used only in launcher, in the editor voxels are always run-time generated\n"
                    "If enabled, level export will include voxels pre-computation process which may take up to one hour for big complex levels");
@@ -254,7 +256,6 @@ REGISTER_CVAR_AUTO(float, e_svoTI_HighGlossOcclusion, 0.f, VF_NULL, "Normally sp
 REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizeUnderTerrain, 0, VF_NULL, "0 = Skip underground triangles during voxelization");
 REGISTER_CVAR_AUTO(int, e_svoTI_VoxelizeHiddenObjects, 0, VF_NULL, "0 = Skip hidden objects during voxelization");
 REGISTER_CVAR_AUTO(int, e_svoTI_AsyncCompute, 0, VF_NULL, "Use asynchronous compute for SVO updates");
-REGISTER_CVAR_AUTO(float, e_svoTI_VoxelizeMapBorder, 0.f, VF_NULL, "Allows to skip voxelization of geometry near the edges of the map.");
 
 #if defined (CRY_PLATFORM_CONSOLE) || defined (CRY_PLATFORM_MOBILE)
 const int svoTI_numStreamingThreads = 1;

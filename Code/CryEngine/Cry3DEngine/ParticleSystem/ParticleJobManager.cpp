@@ -60,6 +60,7 @@ void CParticleJobManager::ScheduleUpdates()
 		// Update synchronously in main thread
 		for (auto pEmitter : m_emitterRefs)
 			pEmitter->UpdateAll();
+		m_emitterRefs.clear();
 		return;
 	}
 

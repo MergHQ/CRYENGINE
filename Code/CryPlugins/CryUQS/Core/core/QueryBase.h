@@ -100,6 +100,7 @@ namespace UQS
 				// this is stuff that CQueryManager::DebugDrawQueryStatistics() is partly interested in (but it's also interested in the number of items - hmmm, could we just display the elapsed frames instead?)
 				string                                  querierName;
 				string                                  queryBlueprintName;
+				CTimeValue                              queryCreatedTimestamp;
 				size_t                                  totalElapsedFrames;
 				CTimeValue                              totalConsumedTime;
 				std::vector<SGrantedAndUsedTime>        grantedAndUsedTimePerFrame;       // grows with each update call
@@ -159,6 +160,7 @@ namespace UQS
 
 		private:
 			// debugging
+			CTimeValue                                  m_queryCreatedTimestamp;          // timestamp of when the query was created (via its ctor)
 			size_t                                      m_totalElapsedFrames;             // runaway-counter that increments on each Update() call
 			CTimeValue                                  m_totalConsumedTime;              // run-away timer that increments on each Update() call
 			std::vector<SGrantedAndUsedTime>            m_grantedAndUsedTimePerFrame;     // keeps track of how much time we were given to do some work on each frame and how much time we actually spent; grows on each Update() call

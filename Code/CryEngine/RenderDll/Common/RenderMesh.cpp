@@ -4156,10 +4156,14 @@ void CRenderMesh::UpdateModifiedMeshes(bool bAcquireLock, int threadId)
 	std::vector<CRenderMesh*> modifiedMeshes;
 	{
 		AUTO_LOCK(m_sLinkLock);
-		for (util::list<CRenderMesh>* iter = s_MeshModifiedList[threadId].next, *pos = iter->next; iter != &s_MeshModifiedList[threadId]; iter = pos, pos = pos->next)
-			modifiedMeshes.push_back(iter->item<&CRenderMesh::m_Modified>(threadId));
+		
+		while (!s_MeshModifiedList[threadId].empty())
+		{
+			util::list<CRenderMesh>* pListItem = s_MeshModifiedList[threadId].next;
+			pListItem->erase();
 
-		s_MeshModifiedList[threadId].clear();
+			modifiedMeshes.push_back(pListItem->item<&CRenderMesh::m_Modified>(threadId));
+		}
 	}
 
 	for (auto* pMesh : modifiedMeshes)
@@ -4630,10 +4634,7 @@ void CRenderMesh::ReleaseRemappedBoneIndicesPair(const uint pairGuid)
 			if (--m_RemappedBoneIndices[i].refcount == 0)
 			{
 				m_DeletedBoneIndices.emplace_back(pairGuid);
-				{
-					AUTO_LOCK(m_sLinkLock);
-					m_Modified[threadId].relink_tail(s_MeshModifiedList[threadId]);
-				}
+				RelinkTail(m_Modified[threadId], s_MeshModifiedList[threadId]);
 
 				return; 
 			}

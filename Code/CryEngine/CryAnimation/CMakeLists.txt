@@ -230,3 +230,6 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineModule(CryAnimation PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine")
+if (OPTION_UNIT_TEST AND NOT OPTION_STATIC_LINKING) #Currently an additional static lib is only used by unit testing under non-monolithic mode
+	CryEngineModule(CryAnimationLib PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine" FORCE_STATIC)
+endif()

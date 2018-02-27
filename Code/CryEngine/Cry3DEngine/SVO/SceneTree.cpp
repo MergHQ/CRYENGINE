@@ -483,6 +483,8 @@ void CSvoEnv::ProcessSvoRootTeleport()
 
 		if (scrollDir)
 		{
+			m_bRootTeleportSkipFrame = true; // workaround for one frame flicker on root teleport
+
 			// scroll root node bounding box
 			m_pSvoRoot->m_nodeBox.min[axisId] += rootSize / 2 * scrollDir;
 			m_pSvoRoot->m_nodeBox.max[axisId] += rootSize / 2 * scrollDir;
@@ -703,7 +705,7 @@ void CSvoNode::Render(PodArray<struct SPvsItem>* pSortedPVS, uint64 nodeKey, int
 
 	const float nodeToCamDist = m_nodeBox.GetDistance(vCamPos);
 
-	const float boxSizeRated = boxSize * Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizaionLODRatio;
+	const float boxSizeRated = boxSize * Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationLODRatio;
 
 	bool bDrawThisNode = false;
 
@@ -962,6 +964,8 @@ CSvoEnv::CSvoEnv(const AABB& worldBox)
 CSvoEnv::~CSvoEnv()
 {
 	SAFE_DELETE(m_pStreamEngine);
+	assert(CVoxelSegment::m_streamingTasksInProgress == 0);
+
 	SAFE_DELETE(m_pSvoRoot);
 
 	#ifdef FEATURE_SVO_GI_USE_MESH_RT
@@ -977,6 +981,7 @@ CSvoEnv::~CSvoEnv()
 	GetRenderer()->RemoveTexture(m_texAldiPoolId);
 	GetRenderer()->RemoveTexture(m_texOpasPoolId);
 	GetRenderer()->RemoveTexture(m_texNodePoolId);
+	CVoxelSegment::m_svoDataPoolsCounter = 0;
 
 	GetCVars()->e_svoTI_Active = 0;
 	GetCVars()->e_svoTI_Apply = 0;
@@ -1099,7 +1104,7 @@ uint32 CSvoNode::SaveNode(PodArray<byte>& rS, uint32& nodesCounterRec, ICryArchi
 					float startTime = Cry3DEngineBase::GetTimer()->GetAsyncCurTime();
 
 					AABB terrainBox = AABB(Vec3(0, 0, 0), Vec3((float)gEnv->p3DEngine->GetTerrainSize(), (float)gEnv->p3DEngine->GetTerrainSize(), (float)gEnv->p3DEngine->GetTerrainSize()));
-					terrainBox.Expand(-Vec3(Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizeMapBorder + 1.f, Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizeMapBorder + 1.f, 0));
+					terrainBox.Expand(-Vec3(Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationMapBorder + 1.f, Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationMapBorder + 1.f, 0));
 					bool isInPlayableArea = terrainBox.IsIntersectBox(m_ppChilds[childId]->m_nodeBox);
 
 					if (isInPlayableArea && !CVoxelSegment::m_bExportAbortRequested)
@@ -1629,7 +1634,9 @@ bool CSvoEnv::GetSvoStaticTextures(I3DEngine::SSvoStaticTexInfo& svoInfo, PodArr
 	svoInfo.nBrickSize = SVO_VOX_BRICK_MAX_SIZE;
 
 	svoInfo.bSvoReady = (m_streamingStartTime < 0);
-	svoInfo.bSvoFreeze = (m_svoFreezeTime >= 0);
+	svoInfo.bSvoFreeze = (m_svoFreezeTime >= 0) || m_bRootTeleportSkipFrame;
+
+	m_bRootTeleportSkipFrame = false;
 
 	ZeroStruct(svoInfo.arrPortalsPos);
 	ZeroStruct(svoInfo.arrPortalsDir);
@@ -2233,8 +2240,9 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 	while (GetCVars()->e_svoVoxelPoolResolution < voxelPoolResolution)
 		GetCVars()->e_svoVoxelPoolResolution *= 2;
 
-	GetCVars()->e_svoTI_VoxelizaionLODRatio = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "VoxelizaionLODRatio", "0"));
-	GetCVars()->e_svoDVR_DistRatio = GetCVars()->e_svoTI_VoxelizaionLODRatio / 2;
+	GetCVars()->e_svoTI_VoxelizationLODRatio = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "VoxelizationLODRatio", "1"));
+	GetCVars()->e_svoTI_VoxelizationMapBorder = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "VoxelizationMapBorder", "0"));
+	GetCVars()->e_svoDVR_DistRatio = GetCVars()->e_svoTI_VoxelizationLODRatio / 2;
 
 	GetCVars()->e_svoTI_InjectionMultiplier = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "InjectionMultiplier", "0"));
 	GetCVars()->e_svoTI_NumberOfBounces = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "NumberOfBounces", "0"));
@@ -2784,7 +2792,7 @@ void CSvoNode::CheckAllocateChilds()
 
 		AABB childBox = GetChildBBox(childId);
 
-		if (!IsStreamingActive() && Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizaionPostpone && (!m_ppChilds || !m_ppChilds[childId]) && (childBox.GetSize().z == Cry3DEngineBase::GetCVars()->e_svoMaxNodeSize))
+		if (!IsStreamingActive() && Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationPostpone && (!m_ppChilds || !m_ppChilds[childId]) && (childBox.GetSize().z == Cry3DEngineBase::GetCVars()->e_svoMaxNodeSize))
 		{
 			bool bThisIsAreaParent, bThisIsLowLodNode;
 			if (!CVoxelSegment::CheckCollectObjectsForVoxelization(childBox, nullptr, bThisIsAreaParent, bThisIsLowLodNode, true))

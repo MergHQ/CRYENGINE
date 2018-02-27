@@ -96,6 +96,7 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_NewBornTime);
 
 	RemoveParticles(context);
+	AgeUpdate(context);
 
 	AddParticles(context);
 	UpdateNewBorns(context);
@@ -121,7 +122,8 @@ void CParticleComponentRuntime::UpdateParticles(const SUpdateContext& context)
 	GetComponent()->PostUpdateParticles(context);
 
 	UpdateLocalSpace(context.m_updateRange);
-	AgeUpdate(context);
+
+	OnKillParticles(context);
 
 	m_particleStats.updated += context.m_updateRange.size();
 }
@@ -292,6 +294,25 @@ void CParticleComponentRuntime::RemoveParticles(const SUpdateContext& context)
 	}
 }
 
+void CParticleComponentRuntime::OnKillParticles(const SUpdateContext &context)
+{
+	if (GetComponent()->KillParticles.size())
+	{
+		TParticleIdArray particleIds(*context.m_pMemHeap);
+		particleIds.reserve(m_container.GetNumParticles());
+		IOFStream normAges = m_container.GetIOFStream(EPDT_NormalAge);
+
+		for (auto particleId : context.GetUpdateRange())
+		{
+			const float age = normAges.Load(particleId);
+			if (IsExpired(age))
+				particleIds.push_back(particleId);
+		}
+		if (!particleIds.empty())
+			GetComponent()->KillParticles(context, particleIds);
+	}
+}
+
 void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 {
 	CRY_PFX2_PROFILE_DETAIL;
@@ -299,7 +320,6 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 	if (!m_container.HasNewBorns())
 		return;
 
-	const floatv deltaTime = ToFloatv(context.m_deltaTime);
 	CParticleContainer& parentContainer = GetParentContainer();
 
 	// interpolate position and normAge over time and velocity
@@ -311,12 +331,20 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 
 	IOVec3Stream positions = m_container.GetIOVec3Stream(EPVF_Position);
 	IOFStream normAges = m_container.GetIOFStream(EPDT_NormalAge);
+	IFStream invLifeTimes = m_container.GetIFStream(EPDT_InvLifeTime);
 
 	const bool checkParentLife = IsChild();
 
+	GetComponent()->PreInitParticles(context);
+
 	for (auto particleGroupId : context.GetSpawnedGroupRange())
 	{
-		floatv backTime = normAges.Load(particleGroupId) * deltaTime;
+		// Convert absolute spawned particle age to normal age / life
+		floatv normAge = normAges.Load(particleGroupId);
+		floatv backTime = -normAge;
+		normAge *= invLifeTimes.Load(particleGroupId);
+		normAges.Store(particleGroupId, normAge);
+
 		const uint32v parentGroupId = parentIds.Load(particleGroupId);
 		if (checkParentLife)
 		{
@@ -472,21 +500,6 @@ void CParticleComponentRuntime::AgeUpdate(const SUpdateContext& context)
 			-normAge0 * frameTime * invLifeTime
 		);
 		normAges.Store(particleGroupId, normalAge1);
-	}
-
-	if (GetComponent()->KillParticles.size())
-	{
-		TParticleIdArray particleIds(*context.m_pMemHeap);
-		particleIds.reserve(m_container.GetNumParticles());
-
-		for (auto particleId : context.GetUpdateRange())
-		{
-			const float age = normAges.Load(particleId);
-			if (IsExpired(age))
-				particleIds.push_back(particleId);
-		}
-		if (!particleIds.empty())
-			GetComponent()->KillParticles(context, particleIds);
 	}
 }
 

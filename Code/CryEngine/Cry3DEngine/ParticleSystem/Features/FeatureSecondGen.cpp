@@ -174,10 +174,11 @@ public:
 		triggers.reserve(container.GetNumSpawnedParticles());
 
 		IFStream normAges = container.GetIFStream(EPDT_NormalAge);
+		IFStream lifeTimes = container.GetIFStream(EPDT_LifeTime);
 
 		for (auto particleId : context.GetSpawnedRange())
 		{
-			const float delay = (1.0f + normAges.Load(particleId)) * context.m_deltaTime;
+			const float delay = context.m_deltaTime - normAges.Load(particleId) * lifeTimes.Load(particleId);
 			triggers.emplace_back(particleId, delay);
 		}
 

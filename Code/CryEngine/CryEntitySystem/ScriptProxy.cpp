@@ -514,6 +514,19 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 	case ENTITY_EVENT_XFORM_FINISHED_EDITOR:
 		m_pScript->Call_OnTransformFromEditorDone(m_pThis);
 		break;
+	case ENTITY_EVENT_COLLISION:
+		{
+			const EventPhysCollision* pCollision = reinterpret_cast<const EventPhysCollision*>(event.nParam[0]);
+
+			const int thisEntityIndex = static_cast<int>(event.nParam[1]);
+			const int otherEntityIndex = (thisEntityIndex + 1) % 2;
+
+			CEntity* pOtherEntity = static_cast<CEntity*>(pCollision->pEntity[otherEntityIndex]->GetForeignData(PHYS_FOREIGN_ID_ENTITY));
+
+			const Vec3& normal = thisEntityIndex == 0 ? pCollision->n : -pCollision->n;
+			OnCollision(pOtherEntity, pCollision->idmat[otherEntityIndex], pCollision->pt, normal, pCollision->vloc[thisEntityIndex], pCollision->vloc[otherEntityIndex], pCollision->partid[otherEntityIndex], pCollision->mass[otherEntityIndex]);
+		}
+		break;
 	}
 }
 
@@ -526,7 +539,7 @@ uint64 CEntityComponentLuaScript::GetEventMask() const
 	                   | BIT64(ENTITY_EVENT_LEAVEAREA) | BIT64(ENTITY_EVENT_ENTERNEARAREA) | BIT64(ENTITY_EVENT_LEAVENEARAREA) | BIT64(ENTITY_EVENT_MOVENEARAREA)
 	                   | BIT64(ENTITY_EVENT_PHYS_BREAK) | BIT64(ENTITY_EVENT_AUDIO_TRIGGER_ENDED) | BIT64(ENTITY_EVENT_LEVEL_LOADED) | BIT64(ENTITY_EVENT_START_LEVEL)
 	                   | BIT64(ENTITY_EVENT_START_GAME) | BIT64(ENTITY_EVENT_PRE_SERIALIZE) | BIT64(ENTITY_EVENT_POST_SERIALIZE) | BIT64(ENTITY_EVENT_HIDE)
-	                   | BIT64(ENTITY_EVENT_UNHIDE) | BIT64(ENTITY_EVENT_XFORM_FINISHED_EDITOR);
+	                   | BIT64(ENTITY_EVENT_UNHIDE) | BIT64(ENTITY_EVENT_XFORM_FINISHED_EDITOR) | BIT64(ENTITY_EVENT_COLLISION);
 
 	if (m_implementedUpdateFunction && m_isUpdateEnabled && (!m_pEntity->IsHidden() || (m_pEntity->GetFlags() & ENTITY_FLAG_UPDATE_HIDDEN) != 0))
 	{
@@ -909,6 +922,17 @@ void CEntityComponentLuaScript::CallInitEvent(bool bFromReload)
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentLuaScript::OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass)
 {
+	if (CVar::pLogCollisions->GetIVal() != 0)
+	{
+		string s1 = GetEntity()->GetEntityTextDescription();
+		string s2;
+		if (pTarget)
+			s2 = pTarget->GetEntityTextDescription();
+		else
+			s2 = "<Unknown>";
+		CryLogAlways("OnCollision %s (Target: %s)", s1.c_str(), s2.c_str());
+	}
+
 	if (!CurrentState()->IsStateFunctionImplemented(ScriptState_OnCollision))
 		return;
 

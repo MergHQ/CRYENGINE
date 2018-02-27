@@ -132,6 +132,7 @@ private:
 	void              DebugDrawNavigationSystemState(NavigationSystem& navigationSystem);
 	void              DebugDrawMemoryStats(NavigationSystem& navigationSystem);
 	void              DebugDrawTriangleOnCursor(NavigationSystem& navigationSystem);
+	void              DebugDrawMeshBorders(NavigationSystem& navigationSystem);
 
 	DebugDrawSettings GetDebugDrawSettings(NavigationSystem& navigationSystem);
 

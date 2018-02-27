@@ -2885,25 +2885,28 @@ const MNM::INavMesh* NavigationSystem::GetMNMNavMesh(NavigationMeshID meshID) co
 
 size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, const INavMeshQueryFilter* pFilter, float minIslandArea) const
 {
-	if (m_meshes.validate(meshID))
+	if (maxCenterLocationCount == 0 || !m_meshes.validate(meshID))
+		return 0;
+	
+	const NavigationMesh& mesh = m_meshes[meshID];
+	const MNM::CNavMesh& navMesh = mesh.navMesh;
+	const MNM::aabb_t meshAabb = navMesh.ToMeshSpace(MNM::aabb_t(searchAABB.min, searchAABB.max));
+
+	size_t foundTrianglesCount = 0;
+	navMesh.QueryTrianglesWithProcessing(meshAabb, pFilter, [=, &foundTrianglesCount](const MNM::TileID tileId, const MNM::Tile::STriangle** pTriangles, const MNM::TriangleID* pTriangleIds, const size_t trianglesCount)
 	{
-		const NavigationMesh& mesh = m_meshes[meshID];
-		const MNM::aabb_t meshAabb = mesh.navMesh.ToMeshSpace(MNM::aabb_t(searchAABB.min, searchAABB.max));
-		const size_t maxTriangleCount = 4096;
-		MNM::TriangleID triangleIDs[maxTriangleCount];
-		const size_t foundTrianglesCount = mesh.navMesh.GetTriangles(meshAabb, triangleIDs, maxTriangleCount, pFilter, minIslandArea);
-
-		const size_t trianglesCount = min(foundTrianglesCount, maxCenterLocationCount);
-
 		MNM::vector3_t a, b, c;
 		for (size_t i = 0; i < trianglesCount; ++i)
 		{
-			mesh.navMesh.GetVertices(triangleIDs[i], a, b, c);
-			centerLocations[i] = mesh.navMesh.ToWorldSpace((a + b + c) * MNM::real_t(0.33333f)).GetVec3();
+			navMesh.GetVertices(pTriangleIds[i], a, b, c);
+			centerLocations[foundTrianglesCount] = navMesh.ToWorldSpace((a + b + c) * MNM::real_t(0.33333f)).GetVec3();
+
+			if (++foundTrianglesCount == maxCenterLocationCount)
+				return INavMeshQueryProcessing::EResult::Stop;
 		}
-		return trianglesCount;
-	}
-	return 0;
+		return INavMeshQueryProcessing::EResult::Continue;
+	});
+	return foundTrianglesCount;
 }
 
 size_t NavigationSystem::GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBordersEdgesWithNormal, size_t maxBorderCount, const INavMeshQueryFilter* pFilter, float minIslandArea /*= 0.0f*/) const
@@ -2935,30 +2938,29 @@ size_t NavigationSystem::GetTriangleBorders(const NavigationMeshID meshID, const
 
 size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t maxCount, const INavMeshQueryFilter* pFilter, float minIslandArea) const
 {
-	if (m_meshes.validate(meshID))
+	if (maxCount == 0 || !m_meshes.validate(meshID))
+		return 0;
+	
+	const NavigationMesh& mesh = m_meshes[meshID];
+	const MNM::CNavMesh& navMesh = mesh.navMesh;
+	const MNM::aabb_t meshAabb = navMesh.ToMeshSpace(MNM::aabb_t(aabb.min, aabb.max));
+
+	size_t foundTrianglesCount = 0;
+	navMesh.QueryTrianglesWithProcessing(meshAabb, pFilter, [=, &foundTrianglesCount](const MNM::TileID tileId, const MNM::Tile::STriangle** pTriangles, const MNM::TriangleID* pTriangleIds, const size_t trianglesCount)
 	{
-		const NavigationMesh& mesh = m_meshes[meshID];
-		const MNM::aabb_t meshAabb = mesh.navMesh.ToMeshSpace(MNM::aabb_t(aabb.min, aabb.max));
-		const size_t maxTriangleCount = 4096;
-		MNM::TriangleID triangleIDs[maxTriangleCount];
-		const size_t foundTrianglesCount = mesh.navMesh.GetTriangles(meshAabb, triangleIDs, maxTriangleCount, pFilter, minIslandArea);
-		
-		const size_t trianglesCount = min(foundTrianglesCount, maxCount);
-
-		MNM::Tile::STriangle triangle;
 		MNM::vector3_t a, b, c;
-
 		for (size_t i = 0; i < trianglesCount; ++i)
 		{
-			mesh.navMesh.GetTriangle(triangleIDs[i], triangle);
-			mesh.navMesh.GetVertices(triangleIDs[i], a, b, c);
-			centerLocations[i] = mesh.navMesh.ToWorldSpace((a + b + c) * MNM::real_t(0.33333f)).GetVec3();
-			islandids[i] = triangle.islandID;
-		}
-		return trianglesCount;
-	}
+			navMesh.GetVertices(pTriangleIds[i], a, b, c);
+			centerLocations[foundTrianglesCount] = navMesh.ToWorldSpace((a + b + c) * MNM::real_t(0.33333f)).GetVec3();
+			islandids[foundTrianglesCount] = pTriangles[i]->islandID;
 
-	return 0;
+			if (++foundTrianglesCount == maxCount)
+				return INavMeshQueryProcessing::EResult::Stop;
+		}
+		return INavMeshQueryProcessing::EResult::Continue;
+	});
+	return foundTrianglesCount;
 }
 
 // Helper function to read various navigationId types from file without creating intermediate uint32.
@@ -4168,6 +4170,8 @@ void NavigationSystemDebugDraw::DebugDraw(NavigationSystem& navigationSystem)
 
 		DebugDrawNavigationMeshesForSelectedAgent(navigationSystem, excludeTileID);
 
+		DebugDrawMeshBorders(navigationSystem);
+
 		DebugDrawTriangleOnCursor(navigationSystem);
 
 		m_progress.Draw();
@@ -4987,6 +4991,36 @@ void NavigationSystemDebugDraw::DebugDrawNavigationMeshesForSelectedAgent(Naviga
 		default:
 			break;
 		}
+	}
+}
+
+void NavigationSystemDebugDraw::DebugDrawMeshBorders(NavigationSystem& navigationSystem)
+{
+	CAISystem::SObjectDebugParams debugObject;
+	if (!GetAISystem()->GetObjectDebugParamsFromName("MNMDebugMeshBorders", debugObject))
+		return;
+
+	NavigationMeshID meshID = navigationSystem.GetEnclosingMeshID(m_agentTypeID, debugObject.objectPos);
+	IF_UNLIKELY(!meshID)
+		return;
+
+	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
+	const AABB aabb(debugObject.objectPos - Vec3(10.0f), debugObject.objectPos + Vec3(10.0f));
+
+	const size_t maxBordersCount = 128;
+	Vec3 bordersWithNormals[maxBordersCount * 3];
+
+	const size_t foundCount = navigationSystem.GetTriangleBorders(meshID, aabb, bordersWithNormals, maxBordersCount, pDebugQueryFilter);
+	
+	IRenderAuxGeom& renderAuxGeom = *gEnv->pRenderer->GetIRenderAuxGeom();
+
+	const ColorB color(Col_Red);
+	const Vec3 offset(0.0f, 0.0f, 0.07f);
+
+	const size_t filledArraySize = foundCount * 3;
+	for (size_t i = 0; i < filledArraySize; i += 3)
+	{
+		renderAuxGeom.DrawLine(bordersWithNormals[i] + offset, color, bordersWithNormals[i + 1] + offset, color, 5.0f);
 	}
 }
 

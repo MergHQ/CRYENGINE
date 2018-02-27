@@ -497,20 +497,31 @@ public:
 	const CIslands& GetIslands() const { return m_islands; }
 
 	TileID GetNeighbourTileID(size_t x, size_t y, size_t z, size_t side) const;
+	TileID GetNeighbourTileID(const TileID tileId, size_t side) const;
+
 	void SetTrianglesAnnotation(const MNM::TriangleID* pTrianglesArray, const size_t trianglesCount, const MNM::AreaAnnotation areaAnnotation, std::vector<TileID>& affectedTiles);
 	bool SnapPosition(const vector3_t& localPosition, const SSnapToNavMeshRulesInfo& snappingRules, const INavMeshQueryFilter* pFilter, vector3_t& snappedLocalPosition, MNM::TriangleID* pTriangleId) const;
 
 	// MNM::INavMesh
 	virtual void       GetMeshParams(NavMesh::SParams& outParams) const override;
 	virtual TileID     FindTileIDByTileGridCoord(const vector3_t& tileGridCoord) const override;
-	virtual size_t     QueryTriangles(const aabb_t& queryLocalAabb, INavMeshQueryFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const override;
+	virtual size_t     QueryTriangles(const aabb_t& queryLocalAabb, const INavMeshQueryFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const override;
+	virtual void       QueryTrianglesWithProcessing(const aabb_t& queryAabbWorld, const INavMeshQueryFilter* pFilter, INavMeshQueryProcessing* pQueryProcessing) const override;
 	virtual TriangleID FindClosestTriangle(const vector3_t& localPosition, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestLocalPosition, float* pOutClosestDistanceSq) const override;
 	virtual bool       GetTileData(const TileID tileId, Tile::STileData& outTileData) const override;
 	virtual const AreaAnnotation* GetTriangleAnnotation(TriangleID triangleID) const override;
 	virtual bool CanTrianglePassFilter(const TriangleID triangleID, const INavMeshQueryFilter& filter) const override;
 	// ~MNM::INavMesh
 
+	template<typename TQuery>
+	void QueryTrianglesWithProcessing(const aabb_t& queryAabbWorld, const INavMeshQueryFilter* pFilter, TQuery&& query) const;
+
 private:
+	template<typename TFilter, typename TQuery>
+	void QueryTrianglesWithProcessingInternal(const aabb_t& queryAabbWorld, const TFilter& filter, TQuery&& query) const;
+
+	template<typename TFilter, typename TQuery>
+	INavMeshQueryProcessing::EResult QueryTileTrianglesWithProcessing(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, TQuery&& query) const;
 
 	template<typename TFilter>
 	CNavMesh::EWayQueryResult FindWayInternal(WayQueryRequest& inputRequest, WayQueryWorkingSet& workingSet, const TFilter& filter, WayQueryResult& result) const;
@@ -553,9 +564,6 @@ private:
 	size_t     QueryTileTrianglesBV(const TileID tileID, const STile& tile, const aabb_t& queryAabbTile, TFilter& filter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const;
 
 	TriangleID FindClosestTriangleInternal(const vector3_t& localPosition, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestLocalPosition, real_t::unsigned_overflow_type* pOutClosestDistanceSq) const;
-
-	size_t     GetTrianglesBordersNoFilter(const TriangleID* triangleIDs, const size_t triangleCount, Vec3* pBorders, const size_t maxBorderCount) const;
-	size_t     GetTrianglesBordersWithFilter(const TriangleID* triangleIDs, const size_t triangleCount, const INavMeshQueryFilter& filter, Vec3* pBorders, const size_t maxBorderCount) const;
 
 protected:
 	void ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile);
@@ -676,6 +684,8 @@ protected:
 	static const real_t                  kMaxPullingThreshold;
 	static const real_t                  kAdjecencyCalculationToleranceSq;
 };
-}
+} // namespace MNM
+
+#include "NavMesh.inl"
 
 #endif  // #ifndef __MNM_MESH_GRID_H

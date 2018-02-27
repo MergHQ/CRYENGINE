@@ -337,9 +337,6 @@ private:
 	int                                       m_curTransMatrixIdx;
 	int                                       m_curWorldMatrixIdx;
 
-	CRenderDisplayContext*                    m_pCurrentDisplayContext = nullptr;
-	SDisplayContextKey                        m_currentDisplayKey;
-
 	CShader*                                  m_pAuxGeomShader;
 	EAuxGeomPublicRenderflags_DrawInFrontMode m_curDrawInFrontMode;
 

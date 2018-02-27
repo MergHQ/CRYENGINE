@@ -862,7 +862,7 @@ goto doretest; }*/
 
 			if (nhits = m_pWorld->CheckAreas(this,gravity,pb,4,Vec3(ZERO),iCaller)) {
 				if (!is_unused(gravity))
-					m_waterGravity=m_gravity = (gravity-m_pWorld->m_vars.gravity).len2() < gravity.len2()*sqr(0.01) ? m_gravity0 : gravity;
+					m_gravity = (gravity-m_pWorld->m_vars.gravity).len2() < gravity.len2()*sqr(0.01) ? m_gravity0 : gravity;
 				for(i=0,m_depth=depth=0; i<nhits; i++) {
 					vmedium[pb[i].iMedium] += pb[i].waterFlow;
 					if (pb[i].iMedium==0 && (depth=(m_pos-pb[i].waterPlane.origin)*pb[i].waterPlane.n)<0)

@@ -158,6 +158,8 @@ CVoxStreamEngine::~CVoxStreamEngine()
 		delete pWorker;
 	}
 	m_workerThreads.clear();
+
+	ProcessSyncCallBacks();
 }
 
 void CVoxStreamEngine::DecompressVoxStreamItem(const SVoxStreamItem item)
@@ -1916,7 +1918,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 					if (pNode->GetRndFlags() & (ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY))
 						continue;
 
-					if (!GetCVars()->e_svoTI_VoxelizeHiddenObjects && (pNode->GetRndFlags() & ERF_HIDDEN) && !m_bExportMode)
+					if (!GetCVars()->e_svoTI_VoxelizeHiddenObjects && (pNode->GetRndFlags() & ERF_HIDDEN))
 						continue;
 
 					if (bThisIsLowLodNode)
@@ -2018,7 +2020,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 						else if (eStreamingStatusParent != ecss_Ready && bUnloadable)
 						{
 							// request streaming of missing meshes
-							if (Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizaionPostpone == 2)
+							if (Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationPostpone == 2)
 							{
 								info.pStatObj->UpdateStreamableComponents(0.5f, info.matObj, false, lodId);
 							}

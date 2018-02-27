@@ -665,11 +665,6 @@ void CD3DStereoRenderer::ProcessScene(int sceneFlags, const SRenderingPassInfo& 
 			// Render shadows on both GPUs
 			sceneFlagsLeft = 0;
 			sceneFlagsRight = 0;
-
-#if !defined(_RELEASE)
-			// Divide the cascades across the GPUs
-			CRenderer::CV_r_ShadowGenMode = 1;
-#endif
 		}
 
 		// Left eye

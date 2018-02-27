@@ -153,10 +153,12 @@ private:
 		const uint octaves = m_octaves;
 		const Vec3v scale = ToVec3v(m_scale);
 		const IFStream ages = container.GetIFStream(EPDT_NormalAge);
+		const IFStream lifeTimes = container.GetIFStream(EPDT_LifeTime);
 
 		for (auto particleGroupId : context.GetUpdateGroupRange())
 		{
 			const floatv age = ages.Load(particleGroupId);
+			const floatv lifeTime = lifeTimes.Load(particleGroupId);
 			const Vec3v position = positions.Load(particleGroupId);
 			const Vec3v velocity0 = localVelocities.Load(particleGroupId);
 
@@ -164,7 +166,7 @@ private:
 			sample.x = Mul(position.x, invSize);
 			sample.y = Mul(position.y, invSize);
 			sample.z = Mul(position.z, invSize);
-			sample.w = StartTime(time, delta, age);
+			sample.w = StartTime(time, delta, age * lifeTime);
 
 			Vec3v fieldSample = Fractal(sample, octaves, fieldFn);
 			fieldSample.x *= scale.x;

@@ -129,7 +129,8 @@
       <HalfresKernelPrimary type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <HalfresKernelSecondary type="BOOL" value="1" TipCVar="e_svoTI_*"/>
       <UseLightProbes type="BOOL" value="0" TipCVar="e_svoTI_*"/>
-      <VoxelizaionLODRatio type="Float" value="1" min="0.5" max="4" TipCVar="e_svoTI_*"/>
+      <VoxelizationLODRatio type="Float" value="1" min="0.5" max="4" TipCVar="e_svoTI_*"/>
+      <VoxelizationMapBorder type="Int" value="0" min="0" TipCVar="e_svoTI_*"/>
       <VoxelPoolResolution type="Int" value="128" min="128" max="256" TipCVar="e_svo*"/>
       <SSAOAmount type="Float" value="0.7" min="0" max="1" TipCVar="e_svoTI_*"/>
       <ObjectsMaxViewDistance type="Float" value="48" min="0" max="128" TipCVar="e_svoTI_*"/>

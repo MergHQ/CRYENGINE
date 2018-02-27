@@ -120,7 +120,7 @@ namespace UQS
 			explicit                                            CHistoricQuery(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager);
 
 			CDebugRenderWorldPersistent&                        GetDebugRenderWorldPersistent();
-			void                                                OnQueryCreated();
+			void                                                OnQueryCreated(const CTimeValue& queryCreatedTimestamp);
 			void                                                OnQueryBlueprintInstantiationStarted(const char* szQueryBlueprintName);
 			void                                                OnQueryCanceled(const CQueryBase::SStatistics& finalStatistics);
 			void                                                OnQueryFinished(const CQueryBase::SStatistics& finalStatistics);
