@@ -185,11 +185,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 	if (nRndFlags & ERF_HIDDEN)
 		return;
 
-	if (eERType == eERType_MovableBrush)
-	{
-		GetObjManager()->RenderBrush((CBrush*)pEnt, pAffectingLights, nullptr, objBox, fEntDistance, true, passInfo, passCullMask);
-		return;
-	}
+	CRY_ASSERT(eERType != eERType_MovableBrush);
 
 #ifndef _RELEASE
 	if (!passInfo.RenderEntities() && pEnt->GetOwnerEntity())

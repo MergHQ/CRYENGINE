@@ -859,6 +859,11 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		pObj->m_ObjFlags |= FOB_DYNAMIC_OBJECT;
 	}
 
+	if (m_dwRndFlags & ERF_HUD_REQUIRE_DEPTHTEST)
+	{
+		pObj->m_ObjFlags |= FOB_HUD_REQUIRE_DEPTHTEST;
+	}
+
 	if (uint8 nMaterialLayers = IRenderNode::GetMaterialLayers())
 	{
 		uint8 nFrozenLayer = (nMaterialLayers & MTL_LAYER_FROZEN) ? MTL_LAYER_FROZEN_MASK : 0;
