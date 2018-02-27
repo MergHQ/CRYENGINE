@@ -320,7 +320,7 @@ public:
 
 	void FreeMemory()
 	{
-		stl::reconstruct(*m_rawData);
+		m_rawData->Reset();
 	}
 
 	// setting orthogonal projection
@@ -383,8 +383,31 @@ private:
 	void   AddPrimitive(SAuxVertex*& pVertices, uint32 numVertices, const SAuxGeomRenderFlags& renderFlags);
 	void   AddIndexedPrimitive(SAuxVertex*& pVertices, uint32 numVertices, vtx_idx*& pIndices, uint32 numIndices, const SAuxGeomRenderFlags& renderFlags);
 	void   AddObject(SAuxDrawObjParams*& pDrawParams, const SAuxGeomRenderFlags& renderFlags);
-	bool     m_activeDrawBuffer;
-	uint32_t m_activeDrawBufferMaxVertices;
+
+public:
+	struct SActiveDrawBufferInfo
+	{
+		uint32_t m_maxVertices;
+		enum State : uint8
+		{
+			Enabled = BIT(0),
+			Textured = BIT(1),
+			UseScratchBuffer = BIT(2),
+
+			None = 0,
+			All = Enabled | Textured | UseScratchBuffer
+		} m_state;
+	};
+private:
+	SActiveDrawBufferInfo m_activeDrawBufferInfo;
+	void SetActivateDrawBuffer(bool enabled = true);
+	void SetUseScratchActiveDrawBuffer(bool use = true);
+	void SetTexturedActiveDrawBuffer(bool textured = true);
+
+	bool IsDrawBufferActive();
+	bool IsActiveDrawBufferUsingScratch();
+	bool IsActiveDrawBufferTextured();
+
 protected:
 	int GetTransMatrixIndex() const
 	{
@@ -419,8 +442,12 @@ protected:
 		}
 	};
 
-	SAuxGeomCBRawData*			m_rawData = nullptr;
+	SAuxGeomCBRawData*			   m_rawData = nullptr;
+	static const size_t            m_maxScratchBufferVertices = 16 * 1024;
+	std::array<SAuxVertex, m_maxScratchBufferVertices * sizeof(SAuxVertex)> m_scratchBuffer;
 };
+DEFINE_ENUM_FLAG_OPERATORS(CAuxGeomCB::SActiveDrawBufferInfo::State);
+
 
 // package CAuxGeomCB::SAuxGeomCBRawData ptr via seperate struct as nested types cannot be forward declared
 struct SAuxGeomCBRawDataPackaged
