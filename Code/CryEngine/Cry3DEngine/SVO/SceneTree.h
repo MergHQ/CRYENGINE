@@ -160,6 +160,7 @@ public:
 	CVoxStreamEngine*         m_pStreamEngine;
 	CSvoNode*                 m_pSvoRoot;
 	bool                      m_bReady;
+	bool                      m_bRootTeleportSkipFrame = false;
 	PodArray<CVoxelSegment*>  m_arrForStreaming[SVO_STREAM_QUEUE_MAX_SIZE][SVO_STREAM_QUEUE_MAX_SIZE];
 	int                       m_debugDrawVoxelsCounter;
 	int                       m_nodeCounter;
