@@ -319,7 +319,7 @@ def cmd_install(args):
 
 #--- ADD ---
 
-def add_engines(*engine_files):
+def add_engines(*engine_files, silent):
     """
     Adds the collection of engines to the registered engines.
     """
@@ -341,13 +341,14 @@ def add_engines(*engine_files):
             added.append(engine_id)
 
     if added:
-        cryregistry.save_engines(engine_registry)
+        return cryregistry.save_engines(engine_registry, register_action=True, silent=silent)
+    return 0
 
 def cmd_add(args):
     """
     Adds the engine to the registered engines.
     """
-    add_engines(*args.engine_files)
+    sys.exit(add_engines(*args.engine_files, silent=args.silent))
 
 #--- REMOVE ---
 
@@ -366,7 +367,7 @@ def cmd_remove(args):
             removed.append(engine_id)
 
     if removed:
-        cryregistry.save_engines(engine_registry)
+        sys.exit(cryregistry.save_engines(engine_registry, register_action=False, silent=args.silent))
 
 #--- SWITCH ---
 
@@ -478,7 +479,11 @@ class CrySwitch(tk.Frame):
                 engine = cryproject.load(engine_path)
                 engine_id = engine['info']['id']
 
-            add_engines(engine_path)
+            # When using the switch engine UI we don't need to be silent anymore.
+            error_code = add_engines(engine_path, silent=False)
+            if error_code != 0:
+                self.close()
+                return error_code
 
         self.close()
 
