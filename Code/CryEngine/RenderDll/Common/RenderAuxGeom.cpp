@@ -32,7 +32,7 @@ static inline uint32 AlphaFlags(const ColorB& colV)
 CAuxGeomCB::CAuxGeomCB()
 {
 	m_rawData = new SAuxGeomCBRawData;
-	m_activeDrawBuffer = false;
+	SetActivateDrawBuffer(false);
 }
 
 CAuxGeomCB::~CAuxGeomCB()
@@ -548,25 +548,59 @@ void CAuxGeomCB::DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bo
 
 SAuxVertex * CAuxGeomCB::BeginDrawBuffer(uint32 maxVertices, bool textured)
 {
-	CRY_ASSERT_MESSAGE(m_activeDrawBuffer == false, "Nested BeginDrawBuffer-EndDrawBuffer is not allowed.");
-	CRY_ASSERT((maxVertices >= 3) && (0 == (maxVertices % 3)));
+	CRY_ASSERT_MESSAGE(!IsDrawBufferActive(), "Nested BeginDrawBuffer-EndDrawBuffer is not allowed.");
 
 	SAuxVertex* bufVertices;
-	AddPrimitive(bufVertices, maxVertices, CreateTriangleRenderFlags(false, textured));
-	m_activeDrawBuffer = true;
-	m_activeDrawBufferMaxVertices = maxVertices;
+	bool usingScratchBuffer = false;
+	if (maxVertices <= m_maxScratchBufferVertices)
+	{
+		usingScratchBuffer = true;
+		bufVertices = m_scratchBuffer.data();
+	}
+	else
+	{
+		CRY_ASSERT((maxVertices >= 3) && (0 == (maxVertices % 3)));
+		AddPrimitive(bufVertices, maxVertices, CreateTriangleRenderFlags(false, textured));
+	}
+
+	SetActivateDrawBuffer(true);
+	SetTexturedActiveDrawBuffer(textured);
+	SetUseScratchActiveDrawBuffer(usingScratchBuffer);
+	m_activeDrawBufferInfo.m_maxVertices = maxVertices;
 
 	return bufVertices;
 }
 
 void CAuxGeomCB::EndDrawBuffer(uint32 numVertices)
 {
+	CRY_ASSERT(IsDrawBufferActive());
+
+	if (numVertices == 0)
+	{
+		SetActivateDrawBuffer(false);
+		return;
+	}
+
+	CRY_ASSERT(numVertices % 3 == 0);
+
+	if (IsActiveDrawBufferUsingScratch())
+	{
+		// This needs to be called before AddPrimitive to not trigger its assert wrongly.
+		SetActivateDrawBuffer(false);
+
+		CRY_ASSERT(numVertices <= m_maxScratchBufferVertices);
+		SAuxVertex* bufVertices;
+		AddPrimitive(bufVertices, numVertices, CreateTriangleRenderFlags(false, IsActiveDrawBufferUsingScratch()));
+		memcpy(bufVertices, m_scratchBuffer.data(), numVertices * sizeof(SAuxVertex));
+		return;
+	}
+
 	AuxVertexBuffer& vertexBuffer(AccessData()->m_auxVertexBuffer);
 	AuxPushBuffer& auxPushBuffer(AccessData()->m_auxPushBuffer);
-	uint32_t notFilledElements = (m_activeDrawBufferMaxVertices - numVertices);
+	uint32_t notFilledElements = (m_activeDrawBufferInfo.m_maxVertices - numVertices);
 	auxPushBuffer.back().m_numVertices -= notFilledElements;
 	vertexBuffer.resize(vertexBuffer.size() - notFilledElements);
-	m_activeDrawBuffer = false;
+	SetActivateDrawBuffer(false);
 }
 
 void CAuxGeomCB::DrawAABB(const AABB& aabb, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle)
@@ -2506,7 +2540,7 @@ void CAuxGeomCB::AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const
 
 void CAuxGeomCB::AddPrimitive(SAuxVertex*& pVertices, uint32 numVertices, const SAuxGeomRenderFlags& renderFlags)
 {
-	CRY_ASSERT_MESSAGE(m_activeDrawBuffer == false, "Adding primitive while BeginDrawBuffer will cause issue in aux drawing.");
+	CRY_ASSERT_MESSAGE(!IsDrawBufferActive(), "Adding primitive while BeginDrawBuffer will cause issue in aux drawing.");
 	CRY_ASSERT(numVertices > 0);
 
 	// add push buffer entry to allow later merging of batches committed via DP
@@ -2522,7 +2556,7 @@ void CAuxGeomCB::AddPrimitive(SAuxVertex*& pVertices, uint32 numVertices, const 
 
 void CAuxGeomCB::AddIndexedPrimitive(SAuxVertex*& pVertices, uint32 numVertices, vtx_idx*& pIndices, uint32 numIndices, const SAuxGeomRenderFlags& renderFlags)
 {
-	CRY_ASSERT_MESSAGE(m_activeDrawBuffer == false, "Adding primitive while BeginDrawBuffer will cause issue in aux drawing.");
+	CRY_ASSERT_MESSAGE(!IsDrawBufferActive(), "Adding primitive while BeginDrawBuffer will cause issue in aux drawing.");
 	CRY_ASSERT(numVertices > 0);
 	CRY_ASSERT(numIndices > 0);
 
@@ -2564,6 +2598,45 @@ void CAuxGeomCB::SAuxGeomCBRawData::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(&m_auxIndexBuffer, m_auxIndexBuffer.capacity() * sizeof(AuxIndexBuffer::value_type));
 	pSizer->AddObject(&m_auxDrawObjParamBuffer, m_auxDrawObjParamBuffer.capacity() * sizeof(AuxDrawObjParamBuffer::value_type));
 	pSizer->AddObject(m_TextMessages);
+}
+
+void CAuxGeomCB::SetActivateDrawBuffer(bool enabled)
+{
+	CRY_ASSERT_MESSAGE(!enabled || !IsDrawBufferActive(), "a buffer cannot be re-enabled while it is active.");
+	if(enabled)
+		m_activeDrawBufferInfo.m_state |= SActiveDrawBufferInfo::Enabled;
+	else
+		m_activeDrawBufferInfo.m_state &= ~SActiveDrawBufferInfo::Enabled;
+}
+
+void CAuxGeomCB::SetUseScratchActiveDrawBuffer(bool use)
+{ 
+	if(use)
+		m_activeDrawBufferInfo.m_state |= SActiveDrawBufferInfo::UseScratchBuffer;
+	else
+		m_activeDrawBufferInfo.m_state &= ~SActiveDrawBufferInfo::UseScratchBuffer;
+}
+void CAuxGeomCB::SetTexturedActiveDrawBuffer(bool textured)
+{ 
+	if(textured)
+		m_activeDrawBufferInfo.m_state |= SActiveDrawBufferInfo::Textured;
+	else
+		m_activeDrawBufferInfo.m_state &= ~SActiveDrawBufferInfo::Textured;
+}
+
+bool CAuxGeomCB::IsDrawBufferActive()
+{ 
+	return (m_activeDrawBufferInfo.m_state & SActiveDrawBufferInfo::Enabled) != 0; 
+}
+
+bool CAuxGeomCB::IsActiveDrawBufferUsingScratch()
+{ 
+	return (m_activeDrawBufferInfo.m_state & SActiveDrawBufferInfo::UseScratchBuffer) != 0; 
+}
+
+bool CAuxGeomCB::IsActiveDrawBufferTextured()
+{ 
+	return (m_activeDrawBufferInfo.m_state & SActiveDrawBufferInfo::Textured) != 0; 
 }
 
 #endif // #if defined(ENABLE_RENDER_AUX_GEOM)
