@@ -58,7 +58,6 @@ public:
 	void OnPhysicsPostStep(EventPhysPostStep* pEvent = 0);
 	void AttachToPhysicalEntity(IPhysicalEntity* pPhysEntity);
 	void CreateRenderGeometry(int nSlot, IGeometry* pFromGeom, bop_meshupdate* pLastUpdate = 0);
-	void OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass);
 	//////////////////////////////////////////////////////////////////////////
 
 	void              UpdateSlotGeometry(int nSlot, IStatObj* pStatObjNew = 0, float mass = -1.0f, int bNoSubslots = 1);

@@ -2075,26 +2075,6 @@ CEntity* CEntityPhysics::GetCEntity(IPhysicalEntity* pPhysEntity)
 	return static_cast<CEntity*>(pPhysEntity->GetForeignData(PHYS_FOREIGN_ID_ENTITY));
 }
 
-void CEntityPhysics::OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass)
-{
-	CEntityComponentLuaScript* pProxy = GetEntity()->GetScriptProxy();
-
-	if (pProxy)
-	{
-		if (CVar::pLogCollisions->GetIVal() != 0)
-		{
-			string s1 = GetEntity()->GetEntityTextDescription();
-			string s2;
-			if (pTarget)
-				s2 = pTarget->GetEntityTextDescription();
-			else
-				s2 = "<Unknown>";
-			CryLogAlways("OnCollision %s (Target: %s)", s1.c_str(), s2.c_str());
-		}
-		pProxy->OnCollision(pTarget, matId, pt, n, vel, targetVel, partId, mass);
-	}
-}
-
 void CEntityPhysics::OnChangedPhysics(bool bEnabled)
 {
 	SEntityEvent evt(ENTITY_EVENT_ENABLE_PHYSICS);

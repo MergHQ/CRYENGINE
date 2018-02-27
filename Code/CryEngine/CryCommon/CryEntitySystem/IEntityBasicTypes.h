@@ -146,8 +146,15 @@ enum EEntityEvent
 	//! Sent when Breakable object is broken in physics.
 	ENTITY_EVENT_PHYS_BREAK,
 
-	//! Physical collision.
+	//! Sent when a logged physical collision is processed on the Main thread. The collision has already occurred since this event is logged, but can be handled on the main thread without considering threading.
+	//! nParam[0] = const EventPhysCollision *, contains collision info and can be obtained as: reinterpret_cast<const EventPhysCollision*>(event.nParam[0])
+	//! nParam[1] 0 if we are the source of the collision, otherwise 1.
 	ENTITY_EVENT_COLLISION,
+
+	//! Sent when a physical collision is reported just as it occurred, most likely on the physics thread. This callback has to be thread-safe!
+	//! nParam[0] = const EventPhysCollision *, contains collision info and can be obtained as: reinterpret_cast<const EventPhysCollision*>(event.nParam[0])
+	//! nParam[1] 0 if we are the source of the collision, otherwise 1.
+	ENTITY_EVENT_COLLISION_IMMEDIATE,
 
 	//! Sent only if ENTITY_FLAG_SEND_RENDER_EVENT is set
 	//! Called when entity is first rendered (When any of the entity render nodes are considered by 3D engine for rendering this frame)
