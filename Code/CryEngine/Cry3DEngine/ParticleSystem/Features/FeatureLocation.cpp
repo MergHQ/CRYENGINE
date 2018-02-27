@@ -747,6 +747,7 @@ public:
 		const float delta = m_rate * context.m_deltaTime;
 		CParticleContainer& container = context.m_container;
 		const IFStream ages = container.GetIFStream(EPDT_NormalAge);
+		const IFStream lifeTimes = container.GetIFStream(EPDT_LifeTime);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 
 		STempInitBuffer<float> sizes(context, m_amplitude);
@@ -756,11 +757,12 @@ public:
 			const float amplitude = sizes.m_stream.SafeLoad(particleId);
 			const Vec3 wPosition0 = positions.Load(particleId);
 			const float age = ages.Load(particleId);
+			const float lifeTime = lifeTimes.Load(particleId);
 			Vec4 sample;
 			sample.x = wPosition0.x * invSize;
 			sample.y = wPosition0.y * invSize;
 			sample.z = wPosition0.z * invSize;
-			sample.w = StartTime(time, delta, age);
+			sample.w = StartTime(time, delta, age * lifeTime);
 			const Vec3 potential = Fractal(sample, m_octaves);
 			const Vec3 wPosition1 = potential * amplitude + wPosition0;
 			positions.Store(particleId, wPosition1);

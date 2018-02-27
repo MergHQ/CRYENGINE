@@ -37,6 +37,7 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		m_lifeTime.AddToComponent(pComponent, this, EPDT_LifeTime);
+		pComponent->PreInitParticles.add(this);
 		pParams->m_maxParticleLifeTime = m_lifeTime.GetValueRange().end;
 
 		if (m_killOnParentDeath)
@@ -44,7 +45,7 @@ public:
 		pComponent->UpdateGPUParams.add(this);
 	}
 
-	virtual void InitParticles(const SUpdateContext& context) override
+	virtual void PreInitParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 

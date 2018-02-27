@@ -25,8 +25,8 @@ struct SSpawnData
 
 	float DeltaTime(float dT) const
 	{
-		const float startTime = clamp(m_timer, 0.0f, m_duration);
-		const float endTime = clamp(m_timer + dT, 0.0f, m_duration);
+		const float startTime = max(m_timer, 0.0f);
+		const float endTime = min(m_timer + dT, m_duration);
 		return endTime - startTime;
 	}
 };
@@ -147,7 +147,6 @@ protected:
 		if (!runtime.IsChild())
 			countScale *= runtime.GetEmitter()->GetSpawnParams().fCountScale;
 		const float dT = context.m_deltaTime;
-		const float invDT = dT ? 1.0f / dT : 0.0f;
 		SUpdateRange range(0, numInstances);
 
 		TFloatArray amounts(*context.m_pMemHeap, numInstances);
@@ -167,8 +166,8 @@ protected:
 		{
 			SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
 
-			const float startTime = clamp(spawnData.m_timer, 0.0f, spawnData.m_duration);
-			const float endTime = clamp(spawnData.m_timer + dT, 0.0f, spawnData.m_duration);
+			const float startTime = max(spawnData.m_timer, 0.0f);
+			const float endTime = min(spawnData.m_timer + dT, spawnData.m_duration);
 			const float spawnTime = endTime - startTime;
 			const float spawned = amounts[i] * countScale;
 			
@@ -181,9 +180,10 @@ protected:
 				entry.m_count = uint32(ceil(spawnData.m_spawned + spawned) - ceil(spawnData.m_spawned));
 				if (entry.m_count)
 				{
+					// Set parameters for absolute particle age and spawn fraction
 					entry.m_parentId = runtime.GetParentId(i);
-					entry.m_ageIncrement = rcp(spawned) * spawnTime * invDT;
-					entry.m_ageBegin = (startTime - spawnData.m_timer - dT) * invDT;
+					entry.m_ageIncrement = -spawnTime * rcp(spawned);
+					entry.m_ageBegin = dT + min(spawnData.m_timer, 0.0f);
 					entry.m_ageBegin += (ceil(spawnData.m_spawned) - spawnData.m_spawned) * entry.m_ageIncrement;
 
 					if (std::isfinite(spawnData.m_duration))
@@ -296,7 +296,8 @@ public:
 		{
 			SSpawnData& spawnData = context.m_runtime.GetInstanceData(i, m_offsetSpawnData);
 			const float dt = spawnData.DeltaTime(context.m_deltaTime);
-
+			if (dt < 0.0f)
+				continue;
 			if (m_mode == ESpawnCountMode::TotalParticles || spawnData.m_duration <= context.m_params.m_maxParticleLifeTime)
 			{
 				if (spawnData.m_duration > dt)
@@ -352,9 +353,12 @@ public:
 		for (uint i = 0; i < amounts.size(); ++i)
 		{
 			SSpawnData& spawnData = context.m_runtime.GetInstanceData(i, m_offsetSpawnData);
+			const float dt = spawnData.DeltaTime(context.m_deltaTime);
+			if (dt < 0.0f)
+				continue;
 			amounts[i] =
 				m_mode == ESpawnRateMode::ParticlesPerFrame ? amounts[i]
-				: spawnData.DeltaTime(context.m_deltaTime) * (m_mode == ESpawnRateMode::ParticlesPerSecond ? amounts[i] : rcp(amounts[i]));
+				: dt * (m_mode == ESpawnRateMode::ParticlesPerSecond ? amounts[i] : rcp(amounts[i]));
 		}
 	}
 

@@ -80,16 +80,17 @@ class CLevelTimeSampler
 public:
 	CLevelTimeSampler(const SUpdateContext& context, EModDomain domain)
 		: deltaTime(ToFloatv(context.m_deltaTime))
-		, selfAges(GetContainer(context, domain).GetIFStream(EPDT_NormalAge))
+		, ages(GetContainer(context, domain).GetIFStream(EPDT_NormalAge))
+		, lifeTimes(GetContainer(context, domain).GetIFStream(EPDT_LifeTime))
 		, levelTime(ToFloatv(context.m_time))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
-		const floatv selfAge = selfAges.Load(particleId);
-		return StartTime(levelTime, deltaTime, selfAge);
+		return StartTime(levelTime, deltaTime, ages.Load(particleId) * lifeTimes.Load(particleId));
 	}
 private:
-	IFStream selfAges;
+	IFStream ages;
+	IFStream lifeTimes;
 	floatv   levelTime;
 	floatv   deltaTime;
 };

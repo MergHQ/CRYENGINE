@@ -105,7 +105,7 @@ T DeltaTime(T frameTime, T normAge, T lifeTime);
 
 // Return the start-time of a particle in the previous frame
 template<typename T>
-T StartTime(T curTime, T frameTime, T normAge);
+T StartTime(T curTime, T frameTime, T absAge);
 
 
 // non vectorized
