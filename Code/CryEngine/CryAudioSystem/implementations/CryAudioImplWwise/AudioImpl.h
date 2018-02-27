@@ -81,7 +81,13 @@ private:
 	CryFixedStringT<MaxFilePathLength> m_regularSoundBankFolder;
 	CryFixedStringT<MaxFilePathLength> m_localizedSoundBankFolder;
 
-	using AudioInputDevices = std::map<DeviceId, AkOutputDeviceID>;
+	struct SInputDeviceInfo
+	{
+		bool             akIsActiveOutputDevice;
+		AkOutputDeviceID akOutputDeviceID;
+	};
+
+	using AudioInputDevices = std::map<DeviceId, SInputDeviceInfo>;
 	AudioInputDevices m_mapInputDevices;
 
 #if !defined(WWISE_FOR_RELEASE)
