@@ -189,7 +189,8 @@ void CAnimScreenFaderNode::Animate(SAnimContext& animContext)
 
 				if (pTrack->GetDrawColor().w < 0.01f)
 				{
-					m_bActive = IsAnyTextureVisible();
+					if (!IsAnyTextureVisible())
+						Deactivate();
 				}
 				else
 				{
@@ -200,7 +201,10 @@ void CAnimScreenFaderNode::Animate(SAnimContext& animContext)
 		else
 		{
 			pTrack->SetTextureVisible(false);
-			m_bActive = IsAnyTextureVisible();
+			if (m_bActive && !IsAnyTextureVisible())
+				Deactivate();
+			else
+				m_bActive = IsAnyTextureVisible();
 		}
 	}
 }
@@ -213,17 +217,23 @@ void CAnimScreenFaderNode::CreateDefaultTracks()
 void CAnimScreenFaderNode::OnReset()
 {
 	CAnimNode::OnReset();
-	m_bActive = false;
+	Deactivate();
 }
 
 void CAnimScreenFaderNode::Activate(bool bActivate)
 {
-	m_bActive = false;
+	Deactivate();
 
 	if (m_texPrecached == false)
 	{
 		PrecacheTexData();
 	}
+}
+
+void CAnimScreenFaderNode::Deactivate() 
+{
+	gEnv->pRenderer->EF_SetPostEffectParamVec4("ScreenFader_Color", Vec4(0, 0, 0, 0), true);
+	m_bActive = false;
 }
 
 void CAnimScreenFaderNode::Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks)
