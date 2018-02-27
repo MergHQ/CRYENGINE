@@ -14,7 +14,18 @@ namespace Tile
 }
 }
 
-//! INavMeshQueryFilter is structure used in navigation queries (finding path, raycast, query triangles...)
+//! INavMeshQueryProcessing is a structure used for processing triangles in NavMesh triangle queries. See INavMesh::QueryTrianglesWithProcessing
+struct INavMeshQueryProcessing
+{
+	enum class EResult
+	{
+		Continue, // Continue processing with next set of triangles
+		Stop,     // Processing is done and should be stopped
+	};
+	virtual EResult operator() (const MNM::TileID tileId, const MNM::Tile::STriangle** pTriangles, const MNM::TriangleID* pTriangleIds, const size_t trianglesCount) = 0;
+};
+
+//! INavMeshQueryFilter is a structure used in navigation queries (finding path, raycast, query triangles...)
 //! for filtering passable triangles and computing costs of traversing triangles
 //! 
 //! Asynchronous jobs inside Navigation System can create a copy of the filter,

@@ -3,6 +3,7 @@
 #include "MNMTile.h"
 
 struct INavMeshQueryFilter;
+struct INavMeshQueryProcessing;
 
 namespace MNM
 {
@@ -108,7 +109,13 @@ struct INavMesh
 	//! \param maxTrianglesCount Size of output buffer for result triangleId's.
 	//! \param pOutTriangles Array buffer for result triangleId's.
 	//! \return Count of found triangleId's.
-	virtual size_t QueryTriangles(const aabb_t& queryLocalAabb, INavMeshQueryFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const = 0;
+	virtual size_t QueryTriangles(const aabb_t& queryLocalAabb, const INavMeshQueryFilter* pOptionalFilter, const size_t maxTrianglesCount, TriangleID* pOutTriangles) const = 0;
+
+	//! Queries NavMesh triangles inside a bounding box and process them
+	//! \param queryLocalAabb Bounding box for the query in a mesh coordinate space.
+	//! \param pOptionalFilter Pointer to the optional triangle filter. If provided, then it's called for each triangleId.
+	//! \param pQueryProcessing Pointer to the function object structure responsible for processing queried triangles. See INavMeshQueryProcessing.
+	virtual void QueryTrianglesWithProcessing(const aabb_t& queryLocalAabb, const INavMeshQueryFilter* pOptionalFilter, INavMeshQueryProcessing* pQueryProcessing) const = 0;
 
 	//! Finds a single triangle closest to the point. /see QueryTriangles() for a way to get candidate triangles.
 	//! \param queryLocalPosition Query point in a mesh coordinate space.
