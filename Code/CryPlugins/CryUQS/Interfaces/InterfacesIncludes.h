@@ -79,6 +79,8 @@
 #include "core/QueryResult.h"
 
 #include "client/QueryRequest.h"
+#include "client/IQueryVisitor.h"
+#include "client/IQueryFinishedListener.h"
 
 #include "core/IQueryManager.h"
 #include "core/IQueryHistoryListener.h"

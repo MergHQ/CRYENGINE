@@ -54,6 +54,7 @@ namespace UQS
 		CQueryBase::SStatistics::SStatistics()
 			: querierName()
 			, queryBlueprintName()
+			, queryCreatedTimestamp()
 			, totalElapsedFrames(0)
 			, totalConsumedTime()
 			, grantedAndUsedTimePerFrame()
@@ -77,6 +78,7 @@ namespace UQS
 		{
 			ar(querierName, "querierName");
 			ar(queryBlueprintName, "queryBlueprintName");
+			ar(queryCreatedTimestamp, "queryCreatedTimestamp");
 			ar(totalElapsedFrames, "totalElapsedFrames");
 			ar(totalConsumedTime, "totalConsumedTime");
 			ar(grantedAndUsedTimePerFrame, "grantedAndUsedTimePerFrame");
@@ -109,13 +111,14 @@ namespace UQS
 			, m_pHistory(ctorContext.pOptionalHistoryToWriteTo)
 			, m_queryID(ctorContext.queryID)
 			, m_pOptionalShuttledItems(ctorContext.pOptionalResultingItemsFromPreviousQuery)
+			, m_queryCreatedTimestamp(gEnv->pTimer->GetAsyncTime())
 			, m_totalElapsedFrames(0)
 			, m_bRequiresSomeTimeBudgetForExecution(bRequiresSomeTimeBudgetForExecution)
 			, m_blackboard(m_globalParams, m_pOptionalShuttledItems.get(), m_timeBudgetForCurrentUpdate, ctorContext.pOptionalHistoryToWriteTo ? &ctorContext.pOptionalHistoryToWriteTo->GetDebugRenderWorldPersistent() : nullptr)
 		{
 			if (m_pHistory)
 			{
-				m_pHistory->OnQueryCreated();
+				m_pHistory->OnQueryCreated(m_queryCreatedTimestamp);
 			}
 		}
 
@@ -349,6 +352,7 @@ namespace UQS
 			if (m_pQueryBlueprint)
 				out.queryBlueprintName = m_pQueryBlueprint->GetName();
 
+			out.queryCreatedTimestamp = m_queryCreatedTimestamp;
 			out.totalElapsedFrames = m_totalElapsedFrames;
 			out.totalConsumedTime = m_totalConsumedTime;
 			out.grantedAndUsedTimePerFrame = m_grantedAndUsedTimePerFrame;

@@ -163,9 +163,9 @@ namespace UQS
 			return m_debugRenderWorldPersistent;
 		}
 
-		void CHistoricQuery::OnQueryCreated()
+		void CHistoricQuery::OnQueryCreated(const CTimeValue& queryCreatedTimestamp)
 		{
-			m_queryCreatedTimestamp = gEnv->pTimer->GetAsyncTime();
+			m_queryCreatedTimestamp = queryCreatedTimestamp;
 			m_queryLifetimeStatus = EQueryLifetimeStatus::QueryIsAlive;
 
 			// notify the top-level query-history-manager that the underlying query has just been created/started
