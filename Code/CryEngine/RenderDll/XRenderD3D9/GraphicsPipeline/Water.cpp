@@ -1189,7 +1189,7 @@ void CWaterStage::ExecuteWaterNormalGen()
 	CTexture* pTexture = CRendererResources::s_ptexWaterVolumeTemp[frameID];
 	if (!CTexture::IsTextureExist(pTexture))
 	{
-		if (!pTexture->Create2DTexture(nGridSize, nGridSize, 1, FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD, nullptr, eTF_R32G32B32A32F))
+		if (!pTexture->Create2DTexture(nGridSize, nGridSize, 1, FT_DONT_RELEASE | FT_NOMIPS, nullptr, eTF_R32G32B32A32F))
 		{
 			return;
 		}

@@ -462,10 +462,10 @@ void CRendererResources::LoadDefaultSystemTextures()
 		//s_ptexHitAreaRT[0] = CTexture::CreateTextureObject("$HitEffectAccumBuffRT_0", 128, 128, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 		//s_ptexHitAreaRT[1] = CTexture::CreateTextureObject("$HitEffectAccumBuffRT_1", 128, 128, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 
-		s_ptexWindGrid = CTexture::GetOrCreateTextureObject("WindGrid", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_STAGE_UPLOAD, eTF_Unknown, TO_WINDGRID);
+		s_ptexWindGrid = CTexture::GetOrCreateTextureObject("WindGrid", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown, TO_WINDGRID);
 		if (!CTexture::IsTextureExist(s_ptexWindGrid))
 		{
-			s_ptexWindGrid->Create2DTexture(256, 256, 1, FT_DONT_RELEASE | FT_DONT_STREAM | FT_STAGE_UPLOAD, nullptr, eTF_R16G16F);
+			s_ptexWindGrid->Create2DTexture(256, 256, 1, FT_DONT_RELEASE | FT_DONT_STREAM, nullptr, eTF_R16G16F);
 		}
 
 		s_ptexLinearDepthReadBack[0] = CTexture::GetOrCreateTextureObject("$ZTargetReadBack0", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
@@ -531,8 +531,8 @@ void CRendererResources::LoadDefaultSystemTextures()
 			// fixme: get texture resolution from CREWaterOcean
 			// TODO: make s_ptexWaterVolumeTemp an array texture
 			s_ptexWaterOcean = CTexture::GetOrCreateTextureObject("$WaterOceanMap", 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_NOMIPS | FT_STAGE_UPLOAD | FT_DONT_STREAM, eTF_Unknown, TO_WATEROCEANMAP);
-			s_ptexWaterVolumeTemp[0] = CTexture::GetOrCreateTextureObject("$WaterVolumeTemp_0", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_NOMIPS | FT_STAGE_UPLOAD | FT_DONT_STREAM, eTF_Unknown);
-			s_ptexWaterVolumeTemp[1] = CTexture::GetOrCreateTextureObject("$WaterVolumeTemp_1", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_NOMIPS | FT_STAGE_UPLOAD | FT_DONT_STREAM, eTF_Unknown);
+			s_ptexWaterVolumeTemp[0] = CTexture::GetOrCreateTextureObject("$WaterVolumeTemp_0", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_NOMIPS | FT_DONT_STREAM, eTF_Unknown);
+			s_ptexWaterVolumeTemp[1] = CTexture::GetOrCreateTextureObject("$WaterVolumeTemp_1", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_NOMIPS | FT_DONT_STREAM, eTF_Unknown);
 			s_ptexWaterVolumeDDN = CTexture::GetOrCreateTextureObject("$WaterVolumeDDN", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEMAP);
 			s_ptexWaterVolumeRefl[0] = CTexture::GetOrCreateTextureObject("$WaterVolumeRefl", 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEREFLMAP);
 			s_ptexWaterVolumeRefl[1] = CTexture::GetOrCreateTextureObject("$WaterVolumeReflPrev", 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEREFLMAPPREV);

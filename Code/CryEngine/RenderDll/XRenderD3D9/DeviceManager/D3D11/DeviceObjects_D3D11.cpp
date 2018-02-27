@@ -526,7 +526,9 @@ D3DResource* CDeviceObjectFactory::AllocateStagingResource(D3DResource* pForTex,
 	Desc.SampleDesc.Count = 1;
 	Desc.SampleDesc.Quality = 0;
 	Desc.MiscFlags = 0;
+
 	StagingPoolVec::iterator it = std::find(m_stagingPool.begin(), m_stagingPool.end(), Desc);
+	it = it != m_stagingPool.end() && ((it->lastUsedFrameID - GetCompletedFrameCounter()) > MAX_FRAMES_IN_FLIGHT) ? it : m_stagingPool.end();
 
 	if (it == m_stagingPool.end())
 	{
@@ -574,6 +576,7 @@ void CDeviceObjectFactory::ReleaseStagingResource(D3DResource* pStagingRes)
 
 	StagingTextureDef def;
 	def.desc = Desc;
+	def.lastUsedFrameID = GetCurrentFrameCounter();
 	def.pStagingResource = (D3DTexture*)pStagingRes;
 	m_stagingPool.push_back(def);
 }

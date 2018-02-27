@@ -1271,7 +1271,7 @@ void CRenderer::EF_SubmitWind(const SWindGrid* pWind)
 		m_pCurWindGrid = pWind;
 		if (!CTexture::IsTextureExist(CRendererResources::s_ptexWindGrid))
 		{
-			CRendererResources::s_ptexWindGrid->Create2DTexture(pWind->m_nWidth, pWind->m_nHeight, 1, FT_DONT_RELEASE | FT_DONT_STREAM | FT_STAGE_UPLOAD, nullptr, eTF_R16G16F);
+			CRendererResources::s_ptexWindGrid->Create2DTexture(pWind->m_nWidth, pWind->m_nHeight, 1, FT_DONT_RELEASE | FT_DONT_STREAM, nullptr, eTF_R16G16F);
 		}
 		CDeviceTexture* pDevTex = CRendererResources::s_ptexWindGrid->GetDevTexture();
 		int nThreadID = m_pRT->m_nCurThreadProcess;
