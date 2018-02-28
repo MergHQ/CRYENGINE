@@ -17,6 +17,11 @@ std::shared_ptr<CMonoObject> CMonoMethod::Invoke(const CMonoObject* pObject, voi
 	return InvokeInternal(pObject != nullptr ? pObject->GetManagedObject() : nullptr, pParameters, bEncounteredException);
 }
 
+std::shared_ptr<CMonoObject> CMonoMethod::Invoke(const CMonoObject* pObject, const void** pParameters, bool &bEncounteredException) const
+{
+	return InvokeInternal(pObject != nullptr ? pObject->GetManagedObject() : nullptr, const_cast<void**>(pParameters), bEncounteredException);
+}
+
 std::shared_ptr<CMonoObject> CMonoMethod::Invoke(const CMonoObject* const pObject, MonoInternals::MonoArray* pParameters, bool &bEncounteredException) const
 {
 	return InvokeInternal(pObject != nullptr ? pObject->GetManagedObject() : nullptr, pParameters, bEncounteredException);
