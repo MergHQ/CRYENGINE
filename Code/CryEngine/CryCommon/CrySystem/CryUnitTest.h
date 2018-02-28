@@ -282,6 +282,29 @@ ILINE bool AreInequal(const char* str1, const char* str2)       { return strcmp(
 template<std::size_t M, std::size_t N>
 ILINE bool AreInequal(const char(&str1)[M], const char(&str2)[N]) { return strcmp(str1, str2) != 0; }
 
+inline void ReportError(const char* file, int line, const char* conditionExpression)
+{
+	CryDebugBreak();
+	gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause(conditionExpression, file, line);
+}
+
+inline void ReportError(const char* file, int line, string conditionExpression, const string& message)
+{
+	CryDebugBreak();
+	conditionExpression.append(" message:");
+	conditionExpression.append(message);
+	gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause(conditionExpression.c_str(), file, line);
+}
+
+template<typename ... ArgsT>
+void ReportError(const char* file, int line, string conditionExpression, const char* format, ArgsT&&... args)
+{
+	CryDebugBreak();
+	conditionExpression.append(" message:");
+	conditionExpression.AppendFormat(format, std::forward<ArgsT>(args)...);
+	gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause(conditionExpression.c_str(), file, line);
+}
+
 }
 
 //! Specifies a new test.
@@ -318,55 +341,63 @@ ILINE bool AreInequal(const char(&str1)[M], const char(&str2)[N]) { return strcm
   namespace SuiteName
 
 //! Fails and reports if the specified expression evaluates to false.
-#define CRY_UNIT_TEST_ASSERT(condition)                                                                          \
+//! Usage: CRY_UNIT_TEST_ASSERT(expression)
+//! Usage: CRY_UNIT_TEST_ASSERT(expression, errorMsg)              where errorMsg is string or string literal
+//! Usage: CRY_UNIT_TEST_ASSERT(expression, errorMsgFormat, ...)   where errorMsgFormat is string literal
+#define CRY_UNIT_TEST_ASSERT(expr, ...)                                                                          \
   do                                                                                                             \
   {                                                                                                              \
-  if (!(condition))                                                                                              \
-  {                                                                                                              \
-    CryDebugBreak();                                                                                             \
-    gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause( # condition, __FILE__, __LINE__); \
-  }                                                                                                              \
+    if (!(expr))                                                                                                 \
+    {                                                                                                            \
+      CryUnitTestImpl::ReportError(__FILE__, __LINE__, #expr, ##__VA_ARGS__);                                    \
+    }                                                                                                            \
   } while (0)
 
 //! Fails and reports if the specified floating point values are not equal with respect to epsilon.
-#define CRY_UNIT_TEST_CHECK_CLOSE(valueA, valueB, epsilon)                                                            \
+//! Usage: CRY_UNIT_TEST_CHECK_CLOSE(valueA, valueB, epsilon)
+//! Usage: CRY_UNIT_TEST_CHECK_CLOSE(valueA, valueB, epsilon, errorMsg)              where errorMsg is string or string literal
+//! Usage: CRY_UNIT_TEST_CHECK_CLOSE(valueA, valueB, epsilon, errorMsgFormat, ...)   where errorMsgFormat is string literal
+#define CRY_UNIT_TEST_CHECK_CLOSE(valueA, valueB, epsilon, ...)                                                       \
   do                                                                                                                  \
   {                                                                                                                   \
     if (!(IsEquivalent(valueA, valueB, epsilon)))                                                                     \
     {                                                                                                                 \
-      CryDebugBreak();                                                                                                \
       string message = # valueA " != " # valueB " with epsilon " # epsilon " [";                                      \
-      message.append(CryUnitTestImpl::FormatVar(valueA).c_str()).append(" != ");                                      \
-      message.append(CryUnitTestImpl::FormatVar(valueB).c_str()).append("]");                                         \
-      gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause(message.c_str(), __FILE__, __LINE__); \
+      message.append(CryUnitTestImpl::FormatVar(valueA)).append(" != ");                                              \
+      message.append(CryUnitTestImpl::FormatVar(valueB)).append("]");                                                 \
+      CryUnitTestImpl::ReportError(__FILE__, __LINE__, std::move(message), ##__VA_ARGS__);                            \
     }                                                                                                                 \
   } while (0)
 
 //! Fails and reports if the specified values are not equal.
-#define CRY_UNIT_TEST_CHECK_EQUAL(valueA, valueB)                                                                     \
+//! Usage: CRY_UNIT_TEST_CHECK_EQUAL(valueA, valueB)
+//! Usage: CRY_UNIT_TEST_CHECK_EQUAL(valueA, valueB, errorMsg)              where errorMsg is string or string literal
+//! Usage: CRY_UNIT_TEST_CHECK_EQUAL(valueA, valueB, errorMsgFormat, ...)   where errorMsgFormat is string literal
+#define CRY_UNIT_TEST_CHECK_EQUAL(valueA, valueB, ...)                                                                \
   do                                                                                                                  \
   {                                                                                                                   \
     if (!CryUnitTestImpl::AreEqual(valueA, valueB))                                                                   \
     {                                                                                                                 \
-      CryDebugBreak();                                                                                                \
       string message = # valueA " != " # valueB " [";                                                                 \
-      message.append(CryUnitTestImpl::FormatVar(valueA).c_str()).append(" != ");                                      \
-      message.append(CryUnitTestImpl::FormatVar(valueB).c_str()).append("]");                                         \
-      gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause(message.c_str(), __FILE__, __LINE__); \
+      message.append(CryUnitTestImpl::FormatVar(valueA)).append(" != ");                                              \
+      message.append(CryUnitTestImpl::FormatVar(valueB)).append("]");                                                 \
+      CryUnitTestImpl::ReportError(__FILE__, __LINE__, std::move(message), ##__VA_ARGS__);                            \
     }                                                                                                                 \
   } while (0)
 
 //! Fails and reports if the specified values are not different.
-#define CRY_UNIT_TEST_CHECK_DIFFERENT(valueA, valueB)                                                                 \
+//! Usage: CRY_UNIT_TEST_CHECK_DIFFERENT(valueA, valueB)
+//! Usage: CRY_UNIT_TEST_CHECK_DIFFERENT(valueA, valueB, errorMsg)              where errorMsg is string or string literal
+//! Usage: CRY_UNIT_TEST_CHECK_DIFFERENT(valueA, valueB, errorMsgFormat, ...)   where errorMsgFormat is string literal
+#define CRY_UNIT_TEST_CHECK_DIFFERENT(valueA, valueB, ...)                                                            \
   do                                                                                                                  \
   {                                                                                                                   \
     if (!CryUnitTestImpl::AreInequal(valueA, valueB))                                                                 \
     {                                                                                                                 \
-      CryDebugBreak();                                                                                                \
       string message = # valueA " == " # valueB " [";                                                                 \
-      message.append(CryUnitTestImpl::FormatVar(valueA).c_str()).append(" != ");                                      \
-      message.append(CryUnitTestImpl::FormatVar(valueB).c_str()).append("]");                                         \
-      gEnv->pSystem->GetITestSystem()->GetIUnitTestManager()->SetExceptionCause(message.c_str(), __FILE__, __LINE__); \
+      message.append(CryUnitTestImpl::FormatVar(valueA)).append(" != ");                                              \
+      message.append(CryUnitTestImpl::FormatVar(valueB)).append("]");                                                 \
+      CryUnitTestImpl::ReportError(__FILE__, __LINE__, std::move(message), ##__VA_ARGS__);                            \
     }                                                                                                                 \
   } while (0)
 //The last line must exist to compile on gcc!
