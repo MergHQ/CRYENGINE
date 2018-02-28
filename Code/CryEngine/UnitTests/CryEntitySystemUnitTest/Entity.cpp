@@ -18,15 +18,6 @@
 #include "CryAnimation/ICryMannequin.h"
 #include <CryEntitySystem/IEntityComponent.h>
 
-#if defined(_LIB) && CRY_PLATFORM_DURANGO
-#include "CryPhysics/physinterface.h"
-//A hack due to the current dependency setup
-IPhysicalWorld *CreatePhysicalWorld(ISystem *pSystem)
-{
-	return nullptr;
-}
-#endif
-
 using ::testing::Return;
 using ::testing::ReturnRef;
 using ::testing::_;
