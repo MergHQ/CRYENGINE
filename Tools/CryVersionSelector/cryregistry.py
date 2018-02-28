@@ -4,11 +4,20 @@ Handles loading and saving the available engines on this machine.
 """
 
 import os
+import sys
 import json
 import platform
 
 ENGINE_FILENAME = 'cryengine.json'
 ENGINE_EXTENSION = '.cryengine'
+
+HAS_WIN_MODULES = True
+try:
+    import ctypes
+    import win32con
+    MESSAGEBOX = ctypes.windll.user32.MessageBoxW
+except ImportError:
+    HAS_WIN_MODULES = False
 
 def paths_engine_database():
     """
@@ -80,7 +89,7 @@ def load_engines():
 
     return database
 
-def save_engines(database):
+def save_engines(database, register_action=True, silent=False):
     """
     Saves the database to the hard-drive.
     """
@@ -93,7 +102,25 @@ def save_engines(database):
             with open(registry_path, 'w') as file:
                 file.write(json.dumps(database, indent=4, sort_keys=True))
         except:
-            print('Error while saving  to {}.'.format(registry_path))
+            message = ''
+            title = ''
+            if register_action:
+                message = 'Error while registering the engine. Make sure that "{}" is not read-only and you have writing rights!'.format(registry_path)
+                title = 'Unable to register engine!'
+            else:
+                message = 'Error while deregistering the engine. Make sure that "{}" is not read-only and you have writing rights!'.format(registry_path)
+                title = 'Unable to remove engine!'
+            
+            if silent:
+                sys.stderr.write(message)
+            else:
+                if HAS_WIN_MODULES:
+                    MESSAGEBOX(None, message, title, win32con.MB_OK | win32con.MB_ICONERROR)
+                else:
+                    print(message)
+
+            # Custom error-code for unable to write to engine-database.
+            return 630
 
 def engine_path(database, engine_version):
     """
