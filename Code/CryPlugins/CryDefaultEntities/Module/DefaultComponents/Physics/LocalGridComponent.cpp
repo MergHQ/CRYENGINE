@@ -69,14 +69,6 @@ void CLocalGridComponent::Reset()
 			}
 		}
 	}
-
-	FILE *fdump = fopen("e:\\entdump.txt", "w");
-	for(auto ient = gEnv->pEntitySystem->GetEntityIterator(); !ient->IsEnd(); ient->Next()) {
-		const IEntity *pent = ient->This();
-		Vec3 pos = pent->GetWorldPos();
-		fprintf(fdump, "%s | %d | %s | %.2f %.2f %.2f\n", pent->GetName(), (int)pent->GetId() & 0xffff, pent->GetClass() ? pent->GetClass()->GetName() : "", pos.x,pos.y,pos.z);
-	}
-	fclose(fdump);
 }
 
 void CLocalGridComponent::Physicalize()
