@@ -1158,6 +1158,11 @@ int CPhysicalEntity::GetStatus(pe_status *_status) const
 		return 1;
 	}
 
+	if (_status->type==pe_status_constraint::type_id && IsPortal(this)) {
+		((pe_status_constraint*)_status)->pBuddyEntity = m_pEntBuddy;
+		return 1;
+	}
+
 	if (_status->type==pe_status_extent::type_id)
 	{
 		pe_status_extent *status = (pe_status_extent*)_status;
@@ -1392,6 +1397,12 @@ int CPhysicalEntity::Action(pe_action *_action, int bThreadSafe)
 		m_pEntBuddy = (CPhysicalPlaceholder*)((pe_action_add_constraint*)_action)->pBuddy;
 		m_pEntBuddy->m_iForeignFlags = (m_iForeignFlags = ent_rigid|ent_sleeping_rigid|ent_living|ent_independent | TRIGGER_PORTAL) | TRIGGER_PORTAL_INV;
 		m_pEntBuddy->m_pEntBuddy = this;
+		return 1;
+	}
+
+	if (_action->type==pe_action_update_constraint::type_id && ((pe_action_update_constraint*)_action)->bRemove && IsPortal(this)) {
+		m_pEntBuddy = nullptr; 
+		m_iForeignFlags &= ~(TRIGGER_PORTAL | TRIGGER_PORTAL_INV);
 		return 1;
 	}
 	

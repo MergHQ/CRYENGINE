@@ -119,6 +119,8 @@ foundbox:
 			pEngine->m_arrEntsInFoliage[i].timeIdle = 0;
 
 		IRenderNode* pVeg = GetRenderNodeFromPhys(pOverlap->pForeignData[1], pOverlap->iForeignData[1]);
+		if (!pVeg)
+			return 1;
 		const CCamera& cam = gEnv->pSystem->GetViewCamera();
 		int cullDist = GetCVars()->e_CullVegActivation;
 		int iSource = 0;

@@ -73,7 +73,7 @@ class CStream;
 #endif
 
 #define ENTGRID_2LEVEL
-//#define MULTI_GRID
+#define MULTI_GRID
 
 // uncomment the following block to effectively disable validations
 /*#define VALIDATOR_LOG(pLog,str)
