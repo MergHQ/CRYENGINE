@@ -4,13 +4,10 @@ add_sources("NoUberFile"
 	SOURCE_GROUP "Source Files"
         "xml.cpp"
 		"ArchiveHostTests.cpp"
-	SOURCE_GROUP "Root"
-		"StdAfx.cpp"
-		"StdAfx.h"
 )
 end_sources()
 
-CryUnitTestSuite(CrySystemUnitTest PCH "StdAfx.cpp" SOLUTION_FOLDER "UnitTests")
+CryUnitTestSuite(CrySystemUnitTest SOLUTION_FOLDER "UnitTests")
 
 use_scaleform()
 include_directories("${CRYENGINE_DIR}/Code/CryEngine/CrySystem")
