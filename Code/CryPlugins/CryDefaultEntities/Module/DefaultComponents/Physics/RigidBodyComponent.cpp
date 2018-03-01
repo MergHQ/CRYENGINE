@@ -97,7 +97,9 @@ void CRigidBodyComponent::Initialize()
 
 	if (m_isNetworked)
 	{
+		m_pEntity->GetNetEntity()->EnableDelegatableAspect(eEA_Physics, false);
 		m_pEntity->GetNetEntity()->BindToNetwork();
+		m_pEntity->GetNetEntity()->SetAspectProfile(eEA_Physics, static_cast<int>(m_type));
 	}
 }
 
@@ -186,10 +188,24 @@ void CRigidBodyComponent::ProcessEvent(const SEntityEvent& event)
 
 uint64 CRigidBodyComponent::GetEventMask() const
 {
-	uint64 bitFlags = m_bSendCollisionSignal ? BIT64(ENTITY_EVENT_COLLISION) : 0;
-	bitFlags |= BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | BIT64(ENTITY_EVENT_START_GAME);
+	uint64 bitFlags = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | BIT64(ENTITY_EVENT_START_GAME);
+	if (m_bSendCollisionSignal)
+	{
+		bitFlags |= BIT64(ENTITY_EVENT_COLLISION);
+	}
 
 	return bitFlags;
+}
+
+bool CRigidBodyComponent::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags)
+{
+	if (aspect == eEA_Physics)
+	{
+		// Serialize physics state in order to keep the clients in sync
+		m_pEntity->PhysicsNetSerializeTyped(ser, static_cast<int>(m_type), flags);
+	}
+
+	return true;
 }
 
 }
