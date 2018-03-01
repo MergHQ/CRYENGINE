@@ -357,27 +357,111 @@ struct IBreakReplicator
 	// </interfuscator:shuffle>
 };
 
+//! Persistent debug exposes functionality for drawing debug geometry over a specific period of time, without having to continuously re-render manually each frmae.
+//! This can be extremely useful to debug gameplay logic.
 struct IPersistantDebug
 {
 	// <interfuscator:shuffle>
 	virtual ~IPersistantDebug(){}
-	virtual void Begin(const char* name, bool clear) = 0;
+	//! Starts a persistent debug drawing group
+	//! It is mandatory to call this function before invoking any of the Add* functions!
+	//! \param szName The name of the group
+	//! \param clear Whether or not to clear any persistent drawing done to the specified group before
+	virtual void Begin(const char* szName, bool clear) = 0;
+	//! Adds a persistent sphere at the specified location
+	//! \param pos The world coordinates to draw this object at
+	//! \param radius Radius of the sphere
+	//! \param clr Color of the debug geometry
+	//! \param timeout Timeout in seconds after which the item will stop rendering
 	virtual void AddSphere(const Vec3& pos, float radius, ColorF clr, float timeout) = 0;
+	//! Adds a persistent direction indicator at the specified location
+	//! \param pos The world coordinates to draw this object at
+	//! \param radius Radius of the directional indicator
+	//! \param dir Directional vector we want to visualize
+	//! \param clr Color of the debug geometry
+	//! \param timeout Timeout in seconds after which the item will stop rendering
 	virtual void AddDirection(const Vec3& pos, float radius, const Vec3& dir, ColorF clr, float timeout) = 0;
+	//! Adds a persistent line at the specified coordinates
+	//! \param pos1 Origin of the line, in world coordinates
+	//! \param pos2 End point of the line, in world coordinates
+	//! \param clr Color of the debug geometry
+	//! \param timeout Timeout in seconds after which the item will stop rendering
 	virtual void AddLine(const Vec3& pos1, const Vec3& pos2, ColorF clr, float timeout) = 0;
+	//! Adds a planar disc to the specified coordinates
+	//! \param pos The world coordinates to draw this object at
+	//! \param innerRadius The inner radius of the disc
+	//! \param outerRadius The outer radius of the disc
+	//! \param clr Color of the debug geometry
+	//! \param timeout Timeout in seconds after which the item will stop rendering
 	virtual void AddPlanarDisc(const Vec3& pos, float innerRadius, float outerRadius, ColorF clr, float timeout) = 0;
+	//! \param pos The world coordinates to draw this object at
+	//! \param dir The direction in which the cone will point
+	//! \param baseRadius Radius of the cone at its base
+	//! \param height Height of the cone
+	//! \param clr Color of the debug geometry
+	//! \param timeout Timeout in seconds after which the item will stop rendering
 	virtual void AddCone(const Vec3& pos, const Vec3& dir, float baseRadius, float height, ColorF clr, float timeout) = 0;
+	//! Adds a cylinder at the specified coordinates
+	//! \param pos The world coordinates to draw this object at
+	//! \param dir Direction in which the cylinder will point
+	//! \param radius Radius of the cylinder
+	//! \param height Height of the cylinder
+	//! \param clr Color of the debug geometry
+	//! \param timeout Timeout in seconds after which the item will stop rendering
 	virtual void AddCylinder(const Vec3& pos, const Vec3& dir, float radius, float height, ColorF clr, float timeout) = 0;
-	virtual void Add2DText(const char* text, float size, ColorF clr, float timeout) = 0;
+	//! Adds 2D text on screen
+	//! \param szText Text message to draw
+	//! \param size Size of the text
+	//! \param clr Color of the debug geometry
+	//! \param timeout Timeout in seconds after which the item will stop rendering
+	virtual void Add2DText(const char* szText, float size, ColorF clr, float timeout) = 0;
+	//! Adds 2D text to the specified screen coordinates
+	//! \param x X axis coordinate in screen space
+	//! \param y Y axis coordinate in screen space
+	//! \param size Size of the text
+	//! \param clr Color of the debug geometry
+	//! \param timeout Timeout in seconds after which the item will stop rendering
+	//! \param fmt... printf style text message to be drawn on screen
 	virtual void AddText(float x, float y, float size, ColorF clr, float timeout, const char* fmt, ...) = 0;
+	//! Adds 3D text to the specified world coordinates
+	//! \param pos The world coordinates to draw this object at
+	//! \param size Size of the text
+	//! \param clr Color of the debug geometry
+	//! \param timeout Timeout in seconds after which the item will stop rendering
+	//! \param fmt... printf style text message to be drawn on screen
 	virtual void AddText3D(const Vec3& pos, float size, ColorF clr, float timeout, const char* fmt, ...) = 0;
+	//! Adds a 2D line on screen
+	//! \param x1 X axis coordinate in screen space where the line starts
+	//! \param y1 Y axis coordinate in screen space where the line starts
+	//! \param x2 X axis coordinate in screen space where the line ends
+	//! \param y2 Y axis coordinate in screen space where the line ends
+	//! \param clr Color of the debug geometry
+	//! \param timeout Timeout in seconds after which the item will stop rendering
 	virtual void Add2DLine(float x1, float y1, float x2, float y2, ColorF clr, float timeout) = 0;
+	//! Adds a visualized quaternion to the specified coordinates
+	//! \param pos The world coordinates to draw this object at
+	//! \param q The quaternion to visualize
+	//! \param r Radius of the helper
+	//! \param clr Color of the debug geometry
+	//! \param timeout Timeout in seconds after which the item will stop rendering
 	virtual void AddQuat(const Vec3& pos, const Quat& q, float r, ColorF clr, float timeout) = 0;
+	//! Adds an axis-aligned bounding box
+	//! \param min Starting coordinates of the bounding box
+	//! \param min End coordinates of the bounding box
+	//! \param clr Color of the debug geometry
+	//! \param timeout Timeout in seconds after which the item will stop rendering
 	virtual void AddAABB(const Vec3& min, const Vec3& max, ColorF clr, float timeout) = 0;
+	//! Adds a tag above the specified entity, using the specified parameters
+	//! \param params Parameters describing the tag
+	//! \param The context in which we'll add the tag
 	virtual void AddEntityTag(const SEntityTagParams& params, const char* tagContext = "") = 0;
+	//! Clears all entity tags for the specified entity
 	virtual void ClearEntityTags(EntityId entityId) = 0;
+	//! Clears a specific tag for the specified entity
 	virtual void ClearStaticTag(EntityId entityId, const char* staticId) = 0;
+	//! Clears all entity tags by context
 	virtual void ClearTagContext(const char* tagContext) = 0;
+	//! Clears all entity tags by context, for a specific entity instance
 	virtual void ClearTagContext(const char* tagContext, EntityId entityId) = 0;
 	virtual void Update(float frameTime) = 0;
 	virtual void PostUpdate(float frameTime) = 0;
