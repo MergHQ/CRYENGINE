@@ -933,7 +933,8 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 	params.scale = pEntity->GetScale();
 	params.rotation = pEntity->GetRotation();
 	params.nChannelId = pEntity->GetNetEntity()->GetChannelId();
-	params.flags = pEntity->GetFlags();
+	// Make sure that the remotely spawned entity uses the same flags, except the local player flag!
+	params.flags = pEntity->GetFlags() & ~ENTITY_FLAG_LOCAL_PLAYER;
 
 	params.bClientActor = pChannel ?
 	                      ((CGameChannel*)pChannel->GetGameChannel())->GetPlayerId() == pEntity->GetId() : false;
