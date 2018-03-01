@@ -2266,6 +2266,7 @@ struct CPhysicalWorldSerializer : Serializer {
 	template<class PhysEnt> PhysEnt* CreateEnt(CPhysicalWorld *pWorld, const char* name) {
 		PhysEnt *ent = (PhysEnt*)CryModuleMalloc(sizeof(PhysEnt)+strlen(name)+1);
 		new(ent) PhysEnt(pWorld, nullptr);
+		pWorld->SetGrid(ent, &pWorld->m_entgrid);
 		pe_params_foreign_data pfd;
 		strcpy((char*)(pfd.pForeignData = (char*)ent+sizeof(PhysEnt)), name);
 		pfd.iForeignData = 100;
