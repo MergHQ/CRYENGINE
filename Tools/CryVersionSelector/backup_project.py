@@ -165,6 +165,10 @@ def copy_binaries(project, project_path, export_path, silent):
     related files such as debug symbols.
     """
     plugins = cryproject.plugins_list(project)
+
+    if not plugins:
+        return
+
     for plugin in plugins:
         path = plugin.get("path")
         plugin_type = plugin.get("type")
