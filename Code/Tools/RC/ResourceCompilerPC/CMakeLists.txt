@@ -204,6 +204,7 @@ target_include_directories(${THIS_PROJECT} PRIVATE
 	"${SDK_DIR}"
 	"${SDK_DIR}/Alembic/alembic-1.1.0/include"
 	"${SDK_DIR}/Alembic/ilmbase-1.0.2/include")
+target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR)
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRYTOOLS -DRESOURCECOMPILERPC_EXPORTS -DOFFLINE_COMPUTATION)
 if (OPTION_FBX_SDK)
 	use_fbx_sdk()
