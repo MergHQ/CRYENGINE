@@ -156,13 +156,13 @@ void CManagedEntityComponent::ProcessEvent(const SEntityEvent &event)
 		break;
 		case ENTITY_EVENT_COLLISION:
 		{
-			EventPhysCollision* pCollision = (EventPhysCollision*)event.nParam[0];
+			const EventPhysCollision* pCollision = reinterpret_cast<const EventPhysCollision*>(event.nParam[0]);
 			
 			// Make sure all references to this entity are slotted in the first element of the arrays.
-			int entityIndex = pCollision->pEntity[0] != m_pEntity->GetPhysicalEntity() ? 1 : 0;
-			int otherIndex = (entityIndex + 1) % 2;
+			const int entityIndex = static_cast<int>(event.nParam[1]);
+			const int otherIndex = (entityIndex + 1) % 2;
 
-			void* pParams[12];
+			const void* pParams[12];
 			pParams[0] = &pCollision->pEntity[entityIndex]; // sourceEntityPhysics
 			pParams[1] = &pCollision->pEntity[otherIndex]; // targetEntityPhysics
 			pParams[2] = &pCollision->pt; // point
