@@ -26,7 +26,7 @@ void CPlayerComponent::Initialize()
 
 	// CryNetwork/CryPhysics: the entity has to be physicalized on both sides
 	// *prior* to binding to network, so the physical state is synced properly.
-	int slot = m_pEntity->LoadGeometry(GetOrMakeEntitySlotId(), "Objects/Default/primitive_sphere.cgf");
+	int slot = m_pEntity->LoadGeometry(GetOrMakeEntitySlotId(), "%ENGINE%/EngineAssets/Objects/primitive_sphere.cgf");
 	if (slot != -1)
 	{
 		auto material = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial("%ENGINE%/EngineAssets/TextureMsg/DefaultSolids");
