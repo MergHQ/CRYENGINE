@@ -881,6 +881,10 @@ struct CGeomanSerializer : Serializer {
 		CPhysicalWorld *pWorld = (CPhysicalWorld*)ctx.pobj;
 		if (!ctx.bSaving)	{
 			int i,j;
+			if (!pWorld->m_pExpl)
+				pWorld->m_nExpl = 0;
+			if (pWorld->m_nCracks)
+				pWorld->m_nCracks = 0;
 			for(i=j=0; i<pWorld->m_nExpl; i++) {
 				pWorld->m_pExpl[i].rsize = 1/pWorld->m_pExpl[i].size;
 				if (i>0 && pWorld->m_pExpl[i].idmat!=pWorld->m_pExpl[i-1].idmat)
