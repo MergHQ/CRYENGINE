@@ -1811,7 +1811,7 @@ void CharacterDocument::PreRender(const SRenderContext& context)
 		if (m_AverageFrameTime > 0)
 		{
 			pe_params_flags pf;
-			pf.flagsOR = pef_update;
+			pf.flagsOR = pef_update | pef_ignore_areas;
 
 			IPhysicalEntity* pCharBasePhys = skeletonPose.GetCharacterPhysics();
 			if (pCharBasePhys)
