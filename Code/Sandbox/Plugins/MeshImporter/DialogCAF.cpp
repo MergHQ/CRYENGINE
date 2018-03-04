@@ -767,7 +767,7 @@ bool CDialogCAF::SaveAs(SSaveContext& ctx)
 		saveState.clipName = clip.outputName;
 	}
 
-	const string targetDirPath = ctx.targetFilePath;
+	const string targetDirPath = PathUtil::GetPathWithoutFilename(ctx.targetFilePath);
 
 	const QString absOriginalFilePath = GetSceneManager().GetImportFile()->GetOriginalFilePath();
 	ThreadingUtils::Async([clipSaveStates, absOriginalFilePath, targetDirPath]()

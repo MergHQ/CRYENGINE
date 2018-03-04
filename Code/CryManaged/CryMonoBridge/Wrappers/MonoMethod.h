@@ -19,6 +19,13 @@ class CMonoMethod
 public:
 	CMonoMethod(MonoInternals::MonoMethod* pMethod);
 
+	std::shared_ptr<CMonoObject> Invoke(const CMonoObject* const pObject, const void** pParameters, bool &bEncounteredException) const;
+	std::shared_ptr<CMonoObject> Invoke(const CMonoObject* const pObject, const void** pParameters) const
+	{
+		bool bEncounteredException;
+		return Invoke(pObject, pParameters, bEncounteredException);
+	}
+
 	std::shared_ptr<CMonoObject> Invoke(const CMonoObject* const pObject, void** pParameters, bool &bEncounteredException) const;
 	std::shared_ptr<CMonoObject> Invoke(const CMonoObject* const pObject = nullptr, void** pParameters = nullptr) const
 	{
