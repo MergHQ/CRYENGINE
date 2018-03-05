@@ -922,7 +922,8 @@ CCryPak::~CCryPak()
 		}
 	}
 
-	SAFE_DELETE(m_pWidget);
+	ICryPerfHUD* pPerfHUD = gEnv->pSystem->GetPerfHUD();
+	pPerfHUD->RemoveWidget(m_pWidget);
 }
 
 // makes the path lower-case and removes the duplicate and non native slashes

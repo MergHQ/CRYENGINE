@@ -1046,7 +1046,15 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 
 			if (m_hCursor == NULL && gEnv->pConsole->GetCVar("r_MouseUseSystemCursor")->GetIVal() != 0)
 			{
-				m_hCursor = CreateResourceFromTexture(this, gEnv->pConsole->GetCVar("r_MouseCursorTexture")->GetString(), eResourceType_Cursor);
+				const char* texture = gEnv->pConsole->GetCVar("r_MouseCursorTexture")->GetString();
+				if (texture && *texture)
+				{
+					m_hCursor = CreateResourceFromTexture(this, texture, eResourceType_Cursor);
+				}
+				else
+				{
+					m_hCursor = ::LoadCursor(NULL, IDC_ARROW);
+				}
 			}
 
 			// Moved from Game DLL

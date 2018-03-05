@@ -472,6 +472,7 @@ private:
 	struct StagingTextureDef
 	{
 		D3D11_TEXTURE2D_DESC desc;
+		uint32 lastUsedFrameID;
 		D3DTexture*          pStagingResource;
 
 		friend bool operator==(const StagingTextureDef& a, const D3D11_TEXTURE2D_DESC& b)

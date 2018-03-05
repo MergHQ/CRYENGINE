@@ -31,7 +31,7 @@ public:
 		: m_probability(1.0f)
 		, m_mode(ESecondGenMode::All) {}
 
-	bool ResolveDependency(CParticleComponent* pComponent) override
+	CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
 	{
 		CRY_PFX2_ASSERT(pComponent);
 
@@ -49,7 +49,7 @@ public:
 				}
 			}
 		}
-		return true;
+		return this;
 	}
 
 	void Serialize(Serialization::IArchive& ar) override

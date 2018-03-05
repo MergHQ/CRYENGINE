@@ -180,9 +180,10 @@ public:
 	virtual IParticleFeature*   AddFeature(uint placeIdx, const SParticleFeatureParams& featureParams) override;
 	virtual void                RemoveFeature(uint featureIdx) override;
 	virtual void                SwapFeatures(const uint* swapIds, uint numSwapIds) override;
+	virtual IParticleComponent* GetParent() const override                                { return m_parent; }
+	virtual void                SetParent(IParticleComponent* pParentComponent) override;
 	virtual Vec2                GetNodePosition() const override;
 	virtual void                SetNodePosition(Vec2 position) override;
-	virtual IParticleComponent* GetParent() const override                                { return m_parent; }
 	// ~IParticleComponent
 
 	void                                  ClearFeatures()                       { m_features.clear(); }
@@ -195,7 +196,6 @@ public:
 
 	uint                                  GetComponentId() const                { return m_componentId; }
 	CParticleEffect*                      GetEffect() const                     { return m_pEffect; }
-	void                                  SetEffect(CParticleEffect* pEffect)   { m_pEffect = pEffect; }
 
 	template<typename T> TDataOffset<T>   AddInstanceData()                     { return AddInstanceData(sizeof(T)); }
 	void                                  AddParticleData(EParticleDataType type);
@@ -212,6 +212,7 @@ public:
 	void                    SetParentComponent(CParticleComponent* pParentComponent, bool delayed);
 	CParticleComponent*     GetParentComponent() const                          { return m_parent; }
 	const TComponents&      GetChildComponents() const                          { return m_children; }
+	void                    ClearChildren()                                     { m_children.resize(0); }
 
 	void                    GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 	float                   GetEquilibriumTime(Range parentLife = Range()) const;

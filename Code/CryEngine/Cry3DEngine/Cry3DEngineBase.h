@@ -117,6 +117,7 @@ struct Cry3DEngineBase
 	inline static ICryPak*           GetPak()                    { return m_pCryPak; }
 	inline static CMatMan*           GetMatMan()                 { return m_pMatMan; }
 	inline static CWaterWaveManager* GetWaterWaveManager()       { return m_pWaterWaveManager; };
+	inline static CBreezeGenerator*  GetBreezeGenerator()        { return m_pBreezeGenerator; };
 	inline static CRenderMeshMerger* GetSharedRenderMeshMerger() { return m_pRenderMeshMerger; };
 	inline static CTemporaryPool*    GetTemporaryPool()          { return CTemporaryPool::Get(); };
 

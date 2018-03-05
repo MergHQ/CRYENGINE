@@ -35,7 +35,7 @@ public:
 		m_stopTrigger.Resolve();
 		if (GetNumResources())
 		{
-			pComponent->RenderDeferred.add(this);
+			pComponent->MainPreUpdate.add(this);
 			pComponent->AddParticleData(EPVF_Position);
 			if (m_followParticle || m_stopOnDeath)
 			{
@@ -76,7 +76,7 @@ public:
 		context.m_container.FillData(EPDT_AudioObject, (CryAudio::IObject*)0, context.GetSpawnedRange());
 	}
 
-	void RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override
+	void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) override
 	{
 		CryStackStringT<char, 512> proxyName;
 		proxyName.append(pComponentRuntime->GetComponent()->GetEffect()->GetName());
@@ -143,12 +143,11 @@ private:
 
 		for (auto particleId : context.GetUpdateRange())
 		{
-			const float age = normAges.Load(particleId);
 			if (m_playTrigger && container.IsNewBorn(particleId))
 			{
 				Trigger(m_playTrigger, proxyName, positions.Load(particleId));
 			}
-			if (m_stopTrigger && IsExpired(age))
+			if (m_stopTrigger && IsExpired(normAges.Load(particleId)))
 			{
 				Trigger(m_stopTrigger, proxyName, positions.Load(particleId));
 			}
@@ -168,7 +167,6 @@ private:
 		for (auto particleId : context.GetUpdateRange())
 		{
 			CryAudio::IObject* pIObject = audioObjects.Load(particleId);
-			const float age = normAges.Load(particleId);
 			if (container.IsNewBorn(particleId))
 			{
 				if (m_playTrigger && !pIObject)
@@ -182,7 +180,7 @@ private:
 			{
 				if (m_followParticle)
 					pIObject->SetTransformation(positions.Load(particleId));
-				if (IsExpired(age))
+				if (IsExpired(normAges.Load(particleId)))
 				{
 					if (m_stopOnDeath)
 						pIObject->StopTrigger(m_playTrigger);

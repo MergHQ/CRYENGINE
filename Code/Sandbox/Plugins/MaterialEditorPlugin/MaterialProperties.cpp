@@ -161,7 +161,7 @@ void SerializeWordToDegree(Serialization::IArchive& ar, uint16& word, char* name
 }
 
 template<typename T>
-void SetFlag(T& bitFieldInOut, int mask, bool set)
+void SetFlag(T& bitFieldInOut, uint64 mask, bool set)
 {
 	static_assert(std::is_integral<T>::value, "Type must be an integer type");
 	if (set)

@@ -69,7 +69,7 @@ void CFeatureFieldColor::Serialize(Serialization::IArchive& ar)
 		void Serialize(Serialization::IArchive& ar)
 		{
 			ar(m_color, "Color", "^");
-			ar(m_modifiers, "Modifiers", "^");
+			ar(SkipEmpty(m_modifiers), "Modifiers", "^");
 		}
 		std::vector<PColorModifier>& m_modifiers;
 		ColorB&                      m_color;

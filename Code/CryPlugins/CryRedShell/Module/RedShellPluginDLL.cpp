@@ -27,37 +27,64 @@ class CPlugin final : public Cry::IEnginePlugin
 public:
 	virtual ~CPlugin() = default;
 
+	static void LogInitError(bool isMandatory, const char* szMessage)
+	{
+		if (isMandatory)
+		{
+			CryFatalError(szMessage);
+		}
+		else
+		{
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, szMessage);
+		}
+	}
+
 	// Cry::IEnginePlugin
 	virtual const char* GetName() const override { return "RedShellPlugin"; }
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-		if (env.IsEditor())
+		if (env.IsEditor() || env.IsDedicated())
 		{
-			// Don't use RedShell SDK integration in Sandbox
+			// Don't use RedShell SDK integration in Sandbox and on dedicated server
 			return true;
 		}
 
+		bool isEnabled = true;
+		bool isMandatory = false;
+		if (ICVar* pIsEnabled = REGISTER_INT("redShell_enabled", 1, VF_REQUIRE_APP_RESTART | VF_INVISIBLE, "Enable RedShell plugin. 1 - enabled, 2 - enabled and mandatory"))
+		{
+			int isEnabledCvar = pIsEnabled->GetIVal();
+			isEnabled = isEnabledCvar > 0;
+			isMandatory = isEnabledCvar > 1;
+			env.pConsole->UnregisterVariable("redShell_enabled");
+		}
+
+		if (!isEnabled)
+		{
+			return true;
+		}
+		
 		CryLogAlways("[RedShell] Initializing ...");
 
 		Cry::GamePlatform::IPlugin* pSteamPlugin = env.pSystem->GetIPluginManager()->QueryPlugin<Cry::GamePlatform::IPlugin>();
 		if ((pSteamPlugin == nullptr) || (pSteamPlugin->GetType() != Cry::GamePlatform::EType::Steam))
 		{
-			CryFatalError("[RedShell] RedShell plugin requires Steam. Make sure that GamePlatform plugin is enabled and loaded before loading RedShell plugin !");
-			return false;
+			LogInitError(isMandatory, "[RedShell] RedShell plugin requires Steam. Make sure that GamePlatform plugin is enabled and loaded before loading RedShell plugin !");
+			return !isMandatory;
 		}
 
 		Cry::GamePlatform::IUser* pSteamUser = pSteamPlugin->GetLocalClient();
 		if (pSteamUser == nullptr)
 		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[RedShell] Failed to query steam user to initialize RedShell SDK");
-			return true;
+			LogInitError(isMandatory, "[RedShell] Failed to query steam user to initialize RedShell SDK");
+			return !isMandatory;
 		}
 
 		ICVar* pApiKey = REGISTER_STRING("redShell_ApiKey", "", VF_REQUIRE_APP_RESTART | VF_INVISIBLE | VF_CHEAT_ALWAYS_CHECK, "Sets the API key needed by RedShell SDK, so that the SDK knows for which game to register a conversion.");
 		if (pApiKey == nullptr)
 		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[RedShell] Failed to register redShell_ApiKey CVar. User conversion likely won't be registered");
-			return true;
+			LogInitError(isMandatory, "[RedShell] Failed to register redShell_ApiKey CVar. User conversion likely won't be registered");
+			return !isMandatory;
 		}
 
 		const Cry::GamePlatform::IUser::Identifier steamUserId = pSteamUser->GetIdentifier();

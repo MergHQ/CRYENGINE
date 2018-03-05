@@ -35,6 +35,7 @@ class IOpticsManager;
 struct IDeferredPhysicsEventManager;
 struct IBSPTree3D;
 struct ITimeOfDay;
+struct IBreezeGenerator;
 struct IRenderView;
 class CRenderView;
 
@@ -1891,6 +1892,9 @@ struct I3DEngine : public IProcess
 	//! Gets wind direction and forace at the sample points provided.
 	//! \note The positions defining the samples will be overwritten with the accumulated wind influences.
 	virtual bool SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, bool bIndoors) const = 0;
+
+	//! Retrieve pointer to the breeze generator interface.
+	virtual IBreezeGenerator* GetBreezeGenerator() = 0;
 
 	//! Gets the VisArea which is present at a specified point.
 	//! \return VisArea containing point, if any, 0 otherwise.
