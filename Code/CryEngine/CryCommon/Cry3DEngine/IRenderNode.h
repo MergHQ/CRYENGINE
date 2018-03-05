@@ -1029,9 +1029,9 @@ struct IRopeRenderNode : public IRenderNode
 		int   nMaxSubVtx = 3;
 
 		float mass = 1.f;        //!< Rope mass. if mass is 0 it will be static.
-		float tension = 0.5f;
+		float tension = 0.f;
 		float friction = 2.f;
-		float frictionPull = 2.f;
+		float frictionPull = 0.f;
 
 		Vec3  wind = ZERO;
 		float windVariance = 0.f;
@@ -1042,9 +1042,9 @@ struct IRopeRenderNode : public IRenderNode
 		float maxForce = 0.f;
 
 		int   nMaxIters = 650;
-		float maxTimeStep = 0.25f;
+		float maxTimeStep = 0.02f;
 		float stiffness = 10.f;
-		float hardness = 20.f;
+		float hardness = 8.f;
 		float damping = 0.2f;
 		float sleepSpeed = 0.04f;
 	};
