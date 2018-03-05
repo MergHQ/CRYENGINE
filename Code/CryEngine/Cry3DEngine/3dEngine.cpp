@@ -2986,6 +2986,12 @@ void C3DEngine::DeleteRenderNode(IRenderNode* pRenderNode)
 void C3DEngine::SetWind(const Vec3& vWind)
 {
 	m_vWindSpeed = vWind;
+
+	if (m_pBreezeGenerator)
+	{
+		m_pBreezeGenerator->m_wind_speed = vWind;
+	}
+
 	if (!m_vWindSpeed.IsZero())
 	{
 		// Maintain a large physics area for global wind.
@@ -3103,6 +3109,11 @@ bool C3DEngine::SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, boo
 	}
 
 	return true;
+}
+
+IBreezeGenerator* C3DEngine::GetBreezeGenerator()
+{
+	return Cry3DEngineBase::GetBreezeGenerator();
 }
 
 //==============================================================================================================================================
