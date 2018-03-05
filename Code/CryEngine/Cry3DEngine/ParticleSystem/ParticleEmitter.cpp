@@ -54,6 +54,14 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 
 	if (m_pEffect)
 		m_attributeInstance.Reset(m_pEffect->GetAttributeTable());
+
+	m_parentContainer.AddParticleData(EPVF_Position);
+	m_parentContainer.AddParticleData(EPQF_Orientation);
+	m_parentContainer.AddParticleData(EPVF_Velocity);
+	m_parentContainer.AddParticleData(EPVF_AngularVelocity);
+	m_parentContainer.AddParticleData(EPDT_NormalAge);
+
+	m_parentContainer.AddParticle();
 }
 
 CParticleEmitter::~CParticleEmitter()
@@ -131,7 +139,7 @@ void CParticleEmitter::Update()
 	m_time += m_deltaTime;
 	++m_currentSeed;
 
-	if (m_active && m_effectEditVersion != m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion)
+	if (m_alive && m_effectEditVersion != m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion)
 	{
 		m_pEffectOriginal->Compile();
 		m_attributeInstance.Reset(m_pEffectOriginal->GetAttributeTable());
@@ -375,16 +383,10 @@ void CParticleEmitter::Activate(bool activate)
 	if (!m_pEffect || activate == m_active)
 		return;
 
+	m_active = activate;
 	if (activate)
 	{
-		m_parentContainer.AddParticleData(EPVF_Position);
-		m_parentContainer.AddParticleData(EPQF_Orientation);
-		m_parentContainer.AddParticleData(EPVF_Velocity);
-		m_parentContainer.AddParticleData(EPVF_AngularVelocity);
-		m_parentContainer.AddParticleData(EPDT_NormalAge);
-
 		InitSeed();
-
 		UpdateRuntimes();
 
 		if (m_spawnParams.bPrime)
@@ -401,8 +403,6 @@ void CParticleEmitter::Activate(bool activate)
 				pRuntime->RemoveAllSubInstances();
 		}
 	}
-
-	m_active = activate;
 }
 
 void CParticleEmitter::Restart()
@@ -558,17 +558,25 @@ void CParticleEmitter::UpdateRuntimes()
 		m_pEffect = new CParticleEffect(*m_pEffectOriginal);
 		for (auto& pComponent : m_pEffect->GetComponents())
 		{
-			if (!pComponent->GetParentComponent())
+			pComponent = new CParticleComponent(*pComponent);
+			pComponent->ClearChildren();
+			if (auto pParentComponent = pComponent->GetParentComponent())
 			{
-				// clone component and add features
-				pComponent = new CParticleComponent(*pComponent);
-				pComponent->SetEffect(m_pEffect);
+				auto pNewParent = m_pEffect->GetComponent(pParentComponent->GetComponentId());
+				pComponent->SetParent(pNewParent);
+			}
+			else
+			{
 				for (auto& feature : m_emitterFeatures)
 					pComponent->AddFeature(static_cast<CParticleFeature*>(feature.get()));
 			}
 		}
 		m_pEffect->SetChanged();
 		m_pEffect->Compile();
+	}
+	else
+	{
+		m_pEffect = m_pEffectOriginal;
 	}
 
 	for (const auto& pComponent: m_pEffect->GetComponents())
@@ -587,30 +595,31 @@ void CParticleEmitter::UpdateRuntimes()
 		);
 
 		if (!pRuntime || !pRuntime->IsValidForComponent())
+		{
 			pRuntime = new CParticleComponentRuntime(this, pComponent);
+		}
+		else
+		{
+			pRuntime->RemoveAllSubInstances();
+			pRuntime->Initialize();
+		}
 
 		newRuntimes.push_back(pRuntime);
 		m_componentRuntimesFor.push_back(pRuntime);
+
+		if (m_active && !pRuntime->IsChild())
+		{
+			TDynArray<SInstance> instances(m_parentContainer.GetNumParticles());
+			for (uint id = 0; id < instances.size(); ++id)
+				instances[id].m_parentId = id;
+			pRuntime->AddSubInstances(instances);
+			m_alive = true;
+		}
 	}
 
 	m_componentRuntimes = newRuntimes;
 
 	m_effectEditVersion = m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion;
-
-	m_parentContainer.AddParticle();
-
-	for (auto& pRuntime : m_componentRuntimes)
-	{
-		pRuntime->RemoveAllSubInstances();
-		pRuntime->Initialize();
-		if (!pRuntime->IsChild())
-		{
-			SInstance instance;
-			pRuntime->AddSubInstances({&instance, 1});
-		}
-	}
-
-	m_alive = true;
 }
 
 void CParticleEmitter::ResetRenderObjects()
@@ -778,9 +787,9 @@ uint CParticleEmitter::GetParticleSpec() const
 	if (m_spawnParams.eSpec != EParticleSpec::Default)
 		return uint(m_spawnParams.eSpec);
 
-	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
-	if (pCVars->e_ParticlesQuality != 0)
-		return pCVars->e_ParticlesQuality;
+	int quality = C3DEngine::GetCVars()->e_ParticlesQuality;
+	if (quality != 0)
+		return quality;
 
 	const ESystemConfigSpec configSpec = gEnv->pSystem->GetConfigSpec();
 	return uint(configSpec);

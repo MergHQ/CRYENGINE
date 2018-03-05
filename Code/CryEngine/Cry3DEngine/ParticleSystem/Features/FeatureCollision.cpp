@@ -572,7 +572,7 @@ void CFeatureGPUCollision::Serialize(Serialization::IArchive& ar)
 	ar(m_restitution, "Restitution", "Restitution");
 }
 
+CRY_PFX2_LEGACY_FEATURE(CFeatureGPUCollision, "Motion", "Collision");
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureGPUCollision, "GPU Particles", "Collision", colorGPU);
-CRY_PFX2_LEGACY_FEATURE(CParticleFeature, CFeatureGPUCollision, "MotionCollision");
 
 }

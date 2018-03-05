@@ -62,7 +62,7 @@ void CParamMod<TParamModContext, T >::Serialize(Serialization::IArchive& ar)
 	TParamModContext modContext;
 	Serialization::SContext _modContext(ar, static_cast<IParamModContext*>(&modContext));
 	ar(m_baseValue, "value", "^");
-	ar(m_modifiers, "modifiers", "^");
+	ar(SkipEmpty(m_modifiers), "modifiers", "^");
 
 	if (ar.isInput())
 	{

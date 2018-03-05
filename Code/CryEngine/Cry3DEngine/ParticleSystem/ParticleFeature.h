@@ -36,7 +36,7 @@ public:
 	// ~IParticleFeature
 
 	// Initialization
-	virtual bool              ResolveDependency(CParticleComponent* pComponent)                         { return true; }
+	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent)                         { return this; }
 	virtual void              AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) {}
 	virtual EFeatureType      GetFeatureType()                                                          { return EFT_Generic; }
 	virtual bool              CanMakeRuntime(CParticleEmitter* pEmitter) const                          { return true; }
@@ -172,7 +172,7 @@ static const ColorB colorComponent  = HexToColor(0x80c0c0);
 #define CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(BaseType, Type, GroupName, FeatureName, Color) \
   CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, Color, true, 0)
 
-#define CRY_PFX2_LEGACY_FEATURE(BaseType, NewType, LegacyName)           \
-	SERIALIZATION_CLASS_NAME(BaseType, NewType, LegacyName, LegacyName);
+#define CRY_PFX2_LEGACY_FEATURE(Type, GroupName, FeatureName) \
+	SERIALIZATION_CLASS_NAME(CParticleFeature, Type, GroupName FeatureName, GroupName FeatureName);
 
 }

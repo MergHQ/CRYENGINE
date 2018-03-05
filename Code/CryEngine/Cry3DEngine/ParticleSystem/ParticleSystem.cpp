@@ -342,9 +342,11 @@ const SParticleFeatureParams* CParticleSystem::GetDefaultFeatureParam(EFeatureTy
 
 bool CParticleSystem::SerializeFeatures(IArchive& ar, TParticleFeatures& features, cstr name, cstr label) const
 {
-	if (ar.isInput())
+	auto size = features.size();
+	bool ok = ar(features, name, label);
+	if (ar.isInput() && size + features.size() > 0)
 		features.m_editVersion++;
-	return ar(features, name, label);
+	return ok;
 }
 
 void CParticleSystem::GetStats(SParticleStats& stats)

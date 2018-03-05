@@ -128,6 +128,7 @@ void SComponentParams::GetMaxParticleCounts(int& total, int& perFrame, float min
 CParticleComponent::CParticleComponent()
 	: m_dirty(true)
 	, m_pEffect(0)
+	, m_parent(nullptr)
 	, m_componentId(gInvalidId)
 	, m_nodePosition(-1.0f, -1.0f)
 {
@@ -206,15 +207,21 @@ void CParticleComponent::AddParticleData(EParticleDataType type)
 		m_useParticleData[i] = true;
 }
 
-void CParticleComponent::SetParentComponent(CParticleComponent* pParentComponent, bool delayed)
+void CParticleComponent::SetParent(IParticleComponent* pParentComponent)
 {
 	if (m_parent == pParentComponent)
 		return;
-	m_parent = pParentComponent;
+	if (m_parent)
+		stl::find_and_erase(m_parent->m_children, this);
+	m_parent = static_cast<CParticleComponent*>(pParentComponent);
+	if (m_parent)
+		stl::push_back_unique(m_parent->m_children, this);
+}
+void CParticleComponent::SetParentComponent(CParticleComponent* pParentComponent, bool delayed)
+{
+	SetParent(pParentComponent);
 	if (delayed)
 		m_componentParams.m_emitterLifeTime.end = gInfinity;
-	auto& children = pParentComponent->m_children;
-	stl::push_back_unique(children, this);
 }
 
 void CParticleComponent::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
@@ -316,18 +323,16 @@ void CParticleComponent::ResolveDependencies()
 
 	for (auto& it : m_features)
 	{
-		if (it && it->IsEnabled() && !it->ResolveDependency(this))
-			it = nullptr;
+		if (it && it->IsEnabled())
+		{
+			// potentially replace feature with new one or null
+			CParticleFeature* pFeature = it->ResolveDependency(this);
+			it = pFeature;
+		}
 	}
 
-	// eliminates features that point to null
-	auto it = std::remove_if(
-	  m_features.begin(), m_features.end(),
-	  [](decltype(*m_features.begin()) pFeature)
-		{
-			return !pFeature;
-	  });
-	m_features.erase(it, m_features.end());
+	// remove null features
+	stl::find_and_erase_all(m_features, nullptr);
 }
 
 void CParticleComponent::Compile()
@@ -448,6 +453,7 @@ void CParticleComponent::Serialize(Serialization::IArchive& ar)
 		ar(inputName, "Name", "^");
 		SetName(inputName.c_str());
 	}
+
 
 	Serialization::SContext context(ar, static_cast<IParticleComponent*>(this));
 	ar(m_componentParams, "Stats", "Component Statistics");

@@ -19,6 +19,9 @@ class CFeatureLifeTime : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
+	CFeatureLifeTime(float lifetime = 1, bool killOnParentDeath = false)
+		: m_lifeTime(lifetime), m_killOnParentDeath(killOnParentDeath) {}
+
 	virtual EFeatureType GetFeatureType() override
 	{
 		return EFT_Life;
@@ -119,23 +122,18 @@ CRY_PFX2_IMPLEMENT_FEATURE_DEFAULT(CParticleFeature, CFeatureLifeTime, "Life", "
 class CFeatureLifeImmortal : public CFeatureLifeTime
 {
 public:
-	CFeatureLifeImmortal()
+	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
 	{
-		m_lifeTime = gInfinity;
+		return new CFeatureLifeTime(gInfinity, true);
 	}
 };
 
-CRY_PFX2_LEGACY_FEATURE(CParticleFeature, CFeatureLifeImmortal, "LifeImmortal")
+CRY_PFX2_LEGACY_FEATURE(CFeatureLifeImmortal, "Life", "Immortal")
 
 class CFeatureKillOnParentDeath : public CFeatureLifeTime
 {
 public:
-	CFeatureKillOnParentDeath()
-	{
-		m_killOnParentDeath = true;
-	}
-
-	virtual bool ResolveDependency(CParticleComponent* pComponent) override
+	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
 	{
 		// If another LifeTime feature exists, use it, and set the Kill param.
 		// Otherwise, use this feature, with default LifeTime param.
@@ -146,14 +144,14 @@ public:
 			if (feature && feature != this && feature->GetFeatureType() == EFT_Life)
 			{
 				feature->m_killOnParentDeath = true;
-				return false;
+				return nullptr;
 			}
 		}
-		return true;
+		return nullptr;
 	}
 };
 
-CRY_PFX2_LEGACY_FEATURE(CParticleFeature, CFeatureKillOnParentDeath, "KillOnParentDeath");
+CRY_PFX2_LEGACY_FEATURE(CFeatureKillOnParentDeath, "Kill", "OnParentDeath");
 
 }
 

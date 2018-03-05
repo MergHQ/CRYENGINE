@@ -35,10 +35,10 @@ class CFeatureRenderGpuSprites : public CParticleRenderBase
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	virtual void         Serialize(Serialization::IArchive& ar) override;
-	virtual EFeatureType GetFeatureType() override { return EFT_Render; }
-	virtual bool         ResolveDependency(CParticleComponent* pComponent) override;
-	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
+	virtual void              Serialize(Serialization::IArchive& ar) override;
+	virtual EFeatureType      GetFeatureType() override { return EFT_Render; }
+	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override;
+	virtual void              AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 
 private:
 	struct ConvertNextPowerOfTwo
@@ -74,7 +74,7 @@ void CFeatureRenderGpuSprites::Serialize(Serialization::IArchive& ar)
 	ar(m_sortBias, "SortBias", "Sort Bias");
 }
 
-bool CFeatureRenderGpuSprites::ResolveDependency(CParticleComponent* pComponent)
+CParticleFeature* CFeatureRenderGpuSprites::ResolveDependency(CParticleComponent* pComponent)
 {
 	pComponent->ComponentParams().m_usesGPU = true;
 
@@ -83,10 +83,10 @@ bool CFeatureRenderGpuSprites::ResolveDependency(CParticleComponent* pComponent)
 	params.facingMode = m_facingMode;
 	params.version = pComponent->GetEffect()->GetEditVersion();
 
-	return true;
+	return this;
 }
 
+CRY_PFX2_LEGACY_FEATURE(CFeatureRenderGpuSprites, "Render", "GPU Sprites");
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderGpuSprites, "GPU Particles", "Sprites", colorGPU);
-CRY_PFX2_LEGACY_FEATURE(CParticleFeature, CFeatureRenderGpuSprites, "RenderGPU Sprites");
 
 }
