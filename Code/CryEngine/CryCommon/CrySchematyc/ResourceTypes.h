@@ -89,16 +89,16 @@ inline void ReflectType(CTypeDesc<GeomCacheFileName>& desc)
 	desc.SetDescription("Path to an alembic file");
 }
 
-typedef SerializationUtils::SResourceNameSerializer<&Serialization::GeomPath> GeomFileName;
+typedef SerializationUtils::SResourceNameSelector<&Serialization::StaticModelFilename<string>> GeomFileName;
 
 inline void ReflectType(CTypeDesc<GeomFileName>& desc)
 {
 	desc.SetGUID("bd6f2953-1127-4cdd-bfe7-79f98c97058c"_cry_guid);
-	desc.SetLabel("GeomFileName");
-	desc.SetDescription("Geometry file name");
+	desc.SetLabel("StaticGeomFileName");
+	desc.SetDescription("Static geometry file name");
 }
 
-typedef SerializationUtils::SResourceNameSerializer<&Serialization::SkinName> SkinName;
+typedef SerializationUtils::SResourceNameSelector<&Serialization::SkinnedMeshFilename<string>> SkinName;
 
 inline void ReflectType(CTypeDesc<SkinName>& desc)
 {

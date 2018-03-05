@@ -28,11 +28,13 @@ template<class T> ResourceSelector<T> SkeletonOrCgaPath(T& s)				 { return Resou
 template<class T> ResourceSelector<T> SkeletonParamsPath(T& s)               { return ResourceSelector<T>(s, "SkeletonParams"); } // CHRParams
 template<class T> ResourceSelector<T> JointName(T& s)                        { return ResourceSelector<T>(s, "Joint"); }
 template<class T> ResourceSelector<T> AttachmentName(T& s)                   { return ResourceSelector<T>(s, "Attachment"); }
+template<class T> ResourceSelector<T> SkinnedMeshFilename(T& s)              { return ResourceSelector<T>(s, "SkinnedMesh"); }
 
 // miscellaneous resources
 template<class T> ResourceSelector<T> DialogName(T& s)                    { return ResourceSelector<T>(s, "Dialog"); }
 template<class T> ResourceSelector<T> ForceFeedbackIdName(T& s)           { return ResourceSelector<T>(s, "ForceFeedbackId"); }
 template<class T> ResourceSelector<T> ModelFilename(T& s)                 { return ResourceSelector<T>(s, "Model"); }
+template<class T> ResourceSelector<T> StaticModelFilename(T& s)           { return ResourceSelector<T>(s, "Mesh"); }
 template<class T> ResourceSelector<T> GeomCachePicker(T& s)               { return ResourceSelector<T>(s, "GeometryCache"); }
 template<class T> ResourceSelector<T> ParticlePicker(T& s)                { return ResourceSelector<T>(s, "Particle"); }
 template<class T> ResourceSelector<T> ParticlePickerLegacy(T& s)          { return ResourceSelector<T>(s, "ParticleLegacy"); }
@@ -57,8 +59,6 @@ template<class T> ResourceSelector<T> EntityClassName(T& s)               { retu
 template<class T> ResourceSelector<T> EntityClass(T& s)                  { return ResourceSelector<T>(s, "EntityClass"); }
 // ~WORKAROUND
 
-inline Serialization::ResourceFilePath GeomPath(string& value)                          { return Serialization::ResourceFilePath(value, "Geometry (cgf, cga)|*.cgf;*.cga"); }
-inline Serialization::ResourceFilePath SkinName(string& value)                          { return Serialization::ResourceFilePath(value, "Attachment Geometry (skin)|*.skin"); }
 inline Serialization::ResourceFilePath ObjectIconPath(string& value)                    { return Serialization::ResourceFilePath(value, "Bitmap (bmp)|*.bmp"); }
 inline Serialization::ResourceFilePath MannequinAnimationDatabasePath(string& value)    { return Serialization::ResourceFilePath(value, "Animation Database (adb)|*.adb"); }
 inline Serialization::ResourceFilePath MannequinControllerDefinitionPath(string& value) { return Serialization::ResourceFilePath(value, "Controller Definition (xml)|*.xml"); }
