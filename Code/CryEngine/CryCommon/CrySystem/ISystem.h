@@ -173,6 +173,11 @@ namespace Schematyc2
 	struct IFramework;
 }
 
+namespace minigui
+{
+	struct IMiniGUI;
+}
+
 #define PROC_MENU     1
 #define PROC_3DENGINE 2
 
@@ -1255,6 +1260,7 @@ struct ISystem
 	virtual IZLibDecompressor*      GetIZLibDecompressor() = 0;
 	virtual ILZ4Decompressor*       GetLZ4Decompressor() = 0;
 	virtual ICryPerfHUD*            GetPerfHUD() = 0;
+	virtual minigui::IMiniGUI*      GetMiniGUI() = 0;
 	virtual IPlatformOS*            GetPlatformOS() = 0;
 	virtual INotificationNetwork*   GetINotificationNetwork() = 0;
 	virtual IHardwareMouse*         GetIHardwareMouse() = 0;

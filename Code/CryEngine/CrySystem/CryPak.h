@@ -687,7 +687,7 @@ private:
 		CCryPak*             m_pPak;
 	};
 
-	CPakFileWidget* m_pWidget;
+	_smart_ptr<CPakFileWidget> m_pWidget;
 
 	virtual bool ForEachArchiveFolderEntry(const char* szArchivePath, const char* szFolderPath, const ArchiveEntrySinkFunction& callback) override;
 };

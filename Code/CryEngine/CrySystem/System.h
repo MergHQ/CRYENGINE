@@ -364,6 +364,7 @@ public:
 	IProfilingSystem*            GetIProfilingSystem() override     { return &m_ProfilingSystem; }
 	IPlatformOS*                 GetPlatformOS() override           { return m_pPlatformOS.get(); }
 	ICryPerfHUD*                 GetPerfHUD() override              { return m_pPerfHUD; }
+	minigui::IMiniGUI*           GetMiniGUI() override              { return m_pMiniGUI; }
 	IZLibCompressor*             GetIZLibCompressor() override      { return m_pIZLibCompressor; }
 	IZLibDecompressor*           GetIZLibDecompressor() override    { return m_pIZLibDecompressor; }
 	ILZ4Decompressor*            GetLZ4Decompressor() override      { return m_pILZ4Decompressor; }

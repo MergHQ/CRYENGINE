@@ -70,10 +70,8 @@ CBudgetingSystem::~CBudgetingSystem()
 
 void CBudgetingSystem::RegisterWithPerfHUD()
 {
-	ICryPerfHUDPtr pPerfHUD;
-	CryCreateClassInstanceForInterface(cryiidof<ICryPerfHUD>(), pPerfHUD);
-	minigui::IMiniGUIPtr pGUI;
-	CryCreateClassInstanceForInterface(cryiidof<minigui::IMiniGUI>(), pGUI);
+	ICryPerfHUD* pPerfHUD = gEnv->pSystem->GetPerfHUD();
+	minigui::IMiniGUI* pGUI = gEnv->pSystem->GetMiniGUI();
 
 	if (pPerfHUD && pGUI)
 	{
