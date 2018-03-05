@@ -48,6 +48,7 @@
 #include <CryGame/IGame.h>
 #include "WaterRippleManager.h"
 
+
 #if defined(FEATURE_SVO_GI)
 	#include "SVO/SceneTreeManager.h"
 #endif
@@ -604,6 +605,9 @@ void C3DEngine::ScreenshotDispatcher(const int nRenderFlags, const SRenderingPas
 	case ESST_MAP:
 		{
 			static const unsigned int nMipMapSnapshotSize = 512;
+			Vec2i origRes;
+			origRes.x = passInfo.GetIRenderView()->GetViewport().width;
+			origRes.y = passInfo.GetIRenderView()->GetViewport().height;
 			GetRenderer()->ResizeContext(passInfo.GetDisplayContextHandle(), nMipMapSnapshotSize, nMipMapSnapshotSize);
 			uint32 TmpHeight, TmpWidth, TmpVirtualHeight, TmpVirtualWidth;
 			TmpHeight = TmpWidth = TmpVirtualHeight = TmpVirtualWidth = 1;
@@ -648,6 +652,9 @@ void C3DEngine::ScreenshotDispatcher(const int nRenderFlags, const SRenderingPas
 
 			pStitchedImage->Clear();    // good for debugging
 			delete pStitchedImage;
+
+			GetRenderer()->ResizeContext(passInfo.GetDisplayContextHandle(), origRes.x, origRes.y);  // restore context size!!
+
 		}
 		if (GetCVars()->e_ScreenShot > 0)      // <0 is used for multiple frames (videos)
 			GetCVars()->e_ScreenShot = 0;
