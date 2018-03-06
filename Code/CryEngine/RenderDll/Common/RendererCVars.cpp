@@ -281,6 +281,7 @@ int CRendererCVars::CV_r_shadersdx10;
 int CRendererCVars::CV_r_shadersdx11;
 int CRendererCVars::CV_r_shadersGL4;
 int CRendererCVars::CV_r_shadersGLES3;
+int CRendererCVars::CV_r_shadersVulkan;
 #endif
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersignoreincludeschanging);
 int CRendererCVars::CV_r_shadersAllowCompilation;
@@ -855,40 +856,26 @@ static void ShadersOptimise(IConsoleCmdArgs* Cmd)
 {
 	string userFolderCache = PathUtil::Make(gRenDev->m_cEF.m_szUserPath.c_str(), gRenDev->m_cEF.m_ShadersCache);
 
-	if (CRenderer::CV_r_shadersdx11)
+	// Platform related CVar, PlatformID, PlatformName
+	static const std::tuple<int, uint32, string> platformsInfo[] =
 	{
-		CParserBin::SetupForPlatform(SF_D3D11);
-		CryLogAlways("\nStarting shaders optimizing for DX11...");
-		iLog->Log("Optimize user folder: '%s'", userFolderCache.c_str());
-		gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
-	}
-	if (CRenderer::CV_r_shadersGL4)
+		{ CRenderer::CV_r_shadersorbis,    SF_ORBIS,   "Orbis" },
+		{ CRenderer::CV_r_shadersdurango,  SF_DURANGO, "Durango" },
+		{ CRenderer::CV_r_shadersdx11,     SF_D3D11,   "D3D11" },
+		{ CRenderer::CV_r_shadersGL4,      SF_GL4,     "GLSL 4" },
+		{ CRenderer::CV_r_shadersGLES3,    SF_GLES3,   "GLSL-ES 3" },
+		{ CRenderer::CV_r_shadersVulkan,   SF_VULKAN,  "Vulkan" },
+	};
+
+	for (const auto& platformInfo : platformsInfo)
 	{
-		CParserBin::SetupForPlatform(SF_GL4);
-		CryLogAlways("\nStarting shaders optimizing for GLSL 4...");
-		iLog->Log("Optimize user folder: '%s'", userFolderCache.c_str());
-		gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
-	}
-	if (CRenderer::CV_r_shadersGLES3)
-	{
-		CParserBin::SetupForPlatform(SF_GLES3);
-		CryLogAlways("\nStarting shaders optimizing for GLSL-ES 3...");
-		iLog->Log("Optimize user folder: '%s'", userFolderCache);
-		gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
-	}
-	if (CRenderer::CV_r_shadersdurango)
-	{
-		CParserBin::SetupForPlatform(SF_DURANGO);
-		CryLogAlways("\nStarting shaders optimizing for Durango...");
-		iLog->Log("Optimize user folder: '%s'", userFolderCache);
-		gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
-	}
-	if (CRenderer::CV_r_shadersorbis)
-	{
-		CParserBin::SetupForPlatform(SF_ORBIS);
-		CryLogAlways("\nStarting shaders optimizing for Orbis...");
-		iLog->Log("Optimize user folder: '%s'", userFolderCache.c_str());
-		gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
+		if (std::get<0>(platformInfo))
+		{
+			CParserBin::SetupForPlatform(std::get<1>(platformInfo));
+			CryLogAlways("\nStarting shaders optimizing for %s...", std::get<2>(platformInfo).c_str());
+			iLog->Log("Optimize user folder: '%s'", userFolderCache.c_str());
+			gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
+		}
 	}
 }
 
@@ -2127,6 +2114,7 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_ShadersGL4", CV_r_shadersGL4, 1, VF_NULL, "");
 	REGISTER_CVAR3("r_ShadersGLES3", CV_r_shadersGLES3, 1, VF_NULL, "");
 	REGISTER_CVAR3("r_ShadersDurango", CV_r_shadersdurango, 1, VF_NULL, "");
+REGISTER_CVAR3("r_ShadersVulkan", CV_r_shadersVulkan, 1, VF_NULL, "");
 #endif
 
 	DefineConstIntCVar3("r_ShadersIgnoreIncludesChanging", CV_r_shadersignoreincludeschanging, 0, VF_NULL, "");

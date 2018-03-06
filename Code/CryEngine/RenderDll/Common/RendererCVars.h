@@ -122,6 +122,7 @@ public:
 	static int   CV_r_shadersGL4;
 	static int   CV_r_shadersGLES3;
 	static int   CV_r_shadersdurango;
+	static int   CV_r_shadersVulkan;
 #endif
 	//  static int CV_r_envcmwrite;
 	static int CV_r_shadersremotecompiler;

@@ -105,14 +105,40 @@ CDeviceResourceLayoutPtr CDeviceObjectFactory::CreateResourceLayoutImpl(const SD
 
 const std::vector<uint8>* CDeviceObjectFactory::LookupResourceLayoutEncoding(uint64 layoutHash)
 {
-	for (auto& it : m_ResourceLayoutCache)
-	{
-		auto pLayout = reinterpret_cast<CDeviceResourceLayout_Vulkan*>(it.second.get());
-		if (pLayout->GetHash() == layoutHash)
-			return &pLayout->GetEncodedLayout();
-	}
+	auto encodedLayout = m_encodedResourceLayouts.find(layoutHash);
+	if (encodedLayout != m_encodedResourceLayouts.end())
+		return &m_encodedResourceLayouts[layoutHash];
 
 	return nullptr;
+}
+
+void CDeviceObjectFactory::RegisterEncodedResourceLayout(uint64 layoutHash, std::vector<uint8>&& encodedLayout)
+{
+	if (m_encodedResourceLayouts.find(layoutHash) != m_encodedResourceLayouts.end())
+		CryFatalError("An encode");
+	m_encodedResourceLayouts[layoutHash] = std::move(encodedLayout);
+}
+
+void CDeviceObjectFactory::UnRegisterEncodedResourceLayout(uint64 layoutHash)
+{
+	m_encodedResourceLayouts.erase(layoutHash);
+}
+
+uint32 CDeviceObjectFactory::GetEncodedResourceLayoutSize(const std::vector<uint8>& encodedLayout)
+{
+	uint32 encodedResourceLayoutSize = 0;
+
+	if (encodedLayout.size() > 0)
+	{
+		encodedResourceLayoutSize++;
+		uint8 numberOfResourceLayout = encodedLayout[0];
+		for (uint i = 0; i < numberOfResourceLayout; ++i)
+		{
+			encodedResourceLayoutSize += 2 * encodedLayout[encodedResourceLayoutSize] + 1;
+		}
+	}
+
+	return encodedResourceLayoutSize;
 }
 
 VkDescriptorSetLayout CDeviceObjectFactory::GetInlineConstantBufferLayout()

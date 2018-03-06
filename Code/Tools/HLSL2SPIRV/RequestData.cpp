@@ -100,10 +100,10 @@ bool Load(const std::string& dataFilename, SInfo& info)
 
 			for (int j = 0; j < rangeCount; j++)
 			{
-				info.registerRanges[i][j].type = ERegisterRangeType(*pLayoutData++);
-				info.registerRanges[i][j].start = *pLayoutData++;
-				info.registerRanges[i][j].count = *pLayoutData++;
-				info.registerRanges[i][j].shaderStageMask = *pLayoutData++;
+				uint8_t slotTypeStagesByte = *pLayoutData++;
+				uint8_t slotNumberDescCountByte = *pLayoutData++;
+				info.registerRanges[i][j].setTypeAndStage(slotTypeStagesByte);
+				info.registerRanges[i][j].setSlotNumberAndDescCount(slotNumberDescCountByte);
 			}
 		}
 

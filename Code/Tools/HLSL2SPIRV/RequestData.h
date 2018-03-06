@@ -36,6 +36,18 @@ struct SRegisterRangeDesc
 		, shaderStageMask(0)
 	{}
 
+	void setTypeAndStage(uint8_t typeAndStageByte)
+	{
+		shaderStageMask = typeAndStageByte & 0x3F;
+		type = (ERegisterRangeType)(typeAndStageByte >> 6);
+	}
+
+	void setSlotNumberAndDescCount(uint8_t slotNumberAndDescCount)
+	{
+		start = slotNumberAndDescCount & 0x3F;
+		count = slotNumberAndDescCount >> 6;
+	}
+
 	ERegisterRangeType type;
 	uint32_t           start;
 	uint32_t           count;
