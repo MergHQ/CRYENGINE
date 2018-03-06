@@ -228,7 +228,7 @@ bool CVehiclePartLight::Init(IVehicle* pVehicle, const CVehicleParams& table, IV
 
 			if (pVehicleLightParams->texture.empty() == false && gEnv->pRenderer)
 			{
-				m_light.m_pLightImage = gEnv->pRenderer->EF_LoadTexture(pVehicleLightParams->texture.c_str(), FT_DONT_STREAM);
+				m_light.m_pLightImage = gEnv->pRenderer->EF_LoadTexture(pVehicleLightParams->texture.c_str(), 0);
 			}
 
 			if (pVehicleLightParams->material.empty() == false)

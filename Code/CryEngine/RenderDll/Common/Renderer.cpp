@@ -1390,6 +1390,9 @@ void CRenderer::Log(char* str)
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // Dynamic lights
 bool CRenderer::EF_IsFakeDLight(const SRenderLight* Source)
 {
@@ -1452,12 +1455,24 @@ void CRenderer::EF_ADDDlight(SRenderLight* Source, const SRenderingPassInfo& pas
 		return;
 	}
 
-	Source->m_Id = passInfo.GetRenderView()->AddDynamicLight(*Source);
+	RenderLightIndex nLightID = passInfo.GetRenderView()->AddDynamicLight(*Source);
 
-	EF_PrecacheResource(Source, (passInfo.GetCamera().GetPosition() - Source->m_Origin).GetLengthSquared() / max(0.001f, Source->m_fRadius * Source->m_fRadius), 0.1f, 0, 0);
+	//EF_CheckLightMaterial(Source, nLightID, passInfo);
 
-	//EF_CheckLightMaterial(Source, pNew, passInfo);
+	Source->m_Id = nLightID;
 }
+
+int CRenderer::EF_AddDeferredLight(const SRenderLight& pLight, float fMult, const SRenderingPassInfo& passInfo)
+{
+	RenderLightIndex nLightID = passInfo.GetRenderView()->AddDeferredLight(pLight, fMult, passInfo);
+
+	EF_CheckLightMaterial(const_cast<SRenderLight*>(&pLight), nLightID, passInfo);
+
+	return nLightID;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool CRenderer::EF_AddDeferredDecal(const SDeferredDecal& rDecal, const SRenderingPassInfo& passInfo)
 {

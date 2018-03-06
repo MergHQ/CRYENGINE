@@ -32,7 +32,7 @@ void LoadProjectorLight(IEntity& entity)
 	// Load a sample projector texture from the engine assets (included with all projects)
 	const char* szProjectedTexturePath = "%ENGINEASSETS%/Textures/Lights/ce_logo_white.dds";
 	// Load the texture we want to project onto other objects
-	light.m_pLightImage = gEnv->pRenderer->EF_LoadTexture(szProjectedTexturePath, FT_DONT_STREAM);
+	light.m_pLightImage = gEnv->pRenderer->EF_LoadTexture(szProjectedTexturePath, 0);
 	// Project in a 90-degree cone
 	light.m_fLightFrustumAngle = 90;
 

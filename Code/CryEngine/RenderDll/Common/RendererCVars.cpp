@@ -1895,7 +1895,7 @@ void CRendererCVars::InitCVars()
 	               "Specify the limit (in bytes) that defrag update will stop");
 
 	REGISTER_CVAR3("r_TexturesStreamingMaxRequestedMB", CV_r_TexturesStreamingMaxRequestedMB, 2.f, VF_NULL,
-	               "Maximum amount of texture data requested from streaming system in MB.\n"
+	               "Maximum amount of texture data requested from streaming system per frame in MB.\n"
 	               "Usage: r_TexturesStreamingMaxRequestedMB [size]\n"
 	               "Default is 2.0(MB)");
 
@@ -1913,9 +1913,9 @@ void CRendererCVars::InitCVars()
 	                    "Usage: r_texturesstreamingPostponeThresholdMip [count]\n"
 	                    "Default is 1");
 	DefineConstIntCVar3("r_TexturesStreamingMinReadSizeKB", CV_r_texturesstreamingMinReadSizeKB, 64, VF_NULL,
-	                    "Minimal read portion in KB.\n"
+	                    "Minimal streaming request size in KB.\n"
 	                    "Usage: r_TexturesStreamingMinReadSizeKB [size]\n"
-	                    "Default is 32(KB)");
+	                    "Default is 64KiBi");
 	REGISTER_CVAR3("r_texturesstreamingSkipMips", CV_r_texturesstreamingSkipMips, 0, VF_NULL,
 	               "Number of top mips to ignore when streaming.\n");
 	REGISTER_CVAR3("r_texturesstreamingMinUsableMips", CV_r_texturesstreamingMinUsableMips, 7, VF_NULL,
@@ -1934,9 +1934,19 @@ void CRendererCVars::InitCVars()
 	               "Maximum number of tasks submitted to streaming system.\n"
 	               "Usage: r_TexturesStreamingMaxRequestedJobs [jobs number]\n"
 	               "Default is 32 jobs");
+#ifdef TEXSTRM_SUPPORT_REACTIVE
 	DefineConstIntCVar3("r_TexturesStreamingUpdateType", CV_r_texturesstreamingUpdateType, TEXSTREAMING_UPDATETYPE_DEFAULT_VAL, VF_NULL,
 	                    "Texture streaming update type.\n"
-	                    "Default is 0");
+	                    "Default is 0\n"
+	                    "0 - Use reactive texture streamer\n"
+	                    "1 - Use planning texture streamer");
+#else
+	DefineConstIntCVar3("r_TexturesStreamingUpdateType", CV_r_texturesstreamingUpdateType, TEXSTREAMING_UPDATETYPE_DEFAULT_VAL, VF_NULL,
+	                    "Texture streaming update type.\n"
+	                    "Default is 0\n"
+	                    "0 - Unavailable (maps to 1)\n"
+	                    "1 - Use planning texture streamer");
+#endif
 	DefineConstIntCVar3("r_TexturesStreamingPrecacheRounds", CV_r_texturesstreamingPrecacheRounds, 1, VF_NULL,
 	                    "Number of precache rounds to include in active streamed texture lists.\n"
 	                    "Default is 1");
@@ -1972,7 +1982,9 @@ void CRendererCVars::InitCVars()
 	                    "Enables direct streaming of textures from disk during game.\n"
 	                    "Usage: r_TexturesStreaming [0/1/2]\n"
 	                    "Default is 0 (off). All textures save in native format with mips in a\n"
-	                    "cache file. Textures are then loaded into texture memory from the cache.");
+	                    "cache file. Textures are then loaded into texture memory from the cache.\n"
+	                    "1 - stream only mesh/material textures on-demand\n"
+	                    "2 - stream also cube textures on-demand");
 	DefineConstIntCVar3("r_TexturesStreamingLowestPrefetchBias", CV_r_TexturesStreamingLowestPrefetchBias, 0, VF_NULL,
 	                    "Clamping texture prefetch to at most fetch this many more mips than requested if there's free pool memory.\n"
 	                    "Usage: r_TexturesStreamingLowestPrefetchBias [-0...-inf]\n"
@@ -1985,9 +1997,9 @@ void CRendererCVars::InitCVars()
 	DefineConstIntCVar3("r_TexturesStreamingDebug", CV_r_TexturesStreamingDebug, 0, VF_CHEAT,
 	                    "Enables textures streaming debug mode. (Log uploads and remove unnecessary mip levels)\n"
 	                    "Usage: r_TexturesStreamingDebug [0/1/2]\n"
-	                    "Default is 0 (off)."
-	                    "1 - texture streaming log."
-	                    "2 - Show textures hit-parade based on streaming priorities"
+	                    "Default is 0 (off).\n"
+	                    "1 - texture streaming log.\n"
+	                    "2 - Show textures hit-parade based on streaming priorities\n"
 	                    "3 - Show textures hit-parade based on the memory consumed");
 	CV_r_TexturesStreamingDebugfilter = REGISTER_STRING("r_TexturesStreamingDebugFilter", "", VF_CHEAT, "Filters displayed textures by name in texture streaming debug mode\n");
 	REGISTER_CVAR3("r_TexturesStreamingDebugMinSize", CV_r_TexturesStreamingDebugMinSize, 100, VF_NULL,
