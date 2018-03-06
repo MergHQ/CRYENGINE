@@ -3078,7 +3078,14 @@ void COctreeNode::RenderCommonObjects(TDoublyLinkedList<IRenderNode>* lstObjects
 
 			if (pObj->CanExecuteRenderAsJob() || !bOcclusionCullerInUse)
 			{
-				GetObjManager()->RenderObject(pObj, pAffectingLights, vAmbColor, objBox, fEntDistance, rnType, passInfo, objCullMask);
+				if (rnType == eERType_MovableBrush)
+				{
+					GetObjManager()->RenderBrush((CBrush*)pObj, pAffectingLights, nullptr, objBox, fEntDistance, true, passInfo, passCullMask);
+				}
+				else
+				{
+					GetObjManager()->RenderObject(pObj, pAffectingLights, vAmbColor, objBox, fEntDistance, rnType, passInfo, objCullMask);
+				}			
 			}
 			else
 			{
