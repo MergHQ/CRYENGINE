@@ -48,7 +48,7 @@ namespace Cry
 				desc.AddMember(&CPlaneConstraintComponent::m_damping, 'damp', "Damping", "Damping", nullptr, 0.f);
 			}
 
-			virtual void ConstrainToEntity(Schematyc::ExplicitEntityId targetEntityId, bool bDisableCollisionsWith, bool bAllowRotation)
+			virtual void ConstrainToEntity(Schematyc::ExplicitEntityId targetEntityId, bool bDisableCollisionsWith)
 			{
 				if ((EntityId)targetEntityId != INVALID_ENTITYID)
 				{
@@ -56,18 +56,18 @@ namespace Cry
 					{
 						if (IPhysicalEntity* pPhysicalEntity = pTargetEntity->GetPhysicalEntity())
 						{
-							ConstrainTo(pPhysicalEntity, bDisableCollisionsWith, bAllowRotation);
+							ConstrainTo(pPhysicalEntity, bDisableCollisionsWith);
 						}
 					}
 				}
 			}
 
-			virtual void ConstrainToPoint(bool bAllowRotation)
+			virtual void ConstrainToPoint()
 			{
-				ConstrainTo(WORLD_ENTITY, false, bAllowRotation);
+				ConstrainTo(WORLD_ENTITY, false);
 			}
 
-			virtual void ConstrainTo(IPhysicalEntity* pOtherEntity, bool bDisableCollisionsWith = false, bool bAllowRotation = true)
+			virtual void ConstrainTo(IPhysicalEntity* pOtherEntity, bool bDisableCollisionsWith = false)
 			{
 				if (m_constraintIds.size() > 0)
 				{
@@ -112,14 +112,14 @@ namespace Cry
 					constraint.yzlimits[1] = m_limitMaxY.ToRadians();
 					constraint.damping = m_damping;
 
-					if (!bAllowRotation)
+					if (!constraint.xlimits[0] && !constraint.xlimits[1] && !constraint.yzlimits[1])
 					{
 						constraint.flags |= constraint_no_rotation;
 					}
 
 					if (bDisableCollisionsWith && pOtherEntity != WORLD_ENTITY && pOtherEntity != pConstraintOwner)
 					{
-						constraint.flags |= constraint_ignore_buddy | constraint_inactive;
+						constraint.flags |= constraint_ignore_buddy;
 
 						constraint.pBuddy = pConstraintOwner;
 						pOtherEntity->Action(&constraint);
