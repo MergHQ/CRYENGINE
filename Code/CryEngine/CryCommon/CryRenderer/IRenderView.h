@@ -123,6 +123,8 @@ struct IRenderView : public CMultiThreadRefCount
 
 	//////////////////////////////////////////////////////////////////////////
 	// Access to dynamic lights
+	virtual RenderLightIndex AddDeferredLight(const SRenderLight& pDL, float fMult, const SRenderingPassInfo& passInfo) = 0;
+
 	virtual RenderLightIndex AddDynamicLight(const SRenderLight& light) = 0;
 	virtual RenderLightIndex GetDynamicLightsCount() const = 0;
 	virtual SRenderLight&    GetDynamicLight(RenderLightIndex nLightId) = 0;

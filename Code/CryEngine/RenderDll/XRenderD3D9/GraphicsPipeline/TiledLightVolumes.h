@@ -42,10 +42,6 @@ public:
 	STiledLightShadeInfo* GetTiledLightShadeInfo() { return &tileLightsShade[0]; }
 	uint32                GetValidLightCount() { return m_numValidLights; }
 
-	int                   InsertTextureToSpecularProbeAtlas(CTexture* texture, int arrayIndex) { return InsertTexture(texture, m_specularProbeAtlas, arrayIndex); }
-	int                   InsertTextureToDiffuseProbeAtlas(CTexture* texture, int arrayIndex) { return InsertTexture(texture, m_diffuseProbeAtlas, arrayIndex); }
-	int                   InsertTextureToSpotTexAtlas(CTexture* texture, int arrayIndex) { return InsertTexture(texture, m_spotTexAtlas, arrayIndex); }
-
 	bool                  IsCausticsVisible() const { return m_bApplyCaustics; }
 	void                  NotifyCausticsVisible() { m_bApplyCaustics = true; }
 	void                  NotifyCausticsInvisible() { m_bApplyCaustics = false; }
@@ -69,7 +65,9 @@ public:
 private:
 	// Cubemap Array(s) ==================================================================
 
-	int  InsertTexture(CTexture* texture, TextureAtlas& atlas, int arrayIndex);
+	int  InsertTexture(CTexture* texture, float mipFactor, TextureAtlas& atlas, int arrayIndex);
+	void UploadTextures(TextureAtlas& atlas);
+	std::pair<size_t, size_t> MeasureTextures(TextureAtlas& atlas);
 
 	// Tiled Light Volumes ===============================================================
 
@@ -78,6 +76,8 @@ private:
 	void ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispatchSizeY);
 
 private:
+	typedef _smart_ptr<CTexture> TexSmartPtr;
+
 	friend class CVolumetricFogStage;
 	friend class CSvoRenderer;
 
@@ -85,20 +85,28 @@ private:
 
 	struct AtlasItem
 	{
-		ITexture* texture;
-		int       updateFrameID;
-		int       accessFrameID;
-		bool      invalid;
+		static constexpr uint8 highestMip = 100;
+		static constexpr float mipFactorMinSize = highestMip * highestMip;
 
-		AtlasItem() : texture(NULL), updateFrameID(-1), accessFrameID(0), invalid(false) {}
+		TexSmartPtr texture;
+		int         updateFrameID;
+		int         accessFrameID;
+		float       mipFactorRequested;
+		uint8       lowestTransferedMip;
+		uint8       lowestRenderableMip;
+		bool        invalid;
+
+		AtlasItem() : texture(nullptr), updateFrameID(-1), accessFrameID(0),
+			lowestTransferedMip(highestMip), lowestRenderableMip(highestMip),
+			mipFactorRequested(mipFactorMinSize), invalid(false) {}
 	};
 
 	struct TextureAtlas
 	{
-		CTexture*              texArray;
+		TexSmartPtr            texArray;
 		std::vector<AtlasItem> items;
 
-		TextureAtlas() : texArray(NULL) {}
+		TextureAtlas() : texArray(nullptr) {}
 	};
 
 	// Tiled Light Lists =================================================================
@@ -142,8 +150,14 @@ private:
 
 	struct STiledLightShadeInfo
 	{
+		static constexpr uint16 resNoIndex = 0xFFFF;
+		static constexpr uint8  resMipLimit = 0x00;
+		static constexpr uint16 stencilBias = 1;
+
 		uint32   lightType;
-		uint32   resIndex;
+		uint16   resIndex;
+		uint8    resMipClamp0;
+		uint8    resMipClamp1;
 		uint32   shadowMaskIndex;
 		uint16   stencilID0;
 		uint16   stencilID1;
@@ -204,6 +218,7 @@ private:
 	uint32                m_numValidLights;
 	uint32                m_numSkippedLights;
 	uint32                m_numAtlasUpdates;
+	uint32                m_numAtlasEvictions;
 
 	bool                  m_bApplyCaustics;
 
