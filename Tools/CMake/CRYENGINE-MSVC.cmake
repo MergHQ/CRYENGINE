@@ -41,7 +41,7 @@ set(CMAKE_MODULE_LINKER_FLAGS_PROFILE "/debug /INCREMENTAL" CACHE STRING "Profil
 
 set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "/debug" CACHE STRING "Release link flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE    "/debug" CACHE STRING "Release link flags" FORCE)
-set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "/debug /INCREMENTAL" CACHE STRING "Release link flags" FORCE)
+set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "/debug  /OPT:REF /OPT:ICF" CACHE STRING "Release link flags" FORCE)
 
 function (wrap_whole_archive project target source)
 	set(${target} "${${source}}" PARENT_SCOPE)
