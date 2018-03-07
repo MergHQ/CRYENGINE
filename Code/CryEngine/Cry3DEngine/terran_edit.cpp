@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 // -------------------------------------------------------------------------
 //  File name:   terran_edit.cpp
@@ -134,131 +134,6 @@ void CTerrain::RemoveAllStaticObjects()
 	}
 }
 
-#define GET_Z_VAL(_x, _y) pTerrainBlock[(_x) * nTerrainSize + (_y)]
-
-void CTerrain::BuildErrorsTableForArea(float* pLodErrors, int nMaxLods,
-                                       int X1, int Y1, int X2, int Y2, float* pTerrainBlock,
-                                       SSurfaceTypeItem* pSurfaceData, int nSurfOffsetX, int nSurfOffsetY,
-                                       int nSurfSizeX, int nSurfSizeY, bool& bHasHoleEdges)
-{
-	memset(pLodErrors, 0, nMaxLods * sizeof(pLodErrors[0]));
-	int nSectorSize = int(CTerrain::GetSectorSize() * CTerrain::GetHeightMapUnitSizeInverted());
-	int nTerrainSize = int(CTerrain::GetTerrainSize() * CTerrain::GetHeightMapUnitSizeInverted());
-
-	bool bSectorHasHoles = false;
-	bool bSectorHasMesh = false;
-
-	{
-		int nLodUnitSize = 1;
-		int x1 = max(0, X1 - nLodUnitSize);
-		int x2 = min(nTerrainSize - nLodUnitSize, X2 + nLodUnitSize);
-		int y1 = max(0, Y1 - nLodUnitSize);
-		int y2 = min(nTerrainSize - nLodUnitSize, Y2 + nLodUnitSize);
-
-		for (int X = x1; X < x2; X += nLodUnitSize)
-		{
-			for (int Y = y1; Y < y2; Y += nLodUnitSize)
-			{
-				int nSurfX = (X - nSurfOffsetX);
-				int nSurfY = (Y - nSurfOffsetY);
-				if (nSurfX >= 0 && nSurfY >= 0 && nSurfX < nSurfSizeX && nSurfY < nSurfSizeY && pSurfaceData)
-				{
-					int nSurfCell = nSurfX * nSurfSizeY + nSurfY;
-					assert(nSurfCell >= 0 && nSurfCell < nSurfSizeX * nSurfSizeY);
-					if (pSurfaceData[nSurfCell].GetHole())
-						bSectorHasHoles = true;
-					else
-						bSectorHasMesh = true;
-				}
-			}
-		}
-	}
-
-	bHasHoleEdges = (bSectorHasHoles && bSectorHasMesh);
-
-	for (int nLod = 1; nLod < nMaxLods; nLod++)
-	{
-		// calculate max difference between detail levels and actual height map
-		float fMaxDiff = 0;
-
-		if (bHasHoleEdges)
-			fMaxDiff = max(fMaxDiff, GetFloatCVar(e_TerrainLodRatioHolesMin));
-
-		int nLodUnitSize = (1 << nLod);
-
-		assert(nLodUnitSize <= nSectorSize);
-
-		int x1 = max(0, X1 - nLodUnitSize);
-		int x2 = min(nTerrainSize - nLodUnitSize, X2 + nLodUnitSize);
-		int y1 = max(0, Y1 - nLodUnitSize);
-		int y2 = min(nTerrainSize - nLodUnitSize, Y2 + nLodUnitSize);
-
-		float fSurfSwitchError = 0.5f * nLod;
-
-		for (int X = x1; X < x2; X += nLodUnitSize)
-		{
-			for (int Y = y1; Y < y2; Y += nLodUnitSize)
-			{
-				uint32 nLodedSurfType = 0;
-
-				{
-					int nSurfX = (X - nSurfOffsetX);
-					int nSurfY = (Y - nSurfOffsetY);
-					if (nSurfX >= 0 && nSurfY >= 0 && nSurfX < nSurfSizeX && nSurfY < nSurfSizeY && pSurfaceData)
-					{
-						int nSurfCell = nSurfX * nSurfSizeY + nSurfY;
-						assert(nSurfCell >= 0 && nSurfCell < nSurfSizeX * nSurfSizeY);
-						nLodedSurfType = pSurfaceData[nSurfCell].GetDominatingSurfaceType();
-					}
-				}
-
-				for (int x = 1; x < nLodUnitSize; x++)
-				{
-					float kx = (float)x / (float)nLodUnitSize;
-
-					float z1 = (1.f - kx) * GET_Z_VAL(X + 0, Y + 0) + (kx) * GET_Z_VAL(X + nLodUnitSize, Y + 0);
-					float z2 = (1.f - kx) * GET_Z_VAL(X + 0, Y + nLodUnitSize) + (kx) * GET_Z_VAL(X + nLodUnitSize, Y + nLodUnitSize);
-
-					for (int y = 1; y < nLodUnitSize; y++)
-					{
-						// skip map borders
-						int nBorder = (nSectorSize >> 2);
-						if ((X + x) < nBorder || (X + x) > (nTerrainSize - nBorder) ||
-						    (Y + y) < nBorder || (Y + y) > (nTerrainSize - nBorder))
-							continue;
-
-						float ky = (float)y / nLodUnitSize;
-						float fInterpolatedZ = (1.f - ky) * z1 + ky * z2;
-						float fRealZ = GET_Z_VAL(X + x, Y + y);
-						float fDiff = fabs(fRealZ - fInterpolatedZ);
-
-						if (fMaxDiff < fSurfSwitchError)
-						{
-							int nSurfX = (X + x - nSurfOffsetX);
-							int nSurfY = (Y + y - nSurfOffsetY);
-							if (nSurfX >= 0 && nSurfY >= 0 && nSurfX < nSurfSizeX && nSurfY < nSurfSizeY && pSurfaceData)
-							{
-								int nSurfCell = nSurfX * nSurfSizeY + nSurfY;
-								assert(nSurfCell >= 0 && nSurfCell < nSurfSizeX * nSurfSizeY);
-								uint32 nRealSurfType = pSurfaceData[nSurfCell].GetDominatingSurfaceType();
-
-								// rise error if surface types will pop
-								if (nRealSurfType != nLodedSurfType)
-									fDiff = max(fDiff, fSurfSwitchError);
-							}
-						}
-
-						if (fDiff > fMaxDiff)
-							fMaxDiff = fDiff;
-					}
-				}
-			}
-		}
-		// note: values in m_arrGeomErrors table may be non incremental - this is correct
-		pLodErrors[nLod] = fMaxDiff;
-	}
-}
-
 void CTerrain::HighlightTerrain(int x1, int y1, int x2, int y2)
 {
 	// Input dimensions are in units.
@@ -284,8 +159,8 @@ void CTerrain::HighlightTerrain(int x1, int y1, int x2, int y2)
 }
 
 void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float* pTerrainBlock,
-	SSurfaceTypeItem* pSurfaceData, int nSurfOrgX, int nSurfOrgY, int nSurfSizeX, int nSurfSizeY,
-	uint32* pResolMap, int nResolMapSizeX, int nResolMapSizeY)
+                                   SSurfaceTypeItem* pSurfaceData, int nSurfOrgX, int nSurfOrgY, int nSurfSizeX, int nSurfSizeY,
+                                   uint32* pResolMap, int nResolMapSizeX, int nResolMapSizeY)
 {
 #ifndef _RELEASE
 
@@ -343,24 +218,6 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 			int x2 = x0 + ((rangeX + 1) << m_nUnitsToSectorBitShift);
 			int y2 = y0 + ((rangeY + 1) << m_nUnitsToSectorBitShift);
 
-			// find min/max
-			float fMin = pTerrainBlock[x1 * nHmapSize + y1];
-			float fMax = fMin;
-
-			for (int x = x1; x <= x2; x++)
-			{
-				for (int y = y1; y <= y2; y++)
-				{
-					float fHeight = pTerrainBlock[CLAMP(x, 0, nHmapSize - 1) * nHmapSize + CLAMP(y, 0, nHmapSize - 1)];
-
-					if (fHeight > fMax) fMax = fHeight;
-					if (fHeight < fMin) fMin = fHeight;
-				}
-			}
-
-			// reserve some space for in-game deformations
-			fMin = max(0.f, fMin - TERRAIN_DEFORMATION_MAX_DEPTH);
-
 			float fMaxTexelSizeMeters = -1;
 
 			if (pResolMap)
@@ -375,46 +232,10 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 				fMaxTexelSizeMeters = (float)nResTileSizeMeters / (float)nTexRes;
 			}
 
-			// find error metrics
-			if (!pTerrainNode->m_pGeomErrors)
-				pTerrainNode->m_pGeomErrors = new float[m_nUnitsToSectorBitShift];
-
-			bool bHasHoleEdges = false;
-
-			{
-				BuildErrorsTableForArea(pTerrainNode->m_pGeomErrors, m_nUnitsToSectorBitShift, x1, y1, x2, y2, pTerrainBlock, pSurfaceData, nSurfOrgX, nSurfOrgY, nSurfSizeX, nSurfSizeY, bHasHoleEdges);
-			}
-
-			assert(pTerrainNode->m_pGeomErrors[0] == 0);
-
-			pTerrainNode->m_boxHeigtmapLocal.min.Set((float)((x1 - x0) * unitSize), (float)((y1 - y0) * unitSize), fMin);
-			pTerrainNode->m_boxHeigtmapLocal.max.Set((float)((x2 - x0) * unitSize), (float)((y2 - y0) * unitSize), max(fMax, GetWaterLevel()));
-
-			// same as in SetLOD()
-			float fAllowedError = 0.05f; // ( GetCVars()->e_TerrainLodRatio * 32.f ) / 180.f * 2.5f;
-			int nGeomMML = m_nUnitsToSectorBitShift - 1;
-
-			for (; nGeomMML > 0; nGeomMML--)
-			{
-				float stepMeters = (float)((1 << nGeomMML) * GetHeightMapUnitSize());
-
-				if (stepMeters <= fMaxTexelSizeMeters)
-					break;
-
-				if (pTerrainNode->m_pGeomErrors[nGeomMML] < fAllowedError)
-					break;
-			}
-
-			if (nGeomMML == m_nUnitsToSectorBitShift - 1 && (fMax - fMin) < 0.05f)
-				nGeomMML = m_nUnitsToSectorBitShift;
-
-			if (bHasHoleEdges)
-				nGeomMML = 0;
+			int nStep = 1 << 0 /*nGeomMML*/;
+			int nMaxStep = 1 << m_nUnitsToSectorBitShift;
 
 			SRangeInfo& ri = pTerrainNode->m_rangeInfo;
-
-			int nStep = 1 << nGeomMML;
-			int nMaxStep = 1 << m_nUnitsToSectorBitShift;
 
 			if (ri.nSize != nMaxStep / nStep + 1)
 			{
@@ -431,13 +252,9 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 				rawHeightmap.resize(ri.nSize * ri.nSize);
 			}
 
-			{
-				int ix = CLAMP(x1, 1, nHmapSize - 1);
-				int iy = CLAMP(y1, 1, nHmapSize - 1);
-
-				fMin = pTerrainBlock[ix * nHmapSize + iy];
-				fMax = fMin;
-			}
+			// find min/max
+			float fMin = pTerrainBlock[CLAMP(x1, 1, nHmapSize - 1) * nHmapSize + CLAMP(y1, 1, nHmapSize - 1)];
+			float fMax = fMin;
 
 			// fill height map data array in terrain node, all in units
 			for (int x = x1; x <= x2; x += nStep)
@@ -461,10 +278,16 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 				}
 			}
 
+			// reserve some space for in-game deformations
+			fMin = max(0.f, fMin - TERRAIN_DEFORMATION_MAX_DEPTH);
+
 			pTerrainNode->m_bHMDataIsModified = (ri.fOffset != fMin);
 
 			ri.fOffset = fMin;
 			ri.fRange = (fMax - fMin) / float(0x0FFF);
+
+			pTerrainNode->m_boxHeigtmapLocal.min.Set((float)((x1 - x0) * unitSize), (float)((y1 - y0) * unitSize), fMin);
+			pTerrainNode->m_boxHeigtmapLocal.max.Set((float)((x2 - x0) * unitSize), (float)((y2 - y0) * unitSize), max(fMax, GetWaterLevel()));
 
 			for (int x = x1; x <= x2; x += nStep)
 			{
@@ -492,7 +315,7 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 						int nSurfCell = nSurfX * nSurfSizeY + nSurfY;
 						assert(nSurfCell >= 0 && nSurfCell < nSurfSizeX * nSurfSizeY);
 
-						const SSurfaceTypeItem & src = pSurfaceData[nSurfCell];
+						const SSurfaceTypeItem& src = pSurfaceData[nSurfCell];
 
 						if (src.GetHole())
 						{
@@ -533,7 +356,7 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 			}
 		}
 	}
-	
+
 	for (int rangeX = rangeX1; rangeX < rangeX2; rangeX++)
 	{
 		for (int rangeY = rangeY1; rangeY < rangeY2; rangeY++)
@@ -546,6 +369,8 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 				CTerrainNode* pNode = pTerrainNode;
 				while (pNode)
 				{
+					pNode->m_geomError = kGeomErrorNotSet;
+
 					pNode->ReleaseHeightMapGeometry();
 					pNode->RemoveProcObjects(false, false);
 					pNode->UpdateDetailLayersInfo(false);
@@ -553,15 +378,6 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 					// propagate bounding boxes and error metrics to parents
 					if (pNode != pTerrainNode)
 					{
-						for (int i = 0; i < m_nUnitsToSectorBitShift; i++)
-						{
-							pNode->m_pGeomErrors[i] = max(max(
-								pNode->m_pChilds[0].m_pGeomErrors[i],
-								pNode->m_pChilds[1].m_pGeomErrors[i]), max(
-									pNode->m_pChilds[2].m_pGeomErrors[i],
-									pNode->m_pChilds[3].m_pGeomErrors[i]));
-						}
-
 						pNode->m_boxHeigtmapLocal.min = SetMaxBB();
 						pNode->m_boxHeigtmapLocal.max = SetMinBB();
 
@@ -575,7 +391,7 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 					// request elevation texture update
 					if (pNode->m_nNodeTexSet.nSlot0 != 0xffff && pNode->m_nNodeTexSet.nSlot0 < m_pTerrain->m_texCache[2].GetPoolSize())
 					{
-						if(pTerrainNode->m_bHMDataIsModified)
+						if (pTerrainNode->m_bHMDataIsModified)
 							pNode->m_eElevTexEditingState = eTES_SectorIsModified_AtlasIsDirty;
 					}
 
@@ -586,9 +402,6 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 			modifiedArea.Add(pTerrainNode->GetBBox());
 		}
 	}
-
-	if (GetCurAsyncTimeSec() - fStartTime > 1)
-		PrintMessage("CTerrain::SetTerrainElevation took %.2f sec", GetCurAsyncTimeSec() - fStartTime);
 
 	if (Get3DEngine()->m_pObjectsTree)
 		Get3DEngine()->m_pObjectsTree->UpdateTerrainNodes();
@@ -621,10 +434,7 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 
 	m_bHeightMapModified = 0;
 
-	if (nSizeX != nHmapSize || nSizeY != nHmapSize)
-	{
-		m_bTerrainPaintingInProgress = true;
-	}
+	m_terrainPaintingFrameId = GetRenderer()->GetFrameID(false);
 
 #endif // _RELEASE
 }

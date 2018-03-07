@@ -16,6 +16,7 @@ namespace pfx2
 {
 
 class CParticleComponentRuntime;
+struct SInstance;
 
 class CParticleFeature : public IParticleFeature
 {
@@ -44,6 +45,10 @@ public:
 	// Runtime and instance initialization
 	virtual void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) {}
 
+	virtual void AddSubInstances(const SUpdateContext& context) {}
+
+	virtual void CullSubInstances(const SUpdateContext& context, TVarArray<SInstance>& instances) {}
+
 	virtual void InitSubInstances(const SUpdateContext& context, SUpdateRange instanceRange) {}
 
 	virtual void GetSpatialExtents(const SUpdateContext& context, TConstArray<float> scales, TVarArray<float> extents) {}
@@ -58,8 +63,6 @@ public:
 	virtual void InitParticles(const SUpdateContext& context) {}
 
 	virtual void PostInitParticles(const SUpdateContext& context) {}
-
-	virtual void KillParticles(const SUpdateContext& context, TConstArray<TParticleId> particleIds) {}
 
 	virtual void DestroyParticles(const SUpdateContext& context) {}
 
@@ -97,6 +100,8 @@ struct SFeatureDispatchers
 {
 	TFeatureDispatcher<CParticleComponentRuntime*> MainPreUpdate { &CParticleFeature::MainPreUpdate };
 
+	TFeatureDispatcher<const SUpdateContext&> AddSubInstances { &CParticleFeature::AddSubInstances };
+	TFeatureDispatcher<const SUpdateContext&, TVarArray<SInstance>&> CullSubInstances { &CParticleFeature::CullSubInstances };
 	TFeatureDispatcher<const SUpdateContext&, SUpdateRange> InitSubInstances { &CParticleFeature::InitSubInstances };
 	TFeatureDispatcher<const SUpdateContext&, TDynArray<SSpawnEntry>&> SpawnParticles { &CParticleFeature::SpawnParticles };
 
@@ -106,7 +111,6 @@ struct SFeatureDispatchers
 	TFeatureDispatcher<const SUpdateContext&> PreInitParticles { &CParticleFeature::PreInitParticles };
 	TFeatureDispatcher<const SUpdateContext&> InitParticles { &CParticleFeature::InitParticles };
 	TFeatureDispatcher<const SUpdateContext&> PostInitParticles { &CParticleFeature::PostInitParticles };
-	TFeatureDispatcher<const SUpdateContext&, TConstArray<TParticleId>> KillParticles { &CParticleFeature::KillParticles };
 	TFeatureDispatcher<const SUpdateContext&> DestroyParticles { &CParticleFeature::DestroyParticles };
 
 	TFeatureDispatcher<const SUpdateContext&> PreUpdateParticles { &CParticleFeature::PreUpdateParticles };

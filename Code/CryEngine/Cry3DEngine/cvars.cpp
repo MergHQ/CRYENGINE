@@ -59,7 +59,7 @@ void OnGsmLodsNumChange(ICVar* pArgs)
 	if (Cry3DEngineBase::GetRenderer())
 	{
 		Cry3DEngineBase::GetRenderer()->UpdateCachedShadowsLodCount(pArgs->GetIVal());
-}
+	}
 }
 
 void OnDynamicDistanceShadowsVarChange(ICVar* pArgs)
@@ -108,7 +108,7 @@ void CVars::Init()
 	                   "1: use usual rendering path\n"
 	                   "2: use fast rendering path with merged fog");
 	REGISTER_CVAR(e_WaterOceanBottom, 1, VF_NULL,
-	                   "Activates drawing bottom of ocean");
+	              "Activates drawing bottom of ocean");
 
 	REGISTER_CVAR(e_WaterOceanFFT, 0, VF_NULL,
 	              "Activates fft based ocean");
@@ -116,8 +116,8 @@ void CVars::Init()
 	DefineConstIntCVar(e_WaterRipplesDebug, 0, VF_CHEAT,
 	                   "Draw water hits that affect water ripple simulation");
 
-	REGISTER_CVAR(e_DebugDrawMaxDistance, 1000.0f, VF_NULL, 
-				  "Draw distance for e_debugDraw text");
+	REGISTER_CVAR(e_DebugDrawMaxDistance, 1000.0f, VF_NULL,
+	              "Draw distance for e_debugDraw text");
 
 	DefineConstIntCVar(e_DebugDrawShowOnlyCompound, 0, VF_NULL,
 	                   "e_DebugDraw shows only Compound (less efficient) static meshes");
@@ -186,9 +186,9 @@ void CVars::Init()
 	DefineConstIntCVar(e_TerrainDetailMaterialsDebug, 0, VF_CHEAT,
 	                   "Shows number of materials in use per terrain sector");
 	REGISTER_CVAR(e_TerrainDetailMaterialsViewDistZ, e_TerrainDetailMaterialsViewDistZDefault, VF_NULL,
-	                     "Max view distance of terrain Z materials");
+	              "Max view distance of terrain Z materials");
 	REGISTER_CVAR(e_TerrainDetailMaterialsViewDistXY, e_TerrainDetailMaterialsViewDistXYDefault, VF_NULL,
-	                     "Max view distance of terrain XY materials");
+	              "Max view distance of terrain XY materials");
 	DefineConstFloatCVar(e_SunAngleSnapSec, VF_NULL,
 	                     "Sun dir snap control");
 	DefineConstFloatCVar(e_SunAngleSnapDot, VF_NULL,
@@ -307,7 +307,7 @@ void CVars::Init()
 	DefineConstIntCVar(e_DecalsClip, 1, VF_NULL,
 	                   "Clip decal geometry by decal bbox");
 	REGISTER_CVAR(e_DecalsRange, e_DecalsRangeDefault, VF_NULL,
-	                     "Less precision for decals outside this range");
+	              "Less precision for decals outside this range");
 	DefineConstFloatCVar(e_MinMassDistanceCheckRenderMeshCollision, VF_NULL,
 	                     "Minimum mass to check for e_DecalsRange as distance in a RenderMesh Collision check");
 	REGISTER_CVAR(e_DecalsLifeTimeScale, 1.f, VF_NULL,
@@ -324,7 +324,7 @@ void CVars::Init()
 	              "Max distance ratio for spawning dynamic decals.\n"
 	              "This will be applied on top of e_ViewDistRatio");
 	REGISTER_CVAR(e_VegetationBending, 2, VF_NULL,
-	                   "Enable vegetation bending (does not affect merged grass)");
+	              "Enable vegetation bending (does not affect merged grass)");
 	REGISTER_CVAR(e_VegetationBillboards, 0, VF_NULL,
 	              "Allow replacing distant vegetation with billboards\n"
 	              "Billboard textures must be prepared by ed_GenerateBillboardTextures command in the editor");
@@ -369,9 +369,9 @@ void CVars::Init()
 	                     "[DEPRECATED] [0-1] amount to factor in scale of sprites in sprite switch distance.");
 
 	REGISTER_CVAR(e_Wind, 1, VF_NULL,
-	                   "Enable global wind calculations, affects vegetations bending animations");
+	              "Enable global wind calculations, affects vegetations bending animations");
 	REGISTER_CVAR(e_WindAreas, 1, VF_NULL,
-	                   "Debug");
+	              "Debug");
 	DefineConstFloatCVar(e_WindBendingDistRatio, VF_CHEAT,
 	                     "Wind cutoff distance for bending (linearly attentuated to that distance)");
 	REGISTER_CVAR(e_Shadows, 1, VF_NULL,
@@ -392,14 +392,14 @@ void CVars::Init()
 	                   "Simplifies mesh for shadow map generation by X LOD levels");
 #endif
 	REGISTER_CVAR(e_ShadowsLodBiasInvis, 0, VF_NULL,
-	                   "Simplifies mesh for shadow map generation by X LOD levels, if object is not visible in main frame");
+	              "Simplifies mesh for shadow map generation by X LOD levels, if object is not visible in main frame");
 
 	REGISTER_CVAR(e_Tessellation, 1, VF_NULL,
-	                   "HW geometry tessellation  0 = not allowed, 1 = allowed");
+	              "HW geometry tessellation  0 = not allowed, 1 = allowed");
 	REGISTER_CVAR(e_TessellationMaxDistance, 30.f, VF_NULL,
 	              "Maximum distance from camera in meters to allow tessellation, also affects distance-based displacement fadeout");
 	REGISTER_CVAR(e_ShadowsTessellateCascades, 1, VF_NULL,
-	                   "Maximum cascade number to render tessellated shadows (0 = no tessellation for sun shadows)");
+	              "Maximum cascade number to render tessellated shadows (0 = no tessellation for sun shadows)");
 	DefineConstIntCVar(e_ShadowsTessellateDLights, 0, VF_NULL,
 	                   "Disable/enable tessellation for local lights shadows");
 	REGISTER_CVAR(e_GsmCastFromTerrain, 1, VF_NULL,
@@ -417,9 +417,9 @@ void CVars::Init()
 	REGISTER_CVAR_CB(e_ShadowsCacheRenderCharacters, 0, VF_NULL,
 	                 "Render characters into the shadow cache. 0=disabled, 1=enabled", OnDynamicDistanceShadowsVarChange);
 	REGISTER_CVAR(e_ShadowsCacheExtendLastCascade, 0, VF_NULL,
-	                 "Always render full extent of last cached shadow cascade. 0=disabled, 1=enabled");
+	              "Always render full extent of last cached shadow cascade. 0=disabled, 1=enabled");
 	REGISTER_CVAR(e_ShadowsCacheMaxNodesPerFrame, 50, VF_NULL,
-	                 "Maximum number of octree nodes to visit during incremental update. default: 50");
+	              "Maximum number of octree nodes to visit during incremental update. default: 50");
 	REGISTER_CVAR_CB(e_DynamicDistanceShadows, 1, VF_NULL,
 	                 "Enable dynamic distance shadows, 0 = disable, 1 = enable only for movable object types, 2 = enable for all object types, -1 = don't render dynamic distance shadows", OnDynamicDistanceShadowsVarChange);
 	DefineConstIntCVar(e_ShadowsCascadesCentered, 0, VF_NULL,
@@ -454,7 +454,7 @@ void CVars::Init()
 	REGISTER_CVAR(e_ShadowsUpdateViewDistRatio, 128, VF_NULL,
 	              "View dist ratio for shadow maps updating for shadowpool");
 	REGISTER_CVAR(e_ShadowsCastViewDistRatioLights, e_ShadowsCastViewDistRatioLightsDefault, VF_NULL,
-	                     "View dist ratio for shadow maps casting for light sources");
+	              "View dist ratio for shadow maps casting for light sources");
 	REGISTER_CVAR(e_ShadowsCastViewDistRatio, 0.8f, VF_NULL,
 	              "View dist ratio for shadow maps casting from objects");
 	REGISTER_CVAR(e_GsmRange, 3.0f, VF_NULL,
@@ -483,6 +483,8 @@ void CVars::Init()
 	              "Take only trianglses close to terrain for objects integration");
 	DefineConstIntCVar(e_TerrainDeformations, 0, VF_CHEAT,
 	                   "Allows in-game terrain surface deformations");
+	REGISTER_CVAR(e_TerrainEditPostponeTexturesUpdate, 10, VF_NULL,
+	              "Controls the postpone of terrain normal and elevation textures update during terrain sculpting in the editor");
 	DefineConstIntCVar(e_AutoPrecacheCameraJumpDist, 16, VF_CHEAT,
 	                   "When not 0 - Force full pre-cache of textures, procedural vegetation and shaders\n"
 	                   "if camera moved for more than X meters in one frame or on new cut scene start");
@@ -533,12 +535,11 @@ void CVars::Init()
 	                     "Density of rays");
 	DefineConstFloatCVar(e_TerrainOcclusionCullingPrecisionDistRatio, VF_CHEAT,
 	                     "Controls density of rays depending on distance to the object");
-	REGISTER_CVAR(e_TerrainLodRatio, 1.f, VF_NULL,
-	              "Set heightmap LOD, this value is combined with sector error metrics and distance to camera");
-	REGISTER_CVAR(e_TerrainLodDistRatio, 1.f, VF_NULL,
-	              "Set heightmap LOD, this value is combined only with sector distance to camera and ignores sector error metrics");
-	DefineConstFloatCVar(e_TerrainLodRatioHolesMin, VF_NULL,
-	                     "Rises LOD for distant terrain sectors with holes, prevents too strong distortions of holes on distance ");
+
+	REGISTER_CVAR(e_TerrainLodDistanceRatio, 0.5f, VF_NULL,
+	              "Controls heightmap LOD by comparing sector distance with a sector size");
+	REGISTER_CVAR(e_TerrainLodErrorRatio, 0.05f, VF_NULL,
+	              "Controls heightmap LOD by comparing sector distance with the maximum elevation difference between the sector and its childs");
 
 	REGISTER_CVAR(e_OcclusionCullingViewDistRatio, 0.5f, VF_NULL,
 	              "Skip per object occlusion test for very far objects - culling on tree level will handle it");
@@ -588,7 +589,7 @@ void CVars::Init()
 	              "Debug");
 
 	REGISTER_CVAR(e_DynamicLightsMaxCount, 512, VF_NULL,
-	                   "Sets maximum amount of dynamic light sources");
+	              "Sets maximum amount of dynamic light sources");
 
 	DefineConstIntCVar(e_DynamicLights, 1, VF_CHEAT,
 	                   "Activates dynamic light sources");
@@ -765,8 +766,6 @@ void CVars::Init()
 	              "Controls objects tree balancing");
 	REGISTER_CVAR(e_ObjectsTreeNodeSizeRatio, 1.f / 16.f, VF_CHEAT,
 	              "Controls objects tree balancing");
-	REGISTER_CVAR(e_OnePassOctreeTraversal, 1, VF_CHEAT,
-	              "If enabled - use new unified way of scene graph traversal");
 	REGISTER_CVAR(e_ExecuteRenderAsJobMask, BIT(eERType_Brush) | BIT(eERType_Vegetation) | BIT(eERType_Road) | BIT(eERType_WaterVolume), VF_NULL,
 	              "Each bit specifies object type to render it in jobs");
 	REGISTER_CVAR(e_ObjectsTreeLevelsDebug, 0, VF_CHEAT,
@@ -805,7 +804,7 @@ void CVars::Init()
 	                   "Pre-render objects right after level loading");
 
 	REGISTER_CVAR(e_Lods, 1, VF_NULL,
-	                   "Load and use LOD models for static geometry");
+	              "Load and use LOD models for static geometry");
 	DefineConstIntCVar(e_LodFaceArea, 1, VF_NULL,
 	                   "Use geometric mean of faces area to compute LOD");
 	DefineConstIntCVar(e_LodsForceUse, 1, VF_NULL,
@@ -828,7 +827,7 @@ void CVars::Init()
 	              "Maximum number of instances per chunk");
 
 	REGISTER_CVAR(e_Recursion, 1, VF_NULL,
-	                   "If 0 - will skip recursive render calls like render into texture");
+	              "If 0 - will skip recursive render calls like render into texture");
 	REGISTER_CVAR(e_RecursionViewDistRatio, 0.1f, VF_NULL,
 	              "Set all view distances shorter by factor of X");
 
@@ -838,9 +837,9 @@ void CVars::Init()
 	REGISTER_CVAR(e_SkyUpdateRate, 0.12f, VF_NULL,
 	              "Percentage of a full dynamic sky update calculated per frame (0..100].");
 	REGISTER_CVAR(e_SkyQuality, 1, VF_NULL,
-	                   "Quality of dynamic sky: 1 (very high), 2 (high).");
+	              "Quality of dynamic sky: 1 (very high), 2 (high).");
 	REGISTER_CVAR(e_SkyType, 1, VF_NULL,
-	                   "Type of sky used: 0 (static), 1 (dynamic).");
+	              "Type of sky used: 0 (static), 1 (dynamic).");
 
 	DefineConstIntCVar(e_DisplayMemoryUsageIcon, e_DisplayMemoryUsageIconDefault, VF_NULL,
 	                   "Turns On/Off the memory usage icon rendering: 1 on, 0 off.");
@@ -858,7 +857,7 @@ void CVars::Init()
 	DefineConstFloatCVar(e_ViewDistCompMaxSize, VF_NULL | VF_LIVE_CREATE_SYNCED,
 	                     "Affects max view distance for big objects, small number will render less objects");
 	REGISTER_CVAR(e_ViewDistRatioPortals, e_ViewDistRatioPortalsDefault, VF_NULL | VF_LIVE_CREATE_SYNCED,
-	                     "View distance ratio for portals");
+	              "View distance ratio for portals");
 	REGISTER_CVAR(e_ViewDistRatioDetail, 30.0f, VF_NULL | VF_LIVE_CREATE_SYNCED,
 	              "View distance ratio for detail objects");
 	REGISTER_CVAR(e_ViewDistRatioVegetation, 30.0f, VF_CVARGRP_IGNOREINREALVAL | VF_LIVE_CREATE_SYNCED,
@@ -897,9 +896,9 @@ void CVars::Init()
 	REGISTER_CVAR(e_PhysProxyTriLimit, 5000, VF_NULL,
 	              "Maximum allowed triangle count for phys proxies");
 	REGISTER_CVAR(e_PhysFoliage, 2, VF_NULL,
-	                   "Enables physicalized foliage\n"
-	                   "1 - only for dynamic objects\n"
-	                   "2 - for static and dynamic)");
+	              "Enables physicalized foliage\n"
+	              "1 - only for dynamic objects\n"
+	              "2 - for static and dynamic)");
 	DefineConstIntCVar(e_RenderMeshUpdateAsync, 1, VF_NULL,
 	                   "Enables async updating of dynamically updated rendermeshes\n"
 	                   "0 - performs a synchronous update\n"
@@ -918,7 +917,7 @@ void CVars::Init()
 	              "If the wind is sufficiently strong, visible foliage in this view dist will be forcefully activated");
 
 	REGISTER_CVAR(e_DeformableObjects, e_DeformableObjectsDefault, VF_NULL,
-	                   "Enable / Disable morph based deformable objects");
+	              "Enable / Disable morph based deformable objects");
 
 	REGISTER_CVAR(e_CullVegActivation, 200, VF_NULL,
 	              "Vegetation activation distance limit; 0 disables visibility-based culling (= unconditional activation)");
@@ -996,7 +995,7 @@ void CVars::Init()
 	DefineConstIntCVar(e_PreloadMaterials, 1, VF_NULL,
 	                   "Preload level materials from level cache pak and resources list");
 	REGISTER_CVAR(e_PreloadDecals, 1, VF_NULL,
-	                   "Preload all materials for decals");
+	              "Preload all materials for decals");
 
 	DefineConstIntCVar(e_StatObjMerge, 1, VF_NULL,
 	                   "Enable CGF sub-objects meshes merging");
@@ -1026,18 +1025,18 @@ void CVars::Init()
 	              "Particle system pool memory size in KB");
 
 	REGISTER_CVAR(e_ParticlesLights, 1, VF_NULL,
-	                   "Allows to have light source attached to every particle\n"
-	                   "0 = Off\n"
-	                   "1 = Deferred lights\n");
+	              "Allows to have light source attached to every particle\n"
+	              "0 = Off\n"
+	              "1 = Deferred lights\n");
 
 	REGISTER_CVAR(e_ParticlesLightsViewDistRatio, e_ParticlesLightsViewDistRatioDefault, VF_NULL,
-	                     "Set particles lights view distance ratio");
+	              "Set particles lights view distance ratio");
 
 	REGISTER_CVAR(e_LightVolumes, e_LightVolumesDefault, VF_NULL,
-	                   "Allows deferred lighting for registered alpha blended geometry\n"
-	                   "0 = Off\n"
-	                   "1 = Enabled\n"
-	                   "2 = Enabled just for sun light\n");
+	              "Allows deferred lighting for registered alpha blended geometry\n"
+	              "0 = Off\n"
+	              "1 = Enabled\n"
+	              "2 = Enabled just for sun light\n");
 
 	DefineConstIntCVar(e_LightVolumesDebug, 0, VF_NULL,
 	                   "Display light volumes debug info\n"

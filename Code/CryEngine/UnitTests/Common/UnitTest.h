@@ -5,6 +5,7 @@
 #include <gmock/gmock.h>
 #include <type_traits>
 #include <string.h>
+#include <CrySTL/type_traits.h>
 
 namespace CryGTestDetails
 {
@@ -201,7 +202,7 @@ namespace CryGTestDetails
 	};
 
 	//! Utilities for determining whether the type is suitable for pass-by-value
-	template<typename T>
+	template<typename T, typename = void>
 	struct FavorCopy
 	{
 		static constexpr bool value =
@@ -210,18 +211,50 @@ namespace CryGTestDetails
 			(std::is_trivially_copyable<T>::value && sizeof(T) <= sizeof(void*));
 	};
 
+	//! This specialization for function type is a rare but valid case.
+	//! The specialization prevents going into type traits that are invalid for 
+	//! function types such as std::is_trivially_copyable.
+	//! Ideally to be replaced with `if constexpr(...)` after C++17.
+	template<typename T>
+	struct FavorCopy<T, typename std::enable_if<std::is_function<T>::value>::type>
+	{
+		static constexpr bool value = true;
+	};
+
 	template<typename T>
 	using EnableIfFavorCopy = typename std::enable_if<FavorCopy<T>::value, int>::type;
 
 	template<typename T>
 	using EnableIfUnfavorCopy = typename std::enable_if<!FavorCopy<T>::value, int>::type;
 
+	//! Operator detection used for generating human-readable compile error message
+	//! when the operator in the expression is not found
+	template <typename T1, typename T2>
+	using EqualityComparisonResultType = decltype(std::declval<const T1&>() == std::declval<const T2&>());
+
+	template <typename T1, typename T2>
+	using InEqualityComparisonResultType = decltype(std::declval<const T1&>() != std::declval<const T2&>());
+
+	template <typename T1, typename T2>
+	using LesserEqualComparisonResultType = decltype(std::declval<const T1&>() <= std::declval<const T2&>());
+
+	template <typename T1, typename T2>
+	using GreaterEqualComparisonResultType = decltype(std::declval<const T1&>() >= std::declval<const T2&>());
+
+	template <typename T1, typename T2>
+	using LessThanComparisonResultType = decltype(std::declval<const T1&>() < std::declval<const T2&>());
+
+	template <typename T1, typename T2>
+	using GreaterThanComparisonResultType = decltype(std::declval<const T1&>() > std::declval<const T2&>());
+
+	//! Represents everything on the left hand side of a comparison operator.
+	//! The evaluation of a comparison can be either a CBinaryExpression or folded back to a CLeftHandSideExpression.
 	template<typename T>
 	class CLeftHandSideExpression
 		: public CDisableOperators
 	{
 
-	// The data members have to go before member functions because of trailing return type deduction
+		// The data members have to go before member functions because of trailing return type deduction
 	private:
 
 		const char* m_msg;
@@ -280,72 +313,84 @@ namespace CryGTestDetails
 		template<typename U, EnableIfUnfavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::Equal, T, const U&> operator==(const U& otherValue) const
 		{
+			static_assert(stl::is_detected<EqualityComparisonResultType, T, U>::value, "'==': operator not found between types");
 			return { m_msg, m_file, m_line, m_val, otherValue };
 		}
 
 		template<typename U, EnableIfFavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::Equal, T, U> operator==(U otherValue) const
 		{
+			static_assert(stl::is_detected<EqualityComparisonResultType, T, U>::value, "'==': operator not found between types");
 			return{ m_msg, m_file, m_line, m_val, otherValue };
 		}
 
 		template<typename U, EnableIfUnfavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::Unequal, T, const U&> operator!=(const U& otherValue) const
 		{
+			static_assert(stl::is_detected<InEqualityComparisonResultType, T, U>::value, "'!=': operator not found between types");
 			return { m_msg, m_file, m_line, m_val, otherValue };
 		}
 
 		template<typename U, EnableIfFavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::Unequal, T, U> operator!=(U otherValue) const
 		{
+			static_assert(stl::is_detected<InEqualityComparisonResultType, T, U>::value, "'!=': operator not found between types");
 			return{ m_msg, m_file, m_line, m_val, otherValue };
 		}
 
 		template<typename U, EnableIfUnfavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::LessEqual, T, const U&> operator<=(const U& otherValue) const
 		{
+			static_assert(stl::is_detected<LesserEqualComparisonResultType, T, U>::value, "'<=': operator not found between types");
 			return { m_msg, m_file, m_line, m_val, otherValue };
 		}
 
 		template<typename U, EnableIfFavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::LessEqual, T, U> operator<=(U otherValue) const
 		{
+			static_assert(stl::is_detected<LesserEqualComparisonResultType, T, U>::value, "'<=': operator not found between types");
 			return{ m_msg, m_file, m_line, m_val, otherValue };
 		}
 
 		template<typename U, EnableIfUnfavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::GreaterEqual, T, const U&> operator>=(const U& otherValue) const
 		{
+			static_assert(stl::is_detected<GreaterEqualComparisonResultType, T, U>::value, "'>=': operator not found between types");
 			return { m_msg, m_file, m_line, m_val, otherValue };
 		}
 
 		template<typename U, EnableIfFavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::GreaterEqual, T, U> operator>=(U otherValue) const
 		{
+			static_assert(stl::is_detected<GreaterEqualComparisonResultType, T, U>::value, "'>=': operator not found between types");
 			return{ m_msg, m_file, m_line, m_val, otherValue };
 		}
 
 		template<typename U, EnableIfUnfavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::LessThan, T, const U&> operator<(const U& otherValue) const
 		{
+			static_assert(stl::is_detected<LessThanComparisonResultType, T, U>::value, "'<': operator not found between types");
 			return { m_msg, m_file, m_line, m_val, otherValue };
 		}
 
 		template<typename U, EnableIfFavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::LessThan, T, U> operator<(U otherValue) const
 		{
+			static_assert(stl::is_detected<LessThanComparisonResultType, T, U>::value, "'<': operator not found between types");
 			return{ m_msg, m_file, m_line, m_val, otherValue };
 		}
 
 		template<typename U, EnableIfUnfavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::GreaterThan, T, const U&> operator>(const U& otherValue) const
 		{
+			static_assert(stl::is_detected<GreaterThanComparisonResultType, T, U>::value, "'>': operator not found between types");
 			return { m_msg, m_file, m_line, m_val, otherValue };
 		}
 
 		template<typename U, EnableIfFavorCopy<U> = 0>
 		constexpr CBinaryExpression<EBinaryOp::GreaterThan, T, U> operator>(U otherValue) const
 		{
+			static_assert(stl::is_detected<GreaterThanComparisonResultType, T, U>::value, "'>': operator not found between types");
 			return{ m_msg, m_file, m_line, m_val, otherValue };
 		}
 
@@ -391,6 +436,8 @@ namespace CryGTestDetails
 }
 
 //Redirection is necessary to reject comma separated arguments. Only single expressions are accepted.
+//DO NOT change to wrap the expression in additional parenthesis like (expr), the reporting mechanism relies on
+//operator precedences and would break if expr is wrapped.
 #define REQUIRE_IMPL(expr) (CryGTestDetails::CExpressionDecomposer(STRINGIFY(expr), __FILE__, __LINE__) << expr).Evaluate()
 
 //! Macro for testing a condition expression similar to EXPECT_TRUE(cond), but with improved error report.
@@ -406,8 +453,40 @@ namespace CryGTestDetails
 //! relationship-macros such as EXPECT_EQ, EXPECT_NE, EXPECT_LT, EXPECT_LE, ...
 #define REQUIRE(expr) REQUIRE_IMPL(expr)
 
+// GTest printing overloads for floating point with enough decimal and hex precision
+// to improve error message qualities
+namespace testing
+{
+	namespace internal
+	{
+		//std::ceil is not constexpr, therefore we supplement ours
+		template<typename T>
+		constexpr int ceil(T f)
+		{
+			return (static_cast<T>(static_cast<int>(f)) == f) ?
+				static_cast<int>(f) :
+				static_cast<int>(f) + ((f > 0) ? 1 : 0);
+		}
+
+		// "9.20000076(0x1.2666680p+3)" for single-precision float
+		template<typename T>
+		inline void CryUnitTestPrintFloatingPoint(T value, ::std::ostream* os)
+		{
+			std::streamsize defaultPrecision = os->precision();
+			constexpr int max_digits16 = ceil(std::numeric_limits<T>::digits / T(4)/*log2(16)*/ + 1);
+			*os << std::setprecision(std::numeric_limits<T>::max_digits10) << value
+				<< '(' << std::hexfloat << std::setprecision(max_digits16) << value << ')'
+				<< std::setprecision(defaultPrecision);
+		}
+
+		inline void PrintTo(float value, ::std::ostream* os)       { CryUnitTestPrintFloatingPoint(value, os); }
+		inline void PrintTo(double value, ::std::ostream* os)      { CryUnitTestPrintFloatingPoint(value, os); }
+		inline void PrintTo(long double value, ::std::ostream* os) { CryUnitTestPrintFloatingPoint(value, os); }
+	}
+}
 
 // GTest printing support for CRYENGINE types
+// These functions can be at global scope thanks to argument-dependent lookup
 #include <CryString/CryString.h>
 
 inline void PrintTo(std::nullptr_t, ::std::ostream* os) { *os << "NULL"; }

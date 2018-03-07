@@ -44,25 +44,7 @@ void CTerrainNode::FillSectorHeightMapTextureData(Array2d<float> &arrHmData)
 
 void CTerrainNode::SetLOD(const SRenderingPassInfo& passInfo)
 {
-	// Calculate geometry LOD
 	const float fDist = m_arrfDistance[passInfo.GetRecursiveLevel()];
-
-	if (fDist < CTerrain::GetSectorSize() + (CTerrain::GetSectorSize() >> 2))
-		m_cNewGeomMML = 0;
-	else
-	{
-		float fAllowedError = (passInfo.GetZoomFactor() * GetCVars()->e_TerrainLodRatio * fDist) / 180.f * 2.5f;
-
-		int nGeomMML;
-		for (nGeomMML = GetTerrain()->m_nUnitsToSectorBitShift - 1; nGeomMML > m_rangeInfo.nUnitBitShift; nGeomMML--)
-			if (m_pGeomErrors[nGeomMML] < fAllowedError)
-				break;
-
-		m_cNewGeomMML = min(nGeomMML, int(fDist / 32));
-
-		// Support only 2 LODs in sector, going lower than 16x16x2 triangles per sector makes very little sense but causes unnecessary mesh updates
-		m_cNewGeomMML = std::min<uint8>(m_cNewGeomMML, m_nTreeLevel + 1);
-	}
 
 	// Calculate Texture LOD
 	if (passInfo.IsGeneralPass())
@@ -82,8 +64,7 @@ uint8 CTerrainNode::GetTextureLOD(float fDistance, const SRenderingPassInfo& pas
 		nMinLod++; // limit amount of texture data if in fall-back mode
 	}
 
-	uint8 cNodeNewTexMML = GetMML(int(fTexSizeK * 0.05f * (fDistance * passInfo.GetZoomFactor()) * GetFloatCVar(e_TerrainTextureLodRatio)), nMinLod,
-	                              m_bMergeNotAllowed ? 0 : GetTerrain()->GetParentNode()->m_nTreeLevel);
+	uint8 cNodeNewTexMML = GetMML(int(fTexSizeK * 0.05f * (fDistance * passInfo.GetZoomFactor()) * GetFloatCVar(e_TerrainTextureLodRatio)), nMinLod, GetTerrain()->GetParentNode()->m_nTreeLevel);
 
 	return cNodeNewTexMML;
 }

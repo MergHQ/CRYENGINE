@@ -12,7 +12,7 @@ namespace detail
 			void* buffer_ptr = CDeviceObjectFactory::GetBackingStorage(ptr);
 			if (ptr->Release() == 0ul)
 			{
-				CDeviceObjectFactory::FreebackingStorage(buffer_ptr);
+				CDeviceObjectFactory::FreeBackingStorage(buffer_ptr);
 			}
 			ptr = NULL;
 		}

@@ -93,8 +93,8 @@ public:
 	std::bitset<OMNI_SIDES_NUM> nOutdatedSideMask = 0xff;                      // Mask of out-of-date frustum sides
 	std::bitset<OMNI_SIDES_NUM> nSideInvalidatedMask = 0xff;                   // Mask of invalidated frustum sides for each GPU
 
-	std::atomic<uint32>&       GetSideSampleMask()             { return *reinterpret_cast<std::atomic<uint32>*>(&this->nSideSampleMask); }
-	const std::atomic<uint32>& GetSideSampleMask() const       { return *reinterpret_cast<const std::atomic<uint32>*>(&this->nSideSampleMask); }
+	std::atomic<uint32>&       GetSideSampleMask()       { return *reinterpret_cast<std::atomic<uint32>*>(&this->nSideSampleMask); }
+	const std::atomic<uint32>& GetSideSampleMask() const { return *reinterpret_cast<const std::atomic<uint32>*>(&this->nSideSampleMask); }
 	std::atomic<uint32>&       GetOnePassCastersCount() const  { return *reinterpret_cast<std::atomic<uint32>*>(&this->onePassCastersNum); }
 
 	// flags
@@ -137,7 +137,6 @@ public:
 	int                             nTextureWidth;
 	int                             nTextureHeight;
 	int                             nShadowMapSize;
-
 	int                             nResetID;
 	float                           fFrustrumSize;
 	float                           fProjRatio;
@@ -145,9 +144,6 @@ public:
 	float                           fDepthConstBias;
 	float                           fDepthSlopeBias;
 	float                           fDepthBiasClamp;
-
-	PodArray<struct IShadowCaster*> castersList;
-	PodArray<struct IShadowCaster*> jobExecutedCastersList;
 	mutable int                     onePassCastersNum = 0;        // Contains number of casters if one-pass octree traversal is used for this frustum
 
 	CCamera                         FrustumPlanes[OMNI_SIDES_NUM];
@@ -158,7 +154,6 @@ public:
 	int                             nUpdateFrameId;
 	IRenderNode*                    pLightOwner;
 	IRenderViewPtr                  pOnePassShadowView;           // if one-pass octree traversal is used this view is allocated and filled by 3DEngine
-	uint32                          uCastersListCheckSum;
 	int                             nShadowMapLod;                // currently use as GSMLod, can be used as cubemap side, -1 means this variable is not used
 	int                             nShadowCacheLod;
 	uint32                          m_Flags;
@@ -210,7 +205,6 @@ public:
 		, fRadius(0)
 		, nUpdateFrameId(-1000)
 		, pLightOwner(nullptr)
-		, uCastersListCheckSum(0)
 		, nShadowMapLod(0)
 		, m_Flags(0)
 		, nShadowCacheLod(0)
@@ -447,14 +441,12 @@ public:
 
 	void ResetCasterLists()
 	{
-		castersList.Clear();
-		jobExecutedCastersList.Clear();
 		onePassCastersNum = 0;
 	}
 
 	int GetCasterNum() const
 	{
-		return castersList.Count() + jobExecutedCastersList.Count() + onePassCastersNum;
+		return onePassCastersNum;
 	}
 
 	int GetNumSides() const
@@ -475,9 +467,6 @@ public:
 	void                         PrepareForShadowPool(uint32 frameID, uint32& numShadowPoolAllocsThisFrame, CPowerOf2BlockPacker& blockPack, TArray<SShadowAllocData>& shadowPoolAlloc, const SRenderLight& light, uint32 timeSlicedShadowUpdatesLimit = ~0, uint32* timeSlicedShadowsUpdated = nullptr);
 	// For time-sliced updates: Returns a mask of per-side flags that hint whether or not the side should be updated
 	std::bitset<6>               GenerateTimeSlicedUpdateCacheMask(uint32 frameID) const;
-
-	void                         RenderShadowFrustum(IRenderViewPtr pShadowsView, int side, bool bJobCasters);
-	void                         Job_RenderShadowCastersToView(const SRenderingPassInfo& passInfo, bool bJobCasters);
 
 	CRenderView*                 GetNextAvailableShadowsView(CRenderView* pMainRenderView);
 
@@ -513,7 +502,7 @@ typedef _smart_ptr<ShadowMapFrustum> ShadowMapFrustumPtr;
 struct SShadowRenderer
 {
 	// Iterate FrustumsToRender array from the CRenderView, and draw render nodes in every frustum there.
-	static void RenderFrustumsToView(CRenderView* pRenderView);
+	static void FinishRenderFrustumsToView(CRenderView* pRenderView);
 };
 
 struct ShadowFrustumMGPUCache : public ISyncMainWithRenderListener
@@ -551,24 +540,6 @@ struct ShadowFrustumMGPUCache : public ISyncMainWithRenderListener
 		for (int i = 0; i < m_staticShadowMapFrustums.size(); ++i)
 		{
 			m_staticShadowMapFrustums[i] = 0;
-		}
-	}
-
-	void DeleteFromCache(IShadowCaster* pCaster)
-	{
-		for (int i = 0; i < m_staticShadowMapFrustums.size(); ++i)
-		{
-			if (ShadowMapFrustum* pFr = m_staticShadowMapFrustums[i])
-			{
-				pFr->castersList.Delete(pCaster);
-				pFr->jobExecutedCastersList.Delete(pCaster);
-			}
-		}
-
-		if (ShadowMapFrustum* pFr = m_pHeightMapAOFrustum)
-		{
-			m_pHeightMapAOFrustum->castersList.Delete(pCaster);
-			m_pHeightMapAOFrustum->jobExecutedCastersList.Delete(pCaster);
 		}
 	}
 

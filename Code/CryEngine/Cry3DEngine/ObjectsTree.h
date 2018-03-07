@@ -35,7 +35,7 @@ struct CRY_ALIGN(16) SCheckOcclusionJobData
 
 	static SCheckOcclusionJobData CreateQuitJobData();
 	static SCheckOcclusionJobData CreateOctreeJobData(COctreeNode * pOctTreeNode, int nRenderMask, const Vec3 &rAmbColor, uint32 passCullMask, const SRenderingPassInfo &passInfo);
-	static SCheckOcclusionJobData CreateTerrainJobData(CTerrainNode * pTerrainNode, const AABB &rAABB, float fDistance);
+	static SCheckOcclusionJobData CreateTerrainJobData(CTerrainNode * pTerrainNode, const AABB &rAABB, float fDistance, uint32 passCullMask);
 
 	JobTypeT type; // type to indicate with which data the union is filled
 	union
@@ -46,7 +46,6 @@ struct CRY_ALIGN(16) SCheckOcclusionJobData
 			COctreeNode* pOctTreeNode;
 			int          nRenderMask;
 			float        vAmbColor[3];
-			uint32       passCullMask;
 		} octTreeData;
 
 		// data for terrain nodes
@@ -62,6 +61,7 @@ struct CRY_ALIGN(16) SCheckOcclusionJobData
 	SRendItemSorter rendItemSorter; // ensure order octree traversal oder even with parallel execution
 	const CCamera* pCam;            // store camera to handle vis areas correctly
 	std::vector<SRenderingPassInfo>* pShadowPasses = nullptr;
+	uint32 passCullMask;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,7 +82,7 @@ inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateOctreeJobData(COctre
 	jobData.octTreeData.vAmbColor[0] = rAmbColor.x;
 	jobData.octTreeData.vAmbColor[1] = rAmbColor.y;
 	jobData.octTreeData.vAmbColor[2] = rAmbColor.z;
-	jobData.octTreeData.passCullMask = passCullMask;
+	jobData.passCullMask = passCullMask;
 	jobData.rendItemSorter = passInfo.GetRendItemSorter();
 	jobData.pCam = &passInfo.GetCamera();
 	jobData.pShadowPasses = passInfo.GetShadowPasses();
@@ -90,10 +90,11 @@ inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateOctreeJobData(COctre
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateTerrainJobData(CTerrainNode* pTerrainNode, const AABB& rAABB, float fDistance)
+inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateTerrainJobData(CTerrainNode* pTerrainNode, const AABB& rAABB, float fDistance, uint32 passCullMask)
 {
 	SCheckOcclusionJobData jobData;
 	jobData.type = TERRAIN_NODE;
+	jobData.passCullMask = passCullMask;
 	jobData.terrainData.pTerrainNode = pTerrainNode;
 	jobData.terrainData.vAABBMin[0] = rAABB.min.x;
 	jobData.terrainData.vAABBMin[1] = rAABB.min.y;
@@ -113,7 +114,7 @@ struct CRY_ALIGN(16) SCheckOcclusionOutput
 
 	static SCheckOcclusionOutput CreateDecalsAndRoadsOutput(IRenderNode * pObj, PodArray<SRenderLight*>* pAffectingLights, const Vec3 &rAmbColor, const AABB &rObjBox, float fEntDistance, bool bCheckPerObjectOcclusion, const SRenderingPassInfo &passInfo);
 	static SCheckOcclusionOutput CreateCommonObjectOutput(IRenderNode * pObj, PodArray<SRenderLight*>* pAffectingLights, const Vec3 &rAmbColor, const AABB &rObjBox, float fEntDistance, SSectorTextureSet * pTerrainTexInfo, uint32 passCullMask, const SRenderingPassInfo &passInfo);
-	static SCheckOcclusionOutput CreateTerrainOutput(CTerrainNode * pTerrainNode, const SRenderingPassInfo &passInfo);
+	static SCheckOcclusionOutput CreateTerrainOutput(CTerrainNode * pTerrainNode, uint32 passCullMask, const SRenderingPassInfo &passInfo);
 	static SCheckOcclusionOutput CreateDeformableBrushOutput(CBrush * pBrush, CRenderObject * pObj, int nLod, const SRenderingPassInfo &passInfo);
 
 	JobTypeT type;
@@ -127,7 +128,6 @@ struct CRY_ALIGN(16) SCheckOcclusionOutput
 			SSectorTextureSet*       pTerrainTexInfo;
 			float                    fEntDistance;
 			bool                     bCheckPerObjectOcclusion;
-			uint32                   passCullMask;
 		} common;
 
 		//TERRAIN Data
@@ -158,6 +158,7 @@ struct CRY_ALIGN(16) SCheckOcclusionOutput
 	Vec3 vAmbColor;
 	AABB objBox;
 	SRendItemSorter rendItemSorter;
+	uint32 passCullMask;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -186,23 +187,21 @@ inline SCheckOcclusionOutput SCheckOcclusionOutput::CreateCommonObjectOutput(IRe
 	outputData.rendItemSorter = passInfo.GetRendItemSorter();
 	outputData.vAmbColor = rAmbColor;
 	outputData.objBox = rObjBox;
-
+	outputData.passCullMask = passCullMask;
 	outputData.common.pObj = pObj;
 	outputData.common.pAffectingLights = pAffectingLights;
 	outputData.common.fEntDistance = fEntDistance;
 	outputData.common.pTerrainTexInfo = pTerrainTexInfo;
-	outputData.common.passCullMask = passCullMask;
-
 	return outputData;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-inline SCheckOcclusionOutput SCheckOcclusionOutput::CreateTerrainOutput(CTerrainNode* pTerrainNode, const SRenderingPassInfo& passInfo)
+inline SCheckOcclusionOutput SCheckOcclusionOutput::CreateTerrainOutput(CTerrainNode* pTerrainNode, uint32 passCullMask, const SRenderingPassInfo& passInfo)
 {
 	SCheckOcclusionOutput outputData;
 	outputData.type = TERRAIN;
 	outputData.rendItemSorter = passInfo.GetRendItemSorter();
-
+	outputData.passCullMask = passCullMask;
 	outputData.terrain.pTerrainNode = pTerrainNode;
 
 	return outputData;
@@ -367,12 +366,11 @@ public:
 	void                     RenderCommonObjects(TDoublyLinkedList<IRenderNode>* lstObjects, const uint32 passCullMask, int nRenderMask, const Vec3& vAmbColor, const bool bOcNodeCompletelyInFrustum, PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo);
 	void                     RenderDecalsAndRoads(TDoublyLinkedList<IRenderNode>* lstObjects, const uint32 passCullMask, int nRenderMask, const Vec3& vAmbColor, const bool bOcNodeCompletelyInFrustum, PodArray<SRenderLight*>* pAffectingLights, const SRenderingPassInfo& passInfo);
 	void                     RenderBrushes(TDoublyLinkedList<IRenderNode>* lstObjects, const uint32 passCullMask, const bool bOcNodeCompletelyInFrustum, PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo);
-	static void              RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfo, float fEntDistance, IRenderNode* pObj, const AABB& objBox, const uint32 passCullMask, const CLodValue* lodValue, const SRendParams* rendParams, PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo);
+	static void              RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfo, float fEntDistance, IRenderNode* pObj, const AABB& objBox, const uint32 passCullMask);
+	static bool              IsShadowCaster(IRenderNode* pObj);
 	PodArray<SRenderLight*>* GetAffectingLights(const SRenderingPassInfo& passInfo);
 	void                     AddLightSource(SRenderLight* pSource, const SRenderingPassInfo& passInfo);
 	void                     CheckInitAffectingLights(const SRenderingPassInfo& passInfo);
-	void                     FillShadowCastersList(bool bNodeCompletellyInFrustum, SRenderLight* pLight, struct ShadowMapFrustum* pFr, PodArray<SPlaneObject>* pShadowHull, uint32 nRenderNodeFlags, const SRenderingPassInfo& passInfo);
-	void                     FillShadowMapCastersList(const ShadowMapFrustumParams& params, bool bNodeCompletellyInFrustum);
 	void                     InvalidateCachedShadowData();
 	void                     ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, IGeneralMemoryHeap* pHeap, const AABB& layerBox);
 	void                     GetLayerMemoryUsage(uint16 nLayerId, ICrySizer* pSizer, int* pNumBrushes, int* pNumDecals);
@@ -495,13 +493,11 @@ private:
 
 	COctreeNode*                     m_arrChilds[8];
 	TDoublyLinkedList<IRenderNode>   m_arrObjects[eRNListType_ListsNum];
-	PodArray<SCasterInfo>            m_lstCasters[eRNListType_ListsNum];
 	Vec3                             m_vNodeCenter;
 	Vec3                             m_vNodeAxisRadius;
 	PodArray<SRenderLight*>          m_lstAffectingLights;
 	uint32                           m_nLightMaskFrameId;
 	COctreeNode*                     m_pParent;
-	uint32                           nFillShadowCastersSkipFrameId;
 	float                            m_fNodeDistance;
 	int                              m_nManageVegetationsFrameId;
 

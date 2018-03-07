@@ -196,6 +196,7 @@ public:
 
 	uint                                  GetComponentId() const                { return m_componentId; }
 	CParticleEffect*                      GetEffect() const                     { return m_pEffect; }
+	void                                  SetEffect(CParticleEffect* pEffect)   { m_pEffect = pEffect; }
 
 	template<typename T> TDataOffset<T>   AddInstanceData()                     { return AddInstanceData(sizeof(T)); }
 	void                                  AddParticleData(EParticleDataType type);
@@ -209,7 +210,6 @@ public:
 	SComponentParams&       ComponentParams()                                   { return m_componentParams; }
 	bool                    UseParticleData(EParticleDataType type) const       { return m_useParticleData[type]; }
 
-	void                    SetParentComponent(CParticleComponent* pParentComponent, bool delayed);
 	CParticleComponent*     GetParentComponent() const                          { return m_parent; }
 	const TComponents&      GetChildComponents() const                          { return m_children; }
 	void                    ClearChildren()                                     { m_children.resize(0); }

@@ -92,8 +92,6 @@ bool CImageDDSFile::Load(const string& filename, uint32 nFlags)
 	AdjustFirstFileName(nFlags, filename.c_str(), adjustedFileName);
 
 	// load file content
-	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
-
 	CCryFile file(adjustedFileName.c_str(), "rb");
 
 	DDSSplitted::RequestInfo otherMips[64];

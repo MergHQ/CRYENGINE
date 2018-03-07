@@ -14,8 +14,6 @@
 #ifndef SECINFO_H
 #define SECINFO_H
 
-#define MML_NOT_SET          ((uint8) - 1)
-
 #define ARR_TEX_OFFSETS_SIZE 4
 
 #include "BasicArea.h"
@@ -369,6 +367,8 @@ enum ETextureEditingState : unsigned int
 	eTES_SectorIsModified_AtlasIsDirty
 };
 
+const float kGeomErrorNotSet = -1;
+
 struct CTerrainNode : public Cry3DEngineBase, public IRenderNode, public IStreamCallback
 {
 public:
@@ -416,9 +416,7 @@ public:
 		m_pChilds(0),
 		m_nLastTimeUsed(0),
 		m_nSetLodFrameId(0),
-		m_pGeomErrors(0),
 		m_pProcObjPoolPtr(0),
-		m_nGSMFrameId(0),
 		m_bHMDataIsModified(0)
 	{
 		memset(&m_arrfDistance, 0, sizeof(m_arrfDistance));
@@ -426,17 +424,15 @@ public:
 	}
 	~CTerrainNode();
 	static void   ResetStaticData();
-	bool          CheckVis(bool bAllIN, bool bAllowRenderIntoCBuffer, const SRenderingPassInfo& passInfo);
+	bool          CheckVis(bool bAllIN, bool bAllowRenderIntoCBuffer, const SRenderingPassInfo& passInfo, uint32 passCullMask);
 	void          SetupTexturing(bool bMakeUncompressedForEditing, const SRenderingPassInfo& passInfo);
 	void          RequestTextures(const SRenderingPassInfo& passInfo);
 	void          EnableTextureEditingMode(unsigned int textureId);
 	void          UpdateNodeTextureFromEditorData();
-	void          UpdateNodeNormalMapFromEditorData();
+	void          UpdateNodeNormalMapFromHeightMap();
 	static void   SaveCompressedMipmapLevel(const void* data, size_t size, void* userData);
 	void          CheckNodeGeomUnload(const SRenderingPassInfo& passInfo);
-	void          SetChildsLod(int nNewGeomLOD, const SRenderingPassInfo& passInfo);
-	int           GetAreaLOD(const SRenderingPassInfo& passInfo);
-	void          RenderNodeHeightmap(const SRenderingPassInfo& passInfo);
+	void          RenderNodeHeightmap(const SRenderingPassInfo& passInfo, uint32 passCullMask);
 	bool          CheckUpdateProcObjects(const SRenderingPassInfo& passInfo);
 	void          IntersectTerrainAABB(const AABB& aabbBox, PodArray<CTerrainNode*>& lstResult);
 	void          UpdateDetailLayersInfo(bool bRecursive);
@@ -508,8 +504,11 @@ public:
 	void                         CheckLeafData();
 	inline STerrainNodeLeafData* GetLeafData() { return m_pLeafData; }
 	void                         OffsetPosition(const Vec3& delta);
-	_smart_ptr<IRenderMesh>      GetSharedRenderMesh(int nDim);
+	_smart_ptr<IRenderMesh>      GetSharedRenderMesh();
 	uint32                       GetMaterialsModificationId();
+	void                         SetTraversalFrameId(uint32 onePassTraversalFrameId, int shadowFrustumLod);
+	void                         UpdateGeomError();
+	void                         InvalidateCachedShadowData();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Member variables
@@ -522,7 +521,6 @@ public:
 
 	// flags
 	uint8 m_bProcObjectsReady : 1;
-	uint8 m_bMergeNotAllowed  : 1;
 	uint8 m_bHasHoles         : 2;                 // sector has holes in the ground
 	uint8 m_bNoOcclusion      : 1;                 // sector has visareas under terrain surface
 
@@ -531,16 +529,13 @@ public:
 #endif // _RELEASE
 
 	uint8 // LOD's
-	  m_cNewGeomMML, m_cCurrGeomMML,
-	  m_cNewGeomMML_Min, m_cNewGeomMML_Max,
-	  m_cNodeNewTexMML, m_cNodeNewTexMML_Min;
+	       m_cNodeNewTexMML, m_cNodeNewTexMML_Min;
 	uint8  m_nTreeLevel;
 
-	uint16 m_nOriginX, m_nOriginY; // sector origin
-	int    m_nLastTimeUsed;        // basically last time rendered
+	uint16 m_nOriginX, m_nOriginY;             // sector origin
+	int    m_nLastTimeUsed;                    // basically last time rendered
 	int    m_nSetLodFrameId;
-
-	float* m_pGeomErrors;  // errors for each lod level
+	float  m_geomError = kGeomErrorNotSet;             // maximum height difference comparing to next more detailed lod
 
 protected:
 
@@ -564,7 +559,6 @@ public:
 	AABB                       m_boxHeigtmapLocal;
 	float                      m_fBBoxExtentionByObjectsIntegration;
 	struct CTerrainNode*       m_pParent;
-	int                        m_nGSMFrameId;
 
 	float                      m_arrfDistance[MAX_RECURSION_LEVELS];
 	int                        m_nNodeTextureOffset;

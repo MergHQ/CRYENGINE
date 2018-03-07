@@ -22,13 +22,13 @@ CParticleSystem::CParticleSystem()
 
 PParticleEffect CParticleSystem::CreateEffect()
 {
-	return new pfx2::CParticleEffect();
+	return new CParticleEffect();
 }
 
 void CParticleSystem::RenameEffect(PParticleEffect pEffect, cstr name)
 {
 	CRY_PFX2_ASSERT(pEffect.get());
-	CParticleEffect* pCEffect = CastEffect(pEffect);
+	CParticleEffect* pCEffect = static_cast<CParticleEffect*>(+pEffect);
 
 	if (pCEffect->GetName())
 		m_effects[pCEffect->GetName()] = nullptr;
@@ -52,7 +52,7 @@ PParticleEmitter CParticleSystem::CreateEmitter(PParticleEffect pEffect)
 	PARTICLE_LIGHT_PROFILER();
 
 	CRY_PFX2_ASSERT(pEffect.get());
-	CParticleEffect* pCEffect = CastEffect(pEffect);
+	CParticleEffect* pCEffect = static_cast<CParticleEffect*>(+pEffect);
 	pCEffect->Compile();
 
 	m_newEmitters.emplace_back(new CParticleEmitter(pCEffect, m_nextEmitterId++));
@@ -324,12 +324,19 @@ PParticleEffect CParticleSystem::LoadEffect(cstr effectName)
 		CheckFileAccess(effectName);
 		PParticleEffect pEffect = CreateEffect();
 		RenameEffect(pEffect, effectName);
-		if (Serialization::LoadJsonFile(*CastEffect(pEffect), effectName))
+		if (Serialization::LoadJsonFile(*static_cast<CParticleEffect*>(+pEffect), effectName))
 			return pEffect;
 	}
 
 	m_effects[effectName] = _smart_ptr<CParticleEffect>();
 	return PParticleEffect();
+}
+const SParticleFeatureParams* CParticleSystem::FindFeatureParam(cstr groupName, cstr featureName)
+{
+	for (const auto& feature : GetFeatureParams())
+		if (!strcmp(feature.m_groupName, groupName) && !strcmp(feature.m_featureName, featureName))
+			return &feature;
+	return nullptr;
 }
 
 const SParticleFeatureParams* CParticleSystem::GetDefaultFeatureParam(EFeatureType type)
@@ -356,16 +363,6 @@ void CParticleSystem::GetStats(SParticleStats& stats)
 
 void CParticleSystem::GetMemoryUsage(ICrySizer* pSizer) const
 {
-}
-
-ILINE CParticleEffect* CParticleSystem::CastEffect(const PParticleEffect& pEffect) const
-{
-	return static_cast<CParticleEffect*>(pEffect.get());
-}
-
-ILINE CParticleEmitter* CParticleSystem::CastEmitter(const PParticleEmitter& pEmitter) const
-{
-	return static_cast<CParticleEmitter*>(pEmitter.get());
 }
 
 uint GetVersion(Serialization::IArchive& ar)

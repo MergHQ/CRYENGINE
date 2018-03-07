@@ -1945,10 +1945,10 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 										if (i==pent->m_nParts) continue;
 									}
 									pTmpEntList[nout] = pent;
-									bProcessed = iszero(m_bUpdateOnlyFlagged & ((int)pent->m_flags^pef_update)) | iszero(pent->m_iSimClass);
+									bProcessed = !(m_bUpdateOnlyFlagged & ((int)pent->m_flags^pef_update)) || !pent->GetMassInv();
 									bProcessed &= iszero(((CPhysicalEntity*)pGridEnt)->m_iDeletionTime);
 									nout += bProcessed; AtomicAdd(&pGridEnt->m_bProcessed, maskCaller & -bProcessed);
-								} else if ((m_bUpdateOnlyFlagged & ((int)pent->m_flags^pef_update) & -pent->m_iSimClass>>31)==0) {
+								} else if (!(m_bUpdateOnlyFlagged & ((int)pent->m_flags^pef_update)) || !pent->GetMassInv()) {
 									bProcessed = isneg(-(int)(pent->m_bProcessed & maskCaller));
 									AtomicAdd(&pent->m_lockUpdate, bProcessed^1);
 									volatile char *pw=(volatile char*)&pent->m_lockUpdate+(1+eBigEndian); for(;*pw;); // ReadLock(m_lockUpdate)

@@ -6,11 +6,11 @@
 #include "VisAreas.h"
 
 const float ShadowCacheGenerator::AO_FRUSTUM_SLOPE_BIAS = 0.5f;
-int  ShadowCacheGenerator::m_cacheGenerationId = 0;
+int ShadowCacheGenerator::m_cacheGenerationId = 0;
 
 uint8 ShadowCacheGenerator::GetNextGenerationID() const
 {
-	// increase generation ID. Make sure we never return a value that 
+	// increase generation ID. Make sure we never return a value that
 	// wraps around to 0 as this is used for invalidating render nodes
 	int nextID = m_cacheGenerationId++;
 	if (uint8(nextID) == 0)
@@ -83,7 +83,6 @@ void ShadowCacheGenerator::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod,
 	pFr->bBlendFrustum = GetCVars()->e_ShadowsBlendCascades > 0;
 	pFr->fBlendVal = pFr->bBlendFrustum ? GetCVars()->e_ShadowsBlendCascadesVal : 1.0f;
 	InitCachedFrustum(pFr, nUpdateStrategy, nLod, shadowCacheLod, nTexRes, m_pLightEntity->GetLightProperties().m_Origin, projectionBoundsLS, passInfo);
-
 
 	// frustum debug
 	if (GetCVars()->e_ShadowsCacheUpdate > 2 || GetCVars()->e_ShadowsFrustums > 0)
@@ -173,14 +172,13 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 	const bool bExcludeDynamicDistanceShadows = GetCVars()->e_DynamicDistanceShadows != 0;
 	const bool bUseCastersHull = (nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eFullUpdateTimesliced);
 	const int maxNodesPerFrame = (nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate)
-		? GetCVars()->e_ShadowsCacheMaxNodesPerFrame * GetRenderer()->GetActiveGPUCount()
-		: std::numeric_limits<int>::max();
+	                             ? GetCVars()->e_ShadowsCacheMaxNodesPerFrame * GetRenderer()->GetActiveGPUCount()
+	                             : std::numeric_limits<int>::max();
 
 	m_pObjManager->MakeStaticShadowCastersList(((CLightEntity*)m_pLightEntity->GetLightProperties().m_pOwner)->GetCastingException(), pFr,
-		bUseCastersHull ? &m_pLightEntity->GetCastersHull() : nullptr,
-		bExcludeDynamicDistanceShadows ? ERF_DYNAMIC_DISTANCESHADOWS : 0, maxNodesPerFrame, passInfo);
+	                                           bUseCastersHull ? &m_pLightEntity->GetCastersHull() : nullptr,
+	                                           bExcludeDynamicDistanceShadows ? ERF_DYNAMIC_DISTANCESHADOWS : 0, maxNodesPerFrame, passInfo);
 	AddTerrainCastersToFrustum(pFr, passInfo);
-	
 
 	pFr->Invalidate();
 	pFr->bIncrementalUpdate = nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate && pFr->pShadowCacheData->mObjectsRendered != 0;
@@ -318,24 +316,25 @@ void ShadowCacheGenerator::AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, con
 		PodArray<CTerrainNode*> lstTerrainNodes;
 		GetTerrain()->IntersectWithBox(pFr->aabbCasters, &lstTerrainNodes);
 
+		bool bCastersFound = false;
+
 		for (int s = 0; s < lstTerrainNodes.Count(); s++)
 		{
 			CTerrainNode* pNode = lstTerrainNodes[s];
 
-			int nLod = pNode->GetAreaLOD(passInfo);
-			if (nLod == MML_NOT_SET)
-				continue;
-
-			if (!pNode->GetLeafData() || !pNode->GetLeafData()->m_pRenderMesh || pNode->m_cCurrGeomMML != pNode->m_cNewGeomMML)
+			const float optimalTerrainSegmentSize = 128.f;
+			if (pNode->GetBBox().GetSize().x != optimalTerrainSegmentSize)
 				continue;
 
 			if (!pFr->NodeRequiresShadowCacheUpdate(pNode))
 				continue;
 
-			pFr->castersList.Add(pNode);
+			bCastersFound = true;
+
+			pNode->SetTraversalFrameId(passInfo.GetMainFrameID(), pFr->nShadowMapLod);
 		}
 
-		if (!pFr->castersList.IsEmpty())
+		if (bCastersFound)
 			pFr->RequestUpdate();
 	}
 }

@@ -4761,6 +4761,11 @@ void C3DEngine::InvalidateShadowCacheData()
 	{
 		m_pObjectsTree->InvalidateCachedShadowData();
 	}
+
+	if (m_pTerrain)
+	{
+		m_pTerrain->GetParentNode()->InvalidateCachedShadowData();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -5166,7 +5171,8 @@ void C3DEngine::ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys
 
 	if (bObjects)
 	{
-		m_pObjectsTree->ActivateObjectsLayer(nLayerId, bActivate, bPhys, pHeap, m_arrObjectLayersActivity[nLayerId].objectsBox);
+		if(m_pObjectsTree)
+			m_pObjectsTree->ActivateObjectsLayer(nLayerId, bActivate, bPhys, pHeap, m_arrObjectLayersActivity[nLayerId].objectsBox);
 
 		if (m_pVisAreaManager)
 			m_pVisAreaManager->ActivateObjectsLayer(nLayerId, bActivate, bPhys, pHeap, m_arrObjectLayersActivity[nLayerId].objectsBox);

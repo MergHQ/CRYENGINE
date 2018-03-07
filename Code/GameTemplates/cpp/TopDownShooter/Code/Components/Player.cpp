@@ -170,7 +170,7 @@ void CPlayerComponent::SpawnCursorEntity()
 
 	// Load geometry
 	const int geometrySlot = 0;
-	m_pCursorEntity->LoadGeometry(geometrySlot, "Objects/Default/primitive_sphere.cgf");
+	m_pCursorEntity->LoadGeometry(geometrySlot, "%ENGINE%/EngineAssets/Objects/primitive_sphere.cgf");
 
 	// Scale the cursor down a bit
 	m_pCursorEntity->SetScale(Vec3(0.1f));
@@ -217,6 +217,11 @@ void CPlayerComponent::UpdateAnimation(float frameTime)
 
 	// Update the Mannequin tags
 	m_pAnimationComponent->SetTagWithId(m_walkTagId, m_pCharacterController->IsWalking());
+
+	if (m_pCursorEntity == nullptr)
+	{
+		return;
+	}
 
 	Vec3 dir = m_pCursorEntity->GetWorldPos() - m_pEntity->GetWorldPos();
 	dir = dir.Normalize();

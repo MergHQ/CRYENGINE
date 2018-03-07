@@ -27,15 +27,17 @@ namespace TerrainSectorRenderTempData {
 void GetMemoryUsage(ICrySizer* pSizer);
 }
 
-void CTerrain::AddVisSector(CTerrainNode* newsec)
+void CTerrain::AddVisSector(CTerrainNode* pNode, uint32 passCullMask)
 {
-	assert(newsec->m_cNewGeomMML < m_nUnitsToSectorBitShift);
-	m_lstVisSectors.Add(newsec);
+	m_lstVisSectors.Add(STerrainVisItem(pNode, passCullMask));
 }
 
-void CTerrain::CheckVis(const SRenderingPassInfo& passInfo)
+void CTerrain::CheckVis(const SRenderingPassInfo& passInfo, uint32 passCullMask)
 {
 	FUNCTION_PROFILER_3DENGINE;
+
+	if (!Get3DEngine()->m_bSunShadowsFromTerrain)
+		passCullMask &= kPassCullMainMask;
 
 	if (passInfo.IsGeneralPass())
 		m_fDistanceToSectorWithWater = OCEAN_IS_VERY_FAR_AWAY;
@@ -49,7 +51,7 @@ void CTerrain::CheckVis(const SRenderingPassInfo& passInfo)
 
 	if (GetParentNode())
 	{
-		GetParentNode()->CheckVis(false, (GetCVars()->e_CoverageBufferTerrain != 0) && (GetCVars()->e_CoverageBuffer != 0), passInfo);
+		GetParentNode()->CheckVis(false, (GetCVars()->e_CoverageBufferTerrain != 0) && (GetCVars()->e_CoverageBuffer != 0), passInfo, passCullMask);
 	}
 
 	if (passInfo.IsGeneralPass())

@@ -159,7 +159,7 @@ void CObjManager::RenderVegetation(CVegetation* pEnt, PodArray<SRenderLight*>* p
 
 	if (passCullMask & ~kPassCullMainMask)
 	{
-		COctreeNode::RenderObjectIntoShadowViews(passInfo, fEntDistance, pEnt, objBox, passCullMask, &lodValue, nullptr, nullptr, pTerrainTexInfo);
+		COctreeNode::RenderObjectIntoShadowViews(passInfo, fEntDistance, pEnt, objBox, passCullMask);
 	}
 }
 
@@ -380,7 +380,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 
 	if (passCullMask & ~kPassCullMainMask)
 	{
-		COctreeNode::RenderObjectIntoShadowViews(passInfo, fEntDistance, pEnt, objBox, passCullMask, nullptr, &DrawParams, pAffectingLights, nullptr);
+		COctreeNode::RenderObjectIntoShadowViews(passInfo, fEntDistance, pEnt, objBox, passCullMask);
 	}
 }
 

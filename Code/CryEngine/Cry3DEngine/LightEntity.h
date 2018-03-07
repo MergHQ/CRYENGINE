@@ -11,8 +11,8 @@ struct ShadowMapInfo
 
 	ShadowMapFrustumPtr pGSM[MAX_GSM_LODS_NUM];
 
-	int dynamicLodCount = 0;
-	int cachedLodCount = 0;
+	int                 dynamicLodCount = 0;
+	int                 cachedLodCount = 0;
 };
 
 class CLightEntity : public ILightSource, public Cry3DEngineBase
@@ -70,13 +70,12 @@ public:
 	void                                 InitShadowFrustum_SUN_Conserv(ShadowMapFrustum* pFr, int dwAllowedTypes, float fGSMBoxSize, float fDistance, int nLod, const SRenderingPassInfo& passInfo);
 	void                                 InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo);
 	void                                 InitShadowFrustum_OMNI(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo);
-	void                                 FillFrustumCastersList_SUN(ShadowMapFrustum* pFr, int dwAllowedTypes, int nRenderNodeFlags, PodArray<struct SPlaneObject>& lstCastersHull, int nLod, const SRenderingPassInfo& passInfo);
-	void                                 FillFrustumCastersList_PROJECTOR(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo);
-	void                                 FillFrustumCastersList_OMNI(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo);
+	void                                 SetupShadowFrustumCamera_SUN(ShadowMapFrustum* pFr, int dwAllowedTypes, int nRenderNodeFlags, PodArray<struct SPlaneObject>& lstCastersHull, int nLod, const SRenderingPassInfo& passInfo);
+	void                                 SetupShadowFrustumCamera_PROJECTOR(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo);
+	void                                 SetupShadowFrustumCamera_OMNI(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo);
 	void                                 CheckValidFrustums_OMNI(ShadowMapFrustum* pFr, const SRenderingPassInfo& passInfo);
 	bool                                 CheckFrustumsIntersect(CLightEntity* lightEnt);
 	bool                                 GetGsmFrustumBounds(const CCamera& viewFrustum, ShadowMapFrustum* pShadowFrustum);
-	void                                 DetectCastersListChanges(ShadowMapFrustum* pFr, const SRenderingPassInfo& passInfo);
 	void                                 OnCasterDeleted(IShadowCaster* pCaster);
 	int                                  MakeShadowCastersHull(PodArray<SPlaneObject>& lstCastersHull, const SRenderingPassInfo& passInfo);
 	static Vec3                          GSM_GetNextScreenEdge(float fPrevRadius, float fPrevDistanceFromView, const SRenderingPassInfo& passInfo);

@@ -49,6 +49,9 @@ namespace CryEngine
 			_isDisposed = true;
 		}
 
+		/// <summary>
+		/// Disposes this instance.
+		/// </summary>
 		public void Dispose()
 		{
 			Dispose(true);

@@ -30,6 +30,9 @@ enum EBitFlagEnum
 	EBitFlagEnumC = BIT(1),
 };
 
+void PlaceholderFunction() {};
+template<typename T> void TemplatePlaceholderFunction() {};
+
 //Ensure these basic evaluations compile and work as intended
 //This is important when we touch the test framework itself
 TEST(CryGTestFrameworkTest, RequireMacroEvaluation)
@@ -50,6 +53,12 @@ TEST(CryGTestFrameworkTest, RequireMacroEvaluation)
 	REQUIRE(i != j - 1);
 	REQUIRE(j == 1);
 	REQUIRE(1 == j);
+
+	//function comparison
+	REQUIRE(PlaceholderFunction == PlaceholderFunction);
+	REQUIRE(PlaceholderFunction != TemplatePlaceholderFunction<void>);
+	REQUIRE(TemplatePlaceholderFunction<int> == TemplatePlaceholderFunction<int>);
+	REQUIRE(TemplatePlaceholderFunction<float> != TemplatePlaceholderFunction<int>);
 
 	//expressions using +, -, *, /, %, !, ~ are more associated than the macro decomposer
 	//these must compile

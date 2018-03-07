@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*=============================================================================
    D3DShadows.cpp : shadows support.
@@ -68,13 +68,6 @@ void CD3D9Renderer::EF_PrepareShadowGenRenderList(const SRenderingPassInfo& pass
 	m_frameRenderStats[m_nFillThreadID].m_NumShadowMaskChannels = 0;
 #endif
 
-	// Prepare shadowpool
-	// With one-pass octree traversal this is done on the 3D engine side.
-	// TODO: Delete this once no longer needed.
-	const auto* e_OnePassOctreeTraversal = gEnv->pConsole->GetCVar("e_OnePassOctreeTraversal");
-	if (!e_OnePassOctreeTraversal->GetIVal())
-		PrepareShadowPool(pRenderView);
-
 	int nSunID = -1;
 
 	{
@@ -126,7 +119,6 @@ void CD3D9Renderer::EF_PrepareShadowGenRenderList(const SRenderingPassInfo& pass
 		}
 	}
 
-
 #if defined(ENABLE_PROFILING_CODE)
 	m_frameRenderStats[m_nFillThreadID].m_NumShadowPoolFrustums += CDeferredShading::Instance().m_shadowPoolAlloc.Num();
 #endif
@@ -147,7 +139,7 @@ void CD3D9Renderer::EF_PrepareShadowGenRenderList(const SRenderingPassInfo& pass
 	}
 
 	// Render All frustums.
-	SShadowRenderer::RenderFrustumsToView(pRenderView);
+	SShadowRenderer::FinishRenderFrustumsToView(pRenderView);
 }
 
 bool CD3D9Renderer::EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRenderLight* pLight, int nLightID)
@@ -199,9 +191,9 @@ void CD3D9Renderer::PrepareShadowPool(CRenderView* pRenderView) const
 	int nDLights = pRenderView->GetDynamicLightsCount();
 
 	const auto nRequestedPoolSize = iConsole->GetCVar("e_ShadowsPoolSize")->GetIVal();
-	auto &shadowPoolSize = CDeferredShading::Instance().m_nShadowPoolSize;
-	auto &blockPack = CDeferredShading::Instance().m_blockPack;
-	auto &shadowPoolAlloc = CDeferredShading::Instance().m_shadowPoolAlloc;
+	auto& shadowPoolSize = CDeferredShading::Instance().m_nShadowPoolSize;
+	auto& blockPack = CDeferredShading::Instance().m_blockPack;
+	auto& shadowPoolAlloc = CDeferredShading::Instance().m_shadowPoolAlloc;
 
 	RenderLightsList& arrLights = pRenderView->GetLightsArray(eDLT_DeferredLight);
 
@@ -214,7 +206,6 @@ void CD3D9Renderer::PrepareShadowPool(CRenderView* pRenderView) const
 		blockPack.Clear();
 		shadowPoolAlloc.SetUse(0);
 	}
-
 
 	bool forceClearPool = CRenderer::CV_r_ShadowPoolMaxFrames == 0;
 
@@ -229,13 +220,13 @@ void CD3D9Renderer::PrepareShadowPool(CRenderView* pRenderView) const
 	else
 	{
 		// Clear out orphaned slots
-		for (SShadowAllocData &pAlloc : shadowPoolAlloc)
+		for (SShadowAllocData& pAlloc : shadowPoolAlloc)
 		{
 			if (pAlloc.isFree())
 				continue;
 
 			bool found = false;
-			for (const auto &light : arrLights)
+			for (const auto& light : arrLights)
 			{
 				if (pAlloc.m_lightID == light.m_nEntityId)
 				{
@@ -287,19 +278,6 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 		pCurFrustum->nResetID = m_nFrameReset;
 		pCurFrustum->RequestUpdate();
 	}
-
-	// With one-pass octree traversal this is done on the 3D engine side.
-	// TODO: Delete this once no longer needed.
-	const auto* e_OnePassOctreeTraversal = gEnv->pConsole->GetCVar("e_OnePassOctreeTraversal");
- 	if (!e_OnePassOctreeTraversal->GetIVal())
-		pCurFrustum->PrepareForShadowPool(
-			static_cast<uint32>(frameID),
-			m_frameRenderStats[m_nFillThreadID].m_NumShadowPoolAllocsThisFrame,
-			CDeferredShading::Instance().m_blockPack,
-			CDeferredShading::Instance().m_shadowPoolAlloc,
-			*pLight,
-			CRenderer::CV_r_ShadowPoolMaxTimeslicedUpdatesPerFrame,
-			&m_nTimeSlicedShadowsUpdatedThisFrame);
 
 	//////////////////////////////////////////////////////////////////////////
 	//recalculate LOF rendering params
@@ -360,8 +338,8 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 		// Update check for shadow frustums:
 		// We update if the side is invalidated, or if it out-of-date and isn't cached (in case of time-sliced updates).
 		const bool shouldRenderSide = (pCurFrustum->m_eFrustumType != ShadowMapFrustum::e_GsmDynamic || pCurFrustum->nOmniFrustumMask[nS]) &&
-			(pCurFrustum->isSideInvalidated(nS) ||
-			(pCurFrustum->isSideOutdated(nS) && !pCurFrustum->nSideCacheMask[nS]));
+		                              (pCurFrustum->isSideInvalidated(nS) ||
+		                               (pCurFrustum->isSideOutdated(nS) && !pCurFrustum->nSideCacheMask[nS]));
 		if (!shouldRenderSide)
 			continue;
 
@@ -491,8 +469,8 @@ CShadowUtils::SShadowsSetupInfo CD3D9Renderer::ConfigShadowTexgen(CRenderView* p
 			Matrix44 mCropView(IDENTITY);
 			mCropView.m00 = (float)pFr->shadowPoolPack[0].GetDim().x / pFr->pDepthTex->GetWidth();
 			mCropView.m11 = (float)pFr->shadowPoolPack[0].GetDim().y / pFr->pDepthTex->GetHeight();
-			mCropView.m30 = (float)pFr->shadowPoolPack[0].Min.x      / pFr->pDepthTex->GetWidth();
-			mCropView.m31 = (float)pFr->shadowPoolPack[0].Min.y      / pFr->pDepthTex->GetHeight();
+			mCropView.m30 = (float)pFr->shadowPoolPack[0].Min.x / pFr->pDepthTex->GetWidth();
+			mCropView.m31 = (float)pFr->shadowPoolPack[0].Min.y / pFr->pDepthTex->GetHeight();
 
 			mTexScaleBiasMat = mTexScaleBiasMat * mCropView;
 		}
@@ -510,29 +488,28 @@ CShadowUtils::SShadowsSetupInfo CD3D9Renderer::ConfigShadowTexgen(CRenderView* p
 	//set shadow matrix
 	Data.ShadowMat = shadowMat.GetTransposed(); //TOFIX: construct projection and view matrices with Column Convention
 
-
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 	//use cur TexGen for homogeneous position reconstruction
 	if (bScreenToLocalBasis && CRenderer::CV_r_FogShadowsMode == 1)
 	{
 		Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPos;
 		bool bVPosSM30 = (GetFeatures() & (RFT_HW_SM30 | RFT_HW_SM40)) != 0;
-		const SRenderViewport &viewport = gcpRendD3D.GetGraphicsPipeline().GetCurrentRenderView()->GetViewport();
+		const SRenderViewport& viewport = gcpRendD3D.GetGraphicsPipeline().GetCurrentRenderView()->GetViewport();
 
 		CCamera Cam = pRenderView->GetCamera(CCamera::eEye_Left);
 		if (pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest && m_drawNearFov > 1.0f && m_drawNearFov < 179.0f)
 			Cam.SetFrustum(Cam.GetViewSurfaceX(), Cam.GetViewSurfaceZ(), DEG2RAD(m_drawNearFov), Cam.GetNearPlane(), Cam.GetFarPlane(), Cam.GetPixelAspectRatio());
 
-		CShadowUtils::ProjectScreenToWorldExpansionBasis(Data.ShadowMat, Cam, pRenderView->m_vProjMatrixSubPixoffset, 
-			static_cast<float>(viewport.width), static_cast<float>(viewport.height), vWBasisX, vWBasisY, vWBasisZ, vCamPos, bVPosSM30);
+		CShadowUtils::ProjectScreenToWorldExpansionBasis(Data.ShadowMat, Cam, pRenderView->m_vProjMatrixSubPixoffset,
+		                                                 static_cast<float>(viewport.width), static_cast<float>(viewport.height), vWBasisX, vWBasisY, vWBasisZ, vCamPos, bVPosSM30);
 
-#pragma warning(push)
-#pragma warning(disable: 4244)
+	#pragma warning(push)
+	#pragma warning(disable: 4244)
 		const auto mScreenToShadow = Matrix44(vWBasisX.x, vWBasisX.y, vWBasisX.z, vWBasisX.w,
-			vWBasisY.x, vWBasisY.y, vWBasisY.z, vWBasisY.w,
-			vWBasisZ.x, vWBasisZ.y, vWBasisZ.z, vWBasisZ.w,
-			vCamPos.x, vCamPos.y, vCamPos.z, vCamPos.w);
-#pragma warning(pop)
+		                                      vWBasisY.x, vWBasisY.y, vWBasisY.z, vWBasisY.w,
+		                                      vWBasisZ.x, vWBasisZ.y, vWBasisZ.z, vWBasisZ.w,
+		                                      vCamPos.x, vCamPos.y, vCamPos.z, vCamPos.w);
+	#pragma warning(pop)
 
 		float fScreenScale = (CV_r_FogShadows == 2) ? 4.0f : 2.0f;
 

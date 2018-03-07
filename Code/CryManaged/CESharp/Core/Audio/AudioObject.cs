@@ -149,6 +149,9 @@ namespace CryEngine
 			}
 		}
 
+		/// <summary>
+		/// Disposes this instance.
+		/// </summary>
 		public void Dispose()
 		{
 			Dispose(true);

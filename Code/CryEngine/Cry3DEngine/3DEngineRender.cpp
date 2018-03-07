@@ -1645,7 +1645,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	std::vector<std::pair<ShadowMapFrustum*, const CLightEntity*>> shadowFrustums;  // Shadow frustums and lights used in scene
 	uint32 passCullMask = kPassCullMainMask;                                        // initialize main view bit as visible
 
-	if (GetCVars()->e_OnePassOctreeTraversal && passInfo.RenderShadows() && !passInfo.IsRecursivePass())
+	if (passInfo.RenderShadows() && !passInfo.IsRecursivePass())
 	{
 		// Collect shadow passes used in scene and allocate render view for each of them
 		uint32 nTimeSlicedShadowsUpdatedThisFrame = 0;
@@ -1710,7 +1710,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 		// start processing terrain
 		if (IsOutdoorVisible() && m_pTerrain && passInfo.RenderTerrain() && Get3DEngine()->m_bShowTerrainSurface && !gEnv->IsDedicated())
-			m_pTerrain->CheckVis(passInfo);
+			m_pTerrain->CheckVis(passInfo, passCullMask);
 
 		// process streaming and procedural vegetation distribution
 		if (passInfo.IsGeneralPass() && m_pTerrain)
@@ -1799,12 +1799,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		GetObjManager()->PushIntoCullQueue(SCheckOcclusionJobData::CreateQuitJobData());
 	}
 
-	if (!GetCVars()->e_OnePassOctreeTraversal)
-	{
-		// fill shadow list here to allow more time between starting and waiting for the occlusion buffer
-		InitShadowFrustums(passInfo);
-	}
-
 	if (passInfo.IsGeneralPass())
 	{
 		gEnv->pSystem->DoWorkDuringOcclusionChecks();
@@ -1824,23 +1818,23 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		m_pObjManager->RenderNonJobObjects(passInfo);
 	}
 
-	if (GetCVars()->e_OnePassOctreeTraversal)
-	{
-		// all shadow casters are submitted, switch render views into eUsageModeWritingDone mode
-		for (const auto& pair : shadowFrustums)
-		{
-			auto &shadowFrustum = pair.first;
-			CRY_ASSERT(shadowFrustum->pOnePassShadowView);
-			shadowFrustum->pOnePassShadowView->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
-		}
-	}
+	// render terrain ground in case of non job mode
+	if (m_pTerrain)
+		m_pTerrain->DrawVisibleSectors(passInfo);
 
 	// Call postrender on the meshes that require it.
-	// Call it before InvokeShadowMapRenderJobs, otherwise render meshes are not constructed at the moment of shadow gen render calls
 	if (passInfo.IsGeneralPass())
 	{
 		m_pMergedMeshesManager->SortActiveInstances(passInfo);
 		m_pMergedMeshesManager->PostRenderMeshes(passInfo);
+	}
+
+	// all shadow casters are submitted, switch render views into eUsageModeWritingDone mode
+	for (const auto& pair : shadowFrustums)
+	{
+		auto &shadowFrustum = pair.first;
+		CRY_ASSERT(shadowFrustum->pOnePassShadowView);
+		shadowFrustum->pOnePassShadowView->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
 	}
 
 	// start render jobs for shadow map
@@ -1852,10 +1846,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	// add sprites render item
 	if (passInfo.RenderFarSprites())
 		m_pObjManager->RenderFarObjects(passInfo);
-
-	// render terrain ground
-	if (m_pTerrain)
-		m_pTerrain->DrawVisibleSectors(passInfo);
 
 	pfx2::CParticleSystem* pParticleSystem = static_cast<pfx2::CParticleSystem*>(m_pParticleSystem.get());
 	if (pParticleSystem)
@@ -1928,8 +1918,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed() && JobManager::InvokeAsJob("CheckOcclusion"))
 		m_pObjManager->EndOcclusionCulling();
 
-	if (GetCVars()->e_OnePassOctreeTraversal)
-	{
 		// release shadow views (from now only renderer owns it)
 		for (const auto& pair : shadowFrustums)
 		{
@@ -1937,8 +1925,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 			CRY_ASSERT(shadowFrustum->pOnePassShadowView);
 			shadowFrustum->pOnePassShadowView.reset();
 		}
-		const_cast<SRenderingPassInfo&>(passInfo).SetShadowPasses(nullptr);
-	}
 }
 
 void C3DEngine::ResetCoverageBufferSignalVariables()

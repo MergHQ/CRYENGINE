@@ -116,9 +116,11 @@ void SComponentParams::Serialize(Serialization::IArchive& ar)
 
 void SComponentParams::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
 {
-	float rate = m_maxParticleRate + m_maxParticlesPerFrame * maxFPS;
-	float extendedLife = m_maxParticleLifeTime + rcp(minFPS); // Particles stay 1 frame after death
-	total = m_maxParticlesBurst + int_ceil(rate * extendedLife);
+	total = m_maxParticlesBurst;
+	const float rate = m_maxParticleRate + m_maxParticlesPerFrame * maxFPS;
+	const float extendedLife = m_maxParticleLifeTime + rcp(minFPS); // Particles stay 1 frame after death
+	if (rate > 0.0f && std::isfinite(extendedLife))
+		total += int_ceil(rate * extendedLife);
 	perFrame = int(m_maxParticlesBurst + m_maxParticlesPerFrame) + int_ceil(m_maxParticleRate / minFPS);
 }
 
@@ -127,7 +129,7 @@ void SComponentParams::GetMaxParticleCounts(int& total, int& perFrame, float min
 
 CParticleComponent::CParticleComponent()
 	: m_dirty(true)
-	, m_pEffect(0)
+	, m_pEffect(nullptr)
 	, m_parent(nullptr)
 	, m_componentId(gInvalidId)
 	, m_nodePosition(-1.0f, -1.0f)
@@ -216,12 +218,6 @@ void CParticleComponent::SetParent(IParticleComponent* pParentComponent)
 	m_parent = static_cast<CParticleComponent*>(pParentComponent);
 	if (m_parent)
 		stl::push_back_unique(m_parent->m_children, this);
-}
-void CParticleComponent::SetParentComponent(CParticleComponent* pParentComponent, bool delayed)
-{
-	SetParent(pParentComponent);
-	if (delayed)
-		m_componentParams.m_emitterLifeTime.end = gInfinity;
 }
 
 void CParticleComponent::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
@@ -363,12 +359,15 @@ void CParticleComponent::Compile()
 	{
 		if (!(featureMask & b))
 		{
-			if (auto* params = GetPSystem()->GetDefaultFeatureParam(EFeatureType(b)))
+			if (EFeatureType(b) != EFT_Child || m_parent)
 			{
-				if (auto* feature = params->m_pFactory())
+				if (auto* params = GetPSystem()->GetDefaultFeatureParam(EFeatureType(b)))
 				{
-					m_defaultFeatures.push_back(pfx2::TParticleFeaturePtr(static_cast<CParticleFeature*>(feature)));
-					static_cast<CParticleFeature*>(feature)->AddToComponent(this, &m_componentParams);
+					if (auto* feature = params->m_pFactory())
+					{
+						m_defaultFeatures.push_back(pfx2::TParticleFeaturePtr(static_cast<CParticleFeature*>(feature)));
+						static_cast<CParticleFeature*>(feature)->AddToComponent(this, &m_componentParams);
+					}
 				}
 			}
 		}
@@ -454,6 +453,26 @@ void CParticleComponent::Serialize(Serialization::IArchive& ar)
 		SetName(inputName.c_str());
 	}
 
+	if (!ar.isEdit())
+	{
+		string parentName;
+		if (ar.isOutput())
+		{
+			if (m_parent)
+			{
+				parentName = m_parent->GetName();
+				ar(parentName, "Parent");
+			}
+		}
+		else if (ar.isInput())
+		{
+			if (ar(parentName, "Parent"))
+			{
+				assert(m_pEffect);
+				SetParent(m_pEffect->FindComponentByName(parentName));
+			}
+		}
+	}
 
 	Serialization::SContext context(ar, static_cast<IParticleComponent*>(this));
 	ar(m_componentParams, "Stats", "Component Statistics");

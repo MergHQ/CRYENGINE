@@ -1363,12 +1363,6 @@ void C3DEngine::OnCasterDeleted(IShadowCaster* pCaster)
 		if (m_pSun)
 			m_pSun->OnCasterDeleted(pCaster);
 
-		if (GetRenderer() && GetRenderer()->GetActiveGPUCount() > 1)
-		{
-			if (ShadowFrustumMGPUCache* pFrustumCache = GetRenderer()->GetShadowFrustumMGPUCache())
-				pFrustumCache->DeleteFromCache(pCaster);
-		}
-
 		// remove from per object shadows list
 		RemovePerObjectShadow(pCaster);
 	}

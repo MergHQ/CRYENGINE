@@ -259,7 +259,6 @@ private:
 		if (m_layoutChangeNotifyLocks == 0)
 		{
 			QMetaObject::invokeMethod(this, "layoutChanged", Qt::QueuedConnection);
-			qApp->processEvents();
 		}
 	}
 

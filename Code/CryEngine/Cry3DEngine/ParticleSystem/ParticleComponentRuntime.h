@@ -84,7 +84,6 @@ public:
 private:
 	void AddParticles(const SUpdateContext& context);
 	void RemoveParticles(const SUpdateContext& context);
-	void OnKillParticles(const SUpdateContext &context);
 	void UpdateNewBorns(const SUpdateContext& context);
 	void UpdateGPURuntime(const SUpdateContext& context);
 	void AgeUpdate(const SUpdateContext& context);

@@ -1,18 +1,30 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
 
-using System.Runtime.Serialization;
 using CryEngine.Common;
 
 namespace CryEngine.Resources
 {
 	/// <summary>
-	/// Defines how a texture is supposed draw itself. Options are draw in one piece (None), or draw equally sized slices in horizontal and/or vertical directrion.
+	/// Defines how a texture is supposed draw itself. Options are draw in one piece (None), or draw equally sized slices in horizontal and/or vertical direction.
 	/// </summary>
 	public enum SliceType
 	{
+		/// <summary>
+		/// No slicing
+		/// </summary>
 		None,
+		/// <summary>
+		/// Slice the texture into a left, center and right part. The center part scales horizontally to fill the rectangle.
+		/// </summary>
 		ThreeHorizontal,
+		/// <summary>
+		/// Slice the texture into a top, center and bottom part. The center part scales vertically to fill the rectangle.
+		/// </summary>
 		ThreeVertical,
+		/// <summary>
+		/// Slice the texture into nine parts. The center top and bottom parts scale horizontally. The center left and right parts scale vertically.
+		/// The center part scales in all directions.
+		/// </summary>
 		Nine
 	}
 
@@ -21,9 +33,24 @@ namespace CryEngine.Resources
 	/// </summary>
 	public struct Region
 	{
+		/// <summary>
+		/// The horizontal position of the region.
+		/// </summary>
 		public int X { get; set; }
+		
+		/// <summary>
+		/// The vertical position of the region.
+		/// </summary>
 		public int Y { get; set; }
+
+		/// <summary>
+		/// The width in pixels of the region.
+		/// </summary>
 		public int Width { get; set; }
+		
+		/// <summary>
+		/// The height in pixels of the region.
+		/// </summary>
 		public int Height { get; set; }
 
 		/// <summary>
@@ -331,12 +358,23 @@ namespace CryEngine.Resources
 			texture.Dispose();
 		}
 
+		/// <summary>
+		/// Determines whether the specified <see cref="Texture"/> instance is null.
+		/// </summary>
+		/// <param name="wrapper"></param>
+		/// <returns></returns>
 		protected static bool IsNull(Texture wrapper)
 		{
 			var isNull = ReferenceEquals(wrapper, null);
 			return isNull ? isNull : (wrapper._nativeTexture == null);
 		}
 
+		/// <summary>
+		/// Determines whether the specified <see cref="Texture"/> instances are the same instance.
+		/// </summary>
+		/// <param name="wrapperA"></param>
+		/// <param name="wrapperB"></param>
+		/// <returns></returns>
 		public static bool operator ==(Texture wrapperA, Texture wrapperB)
 		{
 			var aIsNull = IsNull(wrapperA);
@@ -355,11 +393,22 @@ namespace CryEngine.Resources
 			return ReferenceEquals(wrapperA, wrapperB);
 		}
 
+		/// <summary>
+		/// Determines whether the specified <see cref="Texture"/> instances are not the same instance.
+		/// </summary>
+		/// <param name="wrapperA"></param>
+		/// <param name="wrapperB"></param>
+		/// <returns></returns>
 		public static bool operator !=(Texture wrapperA, Texture wrapperB)
 		{
 			return !(wrapperA == wrapperB);
 		}
 
+		/// <summary>
+		/// Determines whether the specified <see cref="object"/> instance is the same as this instance.
+		/// </summary>
+		/// <param name="obj"></param>
+		/// <returns></returns>
 		public override bool Equals(object obj)
 		{
 			if (obj == null && IsNull(this))
@@ -369,6 +418,11 @@ namespace CryEngine.Resources
 			return ReferenceEquals(this, obj);
 		}
 
+		/// <summary>
+		/// Determines whether the specified <see cref="Texture"/> instance is the same as this instance.
+		/// </summary>
+		/// <param name="wrapper"></param>
+		/// <returns></returns>
 		public bool Equals(Texture wrapper)
 		{
 			if (IsNull(this) && IsNull(wrapper))
@@ -379,6 +433,10 @@ namespace CryEngine.Resources
 			return ReferenceEquals(wrapper, this);
 		}
 
+		/// <summary>
+		/// Serves as a hash function for a particular type.
+		/// </summary>
+		/// <returns></returns>
 		public override int GetHashCode()
 		{
 			if (IsNull(this))
