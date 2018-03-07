@@ -725,7 +725,7 @@ static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
 	else if (shaderTargetStr == STR_ORBIS_SHADER_TARGET)
 	{
 		CRenderer::ShaderTargetFlag = SF_ORBIS;
-		if(r_driverStr != STR_GNM_RENDERER || r_driverStr != STR_DX11_RENDERER)
+		if(r_driverStr != STR_GNM_RENDERER && r_driverStr != STR_DX11_RENDERER)
 			CryFatalError("r_driver MUST match shader target flag.");
 	}
 	else if (shaderTargetStr == STR_DURANGO_SHADER_TARGET)
