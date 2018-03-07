@@ -94,6 +94,9 @@ namespace CryEngine
 			throw new KeyNotFoundException("Component was not registered!");
 		}
 
+		/// <summary>
+		/// The <see cref="CryEngine.Entity"/> that owns this <see cref="EntityComponent"/>.
+		/// </summary>
 		public Entity Entity { get; private set; }
 
 		#region Functions
@@ -134,29 +137,62 @@ namespace CryEngine
 		#endregion
 
 		#region Entity Event Methods
+		/// <summary>
+		/// Called whenever the transform of this <see cref="CryEngine.Entity"/> is changed.
+		/// </summary>
 		protected virtual void OnTransformChanged() { }
 
+		/// <summary>
+		/// Called when the component is initialized. This happens when a level is loaded that contains the component, or when the component is placed in the level.
+		/// </summary>
 		protected virtual void OnInitialize() { }
 
+		/// <summary>
+		/// Called every frame. In the Sandbox this is called every frame if game-mode is enabled.
+		/// </summary>
+		/// <param name="frameTime"></param>
 		protected virtual void OnUpdate(float frameTime) { }
 
+		/// <summary>
+		/// Called every frame in the Sandbox.
+		/// </summary>
+		/// <param name="frameTime"></param>
 		protected virtual void OnEditorUpdate(float frameTime) { }
 
+		/// <summary>
+		/// Called whenever the Sandbox goes in or out of game-mode.
+		/// </summary>
+		/// <param name="enterGame"></param>
 		protected virtual void OnEditorGameModeChange(bool enterGame) { }
 
+		/// <summary>
+		/// Called when this <see cref="EntityComponent"/> is removed.
+		/// </summary>
 		protected virtual void OnRemove() { }
 
+		/// <summary>
+		/// Called when this <see cref="CryEngine.Entity"/> is hidden.
+		/// </summary>
 		protected virtual void OnHide() { }
 
+		/// <summary>
+		/// Called when this <see cref="CryEngine.Entity"/> is not hidden anymore.
+		/// </summary>
 		protected virtual void OnUnhide() { }
 
+		/// <summary>
+		/// Called at the start of the game when all entities have initialized. In the Sandbox this is called when game-mode is enabled.
+		/// </summary>
 		protected virtual void OnGameplayStart() { }
 
+		/// <summary>
+		/// Called when this <see cref="CryEngine.Entity"/> has a collision. The collision is not neceserilly with another <see cref="CryEngine.Entity"/>.
+		/// </summary>
+		/// <param name="collisionEvent"></param>
 		protected virtual void OnCollision(CollisionEvent collisionEvent) { }
 
 		private void OnCollisionInternal(IntPtr sourceEntityPhysics, IntPtr targetEntityPhysics, Vector3 point, Vector3 normal, Vector3 ownVelocity, Vector3 otherVelocity, float ownMass, float otherMass, float penetrationDepth, float normImpulse, float radius, float decalMaxSize)
 		{
-			
 			var collisionEvent = new CollisionEvent()
 			{
 				MaxDecalSize = decalMaxSize,
@@ -176,6 +212,10 @@ namespace CryEngine
 			OnCollision(collisionEvent);
 		}
 
+		/// <summary>
+		/// Called every frame before the physics world is updated.
+		/// </summary>
+		/// <param name="frameTime"></param>
 		protected virtual void OnPrePhysicsUpdate(float frameTime) { }
 		#endregion
 

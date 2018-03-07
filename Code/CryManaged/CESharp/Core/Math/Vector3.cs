@@ -76,7 +76,7 @@ namespace CryEngine
 
 		public override string ToString()
 		{
-			return string.Format(CultureInfo.CurrentCulture, "{0},{1},{2}", _x, _y, _z);
+			return string.Format(CultureInfo.CurrentCulture, "{0}, {1}, {2}", _x, _y, _z);
 		}
 		#endregion
 

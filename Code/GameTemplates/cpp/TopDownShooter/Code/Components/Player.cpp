@@ -173,7 +173,7 @@ void CPlayerComponent::SpawnCursorEntity()
 
 	// Load geometry
 	const int geometrySlot = 0;
-	m_pCursorEntity->LoadGeometry(geometrySlot, "Objects/Default/primitive_sphere.cgf");
+	m_pCursorEntity->LoadGeometry(geometrySlot, "%ENGINE%/EngineAssets/Objects/primitive_sphere.cgf");
 
 	// Scale the cursor down a bit
 	m_pCursorEntity->SetScale(Vec3(0.1f));

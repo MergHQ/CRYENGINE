@@ -45,7 +45,7 @@ void CPlayerComponent::Initialize()
 
 	m_pPathfindingComponent->SetMovementRecommendationCallback([this](const Vec3& recommendedVelocity)
 	{
-		m_pCharacterController->AddVelocity(recommendedVelocity.GetNormalized() * m_movmentSpeed);
+		m_pCharacterController->AddVelocity(recommendedVelocity.GetNormalized() * m_movmentSpeed * gEnv->pTimer->GetFrameTime());
 
 		// Stop the player if we reached the target location.
 		if (recommendedVelocity == ZERO)
@@ -178,7 +178,7 @@ void CPlayerComponent::SpawnCursorEntity()
 
 	// Load geometry
 	const int geometrySlot = 0;
-	m_pCursorEntity->LoadGeometry(geometrySlot, "Objects/Default/primitive_sphere.cgf");
+	m_pCursorEntity->LoadGeometry(geometrySlot, "%ENGINE%/EngineAssets/Objects/primitive_sphere.cgf");
 
 	// Scale the cursor down a bit
 	m_pCursorEntity->SetScale(Vec3(0.1f));

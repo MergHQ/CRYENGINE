@@ -85,10 +85,29 @@ namespace CryEngine
 		/// </summary>
 		public interface IMouseOverride
 		{
+			/// <summary>
+			/// Called when the left mouse button is pressed down.
+			/// </summary>
 			event MouseEventHandler LeftButtonDown;
+			
+			/// <summary>
+			/// Called when the left mouse button was pressed down is now up again.
+			/// </summary>
 			event MouseEventHandler LeftButtonUp;
+
+			/// <summary>
+			/// Called when the right mouse button is pressed down.
+			/// </summary>
 			event MouseEventHandler RightButtonDown;
+
+			/// <summary>
+			/// Called when the right mouse button was pressed down is now up again.
+			/// </summary>
 			event MouseEventHandler RightButtonUp;
+
+			/// <summary>
+			/// Called when the mouse has moved.
+			/// </summary>
 			event MouseEventHandler Move;
 		}
 

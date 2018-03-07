@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace CryEngine.Core.Util
 {
-	public class AutoPinner : IDisposable
+	internal class AutoPinner : IDisposable
 	{
 		public GCHandle Handle { get; }
 		public object Target { get; }

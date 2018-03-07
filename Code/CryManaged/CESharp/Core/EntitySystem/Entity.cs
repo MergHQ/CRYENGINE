@@ -588,6 +588,28 @@ namespace CryEngine
 		}
 
 		/// <summary>
+		/// Load a primitive geometry shape from the engine-assets.
+		/// </summary>
+		/// <param name="slot"></param>
+		/// <param name="primitiveShape"></param>
+		public void LoadGeometry(int slot, Primitives primitiveShape)
+		{
+			string[] urls = new string[]
+			{
+				"%ENGINE%/EngineAssets/Objects/primitive_box.cgf",
+				"%ENGINE%/EngineAssets/Objects/primitive_cube.cgf",
+				"%ENGINE%/EngineAssets/Objects/primitive_cube_small.cgf",
+				"%ENGINE%/EngineAssets/Objects/primitive_cylinder.cgf",
+				"%ENGINE%/EngineAssets/Objects/primitive_plane_small.cgf",
+				"%ENGINE%/EngineAssets/Objects/primitive_pyramid.cgf",
+				"%ENGINE%/EngineAssets/Objects/primitive_sphere.cgf",
+				"%ENGINE%/EngineAssets/Objects/primitive_sphere_small.cgf"
+			};
+
+			NativeHandle.LoadGeometry(slot, urls[(int)primitiveShape]);
+		}
+
+		/// <summary>
 		/// Loads a character to the specified slot, or to next available slot.
 		/// If same character is already loaded in this slot, operation is ignored.
 		/// If this slot number is occupied by a different kind of object it is overwritten.
