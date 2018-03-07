@@ -159,8 +159,8 @@ void CParticleEmitter::Update()
 
 namespace Bounds
 {
-	static const float Expansion       = 1.125f;
-	static const float ShrinkThreshold = 0.5f;
+	static float Expansion       = 1.125f;
+	static float ShrinkThreshold = 0.5f;
 }
 
 void CParticleEmitter::UpdateBoundingBox(const float frameTime)
@@ -559,6 +559,7 @@ void CParticleEmitter::UpdateRuntimes()
 		for (auto& pComponent : m_pEffect->GetComponents())
 		{
 			pComponent = new CParticleComponent(*pComponent);
+			pComponent->SetEffect(m_pEffect);
 			pComponent->ClearChildren();
 			if (auto pParentComponent = pComponent->GetParentComponent())
 			{

@@ -116,9 +116,11 @@ void SComponentParams::Serialize(Serialization::IArchive& ar)
 
 void SComponentParams::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
 {
-	float rate = m_maxParticleRate + m_maxParticlesPerFrame * maxFPS;
-	float extendedLife = m_maxParticleLifeTime + rcp(minFPS); // Particles stay 1 frame after death
-	total = m_maxParticlesBurst + int_ceil(rate * extendedLife);
+	total = m_maxParticlesBurst;
+	const float rate = m_maxParticleRate + m_maxParticlesPerFrame * maxFPS;
+	const float extendedLife = m_maxParticleLifeTime + rcp(minFPS); // Particles stay 1 frame after death
+	if (rate > 0.0f && std::isfinite(extendedLife))
+		total += int_ceil(rate * extendedLife);
 	perFrame = int(m_maxParticlesBurst + m_maxParticlesPerFrame) + int_ceil(m_maxParticleRate / minFPS);
 }
 
@@ -127,7 +129,7 @@ void SComponentParams::GetMaxParticleCounts(int& total, int& perFrame, float min
 
 CParticleComponent::CParticleComponent()
 	: m_dirty(true)
-	, m_pEffect(0)
+	, m_pEffect(nullptr)
 	, m_parent(nullptr)
 	, m_componentId(gInvalidId)
 	, m_nodePosition(-1.0f, -1.0f)

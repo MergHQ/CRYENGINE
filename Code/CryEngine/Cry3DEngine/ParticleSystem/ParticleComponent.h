@@ -196,6 +196,7 @@ public:
 
 	uint                                  GetComponentId() const                { return m_componentId; }
 	CParticleEffect*                      GetEffect() const                     { return m_pEffect; }
+	void                                  SetEffect(CParticleEffect* pEffect)   { m_pEffect = pEffect; }
 
 	template<typename T> TDataOffset<T>   AddInstanceData()                     { return AddInstanceData(sizeof(T)); }
 	void                                  AddParticleData(EParticleDataType type);
