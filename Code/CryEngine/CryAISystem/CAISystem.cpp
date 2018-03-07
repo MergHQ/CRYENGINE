@@ -2277,7 +2277,8 @@ void CAISystem::LoadLevelData(const char* szLevel, const char* szMission, const 
 //====================================================================
 void CAISystem::OnMissionLoaded()
 {
-
+	// Need to enable off-mesh link registering in the case navigation data wasn't loaded (for example when creating a new level).
+	gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->Enable();
 }
 
 //
