@@ -219,12 +219,6 @@ void CParticleComponent::SetParent(IParticleComponent* pParentComponent)
 	if (m_parent)
 		stl::push_back_unique(m_parent->m_children, this);
 }
-void CParticleComponent::SetParentComponent(CParticleComponent* pParentComponent, bool delayed)
-{
-	SetParent(pParentComponent);
-	if (delayed)
-		m_componentParams.m_emitterLifeTime.end = gInfinity;
-}
 
 void CParticleComponent::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
 {
@@ -365,12 +359,15 @@ void CParticleComponent::Compile()
 	{
 		if (!(featureMask & b))
 		{
-			if (auto* params = GetPSystem()->GetDefaultFeatureParam(EFeatureType(b)))
+			if (EFeatureType(b) != EFT_Child || m_parent)
 			{
-				if (auto* feature = params->m_pFactory())
+				if (auto* params = GetPSystem()->GetDefaultFeatureParam(EFeatureType(b)))
 				{
-					m_defaultFeatures.push_back(pfx2::TParticleFeaturePtr(static_cast<CParticleFeature*>(feature)));
-					static_cast<CParticleFeature*>(feature)->AddToComponent(this, &m_componentParams);
+					if (auto* feature = params->m_pFactory())
+					{
+						m_defaultFeatures.push_back(pfx2::TParticleFeaturePtr(static_cast<CParticleFeature*>(feature)));
+						static_cast<CParticleFeature*>(feature)->AddToComponent(this, &m_componentParams);
+					}
 				}
 			}
 		}
@@ -456,6 +453,26 @@ void CParticleComponent::Serialize(Serialization::IArchive& ar)
 		SetName(inputName.c_str());
 	}
 
+	if (!ar.isEdit())
+	{
+		string parentName;
+		if (ar.isOutput())
+		{
+			if (m_parent)
+			{
+				parentName = m_parent->GetName();
+				ar(parentName, "Parent");
+			}
+		}
+		else if (ar.isInput())
+		{
+			if (ar(parentName, "Parent"))
+			{
+				assert(m_pEffect);
+				SetParent(m_pEffect->FindComponentByName(parentName));
+			}
+		}
+	}
 
 	Serialization::SContext context(ar, static_cast<IParticleComponent*>(this));
 	ar(m_componentParams, "Stats", "Component Statistics");

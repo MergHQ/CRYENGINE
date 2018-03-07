@@ -123,8 +123,6 @@ void CParticleComponentRuntime::UpdateParticles(const SUpdateContext& context)
 
 	UpdateLocalSpace(context.m_updateRange);
 
-	OnKillParticles(context);
-
 	m_particleStats.updated += context.m_updateRange.size();
 }
 
@@ -144,6 +142,9 @@ void CParticleComponentRuntime::AddSubInstances(TVarArray<SInstance> instances)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
+	SUpdateContext context(this);
+	GetComponent()->CullSubInstances(context, instances);
+
 	if (instances.empty())
 		return;
 
@@ -154,7 +155,6 @@ void CParticleComponentRuntime::AddSubInstances(TVarArray<SInstance> instances)
 	m_subInstances.append(instances);
 	m_subInstanceData.resize(params.m_instanceDataStride * m_subInstances.size());
 	
-	SUpdateContext context(this);
 	SUpdateRange instanceRange(firstInstance, lastInstance);
 	GetComponent()->InitSubInstances(context, instanceRange);
 
@@ -251,6 +251,7 @@ SChaosKey CParticleComponentRuntime::MakeParentSeed(TParticleId particleId) cons
 
 void CParticleComponentRuntime::AddParticles(const SUpdateContext& context)
 {
+	GetComponent()->AddSubInstances(context);
 	TDynArray<SSpawnEntry> spawnEntries;
 	if (GetNumInstances())
 		GetComponent()->SpawnParticles(context, spawnEntries);
@@ -291,25 +292,6 @@ void CParticleComponentRuntime::RemoveParticles(const SUpdateContext& context)
 					pSubRuntime->ReparentParticles(swapIds);
 			}
 		}
-	}
-}
-
-void CParticleComponentRuntime::OnKillParticles(const SUpdateContext &context)
-{
-	if (GetComponent()->KillParticles.size())
-	{
-		TParticleIdArray particleIds(*context.m_pMemHeap);
-		particleIds.reserve(m_container.GetNumParticles());
-		IOFStream normAges = m_container.GetIOFStream(EPDT_NormalAge);
-
-		for (auto particleId : context.GetUpdateRange())
-		{
-			const float age = normAges.Load(particleId);
-			if (IsExpired(age))
-				particleIds.push_back(particleId);
-		}
-		if (!particleIds.empty())
-			GetComponent()->KillParticles(context, particleIds);
 	}
 }
 
@@ -573,6 +555,7 @@ void CParticleComponentRuntime::UpdateGPURuntime(const SUpdateContext& context)
 	
 	GetComponent()->UpdateGPUParams(context, params);
 
+	GetComponent()->AddSubInstances(context);
 	TDynArray<SSpawnEntry> spawnEntries;
 	if (GetNumInstances())
 		GetComponent()->SpawnParticles(context, spawnEntries);

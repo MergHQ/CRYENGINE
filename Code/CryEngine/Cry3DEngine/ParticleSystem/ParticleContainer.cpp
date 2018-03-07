@@ -274,6 +274,7 @@ void CParticleContainer::RemoveParticles(TVarArray<TParticleId> toRemove, TVarAr
 	}
 
 	m_lastId -= toRemove.size();
+	m_firstSpawnId = m_lastSpawnId = m_lastId;
 }
 
 void CParticleContainer::MakeSwapIds(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds)

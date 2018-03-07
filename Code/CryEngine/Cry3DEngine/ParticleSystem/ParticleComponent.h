@@ -210,7 +210,6 @@ public:
 	SComponentParams&       ComponentParams()                                   { return m_componentParams; }
 	bool                    UseParticleData(EParticleDataType type) const       { return m_useParticleData[type]; }
 
-	void                    SetParentComponent(CParticleComponent* pParentComponent, bool delayed);
 	CParticleComponent*     GetParentComponent() const                          { return m_parent; }
 	const TComponents&      GetChildComponents() const                          { return m_children; }
 	void                    ClearChildren()                                     { m_children.resize(0); }
