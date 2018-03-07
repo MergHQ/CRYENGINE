@@ -62,6 +62,11 @@ namespace CryEngine
 		#endregion
 
 		#region Constructors
+		/// <summary>
+		/// Adding this attribute to a property of an <see cref="EntityComponent"/> exposes the property to the properties panel in the Sandbox.
+		/// </summary>
+		/// <param name="type">The value type of the property. This can change the way the property behaves in the Sandbox.</param>
+		/// <param name="description">Mouse-over description of the property in the Sandbox.</param>
 		public EntityPropertyAttribute(EntityPropertyType type = EntityPropertyType.Primitive, string description = null)
 		{
 			Description = description;

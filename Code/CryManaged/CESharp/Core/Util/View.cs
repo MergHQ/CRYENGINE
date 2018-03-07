@@ -5,6 +5,9 @@ using CryEngine.Common;
 
 namespace CryEngine
 {
+	/// <summary>
+	/// Managed wrapper of the internal IView interface.
+	/// </summary>
 	public sealed class View
 	{
 		internal IView NativeHandle { get; private set; }

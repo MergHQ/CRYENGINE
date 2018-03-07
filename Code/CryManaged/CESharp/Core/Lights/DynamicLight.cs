@@ -4,6 +4,9 @@ using CryEngine.Common;
 
 namespace CryEngine
 {
+	/// <summary>
+	/// Managed wrapper of the internal SRenderLight struct.
+	/// </summary>
 	public class DynamicLight : RenderLight
 	{
 		/// <summary>

@@ -104,6 +104,7 @@
     <Compile Include="EntitySystem\EntityId.cs" />
     <Compile Include="EntitySystem\EntityProperty.cs" />
     <Compile Include="EntitySystem\EntityStatics.cs" />
+    <Compile Include="EntitySystem\Enums\Primitives.cs" />
     <Compile Include="EntitySystem\Native\NativeEntityMethods.cs" />
     <Compile Include="EntitySystem\PhysicsEntity.cs" />
     <Compile Include="Input\ActionHandler.cs" />

@@ -61,6 +61,9 @@ namespace CryEngine.EntitySystem
 	/// </summary>
 	public class PhysicsObject
 	{
+		/// <summary>
+		/// Handle to the entity of this PhysicsObject. Use <see cref="OwnerEntity"/> to get the handle safely.
+		/// </summary>
 		protected Entity _entity;
 
 		internal virtual IPhysicalEntity NativeHandle { get; private set; }
@@ -258,6 +261,12 @@ namespace CryEngine.EntitySystem
 			NativeHandle.Action(actionParams);
 		}
 
+		/// <summary>
+		/// Get the status of the <see cref="PhysicsEntity"/>. 
+		/// The type of status can be specified by choosing from for example <see cref="DynamicsStatus"/>, <see cref="LivingStatus"/>, or <see cref="VehicleStatus"/>.
+		/// </summary>
+		/// <typeparam name="T">The type of the <see cref="BasePhysicsStatus"/> to be retrieved, for example <see cref="DynamicsStatus"/></typeparam>
+		/// <returns></returns>
 		public T GetStatus<T>() where T : BasePhysicsStatus, new()
 		{
 			var status = new T();
@@ -267,6 +276,10 @@ namespace CryEngine.EntitySystem
 			return status;
 		}
 
+		/// <summary>
+		/// Set the physics-type of this <see cref="PhysicsEntity"/>.
+		/// </summary>
+		/// <param name="nativeType"></param>
 		protected void SetType(pe_type nativeType)
 		{
 			switch(nativeType)
