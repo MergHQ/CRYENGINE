@@ -263,7 +263,7 @@ void CLightEntity::UpdateGSMLightSourceShadowFrustum(const SRenderingPassInfo& p
 	float fRadiusLastLod = 0;
 
 	int nNextLod = 0;
-	nNextLod  = UpdateGSMLightSourceDynamicShadowFrustum(nDynamicLodCount, nCachedLodCount, fDistFromView, fRadiusLastLod, nCachedLodCount == 0, passInfo);
+	nNextLod = UpdateGSMLightSourceDynamicShadowFrustum(nDynamicLodCount, nCachedLodCount, fDistFromView, fRadiusLastLod, nCachedLodCount == 0, passInfo);
 	nNextLod += UpdateGSMLightSourceCachedShadowFrustum(nDynamicLodCount, nCachedLodCount, isHeightMapAOEnabled, fDistFromView, fRadiusLastLod, passInfo);
 	nNextLod += UpdateGSMLightSourceNearestShadowFrustum(nNextLod, passInfo);
 
@@ -483,7 +483,7 @@ int CLightEntity::UpdateGSMLightSourceNearestShadowFrustum(int nFrustumIndex, co
 
 bool CLightEntity::IsOnePassTraversalFrustum(const ShadowMapFrustum* pFr)
 {
-	return GetCVars()->e_OnePassOctreeTraversal && (
+	return (
 	  pFr->m_eFrustumType == ShadowMapFrustum::e_PerObject ||
 	  pFr->m_eFrustumType == ShadowMapFrustum::e_GsmCached ||
 	  pFr->m_eFrustumType == ShadowMapFrustum::e_HeightMapAO ||
@@ -507,18 +507,18 @@ bool CLightEntity::ProcessFrustum(int nLod, float fGSMBoxSize, float fDistanceFr
 		InitShadowFrustum_SUN_Conserv(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, fGSMBoxSize, fDistanceFromView, nLod, passInfo);
 
 		const uint32 renderNodeFlags = pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance ? ERF_DYNAMIC_DISTANCESHADOWS : 0xFFFFFFFF;
-		FillFrustumCastersList_SUN(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, renderNodeFlags, lstCastersHull, nLod, passInfo);
+		SetupShadowFrustumCamera_SUN(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, renderNodeFlags, lstCastersHull, nLod, passInfo);
 	}
 	else if (m_light.m_Flags & (DLF_PROJECT | DLF_AREA_LIGHT))
 	{
 		InitShadowFrustum_PROJECTOR(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, passInfo);
-		FillFrustumCastersList_PROJECTOR(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, passInfo);
+		SetupShadowFrustumCamera_PROJECTOR(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, passInfo);
 	}
 	else
 	{
 		pFr->bOmniDirectionalShadow = true;
 		InitShadowFrustum_OMNI(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, passInfo);
-		FillFrustumCastersList_OMNI(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, passInfo);
+		SetupShadowFrustumCamera_OMNI(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, passInfo);
 	}
 
 	CalculateShadowBias(pFr, nLod, fGSMBoxSize);
@@ -1656,7 +1656,7 @@ int CLightEntity::MakeShadowCastersHull(PodArray<SPlaneObject>& lstCastersHull, 
 	return lstCastersHull.Count();
 }
 
-void CLightEntity::FillFrustumCastersList_SUN(ShadowMapFrustum* pFr, int dwAllowedTypes, int nRenderNodeFlags, PodArray<SPlaneObject>& lstCastersHull, int nLod, const SRenderingPassInfo& passInfo)
+void CLightEntity::SetupShadowFrustumCamera_SUN(ShadowMapFrustum* pFr, int dwAllowedTypes, int nRenderNodeFlags, PodArray<SPlaneObject>& lstCastersHull, int nLod, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -1703,16 +1703,10 @@ void CLightEntity::FillFrustumCastersList_SUN(ShadowMapFrustum* pFr, int dwAllow
 	if (pFr->isUpdateRequested())
 	{
 		pFr->ResetCasterLists();
-		if (pFr->m_eFrustumType != ShadowMapFrustum::e_GsmDynamicDistance || GetCVars()->e_DynamicDistanceShadows > 0)
-		{
-			PodArray<SPlaneObject>* pShadowHull = (pFr->nShadowMapLod && !passInfo.IsRenderingCubemap()) ? &lstCastersHull : NULL;
-			m_pObjManager->MakeShadowCastersList((CVisArea*)GetEntityVisArea(), GetBBox(),
-			                                     dwAllowedTypes, nRenderNodeFlags, pFr->vLightSrcRelPos + pFr->vLightSrcRelPos, &m_light, pFr, pShadowHull, passInfo);
-		}
 	}
 }
 
-void CLightEntity::FillFrustumCastersList_PROJECTOR(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo)
+void CLightEntity::SetupShadowFrustumCamera_PROJECTOR(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -1731,16 +1725,14 @@ void CLightEntity::FillFrustumCastersList_PROJECTOR(ShadowMapFrustum* pFr, int d
 		FrustCam.SetMatrix(mat);
 		FrustCam.SetFrustum(pFr->nTexSize, pFr->nTexSize, pFr->fFOV * (gf_PI / 180.0f), pFr->fNearDist, pFr->fFarDist);
 
-		m_pObjManager->MakeShadowCastersList((CVisArea*)GetEntityVisArea(), GetBBox(),
-		                                     dwAllowedTypes, 0xFFFFFFFF, pFr->vLightSrcRelPos + GetBBox().GetCenter(), &m_light, pFr, NULL, passInfo);
-
-		DetectCastersListChanges(pFr, passInfo);
+		pFr->ResetCasterLists();
+		pFr->RequestUpdate();
 
 		pFr->aabbCasters.Reset(); // fix: should i .Reset() pFr->aabbCasters ?
 	}
 }
 
-void CLightEntity::FillFrustumCastersList_OMNI(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo)
+void CLightEntity::SetupShadowFrustumCamera_OMNI(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -1758,70 +1750,13 @@ void CLightEntity::FillFrustumCastersList_OMNI(ShadowMapFrustum* pFr, int dwAllo
 		FrustCam.SetMatrix(mat);
 		FrustCam.SetFrustum(256, 256, pFr->fFOV * (gf_PI / 180.0f) * 0.9f, pFr->fNearDist, pFr->fFarDist);
 
-		m_pObjManager->MakeShadowCastersList((CVisArea*)GetEntityVisArea(), GetBBox(),
-		                                     dwAllowedTypes, 0xFFFFFFFF, pFr->vLightSrcRelPos + GetBBox().GetCenter(), &m_light, pFr, NULL, passInfo);
-
-		DetectCastersListChanges(pFr, passInfo);
+		pFr->ResetCasterLists();
+		pFr->RequestUpdate();
 
 		pFr->aabbCasters.Reset(); // fix: should i .Reset() pFr->aabbCasters ?
 
 		// Update all omni frustums
 		pFr->UpdateOmniFrustums();
-	}
-}
-
-void CLightEntity::DetectCastersListChanges(ShadowMapFrustum* pFr, const SRenderingPassInfo& passInfo)
-{
-	const auto frameID = passInfo.GetFrameID();
-
-	if (pFr->pOnePassShadowView)
-	{
-		pFr->RequestUpdate();
-	}
-	else
-	{
-		uint32 uCastersListCheckSum = 0;
-		for (int i = 0; i < pFr->castersList.Count(); i++)
-		{
-			IShadowCaster* pNode = pFr->castersList.GetAt(i);
-			const AABB entBox = pNode->GetBBoxVirtual();
-			uCastersListCheckSum += uint32((entBox.min.x + entBox.min.y + entBox.min.z) * 10000.f);
-			uCastersListCheckSum += uint32((entBox.max.x + entBox.max.y + entBox.max.z) * 10000.f);
-
-			ICharacterInstance* pChar = pNode->GetEntityCharacter();
-
-			if (pChar)
-			{
-				ISkeletonAnim* pISkeletonAnim = pChar->GetISkeletonAnim();
-				if (pISkeletonAnim)
-				{
-					uint32 numAnimsLayer0 = pISkeletonAnim->GetNumAnimsInFIFO(0);
-					if (numAnimsLayer0 != 0)
-					{
-						pFr->RequestUpdate();
-					}
-				}
-			}
-		}
-
-		if (pFr->fRadius < DISTANCE_TO_THE_SUN)
-		{
-			uCastersListCheckSum += uint32((m_WSBBox.min.x + m_WSBBox.min.y + m_WSBBox.min.z) * 10000.f);
-			uCastersListCheckSum += uint32((m_WSBBox.max.x + m_WSBBox.max.y + m_WSBBox.max.z) * 10000.f);
-		}
-
-		if (pFr->uCastersListCheckSum != uCastersListCheckSum)
-		{
-			pFr->RequestUpdate();
-			pFr->uCastersListCheckSum = uCastersListCheckSum;
-
-			if (GetCVars()->e_ShadowsDebug == 3)
-			{
-				const char* szName = ((CLightEntity*)(pFr->pLightOwner))->m_light.m_sName;
-				PrintMessage("Requesting %s shadow update for %s, frame id = %d",
-				             pFr->bOmniDirectionalShadow ? "Cube" : "2D", szName, frameID);
-			}
-		}
 	}
 }
 
@@ -1842,7 +1777,6 @@ void CLightEntity::OnCasterDeleted(IShadowCaster* pCaster)
 	{
 		if (ShadowMapFrustum* pFr = m_pShadowMapInfo->pGSM[nGsmId])
 		{
-			pFr->castersList.Delete(pCaster);
 		}
 	}
 }
@@ -2172,13 +2106,9 @@ void CLightEntity::ProcessPerObjectFrustum(ShadowMapFrustum* pFr, struct SPerObj
 	pFr->m_eFrustumType = ShadowMapFrustum::e_PerObject;
 	pFr->RequestUpdate();
 	pFr->ResetCasterLists();
-	pFr->castersList.Add(pPerObjectShadow->pCaster);
 
-	if (pPerObjectShadow->pCaster->GetRenderNodeType() == eERType_MovableBrush || pPerObjectShadow->pCaster->GetRenderNodeType() == eERType_Character)
-	{
-		// mark the object to be rendered into shadow map
-		COctreeNode::SetTraversalFrameId((IRenderNode*)pPerObjectShadow->pCaster, passInfo.GetMainFrameID(), ~0);
-	}
+	// mark the object to be rendered into shadow map
+	COctreeNode::SetTraversalFrameId((IRenderNode*)pPerObjectShadow->pCaster, passInfo.GetMainFrameID(), ~0);
 
 	// get caster's bounding box and scale
 	AABB objectBBox;

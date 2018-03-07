@@ -1645,7 +1645,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	std::vector<std::pair<ShadowMapFrustum*, const CLightEntity*>> shadowFrustums;  // Shadow frustums and lights used in scene
 	uint32 passCullMask = kPassCullMainMask;                                        // initialize main view bit as visible
 
-	if (GetCVars()->e_OnePassOctreeTraversal && passInfo.RenderShadows() && !passInfo.IsRecursivePass())
+	if (passInfo.RenderShadows() && !passInfo.IsRecursivePass())
 	{
 		// Collect shadow passes used in scene and allocate render view for each of them
 		uint32 nTimeSlicedShadowsUpdatedThisFrame = 0;
@@ -1799,12 +1799,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		GetObjManager()->PushIntoCullQueue(SCheckOcclusionJobData::CreateQuitJobData());
 	}
 
-	if (!GetCVars()->e_OnePassOctreeTraversal)
-	{
-		// fill shadow list here to allow more time between starting and waiting for the occlusion buffer
-		InitShadowFrustums(passInfo);
-	}
-
 	if (passInfo.IsGeneralPass())
 	{
 		gEnv->pSystem->DoWorkDuringOcclusionChecks();
@@ -1824,8 +1818,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		m_pObjManager->RenderNonJobObjects(passInfo);
 	}
 
-	if (GetCVars()->e_OnePassOctreeTraversal)
-	{
 		// all shadow casters are submitted, switch render views into eUsageModeWritingDone mode
 		for (const auto& pair : shadowFrustums)
 		{
@@ -1833,7 +1825,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 			CRY_ASSERT(shadowFrustum->pOnePassShadowView);
 			shadowFrustum->pOnePassShadowView->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
 		}
-	}
 
 	// Call postrender on the meshes that require it.
 	// Call it before InvokeShadowMapRenderJobs, otherwise render meshes are not constructed at the moment of shadow gen render calls
@@ -1928,8 +1919,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed() && JobManager::InvokeAsJob("CheckOcclusion"))
 		m_pObjManager->EndOcclusionCulling();
 
-	if (GetCVars()->e_OnePassOctreeTraversal)
-	{
 		// release shadow views (from now only renderer owns it)
 		for (const auto& pair : shadowFrustums)
 		{
@@ -1937,8 +1926,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 			CRY_ASSERT(shadowFrustum->pOnePassShadowView);
 			shadowFrustum->pOnePassShadowView.reset();
 		}
-		const_cast<SRenderingPassInfo&>(passInfo).SetShadowPasses(nullptr);
-	}
 }
 
 void C3DEngine::ResetCoverageBufferSignalVariables()

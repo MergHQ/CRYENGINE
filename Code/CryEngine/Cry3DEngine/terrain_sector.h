@@ -510,6 +510,7 @@ public:
 	void                         OffsetPosition(const Vec3& delta);
 	_smart_ptr<IRenderMesh>      GetSharedRenderMesh(int nDim);
 	uint32                       GetMaterialsModificationId();
+	void                         SetTraversalFrameId(uint32 onePassTraversalFrameId, int shadowFrustumLod);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Member variables

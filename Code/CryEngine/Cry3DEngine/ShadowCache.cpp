@@ -84,7 +84,6 @@ void ShadowCacheGenerator::InitShadowFrustum(ShadowMapFrustumPtr& pFr, int nLod,
 	pFr->fBlendVal = pFr->bBlendFrustum ? GetCVars()->e_ShadowsBlendCascadesVal : 1.0f;
 	InitCachedFrustum(pFr, nUpdateStrategy, nLod, shadowCacheLod, nTexRes, m_pLightEntity->GetLightProperties().m_Origin, projectionBoundsLS, passInfo);
 
-
 	// frustum debug
 	if (GetCVars()->e_ShadowsCacheUpdate > 2 || GetCVars()->e_ShadowsFrustums > 0)
 	{
@@ -181,7 +180,6 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 		bExcludeDynamicDistanceShadows ? ERF_DYNAMIC_DISTANCESHADOWS : 0, maxNodesPerFrame, passInfo);
 	AddTerrainCastersToFrustum(pFr, passInfo);
 	
-
 	pFr->Invalidate();
 	pFr->bIncrementalUpdate = nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate && pFr->pShadowCacheData->mObjectsRendered != 0;
 }
@@ -318,6 +316,8 @@ void ShadowCacheGenerator::AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, con
 		PodArray<CTerrainNode*> lstTerrainNodes;
 		GetTerrain()->IntersectWithBox(pFr->aabbCasters, &lstTerrainNodes);
 
+		bool bCastersFound = false;
+
 		for (int s = 0; s < lstTerrainNodes.Count(); s++)
 		{
 			CTerrainNode* pNode = lstTerrainNodes[s];
@@ -332,10 +332,12 @@ void ShadowCacheGenerator::AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, con
 			if (!pFr->NodeRequiresShadowCacheUpdate(pNode))
 				continue;
 
-			pFr->castersList.Add(pNode);
+			bCastersFound = true;
+
+			pNode->SetTraversalFrameId(passInfo.GetMainFrameID(), pFr->nShadowMapLod);
 		}
 
-		if (!pFr->castersList.IsEmpty())
+		if (bCastersFound)
 			pFr->RequestUpdate();
 	}
 }

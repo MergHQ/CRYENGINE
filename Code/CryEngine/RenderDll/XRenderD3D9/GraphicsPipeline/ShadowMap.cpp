@@ -453,9 +453,7 @@ void CShadowMapStage::PreparePassIDForFrustum(const SShadowFrustumToRender& frus
 				}
 				else
 				{
-					IRenderNode* pRenderNode = reinterpret_cast<IRenderNode*>((IRenderNode*)frustum.castersList.front());
-					const char* szName = pRenderNode->GetName();
-					cry_sprintf(profileLabel, "SUN PER OBJECT %s", szName ? szName : "UNKNOWN");
+					cry_sprintf(profileLabel, "SUN PER OBJECT");
 				}
 			}
 			break;

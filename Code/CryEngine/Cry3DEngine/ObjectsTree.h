@@ -368,11 +368,10 @@ public:
 	void                     RenderDecalsAndRoads(TDoublyLinkedList<IRenderNode>* lstObjects, const uint32 passCullMask, int nRenderMask, const Vec3& vAmbColor, const bool bOcNodeCompletelyInFrustum, PodArray<SRenderLight*>* pAffectingLights, const SRenderingPassInfo& passInfo);
 	void                     RenderBrushes(TDoublyLinkedList<IRenderNode>* lstObjects, const uint32 passCullMask, const bool bOcNodeCompletelyInFrustum, PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo);
 	static void              RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfo, float fEntDistance, IRenderNode* pObj, const AABB& objBox, const uint32 passCullMask, const CLodValue* lodValue, const SRendParams* rendParams, PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo);
+	static bool              IsShadowCaster(IRenderNode* pObj);
 	PodArray<SRenderLight*>* GetAffectingLights(const SRenderingPassInfo& passInfo);
 	void                     AddLightSource(SRenderLight* pSource, const SRenderingPassInfo& passInfo);
 	void                     CheckInitAffectingLights(const SRenderingPassInfo& passInfo);
-	void                     FillShadowCastersList(bool bNodeCompletellyInFrustum, SRenderLight* pLight, struct ShadowMapFrustum* pFr, PodArray<SPlaneObject>* pShadowHull, uint32 nRenderNodeFlags, const SRenderingPassInfo& passInfo);
-	void                     FillShadowMapCastersList(const ShadowMapFrustumParams& params, bool bNodeCompletellyInFrustum);
 	void                     InvalidateCachedShadowData();
 	void                     ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, IGeneralMemoryHeap* pHeap, const AABB& layerBox);
 	void                     GetLayerMemoryUsage(uint16 nLayerId, ICrySizer* pSizer, int* pNumBrushes, int* pNumDecals);
@@ -495,13 +494,11 @@ private:
 
 	COctreeNode*                     m_arrChilds[8];
 	TDoublyLinkedList<IRenderNode>   m_arrObjects[eRNListType_ListsNum];
-	PodArray<SCasterInfo>            m_lstCasters[eRNListType_ListsNum];
 	Vec3                             m_vNodeCenter;
 	Vec3                             m_vNodeAxisRadius;
 	PodArray<SRenderLight*>          m_lstAffectingLights;
 	uint32                           m_nLightMaskFrameId;
 	COctreeNode*                     m_pParent;
-	uint32                           nFillShadowCastersSkipFrameId;
 	float                            m_fNodeDistance;
 	int                              m_nManageVegetationsFrameId;
 

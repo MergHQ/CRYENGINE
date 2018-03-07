@@ -471,11 +471,6 @@ CTerrainNode::~CTerrainNode()
 		GetTerrain()->m_pTerrainUpdateDispatcher->RemoveJob(this);
 
 	Get3DEngine()->OnCasterDeleted(this);
-	if (GetRenderer())
-	{
-		if (ShadowFrustumMGPUCache* pFrustumCache = GetRenderer()->GetShadowFrustumMGPUCache())
-			pFrustumCache->DeleteFromCache(this);
-	}
 
 	ReleaseHeightMapGeometry();
 
@@ -1587,4 +1582,19 @@ void CTerrainNode::OffsetPosition(const Vec3& delta)
 void CTerrainNode::FillBBox(AABB& aabb)
 {
 	aabb = GetBBox();
+}
+
+void CTerrainNode::SetTraversalFrameId(uint32 onePassTraversalFrameId, int shadowFrustumLod)
+{
+	if (m_onePassTraversalFrameId != onePassTraversalFrameId)
+	{
+		m_onePassTraversalShadowCascades = 0;
+		m_onePassTraversalFrameId = onePassTraversalFrameId;
+	}
+
+	m_onePassTraversalShadowCascades |= BIT(shadowFrustumLod);
+
+	// mark also the path to this node
+	if (m_pParent)
+		m_pParent->SetTraversalFrameId(onePassTraversalFrameId, shadowFrustumLod);
 }

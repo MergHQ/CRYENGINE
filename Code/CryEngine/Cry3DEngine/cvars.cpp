@@ -765,8 +765,6 @@ void CVars::Init()
 	              "Controls objects tree balancing");
 	REGISTER_CVAR(e_ObjectsTreeNodeSizeRatio, 1.f / 16.f, VF_CHEAT,
 	              "Controls objects tree balancing");
-	REGISTER_CVAR(e_OnePassOctreeTraversal, 1, VF_CHEAT,
-	              "If enabled - use new unified way of scene graph traversal");
 	REGISTER_CVAR(e_ExecuteRenderAsJobMask, BIT(eERType_Brush) | BIT(eERType_Vegetation) | BIT(eERType_Road) | BIT(eERType_WaterVolume), VF_NULL,
 	              "Each bit specifies object type to render it in jobs");
 	REGISTER_CVAR(e_ObjectsTreeLevelsDebug, 0, VF_CHEAT,

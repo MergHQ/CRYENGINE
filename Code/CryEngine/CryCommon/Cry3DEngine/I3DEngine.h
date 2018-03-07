@@ -2136,8 +2136,6 @@ struct I3DEngine : public IProcess
 
 	virtual bool        IsAreaActivationInUse() = 0;
 
-	virtual void        RenderRenderNode_ShadowPass(IShadowCaster* pRNode, const SRenderingPassInfo& passInfo) = 0;
-
 	virtual const char* GetVoxelEditOperationName(EVoxelEditOperation eOperation) = 0;
 
 	//! Gives 3dengine access to original and most precise heighmap data in the editor
