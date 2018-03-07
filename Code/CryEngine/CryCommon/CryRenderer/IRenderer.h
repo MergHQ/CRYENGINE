@@ -301,6 +301,13 @@ class IManager;
 #define STR_VK_RENDERER     "VK"
 #define STR_GNM_RENDERER    "GNM"
 #define STR_AUTO_RENDERER   "Auto"
+
+#define STR_ORBIS_SHADER_TARGET   "ORBIS"
+#define STR_DURANGO_SHADER_TARGET "DURANGO"
+#define STR_D3D11_SHADER_TARGET   "D3D11"
+#define STR_GL4_SHADER_TARGET     "GL4"
+#define STR_GLES3_SHADER_TARGET   "GLES3"
+#define STR_VULKAN_SHADER_TARGET  "VULKAN"
 //////////////////////////////////////////////////////////////////////
 // Render features
 

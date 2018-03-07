@@ -116,13 +116,8 @@ public:
 	static int   CV_r_watervolumecausticsdensity;
 	static int   CV_r_watervolumecausticsresolution;
 #if CRY_PLATFORM_DESKTOP
-	static int   CV_r_shadersorbis;
-	static int   CV_r_shadersdx10;
-	static int   CV_r_shadersdx11;
-	static int   CV_r_shadersGL4;
-	static int   CV_r_shadersGLES3;
-	static int   CV_r_shadersdurango;
-	static int   CV_r_shadersVulkan;
+	static ICVar*       CV_r_ShaderTarget;
+	static int          ShaderTargetFlag;
 #endif
 	//  static int CV_r_envcmwrite;
 	static int CV_r_shadersremotecompiler;

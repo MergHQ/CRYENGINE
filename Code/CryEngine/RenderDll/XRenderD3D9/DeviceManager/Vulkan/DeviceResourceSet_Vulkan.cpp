@@ -282,15 +282,21 @@ std::vector<uint8> CDeviceResourceLayout_Vulkan::EncodeDescriptorSet(const Vecto
 	{
 		SResourceBindPoint& bindPoint = it.first;
 		VkShaderStageFlags stages = GetShaderStageFlags(bindPoint.stages);
-		CRY_ASSERT_MESSAGE((stages & 0x3F) == stages, "You exceed the number of bits can be used for stages.");
-		CRY_ASSERT_MESSAGE((int)SResourceBindPoint::ESlotType::Count <= 4, "The number of slot types is changed. You need to change encoding of descriptor set accordingly.");
-		CRY_ASSERT_MESSAGE(((uint8)bindPoint.slotType & 0x3) == (uint8)bindPoint.slotType, "You exceed the number of bits can be used for slot type.");
+		uint8 descriptorCount = 1;
+
+#ifndef _RELEASE
+		if (
+			(stages & 0x3F) != stages                                      ||
+			((uint8)bindPoint.slotType & 0x3) != (uint8)bindPoint.slotType ||
+			(descriptorCount & 0x3) != descriptorCount                     ||
+			(bindPoint.slotNumber & 0x3F) != bindPoint.slotNumber
+		)
+		{
+			CryFatalError("Encoding need to be changed. Stages flags, slot type, Descriptor count, and slot number are not fitting to two bytes anymore.");
+		}
+#endif
 		uint8 slotTypeStageByte = ((uint8)bindPoint.slotType << 6) | (uint8)stages;
 		result.push_back(slotTypeStageByte);              // 6-bits for stages + 2-bits for slotType
-
-		uint8 descriptorCount = 1;
-		CRY_ASSERT_MESSAGE((bindPoint.slotNumber & 0x3F) == bindPoint.slotNumber, "You exceed the maximum slot number.");
-		CRY_ASSERT_MESSAGE((descriptorCount & 0x3) == descriptorCount, "You exceed the maximum number of encodable descriptor count.");
 		uint8 slotNumberDescriptorCountByte = (descriptorCount << 6) | bindPoint.slotNumber;
 		result.push_back(slotNumberDescriptorCountByte);  // 6-bits for slot number + 2-bits for descriptor count
 	}

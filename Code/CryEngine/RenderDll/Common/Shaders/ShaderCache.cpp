@@ -576,13 +576,13 @@ void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* C
 				cmb.eCL = eHWSC_Num;
 				s++;
 			}
+#if CRY_RENDERER_VULKAN
 			ss = strchr(s, '(');
 			if (!ss)
 			{
 				sSkipLine(s);
 				goto end;
 			}
-#if CRY_RENDERER_VULKAN
 			const char* descriptorSetBegin = ss + 1;
 			const char* descriptorSetEnd = strchr(descriptorSetBegin, ')');
 			const unsigned int descriptorSetLength = static_cast<int>(descriptorSetEnd - descriptorSetBegin);
@@ -1975,45 +1975,26 @@ void CShaderMan::mfPrecacheShaders(bool bStatsOnly)
 {
 	CHWShader::mfFlushPendedShadersWait(-1);
 
-	// Platform related CVar, PlatformID, PlatformName
-	static const std::tuple<int, uint32, string> platformsInfo[] =
-	{
-		{ CRenderer::CV_r_shadersorbis,    SF_ORBIS,   "Orbis"     },
-		{ CRenderer::CV_r_shadersdurango,  SF_DURANGO, "Durango"   },
-		{ CRenderer::CV_r_shadersdx11,     SF_D3D11,   "D3D11"     },
-		{ CRenderer::CV_r_shadersGL4,      SF_GL4,     "GLSL 4"    },
-		{ CRenderer::CV_r_shadersGLES3,    SF_GLES3,   "GLSL-ES 3" },
-		{ CRenderer::CV_r_shadersVulkan,   SF_VULKAN,  "Vulkan"    },
-	};
-
-	if (CRenderer::CV_r_shadersorbis)
+	if (CRenderer::ShaderTargetFlag & SF_ORBIS)
 	{
 	#ifdef WATER_TESSELLATION_RENDERER
 		CRenderer::CV_r_WaterTessellationHW = 0;
 	#endif
 	}
 
-	gRenDev->m_bDeviceSupportsTessellation = CRenderer::CV_r_shadersdx11 || CRenderer::CV_r_shadersGL4 || CRenderer::CV_r_shadersVulkan;
-	gRenDev->m_bDeviceSupportsGeometryShaders = CRenderer::CV_r_shadersdx11 || CRenderer::CV_r_shadersGL4 || CRenderer::CV_r_shadersVulkan || CRenderer::CV_r_shadersdurango || CRenderer::CV_r_shadersorbis;
+	gRenDev->m_bDeviceSupportsTessellation = CRenderer::ShaderTargetFlag & (SF_D3D11 | SF_GL4 | SF_VULKAN);
+	gRenDev->m_bDeviceSupportsGeometryShaders =	CRenderer::ShaderTargetFlag & (SF_D3D11 | SF_GL4 | SF_VULKAN | SF_DURANGO | SF_ORBIS);
 
-	for (const auto& platformInfo : platformsInfo)
-	{
-		if (std::get<0>(platformInfo))
-		{
-			CParserBin::m_bShaderCacheGen = true;
-			gRenDev->m_Features |= RFT_HW_SM50;
-			CParserBin::SetupForPlatform(std::get<1>(platformInfo));
-			CryLogAlways("\nStarting shader compilation for %s...", std::get<2>(platformInfo).c_str());
-			mfInitShadersList(NULL);
-			mfPreloadShaderExts();
-			_PrecacheShaderList(bStatsOnly);
+	CParserBin::m_bShaderCacheGen = true;
+	gRenDev->m_Features |= RFT_HW_SM50;
+	CParserBin::SetupForPlatform(CRenderer::ShaderTargetFlag);
+	CryLogAlways("\nStarting shader compilation for %s...", CRenderer::CV_r_ShaderTarget->GetString());
+	mfInitShadersList(NULL);
+	mfPreloadShaderExts();
+	_PrecacheShaderList(bStatsOnly);
 
-			break;
-		}
-	}
-
-	if (CRenderer::CV_r_shadersorbis)
-		_SetVar("r_ShadersOrbis", 0);
+	if (CRenderer::ShaderTargetFlag & SF_ORBIS)
+		CRenderer::ShaderTargetFlag &= ~SF_ORBIS;
 
 	CParserBin::SetupForPlatform(SF_D3D11);
 

@@ -115,7 +115,7 @@ const std::vector<uint8>* CDeviceObjectFactory::LookupResourceLayoutEncoding(uin
 void CDeviceObjectFactory::RegisterEncodedResourceLayout(uint64 layoutHash, std::vector<uint8>&& encodedLayout)
 {
 	if (m_encodedResourceLayouts.find(layoutHash) != m_encodedResourceLayouts.end())
-		CryFatalError("An encode");
+		CryFatalError("An encoded resource layout with provided hash is already available!");
 	m_encodedResourceLayouts[layoutHash] = std::move(encodedLayout);
 }
 

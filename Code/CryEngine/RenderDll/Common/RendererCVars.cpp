@@ -7,6 +7,7 @@
 #include <Cry3DEngine/ITimeOfDay.h>
 #include "DriverD3D.h"
 #include "GraphicsPipeline/DebugRenderTargets.h"
+#include <cctype>
 
 #if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
 	#define RENDERER_DEFAULT_MESHPOOLSIZE         (64U << 10)
@@ -275,13 +276,8 @@ AllocateConstIntCVar(CRendererCVars, CV_r_shadersdebug);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersCompileStrict);
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersCompileCompatible);
 #if CRY_PLATFORM_DESKTOP
-int CRendererCVars::CV_r_shadersorbis;
-int CRendererCVars::CV_r_shadersdurango;
-int CRendererCVars::CV_r_shadersdx10;
-int CRendererCVars::CV_r_shadersdx11;
-int CRendererCVars::CV_r_shadersGL4;
-int CRendererCVars::CV_r_shadersGLES3;
-int CRendererCVars::CV_r_shadersVulkan;
+ICVar*      CRendererCVars::CV_r_ShaderTarget;
+int         CRendererCVars::ShaderTargetFlag;
 #endif
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersignoreincludeschanging);
 int CRendererCVars::CV_r_shadersAllowCompilation;
@@ -682,6 +678,100 @@ static void OnChange_CV_d3d11_debugMuteMsgID(ICVar* /*pCVar*/)
 }
 #endif
 
+#if CRY_PLATFORM_DESKTOP
+static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
+{
+	if (!pCVar)
+		return;
+
+	std::string r_driverStr = gEnv->pConsole->GetCVar("r_driver")->GetString();
+	std::string shaderTargetStr(pCVar->GetString());
+	auto toUpperLamda = [](unsigned char c) -> unsigned char { return std::toupper(c); };
+	std::transform(shaderTargetStr.begin(), shaderTargetStr.end(), shaderTargetStr.begin(), toUpperLamda);
+	std::transform(r_driverStr.begin(), r_driverStr.end(), r_driverStr.begin(), toUpperLamda);
+
+#if CRY_PLATFORM_ANDROID || CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
+	if (strcmp(pCVar->GetString(), STR_GL4_SHADER_TARGET) && strcmp(pCVar->GetString(), STR_VULKAN_SHADER_TARGET))
+	{
+		pCVar->Set(STR_VULKAN_SHADER_TARGET);
+		return;
+	}
+#elif CRY_PLATFORM_DURANGO
+	if(strcmp(pCVar->GetString(), STR_DURANGO_SHADER_TARGET))
+	{
+		pCVar->Set(STR_DURANGO_SHADER_TARGET);
+		return;
+	}
+#elif CRY_PLATFORM_ORBIS
+	if (strcmp(pCVar->GetString(), STR_ORBIS_SHADER_TARGET))
+	{
+		pCVar->Set(STR_ORBIS_SHADER_TARGET);
+		return;
+	}
+#elif CRY_PLATFORM_WINDOWS
+	// Keep the shader target value
+#else
+	if (strcmp(pCVar->GetString(), STR_VULKAN_SHADER_TARGET))
+	{
+		pCVar->Set(STR_VULKAN_SHADER_TARGET);
+		return;
+	}
+#endif
+
+	if (shaderTargetStr == "")
+	{
+		CRenderer::ShaderTargetFlag = -1;
+	}
+	else if (shaderTargetStr == STR_ORBIS_SHADER_TARGET)
+	{
+		CRenderer::ShaderTargetFlag = SF_ORBIS;
+		if(r_driverStr != STR_GNM_RENDERER)
+			CryFatalError("r_driver MUST match shader target flag.");
+	}
+	else if (shaderTargetStr == STR_DURANGO_SHADER_TARGET)
+	{
+		CRenderer::ShaderTargetFlag = SF_DURANGO;
+		if (r_driverStr != STR_DX11_RENDERER && r_driverStr != STR_DX12_RENDERER)
+			CryFatalError("r_driver MUST match shader target flag.");
+	}
+	else if (shaderTargetStr == STR_D3D11_SHADER_TARGET)
+	{
+		CRenderer::ShaderTargetFlag = SF_D3D11;
+		if (r_driverStr != STR_DX11_RENDERER && r_driverStr != STR_DX12_RENDERER)
+			CryFatalError("r_driver MUST match shader target flag.");
+	}
+	else if (shaderTargetStr == STR_GL4_SHADER_TARGET)
+	{
+		CRenderer::ShaderTargetFlag = SF_GL4;
+		if (r_driverStr != STR_GL_RENDERER)
+			CryFatalError("r_driver MUST match shader target flag.");
+	}
+	else if (shaderTargetStr == STR_GLES3_SHADER_TARGET)
+	{
+		CRenderer::ShaderTargetFlag = SF_GLES3;
+		if (r_driverStr != STR_GL_RENDERER)
+			CryFatalError("r_driver MUST match shader target flag.");
+	}
+	else if (shaderTargetStr == STR_VULKAN_SHADER_TARGET)
+	{
+		CRenderer::ShaderTargetFlag = SF_VULKAN;
+		if (r_driverStr != STR_VK_RENDERER)
+			CryFatalError("r_driver MUST match shader target flag.");
+	}
+	else
+	{
+		CryFatalError("Using %s as a shader target string is not allowed. Available valid options are %s/%s/%s/%s/%s/%s", 
+			shaderTargetStr, 
+			STR_ORBIS_SHADER_TARGET, 
+			STR_DURANGO_SHADER_TARGET,
+			STR_D3D11_SHADER_TARGET,
+			STR_GL4_SHADER_TARGET,
+			STR_GLES3_SHADER_TARGET,
+			STR_VULKAN_SHADER_TARGET);
+	}
+}
+#endif
+
 static void OnChange_CV_r_PostProcess(ICVar* pCVar)
 {
 	if (!pCVar)
@@ -855,28 +945,10 @@ static void ShadersStatsList(IConsoleCmdArgs* Cmd)
 static void ShadersOptimise(IConsoleCmdArgs* Cmd)
 {
 	string userFolderCache = PathUtil::Make(gRenDev->m_cEF.m_szUserPath.c_str(), gRenDev->m_cEF.m_ShadersCache);
-
-	// Platform related CVar, PlatformID, PlatformName
-	static const std::tuple<int, uint32, string> platformsInfo[] =
-	{
-		{ CRenderer::CV_r_shadersorbis,    SF_ORBIS,   "Orbis" },
-		{ CRenderer::CV_r_shadersdurango,  SF_DURANGO, "Durango" },
-		{ CRenderer::CV_r_shadersdx11,     SF_D3D11,   "D3D11" },
-		{ CRenderer::CV_r_shadersGL4,      SF_GL4,     "GLSL 4" },
-		{ CRenderer::CV_r_shadersGLES3,    SF_GLES3,   "GLSL-ES 3" },
-		{ CRenderer::CV_r_shadersVulkan,   SF_VULKAN,  "Vulkan" },
-	};
-
-	for (const auto& platformInfo : platformsInfo)
-	{
-		if (std::get<0>(platformInfo))
-		{
-			CParserBin::SetupForPlatform(std::get<1>(platformInfo));
-			CryLogAlways("\nStarting shaders optimizing for %s...", std::get<2>(platformInfo).c_str());
-			iLog->Log("Optimize user folder: '%s'", userFolderCache.c_str());
-			gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
-		}
-	}
+	CParserBin::SetupForPlatform(CRenderer::ShaderTargetFlag);
+	CryLogAlways("\nStarting shaders optimizing for %s...", CRenderer::CV_r_ShaderTarget->GetString());
+	iLog->Log("Optimize user folder: '%s'", userFolderCache.c_str());
+	gRenDev->m_cEF.mfOptimiseShaders(userFolderCache.c_str(), false);
 }
 
 #endif
@@ -899,6 +971,14 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_GraphicsPipelinePassScheduler", CV_r_GraphicsPipelinePassScheduler, 0, VF_NULL,
 	               "Toggles render pass scheduler that submits passes in a deferred way, allowing improved multithreading and barrier scheduling.");
+	
+#if CRY_PLATFORM_DESKTOP
+	CV_r_ShaderTarget = REGISTER_STRING_CB("r_ShaderTarget", "", VF_DUMPTODISK,
+			"Shader cache generation only CVar."
+			"Sets the shader generation target ( Orbis/Durango/D3D11/GL4/GLES3/Vulkan ).\n"
+			"Specify in system.cfg like this: r_ShaderTarget = \"D3D11\"", OnChange_CV_r_ShaderTarget);
+		OnChange_CV_r_ShaderTarget(CV_r_ShaderTarget);
+#endif
 
 	REGISTER_CVAR3("r_DeferredShadingTiled", CV_r_DeferredShadingTiled, 3, VF_DUMPTODISK,
 	               "Toggles tile based shading.\n"
@@ -2107,15 +2187,6 @@ void CRendererCVars::InitCVars()
 	                    " 3 = compiler input with debug information (useful for PIX etc./{Game}/testcg_1pass\n"
 	                    " 4 = compiler input with debug information, but optimized shaders\n"
 	                    "Default is 0 (off)");
-
-#if CRY_PLATFORM_DESKTOP
-	REGISTER_CVAR3("r_ShadersOrbis", CV_r_shadersorbis, 0, VF_NULL, "");
-	REGISTER_CVAR3("r_ShadersDX11", CV_r_shadersdx11, 1, VF_NULL, "");
-	REGISTER_CVAR3("r_ShadersGL4", CV_r_shadersGL4, 1, VF_NULL, "");
-	REGISTER_CVAR3("r_ShadersGLES3", CV_r_shadersGLES3, 1, VF_NULL, "");
-	REGISTER_CVAR3("r_ShadersDurango", CV_r_shadersdurango, 1, VF_NULL, "");
-REGISTER_CVAR3("r_ShadersVulkan", CV_r_shadersVulkan, 1, VF_NULL, "");
-#endif
 
 	DefineConstIntCVar3("r_ShadersIgnoreIncludesChanging", CV_r_shadersignoreincludeschanging, 0, VF_NULL, "");
 	DefineConstIntCVar3("r_ShadersLazyUnload", CV_r_shaderslazyunload, 0, VF_NULL, "");
