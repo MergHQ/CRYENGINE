@@ -359,7 +359,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 	#endif
 #endif
 
-#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+#if CONSTANT_BUFFER_ENABLE_ALLOCATOR_MAPPING
 						if (!m_D3D110aOptions.MapNoOverwriteOnDynamicConstantBuffer)
 							CryFatalError("D3D11.1 feature 'MapNoOverwriteOnDynamicConstantBuffer' is required!");
 #endif

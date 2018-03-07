@@ -21,7 +21,7 @@ void* CDeviceObjectFactory::GetBackingStorage(D3DBuffer* buffer)
 	return NULL;
 }
 
-void CDeviceObjectFactory::FreebackingStorage(void* base_ptr)
+void CDeviceObjectFactory::FreeBackingStorage(void* base_ptr)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 #if BUFFER_ENABLE_DIRECT_ACCESS

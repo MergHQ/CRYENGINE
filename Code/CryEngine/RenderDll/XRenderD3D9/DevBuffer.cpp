@@ -1303,7 +1303,7 @@ struct CPartitionAllocator
 	uint32              m_partition;
 	uint32              m_capacity;
 
-#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+#if !BUFFER_ENABLE_DIRECT_ACCESS
 	uint32              m_map_count = 0;
 #endif
 
@@ -1353,7 +1353,7 @@ struct CPartitionAllocator
 		std::swap(m_remap[key], m_remap[m_table[roster_index]]);
 	}
 
-#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+#if !BUFFER_ENABLE_DIRECT_ACCESS
 	void map()
 	{
 		if (0 == m_map_count++)
@@ -1830,7 +1830,7 @@ struct CBufferPoolImpl final
 			if (bank.m_buffer)
 				CDeviceObjectFactory::ReleaseBasePointer(bank.m_buffer->GetBuffer());
 #endif
-			SAFE_RELEASE(bank.m_buffer);
+			SAFE_DELETE(bank.m_buffer);
 			bank.m_base_ptr = nullptr;
 		}
 	}
@@ -4029,7 +4029,7 @@ void* CConstantBuffer::BeginWrite()
 
 		void* base_ptr = m_base_ptr;
 
-	#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+	#if CONSTANT_BUFFER_ENABLE_ALLOCATOR_MAPPING
 		auto pAllocator = static_cast<CPartitionAllocator*>(m_allocator);
 		pAllocator->map();
 		base_ptr = pAllocator->base_ptr();
@@ -4076,11 +4076,10 @@ void CConstantBuffer::EndWrite(bool requires_flush)
 		// Transfer sub-set of GPU resource to CPU, also allows graphics debugger and multi-gpu broadcaster to do the right thing
 		CDeviceObjectFactory::MarkWriteRange(m_buffer->GetBuffer(), m_offset, m_size, D3D11_MAP_WRITE);
 
-#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+	#if CONSTANT_BUFFER_ENABLE_ALLOCATOR_MAPPING
 		auto pAllocator = static_cast<CPartitionAllocator*>(m_allocator);
 		pAllocator->unmap();
-#endif
-
+	#endif
 	}
 #else
 	if (m_dynamic)
@@ -4119,17 +4118,17 @@ bool CConstantBuffer::UpdateBuffer(const void* src, buffer_size_t size, buffer_s
 
 		void* base_ptr = m_base_ptr;
 
-#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+	#if CONSTANT_BUFFER_ENABLE_ALLOCATOR_MAPPING
 		auto pAllocator = static_cast<CPartitionAllocator*>(m_allocator);
 		pAllocator->map();
 		base_ptr = pAllocator->base_ptr();
-#endif
+	#endif
 
 		CDeviceObjectFactory::UploadContents<true>(m_buffer->GetBuffer(), 0, m_offset + offset, size, D3D11_MAP_WRITE_NO_OVERWRITE_CB, src, reinterpret_cast<uint8*>(base_ptr) + m_offset + offset, numDataBlocks);
 
-#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+	#if CONSTANT_BUFFER_ENABLE_ALLOCATOR_MAPPING
 		pAllocator->unmap();
-#endif
+	#endif
 
 	}
 #else
