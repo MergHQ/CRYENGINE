@@ -310,7 +310,6 @@ bool CTerrain::OpenTerrainTextureFile(SCommonFileHeader& hdrDiffTexHdr, STerrain
 #endif // _RELEASE
 
 				m_arrSecInfoPyramid[nTreeLevel][x][y]->m_nNodeTextureOffset = -1;
-				m_arrSecInfoPyramid[nTreeLevel][x][y]->m_bMergeNotAllowed = false;
 			}
 
 	// index block

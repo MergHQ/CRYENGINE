@@ -64,12 +64,13 @@ int CTerrainNode::Load_T(T*& f, int& nDataSize, EEndian eEndian, bool bSectorPal
 		CTerrain::LoadDataFromFile_FixAllignemt(f, nDataSize);
 	}
 
-	// load LOD errors
-	delete[] m_pGeomErrors;
-	m_pGeomErrors = new float[GetTerrain()->m_nUnitsToSectorBitShift];
-	if (!CTerrain::LoadDataFromFile(m_pGeomErrors, GetTerrain()->m_nUnitsToSectorBitShift, f, nDataSize, eEndian))
+	// load sector error metric, we load more floats for back compatibility with old levels
+	// TODO: switch to single float on next file format change
+	float* pTmp = new float[GetTerrain()->m_nUnitsToSectorBitShift];
+	if (!CTerrain::LoadDataFromFile(pTmp, GetTerrain()->m_nUnitsToSectorBitShift, f, nDataSize, eEndian))
 		return 0;
-	assert(m_pGeomErrors[0] == 0);
+	m_geomError = pTmp[0];
+	SAFE_DELETE_ARRAY(pTmp);
 
 	// load used surf types
 	for (int i = 0; i < m_lstSurfaceTypeInfo.Count(); i++)
@@ -222,13 +223,14 @@ int CTerrainNode::GetData(byte*& pData, int& nDataSize, EEndian eEndian, SHotUpd
 
 		// get heightmap data
 		AddToPtr(pData, nDataSize, m_rangeInfo.pHMData, m_rangeInfo.nSize * m_rangeInfo.nSize, eEndian, true);
-		//		memcpy(pData, m_rangeInfo.pHMData, nBlockSize);
-		//	UPDATE_PTR_AND_SIZE(pData,nDataSize,nBlockSize);
 
-		// get heightmap error data
-		AddToPtr(pData, nDataSize, m_pGeomErrors, GetTerrain()->m_nUnitsToSectorBitShift, eEndian);
-		//		memcpy(pData, m_pGeomErrors, GetTerrain()->m_nUnitsToSectorBitShift*sizeof(m_pGeomErrors[0]));
-		//	UPDATE_PTR_AND_SIZE(pData,nDataSize,GetTerrain()->m_nUnitsToSectorBitShift*sizeof(m_pGeomErrors[0]));
+		// get heightmap error data, we store more floats for back compatibility
+		// TODO: switch to single float on next file format change
+		float* pTmp = new float[GetTerrain()->m_nUnitsToSectorBitShift];
+		memset(pTmp, 0, sizeof(pTmp[0]) * GetTerrain()->m_nUnitsToSectorBitShift);
+		pTmp[0] = m_geomError;
+		AddToPtr(pData, nDataSize, pTmp, GetTerrain()->m_nUnitsToSectorBitShift, eEndian);
+		SAFE_DELETE_ARRAY(pTmp);
 
 		// get used surf types
 		CRY_ASSERT(m_lstSurfaceTypeInfo.Count() <= SRangeInfo::e_max_surface_types);
@@ -318,7 +320,7 @@ int CTerrainNode::GetData(byte*& pData, int& nDataSize, EEndian eEndian, SHotUpd
 		nDataSize += m_rangeInfo.nSize * m_rangeInfo.nSize * sizeof(m_rangeInfo.pHMData[0]);
 		while (nDataSize & 3)
 			nDataSize++;
-		nDataSize += GetTerrain()->m_nUnitsToSectorBitShift * sizeof(m_pGeomErrors[0]);
+		nDataSize += GetTerrain()->m_nUnitsToSectorBitShift * sizeof(float);
 		nDataSize += m_lstSurfaceTypeInfo.Count() * sizeof(uint8);
 		while (nDataSize & 3)
 			nDataSize++;
@@ -332,4 +334,47 @@ int CTerrainNode::GetData(byte*& pData, int& nDataSize, EEndian eEndian, SHotUpd
 		nNodesNum += m_pChilds[i].GetData(pData, nDataSize, eEndian, pExportInfo);
 
 	return nNodesNum;
+}
+
+void CTerrainNode::UpdateGeomError()
+{
+	FUNCTION_PROFILER_3DENGINE;
+
+	// all (x,y) values are INT in hm units
+
+	const int hmSize = int(CTerrain::GetTerrainSize() * CTerrain::GetHeightMapUnitSizeInverted());
+	const int sectorSize = int((CTerrain::GetSectorSize() << m_nTreeLevel) * CTerrain::GetHeightMapUnitSizeInverted());
+	const int meshDim = int(float(CTerrain::GetSectorSize()) / CTerrain::GetHeightMapUnitSize());
+	const int x1 = int(m_nOriginX * CTerrain::GetHeightMapUnitSizeInverted());
+	const int x2 = x1 + sectorSize;
+	const int y1 = int(m_nOriginY * CTerrain::GetHeightMapUnitSizeInverted());
+	const int y2 = y1 + sectorSize;
+	const int halfStep = sectorSize / meshDim / 2;
+
+	m_geomError = 0;
+
+	if (!halfStep)
+		return; // leaf node = no error
+
+	int mapBorder = 8;
+
+	for (int X = x1; X < x2; X += halfStep)
+	{
+		for (int Y = y1; Y < y2; Y += halfStep)
+		{
+			float z1 = .5f * GetTerrain()->GetZfromUnits(X - halfStep, Y - halfStep) + .5f * GetTerrain()->GetZfromUnits(X + halfStep, Y - halfStep);
+			float z2 = .5f * GetTerrain()->GetZfromUnits(X - halfStep, Y + halfStep) + .5f * GetTerrain()->GetZfromUnits(X + halfStep, Y + halfStep);
+
+			// skip map borders
+			if (X < mapBorder || X > (hmSize - mapBorder) || Y < mapBorder || Y > (hmSize - mapBorder))
+				continue;
+
+			float interpolatedZ = .5f * z1 + .5f * z2;
+			float realZ = GetTerrain()->GetZfromUnits(X, Y);
+			float zDiff = fabs(realZ - interpolatedZ);
+
+			if (zDiff > m_geomError)
+				m_geomError = zDiff;
+		}
+	}
 }

@@ -724,21 +724,21 @@ void CCullThread::CheckOcclusion()
 			float fDistance = sqrtf(Distance::Point_AABBSq(cameraPosition, rAABB));
 
 			// Test OctTree bounding box against main view
-			if (jobData.octTreeData.passCullMask & kPassCullMainMask && !TestAABB(rAABB, fDistance))
+			if (jobData.passCullMask & kPassCullMainMask && !TestAABB(rAABB, fDistance))
 			{
-				jobData.octTreeData.passCullMask &= ~kPassCullMainMask; // mark as not visible in general view
+				jobData.passCullMask &= ~kPassCullMainMask; // mark as not visible in general view
 			}
 
 			// TODO: check also occlusion of shadow volumes
 
-			if (jobData.octTreeData.passCullMask)
+			if (jobData.passCullMask)
 			{
 				Vec3 vAmbColor(jobData.octTreeData.vAmbColor[0], jobData.octTreeData.vAmbColor[1], jobData.octTreeData.vAmbColor[2]);
 
 				SRenderingPassInfo passInfo = SRenderingPassInfo::CreateTempRenderingInfo(/*jobData.pCam,*/ jobData.rendItemSorter, m_passInfoForCheckOcclusion);
 				passInfo.SetShadowPasses(jobData.pShadowPasses);
 
-				pOctTreeNode->COctreeNode::RenderContent(jobData.octTreeData.nRenderMask, vAmbColor, jobData.octTreeData.passCullMask, passInfo);
+				pOctTreeNode->COctreeNode::RenderContent(jobData.octTreeData.nRenderMask, vAmbColor, jobData.passCullMask, passInfo);
 			}
 		}
 		else if (jobData.type == SCheckOcclusionJobData::TERRAIN_NODE)
@@ -748,13 +748,18 @@ void CCullThread::CheckOcclusion()
 
 			float fDistance = jobData.terrainData.fDistance;
 
-			// special case for terrain, they are direclty tested and send back to PPU
-			if (TestAABB(rAABB, fDistance, TerrainBias))
+			// Test bounding box against main view
+			if (jobData.passCullMask & kPassCullMainMask && !TestAABB(rAABB, fDistance, TerrainBias))
 			{
-				SCheckOcclusionOutput outPut = SCheckOcclusionOutput::CreateTerrainOutput(jobData.terrainData.pTerrainNode, m_passInfoForCheckOcclusion);
-				GetObjManager()->PushIntoCullOutputQueue(outPut);
+				jobData.passCullMask &= ~kPassCullMainMask; // mark as not visible in general view
 			}
 
+			// special case for terrain, they are directly tested and send back to PPU
+			if (jobData.passCullMask)
+			{
+				SCheckOcclusionOutput outPut = SCheckOcclusionOutput::CreateTerrainOutput(jobData.terrainData.pTerrainNode, jobData.passCullMask, m_passInfoForCheckOcclusion);
+				GetObjManager()->PushIntoCullOutputQueue(outPut);
+			}
 		}
 		else
 		{

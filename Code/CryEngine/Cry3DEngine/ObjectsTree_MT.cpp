@@ -79,7 +79,7 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 					                             outputData.common.fEntDistance,
 					                             outputData.common.bCheckPerObjectOcclusion,
 					                             passInfo,
-					                             outputData.common.passCullMask);
+					                             outputData.passCullMask);
 					break;
 
 				case eERType_Vegetation:
@@ -90,7 +90,7 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 					                                  outputData.common.pTerrainTexInfo,
 					                                  outputData.common.bCheckPerObjectOcclusion,
 					                                  passInfo,
-					                                  outputData.common.passCullMask);
+					                                  outputData.passCullMask);
 					break;
 
 				default:
@@ -101,13 +101,13 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 					                              outputData.common.fEntDistance,
 					                              outputData.common.pObj->GetRenderNodeType(),
 					                              passInfo,
-					                              outputData.common.passCullMask);
+					                              outputData.passCullMask);
 					break;
 				}
 			}
 			break;
 		case SCheckOcclusionOutput::TERRAIN:
-			outputData.terrain.pTerrainNode->RenderNodeHeightmap(passInfo);
+			outputData.terrain.pTerrainNode->RenderNodeHeightmap(passInfo, outputData.passCullMask);
 			break;
 
 		case SCheckOcclusionOutput::DEFORMABLE_BRUSH:

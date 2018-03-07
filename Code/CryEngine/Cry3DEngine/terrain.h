@@ -16,15 +16,16 @@
 
 #include "TerrainModifications.h"           // CTerrainModifications
 
-#define TERRAIN_BOTTOM_LEVEL         0
-#define TERRAIN_NODE_TREE_DEPTH      16
-#define TERRAIN_TEX_OFFSETS_SIZE     16
-#define TERRAIN_SHARED_MESH_LODS_NUM 4
-#define OCEAN_IS_VERY_FAR_AWAY       1000000.f
+#define TERRAIN_BOTTOM_LEVEL     0
+#define TERRAIN_NODE_TREE_DEPTH  16
+#define TERRAIN_TEX_OFFSETS_SIZE 16
+#define OCEAN_IS_VERY_FAR_AWAY   1000000.f
 
 enum { nHMCacheSize = 64 };
 
 class CTerrainUpdateDispatcher;
+
+typedef std::pair<struct CTerrainNode*, uint32> STerrainVisItem;
 
 // Heightmap data
 class CHeightMap : public Cry3DEngineBase
@@ -364,8 +365,7 @@ public:
 	virtual void         CloneRegion(const AABB& region, const Vec3& offset, float zRotation, const uint16* pIncludeLayers, int numIncludeLayers);
 	virtual void         ClearCloneSources();
 	virtual void         ChangeOceanMaterial(IMaterial* pMat);
-	virtual void         OnTerrainPaintActionComplete() { m_bTerrainPaintingInProgress = false; };
-	bool                 IsTerrainPaintingInProgress()  { return m_bTerrainPaintingInProgress; };
+	virtual void         OnTerrainPaintActionComplete() {};
 	//////////////////////////////////////////////////////////////////////////
 
 	void          RemoveAllStaticObjects();
@@ -390,7 +390,7 @@ public:
 	void          GetTextureCachesStatus(int& nCount0, int& nCount1)
 	{ nCount0 = m_texCache[0].GetPoolSize(); nCount1 = m_texCache[1].GetPoolSize(); }
 
-	void CheckVis(const SRenderingPassInfo& passInfo);
+	void CheckVis(const SRenderingPassInfo& passInfo, uint32 passCullMask);
 	int  UpdateOcean(const SRenderingPassInfo& passInfo);
 	int  RenderOcean(const SRenderingPassInfo& passInfo);
 	void UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo);
@@ -410,12 +410,9 @@ public:
 	void IntersectWithShadowFrustum(PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, const SRenderingPassInfo& passInfo);
 	void IntersectWithBox(const AABB& aabbBox, PodArray<CTerrainNode*>* plstResult);
 	void MarkAllSectorsAsUncompiled();
-	void BuildErrorsTableForArea(float* pLodErrors, int nMaxLods, int X1, int Y1, int X2, int Y2, float* pTerrainBlock,
-	                             SSurfaceTypeItem* pSurfaceData, int nSurfOffsetX, int nSurfOffsetY, int nSurfSizeX, int nSurfSizeY, bool& bHasHoleEdges);
-
 	void GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& crstAABB);
 	void UpdateSectorMeshes(const SRenderingPassInfo& passInfo);
-	void AddVisSector(CTerrainNode* newsec);
+	void AddVisSector(CTerrainNode* pNode, uint32 passCullMask);
 
 	void GetVegetationMaterials(std::vector<IMaterial*>*& pMatTable);
 	void LoadVegetationData(PodArray<struct StatInstGroup>& rTable, PodArray<StatInstGroupChunk>& lstFileChunks, int i);
@@ -423,9 +420,7 @@ public:
 protected:
 
 	CTerrainNode* m_pParentNode = nullptr;
-
-	bool          m_bTerrainPaintingInProgress = false;
-
+	int           m_terrainPaintingFrameId = 0;
 	void       BuildSectorsTree(bool bBuildErrorsTable);
 	int        GetTerrainNodesAmount();
 	bool       OpenTerrainTextureFile(SCommonFileHeader& hdrDiffTexHdr, STerrainTextureFileHeader& hdrDiffTexInfo, const char* szFileName, uint8*& ucpDiffTexTmpBuffer, int& nDiffTexIndexTableSize);
@@ -582,7 +577,7 @@ protected: // ------------------------------------------------------------------
 
 	float                          m_fOceanWaterLevel;
 
-	PodArray<struct CTerrainNode*> m_lstVisSectors;
+	PodArray<STerrainVisItem>      m_lstVisSectors;
 	PodArray<struct CTerrainNode*> m_lstUpdatedSectors;
 	int                            m_checkVisSectorsCount = 0;
 
@@ -612,7 +607,7 @@ protected: // ------------------------------------------------------------------
 	PodArray<ColorB>* m_pTerrainRgbLowResSystemCopy;
 #endif
 
-	_smart_ptr<IRenderMesh> m_pSharedRenderMesh[TERRAIN_SHARED_MESH_LODS_NUM];
+	_smart_ptr<IRenderMesh> m_pSharedRenderMesh;
 
 public:
 	bool    SetCompiledData(byte* pData, int nDataSize, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable, bool bHotUpdate, SHotUpdateInfo* pExportInfo);

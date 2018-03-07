@@ -82,7 +82,6 @@ struct CVars : public Cry3DEngineBase
 #define e_TerrainOcclusionCullingPrecisionDefault          (0.25f)
 #define e_TerrainOcclusionCullingPrecisionDistRatioDefault (3.f)
 #define e_TerrainOcclusionCullingStepSizeDeltaDefault      (1.05f)
-#define e_TerrainLodRatioHolesMinDefault                   (2.f)
 #define e_WindDefault                                      (0.1f)
 #define e_ShadowsCastViewDistRatioLightsDefault            (1.f)
 #define e_DecalsRangeDefault                               (20.f)
@@ -192,7 +191,6 @@ struct CVars : public Cry3DEngineBase
 	float e_DecalsLifeTimeScale;
 	int   e_DecalsForceDeferred;
 	DeclareConstIntCVar(e_CoverageBufferDebugFreeze, 0);
-	DeclareConstFloatCVar(e_TerrainLodRatioHolesMin);
 	DeclareConstIntCVar(e_TerrainOcclusionCulling, 1);
 	int    e_PhysProxyTriLimit;
 	float  e_FoliageWindActivationDist;
@@ -245,8 +243,8 @@ struct CVars : public Cry3DEngineBase
 	float e_CoverageBufferTerrainExpand;
 	DeclareConstIntCVar(e_WaterWaves, 0);
 	int   e_GsmCastFromTerrain;
-	float e_TerrainLodRatio;
-	float e_TerrainLodDistRatio;
+	float e_TerrainLodDistanceRatio;
+	float e_TerrainLodErrorRatio;
 	int   e_StatObjBufferRenderTasks;
 	DeclareConstIntCVar(e_StreamCgfUpdatePerNodeDistance, 1);
 	DeclareConstFloatCVar(e_DecalsDeferredDynamicDepthScale);
@@ -317,6 +315,7 @@ struct CVars : public Cry3DEngineBase
 	int e_TerrainDetailMaterials;
 	DeclareConstIntCVar(e_ShadowsFrustums, 0);
 	DeclareConstIntCVar(e_OcclusionVolumes, e_OcclusionVolumesDefault);
+	int   e_TerrainEditPostponeTexturesUpdate;
 	int   e_DecalsDeferredStatic;
 	DeclareConstIntCVar(e_Roads, 1);
 	float e_TerrainDetailMaterialsViewDistXY;
