@@ -532,14 +532,15 @@ vtxOutRainDropsExtinction RainDropsExtinctionVS(uint VertexID : SV_VertexID)
 
 vtxOutRainDrops RainDropsFinalVS(uint VertexID : SV_VertexID)
 {
-  vtxOutRainDrops OUT = (vtxOutRainDrops)0; 
-  OUT.HPosition = Get2dHPos(IN.Position);
+    vtxOutRainDrops OUT = (vtxOutRainDrops) 0;
+    OUT.HPosition = GetHPos_FromTriVertexID(VertexID);
+    
+    float2 baseTC = GetBaseTC_FromTriVertexID(VertexID);
+    OUT.tcBase0.xy = baseTC.xy;
+    OUT.tcBase1.xy = baseTC.xy + float2(1.0, 0.0) * ScrSize.zw * 4;
+    OUT.tcBase2.xy = baseTC.xy + float2(0.0, 1.0) * ScrSize.zw * 4;
 
-  OUT.tcBase0.xy = IN.baseTC.xy;  
-  OUT.tcBase1.xy = IN.baseTC.xy + float2(1.0, 0.0) * ScrSize.zw*4;
-  OUT.tcBase2.xy = IN.baseTC.xy + float2(0.0, 1.0) * ScrSize.zw*4;
-
-  return OUT;
+    return OUT;
 }
 
 ///////////////// pixel shader //////////////////
