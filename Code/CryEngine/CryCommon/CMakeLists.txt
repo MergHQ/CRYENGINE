@@ -1202,6 +1202,7 @@ install_headers(CrySystem CryThreading)
 			"CryAnimation/Examples/LookIK.cpp"
 			"CryAnimation/Examples/OperatorQueue.cpp"
 			"CryAnimation/Examples/SetDesiredMotionParam.cpp"
+			"CryAnimation/Examples/GetJointOrientation.cpp"
 		SOURCE_GROUP "CryAction"
 			"CryAction/Examples/ActionListener.cpp"
 			"CryAction/Examples/ReBindActionInput.cpp"

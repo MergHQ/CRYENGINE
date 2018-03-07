@@ -391,6 +391,10 @@ struct IDefaultSkeleton
 	virtual uint32       GetJointCRC32ByID(int32 id) const = 0;
 
 	virtual const char*  GetJointNameByID(int32 id) const = 0;
+	//! Gets the identifier of a joint from the name specified in DCC
+	//! \return A non-positive number on failure.
+	//! \par Example
+	//! \include CryAnimation/Examples/GetJointOrientation.cpp
 	virtual int32        GetJointIDByName(const char* name) const = 0;
 
 	virtual const QuatT& GetDefaultAbsJointByID(uint32 nJointIdx) const = 0;
@@ -791,6 +795,8 @@ struct ISkeletonPose : public ISkeletonPhysics
 	 * @see ISkeletonPose::SetPostProcessCallback
 	 * @see ISkeletonPose::GetRelJointByID
 	 * @see ICharacterInstance::FinishAnimationComputations
+	 * @par Example
+	 * @include CryAnimation/Examples/GetJointOrientation.cpp
 	 */
 	virtual const QuatT& GetAbsJointByID(int32 nJointID) const = 0;
 
