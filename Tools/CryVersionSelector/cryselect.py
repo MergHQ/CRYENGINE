@@ -88,6 +88,17 @@ def error_project_json_decode(args):
         sys.stderr.write(message)
     sys.exit(601)
 
+def error_engine_json_decode(engine_file, silent):
+    """
+    Error to specify that the json file is corrupt and couldn't be parsed.
+    """
+    message = "Unable to parse '{}'.\n".format(engine_file)
+    if not silent and HAS_WIN_MODULES:
+        MESSAGEBOX(None, message, 'Unable to parse cryengine file', win32con.MB_OK | win32con.MB_ICONERROR)
+    else:
+        sys.stderr.write(message)
+    sys.exit(604)
+
 def error_engine_path_not_found(args, engine_version):
     """
     Error to specify that the engine path could not be found,
@@ -331,6 +342,9 @@ def add_engines(*engine_files, silent):
             continue
 
         engine = cryproject.load(engine_file)
+        if not engine:
+            error_engine_json_decode(engine_file, silent)
+
         info = engine['info']
         engine_id = info['id']
 
