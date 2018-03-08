@@ -557,7 +557,7 @@ public:
 	// Note: temporary solution, this should be removed as soon as the device
 	// layer for Durango is available
 	static void* GetBackingStorage(D3DBuffer* buffer);
-	static void  FreebackingStorage(void* base_ptr);
+	static void  FreeBackingStorage(void* base_ptr);
 
 	struct STileRequest
 	{

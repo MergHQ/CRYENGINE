@@ -1797,7 +1797,7 @@ struct CBufferPoolImpl final
 			if (bank.m_buffer)
 				CDeviceObjectFactory::ReleaseBasePointer(bank.m_buffer->GetBuffer());
 #endif
-			SAFE_RELEASE(bank.m_buffer);
+			SAFE_DELETE(bank.m_buffer);
 			bank.m_base_ptr = nullptr;
 		}
 	}

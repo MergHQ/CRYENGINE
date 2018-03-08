@@ -197,7 +197,16 @@ int32 CDeviceBuffer::Cleanup()
 {
 	Unbind();
 
+#if CRY_PLATFORM_DURANGO
+	void* pBackingStorage = m_pNativeResource ? CDeviceObjectFactory::GetBackingStorage((ID3D11Buffer*)m_pNativeResource) : nullptr;
+#endif
 	int32 nRef = CDeviceResource::Cleanup();
+#if CRY_PLATFORM_DURANGO
+	if (!nRef && pBackingStorage)
+	{
+		CDeviceObjectFactory::FreeBackingStorage(pBackingStorage);
+	}
+#endif
 
 	if (nRef != -1)
 	{
