@@ -33,7 +33,7 @@ public:
 	void                GetMemoryUsage(ICrySizer* pSizer) const override;
 	void                Invalidate() override;
 
-	void                RenderPreview(SLensFlareRenderParam* pParam, const Vec3& vPos) override;
+	void                RenderPreview(const SLensFlareRenderParam* pParam, const Vec3& vPos) override;
 
 	void                SetOpticsReference(IOpticsElementBase* pReference) override
 	{

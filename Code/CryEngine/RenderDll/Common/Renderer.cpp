@@ -1260,10 +1260,10 @@ void CRenderer::EF_StartEf (const SRenderingPassInfo& passInfo)
 
 void CRenderer::EF_SubmitWind(const SWindGrid* pWind)
 {
-	FUNCTION_PROFILER_RENDERER();
-
 	auto lambdaCallback = [=]
 	{
+		CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::EF_SubmitWind::lambda");
+
 		m_pCurWindGrid = pWind;
 		if (!CTexture::IsTextureExist(CRendererResources::s_ptexWindGrid))
 		{
@@ -4072,6 +4072,7 @@ void CRenderer::RefreshShaderResourceConstants(SShaderItem* pShaderItem, IMateri
 		{
 			if (pShader && pShaderResources)
 			{
+				CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::RefreshShaderResourceConstants");
 				if (pShaderItem->RefreshResourceConstants())
 					pShaderItem->m_pShaderResources->UpdateConstants(pShader);
 			}
@@ -4094,6 +4095,7 @@ void CRenderer::ForceUpdateShaderItem(SShaderItem* pShaderItem, IMaterial* pMate
 		{ 
 			if (pShader && pShaderResources)
 			{
+				CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::ForceUpdateShaderItem");
 				pShader->m_Flags &= ~EF_RELOADED;
 				pShaderItem->Update();
 			}

@@ -122,6 +122,8 @@ void CD3D9Renderer::RT_Init()
 
 void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CD3D9Renderer::RT_ReleaseRenderResources");
+
 	if (nFlags & FRR_FLUSH_TEXTURESTREAMING)
 	{
 		CTexture::RT_FlushStreaming(true);
@@ -200,6 +202,8 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 
 void CD3D9Renderer::RT_CreateRenderResources()
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CD3D9Renderer::RT_CreateRenderResources");
+
 	CRendererResources::LoadDefaultSystemTextures();
 	CRendererResources::CreateSystemTargets(0, 0);
 	EF_Init();
@@ -217,6 +221,8 @@ void CD3D9Renderer::RT_CreateRenderResources()
 
 void CD3D9Renderer::RT_PrecacheDefaultShaders()
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CD3D9Renderer::RT_PrecacheDefaultShaders");
+
 	SShaderCombination cmb;
 
 	m_cEF.s_ShaderStereo->mfPrecache(cmb, true, nullptr);

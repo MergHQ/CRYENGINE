@@ -1615,6 +1615,8 @@ void CTexture::InitStreaming()
 
 void CTexture::RT_FlushStreaming(bool bAbort)
 {
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_FlushStreaming");
+
 	RT_FlushAllStreamingTasks(bAbort);
 
 	// flush all pool items
