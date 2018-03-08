@@ -7,6 +7,7 @@
 #include "Common/ReverseDepth.h"
 #include "Common/Textures/TextureHelpers.h"
 #include "../GraphicsPipeline/Common/GraphicsPipelineStateSet.h"
+#include "D3D11/DeviceObjects_D3D11.h"
 
 
 uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutHandle VertexFormat, ID3D11ShaderReflection* pShaderReflection)
@@ -680,4 +681,8 @@ void CDeviceObjectFactory::TrimPipelineStates()
 
 	EraseExpiredEntriesFromCache(m_InvalidGraphicsPsos);
 	EraseExpiredEntriesFromCache(m_InvalidComputePsos);
+	// Free Blend, Depth, and Rasterizer State(s)
+#if (CRY_RENDERER_DIRECT3D < 120) &&  defined(CRY_RENDERER_DIRECT3D)
+	CDeviceStatesManagerDX11::GetInstance()->ReleaseUnusedStates(0 /* kill them all */);
+#endif
 }

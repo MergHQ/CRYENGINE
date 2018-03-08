@@ -35,6 +35,7 @@
 #include "Gpu/Particles/GpuParticleManager.h"
 
 #include "Common/RenderDisplayContext.h"
+#include "DeviceManager/D3D11/DeviceObjects_D3D11.h"
 
 #if defined(FEATURE_SVO_GI)
 	#include "D3D_SVO.h"
@@ -3491,7 +3492,10 @@ void CD3D9Renderer::RT_EndFrame()
 
 	// Free render objects that could have been used for this frame
 	FreePermanentRenderObjects(gRenDev->GetRenderThreadID());
-
+	// Free Blend, Depth, and Rasterizer State(s)
+#if (CRY_RENDERER_DIRECT3D < 120) &&  defined(CRY_RENDERER_DIRECT3D)
+	CDeviceStatesManagerDX11::GetInstance()->ReleaseUnusedStates(gcpRendD3D->GetFrameID());
+#endif
 	if (m_bStopRendererAtFrameEnd)
 	{
 		m_mtxStopAtRenderFrameEnd.Lock();

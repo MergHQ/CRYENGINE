@@ -27,10 +27,10 @@ struct SSharedState
 
 struct SCustomGraphicsState
 {
-	SCachedValue<ID3D11DepthStencilState*> depthStencilState;
-	SCachedValue<ID3D11RasterizerState*>   rasterizerState;
+	SCachedValue<_smart_ptr<ID3D11DepthStencilState>> depthStencilState;
+	SCachedValue<_smart_ptr<ID3D11RasterizerState>>   rasterizerState;
 	uint32                                 rasterizerStateIndex;
-	SCachedValue<ID3D11BlendState*>        blendState;
+	SCachedValue<_smart_ptr<ID3D11BlendState>>        blendState;
 	SCachedValue<ID3D11InputLayout*>       inputLayout;
 	SCachedValue<D3D11_PRIMITIVE_TOPOLOGY> topology;
 

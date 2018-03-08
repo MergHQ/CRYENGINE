@@ -158,10 +158,10 @@ void CDeviceCommandListImpl::ResetImpl()
 	m_sharedState.numSamplers.fill(0);
 
 	UINT_PTR invalidPtr = UINT_PTR(~0u);
-	m_graphicsState.custom.depthStencilState = nullptr;
-	m_graphicsState.custom.rasterizerState = nullptr;
+	m_graphicsState.custom.depthStencilState.cachedValue = nullptr; 
+	m_graphicsState.custom.rasterizerState.cachedValue = nullptr;
 	m_graphicsState.custom.rasterizerStateIndex = 0;
-	m_graphicsState.custom.blendState = nullptr;
+	m_graphicsState.custom.blendState.cachedValue = nullptr;
 	m_graphicsState.custom.inputLayout = reinterpret_cast<ID3D11InputLayout*>(invalidPtr);
 	m_graphicsState.custom.topology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
 	m_graphicsState.custom.bDepthStencilStateDirty = true;

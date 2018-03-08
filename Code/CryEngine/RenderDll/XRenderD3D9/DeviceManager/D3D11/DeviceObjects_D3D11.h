@@ -29,6 +29,8 @@ struct CRY_ALIGN(16) SStateBlend
 
 		return (((uint64)hashHigh) << 32) | ((uint64)hashLow);
 	}
+
+	bool SkipCleanup()  const { return false; }
 };
 
 struct CRY_ALIGN(16) SStateRaster
@@ -59,7 +61,7 @@ struct CRY_ALIGN(16) SStateRaster
 	static uint64 GetValuesHash(const D3D11_RASTERIZER_DESC& InDesc)
 	{
 		uint64 nHash;
-		//avoid breaking strict alising rules
+		//avoid breaking strict aliasing rules
 		union f32_u
 		{
 			float        floatVal;
@@ -74,6 +76,7 @@ struct CRY_ALIGN(16) SStateRaster
 		return nHash;
 	}
 
+	bool SkipCleanup() const { return (Desc.DepthBiasClamp==0 && Desc.SlopeScaledDepthBias == 0); }
 };
 inline uint32 sStencilState(const D3D11_DEPTH_STENCILOP_DESC& Desc)
 {
@@ -88,6 +91,7 @@ struct CRY_ALIGN(16) SStateDepth
 	uint64 nHashVal;
 	D3D11_DEPTH_STENCIL_DESC Desc;
 	ID3D11DepthStencilState* pState;
+
 	SStateDepth() : nHashVal(), pState()
 	{
 		Desc.DepthEnable = TRUE;
@@ -118,6 +122,8 @@ struct CRY_ALIGN(16) SStateDepth
 			(((uint64)sStencilState(InDesc.BackFace)) << 39);
 		return nHash;
 	}
+
+	bool SkipCleanup() const { return false; }
 };
 
 class CDeviceStatesManagerDX11
@@ -127,6 +133,7 @@ public:
 	~CDeviceStatesManagerDX11() {}
 
 	void ShutDown();
+	void ReleaseUnusedStates(uint32 currentFrameID);
 
 	static CDeviceStatesManagerDX11* GetInstance();
 

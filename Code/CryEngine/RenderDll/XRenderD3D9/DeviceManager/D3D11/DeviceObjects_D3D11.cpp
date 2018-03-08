@@ -38,6 +38,44 @@ CDeviceStatesManagerDX11* CDeviceStatesManagerDX11::GetInstance()
 	return &sStatesManager;
 }
 
+template<class T>
+struct SStateCleaner
+{
+	uint32 curFrame;
+	SStateCleaner(uint32 f) : curFrame(f) {};
+	bool operator()(const T& m) const
+	{  // curFrame==0 is the flag to clear out the whole list, regardless of age
+		if ((curFrame != 0) && m.SkipCleanup())
+			return false;
+		
+		uint32 wasItUsed = m.pState->Release();
+		if (!wasItUsed)
+			return true;
+		m.pState->AddRef(); // still used somewhere! ==> revert retirement
+		
+		return false;
+	}
+};
+
+// if vector gets half-full, remove any states w/out refCount>1
+// TODO: add number of live-objects to r_displayInfo=3
+void CDeviceStatesManagerDX11::ReleaseUnusedStates(uint32 currentFrameID) {
+	if(m_StatesDP.size()>2048) // half of 4096 limit, why clean up too soon?
+		m_StatesDP.erase(
+			std::remove_if(m_StatesDP.begin(), m_StatesDP.end(), SStateCleaner<SStateDepth>(currentFrameID)),
+			m_StatesDP.end());
+
+	if (m_StatesRS.size()>2048)
+		m_StatesRS.erase(
+			std::remove_if(m_StatesRS.begin(), m_StatesRS.end(), SStateCleaner<SStateRaster>(currentFrameID)),
+			m_StatesRS.end());
+
+	if (m_StatesBL.size()>2048)
+		m_StatesBL.erase(
+			std::remove_if(m_StatesBL.begin(), m_StatesBL.end(), SStateCleaner<SStateBlend>(currentFrameID)),
+			m_StatesBL.end());
+}
+
 uint32 CDeviceStatesManagerDX11::GetOrCreateBlendState(const D3D11_BLEND_DESC& desc)
 {
 	uint32 i;
