@@ -301,9 +301,6 @@ bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, IImplItem c
 	case ESystemItemType::Parameter:
 		isCompatible = (implType == EImpltemType::Parameter);
 		break;
-	case ESystemItemType::Switch:
-		isCompatible = (implType == EImpltemType::Invalid);
-		break;
 	case ESystemItemType::State:
 		isCompatible = (implType == EImpltemType::Switch) || (implType == EImpltemType::State) || (implType == EImpltemType::Parameter);
 		break;
@@ -553,7 +550,7 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 	{
 		auto const itemType = static_cast<EImpltemType>(pImplItem->GetType());
 
-		switch (static_cast<EImpltemType>(pImplItem->GetType()))
+		switch (itemType)
 		{
 		case EImpltemType::Switch:
 		case EImpltemType::SwitchGroup:
