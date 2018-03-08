@@ -373,7 +373,7 @@ void CFeatureMotionPhysics::Integrate(const SUpdateContext& context)
 			coeffsv[i] = ToFloatv(coeffs[i]);
 	}
 
-	const bool isLinear = !m_environFlags && !effectorFlags && m_uniformAcceleration.IsZero();
+	const bool isLinear = !(m_environFlags | effectorFlags) && !m_drag.GetBaseValue() && m_uniformAcceleration.IsZero();
 
 	// Integrate positions and velocities
 	for (auto particleGroupId : context.GetUpdateGroupRange())
@@ -888,7 +888,7 @@ private:
 	SFloat m_velocityInheritAfterDeath;
 };
 
+CRY_PFX2_LEGACY_FEATURE(CFeatureMoveRelativeToEmitter, "Velocity", "MoveRelativeToEmitter");
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMoveRelativeToEmitter, "Motion", "MoveRelativeToEmitter", colorMotion);
-CRY_PFX2_LEGACY_FEATURE(CParticleFeature, CFeatureMoveRelativeToEmitter, "VelocityMoveRelativeToEmitter");
 
 }

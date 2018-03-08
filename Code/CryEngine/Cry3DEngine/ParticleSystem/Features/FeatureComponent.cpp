@@ -56,7 +56,7 @@ public:
 
 	virtual void MainPreUpdate(CParticleComponentRuntime* pComponentRuntime) override
 	{
-		CRY_PFX2_PROFILE_DETAILS;
+		CRY_PFX2_PROFILE_DETAIL;
 		if (!m_attribute.GetValueAs(pComponentRuntime->GetEmitter()->GetAttributeInstance(), true))
 			pComponentRuntime->RemoveAllSubInstances();
 	}
@@ -90,7 +90,7 @@ public:
 
 	virtual bool CanMakeRuntime(CParticleEmitter* pEmitter) const override
 	{
-		CRY_PFX2_PROFILE_DETAILS;
+		CRY_PFX2_PROFILE_DETAIL;
 
 		const uint particleSpec = pEmitter->GetParticleSpec();
 		const bool isPc = particleSpec <= CONFIG_VERYHIGH_SPEC;

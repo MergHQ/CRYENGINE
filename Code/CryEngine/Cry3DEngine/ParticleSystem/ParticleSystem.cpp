@@ -1,12 +1,5 @@
 // Copyright 2014-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  Created:     06/04/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "ParticleSystem.h"
 #include "ParticleEffect.h"
@@ -25,6 +18,14 @@ CRYREGISTER_SINGLETON_CLASS(CParticleSystem)
 CParticleSystem::CParticleSystem()
 	: m_threadData(gEnv->pJobManager->GetNumWorkerThreads() + 2) // 1 for main thread, 1 for each job thread, 1 for sum stats
 {
+	if (gEnv && gEnv->pRenderer)
+		gEnv->pRenderer->RegisterSyncWithMainListener(this);
+}
+
+CParticleSystem::~CParticleSystem()
+{
+	if (gEnv && gEnv->pRenderer)
+		gEnv->pRenderer->RemoveSyncWithMainListener(this);
 }
 
 PParticleEffect CParticleSystem::CreateEffect()
@@ -90,28 +91,6 @@ void CParticleSystem::TrimEmitters(bool finished_only)
 	});
 }
 
-void CParticleSystem::InvalidateCachedRenderObjects()
-{
-	// Render objects and PSOs need to be updated when sys_spec changes.
-	static ICVar* pSysSpecCVar = gEnv->pConsole->GetCVar("sys_spec");
-	if (pSysSpecCVar)
-	{
-		const int32 sysSpec = pSysSpecCVar->GetIVal();
-
-		CRY_ASSERT(sysSpec != END_CONFIG_SPEC_ENUM);
-		const bool bInvalidate = ((m_lastSysSpec != END_CONFIG_SPEC_ENUM) && (m_lastSysSpec != sysSpec));
-		m_lastSysSpec = sysSpec;
-
-		if (bInvalidate)
-		{
-			for (auto& pEmitter : m_emitters)
-			{
-				pEmitter->Restart();
-			}
-		}
-	}
-}
-
 void CParticleSystem::Update()
 {
 	CRY_PFX2_PROFILE_DETAIL;
@@ -159,7 +138,10 @@ void CParticleSystem::Update()
 		m_emitters.append(m_newEmitters);
 		m_newEmitters.clear();
 
-		InvalidateCachedRenderObjects();
+		// Detect changed sys spec
+		ESystemConfigSpec sysSpec = gEnv->pSystem->GetConfigSpec();
+		const bool sys_spec_changed = m_lastSysSpec != END_CONFIG_SPEC_ENUM && m_lastSysSpec != sysSpec;
+		m_lastSysSpec = sysSpec;
 
 		// Init stats for current frame
 		auto& mainData = GetMainData();
@@ -170,6 +152,12 @@ void CParticleSystem::Update()
 		for (auto& pEmitter : m_emitters)
 		{
 			mainData.statsCPU.components.alloc += pEmitter->GetRuntimes().size();
+
+			if (sys_spec_changed)
+			{
+				pEmitter->ResetRenderObjects();
+			}
+
 			if (pEmitter->IsAlive())
 			{
 				mainData.statsCPU.emitters.alive++;
@@ -189,13 +177,19 @@ void CParticleSystem::Update()
 
 void CParticleSystem::FinishUpdate()
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	if (m_jobManager.ThreadMode() == 1)
+		m_jobManager.SynchronizeUpdates();
+}
 
-	m_jobManager.SynchronizeUpdates();
-
+void CParticleSystem::SyncMainWithRender()
+{
+	if (m_jobManager.ThreadMode() > 1)
+		m_jobManager.SynchronizeUpdates();
+		
 	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
 	m_lastCameraPose = QuatT(camera.GetMatrix());
 }
+
 
 void CParticleSystem::DeferredRender(const SRenderingPassInfo& passInfo)
 {
@@ -286,13 +280,19 @@ float CParticleSystem::DisplayDebugStats(Vec2 displayLocation, float lineHeight)
 void CParticleSystem::ClearRenderResources()
 {
 #if !defined(_RELEASE)
+	// All external references need to be released before this point to prevent leaks
 	for (const auto& pEmitter : m_emitters)
 	{
-		CRY_PFX2_ASSERT(pEmitter->Unique()); // All external references need to be released before this point to prevent leaks
+		CRY_ASSERT_MESSAGE(pEmitter->Unique(), "Emitter %s not unique", pEmitter->GetCEffect()->GetShortName().c_str());
+	}
+	for (const auto& pEmitter : m_newEmitters)
+	{
+		CRY_ASSERT_MESSAGE(pEmitter->Unique(), "Emitter %s not unique", pEmitter->GetCEffect()->GetShortName().c_str());
 	}
 #endif
 
 	m_emitters.clear();
+	m_newEmitters.clear();
 	m_effects.clear();
 	m_numFrames = 0;
 	m_numClears++;
@@ -356,9 +356,11 @@ const SParticleFeatureParams* CParticleSystem::GetDefaultFeatureParam(EFeatureTy
 
 bool CParticleSystem::SerializeFeatures(IArchive& ar, TParticleFeatures& features, cstr name, cstr label) const
 {
-	if (ar.isInput())
+	auto size = features.size();
+	bool ok = ar(features, name, label);
+	if (ar.isInput() && size + features.size() > 0)
 		features.m_editVersion++;
-	return ar(features, name, label);
+	return ok;
 }
 
 void CParticleSystem::GetStats(SParticleStats& stats)

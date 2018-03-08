@@ -25,7 +25,8 @@ bool Serialize(Serialization::IArchive& ar, EDomainField& value, cstr name, cstr
 
 void CDomain::SerializeInplace(Serialization::IArchive& ar)
 {
-	const auto& context = GetContext(ar);
+	const auto& context = *ar.context<IParamModContext>();
+
 	const uint version = GetVersion(ar);
 
 	bool patchedDomain = false;

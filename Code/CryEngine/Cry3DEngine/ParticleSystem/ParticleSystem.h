@@ -1,12 +1,5 @@
 // Copyright 2014-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  Created:     06/04/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <CryExtension/ClassWeaver.h>
@@ -19,13 +12,13 @@
 
 namespace pfx2
 {
-class CParticleSystem : public Cry3DEngineBase, public IParticleSystem
+class CParticleSystem : public Cry3DEngineBase, public IParticleSystem, ISyncMainWithRenderListener
 {
 	CRYINTERFACE_SIMPLE(IParticleSystem)
 	CRYGENERATE_SINGLETONCLASS_GUID(CParticleSystem, "CryEngine_ParticleSystem", "cd8d738d-54b4-46f7-82ba-23ba999cf2ac"_cry_guid)
 
 	CParticleSystem();
-	virtual ~CParticleSystem() {}
+	~CParticleSystem();
 
 private:
 	typedef std::unordered_map<string, _smart_ptr<CParticleEffect>, stl::hash_stricmp<string>, stl::hash_stricmp<string>> TEffectNameMap;
@@ -50,6 +43,7 @@ public:
 
 	void                    GetStats(SParticleStats& stats) override;
 	void                    GetMemoryUsage(ICrySizer* pSizer) const override;
+	void                    SyncMainWithRender() override;
 	// ~IParticleSystem
 
 	struct SThreadData
@@ -89,7 +83,6 @@ public:
 
 private:
 	void              TrimEmitters(bool finished_only);
-	void              InvalidateCachedRenderObjects();
 	CParticleEffect*  CastEffect(const PParticleEffect& pEffect) const;
 	CParticleEmitter* CastEmitter(const PParticleEmitter& pEmitter) const;
 
@@ -111,7 +104,7 @@ private:
 	uint                     m_numClears      = 0;
 	uint                     m_numFrames      = 0;
 	uint                     m_nextEmitterId  = 0;
-	int32                    m_lastSysSpec    = END_CONFIG_SPEC_ENUM;
+	ESystemConfigSpec        m_lastSysSpec    = END_CONFIG_SPEC_ENUM;
 };
 
 ILINE CParticleSystem* GetPSystem()

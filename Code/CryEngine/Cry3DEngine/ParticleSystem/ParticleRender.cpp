@@ -1,12 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  Created:     26/11/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "ParticleRender.h"
 #include "ParticleManager.h"
@@ -27,7 +20,6 @@ EFeatureType CParticleRenderBase::GetFeatureType()
 void CParticleRenderBase::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
 	CParticleEffect* pEffect = pComponent->GetEffect();
-	pComponent->PrepareRenderObjects.add(this);
 	pComponent->Render.add(this);
 	pComponent->ComputeVertices.add(this);
 	m_waterCulling = SupportsWaterCulling();
@@ -35,30 +27,6 @@ void CParticleRenderBase::AddToComponent(CParticleComponent* pComponent, SCompon
 		m_renderObjectBeforeWaterId = pEffect->AddRenderObjectId();
 	m_renderObjectAfterWaterId = pEffect->AddRenderObjectId();
 	pParams->m_requiredShaderType = eST_Particle;
-}
-
-void CParticleRenderBase::PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent, bool bPrepare)
-{
-	const SComponentParams& params = pComponent->GetComponentParams();
-
-	if (!params.m_pMaterial)
-		return;
-
-	for (uint threadId = 0; threadId < RT_COMMAND_BUF_COUNT; ++threadId)
-	{
-		if (bPrepare)
-		{
-			const uint64 objFlags = params.m_renderObjectFlags;
-			if (m_waterCulling)
-				PrepareRenderObject(pEmitter, pComponent, m_renderObjectBeforeWaterId, threadId, objFlags);
-			PrepareRenderObject(pEmitter, pComponent, m_renderObjectAfterWaterId, threadId, objFlags);
-		}
-		else
-		{
-			ResetRenderObject(pEmitter, pComponent, m_renderObjectBeforeWaterId, threadId);
-			ResetRenderObject(pEmitter, pComponent, m_renderObjectAfterWaterId, threadId);
-		}
-	}
 }
 
 void CParticleRenderBase::Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext)
@@ -113,24 +81,15 @@ void CParticleRenderBase::PrepareRenderObject(CParticleEmitter* pEmitter, CParti
 	pEmitter->SetRenderObject(pRenderObject, std::move(particleMaterial), threadId, renderObjectId);
 }
 
-void CParticleRenderBase::ResetRenderObject(CParticleEmitter* pEmitter, CParticleComponent* pComponent, uint renderObjectId, uint threadId)
-{
-	if (renderObjectId == -1)
-		return;
-	CRenderObject* pRenderObject = pEmitter->GetRenderObject(threadId, renderObjectId);
-	if (!pRenderObject)
-		return;
-
-	if (pRenderObject->m_pRE != nullptr)
-		pRenderObject->m_pRE->Release();
-	gEnv->pRenderer->EF_FreeObject(pRenderObject);
-	pEmitter->SetRenderObject(nullptr, nullptr, threadId, renderObjectId);
-}
-
 void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags)
 {
 	const SComponentParams& params = pComponent->GetComponentParams();
 	CRenderObject* pRenderObject = pEmitter->GetRenderObject(threadId, renderObjectId);
+	if (!pRenderObject)
+	{
+		PrepareRenderObject(pEmitter, pComponent, renderObjectId, threadId, params.m_renderObjectFlags);
+		pRenderObject = pEmitter->GetRenderObject(threadId, renderObjectId);
+	}
 	SRenderObjData* pObjData = pRenderObject->GetObjData();
 
 	const float sortBiasSize = 1.0f / 1024.0f;

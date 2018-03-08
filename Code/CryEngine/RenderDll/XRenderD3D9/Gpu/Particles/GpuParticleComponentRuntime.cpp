@@ -157,6 +157,8 @@ void CParticleComponentRuntime::AddParticles(SUpdateContext& context)
 		m_parameters->numNewBorns += entry.m_count;
 
 	// cap the count to max newborns
+	CRY_ASSERT(m_parameters->numNewBorns <= m_params.maxNewBorns);
+	CRY_ASSERT(m_parameters->numParticles + m_parameters->numNewBorns <= m_params.maxParticles);
 	int maxNewBorns = min(m_parameters->numNewBorns, m_params.maxParticles - m_parameters->numParticles);
 	m_parameters->numNewBorns = min(m_parameters->numNewBorns, maxNewBorns);
 	m_parameters->numParticles += m_parameters->numNewBorns;

@@ -344,6 +344,8 @@ void CAttachmentVCLOTH::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EG
 {
 	int nLOD = m_pRenderSkin->SelectNearestLoadedLOD(0);
 	IRenderMesh* pMesh = m_pRenderSkin->GetIRenderMesh(nLOD);
+	if (!pMesh)
+		return;
 
 	SSkinningData* pSkinningData = NULL;
 	int nFrameID = gEnv->pRenderer->EF_GetSkinningPoolID();

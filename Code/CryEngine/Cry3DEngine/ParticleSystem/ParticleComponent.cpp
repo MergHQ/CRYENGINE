@@ -74,7 +74,8 @@ SComponentParams::SComponentParams()
 	m_renderObjectFlags    = 0;
 	m_instanceDataStride   = 0;
 	m_maxParticlesBurst    = 0;
-	m_maxParticleSpawnRate = 0;
+	m_maxParticlesPerFrame = 0;
+	m_maxParticleRate      = 0.0f;
 	m_scaleParticleCount   = 1.0f;
 	m_maxParticleLifeTime  = 0.0f;
 	m_renderStateFlags     = OS_ALPHA_BLEND;
@@ -116,18 +117,12 @@ void SComponentParams::Serialize(Serialization::IArchive& ar)
 
 void SComponentParams::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
 {
-	if (m_emitterLifeTime.end == 0.0f)
-		total = m_maxParticlesBurst;
-	else
-	{
-		float duration = min(m_emitterLifeTime.Length(), m_maxParticleLifeTime);
-		float rate = m_maxParticleSpawnRate + m_maxParticlesBurst * maxFPS;
-		float count = rate * duration;
-		total = int_ceil(count);
-	}
-	perFrame = max((int)m_maxParticlesBurst, int_ceil(m_maxParticleSpawnRate / minFPS));
-	total = int_ceil(total * m_scaleParticleCount * 1.1f);
-	perFrame = int_ceil(perFrame * m_scaleParticleCount * 1.1f);
+	total = m_maxParticlesBurst;
+	const float rate = m_maxParticleRate + m_maxParticlesPerFrame * maxFPS;
+	const float extendedLife = m_maxParticleLifeTime + rcp(minFPS); // Particles stay 1 frame after death
+	if (rate > 0.0f && std::isfinite(extendedLife))
+		total += int_ceil(rate * extendedLife);
+	perFrame = int(m_maxParticlesBurst + m_maxParticlesPerFrame) + int_ceil(m_maxParticleRate / minFPS);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -135,7 +130,8 @@ void SComponentParams::GetMaxParticleCounts(int& total, int& perFrame, float min
 
 CParticleComponent::CParticleComponent()
 	: m_dirty(true)
-	, m_pEffect(0)
+	, m_pEffect(nullptr)
+	, m_parent(nullptr)
 	, m_componentId(gInvalidId)
 	, m_nodePosition(-1.0f, -1.0f)
 {
@@ -197,11 +193,11 @@ void CParticleComponent::SetNodePosition(Vec2 position)
 	m_nodePosition = position;
 }
 
-TInstanceDataOffset CParticleComponent::AddInstanceData(size_t size)
+uint CParticleComponent::AddInstanceData(uint size)
 {
 	CRY_PFX2_ASSERT(size > 0);        // instance data of 0 bytes makes no sense
 	SetChanged();
-	TInstanceDataOffset offset = TInstanceDataOffset(m_componentParams.m_instanceDataStride);
+	uint offset = m_componentParams.m_instanceDataStride;
 	m_componentParams.m_instanceDataStride += size;
 	return offset;
 }
@@ -214,15 +210,21 @@ void CParticleComponent::AddParticleData(EParticleDataType type)
 		m_useParticleData[i] = true;
 }
 
-void CParticleComponent::SetParentComponent(CParticleComponent* pParentComponent, bool delayed)
+void CParticleComponent::SetParent(IParticleComponent* pParentComponent)
 {
 	if (m_parent == pParentComponent)
 		return;
-	m_parent = pParentComponent;
+	if (m_parent)
+		stl::find_and_erase(m_parent->m_children, this);
+	m_parent = static_cast<CParticleComponent*>(pParentComponent);
+	if (m_parent)
+		stl::push_back_unique(m_parent->m_children, this);
+}
+void CParticleComponent::SetParentComponent(CParticleComponent* pParentComponent, bool delayed)
+{
+	SetParent(pParentComponent);
 	if (delayed)
 		m_componentParams.m_emitterLifeTime.end = gInfinity;
-	auto& children = pParentComponent->m_children;
-	stl::push_back_unique(children, this);
 }
 
 void CParticleComponent::GetMaxParticleCounts(int& total, int& perFrame, float minFPS, float maxFPS) const
@@ -325,18 +327,16 @@ void CParticleComponent::ResolveDependencies()
 
 	for (auto& it : m_features)
 	{
-		if (it && it->IsEnabled() && !it->ResolveDependency(this))
-			it = nullptr;
+		if (it && it->IsEnabled())
+		{
+			// potentially replace feature with new one or null
+			CParticleFeature* pFeature = it->ResolveDependency(this);
+			it = pFeature;
+		}
 	}
 
-	// eliminates features that point to null
-	auto it = std::remove_if(
-	  m_features.begin(), m_features.end(),
-	  [](decltype(*m_features.begin()) pFeature)
-		{
-			return !pFeature;
-	  });
-	m_features.erase(it, m_features.end());
+	// remove null features
+	stl::find_and_erase_all(m_features, nullptr);
 }
 
 void CParticleComponent::Compile()
@@ -373,6 +373,8 @@ void CParticleComponent::Compile()
 void CParticleComponent::FinalizeCompile()
 {
 	GetMaxParticleCounts(m_GPUComponentParams.maxParticles, m_GPUComponentParams.maxNewBorns);
+	m_GPUComponentParams.maxParticles += m_GPUComponentParams.maxParticles >> 3;
+	m_GPUComponentParams.maxNewBorns  += m_GPUComponentParams.maxNewBorns  >> 3;
 	MakeMaterial();
 	m_dirty = false;
 }
@@ -446,6 +448,7 @@ void CParticleComponent::Serialize(Serialization::IArchive& ar)
 		ar(inputName, "Name", "^");
 		SetName(inputName.c_str());
 	}
+
 
 	Serialization::SContext context(ar, static_cast<IParticleComponent*>(this));
 	ar(m_componentParams, "Stats", "Component Statistics");

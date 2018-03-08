@@ -1,12 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  Created:     26/11/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include "ParticleSystem/ParticleFeature.h"
@@ -45,13 +38,11 @@ class CParticleRenderBase : public CParticleFeature, public Cry3DEngineBase
 public:
 	virtual EFeatureType GetFeatureType() override;
 	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
-	virtual void         PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent, bool bPrepare) override;
 	virtual void         Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) override;
 
 protected:
 	virtual bool     SupportsWaterCulling() const { return false; }
 	void             PrepareRenderObject(CParticleEmitter* pEmitter, CParticleComponent* pComponent, uint renderObjectId, uint threadId, uint64 objFlags);
-	void             ResetRenderObject(CParticleEmitter* pEmitter, CParticleComponent* pComponent, uint renderObjectId, uint threadId);
 	void             AddRenderObject(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext, uint renderObjectId, uint threadId, uint64 objFlags);
 	ILINE C3DEngine* Get3DEngine() const          { return static_cast<C3DEngine*>(gEnv->p3DEngine); }
 

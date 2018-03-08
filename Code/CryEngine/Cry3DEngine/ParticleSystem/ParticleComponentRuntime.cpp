@@ -73,7 +73,7 @@ void CParticleComponentRuntime::Initialize()
 
 void CParticleComponentRuntime::UpdateAll()
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	m_alive = false;
 
@@ -92,7 +92,7 @@ void CParticleComponentRuntime::UpdateAll()
 
 void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context)
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_NewBornTime);
 
 	m_container.RemoveNewBornFlags();
@@ -105,7 +105,7 @@ void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context
 
 void CParticleComponentRuntime::UpdateParticles(const SUpdateContext& context)
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_UpdateTime);
 
 	m_container.FillData(EPVF_Acceleration, 0.0f, context.m_updateRange);
@@ -131,7 +131,7 @@ void CParticleComponentRuntime::ComputeVertices(const SCameraInfo& camInfo, CREP
 {
 	if (GetComponent()->IsVisible())
 	{
-		CRY_PFX2_PROFILE_DETAIL;
+		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 		CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_ComputeVerticesTime);
 
 		GetComponent()->ComputeVertices(this, camInfo, pRE, uRenderFlags, fMaxPixels);
@@ -204,10 +204,32 @@ void CParticleComponentRuntime::ReparentParticles(TConstArray<TParticleId> swapI
 	DebugStabilityCheck();
 }
 
-void CParticleComponentRuntime::AddSpawnEntry(const SSpawnEntry& entry)
+void CParticleComponentRuntime::GetEmitLocations(TVarArray<QuatTS> locations) const
 {
-	if (entry.m_count > 0)
-		m_spawnEntries.push_back(entry);
+	SUpdateContext context {non_const(this)};
+	auto const& parentContainer = GetParentContainer();
+	auto parentPositions = parentContainer.GetIVec3Stream(EPVF_Position, GetEmitter()->GetLocation().t);
+	auto parentRotations = parentContainer.GetIQuatStream(EPQF_Orientation, GetEmitter()->GetLocation().q);
+
+	for (uint idx = 0; idx < m_subInstances.size(); ++idx)
+	{
+		TParticleId parentId = GetInstance(idx).m_parentId;
+
+		QuatTS parentLoc;
+		parentLoc.t = parentPositions.SafeLoad(parentId);
+		parentLoc.q = parentRotations.SafeLoad(parentId);
+		parentLoc.s = 1.0f;
+
+		Vec3 emitOffset(0);
+		GetComponent()->GetEmitOffset(context, parentId, emitOffset);
+		parentLoc.t = parentLoc * emitOffset;
+	}
+}
+
+void CParticleComponentRuntime::EmitParticle()
+{
+	SSpawnEntry spawn = {1, GetParentContainer().GetLastParticleId()};
+	m_container.AddParticles({&spawn, 1});
 }
 
 SChaosKey CParticleComponentRuntime::MakeSeed(TParticleId particleId) const
@@ -226,10 +248,10 @@ SChaosKey CParticleComponentRuntime::MakeParentSeed(TParticleId particleId) cons
 
 void CParticleComponentRuntime::AddParticles(const SUpdateContext& context)
 {
+	TDynArray<SSpawnEntry> spawnEntries;
 	if (GetNumInstances())
-		GetComponent()->SpawnParticles(context);
-	m_container.AddParticles(m_spawnEntries);
-	m_spawnEntries.clear();
+		GetComponent()->SpawnParticles(context, spawnEntries);
+	m_container.AddParticles(spawnEntries);
 }
 
 void CParticleComponentRuntime::RemoveParticles(const SUpdateContext& context)
@@ -391,7 +413,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 
 void CParticleComponentRuntime::CalculateBounds()
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_UpdateTime);
 
 	if (HasParticles())
@@ -439,7 +461,7 @@ void CParticleComponentRuntime::CalculateBounds()
 		}
 	#endif
 
-		CRY_PFX2_ASSERT(m_bounds.GetRadius() < 10000.f);
+		CRY_PFX2_ASSERT(m_bounds.GetRadius() < 1000000.f);
 	}
 	else
 	{
@@ -554,8 +576,9 @@ void CParticleComponentRuntime::UpdateGPURuntime(const SUpdateContext& context)
 	
 	GetComponent()->UpdateGPUParams(context, params);
 
+	TDynArray<SSpawnEntry> spawnEntries;
 	if (GetNumInstances())
-		GetComponent()->SpawnParticles(context);
+		GetComponent()->SpawnParticles(context, spawnEntries);
 
 	// Get data of parent particles
 	const auto& parentContainer = context.m_parentContainer;
@@ -570,9 +593,7 @@ void CParticleComponentRuntime::UpdateGPURuntime(const SUpdateContext& context)
 		parentData[parentId].velocity = parentVelocities.Load(parentId);
 	}
 
-	m_pGpuRuntime->UpdateData(params, m_spawnEntries, parentData);
-
-	m_spawnEntries.clear();
+	m_pGpuRuntime->UpdateData(params, spawnEntries, parentData);
 
 	// Accum stats
 	SParticleStats stats;

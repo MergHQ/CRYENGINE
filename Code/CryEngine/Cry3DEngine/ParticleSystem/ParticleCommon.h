@@ -1,12 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  Created:     06/04/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <CryParticleSystem/IParticlesPfx2.h>
@@ -28,7 +21,7 @@
 	#define ILINE inline
 #endif
 #define CRY_PFX2_DBG	// obsolete
-#
+
 #ifndef _RELEASE
 	#define CRY_PFX2_ASSERT(cond) { CRY_ASSERT(cond); }
 #else
@@ -79,8 +72,6 @@ struct SComponentParams;
 
 typedef _smart_ptr<CParticleFeature> TParticleFeaturePtr;
 
-typedef uint32                       TInstanceDataOffset;
-
 const TParticleId gInvalidId           = -1;
 const float gInfinity                  = std::numeric_limits<float>::infinity();
 
@@ -97,7 +88,6 @@ template<typename T> using TSmartArray = TDynArray<_smart_ptr<T>>;
 
 struct TParticleGroupId
 {
-public:
 	TParticleGroupId() {}
 	TParticleGroupId(uint32 i) { id = i; }
 	friend bool                       operator<(const TParticleGroupId a, const TParticleGroupId b)  { return a.id < b.id; }
@@ -166,9 +156,11 @@ struct TIndexRange
 	TInt size() const      { return +m_end - +m_begin; }
 
 	explicit TIndexRange(TIndex b = 0, TIndex e = 0)
-		: m_begin(+b & ~(nStride - 1))
-		, m_end((+e + (nStride - 1)) & ~(nStride - 1))
-	{}
+		: m_begin(+b)
+		, m_end(Align(+e, nStride))
+	{
+		CRY_ASSERT(IsAligned(+b, nStride));
+	}
 
 	template<typename TIndex2, int nStride2>
 	TIndexRange(TIndexRange<TIndex2, nStride2> range)
@@ -191,5 +183,29 @@ enum EFeatureType
 	EFT_END     = BIT(6)
 };
 
+template<typename C>
+struct SkipEmptySerialize
+{
+	C& container;
+
+	SkipEmptySerialize(C& c) : container(c) {}
+};
+
+template<typename C>
+SkipEmptySerialize<C> SkipEmpty(C& cont)
+{
+	return SkipEmptySerialize<C>(cont);
+};
+
+template<typename C>
+bool Serialize(Serialization::IArchive& ar, SkipEmptySerialize<C>& cont, cstr name, cstr label)
+{
+	if (ar.isOutput() && !ar.isEdit() && cont.container.empty())
+		return true;
+	return Serialize(ar, cont.container, name, label);
 }
+
+}
+
+
 

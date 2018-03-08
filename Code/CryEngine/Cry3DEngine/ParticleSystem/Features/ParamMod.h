@@ -28,6 +28,7 @@ enum EModDomain
 };
 
 struct IModifier;
+struct IFieldModifier;
 
 struct IParamMod
 {
@@ -37,6 +38,7 @@ struct IParamMod
 
 struct IParamModContext
 {
+	using TModifier = IModifier;
 	virtual EModDomain GetDomain() const = 0;
 	virtual bool       HasInit() const = 0;
 	virtual bool       HasUpdate() const = 0;
@@ -45,6 +47,7 @@ struct IParamModContext
 
 struct SModParticleField : public IParamModContext
 {
+	using TModifier = IFieldModifier;
 	EModDomain GetDomain() const        { return EMD_PerParticle; }
 	bool       HasInit() const          { return true; }
 	bool       HasUpdate() const        { return true; }
@@ -83,7 +86,6 @@ struct IModifier : public _i_reference_target_t
 {
 public:
 	bool               IsEnabled() const                                { return m_enabled; }
-	virtual bool       CanCreate(const IParamModContext& context) const { return true; }
 	virtual EModDomain GetDomain() const = 0;
 	virtual Range      GetMinMax() const = 0;
 	virtual void       AddToParam(CParticleComponent* pComponent, IParamMod* pParam)                                                                             {}
@@ -91,45 +93,18 @@ public:
 	virtual void       Sample(float* samples, const int numSamples) const                                                                                        {}
 	virtual void       Serialize(Serialization::IArchive& ar);
 	virtual IModifier* VersionFixReplace() const                                                                                                                 { return nullptr; }
-protected:
-	IParamModContext&  GetContext(Serialization::IArchive& ar) const;
 private:
 	SEnable m_enabled;
 };
 
-template<typename TPointer, typename TContext>
-class _context_smart_ptr : public _smart_ptr<TPointer>
+struct IFieldModifier: IModifier
 {
+	virtual IFieldModifier* VersionFixReplace() const { return nullptr; }
 };
-
-template<typename TPointer, typename TContext>
-class FilteredClassFactory : public Serialization::ClassFactory<TPointer>
-{
-private:
-	typedef Serialization::ClassFactory<TPointer> BaseClass;
-public:
-	FilteredClassFactory();
-	static FilteredClassFactory& the();
-};
-
-template<typename TPointer, typename T>
-class FilteredSmartPtrSerializer : public SmartPtrSerializer<TPointer>
-{
-public:
-	FilteredSmartPtrSerializer(_smart_ptr<TPointer>& ptr)
-		: SmartPtrSerializer<TPointer>(ptr) {}
-	virtual Serialization::IClassFactory* factory() const { return &FilteredClassFactory<TPointer, T>::the(); }
-};
-
-template<typename TPointer, typename T>
-bool Serialize(Serialization::IArchive& ar, _context_smart_ptr<TPointer, T>& ptr, const char* name, const char* label);
 
 template<typename TParamModContext, typename T = SFloat>
 class CParamMod : public IParamMod
 {
-private:
-	typedef _context_smart_ptr<IModifier, TParamModContext> PModifier;
-
 public:
 	typedef T TValue;
 	typedef typename T::TType TType;
@@ -163,6 +138,9 @@ public:
 	static const TParamModContext& Context()                  { static TParamModContext context; return context; }
 
 private:
+	using TModifier = typename TParamModContext::TModifier;
+	using PModifier = _smart_ptr<TModifier>;
+
 	T                       m_baseValue;
 	std::vector<PModifier>  m_modifiers;
 	std::vector<IModifier*> m_modInit;
@@ -181,7 +159,7 @@ struct STempModBuffer
 	{
 		m_buffer.resize(range.size());
 		T* data = m_buffer.data() - +*range.begin();
-		m_stream = IFStream(data, baseValue);
+		m_stream = TIStream<T>(data, baseValue);
 		return data;
 	}
 

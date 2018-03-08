@@ -1,12 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-// -------------------------------------------------------------------------
-//  Created:     24/09/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include "ParticleUpdate.h"
@@ -43,7 +36,7 @@ public:
 	// ~IParticleFeature
 
 	// Initialization
-	virtual bool              ResolveDependency(CParticleComponent* pComponent)                         { return true; }
+	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent)                         { return this; }
 	virtual void              AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) {}
 	virtual EFeatureType      GetFeatureType()                                                          { return EFT_Generic; }
 	virtual bool              CanMakeRuntime(CParticleEmitter* pEmitter) const                          { return true; }
@@ -58,7 +51,7 @@ public:
 	virtual void GetEmitOffset(const SUpdateContext& context, TParticleId parentId, Vec3& offset) {}
 
 	// Particle initialization
-	virtual void SpawnParticles(const SUpdateContext& context) {}
+	virtual void SpawnParticles(const SUpdateContext& context, TDynArray<SSpawnEntry>& spawnEntries) {}
 
 	virtual void InitParticles(const SUpdateContext& context) {}
 
@@ -78,7 +71,6 @@ public:
 	virtual void ComputeBounds(CParticleComponentRuntime* pComponentRuntime, AABB& bounds) {}
 
 	// Rendering
-	virtual void PrepareRenderObjects(CParticleEmitter* pEmitter, CParticleComponent* pComponent, bool bPrepare) {}
 	virtual void Render(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
 	virtual void RenderDeferred(CParticleEmitter* pEmitter, CParticleComponentRuntime* pComponentRuntime, CParticleComponent* pComponent, const SRenderContext& renderContext) {}
 	virtual void ComputeVertices(CParticleComponentRuntime* pComponentRuntime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) {}
@@ -104,7 +96,7 @@ struct SFeatureDispatchers
 	TFeatureDispatcher<CParticleComponentRuntime*> MainPreUpdate { &CParticleFeature::MainPreUpdate };
 
 	TFeatureDispatcher<const SUpdateContext&, SUpdateRange> InitSubInstances { &CParticleFeature::InitSubInstances };
-	TFeatureDispatcher<const SUpdateContext&> SpawnParticles { &CParticleFeature::SpawnParticles };
+	TFeatureDispatcher<const SUpdateContext&, TDynArray<SSpawnEntry>&> SpawnParticles { &CParticleFeature::SpawnParticles };
 
 	TFeatureDispatcher<const SUpdateContext&, TConstArray<float>, TVarArray<float>> GetSpatialExtents { &CParticleFeature::GetSpatialExtents };
 	TFeatureDispatcher<const SUpdateContext&, TParticleId, Vec3&> GetEmitOffset { &CParticleFeature::GetEmitOffset };
@@ -121,7 +113,6 @@ struct SFeatureDispatchers
 	TFeatureDispatcher<CParticleComponentRuntime*, AABB&> ComputeBounds { &CParticleFeature::ComputeBounds };
 	TFeatureDispatcher<const SUpdateContext&, gpu_pfx2::SUpdateParams&> UpdateGPUParams { &CParticleFeature::UpdateGPUParams };
 
-	TFeatureDispatcher<CParticleEmitter*, CParticleComponent*, bool> PrepareRenderObjects { &CParticleFeature::PrepareRenderObjects };
 	TFeatureDispatcher<CParticleEmitter*, CParticleComponentRuntime*, CParticleComponent*, const SRenderContext&> Render { &CParticleFeature::Render };
 	TFeatureDispatcher<CParticleEmitter*, CParticleComponentRuntime*, CParticleComponent*, const SRenderContext&> RenderDeferred { &CParticleFeature::RenderDeferred };
 	TFeatureDispatcher<CParticleComponentRuntime*, const SCameraInfo&, CREParticle*, uint64, float> ComputeVertices { &CParticleFeature::ComputeVertices };
@@ -178,7 +169,7 @@ static const ColorB colorComponent  = HexToColor(0x80c0c0);
 #define CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(BaseType, Type, GroupName, FeatureName, Color) \
   CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, Color, true, 0)
 
-#define CRY_PFX2_LEGACY_FEATURE(BaseType, NewType, LegacyName)           \
-	SERIALIZATION_CLASS_NAME(BaseType, NewType, LegacyName, LegacyName);
+#define CRY_PFX2_LEGACY_FEATURE(Type, GroupName, FeatureName) \
+	SERIALIZATION_CLASS_NAME(CParticleFeature, Type, GroupName FeatureName, GroupName FeatureName);
 
 }
