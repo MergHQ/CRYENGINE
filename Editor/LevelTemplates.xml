@@ -114,6 +114,7 @@
       <PortalsInject type="Float" value="0"  min="0" max="10" TipCVar="e_svoTI_*"/>
       <DiffuseAmplifier type="Float" value="1.0" min="0" max="10" TipCVar="e_svoTI_*"/>
       <SpecularAmplifier type="Float" value="1.0" min="0" max="10" TipCVar="e_svoTI_*"/>
+      <SpecularFromDiffuse type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <NumberOfBounces type="Int" value="1" min="0" max="3" TipCVar="e_svoTI_*"/>
       <Saturation type="Float" value="0.8"  min="0" max="4" TipCVar="e_svoTI_*"/>
       <PropagationBooster type="Float" value="1.5" min="0" max="4" TipCVar="e_svoTI_*"/>
@@ -139,6 +140,7 @@
       <HighGlossOcclusion type="Float" value="0" min="-100" max="1" TipCVar="e_svoTI_*"/>
       <ShadowsFromSun type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <ShadowsSoftness type="Float" value="1.25" min="0.2" max="5" TipCVar="e_svoTI_*"/>
+      <ShadowsFromHeightmap type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <Troposphere_Active type="BOOL" value="0" TipCVar="e_svoTI_*"/>
       <Troposphere_Density type="Float" value="1" TipCVar="e_svoTI_*"/>
       <Troposphere_Brightness type="Float" value="1.0" TipCVar="e_svoTI_*"/>

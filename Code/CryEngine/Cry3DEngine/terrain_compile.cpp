@@ -516,8 +516,12 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 		PrintMessage("Object layers control in use");
 
 	m_nUnitsToSectorBitShift = 0;
-	while (m_nSectorSize >> m_nUnitsToSectorBitShift > m_fUnitSize)
+	float nSecSize = (float)m_nSectorSize;
+	while (nSecSize > m_fUnitSize)
+	{
+		nSecSize /= 2;
 		m_nUnitsToSectorBitShift++;
+	}
 
 	if (bHMap && !m_pParentNode)
 	{

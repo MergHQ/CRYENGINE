@@ -75,23 +75,22 @@ void CTiledShadingStage::Execute()
 #if defined(FEATURE_SVO_GI)
 	if (CSvoRenderer::GetInstance()->IsActive())
 	{
-		int nModeGI = CSvoRenderer::GetInstance()->GetIntegratioMode();
+		bool bSpecularTargetIsReady = false;
+		int nModeGI = CSvoRenderer::GetInstance()->GetIntegratioMode(bSpecularTargetIsReady);
 
 		if (nModeGI == 0 && CSvoRenderer::GetInstance()->GetUseLightProbes())
 		{
 			// AO modulates diffuse and specular
 			rtFlags |= g_HWSR_MaskBit[HWSR_CUBEMAP0];
 		}
-		else if (nModeGI <= 1)
+		else 
 		{
-			// GI replaces diffuse and modulates specular
+			// GI replaces diffuse
 			rtFlags |= g_HWSR_MaskBit[HWSR_DECAL_TEXGEN_2D];
-		}
-		else if (nModeGI == 2)
-		{
-			// GI replaces diffuse and specular
-			rtFlags |= g_HWSR_MaskBit[HWSR_CUBEMAP0];
-			rtFlags |= g_HWSR_MaskBit[HWSR_DECAL_TEXGEN_2D];
+
+			// GI replaces specular
+			if (bSpecularTargetIsReady)
+				rtFlags |= g_HWSR_MaskBit[HWSR_CUBEMAP0];
 		}
 	}
 #endif
