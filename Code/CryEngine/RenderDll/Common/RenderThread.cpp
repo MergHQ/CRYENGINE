@@ -613,6 +613,34 @@ void SRenderThread::ProcessCommands()
 		}
 			break;
 
+		case eRC_RenderScene:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_RenderScene");
+
+			START_PROFILE_RT;
+
+			int nFlags = ReadCommand<int>(n);
+			RenderFunc pRenderFunc = ReadCommand<RenderFunc>(n);
+			CRenderView* pRenderView = ReadCommand<CRenderView*>(n);
+			// when we are in video mode, don't execute the command
+			if (m_eVideoThreadMode == eVTM_Disabled)
+				gRenDev->RT_RenderScene(pRenderView, nFlags);
+			else
+			{
+				// cleanup when showing loading render screen
+				if (!pRenderView->IsRecursive())
+				{
+					////////////////////////////////////////////////
+					// to non-thread safe remaing work for *::Render functions
+					CRenderMesh::RT_PerFrameTick();
+					CMotionBlur::InsertNewElements();
+				}
+			}
+			pRenderView->Release();
+			END_PROFILE_PLUS_RT(gRenDev->m_fRTTimeSceneRender);
+		}
+			break;
+
 		case eRC_LambdaCall:
 		{
 			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_LambdaCall");
