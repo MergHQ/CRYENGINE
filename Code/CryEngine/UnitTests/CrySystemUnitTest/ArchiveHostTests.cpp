@@ -378,6 +378,94 @@ TEST(ArchiveHostTest, JsonBasicTypes)
 		REQUIRE(bufChanged[i] == bufResaved[i]);
 }
 
+// Expose an enumeration that can be saved to disk
+enum class EMyEnum
+{
+	Value = 1,
+	UnusedValue,
+};
+
+// Reflect the enum values to the serialization library
+// This is required in order to serialize custom enums
+YASLI_ENUM_BEGIN(EMyEnum, "MyEnum")
+YASLI_ENUM(EMyEnum::Value, "Value", "Value")
+YASLI_ENUM(EMyEnum::UnusedValue, "UnusedValue", "UnusedValue")
+YASLI_ENUM_END()
+
+TEST(ArchiveHostTest, SerializeJson)
+{
+	std::unique_ptr<Serialization::IArchiveHost> host(Serialization::CreateArchiveHost());
+
+	struct SNativeJsonRepresentation
+	{
+		string myString;
+		EMyEnum myEnum;
+		std::vector<int> myVector;
+		std::map<string, string> myMap;
+		// Also test loading into map from legacy format
+		std::map<string, string> myMapLegacy;
+
+		void Serialize(Serialization::IArchive& ar)
+		{
+			ar(myString, "myString");
+			ar(myEnum, "myEnum");
+			ar(myVector, "myVector");
+			ar(myMap, "myMap");
+			ar(myMapLegacy, "myMapLegacy");
+		}
+	};
+
+	const string parsedJson = "{"
+		"\"myString\": \"STR\","
+		"\"myEnum\": \"Value\","
+		"\"myVector\": ["
+			"0,"
+			"1"
+		"],"
+		"\"myMap\": {"
+			"\"first\": \"1\","
+			"\"second\": \"2\""
+		"},"
+		"\"myMapLegacy\": ["
+			"{ \"name\": \"0\", \"value\": \"1337\" },"
+			"{ \"name\": \"1\", \"value\": \"9001\" }"
+		"]"
+	"}";
+
+	SNativeJsonRepresentation parsedObject;
+
+	// Validate that loading succeeded
+	const bool wasParsed = host->LoadJsonBuffer(Serialization::SStruct(parsedObject), parsedJson.data(), parsedJson.length());
+	REQUIRE(wasParsed);
+	REQUIRE(parsedObject.myString == "STR");
+	REQUIRE(parsedObject.myEnum == EMyEnum::Value);
+	REQUIRE(parsedObject.myVector.size() == 2);
+	REQUIRE(parsedObject.myVector[0] == 0);
+	REQUIRE(parsedObject.myVector[1] == 1);
+	REQUIRE(parsedObject.myMap.find("first") != parsedObject.myMap.end());
+	REQUIRE(parsedObject.myMap["first"] == "1");
+	REQUIRE(parsedObject.myMap.find("second") != parsedObject.myMap.end());
+	REQUIRE(parsedObject.myMap["second"] == "2");
+	REQUIRE(parsedObject.myMapLegacy.find("0") != parsedObject.myMapLegacy.end());
+	REQUIRE(parsedObject.myMapLegacy["0"] == "1337");
+	REQUIRE(parsedObject.myMapLegacy.find("1") != parsedObject.myMapLegacy.end());
+	REQUIRE(parsedObject.myMapLegacy["1"] == "9001");
+
+	// Validate that loading succeeds
+	DynArray<char> buffer;
+	host->SaveJsonBuffer(buffer, Serialization::SStruct(parsedObject));
+
+	const string expectedJson = "{"
+		"\n\t\"myString\": \"STR\","
+		"\n\t\"myEnum\": \"Value\","
+		"\n\t\"myVector\": [ 0, 1 ],"
+		"\n\t\"myMap\": { \"first\": \"1\", \"second\": \"2\" },"
+		"\n\t\"myMapLegacy\": { \"0\": \"1337\", \"1\": \"9001\" }"
+	"\n}";
+
+	REQUIRE(string(buffer.data()) == expectedJson);
+}
+
 TEST(ArchiveHostTest, BinBasicTypes)
 {
 	std::unique_ptr<Serialization::IArchiveHost> host(Serialization::CreateArchiveHost());

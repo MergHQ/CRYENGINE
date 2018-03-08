@@ -29,10 +29,10 @@
 			}
 		]
 	},
-	"console_variables": [
-		{ "name": "sys_target_platforms", "value": "pc,ps4,xboxone,linux" }
-	],
-	"console_commands": [
-		{ "name": "map", "value": "example" }
-	]
+	"console_variables": {
+		"sys_target_platforms": "pc,ps4,xboxone,linux"
+	},
+	"console_commands": {
+		"map": "example"
+	}
 }

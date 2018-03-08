@@ -45,6 +45,7 @@ public:
 	YASLI_INLINE bool operator()(BlackBox& ser, const char* name = "", const char* label = 0) override;
 	YASLI_INLINE bool operator()(ContainerInterface& ser, const char* name = "", const char* label = 0) override;
 	YASLI_INLINE bool operator()(KeyValueInterface& ser, const char* name = "", const char* label = 0) override;
+	YASLI_INLINE bool operator()(KeyValueDictionaryInterface& ser, const char* name = "", const char* label = 0) override;
 	YASLI_INLINE bool operator()(PointerInterface& ser, const char* name = "", const char* label = 0) override;
 
 	using Archive::operator();

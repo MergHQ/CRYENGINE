@@ -68,15 +68,15 @@ void CProjectManager::StoreConsoleVariable(const char* szCVarName, const char* s
 {
 	for (auto it = m_project.consoleVariables.begin(); it != m_project.consoleVariables.end(); ++it)
 	{
-		if (!stricmp(it->key, szCVarName))
+		if (!stricmp(it->first, szCVarName))
 		{
-			it->value = szValue;
+			it->second = szValue;
 
 			return;
 		}
 	}
 
-	m_project.consoleVariables.emplace_back(szCVarName, szValue);
+	m_project.consoleVariables.emplace(szCVarName, szValue);
 }
 
 void CProjectManager::SaveProjectChanges()
@@ -190,18 +190,14 @@ bool CProjectManager::ParseProjectFile()
 		m_sys_game_folder->Set(m_project.assetDirectory);
 		m_sys_game_name->Set(m_project.name);
 
-		for (SProject::SConsoleInstruction& consoleVariable : m_project.consoleVariables)
+		for(const std::pair<string, string>& consoleVariablePair : m_project.consoleVariables)
 		{
-			gEnv->pConsole->LoadConfigVar(consoleVariable.key, consoleVariable.value);
+			gEnv->pConsole->LoadConfigVar(consoleVariablePair.first, consoleVariablePair.second);
 		}
 
-		for (SProject::SConsoleInstruction& consoleCommand : m_project.consoleCommands)
+		for (const std::pair<string, string>& consoleCommandPair : m_project.consoleCommands)
 		{
-			stack_string command = consoleCommand.key;
-			command.append(" ");
-			command.append(consoleCommand.value.c_str());
-			
-			gEnv->pConsole->ExecuteString(command.c_str(), false, true);
+			gEnv->pConsole->LoadConfigCommand(consoleCommandPair.first.c_str(), consoleCommandPair.second.c_str());
 		}
 
 		auto gameDllIt = m_project.legacyGameDllPaths.find("any");
@@ -357,8 +353,8 @@ void CProjectManager::MigrateFromLegacyWorkflowIfNecessary()
 
 		string sProjectFile = PathUtil::Make(m_project.rootDirectory, m_sys_project->GetString());
 		// Make sure we have the .cryproject extension
-		sProjectFile = PathUtil::ReplaceExtension(sProjectFile, ".cryproject");
-		gEnv->pSystem->GetArchiveHost()->SaveJsonFile(sProjectFile, Serialization::SStruct(m_project));
+		m_project.filePath = PathUtil::ReplaceExtension(sProjectFile, ".cryproject");
+		SaveProjectChanges();
 	}
 }
 

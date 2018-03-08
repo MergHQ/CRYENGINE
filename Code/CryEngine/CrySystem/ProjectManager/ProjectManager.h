@@ -80,27 +80,10 @@ namespace Cry
 
 			std::unordered_map<string, string, stl::hash_strcmp<string>> legacyGameDllPaths;
 
-			struct SConsoleInstruction
-			{
-				SConsoleInstruction() {}
-				SConsoleInstruction(const char* szKey, const char* szValue)
-					: key(szKey)
-					, value(szValue) {}
-
-				void Serialize(Serialization::IArchive& ar)
-				{
-					ar(key, "name", "name");
-					ar(value, "value", "value");
-				}
-
-				string key;
-				string value;
-			};
-
 			// Specialized CVar values for the project
-			std::vector<SConsoleInstruction> consoleVariables;
+			std::map<string, string> consoleVariables;
 			// Specialized console commands for the project
-			std::vector<SConsoleInstruction> consoleCommands;
+			std::map<string, string> consoleCommands;
 		};
 
 		template<unsigned int version> struct SProjectFileParser {};
@@ -109,7 +92,7 @@ namespace Cry
 		//! Bump this when syntax changes, or default plug-ins are added
 		//! This allows us to automatically migrate and support older versions
 		//! Version 0 = pre-project system, allows for migrating from legacy (game.cfg etc) to .cryproject
-		constexpr unsigned int LatestProjectFileVersion = 3;
+		constexpr unsigned int LatestProjectFileVersion = 4;
 
 		template<>
 		struct SProjectFileParser<LatestProjectFileVersion>
@@ -215,6 +198,7 @@ namespace Cry
 				ar(SInfo(project), "info", "info");
 				ar(SContent(project), "content", "content");
 				ar(SRequire(project), "require", "require");
+				
 				ar(project.consoleVariables, "console_variables", "console_variables");
 				ar(project.consoleCommands, "console_commands", "console_commands");
 			}
