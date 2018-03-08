@@ -65,6 +65,8 @@ public:
 	virtual void GetFileData(char const* const szName, SFileData& fileData) const override;
 	// ~CryAudio::Impl::IImpl
 
+	void SetPanningRule(int const panningRule);
+
 private:
 
 	bool                ParseSwitchOrState(XmlNodeRef const pNode, AkUInt32& outStateOrSwitchGroupId, AkUInt32& outStateOrSwitchId);
