@@ -2957,14 +2957,27 @@ void CClothPiece::UpdateSimulation(const DualQuat* pTransformations, const uint 
 		m_simulator.SetGpuSkinning(true);
 	}
 
-	if (doSkinning)
+	// In case of skinning:   Set all vertices to skinned position
+	// In case of simulation: Set all attached vertices to skinned positions, to avoid any floating-point issues on final positions (e.g., if cloth is cut into skinned & simulated parts)
+	const bool setAllPositions = doSkinning;
+	SetRenderPositionsFromSkinnedPositions(setAllPositions);
+}
+
+void CClothPiece::SetRenderPositionsFromSkinnedPositions(bool setAllPositions)
+{
+	DynArray<Vec3>& tmpClothVtx = m_buffers->m_tmpClothVtx;
+	DynArray<Vec3> const& arrDstPositions = m_buffers->m_arrDstPositions;
+	vtx_idx* const& weldMap = m_clothGeom->weldMap;
+	const int s = arrDstPositions.size();
+	for (int i = 0; i < s; ++i)
 	{
-		for (int i = 0; i < arrDstPositions.size(); i++)
+		const int idx = weldMap[i];
+		if (setAllPositions || m_simulator.IsParticleAttached(idx))
 		{
 #ifdef CLOTH_SSE
-			tmpClothVtx[m_clothGeom->weldMap[i]].Load((const float*)&arrDstPositions[i]);
+			tmpClothVtx[idx].Load((const float*)&arrDstPositions[i]);
 #else
-			tmpClothVtx[m_clothGeom->weldMap[i]] = arrDstPositions[i];
+			tmpClothVtx[idx] = arrDstPositions[i];
 #endif
 		}
 	}
