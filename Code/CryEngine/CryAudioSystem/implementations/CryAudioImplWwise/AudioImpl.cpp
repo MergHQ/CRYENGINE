@@ -368,6 +368,8 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 #endif  // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 	initSettings.uPrepareEventMemoryPoolID = prepareMemPoolId;
 	initSettings.bEnableGameSyncPreparation = false;//TODO: ???
+	g_cvars.m_panningRule = crymath::clamp(g_cvars.m_panningRule, 0, 1);
+	initSettings.settingsMainOutput.ePanningRule = static_cast<AkPanningRule>(g_cvars.m_panningRule);
 
 	initSettings.bUseLEngineThread = g_cvars.m_enableEventManagerThread > 0;
 	initSettings.bUseSoundBankMgrThread = g_cvars.m_enableSoundBankManagerThread > 0;
@@ -558,6 +560,8 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 		m_initBankId = AK_INVALID_BANK_ID;
 	}
 
+	g_cvars.SetImpl(this);
+
 	return ERequestStatus::Success;
 }
 
@@ -663,6 +667,7 @@ ERequestStatus CImpl::ShutDown()
 ERequestStatus CImpl::Release()
 {
 	delete this;
+	g_cvars.SetImpl(nullptr);
 	g_cvars.UnregisterVariables();
 
 	CObject::FreeMemoryPool();
@@ -1395,6 +1400,12 @@ void CImpl::SetLanguage(char const* const szLanguage)
 		CONVERT_CHAR_TO_OSCHAR(temp.c_str(), pTemp);
 		m_fileIOHandler.SetLanguageFolder(pTemp);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::SetPanningRule(int const panningRule)
+{
+	AK::SoundEngine::SetPanningRule(static_cast<AkPanningRule>(panningRule));
 }
 } // namespace Wwise
 } // namespace Impl

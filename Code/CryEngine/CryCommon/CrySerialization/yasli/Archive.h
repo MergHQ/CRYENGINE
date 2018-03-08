@@ -15,6 +15,7 @@
 #include <CrySerialization/yasli/Helpers.h>
 #include <CrySerialization/yasli/Serializer.h>
 #include <CrySerialization/yasli/KeyValue.h>
+#include <CrySerialization/yasli/KeyValueDictionary.h>
 #include <CrySerialization/yasli/TypeID.h>
 
 #define YASLI_HELPERS_DECLARE_DEFAULT_SERIALIZEABLE_TYPE(type) template <> struct IsDefaultSerializaeble<type> { static const bool value = true; };
@@ -26,6 +27,7 @@ struct CallbackInterface;
 
 class Object;
 class KeyValueInterface;
+class KeyValueDictionaryInterface;
 class EnumDescription;
 template <class Enum>
 EnumDescription& getEnumDescription();
@@ -141,6 +143,7 @@ public:
 	virtual bool operator()(PointerInterface& ptr, const char* name = "", const char* label = 0);
 	virtual bool operator()(Object& obj, const char* name = "", const char* label = 0) { return false; }
 	virtual bool operator()(KeyValueInterface& keyValue, const char* name = "", const char* label = 0) { return operator()(Serializer(keyValue), name, label); }
+	virtual bool operator()(KeyValueDictionaryInterface& container, const char* name = "", const char* label = 0);
 	virtual bool operator()(CallbackInterface& callback, const char* name = "", const char* label = 0) { return false; }
 
 	// No point in supporting long double since it is represented as double on MSVC
@@ -329,6 +332,11 @@ inline bool Archive::operator()(PointerInterface& ptr, const char* name, const c
 {
 	Serializer ser(ptr);
 	return operator()(ser, name, label);
+}
+
+inline bool Archive::operator()(KeyValueDictionaryInterface& container, const char* name, const char* label)
+{
+	return container.serializeAsVector(*this, name, label);
 }
 
 template<class T, int Size>

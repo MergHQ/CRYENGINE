@@ -1841,7 +1841,8 @@ void CRenderView::ExpandPermanentRenderObjects()
 					if (!needsCompilation && pri.m_pRenderElement && pri.m_pRenderElement->m_Flags & (FCEF_DIRTY | FCEF_SKINNED | FCEF_UPDATEALWAYS))
 					{
 						needsCompilation = true;
-						compilationOptions &= ~eObjCompilationOption_PerInstanceConstantBuffer;
+						if (!record.requiresInstanceDataUpdate)
+							compilationOptions &= ~eObjCompilationOption_PerInstanceConstantBuffer;
 
 						if(pri.m_pRenderElement->m_Flags & FCEF_SKINNED)
 							compilationOptions |= eObjCompilationOption_PerInstanceExtraResources;

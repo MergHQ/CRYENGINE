@@ -328,6 +328,7 @@ public:
 	void                 SetSkinnedPositions(const Vector4* points);
 	void                 GetVertices(Vector4* pWorldCoords) const;
 	void                 GetVerticesFaded(Vector4* pWorldCoords);
+	bool                 IsParticleAttached(unsigned int idx) const { assert(idx < m_nVtx); return m_particlesCold[idx].bAttached != 0; }
 
 	/**
 	 * Laplace-filter for input-positions, using the default mesh-edges.
@@ -581,6 +582,7 @@ private:
 	void    UpdateSimulation(const DualQuat* pTransformations, const uint transformationCount);
 	template<bool PREVIOUS_POSITIONS>
 	void    SkinSimulationToRenderMesh(int lod, CVertexData& vertexData, const strided_pointer<const Vec3>& pVertexPositionsPrevious);
+	void    SetRenderPositionsFromSkinnedPositions(bool setAllPositions);
 
 	void    WaitForJob(bool bPrev);
 

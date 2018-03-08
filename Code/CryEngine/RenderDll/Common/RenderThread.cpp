@@ -366,10 +366,10 @@ void SRenderThread::RC_PrecacheResource(ITexture* pTP, float fMipFactor, float f
 	}
 
 	_smart_ptr<ITexture> pRefTexture = pTP;
-	ExecuteRenderThreadCommand(
-		[=]{ gRenDev->PrecacheTexture(pRefTexture, fMipFactor, fTimeToReady, Flags, nUpdateId, nCounter); },
-		ERenderCommandFlags::LevelLoadingThread_defer
-	);
+	ExecuteRenderThreadCommand([=]
+	{
+		RC_PrecacheResource(pRefTexture.get(), fMipFactor, fTimeToReady, Flags, nUpdateId, nCounter);
+	}, ERenderCommandFlags::LevelLoadingThread_defer);
 }
 
 void SRenderThread::RC_TryFlush()
@@ -472,9 +472,6 @@ void SRenderThread::RC_StopVideoThread()
 #pragma warning(disable : 4800)
 void SRenderThread::ProcessCommands()
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread::ProcessCommands");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("SRenderThread::ProcessCommands");
-
 #ifndef STRIP_RENDER_THREAD
 	assert(IsRenderThread());
 	if (!CheckFlushCond())
@@ -526,42 +523,57 @@ void SRenderThread::ProcessCommands()
 		switch (nC)
 		{
 		case eRC_CreateDevice:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_CreateDevice");
 			m_bSuccessful &= gRenDev->RT_CreateDevice();
+		}
 			break;
 		case eRC_ResetDevice:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_ResetDevice");
 			if (m_eVideoThreadMode == eVTM_Disabled)
 				gRenDev->RT_Reset();
+		}
 			break;
 	#if CRY_PLATFORM_DURANGO
 		case eRC_SuspendDevice:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_SuspendDevice");
 			if (m_eVideoThreadMode == eVTM_Disabled)
 				gRenDev->RT_SuspendDevice();
+		}
 			break;
 		case eRC_ResumeDevice:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_ResumeDevice");
 			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
 				gRenDev->RT_ResumeDevice();
 				//Now we really want to resume the device
 				bSuspendDevice = false;
 			}
+		}
 			break;
 	#endif
 
 		case eRC_BeginFrame:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_BeginFrame");
+			m_displayContextKey = ReadCommand<SDisplayContextKey>(n);
+			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
-				m_displayContextKey = ReadCommand<SDisplayContextKey>(n);
-				if (m_eVideoThreadMode == eVTM_Disabled)
-				{
-					gRenDev->RT_BeginFrame(m_displayContextKey);
-					m_bBeginFrameCalled = false;
-				}
-				else
-				{
-					m_bBeginFrameCalled = true;
-				}
+				gRenDev->RT_BeginFrame(m_displayContextKey);
+				m_bBeginFrameCalled = false;
 			}
+			else
+			{
+				m_bBeginFrameCalled = true;
+			}
+		}
 			break;
 		case eRC_EndFrame:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_EndFrame");
 			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
 				gRenDev->RT_EndFrame();
@@ -577,64 +589,71 @@ void SRenderThread::ProcessCommands()
 				m_bEndFrameCalled = true;
 				gRenDev->m_nFrameSwapID++;
 			}
+		}
 			break;
 
 		case eRC_FlashRender:
-			{
-				START_PROFILE_RT;
-				IFlashPlayer_RenderProxy* pPlayer = ReadCommand<IFlashPlayer_RenderProxy*>(n);
-				bool stereo = ReadCommand<int>(n) != 0;
-				gRenDev->RT_FlashRenderInternal(pPlayer, stereo, m_eVideoThreadMode == eVTM_Disabled);
-				END_PROFILE_PLUS_RT(gRenDev->m_fRTTimeFlashRender);
-			}
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_FlashRender");
+			START_PROFILE_RT;
+			IFlashPlayer_RenderProxy* pPlayer = ReadCommand<IFlashPlayer_RenderProxy*>(n);
+			bool stereo = ReadCommand<int>(n) != 0;
+			gRenDev->RT_FlashRenderInternal(pPlayer, stereo, m_eVideoThreadMode == eVTM_Disabled);
+			END_PROFILE_PLUS_RT(gRenDev->m_fRTTimeFlashRender);
+		}
 			break;
 		case eRC_FlashRenderLockless:
-			{
-				IFlashPlayer_RenderProxy* pPlayer = ReadCommand<IFlashPlayer_RenderProxy*>(n);
-				int cbIdx = ReadCommand<int>(n);
-				bool stereo = ReadCommand<int>(n) != 0;
-				bool finalPlayback = ReadCommand<int>(n) != 0;
-				gRenDev->RT_FlashRenderPlaybackLocklessInternal(pPlayer, cbIdx, stereo, finalPlayback, m_eVideoThreadMode == eVTM_Disabled);
-			}
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_FlashRenderLockless");
+			IFlashPlayer_RenderProxy* pPlayer = ReadCommand<IFlashPlayer_RenderProxy*>(n);
+			int cbIdx = ReadCommand<int>(n);
+			bool stereo = ReadCommand<int>(n) != 0;
+			bool finalPlayback = ReadCommand<int>(n) != 0;
+			gRenDev->RT_FlashRenderPlaybackLocklessInternal(pPlayer, cbIdx, stereo, finalPlayback, m_eVideoThreadMode == eVTM_Disabled);
+		}
 			break;
 
 		case eRC_RenderScene:
-			{
-				START_PROFILE_RT;
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_RenderScene");
 
-				int nFlags = ReadCommand<int>(n);
-				RenderFunc pRenderFunc = ReadCommand<RenderFunc>(n);
-				CRenderView* pRenderView = ReadCommand<CRenderView*>(n);
-				// when we are in video mode, don't execute the command
-				if (m_eVideoThreadMode == eVTM_Disabled)
-					gRenDev->RT_RenderScene(pRenderView, nFlags);
-				else
+			START_PROFILE_RT;
+
+			int nFlags = ReadCommand<int>(n);
+			RenderFunc pRenderFunc = ReadCommand<RenderFunc>(n);
+			CRenderView* pRenderView = ReadCommand<CRenderView*>(n);
+			// when we are in video mode, don't execute the command
+			if (m_eVideoThreadMode == eVTM_Disabled)
+				gRenDev->RT_RenderScene(pRenderView, nFlags);
+			else
+			{
+				// cleanup when showing loading render screen
+				if (!pRenderView->IsRecursive())
 				{
-					// cleanup when showing loading render screen
-					if (!pRenderView->IsRecursive())
-					{
-						////////////////////////////////////////////////
-						// to non-thread safe remaing work for *::Render functions
-						CRenderMesh::RT_PerFrameTick();
-						CMotionBlur::InsertNewElements();
-					}
+					////////////////////////////////////////////////
+					// to non-thread safe remaing work for *::Render functions
+					CRenderMesh::RT_PerFrameTick();
+					CMotionBlur::InsertNewElements();
 				}
-				pRenderView->Release();
-				END_PROFILE_PLUS_RT(gRenDev->m_fRTTimeSceneRender);
 			}
+			pRenderView->Release();
+			END_PROFILE_PLUS_RT(gRenDev->m_fRTTimeSceneRender);
+		}
 			break;
 
 		case eRC_LambdaCall:
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_LambdaCall");
+			SRenderThreadLambdaCallback* pRTCallback = ReadCommand<SRenderThreadLambdaCallback*>(n);
+			bool bSkipCommand = (m_eVideoThreadMode != eVTM_Disabled) && (uint32(pRTCallback->flags & ERenderCommandFlags::SkipDuringLoading) != 0);
+			// Execute lambda callback on a render thread
+			if (!bSkipCommand)
 			{
-				SRenderThreadLambdaCallback* pRTCallback = ReadCommand<SRenderThreadLambdaCallback*>(n);
-				bool bSkipCommand = (m_eVideoThreadMode != eVTM_Disabled)	&& (uint32(pRTCallback->flags & ERenderCommandFlags::SkipDuringLoading) != 0);
-				// Execute lambda callback on a render thread
-				if (!bSkipCommand)
-				{
-					pRTCallback->callback();
-				}
-				m_lambdaCallbacksPool.Delete(pRTCallback);
+				pRTCallback->callback();
 			}
+
+			m_lambdaCallbacksPool.Delete(pRTCallback);
+		}
 			break;
 
 		default:

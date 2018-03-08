@@ -2267,6 +2267,7 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 		GetCVars()->e_svoTI_NumberOfBounces++;
 
 	GetCVars()->e_svoTI_SpecularAmplifier = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SpecularAmplifier", "0"));
+	GetCVars()->e_svoTI_SpecularFromDiffuse = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SpecularFromDiffuse", "0"));
 
 	GetCVars()->e_svoMinNodeSize = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "MinNodeSize", "0"));
 
@@ -2281,6 +2282,7 @@ void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
 
 	GetCVars()->e_svoTI_ShadowsFromSun = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ShadowsFromSun", "0"));
 	GetCVars()->e_svoTI_ShadowsSoftness = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ShadowsSoftness", "0"));
+	GetCVars()->e_svoTI_ShadowsFromHeightmap = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ShadowsFromHeightmap", "0"));
 	GetCVars()->e_svoTI_Troposphere_Active = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Active", "0"));
 	GetCVars()->e_svoTI_Troposphere_Brightness = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Brightness", "0"));
 	GetCVars()->e_svoTI_Troposphere_Ground_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Ground_Height", "0"));

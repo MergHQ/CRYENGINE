@@ -2027,6 +2027,7 @@ void CEntityPhysics::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 			{
 				ssv.pMesh->SetForeignData(pStatObjNew, 0);
 				GetEntity()->GetEntityRender()->SetSlotGeometry(0, pStatObjNew);
+				pRenderNode = GetEntity()->GetRenderNode();
 			}
 			GetEntity()->GetEntityRender()->InvalidateLocalBounds();
 			// need to force BBox to the brush since it can skip BBox update from XForm if the matrix doesn't change

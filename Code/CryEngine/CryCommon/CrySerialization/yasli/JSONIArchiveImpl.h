@@ -968,6 +968,102 @@ bool JSONIArchive::operator()(KeyValueInterface& keyValue, const char* name, con
 	return false;
 }
 
+bool JSONIArchive::operator()(KeyValueDictionaryInterface& ser, const char* name, const char* label)
+{
+	// JSON only supports strings as keys
+	if (ser.keyType() != TypeID::get<yasli::string>())
+	{
+		return ser.serializeAsVector(*this, name, label);
+	}
+
+	ser.clear();
+
+	if (findName(name)) {
+		bool containerBracket = openBracket();
+		if (containerBracket) {
+			stack_.push_back(Level());
+			stack_.back().start = token_.end;
+
+			while (true) {
+				stack_.back().isKeyValue = true;
+				ser.serializeKey(*this);
+				stack_.back().isKeyValue = false;
+
+				// Delimiter
+				readToken();
+				if (!expect(':'))
+					return false;
+
+				// Serialize the value (passing the key to the archive)
+				stack_.back().isKeyValue = true;
+				ser.serializeValue(*this);
+				stack_.back().isKeyValue = false;
+
+				// read comma or closing bracket
+				readToken();
+
+				if (token_ != ',')
+					break;
+			}
+
+			YASLI_ASSERT(!stack_.empty());
+			stack_.pop_back();
+			return true;
+		}
+		else if(openContainerBracket()) // Fall back to legacy parsing for backwards compatibility
+		{
+			stack_.push_back(Level());
+			stack_.back().start = token_.end;
+
+			while (true)
+			{
+				if (!openBracket())
+					return false;
+
+				// Read string "key"
+				readToken();
+				// Delimiter
+				readToken();
+				if (!expect(':'))
+					return false;
+
+				stack_.back().isKeyValue = true;
+				ser.serializeKey(*this);
+				stack_.back().isKeyValue = false;
+
+				// Read the comma starting the value
+				readToken();
+				if (!expect(','))
+					return false;
+
+				// Read string "value"
+				readToken();
+				// Delimiter
+				readToken();
+				if (!expect(':'))
+					return false;
+
+				stack_.back().isKeyValue = true;
+				ser.serializeValue(*this);
+				stack_.back().isKeyValue = false;
+
+				readToken();
+				if (!expect('}'))
+					return false;
+
+				// read comma, if any
+				readToken();
+				if (token_ != ',')
+					break;
+			}
+
+			YASLI_ASSERT(!stack_.empty());
+			stack_.pop_back();
+			return true;
+		}
+	}
+	return false;
+}
 
 bool JSONIArchive::operator()(PointerInterface& ser, const char* name, const char* label)
 {

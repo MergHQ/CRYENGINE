@@ -220,6 +220,8 @@ def copy_libs(project, project_path, export_path):
     if not libs:
         return
 
+    # The bin folders are optional since they can be generated from the source code.
+    # So if they don't exist just skip them.
     bin_dir = os.path.join(project_path, "bin")
     if not os.path.isdir(bin_dir):
         return
@@ -248,13 +250,15 @@ def copy_libs(project, project_path, export_path):
             include = ["{}*".format(win86)]
             src_path = os.path.join(bin_dir, "win_x86")
             dst_path = os.path.join(export_bin, "win_x86")
-            copy_directory_contents(src_path, dst_path, include, exclude, overwrite=True)
+            if os.path.isdir(src_path):
+                copy_directory_contents(src_path, dst_path, include, exclude, overwrite=True)
 
         if win64:
             include = ["{}*".format(win64)]
             src_path = os.path.join(bin_dir, "win_x64")
             dst_path = os.path.join(export_bin, "win_x64")
-            copy_directory_contents(src_path, dst_path, include, exclude, overwrite=True)
+            if os.path.isdir(src_path):
+                copy_directory_contents(src_path, dst_path, include, exclude, overwrite=True)
 
 def copy_configs(project_path, export_path, project_file_name):
     """

@@ -75,6 +75,8 @@ Texture2D noiseMap2D: register (t15);
 Texture2D shadowFromSvoMinMax: register (t15);
 Texture2D shadowFromSvoFinPrev: register (t16);
 
+Texture2D levelHeightmap: register (t8);
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Structures
 struct vtxOutWPOS
@@ -118,7 +120,7 @@ struct pixout_TraceSunShadows
 // _RT_SAMPLE1									Global environment map is available
 // _RT_SAMPLE2									Troposphere is enabled
 // _RT_SAMPLE3									Volumetric lightmaps enabled
-// _RT_SAMPLE4									ON - diffuse compuations, OFF - specular
+// _RT_SAMPLE4									ON - diffuse computations, OFF - specular
 // _RT_SAMPLE5									Albedo and normals in use
 // _RT_HW_PCF_COMPARE						Half-res kernel
 // _RT_LIGHT_TEX_PROJ						Simple RSM sun
@@ -133,6 +135,8 @@ struct pixout_TraceSunShadows
 // _RT_TILED_SHADING            Enable voxels tracing
 // _RT_ENVIRONMENT_CUBEMAP      Analytical proxies included into voxel tracing
 // _RT_REVERSE_DEPTH            Generate sun shadow mask by SVO ray tracing
+// _RT_PROJECTION_MULTI_RES     Compute simple specular using ALD results of diffuse tracing
+// _RT_QUALITY1                 Include terrain heightmap (whole level) into ray-traced sun shadows
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -879,7 +883,7 @@ float GetBlendMin(float2 tc0, float2 tc1, float fAverSmoothness, float fDepth0, 
 		float fDistTCRat = saturate(length(tc0 - tc1) / .025f);
 
 		// reduce ghosting for mirrors and in case of camera movement
-		fMinBlend = saturate(max(fMinBlend + fDistTCRat * (1.f - fMinBlend), 0.7 * saturate(pow(fAverSmoothness, 3))));
+		fMinBlend = saturate(max(fMinBlend + fDistTCRat * (1.f - fMinBlend), 0.5 * saturate(pow(fAverSmoothness, 3))));
 	}
 
 	fMinBlend += saturate(abs(fDepth0 - fDepth1) * PS_NearFarClipDist.y - .25);
@@ -1466,7 +1470,7 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 	int y = nXY.y & (GI_DIFFUSE_KERNEL_TILING - (int)1);
 	int i = x * GI_DIFFUSE_KERNEL_TILING + y;
 
-	const int nFramesNum = (SVO_TargetResScale.w || !IsDiffuseMode()) ? 1 : 2;
+	const int nFramesNum = (SVO_TargetResScale.w /*|| !IsDiffuseMode()*/) ? 1 : 2;
 
 	#if %_RT_MOTION_BLUR
 	const int nPassesNum = 2;
@@ -1531,9 +1535,9 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 
 		r.startpoint = vPos0;
 
-		//#if !%_RT_SAMPLE5 && %_RT_TILED_SHADING
-		//		r.startpoint += (vFocus * saturate(1 - fAverTransmittanceY * 4) + r.direction * .3) * (VOX_MIN_VOX_SIZE + fDistM*.025f);
-		//#endif
+		#if %_RT_TILED_SHADING
+		  r.startpoint += (vFocus * fAverTransmittanceY) * (VOX_MIN_VOX_SIZE + fDistM*.025f);
+		#endif
 
 	#if !ORBIS
 		#if %_RT_SAMPLE5 && !%_RT_LIGHTVOLUME1 && %_RT_LIGHTVOLUME0
@@ -1571,7 +1575,7 @@ pixoutMRT ConeTracePS(vtxOutWPOS IN)
 		fRayLen = VOX_CONE_MAX_LEN;
 	#endif
 
-		vC = ConeTraceTreeAndSky(fRayLen, r, SvoParamsDiffuse.x + power / 10000, SvoParamsInject.z, 0, false, false, normalize(vNor0) * saturate(1 - fAverTransmittanceY * 4));
+		vC = ConeTraceTreeAndSky(fRayLen, r, SvoParamsDiffuse.x + power / 10000, SvoParamsInject.z, 0, false, false, normalize(vNor0));
 
 		vC *= lerp(1.f, SvoParamsInject.w, saturate(fAverTransmittanceY * 8));
 
@@ -1750,8 +1754,10 @@ pixout_TraceSunShadows TraceSunShadowsPS(vtxOutWPOS IN)
 	OUT.SVO_Shadow = 1;
 
 	if (fDepthMin < 1.f)
-	//if (fDepthMax * PS_NearFarClipDist.y > VOX_SHADOW_MIN_DIST)
 	{
+		float fTransmittanceY = 0;
+		const float3 vNor0 = normalize(GetWorldSpaceNormals(IN.baseTC.xy, fTransmittanceY, normalize(IN.CamVec.xyz)).xyz);
+
 		float3 sunDir = 0;
 		float4 vPosR = 0, vDirF = 0, vCol = 0;
 		if (GetLightTI(0, vPosR, vDirF, vCol))
@@ -1769,6 +1775,8 @@ pixout_TraceSunShadows TraceSunShadowsPS(vtxOutWPOS IN)
 		nXY.y = (nXY.y + (int(SVO_FrameIdByte.x / 2) & 1)) & 1;
 		float3 vOffset = sunDir * (0.5f * (float)nXY.x + 0.25f * (float)nXY.y);
 
+		bool bTraceShadows = (fTransmittanceY > 0.1 || dot(sunDir, vNor0) > 0);
+
 		for (int i = 0; i < 2; i++)
 		{
 			float distance = length(arrPosMinMax[i] - PS_WorldViewPos.xyz);
@@ -1776,10 +1784,51 @@ pixout_TraceSunShadows TraceSunShadowsPS(vtxOutWPOS IN)
 			Ray r;
 			r.direction = sunDir;
 			r.startpoint = arrPosMinMax[i] + r.direction * 0.25f + vOffset * saturate(2.f - distance * 0.25f);
-			float4 vPos1 = 0, vNor1 = 0;
 
-			float3 vSurfNorm = (r.direction - normalize(IN.CamVec) * 0.5f);
-			OUT.SVO_Shadow[i] = saturate(1.f - ConeTraceTree(r, SvoParamsCommon.x, vPos1, vNor1, 0, 63, 0.f, 1.f, 0, 0, 0, false, false, false, vSurfNorm).a);
+			if(bTraceShadows)
+			{
+				// trace SVO
+				#if %_RT_TILED_SHADING
+			float4 vPos1 = 0, vNor1 = 0;
+					float3 vSurfNorm = (r.direction - normalize(IN.CamVec) * 0.5f);
+					OUT.SVO_Shadow[i] = saturate(1.f - ConeTraceTree(r, SvoParamsCommon.x, vPos1, vNor1, 0, 63, 0.f, 1.f, 0, 0, 0, false, false, false, vSurfNorm, 0, 1.f).a);
+				#endif
+
+				// trace heightmap
+				#if %_RT_QUALITY1 
+				if (OUT.SVO_Shadow[i] > 0)
+				{
+					const int samplesNum = 64;
+					const float maxShadowLen = 512.f; // in meters
+					const float shadowHardness = 1.f / 10.f;
+
+					const float texturePoolItemSizeScale = 1.f / 16.f; // 1.f / sqrt(e_TerrainTextureStreamingPoolItemsNum)
+					const float3 worldToTc = float3(1.f / VOX_WORLD_SIZE * texturePoolItemSizeScale, 1.f / VOX_WORLD_SIZE * texturePoolItemSizeScale, 1.f);
+					const float tcMin = 0.01 * texturePoolItemSizeScale;
+					const float tcMax = 0.98 * texturePoolItemSizeScale;
+
+					float3 vStepSize = r.direction / samplesNum * maxShadowLen;
+					float3 vPos = arrPosMinMax[i] + vStepSize;
+					vPos.z += distance * 0.001;
+					vPos *= worldToTc;
+					vStepSize *= worldToTc;
+
+					for (int t = 0; t < samplesNum; t++)
+					{
+						float h = tex2DlodLC(levelHeightmap, vPos.yx).x;
+
+						if (vPos.x > tcMin && vPos.x < tcMax && vPos.y >tcMin && vPos.y < tcMax)
+							OUT.SVO_Shadow[i] = min(OUT.SVO_Shadow[i], saturate(1.f - (h - vPos.z) * shadowHardness));
+
+						vPos += vStepSize;
+					}
+				}
+				#endif
+			}
+			else
+			{
+				OUT.SVO_Shadow[i] = 0;
+			}
 
 			if (fDepthMin / fDepthMax > VOX_DEPTH_RANGE_THRESHOLD)
 			{
@@ -2626,7 +2675,7 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 
 		OUT.Diffuse.xyz = lerp(vRGB * fIntensity, vRGB * vALD.w, pow(gbuffer.Smoothness, 2));
 
-		float4 vFinalDiffuse = tex2DlodPC(sceneDiffuseFin, float4(IN.baseTC.xy, 0, 0));
+		float4 vFinalDiffuse = tex2DlodPC(sceneDiffuseFin, float4(IN.baseTC.xy, 0, 0)) / SvoParamsDiffuse.w * SvoParamsSpecular.w;
 
 		OUT.Diffuse = lerp(vFinalDiffuse, OUT.Diffuse, saturate(pow(gbuffer.Smoothness * 3 - .75, 1)));
 
@@ -2668,6 +2717,27 @@ pixoutMRT UpScalePS(vtxOutWPOS IN)
 		}
 		float4 shadowSvoFinPrev = tex2DlodPC(shadowFromSvoFinPrev, float4(vReprojTC.xy, 0, 0));
 		OUT.Specular = clamp(lerp(shadowSvoFinPrev, fShadowSvoFin, fBlend), 0, 1);
+	}
+#endif
+
+#if %_RT_PROJECTION_MULTI_RES
+	{
+		// simple specular
+		half power = exp2(7.h * gbuffer.Smoothness + 0.5f);
+		float3 vH = normalize(-normalize(IN.CamVec.xyz) + normalize(vALD.xyz));
+		float NdotH = dot(vNor0, vH);	
+		float intensity = fDirIntens * pow(saturate(NdotH), power) * (1 + max(0, vALD.w - fDirIntens) / 2) + max(0, vALD.w - fDirIntens)/2;
+		OUT.Diffuse1.xyz = vRGB * intensity;
+
+	#if !%_RT_SAMPLE5 && !%_RT_LIGHTVOLUME1
+		if (SvoParamsCommon.z > 0)
+			OUT.Diffuse1.xyz += SvoParamsCommon.z * vSkyColorTop.z;
+		else
+			OUT.Diffuse1.xyz += -SvoParamsCommon.z * vSkyColorTop.z * 0.15f;
+	#endif
+
+		OUT.Diffuse1.xyz *= SvoParamsSpecular.w;
+		OUT.Diffuse1.w = fDepthC;
 	}
 #endif
 
