@@ -142,3 +142,6 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineModule(CryEntitySystem PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine")
+
+# Make sure that the entity system always compiles without items that are deprecated
+target_compile_definitions(${THIS_PROJECT} PRIVATE EXCLUDE_5_5_ENTITY_DEPRECATIONS=1)

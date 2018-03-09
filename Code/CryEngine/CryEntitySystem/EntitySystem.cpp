@@ -3247,7 +3247,7 @@ void CEntitySystem::EnableComponentUpdates(IEntityComponent* pComponent, bool bE
 		// Check if any other components need the update event
 		pEntity->m_components.ForEach([pComponent, &bRequiresUpdate](const SEntityComponentRecord& otherComponentRecord) -> bool
 		{
-			if (otherComponentRecord.pComponent.get() != pComponent && (otherComponentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE)) != 0)
+			if (otherComponentRecord.pComponent.get() != pComponent && (otherComponentRecord.registeredEventsMask & ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE)) != 0)
 			{
 			  bRequiresUpdate = true;
 			}

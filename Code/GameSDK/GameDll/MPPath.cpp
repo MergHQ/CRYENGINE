@@ -59,5 +59,5 @@ void CMPPath::ProcessEvent( const SEntityEvent& details )
 
 uint64 CMPPath::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_LEVEL_LOADED);
+	return ENTITY_EVENT_BIT(ENTITY_EVENT_LEVEL_LOADED);
 }

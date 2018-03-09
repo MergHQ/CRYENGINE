@@ -110,7 +110,7 @@ namespace SchematycBaseEnv
 
 	uint64 CEntityGameObjectExtension::GetEventMask() const
 	{
-		return BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_START_LEVEL) | BIT64(ENTITY_EVENT_DONE);
+		return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_LEVEL) | ENTITY_EVENT_BIT(ENTITY_EVENT_DONE);
 	}
 
 	void CEntityGameObjectExtension::ProcessEvent(const SEntityEvent& event)

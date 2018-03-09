@@ -77,5 +77,5 @@ void CEntityComponentTrackViewNode::ProcessEvent(const SEntityEvent& event)
 //////////////////////////////////////////////////////////////////////////
 uint64 CEntityComponentTrackViewNode::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_ANIM_EVENT);
+	return ENTITY_EVENT_BIT(ENTITY_EVENT_ANIM_EVENT);
 }

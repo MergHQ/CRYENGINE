@@ -87,15 +87,15 @@ void CBoidsProxy::ProcessEvent(const SEntityEvent& event)
 
 uint64 CBoidsProxy::GetEventMask() const
 {
-	uint64 eventMask = BIT64(ENTITY_EVENT_XFORM) |
-		BIT64(ENTITY_EVENT_PRE_SERIALIZE) |
-		BIT64(ENTITY_EVENT_ENTERAREA) |
-		BIT64(ENTITY_EVENT_LEAVEAREA) |
-		BIT64(ENTITY_EVENT_RESET);
+	uint64 eventMask = ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) |
+		ENTITY_EVENT_BIT(ENTITY_EVENT_PRE_SERIALIZE) |
+		ENTITY_EVENT_BIT(ENTITY_EVENT_ENTERAREA) |
+		ENTITY_EVENT_BIT(ENTITY_EVENT_LEAVEAREA) |
+		ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
 
 	if (m_playersInCount > 0)
 	{
-		eventMask |= BIT64(ENTITY_EVENT_UPDATE);
+		eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
 	}
 
 	return eventMask;
@@ -194,8 +194,8 @@ void CBoidObjectProxy::ProcessEvent(const SEntityEvent& event)
 uint64 CBoidObjectProxy::GetEventMask() const
 {
 	return
-		BIT64(ENTITY_EVENT_DONE) |
-		BIT64(ENTITY_EVENT_COLLISION);
+		ENTITY_EVENT_BIT(ENTITY_EVENT_DONE) |
+		ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -1131,7 +1131,7 @@ void CWeapon::ProcessEvent(const SEntityEvent& event)
 
 uint64 CWeapon::GetEventMask() const
 {
-	return BaseClass::GetEventMask() | BIT64(ENTITY_EVENT_HIDE) | BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_ANIM_EVENT);
+	return BaseClass::GetEventMask() | ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_ANIM_EVENT);
 }
 
 bool CWeapon::ResetParams()

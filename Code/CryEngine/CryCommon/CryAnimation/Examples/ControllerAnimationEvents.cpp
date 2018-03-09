@@ -24,7 +24,7 @@ public:
 	}
 
 	// Subscribe to animation events
-	virtual uint64 GetEventMask() const override { return BIT64(ENTITY_EVENT_ANIM_EVENT); }
+	virtual uint64 GetEventMask() const override { return ENTITY_EVENT_BIT(ENTITY_EVENT_ANIM_EVENT); }
 
 protected:
 	// The action controller we want to forward events to

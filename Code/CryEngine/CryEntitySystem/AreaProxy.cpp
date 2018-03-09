@@ -192,9 +192,9 @@ void CEntityComponentArea::ProcessEvent(const SEntityEvent& event)
 //////////////////////////////////////////////////////////////////////////
 uint64 CEntityComponentArea::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_XFORM) |
-	       BIT64(ENTITY_EVENT_SCRIPT_EVENT) |
-	       BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE);
+	return ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) |
+		ENTITY_EVENT_BIT(ENTITY_EVENT_SCRIPT_EVENT) |
+		ENTITY_EVENT_BIT(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE);
 }
 
 //////////////////////////////////////////////////////////////////////////

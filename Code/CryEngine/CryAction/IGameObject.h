@@ -613,7 +613,7 @@ struct IGameObjectExtension : public IEntityComponent
 
 	// IEntityComponent
 	//! GetEventMask implementation is now required for the legacy game object extensions, as a valid value is now needed for performance reasons.
-	//! Return the mask (e.g. BIT64(ENTITY_EVENT_XFORM) of all events you expect to process in ProcessEvent.
+	//! Return the mask (e.g. ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) of all events you expect to process in ProcessEvent.
 	virtual uint64 GetEventMask() const override = 0;
 	virtual void Initialize() override {};
 	virtual void NetReplicateSerialize(TSerialize ser) override

@@ -55,11 +55,11 @@ namespace Cry
 
 			virtual uint64 GetEventMask() const final
 			{
-				uint64 bitFlags = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+				uint64 bitFlags = ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 
 				if (m_mass > 0 || m_density > 0)
 				{
-					bitFlags |= BIT64(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED);
+					bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED);
 				}
 
 				return bitFlags;

@@ -72,7 +72,7 @@ void CEnvironmentProbeComponent::ProcessEvent(const SEntityEvent& event)
 
 uint64 CEnvironmentProbeComponent::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	return ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 }
 
 #ifndef RELEASE

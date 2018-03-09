@@ -974,7 +974,7 @@ void CEntity::UpdateComponentEventMask(const IEntityComponent* pComponent)
 //////////////////////////////////////////////////////////////////////////
 void CEntity::OnComponentMaskChanged(const SEntityComponentRecord& componentRecord, EntityEventMask prevMask)
 {
-	if ((componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE)) != 0)
+	if ((componentRecord.registeredEventsMask & ENTITY_EVENT_BIT(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE)) != 0)
 	{
 		// If any component want to process ENTITY_EVENT_RENDER_VISIBILITY_CHANGE we have to enable ENTITY_FLAG_SEND_RENDER_EVENT flag on the entity
 		SetFlags(GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
@@ -985,8 +985,8 @@ void CEntity::OnComponentMaskChanged(const SEntityComponentRecord& componentReco
 
 void CEntity::UpdateComponentEventListeners(const SEntityComponentRecord& componentRecord, EntityEventMask prevMask)
 {
-	const bool bWantsUpdates = (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE)) != 0;
-	const bool bHadUpdates = (prevMask & BIT64(ENTITY_EVENT_UPDATE)) != 0;
+	const bool bWantsUpdates = (componentRecord.registeredEventsMask & ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE)) != 0;
+	const bool bHadUpdates = (prevMask & ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE)) != 0;
 
 	if (bWantsUpdates && !bHadUpdates)
 	{
@@ -997,8 +997,8 @@ void CEntity::UpdateComponentEventListeners(const SEntityComponentRecord& compon
 		g_pIEntitySystem->EnableComponentUpdates(componentRecord.pComponent.get(), false);
 	}
 
-	const bool bWantsPrePhysicsUpdates = (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)) != 0;
-	const bool bHadPrePhysicsUpdates = (prevMask & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)) != 0;
+	const bool bWantsPrePhysicsUpdates = (componentRecord.registeredEventsMask & ENTITY_EVENT_BIT(ENTITY_EVENT_PREPHYSICSUPDATE)) != 0;
+	const bool bHadPrePhysicsUpdates = (prevMask & ENTITY_EVENT_BIT(ENTITY_EVENT_PREPHYSICSUPDATE)) != 0;
 
 	if (bWantsPrePhysicsUpdates && !bHadPrePhysicsUpdates)
 	{

@@ -77,9 +77,9 @@ namespace Cry
 
 		uint64 CWaterRippleComponent::GetEventMask() const
 		{
-			uint64 flags = BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_XFORM);
+			uint64 flags = ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM);
 			if (m_bEnabled)
-				flags |= BIT64(ENTITY_EVENT_UPDATE);
+				flags |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
 
 			return flags;
 		}

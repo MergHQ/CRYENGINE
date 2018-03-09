@@ -297,7 +297,7 @@ void CVicinityDependentObjectMover::ProcessEvent( const SEntityEvent& entityEven
 
 uint64 CVicinityDependentObjectMover::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
 }
 
 void CVicinityDependentObjectMover::GetMemoryUsage( ICrySizer *pSizer ) const

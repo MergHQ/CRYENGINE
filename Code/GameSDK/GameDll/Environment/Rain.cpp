@@ -155,7 +155,7 @@ void CRain::HandleEvent(const SGameObjectEvent& event)
 
 uint64 CRain::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_HIDE) | BIT64(ENTITY_EVENT_DONE);
+	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_DONE);
 }
 
 //------------------------------------------------------------------------

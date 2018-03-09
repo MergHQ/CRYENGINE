@@ -190,11 +190,11 @@ protected:
 
 	virtual uint64 GetEventMask() const override
 	{
-		uint64 bitFlags = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | BIT64(ENTITY_EVENT_SLOT_CHANGED);
+		uint64 bitFlags = ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | ENTITY_EVENT_BIT(ENTITY_EVENT_SLOT_CHANGED);
 
 		if (((uint32)m_type & (uint32)EMeshType::Collider) != 0)
 		{
-			bitFlags |= BIT64(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED);
+			bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED);
 		}
 
 		return bitFlags;

@@ -104,14 +104,14 @@ void CEntityAIListenerComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
-	case EEntityEvent::ENTITY_EVENT_UPDATE:
-	case EEntityEvent::ENTITY_EVENT_XFORM:
+	case ENTITY_EVENT_UPDATE:
+	case ENTITY_EVENT_XFORM:
 		Update();
 		break;
-	case EEntityEvent::ENTITY_EVENT_RESET:
+	case ENTITY_EVENT_RESET:
 		Reset(GetEntity()->GetSimulationMode());
 		break;
-	case EEntityEvent::ENTITY_EVENT_START_GAME:
+	case ENTITY_EVENT_START_GAME:
 	{
 		m_entityEventMask |= IsUsingBones() ? ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE) : ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM);
 		GetEntity()->UpdateComponentEventMask(this);

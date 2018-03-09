@@ -288,7 +288,7 @@ void CTornado::ProcessEvent(const SEntityEvent& event)
 
 uint64 CTornado::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
 }
 
 //------------------------------------------------------------------------

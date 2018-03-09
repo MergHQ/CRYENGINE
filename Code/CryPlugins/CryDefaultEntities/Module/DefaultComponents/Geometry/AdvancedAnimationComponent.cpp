@@ -167,16 +167,16 @@ namespace Cry
 
 		uint64 CAdvancedAnimationComponent::GetEventMask() const
 		{
-			uint64 bitFlags = CBaseMeshComponent::GetEventMask() | BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+			uint64 bitFlags = CBaseMeshComponent::GetEventMask() | ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 
 			if (m_pPoseAligner != nullptr)
 			{
-				bitFlags |= BIT64(ENTITY_EVENT_UPDATE);
+				bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
 			}
 
 			if (m_pActionController != nullptr)
 			{
-				bitFlags |= BIT64(ENTITY_EVENT_UPDATE) | BIT64(ENTITY_EVENT_ANIM_EVENT);
+				bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE) | ENTITY_EVENT_BIT(ENTITY_EVENT_ANIM_EVENT);
 			}
 
 			return bitFlags;

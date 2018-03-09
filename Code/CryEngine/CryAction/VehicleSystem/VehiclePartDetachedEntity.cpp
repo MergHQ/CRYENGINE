@@ -123,7 +123,7 @@ void CVehiclePartDetachedEntity::ProcessEvent(const SEntityEvent& event)
 
 uint64 CVehiclePartDetachedEntity::GetEventMask() const 
 {
-	return BIT64(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
 }
 
 //------------------------------------------------------------------------

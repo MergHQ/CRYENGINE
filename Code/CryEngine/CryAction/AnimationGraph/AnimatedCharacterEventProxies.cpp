@@ -34,7 +34,7 @@ void CAnimatedCharacterComponent_Base::ProcessEvent(const SEntityEvent& event)
 
 uint64 CAnimatedCharacterComponent_Base::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
+	return ENTITY_EVENT_BIT(ENTITY_EVENT_PREPHYSICSUPDATE);
 }
 
 //////////////////////////////////////////////////////////////////////////

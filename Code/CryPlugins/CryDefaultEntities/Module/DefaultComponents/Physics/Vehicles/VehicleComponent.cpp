@@ -252,10 +252,10 @@ namespace Cry
 
 		uint64 CVehiclePhysicsComponent::GetEventMask() const 
 		{
-			uint64 bitFlags = BIT64(ENTITY_EVENT_UPDATE) | BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+			uint64 bitFlags = ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE) | ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 			if (m_bSendCollisionSignal)
 			{
-				bitFlags |= BIT64(ENTITY_EVENT_COLLISION);
+				bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
 			}
 
 			return bitFlags;

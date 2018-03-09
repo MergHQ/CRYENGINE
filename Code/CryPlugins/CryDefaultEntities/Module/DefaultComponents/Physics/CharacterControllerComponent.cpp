@@ -160,17 +160,17 @@ void CCharacterControllerComponent::ProcessEvent(const SEntityEvent& event)
 
 uint64 CCharacterControllerComponent::GetEventMask() const
 {
-	uint64 eventMask = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	uint64 eventMask = ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 
 	// Only update when we have a physical entity
 	if (m_pEntity->GetPhysicalEntity() != nullptr)
 	{
-		eventMask |= BIT64(ENTITY_EVENT_UPDATE);
+		eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
 	}
 
 	if (m_physics.m_bSendCollisionSignal)
 	{
-		eventMask |= BIT64(ENTITY_EVENT_COLLISION);
+		eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
 	}
 
 	return eventMask;

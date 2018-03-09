@@ -1174,6 +1174,7 @@ install_headers(CrySystem CryThreading)
 			"CryEntitySystem/Examples/PhysicalizeEntity.cpp"
 			"CryEntitySystem/Examples/PhysicalizeEntitySlot.cpp"
 			"CryEntitySystem/Examples/PhysicalizeLiving.cpp"
+			"CryEntitySystem/Examples/MonitorCollisions.cpp"
 		SOURCE_GROUP "CryEntitySystem\\\\Networking"
 			"CryEntitySystem/Examples/ComponentNetReplicate.cpp"
 			"CryEntitySystem/Examples/ComponentNetSerialize.cpp"

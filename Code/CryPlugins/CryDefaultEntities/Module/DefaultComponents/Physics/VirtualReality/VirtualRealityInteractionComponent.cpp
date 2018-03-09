@@ -192,7 +192,7 @@ namespace Cry
 
 			uint64 CInteractionComponent::GetEventMask() const
 			{
-				return BIT64(ENTITY_EVENT_UPDATE);
+				return ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
 			}
 
 			void CInteractionComponent::ReleaseObject(SHand& hand, const Vec3& linearVelocity, const Vec3& angularVelocity)

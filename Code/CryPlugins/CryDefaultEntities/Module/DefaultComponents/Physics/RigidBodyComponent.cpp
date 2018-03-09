@@ -188,10 +188,10 @@ void CRigidBodyComponent::ProcessEvent(const SEntityEvent& event)
 
 uint64 CRigidBodyComponent::GetEventMask() const
 {
-	uint64 bitFlags = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | BIT64(ENTITY_EVENT_START_GAME);
+	uint64 bitFlags = ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME);
 	if (m_bSendCollisionSignal)
 	{
-		bitFlags |= BIT64(ENTITY_EVENT_COLLISION);
+		bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
 	}
 
 	return bitFlags;
