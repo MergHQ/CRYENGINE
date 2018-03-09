@@ -36,9 +36,19 @@ enum class ECryXmlVersion : uint32
 struct IArchiveHost
 {
 	virtual ~IArchiveHost() {}
+	//! Parses JSON from file into the specified object
+	//! \par Example
+	//! \include CrySystem/Examples/JsonSerialization.cpp
 	virtual bool LoadJsonFile(const SStruct& outObj, const char* filename, bool bCanBeOnDisk) = 0;
+	//! Saves JSON into a file, reading data from the specified object
+	//! \par Example
+	//! \include CrySystem/Examples/JsonSerialization.cpp
 	virtual bool SaveJsonFile(const char* filename, const SStruct& obj) = 0;
+	//! Parses JSON from buffer into the specified object
+	//! \par Example
+	//! \include CrySystem/Examples/JsonSerialization.cpp
 	virtual bool LoadJsonBuffer(const SStruct& outObj, const char* buffer, size_t bufferLength) = 0;
+	//! Saves JSON into a buffer, reading data from the specified object
 	virtual bool SaveJsonBuffer(DynArray<char>& outBuffer, const SStruct& obj) = 0;
 
 	virtual bool LoadBinaryFile(const SStruct& outObj, const char* filename) = 0;
