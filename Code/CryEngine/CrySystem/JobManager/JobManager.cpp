@@ -707,10 +707,10 @@ void Draw2DBox(float fX, float fY, float fHeigth, float fWidth, const ColorB& rC
 
 	// compute normalized position from absolute points
 	Vec3 vPosition[4] = {
-		Vec3(fPosition[0][0] / fScreenWidth, fPosition[0][1] / fScreenHeigth, 0.0f),
-		Vec3(fPosition[1][0] / fScreenWidth, fPosition[1][1] / fScreenHeigth, 0.0f),
-		Vec3(fPosition[2][0] / fScreenWidth, fPosition[2][1] / fScreenHeigth, 0.0f),
-		Vec3(fPosition[3][0] / fScreenWidth, fPosition[3][1] / fScreenHeigth, 0.0f)
+		Vec3(fPosition[0][0], fPosition[0][1], 0.0f),
+		Vec3(fPosition[1][0], fPosition[1][1], 0.0f),
+		Vec3(fPosition[2][0], fPosition[2][1], 0.0f),
+		Vec3(fPosition[3][0], fPosition[3][1], 0.0f)
 	};
 
 	vtx_idx const anTriangleIndices[6] = {
@@ -732,10 +732,10 @@ void Draw2DBoxOutLine(float fX, float fY, float fHeigth, float fWidth, const Col
 
 	// compute normalized position from absolute points
 	Vec3 vPosition[4] = {
-		Vec3(fPosition[0][0] / fScreenWidth, fPosition[0][1] / fScreenHeigth, 0.0f),
-		Vec3(fPosition[1][0] / fScreenWidth, fPosition[1][1] / fScreenHeigth, 0.0f),
-		Vec3(fPosition[2][0] / fScreenWidth, fPosition[2][1] / fScreenHeigth, 0.0f),
-		Vec3(fPosition[3][0] / fScreenWidth, fPosition[3][1] / fScreenHeigth, 0.0f)
+		Vec3(fPosition[0][0], fPosition[0][1], 0.0f),
+		Vec3(fPosition[1][0], fPosition[1][1], 0.0f),
+		Vec3(fPosition[2][0], fPosition[2][1], 0.0f),
+		Vec3(fPosition[3][0], fPosition[3][1], 0.0f)
 	};
 
 	pAuxRenderer->DrawLine(vPosition[0], rColor, vPosition[1], rColor);
