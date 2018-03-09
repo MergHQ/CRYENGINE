@@ -1787,14 +1787,18 @@ void CEntity::ReplaceComponent(IEntityComponent* pExistingComponent, std::shared
 	{
 		if (componentRecord.pComponent.get() == pExistingComponent)
 		{
-		  componentRecord.pComponent = pNewComponent;
+			// First remove all listeners that point to the old pointer (pExistingComponent)
+			const EntityEventMask prevMask = componentRecord.registeredEventsMask;
+			componentRecord.registeredEventsMask = 0;
+			OnComponentMaskChanged(componentRecord, prevMask);
 
-		  EntityEventMask prevMask = componentRecord.registeredEventsMask;
-		  componentRecord.registeredEventsMask = componentRecord.pComponent->GetEventMask();
-		  componentRecord.eventPriority = componentRecord.pComponent->GetEventPriority();
+			// Now add the new listeners specified by the new component
+			componentRecord.pComponent = pNewComponent;
+			componentRecord.registeredEventsMask = componentRecord.pComponent->GetEventMask();
+			componentRecord.eventPriority = componentRecord.pComponent->GetEventPriority();
+			OnComponentMaskChanged(componentRecord, 0);
 
-		  OnComponentMaskChanged(componentRecord, prevMask);
-		  return false;
+			return false;
 		}
 
 		return true;
