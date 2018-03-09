@@ -15,7 +15,7 @@ namespace UQS
 		float         SCvars::debugDrawLineThickness;
 		int           SCvars::debugDrawAlphaValueOfDiscardedItems;
 		int           SCvars::logQueryHistory;
-		float         SCvars::timeBudgetExcessThresholdInPercentBeforeWarning;
+		float         SCvars::timeBudgetExcessThresholdInPercent;
 		int           SCvars::printTimeExcessWarningsToConsole;
 
 		void SCvars::Register()
@@ -39,8 +39,8 @@ namespace UQS
 				"0/1: Enable logging of past queries to draw them at a later time via 'uqs_debugDraw' set to 1.\n"
 				"Pick the one to draw via PGDOWN/PGUP.");
 
-			REGISTER_CVAR2("uqs_timeBudgetExcessThresholdInPercentBeforeWarning", &timeBudgetExcessThresholdInPercentBeforeWarning, 20.0f, VF_NULL,
-				"Percentage of the granted time of a query that we allow to exceed before issuing a warning.");
+			REGISTER_CVAR2("uqs_timeBudgetExcessThreshold", &timeBudgetExcessThresholdInPercent, 20.0f, VF_NULL,
+				"Percentage of the granted time of a query that we allow to exceed before before taking counter-measures and issuing warnings.");
 
 			REGISTER_CVAR2("uqs_printTimeExcessWarningsToConsole", &printTimeExcessWarningsToConsole, 1, VF_NULL,
 				"0/1: Print warnings due to time excess of queries also to the console, not just to the query history.");

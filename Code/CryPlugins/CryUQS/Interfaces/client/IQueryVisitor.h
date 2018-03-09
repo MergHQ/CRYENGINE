@@ -19,7 +19,7 @@ namespace UQS
 		{
 			struct SQueryInfo
 			{
-				explicit        SQueryInfo(const Core::CQueryID& _queryID, const Core::CQueryID& _parentQueryID, const char* _szQuerierName, const char* _szQueryBlueprintName, int _numGeneratedItems, int _numRemainingItemsToInspect, const CTimeValue& _queryCreatedTimestamp, int _numElapsedFramesSoFar, const CTimeValue& _timeConsumedSoFar);
+				explicit        SQueryInfo(const Core::CQueryID& _queryID, const Core::CQueryID& _parentQueryID, const char* _szQuerierName, const char* _szQueryBlueprintName, int _numGeneratedItems, int _numRemainingItemsToInspect, int _queryCreatedFrame, const CTimeValue& _queryCreatedTimestamp, int _numConsumedFramesSoFar, int _numElapsedFramesSoFar, const CTimeValue& _timeConsumedSoFar);
 
 				Core::CQueryID  queryID;
 				Core::CQueryID  parentQueryID;
@@ -27,7 +27,9 @@ namespace UQS
 				const char*     szQueryBlueprintName;
 				int             numGeneratedItems;
 				int             numRemainingItemsToInspect;
+				int             queryCreatedFrame;
 				CTimeValue      queryCreatedTimestamp;
+				int             numConsumedFramesSoFar;
 				int             numElapsedFramesSoFar;
 				CTimeValue      timeConsumedSoFar;
 			};
@@ -39,14 +41,16 @@ namespace UQS
 			~IQueryVisitor() {}		// protected non-virtual dtor since deletion through base-class pointers is not intended
 		};
 
-		inline IQueryVisitor::SQueryInfo::SQueryInfo(const Core::CQueryID& _queryID, const Core::CQueryID& _parentQueryID, const char* _szQuerierName, const char* _szQueryBlueprintName, int _numGeneratedItems, int _numRemainingItemsToInspect, const CTimeValue& _queryCreatedTimestamp, int _numElapsedFramesSoFar, const CTimeValue& _timeConsumedSoFar)
+		inline IQueryVisitor::SQueryInfo::SQueryInfo(const Core::CQueryID& _queryID, const Core::CQueryID& _parentQueryID, const char* _szQuerierName, const char* _szQueryBlueprintName, int _numGeneratedItems, int _numRemainingItemsToInspect, int _queryCreatedFrame, const CTimeValue& _queryCreatedTimestamp, int _numConsumedFramesSoFar, int _numElapsedFramesSoFar, const CTimeValue& _timeConsumedSoFar)
 			: queryID(_queryID)
 			, parentQueryID(_parentQueryID)
 			, szQuerierName(_szQuerierName)
 			, szQueryBlueprintName(_szQueryBlueprintName)
 			, numGeneratedItems(_numGeneratedItems)
 			, numRemainingItemsToInspect(_numRemainingItemsToInspect)
+			, queryCreatedFrame(_queryCreatedFrame)
 			, queryCreatedTimestamp(_queryCreatedTimestamp)
+			, numConsumedFramesSoFar(_numConsumedFramesSoFar)
 			, numElapsedFramesSoFar(_numElapsedFramesSoFar)
 			, timeConsumedSoFar(_timeConsumedSoFar)
 		{}

@@ -21,7 +21,9 @@ namespace UQS
 			: pQuery()
 			, pQueryBlueprint()
 			, pCallback(0)
+			, queryID(CQueryID::CreateInvalid())
 			, parentQueryID(CQueryID::CreateInvalid())
+			, bPerformanceOffender(false)
 		{}
 
 		//===================================================================================
@@ -56,6 +58,21 @@ namespace UQS
 
 		//===================================================================================
 		//
+		// CQueryManager::CPredEqualQueryID
+		//
+		//===================================================================================
+
+		CQueryManager::CPredEqualQueryID::CPredEqualQueryID(const CQueryID& queryID)
+			: m_queryID(queryID)
+		{}
+
+		bool CQueryManager::CPredEqualQueryID::operator()(const SRunningQueryInfo& runningQueryInfo) const
+		{
+			return m_queryID == runningQueryInfo.queryID;
+		}
+
+		//===================================================================================
+		//
 		// CQueryManager
 		//
 		//===================================================================================
@@ -66,6 +83,7 @@ namespace UQS
 
 		CQueryManager::CQueryManager(CQueryHistoryManager& queryHistoryManager)
 			: m_queryIDProvider(CQueryID::CreateInvalid())
+			, m_bQueriesUpdateInProgress(false)
 			, m_queryHistoryManager(queryHistoryManager)
 		{
 			// nothing
@@ -94,10 +112,12 @@ namespace UQS
 
 		void CQueryManager::CancelQuery(const CQueryID& idOfQueryToCancel)
 		{
-			auto it = m_queries.find(idOfQueryToCancel);
+			assert(!m_bQueriesUpdateInProgress);
+
+			auto it = std::find_if(m_queries.begin(), m_queries.end(), CPredEqualQueryID(idOfQueryToCancel));
 			if (it != m_queries.end())
 			{
-				CQueryBase* pQueryToCancel = it->second.pQuery.get();
+				CQueryBase* pQueryToCancel = it->pQuery.get();
 				pQueryToCancel->Cancel();
 				m_queries.erase(it);
 			}
@@ -123,24 +143,34 @@ namespace UQS
 			stl::find_and_erase_all(m_queryFinishedListeners, pListenerToUnregister);
 		}
 
+		void CQueryManager::RegisterQueryWarningListener(Client::IQueryWarningListener* pListenerToRegister)
+		{
+			stl::push_back_unique(m_queryWarningListeners, pListenerToRegister);
+		}
+
+		void CQueryManager::UnregisterQueryWarningListener(Client::IQueryWarningListener* pListenerToUnregister)
+		{
+			stl::find_and_erase_all(m_queryWarningListeners, pListenerToUnregister);
+		}
+
 		void CQueryManager::VisitRunningQueries(Client::IQueryVisitor& visitor)
 		{
-			for (const auto& pair : m_queries)
+			for (const SRunningQueryInfo& runningQueryInfo : m_queries)
 			{
-				const CQueryID& queryID = pair.first;
-				const SRunningQueryInfo& runningQueryInfo = pair.second;
 				CQueryBase::SStatistics stats;
 				runningQueryInfo.pQuery->GetStatistics(stats);
 
 				const Client::IQueryVisitor::SQueryInfo queryInfo(
-					queryID,
+					runningQueryInfo.queryID,
 					runningQueryInfo.parentQueryID,
 					stats.querierName.c_str(),
 					stats.queryBlueprintName.c_str(),
 					(int)stats.numGeneratedItems,
 					(int)stats.numRemainingItemsToInspect,
+					(int)stats.queryCreatedFrame,
 					stats.queryCreatedTimestamp,
-					(int)stats.totalElapsedFrames,
+					(int)stats.totalConsumedFrames,
+					(int)(gEnv->nMainFrameID - stats.queryCreatedFrame),
 					stats.totalConsumedTime);
 
 				visitor.OnQueryVisited(queryInfo);
@@ -182,19 +212,21 @@ namespace UQS
 			}
 
 			// keep track of and update the new query from now on
-			SRunningQueryInfo& newEntry = m_queries[id];
+			SRunningQueryInfo newEntry;
 			newEntry.pQuery = std::move(q);
 			newEntry.pQueryBlueprint = pQueryBlueprint;
 			newEntry.pCallback = pCallback;
+			newEntry.queryID = id;
 			newEntry.parentQueryID = parentQueryID;
+			m_queries.emplace_back(std::move(newEntry));
 
 			return id;
 		}
 
 		CQueryBase* CQueryManager::FindQueryByQueryID(const CQueryID& queryID)
 		{
-			auto it = m_queries.find(queryID);
-			return (it == m_queries.end()) ? nullptr : it->second.pQuery.get();
+			auto it = std::find_if(m_queries.begin(), m_queries.end(), CPredEqualQueryID(queryID));
+			return (it == m_queries.end()) ? nullptr : it->pQuery.get();
 		}
 
 		void CQueryManager::Update()
@@ -235,31 +267,71 @@ namespace UQS
 			// draw statistics of all ongoing queries in white
 			//
 
-			for (const auto& pair : m_queries)
+			for (const SRunningQueryInfo& runningQueryInfo : m_queries)
 			{
-				const CQueryID& queryID = pair.first;
-				const SRunningQueryInfo& runningInfo = pair.second;
 				CQueryBase::SStatistics stats;
-				runningInfo.pQuery->GetStatistics(stats);
-				row = DebugDrawQueryStatistics(stats, queryID, row, Col_White);
+				runningQueryInfo.pQuery->GetStatistics(stats);
+				row = DebugDrawQueryStatistics(stats, runningQueryInfo.queryID, row, Col_White);
 				++row;
 			}
 		}
 
 		void CQueryManager::UpdateQueries()
 		{
+			struct SWorstPerformingQuery
+			{
+				explicit SWorstPerformingQuery(const std::list<SRunningQueryInfo>::iterator& it)
+					: itInQueries(it)
+				{}
+
+				std::list<SRunningQueryInfo>::iterator itInQueries;   // points into m_queries
+				float usedFractionOfTimeBudget = 0.0f;                // fraction of the time budget that was used in the last update cycle of .itInQueries
+			};
+
 			if (!m_queries.empty())
 			{
+				m_bQueriesUpdateInProgress = true;	// detect unintended calls to CancelQuery() while we're iterating through m_queries
+
 				//
 				// update all queries and collect the finished ones
 				//
 
-				std::vector<SFinishedQueryInfo> finishedOnes;
-				CTimeValue totalRemainingTimeBudget = SCvars::timeBudgetInSeconds;
+				const CTimeValue totalTimeBudget = SCvars::timeBudgetInSeconds;
 
-				// TODO: prematurely bail out if exceeding the time budget before all queries were updated (should continue from there the next time)
-				for (auto it = m_queries.cbegin(); it != m_queries.cend(); ++it)
+				std::vector<SFinishedQueryInfo> finishedOnes;
+				CTimeValue totalRemainingTimeBudget = totalTimeBudget;
+				CTimeValue totalTimeUsedSoFar;
+
+				SWorstPerformingQuery worstPerformingQuery(m_queries.end());
+				bool bEncounteredSomeNonPerformanceOffenderByNow = false;
+
+				for (auto it = m_queries.begin(); it != m_queries.end(); ++it)
 				{
+					const SRunningQueryInfo& runningQueryInfo = *it;
+
+					CQueryBase* pQuery = runningQueryInfo.pQuery.get();
+
+					const bool bThisQueryRequiresSomeTimeBudgetForExecution = pQuery->RequiresSomeTimeBudgetForExecution();
+
+					//
+					// - see if we need to skip this query due to punishment of having exceeded the time budget a lot and having interrupted the whole process before
+					// - the idea is to allow running all queries that *precede* the performance offender until they're finished and to halt the performance offender in the meanwhile
+					// - this is to make sure that the performance offender does no longer block these preceding queries by continuously interrupting everything
+					//
+
+					if (runningQueryInfo.bPerformanceOffender)
+					{
+						if (bEncounteredSomeNonPerformanceOffenderByNow)
+						{
+							NotifyOfQueryPerformanceWarning(runningQueryInfo, "system frame #%i: skipping query due to being a performance offender", (int)gEnv->nMainFrameID);
+							continue;
+						}
+					}
+					else if (bThisQueryRequiresSomeTimeBudgetForExecution)	// don't get infinitely blocked by parent queries that wait for their children (i.e. that wait for exactly this query we're now at)
+					{
+						bEncounteredSomeNonPerformanceOffenderByNow = true;
+					}
+
 					//
 					// Compute the granted time budget for every query again, since the previous query might have donated some unused time to the whole pool and
 					// more queries might have been spawned also.
@@ -270,10 +342,7 @@ namespace UQS
 					// to the remaining queries (this happens implicitly).
 					//
 
-					CQueryBase* pQuery = it->second.pQuery.get();
 					CTimeValue timeBudgetForThisQuery;   // 0.0 seconds by default
-
-					const bool bThisQueryRequiresSomeTimeBudgetForExecution = pQuery->RequiresSomeTimeBudgetForExecution();
 
 					if (bThisQueryRequiresSomeTimeBudgetForExecution)
 					{
@@ -284,7 +353,7 @@ namespace UQS
 						++it2;
 						for (; it2 != m_queries.cend(); ++it2)
 						{
-							const CQueryBase* pQuery2 = it2->second.pQuery.get();
+							const CQueryBase* pQuery2 = it2->pQuery.get();
 							if (pQuery2->RequiresSomeTimeBudgetForExecution())
 							{
 								++numRemainingQueriesThatRequireSomeTimeBudget;
@@ -318,25 +387,30 @@ namespace UQS
 
 					case CQueryBase::EUpdateState::Finished:
 						{
-							const std::shared_ptr<CQueryBase>& pQuery = it->second.pQuery;
-							const std::shared_ptr<const CQueryBlueprint>& pQueryBlueprint = it->second.pQueryBlueprint;
-							const Functor1<const SQueryResult&>& pCallback = it->second.pCallback;
-							const CQueryID& queryID = it->first;
-							const CQueryID& parentQueryID = it->second.parentQueryID;
 							const bool bQueryFinishedWithSuccess = true;
-							finishedOnes.emplace_back(pQuery, pQueryBlueprint, pCallback, queryID, parentQueryID, timestampAfterQueryUpdate, bQueryFinishedWithSuccess, "");
+							finishedOnes.emplace_back(
+								runningQueryInfo.pQuery,
+								runningQueryInfo.pQueryBlueprint,
+								runningQueryInfo.pCallback,
+								runningQueryInfo.queryID,
+								runningQueryInfo.parentQueryID,
+								timestampAfterQueryUpdate,
+								bQueryFinishedWithSuccess, "");
 						}
 						break;
 
 					case CQueryBase::EUpdateState::ExceptionOccurred:
 						{
-							const std::shared_ptr<CQueryBase>& pQuery = it->second.pQuery;
-							const std::shared_ptr<const CQueryBlueprint>& pQueryBlueprint = it->second.pQueryBlueprint;
-							const Functor1<const SQueryResult&>& pCallback = it->second.pCallback;
-							const CQueryID& queryID = it->first;
-							const CQueryID& parentQueryID = it->second.parentQueryID;
 							const bool bQueryFinishedWithSuccess = false;
-							finishedOnes.emplace_back(pQuery, pQueryBlueprint, pCallback, queryID, parentQueryID, timestampAfterQueryUpdate, bQueryFinishedWithSuccess, error.c_str());
+							finishedOnes.emplace_back(
+								runningQueryInfo.pQuery,
+								runningQueryInfo.pQueryBlueprint,
+								runningQueryInfo.pCallback,
+								runningQueryInfo.queryID,
+								runningQueryInfo.parentQueryID,
+								timestampAfterQueryUpdate,
+								bQueryFinishedWithSuccess,
+								error.c_str());
 						}
 						break;
 
@@ -350,7 +424,7 @@ namespace UQS
 
 					const CTimeValue timeUsedByThisQuery = (timestampAfterQueryUpdate - timestampBeforeQueryUpdate);
 
-					if (timeUsedByThisQuery < timeBudgetForThisQuery)
+					if (timeUsedByThisQuery <= timeBudgetForThisQuery)
 					{
 						const CTimeValue unusedTime = timeBudgetForThisQuery - timeUsedByThisQuery;
 						totalRemainingTimeBudget += unusedTime;
@@ -358,19 +432,52 @@ namespace UQS
 					else if (bThisQueryRequiresSomeTimeBudgetForExecution)
 					{
 						//
-						// check for having exceeded the granted time by some percentage
-						// -> if this is the case, then issue a warning to the console and to the query history
+						// keep track of the potentially worst performing query (this one may get skipped in upcoming updates, depending on whether the overall time budget will get exceeded by the extra threshold)
 						//
 
-						const float allowedTimeBudgetExcess = (SCvars::timeBudgetExcessThresholdInPercentBeforeWarning * 0.01f) * timeBudgetForThisQuery.GetMilliSeconds();
-						const bool bExceededTimeBudgetTooMuch = (timeUsedByThisQuery - timeBudgetForThisQuery).GetMilliSeconds() > allowedTimeBudgetExcess;
+						const float usedFractionOfTimeBudget = (timeBudgetForThisQuery.GetValue() > 0) ? (timeUsedByThisQuery.GetMilliSeconds() / timeBudgetForThisQuery.GetMilliSeconds()) : 1.0f;
 
-						if (bExceededTimeBudgetTooMuch)
+						if (worstPerformingQuery.itInQueries == m_queries.end() || worstPerformingQuery.usedFractionOfTimeBudget < usedFractionOfTimeBudget)
 						{
-							it->second.pQuery->EmitTimeExcessWarningToConsoleAndQueryHistory(timeBudgetForThisQuery, timeUsedByThisQuery);
+							worstPerformingQuery.itInQueries = it;
+							worstPerformingQuery.usedFractionOfTimeBudget = usedFractionOfTimeBudget;
+						}
+
+						//
+						// check for overall excess
+						//
+
+						totalTimeUsedSoFar += timeUsedByThisQuery;
+
+						if (totalTimeUsedSoFar > totalTimeBudget)
+						{
+							//
+							// see how much has been exceeded already, and if it's too much, then simply interrupt everything and mark the worst performing query as "performance offender" so that
+							// it will get skipped in subsequent updates until all its preceding queries are finished
+							//
+
+							const float overallFractionUsedSoFar = (totalTimeBudget.GetValue() > 0) ? (totalTimeUsedSoFar.GetMilliSeconds() / totalTimeBudget.GetMilliSeconds()) : 1.0f;
+
+							if (overallFractionUsedSoFar > 1.0f + SCvars::timeBudgetExcessThresholdInPercent * 0.01f)
+							{
+								assert(worstPerformingQuery.itInQueries != m_queries.end());
+
+								NotifyOfQueryPerformanceWarning(*worstPerformingQuery.itInQueries, "system frame #%i: query has just been flagged as a performance offender (consumed %.1f%% of its granted time)", (int)gEnv->nMainFrameID, worstPerformingQuery.usedFractionOfTimeBudget * 100.0f);
+
+								// move the worst performing query to the end of the queue such that preceding queries won't get offended anymore
+								SRunningQueryInfo worstOne = std::move(*worstPerformingQuery.itInQueries);
+								worstOne.bPerformanceOffender = true;
+								m_queries.erase(worstPerformingQuery.itInQueries);
+								m_queries.push_back(std::move(worstOne));
+
+								// prematurely interrupt processing of the remaining queries
+								break;
+							}
 						}
 					}
 				}
+
+				m_bQueriesUpdateInProgress = false;
 
 				//
 				// if some queries have finished, then notify the listeners of the result and store their statistic for short-term 2D on-screen debug rendering
@@ -396,7 +503,7 @@ namespace UQS
 					// now remove all the finished queries
 					for (const SFinishedQueryInfo& entry : finishedOnes)
 					{
-						auto it = m_queries.find(entry.queryID);
+						auto it = std::find_if(m_queries.begin(), m_queries.end(), CPredEqualQueryID(entry.queryID));
 						if (it != m_queries.end())   // this may fail if a finished query got explicitly canceled in the callback from above
 						{
 							m_queries.erase(it);
@@ -448,13 +555,66 @@ namespace UQS
 					(int)stats.numItemsInFinalResultSet,
 					stats.queryCreatedTimestamp,
 					finishedQueryInfo.queryFinishedTimestamp,
-					(int)stats.totalElapsedFrames,
+					(int)stats.totalConsumedFrames,
+					(int)(gEnv->nMainFrameID - stats.queryCreatedFrame),
 					!finishedQueryInfo.bQueryFinishedWithSuccess,
 					finishedQueryInfo.errorIfAny.c_str());
 
 				for (Client::IQueryFinishedListener* pListener : m_queryFinishedListeners)
 				{
 					pListener->OnQueryFinished(queryInfo);
+				}
+			}
+		}
+
+		void CQueryManager::NotifyOfQueryPerformanceWarning(const SRunningQueryInfo& problematicQuery, const char* szFmt, ...) const
+		{
+			va_list ap;
+			stack_string commonWarningMessage;
+			va_start(ap, szFmt);
+			commonWarningMessage.FormatV(szFmt, ap);
+			va_end(ap);
+
+			//
+			// print the warning to the console
+			//
+
+			if (SCvars::printTimeExcessWarningsToConsole == 1)
+			{
+				Shared::CUqsString queryIdAsString;
+				problematicQuery.queryID.ToString(queryIdAsString);
+				CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "[UQS] QueryID #%s: %s / %s: %s",
+					queryIdAsString.c_str(),
+					problematicQuery.pQueryBlueprint->GetName(),
+					problematicQuery.pQuery->GetQuerierName(),
+					commonWarningMessage.c_str());
+			}
+
+			//
+			// log the warning to the query history
+			//
+
+			if (HistoricQuerySharedPtr pHistory = problematicQuery.pQuery->GetHistoricQuery())
+			{
+				pHistory->OnWarningOccurred(commonWarningMessage.c_str());
+			}
+
+			//
+			// notify all listeners of the warning
+			//
+
+			if (!m_queryWarningListeners.empty())
+			{
+				const Client::IQueryWarningListener::SWarningInfo warningInfo(
+					problematicQuery.queryID,
+					problematicQuery.parentQueryID,
+					problematicQuery.pQuery->GetQuerierName(),
+					problematicQuery.pQueryBlueprint->GetName(),
+					commonWarningMessage.c_str());
+
+				for (Client::IQueryWarningListener* pListener : m_queryWarningListeners)
+				{
+					pListener->OnQueryWarning(warningInfo);
 				}
 			}
 		}
@@ -475,13 +635,10 @@ namespace UQS
 			logger.Printf("--- UQS: %i running queries at the moment ---", (int)m_queries.size());
 			CLoggerIndentation _indent;
 
-			for (const auto& pair : m_queries)
+			for (const SRunningQueryInfo& runningQueryInfo : m_queries)
 			{
-				const CQueryID& queryID = pair.first;
-				const CQueryBase& query = *pair.second.pQuery;
-
 				logger.Printf("");
-				DebugPrintQueryStatistics(logger, query, queryID);
+				DebugPrintQueryStatistics(logger, *runningQueryInfo.pQuery, runningQueryInfo.queryID);
 				logger.Printf("------------------------");
 			}
 
@@ -491,19 +648,16 @@ namespace UQS
 		void CQueryManager::CancelAllRunningQueriesDueToUpcomingTearDownOfHub()
 		{
 			// operate on a copy in case the query's callback cancels queries recursively (happens in hierarchical queries)
-			std::map<CQueryID, SRunningQueryInfo> copyOfRunningQueries;
+			std::list<SRunningQueryInfo> copyOfRunningQueries;
 			copyOfRunningQueries.swap(m_queries);
 
-			for (auto it = copyOfRunningQueries.begin(); it != copyOfRunningQueries.end(); ++it)
+			for (const SRunningQueryInfo& runningQueryInfo : copyOfRunningQueries)
 			{
-				const SRunningQueryInfo& runningQueryInfo = it->second;
-
 				// notify the originator of the query that we're prematurely canceling the query
 				if (runningQueryInfo.pCallback)
 				{
-					const CQueryID& queryID = it->first;
 					QueryResultSetUniquePtr pDummyResultSet;
-					const SQueryResult result = SQueryResult::CreateCanceledByHubTearDown(queryID, pDummyResultSet);
+					const SQueryResult result = SQueryResult::CreateCanceledByHubTearDown(runningQueryInfo.queryID, pDummyResultSet);
 					runningQueryInfo.pCallback(result);
 				}
 
@@ -523,7 +677,7 @@ namespace UQS
 
 			CLoggerIndentation _indent;
 
-			logger.Printf("elapsed frames:             %i", (int)stats.totalElapsedFrames);
+			logger.Printf("consumed frames:            %i", (int)stats.totalConsumedFrames);
 			logger.Printf("consumed seconds:           %f (%.2f millisecs)", stats.totalConsumedTime.GetSeconds(), stats.totalConsumedTime.GetSeconds() * 1000.0f);
 			logger.Printf("generated items:            %i", (int)stats.numGeneratedItems);
 			logger.Printf("remaining items to inspect: %i", (int)stats.numRemainingItemsToInspect);

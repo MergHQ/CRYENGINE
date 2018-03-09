@@ -100,8 +100,9 @@ namespace UQS
 				// this is stuff that CQueryManager::DebugDrawQueryStatistics() is partly interested in (but it's also interested in the number of items - hmmm, could we just display the elapsed frames instead?)
 				string                                  querierName;
 				string                                  queryBlueprintName;
+				size_t                                  queryCreatedFrame;
 				CTimeValue                              queryCreatedTimestamp;
-				size_t                                  totalElapsedFrames;
+				size_t                                  totalConsumedFrames;
 				CTimeValue                              totalConsumedTime;
 				std::vector<SGrantedAndUsedTime>        grantedAndUsedTimePerFrame;       // grows with each update call
 
@@ -133,10 +134,13 @@ namespace UQS
 			EUpdateState                                Update(const CTimeValue& amountOfGrantedTime, Shared::CUqsString& error);
 			void                                        Cancel();
 			void                                        GetStatistics(SStatistics& out) const;
-			void                                        EmitTimeExcessWarningToConsoleAndQueryHistory(const CTimeValue& timeGranted, const CTimeValue& timeUsed) const;
 
 			// careful: using the result while the query is still in EUpdateState::StillRunning state is undefined behavior
 			QueryResultSetUniquePtr                     ClaimResultSet();
+
+			// debugging
+			const char*                                 GetQuerierName() const;
+			HistoricQuerySharedPtr                      GetHistoricQuery() const;   // might return a nullptr if history logging was not enabled
 
 		private:
 			virtual bool                                OnInstantiateFromQueryBlueprint(const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error) = 0;
@@ -161,7 +165,8 @@ namespace UQS
 		private:
 			// debugging
 			CTimeValue                                  m_queryCreatedTimestamp;          // timestamp of when the query was created (via its ctor)
-			size_t                                      m_totalElapsedFrames;             // runaway-counter that increments on each Update() call
+			size_t                                      m_queryCreatedFrame;              // system frame number in which the query was created (via its ctor)
+			size_t                                      m_totalConsumedFrames;            // runaway-counter that increments on each Update() call
 			CTimeValue                                  m_totalConsumedTime;              // run-away timer that increments on each Update() call
 			std::vector<SGrantedAndUsedTime>            m_grantedAndUsedTimePerFrame;     // keeps track of how much time we were given to do some work on each frame and how much time we actually spent; grows on each Update() call
 			// ~debugging

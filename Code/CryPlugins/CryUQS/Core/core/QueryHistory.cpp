@@ -138,6 +138,8 @@ namespace UQS
 			, m_queryID(CQueryID::CreateInvalid())
 			, m_parentQueryID(CQueryID::CreateInvalid())
 			, m_queryLifetimeStatus(EQueryLifetimeStatus::QueryIsNotCreatedYet)
+			, m_queryCreatedFrame(0)
+			, m_queryDestroyedFrame(0)
 			, m_bGotCanceledPrematurely(false)
 			, m_bExceptionOccurred(false)
 			, m_longestEvaluatorName(0)
@@ -151,6 +153,8 @@ namespace UQS
 			, m_parentQueryID(parentQueryID)
 			, m_querierName(szQuerierName)
 			, m_queryLifetimeStatus(EQueryLifetimeStatus::QueryIsNotCreatedYet)
+			, m_queryCreatedFrame(0)
+			, m_queryDestroyedFrame(0)
 			, m_bGotCanceledPrematurely(false)
 			, m_bExceptionOccurred(false)
 			, m_longestEvaluatorName(0)
@@ -163,8 +167,9 @@ namespace UQS
 			return m_debugRenderWorldPersistent;
 		}
 
-		void CHistoricQuery::OnQueryCreated(const CTimeValue& queryCreatedTimestamp)
+		void CHistoricQuery::OnQueryCreated(size_t queryCreatedFrame, const CTimeValue& queryCreatedTimestamp)
 		{
+			m_queryCreatedFrame = queryCreatedFrame;
 			m_queryCreatedTimestamp = queryCreatedTimestamp;
 			m_queryLifetimeStatus = EQueryLifetimeStatus::QueryIsAlive;
 
@@ -190,6 +195,7 @@ namespace UQS
 
 		void CHistoricQuery::OnQueryDestroyed()
 		{
+			m_queryDestroyedFrame = gEnv->nMainFrameID;
 			m_queryDestroyedTimestamp = gEnv->pTimer->GetAsyncTime();
 			m_queryLifetimeStatus = EQueryLifetimeStatus::QueryIsDestroyed;
 
@@ -495,6 +501,25 @@ namespace UQS
 			}
 
 			return EItemAnalyzeStatus::SurvivedAllEvaluators;
+		}
+
+		size_t CHistoricQuery::ComputeElapsedFramesFromQueryCreationToDestruction() const
+		{
+			switch (m_queryLifetimeStatus)
+			{
+			case EQueryLifetimeStatus::QueryIsNotCreatedYet:
+				return 0;
+
+			case EQueryLifetimeStatus::QueryIsAlive:
+				return (gEnv->nMainFrameID - m_queryCreatedFrame);
+
+			case EQueryLifetimeStatus::QueryIsDestroyed:
+				return (m_queryDestroyedFrame - m_queryCreatedFrame);
+
+			default:
+				assert(0);
+				return 0;
+			}
 		}
 
 		CTimeValue CHistoricQuery::ComputeElapsedTimeFromQueryCreationToDestruction() const
@@ -814,8 +839,11 @@ namespace UQS
 
 			// elapsed frames and time, and timestamps of creation + destruction of the query
 			{
-				// elapsed frames
-				consumer.AddTextLineToCurrentHistoricQuery(color, "elapsed frames until result:  %i", (int)m_finalStatistics.totalElapsedFrames);
+				// elapsed frames (this is NOT the same as the *consumed* frames)
+				consumer.AddTextLineToCurrentHistoricQuery(color, "elapsed frames until result:  %i", (int)ComputeElapsedFramesFromQueryCreationToDestruction());
+
+				// consumed frames
+				consumer.AddTextLineToCurrentHistoricQuery(color, "consumed frames until result: %i", (int)m_finalStatistics.totalConsumedFrames);
 
 				// elapsed time (this is NOT the same as the *consumed* time)
 				const float elapsedTimeInMS = ComputeElapsedTimeFromQueryCreationToDestruction().GetMilliSeconds();
