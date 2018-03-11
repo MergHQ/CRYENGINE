@@ -19,7 +19,7 @@ namespace UQS
 		{
 			struct SQueryInfo
 			{
-				explicit        SQueryInfo(const Core::CQueryID& _queryID, const Core::CQueryID& _parentQueryID, const char* _szQuerierName, const char* _szQueryBlueprintName, int _numGeneratedItems, int _numItemsInFinalResultSet, const CTimeValue& _queryCreatedTimestamp, const CTimeValue& _queryFinishedTimestamp, int _numElapsedFrames, bool _bExceptionOccurred, const char* _szPotentialExceptionMessage);
+				explicit        SQueryInfo(const Core::CQueryID& _queryID, const Core::CQueryID& _parentQueryID, const char* _szQuerierName, const char* _szQueryBlueprintName, int _numGeneratedItems, int _numItemsInFinalResultSet, const CTimeValue& _queryCreatedTimestamp, const CTimeValue& _queryFinishedTimestamp, int _numConsumedFrames, int _numElapsedFrames, bool _bExceptionOccurred, const char* _szPotentialExceptionMessage);
 
 				Core::CQueryID  queryID;
 				Core::CQueryID  parentQueryID;
@@ -29,6 +29,7 @@ namespace UQS
 				int             numItemsInFinalResultSet;
 				CTimeValue      queryCreatedTimestamp;
 				CTimeValue      queryFinishedTimestamp;
+				int             numConsumedFrames;
 				int             numElapsedFrames;
 				bool            bExceptionOccurred;
 				const char*     szPotentialExceptionMessage;
@@ -41,7 +42,7 @@ namespace UQS
 			~IQueryFinishedListener() {}	// protected non-virtual dtor since deletion through base-class pointers is not intended
 		};
 
-		inline IQueryFinishedListener::SQueryInfo::SQueryInfo(const Core::CQueryID& _queryID, const Core::CQueryID& _parentQueryID, const char* _szQuerierName, const char* _szQueryBlueprintName, int _numGeneratedItems, int _numItemsInFinalResultSet, const CTimeValue& _queryCreatedTimestamp, const CTimeValue& _queryFinishedTimestamp, int _numElapsedFrames, bool _bExceptionOccurred, const char* _szPotentialExceptionMessage)
+		inline IQueryFinishedListener::SQueryInfo::SQueryInfo(const Core::CQueryID& _queryID, const Core::CQueryID& _parentQueryID, const char* _szQuerierName, const char* _szQueryBlueprintName, int _numGeneratedItems, int _numItemsInFinalResultSet, const CTimeValue& _queryCreatedTimestamp, const CTimeValue& _queryFinishedTimestamp, int _numConsumedFrames, int _numElapsedFrames, bool _bExceptionOccurred, const char* _szPotentialExceptionMessage)
 			: queryID(_queryID)
 			, parentQueryID(_parentQueryID)
 			, szQuerierName(_szQuerierName)
@@ -50,6 +51,7 @@ namespace UQS
 			, numItemsInFinalResultSet(_numItemsInFinalResultSet)
 			, queryCreatedTimestamp(_queryCreatedTimestamp)
 			, queryFinishedTimestamp(_queryFinishedTimestamp)
+			, numConsumedFrames(_numConsumedFrames)
 			, numElapsedFrames(_numElapsedFrames)
 			, bExceptionOccurred(_bExceptionOccurred)
 			, szPotentialExceptionMessage(_szPotentialExceptionMessage)

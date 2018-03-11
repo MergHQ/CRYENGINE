@@ -54,8 +54,9 @@ namespace UQS
 		CQueryBase::SStatistics::SStatistics()
 			: querierName()
 			, queryBlueprintName()
+			, queryCreatedFrame(0)
 			, queryCreatedTimestamp()
-			, totalElapsedFrames(0)
+			, totalConsumedFrames(0)
 			, totalConsumedTime()
 			, grantedAndUsedTimePerFrame()
 
@@ -78,8 +79,9 @@ namespace UQS
 		{
 			ar(querierName, "querierName");
 			ar(queryBlueprintName, "queryBlueprintName");
+			ar(queryCreatedFrame, "queryCreatedFrame");
 			ar(queryCreatedTimestamp, "queryCreatedTimestamp");
-			ar(totalElapsedFrames, "totalElapsedFrames");
+			ar(totalConsumedFrames, "totalConsumedFrames");
 			ar(totalConsumedTime, "totalConsumedTime");
 			ar(grantedAndUsedTimePerFrame, "grantedAndUsedTimePerFrame");
 
@@ -111,14 +113,15 @@ namespace UQS
 			, m_pHistory(ctorContext.pOptionalHistoryToWriteTo)
 			, m_queryID(ctorContext.queryID)
 			, m_pOptionalShuttledItems(ctorContext.pOptionalResultingItemsFromPreviousQuery)
+			, m_queryCreatedFrame(gEnv->nMainFrameID)
 			, m_queryCreatedTimestamp(gEnv->pTimer->GetAsyncTime())
-			, m_totalElapsedFrames(0)
+			, m_totalConsumedFrames(0)
 			, m_bRequiresSomeTimeBudgetForExecution(bRequiresSomeTimeBudgetForExecution)
 			, m_blackboard(m_globalParams, m_pOptionalShuttledItems.get(), m_timeBudgetForCurrentUpdate, ctorContext.pOptionalHistoryToWriteTo ? &ctorContext.pOptionalHistoryToWriteTo->GetDebugRenderWorldPersistent() : nullptr)
 		{
 			if (m_pHistory)
 			{
-				m_pHistory->OnQueryCreated(m_queryCreatedTimestamp);
+				m_pHistory->OnQueryCreated(m_queryCreatedFrame, m_queryCreatedTimestamp);
 			}
 		}
 
@@ -256,7 +259,7 @@ namespace UQS
 
 			const CTimeValue startTime = gEnv->pTimer->GetAsyncTime();
 
-			++m_totalElapsedFrames;
+			++m_totalConsumedFrames;
 
 			// immediate debug-rendering ON/OFF
 			if (SCvars::debugDraw)
@@ -352,8 +355,9 @@ namespace UQS
 			if (m_pQueryBlueprint)
 				out.queryBlueprintName = m_pQueryBlueprint->GetName();
 
+			out.queryCreatedFrame = m_queryCreatedFrame;
 			out.queryCreatedTimestamp = m_queryCreatedTimestamp;
-			out.totalElapsedFrames = m_totalElapsedFrames;
+			out.totalConsumedFrames = m_totalConsumedFrames;
 			out.totalConsumedTime = m_totalConsumedTime;
 			out.grantedAndUsedTimePerFrame = m_grantedAndUsedTimePerFrame;
 
@@ -364,35 +368,19 @@ namespace UQS
 			OnGetStatistics(out);
 		}
 
-		void CQueryBase::EmitTimeExcessWarningToConsoleAndQueryHistory(const CTimeValue& timeGranted, const CTimeValue& timeUsed) const
-		{
-			stack_string commonWarningMessage;
-			commonWarningMessage.Format("Exceeded time-budget in current frame: granted time = %f ms, actually consumed = %f ms", timeGranted.GetMilliSeconds(), timeUsed.GetMilliSeconds());
-
-			// print a warning to the console
-			if(SCvars::printTimeExcessWarningsToConsole == 1)
-			{
-				Shared::CUqsString queryIdAsString;
-				m_queryID.ToString(queryIdAsString);
-				CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "[UQS] QueryID #%s: %s / %s: %s",
-					queryIdAsString.c_str(),
-					m_pQueryBlueprint->GetName(),
-					m_querierName.c_str(),
-					commonWarningMessage.c_str());
-			}
-
-			// log the warning to the query history
-			{
-				if (m_pHistory)
-				{
-					m_pHistory->OnWarningOccurred(commonWarningMessage.c_str());
-				}
-			}
-		}
-
 		QueryResultSetUniquePtr CQueryBase::ClaimResultSet()
 		{
 			return std::move(m_pResultSet);
+		}
+
+		const char* CQueryBase::GetQuerierName() const
+		{
+			return m_querierName.c_str();
+		}
+
+		HistoricQuerySharedPtr CQueryBase::GetHistoricQuery() const
+		{
+			return m_pHistory;
 		}
 
 		void CQueryBase::AddItemsFromGlobalParametersToDebugRenderWorld() const

@@ -9,6 +9,9 @@ namespace UQS
 {
 	namespace Core
 	{
+		SERIALIZATION_CLASS_NAME(CItemDebugProxyBase, CItemDebugProxy_Sphere, "CItemDebugProxy_Sphere", "");
+		SERIALIZATION_CLASS_NAME(CItemDebugProxyBase, CItemDebugProxy_Path, "CItemDebugProxy_Path", "");
+		SERIALIZATION_CLASS_NAME(CItemDebugProxyBase, CItemDebugProxy_AABB, "CItemDebugProxy_AABB", "");
 
 		static const float MAX_ITEM_DEBUG_PROXY_DISTANCE_FROM_CAMERA = 1000.0f;
 

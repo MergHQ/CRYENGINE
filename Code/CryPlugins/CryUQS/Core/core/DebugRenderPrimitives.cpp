@@ -13,6 +13,16 @@ namespace UQS
 	namespace Core
 	{
 
+		SERIALIZATION_CLASS_NAME(CDebugRenderPrimitiveBase, CDebugRenderPrimitive_Sphere, "CDebugRenderPrimitive_Sphere", "");
+		SERIALIZATION_CLASS_NAME(CDebugRenderPrimitiveBase, CDebugRenderPrimitive_Direction, "CDebugRenderPrimitive_Direction", "");
+		SERIALIZATION_CLASS_NAME(CDebugRenderPrimitiveBase, CDebugRenderPrimitive_Line, "CDebugRenderPrimitive_Line", "");
+		SERIALIZATION_CLASS_NAME(CDebugRenderPrimitiveBase, CDebugRenderPrimitive_Cone, "CDebugRenderPrimitive_Cone", "");
+		SERIALIZATION_CLASS_NAME(CDebugRenderPrimitiveBase, CDebugRenderPrimitive_Cylinder, "CDebugRenderPrimitive_Cylinder", "");
+		SERIALIZATION_CLASS_NAME(CDebugRenderPrimitiveBase, CDebugRenderPrimitive_Text, "CDebugRenderPrimitive_Text", "");
+		SERIALIZATION_CLASS_NAME(CDebugRenderPrimitiveBase, CDebugRenderPrimitive_Quat, "CDebugRenderPrimitive_Quat", "");
+		SERIALIZATION_CLASS_NAME(CDebugRenderPrimitiveBase, CDebugRenderPrimitive_AABB, "CDebugRenderPrimitive_AABB", "");
+		SERIALIZATION_CLASS_NAME(CDebugRenderPrimitiveBase, CDebugRenderPrimitive_OBB, "CDebugRenderPrimitive_OBB", "");
+
 		static IRenderAuxGeom* GetRenderAuxGeom()
 		{
 			return gEnv->pRenderer ? gEnv->pRenderer->GetIRenderAuxGeom() : nullptr;

@@ -27,6 +27,8 @@ namespace UQS
 			virtual void                  AddItemMonitorToQuery(const CQueryID& queryID, Client::ItemMonitorUniquePtr&& pItemMonitorToInstall) = 0;
 			virtual void                  RegisterQueryFinishedListener(Client::IQueryFinishedListener* pListenerToRegister) = 0;
 			virtual void                  UnregisterQueryFinishedListener(Client::IQueryFinishedListener* pListenerToUnregister) = 0;
+			virtual void                  RegisterQueryWarningListener(Client::IQueryWarningListener* pListenerToRegister) = 0;
+			virtual void                  UnregisterQueryWarningListener(Client::IQueryWarningListener* pListenerToUnregister) = 0;
 			virtual void                  VisitRunningQueries(Client::IQueryVisitor& visitor) = 0;
 		};
 
