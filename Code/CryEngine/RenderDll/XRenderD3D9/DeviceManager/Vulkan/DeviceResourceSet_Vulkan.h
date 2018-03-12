@@ -128,7 +128,9 @@ public:
 
 	const VkPipelineLayout&   GetVkPipelineLayout() const { return m_pipelineLayout; }
 	uint64                    GetHash()             const { return m_hash; }
-	const std::vector<uint8>& GetEncodedLayout()    const { return m_encodedLayout; }
+	const std::vector<uint8>& GetEncodedLayout()    const { return *GetDeviceObjectFactory().LookupResourceLayoutEncoding(m_hash); }
+
+
 
 protected:
 	std::vector<uint8>        EncodeDescriptorSet(const VectorMap<SResourceBindPoint, SResourceBinding>& resources);
@@ -137,6 +139,5 @@ protected:
 	VkPipelineLayout                   m_pipelineLayout;
 
 	uint64                             m_hash;
-	std::vector<uint8>                 m_encodedLayout;
 };
 

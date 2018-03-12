@@ -194,6 +194,9 @@ public:
 
 #if CRY_RENDERER_VULKAN
 	const std::vector<uint8>* LookupResourceLayoutEncoding(uint64 layoutHash);
+	void RegisterEncodedResourceLayout(uint64 layoutHash, std::vector<uint8>&& encodedLayout);
+	void UnRegisterEncodedResourceLayout(uint64 layoutHash);
+	uint32 GetEncodedResourceLayoutSize(const std::vector<uint8>& encodedLayout);
 	VkDescriptorSetLayout     GetInlineConstantBufferLayout();
 #endif
 
@@ -363,6 +366,7 @@ private:
 	NCryVulkan::CDevice*             m_pVKDevice;
 	NCryVulkan::CCommandScheduler*   m_pVKScheduler;
 	VkDescriptorSetLayout            m_inlineConstantBufferLayout;
+	std::map<uint64, std::vector<uint8>> m_encodedResourceLayouts;
 
 	struct SDeferredUploadData
 	{

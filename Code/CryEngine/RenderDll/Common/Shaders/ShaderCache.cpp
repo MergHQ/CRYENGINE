@@ -11,6 +11,7 @@
 #include "StdAfx.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include "RemoteCompiler.h"
+#include <CryCore/Base64.h>
 
 bool SShaderCombIdent::operator==(const SShaderCombIdent& other) const
 {
@@ -583,7 +584,33 @@ void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* C
 				assert(cmb.eCL < eHWSC_Num);
 			}
 			else
+			{
 				cmb.eCL = eHWSC_Num;
+				s++;
+			}
+#if CRY_RENDERER_VULKAN
+			ss = strchr(s, '(');
+			if (!ss)
+			{
+				sSkipLine(s);
+				goto end;
+			}
+			const char* descriptorSetBegin = ss + 1;
+			const char* descriptorSetEnd = strchr(descriptorSetBegin, ')');
+			const unsigned int descriptorSetLength = static_cast<int>(descriptorSetEnd - descriptorSetBegin);
+			if (descriptorSetLength > 0)
+			{
+				unsigned int decodedBufferSize  = Base64::decodedsize_base64(descriptorSetLength);
+				std::vector<uint8> encodedLayout(decodedBufferSize);
+				Base64::decode_base64((char*)&encodedLayout[0], descriptorSetBegin, descriptorSetLength, false);
+				encodedLayout.resize(GetDeviceObjectFactory().GetEncodedResourceLayoutSize(encodedLayout));
+
+				if (!GetDeviceObjectFactory().LookupResourceLayoutEncoding(cmb.Ident.m_pipelineState.VULKAN.resourceLayoutHash))
+				{
+					GetDeviceObjectFactory().RegisterEncodedResourceLayout(cmb.Ident.m_pipelineState.VULKAN.resourceLayoutHash, std::move(encodedLayout));
+				}
+			}
+#endif			
 			if (bNewFormat)
 			{
 				CCryNameR nm = CCryNameR(st);
@@ -1081,7 +1108,20 @@ void CShaderMan::mfInsertNewCombination(SShaderCombIdent& Ident, EHWShaderClass 
 	uint32 nLT = Ident.m_LightMask;
 	if (bStore == 1 && Ident.m_LightMask)
 		nLT = 1;
+	
+#ifdef CRY_RENDERER_VULKAN
+	std::string base64EncodedLayout;
+	const std::vector<uint8>* pEncodedLayout = GetDeviceObjectFactory().LookupResourceLayoutEncoding(Ident.m_pipelineState.VULKAN.resourceLayoutHash);
+	if (pEncodedLayout)
+	{
+		size_t base64EncodedLayoutSize = (Base64::encodedsize_base64(pEncodedLayout->size()));
+		base64EncodedLayout.resize(base64EncodedLayoutSize);
+		Base64::encode_base64((char*)&base64EncodedLayout[0], (const char*)pEncodedLayout->data(), pEncodedLayout->size(), false);
+	}
+	sprintf(str, "<%d>%s(%s)(%s)(%x)(%x)(%x)(%llx)(%s)(%s)", SHADER_LIST_VER, name, sGL.c_str(), sRT.c_str(), nLT, Ident.m_MDMask, Ident.m_MDVMask, Ident.m_pipelineState.opaque, CHWShader::mfClassString(eCL), base64EncodedLayout.c_str());
+#else
 	sprintf(str, "<%d>%s(%s)(%s)(%x)(%x)(%x)(%llx)(%s)", SHADER_LIST_VER, name, sGL.c_str(), sRT.c_str(), nLT, Ident.m_MDMask, Ident.m_MDVMask, Ident.m_pipelineState.opaque, CHWShader::mfClassString(eCL));
+#endif
 	if (!bStore)
 	{
 		if (Str)
@@ -1129,7 +1169,7 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 	const char* pCompilerOrbis   = "ORBIS/V033/DXOrbisShaderCompiler.exe %s %s %s %s";
 	const char* pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
 	const char* pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
-	const char *pCompilerSPIRV   = "SPIRV/V001/HLSL2SPIRV.exe %s %s %s %s";
+	const char *pCompilerSPIRV   = "SPIRV/V002/HLSL2SPIRV.exe %s %s %s %s";
 
 #define ESSL_VERSION   "es310"
 #if DXGL_REQUIRED_VERSION >= DXGL_VERSION_45
@@ -1947,84 +1987,26 @@ void CShaderMan::mfPrecacheShaders(bool bStatsOnly)
 {
 	CHWShader::mfFlushPendedShadersWait(-1);
 
-	if (CRenderer::CV_r_shadersorbis)
+	if (CRenderer::ShaderTargetFlag & SF_ORBIS)
 	{
 	#ifdef WATER_TESSELLATION_RENDERER
 		CRenderer::CV_r_WaterTessellationHW = 0;
 	#endif
-		gRenDev->m_bDeviceSupportsGeometryShaders = true;
-		gRenDev->m_Features |= RFT_HW_SM30;
-
-		CParserBin::m_bShaderCacheGen = true;
-
-		gRenDev->m_Features |= RFT_HW_SM50;
-		CParserBin::SetupForPlatform(SF_ORBIS);
-		CryLogAlways("\nStarting shader compilation for Orbis...");
-		mfInitShadersList(NULL);
-		mfPreloadShaderExts();
-		_PrecacheShaderList(bStatsOnly);
-
-		_SetVar("r_ShadersOrbis", 0);
 	}
-	else if (CRenderer::CV_r_shadersdurango)
-	{
-		gRenDev->m_bDeviceSupportsGeometryShaders = true;
-		gRenDev->m_Features |= RFT_HW_SM30;
 
-		CParserBin::m_bShaderCacheGen = true;
+	gRenDev->m_bDeviceSupportsTessellation = CRenderer::ShaderTargetFlag & (SF_D3D11 | SF_GL4 | SF_VULKAN);
+	gRenDev->m_bDeviceSupportsGeometryShaders =	CRenderer::ShaderTargetFlag & (SF_D3D11 | SF_GL4 | SF_VULKAN | SF_DURANGO | SF_ORBIS);
 
-		gRenDev->m_Features |= RFT_HW_SM50;
-		CParserBin::SetupForPlatform(SF_DURANGO);
-		CryLogAlways("\nStarting shader compilation for Durango...");
-		mfInitShadersList(NULL);
-		mfPreloadShaderExts();
-		_PrecacheShaderList(bStatsOnly);
-	}
-	else if (CRenderer::CV_r_shadersdx11)
-	{
-		gRenDev->m_bDeviceSupportsTessellation = true;
-		gRenDev->m_bDeviceSupportsGeometryShaders = true;
-		gRenDev->m_Features |= RFT_HW_SM30;
+	CParserBin::m_bShaderCacheGen = true;
+	gRenDev->m_Features |= RFT_HW_SM50;
+	CParserBin::SetupForPlatform(CRenderer::ShaderTargetFlag);
+	CryLogAlways("\nStarting shader compilation for %s...", CRenderer::CV_r_ShaderTarget->GetString());
+	mfInitShadersList(NULL);
+	mfPreloadShaderExts();
+	_PrecacheShaderList(bStatsOnly);
 
-		CParserBin::m_bShaderCacheGen = true;
-
-		gRenDev->m_Features |= RFT_HW_SM50;
-		CParserBin::SetupForPlatform(SF_D3D11);
-		CryLogAlways("\nStarting shader compilation for D3D11...");
-		mfInitShadersList(NULL);
-		mfPreloadShaderExts();
-		_PrecacheShaderList(bStatsOnly);
-	}
-	else if (CRenderer::CV_r_shadersGL4)
-	{
-		gRenDev->m_bDeviceSupportsTessellation = true;
-		gRenDev->m_bDeviceSupportsGeometryShaders = true;
-		gRenDev->m_Features |= RFT_HW_SM30;
-
-		CParserBin::m_bShaderCacheGen = true;
-
-		gRenDev->m_Features |= RFT_HW_SM50;
-		CParserBin::SetupForPlatform(SF_GL4);
-		CryLogAlways("\nStarting shader compilation for GLSL 4...");
-		mfInitShadersList(NULL);
-		mfPreloadShaderExts();
-		_PrecacheShaderList(bStatsOnly);
-	}
-	else if (CRenderer::CV_r_shadersGLES3)
-	{
-		gRenDev->m_bDeviceSupportsTessellation = false;
-		gRenDev->m_bDeviceSupportsGeometryShaders = false;
-		gRenDev->m_Features |= RFT_HW_SM30;
-
-		CParserBin::m_bShaderCacheGen = true;
-
-		gRenDev->m_Features |= RFT_HW_SM50;
-		CParserBin::SetupForPlatform(SF_GLES3);
-		CryLogAlways("\nStarting shader compilation for GLSL-ES 3...");
-		mfInitShadersList(NULL);
-		mfPreloadShaderExts();
-		_PrecacheShaderList(bStatsOnly);
-	}
+	if (CRenderer::ShaderTargetFlag & SF_ORBIS)
+		CRenderer::ShaderTargetFlag &= ~SF_ORBIS;
 
 	CParserBin::SetupForPlatform(SF_D3D11);
 
