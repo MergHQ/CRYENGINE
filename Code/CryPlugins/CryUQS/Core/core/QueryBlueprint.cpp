@@ -18,7 +18,7 @@ namespace UQS
 
 		CTextualQueryBlueprint::CTextualQueryBlueprint()
 			: m_queryFactoryGUID(CryGUID::Null())
-			, m_maxItemsToKeepInResultSet(0)
+			, m_maxItemsToKeepInResultSet(1)	// default to 1 item in the result set (i.e. the most common use-case), instead of 0 (which would mean: "return me as many items as possible")
 		{
 			// nothing
 		}
