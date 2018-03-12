@@ -916,13 +916,12 @@ void CVisionMap::RayCastComplete(const QueuedRayID& queuedRayID, const RayCastRe
 		}
 	}
 
-	bool isLastRaycast = false;
 	if (requiresStatisticalAnalysis)
 	{
 		pvsEntry.numberOfSucceededRaycasts += visible ? 1 : 0;
 		pvsEntry.numberOfCompletedRaycasts++;
 
-		isLastRaycast = (pvsEntry.numberOfCompletedRaycasts == observableInfo.observableParams.observablePositionsCount);
+		const bool isLastRaycast = (pvsEntry.numberOfCompletedRaycasts == observableInfo.observableParams.observablePositionsCount);
 
 		if (visible && !pvsEntry.visible)
 		{
@@ -950,10 +949,14 @@ void CVisionMap::RayCastComplete(const QueuedRayID& queuedRayID, const RayCastRe
 		pvsEntry.currentTestPositionIndex = 0;
 	}
 
+	// at this point a ray has been casted to all observable positions
+	const bool isPartiallyVisible = (pvsEntry.numberOfSucceededRaycasts > 0);
+	const bool isInvisible        = (pvsEntry.numberOfSucceededRaycasts == 0);
+
 	const bool triggersCallback =
-		(!requiresStatisticalAnalysis && pvsEntry.visible != visible) ||                                                  // default mode     - changed visibility
-		(requiresStatisticalAnalysis && (visible && !pvsEntry.visible && !isLastRaycast)) ||                             // statistical mode - became visible
-		(requiresStatisticalAnalysis && (pvsEntry.numberOfSucceededRaycasts == 0 && pvsEntry.visible && isLastRaycast)); // statistical mode - became invisible
+		(!requiresStatisticalAnalysis && pvsEntry.visible != visible) ||              // default mode     - changed visibility
+		(requiresStatisticalAnalysis && (isPartiallyVisible && !pvsEntry.visible)) || // statistical mode - became visible
+		(requiresStatisticalAnalysis && (isInvisible && pvsEntry.visible));           // statistical mode - became invisible
 
 	if (triggersCallback)
 	{
@@ -972,7 +975,7 @@ void CVisionMap::RayCastComplete(const QueuedRayID& queuedRayID, const RayCastRe
 		m_pendingRays.erase(pendingRayIt);
 	}
 
-	if (requiresStatisticalAnalysis && isLastRaycast)
+	if (requiresStatisticalAnalysis)
 	{
 		pvsEntry.currentTestPositionIndex = 0;
 		pvsEntry.numberOfCompletedRaycasts = 0;
