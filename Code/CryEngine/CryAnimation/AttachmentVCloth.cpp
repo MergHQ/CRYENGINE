@@ -529,6 +529,8 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 {
 	if (!m_clothPiece.GetSimulator().IsVisible() || Console::GetInst().ca_VClothMode == 0) return;
 
+	DEFINE_PROFILER_FUNCTION();
+
 	bool bNeedSWskinning = (m_pAttachmentManager->m_pSkelInstance->m_CharEditMode&CA_CharacterTool); // in character tool always use software skinning
 	if (!bNeedSWskinning)
 	{
@@ -626,9 +628,11 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 
 	pD->m_uniqueObjectId = reinterpret_cast<uintptr_t>(RendParams.pInstance);
 
-	bool bCheckMotion = pMaster->MotionBlurMotionCheck(pObj->m_ObjFlags);
-	if (bCheckMotion)
+	const bool hasMotion = pMaster->MotionBlurMotionCheck(pObj->m_ObjFlags);
+	if (hasMotion)
+	{
 		uLocalObjFlags |= FOB_MOTION_BLUR;
+	}
 
 	assert(RendParams.pMatrix);
 	Matrix34 RenderMat34 = (*RendParams.pMatrix);
@@ -738,24 +742,38 @@ void CAttachmentVCLOTH::DrawAttachment(SRendParams& RendParams, const SRendering
 #endif
 
 			vertexSkinData.pVertexPositionsPrevious = strided_pointer<const Vec3>(NULL);
-			if (pD->m_pSkinningData->pPreviousSkinningRenderData)
-				gEnv->pJobManager->WaitForJob(*pD->m_pSkinningData->pPreviousSkinningRenderData->pAsyncJobs);
-			_smart_ptr<IRenderMesh>& pRenderMeshPrevious = m_pRenderMeshsSW[1 - iCurrentRenderMeshID];
-			if (pRenderMeshPrevious != NULL)
+
+			// avoid motion blur, if the same skin is used for actual and previous time-step
+			// (in that case, vertex-velocities would be zero, thus, motion blur is not possible / additionally, avoid waiting for skinning-job [i.e., WaitForJob])
+			const bool applyMotionBlur = pD->m_pSkinningData != pD->m_pSkinningData->pPreviousSkinningRenderData;
+			if (applyMotionBlur && hasMotion)
 			{
-				pRenderMeshPrevious->LockForThreadAccess();
-				Vec3* pPrevPositions = (Vec3*)pRenderMeshPrevious->GetPosPtrNoCache(vertexSkinData.pVertexPositionsPrevious.iStride, fslRead);
-				if (pPrevPositions)
+				if (pD->m_pSkinningData->pPreviousSkinningRenderData)
 				{
-					vertexSkinData.pVertexPositionsPrevious.data = pPrevPositions;
-					pVertexAnimation->m_previousRenderMesh = pRenderMeshPrevious;
+					gEnv->pJobManager->WaitForJob(*pD->m_pSkinningData->pPreviousSkinningRenderData->pAsyncJobs);
 				}
-				else
+				_smart_ptr<IRenderMesh>& pRenderMeshPrevious = m_pRenderMeshsSW[1 - iCurrentRenderMeshID];
+				if (pRenderMeshPrevious != NULL)
 				{
-					pRenderMeshPrevious->UnlockStream(VSF_GENERAL);
-					pRenderMeshPrevious->UnLockForThreadAccess();
+					pRenderMeshPrevious->LockForThreadAccess();
+					Vec3* pPrevPositions = (Vec3*)pRenderMeshPrevious->GetPosPtrNoCache(vertexSkinData.pVertexPositionsPrevious.iStride, fslRead);
+					if (pPrevPositions)
+					{
+						vertexSkinData.pVertexPositionsPrevious.data = pPrevPositions;
+						pVertexAnimation->m_previousRenderMesh = pRenderMeshPrevious;
+					}
+					else
+					{
+						pRenderMeshPrevious->UnlockStream(VSF_GENERAL);
+						pRenderMeshPrevious->UnLockForThreadAccess();
+					}
 				}
 			}
+			else
+			{
+				pObj->m_ObjFlags &= ~FOB_MOTION_BLUR;
+			}
+
 			m_vertexAnimation.SetSkinData(vertexSkinData);
 
 			pVertexAnimation->vertexData.m_vertexCount = pRenderMesh->GetVerticesCount();
@@ -2645,6 +2663,8 @@ bool CClothPiece::Initialize(const CAttachmentVCLOTH* pVClothAttachment)
 {
 	if (m_initialized)
 		return true;
+
+	DEFINE_PROFILER_FUNCTION();
 
 	if (pVClothAttachment == 0)
 		return false;
