@@ -349,6 +349,12 @@ class CSerializationChunk::CBuildImpl : public CSimpleSerializeImpl<false, eST_N
 {
 public:
 	CBuildImpl(CSerializationChunk* pChunk) : m_pChunk(pChunk) {}
+	~CBuildImpl()
+	{
+		// If these asserts fire, then there is likely a mismatch between BeginOptionalGroup() and EndGroup()
+		NET_ASSERT(m_resolveConditions.empty());
+		NET_ASSERT(m_inOptionalGroup.empty());
+	}
 
 	template<class T>
 	void Value(const char* name, T& value, uint32 policy)

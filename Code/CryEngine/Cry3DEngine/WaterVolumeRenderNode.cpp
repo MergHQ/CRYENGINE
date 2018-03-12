@@ -91,12 +91,12 @@ CWaterVolumeRenderNode::~CWaterVolumeRenderNode()
 	{
 		if (m_pVolumeRE[i])
 		{
-			m_pVolumeRE[i]->Release(true);
+			m_pVolumeRE[i]->Release(false);
 			m_pVolumeRE[i] = 0;
 		}
 		if (m_pSurfaceRE[i])
 		{
-			m_pSurfaceRE[i]->Release(true);
+			m_pSurfaceRE[i]->Release(false);
 			m_pSurfaceRE[i] = 0;
 		}
 	}

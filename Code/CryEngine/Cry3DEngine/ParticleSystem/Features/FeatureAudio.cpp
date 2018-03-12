@@ -22,7 +22,7 @@ namespace pfx2
 {
 static const ColorB audioColor = ColorB(172, 196, 138);
 
-EParticleDataType PDT(EPDT_AudioObject, CryAudio::IObject*);
+MakeDataType(EPDT_AudioObject, CryAudio::IObject*);
 
 class CFeatureAudioTrigger final : public CParticleFeature
 {
@@ -91,7 +91,7 @@ public:
 
 	void DestroyParticles(const SUpdateContext& context) override
 	{
-		auto audioObjects = context.m_container.GetTIStream<CryAudio::IObject*>(EPDT_AudioObject);
+		auto audioObjects = context.m_container.IStream(EPDT_AudioObject);
 		for (auto particleId : context.GetUpdateRange())
 		{
 			if (auto pIObject = audioObjects.Load(particleId))
@@ -162,7 +162,7 @@ private:
 		CParticleContainer& container = context.m_container;
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		const auto normAges = container.GetIFStream(EPDT_NormalAge);
-		auto audioObjects = container.GetTIOStream<CryAudio::IObject*>(EPDT_AudioObject);
+		auto audioObjects = container.IOStream(EPDT_AudioObject);
 
 		for (auto particleId : context.GetUpdateRange())
 		{
@@ -265,17 +265,15 @@ public:
 		CParticleContainer& container = context.m_container;
 		if (!container.HasData(EPDT_AudioObject))
 			return;
-		auto audioObjects = container.GetTIOStream<CryAudio::IObject*>(EPDT_AudioObject);
 
-		STempModBuffer<float> values(context, m_value);
-		values.ModifyUpdate(context, m_value, container.GetFullRange());
+		auto audioObjects = container.IOStream(EPDT_AudioObject);
+		STempUpdateBuffer<float> values(context, m_value, context.GetUpdateRange());
 
 		for (auto particleId : context.GetUpdateRange())
 		{
-			const float value = values.m_stream.Load(particleId);
-			if (CryAudio::IObject* const pIObject = audioObjects.Load(particleId))
+			if (auto* pIObject = audioObjects.Load(particleId))
 			{
-				pIObject->SetParameter(m_parameterId, value);
+				pIObject->SetParameter(m_parameterId, values[particleId]);
 			}
 		}
 	}

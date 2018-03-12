@@ -267,25 +267,38 @@ void CDeviceResourceSet_Vulkan::ReleaseDescriptors()
 
 CDeviceResourceLayout_Vulkan::~CDeviceResourceLayout_Vulkan()
 {
-	vkDestroyPipelineLayout(m_pDevice->GetVkDevice(), m_pipelineLayout, nullptr);
+	if(m_pDevice)
+		vkDestroyPipelineLayout(m_pDevice->GetVkDevice(), m_pipelineLayout, nullptr);
+	GetDeviceObjectFactory().UnRegisterEncodedResourceLayout(m_hash);
 }
 
 std::vector<uint8> CDeviceResourceLayout_Vulkan::EncodeDescriptorSet(const VectorMap<SResourceBindPoint, SResourceBinding>& resources)
 {
 	std::vector<uint8> result;
-	result.reserve(1 + resources.size() * 4);
+	result.reserve(1 + resources.size() * 2);
 
 	result.push_back(resources.size());
 	for (auto it : resources)
 	{
 		SResourceBindPoint& bindPoint = it.first;
 		VkShaderStageFlags stages = GetShaderStageFlags(bindPoint.stages);
-		CRY_ASSERT((stages & 0xFF) == stages);
+		uint8 descriptorCount = 1;
 
-		result.push_back((uint8)bindPoint.slotType);
-		result.push_back(bindPoint.slotNumber);
-		result.push_back(1); // descriptor count
-		result.push_back((uint8)stages);
+#ifndef _RELEASE
+		if (
+			(stages & 0x3F) != stages                                      ||
+			((uint8)bindPoint.slotType & 0x3) != (uint8)bindPoint.slotType ||
+			(descriptorCount & 0x3) != descriptorCount                     ||
+			(bindPoint.slotNumber & 0x3F) != bindPoint.slotNumber
+		)
+		{
+			CryFatalError("Encoding need to be changed. Stages flags, slot type, Descriptor count, and slot number are not fitting to two bytes anymore.");
+		}
+#endif
+		uint8 slotTypeStageByte = ((uint8)bindPoint.slotType << 6) | (uint8)stages;
+		result.push_back(slotTypeStageByte);              // 6-bits for stages + 2-bits for slotType
+		uint8 slotNumberDescriptorCountByte = (descriptorCount << 6) | bindPoint.slotNumber;
+		result.push_back(slotNumberDescriptorCountByte);  // 6-bits for slot number + 2-bits for descriptor count
 	}
 
 	return result;
@@ -293,7 +306,6 @@ std::vector<uint8> CDeviceResourceLayout_Vulkan::EncodeDescriptorSet(const Vecto
 
 bool CDeviceResourceLayout_Vulkan::Init(const SDeviceResourceLayoutDesc& desc)
 {
-	m_encodedLayout.clear();
 	m_hash = 0;
 
 	VkDescriptorSetLayout descriptorSets[EResourceLayoutSlot_Max] = {};
@@ -344,17 +356,15 @@ bool CDeviceResourceLayout_Vulkan::Init(const SDeviceResourceLayoutDesc& desc)
 	{
 		m_hash = desc.GetHash();
 
-		m_encodedLayout.reserve(MAX_TMU * 4);
-		m_encodedLayout.push_back(desc.m_resourceBindings.size());
+		std::vector<uint8> encodedLayout;
+		encodedLayout.reserve(MAX_TMU * 2);
+		encodedLayout.push_back(static_cast<uint8>(desc.m_resourceBindings.size()));
 
 		for (auto& encodedSet : encodedDescriptorSets)
-			m_encodedLayout.insert(m_encodedLayout.end(), encodedSet.begin(), encodedSet.end());
+			encodedLayout.insert(encodedLayout.end(), encodedSet.begin(), encodedSet.end());
 
-		if (GetDeviceObjectFactory().LookupResourceLayoutEncoding(m_hash) != nullptr)
-		{
-			CryFatalError("Resource layout hash collision!");
-		}
-
+		GetDeviceObjectFactory().RegisterEncodedResourceLayout(m_hash, std::move(encodedLayout));
+		
 		return true;
 	}
 

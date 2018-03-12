@@ -39,7 +39,7 @@ namespace UQS
 				"0/1: Enable logging of past queries to draw them at a later time via 'uqs_debugDraw' set to 1.\n"
 				"Pick the one to draw via PGDOWN/PGUP.");
 
-			REGISTER_CVAR2("uqs_timeBudgetExcessThreshold", &timeBudgetExcessThresholdInPercent, 20.0f, VF_NULL,
+			REGISTER_CVAR2("uqs_timeBudgetExcessThresholdInPercent", &timeBudgetExcessThresholdInPercent, 20.0f, VF_NULL,
 				"Percentage of the granted time of a query that we allow to exceed before before taking counter-measures and issuing warnings.");
 
 			REGISTER_CVAR2("uqs_printTimeExcessWarningsToConsole", &printTimeExcessWarningsToConsole, 1, VF_NULL,
@@ -54,7 +54,7 @@ namespace UQS
 			gEnv->pConsole->UnregisterVariable("uqs_debugDrawLineThickness");
 			gEnv->pConsole->UnregisterVariable("uqs_debugDrawAlphaValueOfDiscardedItems");
 			gEnv->pConsole->UnregisterVariable("uqs_logQueryHistory");
-			gEnv->pConsole->UnregisterVariable("uqs_timeBudgetExcessThresholdInPercentBeforeWarning");
+			gEnv->pConsole->UnregisterVariable("uqs_timeBudgetExcessThresholdInPercent");
 			gEnv->pConsole->UnregisterVariable("uqs_printTimeExcessWarningsToConsole");
 		}
 	}

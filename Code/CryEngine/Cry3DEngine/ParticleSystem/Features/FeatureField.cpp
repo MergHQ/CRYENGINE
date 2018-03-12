@@ -18,7 +18,7 @@
 namespace pfx2
 {
 
-EParticleDataType PDT(EPDT_Alpha, float, EDataFlags::BHasInit);
+MakeDataType(EPDT_Alpha, float, EDataFlags::BHasInit);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureFieldOpacity
@@ -94,7 +94,7 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldOpacity, "Field", "Opa
 //////////////////////////////////////////////////////////////////////////
 // CFeatureFieldSize
 
-EParticleDataType PDT(EPDT_Size, float, EDataFlags::BHasInit);
+MakeDataType(EPDT_Size, float, EDataFlags::BHasInit);
 
 class CFeatureFieldSize : public CParticleFeature
 {

@@ -17,7 +17,7 @@ ILINE const CParticleContainer& GetContainer(const SUpdateContext context, EModD
 class CSelfStreamSampler
 {
 public:
-	CSelfStreamSampler(const SUpdateContext& context, EParticleDataType sourceStreamType, EModDomain domain = EMD_PerParticle)
+	CSelfStreamSampler(const SUpdateContext& context, TDataType<float> sourceStreamType, EModDomain domain = EMD_PerParticle)
 		: sourceStream(GetContainer(context, domain).GetIFStream(sourceStreamType))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
@@ -31,7 +31,7 @@ private:
 class CParentStreamSampler
 {
 public:
-	CParentStreamSampler(const SUpdateContext& context, EParticleDataType sourceStreamType)
+	CParentStreamSampler(const SUpdateContext& context, TDataType<float> sourceStreamType)
 		: parentSourceStream(context.m_parentContainer.GetIFStream(sourceStreamType, 1.0f))
 		, parentIds(context.m_container.GetIPidStream(EPDT_ParentId))
 	{}
@@ -278,7 +278,7 @@ ILINE EModDomain CDomain::GetDomain() const
 		return EMD_PerEffect;
 	}
 }
-ILINE EParticleDataType CDomain::GetDataType() const
+ILINE TDataType<float> CDomain::GetDataType() const
 {
 	switch (m_domain)
 	{
@@ -287,9 +287,9 @@ ILINE EParticleDataType CDomain::GetDataType() const
 	case EDomain::SpawnFraction:
 		return EPDT_SpawnFraction;
 	case EDomain::Field:
-		return EParticleDataType(m_fieldSource);
+		return TDataType<float>(m_fieldSource);
 	default:
-		return EParticleDataType::size();
+		return TDataType<float>(EParticleDataType::size());
 	}
 }
 
