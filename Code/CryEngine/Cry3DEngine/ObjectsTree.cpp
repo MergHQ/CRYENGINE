@@ -633,7 +633,7 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePas
 			{
 				// view dependent max view distance check
 				Vec3 closestPoint(0);
-				if (GetCVars()->e_ViewDistRatio3Planar && Distance::Point_AABBSq(passInfo.GetCamera().GetPosition(), nodeBox, closestPoint) > 1.f)
+				if (nodeDistance && GetCVars()->e_ViewDistRatio3Planar && Distance::Point_AABBSq(passInfo.GetCamera().GetPosition(), nodeBox, closestPoint) > 1.f)
 				{
 					// 3-planar distance
 					Vec3 vSize3D = nodeBox.GetSize();
@@ -2768,9 +2768,7 @@ void COctreeNode::RenderBrushes(TDoublyLinkedList<IRenderNode>* lstObjects, cons
 	}
 }
 
-void COctreeNode::RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfoGeneral, float fEntDistance,
-                                              IRenderNode* pObj, const AABB& objBox, const uint32 passCullMask, const CLodValue* lodValue, const SRendParams* rendParams,
-                                              PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo)
+void COctreeNode::RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfoGeneral, float fEntDistance, IRenderNode* pObj, const AABB& objBox, const uint32 passCullMask)
 {
 	if (IsShadowCaster(pObj) &&
 	    passCullMask & ~kPassCullMainMask &&
@@ -3522,7 +3520,7 @@ void CObjManager::RenderBrush(CBrush* pEnt, PodArray<SRenderLight*>* pAffectingL
 
 	if (passCullMask & ~kPassCullMainMask)
 	{
-		COctreeNode::RenderObjectIntoShadowViews(passInfo, fEntDistance, pEnt, objBox, passCullMask, &lodValue, nullptr, pAffectingLights, pTerrainTexInfo);
+		COctreeNode::RenderObjectIntoShadowViews(passInfo, fEntDistance, pEnt, objBox, passCullMask);
 	}
 }
 

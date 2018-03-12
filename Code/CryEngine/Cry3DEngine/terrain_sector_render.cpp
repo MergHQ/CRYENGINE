@@ -183,9 +183,6 @@ void CTerrainUpdateDispatcher::QueueJob(CTerrainNode* pNode, const SRenderingPas
 
 bool CTerrainUpdateDispatcher::AddJob(CTerrainNode* pNode, bool executeAsJob, const SRenderingPassInfo& passInfo)
 {
-	// 1U<<MML_NOT_SET will generate 0!
-	if (pNode->m_cNewGeomMML == MML_NOT_SET)
-		return true;
 	STerrainNodeLeafData* pLeafData = pNode->GetLeafData();
 	if (!pLeafData)
 		return true;
@@ -193,11 +190,10 @@ bool CTerrainUpdateDispatcher::AddJob(CTerrainNode* pNode, bool executeAsJob, co
 	const unsigned alignPad = TARGET_DEFAULT_ALIGN;
 
 	// Preallocate enough temp memory to prevent reallocations
-	const float stepSize = (1 << pNode->m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize();
-	const int nSectorSize = CTerrain::GetSectorSize() << pNode->m_nTreeLevel;
+	const int meshDim = int(float(CTerrain::GetSectorSize()) / CTerrain::GetHeightMapUnitSize());
 
-	int nNumVerts = stepSize ? (int(nSectorSize / stepSize) + 1 + 2) * (int(nSectorSize / stepSize) + 1 + 2) : 0;
-	int nNumIdx = stepSize ? (int(nSectorSize / stepSize) + 2) * (int(nSectorSize / stepSize) + 2) * 6 : 0;
+	int nNumVerts = (meshDim + 1 + 2) * (meshDim + 1 + 2);
+	int nNumIdx = (meshDim + 2) * (meshDim + 2) * 6;
 
 	if (!pNode->m_nTreeLevel && Get3DEngine()->m_bIntegrateObjectsIntoTerrain)
 	{
@@ -409,10 +405,7 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 	{
 		SetupTexturing(false, passInfo);
 
-		float stepSize = (1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize();
-		float sectorSize = (m_boxHeigtmapLocal.max.x - m_boxHeigtmapLocal.min.x);
-
-		IRenderMesh* pRenderMesh = GetSharedRenderMesh(int(sectorSize / stepSize));
+		IRenderMesh* pRenderMesh = GetSharedRenderMesh();
 
 		CRenderObject* pTerrainRenderObject = nullptr;
 
@@ -424,7 +417,7 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 		CLodValue lodValue(3, 0, 3);
 		if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &lodValue, IRenderView::SInstanceUpdateInfo{ objMat }, passInfo))
 		{
-			pTerrainRenderObject->m_pRenderNode = nullptr;
+			pTerrainRenderObject->m_pRenderNode = this;
 			pTerrainRenderObject->m_II.m_AmbColor = Get3DEngine()->GetSkyColor();
 			pTerrainRenderObject->m_fDistance = m_arrfDistance[passInfo.GetRecursiveLevel()];
 
@@ -720,11 +713,9 @@ void CTerrainNode::BuildIndices(CStripsInfo& si, const SRenderingPassInfo& passI
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	if (m_cNewGeomMML == MML_NOT_SET)
-		return;
-
-	float stepSize = (1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize();
 	int sectorSize = CTerrain::GetSectorSize() << m_nTreeLevel;
+	const int meshDim = int(float(CTerrain::GetSectorSize()) / CTerrain::GetHeightMapUnitSize());
+	float stepSize = float(sectorSize) / float(meshDim);
 
 	float sectorSizeSB = sectorSize + stepSize * 2;
 
@@ -779,16 +770,9 @@ bool CTerrainNode::RenderSector(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	//m_nNodeRenderLastFrameId = passInfo.GetMainFrameID();
-
-	assert(m_cNewGeomMML == MML_NOT_SET || m_cNewGeomMML < GetTerrain()->m_nUnitsToSectorBitShift);
-
 	STerrainNodeLeafData* pLeafData = GetLeafData();
 
-	float stepSize = (1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize();
-	float sectorSize = (m_boxHeigtmapLocal.max.x - m_boxHeigtmapLocal.min.x);
-
-	IRenderMesh* pRenderMesh = (m_nTreeLevel >= GetCVars()->e_TerrainMeshInstancingMinLod) ? GetSharedRenderMesh(int(sectorSize / stepSize)) : GetLeafData()->m_pRenderMesh;
+	IRenderMesh* pRenderMesh = (m_nTreeLevel >= GetCVars()->e_TerrainMeshInstancingMinLod) ? GetSharedRenderMesh() : GetLeafData()->m_pRenderMesh;
 
 	bool bDetailLayersReady = passInfo.IsShadowPass() ||
 	                          !m_lstSurfaceTypeInfo.Count() ||
@@ -807,13 +791,9 @@ bool CTerrainNode::RenderSector(const SRenderingPassInfo& passInfo)
 
 	if (pRenderMesh && GetCVars()->e_TerrainDrawThisSectorOnly < 2 && bDetailLayersReady)
 	{
-		if (passInfo.GetRecursiveLevel() || (m_cCurrGeomMML == m_cNewGeomMML) || m_nTreeLevel >= GetCVars()->e_TerrainMeshInstancingMinLod ||
-		    (passInfo.IsCachedShadowPass() && passInfo.GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED_MGPU_COPY))
-		{
 			DrawArray(passInfo);
 			return true;
 		}
-	}
 
 	if (passInfo.GetRecursiveLevel())
 		if (pRenderMesh)
@@ -849,8 +829,6 @@ void CTerrainNode::RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo)
 	InvalidatePermanentRenderObject();
 
 	UpdateRenderMesh(&m_pUpdateTerrainTempData->m_StripsInfo);
-
-	m_cCurrGeomMML = m_cNewGeomMML;
 
 	// update detail layers indices
 	if (passInfo.RenderTerrainDetailMaterial())
@@ -921,15 +899,9 @@ void CTerrainNode::BuildVertices_Wrapper()
 
 	_smart_ptr<IRenderMesh>& pRenderMesh = pLeafData->m_pRenderMesh;
 
-	// 1U<<MML_NOT_SET will generate zero
-	if (m_cNewGeomMML == MML_NOT_SET)
-		return;
-
-	float stepSize = (1 << m_cNewGeomMML) * CTerrain::GetHeightMapUnitSize();
-	float nSectorSize = float(CTerrain::GetSectorSize() << m_nTreeLevel);
-	assert(stepSize && stepSize <= nSectorSize);
-	if (stepSize > nSectorSize)
-		stepSize = nSectorSize;
+	int sectorSize = CTerrain::GetSectorSize() << m_nTreeLevel;
+	const int meshDim = int(float(CTerrain::GetSectorSize()) / CTerrain::GetHeightMapUnitSize());
+	float stepSize = float(sectorSize) / float(meshDim);
 
 	BuildVertices(stepSize);
 }
@@ -1278,18 +1250,12 @@ void AddIndexShared(int _x, int _y, PodArray<vtx_idx>& arrIndices, int nSectorSi
 }
 
 // Build single render mesh (with safety borders) to be re-used for multiple sectors
-_smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh(int nDim)
+_smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh()
 {
-	int nLod = 0;
-	int n = int(CTerrain::m_fInvUnitSize * (float)CTerrain::m_nSectorSize);
-	while (nDim < n && nLod < (TERRAIN_SHARED_MESH_LODS_NUM - 1))
-	{
-		nLod++;
-		n >>= 1;
-	}
+	const int meshDim = int(float(CTerrain::GetSectorSize()) / CTerrain::GetHeightMapUnitSize());
 
-	if (m_pTerrain->m_pSharedRenderMesh[nLod])
-		return m_pTerrain->m_pSharedRenderMesh[nLod];
+	if (m_pTerrain->m_pSharedRenderMesh)
+		return m_pTerrain->m_pSharedRenderMesh;
 
 	int nBorder = 1;
 
@@ -1308,13 +1274,13 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh(int nDim)
 
 	PodArray<SVF_P2S_N4B_C4B_T1F> arrVertices;
 
-	for (int x = -nBorder; x <= (nDim + nBorder); x++)
+	for (int x = -nBorder; x <= (meshDim + nBorder); x++)
 	{
-		for (int y = -nBorder; y <= (nDim + nBorder); y++)
+		for (int y = -nBorder; y <= (meshDim + nBorder); y++)
 		{
-			vert.xy = CryHalf2(SATURATE(float(x) / float(nDim)), SATURATE(float(y) / float(nDim)));
+			vert.xy = CryHalf2(SATURATE(float(x) / float(meshDim)), SATURATE(float(y) / float(meshDim)));
 
-			if (x < 0 || y < 0 || x > nDim || y > nDim)
+			if (x < 0 || y < 0 || x > meshDim || y > meshDim)
 				vert.z = -0.1f;
 			else
 				vert.z = 0.f;
@@ -1325,23 +1291,23 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh(int nDim)
 
 	PodArray<vtx_idx> arrIndices;
 
-	int nDimEx = nDim + nBorder * 2;
+	int meshDimEx = meshDim + nBorder * 2;
 
-	for (int x = 0; x < nDimEx; x++)
+	for (int x = 0; x < meshDimEx; x++)
 	{
-		for (int y = 0; y < nDimEx; y++)
+		for (int y = 0; y < meshDimEx; y++)
 		{
-			AddIndexShared(x + 1, y + 0, arrIndices, nDimEx);
-			AddIndexShared(x + 1, y + 1, arrIndices, nDimEx);
-			AddIndexShared(x + 0, y + 0, arrIndices, nDimEx);
+			AddIndexShared(x + 1, y + 0, arrIndices, meshDimEx);
+			AddIndexShared(x + 1, y + 1, arrIndices, meshDimEx);
+			AddIndexShared(x + 0, y + 0, arrIndices, meshDimEx);
 
-			AddIndexShared(x + 0, y + 0, arrIndices, nDimEx);
-			AddIndexShared(x + 1, y + 1, arrIndices, nDimEx);
-			AddIndexShared(x + 0, y + 1, arrIndices, nDimEx);
+			AddIndexShared(x + 0, y + 0, arrIndices, meshDimEx);
+			AddIndexShared(x + 1, y + 1, arrIndices, meshDimEx);
+			AddIndexShared(x + 0, y + 1, arrIndices, meshDimEx);
 		}
 	}
 
-	m_pTerrain->m_pSharedRenderMesh[nLod] = GetRenderer()->CreateRenderMeshInitialized(
+	m_pTerrain->m_pSharedRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
 	  arrVertices.GetElements(),
 	  arrVertices.Count(),
 	  EDefaultInputLayouts::P2S_N4B_C4B_T1F,
@@ -1351,9 +1317,9 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh(int nDim)
 	  "TerrainSectorSharedRenderMesh", "TerrainSectorSharedRenderMesh",
 	  eRMT_Static);
 
-	m_pTerrain->m_pSharedRenderMesh[nLod]->SetChunk(NULL, 0, arrVertices.Count(), 0, arrIndices.Count(), 1.0f, 0);
+	m_pTerrain->m_pSharedRenderMesh->SetChunk(NULL, 0, arrVertices.Count(), 0, arrIndices.Count(), 1.0f, 0);
 
-	return m_pTerrain->m_pSharedRenderMesh[nLod];
+	return m_pTerrain->m_pSharedRenderMesh;
 }
 
 uint32 CTerrainNode::GetMaterialsModificationId()

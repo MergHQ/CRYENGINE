@@ -59,7 +59,7 @@ void OnGsmLodsNumChange(ICVar* pArgs)
 	if (Cry3DEngineBase::GetRenderer())
 	{
 		Cry3DEngineBase::GetRenderer()->UpdateCachedShadowsLodCount(pArgs->GetIVal());
-	}
+}
 }
 
 void OnDynamicDistanceShadowsVarChange(ICVar* pArgs)
@@ -487,6 +487,8 @@ void CVars::Init()
 	              "Take only trianglses close to terrain for objects integration");
 	DefineConstIntCVar(e_TerrainDeformations, 0, VF_CHEAT,
 	                   "Allows in-game terrain surface deformations");
+	REGISTER_CVAR(e_TerrainEditPostponeTexturesUpdate, 10, VF_NULL,
+	              "Controls the postpone of terrain normal and elevation textures update during terrain sculpting in the editor");
 	DefineConstIntCVar(e_AutoPrecacheCameraJumpDist, 16, VF_CHEAT,
 	                   "When not 0 - Force full pre-cache of textures, procedural vegetation and shaders\n"
 	                   "if camera moved for more than X meters in one frame or on new cut scene start");
@@ -537,12 +539,11 @@ void CVars::Init()
 	                     "Density of rays");
 	DefineConstFloatCVar(e_TerrainOcclusionCullingPrecisionDistRatio, VF_CHEAT,
 	                     "Controls density of rays depending on distance to the object");
-	REGISTER_CVAR(e_TerrainLodRatio, 1.f, VF_NULL,
-	              "Set heightmap LOD, this value is combined with sector error metrics and distance to camera");
-	REGISTER_CVAR(e_TerrainLodDistRatio, 1.f, VF_NULL,
-	              "Set heightmap LOD, this value is combined only with sector distance to camera and ignores sector error metrics");
-	DefineConstFloatCVar(e_TerrainLodRatioHolesMin, VF_NULL,
-	                     "Rises LOD for distant terrain sectors with holes, prevents too strong distortions of holes on distance ");
+
+	REGISTER_CVAR(e_TerrainLodDistanceRatio, 0.5f, VF_NULL,
+	              "Controls heightmap LOD by comparing sector distance with a sector size");
+	REGISTER_CVAR(e_TerrainLodErrorRatio, 0.05f, VF_NULL,
+	              "Controls heightmap LOD by comparing sector distance with the maximum elevation difference between the sector and its childs");
 
 	REGISTER_CVAR(e_OcclusionCullingViewDistRatio, 0.5f, VF_NULL,
 	              "Skip per object occlusion test for very far objects - culling on tree level will handle it");

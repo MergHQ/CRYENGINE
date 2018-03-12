@@ -14,36 +14,10 @@
 #include "StdAfx.h"
 #include "terrain.h"
 #include "terrain_sector.h"
-#include "ObjMan.h"
-#include "VisAreas.h"
-#include "PolygonClipContext.h"
 
-struct CTerrain__Cmp_Sectors
-{
-	CTerrain__Cmp_Sectors(const SRenderingPassInfo& state) : passInfo(state) {}
-
-	bool __cdecl operator()(CTerrainNode* p1, CTerrainNode* p2)
-	{
-		int nRecursiveLevel = passInfo.GetRecursiveLevel();
-
-		// if same - give closest sectors higher priority
-		if (p1->m_arrfDistance[nRecursiveLevel] > p2->m_arrfDistance[nRecursiveLevel])
-			return false;
-		else if (p1->m_arrfDistance[nRecursiveLevel] < p2->m_arrfDistance[nRecursiveLevel])
-			return true;
-
-		return false;
-	}
-private:
-	const SRenderingPassInfo passInfo;
-};
-
-float GetPointToBoxDistance(Vec3 vPos, AABB bbox);
-
-int   CTerrain::GetDetailTextureMaterials(IMaterial* materials[])
+int CTerrain::GetDetailTextureMaterials(IMaterial* materials[])
 {
 	int materialNumber = 0;
-	//vector<IMaterial*> materials;
 
 	uchar szProj[] = "XYZ";
 
@@ -77,13 +51,9 @@ void CTerrain::DrawVisibleSectors(const SRenderingPassInfo& passInfo)
 	if (!passInfo.RenderTerrain() || !Get3DEngine()->m_bShowTerrainSurface)
 		return;
 
-	// sort to get good texture streaming priority
-	if (m_lstVisSectors.Count() > 0)
-		std::sort(m_lstVisSectors.GetElements(), m_lstVisSectors.GetElements() + m_lstVisSectors.Count(), CTerrain__Cmp_Sectors(passInfo));
-
-	for (CTerrainNode* pNode : m_lstVisSectors)
+	for (STerrainVisItem node : m_lstVisSectors)
 	{
-		pNode->RenderNodeHeightmap(passInfo);
+		node.first->RenderNodeHeightmap(passInfo, node.second);
 	}
 }
 

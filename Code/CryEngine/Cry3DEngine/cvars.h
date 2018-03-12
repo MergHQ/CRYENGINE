@@ -82,7 +82,6 @@ struct CVars : public Cry3DEngineBase
 #define e_TerrainOcclusionCullingPrecisionDefault          (0.25f)
 #define e_TerrainOcclusionCullingPrecisionDistRatioDefault (3.f)
 #define e_TerrainOcclusionCullingStepSizeDeltaDefault      (1.05f)
-#define e_TerrainLodRatioHolesMinDefault                   (2.f)
 #define e_WindDefault                                      (0.1f)
 #define e_ShadowsCastViewDistRatioLightsDefault            (1.f)
 #define e_DecalsRangeDefault                               (20.f)
@@ -154,15 +153,15 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_ShadowsLodBiasFixed, 0);
 #endif
 	DeclareConstIntCVar(e_FogVolumes, 1);
-	int e_VolumetricFog;
+	int    e_VolumetricFog;
 	DeclareConstIntCVar(e_Render, e_RenderDefault);
 	DeclareConstIntCVar(e_Tessellation, 1);
-	float e_TessellationMaxDistance;
+	float  e_TessellationMaxDistance;
 	DeclareConstIntCVar(e_ShadowsTessellateCascades, 1);
 	DeclareConstIntCVar(e_ShadowsTessellateDLights, 0);
-	int e_CoverageBufferReproj;
-	int e_CoverageBufferRastPolyLimit;
-	int e_CoverageBufferShowOccluder;
+	int    e_CoverageBufferReproj;
+	int    e_CoverageBufferRastPolyLimit;
+	int    e_CoverageBufferShowOccluder;
 	DeclareConstFloatCVar(e_ViewDistRatioPortals);
 	DeclareConstIntCVar(e_ParticlesLights, 1);
 	DeclareConstIntCVar(e_ObjFastRegister, 1);
@@ -191,7 +190,6 @@ struct CVars : public Cry3DEngineBase
 	float e_DecalsLifeTimeScale;
 	int   e_DecalsForceDeferred;
 	DeclareConstIntCVar(e_CoverageBufferDebugFreeze, 0);
-	DeclareConstFloatCVar(e_TerrainLodRatioHolesMin);
 	DeclareConstIntCVar(e_TerrainOcclusionCulling, 1);
 	int    e_PhysProxyTriLimit;
 	float  e_FoliageWindActivationDist;
@@ -208,17 +206,17 @@ struct CVars : public Cry3DEngineBase
 	int    e_DynamicLightsFrameIdVisTest;
 	DeclareConstIntCVar(e_WaterWavesTessellationAmount, 5);
 	DeclareConstIntCVar(e_ShadowsLodBiasInvis, 0);
-	float e_CoverageBufferBias;
-	int   e_DynamicLightsMaxEntityLights;
-	int   e_SQTestMoveSpeed;
-	float e_StreamAutoMipFactorMax;
-	int   e_ObjQuality;
-	int   e_StaticInstancing;
-	int   e_StaticInstancingMinInstNum;
-	int   e_RNTmpDataPoolMaxFrames;
+	float  e_CoverageBufferBias;
+	int    e_DynamicLightsMaxEntityLights;
+	int    e_SQTestMoveSpeed;
+	float  e_StreamAutoMipFactorMax;
+	int    e_ObjQuality;
+	int    e_StaticInstancing;
+	int    e_StaticInstancingMinInstNum;
+	int    e_RNTmpDataPoolMaxFrames;
 	DeclareConstIntCVar(e_DynamicLightsMaxCount, 512);
 	DeclareConstIntCVar(e_DebugLights, 0);
-	int e_StreamCgfPoolSize;
+	int    e_StreamCgfPoolSize;
 	DeclareConstIntCVar(e_StatObjPreload, 1);
 	DeclareConstIntCVar(e_ShadowsDebug, 0);
 	DeclareConstIntCVar(e_ShadowsCascadesCentered, 0);
@@ -244,8 +242,8 @@ struct CVars : public Cry3DEngineBase
 	float e_CoverageBufferTerrainExpand;
 	DeclareConstIntCVar(e_WaterWaves, 0);
 	int   e_GsmCastFromTerrain;
-	float e_TerrainLodRatio;
-	float e_TerrainLodDistRatio;
+	float e_TerrainLodDistanceRatio;
+	float e_TerrainLodErrorRatio;
 	int   e_StatObjBufferRenderTasks;
 	DeclareConstIntCVar(e_StreamCgfUpdatePerNodeDistance, 1);
 	DeclareConstFloatCVar(e_DecalsDeferredDynamicDepthScale);
@@ -279,12 +277,12 @@ struct CVars : public Cry3DEngineBase
 	float  e_PhysOceanCell;
 	DeclareConstIntCVar(e_WindAreas, 1);
 	DeclareConstFloatCVar(e_WindBendingDistRatio);
-	float e_WindBendingStrength;
-	float e_WindBendingAreaStrength;
-	float e_SQTestDelay;
-	int   e_PhysMinCellSize;
-	int   e_StreamCgfMaxTasksInProgress;
-	int   e_StreamCgfMaxNewTasksPerUpdate;
+	float  e_WindBendingStrength;
+	float  e_WindBendingAreaStrength;
+	float  e_SQTestDelay;
+	int    e_PhysMinCellSize;
+	int    e_StreamCgfMaxTasksInProgress;
+	int    e_StreamCgfMaxNewTasksPerUpdate;
 	DeclareConstFloatCVar(e_DecalsPlacementTestAreaSize);
 	DeclareConstFloatCVar(e_DecalsPlacementTestMinDepth);
 	DeclareConstFloatCVar(e_CameraRotationSpeed);
@@ -297,7 +295,7 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_ParticlesCullAgainstViewFrustum, 1);
 	DeclareConstIntCVar(e_ParticlesCullAgainstOcclusionBuffer, 1);
 	DeclareConstFloatCVar(e_StreamPredictionMinReportDistance);
-	int e_WaterTessellationSwathWidth;
+	int   e_WaterTessellationSwathWidth;
 	DeclareConstIntCVar(e_StreamSaveStartupResultsIntoXML, 0);
 	DeclareConstIntCVar(e_PhysFoliage, 2);
 	DeclareConstIntCVar(e_RenderMeshUpdateAsync, 1);
@@ -315,10 +313,11 @@ struct CVars : public Cry3DEngineBase
 	int e_TerrainDetailMaterials;
 	DeclareConstIntCVar(e_ShadowsFrustums, 0);
 	DeclareConstIntCVar(e_OcclusionVolumes, e_OcclusionVolumesDefault);
-	int e_DecalsDeferredStatic;
+	int   e_TerrainEditPostponeTexturesUpdate;
+	int   e_DecalsDeferredStatic;
 	DeclareConstIntCVar(e_Roads, 1);
 	DeclareConstFloatCVar(e_TerrainDetailMaterialsViewDistXY);
-	int e_ParticlesQuality;
+	int   e_ParticlesQuality;
 	DeclareConstIntCVar(e_DebugDrawShowOnlyCompound, 0);
 	DeclareConstFloatCVar(e_SunAngleSnapSec);
 	float e_GsmRangeStep;
@@ -349,12 +348,12 @@ struct CVars : public Cry3DEngineBase
 	float e_ShadowsAutoBias;
 	DeclareConstIntCVar(e_GsmDepthBoundsDebug, 0);
 	DeclareConstIntCVar(e_TimeOfDayDebug, 0);
-	int e_WaterTessellationAmount;
-	int e_Entities;
-	int e_CoverageBuffer;
-	int e_ScreenShotQuality;
+	int   e_WaterTessellationAmount;
+	int   e_Entities;
+	int   e_CoverageBuffer;
+	int   e_ScreenShotQuality;
 	DeclareConstFloatCVar(e_FoliageBranchesDamping);
-	int e_levelStartupFrameNum;
+	int   e_levelStartupFrameNum;
 	DeclareConstIntCVar(e_DecalsPreCreate, 1);
 	DeclareConstFloatCVar(e_ParticlesLightsViewDistRatio);
 	int   e_Brushes;
@@ -481,10 +480,10 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstFloatCVar(e_VolObjShadowStrength);
 	DeclareConstIntCVar(e_ParticlesDebug, 0);
 	DeclareConstIntCVar(e_WaterOcean, e_WaterOceanDefault);
-	float e_ViewDistRatio;
-	float e_ViewDistRatioVegetation;
-	float e_ViewDistRatioModifierGameDecals;
-	float e_ViewDistRatio3Planar;
+	float  e_ViewDistRatio;
+	float  e_ViewDistRatioVegetation;
+	float  e_ViewDistRatioModifierGameDecals;
+	float  e_ViewDistRatio3Planar;
 	DeclareConstIntCVar(e_ObjectLayersActivationPhysics, 1);
 	DeclareConstIntCVar(e_StreamCgfDebugHeatMap, 0);
 	DeclareConstFloatCVar(e_StreamPredictionDistanceFar);
