@@ -419,7 +419,7 @@ void CVars::Init()
 	                   "Force shadow cascades to be centered 0=disable 1=enable ");
 	DefineConstIntCVar(e_ShadowsCascadesDebug, 0, VF_CHEAT,
 	                   "0=off, 1=visualize sun shadow cascades on screen");
-	REGISTER_CVAR_CB(e_ShadowsPerObject, 1, VF_NULL,
+	REGISTER_CVAR_CB(e_ShadowsPerObject, 0, VF_NULL,
 	                 "Per object shadow maps 0=off, 1=on, -1=don't draw object shadows", OnPerCharacterShadowsChange);
 	REGISTER_CVAR(e_ShadowsPerObjectResolutionScale, 1, VF_NULL,
 	              "Global scale for per object shadow texture resolution\n"
