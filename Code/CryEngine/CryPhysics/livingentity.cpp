@@ -822,6 +822,7 @@ void SLivingEntityNetSerialize::Serialize( TSerialize ser )
 		ser.Value("idEnt", idEntGroundCollider);
 		ser.Value("ipart", ipartGroundCollider);
 		ser.Value("posGround", posOnGroundCollider);
+		ser.EndGroup();
 	}	else {
 		idEntGroundCollider = -1;
 		posOnGroundCollider.zero();
