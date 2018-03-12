@@ -8,33 +8,6 @@
 
 #include "Common/RenderView.h"
 
-//////////////////////////////////////////////////////////////////////////
-void ShadowMapFrustum::Job_RenderShadowCastersToView(const SRenderingPassInfo& passInfo, bool bJobCasters)
-{
-	auto* casters = &castersList;
-	if (bJobCasters)
-		casters = &jobExecutedCastersList;
-
-	for (int i = 0; i < casters->Count(); i++)
-	{
-		IShadowCaster* pShadowCaster = (*casters)[i];
-		//TOFIX reactivate OmniDirectionalShadow
-		if (bOmniDirectionalShadow)
-		{
-			AABB aabb = pShadowCaster->GetBBoxVirtual();
-			//!!! Reactivate proper camera
-			bool bVis = passInfo.GetCamera().IsAABBVisible_F(aabb);
-			if (!bVis)
-				continue;
-		}
-
-		if ((m_Flags & DLF_DIFFUSEOCCLUSION) && pShadowCaster->HasOcclusionmap(0, pLightOwner))
-			continue;
-
-		gEnv->p3DEngine->RenderRenderNode_ShadowPass(pShadowCaster, passInfo);
-	}
-}
-
 void ShadowMapFrustum::SortRenderItemsForFrustumAsync(int side, SRendItem* pFirst, size_t nNumRendItems)
 {
 	FUNCTION_PROFILER_RENDERER();
@@ -49,12 +22,11 @@ void ShadowMapFrustum::SortRenderItemsForFrustumAsync(int side, SRendItem* pFirs
 }
 
 //////////////////////////////////////////////////////////////////////////
-CRenderView* ShadowMapFrustum::GetNextAvailableShadowsView(CRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum)
+CRenderView* ShadowMapFrustum::GetNextAvailableShadowsView(CRenderView* pMainRenderView)
 {
 	CRenderView* pShadowsView = gcpRendD3D->GetOrCreateRenderView(CRenderView::eViewType_Shadow);
 	CRY_ASSERT(pShadowsView->GetUsageMode() == IRenderView::eUsageModeUndefined || pShadowsView->GetUsageMode() == IRenderView::eUsageModeReadingDone);
 
-	pShadowsView->SetShadowFrustumOwner(pOwnerFrustum);
 	pShadowsView->SetParentView(pMainRenderView);
 	pShadowsView->SetFrameId(pMainRenderView->GetFrameId());
 	pShadowsView->SetSkinningDataPools(pMainRenderView->GetSkinningDataPools());
@@ -66,7 +38,7 @@ CRenderView* ShadowMapFrustum::GetNextAvailableShadowsView(CRenderView* pMainRen
 
 IRenderView* CRenderer::GetNextAvailableShadowsView(IRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum)
 {
-	return pOwnerFrustum->GetNextAvailableShadowsView((CRenderView*)pMainRenderView, pOwnerFrustum);
+	return pOwnerFrustum->GetNextAvailableShadowsView((CRenderView*)pMainRenderView);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -236,89 +208,12 @@ void ShadowMapFrustum::PrepareForShadowPool(uint32 frameID, uint32 &numShadowPoo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ShadowMapFrustum::RenderShadowFrustum(IRenderViewPtr pShadowsView, int side, bool bJobCasters)
-{
-	uint32 nRenderingFlags = SRenderingPassInfo::DEFAULT_SHADOWS_FLAGS;
-
-#if defined(FEATURE_SVO_GI)
-	if (CSvoRenderer::GetRsmColorMap(*this))
+void SShadowRenderer::FinishRenderFrustumsToView(CRenderView* pRenderView)
 	{
-		// we need correct diffuse texture for every chunk
-		nRenderingFlags |= SRenderingPassInfo::DISABLE_RENDER_CHUNK_MERGE;
-	}
-#endif
-
-	CCamera tmpCamera = GetCamera(side);
-
-	// create a matching rendering pass info for shadows
-	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateShadowPassRenderingInfo(
-	  pShadowsView,
-	  tmpCamera,
-	  m_Flags,
-	  nShadowMapLod,
-	  IsCached(),
-	  bIsMGPUCopy,
-	  side,
-	  nRenderingFlags);
-
-	//if (!bJobCasters)
-	{
-		// Make sure no jobs used during rendering
-		passInfo.SetWriteMutex(nullptr);
-	}
-
-	auto lambda = [=]() { Job_RenderShadowCastersToView(passInfo, bJobCasters); };
-	if (!bJobCasters)
-	{
-		// Render not jobified casters in the main thread.
-		lambda();
-	}
-	else
-	{
-		// Render job casters as multithreaded jobs
-		gEnv->pJobManager->AddLambdaJob("RenderShadowCasters", std::move(lambda), JobManager::eLowPriority, pShadowsView->GetWriteMutex());
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void SShadowRenderer::RenderFrustumsToView(CRenderView* pRenderView)
-{
 	FUNCTION_PROFILER_RENDERER();
-
-	int nThreadID = SRenderThread::GetLocalThreadCommandBufferId();
-
-	CCamera tmpCamera;
 
 	auto& frustumsToRender = pRenderView->GetFrustumsToRender();
 
-	for (SShadowFrustumToRender& rFrustumToRender : frustumsToRender)
-	{
-		if (rFrustumToRender.pFrustum->pOnePassShadowView)
-			continue; // already processed in 3dengine
-
-		rFrustumToRender.pShadowsView->SwitchUsageMode(IRenderView::eUsageModeWriting);
-	}
-
-	// First do a pass and submit to rendering with job enabled casters
-	// This will create multithreaded job for each rendering pass
-	for (SShadowFrustumToRender& rFrustumToRender : frustumsToRender)
-	{
-		auto* pCurFrustum = rFrustumToRender.pFrustum.get();
-		if (pCurFrustum->pOnePassShadowView)
-			continue; // already processed in 3dengine
-
-		for (int side = 0; side < pCurFrustum->GetNumSides(); ++side)
-		{
- 			if (pCurFrustum->ShouldCacheSideHint(side))
-				continue;
-
-			//////////////////////////////////////////////////////////////////////////
-			// Invoke IRenderNode::Render
-			pCurFrustum->RenderShadowFrustum(rFrustumToRender.pShadowsView, side, true);
-		}
-	}
-
-	// Now do a rendering pass for non job enabled casters, they will be rendered in this thread
 	for (SShadowFrustumToRender& rFrustumToRender : frustumsToRender)
 	{
 		auto* pCurFrustum = rFrustumToRender.pFrustum.get();
@@ -330,12 +225,7 @@ void SShadowRenderer::RenderFrustumsToView(CRenderView* pRenderView)
 			if (pCurFrustum->ShouldCacheSideHint(side))
 			{
 				pCurFrustum->MarkShadowGenMaskForSide(side);
-				continue;
 			}
-
-			//////////////////////////////////////////////////////////////////////////
-			// Invoke IRenderNode::Render
-			pCurFrustum->RenderShadowFrustum(rFrustumToRender.pShadowsView, side, false);
 		}
 	}
 

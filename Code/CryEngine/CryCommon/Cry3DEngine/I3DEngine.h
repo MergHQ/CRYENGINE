@@ -1954,6 +1954,7 @@ struct I3DEngine : public IProcess
 	virtual void  SetShadowsGSMCache(bool bCache) = 0;
 	virtual void  SetCachedShadowBounds(const AABB& shadowBounds, float fAdditionalCascadesScale) = 0;
 	virtual void  SetRecomputeCachedShadows(uint nUpdateStrategy = 0) = 0;
+	virtual void  InvalidateShadowCacheData() = 0;
 
 	//! Physicalizes area if not physicalized yet.
 	virtual void CheckPhysicalized(const Vec3& vBoxMin, const Vec3& vBoxMax) = 0;
@@ -2130,8 +2131,6 @@ struct I3DEngine : public IProcess
 	virtual void        SetTerrainLayerBaseTextureData(int nLayerId, byte* pImage, int nDim, const char* nImgFileName, IMaterial* pMat, float fBr, float fTiling, int nDetailSurfTypeId, float fTilingDetail, float fSpecularAmount, float fSortOrder, ColorF layerFilterColor, float fUseRemeshing, bool bShowSelection) = 0;
 
 	virtual bool        IsAreaActivationInUse() = 0;
-
-	virtual void        RenderRenderNode_ShadowPass(IShadowCaster* pRNode, const SRenderingPassInfo& passInfo) = 0;
 
 	virtual const char* GetVoxelEditOperationName(EVoxelEditOperation eOperation) = 0;
 
@@ -2910,8 +2909,8 @@ inline void SRenderingPassInfo::SetRenderView(int nThreadID, IRenderView::EViewT
 
 inline void SRenderingPassInfo::SetRenderView(IRenderViewPtr pRenderView)
 {
-	m_pRenderView = pRenderView;
 	SetRenderView(pRenderView.get());
+	m_pRenderView = std::move(pRenderView);
 }
 
 inline void SRenderingPassInfo::SetRenderView(IRenderView* pRenderView)

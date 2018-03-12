@@ -14,7 +14,6 @@
 
 constexpr uint32 kPassCullMainBitId = 0;
 constexpr uint32 kPassCullMainMask = BIT(kPassCullMainBitId);
-constexpr uint32 kMaxShadowPassesNum = sizeof(uint32) * CHAR_BIT - 1; // reserve first bit for main view
 
 enum ELoadObjectsMode { LOM_LOAD_ALL, LOM_LOAD_ONLY_NON_STREAMABLE, LOM_LOAD_ONLY_STREAMABLE };
 
@@ -358,7 +357,7 @@ public:
 	bool                     DeleteObject(IRenderNode* pObj);
 	void                     Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRenderMask, const Vec3& vAmbColor, uint32 passCullMask, const SRenderingPassInfo& passInfo);
 	void                     Render_LightSources(bool bNodeCompletelyInFrustum, const SRenderingPassInfo& passInfo);
-	static uint32            UpdateCullMask(uint32 onePassTraversalFrameId, const IRenderNode::RenderFlagsType renderFlags, const SRenderingPassInfo& passInfo, const AABB& nodeBox, const float nodeDistance, const float nodeMaxViewDist, const bool bTestCoverageBuffer,
+	static uint32            UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePassTraversalShadowCascades, const IRenderNode::RenderFlagsType renderFlags, const SRenderingPassInfo& passInfo, const AABB& nodeBox, const float nodeDistance, const float nodeMaxViewDist, const bool bTestCoverageBuffer,
 	                                        bool& bCompletelyInMainFrustum, OcclusionTestClient* occlusionTestClient, uint32 passCullMask);
 	void                     CheckUpdateStaticInstancing();
 	void                     RenderDebug();
@@ -369,11 +368,11 @@ public:
 	void                     RenderDecalsAndRoads(TDoublyLinkedList<IRenderNode>* lstObjects, const uint32 passCullMask, int nRenderMask, const Vec3& vAmbColor, const bool bOcNodeCompletelyInFrustum, PodArray<SRenderLight*>* pAffectingLights, const SRenderingPassInfo& passInfo);
 	void                     RenderBrushes(TDoublyLinkedList<IRenderNode>* lstObjects, const uint32 passCullMask, const bool bOcNodeCompletelyInFrustum, PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo);
 	static void              RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfo, float fEntDistance, IRenderNode* pObj, const AABB& objBox, const uint32 passCullMask, const CLodValue* lodValue, const SRendParams* rendParams, PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo);
+	static bool              IsShadowCaster(IRenderNode* pObj);
 	PodArray<SRenderLight*>* GetAffectingLights(const SRenderingPassInfo& passInfo);
 	void                     AddLightSource(SRenderLight* pSource, const SRenderingPassInfo& passInfo);
 	void                     CheckInitAffectingLights(const SRenderingPassInfo& passInfo);
-	void                     FillShadowCastersList(bool bNodeCompletellyInFrustum, SRenderLight* pLight, struct ShadowMapFrustum* pFr, PodArray<SPlaneObject>* pShadowHull, uint32 nRenderNodeFlags, const SRenderingPassInfo& passInfo);
-	void                     FillShadowMapCastersList(const ShadowMapFrustumParams& params, bool bNodeCompletellyInFrustum);
+	void                     InvalidateCachedShadowData();
 	void                     ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, IGeneralMemoryHeap* pHeap, const AABB& layerBox);
 	void                     GetLayerMemoryUsage(uint16 nLayerId, ICrySizer* pSizer, int* pNumBrushes, int* pNumDecals);
 	virtual void             MarkAsUncompiled(const ERNListType eListType)       { SetCompiled(eListType, false); }
@@ -456,7 +455,7 @@ public:
 	void                OffsetObjects(const Vec3& offset);
 	void                SetVisArea(CVisArea* pVisArea);
 	void                SetTerrainNode(struct CTerrainNode* node) { m_pTerrainNode = node; }
-	static void         SetTraversalFrameId(IRenderNode* pObj, uint32 onePassTraversalFrameId);
+	static void         SetTraversalFrameId(IRenderNode* pObj, uint32 onePassTraversalFrameId, int shadowFrustumLod);
 	static COctreeNode* Create(const AABB& box, struct CVisArea* pVisArea, COctreeNode* pParent = NULL);
 
 protected:
@@ -495,13 +494,11 @@ private:
 
 	COctreeNode*                     m_arrChilds[8];
 	TDoublyLinkedList<IRenderNode>   m_arrObjects[eRNListType_ListsNum];
-	PodArray<SCasterInfo>            m_lstCasters[eRNListType_ListsNum];
 	Vec3                             m_vNodeCenter;
 	Vec3                             m_vNodeAxisRadius;
 	PodArray<SRenderLight*>          m_lstAffectingLights;
 	uint32                           m_nLightMaskFrameId;
 	COctreeNode*                     m_pParent;
-	uint32                           nFillShadowCastersSkipFrameId;
 	float                            m_fNodeDistance;
 	int                              m_nManageVegetationsFrameId;
 

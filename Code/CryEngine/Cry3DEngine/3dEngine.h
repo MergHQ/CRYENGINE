@@ -611,6 +611,7 @@ public:
 	virtual void   SetShadowsGSMCache(bool bCache);
 	virtual void   SetCachedShadowBounds(const AABB& shadowBounds, float fAdditionalCascadesScale);
 	virtual void   SetRecomputeCachedShadows(uint nUpdateStrategy = 0);
+	virtual void   InvalidateShadowCacheData();
 	void           SetShadowsCascadesBias(const float* pCascadeConstBias, const float* pCascadeSlopeBias);
 	const float*   GetShadowsCascadesConstBias() const { return m_pShadowCascadeConstBias; }
 	const float*   GetShadowsCascadesSlopeBias() const { return m_pShadowCascadeSlopeBias; }
@@ -1135,7 +1136,7 @@ public:
 	void                 ReRegisterKilledVegetationInstances();
 	Vec3                 GetEntityRegisterPoint(IRenderNode* pEnt);
 
-	virtual void         RenderRenderNode_ShadowPass(IShadowCaster* pRNode, const SRenderingPassInfo& passInfo);
+	void                 RenderRenderNode_ShadowPass(IShadowCaster* pRNode, const SRenderingPassInfo& passInfo);
 	void                 ProcessCVarsChange();
 	ILINE int            GetGeomDetailScreenRes()
 	{
@@ -1196,9 +1197,9 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	class CLightEntity* m_pSun;
 
-	std::vector<byte>    arrFPSforSaveLevelStats;
-	PodArray<float>      m_arrProcessStreamingLatencyTestResults;
-	PodArray<int>        m_arrProcessStreamingLatencyTexNum;
+	std::vector<byte>   arrFPSforSaveLevelStats;
+	PodArray<float>     m_arrProcessStreamingLatencyTestResults;
+	PodArray<int>       m_arrProcessStreamingLatencyTexNum;
 
 	// fields which are used by SRenderingPass to store over frame information
 	CThreadSafeRendererContainer<CCamera> m_RenderingPassCameras[2];                 // camera storage for SRenderingPass, the cameras cannot be stored on stack to allow job execution

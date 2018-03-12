@@ -335,7 +335,6 @@ struct CVars : public Cry3DEngineBase
 	float e_LodFaceAreaTargetSize;
 	float e_ObjectsTreeNodeMinSize;
 	float e_ObjectsTreeNodeSizeRatio;
-	int   e_OnePassOctreeTraversal;
 	int   e_ExecuteRenderAsJobMask;
 	float e_ObjectsTreeLevelsDebug;
 	DeclareConstIntCVar(e_CoverageBufferDrawOccluders, 0);

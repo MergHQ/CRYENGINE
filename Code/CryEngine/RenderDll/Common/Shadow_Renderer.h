@@ -14,6 +14,8 @@
 
 #define OMNI_SIDES_NUM 6
 
+constexpr uint32 kMaxShadowPassesNum = sizeof(uint32) * CHAR_BIT - 1; // reserve first bit for main view
+
 // data used to compute a custom shadow frustum for near shadows
 struct CustomShadowMapFrustumData
 {
@@ -53,22 +55,21 @@ struct ShadowMapFrustum : public CMultiThreadRefCount
 			eIncrementalUpdate
 		};
 
-		ShadowCacheData() { Reset(); }
+		ShadowCacheData() { Reset(1); }
 
-		void Reset()
+		void Reset(uint32 cacheGeneration)
 		{
 			memset(mOctreePath, 0x0, sizeof(mOctreePath));
 			memset(mOctreePathNodeProcessed, 0x0, sizeof(mOctreePathNodeProcessed));
-			mProcessedCasters.clear();
-			mProcessedTerrainCasters.clear();
+			mGeneration = cacheGeneration;
+			mObjectsRendered = 0;
 		}
+		uint32                           mObjectsRendered;
+		uint8                            mGeneration;
 
 		static const int                 MAX_TRAVERSAL_PATH_LENGTH = 32;
 		uint8                            mOctreePath[MAX_TRAVERSAL_PATH_LENGTH];
 		uint8                            mOctreePathNodeProcessed[MAX_TRAVERSAL_PATH_LENGTH];
-
-		VectorSet<struct IShadowCaster*> mProcessedCasters;
-		VectorSet<uint64>                mProcessedTerrainCasters;
 	};
 
 public:
@@ -94,6 +95,7 @@ public:
 
 	std::atomic<uint32>&       GetSideSampleMask()       { return *reinterpret_cast<std::atomic<uint32>*>(&this->nSideSampleMask); }
 	const std::atomic<uint32>& GetSideSampleMask() const { return *reinterpret_cast<const std::atomic<uint32>*>(&this->nSideSampleMask); }
+	std::atomic<uint32>&       GetOnePassCastersCount() const  { return *reinterpret_cast<std::atomic<uint32>*>(&this->onePassCastersNum); }
 
 	// flags
 	bool bIncrementalUpdate;
@@ -135,7 +137,6 @@ public:
 	int                             nTextureWidth;
 	int                             nTextureHeight;
 	int                             nShadowMapSize;
-
 	int                             nResetID;
 	float                           fFrustrumSize;
 	float                           fProjRatio;
@@ -143,10 +144,7 @@ public:
 	float                           fDepthConstBias;
 	float                           fDepthSlopeBias;
 	float                           fDepthBiasClamp;
-
-	PodArray<struct IShadowCaster*> castersList;
-	PodArray<struct IShadowCaster*> jobExecutedCastersList;
-	int                             onePassCastersNum = 0;                     // Contains number of casters if one-pass octree traversal is used for this frustum
+	mutable int                     onePassCastersNum = 0;        // Contains number of casters if one-pass octree traversal is used for this frustum
 
 	CCamera                         FrustumPlanes[OMNI_SIDES_NUM];
 	AABB                            aabbCasters;      //casters bbox in world space
@@ -155,9 +153,9 @@ public:
 	float                           fRadius;
 	int                             nUpdateFrameId;
 	IRenderNode*                    pLightOwner;
-	uint32                          uCastersListCheckSum;
+	IRenderViewPtr                  pOnePassShadowView;           // if one-pass octree traversal is used this view is allocated and filled by 3DEngine
 	int                             nShadowMapLod;                // currently use as GSMLod, can be used as cubemap side, -1 means this variable is not used
-	IRenderView*                    pOnePassShadowView = nullptr; // if one-pass octree traversal is used this view is allocated and filled by 3DEngine
+	int                             nShadowCacheLod;
 	uint32                          m_Flags;
 
 	// Render view that is used to accumulate items for this frustum.
@@ -207,9 +205,9 @@ public:
 		, fRadius(0)
 		, nUpdateFrameId(-1000)
 		, pLightOwner(nullptr)
-		, uCastersListCheckSum(0)
 		, nShadowMapLod(0)
 		, m_Flags(0)
+		, nShadowCacheLod(0)
 	{
 		ZeroArray(nPackID);
 	}
@@ -328,37 +326,23 @@ public:
 		return (m_Flags & DLF_SUN) && (m_eFrustumType == e_GsmDynamic || m_eFrustumType == e_GsmDynamicDistance);
 	}
 
-	ILINE bool IntersectAABB(const AABB& bbox, bool* pAllIn) const
+	ILINE bool IntersectAABB(const AABB& bbox, bool* pAllIn, int side = -1) const
 	{
 		if (bOmniDirectionalShadow)
-			return bbox.IsOverlapSphereBounds(vLightSrcRelPos + vProjTranslation, fFarDist);
+		{
+			return (side < 0)
+				? bbox.IsOverlapSphereBounds(vLightSrcRelPos + vProjTranslation, fFarDist)
+				: FrustumPlanes[side].IsAABBVisible_EH(bbox, pAllIn) > 0;
+		}
 
-		bool bDummy = false;
 		if (bBlendFrustum)
 		{
 			if (FrustumPlanes[1].IsAABBVisible_EH(bbox, pAllIn) > 0)
 				return true;
 		}
 
+		bool bDummy = false;
 		return FrustumPlanes[0].IsAABBVisible_EH(bbox, bBlendFrustum ? &bDummy : pAllIn) > 0;
-	}
-
-	ILINE bool IntersectSphere(const Sphere& sp, bool* pAllIn) const
-	{
-		if (bOmniDirectionalShadow)
-			return Distance::Point_PointSq(sp.center, vLightSrcRelPos + vProjTranslation) < sqr(fFarDist + sp.radius);
-
-		uint8 res = 0;
-		if (bBlendFrustum)
-		{
-			res = FrustumPlanes[1].IsSphereVisible_FH(sp);
-			*pAllIn = (res == CULL_INCLUSION);
-			if (res != CULL_EXCLUSION)
-				return true;
-		}
-		res = FrustumPlanes[0].IsSphereVisible_FH(sp);
-		*pAllIn = bBlendFrustum ? false : (res == CULL_INCLUSION);
-		return res != CULL_EXCLUSION;
 	}
 
 	Vec3 UnProject(float sx, float sy, float sz, IRenderer* pRend) const
@@ -457,14 +441,12 @@ public:
 
 	void ResetCasterLists()
 	{
-		castersList.Clear();
-		jobExecutedCastersList.Clear();
 		onePassCastersNum = 0;
 	}
 
 	int GetCasterNum() const
 	{
-		return castersList.Count() + jobExecutedCastersList.Count() + onePassCastersNum;
+		return onePassCastersNum;
 	}
 
 	int GetNumSides() const
@@ -486,19 +468,40 @@ public:
 	// For time-sliced updates: Returns a mask of per-side flags that hint whether or not the side should be updated
 	std::bitset<6>               GenerateTimeSlicedUpdateCacheMask(uint32 frameID) const;
 
-	void                         RenderShadowFrustum(IRenderViewPtr pShadowsView, int side, bool bJobCasters);
-	void                         Job_RenderShadowCastersToView(const SRenderingPassInfo& passInfo, bool bJobCasters);
-
-	CRenderView*                 GetNextAvailableShadowsView(CRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum);
+	CRenderView*                 GetNextAvailableShadowsView(CRenderView* pMainRenderView);
 
 	_smart_ptr<ShadowMapFrustum> Clone() const { return new ShadowMapFrustum(*this); }
+
+	bool NodeRequiresShadowCacheUpdate(const IRenderNode* pNode) const
+	{
+		CRY_ASSERT(IsCached() && nShadowCacheLod>=0 && nShadowCacheLod < MAX_GSM_CACHED_LODS_NUM);
+		return pNode->m_shadowCacheLastRendered[nShadowCacheLod] != pShadowCacheData->mGeneration;
+	}
+
+	void MarkNodeAsCached(IRenderNode* pNode, bool isCached = true) const
+	{
+		CRY_ASSERT(this->IsCached());
+		if (pNode)
+		{
+			pNode->m_shadowCacheLastRendered[nShadowMapLod] = isCached ? pShadowCacheData->mGeneration : 0;
+			pShadowCacheData->mObjectsRendered++;
+		}
+	}
+
+	static void ForceMarkNodeAsUncached(IRenderNode* pNode)
+	{
+		if (pNode)
+		{
+			ZeroArray(pNode->m_shadowCacheLastRendered);
+		}
+	}
 };
 typedef _smart_ptr<ShadowMapFrustum> ShadowMapFrustumPtr;
 
 struct SShadowRenderer
 {
 	// Iterate FrustumsToRender array from the CRenderView, and draw render nodes in every frustum there.
-	static void RenderFrustumsToView(CRenderView* pRenderView);
+	static void FinishRenderFrustumsToView(CRenderView* pRenderView);
 };
 
 struct ShadowFrustumMGPUCache : public ISyncMainWithRenderListener
@@ -539,24 +542,6 @@ struct ShadowFrustumMGPUCache : public ISyncMainWithRenderListener
 		}
 	}
 
-	void DeleteFromCache(IShadowCaster* pCaster)
-	{
-		for (int i = 0; i < m_staticShadowMapFrustums.size(); ++i)
-		{
-			if (ShadowMapFrustum* pFr = m_staticShadowMapFrustums[i])
-			{
-				pFr->castersList.Delete(pCaster);
-				pFr->jobExecutedCastersList.Delete(pCaster);
-			}
-		}
-
-		if (ShadowMapFrustum* pFr = m_pHeightMapAOFrustum)
-		{
-			m_pHeightMapAOFrustum->castersList.Delete(pCaster);
-			m_pHeightMapAOFrustum->jobExecutedCastersList.Delete(pCaster);
-		}
-	}
-
 	virtual void SyncMainWithRender()
 	{
 		/** What we need here is the renderer telling the main thread to update the shadow frustum cache when all GPUs are done
@@ -587,12 +572,13 @@ struct SShadowFrustumToRender
 	IRenderViewPtr      pShadowsView;
 
 	SShadowFrustumToRender() : pFrustum(0), pLight(0), nLightID(0) {}
-	SShadowFrustumToRender(ShadowMapFrustum* pFrustum, SRenderLight* pLight, int nLightID, IRenderViewPtr pShadowsView)
-		: pFrustum(pFrustum)
-		, pLight(pLight)
-		, nLightID(nLightID)
-		, pShadowsView(pShadowsView)
+	SShadowFrustumToRender(ShadowMapFrustum* _pFrustum, SRenderLight* _pLight, int _nLightID, IRenderViewPtr _pShadowsView)
+		: pFrustum(_pFrustum)
+		, pLight(_pLight)
+		, nLightID(_nLightID)
+		, pShadowsView(std::move(_pShadowsView))
 	{
+		pShadowsView->SetShadowFrustumOwner(pFrustum);
 		CRY_ASSERT(pFrustum->pDepthTex == nullptr);
 	}
 };

@@ -62,6 +62,7 @@
 #include <CryNetwork/IRemoteCommand.h>
 #include "CloudBlockerRenderNode.h"
 #include "WaterRippleManager.h"
+#include "ShadowCache.h"
 
 #if defined(FEATURE_SVO_GI)
 	#include "SVO/SceneTreeManager.h"
@@ -4735,6 +4736,16 @@ void C3DEngine::SetRecomputeCachedShadows(IRenderNode* pNode, uint updateStrateg
 	}
 }
 
+void C3DEngine::InvalidateShadowCacheData()
+{
+	ShadowCacheGenerator::ResetGenerationID();
+
+	if (m_pObjectsTree)
+	{
+		m_pObjectsTree->InvalidateCachedShadowData();
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 void C3DEngine::SetShadowsCascadesBias(const float* pCascadeConstBias, const float* pCascadeSlopeBias)
 {
@@ -6334,7 +6345,7 @@ void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const 
 	if (passInfo.GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED)
 		nStaticObjectLod = GetCVars()->e_ShadowsCacheObjectLod;
 	else if (passInfo.GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED_MGPU_COPY)
-		nStaticObjectLod = pRenderNode->m_cStaticShadowLod;
+		nStaticObjectLod = pRenderNode->m_shadowCacheLod[passInfo.ShadowFrustumLod()];
 
 	SRenderNodeTempData* pTempData = Get3DEngine()->CheckAndCreateRenderNodeTempData(pRenderNode, passInfo);
 	if (!pTempData)

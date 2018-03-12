@@ -202,6 +202,7 @@ enum ERenderNodeFlags : uint64
 
 #define ERF_GI_MODE_BITS_MASK (ERF_GI_MODE_BIT0 | ERF_GI_MODE_BIT1 | ERF_GI_MODE_BIT2)          // Bit mask of the GI mode.
 
+/* Base class of IRenderNode: Be careful when modifying the size as we can easily have millions of IRenderNode in a level. */
 struct IShadowCaster
 {
 	// <interfuscator:shuffle>
@@ -214,7 +215,17 @@ struct IShadowCaster
 	virtual struct ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) = 0;
 	virtual EERType                    GetRenderNodeType() = 0;
 	// </interfuscator:shuffle>
-	uint8                              m_cStaticShadowLod;
+
+	//! Internal states to track shadow cache status
+	uint8                              m_shadowCacheLastRendered[MAX_GSM_CACHED_LODS_NUM];
+	uint8                              m_shadowCacheLod[MAX_GSM_CACHED_LODS_NUM];
+
+	//! Shadow LOD bias.
+	//! Set to SHADOW_LODBIAS_DISABLE to disable any shadow lod overrides for this rendernode.
+	static const int8 SHADOW_LODBIAS_DISABLE = -128;
+	int8              m_cShadowLodBias;
+
+	int8              unused;
 };
 
 struct IOctreeNode
@@ -233,6 +244,8 @@ protected:
  *
  * To visualize objects in a world CRYENGINE defines the concept of render nodes and render elements. Render nodes represent general objects in the 3D engine. Among other things they are used to build a hierarchy for visibility culling, allow physics interactions (optional) and rendering.
  * For actual rendering they add themselves to the renderer (with the help of render objects as you can see in the sample code below) passing an appropriate render element which implements the actual drawing of the object.
+ *
+ * Be careful when modifying the size as we can easily have millions of IRenderNode in a level.
  */
 struct IRenderNode : public IShadowCaster
 {
@@ -273,8 +286,10 @@ public:
 		m_pTempData.store(nullptr);
 		m_pPrev = m_pNext = nullptr;
 		m_cShadowLodBias = 0;
-		m_cStaticShadowLod = 0;
 		m_nEditorSelectionID = 0;
+
+		ZeroArray(m_shadowCacheLod);
+		ZeroArray(m_shadowCacheLastRendered);
 	}
 
 	virtual bool CanExecuteRenderAsJob() { return false; }
@@ -430,7 +445,8 @@ public:
 		pDest->m_ucViewDistRatio = m_ucViewDistRatio;
 		pDest->m_ucLodRatio = m_ucLodRatio;
 		pDest->m_cShadowLodBias = m_cShadowLodBias;
-		pDest->m_cStaticShadowLod = m_cStaticShadowLod;
+		memcpy(pDest->m_shadowCacheLod, m_shadowCacheLod, sizeof(m_shadowCacheLod));
+		ZeroArray(pDest->m_shadowCacheLastRendered);
 		pDest->m_nInternalFlags = m_nInternalFlags;
 		pDest->m_nMaterialLayers = m_nMaterialLayers;
 		//pDestBrush->m_pRNTmpData				//If this is copied from the source render node, there are two
@@ -570,19 +586,19 @@ public:
 	//! Current objects tree cell.
 	IOctreeNode* m_pOcNode;
 
+	//! Render flags (@see ERenderNodeFlags)
+	RenderFlagsType m_dwRndFlags;
+
 	//! Pointer to temporary data allocated only for currently visible objects.
 	std::atomic<SRenderNodeTempData*> m_pTempData;
+	CryRWLock                         m_manipulationLock;	
 	int                               m_manipulationFrame = -1;
-	CryRWLock                         m_manipulationLock;
 
 	//! Hud silhouette parameter, default is black with alpha zero
 	uint32 m_nHUDSilhouettesParam;
 
 	//! Max view distance.
 	float m_fWSMaxViewDist;
-
-	//! Render flags (@see ERenderNodeFlags)
-	RenderFlagsType m_dwRndFlags;
 
 	//! Flags for render node internal usage, one or more bits from EInternalFlags.
 	uint8 m_nInternalFlags;
@@ -596,11 +612,6 @@ public:
 	//! Material layers bitmask -> which material layers are active.
 	uint8 m_nMaterialLayers;
 
-	//! Shadow LOD bias.
-	//! Set to SHADOW_LODBIAS_DISABLE to disable any shadow lod overrides for this rendernode.
-	static const int8 SHADOW_LODBIAS_DISABLE = -128;
-	int8              m_cShadowLodBias;
-
 	//! Selection ID used to map the rendernode to a baseobject in the editor, or differentiate between objects
 	//! in highlight framebuffer
 	//! This ID is split in two parts. The low 8 bits store flags such as selection and highlight state
@@ -610,6 +621,7 @@ public:
 
 	//! Used to request visiting of the node during one-pass traversal
 	uint32 m_onePassTraversalFrameId = 0;
+	uint32 m_onePassTraversalShadowCascades = 0;
 };
 
 inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)

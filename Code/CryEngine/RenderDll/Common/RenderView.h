@@ -244,8 +244,8 @@ public:
 	// Can start executing post write jobs on shadow views
 	void                      PostWriteShadowViews();
 	void                      PrepareShadowViews(); // Sync all outstanding shadow preparation jobs
-	void                      SetShadowFrustumOwner(ShadowMapFrustum* pOwner) { m_shadows.m_pShadowFrustumOwner = pOwner; }
-	virtual ShadowMapFrustum* GetShadowFrustumOwner() const final             { return m_shadows.m_pShadowFrustumOwner; }
+	virtual void              SetShadowFrustumOwner(ShadowMapFrustum* pOwner) final { m_shadows.m_pShadowFrustumOwner = pOwner; }
+	virtual ShadowMapFrustum* GetShadowFrustumOwner() const final                   { return m_shadows.m_pShadowFrustumOwner; }
 
 	//////////////////////////////////////////////////////////////////////////
 	const SRenderGlobalFogDescription& GetGlobalFog() const        { return m_globalFogDescription; };
