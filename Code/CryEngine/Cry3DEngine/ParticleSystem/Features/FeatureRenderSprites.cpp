@@ -9,7 +9,9 @@
 namespace pfx2
 {
 
-extern EParticleDataType EPDT_Alpha, EPDT_Color, EPDT_Angle2D, EPDT_Tile;
+extern TDataType<float> EPDT_Alpha, EPDT_Angle2D;
+extern TDataType<uint8> EPDT_Tile;
+extern TDataType<UCol>  EPDT_Color;
 
 SERIALIZATION_DECLARE_ENUM(ESortMode,
                            None,
@@ -558,7 +560,7 @@ void CFeatureRenderSprites::WriteToGPUMem(const SSpritesContext& spritesContext,
 	const IFStream lifetimes = container.GetIFStream(EPDT_LifeTime);
 	const IFStream angles = container.GetIFStream(EPDT_Angle2D, 0.0f);
 	const IColorStream colors = container.GetIColorStream(EPDT_Color);
-	const TIStream<uint8> tiles = container.GetTIStream<uint8>(EPDT_Tile);
+	const TIStream<uint8> tiles = container.IStream(EPDT_Tile);
 	const Vec3 camPos = spritesContext.m_camInfo.pCamera->GetPosition();
 	const Vec3 emitterPosition = spritesContext.m_context.m_runtime.GetEmitter()->GetPos();
 	const Vec3 cameraOffset = (emitterPosition - camPos).GetNormalized() * m_cameraOffset;

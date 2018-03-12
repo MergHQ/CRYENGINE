@@ -103,7 +103,7 @@ public:
 		THeapArray<SInstance> triggers(*context.m_pMemHeap);
 		triggers.reserve(parentContainer.GetNumParticles());
 		
-		const TIStream<SContactPoint> contactPoints = parentContainer.GetTIStream<SContactPoint>(EPDT_ContactPoint);
+		const auto contactPoints = parentContainer.IStream(EPDT_ContactPoint);
 
 		for (auto particleId : parentContainer.GetFullRange())
 		{

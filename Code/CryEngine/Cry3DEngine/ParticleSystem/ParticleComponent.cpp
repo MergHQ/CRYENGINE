@@ -21,21 +21,21 @@
 namespace pfx2
 {
 
-EParticleDataType PDT(EPDT_SpawnId,          TParticleId);
-EParticleDataType PDT(EPDT_ParentId,         TParticleId);
-EParticleDataType PDT(EPDT_SpawnFraction,    float);
-EParticleDataType PDT(EPDT_NormalAge,        float);
-EParticleDataType PDT(EPDT_LifeTime,         float);
-EParticleDataType PDT(EPDT_InvLifeTime,      float);
-EParticleDataType PDT(EPDT_Random,           float);
+MakeDataType(EPDT_SpawnId,          TParticleId);
+MakeDataType(EPDT_ParentId,         TParticleId);
+MakeDataType(EPDT_SpawnFraction,    float);
+MakeDataType(EPDT_NormalAge,        float);
+MakeDataType(EPDT_LifeTime,         float);
+MakeDataType(EPDT_InvLifeTime,      float);
+MakeDataType(EPDT_Random,           float);
 
-EParticleDataType PDT(EPVF_Position,         float[3]);
-EParticleDataType PDT(EPVF_Velocity,         float[3]);
-EParticleDataType PDT(EPQF_Orientation,      float[4]);
-EParticleDataType PDT(EPVF_AngularVelocity,  float[3]);
-EParticleDataType PDT(EPVF_LocalPosition,    float[3]);
-EParticleDataType PDT(EPVF_LocalVelocity,    float[3]);
-EParticleDataType PDT(EPQF_LocalOrientation, float[4]);
+MakeDataType(EPVF_Position,         Vec3);
+MakeDataType(EPVF_Velocity,         Vec3);
+MakeDataType(EPQF_Orientation,      Quat);
+MakeDataType(EPVF_AngularVelocity,  Vec3);
+MakeDataType(EPVF_LocalPosition,    Vec3);
+MakeDataType(EPVF_LocalVelocity,    Vec3);
+MakeDataType(EPQF_LocalOrientation, Quat);
 
 
 

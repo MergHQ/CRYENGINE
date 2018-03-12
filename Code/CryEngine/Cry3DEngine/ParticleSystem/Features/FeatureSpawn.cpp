@@ -150,6 +150,7 @@ protected:
 		SUpdateRange range(0, numInstances);
 
 		TFloatArray amounts(*context.m_pMemHeap, numInstances);
+		IOFStream amountStream(amounts.data());
 		for (uint i = 0; i < numInstances; ++i)
 		{
 			SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
@@ -158,7 +159,7 @@ protected:
 
 		// Pad end of array, for vectorized modifiers
 		std::fill(amounts.end(), amounts.begin() + amounts.capacity(), 0.0f);
-		m_amount.ModifyUpdate(context, amounts.data(), range);
+		m_amount.ModifyUpdate(context, amountStream, range);
 
 		GetSpawnCounts(context, amounts);
 
@@ -217,16 +218,11 @@ protected:
 
 		CParticleComponentRuntime& runtime = context.m_runtime;
 		SUpdateRange startRange(0, numStarts);
-		TFloatArray amounts(*context.m_pMemHeap, numStarts);
-		TFloatArray delays(*context.m_pMemHeap, numStarts);
-		TFloatArray durations(*context.m_pMemHeap, numStarts);
-		TFloatArray restarts(*context.m_pMemHeap, numStarts);
-		m_amount.ModifyInit(context, amounts.data(), startRange);
-		m_delay.ModifyInit(context, delays.data(), startRange);
-		if (m_duration.IsEnabled())
-			m_duration.ModifyInit(context, durations.data(), startRange);
-		if (m_restart.IsEnabled())
-			m_restart.ModifyInit(context, restarts.data(), startRange);
+
+		STempInitBuffer<float> amounts(context, m_amount, startRange);
+		STempInitBuffer<float> delays(context, m_delay, startRange);
+		STempInitBuffer<float> durations(context, m_duration, startRange);
+		STempInitBuffer<float> restarts(context, m_restart, startRange);
 
 		for (uint i = 0; i < numStarts; ++i)
 		{
@@ -239,8 +235,8 @@ protected:
 			spawnData.m_timer    = -delay;
 			spawnData.m_spawned  = 0.0f;
 			spawnData.m_amount   = amounts[i];
-			spawnData.m_duration = m_duration.IsEnabled() ? durations[i] : gInfinity;
-			spawnData.m_restart = m_restart.IsEnabled() ? max(restarts[i], delay + spawnData.m_duration) : gInfinity;
+			spawnData.m_duration = durations[i];
+			spawnData.m_restart  = max(restarts[i], delay + spawnData.m_duration);
 		}
 	}
 

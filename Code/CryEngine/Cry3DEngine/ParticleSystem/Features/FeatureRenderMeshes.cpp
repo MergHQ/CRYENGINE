@@ -8,9 +8,10 @@
 namespace pfx2
 {
 
-EParticleDataType PDT(EPDT_MeshGeometry, IMeshObj*, EDataFlags::BNeedsClear); // Submesh pointers must be cleared on edit to avoid referencing freed parent mesh
+MakeDataType(EPDT_MeshGeometry, IMeshObj*, EDataFlags::BNeedsClear); // Submesh pointers must be cleared on edit to avoid referencing freed parent mesh
 
-extern EParticleDataType EPDT_Alpha, EPDT_Color;
+extern TDataType<float> EPDT_Alpha;
+extern TDataType<UCol>  EPDT_Color;
 
 
 SERIALIZATION_ENUM_DEFINE(ESizeMode, : uint8,
@@ -112,8 +113,8 @@ public:
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 		CParticleContainer& container = context.m_container;
-		TIOStream<IMeshObj*> meshes = container.GetTIOStream<IMeshObj*>(EPDT_MeshGeometry);
-		TIStream<uint> spawnIds = container.GetTIStream<uint>(EPDT_SpawnId);
+		TIOStream<IMeshObj*> meshes = container.IOStream(EPDT_MeshGeometry);
+		TIStream<uint> spawnIds = container.IStream(EPDT_SpawnId);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOQuatStream orientations = container.GetIOQuatStream(EPQF_Orientation);
 		IFStream sizes = container.GetIFStream(EPDT_Size, 1.0f);
@@ -182,7 +183,7 @@ public:
 		const IQuatStream orientations = container.GetIQuatStream(EPQF_Orientation);
 		const IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
 		const IFStream sizes = container.GetIFStream(EPDT_Size, 1.0f);
-		const TIStream<IMeshObj*> meshes = container.GetTIStream<IMeshObj*>(EPDT_MeshGeometry);
+		const TIStream<IMeshObj*> meshes = container.IStream(EPDT_MeshGeometry);
 		const Vec3 camPosition = passInfo.GetCamera().GetPosition();
 		const bool hasAlphas = container.HasData(EPDT_Alpha);
 		const bool hasPieces = container.HasData(EPDT_MeshGeometry);

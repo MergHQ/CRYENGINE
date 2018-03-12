@@ -17,12 +17,13 @@ void ILocalEffector::Serialize(Serialization::IArchive& ar)
 //////////////////////////////////////////////////////////////////////////
 // CFeatureMotionPhysics
 
-EParticleDataType PDT(EPDT_Gravity,       float, EDataFlags::BHasInit);
-EParticleDataType PDT(EPDT_Drag,          float, EDataFlags::BHasInit);
-EParticleDataType PDT(EPVF_Acceleration,  float[3]);
-EParticleDataType PDT(EPVF_VelocityField, float[3]);
-EParticleDataType PDT(EPVF_PositionPrev,  float[3]);
-extern EParticleDataType EPDT_MeshGeometry;
+MakeDataType(EPDT_Gravity,       float, EDataFlags::BHasInit);
+MakeDataType(EPDT_Drag,          float, EDataFlags::BHasInit);
+MakeDataType(EPVF_Acceleration,  Vec3);
+MakeDataType(EPVF_VelocityField, Vec3);
+MakeDataType(EPVF_PositionPrev,  Vec3);
+
+extern TDataType<IMeshObj*> EPDT_MeshGeometry;
 
 CFeatureMotionPhysics::CFeatureMotionPhysics()
 	: m_gravity(0.0f)
@@ -526,7 +527,7 @@ CRY_PFX2_IMPLEMENT_FEATURE_DEFAULT(CParticleFeature, CFeatureMotionPhysics, "Mot
 //////////////////////////////////////////////////////////////////////////
 // CFeatureMotionCryPhysics
 
-EParticleDataType PDT(EPDT_PhysicalEntity, IPhysicalEntity*);
+MakeDataType(EPDT_PhysicalEntity, IPhysicalEntity*);
 
 void PopulateSurfaceTypes()
 {
@@ -595,13 +596,13 @@ void CFeatureMotionCryPhysics::PostInitParticles(const SUpdateContext& context)
 	const SPhysEnviron& physicsEnv = pEmitter->GetPhysicsEnv();
 
 	CParticleContainer& container = context.m_container;
-	auto physicalEntities = container.GetTIOStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
+	auto physicalEntities = container.IOStream(EPDT_PhysicalEntity);
 	const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 	const IVec3Stream velocities = container.GetIVec3Stream(EPVF_Velocity);
 	const IVec3Stream angularVelocities = container.GetIVec3Stream(EPVF_AngularVelocity);
 	const IQuatStream orientations = container.GetIQuatStream(EPQF_Orientation);
 	const IFStream sizes = container.GetIFStream(EPDT_Size);
-	const TIStream<IMeshObj*> meshes = container.GetTIStream<IMeshObj*>(EPDT_MeshGeometry);
+	const TIStream<IMeshObj*> meshes = container.IStream(EPDT_MeshGeometry);
 
 	const float sphereVolume = 4.0f / 3.0f * gf_PI;
 	const Vec3 acceleration = physicsEnv.m_UniformForces.vAccel * m_gravity + m_uniformAcceleration;
@@ -699,7 +700,7 @@ void CFeatureMotionCryPhysics::UpdateParticles(const SUpdateContext& context)
 
 	IPhysicalWorld* pPhysicalWorld = gEnv->pPhysicalWorld;
 	CParticleContainer& container = context.m_container;
-	auto physicalEntities = container.GetTIOStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
+	auto physicalEntities = container.IOStream(EPDT_PhysicalEntity);
 	IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 	IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 	IOVec3Stream angularVelocities = container.GetIOVec3Stream(EPVF_AngularVelocity);
@@ -736,7 +737,7 @@ void CFeatureMotionCryPhysics::UpdateParticles(const SUpdateContext& context)
 
 void CFeatureMotionCryPhysics::DestroyParticles(const SUpdateContext& context)
 {
-	auto physicalEntities = context.m_container.GetTIStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
+	auto physicalEntities = context.m_container.IStream(EPDT_PhysicalEntity);
 	for (auto particleId : context.GetUpdateRange())
 	{
 		if (auto pPhysicalEntity = physicalEntities.Load(particleId))

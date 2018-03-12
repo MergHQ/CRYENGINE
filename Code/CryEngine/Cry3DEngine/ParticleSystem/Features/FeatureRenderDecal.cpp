@@ -7,7 +7,8 @@
 namespace pfx2
 {
 
-extern EParticleDataType EPDT_Alpha, EPDT_Tile;
+extern TDataType<float> EPDT_Alpha;
+extern TDataType<uint8> EPDT_Tile;
 
 class CFeatureRenderDecals : public CParticleFeature, public Cry3DEngineBase
 {
@@ -50,7 +51,7 @@ struct SDecalTiler
 		: animation(_params.m_textureAnimation)
 		, ages(_container.GetIFStream(EPDT_NormalAge))
 		, lifetimes(_container.GetIFStream(EPDT_LifeTime))
-		, tiles(_container.GetTIStream<uint8>(EPDT_Tile, 0))
+		, tiles(_container.IStream(EPDT_Tile))
 		, frameCount(float(_params.m_textureAnimation.m_frameCount))
 		, firstTile(_params.m_shaderData.m_firstTile)
 		, tileSize(Vec2(_params.m_shaderData.m_tileSize[0], _params.m_shaderData.m_tileSize[1]))

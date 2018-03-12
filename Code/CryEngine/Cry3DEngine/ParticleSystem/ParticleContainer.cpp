@@ -1,21 +1,10 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
-
-// -------------------------------------------------------------------------
-//  Created:     24/09/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
 #include "ParticleContainer.h"
 
-CRY_PFX2_DBG
-
 namespace
 {
-
-static std::set<void*> g_allocMems;
 
 void* ParticleAlloc(uint32 sz)
 {
@@ -91,8 +80,6 @@ void CParticleContainer::ResetUsedData()
 
 void CParticleContainer::AddParticleData(EParticleDataType type)
 {
-	CRY_PFX2_PROFILE_DETAIL;
-
 	const size_t allocSize = m_maxParticles * type.info().typeSize;
 	uint dim = type.info().dimension;
 	for (uint i = 0; i < dim; ++i)
@@ -201,16 +188,16 @@ void CParticleContainer::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
 
 		if (HasData(EPDT_ParentId))
 		{
-			TParticleId* pParentIds = GetData<TParticleId>(EPDT_ParentId);
+			auto parentIds = IOStream(EPDT_ParentId);
 			for (uint32 i = currentId; i < currentId + toAddCount; ++i)
-				pParentIds[i] = spawnEntry.m_parentId;
+				parentIds[i] = spawnEntry.m_parentId;
 		}
 
 		if (HasData(EPDT_SpawnId))
 		{
-			uint32* pSpawnIds = GetData<TParticleId>(EPDT_SpawnId);
+			auto spawnIds = IOStream(EPDT_SpawnId);
 			for (uint32 i = currentId; i < currentId + toAddCount; ++i)
-				pSpawnIds[i] = m_nextSpawnId++;
+				spawnIds[i] = m_nextSpawnId++;
 		}
 		else
 		{
@@ -221,17 +208,17 @@ void CParticleContainer::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
 		{
 			// Store newborn ages
 			float age = spawnEntry.m_ageBegin;
-			float* pNormalAges = GetData<float>(EPDT_NormalAge);
+			auto ages = IOStream(EPDT_NormalAge);
 			for (uint32 i = currentId; i < currentId + toAddCount; ++i, age += spawnEntry.m_ageIncrement)
-				pNormalAges[i] = age;
+				ages[i] = age;
 		}
 
 		if (HasData(EPDT_SpawnFraction))
 		{
 			float fraction = spawnEntry.m_fractionBegin;
-			float* pSpawnFractions = GetData<float>(EPDT_SpawnFraction);
+			auto spawnFractions = IOStream(EPDT_SpawnFraction);
 			for (uint32 i = currentId; i < currentId + toAddCount; ++i, fraction += spawnEntry.m_fractionIncrement)
-				pSpawnFractions[i] = min(fraction, 1.0f);
+				spawnFractions[i] = min(fraction, 1.0f);
 		}
 
 		currentId += toAddCount;

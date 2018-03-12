@@ -16,9 +16,10 @@ namespace pfx2
 {
 
 
-EParticleDataType PDT(EPDT_RibbonId, TParticleId);
+MakeDataType(EPDT_RibbonId, TParticleId);
 
-extern EParticleDataType EPDT_Alpha, EPDT_Color;
+extern TDataType<float> EPDT_Alpha;
+extern TDataType<UCol>  EPDT_Color;
 
 
 SERIALIZATION_DECLARE_ENUM(ERibbonMode,
@@ -32,7 +33,7 @@ SERIALIZATION_DECLARE_ENUM(ERibbonStreamSource,
                            )
 
 
-EParticleDataType DataType(ERibbonStreamSource source)
+TDataType<float> DataType(ERibbonStreamSource source)
 {
 	return source == ERibbonStreamSource::Spawn ? EPDT_SpawnFraction : EPDT_NormalAge;
 }
@@ -128,9 +129,9 @@ void CFeatureRenderRibbon::InitParticles(const SUpdateContext& context)
 
 	CParticleContainer& container = context.m_container;
 	CParticleContainer& parentContainer = context.m_parentContainer;
-	IOUintStream ribbonIds = container.GetIOUintStream(EPDT_RibbonId);
-	IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-	IUintStream parentSpawnIds = parentContainer.GetIUintStream(EPDT_SpawnId, 0);
+	IOUintStream ribbonIds = container.IOStream(EPDT_RibbonId);
+	IPidStream parentIds = container.IStream(EPDT_ParentId);
+	IPidStream parentSpawnIds = parentContainer.IStream(EPDT_SpawnId);
 
 	for (auto particleId : context.GetSpawnedRange())
 	{
@@ -172,8 +173,8 @@ void CFeatureRenderRibbon::MakeRibbons(CParticleComponentRuntime* pComponentRunt
 	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
 	const SUpdateContext context = SUpdateContext(pComponentRuntime);
 	const CParticleContainer& container = pComponentRuntime->GetContainer();
-	const IUintStream ribbonIds = container.GetIUintStream(EPDT_RibbonId);
-	const IUintStream spawnIds = container.GetIUintStream(EPDT_SpawnId);
+	const IUintStream ribbonIds = container.IStream(EPDT_RibbonId);
+	const IPidStream spawnIds = container.IStream(EPDT_SpawnId);
 	const uint32 numParticles = container.GetNumParticles();
 	uint numValidParticles = context.GetUpdateRange().size();
 
@@ -357,7 +358,7 @@ ILINE void CFeatureRenderRibbon::WriteToGPUMem(CParticleComponentRuntime* pCompo
 
 	const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
 	const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
-	const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
+	const IPidStream parentIds = container.IStream(EPDT_ParentId);
 	const IFStream parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
 	const uint extraVertices = m_connectToOrigin ? 2 : 1;
 	const CRibbonColorSTs colorSTsSampler = CRibbonColorSTs(container, m_streamSource);

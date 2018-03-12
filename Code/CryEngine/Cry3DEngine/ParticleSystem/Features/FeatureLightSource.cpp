@@ -8,10 +8,11 @@
 namespace pfx2
 {
 
-extern EParticleDataType
-	EPDT_Color,
+extern TDataType<float>
 	EPDT_Alpha,
 	EPDT_Size;
+extern TDataType<UCol>
+	EPDT_Color;
 
 SERIALIZATION_DECLARE_ENUM(ELightAffectsFog,
 	No,

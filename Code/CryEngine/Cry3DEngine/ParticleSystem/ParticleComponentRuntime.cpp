@@ -15,7 +15,7 @@
 namespace pfx2
 {
 
-extern EParticleDataType EPVF_Acceleration, EPVF_VelocityField;
+extern TDataType<Vec3> EPVF_Acceleration, EPVF_VelocityField;
 
 
 CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter, CParticleComponent* pComponent)
@@ -108,8 +108,8 @@ void CParticleComponentRuntime::UpdateParticles(const SUpdateContext& context)
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	CTimeProfiler profile(GetPSystem()->GetProfiler(), this, EPS_UpdateTime);
 
-	m_container.FillData(EPVF_Acceleration, 0.0f, context.m_updateRange);
-	m_container.FillData(EPVF_VelocityField, 0.0f, context.m_updateRange);
+	m_container.FillData(EPVF_Acceleration, Vec3(0), context.m_updateRange);
+	m_container.FillData(EPVF_VelocityField, Vec3(0), context.m_updateRange);
 
 	for (EParticleDataType type(0); type < EParticleDataType::size(); type = type + type.info().step())
 	{
@@ -166,8 +166,7 @@ void CParticleComponentRuntime::RemoveAllSubInstances()
 	m_subInstances.clear();
 	m_subInstanceData.clear();
 
-	IOPidStream parentIds = m_container.GetIOPidStream(EPDT_ParentId);
-	parentIds.Fill(m_container.GetFullRange(), gInvalidId);
+	m_container.FillData(EPDT_ParentId, gInvalidId, m_container.GetFullRange());
 	DebugStabilityCheck();
 }
 
@@ -356,7 +355,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 	}
 
 	// neutral velocity
-	m_container.FillData(EPVF_Velocity, 0.0f, m_container.GetSpawnedRange());
+	m_container.FillData(EPVF_Velocity, Vec3(0), m_container.GetSpawnedRange());
 
 	// initialize unormrand
 	if (m_container.HasData(EPDT_Random))
@@ -384,7 +383,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 			const floatv size1 = size0 * scalev;
 			sizes.Store(particleGroupId, size1);
 		}
-		m_container.CopyData(InitType(EPDT_Size), EPDT_Size, context.GetSpawnedRange());
+		m_container.CopyData(EPDT_Size.InitType(), EPDT_Size, context.GetSpawnedRange());
 	}
 	if (spawnParams.fSpeedScale != 1.0f && m_container.HasData(EPVF_Velocity))
 	{

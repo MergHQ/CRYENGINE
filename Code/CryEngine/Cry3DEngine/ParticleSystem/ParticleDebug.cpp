@@ -176,7 +176,7 @@ void DebugDrawComponentCollisions(CParticleComponentRuntime* pRuntime)
 	const CParticleContainer& container = pRuntime->GetContainer();
 	if (!container.HasData(EPDT_ContactPoint))
 		return;
-	const TIStream<SContactPoint> contactPoints = container.GetTIStream<SContactPoint>(EPDT_ContactPoint);
+	const TIStream<SContactPoint> contactPoints = container.IStream(EPDT_ContactPoint);
 
 	for (auto particleId : context.GetUpdateRange())
 	{
