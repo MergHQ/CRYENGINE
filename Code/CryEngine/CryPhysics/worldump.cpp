@@ -43,9 +43,9 @@
 
 
 enum fieldTypes { ft_int=0,ft_uint,ft_short,ft_ushort,ft_uint64,ft_float,ft_vector,ft_quaternion,ft_entityptr,ft_matrix33,ft_proc };
-static char *g_strFormats[2][10] = {{ "%i","%X","%hd","%hu","%I64X","%.8g","(%.8g %.8g %.8g)", "(%f (%f %f %f))", "%d", "(%f %f %f)(%f %f %f)(%f %f %f)" },
+static const char *g_strFormats[2][10] = {{ "%i","%X","%hd","%hu","%I64X","%.8g","(%.8g %.8g %.8g)", "(%f (%f %f %f))", "%d", "(%f %f %f)(%f %f %f)(%f %f %f)" },
 																	  { "%i","%X","%hd","%hu","%I64X","%g", "(%g %g %g)", "(%f (%f %f %f))", "%d", "(%f %f %f)(%f %f %f)(%f %f %f)" }};
-static char g_strTabs[17] = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
+static const char g_strTabs[17] = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
 
 struct parse_item;
 struct parse_context;
@@ -67,7 +67,7 @@ union parse_data {
 };
 
 struct parse_item {
-	char *name;
+	const char *name;
 	int itype;
 	parse_data data;
 	int idx;
@@ -631,7 +631,7 @@ struct CPhysGeometrySerializer : Serializer {
 	int SerializeGeometryPtr(parse_context &ctx, char* str, IGeometry *&pGeom) {
 		Serializer *pSerializer;
 		if (ctx.bSaving) {
-			char *name;
+			const char *name;
 			if (!pGeom)
 				return 1;
 			switch (pGeom->GetType()) {
@@ -2289,7 +2289,7 @@ struct CPhysicalWorldSerializer : Serializer {
 				for(; pent; pent=pent->m_prev) {
 					if ((pent->m_flags & flaggedOnly)!=flaggedOnly)
 						continue;
-					char *name = "Static";
+					const char *name = "Static";
 					Serializer *pSerializer = pStaticEntitySerializer;
 					switch (pent->GetType()) {
 						case PE_RIGID: pSerializer = pRigidEntitySerializer; name = "Rigid Body"; break;

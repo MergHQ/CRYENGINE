@@ -402,7 +402,7 @@ void CDebugHistory::Render()
 		//		float x2 = m_layoutTopLeft.x + m_layoutExtent.x;
 		float y2 = m_layoutTopLeft.y + m_layoutExtent.y - m_layoutMargin * 2.0f;
 
-		char* gridNumberPrecision = "%f";
+		const char* gridNumberPrecision = "%f";
 		if (scopeExtent >= 100.0f)
 		{
 			gridNumberPrecision = "%.0f";

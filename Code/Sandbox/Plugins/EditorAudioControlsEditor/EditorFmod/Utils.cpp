@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ImplUtils.h"
+#include "Utils.h"
 
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/File/CryFile.h>
@@ -13,28 +13,28 @@ namespace Fmod
 namespace Utils
 {
 //////////////////////////////////////////////////////////////////////////
-CID GetId(EImplItemType const type, string const& name, CImplItem* const pParent, CImplItem const& rootItem)
+ControlId GetId(EItemType const type, string const& name, CItem* const pParent, CItem const& rootItem)
 {
 	string const fullname = Utils::GetTypeName(type) + Utils::GetPathName(pParent, rootItem) + "/" + name;
 	return CryAudio::StringToId(fullname.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////////
-string GetPathName(CImplItem const* const pImplItem, CImplItem const& rootItem)
+string GetPathName(CItem const* const pItem, CItem const& rootItem)
 {
 	string pathName = "";
-	auto const editorFolderType = static_cast<ItemType>(EImplItemType::EditorFolder);
+	EItemType const editorFolderType = EItemType::EditorFolder;
 
-	if (pImplItem != nullptr)
+	if (pItem != nullptr)
 	{
-		string fullname = pImplItem->GetName();
-		IImplItem const* pParent = pImplItem->GetParent();
+		string fullname = pItem->GetName();
+		auto pParent = static_cast<CItem const*>(pItem->GetParent());
 
 		while ((pParent != nullptr) && (pParent->GetType() != editorFolderType) && (pParent != &rootItem))
 		{
 			// The id needs to represent the full path, as we can have items with the same name in different folders
 			fullname = pParent->GetName() + "/" + fullname;
-			pParent = pParent->GetParent();
+			pParent = static_cast<CItem const*>(pParent->GetParent());
 		}
 
 		pathName = fullname;
@@ -44,37 +44,37 @@ string GetPathName(CImplItem const* const pImplItem, CImplItem const& rootItem)
 }
 
 //////////////////////////////////////////////////////////////////////////
-string GetTypeName(EImplItemType const type)
+string GetTypeName(EItemType const type)
 {
 	string name = "";
 
 	switch (type)
 	{
-	case EImplItemType::Folder:
+	case EItemType::Folder:
 		name = "folder:";
 		break;
-	case EImplItemType::Event:
+	case EItemType::Event:
 		name = "event:";
 		break;
-	case EImplItemType::Parameter:
+	case EItemType::Parameter:
 		name = "parameter:";
 		break;
-	case EImplItemType::Snapshot:
+	case EItemType::Snapshot:
 		name = "snapshot:";
 		break;
-	case EImplItemType::Bank:
+	case EItemType::Bank:
 		name = "bank:";
 		break;
-	case EImplItemType::Return:
+	case EItemType::Return:
 		name = "return:";
 		break;
-	case EImplItemType::VCA:
+	case EItemType::VCA:
 		name = "vca:";
 		break;
-	case EImplItemType::MixerGroup:
+	case EItemType::MixerGroup:
 		name = "group:";
 		break;
-	case EImplItemType::EditorFolder:
+	case EItemType::EditorFolder:
 		name = "editorfolder:";
 		break;
 	default:

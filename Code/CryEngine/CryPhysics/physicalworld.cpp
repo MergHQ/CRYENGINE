@@ -4598,7 +4598,7 @@ CPhysicalEntity *CPhysicalWorld::CheckColliderListsIntegrity()
 
 void CPhysicalWorld::GetMemoryStatistics(ICrySizer *pSizer)
 {
-	static char *entnames[] = { "static entities", "physical entities", "physical entities", "living entities", "detached entities",
+	static const char *entnames[] = { "static entities", "physical entities", "physical entities", "living entities", "detached entities",
 		"areas","triggers", "deleted entities" };
 	int i,j,n;
 	CPhysicalEntity *pent;

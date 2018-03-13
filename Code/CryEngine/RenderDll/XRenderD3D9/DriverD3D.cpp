@@ -4249,7 +4249,7 @@ Vec3 CD3D9Renderer::UnprojectFromScreen(int x, int y)
 	return (vDir - vCenter).normalized();
 }
 
-void CD3D9Renderer::Graph(byte* g, int x, int y, int width, int height, int nC, int type, char* text, ColorF& color, float fScale)
+void CD3D9Renderer::Graph(byte* g, int x, int y, int width, int height, int nC, int type, const char* text, ColorF& color, float fScale)
 {
 	ColorF col;
 	PREFAST_SUPPRESS_WARNING(6255)
@@ -4314,7 +4314,7 @@ void CD3D9Renderer::Graph(byte* g, int x, int y, int width, int height, int nC, 
 	IRenderAuxGeom::GetAux()->SetRenderFlags(oldRenderFlags);
 }
 
-void CD3D9Renderer::PushProfileMarker(char* label)
+void CD3D9Renderer::PushProfileMarker(const char* label)
 {
 	ExecuteRenderThreadCommand(
 		[=]{ this->SetProfileMarker(label, CRenderer::ESPM_PUSH); },
@@ -4322,7 +4322,7 @@ void CD3D9Renderer::PushProfileMarker(char* label)
 	);
 }
 
-void CD3D9Renderer::PopProfileMarker(char* label)
+void CD3D9Renderer::PopProfileMarker(const char* label)
 {
 	ExecuteRenderThreadCommand(
 		[=] { this->SetProfileMarker(label, CRenderer::ESPM_POP); },

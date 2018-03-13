@@ -3,15 +3,15 @@
 #pragma once
 
 #include <QWidget>
-#include <SystemTypes.h>
+#include <SharedData.h>
 
 class QPropertyTree;
 class QAttributeFilterProxyModel;
 
 namespace ACE
 {
-class CSystemControl;
-class CConnectionModel;
+class CControl;
+class CConnectionsModel;
 class CTreeView;
 
 class CConnectionsWidget final : public QWidget
@@ -20,22 +20,24 @@ class CConnectionsWidget final : public QWidget
 
 public:
 
-	CConnectionsWidget(QWidget* const pParent);
+	explicit CConnectionsWidget(QWidget* const pParent);
 	virtual ~CConnectionsWidget() override;
 
-	void SetControl(CSystemControl* const pControl, bool const restoreSelection);
-	void Reload();
+	CConnectionsWidget() = delete;
+
+	void SetControl(CControl* const pControl, bool const restoreSelection);
+	void Reset();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
 
 signals:
 
-	void SignalSelectConnectedImplItem(CID const itemId);
+	void SignalSelectConnectedImplItem(ControlId const itemId);
 
 private slots:
 
 	void OnContextMenu(QPoint const& pos);
-	void OnConnectionAdded(CID const id);
+	void OnConnectionAdded(ControlId const id);
 
 private:
 
@@ -46,11 +48,12 @@ private:
 	void RemoveSelectedConnection();
 	void RefreshConnectionProperties();
 	void UpdateSelectedConnections();
+	void ResizeColumns();
 
-	CSystemControl*                   m_pControl;
+	CControl*                         m_pControl;
 	QPropertyTree* const              m_pConnectionProperties;
 	QAttributeFilterProxyModel* const m_pAttributeFilterProxyModel;
-	CConnectionModel* const           m_pConnectionModel;
+	CConnectionsModel* const          m_pConnectionModel;
 	CTreeView* const                  m_pTreeView;
 	int const                         m_nameColumn;
 };

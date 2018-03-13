@@ -55,7 +55,7 @@ LONG WINAPI CryEngineExceptionFilterMiniDump(struct _EXCEPTION_POINTERS* pExcept
 		hDll = ::LoadLibraryA("DBGHELP.DLL");
 	}
 
-	TCHAR* szResult = NULL;
+	const TCHAR* szResult = NULL;
 	char szLogMessage[_MAX_PATH + 1024] = { 0 };// extra data for prefix
 
 	//TCHAR * m_szAppName = _T("CE2Dump");

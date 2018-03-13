@@ -201,11 +201,11 @@ private:
 
 		void        GetMemoryUsage(ICrySizer* pSizer) const {}
 
-		friend bool operator<(const TexturePoolKey& a, const TexturePoolKey& b)
+		bool operator<(const TexturePoolKey& right) const
 		{
-			if (a.a != b.a)
-				return a.a < b.a;
-			return a.b < b.b;
+			if (a != right.a)
+				return a < right.a;
+			return b < right.b;
 		}
 	};
 

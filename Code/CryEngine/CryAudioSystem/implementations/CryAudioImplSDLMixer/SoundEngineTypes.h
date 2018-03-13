@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "GlobalData.h"
+
 #include <IAudioImpl.h>
 #include <PoolObject.h>
 
@@ -31,8 +33,8 @@ public:
 	explicit CTrigger(
 	  EEventType const type,
 	  SampleId const sampleId,
-	  float const attenuationMinDistance = 0.0f,
-	  float const attenuationMaxDistance = 100.0f,
+	  float const attenuationMinDistance = s_defaultMinAttenuationDist,
+	  float const attenuationMaxDistance = s_defaultMaxAttenuationDist,
 	  int const volume = 128,
 	  int const numLoops = 1,
 	  int const fadeInTime = 0,

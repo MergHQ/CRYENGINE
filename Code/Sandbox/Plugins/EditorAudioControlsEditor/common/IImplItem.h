@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "SystemTypes.h"
+#include "SharedData.h"
 
 #include <CryCore/Platform/platform.h>
 #include <CryString/CryString.h>
@@ -14,13 +14,10 @@ struct IImplItem
 	virtual ~IImplItem() = default;
 
 	//! Returns id of the item.
-	virtual CID GetId() const = 0;
-
-	//! Returns type of the item.
-	virtual ItemType GetType() const = 0;
+	virtual ControlId GetId() const = 0;
 
 	//! Returns name of the item.
-	virtual string GetName() const = 0;  // char* const?
+	virtual string GetName() const = 0;
 
 	//! Returns file path of the item.
 	//! If the item is not a file, an empty path is returned.
@@ -30,8 +27,11 @@ struct IImplItem
 	//! The radius is used to calculate the activity radius of the connected audio system trigger.
 	virtual float GetRadius() const = 0;
 
+	//! \return An integer of the sort priority, used for sort order in models.
+	virtual int GetSortPriority() const = 0;
+
 	//! Returns the number of children.
-	virtual size_t GetNumChildren() const = 0; // NumChilds?
+	virtual size_t GetNumChildren() const = 0;
 
 	//! Returns a pointer to the child item at the given index.
 	//! \param index Index of the child slot.

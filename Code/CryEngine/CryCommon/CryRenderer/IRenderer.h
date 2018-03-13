@@ -1230,7 +1230,7 @@ struct IRenderer//: public IRendererCallbackServer
 
 	//! Load lightmap for name.
 	virtual int  EF_LoadLightmap(const char* name) = 0;
-	virtual bool EF_RenderEnvironmentCubeHDR(int size, Vec3& Pos, TArray<unsigned short>& vecData) = 0;
+	virtual bool EF_RenderEnvironmentCubeHDR(int size, const Vec3& Pos, TArray<unsigned short>& vecData) = 0;
 	// Writes a TIF file to the system with the requested preset
 	// Intended for use with EF_RenderEnvironmentCubeHDR
 	virtual bool WriteTIFToDisk(const void* pData, int width, int height, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName) = 0;
@@ -1356,8 +1356,8 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual float ScaleCoordY(float value) const = 0;
 	virtual void  ScaleCoord(float& x, float& y) const = 0;
 
-	virtual void  PushProfileMarker(char* label) = 0;
-	virtual void  PopProfileMarker(char* label) = 0;
+	virtual void  PushProfileMarker(const char* label) = 0;
+	virtual void  PopProfileMarker(const char* label) = 0;
 
 	//! For one frame allows disabling limit of texture streaming requests.
 	virtual void RequestFlushAllPendingTextureStreamingJobs(int nFrames) {}
@@ -1380,7 +1380,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual IColorGradingController* GetIColorGradingController() = 0;
 	virtual IStereoRenderer*         GetIStereoRenderer() = 0;
 
-	virtual void                     Graph(byte* g, int x, int y, int wdt, int hgt, int nC, int type, char* text, ColorF& color, float fScale) = 0;
+	virtual void                     Graph(byte* g, int x, int y, int wdt, int hgt, int nC, int type, const char* text, ColorF& color, float fScale) = 0;
 
 	// NB: The following functions will be removed.
 	virtual void         EnableVSync(bool enable) = 0;

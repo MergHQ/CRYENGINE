@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "GlobalData.h"
+
 #include <ATLEntityData.h>
 #include <IAudioImpl.h>
 #include <PoolObject.h>
@@ -133,7 +135,7 @@ struct SSwitchState final : public ISwitchState
 	  ESwitchType const type_,
 	  AkUInt32 const stateOrSwitchGroupId_,
 	  AkUInt32 const stateOrSwitchId_,
-	  float const rtpcValue_ = 0.0f)
+	  float const rtpcValue_ = s_defaultStateValue)
 		: type(type_)
 		, stateOrSwitchGroupId(stateOrSwitchGroupId_)
 		, stateOrSwitchId(stateOrSwitchId_)

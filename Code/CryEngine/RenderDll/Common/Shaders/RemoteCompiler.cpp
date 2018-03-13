@@ -245,7 +245,7 @@ EServerError CShaderSrv::Compile(std::vector<uint8>& rVec,
 	if (errCompile != ESOK)
 	{
 		bool logError = true;
-		char* why = "";
+		const char* why = "";
 		switch (errCompile)
 		{
 		case ESNetworkError:

@@ -3,8 +3,8 @@
 #include "StdAfx.h"
 #include "ResourceSelectorModel.h"
 
-#include "SystemAssetsManager.h"
-#include "SystemControlsIcons.h"
+#include "AssetsManager.h"
+#include "AssetIcons.h"
 
 #include <QtUtil.h>
 
@@ -37,7 +37,7 @@ QVariant CResourceSourceModel::data(QModelIndex const& index, int role) const
 {
 	QVariant variant;
 
-	CSystemLibrary const* const pLibrary = static_cast<CSystemLibrary*>(index.internalPointer());
+	CLibrary const* const pLibrary = static_cast<CLibrary*>(index.internalPointer());
 
 	if (pLibrary != nullptr)
 	{
@@ -57,10 +57,10 @@ QVariant CResourceSourceModel::data(QModelIndex const& index, int role) const
 			}
 			break;
 		case Qt::DecorationRole:
-			variant = GetItemTypeIcon(ESystemItemType::Library);
+			variant = GetAssetIcon(EAssetType::Library);
 			break;
 		case static_cast<int>(SystemModelUtils::ERoles::ItemType):
-			variant = static_cast<int>(ESystemItemType::Library);
+			variant = static_cast<int>(EAssetType::Library);
 			break;
 		case static_cast<int>(SystemModelUtils::ERoles::InternalPointer):
 			variant = reinterpret_cast<intptr_t>(pLibrary);
@@ -76,19 +76,7 @@ QVariant CResourceSourceModel::data(QModelIndex const& index, int role) const
 //////////////////////////////////////////////////////////////////////////
 bool CResourceSourceModel::setData(QModelIndex const& index, QVariant const& value, int role)
 {
-	bool wasDataSet = false;
-
-	if (index.isValid())
-	{
-		CSystemAsset const* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
-
-		if (pItem != nullptr)
-		{
-			wasDataSet = true;
-		}
-	}
-
-	return wasDataSet;
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -141,35 +129,35 @@ QVariant CResourceLibraryModel::data(QModelIndex const& index, int role) const
 
 	if (index.isValid())
 	{
-		CSystemAsset const* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
+		CAsset const* const pAsset = static_cast<CAsset*>(index.internalPointer());
 
-		if (pItem != nullptr)
+		if (pAsset != nullptr)
 		{
-			ESystemItemType const itemType = pItem->GetType();
+			EAssetType const itemType = pAsset->GetType();
 
 			switch (role)
 			{
 			case Qt::DisplayRole:
-				variant = QtUtil::ToQStringSafe(pItem->GetName());
+				variant = QtUtil::ToQStringSafe(pAsset->GetName());
 				break;
 			case Qt::ToolTipRole:
-				if (!pItem->GetDescription().IsEmpty())
+				if (!pAsset->GetDescription().IsEmpty())
 				{
-					variant = QtUtil::ToQStringSafe(pItem->GetName() + ": " + pItem->GetDescription());
+					variant = QtUtil::ToQStringSafe(pAsset->GetName() + ": " + pAsset->GetDescription());
 				}
 				else
 				{
-					variant = QtUtil::ToQStringSafe(pItem->GetName());
+					variant = QtUtil::ToQStringSafe(pAsset->GetName());
 				}
 				break;
 			case Qt::DecorationRole:
-				variant = GetItemTypeIcon(itemType);
+				variant = GetAssetIcon(itemType);
 				break;
 			case static_cast<int>(SystemModelUtils::ERoles::ItemType):
 				variant = static_cast<int>(itemType);
 				break;
 			case static_cast<int>(SystemModelUtils::ERoles::InternalPointer):
-				variant = reinterpret_cast<intptr_t>(pItem);
+				variant = reinterpret_cast<intptr_t>(pAsset);
 				break;
 			default:
 				break;
@@ -183,19 +171,7 @@ QVariant CResourceLibraryModel::data(QModelIndex const& index, int role) const
 //////////////////////////////////////////////////////////////////////////
 bool CResourceLibraryModel::setData(QModelIndex const& index, QVariant const& value, int role)
 {
-	bool wasDataSet = false;
-
-	if (index.isValid())
-	{
-		CSystemAsset const* const pItem = static_cast<CSystemAsset*>(index.internalPointer());
-
-		if (pItem != nullptr)
-		{
-			wasDataSet = true;
-		}
-	}
-
-	return wasDataSet;
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -236,7 +212,7 @@ Qt::DropActions CResourceLibraryModel::supportedDropActions() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-CResourceFilterProxyModel::CResourceFilterProxyModel(ESystemItemType const type, Scope const scope, QObject* const pParent)
+CResourceFilterProxyModel::CResourceFilterProxyModel(EAssetType const type, Scope const scope, QObject* const pParent)
 	: QDeepFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
 	, m_type(type)
 	, m_scope(scope)
@@ -254,7 +230,7 @@ bool CResourceFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex cons
 
 		if (index.isValid())
 		{
-			CSystemAsset* const pAsset = SystemModelUtils::GetAssetFromIndex(index, 0);
+			CAsset* const pAsset = SystemModelUtils::GetAssetFromIndex(index, 0);
 
 			if (pAsset != nullptr)
 			{
@@ -262,7 +238,7 @@ bool CResourceFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex cons
 
 				if (matchesFilter)
 				{
-					auto const pControl = static_cast<CSystemControl*>(pAsset);
+					auto const pControl = static_cast<CControl*>(pAsset);
 					Scope const scope = pControl->GetScope();
 
 					if (scope != Utils::GetGlobalScope() && scope != m_scope)
@@ -286,12 +262,12 @@ bool CResourceFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex co
 	if (left.column() == right.column())
 	{
 		int const itemTypeRole = static_cast<int>(SystemModelUtils::ERoles::ItemType);
-		ESystemItemType const leftType = static_cast<ESystemItemType>(sourceModel()->data(left, itemTypeRole).toInt());
-		ESystemItemType const rightType = static_cast<ESystemItemType>(sourceModel()->data(right, itemTypeRole).toInt());
+		EAssetType const leftType = static_cast<EAssetType>(sourceModel()->data(left, itemTypeRole).toInt());
+		EAssetType const rightType = static_cast<EAssetType>(sourceModel()->data(right, itemTypeRole).toInt());
 
 		if (leftType != rightType)
 		{
-			isLessThan = rightType < ESystemItemType::Folder;
+			isLessThan = rightType < EAssetType::Folder;
 		}
 		else
 		{

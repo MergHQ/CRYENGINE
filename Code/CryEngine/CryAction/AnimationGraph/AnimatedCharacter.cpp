@@ -17,9 +17,9 @@
 
 #include <IViewSystem.h>
 
-char* g_szMCMString[eMCM_COUNT] = { "Undefined", "Entity", "Animation", "DecoupledCatchUp", "ClampedEntity", "SmoothedEntity", "AnimationHCollision" };
-char* g_szColliderModeString[eColliderMode_COUNT] = { "Undefined", "Disabled", "GroundedOnly", "Pushable", "NonPushable", "PushesPlayersOnly", "Spectator" };
-char* g_szColliderModeLayerString[eColliderModeLayer_COUNT] = { "AG", "Game", "Script", "FG", "Anim", "Sleep", "Debug" };
+const char* g_szMCMString[eMCM_COUNT] = { "Undefined", "Entity", "Animation", "DecoupledCatchUp", "ClampedEntity", "SmoothedEntity", "AnimationHCollision" };
+const char* g_szColliderModeString[eColliderMode_COUNT] = { "Undefined", "Disabled", "GroundedOnly", "Pushable", "NonPushable", "PushesPlayersOnly", "Spectator" };
+const char* g_szColliderModeLayerString[eColliderModeLayer_COUNT] = { "AG", "Game", "Script", "FG", "Anim", "Sleep", "Debug" };
 
 #define ANIMCHAR_MEM_DEBUG // Memory Allocation Tracking
 #undef  ANIMCHAR_MEM_DEBUG

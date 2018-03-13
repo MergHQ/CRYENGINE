@@ -137,7 +137,7 @@ public:
 
 protected:
 
-	void AddNodeStyle(const char* szStyleId, CryIcon& icon, QColor iconColor, QColor backgroundColor)
+	void AddNodeStyle(const char* szStyleId, const CryIcon& icon, QColor iconColor, QColor backgroundColor)
 	{
 		CryGraphEditor::CNodeWidgetStyle* pStyle = new CryGraphEditor::CNodeWidgetStyle(szStyleId, *(m_pStyle.get()));
 

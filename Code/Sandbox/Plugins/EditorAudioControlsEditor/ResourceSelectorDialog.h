@@ -1,9 +1,9 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
 #include <Controls/EditorDialog.h>
-#include <SystemTypes.h>
+#include <SharedData.h>
 
 class QSearchBox;
 class QDialogButtonBox;
@@ -14,8 +14,7 @@ class QModelIndex;
 namespace ACE
 {
 class CTreeView;
-class CSystemAsset;
-class CSystemAssetsManager;
+class CAsset;
 class CResourceSourceModel;
 class CResourceLibraryModel;
 class CResourceFilterProxyModel;
@@ -26,10 +25,12 @@ class CResourceSelectorDialog final : public CEditorDialog
 
 public:
 
-	CResourceSelectorDialog(ESystemItemType const type, Scope const scope, QWidget* const pParent);
-	~CResourceSelectorDialog();
+	explicit CResourceSelectorDialog(EAssetType const type, Scope const scope, QWidget* const pParent);
+	virtual ~CResourceSelectorDialog() override;
 
-	char const*   ChooseItem(char const* currentValue);
+	CResourceSelectorDialog() = delete;
+
+	char const* ChooseItem(char const* currentValue);
 
 	// QDialog
 	virtual QSize sizeHint() const override;
@@ -49,14 +50,13 @@ private:
 	void                DeleteModels();
 
 	// QDialog
-	virtual bool        eventFilter(QObject* pObject, QEvent* pEvent) override;
+	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 	// ~QDialog
 
-	ESystemItemType const               m_type;
+	EAssetType const                    m_type;
 	Scope const                         m_scope;
 	bool                                m_selectionIsValid = false;
 
-	CSystemAssetsManager* const         m_pAssetsManager;
 	QSearchBox* const                   m_pSearchBox;
 	CTreeView* const                    m_pTreeView;
 	QDialogButtonBox* const             m_pDialogButtons;
@@ -66,6 +66,6 @@ private:
 	std::vector<CResourceLibraryModel*> m_libraryModels;
 
 	static string                       s_previousControlName;
-	static ESystemItemType              s_previousControlType;
+	static EAssetType                   s_previousControlType;
 };
 } // namespace ACE

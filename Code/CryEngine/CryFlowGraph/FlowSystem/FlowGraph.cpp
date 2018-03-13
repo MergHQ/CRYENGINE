@@ -369,7 +369,7 @@ void CFlowGraphBase::SetDebugName(const char* sName)
 void CFlowGraphBase::CreateDebugName()
 {
 #if !defined(_RELEASE)
-	char* sType;
+	const char* sType;
 	stack_string sExtra = "";
 
 	switch (m_Type)

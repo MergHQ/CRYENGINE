@@ -4,7 +4,7 @@
 
 #include <EditorFramework/Editor.h>
 #include <IEditor.h>
-#include <SystemTypes.h>
+#include <SharedData.h>
 
 class QAction;
 class QLabel;
@@ -13,12 +13,11 @@ class QVBoxLayout;
 
 namespace ACE
 {
-class CSystemAssetsManager;
 class CSystemControlsWidget;
 class CPropertiesWidget;
 class CMiddlewareDataWidget;
-class CSystemAsset;
-class CSystemControl;
+class CAsset;
+class CControl;
 class CFileMonitorSystem;
 class CFileMonitorMiddleware;
 
@@ -64,8 +63,8 @@ protected slots:
 signals:
 
 	void SignalSelectedSystemControlChanged();
-	void SignalSelectConnectedSystemControl(CSystemControl& systemControl, CID const itemId);
-	void SignalSelectConnectedImplItem(CID const itemId);
+	void SignalSelectConnectedSystemControl(CControl& systemControl, ControlId const itemId);
+	void SignalSelectConnectedImplItem(ControlId const itemId);
 
 private slots:
 
@@ -73,29 +72,28 @@ private slots:
 
 private:
 
-	void                       InitMenuBar();
-	void                       InitToolbar(QVBoxLayout* const pWindowLayout);
-	void                       UpdateImplLabel();
-	void                       RegisterWidgets();
-	void                       Reload();
-	void                       Save();
-	void                       SaveBeforeImplementationChange();
-	void                       CheckErrorMask();
-	void                       UpdateAudioSystemData();
-	void                       ReloadSystemData();
-	void                       ReloadMiddlewareData();
-	void                       RefreshAudioSystem();
-	void                       BackupTreeViewStates();
-	void                       RestoreTreeViewStates();
-	bool                       TryClose();
+	void                   InitMenuBar();
+	void                   InitToolbar(QVBoxLayout* const pWindowLayout);
+	void                   UpdateImplLabel();
+	void                   RegisterWidgets();
+	void                   Reload(bool const hasImplChanged = false);
+	void                   Save();
+	void                   SaveBeforeImplementationChange();
+	void                   CheckErrorMask();
+	void                   UpdateAudioSystemData();
+	void                   ReloadSystemData();
+	void                   ReloadMiddlewareData();
+	void                   RefreshAudioSystem();
+	void                   BackupTreeViewStates();
+	void                   RestoreTreeViewStates();
+	bool                   TryClose();
 
-	std::vector<CSystemAsset*> GetSelectedSystemAssets();
+	std::vector<CAsset*>   GetSelectedAssets();
 
-	CSystemControlsWidget*     CreateSystemControlsWidget();
-	CPropertiesWidget*         CreatePropertiesWidget();
-	CMiddlewareDataWidget*     CreateMiddlewareDataWidget();
+	CSystemControlsWidget* CreateSystemControlsWidget();
+	CPropertiesWidget*     CreatePropertiesWidget();
+	CMiddlewareDataWidget* CreateMiddlewareDataWidget();
 
-	CSystemAssetsManager* const   m_pAssetsManager;
 	CSystemControlsWidget*        m_pSystemControlsWidget;
 	CPropertiesWidget*            m_pPropertiesWidget;
 	CMiddlewareDataWidget*        m_pMiddlewareDataWidget;

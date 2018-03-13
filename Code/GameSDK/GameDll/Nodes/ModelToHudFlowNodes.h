@@ -38,7 +38,7 @@ public:
 
 private:
 	CMenuRender3DModelMgr::TAddedModelIndex characterModelIndex;
-	char*  playerModelName;
+	const char*  playerModelName;
 	string sUIElement;
 	string sMovieClipName;
 };
@@ -68,7 +68,7 @@ public:
 
 private:
 	CMenuRender3DModelMgr::TAddedModelIndex characterModelIndex;
-	char*  playerModelName;
+	const char*  playerModelName;
 	string sUIElement;
 	string sMovieClipName;
 };

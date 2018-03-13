@@ -577,8 +577,8 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 	if (_stricmp(szTag, s_szParameterTag) == 0)
 	{
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
-		float multiplier = 1.0f;
-		float shift = 0.0f;
+		float multiplier = s_defaultParamMultiplier;
+		float shift = s_defaultParamShift;
 		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
 		pRootNode->getAttr(s_szShiftAttribute, shift);
 
@@ -597,8 +597,8 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 			FMOD_RESULT const fmodResult = m_pSystem->getVCAByID(&guid, &pVca);
 			ASSERT_FMOD_OK;
 
-			float multiplier = 1.0f;
-			float shift = 0.0f;
+			float multiplier = s_defaultParamMultiplier;
+			float shift = s_defaultParamShift;
 			pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
 			pRootNode->getAttr(s_szShiftAttribute, shift);
 
@@ -715,8 +715,8 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 	{
 
 		char const* const szName = pRootNode->getAttr(s_szNameAttribute);
-		float multiplier = 1.0f;
-		float shift = 0.0f;
+		float multiplier = s_defaultParamMultiplier;
+		float shift = s_defaultParamShift;
 		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
 		pRootNode->getAttr(s_szShiftAttribute, shift);
 

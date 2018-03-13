@@ -134,7 +134,7 @@ class CResFile
 
 private:
 	string m_name;
-	char*  m_szAccess;
+	const char*  m_szAccess;
 	FILE*  m_handle;
 	ResDir m_Dir;
 	ResDirOpen m_DirOpen;

@@ -12,7 +12,7 @@
 #include <CryMemory/BucketAllocatorImpl.h>
 #include <CryCore/CryCrc32.h>
 
-char* g_KeyTokens[eT_max];
+const char* g_KeyTokens[eT_max];
 TArray<bool> sfxIFDef;
 TArray<bool> sfxIFIgnore;
 bool CParserBin::m_bEditable;
@@ -874,7 +874,7 @@ CCryNameTSCRC CParserBin::GetPlatformSpecName(CCryNameTSCRC orgName)
 	return nmTemp;
 }
 
-uint32 CParserBin::fxTokenKey(char* szToken, EToken eTC)
+uint32 CParserBin::fxTokenKey(const char* szToken, EToken eTC)
 {
 	g_KeyTokens[eTC] = szToken;
 	return eTC;

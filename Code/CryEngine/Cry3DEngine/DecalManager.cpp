@@ -902,7 +902,7 @@ void CDecalManager::OnEntityDeleted(IRenderNode* pRenderNode)
 				{
 					CDecal& decal = m_arrDecals[i];
 					Vec3 vPos = decal.GetWorldPosition();
-					char* szOwnerName = "none";
+					const char* szOwnerName = "none";
 #ifdef _DEBUG
 					szOwnerName = decal.m_decalOwnerName;
 #endif

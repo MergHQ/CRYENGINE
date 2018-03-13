@@ -507,7 +507,7 @@ bool CDialogSession::Validate()
 ////////////////////////////////////////////////////////////////////////////
 const char* CDialogSession::GetEventName(EDialogSessionEvent event)
 {
-	static char* names[] = {
+	static const char* names[] = {
 		"eDSE_SessionStart",
 		"eDSE_EndOfDialog",
 		"eDSE_UserStopped",

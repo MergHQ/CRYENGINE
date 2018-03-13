@@ -19,7 +19,7 @@ add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
 
 add_definitions(-DCRASHRPT_LIB)
 
-CryEngineStaticModule(crashrpt SOLUTION_FOLDER "Libs")
+CryEngineStaticModule(crashrpt SOLUTION_FOLDER "Libs" MSVC_PERMISSIVE)
 target_include_directories(${THIS_PROJECT} PUBLIC ${crashrpt_dir}/include)
 target_include_directories(${THIS_PROJECT} PRIVATE ${crashrpt_dir}/thirdparty/wtl)
 

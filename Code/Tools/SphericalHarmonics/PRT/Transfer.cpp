@@ -73,8 +73,10 @@ void NSH::NTransfer::CInterreflectionTransfer::PrepareVectors
 
 void NSH::NTransfer::CInterreflectionTransfer::FreeMemory()
 {
-	m_IntersectionInfo.swap(TIntersectionsInfo());
-	m_HSVertexCounter.swap(THemisphereCountInfo());
+	TIntersectionsInfo intersectionsInfo;
+	THemisphereCountInfo countInfo;
+	m_IntersectionInfo.swap(intersectionsInfo);
+	m_HSVertexCounter.swap(countInfo);
 }
 
 void NSH::NTransfer::CInterreflectionTransfer::InitializeVISCache(const SDescriptor& crSHDescriptor)
@@ -760,7 +762,8 @@ void NSH::NTransfer::CInterreflectionTransfer::ComputeDirectPassMultipleThreadin
 				m_State.overallVertexIndex++;
 			}//vertices
 			//free some memory
-			rRayQueries.swap(TThreadRayVertexQueryVec());
+			TThreadRayVertexQueryVec rayVertexQueryVec;
+			rRayQueries.swap(rayVertexQueryVec);
 		}//threads
 		Notify();//update observers 
 		m_State.meshIndex++;//next mesh

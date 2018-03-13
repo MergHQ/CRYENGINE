@@ -3,76 +3,71 @@
 #include "StdAfx.h"
 #include "FileWriter.h"
 
-#include "SystemAssetsManager.h"
+#include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 
 #include <IEditorImpl.h>
 #include <IImplItem.h>
 #include <CryString/StringUtils.h>
 #include <CrySystem/File/CryFile.h>
-#include <CrySystem/ISystem.h>
-#include <IEditor.h>
 #include <QtUtil.h>
-#include <ConfigurationManager.h>
 
 namespace ACE
 {
 uint32 const CFileWriter::s_currentFileVersion = 3;
 
 //////////////////////////////////////////////////////////////////////////
-string TypeToTag(ESystemItemType const eType)
+char const* TypeToTag(EAssetType const assetType)
 {
-	string tag = "";
+	char const* szTag = nullptr;
 
-	switch (eType)
+	switch (assetType)
 	{
-	case ESystemItemType::Parameter:
-		tag = CryAudio::s_szParameterTag;
+	case EAssetType::Parameter:
+		szTag = CryAudio::s_szParameterTag;
 		break;
-	case ESystemItemType::Trigger:
-		tag = CryAudio::s_szTriggerTag;
+	case EAssetType::Trigger:
+		szTag = CryAudio::s_szTriggerTag;
 		break;
-	case ESystemItemType::Switch:
-		tag = CryAudio::s_szSwitchTag;
+	case EAssetType::Switch:
+		szTag = CryAudio::s_szSwitchTag;
 		break;
-	case ESystemItemType::State:
-		tag = CryAudio::s_szStateTag;
+	case EAssetType::State:
+		szTag = CryAudio::s_szStateTag;
 		break;
-	case ESystemItemType::Preload:
-		tag = CryAudio::s_szPreloadRequestTag;
+	case EAssetType::Preload:
+		szTag = CryAudio::s_szPreloadRequestTag;
 		break;
-	case ESystemItemType::Environment:
-		tag = CryAudio::s_szEnvironmentTag;
+	case EAssetType::Environment:
+		szTag = CryAudio::s_szEnvironmentTag;
 		break;
 	default:
-		tag = "";
+		szTag = nullptr;
 		break;
 	}
 
-	return tag;
+	return szTag;
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileWriter::CFileWriter(CSystemAssetsManager const& pAssetsManager, std::set<string>& previousLibraryPaths)
-	: m_assetsManager(pAssetsManager)
-	, m_previousLibraryPaths(previousLibraryPaths)
-{
-}
+CFileWriter::CFileWriter(FileNames& previousLibraryPaths)
+	: m_previousLibraryPaths(previousLibraryPaths)
+{}
 
 //////////////////////////////////////////////////////////////////////////
 void CFileWriter::WriteAll()
 {
-	size_t const libCount = m_assetsManager.GetLibraryCount();
+	size_t const libCount = g_assetsManager.GetLibraryCount();
 
 	for (size_t i = 0; i < libCount; ++i)
 	{
-		CSystemLibrary& library = *m_assetsManager.GetLibrary(i);
+		CLibrary& library = *g_assetsManager.GetLibrary(i);
 		WriteLibrary(library);
 		library.SetModified(false);
 	}
 
 	// Delete libraries that don't exist anymore from disk
-	std::set<string> librariesToDelete;
+	FileNames librariesToDelete;
 	std::set_difference(m_previousLibraryPaths.begin(), m_previousLibraryPaths.end(), m_foundLibraryPaths.begin(), m_foundLibraryPaths.end(),
 	                    std::inserter(librariesToDelete, librariesToDelete.begin()));
 
@@ -86,7 +81,7 @@ void CFileWriter::WriteAll()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteLibrary(CSystemLibrary const& library)
+void CFileWriter::WriteLibrary(CLibrary& library)
 {
 	if (library.IsModified())
 	{
@@ -97,7 +92,7 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 		{
 			for (size_t i = 0; i < itemCount; ++i)
 			{
-				CSystemAsset* const pAsset = library.GetChild(i);
+				CAsset* const pAsset = library.GetChild(i);
 
 				if ((pAsset != nullptr) && !pAsset->IsInternalControl())
 				{
@@ -121,7 +116,7 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 
 		for (auto const& libraryPair : libraryXmlNodes)
 		{
-			string libraryPath = m_assetsManager.GetConfigFolderPath();
+			string libraryPath = g_assetsManager.GetConfigFolderPath();
 			Scope const scope = libraryPair.first;
 
 			if (scope == Utils::GetGlobalScope())
@@ -133,7 +128,7 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 			{
 				// with scope, inside level folder
 				libraryPath += CryAudio::s_szLevelsFolderName;
-				libraryPath += "/" + m_assetsManager.GetScopeInfo(scope).name + "/" + library.GetName();
+				libraryPath += "/" + g_assetsManager.GetScopeInfo(scope).name + "/" + library.GetName();
 			}
 
 			m_foundLibraryPaths.insert(libraryPath.MakeLower() + ".xml");
@@ -146,13 +141,13 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 				pFileNode->setAttr(CryAudio::s_szNameAttribute, library.GetName());
 				pFileNode->setAttr(CryAudio::s_szVersionAttribute, s_currentFileVersion);
 
-				int const numTypes = static_cast<int>(ESystemItemType::NumTypes);
+				auto const numTypes = static_cast<int>(EAssetType::NumTypes);
 
 				for (int i = 0; i < numTypes; ++i)
 				{
-					if (i != static_cast<int>(ESystemItemType::State))   // switch_states are written inside the switches
+					if (i != static_cast<int>(EAssetType::State))   // switch_states are written inside the switches
 					{
-						XmlNodeRef node = libScope.GetXmlNode((ESystemItemType)i);
+						XmlNodeRef node = libScope.GetXmlNode((EAssetType)i);
 
 						if ((node != nullptr) && (node->getChildCount() > 0))
 						{
@@ -204,6 +199,9 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 
 				// TODO: Check out in source control.
 				pFileNode->saveToFile(fullFilePath);
+
+				// Update pak status, because it will exist on disk, if writing doesn't fail.
+				library.SetPakStatus(EPakStatus::OnDisk, gEnv->pCryPak->IsFileExist(fullFilePath.c_str(), ICryPak::eFileLocation_OnDisk));
 			}
 		}
 	}
@@ -214,13 +212,13 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 
 		for (size_t i = 0; i < numChildren; ++i)
 		{
-			CSystemAsset* const pItem = library.GetChild(i);
-			GetScopes(pItem, scopes);
+			CAsset* const pAsset = library.GetChild(i);
+			GetScopes(pAsset, scopes);
 		}
 
 		for (auto const scope : scopes)
 		{
-			string libraryPath = m_assetsManager.GetConfigFolderPath();
+			string libraryPath = g_assetsManager.GetConfigFolderPath();
 
 			if (scope == Utils::GetGlobalScope())
 			{
@@ -231,7 +229,7 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 			{
 				// with scope, inside level folder
 				libraryPath += CryAudio::s_szLevelsFolderName;
-				libraryPath += "/" + m_assetsManager.GetScopeInfo(scope).name + "/" + library.GetName();
+				libraryPath += "/" + g_assetsManager.GetScopeInfo(scope).name + "/" + library.GetName();
 			}
 
 			m_foundLibraryPaths.insert(libraryPath.MakeLower() + ".xml");
@@ -240,27 +238,27 @@ void CFileWriter::WriteLibrary(CSystemLibrary const& library)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteItem(CSystemAsset* const pItem, string const& path, LibraryStorage& library)
+void CFileWriter::WriteItem(CAsset* const pAsset, string const& path, LibraryStorage& library)
 {
-	if (pItem != nullptr)
+	if (pAsset != nullptr)
 	{
-		if (pItem->GetType() == ESystemItemType::Folder)
+		if (pAsset->GetType() == EAssetType::Folder)
 		{
-			size_t const itemCount = pItem->ChildCount();
+			size_t const itemCount = pAsset->ChildCount();
 
 			for (size_t i = 0; i < itemCount; ++i)
 			{
 				// Use forward slash only to ensure cross platform compatibility.
 				string newPath = path.empty() ? "" : path + "/";
-				newPath += pItem->GetName();
-				WriteItem(pItem->GetChild(i), newPath, library);
+				newPath += pAsset->GetName();
+				WriteItem(pAsset->GetChild(i), newPath, library);
 			}
 
-			pItem->SetModified(false);
+			pAsset->SetModified(false);
 		}
 		else
 		{
-			CSystemControl* const pControl = static_cast<CSystemControl*>(pItem);
+			auto const pControl = static_cast<CControl*>(pAsset);
 
 			if (pControl != nullptr)
 			{
@@ -273,20 +271,20 @@ void CFileWriter::WriteItem(CSystemAsset* const pItem, string const& path, Libra
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileWriter::GetScopes(CSystemAsset const* const pItem, std::unordered_set<Scope>& scopes)
+void CFileWriter::GetScopes(CAsset const* const pAsset, std::unordered_set<Scope>& scopes)
 {
-	if (pItem->GetType() == ESystemItemType::Folder)
+	if (pAsset->GetType() == EAssetType::Folder)
 	{
-		size_t const numChildren = pItem->ChildCount();
+		size_t const numChildren = pAsset->ChildCount();
 
 		for (size_t i = 0; i < numChildren; ++i)
 		{
-			GetScopes(pItem->GetChild(i), scopes);
+			GetScopes(pAsset->GetChild(i), scopes);
 		}
 	}
 	else
 	{
-		CSystemControl const* const pControl = static_cast<CSystemControl const*>(pItem);
+		auto const pControl = static_cast<CControl const*>(pAsset);
 
 		if (pControl != nullptr)
 		{
@@ -296,9 +294,9 @@ void CFileWriter::GetScopes(CSystemAsset const* const pItem, std::unordered_set<
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CSystemControl* const pControl, string const& path)
+void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string const& path)
 {
-	ESystemItemType const type = pControl->GetType();
+	EAssetType const type = pControl->GetType();
 	XmlNodeRef const pChildNode = pNode->createNode(TypeToTag(type));
 	pChildNode->setAttr(CryAudio::s_szNameAttribute, pControl->GetName());
 
@@ -307,7 +305,7 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CSystemControl* cons
 		pChildNode->setAttr(s_szPathAttribute, path);
 	}
 
-	if (type == ESystemItemType::Trigger)
+	if (type == EAssetType::Trigger)
 	{
 		float const radius = pControl->GetRadius();
 
@@ -317,34 +315,33 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CSystemControl* cons
 		}
 	}
 
-	if (type == ESystemItemType::Switch)
+	if (type == EAssetType::Switch)
 	{
 		size_t const size = pControl->ChildCount();
 
 		for (size_t i = 0; i < size; ++i)
 		{
-			CSystemAsset* const pItem = pControl->GetChild(i);
+			CAsset* const pAsset = pControl->GetChild(i);
 
-			if ((pItem != nullptr) && (pItem->GetType() == ESystemItemType::State))
+			if ((pAsset != nullptr) && (pAsset->GetType() == EAssetType::State))
 			{
-				WriteControlToXML(pChildNode, static_cast<CSystemControl*>(pItem), "");
+				WriteControlToXML(pChildNode, static_cast<CControl*>(pAsset), "");
 			}
 		}
 	}
-	else if (type == ESystemItemType::Preload)
+	else if (type == EAssetType::Preload)
 	{
 		if (pControl->IsAutoLoad())
 		{
 			pChildNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::s_szDataLoadType);
 		}
 
-		std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
-		size_t const numPlatforms = platforms.size();
+		size_t const numPlatforms = g_platforms.size();
 
 		for (size_t i = 0; i < numPlatforms; ++i)
 		{
-			XmlNodeRef pFileNode = pChildNode->createNode(CryAudio::s_szPlatformTag);
-			pFileNode->setAttr(CryAudio::s_szNameAttribute, platforms[i].c_str());
+			XmlNodeRef const pFileNode = pChildNode->createNode(CryAudio::s_szPlatformTag);
+			pFileNode->setAttr(CryAudio::s_szNameAttribute, g_platforms[i]);
 			WriteConnectionsToXML(pFileNode, pControl, i);
 
 			if (pFileNode->getChildCount() > 0)
@@ -363,8 +360,9 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CSystemControl* cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* const pControl, int const platformIndex /*= -1*/)
+void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, int const platformIndex /*= -1*/)
 {
+	EAssetType const type = pControl->GetType();
 	size_t const numConnections = pControl->GetConnectionCount();
 
 	for (size_t i = 0; i < numConnections; ++i)
@@ -373,9 +371,9 @@ void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* 
 
 		if (pConnection != nullptr)
 		{
-			if ((pControl->GetType() != ESystemItemType::Preload) || (pConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(platformIndex))))
+			if ((type != EAssetType::Preload) || (pConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(platformIndex))))
 			{
-				XmlNodeRef const pChild = g_pEditorImpl->CreateXMLNodeFromConnection(pConnection, pControl->GetType());
+				XmlNodeRef const pChild = g_pEditorImpl->CreateXMLNodeFromConnection(pConnection, type);
 
 				if (pChild != nullptr)
 				{
@@ -449,7 +447,7 @@ void CFileWriter::DeleteLibraryFile(string const& filepath)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteLibraryEditorData(CSystemAsset const& library, XmlNodeRef const pParentNode) const
+void CFileWriter::WriteLibraryEditorData(CAsset const& library, XmlNodeRef const pParentNode) const
 {
 	string const description = library.GetDescription();
 
@@ -460,15 +458,15 @@ void CFileWriter::WriteLibraryEditorData(CSystemAsset const& library, XmlNodeRef
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteFolderEditorData(CSystemAsset const& library, XmlNodeRef const pParentNode) const
+void CFileWriter::WriteFolderEditorData(CAsset const& library, XmlNodeRef const pParentNode) const
 {
 	size_t const itemCount = library.ChildCount();
 
 	for (size_t i = 0; i < itemCount; ++i)
 	{
-		CSystemAsset const* const pAsset = library.GetChild(i);
+		CAsset const* const pAsset = library.GetChild(i);
 
-		if (pAsset->GetType() == ESystemItemType::Folder)
+		if (pAsset->GetType() == EAssetType::Folder)
 		{
 			XmlNodeRef const pFolderNode = pParentNode->createNode(s_szFolderTag);
 
@@ -490,19 +488,19 @@ void CFileWriter::WriteFolderEditorData(CSystemAsset const& library, XmlNodeRef 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileWriter::WriteControlsEditorData(CSystemAsset const& parentAsset, XmlNodeRef const pParentNode) const
+void CFileWriter::WriteControlsEditorData(CAsset const& parentAsset, XmlNodeRef const pParentNode) const
 {
 	size_t const itemCount = parentAsset.ChildCount();
 
 	for (size_t i = 0; i < itemCount; ++i)
 	{
-		CSystemAsset const& asset = *parentAsset.GetChild(i);
-		ESystemItemType const type = asset.GetType();
-		string const nodeName = TypeToTag(type);
+		CAsset const& asset = *parentAsset.GetChild(i);
+		EAssetType const type = asset.GetType();
+		char const* const szTag = TypeToTag(type);
 
-		if (!nodeName.IsEmpty())
+		if (szTag != nullptr)
 		{
-			XmlNodeRef const pControlNode = pParentNode->createNode(nodeName);
+			XmlNodeRef const pControlNode = pParentNode->createNode(TypeToTag(type));
 
 			if (pControlNode != nullptr)
 			{
@@ -517,7 +515,7 @@ void CFileWriter::WriteControlsEditorData(CSystemAsset const& parentAsset, XmlNo
 			}
 		}
 
-		if ((type == ESystemItemType::Folder) || (type == ESystemItemType::Switch))
+		if ((type == EAssetType::Folder) || (type == EAssetType::Switch))
 		{
 			WriteControlsEditorData(asset, pParentNode);
 		}

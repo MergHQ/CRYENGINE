@@ -32,10 +32,10 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 		{
 			setWindowTitle(tr("Audio System Preferences"));
 
-			QVBoxLayout* const pMainLayout = new QVBoxLayout(this);
+			auto const pMainLayout = new QVBoxLayout(this);
 			setLayout(pMainLayout);
 
-			QGridLayout* const pLayout = new QGridLayout(this);
+			auto const pLayout = new QGridLayout(this);
 
 			Qt::Alignment const labelAlignment = static_cast<Qt::Alignment>(Qt::AlignLeft | Qt::AlignVCenter);
 
@@ -47,12 +47,12 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 
 			pLayout->addWidget(new QLabel(tr("Project Path") + ":"), 2, 0, labelAlignment);
 
-			QHBoxLayout* const pProjectPathLayout = new QHBoxLayout(this);
+			auto const pProjectPathLayout = new QHBoxLayout(this);
 			m_projectPath = pImplSettings->GetProjectPath();
-			QLineEdit* const pLineEdit = new QLineEdit(m_projectPath, this);
+			auto const pLineEdit = new QLineEdit(m_projectPath, this);
 			pLineEdit->setMinimumWidth(250);
 
-			QToolButton* const pBrowseButton = new QToolButton(this);
+			auto const pBrowseButton = new QToolButton(this);
 			pBrowseButton->setText("...");
 
 			if (pImplSettings->SupportsProjects())
@@ -91,7 +91,7 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 
 			pMainLayout->addLayout(pLayout);
 
-			QDialogButtonBox* const pButtons = new QDialogButtonBox(this);
+			auto const pButtons = new QDialogButtonBox(this);
 			pButtons->setStandardButtons(QDialogButtonBox::Save | QDialogButtonBox::Cancel);
 			pButtons->button(QDialogButtonBox::Save)->setEnabled(false);
 			QObject::connect(this, &CPreferencesDialog::SignalEnableSaveButton, pButtons->button(QDialogButtonBox::Save), &QPushButton::setEnabled);
@@ -105,10 +105,7 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 					  {
 					    pImplSettings->SetProjectPath(QtUtil::ToString(pLineEdit->text()));
 					    SignalImplementationSettingsAboutToChange();
-					    // clear all connections to the middleware since we are reloading everything
-					    CAudioControlsEditorPlugin::GetAssetsManager()->BackupAndClearAllConnections();
-					    g_pEditorImpl->Reload();
-					    CAudioControlsEditorPlugin::GetAssetsManager()->ReloadAllConnections();
+					    CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData | EReloadFlags::BackupConnections);
 					    SignalImplementationSettingsChanged();
 					  }
 					}

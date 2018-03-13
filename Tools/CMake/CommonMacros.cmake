@@ -184,6 +184,16 @@ MACRO(SET_PLATFORM_TARGET_PROPERTIES TargetProject)
 		endif()
 	endif()
 
+	if (OPTION_MSVC_PERMISSIVE_MINUS)
+		if(NOT MODULE_MSVC_PERMISSIVE)
+			get_target_property(is_editor_module_flags ${TargetProject} EDITOR_MODULE_FLAGS)
+			if(NOT is_editor_module_flags STREQUAL "TRUE")
+				#Enable /permissive- compile option
+				target_compile_options(${TargetProject} PRIVATE "/permissive-")
+			endif()
+		endif()
+	endif()
+
 	# Patch linker flags for recode, setup environment path for executables
 	if (OPTION_RECODE AND EXISTS RECODE_INSTALL_PATH)
 		patch_recode_linker_property(${TargetProject} LINK_FLAGS)
@@ -498,7 +508,7 @@ macro(force_static_crt)
 endmacro()
 
 macro(read_settings)
-	set(options DISABLE_MFC FORCE_STATIC FORCE_SHARED FORCE_SHARED_WIN EDITOR_COMPILE_SETTINGS)
+	set(options DISABLE_MFC FORCE_STATIC FORCE_SHARED FORCE_SHARED_WIN EDITOR_COMPILE_SETTINGS MSVC_PERMISSIVE)
 	set(oneValueArgs SOLUTION_FOLDER PCH OUTDIR)
 	set(multiValueArgs FILE_LIST INCLUDES LIBS DEFINES)
 	cmake_parse_arguments(MODULE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -867,6 +877,7 @@ macro(set_editor_module_flags)
 	target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/Sandbox/Libs/CryQt")
 	target_link_libraries(${THIS_PROJECT} PRIVATE CryQt)
 	set_property(TARGET ${THIS_PROJECT} PROPERTY EXCLUDE_FROM_DEFAULT_BUILD_RELEASE TRUE)
+	set_property(TARGET ${THIS_PROJECT} PROPERTY EDITOR_MODULE_FLAGS TRUE)
 endmacro()
 
 function(CryEditor target)

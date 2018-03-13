@@ -10141,7 +10141,7 @@ int CScriptBind_AI::GetTacticalPoints(IFunctionHandler* pH)
 	}
 
 	SmartScriptTable specTable;
-	char* sQueryName = "null";
+	const char* sQueryName = "null";
 	int queryID = 0;
 	bool bRemoveQuery = true;
 

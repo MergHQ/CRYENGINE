@@ -908,7 +908,7 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 
 		IRenderAuxText::Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, fColor, false, "e_DebugDraw = %d", GetCVars()->e_DebugDraw);
 
-		char* szMode = "";
+		const char* szMode = "";
 
 		switch (GetCVars()->e_DebugDraw)
 		{
@@ -1261,7 +1261,7 @@ void C3DEngine::PrintDebugInfo(const SRenderingPassInfo& passInfo)
 
 			if ((nKB >= GetCVars()->e_StreamCgfDebugMinObjSize && strstr(sName.c_str(), GetCVars()->e_StreamCgfDebugFilter->GetString())) || nSel)
 			{
-				char* pComment = 0;
+				const char* pComment = 0;
 
 				if (!pStatObj->m_bCanUnload)
 					pComment = "NO_STRM";
@@ -1280,7 +1280,7 @@ void C3DEngine::PrintDebugInfo(const SRenderingPassInfo& passInfo)
 					col = Col_Yellow;
 				ColorF fColor(col[0] / 255.f, col[1] / 255.f, col[2] / 255.f, col[3] / 255.f);
 
-				char* pStatusText = "Unload";
+				const char* pStatusText = "Unload";
 				if (pStatObj->m_eStreamingStatus == ecss_Ready)
 					pStatusText = "Ready ";
 				else if (pStatObj->m_eStreamingStatus == ecss_InProgress)

@@ -2,10 +2,9 @@
 
 #pragma once
 
-#include "ImplItem.h"
+#include "Item.h"
 
 #include <CrySystem/XML/IXml.h>
-#include <SystemTypes.h>
 
 namespace ACE
 {
@@ -17,40 +16,42 @@ class CProjectLoader final
 {
 public:
 
-	CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& rootItem, ItemCache& itemCache, CEditorImpl& editorImpl);
+	explicit CProjectLoader(string const& projectPath, string const& soundbanksPath, CItem& rootItem, ItemCache& itemCache, CEditorImpl& editorImpl);
+
+	CProjectLoader() = delete;
 
 private:
 
-	CImplItem* CreateItem(string const& name, EImplItemType const type, CImplItem* const pParent, string const& filePath = "");
+	CItem* CreateItem(string const& name, EItemType const type, CItem* const pParent, string const& filePath = "");
 
-	void       LoadBanks(string const& folderPath, bool const isLocalized, CImplItem& parent);
-	void       ParseFolder(string const& folderPath, CImplItem& editorFolder, CImplItem& parent);
-	void       ParseFile(string const& filepath, CImplItem& parent);
-	void       RemoveEmptyMixerGroups();
-	void       RemoveEmptyEditorFolders(CImplItem* const pEditorFolder);
+	void   LoadBanks(string const& folderPath, bool const isLocalized, CItem& parent);
+	void   ParseFolder(string const& folderPath, CItem& editorFolder, CItem& parent);
+	void   ParseFile(string const& filepath, CItem& parent);
+	void   RemoveEmptyMixerGroups();
+	void   RemoveEmptyEditorFolders(CItem* const pEditorFolder);
 
-	CImplItem* GetContainer(string const& id, EImplItemType const type, CImplItem& parent);
-	CImplItem* LoadContainer(XmlNodeRef const pNode, EImplItemType const type, string const& relationshipParamName, CImplItem& parent);
-	CImplItem* LoadSnapshotGroup(XmlNodeRef const pNode, CImplItem& parent);
-	CImplItem* LoadFolder(XmlNodeRef const pNode, CImplItem& parent);
-	CImplItem* LoadMixerGroup(XmlNodeRef const pNode, CImplItem& parent);
+	CItem* GetContainer(string const& id, EItemType const type, CItem& parent);
+	CItem* LoadContainer(XmlNodeRef const pNode, EItemType const type, string const& relationshipParamName, CItem& parent);
+	CItem* LoadSnapshotGroup(XmlNodeRef const pNode, CItem& parent);
+	CItem* LoadFolder(XmlNodeRef const pNode, CItem& parent);
+	CItem* LoadMixerGroup(XmlNodeRef const pNode, CItem& parent);
 
-	CImplItem* LoadItem(XmlNodeRef const pNode, EImplItemType const type, CImplItem& parent);
-	CImplItem* LoadEvent(XmlNodeRef const pNode, CImplItem& parent);
-	CImplItem* LoadSnapshot(XmlNodeRef const pNode, CImplItem& parent);
-	CImplItem* LoadReturn(XmlNodeRef const pNode, CImplItem& parent);
-	CImplItem* LoadParameter(XmlNodeRef const pNode, CImplItem& parent);
-	CImplItem* LoadVca(XmlNodeRef const pNode, CImplItem& parent);
+	CItem* LoadItem(XmlNodeRef const pNode, EItemType const type, CItem& parent);
+	CItem* LoadEvent(XmlNodeRef const pNode, CItem& parent);
+	CItem* LoadSnapshot(XmlNodeRef const pNode, CItem& parent);
+	CItem* LoadReturn(XmlNodeRef const pNode, CItem& parent);
+	CItem* LoadParameter(XmlNodeRef const pNode, CItem& parent);
+	CItem* LoadVca(XmlNodeRef const pNode, CItem& parent);
 
-	using ItemIds = std::map<string, CImplItem*>;
+	using ItemIds = std::map<string, CItem*>;
 
-	CEditorImpl&            m_editorImpl;
-	CImplItem&              m_rootItem;
-	ItemCache&              m_itemCache;
-	ItemIds                 m_containerIds;
-	ItemIds                 m_snapshotGroupItems;
-	std::vector<CImplItem*> m_emptyMixerGroups;
-	string const            m_projectPath;
+	CEditorImpl&        m_editorImpl;
+	CItem&              m_rootItem;
+	ItemCache&          m_itemCache;
+	ItemIds             m_containerIds;
+	ItemIds             m_snapshotGroupItems;
+	std::vector<CItem*> m_emptyMixerGroups;
+	string const        m_projectPath;
 };
 } // namespace Fmod
 } // namespace ACE

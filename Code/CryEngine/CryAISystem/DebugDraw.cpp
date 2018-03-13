@@ -531,7 +531,7 @@ void CAISystem::DebugDrawDamageControlGraph() const
 			}
 	#endif
 
-			char* szZone = "";
+			const char* szZone = "";
 			switch (pPuppet->m_targetZone)
 			{
 			case AIZONE_OUT:
@@ -2867,7 +2867,7 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 				dc->DrawLine(pos2, ColorB(255, 255, 255, 128), targetSilhouette.center + pPuppet->m_targetBiasDirection, ColorB(255, 255, 255, 128));
 			}
 
-			char* szZone = "";
+			const char* szZone = "";
 			switch (pPuppet->m_targetZone)
 			{
 			case AIZONE_OUT:

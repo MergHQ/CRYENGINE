@@ -1101,7 +1101,7 @@ _smart_ptr<IImageFile> CRenderer::EF_LoadImage(const char* szFileName, uint32 nF
 	return CImageFile::mfLoad_file(szFileName, nFlags);
 }
 
-bool CRenderer::EF_RenderEnvironmentCubeHDR (int size, Vec3& Pos, TArray<unsigned short>& vecData)
+bool CRenderer::EF_RenderEnvironmentCubeHDR (int size, const Vec3& Pos, TArray<unsigned short>& vecData)
 {
 	return CTexture::RenderEnvironmentCMHDR(size, Pos, vecData);
 }
@@ -1357,7 +1357,7 @@ void CRenderer::Logv(const char* format, ...)
 	}
 }
 
-void CRenderer::LogStrv(char* format, ...)
+void CRenderer::LogStrv(const char* format, ...)
 {
 	va_list argptr;
 
@@ -1369,7 +1369,7 @@ void CRenderer::LogStrv(char* format, ...)
 	}
 }
 
-void CRenderer::LogShv(char* format, ...)
+void CRenderer::LogShv(const char* format, ...)
 {
 	va_list argptr;
 
@@ -1382,7 +1382,7 @@ void CRenderer::LogShv(char* format, ...)
 	}
 }
 
-void CRenderer::Log(char* str)
+void CRenderer::Log(const char* str)
 {
 	if (m_LogFile)
 	{

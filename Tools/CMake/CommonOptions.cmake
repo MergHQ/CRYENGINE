@@ -37,4 +37,9 @@ if (MSVC_VERSION)
 option(OPTION_SHOW_COMPILE_METRICS "Show MSVC compilation metrics" OFF)
 endif()
 
+if (MSVC_VERSION GREATER 1900) # Visual Studio > 2017
+	option(OPTION_MSVC_PERMISSIVE_MINUS "Enable Visual Studio C++ /permissive- compile option for the standards-conforming compiler behavior" ON)
+endif()
+
+
 option(OPTION_RELEASE_PROFILING "Enable basic profiling in Release builds" OFF)

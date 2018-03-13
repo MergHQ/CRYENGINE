@@ -37,7 +37,7 @@
 
 #define eCryM_Num 30
 
-static wchar_t* g_moduleNames[] =
+static const wchar_t* g_moduleNames[] =
 {
 	L"",
 	L"Cry3DEngine",

@@ -2846,7 +2846,7 @@ struct phys_job_info
 	int   nFallbacks;
 	int64 nTicks, nLatency, nLatencyAbs;
 	int64 nTicksPeak, nLatencyPeak, nLatencyAbsPeak, peakAge;
-	char* pName;
+	const char* pName;
 };
 
 struct SolverSettings
