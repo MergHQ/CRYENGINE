@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 
@@ -12,14 +12,11 @@
 
 namespace ACE
 {
-dll_string ShowSelectDialog(SResourceSelectorContext const& context, char const* szPreviousValue, ESystemItemType const controlType)
+dll_string ShowSelectDialog(SResourceSelectorContext const& context, char const* szPreviousValue, EAssetType const controlType)
 {
-	CSystemAssetsManager const* const pAssetsManager = CAudioControlsEditorPlugin::GetAssetsManager();
-	CRY_ASSERT_MESSAGE(pAssetsManager != nullptr, "Assets manager is null pointer.");
-
 	char* szLevelName;
 	gEnv->pGameFramework->GetEditorLevel(&szLevelName, nullptr);
-	CResourceSelectorDialog dialog(controlType, pAssetsManager->GetScope(szLevelName), context.parentWidget);
+	CResourceSelectorDialog dialog(controlType, g_assetsManager.GetScope(szLevelName), context.parentWidget);
 	dialog.setModal(true);
 
 	return dialog.ChooseItem(szPreviousValue);
@@ -27,32 +24,32 @@ dll_string ShowSelectDialog(SResourceSelectorContext const& context, char const*
 
 dll_string AudioTriggerSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
 {
-	return ShowSelectDialog(context, szPreviousValue, ESystemItemType::Trigger);
+	return ShowSelectDialog(context, szPreviousValue, EAssetType::Trigger);
 }
 
-dll_string AudioSwitchSelector(SResourceSelectorContext const& context, char const* const  szPreviousValue)
+dll_string AudioSwitchSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
 {
-	return ShowSelectDialog(context, szPreviousValue, ESystemItemType::Switch);
+	return ShowSelectDialog(context, szPreviousValue, EAssetType::Switch);
 }
 
-dll_string AudioSwitchStateSelector(SResourceSelectorContext const& context, char const* const  szPreviousValue)
+dll_string AudioSwitchStateSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
 {
-	return ShowSelectDialog(context, szPreviousValue, ESystemItemType::State);
+	return ShowSelectDialog(context, szPreviousValue, EAssetType::State);
 }
 
-dll_string AudioParameterSelector(SResourceSelectorContext const& context, char const* const  szPreviousValue)
+dll_string AudioParameterSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
 {
-	return ShowSelectDialog(context, szPreviousValue, ESystemItemType::Parameter);
+	return ShowSelectDialog(context, szPreviousValue, EAssetType::Parameter);
 }
 
-dll_string AudioEnvironmentSelector(SResourceSelectorContext const& context, char const* const  szPreviousValue)
+dll_string AudioEnvironmentSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
 {
-	return ShowSelectDialog(context, szPreviousValue, ESystemItemType::Environment);
+	return ShowSelectDialog(context, szPreviousValue, EAssetType::Environment);
 }
 
-dll_string AudioPreloadRequestSelector(SResourceSelectorContext const& context, char const* const  szPreviousValue)
+dll_string AudioPreloadRequestSelector(SResourceSelectorContext const& context, char const* const szPreviousValue)
 {
-	return ShowSelectDialog(context, szPreviousValue, ESystemItemType::Preload);
+	return ShowSelectDialog(context, szPreviousValue, EAssetType::Preload);
 }
 
 REGISTER_RESOURCE_SELECTOR("AudioTrigger", AudioTriggerSelector, "")

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -8,18 +8,18 @@ namespace Impl
 {
 namespace PortAudio
 {
-static constexpr char* s_szImplFolderName = "portaudio";
+static constexpr char const* s_szImplFolderName = "portaudio";
 
 // XML tags
-static constexpr char* s_szFileTag = "Sample";
+static constexpr char const* s_szFileTag = "Sample";
 
 // XML attributes
-static constexpr char* s_szPathAttribute = "path";
-static constexpr char* s_szLoopCountAttribute = "loop_count";
+static constexpr char const* s_szPathAttribute = "path";
+static constexpr char const* s_szLoopCountAttribute = "loop_count";
 
 // XML values
-static constexpr char* s_szStartValue = "start";
-static constexpr char* s_szStopValue = "stop";
+static constexpr char const* s_szStartValue = "start";
+static constexpr char const* s_szStopValue = "stop";
 } // namespace PortAudio
 } // namespace Impl
 } // namespace CryAudio

@@ -1,9 +1,9 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
 #include <QWidget>
-#include <SystemTypes.h>
+#include <SharedData.h>
 
 class QPropertyTree;
 class QLabel;
@@ -12,8 +12,7 @@ class QString;
 namespace ACE
 {
 class CConnectionsWidget;
-class CSystemAssetsManager;
-class CSystemAsset;
+class CAsset;
 
 class CPropertiesWidget final : public QWidget
 {
@@ -21,30 +20,31 @@ class CPropertiesWidget final : public QWidget
 
 public:
 
-	explicit CPropertiesWidget(CSystemAssetsManager* const pAssetsManager, QWidget* const pParent);
+	explicit CPropertiesWidget(QWidget* const pParent);
 	virtual ~CPropertiesWidget() override;
 
-	void Reload();
+	CPropertiesWidget() = delete;
+
+	void Reset();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
 
 signals:
 
-	void SignalSelectConnectedImplItem(CID const itemId);
+	void SignalSelectConnectedImplItem(ControlId const itemId);
 
 public slots:
 
-	void OnSetSelectedAssets(std::vector<CSystemAsset*> const& selectedAssets, bool const restoreSelection);
+	void OnSetSelectedAssets(std::vector<CAsset*> const& selectedAssets, bool const restoreSelection);
 
 private:
 
 	void RevertPropertyTree();
 
-	CSystemAssetsManager* const m_pAssetsManager;
-	CConnectionsWidget* const   m_pConnectionsWidget;
-	QPropertyTree* const        m_pPropertyTree;
-	QLabel*                     m_pConnectionsLabel;
-	std::unique_ptr<QString>    m_pUsageHint;
-	bool                        m_supressUpdates = false;
+	CConnectionsWidget* const m_pConnectionsWidget;
+	QPropertyTree* const      m_pPropertyTree;
+	QLabel*                   m_pConnectionsLabel;
+	std::unique_ptr<QString>  m_pUsageHint;
+	bool                      m_suppressUpdates;
 };
 } // namespace ACE

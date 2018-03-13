@@ -2,10 +2,9 @@
 
 #pragma once
 
-#include "ImplItem.h"
+#include "Item.h"
 
 #include <CrySystem/XML/IXml.h>
-#include <SystemTypes.h>
 
 namespace ACE
 {
@@ -15,18 +14,20 @@ class CProjectLoader final
 {
 public:
 
-	CProjectLoader(string const& projectPath, string const& soundbanksPath, CImplItem& rootItem, ItemCache& itemCache);
+	explicit CProjectLoader(string const& projectPath, string const& soundbanksPath, CItem& rootItem, ItemCache& itemCache);
+
+	CProjectLoader() = delete;
 
 private:
 
-	void       LoadSoundBanks(string const& folderPath, bool const isLocalized, CImplItem& parent);
-	void       LoadFolder(string const& folderPath, string const& folderName, CImplItem& parent);
-	void       LoadWorkUnitFile(string const& filePath, CImplItem& parent);
-	void       LoadXml(XmlNodeRef const root, CImplItem& parent);
-	CImplItem* CreateItem(string const& name, EImpltemType const type, CImplItem& pParent);
-	void       LoadEventsMetadata(string const& soundbanksPath);
+	void   LoadSoundBanks(string const& folderPath, bool const isLocalized, CItem& parent);
+	void   LoadFolder(string const& folderPath, string const& folderName, CItem& parent);
+	void   LoadWorkUnitFile(string const& filePath, CItem& parent);
+	void   LoadXml(XmlNodeRef const root, CItem& parent);
+	CItem* CreateItem(string const& name, EItemType const type, CItem& pParent);
+	void   LoadEventsMetadata(string const& soundbanksPath);
 
-	void       BuildFileCache(string const& folderPath);
+	void   BuildFileCache(string const& folderPath);
 
 private:
 
@@ -37,10 +38,10 @@ private:
 
 	using EventsInfoMap = std::map<uint32, SEventInfo>;
 	using FilesCache = std::map<uint32, string>;
-	using Items = std::map<uint32, CImplItem*>;
+	using Items = std::map<uint32, CItem*>;
 
 	EventsInfoMap m_eventsInfoMap;
-	CImplItem&    m_rootItem;
+	CItem&        m_rootItem;
 	ItemCache&    m_itemCache;
 	string const  m_projectPath;
 

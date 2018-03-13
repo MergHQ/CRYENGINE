@@ -27,12 +27,14 @@ public:
 	{
 		Id = Qt::UserRole + 1,
 		Name,
-		ItemType,
+		SortPriority,
 		IsPlaceholder,
 	};
 
-	CMiddlewareDataModel(QObject* const pParent);
+	explicit CMiddlewareDataModel(QObject* const pParent);
 	virtual ~CMiddlewareDataModel() override;
+
+	CMiddlewareDataModel() = delete;
 
 	static CItemModelAttribute* GetAttributeForColumn(EColumns const column);
 	static QVariant             GetHeaderData(int const section, Qt::Orientation const orientation, int const role);
@@ -59,14 +61,16 @@ private:
 
 	void        ConnectSignals();
 	IImplItem*  ItemFromIndex(QModelIndex const& index) const;
-	QModelIndex IndexFromItem(IImplItem const* const pImplItem) const;
+	QModelIndex IndexFromItem(IImplItem const* const pIImplItem) const;
 };
 
 class CMiddlewareFilterProxyModel final : public QAttributeFilterProxyModel
 {
 public:
 
-	CMiddlewareFilterProxyModel(QObject* const pParent);
+	explicit CMiddlewareFilterProxyModel(QObject* const pParent);
+
+	CMiddlewareFilterProxyModel() = delete;
 
 protected:
 

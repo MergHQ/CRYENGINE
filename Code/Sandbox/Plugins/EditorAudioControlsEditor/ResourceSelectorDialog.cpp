@@ -5,7 +5,6 @@
 
 #include "ResourceSelectorModel.h"
 #include "AudioControlsEditorPlugin.h"
-#include "SystemAssetsManager.h"
 #include "TreeView.h"
 
 #include <QtUtil.h>
@@ -24,16 +23,15 @@
 namespace ACE
 {
 string CResourceSelectorDialog::s_previousControlName = "";
-ESystemItemType CResourceSelectorDialog::s_previousControlType = ESystemItemType::Invalid;
+EAssetType CResourceSelectorDialog::s_previousControlType = EAssetType::None;
 
 //////////////////////////////////////////////////////////////////////////
-CResourceSelectorDialog::CResourceSelectorDialog(ESystemItemType const type, Scope const scope, QWidget* const pParent)
+CResourceSelectorDialog::CResourceSelectorDialog(EAssetType const type, Scope const scope, QWidget* const pParent)
 	: CEditorDialog("AudioControlsResourceSelectorDialog", pParent)
 	, m_type(type)
 	, m_scope(scope)
-	, m_pAssetsManager(CAudioControlsEditorPlugin::GetAssetsManager())
 	, m_pFilterProxyModel(new CResourceFilterProxyModel(m_type, m_scope, this))
-	, m_pSourceModel(new CResourceSourceModel(m_pAssetsManager, this))
+	, m_pSourceModel(new CResourceSourceModel(this))
 	, m_pTreeView(new CTreeView(this, QAdvancedTreeView::Behavior::None))
 	, m_pSearchBox(new QSearchBox(this))
 	, m_pDialogButtons(new QDialogButtonBox(this))
@@ -64,7 +62,7 @@ CResourceSelectorDialog::CResourceSelectorDialog(ESystemItemType const type, Sco
 	m_pDialogButtons->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 	m_pDialogButtons->button(QDialogButtonBox::Ok)->setEnabled(false);
 
-	QVBoxLayout* const pWindowLayout = new QVBoxLayout(this);
+	auto const pWindowLayout = new QVBoxLayout(this);
 	setLayout(pWindowLayout);
 	pWindowLayout->addWidget(m_pSearchBox);
 	pWindowLayout->addWidget(m_pTreeView);
@@ -115,7 +113,7 @@ QAbstractItemModel* CResourceSelectorDialog::CreateLibraryModelFromIndex(QModelI
 	if (sourceIndex.model() == m_pSourceModel)
 	{
 		size_t const numLibraries = m_libraryModels.size();
-		size_t const row = static_cast<size_t>(sourceIndex.row());
+		auto const row = static_cast<size_t>(sourceIndex.row());
 
 		if (row >= numLibraries)
 		{
@@ -123,7 +121,7 @@ QAbstractItemModel* CResourceSelectorDialog::CreateLibraryModelFromIndex(QModelI
 
 			for (size_t i = numLibraries; i < row + 1; ++i)
 			{
-				m_libraryModels[i] = new CResourceLibraryModel(m_pAssetsManager, m_pAssetsManager->GetLibrary(i), this);
+				m_libraryModels[i] = new CResourceLibraryModel(g_assetsManager.GetLibrary(i), this);
 			}
 		}
 
@@ -165,22 +163,19 @@ char const* CResourceSelectorDialog::ChooseItem(char const* szCurrentValue)
 //////////////////////////////////////////////////////////////////////////
 void CResourceSelectorDialog::OnUpdateSelectedControl()
 {
-	if (m_pAssetsManager != nullptr)
+	QModelIndex const& index = m_pTreeView->currentIndex();
+
+	if (index.isValid())
 	{
-		QModelIndex const& index = m_pTreeView->currentIndex();
+		CAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(index, 0);
+		m_selectionIsValid = ((pAsset != nullptr) && (pAsset->GetType() == m_type));
 
-		if (index.isValid())
+		if (m_selectionIsValid)
 		{
-			CSystemAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(index, 0);
-			m_selectionIsValid = ((pAsset != nullptr) && (pAsset->GetType() == m_type));
-
-			if (m_selectionIsValid)
-			{
-				s_previousControlName = pAsset->GetName();
-			}
-
-			m_pDialogButtons->button(QDialogButtonBox::Ok)->setEnabled(m_selectionIsValid);
+			s_previousControlName = pAsset->GetName();
 		}
+
+		m_pDialogButtons->button(QDialogButtonBox::Ok)->setEnabled(m_selectionIsValid);
 	}
 }
 
@@ -193,11 +188,11 @@ QModelIndex CResourceSelectorDialog::FindItem(string const& sControlName)
 
 	if (!matches.empty())
 	{
-		CSystemAsset* const pAsset = SystemModelUtils::GetAssetFromIndex(matches[0], 0);
+		CAsset* const pAsset = SystemModelUtils::GetAssetFromIndex(matches[0], 0);
 
 		if (pAsset != nullptr)
 		{
-			CSystemControl const* const pControl = static_cast<CSystemControl*>(pAsset);
+			CControl const* const pControl = static_cast<CControl*>(pAsset);
 
 			if (pControl != nullptr)
 			{
@@ -229,9 +224,9 @@ bool CResourceSelectorDialog::eventFilter(QObject* pObject, QEvent* pEvent)
 
 			if (index.isValid())
 			{
-				CSystemAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(index, 0);
+				CAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(index, 0);
 
-				if ((pAsset != nullptr) && (pAsset->GetType() == ESystemItemType::Trigger))
+				if ((pAsset != nullptr) && (pAsset->GetType() == EAssetType::Trigger))
 				{
 					CAudioControlsEditorPlugin::ExecuteTrigger(pAsset->GetName());
 					isEvent = true;
@@ -259,7 +254,7 @@ void CResourceSelectorDialog::OnItemDoubleClicked(QModelIndex const& modelIndex)
 {
 	if (m_selectionIsValid)
 	{
-		CSystemAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(modelIndex, 0);
+		CAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(modelIndex, 0);
 
 		if ((pAsset != nullptr) && (pAsset->GetType() == m_type))
 		{
@@ -277,9 +272,9 @@ void CResourceSelectorDialog::OnContextMenu(QPoint const& pos)
 
 	if (index.isValid())
 	{
-		CSystemAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(index, 0);
+		CAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(index, 0);
 
-		if ((pAsset != nullptr) && (pAsset->GetType() == ESystemItemType::Trigger))
+		if ((pAsset != nullptr) && (pAsset->GetType() == EAssetType::Trigger))
 		{
 			pContextMenu->addAction(tr("Execute Trigger"), [=]()
 				{

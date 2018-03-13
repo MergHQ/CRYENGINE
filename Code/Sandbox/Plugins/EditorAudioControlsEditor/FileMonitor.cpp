@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "FileMonitor.h"
 
-#include "SystemAssetsManager.h"
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 
@@ -13,9 +12,8 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CFileMonitor::CFileMonitor(int const delay, CSystemAssetsManager const& assetsManager, QObject* const pParent)
+CFileMonitor::CFileMonitor(int const delay, QObject* const pParent)
 	: QTimer(pParent)
-	, m_assetsManager(assetsManager)
 	, m_delay(delay)
 {
 	setSingleShot(true);
@@ -43,8 +41,8 @@ void CFileMonitor::Disable()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileMonitorSystem::CFileMonitorSystem(int const delay, CSystemAssetsManager const& assetsManager, QObject* const pParent)
-	: CFileMonitor(delay, assetsManager, pParent)
+CFileMonitorSystem::CFileMonitorSystem(int const delay, QObject* const pParent)
+	: CFileMonitor(delay, pParent)
 	, m_delayTimer(new QTimer(this))
 {
 	m_delayTimer->setSingleShot(true);
@@ -55,7 +53,7 @@ CFileMonitorSystem::CFileMonitorSystem(int const delay, CSystemAssetsManager con
 //////////////////////////////////////////////////////////////////////////
 void CFileMonitorSystem::Enable()
 {
-	m_monitorFolder = m_assetsManager.GetConfigFolderPath();
+	m_monitorFolder = g_assetsManager.GetConfigFolderPath();
 	GetIEditor()->GetFileMonitor()->RegisterListener(this, m_monitorFolder, "xml");
 }
 
@@ -66,8 +64,8 @@ void CFileMonitorSystem::EnableDelayed()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileMonitorMiddleware::CFileMonitorMiddleware(int const delay, CSystemAssetsManager const& assetsManager, QObject* const pParent)
-	: CFileMonitor(delay, assetsManager, pParent)
+CFileMonitorMiddleware::CFileMonitorMiddleware(int const delay, QObject* const pParent)
+	: CFileMonitor(delay, pParent)
 {
 	Enable();
 }
@@ -85,12 +83,12 @@ void CFileMonitorMiddleware::Enable()
 			m_monitorFolders.clear();
 			GetIEditor()->GetFileMonitor()->UnregisterListener(this);
 
-			m_monitorFolders.emplace_back(pImplSettings->GetAssetsPath());
-			m_monitorFolders.emplace_back(PathUtil::GetLocalizationFolder().c_str());
+			m_monitorFolders.push_back(pImplSettings->GetAssetsPath());
+			m_monitorFolders.push_back(PathUtil::GetLocalizationFolder().c_str());
 
 			if (pImplSettings->SupportsProjects())
 			{
-				m_monitorFolders.emplace_back(pImplSettings->GetProjectPath());
+				m_monitorFolders.push_back(pImplSettings->GetProjectPath());
 			}
 
 			for (auto const& folder : m_monitorFolders)

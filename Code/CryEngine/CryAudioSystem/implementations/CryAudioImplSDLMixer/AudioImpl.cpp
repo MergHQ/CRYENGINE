@@ -5,7 +5,6 @@
 #include "AudioImplCVars.h"
 #include "SoundEngineUtil.h"
 #include "SoundEngineTypes.h"
-#include "GlobalData.h"
 #include <Logger.h>
 #include <CrySystem/File/CryFile.h>
 #include <CryAudio/IAudioSystem.h>
@@ -378,11 +377,11 @@ ITrigger const* CImpl::ConstructTrigger(XmlNodeRef const pRootNode)
 			// Max to -1 to stay backwards compatible.
 			numLoops = std::max(-1, numLoops);
 
-			float fadeInTimeSec = 0.0f;
+			float fadeInTimeSec = s_defaultFadeInTime;
 			pRootNode->getAttr(s_szFadeInTimeAttribute, fadeInTimeSec);
 			auto const fadeInTimeMs = static_cast<int>(fadeInTimeSec * 1000.0f);
 
-			float fadeOutTimeSec = 0.0f;
+			float fadeOutTimeSec = s_defaultFadeOutTime;
 			pRootNode->getAttr(s_szFadeOutTimeAttribute, fadeOutTimeSec);
 			auto const fadeOutTimeMs = static_cast<int>(fadeOutTimeSec * 1000.0f);
 
@@ -424,8 +423,8 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 		string const fullFilePath = GetFullFilePath(szFileName, szPath);
 		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true);
 
-		float multiplier = 1.0f;
-		float shift = 0.0f;
+		float multiplier = s_defaultParamMultiplier;
+		float shift = s_defaultParamShift;
 		pRootNode->getAttr(s_szMutiplierAttribute, multiplier);
 		multiplier = std::max(0.0f, multiplier);
 		pRootNode->getAttr(s_szShiftAttribute, shift);
@@ -454,7 +453,7 @@ ISwitchState const* CImpl::ConstructSwitchState(XmlNodeRef const pRootNode)
 		string const fullFilePath = GetFullFilePath(szFileName, szPath);
 		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true);
 
-		float value = 0.0f;
+		float value = s_defaultStateValue;
 		pRootNode->getAttr(s_szValueAttribute, value);
 		value = crymath::clamp(value, 0.0f, 1.0f);
 

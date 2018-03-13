@@ -4,8 +4,6 @@
 #include "AudioControlsLoader.h"
 
 #include "FileLoader.h"
-#include "SystemAssetsManager.h"
-#include "SystemControlsModel.h"
 #include "AudioControlsEditorPlugin.h"
 
 #include <CryString/StringUtils.h>
@@ -25,46 +23,45 @@ string const CAudioControlsLoader::s_controlsLevelsFolder = "levels/";
 string const CAudioControlsLoader::s_assetsFolderPath = AUDIO_SYSTEM_DATA_ROOT "/ace/";
 
 //////////////////////////////////////////////////////////////////////////
-ESystemItemType TagToType_BackwardsComp(string const& tag)
+EAssetType TagToType_BackwardsComp(char const* const szTag)
 {
-	ESystemItemType type;
+	EAssetType type = EAssetType::None;
 
-	if (tag == "ATLSwitch")
+	if (_stricmp(szTag, "ATLSwitch") == 0)
 	{
-		type = ESystemItemType::Switch;
+		type = EAssetType::Switch;
 	}
-	else if (tag == "ATLSwitchState")
+	else if (_stricmp(szTag, "ATLSwitchState") == 0)
 	{
-		type = ESystemItemType::State;
+		type = EAssetType::State;
 	}
-	else if (tag == "ATLEnvironment")
+	else if (_stricmp(szTag, "ATLEnvironment") == 0)
 	{
-		type = ESystemItemType::Environment;
+		type = EAssetType::Environment;
 	}
-	else if (tag == "ATLRtpc")
+	else if (_stricmp(szTag, "ATLRtpc") == 0)
 	{
-		type = ESystemItemType::Parameter;
+		type = EAssetType::Parameter;
 	}
-	else if (tag == "ATLTrigger")
+	else if (_stricmp(szTag, "ATLTrigger") == 0)
 	{
-		type = ESystemItemType::Trigger;
+		type = EAssetType::Trigger;
 	}
-	else if (tag == "ATLPreloadRequest")
+	else if (_stricmp(szTag, "ATLPreloadRequest") == 0)
 	{
-		type = ESystemItemType::Preload;
+		type = EAssetType::Preload;
 	}
 	else
 	{
-		type = ESystemItemType::Invalid;
+		type = EAssetType::None;
 	}
 
 	return type;
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAudioControlsLoader::CAudioControlsLoader(CSystemAssetsManager* const pAssetsManager)
-	: m_pAssetsManager(pAssetsManager)
-	, m_errorCodeMask(EErrorCode::NoError)
+CAudioControlsLoader::CAudioControlsLoader()
+	: m_errorCodeMask(EErrorCode::None)
 	, m_loadOnlyDefaultControls(false)
 {}
 
@@ -74,7 +71,7 @@ void CAudioControlsLoader::LoadAll(bool const loadOnlyDefaultControls /*= false*
 	m_loadOnlyDefaultControls = loadOnlyDefaultControls;
 	LoadScopes();
 	LoadControls(s_assetsFolderPath);
-	LoadControls(m_pAssetsManager->GetConfigFolderPath());
+	LoadControls(g_assetsManager.GetConfigFolderPath());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -100,12 +97,12 @@ void CAudioControlsLoader::LoadControls(string const& folderPath)
 				{
 					LoadAllLibrariesInFolder(folderPath, name);
 
-					if (!m_pAssetsManager->ScopeExists(fd.name))
+					if (!g_assetsManager.ScopeExists(fd.name))
 					{
 						// if the control doesn't exist it
 						// means it is not a real level in the
 						// project so it is flagged as LocalOnly
-						m_pAssetsManager->AddScope(fd.name, true);
+						g_assetsManager.AddScope(fd.name, true);
 					}
 				}
 			}
@@ -170,7 +167,7 @@ void CAudioControlsLoader::LoadAllLibrariesInFolder(string const& folderPath, st
 }
 
 //////////////////////////////////////////////////////////////////////////
-CSystemAsset* CAudioControlsLoader::AddUniqueFolderPath(CSystemAsset* pParent, QString const& path)
+CAsset* CAudioControlsLoader::AddUniqueFolderPath(CAsset* pParent, QString const& path)
 {
 	QStringList folderNames = path.split(QRegularExpression(R"((\\|\/))"), QString::SkipEmptyParts);
 
@@ -180,7 +177,7 @@ CSystemAsset* CAudioControlsLoader::AddUniqueFolderPath(CSystemAsset* pParent, Q
 	{
 		if (!folderNames[i].isEmpty())
 		{
-			CSystemAsset* const pChild = m_pAssetsManager->CreateFolder(QtUtil::ToString(folderNames[i]), pParent);
+			CAsset* const pChild = g_assetsManager.CreateFolder(QtUtil::ToString(folderNames[i]), pParent);
 
 			if (pChild != nullptr)
 			{
@@ -196,7 +193,7 @@ CSystemAsset* CAudioControlsLoader::AddUniqueFolderPath(CSystemAsset* pParent, Q
 void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint32 const version)
 {
 	// Always create a library file, even if no proper formatting is present.
-	CSystemLibrary* const pLibrary = m_pAssetsManager->CreateLibrary(filename);
+	CLibrary* const pLibrary = g_assetsManager.CreateLibrary(filename);
 
 	if (pLibrary != nullptr)
 	{
@@ -214,7 +211,7 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string co
 				}
 				else
 				{
-					Scope const scope = level.empty() ? Utils::GetGlobalScope() : m_pAssetsManager->GetScope(level);
+					Scope const scope = level.empty() ? Utils::GetGlobalScope() : g_assetsManager.GetScope(level);
 					int const numControls = pNode->getChildCount();
 
 					for (int j = 0; j < numControls; ++j)
@@ -235,9 +232,9 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string co
 }
 
 //////////////////////////////////////////////////////////////////////////
-CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, uint32 const version, CSystemAsset* const pParentItem)
+CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, uint32 const version, CAsset* const pParentItem)
 {
-	CSystemControl* pControl = nullptr;
+	CControl* pControl = nullptr;
 
 	if (pNode != nullptr)
 	{
@@ -249,31 +246,31 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 			pathName = QtUtil::ToQString(pNode->getAttr("path"));
 		}
 
-		CSystemAsset* const pFolderItem = AddUniqueFolderPath(pParentItem, pathName);
+		CAsset* const pFolderItem = AddUniqueFolderPath(pParentItem, pathName);
 
 		if (pFolderItem != nullptr)
 		{
 			string const name = pNode->getAttr("atl_name");
-			ESystemItemType const controlType = TagToType_BackwardsComp(pNode->getTag());
+			EAssetType const controlType = TagToType_BackwardsComp(pNode->getTag());
 
-			if (!((controlType == ESystemItemType::Switch) && ((name == "ObstrOcclCalcType") ||
-			                                                   (name == "object_velocity_tracking") ||
-			                                                   (name == "object_doppler_tracking") ||
-			                                                   (name == CryAudio::s_szAbsoluteVelocityTrackingSwitchName) ||
-			                                                   (name == CryAudio::s_szRelativeVelocityTrackingSwitchName))) &&
-			    !((controlType == ESystemItemType::Trigger) && (name == CryAudio::s_szDoNothingTriggerName)))
+			if (!((controlType == EAssetType::Switch) && ((name == "ObstrOcclCalcType") ||
+			                                              (name == "object_velocity_tracking") ||
+			                                              (name == "object_doppler_tracking") ||
+			                                              (name == CryAudio::s_szAbsoluteVelocityTrackingSwitchName) ||
+			                                              (name == CryAudio::s_szRelativeVelocityTrackingSwitchName))) &&
+			    !((controlType == EAssetType::Trigger) && (name == CryAudio::s_szDoNothingTriggerName)))
 			{
-				pControl = m_pAssetsManager->FindControl(name, controlType);
+				pControl = g_assetsManager.FindControl(name, controlType);
 
 				if (pControl == nullptr)
 				{
-					pControl = m_pAssetsManager->CreateControl(name, controlType, pFolderItem);
+					pControl = g_assetsManager.CreateControl(name, controlType, pFolderItem);
 
 					if (pControl != nullptr)
 					{
 						switch (controlType)
 						{
-						case ESystemItemType::Trigger:
+						case EAssetType::Trigger:
 							{
 								float radius = 0.0f;
 								pNode->getAttr("atl_radius", radius);
@@ -281,7 +278,7 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 								LoadConnections(pNode, pControl);
 							}
 							break;
-						case ESystemItemType::Switch:
+						case EAssetType::Switch:
 							{
 								int const stateCount = pNode->getChildCount();
 
@@ -291,7 +288,7 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 								}
 							}
 							break;
-						case ESystemItemType::Preload:
+						case EAssetType::Preload:
 							LoadPreloadConnections(pNode, pControl, version);
 							break;
 						default:
@@ -305,10 +302,10 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 				}
 
 				if (isInDefaultLibrary &&
-				    (!((controlType == ESystemItemType::Trigger) && (m_defaultTriggerNames.find(name) != m_defaultTriggerNames.end())) &&
-				     !((controlType == ESystemItemType::Parameter) && (m_defaultParameterNames.find(name) != m_defaultParameterNames.end()))))
+				    (!((controlType == EAssetType::Trigger) && (m_defaultTriggerNames.find(name) != m_defaultTriggerNames.end())) &&
+				     !((controlType == EAssetType::Parameter) && (m_defaultParameterNames.find(name) != m_defaultParameterNames.end()))))
 				{
-					CSystemLibrary* const pLibrary = m_pAssetsManager->CreateLibrary("_default_controls_old");
+					CLibrary* const pLibrary = g_assetsManager.CreateLibrary("_default_controls_old");
 					pControl->GetParent()->RemoveChild(pControl);
 					pLibrary->AddChild(pControl);
 					pControl->SetParent(pLibrary);
@@ -322,22 +319,22 @@ CSystemControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope 
 }
 
 //////////////////////////////////////////////////////////////////////////
-CSystemControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode, Scope const scope, uint32 const version, CSystemAsset* const pParentItem)
+CControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode, Scope const scope, uint32 const version, CAsset* const pParentItem)
 {
-	CSystemControl* pControl = nullptr;
+	CControl* pControl = nullptr;
 
 	if (pNode != nullptr)
 	{
 		string const name = pNode->getAttr("atl_name");
-		ESystemItemType const controlType = TagToType_BackwardsComp(pNode->getTag());
+		EAssetType const controlType = TagToType_BackwardsComp(pNode->getTag());
 
-		if ((controlType == ESystemItemType::Trigger) && (m_defaultTriggerNames.find(name) != m_defaultTriggerNames.end()))
+		if ((controlType == EAssetType::Trigger) && (m_defaultTriggerNames.find(name) != m_defaultTriggerNames.end()))
 		{
-			pControl = m_pAssetsManager->FindControl(name, controlType);
+			pControl = g_assetsManager.FindControl(name, controlType);
 
 			if (pControl == nullptr)
 			{
-				pControl = m_pAssetsManager->CreateControl(name, controlType, pParentItem);
+				pControl = g_assetsManager.CreateControl(name, controlType, pParentItem);
 
 				if (pControl != nullptr)
 				{
@@ -349,13 +346,13 @@ CSystemControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode,
 				}
 			}
 		}
-		else if ((controlType == ESystemItemType::Parameter) && (m_defaultParameterNames.find(name) != m_defaultParameterNames.end()))
+		else if ((controlType == EAssetType::Parameter) && (m_defaultParameterNames.find(name) != m_defaultParameterNames.end()))
 		{
-			pControl = m_pAssetsManager->FindControl(name, controlType);
+			pControl = g_assetsManager.FindControl(name, controlType);
 
 			if (pControl == nullptr)
 			{
-				pControl = m_pAssetsManager->CreateControl(name, controlType, pParentItem);
+				pControl = g_assetsManager.CreateControl(name, controlType, pParentItem);
 
 				if (pControl != nullptr)
 				{
@@ -411,7 +408,7 @@ void CAudioControlsLoader::LoadScopesImpl(string const& sLevelsFolder)
 					if (strcmp(PathUtil::GetExt(name), "level") == 0)
 					{
 						PathUtil::RemoveExtension(name);
-						m_pAssetsManager->AddScope(name);
+						g_assetsManager.AddScope(name);
 					}
 				}
 			}
@@ -423,13 +420,13 @@ void CAudioControlsLoader::LoadScopesImpl(string const& sLevelsFolder)
 }
 
 //////////////////////////////////////////////////////////////////////////
-std::set<string> CAudioControlsLoader::GetLoadedFilenamesList()
+FileNames CAudioControlsLoader::GetLoadedFilenamesList()
 {
 	return m_loadedFilenames;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadConnections(XmlNodeRef const pRoot, CSystemControl* const pControl)
+void CAudioControlsLoader::LoadConnections(XmlNodeRef const pRoot, CControl* const pControl)
 {
 	// The radius might change because of the attenuation matching option
 	// so we check here to inform the user if their data is outdated.
@@ -451,7 +448,7 @@ void CAudioControlsLoader::LoadConnections(XmlNodeRef const pRoot, CSystemContro
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CSystemControl* const pControl, uint32 const version)
+void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version)
 {
 	string const type = pNode->getAttr("atl_type");
 
@@ -464,8 +461,6 @@ void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CSyste
 		pControl->SetAutoLoad(false);
 	}
 
-	// Read the connection information for each of the platform groups
-	std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
 	int const numChildren = pNode->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
@@ -481,19 +476,21 @@ void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CSyste
 
 		// Get the index for that platform name
 		int platformIndex = -1;
-		string const platformName = pGroupNode->getAttr("atl_name");
-		size_t const size = platforms.size();
+		bool foundPlatform = false;
+		char const* const szPlatformName = pGroupNode->getAttr("atl_name");
 
-		for (size_t j = 0; j < size; ++j)
+		for (auto const szPlatform : g_platforms)
 		{
-			if (strcmp(platformName.c_str(), platforms[j].c_str()) == 0)
+			++platformIndex;
+
+			if (stricmp(szPlatformName, szPlatform) == 0)
 			{
-				platformIndex = j;
+				foundPlatform = true;
 				break;
 			}
 		}
 
-		if (platformIndex == -1)
+		if (!foundPlatform)
 		{
 			m_errorCodeMask |= EErrorCode::UnkownPlatform;
 			pControl->SetModified(true, true);
@@ -514,7 +511,7 @@ void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CSyste
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadEditorData(XmlNodeRef const pEditorDataNode, CSystemAsset& library)
+void CAudioControlsLoader::LoadEditorData(XmlNodeRef const pEditorDataNode, CAsset& library)
 {
 	int const size = pEditorDataNode->getChildCount();
 
@@ -538,7 +535,7 @@ void CAudioControlsLoader::LoadEditorData(XmlNodeRef const pEditorDataNode, CSys
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CSystemAsset& library)
+void CAudioControlsLoader::LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CAsset& library)
 {
 	string description = "";
 	pLibraryNode->getAttr("description", description);
@@ -550,7 +547,7 @@ void CAudioControlsLoader::LoadLibraryEditorData(XmlNodeRef const pLibraryNode, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadAllFolders(XmlNodeRef const pFoldersNode, CSystemAsset& library)
+void CAudioControlsLoader::LoadAllFolders(XmlNodeRef const pFoldersNode, CAsset& library)
 {
 	if ((pFoldersNode != nullptr) && (library.GetName() != CryAudio::s_szDefaultLibraryName))
 	{
@@ -564,25 +561,25 @@ void CAudioControlsLoader::LoadAllFolders(XmlNodeRef const pFoldersNode, CSystem
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadFolderData(XmlNodeRef const pFolderNode, CSystemAsset& parentAsset)
+void CAudioControlsLoader::LoadFolderData(XmlNodeRef const pFolderNode, CAsset& parentAsset)
 {
-	CSystemAsset* const pItem = AddUniqueFolderPath(&parentAsset, pFolderNode->getAttr("name"));
+	CAsset* const pAsset = AddUniqueFolderPath(&parentAsset, pFolderNode->getAttr("name"));
 
-	if (pItem != nullptr)
+	if (pAsset != nullptr)
 	{
 		string description = "";
 		pFolderNode->getAttr("description", description);
 
 		if (!description.IsEmpty())
 		{
-			pItem->SetDescription(description);
+			pAsset->SetDescription(description);
 		}
 
 		int const size = pFolderNode->getChildCount();
 
 		for (int i = 0; i < size; ++i)
 		{
-			LoadFolderData(pFolderNode->getChild(i), *pItem);
+			LoadFolderData(pFolderNode->getChild(i), *pAsset);
 		}
 	}
 }
@@ -606,13 +603,13 @@ void CAudioControlsLoader::LoadControlsEditorData(XmlNodeRef const pParentNode)
 {
 	if (pParentNode != nullptr)
 	{
-		ESystemItemType const controlType = TagToType_BackwardsComp(pParentNode->getTag());
+		EAssetType const controlType = TagToType_BackwardsComp(pParentNode->getTag());
 		string description = "";
 		pParentNode->getAttr("description", description);
 
-		if ((controlType != ESystemItemType::Invalid) && !description.IsEmpty())
+		if ((controlType != EAssetType::None) && !description.IsEmpty())
 		{
-			CSystemControl* const pControl = m_pAssetsManager->FindControl(pParentNode->getAttr("name"), controlType);
+			CControl* const pControl = g_assetsManager.FindControl(pParentNode->getAttr("name"), controlType);
 
 			if (pControl != nullptr)
 			{

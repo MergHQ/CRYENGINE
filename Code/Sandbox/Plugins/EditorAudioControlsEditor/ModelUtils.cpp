@@ -1,37 +1,20 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include "ModelUtils.h"
-#include "AudioControlsEditorPlugin.h"
 
-#include <IImplItem.h>
-#include <IEditorImpl.h>
-#include <ConfigurationManager.h>
+#include "AudioControlsEditorPlugin.h"
 
 namespace ACE
 {
 namespace ModelUtils
 {
 //////////////////////////////////////////////////////////////////////////
-void GetPlatformNames()
-{
-	s_platformModellAttributes.clear();
-	std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
-
-	for (auto const& platform : platforms)
-	{
-		CItemModelAttribute platformAttribute = CItemModelAttribute(platform.c_str(), eAttributeType_Boolean, CItemModelAttribute::StartHidden, false);
-		s_platformModellAttributes.emplace_back(platformAttribute);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 QStringList GetScopeNames()
 {
 	QStringList scopeNames;
 	ScopeInfoList scopeInfoList;
-	CAudioControlsEditorPlugin::GetAssetsManager()->GetScopeInfoList(scopeInfoList);
+	g_assetsManager.GetScopeInfoList(scopeInfoList);
 
 	for (auto const& scopeInfo : scopeInfoList)
 	{

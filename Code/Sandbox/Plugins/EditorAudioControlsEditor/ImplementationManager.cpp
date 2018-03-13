@@ -86,16 +86,7 @@ bool CImplementationManager::LoadImplementation()
 				if (GetIEditor() != nullptr)
 				{
 					g_pEditorImpl = pfnAudioInterface(GetIEditor()->GetSystem());
-
-					if (g_pEditorImpl != nullptr)
-					{
-						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");
-						g_pEditorImpl->Reload();
-					}
-					else
-					{
-						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] Data from middleware is empty.");
-					}
+					CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData | EReloadFlags::SetPlatforms);
 				}
 			}
 		}

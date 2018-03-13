@@ -14,14 +14,14 @@ namespace ACE
 namespace PortAudio
 {
 //////////////////////////////////////////////////////////////////////////
-CProjectLoader::CProjectLoader(string const& assetsPath, CImplItem& rootItem)
+CProjectLoader::CProjectLoader(string const& assetsPath, CItem& rootItem)
 	: m_assetsPath(assetsPath)
 {
 	LoadFolder("", rootItem);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
+void CProjectLoader::LoadFolder(string const& folderPath, CItem& parent)
 {
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
@@ -39,11 +39,11 @@ void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 				{
 					if (folderPath.empty())
 					{
-						LoadFolder(name, *CreateItem(name, folderPath, EImpltemType::Folder, parent));
+						LoadFolder(name, *CreateItem(name, folderPath, EItemType::Folder, parent));
 					}
 					else
 					{
-						LoadFolder(folderPath + "/" + name, *CreateItem(name, folderPath, EImpltemType::Folder, parent));
+						LoadFolder(folderPath + "/" + name, *CreateItem(name, folderPath, EItemType::Folder, parent));
 					}
 				}
 				else
@@ -55,7 +55,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 						if ((_stricmp(name.data() + posExtension, ".ogg") == 0) || (_stricmp(name.data() + posExtension, ".wav") == 0))
 						{
 							// Create the event with the same name as the file
-							CreateItem(name, folderPath, EImpltemType::Event, parent);
+							CreateItem(name, folderPath, EItemType::Event, parent);
 						}
 					}
 				}
@@ -68,9 +68,9 @@ void CProjectLoader::LoadFolder(string const& folderPath, CImplItem& parent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CImplItem* CProjectLoader::CreateItem(string const& name, string const& path, EImpltemType const type, CImplItem& rootItem)
+CItem* CProjectLoader::CreateItem(string const& name, string const& path, EItemType const type, CItem& rootItem)
 {
-	CID id;
+	ControlId id;
 	string filePath = m_assetsPath + "/";
 
 	if (path.empty())
@@ -84,11 +84,11 @@ CImplItem* CProjectLoader::CreateItem(string const& name, string const& path, EI
 		filePath += (path + "/" + name);
 	}
 
-	EImplItemFlags const flags = type == EImpltemType::Folder ? EImplItemFlags::IsContainer : EImplItemFlags::None;
-	auto const pImplItem = new CImplItem(name, id, static_cast<ItemType>(type), flags, filePath);
+	EItemFlags const flags = type == EItemType::Folder ? EItemFlags::IsContainer : EItemFlags::None;
+	auto const pItem = new CItem(name, id, type, flags, filePath);
 
-	rootItem.AddChild(pImplItem);
-	return pImplItem;
+	rootItem.AddChild(pItem);
+	return pItem;
 }
 } // namespace PortAudio
 } // namespace ACE

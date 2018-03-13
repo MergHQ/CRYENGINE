@@ -6,8 +6,7 @@
 #include "AudioControlsEditorPlugin.h"
 #include "MiddlewareDataModel.h"
 #include "ImplementationManager.h"
-#include "SystemAssetsManager.h"
-#include "SystemControlsIcons.h"
+#include "AssetIcons.h"
 #include "TreeView.h"
 
 #include <IEditorImpl.h>
@@ -24,9 +23,8 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* const pAssetsManager, QWidget* const pParent)
+CMiddlewareDataWidget::CMiddlewareDataWidget(QWidget* const pParent)
 	: QWidget(pParent)
-	, m_pAssetsManager(pAssetsManager)
 	, m_pMiddlewareFilterProxyModel(new CMiddlewareFilterProxyModel(this))
 	, m_pMiddlewareDataModel(new CMiddlewareDataModel(this))
 	, m_pTreeView(new CTreeView(this))
@@ -68,23 +66,23 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* const pAssets
 
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CMiddlewareDataWidget::OnContextMenu);
 
-	m_pAssetsManager->SignalConnectionAdded.Connect([&]()
+	g_assetsManager.SignalConnectionAdded.Connect([this]()
 		{
-			if (!m_pAssetsManager->IsLoading())
+			if (!g_assetsManager.IsLoading())
 			{
 			  m_pMiddlewareFilterProxyModel->invalidate();
 			}
 	  }, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->SignalConnectionRemoved.Connect([&]()
+	g_assetsManager.SignalConnectionRemoved.Connect([this]()
 		{
-			if (!m_pAssetsManager->IsLoading())
+			if (!g_assetsManager.IsLoading())
 			{
 			  m_pMiddlewareFilterProxyModel->invalidate();
 			}
 	  }, reinterpret_cast<uintptr_t>(this));
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
+	g_implementationManager.SignalImplementationChanged.Connect([this]()
 		{
 			setEnabled(g_pEditorImpl != nullptr);
 	  }, reinterpret_cast<uintptr_t>(this));
@@ -93,9 +91,9 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(CSystemAssetsManager* const pAssets
 //////////////////////////////////////////////////////////////////////////
 CMiddlewareDataWidget::~CMiddlewareDataWidget()
 {
-	m_pAssetsManager->SignalConnectionAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->SignalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalConnectionAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implementationManager.SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	m_pMiddlewareDataModel->DisconnectSignals();
 	m_pMiddlewareDataModel->deleteLater();
@@ -109,26 +107,26 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 
 	if (!selection.isEmpty())
 	{
-		if ((selection.count() == 1) && (m_pAssetsManager != nullptr))
+		if (selection.count() == 1)
 		{
 			if (g_pEditorImpl != nullptr)
 			{
-				CID const itemId = selection[0].data(static_cast<int>(CMiddlewareDataModel::ERoles::Id)).toInt();
-				IImplItem const* const pImplItem = g_pEditorImpl->GetImplItem(itemId);
+				ControlId const itemId = selection[0].data(static_cast<int>(CMiddlewareDataModel::ERoles::Id)).toInt();
+				IImplItem const* const pIImplItem = g_pEditorImpl->GetItem(itemId);
 
-				if ((pImplItem != nullptr) && pImplItem->IsConnected())
+				if ((pIImplItem != nullptr) && pIImplItem->IsConnected())
 				{
-					QMenu* const pConnectionsMenu = new QMenu(pContextMenu);
-					auto const controls = m_pAssetsManager->GetControls();
+					auto const pConnectionsMenu = new QMenu(pContextMenu);
+					auto const& controls = g_assetsManager.GetControls();
 					int count = 0;
 
 					for (auto const pControl : controls)
 					{
-						if (pControl->GetConnection(pImplItem) != nullptr)
+						if (pControl->GetConnection(pIImplItem) != nullptr)
 						{
-							pConnectionsMenu->addAction(GetItemTypeIcon(pControl->GetType()), tr(pControl->GetName()), [=]()
+							pConnectionsMenu->addAction(GetAssetIcon(pControl->GetType()), tr(pControl->GetName()), [=]()
 								{
-									SignalSelectConnectedSystemControl(*pControl, pImplItem->GetId());
+									SignalSelectConnectedSystemControl(*pControl, pIImplItem->GetId());
 							  });
 
 							++count;
@@ -143,11 +141,11 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 					}
 				}
 
-				if ((pImplItem != nullptr) && !pImplItem->GetFilePath().IsEmpty())
+				if ((pIImplItem != nullptr) && !pIImplItem->GetFilePath().IsEmpty())
 				{
 					pContextMenu->addAction(tr("Open Containing Folder"), [&]()
 						{
-							QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pImplItem->GetFilePath()).c_str());
+							QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pIImplItem->GetFilePath()).c_str());
 					  });
 
 					pContextMenu->addSeparator();
@@ -167,7 +165,7 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataWidget::SelectConnectedImplItem(CID const itemId)
+void CMiddlewareDataWidget::SelectConnectedImplItem(ControlId const itemId)
 {
 	ClearFilters();
 	auto const& matches = m_pMiddlewareFilterProxyModel->match(m_pMiddlewareFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(CMiddlewareDataModel::ERoles::Id), itemId, 1, Qt::MatchRecursive);

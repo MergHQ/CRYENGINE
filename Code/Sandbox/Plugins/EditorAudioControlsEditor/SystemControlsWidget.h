@@ -1,9 +1,9 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
 #include <QWidget>
-#include <SystemTypes.h>
+#include <SharedData.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
 class QAction;
@@ -14,9 +14,8 @@ class QFilteringPanel;
 
 namespace ACE
 {
-class CSystemAsset;
-class CSystemControl;
-class CSystemAssetsManager;
+class CAsset;
+class CControl;
 class CSystemSourceModel;
 class CSystemLibraryModel;
 class CSystemFilterProxyModel;
@@ -28,15 +27,15 @@ class CSystemControlsWidget final : public QWidget
 
 public:
 
-	CSystemControlsWidget(CSystemAssetsManager* const pAssetsManager, QWidget* const pParent);
+	CSystemControlsWidget(QWidget* const pParent);
 	virtual ~CSystemControlsWidget() override;
 
-	bool                       IsEditing() const;
-	std::vector<CSystemAsset*> GetSelectedAssets() const;
-	void                       SelectConnectedSystemControl(CSystemControl& control, CID const itemId);
-	void                       Reload();
-	void                       BackupTreeViewStates();
-	void                       RestoreTreeViewStates();
+	bool                 IsEditing() const;
+	std::vector<CAsset*> GetSelectedAssets() const;
+	void                 SelectConnectedSystemControl(CControl& control, ControlId const itemId);
+	void                 Reset();
+	void                 BackupTreeViewStates();
+	void                 RestoreTreeViewStates();
 
 signals:
 
@@ -44,7 +43,8 @@ signals:
 
 private slots:
 
-	void OnDeleteSelectedControl();
+	void OnRenameSelectedControls(string const& name);
+	void OnDeleteSelectedControls();
 	void OnContextMenu(QPoint const& pos);
 	void OnUpdateCreateButtons();
 
@@ -54,7 +54,7 @@ private slots:
 private:
 
 	// QObject
-	virtual bool        eventFilter(QObject* pObject, QEvent* pEvent) override;
+	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 	// ~QObject
 
 	void                InitAddControlWidget(QVBoxLayout* const pLayout);
@@ -62,16 +62,15 @@ private:
 	void                ClearFilters();
 	void                DeleteModels();
 
-	CSystemControl*     CreateControl(string const& name, ESystemItemType const type, CSystemAsset* const pParent);
-	CSystemAsset*       CreateFolder(CSystemAsset* const pParent);
+	CControl*           CreateControl(string const& name, EAssetType const type, CAsset* const pParent);
+	CAsset*             CreateFolder(CAsset* const pParent);
 	void                CreateParentFolder();
 	bool                IsParentFolderAllowed() const;
 	bool                IsDefaultControlSelected() const;
 
 	QAbstractItemModel* CreateLibraryModelFromIndex(QModelIndex const& sourceIndex);
-	CSystemAsset*       GetSelectedAsset() const;
+	CAsset*             GetSelectedAsset() const;
 
-	CSystemAssetsManager* const       m_pAssetsManager;
 	QFilteringPanel*                  m_pFilteringPanel;
 	CTreeView* const                  m_pTreeView;
 	CSystemFilterProxyModel* const    m_pSystemFilterProxyModel;
@@ -90,6 +89,7 @@ private:
 
 	bool                              m_isReloading;
 	bool                              m_isCreatedFromMenu;
+	bool                              m_suppressRenaming;
 	int const                         m_nameColumn;
 };
 } // namespace ACE

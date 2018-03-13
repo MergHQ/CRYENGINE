@@ -18,14 +18,12 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* const pAssetsManager, QWidget* const pParent)
+CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 	: QWidget(pParent)
-	, m_pAssetsManager(pAssetsManager)
 	, m_pPropertyTree(new QPropertyTree(this))
 	, m_pConnectionsWidget(new CConnectionsWidget(this))
+	, m_suppressUpdates(false)
 {
-	CRY_ASSERT_MESSAGE(m_pAssetsManager != nullptr, "Assets manager is null pointer.");
-
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
 	auto const pMainLayout = new QVBoxLayout(this);
@@ -49,66 +47,66 @@ CPropertiesWidget::CPropertiesWidget(CSystemAssetsManager* const pAssetsManager,
 		setEnabled(false);
 	}
 
-	m_pAssetsManager->SignalItemAdded.Connect([&]()
+	g_assetsManager.SignalItemAdded.Connect([this]()
 		{
-			if (!m_pAssetsManager->IsLoading())
+			if (!g_assetsManager.IsLoading())
 			{
 			  RevertPropertyTree();
 			}
 	  }, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->SignalItemRemoved.Connect([&]()
+	g_assetsManager.SignalItemRemoved.Connect([this]()
 		{
-			if (!m_pAssetsManager->IsLoading())
+			if (!g_assetsManager.IsLoading())
 			{
 			  RevertPropertyTree();
 			}
 	  }, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->SignalControlModified.Connect([&]()
+	g_assetsManager.SignalControlModified.Connect([this]()
 		{
-			if (!m_pAssetsManager->IsLoading())
+			if (!g_assetsManager.IsLoading())
 			{
 			  RevertPropertyTree();
 			}
 	  }, reinterpret_cast<uintptr_t>(this));
 
-	m_pAssetsManager->SignalAssetRenamed.Connect([&]()
+	g_assetsManager.SignalAssetRenamed.Connect([this]()
 		{
-			if (!m_pAssetsManager->IsLoading())
+			if (!g_assetsManager.IsLoading())
 			{
 			  RevertPropertyTree();
 			}
 	  }, reinterpret_cast<uintptr_t>(this));
 
-	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.Connect([&]()
+	g_implementationManager.SignalImplementationChanged.Connect([this]()
 		{
 			setEnabled(g_pEditorImpl != nullptr);
 	  }, reinterpret_cast<uintptr_t>(this));
 
-	QObject::connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_supressUpdates = true; });
-	QObject::connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_supressUpdates = false; });
+	QObject::connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_suppressUpdates = true; });
+	QObject::connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_suppressUpdates = false; });
 	QObject::connect(m_pConnectionsWidget, &CConnectionsWidget::SignalSelectConnectedImplItem, this, &CPropertiesWidget::SignalSelectConnectedImplItem);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CPropertiesWidget::~CPropertiesWidget()
 {
-	m_pAssetsManager->SignalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->SignalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->SignalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	m_pAssetsManager->SignalAssetRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	CAudioControlsEditorPlugin::GetImplementationManger()->SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalAssetRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implementationManager.SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropertiesWidget::Reload()
+void CPropertiesWidget::Reset()
 {
-	m_pConnectionsWidget->Reload();
+	m_pConnectionsWidget->Reset();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropertiesWidget::OnSetSelectedAssets(std::vector<CSystemAsset*> const& selectedAssets, bool const restoreSelection)
+void CPropertiesWidget::OnSetSelectedAssets(std::vector<CAsset*> const& selectedAssets, bool const restoreSelection)
 {
 	// Update property tree
 	m_pPropertyTree->detach();
@@ -125,13 +123,13 @@ void CPropertiesWidget::OnSetSelectedAssets(std::vector<CSystemAsset*> const& se
 	// Update connections
 	if (selectedAssets.size() == 1)
 	{
-		ESystemItemType const type = selectedAssets[0]->GetType();
+		EAssetType const type = selectedAssets[0]->GetType();
 
-		if ((type != ESystemItemType::Library) && (type != ESystemItemType::Folder))
+		if ((type != EAssetType::Library) && (type != EAssetType::Folder))
 		{
-			auto const pControl = static_cast<CSystemControl*>(selectedAssets[0]);
+			auto const pControl = static_cast<CControl*>(selectedAssets[0]);
 
-			if (type != ESystemItemType::Switch)
+			if (type != EAssetType::Switch)
 			{
 				m_pConnectionsWidget->SetControl(pControl, restoreSelection);
 				m_pConnectionsWidget->setHidden(false);
@@ -178,7 +176,7 @@ void CPropertiesWidget::RestoreTreeViewStates()
 //////////////////////////////////////////////////////////////////////////
 void CPropertiesWidget::RevertPropertyTree()
 {
-	if (!m_supressUpdates)
+	if (!m_suppressUpdates)
 	{
 		m_pPropertyTree->revert();
 	}
