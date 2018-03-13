@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "TriggerComponent.h"
@@ -91,7 +91,8 @@ void CTriggerComponent::Initialize()
 		m_auxObjectId = CryAudio::DefaultAuxObjectId;
 	}
 
-	if (m_bAutoPlay)
+	// Only play in editor. Launcher is handled via ENTITY_EVENT_START_GAME.
+	if (m_bAutoPlay && gEnv->IsEditor())
 	{
 		Play();
 	}
@@ -165,12 +166,10 @@ void CTriggerComponent::ProcessEvent(const SEntityEvent& event)
 			}
 			break;
 		case ENTITY_EVENT_START_GAME:
-			if (m_bAutoPlay)
+			// Only play in launcher. Editor is handled in Initialize()
+			if (m_bAutoPlay && !gEnv->IsEditor())
 			{
-				if (m_numActiveTriggerInstances == 0)
-				{
-					Play();
-				}
+				Play();
 			}
 			break;
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
