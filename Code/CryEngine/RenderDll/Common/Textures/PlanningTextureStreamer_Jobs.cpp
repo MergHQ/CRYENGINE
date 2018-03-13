@@ -237,7 +237,7 @@ void CPlanningTextureStreamer::Job_UpdateMip(CTexture* pTexture, const float fMi
 
 	STexStreamingInfo* const pStrmInfo = pTexture->m_pFileTexMips;
 
-	if (pStrmInfo && (fMipFactor < pStrmInfo->m_fMinMipFactor))
+	if (pStrmInfo && (fMipFactor <= pStrmInfo->m_fMinMipFactor))
 	{
 		STexStreamZoneInfo& rZoneInfo = pStrmInfo->m_arrSPInfo[nZoneId];
 		STexStreamRoundInfo& rRoundInfo = pTexture->m_streamRounds[nZoneId];
@@ -338,6 +338,7 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 
 	size_t nListSize = 0;
 
+	const int minTransferSize = CRenderer::CV_r_texturesstreamingMinReadSizeKB * 1024;
 	enum { MaxRequests = 16384 };
 	SPlanningRequestIdent requests[MaxRequests];
 	size_t nRequests = 0;
@@ -366,7 +367,19 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 		int deltaMip = (wantKey >> 8) - haveMip;
 		int deltaKey = wantKey - (haveMip << 8);
 		int wantMip  = haveMip + max(deltaMip, -CRenderer::CV_r_TexturesStreamingMaxUpdateRate);
+		int reqstMip = haveMip + deltaMip;
+		int prevMipSize = GetTexReqStreamSizePreClamped(key, haveMip);
 		int cacheMipSize = GetTexReqStreamSizePreClamped(key, wantMip);
+		int transferSize = cacheMipSize - prevMipSize;
+
+		while ((transferSize < minTransferSize) && (reqstMip < wantMip))
+		{
+			cacheMipSize = GetTexReqStreamSizePreClamped(key, wantMip - 1);
+			transferSize = cacheMipSize - prevMipSize;
+
+			wantMip -= (transferSize < minTransferSize);
+		}
+
 		// more priority for streaming requests which are very far away from their target
 		int sortKey = key.GetFpMinMipCur() - (haveMip << 8) + SPlanningTextureOrderKey::PackedFpBias;
 
@@ -440,7 +453,19 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 		int deltaMip = (wantKey >> 8) - haveMip;
 		int deltaKey = wantKey - (haveMip << 8);
 		int wantMip = haveMip + max(deltaMip, -CRenderer::CV_r_TexturesStreamingMaxUpdateRate);
+		int reqstMip = haveMip + deltaMip;
+		int prevMipSize = GetTexReqStreamSizePreClamped(key, haveMip);
 		int cacheMipSize = GetTexReqStreamSizePreClamped(key, wantMip);
+		int transferSize = cacheMipSize - prevMipSize;
+
+		while ((transferSize < minTransferSize) && (reqstMip < wantMip))
+		{
+			cacheMipSize = GetTexReqStreamSizePreClamped(key, wantMip - 1);
+			transferSize = cacheMipSize - prevMipSize;
+
+			wantMip -= (transferSize < minTransferSize);
+		}
+
 		// more priority for streaming requests which are very far away from their target
 		int sortKey = key.GetFpMinMipCur() - (haveMip << 8) + SPlanningTextureOrderKey::PackedFpBias;
 

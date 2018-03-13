@@ -565,6 +565,7 @@ int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, float mipFactor,
 	return arrayIndex;
 }
 
+#pragma optimize("", off)
 void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
@@ -632,11 +633,15 @@ void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
 					const UINT SrcSubresource = D3D11CalcSubresource(numSkpMips, i, numSrcMips - numMisMips);
 					const UINT DstSubresource = D3D11CalcSubresource(numMisMips, arrayIndex * numFaces + i, numDstMips);
 
+					const UINT W = (w + (1 << numMisMips) - 1) >> numMisMips;
+					const UINT H = (h + (1 << numMisMips) - 1) >> numMisMips;
+					const UINT D = (d + (1 << numMisMips) - 1) >> numMisMips;
+
 					const SResourceRegionMapping mapping =
 					{
 						{ 0, 0, 0, SrcSubresource }, // src position
 						{ 0, 0, 0, DstSubresource }, // dst position
-						{ w, h, d, NumSubresources }, // size
+						{ W, H, D, NumSubresources }, // size
 						D3D11_COPY_NO_OVERWRITE_REVERT
 					};
 
@@ -659,7 +664,7 @@ void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
 			// Stream out current texture if we have all or more than we asked for
 			if (requestedMip >= item.lowestRenderableMip)
 			{
-				mipFactorRequested = pTexUpload->GetStreamingInfo() ? std::nextafter(pTexUpload->GetStreamingInfo()->m_fMinMipFactor, 0.0f) : item.mipFactorMinSize;
+				mipFactorRequested = pTexUpload->GetStreamingInfo() ? pTexUpload->GetStreamingInfo()->m_fMinMipFactor : item.mipFactorMinSize;
 				issueCommand = availableMip < item.texture->GetNumPersistentMips();
 			}
 
