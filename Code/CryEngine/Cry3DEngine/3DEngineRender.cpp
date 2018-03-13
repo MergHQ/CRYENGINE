@@ -3903,6 +3903,7 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 				pFr->GetCamera(cubeSide),
 				pFr->m_Flags,
 				pFr->nShadowMapLod,
+				pFr->nShadowCacheLod,
 				pFr->IsCached(),
 				pFr->bIsMGPUCopy,
 				cubeSide,
