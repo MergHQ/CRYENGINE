@@ -29,6 +29,7 @@ static constexpr char const* s_szShiftAttribute = "value_shift";
 
 // XML values
 static constexpr char const* s_szTrueValue = "true";
+static constexpr char const* s_szFalseValue = "false";
 static constexpr char const* s_szStartValue = "start";
 static constexpr char const* s_szStopValue = "stop";
 static constexpr char const* s_szPauseValue = "pause";

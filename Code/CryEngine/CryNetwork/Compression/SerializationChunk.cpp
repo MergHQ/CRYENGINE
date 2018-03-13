@@ -26,7 +26,7 @@
 #endif
 
 #if ENABLE_CORRUPT_PACKET_DUMP
-static char* eOpNames[] =
+static const char* eOpNames[] =
 {
 	"eO_NoOp",
 	#define SERIALIZATION_TYPE(T) "eO_" # T,

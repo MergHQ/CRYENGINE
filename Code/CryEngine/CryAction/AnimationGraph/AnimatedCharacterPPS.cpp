@@ -664,7 +664,7 @@ QuatT CAnimatedCharacter::CalculateWantedEntityMovement(const QuatT& desiredAnim
 	{
 		EMovementControlMethod mcmh = GetMCMH();
 		EMovementControlMethod mcmv = GetMCMV();
-		char* szMcmH = "???";
+		const char* szMcmH = "???";
 		switch (mcmh)
 		{
 		case eMCM_Entity:
@@ -686,7 +686,7 @@ QuatT CAnimatedCharacter::CalculateWantedEntityMovement(const QuatT& desiredAnim
 			szMcmH = "ANM_HC";
 			break;
 		}
-		char* szMcmV = "???";
+		const char* szMcmV = "???";
 		switch (mcmv)
 		{
 		case eMCM_Entity:

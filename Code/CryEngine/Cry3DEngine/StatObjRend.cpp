@@ -78,7 +78,7 @@ void CStatObj::RenderStreamingDebugInfo(CRenderObject* pRenderObject, const SRen
 	{
 		//		nKB = GetStreamableContentMemoryUsage(true) >> 10;
 
-		char* pComment = 0;
+		const char* pComment = 0;
 
 		pStreamable = pStreamable->m_pParentObject ? pStreamable->m_pParentObject : pStreamable;
 

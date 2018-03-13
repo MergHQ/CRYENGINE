@@ -11,12 +11,12 @@ namespace ACE
 {
 struct IEditorImpl;
 
-static constexpr char* s_szLibraryNodeTag = "Library";
-static constexpr char* s_szFoldersNodeTag = "Folders";
-static constexpr char* s_szControlsNodeTag = "Controls";
-static constexpr char* s_szFolderTag = "Folder";
-static constexpr char* s_szPathAttribute = "path";
-static constexpr char* s_szDescriptionAttribute = "description";
+static constexpr char const* s_szLibraryNodeTag = "Library";
+static constexpr char const* s_szFoldersNodeTag = "Folders";
+static constexpr char const* s_szControlsNodeTag = "Controls";
+static constexpr char const* s_szFolderTag = "Folder";
+static constexpr char const* s_szPathAttribute = "path";
+static constexpr char const* s_szDescriptionAttribute = "description";
 
 struct SLibraryScope
 {

@@ -731,7 +731,7 @@ struct SFXTokenBin
 
 #define FX_REGISTER_TOKEN(id) fxTokenKey( # id, eT_ ## id);
 
-extern char* g_KeyTokens[];
+extern const char* g_KeyTokens[];
 
 struct SMacroBinFX
 {
@@ -978,7 +978,7 @@ public:
 	bool                 JumpSemicolumn(uint32& nStart, uint32 nEnd);
 
 	static uint32        fxToken(const char* szToken, bool* bKey = NULL);
-	static uint32        fxTokenKey(char* szToken, EToken eT = eT_unknown);
+	static uint32        fxTokenKey(const char* szToken, EToken eT = eT_unknown);
 	static uint32        GetCRC32(const char* szStr);
 	static uint32        NextToken(char*& buf, char* com, bool& bKey);
 	static void          Init();

@@ -784,7 +784,7 @@ bool CSystemSourceModel::dropMimeData(QMimeData const* pData, Qt::DropAction act
 //////////////////////////////////////////////////////////////////////////
 Qt::DropActions CSystemSourceModel::supportedDropActions() const
 {
-	return Qt::MoveAction | Qt::CopyAction;
+	return static_cast<Qt::DropActions>(Qt::MoveAction | Qt::CopyAction);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1391,7 +1391,7 @@ QMimeData* CSystemLibraryModel::mimeData(QModelIndexList const& indexes) const
 //////////////////////////////////////////////////////////////////////////
 Qt::DropActions CSystemLibraryModel::supportedDropActions() const
 {
-	return Qt::MoveAction | Qt::CopyAction;
+	return static_cast<Qt::DropActions>(Qt::MoveAction | Qt::CopyAction);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -1273,7 +1273,7 @@ bool CAIHandler::CallScript(IScriptTable* scriptTable, const char* funcName, flo
 			if (pAIShowBehaviorCalls && pAIShowBehaviorCalls->GetIVal())
 			{
 				SEntityTagParams params;
-				char* behaviour = "";
+				const char* behaviour = "";
 				scriptTable->GetValue("Name", behaviour);
 				params.entity = m_pEntity->GetId();
 				params.text.Format("%s::%s", behaviour, funcName);

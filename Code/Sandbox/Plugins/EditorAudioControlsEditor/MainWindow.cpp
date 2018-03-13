@@ -412,7 +412,7 @@ void CMainWindow::CheckErrorMask()
 	{
 		if (g_pEditorImpl != nullptr)
 		{
-			QString const middlewareName = g_pEditorImpl->GetName();
+			QString const middlewareName = QString(g_pEditorImpl->GetName());
 			CQuestionDialog::SWarning(tr(GetEditorName()), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nActivity radius of triggers will be updated next time you save."));
 		}
 	}

@@ -972,7 +972,7 @@ public:
 	virtual void                   EF_ReloadShaderFiles(int nCategory) override;
 	virtual void                   EF_ReloadTextures() override;
 	virtual int                    EF_LoadLightmap(const char* nameTex) override;
-	virtual bool                   EF_RenderEnvironmentCubeHDR(int size, Vec3& Pos, TArray<unsigned short>& vecData) override;
+	virtual bool                   EF_RenderEnvironmentCubeHDR(int size, const Vec3& Pos, TArray<unsigned short>& vecData) override;
 	virtual bool                   WriteTIFToDisk(const void* pData, int width, int height, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName) override;
 	virtual ITexture*              EF_GetTextureByID(int Id) override;
 	virtual ITexture*              EF_GetTextureByName(const char* name, uint32 flags = 0) override;
@@ -1169,9 +1169,9 @@ public:
 	uint32 GetActiveGPUCount() const override { return CV_r_multigpu > 0 ? m_nGPUs : 1; }
 
 	void   Logv(const char* format, ...);
-	void   LogStrv(char* format, ...);
-	void   LogShv(char* format, ...);
-	void   Log(char* str);
+	void   LogStrv(const char* format, ...);
+	void   LogShv(const char* format, ...);
+	void   Log(const char* str);
 
 	// Add shader to the list
 	void              EF_AddEf_NotVirtual(CRenderElement* pRE, SShaderItem& pSH, CRenderObject* pObj, const SRenderingPassInfo& passInfo, int nList, int nAW);

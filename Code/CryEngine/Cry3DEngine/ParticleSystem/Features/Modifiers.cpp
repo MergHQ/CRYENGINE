@@ -576,8 +576,8 @@ SERIALIZATION_CLASS_NAME(IModifier, CModLinear, "Linear", "Linear");
 
 struct SSpecData
 {
-	char* m_pName;
-	char* m_pLabel;
+	const char* m_pName;
+	const char* m_pLabel;
 	uint  m_index;
 };
 

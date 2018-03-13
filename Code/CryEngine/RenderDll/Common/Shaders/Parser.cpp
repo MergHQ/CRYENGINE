@@ -370,10 +370,10 @@ void shGetVector4(char* buf, Vec4& v)
 
 static struct SColAsc
 {
-	char*  nam;
+	const char*  nam;
 	ColorF col;
 
-	SColAsc(char* name, const ColorF& c)
+	SColAsc(const char* name, const ColorF& c)
 	{
 		nam = name;
 		col = c;

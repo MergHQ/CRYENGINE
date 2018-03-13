@@ -277,5 +277,5 @@ public:
 	QSizePreservingSplitter(Qt::Orientation orientation, QWidget * parent = 0);
 
 protected:
-	virtual void QSizePreservingSplitter::childEvent(QChildEvent *c);
+	virtual void childEvent(QChildEvent *c) Q_DECL_OVERRIDE;
 };

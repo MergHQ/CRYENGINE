@@ -12,7 +12,7 @@ static char sLogStr[1024];
 	#define edefault(e) default: \
 	  cry_sprintf(sLogStr, "0x%x", e); return sLogStr;
 
-static char* sD3DFMT(DXGI_FORMAT Value)
+static const char* sD3DFMT(DXGI_FORMAT Value)
 {
 	switch (Value)
 	{
@@ -128,7 +128,7 @@ static char* sD3DFMT(DXGI_FORMAT Value)
 	}
 }
 
-static char* sD3DPRIM_TOPLOGY(D3D11_PRIMITIVE_TOPOLOGY Topology)
+static const char* sD3DPRIM_TOPLOGY(D3D11_PRIMITIVE_TOPOLOGY Topology)
 {
 	switch (Topology)
 	{
@@ -145,7 +145,7 @@ static char* sD3DPRIM_TOPLOGY(D3D11_PRIMITIVE_TOPOLOGY Topology)
 	}
 }
 
-static char* sD3DBlendOP(DWORD Value)
+static const char* sD3DBlendOP(DWORD Value)
 {
 	switch (Value)
 	{
@@ -158,7 +158,7 @@ static char* sD3DBlendOP(DWORD Value)
 	}
 }
 
-static char* sD3DBLEND(DWORD Value)
+static const char* sD3DBLEND(DWORD Value)
 {
 	switch (Value)
 	{
@@ -183,7 +183,7 @@ static char* sD3DBLEND(DWORD Value)
 	}
 }
 
-static char* sD3DCompareFunc(DWORD Value)
+static const char* sD3DCompareFunc(DWORD Value)
 {
 	switch (Value)
 	{
@@ -199,7 +199,7 @@ static char* sD3DCompareFunc(DWORD Value)
 	}
 }
 
-static char* sD3DStencilOp(DWORD Value)
+static const char* sD3DStencilOp(DWORD Value)
 {
 	switch (Value)
 	{
@@ -215,7 +215,7 @@ static char* sD3DStencilOp(DWORD Value)
 	}
 }
 
-static char* sD3DCull(DWORD Value)
+static const char* sD3DCull(DWORD Value)
 {
 	switch (Value)
 	{
@@ -226,7 +226,7 @@ static char* sD3DCull(DWORD Value)
 	}
 }
 
-static char* sD3DTAddress(D3D11_TEXTURE_ADDRESS_MODE Value)
+static const char* sD3DTAddress(D3D11_TEXTURE_ADDRESS_MODE Value)
 {
 	switch (Value)
 	{
@@ -239,7 +239,7 @@ static char* sD3DTAddress(D3D11_TEXTURE_ADDRESS_MODE Value)
 	}
 }
 
-static char* sD3DTFilter(D3D11_FILTER Value)
+static const char* sD3DTFilter(D3D11_FILTER Value)
 {
 	switch (Value)
 	{

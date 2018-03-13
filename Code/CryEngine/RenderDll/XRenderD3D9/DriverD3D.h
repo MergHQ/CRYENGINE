@@ -356,8 +356,8 @@ public:
 	virtual int          GetDetailedRayHitInfo(IPhysicalEntity* pCollider, const Vec3& vOrigin, const Vec3& vDirection, const float maxRayDist, float* pUOut, float* pVOut) override;
 	virtual Vec3         UnprojectFromScreen(int x, int y) override;
 
-	virtual void         PushProfileMarker(char* label) override;
-	virtual void         PopProfileMarker(char* label) override;
+	virtual void         PushProfileMarker(const char* label) override;
+	virtual void         PopProfileMarker(const char* label) override;
 
 	unsigned int         UploadToVideoMemory(unsigned char* data, int w, int h, int d, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, ETEX_Type eTT, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false);
 	virtual unsigned int UploadToVideoMemory(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) final;
@@ -371,7 +371,7 @@ public:
 
 	virtual void         PostLevelUnload() override;
 
-	virtual void         Graph(byte* g, int x, int y, int wdt, int hgt, int nC, int type, char* text, ColorF& color, float fScale) override;
+	virtual void         Graph(byte* g, int x, int y, int wdt, int hgt, int nC, int type, const char* text, ColorF& color, float fScale) override;
 
 	virtual void         PrintResourcesLeaks() override;
 

@@ -714,14 +714,14 @@ public:
 		return TRUE;
 
 	}
-	virtual HTREEITEM AddItemToTree(LPTSTR lpszItem, LPARAM ud = NULL, HTREEITEM hParent = NULL, UINT iImage = 0)
+	virtual HTREEITEM AddItemToTree(LPCSTR lpszItem, LPARAM ud = NULL, HTREEITEM hParent = NULL, UINT iImage = 0)
 	{
 		TVITEM tv;
 		TVINSERTSTRUCT tvins;
 		static HTREEITEM hPrev = (HTREEITEM) TVI_FIRST;
 		memset(&tv, 0, sizeof(TVITEM));
 		tv.mask = TVIF_TEXT | TVIF_PARAM | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
-		tv.pszText = lpszItem;
+		tv.pszText = const_cast<CHAR*>(lpszItem);
 		tv.lParam = ud;
 		tv.iImage = iImage;
 		tv.iSelectedImage = iImage;

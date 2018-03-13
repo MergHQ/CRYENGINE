@@ -2614,7 +2614,7 @@ EHWShaderClass CHWShader::mfStringClass(const char* szClass)
 }
 const char* CHWShader::mfProfileString(EHWShaderClass eClass)
 {
-	char* szProfile = "Unknown";
+	const char* szProfile = "Unknown";
 	switch (eClass)
 	{
 	case eHWSC_Vertex:
@@ -2660,7 +2660,7 @@ const char* CHWShader::mfProfileString(EHWShaderClass eClass)
 }
 const char* CHWShader::mfClassString(EHWShaderClass eClass)
 {
-	char* szClass = "Unknown";
+	const char* szClass = "Unknown";
 	switch (eClass)
 	{
 	case eHWSC_Vertex:

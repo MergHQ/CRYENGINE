@@ -261,7 +261,7 @@ int CGBindCallback(const VOID* arg1, const VOID* arg2)
 	return 0;
 }
 
-char* szNamesCB[CB_NUM] = { "PER_BATCH", "PER_INSTANCE", "PER_FRAME", "PER_MATERIAL", "PER_LIGHT", "PER_SHADOWGEN", "SKIN_DATA", "INSTANCE_DATA" };
+const char* szNamesCB[CB_NUM] = { "PER_BATCH", "PER_INSTANCE", "PER_FRAME", "PER_MATERIAL", "PER_LIGHT", "PER_SHADOWGEN", "SKIN_DATA", "INSTANCE_DATA" };
 
 void CHWShader_D3D::mfCreateBinds(SHWSInstance* pInst, void* pConstantTable, byte* pShader, int nSize)
 {

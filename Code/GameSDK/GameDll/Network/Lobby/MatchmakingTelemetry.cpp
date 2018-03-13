@@ -98,7 +98,7 @@ CMatchmakingTelemetry::EMMTelRetVal CMatchmakingTelemetry::EndMatchmakingTranscr
 		CTelemetryCollector *tc=static_cast<CTelemetryCollector*>(static_cast<CGame*>(g_pGame)->GetITelemetryCollector());
 		ITelemetryProducer *pProducer = new CMMTelemetryProducer( m_pBuffer );
 
-		char* nameBase;
+		const char* nameBase;
 
 		switch( transcript )
 		{
@@ -430,7 +430,7 @@ void CMMTelemetryProducer::OutputChosenSessionData( SRecording_Packet& eventPack
 {
 	SMMChosenSessionEvent& sessionEvent = reinterpret_cast<SMMChosenSessionEvent&>( eventPacket );
 
-	char* tagName;
+	const char* tagName;
 
 	if( sessionEvent.m_created )
 	{

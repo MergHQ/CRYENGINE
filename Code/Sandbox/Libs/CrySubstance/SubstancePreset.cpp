@@ -90,7 +90,7 @@ bool ShouldSkipInput(SubstanceAir::string name)
 
 void CSubstancePreset::SSerializer::SInputCategory::Serialize(Serialization::IArchive& ar)
 {
-	for each (SubstanceAir::InputInstanceBase* var in inputs)
+	for (SubstanceAir::InputInstanceBase* var : inputs)
 	{
 		const SubstanceAir::InputDescBase& desc = var->mDesc;
 		if (ShouldSkipInput(desc.mIdentifier))
@@ -283,7 +283,7 @@ void CSubstancePreset::SSerializer::SInputCategory::Serialize(Serialization::IAr
 				{
 					Serialization::StringList stringList;
 					SubstanceAir::string current = "";
-					for each (auto var in tDesc.mEnumValues)
+					for (auto var : tDesc.mEnumValues)
 					{
 						if (var.first == value)
 							current = var.second;
@@ -382,7 +382,7 @@ void CSubstancePreset::SSerializer::Serialize(Serialization::IArchive& ar)
 		SubstanceAir::GraphInstance::Inputs instanceInputs = preset->m_pGraphInstance->getInputs();
 		SSerializer::SInputCategory root(preset, "", "");
 		categories.emplace("", std::move(root));
-		for each (SubstanceAir::InputInstanceBase* var in instanceInputs)
+		for (SubstanceAir::InputInstanceBase* var : instanceInputs)
 		{
 			if (ShouldSkipInput(var->mDesc.mIdentifier))
 			{
@@ -606,7 +606,7 @@ void CSubstancePreset::LoadGraphInstance()
 		return;
 	}
 
-	for each (SubstanceAir::InputInstanceBase* inputInstance in m_pGraphInstance->getInputs())
+	for (SubstanceAir::InputInstanceBase* inputInstance : m_pGraphInstance->getInputs())
 	{
 		if (inputInstance->mDesc.mIdentifier == "$outputsize")
 		{
@@ -621,7 +621,7 @@ void CSubstancePreset::LoadGraphInstance()
 		}
 	}
 
-	for each (SubstanceAir::OutputInstance* outputInstance in m_pGraphInstance->getOutputs())
+	for (SubstanceAir::OutputInstance* outputInstance : m_pGraphInstance->getOutputs())
 	{
 		string nameLow(outputInstance->mDesc.mIdentifier.c_str());
 		nameLow.MakeLower();

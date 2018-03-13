@@ -359,7 +359,7 @@ public:
 
 	EShaderCacheMode             m_eCacheMode;
 
-	char*                        m_szShaderPrecache;
+	const char*                  m_szShaderPrecache;
 
 	FXShaderCacheCombinations    m_ShaderCacheCombinations[2];
 	FXShaderCacheCombinations    m_ShaderCacheExportCombinations;

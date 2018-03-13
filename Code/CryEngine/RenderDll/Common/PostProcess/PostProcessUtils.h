@@ -81,7 +81,7 @@ struct SPostEffectsUtils
 	static void UpdateOverscanBorderAspectRatio();
 
 	// Log utility
-	static void Log(char* pszMsg)
+	static void Log(const char* pszMsg)
 	{
 		if (gRenDev->m_LogFile && pszMsg)
 		{
