@@ -1296,13 +1296,15 @@ void CLog::CreateBackupFile() const
 #if CRY_PLATFORM_DURANGO
 	// Xbox has some limitation in file names. No spaces in file name are allowed. The full path is limited by MAX_PATH, etc.
 	// I change spaces with underscores here for valid name and cut it if it exceed a limit.
-	auto processDurangoPath = [](string path)
+	auto processDurangoPath = [](const string& path)
 	{
-		path = PathUtil::ToDosPath(path);
-		path.replace(' ', '_');
-		if (path.size() > MAX_PATH)
-			path.resize(MAX_PATH);
-		return CryStringUtils::UTF8ToWStrSafe(path);
+		// AdjustFileName to handle %ALIAS%
+		char adjusted[_MAX_PATH];
+		const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(path, adjusted, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+		string durangoPath = PathUtil::ToDosPath(szAdjustedPath);
+		durangoPath.replace(' ', '_');
+		CRY_ASSERT_MESSAGE(durangoPath.size() <= MAX_PATH, "Log backup path is larger than MAX_PATH");
+		return CryStringUtils::UTF8ToWStrSafe(durangoPath);
 	};
 	const wstring durangoSrcFilePath = processDurangoPath(srcFilePath);
 	const wstring durangosDstFilePath = processDurangoPath(dstFilePath);
