@@ -8,24 +8,29 @@ namespace Impl
 {
 namespace Wwise
 {
-static constexpr char* s_szImplFolderName = "wwise";
+static constexpr char const* s_szImplFolderName = "wwise";
 
 // XML tags
-static constexpr char* s_szParameterTag = "Parameter";
-static constexpr char* s_szSwitchGroupTag = "SwitchGroup";
-static constexpr char* s_szStateGroupTag = "StateGroup";
-static constexpr char* s_szFileTag = "File";
-static constexpr char* s_szAuxBusTag = "AuxBus";
-static constexpr char* s_szValueTag = "Value";
+static constexpr char const* s_szParameterTag = "Parameter";
+static constexpr char const* s_szSwitchGroupTag = "SwitchGroup";
+static constexpr char const* s_szStateGroupTag = "StateGroup";
+static constexpr char const* s_szFileTag = "File";
+static constexpr char const* s_szAuxBusTag = "AuxBus";
+static constexpr char const* s_szValueTag = "Value";
 
 // XML attributes
-static constexpr char* s_szValueAttribute = "value";
-static constexpr char* s_szMutiplierAttribute = "value_multiplier";
-static constexpr char* s_szShiftAttribute = "value_shift";
-static constexpr char* s_szLocalizedAttribute = "localized";
+static constexpr char const* s_szValueAttribute = "value";
+static constexpr char const* s_szMutiplierAttribute = "value_multiplier";
+static constexpr char const* s_szShiftAttribute = "value_shift";
+static constexpr char const* s_szLocalizedAttribute = "localized";
 
 // XML values
-static constexpr char* s_szTrueValue = "true";
+static constexpr char const* s_szTrueValue = "true";
+
+// Default values
+static constexpr float const s_defaultParamMultiplier = 1.0f;
+static constexpr float const s_defaultParamShift = 0.0f;
+static constexpr float const s_defaultStateValue = 0.0f;
 } // namespace Wwise
 } // namespace Impl
 } // namespace CryAudio

@@ -3,10 +3,9 @@
 #include "StdAfx.h"
 #include "EditorImpl.h"
 
-#include "ImplConnections.h"
+#include "Connection.h"
 #include "ProjectLoader.h"
 
-#include <CryAudioImplSDLMixer/GlobalData.h>
 #include <CrySystem/ISystem.h>
 #include <CryCore/CryCrc32.h>
 #include <CryCore/StlUtils.h>
@@ -18,10 +17,10 @@ namespace ACE
 namespace SDLMixer
 {
 //////////////////////////////////////////////////////////////////////////
-string GetPath(CImplItem const* const pImplItem)
+string GetPath(CItem const* const pItem)
 {
 	string path;
-	IImplItem const* pParent = pImplItem->GetParent();
+	IImplItem const* pParent = pItem->GetParent();
 
 	while (pParent != nullptr)
 	{
@@ -46,7 +45,7 @@ string GetPath(CImplItem const* const pImplItem)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CImplSettings::CImplSettings()
+CSettings::CSettings()
 	: m_assetAndProjectPath(AUDIO_SYSTEM_DATA_ROOT "/" + string(CryAudio::Impl::SDL_mixer::s_szImplFolderName) + "/" + string(CryAudio::s_szAssetsFolderName))
 {}
 
@@ -79,11 +78,11 @@ void CEditorImpl::Reload(bool const preserveConnectionStatus)
 		{
 			if (connection.second > 0)
 			{
-				auto const pImplItem = static_cast<CImplItem* const>(GetImplItem(connection.first));
+				auto const pItem = static_cast<CItem* const>(GetItem(connection.first));
 
-				if (pImplItem != nullptr)
+				if (pItem != nullptr)
 				{
-					pImplItem->SetConnected(true);
+					pItem->SetConnected(true);
 				}
 			}
 		}
@@ -95,35 +94,40 @@ void CEditorImpl::Reload(bool const preserveConnectionStatus)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IImplItem* CEditorImpl::GetImplItem(CID const id) const
+IImplItem* CEditorImpl::GetItem(ControlId const id) const
 {
-	IImplItem* pImplItem = nullptr;
+	IImplItem* pIImplItem = nullptr;
 
 	if (id >= 0)
 	{
-		pImplItem = stl::find_in_map(m_itemCache, id, nullptr);
+		pIImplItem = stl::find_in_map(m_itemCache, id, nullptr);
 	}
 
-	return pImplItem;
+	return pIImplItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
-char const* CEditorImpl::GetTypeIcon(IImplItem const* const pImplItem) const
+char const* CEditorImpl::GetTypeIcon(IImplItem const* const pIImplItem) const
 {
 	char const* szIconPath = "icons:Dialogs/dialog-error.ico";
-	auto const type = static_cast<EImplItemType>(pImplItem->GetType());
+	auto const pItem = static_cast<CItem const* const>(pIImplItem);
 
-	switch (type)
+	if (pItem != nullptr)
 	{
-	case EImplItemType::Event:
-		szIconPath = "icons:audio/sdlmixer/event.ico";
-		break;
-	case EImplItemType::Folder:
-		szIconPath = "icons:General/Folder.ico";
-		break;
-	default:
-		szIconPath = "icons:Dialogs/dialog-error.ico";
-		break;
+		EItemType const type = pItem->GetType();
+
+		switch (type)
+		{
+		case EItemType::Event:
+			szIconPath = "icons:audio/sdlmixer/event.ico";
+			break;
+		case EItemType::Folder:
+			szIconPath = "icons:General/Folder.ico";
+			break;
+		default:
+			szIconPath = "icons:Dialogs/dialog-error.ico";
+			break;
+		}
 	}
 
 	return szIconPath;
@@ -142,18 +146,18 @@ string const& CEditorImpl::GetFolderName() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEditorImpl::IsSystemTypeSupported(ESystemItemType const systemType) const
+bool CEditorImpl::IsSystemTypeSupported(EAssetType const assetType) const
 {
 	bool isSupported = false;
 
-	switch (systemType)
+	switch (assetType)
 	{
-	case ESystemItemType::Trigger:
-	case ESystemItemType::Parameter:
-	case ESystemItemType::Switch:
-	case ESystemItemType::State:
-	case ESystemItemType::Folder:
-	case ESystemItemType::Library:
+	case EAssetType::Trigger:
+	case EAssetType::Parameter:
+	case EAssetType::Switch:
+	case EAssetType::State:
+	case EAssetType::Folder:
+	case EAssetType::Library:
 		isSupported = true;
 		break;
 	default:
@@ -165,62 +169,70 @@ bool CEditorImpl::IsSystemTypeSupported(ESystemItemType const systemType) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEditorImpl::IsTypeCompatible(ESystemItemType const systemType, IImplItem const* const pImplItem) const
+bool CEditorImpl::IsTypeCompatible(EAssetType const assetType, IImplItem const* const pIImplItem) const
 {
 	bool isCompatible = false;
-	auto const implType = static_cast<EImplItemType>(pImplItem->GetType());
+	auto const pItem = static_cast<CItem const* const>(pIImplItem);
 
-	switch (systemType)
+	if (pItem != nullptr)
 	{
-	case ESystemItemType::Trigger:
-	case ESystemItemType::Parameter:
-	case ESystemItemType::State:
-		isCompatible = (implType == EImplItemType::Event);
-		break;
-	default:
-		isCompatible = false;
-		break;
+		switch (assetType)
+		{
+		case EAssetType::Trigger:
+		case EAssetType::Parameter:
+		case EAssetType::State:
+			isCompatible = (pItem->GetType() == EItemType::Event);
+			break;
+		default:
+			isCompatible = false;
+			break;
+		}
 	}
 
 	return isCompatible;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ESystemItemType CEditorImpl::ImplTypeToSystemType(IImplItem const* const pImplItem) const
+EAssetType CEditorImpl::ImplTypeToAssetType(IImplItem const* const pIImplItem) const
 {
-	ESystemItemType systemType = ESystemItemType::Invalid;
-	auto const implType = static_cast<EImplItemType>(pImplItem->GetType());
+	EAssetType assetType = EAssetType::None;
+	auto const pItem = static_cast<CItem const* const>(pIImplItem);
 
-	switch (implType)
+	if (pItem != nullptr)
 	{
-	case EImplItemType::Event:
-		systemType = ESystemItemType::Trigger;
-		break;
-	default:
-		systemType = ESystemItemType::Invalid;
-		break;
+		EItemType const implType = pItem->GetType();
+
+		switch (implType)
+		{
+		case EItemType::Event:
+			assetType = EAssetType::Trigger;
+			break;
+		default:
+			assetType = EAssetType::None;
+			break;
+		}
 	}
 
-	return systemType;
+	return assetType;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CEditorImpl::CreateConnectionToControl(ESystemItemType const controlType, IImplItem* const pImplItem)
+ConnectionPtr CEditorImpl::CreateConnectionToControl(EAssetType const assetType, IImplItem const* const pIImplItem)
 {
 	ConnectionPtr pConnection = nullptr;
 
-	if (pImplItem != nullptr)
+	if (pIImplItem != nullptr)
 	{
-		switch (controlType)
+		switch (assetType)
 		{
-		case ESystemItemType::Parameter:
-			pConnection = std::make_shared<CParameterConnection>(pImplItem->GetId());
+		case EAssetType::Parameter:
+			pConnection = std::make_shared<CParameterConnection>(pIImplItem->GetId());
 			break;
-		case ESystemItemType::State:
-			pConnection = std::make_shared<CStateConnection>(pImplItem->GetId());
+		case EAssetType::State:
+			pConnection = std::make_shared<CStateConnection>(pIImplItem->GetId());
 			break;
 		default:
-			pConnection = std::make_shared<CEventConnection>(pImplItem->GetId());
+			pConnection = std::make_shared<CEventConnection>(pIImplItem->GetId());
 			break;
 		}
 	}
@@ -229,7 +241,7 @@ ConnectionPtr CEditorImpl::CreateConnectionToControl(ESystemItemType const contr
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystemItemType const controlType)
+ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType)
 {
 	ConnectionPtr pConnectionPtr = nullptr;
 
@@ -253,7 +265,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 				path = pNode->getAttr("sdl_path");
 			}
 #endif    // USE_BACKWARDS_COMPATIBILITY
-			CID id;
+			ControlId id;
 
 			if (path.empty())
 			{
@@ -264,55 +276,55 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 				id = GetId(path + "/" + name);
 			}
 
-			auto pImplItem = static_cast<CImplItem*>(GetImplItem(id));
+			auto pItem = static_cast<CItem*>(GetItem(id));
 
-			if (pImplItem == nullptr)
+			if (pItem == nullptr)
 			{
-				pImplItem = new CImplItem(name, id, static_cast<ItemType>(EImplItemType::Event), EImplItemFlags::IsPlaceHolder);
-				m_itemCache[id] = pImplItem;
+				pItem = new CItem(name, id, EItemType::Event, EItemFlags::IsPlaceHolder);
+				m_itemCache[id] = pItem;
 			}
 
-			if (pImplItem != nullptr)
+			if (pItem != nullptr)
 			{
-				switch (controlType)
+				switch (assetType)
 				{
-				case ESystemItemType::Trigger:
+				case EAssetType::Trigger:
 					{
-						auto const pEventConnection = std::make_shared<CEventConnection>(pImplItem->GetId());
-						string connectionType = pNode->getAttr(CryAudio::s_szTypeAttribute);
+						auto const pEventConnection = std::make_shared<CEventConnection>(pItem->GetId());
+						string actionType = pNode->getAttr(CryAudio::s_szTypeAttribute);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
-						if (connectionType.IsEmpty() && pNode->haveAttr("event_type"))
+						if (actionType.IsEmpty() && pNode->haveAttr("event_type"))
 						{
-							connectionType = pNode->getAttr("event_type");
+							actionType = pNode->getAttr("event_type");
 						}
 #endif          // USE_BACKWARDS_COMPATIBILITY
-						if (connectionType == CryAudio::Impl::SDL_mixer::s_szStopValue)
+						if (actionType.compareNoCase(CryAudio::Impl::SDL_mixer::s_szStopValue) == 0)
 						{
-							pEventConnection->SetType(EEventType::Stop);
+							pEventConnection->SetActionType(EEventActionType::Stop);
 						}
-						else if (connectionType == CryAudio::Impl::SDL_mixer::s_szPauseValue)
+						else if (actionType.compareNoCase(CryAudio::Impl::SDL_mixer::s_szPauseValue) == 0)
 						{
-							pEventConnection->SetType(EEventType::Pause);
+							pEventConnection->SetActionType(EEventActionType::Pause);
 						}
-						else if (connectionType == CryAudio::Impl::SDL_mixer::s_szResumeValue)
+						else if (actionType.compareNoCase(CryAudio::Impl::SDL_mixer::s_szResumeValue) == 0)
 						{
-							pEventConnection->SetType(EEventType::Resume);
+							pEventConnection->SetActionType(EEventActionType::Resume);
 						}
 						else
 						{
-							pEventConnection->SetType(EEventType::Start);
+							pEventConnection->SetActionType(EEventActionType::Start);
 
-							float fadeInTime = pEventConnection->GetFadeInTime();
+							float fadeInTime = CryAudio::Impl::SDL_mixer::s_defaultFadeInTime;
 							pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szFadeInTimeAttribute, fadeInTime);
 							pEventConnection->SetFadeInTime(fadeInTime);
 
-							float fadeOutTime = pEventConnection->GetFadeOutTime();
+							float fadeOutTime = CryAudio::Impl::SDL_mixer::s_defaultFadeOutTime;
 							pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szFadeOutTimeAttribute, fadeOutTime);
 							pEventConnection->SetFadeOutTime(fadeOutTime);
 						}
 
 						string const enablePanning = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szPanningEnabledAttribute);
-						pEventConnection->SetPanningEnabled(enablePanning == CryAudio::Impl::SDL_mixer::s_szTrueValue ? true : false);
+						pEventConnection->SetPanningEnabled(enablePanning.compareNoCase(CryAudio::Impl::SDL_mixer::s_szTrueValue) == 0);
 
 						string enableDistAttenuation = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationEnabledAttribute);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
@@ -321,13 +333,13 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 							enableDistAttenuation = pNode->getAttr("enable_distance_attenuation");
 						}
 #endif          // USE_BACKWARDS_COMPATIBILITY
-						pEventConnection->SetAttenuationEnabled(enableDistAttenuation == CryAudio::Impl::SDL_mixer::s_szTrueValue ? true : false);
+						pEventConnection->SetAttenuationEnabled(enableDistAttenuation.compareNoCase(CryAudio::Impl::SDL_mixer::s_szTrueValue) == 0);
 
-						float minAttenuation = pEventConnection->GetMinAttenuation();
+						float minAttenuation = CryAudio::Impl::SDL_mixer::s_defaultMinAttenuationDist;
 						pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMinDistanceAttribute, minAttenuation);
 						pEventConnection->SetMinAttenuation(minAttenuation);
 
-						float maxAttenuation = pEventConnection->GetMaxAttenuation();
+						float maxAttenuation = CryAudio::Impl::SDL_mixer::s_defaultMaxAttenuationDist;
 						pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMaxDistanceAttribute, maxAttenuation);
 						pEventConnection->SetMaxAttenuation(maxAttenuation);
 
@@ -348,29 +360,24 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 						pConnectionPtr = pEventConnection;
 					}
 					break;
-				case ESystemItemType::Parameter:
+				case EAssetType::Parameter:
 					{
-						auto const pParameterConnection = std::make_shared<CParameterConnection>(pImplItem->GetId());
-
-						float mult = pParameterConnection->GetMultiplier();
+						float mult = CryAudio::Impl::SDL_mixer::s_defaultParamMultiplier;
 						pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szMutiplierAttribute, mult);
-						pParameterConnection->SetMultiplier(mult);
 
-						float shift = pParameterConnection->GetShift();
+						float shift = CryAudio::Impl::SDL_mixer::s_defaultParamShift;
 						pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szShiftAttribute, shift);
-						pParameterConnection->SetShift(shift);
 
+						auto const pParameterConnection = std::make_shared<CParameterConnection>(pItem->GetId(), mult, shift);
 						pConnectionPtr = pParameterConnection;
 					}
 					break;
-				case ESystemItemType::State:
+				case EAssetType::State:
 					{
-						auto const pStateConnection = std::make_shared<CStateConnection>(pImplItem->GetId());
-
-						float value = pStateConnection->GetValue();
+						float value = CryAudio::Impl::SDL_mixer::s_defaultStateValue;
 						pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szValueAttribute, value);
-						pStateConnection->SetValue(value);
 
+						auto const pStateConnection = std::make_shared<CStateConnection>(pItem->GetId(), value);
 						pConnectionPtr = pStateConnection;
 					}
 					break;
@@ -383,42 +390,58 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, ESystem
 }
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, ESystemItemType const controlType)
+XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, EAssetType const assetType)
 {
 	XmlNodeRef pNode = nullptr;
 
-	auto const pImplItem = static_cast<CImplItem const* const>(GetImplItem(pConnection->GetID()));
+	auto const pItem = static_cast<CItem const* const>(GetItem(pConnection->GetID()));
 
-	if (pImplItem != nullptr)
+	if (pItem != nullptr)
 	{
-		switch (controlType)
+		switch (assetType)
 		{
-		case ESystemItemType::Trigger:
+		case EAssetType::Trigger:
 			{
 				std::shared_ptr<CEventConnection const> const pEventConnection = std::static_pointer_cast<CEventConnection const>(pConnection);
 
 				if (pEventConnection != nullptr)
 				{
 					pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
-					pNode->setAttr(CryAudio::s_szNameAttribute, pImplItem->GetName());
+					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 
-					string const path = GetPath(pImplItem);
+					string const path = GetPath(pItem);
 					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, path);
 
-					EEventType const type = pEventConnection->GetType();
+					EEventActionType const type = pEventConnection->GetActionType();
 
 					switch (type)
 					{
-					case EEventType::Start:
+					case EEventActionType::Start:
 						{
 							pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szStartValue);
-							pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPanningEnabledAttribute, pEventConnection->IsPanningEnabled() ? CryAudio::Impl::SDL_mixer::s_szTrueValue : CryAudio::Impl::SDL_mixer::s_szFalseValue);
-							pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationEnabledAttribute, pEventConnection->IsAttenuationEnabled() ? CryAudio::Impl::SDL_mixer::s_szTrueValue : CryAudio::Impl::SDL_mixer::s_szFalseValue);
-							pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMinDistanceAttribute, pEventConnection->GetMinAttenuation());
-							pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMaxDistanceAttribute, pEventConnection->GetMaxAttenuation());
 							pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szVolumeAttribute, pEventConnection->GetVolume());
-							pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szFadeInTimeAttribute, pEventConnection->GetFadeInTime());
-							pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szFadeOutTimeAttribute, pEventConnection->GetFadeOutTime());
+
+							if (pEventConnection->IsPanningEnabled())
+							{
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPanningEnabledAttribute, CryAudio::Impl::SDL_mixer::s_szTrueValue);
+							}
+
+							if (pEventConnection->IsAttenuationEnabled())
+							{
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationEnabledAttribute, CryAudio::Impl::SDL_mixer::s_szTrueValue);
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMinDistanceAttribute, pEventConnection->GetMinAttenuation());
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szAttenuationMaxDistanceAttribute, pEventConnection->GetMaxAttenuation());
+							}
+
+							if (pEventConnection->GetFadeInTime() != CryAudio::Impl::SDL_mixer::s_defaultFadeInTime)
+							{
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szFadeInTimeAttribute, pEventConnection->GetFadeInTime());
+							}
+
+							if (pEventConnection->GetFadeOutTime() != CryAudio::Impl::SDL_mixer::s_defaultFadeOutTime)
+							{
+								pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szFadeOutTimeAttribute, pEventConnection->GetFadeOutTime());
+							}
 
 							if (pEventConnection->IsInfiniteLoop())
 							{
@@ -430,53 +453,53 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 							}
 						}
 						break;
-					case EEventType::Stop:
+					case EEventActionType::Stop:
 						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szStopValue);
 						break;
-					case EEventType::Pause:
+					case EEventActionType::Pause:
 						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szPauseValue);
 						break;
-					case EEventType::Resume:
+					case EEventActionType::Resume:
 						pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::SDL_mixer::s_szResumeValue);
 						break;
 					}
 				}
 			}
 			break;
-		case ESystemItemType::Parameter:
+		case EAssetType::Parameter:
 			{
 				std::shared_ptr<CParameterConnection const> const pParameterConnection = std::static_pointer_cast<CParameterConnection const>(pConnection);
 
 				if (pParameterConnection != nullptr)
 				{
 					pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
-					pNode->setAttr(CryAudio::s_szNameAttribute, pImplItem->GetName());
+					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 
-					string const path = GetPath(pImplItem);
+					string const path = GetPath(pItem);
 					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, path);
 
-					if (pParameterConnection->GetMultiplier() != 1.0f)
+					if (pParameterConnection->GetMultiplier() != CryAudio::Impl::SDL_mixer::s_defaultParamMultiplier)
 					{
 						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szMutiplierAttribute, pParameterConnection->GetMultiplier());
 					}
 
-					if (pParameterConnection->GetShift() != 0.0f)
+					if (pParameterConnection->GetShift() != CryAudio::Impl::SDL_mixer::s_defaultParamShift)
 					{
 						pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szShiftAttribute, pParameterConnection->GetShift());
 					}
 				}
 			}
 			break;
-		case ESystemItemType::State:
+		case EAssetType::State:
 			{
 				std::shared_ptr<CStateConnection const> const pStateConnection = std::static_pointer_cast<CStateConnection const>(pConnection);
 
 				if (pStateConnection != nullptr)
 				{
 					pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
-					pNode->setAttr(CryAudio::s_szNameAttribute, pImplItem->GetName());
+					pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 
-					string const path = GetPath(pImplItem);
+					string const path = GetPath(pItem);
 					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute, path);
 
 					pNode->setAttr(CryAudio::Impl::SDL_mixer::s_szValueAttribute, pStateConnection->GetValue());
@@ -492,56 +515,49 @@ XmlNodeRef CEditorImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnect
 //////////////////////////////////////////////////////////////////////////
 void CEditorImpl::EnableConnection(ConnectionPtr const pConnection)
 {
-	auto const pImplItem = static_cast<CImplItem* const>(GetImplItem(pConnection->GetID()));
+	auto const pItem = static_cast<CItem* const>(GetItem(pConnection->GetID()));
 
-	if (pImplItem != nullptr)
+	if (pItem != nullptr)
 	{
-		++m_connectionsByID[pImplItem->GetId()];
-		pImplItem->SetConnected(true);
+		++m_connectionsByID[pItem->GetId()];
+		pItem->SetConnected(true);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEditorImpl::DisableConnection(ConnectionPtr const pConnection)
 {
-	auto const pImplItem = static_cast<CImplItem* const>(GetImplItem(pConnection->GetID()));
+	auto const pItem = static_cast<CItem* const>(GetItem(pConnection->GetID()));
 
-	if (pImplItem != nullptr)
+	if (pItem != nullptr)
 	{
-		int connectionCount = m_connectionsByID[pImplItem->GetId()] - 1;
+		int connectionCount = m_connectionsByID[pItem->GetId()] - 1;
 
-		if (connectionCount <= 0)
+		if (connectionCount < 1)
 		{
+			CRY_ASSERT_MESSAGE(connectionCount >= 0, "Connection count is < 0");
 			connectionCount = 0;
-			pImplItem->SetConnected(false);
+			pItem->SetConnected(false);
 		}
 
-		m_connectionsByID[pImplItem->GetId()] = connectionCount;
+		m_connectionsByID[pItem->GetId()] = connectionCount;
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEditorImpl::Clear()
 {
-	// Delete all the items
 	for (auto const& itemPair : m_itemCache)
 	{
-		CImplItem const* const pImplItem = itemPair.second;
-
-		if (pImplItem != nullptr)
-		{
-			delete pImplItem;
-		}
+		delete itemPair.second;
 	}
 
 	m_itemCache.clear();
-
-	// Clean up the root item
 	m_rootItem.Clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEditorImpl::CreateItemCache(CImplItem const* const pParent)
+void CEditorImpl::CreateItemCache(CItem const* const pParent)
 {
 	if (pParent != nullptr)
 	{
@@ -549,7 +565,7 @@ void CEditorImpl::CreateItemCache(CImplItem const* const pParent)
 
 		for (size_t i = 0; i < count; ++i)
 		{
-			auto const pChild = static_cast<CImplItem* const>(pParent->GetChildAt(i));
+			auto const pChild = static_cast<CItem* const>(pParent->GetChildAt(i));
 
 			if (pChild != nullptr)
 			{
@@ -561,7 +577,7 @@ void CEditorImpl::CreateItemCache(CImplItem const* const pParent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CID CEditorImpl::GetId(string const& name) const
+ControlId CEditorImpl::GetId(string const& name) const
 {
 	return CryAudio::StringToId(name);
 }

@@ -2,13 +2,13 @@
 
 #pragma once
 
-#include "SystemAssets.h"
+#include "Assets.h"
 
 #include <CryAudio/IAudioSystem.h>
+#include <CrySystem/ISystem.h>
 
 namespace ACE
 {
-class CSystemAssetsManager;
 struct IEditorImpl;
 
 static constexpr char* s_szLibraryNodeTag = "Library";
@@ -30,25 +30,25 @@ struct SLibraryScope
 		pNodes[4] = GetISystem()->CreateXmlNode(CryAudio::s_szPreloadsNodeTag);
 	}
 
-	XmlNodeRef GetXmlNode(ESystemItemType const type) const
+	XmlNodeRef GetXmlNode(EAssetType const type) const
 	{
 		XmlNodeRef pNode;
 
 		switch (type)
 		{
-		case ESystemItemType::Trigger:
+		case EAssetType::Trigger:
 			pNode = pNodes[0];
 			break;
-		case ESystemItemType::Parameter:
+		case EAssetType::Parameter:
 			pNode = pNodes[1];
 			break;
-		case ESystemItemType::Switch:
+		case EAssetType::Switch:
 			pNode = pNodes[2];
 			break;
-		case ESystemItemType::Environment:
+		case EAssetType::Environment:
 			pNode = pNodes[3];
 			break;
-		case ESystemItemType::Preload:
+		case EAssetType::Preload:
 			pNode = pNodes[4];
 			break;
 		default:
@@ -65,31 +65,31 @@ struct SLibraryScope
 
 using LibraryStorage = std::map<Scope, SLibraryScope>;
 
-class CFileWriter
+class CFileWriter final
 {
 public:
 
-	CFileWriter(CSystemAssetsManager const& assetsManager, std::set<string>& previousLibraryPaths);
+	explicit CFileWriter(FileNames& previousLibraryPaths);
+
+	CFileWriter() = delete;
 
 	void WriteAll();
 
 private:
 
-	void WriteLibrary(CSystemLibrary const& library);
-	void WriteItem(CSystemAsset* const pItem, string const& path, LibraryStorage& library);
-	void GetScopes(CSystemAsset const* const pItem, std::unordered_set<Scope>& scopes);
-	void WriteControlToXML(XmlNodeRef const pNode, CSystemControl* const pControl, string const& path);
-	void WriteConnectionsToXML(XmlNodeRef const pNode, CSystemControl* const pControl, int const platformIndex = -1);
-	void WriteLibraryEditorData(CSystemAsset const& library, XmlNodeRef const pParentNode) const;
-	void WriteFolderEditorData(CSystemAsset const& library, XmlNodeRef const pParentNode) const;
-	void WriteControlsEditorData(CSystemAsset const& parentAsset, XmlNodeRef const pParentNode) const;
+	void WriteLibrary(CLibrary& library);
+	void WriteItem(CAsset* const pAsset, string const& path, LibraryStorage& library);
+	void GetScopes(CAsset const* const pAsset, std::unordered_set<Scope>& scopes);
+	void WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string const& path);
+	void WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, int const platformIndex = -1);
+	void WriteLibraryEditorData(CAsset const& library, XmlNodeRef const pParentNode) const;
+	void WriteFolderEditorData(CAsset const& library, XmlNodeRef const pParentNode) const;
+	void WriteControlsEditorData(CAsset const& parentAsset, XmlNodeRef const pParentNode) const;
 	void DeleteLibraryFile(string const& filepath);
 
-	CSystemAssetsManager const& m_assetsManager;
+	FileNames&          m_previousLibraryPaths;
+	FileNames           m_foundLibraryPaths;
 
-	std::set<string>&           m_previousLibraryPaths;
-	std::set<string>            m_foundLibraryPaths;
-
-	static uint32 const         s_currentFileVersion;
+	static uint32 const s_currentFileVersion;
 };
 } // namespace ACE

@@ -1,16 +1,15 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
 #include <QWidget>
-#include <SystemTypes.h>
+#include <SharedData.h>
 
 class QFilteringPanel;
 
 namespace ACE
 {
-class CSystemAssetsManager;
-class CSystemControl;
+class CControl;
 class CMiddlewareDataModel;
 class CMiddlewareFilterProxyModel;
 class CTreeView;
@@ -21,17 +20,19 @@ class CMiddlewareDataWidget final : public QWidget
 
 public:
 
-	CMiddlewareDataWidget(CSystemAssetsManager* const pAssetsManager, QWidget* const pParent);
+	explicit CMiddlewareDataWidget(QWidget* const pParent);
 	virtual ~CMiddlewareDataWidget() override;
+
+	CMiddlewareDataWidget() = delete;
 
 	void Reset();
 	void BackupTreeViewStates();
 	void RestoreTreeViewStates();
-	void SelectConnectedImplItem(CID const itemId);
+	void SelectConnectedImplItem(ControlId const itemId);
 
 signals:
 
-	void SignalSelectConnectedSystemControl(CSystemControl& sytemControl, CID const itemId);
+	void SignalSelectConnectedSystemControl(CControl& sytemControl, ControlId const itemId);
 
 private slots:
 
@@ -41,7 +42,6 @@ private:
 
 	void ClearFilters();
 
-	CSystemAssetsManager* const        m_pAssetsManager;
 	CMiddlewareFilterProxyModel* const m_pMiddlewareFilterProxyModel;
 	CMiddlewareDataModel* const        m_pMiddlewareDataModel;
 	QFilteringPanel*                   m_pFilteringPanel;

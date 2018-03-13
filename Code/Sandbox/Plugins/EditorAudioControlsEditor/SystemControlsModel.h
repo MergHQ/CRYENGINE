@@ -3,7 +3,7 @@
 #pragma once
 
 #include <ProxyModels/AttributeFilterProxyModel.h>
-#include <SystemTypes.h>
+#include <SharedData.h>
 
 class CItemModelAttribute;
 class QMimeData;
@@ -11,11 +11,10 @@ class QMimeData;
 namespace ACE
 {
 struct IImplItem;
-class CSystemControl;
-class CSystemLibrary;
-class CSystemFolder;
-class CSystemAsset;
-class CSystemAssetsManager;
+class CControl;
+class CLibrary;
+class CFolder;
+class CAsset;
 
 namespace SystemModelUtils
 {
@@ -26,6 +25,9 @@ enum class EColumns
 	Placeholder,
 	NoConnection,
 	NoControl,
+	PakStatus,
+	InPak,
+	OnDisk,
 	Scope,
 	Name,
 	Count,
@@ -43,9 +45,9 @@ enum class ERoles
 CItemModelAttribute* GetAttributeForColumn(EColumns const column);
 QVariant             GetHeaderData(int const section, Qt::Orientation const orientation, int const role);
 
-void                 GetAssetsFromIndexesSeparated(QModelIndexList const& list, std::vector<CSystemLibrary*>& outLibraries, std::vector<CSystemFolder*>& outFolders, std::vector<CSystemControl*>& outControls);
-void                 GetAssetsFromIndexesCombined(QModelIndexList const& list, std::vector<CSystemAsset*>& outAssets);
-CSystemAsset*        GetAssetFromIndex(QModelIndex const& index, int const column);
+void                 GetAssetsFromIndexesSeparated(QModelIndexList const& list, std::vector<CLibrary*>& outLibraries, std::vector<CFolder*>& outFolders, std::vector<CControl*>& outControls);
+void                 GetAssetsFromIndexesCombined(QModelIndexList const& list, std::vector<CAsset*>& outAssets);
+CAsset*              GetAssetFromIndex(QModelIndex const& index, int const column);
 QMimeData*           GetDragDropData(QModelIndexList const& list);
 void                 DecodeImplMimeData(const QMimeData* pData, std::vector<IImplItem*>& outItems);
 } // namespace SystemModelUtils
@@ -54,7 +56,7 @@ class CSystemSourceModel : public QAbstractItemModel
 {
 public:
 
-	CSystemSourceModel(CSystemAssetsManager* const pAssetsManager, QObject* const pParent);
+	CSystemSourceModel(QObject* const pParent);
 	virtual ~CSystemSourceModel() override;
 
 	void DisconnectSignals();
@@ -80,16 +82,15 @@ private:
 
 	void ConnectSignals();
 
-	CSystemAssetsManager* const m_pAssetsManager;
-	bool                        m_ignoreLibraryUpdates;
-	int const                   m_nameColumn;
+	bool      m_ignoreLibraryUpdates;
+	int const m_nameColumn;
 };
 
 class CSystemLibraryModel : public QAbstractItemModel
 {
 public:
 
-	CSystemLibraryModel(CSystemAssetsManager* const pAssetsManager, CSystemLibrary* const pLibrary, QObject* const pParent);
+	CSystemLibraryModel(CLibrary* const pLibrary, QObject* const pParent);
 	virtual ~CSystemLibraryModel() override;
 
 	void DisconnectSignals();
@@ -115,11 +116,10 @@ protected:
 private:
 
 	void        ConnectSignals();
-	QModelIndex IndexFromItem(CSystemAsset const* pItem) const;
+	QModelIndex IndexFromItem(CAsset const* pAsset) const;
 
-	CSystemAssetsManager* const m_pAssetsManager;
-	CSystemLibrary* const       m_pLibrary;
-	int const                   m_nameColumn;
+	CLibrary* const m_pLibrary;
+	int const       m_nameColumn;
 };
 
 class CSystemFilterProxyModel final : public QAttributeFilterProxyModel

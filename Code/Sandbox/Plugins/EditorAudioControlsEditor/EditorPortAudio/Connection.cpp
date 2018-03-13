@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ImplConnections.h"
+#include "Connection.h"
 
 #include <CrySerialization/Enum.h>
 
@@ -10,15 +10,15 @@ namespace ACE
 namespace PortAudio
 {
 //////////////////////////////////////////////////////////////////////////
-void CConnection::Serialize(Serialization::IArchive& ar)
+void CEventConnection::Serialize(Serialization::IArchive& ar)
 {
-	EConnectionType const type = m_type;
+	EEventActionType const type = m_actionType;
 	uint32 const loopCount = m_loopCount;
 	bool const isInfiniteLoop = m_isInfiniteLoop;
 
-	ar(m_type, "action", "Action");
+	ar(m_actionType, "action", "Action");
 
-	if (m_type == EConnectionType::Start)
+	if (m_actionType == EEventActionType::Start)
 	{
 		ar(m_isInfiniteLoop, "infinite_loop", "Infinite Loop");
 
@@ -31,7 +31,7 @@ void CConnection::Serialize(Serialization::IArchive& ar)
 
 	if (ar.isInput())
 	{
-		if (type != m_type ||
+		if (type != m_actionType ||
 		    loopCount != m_loopCount ||
 		    isInfiniteLoop != m_isInfiniteLoop)
 		{
@@ -40,9 +40,9 @@ void CConnection::Serialize(Serialization::IArchive& ar)
 	}
 }
 
-SERIALIZATION_ENUM_BEGIN(EConnectionType, "Event Type")
-SERIALIZATION_ENUM(EConnectionType::Start, "start", "Start")
-SERIALIZATION_ENUM(EConnectionType::Stop, "stop", "Stop")
+SERIALIZATION_ENUM_BEGIN(EEventActionType, "Event Type")
+SERIALIZATION_ENUM(EEventActionType::Start, "start", "Start")
+SERIALIZATION_ENUM(EEventActionType::Stop, "stop", "Stop")
 SERIALIZATION_ENUM_END()
 } // namespace PortAudio
-} //namespace ACE
+} // namespace ACE

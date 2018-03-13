@@ -5,7 +5,7 @@
 #include <IPlugin.h>
 #include <IEditor.h>
 
-#include "SystemAssetsManager.h"
+#include "AssetsManager.h"
 
 #include <IEditorImpl.h>
 #include <CryAudio/IAudioInterfacesCommonData.h>
@@ -19,6 +19,21 @@ struct IObject;
 namespace ACE
 {
 class CImplementationManager;
+extern CAssetsManager g_assetsManager;
+extern CImplementationManager g_implementationManager;
+extern Platforms g_platforms;
+
+enum class EReloadFlags
+{
+	None                 = 0,
+	ReloadSystemControls = BIT(0),
+	ReloadImplData       = BIT(1),
+	ReloadScopes         = BIT(2),
+	SendSignals          = BIT(3),
+	SetPlatforms         = BIT(4),
+	BackupConnections    = BIT(5),
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EReloadFlags);
 
 class CAudioControlsEditorPlugin final : public IPlugin, public ISystemEventListener
 {
@@ -33,14 +48,11 @@ public:
 	virtual char const* GetPluginDescription() override { return "The Audio Controls Editor enables browsing and configuring audio events exposed from the audio middleware"; }
 	// ~IPlugin
 
-	static void                    SaveModels();
-	static void                    ReloadModels(bool const reloadImplementation);
-	static void                    ReloadScopes();
-	static CSystemAssetsManager*   GetAssetsManager();
-	static CImplementationManager* GetImplementationManger();
-	static void                    ExecuteTrigger(string const& sTriggerName);
-	static void                    StopTriggerExecution();
-	static EErrorCode              GetLoadingErrorMask() { return s_loadingErrorMask; }
+	static void       SaveData();
+	static void       ReloadData(EReloadFlags const flags);
+	static void       ExecuteTrigger(string const& sTriggerName);
+	static void       StopTriggerExecution();
+	static EErrorCode GetLoadingErrorMask() { return s_loadingErrorMask; }
 
 	static CCrySignal<void()> SignalAboutToLoad;
 	static CCrySignal<void()> SignalLoaded;
@@ -53,12 +65,13 @@ private:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 	// ~ISystemEventListener
 
-	static CSystemAssetsManager   s_assetsManager;
-	static std::set<string>       s_currentFilenames;
-	static CryAudio::IObject*     s_pIAudioObject;
-	static CryAudio::ControlId    s_audioTriggerId;
+	void        InitPlatforms();
+	static void ReloadImplData(EReloadFlags const flags);
 
-	static CImplementationManager s_implementationManager;
-	static EErrorCode             s_loadingErrorMask;
+	static FileNames           s_currentFilenames;
+	static CryAudio::IObject*  s_pIAudioObject;
+	static CryAudio::ControlId s_audioTriggerId;
+
+	static EErrorCode          s_loadingErrorMask;
 };
 } // namespace ACE

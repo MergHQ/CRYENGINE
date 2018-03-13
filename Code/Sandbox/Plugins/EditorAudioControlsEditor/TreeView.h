@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -12,7 +12,9 @@ class CTreeView final : public QAdvancedTreeView
 
 public:
 
-	CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
+	explicit CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
+
+	CTreeView() = delete;
 
 	QModelIndexList GetSelectedIndexes() const { return selectedIndexes(); }
 	bool            IsEditing() const;
@@ -26,7 +28,7 @@ public:
 	void            BackupSelection();
 	void            RestoreSelection();
 
-	void            SetNameRole(int const nameRole) { m_nameRole = nameRole; }
+	void            SetNameRole(int const nameRole)     { m_nameRole = nameRole; }
 	void            SetNameColumn(int const nameColumn) { m_nameColumn = nameColumn; }
 
 private:

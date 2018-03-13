@@ -3,16 +3,15 @@
 #pragma once
 
 #include <QAbstractItemModel>
-#include <SystemTypes.h>
+#include <SharedData.h>
 
 class CItemModelAttribute;
 
 namespace ACE
 {
-class CSystemAssetsManager;
-class CSystemControl;
+class CControl;
 
-class CConnectionModel final : public QAbstractItemModel
+class CConnectionsModel final : public QAbstractItemModel
 {
 	Q_OBJECT
 
@@ -32,10 +31,12 @@ public:
 		Name,
 	};
 
-	CConnectionModel(QObject* const pParent);
-	virtual ~CConnectionModel() override;
+	explicit CConnectionsModel(QObject* const pParent);
+	virtual ~CConnectionsModel() override;
 
-	void                        Init(CSystemControl* const pControl);
+	CConnectionsModel() = delete;
+
+	void                        Init(CControl* const pControl);
 	void                        DisconnectSignals();
 
 	static CItemModelAttribute* GetAttributeForColumn(EColumns const column);
@@ -58,17 +59,18 @@ public:
 
 signals:
 
-	void SignalConnectionAdded(CID const id);
+	void SignalConnectionAdded(ControlId const id);
 
 private:
+
+	using ImplItemIds = std::vector<ControlId>;
 
 	void ConnectSignals();
 	void ResetCache();
 	void ResetModelAndCache();
-	void DecodeMimeData(QMimeData const* pData, std::vector<CID>& ids) const;
+	void DecodeMimeData(QMimeData const* pData, ImplItemIds& ids) const;
 
-	CSystemAssetsManager* const m_pAssetsManager;
-	CSystemControl*             m_pControl;
-	std::vector<ConnectionPtr>  m_connectionsCache;
+	CControl*                  m_pControl;
+	std::vector<ConnectionPtr> m_connectionsCache;
 };
 } // namespace ACE

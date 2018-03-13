@@ -1070,8 +1070,8 @@ IParameter const* CImpl::ConstructParameter(XmlNodeRef const pRootNode)
 	SParameter* pParameter = nullptr;
 
 	AkRtpcID rtpcId = AK_INVALID_RTPC_ID;
-	float multiplier = 1.0f;
-	float shift = 0.0f;
+	float multiplier = s_defaultParamMultiplier;
+	float shift = s_defaultParamShift;
 
 	ParseRtpcImpl(pRootNode, rtpcId, multiplier, shift);
 
@@ -1156,8 +1156,8 @@ IEnvironment const* CImpl::ConstructEnvironment(XmlNodeRef const pRootNode)
 	else if (_stricmp(szTag, s_szParameterTag) == 0)
 	{
 		AkRtpcID rtpcId = AK_INVALID_RTPC_ID;
-		float multiplier = 1.0f;
-		float shift = 0.0f;
+		float multiplier = s_defaultParamMultiplier;
+		float shift = s_defaultParamShift;
 
 		ParseRtpcImpl(pRootNode, rtpcId, multiplier, shift);
 
@@ -1269,7 +1269,7 @@ SSwitchState const* CImpl::ParseWwiseRtpcSwitch(XmlNodeRef const pNode)
 
 	if ((szName != nullptr) && (szName[0] != '\0'))
 	{
-		float value = 0.0f;
+		float value = s_defaultStateValue;
 
 		if (pNode->getAttr(s_szValueAttribute, value))
 		{

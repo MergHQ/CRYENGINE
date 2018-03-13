@@ -2,10 +2,9 @@
 
 #pragma once
 
-#include "ImplItem.h"
+#include "Item.h"
 
 #include <CrySystem/XML/IXml.h>
-#include <SystemTypes.h>
 
 namespace ACE
 {
@@ -15,12 +14,14 @@ class CProjectLoader final
 {
 public:
 
-	CProjectLoader(string const& sAssetsPath, CImplItem& rootItem);
+	explicit CProjectLoader(string const& sAssetsPath, CItem& rootItem);
+
+	CProjectLoader() = delete;
 
 private:
 
-	CImplItem* CreateItem(string const& name, string const& path, EImpltemType const type, CImplItem& rootItem);
-	void       LoadFolder(string const& folderPath, CImplItem& parent);
+	CItem* CreateItem(string const& name, string const& path, EItemType const type, CItem& rootItem);
+	void   LoadFolder(string const& folderPath, CItem& parent);
 
 	string const m_assetsPath;
 };

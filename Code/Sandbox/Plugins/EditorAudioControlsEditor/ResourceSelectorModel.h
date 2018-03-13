@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -7,8 +7,7 @@
 
 namespace ACE
 {
-class CSystemLibrary;
-class CSystemAssetsManager;
+class CLibrary;
 
 namespace ResourceModelUtils
 {
@@ -19,9 +18,11 @@ class CResourceSourceModel final : public CSystemSourceModel
 {
 public:
 
-	CResourceSourceModel(CSystemAssetsManager* const pAssetsManager, QObject* const pParent)
-		: CSystemSourceModel(pAssetsManager, pParent)
+	explicit CResourceSourceModel(QObject* const pParent)
+		: CSystemSourceModel(pParent)
 	{}
+
+	CResourceSourceModel() = delete;
 
 protected:
 
@@ -41,9 +42,11 @@ class CResourceLibraryModel final : public CSystemLibraryModel
 {
 public:
 
-	CResourceLibraryModel(CSystemAssetsManager* const pAssetsManager, CSystemLibrary* const pLibrary, QObject* const pParent)
-		: CSystemLibraryModel(pAssetsManager, pLibrary, pParent)
+	explicit CResourceLibraryModel(CLibrary* const pLibrary, QObject* const pParent)
+		: CSystemLibraryModel(pLibrary, pParent)
 	{}
+
+	CResourceLibraryModel() = delete;
 
 protected:
 
@@ -63,7 +66,9 @@ class CResourceFilterProxyModel final : public QDeepFilterProxyModel
 {
 public:
 
-	CResourceFilterProxyModel(ESystemItemType const type, Scope const scope, QObject* const pParent);
+	explicit CResourceFilterProxyModel(EAssetType const type, Scope const scope, QObject* const pParent);
+
+	CResourceFilterProxyModel() = delete;
 
 protected:
 
@@ -77,7 +82,7 @@ protected:
 
 private:
 
-	ESystemItemType const m_type;
-	Scope const           m_scope;
+	EAssetType const m_type;
+	Scope const      m_scope;
 };
 } // namespace ACE
