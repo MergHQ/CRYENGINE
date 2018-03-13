@@ -462,7 +462,7 @@ namespace UQS
 							{
 								assert(worstPerformingQuery.itInQueries != m_queries.end());
 
-								NotifyOfQueryPerformanceWarning(*worstPerformingQuery.itInQueries, "system frame #%i: query has just been flagged as a performance offender (consumed %.1f%% of its granted time)", (int)gEnv->nMainFrameID, worstPerformingQuery.usedFractionOfTimeBudget * 100.0f);
+								NotifyOfQueryPerformanceWarning(*worstPerformingQuery.itInQueries, "system frame #%i: query has just been flagged as a performance offender (consumed %.1f%% of its granted time: %fms vs %fms)", (int)gEnv->nMainFrameID, worstPerformingQuery.usedFractionOfTimeBudget * 100.0f, timeUsedByThisQuery.GetMilliSeconds(), timeBudgetForThisQuery.GetMilliSeconds());
 
 								// move the worst performing query to the end of the queue such that preceding queries won't get offended anymore
 								SRunningQueryInfo worstOne = std::move(*worstPerformingQuery.itInQueries);
@@ -549,7 +549,7 @@ namespace UQS
 				const Client::IQueryFinishedListener::SQueryInfo queryInfo(
 					finishedQueryInfo.queryID,
 					finishedQueryInfo.parentQueryID,
-					stats.querierName.c_str(), 
+					stats.querierName.c_str(),
 					stats.queryBlueprintName.c_str(),
 					(int)stats.numGeneratedItems,
 					(int)stats.numItemsInFinalResultSet,
