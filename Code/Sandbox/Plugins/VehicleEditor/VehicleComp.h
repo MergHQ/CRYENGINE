@@ -32,7 +32,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void Done();
 	virtual void InitVariables() {}
-	virtual void Display(DisplayContext& dc);
+	virtual void Display(CObjectRenderHelper& objRenderHelper);
 
 	virtual bool HitTest(HitContext& hc);
 

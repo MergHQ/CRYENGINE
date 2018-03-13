@@ -986,6 +986,11 @@ void CStandardGraphicsPipeline::Execute()
 			m_pSceneCustomStage->ExecuteDebugOverlay();
 		}
 
+		if (gEnv->IsEditor())
+		{
+			m_pSceneCustomStage->ExecuteHelpers();
+		}
+
 		// Display tone mapping debugging information on the screen
 		if (CRenderer::CV_r_HDRDebug == 1 && !pRenderView->IsRecursive())
 		{

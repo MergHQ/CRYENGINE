@@ -40,7 +40,7 @@ public:
 	bool Init(CBaseObject* prev, const string& file);
 	void Done();
 	void InitVariables() {};
-	void Display(DisplayContext& disp);
+	void Display(CObjectRenderHelper& objRenderHelper);
 
 	bool HitTest(HitContext& hc);
 

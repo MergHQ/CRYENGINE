@@ -29,7 +29,7 @@ public:
 	bool Init(CBaseObject* prev, const string& file);
 	void Done();
 
-	void Display(DisplayContext& dc);
+	void Display(CObjectRenderHelper& objRenderHelper) override;
 
 	void GetBoundSphere(Vec3& pos, float& radius);
 	void GetBoundBox(AABB& box);

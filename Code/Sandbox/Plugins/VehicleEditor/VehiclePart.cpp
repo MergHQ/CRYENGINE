@@ -176,12 +176,13 @@ void CVehiclePart::DrawRotationLimits(DisplayContext& dc, IVariable* pSpeed, IVa
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehiclePart::Display(DisplayContext& dc)
+void CVehiclePart::Display(CObjectRenderHelper& objRenderHelper)
 {
 	// only draw if selected
 	if (!IsSelected())
 		return;
 
+	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	COLORREF wireColor, solidColor;
 	float alpha = 0.4f;
 	wireColor = dc.GetSelectedColor();

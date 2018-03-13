@@ -42,11 +42,11 @@ bool CVehicleWeapon::HitTest(HitContext& hc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehicleWeapon::Display(DisplayContext& dc)
+void CVehicleWeapon::Display(CObjectRenderHelper& objRenderHelper)
 {
 	// todo: draw at mount helper, add rotation limits from parts
 
-	DrawDefault(dc);
+	DrawDefault(objRenderHelper.GetDisplayContextRef());
 }
 
 //////////////////////////////////////////////////////////////////////////

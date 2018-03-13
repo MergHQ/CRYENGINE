@@ -35,7 +35,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	bool Init(CBaseObject* prev, const string& file);
 	void InitVariables() {};
-	void Display(DisplayContext& disp);
+	void Display(CObjectRenderHelper& objRenderHelper);
 	void Done();
 
 	bool HitTest(HitContext& hc);

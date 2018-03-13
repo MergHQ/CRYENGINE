@@ -181,8 +181,9 @@ bool CVehicleHelper::HitTest(HitContext& hc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehicleHelper::Display(DisplayContext& dc)
+void CVehicleHelper::Display(CObjectRenderHelper& objRenderHelper)
 {
+	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	COLORREF color = GetColor();
 	float radius = RADIUS;
 

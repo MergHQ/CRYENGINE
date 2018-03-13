@@ -29,7 +29,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	void Done();
 
-	void Display(DisplayContext& dc);
+	void Display(CObjectRenderHelper& objRenderHelper);
 
 	void GetBoundBox(AABB& box);
 	void GetLocalBounds(AABB& box);

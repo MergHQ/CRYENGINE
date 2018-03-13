@@ -29,7 +29,7 @@ CVehicleComponent::CVehicleComponent()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehicleComponent::Display(DisplayContext& dc)
+void CVehicleComponent::Display(CObjectRenderHelper& objRenderHelper)
 {
 	if (!IsSelected())
 	{
@@ -37,6 +37,7 @@ void CVehicleComponent::Display(DisplayContext& dc)
 	}
 
 	float alpha = 0.4f;
+	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	COLORREF wireColor = dc.GetSelectedColor();
 	COLORREF solidColor = GetColor();
 
