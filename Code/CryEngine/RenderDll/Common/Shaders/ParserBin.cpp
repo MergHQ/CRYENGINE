@@ -835,22 +835,7 @@ void CParserBin::SetupForPlatform(uint32 nPlatform)
 
 const char* CParserBin::GetPlatformShaderlistName()
 {
-	if (CParserBin::m_nPlatform == SF_D3D11)
-		return "ShaderList_PC.txt";
-	else if (CParserBin::m_nPlatform == SF_GL4)
-		return "ShaderList_GL4.txt";
-	else if (CParserBin::m_nPlatform == SF_GLES3)
-		return "ShaderList_GLES3.txt";
-	else if (CParserBin::m_nPlatform == SF_DURANGO)
-		return "ShaderList_Durango.txt";
-	else if (CParserBin::m_nPlatform == SF_ORBIS)
-		return "ShaderList_Orbis.txt";
-	else if (CParserBin::m_nPlatform == SF_VULKAN)
-		return "ShaderList_Vulkan.txt";
-
-	CryFatalError("Unexpected Shader Platform/No platform specified");
-
-	return "ShaderList.txt";
+	return GetShaderlistName(CParserBin::m_nPlatform);
 }
 
 CCryNameTSCRC CParserBin::GetPlatformSpecName(CCryNameTSCRC orgName)

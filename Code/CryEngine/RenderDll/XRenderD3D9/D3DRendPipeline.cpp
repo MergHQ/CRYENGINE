@@ -885,18 +885,7 @@ void CD3D9Renderer::LogShaderImportMiss(const CShader* pShader)
 		return;
 
 	gRenDev->m_cEF.CreateShaderExportRequestLine(pShader, requestLineStr);
-
-#if CRY_PLATFORM_DURANGO
-	shaderList = "ShaderList_Durango.txt";
-#elif CRY_PLATFORM_ORBIS
-	shaderList = "ShaderList_Orbis.txt";
-#elif CRY_RENDERER_OPENGLES && DXGL_INPUT_GLSL
-	shaderList = "ShaderList_GLES3.txt";
-#elif CRY_RENDERER_OPENGL && DXGL_INPUT_GLSL
-	shaderList = "ShaderList_GL4.txt";
-#else
-	shaderList = "ShaderList_PC.txt";
-#endif
+	shaderList = CurrentPlatformShaderListFile();
 
 #ifdef SHADER_ASYNC_COMPILATION
 	if (CRenderer::CV_r_shadersasynccompiling)

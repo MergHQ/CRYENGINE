@@ -390,6 +390,9 @@ private:
 };
 #endif
 
+const char* GetShaderlistName(uint32 nPlatform);
+const char* CurrentPlatformShaderListFile();
+
 class CHWShader_D3D : public CHWShader
 {
 	// TODO: remove all of these friends (via public access)

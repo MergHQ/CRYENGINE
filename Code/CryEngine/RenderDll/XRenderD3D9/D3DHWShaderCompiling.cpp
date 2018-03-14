@@ -3689,6 +3689,45 @@ bool CHWShader_D3D::mfRequestAsync(CShader* pSH, SHWSInstance* pInst, std::vecto
 	return false;
 }
 
+const char* GetShaderlistName(uint32 nPlatform)
+{
+	switch (nPlatform)
+	{
+	case SF_D3D11:
+		return "ShaderList_PC.txt";
+	case SF_GL4:
+		return "ShaderList_GL4.txt";
+	case SF_GLES3:
+		return "ShaderList_GLES3.txt";
+	case SF_DURANGO:
+		return "ShaderList_Durango.txt";
+	case SF_ORBIS:
+		return "ShaderList_Orbis.txt";
+	case SF_VULKAN:
+		return "ShaderList_Vulkan.txt";
+	default:
+		CryFatalError("Unexpected Shader Platform/No platform specified");
+		return "ShaderList.txt";
+}
+}
+
+const char* CurrentPlatformShaderListFile()
+{
+#if CRY_PLATFORM_ORBIS
+	return GetShaderlistName(SF_ORBIS);
+#elif CRY_PLATFORM_DURANGO
+	return GetShaderlistName(SF_DURANGO);
+#elif CRY_RENDERER_OPENGLES && DXGL_INPUT_GLSL
+	return GetShaderlistName(SF_GLES3);
+#elif CRY_RENDERER_OPENGL && DXGL_INPUT_GLSL
+	return GetShaderlistName(SF_GL4);
+#elif CRY_RENDERER_VULKAN
+	return GetShaderlistName(SF_VULKAN);
+#else
+	return GetShaderlistName(SF_D3D11);
+#endif
+}
+
 void CHWShader_D3D::mfSubmitRequestLine(SHWSInstance* pInst, string* pRequestLine)
 {
 	// Generate request line text.
@@ -3736,19 +3775,7 @@ void CHWShader_D3D::mfSubmitRequestLine(SHWSInstance* pInst, string* pRequestLin
 	else
 #endif
 	{
-		NRemoteCompiler::CShaderSrv::Instance().RequestLine(
-#if CRY_PLATFORM_ORBIS
-		  "ShaderList_Orbis.txt",
-#elif CRY_PLATFORM_DURANGO
-		  "ShaderList_Durango.txt",
-#elif CRY_RENDERER_OPENGLES && DXGL_INPUT_GLSL
-		  "ShaderList_GLES3.txt",
-#elif CRY_RENDERER_OPENGL && DXGL_INPUT_GLSL
-		  "ShaderList_GL4.txt",
-#else
-		  "ShaderList_PC.txt",
-#endif
-		  RequestLine.c_str());
+		NRemoteCompiler::CShaderSrv::Instance().RequestLine(CurrentPlatformShaderListFile(), RequestLine.c_str());
 	}
 }
 
@@ -4417,19 +4444,7 @@ void CAsyncShaderTask::SubmitAsyncRequestLine(SShaderAsyncInfo* pAsync)
 		}
 		else
 		{
-			NRemoteCompiler::CShaderSrv::Instance().RequestLine(
-	#if CRY_PLATFORM_ORBIS
-			  "ShaderList_Orbis.txt",
-	#elif CRY_PLATFORM_DURANGO
-			  "ShaderList_Durango.txt",
-	#elif CRY_RENDERER_OPENGLES && DXGL_INPUT_GLSL
-			  "ShaderList_GLES3.txt",
-	#elif CRY_RENDERER_OPENGL && DXGL_INPUT_GLSL
-			  "ShaderList_GL4.txt",
-	#else
-			  "ShaderList_PC.txt",
-	#endif
-			  pAsync->m_RequestLine.c_str());
+			NRemoteCompiler::CShaderSrv::Instance().RequestLine(CurrentPlatformShaderListFile(), pAsync->m_RequestLine.c_str());
 		}
 	}
 }
