@@ -1734,23 +1734,25 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 	// Initialize component entity pointer
 	pComponent->m_pEntity = this;
 
-	// Sorted insertion, all elements of the m_components are sorted by the proxyType
-	SEntityComponentRecord& componentRecord = m_components.Add();
+	// Sorted insertion, all elements of the m_components are sorted by their event priority.
+	SEntityComponentRecord componentRecord;
 	componentRecord.pComponent = pComponent;
 	componentRecord.typeId = componentTypeID;
 	componentRecord.registeredEventsMask = (EntityEventMask)pComponent->GetEventMask();
 	componentRecord.proxyType = (int)pComponent->GetProxyType();
 	componentRecord.eventPriority = pComponent->GetEventPriority();
 
+	// Proxy component must be last in the order of the event processing
+	if (componentRecord.proxyType == ENTITY_PROXY_SCRIPT)
+		componentRecord.eventPriority = 10000;
+
+	m_components.SortedEmplace(std::move(componentRecord));
+
 	// Automatically assign transformation if necessary
 	if (pComponent->GetComponentFlags().Check(EEntityComponentFlags::Transform) && pComponent->GetTransform() == nullptr)
 	{
 		pComponent->SetTransformMatrix(IDENTITY);
 	}
-
-	// Proxy component must be last in the order of the event processing
-	if (componentRecord.proxyType == ENTITY_PROXY_SCRIPT)
-		componentRecord.eventPriority = 10000;
 
 	OnComponentMaskChanged(componentRecord, 0);
 
@@ -1783,7 +1785,9 @@ void CEntity::RemoveAllComponents()
 
 void CEntity::ReplaceComponent(IEntityComponent* pExistingComponent, std::shared_ptr<IEntityComponent> pNewComponent)
 {
-	m_components.ForEach([this, pExistingComponent, &pNewComponent](SEntityComponentRecord& componentRecord) -> bool
+	int previousEventPriority = 0;
+
+	m_components.ForEach([this, pExistingComponent, &pNewComponent, &previousEventPriority](SEntityComponentRecord& componentRecord) -> bool
 	{
 		if (componentRecord.pComponent.get() == pExistingComponent)
 		{
@@ -1803,6 +1807,12 @@ void CEntity::ReplaceComponent(IEntityComponent* pExistingComponent, std::shared
 
 		return true;
 	});
+
+	if (previousEventPriority != pNewComponent->GetEventPriority())
+	{
+		// Force sorting after replacing the component
+		m_components.Sort(true);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3302,9 +3312,4 @@ void CEntity::ShutDownComponent(SEntityComponentRecord& componentRecord)
 
 	// Entity has changed so make the state dirty
 	m_componentChangeState++;
-}
-
-void CEntityComponentsVector::ShutDownComponent(SEntityComponentRecord& componentRecord)
-{
-	static_cast<CEntity*>(componentRecord.pComponent->GetEntity())->ShutDownComponent(componentRecord);
 }

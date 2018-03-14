@@ -5,6 +5,7 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ITimer.h>
+#include "EntityComponentsVector.h"
 #include "SaltBufferArray.h"          // SaltBufferArray<>
 #include <CryCore/StlUtils.h>
 #include <CryMemory/STLPoolAllocator.h>
@@ -308,8 +309,8 @@ private:
 	CSaltBufferArray    m_EntitySaltBuffer;               // used to create new entity ids (with uniqueid=salt)
 	//////////////////////////////////////////////////////////////////////////
 
-	std::vector<IEntityComponent*> m_updatedEntityComponents;
-	std::vector<IEntityComponent*> m_prePhysicsUpdatedEntityComponents;
+	CEntityComponentsVector<SMinimalEntityComponentRecord> m_updatedEntityComponents;
+	CEntityComponentsVector<SMinimalEntityComponentRecord> m_prePhysicsUpdatedEntityComponents;
 
 	// Entity timers.
 	EntityTimersMap    m_timersMap;

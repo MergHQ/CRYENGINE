@@ -398,7 +398,7 @@ public:
 
 	void                     ShutDownComponent(SEntityComponentRecord& componentRecord);
 
-	CEntityComponentsVector& GetComponentsVector() { return m_components; };
+	CEntityComponentsVector<SEntityComponentRecord>& GetComponentsVector() { return m_components; };
 
 	void                     AddSimpleEventListeners(EntityEventMask events, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority);
 	void                     AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority);
@@ -665,5 +665,5 @@ private:
 	uint16 m_keepAliveCounter = 0;
 
 	// Array of components, linear search in a small array is almost always faster then a more complicated set or map containers.
-	CEntityComponentsVector m_components;
+	CEntityComponentsVector<SEntityComponentRecord> m_components;
 };

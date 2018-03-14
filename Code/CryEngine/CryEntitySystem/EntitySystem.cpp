@@ -364,8 +364,8 @@ void CEntitySystem::Reset()
 	DeletePendingEntities();
 
 	ClearEntityArray();
-	m_updatedEntityComponents.clear();
-	m_prePhysicsUpdatedEntityComponents.clear();
+	m_updatedEntityComponents.Clear();
+	m_prePhysicsUpdatedEntityComponents.Clear();
 
 	stl::free_container(m_deletedEntities);
 	m_guidMap.clear();
@@ -960,10 +960,12 @@ void CEntitySystem::PrePhysicsUpdate()
 	SEntityEvent event(ENTITY_EVENT_PREPHYSICSUPDATE);
 	event.fParam[0] = gEnv->pTimer->GetFrameTime();
 
-	for (IEntityComponent* pEntityComponent : m_prePhysicsUpdatedEntityComponents)
+	m_prePhysicsUpdatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> bool
 	{
-		pEntityComponent->ProcessEvent(event);
-	}
+		rec.pComponent->ProcessEvent(event);
+
+		return true;
+	});
 }
 
 //update the entity system
@@ -1491,10 +1493,12 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 	case (int)EComponentProfilingType::Disabled:
 		{
 #endif
-	for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
+	m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> bool
 	{
-		pEntityComponent->ProcessEvent(event);
-	}
+		rec.pComponent->ProcessEvent(event);
+
+		return true;
+	});
 
 #ifdef INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 }
@@ -1503,10 +1507,12 @@ case(int)EComponentProfilingType::Simple:
 {
 	CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
-	for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
+	m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> bool
 	{
-		pEntityComponent->ProcessEvent(event);
-	}
+		rec.pComponent->ProcessEvent(event);
+
+		return true;
+	});
 
 	CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
@@ -1515,9 +1521,9 @@ case(int)EComponentProfilingType::Simple:
 	EntityId renderedEntityCount = 0;
 	EntityId physicalizedEntityCount = 0;
 
-	for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
+	m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> bool
 	{
-		CEntity* pEntity = static_cast<CEntity*>(pEntityComponent->GetEntity());
+		CEntity* pEntity = static_cast<CEntity*>(rec.pComponent->GetEntity());
 
 		if (updatedEntities.find(pEntity) == updatedEntities.end())
 		{
@@ -1532,7 +1538,9 @@ case(int)EComponentProfilingType::Simple:
 				physicalizedEntityCount++;
 			}
 		}
-	}
+
+		return true;
+	});
 
 	IRenderAuxGeom* pRenderAuxGeom = gEnv->pAuxGeomRenderer;
 
@@ -1544,7 +1552,7 @@ case(int)EComponentProfilingType::Simple:
 	positionY += yOffset;
 	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Physicalized Entities: %i", renderedEntityCount);
 	positionY += yOffset;
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entity Components: %" PRISIZE_T, m_updatedEntityComponents.size());
+	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entity Components: %" PRISIZE_T, m_updatedEntityComponents.Size());
 	positionY += yOffset * 2;
 
 	float componentUpdateTime = (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds();
@@ -1563,8 +1571,10 @@ case(int)EComponentProfilingType::TypeCostBreakdown:
 
 	CTimeValue timeBeforeComponentsUpdate = gEnv->pTimer->GetAsyncTime();
 
-	for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
+	m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> bool
 	{
+		IEntityComponent* pEntityComponent = rec.GetComponent();
+
 		CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
 		pEntityComponent->ProcessEvent(event);
@@ -1599,7 +1609,9 @@ case(int)EComponentProfilingType::TypeCostBreakdown:
 		{
 			it->second.totalCostMs += (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds();
 		}
-	}
+
+		return true;
+	});
 
 	CTimeValue timeAfterComponentsUpdate = gEnv->pTimer->GetAsyncTime();
 
@@ -1607,7 +1619,7 @@ case(int)EComponentProfilingType::TypeCostBreakdown:
 
 	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Entities: %i", GetNumEntities());
 	positionY += yOffset;
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entity Components: %" PRISIZE_T, m_updatedEntityComponents.size());
+	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entity Components: %" PRISIZE_T, m_updatedEntityComponents.Size());
 	positionY += yOffset * 2;
 
 	float componentUpdateTime = (timeAfterComponentsUpdate - timeBeforeComponentsUpdate).GetMilliSeconds();
@@ -1758,8 +1770,8 @@ void CEntitySystem::GetMemoryStatistics(ICrySizer* pSizer) const
 	pSizer->AddObject(m_pClassRegistry);
 	pSizer->AddContainer(m_mapEntityNames);
 
-	pSizer->AddContainer(m_updatedEntityComponents);
-	pSizer->AddContainer(m_prePhysicsUpdatedEntityComponents);
+	pSizer->AddContainer(m_updatedEntityComponents.GetVector());
+	pSizer->AddContainer(m_prePhysicsUpdatedEntityComponents.GetVector());
 
 	{
 		SIZER_COMPONENT_NAME(pSizer, "Entities");
@@ -2447,7 +2459,7 @@ void CEntitySystem::DumpEntities()
 		++count;
 	}
 	CryLogAlways("--------------------------------------------------------------------------------");
-	CryLogAlways(" %d entities (%" PRISIZE_T " active components)", count, m_updatedEntityComponents.size());
+	CryLogAlways(" %d entities (%" PRISIZE_T " active components)", count, m_updatedEntityComponents.Size());
 	CryLogAlways("--------------------------------------------------------------------------------");
 }
 
@@ -3229,7 +3241,10 @@ void CEntitySystem::EnableComponentUpdates(IEntityComponent* pComponent, bool bE
 
 	if (bEnable)
 	{
-		m_updatedEntityComponents.push_back(pComponent);
+		SMinimalEntityComponentRecord record;
+		record.pComponent = pComponent;
+
+		m_updatedEntityComponents.SortedEmplace(std::move(record));
 
 		if (!pEntity->HasInternalFlag(CEntity::EInternalFlag::InActiveList))
 		{
@@ -3240,7 +3255,8 @@ void CEntitySystem::EnableComponentUpdates(IEntityComponent* pComponent, bool bE
 	}
 	else
 	{
-		stl::find_and_erase(m_updatedEntityComponents, pComponent);
+		// Invalid the component entry so it can be cleaned up next iteration.
+		m_updatedEntityComponents.Remove(pComponent);
 
 		bool bRequiresUpdate = false;
 
@@ -3268,10 +3284,13 @@ void CEntitySystem::EnableComponentPrePhysicsUpdates(IEntityComponent* pComponen
 {
 	if (bEnable)
 	{
-		m_prePhysicsUpdatedEntityComponents.push_back(pComponent);
+		SMinimalEntityComponentRecord record;
+		record.pComponent = pComponent;
+
+		m_prePhysicsUpdatedEntityComponents.SortedEmplace(std::move(record));
 	}
 	else
 	{
-		stl::find_and_erase(m_prePhysicsUpdatedEntityComponents, pComponent);
+		m_prePhysicsUpdatedEntityComponents.Remove(pComponent);
 	}
 }
