@@ -366,7 +366,7 @@ target_link_libraries(${THIS_PROJECT} PRIVATE bigdigits)
 
 if(WIN32)
 	# Exclude Default libcmt.lib library
-	set_target_properties( ${THIS_PROJECT} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:libcmt.lib") 
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib") 
 	target_link_libraries( ${THIS_PROJECT} PRIVATE Ws2_32 Mswsock "${SPEEX}" )
 endif(WIN32)
 
