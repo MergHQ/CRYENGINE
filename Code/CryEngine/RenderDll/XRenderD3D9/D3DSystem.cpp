@@ -1640,6 +1640,7 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 	// Initialize the set of connected monitors
 	HandleMessage(0, WM_DEVICECHANGE, 0, 0, 0);
 	m_bDisplayChanged = false;
+	m_bWindowRestored = false;
 #endif
 
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
@@ -2364,6 +2365,10 @@ bool CD3D9Renderer::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 
 	case WM_SIZE:
 		{
+			if (wParam == SIZE_RESTORED)
+			{
+				m_bWindowRestored = true;
+			}
 			if (m_CVWidth != nullptr && !m_isChangingResolution && !IsFullscreen())
 			{
 				m_CVWidth->Set(LOWORD(lParam));

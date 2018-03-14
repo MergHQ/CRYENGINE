@@ -93,7 +93,7 @@ void CAudioControlsLoader::LoadControls(string const& folderPath)
 			{
 				string name = fd.name;
 
-				if (name != "." && name != "..")
+				if ((name != ".") && (name != ".."))
 				{
 					LoadAllLibrariesInFolder(folderPath, name);
 
@@ -137,9 +137,7 @@ void CAudioControlsLoader::LoadAllLibrariesInFolder(string const& folderPath, st
 
 			if (root != nullptr)
 			{
-				string const tag = root->getTag();
-
-				if (tag == "ATLConfig")
+				if (_stricmp(root->getTag(), "ATLConfig") == 0)
 				{
 					m_loadedFilenames.insert(filename.MakeLower());
 					string file = fd.name;
@@ -238,7 +236,7 @@ CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const 
 
 	if (pNode != nullptr)
 	{
-		bool const isInDefaultLibrary = (pParentItem->GetName() == CryAudio::s_szDefaultLibraryName);
+		bool const isInDefaultLibrary = (pParentItem->GetName().compareNoCase(CryAudio::s_szDefaultLibraryName) == 0);
 		QString pathName = "";
 
 		if (!isInDefaultLibrary)
@@ -253,12 +251,14 @@ CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const 
 			string const name = pNode->getAttr("atl_name");
 			EAssetType const controlType = TagToType_BackwardsComp(pNode->getTag());
 
-			if (!((controlType == EAssetType::Switch) && ((name == "ObstrOcclCalcType") ||
-			                                              (name == "object_velocity_tracking") ||
-			                                              (name == "object_doppler_tracking") ||
-			                                              (name == CryAudio::s_szAbsoluteVelocityTrackingSwitchName) ||
-			                                              (name == CryAudio::s_szRelativeVelocityTrackingSwitchName))) &&
-			    !((controlType == EAssetType::Trigger) && (name == CryAudio::s_szDoNothingTriggerName)))
+			if (!((controlType == EAssetType::Switch) && ((name.compareNoCase("ObstrOcclCalcType") == 0) ||
+			                                              (name.compareNoCase("object_velocity_tracking") == 0) ||
+			                                              (name.compareNoCase("object_doppler_tracking") == 0) ||
+			                                              (name.compareNoCase(CryAudio::s_szAbsoluteVelocityTrackingSwitchName) == 0) ||
+			                                              (name.compareNoCase(CryAudio::s_szRelativeVelocityTrackingSwitchName) == 0))) &&
+			    !((controlType == EAssetType::Trigger) && ((name.compareNoCase(CryAudio::s_szDoNothingTriggerName) == 0) ||
+			                                               (m_defaultTriggerNames.find(name) != m_defaultTriggerNames.end()))) &&
+			    !((controlType == EAssetType::Parameter) && (m_defaultParameterNames.find(name) != m_defaultParameterNames.end())))
 			{
 				pControl = g_assetsManager.FindControl(name, controlType);
 
@@ -358,11 +358,11 @@ CControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode, Scope
 				{
 					LoadConnections(pNode, pControl);
 
-					if (pControl->GetName() == "object_speed")
+					if (pControl->GetName().compareNoCase("object_speed") == 0)
 					{
 						pControl->SetName(CryAudio::s_szAbsoluteVelocityParameterName);
 					}
-					else if (pControl->GetName() == "object_doppler")
+					else if (pControl->GetName().compareNoCase("object_doppler") == 0)
 					{
 						pControl->SetName(CryAudio::s_szRelativeVelocityParameterName);
 					}
@@ -405,7 +405,7 @@ void CAudioControlsLoader::LoadScopesImpl(string const& sLevelsFolder)
 				}
 				else
 				{
-					if (strcmp(PathUtil::GetExt(name), "level") == 0)
+					if (_stricmp(PathUtil::GetExt(name), "level") == 0)
 					{
 						PathUtil::RemoveExtension(name);
 						g_assetsManager.AddScope(name);
@@ -450,9 +450,7 @@ void CAudioControlsLoader::LoadConnections(XmlNodeRef const pRoot, CControl* con
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version)
 {
-	string const type = pNode->getAttr("atl_type");
-
-	if (type.compare("AutoLoad") == 0)
+	if (_stricmp(pNode->getAttr("atl_type"), "AutoLoad") == 0)
 	{
 		pControl->SetAutoLoad(true);
 	}
@@ -467,9 +465,8 @@ void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CContr
 	{
 		// Skip unused data from previous format
 		XmlNodeRef const pGroupNode = pNode->getChild(i);
-		string const tag = pGroupNode->getTag();
 
-		if ((version == 1) && (tag.compare("ATLConfigGroup") != 0))
+		if ((version == 1) && (_stricmp(pGroupNode->getTag(), "ATLConfigGroup") != 0))
 		{
 			continue;
 		}
@@ -483,7 +480,7 @@ void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CContr
 		{
 			++platformIndex;
 
-			if (stricmp(szPlatformName, szPlatform) == 0)
+			if (_stricmp(szPlatformName, szPlatform) == 0)
 			{
 				foundPlatform = true;
 				break;
@@ -549,7 +546,7 @@ void CAudioControlsLoader::LoadLibraryEditorData(XmlNodeRef const pLibraryNode, 
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsLoader::LoadAllFolders(XmlNodeRef const pFoldersNode, CAsset& library)
 {
-	if ((pFoldersNode != nullptr) && (library.GetName() != CryAudio::s_szDefaultLibraryName))
+	if ((pFoldersNode != nullptr) && (library.GetName().compareNoCase(CryAudio::s_szDefaultLibraryName) != 0))
 	{
 		int const size = pFoldersNode->getChildCount();
 

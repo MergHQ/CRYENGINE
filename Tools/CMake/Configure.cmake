@@ -146,6 +146,17 @@ include("${TOOLS_CMAKE_DIR}/CommonOptions.cmake")
 # Must be included after SDK_DIR definition
 include("${TOOLS_CMAKE_DIR}/CopyFilesToBin.cmake")
 
+if(MSVC_VERSION AND NOT OPTION_PGO STREQUAL "Off")
+	if (OPTION_RECODE)
+		MESSAGE(STATUS "Cannot support Recode with PGO enabled - disabling Recode support")
+		set(OPTION_RECODE OFF CACHE BOOL "Enable support for Recode" FORCE)
+	endif()
+	if (NOT OPTION_LTCG)
+		MESSAGE(STATUS "OPTION_LTCG is required for PGO - enabling LTCG")
+		set(OPTION_LTCG ON CACHE BOOL "Enable link-time code generation/optimization" FORCE)
+	endif()
+endif()
+
 if (DURANGO)
 	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 		MESSAGE(STATUS "OPTION_STATIC_LINKING required for this configuration")

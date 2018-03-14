@@ -385,7 +385,7 @@ void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const 
 					{
 						XmlNodeRef const pTempNode = pNode->getChild(j);
 
-						if ((pTempNode != nullptr) && (string(pTempNode->getTag()) == string(pChild->getTag())))
+						if ((pTempNode != nullptr) && (_stricmp(pTempNode->getTag(), pChild->getTag()) == 0))
 						{
 							int const numAttributes1 = pTempNode->getNumAttributes();
 							int const numAttributes2 = pChild->getNumAttributes();

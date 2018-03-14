@@ -386,7 +386,14 @@ add_sources("ParticleSystem_uber.cpp"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(Cry3DEngine PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
-target_link_libraries( ${THIS_PROJECT} PRIVATE lz4 )
+MACRO(setup_Cry3DEngine)
+	target_link_libraries( ${THIS_PROJECT} PRIVATE lz4 )
+	target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/TangentBasisComputation")
+ENDMACRO()
 
-target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/TangentBasisComputation")
+CryEngineModule(Cry3DEngine PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
+setup_Cry3DEngine()
+if (OPTION_UNIT_TEST AND NOT OPTION_STATIC_LINKING) #Currently an additional static lib is only used by unit testing under non-monolithic mode
+	CryEngineModule(Cry3DEngineLib PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine" FORCE_STATIC)
+	setup_Cry3DEngine()
+endif()

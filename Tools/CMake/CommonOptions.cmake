@@ -32,6 +32,12 @@ if (WIN32 OR WIN64 OR LINUX)
 endif()
 
 option(OPTION_LTCG "Enable link-time code generation/optimization" OFF)
+set(OPTION_PGO "Off" CACHE STRING "Enable profile-guided optimization")
+set_property(CACHE OPTION_PGO PROPERTY STRINGS "Off" "Generate" "Use")
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	option(OPTION_PGO_INSTRUMENT "Use instrumentation instead of sampling for PGO (more expensive, but better results)" OFF)
+endif()
 
 if (MSVC_VERSION)
 option(OPTION_SHOW_COMPILE_METRICS "Show MSVC compilation metrics" OFF)

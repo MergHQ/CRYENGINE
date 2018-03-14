@@ -454,6 +454,7 @@ TEST(ArchiveHostTest, SerializeJson)
 	// Validate that loading succeeds
 	DynArray<char> buffer;
 	host->SaveJsonBuffer(buffer, Serialization::SStruct(parsedObject));
+	buffer.push_back('\0');
 
 	const string expectedJson = "{"
 		"\n\t\"myString\": \"STR\","

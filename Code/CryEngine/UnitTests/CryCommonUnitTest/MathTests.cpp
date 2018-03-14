@@ -4,6 +4,9 @@
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Math_SSE.h>
 #include <CryMath/LCGRandom.h>
+#include <CryMath/SNoise.h>
+#include <CryMath/RadixSort.h>
+#include <CryMemory/HeapAllocator.h>
 using namespace crymath;
 
 const float HALF_EPSILON = 0.00025f;
@@ -541,5 +544,55 @@ TEST(CryMathTest, Vector)
 #endif
 }
 
+
+template<typename Real>
+NO_INLINE Real SNoiseNoInline(Vec4_tpl<Real> v)
+{
+	return SNoise(v);
+}
+
+template<typename Real>
+void SnoiseTest()
+{
+	using namespace crydetail;
+	const Vec4_tpl<Real> s0 = ToVec4(convert<Real>(0.0f));
+	const Vec4_tpl<Real> s1 = Vec4_tpl<Real>(convert<Real>(104.2f), convert<Real>(504.85f), convert<Real>(32.0f), convert<Real>(10.25f));
+	const Vec4_tpl<Real> s2 = Vec4_tpl<Real>(convert<Real>(-104.2f), convert<Real>(504.85f), convert<Real>(-32.0f), convert<Real>(1.25f));
+	const Vec4_tpl<Real> s3 = Vec4_tpl<Real>(convert<Real>(-257.07f), convert<Real>(-25.85f), convert<Real>(-0.5f), convert<Real>(105.5f));
+	const Vec4_tpl<Real> s4 = Vec4_tpl<Real>(convert<Real>(104.2f), convert<Real>(1504.85f), convert<Real>(78.57f), convert<Real>(-0.75f));
+	Real p0 = SNoiseNoInline(s0);
+	Real p1 = SNoiseNoInline(s1);
+	Real p2 = SNoiseNoInline(s2);
+	Real p3 = SNoiseNoInline(s3);
+	Real p4 = SNoiseNoInline(s4);
+	// #PFX2_TODO : Orbis has a slight difference in precision
+#if CRY_COMPILER_MSVC
+	REQUIRE(All(p0 == convert<Real>(0.0f)));
+	REQUIRE(All(p1 == convert<Real>(-0.291425288f)));
+	REQUIRE(All(p2 == convert<Real>(-0.295406163f)));
+	REQUIRE(All(p3 == convert<Real>(-0.127176195f)));
+	REQUIRE(All(p4 == convert<Real>(-0.0293087773f)));
+#endif
+}
+
+TEST(CryMathTest, SNoise)
+{
+	SnoiseTest<float>();
+	SnoiseTest<f32v4>();
+}
+
+TEST(CryMathTest, RadixSortTest)
+{
+	stl::HeapAllocator<stl::PSyncNone> heap;
+
+	const uint64 data[] = { 15923216, 450445401561561, 5061954, 5491494, 56494109840, 500120, 520025710, 58974, 45842669, 3226, 995422665 };
+	const uint sz = sizeof(data) / sizeof(data[0]);
+	const uint32 expectedIndices[sz] = { 9, 7, 5, 2, 3, 0, 8, 6, 10, 4, 1 };
+	uint32 indices[sz];
+
+	RadixSort(indices, indices + sz, data, data + sz, heap);
+
+	REQUIRE(memcmp(expectedIndices, indices, sz * 4) == 0);
+}
 
 #endif // CRY_HARDWARE_VECTOR4
