@@ -100,7 +100,7 @@ void CProjectLoader::LoadBanks(string const& folderPath, bool const isLocalized,
 
 		for (string const& filename : banks)
 		{
-			if (filename.compare(0, masterBankName.length(), masterBankName) != 0)
+			if (filename.compareNoCase(0, masterBankName.length(), masterBankName) != 0)
 			{
 				CItem* const pSoundBank = CreateItem(filename, EItemType::Bank, &parent, folderPath + "/" + filename);
 			}
@@ -153,37 +153,37 @@ void CProjectLoader::ParseFile(string const& filepath, CItem& parent)
 
 				if (pChild != nullptr)
 				{
-					string const className = pChild->getAttr("class");
+					char const* const szClassName = pChild->getAttr("class");
 
-					if ((className == "EventFolder") || (className == "ParameterPresetFolder"))
+					if ((_stricmp(szClassName, "EventFolder") == 0) || (_stricmp(szClassName, "ParameterPresetFolder") == 0))
 					{
 						pItem = LoadFolder(pChild, parent);
 					}
-					else if (className == "SnapshotGroup")
+					else if (_stricmp(szClassName, "SnapshotGroup") == 0)
 					{
 						LoadSnapshotGroup(pChild, parent);
 					}
-					else if (className == "Event")
+					else if (_stricmp(szClassName, "Event") == 0)
 					{
 						pItem = LoadEvent(pChild, parent);
 					}
-					else if (className == "Snapshot")
+					else if (_stricmp(szClassName, "Snapshot") == 0)
 					{
 						pItem = LoadSnapshot(pChild, parent);
 					}
-					else if (className == "ParameterPreset")
+					else if (_stricmp(szClassName, "ParameterPreset") == 0)
 					{
 						pItem = LoadParameter(pChild, parent);
 					}
-					else if (className == "MixerReturn")
+					else if (_stricmp(szClassName, "MixerReturn") == 0)
 					{
 						LoadReturn(pChild, parent);
 					}
-					else if (className == "MixerGroup")
+					else if (_stricmp(szClassName, "MixerGroup") == 0)
 					{
 						LoadMixerGroup(pChild, parent);
 					}
-					else if (className == "MixerVCA")
+					else if (_stricmp(szClassName, "MixerVCA") == 0)
 					{
 						LoadVca(pChild, parent);
 					}
@@ -240,7 +240,7 @@ CItem* CProjectLoader::LoadContainer(XmlNodeRef const pNode, EItemType const typ
 		XmlNodeRef const pChild = pNode->getChild(i);
 		string const attribName = pChild->getAttr("name");
 
-		if (attribName == "name")
+		if (attribName.compareNoCase("name") == 0)
 		{
 			// Get the container name
 			XmlNodeRef const pNameNode = pChild->getChild(0);
@@ -250,7 +250,7 @@ CItem* CProjectLoader::LoadContainer(XmlNodeRef const pNode, EItemType const typ
 				name = pNameNode->getContent();
 			}
 		}
-		else if (attribName == relationshipParamName)
+		else if (attribName.compareNoCase(relationshipParamName) == 0)
 		{
 			// Get the container parent
 			XmlNodeRef const pParentContainerNode = pChild->getChild(0);
@@ -280,9 +280,9 @@ CItem* CProjectLoader::LoadSnapshotGroup(XmlNodeRef const pNode, CItem& parent)
 	for (int i = 0; i < size; ++i)
 	{
 		XmlNodeRef const pChild = pNode->getChild(i);
-		string const attribName = pChild->getAttr("name");
+		char const* const szAttribName = pChild->getAttr("name");
 
-		if (attribName == "name")
+		if (_stricmp(szAttribName, "name") == 0)
 		{
 			XmlNodeRef const pNameNode = pChild->getChild(0);
 
@@ -291,7 +291,7 @@ CItem* CProjectLoader::LoadSnapshotGroup(XmlNodeRef const pNode, CItem& parent)
 				name = pNameNode->getContent();
 			}
 		}
-		else if (attribName == "items")
+		else if (_stricmp(szAttribName, "items") == 0)
 		{
 			int const itemCount = pChild->getChildCount();
 
@@ -346,9 +346,9 @@ CItem* CProjectLoader::LoadItem(XmlNodeRef const pNode, EItemType const type, CI
 
 		if (pChild != nullptr)
 		{
-			string const tag = pChild->getTag();
+			char const* const szTag = pChild->getTag();
 
-			if (tag == "property")
+			if (_stricmp(szTag, "property") == 0)
 			{
 				string const paramName = pChild->getAttr("name");
 
@@ -362,11 +362,11 @@ CItem* CProjectLoader::LoadItem(XmlNodeRef const pNode, EItemType const type, CI
 					}
 				}
 			}
-			else if (tag == "relationship")
+			else if (_stricmp(szTag, "relationship") == 0)
 			{
-				string const relationshipName = pChild->getAttr("name");
+				char const* const relationshipName = pChild->getAttr("name");
 
-				if (relationshipName == "folder" || relationshipName == "output")
+				if ((_stricmp(relationshipName, "folder") == 0) || (_stricmp(relationshipName, "output") == 0))
 				{
 					XmlNodeRef const pValue = pChild->getChild(0);
 

@@ -199,9 +199,12 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetT
 
 	if (pNode != nullptr)
 	{
-		string const nodeTag = pNode->getTag();
+		char const* const szTag = pNode->getTag();
 
-		if ((nodeTag == CryAudio::s_szEventTag) || (nodeTag == CryAudio::Impl::PortAudio::s_szFileTag) || (nodeTag == "PortAudioEvent") || (nodeTag == "PortAudioSample"))
+		if ((_stricmp(szTag, CryAudio::s_szEventTag) == 0) ||
+		    (_stricmp(szTag, CryAudio::Impl::PortAudio::s_szFileTag) == 0) ||
+		    (_stricmp(szTag, "PortAudioEvent") == 0) || // Backwards compatibility.
+		    (_stricmp(szTag, "PortAudioSample") == 0))  // Backwards compatibility.
 		{
 			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
 			string path = pNode->getAttr(CryAudio::Impl::PortAudio::s_szPathAttribute);

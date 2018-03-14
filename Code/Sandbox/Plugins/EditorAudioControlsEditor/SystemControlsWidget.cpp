@@ -431,7 +431,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 					}
 					else if (controlType == EAssetType::Preload)
 					{
-						if (pControl->GetScope() == CryAudio::StringToId("global") && !pControl->IsAutoLoad())
+						if (pControl->GetScope() == Utils::GetGlobalScope() && !pControl->IsAutoLoad())
 						{
 							QAction* const pLoadAction = new QAction(tr("Load Global Preload Request"), pContextMenu);
 							QAction* const pUnloadAction = new QAction(tr("Unload Global Preload Request"), pContextMenu);
@@ -450,7 +450,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 				for (auto const pControl : controls)
 				{
-					if ((pControl->GetType() == EAssetType::Preload) && (pControl->GetScope() == CryAudio::StringToId("global")) && !pControl->IsAutoLoad())
+					if ((pControl->GetType() == EAssetType::Preload) && (pControl->GetScope() == Utils::GetGlobalScope()) && !pControl->IsAutoLoad())
 					{
 						hasOnlyGlobalPreloads = true;
 					}

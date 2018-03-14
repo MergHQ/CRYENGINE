@@ -86,7 +86,7 @@ void CFileLoader::LoadControls()
 			{
 				string name = fd.name;
 
-				if (name != "." && name != "..")
+				if ((name != ".") && (name != ".."))
 				{
 					LoadAllLibrariesInFolder(g_assetsManager.GetConfigFolderPath(), name);
 
@@ -132,9 +132,7 @@ void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 
 			if (root != nullptr)
 			{
-				string const tag = root->getTag();
-
-				if (tag == CryAudio::s_szRootNodeTag)
+				if (_stricmp(root->getTag(), CryAudio::s_szRootNodeTag) == 0)
 				{
 					m_loadedFilenames.insert(filename.MakeLower());
 					string file = fd.name;
@@ -418,9 +416,7 @@ void CFileLoader::LoadConnections(XmlNodeRef const pRoot, CControl* const pContr
 //////////////////////////////////////////////////////////////////////////
 void CFileLoader::LoadPreloadConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version)
 {
-	string const type = pNode->getAttr(CryAudio::s_szTypeAttribute);
-
-	if (type.compare(CryAudio::s_szDataLoadType) == 0)
+	if (_stricmp(pNode->getAttr(CryAudio::s_szTypeAttribute), CryAudio::s_szDataLoadType) == 0)
 	{
 		pControl->SetAutoLoad(true);
 	}
@@ -435,9 +431,8 @@ void CFileLoader::LoadPreloadConnections(XmlNodeRef const pNode, CControl* const
 	{
 		// Skip unused data from previous format
 		XmlNodeRef const pPlatformNode = pNode->getChild(i);
-		string const tag = pPlatformNode->getTag();
 
-		if (tag == CryAudio::s_szPlatformTag)
+		if (_stricmp(pPlatformNode->getTag(), CryAudio::s_szPlatformTag) == 0)
 		{
 			// Get the index for that platform name
 			int platformIndex = -1;
@@ -448,7 +443,7 @@ void CFileLoader::LoadPreloadConnections(XmlNodeRef const pNode, CControl* const
 			{
 				++platformIndex;
 
-				if (stricmp(szPlatformName, szPlatform) == 0)
+				if (_stricmp(szPlatformName, szPlatform) == 0)
 				{
 					foundPlatform = true;
 					break;

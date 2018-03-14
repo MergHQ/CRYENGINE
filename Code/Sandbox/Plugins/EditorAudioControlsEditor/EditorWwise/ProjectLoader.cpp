@@ -25,43 +25,43 @@ string const g_soundBanksInfoFileName = "SoundbanksInfo.xml";
 ControlId g_soundBanksFolderId = s_aceInvalidId;
 
 //////////////////////////////////////////////////////////////////////////
-EItemType TagToItemType(string const& tag)
+EItemType TagToItemType(char const* const szTag)
 {
 	EItemType type = EItemType::None;
 
-	if (tag == "GameParameter")
+	if (_stricmp(szTag, "GameParameter") == 0)
 	{
 		type = EItemType::Parameter;
 	}
-	else if (tag == "Event")
+	else if (_stricmp(szTag, "Event") == 0)
 	{
 		type = EItemType::Event;
 	}
-	else if (tag == "AuxBus")
+	else if (_stricmp(szTag, "AuxBus") == 0)
 	{
 		type = EItemType::AuxBus;
 	}
-	else if (tag == "WorkUnit")
+	else if (_stricmp(szTag, "WorkUnit") == 0)
 	{
 		type = EItemType::WorkUnit;
 	}
-	else if (tag == "StateGroup")
+	else if (_stricmp(szTag, "StateGroup") == 0)
 	{
 		type = EItemType::StateGroup;
 	}
-	else if (tag == "SwitchGroup")
+	else if (_stricmp(szTag, "SwitchGroup") == 0)
 	{
 		type = EItemType::SwitchGroup;
 	}
-	else if (tag == "Switch")
+	else if (_stricmp(szTag, "Switch") == 0)
 	{
 		type = EItemType::Switch;
 	}
-	else if (tag == "State")
+	else if (_stricmp(szTag, "State") == 0)
 	{
 		type = EItemType::State;
 	}
-	else if (tag == "Folder")
+	else if (_stricmp(szTag, "Folder") == 0)
 	{
 		type = EItemType::VirtualFolder;
 	}
