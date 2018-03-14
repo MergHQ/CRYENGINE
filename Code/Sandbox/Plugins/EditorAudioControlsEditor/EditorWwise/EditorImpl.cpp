@@ -127,7 +127,7 @@ CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const typ
 {
 	CItem* pSearchedItem = nullptr;
 
-	if ((pItem->GetName() == name) && (pItem->GetType() == type))
+	if ((pItem->GetName().compareNoCase(name) == 0) && (pItem->GetType() == type))
 	{
 		pSearchedItem = pItem;
 	}
@@ -471,7 +471,7 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetT
 						{
 							auto const pChild = static_cast<CItem* const>(pItem->GetChildAt(i));
 
-							if ((pChild != nullptr) && (pChild->GetName() == childName))
+							if ((pChild != nullptr) && (pChild->GetName().compareNoCase(childName) == 0))
 							{
 								pStateItem = pChild;
 							}

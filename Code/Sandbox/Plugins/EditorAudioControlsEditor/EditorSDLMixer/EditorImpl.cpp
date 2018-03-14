@@ -247,9 +247,12 @@ ConnectionPtr CEditorImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetT
 
 	if (pNode != nullptr)
 	{
-		string const nodeTag = pNode->getTag();
+		char const* const szTag = pNode->getTag();
 
-		if ((nodeTag == CryAudio::s_szEventTag) || (nodeTag == CryAudio::Impl::SDL_mixer::s_szFileTag) || (nodeTag == "SDLMixerEvent") || (nodeTag == "SDLMixerSample"))
+		if ((_stricmp(szTag, CryAudio::s_szEventTag) == 0) ||
+		    (_stricmp(szTag, CryAudio::Impl::SDL_mixer::s_szFileTag) == 0) ||
+		    (_stricmp(szTag, "SDLMixerEvent") == 0) || // Backwards compatibility.
+		    (_stricmp(szTag, "SDLMixerSample") == 0))  // Backwards compatibility.
 		{
 			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
 			string path = pNode->getAttr(CryAudio::Impl::SDL_mixer::s_szPathAttribute);

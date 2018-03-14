@@ -175,7 +175,7 @@ void CAssetsManager::DeleteItem(CAsset* const pAsset)
 			if (type != EAssetType::Folder)
 			{
 				// Must be a control
-				CControl* const pControl = static_cast<CControl*>(pAsset);
+				auto const pControl = static_cast<CControl*>(pAsset);
 
 				if (pControl != nullptr)
 				{
@@ -468,7 +468,7 @@ CControl* CAssetsManager::FindControl(string const& name, EAssetType const type,
 	{
 		for (auto const pControl : m_controls)
 		{
-			if ((pControl != nullptr) && (pControl->GetName() == name) && (pControl->GetType() == type))
+			if ((pControl != nullptr) && (pControl->GetName().compareNoCase(name) == 0) && (pControl->GetType() == type))
 			{
 				pSystemControl = pControl;
 				break;
@@ -483,7 +483,7 @@ CControl* CAssetsManager::FindControl(string const& name, EAssetType const type,
 		{
 			auto const pControl = static_cast<CControl*>(pParent->GetChild(i));
 
-			if ((pControl != nullptr) && (pControl->GetName() == name) && (pControl->GetType() == type))
+			if ((pControl != nullptr) && (pControl->GetName().compareNoCase(name) == 0) && (pControl->GetType() == type))
 			{
 				pSystemControl = pControl;
 				break;

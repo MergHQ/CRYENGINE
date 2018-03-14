@@ -52,9 +52,9 @@ void CProjectLoader::LoadFolder(string const& folderPath, CItem& parent)
 
 					if (posExtension != string::npos)
 					{
-						if ((stricmp(name.data() + posExtension, ".mp3") == 0) ||
-						    (stricmp(name.data() + posExtension, ".ogg") == 0) ||
-						    (stricmp(name.data() + posExtension, ".wav") == 0))
+						if ((_stricmp(name.data() + posExtension, ".mp3") == 0) ||
+						    (_stricmp(name.data() + posExtension, ".ogg") == 0) ||
+						    (_stricmp(name.data() + posExtension, ".wav") == 0))
 						{
 							// Create the event with the same name as the file
 							CreateItem(name, folderPath, EItemType::Event, parent);

@@ -154,7 +154,7 @@ CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const typ
 {
 	CItem* pSearchedItem = nullptr;
 
-	if ((pItem->GetName() == name) && (pItem->GetType() == type))
+	if ((pItem->GetName().compareNoCase(name) == 0) && (pItem->GetType() == type))
 	{
 		pSearchedItem = pItem;
 	}
@@ -815,7 +815,7 @@ CItem* CEditorImpl::GetItemFromPath(string const& fullpath)
 		{
 			auto const pNextChild = static_cast<CItem* const>(pItem->GetChildAt(i));
 
-			if ((pNextChild != nullptr) && (pNextChild->GetName() == token))
+			if ((pNextChild != nullptr) && (pNextChild->GetName().compareNoCase(token) == 0))
 			{
 				pChild = pNextChild;
 				break;
@@ -854,7 +854,7 @@ CItem* CEditorImpl::CreatePlaceholderFolderPath(string const& path)
 		{
 			auto const pChild = static_cast<CItem* const>(pItem->GetChildAt(i));
 
-			if ((pChild != nullptr) && (pChild->GetName() == token))
+			if ((pChild != nullptr) && (pChild->GetName().compareNoCase(token) == 0))
 			{
 				pFoundChild = pChild;
 				break;
