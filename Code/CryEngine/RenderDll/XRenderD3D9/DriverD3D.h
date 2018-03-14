@@ -790,6 +790,7 @@ public:
 	string                   m_Description;
 	EWindowState             m_windowState = EWindowState::Windowed;
 	bool                     m_isChangingResolution = false;
+	bool					 m_bWindowRestored = false; // Dirty-flag set when the window was restored from minimized state
 
 	std::map<SDisplayContextKey, std::shared_ptr<CRenderDisplayContext>> m_displayContexts;
 

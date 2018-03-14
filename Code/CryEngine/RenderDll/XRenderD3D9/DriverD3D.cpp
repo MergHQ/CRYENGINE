@@ -563,7 +563,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 #if CRY_PLATFORM_CONSOLE || CRY_PLATFORM_MOBILE
 		bNativeRes = true;
 #elif CRY_PLATFORM_WINDOWS
-		bResizeSwapchain |= m_bDisplayChanged && IsFullscreen();
+		bResizeSwapchain |= (m_bWindowRestored || m_bDisplayChanged && IsFullscreen());
 		m_bDisplayChanged = false;
 
 		const bool bFullScreenNativeRes = CV_r_FullscreenNativeRes && CV_r_FullscreenNativeRes->GetIVal() != 0;
@@ -673,6 +673,8 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 			iLog->Log("  Post/Overlay resolution: %dx%d", CRendererResources::s_outputWidth, CRendererResources::s_outputHeight);
 			iLog->Log("  Render resolution: %dx%d", CRendererResources::s_renderWidth, CRendererResources::s_renderHeight);
 		}
+
+		m_bWindowRestored = false;
 	}
 }
 

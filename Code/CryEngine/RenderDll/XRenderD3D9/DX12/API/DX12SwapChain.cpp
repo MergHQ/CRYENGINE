@@ -149,6 +149,8 @@ HRESULT CSwapChain::ResizeBuffers(UINT BufferCount, UINT Width, UINT Height, DXG
 {
 	m_bChangedBackBufferIndex = true;
 
+	m_pDXGISwapChain->GetDesc(&m_Desc);
+
 	// DXGI ERROR: IDXGISwapChain::ResizeBuffers: Cannot add or remove the DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING flag using ResizeBuffers. 
 	m_Desc.BufferCount = BufferCount ? BufferCount : m_Desc.BufferCount;
 	m_Desc.BufferDesc.Width = Width ? Width : m_Desc.BufferDesc.Width;
