@@ -37,6 +37,11 @@ namespace Cry
 				RemoveEntity();
 				SpawnEntity();
 			}
+			else if (event.event ==  ENTITY_EVENT_DONE)
+			{
+				RemoveEntity();
+				RemoveIgnoreConstraint();
+			}
 			else if (event.event == ENTITY_EVENT_DETACH)
 			{
 				if (event.nParam[0] == m_childEntityId)
@@ -90,6 +95,7 @@ namespace Cry
 			return ENTITY_EVENT_BIT(ENTITY_EVENT_DETACH)
 				| ENTITY_EVENT_BIT(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED)
 				| ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+				| ENTITY_EVENT_BIT(ENTITY_EVENT_DONE)
 #ifndef RELEASE
 				| ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM)
 				| ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME)
