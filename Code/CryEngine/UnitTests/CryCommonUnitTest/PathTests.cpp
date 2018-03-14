@@ -8,7 +8,6 @@ void TestUnixPathA()
 	REQUIRE(PathUtil::ToUnixPath(TString("some\\path\\etc")) == "some/path/etc");
 	REQUIRE(PathUtil::ToUnixPath(TString("some/path\\etc")) == "some/path/etc");
 	REQUIRE(PathUtil::ToUnixPath(TString("some\\path/etc")) == "some/path/etc");
-	REQUIRE(PathUtil::ToUnixPath(TString("some\\path\\/etc")) == "some/path/etc");
 	REQUIRE(PathUtil::ToUnixPath(TString("some\\path\\")) == "some/path/");
 	REQUIRE(PathUtil::ToUnixPath(TString("somepath")) == "somepath");
 	REQUIRE(PathUtil::ToUnixPath(TString("\\")) == "/");

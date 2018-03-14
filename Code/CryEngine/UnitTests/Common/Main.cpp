@@ -7,7 +7,6 @@
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX
 
 GTEST_API_ int main(int argc, char **argv) {
-	printf("Running main() from CryUnitTestMain\n");
 	testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();
 }
