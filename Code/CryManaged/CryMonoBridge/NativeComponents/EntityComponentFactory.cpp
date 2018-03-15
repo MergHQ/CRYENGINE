@@ -128,9 +128,9 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 
 	if (prevEventMask != m_eventMask)
 	{
-		for (auto it = m_componentInstances.begin(); it != m_componentInstances.end(); )
+		for (const std::weak_ptr<CManagedEntityComponent>& weakComponent : m_componentInstances)
 		{
-			if (std::shared_ptr<CManagedEntityComponent> pComponent = it->lock())
+			if (std::shared_ptr<CManagedEntityComponent> pComponent = weakComponent.lock())
 			{
 				pComponent->GetEntity()->UpdateComponentEventMask(pComponent.get());
 			}
