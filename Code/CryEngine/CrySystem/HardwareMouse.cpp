@@ -84,9 +84,6 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 
 	Reset(bVisibleByDefault);
 
-	if (gEnv->pSystem)
-		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CHardwareMouse");
-
 #if !defined(_RELEASE)
 	if (gEnv->pConsole)
 		REGISTER_CVAR2("g_debugHardwareMouse", &m_debugHardwareMouse, 0, VF_CHEAT, "Enables debug mode for the hardware mouse.");
@@ -111,7 +108,6 @@ CHardwareMouse::~CHardwareMouse()
 	{
 		if (gEnv->pRenderer)
 		{
-			gEnv->pRenderer->RemoveListener(this);
 #if !defined(DEDICATED_SERVER)
 			SAFE_RELEASE(m_pCursorTexture);     // On dedicated server this texture is actually a static returned by NULL renderer.. can't release that.
 #endif
@@ -194,11 +190,11 @@ void CHardwareMouse::ConfineCursor(bool confine)
 		return;
 
 #if CRY_PLATFORM_WINDOWS
-	RECT rcClient;
 	HWND hWnd = GetConfinedWindowHandle();
 
 	if (hWnd)
 	{
+		RECT rcClient;
 		::GetClientRect(hWnd, &rcClient);
 		::ClientToScreen(hWnd, (LPPOINT)&rcClient.left);
 		::ClientToScreen(hWnd, (LPPOINT)&rcClient.right);
@@ -229,18 +225,6 @@ void CHardwareMouse::ConfineCursor(bool confine)
 			gEnv->pInput->GrabInput(false);
 	}
 #endif
-}
-
-//-----------------------------------------------------------------------------------------------------
-
-void CHardwareMouse::OnPostCreateDevice()
-{
-}
-
-//-----------------------------------------------------------------------------------------------------
-
-void CHardwareMouse::OnPostResetDevice()
-{
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -409,6 +393,14 @@ void CHardwareMouse::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 	{
 		EvaluateCursorConfinement();
 	}
+	else if (event == ESYSTEM_EVENT_DISPLAY_CHANGED)
+	{
+		EvaluateCursorConfinement();
+	}
+	else if (event == ESYSTEM_EVENT_DEVICE_CHANGED)
+	{
+		EvaluateCursorConfinement();
+	}
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -422,10 +414,6 @@ void CHardwareMouse::Release()
 
 void CHardwareMouse::OnPreInitRenderer()
 {
-	CRY_ASSERT(gEnv->pRenderer);
-
-	if (gEnv->pRenderer)
-		gEnv->pRenderer->AddListener(this);
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -436,6 +424,9 @@ void CHardwareMouse::OnPostInitInput()
 
 	if (gEnv->pInput)
 		gEnv->pInput->AddEventListener(this);
+
+	if (gEnv->pSystem)
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CHardwareMouse");
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -486,7 +477,7 @@ void CHardwareMouse::SetConfinedWnd(HWND wnd)
 HWND CHardwareMouse::GetConfinedWindowHandle() const
 {
 	if (m_confinedWnd == nullptr)
-		return (HWND)gEnv->pRenderer->GetHWND();
+		return (HWND) gEnv->pRenderer->GetHWND();
 	else
 		return m_confinedWnd;
 }

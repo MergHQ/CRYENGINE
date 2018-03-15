@@ -1494,10 +1494,13 @@ void CSystem::RunMainLoop()
 #if CRY_PLATFORM_WINDOWS
 	if (!(gEnv && m_env.pSystem) || (!m_env.IsEditor() && !m_env.IsDedicated()))
 	{
-		::ShowCursor(FALSE);
 		if (m_env.pHardwareMouse != nullptr)
 		{
 			m_env.pHardwareMouse->DecrementCounter();
+		}
+		else
+		{
+			::ShowCursor(FALSE);
 		}
 	}
 #else
@@ -3475,6 +3478,12 @@ bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, 
 		return false;
 	case WM_INPUTLANGCHANGE:
 		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LANGUAGE_CHANGE, wParam, lParam);
+		return false;
+	case WM_DISPLAYCHANGE:
+		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_DISPLAY_CHANGED, wParam, lParam);
+		return false;
+	case WM_DEVICECHANGE:
+		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_DEVICE_CHANGED, wParam, lParam);
 		return false;
 
 	case WM_SYSCOMMAND:
