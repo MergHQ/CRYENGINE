@@ -2,11 +2,14 @@
 
 #include <array>
 #include <d3d12.h>
+template<int numTargets> class BroadcastableD3D12Resource;
+template<int numTargets> class BroadcastableD3D12DescriptorHeap;
+template<int numTargets> class BroadcastableD3D12QueryHeap;
 
-template<const int numTargets>
+template<int numTargets>
 class BroadcastableD3D12GraphicsCommandList : public ID3D12GraphicsCommandList
 {
-	template<const int numTargets> friend class BroadcastableD3D12CommandQueue;
+	template<int numTargets> friend class BroadcastableD3D12CommandQueue;
 
 public:
 	int m_RefCount;

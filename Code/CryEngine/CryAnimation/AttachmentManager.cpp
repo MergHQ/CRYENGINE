@@ -2767,6 +2767,10 @@ CAttachmentManager::CModificationCommandBuffer::~CModificationCommandBuffer()
 	// might access structures that are no longer available
 	// (e.g. the default skeleton in the character instance).
 	CRY_ASSERT(m_commandOffsets.size() == 0);
+	if (m_commandOffsets.size() != 0)
+	{
+		CryLogAlways("CAttachmentManager::CModificationCommandBuffer() command buffer not empty!");
+	}
 }
 
 void CAttachmentManager::CModificationCommandBuffer::Execute()

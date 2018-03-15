@@ -3,11 +3,11 @@
 #include <array>
 #include <d3d12.h>
 
-template<const int numTargets>
+template<int numTargets>
 class BroadcastableD3D12QueryHeap : public ID3D12QueryHeap
 {
-	template<const int numTargets> friend class BroadcastableD3D12CommandQueue;
-	template<const int numTargets> friend class BroadcastableD3D12GraphicsCommandList;
+	template<int numTargets> friend class BroadcastableD3D12CommandQueue;
+	template<int numTargets> friend class BroadcastableD3D12GraphicsCommandList;
 
 	int m_RefCount;
 	std::array<ID3D12QueryHeap*, numTargets> m_Targets;
