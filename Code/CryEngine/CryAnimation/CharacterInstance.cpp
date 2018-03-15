@@ -106,6 +106,9 @@ void CCharInstance::RuntimeInit(CDefaultSkeleton* pExtDefaultSkeleton)
 //////////////////////////////////////////////////////////////////////////
 CCharInstance::~CCharInstance()
 {
+	// Make sure all animation jobs are done before releasing the character instance
+	FinishAnimationComputations();
+
 	// The command buffer needs to be flushed here, because if he is flushed
 	// later on, one of the commands might access the
 	// default skeleton which is no longer available
