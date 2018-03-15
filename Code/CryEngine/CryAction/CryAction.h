@@ -88,6 +88,12 @@ class CNetMessageDistpatcher;
 class CEntityContainerMgr;
 class CEntityAttachmentExNodeRegistry;
 
+namespace BehaviorTree
+{
+	struct INodeCreator;
+}
+
+
 class CCryAction :
 	public IGameFramework
 {
@@ -452,6 +458,7 @@ private:
 	// change the game query (better than setting it explicitly)
 	void SetGameQueryListener(CGameQueryListener*);
 
+	void RegisterActionBehaviorTreeNodes();
 	void CheckEndLevelSchedule();
 
 #if !defined(_RELEASE)
@@ -483,8 +490,6 @@ private:
 	ITimer*                       m_pTimer;
 	ILog*                         m_pLog;
 	IGameToEditorInterface*       m_pGameToEditor;
-
-	_smart_ptr<CActionGame>       m_pGame;
 
 	char                          m_editorLevelName[512]; // to avoid having to call string constructor, or allocating memory.
 	char                          m_editorLevelFolder[512];
@@ -676,4 +681,7 @@ private:
 
 	IGameLevelLoadListener*                      m_pGameLevelLoadListener = nullptr;
 	std::vector<INetworkedClientListener*> m_networkClientListeners;
+
+	std::unique_ptr<BehaviorTree::INodeCreator> m_pAnimateFragmentNodeCreator;
+	_smart_ptr<CActionGame>                m_pGame;
 };

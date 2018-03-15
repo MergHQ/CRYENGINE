@@ -368,7 +368,8 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_pGameVolumesManager(NULL),
 	m_pNetMsgDispatcher(nullptr),
 	m_pEntityContainerMgr(nullptr),
-	m_pEntityAttachmentExNodeRegistry(nullptr)
+	m_pEntityAttachmentExNodeRegistry(nullptr),
+	m_pAnimateFragmentNodeCreator(new BehaviorTree::NodeCreator<BehaviorTree::AnimateFragment>("AnimateFragment"))
 {
 	CRY_ASSERT(!m_pThis);
 	m_pThis = this;
@@ -4584,6 +4585,14 @@ void CCryAction::ScheduleEndLevelNow(const char* nextLevel)
 #ifndef _RELEASE
 	gEnv->pSystem->SetLoadOrigin(ISystem::eLLO_Level2Level);
 #endif
+}
+
+void CCryAction::RegisterActionBehaviorTreeNodes()
+{
+	CRY_ASSERT(gEnv->pAISystem->GetIBehaviorTreeManager());
+
+	BehaviorTree::IBehaviorTreeManager& manager = *gEnv->pAISystem->GetIBehaviorTreeManager();
+  manager.GetNodeFactory().RegisterNodeCreator(m_pAnimateFragmentNodeCreator.get());
 }
 
 void CCryAction::CheckEndLevelSchedule()
