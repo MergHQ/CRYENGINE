@@ -39,9 +39,10 @@ bool CDeviceResourceSet_DX12::UpdateImpl(const CDeviceResourceSetDesc& desc, CDe
 	m_DescriptorBlockDX12 = *m_pDescriptors;
 
 	// gather descriptors for all bound resources and copy to new block. NOTE: CBV_SRV_UAV heap, SMP heap not yet supported
+	CDescriptorBlock descriptorScratchSpace = GetDevice()->GetResourceDescriptorScratchSpace();
 	bool bSuccess = GatherDescriptors(desc,
 		descriptors,
-		GetDevice()->GetResourceDescriptorScratchSpace(),
+		descriptorScratchSpace,
 		m_ConstantBuffersInUse,
 		m_ShaderResourceViewsInUse,
 		m_UnorderedAccessViewsInUse);
