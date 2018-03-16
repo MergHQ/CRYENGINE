@@ -45,6 +45,8 @@
 typedef double                        real;
 
 typedef uint32                        DWORD;
+typedef int32                         INT32;
+typedef uint32                        UINT32;
 typedef DWORD*                        LPDWORD;
 typedef uint64                        DWORD_PTR;
 typedef intptr_t INT_PTR, *           PINT_PTR;

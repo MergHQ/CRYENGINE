@@ -2411,7 +2411,7 @@ std::unique_ptr<byte[]> CHWShader_D3D::mfGetCacheItem(uint32& nFlags, int32& nSi
 			if (pD && nSize > 0)
 			{
 				pData = std::unique_ptr<byte[]>(new byte[nSize]);
-				std::memcpy(pData.get(), pD, nSize);
+				memcpy(pData.get(), pD, nSize);
 			}
 
 			rf->mfFileClose(de->GetName(), de->GetFlags());

@@ -958,9 +958,9 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 	iSystem->RegisterWindowMessageHandler(this);
 
 #if USE_SDL2_VIDEO && (CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES)
-	DXGLCreateSDLWindow(m_WinTitle, width, height, fullscreen, &m_hWnd);
+	DXGLCreateSDLWindow(m_WinTitle, width, height, IsFullscreen(), &m_hWnd);
 #elif USE_SDL2_VIDEO && (CRY_RENDERER_VULKAN)
-	VKCreateSDLWindow(m_WinTitle, width, height, fullscreen, &m_hWnd);
+	VKCreateSDLWindow(m_WinTitle, width, height, IsFullscreen(), &m_hWnd);
 #elif CRY_PLATFORM_WINDOWS
 	DWORD style, exstyle;
 

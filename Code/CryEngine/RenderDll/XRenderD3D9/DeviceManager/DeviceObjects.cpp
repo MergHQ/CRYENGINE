@@ -34,7 +34,7 @@ uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutH
 		// Insert ordered by element name
 		auto it = std::lower_bound(reflectedNames.begin(), reflectedNames.end(), Sig.SemanticName, [](const char* const lhs, const char* const rhs)
 		{
-			return std::strcmp(lhs, rhs) <= 0;
+			return ::strcmp(lhs, rhs) <= 0;
 		});
 		reflectedNames.insert(it, Sig.SemanticName);
 	}
@@ -45,7 +45,7 @@ uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutH
 	for (int i = 0; layout_it != layoutDescriptor->m_Declaration.cend() && vs_it != reflectedNames.cend(); ++i, ++layout_it)
 	{
 		int compResult;
-		while (vs_it != reflectedNames.cend() && (compResult = std::strcmp(*vs_it, layout_it->SemanticName)) < 0)
+		while (vs_it != reflectedNames.cend() && (compResult = ::strcmp(*vs_it, layout_it->SemanticName)) < 0)
 		{
 			++vs_it;
 		}
@@ -386,7 +386,7 @@ const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateI
 	// Create the composition descriptor
 	SInputLayoutCompositionDescriptor compositionDescriptor(VertexFormat, StreamMask, pShaderReflection);
 
-	auto it = s_InputLayoutCompositions.lower_bound(compositionDescriptor);
+	auto it = s_InputLayoutCompositions.find(compositionDescriptor);
 	if (it == s_InputLayoutCompositions.end() || it->first != compositionDescriptor)
 	{
 		// Create the input layout for the current permutation
@@ -474,7 +474,7 @@ InputLayoutHandle CDeviceObjectFactory::CreateCustomVertexFormat(size_t numDescs
 		// Insert ordered by element name
 		auto it = std::lower_bound(decs.begin(), decs.end(), inputLayout[n], [](const D3D11_INPUT_ELEMENT_DESC& lhs, const D3D11_INPUT_ELEMENT_DESC& rhs)
 		{
-			return std::strcmp(lhs.SemanticName, rhs.SemanticName) <= 0;
+			return ::strcmp(lhs.SemanticName, rhs.SemanticName) <= 0;
 		});
 		decs.insert(it, inputLayout[n]);
 	}
