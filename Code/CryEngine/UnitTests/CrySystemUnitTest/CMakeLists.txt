@@ -4,6 +4,7 @@ add_sources("NoUberFile"
 	SOURCE_GROUP "Source Files"
         "xml.cpp"
 		"ArchiveHostTests.cpp"
+		"JobTests.cpp"
 )
 end_sources()
 
