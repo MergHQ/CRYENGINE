@@ -44,6 +44,7 @@ set(GCC_COMMON_FLAGS
 	-fno-exceptions
 
 	# upgrade gcc 4.9 -> 7
+	-Wno-unknown-warning
 	-Wno-stringop-overflow
 	-Wno-misleading-indentation
 	-Wno-logical-not-parentheses

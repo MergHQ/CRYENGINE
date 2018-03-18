@@ -390,6 +390,7 @@ void CRenderDisplayContext::AllocateSwapChain()
 
 	DXGI_RATIONAL desktopRefreshRate = scDesc.BufferDesc.RefreshRate;
 
+#if CRY_PLATFORM_DESKTOP
 	if (!windowed)
 	{
 		DXGI_MODE_DESC match;
@@ -399,6 +400,7 @@ void CRenderDisplayContext::AllocateSwapChain()
 			desktopRefreshRate = match.RefreshRate;
 		}
 	}
+#endif
 
 #if defined(SUPPORT_DEVICE_INFO)
 	auto refreshRate = !windowed ? scDesc.BufferDesc.RefreshRate : desktopRefreshRate;

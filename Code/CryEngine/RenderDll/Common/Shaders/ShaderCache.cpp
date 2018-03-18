@@ -595,19 +595,23 @@ void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* C
 				sSkipLine(s);
 				goto end;
 			}
-			const char* descriptorSetBegin = ss + 1;
-			const char* descriptorSetEnd = strchr(descriptorSetBegin, ')');
-			const unsigned int descriptorSetLength = static_cast<int>(descriptorSetEnd - descriptorSetBegin);
-			if (descriptorSetLength > 0)
-			{
-				unsigned int decodedBufferSize  = Base64::decodedsize_base64(descriptorSetLength);
-				std::vector<uint8> encodedLayout(decodedBufferSize);
-				Base64::decode_base64((char*)&encodedLayout[0], descriptorSetBegin, descriptorSetLength, false);
-				encodedLayout.resize(GetDeviceObjectFactory().GetEncodedResourceLayoutSize(encodedLayout));
 
-				if (!GetDeviceObjectFactory().LookupResourceLayoutEncoding(cmb.Ident.m_pipelineState.VULKAN.resourceLayoutHash))
+			{
+				// Define a block here to avoid clang complaining about jumping over variable initialisation.
+				const char* descriptorSetBegin = ss + 1;
+				const char* descriptorSetEnd = strchr(descriptorSetBegin, ')');
+				const unsigned int descriptorSetLength = static_cast<int>(descriptorSetEnd - descriptorSetBegin);
+				if (descriptorSetLength > 0)
 				{
-					GetDeviceObjectFactory().RegisterEncodedResourceLayout(cmb.Ident.m_pipelineState.VULKAN.resourceLayoutHash, std::move(encodedLayout));
+					unsigned int decodedBufferSize  = Base64::decodedsize_base64(descriptorSetLength);
+					std::vector<uint8> encodedLayout(decodedBufferSize);
+					Base64::decode_base64((char*)&encodedLayout[0], descriptorSetBegin, descriptorSetLength, false);
+					encodedLayout.resize(GetDeviceObjectFactory().GetEncodedResourceLayoutSize(encodedLayout));
+
+					if (!GetDeviceObjectFactory().LookupResourceLayoutEncoding(cmb.Ident.m_pipelineState.VULKAN.resourceLayoutHash))
+					{
+						GetDeviceObjectFactory().RegisterEncodedResourceLayout(cmb.Ident.m_pipelineState.VULKAN.resourceLayoutHash, std::move(encodedLayout));
+					}
 				}
 			}
 #endif			

@@ -167,7 +167,17 @@ VkResult CInstance::CreateSurface(const SSurfaceCreationInfo& info, VkSurfaceKHR
 
 	return vkCreateAndroidSurfaceKHR(m_instanceHandle, &createInfo, NULL, surface);
 #elif defined(CRY_PLATFORM_LINUX)
-#error  "Not implemented!""
+	VkXcbSurfaceCreateInfoKHR createInfo = {};
+
+	createInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
+	createInfo.pNext = NULL;
+	createInfo.flags = 0;
+	//createInfo.connection = NULL;		// TODO: find the connection
+	createInfo.window = info.window;
+
+	return vkCreateXcbSurfaceKHR(m_instanceHandle, &createInfo, NULL, surface);
+#else
+	#error  "Not implemented!"
 #endif
 
 }

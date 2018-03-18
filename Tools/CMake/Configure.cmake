@@ -28,8 +28,6 @@ set(CMAKE_MODULE_PATH "${TOOLS_CMAKE_DIR}/modules")
 # C/C++ languages required.
 enable_language(C)
 enable_language(CXX)
-# Force C++11 support requirement
-set (CMAKE_CXX_STANDARD 11)
 
 if (DURANGO OR ORBIS OR ANDROID OR LINUX)
 	unset(WIN32)

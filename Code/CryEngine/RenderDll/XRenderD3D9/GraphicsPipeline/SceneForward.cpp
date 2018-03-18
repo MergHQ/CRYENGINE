@@ -19,7 +19,9 @@ struct SPerPassConstantBuffer
 	CVolumetricFogStage::SForwardParams       cbVoxelFog;
 	CShadowUtils::SShadowCascadesSamplingInfo cbShadowSampling;
 	CSceneForwardStage::SCloudShadingParams   cbClouds;
+#if defined(FEATURE_SVO_GI)
 	CSvoRenderer::SForwardParams              cbSVOGI;
+#endif
 };
 
 CSceneForwardStage::CSceneForwardStage()
@@ -378,8 +380,9 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 	auto* pTiledLights = GetStdGraphicsPipeline().GetTiledLightVolumesStage();
 	auto* pFogStage    = GetStdGraphicsPipeline().GetFogStage();
 	auto* pVolFogStage = GetStdGraphicsPipeline().GetVolumetricFogStage();
+#if defined(FEATURE_SVO_GI)
 	auto* pSVOGIStage  = CSvoRenderer::GetInstance();
-
+#endif
 	CTexture* pShadowMask = bShadowMask ? CRendererResources::s_ptexShadowMask : CRendererResources::s_ptexBlack;
 
 	CDeviceResourceSetDesc* pResourceDescs[] = { &m_opaquePassResources, &m_transparentPassResources, &m_eyeOverlayPassResources };

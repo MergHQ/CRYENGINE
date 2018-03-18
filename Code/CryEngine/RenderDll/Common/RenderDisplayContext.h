@@ -144,7 +144,7 @@ private:
 	unsigned int             m_syncInterval = 0;
 #endif
 
-#if CRY_PLATFORM_WINDOWS
+#if CRY_PLATFORM_DESKTOP
 	DXGIOutput*              m_pOutput = nullptr;
 #endif
 

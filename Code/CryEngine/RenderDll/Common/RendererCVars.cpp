@@ -757,7 +757,7 @@ static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
 	else
 	{
 		CryFatalError("Using %s as a shader target string is not allowed. Available valid options are %s/%s/%s/%s/%s/%s", 
-			shaderTargetStr, 
+			shaderTargetStr.c_str(),
 			STR_ORBIS_SHADER_TARGET, 
 			STR_DURANGO_SHADER_TARGET,
 			STR_D3D11_SHADER_TARGET,

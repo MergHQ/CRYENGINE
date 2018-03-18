@@ -69,8 +69,8 @@ void CDepthReadbackStage::Execute()
 
 	// Support for sampling a region (in the top-left) of the source texture.
 	const Vec2& downscaleFactor = gRenDev->GetRenderQuality().downscaleFactor;
-	const float sampledWidth = std::floorf((float)sourceWidth * downscaleFactor.x);
-	const float sampledHeight = std::floorf((float)sourceHeight * downscaleFactor.y);
+	const float sampledWidth = std::floor((float)sourceWidth * downscaleFactor.x);
+	const float sampledHeight = std::floor((float)sourceHeight * downscaleFactor.y);
 
 	ExecutePasses((float)sourceWidth, (float)sourceHeight, sampledWidth, sampledHeight);
 }

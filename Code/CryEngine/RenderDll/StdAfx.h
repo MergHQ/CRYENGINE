@@ -225,7 +225,6 @@ typedef void (*RenderFunc)(void);
 #if defined(USE_SDL2) && (CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS || CRY_PLATFORM_LINUX)
 	#define USE_SDL2_VIDEO	1
 	#include <SDL.h>
-	#include <SDL_syswm.h>
 #endif
 
 #define _USE_MATH_DEFINES
