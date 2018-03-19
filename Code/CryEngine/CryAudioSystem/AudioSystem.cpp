@@ -78,7 +78,11 @@ CSystem::CSystem()
 	, m_lastExternalThreadFrameId(0)
 	, m_atl()
 {
-	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CryAudio::CSystem");
+	// For occasions such as unit tests pSystem isn't available, we need to skip the step
+	if (gEnv->pSystem != nullptr)
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CryAudio::CSystem");
+	}
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	m_currentRenderAuxGeom.exchange(nullptr);
@@ -90,7 +94,10 @@ CSystem::CSystem()
 //////////////////////////////////////////////////////////////////////////
 CSystem::~CSystem()
 {
-	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	if (gEnv->pSystem != nullptr)
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
