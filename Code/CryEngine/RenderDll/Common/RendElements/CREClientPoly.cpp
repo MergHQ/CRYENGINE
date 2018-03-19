@@ -12,8 +12,6 @@
 #include "CREClientPoly.h"
 #include "Common/RenderView.h"
 
-#include "DriverD3D.h"
-
 //////////////////////////////////////////////////////////////////////////
 void CRenderPolygonDataPool::Clear()
 {

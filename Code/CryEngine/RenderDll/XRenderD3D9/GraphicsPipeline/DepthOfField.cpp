@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "DepthOfField.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
 float NGon_Rad(float theta, float n)

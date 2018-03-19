@@ -5,8 +5,6 @@
 #include "GraphicsPipeline/Common/GraphicsPipelineStateSet.h"
 #include "Common/Textures/TextureHelpers.h"
 
-#include "DriverD3D.h"
-
 //===============================================================================
 
 void CShaderResources::ConvertToInputResource(SInputShaderResources* pDst)

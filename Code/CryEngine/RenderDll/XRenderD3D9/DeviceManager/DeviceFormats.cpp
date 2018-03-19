@@ -5,7 +5,6 @@
 
 #include <CryRenderer/ITexture.h> // ETEX_Format
 
-#include "DriverD3D.h"
 
 bool SPixFormat::CheckSupport(D3DFormat Format, const char* szDescr)
 {

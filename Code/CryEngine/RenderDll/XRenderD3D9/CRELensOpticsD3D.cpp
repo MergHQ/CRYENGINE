@@ -5,7 +5,6 @@
 #include "../Common/RendElements/RootOpticsElement.h"
 #include "../Common/RendElements/FlareSoftOcclusionQuery.h"
 #include "../Common/RendElements/OpticsPredef.hpp"
-#include "DriverD3D.h"
 #include <Cry3DEngine/I3DEngine.h>
 
 #include "GraphicsPipeline/LensOptics.h"

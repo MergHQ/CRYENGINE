@@ -4,7 +4,6 @@
 
 #include "RenderDisplayContext.h"
 #include "RenderOutput.h"
-#include "DriverD3D.h"
 
 static inline string GenerateUniqueTextureName(const string &prefix, uint32 id, const string &name)
 {

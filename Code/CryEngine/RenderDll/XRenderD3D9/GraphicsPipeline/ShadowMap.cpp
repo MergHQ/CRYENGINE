@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include <CryMath/Range.h>
 #include "ShadowMap.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
 #include "Common/Include_HLSL_CPP_Shared.h"

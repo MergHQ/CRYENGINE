@@ -6,9 +6,6 @@
 #include <CryMath/Cry_Vector2.h>
 #include "Timeline.h"
 
-#include "XRenderD3D9/GraphicsPipeline/Common/PrimitiveRenderPass.h"
-#include "XRenderD3D9/GraphicsPipeline/StandardGraphicsPipeline.h"
-
 class CTexture;
 class CShader;
 class RootOpticsElement;

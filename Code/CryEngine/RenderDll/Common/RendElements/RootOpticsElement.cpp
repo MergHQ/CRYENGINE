@@ -5,7 +5,6 @@
 #include "RootOpticsElement.h"
 #include "FlareSoftOcclusionQuery.h"
 #include "../Textures/Texture.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include "stdarg.h"
 

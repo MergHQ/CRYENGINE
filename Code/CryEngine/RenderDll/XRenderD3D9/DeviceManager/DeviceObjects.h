@@ -10,8 +10,6 @@
 #include <atomic>
 
 #include "DeviceResources.h"                // CDeviceBuffer, CDeviceTexture, CDeviceInputStream
-#include "Common/CommonRender.h"            // SResourceView, SSamplerState, SInputLayout
-#include "Common/Shaders/ShaderCache.h"     // UPipelineState
 
 class CHWShader_D3D;
 class CShader;

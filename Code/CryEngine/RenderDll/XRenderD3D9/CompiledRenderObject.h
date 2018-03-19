@@ -3,8 +3,6 @@
 #pragma once
 
 #include <CryMemory/PoolAllocator.h>
-#include "GraphicsPipeline/Common/GraphicsPipelineStateSet.h"
-#include "GraphicsPipeline/StandardGraphicsPipeline.h"
 #include "xxhash.h"
 
 // Special purpose array, base on the DynArray implementation, but embedding first elements into the body of the class itself

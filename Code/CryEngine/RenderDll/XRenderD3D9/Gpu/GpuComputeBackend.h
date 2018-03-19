@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "DriverD3D.h"
 #include "Common/TypedConstantBuffer.h"
 
 // forward declarations

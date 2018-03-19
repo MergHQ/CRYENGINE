@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "PostEffects.h"
 
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include "Common/ReverseDepth.h"
 #include "SceneCustom.h"

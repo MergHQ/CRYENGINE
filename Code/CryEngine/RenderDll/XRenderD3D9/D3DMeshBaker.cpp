@@ -1,12 +1,10 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <Cry3DEngine/IIndexedMesh.h>
 #include <CryRenderer/IShader.h>
-#include "Common/RenderView.h"
 
 //#define CREATE_RENDERDOC_CAPTURE
 

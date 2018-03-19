@@ -9,7 +9,6 @@
    =============================================================================*/
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include <Cry3DEngine/IRenderNode.h>
 #include "../Common/Shadow_Renderer.h"
 #include "../Common/ReverseDepth.h"

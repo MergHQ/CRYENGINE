@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "HeightMapAO.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include "GraphicsPipeline/ClipVolumes.h"
 

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Gpu/GpuComputeBackend.h"
-#include "Common/ComputeSkinningStorage.h"
 #include "Common/GraphicsPipelineStage.h"
 #include "GraphicsPipeline/Common/ComputeRenderPass.h"
 

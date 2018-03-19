@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "SceneGBuffer.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
 #include "Common/Include_HLSL_CPP_Shared.h"

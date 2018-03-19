@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "ClipVolumes.h"
-#include "DriverD3D.h"
 #include "VolumetricFog.h"
 
 struct SPrimitiveConstants

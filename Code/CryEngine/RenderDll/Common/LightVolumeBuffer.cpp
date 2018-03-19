@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "LightVolumeBuffer.h"
-#include "DriverD3D.h"
 
 namespace
 {

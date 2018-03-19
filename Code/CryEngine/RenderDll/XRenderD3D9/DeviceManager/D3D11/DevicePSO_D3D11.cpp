@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "../DeviceObjects.h"
-#include "DriverD3D.h"
 #include "../../../Common/ReverseDepth.h"
 
 #include "DeviceResourceSet_D3D11.h"

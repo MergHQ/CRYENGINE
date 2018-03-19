@@ -2,7 +2,6 @@
 
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include "xxhash.h"
 #include "Vulkan/API/VKInstance.hpp"
 #include "Vulkan/API/VKBufferResource.hpp"

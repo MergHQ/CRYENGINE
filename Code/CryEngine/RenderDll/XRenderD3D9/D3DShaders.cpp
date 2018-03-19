@@ -9,7 +9,6 @@
    =============================================================================*/
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include "../Common/DevBuffer.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include <CrySystem/Profilers/IStatoscope.h>

@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include <CryString/UnicodeFunctions.h>
-#include "DriverD3D.h"
 #include <CryCore/Platform/WindowsUtils.h>
 #include <CrySystem/IProjectManager.h>
 

@@ -47,8 +47,6 @@
 
 #include "Common/RenderDisplayContext.h"
 
-#include "DriverD3D.h" //for gcpRendD3D
-
 #include "../D3DPostProcess.h"
 #include "Common/ReverseDepth.h"
 #include "D3D_SVO.h"

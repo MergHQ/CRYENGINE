@@ -3,8 +3,6 @@
 #include <StdAfx.h>
 #include "ShaderPublicParams.h"
 
-#include "DriverD3D.h"
-
 SShaderParam& CShaderPublicParams::GetParam(int nIndex)
 {
 	assert(nIndex >= 0 && nIndex < (int)m_shaderParams.size());

@@ -1,6 +1,5 @@
 #include "StdAfx.h"
 #include "FullscreenPass.h"
-#include "DriverD3D.h"
 #include "../Common/PostProcess/PostProcessUtils.h"
 
 CFullscreenPass::CFullscreenPass(CRenderPrimitive::EPrimitiveFlags primitiveFlags)

@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "DebugRenderTargets.h"
-#include "DriverD3D.h"
 #include <Common/RenderDisplayContext.h>
 
 struct SDebugRenderTargetConstants

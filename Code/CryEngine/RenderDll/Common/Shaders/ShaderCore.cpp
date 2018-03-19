@@ -12,7 +12,6 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/CGF/CryHeaders.h>
 
-#include "DriverD3D.h"
 #include "Common/RenderView.h"
 #include "Common/RendererResources.h"
 

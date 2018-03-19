@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 
 #include <CryCore/CryCustomTypes.h>
-#include "DriverD3D.h"
 #include "../Common/PostProcess/PostProcessUtils.h"
 #include <CryRenderer/RenderElements/RendElement.h>
 #include <Common/RendElements/MeshUtil.h>

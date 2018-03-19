@@ -5,7 +5,6 @@
 #include "ComputeSkinning.h"
 #include "../../Common/ComputeSkinningStorage.h"
 #include "../../Common/RenderPipeline.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
 namespace compute_skinning

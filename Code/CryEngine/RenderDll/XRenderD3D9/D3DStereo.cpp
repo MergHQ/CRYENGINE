@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 
 #include "D3DStereo.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include "D3DOculus.h"
 #include "D3DOsvr.h"

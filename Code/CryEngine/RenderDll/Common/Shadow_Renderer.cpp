@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "Shadow_Renderer.h"
 
-#include "DriverD3D.h"
 #include "D3D_SVO.h"
 
 #include "Common/RenderView.h"

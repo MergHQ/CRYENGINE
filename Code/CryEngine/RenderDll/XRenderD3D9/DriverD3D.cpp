@@ -5,7 +5,6 @@
 // Included only once per DLL module.
 #include <CryCore/Platform/platform_impl.inl>
 
-#include "DriverD3D.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryInput/IHardwareMouse.h>
 #include <CrySystem/Profilers/IStatoscope.h>

@@ -14,7 +14,6 @@
    =============================================================================*/
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include "D3DPostProcess.h"
 

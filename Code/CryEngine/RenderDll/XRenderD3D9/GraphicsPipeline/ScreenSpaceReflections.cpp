@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "ScreenSpaceReflections.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include "../../Common/ReverseDepth.h"
 

@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "PipelineProfiler.h"
-#include "DriverD3D.h"
 #include <Common/RenderDisplayContext.h>
 
 CRenderPipelineProfiler::CRenderPipelineProfiler()

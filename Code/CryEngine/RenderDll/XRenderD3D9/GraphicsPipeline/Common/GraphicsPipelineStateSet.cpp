@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "GraphicsPipelineStateSet.h"
 #include "GraphicsPipelineStage.h"
-#include "DriverD3D.h"
 #include "xxhash.h"
 
 SGraphicsPipelineStateDescription::SGraphicsPipelineStateDescription(

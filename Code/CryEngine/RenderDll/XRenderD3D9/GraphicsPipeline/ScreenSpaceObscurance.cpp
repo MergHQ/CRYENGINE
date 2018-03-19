@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "ScreenSpaceObscurance.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include "D3D_SVO.h"
 #include "HeightMapAO.h"

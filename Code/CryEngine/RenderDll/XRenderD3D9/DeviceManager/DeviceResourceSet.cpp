@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "DeviceObjects.h"
-#include "DriverD3D.h"
 #include "xxhash.h"
 #include "Common/ReverseDepth.h"
 #include "Common/Textures/TextureHelpers.h"

@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 
 #include "D3DOculus.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
 #include <Common/RenderDisplayContext.h>

@@ -4,7 +4,6 @@
 #include "StdAfx.h"
 #include "D3DREBreakableGlassBuffer.h"
 
-#include "DriverD3D.h"
 #include <CryRenderer/VertexFormats.h>
 
 // Shared buffer-type constants

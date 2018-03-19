@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 
-#include "DriverD3D.h"
 #include "DeviceResources.h"
 
 #if CRY_RENDERER_GNM
