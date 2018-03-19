@@ -30,3 +30,4 @@ private:
 };
 
 #endif // __MannequinEditorPage_h__
+

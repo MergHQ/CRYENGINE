@@ -19,3 +19,4 @@ public:
 	static void SelectConnectedPolygons(MainContext& mc);
 };
 }
+

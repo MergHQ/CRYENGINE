@@ -53,3 +53,4 @@ struct SAnimationFilter
 	void FindTags(std::vector<string>* tags) const;
 	void SetInFolderCondition(const char* folder);
 };
+

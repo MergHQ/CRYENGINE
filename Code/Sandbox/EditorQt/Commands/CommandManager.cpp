@@ -642,3 +642,4 @@ void CEditorCommandManager::SetEditorUIActionsEnabled(bool bEnabled)
 		}
 	}
 }
+

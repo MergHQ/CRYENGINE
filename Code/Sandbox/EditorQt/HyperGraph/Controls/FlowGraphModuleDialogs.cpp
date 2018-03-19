@@ -439,3 +439,4 @@ void CFlowGraphNewModuleInputDlg::OnOK()
 
 	CDialog::OnOK();
 }
+

@@ -27,3 +27,4 @@ private:
 	std::unique_ptr<CModel>          m_pModel;
 	std::unique_ptr<CGraphViewModel> m_pGraphViewModel;
 };
+

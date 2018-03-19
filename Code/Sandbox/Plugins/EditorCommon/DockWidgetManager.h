@@ -104,3 +104,4 @@ private:
 	std::vector<OpenWidget>                       m_openWidgets;
 	std::vector<std::unique_ptr<IDockWidgetType>> m_types;
 };
+

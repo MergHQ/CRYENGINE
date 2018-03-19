@@ -998,3 +998,4 @@ bool CExportManager::ExportSingleStatObj(IStatObj* pStatObj, const char* filenam
 	ExportToFile(filename, true);
 	return true;
 }
+

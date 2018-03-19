@@ -20,3 +20,4 @@ public:
 
 	IOpticsElementBasePtr GetOpticsOfItem(const char* szflareName);
 };
+

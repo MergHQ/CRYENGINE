@@ -245,3 +245,4 @@ inline int TSequencerTrack<KeyType >::CopyKey(CSequencerTrack* pFromTrack, int n
 }
 
 #endif // __SEQUENCER_TRACK_h__
+

@@ -42,3 +42,4 @@ void DrawTimeSlider(QPainter& painter, const STimeSliderOptions& options)
 	painter.drawPolygon(points, 3);
 }
 }
+

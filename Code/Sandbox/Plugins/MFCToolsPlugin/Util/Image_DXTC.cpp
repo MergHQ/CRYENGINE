@@ -767,3 +767,4 @@ CImage_DXTC::COMPRESSOR_ERROR CImage_DXTC::CheckParameters(
 
 	return COMPRESSOR_ERROR_NONE;
 }
+

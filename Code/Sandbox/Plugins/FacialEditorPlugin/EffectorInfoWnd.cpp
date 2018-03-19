@@ -835,3 +835,4 @@ void CEffectorInfoWnd::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 	}
 }
+

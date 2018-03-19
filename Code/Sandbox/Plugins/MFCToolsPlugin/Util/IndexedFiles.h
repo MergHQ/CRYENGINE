@@ -147,3 +147,4 @@ private:
 	// A global database for tagged files
 	static CIndexedFiles* s_pIndexedFiles;
 };
+

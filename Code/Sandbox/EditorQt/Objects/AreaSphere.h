@@ -76,3 +76,4 @@ public:
 	const char*    Category()          { return "Area"; }
 	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CAreaSphere); }
 };
+

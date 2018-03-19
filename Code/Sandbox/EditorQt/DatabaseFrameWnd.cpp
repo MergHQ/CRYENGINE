@@ -944,3 +944,4 @@ void CDatabaseFrameWnd::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		break;
 	}
 }
+

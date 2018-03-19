@@ -152,3 +152,4 @@ MovementRequestID CAIMoveSimulation::SendAIMoveSimulation(IEntity* pEntity, cons
 	
 	return gEnv->pAISystem->GetMovementSystem()->QueueRequest(request);
 }
+

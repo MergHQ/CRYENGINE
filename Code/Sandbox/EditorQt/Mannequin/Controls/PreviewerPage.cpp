@@ -1399,3 +1399,4 @@ void CPreviewerPage::SetTime(float fTime)
 
 	m_wndTrackPanel.SetCurrTime(fTime, true);
 }
+

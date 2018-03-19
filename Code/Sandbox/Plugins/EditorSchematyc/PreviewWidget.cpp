@@ -367,3 +367,4 @@ const Vec3 CPreviewWidget::ms_defaultOrbitTarget = Vec3(0.0f, 0.0f, 1.0f);
 const float CPreviewWidget::ms_defaultOrbitRadius = 2.0f;
 
 } // Schematyc
+

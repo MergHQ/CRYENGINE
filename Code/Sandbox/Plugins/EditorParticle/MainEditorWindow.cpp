@@ -610,3 +610,4 @@ void CParticleEditor::OnEffectOptionsChanged()
 }
 
 }
+

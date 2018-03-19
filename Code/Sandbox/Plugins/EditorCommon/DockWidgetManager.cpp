@@ -322,3 +322,4 @@ Serialization::SStruct DockWidgetManager::WidgetSerializer(QWidget* widget, cons
 		return Serialization::SStruct();
 	return type->Serializer(widget);
 }
+

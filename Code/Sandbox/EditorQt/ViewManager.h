@@ -164,3 +164,4 @@ private:
 
 	std::vector<ICameraDelegate*> m_cameraDelegates;
 };
+

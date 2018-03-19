@@ -485,3 +485,4 @@ inline void STracksRenderCache::ClearTimeMarkers()
 	// zoomed/panned or the content changed.
 	timeMarkers.clear();
 }
+

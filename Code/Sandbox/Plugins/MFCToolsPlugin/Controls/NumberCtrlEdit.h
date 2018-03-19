@@ -62,3 +62,4 @@ protected:
 };
 
 #endif // __numberctrledit_h__
+

@@ -325,3 +325,4 @@ void CConfigPanel::OnSize(UINT nType, int cx, int cy)
 void CConfigPanel::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 }
+

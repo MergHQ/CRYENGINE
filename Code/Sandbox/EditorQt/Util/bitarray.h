@@ -270,3 +270,4 @@ inline int concatBitarray(CBitArray& b1, CBitArray& b2, CBitArray& test, CBitArr
 }
 
 #endif // __bitarray_h__
+

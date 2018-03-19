@@ -194,3 +194,4 @@ protected:
 	CImageList      m_imageList;
 	CDialogManager* m_pDM;
 };
+

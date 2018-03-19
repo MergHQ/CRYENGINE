@@ -1712,3 +1712,4 @@ string CLayer::GetLayerPath() const
 
 	return "";
 }
+

@@ -236,3 +236,4 @@ void CMaterialPanel::SetupUi()
 	pLayout->addWidget(pSplitter);
 	setLayout(pLayout);
 }
+

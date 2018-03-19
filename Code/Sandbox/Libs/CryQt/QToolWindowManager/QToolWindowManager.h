@@ -280,3 +280,4 @@ public:
 protected:
 	virtual void QSizePreservingSplitter::childEvent(QChildEvent *c);
 };
+

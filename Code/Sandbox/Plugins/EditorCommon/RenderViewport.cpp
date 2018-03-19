@@ -1988,3 +1988,4 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyToggleCameraObjectCollisions, camera, tog
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyToggleCameraSpeedHeightRelative, camera, toggle_speed_height_relative,
 	CCommandDescription("Camera Speed Height-Relative"));
 REGISTER_EDITOR_UI_COMMAND_DESC(camera, toggle_speed_height_relative, "Camera Speed Height-Relative", "Z", "")
+

@@ -9,3 +9,4 @@ struct IRenderListener
 	virtual void Render(DisplayContext& rDisplayContext) = 0;
 };
 
+

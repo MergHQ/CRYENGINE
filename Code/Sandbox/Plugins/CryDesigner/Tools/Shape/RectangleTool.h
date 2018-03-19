@@ -113,3 +113,4 @@ protected:
 	PolygonPtr m_pRectPolygon;
 };
 }
+

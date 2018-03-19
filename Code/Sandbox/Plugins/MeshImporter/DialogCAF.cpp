@@ -1035,3 +1035,4 @@ bool CDialogCAF::IsCurrentScene(int sceneId) const
 }
 
 } // namespace MeshImporter
+

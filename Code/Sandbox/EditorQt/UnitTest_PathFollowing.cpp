@@ -352,3 +352,4 @@ void CModelViewportCE::PathFollowing(const SPlayerControlMotionParams& mp, f32 f
 	}
 
 }
+

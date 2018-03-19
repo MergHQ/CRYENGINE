@@ -38,3 +38,4 @@ private:
 	std::function<bool(float num)> m_check;
 };
 
+

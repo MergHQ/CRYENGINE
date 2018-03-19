@@ -60,3 +60,4 @@ struct RCAssetLoader : IEntryLoader
 }
 
 #endif
+

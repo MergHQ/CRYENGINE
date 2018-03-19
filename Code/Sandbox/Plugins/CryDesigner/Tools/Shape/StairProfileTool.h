@@ -72,3 +72,4 @@ protected:
 	StairProfileParameter m_StairProfileParameter;
 };
 }
+

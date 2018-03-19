@@ -150,3 +150,4 @@ void CBaseLibraryItem::SetModified(bool bModified)
 	if (m_bModified && m_library != NULL)
 		m_library->SetModified(bModified);
 }
+

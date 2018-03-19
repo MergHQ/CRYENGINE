@@ -60,3 +60,4 @@ public:
 };
 
 #endif // __CloudObject_h__
+

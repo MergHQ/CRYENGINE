@@ -263,3 +263,4 @@ void CParticleItem::GatherUsedResources(CUsedResources& resources)
 		resources.Add(m_pEffect->GetParticleParams().sStopTrigger.c_str());
 }
 
+

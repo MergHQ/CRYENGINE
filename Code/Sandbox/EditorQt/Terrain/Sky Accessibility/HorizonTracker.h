@@ -109,3 +109,4 @@ inline DWORD GetIntLog2(const DWORD indwValue)
 	assert(0);              // input was not power of two
 	return(0xffffffff);
 }
+

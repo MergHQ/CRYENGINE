@@ -88,3 +88,4 @@ void CSequenceBrowser::OnOpen()
 		CMannequinDialog::GetCurrentInstance()->GetDockingPaneManager()->ShowPane(CMannequinDialog::IDW_PREVIEWER_PANE);
 	}
 }
+

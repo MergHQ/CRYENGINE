@@ -3169,3 +3169,4 @@ void CharacterDefinition::SynchModifiers(ICharacterInstance& character)
 }
 
 }
+

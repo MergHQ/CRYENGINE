@@ -350,3 +350,4 @@ class CArchive;
 
 EDITOR_COMMON_API CArchive& operator<<(CArchive& ar, const string& str); // for CString conversion
 EDITOR_COMMON_API CArchive& operator>>(CArchive& ar, string& str);       // for CString conversion
+

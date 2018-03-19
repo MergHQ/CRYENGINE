@@ -76,3 +76,4 @@ struct AnimationContent;
 bool GenerateFootsteps(AnimationContent* content, string* errorMessage, ICharacterInstance* character, const char* animationName, const FootstepGenerationParameters& params);
 
 }
+

@@ -324,3 +324,4 @@ void QPopupWidget::hideEvent(QHideEvent* pEvent)
 	SignalHide();
 	QWidget::hideEvent(pEvent);
 }
+

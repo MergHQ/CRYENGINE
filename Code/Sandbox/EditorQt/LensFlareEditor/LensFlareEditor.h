@@ -208,3 +208,4 @@ private:
 	std::vector<ILensFlareChangeItemListener*> m_LensFlareChangeItemListenerList;
 	std::vector<HTREEITEM>                     m_AllLensFlareTreeItems;
 };
+

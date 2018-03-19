@@ -103,3 +103,4 @@ void CAsyncImportSceneTask::OnError(const char* szMessage)
 {
 	gEnv->pLog->LogError("%s", szMessage);
 }
+

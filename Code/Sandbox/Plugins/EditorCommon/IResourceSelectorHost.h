@@ -287,3 +287,4 @@ public:
 };
 
 typedef CAutoRegister<SStaticResourceSelectorEntry> CAutoRegisterResourceSelector;
+

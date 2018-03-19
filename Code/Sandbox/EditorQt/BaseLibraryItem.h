@@ -93,3 +93,4 @@ protected:
 TYPEDEF_AUTOPTR(CBaseLibraryItem);
 
 #endif // __baselibraryitem_h__
+

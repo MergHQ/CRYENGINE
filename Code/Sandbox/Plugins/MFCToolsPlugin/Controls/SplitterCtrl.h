@@ -37,3 +37,4 @@ protected:
 	virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 	bool m_bTrackable;
 };
+

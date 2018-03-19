@@ -713,3 +713,4 @@ public:
 	const char*    Category()          { return ""; };
 	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CAITerritoryObject); };
 };
+

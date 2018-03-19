@@ -44,3 +44,4 @@ protected:
 };
 
 #endif //__FACIALVIDEOFRAMEDIALOG_H__
+

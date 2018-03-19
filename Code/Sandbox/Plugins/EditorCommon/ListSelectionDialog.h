@@ -51,3 +51,4 @@ private:
 	std::string            m_chosenItem;
 	int                    m_currentColumn;
 };
+

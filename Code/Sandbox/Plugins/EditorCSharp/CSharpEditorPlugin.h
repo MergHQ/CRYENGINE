@@ -106,3 +106,4 @@ private:
 };
 
 REGISTER_PLUGIN(CCSharpEditorPlugin)
+

@@ -34,3 +34,4 @@ private:
 	std::vector<CBaseObjectPtr>             m_objects;
 	std::vector<CBaseObject::EventCallback> m_eventListeners;
 };
+

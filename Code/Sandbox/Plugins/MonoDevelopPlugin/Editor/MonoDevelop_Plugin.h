@@ -23,3 +23,4 @@ public:
 	void        OnEditorNotify(EEditorNotifyEvent eventId);
 	// ~IPlugin
 };
+

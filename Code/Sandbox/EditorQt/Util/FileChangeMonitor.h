@@ -120,3 +120,4 @@ public:
 private:
 	CFileChangeMonitor* m_pMonitor;
 };
+

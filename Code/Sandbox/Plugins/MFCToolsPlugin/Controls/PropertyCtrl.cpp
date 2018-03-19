@@ -2180,3 +2180,4 @@ void CPropertyCtrl::RemoveCustomPopupMenuPopup(const CString& text)
 {
 	RemoveCustomPopup(text, m_customPopupMenuPopups);
 }
+

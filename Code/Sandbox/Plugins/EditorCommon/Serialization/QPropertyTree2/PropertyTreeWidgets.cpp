@@ -776,3 +776,4 @@ namespace property_tree
 
 REGISTER_PROPERTY_WIDGET_TEMPLATE(SerializableColor_tpl<float>,			ColorF, PropertyTree2::CColorwidget);
 REGISTER_PROPERTY_WIDGET_TEMPLATE(SerializableColor_tpl<unsigned char>, ColorB, PropertyTree2::CColorwidget);
+

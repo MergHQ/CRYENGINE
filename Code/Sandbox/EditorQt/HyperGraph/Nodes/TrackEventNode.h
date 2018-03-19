@@ -61,3 +61,4 @@ protected:
 private:
 	IAnimSequence* m_pSequence; // Current sequence
 };
+

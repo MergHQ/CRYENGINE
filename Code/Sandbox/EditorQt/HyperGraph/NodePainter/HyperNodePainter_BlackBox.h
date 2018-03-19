@@ -10,3 +10,4 @@ public:
 	virtual void Paint(CHyperNode* pNode, CDisplayList* pList);
 };
 
+

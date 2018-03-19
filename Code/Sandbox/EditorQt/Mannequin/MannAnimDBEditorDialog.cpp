@@ -374,3 +374,4 @@ void CMannAnimDBEditorDialog::OnMoveDown()
 			m_adbTree->SelectItem(item);
 	}
 }
+

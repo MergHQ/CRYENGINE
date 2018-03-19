@@ -56,3 +56,4 @@ uint32 CAbstractPinItem::GetIndex() const
 }
 
 }
+

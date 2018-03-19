@@ -181,3 +181,4 @@ void CNotificationList::OnContextMenu(const QPoint& point)
 	});
 	menu.exec(QCursor::pos());
 }
+

@@ -209,3 +209,4 @@ bool CSequencerUtils::CanAnyKeyBeMoved(const SelectedKeys& selectedKeys)
 	}
 	return canAnyKeyBeMoved;
 }
+

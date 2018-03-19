@@ -413,3 +413,4 @@ void MakeUVIslandsFromSelectedElements(std::vector<UVIslandPtr>& outUVIslands)
 }
 }
 }
+

@@ -46,3 +46,4 @@ private:
 	QLineEdit*          m_pThresholdAngleLineEdit;
 };
 }
+

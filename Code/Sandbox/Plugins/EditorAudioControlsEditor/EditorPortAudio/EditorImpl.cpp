@@ -399,3 +399,4 @@ ControlId CEditorImpl::GetId(string const& name) const
 }
 } // namespace PortAudio
 } // namespace ACE
+

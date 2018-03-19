@@ -378,3 +378,4 @@ void CMannNewSubADBFilterDialog::OnUsed2Frag()
 
 	EnableControls();
 }
+

@@ -19,3 +19,4 @@ public:
 	static CDependencyGraph* GetInstance();
 private:
 };
+

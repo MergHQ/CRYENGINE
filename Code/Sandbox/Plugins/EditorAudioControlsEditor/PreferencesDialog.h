@@ -28,3 +28,4 @@ private:
 	bool    m_saveButtonEnable = false;
 };
 } // namespace ACE
+

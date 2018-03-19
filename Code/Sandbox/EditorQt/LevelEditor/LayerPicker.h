@@ -26,3 +26,4 @@ private:
 	CObjectLayer*      m_selectedLayer;
 	QAdvancedTreeView* m_treeView;
 };
+

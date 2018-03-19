@@ -1455,3 +1455,4 @@ QToolWindowManager::QTWMNotifyLock::~QTWMNotifyLock()
 		m_parent->notifyLayoutChange();
 	}
 }
+

@@ -185,3 +185,4 @@ protected:
 	HCURSOR           m_hCursorReplace;
 	SortRecursionType m_sortRecursionType;
 };
+

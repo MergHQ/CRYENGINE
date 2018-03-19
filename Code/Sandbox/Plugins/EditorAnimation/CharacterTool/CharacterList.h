@@ -76,3 +76,4 @@ struct CHRParamsDependencies : IEntryDependencyExtractor
 };
 
 }
+

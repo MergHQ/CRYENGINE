@@ -1849,3 +1849,4 @@ bool CGameEngine::IsGameInputSuspended()
 {
 	return m_bGameModeSuspended;
 }
+

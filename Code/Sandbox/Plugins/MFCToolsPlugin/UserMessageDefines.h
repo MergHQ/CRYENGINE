@@ -50,3 +50,4 @@ enum ESandboxUserMessages
 	WM_VIEWPORT_ON_TITLE_CHANGE,
 };
 #endif
+

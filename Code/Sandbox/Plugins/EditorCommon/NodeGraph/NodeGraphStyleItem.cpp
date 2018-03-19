@@ -23,3 +23,4 @@ void CNodeGraphViewStyleItem::SetParent(CNodeGraphViewStyle* pViewStyle)
 }
 
 }
+

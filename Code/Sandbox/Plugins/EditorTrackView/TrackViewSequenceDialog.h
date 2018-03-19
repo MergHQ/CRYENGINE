@@ -43,3 +43,4 @@ private:
 	QPushButton*  m_pActionButton;
 	EMode         m_mode;
 };
+

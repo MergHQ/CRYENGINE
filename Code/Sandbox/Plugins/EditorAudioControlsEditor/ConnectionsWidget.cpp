@@ -362,3 +362,4 @@ void CConnectionsWidget::RestoreTreeViewStates()
 	m_pTreeView->RestoreSelection();
 }
 } // namespace ACE
+

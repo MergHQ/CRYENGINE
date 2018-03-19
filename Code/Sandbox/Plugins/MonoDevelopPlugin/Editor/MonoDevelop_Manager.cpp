@@ -152,3 +152,4 @@ void CALLBACK CMonoDevelopManager::OnMonoDevelopExit(void* context, BOOLEAN isTi
 	GetInstance()->m_pMonoDevelopWait = NULL;
 	GetInstance()->m_pMonoDevelopProcess = NULL;
 }
+

@@ -777,3 +777,4 @@ _smart_ptr<Model> ElementSet::CreateModel()
 	return pModel;
 }
 }
+

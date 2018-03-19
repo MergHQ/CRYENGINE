@@ -575,3 +575,4 @@ void CProjectLoader::RemoveEmptyEditorFolders(CItem* const pEditorFolder)
 }
 } // namespace Fmod
 } // namespace ACE
+

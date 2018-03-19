@@ -353,3 +353,4 @@ string CNodeProperties::SGroup::GetAsString() const
 {
 	return GetCollectionAsString(properties.begin(), properties.end());
 }
+

@@ -60,3 +60,4 @@ void CObjectClassDesc::OnDataBaseEvent(EDataBaseEvent event)
 		break;
 	}
 }
+

@@ -49,3 +49,4 @@ void CSingleSelectionDialog::Rebuild()
 
 	setLayout(pMainLayout);
 }
+

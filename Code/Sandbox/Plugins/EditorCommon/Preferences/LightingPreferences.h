@@ -15,3 +15,4 @@ struct EDITOR_COMMON_API SLightingPreferences : public SPreferencePage
 };
 
 EDITOR_COMMON_API extern SLightingPreferences gLightingPreferences;
+

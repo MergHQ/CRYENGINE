@@ -226,3 +226,4 @@ void CMaterialPreviewWidget::dropEvent(QDropEvent* pEvent)
 		}
 	}
 }
+

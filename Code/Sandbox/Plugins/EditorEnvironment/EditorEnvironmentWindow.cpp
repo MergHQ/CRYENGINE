@@ -164,3 +164,4 @@ void CEditorEnvironmentWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		m_timeOfDayWidget->UpdateCurveContent();
 	}
 }
+

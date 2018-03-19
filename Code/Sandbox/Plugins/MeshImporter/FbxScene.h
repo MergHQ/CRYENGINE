@@ -767,3 +767,4 @@ const char* CreateEngineMesh(
 
 // TODO: Maybe put this somewhere else.
 string GetFormattedAxes(FbxTool::Axes::EAxis up, FbxTool::Axes::EAxis fwd);
+

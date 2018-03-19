@@ -23,3 +23,4 @@ private:
 };
 
 #endif // UiEnumerations_h__
+

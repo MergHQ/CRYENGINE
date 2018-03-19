@@ -122,3 +122,4 @@ void CCallRcTask::Launch(const QString& metaDataFilename, void* pUserData, const
 	pTask->SetMessage(message);
 	pTaskHost->RunTask(pTask);
 }
+

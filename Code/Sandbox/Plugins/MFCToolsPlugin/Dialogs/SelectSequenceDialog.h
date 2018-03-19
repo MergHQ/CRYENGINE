@@ -22,3 +22,4 @@ protected:
 };
 
 #endif // __SELECTSEQUENCEDIALOG_H__
+

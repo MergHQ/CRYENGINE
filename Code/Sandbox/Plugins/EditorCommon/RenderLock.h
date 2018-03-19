@@ -17,3 +17,4 @@ private:
 
 	static int s_renderLock;
 };
+

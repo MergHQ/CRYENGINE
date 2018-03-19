@@ -116,3 +116,4 @@ private:
 };
 
 #endif // __terrainbeachgen_h__
+

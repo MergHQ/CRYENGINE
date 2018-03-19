@@ -38,3 +38,4 @@ BOOL CHotTrackingTreeCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	}
 	return CTreeCtrl::OnMouseWheel(nFlags, zDelta, pt);
 }
+

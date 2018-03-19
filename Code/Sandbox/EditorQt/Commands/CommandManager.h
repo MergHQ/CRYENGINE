@@ -92,3 +92,4 @@ protected:
 	void          LogCommand(const string& fullCmdName, const CCommand::CArgs& args) const;
 	string        ExecuteAndLogReturn(CCommand* pCommand, const CCommand::CArgs& args);
 };
+

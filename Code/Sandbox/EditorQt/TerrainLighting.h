@@ -133,3 +133,4 @@ struct LightingSettings
 };
 
 #endif // !defined(AFX_TERRAINLIGHTING_H__4CAA5295_2647_42FD_8334_359F55EBA4F8__INCLUDED_)
+

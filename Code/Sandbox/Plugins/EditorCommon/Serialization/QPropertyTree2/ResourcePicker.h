@@ -51,3 +51,4 @@ private:
 	QHBoxLayout*                        m_pLayout;
 	QLineEdit*                          m_pLineEdit;
 };
+

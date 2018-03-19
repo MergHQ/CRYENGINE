@@ -82,3 +82,4 @@ QString GetSelectButtonStyle(QWidget* pWidget);
 
 QFrame* CreateHorizontalLine();
 }
+

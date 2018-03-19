@@ -3142,3 +3142,4 @@ void CHyperGraphDialog::GetGraphPrettyName(CHyperGraph* pGraph, CString& compute
 		}
 	}
 }
+

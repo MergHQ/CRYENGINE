@@ -65,3 +65,4 @@ protected:
 	QAction*             m_addNewPresetAction;
 	QAction*             m_addExistingPresetAction;
 };
+

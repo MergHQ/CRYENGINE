@@ -433,3 +433,4 @@ void CJointGenEntity::Display(CObjectRenderHelper& objRenderHelper)
 		}
 	}
 }
+

@@ -544,3 +544,4 @@ IVec CModelViewportCE::CheckFootIntersection(const Vec3& Final_Heel, const Vec3&
 	retval.toe = Vec3(Final_Toe0.x, Final_Toe0.y, HeightToe0);
 	return retval;
 }
+

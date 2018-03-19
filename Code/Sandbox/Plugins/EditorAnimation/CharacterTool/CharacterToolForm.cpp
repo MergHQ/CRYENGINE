@@ -1229,3 +1229,4 @@ void CharacterToolForm::OnDockWidgetsChanged()
 }
 
 }
+

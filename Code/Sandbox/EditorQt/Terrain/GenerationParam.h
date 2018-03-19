@@ -58,3 +58,4 @@ protected:
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
 
 #endif // !defined(AFX_GENERATIONPARAM_H__B6D3C41A_7769_4657_AD03_0BBEF3D13DEB__INCLUDED_)
+

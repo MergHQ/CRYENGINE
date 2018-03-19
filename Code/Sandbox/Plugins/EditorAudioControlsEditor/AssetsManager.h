@@ -118,3 +118,4 @@ CAsset* GetParentLibrary(CAsset* pAsset);
 void    SelectTopLevelAncestors(std::vector<CAsset*> const& source, std::vector<CAsset*>& dest);
 } // namespace Utils
 } // namespace ACE
+

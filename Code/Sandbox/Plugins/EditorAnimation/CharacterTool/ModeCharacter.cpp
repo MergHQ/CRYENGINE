@@ -778,3 +778,4 @@ void ModeCharacter::UpdateToolbar()
 }
 
 }
+

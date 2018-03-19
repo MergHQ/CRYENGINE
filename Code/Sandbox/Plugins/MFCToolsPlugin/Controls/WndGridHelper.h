@@ -159,3 +159,4 @@ public:
 };
 
 #endif // __WndGridHelper_h__
+

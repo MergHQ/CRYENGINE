@@ -439,3 +439,4 @@ private:
 		return pNode;
 	}
 };
+

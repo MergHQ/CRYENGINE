@@ -29,3 +29,4 @@ protected:
 };
 
 #endif //__SELECTANIMATIONDIALOG_H__
+

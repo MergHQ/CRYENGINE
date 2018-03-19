@@ -192,3 +192,4 @@ void CPinItem::UpdateWithNewIndex(uint32 index)
 }
 
 }
+

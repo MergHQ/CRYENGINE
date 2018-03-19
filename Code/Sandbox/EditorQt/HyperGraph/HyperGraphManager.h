@@ -58,3 +58,4 @@ protected:
 	Listeners m_listeners;
 	bool      m_notifyListenersDisabled;
 };
+

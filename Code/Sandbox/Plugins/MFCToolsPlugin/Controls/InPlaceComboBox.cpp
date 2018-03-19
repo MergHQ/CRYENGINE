@@ -1035,3 +1035,4 @@ void CInPlaceComboBox::RefreshMetrics()
 {
 	RefreshXtremeColors();
 }
+

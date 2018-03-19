@@ -85,3 +85,4 @@ IVariable* CreateDefaultVar(const char* name, bool rec = false);
 IVariable* CreateDefaultChildOf(const char* name);
 
 #endif
+

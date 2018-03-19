@@ -39,3 +39,4 @@ private:
 	afx_msg void OnBeginDrag(NMHDR* pNMHDR, LRESULT* pResult);
 
 };
+

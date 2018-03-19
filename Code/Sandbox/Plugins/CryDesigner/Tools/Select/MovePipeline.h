@@ -52,3 +52,4 @@ private:
 	std::set<PolygonPtr>              m_PolygonsInUVIslands;
 };
 }
+

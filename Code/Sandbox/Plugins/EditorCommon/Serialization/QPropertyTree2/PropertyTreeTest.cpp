@@ -418,3 +418,4 @@ EDITOR_COMMON_API QWidget* CreateLegacyPTWidget_MultiEdit()
 	return tree;
 }
 }
+

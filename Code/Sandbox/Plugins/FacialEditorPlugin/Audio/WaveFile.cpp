@@ -580,3 +580,4 @@ HRESULT WaveFileMemory::GetLoopRegionBytes(DWORD* pdwStart, DWORD* pdwLength) co
 }
 
 } // namespace ATG
+

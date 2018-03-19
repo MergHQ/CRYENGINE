@@ -123,3 +123,4 @@ const float kSelectionCooldownPerSec = 1.1f;
 // ==================================================
 
 QStringList ToStringList(const std::vector<string>& strs);
+

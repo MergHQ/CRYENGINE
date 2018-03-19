@@ -1079,3 +1079,4 @@ void QTimeOfDayWidget::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		UpdateProperties();
 	}
 }
+

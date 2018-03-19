@@ -66,3 +66,4 @@ public:
 };
 
 #endif//__REFPICTURE_H__
+

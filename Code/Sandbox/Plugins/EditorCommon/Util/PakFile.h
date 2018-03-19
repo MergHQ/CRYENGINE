@@ -45,3 +45,4 @@ private:
 	ICryPak*            m_pCryPak;
 };
 
+

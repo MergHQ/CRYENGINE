@@ -175,3 +175,4 @@ public:
 	virtual const char* GetTextureIcon()                    { return "%EDITOR%/ObjectIcons/prefab.bmp"; };
 	virtual bool        IsCreatable() const override;
 };
+

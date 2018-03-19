@@ -14,3 +14,4 @@ ESceneElementType CSceneElementSkin::GetType() const
 {
 	return ESceneElementType::Skin;
 }
+

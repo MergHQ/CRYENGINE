@@ -1297,3 +1297,4 @@ void CMannKeyPropertiesDlgFE::OnUpdate()
 		OnKeySelectionChange();
 	}
 }
+

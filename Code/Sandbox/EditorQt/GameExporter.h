@@ -200,3 +200,4 @@ private:
 
 	static CGameExporter* m_pCurrentExporter;
 };
+

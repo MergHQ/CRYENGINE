@@ -285,3 +285,4 @@ const char* GetTextureSemanticFromChannelType(FbxTool::EMaterialChannelType chan
 	}
 }
 
+

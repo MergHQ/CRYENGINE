@@ -807,3 +807,4 @@ void SCreateMeshStats::Log(const SCreateMeshStats& stats)
 
 	SCreateEngineMeshStats::Log(stats.createEngineMesh);
 }
+

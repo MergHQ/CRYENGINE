@@ -54,3 +54,4 @@ void     Log(const char* format, ...);
 #include <CryRenderer/VertexFormats.h>
 
 #include <qt_windows.h>
+

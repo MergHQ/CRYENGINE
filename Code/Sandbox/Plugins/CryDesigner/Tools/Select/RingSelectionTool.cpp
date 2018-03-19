@@ -176,3 +176,4 @@ void RingSelectionTool::SelectFaceRing(MainContext& mc)
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Ring, eToolGroup_Selection, "Ring", RingSelectionTool,
                                    ringselection, "runs ring selection tool", "designer.ringselection")
+

@@ -190,3 +190,4 @@ void CTextureCompression::WriteDDSToFile(CFile& file, unsigned char* dat, int w,
 
 	SAFE_DELETE_ARRAY(data);
 }
+

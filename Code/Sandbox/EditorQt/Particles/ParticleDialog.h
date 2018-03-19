@@ -123,3 +123,4 @@ protected:
 };
 
 #endif // __particledialog_h__
+

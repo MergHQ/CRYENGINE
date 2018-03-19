@@ -22,3 +22,4 @@ protected:
 };
 
 #endif//__IPOSTRENDERER_H__
+

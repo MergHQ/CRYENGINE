@@ -106,3 +106,4 @@ private:
 	bool                          m_isReloading;
 };
 } // namespace ACE
+

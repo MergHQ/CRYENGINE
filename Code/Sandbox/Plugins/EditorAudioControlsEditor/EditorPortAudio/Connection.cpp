@@ -46,3 +46,4 @@ SERIALIZATION_ENUM(EEventActionType::Stop, "stop", "Stop")
 SERIALIZATION_ENUM_END()
 } // namespace PortAudio
 } // namespace ACE
+

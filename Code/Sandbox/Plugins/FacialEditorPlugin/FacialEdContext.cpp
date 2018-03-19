@@ -1907,3 +1907,4 @@ void CFacialVideoFrameReader::FindAVIFrame(float time, IAVI_Reader*& pAVI, int& 
 		}
 	}
 }
+

@@ -146,3 +146,4 @@ void CAxisHelperExtended::DrawAxis(DisplayContext& dc, const Vec3& direction, co
 
 //////////////////////////////////////////////////////////////////////////
 const float CAxisHelperExtended::ms_maxDist = 1000.0f;
+

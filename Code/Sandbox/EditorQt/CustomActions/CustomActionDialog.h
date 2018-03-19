@@ -45,3 +45,4 @@ public:
 };
 
 #endif // __CustomActionsDialog_h__
+

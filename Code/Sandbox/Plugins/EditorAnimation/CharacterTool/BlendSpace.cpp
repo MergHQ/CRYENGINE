@@ -1363,3 +1363,4 @@ XmlNodeRef CombinedBlendSpace::SaveToXml() const
 }
 
 }
+

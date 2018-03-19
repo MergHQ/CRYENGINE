@@ -76,3 +76,4 @@ void UnmapTool::UnmapSelectedElements()
 
 REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_Unmap, eUVMappingToolGroup_Manipulation, "Unmap", UnmapTool,
                                     unmap, "runs unmap tool", "uvmapping.unmap")
+

@@ -735,3 +735,4 @@ void CRopeObject::UpdateAudioData()
 		pIRopeRenderNode->SetAudioParams(audioParams);
 	}
 }
+

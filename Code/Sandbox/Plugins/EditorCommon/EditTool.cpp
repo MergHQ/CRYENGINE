@@ -18,3 +18,4 @@ void CEditTool::Abort()
 {
 	GetIEditor()->SetEditTool(0);
 }
+

@@ -223,3 +223,4 @@ private:
 	static const uint32               m_dwMaxTileMemory = 1024 * 1024 * 1024; // Stall free support for up to 16k x 16k terrain texture
 	string                            m_TerrainRGBFileName;
 };
+

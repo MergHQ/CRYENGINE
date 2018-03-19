@@ -560,3 +560,4 @@ void CBitmapToolTip::SetTool(CWnd* pWnd, const CRect& rect)
 	m_hToolWnd = pWnd->GetSafeHwnd();
 	m_toolRect = rect;
 }
+

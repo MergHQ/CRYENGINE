@@ -742,3 +742,4 @@ void CHyperNodePainter_Default::CheckBreakpoint(IFlowGraphPtr pFlowGraph, const 
 		bIsTracepoint = pFlowGraphDebugger->IsTracepoint(pFlowGraph, addr);
 	}
 }
+

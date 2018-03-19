@@ -93,3 +93,4 @@ private:
 	static uint32 const s_currentFileVersion;
 };
 } // namespace ACE
+

@@ -929,3 +929,4 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySetCustomCoords, general, set_custom_coor
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySuspendGameInput, general, suspend_game_input,
                                      "Suspend game input and allow editor to tweak properties",
                                      "general.suspend_game_input()");
+

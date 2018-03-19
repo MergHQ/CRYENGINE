@@ -14,3 +14,4 @@ public:
 };
 
 #endif // __imagegif_h__
+

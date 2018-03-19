@@ -478,3 +478,4 @@ void CKDTree::GetPenetratedBoxesRecursively(KDTreeNode* pNode, const Vec3& raySr
 	GetPenetratedBoxesRecursively(pNode->GetChild(0), raySrc, rayDir, outBoxes);
 	GetPenetratedBoxesRecursively(pNode->GetChild(1), raySrc, rayDir, outBoxes);
 }
+

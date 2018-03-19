@@ -55,3 +55,4 @@ void CSequencerSplitter::OnDrawSplitter(CDC* pDC, ESplitType nType, const CRect&
 	// Draw border
 	pDC->Draw3dRect(rectArg, GetSysColor(COLOR_BTNSHADOW), GetSysColor(COLOR_BTNHIGHLIGHT));
 }
+

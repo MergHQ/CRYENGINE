@@ -195,3 +195,4 @@ void QPropertyDialog::Serialize(Serialization::IArchive& ar)
 
 	ar(*m_propertyTree, "propertyTree");
 }
+

@@ -151,3 +151,4 @@ private:
 	QSize             m_sizeHint;
 	int               m_widthOffset;
 };
+

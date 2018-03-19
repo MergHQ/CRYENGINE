@@ -29,3 +29,4 @@ struct IFeatureTest : public _i_reference_target_t
 };
 
 }
+

@@ -423,3 +423,4 @@ f32 CModelViewportCE::IdleStep(IAnimationSet* pIAnimationSet)
 	return 0;
 
 }
+

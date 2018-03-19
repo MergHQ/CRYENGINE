@@ -2304,3 +2304,4 @@ void Model::InvalidateSmoothingGroups() const
 	GetSmoothingGroupMgr()->InvalidateAll();
 }
 }
+

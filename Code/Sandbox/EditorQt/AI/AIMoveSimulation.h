@@ -28,3 +28,4 @@ private:
 };
 
 #endif //__AI_MOVE_SIMULATION_H__
+

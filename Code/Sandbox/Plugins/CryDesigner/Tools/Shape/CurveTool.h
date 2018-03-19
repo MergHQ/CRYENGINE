@@ -60,3 +60,4 @@ protected:
 	CurveParameter   m_CurveParameter;
 };
 }
+

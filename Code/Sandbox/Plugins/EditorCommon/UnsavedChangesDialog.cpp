@@ -77,3 +77,4 @@ bool EDITOR_COMMON_API UnsavedChangesDialog(QWidget* parent, DynArray<string>* s
 	CUnsavedChangedDialog dialog(parent);
 	return dialog.Exec(selectedFiles, files);
 }
+

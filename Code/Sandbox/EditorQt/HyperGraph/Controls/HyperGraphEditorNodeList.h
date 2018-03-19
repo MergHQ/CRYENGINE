@@ -48,3 +48,4 @@ protected:
 	bool                 m_bDragEx;
 	std::vector<CString> m_searchKeywords;
 };
+

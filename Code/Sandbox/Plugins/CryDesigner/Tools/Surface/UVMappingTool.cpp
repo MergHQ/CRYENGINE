@@ -534,3 +534,4 @@ void UVMappingTool::OnChangeParameter(bool continuous)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_UVMapping, eToolGroup_Surface, "UV Mapping", UVMappingTool,
                                                            uvmapping, "runs uvmapping tool", "designer.uvmapping")
+

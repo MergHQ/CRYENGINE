@@ -32,3 +32,4 @@ struct EDITOR_COMMON_API IGizmoManager
 };
 
 #endif // __IGizmoManager_h__
+

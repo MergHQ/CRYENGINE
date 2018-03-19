@@ -1214,3 +1214,4 @@ void CEdMesh::DebugDraw(const SGeometryDebugDrawInfo& info)
 		m_pStatObj->DebugDraw(info);
 	}
 }
+

@@ -348,3 +348,4 @@ void CAnimationCompressionManager::OnReloadCHRPARAMSComplete(CBackgroundTaskRelo
 	if (pTask == m_pReloadCHRPARAMSTask)
 		m_pReloadCHRPARAMSTask = 0;
 }
+

@@ -141,3 +141,4 @@ protected:
 };
 
 #endif // __mannerrorreportdialog_h__
+

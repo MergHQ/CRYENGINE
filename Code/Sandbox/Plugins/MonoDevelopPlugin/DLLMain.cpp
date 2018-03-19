@@ -28,3 +28,4 @@ PLUGIN_API IPlugin* CreatePluginInstance(PLUGIN_INIT_PARAM* pInitParam)
 	ModuleInitISystem(GetIEditor()->GetSystem(), "MonoDevelopPlugin");
 	return new CMonoDevelopPlugin();
 }
+

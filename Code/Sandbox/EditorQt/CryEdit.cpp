@@ -2906,3 +2906,4 @@ REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PyIdleWait, general, idle_wait,
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(CCryEditApp::Command_ExportToEngine, general, export_to_engine,
                                      "Exports the current level to the engine.",
                                      "general.export_to_engine()");
+

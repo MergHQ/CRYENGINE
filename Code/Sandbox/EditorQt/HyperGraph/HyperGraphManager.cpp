@@ -207,3 +207,4 @@ void CHyperGraphManager::RemoveListener(IHyperGraphManagerListener* pListener)
 {
 	stl::find_and_erase(m_listeners, pListener);
 }
+

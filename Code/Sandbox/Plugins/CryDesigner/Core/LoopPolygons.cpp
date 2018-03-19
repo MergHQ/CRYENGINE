@@ -169,3 +169,4 @@ bool LoopPolygons::CreateNewPolygonFromEdges(PolygonPtr polygon, const std::vect
 	return false;
 }
 }
+

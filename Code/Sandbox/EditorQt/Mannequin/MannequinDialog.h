@@ -228,3 +228,4 @@ const CString TAGS_FILENAME_ENDING    = "tags";
 const CString TAGS_FILENAME_EXTENSION = ".xml";
 
 #endif // __MannequinDialog_h__
+

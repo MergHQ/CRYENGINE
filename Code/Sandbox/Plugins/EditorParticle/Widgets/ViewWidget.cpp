@@ -459,3 +459,4 @@ void CGraphView::OnRemoveCustomItem(CryGraphEditor::CAbstractNodeGraphViewModelI
 }
 
 }
+

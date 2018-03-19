@@ -1468,3 +1468,4 @@ bool CSystemFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex cons
 	return isLessThan;
 }
 } // namespace ACE
+

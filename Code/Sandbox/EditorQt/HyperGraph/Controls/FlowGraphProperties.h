@@ -70,3 +70,4 @@ protected:
 	CXTPTaskPanelGroupItem* m_pDescItem;
 	CColorCtrl<CEdit>       m_nodeDescription;
 };
+

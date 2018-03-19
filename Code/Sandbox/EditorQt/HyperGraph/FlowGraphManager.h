@@ -109,3 +109,4 @@ private:
 	std::vector<CHyperFlowGraph*> m_graphs;
 	CFlowGraphMigrationHelper     m_migrationHelper;
 };
+

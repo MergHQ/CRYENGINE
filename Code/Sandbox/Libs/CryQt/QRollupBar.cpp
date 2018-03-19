@@ -304,3 +304,4 @@ bool QRollupBar::eventFilter(QObject * o, QEvent * e)
 }
 
 
+

@@ -56,3 +56,4 @@ protected:
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
 
 #endif // !defined(AFX_MISSIONSELECTDIALOG_H__5F648DA5_8C4C_4F21_833A_16B5A276C507__INCLUDED_)
+

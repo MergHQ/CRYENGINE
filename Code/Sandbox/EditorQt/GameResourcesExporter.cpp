@@ -260,3 +260,4 @@ void CGameResourcesExporter::ExportPerLayerResourceList()
 
 REGISTER_EDITOR_COMMAND(CGameResourcesExporter::ExportSelectedLayerResources, editor, export_layer_resources, CCommandDescription(""));
 REGISTER_EDITOR_COMMAND(CGameResourcesExporter::ExportPerLayerResourceList, editor, export_per_layer_resource_list, CCommandDescription(""));
+

@@ -175,3 +175,4 @@ void CStateMachineItem::LoadFromScriptElement()
 }
 
 }
+

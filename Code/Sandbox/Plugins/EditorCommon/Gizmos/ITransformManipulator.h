@@ -36,3 +36,4 @@ struct EDITOR_COMMON_API ITransformManipulatorOwner
 	virtual bool IsManipulatorVisible() { return true; };
 };
 #endif // __ITransformManipulator_h__
+

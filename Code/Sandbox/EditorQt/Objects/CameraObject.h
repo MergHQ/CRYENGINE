@@ -217,3 +217,4 @@ public:
 };
 
 #endif // __cameraobject_h__
+

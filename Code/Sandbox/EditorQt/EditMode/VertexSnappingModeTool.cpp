@@ -359,3 +359,4 @@ CKDTree* CVertexSnappingModeTool::GetKDTree(CBaseObject* pObject)
 
 	return pTree;
 }
+

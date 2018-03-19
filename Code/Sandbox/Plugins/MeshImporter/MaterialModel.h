@@ -150,3 +150,4 @@ protected:
 private:
 	CMaterialModel* const m_pModel;
 };
+

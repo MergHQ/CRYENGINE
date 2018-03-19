@@ -476,3 +476,4 @@ bool CMiddlewareFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex 
 	return isLessThan;
 }
 } // namespace ACE
+

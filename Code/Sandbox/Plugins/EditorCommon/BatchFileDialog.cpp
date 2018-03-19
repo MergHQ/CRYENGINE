@@ -341,3 +341,4 @@ bool EDITOR_COMMON_API ShowBatchFileDialog(Serialization::StringList* result, co
 	}
 	return false;
 }
+

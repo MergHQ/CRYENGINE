@@ -335,3 +335,4 @@ private:
 extern SAINavigationPreferences gAINavigationPreferences;
 
 #endif // __aimanager_h__
+

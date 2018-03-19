@@ -2102,3 +2102,4 @@ const SKeyColour& CParamTrack::GetBlendColour(int key) const
 {
 	return TAG_KEY_COLOUR;
 }
+

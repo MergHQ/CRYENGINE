@@ -44,3 +44,4 @@ struct IExportManager
 		bool isSelectedRegionObjects = false, bool isTerrain = false, bool isOccluder = false, bool bAnimationExport = false) = 0;
 
 };
+

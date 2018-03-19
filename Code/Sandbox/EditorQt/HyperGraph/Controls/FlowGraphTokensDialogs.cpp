@@ -346,3 +346,4 @@ bool CFlowGraphNewTokenDlg::DoesTokenExist(CString tokenName)
 	}
 	return false;
 }
+

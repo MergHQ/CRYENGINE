@@ -483,3 +483,4 @@ void CConnectionsModel::DecodeMimeData(QMimeData const* pData, ImplItemIds& ids)
 	}
 }
 } // namespace ACE
+

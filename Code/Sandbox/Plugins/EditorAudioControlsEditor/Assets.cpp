@@ -859,3 +859,4 @@ CFolder::CFolder(string const& name)
 	: CAsset(name, EAssetType::Folder)
 {}
 } // namespace ACE
+

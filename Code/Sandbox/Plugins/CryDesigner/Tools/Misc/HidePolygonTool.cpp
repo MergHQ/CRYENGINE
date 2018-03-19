@@ -90,3 +90,4 @@ void HidePolygonTool::Serialize(Serialization::IArchive& ar)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_HidePolygon, eToolGroup_Misc, "Hide Polygon", HidePolygonTool,
                                                            hide, "runs hide tool", "designer.hide")
+

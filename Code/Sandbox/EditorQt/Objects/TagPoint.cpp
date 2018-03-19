@@ -181,3 +181,4 @@ void CNavigationSeedPoint::SetModified(bool boModifiedTransformOnly, bool bNotif
 	__super::SetModified(boModifiedTransformOnly, bNotifyObjectManager);
 	GetIEditorImpl()->GetAI()->CalculateNavigationAccessibility();
 }
+

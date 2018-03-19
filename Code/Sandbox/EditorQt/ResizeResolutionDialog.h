@@ -56,3 +56,4 @@ private:
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
 
 #endif // !defined(AFX_RESIZERESOLUTIONDIALOG_H__C8E98A11_BBE9_499F_AB62_6EA12BDBCF85__INCLUDED_)
+

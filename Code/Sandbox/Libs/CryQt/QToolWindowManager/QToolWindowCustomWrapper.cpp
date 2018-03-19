@@ -228,3 +228,4 @@ void QToolWindowCustomWrapper::deferDeletion()
 	setParent(nullptr);
 	deleteLater();
 }
+

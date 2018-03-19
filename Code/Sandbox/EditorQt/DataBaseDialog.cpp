@@ -284,3 +284,4 @@ BOOL CDataBaseDialog::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLER
 	}
 	return CToolbarDialog::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
 }
+

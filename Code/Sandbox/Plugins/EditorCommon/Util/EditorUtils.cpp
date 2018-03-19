@@ -255,3 +255,4 @@ void ParsePropertyString(const char* szProperties, const char* szDelim, const st
 		pBegin = pEnd;
 	}
 };
+

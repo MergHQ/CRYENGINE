@@ -611,3 +611,4 @@ void PropertyRowResourceSelector::redraw(IDrawContext& context)
 
 REGISTER_PROPERTY_ROW(IResourceSelector, PropertyRowResourceSelector);
 DECLARE_SEGMENT(PropertyRowResourceSelector)
+

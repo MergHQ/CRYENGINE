@@ -20,3 +20,4 @@ public:
 	static DesignerObject* Separate(MainContext& mc);
 };
 }
+

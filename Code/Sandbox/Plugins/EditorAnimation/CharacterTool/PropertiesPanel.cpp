@@ -851,3 +851,4 @@ void PropertiesPanel::keyPressEvent(QKeyEvent* ev)
 }
 
 }
+

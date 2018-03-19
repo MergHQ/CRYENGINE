@@ -71,3 +71,4 @@ public slots:
 private:
 	QVariantMap m_config;
 };
+

@@ -242,3 +242,4 @@ public:
 
 	void        OnFileExportOcclusionMesh();
 };
+

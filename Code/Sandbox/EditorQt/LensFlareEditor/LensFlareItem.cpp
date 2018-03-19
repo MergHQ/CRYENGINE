@@ -155,3 +155,4 @@ void CLensFlareItem::ReplaceOptics(IOpticsElementBasePtr pNewData)
 	pLensFlareEditor->UpdateLensFlareItem(this);
 	pLensFlareEditor->RemovePropertyItems();
 }
+

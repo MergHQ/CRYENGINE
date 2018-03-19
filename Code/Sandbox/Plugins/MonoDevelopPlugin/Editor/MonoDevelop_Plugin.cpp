@@ -62,3 +62,4 @@ void CMonoDevelopPlugin::OnEditorNotify(EEditorNotifyEvent eventId)
 		//CMonoDevelopManager::Init(); <-- for UI ; not yet necessary
 	}
 }
+

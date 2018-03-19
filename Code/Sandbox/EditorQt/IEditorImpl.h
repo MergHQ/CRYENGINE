@@ -560,3 +560,4 @@ protected:
 };
 
 CEditorImpl* GetIEditorImpl();
+

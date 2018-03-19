@@ -1150,3 +1150,4 @@ void CFacialExpressionsDialog::OnDestroy()
 	if (m_pDropTarget)
 		delete m_pDropTarget;
 }
+

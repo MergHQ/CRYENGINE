@@ -181,3 +181,4 @@ void CLensFlareItemTree::UpdateDraggingFromOtherWindow()
 	if (bChanged)
 		RedrawWindow();
 }
+

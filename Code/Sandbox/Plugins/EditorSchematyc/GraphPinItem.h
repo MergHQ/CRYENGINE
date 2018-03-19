@@ -132,3 +132,4 @@ inline CPinId CPinItem::GetPinId() const
 }
 
 Q_DECLARE_METATYPE(CrySchematycEditor::CPinId);
+

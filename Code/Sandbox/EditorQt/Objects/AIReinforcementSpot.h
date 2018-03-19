@@ -60,3 +60,4 @@ public:
 };
 
 #endif // __AIReinforcementSpot_h__
+

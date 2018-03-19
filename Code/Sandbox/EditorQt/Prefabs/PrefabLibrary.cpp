@@ -75,3 +75,4 @@ void CPrefabLibrary::UpdatePrefabObjects()
 		pPrefabItem->UpdateObjects();
 	}
 }
+

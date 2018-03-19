@@ -54,3 +54,4 @@ private:
 
 extern ExtrusionSnappingHelper s_SnappingHelper;
 }
+

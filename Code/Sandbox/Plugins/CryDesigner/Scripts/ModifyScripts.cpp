@@ -141,3 +141,4 @@ void PyDesignerSubdivide(int nLevel)
                        "Subdivides the selected designer objects.",
                        "designer.subdivide(int nLevel)" );
  */
+

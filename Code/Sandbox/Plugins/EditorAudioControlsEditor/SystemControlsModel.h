@@ -139,3 +139,4 @@ protected:
 	// ~QSortFilterProxyModel
 };
 } // namespace ACE
+

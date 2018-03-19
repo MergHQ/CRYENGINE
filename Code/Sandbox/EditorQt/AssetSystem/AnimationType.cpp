@@ -16,3 +16,4 @@ CryIcon CAnimationType::GetIconInternal() const
 {
 	return CryIcon("icons:common/assets_animation.ico");
 }
+

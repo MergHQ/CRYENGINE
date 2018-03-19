@@ -908,3 +908,4 @@ void CFragmentEditorPage::Reset()
 	m_wndTrackPanel.SetFragment(FRAGMENT_ID_INVALID);
 	m_wndKeyProperties.ForceUpdate();
 }
+

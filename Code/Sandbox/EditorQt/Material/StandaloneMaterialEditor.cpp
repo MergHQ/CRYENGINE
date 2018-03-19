@@ -128,3 +128,4 @@ void StandaloneMaterialEditor::OnIdleCallback()
 	GetIEditorImpl()->Notify(eNotify_OnIdleUpdate);
 	QTimer::singleShot(16, this, &StandaloneMaterialEditor::OnIdleCallback);
 }
+

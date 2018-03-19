@@ -71,3 +71,4 @@ public:
 };
 
 #endif // __smartobject_h__
+

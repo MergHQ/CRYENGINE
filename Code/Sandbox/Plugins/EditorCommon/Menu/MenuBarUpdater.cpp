@@ -24,3 +24,4 @@ CMenuBarUpdater::~CMenuBarUpdater()
 {
 	m_pAbstractMenu->signalActionAdded.DisconnectById(GetId());
 }
+

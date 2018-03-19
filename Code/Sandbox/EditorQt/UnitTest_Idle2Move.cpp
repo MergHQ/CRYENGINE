@@ -446,3 +446,4 @@ f32 CModelViewportCE::Idle2Move(IAnimationSet* pIAnimationSet)
 	return 0;
 
 }
+

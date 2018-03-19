@@ -132,3 +132,4 @@ void CMissionProps::OnBnClickedEdit()
 {
 	GetIEditorImpl()->GetDocument()->GetCurrentMission()->GetScript()->Edit();
 }
+

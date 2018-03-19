@@ -263,3 +263,4 @@ Internal::CNotification* CNotificationModel::NotificationFromIndex(const QModelI
 
 	return pNotificationCenter->GetNotification(notificationIdx);
 }
+

@@ -239,3 +239,4 @@ bool CAxisScaleGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
+

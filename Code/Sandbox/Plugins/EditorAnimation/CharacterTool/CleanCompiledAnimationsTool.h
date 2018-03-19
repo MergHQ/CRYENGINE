@@ -9,3 +9,4 @@ namespace CharacterTool
 void ShowCleanCompiledAnimationsTool(QWidget* parent);
 
 }
+

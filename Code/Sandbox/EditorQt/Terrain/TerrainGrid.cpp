@@ -196,3 +196,4 @@ void CTerrainGrid::GetMemoryUsage(ICrySizer* pSizer)
 		if (m_sectorGrid[i])
 			pSizer->Add(*m_sectorGrid[i]);
 }
+

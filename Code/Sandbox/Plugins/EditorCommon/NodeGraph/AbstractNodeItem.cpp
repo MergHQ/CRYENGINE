@@ -99,3 +99,4 @@ uint32 CAbstractNodeItem::GetPinItemIndex(const CAbstractPinItem& pin) const
 }
 
 }
+

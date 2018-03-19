@@ -50,3 +50,4 @@ BOOL CInPlaceColorButton::OnEraseBkgnd(CDC* pDC)
 {
 	return TRUE;
 }
+

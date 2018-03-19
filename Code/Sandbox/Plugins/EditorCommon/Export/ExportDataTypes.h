@@ -166,3 +166,4 @@ struct EDITOR_COMMON_API SExportData
 
 	std::vector<_smart_ptr<SExportObject>> m_objects;
 };
+

@@ -141,3 +141,4 @@ void CComponentsDictionary::Load(const Schematyc::IScriptElement* pScriptScope)
 }
 
 }
+

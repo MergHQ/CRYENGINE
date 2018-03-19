@@ -431,3 +431,4 @@ CByteImage* CTerrainLayerTexGen::GetLayerMask(CLayer* layer)
 	}
 	return 0;
 }
+

@@ -101,3 +101,4 @@ void CAbstractNodeContentWidget::updateGeometry()
 }
 
 }
+

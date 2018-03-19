@@ -166,3 +166,4 @@ private:
 	std::vector<HE_Face>     m_Faces;
 };
 }
+

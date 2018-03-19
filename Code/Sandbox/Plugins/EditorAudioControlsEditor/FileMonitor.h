@@ -69,3 +69,4 @@ private:
 	std::vector<char const*> m_monitorFolders;
 };
 } // namespace ACE
+

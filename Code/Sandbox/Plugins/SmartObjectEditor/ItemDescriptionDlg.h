@@ -41,3 +41,4 @@ public:
 	afx_msg void OnEnChangeItemedit();
 	virtual BOOL OnInitDialog();
 };
+

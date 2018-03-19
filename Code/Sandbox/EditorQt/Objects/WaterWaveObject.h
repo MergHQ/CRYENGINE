@@ -66,3 +66,4 @@ protected:
 
 	IRenderNode*     m_pRenderNode;
 };
+

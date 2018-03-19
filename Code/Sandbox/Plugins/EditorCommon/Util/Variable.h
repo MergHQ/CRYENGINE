@@ -1617,3 +1617,4 @@ public:
 #pragma warning(pop)
 
 #endif // __Variable_h__
+

@@ -4212,3 +4212,4 @@ void CSmartObjectsEditorDialog::SetTemplateDefaults(SmartObjectCondition& condit
 
 	SetTemplateDefaults(condition, param->pNext, message);
 }
+

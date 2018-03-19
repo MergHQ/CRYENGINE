@@ -152,3 +152,4 @@ private:
 	QEventLoop*               m_pEventLoop;
 	CDictionaryWidget*        m_pDictionaryWidget;
 };
+

@@ -468,3 +468,4 @@ bool CTerrainMoveTool::IsManipulatorVisible()
 {
 	return m_source.isSelected || m_target.isSelected;
 }
+

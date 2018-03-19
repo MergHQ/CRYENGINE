@@ -763,3 +763,4 @@ void CCVarListDockable::SaveCVarListToFile(const char* szFilename)
 	QJsonDocument doc(QJsonDocument::fromVariant(GetState()));
 	file.write(doc.toJson());
 }
+

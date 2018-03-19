@@ -680,3 +680,4 @@ void BlockPalette::Serialize(Serialization::IArchive& ar)
 	ar(m_addWithSingleClick, "addWithSingleClick");
 	ar(m_hotkeys, "hotkeys");
 }
+

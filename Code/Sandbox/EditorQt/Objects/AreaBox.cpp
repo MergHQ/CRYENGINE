@@ -1088,3 +1088,4 @@ void CAreaBox::UpdateSoundPanelParams()
 		UpdateUIVars();
 	}
 }
+

@@ -104,3 +104,4 @@ private:
 };
 
 #endif // __SurfaceType_h__
+

@@ -35,3 +35,4 @@ def build(bld):
 		win_x64_performance_libpath = Path(lib_path_base % 'release'),
 		win_x64_release_libpath     = Path(lib_path_base % 'release'),
 	)
+

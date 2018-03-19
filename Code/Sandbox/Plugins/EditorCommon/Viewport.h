@@ -442,3 +442,4 @@ protected:
 
 	QWidget*         m_viewWidget;
 };
+

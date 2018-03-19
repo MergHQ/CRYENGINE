@@ -804,3 +804,4 @@ const char* QPresetsWidget::GetSelectedItem() const
 
 	return nullptr;
 }
+

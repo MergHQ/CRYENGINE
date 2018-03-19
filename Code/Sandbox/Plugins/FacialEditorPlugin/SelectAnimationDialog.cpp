@@ -66,3 +66,4 @@ CString CSelectAnimationDialog::GetSelectedItem()
 	int slashPos = m_selectedItem.Find("/");
 	return (slashPos >= 0 ? m_selectedItem.Right(m_selectedItem.GetLength() - slashPos - 1) : m_selectedItem);
 }
+

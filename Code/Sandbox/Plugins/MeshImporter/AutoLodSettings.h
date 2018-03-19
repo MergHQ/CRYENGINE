@@ -93,3 +93,4 @@ private:
 	std::vector<sNode> m_nodeParams;
 	sGlobalParams      m_globalParams;
 };
+

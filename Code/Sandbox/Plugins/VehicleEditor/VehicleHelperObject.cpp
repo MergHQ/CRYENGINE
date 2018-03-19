@@ -282,3 +282,4 @@ void CVehicleHelper::OnTransform()
 {
 	UpdateVarFromObject();
 }
+

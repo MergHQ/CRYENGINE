@@ -92,3 +92,4 @@ struct IUndoManager
 	virtual const std::list<CUndoStep*>& GetRedoStack() const = 0;
 };
 
+

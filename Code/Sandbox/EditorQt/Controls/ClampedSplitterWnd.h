@@ -51,3 +51,4 @@ private:
 };
 
 #endif // __clampedsplitterwnd_h__
+

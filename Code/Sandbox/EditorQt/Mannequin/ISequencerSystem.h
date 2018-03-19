@@ -347,3 +347,4 @@ private:
 };
 
 #endif // __ISequencerSystem_h__
+

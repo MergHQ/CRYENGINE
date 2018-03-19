@@ -344,3 +344,4 @@ std::vector<string> GetAssetTypesFromFileFormatFlags(int flags);
 } // namespace MeshImporter
 
 std::unique_ptr<QTemporaryDir> CreateTemporaryDirectory();
+

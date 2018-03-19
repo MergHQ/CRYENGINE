@@ -52,3 +52,4 @@ private:
 
 	CTextureManager* m_pTextureManager;
 };
+

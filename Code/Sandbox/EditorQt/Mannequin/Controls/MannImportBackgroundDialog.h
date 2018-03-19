@@ -29,3 +29,4 @@ protected:
 };
 
 #endif // StringInputDialog_h__
+

@@ -21,3 +21,4 @@ public:
 private:
 	virtual CryIcon GetIconInternal() const override;
 };
+

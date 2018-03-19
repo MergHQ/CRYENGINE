@@ -371,3 +371,4 @@ public:
 };
 
 REGISTER_CLASS_DESC(CRiverObjectClassDesc);
+

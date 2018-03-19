@@ -66,3 +66,4 @@ private:
 };
 
 #endif //__RULERPATHAGENT_H__
+

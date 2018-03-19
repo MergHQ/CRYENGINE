@@ -81,3 +81,4 @@ void CDataTypesModel::GenerateTypeInfo()
 	CREATE_TYPE_ITEM(Schematyc::ObjectId, QColor(0, 156, 255));
 	//CREATE_TYPE_ITEM(Schematyc::ExplicitEntityId, QColor(110, 180, 160));
 }
+

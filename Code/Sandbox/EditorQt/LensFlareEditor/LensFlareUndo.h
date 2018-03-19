@@ -113,3 +113,4 @@ private:
 	string m_FullLensFlareItemNameForUndo;
 	string m_FullLensFlareItemNameForRedo;
 };
+

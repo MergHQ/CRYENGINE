@@ -305,3 +305,4 @@ void CLogWidget::WriteLogMessageToOutput(const SLogMessageData& logMessageData)
 }
 
 } // Schematyc
+

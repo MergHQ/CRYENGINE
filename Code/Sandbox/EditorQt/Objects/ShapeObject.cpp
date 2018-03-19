@@ -4876,3 +4876,4 @@ static void PyInsertPoint(const char* objName, int idx, float xPos, float yPos, 
 }
 
 REGISTER_PYTHON_COMMAND(PyInsertPoint, general, nav_insert_point, "Added a point at the given position to the given nav area");
+

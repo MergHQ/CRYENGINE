@@ -165,3 +165,4 @@ target_include_directories( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/squish-ccr")
 target_include_directories( ${THIS_PROJECT} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 use_xt()
+

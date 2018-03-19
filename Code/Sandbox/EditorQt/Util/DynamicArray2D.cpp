@@ -140,3 +140,4 @@ void CDynamicArray2D::ScaleImage(CDynamicArray2D* pDestination)
 		}
 	}
 }
+

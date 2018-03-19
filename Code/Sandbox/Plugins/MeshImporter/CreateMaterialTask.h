@@ -45,3 +45,4 @@ private:
 	string                                       m_materialFilePath;
 	bool m_bSucceeded;
 };
+

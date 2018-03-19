@@ -1446,3 +1446,4 @@ void CTransitionBrowserRecord::CreateItems()
 
 	SetGroup(m_data.m_bFolder);
 }
+

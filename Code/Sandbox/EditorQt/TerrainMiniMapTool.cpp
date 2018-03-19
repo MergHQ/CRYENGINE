@@ -443,3 +443,4 @@ void CTerrainMiniMapTool::Serialize(Serialization::IArchive& ar)
 		}
 	}
 }
+

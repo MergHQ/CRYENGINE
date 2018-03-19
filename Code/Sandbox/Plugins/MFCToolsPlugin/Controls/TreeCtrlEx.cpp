@@ -493,3 +493,4 @@ BOOL CTreeCtrlEx::OnEraseBkgnd(CDC* pDC)
 {
 	return FALSE;
 }
+

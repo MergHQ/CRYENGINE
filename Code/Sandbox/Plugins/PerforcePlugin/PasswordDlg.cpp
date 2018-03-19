@@ -108,3 +108,4 @@ bool OpenPasswordDlg(string& port, string& user, string& client, string& passwd,
 	return false;
 }
 }
+

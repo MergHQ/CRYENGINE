@@ -542,3 +542,4 @@ ELineState PolylineTool::GetLineState() const
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Polyline, eToolGroup_Shape, "Polyline", PolylineTool,
                                                            polyline, "runs polyline tool", "designer.polyline")
+

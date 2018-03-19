@@ -499,3 +499,4 @@ void CViewManager::UnregisterCameraDelegate(ICameraDelegate* pCameraDelegate)
 {
 	stl::find_and_erase(m_cameraDelegates, pCameraDelegate);
 }
+

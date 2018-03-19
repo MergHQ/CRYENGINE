@@ -35,3 +35,4 @@ public:
 };
 
 #endif // __aiwave_h__
+

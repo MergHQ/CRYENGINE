@@ -16,3 +16,4 @@ struct PLUGIN_API SMFCFonts
 };
 
 extern SMFCFonts gMFCFonts;
+

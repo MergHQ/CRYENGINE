@@ -1727,3 +1727,4 @@ void CRGBLayer::SetSubimageFast(const float fDestLeft, const float fDestTop, con
 			TransferSubimageFast(rSrcImage, srcRect, *pTileImage, destRect);
 		}
 }
+

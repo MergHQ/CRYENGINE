@@ -182,3 +182,4 @@ EDITOR_COMMON_API bool MapFromSourceIndirect(const QAbstractItemModel* pProxyMod
 //! Takes a source model index and returns an index in the view's model
 EDITOR_COMMON_API bool MapFromSourceIndirect(const QAbstractItemView* pView, const QModelIndex& sourceIndexIn, QModelIndex& viewIndexOut);
 }
+

@@ -368,3 +368,4 @@ private:
 typedef TImage<float>          CFloatImage;
 typedef TImage<unsigned char>  CByteImage;
 typedef TImage<unsigned short> CWordImage;
+

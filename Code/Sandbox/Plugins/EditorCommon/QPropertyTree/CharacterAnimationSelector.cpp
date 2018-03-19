@@ -71,3 +71,4 @@ dll_string ValidateTrackCharacterAnimation(const SResourceSelectorContext& x, co
 
 REGISTER_RESOURCE_VALIDATING_SELECTOR("TrackCharacterAnimation", CharacterAnimationSelector, ValidateTrackCharacterAnimation, "")
 REGISTER_RESOURCE_VALIDATING_SELECTOR("CharacterAnimation", CharacterAnimationSelector, ValidateCharacterAnimation, "")
+

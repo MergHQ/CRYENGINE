@@ -78,3 +78,4 @@ uint32 CResizeResolutionDialog::GetSize()
 	}
 	return m_dwInitSize;
 }
+

@@ -12,3 +12,4 @@
 #else
 #define CRYQT_API
 #endif
+

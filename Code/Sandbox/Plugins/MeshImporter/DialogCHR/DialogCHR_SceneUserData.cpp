@@ -70,3 +70,4 @@ void CSceneCHR::AutoAssignProxies(const FbxTool::CScene& scene)
 		}
 	}
 }
+

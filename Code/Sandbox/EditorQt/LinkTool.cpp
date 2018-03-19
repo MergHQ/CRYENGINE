@@ -315,3 +315,4 @@ bool CLinkTool::HitTest(CBaseObject* pObject, HitContext& hc)
 
 	return bHit;
 }
+

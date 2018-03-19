@@ -204,3 +204,4 @@ void CUndoLensFlareItemSelectionChange::Redo()
 		return;
 	pEditor->SelectLensFlareItem(m_FullLensFlareItemNameForRedo);
 }
+

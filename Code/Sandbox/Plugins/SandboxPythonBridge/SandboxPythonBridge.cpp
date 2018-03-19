@@ -194,3 +194,4 @@ PyMODINIT_FUNC initSandboxPythonBridge(void)
 	PyObject* module;
 	module = Py_InitModule("SandboxPythonBridge", BridgeMethods);
 }
+

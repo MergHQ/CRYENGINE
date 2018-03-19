@@ -2202,3 +2202,4 @@ QModelIndex CScriptBrowserWidget::TreeViewFromModelIndex(const QModelIndex& inde
 }
 
 } // Schematyc
+

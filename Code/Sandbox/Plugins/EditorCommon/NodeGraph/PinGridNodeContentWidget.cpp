@@ -257,3 +257,4 @@ void CPinGridNodeContentWidget::OnPinRemoved(CAbstractPinItem& item)
 }
 
 }
+

@@ -1250,3 +1250,4 @@ void C2DViewport::SerializeDisplayOptions(Serialization::IArchive& ar)
 }
 
 #endif //EDITOR_2D_VIEWPORT_NOT_IMPLEMENTED
+

@@ -1627,3 +1627,4 @@ bool CObjectMode::IsDisplayGrid()
 	  (!m_bGizmoDrag && m_commandMode != NothingMode)
 	  || (m_commandMode == MoveMode);
 }
+

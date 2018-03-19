@@ -177,3 +177,4 @@ std::future<std::result_of_t<std::decay_t<WorkFn>()>> AsyncNotify(WorkFn&& workF
 }
 
 } // namespace ThreadingUtils
+

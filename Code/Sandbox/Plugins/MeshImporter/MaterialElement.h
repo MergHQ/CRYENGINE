@@ -46,3 +46,4 @@ private:
 
 FbxTool::EMaterialPhysicalizeSetting Convert(FbxMetaData::EPhysicalizeSetting setting);
 FbxMetaData::EPhysicalizeSetting     Convert(FbxTool::EMaterialPhysicalizeSetting setting);
+

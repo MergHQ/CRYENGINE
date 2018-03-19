@@ -184,3 +184,4 @@ public:
 	CFolder() = delete;
 };
 } // namespace ACE
+

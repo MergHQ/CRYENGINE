@@ -145,3 +145,4 @@ struct IDataBaseManager
 };
 
 #endif // __IDataBaseManager_h__
+

@@ -52,3 +52,4 @@ private:
 
 typedef _smart_ptr<BSPTree2D> BSPTree2DPtr;
 }
+

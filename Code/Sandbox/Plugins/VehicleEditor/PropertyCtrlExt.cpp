@@ -339,3 +339,4 @@ void CPropertyCtrlExt::OnGetEffect(CPropertyItem* pItem)
 		}
 	}
 }
+

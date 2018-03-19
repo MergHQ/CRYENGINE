@@ -223,3 +223,4 @@ void CAudioControlsEditorPlugin::InitPlatforms()
 	}
 }
 } // namespace ACE
+

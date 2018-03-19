@@ -102,3 +102,4 @@ void CUndoRedo::Redo()
 	m_undoOperators.push_back(m_redoOperators.back());
 	m_redoOperators.pop_back();
 }
+

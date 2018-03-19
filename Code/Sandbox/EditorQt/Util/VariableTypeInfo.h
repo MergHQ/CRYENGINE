@@ -445,3 +445,4 @@ IVariable* CVariableTypeInfo::Create(CTypeInfo::CVarInfo const& VarInfo, void* p
 }
 
 #endif // __VariableTypeInfo_h__
+

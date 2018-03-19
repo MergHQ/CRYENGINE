@@ -741,3 +741,4 @@ bool CAxisRotateGizmo::HitTest(HitContext& hc)
 	}
 	return false;
 }
+

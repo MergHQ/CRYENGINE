@@ -55,3 +55,4 @@ void InvertSelectionTool::Enter()
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Invert, eToolGroup_Selection, "Invert", InvertSelectionTool,
                                    invertselection, "runs invert selection tool", "designer.invertselection")
+

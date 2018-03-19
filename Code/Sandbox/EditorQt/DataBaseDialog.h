@@ -82,3 +82,4 @@ protected:
 };
 
 #endif // __databasedialog_h__
+

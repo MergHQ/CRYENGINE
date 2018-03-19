@@ -11,3 +11,4 @@ struct IAnimationCompressionManager
 	// "animations/alien/cerberus/cerberus_activation.caf"
 	virtual void QueueAnimationCompression(const char* animationName) = 0;
 };
+

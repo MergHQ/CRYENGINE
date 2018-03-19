@@ -44,3 +44,4 @@ private:
 	QSet<uint32> m_selectionBackup;
 };
 } // namespace ACE
+

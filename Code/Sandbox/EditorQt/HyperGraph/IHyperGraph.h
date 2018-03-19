@@ -110,3 +110,4 @@ struct IHyperNode : public _i_reference_target_t
 	//! Get node id.
 	virtual HyperNodeID GetId() const = 0;
 };
+

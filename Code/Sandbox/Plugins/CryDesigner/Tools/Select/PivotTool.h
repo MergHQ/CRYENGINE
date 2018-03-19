@@ -48,3 +48,4 @@ private:
 	EPivotSelectionType    m_PivotSelectionType;
 };
 }
+

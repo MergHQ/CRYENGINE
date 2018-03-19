@@ -19,3 +19,4 @@
 #define EXPECTED(x) ((x) || (ExpectedIsDebuggerPresent() && (__debugbreak(), true), false))
 
 bool EDITOR_COMMON_API ExpectedIsDebuggerPresent();
+

@@ -793,3 +793,4 @@ void PyConsoleClearLog()
 }
 
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_EditorConsoleCommands::PyConsoleClearLog, general, consoleClearLog, "Clear", "general.consoleClearLog()");
+

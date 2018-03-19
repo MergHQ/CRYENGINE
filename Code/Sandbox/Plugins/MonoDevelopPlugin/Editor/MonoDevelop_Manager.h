@@ -24,3 +24,4 @@ private:
 	HANDLE                      m_pMonoDevelopWait;
 	HANDLE                      m_pMonoDevelopProcess;
 };
+

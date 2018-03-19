@@ -44,3 +44,4 @@ const char* CFBXPlugin::GetPluginDescription()
 {
 	return PluginInfo::kDesc;
 }
+

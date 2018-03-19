@@ -259,3 +259,4 @@ protected:
 private:
 	friend class CHyperGraphSerializer;
 };
+

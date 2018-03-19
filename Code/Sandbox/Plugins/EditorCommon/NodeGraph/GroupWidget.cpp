@@ -135,3 +135,4 @@ void CGroupWidget::UpdateContainingSceneItems()
 }
 
 }
+

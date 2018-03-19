@@ -156,3 +156,4 @@ void CSmartObjectHelperObject::GetBoundSphere(Vec3& pos, float& radius)
 	pos = GetPos();
 	radius = RADIUS;
 }
+

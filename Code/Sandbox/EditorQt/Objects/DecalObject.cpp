@@ -641,3 +641,4 @@ bool CDecalObject::HitTest(HitContext& hc)
 
 	return false;
 }
+

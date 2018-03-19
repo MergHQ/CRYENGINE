@@ -216,3 +216,4 @@ void CTerrainTexGen::InvalidateLighting()
 {
 	return m_LightGen.InvalidateLighting();
 }
+

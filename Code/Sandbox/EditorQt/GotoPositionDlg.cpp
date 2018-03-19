@@ -193,3 +193,4 @@ void CGotoPositionDialog::GotoPosition()
 
 	QDialog::accept();
 }
+

@@ -32,3 +32,4 @@ void CreateMaterial(CMaterial* pParentMaterial, FbxTool::CScene* pFbxScene, cons
 string GetMaterialNameFromFilePath(const string& filePath);
 
 const char* GetTextureSemanticFromChannelType(FbxTool::EMaterialChannelType channelType);
+

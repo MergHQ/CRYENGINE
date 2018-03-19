@@ -307,3 +307,4 @@ private:
 	std::unique_ptr<CProxyGenerator> m_pProxyGenerator;
 	CPhysProxiesControlsWidget* m_pPhysProxiesControls;
 };
+

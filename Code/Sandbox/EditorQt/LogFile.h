@@ -57,3 +57,4 @@ private:
 	static bool m_bShowMemUsage;
 };
 
+

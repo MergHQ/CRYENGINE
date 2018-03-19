@@ -33,3 +33,4 @@ bool ReadMetadata(const XmlNodeRef& asset, SAssetMetadata& metadata);
 void WriteMetaData(const XmlNodeRef& asset, const SAssetMetadata& metadata);
 
 }
+

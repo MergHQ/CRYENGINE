@@ -95,3 +95,4 @@ void CSoundBankConnection::ClearPlatforms()
 }
 } // namespace Wwise
 } // namespace ACE
+

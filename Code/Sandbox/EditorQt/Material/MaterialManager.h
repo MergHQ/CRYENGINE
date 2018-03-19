@@ -181,3 +181,4 @@ protected:
 	bool				   m_bShadersEnumerated;
 	std::vector<string>	   m_shaderList;
 };
+

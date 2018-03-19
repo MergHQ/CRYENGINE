@@ -99,3 +99,4 @@ void CFileMonitorMiddleware::Enable()
 	}
 }
 } // namespace ACE
+

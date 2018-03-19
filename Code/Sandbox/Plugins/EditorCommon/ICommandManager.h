@@ -207,3 +207,4 @@ typedef CAutoRegister<CUiCommand::UiInfo> CAutoRegisterUiCommandHelper;
 #define REGISTER_EDITOR_COMMAND_SHORTCUT(moduleName, functionName, shortcut) REGISTER_EDITOR_UI_COMMAND_DESC(moduleName, functionName, "", shortcut, "")
 #define REGISTER_EDITOR_COMMAND_ICON(moduleName, functionName, icon)         REGISTER_EDITOR_UI_COMMAND_DESC(moduleName, functionName, "", CKeyboardShortcut(), icon)
 #define REGISTER_EDITOR_COMMAND_TEXT(moduleName, functionName, buttonText)   REGISTER_EDITOR_UI_COMMAND_DESC(moduleName, functionName, buttonText, CKeyboardShortcut(), "")
+

@@ -24,3 +24,4 @@ public:
 	void Intersection() { BooleanOperation(eBOE_Intersection); }
 };
 }
+

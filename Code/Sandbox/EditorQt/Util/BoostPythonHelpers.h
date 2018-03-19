@@ -731,3 +731,4 @@ inline string PyCommand(const char* commandString, ...)
 }
 
 #endif // __BOOSTPYTHONHELPER_H__
+

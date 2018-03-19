@@ -164,3 +164,4 @@ void CAssetWidget::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* pEvent)
 
 	CryGraphEditor::CNodeWidget::mouseDoubleClickEvent(pEvent);
 }
+

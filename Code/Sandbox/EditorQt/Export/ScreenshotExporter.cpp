@@ -54,3 +54,4 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTakeScreenshot, general, take_screenshot,
 REGISTER_EDITOR_COMMAND_SHORTCUT(general, take_screenshot, CKeyboardShortcut("F12"));
 
 }
+

@@ -52,3 +52,4 @@ private:
 };
 
 #endif // __entityprototypemanager_h__
+

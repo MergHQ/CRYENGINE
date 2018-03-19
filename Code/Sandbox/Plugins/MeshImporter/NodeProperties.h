@@ -209,3 +209,4 @@ inline bool CNodeProperties::SProperty::IsDefaultValue() const
 		return false;
 	}
 }
+

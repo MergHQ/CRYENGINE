@@ -1186,3 +1186,4 @@ void CPhonemesCtrl::SetSentenceEndTime(int sentenceIndex, float endTime)
 {
 	m_sentences[sentenceIndex].endTime = endTime;
 }
+

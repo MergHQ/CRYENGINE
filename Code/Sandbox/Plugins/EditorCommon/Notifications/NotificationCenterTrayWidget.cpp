@@ -518,3 +518,4 @@ void CNotificationCenterTrayWidget::SetAnimationDistance(int distance)
 	m_pPopUpManager->SetAnimationDistance(distance);
 
 }
+

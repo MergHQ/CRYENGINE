@@ -1354,3 +1354,4 @@ void CTrackViewExporter::CreateCurveFromTrack(const CTrackViewTrack* pTrack, SCu
 		}
 	}
 }
+

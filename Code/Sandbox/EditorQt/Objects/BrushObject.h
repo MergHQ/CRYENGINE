@@ -184,3 +184,4 @@ public:
 };
 
 #endif // __brushobject_h__
+

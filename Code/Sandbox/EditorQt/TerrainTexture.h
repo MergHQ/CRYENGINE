@@ -167,3 +167,4 @@ private:
 
 	bool                    m_bIgnoreNotify;
 };
+

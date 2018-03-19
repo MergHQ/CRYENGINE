@@ -3931,3 +3931,4 @@ void CSequencerDopeSheetBase::SetScrollOffset(int hpos)
 	m_scrollOffset.x = hpos;
 	Invalidate();
 }
+

@@ -195,3 +195,4 @@ void CConfigGroup::LoadFromXML(XmlNodeRef node)
 }
 
 }
+

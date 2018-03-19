@@ -123,3 +123,4 @@ protected:
 	// MultiPlayer Type of this flowgraph (default ServerOnly)
 	EMultiPlayerType m_mpType;
 };
+

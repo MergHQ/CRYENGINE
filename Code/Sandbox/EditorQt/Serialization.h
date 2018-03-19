@@ -17,3 +17,4 @@
 #include <CrySerialization/Color.h>
 
 using Serialization::IArchive;
+

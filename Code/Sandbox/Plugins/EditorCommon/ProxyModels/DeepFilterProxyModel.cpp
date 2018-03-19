@@ -589,3 +589,4 @@ bool QDeepFilterProxyModel::rowMatchesFilter(int sourceRow, const QModelIndex& s
 		return QSortFilterProxyModel::filterAcceptsRow(sourceRow, sourceParent);
 	}
 }
+

@@ -405,3 +405,4 @@ public:
 
 // Disabled by AdamJ 10/04/2014 - Causing crashes on adding. This needs complete removal! See CL 43640
 // REGISTER_CLASS_DESC(CWaterWaveObjectClassDesc);
+

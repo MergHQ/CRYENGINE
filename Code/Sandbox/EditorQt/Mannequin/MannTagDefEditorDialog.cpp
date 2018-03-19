@@ -1007,3 +1007,4 @@ void CMannTagDefEditorDialog::OnFilterTagsButton()
 	PopulateTagDefList();
 	EnableControls();
 }
+

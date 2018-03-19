@@ -274,3 +274,4 @@ void ShapeTool::StoreSeparateStatus()
 	m_bSeparatedNewShape = GetAsyncKeyState(VK_SHIFT);
 }
 }
+

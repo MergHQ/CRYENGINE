@@ -364,3 +364,4 @@ ELatheErrorCode LatheTool::CreateShapeAlongPath(
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Lathe, eToolGroup_Modify, "Lathe", LatheTool,
                                    lathe, "runs lathe tool", "designer.lathe")
+

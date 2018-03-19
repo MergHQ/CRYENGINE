@@ -1574,3 +1574,4 @@ XmlNodeRef CObjectLayerManager::GenerateDynTexSrcLayerInfo() const
 
 	return root;
 }
+

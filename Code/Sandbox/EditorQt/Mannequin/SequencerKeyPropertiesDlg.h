@@ -195,3 +195,4 @@ protected:
 };
 
 #endif //__SequencerKeyPropertiesDlg_h__
+

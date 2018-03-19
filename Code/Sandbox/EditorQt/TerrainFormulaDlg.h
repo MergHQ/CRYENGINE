@@ -47,3 +47,4 @@ protected:
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
 
 #endif // !defined(AFX_TERRAINFORMULADLG_H__03882873_87CD_4F37_B976_27099322837A__INCLUDED_)
+

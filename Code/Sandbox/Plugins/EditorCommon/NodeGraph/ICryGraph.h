@@ -84,3 +84,4 @@ class CBaseNode
 typedef CryGUID DataType;
 
 }
+

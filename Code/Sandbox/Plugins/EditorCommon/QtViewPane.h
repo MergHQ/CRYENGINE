@@ -123,3 +123,4 @@ typedef CDockableWidgetT<QMainWindow> CDockableWindow;
 
 #define REGISTER_HIDDEN_VIEWPANE_FACTORY(widget, name, category, unique) \
   REGISTER_VIEWPANE_FACTORY_AND_MENU_IMPL(widget, name, category, unique, "", false)
+

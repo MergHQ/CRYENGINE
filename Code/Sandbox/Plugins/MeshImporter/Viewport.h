@@ -71,3 +71,4 @@ private:
 
 	enum { kDefaultWidthOfDisplayOptionWidget = 200 };
 };
+

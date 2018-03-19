@@ -35,3 +35,4 @@ protected:
 	bool    m_bDisplayOnlyFPSSetting;
 private:
 };
+

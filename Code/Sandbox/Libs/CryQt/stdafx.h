@@ -12,3 +12,4 @@
 #if defined(CryQt_EXPORTS) && !defined(QToolWindowManager_EXPORTS)
 	#define QToolWindowManager_EXPORTS
 #endif
+

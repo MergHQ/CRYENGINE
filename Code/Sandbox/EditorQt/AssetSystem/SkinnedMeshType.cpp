@@ -87,3 +87,4 @@ void CSkinnedMeshType::GenerateThumbnail(const CAsset* pAsset) const
 	}).get();
 }
 
+

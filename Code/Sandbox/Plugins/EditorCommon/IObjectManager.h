@@ -364,3 +364,4 @@ public:
 };
 
 #endif // __IObjectManager_h__
+

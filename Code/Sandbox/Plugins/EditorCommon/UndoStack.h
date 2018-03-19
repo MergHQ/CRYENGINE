@@ -59,3 +59,4 @@ private:
 	std::vector<PBaseOperator> m_undoOperators;
 	std::vector<PBaseOperator> m_redoOperators;
 };
+

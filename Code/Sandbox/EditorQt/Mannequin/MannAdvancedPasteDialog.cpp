@@ -64,3 +64,4 @@ void CMannAdvancedPasteDialog::OnOK()
 
 	CXTResizeDialog::OnOK();
 }
+

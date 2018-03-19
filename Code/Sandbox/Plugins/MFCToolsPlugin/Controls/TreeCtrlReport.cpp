@@ -1219,3 +1219,4 @@ void CTreeCtrlReport::CalculateItemPath(CTreeItemRecord* const pRec, TreeItemPat
 		pParent = (CTreeItemRecord*)pParent->GetParentRecord();
 	}
 }
+

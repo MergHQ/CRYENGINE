@@ -101,3 +101,4 @@ private:
 	QMetaObject::Connection                  m_layoutChangedConnection;
 	QVariantMap                              m_startingLayout;
 };
+

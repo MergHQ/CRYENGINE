@@ -284,3 +284,4 @@ bool CResourceFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex co
 	return isLessThan;
 }
 } // namespace ACE
+

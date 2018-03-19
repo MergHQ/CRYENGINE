@@ -333,3 +333,4 @@ void CRefPicture::ApplyScale(bool bHeight)
 
 	CBaseObject::SetScale(Vec3(1.0f, scaleWidth, scaleHeight));
 }
+

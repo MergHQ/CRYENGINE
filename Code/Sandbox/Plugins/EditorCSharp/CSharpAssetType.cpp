@@ -91,3 +91,4 @@ bool CSharpSourcefileAssetType::OnCreate(CEditableAsset& editAsset, const void* 
 
 	return true;
 }
+

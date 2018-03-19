@@ -50,3 +50,4 @@ std::unique_ptr<IFileReader> CreateFileReader()
 }
 
 }
+

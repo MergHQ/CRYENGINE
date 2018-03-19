@@ -26,3 +26,4 @@ private:
 	std::vector<PolygonPtr> m_SpherePolygons;
 };
 }
+

@@ -876,3 +876,4 @@ void SelectTopLevelAncestors(std::vector<CAsset*> const& source, std::vector<CAs
 }
 } // namespace Utils
 } // namespace ACE
+

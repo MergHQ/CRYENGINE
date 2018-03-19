@@ -542,3 +542,4 @@ void DesignerPanel::UpdateCheckButtons(EDesignerTool tool)
 	}
 }
 }
+

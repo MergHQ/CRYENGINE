@@ -30,3 +30,4 @@ public:
 	int            GetEventCount() { return m_events.size(); }
 	const CString& GetEvent(int i) { return m_events[i]; }
 };
+

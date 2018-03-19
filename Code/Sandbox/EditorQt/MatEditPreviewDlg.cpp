@@ -182,3 +182,4 @@ LRESULT CMatEditPreviewDlg::OnKickIdle(WPARAM wParam, LPARAM)
 	SendMessageToDescendants(WM_IDLEUPDATECMDUI, 1);
 	return 0;
 }
+

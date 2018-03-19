@@ -114,3 +114,4 @@ struct IEditorImpl
 	virtual void DisableConnection(ConnectionPtr const pConnection) {}
 };
 } // namespace ACE
+

@@ -131,3 +131,4 @@ protected:
 	bool m_bIgnoreParamUpdate;
 	bool m_bNeedUpdateSectors;
 };
+

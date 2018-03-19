@@ -90,3 +90,4 @@ protected:
 	BrushPlane     m_PlaneAlignedWithView;
 };
 }
+

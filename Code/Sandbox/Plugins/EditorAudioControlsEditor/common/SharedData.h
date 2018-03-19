@@ -59,3 +59,4 @@ enum class EErrorCode
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EErrorCode);
 } // namespace ACE
+

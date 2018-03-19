@@ -36,3 +36,4 @@ protected:
 };
 
 #endif // __selectentityclsdialog_h__
+

@@ -7,3 +7,4 @@
 bool HasDefaultUserData(const FbxTool::CScene* pScene, const FbxTool::SNode* pNode);
 
 FbxTool::ENodeExportSetting GetDefaultNodeExportSetting(const FbxTool::SNode* pNode);
+

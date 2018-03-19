@@ -251,3 +251,4 @@ void SkeletonContent::ComposeCompleteAnimationSetFilter(AnimationSetFilter* outF
 }
 
 }
+

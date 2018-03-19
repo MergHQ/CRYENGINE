@@ -102,3 +102,4 @@ BrushVec3 SnapToGridTool::SnapVertexToGrid(const BrushVec3& vPos)
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_SnapToGrid, eToolGroup_Misc, "Snap to Grid", SnapToGridTool,
                                    snaptogrid, "runs snap to grid tool", "designer.snaptogrid");
+

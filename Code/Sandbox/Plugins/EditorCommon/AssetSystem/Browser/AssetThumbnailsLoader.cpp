@@ -240,3 +240,4 @@ void CAssetThumbnailsLoader::OnCVarChanged(ICVar* const pGenerateThumbnais)
 		});
 	}
 }
+

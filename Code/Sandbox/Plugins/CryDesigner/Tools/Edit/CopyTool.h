@@ -21,3 +21,4 @@ public:
 	static void Copy(MainContext& mc, ElementSet* pOutCopiedElements);
 };
 }
+

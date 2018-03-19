@@ -194,3 +194,4 @@ void CMaterialElement::MarkForDeletion()
 {
 	SetSubMaterialIndex(-1);
 }
+

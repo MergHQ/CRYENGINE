@@ -61,3 +61,4 @@ protected:
 };
 
 #endif //__BaseFrameWnd__
+

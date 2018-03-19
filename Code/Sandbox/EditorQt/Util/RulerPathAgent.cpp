@@ -148,3 +148,4 @@ const AgentMovementAbility& CRulerPathAgent::GetPathAgentMovementAbility() const
 {
 	return m_AgentMovementAbility;
 }
+

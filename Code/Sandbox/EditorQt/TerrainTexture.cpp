@@ -2009,3 +2009,4 @@ void CTerrainTextureDialog::StoreLayersUndo()
 {
 	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersUndoObject);
 }
+

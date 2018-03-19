@@ -26,3 +26,4 @@ void SCharacterRigContent::ApplyToCharacter(ICharacterInstance* instance)
 }
 
 }
+

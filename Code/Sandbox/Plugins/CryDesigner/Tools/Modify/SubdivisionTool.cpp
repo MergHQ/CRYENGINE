@@ -170,3 +170,4 @@ void SubdivisionTool::DeleteAllUnused()
 #include "UIs/SubdivisionPanel.h"
 REGISTER_DESIGNER_TOOL_WITH_PANEL_AND_COMMAND(eDesigner_Subdivision, eToolGroup_Modify, "Subdivision", SubdivisionTool, SubdivisionPanel,
                                               subdivision, "runs subdivision tool", "designer.subdivision")
+

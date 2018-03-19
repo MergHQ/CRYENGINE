@@ -97,3 +97,4 @@ private:
 using ItemCache = std::map<ControlId, CItem*>;
 } // namespace Fmod
 } // namespace ACE
+

@@ -46,3 +46,4 @@ void SeparateTool::SeparatePolygons()
 
 REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_Separate, eUVMappingToolGroup_Manipulation, "Separate", SeparateTool,
                                     separate, "runs separate tool", "uvmapping.separate")
+

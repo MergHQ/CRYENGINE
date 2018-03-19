@@ -102,3 +102,4 @@ BOOL CMannequinEditorPage::PreTranslateMessage(MSG* pMsg)
 
 	return FALSE;
 }
+

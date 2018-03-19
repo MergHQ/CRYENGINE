@@ -229,3 +229,4 @@ XmlNodeRef CGeomEntity::Export(const string& levelPath, XmlNodeRef& xmlNode)
 
 	return node;
 }
+

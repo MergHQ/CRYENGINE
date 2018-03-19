@@ -26,3 +26,4 @@ void CFragmentSplitter::OnSetFocus(CWnd* pOldWnd)
 		}
 	}
 }
+

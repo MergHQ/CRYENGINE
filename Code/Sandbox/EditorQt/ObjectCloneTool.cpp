@@ -212,3 +212,4 @@ bool CObjectCloneTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, 
 	}
 	return false;
 }
+

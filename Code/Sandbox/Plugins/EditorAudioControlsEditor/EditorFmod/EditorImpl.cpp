@@ -875,3 +875,4 @@ CItem* CEditorImpl::CreatePlaceholderFolderPath(string const& path)
 }
 } // namespace Fmod
 } // namespace ACE
+

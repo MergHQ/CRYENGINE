@@ -59,3 +59,4 @@ void CScene::Clear()
 	m_elements.clear();
 	m_freeIDs.clear();
 }
+

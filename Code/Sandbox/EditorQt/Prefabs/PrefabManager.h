@@ -123,3 +123,4 @@ protected:
 	CPrefabEvents* m_pPrefabEvents;
 	bool           m_skipPrefabUpdate;
 };
+

@@ -31,3 +31,4 @@ private:
 	int m_iSearchResultCount;
 	int m_iIndex;
 };
+

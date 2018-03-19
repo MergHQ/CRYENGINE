@@ -63,3 +63,4 @@ dll_string ValidateSequenceEvent(const SResourceSelectorContext& x, const char* 
 }
 
 REGISTER_RESOURCE_VALIDATING_SELECTOR("SequenceEvent", SequenceEventSelector, ValidateSequenceEvent, "")
+

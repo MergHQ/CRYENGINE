@@ -31,3 +31,4 @@ void CConfigurationManager::Init()
 	// There has to be at least one target platform defined
 	CRY_ASSERT(!m_platformNames.empty());
 }
+

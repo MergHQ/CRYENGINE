@@ -49,3 +49,4 @@ private:
 	_smart_ptr<CMaterial>      m_pLensFlareMaterial;
 	_smart_ptr<CLensFlareItem> m_pLensFlareItem;
 };
+

@@ -508,3 +508,4 @@ inline const TTerrainObject& CTerrainObjectMan::GetTerrainObjectByID(const uint3
 }
 
 #endif //__terrainobjectman_h__
+

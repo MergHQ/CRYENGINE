@@ -153,3 +153,4 @@ void CIndexedFiles::PrepareTagTable()
 		}
 	}
 }
+

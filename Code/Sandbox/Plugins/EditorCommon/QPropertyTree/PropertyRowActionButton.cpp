@@ -138,3 +138,4 @@ protected:
 };
 
 REGISTER_PROPERTY_ROW(IActionButton, PropertyRowActionButton);
+

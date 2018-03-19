@@ -66,3 +66,4 @@ struct SEditorMetaData : FbxMetaData::IEditorMetaData
 	virtual std::unique_ptr<FbxMetaData::IEditorMetaData> Clone() const override;
 };
 
+

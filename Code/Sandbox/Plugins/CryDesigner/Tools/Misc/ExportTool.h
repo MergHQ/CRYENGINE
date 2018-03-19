@@ -21,3 +21,4 @@ public:
 	void Serialize(Serialization::IArchive& ar);
 };
 }
+

@@ -18,3 +18,4 @@ def build(bld):
 		defines = [ 'SCHEMATYC_PLUGIN_EXPORTS' ],
 		module_extensions = ['toolkit_pro'],
 	)
+

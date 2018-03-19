@@ -237,3 +237,4 @@ void CReportDialog::Load(CReport* report)
 		m_wndReport.Populate();
 	}
 }
+

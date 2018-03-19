@@ -151,3 +151,4 @@ void QPreferencesDialog::OnPreferencesReset()
 {
 	m_pContainer->SetChild(GetIEditor()->GetPreferences()->GetPageWidget(m_currPath));
 }
+

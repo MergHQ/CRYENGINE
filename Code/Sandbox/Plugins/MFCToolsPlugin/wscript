@@ -19,3 +19,4 @@ def build(bld):
 			includes = [ Path('Code/Sandbox/Plugins/MFCToolsPlugin') ]
 		),
 	)
+

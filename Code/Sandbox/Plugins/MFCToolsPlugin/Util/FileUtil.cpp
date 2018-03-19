@@ -2817,3 +2817,4 @@ bool CTempFileHelper::UpdateFile(bool bBackup)
 		return true;
 	}
 }
+

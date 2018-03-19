@@ -33,3 +33,4 @@ public:
 	// Disallow creation from the Create Object panel, only use the Asset Browser
 	virtual bool        IsCreatable() const { return false; }
 };
+

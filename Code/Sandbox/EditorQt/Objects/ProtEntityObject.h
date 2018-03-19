@@ -78,3 +78,4 @@ public:
 };
 
 #endif // __protentityobject_h__
+

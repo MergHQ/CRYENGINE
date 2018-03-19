@@ -67,3 +67,4 @@ static CItemModelAttributeEnum s_typeAttribute("Type", s_typeFilterList, CItemMo
 static CItemModelAttributeEnumFunc s_scopeAttribute("Scope", &GetScopeNames, CItemModelAttribute::StartHidden, true);
 } // namespace ModelUtils
 } // namespace ACE
+

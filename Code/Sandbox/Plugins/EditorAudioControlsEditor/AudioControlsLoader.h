@@ -52,3 +52,4 @@ private:
 	FileNames           m_defaultParameterNames { CryAudio::s_szAbsoluteVelocityParameterName, "object_speed", CryAudio::s_szRelativeVelocityParameterName, "object_doppler" };
 };
 } // namespace ACE
+

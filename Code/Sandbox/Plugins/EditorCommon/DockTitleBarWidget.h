@@ -41,3 +41,4 @@ class EDITOR_COMMON_API CCustomDockWidget : public QDockWidget
 public:
 	CCustomDockWidget(const char* title, QWidget* parent = nullptr, Qt::WindowFlags flags = 0);
 };
+

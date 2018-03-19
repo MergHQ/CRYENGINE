@@ -66,3 +66,4 @@ protected:
 
 	bool                      m_bGameObjectCreated;
 };
+

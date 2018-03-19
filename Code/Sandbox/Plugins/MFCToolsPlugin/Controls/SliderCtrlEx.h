@@ -82,3 +82,4 @@ private:
 };
 
 #endif // __SliderCtrlEx_h__
+

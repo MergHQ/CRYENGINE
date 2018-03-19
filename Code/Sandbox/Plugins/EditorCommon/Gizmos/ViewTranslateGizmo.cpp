@@ -145,3 +145,4 @@ bool CViewTranslateGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
+

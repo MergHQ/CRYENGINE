@@ -155,3 +155,4 @@ inline CRasterMPMan::CRasterMPMan() : m_ThreadActive(false), m_CoreCount(1)
 }
 
 #endif // __raster_mpman_h__
+

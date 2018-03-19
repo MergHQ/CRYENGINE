@@ -68,3 +68,4 @@ private:
 	//! True if memory block owns its memory.
 	bool  m_owns;
 };
+

@@ -23,3 +23,4 @@ inline void ConvexHull2D(std::vector<Vec3>& ptsOut, const std::vector<Vec3>& pts
 	// The sort in Andrew's seems to be about 3-4x faster than Graham's--using Andrew's for now.
 	ConvexHull2DAndrew(ptsOut, ptsIn);
 }
+

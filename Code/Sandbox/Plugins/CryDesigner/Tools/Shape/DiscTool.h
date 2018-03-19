@@ -75,3 +75,4 @@ protected:
 	DiscParameter  m_DiscParameter;
 };
 }
+

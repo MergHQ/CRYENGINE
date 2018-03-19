@@ -149,3 +149,4 @@ const FlexibleMesh& SmoothingGroup::GetFlexibleMesh(Model* pModel, bool bGenerat
 	return m_FlexibleMesh;
 }
 }
+

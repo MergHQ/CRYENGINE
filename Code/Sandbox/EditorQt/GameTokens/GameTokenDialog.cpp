@@ -1223,3 +1223,4 @@ void CGameTokenDialog::OnTokenLocalOnlyChange()
 
 	UpdateField(IDC_TOKEN_LOCAL_ONLY, "", m_tokenLocalOnlyCheck.GetCheck() == BST_CHECKED);
 }
+

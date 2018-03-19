@@ -136,3 +136,4 @@ void PropertyRowOutputFilePath::serializeValue(Serialization::IArchive& ar)
 
 REGISTER_PROPERTY_ROW(OutputFilePath, PropertyRowOutputFilePath);
 DECLARE_SEGMENT(PropertyRowOutputFilePath)
+

@@ -641,3 +641,4 @@ void CUndoManager::EndRestoreTransaction()
 		(*iter)->EndRestoreTransaction();
 	}
 }
+

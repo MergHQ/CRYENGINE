@@ -29,3 +29,4 @@ private:
 	bool m_bFileNameAsciiOnly;
 };
 
+

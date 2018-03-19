@@ -2299,3 +2299,4 @@ void CFragmentBrowser::ClearSelectedItemData()
 	m_options.resize(0);
 	KeepCorrectData();
 }
+

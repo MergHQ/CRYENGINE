@@ -55,3 +55,4 @@ struct IImplItem
 	virtual bool IsContainer() const = 0;
 };
 } // namespace ACE
+

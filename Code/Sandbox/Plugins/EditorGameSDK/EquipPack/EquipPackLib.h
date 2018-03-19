@@ -33,3 +33,4 @@ private:
 	static CEquipPackLib s_rootEquips;
 	TEquipPackMap        m_equipmentPacks;
 };
+

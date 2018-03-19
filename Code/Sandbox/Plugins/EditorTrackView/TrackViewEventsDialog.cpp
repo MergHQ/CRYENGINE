@@ -501,3 +501,4 @@ void CTrackViewEventsDialog::customEvent(QEvent* pEvent)
 		QWidget::customEvent(pEvent);
 	}
 }
+

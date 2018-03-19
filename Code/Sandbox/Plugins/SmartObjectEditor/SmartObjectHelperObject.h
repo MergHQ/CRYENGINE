@@ -86,3 +86,4 @@ public:
 };
 
 #endif // __SmartObjectHelperObject_h__
+

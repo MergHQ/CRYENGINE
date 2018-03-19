@@ -206,3 +206,4 @@ void CMiddlewareDataWidget::RestoreTreeViewStates()
 	m_pTreeView->RestoreSelection();
 }
 } // namespace ACE
+

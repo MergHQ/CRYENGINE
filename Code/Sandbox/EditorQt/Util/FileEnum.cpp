@@ -161,3 +161,4 @@ bool CFileEnum::ScanDirectory(
 {
 	return ScanDirectoryRecursive(path, "", file, files, bRecursive, bSkipPaks);
 }
+

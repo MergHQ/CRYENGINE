@@ -12,3 +12,4 @@ IVehicleData* VehicleDataLoad(const XmlNodeRef& definition, const char* dataFile
 IVehicleData* VehicleDataLoad(const XmlNodeRef& definition, const XmlNodeRef& data, bool bFillDefaults = true);
 
 #endif
+

@@ -210,3 +210,4 @@ void CSurfaceType::AssignUnusedSurfaceTypeID()
 
 	m_nSurfaceTypeID = nID;
 }
+

@@ -346,3 +346,4 @@ void CRuler::OnRButtonUp(CViewport* pView, CPoint& point, int flags)
 	/*m_startPoint.Reset();
 	   m_endPoint.Reset();*/
 }
+

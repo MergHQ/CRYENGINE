@@ -4590,3 +4590,4 @@ void BlitImage(TImage<T>* pDest, TImage<T>* pSrc, const Matrix34& mat, T delta)
 		}
 	}
 }
+

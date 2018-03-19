@@ -2329,3 +2329,4 @@ void CAIDebuggerView::DebugDisableAll()
 	UpdateAIDebugger();
 	Invalidate();
 }
+

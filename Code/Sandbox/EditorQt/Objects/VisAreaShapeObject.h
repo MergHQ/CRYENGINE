@@ -167,3 +167,4 @@ public:
 };
 
 #endif // __visareashapeobject_h__
+

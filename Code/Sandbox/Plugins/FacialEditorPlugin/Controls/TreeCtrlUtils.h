@@ -258,3 +258,4 @@ template<typename T> SelectedTreeItemDataIterator<T> EndSelectedTreeItemData(CXT
 }
 
 #endif //__TREECONTROLUTILS_H__
+

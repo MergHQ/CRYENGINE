@@ -102,3 +102,4 @@ IResourceSelectorHost* CreateResourceSelectorHost()
 {
 	return new Private_ResourceSelectorHost::CResourceSelectorHost();
 }
+

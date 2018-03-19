@@ -615,3 +615,4 @@ CHyperNode* CHyperNode::GetBlackBox() const
 	}
 	return NULL;
 }
+

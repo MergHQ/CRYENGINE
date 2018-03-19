@@ -42,3 +42,4 @@ protected:
 	QCheckBox*              m_pMergeSideCheckBox;
 };
 }
+

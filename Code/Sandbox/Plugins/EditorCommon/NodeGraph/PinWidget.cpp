@@ -517,3 +517,4 @@ void CPinWidget::UpdateConnectionPoint()
 }
 
 }
+

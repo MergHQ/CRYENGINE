@@ -8,3 +8,4 @@
 #include <CryCore/Platform/CryAtlMfc.h>
 
 #include "EditorCommon.h"
+

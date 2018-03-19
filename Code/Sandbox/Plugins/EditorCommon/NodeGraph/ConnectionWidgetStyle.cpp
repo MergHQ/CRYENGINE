@@ -17,3 +17,4 @@ CConnectionWidgetStyle::CConnectionWidgetStyle(const char* szStyleId, CNodeGraph
 }
 
 }
+

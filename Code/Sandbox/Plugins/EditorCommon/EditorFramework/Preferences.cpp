@@ -202,3 +202,4 @@ bool CPreferences::Serialize(yasli::Archive& ar)
 	}
 	return true;
 }
+

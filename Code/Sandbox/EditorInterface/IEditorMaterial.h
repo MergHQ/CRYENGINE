@@ -27,3 +27,4 @@ struct IEditorMaterial
 	virtual bool IsMultiSubMaterial() const = 0;
 };
 
+

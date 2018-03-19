@@ -386,3 +386,4 @@ private:
 };
 
 #endif // __VehicleEditorDialog_h__
+

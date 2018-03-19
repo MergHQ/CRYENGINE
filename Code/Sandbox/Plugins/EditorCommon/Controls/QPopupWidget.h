@@ -73,3 +73,4 @@ protected:
 	int m_resizeFlags;
 	int m_origin;
 };
+

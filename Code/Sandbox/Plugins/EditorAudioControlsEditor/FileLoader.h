@@ -46,3 +46,4 @@ private:
 	EErrorCode m_errorCodeMask;
 };
 } // namespace ACE
+

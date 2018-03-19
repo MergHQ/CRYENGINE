@@ -40,3 +40,4 @@ private:
 	void showTargets(IToolWindowArea* area);
 };
 
+

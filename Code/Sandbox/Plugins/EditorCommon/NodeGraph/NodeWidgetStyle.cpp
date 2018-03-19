@@ -45,3 +45,4 @@ CNodeInfoWidgetStyle* CNodeWidgetStyle::CreateInfoWidgetStyle()
 }
 
 }
+

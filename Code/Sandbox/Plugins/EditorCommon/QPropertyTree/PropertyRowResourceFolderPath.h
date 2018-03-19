@@ -46,3 +46,4 @@ struct ResourceFolderPathMenuHandler : PropertyRowMenuHandler
 
 	void onMenuClear();
 };
+

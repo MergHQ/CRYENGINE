@@ -19,3 +19,4 @@ public:
 };
 
 #endif // __Editor_Mailer_h__
+

@@ -173,3 +173,4 @@ private:
 	FileExplorerWithButtons*                m_pFileExplorerWidget;
 	RecentResponsesWidget*                  m_pRecentSignalsWidget;
 };
+

@@ -727,3 +727,4 @@ ControlId CEditorImpl::GenerateID(string const& name, bool isLocalized, CItem* p
 }
 } // namespace Wwise
 } // namespace ACE
+

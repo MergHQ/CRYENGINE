@@ -539,3 +539,4 @@ void CTrackViewWindow::keyPressEvent(QKeyEvent* e)
 			m_pTrackViewCore->OnPlayPause(m_pTrackViewCore->IsPaused());
 	}
 }
+

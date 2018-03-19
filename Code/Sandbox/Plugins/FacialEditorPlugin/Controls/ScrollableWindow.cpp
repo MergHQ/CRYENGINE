@@ -237,3 +237,4 @@ void CScrollableWindow::OnSize(UINT nType, int cx, int cy)
 
 	CWnd::OnSize(nType, cx, cy);
 }
+

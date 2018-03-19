@@ -40,3 +40,4 @@ private:
 
 	Gdiplus::RectF m_resizeBorderRect;
 };
+

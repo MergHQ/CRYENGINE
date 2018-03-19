@@ -414,3 +414,4 @@ BrushMatrix34 SelectTool::GetOffsetTMOnAlignedPlane(CViewport* pView, const Brus
 	return offsetTM;
 }
 }
+

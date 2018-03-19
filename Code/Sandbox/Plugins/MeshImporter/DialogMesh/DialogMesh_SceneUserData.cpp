@@ -60,3 +60,4 @@ const FbxTool::SMesh* CSceneUserData::GetSelectedSkin() const
 }
 
 } // namespace DialogMesh
+

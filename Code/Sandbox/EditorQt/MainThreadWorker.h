@@ -22,3 +22,4 @@ private:
 
 	static CMainThreadWorker* s_pTheInstance;
 };
+

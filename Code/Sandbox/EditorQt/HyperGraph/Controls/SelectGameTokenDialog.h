@@ -37,3 +37,4 @@ protected:
 	std::map<HTREEITEM, CString> m_itemsMap;
 };
 
+

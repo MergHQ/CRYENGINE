@@ -28,3 +28,4 @@ public:
 	virtual ~QPropertyGroupHeader() override {}
 };
 
+

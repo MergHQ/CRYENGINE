@@ -23,3 +23,4 @@ public:
 };
 
 REGISTER_PLUGIN(CEditorEnvironment);
+

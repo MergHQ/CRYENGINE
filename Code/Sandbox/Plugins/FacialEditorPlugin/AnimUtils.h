@@ -19,3 +19,4 @@ void StartAnimation(ICharacterInstance* pCharacter, const char* pAnimName);
 void SetAnimationTime(ICharacterInstance* pCharacter, float fNormalizedTime);
 void StopAnimations(ICharacterInstance* pCharacter);
 }
+

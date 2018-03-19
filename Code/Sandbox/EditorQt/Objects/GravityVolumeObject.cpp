@@ -1418,3 +1418,4 @@ void CGravityVolumeObject::OnEvent(ObjectEvent event)
 		m_pEntity->SendEvent(ev);
 	}
 }
+

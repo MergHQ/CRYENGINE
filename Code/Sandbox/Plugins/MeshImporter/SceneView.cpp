@@ -134,3 +134,4 @@ const QAttributeFilterProxyModel* CSceneViewContainer::GetFilter() const
 {
 	return m_pFilterModel.get();
 }
+

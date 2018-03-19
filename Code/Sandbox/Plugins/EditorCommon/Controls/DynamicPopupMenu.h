@@ -158,3 +158,4 @@ private:
 
 	std::function<void()> m_onHide;
 };
+

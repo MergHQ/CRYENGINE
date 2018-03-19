@@ -152,3 +152,4 @@ void SmoothingGroupPanel::UpdateSmoothingGroupList()
 	}
 }
 }
+

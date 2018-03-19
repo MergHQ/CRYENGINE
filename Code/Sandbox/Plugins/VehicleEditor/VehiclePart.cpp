@@ -593,3 +593,4 @@ void CVehiclePart::UpdateScale(float scale)
 void CVehiclePart::OnTreeSelection()
 {
 }
+

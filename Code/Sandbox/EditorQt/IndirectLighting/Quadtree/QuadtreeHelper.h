@@ -243,3 +243,4 @@ const bool RayLeafIntersection
 }//NQT
 
 #endif//QUADTREE_HELPER
+

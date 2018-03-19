@@ -271,3 +271,4 @@ inline Serialization::RangeDecorator<float> STEPRISE_RANGE(float& value)  { retu
 #define CRYDESIGNER_USER_DIRECTORY "CryDesigner"
 #define SERIALIZATION_ENUM_LABEL(value, label) \
   description.add(int(value), label, label);
+

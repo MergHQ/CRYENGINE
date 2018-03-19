@@ -144,3 +144,4 @@ SERIALIZATION_ENUM(EEventActionType::Resume, "resume", "Resume")
 SERIALIZATION_ENUM_END()
 } // namespace SDLMixer
 } // namespace ACE
+

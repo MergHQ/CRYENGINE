@@ -150,3 +150,4 @@ SERIALIZATION_ENUM(ESnapshotActionType::Stop, "stop", "Stop")
 SERIALIZATION_ENUM_END()
 } // namespace Fmod
 } // namespace ACE
+

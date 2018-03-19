@@ -19,3 +19,4 @@ public slots:
 private:
 	QString m_moduleName;
 };
+

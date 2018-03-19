@@ -1054,3 +1054,4 @@ private:
 typedef Polygon::PolygonPtr     PolygonPtr;
 typedef std::vector<PolygonPtr> PolygonList;
 }
+

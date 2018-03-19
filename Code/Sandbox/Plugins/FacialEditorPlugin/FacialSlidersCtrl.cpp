@@ -652,3 +652,4 @@ void CFacialSlidersCtrl::SetShowExpressions(bool bShowExpressions)
 {
 	m_bShowExpressions = bShowExpressions;
 }
+

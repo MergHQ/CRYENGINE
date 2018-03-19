@@ -622,3 +622,4 @@ bool CObjectLayer::IsFrozen(bool isRecursive) const
 	}
 	return m_frozen;
 }
+

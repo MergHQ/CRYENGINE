@@ -164,3 +164,4 @@ IDataBaseLibrary* CLensFlareManager::LoadLibrary(const string& filename, bool bR
 
 	return pLib;
 }
+

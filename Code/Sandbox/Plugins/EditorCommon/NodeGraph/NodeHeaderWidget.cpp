@@ -167,3 +167,4 @@ void CNodeHeader::OnSelectionChanged(bool isSelected)
 }
 
 }
+

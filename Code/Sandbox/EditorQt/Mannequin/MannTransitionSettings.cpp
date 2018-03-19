@@ -202,3 +202,4 @@ void CMannTransitionSettingsDlg::OnComboChange()
 	UpdateFragmentIDs();
 	PopulateTagPanels();
 }
+

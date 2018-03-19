@@ -122,3 +122,4 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 	}
 }
 } // namespace ACE
+

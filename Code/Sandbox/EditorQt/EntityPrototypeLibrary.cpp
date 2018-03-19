@@ -61,3 +61,4 @@ void CEntityPrototypeLibrary::Serialize(XmlNodeRef& root, bool bLoading)
 		}
 	}
 }
+

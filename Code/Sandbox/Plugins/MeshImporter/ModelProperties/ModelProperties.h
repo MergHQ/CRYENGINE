@@ -36,3 +36,4 @@ private:
 	std::vector<CreateSerializerFunc> m_createSerializerFuncs;
 	std::vector<std::shared_ptr<void>> m_serializedObjects;
 };
+

@@ -86,3 +86,4 @@ private:
 	Scope const      m_scope;
 };
 } // namespace ACE
+

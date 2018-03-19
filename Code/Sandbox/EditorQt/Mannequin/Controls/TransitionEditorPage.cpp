@@ -1756,3 +1756,4 @@ void CTransitionEditorPage::SetTime(float fTime)
 
 	m_wndTrackPanel.SetCurrTime(fTime, true);
 }
+

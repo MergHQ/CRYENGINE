@@ -1218,3 +1218,4 @@ uint32 CModelViewportCE::UseHumanLimbIK(ICharacterInstance* pInstance, const cha
 
 	return 1;
 }
+

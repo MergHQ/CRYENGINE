@@ -136,3 +136,4 @@ protected:
 	STokenData* m_pTokenData;
 	TTokens     m_tokens;
 };
+

@@ -787,3 +787,4 @@ void CSelectionGroup::FinishChanges() const
 
 	m_initElementTransforms.clear();
 }
+

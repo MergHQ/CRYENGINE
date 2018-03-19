@@ -63,3 +63,4 @@ dll_string ValidateSequenceCamera(const SResourceSelectorContext& x, const char*
 }
 
 REGISTER_RESOURCE_VALIDATING_SELECTOR("SequenceCamera", SequenceCameraSelector, ValidateSequenceCamera, "")
+

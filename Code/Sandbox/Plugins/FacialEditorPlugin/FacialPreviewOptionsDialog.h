@@ -39,3 +39,4 @@ protected:
 };
 
 #endif //__FACIALPREVIEWOPTIONSDIALOG_H__
+

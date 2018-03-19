@@ -102,3 +102,4 @@ private:
 using ItemCache = std::map<ControlId, CItem*>;
 } // namespace Wwise
 } // namespace ACE
+

@@ -244,3 +244,4 @@ REGISTER_RESOURCE_SELECTOR("StringListStaticSearch", StringListStaticQuickSearch
 REGISTER_RESOURCE_SELECTOR("StringListSearch", StringListQuickSearchSelector, "icons:General/Search.ico")
 } // SerializationUtils
 } // Schematyc
+

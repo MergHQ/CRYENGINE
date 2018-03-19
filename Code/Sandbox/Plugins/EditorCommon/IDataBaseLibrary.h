@@ -99,3 +99,4 @@ struct IDataBaseLibrary
 };
 
 #endif // __IDataBaseLibrary_h__
+

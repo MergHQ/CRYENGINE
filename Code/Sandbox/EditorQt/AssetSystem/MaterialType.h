@@ -36,3 +36,4 @@ private:
 	static CItemModelAttribute s_subMaterialCountAttribute;
 	static CItemModelAttribute s_textureCountAttribute;
 };
+

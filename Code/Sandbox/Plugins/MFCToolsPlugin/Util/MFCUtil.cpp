@@ -331,3 +331,4 @@ bool CMFCUtils::ExecuteConsoleApp(const string& CommandLine, string& OutputText,
 
 	return bReturn;
 }
+

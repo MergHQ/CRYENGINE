@@ -75,3 +75,4 @@ end_sources()
 
 CryEditorPlugin(EditorAudioControlsEditor PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor")
 target_include_directories( ${THIS_PROJECT} PRIVATE .. common "${CRYENGINE_DIR}/Code/CryEngine/CryAction")
+

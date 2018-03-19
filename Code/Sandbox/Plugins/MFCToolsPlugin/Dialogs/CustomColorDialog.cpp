@@ -280,3 +280,4 @@ BOOL CCustomColorDialog::PreTranslateMessage(MSG* pMsg)
 
 	return CMFCColorDialog::PreTranslateMessage(pMsg);
 }
+

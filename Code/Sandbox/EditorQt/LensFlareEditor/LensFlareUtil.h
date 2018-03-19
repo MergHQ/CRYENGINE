@@ -309,3 +309,4 @@ void                  SetVariablesTemplateFromOptics(IOpticsElementBasePtr pOpti
 void                  CopyOptics(IOpticsElementBasePtr pSrcOptics, IOpticsElementBasePtr pDestOptics, bool bReculsiveCopy = true);
 void                  OutputOpticsDebug(IOpticsElementBasePtr pOptics);
 };
+
