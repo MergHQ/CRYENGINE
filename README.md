@@ -10,6 +10,8 @@ Or on Windows, the *download_sdks.exe* can be used alternatively.
 
 CMake must be used to compile the engine, see [here](http://docs.cryengine.com/display/CEPROG/CMake) for more information.
 
+In order to build Sandbox, the FBX SDK (2016.1) must be downloaded from [Autodesk](http://www.autodesk.com).
+
 
 ## Branches
 Development takes place primarily in the "main" branch. The stabilisation branch is used for fixing bugs in the run-up to release, and the release branch provides stable snapshots of the engine.
@@ -21,3 +23,5 @@ Pull requests can only be accepted into the "pullrequests" branch. Thanks in adv
 
 ## License
 The source code in this repository is governed by the CRYENGINE license agreement, which is contained in LICENSE.md, adjacent to this file.
+
+Please note: from March 20th, the new CRYENGINE business model is in effect. That means 5% royalties apply to projects developed and published on CRYENGINE 5.0 and beyond. Check [our new FAQ](https://www.cryengine.com/faq) for all facts and exemptions.
