@@ -24,7 +24,6 @@ set(GCC_COMMON_FLAGS
 	-Wno-narrowing
 	-Wno-write-strings
 	-Wno-format
-
 	-Wno-return-type
 
 	-Wno-strict-aliasing
@@ -48,6 +47,7 @@ set(GCC_COMMON_FLAGS
 	-Wno-stringop-overflow
 	-Wno-misleading-indentation
 	-Wno-logical-not-parentheses
+	-Wno-tautological-compare
 )
 
 set(GCC_CPP_COMMON_FLAGS

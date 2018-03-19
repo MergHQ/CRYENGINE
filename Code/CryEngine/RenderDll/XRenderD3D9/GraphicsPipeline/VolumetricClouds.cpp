@@ -1031,7 +1031,7 @@ void CVolumetricCloudsStage::GenerateCloudShadowGenShaderParam(const Vec3& texSi
 	const Vec3 cloudOffset(PF.pVolCloudTilingOffset.x, PF.pVolCloudTilingOffset.y, PF.pVolCloudTilingOffset.z - altitude);
 
 	// set up constant buffer and upload to GPU.
-	CTypedConstantBuffer<SCloudShadowShaderParam> cb(m_pCloudShadowConstantBuffer);
+	CTypedConstantBuffer<SCloudShadowShaderParam, 256> cb(m_pCloudShadowConstantBuffer);
 	CRY_ASSERT(m_pCloudShadowConstantBuffer->m_size >= sizeof(SCloudShadowShaderParam));
 
 	const Vec3 sunLightDirection = PF.pSunDirection;

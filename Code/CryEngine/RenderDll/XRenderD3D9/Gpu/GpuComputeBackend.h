@@ -239,9 +239,9 @@ private:
 	HostData        m_hostData;
 };
 
-template<typename T> class CTypedConstantBuffer : public ::CTypedConstantBuffer<T>
+template<typename T> class CTypedConstantBuffer : public ::CTypedConstantBuffer<T, 256>
 {
-	typedef typename ::CTypedConstantBuffer<T> TBase;
+	typedef typename ::CTypedConstantBuffer<T, 256> TBase;
 public:
 	bool IsDeviceBufferAllocated() { return TBase::m_constantBuffer != nullptr; }
 	T&   operator=(const T& hostData)

@@ -17,7 +17,7 @@ void CSceneCustomStage::Init()
 	m_pPerPassResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);	
 	m_pPerPassConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerPassConstantBuffer_Custom));
 	
-	CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom> cb(m_pPerPassConstantBuffer);
+	CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 	cb.UploadZeros();
 	
 	bool bSuccess = SetAndBuildPerPassResources(true);
@@ -321,7 +321,7 @@ void CSceneCustomStage::ExecuteDebugger()
 	m_debugViewPass.SetViewport(pRenderView->GetViewport());
 
 	{
-		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom> cb(m_pPerPassConstantBuffer);
+		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 		cb->CP_Custom_ViewMode = Vec4(bViewTexelDensity ? 1.f : 0.f, CRenderer::CV_r_TexelsPerMeter, 0.f, 0.f);
 		cb.CopyToDevice();
 	}
@@ -371,7 +371,7 @@ void CSceneCustomStage::ExecuteDebugOverlay()
 	m_debugViewPass.SetViewport(pRenderView->GetViewport());
 
 	{
-		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom> cb(m_pPerPassConstantBuffer);
+		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 		cb->CP_Custom_ViewMode = Vec4(0.f, 0.f, 0.f, 0.f);
 		cb.CopyToDevice();
 	}
@@ -548,7 +548,7 @@ void CSceneCustomStage::ExecuteHelpers()
 	{
 		bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
 
-		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom> cb(m_pPerPassConstantBuffer);
+		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 		cb->CP_Custom_ViewMode = Vec4(0.f, 0.f, 0.f, 0.f);
 		cb.CopyToDevice();
 	}

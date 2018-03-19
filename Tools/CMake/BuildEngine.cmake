@@ -97,7 +97,7 @@ if(ORBIS)
 	endif()
 endif()
 
-if(WIN64 OR (LINUX AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")))
+if(WIN64 OR LINUX)
 	option(RENDERER_VULKAN "Renderer for Vulkan API" ON)
 	if (RENDERER_VULKAN AND NOT EXISTS "${SDK_DIR}/VulkanSDK")
 		message(STATUS "Vulkan SDK not found in ${SDK_DIR}/VulkanSDK - disabling Vulkan renderer.")
