@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "ParticleBuffer.h"
 #include <CryRenderer/RenderElements/CREParticle.h>
-#include "DriverD3D.h"
 
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 	#define PFX_32BIT_IB

@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "AutoExposure.h"
 
-#include "DriverD3D.h"
 
 void GetSampleOffsets_Downscale4x4Bilinear(uint32 width, uint32 height, Vec4 avSampleOffsets[])
 {

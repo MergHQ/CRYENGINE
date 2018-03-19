@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "TiledLightVolumes.h"
 
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include "D3D_SVO.h"
 

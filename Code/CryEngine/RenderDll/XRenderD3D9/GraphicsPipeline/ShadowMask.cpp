@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "ShadowMask.h"
-#include "DriverD3D.h"
 
 #include "../Common/PostProcess/PostProcessUtils.h"
 #include "../Common/Include_HLSL_CPP_Shared.h"

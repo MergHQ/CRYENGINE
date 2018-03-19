@@ -16,3 +16,21 @@ else()
 	target_link_libraries(${THIS_PROJECT} PRIVATE CrySystem Cry3DEngine)
 endif()
 
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-reorder
+		-Wno-unknown-pragmas
+		-Wno-unused-variable
+		-Wno-parentheses
+		-Wno-unused-private-field
+		-Wno-switch
+		-Wno-empty-body
+		-Wno-format
+		-Wno-logical-op-parentheses
+		-Wno-multichar
+		-Wno-invalid-offsetof
+		-Wno-unused-function
+		-Wno-unused-value
+		-Wno-sometimes-uninitialized
+	)
+endif()

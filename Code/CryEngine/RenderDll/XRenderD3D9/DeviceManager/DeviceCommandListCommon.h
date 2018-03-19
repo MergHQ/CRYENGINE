@@ -194,6 +194,7 @@ public:
 	void Copy(D3DTexture*     pSrc, CDeviceTexture* pDst);
 
 	void Copy(CDeviceBuffer*  pSrc, CDeviceBuffer*  pDst, const SResourceRegionMapping& regionMapping);
+	void Copy(CDeviceBuffer*  pSrc, D3DBuffer*      pDst, const SResourceRegionMapping& regionMapping);
 	void Copy(D3DBuffer*      pSrc, D3DBuffer*      pDst, const SResourceRegionMapping& regionMapping);
 	void Copy(CDeviceTexture* pSrc, CDeviceTexture* pDst, const SResourceRegionMapping& regionMapping);
 	void Copy(D3DTexture*     pSrc, CDeviceTexture* pDst, const SResourceRegionMapping& regionMapping);

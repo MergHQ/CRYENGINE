@@ -3,8 +3,6 @@
 #include "StdAfx.h"
 #include "../Common/Textures/TextureStreamPool.h"
 
-#include "DriverD3D.h"
-
 #if !defined(CHK_RENDTH)
 	#define CHK_RENDTH assert(gRenDev->m_pRT->IsRenderThread(true))
 #endif

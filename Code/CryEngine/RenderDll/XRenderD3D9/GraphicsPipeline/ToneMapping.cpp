@@ -5,7 +5,6 @@
 
 #include "SunShafts.h"
 #include "ColorGrading.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
 #include <Common/RenderDisplayContext.h>

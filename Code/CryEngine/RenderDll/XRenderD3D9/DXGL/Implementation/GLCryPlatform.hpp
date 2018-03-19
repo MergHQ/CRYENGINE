@@ -14,8 +14,6 @@
 #ifndef __GLCRYPLATFORM__
 #define __GLCRYPLATFORM__
 
-#include "DriverD3D.h"
-
 namespace NCryOpenGL
 {
 

@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "ComputeRenderPass.h"
-#include "DriverD3D.h"
 
 CComputeRenderPass::CComputeRenderPass(EPassFlags flags)
 	: m_flags(flags)

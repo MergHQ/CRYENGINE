@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "DeferredDecals.h"
-#include "DriverD3D.h"
 #include "../../Common/Textures/TextureHelpers.h"
 
 

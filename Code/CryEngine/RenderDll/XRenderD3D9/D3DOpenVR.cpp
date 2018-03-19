@@ -5,7 +5,6 @@
 #if defined(INCLUDE_VR_RENDERING)
 
 	#include "D3DOpenVR.h"
-	#include "DriverD3D.h"
 	#include "D3DPostProcess.h"
 	#include "DeviceInfo.h"
 

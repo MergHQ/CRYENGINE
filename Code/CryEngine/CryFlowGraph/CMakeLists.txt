@@ -144,3 +144,22 @@ CryEngineModule(CryFlowGraph PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 target_include_directories(${THIS_PROJECT} PRIVATE .)
 #target_include_directories(${THIS_PROJECT} PRIVATE ../CryAction)
 
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-variable
+		-Wno-reorder
+		-Wno-unknown-pragmas
+		-Wno-parentheses
+		-Wno-switch
+		-Wno-format
+		-Wno-unused-private-field
+		-Wno-unused-value
+		-Wno-multichar
+		-Wno-empty-body
+		-Wno-unused-lambda-capture
+		-Wno-unused-function
+		-Wno-char-subscripts
+		-Wno-comment
+		-Wno-c++11-narrowing
+	)
+endif()

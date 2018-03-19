@@ -4,7 +4,6 @@
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <CryNetwork/INetwork.h>
 #include "StatoscopeRenderStats.h"
-#include "DriverD3D.h"
 
 #if ENABLE_STATOSCOPE
 

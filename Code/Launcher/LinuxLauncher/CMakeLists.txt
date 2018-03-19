@@ -20,6 +20,20 @@ if(LINUX)
 	endif()
 	target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CrySystem")
 	target_link_libraries( ${THIS_PROJECT} PRIVATE SDL2 dl pthread menuw formw ncursesw jsmn)
+	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unknown-pragmas
+			-Wno-unused-variable
+			-Wno-unused-value
+			-Wno-unused-function
+			-Wno-empty-body
+			-Wno-reorder
+			-Wno-switch
+			-Wno-format
+			-Wno-unused-private-field
+			-Wno-parentheses
+		)
+    endif()
 else()
 	CryFileContainer(LinuxLauncher SOLUTION_FOLDER "Launcher")
 endif()

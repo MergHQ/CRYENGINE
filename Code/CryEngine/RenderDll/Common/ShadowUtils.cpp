@@ -10,7 +10,6 @@
 #include "ShadowUtils.h"
 
 #include "Common/RenderView.h"
-#include "DriverD3D.h"
 #include "GraphicsPipeline/Common/FullscreenPass.h"
 #include "GraphicsPipeline/Common/ComputeRenderPass.h"
 

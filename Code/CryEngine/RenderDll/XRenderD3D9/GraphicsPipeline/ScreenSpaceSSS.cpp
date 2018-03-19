@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "ScreenSpaceSSS.h"
-#include "DriverD3D.h"
 
 void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 {

@@ -10,7 +10,6 @@
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <CryCore/BitFiddling.h> // IntegerLog2_RoundUp
 #include <CryMemory/IMemory.h>
-#include "DriverD3D.h"
 
 CryCriticalSection CGraphicsDeviceConstantBuffer::s_accessLock;
 

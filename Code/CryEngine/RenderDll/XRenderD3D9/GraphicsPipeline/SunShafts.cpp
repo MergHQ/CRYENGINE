@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "SunShafts.h"
 
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
 // TODO: Add support for occlusion query to find out if sky is visible at all

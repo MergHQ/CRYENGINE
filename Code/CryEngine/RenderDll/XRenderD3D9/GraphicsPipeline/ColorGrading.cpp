@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "ColorGrading.h"
 
-#include "DriverD3D.h"
 #include "../Common/PostProcess/PostEffects.h"
 
 const char* COLORCHART_DEF_TEX = "%ENGINE%/EngineAssets/Textures/default_cch.tif";

@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "Bloom.h"
-#include "DriverD3D.h"
 
 void CBloomStage::Execute()
 {

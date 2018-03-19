@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "VKAsyncCommandQueue.hpp"
 #include "VKCommandList.hpp"
-#include "DriverD3D.h"
 
 #ifdef VK_LINKEDADAPTER
 	#include "Redirections/VkDevice.inl"

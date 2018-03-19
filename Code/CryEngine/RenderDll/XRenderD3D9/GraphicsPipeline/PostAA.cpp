@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "PostAA.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include "GraphicsPipeline/LensOptics.h"
 #include "ColorGrading.h"

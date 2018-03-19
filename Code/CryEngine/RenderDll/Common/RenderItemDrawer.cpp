@@ -3,8 +3,6 @@
 #include "StdAfx.h"
 #include "RenderView.h"
 
-#include "DriverD3D.h"
-
 #include "GraphicsPipeline/ShadowMap.h"
 #include "CompiledRenderObject.h"
 

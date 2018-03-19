@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include <CryCore/CryCustomTypes.h>
 #include "../../DeviceManager/DeviceObjects.h"
-#include "DriverD3D.h"
 #include "DeviceResourceSet_D3D12.h"
 #include "DeviceCommandListCommon_D3D12.h"
 #include "DeviceRenderPass_D3D12.h"

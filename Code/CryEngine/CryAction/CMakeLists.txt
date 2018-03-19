@@ -904,3 +904,23 @@ target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryPlu
 install(DIRECTORY . DESTINATION include/CryAction FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY . DESTINATION include/CryAction FILES_MATCHING PATTERN "*.hpp")
 
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-parentheses
+		-Wno-reorder
+		-Wno-unknown-pragmas
+		-Wno-unused-variable
+		-Wno-format
+		-Wno-switch
+		-Wno-comment
+		-Wno-unused-private-field
+		-Wno-empty-body
+		-Wno-multichar
+		-Wno-unused-value
+		-Wno-null-conversion
+		-Wno-unused-function
+		-Wno-c++11-narrowing
+		-Wno-char-subscripts
+		-Wno-overloaded-virtual
+	)
+endif()

@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "D3DColorGradingController.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include <CryString/StringUtils.h>
 #include "GraphicsPipeline/ColorGrading.h"

@@ -85,3 +85,20 @@ end_sources()
 
 CryEngineModule(CryMovie PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 target_include_directories( ${THIS_PROJECT} PRIVATE "${CMAKE_SOURCE_DIR}/Code/CryEngine/CryAction" )
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-variable
+		-Wno-parentheses
+		-Wno-reorder
+		-Wno-unused-value
+		-Wno-unknown-pragmas
+		-Wno-format
+		-Wno-empty-body
+		-Wno-unused-private-field
+		-Wno-multichar
+		-Wno-switch
+		-Wno-unused-function
+		-Wno-c++11-narrowing
+		-Wno-comment
+	)
+endif()

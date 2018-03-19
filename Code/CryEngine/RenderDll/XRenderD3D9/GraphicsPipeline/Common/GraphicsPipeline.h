@@ -3,9 +3,7 @@
 #pragma once
 
 #include "Common/RenderView.h"
-#include "GraphicsPipelineStage.h"
 #include "GraphicsPipelineStateSet.h"
-#include "UtilityPasses.h"
 #include "RenderPassScheduler.h"
 
 class CGraphicsPipelineStage;

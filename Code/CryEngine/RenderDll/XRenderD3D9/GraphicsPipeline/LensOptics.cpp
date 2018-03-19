@@ -1,5 +1,4 @@
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include "LensOptics.h"
 #include "Common/RendElements/RootOpticsElement.h"
 #include "Common/RendElements/FlareSoftOcclusionQuery.h"

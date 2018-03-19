@@ -5,7 +5,6 @@
 #include "Renderer.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/ITimeOfDay.h>
-#include "DriverD3D.h"
 #include "GraphicsPipeline/DebugRenderTargets.h"
 #include <cctype>
 

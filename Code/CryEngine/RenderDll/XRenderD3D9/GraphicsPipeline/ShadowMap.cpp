@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include <CryMath/Range.h>
 #include "ShadowMap.h"
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
 #include "Common/Include_HLSL_CPP_Shared.h"
@@ -745,7 +744,7 @@ bool CShadowMapStage::CShadowMapPass::PrepareResources(const CRenderView* pMainV
 
 	// per pass CB
 	{
-		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_ShadowGen> cb(m_pPerPassConstantBuffer);
+		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_ShadowGen, 256> cb(m_pPerPassConstantBuffer);
 
 		cb->CP_ShadowGen_LightPos = Vec4(frustum.vLightSrcRelPos + frustum.vProjTranslation, 0);
 		cb->CP_ShadowGen_ViewPos = Vec4(pMainView->GetCamera(CCamera::eEye_Left).GetPosition(), 0);

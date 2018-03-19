@@ -41,3 +41,19 @@ PUBLIC
 if(LINUX)
         target_compile_options(${THIS_PROJECT} PRIVATE -fPIC)
 endif()
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-variable
+		-Wno-reorder
+		-Wno-unknown-pragmas
+		-Wno-parentheses
+		-Wno-format
+		-Wno-switch
+		-Wno-unused-value
+		-Wno-c++11-narrowing
+		-Wno-unused-private-field
+		-Wno-empty-body
+		-Wno-unused-function
+	)
+endif()

@@ -1,7 +1,5 @@
 // Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
-#include "DriverD3D.h"
-
 static uint32 MapResourceFlags(NCryVulkan::CMemoryResource* pResource)
 {
 	uint32 result = 0;

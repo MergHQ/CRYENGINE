@@ -3,8 +3,6 @@
 #include "StdAfx.h"
 #include "SceneRenderPass.h"
 
-#include "DriverD3D.h"
-
 #include "Common/RenderView.h"
 #include "Common/ReverseDepth.h"
 #include "CompiledRenderObject.h"

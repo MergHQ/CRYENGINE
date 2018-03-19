@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "D3DMultiResRendering.h"
 
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include "../Common/CryNameR.h"
 #include "../Common/Shaders/CShader.h"

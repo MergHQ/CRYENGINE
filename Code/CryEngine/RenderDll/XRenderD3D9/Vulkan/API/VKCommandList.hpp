@@ -34,6 +34,7 @@ class CCommandListPool
 {
 public:
 	CCommandListPool(CDevice* device, CCommandListFenceSet& rCmdFence, int nPoolFenceId);
+	CCommandListPool(const CCommandListPool& clp);
 	~CCommandListPool();
 
 	void Configure();

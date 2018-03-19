@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "UtilityPasses.h"
 #include "FullscreenPass.h"
-#include "DriverD3D.h"
 
 ResourceViewHandle s_RTVDefaults[] =
 {

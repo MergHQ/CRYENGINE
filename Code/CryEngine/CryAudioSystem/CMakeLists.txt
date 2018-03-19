@@ -53,8 +53,33 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
+MACRO(setup_cryaudio)
+	target_include_directories(${THIS_PROJECT} PRIVATE Common)
+	if(DURANGO)
+		target_link_libraries(${THIS_PROJECT} PRIVATE acphal)
+	endif()
+	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unknown-pragmas
+			-Wno-unused-variable
+			-Wno-reorder
+			-Wno-parentheses
+			-Wno-format
+			-Wno-switch
+			-Wno-unused-value
+			-Wno-comment
+			-Wno-empty-body
+			-Wno-format-security
+			-Wno-unused-function
+			-Wno-multichar
+			-Wno-unused-private-field
+		)
+	endif()
+ENDMACRO()
+
 CryEngineModule(CryAudioSystem PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio")
-target_include_directories(${THIS_PROJECT} PRIVATE Common)
-if(DURANGO)
-	target_link_libraries(${THIS_PROJECT} PRIVATE acphal)
+setup_cryaudio()
+if (OPTION_UNIT_TEST AND NOT OPTION_STATIC_LINKING) #Currently an additional static lib is only used by unit testing under non-monolithic mode
+	CryEngineModule(CryAudioSystemLib PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio" FORCE_STATIC)
+	setup_cryaudio()
 endif()

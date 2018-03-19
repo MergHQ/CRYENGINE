@@ -52,3 +52,19 @@ elseif(APPLE)
 	find_library(APPLICATION_SERVICES ApplicationServices)
 	target_link_libraries(${THIS_PROJECT} PRIVATE "${CORE_SERVICES}" "${CARBON}" "${APPLICATION_SERVICES}")
 endif()
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-variable
+		-Wno-reorder
+		-Wno-unknown-pragmas
+		-Wno-parentheses
+		-Wno-format
+		-Wno-switch
+		-Wno-unused-function
+		-Wno-unused-private-field
+		-Wno-empty-body
+		-Wno-unused-value
+	)
+endif()
+

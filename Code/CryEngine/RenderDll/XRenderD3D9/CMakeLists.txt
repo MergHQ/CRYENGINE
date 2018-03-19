@@ -1296,6 +1296,29 @@ if (RENDERER_VULKAN)
 		target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
 		target_link_libraries(${THIS_PROJECT} PRIVATE ${LIBVULKAN})
 	endif()
+
+	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-variable
+			-Wno-parentheses
+			-Wno-reorder
+			-Wno-unused-value
+			-Wno-unknown-pragmas
+			-Wno-format
+			-Wno-unused-private-field
+			-Wno-multichar
+			-Wno-switch
+			-Wno-unused-function
+			-Wno-overloaded-virtual
+			-Wno-tautological-compare
+			-Wno-unused-lambda-capture
+			-Wno-invalid-offsetof
+			-Wno-c++11-narrowing
+			-Wno-empty-body
+			-Wno-self-assign
+			-Wno-null-conversion
+		)
+    endif()
 else()
 	CryFileContainer(CryRenderVulkan SOLUTION_FOLDER "CryEngine")
 endif()
@@ -1307,6 +1330,28 @@ if (EXISTS "${SCE_ORBIS_SDK_DIR}" AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/GNM")
 		target_compile_definitions(${THIS_PROJECT} PRIVATE -D_RENDERER -DDO_RENDERSTATS -DCRY_RENDERER_GNM=40 ${extra_defines})
 		target_compile_options(${THIS_PROJECT} PRIVATE $<$<CONFIG:Release>:-flto>)
 		target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib SceSystemService_stub_weak SceGnmDriver_stub_weak $<$<NOT:$<CONFIG:Release>>:SceGnm> $<$<NOT:$<CONFIG:Release>>:SceGnmx> $<$<NOT:$<CONFIG:Release>>:SceDbg_stub_weak> $<$<CONFIG:Release>:SceGnm_lto> $<$<CONFIG:Release>:SceGnmx_lto>)
+
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-variable
+			-Wno-parentheses
+			-Wno-reorder
+			-Wno-unused-value
+			-Wno-unknown-pragmas
+			-Wno-format
+			-Wno-unused-private-field
+			-Wno-multichar
+			-Wno-switch
+			-Wno-unused-function
+			-Wno-overloaded-virtual
+			-Wno-tautological-compare
+			-Wno-unused-lambda-capture
+			-Wno-invalid-offsetof
+			-Wno-c++11-narrowing
+			-Wno-empty-body
+			-Wno-self-assign
+			-Wno-logical-op-parentheses
+			-Wno-null-conversion
+		)
 	else()
 		CryFileContainer(CryRenderGNM SOLUTION_FOLDER "CryEngine")
 	endif()

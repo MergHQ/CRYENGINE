@@ -50,3 +50,7 @@ PUBLIC
 if(WIN32 OR LINUX OR APPLE)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE curl )
 endif()
+
+if(LINUX OR ORBIS)
+	target_compile_options(${THIS_PROJECT} PRIVATE -w)
+endif()

@@ -3,10 +3,7 @@
 #include "StdAfx.h"
 #include "CompiledRenderObject.h"
 
-#include "DriverD3D.h"
-#include "D3DPostProcess.h"  // CMotionBlur::GetPrevObjToWorldMat
-#include "Common/Include_HLSL_CPP_Shared.h"
-#include "Common/ComputeSkinningStorage.h"
+#include <../Common/PostProcess/PostEffects.h>
 
 //////////////////////////////////////////////////////////////////////////
 #include "GraphicsPipeline/ShadowMap.h"

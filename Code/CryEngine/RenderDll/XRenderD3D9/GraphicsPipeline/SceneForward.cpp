@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "SceneForward.h"
 
-#include "DriverD3D.h"
 #include "D3D_SVO.h"
 #include "Common/ReverseDepth.h"
 #include "Common/RendElements/Stars.h"

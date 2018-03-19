@@ -15,7 +15,6 @@
 #include "DepthReadback.h"
 #include "Common/ReverseDepth.h"
 #include "Common/PostProcess/PostProcessUtils.h"
-#include "DriverD3D.h"
 
 void CDepthReadbackStage::Init()
 {

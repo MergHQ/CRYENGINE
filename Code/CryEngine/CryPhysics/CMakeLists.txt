@@ -104,17 +104,37 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
+macro(setup_CryPhysics)
+	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-shift-negative-value
+			-Wno-writable-strings
+			-Wno-c++11-narrowing
+			-Wno-unused-variable
+			-Wno-parentheses
+			-Wno-reorder
+			-Wno-unused-value
+			-Wno-unknown-pragmas
+			-Wno-format
+			-Wno-unused-private-field
+			-Wno-multichar
+			-Wno-switch
+			-Wno-unused-function
+			-Wno-char-subscripts
+			-Wno-constant-conversion
+			-Wno-null-dereference
+			-Wno-array-bounds
+			-Wno-shift-negative-value
+			-Wno-undefined-var-template
+			-Wno-empty-body
+		)
+    endif()
+endmacro()
+
 if(NOT RESOURCE_COMPILER)
 	if (PHYSICS_CRYPHYSICS)
 		CryEngineModule(CryPhysics PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
-		if(ORBIS OR LINUX OR ANDROID)
-			target_compile_options(${THIS_PROJECT} PRIVATE
-				-Wno-constant-conversion
-				-Wno-null-dereference
-				-Wno-array-bounds
-				-Wno-shift-negative-value
-			)
-		endif()
+		setup_CryPhysics()
 		if(WIN32 OR WIN64)
 			target_compile_options(${THIS_PROJECT} PRIVATE $<$<CONFIG:Profile>:/GL /O2 /Ot> $<$<CONFIG:Release>:/GL /O2 /Ot> $<$<CONFIG:Debug>:/RTCu> )
 		endif() 
@@ -123,16 +143,11 @@ if(NOT RESOURCE_COMPILER)
 	endif()
 	if (OPTION_PHYSDBGR)
 		CryEngineStaticModule(CryPhysicsLib PCH "StdAfx.cpp" SOLUTION_FOLDER "PhysDebugger")
+		setup_CryPhysics()
 		target_include_directories(${THIS_PROJECT} BEFORE PRIVATE ../../Tools/PhysDebugger)
 		target_compile_options(${THIS_PROJECT} PRIVATE $<$<CONFIG:Profile>:/GL /O2 /Ot> $<$<CONFIG:Release>:/GL /O2 /Ot> $<$<CONFIG:Debug>:/RTCu> )
 	endif()
 else()
 	CryResourceCompilerModule(CryPhysicsRC PCH "StdAfx.cpp" SOLUTION_FOLDER "RC")
-	if(LINUX)
-		target_compile_options(${THIS_PROJECT} PRIVATE
-			-Wno-shift-negative-value
-			-Wno-writable-strings
-			-Wno-c++11-narrowing
-		)
-	endif()
+	setup_CryPhysics()
 endif()
