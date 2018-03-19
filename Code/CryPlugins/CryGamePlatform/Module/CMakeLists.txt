@@ -108,3 +108,19 @@ if(WIN32 OR LINUX OR APPLE)
 elseif(ORBIS)
 	target_link_libraries(${THIS_PROJECT} PRIVATE sceNpAuth_stub_weak sceSigninDialog_stub_weak)
 endif()
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-variable
+		-Wno-reorder
+		-Wno-parentheses
+		-Wno-unknown-pragmas
+		-Wno-format
+		-Wno-switch
+		-Wno-multichar
+		-Wno-unused-private-field
+		-Wno-empty-body
+		-Wno-unused-value
+		-Wno-unused-function
+	)
+endif()

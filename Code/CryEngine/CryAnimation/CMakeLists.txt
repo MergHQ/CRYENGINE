@@ -229,7 +229,31 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
+MACRO(setup_CryAnimation)
+    if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-variable
+			-Wno-reorder
+			-Wno-unknown-pragmas
+			-Wno-parentheses
+			-Wno-switch
+			-Wno-format
+			-Wno-dynamic-class-memaccess
+			-Wno-unused-private-field
+			-Wno-unused-value
+			-Wno-invalid-offsetof
+			-Wno-multichar
+			-Wno-empty-body
+			-Wno-unused-lambda-capture
+			-Wno-unused-function
+			-Wno-tautological-constant-out-of-range-compare
+		)
+    endif()
+ENDMACRO()
+
 CryEngineModule(CryAnimation PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine")
+setup_CryAnimation()
 if (OPTION_UNIT_TEST AND NOT OPTION_STATIC_LINKING) #Currently an additional static lib is only used by unit testing under non-monolithic mode
 	CryEngineModule(CryAnimationLib PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine" FORCE_STATIC)
+	setup_CryAnimation()
 endif()

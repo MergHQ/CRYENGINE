@@ -180,3 +180,26 @@ PRIVATE
 PUBLIC
 	.
 )
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-variable
+		-Wno-reorder
+		-Wno-unused-variable
+		-Wno-unknown-pragmas
+		-Wno-parentheses
+		-Wno-switch
+		-Wno-format
+		-Wno-char-subscripts
+		-Wno-empty-body
+		-Wno-multichar
+		-Wno-unused-value
+		-Wno-null-conversion
+		-Wno-unused-value
+		-Wno-unused-private-field
+		-Wno-unused-function
+		-Wno-c++11-narrowing
+		-Wno-dynamic-class-memaccess
+		-Wno-sometimes-uninitialized
+	)
+endif()

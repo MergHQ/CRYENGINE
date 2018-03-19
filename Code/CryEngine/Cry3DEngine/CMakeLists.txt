@@ -389,6 +389,26 @@ end_sources()
 MACRO(setup_Cry3DEngine)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE lz4 )
 	target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/TangentBasisComputation")
+
+	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-reorder
+			-Wno-unknown-pragmas
+			-Wno-unused-variable
+			-Wno-parentheses
+			-Wno-unused-private-field
+			-Wno-switch
+			-Wno-empty-body
+			-Wno-format
+			-Wno-logical-op-parentheses
+			-Wno-multichar
+			-Wno-invalid-offsetof
+			-Wno-unused-function
+			-Wno-unused-value
+			-Wno-sometimes-uninitialized
+			-Wno-tautological-constant-out-of-range-compare
+		)
+    endif()
 ENDMACRO()
 
 CryEngineModule(Cry3DEngine PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")

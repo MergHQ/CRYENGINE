@@ -85,3 +85,21 @@ PRIVATE
 	"${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface"
 	"${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface"
 )
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-variable
+		-Wno-reorder
+		-Wno-unknown-pragmas
+		-Wno-parentheses
+		-Wno-unused-private-field
+		-Wno-multichar
+		-Wno-format
+		-Wno-switch
+		-Wno-comment
+		-Wno-empty-body
+		-Wno-char-subscripts
+		-Wno-empty-body
+		-Wno-unused-value
+		-Wno-unused-function
+	)
+endif()

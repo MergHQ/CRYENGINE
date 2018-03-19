@@ -57,6 +57,20 @@ if(OPTION_SCALEFORMHELPER AND NOT (ORBIS OR ANDROID))
 	if (APPLE)
 		target_link_libraries(${THIS_PROJECT} PRIVATE png16)
 	endif()
+	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-variable
+			-Wno-parentheses
+			-Wno-reorder
+			-Wno-unused-value
+			-Wno-unknown-pragmas
+			-Wno-format
+			-Wno-unused-private-field
+			-Wno-empty-body
+			-Wno-switch
+			-Wno-unused-function
+		)
+    endif()
 else()
 	CryFileContainer(CryScaleformHelper SOLUTION_FOLDER "CryEngine")
 endif()

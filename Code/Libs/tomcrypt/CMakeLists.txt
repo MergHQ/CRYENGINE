@@ -472,6 +472,13 @@ if (WIN32 OR WIN64 OR DURANGO)
 		/wd4311 # Pointer truncation from T1* to T2
 	)
 endif()
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-const-variable
+		-Wno-sometimes-uninitialized
+		-Wno-tautological-constant-out-of-range-compare
+	)
+endif()
 
 CryEngineStaticModule(tomcrypt_staticcrt SOLUTION_FOLDER "Libs")
 force_static_crt()
@@ -502,4 +509,10 @@ if (WIN32 OR WIN64 OR DURANGO)
 		/wd4311 # Pointer truncation from T1* to T2
 	)
 endif()
-
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-const-variable
+		-Wno-sometimes-uninitialized
+		-Wno-tautological-constant-out-of-range-compare
+	)
+endif()

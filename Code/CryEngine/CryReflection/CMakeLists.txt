@@ -28,3 +28,18 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineModule(CryReflection PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unknown-pragmas
+		-Wno-reorder
+		-Wno-parentheses
+		-Wno-unused-variable
+		-Wno-format
+		-Wno-c++11-narrowing
+		-Wno-switch
+		-Wno-unused-private-field
+		-Wno-unused-value
+		-Wno-empty-body
+		-Wno-unused-function
+	)
+endif()

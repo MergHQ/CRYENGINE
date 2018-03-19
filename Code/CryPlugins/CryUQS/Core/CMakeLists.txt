@@ -131,3 +131,21 @@ if(OPTION_UQS_SCHEMATYC_SUPPORT)
 		PUBLIC "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface"
 	)
 endif()
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-variable
+		-Wno-parentheses
+		-Wno-reorder
+		-Wno-unused-value
+		-Wno-unknown-pragmas
+		-Wno-format
+		-Wno-unused-private-field
+		-Wno-empty-body
+		-Wno-multichar
+		-Wno-switch
+		-Wno-unused-function
+		-Wno-char-subscripts
+		-Wno-c++11-narrowing
+	)
+endif()

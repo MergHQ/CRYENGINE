@@ -15,6 +15,6 @@ end_sources()
 
 CryEngineStaticModule(md5 SOLUTION_FOLDER "Libs")
 target_include_directories(${THIS_PROJECT} INTERFACE "${SDK_DIR}")
-if(LINUX)
+if(LINUX OR ORBIS)
 	target_compile_options(${THIS_PROJECT} PRIVATE -w)
 endif()

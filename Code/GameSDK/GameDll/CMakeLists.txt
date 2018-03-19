@@ -1395,3 +1395,28 @@ elseif(DURANGO)
 elseif(ANDROID)
 	target_link_libraries(${THIS_PROJECT} PRIVATE CryAction)
 endif()
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-variable
+		-Wno-parentheses
+		-Wno-reorder
+		-Wno-unused-value
+		-Wno-unknown-pragmas
+		-Wno-format
+		-Wno-unused-private-field
+		-Wno-multichar
+		-Wno-empty-body
+		-Wno-unused-const-variable
+		-Wno-switch
+		-Wno-unused-function
+		-Wno-char-subscripts
+		-Wno-c++11-narrowing
+		-Wno-address-of-packed-member
+		-Wno-invalid-offsetof
+		-Wno-dynamic-class-memaccess
+		-Wno-overloaded-virtual
+		-Wno-writable-strings
+		-Wno-comment
+	)
+endif()

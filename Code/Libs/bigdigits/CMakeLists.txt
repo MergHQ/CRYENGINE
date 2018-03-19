@@ -22,3 +22,10 @@ end_sources()
 
 CryEngineStaticModule(bigdigits SOLUTION_FOLDER "Libs")
 target_include_directories(${THIS_PROJECT} INTERFACE "${SDK_DIR}")
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-tautological-compare
+		-Wno-unknown-pragmas
+	)
+endif()

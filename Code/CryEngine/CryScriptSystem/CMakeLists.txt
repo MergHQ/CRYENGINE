@@ -90,3 +90,20 @@ endif()
 if (ANDROID)
 	set_source_files_properties("vectorlib.c" PROPERTIES LANGUAGE CXX)
 endif()
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-variable
+		-Wno-parentheses
+		-Wno-reorder
+		-Wno-unused-value
+		-Wno-unknown-pragmas
+		-Wno-format
+		-Wno-switch
+		-Wno-empty-body
+		-Wno-unused-private-field
+		-Wno-comment
+		-Wno-multichar
+		-Wno-unused-function
+	)
+endif()

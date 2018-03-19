@@ -2,47 +2,11 @@ set(CLANG_COMMON_FLAGS
 	-Werror
 	-Wall
 
-	-Wno-c++11-extensions
-	-Wno-c++11-narrowing
-	-Wno-char-subscripts
-	-Wno-comment
-	-Wno-conversion-null
-	-Wno-deprecated-writable-strings
-	-Wno-dynamic-class-memaccess
-	-Wno-empty-body
-	-Wno-format
-	-Wno-format-security
-	-Wno-invalid-offsetof
-	-Wno-multichar
-	-Wno-narrowing
-	-Wno-null-character
-	-Wno-overloaded-virtual
-	-Wno-parentheses
-	-Wno-reorder
-	-Wno-self-assign
-	-Wno-sign-compare
-	-Wno-sizeof-pointer-memaccess
-	-Wno-sometimes-uninitialized
-	-Wno-switch
-	-Wno-tautological-compare
-	-Wno-unknown-pragmas
-	-Wno-unneeded-internal-declaration
-	-Wno-unused-function
-	-Wno-unused-private-field
-	-Wno-unused-result
-	-Wno-unused-value
-	-Wno-unused-variable
-
 	-fvisibility-inlines-hidden
 	-fvisibility=hidden
 	-fPIC
 
 	-D_HAS_C9X
-	-Wno-write-strings
-	-Wno-logical-op-parentheses
-	-Wno-null-conversion
-	-Wno-overloaded-virtual
-	-Wno-shift-sign-overflow
 
 	-fdata-sections
 	-ffunction-sections
@@ -55,14 +19,6 @@ set(CLANG_COMMON_FLAGS
 
 	# clang 3.8 -> 5.0 upgrade
 	-Wno-unknown-warning-option      # Allows multiple versions of clang to be used
-	-Wno-dangling-else
-	-Wno-null-dereference
-	-Wno-undefined-var-template
-	-Wno-delete-non-virtual-dtor
-	-Wno-unused-lambda-capture
-	-Wno-deprecated-declarations
-	-Wno-address-of-packed-member
-	-Wno-expansion-to-defined
 )
 
 if(NOT ANDROID)

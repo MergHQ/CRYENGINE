@@ -90,3 +90,9 @@ elseif(ANDROID)
 	target_compile_options(${THIS_PROJECT} PRIVATE -w)
 	target_link_libraries(${THIS_PROJECT} PRIVATE m)
 endif()
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-c++11-narrowing
+	)
+endif()

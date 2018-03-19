@@ -140,3 +140,21 @@ elseif(ORBIS)
 	target_compile_options(${THIS_PROJECT} PRIVATE -Wno-deprecated-declarations)
 	target_link_libraries(${THIS_PROJECT} PRIVATE SceNpCommerce_stub_weak SceJson2_stub_weak)
 endif()
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-function
+		-Wno-reorder
+		-Wno-multichar
+		-Wno-parentheses
+		-Wno-switch
+		-Wno-bitwise-op-parentheses
+		-Wno-logical-op-parentheses
+		-Wno-unknown-pragmas
+		-Wno-unused-variable
+		-Wno-unused-value
+		-Wno-unused-private-field
+		-Wno-format
+		-Wno-empty-body
+	)
+endif()

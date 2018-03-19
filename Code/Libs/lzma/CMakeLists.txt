@@ -32,7 +32,7 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineStaticModule(lzma SOLUTION_FOLDER "Libs")
-if(LINUX)
+if(LINUX OR ORBIS)
 	target_compile_options(${THIS_PROJECT} PRIVATE -w)
 endif()
 target_include_directories(${THIS_PROJECT} INTERFACE "${SDK_DIR}")
