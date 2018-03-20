@@ -1545,16 +1545,16 @@ struct CTimeline::SMoveHandler : SMouseHandler
 		const bool bToggleSelected = (ev->modifiers() & Qt::SHIFT) != 0;
 
 		SAnimTime deltaTime = SAnimTime(float(delta) / m_timeline->m_viewState.widthPixels * m_timeline->m_viewState.visibleDistance);
-		SAnimTime endTime = m_timeline->m_pContent->track.endTime;
-		SAnimTime startElementTime = m_pClickedElement->start;
+		SAnimTime endTime = m_timeline->m_pContent->track.endTime;		
 		
 		SAnimTime currentTime = m_timeline->m_viewState.LayoutToTime(m_timeline->m_viewState.LocalToLayout(currentPos).x());
 
 		bool bNeedMoveElements = false;
 		SAnimTime moveElementsDeltaTime;
 
-		if (m_timeline->m_snapKeys || m_timeline->m_snapTime || bToggleSelected)
+		if (m_pClickedElement && (m_timeline->m_snapKeys || m_timeline->m_snapTime || bToggleSelected))
 		{
+			SAnimTime startElementTime = m_pClickedElement->start;
 			SAnimTime nearestKeyTime(startElementTime);
 
 			if (m_timeline->m_snapKeys)
