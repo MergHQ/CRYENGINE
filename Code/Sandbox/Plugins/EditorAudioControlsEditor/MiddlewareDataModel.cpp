@@ -7,10 +7,7 @@
 #include "ImplementationManager.h"
 #include "ModelUtils.h"
 
-#include <IEditorImpl.h>
-#include <IImplItem.h>
-#include <CrySystem/File/CryFile.h>
-#include <CrySandbox/CrySignal.h>
+#include <IItem.h>
 #include <CryIcon.h>
 
 #include <DragDrop.h>
@@ -133,20 +130,17 @@ int CMiddlewareDataModel::rowCount(QModelIndex const& parent) const
 {
 	int rowCount = 0;
 
-	if (g_pEditorImpl != nullptr)
+	if (g_pIImpl != nullptr)
 	{
-		IImplItem const* pIImplItem = ItemFromIndex(parent);
+		Impl::IItem const* pIItem = ItemFromIndex(parent);
 
-		if (pIImplItem == nullptr)
+		if (pIItem == nullptr)
 		{
 			// If not valid it must be a top level item, so get root.
-			pIImplItem = g_pEditorImpl->GetRoot();
+			pIItem = g_pIImpl->GetRoot();
 		}
 
-		if (pIImplItem != nullptr)
-		{
-			rowCount = pIImplItem->GetNumChildren();
-		}
+		rowCount = pIItem->GetNumChildren();
 	}
 
 	return rowCount;
@@ -163,20 +157,22 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 {
 	QVariant variant;
 
-	if (g_pEditorImpl != nullptr)
+	if (g_pIImpl != nullptr)
 	{
 		if (index.isValid())
 		{
-			IImplItem const* const pIImplItem = ItemFromIndex(index);
+			Impl::IItem const* const pIItem = ItemFromIndex(index);
 
-			if (pIImplItem != nullptr)
+			if (pIItem != nullptr)
 			{
-				if (role == static_cast<int>(ERoles::Name))
+				if (role == static_cast<int>(ModelUtils::ERoles::Name))
 				{
-					variant = static_cast<char const*>(pIImplItem->GetName());
+					variant = static_cast<char const*>(pIItem->GetName());
 				}
 				else
 				{
+					EItemFlags const flags = pIItem->GetFlags();
+
 					switch (index.column())
 					{
 					case static_cast<int>(EColumns::Notification):
@@ -184,27 +180,27 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 							switch (role)
 							{
 							case Qt::DecorationRole:
-								if (!pIImplItem->IsConnected() && !pIImplItem->IsContainer())
+								if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
 								{
 									variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
 								}
-								else if (pIImplItem->IsLocalized())
+								else if ((flags& EItemFlags::IsLocalized) != 0)
 								{
 									variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized));
 								}
 								break;
 							case Qt::ToolTipRole:
-								if (!pIImplItem->IsConnected() && !pIImplItem->IsContainer())
+								if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
 								{
 									variant = tr("Item is not connected to any audio system control");
 								}
-								else if (pIImplItem->IsLocalized())
+								else if ((flags& EItemFlags::IsLocalized) != 0)
 								{
 									variant = tr("Item is localized");
 								}
 								break;
-							case static_cast<int>(ERoles::Id):
-								variant = pIImplItem->GetId();
+							case static_cast<int>(ModelUtils::ERoles::Id):
+								variant = pIItem->GetId();
 								break;
 							default:
 								break;
@@ -212,15 +208,15 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 						}
 						break;
 					case static_cast<int>(EColumns::Connected):
-						if ((role == Qt::CheckStateRole) && !pIImplItem->IsContainer())
+						if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
 						{
-							variant = pIImplItem->IsConnected() ? Qt::Checked : Qt::Unchecked;
+							variant = ((flags& EItemFlags::IsConnected) != 0) ? Qt::Checked : Qt::Unchecked;
 						}
 						break;
 					case static_cast<int>(EColumns::Localized):
-						if ((role == Qt::CheckStateRole) && !pIImplItem->IsContainer())
+						if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
 						{
-							variant = pIImplItem->IsLocalized() ? Qt::Checked : Qt::Unchecked;
+							variant = ((flags& EItemFlags::IsLocalized) != 0) ? Qt::Checked : Qt::Unchecked;
 						}
 						break;
 					case static_cast<int>(EColumns::Name):
@@ -228,20 +224,20 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 							switch (role)
 							{
 							case Qt::DecorationRole:
-								variant = CryIcon(g_pEditorImpl->GetTypeIcon(pIImplItem));
+								variant = CryIcon(g_pIImpl->GetTypeIcon(pIItem));
 								break;
 							case Qt::DisplayRole:
 							case Qt::ToolTipRole:
-								variant = static_cast<char const*>(pIImplItem->GetName());
+								variant = static_cast<char const*>(pIItem->GetName());
 								break;
-							case static_cast<int>(ERoles::Id):
-								variant = pIImplItem->GetId();
+							case static_cast<int>(ModelUtils::ERoles::Id):
+								variant = pIItem->GetId();
 								break;
-							case static_cast<int>(ERoles::SortPriority):
-								variant = pIImplItem->GetSortPriority();
+							case static_cast<int>(ModelUtils::ERoles::SortPriority):
+								variant = pIItem->GetSortPriority();
 								break;
-							case static_cast<int>(ERoles::IsPlaceholder):
-								variant = pIImplItem->IsPlaceholder();
+							case static_cast<int>(ModelUtils::ERoles::IsPlaceholder):
+								variant = (flags& EItemFlags::IsPlaceHolder) != 0;
 								break;
 							default:
 								break;
@@ -268,11 +264,11 @@ Qt::ItemFlags CMiddlewareDataModel::flags(QModelIndex const& index) const
 {
 	Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 
-	if (index.isValid() && (g_pEditorImpl != nullptr))
+	if (index.isValid() && (g_pIImpl != nullptr))
 	{
-		IImplItem const* const pIImplItem = ItemFromIndex(index);
+		Impl::IItem const* const pIItem = ItemFromIndex(index);
 
-		if ((pIImplItem != nullptr) && !pIImplItem->IsPlaceholder() && (g_pEditorImpl->ImplTypeToAssetType(pIImplItem) != EAssetType::NumTypes))
+		if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == 0))
 		{
 			flags |= Qt::ItemIsDragEnabled;
 		}
@@ -286,24 +282,24 @@ QModelIndex CMiddlewareDataModel::index(int row, int column, QModelIndex const& 
 {
 	QModelIndex modelIndex = QModelIndex();
 
-	if (g_pEditorImpl != nullptr)
+	if (g_pIImpl != nullptr)
 	{
 		if ((row >= 0) && (column >= 0))
 		{
-			IImplItem const* pParent = ItemFromIndex(parent);
+			Impl::IItem const* pParent = ItemFromIndex(parent);
 
 			if (pParent == nullptr)
 			{
-				pParent = g_pEditorImpl->GetRoot();
+				pParent = g_pIImpl->GetRoot();
 			}
 
 			if ((pParent != nullptr) && pParent->GetNumChildren() > row)
 			{
-				IImplItem const* const pIImplItem = pParent->GetChildAt(row);
+				Impl::IItem const* const pIItem = pParent->GetChildAt(row);
 
-				if (pIImplItem != nullptr)
+				if (pIItem != nullptr)
 				{
-					modelIndex = createIndex(row, column, reinterpret_cast<quintptr>(pIImplItem));
+					modelIndex = createIndex(row, column, reinterpret_cast<quintptr>(pIItem));
 				}
 			}
 		}
@@ -319,11 +315,11 @@ QModelIndex CMiddlewareDataModel::parent(QModelIndex const& index) const
 
 	if (index.isValid())
 	{
-		IImplItem const* const pIImplItem = ItemFromIndex(index);
+		Impl::IItem const* const pIItem = ItemFromIndex(index);
 
-		if (pIImplItem != nullptr)
+		if (pIItem != nullptr)
 		{
-			modelIndex = IndexFromItem(pIImplItem->GetParent());
+			modelIndex = IndexFromItem(pIItem->GetParent());
 		}
 	}
 
@@ -348,7 +344,7 @@ QStringList CMiddlewareDataModel::mimeTypes() const
 //////////////////////////////////////////////////////////////////////////
 QMimeData* CMiddlewareDataModel::mimeData(QModelIndexList const& indexes) const
 {
-	CDragDropData* const pDragDropData = new CDragDropData();
+	auto const pDragDropData = new CDragDropData();
 	QByteArray byteArray;
 	QDataStream stream(&byteArray, QIODevice::ReadWrite);
 
@@ -363,11 +359,11 @@ QMimeData* CMiddlewareDataModel::mimeData(QModelIndexList const& indexes) const
 
 	for (auto const& index : nameIndexes)
 	{
-		IImplItem const* const pIImplItem = ItemFromIndex(index);
+		Impl::IItem const* const pIItem = ItemFromIndex(index);
 
-		if (pIImplItem != nullptr)
+		if (pIItem != nullptr)
 		{
-			stream << pIImplItem->GetId();
+			stream << pIItem->GetId();
 		}
 	}
 
@@ -376,41 +372,41 @@ QMimeData* CMiddlewareDataModel::mimeData(QModelIndexList const& indexes) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-IImplItem* CMiddlewareDataModel::ItemFromIndex(QModelIndex const& index) const
+Impl::IItem* CMiddlewareDataModel::ItemFromIndex(QModelIndex const& index) const
 {
-	IImplItem* pIImplItem = nullptr;
+	Impl::IItem* pIItem = nullptr;
 
 	if (index.isValid())
 	{
-		pIImplItem = static_cast<IImplItem*>(index.internalPointer());
+		pIItem = static_cast<Impl::IItem*>(index.internalPointer());
 	}
 
-	return pIImplItem;
+	return pIItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex CMiddlewareDataModel::IndexFromItem(IImplItem const* const pIImplItem) const
+QModelIndex CMiddlewareDataModel::IndexFromItem(Impl::IItem const* const pIItem) const
 {
 	QModelIndex modelIndex = QModelIndex();
 
-	if (pIImplItem != nullptr)
+	if (pIItem != nullptr)
 	{
-		IImplItem const* pParent = pIImplItem->GetParent();
+		Impl::IItem const* pParent = pIItem->GetParent();
 
 		if (pParent == nullptr)
 		{
-			pParent = g_pEditorImpl->GetRoot();
+			pParent = g_pIImpl->GetRoot();
 		}
 
 		if (pParent != nullptr)
 		{
-			int const size = pParent->GetNumChildren();
+			size_t const numChildren = pParent->GetNumChildren();
 
-			for (int i = 0; i < size; ++i)
+			for (size_t i = 0; i < numChildren; ++i)
 			{
-				if (pParent->GetChildAt(i) == pIImplItem)
+				if (pParent->GetChildAt(i) == pIItem)
 				{
-					modelIndex = createIndex(i, 0, reinterpret_cast<quintptr>(pIImplItem));
+					modelIndex = createIndex(static_cast<int>(i), 0, reinterpret_cast<quintptr>(pIItem));
 					break;
 				}
 			}
@@ -418,61 +414,5 @@ QModelIndex CMiddlewareDataModel::IndexFromItem(IImplItem const* const pIImplIte
 	}
 
 	return modelIndex;
-}
-
-//////////////////////////////////////////////////////////////////////////
-CMiddlewareFilterProxyModel::CMiddlewareFilterProxyModel(QObject* const pParent)
-	: QAttributeFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CMiddlewareFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex const& sourceParent) const
-{
-	bool matchesFilter = QAttributeFilterProxyModel::rowMatchesFilter(sourceRow, sourceParent);
-
-	if (matchesFilter)
-	{
-		QModelIndex const& index = sourceModel()->index(sourceRow, static_cast<int>(CMiddlewareDataModel::EColumns::Name), sourceParent);
-
-		if (index.isValid())
-		{
-			// Hide placeholder.
-			matchesFilter = !sourceModel()->data(index, static_cast<int>(CMiddlewareDataModel::ERoles::IsPlaceholder)).toBool();
-		}
-	}
-
-	return matchesFilter;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CMiddlewareFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex const& right) const
-{
-	bool isLessThan = false;
-
-	// First sort by type, then by name.
-	if (left.column() == right.column())
-	{
-		int const sortPriorityRole = static_cast<int>(CMiddlewareDataModel::ERoles::SortPriority);
-		int const leftPriority = sourceModel()->data(left, sortPriorityRole).toInt();
-		int const rightPriority = sourceModel()->data(right, sortPriorityRole).toInt();
-
-		if (leftPriority != rightPriority)
-		{
-			isLessThan = leftPriority > rightPriority;
-		}
-		else
-		{
-			QVariant const& valueLeft = sourceModel()->data(left, Qt::DisplayRole);
-			QVariant const& valueRight = sourceModel()->data(right, Qt::DisplayRole);
-			isLessThan = valueLeft < valueRight;
-		}
-	}
-	else
-	{
-		isLessThan = QSortFilterProxyModel::lessThan(left, right);
-	}
-
-	return isLessThan;
 }
 } // namespace ACE

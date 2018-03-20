@@ -10,9 +10,9 @@
 #include "SystemControlsWidget.h"
 #include "PropertiesWidget.h"
 #include "MiddlewareDataWidget.h"
-#include "FileMonitor.h"
+#include "FileMonitorMiddleware.h"
+#include "FileMonitorSystem.h"
 
-#include <CryAudio/IAudioSystem.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
 #include <QtUtil.h>
@@ -41,13 +41,12 @@ CMainWindow::CMainWindow()
 	, m_isModified(false)
 	, m_isReloading(false)
 {
-	setAttribute(Qt::WA_DeleteOnClose);
 	setObjectName(GetEditorName());
 
 	if (g_assetsManager.IsLoading())
 	{
 		// The middleware is being swapped out therefore we must not
-		// reload it and must not call signalAboutToLoad and signalLoaded!
+		// reload it and must not call signals!
 		CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadSystemControls);
 	}
 	else
@@ -57,19 +56,19 @@ CMainWindow::CMainWindow()
 
 	m_isModified = g_assetsManager.IsDirty();
 
-	auto const pWindowLayout = new QVBoxLayout(this);
+	auto const pWindowLayout = new QVBoxLayout();
 	pWindowLayout->setContentsMargins(0, 0, 0, 0);
 
 	InitMenuBar();
 
 	layout()->removeWidget(m_pMenuBar);
 
-	auto const pTopBox = new QHBoxLayout(this);
+	auto const pTopBox = new QHBoxLayout();
 	pTopBox->setMargin(0);
 	pTopBox->addWidget(m_pMenuBar, 0, Qt::AlignLeft);
 	pTopBox->addWidget(m_pImplNameLabel, 0, Qt::AlignRight);
 
-	QWidget* const pTopBar = new QWidget(this);
+	auto const pTopBar = new QWidget();
 	pTopBar->setLayout(pTopBox);
 
 	layout()->addWidget(pTopBar);
@@ -81,7 +80,7 @@ CMainWindow::CMainWindow()
 	g_assetsManager.UpdateAllConnectionStates();
 	CheckErrorMask();
 	UpdateImplLabel();
-	m_pToolBar->setEnabled(g_pEditorImpl != nullptr);
+	m_pToolBar->setEnabled(g_pIImpl != nullptr);
 
 	QObject::connect(m_pMonitorSystem, &CFileMonitorSystem::SignalReloadData, this, &CMainWindow::ReloadSystemData);
 	QObject::connect(m_pMonitorMiddleware, &CFileMonitorMiddleware::SignalReloadData, this, &CMainWindow::ReloadMiddlewareData);
@@ -98,7 +97,7 @@ CMainWindow::CMainWindow()
 			UpdateImplLabel();
 			Reload(true);
 
-			m_pToolBar->setEnabled(g_pEditorImpl != nullptr);
+			m_pToolBar->setEnabled(g_pIImpl != nullptr);
 	  }, reinterpret_cast<uintptr_t>(this));
 
 	GetIEditor()->RegisterNotifyListener(this);
@@ -127,7 +126,7 @@ void CMainWindow::InitMenuBar()
 //////////////////////////////////////////////////////////////////////////
 void CMainWindow::InitToolbar(QVBoxLayout* const pWindowLayout)
 {
-	auto const pToolBarsLayout = new QHBoxLayout(this);
+	auto const pToolBarsLayout = new QHBoxLayout();
 	pToolBarsLayout->setDirection(QBoxLayout::LeftToRight);
 	pToolBarsLayout->setSizeConstraint(QLayout::SetMaximumSize);
 
@@ -303,9 +302,9 @@ void CMainWindow::keyPressEvent(QKeyEvent* pEvent)
 //////////////////////////////////////////////////////////////////////////
 void CMainWindow::UpdateImplLabel()
 {
-	if (g_pEditorImpl != nullptr)
+	if (g_pIImpl != nullptr)
 	{
-		m_pImplNameLabel->setText(QtUtil::ToQString(g_pEditorImpl->GetName()));
+		m_pImplNameLabel->setText(QtUtil::ToQString(g_pIImpl->GetName()));
 	}
 	else
 	{
@@ -341,7 +340,7 @@ void CMainWindow::Reload(bool const hasImplChanged /*= false*/)
 		if (g_assetsManager.IsLoading())
 		{
 			// The middleware is being swapped out therefore we must not
-			// reload it and must not call signalAboutToLoad and signalLoaded!
+			// reload it and must not call signals!
 			CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadSystemControls);
 		}
 		else
@@ -410,9 +409,9 @@ void CMainWindow::CheckErrorMask()
 	}
 	else if ((errorCodeMask& EErrorCode::NonMatchedActivityRadius) != 0)
 	{
-		if (g_pEditorImpl != nullptr)
+		if (g_pIImpl != nullptr)
 		{
-			QString const middlewareName = QString(g_pEditorImpl->GetName());
+			QString const middlewareName = QString(g_pIImpl->GetName());
 			CQuestionDialog::SWarning(tr(GetEditorName()), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nActivity radius of triggers will be updated next time you save."));
 		}
 	}
@@ -605,9 +604,9 @@ void CMainWindow::OnPreferencesDialog()
 }
 
 //////////////////////////////////////////////////////////////////////////
-std::vector<CAsset*> CMainWindow::GetSelectedAssets()
+Assets CMainWindow::GetSelectedAssets()
 {
-	std::vector<CAsset*> assets;
+	Assets assets;
 
 	if (m_pSystemControlsWidget != nullptr)
 	{

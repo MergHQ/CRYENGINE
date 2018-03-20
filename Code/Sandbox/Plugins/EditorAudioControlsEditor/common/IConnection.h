@@ -9,11 +9,11 @@
 
 namespace ACE
 {
-using PlatformIndexType = uint16;
-
 struct IConnection
 {
+	//! \cond INTERNAL
 	virtual ~IConnection() = default;
+	//! \endcond
 
 	//! Returns id of the connection, which is the same id as its middleware control.
 	virtual ControlId GetID() const = 0;

@@ -275,12 +275,10 @@ CSubMaterialView::CSubMaterialView(CMaterialEditor* pMatEd)
 	m_previewWidget->EnableMaterialPrecaching(true);
 	m_previewWidget->LoadFile("%EDITOR%/Objects/MtlPlane.cgf");
 	m_previewWidget->SetCameraLookAt(1.0f, Vec3(0.0f, 0.0f, -1.0f));
-	m_previewWidget->SetBackgroundTexture("%EDITOR%/Materials/Stripes.dds");
 	m_previewWidget->SetClearColor(QColor(0, 0, 0));
 	m_previewWidget->setGeometry(0, 0, maxSize.width(), maxSize.height());
 
-	//TODO: preview don't work if this is not shown
-	m_previewWidget->setVisible(true);
+	m_previewWidget->setVisible(false); // hide this widget, it is just used to render to a pixmap
 }
 
 CSubMaterialView::~CSubMaterialView()

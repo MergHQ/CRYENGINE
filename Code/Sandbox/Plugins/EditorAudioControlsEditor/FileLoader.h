@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Assets.h"
+#include "Control.h"
 
 namespace ACE
 {
@@ -29,7 +29,6 @@ private:
 	void      LoadPreloadConnections(XmlNodeRef const pNode, CControl* const pControl, uint32 const version);
 	void      LoadConnections(XmlNodeRef const root, CControl* const pControl);
 
-	void      CreateInternalControl(CAsset* const pLibrary, char const* const szName, EAssetType const type, char const* const szDescription);
 	void      CreateInternalSwitch(CAsset* const pLibrary, char const* const szSwitchName, SwitchStates const& StateNames, char const* const szDescription);
 	void      CreateDefaultControls();
 

@@ -97,5 +97,6 @@ if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		-Wno-parentheses
 		-Wno-multichar
 		-Wno-deprecated-declarations
+		-Wno-comment
 	)
 endif()

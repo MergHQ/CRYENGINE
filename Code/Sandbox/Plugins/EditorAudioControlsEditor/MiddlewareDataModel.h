@@ -2,13 +2,16 @@
 
 #pragma once
 
-#include <ProxyModels/AttributeFilterProxyModel.h>
+#include <QAbstractItemModel>
 
 class CItemModelAttribute;
 
 namespace ACE
 {
-struct IImplItem;
+namespace Impl
+{
+struct IItem;
+} // namespace Impl
 
 class CMiddlewareDataModel final : public QAbstractItemModel
 {
@@ -21,14 +24,6 @@ public:
 		Localized,
 		Name,
 		Count,
-	};
-
-	enum class ERoles
-	{
-		Id = Qt::UserRole + 1,
-		Name,
-		SortPriority,
-		IsPlaceholder,
 	};
 
 	explicit CMiddlewareDataModel(QObject* const pParent);
@@ -59,27 +54,8 @@ protected:
 
 private:
 
-	void        ConnectSignals();
-	IImplItem*  ItemFromIndex(QModelIndex const& index) const;
-	QModelIndex IndexFromItem(IImplItem const* const pIImplItem) const;
-};
-
-class CMiddlewareFilterProxyModel final : public QAttributeFilterProxyModel
-{
-public:
-
-	explicit CMiddlewareFilterProxyModel(QObject* const pParent);
-
-	CMiddlewareFilterProxyModel() = delete;
-
-protected:
-
-	// QAttributeFilterProxyModel
-	virtual bool rowMatchesFilter(int sourceRow, QModelIndex const& sourcePparent) const override;
-	// ~QAttributeFilterProxyModel
-
-	// QSortFilterProxyModel
-	virtual bool lessThan(QModelIndex const& left, QModelIndex const& right) const override;
-	// ~QSortFilterProxyModel
+	void         ConnectSignals();
+	Impl::IItem* ItemFromIndex(QModelIndex const& index) const;
+	QModelIndex  IndexFromItem(Impl::IItem const* const pIItem) const;
 };
 } // namespace ACE

@@ -1,22 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "EditorImpl.h"
+#include "Impl.h"
 
 #include <CryCore/Platform/platform.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <CrySystem/ISystem.h>
 
-ACE::SDLMixer::CEditorImpl* g_pSdlMixerInterface;
+ACE::Impl::SDLMixer::CImpl* g_pSdlMixerInterface;
 
 //------------------------------------------------------------------
-extern "C" ACE_API ACE::IEditorImpl * GetAudioInterface(ISystem * pSystem)
+extern "C" ACE_API ACE::Impl::IImpl * GetAudioInterface(ISystem * pSystem)
 {
 	ModuleInitISystem(pSystem, "EditorSDLMixer");
 
 	if (g_pSdlMixerInterface == nullptr)
 	{
-		g_pSdlMixerInterface = new ACE::SDLMixer::CEditorImpl();
+		g_pSdlMixerInterface = new ACE::Impl::SDLMixer::CImpl();
 	}
 
 	return g_pSdlMixerInterface;

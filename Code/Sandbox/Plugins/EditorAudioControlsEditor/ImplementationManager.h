@@ -4,10 +4,11 @@
 #include <QObject>
 #include <CrySandbox/CrySignal.h>
 
+#include <IImpl.h>
+
 namespace ACE
 {
-struct IEditorImpl;
-extern IEditorImpl* g_pEditorImpl;
+extern Impl::IImpl* g_pIImpl;
 
 class CImplementationManager final : public QObject
 {

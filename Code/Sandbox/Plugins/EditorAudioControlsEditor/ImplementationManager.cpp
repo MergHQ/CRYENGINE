@@ -1,24 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include "ImplementationManager.h"
+
 #include "AudioControlsEditorPlugin.h"
 
 #include <IUndoManager.h>
-
-#include <IEditorImpl.h>
 #include <CrySystem/IConsole.h>
-#include <IEditor.h>
 
 string const g_sImplementationCVarName = "s_AudioImplName";
 
 namespace ACE
 {
 typedef void (WINAPI * PGNSI)();
-using TPfnGetAudioInterface = IEditorImpl * (*)(ISystem*);
+using TPfnGetAudioInterface = Impl::IImpl * (*)(ISystem*);
 
-IEditorImpl* g_pEditorImpl = nullptr;
+Impl::IImpl* g_pIImpl = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
 CImplementationManager::CImplementationManager()
@@ -35,7 +32,7 @@ CImplementationManager::~CImplementationManager()
 		m_hMiddlewarePlugin = nullptr;
 	}
 
-	g_pEditorImpl = nullptr;
+	g_pIImpl = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -45,7 +42,7 @@ bool CImplementationManager::LoadImplementation()
 	GetIEditor()->GetIUndoManager()->Suspend();
 
 	bool isLoaded = true;
-	ICVar* pCVar = gEnv->pConsole->GetCVar(g_sImplementationCVarName);
+	ICVar const* const pCVar = gEnv->pConsole->GetCVar(g_sImplementationCVarName);
 
 	if (pCVar != nullptr)
 	{
@@ -57,7 +54,7 @@ bool CImplementationManager::LoadImplementation()
 
 			FreeLibrary(m_hMiddlewarePlugin);
 			m_hMiddlewarePlugin = nullptr;
-			g_pEditorImpl = nullptr;
+			g_pIImpl = nullptr;
 		}
 
 		char szExecutableDirPath[_MAX_PATH];
@@ -73,7 +70,7 @@ bool CImplementationManager::LoadImplementation()
 		}
 		else
 		{
-			TPfnGetAudioInterface pfnAudioInterface = (TPfnGetAudioInterface)GetProcAddress(m_hMiddlewarePlugin, "GetAudioInterface");
+			auto const pfnAudioInterface = (TPfnGetAudioInterface)GetProcAddress(m_hMiddlewarePlugin, "GetAudioInterface");
 
 			if (pfnAudioInterface == nullptr)
 			{
@@ -85,7 +82,7 @@ bool CImplementationManager::LoadImplementation()
 			{
 				if (GetIEditor() != nullptr)
 				{
-					g_pEditorImpl = pfnAudioInterface(GetIEditor()->GetSystem());
+					g_pIImpl = pfnAudioInterface(GetIEditor()->GetSystem());
 					CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData | EReloadFlags::SetPlatforms);
 				}
 			}

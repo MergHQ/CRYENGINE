@@ -97,8 +97,7 @@ CXmlNode::~CXmlNode()
 	removeAllChildsImpl();
 
 	SAFE_DELETE(m_pAttributes);
-
-	m_pStringPool->Release();
+	SAFE_RELEASE(m_pStringPool);
 }
 
 CXmlNode::CXmlNode()

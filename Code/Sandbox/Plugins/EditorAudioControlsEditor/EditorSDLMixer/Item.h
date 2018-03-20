@@ -2,9 +2,11 @@
 
 #pragma once
 
-#include <IImplItem.h>
+#include <IItem.h>
 
 namespace ACE
+{
+namespace Impl
 {
 namespace SDLMixer
 {
@@ -15,16 +17,7 @@ enum class EItemType
 	Folder,
 };
 
-enum class EItemFlags
-{
-	None          = 0,
-	IsPlaceHolder = BIT(0),
-	IsConnected   = BIT(1),
-	IsContainer   = BIT(2),
-};
-CRY_CREATE_ENUM_FLAG_OPERATORS(EItemFlags);
-
-class CItem final : public IImplItem
+class CItem final : public IItem
 {
 public:
 
@@ -46,7 +39,7 @@ public:
 
 	CItem() = delete;
 
-	// IImplItem
+	// IItem
 	virtual ControlId     GetId() const override                        { return m_id; }
 	virtual string        GetName() const override                      { return m_name; }
 	virtual string const& GetFilePath() const override                  { return m_filePath; }
@@ -54,20 +47,16 @@ public:
 	virtual int           GetSortPriority() const override              { return static_cast<int>(m_type); }
 
 	virtual size_t        GetNumChildren() const override               { return m_children.size(); }
-	virtual IImplItem*    GetChildAt(size_t const index) const override { return m_children[index]; }
-	virtual IImplItem*    GetParent() const override                    { return m_pParent; }
+	virtual IItem*        GetChildAt(size_t const index) const override { return m_children[index]; }
+	virtual IItem*        GetParent() const override                    { return m_pParent; }
 
-	virtual bool          IsPlaceholder() const override                { return (m_flags& EItemFlags::IsPlaceHolder) != 0; }
-	virtual bool          IsLocalized() const override                  { return false; }
-	virtual bool          IsConnected() const override                  { return (m_flags& EItemFlags::IsConnected) != 0; }
-	virtual bool          IsContainer() const override                  { return (m_flags& EItemFlags::IsContainer) != 0; }
-	// ~IImplItem
+	virtual EItemFlags    GetFlags() const override                     { return m_flags; }
+	// ~IItem
 
-	EItemType GetType() const { return m_type; }
+	EItemType GetType() const                  { return m_type; }
 
-	void      SetConnected(bool const isConnected);
+	void      SetFlags(EItemFlags const flags) { m_flags = flags; }
 	void      AddChild(CItem* const pChild);
-
 	void      Clear();
 
 private:
@@ -83,4 +72,5 @@ private:
 	EItemFlags          m_flags;
 };
 } // namespace SDLMixer
+} // namespace Impl
 } // namespace ACE
