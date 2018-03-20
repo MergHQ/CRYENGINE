@@ -18,7 +18,7 @@ public:
 	CEffectAssetModel();
 
 	void MakeNewAsset();
-	bool OpenAsset(CAsset* pAsset);
+	bool OpenAsset(CAsset* pAsset, bool reload = false);
 	void ClearAsset();
 
 	void ReloadFromFile(CEffectAsset* pEffectAsset);

@@ -35,7 +35,7 @@ void CEffectAssetModel::MakeNewAsset()
 	signalEndEffectAssetChange();
 }
 
-bool CEffectAssetModel::OpenAsset(CAsset* pAsset)
+bool CEffectAssetModel::OpenAsset(CAsset* pAsset, bool reload)
 {
 	CRY_ASSERT(pAsset);
 
@@ -46,7 +46,17 @@ bool CEffectAssetModel::OpenAsset(CAsset* pAsset)
 
 	const string pfxFilePath = pAsset->GetFile(0);
 
-	pfx2::PParticleEffect pEffect = GetParticleSystem()->FindEffect(pfxFilePath.c_str());
+	pfx2::PParticleEffect pEffect;
+	if (reload)
+	{
+		pEffect = GetParticleSystem()->CreateEffect();
+		Serialization::LoadJsonFile(*pEffect, pfxFilePath.c_str());
+	}
+	else
+	{
+		pEffect = GetParticleSystem()->FindEffect(pfxFilePath.c_str());
+	}
+
 	if (!pEffect)
 	{
 		return false;

@@ -238,26 +238,14 @@ void CParticleEditor::Serialize(Serialization::IArchive& archive)
 bool CParticleEditor::OnOpenAsset(CAsset* pAsset)
 {
 	CRY_ASSERT(pAsset);
-	if (m_pEffectAssetModel->OpenAsset(pAsset))
+
+	// Reload effect from file every time it is opened, since it might be that the effect has changed
+	// in memory. Opening means reading the current state from disk.
+	if (m_pEffectAssetModel->OpenAsset(pAsset, true))
 	{
-		// CE-13216: OpenAsset() and ReloadFromFile() create to many hDC, so we get GetDC() failed inside Qt
-		// and application starting termination; that's why we postpone invokation of ReloadFromFile() to give chance
-		// to graph nodes widgets (from NodeGraphView, which were created by OpenAsset()) to be destroyed.
-
-		QTimer::singleShot(0, [this]() // postpone invocation for 1st frame
-		{ 
-			QTimer::singleShot(0, [this]() // postpone invocation for 2nd frame
-			{
-				// Reload effect from file every time it is opened, since it might be that the effect has changed
-				// in memory. Opening means reading the current state from disk.
-				CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-				m_pEffectAssetModel->ReloadFromFile(pEffectAsset);
-
-				m_pEffectToolBar->show();
-				m_pReloadEffectMenuAction->setEnabled(true);
-				m_pShowEffectOptionsMenuAction->setEnabled(true);
-			});	
-		});
+		m_pEffectToolBar->show();
+		m_pReloadEffectMenuAction->setEnabled(true);
+		m_pShowEffectOptionsMenuAction->setEnabled(true);
 
 		return true;
 	}
