@@ -179,7 +179,7 @@ public:
 	{
 		CUpdateLevelsDialog dialog;
 
-		const QString link("http://docs.cryengine.com/display/SDKDOC1/CRYENGINE+5.5.0+Previews#CRYENGINE5.5.0Previews-NewSandboxLevelFileFormat");
+		const QString link("http://docs.cryengine.com/pages/viewpage.action?pageId=29800625#CRYENGINE5.5.0Preview(s)-NewLevelFileFormat");
 
 		const QString text =
 		  tr("<p>"
