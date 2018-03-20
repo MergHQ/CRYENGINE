@@ -22,6 +22,10 @@ Pull requests can only be accepted into the "pullrequests" branch. Thanks in adv
 
 
 ## License
-The source code in this repository is governed by the CRYENGINE license agreement, which is contained in LICENSE.md, adjacent to this file.
+The source code in this repository is governed by the CRYENGINE license agreement, which is contained in [LICENSE.md](LICENSE.md), adjacent to this file. See also the FAQ [here](FAQ.md)
 
-Please note: from March 20th, the new CRYENGINE business model is in effect. That means 5% royalties apply to projects developed and published on CRYENGINE 5.0 and beyond. Check [our new FAQ](https://www.cryengine.com/faq) for all facts and exemptions.
+```diff
++ Please note: from March 20th 2018, the new CRYENGINE business model is in effect. 
++ That means 5% royalties apply to projects developed and published on CRYENGINE 5.0 and beyond. 
++ Check our new FAQ.md for all facts and exemptions.
+```
