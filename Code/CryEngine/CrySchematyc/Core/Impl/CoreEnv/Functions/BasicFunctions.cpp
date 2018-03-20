@@ -794,12 +794,12 @@ void Append(const CSharedString& a, const CSharedString& b, CSharedString& resul
 
 bool Equal(const CSharedString& a, const CSharedString& b)
 {
-	return strcmp(a.c_str(), b.c_str()) != 0;
+	return strcmp(a.c_str(), b.c_str()) == 0;
 }
 
 bool NotEqual(const CSharedString& a, const CSharedString& b)
 {
-	return strcmp(a.c_str(), b.c_str()) == 0;
+	return strcmp(a.c_str(), b.c_str()) != 0;
 }
 
 static void RegisterFunctions(IEnvRegistrar& registrar)
