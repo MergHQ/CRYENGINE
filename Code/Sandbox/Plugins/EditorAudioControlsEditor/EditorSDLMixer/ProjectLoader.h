@@ -8,6 +8,8 @@
 
 namespace ACE
 {
+namespace Impl
+{
 namespace SDLMixer
 {
 class CProjectLoader final
@@ -26,4 +28,5 @@ private:
 	string const m_assetsPath;
 };
 } // namespace SDLMixer
+} // namespace Impl
 } // namespace ACE

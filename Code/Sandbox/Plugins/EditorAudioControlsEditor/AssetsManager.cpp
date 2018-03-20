@@ -5,15 +5,11 @@
 
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
+#include "AssetUtils.h"
 
-#include <IEditorImpl.h>
-#include <IImplItem.h>
+#include <IItem.h>
 
-#include <CryAudio/IAudioSystem.h>
-#include <CryString/StringUtils.h>
-#include <CryString/CryPath.h>
 #include <FilePathUtil.h>
-#include <IEditor.h>
 
 namespace ACE
 {
@@ -23,7 +19,7 @@ ControlId CAssetsManager::m_nextId = 1;
 CAssetsManager::CAssetsManager()
 {
 	ClearDirtyFlags();
-	m_scopes[Utils::GetGlobalScope()] = SScopeInfo("global", false);
+	m_scopes[GlobalScopeId] = SScopeInfo(s_szGlobalScopeName, false);
 	m_controls.reserve(8192);
 }
 
@@ -80,7 +76,7 @@ CControl* CAssetsManager::CreateControl(string const& name, EAssetType const typ
 			}
 			else
 			{
-				SignalItemAboutToBeAdded(pParent);
+				SignalAssetAboutToBeAdded(pParent);
 
 				auto const pNewControl = new CControl(name, GenerateUniqueId(), type);
 
@@ -89,7 +85,7 @@ CControl* CAssetsManager::CreateControl(string const& name, EAssetType const typ
 				pNewControl->SetParent(pParent);
 				pParent->AddChild(pNewControl);
 
-				SignalItemAdded(pNewControl);
+				SignalAssetAdded(pNewControl);
 				pNewControl->SetModified(true);
 
 				pControl = pNewControl;
@@ -109,105 +105,66 @@ CControl* CAssetsManager::CreateControl(string const& name, EAssetType const typ
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::CreateDefaultControl(string const& name, EAssetType const type, CAsset* const pParent, bool& wasModified, string const& description)
+CControl* CAssetsManager::CreateDefaultControl(string const& name, EAssetType const type, CAsset* const pParent, bool const isInternal, string const& description)
 {
-	CControl* pControl = FindControl(name, type);
+	CControl* pControl = nullptr;
 
-	if (pControl == nullptr)
+	if (isInternal)
 	{
 		pControl = CreateControl(name, type, pParent);
-		wasModified = true;
 	}
-	else if (pControl->GetParent() != pParent)
+	else
 	{
-		pControl->GetParent()->RemoveChild(pControl);
-		pParent->AddChild(pControl);
-		pControl->SetParent(pParent);
-		wasModified = true;
+		if (type != EAssetType::State)
+		{
+			pControl = FindControl(name, type);
+		}
+		else
+		{
+			pControl = FindControl(name, type, pParent);
+		}
+
+		if (pControl == nullptr)
+		{
+			pControl = CreateControl(name, type, pParent);
+
+			if (pControl != nullptr)
+			{
+				pControl->SetModified(true, true);
+			}
+		}
+		else
+		{
+			CAsset* const pPreviousParent = pControl->GetParent();
+
+			if (pPreviousParent != pParent)
+			{
+				pControl->GetParent()->RemoveChild(pControl);
+				pParent->AddChild(pControl);
+				pControl->SetParent(pParent);
+
+				pPreviousParent->SetModified(true, true);
+				pControl->SetModified(true, true);
+			}
+		}
 	}
 
 	if (pControl != nullptr)
 	{
+		pControl->SetScope(GlobalScopeId);
 		pControl->SetDescription(description);
-		pControl->SetDefaultControl(true);
-	}
-}
 
-//////////////////////////////////////////////////////////////////////////
-void CAssetsManager::DeleteItem(CAsset* const pAsset)
-{
-	if (pAsset != nullptr)
-	{
-		// Recursively remove all children as well
-		while (pAsset->ChildCount() > 0)
+		if (isInternal)
 		{
-			DeleteItem(pAsset->GetChild(0));
-		}
-
-		EAssetType const type = pAsset->GetType();
-
-		// Inform that we're about to remove the item
-		if (type == EAssetType::Library)
-		{
-			SignalLibraryAboutToBeRemoved(static_cast<CLibrary*>(pAsset));
+			pControl->SetFlags(pControl->GetFlags() | (EAssetFlags::IsDefaultControl | EAssetFlags::IsInternalControl));
 		}
 		else
 		{
-			SignalItemAboutToBeRemoved(pAsset);
-		}
-
-		// Remove/detach item from the tree
-		CAsset* const pParent = pAsset->GetParent();
-
-		if (pParent != nullptr)
-		{
-			pParent->RemoveChild(pAsset);
-			pAsset->SetParent(nullptr);
-		}
-
-		if (type == EAssetType::Library)
-		{
-			m_libraries.erase(std::remove(m_libraries.begin(), m_libraries.end(), static_cast<CLibrary*>(pAsset)), m_libraries.end());
-			SignalLibraryRemoved();
-		}
-		else
-		{
-			if (type != EAssetType::Folder)
-			{
-				// Must be a control
-				auto const pControl = static_cast<CControl*>(pAsset);
-
-				if (pControl != nullptr)
-				{
-					pControl->ClearConnections();
-					m_controls.erase(std::remove_if(m_controls.begin(), m_controls.end(), [&](auto pIterControl) { return pIterControl->GetId() == pControl->GetId(); }), m_controls.end());
-					SetTypeModified(type, true);
-				}
-			}
-
-			SignalItemRemoved(pParent, pAsset);
-		}
-
-		pAsset->SetModified(true);
-		delete pAsset;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-CControl* CAssetsManager::GetControlByID(ControlId const id) const
-{
-	CControl* pSystemControl = nullptr;
-
-	for (auto const pControl : m_controls)
-	{
-		if (pControl->GetId() == id)
-		{
-			pSystemControl = pControl;
-			break;
+			pControl->SetFlags(pControl->GetFlags() | EAssetFlags::IsDefaultControl);
 		}
 	}
 
-	return pSystemControl;
+	return pControl;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -216,7 +173,7 @@ void CAssetsManager::ClearScopes()
 	m_scopes.clear();
 
 	// The global scope must always exist
-	m_scopes[Utils::GetGlobalScope()] = SScopeInfo("global", false);
+	m_scopes[GlobalScopeId] = SScopeInfo(s_szGlobalScopeName, false);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -246,17 +203,17 @@ Scope CAssetsManager::GetScope(string const& name) const
 //////////////////////////////////////////////////////////////////////////
 SScopeInfo CAssetsManager::GetScopeInfo(Scope const id) const
 {
-	return stl::find_in_map(m_scopes, id, SScopeInfo("", false));
+	return stl::find_in_map(m_scopes, id, SScopeInfo());
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAssetsManager::Clear()
 {
-	std::vector<CLibrary*> const libraries = m_libraries;
+	Libraries const libraries = m_libraries;
 
 	for (auto const pLibrary : libraries)
 	{
-		DeleteItem(pLibrary);
+		DeleteAsset(pLibrary);
 	}
 
 	CRY_ASSERT_MESSAGE(m_controls.empty(), "m_controls is not empty.");
@@ -273,9 +230,9 @@ CLibrary* CAssetsManager::CreateLibrary(string const& name)
 
 	if (!name.empty())
 	{
-		size_t const size = m_libraries.size();
+		size_t const numLibraries = m_libraries.size();
 
-		for (size_t i = 0; i < size; ++i)
+		for (size_t i = 0; i < numLibraries; ++i)
 		{
 			CLibrary* const pLibrary = m_libraries[i];
 
@@ -311,9 +268,9 @@ CAsset* CAssetsManager::CreateFolder(string const& name, CAsset* const pParent /
 	{
 		if ((pParent->GetType() == EAssetType::Folder) || (pParent->GetType() == EAssetType::Library))
 		{
-			size_t const size = pParent->ChildCount();
+			size_t const numChildren = pParent->ChildCount();
 
-			for (size_t i = 0; i < size; ++i)
+			for (size_t i = 0; i < numChildren; ++i)
 			{
 				CAsset* const pChild = pParent->GetChild(i);
 
@@ -331,12 +288,12 @@ CAsset* CAssetsManager::CreateFolder(string const& name, CAsset* const pParent /
 
 				if (pFolder != nullptr)
 				{
-					SignalItemAboutToBeAdded(pParent);
+					SignalAssetAboutToBeAdded(pParent);
 					pParent->AddChild(pFolder);
 					pFolder->SetParent(pParent);
 				}
 
-				SignalItemAdded(pFolder);
+				SignalAssetAdded(pFolder);
 				pFolder->SetModified(true);
 				pAsset = pFolder;
 			}
@@ -360,13 +317,13 @@ void CAssetsManager::OnControlAboutToBeModified(CControl* const pControl)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::OnConnectionAdded(CControl* const pControl, IImplItem* const pIImplItem)
+void CAssetsManager::OnConnectionAdded(CControl* const pControl, Impl::IItem* const pIItem)
 {
 	SignalConnectionAdded(pControl);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::OnConnectionRemoved(CControl* const pControl, IImplItem* const pIImplItem)
+void CAssetsManager::OnConnectionRemoved(CControl* const pControl, Impl::IItem* const pIItem)
 {
 	SignalConnectionRemoved(pControl);
 }
@@ -382,9 +339,9 @@ void CAssetsManager::UpdateFolderPaths()
 {
 	string const rootPath = AUDIO_SYSTEM_DATA_ROOT "/";
 
-	if (g_pEditorImpl != nullptr)
+	if (g_pIImpl != nullptr)
 	{
-		string const& implFolderPath = rootPath + g_pEditorImpl->GetFolderName() + "/";
+		string const& implFolderPath = rootPath + g_pIImpl->GetFolderName() + "/";
 		m_configFolderPath = implFolderPath + CryAudio::s_szConfigFolderName + "/";
 		m_assetFolderPath = implFolderPath + CryAudio::s_szAssetsFolderName + "/";
 	}
@@ -417,9 +374,7 @@ void CAssetsManager::SetAssetModified(CAsset* const pAsset, bool const isModifie
 {
 	if (isModified)
 	{
-		UpdateLibraryConnectionStates(pAsset);
 		auto const type = pAsset->GetType();
-
 		m_modifiedTypes.emplace(type);
 
 		if (type == EAssetType::Library)
@@ -428,6 +383,7 @@ void CAssetsManager::SetAssetModified(CAsset* const pAsset, bool const isModifie
 		}
 
 		SignalIsDirty(true);
+		UpdateLibraryConnectionStates(pAsset);
 	}
 }
 
@@ -462,7 +418,7 @@ void CAssetsManager::ClearDirtyFlags()
 //////////////////////////////////////////////////////////////////////////
 CControl* CAssetsManager::FindControl(string const& name, EAssetType const type, CAsset* const pParent /*= nullptr*/) const
 {
-	CControl* pSystemControl = nullptr;
+	CControl* pSearchedControl = nullptr;
 
 	if (pParent == nullptr)
 	{
@@ -470,28 +426,28 @@ CControl* CAssetsManager::FindControl(string const& name, EAssetType const type,
 		{
 			if ((pControl != nullptr) && (pControl->GetName().compareNoCase(name) == 0) && (pControl->GetType() == type))
 			{
-				pSystemControl = pControl;
+				pSearchedControl = pControl;
 				break;
 			}
 		}
 	}
 	else
 	{
-		size_t const size = pParent->ChildCount();
+		size_t const numChildren = pParent->ChildCount();
 
-		for (size_t i = 0; i < size; ++i)
+		for (size_t i = 0; i < numChildren; ++i)
 		{
 			auto const pControl = static_cast<CControl*>(pParent->GetChild(i));
 
 			if ((pControl != nullptr) && (pControl->GetName().compareNoCase(name) == 0) && (pControl->GetType() == type))
 			{
-				pSystemControl = pControl;
+				pSearchedControl = pControl;
 				break;
 			}
 		}
 	}
 
-	return pSystemControl;
+	return pSearchedControl;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -548,16 +504,13 @@ void CAssetsManager::UpdateAllConnectionStates()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::UpdateLibraryConnectionStates(CAsset* pAsset)
+void CAssetsManager::UpdateLibraryConnectionStates(CAsset* const pAsset)
 {
-	while ((pAsset != nullptr) && (pAsset->GetType() != EAssetType::Library))
-	{
-		pAsset = pAsset->GetParent();
-	}
+	CAsset* const pLibrary = AssetUtils::GetParentLibrary(pAsset);
 
-	if (pAsset != nullptr)
+	if (pLibrary != nullptr)
 	{
-		UpdateAssetConnectionStates(pAsset);
+		UpdateAssetConnectionStates(pLibrary);
 	}
 }
 
@@ -566,9 +519,9 @@ void CAssetsManager::UpdateAssetConnectionStates(CAsset* const pAsset)
 {
 	if (pAsset != nullptr)
 	{
-		EAssetType const type = pAsset->GetType();
+		EAssetType const assetType = pAsset->GetType();
 
-		if ((type == EAssetType::Library) || (type == EAssetType::Folder) || (type == EAssetType::Switch))
+		if ((assetType == EAssetType::Library) || (assetType == EAssetType::Folder) || (assetType == EAssetType::Switch))
 		{
 			bool hasPlaceholder = false;
 			bool hasNoConnection = false;
@@ -581,49 +534,51 @@ void CAssetsManager::UpdateAssetConnectionStates(CAsset* const pAsset)
 
 				UpdateAssetConnectionStates(pChild);
 
-				if (pChild->HasPlaceholderConnection())
+				EAssetFlags const childFlags = pChild->GetFlags();
+
+				if ((childFlags& EAssetFlags::HasPlaceholderConnection) != 0)
 				{
 					hasPlaceholder = true;
 				}
 
-				if (!pChild->HasConnection())
+				if ((childFlags& EAssetFlags::HasConnection) == 0)
 				{
 					hasNoConnection = true;
 				}
 
-				if (pChild->HasControl())
+				if ((childFlags& EAssetFlags::HasControl) != 0)
 				{
 					hasControl = true;
 				}
 			}
 
-			pAsset->SetHasPlaceholderConnection(hasPlaceholder);
-			pAsset->SetHasConnection(!hasNoConnection);
-			pAsset->SetHasControl(hasControl);
+			pAsset->SetFlags(hasPlaceholder ? (pAsset->GetFlags() | EAssetFlags::HasPlaceholderConnection) : (pAsset->GetFlags() & ~EAssetFlags::HasPlaceholderConnection));
+			pAsset->SetFlags(!hasNoConnection ? (pAsset->GetFlags() | EAssetFlags::HasConnection) : (pAsset->GetFlags() & ~EAssetFlags::HasConnection));
+			pAsset->SetFlags(hasControl ? (pAsset->GetFlags() | EAssetFlags::HasControl) : (pAsset->GetFlags() & ~EAssetFlags::HasControl));
 		}
-		else if (type != EAssetType::None)
+		else if (assetType != EAssetType::None)
 		{
-			CControl* const pControl = static_cast<CControl*>(pAsset);
+			auto const pControl = static_cast<CControl*>(pAsset);
 
 			if (pControl != nullptr)
 			{
-				pControl->SetHasControl(true);
+				pControl->SetFlags(pControl->GetFlags() | EAssetFlags::HasControl);
 
 				bool hasPlaceholder = false;
-				bool hasConnection = pControl->IsDefaultControl();
+				bool hasConnection = (pControl->GetFlags() & EAssetFlags::IsDefaultControl) != 0;
 				size_t const connectionCount = pControl->GetConnectionCount();
 
 				for (size_t i = 0; i < connectionCount; ++i)
 				{
 					hasConnection = true;
 
-					if (g_pEditorImpl != nullptr)
+					if (g_pIImpl != nullptr)
 					{
-						IImplItem const* const pIImplItem = g_pEditorImpl->GetItem(pControl->GetConnectionAt(i)->GetID());
+						Impl::IItem const* const pIItem = g_pIImpl->GetItem(pControl->GetConnectionAt(i)->GetID());
 
-						if (pIImplItem != nullptr)
+						if (pIItem != nullptr)
 						{
-							if (pIImplItem->IsPlaceholder())
+							if ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) != 0)
 							{
 								hasPlaceholder = true;
 							}
@@ -631,15 +586,75 @@ void CAssetsManager::UpdateAssetConnectionStates(CAsset* const pAsset)
 					}
 				}
 
-				pControl->SetHasPlaceholderConnection(hasPlaceholder);
-				pControl->SetHasConnection(hasConnection);
+				pControl->SetFlags(hasPlaceholder ? (pControl->GetFlags() | EAssetFlags::HasPlaceholderConnection) : (pControl->GetFlags() & ~EAssetFlags::HasPlaceholderConnection));
+				pControl->SetFlags(hasConnection ? (pControl->GetFlags() | EAssetFlags::HasConnection) : (pControl->GetFlags() & ~EAssetFlags::HasConnection));
 			}
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::MoveItems(CAsset* const pParent, std::vector<CAsset*> const& assets)
+void CAssetsManager::DeleteAsset(CAsset* const pAsset)
+{
+	if (pAsset != nullptr)
+	{
+		// Recursively remove all children as well
+		while (pAsset->ChildCount() > 0)
+		{
+			DeleteAsset(pAsset->GetChild(0));
+		}
+
+		EAssetType const type = pAsset->GetType();
+
+		// Inform that we're about to remove the asset
+		if (type == EAssetType::Library)
+		{
+			SignalLibraryAboutToBeRemoved(static_cast<CLibrary*>(pAsset));
+		}
+		else
+		{
+			SignalAssetAboutToBeRemoved(pAsset);
+		}
+
+		// Remove/detach asset from the tree
+		CAsset* const pParent = pAsset->GetParent();
+
+		if (pParent != nullptr)
+		{
+			pParent->RemoveChild(pAsset);
+			pAsset->SetParent(nullptr);
+		}
+
+		if (type == EAssetType::Library)
+		{
+			m_libraries.erase(std::remove(m_libraries.begin(), m_libraries.end(), static_cast<CLibrary*>(pAsset)), m_libraries.end());
+			SignalLibraryRemoved();
+		}
+		else
+		{
+			if (type != EAssetType::Folder)
+			{
+				// Must be a control
+				auto const pControl = static_cast<CControl*>(pAsset);
+
+				if (pControl != nullptr)
+				{
+					pControl->ClearConnections();
+					m_controls.erase(std::remove_if(m_controls.begin(), m_controls.end(), [&](auto pIterControl) { return pIterControl->GetId() == pControl->GetId(); }), m_controls.end());
+					SetTypeModified(type, true);
+				}
+			}
+
+			SignalAssetRemoved(pParent, pAsset);
+		}
+
+		pAsset->SetModified(true);
+		delete pAsset;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAssetsManager::MoveAssets(CAsset* const pParent, Assets const& assets)
 {
 	if (pParent != nullptr)
 	{
@@ -651,14 +666,14 @@ void CAssetsManager::MoveItems(CAsset* const pParent, std::vector<CAsset*> const
 
 				if (pPreviousParent != nullptr)
 				{
-					SignalItemAboutToBeRemoved(pAsset);
+					SignalAssetAboutToBeRemoved(pAsset);
 					pPreviousParent->RemoveChild(pAsset);
 					pAsset->SetParent(nullptr);
-					SignalItemRemoved(pPreviousParent, pAsset);
+					SignalAssetRemoved(pPreviousParent, pAsset);
 					pPreviousParent->SetModified(true);
 				}
 
-				SignalItemAboutToBeAdded(pParent);
+				SignalAssetAboutToBeAdded(pParent);
 				EAssetType const type = pAsset->GetType();
 
 				if ((type == EAssetType::State) || (type == EAssetType::Folder))
@@ -669,31 +684,29 @@ void CAssetsManager::MoveItems(CAsset* const pParent, std::vector<CAsset*> const
 
 				pParent->AddChild(pAsset);
 				pAsset->SetParent(pParent);
-				SignalItemAdded(pAsset);
+				SignalAssetAdded(pAsset);
 				pAsset->SetModified(true);
 			}
 		}
-
-		pParent->SetModified(true);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::CreateAndConnectImplItems(IImplItem* const pIImplItem, CAsset* const pParent)
+void CAssetsManager::CreateAndConnectImplItems(Impl::IItem* const pIItem, CAsset* const pParent)
 {
-	SignalItemAboutToBeAdded(pParent);
-	CAsset* pAsset = CreateAndConnectImplItemsRecursively(pIImplItem, pParent);
-	SignalItemAdded(pAsset);
+	SignalAssetAboutToBeAdded(pParent);
+	CAsset* pAsset = CreateAndConnectImplItemsRecursively(pIItem, pParent);
+	SignalAssetAdded(pAsset);
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(IImplItem* const pIImplItem, CAsset* const pParent)
+CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(Impl::IItem* const pIItem, CAsset* const pParent)
 {
 	CAsset* pAsset = nullptr;
 
 	// Create the new control and connect it to the one dragged in externally
-	string name = pIImplItem->GetName();
-	EAssetType type = g_pEditorImpl->ImplTypeToAssetType(pIImplItem);
+	string name = pIItem->GetName();
+	EAssetType type = g_pIImpl->ImplTypeToAssetType(pIItem);
 
 	if (type != EAssetType::None)
 	{
@@ -707,11 +720,11 @@ CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(IImplItem* const pI
 
 		if (type != EAssetType::State)
 		{
-			name = Utils::GenerateUniqueControlName(name, type);
+			name = AssetUtils::GenerateUniqueControlName(name, type);
 		}
 		else
 		{
-			name = Utils::GenerateUniqueName(name, type, pParent);
+			name = AssetUtils::GenerateUniqueName(name, type, pParent);
 		}
 
 		auto const pControl = new CControl(name, GenerateUniqueId(), type);
@@ -719,7 +732,7 @@ CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(IImplItem* const pI
 		pParent->AddChild(pControl);
 		m_controls.push_back(pControl);
 
-		ConnectionPtr const pAudioConnection = g_pEditorImpl->CreateConnectionToControl(pControl->GetType(), pIImplItem);
+		ConnectionPtr const pAudioConnection = g_pIImpl->CreateConnectionToControl(pControl->GetType(), pIItem);
 
 		if (pAudioConnection != nullptr)
 		{
@@ -731,7 +744,7 @@ CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(IImplItem* const pI
 	else
 	{
 		// If the type of the control is invalid then it must be a folder or container
-		name = Utils::GenerateUniqueName(name, EAssetType::Folder, pParent);
+		name = AssetUtils::GenerateUniqueName(name, EAssetType::Folder, pParent);
 		auto const pFolder = new CFolder(name);
 		pParent->AddChild(pFolder);
 		pFolder->SetParent(pParent);
@@ -739,140 +752,13 @@ CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(IImplItem* const pI
 		pAsset = pFolder;
 	}
 
-	size_t const size = pIImplItem->GetNumChildren();
+	size_t const numChildren = pIItem->GetNumChildren();
 
-	for (size_t i = 0; i < size; ++i)
+	for (size_t i = 0; i < numChildren; ++i)
 	{
-		CreateAndConnectImplItemsRecursively(pIImplItem->GetChildAt(i), pAsset);
+		CreateAndConnectImplItemsRecursively(pIItem->GetChildAt(i), pAsset);
 	}
 
 	return pAsset;
 }
-
-//////////////////////////////////////////////////////////////////////////
-namespace Utils
-{
-//////////////////////////////////////////////////////////////////////////
-Scope GetGlobalScope()
-{
-	static Scope const globalScopeId = CryAudio::StringToId("global");
-	return globalScopeId;
-}
-
-//////////////////////////////////////////////////////////////////////////
-string GenerateUniqueName(string const& name, EAssetType const type, CAsset* const pParent)
-{
-	string finalName = name;
-
-	if (pParent != nullptr)
-	{
-		size_t const size = pParent->ChildCount();
-		std::vector<string> names;
-		names.reserve(size);
-
-		for (size_t i = 0; i < size; ++i)
-		{
-			CAsset const* const pChild = pParent->GetChild(i);
-
-			if ((pChild != nullptr) && (pChild->GetType() == type))
-			{
-				names.emplace_back(pChild->GetName());
-			}
-		}
-
-		finalName = PathUtil::GetUniqueName(name, names);
-	}
-
-	return finalName;
-}
-
-//////////////////////////////////////////////////////////////////////////
-string GenerateUniqueLibraryName(string const& name)
-{
-	size_t const size = g_assetsManager.GetLibraryCount();
-	std::vector<string> names;
-	names.reserve(size);
-
-	for (size_t i = 0; i < size; ++i)
-	{
-		CLibrary const* const pLibrary = g_assetsManager.GetLibrary(i);
-
-		if (pLibrary != nullptr)
-		{
-			names.emplace_back(pLibrary->GetName());
-		}
-	}
-
-	return PathUtil::GetUniqueName(name, names);
-}
-
-//////////////////////////////////////////////////////////////////////////
-string GenerateUniqueControlName(string const& name, EAssetType const type)
-{
-	CAssetsManager::Controls const& controls(g_assetsManager.GetControls());
-	std::vector<string> names;
-	names.reserve(controls.size());
-
-	for (auto const* const pControl : controls)
-	{
-		if (type == pControl->GetType())
-		{
-			names.emplace_back(pControl->GetName());
-		}
-	}
-
-	return PathUtil::GetUniqueName(name, names);
-}
-
-//////////////////////////////////////////////////////////////////////////
-CAsset* GetParentLibrary(CAsset* pAsset)
-{
-	while ((pAsset != nullptr) && (pAsset->GetType() != EAssetType::Library))
-	{
-		pAsset = pAsset->GetParent();
-	}
-
-	return pAsset;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void SelectTopLevelAncestors(std::vector<CAsset*> const& source, std::vector<CAsset*>& dest)
-{
-	for (auto const pAsset : source)
-	{
-		// Check if item has ancestors that are also selected
-		bool isAncestorAlsoSelected = false;
-
-		for (auto const pOtherItem : source)
-		{
-			if (pAsset != pOtherItem)
-			{
-				// Find if pOtherItem is the ancestor of pAsset
-				CAsset const* pParent = pAsset->GetParent();
-
-				while (pParent != nullptr)
-				{
-					if (pParent == pOtherItem)
-					{
-						break;
-					}
-
-					pParent = pParent->GetParent();
-				}
-
-				if (pParent != nullptr)
-				{
-					isAncestorAlsoSelected = true;
-					break;
-				}
-			}
-		}
-
-		if (!isAncestorAlsoSelected)
-		{
-			dest.push_back(pAsset);
-		}
-	}
-}
-} // namespace Utils
 } // namespace ACE

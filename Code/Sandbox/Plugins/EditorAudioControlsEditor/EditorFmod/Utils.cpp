@@ -3,10 +3,11 @@
 #include "StdAfx.h"
 #include "Utils.h"
 
-#include <CryAudio/IAudioSystem.h>
 #include <CrySystem/File/CryFile.h>
 
 namespace ACE
+{
+namespace Impl
 {
 namespace Fmod
 {
@@ -86,4 +87,5 @@ string GetTypeName(EItemType const type)
 }
 } // namespace Utils
 } // namespace Fmod
+} // namespace Impl
 } // namespace ACE

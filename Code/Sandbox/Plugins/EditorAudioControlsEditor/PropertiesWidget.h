@@ -35,7 +35,7 @@ signals:
 
 public slots:
 
-	void OnSetSelectedAssets(std::vector<CAsset*> const& selectedAssets, bool const restoreSelection);
+	void OnSetSelectedAssets(Assets const& selectedAssets, bool const restoreSelection);
 
 private:
 

@@ -8,6 +8,8 @@
 
 namespace ACE
 {
+namespace Impl
+{
 namespace Wwise
 {
 class CProjectLoader final
@@ -55,4 +57,5 @@ private:
 	std::set<uint32> m_filesLoaded;
 };
 } // namespace Wwise
+} // namespace Impl
 } // namespace ACE

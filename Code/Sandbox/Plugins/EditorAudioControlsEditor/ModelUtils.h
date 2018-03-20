@@ -8,6 +8,16 @@ namespace ACE
 {
 namespace ModelUtils
 {
+enum class ERoles
+{
+	Id = Qt::UserRole + 1,
+	Name,
+	InternalPointer,
+	IsDefaultControl,
+	IsPlaceholder,
+	SortPriority,
+};
+
 enum class EItemStatus
 {
 	Placeholder,

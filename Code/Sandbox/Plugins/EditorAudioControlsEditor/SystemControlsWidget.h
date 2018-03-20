@@ -3,8 +3,8 @@
 #pragma once
 
 #include <QWidget>
+
 #include <SharedData.h>
-#include <CryAudio/IAudioInterfacesCommonData.h>
 
 class QAction;
 class QVBoxLayout;
@@ -30,12 +30,12 @@ public:
 	CSystemControlsWidget(QWidget* const pParent);
 	virtual ~CSystemControlsWidget() override;
 
-	bool                 IsEditing() const;
-	std::vector<CAsset*> GetSelectedAssets() const;
-	void                 SelectConnectedSystemControl(CControl& control, ControlId const itemId);
-	void                 Reset();
-	void                 BackupTreeViewStates();
-	void                 RestoreTreeViewStates();
+	bool   IsEditing() const;
+	Assets GetSelectedAssets() const;
+	void   SelectConnectedSystemControl(CControl& control, ControlId const itemId);
+	void   Reset();
+	void   BackupTreeViewStates();
+	void   RestoreTreeViewStates();
 
 signals:
 

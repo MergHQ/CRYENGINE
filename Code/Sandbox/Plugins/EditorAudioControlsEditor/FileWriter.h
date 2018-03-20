@@ -2,14 +2,13 @@
 
 #pragma once
 
-#include "Assets.h"
+#include "Control.h"
 
-#include <CryAudio/IAudioSystem.h>
 #include <CrySystem/ISystem.h>
 
 namespace ACE
 {
-struct IEditorImpl;
+class CLibrary;
 
 static constexpr char const* s_szLibraryNodeTag = "Library";
 static constexpr char const* s_szFoldersNodeTag = "Folders";

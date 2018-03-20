@@ -5,16 +5,17 @@
 
 #include "AudioControlsEditorPlugin.h"
 #include "MiddlewareDataModel.h"
+#include "MiddlewareFilterProxyModel.h"
 #include "ImplementationManager.h"
 #include "AssetIcons.h"
+#include "ModelUtils.h"
 #include "TreeView.h"
 
-#include <IEditorImpl.h>
-#include <IImplItem.h>
+#include <IItem.h>
+#include <CryString/CryPath.h>
 #include <QFilteringPanel.h>
 #include <QSearchBox.h>
 #include <QtUtil.h>
-#include <CrySystem/IProjectManager.h>
 
 #include <QHeaderView>
 #include <QMenu>
@@ -48,18 +49,18 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(QWidget* const pParent)
 	m_pTreeView->header()->setMinimumSectionSize(25);
 	m_pTreeView->header()->setSectionResizeMode(static_cast<int>(CMiddlewareDataModel::EColumns::Notification), QHeaderView::ResizeToContents);
 	m_pTreeView->SetNameColumn(m_nameColumn);
-	m_pTreeView->SetNameRole(static_cast<int>(CMiddlewareDataModel::ERoles::Name));
+	m_pTreeView->SetNameRole(static_cast<int>(ModelUtils::ERoles::Name));
 	m_pTreeView->TriggerRefreshHeaderColumns();
 
 	m_pFilteringPanel = new QFilteringPanel("ACEMiddlewareData", m_pMiddlewareFilterProxyModel, this);
 	m_pFilteringPanel->SetContent(m_pTreeView);
 	m_pFilteringPanel->GetSearchBox()->SetAutoExpandOnSearch(m_pTreeView);
 
-	QVBoxLayout* const pMainLayout = new QVBoxLayout(this);
+	auto const pMainLayout = new QVBoxLayout(this);
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
 	pMainLayout->addWidget(m_pFilteringPanel);
 
-	if (g_pEditorImpl == nullptr)
+	if (g_pIImpl == nullptr)
 	{
 		setEnabled(false);
 	}
@@ -84,7 +85,7 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(QWidget* const pParent)
 
 	g_implementationManager.SignalImplementationChanged.Connect([this]()
 		{
-			setEnabled(g_pEditorImpl != nullptr);
+			setEnabled(g_pIImpl != nullptr);
 	  }, reinterpret_cast<uintptr_t>(this));
 }
 
@@ -109,12 +110,12 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 	{
 		if (selection.count() == 1)
 		{
-			if (g_pEditorImpl != nullptr)
+			if (g_pIImpl != nullptr)
 			{
-				ControlId const itemId = selection[0].data(static_cast<int>(CMiddlewareDataModel::ERoles::Id)).toInt();
-				IImplItem const* const pIImplItem = g_pEditorImpl->GetItem(itemId);
+				ControlId const itemId = selection[0].data(static_cast<int>(ModelUtils::ERoles::Id)).toInt();
+				Impl::IItem const* const pIItem = g_pIImpl->GetItem(itemId);
 
-				if ((pIImplItem != nullptr) && pIImplItem->IsConnected())
+				if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsConnected) != 0))
 				{
 					auto const pConnectionsMenu = new QMenu(pContextMenu);
 					auto const& controls = g_assetsManager.GetControls();
@@ -122,11 +123,11 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 
 					for (auto const pControl : controls)
 					{
-						if (pControl->GetConnection(pIImplItem) != nullptr)
+						if (pControl->GetConnection(pIItem) != nullptr)
 						{
 							pConnectionsMenu->addAction(GetAssetIcon(pControl->GetType()), tr(pControl->GetName()), [=]()
 								{
-									SignalSelectConnectedSystemControl(*pControl, pIImplItem->GetId());
+									SignalSelectConnectedSystemControl(*pControl, pIItem->GetId());
 							  });
 
 							++count;
@@ -141,11 +142,11 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 					}
 				}
 
-				if ((pIImplItem != nullptr) && !pIImplItem->GetFilePath().IsEmpty())
+				if ((pIItem != nullptr) && !pIItem->GetFilePath().IsEmpty())
 				{
 					pContextMenu->addAction(tr("Open Containing Folder"), [&]()
 						{
-							QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pIImplItem->GetFilePath()).c_str());
+							QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pIItem->GetFilePath()).c_str());
 					  });
 
 					pContextMenu->addSeparator();
@@ -168,7 +169,7 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 void CMiddlewareDataWidget::SelectConnectedImplItem(ControlId const itemId)
 {
 	ClearFilters();
-	auto const& matches = m_pMiddlewareFilterProxyModel->match(m_pMiddlewareFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(CMiddlewareDataModel::ERoles::Id), itemId, 1, Qt::MatchRecursive);
+	auto const& matches = m_pMiddlewareFilterProxyModel->match(m_pMiddlewareFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(ModelUtils::ERoles::Id), itemId, 1, Qt::MatchRecursive);
 
 	if (!matches.isEmpty())
 	{

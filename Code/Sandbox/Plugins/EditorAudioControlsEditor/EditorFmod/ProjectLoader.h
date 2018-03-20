@@ -8,15 +8,17 @@
 
 namespace ACE
 {
+namespace Impl
+{
 namespace Fmod
 {
-class CEditorImpl;
+class CImpl;
 
 class CProjectLoader final
 {
 public:
 
-	explicit CProjectLoader(string const& projectPath, string const& soundbanksPath, CItem& rootItem, ItemCache& itemCache, CEditorImpl& editorImpl);
+	explicit CProjectLoader(string const& projectPath, string const& soundbanksPath, CItem& rootItem, ItemCache& itemCache, CImpl const& impl);
 
 	CProjectLoader() = delete;
 
@@ -45,7 +47,7 @@ private:
 
 	using ItemIds = std::map<string, CItem*>;
 
-	CEditorImpl&        m_editorImpl;
+	CImpl const&        m_impl;
 	CItem&              m_rootItem;
 	ItemCache&          m_itemCache;
 	ItemIds             m_containerIds;
@@ -54,4 +56,5 @@ private:
 	string const        m_projectPath;
 };
 } // namespace Fmod
+} // namespace Impl
 } // namespace ACE
