@@ -63,7 +63,7 @@ If you have already started development of a Game under the Limited License Agre
 
 **2.1.1.** to install and run the CRYENGINE pursuant to the CRYENGINE Documentation;
 
-**2.1.2.** to develop, maintain, extend and/or enhance CRYENGINE pursuant to the CRYENGINE Documentation. However, you are not allowed to combine CRYENGINE with code from other game engine and middleware providers;
+**2.1.2.** to develop, maintain, extend and/or enhance CRYENGINE pursuant to the CRYENGINE Documentation. However, you are not allowed to combine CRYENGINE with code from other game engine providers;
 
 **2.1.3.** to develop Games using CRYENGINE and to render such Games in object code  form (including the CRYENGINE Assets and the CRYENGINE Redistributables but not the CRYENGINE Tools) pursuant to the CRYENGINE documentation;
 
@@ -87,7 +87,7 @@ If you have already started development of a Game under the Limited License Agre
   - architecture;
   - pornography;
   - Serious Games.
-- combine CRYENGINE with code from other game engine and middleware providers;
+- combine CRYENGINE with code from other game engine providers;
 - remove any technical safeguards from the CRYENGINE (if any);
 - copy, replicate or mimic Crytek's games;
 - remove, modify or substitute any trademark, copyright or proprietary notices from the CRYENGINE,
