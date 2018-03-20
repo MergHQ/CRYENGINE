@@ -4,7 +4,10 @@
 option(PLUGIN_SCHEMATYC "Enables compilation of the Schematyc plugin" ON)
 
 option(OPTION_PAKTOOLS "Build .pak encryption tools" OFF)
-option(OPTION_RC "Include RC in the build" ON)
+
+if(WIN64)
+	option(OPTION_RC "Include RC in the build" ON)
+endif()
 
 option(OPTION_DOXYGEN_EXAMPLES "Build Doxygen examples with the engine" OFF)
 
