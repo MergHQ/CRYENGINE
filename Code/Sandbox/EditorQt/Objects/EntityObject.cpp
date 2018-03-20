@@ -765,12 +765,13 @@ static void OnBnClickedAddComponent()
 		friend class CComponentDictionary;
 
 	public:
-		CComponentDictionaryEntry(const char* szName, const Schematyc::IEnvComponent& component, QString tooltip, const char* szIcon, bool bEnabled)
+		CComponentDictionaryEntry(const char* szName, const Schematyc::IEnvComponent& component, QString tooltip, const char* szIcon, bool bEnabled, const CAbstractDictionaryEntry* pParentEntry = nullptr)
 			: m_name(szName)
 			, m_component(component)
 			, m_tooltip(tooltip)
 			, m_icon(szIcon)
-			, m_bEnabled(bEnabled) {}
+			, m_bEnabled(bEnabled)
+			, m_pParentEntry(pParentEntry) {}
 		virtual ~CComponentDictionaryEntry() {}
 
 		// CAbstractDictionaryEntry
@@ -785,9 +786,10 @@ static void OnBnClickedAddComponent()
 			return QVariant();
 		}
 
-		virtual QString      GetToolTip() const override                     { return m_tooltip; }
+		virtual QString  GetToolTip() const override { return m_tooltip; }
 		virtual const QIcon* GetColumnIcon(int32 columnIndex) const override { return &m_icon; }
-		virtual bool         IsEnabled() const override                      { return m_bEnabled; }
+		virtual const CAbstractDictionaryEntry* GetParentEntry() const override { return m_pParentEntry; }
+		virtual bool IsEnabled() const override { return m_bEnabled; }
 		// ~CAbstractDictionaryEntry
 
 		const Schematyc::IEnvComponent& GetComponent() const { return m_component; }
@@ -799,6 +801,7 @@ static void OnBnClickedAddComponent()
 		bool                            m_bEnabled;
 
 		const Schematyc::IEnvComponent& m_component;
+		const CAbstractDictionaryEntry* m_pParentEntry;
 	};
 
 	class CComponentDictionaryCategoryEntry final : public CAbstractDictionaryEntry
@@ -988,7 +991,7 @@ static void OnBnClickedAddComponent()
 
 			if (pCategoryEntry != nullptr)
 			{
-				pCategoryEntry->AddEntry(CComponentDictionaryEntry(szName, *pComponent, tooltip, pComponent->GetDesc().GetIcon(), bEnabled));
+				pCategoryEntry->AddEntry(CComponentDictionaryEntry(szName, *pComponent, tooltip, pComponent->GetDesc().GetIcon(), bEnabled, pCategoryEntry));
 			}
 			else
 			{
