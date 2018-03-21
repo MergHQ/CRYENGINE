@@ -277,7 +277,10 @@ void CEditorFileMonitor::OnFileMonitorChange(const SFileChangeInfo& rChange)
 			if (rChange.changeType != IFileChangeListener::eChangeType_Deleted)
 			{
 				// Apart from reloading resources it also may trigger importing of tif files.
-				GetIEditorImpl()->GetGameEngine()->ReloadResourceFile(filenameRelGame);
+				if (rChange.changeType != IFileChangeListener::eChangeType_RenamedOldName)
+				{
+					GetIEditorImpl()->GetGameEngine()->ReloadResourceFile(filenameRelGame);
+				}
 
 				if (stricmp(ext, "cgf") == 0)
 				{

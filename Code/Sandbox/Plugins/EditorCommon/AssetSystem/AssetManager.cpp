@@ -372,6 +372,17 @@ void CAssetManager::MoveAssets(const std::vector<CAsset*>& assets, const char* s
 	}
 }
 
+bool CAssetManager::RenameAsset(CAsset* pAsset, const char* szNewName)
+{
+	using namespace Private_AssetManager;
+
+	DeleteAssetFilesFromMap(m_fileToAssetMap, pAsset);
+	const bool result = pAsset->GetType()->RenameAsset(pAsset, szNewName);
+	AddAssetFilesToMap(m_fileToAssetMap, pAsset);
+
+	return result;
+}
+
 bool CAssetManager::HasSharedSourceFile(const CAsset& asset) const
 {
 	if (!asset.GetType()->IsImported())

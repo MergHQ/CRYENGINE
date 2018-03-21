@@ -70,6 +70,11 @@ public:
 	//! \param szDestinationFolder The destination folder. The path must be relative to the assets root directory.
 	void MoveAssets(const std::vector<CAsset*>& assets, const char* szDestinationFolder) const;
 
+	//! Renames an existing asset.
+	//! \param pAsset The asset to be renamed.
+	//! \param szNewName The new name for the asset. The asset must not already exist.
+	bool RenameAsset(CAsset* pAsset, const char* szNewName);
+
 	CAssetModel* GetAssetModel() { return m_assetModel; }
 	CAssetFoldersModel* GetAssetFoldersModel() { return m_assetFoldersModel; }
 	bool IsScanning() const { return m_isScanning; }

@@ -401,7 +401,7 @@ bool CAssetModel::setData(const QModelIndex& index, const QVariant& value, int r
 			return false;
 		}
 
-		if (!pAsset->GetType()->RenameAsset(pAsset, newName))
+		if (!CAssetManager::GetInstance()->RenameAsset(pAsset, newName))
 		{
 			return false;
 		}
