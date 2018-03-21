@@ -3,7 +3,7 @@
 /************************************************************************
    This class initiates from a given string, and stores the hashed Representation of that string
    Plus: It can store a copy of the original string for debug purposes
-   /************************************************************************/
+************************************************************************/
 
 //! \cond INTERNAL
 
@@ -34,7 +34,7 @@ public:
 	explicit CHashedString(const uint32 hash);
 	CHashedString(const char* szText); //!< Remark: If the string starts with '0x' then we assume it is already a string representation of a hash, we wont rehash this string, but instead just convert it into a hash.
 	CHashedString(const string& text); //!< Remark: If the string starts with '0x' then we assume it is already a string representation of a hash, we wont rehash this string, but instead just convert it into a hash.
-	
+
 	void   Clear();
 	bool   IsValid() const { return m_hash != CHashedString::INVALID_HASH; } //!< Remark: Valid means the Hash != INVALID_HASH. Therefore Empty strings (and the string "0x0") will be treated as a invalid.
 	string GetText() const;                                                  //!< Remark: only if HASHEDSTRING_STORES_SOURCE_STRING is defined you will receive the original string, otherwise you will get the hash value converted to an string (starting with '0x')
