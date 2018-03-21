@@ -5329,7 +5329,7 @@ void CSystem::CreateSystemVars()
 
 	REGISTER_CVAR_CB(sys_ProfileLevelLoadingDump, 0, VF_CHEAT, "Output level loading dump stats into log\n", OnLevelLoadingDump);
 
-	REGISTER_CVAR(sys_SchematycPlugin, 0, VF_REQUIRE_APP_RESTART,
+	REGISTER_CVAR(sys_SchematycPlugin, 2, VF_REQUIRE_APP_RESTART,
 	              "Set whether default Schematyc and/or experimental plugin is loaded\n"
 	              "0 = Both plugins\n"
 	              "1 = Loads default Schematyc plugin only\n"
