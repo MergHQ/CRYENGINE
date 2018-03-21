@@ -255,7 +255,9 @@ NET_IMPLEMENT_SIMPLE_ATSYNC_MESSAGE(CGameClientChannel, SetGameType, eNRT_Reliab
 {
 	string rulesClass;
 	string levelName = param.levelName;
-	if (!GetGameContext()->ClassNameFromId(rulesClass, param.rulesClass))
+	bool hasGameRules = !CCryAction::GetCryAction()->GetGameContext()->HasContextFlag(eGSF_NoGameRules);
+
+	if (hasGameRules && !GetGameContext()->ClassNameFromId(rulesClass, param.rulesClass))
 	{
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "No GameRules");
 	}
@@ -263,9 +265,12 @@ NET_IMPLEMENT_SIMPLE_ATSYNC_MESSAGE(CGameClientChannel, SetGameType, eNRT_Reliab
 	bool ok = true;
 	if (!GetGameContext()->SetImmersive(param.immersive))
 		return false;
+
 	if (!bFromDemoSystem)
 	{
-		CryLogAlways("Game rules class: %s", rulesClass.c_str());
+		if (hasGameRules)
+			CryLogAlways("Game rules class: %s", rulesClass.c_str());
+
 		SGameContextParams params;
 		params.levelName = levelName.c_str();
 		params.gameRules = rulesClass.c_str();
