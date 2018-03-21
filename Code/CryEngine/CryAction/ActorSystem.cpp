@@ -310,9 +310,6 @@ void CActorSystem::Scan(const char* folderName)
 			const char* fileExtension = PathUtil::GetExt(fd.name);
 			if (stricmp(fileExtension, "xml"))
 			{
-				if (stricmp(fileExtension, "binxml"))
-					GameWarning("ActorSystem: File '%s' does not have 'xml' extension, skipping.", fd.name);
-
 				continue;
 			}
 

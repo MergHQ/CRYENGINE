@@ -451,9 +451,6 @@ void CItemSystem::Scan(const char* folderName)
 			const char* fileExtension = PathUtil::GetExt(fd.name);
 			if (stricmp(fileExtension, "xml"))
 			{
-				if (stricmp(fileExtension, "binxml"))
-					GameWarning("ItemSystem: File '%s' does not have 'xml' extension, skipping.", fd.name);
-
 				continue;
 			}
 
