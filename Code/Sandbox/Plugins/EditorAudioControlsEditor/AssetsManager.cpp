@@ -571,17 +571,14 @@ void CAssetsManager::UpdateAssetConnectionStates(CAsset* const pAsset)
 				for (size_t i = 0; i < connectionCount; ++i)
 				{
 					hasConnection = true;
+					Impl::IItem const* const pIItem = g_pIImpl->GetItem(pControl->GetConnectionAt(i)->GetID());
 
-					if (g_pIImpl != nullptr)
+					if (pIItem != nullptr)
 					{
-						Impl::IItem const* const pIItem = g_pIImpl->GetItem(pControl->GetConnectionAt(i)->GetID());
-
-						if (pIItem != nullptr)
+						if ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) != 0)
 						{
-							if ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) != 0)
-							{
-								hasPlaceholder = true;
-							}
+							hasPlaceholder = true;
+							break;
 						}
 					}
 				}

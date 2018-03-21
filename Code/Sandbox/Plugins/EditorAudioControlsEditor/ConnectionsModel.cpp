@@ -44,7 +44,7 @@ bool CanDropData(QMimeData const* const pData, CAsset const* pControl)
 {
 	bool canDrop = true;
 
-	if ((g_pIImpl != nullptr) && (pControl != nullptr))
+	if (pControl != nullptr)
 	{
 		ControlIds ids;
 		ProcessDragDropData(pData, ids);
@@ -204,7 +204,7 @@ int CConnectionsModel::rowCount(QModelIndex const& parent) const
 {
 	int rowCount = 0;
 
-	if ((m_pControl != nullptr) && (g_pIImpl != nullptr))
+	if (m_pControl != nullptr)
 	{
 		if ((parent.row() < 0) || (parent.column() < 0))
 		{
@@ -226,7 +226,7 @@ QVariant CConnectionsModel::data(QModelIndex const& index, int role) const
 {
 	QVariant variant;
 
-	if ((g_pIImpl != nullptr) && (m_pControl != nullptr) && index.isValid())
+	if ((m_pControl != nullptr) && index.isValid())
 	{
 		if (index.row() < m_connectionsCache.size())
 		{
@@ -362,7 +362,7 @@ QModelIndex CConnectionsModel::index(int row, int column, QModelIndex const& par
 {
 	QModelIndex modelIndex = QModelIndex();
 
-	if ((g_pIImpl != nullptr) && (m_pControl != nullptr))
+	if (m_pControl != nullptr)
 	{
 		if ((row >= 0) && (column >= 0))
 		{
