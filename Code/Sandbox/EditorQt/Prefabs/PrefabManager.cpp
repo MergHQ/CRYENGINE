@@ -359,12 +359,13 @@ void CPrefabManager::ExtractAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
 		return;
 
 	CUndo undo("Extract all from prefab(s)");
-
 	CloneAllFromPrefabs(prefabs);
 
-	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
+	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 	for (CPrefabObject* pPrefab : prefabs)
+	{
 		pObjectManager->DeleteObject(pPrefab);
+	}
 }
 
 void CPrefabManager::ExtractAllFromSelection()
@@ -467,20 +468,60 @@ void CPrefabManager::CloneObjectsFromPrefabs(std::vector<CBaseObject*>& childObj
 //////////////////////////////////////////////////////////////////////////
 void CPrefabManager::CloneAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
 {
-	if (prefabs.empty())
-		return;
+	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 
-	CUndo undo("Clone All from Prefab(s)");
+	// We must clone the objects within the prefab before detaching them because if the user
+	// undoes this operation, the first thing that will happen is that a prefab of this type will be created.
+	// Doing this, will cause the prefab to be fully constructed, rather than just the empty prefab.
+	// This will cause GUID collision with the already existing objects (the ones we will extract now)
+	// when the action was first executed
+	CObjectCloneContext cloneContext;
 
-	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
+	CUndo undo("Clone all from prefab(s)");
+
 	pObjectManager->ClearSelection();
 
-	std::vector<CBaseObject*> clonedObjects;
+	std::vector<CBaseObject*> objectsToSelect;
+	for (auto pPrefab : prefabs)
+	{
+		pPrefab->SetAutoUpdatePrefab(false);
 
-	for (CPrefabObject* pPrefab : prefabs)
-		pPrefab->CloneAll(clonedObjects);
+		auto childCount = pPrefab->GetChildCount();
+		std::vector<CBaseObject*> children;
+		children.reserve(childCount);
+		objectsToSelect.reserve(childCount);
 
-	pObjectManager->SelectObjects(clonedObjects);
+		for (auto i = 0; i < childCount; ++i)
+		{
+			// Clone every object.
+			CBaseObject* pFromObject = pPrefab->GetChild(i);
+			CBaseObject* pNewObj = pObjectManager->CloneObject(pFromObject);
+			if (!pNewObj) // can be null, e.g. sequence can't be cloned
+			{
+				continue;
+			}
+			cloneContext.AddClone(pFromObject, pNewObj);
+			children.push_back(pNewObj);
+		}
+
+		// Only after everything was cloned, call PostClone on all cloned objects.
+		// Copy objects map as it can be invalidated during PostClone
+		auto objectsMap = cloneContext.m_objectsMap;
+		for (auto it : objectsMap)
+		{
+			CBaseObject* pFromObject = it.first;
+			CBaseObject* pClonedObject = it.second;
+			if (pClonedObject)
+			{
+				pClonedObject->PostClone(pFromObject, cloneContext);
+				objectsToSelect.push_back(pClonedObject);
+			}
+		}
+
+		pPrefab->RemoveMembers(children);
+	}
+
+	pObjectManager->SelectObjects(objectsToSelect);
 }
 
 void CPrefabManager::CloneAllFromSelection()
@@ -747,4 +788,3 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyCloseAll, prefab, c
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyReloadAll, prefab, reload_all,
                                    CCommandDescription("Reload all prefabs"));
-

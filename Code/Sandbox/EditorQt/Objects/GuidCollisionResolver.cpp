@@ -131,6 +131,9 @@ const std::vector<CBaseObject*>& CGuidCollisionResolver::GetSavedChildren(CPrefa
 	{
 		return pair.first == pPrefabObject;
 	});
+
+	CRY_ASSERT_MESSAGE(it != m_hierarchy.cend(), "No saved children found for prefab");
+
 	return it->second;
 }
 
