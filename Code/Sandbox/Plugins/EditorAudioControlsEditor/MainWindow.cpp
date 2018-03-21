@@ -77,10 +77,15 @@ CMainWindow::CMainWindow()
 	SetContent(pWindowLayout);
 	RegisterWidgets();
 
-	g_assetsManager.UpdateAllConnectionStates();
-	CheckErrorMask();
+	if (g_pIImpl != nullptr)
+	{
+		g_assetsManager.UpdateAllConnectionStates();
+		CheckErrorMask();
+	}
+
 	UpdateImplLabel();
 	m_pToolBar->setEnabled(g_pIImpl != nullptr);
+	GetMenuBar()->setEnabled(g_pIImpl != nullptr);
 
 	QObject::connect(m_pMonitorSystem, &CFileMonitorSystem::SignalReloadData, this, &CMainWindow::ReloadSystemData);
 	QObject::connect(m_pMonitorMiddleware, &CFileMonitorMiddleware::SignalReloadData, this, &CMainWindow::ReloadMiddlewareData);
@@ -98,6 +103,7 @@ CMainWindow::CMainWindow()
 			Reload(true);
 
 			m_pToolBar->setEnabled(g_pIImpl != nullptr);
+			GetMenuBar()->setEnabled(g_pIImpl != nullptr);
 	  }, reinterpret_cast<uintptr_t>(this));
 
 	GetIEditor()->RegisterNotifyListener(this);
@@ -364,8 +370,11 @@ void CMainWindow::Reload(bool const hasImplChanged /*= false*/)
 			m_pPropertiesWidget->Reset();
 		}
 
-		g_assetsManager.UpdateAllConnectionStates();
-		CheckErrorMask();
+		if (g_pIImpl != nullptr)
+		{
+			g_assetsManager.UpdateAllConnectionStates();
+			CheckErrorMask();
+		}
 
 		if (!hasImplChanged)
 		{
@@ -409,11 +418,8 @@ void CMainWindow::CheckErrorMask()
 	}
 	else if ((errorCodeMask& EErrorCode::NonMatchedActivityRadius) != 0)
 	{
-		if (g_pIImpl != nullptr)
-		{
-			QString const middlewareName = QString(g_pIImpl->GetName());
-			CQuestionDialog::SWarning(tr(GetEditorName()), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nActivity radius of triggers will be updated next time you save."));
-		}
+		QString const middlewareName = QString(g_pIImpl->GetName());
+		CQuestionDialog::SWarning(tr(GetEditorName()), tr("The attenuation of some controls has changed in your ") + middlewareName + tr(" project.\n\nActivity radius of triggers will be updated next time you save."));
 	}
 }
 
@@ -488,19 +494,19 @@ void CMainWindow::ReloadSystemData()
 	m_pMonitorSystem->Disable();
 
 	bool shouldReload = true;
-	char const* messageText;
+	char const* szMessageText;
 
 	if (m_isModified)
 	{
-		messageText = "External changes have been made to audio controls files.\nIf you reload you will lose all your unsaved changes.\nAre you sure you want to reload?";
+		szMessageText = "External changes have been made to audio controls files.\nIf you reload you will lose all your unsaved changes.\nAre you sure you want to reload?";
 	}
 	else
 	{
-		messageText = "External changes have been made to audio controls files.\nDo you want to reload?";
+		szMessageText = "External changes have been made to audio controls files.\nDo you want to reload?";
 	}
 
 	auto const messageBox = new CQuestionDialog();
-	messageBox->SetupQuestion(tr(GetEditorName()), tr(messageText), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
+	messageBox->SetupQuestion(tr(GetEditorName()), tr(szMessageText), QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
 	shouldReload = (messageBox->Execute() == QDialogButtonBox::Yes);
 
 	if (shouldReload)

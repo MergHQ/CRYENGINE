@@ -24,7 +24,14 @@ endif()
 
 option(OPTION_DEVELOPER_CONSOLE_IN_RELEASE "Enables the developer console in Release builds" ON)
 
-option(OPTION_UNIT_TEST "Unit Tests" ON)
+if(EXISTS "${SDK_DIR}/googletest_CE_Support")
+	option(OPTION_UNIT_TEST "Unit Tests" ON)
+elseif(OPTION_UNIT_TEST)
+	message(STATUS "Google Test not found in ${SDK_DIR}/googletest_CE_Support - disabling unit tests.")
+
+	# Disables the OPTION_UNIT_TEST option but also updates the message in the cache that is then used in the GUI as a tooltip.
+	set(OPTION_UNIT_TEST OFF CACHE BOOL "OPTION_UNIT_TEST was previously set but Google Test is not available. Check bootstrap settings." FORCE)
+endif()
 
 #Plugins
 option(PLUGIN_FPSPLUGIN "Frames per second sample plugin" OFF)

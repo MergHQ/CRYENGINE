@@ -629,41 +629,6 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePas
 			{
 				passCullMask &= ~kPassCullMainMask;
 			}
-			else
-			{
-				// view dependent max view distance check
-				Vec3 closestPoint(0);
-				if (nodeDistance && GetCVars()->e_ViewDistRatio3Planar && Distance::Point_AABBSq(passInfo.GetCamera().GetPosition(), nodeBox, closestPoint) > 1.f)
-				{
-					// 3-planar distance
-					Vec3 vSize3D = nodeBox.GetSize();
-
-					Vec3 vAxisWeights;
-					float maxWeight = 0;
-
-					for (int i = 0; i < 3; i++)
-					{
-						// weight of direction depends on the area of corresponding AABB face
-						vAxisWeights[i] = vSize3D[(i + 1) % 3] * vSize3D[(i + 2) % 3];
-						maxWeight = max(maxWeight, vAxisWeights[i]);
-					}
-
-					if (maxWeight)
-					{
-						// for back computability we modify max view distance only for non dominant AABB sides
-						vAxisWeights /= maxWeight;
-					}
-
-					Vec3 vViewDirAbs = (passInfo.GetCamera().GetPosition() - closestPoint).GetNormalized().abs();
-
-					float distModifier = vViewDirAbs.dot(vAxisWeights);
-
-					if (nodeDistance > LERP(1.f, distModifier, GetCVars()->e_ViewDistRatio3Planar) * nodeMaxViewDistance)
-					{
-						passCullMask &= ~kPassCullMainMask;
-					}
-				}
-			}
 		}
 	}
 

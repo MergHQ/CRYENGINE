@@ -110,47 +110,44 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 	{
 		if (selection.count() == 1)
 		{
-			if (g_pIImpl != nullptr)
+			ControlId const itemId = selection[0].data(static_cast<int>(ModelUtils::ERoles::Id)).toInt();
+			Impl::IItem const* const pIItem = g_pIImpl->GetItem(itemId);
+
+			if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsConnected) != 0))
 			{
-				ControlId const itemId = selection[0].data(static_cast<int>(ModelUtils::ERoles::Id)).toInt();
-				Impl::IItem const* const pIItem = g_pIImpl->GetItem(itemId);
+				auto const pConnectionsMenu = new QMenu(pContextMenu);
+				auto const& controls = g_assetsManager.GetControls();
+				int count = 0;
 
-				if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsConnected) != 0))
+				for (auto const pControl : controls)
 				{
-					auto const pConnectionsMenu = new QMenu(pContextMenu);
-					auto const& controls = g_assetsManager.GetControls();
-					int count = 0;
-
-					for (auto const pControl : controls)
+					if (pControl->GetConnection(pIItem) != nullptr)
 					{
-						if (pControl->GetConnection(pIItem) != nullptr)
-						{
-							pConnectionsMenu->addAction(GetAssetIcon(pControl->GetType()), tr(pControl->GetName()), [=]()
-								{
-									SignalSelectConnectedSystemControl(*pControl, pIItem->GetId());
-							  });
+						pConnectionsMenu->addAction(GetAssetIcon(pControl->GetType()), tr(pControl->GetName()), [=]()
+							{
+								SignalSelectConnectedSystemControl(*pControl, pIItem->GetId());
+						  });
 
-							++count;
-						}
-					}
-
-					if (count > 0)
-					{
-						pConnectionsMenu->setTitle(tr("Connections (" + ToString(count) + ")"));
-						pContextMenu->addMenu(pConnectionsMenu);
-						pContextMenu->addSeparator();
+						++count;
 					}
 				}
 
-				if ((pIItem != nullptr) && !pIItem->GetFilePath().IsEmpty())
+				if (count > 0)
 				{
-					pContextMenu->addAction(tr("Open Containing Folder"), [&]()
-						{
-							QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pIItem->GetFilePath()).c_str());
-					  });
-
+					pConnectionsMenu->setTitle(tr("Connections (" + ToString(count) + ")"));
+					pContextMenu->addMenu(pConnectionsMenu);
 					pContextMenu->addSeparator();
 				}
+			}
+
+			if ((pIItem != nullptr) && !pIItem->GetFilePath().IsEmpty())
+			{
+				pContextMenu->addAction(tr("Open Containing Folder"), [&]()
+					{
+						QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pIItem->GetFilePath()).c_str());
+				  });
+
+				pContextMenu->addSeparator();
 			}
 		}
 

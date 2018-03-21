@@ -157,94 +157,91 @@ QVariant CMiddlewareDataModel::data(QModelIndex const& index, int role) const
 {
 	QVariant variant;
 
-	if (g_pIImpl != nullptr)
+	if (index.isValid())
 	{
-		if (index.isValid())
+		Impl::IItem const* const pIItem = ItemFromIndex(index);
+
+		if (pIItem != nullptr)
 		{
-			Impl::IItem const* const pIItem = ItemFromIndex(index);
-
-			if (pIItem != nullptr)
+			if (role == static_cast<int>(ModelUtils::ERoles::Name))
 			{
-				if (role == static_cast<int>(ModelUtils::ERoles::Name))
-				{
-					variant = static_cast<char const*>(pIItem->GetName());
-				}
-				else
-				{
-					EItemFlags const flags = pIItem->GetFlags();
+				variant = static_cast<char const*>(pIItem->GetName());
+			}
+			else
+			{
+				EItemFlags const flags = pIItem->GetFlags();
 
-					switch (index.column())
+				switch (index.column())
+				{
+				case static_cast<int>(EColumns::Notification):
 					{
-					case static_cast<int>(EColumns::Notification):
+						switch (role)
 						{
-							switch (role)
+						case Qt::DecorationRole:
+							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
 							{
-							case Qt::DecorationRole:
-								if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
-								{
-									variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
-								}
-								else if ((flags& EItemFlags::IsLocalized) != 0)
-								{
-									variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized));
-								}
-								break;
-							case Qt::ToolTipRole:
-								if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
-								{
-									variant = tr("Item is not connected to any audio system control");
-								}
-								else if ((flags& EItemFlags::IsLocalized) != 0)
-								{
-									variant = tr("Item is localized");
-								}
-								break;
-							case static_cast<int>(ModelUtils::ERoles::Id):
-								variant = pIItem->GetId();
-								break;
-							default:
-								break;
+								variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
 							}
-						}
-						break;
-					case static_cast<int>(EColumns::Connected):
-						if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
-						{
-							variant = ((flags& EItemFlags::IsConnected) != 0) ? Qt::Checked : Qt::Unchecked;
-						}
-						break;
-					case static_cast<int>(EColumns::Localized):
-						if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
-						{
-							variant = ((flags& EItemFlags::IsLocalized) != 0) ? Qt::Checked : Qt::Unchecked;
-						}
-						break;
-					case static_cast<int>(EColumns::Name):
-						{
-							switch (role)
+							else if ((flags& EItemFlags::IsLocalized) != 0)
 							{
-							case Qt::DecorationRole:
-								variant = CryIcon(g_pIImpl->GetTypeIcon(pIItem));
-								break;
-							case Qt::DisplayRole:
-							case Qt::ToolTipRole:
-								variant = static_cast<char const*>(pIItem->GetName());
-								break;
-							case static_cast<int>(ModelUtils::ERoles::Id):
-								variant = pIItem->GetId();
-								break;
-							case static_cast<int>(ModelUtils::ERoles::SortPriority):
-								variant = pIItem->GetSortPriority();
-								break;
-							case static_cast<int>(ModelUtils::ERoles::IsPlaceholder):
-								variant = (flags& EItemFlags::IsPlaceHolder) != 0;
-								break;
-							default:
-								break;
+								variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized));
 							}
+							break;
+						case Qt::ToolTipRole:
+							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
+							{
+								variant = tr("Item is not connected to any audio system control");
+							}
+							else if ((flags& EItemFlags::IsLocalized) != 0)
+							{
+								variant = tr("Item is localized");
+							}
+							break;
+						case static_cast<int>(ModelUtils::ERoles::Id):
+							variant = pIItem->GetId();
+							break;
+						default:
+							break;
 						}
-						break;
 					}
+					break;
+				case static_cast<int>(EColumns::Connected):
+					if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
+					{
+						variant = ((flags& EItemFlags::IsConnected) != 0) ? Qt::Checked : Qt::Unchecked;
+					}
+					break;
+				case static_cast<int>(EColumns::Localized):
+					if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
+					{
+						variant = ((flags& EItemFlags::IsLocalized) != 0) ? Qt::Checked : Qt::Unchecked;
+					}
+					break;
+				case static_cast<int>(EColumns::Name):
+					{
+						switch (role)
+						{
+						case Qt::DecorationRole:
+							variant = CryIcon(g_pIImpl->GetTypeIcon(pIItem));
+							break;
+						case Qt::DisplayRole:
+						case Qt::ToolTipRole:
+							variant = static_cast<char const*>(pIItem->GetName());
+							break;
+						case static_cast<int>(ModelUtils::ERoles::Id):
+							variant = pIItem->GetId();
+							break;
+						case static_cast<int>(ModelUtils::ERoles::SortPriority):
+							variant = pIItem->GetSortPriority();
+							break;
+						case static_cast<int>(ModelUtils::ERoles::IsPlaceholder):
+							variant = (flags& EItemFlags::IsPlaceHolder) != 0;
+							break;
+						default:
+							break;
+						}
+					}
+					break;
 				}
 			}
 		}
@@ -264,7 +261,7 @@ Qt::ItemFlags CMiddlewareDataModel::flags(QModelIndex const& index) const
 {
 	Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 
-	if (index.isValid() && (g_pIImpl != nullptr))
+	if (index.isValid())
 	{
 		Impl::IItem const* const pIItem = ItemFromIndex(index);
 
@@ -282,25 +279,22 @@ QModelIndex CMiddlewareDataModel::index(int row, int column, QModelIndex const& 
 {
 	QModelIndex modelIndex = QModelIndex();
 
-	if (g_pIImpl != nullptr)
+	if ((row >= 0) && (column >= 0))
 	{
-		if ((row >= 0) && (column >= 0))
+		Impl::IItem const* pParent = ItemFromIndex(parent);
+
+		if (pParent == nullptr)
 		{
-			Impl::IItem const* pParent = ItemFromIndex(parent);
+			pParent = g_pIImpl->GetRoot();
+		}
 
-			if (pParent == nullptr)
+		if ((pParent != nullptr) && pParent->GetNumChildren() > row)
+		{
+			Impl::IItem const* const pIItem = pParent->GetChildAt(row);
+
+			if (pIItem != nullptr)
 			{
-				pParent = g_pIImpl->GetRoot();
-			}
-
-			if ((pParent != nullptr) && pParent->GetNumChildren() > row)
-			{
-				Impl::IItem const* const pIItem = pParent->GetChildAt(row);
-
-				if (pIItem != nullptr)
-				{
-					modelIndex = createIndex(row, column, reinterpret_cast<quintptr>(pIItem));
-				}
+				modelIndex = createIndex(row, column, reinterpret_cast<quintptr>(pIItem));
 			}
 		}
 	}

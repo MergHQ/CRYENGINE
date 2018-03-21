@@ -483,7 +483,6 @@ struct CVars : public Cry3DEngineBase
 	float  e_ViewDistRatioVegetation;
 	ICVar* e_AutoViewDistRatio;
 	float  e_ViewDistRatioModifierGameDecals;
-	float  e_ViewDistRatio3Planar;
 	DeclareConstIntCVar(e_ObjectLayersActivationPhysics, 1);
 	DeclareConstIntCVar(e_StreamCgfDebugHeatMap, 0);
 	DeclareConstFloatCVar(e_StreamPredictionDistanceFar);
