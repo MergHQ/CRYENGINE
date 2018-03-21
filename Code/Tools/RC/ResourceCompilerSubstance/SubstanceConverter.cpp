@@ -220,13 +220,17 @@ public:
 			{
 				const string tempPath(data->path + ".$ti"); // using ".$tif" is unsafe, by mistake the engine can treat it as the final tif file.
 				const string finalPath(data->path + ".tif");
+				const string filename = PathUtil::GetFile(finalPath);
+				RCLog("Saving output from %s: %s", PathUtil::GetFile(data->texturePreset).c_str(), filename.c_str());
 
-				SaveByUsingTIFFSaver(tempPath, commandline, result->getTexture());
+				if (!SaveByUsingTIFFSaver(tempPath, commandline, result->getTexture()))
+				{
+					RCLogError("Failed to save temporary image file: %s", tempPath.c_str());
+				}
+
 				// Force remove of the read only flag.
 				SetFileAttributes(finalPath, FILE_ATTRIBUTE_ARCHIVE);
 				MoveFileEx(tempPath, finalPath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
-				const string filename = PathUtil::GetFile(finalPath);			
-				RCLog("   Processed output from %s: %s", PathUtil::GetFile(data->texturePreset).c_str(), filename.c_str());
 				m_pRC->AddInputOutputFilePair(data->path, finalPath);
 			}
 		}
