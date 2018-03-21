@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include <CrySystem/File/IFileChangeMonitor.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 
@@ -39,6 +40,29 @@ private:
 
 private:
 	std::deque<std::pair<string, Predicate>> m_queue;
+};
+
+//! The base implementation of the IFileChangeListener with the ability to wait until the file locking operation ends, without blocking the calling thread.
+//! Implements a FIFO file processing queue.
+class EDITOR_COMMON_API CAsyncFileListener : public IFileChangeListener
+{
+public:
+
+	//! Return true if the file should be processed. The predicate should not try to open file.
+	virtual bool AcceptFile(const char* szFilename, EChangeType eType) = 0;
+
+	//! Return true if the file processing is complete.
+	//! If the function returns false, the listener will try to call the processing of the file again, somewhat later.
+	//! In any case the files will be processed in FIFO order (first-in, first-out).
+	//! The implementation should expect that the method can be called asynchronously in the main thread.
+	virtual bool ProcessFile(const char* szFilename, EChangeType eType) = 0;
+
+private:
+	// Inherited via IFileChangeListener
+	virtual void OnFileChange(const char* szFilename, EChangeType eType) override;
+
+private:
+	CProcessingQueue m_fileQueue;
 };
 
 };

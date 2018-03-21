@@ -105,4 +105,29 @@ void CProcessingQueue::ProcessQueue()
 	}
 }
 
+void CAsyncFileListener::OnFileChange(const char* szFilename, EChangeType eType)
+{
+	// Ignore events for files outside of the current game folder.
+	if (GetISystem()->GetIPak()->IsAbsPath(szFilename))
+	{
+		return;
+	}
+
+	if (AcceptFile(szFilename, eType))
+	{
+		const string assetPath(szFilename);
+		m_fileQueue.ProcessItemUniqueAsync(assetPath, [this, eType](const string& assetPath)
+		{
+			// It can be that the file is still being opened for writing.
+			if (AssetManagerHelpers::IsFileOpened(assetPath))
+			{
+				// Try again
+				return false;
+			}
+
+			return ProcessFile(assetPath.c_str(), eType);
+		});
+	}
+}
+
 };
