@@ -756,6 +756,9 @@ void CGroup::Ungroup()
 		GetObjectManager()->UnselectObject(this);
 	}
 
+	if (m_children.empty())
+		return;
+
 	std::vector<CBaseObject*> newSelection;
 	newSelection.reserve(m_children.size());
 
@@ -1036,6 +1039,9 @@ void CGroup::DetachThis(bool bKeepPos, bool bPlaceOnRoot)
 
 void CGroup::DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos /* = true */, bool shouldPlaceOnRoot /* = false */)
 {
+	if (objects.empty())
+		return;
+
 	using namespace Private_Group;
 	LOADING_TIME_PROFILE_SECTION;
 
