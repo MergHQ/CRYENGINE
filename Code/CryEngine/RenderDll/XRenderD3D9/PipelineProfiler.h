@@ -111,7 +111,7 @@ protected:
 	void DisplayDetailedPassStats(uint32 frameDataIndex);
 
 protected:
-	enum { kNumPendingFrames = MAX_FRAMES_IN_FLIGHT + 1 };
+	enum { kNumPendingFrames = MAX_FRAMES_IN_FLIGHT };
 
 	std::vector<uint32> m_stack;
 	SFrameData          m_frameData[kNumPendingFrames];

@@ -75,9 +75,11 @@ public:
 	void                     SetViewport(const SRenderViewport& vp);
 	const SRenderViewport&   GetViewport() const { return m_viewport; }
 
-	Vec2i                    GetDisplayResolution() const { return Vec2i(m_DisplayWidth, m_DisplayHeight); }
+	Vec2i                    GetDisplayResolution()    const { return Vec2i(m_DisplayWidth, m_DisplayHeight); }
 	//! Gets the resolution of the monitor that this context's window is currently present on
 	RectI                    GetCurrentMonitorBounds() const;
+	int                      GetBackBufferCount()      const { return m_backbufferCount; }
+	void                     SetBackBufferCount(int count)   { m_backbufferCount = count; }
 
 	void                     InitializeDisplayResolution(int displayWidth, int displayHeight);
 	void                     ChangeDisplayResolution(int displayWidth, int displayHeight, bool fullscreen, bool bResizeTarget = false, bool bForce = false);
@@ -137,6 +139,8 @@ private:
 
 	DXGI_SURFACE_DESC        m_swapChainDesc;      // Surface description of the BackBuffer
 	float                    m_aspectRatio = 1.0f;
+
+	int                      m_backbufferCount = 2;
 
 #if defined(SUPPORT_DEVICE_INFO)
 	uint32                   m_refreshRateNumerator = 0;
