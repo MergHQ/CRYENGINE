@@ -538,6 +538,7 @@ void CAnimEntityNode::UpdateDynamicParams_PureGame()
 				AddPropertyToParamInfoMap(propertyName.c_str(), strippedPath, paramInfo);
 			}
 		}
+		InitializeTrackDefaultValue(pTrack, paramType);
 	}
 
 	DynArray<IEntityComponent*> components;
