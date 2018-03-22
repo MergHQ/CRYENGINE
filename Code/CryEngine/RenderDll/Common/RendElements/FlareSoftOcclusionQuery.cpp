@@ -172,6 +172,8 @@ void CFlareSoftOcclusionQuery::BatchReadResults()
 	if (!g_bCreatedGlobalResources)
 		return;
 
+	CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "CFlareSoftOcclusionQuery::BatchReadResults");
+
 	CRendererResources::s_ptexFlaresOcclusionRing[s_ringReadIdx]->GetDevTexture()->AccessCurrStagingResource(0, false, [=](void* pData, uint32 rowPitch, uint32 slicePitch)
 	{
 		unsigned char* pTexBuf = reinterpret_cast<unsigned char*>(pData);

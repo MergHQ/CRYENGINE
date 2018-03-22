@@ -24,8 +24,8 @@
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-// convience macro for all device wrapper function
-#define CRY_DEVICE_WRAPPER_PROFILE() CRY_PROFILE_FUNCTION(PROFILE_DEVICE)
+// convience macro for all device wrapper function. currently disabled as it causes too much overhead for general profiling
+#define CRY_DEVICE_WRAPPER_PROFILE()
 
 struct SRenderStatePassD3D;
 struct CRenderObjectD3D;
