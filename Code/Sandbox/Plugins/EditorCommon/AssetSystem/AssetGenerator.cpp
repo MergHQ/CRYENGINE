@@ -205,6 +205,11 @@ void CAssetGenerator::GenerateCryasset(const string& filePath)
 
 void CAssetGenerator::OnCompilationStarted(const char* szSource, const char* szTarget, int nPending)
 {
+	std::unique_lock<std::mutex> lock(m_textureCompilerMutex);
+	if (m_pTextureCompilerProgress)
+	{
+		m_pTextureCompilerProgress->SetMessage(QtUtil::ToQString(PathUtil::GetFile(szSource)));
+	}
 }
 
 void CAssetGenerator::OnCompilationFinished(const char* szSource, const char* szTarget, ERcExitCode eReturnCode)
@@ -213,14 +218,30 @@ void CAssetGenerator::OnCompilationFinished(const char* szSource, const char* sz
 
 void CAssetGenerator::OnCompilationQueueTriggered(int nPending)
 {
-	m_waitForTextureCompiler = true;
-	m_pTextureCompilerProgress.reset(new CProgressNotification(QObject::tr("Compiling textures"), QString()));
+	std::unique_lock<std::mutex> lock(m_textureCompilerMutex);
+
+	if (!m_waitForTextureCompiler)
+	{
+		m_pTextureCompilerProgress.reset(new CProgressNotification(QObject::tr("Compiling textures"), QString()));
+	}
+
+	++m_waitForTextureCompiler;
 }
 
 void CAssetGenerator::OnCompilationQueueDepleted()
 {
-	m_waitForTextureCompiler = false;
-	m_pTextureCompilerProgress.reset();
+	std::unique_lock<std::mutex> lock(m_textureCompilerMutex);
+
+	if (m_waitForTextureCompiler > 0)
+	{
+		--m_waitForTextureCompiler;
+	}
+	
+	if (!m_waitForTextureCompiler)
+	{
+		m_pTextureCompilerProgress.reset();
+	}
+
 }
 
 }
