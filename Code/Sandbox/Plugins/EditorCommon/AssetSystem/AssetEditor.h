@@ -45,7 +45,7 @@ public:
 	CAsset* GetAssetBeingEdited() { return m_assetBeingEdited; }
 	const CAsset* GetAssetBeingEdited() const { return m_assetBeingEdited; }
 
-	virtual bool OnSave() override final;
+	virtual bool OnSave() override;    // #TODO Make this method final.
 	virtual bool OnSaveAs() override;  // #TODO Make this method final.
 
 	bool SaveBackup(const string& backupFolder);

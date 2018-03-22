@@ -41,6 +41,7 @@ protected:
 	virtual void OnCloseAsset() override;
 
 	// CEditor implementation.
+	virtual bool OnSave() override;
 	virtual bool OnSaveAs() override;
 
 	virtual void customEvent(QEvent* pEvent) override;

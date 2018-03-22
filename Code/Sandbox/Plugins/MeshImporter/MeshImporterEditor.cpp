@@ -219,10 +219,16 @@ bool CEditorAdapter::OnOpenAsset(CAsset* pAsset)
 	return bOpen;
 }
 
-bool CEditorAdapter::OnSaveAsset(CEditableAsset&)
+bool CEditorAdapter::OnSaveAsset(CEditableAsset& /*editAsset*/)
+{
+	CRY_ASSERT_MESSAGE(false, "Not implemented");
+	return false;
+}
+
+bool CEditorAdapter::OnSave()
 {
 	m_pDialog->OnSave();
-	return false;
+	return true;
 }
 
 bool CEditorAdapter::OnSaveAs()
