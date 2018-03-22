@@ -419,7 +419,12 @@ void C3DEngine::UnloadLevel()
 		CryComment("done");
 	}
 
-	CRY_ASSERT(m_pClipVolumeManager->GetClipVolumeCount() == 0);
+	// free all clip volumes marked for delete
+	{
+		m_pClipVolumeManager->TrimDeletedClipVolumes();
+		CRY_ASSERT(m_pClipVolumeManager->GetClipVolumeCount() == 0);
+	}
+
 	CRY_ASSERT(!COctreeNode::m_nNodesCounterAll);
 
 	if (m_pWaterWaveManager)

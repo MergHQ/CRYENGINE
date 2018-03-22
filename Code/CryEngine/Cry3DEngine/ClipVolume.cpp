@@ -16,20 +16,6 @@ CClipVolume::CClipVolume()
 	memset(m_sName, 0x0, sizeof(m_sName));
 }
 
-CClipVolume::~CClipVolume()
-{
-	m_pRenderMesh = NULL;
-
-	AUTO_LOCK(m_lstRenderNodesCritSection);
-	for (size_t i = 0; i < m_lstRenderNodes.size(); ++i)
-	{
-		IRenderNode* pNode = m_lstRenderNodes[i];
-
-		if (const auto pTempData = pNode->m_pTempData.load())
-			pTempData->userData.m_pClipVolume = nullptr;
-	}
-}
-
 void CClipVolume::SetName(const char* szName)
 {
 	cry_strcpy(m_sName, szName);
@@ -50,7 +36,7 @@ void CClipVolume::Update(_smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTr
 {
 	const bool bMeshUpdated = m_pRenderMesh != pRenderMesh;
 
-	m_pRenderMesh = pRenderMesh;
+	m_pRenderMesh = std::move(pRenderMesh);
 	m_pBspTree = pBspTree;
 	m_WorldTM = worldTM;
 	m_InverseWorldTM = worldTM.GetInverted();
@@ -60,7 +46,7 @@ void CClipVolume::Update(_smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTr
 
 	if (m_pRenderMesh)
 	{
-		pRenderMesh->GetBBox(m_BBoxLS.min, m_BBoxLS.max);
+		m_pRenderMesh->GetBBox(m_BBoxLS.min, m_BBoxLS.max);
 		m_BBoxWS.SetTransformedAABB(worldTM, m_BBoxLS);
 	}
 }
@@ -74,27 +60,6 @@ bool CClipVolume::IsPointInsideClipVolume(const Vec3& point) const
 
 	Vec3 pt = m_InverseWorldTM.TransformPoint(point);
 	return m_BBoxLS.IsContainPoint(pt) && m_pBspTree->IsInside(pt);
-}
-
-void CClipVolume::RegisterRenderNode(IRenderNode* pRenderNode)
-{
-	AUTO_LOCK(m_lstRenderNodesCritSection);
-	if (m_lstRenderNodes.Find(pRenderNode) < 0)
-	{
-		m_lstRenderNodes.Add(pRenderNode);
-
-		if (const auto pTempData = pRenderNode->m_pTempData.load())
-			pTempData->userData.m_pClipVolume = this;
-	}
-}
-void CClipVolume::UnregisterRenderNode(IRenderNode* pRenderNode)
-{
-	AUTO_LOCK(m_lstRenderNodesCritSection);
-	if (m_lstRenderNodes.Delete(pRenderNode))
-	{
-		if (const auto pTempData = pRenderNode->m_pTempData.load())
-			pTempData->userData.m_pClipVolume = nullptr;
-	}
 }
 
 void CClipVolume::GetMemoryUsage(class ICrySizer* pSizer) const

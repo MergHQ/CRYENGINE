@@ -108,10 +108,12 @@ struct SRenderNodeTempData
 		struct IClipVolume* m_pClipVolume;
 
 		Vec4                vEnvironmentProbeMults;
+		Vec3                lastClipVolumePosition;
 		uint32              nCubeMapId                  : 16;
 		uint32              nCubeMapIdCacheClearCounter : 16;
 		uint32              nWantedLod                  : 8;
 		uint32              bTerrainColorWasUsed        : 1;
+		uint32              bClipVolumeAssigned         : 1;
 		IRenderNode*        pOwnerNode;
 		uint32              nStatObjLastModificationId;
 	};
@@ -125,13 +127,16 @@ public:
 	std::atomic<uint32> invalidRenderObjects;
 
 public:
-	SRenderNodeTempData() { ZeroStruct(userData); hasValidRenderObjects = invalidRenderObjects = false; }
+	SRenderNodeTempData()  { ZeroStruct(userData); hasValidRenderObjects = invalidRenderObjects = false; }
 	~SRenderNodeTempData() { Free(); };
 
 	CRenderObject* GetRenderObject(int nLod); /* thread-safe */
 	void           Free();
 	void           FreeRenderObjects(); /* non-thread-safe */
 	void           InvalidateRenderObjectsInstanceData();
+
+	void           SetClipVolume(IClipVolume* pClipVolume, const Vec3& pos);
+	void           ResetClipVolume();
 
 	void           OffsetPosition(const Vec3& delta)
 	{
