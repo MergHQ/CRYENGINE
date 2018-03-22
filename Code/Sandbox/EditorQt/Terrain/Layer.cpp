@@ -463,8 +463,12 @@ void CLayer::Serialize(Serialization::IArchive& ar)
 		ar(filterColor, "filtercolor", "Filter Color");
 		ar(minHeight, "minheight", "Min Height");
 		ar(maxHeight, "maxheight", "Max Height");
-		ar(minAngle, "minangle", "Min Angle");
-		ar(maxAngle, "maxangle", "Max Angle");
+		
+		// Limit the slope values from 0.0 to slightly less than 90. We later calculate the slope as
+		// tan(angle) and tan(90) will result in disaster
+		const float slopeLimitDeg = 90.f - 0.01;
+		ar(yasli::Range(minAngle, 0.0f, slopeLimitDeg), "minangle", "Min Angle");
+		ar(yasli::Range(maxAngle, 0.0f, slopeLimitDeg), "maxangle", "Max Angle");
 		ar(Serialization::TextureFilename(textureName), "texture", "Texture");
 		ar(Serialization::MaterialPicker(materialName), "material", "Material");
 
