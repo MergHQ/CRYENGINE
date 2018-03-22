@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IGamePlatform.h"
+#include <CrySystem/ILocalizationManager.h>
 
 namespace Cry
 {
@@ -91,6 +92,8 @@ namespace Cry
 				std::shared_ptr<INetworking> m_pNetworking;
 
 				std::shared_ptr<IServer> m_pServer;
+
+				std::map<string, ILocalizationManager::EPlatformIndependentLanguageID> m_translationMappings;
 
 				std::vector<std::unique_ptr<IUser>> m_users;
 
