@@ -478,6 +478,11 @@ if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		-Wno-sometimes-uninitialized
 		-Wno-tautological-constant-out-of-range-compare
 	)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-const-variable
+		-Wno-unused-but-set-variable
+	)
 endif()
 
 CryEngineStaticModule(tomcrypt_staticcrt SOLUTION_FOLDER "Libs")
@@ -514,5 +519,10 @@ if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		-Wno-unused-const-variable
 		-Wno-sometimes-uninitialized
 		-Wno-tautological-constant-out-of-range-compare
+	)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-const-variable
+		-Wno-unused-but-set-variable
 	)
 endif()

@@ -33,6 +33,29 @@ if(LINUX)
 			-Wno-unused-private-field
 			-Wno-parentheses
 		)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-function
+			-Wno-unused-value
+			-Wno-unused-variable
+			-Wno-sign-compare
+			-Wno-ignored-attributes
+			-Wno-int-in-bool-context
+			-Wno-unused-but-set-variable
+			-Wno-misleading-indentation
+			-Wno-unknown-pragmas
+			-Wno-strict-aliasing
+			-Wno-unused-result
+			-Wno-maybe-uninitialized
+			-Wno-unused-const-variable
+			-Wno-multichar
+			-Wno-char-subscripts
+			-Wno-parentheses
+			-Wno-comment
+			-Wno-address
+			-Wno-format
+			-Wno-switch
+		)
     endif()
 else()
 	CryFileContainer(LinuxLauncher SOLUTION_FOLDER "Launcher")

@@ -74,7 +74,32 @@ MACRO(setup_cryaudio)
 			-Wno-multichar
 			-Wno-unused-private-field
 		)
-	endif()
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-function
+			-Wno-unused-value
+			-Wno-unused-variable
+			-Wno-sign-compare
+			-Wno-ignored-attributes
+			-Wno-invalid-offsetof
+			-Wno-aligned-new
+			-Wno-int-in-bool-context
+			-Wno-unused-but-set-variable
+			-Wno-misleading-indentation
+			-Wno-unknown-pragmas
+			-Wno-strict-aliasing
+			-Wno-maybe-uninitialized
+			-Wno-multichar
+			-Wno-char-subscripts
+			-Wno-conversion-null
+			-Wno-parentheses
+			-Wno-comment
+			-Wno-reorder
+			-Wno-address
+			-Wno-format
+			-Wno-switch
+		)
+    endif()
 ENDMACRO()
 
 CryEngineModule(CryAudioSystem PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio")
