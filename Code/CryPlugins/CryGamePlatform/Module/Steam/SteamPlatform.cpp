@@ -19,7 +19,6 @@
 #include "SteamUserLobby.h"
 
 #include <CrySystem/ICmdLine.h>
-#include <CrySystem/ILocalizationManager.h>
 
 // Included only once per DLL module.
 #include <CryCore/Platform/platform_impl.inl>
@@ -49,6 +48,29 @@ namespace Cry
 				, m_authTicketHandle(k_HAuthTicketInvalid)
 			{
 				s_pInstance = this;
+
+				// Map Steam API language codes to engine
+				// Full list of Steam API language codes can be found here: https://partner.steamgames.com/doc/store/localization
+				m_translationMappings["arabic"] = ILocalizationManager::ePILID_Arabic;
+				m_translationMappings["schinese"] = ILocalizationManager::ePILID_ChineseS;
+				m_translationMappings["tchinese"] = ILocalizationManager::ePILID_ChineseT;
+				m_translationMappings["czech"] = ILocalizationManager::ePILID_Czech;
+				m_translationMappings["danish"] = ILocalizationManager::ePILID_Danish;
+				m_translationMappings["dutch"] = ILocalizationManager::ePILID_Dutch;
+				m_translationMappings["english"] = ILocalizationManager::ePILID_English;
+				m_translationMappings["finnish"] = ILocalizationManager::ePILID_Finnish;
+				m_translationMappings["french"] = ILocalizationManager::ePILID_French;
+				m_translationMappings["german"] = ILocalizationManager::ePILID_German;
+				m_translationMappings["italian"] = ILocalizationManager::ePILID_Italian;
+				m_translationMappings["japanese"] = ILocalizationManager::ePILID_Japanese;
+				m_translationMappings["koreana"] = ILocalizationManager::ePILID_Korean;
+				m_translationMappings["norwegian"] = ILocalizationManager::ePILID_Norwegian;
+				m_translationMappings["polish"] = ILocalizationManager::ePILID_Polish;
+				m_translationMappings["portuguese"] = ILocalizationManager::ePILID_Portuguese;
+				m_translationMappings["russian"] = ILocalizationManager::ePILID_Russian;
+				m_translationMappings["spanish"] = ILocalizationManager::ePILID_Spanish;
+				m_translationMappings["swedish"] = ILocalizationManager::ePILID_Swedish;
+				m_translationMappings["turkish"] = ILocalizationManager::ePILID_Turkish;
 			}
 
 			bool CPlugin::Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams)
@@ -139,24 +161,44 @@ namespace Cry
 					}
 				}
 
-				ILocalizationManager* pLocalizationManager = gEnv->pSystem->GetLocalizationManager();
+				// Set localization according to the settings made in Steam
 				const char* szDesiredLanguage = pSteamApps->GetCurrentGameLanguage();
-				if (szDesiredLanguage != nullptr && szDesiredLanguage[0] != '\0')
+				ILocalizationManager::EPlatformIndependentLanguageID languageId = ILocalizationManager::ePILID_English; // Default to english if we the language is not supported
+				const auto remapIt = m_translationMappings.find(szDesiredLanguage);
+				if (remapIt != m_translationMappings.end())
 				{
-					CryLogAlways("Attempting to automatically set user preferred language %s", szDesiredLanguage);
+					languageId = remapIt->second;
+				}
+				else
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[GamePlatform] Language mapping missing for %s", szDesiredLanguage);
+				}
 
-					for (int i = 0; i < ILocalizationManager::ePILID_MAX_OR_INVALID; i++)
+				CRY_ASSERT_MESSAGE(languageId != ILocalizationManager::ePILID_MAX_OR_INVALID, "Invalid language ID");
+				if (languageId != ILocalizationManager::ePILID_MAX_OR_INVALID)
+				{
+					const char* szLanguage = gEnv->pSystem->GetLocalizationManager()->LangNameFromPILID(languageId);
+					CRY_ASSERT(szLanguage != nullptr && szLanguage[0] != '\0');
+					CryLogAlways("Attempting to automatically set user preferred language %s", szLanguage);
+					ICVar* pVar = gEnv->pConsole->GetCVar("g_language");
+					if (pVar != nullptr)
 					{
-						const char* languageName = pLocalizationManager->LangNameFromPILID((ILocalizationManager::EPlatformIndependentLanguageID)i);
-
-						if (!stricmp(languageName, szDesiredLanguage))
+						// Don't override the language if it was loaded from a config file.
+						// We assume that it was set via an ingame-menu in that case.
+						if ((pVar->GetFlags() & VF_WASINCONFIG) == 0)
 						{
-							if (pLocalizationManager->IsLanguageSupported((ILocalizationManager::EPlatformIndependentLanguageID)i))
-							{
-								gEnv->pConsole->GetCVar("g_language")->Set(languageName);
-							}
+							pVar->Set(szLanguage);
+						}
+					}
 
-							break;
+					pVar = gEnv->pConsole->GetCVar("g_languageAudio");
+					if (pVar != nullptr)
+					{
+						// Don't override the language if it was loaded from a config file.
+						// We assume that it was set via an ingame-menu in that case.
+						if ((pVar->GetFlags() & VF_WASINCONFIG) == 0)
+						{
+							pVar->Set(szLanguage);
 						}
 					}
 				}

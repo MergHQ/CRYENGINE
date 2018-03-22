@@ -567,6 +567,30 @@ MACRO(setup_crysystem)
 			-Wno-dynamic-class-memaccess
 			-Wno-comment
 		)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-function
+			-Wno-unused-value
+			-Wno-unused-variable
+			-Wno-sign-compare
+			-Wno-ignored-attributes
+			-Wno-int-in-bool-context
+			-Wno-unused-but-set-variable
+			-Wno-misleading-indentation
+			-Wno-unknown-pragmas
+			-Wno-unused-const-variable
+			-Wno-multichar
+			-Wno-return-type
+			-Wno-strict-aliasing
+			-Wno-maybe-uninitialized
+			-Wno-unused-result
+			-Wno-char-subscripts
+			-Wno-parentheses
+			-Wno-comment
+			-Wno-address
+			-Wno-format
+			-Wno-switch
+		)
     endif()
 ENDMACRO()
 

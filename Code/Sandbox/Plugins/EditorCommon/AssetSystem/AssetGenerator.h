@@ -7,6 +7,7 @@
 #include <CryRenderer/IRenderer.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 
+#include <mutex>
 
 class CProgressNotification;
 
@@ -38,7 +39,8 @@ private:
 	std::unique_ptr<CProgressNotification> m_pProgress;
 	std::unique_ptr<CProgressNotification> m_pTextureCompilerProgress;
 	string m_rcSettings;
-	volatile bool m_waitForTextureCompiler = false;
+	std::mutex m_textureCompilerMutex;
+	size_t m_waitForTextureCompiler = 0;
 };
 
 };

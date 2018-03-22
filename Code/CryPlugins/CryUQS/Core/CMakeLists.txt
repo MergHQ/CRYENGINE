@@ -148,4 +148,22 @@ if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		-Wno-char-subscripts
 		-Wno-c++11-narrowing
 	)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-function
+		-Wno-unused-value
+		-Wno-unused-variable
+		-Wno-sign-compare
+		-Wno-unused-but-set-variable
+		-Wno-misleading-indentation
+		-Wno-unknown-pragmas
+		-Wno-strict-aliasing
+		-Wno-maybe-uninitialized
+		-Wno-multichar
+		-Wno-reorder
+		-Wno-parentheses
+		-Wno-char-subscripts
+		-Wno-format
+		-Wno-switch
+	)
 endif()

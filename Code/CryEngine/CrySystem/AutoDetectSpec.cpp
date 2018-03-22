@@ -94,10 +94,10 @@ static void GetCPUName(char* pName, size_t bufferSize)
 	cry_sprintf(pName, bufferSize, name);
 }
 
-void Win32SysInspect::GetOS(SPlatformInfo::EWinVersion& ver, bool& is64Bit, char* pName, size_t bufferSize)
+void Win32SysInspect::GetOS(SPlatformInfo::SWinInfo& win, char* pName, size_t bufferSize)
 {
-	ver = SPlatformInfo::WinUndetected;
-	is64Bit = false;
+	win.ver = SPlatformInfo::WinUndetected;
+	win.is64Bit = false;
 
 	if (pName && bufferSize)
 		pName[0] = '\0';
@@ -114,34 +114,38 @@ void Win32SysInspect::GetOS(SPlatformInfo::EWinVersion& ver, bool& is64Bit, char
 			if (sysInfo.dwMajorVersion == 5)
 			{
 				if (sysInfo.dwMinorVersion == 0)
-					ver = SPlatformInfo::Win2000;
+					win.ver = SPlatformInfo::Win2000;
 				else if (sysInfo.dwMinorVersion == 1)
-					ver = SPlatformInfo::WinXP;
+					win.ver = SPlatformInfo::WinXP;
 				else if (sysInfo.dwMinorVersion == 2)
 				{
 					if (sysInfo.wProductType == VER_NT_WORKSTATION)
-						ver = SPlatformInfo::WinXP; // 64 bit windows actually but this will be detected later anyway
+						win.ver = SPlatformInfo::WinXP; // 64 bit windows actually but this will be detected later anyway
 					else if (sysInfo.wProductType == VER_NT_SERVER || sysInfo.wProductType == VER_NT_DOMAIN_CONTROLLER)
-						ver = SPlatformInfo::WinSrv2003;
+						win.ver = SPlatformInfo::WinSrv2003;
 				}
 			}
 			else if (sysInfo.dwMajorVersion == 6)
 			{
 				if (sysInfo.dwMinorVersion == 0)
-					ver = SPlatformInfo::WinVista;
+					win.ver = SPlatformInfo::WinVista;
 				else if (sysInfo.dwMinorVersion == 1)
-					ver = SPlatformInfo::Win7;
+					win.ver = SPlatformInfo::Win7;
 				else if (sysInfo.dwMinorVersion == 2)
-					ver = SPlatformInfo::Win8;
+					win.ver = SPlatformInfo::Win8;
 				else if (sysInfo.dwMinorVersion == 3)
-					ver = SPlatformInfo::Win8Point1;
+					win.ver = SPlatformInfo::Win8Point1;
 			}
 			else if (sysInfo.dwMajorVersion == 10)
 			{
 				if (sysInfo.dwMinorVersion == 0)
-					ver = SPlatformInfo::Win10;
+					win.ver = SPlatformInfo::Win10;
 			}
+
+			win.build = sysInfo.dwBuildNumber;
 		}
+
+		GetWindowsDirectory(win.path.m_strBuf, sizeof(win.path.m_strBuf));
 
 		typedef BOOL (WINAPI * FP_GetSystemWow64Directory)(LPSTR, UINT);
 		FP_GetSystemWow64Directory pgsw64d((FP_GetSystemWow64Directory) GetProcAddress(GetModuleHandle("kernel32"), "GetSystemWow64DirectoryA"));
@@ -149,15 +153,15 @@ void Win32SysInspect::GetOS(SPlatformInfo::EWinVersion& ver, bool& is64Bit, char
 		{
 			char str[MAX_PATH];
 			if (!pgsw64d(str, sizeof(str)))
-				is64Bit = GetLastError() != ERROR_CALL_NOT_IMPLEMENTED;
+				win.is64Bit = GetLastError() != ERROR_CALL_NOT_IMPLEMENTED;
 			else
-				is64Bit = true;
+				win.is64Bit = true;
 		}
 
 		if (pName && bufferSize)
 		{
 			const char* windowsVersionText(0);
-			switch (ver)
+			switch (win.ver)
 			{
 			case SPlatformInfo::Win2000:
 				windowsVersionText = "Windows 2000";
@@ -193,7 +197,7 @@ void Win32SysInspect::GetOS(SPlatformInfo::EWinVersion& ver, bool& is64Bit, char
 			if (sysInfo.wServicePackMajor > 0)
 				cry_sprintf(sptext, "SP %d ", sysInfo.wServicePackMajor);
 
-			cry_sprintf(pName, bufferSize, "%s %s %s(build %d.%d.%d)", windowsVersionText, is64Bit ? "64 bit" : "32 bit",
+			cry_sprintf(pName, bufferSize, "%s %s %s(build %d.%d.%d)", windowsVersionText, win.is64Bit ? "64 bit" : "32 bit",
 			            sptext, sysInfo.dwMajorVersion, sysInfo.dwMinorVersion, sysInfo.dwBuildNumber);
 		}
 	}
@@ -201,10 +205,11 @@ void Win32SysInspect::GetOS(SPlatformInfo::EWinVersion& ver, bool& is64Bit, char
 
 static void GetOSName(char* pName, size_t bufferSize)
 {
-	SPlatformInfo::EWinVersion winVer(SPlatformInfo::WinUndetected);
-	bool is64bit(false);
+	SPlatformInfo::SWinInfo win;
+	win.ver = SPlatformInfo::WinUndetected;
+	win.is64Bit = false;
 
-	Win32SysInspect::GetOS(winVer, is64bit, pName, bufferSize);
+	Win32SysInspect::GetOS(win, pName, bufferSize);
 }
 
 bool Win32SysInspect::IsVistaKB940105Required()
@@ -986,9 +991,7 @@ void CSystem::AutoDetectSpec(const bool detectResolution)
 	char tempBuf[512];
 
 	// get OS
-	SPlatformInfo::EWinVersion winVer(SPlatformInfo::WinUndetected);
-	bool is64bit(false);
-	Win32SysInspect::GetOS(winVer, is64bit, tempBuf, sizeof(tempBuf));
+	GetOSName(tempBuf, sizeof(tempBuf));
 	CryLogAlways("- %s", tempBuf);
 
 	// get system memory

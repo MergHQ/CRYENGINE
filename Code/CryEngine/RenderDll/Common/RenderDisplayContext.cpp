@@ -264,8 +264,11 @@ void CRenderDisplayContext::ChangeDisplayResolution(int displayWidth, int displa
 #if !defined(CRY_PLATFORM_ORBIS)
 	// No changes do not need to resize
 	DXGI_SWAP_CHAIN_DESC desc;
-	if (m_pSwapChain  != nullptr && SUCCEEDED(m_pSwapChain->GetDesc(&desc)) && desc.BufferDesc.Width == displayWidth && desc.BufferDesc.Height == displayHeight && !bForce)
-		return;
+	if (m_pSwapChain != nullptr && SUCCEEDED(m_pSwapChain->GetDesc(&desc)) && !bForce)
+	{
+		if (desc.BufferDesc.Width == displayWidth && desc.BufferDesc.Height == displayHeight && desc.BufferCount == GetBackBufferCount())
+			return;
+	}
 #else
 	if (m_DisplayWidth == displayWidth && m_DisplayHeight == displayHeight && m_pSwapChain && !bForce)
 		return;
@@ -339,14 +342,9 @@ void CRenderDisplayContext::AllocateSwapChain()
 	DXGI_FORMAT fmt = DXGI_FORMAT_R8G8B8A8_UNORM;
 #endif
 
-#if (CRY_RENDERER_DIRECT3D >= 120)
-	const int defaultBufferCount = 4;
-#else
-	const int defaultBufferCount = 2;
-#endif
-
 	const int backbufferWidth  = m_DisplayWidth;
 	const int backbufferHeight = m_DisplayHeight;
+	const int backbufferCount  = m_backbufferCount;
 
 	const bool windowed = !gcpRendD3D->IsFullscreen();
 	const bool isMainContext = IsMainContext();
@@ -367,7 +365,7 @@ void CRenderDisplayContext::AllocateSwapChain()
 
 	scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT;
 	const bool bWaitable = (isMainContext && CRenderer::CV_r_D3D12WaitableSwapChain && windowed);
-	scDesc.BufferCount = (isMainContext && (CRenderer::CV_r_minimizeLatency > 0 || bWaitable)) ? MAX_FRAMES_IN_FLIGHT : defaultBufferCount;
+	scDesc.BufferCount = backbufferCount;
 	scDesc.OutputWindow = (HWND)m_hWnd;
 
 	// Always create a swapchain for windowed mode as per Microsoft recommendations here: https://msdn.microsoft.com/en-us/library/windows/desktop/bb174579(v=vs.85).aspx
@@ -382,7 +380,6 @@ void CRenderDisplayContext::AllocateSwapChain()
 		// Set this flag to create a waitable object you can use to ensure rendering does not begin while a
 		// frame is still being presented. When this flag is used, the swapchain's latency must be set with
 		// the IDXGISwapChain2::SetMaximumFrameLatency API instead of IDXGIDevice1::SetMaximumFrameLatency.
-		scDesc.BufferCount = MAX_FRAMES_IN_FLIGHT + 1;
 		scDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 	}
 #endif
@@ -424,7 +421,8 @@ void CRenderDisplayContext::AllocateSwapChain()
 #if (CRY_RENDERER_DIRECT3D >= 120)
 	if (scDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)
 	{
-		pSwapChain->SetMaximumFrameLatency(MAX_FRAME_LATENCY);
+		CRY_ASSERT(scDesc.BufferCount > CRendererCVars::CV_r_MaxFrameLatency);
+		pSwapChain->SetMaximumFrameLatency(CRendererCVars::CV_r_MaxFrameLatency);
 	}
 #endif
 
@@ -578,6 +576,7 @@ void CRenderDisplayContext::ResizeSwapChain(bool bResizeTarget)
 
 	scDesc.BufferDesc.Width  = backbufferWidth;
 	scDesc.BufferDesc.Height = backbufferHeight;
+	scDesc.BufferCount       = GetBackBufferCount();
 
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
 	if (IsMainContext())
@@ -602,9 +601,21 @@ void CRenderDisplayContext::ResizeSwapChain(bool bResizeTarget)
 		CRY_ASSERT(SUCCEEDED(rr));
 	}
 
+	// Configure maximum frame latency
+#if CRY_PLATFORM_WINDOWS && CRY_RENDERER_DIRECT3D
+	{
+		CRY_ASSERT(scDesc.BufferCount > CRendererCVars::CV_r_MaxFrameLatency);
+
+		DXGIDevice* pDXGIDevice = nullptr;
+		if (SUCCEEDED(gcpRendD3D->GetDevice().GetRealDevice()->QueryInterface(__uuidof(DXGIDevice), (void**)&pDXGIDevice)) && pDXGIDevice)
+			pDXGIDevice->SetMaximumFrameLatency(CRendererCVars::CV_r_MaxFrameLatency);
+		SAFE_RELEASE(pDXGIDevice);
+	}
+#endif
+
 	// Resize the Resources associated with the SwapChain
 	{
-		HRESULT hr = m_pSwapChain->ResizeBuffers(0, scDesc.BufferDesc.Width, scDesc.BufferDesc.Height, DXGI_FORMAT_UNKNOWN, scDesc.Flags);
+		HRESULT hr = m_pSwapChain->ResizeBuffers(scDesc.BufferCount, scDesc.BufferDesc.Width, scDesc.BufferDesc.Height, DXGI_FORMAT_UNKNOWN, scDesc.Flags);
 		CRY_ASSERT(SUCCEEDED(hr));
 	}
 #endif

@@ -746,6 +746,7 @@ DEFINE_ENUM_FLAG_OPERATORS(ELoadConfigurationFlags);
 
 struct SPlatformInfo
 {
+	const char* processorType;
 	unsigned int numCoresAvailableToProcess;
 	unsigned int numLogicalProcessors;
 
@@ -763,9 +764,16 @@ struct SPlatformInfo
 		Win10
 	};
 
-	EWinVersion winVer;
-	bool        win64Bit;
-	bool        vistaKB940105Required;
+	struct SWinInfo
+	{
+		CryPathString path;
+		EWinVersion   ver;
+		uint32_t      build;
+		bool          is64Bit;
+		bool          vistaKB940105Required;
+	};
+
+	SWinInfo win;
 #endif
 };
 

@@ -1318,6 +1318,32 @@ if (RENDERER_VULKAN)
 			-Wno-self-assign
 			-Wno-null-conversion
 		)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-function
+			-Wno-unused-value
+			-Wno-unused-variable
+			-Wno-sign-compare
+			-Wno-ignored-attributes
+			-Wno-int-in-bool-context
+			-Wno-unused-but-set-variable
+			-Wno-tautological-compare
+			-Wno-misleading-indentation
+			-Wno-uninitialized
+			-Wno-maybe-uninitialized
+			-Wno-array-bounds
+			-Wno-unused-result
+			-Wno-narrowing
+			-Wno-unknown-pragmas
+			-Wno-strict-aliasing
+			-Wno-multichar
+			-Wno-char-subscripts
+			-Wno-parentheses
+			-Wno-comment
+			-Wno-address
+			-Wno-format
+			-Wno-switch
+		)
     endif()
 else()
 	CryFileContainer(CryRenderVulkan SOLUTION_FOLDER "CryEngine")

@@ -503,4 +503,28 @@ if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		-Wno-c++11-narrowing
 		-Wno-undefined-var-template
 	)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-function
+		-Wno-unused-value
+		-Wno-unused-variable
+		-Wno-sign-compare
+		-Wno-unused-but-set-variable
+		-Wno-misleading-indentation
+		-Wno-unknown-pragmas
+		-Wno-multichar
+		-Wno-int-in-bool-context
+		-Wno-unused-result
+		-Wno-array-bounds
+		-Wno-strict-aliasing
+		-Wno-maybe-uninitialized
+		-Wno-logical-not-parentheses
+		-Wno-char-subscripts
+		-Wno-conversion-null
+		-Wno-comment
+		-Wno-reorder
+		-Wno-parentheses
+		-Wno-format
+		-Wno-switch
+	)
 endif()

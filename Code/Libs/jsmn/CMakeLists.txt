@@ -23,4 +23,8 @@ if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(${THIS_PROJECT} PRIVATE
 		-Wno-switch
 	)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-switch
+	)
 endif()

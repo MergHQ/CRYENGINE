@@ -28,4 +28,12 @@ if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		-Wno-tautological-compare
 		-Wno-unknown-pragmas
 	)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-tautological-compare
+		-Wno-unknown-pragmas
+		-Wno-unused-variable
+		-Wno-unused-but-set-variable
+		-Wno-parentheses
+	)
 endif()

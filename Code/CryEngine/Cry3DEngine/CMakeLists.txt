@@ -408,6 +408,32 @@ MACRO(setup_Cry3DEngine)
 			-Wno-sometimes-uninitialized
 			-Wno-tautological-constant-out-of-range-compare
 		)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-function
+			-Wno-unused-value
+			-Wno-unused-variable
+			-Wno-sign-compare
+			-Wno-ignored-attributes
+			-Wno-invalid-offsetof
+			-Wno-aligned-new
+			-Wno-int-in-bool-context
+			-Wno-unused-but-set-variable
+			-Wno-misleading-indentation
+			-Wno-strict-aliasing
+			-Wno-maybe-uninitialized
+			-Wno-unknown-pragmas
+			-Wno-multichar
+			-Wno-char-subscripts
+			-Wno-conversion-null
+			-Wno-parentheses
+			-Wno-stringop-overflow
+			-Wno-comment
+			-Wno-reorder
+			-Wno-address
+			-Wno-format
+			-Wno-switch
+		)
     endif()
 ENDMACRO()
 

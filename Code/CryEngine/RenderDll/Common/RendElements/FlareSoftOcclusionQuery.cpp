@@ -84,10 +84,10 @@ void CFlareSoftOcclusionQuery::InitGlobalResources()
 	if (g_bCreatedGlobalResources)
 		return;
 
-	const uint32 numGPUs = (gRenDev->GetActiveGPUCount() <= MAX_OCCLUSION_READBACK_TEXTURES / 2) ? gRenDev->GetActiveGPUCount() : 1;
+	const uint32 numGPUs = gRenDev->GetActiveGPUCount();
 	s_ringWriteIdx = 0;
-	s_ringReadIdx = numGPUs;
-	s_ringSize = numGPUs * 2;
+	s_ringReadIdx  = numGPUs;
+	s_ringSize     = numGPUs * MAX_FRAMES_IN_FLIGHT;
 
 	memset(s_idHashTable, 0, sizeof(s_idHashTable));
 	memset(s_paletteRawCache, 0, sizeof(s_paletteRawCache));
@@ -172,6 +172,8 @@ void CFlareSoftOcclusionQuery::BatchReadResults()
 	if (!g_bCreatedGlobalResources)
 		return;
 
+	CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "CFlareSoftOcclusionQuery::BatchReadResults");
+
 	CRendererResources::s_ptexFlaresOcclusionRing[s_ringReadIdx]->GetDevTexture()->AccessCurrStagingResource(0, false, [=](void* pData, uint32 rowPitch, uint32 slicePitch)
 	{
 		unsigned char* pTexBuf = reinterpret_cast<unsigned char*>(pData);
@@ -190,7 +192,7 @@ void CFlareSoftOcclusionQuery::ReadbackSoftOcclQuery()
 	CRendererResources::s_ptexFlaresOcclusionRing[s_ringWriteIdx]->GetDevTexture()->DownloadToStagingResource(0);
 
 	// sync point. Move to next texture to read and write
-	s_ringReadIdx = (s_ringReadIdx + 1) % s_ringSize;
+	s_ringReadIdx  = (s_ringReadIdx  + 1) % s_ringSize;
 	s_ringWriteIdx = (s_ringWriteIdx + 1) % s_ringSize;
 }
 

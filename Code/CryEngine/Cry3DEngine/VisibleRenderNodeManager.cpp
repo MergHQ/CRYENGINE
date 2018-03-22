@@ -81,6 +81,19 @@ void SRenderNodeTempData::InvalidateRenderObjectsInstanceData()
 	}
 }
 
+void SRenderNodeTempData::SetClipVolume(IClipVolume* pClipVolume, const Vec3& pos)
+{
+	userData.m_pClipVolume = pClipVolume;
+	userData.lastClipVolumePosition = pos;
+	userData.bClipVolumeAssigned = true;
+}
+
+void SRenderNodeTempData::ResetClipVolume()
+{
+	userData.m_pClipVolume = nullptr;
+	userData.bClipVolumeAssigned = false;
+}
+
 //////////////////////////////////////////////////////////////////////////
 CVisibleRenderNodesManager::CVisibleRenderNodesManager()
 	: m_lastStartUpdateNode(0)

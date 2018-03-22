@@ -444,15 +444,6 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 #endif
 #endif
 
-	// Configure maximum frame latency --------------------------------------------------------------------------------------------
-	if (m_pDevice)
-	{
-		DXGIDevice* pDXGIDevice = 0;
-		if (SUCCEEDED(m_pDevice->QueryInterface(__uuidof(DXGIDevice), (void**)&pDXGIDevice)) && pDXGIDevice)
-			pDXGIDevice->SetMaximumFrameLatency(MAX_FRAME_LATENCY);
-		SAFE_RELEASE(pDXGIDevice);
-	}
-
 	HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
 	if (!hWnd)
 	{
@@ -466,6 +457,25 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		pCreateDeviceCallback(m_pDevice);
 
 	ProcessWindowMessages(hWnd);
+
+#if defined(USE_NV_API)
+	{
+		const NvAPI_Status opStatus = NvAPI_SYS_GetDriverAndBranchVersion(&m_driverVersion, m_buildBranchVersion);
+		switch (opStatus)
+		{
+		case NVAPI_OK:
+			break;
+		case NVAPI_INVALID_ARGUMENT:
+		case NVAPI_API_NOT_INITIALIZED:
+		case NVAPI_ERROR:
+		default:
+			cry_sprintf(m_buildBranchVersion, strlen(m_buildBranchVersion), "Unavailable (NVAPI error)");
+			CryLogAlways("NvAPI_SYS_GetDriverAndBranchVersion() failed with error code: %d", static_cast<int>(opStatus));
+		}
+	}
+#else
+	cry_sprintf(m_buildBranchVersion, strlen(m_buildBranchVersion), "Unavailable (NVAPI disabled)");
+#endif
 
 	return IsOk();
 
@@ -554,5 +564,4 @@ void DeviceInfo::ProcessSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PT
 	}
 }
 #endif // #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
-
 #endif // #if defined(SUPPORT_DEVICE_INFO)

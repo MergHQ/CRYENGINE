@@ -2890,6 +2890,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		m_pCpu->Detect();
 		m_env.pi.numCoresAvailableToProcess = m_pCpu->GetCPUCount();
 		m_env.pi.numLogicalProcessors = m_pCpu->GetLogicalCPUCount();
+		m_env.pi.processorType = m_pCpu->m_Cpu[0].mCpuType;
 
 		// Check hard minimum CPU requirements
 		if (!CheckCPURequirements(m_pCpu, this))

@@ -49,6 +49,9 @@ struct DeviceInfo
 	D3D_FEATURE_LEVEL                   FeatureLevel() const              { return m_featureLevel; }
 	D3DFormat                           AutoDepthStencilFmt() const       { return m_autoDepthStencilFmt; }
 
+	unsigned long                       DriverVersion() const             { return m_driverVersion; }
+	const char*                         DriverBuildNumber() const         { return m_buildBranchVersion; }
+
 protected:
 	#if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
 	void ProcessSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PTR lParam);
@@ -92,10 +95,13 @@ protected:
 	bool                                m_activated;
 	bool                                m_activatedMT;
 
-	#if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
+#if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
 	CryCriticalSection           m_msgQueueLock;
 	DeviceInfoInternal::MsgQueue m_msgQueue;
-	#endif
+#endif
+
+	unsigned long m_driverVersion;
+	char m_buildBranchVersion[64];
 };
 
 #endif // #if defined(SUPPORT_DEVICE_INFO)

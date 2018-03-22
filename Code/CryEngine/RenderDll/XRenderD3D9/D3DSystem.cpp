@@ -327,6 +327,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 		m_VSync = 0;
 
 	pDC->EnableVerticalSync(m_VSync != 0);
+	pDC->SetBackBufferCount(CV_r_MaxFrameLatency + 1);
 
 	if (IsFullscreen() && nNewColDepth == 16)
 	{
@@ -1869,14 +1870,6 @@ bool CD3D9Renderer::CreateDevice()
 #if (CRY_RENDERER_DIRECT3D >= 120)
 			pD3D12Device = (pDX12Device = reinterpret_cast<CCryDX12Device*>(pD3D11Device))->GetD3D12Device();
 #endif
-			{
-				DXGIDevice* pDXGIDevice = 0;
-				if (SUCCEEDED(pD3D11Device->QueryInterface(__uuidof(DXGIDevice), (void**)&pDXGIDevice)) && pDXGIDevice)
-					pDXGIDevice->SetMaximumFrameLatency(MAX_FRAME_LATENCY);
-				SAFE_RELEASE(pDXGIDevice);
-			}
-
-			// ...
 		}
 	}
 
@@ -1985,11 +1978,14 @@ bool CD3D9Renderer::CreateDevice()
 
 	//query adapter name
 	const DXGI_ADAPTER_DESC1& desc = m_devInfo.AdapterDesc();
-	m_adapterInfo.name = CryStringUtils::WStrToUTF8(desc.Description);
+	m_adapterInfo.name = CryStringUtils::WStrToUTF8(desc.Description).c_str();
 	m_adapterInfo.VendorId = desc.VendorId;
 	m_adapterInfo.DeviceId = desc.DeviceId;
 	m_adapterInfo.SubSysId = desc.SubSysId;
 	m_adapterInfo.Revision = desc.Revision;
+	m_adapterInfo.DedicatedVideoMemory = desc.DedicatedVideoMemory;
+	m_adapterInfo.DriverVersion = m_devInfo.DriverVersion();
+	m_adapterInfo.DriverBuildNumber = m_devInfo.DriverBuildNumber();
 
 	OnD3D11PostCreateDevice(m_devInfo.Device());
 	#endif
@@ -2274,6 +2270,7 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	pDC->m_nSSSamplesY = CV_r_Supersampling;
 	pDC->m_bMainViewport = true;
 	pDC->SetHWND(rd->m_hWnd);
+	pDC->SetBackBufferCount(CV_r_MaxFrameLatency + 1);
 
 #if DX11_WRAPPABLE_INTERFACE && CAPTURE_REPLAY_LOG
 	rd->MemReplayWrapD3DDevice();

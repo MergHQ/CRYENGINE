@@ -48,7 +48,6 @@ int CRendererCVars::CV_r_FullscreenPreemption = 1;
 AllocateConstIntCVar(CRendererCVars, CV_r_SyncToFrameFence);
 AllocateConstIntCVar(CRendererCVars, CV_e_DebugTexelDensity);
 AllocateConstIntCVar(CRendererCVars, CV_e_DebugDraw);
-int CRendererCVars::CV_r_minimizeLatency = 0;
 AllocateConstIntCVar(CRendererCVars, CV_r_statsMinDrawcalls);
 AllocateConstIntCVar(CRendererCVars, CV_r_stats);
 AllocateConstIntCVar(CRendererCVars, CV_r_profiler);
@@ -331,6 +330,7 @@ int CRendererCVars::CV_r_MotionBlurQuality;
 int CRendererCVars::CV_r_MotionBlurGBufferVelocity;
 float CRendererCVars::CV_r_MotionBlurThreshold;
 int CRendererCVars::CV_r_UseMergedPosts;
+int CRendererCVars::CV_r_MaxFrameLatency;
 float CRendererCVars::CV_r_MotionBlurShutterSpeed;
 float CRendererCVars::CV_r_MotionBlurCameraMotionScale;
 float CRendererCVars::CV_r_MotionBlurMaxViewDist;
@@ -812,6 +812,12 @@ static void OnChange_CV_r_ShadersAllowCompiliation(ICVar* pCVar)
 	// before this.
 	CRenderer::CV_r_shadersasyncactivation = 0;
 	CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR, "Changing r_ShadersAllowCompilation at runtime can cause problems. Please set it in your system.cfg or user.cfg instead.");
+}
+
+static void OnChange_CV_r_MaxFrameLatency(ICVar* pCVar)
+{
+	int clampedLatency = clamp_tpl(pCVar->GetIVal(), 1, MAX_FRAME_LATENCY);
+	pCVar->Set(clampedLatency);
 }
 
 static void OnChange_CV_r_FlaresTessellationRatio(ICVar* pCVar)
@@ -2171,11 +2177,9 @@ void CRendererCVars::InitCVars()
 	DefineConstIntCVar3("r_SyncToFrameFence", CV_r_SyncToFrameFence, 1, VF_CHEAT,
 	                    "Stall the render thread until GPU finished processing previous frame");
 
-	REGISTER_CVAR3("r_minimizeLatency", CV_r_minimizeLatency, 0, VF_REQUIRE_APP_RESTART,
-	               "Initializes and drives renderer to minimize display latency as much as possible.\n"
-	               "As such only a double buffer swap chain will be created.\n"
-	               "Maximum frame latency will be set to 1 on DXGI-supporting platforms\n"
-	               "as well as frames flushed after Present() if r_Flush is enabled.");
+	REGISTER_CVAR3_CB("r_MaxFrameLatency", CV_r_MaxFrameLatency, 1, VF_NULL, 
+	                  "Maximum number of frames that can be in-flight on the GPU",
+	                   OnChange_CV_r_MaxFrameLatency);
 
 	DefineConstIntCVar3("r_ShadersDebug", CV_r_shadersdebug, 0, VF_DUMPTODISK,
 	                    "Enable special logging when shaders become compiled\n"
