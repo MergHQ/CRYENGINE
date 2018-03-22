@@ -1985,11 +1985,14 @@ bool CD3D9Renderer::CreateDevice()
 
 	//query adapter name
 	const DXGI_ADAPTER_DESC1& desc = m_devInfo.AdapterDesc();
-	m_adapterInfo.name = CryStringUtils::WStrToUTF8(desc.Description);
+	m_adapterInfo.name = CryStringUtils::WStrToUTF8(desc.Description).c_str();
 	m_adapterInfo.VendorId = desc.VendorId;
 	m_adapterInfo.DeviceId = desc.DeviceId;
 	m_adapterInfo.SubSysId = desc.SubSysId;
 	m_adapterInfo.Revision = desc.Revision;
+	m_adapterInfo.DedicatedVideoMemory = desc.DedicatedVideoMemory;
+	m_adapterInfo.DriverVersion = m_devInfo.DriverVersion();
+	m_adapterInfo.DriverBuildNumber = m_devInfo.DriverBuildNumber();
 
 	OnD3D11PostCreateDevice(m_devInfo.Device());
 	#endif

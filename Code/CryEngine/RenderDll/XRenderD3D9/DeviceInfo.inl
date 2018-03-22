@@ -467,6 +467,25 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 
 	ProcessWindowMessages(hWnd);
 
+#if defined(USE_NV_API)
+	{
+		const NvAPI_Status opStatus = NvAPI_SYS_GetDriverAndBranchVersion(&m_driverVersion, m_buildBranchVersion);
+		switch (opStatus)
+		{
+		case NVAPI_OK:
+			break;
+		case NVAPI_INVALID_ARGUMENT:
+		case NVAPI_API_NOT_INITIALIZED:
+		case NVAPI_ERROR:
+		default:
+			cry_sprintf(m_buildBranchVersion, strlen(m_buildBranchVersion), "Unavailable (NVAPI error)");
+			CryLogAlways("NvAPI_SYS_GetDriverAndBranchVersion() failed with error code: %d", static_cast<int>(opStatus));
+		}
+	}
+#else
+	cry_sprintf(m_buildBranchVersion, strlen(m_buildBranchVersion), "Unavailable (NVAPI disabled)");
+#endif
+
 	return IsOk();
 
 #else
@@ -554,5 +573,4 @@ void DeviceInfo::ProcessSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PT
 	}
 }
 #endif // #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
-
 #endif // #if defined(SUPPORT_DEVICE_INFO)
