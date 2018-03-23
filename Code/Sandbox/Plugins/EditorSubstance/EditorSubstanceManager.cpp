@@ -76,11 +76,14 @@ public:
 			// TODO for now it looks like sandbox isn't reloading the texture when tif is not existent and dd
 			// is written directly, so we need to write the tif
 			//additionalSettings += " /directdds /sourceroot=\"" + gameFolderPath + "\"";
-			additionalSettings += " /sourceroot=\"" + gameFolderPath + "\"";
+			additionalSettings += "/sourceroot=\"" + gameFolderPath + "\"";
+
+			AssetManagerHelpers::RCLogger logger;
+
 			CResourceCompilerHelper::CallResourceCompiler(
 				assetPath.c_str(),
 				additionalSettings,
-				nullptr,
+				&logger,
 				false, // may show window?
 				CResourceCompilerHelper::eRcExePath_editor,
 				true,  // silent?

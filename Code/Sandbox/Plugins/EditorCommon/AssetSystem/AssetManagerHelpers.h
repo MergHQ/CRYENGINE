@@ -11,7 +11,7 @@ namespace AssetManagerHelpers
 
 bool IsFileOpened(const string& path);
 
-struct RCLogger : IResourceCompilerListener
+struct EDITOR_COMMON_API RCLogger : IResourceCompilerListener
 {
 	virtual void OnRCMessage(MessageSeverity severity, const char* szText) override;
 };

@@ -588,8 +588,10 @@ CSubstancePreset::CSubstancePreset(const string& fileName, const string& archive
 
 CSubstancePreset::CSubstancePreset()
 	: m_pGraphInstance(0)
+	, m_resolutionBackup(0, 0)
+	, m_resolutionId(-1)
+	, m_uniformResolution(true)
 {
-
 }
 
 CSubstancePreset::~CSubstancePreset()
