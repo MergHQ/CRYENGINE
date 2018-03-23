@@ -80,11 +80,14 @@ class UncrustifyRunner:
         if self.trigger:
             if 'shelved' not in description:
                 raise ValueError('The changelist does not have shelved files.')
+            #  HACK, do not unshelve the uncrustify script or it will fail
+            if any(f.endswith('p4v_uncrustify.py') for f in description['depotFile']):
+                return []
             self.unshelve_changelist = self.create_changelist('!X For style check')
             self.p4.run_unshelve('-s', changelist, '-c', self.unshelve_changelist)
         # Retrieve local paths for all files in the changelist.
         fstat_results = self.p4.run_fstat(['-Op', *(f'{filename}#have' for filename in description['depotFile'])])
-        changelist_files = [f['path'] for f in fstat_results]
+        changelist_files = [f['path'] for f in fstat_results if 'delete' not in f['action']]
         filtered_files = set()
         if self.allowed_patterns:
             for pattern in self.allowed_patterns:
