@@ -741,16 +741,15 @@ void CObjectLayerManager::Serialize(CObjectArchive& ar)
 		for (LayersMap::const_iterator it = m_layersMap.begin(); it != m_layersMap.end(); ++it)
 		{
 			CObjectLayer* pLayer = it->second;
-			if (pLayer->GetLayerType() != eObjectLayerType_Folder)
+			if (pLayer->GetLayerType() == eObjectLayerType_Folder)
 			{
+				continue;
+			}
 
-				//XmlNodeRef layerNode = layersNode->newChild("Layer");
-				//pLayer->SerializeBase(layerNode, false);
-				if (!gEditorGeneralPreferences.saveOnlyModified() || pLayer->IsModified())
-				{
-					// Save external level additionally to file.
-					SaveLayer(&ar, pLayer);
-				}
+			if (!gEditorGeneralPreferences.saveOnlyModified() || pLayer->IsModified() || !PathUtil::FileExists(pLayer->GetLayerFilepath()))
+			{
+				// Save external level to file.
+				SaveLayer(&ar, pLayer);
 			}
 		}
 
