@@ -37,23 +37,6 @@
 #include "ISubstanceManager.h"
 #include "ISubstanceInstanceRenderer.h"
 
-static ThreadUtils::CriticalSection s_initDiallogSystemLock;
-
-
-const char* stristr(const char* szString, const char* szSubstring)
-{
-	int nSuperstringLength = (int)strlen(szString);
-	int nSubstringLength = (int)strlen(szSubstring);
-
-	for(int nSubstringPos = 0; nSubstringPos <= nSuperstringLength - nSubstringLength; ++nSubstringPos)
-	{
-		if (strnicmp(szString+nSubstringPos, szSubstring, nSubstringLength) == 0)
-			return szString+nSubstringPos;
-	}
-
-	return NULL;
-}
-
 // checks if preset exists, reports warning or error if doesn't
 bool CSubstanceCompiler::CheckForExistingPreset(const ConvertContext& CC, const string& presetName, bool errorInsteadOfWarning)
 {
@@ -72,18 +55,11 @@ bool CSubstanceCompiler::CheckForExistingPreset(const ConvertContext& CC, const 
 	return true;
 }
 
-
 // constructor
-#pragma warning(push)
-#pragma warning(disable:4355) // 'this': used in base member initializer list
 CSubstanceCompiler::CSubstanceCompiler(CSubstanceConverter* converter)
 	: m_pConverter(converter)
 {
-
-
 }
-#pragma warning(pop)
-
 
 // destructor
 CSubstanceCompiler::~CSubstanceCompiler()
@@ -161,6 +137,11 @@ static string AutoselectPreset(const ConvertContext& CC, const uint32 width, con
 bool CSubstanceCompiler::ProcessImplementation()
 {
 	const string sourceFile = m_CC.GetSourcePath();
+	if (m_CC.pRC->GetVerbosityLevel() > 0)
+	{
+		RCLog("Processing substance preset: %s", sourceFile.c_str());
+	}
+
 	ISubstancePreset* pCurrentPreset = ISubstancePreset::Load(sourceFile);
 	if (!pCurrentPreset || pCurrentPreset->GetSubstanceArchive().empty())
 	{
