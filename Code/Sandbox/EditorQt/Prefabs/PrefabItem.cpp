@@ -21,6 +21,8 @@
 
 #include "IUndoManager.h"
 
+#include <Objects/IObjectLayer.h>
+
 //////////////////////////////////////////////////////////////////////////
 CPrefabItem::CPrefabItem()
 {
@@ -123,146 +125,67 @@ void CPrefabItem::Update()
 //////////////////////////////////////////////////////////////////////////
 void CPrefabItem::MakeFromSelection(const CSelectionGroup& fromSelection)
 {
-	if (fromSelection.IsEmpty())
+	const CSelectionGroup* selection = GetIEditorImpl()->GetSelection();
+	selection->FilterParents();
+
+	int i;
+	std::vector<CBaseObject*> objects;
+	objects.reserve(selection->GetFilteredCount());
+	for (i = 0; i < selection->GetFilteredCount(); i++)
+	{
+		objects.push_back(selection->GetFilteredObject(i));
+	}
+
+	if (objects.size())
+	{
+		const auto lastIdx = objects.size() - 1;
+		IObjectLayer* pDestLayer = objects[lastIdx]->GetLayer();
+
+		for (i = 0; i < objects.size(); ++i)
+		{
+			if (!objects[i]->AreLinkedDescendantsInLayer(pDestLayer))
+			{
+				string message;
+				message.Format("The objects you are trying to create a prefab from are on different layers. All objects will be moved to %s layer\n\n"
+					"Do you want to continue?", pDestLayer->GetName());
+
+				if (QDialogButtonBox::StandardButton::Yes != CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr(message)))
+				{
+					return;
+				}
+
+				break;
+			}
+		}
+	}
+
+	GetIEditorImpl()->GetIUndoManager()->Begin();
+	CBaseObject* pObject = GetIEditorImpl()->NewObject(PREFAB_OBJECT_CLASS_NAME);
+
+	if (!pObject || !pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
 		return;
 
-	IObjectManager* pObjMan = GetIEditorImpl()->GetObjectManager();
-	CSelectionGroup selection;
+	CPrefabObject* pPrefabObj = (CPrefabObject*)pObject;
+	pPrefabObj->SetPrefab(this, false);
 
-	selection.Copy(fromSelection);
-
-	if (selection.GetCount() == 1)
+	if (!pPrefabObj)
 	{
-		CBaseObject* pObject = selection.GetObject(0);
-		if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-		{
-			CPrefabObject* pPrefabObject = (CPrefabObject*)pObject;
-			pObjMan->SelectObject(pObject);
-			return;
-		}
+		GetIEditorImpl()->GetIUndoManager()->Cancel();
+		return;
 	}
 
 	// Snap center to grid.
-	Vec3 vPivot = gSnappingPreferences.Snap(selection.GetBounds().min);
-	_smart_ptr<CGroup> pCommonGroupObj = (CGroup*)selection.GetObject(0)->GetGroup();
-	TBaseObjects objectList;
+	Vec3 center = gSnappingPreferences.Snap(selection->GetCenter());
+	pPrefabObj->SetPos(center);
 
-	selection.FilterLinkedObjects();
-	int nSelectionCount = selection.GetFilteredCount();
-	for (int i = 0; i < nSelectionCount; i++)
-	{
-		CBaseObject* pObj = selection.GetFilteredObject(i);
-		if (!pObj->GetGroup())
-			objectList.push_back(pObj);
-	}
+	GetIEditorImpl()->GetPrefabManager()->AddSelectionToPrefab(pPrefabObj);
 
-	CBaseObject* pPrefabObj = NULL;
-	{
-		//////////////////////////////////////////////////////////////////////////
-		// Transform all objects in selection into local space of prefab.
-		Matrix34 invParentTM;
-		invParentTM.SetIdentity();
-		invParentTM.SetTranslation(vPivot);
-		invParentTM.Invert();
+	// Clear selection
+	GetIEditorImpl()->GetObjectManager()->SelectObject(pPrefabObj);
 
-		CUndo undo("Make Prefab");
-		for (int i = 0, selectionCount(objectList.size()); i < selectionCount; i++)
-		{
-			CBaseObject* pObj = objectList[i];
+	GetIEditorImpl()->GetIUndoManager()->Accept("Create Prefab");
+	GetIEditorImpl()->SetModifiedFlag();
 
-			if (pCommonGroupObj)
-			{
-				pCommonGroupObj->RemoveMember(pObj);
-			}
-			else if (pObj->GetParent())
-			{
-				continue;
-			}
-
-			Matrix34 localTM = invParentTM * pObj->GetWorldTM();
-			pObj->SetLocalTM(localTM);
-		}
-
-		//////////////////////////////////////////////////////////////////////////
-		// Save all objects in flat selection to XML.
-		GetIEditorImpl()->GetIUndoManager()->Suspend();
-
-		CSelectionGroup flatSelection;
-		selection.FlattenHierarchy(flatSelection, true);
-
-		m_objectsNode = XmlHelpers::CreateXmlNode("Objects");
-		std::vector<CBaseObject*> linkedObjects; // Collect all linked objects to be deleted later
-		CObjectArchive ar(pObjMan, m_objectsNode, false);
-		for (int i = 0, iFlatSelectionCount(flatSelection.GetCount()); i < iFlatSelectionCount; i++)
-		{
-			CBaseObject* pObj = flatSelection.GetObject(i);
-			if (!pObj->IsPartOfPrefab())
-			{
-				CollectLinkedObjects(pObj, linkedObjects, selection);
-				ar.SaveObject(pObj, true, true);
-				SaveLinkedObjects(ar, pObj, false);
-			}
-		}
-
-		GetIEditorImpl()->GetIUndoManager()->Resume();
-
-		//////////////////////////////////////////////////////////////////////////
-		// Delete objects in original selection.
-		//////////////////////////////////////////////////////////////////////////
-		int selectionCount = selection.GetCount();
-		std::vector<CBaseObject*> objectsToDelete;
-		objectsToDelete.reserve(selectionCount);
-
-		// save layer before deleting objects
-		IObjectLayer* pPrefabsLayer = selection.GetObject(selectionCount - 1)->GetLayer();
-
-		for (int i = 0; i < selectionCount; i++)
-		{
-			CBaseObject* pObj = selection.GetObject(i);
-			objectsToDelete.push_back(pObj);
-		}
-
-		for (auto& pLinkedObj : linkedObjects)
-		{
-			objectsToDelete.push_back(pLinkedObj);
-		}
-
-		pObjMan->DeleteObjects(objectsToDelete);
-
-		//////////////////////////////////////////////////////////////////////////
-		// Create prefab object.
-		pPrefabObj = pObjMan->NewObject(PREFAB_OBJECT_CLASS_NAME);
-		if (pPrefabObj && pPrefabObj->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-		{
-			CPrefabObject* pConcretePrefabObj = (CPrefabObject*)pPrefabObj;
-			if (pPrefabsLayer)
-				pConcretePrefabObj->SetLayer(pPrefabsLayer);
-
-			pConcretePrefabObj->SetUniqName(GetName());
-			pConcretePrefabObj->SetPos(vPivot);
-			pConcretePrefabObj->SetPrefab(this, false);
-
-			if (pCommonGroupObj)
-				pCommonGroupObj->AddMember(pConcretePrefabObj);
-		}
-		else if (pPrefabObj)
-		{
-			pObjMan->DeleteObject(pPrefabObj);
-			pPrefabObj = 0;
-		}
-
-		if (pPrefabObj)
-		{
-			pObjMan->SelectObject(pPrefabObj);
-			CPrefabObject* pConcretePrefabObj = (CPrefabObject*)pPrefabObj;
-			TBaseObjects allChildren;
-			pConcretePrefabObj->GetAllChildren(allChildren);
-			for (int i = 0, iChildCounter(allChildren.size()); i < iChildCounter; ++i)
-			{
-				pObjMan->RegisterObjectName(allChildren[i]->GetName());
-			}
-		}
-	}
 	SetModified();
 }
 
