@@ -3944,6 +3944,7 @@ SSkinningData* CRenderer::EF_CreateSkinningData(IRenderView* pRenderView, uint32
 	pSkinningRenderData->pPreviousSkinningRenderData = NULL;
 	pSkinningRenderData->pCharInstCB                 = FX_AllocateCharInstCB(pSkinningRenderData, m_nPoolIndex);
 	pSkinningRenderData->remapGUID                   = ~0u;
+	memset(pSkinningRenderData->vecPrecisionOffset, 0, sizeof(pSkinningRenderData->vecPrecisionOffset));
 
 	pSkinningRenderData->pNextSkinningData       = NULL;
 	pSkinningRenderData->pMasterSkinningDataList = &pSkinningRenderData->pNextSkinningData;

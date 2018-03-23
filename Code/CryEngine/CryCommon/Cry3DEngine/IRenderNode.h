@@ -1010,12 +1010,22 @@ struct IRopeRenderNode : public IRenderNode
 		eRope_StaticAttachEnd        = 0x0200,  //!< attach end point to the 'world'.
 		eRope_CastShadows            = 0x0400,  //!< self-explanatory.
 		eRope_Awake                  = 0x0800,  //!< Rope will be awake initially.
+		eRope_UseBones							 = 0x1000,  //!< Rope will use skinned mesh instead fully generated
+		eRope_SegObjBends						 = 0x2000,  //!< Is segment cgf is used, whether it'll be rigidly linked to bones
+	};
+	enum ERopeSegAxis
+	{
+		eRopeSeg_X    = 0,
+		eRopeSeg_Y    = 1,
+		eRopeSeg_Z    = 2,
+		eRopeSeg_Auto = 3
 	};
 	struct SRopeParams
 	{
-		int   nFlags = eRope_CheckCollisinos; //!< ERopeParamFlags.
+		int   nFlags = eRope_CheckCollisinos | eRope_UseBones; //!< ERopeParamFlags.
 
 		float fThickness = 0.02f;
+		float sizeChange = 0.0f;
 
 		//! Radius for the end points anchors that bind rope to objects in world.
 		float fAnchorRadius = 0.1f;
@@ -1027,6 +1037,12 @@ struct IRopeRenderNode : public IRenderNode
 		float fTextureTileU = 1.f;
 		float fTextureTileV = 10.f;
 		//////////////////////////////////////////////////////////////////////////
+
+		string       segmentObj;
+		ERopeSegAxis segObjAxis = eRopeSeg_Auto;
+		float        segObjLen  = 1.0f;
+		float        segObjRot  = 0.0f;
+		int          boneSmoothIters = 2;
 
 		//////////////////////////////////////////////////////////////////////////
 		// Rope Physical parameters.

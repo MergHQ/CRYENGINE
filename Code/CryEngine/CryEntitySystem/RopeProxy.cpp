@@ -194,6 +194,12 @@ inline void RopeParamsToXml(IRopeRenderNode::SRopeParams& rp, XmlNodeRef& node, 
 		node->getAttr("hardness", rp.hardness);
 		node->getAttr("damping", rp.damping);
 		node->getAttr("sleepSpeed", rp.sleepSpeed);
+		node->getAttr("sizeDecay", rp.sizeChange);
+		node->getAttr("smoothIters", rp.boneSmoothIters);
+		node->getAttr("segObjLen", rp.segObjLen);
+		node->getAttr("segObjRot", rp.segObjRot);
+		node->getAttr("segObjAxis", (int&)rp.segObjAxis);
+		rp.segmentObj = node->getAttr("segmentObj");
 	}
 	else
 	{
@@ -224,6 +230,12 @@ inline void RopeParamsToXml(IRopeRenderNode::SRopeParams& rp, XmlNodeRef& node, 
 		node->setAttr("hardness", rp.hardness);
 		node->setAttr("damping", rp.damping);
 		node->setAttr("sleepSpeed", rp.sleepSpeed);
+		node->setAttr("sizeDecay", rp.sizeChange);
+		node->setAttr("smoothIters", rp.boneSmoothIters);
+		node->setAttr("segObjLen", rp.segObjLen);
+		node->setAttr("segObjRot", rp.segObjRot);
+		node->setAttr("segObjAxis", rp.segObjAxis);
+		node->setAttr("segmentObj", rp.segmentObj);
 	}
 }
 
