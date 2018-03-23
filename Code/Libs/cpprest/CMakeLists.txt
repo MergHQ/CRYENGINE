@@ -62,5 +62,5 @@ if (WIN32)
 	#Disable link warning LNK4221 (StdAfx.obj : warning LNK4221: This object file does not define any previously undefined public symbols, so it will not be used by any link operation that consumes this library)
 	set_target_properties(${THIS_PROJECT} PROPERTIES STATIC_LIBRARY_FLAGS "/ignore:4221")
 else()
-#			linux_lib = [ 'boost_system', 'crypto', 'ssl', 'boost_thread' ]
+	target_link_libraries(${THIS_PROJECT} PRIVATE boost_system crypto ssl boost_thread)
 endif()
