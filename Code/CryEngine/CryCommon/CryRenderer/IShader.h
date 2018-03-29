@@ -256,6 +256,7 @@ struct SShaderParam
 
 				switch (sp->m_Type)
 				{
+				case eType_HALF:
 				case eType_FLOAT:
 					sp->m_Value.m_Float = pr.m_Float;
 					break;
@@ -287,6 +288,18 @@ struct SShaderParam
 						sp->m_Value.m_String = new char[len];
 						strcpy(sp->m_Value.m_String, str);
 					}
+					break;
+				case eType_BOOL:
+					sp->m_Value.m_Bool = pr.m_Bool;
+					break;
+				case eType_BYTE:
+					sp->m_Value.m_Byte = pr.m_Byte;
+					break;
+				case eType_CAMERA:
+					sp->m_Value.m_pCamera = pr.m_pCamera;
+					break;
+				case eType_UNKNOWN:
+					CryLog("Unable to set parameter of type 'unknown'.");
 					break;
 				}
 				break;

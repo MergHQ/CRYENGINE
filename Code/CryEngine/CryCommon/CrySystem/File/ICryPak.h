@@ -800,7 +800,7 @@ protected:
 class CInMemoryFileLoader
 {
 public:
-	CInMemoryFileLoader(ICryPak* pCryPak) : m_pPak(pCryPak), m_pFile(0), m_pBuffer(0), m_pCursor(0), m_nFileSize(0) {}
+	CInMemoryFileLoader(ICryPak* pCryPak) : m_pFile(0), m_pBuffer(0), m_pPak(pCryPak), m_pCursor(0), m_nFileSize(0) {}
 	~CInMemoryFileLoader()
 	{
 		Close();

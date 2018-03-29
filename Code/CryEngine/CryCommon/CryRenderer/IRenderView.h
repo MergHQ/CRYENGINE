@@ -30,15 +30,15 @@ struct SRenderPolygonDescription
 
 	SRenderPolygonDescription() {}
 	SRenderPolygonDescription(CRenderObject* pRendObj, SShaderItem& si, int numPts, const SVF_P3F_C4B_T2F* verts, const SPipTangents* tangs, uint16* inds, int ninds, ERenderListID _renderListId, int nAW)
-		: numVertices(numPts)
+		: shaderItem(si)
+		, numVertices(numPts)
 		, pVertices(verts)
 		, pTangents(tangs)
 		, pIndices(inds)
 		, numIndices(ninds)
-		, renderListId(_renderListId)
 		, afterWater(nAW)
+		, renderListId(_renderListId)
 		, pRenderObject(pRendObj)
-		, shaderItem(si)
 	{}
 };
 

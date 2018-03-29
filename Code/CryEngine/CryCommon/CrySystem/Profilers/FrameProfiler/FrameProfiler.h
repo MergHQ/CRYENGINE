@@ -598,7 +598,7 @@ public:
 
 struct DiskOperationInfo
 {
-	DiskOperationInfo() : m_nSeeksCount(0), m_nFileOpenCount(0), m_nFileReadCount(0), m_dOperationSize(0.), m_dOperationTime(0.) {}
+	DiskOperationInfo() : m_nSeeksCount(0), m_nFileOpenCount(0), m_nFileReadCount(0), m_dOperationTime(0.), m_dOperationSize(0.) {}
 	int    m_nSeeksCount;
 	int    m_nFileOpenCount;
 	int    m_nFileReadCount;

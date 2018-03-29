@@ -209,49 +209,26 @@ public:
 
 		ILINE void PushSection(CFrameProfilerSection* pSection, TThreadId threadId)
 		{
-			if (m_aThreadStacks[0].threadId == threadId)
-				Push(m_aThreadStacks[0].pProfilerSection, pSection);
-			else
-				PushThreadedSection(pSection, threadId);
-		}
-		void PushThreadedSection(CFrameProfilerSection* pSection, TThreadId threadId)
-		{
-			assert(pSection);
+			assert(threadId != TThreadId(0) && pSection);
+
+			for (int i = 0, end = m_nThreadStacks; i < end; ++i)
 			{
-				CryReadLock(&m_lock);
-
-				// Look for thread slot.
-				for (int i = 1; i < m_nThreadStacks; ++i)
-					if (m_aThreadStacks[i].threadId == threadId)
-					{
-						Push(m_aThreadStacks[i].pProfilerSection, pSection);
-						CryReleaseReadLock(&m_lock);
-						return;
-					}
-
-				CryReleaseReadLock(&m_lock);
+				if (m_aThreadStacks[i].threadId == threadId)
+				{
+					Push(m_aThreadStacks[i].pProfilerSection, pSection);
+					return;
+				}
 			}
 
-			// Look for unused slot.
-			CryWriteLock(&m_lock);
+			// add new thread stack entry
+			int newIndex = CryInterlockedIncrement((volatile int*)&m_nThreadStacks) - 1;
 
-			int i;
-			for (i = 1; i < m_nThreadStacks; ++i)
-				if (m_aThreadStacks[i].threadId == threadID(0))
-					break;
+			if (newIndex == nMAX_THREADS)
+				CryFatalError("Profiled thread count of %d exceeded!", nMAX_THREADS);
 
-			// Allocate new slot.
-			if (i == m_nThreadStacks)
-			{
-				if (m_nThreadStacks == nMAX_THREADS)
-					CryFatalError("Profiled thread count of %d exceeded!", nMAX_THREADS);
-				m_nThreadStacks++;
-			}
-
-			m_aThreadStacks[i].threadId = threadId;
-			Push(m_aThreadStacks[i].pProfilerSection, pSection);
-
-			CryReleaseWriteLock(&m_lock);
+			m_aThreadStacks[newIndex].threadId = threadId;
+			Push(m_aThreadStacks[newIndex].pProfilerSection, pSection);
+			return;
 		}
 
 		ILINE void PopSection(CFrameProfilerSection* pSection, TThreadId threadId)

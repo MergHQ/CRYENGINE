@@ -165,6 +165,8 @@ struct  SplineKey
 				case ETangentType::Linear:
 					ds = value - prev->value;
 					break;
+				default:
+					break;
 				}
 			}
 
@@ -183,6 +185,8 @@ struct  SplineKey
 					break;
 				case ETangentType::Linear:
 					dd = next->value - value;
+					break;
+				default:
 					break;
 				}
 			}

@@ -332,7 +332,7 @@ protected:
 	};
 	void* callee;
 
-	FunctorBase() : callee(0), func(0) {}
+	FunctorBase() :func(0),  callee(0) {}
 	FunctorBase(const void* c, PtrToFunc f, const void* mf, size_t sz) : callee((void*)c)
 	{
 		if (c)  //must be callee/memfunc

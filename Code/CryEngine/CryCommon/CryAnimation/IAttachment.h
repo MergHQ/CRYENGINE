@@ -132,8 +132,7 @@ public:
 	SVClothParams() :
 
 		// Animation Control
-		hide(false)
-		, forceSkinning(false)
+		forceSkinning(false)
 		, forceSkinningFpsThreshold(25.0f)
 		, forceSkinningTranslateThreshold(1.0f)
 		, checkAnimationRewind(true)
@@ -192,6 +191,7 @@ public:
 		, debugPrint(0)
 
 		, weights(nullptr)
+		, hide(false)
 		, disableSimulation(false)
 	{}
 };
@@ -201,9 +201,9 @@ struct SVClothAttachmentParams
 {
 	SVClothAttachmentParams(const char* attachmentName, const SVClothParams& vclothParams, int skinLoadingFlags, int flags)
 		: attachmentName(attachmentName)
-		, skinLoadingFlags(skinLoadingFlags)
-		, flags(flags)
 		, vclothParams(vclothParams)
+		, flags(flags)
+		, skinLoadingFlags(skinLoadingFlags)
 	{}
 
 	const string attachmentName;
@@ -729,10 +729,10 @@ inline IMaterial* CSKINAttachment::GetBaseMaterial(uint32 nLOD) const
 struct CEntityAttachment : public IAttachmentObject
 {
 public:
-	CEntityAttachment() : m_scale(1.0f, 1.0f, 1.0f), m_id(0){}
+	CEntityAttachment() : m_id(0), m_scale(1.0f, 1.0f, 1.0f) {}
 
-	virtual EType GetAttachmentType() override { return eAttachment_Entity; };
-	void          SetEntityId(EntityId id)     { m_id = id; };
+	virtual EType GetAttachmentType() override { return eAttachment_Entity; }
+	void          SetEntityId(EntityId id)     { m_id = id; }
 	EntityId      GetEntityId()                { return m_id; }
 
 	virtual void  ProcessAttachment(IAttachment* pIAttachment) override

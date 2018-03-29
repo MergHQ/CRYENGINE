@@ -266,7 +266,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 struct WriteLockCond
 {
-	WriteLockCond(volatile int& rw, int bActive = 1) : prw(&rw), iActive(0)
+	WriteLockCond(volatile int& rw, int bActive = 1) : iActive(0), prw(&rw)
 	{
 		if (bActive)
 		{

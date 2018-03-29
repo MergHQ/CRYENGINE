@@ -277,8 +277,8 @@ struct SExecuteTriggerData : public SCreateObjectData
 	  CObjectTransformation const& transformation_ = CObjectTransformation::GetEmptyObject(),
 	  EntityId const entityId_ = INVALID_ENTITYID,
 	  bool const setCurrentEnvironments_ = false)
-		: triggerId(triggerId_)
-		, SCreateObjectData(szName_, occlusionType_, transformation_, entityId_, setCurrentEnvironments_)
+		: SCreateObjectData(szName_, occlusionType_, transformation_, entityId_, setCurrentEnvironments_),
+		  triggerId(triggerId_)
 	{}
 
 	ControlId const triggerId;

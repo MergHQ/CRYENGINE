@@ -338,6 +338,16 @@ bool CMetadataCompiler::Process()
 	const string sourceFilename = m_CC.GetSourcePath();
 	const string metadataFilename = IAssetManager::GetMetadataFilename(sourceFilename);
 
+	// If source file does not exist, ignore it.
+	if (!FileUtil::FileExists(sourceFilename))
+	{
+		if (!m_CC.config->GetAsBool("skipmissing", false, true))
+		{
+			RCLogWarning("File does not exist: %s", sourceFilename.c_str());
+		}
+		return true;
+	}
+
 	if (m_CC.config->GetAsBool("stripMetadata", false, true))
 	{
 		return DeleteFileIfExists(metadataFilename);

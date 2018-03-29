@@ -52,11 +52,11 @@ class CREHDRSky : public CRenderElement
 public:
 	CREHDRSky()
 		: m_pRenderParams(0)
+		, m_pSkyDomeTextureMie(0)
+		, m_pSkyDomeTextureRayleigh(0)
 		, m_skyDomeTextureLastTimeStamp(-1)
 		, m_frameReset(0)
 		, m_pStars(0)
-		, m_pSkyDomeTextureMie(0)
-		, m_pSkyDomeTextureRayleigh(0)
 	{
 		mfSetType(eDATA_HDRSky);
 		mfUpdateFlags(FCEF_TRANSFORM);

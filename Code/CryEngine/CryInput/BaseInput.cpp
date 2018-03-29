@@ -36,17 +36,17 @@ bool compareInputListener(const IInputEventListener* pListenerA, const IInputEve
 
 CBaseInput::CBaseInput()
 	: m_pExclusiveListener(0)
+	, m_touchListeners(1)
 	, m_enableEventPosting(true)
 	, m_retriggering(false)
 	, m_hasFocus(false)
+	, m_forceFeedbackDeviceIndex(EFF_INVALID_DEVICE_INDEX)
 	, m_modifiers(0)
 	, m_pCVars(new CInputCVars())
-	, m_platformFlags(0)
-	, m_forceFeedbackDeviceIndex(EFF_INVALID_DEVICE_INDEX)
 	, m_pKinectInput(0)
 	, m_pEyeTrackerInput(0)
 	, m_pNaturalPointInput(0)
-	, m_touchListeners(1)
+	, m_platformFlags(0)
 {
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CBaseInput");
 
