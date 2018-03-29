@@ -274,9 +274,9 @@ struct IEntityLink
 struct SEntityPhysicalizeParams
 {
 	//////////////////////////////////////////////////////////////////////////
-	SEntityPhysicalizeParams() : type(0), density(-1), mass(-1), nSlot(-1), nFlagsOR(0), nFlagsAND(UINT_MAX),
+	SEntityPhysicalizeParams() : type(0), nSlot(-1), density(-1), mass(-1), nFlagsAND(UINT_MAX), nFlagsOR(0), nLod(0),
 		pAttachToEntity(NULL), nAttachToPart(-1), fStiffnessScale(0), bCopyJointVelocities(false),
-		pParticle(NULL), pBuoyancy(NULL), pPlayerDimensions(NULL), pPlayerDynamics(NULL), pCar(NULL), pAreaDef(NULL), nLod(0), szPropsOverride(0) {};
+		pParticle(NULL), pBuoyancy(NULL), pPlayerDimensions(NULL), pPlayerDynamics(NULL), pCar(NULL), pAreaDef(NULL), szPropsOverride(0) {}
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Physicalization type must be one of pe_type enums.
@@ -343,7 +343,7 @@ struct SEntityPhysicalizeParams
 		struct pe_params_area* pGravityParams;
 
 		AreaDefinition() : areaType(AREA_SPHERE), fRadius(0), boxmin(0, 0, 0), boxmax(0, 0, 0),
-			pPoints(NULL), nNumPoints(0), pGravityParams(NULL), zmin(0), zmax(0), center(0, 0, 0), axis(0, 0, 0) {}
+			pPoints(NULL), nNumPoints(0), zmin(0), zmax(0), center(0, 0, 0), axis(0, 0, 0), pGravityParams(NULL) {}
 	};
 
 	//! When physicalizing with type == PE_AREA this must be a valid pointer to the AreaDefinition structure.

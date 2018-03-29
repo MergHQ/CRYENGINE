@@ -92,7 +92,7 @@ public:
 	virtual void                 ForceFeedbackEvent(const SFFOutputEvent& event);
 	virtual void                 ForceFeedbackSetDeviceIndex(int index);
 	virtual void                 EnableDevice(EInputDeviceType deviceType, bool enable);
-	virtual void                 ProcessKey(uint32 key, bool pressed, wchar_t unicode, bool repeat) {};
+	virtual void                 ProcessKey(uint32 key, bool pressed, wchar_t unicode, bool repeat) {}
 	// ~IInput
 
 	// ISystemEventListener

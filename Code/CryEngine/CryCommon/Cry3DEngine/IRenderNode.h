@@ -77,7 +77,7 @@ enum EOcclusionObjectType
 
 struct OcclusionTestClient
 {
-	OcclusionTestClient() : nLastOccludedMainFrameID(0), nLastVisibleMainFrameID(0)
+	OcclusionTestClient() : nLastVisibleMainFrameID(0), nLastOccludedMainFrameID(0)
 	{
 #ifdef SUPP_HMAP_OCCL
 		vLastVisPoint.Set(0, 0, 0);

@@ -58,7 +58,7 @@ struct Context {
 	Context* previousContext;
 	Archive* archive;
 
-	Context() : archive(0), object(0), previousContext(0) {}
+	Context() :  object(0), previousContext(0), archive(0) {}
 	template<class T>
 	void set(T* object);
 	template<class T>
@@ -88,10 +88,10 @@ public:
 	};
 
 	Archive(int caps)
-	: lastContext_(0)
-	, caps_(caps)
+	: caps_(caps)
 	, filter_(YASLI_DEFAULT_FILTER)
 	, modifiedRow_(nullptr)
+	, lastContext_(0)
 	{
 	}
 	virtual ~Archive() {}

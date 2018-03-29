@@ -179,7 +179,7 @@ struct SGeometryDebugDrawInfo
 	uint32 bNoLines     : 1;
 	uint32 bDrawInFront : 1;   //!< Draw debug draw geometry on top of real geometry.
 
-	SGeometryDebugDrawInfo() : color(255, 0, 255, 255), lineColor(255, 255, 0, 255), bNoLines(0), bNoCull(0) { tm.SetIdentity(); }
+	SGeometryDebugDrawInfo() : color(255, 0, 255, 255), lineColor(255, 255, 0, 255), bNoCull(0), bNoLines(0) { tm.SetIdentity(); }
 };
 //! \endcond
 
@@ -1119,7 +1119,7 @@ struct SVisAreaInfo
 
 struct SDebugFPSInfo
 {
-	SDebugFPSInfo() : fAverageFPS(0.0f), fMaxFPS(0.0f), fMinFPS(0.0f)
+	SDebugFPSInfo() : fAverageFPS(0.0f), fMinFPS(0.0f), fMaxFPS(0.0f)
 	{
 	}
 	float fAverageFPS;
@@ -1130,48 +1130,41 @@ struct SDebugFPSInfo
 //! Common scene rain parameters shared across engine and editor.
 struct CRY_ALIGN(16) SRainParams
 {
-	SRainParams()
-		: fAmount(0.f), fCurrentAmount(0.f), fRadius(0.f), nUpdateFrameID(-1), bIgnoreVisareas(false), bDisableOcclusion(false)
-		  , matOccTrans(IDENTITY), matOccTransRender(IDENTITY), qRainRotation(IDENTITY), areaAABB(AABB::RESET)
-		  , bApplySkyColor(false), fSkyColorWeight(0.5f)
-	{
-	}
+	Matrix44 matOccTrans = IDENTITY;         //!< Transformation matrix for rendering into a new occ map.
+	Matrix44 matOccTransRender = IDENTITY;   //!< Transformation matrix for rendering occluded rain using current occ map.
+	Quat qRainRotation = IDENTITY;           //!< Quaternion for the scene's rain entity rotation.
+	AABB areaAABB = AABB::RESET;
 
-	Matrix44 matOccTrans;         //!< Transformation matrix for rendering into a new occ map.
-	Matrix44 matOccTransRender;   //!< Transformation matrix for rendering occluded rain using current occ map.
-	Quat qRainRotation;           //!< Quaternion for the scene's rain entity rotation.
-	AABB areaAABB;
+	Vec3 vWorldPos = {};
+	Vec3 vColor = {};
 
-	Vec3 vWorldPos;
-	Vec3 vColor;
+	float fAmount = 0.0f;
+	float fCurrentAmount = 0.0f;
+	float fRadius = 0.0f;
 
-	float fAmount;
-	float fCurrentAmount;
-	float fRadius;
+	float fFakeGlossiness = 0.0f;
+	float fFakeReflectionAmount = 0.0f;
+	float fDiffuseDarkening = 0.0f;
 
-	float fFakeGlossiness;
-	float fFakeReflectionAmount;
-	float fDiffuseDarkening;
+	float fRainDropsAmount = 0.0f;
+	float fRainDropsSpeed = 0.0f;
+	float fRainDropsLighting = 0.0f;
 
-	float fRainDropsAmount;
-	float fRainDropsSpeed;
-	float fRainDropsLighting;
+	float fMistAmount = 0.0f;
+	float fMistHeight = 0.0f;
 
-	float fMistAmount;
-	float fMistHeight;
+	float fPuddlesAmount = 0.0f;
+	float fPuddlesMaskAmount = 0.0f;
+	float fPuddlesRippleAmount = 0.0f;
+	float fSplashesAmount = 0.0f;
 
-	float fPuddlesAmount;
-	float fPuddlesMaskAmount;
-	float fPuddlesRippleAmount;
-	float fSplashesAmount;
+	int nUpdateFrameID = -1;
+	bool bApplyOcclusion = false;
+	bool bIgnoreVisareas = false;
+	bool bDisableOcclusion = false;
 
-	int nUpdateFrameID;
-	bool bApplyOcclusion;
-	bool bIgnoreVisareas;
-	bool bDisableOcclusion;
-
-	bool bApplySkyColor;
-	float fSkyColorWeight;
+	bool bApplySkyColor = false;
+	float fSkyColorWeight = 0.5f;
 };
 
 struct SSnowParams

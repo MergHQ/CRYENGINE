@@ -202,6 +202,7 @@ struct ParticleLoc : QuatTS
 	case IParticleAttributes::ET_Integer: { using T = int;    code; break; } \
 	case IParticleAttributes::ET_Float:   { using T = float;  code; break; } \
 	case IParticleAttributes::ET_Color:   { using T = ColorB; code; break; } \
+	default: break; \
 	} \
 
 struct IParticleAttributes

@@ -2429,8 +2429,8 @@ struct IGeometry
 	{
 		SProxifyParams() : ncells(50), islandMap(-1l), maxLineDot(0.88f), maxLineDist(2.0f), minLineCells(8), minSurfCells(50), surfPrimIters(1.0f), surfMinNormLen(0.5f), surfMergeDist(4.0f),
 			surfNormRefineThresh(0.94f), primVoxInflate(1.5f), primRefillThresh(0.6f), primVfillSurf(0.85f), primVfillLine(0.6f), primSurfOutside(0.4f), capsHRratio(4.0f), maxGeoms(128),
-			surfMeshMinCells(80), surfMeshIters(7), lenVtxNorm(1.0f), surfRefineWithMesh(1), surfMaxAndMinNorms(0), inflatePrims(0), inflateMeshes(0), nVoxPatches(0),
-			mergeIslands(1), convexHull(0), closeHoles(0), forceBBox(0), findPrimSurfaces(1), findPrimLines(1), findMeshes(1), storeVox(0), reuseVox(0), flipCurCell(0), skipPrimMask(0)
+			skipPrimMask(0), surfMeshMinCells(80), surfMeshIters(7), lenVtxNorm(1.0f), inflatePrims(0), inflateMeshes(0), nVoxPatches(0), mergeIslands(1), convexHull(0), closeHoles(0), forceBBox(0),
+			findPrimSurfaces(1), findPrimLines(1), findMeshes(1), surfMaxAndMinNorms(0), surfRefineWithMesh(1), storeVox(0), reuseVox(0), flipCurCell(0)
 		{ MARK_UNUSED qForced, pVoxPatches; }
 		int          ncells;
 		uint64       islandMap;

@@ -315,9 +315,10 @@ struct CRY_ALIGN(16) SJobState: SJobStateBase
 {
 	//! When profiling, intercept the SetRunning() and SetStopped() functions for profiling informations.
 	ILINE SJobState()
-		: m_pFollowUpJob(NULL)
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
-		  , nProfilerIndex(~0)
+		: nProfilerIndex(~0), m_pFollowUpJob(nullptr)
+#else
+		: m_pFollowUpJob(NULL)
 #endif
 	{
 	}
@@ -457,7 +458,7 @@ struct CRY_ALIGN(16) SJobFrameStatsSummary
 SJobFrameStats::SJobFrameStats(const char* cpJobName) : usec(0), count(0), cpName(cpJobName), usecLast(0)
 {}
 
-SJobFrameStats::SJobFrameStats() : cpName("Uninitialized"), usec(0), count(0), usecLast(0)
+SJobFrameStats::SJobFrameStats() : usec(0), count(0), cpName("Uninitialized"), usecLast(0)
 {}
 
 void SJobFrameStats::operator=(const SJobFrameStats& crFrom)

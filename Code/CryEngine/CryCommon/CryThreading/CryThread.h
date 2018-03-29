@@ -218,7 +218,7 @@ class CryReadModifyLock
 {
 public:
 	CryReadModifyLock()
-		: m_modifyCount(0), m_readCount(0)
+		: m_readCount(0), m_modifyCount(0)
 	{
 		SetDebugLocked(false);
 	}

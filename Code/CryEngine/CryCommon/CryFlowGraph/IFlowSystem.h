@@ -849,7 +849,7 @@ public:
 	}
 
 	//! Checks if the current value matches the given string or if it would require a conversion due to incompatible with the datatype
-	// eg. setting a Bool with '1' is valid, setting it with '12' is not (so this will return true). For both cases the FlowData will be set to true
+	//! eg. setting a Bool with '1' is valid, setting it with '12' is not (so this will return true). For both cases the FlowData will be set to true
 	bool CheckIfForcedConversionOfCurrentValueWithString(const string& valueStr)
 	{
 		string convertedValueStr;
@@ -910,6 +910,9 @@ public:
 						}
 					}
 				}
+				break;
+			default:
+				CryLogAlways("Attempted to convert an invalid EFlowDataTypes member.");
 				break;
 			}
 

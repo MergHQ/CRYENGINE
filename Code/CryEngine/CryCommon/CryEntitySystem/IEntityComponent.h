@@ -292,9 +292,9 @@ struct IEntityComponent : public ICryUnknown, ISimpleEntityEventListener
 			, guid(guid_)
 			, name(name_)
 			, classDesc(classDesc_)
-			, flags(flags_)
-			, pParent(pParent_)
 			, transform(transform_)
+			, pParent(pParent_)
+			, flags(flags_)
 		{}
 
 		IEntity*                           pEntity;
@@ -309,16 +309,16 @@ struct IEntityComponent : public ICryUnknown, ISimpleEntityEventListener
 
 public:
 	//~ICryUnknown
-	virtual ICryFactory* GetFactory() const { return nullptr; };
+	virtual ICryFactory* GetFactory() const { return nullptr; }
 
 protected:
-	virtual void* QueryInterface(const CryInterfaceID& iid) const { return nullptr; };
-	virtual void* QueryComposite(const char* name) const          { return nullptr; };
+	virtual void* QueryInterface(const CryInterfaceID& iid) const { return nullptr; }
+	virtual void* QueryComposite(const char* name) const          { return nullptr; }
 	//~ICryUnknown
 
 public:
 	// Return Host entity pointer
-	ILINE IEntity* GetEntity() const { return m_pEntity; };
+	ILINE IEntity* GetEntity() const { return m_pEntity; }
 	ILINE EntityId GetEntityId() const;
 
 public:

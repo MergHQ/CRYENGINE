@@ -527,12 +527,12 @@ struct SFFOutputEvent
 	}
 
 	SFFOutputEvent(EInputDeviceType id, EFFEffectId event, SFFTriggerOutputData::Initial::Value triggerInitValue, float time = 1.0f, float ampA = 1.0f, float ampB = 1.0f) :
-		deviceType(id), eventId(event), timeInSeconds(time), amplifierS(ampA), amplifierA(ampB),
+		deviceType(id), eventId(event), amplifierS(ampA), amplifierA(ampB), timeInSeconds(time),
 		triggerData(triggerInitValue)
 	{}
 
 	SFFOutputEvent(EInputDeviceType id, EFFEffectId event, const SFFTriggerOutputData& triggerData, float time = 1.0f, float ampA = 1.0f, float ampB = 1.0f) :
-		deviceType(id), eventId(event), timeInSeconds(time), amplifierS(ampA), amplifierA(ampB),
+		deviceType(id), eventId(event), amplifierS(ampA), amplifierA(ampB), timeInSeconds(time),
 		triggerData(triggerData)
 	{}
 };
@@ -550,8 +550,8 @@ struct SInputSymbol
 	};
 
 	SInputSymbol(uint32 devSpecId_, EKeyId keyId_, const TKeyName& name_, EType type_, uint32 user_ = 0)
-		: devSpecId(devSpecId_)
-		, keyId(keyId_), name(name_)
+		: keyId(keyId_), name(name_)
+		, devSpecId(devSpecId_)
 		, state(eIS_Unknown)
 		, type(type_)
 		, value(0.0f)
@@ -609,10 +609,10 @@ struct SInputBlockData
 	                const float fBlockDuration_,
 	                const bool bAllDeviceIndices_ = true,
 	                const uint8 deviceIndex_ = 0)
-		: keyId(keyId_)
-		, fBlockDuration(fBlockDuration_)
-		, bAllDeviceIndices(bAllDeviceIndices_)
+		: fBlockDuration(fBlockDuration_)
+		, keyId(keyId_)
 		, deviceIndex(deviceIndex_)
+		, bAllDeviceIndices(bAllDeviceIndices_)
 	{
 	}
 
