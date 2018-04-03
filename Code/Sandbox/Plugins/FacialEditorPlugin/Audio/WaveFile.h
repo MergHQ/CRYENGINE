@@ -170,3 +170,4 @@ public:
 } // namespace ATG
 
 #endif // __WAVEFILE_H__
+

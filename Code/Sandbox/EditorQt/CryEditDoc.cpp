@@ -1567,3 +1567,4 @@ bool PySaveLevel()
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySaveLevel, general, save_level,
                                      "Saves the current level.",
                                      "general.save_level()");
+

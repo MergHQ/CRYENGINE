@@ -53,3 +53,4 @@ private:
 };
 
 #endif // __ObjectCloneTool_h__
+

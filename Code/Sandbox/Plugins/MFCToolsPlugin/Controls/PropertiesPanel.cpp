@@ -250,3 +250,4 @@ void CPropertiesPanel::SetTitle(const char* title)
 		pStatic->SetWindowText(paddedTitle.GetString());
 	}
 }
+

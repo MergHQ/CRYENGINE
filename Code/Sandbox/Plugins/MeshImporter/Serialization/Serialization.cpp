@@ -46,3 +46,4 @@ void SMeshInfo::Serialize(Serialization::IArchive& ar)
 	ar(pMesh->numTriangles, "tri", "!Number of triangles");
 	ar(pMesh->numVertices, "vtc", "!Number of vertices");
 }
+

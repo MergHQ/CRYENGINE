@@ -101,3 +101,4 @@ bool PropertyRowResourceFolderPath::onContextMenu(IMenu& menu, PropertyTree* tre
 
 REGISTER_PROPERTY_ROW(ResourceFolderPath, PropertyRowResourceFolderPath);
 DECLARE_SEGMENT(PropertyRowResourceFolderPath)
+

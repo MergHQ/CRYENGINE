@@ -257,3 +257,4 @@ LRESULT CImageButton::OnMouseLeave(WPARAM wParam, LPARAM lParam)
 	}
 	return 1;
 }
+

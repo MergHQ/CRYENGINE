@@ -77,3 +77,4 @@ private:
 };
 
 #endif // !defined(AFX_BREAKPOINTSCONTROL_H)
+

@@ -70,3 +70,4 @@ private:
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
 
 #endif // !defined(AFX_MATEDITPREVIEWDLG_H__AFB120BD_DBC4_40C0_A03C_8531A6530F3B__INCLUDED_)
+

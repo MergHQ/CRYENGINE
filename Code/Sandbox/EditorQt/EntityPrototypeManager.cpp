@@ -126,3 +126,4 @@ CEntityPrototype* CEntityPrototypeManager::FindPrototypeFromXMLFiles(CryGUID gui
 
 	return NULL;
 }
+

@@ -69,3 +69,4 @@ private:
 	CVarBlockPtr          m_vars;
 
 };
+

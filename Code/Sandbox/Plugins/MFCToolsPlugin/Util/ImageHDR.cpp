@@ -450,3 +450,4 @@ bool CImageHDR::Load(const string& fileName, CImageEx& outImage)
 
 	return bRet;
 }
+

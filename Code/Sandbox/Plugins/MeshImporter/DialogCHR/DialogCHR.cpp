@@ -1213,3 +1213,4 @@ void CDialogCHR::OnViewportMouse(const SMouseEvent& ev)
 }
 
 } // namespace MeshImporter
+

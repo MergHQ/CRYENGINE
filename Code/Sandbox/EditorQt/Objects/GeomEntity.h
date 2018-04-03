@@ -53,3 +53,4 @@ public:
 	virtual const char*    GetDataFilesFilterString() override { return GetFileSpec(); }
 	virtual bool           IsCreatable() const override { return CObjectClassDesc::IsEntityClassAvailable(); }
 };
+

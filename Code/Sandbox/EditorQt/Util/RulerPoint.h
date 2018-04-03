@@ -49,3 +49,4 @@ private:
 };
 
 #endif //__RULERPOINT_H__
+

@@ -36,3 +36,4 @@ private:
 	bool          m_uniformScale;
 	bool          m_ignoreSignals;
 };
+

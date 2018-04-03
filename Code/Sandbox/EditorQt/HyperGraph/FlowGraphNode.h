@@ -92,3 +92,4 @@ protected:
 	std::map<TFlowPortId, bool>   m_portActivationAdditionalDebugInformationMap;
 	std::vector<TFlowPortId>      m_debugPortActivations;
 };
+

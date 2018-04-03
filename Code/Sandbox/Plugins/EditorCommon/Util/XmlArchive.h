@@ -70,3 +70,4 @@ public:
 };
 
 #endif // __XmlArchive_h__
+

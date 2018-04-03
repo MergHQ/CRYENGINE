@@ -520,3 +520,4 @@ const SMinimapInfo& CMission::GetMinimap() const
 {
 	return m_minimap;
 }
+

@@ -747,3 +747,4 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyCloseAll, prefab, c
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyReloadAll, prefab, reload_all,
                                    CCommandDescription("Reload all prefabs"));
+

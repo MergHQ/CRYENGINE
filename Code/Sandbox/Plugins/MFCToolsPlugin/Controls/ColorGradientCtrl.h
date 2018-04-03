@@ -153,3 +153,4 @@ private:
 };
 
 #endif // __ColorGradientCtrl_h__
+

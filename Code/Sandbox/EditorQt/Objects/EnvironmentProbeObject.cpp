@@ -563,3 +563,4 @@ void CEnvironementProbeObject::OnMultiSelPropertyChanged(IVariable* pVar)
 	UpdateLinks();
 	CBaseObject::OnMultiSelPropertyChanged(pVar);
 }
+

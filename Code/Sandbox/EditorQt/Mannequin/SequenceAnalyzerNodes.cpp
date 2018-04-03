@@ -201,3 +201,4 @@ void CScopeNode::UpdateMutedLayerMasks(uint32 mutedAnimLayerMask, uint32 mutedPr
 		}
 	}
 }
+

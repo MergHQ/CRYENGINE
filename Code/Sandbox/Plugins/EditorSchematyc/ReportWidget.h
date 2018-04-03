@@ -30,3 +30,4 @@ namespace Schematyc
 		QTextBrowser* m_pOutput;
 	};
 }
+

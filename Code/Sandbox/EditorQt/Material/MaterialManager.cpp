@@ -1667,3 +1667,4 @@ void CMaterialManager::CreateTerrainLayerFromMaterial(CMaterial* pMaterial)
 	pLayer->SetSelected(true);
 	GetIEditorImpl()->Notify(eNotify_OnInvalidateControls);
 }
+

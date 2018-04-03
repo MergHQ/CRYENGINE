@@ -32,3 +32,4 @@ private:
 	CryGUID m_entityGuid;
 	int     m_iOrgFlags;
 };
+

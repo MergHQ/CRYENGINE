@@ -427,3 +427,4 @@ void CJointGenEntity::Display(DisplayContext& dc)
 		}
 	}
 }
+

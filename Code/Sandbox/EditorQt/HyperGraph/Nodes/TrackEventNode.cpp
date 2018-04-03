@@ -495,3 +495,4 @@ void CTrackEventNode::OnTrackEvent(IAnimSequence* pSequence, int reason, const c
 		break;
 	}
 }
+

@@ -1191,3 +1191,4 @@ void DisplayContext::SetDisplayContext(const SDisplayContextKey &displayContextK
 	pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom(/*eType*/);
 	pRenderAuxGeom->SetCurrentDisplayContext(displayContextKey);
 }
+

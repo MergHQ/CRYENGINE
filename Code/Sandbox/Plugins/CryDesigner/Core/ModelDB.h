@@ -69,3 +69,4 @@ private:
 	std::unique_ptr<PlaneDB> m_pPlaneDB;
 };
 }
+

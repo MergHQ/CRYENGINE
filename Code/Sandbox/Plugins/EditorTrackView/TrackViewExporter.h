@@ -69,3 +69,4 @@ private:
 	TObjectMap     m_objectMap;
 	CBaseObject*   m_pBaseObj;
 };
+

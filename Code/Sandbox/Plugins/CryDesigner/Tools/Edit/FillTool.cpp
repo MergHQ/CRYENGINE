@@ -366,3 +366,4 @@ void FillTool::Serialize(Serialization::IArchive& ar)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Fill, eToolGroup_Edit, "Fill", FillTool,
                                                            fill, "runs fill tool", "designer.fill")
+

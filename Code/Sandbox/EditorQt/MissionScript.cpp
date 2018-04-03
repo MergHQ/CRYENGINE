@@ -92,3 +92,4 @@ void CMissionScript::SetScriptFile(const CString& file)
 {
 	m_sFilename = file;
 }
+

@@ -57,3 +57,4 @@ private:
 	typedef std::map<string, CBitmap*> IconsMap;
 	IconsMap m_iconBitmapsMap;
 };
+

@@ -59,3 +59,4 @@ private:
 	std::unique_ptr<CommandModel> m_pModel;
 	QAdvancedTreeView*            m_pTreeView;
 };
+

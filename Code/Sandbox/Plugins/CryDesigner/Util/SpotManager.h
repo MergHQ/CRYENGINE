@@ -225,3 +225,4 @@ private:
 	BrushFloat m_BuiltInSnapSize;
 };
 }
+

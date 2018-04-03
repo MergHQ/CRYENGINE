@@ -326,3 +326,4 @@ bool SViewportSelectionPreferences::Serialize(yasli::Archive& ar)
 
 	return true;
 }
+

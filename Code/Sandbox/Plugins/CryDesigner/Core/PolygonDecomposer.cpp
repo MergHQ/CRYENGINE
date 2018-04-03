@@ -1277,3 +1277,4 @@ BrushVec2 PolygonDecomposer::Convert3DTo2D(const BrushVec3& pos) const
 }
 
 }
+

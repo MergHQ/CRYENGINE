@@ -231,3 +231,4 @@ private:
 	};
 	std::vector<STextureLabel> m_textureLabels;
 };
+

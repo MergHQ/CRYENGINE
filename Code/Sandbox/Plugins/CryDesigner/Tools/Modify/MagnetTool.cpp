@@ -454,3 +454,4 @@ void MagnetTool::Display(DisplayContext& dc)
 	dc.PushMatrix(GetWorldTM());
 }
 }
+

@@ -186,3 +186,4 @@ std::vector<PolygonPtr> Model::GetIntersectedParts(PolygonPtr pPolygon) const
 	return outPolygons.negList;
 }
 };
+

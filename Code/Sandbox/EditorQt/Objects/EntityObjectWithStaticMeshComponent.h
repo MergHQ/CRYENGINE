@@ -32,3 +32,4 @@ public:
 	const char*         GetFileSpec() { return "*.cgf"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 };
+

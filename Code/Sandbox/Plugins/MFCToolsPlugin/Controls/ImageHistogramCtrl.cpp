@@ -682,3 +682,4 @@ void CImageHistogramCtrl::OnMouseMove(UINT nFlags, CPoint point)
 {
 	CWnd::OnMouseMove(nFlags, point);
 }
+

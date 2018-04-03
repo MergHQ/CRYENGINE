@@ -904,3 +904,4 @@ int AddVertex(std::vector<Vertex>& vertices, const Vertex& newVertex)
 	return vertices.size() - 1;
 }
 }
+

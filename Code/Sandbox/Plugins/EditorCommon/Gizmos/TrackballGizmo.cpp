@@ -169,3 +169,4 @@ bool CTrackballGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
+

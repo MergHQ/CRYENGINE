@@ -302,3 +302,4 @@ void CControlsListBox::SetItemControl(int nIndex, CWnd* pWnd)
 			m_controlsMap.erase(nIndex);
 	}
 }
+

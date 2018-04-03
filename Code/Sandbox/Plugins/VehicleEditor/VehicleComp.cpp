@@ -469,3 +469,4 @@ void CVehicleComponent::UpdateScale(float scale)
 
 	UpdateObjectFromVar();
 }
+

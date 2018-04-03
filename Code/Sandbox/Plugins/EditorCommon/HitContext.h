@@ -115,3 +115,4 @@ struct HitContext
 		name = nullptr;
 	}
 };
+

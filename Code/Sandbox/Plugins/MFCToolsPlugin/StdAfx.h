@@ -24,3 +24,4 @@
 #include "IUndoObject.h"
 
 #include <CryCore/smartptr.h>
+

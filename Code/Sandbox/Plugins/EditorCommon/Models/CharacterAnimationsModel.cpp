@@ -70,3 +70,4 @@ QModelIndex CCharacterAnimationsModel::parent(const QModelIndex& index) const
 {
 	return QModelIndex();
 }
+

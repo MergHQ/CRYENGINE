@@ -24,3 +24,4 @@ bool SLightingPreferences::Serialize(yasli::Archive& ar)
 
 	return true;
 }
+

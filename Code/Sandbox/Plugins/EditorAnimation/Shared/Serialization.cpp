@@ -9,3 +9,4 @@ bool Serialize(Serialization::IArchive& ar, SkeletonAlias& value, const char* na
 {
 	return ar(value.alias, name, label);
 }
+

@@ -84,3 +84,4 @@ private:
 };
 
 #endif //__BitmapToolTip_h__
+

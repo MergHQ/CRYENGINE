@@ -152,3 +152,4 @@ void CMaterialPickTool::SetMaterial(IMaterial* pMaterial)
 		m_displayString += sfType;
 	}
 }
+

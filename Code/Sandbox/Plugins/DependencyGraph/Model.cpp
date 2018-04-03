@@ -106,3 +106,4 @@ const std::vector<string> CModel::GetSourceFileExtensions(const CAssetType* asse
 	}
 	return {};
 }
+

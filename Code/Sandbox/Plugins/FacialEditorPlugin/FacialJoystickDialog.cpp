@@ -523,3 +523,4 @@ void CFacialJoystickDialog::OnDestroy()
 	if (m_pDropTarget)
 		delete m_pDropTarget;
 }
+

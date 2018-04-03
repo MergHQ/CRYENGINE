@@ -68,3 +68,4 @@ protected:
 	static const int   s_ColumnCount = 4;
 	static const char* s_ColumnNames[s_ColumnCount];
 };
+

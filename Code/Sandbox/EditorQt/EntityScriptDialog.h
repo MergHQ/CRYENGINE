@@ -66,3 +66,4 @@ protected:
 };
 
 #endif // __entityscriptdialog_h__
+

@@ -237,3 +237,4 @@ namespace Serialization
 {
 REGISTER_PROPERTY_WIDGET(IResourceSelector, CResourcePicker);
 }
+

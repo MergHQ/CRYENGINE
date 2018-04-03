@@ -268,3 +268,4 @@ private:
 
 	bool                              m_bIgnoreObjectEvents; //! All level contents and graphs are being created or deleted. Ignore certain types of events.
 };
+

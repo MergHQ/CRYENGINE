@@ -22,3 +22,4 @@ void CVariableItem::Serialize(Serialization::IArchive& archive)
 {
 
 }
+

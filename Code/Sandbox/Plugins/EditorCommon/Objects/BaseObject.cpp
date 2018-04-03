@@ -4231,3 +4231,4 @@ void CBaseObject::UnRegisterFromEngine()
 		GetIEditor()->UnRegisterEntityAsJob(pRenderNode);
 	}
 }
+

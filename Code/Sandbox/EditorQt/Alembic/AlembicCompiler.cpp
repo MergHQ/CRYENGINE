@@ -246,3 +246,4 @@ bool CAlembicCompiler::CompileAlembic(CString& fileName, const CString& fullPath
 
 	return false;
 }
+

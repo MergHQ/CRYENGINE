@@ -238,3 +238,4 @@ bool CClipboard::GetImage(CImageEx& img)
 
 	return true;
 }
+

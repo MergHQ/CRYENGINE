@@ -436,3 +436,4 @@ private:
 
 	std::vector<SConverter> m_typeConverters;
 };
+

@@ -299,3 +299,4 @@ void CafCompressionHelper::CleanUpCompressionResult(const char* createdFile)
 		path = createdFolder;
 	}
 }
+

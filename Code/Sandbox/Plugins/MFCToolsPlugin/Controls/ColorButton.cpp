@@ -192,3 +192,4 @@ CColorButton::GetShowText() const
 {
 	return(m_showText);
 }
+

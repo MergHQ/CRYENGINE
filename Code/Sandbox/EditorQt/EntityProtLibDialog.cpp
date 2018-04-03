@@ -1074,3 +1074,4 @@ void CEntityProtLibDialog::OnRemoveLibrary()
 		CBaseLibraryDialog::OnRemoveLibrary();
 	}
 }
+

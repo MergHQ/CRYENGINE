@@ -299,3 +299,4 @@ private:
 };
 
 #endif // __MANNEQUIN_MODEL_VIEWPORT_H__
+

@@ -51,3 +51,4 @@ private:
 	std::vector<SStatObj> m_StatObjectList;
 
 };
+

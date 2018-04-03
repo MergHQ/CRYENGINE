@@ -23,3 +23,4 @@ void DisplayPolygonNormals(DisplayContext& dc, MainContext& mc);
 void DisplayTriangulation(DisplayContext& dc, MainContext& mc);
 }
 }
+

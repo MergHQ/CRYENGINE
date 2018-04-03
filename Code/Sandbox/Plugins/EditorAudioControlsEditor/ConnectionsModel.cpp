@@ -497,3 +497,4 @@ void CConnectionsModel::ResetModelAndCache()
 	endResetModel();
 }
 } // namespace ACE
+

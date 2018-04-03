@@ -45,3 +45,4 @@ public:
 };
 
 #endif // __CharAttachHelper_h__
+

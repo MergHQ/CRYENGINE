@@ -23,3 +23,4 @@ namespace Serialization
 {
 REGISTER_PROPERTY_ROW(SGap, PropertyRowGap);
 }
+

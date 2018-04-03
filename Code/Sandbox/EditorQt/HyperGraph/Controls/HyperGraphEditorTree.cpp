@@ -597,3 +597,4 @@ void CHyperGraphsTreeCtrl::DeleteEmptyParentFolders(HTREEITEM hFirstParent)
 	}
 }
 
+

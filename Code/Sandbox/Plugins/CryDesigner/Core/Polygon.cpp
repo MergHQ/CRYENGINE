@@ -4281,3 +4281,4 @@ bool Polygon::CheckPrivateFlags(int nFlags) const
 	return m_PrivateFlag & nFlags ? true : false;
 }
 }
+

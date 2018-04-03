@@ -146,3 +146,4 @@ void CLensFlareView::OnSize(UINT nType, int cx, int cy)
 	__super::OnSize(nType, cx, cy);
 	Update();
 }
+

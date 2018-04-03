@@ -1287,3 +1287,4 @@ bool CTerrainLightGen::RefreshAccessibility(const LightingSettings* inpLSettings
 
 	return true;
 }
+

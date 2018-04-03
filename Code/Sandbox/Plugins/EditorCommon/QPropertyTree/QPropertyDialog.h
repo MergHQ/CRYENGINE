@@ -52,3 +52,4 @@ private:
 	QSize m_sizeHint;
 	bool  m_storeContent;
 };
+

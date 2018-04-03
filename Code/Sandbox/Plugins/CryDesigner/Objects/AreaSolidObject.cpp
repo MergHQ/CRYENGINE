@@ -567,3 +567,4 @@ std::vector<EDesignerTool> AreaSolidObject::GetIncompatibleSubtools()
 	return toolList;
 }
 } // namespace Designer
+

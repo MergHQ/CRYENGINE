@@ -31,3 +31,4 @@ void CUndoEntityParam::Redo()
 {
 	PySetEntityParam(m_entityName, m_paramName, m_redo);
 }
+

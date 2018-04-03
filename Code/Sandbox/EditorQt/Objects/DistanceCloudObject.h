@@ -64,3 +64,4 @@ public:
 };
 
 #endif // _DISTANCECLOUDOBJECT_H_
+

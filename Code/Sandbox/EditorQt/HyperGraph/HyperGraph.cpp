@@ -1232,3 +1232,4 @@ bool CHyperGraph::GetViewPosition(CPoint& point, float& zoom)
 	zoom = m_fViewZoom;
 	return m_bViewPosInitialized;
 }
+

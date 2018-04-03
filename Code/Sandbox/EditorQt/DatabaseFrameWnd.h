@@ -177,3 +177,4 @@ protected:
 	ItemsToTreeMap       m_itemsToTree;
 	CString              m_selectedGroup;
 };
+

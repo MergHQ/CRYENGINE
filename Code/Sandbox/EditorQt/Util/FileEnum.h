@@ -24,3 +24,4 @@ public:
 protected:
 	intptr_t m_hEnumFile;
 };
+

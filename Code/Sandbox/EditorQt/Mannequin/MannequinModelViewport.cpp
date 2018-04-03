@@ -1394,3 +1394,4 @@ BOOL CMannequinModelViewport::PreTranslateMessage(MSG* pMsg)
 
 	return TRUE;
 }
+

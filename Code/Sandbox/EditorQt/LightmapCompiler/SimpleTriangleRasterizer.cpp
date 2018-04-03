@@ -408,3 +408,4 @@ void CSimpleTriangleRasterizer::ShrinkTriangle(float inoutfX[3], float inoutfY[3
 		inoutfY[a] += (dy1 + dy2) * infAmount;
 	}
 }
+

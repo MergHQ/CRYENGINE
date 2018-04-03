@@ -273,3 +273,4 @@ const char* CImageTIF::GetPreset(const string& fileName)
 	}
 	return strReturn.c_str();
 }
+

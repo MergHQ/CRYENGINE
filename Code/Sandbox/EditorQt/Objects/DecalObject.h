@@ -79,3 +79,4 @@ public:
 };
 
 #endif // _DECALOBJECT_H_
+

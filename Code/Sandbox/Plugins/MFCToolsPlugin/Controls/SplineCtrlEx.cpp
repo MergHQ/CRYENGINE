@@ -3409,3 +3409,4 @@ void CSplineCtrlEx::OnCaptureChanged(CWnd* pWnd)
 {
 	StopTracking();
 }
+

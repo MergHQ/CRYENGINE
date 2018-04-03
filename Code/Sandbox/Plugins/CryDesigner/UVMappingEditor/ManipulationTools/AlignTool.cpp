@@ -51,3 +51,4 @@ void AlignTool::AlignSelectedVertices()
 
 REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_Alignment, eUVMappingToolGroup_Manipulation, "Alignment", AlignTool,
                                     alignment, "runs alignment tool", "designer.alignment")
+

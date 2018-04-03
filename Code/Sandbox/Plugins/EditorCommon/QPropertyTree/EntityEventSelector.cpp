@@ -71,3 +71,4 @@ dll_string ValidateEntityEvent(const SResourceSelectorContext& x, const char* ne
 }
 
 REGISTER_RESOURCE_VALIDATING_SELECTOR("EntityEvent", EntityEventSelector, ValidateEntityEvent, "")
+

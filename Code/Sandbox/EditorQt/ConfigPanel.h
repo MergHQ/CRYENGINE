@@ -83,3 +83,4 @@ protected:
 	uint     m_currentPosition;
 	uint     m_currentId;
 };
+

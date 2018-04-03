@@ -814,3 +814,4 @@ bool SpotManager::IsVertexOnEdgeInModel(Model* pModel, const BrushPlane& plane, 
 	return false;
 }
 }
+

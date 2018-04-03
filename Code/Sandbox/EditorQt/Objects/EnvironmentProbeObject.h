@@ -88,3 +88,4 @@ public:
 	const char*    GetTextureIcon()             { return "%EDITOR%/ObjectIcons/environmentProbe.bmp"; };
 	virtual bool   IsCreatable() const override { return gEnv->pEntitySystem->GetClassRegistry()->FindClass("EnvironmentLight"); }
 };
+

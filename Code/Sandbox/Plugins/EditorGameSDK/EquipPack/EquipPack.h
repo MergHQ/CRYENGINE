@@ -100,3 +100,4 @@ protected:
 	TAmmoVec       m_ammoVec;
 	bool           m_bModified;
 };
+

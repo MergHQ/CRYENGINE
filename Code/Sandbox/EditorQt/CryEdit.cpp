@@ -1471,3 +1471,4 @@ REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PySetResultToFailure, general, set_res
 REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PyIdleWait, general, idle_wait,
                                           "Waits idling for a given seconds. Primarily used for auto-testing.",
                                           "general.idle_wait(double time)");
+

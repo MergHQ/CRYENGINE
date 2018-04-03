@@ -13,3 +13,4 @@ public:
 	virtual void        SetState(const QVariantMap& state) = 0;
 };
 Q_DECLARE_INTERFACE(IStateSerializable, "EditorCommon/IStateSerializable");
+

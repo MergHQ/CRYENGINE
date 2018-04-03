@@ -296,3 +296,4 @@ private:
 };
 
 #endif // !defined(AFX_LAYER_H__92D64D54_E1C2_4D48_9664_8BD50F7324F8__INCLUDED_)
+

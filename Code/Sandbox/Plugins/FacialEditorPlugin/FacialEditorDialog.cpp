@@ -2991,3 +2991,4 @@ void CFacialEditorDialog::OnImportShortcuts()
 {
 	CMFCUtils::ImportShortcuts(GetCommandBars()->GetShortcutManager(), "FacialEditor");
 }
+

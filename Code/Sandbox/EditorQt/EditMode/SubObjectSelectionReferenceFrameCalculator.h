@@ -23,3 +23,4 @@ private:
 	bool               bUseExplicitFrame;
 	bool               bExplicitAnySelected;
 };
+

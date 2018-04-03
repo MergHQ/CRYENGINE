@@ -530,3 +530,4 @@ struct SHeightmapTriangleValidator : public ITriangleValidator
 };
 
 #endif // __terraingigen_h__
+

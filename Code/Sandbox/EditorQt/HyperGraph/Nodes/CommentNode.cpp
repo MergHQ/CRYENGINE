@@ -20,3 +20,4 @@ CHyperNode* CCommentNode::Clone()
 	pNode->CopyFrom(*this);
 	return pNode;
 }
+

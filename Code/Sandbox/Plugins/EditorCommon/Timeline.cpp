@@ -3909,3 +3909,4 @@ void CTimeline::OnLayoutChange()
 
 	SignalLayoutChanged();
 }
+

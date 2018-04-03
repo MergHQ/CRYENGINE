@@ -30,3 +30,4 @@ public:
 private:
 	IAnimationSet& m_animationSet;
 };
+

@@ -621,3 +621,4 @@ void CScheduleManager::OnEditorNotifyEvent(EEditorNotifyEvent ev)
 //-----------------------------------------------------------------------------
 
 } // BackgroundScheduleManager
+

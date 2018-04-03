@@ -71,3 +71,4 @@ QModelIndex CEntityEventsModel::parent(const QModelIndex& index) const
 {
 	return QModelIndex();
 }
+

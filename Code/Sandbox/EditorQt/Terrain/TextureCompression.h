@@ -32,3 +32,4 @@ private: // ------------------------------------------------------------------
 };
 
 #endif // !defined(AFX_TEXTURECOMPRESSION_H__B2702EC6_F5D8_4BB3_B2EE_A2F66C128380__INCLUDED_)
+

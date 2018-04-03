@@ -554,3 +554,4 @@ void CFileLoader::LoadControlsEditorData(XmlNodeRef const pParentNode)
 	}
 }
 } // namespace ACE
+

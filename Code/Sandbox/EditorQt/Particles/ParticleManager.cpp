@@ -178,3 +178,4 @@ void CParticleManager::DeleteItem(IDataBaseItem* pItem)
 // Manually instantiate templates as needed here.
 STRUCT_INFO_T_INSTANTIATE(Color_tpl, <float>)
 #endif
+

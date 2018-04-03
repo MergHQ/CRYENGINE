@@ -64,3 +64,4 @@ public:
 private:
 	bool m_bPrevState;
 };
+

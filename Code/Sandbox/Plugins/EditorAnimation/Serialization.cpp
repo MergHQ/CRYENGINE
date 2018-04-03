@@ -31,3 +31,4 @@ void SerializeFromMemory(const Serialization::SStruct& obj, const DynArray<char>
 }
 
 }
+

@@ -44,3 +44,4 @@ void CCharacterDefinitionType::GenerateThumbnail(const CAsset* pAsset) const
 	}).get();
 }
 
+

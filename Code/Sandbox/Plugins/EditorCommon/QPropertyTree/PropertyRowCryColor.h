@@ -62,3 +62,4 @@ struct CryColorMenuHandler : PropertyRowMenuHandler
 
 	void onMenuPickColor();
 };
+

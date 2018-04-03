@@ -40,3 +40,4 @@ public:
 	CString m_sDesc;
 };
 
+

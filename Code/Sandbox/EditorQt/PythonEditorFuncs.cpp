@@ -839,3 +839,4 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyGetHideMask, general, get_hidemask,
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySetSelectionMask, general, set_selection_mask,
                                      "Sets the selection mask for the level editor",
                                      "general.set_selection_mask(int mask)");
+

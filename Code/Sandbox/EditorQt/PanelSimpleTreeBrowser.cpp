@@ -230,3 +230,4 @@ void CSimpleTreeBrowser::OnDblclkBrowserTree(CTreeItemRecord* pRec)
 		m_onDblClickCallback((SSimpleTreeBrowserItem*) pRec->GetUserData());
 	}
 }
+

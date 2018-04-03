@@ -353,3 +353,4 @@ bool UVIsland::FindIsolatedAreas(std::vector<UVIslandPtr>& outIsolatedAreas)
 }
 
 }
+

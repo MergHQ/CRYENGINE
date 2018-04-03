@@ -779,3 +779,4 @@ void CNumberCtrl::EnableNotifyWithoutValueChange(bool bFlag)
 	m_bForceModified = bFlag;
 	m_edit.EnableUpdateOnKillFocus(!bFlag);
 }
+

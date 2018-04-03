@@ -406,3 +406,4 @@ QString& CRuler::ToString(const STick& tick, QString& strOut, const char* szForm
 	return strOut;
 }
 }
+

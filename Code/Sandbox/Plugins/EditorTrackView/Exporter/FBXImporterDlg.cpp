@@ -62,3 +62,4 @@ void QFBXImporterDlg::OnConfirmed()
 	m_bConfirmed = true;
 	QDialog::accept();
 }
+

@@ -82,3 +82,4 @@ void CScriptElementDetailItem::Serialize(Serialization::IArchive& archive)
 }
 
 }
+

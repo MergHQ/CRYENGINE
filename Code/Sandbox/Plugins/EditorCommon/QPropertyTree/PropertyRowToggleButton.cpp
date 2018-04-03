@@ -194,3 +194,4 @@ protected:
 
 REGISTER_PROPERTY_ROW(ToggleButton, PropertyRowToggleButton);
 REGISTER_PROPERTY_ROW(RadioButton, PropertyRowRadioButton);
+

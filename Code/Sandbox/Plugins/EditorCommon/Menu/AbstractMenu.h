@@ -175,3 +175,4 @@ private:
 	string m_name;
 	bool m_bEnabled;
 };
+

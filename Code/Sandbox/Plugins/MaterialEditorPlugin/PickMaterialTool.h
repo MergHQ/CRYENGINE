@@ -41,3 +41,4 @@ protected:
 	CMaterialEditor*		m_pMaterialEditor;
 };
 
+

@@ -24,3 +24,4 @@ void LoadAllocatorModule(FNC_SHMalloc& pfnMalloc, FNC_SHFreeSize& pfnFree)
 CSHAllocator<unsigned char> gsByteAllocator;
 
 #endif
+

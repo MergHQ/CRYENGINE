@@ -232,3 +232,4 @@ void CClipboardItemCollection::Serialize(Serialization::IArchive& archive)
 }
 
 }
+

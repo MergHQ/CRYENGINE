@@ -379,3 +379,4 @@ void CNavigation::GetMemoryStatistics(ICrySizer* pSizer)
 	}
 	pSizer->AddObject(&m_mapDesignerPaths, size);
 }
+

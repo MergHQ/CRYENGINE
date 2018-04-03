@@ -65,3 +65,4 @@ void AILogAlways(const char* format, ...) PRINTF_PARAMS(1, 2);
 void AILogLoading(const char* format, ...) PRINTF_PARAMS(1, 2);
 
 #endif // file included
+

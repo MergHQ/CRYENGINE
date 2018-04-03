@@ -110,3 +110,4 @@ protected:
 };
 
 #endif // __FRAGMENT_EDITOR_H__
+

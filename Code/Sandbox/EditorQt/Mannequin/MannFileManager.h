@@ -60,3 +60,4 @@ private:
 };
 
 #endif // __MannFileManager_H__
+

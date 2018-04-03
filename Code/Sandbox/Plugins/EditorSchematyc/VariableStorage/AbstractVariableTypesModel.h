@@ -66,3 +66,4 @@ private:
 	TypesByGuid  m_typesByGuid;
 	TypesByIndex m_typesByIndex;
 };
+

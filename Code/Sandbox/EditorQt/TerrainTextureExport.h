@@ -77,3 +77,4 @@ protected:
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
 
 #endif // !defined(AFX_TerrainTextureExport_H__4CAA5295_2647_42FD_8334_359F55EBA777__INCLUDED_)
+

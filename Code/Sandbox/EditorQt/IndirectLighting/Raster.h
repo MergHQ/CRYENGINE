@@ -180,3 +180,4 @@ inline void CRasterTriangleSink::SetFillMode(const bool cNegative)
 }
 
 #endif // __raster_h__
+

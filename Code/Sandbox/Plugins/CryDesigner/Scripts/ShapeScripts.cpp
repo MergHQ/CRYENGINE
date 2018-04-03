@@ -345,3 +345,4 @@ void PyDesignerStartToAddAnotherHole()
                        "Starts to add an another hole to a polygon",
                        "designer.start_to_add_another_hole()" );
  */
+

@@ -52,3 +52,4 @@ private:
 };
 
 #endif // __LinkTool_h__
+

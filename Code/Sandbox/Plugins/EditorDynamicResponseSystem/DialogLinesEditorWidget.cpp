@@ -464,3 +464,4 @@ bool CDialogLinesDatabaseImportExportHelper::SplitStringList(const wchar_t* szSt
 
 	return bWasFound;
 }
+

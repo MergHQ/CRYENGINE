@@ -102,3 +102,4 @@ bool CMaterialType::OnCreate(CEditableAsset& editAsset, const void* pTypeSpecifi
 
 	return true;
 }
+

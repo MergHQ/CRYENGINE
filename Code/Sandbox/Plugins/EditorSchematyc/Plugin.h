@@ -17,3 +17,4 @@ public:
 	const char* GetPluginDescription() override;
 	// ~IPlugin
 };
+

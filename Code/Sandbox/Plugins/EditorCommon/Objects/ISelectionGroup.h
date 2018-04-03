@@ -34,3 +34,4 @@ public:
 	virtual bool GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const = 0;
 };
 
+

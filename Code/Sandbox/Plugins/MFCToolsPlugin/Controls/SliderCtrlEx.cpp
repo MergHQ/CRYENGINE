@@ -384,3 +384,4 @@ void CSliderCtrlCustomDraw::SetSelection(int nMin, int nMax)
 		//MoveWindow(rc,FALSE);
 	}
 }
+

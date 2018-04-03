@@ -21,3 +21,4 @@ private:
 	QString m_assetPath;
 	QVBoxLayout* m_pLayout;
 };
+

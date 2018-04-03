@@ -189,3 +189,4 @@ private:
 protected:
 	virtual void PreSubclassWindow();
 };
+

@@ -22,3 +22,4 @@ public:
 	const char* GetPluginName() override;
 	const char* GetPluginDescription() override;
 };
+

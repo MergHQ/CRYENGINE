@@ -167,3 +167,4 @@ CCustomDockWidget::CCustomDockWidget(const char* title, QWidget* parent, Qt::Win
 		EXPECTED(connect(floatButton, &QAbstractButton::clicked, [this]() { setFloating(!isFloating()); }));
 	}
 }
+

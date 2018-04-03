@@ -26,3 +26,4 @@ CCustomButton::CCustomButton()
 {
 	SetTheme(xtpButtonThemeOffice2003);
 }
+

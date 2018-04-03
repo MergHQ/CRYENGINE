@@ -202,3 +202,4 @@ target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/TangentBasisCompu
 
 target_link_libraries(${THIS_PROJECT} PRIVATE Sandbox MFCToolsPlugin FbxSdk)
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DBUILDING_FBX_TOOL)
+

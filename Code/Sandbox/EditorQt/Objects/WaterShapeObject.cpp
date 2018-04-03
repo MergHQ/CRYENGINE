@@ -471,3 +471,4 @@ void CWaterShapeObject::UpdateVisibility(bool visible)
 		UpdateGameArea();
 	}
 }
+

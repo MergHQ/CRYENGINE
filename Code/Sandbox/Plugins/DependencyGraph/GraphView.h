@@ -38,3 +38,4 @@ public:
 protected:
 	virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* pEvent) override;
 };
+

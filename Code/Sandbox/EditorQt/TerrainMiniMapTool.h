@@ -68,3 +68,4 @@ private:
 };
 
 #endif // __TerrainMiniMapTool_h__
+

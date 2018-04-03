@@ -38,3 +38,4 @@ private:
 	string GetRootNodeName();
 	string m_libsPath;
 };
+

@@ -72,3 +72,4 @@ protected:
 	BrushVec3         m_CursorPos;
 };
 }
+

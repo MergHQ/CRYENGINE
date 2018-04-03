@@ -66,3 +66,4 @@ protected:
 	// Set to the maximum warning type emitted. Resets when acknowledged by user.
 	int                              m_notificationType;
 };
+

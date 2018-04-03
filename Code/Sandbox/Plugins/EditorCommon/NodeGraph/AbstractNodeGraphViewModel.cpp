@@ -11,3 +11,4 @@ CNodeGraphViewModel::~CNodeGraphViewModel()
 }
 
 }
+

@@ -252,3 +252,4 @@ private:
 EDITOR_COMMON_API QGraphicsProxyWidget* AddWidget(QGraphicsScene* pScene, QWidget* pWidget);
 
 }
+

@@ -120,3 +120,4 @@ void CMenuBarBuilder::SetEnabled(bool enabled)
 }
 
 } // namespace MenuWidgetBuilders
+

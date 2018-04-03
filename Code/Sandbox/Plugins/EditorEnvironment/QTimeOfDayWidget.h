@@ -159,3 +159,4 @@ protected:
 
 	float                       m_fAnimTimeSecondsIn24h;
 };
+

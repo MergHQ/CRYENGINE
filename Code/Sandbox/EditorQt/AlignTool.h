@@ -26,3 +26,4 @@ private:
 };
 
 #endif // __aligntool_h__
+

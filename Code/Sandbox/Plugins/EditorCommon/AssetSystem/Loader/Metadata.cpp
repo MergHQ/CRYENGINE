@@ -143,3 +143,4 @@ void WriteMetaData(const XmlNodeRef& asset, const SAssetMetadata& metadata)
 }
 
 }
+

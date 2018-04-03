@@ -614,3 +614,4 @@ public:
 	const char*         GetFileSpec()                       { return "*EntityClass"; }
 	virtual const char* GetDataFilesFilterString() override { return not_implemented; }
 };
+

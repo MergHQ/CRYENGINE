@@ -596,3 +596,4 @@ void CTerrainBeachGenerator::MakeBeachStage2(CTerrainSectorBeachInfo* pSector)
 	delete[] m_pVertBufferBeach;
 	m_pVertBufferBeach = 0;
 }
+

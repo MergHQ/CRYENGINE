@@ -59,3 +59,4 @@ private:
 	FbxMetaData::SMetaData m_metaData;
 	Finalize m_finalize;
 };
+

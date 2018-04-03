@@ -903,3 +903,4 @@ CPrefabItem* CPrefabDialog::GetPrefabFromSelection()
 		return pItemNew;
 	return 0;
 }
+

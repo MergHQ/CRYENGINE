@@ -1564,3 +1564,4 @@ string GetFormattedAxes(FbxTool::Axes::EAxis up, FbxTool::Axes::EAxis fwd)
 {
 	return string(GetFormattedAxis(fwd)) + string(GetFormattedAxis(up));
 }
+

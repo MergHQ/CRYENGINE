@@ -85,3 +85,4 @@ typedef CAutoRegister<IClassDesc> CAutoRegisterClassHelper;
   });																														 \
   }
 
+

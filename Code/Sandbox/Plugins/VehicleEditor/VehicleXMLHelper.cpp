@@ -940,3 +940,4 @@ void DefinitionTable::Dump()
 		CryLog("## %s is a %s", (const char*)it->first, name, type);
 	}
 }
+

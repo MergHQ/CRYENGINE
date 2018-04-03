@@ -49,3 +49,4 @@ private:
 };
 
 #endif // __XmlTemplate_h__
+

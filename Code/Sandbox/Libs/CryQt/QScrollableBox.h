@@ -24,3 +24,4 @@ protected:
 	QScrollArea* m_scrollArea;
 	QVBoxLayout* m_layout;
 };
+

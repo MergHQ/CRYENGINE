@@ -159,3 +159,4 @@ const char* CSmartObjectTemplateDialog::GetSOTemplate() const
 	}
 	return sName;
 };
+

@@ -210,3 +210,4 @@ void CSequencerNode::ClearMenuOptions(CMenu& menu)
 void CSequencerNode::OnMenuOption(int menuOption)
 {
 }
+

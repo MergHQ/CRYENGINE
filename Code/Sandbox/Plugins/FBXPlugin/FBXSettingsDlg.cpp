@@ -93,3 +93,4 @@ bool OpenFBXSettingsDlg(struct SFBXSettings& settings)
 
 	return dialog.Execute();
 }
+

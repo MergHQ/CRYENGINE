@@ -52,3 +52,4 @@ void CUndoSequencerSequenceModifyObject::Redo()
 	// Refresh stuff after undo.
 	GetIEditorImpl()->UpdateSequencer(true);
 }
+

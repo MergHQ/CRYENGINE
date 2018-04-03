@@ -331,3 +331,4 @@ struct CRenderViewport::SScopedCurrentContext
 		viewport->RestorePreviousContext(previousContext);
 	}
 };
+

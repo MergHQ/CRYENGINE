@@ -59,3 +59,4 @@ private:
 };
 
 #endif // GenericOverwriteDialog_h__
+

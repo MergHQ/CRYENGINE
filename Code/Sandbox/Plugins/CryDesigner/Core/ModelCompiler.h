@@ -72,3 +72,4 @@ private:
 	int                  m_nCompilerFlag;
 };
 }
+

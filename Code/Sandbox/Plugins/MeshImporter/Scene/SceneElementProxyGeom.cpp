@@ -145,3 +145,4 @@ ESceneElementType CSceneElementProxyGeom::GetType() const
 {
 	return ESceneElementType::ProxyGeom;
 }
+

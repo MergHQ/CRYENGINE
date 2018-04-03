@@ -34,3 +34,4 @@ private:
 	string m_additionalOptions;
 	bool m_bEcho;
 };
+

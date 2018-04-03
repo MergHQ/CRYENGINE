@@ -52,3 +52,4 @@ private:
 	Callback                         m_callback;
 	void*                            m_pUserData;
 };
+

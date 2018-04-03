@@ -51,3 +51,4 @@ void CSequencerDopeSheetToolbar::SetTime(float fTime, float fFps)
 	sText.Format("%02d:%02d:%02d (%02d)", nMins, nSecs, nMillis, nFrames);
 	m_timeWindow.SetWindowText(sText);
 }
+

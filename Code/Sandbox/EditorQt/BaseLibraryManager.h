@@ -205,3 +205,4 @@ public:
 };
 
 #endif // __baselibrarymanager_h__
+

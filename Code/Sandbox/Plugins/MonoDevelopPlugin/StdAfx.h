@@ -33,3 +33,4 @@
 
 IEditor*  GetIEditor();
 HINSTANCE GetHInstance();
+

@@ -210,3 +210,4 @@ void CDynamicPopupMenu::SpawnAtCursor()
 	Spawn(QCursor::pos().x(), QCursor::pos().y());
 }
 
+

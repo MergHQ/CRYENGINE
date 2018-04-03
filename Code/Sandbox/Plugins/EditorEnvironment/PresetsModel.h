@@ -95,3 +95,4 @@ public slots:
 protected:
 	QPresetsWidget& m_presetsWidget;
 };
+

@@ -117,3 +117,4 @@ void CNodeGraphViewGraphicsWidget::OnItemDeactivatedChanged()
 }
 
 }
+

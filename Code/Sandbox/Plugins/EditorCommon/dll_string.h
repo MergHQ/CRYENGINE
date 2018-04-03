@@ -212,3 +212,4 @@ bool operator!=(const dll_string_tpl<T>& lhs, const dll_string_tpl<T>& rhs)
 }
 
 typedef dll_string_tpl<char> dll_string;
+

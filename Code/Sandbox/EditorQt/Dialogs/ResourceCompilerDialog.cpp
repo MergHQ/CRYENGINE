@@ -204,3 +204,4 @@ void CResourceCompilerDialog::OnShowLog()
 	const CString parameters = "/select," + path;
 	ShellExecute(NULL, "Open", "explorer.exe", parameters, "", SW_NORMAL);
 }
+

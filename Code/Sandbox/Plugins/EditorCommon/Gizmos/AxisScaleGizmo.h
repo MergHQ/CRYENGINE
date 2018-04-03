@@ -76,3 +76,4 @@ private:
 	float m_origScale;
 };
 
+

@@ -238,3 +238,4 @@ bool SmoothingGroupTool::RenameSmoothingGroup(const char* former_name, const cha
 #include "UIs/SmoothingGroupPanel.h"
 REGISTER_DESIGNER_TOOL_WITH_PANEL_AND_COMMAND(eDesigner_SmoothingGroup, eToolGroup_Surface, "Smoothing Group", SmoothingGroupTool, SmoothingGroupPanel,
                                               smoothinggroup, "runs smoothing group tool", "designer.smoothinggroup")
+

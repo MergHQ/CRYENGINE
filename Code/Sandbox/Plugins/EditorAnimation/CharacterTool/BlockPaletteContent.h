@@ -51,3 +51,4 @@ struct BlockPaletteContent
 		ar(items, "items", "Items");
 	}
 };
+

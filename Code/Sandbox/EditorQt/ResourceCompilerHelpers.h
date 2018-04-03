@@ -6,3 +6,4 @@ class CResourceCompilerVersion
 public:
 	static bool CheckIfValid(bool bSilent = false);
 };
+

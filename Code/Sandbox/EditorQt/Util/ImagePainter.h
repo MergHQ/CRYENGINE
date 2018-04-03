@@ -72,3 +72,4 @@ public:
 };
 
 #endif // __imagepainter_h__
+

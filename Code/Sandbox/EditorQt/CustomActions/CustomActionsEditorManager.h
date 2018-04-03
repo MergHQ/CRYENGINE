@@ -31,3 +31,4 @@ private:
 };
 
 #endif // __CustomActionsEditorManager_h__
+

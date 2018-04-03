@@ -4021,3 +4021,4 @@ void CObjectManager::SelectObjectInRect(CBaseObject* pObj, CViewport* view, HitC
 		}
 	}
 }
+

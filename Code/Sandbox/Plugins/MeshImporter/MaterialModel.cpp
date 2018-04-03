@@ -450,3 +450,4 @@ bool CSortedMaterialModel::lessThan(const QModelIndex& lhp, const QModelIndex& r
 	}
 	return QSortFilterProxyModel::lessThan(lhp, rhp);
 }
+

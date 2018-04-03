@@ -217,3 +217,4 @@ void CubemapUtils::GenerateCubemaps()
 	envmapTexSchedule->AddItem(scheduleItem);
 	GetIEditorImpl()->GetBackgroundScheduleManager()->SubmitSchedule(envmapTexSchedule);
 }
+

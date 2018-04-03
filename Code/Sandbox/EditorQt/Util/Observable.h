@@ -94,3 +94,4 @@ protected:
   virtual bool RegisterObserver(observerClassName * pObserver) { return CObservable<observerClassName>::RegisterObserver(pObserver); };     \
   virtual bool UnregisterObserver(observerClassName * pObserver) { return CObservable<observerClassName>::UnregisterObserver(pObserver); }; \
   virtual void UnregisterAllObservers() { CObservable<observerClassName>::UnregisterAllObservers(); };
+

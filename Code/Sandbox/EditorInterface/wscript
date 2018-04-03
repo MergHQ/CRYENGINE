@@ -7,3 +7,4 @@ def build(bld):
 		vs_filter  = 'Sandbox',
 		file_list  = ['editorinterface.waf_files'],
 	)	
+

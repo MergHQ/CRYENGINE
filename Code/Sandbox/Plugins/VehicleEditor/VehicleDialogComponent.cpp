@@ -117,3 +117,4 @@ void CVeedObject::OnObjectEventCallback(CBaseObject* pObject, int eventId)
 		m_ignoreOnTransformCallback = false;
 	}
 }
+

@@ -863,3 +863,4 @@ void CSplineCtrl::SetTimelineCtrl(CTimelineCtrl* pTimelineCtrl)
 	if (m_pTimelineCtrl)
 		m_pTimelineCtrl->SetParent(this);
 }
+

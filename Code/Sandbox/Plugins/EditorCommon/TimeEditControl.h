@@ -32,3 +32,4 @@ protected:
 
 	virtual void keyPressEvent(QKeyEvent* event);
 };
+

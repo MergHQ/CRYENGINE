@@ -57,3 +57,4 @@ public:
 };
 
 #endif // !defined(AFX_NOISE_H__D47F4AD3_03B3_4E25_957A_697628BCDDEA__INCLUDED_)
+

@@ -839,3 +839,4 @@ void CTerrainManager::AddLayer(CLayer* layer)
 
 	SelectLayer(layerIndex);
 }
+

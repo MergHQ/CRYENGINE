@@ -49,3 +49,4 @@ protected:
 };
 
 #endif // __particlemanager_h__
+

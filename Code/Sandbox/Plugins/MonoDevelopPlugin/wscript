@@ -10,3 +10,4 @@ def build(bld):
 		includes = [ '.', '..', Path('Code/CryEngine/CryAction') ],
 		use = [ 'Editor', 'EditorCommon' ]
 	)
+

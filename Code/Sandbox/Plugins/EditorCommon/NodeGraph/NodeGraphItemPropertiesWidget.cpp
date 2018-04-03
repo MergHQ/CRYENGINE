@@ -54,3 +54,4 @@ void CNodeGraphItemPropertiesWidget::SetupPropertyTree()
 }
 
 }
+

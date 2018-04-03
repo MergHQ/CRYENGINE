@@ -195,3 +195,4 @@ private:
 
 	static CEntityScriptRegistry* m_instance;
 };
+

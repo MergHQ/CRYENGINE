@@ -157,3 +157,4 @@ const CNodePinWidgetStyle* CNodeGraphViewStyle::GetPinWidgetStyle(const char* st
 }
 
 }
+

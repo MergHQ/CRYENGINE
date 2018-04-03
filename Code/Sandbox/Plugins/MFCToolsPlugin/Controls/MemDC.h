@@ -169,3 +169,4 @@ private:
 	#endif // _MSC_VER >= 1000
 
 #endif //ndef MemDCh
+

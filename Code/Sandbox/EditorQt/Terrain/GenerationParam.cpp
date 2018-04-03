@@ -176,3 +176,4 @@ void CGenerationParam::LoadParam(SNoiseParams* pParam)
 	CryLog("Loading parameters (fFade: %f, fFreq: %f, fFreqStep: %f) to dialog...",
 	                     pParam->fFade, pParam->fFrequency, pParam->fFrequencyStep);
 }
+

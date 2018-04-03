@@ -156,3 +156,4 @@ QSplitterHandle* QNotifierSplitter::createHandle()
 {
 	return new QNotifierSplitterHandle(orientation(), this);
 }
+

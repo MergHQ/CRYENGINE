@@ -46,3 +46,4 @@ public:
 	void          DrawSphere(const Matrix34& reference, const CCamera& cam, struct IRenderAuxGeom* pRenderer);
 	static uint32 IntersectSphereLineSegment(const Sphere& s, const Vec3& LineStart, const Vec3& LineEnd, Vec3& I);
 };
+

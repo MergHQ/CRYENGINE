@@ -195,3 +195,4 @@ Schematyc::IScript* CEntityAssetType::GetScript(const CAsset& asset) const
 }
 
 }
+

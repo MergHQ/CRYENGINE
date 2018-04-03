@@ -3135,3 +3135,4 @@ CString CMaterialBrowserRecord::CollectChildItems()
 	return paths;
 }
 
+

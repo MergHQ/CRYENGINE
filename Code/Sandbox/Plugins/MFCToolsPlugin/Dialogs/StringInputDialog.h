@@ -48,3 +48,4 @@ private:
 };
 
 #endif // StringInputDialog_h__
+

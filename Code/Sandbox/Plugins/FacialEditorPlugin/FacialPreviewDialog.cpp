@@ -467,3 +467,4 @@ void CModelViewportFE::HandleAnimationSettingsSwitch()
 	if (m_storedCamerasInitialized[cameraIndex])
 		m_Camera.SetMatrix(m_storedCameras[cameraIndex]);
 }
+

@@ -75,3 +75,4 @@ void CNodeGraphViewBackground::mouseReleaseEvent(QGraphicsSceneMouseEvent* pEven
 }
 
 }
+

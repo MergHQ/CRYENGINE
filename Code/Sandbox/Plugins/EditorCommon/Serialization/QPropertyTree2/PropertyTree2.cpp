@@ -580,3 +580,4 @@ void QPropertyTree2::EnsureRowVisible(const PropertyTree2::CRowModel* row)
 	const auto form = m_rootForm->ExpandToRow(row);
 	form->ScrollToRow(row);
 }
+

@@ -55,3 +55,4 @@ void CAboutDialog::SetVersion(const Version& version)
 	cry_sprintf(versionText, "Version %d.%d.%d - Build %d", version[3], version[2], version[1], version[0]);
 	m_versionText->setText(versionText);
 }
+

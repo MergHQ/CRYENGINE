@@ -30,3 +30,4 @@ protected:
 	QDockWidget*        m_pPresetsDock;
 	QDockWidget*        m_pSunSettingsDock;
 };
+

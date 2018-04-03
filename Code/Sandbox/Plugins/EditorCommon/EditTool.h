@@ -119,3 +119,4 @@ protected:
 };
 
 #endif // __EditTool_h__
+

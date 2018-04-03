@@ -45,3 +45,4 @@ void AnimUtils::StopAnimations(ICharacterInstance* pCharacter)
 		pISkeletonAnim->StopAnimationsAllLayers();
 	}
 }
+

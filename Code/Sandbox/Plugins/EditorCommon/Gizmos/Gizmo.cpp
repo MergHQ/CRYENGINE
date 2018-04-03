@@ -35,3 +35,4 @@ void CGizmo::SetHighlighted(bool highlighted)
 		UnsetFlag(EGIZMO_HIGHLIGHTED);
 	}
 }
+

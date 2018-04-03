@@ -86,3 +86,4 @@ private:
 
 	DECLARE_MESSAGE_MAP()
 };
+

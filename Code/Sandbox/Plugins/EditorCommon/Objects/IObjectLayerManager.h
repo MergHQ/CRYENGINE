@@ -17,3 +17,4 @@ struct IObjectLayerManager
 	virtual IObjectLayer*  GetCurrentLayer() const = 0;
 };
 
+

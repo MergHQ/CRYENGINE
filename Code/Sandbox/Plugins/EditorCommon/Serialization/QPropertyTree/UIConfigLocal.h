@@ -10,3 +10,4 @@ namespace property_tree
 {
 typedef CryIcon PropertyIcon;
 }
+

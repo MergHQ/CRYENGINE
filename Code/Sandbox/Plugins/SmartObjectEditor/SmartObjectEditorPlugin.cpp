@@ -243,3 +243,4 @@ bool CSmartObjectEditorPlugin::OnEditDeprecatedProperty(int type, const string& 
 
 	return false;
 }
+

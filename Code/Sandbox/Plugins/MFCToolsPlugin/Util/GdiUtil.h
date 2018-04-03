@@ -135,3 +135,4 @@ protected:
 //! \param aEndColor the end color of the gradient
 //! \param aFillType the mode to fill the rectangle: GRADIENT_FILL_RECT_H - horizontal fill, GRADIENT_FILL_RECT_V - vertical fill
 bool GradientFillRect(HDC hDC, CRect& rRect, COLORREF aStartColor, COLORREF aEndColor, int aFillType);
+

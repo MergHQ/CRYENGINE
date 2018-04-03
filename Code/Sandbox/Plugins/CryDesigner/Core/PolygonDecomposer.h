@@ -232,3 +232,4 @@ private: // Related to Decomposition into convexes
 	mutable Convexes* m_pBrushConvexes;
 };
 }
+

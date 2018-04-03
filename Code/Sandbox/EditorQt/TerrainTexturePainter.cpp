@@ -962,3 +962,4 @@ void CTerrainTexturePainter::Command_Activate()
 }
 
 REGISTER_PYTHON_COMMAND(CTerrainTexturePainter::Command_Activate, edit_mode, terrain_painter, "Activates terrain texture painting mode");
+

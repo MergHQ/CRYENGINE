@@ -2024,3 +2024,4 @@ void CCurveEditor::FillWithCurveToolsAndConnect(QToolBar* pToolBar)
 	pToolBar->addAction(CryIcon("icons:CurveEditor/break.ico"), "Break tangents", this, SLOT(OnBreakTangents()));
 	pToolBar->addAction(CryIcon("icons:CurveEditor/unify.ico"), "Unify tangents", this, SLOT(OnUnifyTangents()));
 }
+

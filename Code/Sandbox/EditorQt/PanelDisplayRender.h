@@ -62,3 +62,4 @@ protected:
 	std::unordered_map<ICVar*, uint64> m_varCallbackMap;
 	CViewport*                         m_pViewport;
 };
+

@@ -140,3 +140,4 @@ void CLayerPicker::SelectLayerIndex(const QModelIndex& index)
 		}
 	}
 }
+

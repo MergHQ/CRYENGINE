@@ -47,3 +47,4 @@ private:
 
 	bool m_parentWasDisabled;
 };
+

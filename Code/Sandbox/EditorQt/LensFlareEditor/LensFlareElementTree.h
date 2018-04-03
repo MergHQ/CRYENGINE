@@ -160,3 +160,4 @@ private:
 	std::vector<CLensFlareElement::LensFlareElementPtr> m_LensFlareElements;
 	CLensFlareItem* m_pLensFlareItem;
 };
+

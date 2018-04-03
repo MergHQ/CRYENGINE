@@ -410,3 +410,4 @@ CPhysPullTool::~CPhysPullTool()
 	ReleasePhysEnt(m_pEntAttach);
 	m_timeBullet = 0;
 }
+

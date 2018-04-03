@@ -18,3 +18,4 @@ public:
 	static void  Weld(MainContext& mc, const BrushVec3& vSrc, const BrushVec3& vTarget);
 };
 }
+

@@ -81,3 +81,4 @@ struct SSubObjSelectionModifyContext
 };
 
 #endif //__SubObjSelection_h__
+

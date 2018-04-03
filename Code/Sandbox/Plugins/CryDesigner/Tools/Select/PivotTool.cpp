@@ -176,3 +176,4 @@ void PivotTool::OnManipulatorBegin(IDisplayViewport* pView, ITransformManipulato
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Pivot, eToolGroup_BasicSelection, "Pivot", PivotTool,
                                                            pivotselection, "runs pivot selection tool", "designer.pivotselection")
+

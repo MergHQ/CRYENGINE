@@ -191,3 +191,4 @@ void CMemoryBlock::Serialize(CArchive& ar)
 		ar.Write(m_buffer, m_size);
 	}
 }
+

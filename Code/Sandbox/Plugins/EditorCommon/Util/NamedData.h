@@ -58,3 +58,4 @@ private:
 	typedef std::map<string, DataBlock*, stl::less_stricmp<string>> TBlocks;
 	TBlocks m_blocks;
 };
+

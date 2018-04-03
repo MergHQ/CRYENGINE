@@ -66,3 +66,4 @@ struct IDataBaseItem
 };
 
 #endif // __IDataBaseItem_h__
+

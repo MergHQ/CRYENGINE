@@ -25,3 +25,4 @@ public:
 
 	TResourceFiles files;
 };
+

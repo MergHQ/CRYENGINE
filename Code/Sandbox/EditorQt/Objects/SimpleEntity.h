@@ -36,3 +36,4 @@ public:
 	const char*         GetFileSpec()                       { return "*.cgf;*.chr;*.cga;*.cdf"; };
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 };
+

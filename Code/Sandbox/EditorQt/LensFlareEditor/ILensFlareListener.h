@@ -17,3 +17,4 @@ class ILensFlareChangeElementListener
 public:
 	virtual void OnLensFlareChangeElement(CLensFlareElement* pLensFlareElement) = 0;
 };
+

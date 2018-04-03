@@ -760,3 +760,4 @@ inline string CommandString(const char* commandString, P1 p1, P2 p2, P3 p3, P4 p
 {
 	return string(commandString) + " " + CCommand::ToString_(p1) + " " + CCommand::ToString_(p2) + " " + CCommand::ToString_(p3) + " " + CCommand::ToString_(p4) + " " + CCommand::ToString_(p5);
 }
+

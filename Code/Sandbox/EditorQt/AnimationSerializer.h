@@ -41,3 +41,4 @@ public:
 };
 
 #endif // __animationserializer_h__
+

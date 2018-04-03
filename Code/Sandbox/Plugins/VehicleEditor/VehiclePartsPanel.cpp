@@ -2104,3 +2104,4 @@ void CVehiclePartsPanel::OnScaleHelpers()
 		}
 	}
 }
+

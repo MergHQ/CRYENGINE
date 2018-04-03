@@ -520,3 +520,4 @@ void CFileWriter::WriteControlsEditorData(CAsset const& parentAsset, XmlNodeRef 
 	}
 }
 } // namespace ACE
+

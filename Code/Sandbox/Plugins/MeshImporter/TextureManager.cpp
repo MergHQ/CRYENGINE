@@ -176,3 +176,4 @@ void CTextureManager::Init(const MeshImporter::CSceneManager& sceneManager)
 		}
 	}
 }
+

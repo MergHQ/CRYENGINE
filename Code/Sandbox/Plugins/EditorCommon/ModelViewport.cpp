@@ -1323,3 +1323,4 @@ bool CModelViewport::UseAnimationDrivenMotion() const
 {
 	return false;
 }
+

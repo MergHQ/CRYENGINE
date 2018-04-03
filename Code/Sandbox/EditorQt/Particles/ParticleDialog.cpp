@@ -1359,3 +1359,4 @@ void EditParticle(const SResourceSelectorContext& context, const char* szAssetPa
 
 REGISTER_RESOURCE_EDITING_SELECTOR_WITH_LEGACY_SUPPORT("ParticleLegacy", ParticleSelector, ValidateParticlePath, EditParticle, "")
 REGISTER_RESOURCE_EDITING_SELECTOR("Particle", ParticleSelector, ValidateParticlePath, EditParticle, "")
+

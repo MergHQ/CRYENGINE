@@ -11,3 +11,4 @@ public:
 		SetOrbitMode(true);
 	}
 };
+

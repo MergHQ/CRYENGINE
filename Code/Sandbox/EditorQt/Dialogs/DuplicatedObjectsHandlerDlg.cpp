@@ -47,3 +47,4 @@ void CDuplicatedObjectsHandlerDlg::OnBnClickedCreateCopiesBtn()
 	m_result = eResult_CreateCopies;
 	OnOK();
 }
+

@@ -107,3 +107,4 @@ private:
 	QPropertyTree*                   m_pPropertyTree;
 	std::unique_ptr<SDisplayOptions> m_pOptions;
 };
+

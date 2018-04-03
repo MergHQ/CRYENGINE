@@ -70,3 +70,4 @@ private:
 	bool m_bChoosePathPolygonPhase;
 };
 }
+

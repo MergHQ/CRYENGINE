@@ -39,3 +39,4 @@ struct SEditorSettings
 private:
 	SEditorSettings();
 };
+

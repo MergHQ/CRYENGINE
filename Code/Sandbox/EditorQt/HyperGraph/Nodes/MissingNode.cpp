@@ -83,3 +83,4 @@ const char* CMissingNode::GetInfoAsString() const
 	sNodeInfo.Format("!!Missing Node!!\nClass:  %s", m_sMissingClassName);
 	return sNodeInfo.c_str();
 }
+

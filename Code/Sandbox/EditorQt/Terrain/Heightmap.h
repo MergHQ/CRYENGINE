@@ -356,3 +356,4 @@ inline float CHeightmap::GetSlope(int x, int y)
 	if (fs > 255.0f) fs = 255.0f;
 	return fs;
 };
+

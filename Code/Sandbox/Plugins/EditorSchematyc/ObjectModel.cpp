@@ -298,3 +298,4 @@ void CObjectModel::LoadFromScriptElement()
 }
 
 }
+

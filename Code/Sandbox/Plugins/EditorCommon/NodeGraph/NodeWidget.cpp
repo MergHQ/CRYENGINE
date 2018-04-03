@@ -342,3 +342,4 @@ void CNodeWidget::SetHeaderNameWidth(int32 width)
 }
 
 }
+

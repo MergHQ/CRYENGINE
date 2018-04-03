@@ -47,3 +47,4 @@ private:
 
 	IOpticsElementBasePtr m_pOptics;
 };
+

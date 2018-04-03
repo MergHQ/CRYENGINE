@@ -38,3 +38,4 @@ protected:
 	bool InsertItem(const FlareInfo& flareInfo);
 
 };
+

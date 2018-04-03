@@ -31,3 +31,4 @@ private:
 	QVBoxLayout*                  m_pMainLayout;
 	QVBoxLayout*                  m_pNotificationsLayout;
 };
+

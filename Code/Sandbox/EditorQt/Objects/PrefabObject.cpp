@@ -1719,3 +1719,4 @@ REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PyHasPrefabGroup, prefab, has_group,
 REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PyHasPrefabItem, prefab, has_item,
                                           "Return true if in the specified prefab library, and in the specified group, the specified item exists.",
                                           "prefab.has_item()");
+

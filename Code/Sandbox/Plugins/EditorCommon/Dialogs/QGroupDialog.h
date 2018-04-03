@@ -23,3 +23,4 @@ private:
 	QLineEdit* m_pGroup;
 };
 
+

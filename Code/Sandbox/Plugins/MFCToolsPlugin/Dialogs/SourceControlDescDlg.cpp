@@ -40,3 +40,4 @@ void CSourceControlDescDlg::OnBnClickedOk()
 			OnOK();
 	}
 }
+

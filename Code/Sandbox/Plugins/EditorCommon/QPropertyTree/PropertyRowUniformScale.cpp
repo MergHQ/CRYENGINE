@@ -73,3 +73,4 @@ namespace Serialization
 {
 REGISTER_PROPERTY_ROW(SUniformScale, PropertyRowUniformScale);
 }
+

@@ -122,3 +122,4 @@ public:
 	CCrySignal<void(const char*)>                           m_libraryRemoved;
 	CCrySignal<void()>                                      m_databaseCleared;
 };
+

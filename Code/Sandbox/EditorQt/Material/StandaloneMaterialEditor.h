@@ -21,3 +21,4 @@ private:
 
 	CWnd* m_materialWnd;
 };
+

@@ -718,3 +718,4 @@ void CCameraObjectTarget::Serialize(CObjectArchive& ar)
 {
 	CEntityObject::Serialize(ar);
 }
+

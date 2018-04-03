@@ -196,3 +196,4 @@ void QCustomResolutionDialog::AspectOptionChanged(int index)
 		break;
 	}
 }
+

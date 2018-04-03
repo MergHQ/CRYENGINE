@@ -562,3 +562,4 @@ void CMannTagEditorDialog::OnBnClickedCreateAdbFile()
 		ResetFragmentADBs();
 	}
 }
+

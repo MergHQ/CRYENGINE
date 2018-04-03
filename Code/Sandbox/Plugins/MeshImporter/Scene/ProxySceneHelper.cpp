@@ -154,3 +154,4 @@ CSceneElementProxyGeom* FindSceneElementOfProxyGeom(CScene& scene, const phys_ge
 
 	return nullptr;
 }
+

@@ -58,3 +58,4 @@ private:
 	HandlersMap m_structHandlers;   // TODO: have only one of these.
 };
 }
+

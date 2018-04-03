@@ -113,3 +113,4 @@ struct SAnimSettings
 	static string GetIntermediateFilename(const char* animationPath);
 	static void   SplitTagString(std::vector<string>* tags, const char* str);
 };
+

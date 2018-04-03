@@ -199,3 +199,4 @@ public:
 private:
 	QString m_title;
 };
+

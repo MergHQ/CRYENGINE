@@ -27,3 +27,4 @@ void CAbstractCommentItem::SetPosition(QPointF position)
 }
 
 }
+

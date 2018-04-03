@@ -23,3 +23,4 @@ private:
 	static void SelectRing(MainContext& mc, const BrushEdge3D& inputEdge);
 };
 }
+

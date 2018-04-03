@@ -209,3 +209,4 @@ void CSelectGameTokenDialog::OnTvnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 		EndDialog(IDOK);
 	}
 }
+

@@ -99,3 +99,4 @@ void CModelProperties::ConnectViewToPropertyObject(QAbstractItemView* pView)
 		}
 	});
 }
+

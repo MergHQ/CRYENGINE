@@ -59,3 +59,4 @@ protected:
 };
 
 #endif // __MANN_KEY_PROPERTIES_DLG_H__
+

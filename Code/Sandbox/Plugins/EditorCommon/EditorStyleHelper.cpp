@@ -191,3 +191,4 @@ EDITOR_COMMON_API EditorStyleHelper* GetStyleHelper()
 	s_instance->ensurePolished();
 	return s_instance;
 }
+

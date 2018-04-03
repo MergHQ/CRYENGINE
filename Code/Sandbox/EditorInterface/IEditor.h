@@ -560,3 +560,4 @@ struct IAutoEditorNotifyListener : public IEditorNotifyListener
 		((IEditor*)GetIEditor())->UnregisterNotifyListener(this);
 	}
 };
+

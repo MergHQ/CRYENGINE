@@ -137,3 +137,4 @@ private:
 };
 
 #endif // __SelectionGroup_h__
+

@@ -292,3 +292,4 @@ void SmoothingGroupManager::InvalidateSmoothingGroup(PolygonPtr pPolygon)
 	}
 }
 }
+

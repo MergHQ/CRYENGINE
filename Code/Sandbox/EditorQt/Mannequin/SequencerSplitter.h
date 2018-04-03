@@ -33,3 +33,4 @@ protected:
 };
 
 #endif // __sequencersplitter_h__
+

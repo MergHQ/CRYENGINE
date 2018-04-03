@@ -52,3 +52,4 @@ int SDBATable::FindDBAForAnimation(const SAnimationFilterItem& animation) const
 
 	return -1;
 }
+

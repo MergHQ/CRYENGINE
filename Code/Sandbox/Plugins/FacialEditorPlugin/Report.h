@@ -149,3 +149,4 @@ inline void CReport::Clear()
 }
 
 #endif //__REPORT_H__
+

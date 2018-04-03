@@ -128,3 +128,4 @@ void HeightManipulator::Display(DisplayContext& dc)
 	}
 }
 }
+

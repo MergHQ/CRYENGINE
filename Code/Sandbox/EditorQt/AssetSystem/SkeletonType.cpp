@@ -72,3 +72,4 @@ void CSkeletonType::GenerateThumbnail(const CAsset* pAsset) const
 	}).get();
 }
 
+

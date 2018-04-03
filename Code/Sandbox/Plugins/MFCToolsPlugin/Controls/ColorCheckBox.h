@@ -14,3 +14,4 @@ public:
 	void SetToolTip(const char* tooltipText);
 };
 typedef CCustomButton CColoredPushButton;
+

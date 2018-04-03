@@ -15,3 +15,4 @@ bool       VehicleDataSave(const char* definitionFile, const char* dataFile, IVe
 XmlNodeRef VehicleDataMergeAndSave(const char* originalXml, XmlNodeRef definition, IVehicleData* pData);
 
 #endif
+

@@ -777,3 +777,4 @@ void CImageListCtrl::InvalidateAllBitmaps()
 	for (int i = 0; i < m_items.size(); i++)
 		m_items[i]->bBitmapValid = false;
 }
+

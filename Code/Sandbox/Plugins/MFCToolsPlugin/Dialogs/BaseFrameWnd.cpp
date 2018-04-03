@@ -207,3 +207,4 @@ CXTPDockingPane* CBaseFrameWnd::CreateDockingPane(const char* sPaneTitle, CWnd* 
 	m_dockingPaneWindows.push_back(std::pair<int, CWnd*>(nID, pWindow));
 	return pPane;
 }
+

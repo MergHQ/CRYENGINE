@@ -35,3 +35,4 @@ void SelectConnectedTool::SelectConnectedPolygons(MainContext& mc)
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Connected, eToolGroup_Selection, "Connected", SelectConnectedTool,
                                    connectedselection, "runs connected selection tool", "designer.connectedselection")
+

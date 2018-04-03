@@ -1571,3 +1571,4 @@ void CScene::SetVisibleLayerMask(unsigned int layerMask)
 }
 
 }
+

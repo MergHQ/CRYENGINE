@@ -325,3 +325,4 @@ inline bool CTrackViewBatchRenderDlg::SRenderContext::IsInRendering() const
 {
 	return currentItemIndex >= 0;
 }
+

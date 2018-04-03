@@ -67,3 +67,4 @@ public:
 protected:
 	uint32                       m_flags;
 };
+

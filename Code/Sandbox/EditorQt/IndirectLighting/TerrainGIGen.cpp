@@ -2598,3 +2598,4 @@ const bool CTerrainGIGen::Generate
 
 	return true;
 }
+

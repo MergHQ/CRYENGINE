@@ -269,3 +269,4 @@ CItemModelAttribute* CSceneModelSkeleton::GetColumnAttribute(int col) const
 		return nullptr;
 	};
 }
+

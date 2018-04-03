@@ -436,3 +436,4 @@ void CEnvBrowserWidget::ExpandAll()
 	m_pTreeView->expandAll();
 }
 } // Schematyc
+

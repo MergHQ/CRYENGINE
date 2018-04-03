@@ -796,3 +796,4 @@ Schematyc::CScriptBrowserWidget* CMainWindow::CreateScriptBrowserWidget()
 }
 
 } // Schematyc
+

@@ -37,3 +37,4 @@ protected:
 	QString          m_ItemNameBeforeEdit;
 };
 }
+

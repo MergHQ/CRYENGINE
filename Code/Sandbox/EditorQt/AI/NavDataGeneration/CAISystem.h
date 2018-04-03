@@ -470,3 +470,4 @@ typedef std::map<string, SShape>                   ShapeMap;
 typedef std::map<string, SPerceptionModifierShape> PerceptionModifierShapeMap;
 
 #endif // _CAISYSTEM_H_
+

@@ -389,3 +389,4 @@ bool ValidateClipboardContents(const char* szPrefix)
 
 }
 }
+

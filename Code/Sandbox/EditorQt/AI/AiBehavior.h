@@ -75,3 +75,4 @@ typedef TSmartPtr<CAIBehavior>  CAIBehaviorPtr;
 typedef TSmartPtr<CAICharacter> CAICharacterPtr;
 
 #endif // __aibehavior_h__
+

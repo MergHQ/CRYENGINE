@@ -30,3 +30,4 @@ bool SMannequinGeneralPreferences::Serialize(yasli::Archive& ar)
 
 	return true;
 }
+

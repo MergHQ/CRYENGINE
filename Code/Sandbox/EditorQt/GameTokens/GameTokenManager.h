@@ -44,3 +44,4 @@ protected:
 };
 
 #endif // __GameTokenManager_h__
+

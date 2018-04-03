@@ -57,3 +57,4 @@ const CNodePinWidgetStyle* CNodeContentWidgetStyle::GetPinWidgetStyle(const char
 }
 
 }
+

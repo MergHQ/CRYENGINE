@@ -102,3 +102,4 @@ protected:
 };
 
 #endif // __SEQUENCER_NODE_h__
+

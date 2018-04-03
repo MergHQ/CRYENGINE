@@ -86,3 +86,4 @@ private:
 	std::vector<AABB>                  m_DebugBoxes;
 	std::map<CBaseObjectPtr, CKDTree*> m_ObjectKdTreeMap;
 };
+

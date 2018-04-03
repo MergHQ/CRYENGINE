@@ -59,3 +59,4 @@ private:
 	QModelIndex  IndexFromItem(Impl::IItem const* const pIItem) const;
 };
 } // namespace ACE
+

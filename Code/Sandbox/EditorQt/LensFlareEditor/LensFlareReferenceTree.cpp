@@ -13,3 +13,4 @@ CLensFlareReferenceTree::CLensFlareReferenceTree()
 CLensFlareReferenceTree::~CLensFlareReferenceTree()
 {
 }
+

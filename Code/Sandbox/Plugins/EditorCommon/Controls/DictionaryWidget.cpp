@@ -633,3 +633,4 @@ void CModalPopupDictionary::OnAborted()
 	if (m_pEventLoop)
 		m_pEventLoop->exit();
 }
+

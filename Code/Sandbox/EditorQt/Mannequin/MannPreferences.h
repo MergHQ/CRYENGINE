@@ -15,3 +15,4 @@ struct SMannequinGeneralPreferences : public SPreferencePage
 };
 
 extern SMannequinGeneralPreferences gMannequinPreferences;
+

@@ -49,3 +49,4 @@ void CNodePinWidgetStyle::GeneratePixmaps()
 }
 
 }
+

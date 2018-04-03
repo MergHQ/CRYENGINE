@@ -18,3 +18,4 @@ QModelIndex GetSourceModelIndex(const QModelIndex& index)
 
 	return original;
 }
+

@@ -462,3 +462,4 @@ void DesignerSettings::Update(bool continuous)
 	Save();
 }
 }
+

@@ -1400,3 +1400,4 @@ void CEntityScriptRegistry::Release()
 	}
 	m_instance = 0;
 }
+

@@ -363,3 +363,4 @@ void CAreaSphere::UpdateAttachedEntities()
 		}
 	}
 }
+

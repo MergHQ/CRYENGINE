@@ -46,3 +46,4 @@ bool ExcludedEdgeManager::GetVisibleEdge(const BrushEdge3D& edge, const BrushPla
 	return true;
 }
 }
+

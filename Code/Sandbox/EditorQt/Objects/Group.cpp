@@ -1298,3 +1298,4 @@ void CGroup::UpdatePivot(const Vec3& newWorldPivotPos)
 	CBaseObject::SetWorldPos(newWorldPivotPos);
 	m_bUpdatingPivot = false;
 }
+

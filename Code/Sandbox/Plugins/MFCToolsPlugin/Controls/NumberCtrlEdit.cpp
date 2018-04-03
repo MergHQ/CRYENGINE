@@ -155,3 +155,4 @@ void CNumberCtrlEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 		}
 	}
 }
+

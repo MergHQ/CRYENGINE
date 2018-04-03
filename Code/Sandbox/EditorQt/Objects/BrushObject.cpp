@@ -1185,3 +1185,4 @@ string CBrushObject::GetMouseOverStatisticsText() const
 
 	return triangleCountText;
 }
+

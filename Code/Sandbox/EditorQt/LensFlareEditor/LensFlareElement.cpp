@@ -216,3 +216,4 @@ CLensFlareView* CLensFlareElement::GetLensFlareView() const
 		return NULL;
 	return pEditor->GetLensFlareView();
 }
+

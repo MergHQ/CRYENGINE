@@ -487,3 +487,4 @@ void CTerrainTextureExport::OnChangeResolutionBtn()
 
 	GetIEditorImpl()->GetActiveView()->Update();
 }
+

@@ -70,3 +70,4 @@ void CEffectAsset::SetModified(bool bModified)
 }
 
 }
+

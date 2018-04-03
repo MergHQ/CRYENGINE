@@ -424,3 +424,4 @@ void CVehiclePrototype::AddHelper(CVehicleHelper* pHelper, IVariable* pHelperVar
 
 	AttachChild(pHelper, true);
 }
+

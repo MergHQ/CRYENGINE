@@ -62,3 +62,4 @@ void CProcessInfo::QueryMemInfo(ProcessMemInfo& meminfo)
 	meminfo.PeakPagefileUsage = pc.PeakPagefileUsage;
 	meminfo.PageFaultCount = pc.PageFaultCount;
 }
+

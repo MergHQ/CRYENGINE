@@ -221,3 +221,4 @@ void CTreeView::RestoreSelectionChildren(QModelIndex const& index)
 	}
 }
 } // namespace ACE
+

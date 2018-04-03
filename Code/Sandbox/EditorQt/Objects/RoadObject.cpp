@@ -865,3 +865,4 @@ public:
 };
 
 REGISTER_CLASS_DESC(CRoadObjectClassDesc);
+

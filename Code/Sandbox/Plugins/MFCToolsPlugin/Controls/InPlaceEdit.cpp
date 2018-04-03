@@ -121,3 +121,4 @@ void CInPlaceEdit::OnEnChange()
 	if (m_bUpdateOnEnChange && m_onChange)
 		m_onChange();
 }
+

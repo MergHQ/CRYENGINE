@@ -46,3 +46,4 @@ void CAICharacter::Edit()
 {
 	CFileUtil::EditTextFile(GetScript());
 }
+

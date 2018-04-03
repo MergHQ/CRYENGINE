@@ -69,3 +69,4 @@ private:
 	static EAssetType                   s_previousControlType;
 };
 } // namespace ACE
+

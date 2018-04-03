@@ -108,3 +108,4 @@ void CHyperNodePainter_QuickSearch::Paint(CHyperNode* pNode, CDisplayList* pList
 	end.Y = 14.0f;
 	pList->AddLine(start, end, &pAssets->penBorder);
 }
+

@@ -58,3 +58,4 @@ void SScanAndLoadFilesTask::Finalize()
 }
 
 }
+

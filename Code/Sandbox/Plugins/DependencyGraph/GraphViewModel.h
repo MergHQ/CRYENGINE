@@ -67,3 +67,4 @@ protected:
 	const CAssetType* const m_pAssetType;
 	string                  m_path;
 };
+

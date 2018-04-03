@@ -277,3 +277,4 @@ bool CObjectCreateTool::CanStartCreation()
 {
 	return GetIEditorImpl()->GetObjectManager()->GetLayersManager() && GetIEditorImpl()->GetObjectManager()->CanCreateObject();
 }
+

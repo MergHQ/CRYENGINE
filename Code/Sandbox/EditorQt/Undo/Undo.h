@@ -119,3 +119,4 @@ private: // ---------------------------------------------------------------
 	std::vector<IUndoManagerListener*> m_listeners;
 };
 
+

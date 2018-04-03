@@ -81,3 +81,4 @@ private:
 	int                       m_CandidateObjectCount;
 	int                       m_CurrentSelectedPos;
 };
+

@@ -102,3 +102,4 @@ EDITOR_COMMON_API bool IsValidFileName(const QString& name);
 //! Returns current platform specific folder name, used when the user wants to store platform specific data.
 EDITOR_COMMON_API string GetCurrentPlatformFolder();
 }
+

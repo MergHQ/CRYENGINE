@@ -3,3 +3,4 @@
 #pragma once
 
 bool OpenFBXSettingsDlg(struct SFBXSettings& settings);
+

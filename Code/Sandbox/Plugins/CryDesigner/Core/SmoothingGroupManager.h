@@ -45,3 +45,4 @@ private:
 	InvertSmoothingGroupMap m_MapPolygon2GroupId;
 };
 }
+

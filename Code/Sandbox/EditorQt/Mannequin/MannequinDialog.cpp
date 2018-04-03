@@ -2268,3 +2268,4 @@ void CMannequinDialog::EnableMenuCommand(uint32 commandId, bool enable)
 		pContextEditorCommand->SetEnabled(enable);
 	}
 }
+

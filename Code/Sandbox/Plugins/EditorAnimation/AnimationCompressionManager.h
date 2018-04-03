@@ -49,3 +49,4 @@ private:
 	std::vector<SAnimationInWorks>        m_canceledAnimations;
 	bool m_enabled;
 };
+

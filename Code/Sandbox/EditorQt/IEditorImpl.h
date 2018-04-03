@@ -555,3 +555,4 @@ protected:
 };
 
 CEditorImpl* GetIEditorImpl();
+

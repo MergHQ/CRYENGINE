@@ -2235,3 +2235,4 @@ BOOL CMaterialDialog::PreTranslateMessage(MSG* pMsg)
 
 	return __super::PreTranslateMessage(pMsg);
 }
+

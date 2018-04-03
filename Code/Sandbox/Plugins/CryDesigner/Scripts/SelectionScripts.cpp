@@ -287,3 +287,4 @@ void PyDesignerSelectPivotMode()
                        "Select Pivot Mode of CryDesigner",
                        "designer.select_pivotmode()");
  */
+

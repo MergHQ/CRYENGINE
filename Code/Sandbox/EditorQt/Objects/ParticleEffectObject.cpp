@@ -380,3 +380,4 @@ void CParticleEffectObject::CFastParticleParser::ParseParticle(XmlNodeRef& node,
 		}
 	}
 }
+

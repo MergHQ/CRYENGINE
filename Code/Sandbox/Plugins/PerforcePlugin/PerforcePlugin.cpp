@@ -45,3 +45,4 @@ void CPerforcePlugin::OnEditorNotifyEvent(EEditorNotifyEvent aEventId)
 		g_pPerforceControl->Init();
 	}
 }
+

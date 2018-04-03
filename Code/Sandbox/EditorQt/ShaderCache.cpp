@@ -155,3 +155,4 @@ void CLevelShaderCache::ActivateShaders()
 		gEnv->pRenderer->EF_Query(EFQ_SetShaderCombinations, textBuffer);
 	}
 }
+

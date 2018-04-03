@@ -168,3 +168,4 @@ protected:
 	//! Attached files
 	std::vector<string> m_files;
 };
+

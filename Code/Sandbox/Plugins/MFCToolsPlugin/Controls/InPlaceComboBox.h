@@ -216,3 +216,4 @@ inline int CInPlaceComboBox::GetCurrentSelection() const
 }
 
 #endif // __inplacecombobox_h__#pragma once
+

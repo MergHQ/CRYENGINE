@@ -8,3 +8,4 @@ bool ExpectedIsDebuggerPresent()
 {
 	return IsDebuggerPresent() ? true : false;
 }
+

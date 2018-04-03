@@ -337,3 +337,4 @@ private:
 	HCURSOR                 m_hCursorCreate;
 	HCURSOR                 m_hCursorReplace;
 };
+

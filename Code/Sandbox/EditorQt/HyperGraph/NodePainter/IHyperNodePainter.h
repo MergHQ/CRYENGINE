@@ -9,3 +9,4 @@ struct IHyperNodePainter
 	virtual void Paint(CHyperNode* pNode, CDisplayList* pList) = 0;
 };
 
+

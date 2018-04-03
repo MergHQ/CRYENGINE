@@ -580,3 +580,4 @@ void CryIcon::SetDefaultTint(QIcon::Mode mode, QBrush brush)
 		break;
 	}
 }
+

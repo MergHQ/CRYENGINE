@@ -998,3 +998,4 @@ bool CImageUtil::CreateBitmapFromImage(const CImageEx& image, CBitmap& bitmapObj
 
 	return true;
 }
+

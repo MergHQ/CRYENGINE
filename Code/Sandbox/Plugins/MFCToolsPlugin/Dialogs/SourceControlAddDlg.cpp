@@ -58,3 +58,4 @@ void CSourceControlAddDlg::OnBnClickedAddDefault()
 	m_result = ADD_ONLY;
 	OnOK();
 }
+

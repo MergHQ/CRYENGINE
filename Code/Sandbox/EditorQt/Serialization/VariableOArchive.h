@@ -78,3 +78,4 @@ private:
 	EntityId            m_animationEntityId;
 };
 }
+

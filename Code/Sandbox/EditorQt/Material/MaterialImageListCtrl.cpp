@@ -468,3 +468,4 @@ void CMaterialImageListCtrl::CalcLayout(bool bUpdateScrollBar /*=true */)
 
 	bNoRecurse = false;
 }
+

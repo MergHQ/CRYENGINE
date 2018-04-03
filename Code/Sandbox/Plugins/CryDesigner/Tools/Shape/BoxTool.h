@@ -59,3 +59,4 @@ protected:
 	BoxParameter m_BoxParameter;
 };
 }
+

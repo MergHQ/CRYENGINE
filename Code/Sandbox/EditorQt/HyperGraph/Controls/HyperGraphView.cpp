@@ -5512,3 +5512,4 @@ const Gdiplus::PointF& CHyperGraphView::SGraphVisualChanges::GetNodeStartPositio
 
 	return dummyPoint;
 }
+

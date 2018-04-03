@@ -26,3 +26,4 @@ private:
 };
 
 #endif // __CUNDOENTITYPROPERTY__H__
+

@@ -241,3 +241,4 @@ BSPTree3DNode* BSPTree3D::BuildBSP(std::vector<PolygonPtr>& polygonList)
 }
 
 }
+

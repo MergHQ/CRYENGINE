@@ -1689,3 +1689,4 @@ void CSplineObject::EditSpline()
 		pEditTool->SetUserData("object", this);
 	}
 }
+

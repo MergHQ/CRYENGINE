@@ -599,3 +599,4 @@ void CParticleEditor::OnEffectOptionsChanged()
 }
 
 }
+

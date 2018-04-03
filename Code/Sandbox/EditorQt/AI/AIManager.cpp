@@ -1401,3 +1401,4 @@ void CAIManager::SNavigationUpdateProgress::Update(const INavigationSystem* pNav
 		}
 	}
 }
+

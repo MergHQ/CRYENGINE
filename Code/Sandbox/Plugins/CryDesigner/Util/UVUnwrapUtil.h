@@ -26,3 +26,4 @@ float CalculateSphericalRadius(Model* pModel);
 void  CalculateCylinderRadiusHeight(Model* pModel, float& outRadius, float& outHeight);
 }
 }
+

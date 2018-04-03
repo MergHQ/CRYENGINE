@@ -1684,3 +1684,4 @@ void CJoystickCtrl::UpdateDocumentRect()
 
 	OnClientSizeUpdated();
 }
+

@@ -70,3 +70,4 @@ private:
 	//! gizmo that cursor is over. It receives input events and may start interaction
 	CGizmoPtr m_highlighted;
 };
+

@@ -117,3 +117,4 @@ const char* CScriptBind_AI::GetPathTypeName(EAIPathType pathType)
 	assert(!!!"Should not be here");
 	return 0;
 }
+

@@ -428,3 +428,4 @@ static SBrushPlane<float> ToFloatPlane(const BrushPlane& plane)
 	return SBrushPlane<float>(ToVec3(plane.Normal()), ToFloat(plane.Distance()));
 }
 }
+

@@ -21,3 +21,4 @@ public:
 private:
 	phys_geometry* m_pPhysGeom;
 };
+

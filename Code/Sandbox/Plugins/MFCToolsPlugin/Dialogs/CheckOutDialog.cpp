@@ -99,3 +99,4 @@ bool CCheckOutDialog::EnableForAll(bool isEnable)
 		InstanceIsForAll() = false;
 	return bPrevEnable;
 }
+

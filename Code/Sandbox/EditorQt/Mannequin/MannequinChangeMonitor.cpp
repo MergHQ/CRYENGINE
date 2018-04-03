@@ -26,3 +26,4 @@ void CMannequinChangeMonitor::OnFileChange(const char* sFilename, EChangeType eT
 		m_pFileChangeWriter->ShowFileManager();
 	}
 }
+

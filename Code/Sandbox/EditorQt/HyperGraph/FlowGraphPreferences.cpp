@@ -144,3 +144,4 @@ bool SFlowGraphColorPreferences::Serialize(yasli::Archive& ar)
 
 	return true;
 }
+

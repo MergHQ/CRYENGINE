@@ -15,3 +15,4 @@ ICharacterInstance* CreateTemporaryCharacter(
   const QString& skeletonFilePath,
   const QString& skinFilePath,
   const QString& materialFilePath);
+

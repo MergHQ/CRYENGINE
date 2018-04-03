@@ -32,3 +32,4 @@ protected:
 
 	void OnTvnItemDoubleClicked(NMHDR* pNMHDR, LRESULT* pResult);
 };
+

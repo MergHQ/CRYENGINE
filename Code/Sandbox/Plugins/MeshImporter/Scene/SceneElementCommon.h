@@ -45,3 +45,4 @@ private:
 	CScene*                m_pScene;
 	int                               m_id;
 };
+

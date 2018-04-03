@@ -325,3 +325,4 @@ void CPresetsModel::OnSignalEntryNodeDataChanged(CPresetsModelNode* pEntryNode)
 	QModelIndex index = ModelIndexFromNode(pEntryNode);
 	dataChanged(index, index);
 }
+

@@ -139,3 +139,4 @@ void EditorCompressionPresetTable::Reset()
 }
 
 }
+

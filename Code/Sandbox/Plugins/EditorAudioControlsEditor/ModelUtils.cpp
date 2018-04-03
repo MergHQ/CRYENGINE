@@ -27,3 +27,4 @@ QStringList GetScopeNames()
 }
 } // namespace ModelUtils
 } // namespace ACE
+

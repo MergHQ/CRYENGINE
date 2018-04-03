@@ -902,3 +902,4 @@ AnimEventPlayer_CharacterTool::AnimEventPlayer_CharacterTool()
 CRYREGISTER_CLASS(AnimEventPlayer_CharacterTool)
 
 }
+

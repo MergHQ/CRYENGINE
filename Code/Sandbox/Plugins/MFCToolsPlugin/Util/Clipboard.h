@@ -33,3 +33,4 @@ private:
 	static string    m_title;
 };
 
+

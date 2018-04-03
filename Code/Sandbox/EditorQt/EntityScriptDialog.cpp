@@ -195,3 +195,4 @@ void CEntityScriptDialog::OnAddMethod()
 		}
 	}
 }
+

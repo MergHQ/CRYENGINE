@@ -36,3 +36,4 @@ private:
 	std::vector<BrushEdge3D> m_SelectedEdgesAsEnter;
 };
 }
+

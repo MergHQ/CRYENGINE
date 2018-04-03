@@ -1021,3 +1021,4 @@ void CRollupCtrl::SetBkColor(COLORREF bkColor)
 		m_bkgBrush.DeleteObject();
 	m_bkgBrush.CreateSolidBrush(bkColor);
 }
+

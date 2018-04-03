@@ -604,3 +604,4 @@ public:
 };
 
 #endif //!__MannequinBase_h__
+

@@ -1198,3 +1198,4 @@ void QViewport::RemoveConsumer(QViewportConsumer* consumer)
 {
 	m_consumers.erase(std::remove(m_consumers.begin(), m_consumers.end(), consumer), m_consumers.end());
 }
+

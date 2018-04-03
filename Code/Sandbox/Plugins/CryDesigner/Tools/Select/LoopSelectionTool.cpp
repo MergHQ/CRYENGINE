@@ -385,3 +385,4 @@ PolygonPtr LoopSelectionTool::FindAdjacentNextPolygon(MainContext& mc, PolygonPt
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Loop, eToolGroup_Selection, "Loop", LoopSelectionTool,
                                    loopselection, "runs loop selection tool", "designer.loopselection")
+

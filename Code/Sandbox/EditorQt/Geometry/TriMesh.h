@@ -220,3 +220,4 @@ private:
 	int        m_streamSize[LAST_STREAM];
 	CBitArray* m_streamSel[LAST_STREAM];
 };
+

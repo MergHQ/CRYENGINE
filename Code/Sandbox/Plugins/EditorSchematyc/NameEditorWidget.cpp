@@ -2,3 +2,4 @@
 
 #include "StdAfx.h"
 #include "NameEditorWidget.h"
+

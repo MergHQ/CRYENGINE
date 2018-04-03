@@ -1629,3 +1629,4 @@ string CTrackViewBatchRenderDlg::GenerateCaptureItemString(const SRenderItem& it
 
 	return itemText;
 }
+

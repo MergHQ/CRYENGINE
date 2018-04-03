@@ -759,3 +759,4 @@ CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(Impl::IItem* const 
 	return pAsset;
 }
 } // namespace ACE
+

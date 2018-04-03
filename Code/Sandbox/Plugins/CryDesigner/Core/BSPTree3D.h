@@ -31,3 +31,4 @@ private:
 	BSPTree3DNode* BuildBSP(PolygonList& polygonList);
 };
 }
+

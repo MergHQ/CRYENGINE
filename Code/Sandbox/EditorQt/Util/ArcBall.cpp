@@ -688,3 +688,4 @@ void CArcBall3D::DrawSphere(const Matrix34& reference, const CCamera& cam, IRend
 	renderFlags.SetDepthWriteFlag(e_DepthWriteOn);
 	pRenderer->SetRenderFlags(renderFlags);
 }
+

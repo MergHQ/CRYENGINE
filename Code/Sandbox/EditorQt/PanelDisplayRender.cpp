@@ -577,3 +577,4 @@ void CPanelDisplayRender::showEvent(QShowEvent* e)
 }
 
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CPanelDisplayRender, "Display Settings", "Viewport", false, "Viewport")
+

@@ -1247,3 +1247,4 @@ void CPrefabEvents::SPrefabNodeHelper::CompleteNodeRemoval()
 		m_nodePosToRemove.clear();
 	}
 }
+

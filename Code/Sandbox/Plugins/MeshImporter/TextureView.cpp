@@ -67,3 +67,4 @@ void CTextureView::CreateContextMenu(const QPoint& point)
 	const QPoint popupLocation = point + QPoint(1, 1); // Otherwise double-right-click immediately executes first option
 	pMenu->popup(viewport()->mapToGlobal(popupLocation));
 }
+

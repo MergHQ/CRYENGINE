@@ -53,3 +53,4 @@ private:
 	QLineEdit*                m_pFilterLineEdit;
 	CDialogLinesDatabaseImportExportHelper m_importExportHelper;
 };
+

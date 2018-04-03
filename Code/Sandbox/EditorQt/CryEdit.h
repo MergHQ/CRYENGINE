@@ -131,3 +131,4 @@ public:
 	static void SubObjectModeFace();
 	static void SubObjectModePivot();
 };
+

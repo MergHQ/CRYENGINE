@@ -522,3 +522,4 @@ void CTopRendererWnd::SerializeDisplayOptions(Serialization::IArchive& ar)
 
 	C2DViewport::SerializeDisplayOptions(ar);
 }
+

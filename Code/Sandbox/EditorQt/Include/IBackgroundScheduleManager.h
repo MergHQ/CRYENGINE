@@ -189,3 +189,4 @@ struct IBackgroundScheduleManager
 	// Advance work on the schedules
 	virtual void Update() = 0;
 };
+

@@ -2101,3 +2101,4 @@ void CMaterial::SetHighlightFlags(int highlightFlags)
 
 	UpdateHighlighting();
 }
+

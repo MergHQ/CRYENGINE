@@ -181,3 +181,4 @@ void CPropertiesWidget::RevertPropertyTree()
 	}
 }
 } // namespace ACE
+

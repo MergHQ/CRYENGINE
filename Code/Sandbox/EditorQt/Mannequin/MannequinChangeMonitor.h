@@ -18,3 +18,4 @@ public:
 };
 
 #endif //__MannequinChangeMonitor_h__
+

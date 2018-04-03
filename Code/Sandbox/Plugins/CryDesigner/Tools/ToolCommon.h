@@ -101,3 +101,4 @@ typedef void* TDesignerNotifyParam;
   if (ar.openBlock("Message", msg)) \
     ar.closeBlock();
 }
+

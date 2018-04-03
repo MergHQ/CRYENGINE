@@ -43,3 +43,4 @@ inline QRectF operator+(const QRectF& a, const QRect& b)
 {
 	return a.adjusted(b.left(), b.top(), b.right(), b.bottom());
 }
+

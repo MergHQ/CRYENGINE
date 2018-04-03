@@ -499,3 +499,4 @@ void CImagePainter::FillWithPattern(CImageEx& outImage, const uint32 dwOffsetX, 
 		}
 	}
 }
+

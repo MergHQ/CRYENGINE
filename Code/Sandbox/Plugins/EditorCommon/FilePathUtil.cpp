@@ -512,3 +512,4 @@ EDITOR_COMMON_API bool IsValidFileName(const QString& name)
 }
 
 }
+

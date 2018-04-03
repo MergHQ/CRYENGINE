@@ -165,3 +165,4 @@ public:
 private:
 	bool m_prevState;
 };
+

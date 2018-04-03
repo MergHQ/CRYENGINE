@@ -16,3 +16,4 @@ private:
 };
 
 #endif // AutoLogTime_h__
+

@@ -804,3 +804,4 @@ void CGraphsWidget::PopulateContextMenuForItem(QMenu& menu, CStateItem& stateIte
 }
 
 }
+

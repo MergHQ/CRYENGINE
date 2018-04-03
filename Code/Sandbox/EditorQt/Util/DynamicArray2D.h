@@ -28,3 +28,4 @@ private:
 };
 
 #endif // !defined(AFX_DYNAMICARRAY_H__3B36BCC2_AB88_11D1_8F4C_D0B67CC10B05__INCLUDED_)
+

@@ -51,3 +51,4 @@ struct SBatchFileSettings
 };
 
 bool EDITOR_COMMON_API ShowBatchFileDialog(Serialization::StringList* filenames, const SBatchFileSettings& settings, QWidget* parent);
+

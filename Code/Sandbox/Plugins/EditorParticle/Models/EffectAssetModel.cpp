@@ -102,3 +102,4 @@ CEffectAsset* CEffectAssetModel::GetEffectAsset()
 }
 
 }
+

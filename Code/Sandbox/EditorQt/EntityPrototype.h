@@ -86,3 +86,4 @@ private:
 TYPEDEF_AUTOPTR(CEntityPrototype);
 
 #endif // __centityprototype_h__
+

@@ -30,3 +30,4 @@ private:
 	QDockWidget* m_pDock;
 	Widget*      m_pWidget;
 };
+

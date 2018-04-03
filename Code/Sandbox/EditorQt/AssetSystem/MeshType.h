@@ -35,3 +35,4 @@ public:
 	static CItemModelAttribute s_triangleCountAttribute;
 	static CItemModelAttribute s_materialCountAttribute;
 };
+

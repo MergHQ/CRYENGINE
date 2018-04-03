@@ -121,3 +121,4 @@ inline bool CAbstractObjectStructureModel::RemoveItem(CAbstractObjectStructureMo
 }
 
 }
+

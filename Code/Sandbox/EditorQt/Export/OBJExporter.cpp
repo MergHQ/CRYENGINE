@@ -242,3 +242,4 @@ void COBJExporter::Release()
 {
 	delete this;
 }
+

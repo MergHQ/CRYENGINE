@@ -112,3 +112,4 @@ protected:
 };
 
 #endif // __GENERICSELECTITEMDIALOG_H__
+
