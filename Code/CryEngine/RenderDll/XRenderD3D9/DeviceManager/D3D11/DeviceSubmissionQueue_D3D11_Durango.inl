@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 // Note: temporary solution, this should be removed as soon as the device
 // layer for Durango is available

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #if !defined(AFX_XCONSOLE_H__BA902011_5C47_4954_8E09_68598456912D__INCLUDED_)
 #define AFX_XCONSOLE_H__BA902011_5C47_4954_8E09_68598456912D__INCLUDED_
