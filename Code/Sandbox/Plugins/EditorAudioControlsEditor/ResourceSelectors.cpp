@@ -59,3 +59,4 @@ REGISTER_RESOURCE_SELECTOR("AudioRTPC", AudioParameterSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioEnvironment", AudioEnvironmentSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioPreloadRequest", AudioPreloadRequestSelector, "")
 } // namespace ACE
+

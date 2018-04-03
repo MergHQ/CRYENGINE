@@ -1,4 +1,4 @@
-# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+# Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 def build(bld):	
 	
 	bld.CryPluginModule(
@@ -19,3 +19,4 @@ def build(bld):
 			includes = [ Path('Code/Sandbox/Plugins/MFCToolsPlugin') ]
 		),
 	)
+

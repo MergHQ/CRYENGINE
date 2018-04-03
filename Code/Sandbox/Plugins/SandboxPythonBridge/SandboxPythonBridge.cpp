@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "SandboxPythonBridge.h"
@@ -194,3 +194,4 @@ PyMODINIT_FUNC initSandboxPythonBridge(void)
 	PyObject* module;
 	module = Py_InitModule("SandboxPythonBridge", BridgeMethods);
 }
+

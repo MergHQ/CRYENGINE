@@ -611,3 +611,4 @@ void CAudioControlsLoader::LoadControlsEditorData(XmlNodeRef const pParentNode)
 	}
 }
 } // namespace ACE
+

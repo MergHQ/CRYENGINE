@@ -410,3 +410,4 @@ QModelIndex CMiddlewareDataModel::IndexFromItem(Impl::IItem const* const pIItem)
 	return modelIndex;
 }
 } // namespace ACE
+

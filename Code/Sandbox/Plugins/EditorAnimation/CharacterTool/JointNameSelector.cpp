@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 
@@ -235,3 +235,4 @@ dll_string JointNameSelector(const SResourceSelectorContext& x, const char* prev
 	return jointName.c_str();
 }
 REGISTER_RESOURCE_SELECTOR("Joint", JointNameSelector, "icons:common/animation_bone.ico")
+

@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 // Precompiled header.
 #pragma once
 
@@ -146,3 +146,4 @@ inline _smart_ptr<T> MakeSmartFromUnique(std::unique_ptr<T, Detail::DeleteUsingR
 	pUnique.reset();                     // Calls Release()
 	return pSmart;
 }
+

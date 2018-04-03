@@ -132,3 +132,4 @@ private:
 	CAsset* m_assetBeingEdited;
 	std::vector<CAssetType*> m_supportedAssetTypes;
 };
+

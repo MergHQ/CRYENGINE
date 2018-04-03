@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "MaterialProperties.h"
 #include "QAdvancedPropertyTree.h"
@@ -1114,3 +1114,4 @@ void CMaterialSerializer::PopulateStringLists()
 	m_textureTypeStringList.push_back(GetIEditor()->Get3DEngine()->GetMaterialHelpers().GetNameFromTextureType(eTT_Dyn2D));
 	m_textureTypeStringList.push_back(GetIEditor()->Get3DEngine()->GetMaterialHelpers().GetNameFromTextureType(eTT_User));
 }
+

@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "PreviewWidget.h"
@@ -367,3 +367,4 @@ const Vec3 CPreviewWidget::ms_defaultOrbitTarget = Vec3(0.0f, 0.0f, 1.0f);
 const float CPreviewWidget::ms_defaultOrbitRadius = 2.0f;
 
 } // Schematyc
+

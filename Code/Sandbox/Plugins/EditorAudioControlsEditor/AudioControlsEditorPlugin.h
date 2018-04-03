@@ -71,3 +71,4 @@ private:
 	static EErrorCode          s_loadingErrorMask;
 };
 } // namespace ACE
+

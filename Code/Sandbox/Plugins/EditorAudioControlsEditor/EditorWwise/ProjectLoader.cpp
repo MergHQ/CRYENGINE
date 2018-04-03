@@ -465,3 +465,4 @@ void CProjectLoader::BuildFileCache(string const& folderPath)
 } // namespace Wwise
 } // namespace Impl
 } // namespace ACE
+

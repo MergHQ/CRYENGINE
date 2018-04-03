@@ -672,3 +672,4 @@ bool CMainWindow::CanQuit(std::vector<string>& unsavedChanges)
 	return canQuit;
 }
 } // namespace ACE
+

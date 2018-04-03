@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 
@@ -252,3 +252,4 @@ REGISTER_RESOURCE_SELECTOR("StringListStaticSearch", StringListStaticQuickSearch
 REGISTER_RESOURCE_SELECTOR("StringListSearch", StringListQuickSearchSelector, "icons:General/Search.ico")
 } // SerializationUtils
 } // Schematyc
+

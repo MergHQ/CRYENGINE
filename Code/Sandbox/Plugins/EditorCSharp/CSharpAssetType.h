@@ -27,3 +27,4 @@ private:
 	virtual CryIcon GetIconInternal() const override;
 	string GetCleanName(const string& name) const;
 };
+

@@ -86,3 +86,4 @@ struct SScopeInfo
 
 using ScopeInfoList = std::vector<SScopeInfo>;
 } // namespace ACE
+

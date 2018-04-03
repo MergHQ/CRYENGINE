@@ -1,4 +1,4 @@
-# Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+# Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 def build(bld): 
 
@@ -28,3 +28,4 @@ def build(bld):
 		win_x64_profile_libpath     = Path('Code/SDKs/FbxSdk/lib/' + fbx_sdk_subfolder + '/x64/release'),
 		lib                         = 'libfbxsdk-md',
 	)
+

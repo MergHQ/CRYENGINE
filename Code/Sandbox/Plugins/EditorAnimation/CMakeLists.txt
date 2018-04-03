@@ -170,3 +170,4 @@ target_include_directories(${THIS_PROJECT} PRIVATE ../../EditorQt/Include)
 target_link_libraries(${THIS_PROJECT} PRIVATE Sandbox)
 set_libpath_flag()
 set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}OpenCollada/COLLADAStreamWriter/lib/win/Win32/Release")
+

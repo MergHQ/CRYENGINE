@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*
    Relationship between Variable data, PropertyItem value string, and draw string
@@ -3338,3 +3338,4 @@ void CPropertyItem::EnableNotifyWithoutValueChange(bool bFlag)
 	if (m_cEdit)
 		m_cEdit->EnableUpdateOnKillFocus(!m_bForceModified);
 }
+

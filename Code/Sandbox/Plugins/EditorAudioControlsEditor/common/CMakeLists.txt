@@ -17,3 +17,4 @@ end_sources()
 #END-FILE-LIST
 
 CryFileContainer(EditorAudioControlsEditorCommon SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor")
+

@@ -45,3 +45,4 @@ inline CryIcon GetAssetIcon(EAssetType const type)
 	return icon;
 }
 } // namespace ACE
+

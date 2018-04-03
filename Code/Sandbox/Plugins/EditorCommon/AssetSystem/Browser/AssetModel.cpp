@@ -631,3 +631,4 @@ QMimeData* CAssetModel::mimeData(const QModelIndexList& indexes) const
 
 	return pDragDropData;
 }
+

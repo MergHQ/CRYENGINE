@@ -30,3 +30,4 @@ private:
 	HMODULE m_hMiddlewarePlugin;
 };
 } // namespace ACE
+

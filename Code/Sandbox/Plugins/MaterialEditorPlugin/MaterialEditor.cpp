@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "MaterialEditor.h"
 
@@ -412,5 +412,6 @@ void CMaterialEditor::OnRemoveSubMaterial(int slot)
 	CRY_ASSERT(m_pMaterial && m_pMaterial->IsMultiSubMaterial());
 	m_pMaterial->SetSubMaterial(slot, nullptr);
 }
+
 
 

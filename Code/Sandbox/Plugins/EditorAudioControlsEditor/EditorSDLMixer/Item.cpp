@@ -24,3 +24,4 @@ void CItem::Clear()
 } // namespace SDLMixer
 } // namespace Impl
 } // namespace ACE
+

@@ -212,3 +212,4 @@ private:
 	static CAssetManager* s_instance;
 };
 
+

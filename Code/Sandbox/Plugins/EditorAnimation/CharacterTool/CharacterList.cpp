@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
 
@@ -196,3 +196,4 @@ dll_string AttachmentNameSelector(const SResourceSelectorContext& x, const char*
 REGISTER_RESOURCE_SELECTOR("Attachment", AttachmentNameSelector, "icons:common/animation_attachement.ico")
 
 }
+

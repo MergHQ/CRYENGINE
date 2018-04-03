@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "DialogCAF.h"
@@ -1035,3 +1035,4 @@ bool CDialogCAF::IsCurrentScene(int sceneId) const
 }
 
 } // namespace MeshImporter
+
