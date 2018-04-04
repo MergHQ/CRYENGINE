@@ -58,7 +58,7 @@ public:
 	bool GetBoundsChanged() const;
 
 	// XForm slot.
-	void OnXForm(int nWhyFlags);
+	void OnXForm(EntityTransformationFlagsMask transformReasons);
 
 	//////////////////////////////////////////////////////////////////////////
 	// @see EEntitySlotFlags

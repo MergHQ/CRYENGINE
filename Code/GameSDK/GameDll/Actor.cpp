@@ -1807,20 +1807,6 @@ void CActor::ProcessEvent(const SEntityEvent& event)
 			pBodyDamageManager->ReloadBodyDamage(*this);
 			break;
 		}
-	case ENTITY_EVENT_ADD_TO_RADAR:
-		{
-			SHUDEvent hudevent(eHUDEvent_AddEntity);
-			hudevent.AddData(SHUDEventData(static_cast<int>(GetEntityId())));
-			CHUDEventDispatcher::CallEvent(hudevent);
-			break;
-		}
-	case ENTITY_EVENT_REMOVE_FROM_RADAR:
-		{
-			SHUDEvent hudevent(eHUDEvent_RemoveEntity);
-			hudevent.AddData(SHUDEventData(static_cast<int>(GetEntityId())));
-			CHUDEventDispatcher::CallEvent(hudevent);
-			break;
-		}
   }  
 }
 
@@ -1836,9 +1822,7 @@ uint64 CActor::GetEventMask() const
 		| BIT64(ENTITY_EVENT_TIMER)
 		| BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)
 		| BIT64(ENTITY_EVENT_INIT)
-		| BIT64(ENTITY_EVENT_RELOAD_SCRIPT)
-		| BIT64(ENTITY_EVENT_ADD_TO_RADAR)
-		| BIT64(ENTITY_EVENT_REMOVE_FROM_RADAR);
+		| BIT64(ENTITY_EVENT_RELOAD_SCRIPT);
 }
 
 void CActor::BecomeRemotePlayer()
@@ -3693,7 +3677,7 @@ void CActor::AttemptToRecycleAIActor()
 	else
 	{
 		// Attempt later again
-		GetEntity()->SetTimer( RECYCLE_AI_ACTOR_TIMER_ID, 2000 );
+		SetTimer( RECYCLE_AI_ACTOR_TIMER_ID, 2000 );
 	}
 }
 
@@ -3772,7 +3756,7 @@ bool CActor::ScheduleItemSwitch(EntityId itemId, bool keepHistory, int category,
 			pActorStats->exchangeItemStats.switchingToItemID = itemId;
 			pActorStats->exchangeItemStats.keepHistory = keepHistory;
 
-			GetEntity()->SetTimer(ITEM_SWITCH_THIS_FRAME, deselectDelay);
+			SetTimer(ITEM_SWITCH_THIS_FRAME, deselectDelay);
 
 			return true;
 		}

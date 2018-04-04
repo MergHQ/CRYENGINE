@@ -192,7 +192,7 @@ enum EEntityFlags : uint32
 	ENTITY_FLAG_NO_DECALNODE_DECALS = BIT(4),
 	//////////////////////////////////////////////////////////////////////////
 
-	ENTITY_FLAG_WRITE_ONLY              = BIT(5),
+	ENTITY_FLAG_CLONED                  = BIT(5), //!< Entity was cloned from another
 	ENTITY_FLAG_NOT_REGISTER_IN_SECTORS = BIT(6),
 	ENTITY_FLAG_CALC_PHYSICS            = BIT(7),
 	//! Entity should only be present on the client, and not server
@@ -222,21 +222,19 @@ enum EEntityFlags : uint32
 	ENTITY_FLAG_LOCAL_PLAYER            = BIT(29),
 	ENTITY_FLAG_AI_HIDEABLE             = BIT(30), //!< AI can use the object to calculate automatic hide points.
 
-	ENTITY_FLAG_PREALLOCATED_COMPONENTS = BIT(31)   //! Components known at load time were allocated in one contiguous chunk of memory along with the entity
+	ENTITY_FLAG_DYNAMIC_DISTANCE_SHADOWS = BIT(31)
 };
 
-enum EEntityFlagsExtended : uint16
+enum EEntityFlagsExtended : uint8
 {
 	ENTITY_FLAG_EXTENDED_AUDIO_LISTENER                 = BIT(0),
 	ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE               = BIT(1),
 	ENTITY_FLAG_EXTENDED_CAN_COLLIDE_WITH_MERGED_MESHES = BIT(2),
-	ENTITY_FLAG_EXTENDED_DYNAMIC_DISTANCE_SHADOWS       = BIT(3),
-	ENTITY_FLAG_EXTENDED_GI_MODE_BIT0                   = BIT(4), // Bit0 of entity GI mode, see IRenderNode::EGIMode
-	ENTITY_FLAG_EXTENDED_GI_MODE_BIT1                   = BIT(5), // Bit1 of entity GI mode, see IRenderNode::EGIMode
-	ENTITY_FLAG_EXTENDED_GI_MODE_BIT2                   = BIT(6), // Bit2 of entity GI mode, see IRenderNode::EGIMode
-	ENTITY_FLAG_EXTENDED_PREVIEW                        = BIT(7), //!< Entity is spawn for the previewing
-	ENTITY_FLAG_EXTENDED_CLONED                         = BIT(8), //!< Entity was cloned from another
-	ENTITY_FLAG_EXTENDED_IGNORED_IN_NAVMESH_GENERATION  = BIT(9), //!< Entity's geometry doesn't contribute to NavMesh generation
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT0                   = BIT(3), // Bit0 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT1                   = BIT(4), // Bit1 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT2                   = BIT(5), // Bit2 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_PREVIEW                        = BIT(6), //!< Entity is spawn for the previewing
+	ENTITY_FLAG_EXTENDED_IGNORED_IN_NAVMESH_GENERATION  = BIT(7), //!< Entity's geometry doesn't contribute to NavMesh generation
 };
 
 #define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 4                                                                                                           // Bit offset of entity GI mode in EEntityFlagsExtended. Must be equal to the bit id of ENTITY_FLAG_EXTENDED_GI_MODE_BIT0
@@ -446,9 +444,6 @@ struct IEntity
 
 	using AttachmentFlagsMask = CEnumFlags<EAttachmentFlags>;
 	using AttachmentFlagsType = uint32;
-
-	static constexpr int CREATE_NEW_UNIQUE_TIMER_ID = -666;
-	static constexpr int KILL_ALL_TIMER = -1;
 
 	struct SRenderNodeParams
 	{
@@ -686,21 +681,25 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 
-	//! Starts the entity timer.
-	//! Entity timers are owned by entity, every entity can have it`s own independent timers,
-	//! so TimerId must not be unique across multiple entities.
-	//! When timer finishes entity system will signal to the entity *once* with an event ENTITY_EVENT_TIME.
+	//! Starts a timer for an event listener (most likely an entity component)
+	//! Entity timers are owned by the specified listener, and each component can have its own independent timers with identifiers that are unique to that instance
+	//! When timer finishes entity system will signal to the specified listener *once* with an event ENTITY_EVENT_TIMER.
 	//! Multiple timers can be started simultaneously with different timer ids.
 	//! If some timer is not yet finished and another timer with the same timerID is set, the new one
 	//! will override old timer, and old timer will not send finish event.
-	//! \param nTimerId Timer ID, multiple timers with different IDs are possible. (specify IEntity::CREATE_NEW_UNIQUE_TIMER_ID to let the system generate a new and unique Id)
-	//! \param nMilliSeconds Timer timeout time in milliseconds.
-	//! \return the (generated) timerId
-	virtual int SetTimer(int nTimerId, int nMilliSeconds) = 0;
+	//! \param pListener the listener to which the ENTITY_EVENT_TIMER event will be sent on completion
+	//! \param id Identifier of the entity that we are applying the timer to
+	//! \param componentInstanceGUID Optional instance GUID of the component to which this timer is added. If set, the timer will be serialized to disk and restored with save games.
+	//! \param timerId Timer ID, multiple timers with different IDs are possible.
+	//! \param timeInMilliseconds Timer timeout time in milliseconds.
+	virtual void SetTimer(ISimpleEntityEventListener* pListener, EntityId id, const CryGUID& componentInstanceGUID, uint8 timerId, int timeInMilliseconds) = 0;
 
-	//! Stops already started entity timer with this id.
-	//! \param nTimerId Timer ID of the timer started for this entity. (specify IEntity::KILL_ALL_TIMER to stop all timer on this entity)
-	virtual void KillTimer(int nTimerId) = 0;
+	//! Stops already started entity timer with this id for the specified listener / component
+	//! \param timerId Timer ID of the timer started for this entity.
+	virtual void KillTimer(ISimpleEntityEventListener* pListener, uint8 timerId) = 0;
+
+	//! Stops all the timers for the specified listener / component
+	virtual void KillAllTimers(ISimpleEntityEventListener* pListener) = 0;
 
 	//! Hides this entity, makes it invisible and disable its physics.
 	//! \param bHide If true hide the entity, is false unhides it.
@@ -1463,6 +1462,21 @@ inline void IEntityComponent::SetTransformMatrix(const CryTransform::CTransformP
 inline Matrix34 IEntityComponent::GetWorldTransformMatrix() const
 {
 	return m_pEntity->GetWorldTM() * GetTransformMatrix();
+}
+
+inline void IEntityComponent::SetTimer(uint8 timerId, int timeInMilliseconds)
+{
+	m_pEntity->SetTimer(this, GetEntityId(), GetGUID(), timerId, timeInMilliseconds);
+}
+
+inline void IEntityComponent::KillTimer(uint8 timerId)
+{
+	m_pEntity->KillTimer(this, timerId);
+}
+
+inline void IEntityComponent::KillAllTimers()
+{
+	m_pEntity->KillAllTimers(this);
 }
 
 //////////////////////////////////////////////////////////////////////////

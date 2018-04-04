@@ -572,7 +572,7 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 		{
 			pEntity = pPrecreatedEntity;
 			pEntity->PreInit(params);
-			pEntity->m_flags |= ENTITY_FLAG_PREALLOCATED_COMPONENTS;
+			pEntity->SetInternalFlag(CEntity::EInternalFlag::PreallocatedComponents, true);
 		}
 		else if (pEntity == nullptr)
 		{
@@ -682,7 +682,7 @@ void CEntitySystem::DeleteEntity(CEntity* pEntity)
 		if (!pEntity->m_guid.IsNull())
 			UnregisterEntityGuid(pEntity->m_guid);
 
-		if ((pEntity->m_flags & ENTITY_FLAG_PREALLOCATED_COMPONENTS) == 0)
+		if (!pEntity->HasInternalFlag(CEntity::EInternalFlag::PreallocatedComponents))
 		{
 			delete pEntity;
 		}
@@ -774,6 +774,8 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 					return;
 				}
 			}
+
+			pEntity->GetPhysicalProxy()->PrepareForDeletion();
 
 			// Send deactivate event.
 			SEntityEvent entevent;
@@ -960,6 +962,34 @@ void CEntitySystem::PrePhysicsUpdate()
 	SEntityEvent event(ENTITY_EVENT_PREPHYSICSUPDATE);
 	event.fParam[0] = gEnv->pTimer->GetFrameTime();
 
+#ifdef ENABLE_PROFILING_CODE
+	if (CVar::es_profileComponentUpdates != 0)
+	{
+		const CTimeValue timeBeforePrePhysicsUpdate = gEnv->pTimer->GetAsyncTime();
+
+		for (IEntityComponent* pEntityComponent : m_prePhysicsUpdatedEntityComponents)
+		{
+			const CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
+
+			pEntityComponent->ProcessEvent(event);
+
+			const CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
+			const float componentUpdateTime = (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds();
+			if (componentUpdateTime > m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].mostExpensiveEntityCostMs)
+			{
+				m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].mostExpensiveEntityCostMs = componentUpdateTime;
+				m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].mostExpensiveEntity = pEntityComponent->GetEntityId();
+			}
+		}
+
+		const CTimeValue timeAfterPrePhysicsUpdate = gEnv->pTimer->GetAsyncTime();
+
+		const float componentsUpdateTime = (timeAfterPrePhysicsUpdate - timeBeforePrePhysicsUpdate).GetMilliSeconds();
+		m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].numEvents = m_prePhysicsUpdatedEntityComponents.size();
+		m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].totalCostMs = componentsUpdateTime;
+	}
+	else
+#endif
 	for (IEntityComponent* pEntityComponent : m_prePhysicsUpdatedEntityComponents)
 	{
 		pEntityComponent->ProcessEvent(event);
@@ -1452,6 +1482,71 @@ void CEntitySystem::DebugDrawLayerInfo()
 #endif //ENABLE_PROFILING_CODE
 }
 
+#ifdef ENABLE_PROFILING_CODE
+#define DEF_ENTITY_EVENT_NAME(x) #x
+
+std::array<const char*, ENTITY_EVENT_LAST> s_eventNames =
+{ {
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_XFORM),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_XFORM_FINISHED_EDITOR),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_INIT),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_DONE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_RESET),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ATTACH),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ATTACH_THIS),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_DETACH),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_DETACH_THIS),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_LINK),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_DELINK),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_HIDE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_UNHIDE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_LAYER_HIDE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_LAYER_UNHIDE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ENABLE_PHYSICS),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PHYSICS_CHANGE_STATE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_SCRIPT_EVENT),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ENTERAREA),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_LEAVEAREA),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ENTERNEARAREA),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_LEAVENEARAREA),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_MOVEINSIDEAREA),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_MOVENEARAREA),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PHYS_POSTSTEP),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PHYS_BREAK),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_COLLISION),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_COLLISION_IMMEDIATE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_LEVEL_LOADED),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_START_LEVEL),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_START_GAME),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ENTER_SCRIPT_STATE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_LEAVE_SCRIPT_STATE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PRE_SERIALIZE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_POST_SERIALIZE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_INVISIBLE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_VISIBLE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_MATERIAL),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ANIM_EVENT),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_SCRIPT_REQUEST_COLLIDERMODE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ACTIVATE_FLOW_NODE_OUTPUT),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_RELOAD_SCRIPT),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ACTIVATED),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_DEACTIVATED),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_SET_AUTHORITY),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_SET_NAME),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_AUDIO_TRIGGER_STARTED),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_AUDIO_TRIGGER_ENDED),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_SLOT_CHANGED),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_SPAWNED_REMOTELY),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PREPHYSICSUPDATE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_UPDATE),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_TIMER),
+	} };
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 {
@@ -1477,13 +1572,15 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 		// Displays information of component costs, but no details on what is slow
 		Simple,
 		// Breaks down cost of component update based on component type
-		TypeCostBreakdown
+		TypeCostBreakdown,
+		// Breaks down cost of component events
+		EventCostBreakdown,
 	};
 
 	const float positionX = 50;
-	float positionY = 50;
-	const float yOffset = 16;
-	const float fontSize = 1.5f;
+	float positionY = 20;
+	const float yOffset = 10.6f;
+	const float fontSize = 1.f;
 	const float textColor[] = { 1, 1, 1, 1 };
 
 	switch (CVar::es_profileComponentUpdates)
@@ -1491,141 +1588,211 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 	case (int)EComponentProfilingType::Disabled:
 		{
 #endif
-	for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
-	{
-		pEntityComponent->ProcessEvent(event);
-	}
+			for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
+			{
+				pEntityComponent->ProcessEvent(event);
+			}
 
 #ifdef INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
-}
-break;
-case(int)EComponentProfilingType::Simple:
-{
-	CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
-
-	for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
-	{
-		pEntityComponent->ProcessEvent(event);
-	}
-
-	CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
-
-	std::set<CEntity*> updatedEntities;
-
-	EntityId renderedEntityCount = 0;
-	EntityId physicalizedEntityCount = 0;
-
-	for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
-	{
-		CEntity* pEntity = static_cast<CEntity*>(pEntityComponent->GetEntity());
-
-		if (updatedEntities.find(pEntity) == updatedEntities.end())
+		}
+		break;
+	case(int)EComponentProfilingType::Simple:
 		{
-			updatedEntities.insert(pEntity);
+		const CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
-			if (pEntity->GetEntityRender()->GetSlotCount() > 0)
+			for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
 			{
-				renderedEntityCount++;
+				pEntityComponent->ProcessEvent(event);
 			}
-			if (pEntity->GetPhysicalEntity() != nullptr)
+
+			const CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
+
+			std::set<CEntity*> updatedEntities;
+
+			EntityId renderedEntityCount = 0;
+			EntityId physicalizedEntityCount = 0;
+
+			for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
 			{
-				physicalizedEntityCount++;
+				CEntity* pEntity = static_cast<CEntity*>(pEntityComponent->GetEntity());
+
+				if (updatedEntities.find(pEntity) == updatedEntities.end())
+				{
+					updatedEntities.insert(pEntity);
+
+					if (pEntity->GetEntityRender()->GetSlotCount() > 0)
+					{
+						renderedEntityCount++;
+					}
+					if (pEntity->GetPhysicalEntity() != nullptr)
+					{
+						physicalizedEntityCount++;
+					}
+				}
+			}
+
+			IRenderAuxGeom* pRenderAuxGeom = gEnv->pAuxGeomRenderer;
+
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Entities: %i", GetNumEntities());
+			positionY += yOffset;
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entities: %" PRISIZE_T, updatedEntities.size());
+			positionY += yOffset;
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Rendered Entities: %i", renderedEntityCount);
+			positionY += yOffset;
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Physicalized Entities: %i", renderedEntityCount);
+			positionY += yOffset;
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entity Components: %" PRISIZE_T, m_updatedEntityComponents.size());
+			positionY += yOffset * 2;
+
+			const float componentUpdateTime = (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds();
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Entity Components: %f ms", componentUpdateTime);
+		}
+		break;
+	case(int)EComponentProfilingType::TypeCostBreakdown:
+		{
+			struct SComponentTypeInfo
+			{
+				const char* szName;
+				float       totalCostMs;
+			};
+
+			std::unordered_map<CryGUID, SComponentTypeInfo> componentTypeCostMap;
+
+			const CTimeValue timeBeforeComponentsUpdate = gEnv->pTimer->GetAsyncTime();
+
+			for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
+			{
+				const CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
+
+				pEntityComponent->ProcessEvent(event);
+
+				const CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
+
+				CryGUID typeGUID = pEntityComponent->GetClassDesc().GetGUID();
+				const char* szName = pEntityComponent->GetClassDesc().GetLabel();
+				if (szName == nullptr || szName[0] == '\0')
+				{
+					szName = pEntityComponent->GetClassDesc().GetName().c_str();
+				}
+
+				if (typeGUID.IsNull() && pEntityComponent->GetFactory() != nullptr)
+				{
+					typeGUID = pEntityComponent->GetFactory()->GetClassID();
+					szName = pEntityComponent->GetFactory()->GetName();
+				}
+
+				if (szName == nullptr || szName[0] == '\0')
+				{
+					szName = "Unknown Legacy Entity Component";
+				}
+
+				auto it = componentTypeCostMap.find(typeGUID);
+
+				if (it == componentTypeCostMap.end())
+				{
+					componentTypeCostMap.emplace(typeGUID, SComponentTypeInfo { szName, (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds() });
+				}
+				else
+				{
+					it->second.totalCostMs += (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds();
+				}
+			}
+
+			const CTimeValue timeAfterComponentsUpdate = gEnv->pTimer->GetAsyncTime();
+
+			IRenderAuxGeom* pRenderAuxGeom = gEnv->pAuxGeomRenderer;
+
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Entities: %i", GetNumEntities());
+			positionY += yOffset;
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entity Components: %" PRISIZE_T, m_updatedEntityComponents.size());
+			positionY += yOffset * 2;
+
+			const float componentUpdateTime = (timeAfterComponentsUpdate - timeBeforeComponentsUpdate).GetMilliSeconds();
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Entity Components: %f ms", componentUpdateTime);
+			positionY += yOffset;
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "------------------------");
+			positionY += yOffset;
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Entity Component Type Cost Breakdown:");
+			positionY += yOffset * 1.5f;
+
+			for (const std::pair<CryGUID, SComponentTypeInfo>& componentTypeCostPair : componentTypeCostMap)
+			{
+				pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "%s: %f ms", componentTypeCostPair.second.szName, componentTypeCostPair.second.totalCostMs);
+				positionY += yOffset;
 			}
 		}
+		break;
+	case (int)EComponentProfilingType::EventCostBreakdown:
+		{
+			const CTimeValue timeBeforeComponentsUpdate = gEnv->pTimer->GetAsyncTime();
+
+			for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
+			{
+				const CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
+
+				pEntityComponent->ProcessEvent(event);
+
+				const CTimeValue timeAfterComponentsUpdate = gEnv->pTimer->GetAsyncTime();
+				const float componentUpdateTime = (timeAfterComponentsUpdate - timeBeforeComponentsUpdate).GetMilliSeconds();
+				if (componentUpdateTime > m_profiledEvents[ENTITY_EVENT_UPDATE].mostExpensiveEntityCostMs)
+				{
+					m_profiledEvents[ENTITY_EVENT_UPDATE].mostExpensiveEntityCostMs = componentUpdateTime;
+					m_profiledEvents[ENTITY_EVENT_UPDATE].mostExpensiveEntity = pEntityComponent->GetEntityId();
+				}
+			}
+
+			const CTimeValue timeAfterComponentsUpdate = gEnv->pTimer->GetAsyncTime();
+
+			IRenderAuxGeom* pRenderAuxGeom = gEnv->pAuxGeomRenderer;
+
+			const float componentsUpdateTime = (timeAfterComponentsUpdate - timeBeforeComponentsUpdate).GetMilliSeconds();
+			m_profiledEvents[ENTITY_EVENT_UPDATE].numEvents = m_updatedEntityComponents.size();
+			m_profiledEvents[ENTITY_EVENT_UPDATE].totalCostMs = componentsUpdateTime;
+
+			const float eventNameColumnPositionX = positionX;
+			pRenderAuxGeom->Draw2dLabel(eventNameColumnPositionX, positionY, fontSize, textColor, false, "Event Name");
+
+			const float numEventsColumnPositionX = eventNameColumnPositionX + 250;
+			pRenderAuxGeom->Draw2dLabel(numEventsColumnPositionX, positionY, fontSize, textColor, false, "| Count");
+
+			const float totalCostColumnPositionX = numEventsColumnPositionX + 50;
+			pRenderAuxGeom->Draw2dLabel(totalCostColumnPositionX, positionY, fontSize, textColor, false, "| Total Cost (ms)");
+
+			const float numListenerAdditionsPositionX = totalCostColumnPositionX + 125;
+			pRenderAuxGeom->Draw2dLabel(numListenerAdditionsPositionX, positionY, fontSize, textColor, false, "| Added Listeners");
+
+			const float numListenerRemovalsPositionX = numListenerAdditionsPositionX + 100;
+			pRenderAuxGeom->Draw2dLabel(numListenerRemovalsPositionX, positionY, fontSize, textColor, false, "| Removed Listeners");
+
+			const float mostExpensiveEntityPositionX = numListenerRemovalsPositionX + 100;
+			pRenderAuxGeom->Draw2dLabel(mostExpensiveEntityPositionX, positionY, fontSize, textColor, false, "| Most Expensive Entity (ms)");
+
+			positionY += yOffset;
+			
+			for(int i = 0; i < ENTITY_EVENT_LAST; ++i)
+			{
+				const SProfiledEntityEvent& profiledEvent = m_profiledEvents[i];
+				const char* szEventName = s_eventNames[i];
+
+				pRenderAuxGeom->Draw2dLabel(eventNameColumnPositionX, positionY, fontSize, textColor, false, szEventName);
+				pRenderAuxGeom->Draw2dLabel(numEventsColumnPositionX, positionY, fontSize, textColor, false, "| %i", profiledEvent.numEvents);
+				pRenderAuxGeom->Draw2dLabel(totalCostColumnPositionX, positionY, fontSize, textColor, false, "| %f", profiledEvent.totalCostMs);
+				pRenderAuxGeom->Draw2dLabel(numListenerAdditionsPositionX, positionY, fontSize, textColor, false, "| %i", profiledEvent.numListenerAdditions);
+				pRenderAuxGeom->Draw2dLabel(numListenerRemovalsPositionX, positionY, fontSize, textColor, false, "| %i", profiledEvent.numListenerRemovals);
+
+				if (CEntity* pEntity = GetEntityFromID(profiledEvent.mostExpensiveEntity))
+				{
+					pRenderAuxGeom->Draw2dLabel(mostExpensiveEntityPositionX, positionY, fontSize, textColor, false, "| %s (%u): %f ms", pEntity->GetName(), pEntity->GetId(), profiledEvent.mostExpensiveEntityCostMs);
+				}
+
+				positionY += yOffset;
+			}
+
+			// Zero next frame's data
+			m_profiledEvents.fill(SProfiledEntityEvent());
+		}
+		break;
 	}
-
-	IRenderAuxGeom* pRenderAuxGeom = gEnv->pAuxGeomRenderer;
-
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Entities: %i", GetNumEntities());
-	positionY += yOffset;
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entities: %" PRISIZE_T, updatedEntities.size());
-	positionY += yOffset;
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Rendered Entities: %i", renderedEntityCount);
-	positionY += yOffset;
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Physicalized Entities: %i", renderedEntityCount);
-	positionY += yOffset;
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entity Components: %" PRISIZE_T, m_updatedEntityComponents.size());
-	positionY += yOffset * 2;
-
-	float componentUpdateTime = (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds();
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Entity Components: %f ms", componentUpdateTime);
-}
-break;
-case(int)EComponentProfilingType::TypeCostBreakdown:
-{
-	struct SComponentTypeInfo
-	{
-		const char* szName;
-		float       totalCostMs;
-	};
-
-	std::unordered_map<CryGUID, SComponentTypeInfo> componentTypeCostMap;
-
-	CTimeValue timeBeforeComponentsUpdate = gEnv->pTimer->GetAsyncTime();
-
-	for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
-	{
-		CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
-
-		pEntityComponent->ProcessEvent(event);
-
-		CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
-
-		CryGUID typeGUID = pEntityComponent->GetClassDesc().GetGUID();
-		const char* szName = pEntityComponent->GetClassDesc().GetLabel();
-		if (szName == nullptr || szName[0] == '\0')
-		{
-			szName = pEntityComponent->GetClassDesc().GetName().c_str();
-		}
-
-		if (typeGUID.IsNull() && pEntityComponent->GetFactory() != nullptr)
-		{
-			typeGUID = pEntityComponent->GetFactory()->GetClassID();
-			szName = pEntityComponent->GetFactory()->GetName();
-		}
-
-		if (szName == nullptr || szName[0] == '\0')
-		{
-			szName = "Unknown Legacy Entity Component";
-		}
-
-		auto it = componentTypeCostMap.find(typeGUID);
-
-		if (it == componentTypeCostMap.end())
-		{
-			componentTypeCostMap.emplace(typeGUID, SComponentTypeInfo { szName, (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds() });
-		}
-		else
-		{
-			it->second.totalCostMs += (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds();
-		}
-	}
-
-	CTimeValue timeAfterComponentsUpdate = gEnv->pTimer->GetAsyncTime();
-
-	IRenderAuxGeom* pRenderAuxGeom = gEnv->pAuxGeomRenderer;
-
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Entities: %i", GetNumEntities());
-	positionY += yOffset;
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entity Components: %" PRISIZE_T, m_updatedEntityComponents.size());
-	positionY += yOffset * 2;
-
-	float componentUpdateTime = (timeAfterComponentsUpdate - timeBeforeComponentsUpdate).GetMilliSeconds();
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Entity Components: %f ms", componentUpdateTime);
-	positionY += yOffset;
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "------------------------");
-	positionY += yOffset;
-	pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Entity Component Type Cost Breakdown:");
-	positionY += yOffset * 1.5f;
-
-	for (const std::pair<CryGUID, SComponentTypeInfo>& componentTypeCostPair : componentTypeCostMap)
-	{
-		pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "%s: %f ms", componentTypeCostPair.second.szName, componentTypeCostPair.second.totalCostMs);
-		positionY += yOffset;
-	}
-}
-break;
-}
 #endif
 }
 
@@ -1802,59 +1969,56 @@ void CEntitySystem::AddTimerEvent(SEntityTimerEvent& event, CTimeValue startTime
 	CTimeValue millis;
 	millis.SetMilliSeconds(event.nMilliSeconds);
 	CTimeValue nTriggerTime = startTime + millis;
-	m_timersMap.insert(EntityTimersMap::value_type(nTriggerTime, event));
-
-	if (CVar::es_DebugTimers)
-	{
-		CEntity* pEntity = GetEntityFromID(event.entityId);
-		if (pEntity)
-			CryLogAlways("SetTimer (timerID=%d,time=%dms) for Entity %s", event.nTimerId, event.nMilliSeconds, pEntity->GetEntityTextDescription().c_str());
-	}
+	m_timersMap.emplace(nTriggerTime, event);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitySystem::RemoveTimerEvent(EntityId id, int nTimerId)
+void CEntitySystem::RemoveAllTimerEvents(ISimpleEntityEventListener* pListener)
 {
-	if (nTimerId < 0)
+	for (EntityTimersMap::const_iterator it = m_timersMap.begin(); it != m_timersMap.end();)
 	{
-		// Delete all timers of this entity.
-		EntityTimersMap::iterator next;
-		for (EntityTimersMap::iterator it = m_timersMap.begin(); it != m_timersMap.end(); it = next)
+		if (pListener == it->second.pListener)
 		{
-			next = it;
-			++next;
-			if (id == it->second.entityId)
-			{
-				// Remove this item.
-				m_timersMap.erase(it);
-			}
+			// Remove this item.
+			it = m_timersMap.erase(it);
+		}
+		else
+		{
+			++it;
 		}
 	}
-	else
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::RemoveAllTimerEvents(EntityId id)
+{
+	for (EntityTimersMap::const_iterator it = m_timersMap.begin(); it != m_timersMap.end();)
 	{
-		for (EntityTimersMap::iterator it = m_timersMap.begin(); it != m_timersMap.end(); ++it)
+		if (it->second.entityId == id)
 		{
-			if (id == it->second.entityId && nTimerId == it->second.nTimerId)
-			{
-				// Remove this item.
-				m_timersMap.erase(it);
-				break;
-			}
+			// Remove this item.
+			it = m_timersMap.erase(it);
+		}
+		else
+		{
+			++it;
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntitySystem::HasTimerEvent(EntityId id, int nTimerId)
+void CEntitySystem::RemoveTimerEvent(ISimpleEntityEventListener* pListener, int nTimerId)
 {
-	for (const auto& current : m_timersMap)
+	for (EntityTimersMap::const_iterator it = m_timersMap.begin(), end = m_timersMap.end(); it != end; ++it)
 	{
-		if (id == current.second.entityId && nTimerId == current.second.nTimerId)
+		if (pListener == it->second.pListener && nTimerId == it->second.nTimerId)
 		{
-			return true;
+			// Remove this item.
+			m_timersMap.erase(it);
+			break;
 		}
 	}
-	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1892,7 +2056,7 @@ void CEntitySystem::PauseTimers(bool bPause, bool bResume)
 		for (it = lstTemp.begin(); it != lstTemp.end(); ++it)
 		{
 			CTimeValue nUpdatedTimer = nAdditionalTriggerTime + it->first;
-			m_timersMap.insert(EntityTimersMap::value_type(nUpdatedTimer, it->second));
+			m_timersMap.emplace(nUpdatedTimer, it->second);
 		} //it
 
 		m_nStartPause.SetSeconds(-1.0f);
@@ -1909,16 +2073,17 @@ void CEntitySystem::UpdateTimers()
 
 	CTimeValue nCurrTimeMillis = gEnv->pTimer->GetFrameStartTime();
 
-	// Iterate thru all matching timers.
-	EntityTimersMap::iterator first = m_timersMap.begin();
-	EntityTimersMap::iterator last = m_timersMap.upper_bound(nCurrTimeMillis);
+	// Iterate through all matching timers.
+	EntityTimersMap::const_iterator first = m_timersMap.begin();
+	EntityTimersMap::const_iterator last = m_timersMap.upper_bound(nCurrTimeMillis);
 	if (last != first)
 	{
 		// Make a separate list, because OnTrigger call can modify original timers map.
 		m_currentTimers.clear();
+		m_currentTimers.reserve(std::distance(first, last));
 
-		for (EntityTimersMap::iterator it = first; it != last; ++it)
-			m_currentTimers.push_back(it->second);
+		for (EntityTimersMap::const_iterator it = first; it != last; ++it)
+			m_currentTimers.emplace_back(it->second);
 
 		// Delete these items from map.
 		m_timersMap.erase(first, last);
@@ -1926,31 +2091,43 @@ void CEntitySystem::UpdateTimers()
 		//////////////////////////////////////////////////////////////////////////
 		// Execute OnTimer events.
 
-		EntityTimersVector::iterator it = m_currentTimers.begin();
-		EntityTimersVector::iterator end = m_currentTimers.end();
-
 		SEntityEvent entityEvent;
 		entityEvent.event = ENTITY_EVENT_TIMER;
 
-		for (; it != end; ++it)
+#ifdef ENABLE_PROFILING_CODE
+		const CTimeValue timeBeforeTimerEvents = gEnv->pTimer->GetAsyncTime();
+#endif
+
+		for(const SEntityTimerEvent& event : m_currentTimers)
 		{
-			SEntityTimerEvent& event = *it;
+			// Send Timer event to the entity.
+			entityEvent.nParam[0] = event.nTimerId;
+			entityEvent.nParam[1] = event.nMilliSeconds;
 
-			if (CEntity* pEntity = GetEntityFromID(event.entityId))
+#ifdef ENABLE_PROFILING_CODE
+			const CTimeValue timeBeforeTimerEvent = gEnv->pTimer->GetAsyncTime();
+#endif
+
+			event.pListener->ProcessEvent(entityEvent);
+
+#ifdef ENABLE_PROFILING_CODE
+			const CTimeValue timeAfterTimerEvent = gEnv->pTimer->GetAsyncTime();
+			const float timerEventCostMs = (timeAfterTimerEvent - timeBeforeTimerEvent).GetMilliSeconds();
+
+			if (timerEventCostMs > m_profiledEvents[ENTITY_EVENT_TIMER].mostExpensiveEntityCostMs)
 			{
-				// Send Timer event to the entity.
-				entityEvent.nParam[0] = event.nTimerId;
-				entityEvent.nParam[1] = event.nMilliSeconds;
-				entityEvent.nParam[2] = event.entityId;
-				pEntity->SendEvent(entityEvent);
-
-				if (CVar::es_DebugTimers)
-				{
-					if (pEntity)
-						CryLogAlways("OnTimer Event (timerID=%d,time=%dms) for Entity %s (which is %s)", event.nTimerId, event.nMilliSeconds, pEntity->GetEntityTextDescription().c_str(), pEntity->IsActivatedForUpdates() ? "active" : "inactive");
-				}
+				m_profiledEvents[ENTITY_EVENT_TIMER].mostExpensiveEntityCostMs = timerEventCostMs;
+				m_profiledEvents[ENTITY_EVENT_TIMER].mostExpensiveEntity = event.entityId;
 			}
+#endif
 		}
+
+#ifdef ENABLE_PROFILING_CODE
+		const CTimeValue timeAfterTimerEvents = gEnv->pTimer->GetAsyncTime();
+
+		m_profiledEvents[ENTITY_EVENT_TIMER].numEvents = m_currentTimers.size();
+		m_profiledEvents[ENTITY_EVENT_TIMER].totalCostMs = (timeAfterTimerEvents - timeBeforeTimerEvents).GetMilliSeconds();
+#endif
 	}
 }
 
@@ -2336,16 +2513,22 @@ void CEntitySystem::Serialize(TSerialize ser)
 		int count = m_timersMap.size();
 		ser.Value("timerCount", count);
 
-		SEntityTimerEvent tempEvent;
 		if (ser.IsWriting())
 		{
 			EntityTimersMap::iterator it;
 			for (it = m_timersMap.begin(); it != m_timersMap.end(); ++it)
 			{
-				tempEvent = it->second;
+				SEntityTimerEvent tempEvent = it->second;
+				if (tempEvent.componentInstanceGUID.IsNull())
+				{
+					// We cannot deserialize without knowing which component instance to map to, skip.
+					continue;
+				}
 
 				ser.BeginGroup("Timer");
-				ser.Value("entityID", tempEvent.entityId);
+				ser.Value("entityId", tempEvent.entityId);
+				ser.Value("componentInstanceGUIDHipart", tempEvent.componentInstanceGUID.hipart);
+				ser.Value("componentInstanceGUIDLopart", tempEvent.componentInstanceGUID.lopart);
 				ser.Value("eventTime", tempEvent.nMilliSeconds);
 				ser.Value("timerID", tempEvent.nTimerId);
 				CTimeValue start = it->first;
@@ -2360,16 +2543,33 @@ void CEntitySystem::Serialize(TSerialize ser)
 			CTimeValue start;
 			for (int c = 0; c < count; ++c)
 			{
+				SEntityTimerEvent tempEvent;
+
 				ser.BeginGroup("Timer");
-				ser.Value("entityID", tempEvent.entityId);
+				ser.Value("entityId", tempEvent.entityId);
+				ser.Value("componentInstanceGUIDHipart", tempEvent.componentInstanceGUID.hipart);
+				ser.Value("componentInstanceGUIDLopart", tempEvent.componentInstanceGUID.lopart);
 				ser.Value("eventTime", tempEvent.nMilliSeconds);
 				ser.Value("timerID", tempEvent.nTimerId);
 				ser.Value("startTime", start);
 				ser.EndGroup();
 				start.SetMilliSeconds((int64)(start.GetMilliSeconds() - tempEvent.nMilliSeconds));
-				AddTimerEvent(tempEvent, start);
 
-				//assert(GetEntity(tempEvent.entityId));
+				if (CEntity* pEntity = GetEntityFromID(tempEvent.entityId))
+				{
+					if (IEntityComponent* pComponent = pEntity->GetComponentByGUID(tempEvent.componentInstanceGUID))
+					{
+						AddTimerEvent(tempEvent, start);
+					}
+					else
+					{
+						EntityWarning("Deserialized timer event with id %i for entity %u, but component with instance GUID %s did not exist!", tempEvent.nTimerId, tempEvent.entityId, tempEvent.componentInstanceGUID.ToDebugString());
+					}
+				}
+				else
+				{
+					EntityWarning("Deserialized timer event with id %i for entity %u, but entity did not exist!", tempEvent.nTimerId, tempEvent.entityId);
+				}
 			}
 		}
 

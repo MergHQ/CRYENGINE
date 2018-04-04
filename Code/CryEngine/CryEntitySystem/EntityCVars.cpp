@@ -27,14 +27,12 @@ ICVar* CVar::pDrawAreaDebug = NULL;
 
 ICVar* CVar::pSysSpecLight = NULL;
 
-int CVar::es_DebugTimers = 0;
 int CVar::es_DebugFindEntity = 0;
 int CVar::es_UsePhysVisibilityChecks = 1;
 float CVar::es_MaxPhysDist;
 float CVar::es_MaxPhysDistInvisible;
 float CVar::es_MaxPhysDistCloth;
 float CVar::es_FarPhysTimeout;
-int CVar::es_DebugEvents = 0;
 int CVar::es_debugEntityLifetime = 0;
 int CVar::es_DebugEntityUsage = 0;
 const char* CVar::es_DebugEntityUsageFilter = "";
@@ -161,14 +159,7 @@ void CVar::Init()
 	                                     VF_DUMPTODISK, "Enable (experimental) full script save functionality");
 
 	pLogCollisions = REGISTER_INT("es_log_collisions", 0, 0, "Enables collision events logging");
-	REGISTER_CVAR(es_DebugTimers, 0, VF_CHEAT,
-	              "This is for profiling and debugging (for game coders and level designer)\n"
-	              "By enabling this you get a lot of console printouts that show all entities that receive OnTimer\n"
-	              "events - it's good to minimize the call count. Certain entities might require this feature and\n"
-	              "using less active entities can often be defined by the level designer.\n"
-	              "Usage: es_DebugTimers 0/1");
 	REGISTER_CVAR(es_DebugFindEntity, 0, VF_CHEAT, "");
-	REGISTER_CVAR(es_DebugEvents, 0, VF_CHEAT, "Enables logging of entity events");
 
 	REGISTER_CVAR(es_DebugEntityUsage, 0, 0,
 	              "Draws information to the screen to show how entities are being used, per class, including total, active and hidden counts and memory usage"
@@ -232,7 +223,8 @@ void CVar::Init()
 	REGISTER_CVAR(es_profileComponentUpdates, 0, 0, "Enables profiling of components that are updated per frame.\n"
 	                                                "Default: 0 (off)\n"
 	                                                "1 - Simple profiling, shows cost of all components per frame\n"
-	                                                "2 - Component type cost braekdown, shows cost of each component type per frame");
+	                                                "2 - Component type cost breakdown, shows cost of each component type per frame\n"
+													"3 - Component event cost breakdown, shows amount and cost of entity events per frame");
 }
 
 void CVar::DumpEntities(IConsoleCmdArgs* args)

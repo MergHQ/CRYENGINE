@@ -2118,8 +2118,8 @@ void CItem::Pickalize(bool enable, bool dropped)
 		if(dropped)
 		{
 			const int dropFlyTimeout = 750;
-			GetEntity()->KillTimer(eIT_Flying);
-			GetEntity()->SetTimer(eIT_Flying, dropFlyTimeout);
+			KillTimer(eIT_Flying);
+			SetTimer(eIT_Flying, dropFlyTimeout);
 		}
 
 		if(GetEntity()->IsSlotValid(eIGS_Aux0))

@@ -42,8 +42,10 @@ typedef std::vector<EntityGUID>                                  EntityGuidVecto
 //////////////////////////////////////////////////////////////////////////
 struct SEntityTimerEvent
 {
+	ISimpleEntityEventListener* pListener;
 	EntityId entityId;
-	int      nTimerId;
+	CryGUID componentInstanceGUID;
+	uint8    nTimerId;
 	int      nMilliSeconds;
 };
 
@@ -192,6 +194,10 @@ public:
 
 	// Sets new entity timer event.
 	void AddTimerEvent(SEntityTimerEvent& event, CTimeValue startTime = gEnv->pTimer->GetFrameStartTime());
+	void RemoveAllTimerEvents(ISimpleEntityEventListener* pListener);
+	void RemoveAllTimerEvents(EntityId id);
+	void RemoveTimerEvent(ISimpleEntityEventListener* pListener, int nTimerId);
+
 
 	//////////////////////////////////////////////////////////////////////////
 	// Load entities from XML.
@@ -205,12 +211,6 @@ public:
 	virtual void EndCreateEntities() final;
 
 	IEntity*     SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEntitySpawnParams& params, bool bAutoInit);
-
-	//////////////////////////////////////////////////////////////////////////
-	// Called from CEntity implementation.
-	//////////////////////////////////////////////////////////////////////////
-	void RemoveTimerEvent(EntityId id, int nTimerId);
-	bool HasTimerEvent(EntityId id, int nTimerId);
 
 	// Access to class that binds script to entity functions.
 	// Used by Script proxy.
@@ -376,6 +376,19 @@ public:
 	};
 
 	std::vector<SLayerProfile> m_layerProfiles;
+
+	struct SProfiledEntityEvent
+	{
+		int numEvents = 0;
+		float totalCostMs = 0.f;
+		int numListenerAdditions = 0;
+		int numListenerRemovals = 0;
+
+		EntityId mostExpensiveEntity = INVALID_ENTITYID;
+		float mostExpensiveEntityCostMs = 0.f;
+	};
+
+	std::array<SProfiledEntityEvent, ENTITY_EVENT_LAST> m_profiledEvents;
 #endif //ENABLE_PROFILING_CODE
 };
 

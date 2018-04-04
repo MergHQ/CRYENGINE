@@ -35,11 +35,11 @@ public:
 
 	enum ProjectileTimer
 	{
-		ePTIMER_LIFETIME		= 0x110,
-		ePTIMER_SHOWTIME		= 0x111,
-		ePTIMER_STICKY			= 0x112,
-		ePTIMER_ACTIVATION	= 0x113, 
-		ePTIMER_BEACONDELAY = 0x114,
+		ePTIMER_LIFETIME		= 0,
+		ePTIMER_SHOWTIME		= 1,
+		ePTIMER_STICKY			= 2,
+		ePTIMER_ACTIVATION	= 3, 
+		ePTIMER_BEACONDELAY = 4,
 	};
 
 	enum ProjectileFlags

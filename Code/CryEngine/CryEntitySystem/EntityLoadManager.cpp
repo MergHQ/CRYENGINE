@@ -267,7 +267,7 @@ bool CEntityLoadManager::ExtractCommonEntityLoadParams(XmlNodeRef& entityNode, S
 		bool bDynamicDistanceShadows = false;
 		if (entityNode->getAttr("DynamicDistanceShadows", bDynamicDistanceShadows) && bDynamicDistanceShadows)
 		{
-			spawnParams.nFlagsExtended |= ENTITY_FLAG_EXTENDED_DYNAMIC_DISTANCE_SHADOWS;
+			spawnParams.nFlags |= ENTITY_FLAG_DYNAMIC_DISTANCE_SHADOWS;
 		}
 
 		bool bGoodOccluder = false; // false by default (do not change, it must be coordinated with editor export)

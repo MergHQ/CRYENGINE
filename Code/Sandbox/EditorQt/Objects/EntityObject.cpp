@@ -2105,8 +2105,7 @@ void CEntityObject::SpawnEntity()
 
 	SEntitySpawnParams params;
 	params.pClass = m_pEntityClass;
-	params.nFlags = 0;
-	params.nFlagsExtended = m_bCloned ? ENTITY_FLAG_EXTENDED_CLONED : 0;
+	params.nFlags = m_bCloned ? ENTITY_FLAG_CLONED : 0;
 	params.sName = (const char*)GetName();
 	params.vPosition = GetPos();
 	params.qRotation = GetRotation();

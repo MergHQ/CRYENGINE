@@ -180,7 +180,7 @@ void CAudioAreaRandom::OnResetState()
 		if (!m_bPlaying)
 		{
 			// Entity was enabled
-			entity.KillTimer(m_timerId);
+			KillTimer(m_timerId);
 			m_timerId = 0;
 
 			Play();
@@ -222,7 +222,7 @@ void CAudioAreaRandom::Play()
 
 		m_currentlyPlayingTriggerId = m_playTriggerId;
 
-		GetEntity()->SetTimer(m_timerId, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
+		SetTimer(m_timerId, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
 		m_bPlaying = true;
 	}
 }
@@ -230,7 +230,7 @@ void CAudioAreaRandom::Play()
 void CAudioAreaRandom::Stop()
 {
 	IEntity& entity = *GetEntity();
-	entity.KillTimer(m_timerId);
+	KillTimer(m_timerId);
 
 	if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 	{

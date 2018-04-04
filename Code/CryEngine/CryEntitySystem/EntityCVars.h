@@ -20,9 +20,7 @@ struct CVar
 	static ICVar*      pUpdateEntities;
 	static ICVar*      pEntityBBoxes;
 
-	static int         es_DebugTimers;
 	static int         es_DebugFindEntity;
-	static int         es_DebugEvents;
 	static int         es_debugEntityLifetime;
 	static int         es_DebugEntityUsage;
 	static const char* es_DebugEntityUsageFilter;

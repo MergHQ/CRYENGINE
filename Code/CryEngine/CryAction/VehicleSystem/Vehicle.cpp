@@ -1256,10 +1256,6 @@ void CVehicle::ProcessEvent(const SEntityEvent& entityEvent)
 		OnTimer((int)entityEvent.nParam[0]);
 		break;
 
-	case ENTITY_EVENT_MATERIAL_LAYER:
-		OnMaterialLayerChanged(entityEvent);
-		break;
-
 	case ENTITY_EVENT_HIDE:
 	case ENTITY_EVENT_UNHIDE:
 		{
@@ -1317,7 +1313,6 @@ uint64 CVehicle::GetEventMask() const
 	  BIT64(ENTITY_EVENT_RESET) |
 	  BIT64(ENTITY_EVENT_DONE) |
 	  BIT64(ENTITY_EVENT_TIMER) |
-	  BIT64(ENTITY_EVENT_MATERIAL_LAYER) |
 	  BIT64(ENTITY_EVENT_HIDE) |
 	  BIT64(ENTITY_EVENT_UNHIDE) |
 	  BIT64(ENTITY_EVENT_ANIM_EVENT) |
@@ -1334,32 +1329,6 @@ void CVehicle::DeleteActionController()
 	{
 		CVehicleSeat* seat = ite->second;
 		seat->OnVehicleActionControllerDeleted();
-	}
-}
-
-//------------------------------------------------------------------------
-void CVehicle::OnMaterialLayerChanged(const SEntityEvent& event)
-{
-	// only handle frozen layer for now.
-	bool frozen = event.nParam[0] & MTL_LAYER_FROZEN;
-	bool prev = event.nParam[1] & MTL_LAYER_FROZEN;
-	if (frozen != prev)
-	{
-		int n = GetEntity()->GetChildCount();
-		for (int i = 0; i < n; ++i)
-		{
-			IEntity* pChild = GetEntity()->GetChild(i);
-			IEntityRender* pIEntityRender = pChild->GetRenderInterface();
-
-			{
-				if (IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(pChild->GetId()))
-					if (pActor->IsPlayer()) // don't freeze players inside vehicles
-						continue;
-
-				//uint8 mask = pIEntityRender->GetMaterialLayersMask();
-				//pIEntityRender->SetMaterialLayersMask(frozen ? mask | MTL_LAYER_FROZEN : mask & ~MTL_LAYER_FROZEN);
-			}
-		}
 	}
 }
 
@@ -1381,7 +1350,7 @@ int CVehicle::SetTimer(int timerId, int ms, IVehicleObject* pObject)
 
 	if (m_timers.insert(std::make_pair(timerId, pObject)).second)
 	{
-		GetEntity()->SetTimer(timerId, ms);
+		IEntityComponent::SetTimer(timerId, ms);
 		//CryLog("vehicle <%s> setting timer %i, %i ms", GetEntity()->GetName(), timerId, ms);
 
 		return timerId;
@@ -1395,7 +1364,7 @@ int CVehicle::KillTimer(int timerId)
 {
 	if (timerId != -1)
 	{
-		GetEntity()->KillTimer(timerId);
+		IEntityComponent::KillTimer(timerId);
 		m_timers.erase(timerId);
 	}
 
@@ -1407,7 +1376,7 @@ void CVehicle::KillTimers()
 {
 	KillAbandonedTimer();
 
-	GetEntity()->KillTimer(IEntity::KILL_ALL_TIMER);
+	KillAllTimers();
 	m_timers.clear();
 }
 
@@ -4794,13 +4763,11 @@ void CVehicle::StartAbandonedTimer(bool force, float timer)
 
 	const float mintime = 5.0f;
 
-	IEntity* pEntity = GetEntity();
+	IEntityComponent::KillTimer(eVT_Abandoned);
+	IEntityComponent::SetTimer(eVT_Abandoned, (int)(max(mintime + 0.5f, timer) * 1000.0f));
 
-	pEntity->KillTimer(eVT_Abandoned);
-	pEntity->SetTimer(eVT_Abandoned, (int)(max(mintime + 0.5f, timer) * 1000.0f));
-
-	pEntity->KillTimer(eVT_AbandonedSound);
-	pEntity->SetTimer(eVT_AbandonedSound, (int)(max(0.0f, ((timer + 0.5f) - mintime)) * 1000.0f)); // warn sound
+	IEntityComponent::KillTimer(eVT_AbandonedSound);
+	IEntityComponent::SetTimer(eVT_AbandonedSound, (int)(max(0.0f, ((timer + 0.5f) - mintime)) * 1000.0f)); // warn sound
 }
 
 //------------------------------------------------------------------------
@@ -4809,8 +4776,8 @@ void CVehicle::KillAbandonedTimer()
 	if (!gEnv->bServer)
 		return;
 
-	GetEntity()->KillTimer(eVT_Abandoned);
-	GetEntity()->KillTimer(eVT_AbandonedSound);
+	IEntityComponent::KillTimer(eVT_Abandoned);
+	IEntityComponent::KillTimer(eVT_AbandonedSound);
 
 	EnableAbandonedWarnSound(false);
 }
