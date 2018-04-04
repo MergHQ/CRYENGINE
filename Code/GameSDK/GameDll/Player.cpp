@@ -9856,7 +9856,7 @@ void CPlayer::RefillAmmo()
 
 		// Note: 'REFILL_AMMO_TIMER_ID' Just controls how long the weapon is offscreen for, before being raised again,
 		// it DOES NOT actually trigger any assignment of ammo to a client
-		GetEntity()->SetTimer(REFILL_AMMO_TIMER_ID, (int)(g_pGameCVars->pl_refillAmmoDelay * 1000.0f));
+		SetTimer(REFILL_AMMO_TIMER_ID, (int)(g_pGameCVars->pl_refillAmmoDelay * 1000.0f));
 	}
 }
 

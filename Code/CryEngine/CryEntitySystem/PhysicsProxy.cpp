@@ -70,16 +70,6 @@ CEntityPhysics::~CEntityPhysics()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityPhysics::RegisterEventListeners(IEntityComponent::ComponentEventPriority eventPriority)
-{
-	EntityEventMask events = BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_HIDE) | BIT64(ENTITY_EVENT_INVISIBLE) | BIT64(ENTITY_EVENT_UNHIDE)
-	                         | BIT64(ENTITY_EVENT_VISIBLE) | BIT64(ENTITY_EVENT_DONE) | BIT64(ENTITY_EVENT_ATTACH) | BIT64(ENTITY_EVENT_DETACH) | BIT64(ENTITY_EVENT_COLLISION)
-	                         | BIT64(ENTITY_EVENT_PHYS_BREAK) | BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE) | BIT64(ENTITY_EVENT_MATERIAL);
-
-	GetEntity()->AddSimpleEventListeners(events, this, eventPriority);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEntityPhysics::ReleasePhysicalEntity()
 {
 	// Delete physical entity from physical world.
@@ -218,246 +208,206 @@ CEntity* GetAdam(CEntity* pAdam, Matrix34& mtx)
 	return pAdam;
 }
 
+void CEntityPhysics::OnEntityHiddenOrMadeInvisible()
+{
+	if (!gEnv->IsEditor() && m_pPhysicalEntity && m_pPhysicalEntity->GetType() == PE_SOFT)
+	{
+		ReleasePhysicalEntity();
+		GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsRemoved, true);
+	}
+	else
+		EnablePhysics(false);
+}
+
+void CEntityPhysics::OnEntityUnhiddenOrMadeVisible()
+{
+	if (!gEnv->IsEditor() && !m_pPhysicalEntity && GetEntity()->HasInternalFlag(CEntity::EInternalFlag::PhysicsRemoved))
+	{
+		SEntityEvent e;
+		e.event = ENTITY_EVENT_RESET;
+		GetEntity()->GetScriptProxy()->ProcessEvent(e);
+		GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsRemoved, false);
+	}
+	else
+		EnablePhysics(true);
+}
+
+void CEntityPhysics::OnEntityUnhidden()
+{
+	// Force xform update to move physics proxy. Physics ignores updates while hidden.
+	OnEntityXForm({ ENTITY_XFORM_POS, ENTITY_XFORM_ROT, ENTITY_XFORM_SCL });
+}
+
+void CEntityPhysics::PrepareForDeletion()
+{
+	SEntityPhysicalizeParams epp;
+	epp.type = PE_NONE;
+	Physicalize(epp);
+
+	// Disabling the physics on 'done' prevents any outstanding physics CBs being executed.
+	GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsDisabled, true);
+}
+
+void CEntityPhysics::OnChildEntityAttached(EntityId childEntityId)
+{
+	pe_action_move_parts amp;
+	CEntity* pChild = g_pIEntitySystem->GetEntityFromID(childEntityId);
+	CEntity* pAdam = GetAdam(pChild, amp.mtxRel);
+	if (pChild && pChild->GetParentBindingType() != CEntity::EBindingType::eBT_LocalSim)
+	{
+		int i;
+		for (i = pChild->GetSlotCount() - 1; i >= 0 && (!pChild->GetCharacter(i) || pChild->GetCharacter(i)->GetObjectType() != CGA); i--)
+			;
+
+		CEntityPhysics* pChildProxy, *pAdamProxy;
+
+		if (i < 0 &&
+			(pChildProxy = pChild->GetPhysicalProxy()) && pChildProxy->m_pPhysicalEntity && pChildProxy->m_pPhysicalEntity->GetType() <= PE_RIGID &&
+			pAdam && (pAdamProxy = pAdam->GetPhysicalProxy()) && pAdamProxy->m_pPhysicalEntity &&
+			(i = pAdamProxy->m_pPhysicalEntity->GetType()) <= PE_WHEELEDVEHICLE && i != PE_STATIC)
+		{
+			// Move pChild (and all of its children) to pAdam
+			int idmap[EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS + 1];
+			memset(idmap, -1, sizeof(idmap));
+			pChild->m_hierarchy.attachId = idmap[EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS] = AllocAttachId(pAdam->m_hierarchy.childrenAttachIds);
+			RemapChildAttachIds(pChild, pChild->m_hierarchy.childrenAttachIds, pAdam->m_hierarchy.childrenAttachIds, idmap);
+			amp.pTarget = pAdamProxy->m_pPhysicalEntity;
+			amp.MapPartId = AttachPartId;
+			amp.auxData = idmap;
+			amp.szAuxData = EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS + 1;
+			pChildProxy->m_pPhysicalEntity->Action(&amp);
+		}
+	}
+}
+
+void CEntityPhysics::OnChildEntityDetached(EntityId childEntityId)
+{
+	CEntity* pChild = g_pIEntitySystem->GetEntityFromID(childEntityId);
+	CEntity* pAdam = static_cast<CEntity*>(GetEntity()->GetAdam());
+	if (pChild && pChild->GetParentBindingType() != CEntity::EBindingType::eBT_LocalSim)
+	{
+		CEntityPhysics* pChildProxy, *pAdamProxy;
+		if ((pChildProxy = pChild->GetPhysicalProxy()) && pChildProxy->m_pPhysicalEntity &&
+			pAdam && (pAdamProxy = pAdam->GetPhysicalProxy()) && pAdamProxy->m_pPhysicalEntity &&
+			pChild->m_hierarchy.attachId >= 0)
+		{
+			Matrix34 childWorldTM = pChild->GetWorldTM();
+			childWorldTM.OrthonormalizeFast();
+			pe_action_move_parts amp;
+			int idmap[EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS + 1];
+			memset(idmap, -1, sizeof(idmap));
+			idmap[pChild->m_hierarchy.attachId] = 1 << 30;
+			RemapChildAttachIds(pChild, pAdam->m_hierarchy.childrenAttachIds, pChild->m_hierarchy.childrenAttachIds, idmap);
+			amp.mtxRel = childWorldTM.GetInverted() * pAdam->GetWorldTM();
+			amp.pTarget = pChildProxy->m_pPhysicalEntity;
+			amp.MapPartId = DetachPartId;
+			amp.auxData = idmap;
+			amp.szAuxData = EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS + 1;
+			pAdamProxy->m_pPhysicalEntity->Action(&amp);
+			pAdam->m_hierarchy.childrenAttachIds &= ~(attachMask1 << pChild->m_hierarchy.attachId);
+			pChild->m_hierarchy.attachId = -1;
+		}
+	}
+}
+
+void CEntityPhysics::OnCollision(const EventPhysCollision& collision, int sourceIndex)
+{
+	if (sourceIndex == 1)
+	{
+		int islot = EntityPhysicsUtils::GetSlotIdx(collision.partid[1]);
+		pe_params_bbox pbb;
+		Vec3 sz;
+		float r, strength;
+		Matrix34 mtx;
+		CEntitySlot* pSlot = GetEntity()->GetSlot(islot);
+		if (!pSlot || !pSlot->GetStatObj())
+			pSlot = GetEntity()->GetSlot(islot = 0);
+		collision.pEntity[0]->GetParams(&pbb);
+		sz = pbb.BBox[1] - pbb.BBox[0];
+		r = min(0.5f, max(0.05f, (sz.x + sz.y + sz.z) * (1.0f / 3)));
+		strength = min(r, collision.vloc[0].len() * (1.0f / 50));
+		mtx = GetEntity()->GetSlotWorldTM(islot).GetInverted();
+
+		if (pSlot && pSlot->GetStatObj())
+		{
+			IStatObj* pNewObj;
+			if ((pNewObj = pSlot->GetStatObj()->DeformMorph(mtx * collision.pt, r, strength)) != pSlot->GetStatObj())
+				GetEntity()->SetStatObj(pNewObj, islot, true);
+		}
+	}
+}
+
+void CEntityPhysics::SendBreakEvent(EventPhysJointBroken* pEvent)
+{
+	// Counter for feature test setup
+	{
+		CODECHECKPOINT(physics_on_tree_joint_break);
+
+		if (pEvent && !pEvent->bJoint && pEvent->idJoint == 1000000)
+		{
+			// special handling for splinters on breakable trees
+			CEntity* pent, *pentNew;
+			IStatObj* pStatObj;
+			int i, j, iop;
+			float dist, mindist;
+			for (iop = 0; iop < 2; iop++)
+				if (!is_unused(pEvent->pNewEntity[iop]) && (pent = static_cast<CEntity*>(pEvent->pEntity[iop]->GetForeignData(PHYS_FOREIGN_ID_ENTITY))))
+				{
+					for (i = pent->GetSlotCount() - 1, j = -1, mindist = 1E10f; i > 0; i--)
+						if ((pStatObj = pent->GetStatObj(i | ENTITY_SLOT_ACTUAL)) && !(pStatObj->GetFlags() & STATIC_OBJECT_GENERATED) &&
+							!pStatObj->GetPhysGeom() && (dist = (pent->GetSlotWorldTM(i).GetTranslation() - pEvent->pt).len2()) < mindist)
+							mindist = dist, j = i;
+					if (j >= 0)
+					{
+						pStatObj = pent->GetStatObj(j | ENTITY_SLOT_ACTUAL);
+						if (pEvent->pNewEntity[iop] && (pentNew = static_cast<CEntity*>(pEvent->pNewEntity[iop]->GetForeignData(PHYS_FOREIGN_ID_ENTITY))))
+							pentNew->SetSlotLocalTM(pentNew->SetStatObj(pStatObj, -1, false), pent->GetSlotLocalTM(j | ENTITY_SLOT_ACTUAL, false));
+						else
+						{
+							IStatObj::SSubObject* pSubObj = pStatObj->FindSubObject("splinters_cloud");
+							if (pSubObj)
+							{
+								IParticleEffect* pEffect = gEnv->pParticleManager->FindEffect(pSubObj->properties);
+								if (pEffect)
+									pEffect->Spawn(true, IParticleEffect::ParticleLoc(pEvent->pt));
+							}
+						}
+						pent->FreeSlot(j);
+					}
+				}
+		}
+	}
+
+	SEntityEvent event;
+	event.event = ENTITY_EVENT_PHYS_BREAK;
+	event.nParam[0] = (INT_PTR)pEvent;
+	event.nParam[1] = 0;
+	GetEntity()->SendEvent(event);
+}
+
+void CEntityPhysics::OnGlobalEntityMaterialChanged(IMaterial* pMaterial)
+{
+	if (pMaterial != nullptr)
+	{
+		CEntity* pAdam = static_cast<CEntity*>(GetEntity()->GetAdam());
+		if (GetEntity()->m_hierarchy.attachId >= 0 && pAdam && pAdam != GetEntity() && pAdam->GetPhysics())
+		{
+			UpdateParamsFromRenderMaterial(0, pAdam->GetPhysics());
+		}
+		else if (m_pPhysicalEntity)
+		{
+			UpdateParamsFromRenderMaterial(-1, m_pPhysicalEntity);
+		}
+	}
+}
+
 void CEntityPhysics::ProcessEvent(const SEntityEvent& event)
 {
 	// See AddSimpleEventListener calls in CEntityPhysics::PostInit
 	switch (event.event)
 	{
-	case ENTITY_EVENT_XFORM:
-		OnEntityXForm(event);
-		if (m_pPhysicalEntity && m_pPhysicalEntity->GetType() <= PE_RIGID && GetEntity()->m_hierarchy.attachId >= 0)
-		{
-			CEntity* pAdam;
-			pe_status_pos sp;
-			sp.flags = status_local;
-			pe_params_bbox pbb;
-			Matrix34 mtxPart, mtxLoc;
-			pe_params_part pp;
-			pp.pMtx3x4 = &mtxPart;
-			AABB bbox;
-			bbox.Reset();
-			if ((pAdam = GetAdam(GetEntity(), mtxLoc)) != GetEntity() &&
-			    pAdam->GetPhysicalProxy()->m_pPhysicalEntity && pAdam->GetPhysicalProxy()->m_pPhysicalEntity->GetType() <= PE_WHEELEDVEHICLE)
-			{
-				for (sp.ipart = 0; pAdam->GetPhysicalProxy()->m_pPhysicalEntity->GetStatus(&sp); sp.ipart++)
-				{
-					int nLevels, nBits;
-					EntityPhysicsUtils::ParsePartId(sp.partid, nLevels, nBits);
-					if (sp.partid & 1 << 30 && (sp.partid >> nBits & EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS - 1) == GetEntity()->m_hierarchy.attachId)
-					{
-						bbox.Add(sp.BBox[0] + sp.pos), bbox.Add(sp.BBox[1] + sp.pos);
-						if (!GetEntity()->HasInternalFlag(CEntity::EInternalFlag::PhysicsIgnoreTransformEvent) && !pAdam->HasInternalFlag(CEntity::EInternalFlag::PhysicsIgnoreTransformEvent))
-						{
-							pp.partid = sp.partid;
-							mtxPart = mtxLoc * GetEntity()->GetSlotLocalTM(sp.partid & EntityPhysicsUtils::PARTID_MAX_SLOTS - 1, true);
-							pAdam->GetPhysicalProxy()->m_pPhysicalEntity->SetParams(&pp);
-						}
-					}
-				}
-				if (bbox.max.x > bbox.min.x)
-				{
-					pbb.BBox[0] = bbox.min;
-					pbb.BBox[1] = bbox.max;
-					m_pPhysicalEntity->SetParams(&pbb);
-				}
-			}
-		}
-		break;
-	case ENTITY_EVENT_HIDE:
-	case ENTITY_EVENT_INVISIBLE:
-		if (event.nParam[0] != 1)
-		{
-			if (!gEnv->IsEditor() && m_pPhysicalEntity && m_pPhysicalEntity->GetType() == PE_SOFT)
-			{
-				ReleasePhysicalEntity();
-				GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsRemoved, true);
-			}
-			else
-				EnablePhysics(false);
-		}
-		break;
-	case ENTITY_EVENT_UNHIDE:
-	case ENTITY_EVENT_VISIBLE:
-		if (event.nParam[0] != 1)
-		{
-			if (!gEnv->IsEditor() && !m_pPhysicalEntity && GetEntity()->HasInternalFlag(CEntity::EInternalFlag::PhysicsRemoved))
-			{
-				SEntityEvent e;
-				e.event = ENTITY_EVENT_RESET;
-				GetEntity()->GetScriptProxy()->ProcessEvent(e);
-				GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsRemoved, false);
-			}
-			else
-				EnablePhysics(true);
-			if (event.event == ENTITY_EVENT_UNHIDE)
-			{
-				// Force xform update to move physics proxy. Physics ignores updates while hidden.
-				SEntityEvent event(ENTITY_EVENT_XFORM);
-				event.nParam[0] = ENTITY_XFORM_POS | ENTITY_XFORM_ROT | ENTITY_XFORM_SCL;
-				OnEntityXForm(event);
-			}
-		}
-		break;
-	case ENTITY_EVENT_DONE:
-		{
-			SEntityPhysicalizeParams epp;
-			epp.type = PE_NONE;
-			Physicalize(epp);
-
-			// Disabling the physics on 'done' prevents any outstanding physics CBs being executed.
-			GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsDisabled, true);
-			break;
-		}
-	case ENTITY_EVENT_ATTACH:
-		{
-			pe_action_move_parts amp;
-			CEntity* pChild = g_pIEntitySystem->GetEntityFromID((EntityId)event.nParam[0]);
-			CEntity* pAdam = GetAdam(pChild, amp.mtxRel);
-			if (pChild && pChild->GetParentBindingType() != CEntity::EBindingType::eBT_LocalSim)
-			{
-				int i;
-				for (i = pChild->GetSlotCount() - 1; i >= 0 && (!pChild->GetCharacter(i) || pChild->GetCharacter(i)->GetObjectType() != CGA); i--)
-					;
-
-				CEntityPhysics* pChildProxy, * pAdamProxy;
-
-				if (i < 0 &&
-				    (pChildProxy = pChild->GetPhysicalProxy()) && pChildProxy->m_pPhysicalEntity && pChildProxy->m_pPhysicalEntity->GetType() <= PE_RIGID &&
-				    pAdam && (pAdamProxy = pAdam->GetPhysicalProxy()) && pAdamProxy->m_pPhysicalEntity &&
-				    (i = pAdamProxy->m_pPhysicalEntity->GetType()) <= PE_WHEELEDVEHICLE && i != PE_STATIC)
-				{
-					// Move pChild (and all of its children) to pAdam
-					int idmap[EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS + 1];
-					memset(idmap, -1, sizeof(idmap));
-					pChild->m_hierarchy.attachId = idmap[EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS] = AllocAttachId(pAdam->m_hierarchy.childrenAttachIds);
-					RemapChildAttachIds(pChild, pChild->m_hierarchy.childrenAttachIds, pAdam->m_hierarchy.childrenAttachIds, idmap);
-					amp.pTarget = pAdamProxy->m_pPhysicalEntity;
-					amp.MapPartId = AttachPartId;
-					amp.auxData = idmap;
-					amp.szAuxData = EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS + 1;
-					pChildProxy->m_pPhysicalEntity->Action(&amp);
-				}
-			}
-		} break;
-	case ENTITY_EVENT_DETACH:
-		{
-			CEntity* pChild = g_pIEntitySystem->GetEntityFromID((EntityId)event.nParam[0]);
-			CEntity* pAdam = static_cast<CEntity*>(GetEntity()->GetAdam());
-			if (pChild && pChild->GetParentBindingType() != CEntity::EBindingType::eBT_LocalSim)
-			{
-				CEntityPhysics* pChildProxy, * pAdamProxy;
-				if ((pChildProxy = pChild->GetPhysicalProxy()) && pChildProxy->m_pPhysicalEntity &&
-				    pAdam && (pAdamProxy = pAdam->GetPhysicalProxy()) && pAdamProxy->m_pPhysicalEntity &&
-				    pChild->m_hierarchy.attachId >= 0)
-				{
-					Matrix34 childWorldTM = pChild->GetWorldTM();
-					childWorldTM.OrthonormalizeFast();
-					pe_action_move_parts amp;
-					int idmap[EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS + 1];
-					memset(idmap, -1, sizeof(idmap));
-					idmap[pChild->m_hierarchy.attachId] = 1 << 30;
-					RemapChildAttachIds(pChild, pAdam->m_hierarchy.childrenAttachIds, pChild->m_hierarchy.childrenAttachIds, idmap);
-					amp.mtxRel = childWorldTM.GetInverted() * pAdam->GetWorldTM();
-					amp.pTarget = pChildProxy->m_pPhysicalEntity;
-					amp.MapPartId = DetachPartId;
-					amp.auxData = idmap;
-					amp.szAuxData = EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS + 1;
-					pAdamProxy->m_pPhysicalEntity->Action(&amp);
-					pAdam->m_hierarchy.childrenAttachIds &= ~(attachMask1 << pChild->m_hierarchy.attachId);
-					pChild->m_hierarchy.attachId = -1;
-				}
-			}
-		} break;
-	case ENTITY_EVENT_COLLISION:
-		if (event.nParam[1] == 1)
-		{
-			EventPhysCollision* pColl = (EventPhysCollision*)event.nParam[0];
-			int islot = EntityPhysicsUtils::GetSlotIdx(pColl->partid[1]);
-			pe_params_bbox pbb;
-			Vec3 sz;
-			float r, strength;
-			Matrix34 mtx;
-			CEntitySlot* pSlot = GetEntity()->GetSlot(islot);
-			if (!pSlot || !pSlot->GetStatObj())
-				pSlot = GetEntity()->GetSlot(islot = 0);
-			pColl->pEntity[0]->GetParams(&pbb);
-			sz = pbb.BBox[1] - pbb.BBox[0];
-			r = min(0.5f, max(0.05f, (sz.x + sz.y + sz.z) * (1.0f / 3)));
-			strength = min(r, pColl->vloc[0].len() * (1.0f / 50));
-			mtx = GetEntity()->GetSlotWorldTM(islot).GetInverted();
-
-			if (pSlot && pSlot->GetStatObj())
-			{
-				IStatObj* pNewObj;
-				if ((pNewObj = pSlot->GetStatObj()->DeformMorph(mtx * pColl->pt, r, strength)) != pSlot->GetStatObj())
-					GetEntity()->SetStatObj(pNewObj, islot, true);
-			}
-		}
-		break;
-	case ENTITY_EVENT_PHYS_BREAK:
-		{
-			EventPhysJointBroken* pepjb = (EventPhysJointBroken*)event.nParam[0];
-
-			// Counter for feature test setup
-			CODECHECKPOINT(physics_on_tree_joint_break);
-
-			if (pepjb && !pepjb->bJoint && pepjb->idJoint == 1000000)
-			{
-				// special handling for splinters on breakable trees
-				CEntity* pent, * pentNew;
-				IStatObj* pStatObj;
-				int i, j, iop;
-				float dist, mindist;
-				for (iop = 0; iop < 2; iop++)
-					if (!is_unused(pepjb->pNewEntity[iop]) && (pent = static_cast<CEntity*>(pepjb->pEntity[iop]->GetForeignData(PHYS_FOREIGN_ID_ENTITY))))
-					{
-						for (i = pent->GetSlotCount() - 1, j = -1, mindist = 1E10f; i > 0; i--)
-							if ((pStatObj = pent->GetStatObj(i | ENTITY_SLOT_ACTUAL)) && !(pStatObj->GetFlags() & STATIC_OBJECT_GENERATED) &&
-							    !pStatObj->GetPhysGeom() && (dist = (pent->GetSlotWorldTM(i).GetTranslation() - pepjb->pt).len2()) < mindist)
-								mindist = dist, j = i;
-						if (j >= 0)
-						{
-							pStatObj = pent->GetStatObj(j | ENTITY_SLOT_ACTUAL);
-							if (pepjb->pNewEntity[iop] && (pentNew = static_cast<CEntity*>(pepjb->pNewEntity[iop]->GetForeignData(PHYS_FOREIGN_ID_ENTITY))))
-								pentNew->SetSlotLocalTM(pentNew->SetStatObj(pStatObj, -1, false), pent->GetSlotLocalTM(j | ENTITY_SLOT_ACTUAL, false));
-							else
-							{
-								IStatObj::SSubObject* pSubObj = pStatObj->FindSubObject("splinters_cloud");
-								if (pSubObj)
-								{
-									IParticleEffect* pEffect = gEnv->pParticleManager->FindEffect(pSubObj->properties);
-									if (pEffect)
-										pEffect->Spawn(true, IParticleEffect::ParticleLoc(pepjb->pt));
-								}
-							}
-							pent->FreeSlot(j);
-						}
-					}
-			}
-		} break;
-	case ENTITY_EVENT_RENDER_VISIBILITY_CHANGE:
-		{
-			bool bVisible = event.nParam[0] != 0;
-
-			AwakeOnRender(bVisible);
-		}
-		break;
 	case ENTITY_EVENT_TIMER:
 		OnTimer((int)event.nParam[0]);
-		break;
-	case ENTITY_EVENT_MATERIAL:
-		if (IMaterial* pMtl = reinterpret_cast<IMaterial*>(event.nParam[0]))
-		{
-			CEntity* pAdam = static_cast<CEntity*>(GetEntity()->GetAdam());
-			if (GetEntity()->m_hierarchy.attachId >= 0 && pAdam && pAdam != GetEntity() && pAdam->GetPhysics())
-			{
-				UpdateParamsFromRenderMaterial(0, pAdam->GetPhysics());
-			}
-			else if (m_pPhysicalEntity)
-			{
-				UpdateParamsFromRenderMaterial(-1, m_pPhysicalEntity);
-			}
-		}
 		break;
 	}
 }
@@ -482,7 +432,7 @@ void CEntityPhysics::AwakeOnRender(bool bRender)
 
 void CEntityPhysics::OnTimer(int id)
 {
-	if (GetEntity()->HasInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender) && m_pPhysicalEntity)
+	if (id == 0 && GetEntity()->HasInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender) && m_pPhysicalEntity)
 	{
 		for (int slot = 0; slot < GetEntity()->GetSlotCount(); slot++)
 		{
@@ -509,10 +459,10 @@ void CEntityPhysics::OnTimer(int id)
 			pfd.iForeignFlags = 0;
 			m_pPhysicalEntity->SetParams(&pfd);
 			GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender, false);
-			GetEntity()->RemoveSimpleEventListener(ENTITY_EVENT_TIMER, this);
 			return;
 		}
-		GetEntity()->SetTimer(IEntity::CREATE_NEW_UNIQUE_TIMER_ID, 50);
+		// Re-create timer, re-use same id
+		GetEntity()->SetTimer(this, GetEntity()->GetId(), CryGUID(), 0, 50);
 	}
 }
 
@@ -604,10 +554,48 @@ void CEntityPhysics::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityPhysics::OnEntityXForm(const SEntityEvent& event)
+void CEntityPhysics::OnEntityXForm(EntityTransformationFlagsMask transformReasons)
 {
-	if (event.nParam[0] & ENTITY_XFORM_IGNORE_PHYSICS ||
-	    event.nParam[0] & ENTITY_XFORM_FROM_PARENT && (
+	if (m_pPhysicalEntity && m_pPhysicalEntity->GetType() <= PE_RIGID && GetEntity()->m_hierarchy.attachId >= 0)
+	{
+		CEntity* pAdam;
+		pe_status_pos sp;
+		sp.flags = status_local;
+		pe_params_bbox pbb;
+		Matrix34 mtxPart, mtxLoc;
+		pe_params_part pp;
+		pp.pMtx3x4 = &mtxPart;
+		AABB bbox;
+		bbox.Reset();
+		if ((pAdam = GetAdam(GetEntity(), mtxLoc)) != GetEntity() &&
+			pAdam->GetPhysicalProxy()->m_pPhysicalEntity && pAdam->GetPhysicalProxy()->m_pPhysicalEntity->GetType() <= PE_WHEELEDVEHICLE)
+		{
+			for (sp.ipart = 0; pAdam->GetPhysicalProxy()->m_pPhysicalEntity->GetStatus(&sp); sp.ipart++)
+			{
+				int nLevels, nBits;
+				EntityPhysicsUtils::ParsePartId(sp.partid, nLevels, nBits);
+				if (sp.partid & 1 << 30 && (sp.partid >> nBits & EntityPhysicsUtils::PARTID_MAX_ATTACHMENTS - 1) == GetEntity()->m_hierarchy.attachId)
+				{
+					bbox.Add(sp.BBox[0] + sp.pos), bbox.Add(sp.BBox[1] + sp.pos);
+					if (!GetEntity()->HasInternalFlag(CEntity::EInternalFlag::PhysicsIgnoreTransformEvent) && !pAdam->HasInternalFlag(CEntity::EInternalFlag::PhysicsIgnoreTransformEvent))
+					{
+						pp.partid = sp.partid;
+						mtxPart = mtxLoc * GetEntity()->GetSlotLocalTM(sp.partid & EntityPhysicsUtils::PARTID_MAX_SLOTS - 1, true);
+						pAdam->GetPhysicalProxy()->m_pPhysicalEntity->SetParams(&pp);
+					}
+				}
+			}
+			if (bbox.max.x > bbox.min.x)
+			{
+				pbb.BBox[0] = bbox.min;
+				pbb.BBox[1] = bbox.max;
+				m_pPhysicalEntity->SetParams(&pbb);
+			}
+		}
+	}
+
+	if (transformReasons & ENTITY_XFORM_IGNORE_PHYSICS ||
+		transformReasons & ENTITY_XFORM_FROM_PARENT && (
 	      GetEntity()->GetParentBindingType() == CEntity::EBindingType::eBT_LocalSim ||
 	      m_pPhysicalEntity && m_pPhysicalEntity->GetType() == PE_GRID))
 		return;
@@ -616,7 +604,7 @@ void CEntityPhysics::OnEntityXForm(const SEntityEvent& event)
 	{
 		if (m_pPhysicalEntity)
 		{
-			if (m_pPhysicalEntity->GetType() == PE_SOFT && event.nParam[0] & ENTITY_XFORM_FROM_PARENT && gEnv->pPhysicalWorld->GetPhysVars()->lastTimeStep > 0)
+			if (m_pPhysicalEntity->GetType() == PE_SOFT && transformReasons & ENTITY_XFORM_FROM_PARENT && gEnv->pPhysicalWorld->GetPhysVars()->lastTimeStep > 0)
 				return;
 
 			// This set flag prevents endless recursion of events received from physics.
@@ -624,12 +612,12 @@ void CEntityPhysics::OnEntityXForm(const SEntityEvent& event)
 			pe_params_pos ppos;
 
 			bool bAnySet = false;
-			if (event.nParam[0] & ENTITY_XFORM_POS) // Position changes.
+			if (transformReasons & ENTITY_XFORM_POS) // Position changes.
 			{
 				ppos.pos = GetEntity()->GetWorldTM().GetTranslation();
 				bAnySet = true;
 			}
-			if (event.nParam[0] & ENTITY_XFORM_ROT) // Rotation changes.
+			if (transformReasons & ENTITY_XFORM_ROT) // Rotation changes.
 			{
 				bAnySet = true;
 				if (!GetEntity()->GetParent())
@@ -637,7 +625,7 @@ void CEntityPhysics::OnEntityXForm(const SEntityEvent& event)
 				else
 					ppos.pMtx3x4 = const_cast<Matrix34*>(&GetEntity()->GetWorldTM());
 			}
-			if (event.nParam[0] & ENTITY_XFORM_SCL) // Scale changes.
+			if (transformReasons & ENTITY_XFORM_SCL) // Scale changes.
 			{
 				bAnySet = true;
 				Vec3 s = GetEntity()->GetScale();
@@ -1457,8 +1445,7 @@ void CEntityPhysics::PhysicalizeSoft(SEntityPhysicalizeParams& params)
 		pfd.iForeignFlags = params.nAttachToPart;
 		m_pPhysicalEntity->SetParams(&pfd);
 		GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender, true);
-		GetEntity()->AddSimpleEventListener(ENTITY_EVENT_TIMER, this, 0);
-		GetEntity()->SetTimer(IEntity::CREATE_NEW_UNIQUE_TIMER_ID, 50);
+		GetEntity()->SetTimer(this, GetEntity()->GetId(), CryGUID(), 0, 50);
 	}
 }
 
@@ -2085,9 +2072,30 @@ CEntity* CEntityPhysics::GetCEntity(IPhysicalEntity* pPhysEntity)
 
 void CEntityPhysics::OnChangedPhysics(bool bEnabled)
 {
+	GetEntity()->GetEntityRender()->TryInvalidateParticleEmitters();
+
 	SEntityEvent evt(ENTITY_EVENT_ENABLE_PHYSICS);
 	evt.nParam[0] = bEnabled;
 	GetEntity()->SendEvent(evt);
+}
+
+void CEntityPhysics::OnPhysicsStateChanged(int previousSimulationClass)
+{
+	SEntityEvent event(ENTITY_EVENT_PHYSICS_CHANGE_STATE);
+	if (previousSimulationClass == SC_ACTIVE_RIGID)
+	{
+		GetEntity()->GetEntityRender()->TryInvalidateParticleEmitters();
+
+		event.nParam[0] = 1;
+		GetEntity()->SendEvent(event);
+	}
+	else if(previousSimulationClass == SC_SLEEPING_RIGID)
+	{
+		GetEntity()->GetEntityRender()->TryInvalidateParticleEmitters();
+
+		event.nParam[0] = 0;
+		GetEntity()->SendEvent(event);
+	}
 }
 
 void CEntityPhysics::GetMemoryUsage(ICrySizer* pSizer) const

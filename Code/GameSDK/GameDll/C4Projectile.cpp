@@ -181,7 +181,7 @@ void CC4Projectile::Launch(const Vec3 &pos, const Vec3 &dir, const Vec3 &velocit
 
 	if(m_pAmmoParams->armTime > 0.f)
 	{
-		GetEntity()->SetTimer(ePTIMER_ACTIVATION, (int)(m_pAmmoParams->armTime*1000.f));
+		SetTimer(ePTIMER_ACTIVATION, (int)(m_pAmmoParams->armTime*1000.f));
 		Arm(false);
 	}
 	else

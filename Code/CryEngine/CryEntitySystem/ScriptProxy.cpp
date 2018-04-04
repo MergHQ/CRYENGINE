@@ -486,7 +486,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 		// Kill all timers.
 		{
 			// If state changed kill all old timers.
-			m_pEntity->KillTimer(IEntity::KILL_ALL_TIMER);
+			KillAllTimers();
 			m_currentStateId = 0;
 		}
 		break;
@@ -533,13 +533,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 //////////////////////////////////////////////////////////////////////////
 uint64 CEntityComponentLuaScript::GetEventMask() const
 {
-	uint64 eventMask = BIT64(ENTITY_EVENT_ANIM_EVENT) | BIT64(ENTITY_EVENT_DONE) | BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_INIT)
-	                   | BIT64(ENTITY_EVENT_TIMER) | BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_ATTACH) | BIT64(ENTITY_EVENT_ATTACH_THIS)
-	                   | BIT64(ENTITY_EVENT_DETACH) | BIT64(ENTITY_EVENT_DETACH_THIS) | BIT64(ENTITY_EVENT_ENTERAREA) | BIT64(ENTITY_EVENT_MOVEINSIDEAREA)
-	                   | BIT64(ENTITY_EVENT_LEAVEAREA) | BIT64(ENTITY_EVENT_ENTERNEARAREA) | BIT64(ENTITY_EVENT_LEAVENEARAREA) | BIT64(ENTITY_EVENT_MOVENEARAREA)
-	                   | BIT64(ENTITY_EVENT_PHYS_BREAK) | BIT64(ENTITY_EVENT_AUDIO_TRIGGER_ENDED) | BIT64(ENTITY_EVENT_LEVEL_LOADED) | BIT64(ENTITY_EVENT_START_LEVEL)
-	                   | BIT64(ENTITY_EVENT_START_GAME) | BIT64(ENTITY_EVENT_PRE_SERIALIZE) | BIT64(ENTITY_EVENT_POST_SERIALIZE) | BIT64(ENTITY_EVENT_HIDE)
-	                   | BIT64(ENTITY_EVENT_UNHIDE) | BIT64(ENTITY_EVENT_XFORM_FINISHED_EDITOR) | BIT64(ENTITY_EVENT_COLLISION);
+	uint64 eventMask = GetEventMaskStatic();
 
 	if (m_implementedUpdateFunction && m_isUpdateEnabled && (!m_pEntity->IsHidden() || (m_pEntity->GetFlags() & ENTITY_FLAG_UPDATE_HIDDEN) != 0))
 	{
@@ -547,6 +541,17 @@ uint64 CEntityComponentLuaScript::GetEventMask() const
 	}
 
 	return eventMask;
+}
+
+uint64 CEntityComponentLuaScript::GetEventMaskStatic()
+{
+	return BIT64(ENTITY_EVENT_ANIM_EVENT) | BIT64(ENTITY_EVENT_DONE) | BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_INIT)
+		| BIT64(ENTITY_EVENT_TIMER) | BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_ATTACH) | BIT64(ENTITY_EVENT_ATTACH_THIS)
+		| BIT64(ENTITY_EVENT_DETACH) | BIT64(ENTITY_EVENT_DETACH_THIS) | BIT64(ENTITY_EVENT_ENTERAREA) | BIT64(ENTITY_EVENT_MOVEINSIDEAREA)
+		| BIT64(ENTITY_EVENT_LEAVEAREA) | BIT64(ENTITY_EVENT_ENTERNEARAREA) | BIT64(ENTITY_EVENT_LEAVENEARAREA) | BIT64(ENTITY_EVENT_MOVENEARAREA)
+		| BIT64(ENTITY_EVENT_PHYS_BREAK) | BIT64(ENTITY_EVENT_AUDIO_TRIGGER_ENDED) | BIT64(ENTITY_EVENT_LEVEL_LOADED) | BIT64(ENTITY_EVENT_START_LEVEL)
+		| BIT64(ENTITY_EVENT_START_GAME) | BIT64(ENTITY_EVENT_PRE_SERIALIZE) | BIT64(ENTITY_EVENT_POST_SERIALIZE) | BIT64(ENTITY_EVENT_HIDE)
+		| BIT64(ENTITY_EVENT_UNHIDE) | BIT64(ENTITY_EVENT_XFORM_FINISHED_EDITOR) | BIT64(ENTITY_EVENT_COLLISION);;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -575,7 +580,7 @@ bool CEntityComponentLuaScript::GotoState(int stateId)
 	m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnEndState);
 
 	// If state changed kill all old timers.
-	m_pEntity->KillTimer(IEntity::KILL_ALL_TIMER);
+	KillAllTimers();
 
 	SEntityEvent levent;
 	levent.event = ENTITY_EVENT_LEAVE_SCRIPT_STATE;
@@ -705,7 +710,7 @@ void CEntityComponentLuaScript::GameSerialize(TSerialize ser)
 				if (m_currentStateId != currStateId)
 				{
 					// If state changed kill all old timers.
-					m_pEntity->KillTimer(IEntity::KILL_ALL_TIMER);
+					KillAllTimers();
 					m_currentStateId = currStateId;
 				}
 				if (ser.IsReading())

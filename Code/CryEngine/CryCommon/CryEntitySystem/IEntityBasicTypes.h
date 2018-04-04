@@ -46,10 +46,6 @@ enum EEntityEvent
 	//! Called when the entity is moved/scaled/rotated in the editor. Only send on mouseButtonUp (hence finished).
 	ENTITY_EVENT_XFORM_FINISHED_EDITOR,
 
-	//! Sent when the entity timer expire.
-	//! nParam[0] = TimerId, nParam[1] = milliseconds.
-	ENTITY_EVENT_TIMER,
-
 	//! Sent for unremovable entities when they are respawn.
 	ENTITY_EVENT_INIT,
 
@@ -185,7 +181,6 @@ enum EEntityEvent
 	ENTITY_EVENT_POST_SERIALIZE,
 
 	//! Called when the entity becomes invisible.
-	//! nParam[0] = if 1 physics will ignore this event
 	ENTITY_EVENT_INVISIBLE,
 
 	//! Called when the entity gets out of invisibility.
@@ -195,9 +190,6 @@ enum EEntityEvent
 	//! Called when the entity material change.
 	//! nParam[0] = pointer to the new IMaterial.
 	ENTITY_EVENT_MATERIAL,
-
-	//! Called when the entitys material layer mask changes.
-	ENTITY_EVENT_MATERIAL_LAYER,
 
 	//! Called when an animation event (placed on animations in editor) is encountered.
 	//! nParam[0] = AnimEventInstance* pEventParameters.
@@ -239,12 +231,6 @@ enum EEntityEvent
 	//! \see ENTITY_FLAG_LOCAL_PLAYER
 	ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER,
 
-	//! Called when the entity should be added to the radar.
-	ENTITY_EVENT_ADD_TO_RADAR,
-
-	//! Called when the entity should be removed from the radar.
-	ENTITY_EVENT_REMOVE_FROM_RADAR,
-
 	//! Called when the entity's name is set.
 	ENTITY_EVENT_SET_NAME,
 
@@ -266,7 +252,7 @@ enum EEntityEvent
 
 	//! Not an entity event, but signifies the last event that is sent via CEntity::SendEvent
 	//! Others are grouped in the entity system due to being sent by batch every frame.
-	ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL,
+	ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL = ENTITY_EVENT_SPAWNED_REMOTELY,
 
 	//! Called when the pre-physics update is done; fParam[0] is the frame time.
 	ENTITY_EVENT_PREPHYSICSUPDATE,
@@ -275,6 +261,10 @@ enum EEntityEvent
 	//! nParam[0] = pointer to SEntityUpdateContext structure.
 	//! fParam[0] = frame time
 	ENTITY_EVENT_UPDATE,
+
+	//! Sent when the entity timer expire.
+	//! nParam[0] = TimerId, nParam[1] = milliseconds.
+	ENTITY_EVENT_TIMER,
 
 	//! Last entity event in list.
 	ENTITY_EVENT_LAST,

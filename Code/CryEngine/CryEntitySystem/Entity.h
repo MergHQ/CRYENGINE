@@ -5,6 +5,10 @@
 #include <CryEntitySystem/IEntity.h>
 #include <CryCore/Containers/CryListenerSet.h>
 
+// Store listeners for each entity event in a constant array in CEntity
+// Improves SendEvent from o(log n) to O(1), but adds a lot of memory usage per entity.
+//#define USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
+
 //////////////////////////////////////////////////////////////////////////
 // This is the order in which the proxies are serialized
 const static EEntityProxy ProxySerializationOrder[] = {
@@ -63,30 +67,32 @@ class CEntity : public IEntity
 public:
 	enum class EInternalFlag : uint32
 	{
-		Initialized         = 1 << 0,
-		InActiveList        = 1 << 1,
-		Hidden              = 1 << 2,
-		Invisible           = 1 << 3,
-		LoadedFromLevelFile = 1 << 4,
-		SelectedInEditor    = 1 << 5,
-		HighlightedInEditor = 1 << 6,
+		Initialized            = 1 << 0,
+		InActiveList           = 1 << 1,
+		Hidden                 = 1 << 2,
+		Invisible              = 1 << 3,
+		LoadedFromLevelFile    = 1 << 4,
+		SelectedInEditor       = 1 << 5,
+		HighlightedInEditor    = 1 << 6,
+		//! Components known at load time were allocated in one contiguous chunk of memory along with the entity
+		PreallocatedComponents = 1 << 7,
 
 		// Start CEntityRender entries
 		// Bounding box should not be recalculated
-		FixedBounds  = 1 << 7,
-		ValidBounds  = 1 << 8,
-		HasParticles = 1 << 9,
+		FixedBounds  = 1 << 8,
+		ValidBounds  = 1 << 9,
+		HasParticles = 1 << 10,
 
 		// Start CEntityPhysics entries
-		FirstPhysicsFlag                   = 1 << 10,
+		FirstPhysicsFlag                   = 1 << 11,
 		PhysicsIgnoreTransformEvent        = FirstPhysicsFlag,
-		PhysicsDisabled                    = 1 << 11,
-		PhysicsSyncCharacter               = 1 << 12,
-		PhysicsHasCharacter                = 1 << 13,
-		PhysicsAwakeOnRender               = 1 << 14,
-		PhysicsAttachClothOnRender         = 1 << 15,
-		PhysicsDisableNetworkSerialization = 1 << 16,
-		PhysicsRemoved                     = 1 << 17,
+		PhysicsDisabled                    = 1 << 12,
+		PhysicsSyncCharacter               = 1 << 13,
+		PhysicsHasCharacter                = 1 << 14,
+		PhysicsAwakeOnRender               = 1 << 15,
+		PhysicsAttachClothOnRender         = 1 << 16,
+		PhysicsDisableNetworkSerialization = 1 << 17,
+		PhysicsRemoved                     = 1 << 18,
 		LastPhysicsFlag                    = PhysicsRemoved
 	};
 
@@ -189,8 +195,9 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual int   SetTimer(int nTimerId, int nMilliSeconds) final;
-	virtual void  KillTimer(int nTimerId) final;
+	virtual void SetTimer(ISimpleEntityEventListener* pListener, EntityId id, const CryGUID& componentInstanceGUID, uint8 timerId, int timeInMilliseconds) final;
+	virtual void KillTimer(ISimpleEntityEventListener* pListener, uint8 timerId) final;
+	virtual void KillAllTimers(ISimpleEntityEventListener* pListener) final;
 
 	virtual void  Hide(bool bHide, EEntityHideFlags hideFlags = ENTITY_HIDE_NO_FLAG) final;
 	void          SendHideEvent(bool bHide, EEntityHideFlags hideFlags);
@@ -387,8 +394,8 @@ public:
 	virtual void                  GetEditorObjectInfo(bool& bSelected, bool& bHighlighted) const final override;
 	virtual void                  SetEditorObjectInfo(bool bSelected, bool bHighlighted) final override;
 
-	virtual Schematyc::IObject*   GetSchematycObject() const final   { return m_pSchematycObject; };
-	virtual void                  OnSchematycObjectDestroyed() final { m_pSchematycObject = nullptr; }
+	virtual Schematyc::IObject*   GetSchematycObject() const final   { return m_pLegacySchematycData != nullptr ? m_pLegacySchematycData->pSchematycObject : nullptr; };
+	virtual void                  OnSchematycObjectDestroyed() final { m_pLegacySchematycData != nullptr ? m_pLegacySchematycData->pSchematycObject = nullptr : nullptr; }
 
 	virtual EEntitySimulationMode GetSimulationMode() const final    { return m_simulationMode; };
 	//~IEntity
@@ -423,7 +430,6 @@ protected:
 	// Attachment.
 	//////////////////////////////////////////////////////////////////////////
 	void OnRellocate(EntityTransformationFlagsMask transformReasons);
-	void LogEvent(const SEntityEvent& event, CTimeValue dt);
 	//////////////////////////////////////////////////////////////////////////
 
 private:
@@ -514,11 +520,18 @@ private:
 	// For tracking entity inside proximity trigger system.
 	SProximityElement* m_pProximityEntity = nullptr;
 
-	//! Schematyc object associated with this entity.
-	Schematyc::IObject* m_pSchematycObject = nullptr;
+	struct SLegacySchematycData
+	{
+		~SLegacySchematycData();
 
-	//! Public Properties of the associated Schematyc object
-	Schematyc::IObjectPropertiesPtr m_pSchematycProperties = nullptr;
+		//! Schematyc object associated with this entity.
+		Schematyc::IObject* pSchematycObject = nullptr;
+
+		//! Public Properties of the associated Schematyc object
+		Schematyc::IObjectPropertiesPtr pSchematycProperties = nullptr;
+	};
+
+	std::unique_ptr<SLegacySchematycData> m_pLegacySchematycData;
 
 	struct SExternalEventListener final : public ISimpleEntityEventListener
 	{
@@ -533,7 +546,7 @@ private:
 		CEntity*              m_pEntity;
 	};
 
-	std::vector<std::unique_ptr<SExternalEventListener>> m_externalEventListeners;
+	DynArray<std::unique_ptr<SExternalEventListener>> m_externalEventListeners;
 	// Mask of entity events that are present in m_simpleEventListeners, avoiding find operation every time
 	uint64 m_eventListenerMask = 0;
 
@@ -542,9 +555,12 @@ private:
 		ISimpleEntityEventListener*              pListener;
 		IEntityComponent::ComponentEventPriority eventPriority;
 	};
-
+	
+	// Container structure for listeners to one individual entity event
+	// The size of this struct should be kept to a minimum (currently 16 bytes) as we keep an array containing a set for each entity event in CEntity.
 	struct SEventListenerSet
 	{
+#ifndef USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
 		SEventListenerSet(EEntityEvent entityEvent) : event(entityEvent), firstUnsortedListenerIndex(-1) {}
 		SEventListenerSet(const SEventListenerSet&) = delete;
 		SEventListenerSet& operator=(const SEventListenerSet&) = delete;
@@ -554,12 +570,16 @@ private:
 			, firstUnsortedListenerIndex(other.firstUnsortedListenerIndex) {}
 		SEventListenerSet& operator=(SEventListenerSet&&) = default;
 
-		EEntityEvent                event;
-		std::vector<SEventListener> listeners;
+		EEntityEvent event;
+#endif
+
+		using Index = int8;
+
+		DynArray<SEventListener> listeners;
 		// Index of the listener we pushed back while iterating
 		// Allows us to skip going through a lot of possibly unneeded listeners
 		// Negative if we are sorted
-		int16 firstUnsortedListenerIndex;
+		Index firstUnsortedListenerIndex = -1;
 
 		bool IsEmpty() const  { return listeners.empty(); }
 		// Whether or not the entire collection of listeners is sorted
@@ -571,24 +591,26 @@ private:
 			// Sorted insertion based on the requested event priority
 			auto upperBoundIt = std::upper_bound(listeners.begin(), listeners.end(), listener, [](const SEventListener& a, const SEventListener& b) -> bool { return a.eventPriority < b.eventPriority; });
 			listeners.emplace(upperBoundIt, listener);
+			CRY_ASSERT_MESSAGE(listeners.size() <= std::numeric_limits<Index>::max(), "Max entity event listener count exceeded!");
 		}
 
 		void UnsortedInsert(SEventListener& listener)
 		{
 			if (IsSorted())
 			{
-				firstUnsortedListenerIndex = static_cast<uint16>(listeners.size());
+				firstUnsortedListenerIndex = static_cast<Index>(listeners.size());
 			}
 
 			// Adding of event listener while we are iterating, we cannot sort here so push to back and require sort when iteration is done
-			listeners.push_back(listener);
+			listeners.emplace_back(listener);
+			CRY_ASSERT_MESSAGE(listeners.size() <= std::numeric_limits<Index>::max(), "Max entity event listener count exceeded!");
 		}
 
-		void InvalidateElement(std::vector<SEventListener>::iterator listenerIt)
+		void InvalidateElement(SEventListener* pElement)
 		{
-			listenerIt->pListener = nullptr;
+			pElement->pListener = nullptr;
 
-			uint16 elementIndex = static_cast<uint16>(std::distance(listeners.begin(), listenerIt));
+			Index elementIndex = static_cast<Index>(std::distance(listeners.begin(), pElement));
 
 			if (elementIndex < firstUnsortedListenerIndex)
 			{
@@ -599,34 +621,33 @@ private:
 		// Sort any potentially unsorted elements, does not affect the rest of the container as it is assumed sorted
 		void SortUnsortedElements()
 		{
-			uint16 numUnsortedListeners = static_cast<uint16>(listeners.size() - firstUnsortedListenerIndex);
+			CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
+
+			int numUnsortedListeners = static_cast<int>(listeners.size() - firstUnsortedListenerIndex);
 
 			while (numUnsortedListeners > 0)
 			{
 				// Temporarily remove item for sorting
-				auto listenerIt = --listeners.end();
 				numUnsortedListeners--;
 
-				if (listenerIt->pListener != nullptr)
+				if (listeners.back().pListener != nullptr)
 				{
-					SEventListener eventListener = *listenerIt;
-					listeners.erase(listenerIt);
+					SEventListener listener = listeners.back();
+					listeners.pop_back();
 
 					// Sorted insertion based on the requested event priority
-					auto upperBoundIt = std::upper_bound(listeners.begin(), listeners.end() - numUnsortedListeners, eventListener, [](const SEventListener& a, const SEventListener& b) -> bool { return a.eventPriority < b.eventPriority; });
-					listeners.insert(upperBoundIt, eventListener);
+					auto upperBoundIt = std::upper_bound(listeners.begin(), listeners.end() - numUnsortedListeners, listener, [](const SEventListener& a, const SEventListener& b) -> bool { return a.eventPriority < b.eventPriority; });
+					listeners.insert(upperBoundIt, listener);
 				}
 				else
 				{
-					listeners.erase(listenerIt);
+					listeners.pop_back();
 				}
 			}
 
 			OnSorted();
 		}
 	};
-
-	std::vector<std::unique_ptr<SEventListenerSet>> m_simpleEventListeners;
 
 	// NetEntity stores the network serialization configuration.
 	std::unique_ptr<INetEntity> m_pNetEntity;
@@ -666,4 +687,10 @@ private:
 
 	// Array of components, linear search in a small array is almost always faster then a more complicated set or map containers.
 	CEntityComponentsVector m_components;
+
+#ifdef USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
+	std::array<SEventListenerSet, ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL + 1> m_simpleEventListeners;
+#else
+	DynArray<std::unique_ptr<SEventListenerSet>> m_simpleEventListeners;
+#endif
 };

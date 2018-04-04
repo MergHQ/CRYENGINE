@@ -21,19 +21,14 @@ struct IRenderNode;
 //    It can contain multiple sub object slots that can have their own relative transformation, and
 //    each slot can represent specific renderable node (IStatObj,ICharacterInstance,etc..)
 ///////////////////////////////////////////////////////////// /////////////
-class CEntityRender final : public ISimpleEntityEventListener
+class CEntityRender
 {
 public:
 	CEntityRender();
 	virtual ~CEntityRender();
 
-	// ISimpleEntityEventListener
-	virtual void ProcessEvent(const SEntityEvent& event) override;
-	// ~ISimpleEntityEventListener
-
 	// Must be called after constructor.
 	void PostInit();
-	void RegisterEventListeners(IEntityComponent::ComponentEventPriority priority);
 
 	void Serialize(TSerialize ser);
 	bool NeedNetworkSerialize();
@@ -132,9 +127,13 @@ public:
 	bool IsRendered() const;
 	void PreviewRender(SEntityPreviewContext& context);
 
+	void TryInvalidateParticleEmitters();
+
 private:
 	void ComputeLocalBounds(bool bForce = false);
-	void OnEntityXForm(int nWhyFlags);
+	void OnEntityXForm(EntityTransformationFlagsMask transformReasons);
+	void OnAttachedToParent() { OnEntityXForm(EntityTransformationFlagsMask()); }
+	void OnDetachedFromParent() { OnEntityXForm(EntityTransformationFlagsMask()); }
 
 	// Get existing slot or make a new slot if not exist.
 	// Is nSlot is negative will allocate a new available slot and return it Index in nSlot parameter.

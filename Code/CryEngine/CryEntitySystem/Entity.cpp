@@ -69,8 +69,7 @@ void CEntity::PreInit(SEntitySpawnParams& params)
 
 	//////////////////////////////////////////////////////////////////////////
 	// Check if entity needs to create a script proxy.
-	IEntityScript* pEntityScript = m_pClass->GetIEntityScript();
-	if (pEntityScript)
+	if (IEntityScript* pEntityScript = m_pClass->GetIEntityScript())
 	{
 		// Creates a script proxy.
 		CEntityScript* pCEntityScript = static_cast<CEntityScript*>(pEntityScript);
@@ -118,50 +117,61 @@ bool CEntity::SendEvent(const SEntityEvent& event)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
-#ifndef _RELEASE
+#ifdef ENABLE_PROFILING_CODE
 	CTimeValue timeBeforeEventSend;
-	if (CVar::es_DebugEvents)
+	if (CVar::es_profileComponentUpdates != 0)
 	{
 		timeBeforeEventSend = gEnv->pTimer->GetAsyncTime();
+
+		g_pIEntitySystem->m_profiledEvents[event.event].numEvents++;
 	}
 #endif
 
 	if (!IsGarbage() && (m_eventListenerMask & ENTITY_EVENT_BIT(event.event)) != 0)
 	{
-		auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), SEventListenerSet(event.event), [](const std::unique_ptr<SEventListenerSet>& a, const SEventListenerSet& b) -> bool { return a->event < b.event; });
+		CRY_ASSERT_MESSAGE(event.event <= ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL, "Performance critical events should be handled in CEntitySystem!");
 
-		if (it != m_simpleEventListeners.end() && it->get()->event == event.event)
+#ifdef USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
+		SEventListenerSet& listenerSet = m_simpleEventListeners[event.event];
+#else
+		auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), event.event, [](const std::unique_ptr<SEventListenerSet>& a, EEntityEvent event) -> bool { return a->event < event; });
+		CRY_ASSERT_MESSAGE(it != m_simpleEventListeners.end() && it->get()->event == event.event, "Listener must be contained in storage if m_eventListenerMask is set!");
+
+		SEventListenerSet& listenerSet = *it->get();
+#endif
+
+		m_sendEventRecursionCount++;
+
+		// Numbered iteration as listeners may be invalidated (set to null) during iteration
+		// Sorting is not affected while iterating, so this is safe.
+		for (int i = 0; i < listenerSet.listeners.size(); ++i)
 		{
-			SEventListenerSet& listenerSet = *it->get();
-
-			m_sendEventRecursionCount++;
-
-			// Numbered iteration as listeners may be invalidated (set to null) during iteration
-			// Sorting is not affected while iterating, so this is safe.
-			for (size_t i = 0; i < listenerSet.listeners.size(); ++i)
+			if (listenerSet.listeners[i].pListener != nullptr)
 			{
-				if (listenerSet.listeners[i].pListener != nullptr)
-				{
-					listenerSet.listeners[i].pListener->ProcessEvent(event);
-				}
-			}
-
-			// Sort vector and remove invalidated elements when we are done recursing
-			if (--m_sendEventRecursionCount == 0 && !listenerSet.IsSorted())
-			{
-				listenerSet.SortUnsortedElements();
-				if (listenerSet.IsEmpty())
-				{
-					m_eventListenerMask &= ~ENTITY_EVENT_BIT(event.event);
-				}
+				listenerSet.listeners[i].pListener->ProcessEvent(event);
 			}
 		}
 
-#ifndef _RELEASE
-		if (CVar::es_DebugEvents)
+		// Sort vector and remove invalidated elements when we are done recursing
+		if (--m_sendEventRecursionCount == 0 && !listenerSet.IsSorted())
 		{
-			CTimeValue timeAfterEventSent = gEnv->pTimer->GetAsyncTime();
-			LogEvent(event, timeAfterEventSent - timeBeforeEventSend);
+			listenerSet.SortUnsortedElements();
+			if (listenerSet.IsEmpty())
+			{
+				m_eventListenerMask &= ~ENTITY_EVENT_BIT(event.event);
+			}
+		}
+
+#ifdef ENABLE_PROFILING_CODE
+		const CTimeValue timeAfterEventSent = gEnv->pTimer->GetAsyncTime();
+		const float eventCostMs = (timeAfterEventSent - timeBeforeEventSend).GetMilliSeconds();
+
+		g_pIEntitySystem->m_profiledEvents[event.event].totalCostMs += eventCostMs;
+
+		if (eventCostMs > g_pIEntitySystem->m_profiledEvents[event.event].mostExpensiveEntityCostMs)
+		{
+			g_pIEntitySystem->m_profiledEvents[event.event].mostExpensiveEntityCostMs = eventCostMs;
+			g_pIEntitySystem->m_profiledEvents[event.event].mostExpensiveEntity = m_id;
 		}
 #endif
 
@@ -171,15 +181,19 @@ bool CEntity::SendEvent(const SEntityEvent& event)
 	return false;
 }
 
+#define FOR_ENABLED_ENTITY_EVENTS_IN_MASK(mask) \
+	const uint8 firstEventIndex = static_cast<uint8>(countTrailingZeros64(mask)); /* Index of the first set bit in mask */ \
+	const uint8 lastUsedEventIndex = static_cast<uint8>(std::numeric_limits<EntityEventMask>::digits - static_cast<uint8>(countLeadingZeros64(mask)));  /* Index of the last set bit in mask */ \
+	const uint8 lastEventIndex = min(lastUsedEventIndex, static_cast<uint8>(ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL)); /* Index of the last usable set bit in mask, perf critical events don't matter */ \
+	for (uint8 i = firstEventIndex; i < lastEventIndex; i += static_cast<uint8>(countTrailingZeros64(mask >> (i + 1)) + 1)) /* Iterate through the set events, skip past segments that are set to 0 - faster than check inside since majority of events will have the majority of mask bits set to 0 */ \
+	
+
 /////////////////////////////////////////////////////////////////////////
 void CEntity::AddSimpleEventListeners(EntityEventMask events, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority)
 {
-	for (uint64 i = countTrailingZeros64(events), n = std::numeric_limits<EntityEventMask>::digits - countLeadingZeros64(events); i < n; ++i)
+	FOR_ENABLED_ENTITY_EVENTS_IN_MASK(events)
 	{
-		if ((events & (1ull << i)) != 0)
-		{
-			AddSimpleEventListener((EEntityEvent)i, pListener, priority);
-		}
+		AddSimpleEventListener((EEntityEvent)i, pListener, priority);
 	}
 }
 
@@ -200,17 +214,31 @@ void CEntity::ClearComponentEventListeners()
 /////////////////////////////////////////////////////////////////////////
 void CEntity::AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
+	CRY_ASSERT_MESSAGE(event <= ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL, "Performance critical events should not add listeners, as they are sent by the entity system and not entity instances");
+
 	SEventListener eventListener = SEventListener {
 		pListener, priority
 	};
 
+#ifdef ENABLE_PROFILING_CODE
+	g_pIEntitySystem->m_profiledEvents[event].numListenerAdditions++;
+#endif
+
+#ifdef USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
+	SEventListenerSet& listenerSet = m_simpleEventListeners[event];
+#endif
+
 	// Check if a collection of listeners exists for the event
 	if ((m_eventListenerMask & ENTITY_EVENT_BIT(event)) != 0)
 	{
-		auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), SEventListenerSet(event), [](const std::unique_ptr<SEventListenerSet>& a, const SEventListenerSet& b) -> bool { return a->event < b.event; });
+#ifndef USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
+		auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), event, [](const std::unique_ptr<SEventListenerSet>& a, EEntityEvent event) -> bool { return a->event < event; });
 		CRY_ASSERT(it != m_simpleEventListeners.end() && it->get()->event == event);
 
 		SEventListenerSet& listenerSet = *it->get();
+#endif
+
 		if (m_sendEventRecursionCount > 0)
 		{
 			listenerSet.UnsortedInsert(eventListener);
@@ -223,10 +251,12 @@ void CEntity::AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListe
 	}
 	else
 	{
-		auto upperBoundIt = std::upper_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), SEventListenerSet(event), [](const SEventListenerSet& a, const std::unique_ptr<SEventListenerSet>& b) -> bool { return a.event < b->event; });
+#ifndef USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
+		auto upperBoundIt = std::upper_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), event, [](EEntityEvent event, const std::unique_ptr<SEventListenerSet>& b) -> bool { return event < b->event; });
 		auto it = m_simpleEventListeners.emplace(upperBoundIt, stl::make_unique<SEventListenerSet>(event));
 
 		SEventListenerSet& listenerSet = *it->get();
+#endif
 
 		// Event listener was not present, in this case it is safe to always create
 		m_eventListenerMask |= ENTITY_EVENT_BIT(event);
@@ -237,14 +267,25 @@ void CEntity::AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListe
 /////////////////////////////////////////////////////////////////////////
 void CEntity::RemoveSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
+	CRY_ASSERT_MESSAGE(event <= ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL, "Performance critical events should not add listeners, as they are sent by the entity system and not entity instances");
+
+#ifdef ENABLE_PROFILING_CODE
+	g_pIEntitySystem->m_profiledEvents[event].numListenerRemovals++;
+#endif
+
 	if ((m_eventListenerMask & ENTITY_EVENT_BIT(event)) != 0)
 	{
-		auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), SEventListenerSet(event), [](const std::unique_ptr<SEventListenerSet>& a, const SEventListenerSet& b) -> bool { return a->event < b.event; });
+#ifdef USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
+		SEventListenerSet& listenerSet = m_simpleEventListeners[event];
+#else
+		auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), event, [](const std::unique_ptr<SEventListenerSet>& a, EEntityEvent event) -> bool { return a->event < event; });
 		CRY_ASSERT(it != m_simpleEventListeners.end() && it->get()->event == event);
 
 		SEventListenerSet& listenerSet = *it->get();
+#endif
 
-		for (auto listenerIt = listenerSet.listeners.begin(), end = listenerSet.listeners.end(); listenerIt != end; ++listenerIt)
+		for (decltype(listenerSet.listeners)::iterator listenerIt = listenerSet.listeners.begin(), end = listenerSet.listeners.end(); listenerIt != end; ++listenerIt)
 		{
 			if (listenerIt->pListener == pListener)
 			{
@@ -259,7 +300,13 @@ void CEntity::RemoveSimpleEventListener(EEntityEvent event, ISimpleEntityEventLi
 
 					if (listenerSet.IsEmpty())
 					{
+#ifdef USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
+						// Consider the listener set sorted since it's now empty
+						listenerSet.OnSorted();
+#else
 						m_simpleEventListeners.erase(it);
+#endif
+
 						m_eventListenerMask &= ~ENTITY_EVENT_BIT(event);
 					}
 				}
@@ -338,11 +385,6 @@ bool CEntity::Init(SEntitySpawnParams& params)
 		SerializeXML(params.entityNode, true, false);
 	}
 
-	// Our internal systems should receive events first
-	IEntityComponent::ComponentEventPriority eventPriority = std::numeric_limits<IEntityComponent::ComponentEventPriority>::min();
-	m_render.RegisterEventListeners(eventPriority);
-	m_physics.RegisterEventListeners(eventPriority);
-
 	SEntityEvent entevnt;
 	entevnt.event = ENTITY_EVENT_INIT;
 	SendEvent(entevnt);
@@ -406,24 +448,31 @@ void CEntity::ShutDown()
 		gEnv->pAISystem->GetSmartObjectManager()->RemoveSmartObject(this);
 
 	m_externalEventListeners.clear();
+
+#ifndef USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
 	m_simpleEventListeners.clear();
+#endif
+
 	m_eventListenerMask = 0;
 
-	g_pIEntitySystem->RemoveTimerEvent(GetId(), -1);
+	g_pIEntitySystem->RemoveAllTimerEvents(GetId());
 	g_pIEntitySystem->RemoveEntityFromLayers(GetId());
 
 	DetachAll();
 	DetachThis();
 
-	if (m_pSchematycObject)
-	{
-		gEnv->pSchematyc->DestroyObject(m_pSchematycObject->GetId());
-		m_pSchematycObject = nullptr;
-		m_pSchematycProperties.reset();
-	}
+	m_pLegacySchematycData.reset();
 
 	// ShutDown all components.
 	m_components.Clear();
+}
+
+CEntity::SLegacySchematycData::~SLegacySchematycData()
+{
+	if (pSchematycObject != nullptr)
+	{
+		gEnv->pSchematyc->DestroyObject(pSchematycObject->GetId());
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -505,10 +554,14 @@ void CEntity::AttachChild(IEntity* pChildEntity, const SChildAttachParams& attac
 	else
 		pChild->InvalidateTM(ENTITY_XFORM_FROM_PARENT);
 
+	m_physics.OnChildEntityAttached(pChild->GetId());
+
 	// Send attach event.
 	SEntityEvent event(ENTITY_EVENT_ATTACH);
 	event.nParam[0] = pChild->GetId();
 	SendEvent(event);
+
+	pChild->m_render.OnAttachedToParent();
 
 	// Send ATTACH_THIS event to child
 	SEntityEvent eventThis(ENTITY_EVENT_ATTACH_THIS);
@@ -560,10 +613,14 @@ void CEntity::DetachThis(AttachmentFlagsType attachmentFlags, EntityTransformati
 			InvalidateTM({ static_cast<EEntityXFormFlags>(transformReasons), ENTITY_XFORM_FROM_PARENT });
 		}
 
+		pParent->m_physics.OnChildEntityDetached(GetId());
+
 		// Send detach event to parent.
 		SEntityEvent event(ENTITY_EVENT_DETACH);
 		event.nParam[0] = GetId();
 		pParent->SendEvent(event);
+
+		m_render.OnDetachedFromParent();
 
 		// Send DETACH_THIS event to child
 		SEntityEvent eventThis(ENTITY_EVENT_DETACH_THIS);
@@ -685,12 +742,12 @@ void CEntity::AddEventListener(EEntityEvent event, IEntityEventListener* pListen
 //////////////////////////////////////////////////////////////////////////
 void CEntity::RemoveEventListener(EEntityEvent event, IEntityEventListener* pListener)
 {
-	for (auto it = m_externalEventListeners.begin(), end = m_externalEventListeners.end(); it != end; ++it)
+	for(size_t i = 0, size = m_externalEventListeners.size(); i < size; ++i)
 	{
-		if (it->get()->m_pListener == pListener)
+		if (m_externalEventListeners[i]->m_pListener == pListener)
 		{
-			RemoveSimpleEventListener(event, it->get());
-			m_externalEventListeners.erase(it);
+			RemoveSimpleEventListener(event, m_externalEventListeners[i].get());
+			m_externalEventListeners.erase(i);
 			break;
 		}
 	}
@@ -807,6 +864,9 @@ void CEntity::InvalidateTM(EntityTransformationFlagsMask transformReasons, bool 
 		{
 			m_pNetEntity->OnNetworkedEntityTransformChanged(transformReasons);
 		}
+
+		m_render.OnEntityXForm(transformReasons);
+		m_physics.OnEntityXForm(transformReasons);
 
 		SEntityEvent event(ENTITY_EVENT_XFORM);
 		event.nParam[0] = transformReasons.UnderlyingValue();
@@ -985,33 +1045,41 @@ void CEntity::OnComponentMaskChanged(const SEntityComponentRecord& componentReco
 
 void CEntity::UpdateComponentEventListeners(const SEntityComponentRecord& componentRecord, EntityEventMask prevMask)
 {
-	const bool bWantsUpdates = (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE)) != 0;
-	const bool bHadUpdates = (prevMask & BIT64(ENTITY_EVENT_UPDATE)) != 0;
+	const bool wantsUpdates = (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE)) != 0;
+	const bool hadUpdates = (prevMask & BIT64(ENTITY_EVENT_UPDATE)) != 0;
 
-	if (bWantsUpdates && !bHadUpdates)
+	if (wantsUpdates && !hadUpdates)
 	{
 		g_pIEntitySystem->EnableComponentUpdates(componentRecord.pComponent.get(), true);
 	}
-	else if (!bWantsUpdates && bHadUpdates)
+	else if (!wantsUpdates && hadUpdates)
 	{
 		g_pIEntitySystem->EnableComponentUpdates(componentRecord.pComponent.get(), false);
 	}
 
-	const bool bWantsPrePhysicsUpdates = (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)) != 0;
-	const bool bHadPrePhysicsUpdates = (prevMask & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)) != 0;
+	const bool wantsPrePhysicsUpdates = (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)) != 0;
+	const bool hadPrePhysicsUpdates = (prevMask & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)) != 0;
 
-	if (bWantsPrePhysicsUpdates && !bHadPrePhysicsUpdates)
+	if (wantsPrePhysicsUpdates && !hadPrePhysicsUpdates)
 	{
 		g_pIEntitySystem->EnableComponentPrePhysicsUpdates(componentRecord.pComponent.get(), true);
 	}
-	else if (!bWantsPrePhysicsUpdates && bHadPrePhysicsUpdates)
+	else if (!wantsPrePhysicsUpdates && hadPrePhysicsUpdates)
 	{
 		g_pIEntitySystem->EnableComponentPrePhysicsUpdates(componentRecord.pComponent.get(), false);
 	}
 
+	const bool wantsTimerEvents = (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_TIMER)) != 0;
+	const bool hadTimerEvents = (prevMask & BIT64(ENTITY_EVENT_TIMER)) != 0;
+
+	if (hadTimerEvents && !wantsTimerEvents)
+	{
+		g_pIEntitySystem->RemoveAllTimerEvents(componentRecord.pComponent.get());
+	}
+
 	EntityEventMask maskDifference = componentRecord.registeredEventsMask ^ prevMask;
 
-	for (EntityEventMask i = countTrailingZeros64(maskDifference), n = std::numeric_limits<EntityEventMask>::digits - countLeadingZeros64(maskDifference); i < n; ++i)
+	FOR_ENABLED_ENTITY_EVENTS_IN_MASK(maskDifference)
 	{
 		bool hasEvent = (componentRecord.registeredEventsMask & (1ull << i)) != 0;
 		bool hadEvent = (prevMask & (1ull << i)) != 0;
@@ -1028,33 +1096,28 @@ void CEntity::UpdateComponentEventListeners(const SEntityComponentRecord& compon
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CEntity::SetTimer(int nTimerId, int nMilliSeconds)
+void CEntity::SetTimer(ISimpleEntityEventListener* pListener, EntityId id, const CryGUID& componentInstanceGUID, uint8 timerId, int timeInMilliseconds)
 {
-	if (nTimerId == IEntity::CREATE_NEW_UNIQUE_TIMER_ID)  // generate a new entity-unique timerId
-	{
-		static uint16 uniqueTimerId = 0;
-		while (g_pIEntitySystem->HasTimerEvent(m_id, uniqueTimerId))
-			++uniqueTimerId;
-		nTimerId = uniqueTimerId;
-	}
-
-	KillTimer(nTimerId);
+	KillTimer(pListener, timerId);
 	SEntityTimerEvent timeEvent;
-	timeEvent.entityId = m_id;
-	timeEvent.nTimerId = nTimerId;
-	timeEvent.nMilliSeconds = nMilliSeconds;
+	timeEvent.pListener = pListener;
+	timeEvent.entityId = id;
+	timeEvent.componentInstanceGUID = componentInstanceGUID;
+	timeEvent.nTimerId = timerId;
+	timeEvent.nMilliSeconds = timeInMilliseconds;
 	g_pIEntitySystem->AddTimerEvent(timeEvent);
-
-	return timeEvent.nTimerId;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::KillTimer(int nTimerId)
+void CEntity::KillTimer(ISimpleEntityEventListener* pListener, uint8 timerId)
 {
-	if (nTimerId != IEntity::CREATE_NEW_UNIQUE_TIMER_ID)
-	{
-		g_pIEntitySystem->RemoveTimerEvent(m_id, nTimerId);
-	}
+	g_pIEntitySystem->RemoveTimerEvent(pListener, timerId);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::KillAllTimers(ISimpleEntityEventListener* pListener)
+{
+	g_pIEntitySystem->RemoveAllTimerEvents(pListener);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1074,6 +1137,17 @@ void CEntity::Hide(bool hide, EEntityHideFlags hideFlags)
 //////////////////////////////////////////////////////////////////////////
 void CEntity::SendHideEvent(bool bHide, EEntityHideFlags hideFlags)
 {
+	m_render.UpdateRenderNodes();
+	if (bHide)
+	{
+		m_physics.OnEntityHiddenOrMadeInvisible();
+	}
+	else
+	{
+		m_physics.OnEntityUnhiddenOrMadeVisible();
+		m_physics.OnEntityUnhidden();
+	}
+
 	SEntityEvent e(bHide ? ENTITY_EVENT_HIDE : ENTITY_EVENT_UNHIDE);
 	e.nParam[0] = hideFlags;
 	SendEvent(e);
@@ -1095,16 +1169,18 @@ void CEntity::Invisible(bool invisible)
 	{
 		SetInternalFlag(EInternalFlag::Invisible, invisible);
 
+		m_render.UpdateRenderNodes();
 		if (invisible)
 		{
-			SEntityEvent e(ENTITY_EVENT_INVISIBLE);
-			SendEvent(e);
+			m_physics.OnEntityHiddenOrMadeInvisible();
 		}
 		else
 		{
-			SEntityEvent e(ENTITY_EVENT_VISIBLE);
-			SendEvent(e);
+			m_physics.OnEntityUnhiddenOrMadeVisible();
 		}
+
+		SEntityEvent e(invisible ? ENTITY_EVENT_INVISIBLE : ENTITY_EVENT_VISIBLE);
+		SendEvent(e);
 
 		// Propagate invisible flag to the child entities.
 		for (int i = 0; i < (int)m_hierarchy.children.size(); i++)
@@ -1198,11 +1274,11 @@ void CEntity::LoadComponent(Serialization::IArchive& archive, uint8*& pComponent
 	std::shared_ptr<IEntityComponent> pComponent;
 	IEntityComponent* pParentComponent = nullptr;
 
-	bool bValidInstanceGUID = !componentGUID.IsNull() && (m_flagsExtended & ENTITY_FLAG_EXTENDED_CLONED) == 0;
+	bool bValidInstanceGUID = !componentGUID.IsNull() && (m_flags & ENTITY_FLAG_CLONED) == 0;
 	if (bValidInstanceGUID)
 	{
 		// Find component in the list of the existing entity components
-		for (auto& record : m_components.GetVector())
+		for (const SEntityComponentRecord& record : m_components.GetVector())
 		{
 			if (record.pComponent != nullptr && record.pComponent->GetGUID() == componentGUID)
 			{
@@ -1249,11 +1325,11 @@ void CEntity::LoadComponent(Serialization::IArchive& archive, uint8*& pComponent
 
 	IEntityComponent::SInitParams initParams(this, componentGUID, name, &componentClassDesc, componentFlags, pParentComponent, pTransform);
 
-	CRY_ASSERT((m_flags & ENTITY_FLAG_PREALLOCATED_COMPONENTS) == 0 || pComponent == nullptr);
+	CRY_ASSERT(!HasInternalFlag(EInternalFlag::PreallocatedComponents) || pComponent == nullptr);
 
 	if (!pComponent)
 	{
-		if ((m_flags & ENTITY_FLAG_PREALLOCATED_COMPONENTS) != 0)
+		if (HasInternalFlag(EInternalFlag::PreallocatedComponents))
 		{
 			pComponent = pEnvComponent->CreateFromBuffer(pComponentBuffer);
 
@@ -1275,7 +1351,7 @@ void CEntity::LoadComponent(Serialization::IArchive& archive, uint8*& pComponent
 		// Apply loaded properties values on the members of the component
 		//classProperties.Apply(componentClassDesc, pComponent.get());
 		Schematyc::Utils::SerializeClass(archive, componentClassDesc, pComponent.get(), "properties", "properties");
-
+		
 		// Add the component to the entity
 		AddComponentInternal(pComponent, typeGUID, &initParams, &componentClassDesc);
 	}
@@ -1563,11 +1639,11 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 			return true;
 		});
 
-		if (m_pSchematycProperties && !bExcludeSchematycProperties)
+		if (m_pLegacySchematycData != nullptr && m_pLegacySchematycData->pSchematycProperties != nullptr && !bExcludeSchematycProperties)
 		{
 			// Save Schematyc object properties from the Entity Node XML data
 			XmlNodeRef schematycPropsNode = node->newChild("SchematycProperties");
-			Serialization::SaveXmlNode(schematycPropsNode, *m_pSchematycProperties.get());
+			Serialization::SaveXmlNode(schematycPropsNode, *m_pLegacySchematycData->pSchematycProperties.get());
 		}
 	}
 }
@@ -1815,7 +1891,7 @@ void CEntity::GetComponentsByTypeId(const CryInterfaceID& typeId, DynArray<IEnti
 //////////////////////////////////////////////////////////////////////////
 IEntityComponent* CEntity::GetComponentByGUID(const CryGUID& guid) const
 {
-	for (auto& record : m_components.GetVector())
+	for (const SEntityComponentRecord& record : m_components.GetVector())
 	{
 		if (record.pComponent != nullptr && record.pComponent->GetGUID() == guid)
 		{
@@ -1893,7 +1969,7 @@ IEntityComponent* CEntity::QueryComponentByInterfaceID(const CryInterfaceID& int
 //////////////////////////////////////////////////////////////////////////
 void CEntity::GetComponents(DynArray<IEntityComponent*>& components) const
 {
-	auto& vec = m_components.GetVector();
+	const std::vector<SEntityComponentRecord>& vec = m_components.GetVector();
 	components.resize(0);
 	components.reserve(vec.size());
 	for (const SEntityComponentRecord& rec : vec)
@@ -2259,6 +2335,7 @@ void CEntity::SetMaterial(IMaterial* pMaterial)
 	m_pMaterial = pMaterial;
 
 	m_render.UpdateRenderNodes();
+	m_physics.OnGlobalEntityMaterialChanged(pMaterial);
 
 	SEntityEvent event;
 	event.event = ENTITY_EVENT_MATERIAL;
@@ -2874,6 +2951,8 @@ IEntityLink* CEntity::AddEntityLink(const char* szLinkName, EntityId entityId, E
 		m_pEntityLinks = pNewLink;
 	}
 
+	m_render.TryInvalidateParticleEmitters();
+
 	// Send event.
 	SEntityEvent event(ENTITY_EVENT_LINK);
 	event.nParam[0] = (INT_PTR)pNewLink;
@@ -2896,6 +2975,8 @@ void CEntity::RemoveEntityLink(IEntityLink* pLink)
 {
 	if (!m_pEntityLinks || !pLink)
 		return;
+
+	m_render.TryInvalidateParticleEmitters();
 
 	// Send event.
 	SEntityEvent event(ENTITY_EVENT_DELINK);
@@ -2928,6 +3009,8 @@ void CEntity::RemoveAllEntityLinks()
 	{
 		m_pEntityLinks = pLink->next;
 
+		m_render.TryInvalidateParticleEmitters();
+
 		// Send event.
 		SEntityEvent event(ENTITY_EVENT_DELINK);
 		event.nParam[0] = (INT_PTR)pLink;
@@ -2951,96 +3034,9 @@ void CEntity::GetMemoryUsage(ICrySizer* pSizer) const
 			componentRecord.pComponent->GetMemoryUsage(pSizer);
 		}
 	}
-
-	pSizer->AddContainer(m_simpleEventListeners);
 }
 
 //////////////////////////////////////////////////////////////////////////
-#define DEF_ENTITY_EVENT_NAME(x) { x, # x }
-struct SEventName
-{
-	EEntityEvent event;
-	const char*  name;
-} s_eventsName[] =
-{
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_XFORM),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_TIMER),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_INIT),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_DONE),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_RESET),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ATTACH),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ATTACH_THIS),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_DETACH),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_DETACH_THIS),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_LINK),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_DELINK),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_HIDE),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_UNHIDE),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ENABLE_PHYSICS),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PHYSICS_CHANGE_STATE),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_SCRIPT_EVENT),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ENTERAREA),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_LEAVEAREA),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ENTERNEARAREA),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_LEAVENEARAREA),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_MOVEINSIDEAREA),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_MOVENEARAREA),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PHYS_BREAK),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PHYS_POSTSTEP),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_AUDIO_TRIGGER_STARTED),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_AUDIO_TRIGGER_ENDED),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_COLLISION),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PREPHYSICSUPDATE),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_LEVEL_LOADED),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_START_LEVEL),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_START_GAME),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ENTER_SCRIPT_STATE),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_LEAVE_SCRIPT_STATE),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PRE_SERIALIZE),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_POST_SERIALIZE),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_INVISIBLE),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_VISIBLE),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_MATERIAL),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_ACTIVATED),
-	DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_DEACTIVATED),
-};
-
-//////////////////////////////////////////////////////////////////////////
-void CEntity::LogEvent(const SEntityEvent& event, CTimeValue dt)
-{
-	static int s_LastLoggedFrame = 0;
-
-	int nFrameId = gEnv->pRenderer->GetFrameID(false);
-	if (CVar::es_DebugEvents == 2 && s_LastLoggedFrame < nFrameId && s_LastLoggedFrame > nFrameId - 10)
-	{
-		// On Next frame turn it off.
-		CVar::es_DebugEvents = 0;
-		return;
-	}
-
-	// Find event, quite slow but ok for logging.
-	char sNameId[32];
-	const char* sName = "";
-	for (int i = 0; i < CRY_ARRAY_COUNT(s_eventsName); i++)
-	{
-		if (s_eventsName[i].event == event.event)
-		{
-			sName = s_eventsName[i].name;
-			break;
-		}
-	}
-	if (!*sName)
-	{
-		cry_sprintf(sNameId, "%d", (int)event.event);
-		sName = sNameId;
-	}
-	s_LastLoggedFrame = nFrameId;
-
-	float fTimeMs = dt.GetMilliSeconds();
-	CryLogAlways("<Frame:%d><EntityEvent> [%s](%X)\t[%.2fms]\t%s", nFrameId, sName, (int)event.nParam[0], fTimeMs, GetEntityTextDescription().c_str());
-}
-
 IAIObject* CEntity::GetAIObject() const
 {
 	if (gEnv->pAISystem == nullptr)
@@ -3057,9 +3053,14 @@ void CEntity::CreateSchematycObject(const SEntitySpawnParams& spawnParams)
 	Schematyc::IRuntimeClassConstPtr pRuntimeClass = pClass->GetSchematycRuntimeClass();
 	if (pRuntimeClass)
 	{
-		if (!m_pSchematycProperties)
+		if (m_pLegacySchematycData == nullptr)
 		{
-			m_pSchematycProperties = pRuntimeClass->GetDefaultProperties().Clone();
+			m_pLegacySchematycData = stl::make_unique<SLegacySchematycData>();
+		}
+
+		if(m_pLegacySchematycData->pSchematycProperties == nullptr)
+		{
+			m_pLegacySchematycData->pSchematycProperties = pRuntimeClass->GetDefaultProperties().Clone();
 		}
 		if (spawnParams.entityNode)
 		{
@@ -3067,20 +3068,20 @@ void CEntity::CreateSchematycObject(const SEntitySpawnParams& spawnParams)
 			if (schematycPropsNode)
 			{
 				// Load Schematyc object properties from the Entity Node XML data
-				Serialization::LoadXmlNode(*m_pSchematycProperties.get(), schematycPropsNode);
+				Serialization::LoadXmlNode(*m_pLegacySchematycData->pSchematycProperties.get(), schematycPropsNode);
 			}
 		}
 
 		Schematyc::SObjectParams objectParams;
 		objectParams.classGUID = pRuntimeClass->GetGUID();
-		objectParams.pProperties = m_pSchematycProperties;
+		objectParams.pProperties = m_pLegacySchematycData->pSchematycProperties;
 		objectParams.pEntity = this;
 
-		if (gEnv->pSchematyc->CreateObject(objectParams, m_pSchematycObject))
+		if (gEnv->pSchematyc->CreateObject(objectParams, m_pLegacySchematycData->pSchematycObject))
 		{
 			if (m_simulationMode != EEntitySimulationMode::Idle)
 			{
-				m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly);
+				m_pLegacySchematycData->pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly);
 			}
 		}
 	}
@@ -3090,9 +3091,9 @@ void CEntity::CreateSchematycObject(const SEntitySpawnParams& spawnParams)
 void CEntity::SetSimulationMode(EEntitySimulationMode mode)
 {
 	m_simulationMode = mode;
-	if (m_pSchematycObject != nullptr)
+	if (m_pLegacySchematycData != nullptr && m_pLegacySchematycData->pSchematycObject != nullptr)
 	{
-		m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly);
+		m_pLegacySchematycData->pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly);
 	}
 }
 
@@ -3127,9 +3128,9 @@ void CEntity::OnEditorGameModeChanged(bool bEnterGameMode)
 	}
 
 	// We only want to reset when we return from game mode to editor mode.
-	if (m_pSchematycObject != nullptr)
+	if (m_pLegacySchematycData != nullptr && m_pLegacySchematycData->pSchematycObject != nullptr)
 	{
-		m_pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly);
+		m_pLegacySchematycData->pSchematycObject->SetSimulationMode(m_simulationMode, Schematyc::EObjectSimulationUpdatePolicy::OnChangeOnly);
 	}
 }
 
@@ -3204,18 +3205,11 @@ void CEntity::OnRenderNodeVisibilityChange(bool bBecomeVisible)
 	bNoReentrant = true;
 	if (GetFlags() & ENTITY_FLAG_SEND_RENDER_EVENT)
 	{
-		if (bBecomeVisible)
-		{
-			SEntityEvent entityEvent(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE);
-			entityEvent.nParam[0] = 1;
-			SendEvent(entityEvent);
-		}
-		else
-		{
-			SEntityEvent entityEvent(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE);
-			entityEvent.nParam[0] = 0;
-			SendEvent(entityEvent);
-		}
+		m_physics.AwakeOnRender(bBecomeVisible);
+
+		SEntityEvent entityEvent(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE);
+		entityEvent.nParam[0] = bBecomeVisible ? 1 : 0;
+		SendEvent(entityEvent);
 	}
 	bNoReentrant = false;
 }

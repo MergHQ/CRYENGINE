@@ -519,7 +519,6 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem)
 	pSS->SetGlobalValue("FOREIGNFLAGS_MOVING_PLATFORM", PFF_MOVING_PLATFORM);
 
 	// Watch our, more then 23 bits cannot be used!
-	SCRIPT_REG_GLOBAL(ENTITY_FLAG_WRITE_ONLY);
 	SCRIPT_REG_GLOBAL(ENTITY_FLAG_NOT_REGISTER_IN_SECTORS);
 	SCRIPT_REG_GLOBAL(ENTITY_FLAG_CALC_PHYSICS);
 	SCRIPT_REG_GLOBAL(ENTITY_FLAG_CLIENT_ONLY);
@@ -5413,7 +5412,10 @@ int CScriptBind_Entity::SetTimer(IFunctionHandler* pH)
 	int timerId = 0;
 	int msec = 0;
 	pH->GetParams(timerId, msec);
-	pEntity->SetTimer(timerId, msec);
+	if (IEntityScriptComponent* pScriptProxy = (IEntityScriptComponent*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT))
+	{
+		pScriptProxy->SetTimer(timerId, msec);
+	}
 	return pH->EndFunction();
 }
 
@@ -5423,7 +5425,10 @@ int CScriptBind_Entity::KillTimer(IFunctionHandler* pH)
 
 	int timerId = 0;
 	pH->GetParams(timerId);
-	pEntity->KillTimer(timerId);
+	if (IEntityScriptComponent* pScriptProxy = (IEntityScriptComponent*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT))
+	{
+		pScriptProxy->KillTimer(timerId);
+	}
 	return pH->EndFunction();
 }
 

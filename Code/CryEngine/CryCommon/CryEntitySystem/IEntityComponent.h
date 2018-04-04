@@ -478,6 +478,23 @@ public:
 	//! Return Calculated Transformation Matrix for current component transform
 	Matrix34 GetTransformMatrix() const { return (m_componentFlags.Check(EEntityComponentFlags::Transform) && m_pTransform) ? m_pTransform->ToMatrix34() : IDENTITY; }
 
+	//! Starts a timer for this component instance
+	//! Entity timers are owned by the component, and each component can have its own independent timers with identifiers that are unique to that instance
+	//! When timer finishes entity system will signal to the component *once* with an event ENTITY_EVENT_TIMER.
+	//! Multiple timers can be started simultaneously with different timer ids.
+	//! If some timer is not yet finished and another timer with the same timerID is set, the new one
+	//! will override old timer, and old timer will not send finish event.
+	//! The timer will automatically be serialized to disk and restored for save games, assuming that a component with the same instance GUID exists at deserialization time.
+	//! \param timerId Timer ID, multiple timers with different IDs are possible.
+	//! \param timeInMilliseconds Timer timeout time in milliseconds.
+	void SetTimer(uint8 timerId, int timeInMilliseconds);
+	//! Stops the specified timer for this component instance
+	//! \see ENTITY_EVENT_TIMER
+	void KillTimer(uint8 timerId);
+	//! Stops all timers for this component instance
+	//! \see ENTITY_EVENT_TIMER
+	void KillAllTimers();
+
 	//! Get name of this individual component, usually only Schematyc components will have names
 	const char* GetName() const { return m_name.c_str(); };
 

@@ -168,7 +168,7 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 
 		{
 			uint32 entityFlags = m_pEntity->GetFlags();
-			SetRenderNodeFlags(renderNodeFlags, ERF_DYNAMIC_DISTANCESHADOWS, 0 != (m_pEntity->m_flagsExtended & ENTITY_FLAG_EXTENDED_DYNAMIC_DISTANCE_SHADOWS));
+			SetRenderNodeFlags(renderNodeFlags, ERF_DYNAMIC_DISTANCESHADOWS, 0 != (m_pEntity->m_flags & ENTITY_FLAG_DYNAMIC_DISTANCE_SHADOWS));
 
 			SetRenderNodeFlags(renderNodeFlags, ERF_CASTSHADOWMAPS, (0 != (entityFlags & ENTITY_FLAG_CASTSHADOW)) || (0 != (GetFlags() & ENTITY_SLOT_CAST_SHADOW)));
 			SetRenderNodeFlags(renderNodeFlags, ERF_GOOD_OCCLUDER, 0 != (entityFlags & ENTITY_FLAG_GOOD_OCCLUDER));
@@ -255,7 +255,7 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitySlot::OnXForm(int nWhyFlags)
+void CEntitySlot::OnXForm(EntityTransformationFlagsMask transformReasons)
 {
 	ComputeWorldTransform();
 
@@ -385,7 +385,7 @@ void CEntitySlot::SetLocalTM(const Matrix34& localTM)
 	m_localTM = localTM;
 	ComputeWorldTransform();
 
-	OnXForm(0);
+	OnXForm(EntityTransformationFlagsMask());
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -28,8 +28,6 @@ public:
 	virtual void ProcessEvent(const SEntityEvent& event) override;
 	// ~ISimpleEntityEventListener
 
-	void RegisterEventListeners(IEntityComponent::ComponentEventPriority priority);
-
 	void SerializeXML(XmlNodeRef& entityNode, bool bLoading);
 	bool NeedNetworkSerialize();
 	void SerializeTyped(TSerialize ser, int type, int flags);
@@ -58,6 +56,7 @@ public:
 	void OnPhysicsPostStep(EventPhysPostStep* pEvent = 0);
 	void AttachToPhysicalEntity(IPhysicalEntity* pPhysEntity);
 	void CreateRenderGeometry(int nSlot, IGeometry* pFromGeom, bop_meshupdate* pLastUpdate = 0);
+	void OnPhysicsStateChanged(int previousSimulationClass);
 	//////////////////////////////////////////////////////////////////////////
 
 	void              UpdateSlotGeometry(int nSlot, IStatObj* pStatObjNew = 0, float mass = -1.0f, int bNoSubslots = 1);
@@ -76,13 +75,18 @@ public:
 	void              ReattachSoftEntityVtx(IPhysicalEntity* pAttachToEntity, int nAttachToPart);
 
 #if !defined(_RELEASE)
-	static void EnableValidation();
-	static void DisableValidation();
+	static void       EnableValidation();
+	static void       DisableValidation();
 #endif
+
+	void              PrepareForDeletion();
+	void              OnCollision(const EventPhysCollision& collision, int sourceIndex);
+	void              SendBreakEvent(EventPhysJointBroken* pEvent);
+	void              OnGlobalEntityMaterialChanged(IMaterial* pMaterial);
 
 private:
 	IPhysicalWorld*  PhysicalWorld() const { return gEnv->pPhysicalWorld; }
-	void             OnEntityXForm(const SEntityEvent& event);
+	void             OnEntityXForm(EntityTransformationFlagsMask transformReasons);
 	void             OnChangedPhysics(bool bEnabled);
 	void             DestroyPhysicalEntity(bool bDestroyCharacters = true, int iMode = 0);
 
@@ -115,6 +119,11 @@ private:
 
 	void             AwakeOnRender(bool vRender);
 	void             OnTimer(int id);
+	void             OnEntityHiddenOrMadeInvisible();
+	void             OnEntityUnhiddenOrMadeVisible();
+	void             OnEntityUnhidden();
+	void             OnChildEntityAttached(EntityId childEntityId);
+	void             OnChildEntityDetached(EntityId childEntityId);
 
 private:
 	CEntity* GetEntity() const;

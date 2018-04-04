@@ -662,7 +662,6 @@ protected:
 
 	void                             OnPhysPostStep(const EventPhys* pEvent, bool logged);
 	void                             OnPhysStateChange(EventPhysStateChange* pEvent);
-	void                             OnMaterialLayerChanged(const SEntityEvent& event);
 	bool                             InitParticles(const CVehicleParams& table);
 	void                             InitModification(const CVehicleParams& data, const char* modification);
 	void                             OnTimer(int timerId);

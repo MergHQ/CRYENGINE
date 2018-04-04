@@ -172,12 +172,11 @@ int CPhysicsEventListener::OnStateChange(const EventPhys* pEvent)
 	CEntity* pCEntity = GetEntity(pStateChange->pForeignData, pStateChange->iForeignData);
 	if (pCEntity)
 	{
-		int nOldSymClass = pStateChange->iSimClass[0];
-		if (nOldSymClass == SC_ACTIVE_RIGID)
+		int previousSimulationClass = pStateChange->iSimClass[0];
+		pCEntity->GetPhysicalProxy()->OnPhysicsStateChanged(previousSimulationClass);
+
+		if (previousSimulationClass == SC_ACTIVE_RIGID)
 		{
-			SEntityEvent event(ENTITY_EVENT_PHYSICS_CHANGE_STATE);
-			event.nParam[0] = 1;
-			pCEntity->SendEvent(event);
 			if (pStateChange->timeIdle >= CVar::es_FarPhysTimeout)
 			{
 				pe_status_dynamics sd;
@@ -187,12 +186,6 @@ int CPhysicsEventListener::OnStateChange(const EventPhys* pEvent)
 					pCEntity->SetInternalFlag(CEntity::EInternalFlag::PhysicsAwakeOnRender, true);
 				}
 			}
-		}
-		else if (nOldSymClass == SC_SLEEPING_RIGID)
-		{
-			SEntityEvent event(ENTITY_EVENT_PHYSICS_CHANGE_STATE);
-			event.nParam[0] = 0;
-			pCEntity->SendEvent(event);
 		}
 	}
 	return 1;
@@ -433,6 +426,11 @@ void CPhysicsEventListener::SendCollisionEventToEntity(SEntityEvent& event)
 				pCollision->partid[i] &= (1 << numBits) - 1;
 			}
 
+			if (event.event == ENTITY_EVENT_COLLISION)
+			{
+				pEntity->GetPhysicalProxy()->OnCollision(*pCollision, i);
+			}
+
 			// Specify whether or not we are the source
 			event.nParam[1] = i;
 			pEntity->SendEvent(event);
@@ -476,11 +474,7 @@ int CPhysicsEventListener::OnJointBreak(const EventPhys* pEvent)
 	//GetEntity(pBreakEvent->pForeignData[0],pBreakEvent->iForeignData[0]);
 	if (pCEntity)
 	{
-		SEntityEvent event;
-		event.event = ENTITY_EVENT_PHYS_BREAK;
-		event.nParam[0] = (INT_PTR)pEvent;
-		event.nParam[1] = 0;
-		pCEntity->SendEvent(event);
+		pCEntity->GetPhysicalProxy()->SendBreakEvent(pBreakEvent);
 		pStatObj = pCEntity->GetStatObj(ENTITY_SLOT_ACTUAL);
 
 		//if (pCEntity->GetEntityRender())

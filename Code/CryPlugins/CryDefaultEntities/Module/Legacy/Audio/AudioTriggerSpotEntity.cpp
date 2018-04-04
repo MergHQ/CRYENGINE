@@ -64,7 +64,7 @@ void CAudioTriggerSpotEntity::ProcessEvent(const SEntityEvent& event)
 
 				if (m_behavior == ePlayBehavior_TriggerRate)
 				{
-					GetEntity()->SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
+					SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
 				}
 			}
 
@@ -85,7 +85,7 @@ void CAudioTriggerSpotEntity::TriggerFinished(const CryAudio::ControlId trigger)
 	// playing, that instance we need to ignore.
 	if (m_bEnabled && trigger == m_playTriggerId && m_behavior == ePlayBehavior_Delay)
 	{
-		GetEntity()->SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
+		SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
 	}
 }
 
@@ -153,14 +153,13 @@ void CAudioTriggerSpotEntity::OnResetState()
 
 void CAudioTriggerSpotEntity::StartPlayingBehaviour()
 {
-	IEntity& entity = *GetEntity();
-	entity.KillTimer(DELAY_TIMER_ID);
+	KillTimer(DELAY_TIMER_ID);
 
 	Play();
 
 	if (m_behavior == ePlayBehavior_TriggerRate)
 	{
-		entity.SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
+		SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
 	}
 }
 
@@ -189,7 +188,7 @@ void CAudioTriggerSpotEntity::Play()
 void CAudioTriggerSpotEntity::Stop()
 {
 	IEntity& entity = *GetEntity();
-	entity.KillTimer(DELAY_TIMER_ID);
+	KillTimer(DELAY_TIMER_ID);
 
 	if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 	{

@@ -1592,7 +1592,7 @@ public:
 	{
 		if (event.event == ENTITY_EVENT_TIMER)
 		{
-			if (!GetEntity()->IsRendered())
+			if (event.nParam[0] == 0 && !GetEntity()->IsRendered())
 			{
 				// Remove ourself
 				g_pIEntitySystem->RemoveEntity(GetEntity()->GetId());
@@ -1600,7 +1600,7 @@ public:
 			else
 			{
 				// Wait some more to see if still rendered.
-				GetEntity()->SetTimer(0, m_timeoutMillis);
+				SetTimer(0, m_timeoutMillis);
 			}
 		}
 	}
@@ -1616,7 +1616,7 @@ public:
 	void         SetTimeout(int timeoutMillis)
 	{
 		m_timeoutMillis = timeoutMillis;
-		GetEntity()->SetTimer(0, m_timeoutMillis);
+		SetTimer(0, m_timeoutMillis);
 	}
 
 private:
@@ -2469,8 +2469,7 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 
 		if (bNewEntity)
 		{
-			SEntityEvent entityEvent(ENTITY_EVENT_PHYS_BREAK);
-			pCEntity->SendEvent(entityEvent);
+			pCEntity->GetPhysicalProxy()->SendBreakEvent(nullptr);
 		}
 
 		if (m_pBreakEventListener && pSrcStatObj != pDeformedStatObj && pUpdateEvent->iReason != EventPhysUpdateMesh::ReasonDeform)

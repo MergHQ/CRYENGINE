@@ -461,13 +461,13 @@ bool CProjectile::Init(IGameObject* pGameObject)
 
 	float lifetime = m_pAmmoParams->lifetime;
 	if (lifetime > 0.0f)
-		pEntity->SetTimer(ePTIMER_LIFETIME, (int)(lifetime * 1000.0f));
+		SetTimer(ePTIMER_LIFETIME, (int)(lifetime * 1000.0f));
 
 	float showtime = m_pAmmoParams->showtime;
 	if (showtime > 0.0f)
 	{
 		pEntity->SetSlotFlags(0, pEntity->GetSlotFlags(0) & (~ENTITY_SLOT_RENDER));
-		pEntity->SetTimer(ePTIMER_SHOWTIME, (int)(showtime * 1000.0f));
+		SetTimer(ePTIMER_SHOWTIME, (int)(showtime * 1000.0f));
 	}
 	else
 		pEntity->SetSlotFlags(0, pEntity->GetSlotFlags(0) | ENTITY_SLOT_RENDER);
@@ -505,13 +505,13 @@ void CProjectile::ReInitFromPool()
 
 	float lifetime = m_pAmmoParams->lifetime;
 	if (lifetime > 0.0f)
-		GetEntity()->SetTimer(ePTIMER_LIFETIME, (int)(lifetime * 1000.0f));
+		SetTimer(ePTIMER_LIFETIME, (int)(lifetime * 1000.0f));
 
 	float showtime = m_pAmmoParams->showtime;
 	if (showtime > 0.0f)
 	{
 		GetEntity()->SetSlotFlags(0, GetEntity()->GetSlotFlags(0) & (~ENTITY_SLOT_RENDER));
-		GetEntity()->SetTimer(ePTIMER_SHOWTIME, (int)(showtime * 1000.0f));
+		SetTimer(ePTIMER_SHOWTIME, (int)(showtime * 1000.0f));
 	}
 	else
 		GetEntity()->SetSlotFlags(0, GetEntity()->GetSlotFlags(0) | ENTITY_SLOT_RENDER);
@@ -553,7 +553,7 @@ void CProjectile::ReInitFromPool()
 void CProjectile::SetLifeTime(float lifeTime)
 {
 	if (lifeTime > 0.0f)
-		GetEntity()->SetTimer(ePTIMER_LIFETIME, (int)(lifeTime * 1000.0f));
+		SetTimer(ePTIMER_LIFETIME, (int)(lifeTime * 1000.0f));
 }
 
 //------------------------------------------------------------------------

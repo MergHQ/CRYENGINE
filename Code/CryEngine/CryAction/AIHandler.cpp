@@ -1511,7 +1511,7 @@ void CAIHandler::SetAlertness(int value, bool triggerEvent /*=false*/)
 		m_pEntity->SendEvent(event);
 	}
 
-	IActor* const pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(m_pEntity->GetId());
+	/*IActor* const pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(m_pEntity->GetId());
 	if (pActor)
 	{
 		if (switchToWeaponAlerted)
@@ -1524,7 +1524,7 @@ void CAIHandler::SetAlertness(int value, bool triggerEvent /*=false*/)
 			SEntityEvent radarEvent(ENTITY_EVENT_REMOVE_FROM_RADAR);
 			pActor->ProcessEvent(radarEvent);
 		}
-	}
+	}*/
 
 	CAIFaceManager::e_ExpressionEvent expression(CAIFaceManager::EE_NONE);
 	const char* sStates = "";
