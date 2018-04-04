@@ -1,11 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     25/03/2015 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include <CrySerialization/SmartPtr.h>
 #include "ParamMod.h"
@@ -29,8 +22,7 @@ void CParamMod<TParamModContext, T >::AddToComponent(CParticleComponent* pCompon
 {
 	m_modInit.clear();
 	m_modUpdate.clear();
-	auto it = std::remove_if(m_modifiers.begin(), m_modifiers.end(), [](const PModifier& ptr) { return !ptr; });
-	m_modifiers.erase(it, m_modifiers.end());
+	stl::find_and_erase_all(m_modifiers, nullptr);
 
 	if (Context().GetDomain() == EMD_PerParticle)
 		pComponent->InitParticles.add(pFeature);
@@ -43,14 +35,14 @@ void CParamMod<TParamModContext, T >::AddToComponent(CParticleComponent* pCompon
 }
 
 template<typename TParamModContext, typename T>
-void CParamMod<TParamModContext, T >::AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature, EParticleDataType dataType)
+void CParamMod<TParamModContext, T >::AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature, TDataType<TType> dataType)
 {
 	AddToComponent(pComponent, pFeature);
 	pComponent->AddParticleData(dataType);
 
 	if (dataType.info().hasInit && !m_modUpdate.empty())
 	{
-		pComponent->AddParticleData(InitType(dataType));
+		pComponent->AddParticleData(dataType.InitType());
 		if (Context().GetDomain() == EMD_PerParticle)
 			pComponent->UpdateParticles.add(pFeature);
 	}
@@ -79,7 +71,7 @@ void CParamMod<TParamModContext, T >::Serialize(Serialization::IArchive& ar)
 }
 
 template<typename TParamModContext, typename T>
-void CParamMod<TParamModContext, T >::InitParticles(const SUpdateContext& context, EParticleDataType dataType) const
+void CParamMod<TParamModContext, T >::InitParticles(const SUpdateContext& context, TDataType<TType> dataType) const
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
@@ -87,52 +79,43 @@ void CParamMod<TParamModContext, T >::InitParticles(const SUpdateContext& contex
 	if (container.GetMaxParticles() == 0 || !container.HasData(dataType))
 		return;
 
-	TIOStream<TType> dataStream = container.GetTIOStream<TType>(dataType);
-	SUpdateRange spawnRange = container.GetSpawnedRange();
-
-	dataStream.Fill(spawnRange, m_baseValue);
-
-	for (auto & pModifier : m_modInit)
-		pModifier->Modify(context, spawnRange, dataStream, dataType, EMD_PerParticle);
+	TIOStream<TType> stream = container.IOStream(dataType);
+	ModifyInit(context, stream, context.GetSpawnedRange(), dataType);
 
 	if (dataType.info().hasInit)
-		container.CopyData(InitType(dataType), dataType, spawnRange);
+		container.CopyData(dataType.InitType(), dataType, context.GetSpawnedRange());
 }
 
 template<typename TParamModContext, typename T>
-void CParamMod<TParamModContext, T >::Update(const SUpdateContext& context, EParticleDataType dataType) const
+void CParamMod<TParamModContext, T >::Update(const SUpdateContext& context, TDataType<TType> dataType) const
 {
 	CParticleContainer& container = context.m_container;
 	if (container.GetMaxParticles() == 0 || !container.HasData(dataType))
 		return;
 
-	TIOStream<TType> stream = container.GetTIOStream<TType>(dataType);
-	for (auto& pModifier : m_modUpdate)
-		pModifier->Modify(context, context.m_updateRange, stream, dataType, EMD_PerParticle);
+	CRY_PFX2_ASSERT(context.GetUpdateRange().m_end <= container.GetNumParticles());
+	TIOStream<TType> stream = container.IOStream(dataType);
+	ModifyUpdate(context, stream, context.GetUpdateRange(), dataType);
 }
 
 template<typename TParamModContext, typename T>
-void CParamMod<TParamModContext, T >::ModifyInit(const SUpdateContext& context, TType* data, SUpdateRange range) const
+void CParamMod<TParamModContext, T >::ModifyInit(const SUpdateContext& context, TIOStream<TType>& stream, SUpdateRange range, TDataType<TType> dataType) const
 {
 	CRY_PFX2_PROFILE_DETAIL;
-	TIOStream<TType> dataStream(data);
-
-	dataStream.Fill(range, m_baseValue);
+	stream.Fill(range, m_baseValue);
 
 	const EModDomain domain = Context().GetDomain();
 	for (auto& pModifier : m_modInit)
-		pModifier->Modify(context, range, dataStream, EParticleDataType(), domain);
+		pModifier->Modify(context, range, stream, dataType, domain);
 }
 
 template<typename TParamModContext, typename T>
-void CParamMod<TParamModContext, T >::ModifyUpdate(const SUpdateContext& context, TType* data, SUpdateRange range) const
+void CParamMod<TParamModContext, T >::ModifyUpdate(const SUpdateContext& context, TIOStream<TType>& stream, SUpdateRange range, TDataType<TType> dataType) const
 {
 	CRY_PFX2_PROFILE_DETAIL;
-	TIOStream<TType> dataStream(data);
-
 	const EModDomain domain = Context().GetDomain();
 	for (auto& pModifier : m_modUpdate)
-		pModifier->Modify(context, range, dataStream, EParticleDataType(), domain);
+		pModifier->Modify(context, range, stream, dataType, domain);
 }
 
 template<typename TParamModContext, typename T>
@@ -146,14 +129,14 @@ TRange<typename T::TType> CParamMod<TParamModContext, T >::GetValues(const SUpda
 	for (auto & pMod : m_modInit)
 	{
 		if (pMod->GetDomain() >= domain)
-			pMod->Modify(context, range, stream, EParticleDataType(), domain);
+			pMod->Modify(context, range, stream, TDataType<TType>(), domain);
 		else
 			minmax = minmax * pMod->GetMinMax();
 	}
 	for (auto& pMod : m_modUpdate)
 	{
 		if (updating && pMod->GetDomain() >= domain)
-			pMod->Modify(context, range, stream, EParticleDataType(), domain);
+			pMod->Modify(context, range, stream, TDataType<TType>(), domain);
 		else
 			minmax = minmax * pMod->GetMinMax();
 	}
