@@ -31,14 +31,14 @@ namespace Cry
 #ifndef RELEASE
 					// Reset mass or density to 0 in the UI if the other is changed to be positive.
 					// It is not possible to use both at the same time, this makes that clearer for the designer.
-					if (m_mass != m_prevMass && m_mass > 0)
+					if (m_mass != m_prevMass && !isneg(m_mass))
 					{
 						m_density = m_prevDensity = 0;
 						m_prevMass = m_mass;
 					}
 					if (m_density != m_prevDensity && m_density > 0)
 					{
-						m_mass = m_prevMass = 0;
+						m_mass = m_prevMass = -1;
 						m_prevDensity = m_density;
 					}
 #endif
@@ -57,7 +57,7 @@ namespace Cry
 			{
 				uint64 bitFlags = ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 
-				if (m_mass > 0 || m_density > 0)
+				if (!isneg(m_mass) || m_density > 0)
 				{
 					bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED);
 				}
@@ -129,29 +129,23 @@ namespace Cry
 				{
 					pPhysicalEntity->RemoveGeometry(m_pEntity->GetPhysicalEntityPartId0(GetEntitySlotId()));
 
-					if (m_mass > 0 || m_density > 0)
+					if (!isneg(m_mass) || m_density > 0)
 					{
 						IGeometry* pPrimGeom = CreateGeometry();
 						phys_geometry* pPhysGeom = gEnv->pPhysicalWorld->GetGeomManager()->RegisterGeometry(pPrimGeom, 0);
 
 						std::unique_ptr<pe_geomparams> pGeomParams = GetGeomParams();
 
-						if (m_mass > 0)
+						if (!isneg(m_mass))
 						{
 							pGeomParams->mass = m_mass;
-						}
-						else
-						{
-							pGeomParams->mass = -1.f;
-						}
-
-						if (m_density > 0)
-						{
-							pGeomParams->density = m_density;
-						}
-						else
-						{
 							pGeomParams->density = -1.f;
+						}
+						else
+						{
+							CRY_ASSERT(m_density > 0);
+							pGeomParams->density = m_density;
+							pGeomParams->mass = -1.f;
 						}
 
 						if (m_surfaceTypeName.value.size() > 0)
