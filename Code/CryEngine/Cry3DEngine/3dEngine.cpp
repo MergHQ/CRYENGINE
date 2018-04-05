@@ -4878,8 +4878,6 @@ SRenderNodeTempData* C3DEngine::CheckAndCreateRenderNodeTempData(IRenderNode* pR
 	if (!pTempData)
 		return nullptr;
 
-	CRY_ASSERT(!pTempData->invalidRenderObjects);
-
 	// Technically this function is unsafe if the same node is hit (non-atomic read-modify-write)
 	// The assumption is that the same node can not be contended for the same condition(s), which is
 	// approximately the "distinct" passes used. For as long as different passes contend the node it's fine.
