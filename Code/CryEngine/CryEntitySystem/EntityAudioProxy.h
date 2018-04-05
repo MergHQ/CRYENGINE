@@ -27,6 +27,7 @@ public:
 	virtual void         GameSerialize(TSerialize ser) override;
 	virtual bool         NeedGameSerialize() override                     { return false; }
 	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
+	virtual void		 OnTransformChanged() override;
 	// ~IEntityComponent
 
 	// IEntityAudioComponent
