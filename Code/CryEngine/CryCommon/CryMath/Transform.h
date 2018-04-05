@@ -74,10 +74,7 @@ public:
 
 	inline Matrix34 ToMatrix34() const
 	{
-		Matrix34 output = m_rotation.ToMatrix();
-		output = output * Matrix34::CreateScale(m_scale);
-		output.SetTranslation(m_translation);
-		return output;
+		return Matrix34::Create(m_scale, m_rotation.ToQuat(), m_translation);
 	}
 
 	inline void Serialize(Serialization::IArchive& archive)
