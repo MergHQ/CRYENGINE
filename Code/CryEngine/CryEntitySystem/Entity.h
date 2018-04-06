@@ -290,7 +290,7 @@ public:
 	virtual uint32                     GetSlotFlags(int nSlot) const final;
 	virtual int                        SetSlotRenderNode(int nSlot, IRenderNode* pRenderNode) final;
 	virtual IRenderNode*               GetSlotRenderNode(int nSlot) final;
-	virtual void                       UpdateSlotForComponent(IEntityComponent* pComponent) final;
+	virtual void                       UpdateSlotForComponent(IEntityComponent* pComponent, bool callOnTransformChanged = true) final;
 	virtual bool                       ShouldUpdateCharacter(int nSlot) const final;
 	virtual ICharacterInstance*        GetCharacter(int nSlot) final;
 	virtual int                        SetCharacter(ICharacterInstance* pCharacter, int nSlot, bool bUpdatePhysics) final;

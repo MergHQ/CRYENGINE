@@ -1749,7 +1749,9 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 	// Automatically assign transformation if necessary
 	if (pComponent->GetComponentFlags().Check(EEntityComponentFlags::Transform) && pComponent->GetTransform() == nullptr)
 	{
-		pComponent->SetTransformMatrix(IDENTITY);
+		pComponent->m_pTransform = std::make_shared<CryTransform::CTransform>();
+
+		UpdateSlotForComponent(pComponent.get(), false);
 	}
 
 	OnComponentMaskChanged(componentRecord, 0);
@@ -2451,7 +2453,7 @@ IRenderNode* CEntity::GetSlotRenderNode(int nSlot)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::UpdateSlotForComponent(IEntityComponent* pComponent)
+void CEntity::UpdateSlotForComponent(IEntityComponent* pComponent, bool callOnTransformChanged)
 {
 	int slotId = pComponent->GetEntitySlotId();
 	if (slotId == IEntityComponent::EmptySlotId)
@@ -2478,7 +2480,10 @@ void CEntity::UpdateSlotForComponent(IEntityComponent* pComponent)
 		pComponent->SetTransformMatrix(IDENTITY);
 	}
 
-	pComponent->OnTransformChanged();
+	if (callOnTransformChanged)
+	{
+		pComponent->OnTransformChanged();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
