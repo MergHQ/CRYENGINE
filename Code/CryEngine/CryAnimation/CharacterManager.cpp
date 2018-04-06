@@ -2739,6 +2739,14 @@ void CharacterManager::DumpAssetStatistics()
 // can be called instead of Update() for UI purposes (such as in preview viewports, etc).
 void CharacterManager::DummyUpdate()
 {
+	// Note: DummyUpdate() is mutually exclusive with Update(). Either one or the other will be called, exactly once per frame, depending on whether we have a level loaded in Sandbox or not.
+
+	CAnimationContext::Instance().Update();
+	// We need to update the animation context here in order to flush the animation memory pool, regardless of if the character manager is fully running or not.
+	// The reason for that is, even if character manager updates are suspended (i.e. no level is loaded), external tools (Character Tool, Mannequin, etc) can still
+	// orchestrate animation updates of the character instances they own. If the memory pool is not flushed, this results in perpetual growth of memory usage.
+	// TODO: Memory pooling in the animation system needs to be streamlined.
+
 	m_nUpdateCounter++;
 }
 
