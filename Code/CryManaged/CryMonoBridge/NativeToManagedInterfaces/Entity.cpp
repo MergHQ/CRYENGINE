@@ -46,7 +46,7 @@ static void RegisterComponent(MonoInternals::MonoReflectionType* pType, uint64 g
 	}
 
 	CMonoDomain* pDomain = GetMonoRuntime()->FindDomainByHandle(MonoInternals::mono_object_get_domain((MonoInternals::MonoObject*)pType));
-	CMonoLibrary& library = pDomain->GetLibraryFromMonoAssembly(MonoInternals::mono_image_get_assembly(pImage));
+	CMonoLibrary& library = pDomain->GetLibraryFromMonoAssembly(MonoInternals::mono_image_get_assembly(pImage), pImage);
 
 	std::shared_ptr<CMonoString> pClassName = pDomain->CreateString(pName);
 	std::shared_ptr<CMonoString> pClassCategory = pDomain->CreateString(pCategory);

@@ -76,6 +76,7 @@ protected:
 	void SetWeakPointer(std::weak_ptr<CMonoClass> pClass) { m_pThis = pClass; }
 
 	void RegisterObject(std::weak_ptr<CMonoObject> pObject);
+	std::weak_ptr<CMonoMethod> FindOrEmplaceMethod(MonoInternals::MonoMethod* pMethod);
 
 protected:
 	MonoInternals::MonoClass* m_pClass;

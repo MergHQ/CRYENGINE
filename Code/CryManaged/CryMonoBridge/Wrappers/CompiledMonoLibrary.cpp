@@ -9,7 +9,7 @@
 #include <CrySystem/ICryPluginManager.h>
 
 CCompiledMonoLibrary::CCompiledMonoLibrary(const char* szDirectory, CMonoDomain* pDomain)
-	: CMonoLibrary(nullptr, "", pDomain)
+	: CMonoLibrary(nullptr, nullptr, "", pDomain)
 	, m_directory(szDirectory)
 {
 	string assemblyName = GetMonoRuntime()->GetGeneratedAssemblyName();
@@ -18,7 +18,7 @@ CCompiledMonoLibrary::CCompiledMonoLibrary(const char* szDirectory, CMonoDomain*
 }
 
 CCompiledMonoLibrary::CCompiledMonoLibrary(CMonoDomain* pDomain)
-	: CMonoLibrary(nullptr, "", pDomain)
+	: CMonoLibrary(nullptr, nullptr, "", pDomain)
 {
 	string assemblyName = GetMonoRuntime()->GetGeneratedAssemblyName();
 	m_assemblyPath = PathUtil::Make(PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), "bin"), assemblyName + ".dll");

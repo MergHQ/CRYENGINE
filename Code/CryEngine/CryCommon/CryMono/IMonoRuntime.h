@@ -64,7 +64,7 @@ struct IMonoEngineModule : public Cry::IDefaultModule
 
 	virtual CRootMonoDomain*            GetRootDomain() = 0;
 	virtual CMonoDomain*                GetActiveDomain() = 0;
-	virtual CAppDomain*                 CreateDomain(char* name, bool bActivate = false) = 0;
+	virtual CAppDomain*                 CreateDomain(const char* name, bool bActivate = false) = 0;
 	virtual void                        ReloadPluginDomain() = 0;
 
 	virtual CMonoLibrary*               GetCryCommonLibrary() const = 0;

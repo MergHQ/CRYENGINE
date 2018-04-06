@@ -31,12 +31,16 @@ public:
 	CMonoMethod GetGetMethod() const;
 	CMonoMethod GetSetMethod() const;
 
+	const char* GetName() const { return m_name.c_str(); }
+
+	std::shared_ptr<CMonoClass> GetUnderlyingClass() const { return m_pUnderlyingClass; }
+
+protected:
 	MonoInternals::MonoType* GetUnderlyingType(MonoInternals::MonoReflectionProperty* pReflectionProperty) const;
 	MonoInternals::MonoClass* GetUnderlyingClass(MonoInternals::MonoReflectionProperty* pReflectionProperty) const;
-
-	const char* GetName() const { return m_name.c_str(); }
 
 protected:
 	string m_name;
 	MonoInternals::MonoProperty* m_pProperty;
+	std::shared_ptr<CMonoClass>  m_pUnderlyingClass;
 };
