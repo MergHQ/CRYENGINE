@@ -37,8 +37,9 @@ void CListenerComponent::Initialize()
 			m_pEntity->SetFlags(m_pEntity->GetFlags() | ENTITY_FLAG_TRIGGER_AREAS);
 			m_pEntity->SetFlagsExtended(m_pEntity->GetFlagsExtended() | ENTITY_FLAG_EXTENDED_AUDIO_LISTENER);
 
-			Matrix34 const& tm = m_pEntity->GetWorldTM();
+			Matrix34 const tm = GetWorldTransformMatrix();
 			CRY_ASSERT_MESSAGE(tm.IsValid(), "Invalid Matrix34 during CListenerComponent::Initialize");
+
 			m_previousTransformation = tm;
 			m_pIListener->SetTransformation(m_previousTransformation);
 		}
@@ -79,17 +80,8 @@ void CListenerComponent::ProcessEvent(const SEntityEvent& event)
 
 				if ((flags & (ENTITY_XFORM_POS | ENTITY_XFORM_ROT)) != 0)
 				{
-					Matrix34 const& tm = m_pEntity->GetWorldTM();
-
-					// Listener needs to move at least 1 cm to trigger an update.
-					if (!m_previousTransformation.IsEquivalent(tm, 0.01f))
-					{
-						m_previousTransformation = tm;
-						m_pIListener->SetTransformation(m_previousTransformation);
-
-						// Add entity to the AreaManager for raising audio relevant events.
-						gEnv->pEntitySystem->GetAreaManager()->MarkEntityForUpdate(m_pEntity->GetId());
-					}
+					OnTransformChanged();
+					
 				}
 
 				break;
@@ -102,6 +94,22 @@ void CListenerComponent::ProcessEvent(const SEntityEvent& event)
 			break;
 #endif      // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CListenerComponent::OnTransformChanged()
+{
+	Matrix34 const tm = GetWorldTransformMatrix();
+
+	// Listener needs to move at least 1 cm to trigger an update.
+	if (!m_previousTransformation.IsEquivalent(tm, 0.01f))
+	{
+		m_previousTransformation = tm;
+		m_pIListener->SetTransformation(m_previousTransformation);
+
+		// Add entity to the AreaManager for raising audio relevant events.
+		gEnv->pEntitySystem->GetAreaManager()->MarkEntityForUpdate(m_pEntity->GetId());
 	}
 }
 } // namespace DefaultComponents

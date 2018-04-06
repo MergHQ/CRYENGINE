@@ -169,14 +169,14 @@ protected:
 #ifndef RELEASE
 				// Reset mass or density to 0 in the UI if the other is changed to be positive.
 				// It is not possible to use both at the same time, this makes that clearer for the designer.
-				if (m_physics.m_mass != m_physics.m_prevMass && m_physics.m_mass >= 0)
+				if (m_physics.m_mass != m_physics.m_prevMass && !isneg(m_physics.m_mass))
 				{
 					m_physics.m_density = m_physics.m_prevDensity = 0;
 					m_physics.m_prevMass = m_physics.m_mass;
 				}
 				if (m_physics.m_density != m_physics.m_prevDensity && m_physics.m_density >= 0)
 				{
-					m_physics.m_mass = m_physics.m_prevMass = 0;
+					m_physics.m_mass = m_physics.m_prevMass = -1;
 					m_physics.m_prevDensity = m_physics.m_density;
 				}
 #endif
@@ -238,7 +238,7 @@ protected:
 
 			m_pEntity->UnphysicalizeSlot(GetEntitySlotId());
 
-			if ((m_physics.m_mass > 0 || m_physics.m_density > 0) && ((uint32)m_type & (uint32)EMeshType::Collider) != 0)
+			if ((!isneg(m_physics.m_mass) || m_physics.m_density > 0) && ((uint32)m_type & (uint32)EMeshType::Collider) != 0)
 			{
 				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
 				{
@@ -246,22 +246,16 @@ protected:
 					physParams.nSlot = GetEntitySlotId();
 					physParams.type = pPhysicalEntity->GetType();
 
-					if (m_physics.m_mass > 0)
+					if(!isneg(m_physics.m_mass))
 					{
 						physParams.mass = m_physics.m_mass;
-					}
-					else
-					{
-						physParams.mass = -1.f;
-					}
-
-					if (m_physics.m_density > 0)
-					{
-						physParams.density = m_physics.m_density;
-					}
-					else
-					{
 						physParams.density = -1.f;
+					}
+					else
+					{
+						CRY_ASSERT(m_physics.m_density > 0);
+						physParams.density = m_physics.m_density;
+						physParams.mass = -1.f;
 					}
 
 					m_pEntity->PhysicalizeSlot(GetEntitySlotId(), physParams);

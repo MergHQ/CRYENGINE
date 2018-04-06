@@ -41,13 +41,19 @@ void CEntityComponentAudio::Initialize()
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentAudio::OnMove()
 {
-	Matrix34 const& tm = m_pEntity->GetWorldTM();
+	Matrix34 const tm = GetWorldTransformMatrix();
 	CRY_ASSERT_MESSAGE(tm.IsValid(), "Invalid Matrix34 during CEntityComponentAudio::OnMove");
 
 	if ((m_flags & eEntityAudioProxyFlags_CanMoveWithEntity) != 0)
 	{
 		std::for_each(m_mapAuxObjects.begin(), m_mapAuxObjects.end(), SRepositionAudioProxy(tm, CryAudio::SRequestUserData::GetEmptyObject()));
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityComponentAudio::OnTransformChanged()
+{
+	OnMove();
 }
 
 //////////////////////////////////////////////////////////////////////////
