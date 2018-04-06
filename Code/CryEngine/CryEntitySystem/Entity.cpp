@@ -81,7 +81,7 @@ void CEntity::PreInit(SEntitySpawnParams& params)
 	}
 
 	// #netentity Will be addressed in BindToNetwork-refactoring
-	m_pNetEntity = std::unique_ptr<INetEntity>(new CNetEntity(this));
+	m_pNetEntity = std::unique_ptr<INetEntity>(new CNetEntity(this, params));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -397,8 +397,6 @@ bool CEntity::Init(SEntitySpawnParams& params)
 		// Physics state serialization must be after full initialization
 		m_physics.SerializeXML(params.entityNode, true);
 	}
-
-	g_pIEntitySystem->RemoveSpawnSerializerForEntity(GetId());
 
 	// Initialize rendered slots last
 	m_render.PostInit();
@@ -1814,15 +1812,6 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 
 	// Entity has changed so make the state dirty
 	m_componentChangeState++;
-
-	// If we have not spawned fully yet, allow all components to serialize replicated network data
-	if (!HasInternalFlag(CEntity::EInternalFlag::Initialized))
-	{
-		if (TSerialize* pSpawnSerializer = g_pIEntitySystem->GetSpawnSerializerForEntity(GetId()))
-		{
-			pComponent->NetReplicateSerialize(*pSpawnSerializer);
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
