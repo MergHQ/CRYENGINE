@@ -101,15 +101,14 @@ bool SProject::Serialize(Serialization::IArchive& ar)
 
 bool CProjectManager::ParseProjectFile()
 {
-	char szEngineRootDirectoryBuffer[_MAX_PATH];
-	CryFindEngineRootFolder(CRY_ARRAY_COUNT(szEngineRootDirectoryBuffer), szEngineRootDirectoryBuffer);
+	const char* szEngineRootDirectory = gEnv->pSystem->GetRootFolder();
 
 	const ICmdLineArg* arg = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
 	string projectFile = arg != nullptr ? arg->GetValue() : m_sys_project->GetString();
 	if (projectFile.size() == 0)
 	{
 		CryLogAlways("\nRunning CRYENGINE without a project!");
-		CryLogAlways("	Using Engine Folder %s", szEngineRootDirectoryBuffer);
+		CryLogAlways("	Using Engine Folder %s", szEngineRootDirectory);
 
 		m_sys_game_name->Set("CRYENGINE - No Project");
 		// Specify an assets directory despite having no project, this is to prevent CryPak scanning engine root
@@ -131,7 +130,7 @@ bool CProjectManager::ParseProjectFile()
 	if (projectFile[0] != '/')
 #endif
 	{
-		m_project.filePath = PathUtil::Make(szEngineRootDirectoryBuffer, projectFile.c_str());
+		m_project.filePath = PathUtil::Make(szEngineRootDirectory, projectFile.c_str());
 	}
 	else
 	{
@@ -172,6 +171,8 @@ bool CProjectManager::ParseProjectFile()
 
 		// Create the full path to the asset directory
 		m_project.assetDirectoryFullPath = PathUtil::Make(m_project.rootDirectory, m_project.assetDirectory);
+		// Ensure compatibility with all supported platform filesystems
+		m_project.assetDirectoryFullPath.MakeLower();
 
 		// Does directory exist
 		if (!CryDirectoryExists(m_project.assetDirectoryFullPath.c_str()))
@@ -285,7 +286,9 @@ bool CProjectManager::ParseProjectFile()
 
 			// Create a temporary asset directory, as some systems rely on an assets directory existing.
 			m_project.assetDirectory = "NoAssetFolder";
-			m_project.assetDirectoryFullPath = PathUtil::Make(szEngineRootDirectoryBuffer, m_project.assetDirectory);
+			m_project.assetDirectoryFullPath = PathUtil::Make(szEngineRootDirectory, m_project.assetDirectory);
+			m_project.assetDirectoryFullPath.MakeLower();
+
 			CryCreateDirectory(m_project.assetDirectoryFullPath.c_str());
 
 			m_sys_game_folder->Set(m_project.assetDirectory.c_str());
@@ -319,7 +322,7 @@ bool CProjectManager::ParseProjectFile()
 
 	CryLogAlways("\nProject %s", GetCurrentProjectName());
 	CryLogAlways("\tUsing Project Folder %s", GetCurrentProjectDirectoryAbsolute());
-	CryLogAlways("\tUsing Engine Folder %s", szEngineRootDirectoryBuffer);
+	CryLogAlways("\tUsing Engine Folder %s", szEngineRootDirectory);
 	CryLogAlways("\tUsing Asset Folder %s", GetCurrentAssetDirectoryAbsolute());
 
 	return true;
@@ -345,6 +348,7 @@ void CProjectManager::MigrateFromLegacyWorkflowIfNecessary()
 
 		// Create the full path to the asset directory
 		m_project.assetDirectoryFullPath = PathUtil::Make(m_project.rootDirectory, m_project.assetDirectory);
+		m_project.assetDirectoryFullPath.MakeLower();
 
 		// Make sure we include default plug-ins
 		AddDefaultPlugins(0);
