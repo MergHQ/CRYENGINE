@@ -569,7 +569,7 @@ protected:
 	// Loaded data for the entity;
 	// This xml data is passed to the entity for loading data from it.
 	XmlNodeRef m_loadedXmlNodeData;
-	bool       m_bCloned;
+	bool       m_bCloned = false;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Associated FlowGraph.
