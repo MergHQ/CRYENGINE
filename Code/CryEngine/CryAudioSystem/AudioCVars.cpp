@@ -168,6 +168,11 @@ void CCVars::RegisterVariables()
 	               "Usage: s_AccumulateOcclusion [0/1] (off/on)\n"
 	               "Default PC: 1, XboxOne: 1, PS4: 1, Mac: 1, Linux: 1, iOS: 1, Android: 1\n");
 
+	REGISTER_CVAR2("s_IgnoreWindowFocus", &m_ignoreWindowFocus, 0, VF_NULL,
+	               "If set to 1, the audio system will not execute the \"lose_focus\" and \"get_focus\" triggers when the application window focus changes.\n"
+	               "Usage: s_IgnoreWindowFocus [0/1]\n"
+	               "Default: 0 (off)\n");
+
 	REGISTER_COMMAND("s_ExecuteTrigger", CmdExecuteTrigger, VF_CHEAT,
 	                 "Execute an Audio Trigger.\n"
 	                 "The first argument is the name of the AudioTrigger to be executed, the second argument is an optional AudioObject ID.\n"
@@ -210,11 +215,6 @@ void CCVars::RegisterVariables()
 	               "Limits drawing of audio object debug info to the specified distance around the active listeners. Setting this cvar to 0 disables the limiting.\n"
 	               "Usage: s_DebugDistance [0/...]\n"
 	               "Default: 0 m (infinite)\n");
-
-	REGISTER_CVAR2("s_IgnoreWindowFocus", &m_ignoreWindowFocus, 0, VF_DEV_ONLY,
-	               "If set to 1, the sound system will continue playing when the Editor or Game window loses focus.\n"
-	               "Usage: s_IgnoreWindowFocus [0/1]\n"
-	               "Default: 0 (off)\n");
 
 	REGISTER_CVAR2("s_DrawAudioDebug", &m_drawAudioDebug, 0, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
 	               "Draws AudioTranslationLayer related debug data to the screen.\n"
