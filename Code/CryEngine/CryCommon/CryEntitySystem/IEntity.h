@@ -1086,7 +1086,7 @@ public:
 	virtual bool SetParentSlot(int nParentIndex, int nChildIndex) = 0;
 
 	//! Prepare and update an entity slot to be used with component
-	virtual void UpdateSlotForComponent(IEntityComponent* pComponent) = 0;
+	virtual void UpdateSlotForComponent(IEntityComponent* pComponent, bool callOnTransformChanged = true) = 0;
 
 	//! Assigns a custom material to the specified object slot.
 	//! \param nSlot Index of the slot, if -1 assign this material to all existing slots.
