@@ -254,9 +254,6 @@ public:
 	void                             EnableComponentUpdates(IEntityComponent* pComponent, bool bEnable);
 	void                             EnableComponentPrePhysicsUpdates(IEntityComponent* pComponent, bool bEnable);
 
-	TSerialize*                      GetSpawnSerializerForEntity(EntityId id);
-	void                             RemoveSpawnSerializerForEntity(EntityId id);
-
 private:
 	bool ValidateSpawnParameters(SEntitySpawnParams& params);
 
@@ -347,11 +344,6 @@ private:
 	//don't spawn any entities without being forced to
 	bool m_bLocked;
 	bool m_bSupportLegacy64bitGuids = false;
-	// Map containing spawn serializer for entities
-	// Used to call IEntityComponent::NetReplicateSerialize
-	// Automatically cleared as soon as the spawn serializer is no longer needed anymore
-	// This results in the vector mostly having a size of 0 or 1.
-	std::vector<std::pair<EntityId, TSerialize*>> m_spawnSerializers;
 
 	friend class CEntityItMap;
 

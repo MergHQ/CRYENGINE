@@ -561,11 +561,6 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 		}
 	}
 
-	if (params.pSpawnSerializer != nullptr)
-	{
-		m_spawnSerializers.emplace_back(params.id, params.pSpawnSerializer);
-	}
-
 	if (pEntity == nullptr || pPrecreatedEntity != nullptr)
 	{
 		if (pPrecreatedEntity != nullptr)
@@ -811,33 +806,6 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 					m_deferredUsedEntities.push_back(pEntity);
 				}
 			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////
-TSerialize* CEntitySystem::GetSpawnSerializerForEntity(EntityId id)
-{
-	for (const std::pair<EntityId, TSerialize*>& pair : m_spawnSerializers)
-	{
-		if (pair.first == id)
-		{
-			return pair.second;
-		}
-	}
-
-	return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////
-void CEntitySystem::RemoveSpawnSerializerForEntity(EntityId id)
-{
-	for(auto it = m_spawnSerializers.begin(), end = m_spawnSerializers.end(); it != end; ++it)
-	{
-		if (it->first == id)
-		{
-			m_spawnSerializers.erase(it);
-			return;
 		}
 	}
 }
