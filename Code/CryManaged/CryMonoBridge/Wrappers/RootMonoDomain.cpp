@@ -18,5 +18,5 @@ CMonoLibrary& CRootMonoDomain::GetNetCoreLibrary()
 {
 	MonoInternals::MonoImage* pMonoCorlib = MonoInternals::mono_get_corlib();
 	
-	return GetLibraryFromMonoAssembly(MonoInternals::mono_image_get_assembly(pMonoCorlib));
+	return GetLibraryFromMonoAssembly(MonoInternals::mono_image_get_assembly(pMonoCorlib), pMonoCorlib);
 }

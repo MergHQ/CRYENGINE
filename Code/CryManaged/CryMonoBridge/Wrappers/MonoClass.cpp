@@ -36,6 +36,7 @@ void CMonoClass::Serialize(CMonoObject* pSerializer)
 		if (std::shared_ptr<CMonoObject> pObject = it->lock())
 		{
 			pDomain->SerializeObject(pSerializer, pObject->GetManagedObject(), false);
+			pObject->InvalidateBeforeDeserialization();
 
 			++it;
 		}
@@ -88,7 +89,7 @@ void CMonoClass::RefreshCachedMembers()
 		bool isMethodValid = false;
 
 		// Create an internal mono representation of the description that we saved
-		if (MonoInternals::MonoMethodDesc* pMethodDesc = MonoInternals::mono_method_desc_new(pMethod->GetSerializedDescription(), false))
+		if (MonoInternals::MonoMethodDesc* pMethodDesc = MonoInternals::mono_method_desc_new(pMethod->GetSignatureDescription(false), false))
 		{
 			// Search for the method signature in all implemented classes
 			MonoInternals::MonoClass *pClass = m_pClass;
@@ -281,13 +282,30 @@ std::shared_ptr<CMonoProperty> CMonoClass::MakeProperty(MonoInternals::MonoRefle
 	return std::make_shared<CMonoProperty>(pProperty, szName);
 }	
 
+std::weak_ptr<CMonoMethod> CMonoClass::FindOrEmplaceMethod(MonoInternals::MonoMethod* pMethod)
+{
+	CRY_ASSERT(pMethod != nullptr);
+
+	auto methodIt = std::find_if(m_methods.begin(), m_methods.end(), [pMethod](const std::shared_ptr<CMonoMethod>& pMonoMethod) -> bool
+	{
+		return pMonoMethod->GetHandle() == pMethod;
+	});
+
+	if (methodIt != m_methods.end())
+	{
+		return *methodIt;
+	}
+
+	std::shared_ptr<CMonoMethod> pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
+	m_methods.push_back(pMonoMethod);
+	return pMonoMethod;
+}
+
 std::weak_ptr<CMonoMethod> CMonoClass::FindMethod(const char* szName, int numParams)
 {
 	if (MonoInternals::MonoMethod* pMethod = MonoInternals::mono_class_get_method_from_name(m_pClass, szName, numParams))
 	{
-		std::shared_ptr<CMonoMethod> pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
-		m_methods.push_back(pMonoMethod);
-		return pMonoMethod;
+		return FindOrEmplaceMethod(pMethod);
 	}
 
 	return std::weak_ptr<CMonoMethod>();
@@ -300,9 +318,7 @@ std::weak_ptr<CMonoMethod> CMonoClass::FindMethodInInheritedClasses(const char* 
 	{
 		if (MonoInternals::MonoMethod* pMethod = MonoInternals::mono_class_get_method_from_name(pClass, szName, numParams))
 		{
-			std::shared_ptr<CMonoMethod> pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
-			m_methods.push_back(pMonoMethod);
-			return pMonoMethod;
+			return FindOrEmplaceMethod(pMethod);
 		}
 
 		pClass = MonoInternals::mono_class_get_parent(pClass);
@@ -324,11 +340,7 @@ std::weak_ptr<CMonoMethod> CMonoClass::FindMethodWithDesc(const char* szMethodDe
 
 	if (MonoInternals::MonoMethod* pMethod = MonoInternals::mono_method_desc_search_in_class(pMethodDesc, m_pClass))
 	{
-		MonoInternals::mono_method_desc_free(pMethodDesc);
-
-		std::shared_ptr<CMonoMethod> pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
-		m_methods.push_back(pMonoMethod);
-		return pMonoMethod;
+		return FindOrEmplaceMethod(pMethod);
 	}
 
 	MonoInternals::mono_method_desc_free(pMethodDesc);
@@ -353,9 +365,7 @@ std::weak_ptr<CMonoMethod> CMonoClass::FindMethodWithDescInInheritedClasses(cons
 		{
 			MonoInternals::mono_method_desc_free(pDesiredDesc);
 
-			std::shared_ptr<CMonoMethod> pMonoMethod = std::make_shared<CMonoMethod>(pMethod);
-			m_methods.push_back(pMonoMethod);
-			return pMonoMethod;
+			return FindOrEmplaceMethod(pMethod);
 		}
 
 		pClass = MonoInternals::mono_class_get_parent(pClass);

@@ -21,6 +21,8 @@ public:
 	virtual bool IsReloading() override { return m_isReloading; }
 	// ~CMonoDomain
 
+	void Initialize();
+
 	CMonoLibrary* GetCryCommonLibrary() const { return m_pLibCommon; }
 	CMonoLibrary* GetCryCoreLibrary() const { return m_pLibCore; }
 

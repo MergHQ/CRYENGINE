@@ -54,10 +54,6 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 	}
 
 	m_pConstructorMethod = m_pClass->FindMethod(".ctor");
-	if (!m_pConstructorMethod.expired())
-	{
-		m_pConstructorMethod.lock()->GetSignatureDescription(true, true);
-	}
 
 	// TODO: Check if we are supposed to be abstract, and re-implement the below
 	if (m_pConstructorMethod.expired() && !isAbstract)
@@ -67,16 +63,8 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 	}
 
 	m_pInternalSetEntityMethod = pEntityComponentClass->FindMethod("SetEntity", 2);
-	if (!m_pInternalSetEntityMethod.expired())
-	{
-		m_pInternalSetEntityMethod.lock()->GetSignatureDescription(true, true);
-	}
 
 	m_pInitializeMethod = m_pClass->FindMethodWithDescInInheritedClasses("OnInitialize()", pEntityComponentClass);
-	if (!m_pInitializeMethod.expired())
-	{
-		m_pInitializeMethod.lock()->GetSignatureDescription(true, true);
-	}
 
 	auto tryGetMethod = [this, pEntityComponentClass](const char* szMethodSignature, EEntityEvent associatedEvent) -> std::weak_ptr<CMonoMethod>
 	{
@@ -84,8 +72,6 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 		if (!pMethod.expired())
 		{
 			m_eventMask |= ENTITY_EVENT_BIT(associatedEvent);
-
-			pMethod.lock()->GetSignatureDescription(true, true);
 		}
 		else
 		{
@@ -113,11 +99,6 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 	if (!m_pClass->FindMethodWithDescInInheritedClasses("OnCollision(CollisionEvent)", pEntityComponentClass).expired())
 	{
 		m_pCollisionMethod = pEntityComponentClass->FindMethod("OnCollisionInternal", 12);
-		if (!m_pCollisionMethod.expired())
-		{
-			m_pCollisionMethod.lock()->GetSignatureDescription(true, true);
-		}
-
 		m_eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
 	}
 	else
@@ -340,14 +321,12 @@ void CManagedEntityComponentFactory::AddProperty(MonoInternals::MonoReflectionPr
 	{
 		MonoInternals::MonoTypeEnum monoType = (MonoInternals::MonoTypeEnum)MonoInternals::mono_type_get_type(MonoInternals::mono_signature_get_return_type(pProperty->GetGetMethod().GetSignature()));
 
-		MonoInternals::MonoClass* pUnderlyingClass = pProperty->GetUnderlyingClass(pReflectionProperty);
-		MonoInternals::MonoImage* pClassImage = MonoInternals::mono_class_get_image(pUnderlyingClass);
-		MonoInternals::MonoAssembly* pClassAssembly = MonoInternals::mono_image_get_assembly(pClassImage);
-
-		CMonoLibrary& classLibrary = GetMonoRuntime()->GetActiveDomain()->GetLibraryFromMonoAssembly(pClassAssembly);
-		std::shared_ptr<CMonoClass> pMonoClass = classLibrary.GetClassFromMonoClass(pUnderlyingClass);
-
-		std::shared_ptr<CMonoObject> pDefaultValueObject = pDefaultValue != nullptr ? pMonoClass->CreateFromMonoObject(pDefaultValue) : nullptr;
+		std::shared_ptr<CMonoObject> pDefaultValueObject;
+		if (pDefaultValue != nullptr)
+		{
+			std::shared_ptr<CMonoClass> pUnderlyingClass = pProperty->GetUnderlyingClass();
+			pDefaultValueObject = pUnderlyingClass->CreateFromMonoObject(pDefaultValue);
+		}
 
 		// First check if the property was already registered (if deserializing)
 		for (auto it = m_properties.begin(), end = m_properties.end(); it != end; ++it)
@@ -649,9 +628,10 @@ bool CManagedEntityComponentFactory::SPropertyTypeDescription::Serialize(Seriali
 				else
 				{
 					MonoInternals::MonoClass* pStringClass = MonoInternals::mono_object_get_class(pString);
-					MonoInternals::MonoAssembly* pStringAssembly = MonoInternals::mono_image_get_assembly(MonoInternals::mono_class_get_image(pStringClass));
+					MonoInternals::MonoImage* pStringImage = MonoInternals::mono_class_get_image(pStringClass);
+					MonoInternals::MonoAssembly* pStringAssembly = MonoInternals::mono_image_get_assembly(pStringImage);
 
-					CMonoLibrary& library = GetMonoRuntime()->GetActiveDomain()->GetLibraryFromMonoAssembly(pStringAssembly);
+					CMonoLibrary& library = GetMonoRuntime()->GetActiveDomain()->GetLibraryFromMonoAssembly(pStringAssembly, pStringImage);
 
 					pPropertyValue->pObject = library.GetClassFromMonoClass(pStringClass)->CreateFromMonoObject(pString);
 				}

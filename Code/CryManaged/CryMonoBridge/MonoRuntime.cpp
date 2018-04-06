@@ -26,6 +26,10 @@
 #include <CryInput/IHardwareMouse.h>
 #include <CrySystem/ICmdLine.h>
 
+#if CRY_PLATFORM_WINDOWS
+#include <Shlwapi.h>
+#endif
+
 // Must be included only once in DLL module.
 #include <CryCore/Platform/platform_impl.inl>
 
@@ -155,9 +159,9 @@ bool CMonoRuntime::Initialize(SSystemGlobalEnvironment& env, const SSystemInitPa
 	MonoInternals::mono_trace_set_printerr_handler(MonoPrintErrorCallback);
 
 	m_pRootDomain = std::make_shared<CRootMonoDomain>();
-	m_pRootDomain->Initialize();
-
 	m_domains.emplace_back(m_pRootDomain);
+
+	m_pRootDomain->Initialize();
 
 	RegisterInternalInterfaces();
 
@@ -180,7 +184,37 @@ void CMonoRuntime::Shutdown()
 
 std::shared_ptr<Cry::IEnginePlugin> CMonoRuntime::LoadBinary(const char* szBinaryPath)
 {
-	std::shared_ptr<CManagedPlugin> pPlugin = std::make_shared<CManagedPlugin>(szBinaryPath);
+	string binaryPath;
+
+#if CRY_PLATFORM_DURANGO
+	if (true)
+#elif CRY_PLATFORM_WINAPI
+	if (PathIsRelative(szBinaryPath))
+#elif CRY_PLATFORM_POSIX
+	if (szBinaryPath[0] != '/')
+#endif
+	{
+		// First search in the project directory
+		binaryPath = PathUtil::Make(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute(), szBinaryPath);
+		if (!gEnv->pCryPak->IsFileExist(binaryPath.c_str()))
+		{
+			// File did not exist in the project directory, try the engine binary directory
+			char szEngineDirectoryBuffer[_MAX_PATH];
+			CryGetExecutableFolder(CRY_ARRAY_COUNT(szEngineDirectoryBuffer), szEngineDirectoryBuffer);
+
+			binaryPath = PathUtil::Make(szEngineDirectoryBuffer, szBinaryPath);
+			if (!gEnv->pCryPak->IsFileExist(binaryPath.c_str()))
+			{
+				binaryPath = szBinaryPath;
+			}
+		}
+	}
+	else
+	{
+		binaryPath = szBinaryPath;
+	}
+
+	std::shared_ptr<CManagedPlugin> pPlugin = std::make_shared<CManagedPlugin>(binaryPath);
 	m_plugins.emplace_back(pPlugin);
 	return pPlugin;
 }
@@ -245,13 +279,16 @@ CMonoDomain* CMonoRuntime::GetActiveDomain()
 		return pDomain;
 	}
 
+	CRY_ASSERT_MESSAGE(false, "Kept here for safety if code reaches it, but should never be called");
 	m_domains.emplace_back(std::make_shared<CAppDomain>(pActiveMonoDomain));
+	static_cast<CAppDomain*>(m_domains.back().get())->Initialize();
 	return m_domains.back().get();
 }
 
 CAppDomain* CMonoRuntime::CreateDomain(char* name, bool bActivate)
 {
 	m_domains.emplace_back(std::make_shared<CAppDomain>(name, bActivate));
+	static_cast<CAppDomain*>(m_domains.back().get())->Initialize();
 	return static_cast<CAppDomain*>(m_domains.back().get());
 }
 
@@ -272,10 +309,10 @@ void CMonoRuntime::RegisterManagedNodeCreator(const char* szClassName, IManagedN
 	manager.GetNodeFactory().RegisterNodeCreator(m_nodeCreators.back().get());
 }
 
-void CMonoRuntime::RegisterNativeToManagedInterface(IMonoNativeToManagedInterface& interface)
+void CMonoRuntime::RegisterNativeToManagedInterface(IMonoNativeToManagedInterface& nativeToManagedInterface)
 {
 	string functionNamePrefix;
-	functionNamePrefix.Format("%s.%s::", interface.GetNamespace(), interface.GetClassName());
+	functionNamePrefix.Format("%s.%s::", nativeToManagedInterface.GetNamespace(), nativeToManagedInterface.GetClassName());
 
 	auto registerInternalCall = [functionNamePrefix](const void* pMethod, const char* szMethodName)
 	{
@@ -284,7 +321,7 @@ void CMonoRuntime::RegisterNativeToManagedInterface(IMonoNativeToManagedInterfac
 		MonoInternals::mono_add_internal_call(methodName, pMethod);
 	};
 
-	interface.RegisterFunctions(registerInternalCall);
+	nativeToManagedInterface.RegisterFunctions(registerInternalCall);
 }
 
 CMonoDomain* CMonoRuntime::FindDomainByHandle(MonoInternals::MonoDomain* pMonoDomain)
@@ -298,6 +335,7 @@ CMonoDomain* CMonoRuntime::FindDomainByHandle(MonoInternals::MonoDomain* pMonoDo
 	}
 
 	m_domains.emplace_back(std::make_shared<CAppDomain>(pMonoDomain));
+	static_cast<CAppDomain*>(m_domains.back().get())->Initialize();
 	return m_domains.back().get();
 }
 

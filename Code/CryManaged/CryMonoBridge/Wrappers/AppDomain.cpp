@@ -20,8 +20,6 @@ CAppDomain::CAppDomain(char *name, bool bActivate)
 
 	m_bNativeDomain = true;
 
-	CacheObjectMethods();
-
 	char executableFolder[_MAX_PATH];
 	CryGetExecutableFolder(_MAX_PATH, executableFolder);
 
@@ -42,16 +40,6 @@ CAppDomain::CAppDomain(char *name, bool bActivate)
 		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to load managed core library!");
 		return;
 	}
-
-	// Get the equivalent of gEnv
-	std::shared_ptr<CMonoClass> pEngineClass = m_pLibCore->GetTemporaryClass("CryEngine", "Engine");
-	CRY_ASSERT(pEngineClass != nullptr);
-
-	// Call the static Initialize function
-	if (std::shared_ptr<CMonoMethod> pMethod = pEngineClass->FindMethod("OnEngineStart").lock())
-	{
-		pMethod->Invoke();
-	}
 }
 
 CAppDomain::CAppDomain(MonoInternals::MonoDomain* pMonoDomain)
@@ -63,8 +51,6 @@ CAppDomain::CAppDomain(MonoInternals::MonoDomain* pMonoDomain)
 #endif
 
 	m_bNativeDomain = false;
-
-	CacheObjectMethods();
 }
 
 CAppDomain::~CAppDomain()
@@ -77,6 +63,24 @@ CAppDomain::~CAppDomain()
 
 		// Call the static Shutdown function
 		if (std::shared_ptr<CMonoMethod> pMethod = pEngineClass->FindMethod("OnEngineShutdown").lock())
+		{
+			pMethod->Invoke();
+		}
+	}
+}
+
+void CAppDomain::Initialize()
+{
+	CacheObjectMethods();
+
+	if (m_pLibCore != nullptr)
+	{
+		// Get the equivalent of gEnv
+		std::shared_ptr<CMonoClass> pEngineClass = m_pLibCore->GetTemporaryClass("CryEngine", "Engine");
+		CRY_ASSERT(pEngineClass != nullptr);
+
+		// Call the static Initialize function
+		if (std::shared_ptr<CMonoMethod> pMethod = pEngineClass->FindMethod("OnEngineStart").lock())
 		{
 			pMethod->Invoke();
 		}

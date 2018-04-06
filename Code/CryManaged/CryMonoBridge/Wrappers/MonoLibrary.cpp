@@ -13,15 +13,15 @@
 #include "RootMonoDomain.h"
 
 CMonoLibrary::CMonoLibrary(const char* filePath, CMonoDomain* pDomain)
-	: CMonoLibrary(nullptr, filePath, pDomain)
+	: CMonoLibrary(nullptr, nullptr, filePath, pDomain)
 {
 }
 
-CMonoLibrary::CMonoLibrary(MonoInternals::MonoAssembly* pAssembly, const char* filePath, CMonoDomain* pDomain)
+CMonoLibrary::CMonoLibrary(MonoInternals::MonoAssembly* pAssembly, MonoInternals::MonoImage* pImage, const char* filePath, CMonoDomain* pDomain)
 	: m_pAssembly(pAssembly)
 	, m_pDomain(pDomain)
 	, m_assemblyPath(filePath)
-	, m_pImage(pAssembly != nullptr ? MonoInternals::mono_assembly_get_image(pAssembly) : nullptr)
+	, m_pImage(pImage)
 {
 }
 
@@ -111,48 +111,50 @@ bool CMonoLibrary::LoadLibraryFile(string& assemblyPath, int loadIndex)
 	// Do a copy of the binary on windows to allow reload during development
 	// Otherwise Mono will lock the file.
 #if defined(CRY_PLATFORM_WINDOWS) && !defined(RELEASE)
-	
-	string tempBinaryDirectory = m_pDomain->TempDirectoryPath();
-
-	// Non-engine assemblies need to be put in a separate folder so they won't conflict with eachother.
-	if (loadIndex != -1)
+	if (gEnv->pCryPak->IsFileExist(tempAssemblyPath))
 	{
-		string assemblyFolderName = "ManagedAssembly";
-		tempBinaryDirectory = PathUtil::Make(tempBinaryDirectory, assemblyFolderName.AppendFormat("_%d\\", loadIndex));
+		string tempBinaryDirectory = m_pDomain->TempDirectoryPath();
+
+		// Non-engine assemblies need to be put in a separate folder so they won't conflict with eachother.
+		if (loadIndex != -1)
+		{
+			string assemblyFolderName = "ManagedAssembly";
+			tempBinaryDirectory = PathUtil::Make(tempBinaryDirectory, assemblyFolderName.AppendFormat("_%d\\", loadIndex));
+		}
+
+		DWORD attribs = GetFileAttributesA(tempBinaryDirectory.c_str());
+		if (attribs == INVALID_FILE_ATTRIBUTES)
+		{
+			CryCreateDirectory(tempBinaryDirectory.c_str());
+		}
+
+		string fileName = PathUtil::GetFile(assemblyPath);
+		tempAssemblyPath = PathUtil::Make(tempBinaryDirectory, fileName);
+
+		// If mdb
+		string mdbPathSource = assemblyPath + ".mdb";
+		string mdbPathTarget = tempAssemblyPath + ".mdb";
+
+		// Also copy debug databases, if present
+		string pdbPathSource = PathUtil::ReplaceExtension(assemblyPath, ".pdb");
+		string pdbPathTarget = PathUtil::ReplaceExtension(tempAssemblyPath, ".pdb");
+
+		// We are only interested in the latest debug symbols, so only copy the latest one.
+		if (IsFileNewer(pdbPathSource, mdbPathSource))
+		{
+			mdbPathTarget = "";
+		}
+		else
+		{
+			pdbPathTarget = "";
+		}
+
+		// It could be that old .dll, mdb and .pdb files are still in the temporary directory.
+		// This can cause unexpected behavior or out of sync debug-symbols, so delete the old files first.
+		RemoveAndCopyFile(mdbPathSource, mdbPathTarget);
+		RemoveAndCopyFile(pdbPathSource, pdbPathTarget);
+		RemoveAndCopyFile(assemblyPath, tempAssemblyPath);
 	}
-
-	DWORD attribs = GetFileAttributesA(tempBinaryDirectory.c_str());
-	if (attribs == INVALID_FILE_ATTRIBUTES)
-	{
-		CryCreateDirectory(tempBinaryDirectory.c_str());
-	}
-
-	string fileName = PathUtil::GetFile(assemblyPath);
-	tempAssemblyPath = PathUtil::Make(tempBinaryDirectory, fileName);
-
-	// If mdb
-	string mdbPathSource = assemblyPath + ".mdb";
-	string mdbPathTarget = tempAssemblyPath + ".mdb";
-
-	// Also copy debug databases, if present
-	string pdbPathSource = PathUtil::ReplaceExtension(assemblyPath, ".pdb");
-	string pdbPathTarget = PathUtil::ReplaceExtension(tempAssemblyPath, ".pdb");
-
-	// We are only interested in the latest debug symbols, so only copy the latest one.
-	if (IsFileNewer(pdbPathSource, mdbPathSource))
-	{
-		mdbPathTarget = "";
-	}
-	else
-	{
-		pdbPathTarget = "";
-	}
-
-	// It could be that old .dll, mdb and .pdb files are still in the temporary directory.
-	// This can cause unexpected behavior or out of sync debug-symbols, so delete the old files first.
-	RemoveAndCopyFile(mdbPathSource, mdbPathTarget);
-	RemoveAndCopyFile(pdbPathSource, pdbPathTarget);
-	RemoveAndCopyFile(assemblyPath, tempAssemblyPath);
 #endif
 
 	m_pAssembly = MonoInternals::mono_domain_assembly_open(m_pDomain->GetMonoDomain(), tempAssemblyPath);

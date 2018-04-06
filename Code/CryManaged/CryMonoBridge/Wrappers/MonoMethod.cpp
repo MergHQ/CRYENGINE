@@ -10,6 +10,23 @@
 CMonoMethod::CMonoMethod(MonoInternals::MonoMethod* pMethod)
 	: m_pMethod(pMethod)
 {
+	MonoInternals::MonoMethodSignature* pSignature = GetSignature();
+	MonoInternals::MonoType* pReturnType = MonoInternals::mono_signature_get_return_type(pSignature);
+
+	const int returnType = MonoInternals::mono_type_get_type(pReturnType);
+
+	if (returnType != MonoInternals::MONO_TYPE_VOID)
+	{
+		MonoInternals::MonoClass *pReturnTypeClass = MonoInternals::mono_class_from_mono_type(pReturnType);
+
+		MonoInternals::MonoImage* pClassImage = MonoInternals::mono_class_get_image(pReturnTypeClass);
+		MonoInternals::MonoAssembly* pClassAssembly = MonoInternals::mono_image_get_assembly(pClassImage);
+
+		CMonoLibrary& classLibrary = GetMonoRuntime()->GetActiveDomain()->GetLibraryFromMonoAssembly(pClassAssembly, pClassImage);
+		m_pReturnValue = classLibrary.GetClassFromMonoClass(pReturnTypeClass);
+	}
+
+	GetSignature(m_description, false);
 }
 
 std::shared_ptr<CMonoObject> CMonoMethod::Invoke(const CMonoObject* pObject, void** pParameters, bool &bEncounteredException) const
@@ -38,7 +55,7 @@ std::shared_ptr<CMonoObject> CMonoMethod::InvokeInternal(MonoInternals::MonoObje
 	{
 		if (pResult != nullptr)
 		{
-			return std::make_shared<CMonoObject>(pResult);
+			return m_pReturnValue->CreateFromMonoObject(pResult);
 		}
 		else
 		{
@@ -61,7 +78,7 @@ std::shared_ptr<CMonoObject> CMonoMethod::InvokeInternal(MonoInternals::MonoObje
 	{
 		if (pResult != nullptr)
 		{
-			return std::make_shared<CMonoObject>(pResult);
+			return m_pReturnValue->CreateFromMonoObject(pResult);
 		}
 		else
 		{
@@ -90,29 +107,32 @@ void CMonoMethod::VisitParameters(std::function<void(int index, MonoInternals::M
 	}
 }
 
-string CMonoMethod::GetSignatureDescription(bool bIncludeNamespace, bool bForceSkipCache) const
+string CMonoMethod::GetSignatureDescription(bool includeNamespace) const
 {
-	if (m_description.size() > 0 && !bForceSkipCache)
+	if (includeNamespace)
 	{
-		return m_description;
+		string descriptionWithNamespace;
+		GetSignature(descriptionWithNamespace, true);
+		return descriptionWithNamespace;
 	}
 
+	return m_description;
+}
+
+void CMonoMethod::GetSignature(string& signatureOut, bool includeNamespace) const
+{
 	MonoInternals::MonoMethodSignature* pSignature = MonoInternals::mono_method_signature(m_pMethod);
-	char* desc = MonoInternals::mono_signature_get_desc(pSignature, bIncludeNamespace);
+	char* desc = MonoInternals::mono_signature_get_desc(pSignature, includeNamespace);
 	const char* szName = GetName();
 
-	string result;
-	result.Format(":%s(%s)", szName, desc);
+	signatureOut.Format(":%s(%s)", szName, desc);
 
 	MonoInternals::mono_free(desc);
-
-	const_cast<CMonoMethod*>(this)->m_description = result;
-	return result;
 }
 
 void CMonoMethod::PrepareForSerialization()
 {
-	GetSignatureDescription(false, true);
+	CRY_ASSERT(!m_description.empty());
 
 	// Invalidate the method so we don't try to use it later
 	m_pMethod = nullptr;

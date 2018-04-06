@@ -9,12 +9,29 @@ CMonoProperty::CMonoProperty(MonoInternals::MonoProperty* pProperty, const char*
 	: m_pProperty(pProperty)
 	, m_name(szName)
 {
+	MonoInternals::MonoClass* pPropertyClass = MonoInternals::mono_property_get_parent(pProperty);
+	MonoInternals::MonoReflectionProperty* pReflectedProperty = MonoInternals::mono_property_get_object(MonoInternals::mono_domain_get(), pPropertyClass, pProperty);
+
+	MonoInternals::MonoClass* pUnderlyingClass = GetUnderlyingClass(pReflectedProperty);
+
+	MonoInternals::MonoImage* pClassImage = MonoInternals::mono_class_get_image(pUnderlyingClass);
+	MonoInternals::MonoAssembly* pClassAssembly = MonoInternals::mono_image_get_assembly(pClassImage);
+
+	CMonoLibrary& classLibrary = GetMonoRuntime()->GetActiveDomain()->GetLibraryFromMonoAssembly(pClassAssembly, pClassImage);
+	m_pUnderlyingClass = classLibrary.GetClassFromMonoClass(pUnderlyingClass);
 }
 
-CMonoProperty::CMonoProperty(MonoInternals::MonoReflectionProperty* pProperty, const char* szName)
-	: m_pProperty(((InternalMonoReflectionType*)pProperty)->property)
+CMonoProperty::CMonoProperty(MonoInternals::MonoReflectionProperty* pReflectedProperty, const char* szName)
+	: m_pProperty(((InternalMonoReflectionType*)pReflectedProperty)->property)
 	, m_name(szName)
 {
+	MonoInternals::MonoClass* pUnderlyingClass = GetUnderlyingClass(pReflectedProperty);
+
+	MonoInternals::MonoImage* pClassImage = MonoInternals::mono_class_get_image(pUnderlyingClass);
+	MonoInternals::MonoAssembly* pClassAssembly = MonoInternals::mono_image_get_assembly(pClassImage);
+
+	CMonoLibrary& classLibrary = GetMonoRuntime()->GetActiveDomain()->GetLibraryFromMonoAssembly(pClassAssembly, pClassImage);
+	m_pUnderlyingClass = classLibrary.GetClassFromMonoClass(pUnderlyingClass);
 }
 
 std::shared_ptr<CMonoObject> CMonoProperty::Get(MonoInternals::MonoObject* pObject, bool &bEncounteredException) const
@@ -27,7 +44,7 @@ std::shared_ptr<CMonoObject> CMonoProperty::Get(MonoInternals::MonoObject* pObje
 	{
 		if (pResult != nullptr)
 		{
-			return std::make_shared<CMonoObject>(pResult);
+			return m_pUnderlyingClass->CreateFromMonoObject(pResult);
 		}
 		else
 		{
