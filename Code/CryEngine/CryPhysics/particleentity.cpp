@@ -691,7 +691,9 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 				event.partid[1] += hits[j].iNode-event.partid[1] & pCollider->m_nParts-1>>31; // return iNode for partless entitis (ropes, cloth)
 				event.iPrim[1] = max(0,hits[j].iPrim);
 
-				if (pCollider->GetType()!=PE_PARTICLE && 
+				if (pCollider->m_parts[ipart].flags & geom_no_coll_response)
+					hits[j].pCollider = 0; // will also disregard the hit as solid
+				else if (pCollider->GetType()!=PE_PARTICLE && 
 						(pCollider->m_iSimClass>0 || pCollider->m_parts[ipart].flags & geom_monitor_contacts) && 
 						!(pCollider->m_parts[ipart].flagsCollider & geom_no_particle_impulse)) 
 				{	Vec3 vrel = vel0-event.vloc[1];
