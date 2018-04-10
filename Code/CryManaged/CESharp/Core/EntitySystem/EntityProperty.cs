@@ -37,11 +37,22 @@ namespace CryEngine
 		/// The property is a path to a material file.
 		/// </summary>
 		Material,
-		//FIXME Animation property is not working properly in the Sandbox.
 		/// <summary>
 		/// The property is a path to an animation file.
 		/// </summary>
-		Animation
+		Animation,
+		/// <summary>
+		/// The property is a path to a character file (.cdf).
+		/// </summary>
+		Character,
+		/// <summary>
+		/// The property is the name of a loaded action map.
+		/// </summary>
+		ActionMapName,
+		/// <summary>
+		/// The property is the name of an action of a loaded action map.
+		/// </summary>
+		ActionMapActionName
 	}
 
 	/// <summary>

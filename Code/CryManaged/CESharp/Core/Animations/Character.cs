@@ -149,7 +149,7 @@ namespace CryEngine.Animations
 		/// </summary>
 		public void Release()
 		{
-			var skeleton = NativeHandle.GetISkeletonAnim();
+			var skeleton = NativeHandle?.GetISkeletonAnim();
 			if(skeleton != null)
 			{
 				var values = Enum.GetValues(typeof(EMotionParamID)) as int[];

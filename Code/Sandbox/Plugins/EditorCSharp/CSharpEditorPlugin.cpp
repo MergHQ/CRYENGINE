@@ -499,7 +499,7 @@ bool CCSharpEditorPlugin::OpenCSharpSolution()
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
-		shellInfo.lpParameters = solutionFile.c_str();
+		shellInfo.lpParameters = string().Format("\"%s\"", solutionFile).c_str();
 		shellInfo.nShow = SW_SHOWNORMAL;
 		shellInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shellInfo.cbSize = sizeof(shellInfo);
@@ -535,7 +535,7 @@ bool CCSharpEditorPlugin::OpenFileInSolution(const string& filePath)
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
-		shellInfo.lpParameters = string("%s %s").Format(solutionFile, filePath).c_str();
+		shellInfo.lpParameters = string().Format("\"%s\" \"%s\"", solutionFile, filePath).c_str();
 		shellInfo.nShow = SW_SHOWNORMAL;
 		shellInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shellInfo.cbSize = sizeof(shellInfo);
@@ -583,10 +583,7 @@ bool CCSharpEditorPlugin::OpenFileInSolution(const string& filePath, const int l
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
-
-		string arguments;
-		arguments.Format("%s %s%s", solutionFile, filePath, commandFormat, line);
-		shellInfo.lpParameters = arguments.c_str();
+		shellInfo.lpParameters = string().Format("\"%s\" \"%s\"%s", solutionFile, filePath, commandFormat).c_str();
 		shellInfo.nShow = SW_SHOWNORMAL;
 		shellInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shellInfo.cbSize = sizeof(shellInfo);
@@ -610,14 +607,10 @@ bool CCSharpEditorPlugin::OpenFileInTextEditor(const string& filePath) const
 	// No active process found, so open the solution file with the selected text editor.
 	if (!textEditor.empty())
 	{
-		string solutionFile = GetCSharpSolutionPath();
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
-
-		string arguments;
-		arguments.Format("%s /edit", filePath);
-		shellInfo.lpParameters = arguments.c_str();
+		shellInfo.lpParameters = string().Format("\"%s\" /edit", filePath).c_str();
 		shellInfo.nShow = SW_SHOWNORMAL;
 		shellInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shellInfo.cbSize = sizeof(shellInfo);
@@ -650,14 +643,10 @@ bool CCSharpEditorPlugin::OpenFileInTextEditor(const string& filePath, const int
 	// No active process found, so open the solution file with the selected text editor.
 	if (!textEditor.empty())
 	{
-		string solutionFile = GetCSharpSolutionPath();
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
-
-		string arguments;
-		arguments.Format("%s%s /edit", filePath, commandFormat, line);
-		shellInfo.lpParameters = arguments.c_str();
+		shellInfo.lpParameters = string().Format("\"%s\"%s /edit", filePath, commandFormat).c_str();
 		shellInfo.nShow = SW_SHOWNORMAL;
 		shellInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shellInfo.cbSize = sizeof(shellInfo);
@@ -705,6 +694,7 @@ bool CCSharpEditorPlugin::HasExistingTextEditor() const
 			DWORD processId = GetProcessId(m_textEditorHandle);
 			// Invert the value because EnumWindows will return false if SetWindowToForeground found the window, and true if it didn't.
 			return !EnumWindows(&SetWindowToForeground, processId);
+			
 		}
 	}
 	return false;

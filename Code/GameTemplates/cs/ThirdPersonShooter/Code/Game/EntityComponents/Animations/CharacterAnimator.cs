@@ -12,6 +12,7 @@ namespace CryEngine.Game
 	[EntityComponent(Category = "Animation", Guid = "78583bcc-4cc4-67e7-b83d-88a4bdc53e0f")]
 	public class CharacterAnimator : EntityComponent
 	{
+		private string _characterGeometry = "";
 		private int _characterSlot = 0;
 		private string _controllerDefinition = "";
 		private string _mannequinContext = "";
@@ -51,6 +52,28 @@ namespace CryEngine.Game
 		/// <value>The start name of the fragment.</value>
 		[EntityProperty(Description = "The name of the fragment that is set active when initializing this Animator.")]
 		public string StartFragmentName { get; set; }
+
+		/// <summary>
+		/// The Character geometry file to load. Usually a .cdf file.
+		/// </summary>
+		[EntityProperty(Description = "The Character geometry file to load. Usually a .cdf file.", Type = EntityPropertyType.Character)]
+		public string CharacterGeometry
+		{
+			get
+			{
+				return _characterGeometry;
+			}
+			set
+			{
+				if(_characterGeometry != value)
+				{
+					_characterGeometry = value;
+					CharacterSlot = Entity.LoadCharacter(CharacterSlot, value);
+					_dirty = true;
+				}
+			}
+		}
+
 		/// <summary>
 		/// The Animator will try to animate the character in this slot of its Entity.
 		/// </summary>
@@ -140,8 +163,8 @@ namespace CryEngine.Game
 		/// </summary>
 		/// <value><c>true</c> if animation driven motion; otherwise, <c>false</c>.</value>
 		[EntityProperty(Description = "If true, the animation will move this Entity.")]
-		public bool AnimationDrivenMotion 
-		{ 
+		public bool AnimationDrivenMotion
+		{
 			get
 			{
 				var skeleton = _character?.AnimationSkeleton;
@@ -172,8 +195,8 @@ namespace CryEngine.Game
 		/// </summary>
 		/// <value>The animation speed.</value>
 		[EntityProperty(Description = "Influences the speed at which animations play.")]
-		public float PlaybackScale 
-		{ 
+		public float PlaybackScale
+		{
 			get
 			{
 				if(_character == null)
@@ -215,7 +238,7 @@ namespace CryEngine.Game
 			base.OnGameplayStart();
 
 			// When the gameplay starts all values are assumed to be set correctly, so log any errors that might occur.
-            Initialize(false);
+			Initialize(false);
 		}
 
 		protected override void OnEditorGameModeChange(bool enterGame)
@@ -279,12 +302,15 @@ namespace CryEngine.Game
 				return;
 			}
 
+			string characterGeometry = _characterGeometry;
 			string mannequinControllerDefinition = ControllerDefinition;
 			string mannequinContextName = MannequinContext;
 			string animationDatabasePath = AnimationDatabase;
 			string startFragmentName = StartFragmentName;
 
-			if(string.IsNullOrWhiteSpace(mannequinControllerDefinition) ||
+
+			if(string.IsNullOrWhiteSpace(characterGeometry) ||
+			   string.IsNullOrWhiteSpace(mannequinControllerDefinition) ||
 			   string.IsNullOrWhiteSpace(mannequinContextName) ||
 			   string.IsNullOrWhiteSpace(animationDatabasePath) ||
 			   string.IsNullOrWhiteSpace(startFragmentName))
@@ -296,6 +322,7 @@ namespace CryEngine.Game
 				return;
 			}
 
+			CharacterSlot = entity.LoadCharacter(CharacterSlot, characterGeometry);
 			var character = entity.GetCharacter(CharacterSlot);
 			if(character == null)
 			{
@@ -372,7 +399,7 @@ namespace CryEngine.Game
 			_actionController.Queue(animationContextAction);
 
 			// Decide if movement is coming from the animation (root joint offset). If false, we control this entirely via physics.
-			var skeleton = character.AnimationSkeleton;
+			var skeleton = character?.AnimationSkeleton;
 			if(skeleton == null)
 			{
 				if(!silent)
@@ -500,7 +527,7 @@ namespace CryEngine.Game
 
 			if(_dirty)
 			{
-                Initialize(false);
+				Initialize(false);
 			}
 
 			if(tag == null)
@@ -541,7 +568,7 @@ namespace CryEngine.Game
 
 			if(_dirty)
 			{
-                Initialize(false);
+				Initialize(false);
 			}
 
 			if(_character == null)

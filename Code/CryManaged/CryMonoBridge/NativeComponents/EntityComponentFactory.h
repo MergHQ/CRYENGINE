@@ -20,7 +20,10 @@ enum class EEntityPropertyType : uint32
 	AnyFile,
 	Sound,
 	Material,
-	Animation
+	Animation,
+	Character,
+	ActionMapName,
+	ActionMapActionName
 };
 
 class CManagedEntityComponent;
