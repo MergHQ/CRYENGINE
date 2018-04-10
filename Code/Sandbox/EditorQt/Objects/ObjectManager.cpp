@@ -1180,6 +1180,36 @@ void CObjectManager::DeleteAllObjects()
 	m_nameNumbersMap.clear();
 }
 
+void CObjectManager::CloneObjects(std::vector<CBaseObject*>& objects, std::vector<CBaseObject*>& outClonedObjects)
+{
+	CObjectCloneContext cloneContext;
+
+	for (CBaseObject* pObject : objects)
+	{
+		// Clone every object.
+		CBaseObject* pNewObj = CloneObject(pObject);
+		if (!pNewObj) // can be null, e.g. sequence can't be cloned
+		{
+			continue;
+		}
+		cloneContext.AddClone(pObject, pNewObj);
+	}
+
+	// Only after everything was cloned, call PostClone on all cloned objects.
+	// Copy objects map as it can be invalidated during PostClone
+	auto objectsMap = cloneContext.m_objectsMap;
+	for (auto it : objectsMap)
+	{
+		CBaseObject* pFromObject = it.first;
+		CBaseObject* pClonedObject = it.second;
+		if (pClonedObject)
+		{
+			pClonedObject->PostClone(pFromObject, cloneContext);
+			outClonedObjects.push_back(pClonedObject);
+		}
+	}
+}
+
 CBaseObject* CObjectManager::CloneObject(CBaseObject* obj)
 {
 	CRY_ASSERT(obj);

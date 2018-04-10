@@ -467,20 +467,38 @@ void CPrefabManager::CloneObjectsFromPrefabs(std::vector<CBaseObject*>& childObj
 //////////////////////////////////////////////////////////////////////////
 void CPrefabManager::CloneAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
 {
-	if (prefabs.empty())
-		return;
+	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 
-	CUndo undo("Clone All from Prefab(s)");
+	CUndo undo("Clone all from prefab(s)");
 
-	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
 	pObjectManager->ClearSelection();
 
-	std::vector<CBaseObject*> clonedObjects;
-
+	std::vector<CBaseObject*> objectsToSelect;
 	for (CPrefabObject* pPrefab : prefabs)
-		pPrefab->CloneAll(clonedObjects);
+	{
+		bool autoUpdatePrefab = pPrefab->GetAutoUpdatePrefab();
+		pPrefab->SetAutoUpdatePrefab(false);
 
-	pObjectManager->SelectObjects(clonedObjects);
+		auto childCount = pPrefab->GetChildCount();
+		std::vector<CBaseObject*> children;
+		std::vector<CBaseObject*> newChildren;
+		children.reserve(childCount);
+		newChildren.reserve(childCount);
+
+		for (auto i = 0; i < childCount; ++i)
+		{
+			children.push_back(pPrefab->GetChild(i));
+		}
+
+		pObjectManager->CloneObjects(children, newChildren);
+
+		pPrefab->RemoveMembers(newChildren);
+		pPrefab->SetAutoUpdatePrefab(autoUpdatePrefab);
+
+		objectsToSelect.insert(objectsToSelect.cend(), newChildren.begin(), newChildren.end());
+	}
+
+	pObjectManager->SelectObjects(objectsToSelect);
 }
 
 void CPrefabManager::CloneAllFromSelection()
