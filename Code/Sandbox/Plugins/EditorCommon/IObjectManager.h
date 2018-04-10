@@ -91,6 +91,8 @@ public:
 	virtual void         DeleteObject(CBaseObject* obj) = 0;
 	virtual void         DeleteObjects(std::vector<CBaseObject*>& objects) = 0;
 	virtual void         DeleteAllObjects() = 0;
+
+	virtual void         CloneObjects(std::vector<CBaseObject*>& objects, std::vector<CBaseObject*>& outClonedObjects) = 0;
 	virtual CBaseObject* CloneObject(CBaseObject* obj) = 0;
 
 	//! Get number of objects manager by ObjectManager (not contain sub objects of groups).

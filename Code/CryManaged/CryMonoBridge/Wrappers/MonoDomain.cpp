@@ -154,7 +154,7 @@ CMonoLibrary* CMonoDomain::LoadLibrary(const char* path, int loadIndex)
 	return nullptr;
 }
 
-CMonoLibrary& CMonoDomain::GetLibraryFromMonoAssembly(MonoInternals::MonoAssembly* pAssembly)
+CMonoLibrary& CMonoDomain::GetLibraryFromMonoAssembly(MonoInternals::MonoAssembly* pAssembly, MonoInternals::MonoImage* pImage)
 {
 	for (const std::unique_ptr<CMonoLibrary>& pLibrary : m_loadedLibraries)
 	{
@@ -162,12 +162,21 @@ CMonoLibrary& CMonoDomain::GetLibraryFromMonoAssembly(MonoInternals::MonoAssembl
 		{
 			return *pLibrary.get();
 		}
+		else if (pLibrary.get()->GetImage() == pImage)
+		{
+			if (pAssembly != nullptr && pLibrary.get()->GetAssembly() == nullptr)
+			{
+				pLibrary.get()->SetAssembly(pAssembly);
+			}
+
+			return *pLibrary.get();
+		}
 	}
 
 	MonoInternals::MonoAssemblyName* pAssemblyName = MonoInternals::mono_assembly_get_name(pAssembly);
 	string assemblyPath = MonoInternals::mono_assembly_name_get_name(pAssemblyName);
 	
-	m_loadedLibraries.emplace_back(stl::make_unique<CMonoLibrary>(pAssembly, assemblyPath, this));
+	m_loadedLibraries.emplace_back(stl::make_unique<CMonoLibrary>(pAssembly, pImage, assemblyPath, this));
 	return *m_loadedLibraries.back().get();
 }
 

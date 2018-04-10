@@ -76,6 +76,12 @@ void CMonoObject::AssignObject(MonoInternals::MonoObject* pObject)
 	m_gcHandle = MonoInternals::mono_gchandle_new(m_pObject, true);
 }
 
+void CMonoObject::InvalidateBeforeDeserialization()
+{
+	m_pObject = nullptr;
+	m_gcHandle = 0;
+}
+
 CMonoClass* CMonoObject::GetClass()
 {
 	if (m_pClass == nullptr)
@@ -84,7 +90,7 @@ CMonoClass* CMonoObject::GetClass()
 		MonoInternals::MonoImage* pImage = MonoInternals::mono_class_get_image(pClass);
 		MonoInternals::MonoAssembly* pAssembly = MonoInternals::mono_image_get_assembly(pImage);
 
-		CMonoLibrary& library = GetMonoRuntime()->GetActiveDomain()->GetLibraryFromMonoAssembly(pAssembly);
+		CMonoLibrary& library = GetMonoRuntime()->GetActiveDomain()->GetLibraryFromMonoAssembly(pAssembly, pImage);
 		m_pClass = library.GetClassFromMonoClass(pClass);
 	}
 

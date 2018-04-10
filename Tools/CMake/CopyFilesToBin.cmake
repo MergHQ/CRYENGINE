@@ -40,11 +40,6 @@ macro(add_optional_runtime_files)
 		set (BinaryFileList_Win32 ${BinaryFileList_Win32} "${SDK_DIR}/CrashRpt/1403/bin/x86/CrashSender1403.exe")
 	endif()
 
-	if (OPTION_CRYMONO)
-		set (BinaryFileList_Win64 ${BinaryFileList_Win64} "${SDK_DIR}/Mono/lib/x64/mono-2.0-sgen.dll")
-		set (BinaryFileList_Win32 ${BinaryFileList_Win32} "${SDK_DIR}/Mono/lib/x86/mono-2.0-sgen.dll")
-	endif()
-
 	if (PLUGIN_VR_OCULUS OR AUDIO_OCULUS_HRTF)
 		set (BinaryFileList_Win64 ${BinaryFileList_Win64} "${SDK_DIR}/audio/oculus/wwise/x64/bin/plugins/OculusSpatializerWwise.dll")
 		set (BinaryFileList_Win32 ${BinaryFileList_Win32} "${SDK_DIR}/audio/oculus/wwise/Win32/bin/plugins/OculusSpatializerWwise.dll")

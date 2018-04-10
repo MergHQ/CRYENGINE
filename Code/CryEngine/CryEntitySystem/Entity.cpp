@@ -81,7 +81,7 @@ void CEntity::PreInit(SEntitySpawnParams& params)
 	}
 
 	// #netentity Will be addressed in BindToNetwork-refactoring
-	m_pNetEntity = std::unique_ptr<INetEntity>(new CNetEntity(this));
+	m_pNetEntity = std::unique_ptr<INetEntity>(new CNetEntity(this, params));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -397,8 +397,6 @@ bool CEntity::Init(SEntitySpawnParams& params)
 		// Physics state serialization must be after full initialization
 		m_physics.SerializeXML(params.entityNode, true);
 	}
-
-	g_pIEntitySystem->RemoveSpawnSerializerForEntity(GetId());
 
 	// Initialize rendered slots last
 	m_render.PostInit();
@@ -1803,7 +1801,9 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 	// Automatically assign transformation if necessary
 	if (pComponent->GetComponentFlags().Check(EEntityComponentFlags::Transform) && pComponent->GetTransform() == nullptr)
 	{
-		pComponent->SetTransformMatrix(IDENTITY);
+		pComponent->m_pTransform = std::make_shared<CryTransform::CTransform>();
+
+		UpdateSlotForComponent(pComponent.get(), false);
 	}
 
 	// Proxy component must be last in the order of the event processing
@@ -1814,15 +1814,6 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 
 	// Entity has changed so make the state dirty
 	m_componentChangeState++;
-
-	// If we have not spawned fully yet, allow all components to serialize replicated network data
-	if (!HasInternalFlag(CEntity::EInternalFlag::Initialized))
-	{
-		if (TSerialize* pSpawnSerializer = g_pIEntitySystem->GetSpawnSerializerForEntity(GetId()))
-		{
-			pComponent->NetReplicateSerialize(*pSpawnSerializer);
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2511,7 +2502,7 @@ IRenderNode* CEntity::GetSlotRenderNode(int nSlot)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::UpdateSlotForComponent(IEntityComponent* pComponent)
+void CEntity::UpdateSlotForComponent(IEntityComponent* pComponent, bool callOnTransformChanged)
 {
 	int slotId = pComponent->GetEntitySlotId();
 	if (slotId == IEntityComponent::EmptySlotId)
@@ -2538,7 +2529,10 @@ void CEntity::UpdateSlotForComponent(IEntityComponent* pComponent)
 		pComponent->SetTransformMatrix(IDENTITY);
 	}
 
-	pComponent->OnTransformChanged();
+	if (callOnTransformChanged)
+	{
+		pComponent->OnTransformChanged();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

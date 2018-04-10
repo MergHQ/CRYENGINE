@@ -103,7 +103,7 @@ class CLoseFocusTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CLoseFocusTrigger(TriggerImplId const id, Impl::IImpl& iImpl);
+	explicit CLoseFocusTrigger(TriggerImplId const id, Impl::IImpl& iimpl);
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
@@ -111,14 +111,14 @@ public:
 
 private:
 
-	Impl::IImpl& m_iImpl;
+	Impl::IImpl& m_iimpl;
 };
 
 class CGetFocusTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CGetFocusTrigger(TriggerImplId const id, Impl::IImpl& iImpl);
+	explicit CGetFocusTrigger(TriggerImplId const id, Impl::IImpl& iimpl);
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
@@ -126,14 +126,14 @@ public:
 
 private:
 
-	Impl::IImpl& m_iImpl;
+	Impl::IImpl& m_iimpl;
 };
 
 class CMuteAllTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CMuteAllTrigger(TriggerImplId const id, Impl::IImpl& iImpl);
+	explicit CMuteAllTrigger(TriggerImplId const id, Impl::IImpl& iimpl);
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
@@ -141,28 +141,28 @@ public:
 
 private:
 
-	Impl::IImpl& m_iImpl;
+	Impl::IImpl& m_iimpl;
 };
 
 class CUnmuteAllTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CUnmuteAllTrigger(TriggerImplId const id, Impl::IImpl& iImpl);
+	explicit CUnmuteAllTrigger(TriggerImplId const id, Impl::IImpl& iimpl);
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
 	// ~CATLTriggerImpl
 
 private:
-	Impl::IImpl& m_iImpl;
+	Impl::IImpl& m_iimpl;
 };
 
 class CPauseAllTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CPauseAllTrigger(TriggerImplId const id, Impl::IImpl& iImpl);
+	explicit CPauseAllTrigger(TriggerImplId const id, Impl::IImpl& iimpl);
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
@@ -170,14 +170,14 @@ public:
 
 private:
 
-	Impl::IImpl& m_iImpl;
+	Impl::IImpl& m_iimpl;
 };
 
 class CResumeAllTrigger final : public CATLTriggerImpl
 {
 public:
 
-	explicit CResumeAllTrigger(TriggerImplId const id, Impl::IImpl& iImpl);
+	explicit CResumeAllTrigger(TriggerImplId const id, Impl::IImpl& iimpl);
 
 	// CATLTriggerImpl
 	virtual ERequestStatus Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const override;
@@ -185,7 +185,7 @@ public:
 
 private:
 
-	Impl::IImpl& m_iImpl;
+	Impl::IImpl& m_iimpl;
 };
 
 class CAbsoluteVelocityParameter final : public IParameterImpl

@@ -2,6 +2,7 @@
 #pragma once
 
 #include <CryNetwork/INetEntity.h>
+#include <array>
 
 class CEntity;
 
@@ -10,7 +11,7 @@ struct SEntitySchedulingProfiles;
 class CNetEntity final : public INetEntity
 {
 public:
-	explicit CNetEntity(CEntity* pEntity);
+	explicit CNetEntity(CEntity* pEntity, const SEntitySpawnParams& params);
 	virtual ~CNetEntity();
 
 	virtual bool                  BindToNetwork(EBindToNetworkMode mode) override;
@@ -49,7 +50,7 @@ public:
 
 	virtual void                  OnNetworkedEntityTransformChanged(EntityTransformationFlagsMask transformReasons) override;
 
-	virtual void                  OnEntityInitialized() override {}
+	virtual void                  OnEntityInitialized() override;
 
 	static void                   UpdateSchedulingProfiles();
 
@@ -59,17 +60,18 @@ private:
 
 private:
 	CEntity*                         m_pEntity;
-	IGameObjectProfileManager*       m_pProfileManager;
+	IGameObjectProfileManager*       m_pProfileManager = nullptr;
 	const SEntitySchedulingProfiles* m_schedulingProfiles;
 	std::vector<SRmiHandler>         m_rmiHandlers;
+	TSerialize*                      m_pSpawnSerializer = nullptr;
 
-	NetworkAspectType                m_enabledAspects;
-	NetworkAspectType                m_delegatableAspects;
-	EntityId                         m_cachedParentId;
+	NetworkAspectType                m_enabledAspects = NET_ASPECT_ALL;
+	NetworkAspectType                m_delegatableAspects = NET_ASPECT_ALL;
+	EntityId                         m_cachedParentId = INVALID_ENTITYID;
 
-	uint16                           m_channelId;
+	uint16                           m_channelId = 0;
 	uint8                            m_isBoundToNetwork    : 1;
 	uint8                            m_hasAuthority        : 1;
 	uint8                            m_bNoSyncPhysics      : 1;
-	uint8                            m_profiles[NUM_ASPECTS];
+	std::array<uint8, NUM_ASPECTS>   m_profiles;
 };

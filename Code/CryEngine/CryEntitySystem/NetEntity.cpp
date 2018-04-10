@@ -11,20 +11,15 @@ class CNetEntity;
 static std::set<CNetEntity*> g_updateSchedulingProfile;
 static CryCriticalSection g_updateSchedulingProfileCritSec;
 
-CNetEntity::CNetEntity(CEntity *entity_)
-	: m_pEntity(entity_)
-	, m_channelId(0)
-	, m_enabledAspects(NET_ASPECT_ALL)
-	, m_delegatableAspects(NET_ASPECT_ALL)
+CNetEntity::CNetEntity(CEntity* pEntity, const SEntitySpawnParams& params)
+	: m_pEntity(pEntity)
 	, m_isBoundToNetwork(false)
 	, m_bNoSyncPhysics(false)
-	, m_pProfileManager(0)
-	, m_cachedParentId(0)
-	, m_schedulingProfiles(gEnv->pGameFramework->GetEntitySchedulerProfiles(entity_))
 	, m_hasAuthority(false)
+	, m_schedulingProfiles(gEnv->pGameFramework->GetEntitySchedulerProfiles(pEntity))
+	, m_pSpawnSerializer(params.pSpawnSerializer)
 {
-	for (int i = 0; i < NUM_ASPECTS; i++)
-		m_profiles[i] = 255;
+	m_profiles.fill(255);
 };
 
 CNetEntity::~CNetEntity()
@@ -405,6 +400,21 @@ void CNetEntity::OnNetworkedEntityTransformChanged(EntityTransformationFlagsMask
 				drawDistance = pRN->GetMaxViewDist();
 		m_pNetContext->ChangedTransform(entId, pEntity->GetWorldPos(), pEntity->GetWorldRotation(), drawDistance);
 #endif
+	}
+}
+
+void CNetEntity::OnEntityInitialized()
+{
+	if(m_pSpawnSerializer != nullptr)
+	{
+		m_pEntity->m_components.ForEach([this](const SEntityComponentRecord& componentRecord) -> bool
+		{
+			componentRecord.pComponent->NetReplicateSerialize(*m_pSpawnSerializer);
+			return true;
+		});
+
+		// Spawn serializer will be released after entity initialization
+		m_pSpawnSerializer = nullptr;
 	}
 }
 

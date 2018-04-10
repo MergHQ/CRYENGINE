@@ -125,106 +125,86 @@ ERequestStatus CDoNothingTrigger::Execute(Impl::IObject* const pImplObject, Impl
 }
 
 //////////////////////////////////////////////////////////////////////////
-CLoseFocusTrigger::CLoseFocusTrigger(TriggerImplId const id, Impl::IImpl& iImpl)
+CLoseFocusTrigger::CLoseFocusTrigger(TriggerImplId const id, Impl::IImpl& iimpl)
 	: CATLTriggerImpl(id)
-	, m_iImpl(iImpl)
+	, m_iimpl(iimpl)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CLoseFocusTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
 {
-	ERequestStatus result = ERequestStatus::SuccessDoNotTrack;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	if (g_cvars.m_ignoreWindowFocus == 0)
-	{
-		result = m_iImpl.OnLoseFocus();
-	}
-#else
-	result = m_iImpl.OnLoseFocus();
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
+	ERequestStatus const result = m_iimpl.OnLoseFocus();
 	return result == ERequestStatus::Success ? ERequestStatus::SuccessDoNotTrack : result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-CGetFocusTrigger::CGetFocusTrigger(TriggerImplId const id, Impl::IImpl& iImpl)
+CGetFocusTrigger::CGetFocusTrigger(TriggerImplId const id, Impl::IImpl& iimpl)
 	: CATLTriggerImpl(id)
-	, m_iImpl(iImpl)
+	, m_iimpl(iimpl)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CGetFocusTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
 {
-	ERequestStatus result = ERequestStatus::SuccessDoNotTrack;
-
-#if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-	if (g_cvars.m_ignoreWindowFocus == 0)
-	{
-		result = m_iImpl.OnGetFocus();
-	}
-#else
-	result = m_iImpl.OnGetFocus();
-#endif  // INCLUDE_AUDIO_PRODUCTION_CODE
-
+	ERequestStatus const result = m_iimpl.OnGetFocus();
 	return result == ERequestStatus::Success ? ERequestStatus::SuccessDoNotTrack : result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-CMuteAllTrigger::CMuteAllTrigger(TriggerImplId const id, Impl::IImpl& iImpl)
+CMuteAllTrigger::CMuteAllTrigger(TriggerImplId const id, Impl::IImpl& iimpl)
 	: CATLTriggerImpl(id)
-	, m_iImpl(iImpl)
+	, m_iimpl(iimpl)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CMuteAllTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
 {
-	ERequestStatus const result = m_iImpl.MuteAll();
+	ERequestStatus const result = m_iimpl.MuteAll();
 	return result == ERequestStatus::Success ? ERequestStatus::SuccessDoNotTrack : result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-CUnmuteAllTrigger::CUnmuteAllTrigger(TriggerImplId const id, Impl::IImpl& iImpl)
+CUnmuteAllTrigger::CUnmuteAllTrigger(TriggerImplId const id, Impl::IImpl& iimpl)
 	: CATLTriggerImpl(id)
-	, m_iImpl(iImpl)
+	, m_iimpl(iimpl)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CUnmuteAllTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
 {
-	ERequestStatus const result = m_iImpl.UnmuteAll();
+	ERequestStatus const result = m_iimpl.UnmuteAll();
 	return result == ERequestStatus::Success ? ERequestStatus::SuccessDoNotTrack : result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-CPauseAllTrigger::CPauseAllTrigger(TriggerImplId const id, Impl::IImpl& iImpl)
+CPauseAllTrigger::CPauseAllTrigger(TriggerImplId const id, Impl::IImpl& iimpl)
 	: CATLTriggerImpl(id)
-	, m_iImpl(iImpl)
+	, m_iimpl(iimpl)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CPauseAllTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
 {
-	ERequestStatus const result = m_iImpl.PauseAll();
+	ERequestStatus const result = m_iimpl.PauseAll();
 	return result == ERequestStatus::Success ? ERequestStatus::SuccessDoNotTrack : result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-CResumeAllTrigger::CResumeAllTrigger(TriggerImplId const id, Impl::IImpl& iImpl)
+CResumeAllTrigger::CResumeAllTrigger(TriggerImplId const id, Impl::IImpl& iimpl)
 	: CATLTriggerImpl(id)
-	, m_iImpl(iImpl)
+	, m_iimpl(iimpl)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CResumeAllTrigger::Execute(Impl::IObject* const pImplObject, Impl::IEvent* const pImplEvent) const
 {
-	ERequestStatus const result = m_iImpl.ResumeAll();
+	ERequestStatus const result = m_iimpl.ResumeAll();
 	return result == ERequestStatus::Success ? ERequestStatus::SuccessDoNotTrack : result;
 }
 

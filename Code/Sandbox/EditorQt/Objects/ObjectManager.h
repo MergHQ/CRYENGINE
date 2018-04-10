@@ -60,7 +60,9 @@ public:
 	void         DeleteObjects(std::vector<CBaseObject*>& objects);
 
 	void         DeleteAllObjects();
-	CBaseObject* CloneObject(CBaseObject* obj);
+
+	void         CloneObjects(std::vector<CBaseObject*>& objects, std::vector<CBaseObject*>& outClonedObjects) override;
+	CBaseObject* CloneObject(CBaseObject* obj) override;
 
 	//! Get number of objects manager by ObjectManager (not contain sub objects of groups).
 	int GetObjectCount() const;
@@ -392,11 +394,11 @@ private:
 	uint32 m_forceID;
 
 	//! Array of currently visible objects.
-	TBaseObjects m_visibleObjects;
-	bool         m_bVisibleObjectValid;
-	unsigned int m_lastHideMask;
+	TBaseObjects    m_visibleObjects;
+	bool            m_bVisibleObjectValid;
+	unsigned int    m_lastHideMask;
 
-	float        m_maxObjectViewDistRatio;
+	float           m_maxObjectViewDistRatio;
 
 	CSelectionGroup m_currSelection;
 

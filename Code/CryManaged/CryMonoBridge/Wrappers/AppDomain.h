@@ -10,7 +10,7 @@ class CAppDomain final : public CMonoDomain
 	friend class CMonoRuntime;
 
 public:
-	CAppDomain(char *name, bool bActivate = false);
+	CAppDomain(const char *name, bool bActivate = false);
 	CAppDomain(MonoInternals::MonoDomain* pMonoDomain);
 	virtual ~CAppDomain();
 
@@ -20,6 +20,8 @@ public:
 	virtual bool Reload() override;
 	virtual bool IsReloading() override { return m_isReloading; }
 	// ~CMonoDomain
+
+	void Initialize();
 
 	CMonoLibrary* GetCryCommonLibrary() const { return m_pLibCommon; }
 	CMonoLibrary* GetCryCoreLibrary() const { return m_pLibCore; }
@@ -31,7 +33,7 @@ public:
 	std::shared_ptr<CMonoObject> DeserializeObject(CMonoObject* pSerializer, const CMonoClass* const pObjectClass);
 
 protected:
-	void CreateDomain(char *name, bool bActivate);
+	void CreateDomain(const char *name, bool bActivate);
 
 	void SerializeDomainData(std::vector<char>& bufferOut);
 	std::shared_ptr<CMonoObject> CreateDeserializer(const std::vector<char>& serializedData);

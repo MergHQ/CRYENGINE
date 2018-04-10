@@ -106,7 +106,7 @@ public:
 
 	virtual CRootMonoDomain*            GetRootDomain() override;
 	virtual CMonoDomain*                GetActiveDomain() override;
-	virtual CAppDomain*                 CreateDomain(char* name, bool bActivate = false) override;
+	virtual CAppDomain*                 CreateDomain(const char* name, bool bActivate = false) override;
 	virtual void                        ReloadPluginDomain() override;
 
 	virtual CMonoLibrary*               GetCryCommonLibrary() const override;

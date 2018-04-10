@@ -47,7 +47,7 @@ public:
 	static std::shared_ptr<CMonoString> CreateString(MonoInternals::MonoString* pManagedString);
 	
 	CMonoLibrary* LoadLibrary(const char* szPath, int loadInded = -1);
-	CMonoLibrary& GetLibraryFromMonoAssembly(MonoInternals::MonoAssembly* pAssembly);
+	CMonoLibrary& GetLibraryFromMonoAssembly(MonoInternals::MonoAssembly* pAssembly, MonoInternals::MonoImage* pImage);
 
 	MonoInternals::MonoDomain* GetHandle() const { return m_pDomain; }
 

@@ -48,43 +48,22 @@ CObjectCloneTool::~CObjectCloneTool()
 
 void CObjectCloneTool::CloneSelection()
 {
-	CSelectionGroup selObjects;
-	CSelectionGroup sel;
-
 	const CSelectionGroup* currSelection = GetIEditorImpl()->GetSelection();
 	currSelection->FilterParents();
 
+	std::vector<CBaseObject*> objects;
 	std::vector<CBaseObject*> newObjects;
+	objects.reserve(currSelection->GetFilteredCount());
 	newObjects.reserve(currSelection->GetFilteredCount());
-
-	CObjectCloneContext cloneContext;
 
 	auto pObjMan = GetIEditor()->GetObjectManager();
 
 	// Clone every object.
 	for (int i = 0; i < currSelection->GetFilteredCount(); i++)
 	{
-		CBaseObject* pFromObject = currSelection->GetFilteredObject(i);
-		CBaseObject* newObj = pObjMan->CloneObject(pFromObject);
-		if (!newObj) // can be null, e.g. sequence can't be cloned
-		{
-			continue;
-		}
-
-		cloneContext.AddClone(pFromObject, newObj);
-		newObjects.push_back(newObj);
+		objects.push_back(currSelection->GetFilteredObject(i));
 	}
-
-	// Only after everything was cloned, call PostClone on all cloned objects.
-	//Copy objects map as it can be invalidated during PostClone
-	auto objectsMap = cloneContext.m_objectsMap;
-	for (auto it : objectsMap)
-	{
-		CBaseObject* pFromObject = it.first;
-		CBaseObject* pClonedObject = it.second;
-		if (pClonedObject)
-			pClonedObject->PostClone(pFromObject, cloneContext);
-	}
+	pObjMan->CloneObjects(objects, newObjects);
 
 	GetIEditorImpl()->ClearSelection();
 	GetIEditorImpl()->SelectObjects(newObjects);
@@ -139,7 +118,7 @@ bool CObjectCloneTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint&
 				bool followTerrain = false;
 
 				int axis = GetIEditorImpl()->GetAxisConstrains();
-				
+
 				Vec3 p1 = m_initPosition;
 				Vec3 p2 = view->MapViewToCP(point);
 				if (p2.IsZero())
@@ -148,7 +127,7 @@ bool CObjectCloneTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint&
 				Vec3 offset = view->GetCPVector(p1, p2);
 
 				offset = view->SnapToGrid(offset);
-				
+
 				int selectionFlags = CSelectionGroup::eMS_None;
 				if (GetIEditorImpl()->IsSnapToTerrainEnabled())
 					selectionFlags = CSelectionGroup::eMS_FollowTerrain;

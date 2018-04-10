@@ -21,7 +21,7 @@ class CMonoLibrary
 	// Start public API below
 public:
 	CMonoLibrary(const char* filePath, CMonoDomain* pDomain);
-	CMonoLibrary(MonoInternals::MonoAssembly* pAssembly, const char* filePath, CMonoDomain* pDomain);
+	CMonoLibrary(MonoInternals::MonoAssembly* pAssembly, MonoInternals::MonoImage* pImage, const char* filePath, CMonoDomain* pDomain);
 	~CMonoLibrary();
 	
 	bool IsLoaded() const { return m_pAssembly != nullptr; }
@@ -55,6 +55,7 @@ public:
 
 	std::shared_ptr<CMonoClass> GetClassFromMonoClass(MonoInternals::MonoClass* pClass);
 
+	void SetAssembly(MonoInternals::MonoAssembly* pAssembly) { m_pAssembly = pAssembly; }
 	MonoInternals::MonoAssembly* GetAssembly() const { return m_pAssembly; }
 	MonoInternals::MonoImage* GetImage() const { return m_pImage; }
 
