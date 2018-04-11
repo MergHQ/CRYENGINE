@@ -137,7 +137,9 @@ void CEntityAINavigationComponent::Initialize()
 	m_pPathfollower = gEnv->pAISystem->CreateAndReturnNewDefaultPathFollower(pathFollowerParams, m_pathObstacles);
 	m_movementAdapter.SetPathFollower(m_pPathfollower.get());
 
-	Reset();
+	//Temporary solution, start the component (register to movement system) now, even if the parameters aren't necessarily set
+	Start();
+	GetEntity()->UpdateComponentEventMask(this);
 }
 
 void CEntityAINavigationComponent::OnShutDown()
@@ -239,7 +241,10 @@ void CEntityAINavigationComponent::ProcessEvent(const SEntityEvent& event)
 		{
 			if (GetEntity()->GetSimulationMode() != EEntitySimulationMode::Game)
 			{
+				// Temporary solution, stop and start whole component when leaving game mode
 				Stop();
+				Start();
+
 				GetEntity()->UpdateComponentEventMask(this);
 			}
 			break;
@@ -248,7 +253,10 @@ void CEntityAINavigationComponent::ProcessEvent(const SEntityEvent& event)
 		{
 			if (IsGameOrSimulation())
 			{
+				// Temporary solution, stop and start whole component when entering game mode
+				Stop();
 				Start();
+
 				GetEntity()->UpdateComponentEventMask(this);
 			}
 			break;
@@ -362,14 +370,17 @@ bool CEntityAINavigationComponent::IsRayObstructed(const Vec3& toPosition) const
 
 void CEntityAINavigationComponent::SetNavigationAgentType(const char* szTypeName)
 {
-	if (IsGameOrSimulation())
-	{
-		CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Navigation Component: Agent Type ID for entity '%s' cannot be changed while the game is running!", GetEntity()->GetName());
-		return;
-	}
-
+	const NavigationAgentTypeID oldTypeId = m_agentTypeId;
+	
 	m_agentTypeId = gEnv->pAISystem->GetNavigationSystem()->GetAgentTypeID(szTypeName);
 	m_movementAdapter.SetNavigationAgentTypeID(m_agentTypeId);
+	
+	if(oldTypeId != m_agentTypeId)
+	{
+		// Temporary solution, stop and start whole component to re-register in movement system
+		Stop();
+		Start();
+	}
 }
 
 void CEntityAINavigationComponent::SetMovementProperties(const SMovementProperties& properties)
@@ -384,6 +395,16 @@ void CEntityAINavigationComponent::SetCollisionAvoidanceProperties(const SCollis
 		m_collisionAgent.Initialize((m_collisionAvoidanceProperties.type == SCollisionAvoidanceProperties::EType::None) ? nullptr : GetEntity());
 	}
 	m_collisionAvoidanceProperties = properties;
+}
+
+const IEntityNavigationComponent::SMovementProperties& CEntityAINavigationComponent::GetMovementProperties() const
+{
+	return m_movementProperties;
+}
+
+const IEntityNavigationComponent::SCollisionAvoidanceProperties& CEntityAINavigationComponent::GetCollisionAvoidanceProperties() const
+{
+	return m_collisionAvoidanceProperties;
 }
 
 bool CEntityAINavigationComponent::TestRaycastHit(const Vec3& toPositon, Vec3& hitPos, Vec3& hitNorm) const

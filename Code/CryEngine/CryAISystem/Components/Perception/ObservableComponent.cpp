@@ -170,6 +170,14 @@ void CEntityAIObservableComponent::UpdateChange()
 	m_changeHintFlags = EChangeHint();
 }
 
+void CEntityAIObservableComponent::UpdateChange(const uint32 changeHintFlags)
+{
+	if (IsRegistered())
+	{
+		gEnv->pAISystem->GetVisionMap()->ObservableChanged(m_observableId, m_params, changeHintFlags);
+	}
+}
+
 void CEntityAIObservableComponent::SyncWithEntity()
 {
 	m_changeHintFlags = EChangeHint(m_changeHintFlags | eChangedPosition);
@@ -189,3 +197,60 @@ void CEntityAIObservableComponent::SyncWithEntity()
 		m_params.observablePositionsCount = 1;
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityAIObservableComponent::SetTypeMask(const uint32 typeMask)
+{
+	m_visionMapType.mask = typeMask;
+
+	m_params.typeMask = typeMask;
+	UpdateChange(eChangedTypeMask);
+}
+
+void CEntityAIObservableComponent::AddObservableLocationOffsetFromPivot(const Vec3& offsetFromPivot)
+{
+	Perception::ComponentHelpers::SLocation location;
+	location.offset = offsetFromPivot;
+	location.type = Perception::ComponentHelpers::SLocation::EType::Pivot;
+	
+	m_observableLocations.locations.push_back(location);
+	Update();
+}
+
+void CEntityAIObservableComponent::AddObservableLocationOffsetFromBone(const Vec3& offsetFromBone, const char* szBoneName)
+{
+	Perception::ComponentHelpers::SLocation location;
+	location.offset = offsetFromBone;
+	location.boneName = szBoneName;
+	location.type = Perception::ComponentHelpers::SLocation::EType::Bone;
+
+	m_observableLocations.locations.push_back(location);
+	Update();
+}
+
+void CEntityAIObservableComponent::SetObservableLocationOffsetFromPivot(const size_t index, const Vec3& offsetFromPivot)
+{
+	if (index < m_observableLocations.locations.size())
+	{
+		Perception::ComponentHelpers::SLocation& location = m_observableLocations.locations[index];
+		location.offset = offsetFromPivot;
+		location.type = Perception::ComponentHelpers::SLocation::EType::Pivot;
+
+		Update();
+	}
+}
+
+void CEntityAIObservableComponent::SetObservableLocationOffsetFromBone(const size_t index, const Vec3& offsetFromBone, const char* szBoneName)
+{
+	if (index < m_observableLocations.locations.size())
+	{
+		Perception::ComponentHelpers::SLocation& location = m_observableLocations.locations[index];		
+		location.offset = offsetFromBone;
+		location.boneName = szBoneName;
+		location.type = Perception::ComponentHelpers::SLocation::EType::Bone;
+
+		Update();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////

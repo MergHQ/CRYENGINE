@@ -60,11 +60,15 @@ public:
 	virtual void   SetNavigationAgentType(const char* szTypeName) override;
 	virtual void   SetMovementProperties(const SMovementProperties& properties) override;
 	virtual void   SetCollisionAvoidanceProperties(const SCollisionAvoidanceProperties& properties) override;
+	virtual void   SetNavigationQueryFilter(const SNavMeshQueryFilterDefault& filter) override { m_navigationQueryFilter = filter; }
 	virtual bool   TestRaycastHit(const Vec3& toPositon, Vec3& hitPos, Vec3& hitNorm) const override;
 	virtual bool   IsRayObstructed(const Vec3& toPosition) const override;
 	virtual bool   IsDestinationReachable(const Vec3& destination) const override;
 	virtual void   NavigateTo(const Vec3& destination) override;
 	virtual void   StopMovement() override;
+
+	virtual const SMovementProperties& GetMovementProperties() const override;
+	virtual const SCollisionAvoidanceProperties& GetCollisionAvoidanceProperties() const override;
 
 	virtual Vec3   GetRequestedVelocity() const override;
 	virtual void   SetRequestedVelocity(const Vec3& velocity) override;
@@ -106,9 +110,6 @@ private:
 
 	Vec3                                 GetVelocity() const;
 	Vec3                                 GetPosition() const;
-
-	const SMovementProperties&           GetMovementProperties() const           { return m_movementProperties; }
-	const SCollisionAvoidanceProperties& GetCollisionAvoidanceProperties() const { return m_collisionAvoidanceProperties; }
 
 	void                                 FillPathFollowerParams(PathFollowerParams& params) const;
 

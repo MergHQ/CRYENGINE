@@ -97,6 +97,25 @@ protected:
 	virtual uint64 GetEventMask() const override { return m_entityEventMask; };
 	// ~IEntityComponent
 
+	// IEntityObserverComponent
+	virtual bool CanSee(const EntityId entityId) const override;
+
+	virtual void SetUserConditionCallback(const UserConditionCallback callback) override;
+	virtual void SetTypeMask(const uint32 typeMask) override;
+	virtual void SetTypesToObserveMask(const uint32 typesToObserverMask) override;
+	virtual void SetFactionsToObserveMask(const uint32 factionsToObserveMask) override;
+	virtual void SetFOV(const float fovInRad) override;
+	virtual void SetRange(const float range) override;
+	virtual void SetPivotOffset(const Vec3& offsetFromPivot) override;
+	virtual void SetBoneOffset(const Vec3& offsetFromBone, const char* szBoneName) override;
+
+	virtual uint32 GetTypeMask() const override;
+	virtual uint32 GetTypesToObserveMask() const override;
+	virtual uint32 GetFactionsToObserveMask() const override;
+	virtual float GetFOV() const override;
+	virtual float GetRange() const override;
+	// ~IEntityObserverComponent
+
 private:
 	void   Update();
 	void   Reset(EEntitySimulationMode simulationMode);
@@ -107,8 +126,9 @@ private:
 
 	void   SyncWithEntity();
 	void   UpdateChange();
+	void   UpdateChange(uint32 changeHintFlags);
 
-	bool   CanSee(Schematyc::ExplicitEntityId entityId) const;
+	bool   CanSeeSchematyc(Schematyc::ExplicitEntityId entityId) const;
 
 	bool   OnObserverUserCondition(const VisionID& observerId, const ObserverParams& observerParams, const VisionID& observableId, const ObservableParams& observableParams);
 	void   ObserverUserConditionResult(bool bResult);
@@ -131,5 +151,6 @@ private:
 	ObserverProperties::SVisionProperties        m_visionProperties;
 	Perception::ComponentHelpers::SVisionMapType m_typesToObserve;
 	SFactionFlagsMask                            m_factionsToObserve;
-	bool m_bUseUserCustomCondition = false;
+	UserConditionCallback                        m_userConditionCallback;
+	bool                                         m_bUseUserCustomCondition = false;
 };
