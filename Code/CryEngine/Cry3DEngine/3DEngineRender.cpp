@@ -1610,7 +1610,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Add clip volumes to renderer
 	////////////////////////////////////////////////////////////////////////////////////////
-	if (m_pClipVolumeManager)
+	if (m_pClipVolumeManager && GetCVars()->e_ClipVolumes)
 		m_pClipVolumeManager->PrepareVolumesForRendering(passInfo);
 
 	if (m_pPartManager)
