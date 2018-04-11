@@ -1815,6 +1815,7 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 
 	const int itype = itypePetitioner;
 	const int bAreasOnly = iszero(objtypes-ent_areas);
+	const int onlyFlagged = m_bUpdateOnlyFlagged & -(iszero(objtypes & ent_GEA_external) & 1-bAreasOnly);
 #ifndef _RELEASE
 	m_nGEA[iCaller]++;
 #endif
@@ -1945,10 +1946,10 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 										if (i==pent->m_nParts) continue;
 									}
 									pTmpEntList[nout] = pent;
-									bProcessed = !(m_bUpdateOnlyFlagged & ((int)pent->m_flags^pef_update)) || !pent->GetMassInv();
+									bProcessed = !(onlyFlagged & ((int)pent->m_flags^pef_update)) || !pent->GetMassInv();
 									bProcessed &= iszero(((CPhysicalEntity*)pGridEnt)->m_iDeletionTime);
 									nout += bProcessed; AtomicAdd(&pGridEnt->m_bProcessed, maskCaller & -bProcessed);
-								} else if (!(m_bUpdateOnlyFlagged & ((int)pent->m_flags^pef_update)) || !pent->GetMassInv()) {
+								} else if (!(onlyFlagged & ((int)pent->m_flags^pef_update)) || !pent->GetMassInv()) {
 									bProcessed = isneg(-(int)(pent->m_bProcessed & maskCaller));
 									AtomicAdd(&pent->m_lockUpdate, bProcessed^1);
 									volatile char *pw=(volatile char*)&pent->m_lockUpdate+(1+eBigEndian); for(;*pw;); // ReadLock(m_lockUpdate)
@@ -4337,7 +4338,6 @@ float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLock
 	geom_contact *pcontacts;
 	static geom_contact contactsBest[MAX_PHYS_THREADS+1];
 	geom_contact &contactBest = contactsBest[iCaller];
-	contactBest.t = 0; contactBest.pt.zero();
 
 	if (pp.entTypes & rwi_queue) {
 		WriteLock lockQ(m_lockPwiQueue);
@@ -4371,6 +4371,7 @@ float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLock
 	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 	PHYS_FUNC_PROFILER( pNameTag );
 	WriteLockCond lock(m_lockCaller[iCaller]), &lockContacts = pLockContactsExp ? *pLockContactsExp : const_cast<SPWIParams&>(pp).lockContacts;
+	contactBest.t = 0; contactBest.pt.zero();
 
 	if (pp.pip) {
 		ip = *pp.pip;
@@ -4414,7 +4415,7 @@ float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLock
 			if (((CPhysicalPlaceholder**)pp.pSkipEnts)[i]->m_pEntBuddy && !(((CPhysicalPlaceholder**)pp.pSkipEnts)[i]->m_pEntBuddy->m_bProcessed>>iCaller&1))
 				AtomicAdd(&((CPhysicalPlaceholder**)pp.pSkipEnts)[i]->m_pEntBuddy->m_bProcessed,1<<iCaller);
 		}
-		nents = GetEntitiesAround(BBox[0],BBox[1],pents,pp.entTypes,0,0,iCaller);
+		nents = GetEntitiesAround(BBox[0],BBox[1],pents,pp.entTypes | ent_GEA_external,0,0,iCaller);
 	}	else {
 		pents = (CPhysicalEntity**)pp.pSkipEnts;
 		nents = -pp.nSkipEnts;
