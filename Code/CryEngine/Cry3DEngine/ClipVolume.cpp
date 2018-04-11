@@ -6,12 +6,14 @@
 #include <CryEntitySystem/IEntitySystem.h>
 
 CClipVolume::CClipVolume()
-	: m_nStencilRef(0)
-	, m_WorldTM(IDENTITY)
+	: m_WorldTM(IDENTITY)
 	, m_InverseWorldTM(IDENTITY)
+	, m_pBspTree(NULL)
 	, m_BBoxWS(AABB::RESET)
 	, m_BBoxLS(AABB::RESET)
-	, m_pBspTree(NULL)
+	, m_nFlags(0)
+	, m_nStencilRef(0)
+	, m_viewDistRatio(100)
 {
 	memset(m_sName, 0x0, sizeof(m_sName));
 }
@@ -27,12 +29,12 @@ void CClipVolume::GetClipVolumeMesh(_smart_ptr<IRenderMesh>& renderMesh, Matrix3
 	worldTM = m_WorldTM;
 }
 
-AABB CClipVolume::GetClipVolumeBBox() const
+const AABB& CClipVolume::GetClipVolumeBBox() const
 {
 	return m_BBoxWS;
 }
 
-void CClipVolume::Update(_smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, uint32 flags)
+void CClipVolume::Update(_smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, uint8 viewDistRatio, uint32 flags)
 {
 	const bool bMeshUpdated = m_pRenderMesh != pRenderMesh;
 
@@ -43,12 +45,23 @@ void CClipVolume::Update(_smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTr
 	m_BBoxWS.Reset();
 	m_BBoxLS.Reset();
 	m_nFlags = flags;
+	m_viewDistRatio = viewDistRatio;
 
 	if (m_pRenderMesh)
 	{
 		m_pRenderMesh->GetBBox(m_BBoxLS.min, m_BBoxLS.max);
 		m_BBoxWS.SetTransformedAABB(worldTM, m_BBoxLS);
 	}
+}
+
+float CClipVolume::GetMaxViewDist() const
+{
+	const auto pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
+	const float viewDistRatioNormalized = m_viewDistRatio == 255 ? 100.0f : m_viewDistRatio * 0.01f;
+	const float clampedSize = std::min(GetFloatCVar(e_ViewDistCompMaxSize), m_BBoxWS.GetRadius());
+	const float maxViewDist = pCVars->e_ViewDistRatio * clampedSize * viewDistRatioNormalized;
+
+	return std::max(pCVars->e_ViewDistMin, maxViewDist);
 }
 
 bool CClipVolume::IsPointInsideClipVolume(const Vec3& point) const

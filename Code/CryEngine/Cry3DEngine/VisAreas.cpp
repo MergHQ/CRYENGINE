@@ -353,7 +353,7 @@ void        CVisArea::PreRender(int nReqursionLevel,
 	s_tmpCameras[m_lstCurCamerasIdx + m_lstCurCamerasLen] = CurCamera;
 	++m_lstCurCamerasLen;
 
-	if (lstVisibleAreas.Find(this) < 0)
+	if (lstVisibleAreas.Find(this) < 0 && GetCVars()->e_ClipVolumes)
 	{
 		lstVisibleAreas.Add(this);
 		m_nStencilRef = passInfo.GetIRenderView()->AddClipVolume(this);

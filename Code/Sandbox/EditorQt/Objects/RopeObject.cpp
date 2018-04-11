@@ -428,7 +428,7 @@ void CRopeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiEd
 		ar(Serialization::Range(m_ropeParams.fThickness, 0.0f, 10000.0f), "radius", "Radius");
 		SerializeBitflag(ar, m_ropeParams.nFlags, IRopeRenderNode::eRope_Smooth, "smooth", "Smooth");
 		SerializeBitflag(ar, m_ropeParams.nFlags, IRopeRenderNode::eRope_UseBones, "boned", "Use Bones");
-		ar(Serialization::Range(m_ropeParams.nNumSegments, 2, 1000), "num_segments", "Num Segments");
+		ar(Serialization::Range(m_ropeParams.nNumSegments, 1, 1000), "num_segments", "Num Segments");
 		ar(Serialization::Range(m_ropeParams.nNumSides, 2, 100), "num_sides", "Num Sides");
 		ar(m_ropeParams.sizeChange, "sizeChange", "Radius Change");
 		ar(Serialization::Range(m_ropeParams.boneSmoothIters, 0, 10), "smooth_iters", "Bone Smooth Iters");

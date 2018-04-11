@@ -21,14 +21,6 @@ GenericPlanner::GenericPlanner(NavigationAgentTypeID navigationAgentTypeID)
 	, m_pendingPathReplanning()
 	, m_pathfinderRequestQueued(false)
 {
-	gAIEnv.pNavigationSystem->AddMeshChangeCallback(m_navigationAgentTypeID, functor(*this, &GenericPlanner::OnNavigationMeshChanged));
-	gAIEnv.pNavigationSystem->AddMeshAnnotationChangeCallback(m_navigationAgentTypeID, functor(*this, &GenericPlanner::OnNavigationAnnotationChanged));
-}
-
-GenericPlanner::~GenericPlanner()
-{
-	gAIEnv.pNavigationSystem->RemoveMeshChangeCallback(m_navigationAgentTypeID, functor(*this, &GenericPlanner::OnNavigationMeshChanged));
-	gAIEnv.pNavigationSystem->RemoveMeshAnnotationChangeCallback(m_navigationAgentTypeID, functor(*this, &GenericPlanner::OnNavigationAnnotationChanged));
 }
 
 bool GenericPlanner::IsUpdateNeeded() const
@@ -123,9 +115,9 @@ IPlanner::Status GenericPlanner::Update(const MovementUpdateContext& context)
 		}
 	}
 
-	if (!m_pendingPathReplanning.bNavMeshChanged)
+	if (!m_pendingPathReplanning.bSomeBlockNeedsReplanning)
 	{
-		CheckForNeedToPathReplanningDueToNavMeshChanges(context);
+		m_pendingPathReplanning.bSomeBlockNeedsReplanning = m_plan.CheckForNeedToReplan(context);
 	}
 
 	if (m_pendingPathReplanning.IsPending())
@@ -140,93 +132,6 @@ IPlanner::Status GenericPlanner::Update(const MovementUpdateContext& context)
 	ExecuteCurrentPlan(context, OUT status);
 
 	return status;
-}
-
-void GenericPlanner::OnNavigationMeshChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID)
-{
-	QueueNavigationChange(navigationAgentTypeID, meshID, tileID, SMeshTileChange::EChangeType::AfterGeneration);
-}
-
-void GenericPlanner::OnNavigationAnnotationChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID)
-{
-	QueueNavigationChange(navigationAgentTypeID, meshID, tileID, SMeshTileChange::EChangeType::Annotation);
-}
-
-void GenericPlanner::QueueNavigationChange(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID, const SMeshTileChange::ChangeFlags& changeFlag)
-{
-	if (gAIEnv.CVars.MovementSystemPathReplanningEnabled)
-	{
-		//
-		// We're interested in the NavMesh-change only when we have a plan that we're executing or are still path-finding.
-		//
-		// Notice: The case where we're still waiting for the MNMPathfinder to find us a path is already handled by the MNMPathfinder itself.
-		//         The NavigationSystem::Update() method is carefully designed such that the order of [MNMPathfinder gets notified of NavMesh-changes],
-		//         [re-plans], [notifies of his found path] and the [time until GenericPlanner builds the plan by a call from MovementSystem::Update()] is even handling
-		//         the case where a freshly found path would immediately become invalid on the next update loop and get detected by GenericPlanner as he already has
-		//         a plan by that time.
-		//         In other words: an extra OR-check for "m_pathfinderRequestQueued == true" is not necessary here.
-		//
-		if (m_plan.HasBlocks())
-		{
-			//
-			// Ignore NavMesh changes when moving along a designer-placed path. It's the responsibility of the
-			// level designer to place paths such that they will not interfere with (his scripted) NavMesh changes.
-			//
-			if (!m_request.style.IsMovingAlongDesignedPath())
-			{
-				// extra check for whether we're already aware of some previous NavMesh-change having invalidated our path (we're just waiting for the SmartObject-traversal to finish before re-planning)
-				if (!m_pendingPathReplanning.bNavMeshChanged)
-				{
-					SMeshTileChange meshTileChange(meshID, tileID, changeFlag);
-					auto findIt = std::find(m_queuedNavMeshChanges.begin(), m_queuedNavMeshChanges.end(), meshTileChange);
-					if (findIt != m_queuedNavMeshChanges.end())
-					{
-						findIt->changeFlags |= meshTileChange.changeFlags;
-					}
-					else
-					{
-						m_queuedNavMeshChanges.push_back(meshTileChange);
-					}
-				}
-			}
-		}
-	}
-}
-
-void GenericPlanner::CheckForNeedToPathReplanningDueToNavMeshChanges(const MovementUpdateContext& context)
-{
-	AIAssert(!m_pendingPathReplanning.bNavMeshChanged);
-
-	//
-	// React to NavMesh changes:
-	// If we're no longer path-finding, we must have a plan that we might be executing already, so check with the path-follower if any NavMesh change will affect the path that
-	// is being traversed by the plan.
-	//
-
-	if (!m_pathfinderRequestQueued && m_plan.HasBlocks())
-	{
-		if (!m_pendingPathReplanning.bNavMeshChanged)
-		{
-			//
-			// Check with the path-follower for whether any of the NavMesh changes affects the path we're traversing.
-			//
-			for (const SMeshTileChange& meshTileChange : m_queuedNavMeshChanges)
-			{
-				const bool bAnnotationChange = meshTileChange.changeFlags.Check(SMeshTileChange::EChangeType::Annotation);
-				const bool bDataChange = meshTileChange.changeFlags.Check(SMeshTileChange::EChangeType::AfterGeneration);
-				if (context.pathFollower.IsRemainingPathAffectedByNavMeshChange(meshTileChange.meshID, meshTileChange.tileID, bAnnotationChange, bDataChange))
-				{
-					m_pendingPathReplanning.bNavMeshChanged = true;
-					break;
-				}
-			}
-		}
-
-		//
-		// Now, we don't need the collected NavMesh changes anymore.
-		//
-		stl::free_container(m_queuedNavMeshChanges);
-	}
 }
 
 bool GenericPlanner::IsReadyForNewRequest() const
@@ -407,7 +312,9 @@ void GenericPlanner::ProduceMoveToPlan(const MovementUpdateContext& context)
 		TPathPoints fullPath(designedPath.shape.begin(), designedPath.shape.end());
 		CNavPath navPath;
 		navPath.SetPathPoints(fullPath);
-		m_plan.AddBlock(BlockPtr(new FollowPath(navPath, .0f, m_request.style, false)));
+		const float endDistance = 0.0f;
+		const bool bLastFollowBlock = false;
+		m_plan.AddBlock(BlockPtr(new FollowPath(m_plan, m_navigationAgentTypeID, navPath, endDistance, m_request.style, bLastFollowBlock)));
 	}
 	else
 	{
@@ -479,11 +386,12 @@ void GenericPlanner::ProduceMoveToPlan(const MovementUpdateContext& context)
 				TPathPoints points;
 				points.assign(first, next);
 				path.SetPathPoints(points);
+				path.GetParams().meshID = pNavPath->GetParams().meshID;
 
 				const bool blockAfterThisIsUseExactPositioning = isLastNode && (m_request.style.GetExactPositioningRequest() != 0);
 				const bool blockAfterThisUsesSomeFormOfExactPositioning = isSmartObject || isCustomObject || blockAfterThisIsUseExactPositioning;
 				const float endDistance = blockAfterThisUsesSomeFormOfExactPositioning ? 2.5f : 0.0f;   // The value 2.5 meters was used prior to Crysis 3
-				m_plan.AddBlock(BlockPtr(new FollowPath(path, endDistance, m_request.style, isLastNode)));
+				m_plan.AddBlock(BlockPtr(new FollowPath(m_plan, m_navigationAgentTypeID, path, endDistance, m_request.style, isLastNode)));
 
 				if (lastAddedSmartObjectBlock)
 				{

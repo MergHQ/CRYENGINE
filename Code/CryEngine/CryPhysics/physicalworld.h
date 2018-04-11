@@ -26,6 +26,7 @@ struct le_precomp_entity;
 struct le_precomp_part;
 struct le_tmp_contact;
 enum { pef_step_requested = 0x40000000 };
+enum entity_query_flags_aux { ent_GEA_external = ent_reserved };
 
 template <class T> T *CONTACT_END(T *const &pnext) { return (T*)((INT_PTR)&pnext-(INT_PTR)&((T*)0)->next); }
 
@@ -422,7 +423,7 @@ public:
 
 	virtual int GetEntitiesInBox(Vec3 ptmin,Vec3 ptmax, IPhysicalEntity **&pList, int objtypes, int szListPrealloc) {
 		WriteLock lock(m_lockCaller[MAX_PHYS_THREADS]);
-		return GetEntitiesAround(ptmin,ptmax, (CPhysicalEntity**&)pList, objtypes, 0, szListPrealloc, MAX_PHYS_THREADS);
+		return GetEntitiesAround(ptmin,ptmax, (CPhysicalEntity**&)pList, objtypes | ent_GEA_external, 0, szListPrealloc, MAX_PHYS_THREADS);
 	}
 	int GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhysicalEntity **&pList, int objtypes, CPhysicalEntity *pPetitioner=0,
 		int szListPrealoc=0, int iCaller=get_iCaller());

@@ -101,7 +101,6 @@ class GenericPlanner : public IPlanner
 {
 public:
 	explicit GenericPlanner(NavigationAgentTypeID navigationAgentTypeID);
-	~GenericPlanner();
 	virtual bool   IsUpdateNeeded() const override;
 	virtual void   StartWorkingOnRequest(const MovementRequestID& requestId, const MovementRequest& request, const MovementUpdateContext& context) override;
 	virtual void   CancelCurrentRequest(MovementActor& actor) override;
@@ -117,35 +116,12 @@ private:
 	void ProduceStopPlan(const MovementUpdateContext& context);
 	bool CanReplan(const MovementRequest& request) const;
 	void StartWorkingOnRequest_Internal(const MovementRequestID& requestId, const MovementRequest& request, const MovementUpdateContext& context);
-	void OnNavigationMeshChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID);
-	void OnNavigationAnnotationChanged(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID);
-	void CheckForNeedToPathReplanningDueToNavMeshChanges(const MovementUpdateContext& context);
 
 private:
-	/// Tiles that were affected by NavMesh changes
-	struct SMeshTileChange
-	{
-		enum class EChangeType : uint8
-		{
-			AfterGeneration = 0,
-			Annotation,
-		};
-		typedef CEnumFlags<EChangeType> ChangeFlags;
-		
-		const NavigationMeshID  meshID;
-		const MNM::TileID       tileID;
-		CEnumFlags<EChangeType> changeFlags;
-
-		explicit SMeshTileChange(NavigationMeshID _meshID, const MNM::TileID _tileID, const ChangeFlags& _changeFlags) : meshID(_meshID), tileID(_tileID), changeFlags(_changeFlags) {}
-		bool operator==(const SMeshTileChange& rhs) const { return (this->tileID == rhs.tileID) && (this->meshID == rhs.meshID); }
-	};
-
-	void QueueNavigationChange(NavigationAgentTypeID navigationAgentTypeID, NavigationMeshID meshID, uint32 tileID, const SMeshTileChange::ChangeFlags& changeFlag);
-
 	// Reasons for potential path-replanning
 	struct SPendingPathReplanning
 	{
-		bool bNavMeshChanged;              // the NavMesh changed and some (or all) of its changes affect the path we're currently moving along
+		bool bSomeBlockNeedsReplanning;    // some of the movement blocks in the plan recognized potentially problematic environment changes (e.g. NavMesh regeneration), that affects them and therefore request to re-plan
 		bool bSuddenNonInterruptibleBlock; // the pathfinder returned a path after a previously interruptible block suddenly became non-interruptible (can happen when the UseSmartObject transitions from its internal "Prepare" state to "Traverse")
 
 		SPendingPathReplanning()
@@ -155,17 +131,16 @@ private:
 
 		void Clear()
 		{
-			bNavMeshChanged = bSuddenNonInterruptibleBlock = false;
+			bSomeBlockNeedsReplanning = bSuddenNonInterruptibleBlock = false;
 		}
 
 		bool IsPending() const
 		{
-			return bNavMeshChanged || bSuddenNonInterruptibleBlock;
+			return bSomeBlockNeedsReplanning || bSuddenNonInterruptibleBlock;
 		}
 	};
 
 	const NavigationAgentTypeID  m_navigationAgentTypeID;
-	std::vector<SMeshTileChange> m_queuedNavMeshChanges;
 	SPendingPathReplanning       m_pendingPathReplanning;   // dirty-flag to automatically re-path as soon as the possibly existing plan allows for it again
 	Plan                         m_plan;
 	MovementRequestID            m_requestId;

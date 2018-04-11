@@ -2864,10 +2864,10 @@ void C3DEngine::DeleteClipVolume(IClipVolume* pClipVolume)
 	m_pClipVolumeManager->DeleteClipVolume(pClipVolume);
 }
 
-void C3DEngine::UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, bool bActive, uint32 flags, const char* szName)
+void C3DEngine::UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, uint8 viewDistRatio, bool bActive, uint32 flags, const char* szName)
 {
 	MarkRNTmpDataPoolForReset();
-	m_pClipVolumeManager->UpdateClipVolume(pClipVolume, pRenderMesh, pBspTree, worldTM, bActive, flags, szName);
+	m_pClipVolumeManager->UpdateClipVolume(pClipVolume, pRenderMesh, pBspTree, worldTM, viewDistRatio, bActive, flags, szName);
 }
 
 void C3DEngine::ResetParticlesAndDecals()

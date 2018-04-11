@@ -39,8 +39,9 @@ ClipVolumeObject::ClipVolumeObject()
 		m_pVarObject = stl::make_unique<CVarObject>();
 	}
 
-	m_pVarObject->AddVariable(mv_filled, "Filled", functor(*this, &ClipVolumeObject::OnFlagsChanged));
-	m_pVarObject->AddVariable(mv_ignoreOutdoorAO, "IgnoreOutdoorAO", functor(*this, &ClipVolumeObject::OnFlagsChanged));
+	m_pVarObject->AddVariable(mv_filled, "Filled", functor(*this, &ClipVolumeObject::OnPropertyChanged));
+	m_pVarObject->AddVariable(mv_ignoreOutdoorAO, "IgnoreOutdoorAO", functor(*this, &ClipVolumeObject::OnPropertyChanged));
+	m_pVarObject->AddVariable(mv_ratioViewDist, "ViewDistRatio", functor(*this, &ClipVolumeObject::OnPropertyChanged));
 }
 
 ClipVolumeObject::~ClipVolumeObject()
@@ -401,6 +402,7 @@ void ClipVolumeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	{
 		pObject->m_pVarObject->SerializeVariable(&pObject->mv_filled, ar);
 		pObject->m_pVarObject->SerializeVariable(&pObject->mv_ignoreOutdoorAO, ar);
+		pObject->m_pVarObject->SerializeVariable(&pObject->mv_ratioViewDist, ar);
 
 		if (ar.openBlock("operators", "Operators"))
 		{
@@ -422,14 +424,14 @@ void ClipVolumeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	});
 }
 
-void ClipVolumeObject::OnFlagsChanged(IVariable* var)
+void ClipVolumeObject::OnPropertyChanged(IVariable* var)
 {
-	if (var == &mv_ignoreOutdoorAO)
+	if (var == &mv_ignoreOutdoorAO || var == &mv_ratioViewDist)
 	{
 		if (!m_pEntity)
 			return;
 		if (const auto pVolume = m_pEntity->GetOrCreateComponent<IClipVolumeComponent>())
-			pVolume->SetProperties(mv_ignoreOutdoorAO);
+			pVolume->SetProperties(mv_ignoreOutdoorAO, mv_ratioViewDist);
 	}
 	else if (var == &mv_filled)
 	{

@@ -914,9 +914,13 @@ void CRopeRenderNode::Render(const SRendParams& rParams, const SRenderingPassInf
 			m_idSkinFrame = idFrame;
 			pSD = gEnv->pRenderer->EF_CreateSkinningData(passInfo.GetIRenderView(), m_bones.size(), false);
 			memcpy(pSD->pBoneQuatsS, m_bones.data(), m_bones.size() * sizeof(DualQuat));
-			if (pSD->pPreviousSkinningRenderData = m_skinDataHist[iListPrev])
+			if (m_skinDataHist[iListPrev] && m_skinDataHist[iListPrev]->pCustomData == (void*)(INT_PTR)(idFrame-1))
+			{
+				pSD->pPreviousSkinningRenderData = m_skinDataHist[iListPrev];
 				pSD->nHWSkinningFlags |= eHWS_MotionBlured;
+			}
 			m_skinDataHist[iList] = pSD;
+			pSD->pCustomData = (void*)(INT_PTR)idFrame;
 		}
 		pOD->m_pSkinningData = pSD;
 		pObj->m_ObjFlags |= FOB_SKINNED | FOB_DYNAMIC_OBJECT;
@@ -1694,8 +1698,10 @@ void CRopeRenderNode::UpdateRenderMesh()
 
 			if (!m_params.segmentObj.empty())
 			{
-				m_bones.resize(m_params.nNumSegments+2);
-				m_filteredPoints.resize(m_params.nNumSegments+1);
+				m_bones.resize(((m_params.nFlags & (eRope_Subdivide | eRope_SegObjBends)) == eRope_SegObjBends ? max(m_params.nPhysSegments,m_params.nNumSegments) : m_params.nNumSegments) + 2);
+				m_filteredPoints.resize((int)m_bones.size()-2 > m_params.nNumSegments ? 0 : m_params.nNumSegments+1);
+				const float kt = (float)(m_bones.size()-2) / m_params.nNumSegments;
+
 				IRenderMesh *pSegMesh = m_segObj->GetRenderMesh();
 				AABB bbox = m_segObj->GetAABB();
 				int iax = m_params.segObjAxis==eRopeSeg_Auto ? idxmax3(bbox.GetSize()) : (int)m_params.segObjAxis;
@@ -1718,7 +1724,6 @@ void CRopeRenderNode::UpdateRenderMesh()
 				m_tmpIdx.resize(m_params.nNumSegments*ntris);
 				for(int i=0,iseg=0; iseg<m_params.nNumSegments; iseg++)
 				{
-					int isegPrev = max(0,iseg-1);
 					for(int j=0; j<nvtx; j++,i++)
 					{
 						vtx[i] = trans * vtxSeg[j];
@@ -1729,10 +1734,11 @@ void CRopeRenderNode::UpdateRenderMesh()
 						qtang.w = max(qtang.w, 1.0f/32767);
 						qtng[i] = SMeshQTangents(qtang * t4.w);
 						tex[i] = texSeg[j];
-						skin[i].boneIds[0] = iseg+1;
-						skin[i].boneIds[1] = isegPrev+1;
-						skin[i].boneIds[2] = iseg+2;
-						const float t = (vtx[i].x-iseg*dx)*dxInv;
+						float t = ((vtx[i].x-iseg*dx)*dxInv + iseg)*kt;
+						int ibone = (int)t;	t -= ibone;
+						skin[i].boneIds[0] = ibone+1;
+						skin[i].boneIds[1] = max(0,ibone-1)+1;
+						skin[i].boneIds[2] = ibone+2;
 						const int half = isneg(0.5f-t);
 						skin[i].weights[half+1] = 255 - (skin[i].weights[0] = 1+(int8)(254*(1-fabs(t-0.5f))) | nosmooth);
 					}
@@ -1833,7 +1839,7 @@ void CRopeRenderNode::UpdateRenderMesh()
 		float seglen = m_lenSkin / max((int)m_bones.size()-2, 1);
 		float curlen = 0, curseg, cursegInv, ki;
 		Vec3 *srcPoints = &m_physicsPoints[0];
-		if (m_filteredPoints.size() != m_physicsPoints.size() || m_params.nFlags & IRopeRenderNode::eRope_Smooth)
+		if (!m_filteredPoints.empty() && (m_filteredPoints.size() != m_physicsPoints.size() || m_params.nFlags & IRopeRenderNode::eRope_Smooth))
 		{
 			cursegInv = 1 / max(1e-6f, curseg = (m_physicsPoints[1]-m_physicsPoints[0]).len());
 			ki = m_lenSkin / (m_bones.size()-2);
