@@ -6,9 +6,9 @@
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 
-#include <IEditorImpl.h>
+#include <ISettings.h>
 #include <QtUtil.h>
-#include "FileDialogs/SystemFileDialog.h"
+#include <FileDialogs/SystemFileDialog.h>
 
 #include <QDialogButtonBox>
 #include <QGridLayout>
@@ -24,11 +24,11 @@ namespace ACE
 CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 	: CEditorDialog("AudioSystemPreferencesDialog", pParent)
 {
-	if (g_pEditorImpl != nullptr)
+	if (g_pIImpl != nullptr)
 	{
-		IImplSettings const* const pImplSettings = g_pEditorImpl->GetSettings();
+		Impl::ISettings const* const pISettings = g_pIImpl->GetSettings();
 
-		if (pImplSettings != nullptr)
+		if (pISettings != nullptr)
 		{
 			setWindowTitle(tr("Audio System Preferences"));
 
@@ -40,22 +40,22 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 			Qt::Alignment const labelAlignment = static_cast<Qt::Alignment>(Qt::AlignLeft | Qt::AlignVCenter);
 
 			pLayout->addWidget(new QLabel(tr("Audio Middleware") + ":"), 0, 0, labelAlignment);
-			pLayout->addWidget(new QLabel(QtUtil::ToQString(g_pEditorImpl->GetName())), 0, 1, labelAlignment);
+			pLayout->addWidget(new QLabel(QtUtil::ToQString(g_pIImpl->GetName())), 0, 1, labelAlignment);
 
 			pLayout->addWidget(new QLabel(tr("Assets Path") + ":"), 1, 0, labelAlignment);
-			pLayout->addWidget(new QLabel(pImplSettings->GetAssetsPath()), 1, 1);
+			pLayout->addWidget(new QLabel(pISettings->GetAssetsPath()), 1, 1);
 
 			pLayout->addWidget(new QLabel(tr("Project Path") + ":"), 2, 0, labelAlignment);
 
 			auto const pProjectPathLayout = new QHBoxLayout(this);
-			m_projectPath = pImplSettings->GetProjectPath();
+			m_projectPath = pISettings->GetProjectPath();
 			auto const pLineEdit = new QLineEdit(m_projectPath, this);
 			pLineEdit->setMinimumWidth(250);
 
 			auto const pBrowseButton = new QToolButton(this);
 			pBrowseButton->setText("...");
 
-			if (pImplSettings->SupportsProjects())
+			if (pISettings->SupportsProjects())
 			{
 				QObject::connect(pLineEdit, &QLineEdit::textChanged, [=](QString const& projectPath)
 					{
@@ -64,7 +64,7 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 
 				QObject::connect(pBrowseButton, &QToolButton::clicked, [=]()
 					{
-						if (g_pEditorImpl != nullptr)
+						if (g_pIImpl != nullptr)
 						{
 						  CSystemFileDialog::RunParams runParams;
 						  runParams.initialDir = pLineEdit->text();
@@ -97,13 +97,13 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 			QObject::connect(this, &CPreferencesDialog::SignalEnableSaveButton, pButtons->button(QDialogButtonBox::Save), &QPushButton::setEnabled);
 			QObject::connect(pButtons, &QDialogButtonBox::accepted, [=]()
 				{
-					if (g_pEditorImpl != nullptr)
+					if (g_pIImpl != nullptr)
 					{
-					  IImplSettings* const pImplSettings = g_pEditorImpl->GetSettings();
+					  Impl::ISettings* const pISettings = g_pIImpl->GetSettings();
 
-					  if (pImplSettings != nullptr)
+					  if (pISettings != nullptr)
 					  {
-					    pImplSettings->SetProjectPath(QtUtil::ToString(pLineEdit->text()));
+					    pISettings->SetProjectPath(QtUtil::ToString(pLineEdit->text()));
 					    SignalImplementationSettingsAboutToChange();
 					    CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData | EReloadFlags::BackupConnections);
 					    SignalImplementationSettingsChanged();

@@ -1,22 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "EditorImpl.h"
+#include "Impl.h"
 
 #include <CryCore/Platform/platform.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <CrySystem/ISystem.h>
 
-ACE::Wwise::CEditorImpl* g_pWwiseInterface;
+ACE::Impl::Wwise::CImpl* g_pWwiseInterface;
 
 //------------------------------------------------------------------
-extern "C" ACE_API ACE::IEditorImpl * GetAudioInterface(ISystem * pSystem)
+extern "C" ACE_API ACE::Impl::IImpl * GetAudioInterface(ISystem * pSystem)
 {
 	ModuleInitISystem(pSystem, "EditorWwise");
 
 	if (g_pWwiseInterface == nullptr)
 	{
-		g_pWwiseInterface = new ACE::Wwise::CEditorImpl();
+		g_pWwiseInterface = new ACE::Impl::Wwise::CImpl();
 	}
 
 	return g_pWwiseInterface;

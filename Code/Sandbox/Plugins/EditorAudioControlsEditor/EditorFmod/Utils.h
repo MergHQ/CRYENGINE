@@ -6,6 +6,8 @@
 
 namespace ACE
 {
+namespace Impl
+{
 namespace Fmod
 {
 static string const s_soundBanksFolderName = "Banks";
@@ -22,5 +24,6 @@ string    GetPathName(CItem const* const pItem, CItem const& rootItem);
 string    GetTypeName(EItemType const type);
 } // namespace Utils
 } // namespace Fmod
+} // namespace Impl
 } // namespace ACE
 

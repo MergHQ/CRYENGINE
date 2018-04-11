@@ -7,7 +7,6 @@
 #include "ImplementationManager.h"
 #include "ConnectionsWidget.h"
 
-#include <IEditor.h>
 #include <QtUtil.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
 
@@ -42,12 +41,12 @@ CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 
 	pMainLayout->addWidget(m_pConnectionsWidget);
 
-	if (g_pEditorImpl == nullptr)
+	if (g_pIImpl == nullptr)
 	{
 		setEnabled(false);
 	}
 
-	g_assetsManager.SignalItemAdded.Connect([this]()
+	g_assetsManager.SignalAssetAdded.Connect([this]()
 		{
 			if (!g_assetsManager.IsLoading())
 			{
@@ -55,7 +54,7 @@ CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 			}
 	  }, reinterpret_cast<uintptr_t>(this));
 
-	g_assetsManager.SignalItemRemoved.Connect([this]()
+	g_assetsManager.SignalAssetRemoved.Connect([this]()
 		{
 			if (!g_assetsManager.IsLoading())
 			{
@@ -81,7 +80,7 @@ CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 
 	g_implementationManager.SignalImplementationChanged.Connect([this]()
 		{
-			setEnabled(g_pEditorImpl != nullptr);
+			setEnabled(g_pIImpl != nullptr);
 	  }, reinterpret_cast<uintptr_t>(this));
 
 	QObject::connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_suppressUpdates = true; });
@@ -92,8 +91,8 @@ CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 //////////////////////////////////////////////////////////////////////////
 CPropertiesWidget::~CPropertiesWidget()
 {
-	g_assetsManager.SignalItemAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_assetsManager.SignalItemRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalAssetAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_assetsManager.SignalAssetRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalAssetRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_implementationManager.SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
@@ -106,7 +105,7 @@ void CPropertiesWidget::Reset()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropertiesWidget::OnSetSelectedAssets(std::vector<CAsset*> const& selectedAssets, bool const restoreSelection)
+void CPropertiesWidget::OnSetSelectedAssets(Assets const& selectedAssets, bool const restoreSelection)
 {
 	// Update property tree
 	m_pPropertyTree->detach();

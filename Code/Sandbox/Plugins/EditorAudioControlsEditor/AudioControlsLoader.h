@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "Assets.h"
-#include <CryAudio/IAudioSystem.h>
+#include "Control.h"
 
 namespace ACE
 {

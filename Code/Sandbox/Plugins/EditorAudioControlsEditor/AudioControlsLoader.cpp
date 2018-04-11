@@ -3,16 +3,11 @@
 #include "StdAfx.h"
 #include "AudioControlsLoader.h"
 
-#include "FileLoader.h"
 #include "AudioControlsEditorPlugin.h"
 
-#include <CryString/StringUtils.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
-#include <CryString/CryPath.h>
 #include <QtUtil.h>
-#include <IEditor.h>
-#include <ConfigurationManager.h>
 
 #include <QRegularExpression>
 
@@ -169,9 +164,9 @@ CAsset* CAudioControlsLoader::AddUniqueFolderPath(CAsset* pParent, QString const
 {
 	QStringList folderNames = path.split(QRegularExpression(R"((\\|\/))"), QString::SkipEmptyParts);
 
-	int const size = folderNames.length();
+	int const numFolders = folderNames.length();
 
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < numFolders; ++i)
 	{
 		if (!folderNames[i].isEmpty())
 		{
@@ -209,7 +204,7 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string co
 				}
 				else
 				{
-					Scope const scope = level.empty() ? Utils::GetGlobalScope() : g_assetsManager.GetScope(level);
+					Scope const scope = level.empty() ? GlobalScopeId : g_assetsManager.GetScope(level);
 					int const numControls = pNode->getChildCount();
 
 					for (int j = 0; j < numControls; ++j)
@@ -510,9 +505,9 @@ void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CContr
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsLoader::LoadEditorData(XmlNodeRef const pEditorDataNode, CAsset& library)
 {
-	int const size = pEditorDataNode->getChildCount();
+	int const numChildren = pEditorDataNode->getChildCount();
 
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < numChildren; ++i)
 	{
 		XmlNodeRef const pChild = pEditorDataNode->getChild(i);
 
@@ -548,9 +543,9 @@ void CAudioControlsLoader::LoadAllFolders(XmlNodeRef const pFoldersNode, CAsset&
 {
 	if ((pFoldersNode != nullptr) && (library.GetName().compareNoCase(CryAudio::s_szDefaultLibraryName) != 0))
 	{
-		int const size = pFoldersNode->getChildCount();
+		int const numChildren = pFoldersNode->getChildCount();
 
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < numChildren; ++i)
 		{
 			LoadFolderData(pFoldersNode->getChild(i), library);
 		}
@@ -572,9 +567,9 @@ void CAudioControlsLoader::LoadFolderData(XmlNodeRef const pFolderNode, CAsset& 
 			pAsset->SetDescription(description);
 		}
 
-		int const size = pFolderNode->getChildCount();
+		int const numChildren = pFolderNode->getChildCount();
 
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < numChildren; ++i)
 		{
 			LoadFolderData(pFolderNode->getChild(i), *pAsset);
 		}
@@ -586,9 +581,9 @@ void CAudioControlsLoader::LoadAllControlsEditorData(XmlNodeRef const pControlsN
 {
 	if (pControlsNode != nullptr)
 	{
-		int const size = pControlsNode->getChildCount();
+		int const numChildren = pControlsNode->getChildCount();
 
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < numChildren; ++i)
 		{
 			LoadControlsEditorData(pControlsNode->getChild(i));
 		}

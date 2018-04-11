@@ -88,7 +88,7 @@ private:
 	void                   RestoreTreeViewStates();
 	bool                   TryClose();
 
-	std::vector<CAsset*>   GetSelectedAssets();
+	Assets                 GetSelectedAssets();
 
 	CSystemControlsWidget* CreateSystemControlsWidget();
 	CPropertiesWidget*     CreatePropertiesWidget();

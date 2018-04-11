@@ -3,14 +3,15 @@
 #include "StdAfx.h"
 #include "ResourceSelectorDialog.h"
 
-#include "ResourceSelectorModel.h"
+#include "ResourceSourceModel.h"
+#include "ResourceLibraryModel.h"
+#include "ResourceFilterProxyModel.h"
 #include "AudioControlsEditorPlugin.h"
 #include "TreeView.h"
 
 #include <QtUtil.h>
 #include <QSearchBox.h>
 #include <ProxyModels/MountingProxyModel.h>
-#include <ProxyModels/DeepFilterProxyModel.h>
 
 #include <QDialogButtonBox>
 #include <QVBoxLayout>
@@ -39,7 +40,7 @@ CResourceSelectorDialog::CResourceSelectorDialog(EAssetType const type, Scope co
 	setWindowTitle("Select Audio System Control");
 
 	m_pMountingProxyModel = new CMountingProxyModel(WrapMemberFunction(this, &CResourceSelectorDialog::CreateLibraryModelFromIndex), this);
-	m_pMountingProxyModel->SetHeaderDataCallbacks(1, &ResourceModelUtils::GetHeaderData);
+	m_pMountingProxyModel->SetHeaderDataCallbacks(1, &CResourceSourceModel::GetHeaderData);
 	m_pMountingProxyModel->SetSourceModel(m_pSourceModel);
 
 	m_pFilterProxyModel->setSourceModel(m_pMountingProxyModel);
@@ -167,7 +168,7 @@ void CResourceSelectorDialog::OnUpdateSelectedControl()
 
 	if (index.isValid())
 	{
-		CAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(index, 0);
+		CAsset const* const pAsset = CSystemSourceModel::GetAssetFromIndex(index, 0);
 		m_selectionIsValid = ((pAsset != nullptr) && (pAsset->GetType() == m_type));
 
 		if (m_selectionIsValid)
@@ -188,7 +189,7 @@ QModelIndex CResourceSelectorDialog::FindItem(string const& sControlName)
 
 	if (!matches.empty())
 	{
-		CAsset* const pAsset = SystemModelUtils::GetAssetFromIndex(matches[0], 0);
+		CAsset* const pAsset = CSystemSourceModel::GetAssetFromIndex(matches[0], 0);
 
 		if (pAsset != nullptr)
 		{
@@ -198,7 +199,7 @@ QModelIndex CResourceSelectorDialog::FindItem(string const& sControlName)
 			{
 				Scope const scope = pControl->GetScope();
 
-				if (scope == Utils::GetGlobalScope() || scope == m_scope)
+				if (scope == GlobalScopeId || scope == m_scope)
 				{
 					modelIndex = matches[0];
 				}
@@ -224,7 +225,7 @@ bool CResourceSelectorDialog::eventFilter(QObject* pObject, QEvent* pEvent)
 
 			if (index.isValid())
 			{
-				CAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(index, 0);
+				CAsset const* const pAsset = CSystemSourceModel::GetAssetFromIndex(index, 0);
 
 				if ((pAsset != nullptr) && (pAsset->GetType() == EAssetType::Trigger))
 				{
@@ -254,7 +255,7 @@ void CResourceSelectorDialog::OnItemDoubleClicked(QModelIndex const& modelIndex)
 {
 	if (m_selectionIsValid)
 	{
-		CAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(modelIndex, 0);
+		CAsset const* const pAsset = CSystemSourceModel::GetAssetFromIndex(modelIndex, 0);
 
 		if ((pAsset != nullptr) && (pAsset->GetType() == m_type))
 		{
@@ -272,7 +273,7 @@ void CResourceSelectorDialog::OnContextMenu(QPoint const& pos)
 
 	if (index.isValid())
 	{
-		CAsset const* const pAsset = SystemModelUtils::GetAssetFromIndex(index, 0);
+		CAsset const* const pAsset = CSystemSourceModel::GetAssetFromIndex(index, 0);
 
 		if ((pAsset != nullptr) && (pAsset->GetType() == EAssetType::Trigger))
 		{

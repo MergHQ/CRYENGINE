@@ -6,11 +6,9 @@
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 
-#include <IEditorImpl.h>
-#include <IImplItem.h>
+#include <IItem.h>
 #include <CryString/StringUtils.h>
 #include <CrySystem/File/CryFile.h>
-#include <QtUtil.h>
 
 namespace ACE
 {
@@ -83,18 +81,18 @@ void CFileWriter::WriteAll()
 //////////////////////////////////////////////////////////////////////////
 void CFileWriter::WriteLibrary(CLibrary& library)
 {
-	if (library.IsModified())
+	if ((library.GetFlags() & EAssetFlags::IsModified) != 0)
 	{
 		LibraryStorage libraryXmlNodes;
 		size_t const itemCount = library.ChildCount();
 
-		if (library.IsDefaultControl())
+		if ((library.GetFlags() & EAssetFlags::IsDefaultControl) != 0)
 		{
 			for (size_t i = 0; i < itemCount; ++i)
 			{
 				CAsset* const pAsset = library.GetChild(i);
 
-				if ((pAsset != nullptr) && !pAsset->IsInternalControl())
+				if ((pAsset != nullptr) && ((pAsset->GetFlags() & EAssetFlags::IsInternalControl) == 0))
 				{
 					WriteItem(pAsset, "", libraryXmlNodes);
 				}
@@ -111,7 +109,7 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 		// If empty, force it to write an empty library at the root
 		if (libraryXmlNodes.empty())
 		{
-			libraryXmlNodes[Utils::GetGlobalScope()].isDirty = true;
+			libraryXmlNodes[GlobalScopeId].isDirty = true;
 		}
 
 		for (auto const& libraryPair : libraryXmlNodes)
@@ -119,7 +117,7 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 			string libraryPath = g_assetsManager.GetConfigFolderPath();
 			Scope const scope = libraryPair.first;
 
-			if (scope == Utils::GetGlobalScope())
+			if (scope == GlobalScopeId)
 			{
 				// no scope, file at the root level
 				libraryPath += library.GetName();
@@ -220,7 +218,7 @@ void CFileWriter::WriteLibrary(CLibrary& library)
 		{
 			string libraryPath = g_assetsManager.GetConfigFolderPath();
 
-			if (scope == Utils::GetGlobalScope())
+			if (scope == GlobalScopeId)
 			{
 				// no scope, file at the root level
 				libraryPath += library.GetName();
@@ -317,9 +315,9 @@ void CFileWriter::WriteControlToXML(XmlNodeRef const pNode, CControl* const pCon
 
 	if (type == EAssetType::Switch)
 	{
-		size_t const size = pControl->ChildCount();
+		size_t const numChildren = pControl->ChildCount();
 
-		for (size_t i = 0; i < size; ++i)
+		for (size_t i = 0; i < numChildren; ++i)
 		{
 			CAsset* const pAsset = pControl->GetChild(i);
 
@@ -373,7 +371,7 @@ void CFileWriter::WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const 
 		{
 			if ((type != EAssetType::Preload) || (pConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(platformIndex))))
 			{
-				XmlNodeRef const pChild = g_pEditorImpl->CreateXMLNodeFromConnection(pConnection, type);
+				XmlNodeRef const pChild = g_pIImpl->CreateXMLNodeFromConnection(pConnection, type);
 
 				if (pChild != nullptr)
 				{
@@ -451,7 +449,7 @@ void CFileWriter::WriteLibraryEditorData(CAsset const& library, XmlNodeRef const
 {
 	string const description = library.GetDescription();
 
-	if (!description.IsEmpty() && !library.IsDefaultControl())
+	if (!description.IsEmpty() && (library.GetFlags() & EAssetFlags::IsDefaultControl) == 0)
 	{
 		pParentNode->setAttr(s_szDescriptionAttribute, description);
 	}
@@ -475,7 +473,7 @@ void CFileWriter::WriteFolderEditorData(CAsset const& library, XmlNodeRef const 
 				pFolderNode->setAttr(CryAudio::s_szNameAttribute, pAsset->GetName());
 				string const description = pAsset->GetDescription();
 
-				if (!description.IsEmpty() && !pAsset->IsDefaultControl())
+				if (!description.IsEmpty() && ((pAsset->GetFlags() & EAssetFlags::IsDefaultControl) == 0))
 				{
 					pFolderNode->setAttr(s_szDescriptionAttribute, description);
 				}
@@ -506,7 +504,7 @@ void CFileWriter::WriteControlsEditorData(CAsset const& parentAsset, XmlNodeRef 
 			{
 				string const description = asset.GetDescription();
 
-				if (!description.IsEmpty() && !asset.IsDefaultControl())
+				if (!description.IsEmpty() && ((asset.GetFlags() & EAssetFlags::IsDefaultControl) == 0))
 				{
 					pControlNode->setAttr(CryAudio::s_szNameAttribute, asset.GetName());
 					pControlNode->setAttr(s_szDescriptionAttribute, description);

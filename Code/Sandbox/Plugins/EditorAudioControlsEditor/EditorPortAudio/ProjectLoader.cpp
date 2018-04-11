@@ -3,13 +3,14 @@
 #include "StdAfx.h"
 #include "ProjectLoader.h"
 
-#include "EditorImpl.h"
+#include "Impl.h"
 
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
-#include <CryCore/CryCrc32.h>
 
 namespace ACE
+{
+namespace Impl
 {
 namespace PortAudio
 {
@@ -91,5 +92,6 @@ CItem* CProjectLoader::CreateItem(string const& name, string const& path, EItemT
 	return pItem;
 }
 } // namespace PortAudio
+} // namespace Impl
 } // namespace ACE
 

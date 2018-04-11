@@ -5,21 +5,10 @@
 
 namespace ACE
 {
+namespace Impl
+{
 namespace PortAudio
 {
-//////////////////////////////////////////////////////////////////////////
-void CItem::SetConnected(bool const isConnected)
-{
-	if (isConnected)
-	{
-		m_flags |= EItemFlags::IsConnected;
-	}
-	else
-	{
-		m_flags &= ~EItemFlags::IsConnected;
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CItem::AddChild(CItem* const pChild)
 {
@@ -33,5 +22,6 @@ void CItem::Clear()
 	m_children.clear();
 }
 } // namespace PortAudio
+} // namespace Impl
 } // namespace ACE
 

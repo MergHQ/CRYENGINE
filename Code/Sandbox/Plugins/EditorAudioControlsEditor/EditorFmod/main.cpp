@@ -1,22 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "EditorImpl.h"
+#include "Impl.h"
 
 #include <CryCore/Platform/platform.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <CrySystem/ISystem.h>
 
-ACE::Fmod::CEditorImpl* g_pFmodInterface;
+ACE::Impl::Fmod::CImpl* g_pFmodInterface;
 
 //------------------------------------------------------------------
-extern "C" ACE_API ACE::IEditorImpl * GetAudioInterface(ISystem * pSystem)
+extern "C" ACE_API ACE::Impl::IImpl * GetAudioInterface(ISystem * pSystem)
 {
 	ModuleInitISystem(pSystem, "EditorFmod");
 
 	if (g_pFmodInterface == nullptr)
 	{
-		g_pFmodInterface = new ACE::Fmod::CEditorImpl();
+		g_pFmodInterface = new ACE::Impl::Fmod::CImpl();
 	}
 
 	return g_pFmodInterface;

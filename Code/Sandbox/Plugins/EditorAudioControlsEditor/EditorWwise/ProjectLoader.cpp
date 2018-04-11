@@ -3,15 +3,16 @@
 #include "StdAfx.h"
 #include "ProjectLoader.h"
 
-#include "EditorImpl.h"
+#include "Impl.h"
 
 #include <CryAudioImplWwise/GlobalData.h>
-#include <CryAudio/IAudioSystem.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ILocalizationManager.h>
 
 namespace ACE
+{
+namespace Impl
 {
 namespace Wwise
 {
@@ -74,21 +75,21 @@ EItemType TagToItemType(char const* const szTag)
 }
 
 //////////////////////////////////////////////////////////////////////////
-string BuildPath(IImplItem const* const pIImplItem)
+string BuildPath(IItem const* const pIItem)
 {
 	string buildPath = "";
 
-	if (pIImplItem != nullptr)
+	if (pIItem != nullptr)
 	{
-		IImplItem const* const pParent = pIImplItem->GetParent();
+		IItem const* const pParent = pIItem->GetParent();
 
 		if (pParent != nullptr)
 		{
-			buildPath = BuildPath(pParent) + "/" + pIImplItem->GetName();
+			buildPath = BuildPath(pParent) + "/" + pIItem->GetName();
 		}
 		else
 		{
-			buildPath = pIImplItem->GetName();
+			buildPath = pIItem->GetName();
 		}
 	}
 
@@ -462,5 +463,6 @@ void CProjectLoader::BuildFileCache(string const& folderPath)
 	}
 }
 } // namespace Wwise
+} // namespace Impl
 } // namespace ACE
 

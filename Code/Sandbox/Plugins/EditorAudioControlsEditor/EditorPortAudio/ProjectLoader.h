@@ -8,6 +8,8 @@
 
 namespace ACE
 {
+namespace Impl
+{
 namespace PortAudio
 {
 class CProjectLoader final
@@ -26,5 +28,6 @@ private:
 	string const m_assetsPath;
 };
 } // namespace PortAudio
+} // namespace Impl
 } // namespace ACE
 

@@ -9,14 +9,11 @@
 #include "FileLoader.h"
 #include "ImplementationManager.h"
 
-#include <IEditorImpl.h>
-#include <CryAudio/IAudioSystem.h>
 #include <CryAudio/IObject.h>
 #include <CryMath/Cry_Camera.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <IUndoManager.h>
 #include <QtViewPane.h>
-#include <IResourceSelectorHost.h>
 #include <ConfigurationManager.h>
 
 REGISTER_PLUGIN(ACE::CAudioControlsEditorPlugin);
@@ -70,7 +67,7 @@ void CAudioControlsEditorPlugin::SaveData()
 {
 	SignalAboutToSave();
 
-	if (g_pEditorImpl != nullptr)
+	if (g_pIImpl != nullptr)
 	{
 		CFileWriter writer(s_currentFilenames);
 		writer.WriteAll();
@@ -95,7 +92,7 @@ void CAudioControlsEditorPlugin::ReloadData(EReloadFlags const flags)
 		g_assetsManager.UpdateFolderPaths();
 		g_assetsManager.Clear();
 
-		if (g_pEditorImpl != nullptr)
+		if (g_pIImpl != nullptr)
 		{
 			if ((flags& EReloadFlags::ReloadImplData) != 0)
 			{
@@ -150,7 +147,7 @@ void CAudioControlsEditorPlugin::ReloadData(EReloadFlags const flags)
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorPlugin::ReloadImplData(EReloadFlags const flags)
 {
-	if (g_pEditorImpl != nullptr)
+	if (g_pIImpl != nullptr)
 	{
 		if ((flags& EReloadFlags::BackupConnections) != 0)
 		{
@@ -158,11 +155,11 @@ void CAudioControlsEditorPlugin::ReloadImplData(EReloadFlags const flags)
 		}
 
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");
-		g_pEditorImpl->Reload();
+		g_pIImpl->Reload();
 
 		if ((flags& EReloadFlags::ReloadImplData) != 0)
 		{
-			g_pEditorImpl->SetPlatforms(g_platforms);
+			g_pIImpl->SetPlatforms(g_platforms);
 		}
 
 		if ((flags& EReloadFlags::BackupConnections) != 0)

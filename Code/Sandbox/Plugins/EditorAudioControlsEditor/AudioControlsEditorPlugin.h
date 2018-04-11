@@ -7,10 +7,6 @@
 
 #include "AssetsManager.h"
 
-#include <IEditorImpl.h>
-#include <CryAudio/IAudioInterfacesCommonData.h>
-#include <CrySandbox/CrySignal.h>
-
 namespace CryAudio
 {
 struct IObject;
