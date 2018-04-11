@@ -344,7 +344,7 @@ public:
 	virtual bool        UpdateAndSteerAlongPath(Vec3& dirOut, float& distToEndOut, float& distToPathOut, bool& isResolvingSticking, Vec3& pathDirOut, Vec3& pathAheadDirOut, Vec3& pathAheadPosOut, Vec3 currentPos, const Vec3& currentVel, float lookAhead, float pathRadius, float dt, bool resolveSticking, bool twoD) = 0;
 
 	virtual bool        AdjustPathAroundObstacles(const Vec3& currentpos, const AgentMovementAbility& movementAbility, const INavMeshQueryFilter* pFilter) = 0;
-	virtual bool        CanPassFilter(size_t fromPointIndex, const INavMeshQueryFilter* pFilter) = 0;
+	virtual bool        CanPassFilter(size_t fromPointIndex, const INavMeshQueryFilter* pFilter) const = 0;
 
 	virtual void        TrimPath(float length, bool twoD) = 0;
 	;

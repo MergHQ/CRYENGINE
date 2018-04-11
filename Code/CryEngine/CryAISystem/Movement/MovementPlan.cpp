@@ -6,6 +6,32 @@
 
 namespace Movement
 {
+
+void Plan::InstallPlanMonitor(IPlanMonitor* pMonitorToInstall)
+{
+	stl::push_back_unique(m_monitors, pMonitorToInstall);
+}
+
+void Plan::UninstallPlanMonitor(IPlanMonitor* pMonitorToUninstall)
+{
+	stl::find_and_erase(m_monitors, pMonitorToUninstall);
+}
+
+bool Plan::CheckForNeedToReplan(const MovementUpdateContext& context) const
+{
+	if (!m_monitors.empty())
+	{
+		for (IPlanMonitor* pMonitor : m_monitors)
+		{
+			if (pMonitor->CheckForReplanning(context))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 Plan::Status Plan::Execute(const MovementUpdateContext& context)
 {
 	if (m_current == NoBlockIndex)

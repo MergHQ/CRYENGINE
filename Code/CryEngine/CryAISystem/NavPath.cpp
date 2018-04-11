@@ -1683,7 +1683,7 @@ float CNavPath::GetDistToSmartObject(bool b2D) const
 	return std::numeric_limits<float>::max();
 }
 
-bool CNavPath::CanPassFilter(size_t fromPointIndex, const INavMeshQueryFilter* pFilter)
+bool CNavPath::CanPassFilter(size_t fromPointIndex, const INavMeshQueryFilter* pFilter) const
 {
 	if (!pFilter)
 		return true;
