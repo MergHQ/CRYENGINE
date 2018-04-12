@@ -433,7 +433,7 @@ class CHistoricQueryTreeView : public QAdvancedTreeView
 {
 public:
 	explicit CHistoricQueryTreeView(QWidget* pParent)
-		: QAdvancedTreeView(QAdvancedTreeView::Behavior(QAdvancedTreeView::PreserveExpandedAfterReset | QAdvancedTreeView::PreserveSelectionAfterReset), pParent)
+		: QAdvancedTreeView(QAdvancedTreeView::Behavior(QAdvancedTreeView::None), pParent)
 	{
 	}
 

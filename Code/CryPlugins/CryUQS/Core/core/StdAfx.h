@@ -35,6 +35,7 @@ namespace UQS
 #include "ItemFactoryDatabase.h"
 #include "DebugRenderPrimitives.h"
 #include "DebugRenderWorld.h"
+#include "DebugMessageCollection.h"
 #include "ItemList.h"
 #include "ItemSerializationSupport.h"
 #include "LeafFunctionReturnValue.h"

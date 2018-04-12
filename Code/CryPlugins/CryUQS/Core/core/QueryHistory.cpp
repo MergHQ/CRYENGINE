@@ -167,6 +167,11 @@ namespace UQS
 			return m_debugRenderWorldPersistent;
 		}
 
+		CDebugMessageCollection& CHistoricQuery::GetDebugMessageCollection()
+		{
+			return m_debugMessageCollection;
+		}
+
 		void CHistoricQuery::OnQueryCreated(size_t queryCreatedFrame, const CTimeValue& queryCreatedTimestamp)
 		{
 			m_queryCreatedFrame = queryCreatedFrame;
@@ -208,11 +213,6 @@ namespace UQS
 			m_exceptionMessage = szExceptionMessage;
 			m_bExceptionOccurred = true;
 			m_finalStatistics = finalStatistics;
-		}
-
-		void CHistoricQuery::OnWarningOccurred(const char* szWarningMessage)
-		{
-			m_warningMessages.push_back(szWarningMessage);
 		}
 
 		void CHistoricQuery::OnGenerationPhaseFinished(size_t numGeneratedItems, const CQueryBlueprint& queryBlueprint)
@@ -757,7 +757,7 @@ namespace UQS
 			{
 				color = bHighlight ? Col_Red : Col_DeepPink;
 			}
-			else if (!m_warningMessages.empty())
+			else if (m_debugMessageCollection.HasSomeWarnings())
 			{
 				color = bHighlight ? Col_OrangeRed : Col_Orange;
 			}
@@ -774,7 +774,7 @@ namespace UQS
 
 			const CTimeValue elapsedTime = ComputeElapsedTimeFromQueryCreationToDestruction();
 			const bool bFoundTooFewItems = (m_finalStatistics.numItemsInFinalResultSet == 0) || (m_finalStatistics.numItemsInFinalResultSet < m_finalStatistics.numDesiredItems);
-			const bool bEncounteredSomeWarnings = !m_warningMessages.empty();
+			const bool bEncounteredSomeWarnings = m_debugMessageCollection.HasSomeWarnings();
 			const IQueryHistoryConsumer::SHistoricQueryOverview overview(
 				color,
 				m_querierName.c_str(),
@@ -821,20 +821,9 @@ namespace UQS
 				}
 			}
 
-			// warning messages
+			// debug messages
 			{
-				if (m_warningMessages.empty())
-				{
-					consumer.AddTextLineToCurrentHistoricQuery(color, "No warnings");
-				}
-				else
-				{
-					consumer.AddTextLineToCurrentHistoricQuery(Col_Orange, "%i warnings:", (int)m_warningMessages.size());
-					for (const string& warningMessage : m_warningMessages)
-					{
-						consumer.AddTextLineToCurrentHistoricQuery(Col_Orange, "%s", warningMessage.c_str());
-					}
-				}
+				m_debugMessageCollection.EmitAllMessagesToQueryHistoryConsumer(consumer, color, Col_White, Col_Orange);
 			}
 
 			// elapsed frames and time, and timestamps of creation + destruction of the query
@@ -1134,8 +1123,8 @@ namespace UQS
 			ar(m_bGotCanceledPrematurely, "m_bGotCanceledPrematurely");
 			ar(m_bExceptionOccurred, "m_bExceptionOccurred");
 			ar(m_exceptionMessage, "m_exceptionMessage");
-			ar(m_warningMessages, "m_warningMessages");
 			ar(m_debugRenderWorldPersistent, "m_debugRenderWorldPersistent");
+			ar(m_debugMessageCollection, "m_debugMessageCollection");
 			ar(m_items, "m_items");
 			ar(m_instantEvaluatorNames, "m_instantEvaluatorNames");
 			ar(m_deferredEvaluatorNames, "m_deferredEvaluatorNames");
