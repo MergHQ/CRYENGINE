@@ -157,7 +157,7 @@ void CAudioControlsEditorPlugin::ReloadImplData(EReloadFlags const flags)
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");
 		g_pIImpl->Reload();
 
-		if ((flags& EReloadFlags::ReloadImplData) != 0)
+		if ((flags& EReloadFlags::SetPlatforms) != 0)
 		{
 			g_pIImpl->SetPlatforms(g_platforms);
 		}
