@@ -46,7 +46,7 @@ public:
 private:
 
 	void   Clear();
-	CItem* CreateItem(string const& name, EItemType const type, CItem* const pParent);
+	CItem* CreatePlaceholderItem(string const& name, EItemType const type, CItem* const pParent);
 	CItem* GetItemFromPath(string const& fullpath);
 	CItem* CreatePlaceholderFolderPath(string const& path);
 

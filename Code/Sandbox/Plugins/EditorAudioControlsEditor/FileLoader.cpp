@@ -356,7 +356,7 @@ void CFileLoader::CreateDefaultControls()
 		g_assetsManager.CreateDefaultControl(CryAudio::s_szMuteAllTriggerName, EAssetType::Trigger, pLibrary, false, "Mutes all audio. Gets triggered when the editor mute action is used.");
 		g_assetsManager.CreateDefaultControl(CryAudio::s_szUnmuteAllTriggerName, EAssetType::Trigger, pLibrary, false, "Unmutes all audio. Gets triggered when the editor unmute action is used.");
 		g_assetsManager.CreateDefaultControl(CryAudio::s_szPauseAllTriggerName, EAssetType::Trigger, pLibrary, false, "Pauses playback of all audio.");
-		g_assetsManager.CreateDefaultControl(CryAudio::s_szResumeAllTriggerName, EAssetType::Trigger, pLibrary, false, "Reumes playback of all audio.");
+		g_assetsManager.CreateDefaultControl(CryAudio::s_szResumeAllTriggerName, EAssetType::Trigger, pLibrary, false, "Resumes playback of all audio.");
 
 		string description;
 		description.Format(R"(Updates the absolute velocity of an object, if its "%s" switch is enabled.)", CryAudio::s_szAbsoluteVelocityTrackingSwitchName);

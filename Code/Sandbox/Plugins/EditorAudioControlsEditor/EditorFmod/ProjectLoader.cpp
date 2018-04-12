@@ -452,23 +452,7 @@ CItem* CProjectLoader::CreateItem(string const& name, EItemType const type, CIte
 	ControlId const id = Utils::GetId(type, name, pParent, m_rootItem);
 	auto pItem = static_cast<CItem*>(m_impl.GetItem(id));
 
-	if (pItem != nullptr)
-	{
-		EItemFlags const flags = pItem->GetFlags();
-
-		if ((flags& EItemFlags::IsPlaceHolder) != 0)
-		{
-			pItem->SetFlags(flags & ~EItemFlags::IsPlaceHolder);
-			CItem* pParentItem = pParent;
-
-			while (pParentItem != nullptr)
-			{
-				pParentItem->SetFlags(pParentItem->GetFlags() & ~EItemFlags::IsPlaceHolder);
-				pParentItem = static_cast<CItem*>(pParentItem->GetParent());
-			}
-		}
-	}
-	else
+	if (pItem == nullptr)
 	{
 		if (type == EItemType::Bank)
 		{
