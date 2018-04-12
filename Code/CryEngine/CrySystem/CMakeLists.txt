@@ -572,6 +572,7 @@ MACRO(setup_crysystem)
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-unused-function
 			-Wno-unused-value
+			-Wno-array-bounds
 			-Wno-unused-variable
 			-Wno-sign-compare
 			-Wno-ignored-attributes
