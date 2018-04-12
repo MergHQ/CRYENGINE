@@ -110,6 +110,8 @@ add_sources("UQS_uber_core.cpp"
 		"core/EvaluatorBlueprintBase.cpp"
 		"core/SettingsManager.h"
 		"core/SettingsManager.cpp"
+		"core/DebugMessageCollection.h"
+		"core/DebugMessageCollection.cpp"
 )
 
 end_sources()

@@ -596,7 +596,7 @@ namespace UQS
 
 			if (HistoricQuerySharedPtr pHistory = problematicQuery.pQuery->GetHistoricQuery())
 			{
-				pHistory->OnWarningOccurred(commonWarningMessage.c_str());
+				pHistory->GetDebugMessageCollection().AddWarning("%s", commonWarningMessage.c_str());
 			}
 
 			//

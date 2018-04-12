@@ -120,13 +120,13 @@ namespace UQS
 			explicit                                            CHistoricQuery(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager);
 
 			CDebugRenderWorldPersistent&                        GetDebugRenderWorldPersistent();
+			CDebugMessageCollection&                            GetDebugMessageCollection();
 			void                                                OnQueryCreated(size_t queryCreatedFrame, const CTimeValue& queryCreatedTimestamp);
 			void                                                OnQueryBlueprintInstantiationStarted(const char* szQueryBlueprintName);
 			void                                                OnQueryCanceled(const CQueryBase::SStatistics& finalStatistics);
 			void                                                OnQueryFinished(const CQueryBase::SStatistics& finalStatistics);
 			void                                                OnQueryDestroyed();
 			void                                                OnExceptionOccurred(const char* szExceptionMessage, const CQueryBase::SStatistics& finalStatistics);
-			void                                                OnWarningOccurred(const char* szWarningMessage);
 			void                                                OnGenerationPhaseFinished(size_t numGeneratedItems, const CQueryBlueprint& queryBlueprint);
 			void                                                OnInstantEvaluatorScoredItem(size_t instantEvaluatorIndex, size_t itemIndex, float nonWeightedSingleScore, float weightedSingleScore, float accumulatedAndWeightedScoreSoFar);
 			void                                                OnInstantEvaluatorDiscardedItem(size_t instantEvaluatorIndex, size_t itemIndex);
@@ -194,6 +194,7 @@ namespace UQS
 			string                                              m_exceptionMessage;
 			std::vector<string>                                 m_warningMessages;
 			CDebugRenderWorldPersistent                         m_debugRenderWorldPersistent;
+			CDebugMessageCollection                             m_debugMessageCollection;
 			std::vector<SHistoricItem>                          m_items;                            // counter-part of all the generated items
 			std::vector<string>                                 m_instantEvaluatorNames;            // cached names of all instant-evaluator factories; this is necessary in case query blueprints get reloaded at runtime to prevent dangling pointers
 			std::vector<string>                                 m_deferredEvaluatorNames;           // ditto for deferred-evaluator factories

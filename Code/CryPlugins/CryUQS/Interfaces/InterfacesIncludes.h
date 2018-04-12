@@ -17,6 +17,7 @@
 #include "shared/GUIDHelper.h"
 
 #include "core/IDebugRenderWorld.h"
+#include "core/IDebugMessageCollection.h"
 #include "core/IFactoryDatabase.h"
 #include "core/IItemDebugProxies.h"
 #include "core/IItemDebugProxyFactory.h"
