@@ -40,18 +40,20 @@ void CPlayerComponent::Initialize()
 
 	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are triggered
 	m_pInputComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CInputComponent>();
-	// Get and initialize the pathfinding component
-	m_pPathfindingComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CPathfindingComponent>();
+	
+	// Get and initialize the navigation component
+	m_pNavigationComponent = m_pEntity->GetOrCreateComponent<IEntityNavigationComponent>();
 
-	m_pPathfindingComponent->SetMovementRecommendationCallback([this](const Vec3& recommendedVelocity)
+	IEntityNavigationComponent::SMovementProperties movementProperties;
+	movementProperties.normalSpeed = m_movementSpeed;
+	movementProperties.maxSpeed = m_movementSpeed;
+	movementProperties.maxAcceleration = m_movementSpeed * 1.5f;
+	m_pNavigationComponent->SetMovementProperties(movementProperties);
+	m_pNavigationComponent->SetNavigationAgentType("MediumSizedCharacters");
+
+	m_pNavigationComponent->SetStateUpdatedCallback([this](const Vec3& recommendedVelocity)
 	{
-		m_pCharacterController->AddVelocity(recommendedVelocity.GetNormalized() * m_movmentSpeed * gEnv->pTimer->GetFrameTime());
-
-		// Stop the player if we reached the target location.
-		if (recommendedVelocity == ZERO)
-		{
-			m_pCharacterController->SetVelocity(ZERO);
-		}
+		m_pCharacterController->ChangeVelocity(recommendedVelocity, Cry::DefaultComponents::CCharacterControllerComponent::EChangeVelocityMode::SetAsTarget);
 	});
 
 	// Register the walk action
@@ -59,12 +61,7 @@ void CPlayerComponent::Initialize()
 	{
 		if (m_pCursorEntity != nullptr && activationMode == eAAM_OnPress)
 		{
-			if (m_pPathfindingComponent->IsProcessingRequest())
-			{
-				m_pPathfindingComponent->CancelCurrentRequest();
-			}
-
-			m_pPathfindingComponent->RequestMoveTo(m_pCursorEntity->GetWorldPos());
+			m_pNavigationComponent->NavigateTo(m_pCursorEntity->GetWorldPos());
 		}
 	});
 

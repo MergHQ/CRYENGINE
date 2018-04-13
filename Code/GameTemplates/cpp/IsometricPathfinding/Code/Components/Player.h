@@ -9,7 +9,7 @@
 #include <DefaultComponents/Physics/CharacterControllerComponent.h>
 #include <DefaultComponents/Geometry/AdvancedAnimationComponent.h>
 #include <DefaultComponents/Input/InputComponent.h>
-#include <DefaultComponents/AI/PathfindingComponent.h>
+#include <CryAISystem/Components/IEntityNavigationComponent.h>
 
 ////////////////////////////////////////////////////////
 // Represents a player participating in gameplay
@@ -50,11 +50,11 @@ protected:
 	Cry::DefaultComponents::CCharacterControllerComponent* m_pCharacterController = nullptr;
 	Cry::DefaultComponents::CAdvancedAnimationComponent* m_pAnimationComponent = nullptr;
 	Cry::DefaultComponents::CInputComponent* m_pInputComponent = nullptr;
-	Cry::DefaultComponents::CPathfindingComponent* m_pPathfindingComponent = nullptr;
+	IEntityNavigationComponent* m_pNavigationComponent = nullptr;
 
 	TagID m_walkTagId;
 
-	const float m_movmentSpeed = 30.0f;
+	const float m_movementSpeed = 5.0f;
 
 	IEntity* m_pCursorEntity = nullptr;
 };
