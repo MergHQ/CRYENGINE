@@ -17,34 +17,32 @@
 
 const float CMannequinModelViewport::s_maxTweenTime = 0.5f;
 
-/*
-   The following code was in OnRender, commented out:
-
-   static bool DEBUG_DRAW = true;
-
-   if (DEBUG_DRAW && m_sequencePlayback)
-   {
-    m_sequencePlayback->DebugDraw();
-   }
-
- */
-
-CString GetUserOptionsRegKeyName(EMannequinEditorMode editorMode)
+namespace
 {
-	CString keyName("Settings\\Mannequin\\");
-	switch (editorMode)
+	bool IsLevelLoading()
 	{
-	case eMEM_FragmentEditor:
-		keyName += "FragmentEditor";
-		break;
-	case eMEM_Previewer:
-		keyName += "Previewer";
-		break;
-	case eMEM_TransitionEditor:
-		keyName += "TransitionEditor";
-		break;
+		ESystemGlobalState state = GetISystem()->GetSystemGlobalState();
+		bool isLevelLoading = state != ESYSTEM_GLOBAL_STATE_RUNNING && state != ESYSTEM_GLOBAL_STATE_INIT;
+		return isLevelLoading;
 	}
-	return keyName + "UserOptions";
+
+	CString GetUserOptionsRegKeyName(EMannequinEditorMode editorMode)
+	{
+		CString keyName("Settings\\Mannequin\\");
+		switch (editorMode)
+		{
+		case eMEM_FragmentEditor:
+			keyName += "FragmentEditor";
+			break;
+		case eMEM_Previewer:
+			keyName += "Previewer";
+			break;
+		case eMEM_TransitionEditor:
+			keyName += "TransitionEditor";
+			break;
+		}
+		return keyName + "UserOptions";
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -153,6 +151,8 @@ bool CMannequinModelViewport::UseAnimationDrivenMotionForEntity(const IEntity* p
 //////////////////////////////////////////////////////////////////////////
 void CMannequinModelViewport::Update()
 {
+	if (IsLevelLoading()) return; // avoid update during level loading time, since QT-MFC-coupling might crash in rare cases
+
 	__super::Update();
 
 	if (Deprecated::CheckVirtualKey('E'))
@@ -442,6 +442,8 @@ bool CMannequinModelViewport::HitTest(HitContext& hc, const bool bIsClick)
 
 void CMannequinModelViewport::OnRender()
 {
+	if (IsLevelLoading()) return; // avoid render-update during level loading time, since QT-MFC-coupling might crash in rare cases
+
 	if (CMannequinDialog::GetCurrentInstance())
 	{
 		CMannequinDialog::GetCurrentInstance()->OnRender();
@@ -892,6 +894,8 @@ void CMannequinModelViewport::UpdateCharacter(IEntity* pEntity, ICharacterInstan
 
 void CMannequinModelViewport::UpdateAnimation(float timePassed)
 {
+	if (IsLevelLoading()) return; // avoid update during level loading time, since QT-MFC-coupling might crash in rare cases
+
 	gEnv->pGameFramework->GetMannequinInterface().SetSilentPlaybackMode(m_bPaused);
 	if (m_pActionController)
 	{
