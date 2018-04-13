@@ -123,7 +123,7 @@ public:
 
 					// Draw vertical box left to the item icon.
 					{
-						const int markerWidth = 2;
+						const int markerWidth = 4;
 						iconRect.setWidth(markerWidth);
 						painter->fillRect(iconRect, color);
 					}
