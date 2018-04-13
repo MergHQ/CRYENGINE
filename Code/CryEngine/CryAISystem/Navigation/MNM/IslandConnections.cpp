@@ -189,7 +189,8 @@ bool IslandConnections::CanNavigateBetweenIslandsInternal(const IEntity* pEntity
 	const OffMeshNavigationManager* offMeshNavigationManager = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager();
 	CRY_ASSERT(offMeshNavigationManager);
 
-	CRY_ASSERT_MESSAGE(fromIsland.GetNavigationMeshIDAsUint32() == toIsland.GetNavigationMeshIDAsUint32(), "Island connections between two different meshes isn't supported.");
+	if (fromIsland.GetNavigationMeshIDAsUint32() != toIsland.GetNavigationMeshIDAsUint32())
+		return false; // Island connections between two different meshes isn't supported
 
 	TIslandNodeStatesArray& islandNodeStates = PrepareIslandNodeStatesArray(fromIsland);
 	

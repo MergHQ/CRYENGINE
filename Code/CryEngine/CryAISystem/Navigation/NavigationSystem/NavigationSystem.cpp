@@ -2893,7 +2893,7 @@ size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID
 	const MNM::aabb_t meshAabb = navMesh.ToMeshSpace(MNM::aabb_t(searchAABB.min, searchAABB.max));
 
 	size_t foundTrianglesCount = 0;
-	navMesh.QueryTrianglesWithProcessing(meshAabb, pFilter, [=, &foundTrianglesCount](const MNM::TileID tileId, const MNM::Tile::STriangle** pTriangles, const MNM::TriangleID* pTriangleIds, const size_t trianglesCount)
+	navMesh.QueryTrianglesWithProcessing(meshAabb, pFilter, [&](const MNM::TileID tileId, const MNM::Tile::STriangle** pTriangles, const MNM::TriangleID* pTriangleIds, const size_t trianglesCount)
 	{
 		MNM::vector3_t a, b, c;
 		for (size_t i = 0; i < trianglesCount; ++i)
@@ -2946,7 +2946,7 @@ size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AA
 	const MNM::aabb_t meshAabb = navMesh.ToMeshSpace(MNM::aabb_t(aabb.min, aabb.max));
 
 	size_t foundTrianglesCount = 0;
-	navMesh.QueryTrianglesWithProcessing(meshAabb, pFilter, [=, &foundTrianglesCount](const MNM::TileID tileId, const MNM::Tile::STriangle** pTriangles, const MNM::TriangleID* pTriangleIds, const size_t trianglesCount)
+	navMesh.QueryTrianglesWithProcessing(meshAabb, pFilter, [&](const MNM::TileID tileId, const MNM::Tile::STriangle** pTriangles, const MNM::TriangleID* pTriangleIds, const size_t trianglesCount)
 	{
 		MNM::vector3_t a, b, c;
 		for (size_t i = 0; i < trianglesCount; ++i)
