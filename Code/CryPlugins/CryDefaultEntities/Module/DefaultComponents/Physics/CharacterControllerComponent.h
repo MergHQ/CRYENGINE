@@ -40,6 +40,13 @@ namespace Cry
 #endif
 
 		public:
+			enum class EChangeVelocityMode : int
+			{
+				SetAsTarget = 0, // velocity change with snapping to the ground, can be used for walking
+				Jump        = 1, // instant velocity change, can be used for jumping or flying
+				Add         = 2, // adding velocity to the current value of velocity
+			};
+
 			static void ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent>& desc)
 			{
 				desc.SetGUID("{98183F31-A685-43CD-92A9-815274F0A81C}"_cry_guid);
@@ -89,7 +96,22 @@ namespace Cry
 					pe_action_move moveAction;
 
 					// Override velocity
-					moveAction.iJump = 1;
+					moveAction.iJump = 0;
+					moveAction.dir = velocity;
+
+					// Dispatch the movement request
+					pPhysicalEntity->Action(&moveAction);
+				}
+			}
+
+			virtual void ChangeVelocity(const Vec3& velocity, const EChangeVelocityMode mode)
+			{
+				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
+				{
+					pe_action_move moveAction;
+
+					// Override velocity
+					moveAction.iJump = static_cast<int>(mode);
 					moveAction.dir = velocity;
 
 					// Dispatch the movement request
@@ -226,5 +248,15 @@ namespace Cry
 
 			Vec3 m_velocity = ZERO;
 		};
+
+		static void ReflectType(Schematyc::CTypeDesc<CCharacterControllerComponent::EChangeVelocityMode>& desc)
+		{
+			desc.SetGUID("{D6B8165A-5BF5-431F-9268-4811DBED4760}"_cry_guid);
+			desc.SetLabel("Velocity change mode");
+
+			desc.AddConstant(CCharacterControllerComponent::EChangeVelocityMode::SetAsTarget, "SetAsTarget", "Velocity change with snapping to the ground, can be used for walking");
+			desc.AddConstant(CCharacterControllerComponent::EChangeVelocityMode::Jump, "Jump", "Instant velocity change, can be used for jumping or flying");
+			desc.AddConstant(CCharacterControllerComponent::EChangeVelocityMode::Add, "Add", "Adding velocity to the current value of velocity");
+		}
 	}
 }
