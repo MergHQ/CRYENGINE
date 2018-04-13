@@ -38,6 +38,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		-Wno-unused-function
 		-Wno-unused-value
 		-Wno-unused-variable
+		-Wno-uninitialized
 		-Wno-sign-compare
 		-Wno-ignored-attributes
 		-Wno-int-in-bool-context

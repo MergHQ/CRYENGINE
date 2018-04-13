@@ -42,5 +42,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_compile_options(${THIS_PROJECT} PRIVATE
 		-Wno-unused-function
 		-Wno-stringop-overflow
+		-Wno-maybe-uninitialized
 	)
 endif()

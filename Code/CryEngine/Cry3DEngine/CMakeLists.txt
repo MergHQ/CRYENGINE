@@ -413,6 +413,7 @@ MACRO(setup_Cry3DEngine)
 			-Wno-unused-function
 			-Wno-unused-value
 			-Wno-unused-variable
+			-Wno-strict-overflow
 			-Wno-sign-compare
 			-Wno-ignored-attributes
 			-Wno-invalid-offsetof

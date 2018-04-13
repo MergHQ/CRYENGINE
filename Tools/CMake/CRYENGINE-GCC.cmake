@@ -17,6 +17,7 @@ set(GCC_CPP_COMMON_FLAGS
 	-Wno-invalid-offsetof
 	-Wno-aligned-new
 	-Wno-conversion-null
+	-Wno-unused-result
 	-Wno-reorder
 )
 
