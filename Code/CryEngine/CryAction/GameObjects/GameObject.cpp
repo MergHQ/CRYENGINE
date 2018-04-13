@@ -333,7 +333,7 @@ void CGameObject::Initialize()
 	GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
 
 	// Fix case where init was already called
-	if (!m_wasInitialized)
+	if (m_pEntity->IsInitialized())
 	{
 		SEntityEvent event(ENTITY_EVENT_INIT);
 		ProcessEvent(event);
@@ -645,7 +645,6 @@ void CGameObject::ProcessEvent(const SEntityEvent& event)
 
 		// This is a CGameObject-specific vehicles-related workaround.
 		case ENTITY_EVENT_INIT:
-			m_wasInitialized = true;
 			OnInitEvent();
 			if (m_bNeedsNetworkRebind)
 			{

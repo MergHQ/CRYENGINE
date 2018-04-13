@@ -391,6 +391,8 @@ public:
 	virtual void                  OnSchematycObjectDestroyed() final { m_pSchematycObject = nullptr; }
 
 	virtual EEntitySimulationMode GetSimulationMode() const final    { return m_simulationMode; };
+
+	virtual bool IsInitialized() const final { return HasInternalFlag(EInternalFlag::Initialized); }
 	//~IEntity
 
 	void                     SetSimulationMode(EEntitySimulationMode mode);

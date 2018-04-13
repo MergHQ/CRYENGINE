@@ -521,6 +521,9 @@ public:
 	//! Gets current entity EEntityFlagsExtended flags.
 	virtual uint32 GetFlagsExtended() const = 0;
 
+	//! \return true if entity is completely initialized.
+	virtual bool IsInitialized() const = 0;
+
 	//! Checks if this entity was marked for deletion.
 	//! If this function returns true, it will be deleted on next frame, and it is pointless to perform any operations on such entity.
 	//! \return True if entity marked for deletion, false otherwise.
