@@ -466,12 +466,7 @@ ConnectionPtr CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType co
 					name = name.substr(pos + 1, name.length() - pos);
 				}
 
-				pItem = CreateItem(name, type, CreatePlaceholderFolderPath(path));
-
-				if (pItem != nullptr)
-				{
-					pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsPlaceHolder);
-				}
+				pItem = CreatePlaceholderItem(name, type, CreatePlaceholderFolderPath(path));
 			}
 
 			switch (type)
@@ -734,38 +729,15 @@ void CImpl::Clear()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CItem* CImpl::CreateItem(string const& name, EItemType const type, CItem* const pParent)
+CItem* CImpl::CreatePlaceholderItem(string const& name, EItemType const type, CItem* const pParent)
 {
 	ControlId const id = Utils::GetId(type, name, pParent, m_rootItem);
 
 	auto pItem = static_cast<CItem*>(GetItem(id));
 
-	if (pItem != nullptr)
+	if (pItem == nullptr)
 	{
-		EItemFlags const flags = pItem->GetFlags();
-
-		if ((flags& EItemFlags::IsPlaceHolder) != 0)
-		{
-			pItem->SetFlags(flags & ~EItemFlags::IsPlaceHolder);
-			CItem* pParentItem = pParent;
-
-			while (pParentItem != nullptr)
-			{
-				pParentItem->SetFlags(pParentItem->GetFlags() & ~EItemFlags::IsPlaceHolder);
-				pParentItem = static_cast<CItem*>(pParentItem->GetParent());
-			}
-		}
-	}
-	else
-	{
-		if (type == EItemType::EditorFolder)
-		{
-			pItem = new CItem(name, id, type, EItemFlags::IsContainer);
-		}
-		else
-		{
-			pItem = new CItem(name, id, type);
-		}
+		pItem = new CItem(name, id, type, EItemFlags::IsPlaceHolder);
 
 		if (pParent != nullptr)
 		{
@@ -848,8 +820,7 @@ CItem* CImpl::CreatePlaceholderFolderPath(string const& path)
 
 		if (pFoundChild == nullptr)
 		{
-			pFoundChild = CreateItem(token, EItemType::Folder, pItem);
-			pFoundChild->SetFlags(pFoundChild->GetFlags() | EItemFlags::IsPlaceHolder);
+			pFoundChild = CreatePlaceholderItem(token, EItemType::Folder, pItem);
 		}
 
 		pItem = pFoundChild;
