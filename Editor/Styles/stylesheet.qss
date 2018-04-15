@@ -2121,3 +2121,9 @@ QWidget#HoverWidget:hover
 	background-color: rgb(86,86,86);
     border-radius: 3px;
 }
+
+QToolButton#Filter::menu-indicator 
+{
+	image: url("icons:common/general_dropdown_triangle.ico");
+	subcontrol-position: right bottom;
+}

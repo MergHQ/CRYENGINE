@@ -24,6 +24,7 @@
 #include "CryIcon.h"
 #include "ProxyModels/FavoritesHelper.h"
 #include "QtUtil.h"
+#include "Menu/MenuWidgetBuilders.h"
 
 class QFilteringPanel::CSavedFiltersModel : public QAbstractListModel
 {
@@ -514,6 +515,21 @@ QFilteringPanel::QFilteringPanel(const char* uniqueName, QAttributeFilterProxyMo
 		SetExpanded(!IsExpanded());
 		UpdateOptionsIcon();
 	});
+
+	//Quick filters on right click on filter button
+	{
+		QMenu* const pMenu = new QMenu(this);
+		m_optionsButton->setMenu(pMenu);
+		m_optionsButton->setContextMenuPolicy(Qt::CustomContextMenu);
+		m_optionsButton->setObjectName("Filter");
+		connect(m_optionsButton, &QToolButton::customContextMenuRequested, [this]() 
+		{
+			CAbstractMenu abstractMenu;
+			FillMenu(&abstractMenu);
+			abstractMenu.Build(MenuWidgetBuilders::CMenuBuilder(m_optionsButton->menu()));
+			m_optionsButton->showMenu();
+		});
+	}
 	
 	m_optionsLayout = new QGridLayout();
 	m_optionsLayout->setContentsMargins(0, 0, 0, 0);
@@ -631,7 +647,7 @@ void QFilteringPanel::FillMenu(CAbstractMenu* pMenu, const QString& submenuName)
 		});
 	}
 
-	if (!submenuName.isEmpty() && pMenu->IsEmpty())
+	if (filters.empty())
 	{ 
 		QAction* const pAction = pMenu->CreateAction(tr("No Saved Filters"), section);
 		pAction->setEnabled(false);
