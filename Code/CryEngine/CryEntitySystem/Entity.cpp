@@ -128,7 +128,7 @@ bool CEntity::SendEvent(const SEntityEvent& event)
 
 	if (!IsGarbage() && (m_eventListenerMask & ENTITY_EVENT_BIT(event.event)) != 0)
 	{
-		auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), SEventListenerSet(event.event), [](const std::unique_ptr<SEventListenerSet>& a, const SEventListenerSet& b) -> bool { return a->event < b.event; });
+		auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), event.event, [](const std::unique_ptr<SEventListenerSet>& a, const EEntityEvent event) -> bool { return a->event < event; });
 
 		if (it != m_simpleEventListeners.end() && it->get()->event == event.event)
 		{
@@ -136,23 +136,15 @@ bool CEntity::SendEvent(const SEntityEvent& event)
 
 			m_sendEventRecursionCount++;
 
-			// Numbered iteration as listeners may be invalidated (set to null) during iteration
-			// Sorting is not affected while iterating, so this is safe.
-			for (size_t i = 0; i < listenerSet.listeners.size(); ++i)
-			{
-				if (listenerSet.listeners[i].pListener != nullptr)
-				{
-					listenerSet.listeners[i].pListener->ProcessEvent(event);
-				}
-			}
+			listenerSet.SendEvent(event);
 
 			// Sort vector and remove invalidated elements when we are done recursing
 			if (--m_sendEventRecursionCount == 0 && !listenerSet.IsSorted())
 			{
 				listenerSet.SortUnsortedElements();
-				if (listenerSet.IsEmpty())
+				if (!listenerSet.HasValidElements())
 				{
-					m_eventListenerMask &= ~ENTITY_EVENT_BIT(event.event);
+					m_simpleEventListeners.erase(it);
 				}
 			}
 		}
@@ -186,14 +178,17 @@ void CEntity::AddSimpleEventListeners(EntityEventMask events, ISimpleEntityEvent
 /////////////////////////////////////////////////////////////////////////
 void CEntity::ClearComponentEventListeners()
 {
-	m_components.ForEach([this](SEntityComponentRecord& record) -> bool
+	m_components.ForEach([this](SEntityComponentRecord& record) -> EComponentIterationResult
 	{
-		EntityEventMask prevMask = record.registeredEventsMask;
-		record.registeredEventsMask = 0;
+		if (record.registeredEventsMask != 0)
+		{
+			EntityEventMask prevMask = record.registeredEventsMask;
+			record.registeredEventsMask = 0;
 
-		OnComponentMaskChanged(record, prevMask);
+			OnComponentMaskChanged(record, prevMask);
+		}
 
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 }
 
@@ -204,13 +199,18 @@ void CEntity::AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListe
 		pListener, priority
 	};
 
+	auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), event, [](const std::unique_ptr<SEventListenerSet>& a, const EEntityEvent event) -> bool { return a->event < event; });
+	
 	// Check if a collection of listeners exists for the event
-	if ((m_eventListenerMask & ENTITY_EVENT_BIT(event)) != 0)
+	if (it != m_simpleEventListeners.end() && it->get()->event == event)
 	{
-		auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), SEventListenerSet(event), [](const std::unique_ptr<SEventListenerSet>& a, const SEventListenerSet& b) -> bool { return a->event < b.event; });
-		CRY_ASSERT(it != m_simpleEventListeners.end() && it->get()->event == event);
-
 		SEventListenerSet& listenerSet = *it->get();
+		if (!listenerSet.HasValidElements())
+		{
+			// Re-apply the event listener mask, was automatically removed when the last entry was invalidated
+			m_eventListenerMask |= ENTITY_EVENT_BIT(event);
+		}
+
 		if (m_sendEventRecursionCount > 0)
 		{
 			listenerSet.UnsortedInsert(eventListener);
@@ -223,49 +223,47 @@ void CEntity::AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListe
 	}
 	else
 	{
-		auto upperBoundIt = std::upper_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), SEventListenerSet(event), [](const SEventListenerSet& a, const std::unique_ptr<SEventListenerSet>& b) -> bool { return a.event < b->event; });
-		auto it = m_simpleEventListeners.emplace(upperBoundIt, stl::make_unique<SEventListenerSet>(event));
-
-		SEventListenerSet& listenerSet = *it->get();
+		auto upperBoundIt = std::upper_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), event, [](const EEntityEvent event, const std::unique_ptr<SEventListenerSet>& b) -> bool { return event < b->event; });
+		auto it = m_simpleEventListeners.emplace(upperBoundIt, stl::make_unique<SEventListenerSet>(event, eventListener));
 
 		// Event listener was not present, in this case it is safe to always create
 		m_eventListenerMask |= ENTITY_EVENT_BIT(event);
-		listenerSet.SortedInsert(eventListener);
 	}
 }
 
 /////////////////////////////////////////////////////////////////////////
 void CEntity::RemoveSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener)
 {
-	if ((m_eventListenerMask & ENTITY_EVENT_BIT(event)) != 0)
+	CRY_ASSERT((m_eventListenerMask & ENTITY_EVENT_BIT(event)) != 0);
+
+	auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), event, [](const std::unique_ptr<SEventListenerSet>& a, const EEntityEvent& event) -> bool { return a->event < event; });
+	CRY_ASSERT(it != m_simpleEventListeners.end() && it->get()->event == event);
+
+	SEventListenerSet& listenerSet = *it->get();
+	const std::vector<SEventListener>::iterator listenerIt = listenerSet.FindListener(pListener);
+	if (listenerIt == listenerSet.GetEnd())
 	{
-		auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), SEventListenerSet(event), [](const std::unique_ptr<SEventListenerSet>& a, const SEventListenerSet& b) -> bool { return a->event < b.event; });
-		CRY_ASSERT(it != m_simpleEventListeners.end() && it->get()->event == event);
+		// Listener was most likely invalidated before, we can skip removal
+		return;
+	}
 
-		SEventListenerSet& listenerSet = *it->get();
-
-		for (auto listenerIt = listenerSet.listeners.begin(), end = listenerSet.listeners.end(); listenerIt != end; ++listenerIt)
+	if (m_sendEventRecursionCount > 0)
+	{
+		// Invalidate, will be removed when we are done sending events
+		listenerSet.InvalidateElement(listenerIt);
+		if (!listenerSet.HasValidElements())
 		{
-			if (listenerIt->pListener == pListener)
-			{
-				if (m_sendEventRecursionCount > 0)
-				{
-					// Invalidate, will be removed when we are done sending events
-					listenerSet.InvalidateElement(listenerIt);
-				}
-				else
-				{
-					listenerSet.listeners.erase(listenerIt);
+			m_eventListenerMask &= ~ENTITY_EVENT_BIT(event);
+		}
+	}
+	else
+	{
+		listenerSet.RemoveElement(listenerIt);
 
-					if (listenerSet.IsEmpty())
-					{
-						m_simpleEventListeners.erase(it);
-						m_eventListenerMask &= ~ENTITY_EVENT_BIT(event);
-					}
-				}
-
-				break;
-			}
+		if (!listenerSet.HasValidElements())
+		{
+			m_simpleEventListeners.erase(it);
+			m_eventListenerMask &= ~ENTITY_EVENT_BIT(event);
 		}
 	}
 }
@@ -403,10 +401,6 @@ void CEntity::ShutDown()
 	if (gEnv->pAISystem && gEnv->pAISystem->GetSmartObjectManager())
 		gEnv->pAISystem->GetSmartObjectManager()->RemoveSmartObject(this);
 
-	m_externalEventListeners.clear();
-	m_simpleEventListeners.clear();
-	m_eventListenerMask = 0;
-
 	g_pIEntitySystem->RemoveTimerEvent(GetId(), -1);
 	g_pIEntitySystem->RemoveEntityFromLayers(GetId());
 
@@ -419,6 +413,16 @@ void CEntity::ShutDown()
 		m_pSchematycObject = nullptr;
 		m_pSchematycProperties.reset();
 	}
+
+	m_externalEventListeners.clear();
+	m_simpleEventListeners.clear();
+	m_eventListenerMask = 0;
+	// Update the registered event mask in all components, as to indicate that no listeners were registered
+	m_components.NonRecursiveForEach([](SEntityComponentRecord& record) -> EComponentIterationResult
+	{
+		record.registeredEventsMask = 0;
+		return EComponentIterationResult::Continue;
+	});
 
 	// ShutDown all components.
 	m_components.Clear();
@@ -704,15 +708,14 @@ void CEntity::PreviewRender(SEntityPreviewContext& context)
 {
 	m_render.PreviewRender(context);
 
-	m_components.ForEach([&](const SEntityComponentRecord& rec) -> bool
+	m_components.ForEach([this, &context](const SEntityComponentRecord& rec) -> EComponentIterationResult
 	{
-		IEntityComponentPreviewer* pPreviewer = rec.pComponent->GetPreviewer();
-		if (pPreviewer)
+		if (IEntityComponentPreviewer* pPreviewer = rec.pComponent->GetPreviewer())
 		{
-		  pPreviewer->Render(*this, *rec.pComponent.get(), context);
+			pPreviewer->Render(*this, *rec.pComponent.get(), context);
 		}
 
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 }
 
@@ -954,18 +957,22 @@ void CEntity::PrepareForDeletion()
 //////////////////////////////////////////////////////////////////////////
 void CEntity::UpdateComponentEventMask(const IEntityComponent* pComponent)
 {
-	m_components.ForEach([this, pComponent](SEntityComponentRecord& record) -> bool
+	m_components.ForEach([this, pComponent](SEntityComponentRecord& record) -> EComponentIterationResult
 	{
 		if (record.pComponent.get() == pComponent)
 		{
-		  EntityEventMask prevMask = record.registeredEventsMask;
-		  record.registeredEventsMask = (EntityEventMask)record.pComponent->GetEventMask();
+			const EntityEventMask newMask = (EntityEventMask)record.pComponent->GetEventMask();
+			const EntityEventMask prevMask = record.registeredEventsMask;
+			if (prevMask != newMask)
+			{
+				record.registeredEventsMask = newMask;
+				OnComponentMaskChanged(record, prevMask);
+			}
 
-		  OnComponentMaskChanged(record, prevMask);
-		  return false;
+			return EComponentIterationResult::Break;
 		}
 
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 }
 
@@ -983,6 +990,23 @@ void CEntity::OnComponentMaskChanged(const SEntityComponentRecord& componentReco
 
 void CEntity::UpdateComponentEventListeners(const SEntityComponentRecord& componentRecord, EntityEventMask prevMask)
 {
+	const EntityEventMask maskDifference = componentRecord.registeredEventsMask ^ prevMask;
+
+	for (EntityEventMask i = countTrailingZeros64(maskDifference), n = std::numeric_limits<EntityEventMask>::digits - countLeadingZeros64(maskDifference); i < n; ++i)
+	{
+		bool hasEvent = (componentRecord.registeredEventsMask & (1ull << i)) != 0;
+		bool hadEvent = (prevMask & (1ull << i)) != 0;
+
+		if (hasEvent && !hadEvent)
+		{
+			AddSimpleEventListener(EEntityEvent(i), componentRecord.pComponent.get(), componentRecord.eventPriority);
+		}
+		else if (hadEvent && !hasEvent)
+		{
+			RemoveSimpleEventListener(EEntityEvent(i), componentRecord.pComponent.get());
+		}
+	}
+
 	const bool bWantsUpdates = (componentRecord.registeredEventsMask & ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE)) != 0;
 	const bool bHadUpdates = (prevMask & ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE)) != 0;
 
@@ -1005,23 +1029,6 @@ void CEntity::UpdateComponentEventListeners(const SEntityComponentRecord& compon
 	else if (!bWantsPrePhysicsUpdates && bHadPrePhysicsUpdates)
 	{
 		g_pIEntitySystem->EnableComponentPrePhysicsUpdates(componentRecord.pComponent.get(), false);
-	}
-
-	EntityEventMask maskDifference = componentRecord.registeredEventsMask ^ prevMask;
-
-	for (EntityEventMask i = countTrailingZeros64(maskDifference), n = std::numeric_limits<EntityEventMask>::digits - countLeadingZeros64(maskDifference); i < n; ++i)
-	{
-		bool hasEvent = (componentRecord.registeredEventsMask & (1ull << i)) != 0;
-		bool hadEvent = (prevMask & (1ull << i)) != 0;
-
-		if (hasEvent && !hadEvent)
-		{
-			AddSimpleEventListener(EEntityEvent(i), componentRecord.pComponent.get(), componentRecord.eventPriority);
-		}
-		else if (hadEvent && !hasEvent)
-		{
-			RemoveSimpleEventListener(EEntityEvent(i), componentRecord.pComponent.get());
-		}
 	}
 }
 
@@ -1143,10 +1150,11 @@ ISerializableInfoPtr CEntity::GetSerializableNetworkSpawnInfo() const
 	_smart_ptr<SSerializableContainer> pContainer = new SSerializableContainer(GetId());
 	pContainer->componentInstanceGUIDs.reserve(m_components.Size());
 
-	m_components.ForEachUnchecked([&pContainer](const SEntityComponentRecord& record)
+	m_components.NonRecursiveForEach([&pContainer](const SEntityComponentRecord& record) -> EComponentIterationResult
 	{
 		CRY_ASSERT(!record.pComponent->GetGUID().IsNull());
 		pContainer->componentInstanceGUIDs.emplace_back(record.pComponent->GetGUID());
+		return EComponentIterationResult::Continue;
 	});
 
 	return pContainer;
@@ -1199,15 +1207,10 @@ void CEntity::LoadComponent(Serialization::IArchive& archive, uint8*& pComponent
 	bool bValidInstanceGUID = !componentGUID.IsNull() && (m_flagsExtended & ENTITY_FLAG_EXTENDED_CLONED) == 0;
 	if (bValidInstanceGUID)
 	{
-		// Find component in the list of the existing entity components
-		for (auto& record : m_components.GetVector())
+		pComponent = m_components.FindComponent([componentGUID](const SEntityComponentRecord& record) -> bool
 		{
-			if (record.pComponent != nullptr && record.pComponent->GetGUID() == componentGUID)
-			{
-				pComponent = record.pComponent;
-				break;
-			}
-		}
+			return record.pComponent->GetGUID() == componentGUID;
+		});
 	}
 	else
 	{
@@ -1367,16 +1370,12 @@ bool CEntity::LoadComponentLegacy(XmlNodeRef entityNode, XmlNodeRef componentNod
 
 	IEntityComponent* pComponent = GetComponentByTypeId(componentTypeId);
 
-	if (!pComponent)
+	if (pComponent == nullptr)
 	{
-		for (const SEntityComponentRecord& record : m_components.GetVector())
+		pComponent = m_components.FindComponent([componentTypeId](const SEntityComponentRecord& record) -> bool
 		{
-			if (record.pComponent != nullptr && record.pComponent->GetClassDesc().GetGUID() == componentTypeId)
-			{
-				pComponent = record.pComponent.get();
-				break;
-			}
-		}
+			return record.pComponent->GetClassDesc().GetGUID() == componentTypeId;
+		}).get();
 	}
 	if (pComponent && pComponent->GetComponentFlags().Check(EEntityComponentFlags::Schematyc))
 	{
@@ -1500,14 +1499,14 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 			}
 
 			// Now that all components are in place, initialize them (does not apply to legacy proxies).
-			m_components.ForEach([&](const SEntityComponentRecord& record) -> bool
+			m_components.ForEach([&](const SEntityComponentRecord& record) -> EComponentIterationResult
 			{
 				if (record.proxyType == ENTITY_PROXY_LAST)
 				{
-				  record.pComponent->Initialize();
+					record.pComponent->Initialize();
 				}
 
-				return true;
+				return EComponentIterationResult::Continue;
 			});
 		}
 		m_physics.SerializeXML(node, bLoading);
@@ -1516,7 +1515,7 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 	{
 		XmlNodeRef componentsNode;
 
-		m_components.ForEach([&](const SEntityComponentRecord& record) -> bool
+		m_components.ForEach([&](const SEntityComponentRecord& record) -> EComponentIterationResult
 		{
 			IEntityComponent& component = *record.pComponent;
 
@@ -1524,41 +1523,38 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 			if (!component.GetComponentFlags().Check(EEntityComponentFlags::Schematyc) &&
 			    !component.GetComponentFlags().Check(EEntityComponentFlags::NoSave))
 			{
-			  if (!component.GetClassDesc().GetName().IsEmpty())
-			  {
-			    if (!componentsNode)
-			    {
-			      // Create sub-node on first access
-			      componentsNode = node->newChild("Components");
-			    }
-			    XmlNodeRef componentNode = componentsNode->newChild("Component");
+				if (!component.GetClassDesc().GetName().IsEmpty())
+				{
+					if (!componentsNode)
+					{
+						// Create sub-node on first access
+						componentsNode = node->newChild("Components");
+					}
+					XmlNodeRef componentNode = componentsNode->newChild("Component");
 
-			    struct SEntityComponentSaveHelper
-			    {
-			      CEntity& entity;
-			      IEntityComponent* pComponent;
-			      void Serialize(Serialization::IArchive & archive)
-			      {
-			        entity.SaveComponent(archive, *pComponent);
-			      }
-			    };
+					struct SEntityComponentSaveHelper
+					{
+						CEntity& entity;
+						IEntityComponent* pComponent;
+						void Serialize(Serialization::IArchive& archive) { entity.SaveComponent(archive, *pComponent); }
+					};
 
-			    SEntityComponentSaveHelper saveHelper { *this, &component };
-			    Serialization::SaveXmlNode(componentNode, Serialization::SStruct(saveHelper));
-			  }
-			  else if (component.GetPropertyGroup() || component.GetComponentFlags().Check(EEntityComponentFlags::Legacy))
-			  {
-			    if (!componentsNode)
-			    {
-			      // Create sub-node on first access
-			      componentsNode = node->newChild("Components");
-			    }
-			    XmlNodeRef componentNode = componentsNode->newChild("Component");
-			    SaveComponentLegacy(record.typeId, node, componentNode, component, bIncludeScriptProxy);
-			  }
+					SEntityComponentSaveHelper saveHelper{*this, &component};
+					Serialization::SaveXmlNode(componentNode, Serialization::SStruct(saveHelper));
+				}
+				else if (component.GetPropertyGroup() || component.GetComponentFlags().Check(EEntityComponentFlags::Legacy))
+				{
+					if (!componentsNode)
+					{
+						// Create sub-node on first access
+						componentsNode = node->newChild("Components");
+					}
+					XmlNodeRef componentNode = componentsNode->newChild("Component");
+					SaveComponentLegacy(record.typeId, node, componentNode, component, bIncludeScriptProxy);
+				}
 			}
 
-			return true;
+			return EComponentIterationResult::Continue;
 		});
 
 		if (m_pSchematycProperties && !bExcludeSchematycProperties)
@@ -1573,21 +1569,18 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bIncludeScriptP
 //////////////////////////////////////////////////////////////////////////
 IEntityComponent* CEntity::GetProxy(EEntityProxy proxy) const
 {
-	for (const SEntityComponentRecord& componentRec : m_components.GetVector())
+	return m_components.FindComponent([proxy](const SEntityComponentRecord& record) -> bool
 	{
-		if (componentRec.proxyType == proxy)
-			return componentRec.pComponent.get();
-	}
-	return nullptr;
+		return record.proxyType == proxy;
+	}).get();
 }
 
 //////////////////////////////////////////////////////////////////////////
 IEntityComponent* CEntity::CreateProxy(EEntityProxy proxy)
 {
-	for (const SEntityComponentRecord& componentRec : m_components.GetVector())
+	if (IEntityComponent* pComponent = GetProxy(proxy))
 	{
-		if (componentRec.proxyType == proxy)
-			return componentRec.pComponent.get();
+		return pComponent;
 	}
 
 	switch (proxy)
@@ -1739,12 +1732,13 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 	componentRecord.registeredEventsMask = (EntityEventMask)pComponent->GetEventMask();
 	componentRecord.proxyType = (int)pComponent->GetProxyType();
 	componentRecord.eventPriority = pComponent->GetEventPriority();
+	componentRecord.creationOrder = m_componentChangeState;
 
 	// Proxy component must be last in the order of the event processing
 	if (componentRecord.proxyType == ENTITY_PROXY_SCRIPT)
 		componentRecord.eventPriority = 10000;
 
-	m_components.SortedEmplace(std::move(componentRecord));
+	const SEntityComponentRecord& storedRecord = m_components.SortedEmplace(std::move(componentRecord));
 
 	// Automatically assign transformation if necessary
 	if (pComponent->GetComponentFlags().Check(EEntityComponentFlags::Transform) && pComponent->GetTransform() == nullptr)
@@ -1754,7 +1748,7 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 		UpdateSlotForComponent(pComponent.get(), false);
 	}
 
-	OnComponentMaskChanged(componentRecord, 0);
+	OnComponentMaskChanged(storedRecord, 0);
 
 	// Entity has changed so make the state dirty
 	m_componentChangeState++;
@@ -1776,72 +1770,63 @@ void CEntity::RemoveAllComponents()
 
 void CEntity::ReplaceComponent(IEntityComponent* pExistingComponent, std::shared_ptr<IEntityComponent> pNewComponent)
 {
-	int previousEventPriority = 0;
+	TComponentsRecord::TRecordStorage::iterator it = m_components.FindExistingComponent(pExistingComponent);
+	CRY_ASSERT_MESSAGE(it != m_components.GetEnd(), "Tried to replace an non-existent component!");
 
-	m_components.ForEach([this, pExistingComponent, &pNewComponent, &previousEventPriority](SEntityComponentRecord& componentRecord) -> bool
+	SEntityComponentRecord& record = *it;
+
+	record.eventPriority = record.pComponent->GetEventPriority();
+
+	// If the existing record had registered event listeners, make sure to remove them
+	if (record.registeredEventsMask != 0)
 	{
-		if (componentRecord.pComponent.get() == pExistingComponent)
-		{
-			// First remove all listeners that point to the old pointer (pExistingComponent)
-			const EntityEventMask prevMask = componentRecord.registeredEventsMask;
-			componentRecord.registeredEventsMask = 0;
-			OnComponentMaskChanged(componentRecord, prevMask);
+		// First remove all listeners that point to the old pointer (pExistingComponent)
+		const EntityEventMask prevMask = record.registeredEventsMask;
+		record.registeredEventsMask = 0;
+		OnComponentMaskChanged(record, prevMask);
+	}
 
-			// Now add the new listeners specified by the new component
-			componentRecord.pComponent = pNewComponent;
-			componentRecord.registeredEventsMask = componentRecord.pComponent->GetEventMask();
-			componentRecord.eventPriority = componentRecord.pComponent->GetEventPriority();
-			OnComponentMaskChanged(componentRecord, 0);
+	record.pComponent = pNewComponent;
+	record.registeredEventsMask = record.pComponent->GetEventMask();
 
-			return false;
-		}
+	const int previousEventPriority = record.eventPriority;
+	record.eventPriority = record.pComponent->GetEventPriority();
 
-		return true;
-	});
-
-	if (previousEventPriority != pNewComponent->GetEventPriority())
+	if (record.eventPriority != previousEventPriority)
 	{
 		// Force sorting after replacing the component
-		m_components.Sort(true);
+		m_components.ReSortComponent(it);
 	}
+
+	// Now add the new listeners specified by the new component
+	OnComponentMaskChanged(record, 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
 IEntityComponent* CEntity::GetComponentByTypeId(const CryInterfaceID& typeId) const
 {
-	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
+	return m_components.FindComponent([typeId](const SEntityComponentRecord& record) -> bool
 	{
-		if (componentRecord.typeId == typeId)
-		{
-			return componentRecord.pComponent.get();
-		}
-	}
-	return nullptr;
+		return record.typeId == typeId;
+	}).get();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntity::GetComponentsByTypeId(const CryInterfaceID& typeId, DynArray<IEntityComponent*>& components) const
 {
-	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
+	m_components.FindComponents([typeId](const SEntityComponentRecord& record) -> bool
 	{
-		if (componentRecord.typeId == typeId)
-		{
-			components.push_back(componentRecord.pComponent.get());
-		}
-	}
+		return record.typeId == typeId;
+	}, components);
 }
 
 //////////////////////////////////////////////////////////////////////////
 IEntityComponent* CEntity::GetComponentByGUID(const CryGUID& guid) const
 {
-	for (auto& record : m_components.GetVector())
+	return m_components.FindComponent([guid](const SEntityComponentRecord& record) -> bool
 	{
-		if (record.pComponent != nullptr && record.pComponent->GetGUID() == guid)
-		{
-			return record.pComponent.get();
-		}
-	}
-	return nullptr;
+		return record.pComponent->GetGUID() == guid;
+	}).get();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1851,28 +1836,18 @@ void CEntity::QueryComponentsByInterfaceID(const CryInterfaceID& interfaceID, Dy
 	CRY_ASSERT(interfaceID != cryiidof<ICryUnknown>());
 	CRY_ASSERT(interfaceID != cryiidof<IEntityComponent>());
 
-	for (const SEntityComponentRecord& record : m_components.GetVector())
+	m_components.FindComponents([interfaceID](const SEntityComponentRecord& record) -> bool
 	{
-		if (record.pComponent == nullptr)
-			continue;
-
-		// Check unified Schematyc / Entity class hierarchy
-		if (record.pComponent->GetClassDesc().GetGUID() == interfaceID || record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr)
+		const bool isModernEntityType = record.pComponent->GetClassDesc().GetGUID() == interfaceID || record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr;
+		if (isModernEntityType)
 		{
-			components.push_back(record.pComponent.get());
-			continue;
+			return true;
 		}
 
 		// Check legacy component class hierarchy
-		if (ICryFactory* pFactory = record.pComponent->GetFactory())
-		{
-			if (pFactory->GetClassID() == interfaceID || pFactory->ClassSupports(interfaceID))
-			{
-				components.push_back(record.pComponent.get());
-				continue;
-			}
-		}
-	}
+		ICryFactory* pFactory = record.pComponent->GetFactory();
+		return pFactory != nullptr && (pFactory->GetClassID() == interfaceID || pFactory->ClassSupports(interfaceID));
+	}, components);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1885,43 +1860,33 @@ IEntityComponent* CEntity::QueryComponentByInterfaceID(const CryInterfaceID& int
 		return nullptr;
 	}
 
-	for (const SEntityComponentRecord& record : m_components.GetVector())
+	return m_components.FindComponent([interfaceID](const SEntityComponentRecord& record) -> bool
 	{
-		if (record.pComponent == nullptr)
-			continue;
-
-		// Check unified Schematyc / Entity class hierarchy
-		if (record.pComponent->GetClassDesc().GetGUID() == interfaceID || record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr)
+		const bool isModernSchematycEntity = record.pComponent->GetClassDesc().GetGUID() == interfaceID || record.pComponent->GetClassDesc().FindBaseByTypeID(interfaceID) != nullptr;
+		if (isModernSchematycEntity)
 		{
-			return record.pComponent.get();
+			return true;
 		}
 
-		// Check legacy component class hierarchy
 		if (ICryFactory* pFactory = record.pComponent->GetFactory())
 		{
-			if (pFactory->GetClassID() == interfaceID || pFactory->ClassSupports(interfaceID))
-			{
-				return record.pComponent.get();
-			}
+			return pFactory->GetClassID() == interfaceID || pFactory->ClassSupports(interfaceID);
 		}
-	}
 
-	return nullptr;
+		return false;
+	}).get();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntity::GetComponents(DynArray<IEntityComponent*>& components) const
 {
-	auto& vec = m_components.GetVector();
 	components.resize(0);
-	components.reserve(vec.size());
-	for (const SEntityComponentRecord& rec : vec)
+	components.reserve(m_components.Size());
+
+	m_components.FindComponents([](const SEntityComponentRecord& record) -> bool
 	{
-		if (rec.pComponent != nullptr)
-		{
-			components.push_back(rec.pComponent.get());
-		}
-	}
+		return true;
+	}, components);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1932,18 +1897,25 @@ uint32 CEntity::GetComponentsCount() const
 
 uint8 CEntity::GetComponentChangeState() const
 {
-	return m_componentChangeState;
+	uint16 componentChangeState = m_componentChangeState;
+
+	while (componentChangeState > std::numeric_limits<uint8>::max())
+	{
+		componentChangeState -= std::numeric_limits<uint8>::max();
+	}
+
+	return static_cast<uint8>(componentChangeState);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntity::VisitComponents(const ComponentsVisitor& visitor)
 {
-	m_components.ForEach([&](const SEntityComponentRecord& componentRecord) -> bool
+	m_components.ForEach([&visitor](const SEntityComponentRecord& componentRecord) -> EComponentIterationResult
 	{
 		// Call visitor callback on every component
 		visitor(componentRecord.pComponent.get());
 
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 }
 
@@ -2966,13 +2938,8 @@ void CEntity::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
 	m_physics.GetMemoryUsage(pSizer);
-	for (const SEntityComponentRecord& componentRecord : m_components.GetVector())
-	{
-		if (componentRecord.pComponent != nullptr)
-		{
-			componentRecord.pComponent->GetMemoryUsage(pSizer);
-		}
-	}
+
+	m_components.GetMemoryStatistics(pSizer);
 
 	pSizer->AddContainer(m_simpleEventListeners);
 }
@@ -3132,14 +3099,14 @@ void CEntity::OnEditorGameModeChanged(bool bEnterGameMode)
 		m_flags &= ~ENTITY_FLAG_REMOVED;
 
 		// Re-add the component event listener which where removed
-		m_components.ForEach([this](SEntityComponentRecord& record) -> bool
+		m_components.ForEach([this](SEntityComponentRecord& record) -> EComponentIterationResult
 		{
 			EntityEventMask prevMask = record.registeredEventsMask;
 			record.registeredEventsMask = record.pComponent->GetEventMask();
 
 			OnComponentMaskChanged(record, prevMask);
 
-			return true;
+			return EComponentIterationResult::Continue;
 		});
 
 		// If entity was deleted in game, resurrect it.
@@ -3291,9 +3258,12 @@ void CEntity::SetEditorObjectInfo(bool selected, bool highlighted)
 
 void CEntity::ShutDownComponent(SEntityComponentRecord& componentRecord)
 {
-	EntityEventMask prevMask = componentRecord.registeredEventsMask;
-	componentRecord.registeredEventsMask = 0;
-	UpdateComponentEventListeners(componentRecord, prevMask);
+	if (componentRecord.registeredEventsMask != 0)
+	{
+		const EntityEventMask prevMask = componentRecord.registeredEventsMask;
+		componentRecord.registeredEventsMask = 0;
+		UpdateComponentEventListeners(componentRecord, prevMask);
+	}
 
 	componentRecord.pComponent->OnShutDown();
 

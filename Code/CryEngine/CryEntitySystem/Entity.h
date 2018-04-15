@@ -488,7 +488,7 @@ private:
 	std::underlying_type<EInternalFlag>::type m_internalFlags = 0;
 
 	uint8 m_sendEventRecursionCount = 0;
-	uint8 m_componentChangeState = 0;
+	uint16 m_componentChangeState = 0;
 
 	// Name of the entity.
 	string m_name;
@@ -547,47 +547,114 @@ private:
 
 	struct SEventListenerSet
 	{
-		SEventListenerSet(EEntityEvent entityEvent) : event(entityEvent), firstUnsortedListenerIndex(-1) {}
+		SEventListenerSet(EEntityEvent entityEvent, const SEventListener& firstEventListener)
+			: event(entityEvent)
+			, firstUnsortedListenerIndex(-1)
+			, hasValidElements(1) 
+			, listeners({ firstEventListener }) {}
+
 		SEventListenerSet(const SEventListenerSet&) = delete;
 		SEventListenerSet& operator=(const SEventListenerSet&) = delete;
 		SEventListenerSet(SEventListenerSet&& other)
 			: event(other.event)
 			, listeners(std::move(other.listeners))
-			, firstUnsortedListenerIndex(other.firstUnsortedListenerIndex) {}
+			, firstUnsortedListenerIndex(other.firstUnsortedListenerIndex)
+			, hasValidElements(other.hasValidElements) {}
 		SEventListenerSet& operator=(SEventListenerSet&&) = default;
 
-		EEntityEvent                event;
+		EEntityEvent event;
+
+	protected:
 		std::vector<SEventListener> listeners;
 		// Index of the listener we pushed back while iterating
 		// Allows us to skip going through a lot of possibly unneeded listeners
 		// Negative if we are sorted
-		int16 firstUnsortedListenerIndex;
+		int16 firstUnsortedListenerIndex : 15;
+		// Whether or not we have valid (non-null) entries in the vector
+		// Needed since Remove while we are iterating requires that we invalidate instead of erasing
+		int16 hasValidElements : 1;
 
-		bool IsEmpty() const  { return listeners.empty(); }
+		void CheckForInvalidatedElements()
+		{
+			if (hasValidElements)
+			{
+				hasValidElements = std::find_if(listeners.begin(), listeners.end(), [](const SEventListener& listener) -> bool { return listener.pListener != nullptr; }) != listeners.end();
+			}
+		}
+
+	public:
+		std::vector<SEventListener>::iterator FindListener(ISimpleEntityEventListener* pListener)
+		{
+			return std::find_if(listeners.begin(), listeners.end(), [pListener](const SEventListener& listener) -> bool { return listener.pListener == pListener; });
+		}
+
+		std::vector<SEventListener>::const_iterator GetEnd() const { return listeners.end(); }
+
 		// Whether or not the entire collection of listeners is sorted
 		bool IsSorted() const { return isneg(firstUnsortedListenerIndex) != 0; }
-		void OnSorted()       { firstUnsortedListenerIndex = -1; }
+		void OnSorted() { firstUnsortedListenerIndex = -1; }
+
+		void SendEvent(const SEntityEvent& event)
+		{
+			// Numbered iteration as listeners may be invalidated (set to null) during iteration
+			// Sorting is not affected while iterating, so this is safe
+			for (size_t i = 0; i < listeners.size(); ++i)
+			{
+				if (listeners[i].pListener != nullptr)
+				{
+					listeners[i].pListener->ProcessEvent(event);
+				}
+			}
+		}
 
 		void SortedInsert(SEventListener& listener)
 		{
+			// Attempt to sort existing elements first, if there are any unsorted
+			if (!IsSorted())
+			{
+				SortUnsortedElements();
+			}
+
 			// Sorted insertion based on the requested event priority
 			auto upperBoundIt = std::upper_bound(listeners.begin(), listeners.end(), listener, [](const SEventListener& a, const SEventListener& b) -> bool { return a.eventPriority < b.eventPriority; });
 			listeners.emplace(upperBoundIt, listener);
+			hasValidElements = 1;
 		}
 
 		void UnsortedInsert(SEventListener& listener)
 		{
 			if (IsSorted())
 			{
-				firstUnsortedListenerIndex = static_cast<uint16>(listeners.size());
+				firstUnsortedListenerIndex = static_cast<int16>(listeners.size());
 			}
 
 			// Adding of event listener while we are iterating, we cannot sort here so push to back and require sort when iteration is done
 			listeners.push_back(listener);
+			hasValidElements = 1;
+		}
+
+		void RemoveElement(std::vector<SEventListener>::const_iterator listenerIt)
+		{
+			// See if we need to adjust firstUnsortedListenerIndex due to an element being erased
+			if (!IsSorted() && std::distance(static_cast<std::vector<SEventListener>::const_iterator>(listeners.begin()), listenerIt) < firstUnsortedListenerIndex)
+			{
+				firstUnsortedListenerIndex--;
+			}
+
+			listeners.erase(listenerIt);
+
+			// Take the opportunity to sort the elements if we are able
+			if (!IsSorted())
+			{
+				SortUnsortedElements();
+			}
+
+			CheckForInvalidatedElements();
 		}
 
 		void InvalidateElement(std::vector<SEventListener>::iterator listenerIt)
 		{
+			CRY_ASSERT(listenerIt->pListener != nullptr);
 			listenerIt->pListener = nullptr;
 
 			uint16 elementIndex = static_cast<uint16>(std::distance(listeners.begin(), listenerIt));
@@ -596,11 +663,19 @@ private:
 			{
 				firstUnsortedListenerIndex = elementIndex;
 			}
+
+			CheckForInvalidatedElements();
+		}
+
+		bool HasValidElements() const
+		{
+			return hasValidElements != 0;
 		}
 
 		// Sort any potentially unsorted elements, does not affect the rest of the container as it is assumed sorted
 		void SortUnsortedElements()
 		{
+			CRY_ASSERT(!IsSorted());
 			uint16 numUnsortedListeners = static_cast<uint16>(listeners.size() - firstUnsortedListenerIndex);
 
 			while (numUnsortedListeners > 0 && listeners.size() != 0)
@@ -666,6 +741,7 @@ private:
 	// counter to prevent deletion if entity is processed deferred by for example physics events
 	uint16 m_keepAliveCounter = 0;
 
+	using TComponentsRecord = CEntityComponentsVector<SEntityComponentRecord>;
 	// Array of components, linear search in a small array is almost always faster then a more complicated set or map containers.
-	CEntityComponentsVector<SEntityComponentRecord> m_components;
+	TComponentsRecord m_components;
 };

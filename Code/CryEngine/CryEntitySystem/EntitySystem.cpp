@@ -928,11 +928,11 @@ void CEntitySystem::PrePhysicsUpdate()
 	SEntityEvent event(ENTITY_EVENT_PREPHYSICSUPDATE);
 	event.fParam[0] = gEnv->pTimer->GetFrameTime();
 
-	m_prePhysicsUpdatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> bool
+	m_prePhysicsUpdatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 	{
 		rec.pComponent->ProcessEvent(event);
 
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 }
 
@@ -1461,11 +1461,11 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 	case (int)EComponentProfilingType::Disabled:
 		{
 #endif
-	m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> bool
+	m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 	{
 		rec.pComponent->ProcessEvent(event);
 
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 
 #ifdef INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
@@ -1475,11 +1475,11 @@ case(int)EComponentProfilingType::Simple:
 {
 	CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
-	m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> bool
+	m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 	{
 		rec.pComponent->ProcessEvent(event);
 
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 
 	CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
@@ -1489,7 +1489,7 @@ case(int)EComponentProfilingType::Simple:
 	EntityId renderedEntityCount = 0;
 	EntityId physicalizedEntityCount = 0;
 
-	m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> bool
+	m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 	{
 		CEntity* pEntity = static_cast<CEntity*>(rec.pComponent->GetEntity());
 
@@ -1507,7 +1507,7 @@ case(int)EComponentProfilingType::Simple:
 			}
 		}
 
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 
 	IRenderAuxGeom* pRenderAuxGeom = gEnv->pAuxGeomRenderer;
@@ -1539,7 +1539,7 @@ case(int)EComponentProfilingType::TypeCostBreakdown:
 
 	CTimeValue timeBeforeComponentsUpdate = gEnv->pTimer->GetAsyncTime();
 
-	m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> bool
+	m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 	{
 		IEntityComponent* pEntityComponent = rec.GetComponent();
 
@@ -1578,7 +1578,7 @@ case(int)EComponentProfilingType::TypeCostBreakdown:
 			it->second.totalCostMs += (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds();
 		}
 
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 
 	CTimeValue timeAfterComponentsUpdate = gEnv->pTimer->GetAsyncTime();
@@ -1738,8 +1738,8 @@ void CEntitySystem::GetMemoryStatistics(ICrySizer* pSizer) const
 	pSizer->AddObject(m_pClassRegistry);
 	pSizer->AddContainer(m_mapEntityNames);
 
-	pSizer->AddContainer(m_updatedEntityComponents.GetVector());
-	pSizer->AddContainer(m_prePhysicsUpdatedEntityComponents.GetVector());
+	m_updatedEntityComponents.GetMemoryStatistics(pSizer);
+	m_prePhysicsUpdatedEntityComponents.GetMemoryStatistics(pSizer);
 
 	{
 		SIZER_COMPONENT_NAME(pSizer, "Entities");
@@ -3229,14 +3229,15 @@ void CEntitySystem::EnableComponentUpdates(IEntityComponent* pComponent, bool bE
 		bool bRequiresUpdate = false;
 
 		// Check if any other components need the update event
-		pEntity->m_components.ForEach([pComponent, &bRequiresUpdate](const SEntityComponentRecord& otherComponentRecord) -> bool
+		pEntity->m_components.NonRecursiveForEach([pComponent, &bRequiresUpdate](const SEntityComponentRecord& otherComponentRecord) -> EComponentIterationResult
 		{
 			if (otherComponentRecord.pComponent.get() != pComponent && (otherComponentRecord.registeredEventsMask & ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE)) != 0)
 			{
-			  bRequiresUpdate = true;
+				bRequiresUpdate = true;
+				return EComponentIterationResult::Break;
 			}
 
-			return !bRequiresUpdate;
+			return EComponentIterationResult::Continue;
 		});
 
 		if (!bRequiresUpdate)

@@ -52,7 +52,6 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 			params.guid = CryGUID::Create();
 			params.sName = szName;
 			params.nFlags = ENTITY_FLAG_CLIENT_ONLY;
-			params.pClass = g_pIEntitySystem->GetClassRegistry()->GetDefaultClass();
 
 			pEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(params));
 			CRY_UNIT_TEST_ASSERT(pEntity != nullptr);
@@ -386,7 +385,6 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		params.guid = CryGUID::Create();
 		params.sName = __FUNCTION__;
 		params.nFlags = ENTITY_FLAG_CLIENT_ONLY;
-		params.pClass = g_pIEntitySystem->GetClassRegistry()->GetDefaultClass();
 
 		params.vPosition = Vec3(1, 2, 3);
 		const Ang3 angles = Ang3(gf_PI, 0, gf_PI * 0.5f);
@@ -430,7 +428,6 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		parentParams.guid = CryGUID::Create();
 		parentParams.sName = __FUNCTION__;
 		parentParams.nFlags = ENTITY_FLAG_CLIENT_ONLY;
-		parentParams.pClass = g_pIEntitySystem->GetClassRegistry()->GetDefaultClass();
 
 		parentParams.vPosition = Vec3(1, 2, 3);
 		const Ang3 angles = Ang3(gf_PI, 0, gf_PI * 0.5f);
@@ -452,7 +449,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		const CEntity* const pChildEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(childParams));
 		CRY_UNIT_TEST_ASSERT(pChildEntity != nullptr);
 		CRY_UNIT_TEST_ASSERT(pChildEntity->GetParent() == pParentEntity);
-		
+
 		// Ensure that parent world transform is correct
 		CRY_UNIT_TEST_CHECK_CLOSE(pParentEntity->GetWorldTM(), Matrix34::Create(parentParams.vScale, parentParams.qRotation, parentParams.vPosition), VEC_EPSILON);
 
@@ -485,6 +482,71 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 
 		g_pIEntitySystem->RemoveEntity(pParentEntity->GetId());
 		g_pIEntitySystem->RemoveEntity(pChildEntity->GetId());
+	}
+
+	CRY_UNIT_TEST(TestDefaultEntitySpawnClass)
+	{
+		SEntitySpawnParams spawnParams;
+		spawnParams.guid = CryGUID::Create();
+		spawnParams.sName = __FUNCTION__;
+		spawnParams.nFlags = ENTITY_FLAG_CLIENT_ONLY;
+
+		CEntity* const pEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(spawnParams));
+		CRY_UNIT_TEST_ASSERT(pEntity != nullptr);
+		CRY_UNIT_TEST_ASSERT(pEntity->GetClass() != nullptr);
+		CRY_UNIT_TEST_ASSERT(pEntity->GetClass() == g_pIEntitySystem->GetClassRegistry()->GetDefaultClass());
+	}
+
+	CRY_UNIT_TEST(TestComponentShutdownOrder)
+	{
+		bool firstComponentDestroyed = false;
+		bool secondComponentDestroyed = false;
+
+		class CFirstComponent : public IEntityComponent
+		{
+			bool& wasDestroyed;
+			const bool& wasOtherDestroyed;
+
+		public:
+			CFirstComponent(bool& destroyed, bool& otherDestroyed) : wasDestroyed(destroyed), wasOtherDestroyed(otherDestroyed) {}
+			virtual ~CFirstComponent()
+			{
+				CRY_UNIT_TEST_ASSERT(!wasDestroyed);
+				CRY_UNIT_TEST_ASSERT(!wasOtherDestroyed);
+				wasDestroyed = true;
+			}
+		};
+
+		class CSecondComponent : public IEntityComponent
+		{
+			bool& wasDestroyed;
+			const bool& wasOtherDestroyed;
+
+		public:
+			CSecondComponent(bool& destroyed, bool& otherDestroyed) : wasDestroyed(destroyed), wasOtherDestroyed(otherDestroyed) {}
+			virtual ~CSecondComponent() 
+			{
+				CRY_UNIT_TEST_ASSERT(!wasDestroyed);
+				CRY_UNIT_TEST_ASSERT(wasOtherDestroyed);
+				wasDestroyed = true;
+			}
+		};
+
+		SEntitySpawnParams spawnParams;
+		spawnParams.guid = CryGUID::Create();
+		spawnParams.sName = __FUNCTION__;
+		spawnParams.nFlags = ENTITY_FLAG_CLIENT_ONLY;
+
+		CEntity* const pEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(spawnParams));
+		CRY_UNIT_TEST_ASSERT(pEntity != nullptr);
+
+		pEntity->CreateComponentClass<CFirstComponent>(firstComponentDestroyed, secondComponentDestroyed);
+		CRY_UNIT_TEST_ASSERT(!firstComponentDestroyed && !secondComponentDestroyed);
+		pEntity->CreateComponentClass<CSecondComponent>(secondComponentDestroyed, firstComponentDestroyed);
+		CRY_UNIT_TEST_ASSERT(!firstComponentDestroyed && !secondComponentDestroyed);
+
+		g_pIEntitySystem->RemoveEntity(pEntity->GetId(), true);
+		CRY_UNIT_TEST_ASSERT(firstComponentDestroyed && secondComponentDestroyed);
 	}
 }
 

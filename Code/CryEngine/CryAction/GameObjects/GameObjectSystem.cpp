@@ -107,7 +107,6 @@ void CGameObjectSystem::Reset()
 	}
 #endif //#if !defined(_RELEASE)
 
-	stl::free_container(m_tempObjects);
 	stl::free_container(m_postUpdateObjects);
 	stl::free_container(m_activatedExtensions_top);
 }
@@ -398,19 +397,43 @@ IEntityComponent* CGameObjectSystem::CreateGameObjectWithPreactivatedExtension(I
 
 void CGameObjectSystem::PostUpdate(float frameTime)
 {
-	m_tempObjects = m_postUpdateObjects;
-	for (std::vector<IGameObject*>::const_iterator iter = m_tempObjects.begin(); iter != m_tempObjects.end(); ++iter)
+	m_isPostUpdating = true;
+
+	for(size_t i = 0, n = m_postUpdateObjects.size(); i < n;)
 	{
-		(*iter)->PostUpdate(frameTime);
+		if (m_postUpdateObjects[i] != nullptr)
+		{
+			m_postUpdateObjects[i]->PostUpdate(frameTime);
+			++i;
+		}
+		else
+		{
+			m_postUpdateObjects.erase(m_postUpdateObjects.begin() + i);
+		}
 	}
+
+	m_isPostUpdating = false;
 }
 
 void CGameObjectSystem::SetPostUpdate(IGameObject* pGameObject, bool enable)
 {
 	if (enable)
+	{
 		stl::push_back_unique(m_postUpdateObjects, pGameObject);
+	}
 	else
-		stl::find_and_erase(m_postUpdateObjects, pGameObject);
+	{
+		auto it = std::find(m_postUpdateObjects.begin(), m_postUpdateObjects.end(), pGameObject);
+		
+		if (m_isPostUpdating)
+		{
+			*it = nullptr;
+		}
+		else if(it != m_postUpdateObjects.end())
+		{
+			m_postUpdateObjects.erase(it);
+		}
+	}
 }
 
 const SEntitySchedulingProfiles* CGameObjectSystem::GetEntitySchedulerProfiles(IEntity* pEnt)

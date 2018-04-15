@@ -83,29 +83,27 @@ void CEntitiesComponentPropertyCache::LoadComponent(CEntity& entity, IEntityComp
 
 void CEntitiesComponentPropertyCache::StoreEntity(CEntity& entity)
 {
-	entity.GetComponentsVector().ForEach(
-	  [&](const SEntityComponentRecord& rec) -> bool
+	entity.GetComponentsVector().ForEach([this, &entity](const SEntityComponentRecord& rec) -> EComponentIterationResult
 	{
 		if (!rec.pComponent->GetClassDesc().GetName().IsEmpty())
 		{
-		  StoreComponent(entity, *rec.pComponent.get());
+			StoreComponent(entity, *rec.pComponent.get());
 		}
 
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 }
 
 void CEntitiesComponentPropertyCache::LoadEntity(CEntity& entity)
 {
-	entity.GetComponentsVector().ForEach(
-	  [&](const SEntityComponentRecord& rec) -> bool
+	entity.GetComponentsVector().ForEach([this, &entity](const SEntityComponentRecord& rec) -> EComponentIterationResult
 	{
 		if (!rec.pComponent->GetClassDesc().GetName().IsEmpty())
 		{
-		  LoadComponent(entity, *rec.pComponent.get());
+			LoadComponent(entity, *rec.pComponent.get());
 		}
 
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 }
 
