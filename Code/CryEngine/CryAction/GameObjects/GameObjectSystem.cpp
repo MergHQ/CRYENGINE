@@ -424,14 +424,17 @@ void CGameObjectSystem::SetPostUpdate(IGameObject* pGameObject, bool enable)
 	else
 	{
 		auto it = std::find(m_postUpdateObjects.begin(), m_postUpdateObjects.end(), pGameObject);
-		
-		if (m_isPostUpdating)
+		if(it != m_postUpdateObjects.end())
 		{
-			*it = nullptr;
-		}
-		else if(it != m_postUpdateObjects.end())
-		{
-			m_postUpdateObjects.erase(it);
+			if (m_isPostUpdating)
+			{
+				*it = nullptr;
+			}
+			else
+			{
+				m_postUpdateObjects.erase(it);
+			}
+
 		}
 	}
 }
