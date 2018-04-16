@@ -26,7 +26,7 @@
 #define MAX_SEQUENCE_NUMBER 256
 #endif
 
-inline int FrameOwner(const entity_contact &cnt) { return isneg(cnt.pbody[1]->Minv-cnt.pbody[0]->Minv) & cnt.pent[1]->m_iSimClass-3>>31 & ~isneg(cnt.pent[1]->m_id); }
+inline int FrameOwner(const entity_contact &cnt) { return isneg(cnt.pbody[1]->Minv-cnt.pbody[0]->Minv) & cnt.pent[1]->m_iSimClass-3>>31; }
 
 inline void GetContactFrames(const entity_contact &cnt, QuatT* frames, int n=2)	{ 
 	float scale;

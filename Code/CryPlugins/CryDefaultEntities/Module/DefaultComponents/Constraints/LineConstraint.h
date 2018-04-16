@@ -107,6 +107,7 @@ namespace Cry
 					constraint.qframe[0] = constraint.qframe[1] = Quat(slotTransform) * Quat::CreateRotationV0V1(Vec3(1, 0, 0), m_axis);
 					constraint.xlimits[0] = m_limitMin;
 					constraint.xlimits[1] = m_limitMax;
+					constraint.yzlimits[0] = constraint.yzlimits[1] = 0;
 					constraint.damping = m_damping;
 
 					if (!bAllowRotation)

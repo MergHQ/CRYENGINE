@@ -230,8 +230,8 @@ namespace Cry
 			}
 			else if (event.event == ENTITY_EVENT_UPDATE)
 			{
-				pe_status_vehicle vehicleStatus;
-				m_pEntity->GetPhysicalEntity()->GetStatus(&vehicleStatus);
+				//pe_status_vehicle vehicleStatus;
+				//m_pEntity->GetPhysicalEntity()->GetStatus(&vehicleStatus);
 			}
 			else if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 			{

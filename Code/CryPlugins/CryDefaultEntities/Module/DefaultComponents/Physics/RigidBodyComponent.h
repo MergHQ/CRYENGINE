@@ -40,9 +40,9 @@ namespace Cry
 				{
 					desc.SetGUID("{2C5EFA87-F7D0-43F1-90B8-576EEB60FC37}"_cry_guid);
 					desc.SetLabel("Buoyancy Parameters");
-					desc.AddMember(&CRigidBodyComponent::SBuoyancyParameters::damping, 'damp', "Damping", "Damping", "Uniform damping while submerged, will be scaled with submerged fraction", 1.f);
-					desc.AddMember(&CRigidBodyComponent::SBuoyancyParameters::density, 'dens', "Density", "Density", "Density of the fluid", 1.f);
-					desc.AddMember(&CRigidBodyComponent::SBuoyancyParameters::resistance, 'rest', "Resistance", "Resistance", "Resistance of the fluid", 1.f);
+					desc.AddMember(&CRigidBodyComponent::SBuoyancyParameters::damping, 'damp', "Damping", "Damping", "Uniform damping while submerged, will be scaled with submerged fraction", 0.f);
+					desc.AddMember(&CRigidBodyComponent::SBuoyancyParameters::density, 'dens', "Density", "Density", "Density of the fluid", 1000.f);
+					desc.AddMember(&CRigidBodyComponent::SBuoyancyParameters::resistance, 'rest', "Resistance", "Resistance", "Resistance of the fluid", 1000.f);
 				}
 
 				Schematyc::PositiveFloat damping = 1.f;
