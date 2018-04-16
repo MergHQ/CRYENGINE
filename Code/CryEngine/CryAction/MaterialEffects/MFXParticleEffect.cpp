@@ -53,18 +53,28 @@ void CMFXParticleEffect::Execute(const SMFXRunTimeEffectParams& params)
 
 	Vec3 pos = params.pos;
 	Vec3 dir = ZERO;
-	Vec3 inDir = params.dir[0];
-	Vec3 reverso = inDir * -1.0f;
 	switch (m_particleParams.directionType)
 	{
 	case SMFXParticleParams::eDT_Normal:
 		dir = params.normal;
 		break;
 	case SMFXParticleParams::eDT_Ricochet:
-		dir = reverso.GetRotated(params.normal, gf_PI).normalize();
+		dir = (-params.dir[0]).GetRotated(params.normal, gf_PI).normalize();
 		break;
 	case SMFXParticleParams::eDT_ProjectileDir:
-		dir = -inDir;
+		dir = -params.dir[0];
+		break;
+	case SMFXParticleParams::eDT_ObjectDir:
+		dir = params.objectDir;
+		break;
+	case SMFXParticleParams::eDT_ObjectVelocityDir3D:
+		dir = params.objectVelocityDir;
+		break;
+	case SMFXParticleParams::eDT_ObjectVelocityDir2D:
+		dir = Vec2(params.objectVelocityDir);
+		break;
+	case SMFXParticleParams::eDT_JointDir:
+		dir = params.jointDir;
 		break;
 	default:
 		dir = params.normal;
@@ -336,6 +346,22 @@ void CMFXParticleEffect::LoadParamsFromXml(const XmlNodeRef& paramsNode)
 		else if (!strcmp(val, "ProjectileDir"))
 		{
 			directionType = SMFXParticleParams::eDT_ProjectileDir;
+		}
+		else if (!strcmp(val, "ObjectDir"))
+		{
+			directionType = SMFXParticleParams::eDT_ObjectDir;
+		}
+		else if (!strcmp(val, "ObjectVelocityDir3D"))
+		{
+			directionType = SMFXParticleParams::eDT_ObjectVelocityDir3D;
+		}
+		else if (!strcmp(val, "ObjectVelocityDir2D"))
+		{
+			directionType = SMFXParticleParams::eDT_ObjectVelocityDir2D;
+		}
+		else if (!strcmp(val, "JointDir"))
+		{
+			directionType = SMFXParticleParams::eDT_JointDir;
 		}
 	}
 	m_particleParams.directionType = directionType;

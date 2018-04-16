@@ -84,6 +84,9 @@ struct SMFXRunTimeEffectParams
 		, pos(ZERO)
 		, decalPos(ZERO)
 		, normal(0.0f, 0.0f, 1.0f)
+		, objectDir(0.0f, 0.0f, 1.0f)
+		, objectVelocityDir(0.0f, 0.0f, 1.0f)
+		, jointDir(0.0f, 0.0f, 1.0f)
 		, angle(MFX_INVALID_ANGLE)
 		, scale(1.0f)
 		, audioProxyEntityId(0)
@@ -148,6 +151,9 @@ public:
 	Vec3         decalPos;
 	Vec3         dir[2];
 	Vec3         normal;
+	Vec3         objectDir;
+	Vec3         objectVelocityDir;
+	Vec3         jointDir;
 	float        angle;
 	float        scale;
 
