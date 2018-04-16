@@ -217,6 +217,37 @@ void CPrefabObject::Done()
 	CBaseObject::Done();
 }
 
+bool CPrefabObject::CreateFrom(std::vector<CBaseObject*>& objects)
+{
+	if (!CGroup::CreateFrom(objects))
+		return false;
+
+	CRY_ASSERT_MESSAGE(m_pPrefabItem, "Trying to create a prefab that has no Prefab Item");
+	m_pPrefabItem->SetModified();
+
+	return true;
+}
+
+void CPrefabObject::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center, CPrefabItem* pItem)
+{
+	CUndo undo("Create Prefab");
+	CPrefabObject* pPrefab = static_cast<CPrefabObject*>(GetIEditorImpl()->NewObject(PREFAB_OBJECT_CLASS_NAME));
+	pPrefab->SetPrefab(pItem, false);
+
+	if (!pPrefab)
+	{
+		undo.Cancel();
+		return;
+	}
+
+	// Snap center to grid.
+	pPrefab->SetPos(gSnappingPreferences.Snap(center));
+	if (!pPrefab->CreateFrom(objects))
+	{
+		undo.Cancel();
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 bool CPrefabObject::Init(CBaseObject* prev, const string& file)
 {
@@ -674,6 +705,16 @@ void CPrefabObject::DeleteChildrenWithoutUpdating()
 	}
 }
 
+void CPrefabObject::SetPrefabFlagForLinkedObjects(CBaseObject* pObject)
+{
+	for (auto i = 0; i < pObject->GetLinkedObjectCount(); ++i)
+	{
+		CBaseObject* pLinkedObject = pObject->GetLinkedObject(i);
+		pLinkedObject->SetFlags(OBJFLAG_PREFAB);
+		SetPrefabFlagForLinkedObjects(pLinkedObject);
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 void CPrefabObject::SetObjectPrefabFlagAndLayer(CBaseObject* object)
 {
@@ -1054,6 +1095,35 @@ void CPrefabObject::AddMember(CBaseObject* pObj, bool bKeepPos /*=true */)
 	GetIEditor()->GetIUndoManager()->Resume();
 	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 
+	pObjectManager->NotifyPrefabObjectChanged(this);
+
+	// if the currently modified prefab is selected make sure to refresh the inspector
+	if (pObjectManager->GetSelection()->IsContainObject(this))
+		pObjectManager->EmitPopulateInspectorEvent();
+}
+
+void CPrefabObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKeepPos/* = true*/)
+{
+	CGroup::AddMembers(objects, shouldKeepPos);
+
+	for (CBaseObject* pObject : objects)
+	{
+		SetObjectPrefabFlagAndLayer(pObject);
+		InitObjectPrefabId(pObject);
+		SetPrefabFlagForLinkedObjects(pObject);
+
+		CryGUID newGuid = CPrefabChildGuidProvider(this).GetFor(pObject);
+		GetObjectManager()->ChangeObjectId(pObject->GetId(), newGuid);
+
+		SObjectChangedContext context;
+		context.m_operation = eOCOT_Add;
+		context.m_modifiedObjectGlobalId = pObject->GetId();
+		context.m_modifiedObjectGuidInPrefab = pObject->GetIdInPrefab();
+
+		SyncPrefab(context);
+	}
+
+	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 	pObjectManager->NotifyPrefabObjectChanged(this);
 
 	// if the currently modified prefab is selected make sure to refresh the inspector

@@ -13,6 +13,7 @@
 #include "Objects/ObjectLayerManager.h"
 #include <algorithm>
 
+#include <Grid.h>
 #include <Serialization/Decorators/EditToolButton.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 
@@ -362,19 +363,37 @@ void CGroup::ForEachParentOf(const std::vector<CBaseObject*>& objects, std::func
 	}
 }
 
-void CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
+
+bool CGroup::CanCreateFrom(std::vector<CBaseObject*>& objects)
 {
-	CUndo undo("Create Group");
-	CGroup* group = (CGroup*)GetIEditorImpl()->NewObject("Group");
-	if (!group)
+	if (objects.empty())
+		return false;
+
+	const auto lastIdx = objects.size() - 1;
+	IObjectLayer* pDestLayer = objects[lastIdx]->GetLayer();
+
+	for (auto i = 0; i < objects.size(); ++i)
 	{
-		undo.Cancel();
-		return;
+		if (!objects[i]->AreLinkedDescendantsInLayer(pDestLayer))
+		{
+			string message;
+			message.Format("The objects you are trying to group objects from different layers. All objects will be moved to %s layer\n\n"
+				"Do you want to continue?", pDestLayer->GetName());
+
+			if (QDialogButtonBox::StandardButton::Yes != CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr(message)))
+			{
+				return false;
+			}
+
+			return true;
+		}
 	}
 
-	// Snap center to grid.
-	group->SetPos(center);
+	return true;
+}
 
+bool CGroup::CreateFrom(std::vector<CBaseObject*>& objects)
+{
 	// Clear selection
 	GetIEditorImpl()->GetObjectManager()->ClearSelection();
 
@@ -383,11 +402,11 @@ void CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
 	{
 		CBaseObject* pLastSelectedObject = objects[objects.size() - 1];
 		GetIEditorImpl()->GetIUndoManager()->Suspend();
-		group->SetLayer(pLastSelectedObject->GetLayer());
+		SetLayer(pLastSelectedObject->GetLayer());
 		GetIEditorImpl()->GetIUndoManager()->Resume();
 
 		if (CBaseObject* pLastParent = pLastSelectedObject->GetGroup())
-			pLastParent->AddMember(group);
+			pLastParent->AddMember(this);
 	}
 
 	// Prefab support
@@ -402,23 +421,44 @@ void CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
 		// Sanity check if user is trying to group objects from different prefabs
 		if (pPrefabToCompareAgainst && pObjectPrefab)
 		{
-			undo.Cancel();
-			GetIEditorImpl()->DeleteObject(group);
-			return;
+			return false;
 		}
 
 		if (!pPrefabToCompareAgainst)
 			pPrefabToCompareAgainst = pObjectPrefab;
 	}
 
-	group->AddMembers(objects);
+	AddMembers(objects);
 
 	// Signal that we added a group to the prefab
 	if (pPrefabToCompareAgainst)
-		pPrefabToCompareAgainst->AddMember(group);
+		pPrefabToCompareAgainst->AddMember(this);
 
-	GetIEditorImpl()->GetObjectManager()->SelectObject(group);
+	GetIEditorImpl()->GetObjectManager()->SelectObject(this);
 	GetIEditorImpl()->SetModifiedFlag();
+
+	return true;
+}
+
+void CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
+{
+	CUndo undo("Create Group");
+	CGroup* group = (CGroup*)GetIEditorImpl()->NewObject("Group");
+	if (!group)
+	{
+		undo.Cancel();
+		return;
+	}
+
+	// Snap center to grid.
+	group->SetPos(gSnappingPreferences.Snap(center));
+
+	if (!group->CreateFrom(objects))
+	{
+		undo.Cancel();
+		GetIEditorImpl()->DeleteObject(group);
+		return;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
