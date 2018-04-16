@@ -599,7 +599,7 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 				DestroyTexOfFlashFile(sr.m_Textures[tex].m_Name);
 			}
 			*/
-			shaderTexture.m_Name = textureFilePath;
+			shaderTexture.SetName(textureFilePath.c_str());
 		}
 
 

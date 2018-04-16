@@ -1196,6 +1196,12 @@ struct SEfResTexture
 	STexSamplerRT    m_Sampler;
 	SEfResTextureExt m_Ext;
 
+	// Used to ensure that string memory is managed by the same module that created this struct, even if the name is changed from a different module.
+	virtual void SetName(const char* szName)
+	{
+		m_Name = szName;
+	}
+
 	void        UpdateForCreate();
 	void        Update(int nTSlot, uint32& nMDMask);
 	void        UpdateWithModifier(int nTSlot, uint32& nMDMask);
