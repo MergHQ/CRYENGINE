@@ -166,13 +166,14 @@ def generate_csharp_project (project_file, code_directory, cs_source_directory, 
 
 def generate_cpp_cmakelists (project_name, project_file, code_directory, engine_root_directory, is_default_project=True):
     cmakelists_template = Template("cmake_minimum_required (VERSION 3.6.2)\n")
+    project_file_name = os.path.basename(project_file)
 
     if is_default_project:
          cmakelists_template.template += """set(CRYENGINE_DIR "$engine_root_directory")
 set(TOOLS_CMAKE_DIR "$${CRYENGINE_DIR}/Tools/CMake")
 
 set(PROJECT_BUILD 1)
-set(PROJECT_DIR "$project_path")
+set(PROJECT_DIR "$${CMAKE_SOURCE_DIR}/../")
 
 include("$${TOOLS_CMAKE_DIR}/CommonOptions.cmake")
 
@@ -203,7 +204,7 @@ PRIVATE
 set_solution_startup_target($startup_project)
 
 if (WIN32)
-    set_visual_studio_debugger_command( $${THIS_PROJECT} "$${CRYENGINE_DIR}/bin/win_x64/GameLauncher.exe" "-project \\"$projectfile\\"" )
+    set_visual_studio_debugger_command( $${THIS_PROJECT} "$${CRYENGINE_DIR}/bin/win_x64/GameLauncher.exe" "-project \\"$${PROJECT_DIR}$projectfile\\"" )
 endif()\n'''
 
     cmakelists_path = os.path.join(code_directory, 'CMakeLists.txt')
@@ -258,7 +259,7 @@ endif()\n'''
                 if first_delimiter_index != -1:
                     standalone_project_name = standalone_project_name[:first_delimiter_index]
 
-                generate_cpp_cmakelists(standalone_project_name, project_file, os.path.join(code_directory, standalone_directory), engine_root_directory, False)
+                generate_cpp_cmakelists(standalone_project_name, project_file_name, os.path.join(code_directory, standalone_directory), engine_root_directory, False)
 
                 standalone_directories.append(standalone_project_name)
 
@@ -279,7 +280,7 @@ endif()\n'''
     if source_count == 0:
         return
 
-    startup_project, launcher_projects = get_startup_and_launcher_projects(project_name, project_file, engine_root_directory)
+    startup_project, launcher_projects = get_startup_and_launcher_projects(project_name, project_file_name, engine_root_directory)
 
     output_path = os.path.abspath(os.path.join(code_directory, os.pardir, "bin", "win_x64"))
 
@@ -287,7 +288,7 @@ endif()\n'''
         'sources' : cmakelists_sources,
         'engine_root_directory': engine_root_directory.replace('\\', '/'),
         'project_name': project_name,
-        'projectfile': project_file.replace('\\', '/'),
+        'projectfile': project_file_name,
         'project_path': os.path.abspath(os.path.dirname(project_file)).replace('\\', '/'),
         'startup_project': startup_project,
         'launcher_projects': launcher_projects,
@@ -298,7 +299,7 @@ endif()\n'''
 
     cmakelists_file.write(cmakelists_contents)
 
-def get_startup_and_launcher_projects(project_name, project_file, engine_root_directory):
+def get_startup_and_launcher_projects(project_name, project_file_name, engine_root_directory):
     platform_file_path = os.path.join(engine_root_directory, "Code", "CryEngine", "CryCommon", "CryCore", "Platform", "platform.h")
     if not os.path.isfile(platform_file_path):
         print("File not found: {}".format(platform_file_path))
@@ -310,29 +311,29 @@ if(OPTION_ENGINE)
 		add_library(Editor STATIC "$${CRYENGINE_DIR}/Code/CryEngine/CryCommon/CryCore/Platform/platform.h")
 		set_target_properties(Editor PROPERTIES LINKER_LANGUAGE CXX)
 		if (WIN32)
-			set_visual_studio_debugger_command(Editor "$${CRYENGINE_DIR}/bin/win_x64/Sandbox.exe" "-project \\"$projectfile\\"")
+			set_visual_studio_debugger_command(Editor "$${CRYENGINE_DIR}/bin/win_x64/Sandbox.exe" "-project \\"$${PROJECT_DIR}$project_file_name\\"")
 		endif()
 	endif()
 else()
 	add_library(GameLauncher STATIC "$${CRYENGINE_DIR}/Code/CryEngine/CryCommon/CryCore/Platform/platform.h")
 	set_target_properties(GameLauncher PROPERTIES LINKER_LANGUAGE CXX)
 	if (WIN32)
-		set_visual_studio_debugger_command(GameLauncher "$${CRYENGINE_DIR}/bin/win_x64/GameLauncher.exe" "-project \\"$projectfile\\"")
+		set_visual_studio_debugger_command(GameLauncher "$${CRYENGINE_DIR}/bin/win_x64/GameLauncher.exe" "-project \\"$${PROJECT_DIR}$project_file_name\\"")
 	endif()
 
     add_library(Editor STATIC "$${CRYENGINE_DIR}/Code/CryEngine/CryCommon/CryCore/Platform/platform.h")
     set_target_properties(Editor PROPERTIES LINKER_LANGUAGE CXX)
     if (WIN32)
-        set_visual_studio_debugger_command(Editor "$${CRYENGINE_DIR}/bin/win_x64/Sandbox.exe" "-project \\"$projectfile\\"")
+        set_visual_studio_debugger_command(Editor "$${CRYENGINE_DIR}/bin/win_x64/Sandbox.exe" "-project \\"$${PROJECT_DIR}$project_file_name\\"")
     endif()
 
 	add_library(GameServer STATIC "$${CRYENGINE_DIR}/Code/CryEngine/CryCommon/CryCore/Platform/platform.h")
 	set_target_properties(GameServer PROPERTIES LINKER_LANGUAGE CXX)
 	if (WIN32)
-		set_visual_studio_debugger_command(GameServer "$${CRYENGINE_DIR}/bin/win_x64/Game_Server.exe" "-project \\"$projectfile\\"")
+		set_visual_studio_debugger_command(GameServer "$${CRYENGINE_DIR}/bin/win_x64/Game_Server.exe" "-project \\"$${PROJECT_DIR}$project_file_name\\"")
 	endif()
 endif()\n''')
-    cmake_launcher_projects = launcher_projects.substitute({'projectfile' : project_file.replace('\\', '/')})
+    cmake_launcher_projects = launcher_projects.substitute({'project_file_name' : project_file_name})
     return "GameLauncher", cmake_launcher_projects
 
 def add_cpp_sources(directoryname, project_name, code_directory, skip_directories):
