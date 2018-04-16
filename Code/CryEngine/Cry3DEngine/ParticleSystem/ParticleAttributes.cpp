@@ -157,6 +157,7 @@ void CAttributeInstance::Reset(const IParticleAttributes* pCopySource)
 		m_attributesEdit = pCCopySource->m_attributesEdit;
 		m_pAttributeTable = pCCopySource->m_pAttributeTable;
 	}
+	m_changed = true;
 }
 
 void CAttributeInstance::Reset(TAttributeTablePtr pTable)
@@ -166,6 +167,7 @@ void CAttributeInstance::Reset(TAttributeTablePtr pTable)
 	if (m_pAttributeTable.lock() != pTable)
 	{
 		m_pAttributeTable = pTable;
+		m_changed = true;
 	}
 }
 
@@ -185,6 +187,8 @@ void CAttributeInstance::Serialize(IArchive& ar)
 			ar(AttributeEditSerializer{ this, attributeId }, name, name);
 		}
 	}
+	if (ar.isInput())
+		m_changed = true;
 }
 
 void CAttributeInstance::TransferInto(IParticleAttributes* pReceiver) const
@@ -290,6 +294,7 @@ bool CAttributeInstance::SetValue(TAttributeId id, const TValue& input)
 		pEdit->m_value = output;
 	else
 		m_attributesEdit.emplace_back(GetDesc(id).m_name, output);
+	m_changed = true;
 	return true;
 }
 
@@ -300,6 +305,7 @@ void CAttributeInstance::ResetValue(TAttributeId id)
 	{
 		return edit.m_name == name;
 	});
+	m_changed = true;
 }
 
 bool CAttributeReference::Serialize(Serialization::IArchive& ar, cstr name, cstr label)

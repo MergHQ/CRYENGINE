@@ -1,12 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  Created:     06/04/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include "ParticleCommon.h"
@@ -75,7 +68,7 @@ public:
 	string                    MakeUniqueName(const CParticleComponent* forComponent, const char* name);
 	uint                      AddRenderObjectId();
 	uint                      GetNumRenderObjectIds() const;
-	float                     GetEquilibriumTime() const;
+	STimingParams const&      GetTimings() const                                            { return m_timings; }
 	uint                      GetEnvironFlags() const                                       { return m_environFlags; }
 	void                      AddEnvironFlags(uint flags)                                   { m_environFlags |= flags; }
 	string                    GetShortName() const;
@@ -94,6 +87,7 @@ private:
 	string             m_name;
 	TAttributeTablePtr m_pAttributes;
 	TComponents        m_components;
+	STimingParams      m_timings;
 	uint               m_numRenderObjects;
 	uint               m_environFlags;
 	int                m_editVersion;

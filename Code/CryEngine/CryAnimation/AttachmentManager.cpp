@@ -1016,8 +1016,6 @@ float CAttachmentManager::GetExtent(EGeomForm eForm)
 
 void CAttachmentManager::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const
 {
-	points.fill(ZERO);
-
 	CGeomExtent const& ext = m_Extents[eForm];
 	for (auto part : ext.RandomPartsAliasSum(points, seed))
 	{

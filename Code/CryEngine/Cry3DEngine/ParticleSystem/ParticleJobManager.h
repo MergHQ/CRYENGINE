@@ -14,7 +14,7 @@ class CParticleComponentRuntime;
 struct SRenderContext;
 
 // Schedules particle update and render jobs
-class CParticleJobManager: ISyncMainWithRenderListener
+class CParticleJobManager
 {
 public:
 	struct SDeferredRender
@@ -36,7 +36,6 @@ public:
 
 public:
 	CParticleJobManager();
-	~CParticleJobManager();
 	void AddEmitter(CParticleEmitter* pEmitter) { m_emitterRefs.push_back(pEmitter); }
 	void AddDeferredRender(CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
 	void ScheduleComputeVertices(CParticleComponentRuntime* pComponentRuntime, CRenderObject* pRenderObject, const SRenderContext& renderContext);
@@ -49,7 +48,6 @@ public:
 private:
 
 	void Job_ScheduleUpdates();
-	void SyncMainWithRender() override;
 
 	TDynArray<CParticleEmitter*> m_emitterRefs;
 	TDynArray<SDeferredRender>   m_deferredRenders;

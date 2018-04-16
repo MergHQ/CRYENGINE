@@ -17,14 +17,6 @@ int e_ParticlesJobsPerThread = 16;
 CParticleJobManager::CParticleJobManager()
 {
 	REGISTER_CVAR(e_ParticlesJobsPerThread, 16, 0, "Maximum particle jobs to assign per worker thread");
-	if (gEnv && gEnv->pRenderer)
-		gEnv->pRenderer->RegisterSyncWithMainListener(this);
-}
-
-CParticleJobManager::~CParticleJobManager()
-{
-	if (gEnv && gEnv->pRenderer)
-		gEnv->pRenderer->RemoveSyncWithMainListener(this);
 }
 
 void CParticleJobManager::AddDeferredRender(CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext)
@@ -77,21 +69,23 @@ void CParticleJobManager::Job_ScheduleUpdates()
 
 	JobManager::TPriorityLevel priority = JobManager::eRegularPriority;
 
-	if (ThreadMode() == 3)
+	if (ThreadMode() >= 3)
 	{
-		// Split emitters into visible and hidden, schedule visible first
-		const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
-
+		// Schedule emitters rendered last frame first
 		TDynArray<CParticleEmitter*> visible, hidden;
+		visible.reserve(m_emitterRefs.size());
+		hidden.reserve(m_emitterRefs.size());
+
 		for (auto pEmitter : m_emitterRefs)
 		{
-			if (camera.IsAABBVisible_F(pEmitter->GetBBox()))
+			if (pEmitter->WasRenderedLastFrame())
 				visible.push_back(pEmitter);
 			else
 				hidden.push_back(pEmitter);
 		}
 
 		// Sort by camera Z
+		const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
 		Vec3 sortDir = -camera.GetViewdir();
 		stl::sort(visible, [sortDir](const CParticleEmitter* pe)
 		{
@@ -134,22 +128,9 @@ void CParticleJobManager::Job_ScheduleUpdates()
 
 void CParticleJobManager::SynchronizeUpdates()
 {
-	if (ThreadMode() == 1)
-	{
-		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-		m_updateState.Wait();
-		m_emitterRefs.clear();
-	}
-}
-
-void CParticleJobManager::SyncMainWithRender()
-{
-	if (ThreadMode() > 1)
-	{
-		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-		m_updateState.Wait();
-		m_emitterRefs.clear();
-	}
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	m_updateState.Wait();
+	m_emitterRefs.clear();
 }
 
 void CParticleJobManager::DeferredRender()

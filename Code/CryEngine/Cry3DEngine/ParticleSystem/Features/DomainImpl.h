@@ -324,7 +324,7 @@ ILINE void CDomain::Dispatch(const SUpdateContext& context, const SUpdateRange& 
 			detail::CViewAngleSampler(context, domain));
 		break;
 	case EDomain::CameraDistance:
-		if (!(C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('u')))
+		if (!(C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('u')) || domain == EMD_PerParticle)
 			((TBase*)this)->DoModify(
 				context, range, stream,
 				detail::CCameraDistanceSampler(context, domain));

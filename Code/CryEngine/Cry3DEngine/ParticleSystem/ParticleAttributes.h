@@ -95,10 +95,13 @@ public:
 
 	void                   AddAttribute(const SAttributeEdit& edit) { m_attributesEdit.push_back(edit); }
 	TAttributeId           FindAttributeIdByName(const CCryName& name) const;
+	
+	bool                   WasChanged() { return m_changed && ((m_changed = false), true); }
 
 private:
 	std::vector<SAttributeEdit>          m_attributesEdit;
 	std::weak_ptr<const CAttributeTable> m_pAttributeTable;
+	bool                                 m_changed = true;
 };
 
 class CAttributeReference
