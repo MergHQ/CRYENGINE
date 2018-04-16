@@ -16,7 +16,7 @@
 #include "waterman.h"
 #include "particleentity.h"
 
-CParticleEntity *CParticleEntity::g_pCurParticle[MAX_PHYS_THREADS+1] = { 0 };
+CParticleEntity *CParticleEntity::g_pCurParticle[MAX_TOT_THREADS] = { 0 };
 
 
 CParticleEntity::CParticleEntity(CPhysicalWorld *pWorld, IGeneralMemoryHeap* pHeap)
@@ -507,8 +507,10 @@ int g_retest=0;*/
 
 int CParticleEntity::DoStep(float time_interval, int iCaller)
 {
-	static ray_hit _hits[MAX_PHYS_THREADS+1][8];
-  ray_hit (&hits)[8] = _hits[get_iCaller()];
+	if (iCaller==MAX_PHYS_THREADS)
+		iCaller += alloc_extCaller();
+	static ray_hit _hits[MAX_TOT_THREADS][8];
+  ray_hit (&hits)[8] = _hits[iCaller];
 	pe_action_impulse ai;
 	//pe_action_register_coll_event arce;
 	pe_status_dynamics sd;
@@ -524,7 +526,7 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 	portals[0] = nullptr;
 
 	if (m_depth<0) {
-		gravity = m_waterGravity*min(1.0f,-m_depth*m_rdim); kAirResistance = m_kWaterResistance;
+		gravity = m_waterGravity*min(1.0f,max(0.0f,-m_depth*m_rdim-0.1f)); kAirResistance = m_kWaterResistance;
 	} else {
 		gravity = m_gravity; kAirResistance = m_kAirResistance;
 	}
@@ -883,7 +885,7 @@ goto doretest; }*/
 	return 1;
 }
 
-static geom_contact g_ParticleContact[MAX_PHYS_THREADS+1];
+static geom_contact g_ParticleContact[MAX_TOT_THREADS];
 
 int CParticleEntity::RayTrace(SRayTraceRes& rtr)
 {
@@ -901,7 +903,7 @@ int CParticleEntity::RayTrace(SRayTraceRes& rtr)
 
 	if (box_ray_intersection(&abox,&rtr.pRay->m_ray,&inters)) {
 		int caller = get_iCaller();
-		assert (0 <= caller && caller < (MAX_PHYS_THREADS+1));
+		assert (0 <= caller && caller < MAX_TOT_THREADS);
 
 		rtr.pcontacts = &g_ParticleContact[caller];
 		rtr.pcontacts->pt = inters.pt[0];

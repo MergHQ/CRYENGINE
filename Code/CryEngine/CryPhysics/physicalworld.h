@@ -422,8 +422,14 @@ public:
 	virtual void RasterizeEntities(const grid3d& grid, uchar *rbuf, int objtypes, float massThreshold, const Vec3& offsBBox, const Vec3& sizeBBox, int flags);
 
 	virtual int GetEntitiesInBox(Vec3 ptmin,Vec3 ptmax, IPhysicalEntity **&pList, int objtypes, int szListPrealloc) {
-		WriteLock lock(m_lockCaller[MAX_PHYS_THREADS]);
-		return GetEntitiesAround(ptmin,ptmax, (CPhysicalEntity**&)pList, objtypes | ent_GEA_external, 0, szListPrealloc, MAX_PHYS_THREADS);
+		int iCaller;
+		Vec3 gBBox[2]; m_entgrid.BBoxToGrid(ptmin,ptmax, gBBox);
+		if ((gBBox[1].x-gBBox[0].x)*(gBBox[1].y-gBBox[0].y) > m_entgrid.step.x*m_entgrid.step.y*sqr(50)) {
+			iCaller = MAX_PHYS_THREADS; set_extCaller(0);	// for large boxes (and thus potentially lots on ents) always use external caller 0
+		}	else
+			iCaller = get_iCaller(1);
+		WriteLock lock(m_lockCaller[iCaller]);
+		return GetEntitiesAround(ptmin,ptmax, (CPhysicalEntity**&)pList, objtypes, 0, szListPrealloc, iCaller);
 	}
 	int GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhysicalEntity **&pList, int objtypes, CPhysicalEntity *pPetitioner=0,
 		int szListPrealoc=0, int iCaller=get_iCaller());
@@ -451,7 +457,7 @@ public:
 			case PLOCK_AREAS: return &m_lockAreas;
 			case PLOCK_TRACE_PENDING_RAYS: return &m_lockTPR;
 			default:
-				if ((unsigned int)(idx-PLOCK_CALLER0)<=(unsigned int)MAX_PHYS_THREADS)
+				if ((unsigned int)(idx-PLOCK_CALLER0)<(unsigned int)MAX_TOT_THREADS)
 					return m_lockCaller+(idx-PLOCK_CALLER0);
 		}
 		return 0;
@@ -760,14 +766,14 @@ public:
 	int m_nTypeEnts[10];
 	int m_bEntityCountReserved;
 #ifndef _RELEASE
-	volatile int m_nGEA[MAX_PHYS_THREADS+1];
+	volatile int m_nGEA[MAX_TOT_THREADS];
 #endif
 	int m_nEntListAllocs;
 	int m_nOnDemandListFailures;
 	int m_iLastPODUpdate;
-	Vec3 m_prevGEABBox[MAX_PHYS_THREADS+1][2];
-	int m_prevGEAobjtypes[MAX_PHYS_THREADS+1];
-	int m_nprevGEAEnts[MAX_PHYS_THREADS+1];
+	Vec3 m_prevGEABBox[MAX_TOT_THREADS][2];
+	int m_prevGEAobjtypes[MAX_TOT_THREADS];
+	int m_nprevGEAEnts[MAX_TOT_THREADS];
 
 	int m_nPlaceholders,m_nPlaceholderChunks,m_iLastPlaceholder;
 	CPhysicalPlaceholder **m_pPlaceholders;
@@ -782,7 +788,7 @@ public:
 	Vec3 *m_pExplVictimsImp;
 	int m_nExplVictims,m_nExplVictimsAlloc;
 
-	CPhysicalEntity *m_pHeightfield[MAX_PHYS_THREADS+2];
+	CPhysicalEntity *m_pHeightfield[MAX_TOT_THREADS+1];
 	Matrix33 m_HeightfieldBasis;
 	Vec3 m_HeightfieldOrigin;
 
@@ -869,9 +875,9 @@ public:
 
 	SThreadTaskRequest m_rq;
 	CryEvent m_threadStart[MAX_PHYS_THREADS],m_threadDone[MAX_PHYS_THREADS];
-	SThreadData m_threadData[MAX_PHYS_THREADS+1];
+	SThreadData m_threadData[MAX_TOT_THREADS];
 	SPhysTask *m_threads[MAX_PHYS_THREADS];
-	Vec3 m_BBoxPlayerGroup[MAX_PHYS_THREADS+1][2];
+	Vec3 m_BBoxPlayerGroup[MAX_TOT_THREADS][2];
 	int m_nGroups;
 	float m_maxGroupMass;
 	volatile int m_nWorkerThreads;
@@ -885,7 +891,7 @@ public:
 	volatile int m_lockGrid;
 	volatile int m_lockPODGrid;
 	volatile int m_lockEntIdList;
-	volatile int m_lockStep, m_lockCaller[MAX_PHYS_THREADS+1],m_lockQueue,m_lockList;
+	volatile int m_lockStep, m_lockCaller[MAX_TOT_THREADS],m_lockQueue,m_lockList;
 	volatile int m_lockAreas;
 	volatile int m_lockActiveAreas;
 	volatile int m_lockEventsQueue,m_iLastLogPump, m_lockEventClients;

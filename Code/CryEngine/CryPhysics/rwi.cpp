@@ -541,8 +541,10 @@ int CPhysicalWorld::RayWorldIntersection(const IPhysicalWorld::SRWIParams &rp, c
 		inodeLastHit = rp.phitLast->iNode;
 	}
 
-	assert(iCaller<=MAX_PHYS_THREADS);
-	WriteLockCond lock(m_lockCaller[iCaller], iCaller==MAX_PHYS_THREADS && rp.iForeignData!=FD_RWI_RECURSIVE);
+	assert(iCaller<MAX_TOT_THREADS);
+	if (iCaller==MAX_PHYS_THREADS && rp.iForeignData!=FD_RWI_RECURSIVE)
+		iCaller += alloc_extCaller();
+	WriteLockCond lock(m_lockCaller[iCaller], iCaller>=MAX_PHYS_THREADS && rp.iForeignData!=FD_RWI_RECURSIVE);
 
 	if (rp.iForeignData==FD_RWI_RECURSIVE) {
 		egc.nEnts = ((entity_grid_checker*)rp.pForeignData)->nEnts;

@@ -10,7 +10,7 @@
 #include "heightfieldbv.h"
 
 InitHeightfieldGlobals::InitHeightfieldGlobals() {
-  for(int iCaller=0; iCaller<=MAX_PHYS_THREADS; iCaller++) {
+  for(int iCaller=0; iCaller<MAX_TOT_THREADS; iCaller++) {
     g_BVhf.iNode = 0; g_BVhf.type = heightfield::type;
   }
 }
