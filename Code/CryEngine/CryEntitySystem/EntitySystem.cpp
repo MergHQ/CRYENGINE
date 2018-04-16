@@ -364,8 +364,8 @@ void CEntitySystem::Reset()
 	DeletePendingEntities();
 
 	ClearEntityArray();
-	m_updatedEntityComponents.clear();
-	m_prePhysicsUpdatedEntityComponents.clear();
+	m_updatedEntityComponents.Clear();
+	m_prePhysicsUpdatedEntityComponents.Clear();
 
 	stl::free_container(m_deletedEntities);
 	m_guidMap.clear();
@@ -935,33 +935,37 @@ void CEntitySystem::PrePhysicsUpdate()
 	{
 		const CTimeValue timeBeforePrePhysicsUpdate = gEnv->pTimer->GetAsyncTime();
 
-		for (IEntityComponent* pEntityComponent : m_prePhysicsUpdatedEntityComponents)
+		m_prePhysicsUpdatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 		{
 			const CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
-			pEntityComponent->ProcessEvent(event);
+			rec.pComponent->ProcessEvent(event);
 
 			const CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
 			const float componentUpdateTime = (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds();
 			if (componentUpdateTime > m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].mostExpensiveEntityCostMs)
 			{
 				m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].mostExpensiveEntityCostMs = componentUpdateTime;
-				m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].mostExpensiveEntity = pEntityComponent->GetEntityId();
+				m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].mostExpensiveEntity = rec.pComponent->GetEntityId();
 			}
-		}
+
+			return EComponentIterationResult::Continue;
+		});
 
 		const CTimeValue timeAfterPrePhysicsUpdate = gEnv->pTimer->GetAsyncTime();
 
 		const float componentsUpdateTime = (timeAfterPrePhysicsUpdate - timeBeforePrePhysicsUpdate).GetMilliSeconds();
-		m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].numEvents = m_prePhysicsUpdatedEntityComponents.size();
+		m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].numEvents = m_prePhysicsUpdatedEntityComponents.Size();
 		m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].totalCostMs = componentsUpdateTime;
 	}
 	else
 #endif
-	for (IEntityComponent* pEntityComponent : m_prePhysicsUpdatedEntityComponents)
+	m_prePhysicsUpdatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 	{
-		pEntityComponent->ProcessEvent(event);
-	}
+		rec.pComponent->ProcessEvent(event);
+
+		return EComponentIterationResult::Continue;
+	});
 }
 
 //update the entity system
@@ -1556,10 +1560,11 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 	case (int)EComponentProfilingType::Disabled:
 		{
 #endif
-			for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
+			m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 			{
-				pEntityComponent->ProcessEvent(event);
-			}
+				rec.pComponent->ProcessEvent(event);
+				return EComponentIterationResult::Continue;
+			});
 
 #ifdef INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 		}
@@ -1568,10 +1573,11 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 		{
 		const CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
-			for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
+			m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 			{
-				pEntityComponent->ProcessEvent(event);
-			}
+				rec.pComponent->ProcessEvent(event);
+				return EComponentIterationResult::Continue;
+			});
 
 			const CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
@@ -1580,9 +1586,9 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 			EntityId renderedEntityCount = 0;
 			EntityId physicalizedEntityCount = 0;
 
-			for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
+			m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 			{
-				CEntity* pEntity = static_cast<CEntity*>(pEntityComponent->GetEntity());
+				CEntity* pEntity = static_cast<CEntity*>(rec.pComponent->GetEntity());
 
 				if (updatedEntities.find(pEntity) == updatedEntities.end())
 				{
@@ -1597,7 +1603,9 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 						physicalizedEntityCount++;
 					}
 				}
-			}
+
+				return EComponentIterationResult::Continue;
+			});
 
 			IRenderAuxGeom* pRenderAuxGeom = gEnv->pAuxGeomRenderer;
 
@@ -1609,7 +1617,9 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 			positionY += yOffset;
 			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Physicalized Entities: %i", renderedEntityCount);
 			positionY += yOffset;
-			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entity Components: %" PRISIZE_T, m_updatedEntityComponents.size());
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entity Components: %" PRISIZE_T, m_updatedEntityComponents.Size());
+			positionY += yOffset;
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Pre-physics Updated Entity Components: %" PRISIZE_T, m_prePhysicsUpdatedEntityComponents.Size());
 			positionY += yOffset * 2;
 
 			const float componentUpdateTime = (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds();
@@ -1628,25 +1638,25 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 
 			const CTimeValue timeBeforeComponentsUpdate = gEnv->pTimer->GetAsyncTime();
 
-			for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
+			m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 			{
 				const CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
-				pEntityComponent->ProcessEvent(event);
+				rec.pComponent->ProcessEvent(event);
 
 				const CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
-				CryGUID typeGUID = pEntityComponent->GetClassDesc().GetGUID();
-				const char* szName = pEntityComponent->GetClassDesc().GetLabel();
+				CryGUID typeGUID = rec.pComponent->GetClassDesc().GetGUID();
+				const char* szName = rec.pComponent->GetClassDesc().GetLabel();
 				if (szName == nullptr || szName[0] == '\0')
 				{
-					szName = pEntityComponent->GetClassDesc().GetName().c_str();
+					szName = rec.pComponent->GetClassDesc().GetName().c_str();
 				}
 
-				if (typeGUID.IsNull() && pEntityComponent->GetFactory() != nullptr)
+				if (typeGUID.IsNull() && rec.pComponent->GetFactory() != nullptr)
 				{
-					typeGUID = pEntityComponent->GetFactory()->GetClassID();
-					szName = pEntityComponent->GetFactory()->GetName();
+					typeGUID = rec.pComponent->GetFactory()->GetClassID();
+					szName = rec.pComponent->GetFactory()->GetName();
 				}
 
 				if (szName == nullptr || szName[0] == '\0')
@@ -1664,7 +1674,9 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 				{
 					it->second.totalCostMs += (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds();
 				}
-			}
+
+				return EComponentIterationResult::Continue;
+			});
 
 			const CTimeValue timeAfterComponentsUpdate = gEnv->pTimer->GetAsyncTime();
 
@@ -1672,7 +1684,7 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 
 			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Entities: %i", GetNumEntities());
 			positionY += yOffset;
-			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entity Components: %" PRISIZE_T, m_updatedEntityComponents.size());
+			pRenderAuxGeom->Draw2dLabel(positionX, positionY, fontSize, textColor, false, "Number of Updated Entity Components: %" PRISIZE_T, m_updatedEntityComponents.Size());
 			positionY += yOffset * 2;
 
 			const float componentUpdateTime = (timeAfterComponentsUpdate - timeBeforeComponentsUpdate).GetMilliSeconds();
@@ -1694,27 +1706,29 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 		{
 			const CTimeValue timeBeforeComponentsUpdate = gEnv->pTimer->GetAsyncTime();
 
-			for (IEntityComponent* pEntityComponent : m_updatedEntityComponents)
+			m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 			{
 				const CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
-				pEntityComponent->ProcessEvent(event);
+				rec.pComponent->ProcessEvent(event);
 
 				const CTimeValue timeAfterComponentsUpdate = gEnv->pTimer->GetAsyncTime();
 				const float componentUpdateTime = (timeAfterComponentsUpdate - timeBeforeComponentsUpdate).GetMilliSeconds();
 				if (componentUpdateTime > m_profiledEvents[ENTITY_EVENT_UPDATE].mostExpensiveEntityCostMs)
 				{
 					m_profiledEvents[ENTITY_EVENT_UPDATE].mostExpensiveEntityCostMs = componentUpdateTime;
-					m_profiledEvents[ENTITY_EVENT_UPDATE].mostExpensiveEntity = pEntityComponent->GetEntityId();
+					m_profiledEvents[ENTITY_EVENT_UPDATE].mostExpensiveEntity = rec.pComponent->GetEntityId();
 				}
-			}
+
+				return EComponentIterationResult::Continue;
+			});
 
 			const CTimeValue timeAfterComponentsUpdate = gEnv->pTimer->GetAsyncTime();
 
 			IRenderAuxGeom* pRenderAuxGeom = gEnv->pAuxGeomRenderer;
 
 			const float componentsUpdateTime = (timeAfterComponentsUpdate - timeBeforeComponentsUpdate).GetMilliSeconds();
-			m_profiledEvents[ENTITY_EVENT_UPDATE].numEvents = m_updatedEntityComponents.size();
+			m_profiledEvents[ENTITY_EVENT_UPDATE].numEvents = m_updatedEntityComponents.Size();
 			m_profiledEvents[ENTITY_EVENT_UPDATE].totalCostMs = componentsUpdateTime;
 
 			const float eventNameColumnPositionX = positionX;
@@ -1893,8 +1907,8 @@ void CEntitySystem::GetMemoryStatistics(ICrySizer* pSizer) const
 	pSizer->AddObject(m_pClassRegistry);
 	pSizer->AddContainer(m_mapEntityNames);
 
-	pSizer->AddContainer(m_updatedEntityComponents);
-	pSizer->AddContainer(m_prePhysicsUpdatedEntityComponents);
+	m_updatedEntityComponents.GetMemoryStatistics(pSizer);
+	m_prePhysicsUpdatedEntityComponents.GetMemoryStatistics(pSizer);
 
 	{
 		SIZER_COMPONENT_NAME(pSizer, "Entities");
@@ -2615,7 +2629,7 @@ void CEntitySystem::DumpEntities()
 		++count;
 	}
 	CryLogAlways("--------------------------------------------------------------------------------");
-	CryLogAlways(" %d entities (%" PRISIZE_T " active components)", count, m_updatedEntityComponents.size());
+	CryLogAlways(" %d entities (%" PRISIZE_T " active components)", count, m_updatedEntityComponents.Size());
 	CryLogAlways("--------------------------------------------------------------------------------");
 }
 
@@ -3397,7 +3411,10 @@ void CEntitySystem::EnableComponentUpdates(IEntityComponent* pComponent, bool bE
 
 	if (bEnable)
 	{
-		m_updatedEntityComponents.push_back(pComponent);
+		SMinimalEntityComponentRecord record;
+		record.pComponent = pComponent;
+
+		m_updatedEntityComponents.SortedEmplace(std::move(record));
 
 		if (!pEntity->HasInternalFlag(CEntity::EInternalFlag::InActiveList))
 		{
@@ -3408,19 +3425,21 @@ void CEntitySystem::EnableComponentUpdates(IEntityComponent* pComponent, bool bE
 	}
 	else
 	{
-		stl::find_and_erase(m_updatedEntityComponents, pComponent);
+		// Invalid the component entry so it can be cleaned up next iteration.
+		m_updatedEntityComponents.Remove(pComponent);
 
 		bool bRequiresUpdate = false;
 
 		// Check if any other components need the update event
-		pEntity->m_components.ForEach([pComponent, &bRequiresUpdate](const SEntityComponentRecord& otherComponentRecord) -> bool
+		pEntity->m_components.NonRecursiveForEach([pComponent, &bRequiresUpdate](const SEntityComponentRecord& otherComponentRecord) -> EComponentIterationResult
 		{
 			if (otherComponentRecord.pComponent.get() != pComponent && (otherComponentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE)) != 0)
 			{
-			  bRequiresUpdate = true;
+				bRequiresUpdate = true;
+				return EComponentIterationResult::Break;
 			}
 
-			return !bRequiresUpdate;
+			return EComponentIterationResult::Continue;
 		});
 
 		if (!bRequiresUpdate)
@@ -3436,10 +3455,13 @@ void CEntitySystem::EnableComponentPrePhysicsUpdates(IEntityComponent* pComponen
 {
 	if (bEnable)
 	{
-		m_prePhysicsUpdatedEntityComponents.push_back(pComponent);
+		SMinimalEntityComponentRecord record;
+		record.pComponent = pComponent;
+
+		m_prePhysicsUpdatedEntityComponents.SortedEmplace(std::move(record));
 	}
 	else
 	{
-		stl::find_and_erase(m_prePhysicsUpdatedEntityComponents, pComponent);
+		m_prePhysicsUpdatedEntityComponents.Remove(pComponent);
 	}
 }

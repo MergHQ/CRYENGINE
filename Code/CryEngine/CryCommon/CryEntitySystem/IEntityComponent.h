@@ -407,6 +407,7 @@ public:
 
 	//! \brief Network serialization. Override to provide a mask of active network aspects
 	//! used by this component. Called once during binding to network.
+	//! \warning Sending entity events or querying other components is prohibited from within this function!
 	//! \par Example
 	//! \include CryEntitySystem/Examples/ComponentNetSerialize.cpp
 	virtual NetworkAspectType GetNetSerializeAspectMask() const { return 0; }
@@ -425,6 +426,7 @@ public:
 	//! This is called once when spawning an entity, in order to serialize its data - and once again on the remote client to deserialize the state.
 	//! Deserialization will always occur *before* IEntityComponent::Initialize is called.
 	//! @param[in,out] ser Serializer for reading / writing values.
+	//! \warning This is not called from the Main thread, keep thread safety in mind - and in the best case only serialize local values, without invoking complex logic.
 	//! \see ISerialize::Value()
 	//! \par Example
 	//! \include CryEntitySystem/Examples/ComponentNetReplicate.cpp
