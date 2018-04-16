@@ -4,6 +4,7 @@
 #define _ICONSOLE_H_
 
 #include <CryCore/SFunctor.h>
+#include <initializer_list>
 
 struct ConsoleBind;
 
@@ -648,6 +649,19 @@ struct ICVar
 	//! Set the data probe string value of the variable.
 	virtual void SetDataProbeString(const char* pDataProbeString) = 0;
 #endif
+
+	//! Set the minimum value that is allowed for this CVar. 
+	virtual void SetMinValue(int min) = 0;
+	virtual void SetMinValue(float min) = 0;
+
+	//! Set the maximum value that is allowed for this CVar.
+	virtual void SetMaxValue(int max) = 0;
+	virtual void SetMaxValue(float max) = 0;
+
+	//! Set the allowed values for this CVar
+	virtual void SetAllowedValues(std::initializer_list<int> values) = 0;
+	virtual void SetAllowedValues(std::initializer_list<float> values) = 0;
+	virtual void SetAllowedValues(std::initializer_list<string> values) = 0;
 };
 
 struct ScopedConsoleLoadConfigType

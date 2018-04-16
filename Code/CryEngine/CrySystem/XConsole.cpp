@@ -435,6 +435,8 @@ void CXConsole::Init(CSystem* pSystem)
 	                                       "0: normal console behavior\n"
 	                                       "1: hide the console");
 
+	REGISTER_CVAR3("sys_cvar_logging", CXConsoleVariableBase::m_sys_cvar_logging, 1, VF_NULL, "Log attempts to set CVars to forbidden/out-of-range values.");
+
 	REGISTER_CVAR(con_display_last_messages, 0, VF_NULL, "");  // keep default at 1, needed for gameplay
 	REGISTER_CVAR(con_line_buffer_size, 1000, VF_NULL, "");
 	REGISTER_CVAR(con_font_size, 14, VF_NULL, "");
