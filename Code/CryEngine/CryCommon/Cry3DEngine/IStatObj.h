@@ -212,6 +212,7 @@ struct IStatObj : IMeshObj, IStreamable
 		ELoadingFlagsIgnoreLoDs     = BIT(2),
 		ELoadingFlagsTessellate     = BIT(3), //!< If e_StatObjTessellation enabled.
 		ELoadingFlagsJustGeometry   = BIT(4), //!< For streaming, to avoid parsing all chunks.
+		ELoadingFlagsNoErrorIfFail  = BIT(5), //!< Don't log error message if the file is not found
 	};
 
 	struct SSubObject
