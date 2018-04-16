@@ -453,9 +453,9 @@ enum ColorMask
 	GS_NOCOLMASK_RGBA				= 0x00009000,
 	GS_NOCOLMASK_GBUFFER_OVERLAY	= 0x0000A000,
 
-	Count							= 0x0000B000,
+	GS_NOCOLMASK_COUNT				= 0x0000B000,
 };
-static_assert(ColorMask::Count <= GS_COLMASK_MASK, "Exceeded count limit of possible color masks (16)");
+static_assert(GS_NOCOLMASK_COUNT <= GS_COLMASK_MASK, "Exceeded count limit of possible color masks (16)");
 
 #define GS_WIREFRAME               0x00010000
 #define GS_POINTRENDERING          0x00020000
