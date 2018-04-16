@@ -1934,31 +1934,38 @@ struct SDummyCVar : ICVar
 	#endif
 	}
 
-	void            Release() override                                             {}
-	int             GetIVal() const override                                       { WarnUse(); return static_cast<int>(value); }
-	int64           GetI64Val() const override                                     { WarnUse(); return static_cast<int64>(value); }
-	float           GetFVal() const override                                       { WarnUse(); return static_cast<float>(value); }
-	const char*     GetString() const override                                     { return ""; }
-	const char*     GetDataProbeString() const override                            { return ""; }
-	void            Set(const char* s) override                                    { if (SQueryTypeEnum<T>::ParseString(s) != value) InvalidAccess(); }
-	void            ForceSet(const char* s) override                               { Set(s); }
-	void            Set(const float f) override                                    { if (static_cast<T>(f) != value) InvalidAccess(); }
-	void            Set(const int i) override                                      { if (static_cast<T>(i) != value) InvalidAccess(); }
-	void            ClearFlags(int flags) override                                 {}
-	int             GetFlags() const override                                      { return VF_CONST_CVAR | VF_READONLY; }
-	int             SetFlags(int flags) override                                   { return 0; }
-	int             GetType() override                                             { return SQueryTypeEnum<T>::type; }
-	const char*     GetHelp() override                                             { return NULL; }
-	bool            IsConstCVar() const override                                   { return true; }
-	void            SetOnChangeCallback(ConsoleVarFunc pChangeFunc) override       { (void)pChangeFunc; }
-	uint64          AddOnChangeFunctor(const SFunctor& /*changeFunctor*/) override { return 0;  }
-	uint64          GetNumberOfOnChangeFunctors() const override                   { return 0; }
-	const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override        { InvalidAccess();  static SFunctor oDummy; return oDummy; }
-	bool            RemoveOnChangeFunctor(const uint64 nElement) override          { return true; }
-	ConsoleVarFunc  GetOnChangeCallback() const override                           { InvalidAccess(); return NULL; }
-	void            GetMemoryUsage(class ICrySizer* pSizer) const override         {}
-	int             GetRealIVal() const override                                   { return GetIVal(); }
-	void            SetDataProbeString(const char* pDataProbeString)               { InvalidAccess(); }
+	void            Release() override                                              {}
+	int             GetIVal() const override                                        { WarnUse(); return static_cast<int>(value); }
+	int64           GetI64Val() const override                                      { WarnUse(); return static_cast<int64>(value); }
+	float           GetFVal() const override                                        { WarnUse(); return static_cast<float>(value); }
+	const char*     GetString() const override                                      { return ""; }
+	const char*     GetDataProbeString() const override                             { return ""; }
+	void            Set(const char* s) override                                     { if (SQueryTypeEnum<T>::ParseString(s) != value) InvalidAccess(); }
+	void            ForceSet(const char* s) override                                { Set(s); }
+	void            Set(const float f) override                                     { if (static_cast<T>(f) != value) InvalidAccess(); }
+	void            Set(const int i) override                                       { if (static_cast<T>(i) != value) InvalidAccess(); }
+	void            ClearFlags(int flags) override                                  {}
+	int             GetFlags() const override                                       { return VF_CONST_CVAR | VF_READONLY; }
+	int             SetFlags(int flags) override                                    { return 0; }
+	int             GetType() override                                              { return SQueryTypeEnum<T>::type; }
+	const char*     GetHelp() override                                              { return NULL; }
+	bool            IsConstCVar() const override                                    { return true; }
+	void            SetOnChangeCallback(ConsoleVarFunc pChangeFunc) override        { (void)pChangeFunc; }
+	uint64          AddOnChangeFunctor(const SFunctor& /*changeFunctor*/) override  { return 0;  }
+	uint64          GetNumberOfOnChangeFunctors() const override                    { return 0; }
+	const SFunctor& GetOnChangeFunctor(uint64 nFunctorIndex) const override         { InvalidAccess();  static SFunctor oDummy; return oDummy; }
+	bool            RemoveOnChangeFunctor(const uint64 nElement) override           { return true; }
+	ConsoleVarFunc  GetOnChangeCallback() const override                            { InvalidAccess(); return NULL; }
+	void            GetMemoryUsage(class ICrySizer* pSizer) const override          {}
+	int             GetRealIVal() const override                                    { return GetIVal(); }
+	void            SetDataProbeString(const char* pDataProbeString)                { InvalidAccess(); }
+	void            SetMinValue(int min) override                                   {}
+	void            SetMinValue(float min) override                                 {}
+	void            SetMaxValue(int max) override                                   {}
+	void            SetMaxValue(float max) override                                 {}
+	void            SetAllowedValues(std::initializer_list<int> values) override    {}
+	void            SetAllowedValues(std::initializer_list<float> values) override  {}
+	void            SetAllowedValues(std::initializer_list<string> values) override {}
 };
 }
 

@@ -185,18 +185,19 @@ void CParticleContainer::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
 	for (const auto& spawnEntry : spawnEntries)
 	{
 		const uint32 toAddCount = spawnEntry.m_count;
+		const uint32 lastId = CRY_PFX2_PARTICLESGROUP_ALIGN(currentId + toAddCount);
 
 		if (HasData(EPDT_ParentId))
 		{
 			auto parentIds = IOStream(EPDT_ParentId);
-			for (uint32 i = currentId; i < currentId + toAddCount; ++i)
+			for (uint32 i = currentId; i < lastId; ++i)
 				parentIds[i] = spawnEntry.m_parentId;
 		}
 
 		if (HasData(EPDT_SpawnId))
 		{
 			auto spawnIds = IOStream(EPDT_SpawnId);
-			for (uint32 i = currentId; i < currentId + toAddCount; ++i)
+			for (uint32 i = currentId; i < lastId; ++i)
 				spawnIds[i] = m_nextSpawnId++;
 		}
 		else
@@ -209,7 +210,7 @@ void CParticleContainer::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
 			// Store newborn ages
 			float age = spawnEntry.m_ageBegin;
 			auto ages = IOStream(EPDT_NormalAge);
-			for (uint32 i = currentId; i < currentId + toAddCount; ++i, age += spawnEntry.m_ageIncrement)
+			uint32 i; for (i = currentId; i < lastId; ++i, age += spawnEntry.m_ageIncrement)
 				ages[i] = age;
 		}
 
@@ -217,7 +218,7 @@ void CParticleContainer::AddParticles(TConstArray<SSpawnEntry> spawnEntries)
 		{
 			float fraction = spawnEntry.m_fractionBegin;
 			auto spawnFractions = IOStream(EPDT_SpawnFraction);
-			for (uint32 i = currentId; i < currentId + toAddCount; ++i, fraction += spawnEntry.m_fractionIncrement)
+			for (uint32 i = currentId; i < lastId; ++i, fraction += spawnEntry.m_fractionIncrement)
 				spawnFractions[i] = min(fraction, 1.0f);
 		}
 

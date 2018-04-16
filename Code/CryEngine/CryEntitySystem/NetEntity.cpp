@@ -64,10 +64,10 @@ NetworkAspectType CNetEntity::CombineAspects()
 		eEA_GameServerE;
 
 	NetworkAspectType aspects = 0;
-	m_pEntity->m_components.ForEach([&aspects](const SEntityComponentRecord& componentRecord) -> bool
+	m_pEntity->m_components.NonRecursiveForEach([&aspects](const SEntityComponentRecord& componentRecord) -> EComponentIterationResult
 	{
 		aspects |= componentRecord.pComponent->GetNetSerializeAspectMask();
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 	aspects &= gameObjectAspects;
 
@@ -176,10 +176,10 @@ bool CNetEntity::HasProfileManager()
 
 bool CNetEntity::NetSerializeEntity(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags)
 {
-	m_pEntity->m_components.ForEach([&](const SEntityComponentRecord& componentRecord) -> bool
+	m_pEntity->m_components.ForEach([&ser, aspect, profile, flags](const SEntityComponentRecord& componentRecord) -> EComponentIterationResult
 	{
 		componentRecord.pComponent->NetSerialize(ser, aspect, profile, flags);
-		return true;
+		return EComponentIterationResult::Continue;
 	});
 
 	// #netentity: compare to GameContext::SynchObject, physics aspect. what happens there and here?
@@ -407,10 +407,10 @@ void CNetEntity::OnEntityInitialized()
 {
 	if(m_pSpawnSerializer != nullptr)
 	{
-		m_pEntity->m_components.ForEach([this](const SEntityComponentRecord& componentRecord) -> bool
+		m_pEntity->m_components.ForEach([this](const SEntityComponentRecord& componentRecord) -> EComponentIterationResult
 		{
 			componentRecord.pComponent->NetReplicateSerialize(*m_pSpawnSerializer);
-			return true;
+			return EComponentIterationResult::Continue;
 		});
 
 		// Spawn serializer will be released after entity initialization

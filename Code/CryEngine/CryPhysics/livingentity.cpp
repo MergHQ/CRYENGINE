@@ -283,8 +283,8 @@ int CLivingEntity::SetParams(pe_params *_params, int bThreadSafe)
 	ChangeRequest<pe_params> req(this,m_pWorld,_params,bThreadSafe);
 	if (req.IsQueued()) {
 		if (_params->type==pe_player_dimensions::type_id && (unsigned int)m_iSimClass<7u) {
-			int iter=0,iCaller=get_iCaller();
-			WriteLockCond lockc(m_pWorld->m_lockCaller[iCaller], iCaller==MAX_PHYS_THREADS);
+			int iter=0,iCaller=get_iCaller(1);
+			WriteLockCond lockc(m_pWorld->m_lockCaller[iCaller], iCaller>=MAX_PHYS_THREADS);
 			float hCyl,hPivot;	
 			Vec3 size,pos;
 			quaternionf qrot;

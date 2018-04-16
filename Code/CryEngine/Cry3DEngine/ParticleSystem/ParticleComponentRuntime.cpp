@@ -1,12 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  Created:     02/04/2015 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "ParticleComponentRuntime.h"
 #include "ParticleSystem.h"
@@ -83,11 +76,15 @@ void CParticleComponentRuntime::UpdateAll()
 	AddRemoveParticles(SUpdateContext(this));
 	if (HasParticles())
 	{
-		m_alive = true;
+		SetAlive();
 		UpdateParticles(SUpdateContext(this));
 	}
 	CalculateBounds();
 	AccumStats();
+
+	auto& stats = GetPSystem()->GetThreadData().statsCPU;
+	stats.components.updated ++;
+	stats.particles.updated += m_container.GetNumParticles();
 }
 
 void CParticleComponentRuntime::AddRemoveParticles(const SUpdateContext& context)
@@ -120,10 +117,6 @@ void CParticleComponentRuntime::UpdateParticles(const SUpdateContext& context)
 	GetComponent()->PreUpdateParticles(context);
 	GetComponent()->UpdateParticles(context);
 	GetComponent()->PostUpdateParticles(context);
-
-	UpdateLocalSpace(context.m_updateRange);
-
-	m_particleStats.updated += context.m_updateRange.size();
 }
 
 void CParticleComponentRuntime::ComputeVertices(const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)
@@ -294,6 +287,9 @@ void CParticleComponentRuntime::RemoveParticles(const SUpdateContext& context)
 	}
 }
 
+extern TDataType<Vec3> EPVF_ParentPosition;
+extern TDataType<Quat> EPQF_ParentOrientation;
+
 void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 {
 	CRY_PFX2_PROFILE_DETAIL;
@@ -307,10 +303,17 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 	const IPidStream parentIds = m_container.GetIPidStream(EPDT_ParentId);
 	const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
 	const IVec3Stream parentVelocities = parentContainer.GetIVec3Stream(EPVF_Velocity);
+	const IQuatStream parentOrientations = parentContainer.GetIQuatStream(EPQF_Orientation, GetEmitter()->GetLocation().q);
+	const IVec3Stream parentAngularVelocities = parentContainer.GetIVec3Stream(EPVF_AngularVelocity);
 	const IFStream parentNormAges = parentContainer.GetIFStream(EPDT_NormalAge);
 	const IFStream parentLifeTimes = parentContainer.GetIFStream(EPDT_LifeTime);
 
+	IOVec3Stream parentPrevPositions = m_container.IOStream(EPVF_ParentPosition);
+	IOQuatStream parentPrevOrientations = m_container.IOStream(EPQF_ParentOrientation);
+
 	IOVec3Stream positions = m_container.GetIOVec3Stream(EPVF_Position);
+	IOQuatStream orientations = m_container.GetIOQuatStream(EPQF_Orientation);
+
 	IOFStream normAges = m_container.GetIOFStream(EPDT_NormalAge);
 	IFStream invLifeTimes = m_container.GetIFStream(EPDT_InvLifeTime);
 
@@ -326,6 +329,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 		normAge *= invLifeTimes.Load(particleGroupId);
 		normAges.Store(particleGroupId, normAge);
 
+		// Set initial position and orientation from parent
 		const uint32v parentGroupId = parentIds.Load(particleGroupId);
 		if (checkParentLife)
 		{
@@ -334,30 +338,35 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 			const floatv parentOverAge = max(parentNormAge * parentLifeTime - parentLifeTime, convert<floatv>());
 			backTime = min(backTime + parentOverAge, convert<floatv>());
 		}
+
 		const Vec3v wParentPos = parentPositions.SafeLoad(parentGroupId);
 		const Vec3v wParentVel = parentVelocities.SafeLoad(parentGroupId);
 		const Vec3v wPosition = MAdd(wParentVel, backTime, wParentPos);
 		positions.Store(particleGroupId, wPosition);
-	}
 
-	// update orientation if any
-	if (m_container.HasData(EPQF_Orientation))
-	{
-		const Quat defaultQuat = GetEmitter()->GetLocation().q;
-		const IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
-		IOQuatStream quats = m_container.GetIOQuatStream(EPQF_Orientation);
-		for (auto particleGroupId : context.GetSpawnedGroupRange())
+		if (m_container.HasData(EPVF_ParentPosition))
+			parentPrevPositions.Store(particleGroupId, wPosition);
+
+		if (m_container.HasData(EPQF_Orientation) || m_container.HasData(EPQF_ParentOrientation))
 		{
-			const TParticleIdv parentGroupId = parentIds.Load(particleGroupId);
-			const Quatv wParentQuat = parentQuats.SafeLoad(parentGroupId);
-			quats.Store(particleGroupId, wParentQuat);
+			Quatv wParentQuat = parentOrientations.SafeLoad(parentGroupId);
+			if (m_container.HasData(EPVF_AngularVelocity))
+			{
+				const Vec3v parentAngularVelocity = parentAngularVelocities.SafeLoad(parentGroupId);
+				wParentQuat = AddAngularVelocity(wParentQuat, parentAngularVelocity, backTime);
+			}
+			if (m_container.HasData(EPQF_Orientation))
+				orientations.Store(particleGroupId, wParentQuat);
+
+			if (m_container.HasData(EPQF_ParentOrientation))
+				parentPrevOrientations.Store(particleGroupId, wParentQuat);
 		}
 	}
 
 	// neutral velocity
 	m_container.FillData(EPVF_Velocity, Vec3(0), m_container.GetSpawnedRange());
 
-	// initialize unormrand
+	// initialize random
 	if (m_container.HasData(EPDT_Random))
 	{
 		IOFStream unormRands = m_container.GetIOFStream(EPDT_Random);
@@ -396,8 +405,6 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context)
 			velocities.Store(particleGroupId, velocity1);
 		}
 	}
-
-	UpdateLocalSpace(m_container.GetSpawnedRange());
 
 	// feature post init particles
 	GetComponent()->PostInitParticles(context);
@@ -476,67 +483,8 @@ void CParticleComponentRuntime::AgeUpdate(const SUpdateContext& context)
 	{
 		const floatv invLifeTime = invLifeTimes.Load(particleGroupId);
 		const floatv normAge0 = normAges.Load(particleGroupId);
-		const floatv normalAge1 = __fsel(normAge0,
-			normAge0 + frameTime * invLifeTime,
-			-normAge0 * frameTime * invLifeTime
-		);
-		normAges.Store(particleGroupId, normalAge1);
-	}
-}
-
-void CParticleComponentRuntime::UpdateLocalSpace(SUpdateRange range)
-{
-	CRY_PFX2_PROFILE_DETAIL;
-
-	const bool hasLocalPositions = m_container.HasData(EPVF_LocalPosition);
-	const bool hasLocalVelocities = m_container.HasData(EPVF_LocalVelocity);
-	const bool hasLocalOrientations = m_container.HasData(EPQF_LocalOrientation) && m_container.HasData(EPQF_Orientation);
-
-	if (!hasLocalPositions && !hasLocalVelocities && !hasLocalOrientations)
-		return;
-
-	const CParticleContainer& parentContainer = GetParentContainer();
-	const Quat defaultQuat = GetEmitter()->GetLocation().q;
-	const IPidStream parentIds = m_container.GetIPidStream(EPDT_ParentId);
-	const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
-	const IQuatStream parentOrientations = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
-	const IVec3Stream worldPositions = m_container.GetIVec3Stream(EPVF_Position);
-	const IVec3Stream worldVelocities = m_container.GetIVec3Stream(EPVF_Velocity);
-	const IQuatStream worldOrientations = m_container.GetIQuatStream(EPQF_Orientation);
-	IOVec3Stream localPositions = m_container.GetIOVec3Stream(EPVF_LocalPosition);
-	IOVec3Stream localVelocities = m_container.GetIOVec3Stream(EPVF_LocalVelocity);
-	IOQuatStream localOrientations = m_container.GetIOQuatStream(EPQF_LocalOrientation);
-
-	for (auto particleId : range)
-	{
-		const TParticleId parentId = parentIds.Load(particleId);
-		if (parentId == gInvalidId)
-			continue;
-
-		const Vec3 wParentPos = parentPositions.Load(parentId);
-		const Quat parentOrientation = parentOrientations.SafeLoad(parentId);
-		const QuatT worldToParent = QuatT(wParentPos, parentOrientation).GetInverted();
-
-		if (hasLocalPositions)
-		{
-			const Vec3 wPosition = worldPositions.Load(particleId);
-			const Vec3 oPosition = worldToParent * wPosition;
-			localPositions.Store(particleId, oPosition);
-		}
-
-		if (hasLocalVelocities)
-		{
-			const Vec3 wVelocity = worldVelocities.Load(particleId);
-			const Vec3 oVelocity = worldToParent.q * wVelocity;
-			localVelocities.Store(particleId, oVelocity);
-		}
-
-		if (hasLocalOrientations)
-		{
-			const Quat wOrientation = worldOrientations.Load(particleId);
-			const Quat oOrientation = worldToParent.q * wOrientation;
-			localOrientations.Store(particleId, oOrientation);
-		}
+		const floatv normAge1 = normAge0 + frameTime * invLifeTime;
+		normAges.Store(particleGroupId, normAge1);
 	}
 }
 
@@ -577,14 +525,16 @@ void CParticleComponentRuntime::UpdateGPURuntime(const SUpdateContext& context)
 	// Accum stats
 	SParticleStats stats;
 	m_pGpuRuntime->AccumStats(stats);
-	stats.particles.rendered *= m_particleStats.rendered;
-	stats.components.rendered *= m_particleStats.rendered;
+	stats.particles.rendered = stats.components.rendered = 0;
 	GetPSystem()->GetThreadData().statsGPU += stats;
 
-	m_particleStats = {};
-	
 	if (stats.particles.alive)
-		m_alive = true;
+		SetAlive();
+
+	auto& emitterStats = m_pEmitter->GetStats();
+	emitterStats.particles.alloc += stats.particles.alloc;
+	emitterStats.particles.alive += stats.particles.alive;
+	emitterStats.components.alive += IsAlive();
 }
 
 void CParticleComponentRuntime::DebugStabilityCheck()
@@ -623,23 +573,18 @@ bool CParticleComponentRuntime::HasParticles() const
 
 void CParticleComponentRuntime::AccumStats()
 {
-	auto& statsCPU = GetPSystem()->GetThreadData().statsCPU;
-
-	statsCPU.particles += m_particleStats;
+	auto& emitterStats = m_pEmitter->GetStats();
 
 	const uint allocParticles = m_container.GetMaxParticles();
 	const uint aliveParticles = m_container.GetNumParticles();
 
-	statsCPU.particles.alloc += allocParticles;
-	statsCPU.particles.alive += aliveParticles;
-	statsCPU.components.alive += IsAlive();
-
-	statsCPU.components.updated ++;
+	emitterStats.particles.alloc += allocParticles;
+	emitterStats.particles.alive += aliveParticles;
+	emitterStats.components.alive += IsAlive();
 
 	CParticleProfiler& profiler = GetPSystem()->GetProfiler();
 	profiler.AddEntry(this, EPS_ActiveParticles, aliveParticles);
 	profiler.AddEntry(this, EPS_AllocatedParticles, allocParticles);
-	m_particleStats = {};
 }
 
 

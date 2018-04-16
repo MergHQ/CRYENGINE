@@ -1,12 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  Created:     02/04/2015 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include "ParticleCommon.h"
@@ -79,15 +72,12 @@ public:
 	bool                      HasParticles() const;
 	void                      AccumStats();
 
-	SParticleStats::ParticleStats& GetParticleStats() { return m_particleStats; }
-
 private:
 	void AddParticles(const SUpdateContext& context);
 	void RemoveParticles(const SUpdateContext& context);
 	void UpdateNewBorns(const SUpdateContext& context);
 	void UpdateGPURuntime(const SUpdateContext& context);
 	void AgeUpdate(const SUpdateContext& context);
-	void UpdateLocalSpace(SUpdateRange range);
 	void DebugStabilityCheck();
 
 	_smart_ptr<CParticleComponent>                  m_pComponent;
@@ -96,7 +86,6 @@ private:
 	TDynArray<SInstance>                            m_subInstances;
 	TDynArray<byte>                                 m_subInstanceData;
 	AABB                                            m_bounds;
-	SParticleStats::ParticleStats                   m_particleStats;
 	bool                                            m_alive;
 
 	_smart_ptr<gpu_pfx2::IParticleComponentRuntime> m_pGpuRuntime;

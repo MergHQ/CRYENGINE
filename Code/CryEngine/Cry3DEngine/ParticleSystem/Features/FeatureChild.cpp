@@ -22,7 +22,7 @@ public:
 	{
 		pComponent->AddSubInstances.add(this);
 		if (IsDelayed())
-			pParams->m_emitterLifeTime.end += pComponent->GetParentComponent()->GetComponentParams().m_maxParticleLifeTime;
+			pParams->m_maxTotalLIfe += pComponent->GetParentComponent()->GetComponentParams().m_maxParticleLife;
 	}
 
 	virtual bool IsDelayed() const { return false; }

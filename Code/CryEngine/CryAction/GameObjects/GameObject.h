@@ -270,7 +270,6 @@ public:
 	virtual void OnNetworkedEntityTransformChanged(EntityTransformationFlagsMask transformReasons) override;
 
 private:
-	bool             m_wasInitialized = false;
 	INetEntity*      m_pNetEntity;
 
 	IActionListener* m_pActionDelegate;

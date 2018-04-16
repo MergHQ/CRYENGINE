@@ -11,6 +11,7 @@
 
 #include <utility>
 #include <type_traits>
+#include <initializer_list>
 #include <CryMemory/IGeneralMemoryHeap.h> // <> required for Interfuscator
 
 //---------------------------------------------------------------------------
@@ -1123,6 +1124,15 @@ struct DynArray : Array<T, I, STORE>
 		create(std::forward<Val1>(val1), std::forward<Val2>(val2));
 	}
 
+	DynArray(std::initializer_list<T> list)
+	{
+		create(list.size(), EInit::eNoInit);
+		for (const T& element : list)
+		{
+			emplace_back(element);
+		}
+	}
+
 	template<class Val>
 	DynArray& operator=(const Val& val)
 	{
@@ -1299,6 +1309,16 @@ struct DynArray : Array<T, I, STORE>
 	iterator erase(Pos pos)
 	{
 		return erase(pos, 1);
+	}
+
+	iterator erase(iterator it)
+	{
+		return erase(static_cast<I>(std::distance(begin(), it)));
+	}
+
+	iterator erase(const_iterator it)
+	{
+		return erase(static_cast<I>(std::distance(static_cast<const_iterator>(begin()), it)));
 	}
 
 	void pop_back(I count = 1)

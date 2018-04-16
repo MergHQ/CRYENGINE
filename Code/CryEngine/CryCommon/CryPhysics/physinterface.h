@@ -131,11 +131,14 @@ IPhysicalEntity* const WORLD_ENTITY = (IPhysicalEntity*)-10;
 #if CRY_PLATFORM_ARM
 //FIXME: There's a threading issue in CryPhysics with ARM's weak memory ordering.
 	#define MAX_PHYS_THREADS 1
+	#define MAX_EXT_THREADS  1
 #else
 	#if defined(DEDICATED_SERVER)
 		#define MAX_PHYS_THREADS 1
+		#define MAX_EXT_THREADS  1
 	#else
 		#define MAX_PHYS_THREADS 4
+		#define MAX_EXT_THREADS  2 // the amount of concurrent thread slots for external world queries; currently only 1 and 2 are supported
 	#endif
 #endif
 

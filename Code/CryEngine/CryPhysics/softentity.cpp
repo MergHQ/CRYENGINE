@@ -1745,7 +1745,7 @@ void CSoftEntity::ApplyVolumetricPressure(const Vec3 &epicenter, float kr, float
 	}
 }
 
-static geom_contact g_SoftContact[MAX_PHYS_THREADS+1];
+static geom_contact g_SoftContact[MAX_TOT_THREADS];
 
 int CSoftEntity::RayTrace(SRayTraceRes& rtr)
 {

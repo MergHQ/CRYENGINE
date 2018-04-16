@@ -1487,7 +1487,7 @@ void CPhysArea::GetMemoryStatistics(ICrySizer *pSizer) const
 		pSizer->AddObject(m_pt, sizeof(m_pt[0])*(m_npt+1));
 		pSizer->AddObject(m_idxSort[0], sizeof(m_idxSort[0][0])*m_npt);
 		pSizer->AddObject(m_idxSort[1], sizeof(m_idxSort[1][0])*m_npt);
-		pSizer->AddObject(m_pMask, sizeof(m_pMask[0])*((m_npt-1>>5)+1)*(MAX_PHYS_THREADS+1));
+		pSizer->AddObject(m_pMask, sizeof(m_pMask[0])*((m_npt-1>>5)+1)*MAX_TOT_THREADS);
 	}
 	if (m_ptSpline)
 		pSizer->AddObject(m_ptSpline, sizeof(m_ptSpline[0])*m_npt);
@@ -1527,7 +1527,7 @@ void CPhysArea::ProcessBorder()
 		if (m_pMask) delete[] m_pMask;
 		m_idxSort[0] = new int[m_npt];
 		m_idxSort[1] = new int[m_npt];
-		memset(m_pMask = new unsigned int[((m_npt-1>>5)+1)*(MAX_PHYS_THREADS+1)],0,((m_npt-1>>5)+1)*(MAX_PHYS_THREADS+1)*sizeof(int));
+		memset(m_pMask = new unsigned int[((m_npt-1>>5)+1)*MAX_TOT_THREADS],0,((m_npt-1>>5)+1)*MAX_TOT_THREADS*sizeof(int));
 		float *xstart = new float[m_npt];
 
 		for(int iend=0; iend<2; iend++)	{
@@ -1623,7 +1623,7 @@ IPhysicalEntity *CPhysicalWorld::AddArea(Vec3 *pt,int npt, float zmin,float zmax
 
 	pArea->m_offset = pArea->m_offset0+pos;
 	pArea->m_R = Matrix33(q)*pArea->m_R0;
-	memset(pArea->m_pMask = new unsigned int[((npt-1>>5)+1)*(MAX_PHYS_THREADS+1)],0,((npt-1>>5)+1)*(MAX_PHYS_THREADS+1)*sizeof(int));
+	memset(pArea->m_pMask = new unsigned int[((npt-1>>5)+1)*MAX_TOT_THREADS],0,((npt-1>>5)+1)*MAX_TOT_THREADS*sizeof(int));
 
 	sz = Matrix33(pArea->m_R).Fabs()*pArea->m_size0*scale;
 	center = pArea->m_offset+pArea->m_R*(BBox[0]+BBox[1])*(pArea->m_scale*0.5f);
@@ -1813,7 +1813,7 @@ void CPhysicalWorld::RemoveArea(IPhysicalEntity *_pArea)
 	DetachEntityGridThunks(pArea);
 	m_nAreas--;	m_nTypeEnts[PE_AREA]--;
 	pArea->m_next=m_pDeletedAreas; m_pDeletedAreas=pArea;
-	for(int i=0;i<=MAX_PHYS_THREADS;i++)
+	for(int i=0;i<MAX_TOT_THREADS;i++)
 		m_prevGEAobjtypes[i] = -1;
 }
 
@@ -1852,7 +1852,7 @@ int CPhysicalWorld::CheckAreas(const Vec3 &ptc, Vec3 &gravity, pe_params_buoyanc
 	}
 
 	if (m_vars.bMultithreaded+iCaller>MAX_PHYS_THREADS)
-		iCaller = get_iCaller();
+		iCaller = get_iCaller(1);
 	WriteLock lock0(m_lockCaller[iCaller]);
 	ReadLock lock1(m_lockAreas);
 

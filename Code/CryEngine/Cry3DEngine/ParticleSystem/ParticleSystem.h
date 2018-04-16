@@ -12,13 +12,13 @@
 
 namespace pfx2
 {
-class CParticleSystem : public Cry3DEngineBase, public IParticleSystem
+class CParticleSystem : public Cry3DEngineBase, public IParticleSystem, ISyncMainWithRenderListener
 {
 	CRYINTERFACE_SIMPLE(IParticleSystem)
 	CRYGENERATE_SINGLETONCLASS_GUID(CParticleSystem, "CryEngine_ParticleSystem", "cd8d738d-54b4-46f7-82ba-23ba999cf2ac"_cry_guid)
 
 	CParticleSystem();
-	virtual ~CParticleSystem() {}
+	~CParticleSystem();
 
 private:
 	typedef std::unordered_map<string, _smart_ptr<CParticleEffect>, stl::hash_stricmp<string>, stl::hash_stricmp<string>> TEffectNameMap;
@@ -43,6 +43,7 @@ public:
 
 	void                    GetStats(SParticleStats& stats) override;
 	void                    GetMemoryUsage(ICrySizer* pSizer) const override;
+	void                    SyncMainWithRender() override;
 	// ~IParticleSystem
 
 	struct SThreadData

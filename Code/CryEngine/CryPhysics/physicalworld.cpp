@@ -93,6 +93,7 @@ int g_nPhysWorlds;
 threadID g_physThreadId = THREADID_NULL;
 #else
 TLS_DEFINE(int*, g_pidxPhysThread);
+TLS_DEFINE_DEFAULT_VALUE(int, g_idxExtThread, 0);
 
 void MarkAsPhysThread() {
 	static int g_ibufPhysThread[2] = { 1,0 };
@@ -323,7 +324,7 @@ CPhysicalWorld::~CPhysicalWorld()
 
 	if (g_StaticPhysicalEntity.m_pWorld==this)
 		g_StaticPhysicalEntity.m_pWorld = 0;		
-	memset(g_StaticPhysicalEntity.m_pUsedParts = new int[MAX_PHYS_THREADS+1][16], 0, sizeof(*g_StaticPhysicalEntity.m_pUsedParts));
+	memset(g_StaticPhysicalEntity.m_pUsedParts = new int[MAX_TOT_THREADS][16], 0, sizeof(*g_StaticPhysicalEntity.m_pUsedParts));
 	int i;
 	for(i=0; i<g_nPhysWorlds && g_pPhysWorlds[i]!=this; i++);
 	if (i<g_nPhysWorlds)
@@ -394,7 +395,7 @@ void CPhysicalWorld::Init()
 	int i; for(i=0;i<8;i++) { m_pTypedEnts[i]=m_pTypedEntsPerm[i]=0; m_updateTimes[i]=0; }
 	m_pHiddenEnts = 0;
 	for(i=0;i<10;i++) m_nTypeEnts[i]=0;
-	for(i=0;i<=MAX_PHYS_THREADS;i++) {
+	for(i=0;i<MAX_TOT_THREADS;i++) {
 		m_pHeightfield[i] = 0;
 		m_lockCaller[i] = 0;
 	}
@@ -460,7 +461,7 @@ void CPhysicalWorld::Init()
 	m_nProfileFunx=m_nProfileFunxAlloc = 0; m_pFuncProfileData = 0;
 	m_posViewer.zero();
 
-	for(i=0;i<=MAX_PHYS_THREADS;i++) {
+	for(i=0;i<MAX_TOT_THREADS;i++) {
 #ifndef _RELEASE
 		m_nGEA[i] = 0;
 #endif
@@ -635,7 +636,7 @@ void CPhysicalWorld::Shutdown(int bDeleteGeometries)
 	}
 	for(i=1;i<MAX_PHYS_THREADS;i++)
 		delete[] m_threadData[i].pTmpEntList;
-	for(i=0;i<=MAX_PHYS_THREADS;i++) {
+	for(i=0;i<MAX_TOT_THREADS;i++) {
 		m_threadData[i].szList=0; m_threadData[i].pTmpEntList=0;
 	}
 
@@ -704,7 +705,7 @@ void CPhysicalWorld::Shutdown(int bDeleteGeometries)
 	}
 	m_bMassDestruction = 0;
 
-	for(i=0;i<=MAX_PHYS_THREADS;i++) {
+	for(i=0;i<MAX_TOT_THREADS;i++) {
 		delete[] m_threadData[i].pTmpPartBVList, m_threadData[i].pTmpPartBVList=0;
 		m_threadData[i].szTmpPartBVList=m_threadData[i].nTmpPartBVs=0;
 		m_threadData[i].pTmpPartBVListOwner=0;
@@ -738,7 +739,7 @@ IPhysicalEntity *CPhysicalWorld::SetHeightfieldData(const heightfield *phf, int 
 	int iCaller;
 	CPhysicalEntity *pHF;
 	if (!phf) {
-		for(iCaller=0;iCaller<=MAX_PHYS_THREADS;iCaller++)
+		for(iCaller=0;iCaller<MAX_TOT_THREADS;iCaller++)
 			if (pHF = m_pHeightfield[iCaller]) {
 				m_pHeightfield[iCaller] = 0;
 				assert(pHF->m_parts[0].pPhysGeom); // analyzer:(
@@ -751,7 +752,7 @@ IPhysicalEntity *CPhysicalWorld::SetHeightfieldData(const heightfield *phf, int 
 			}
 		return 0;
 	}
-	for(iCaller=0; iCaller<=MAX_PHYS_THREADS; iCaller++) {
+	for(iCaller=0; iCaller<MAX_TOT_THREADS; iCaller++) {
 		CGeometry *pGeom = (CGeometry*)CreatePrimitive(heightfield::type, phf);
 		pHF=m_pHeightfield[iCaller]; m_pHeightfield[iCaller]=0;
 		if (pHF)	{
@@ -811,11 +812,9 @@ void CPhysicalWorld::SetHeightfieldMatMapping(int *pMatMapping, int nMats)
 	if(!pMatMapping)
 		return;
 	
-	for(int iCaller=0; iCaller<=MAX_PHYS_THREADS; iCaller++)
-	{
+	for(int iCaller=0; iCaller<MAX_TOT_THREADS; iCaller++) {
 		CPhysicalEntity *pHF = m_pHeightfield[iCaller];
-		if(pHF && pHF->m_parts && pHF->m_parts[0].pMatMapping)
-		{
+		if(pHF && pHF->m_parts && pHF->m_parts[0].pMatMapping) {
 			memcpy(pHF->m_parts[0].pMatMapping, pMatMapping, nMats*sizeof(int));
 			pHF->m_parts[0].nMats = nMats;
 		}
@@ -1441,7 +1440,7 @@ int CPhysicalWorld::DestroyPhysicalEntity(IPhysicalEntity* _pent,int mode,int bT
 	pent->m_iDeletionTime = max(4,m_iLastLogPump+2);
 	for(idx=m_nProfiledEnts-1;idx>=0;idx--) if (m_pEntProfileData[idx].pEntity==pent)
 		memmove(m_pEntProfileData+idx, m_pEntProfileData+idx+1, (--m_nProfiledEnts-idx)*sizeof(m_pEntProfileData[0]));
-	for(idx=0; idx<=MAX_PHYS_THREADS; idx++)
+	for(idx=0; idx<MAX_TOT_THREADS; idx++)
 		m_prevGEAobjtypes[idx] = -1;
 
 	if (pent->m_iSimClass<0) {
@@ -1766,7 +1765,7 @@ CPhysicalEntity* GroupByOuterEntity(CPhysicalEntity *pent0)
 
 int CPhysicalWorld::ReallocTmpEntList(CPhysicalEntity **&pEntList, int iCaller, int szNew)
 {
-	assert(iCaller<=MAX_PHYS_THREADS);
+	assert(iCaller<MAX_TOT_THREADS);
 	ReallocateList(m_threadData[iCaller].pTmpEntList, m_threadData[iCaller].szList, szNew);
 	pEntList = m_threadData[iCaller].pTmpEntList;
 	if (iCaller==0)
@@ -2832,7 +2831,7 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 		m_pDeletedGrids = nullptr;
 
 		// invalidate the precomputed bv data for ropes
-		for(i=0;i<=MAX_PHYS_THREADS;i++) m_threadData[i].pTmpPartBVListOwner=0;
+		for(i=0;i<MAX_TOT_THREADS;i++) m_threadData[i].pTmpPartBVListOwner=0;
 
 		m_updateTimes[7] = m_timePhysics;
 		if (m_vars.bDoStep==2) {
@@ -3594,6 +3593,8 @@ void CPhysicalWorld::SimulateExplosion(pe_explosion *pexpl, IPhysicalEntity **pS
 	epc.partid[0]=0; epc.idmat[0]=0; epc.penetration=epc.radius=0;
 	if (!CheckAreas(pexpl->epicenter,gravity,&pb,1,-1,Vec3(ZERO),pGridRef,iCaller) || is_unused(gravity))
 		gravity = m_vars.gravity;
+	if (iCaller == MAX_PHYS_THREADS)
+		iCaller += alloc_extCaller();
 	WriteLock lock(m_lockCaller[iCaller]);
 	bboxPart.bOriented = 0;
 	bboxPart.Basis.SetIdentity();
@@ -4043,7 +4044,7 @@ void CPhysicalWorld::DrawPhysicsHelperInformation(IPhysRenderer *pRenderer, int 
 	QuatT offs0 = (m_pRenderer = pRenderer)->SetOffset(m_vars.helperOffset);
 
 	if (m_vars.iDrawHelpers) {
-		assert(iCaller<=MAX_PHYS_THREADS);
+		assert(iCaller<MAX_TOT_THREADS);
 		int i,n=0,nEntListAllocs,nGEA;
 		CPhysicalEntity **pEntList;
 		{ WriteLock lock0(m_lockCaller[iCaller]);
@@ -4266,8 +4267,8 @@ int CPhysicalWorld::CollideEntityWithPrimitive(IPhysicalEntity *_pent, int itype
 		BBox[0][i]+=min(0.0f,dir[i]), BBox[1][i]+=max(0.0f, dir[i]);
 
 	if ((pent->m_BBox[1]-pent->m_BBox[0]).len2() >= 0.0f){
-		assert(iCaller<=MAX_PHYS_THREADS); // sca
-		WriteLockCond lockc(m_lockCaller[iCaller], iCaller==MAX_PHYS_THREADS);
+		assert(iCaller<MAX_TOT_THREADS); // sca
+		WriteLockCond lockc(m_lockCaller[iCaller], iCaller>=MAX_PHYS_THREADS);
 		ReadLock lockEnt(pent->m_lockUpdate);
 
 		for(j=0;j<pent->m_nParts;++j)
@@ -4323,7 +4324,7 @@ static void CreateTriMesh(CTriMesh& gtrimesh, primitives::triangle* tri)
 float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLockCond *pLockContactsExp, const char *pNameTag)
 {
 	int i,j,j1,ncont,nents,iActive=0;
-	int iCaller = get_iCaller();
+	int iCaller = get_iCaller(1);
 	Vec3 BBox[2],sz,mask[2]={ Vec3(ZERO),Vec3(ZERO) };
 	box bbox;
 	CPhysicalEntity **pents;
@@ -4336,7 +4337,7 @@ float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLock
 	intersection_params ip;
 	geom_world_data gwd[2];
 	geom_contact *pcontacts;
-	static geom_contact contactsBest[MAX_PHYS_THREADS+1];
+	static geom_contact contactsBest[MAX_TOT_THREADS];
 	geom_contact &contactBest = contactsBest[iCaller];
 
 	if (pp.entTypes & rwi_queue) {

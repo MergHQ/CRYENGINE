@@ -750,6 +750,9 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionCryPhysics, "Motion",
 //////////////////////////////////////////////////////////////////////////
 // CFeatureMoveRelativeToEmitter
 
+MakeDataType(EPVF_ParentPosition,    Vec3);
+MakeDataType(EPQF_ParentOrientation, Quat);
+
 class CFeatureMoveRelativeToEmitter : public CParticleFeature
 {
 public:
@@ -769,16 +772,14 @@ public:
 		const bool inheritVelOnDeath = (m_velocityInheritAfterDeath != 0.0f);
 
 		if (inheritPositions || inheritVelocities || inheritAngles)
-			pComponent->PreUpdateParticles.add(this);
-		if (inheritPositions)
-			pComponent->AddParticleData(EPVF_LocalPosition);
-		if (inheritVelocities)
-			pComponent->AddParticleData(EPVF_LocalVelocity);
-		if (inheritAngles)
 		{
-			pComponent->AddParticleData(EPQF_Orientation);
-			pComponent->AddParticleData(EPQF_LocalOrientation);
+			pComponent->PreUpdateParticles.add(this);
+			pComponent->AddParticleData(EPQF_ParentOrientation);
 		}
+		if (inheritPositions)
+			pComponent->AddParticleData(EPVF_ParentPosition);
+		if (inheritAngles)
+			pComponent->AddParticleData(EPQF_Orientation);
 		if (inheritVelOnDeath)
 			pComponent->UpdateParticles.add(this);
 	}
@@ -802,9 +803,8 @@ public:
 		const IFStream parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
 		const IQuatStream parentOrientations = parentContainer.GetIQuatStream(EPQF_Orientation);
-		const IVec3Stream localPositions = container.GetIVec3Stream(EPVF_LocalPosition);
-		const IVec3Stream localVelocities = container.GetIVec3Stream(EPVF_LocalVelocity);
-		const IQuatStream localOrientations = container.GetIQuatStream(EPQF_LocalOrientation);
+		IOVec3Stream parentPrevPositions = container.GetIOVec3Stream(EPVF_ParentPosition);
+		IOQuatStream parentPrevOrientations = container.GetIOQuatStream(EPQF_ParentOrientation);
 		IOVec3Stream worldPositions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream worldVelocities = container.GetIOVec3Stream(EPVF_Velocity);
 		IOQuatStream worldOrientations = container.GetIOQuatStream(EPQF_Orientation);
@@ -816,29 +816,31 @@ public:
 		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
-			if (parentId == gInvalidId || IsExpired(parentAges.Load(parentId)))
+			if (parentId == gInvalidId)
 				continue;
 
-			const Vec3 wParentPos = parentPositions.SafeLoad(parentId);
 			const Quat parentOrientation = parentOrientations.SafeLoad(parentId);
-			const QuatT parentToWorld = QuatT(wParentPos, parentOrientation);
+			const Quat parentPrevOrientation = parentPrevOrientations.Load(particleId);
+			const Quat deltaOrientation = parentOrientation * parentPrevOrientation.GetInverted();
+			parentPrevOrientations.Store(particleId, parentOrientation);
 
 			if (inheritPositions)
 			{
+				const Vec3 parentPos = parentPositions.SafeLoad(parentId);
+				const Vec3 parentPrevPos = parentPrevPositions.Load(particleId);
 				const Vec3 wPosition0 = worldPositions.Load(particleId);
-				const Vec3 oPosition = localPositions.Load(particleId);
-				const Vec3 wPosition1 = Lerp(
-					wPosition0, parentToWorld * oPosition,
+				const Vec3 wPosition1 = Lerp(wPosition0, 
+					deltaOrientation * (wPosition0 - parentPrevPos) + parentPos, 
 					m_positionInherit);
 				worldPositions.Store(particleId, wPosition1);
+				parentPrevPositions.Store(particleId, parentPos);
 			}
 
 			if (inheritVelocities)
 			{
 				const Vec3 wVelocity0 = worldVelocities.Load(particleId);
-				const Vec3 oVelocity = localVelocities.Load(particleId);
 				const Vec3 wVelocity1 = Lerp(
-					wVelocity0, parentToWorld.q * oVelocity,
+					wVelocity0, deltaOrientation * wVelocity0,
 					m_velocityInherit);
 				worldVelocities.Store(particleId, wVelocity1);
 			}
@@ -846,9 +848,8 @@ public:
 			if (inheritAngles)
 			{
 				const Quat wOrientation0 = worldOrientations.Load(particleId);
-				const Quat oOrientation = localOrientations.Load(particleId);
 				const Quat wOrientation1 = Lerp(
-					wOrientation0, parentToWorld.q * oOrientation,
+					wOrientation0, deltaOrientation * wOrientation0,
 					m_angularInherit);
 				worldOrientations.Store(particleId, wOrientation1);
 			}

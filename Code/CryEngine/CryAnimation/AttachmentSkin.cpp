@@ -262,7 +262,10 @@ void CAttachmentSKIN::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeo
 	int nLOD = m_pModelSkin->SelectNearestLoadedLOD(0);
 	IRenderMesh* pMesh = m_pModelSkin->GetIRenderMesh(nLOD);
 	if (!pMesh)
+	{
+		points.fill(ZERO);
 		return;
+	}
 
 	SSkinningData* pSkinningData = NULL;
 	int nFrameID = gEnv->pRenderer->EF_GetSkinningPoolID();

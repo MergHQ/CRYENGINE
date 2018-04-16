@@ -609,10 +609,7 @@ struct TContainerCountsBase
 	{
 		F reiterate = 0, reject = 0, clip = 0, collideTest = 0, collideHit = 0;
 	} particles;
-	struct PixelCounts
-	{
-		F updated = 0, rendered = 0;
-	} pixels;
+	TElementCounts<F> pixels;
 };
 
 template<typename F>

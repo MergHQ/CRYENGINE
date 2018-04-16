@@ -76,6 +76,8 @@ private:
 	CGameObjectDispatch       m_dispatch;
 
 	std::vector<IGameObject*> m_postUpdateObjects;
+	bool                      m_isPostUpdating = false;
+
 	IEntityClass*             m_pClassPlayerProximityTrigger;
 
 	typedef std::map<string, SEntitySchedulingProfiles> TSchedulingProfiles;
@@ -88,8 +90,6 @@ private:
 	//
 	typedef std::list<IGameObjectSystemSink*> SinkList;
 	SinkList                                    m_lstSinks; // registered sinks get callbacks
-
-	std::vector<IGameObject*>                   m_tempObjects;
 
 	std::vector<IGameObjectSystem::ExtensionID> m_activatedExtensions_top;
 	std::vector<string>                         m_serializationOrderList; // defines serialization order for extensions

@@ -5,10 +5,6 @@
 #include <CryEntitySystem/IEntity.h>
 #include <CryCore/Containers/CryListenerSet.h>
 
-// Store listeners for each entity event in a constant array in CEntity
-// Improves SendEvent from o(log n) to O(1), but adds a lot of memory usage per entity.
-//#define USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
-
 //////////////////////////////////////////////////////////////////////////
 // This is the order in which the proxies are serialized
 const static EEntityProxy ProxySerializationOrder[] = {
@@ -398,6 +394,8 @@ public:
 	virtual void                  OnSchematycObjectDestroyed() final { m_pLegacySchematycData != nullptr ? m_pLegacySchematycData->pSchematycObject = nullptr : nullptr; }
 
 	virtual EEntitySimulationMode GetSimulationMode() const final    { return m_simulationMode; };
+
+	virtual bool IsInitialized() const final { return HasInternalFlag(EInternalFlag::Initialized); }
 	//~IEntity
 
 	void                     SetSimulationMode(EEntitySimulationMode mode);
@@ -405,7 +403,7 @@ public:
 
 	void                     ShutDownComponent(SEntityComponentRecord& componentRecord);
 
-	CEntityComponentsVector& GetComponentsVector() { return m_components; };
+	CEntityComponentsVector<SEntityComponentRecord>& GetComponentsVector() { return m_components; };
 
 	void                     AddSimpleEventListeners(EntityEventMask events, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority);
 	void                     AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority);
@@ -492,7 +490,7 @@ private:
 	std::underlying_type<EInternalFlag>::type m_internalFlags = 0;
 
 	uint8 m_sendEventRecursionCount = 0;
-	uint8 m_componentChangeState = 0;
+	uint16 m_componentChangeState = 0;
 
 	// Name of the entity.
 	string m_name;
@@ -560,94 +558,166 @@ private:
 	// The size of this struct should be kept to a minimum (currently 16 bytes) as we keep an array containing a set for each entity event in CEntity.
 	struct SEventListenerSet
 	{
-#ifndef USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
-		SEventListenerSet(EEntityEvent entityEvent) : event(entityEvent), firstUnsortedListenerIndex(-1) {}
+		SEventListenerSet(EEntityEvent entityEvent, const SEventListener& firstEventListener)
+			: event(entityEvent)
+			, firstUnsortedListenerIndex(-1)
+			, hasValidElements(1) 
+			, listeners({ firstEventListener }) {}
+
 		SEventListenerSet(const SEventListenerSet&) = delete;
 		SEventListenerSet& operator=(const SEventListenerSet&) = delete;
 		SEventListenerSet(SEventListenerSet&& other)
 			: event(other.event)
 			, listeners(std::move(other.listeners))
-			, firstUnsortedListenerIndex(other.firstUnsortedListenerIndex) {}
+			, firstUnsortedListenerIndex(other.firstUnsortedListenerIndex)
+			, hasValidElements(other.hasValidElements) {}
 		SEventListenerSet& operator=(SEventListenerSet&&) = default;
 
+		using TStorage = DynArray<SEventListener>;
 		EEntityEvent event;
-#endif
 
-		using Index = int8;
-
-		DynArray<SEventListener> listeners;
+protected:
+		TStorage listeners;
 		// Index of the listener we pushed back while iterating
 		// Allows us to skip going through a lot of possibly unneeded listeners
 		// Negative if we are sorted
-		Index firstUnsortedListenerIndex = -1;
+		int16 firstUnsortedListenerIndex : 15;
+		// Whether or not we have valid (non-null) entries in the vector
+		// Needed since Remove while we are iterating requires that we invalidate instead of erasing
+		int16 hasValidElements : 1;
 
-		bool IsEmpty() const  { return listeners.empty(); }
+		void CheckForInvalidatedElements()
+		{
+			if (hasValidElements)
+			{
+				hasValidElements = std::find_if(listeners.begin(), listeners.end(), [](const SEventListener& listener) -> bool { return listener.pListener != nullptr; }) != listeners.end();
+			}
+		}
+
+	public:
+		TStorage::iterator FindListener(ISimpleEntityEventListener* pListener)
+		{
+			return std::find_if(listeners.begin(), listeners.end(), [pListener](const SEventListener& listener) -> bool { return listener.pListener == pListener; });
+		}
+
+		TStorage::const_iterator GetEnd() const { return listeners.end(); }
+
 		// Whether or not the entire collection of listeners is sorted
 		bool IsSorted() const { return isneg(firstUnsortedListenerIndex) != 0; }
-		void OnSorted()       { firstUnsortedListenerIndex = -1; }
+		void OnSorted() { firstUnsortedListenerIndex = -1; }
 
-		void SortedInsert(SEventListener& listener)
+		void SendEvent(const SEntityEvent& event)
 		{
+			// Numbered iteration as listeners may be invalidated (set to null) during iteration
+			// Sorting is not affected while iterating, so this is safe
+			for (int i = 0; i < listeners.size(); ++i)
+			{
+				if (listeners[i].pListener != nullptr)
+				{
+					listeners[i].pListener->ProcessEvent(event);
+				}
+			}
+		}
+
+		void SortedInsert(SEventListener&& listener)
+		{
+			// Attempt to sort existing elements first, if there are any unsorted
+			if (!IsSorted())
+			{
+				SortUnsortedElements();
+			}
+
 			// Sorted insertion based on the requested event priority
-			auto upperBoundIt = std::upper_bound(listeners.begin(), listeners.end(), listener, [](const SEventListener& a, const SEventListener& b) -> bool { return a.eventPriority < b.eventPriority; });
-			listeners.emplace(upperBoundIt, listener);
-			CRY_ASSERT_MESSAGE(listeners.size() <= std::numeric_limits<Index>::max(), "Max entity event listener count exceeded!");
+			auto upperBoundIt = std::upper_bound(listeners.begin(), listeners.end(), listener.eventPriority, [](const int eventPriority, const SEventListener& existingListener) -> bool { return eventPriority < existingListener.eventPriority; });
+			listeners.emplace(upperBoundIt, std::move(listener));
+			hasValidElements = 1;
+			CRY_ASSERT_MESSAGE(listeners.size() <= std::numeric_limits<uint16>::max(), "Max entity event listener count exceeded!");
 		}
 
 		void UnsortedInsert(SEventListener& listener)
 		{
 			if (IsSorted())
 			{
-				firstUnsortedListenerIndex = static_cast<Index>(listeners.size());
+				firstUnsortedListenerIndex = static_cast<int16>(listeners.size());
 			}
 
 			// Adding of event listener while we are iterating, we cannot sort here so push to back and require sort when iteration is done
 			listeners.emplace_back(listener);
-			CRY_ASSERT_MESSAGE(listeners.size() <= std::numeric_limits<Index>::max(), "Max entity event listener count exceeded!");
+			CRY_ASSERT_MESSAGE(listeners.size() <= std::numeric_limits<uint16>::max(), "Max entity event listener count exceeded!");
+			hasValidElements = 1;
 		}
 
-		void InvalidateElement(SEventListener* pElement)
+		void RemoveElement(TStorage::const_iterator listenerIt)
 		{
-			pElement->pListener = nullptr;
+			// See if we need to adjust firstUnsortedListenerIndex due to an element being erased
+			if (!IsSorted() && std::distance(static_cast<TStorage::const_iterator>(listeners.begin()), listenerIt) < firstUnsortedListenerIndex)
+			{
+				firstUnsortedListenerIndex--;
+			}
 
-			Index elementIndex = static_cast<Index>(std::distance(listeners.begin(), pElement));
+			listeners.erase(listenerIt);
+
+			// Take the opportunity to sort the elements if we are able
+			if (!IsSorted())
+			{
+				SortUnsortedElements();
+			}
+
+			CheckForInvalidatedElements();
+		}
+
+		void InvalidateElement(TStorage::iterator listenerIt)
+		{
+			CRY_ASSERT(listenerIt->pListener != nullptr);
+			listenerIt->pListener = nullptr;
+
+			uint16 elementIndex = static_cast<uint16>(std::distance(listeners.begin(), listenerIt));
 
 			if (elementIndex < firstUnsortedListenerIndex)
 			{
 				firstUnsortedListenerIndex = elementIndex;
 			}
+
+			CheckForInvalidatedElements();
+		}
+
+		bool HasValidElements() const
+		{
+			return hasValidElements != 0;
 		}
 
 		// Sort any potentially unsorted elements, does not affect the rest of the container as it is assumed sorted
 		void SortUnsortedElements()
 		{
-			CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
+			CRY_ASSERT(!IsSorted());
+			uint16 numUnsortedListeners = static_cast<uint16>(listeners.size() - firstUnsortedListenerIndex);
 
-			int numUnsortedListeners = static_cast<int>(listeners.size() - firstUnsortedListenerIndex);
-
-			while (numUnsortedListeners > 0)
+			while (numUnsortedListeners > 0 && listeners.size() != 0)
 			{
 				// Temporarily remove item for sorting
+				auto listenerIt = listeners.end() - 1;
 				numUnsortedListeners--;
 
-				if (listeners.back().pListener != nullptr)
+				if (listenerIt->pListener != nullptr)
 				{
-					SEventListener listener = listeners.back();
-					listeners.pop_back();
+					SEventListener eventListener = *listenerIt;
+					listeners.erase(listenerIt);
 
 					// Sorted insertion based on the requested event priority
-					auto upperBoundIt = std::upper_bound(listeners.begin(), listeners.end() - numUnsortedListeners, listener, [](const SEventListener& a, const SEventListener& b) -> bool { return a.eventPriority < b.eventPriority; });
-					listeners.insert(upperBoundIt, listener);
+					auto upperBoundIt = std::upper_bound(listeners.begin(), listeners.end() - numUnsortedListeners, eventListener, [](const SEventListener& a, const SEventListener& b) -> bool { return a.eventPriority < b.eventPriority; });
+					listeners.insert(upperBoundIt, eventListener);
 				}
 				else
 				{
-					listeners.pop_back();
+					listeners.erase(listenerIt);
 				}
 			}
 
 			OnSorted();
 		}
 	};
+
+	DynArray<std::unique_ptr<SEventListenerSet>> m_simpleEventListeners;
 
 	// NetEntity stores the network serialization configuration.
 	std::unique_ptr<INetEntity> m_pNetEntity;
@@ -685,12 +755,7 @@ private:
 	// counter to prevent deletion if entity is processed deferred by for example physics events
 	uint16 m_keepAliveCounter = 0;
 
+	using TComponentsRecord = CEntityComponentsVector<SEntityComponentRecord>;
 	// Array of components, linear search in a small array is almost always faster then a more complicated set or map containers.
-	CEntityComponentsVector m_components;
-
-#ifdef USE_CONSTANT_ENTITY_EVENT_LISTENER_STORAGE
-	std::array<SEventListenerSet, ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL + 1> m_simpleEventListeners;
-#else
-	DynArray<std::unique_ptr<SEventListenerSet>> m_simpleEventListeners;
-#endif
+	CEntityComponentsVector<SEntityComponentRecord> m_components;
 };

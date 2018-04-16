@@ -682,10 +682,27 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 					assert(vertexCount <= 8);
 
 					Vec3 vertices[8];
+
+					// we cannot check auto initialized parameters, so skip those cases
+					bool hasAutoInitParam = false;
+
 					for (size_t i = 0; i < vertexCount; ++i)
 					{
 						const auto parameterId = block.idx[i];
+						for(int dim = 0; dim < m_Dimensions; ++dim)
+						{
+							if (m_arrParameter[parameterId].m_PreInitialized[dim] == 0)
+							{
+								hasAutoInitParam = true;
+							}
+						}
+	
 						vertices[i] = Vec3(m_arrParameter[parameterId].m_Para.x, m_arrParameter[parameterId].m_Para.y, m_arrParameter[parameterId].m_Para.z);
+					}
+
+					if (hasAutoInitParam)
+					{
+						continue;
 					}
 
 					bool issueWarning = false;

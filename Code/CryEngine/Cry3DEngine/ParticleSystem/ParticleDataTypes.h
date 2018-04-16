@@ -205,13 +205,10 @@ extern TDataType<float>
 extern TDataType<Vec3>
 	EPVF_Position,
 	EPVF_Velocity,
-	EPVF_AngularVelocity,
-	EPVF_LocalPosition,
-	EPVF_LocalVelocity;
+	EPVF_AngularVelocity;
 
 extern TDataType<Quat>
-	EPQF_Orientation,
-	EPQF_LocalOrientation;
+	EPQF_Orientation;
 
 // NormalAge functions
 inline bool IsAlive(float age)   { return age < 1.0f; }

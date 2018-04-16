@@ -68,7 +68,7 @@ string D3DDebug_GetLastMessage();
 #endif
 
 // Enum -> Bitmask lookup table
-uint32 ColorMasks[(ColorMask::Count >> GS_COLMASK_SHIFT)][4] =
+uint32 ColorMasks[(GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)][4] =
 {
 	{ 0x0, 0x0, 0x0, 0x0 }, // GS_NOCOLMASK_NONE
 	{ 0x1, 0x1, 0x1, 0x1 }, // GS_NOCOLMASK_R
@@ -84,7 +84,7 @@ uint32 ColorMasks[(ColorMask::Count >> GS_COLMASK_SHIFT)][4] =
 };
 
 // Bitmask -> Enum lookup table
-std::array<uint32, (ColorMask::Count >> GS_COLMASK_SHIFT)> AvailableColorMasks =
+std::array<uint32, (GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)> AvailableColorMasks =
 {
 	{
 		0x0, // GS_NOCOLMASK_NONE
