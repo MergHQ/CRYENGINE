@@ -101,49 +101,40 @@ void CInstance::DestroySDLWindow(HWND kHandle)
 
 #endif //defined(USE_SDL2_VIDEO)
 
-_smart_ptr<CDevice> CInstance::CreateDevice(size_t physicalDeviceIndex, const SSurfaceCreationInfo& surfaceCreationInfo)
+_smart_ptr<CDevice> CInstance::CreateDevice(size_t physicalDeviceIndex)
 {
-	VkSurfaceKHR surface;
-	if (CreateSurface(surfaceCreationInfo, &surface) == VK_SUCCESS)
+	VK_ASSERT(physicalDeviceIndex < m_physicalDevices.size() && "Bad device index");
+	const SPhysicalDeviceInfo& pDeviceInfo = m_physicalDevices[physicalDeviceIndex];
+	VkAllocationCallbacks allocationCallbacks;
+	m_Allocator.GetCpuHeapCallbacks(allocationCallbacks);
+
+	// filter out extensions which are not available
+	std::vector<const char*> extensions;
+	for (const auto& requestedExtension : m_enabledPhysicalDeviceExtensions)
 	{
-		VK_ASSERT(physicalDeviceIndex < m_physicalDevices.size() && "Bad device index");
-		const SPhysicalDeviceInfo& pDeviceInfo = m_physicalDevices[physicalDeviceIndex];
-		VkAllocationCallbacks allocationCallbacks;
-		m_Allocator.GetCpuHeapCallbacks(allocationCallbacks);
-
-		// filter out extensions which are not available
-		std::vector<const char*> extensions;
-		for (const auto& requestedExtension : m_enabledPhysicalDeviceExtensions)
+		int i;
+		for (i=0; i < pDeviceInfo.implicitExtensions.size(); ++i)
 		{
-			int i;
-			for (i=0; i < pDeviceInfo.implicitExtensions.size(); ++i)
-			{
-				const VkExtensionProperties& availableExtension = pDeviceInfo.implicitExtensions[i];
+			const VkExtensionProperties& availableExtension = pDeviceInfo.implicitExtensions[i];
 
-				if (strcmp(availableExtension.extensionName, requestedExtension.name) == 0)
-				{
-					extensions.push_back(requestedExtension.name);
-					break;
-				}
-			}
-
-			if (i == pDeviceInfo.implicitExtensions.size() && requestedExtension.bRequired)
+			if (strcmp(availableExtension.extensionName, requestedExtension.name) == 0)
 			{
-				VK_ERROR("Failed to load extension '%s'", requestedExtension.name);
-				return nullptr;
+				extensions.push_back(requestedExtension.name);
+				break;
 			}
 		}
 
-		auto device = CDevice::Create(&pDeviceInfo, &allocationCallbacks, surface, m_enabledPhysicalDeviceLayers, extensions);
-		Extensions::Init(device.get(), extensions);
+		if (i == pDeviceInfo.implicitExtensions.size() && requestedExtension.bRequired)
+		{
+			VK_ERROR("Failed to load extension '%s'", requestedExtension.name);
+			return nullptr;
+		}
+	}
 
-		return device;
-	}
-	else
-	{
-		VK_ERROR("Failed to create KHR Surface");
-		return nullptr;
-	}
+	auto device = CDevice::Create(&pDeviceInfo, &allocationCallbacks, m_enabledPhysicalDeviceLayers, extensions);
+	Extensions::Init(device.get(), extensions);
+
+	return device;
 }
 
 VkResult CInstance::CreateSurface(const SSurfaceCreationInfo& info, VkSurfaceKHR* surface)
