@@ -109,7 +109,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(CryLobby PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
+CryEngineModule(CryLobby FORCE_SHARED PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 target_include_directories(${THIS_PROJECT}
 PUBLIC
 	"$<BUILD_INTERFACE:${CRYENGINE_DIR}/Code/CryPlugins/CryLobby/Interface>" "$<INSTALL_INTERFACE:include/CryLobby>"

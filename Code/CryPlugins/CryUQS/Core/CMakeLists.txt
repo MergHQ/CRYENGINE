@@ -117,9 +117,9 @@ add_sources("UQS_uber_core.cpp"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(CryUQS_Core PCH "core/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
-target_link_libraries (${THIS_PROJECT} PRIVATE CryUQS_DataSource_XML)
-target_link_libraries (${THIS_PROJECT} PRIVATE CryUQS_StdLib)
+CryEngineModule(CryUQS_Core FORCE_SHARED PCH "core/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
+target_link_libraries (${THIS_PROJECT} PRIVATE CryUQS_DataSource_XML_shareable)
+target_link_libraries (${THIS_PROJECT} PRIVATE CryUQS_StdLib_shareable)
 
 target_include_directories(${THIS_PROJECT}
 	PRIVATE core
