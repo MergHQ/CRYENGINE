@@ -72,7 +72,8 @@ void CGraphicsPipeline::Update(CRenderView* pRenderView, EShaderRenderingFlags r
 	// Sets the current render view on all the pipeline stages.
 	for (auto it = m_pipelineStages.begin(); it != m_pipelineStages.end(); ++it)
 	{
-		if (*it) (*it)->Update();
+		if (*it && (*it)->IsStageActive(renderingFlags))
+			(*it)->Update();
 	}
 }
 

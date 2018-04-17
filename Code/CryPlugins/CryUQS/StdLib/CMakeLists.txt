@@ -35,21 +35,7 @@ add_sources("UQS_uber_stdlib.cpp"
 end_sources()
 #END-FILE-LIST
 
-CryEngineStaticModule(CryUQS_StdLib PCH "stdlib/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
-
-target_include_directories(${THIS_PROJECT}
-	PRIVATE "stdlib"
-	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
-	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../.."
-)
-
-if(OPTION_UQS_SCHEMATYC_SUPPORT)
-	target_include_directories(${THIS_PROJECT}
-		PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface"
-		PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface"
-	)
-endif()
-
+macro (CryUQS_StdLib_SetupOptions)
 if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(${THIS_PROJECT} PRIVATE
 		-Wno-unused-variable
@@ -89,3 +75,23 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		-Wno-switch
 	)
 endif()
+
+target_include_directories(${THIS_PROJECT}
+	PRIVATE "stdlib"
+	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../.."
+)
+
+if(OPTION_UQS_SCHEMATYC_SUPPORT)
+	target_include_directories(${THIS_PROJECT}
+		PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface"
+		PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface"
+	)
+endif()
+endmacro()
+
+CryEngineStaticModule(CryUQS_StdLib PCH "stdlib/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
+CryUQS_StdLib_SetupOptions()
+
+CryEngineStaticModule(CryUQS_StdLib_shareable FORCE_SHARED PCH "stdlib/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
+CryUQS_StdLib_SetupOptions()

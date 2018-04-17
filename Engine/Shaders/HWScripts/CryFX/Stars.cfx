@@ -19,8 +19,6 @@ float4 SkyDome_NightMoonDirSize;
 float3 SkyDome_NightMoonTexGenRight;
 float3 SkyDome_NightMoonTexGenUp;
 
-sampler2D sceneMap0 : register(s0);
-
 struct a2v
 {
   float4 Position  : POSITION;
@@ -31,7 +29,7 @@ struct a2v
 
 struct v2f
 {
-  float4 Position  : POSITION;
+  float4 Position  : SV_POSITION;
   float2 QuadPos   : TEXCOORD;
   float4 Color     : COLOR;
 };

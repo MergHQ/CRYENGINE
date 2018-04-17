@@ -239,8 +239,6 @@ half RipplesNormalsScale
 
 TextureCube envCubeTex : register(t3) = TM_Env;
 
-// TODO: remove after old graphics pipeline is removed.
-sampler2D ReflectionSampler : register(s0)
 <
   string Script =
       "RenderOrder=PreProcess;"
@@ -319,7 +317,7 @@ struct a2v
 struct v2f
 {
 #if !%WATER_TESSELLATION_DX11 || %_RT_NO_TESSELLATION
-	float4 Position		: POSITION; 
+	float4 Position		: SV_POSITION; 
 #endif
 
 	half4  vView  	  : TEXCOORDN;
@@ -348,7 +346,7 @@ struct v2f
 
 struct v2f_hs
 {
-	float4 Position		: POSITION;
+	float4 Position		: SV_POSITION;
 
 	half4  vView  	  : TEXCOORDN;
 

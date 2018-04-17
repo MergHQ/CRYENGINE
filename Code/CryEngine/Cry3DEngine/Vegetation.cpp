@@ -149,6 +149,9 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 		{
 			const float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, GetBBox())) * passInfo.GetZoomFactor();
 			wantedLod = CObjManager::GetObjectLOD(this, fEntDistance);
+
+			if (auto pTempData = m_pTempData.load())
+				pTempData->userData.nWantedLod = wantedLod;
 		}
 
 		int minUsableLod = pStatObj->GetMinUsableLod();
@@ -450,7 +453,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 			mat = matRotZ * mat;
 			// set sprite translation
 			mat.SetTranslation(m_vPos + matRotZ * pStatObj->GetVegCenter() * GetScale());
-			
+
 			pRenderObject->SetMatrix(mat, passInfo);
 
 			// disable selection on sprites

@@ -264,6 +264,7 @@ struct SJobSyncVariable
 
 	//! Interface, should only be used by the job manager or the job state classes.
 	void Wait() volatile;
+	bool NeedsToWait() volatile;
 	void SetRunning(uint16 count = 1) volatile;
 	bool SetStopped(struct SJobStateBase* pPostCallback = nullptr, uint16 count = 1) volatile;
 
@@ -937,6 +938,8 @@ struct IBackend
 
 	virtual void   AddJob(JobManager::CJobDelegator& crJob, const JobManager::TJobHandle cJobHandle, JobManager::SInfoBlock& rInfoBlock) = 0;
 	virtual uint32 GetNumWorkerThreads() const = 0;
+
+	virtual bool AddTempWorkerUntilJobStateIsComplete(JobManager::SJobState& pJobState) = 0;
 	// </interfuscator:shuffle>
 
 #if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
@@ -1599,7 +1602,7 @@ inline bool JobManager::SJobSyncVariable::IsRunning() const volatile
 /////////////////////////////////////////////////////////////////////////////////
 inline void JobManager::SJobSyncVariable::Wait() volatile
 {
-	if (syncVar.wordValue == 0)
+	if (!NeedsToWait())
 		return;
 
 	IJobManager* pJobManager = gEnv->GetJobManager();
@@ -1680,6 +1683,12 @@ retry:
 	pJobManager->DeallocateSemaphore(semaphoreHandle, this);
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////
+inline bool JobManager::SJobSyncVariable::NeedsToWait() volatile
+{
+	return syncVar.wordValue != 0;
+}
 /////////////////////////////////////////////////////////////////////////////////
 inline void JobManager::SJobSyncVariable::SetRunning(uint16 count) volatile
 {
@@ -1765,6 +1774,9 @@ inline bool JobManager::SJobSyncVariable::SetStopped(SJobStateBase* pPostCallbac
 
 inline void JobManager::SInfoBlock::Release(uint32 nMaxValue)
 {
+	// Free lambda bound resources prior marking the info block as free
+	jobLambdaInvoker = nullptr;
+
 	JobManager::IJobManager* pJobManager = gEnv->GetJobManager();
 
 	SInfoBlockState currentInfoBlockState;
@@ -1785,15 +1797,10 @@ inline void JobManager::SInfoBlock::Release(uint32 nMaxValue)
 	}
 	while (resultInfoBlockState.nValue != currentInfoBlockState.nValue);
 
-	// do we need to release a semaphore
+	// Release semaphore
+	// Since this is a copy of the state when we succeeded the CAS it is ok to it after original jobState was returned to the free list.
 	if (currentInfoBlockState.nSemaphoreHandle)
 		gEnv->GetJobManager()->GetSemaphore(currentInfoBlockState.nSemaphoreHandle, this)->Release();
-
-	if (jobLambdaInvoker)
-	{
-		std::function<void()> empty;
-		jobLambdaInvoker.swap(empty);
-	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////

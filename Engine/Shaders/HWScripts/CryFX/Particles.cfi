@@ -136,7 +136,7 @@ float GetShadowOccl(float3 worldPos)
 	samplingContext.pointSamplerClamp = ssPointClamp;
 	samplingContext.bilinearSamplerWrap = ssForwardBilinearWrap;
 
-	return ShadowDepthTest((SShadowSamplingParams)cbShadowSampling, shadowCascades, samplingContext, worldPos, true, true);
+	return ShadowDepthTest(GetShadowSamplingParams(), shadowCascades, samplingContext, worldPos, true, true);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -877,7 +877,7 @@ pixoutParticle ParticlePS(OutputVS IN)
 		envMapIndex = Fwd_TiledLightsShadeInfo[particleInstance.envCubemapIndex].resIndex;
 		envMapColor = Fwd_TiledLightsShadeInfo[particleInstance.envCubemapIndex].color;
 		float3 envDiffuseColor = Fwd_DiffuseCubeArray.SampleLevel(
-			TrilinearClampSamplerState,
+			ssMaterialTrilinearClamp,
 			float4(vNormal.xyz, envMapIndex), 0.0).rgb;
 		envDiffuseColor *= envMapColor.rgb * particleParams.diffuseLighting;
 		cDiffuseAcc.rgb += envDiffuseColor;
@@ -911,7 +911,7 @@ pixoutParticle ParticlePS(OutputVS IN)
 					// #PFX2_TODO : copy-pasted from ShadeLib.cfi. tileShading also uses the exact same thing. Make it consistent.
 					const float numCMapMips = 6.0;
 					const float fGlossinessLod = numCMapMips - fGloss * numCMapMips;
-					cSpecularAcc.rgb = Fwd_SpecCubeArray.SampleLevel(TrilinearClampSamplerState, float4(vNormal.xyz, envMapIndex), fGlossinessLod).rgb;
+					cSpecularAcc.rgb = Fwd_SpecCubeArray.SampleLevel(ssMaterialTrilinearClamp, float4(vNormal.xyz, envMapIndex), fGlossinessLod).rgb;
 					cSpecularAcc.rgb *= envMapColor.rgb * envMapColor.a;
 				}
 			#endif	

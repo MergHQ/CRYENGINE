@@ -8,6 +8,8 @@
 #include <CrySystem/ICryPlugin.h>
 #include <array>
 
+#include <CryCore/Platform/CryLibrary.h>
+
 struct SPluginContainer;
 
 class CCryPluginManager final 
@@ -75,7 +77,10 @@ public:
 	}
 
 protected:
+#if CrySharedLibrarySupported
 	bool LoadPluginFromDisk(EType type, const char* path, bool notifyUserOnFailure = true);
+#endif
+
 	bool OnPluginLoaded(bool notifyUserOnFailure = true);
 	void OnPluginUnloaded(Cry::IEnginePlugin* pPlugin);
 

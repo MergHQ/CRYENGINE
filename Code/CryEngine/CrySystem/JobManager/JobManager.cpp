@@ -404,13 +404,46 @@ JobManager::CJobManager::CJobManager()
 
 const bool JobManager::CJobManager::WaitForJob(JobManager::SJobState& rJobState) const
 {
+	static ICVar* isActiveWaitEnableCVar = gEnv->pConsole->GetCVar("sys_job_system_active_wait_enabled");
+	if (!rJobState.syncVar.NeedsToWait())
+	{
+		return true;
+	}
+
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
 	SJobProfilingData* pJobProfilingData = gEnv->GetJobManager()->GetProfilingData(rJobState.nProfilerIndex);
 	pJobProfilingData->nWaitBegin = gEnv->pTimer->GetAsyncTime();
 	pJobProfilingData->nThreadId = CryGetCurrentThreadId();
 #endif
 
+	// Allow Main and Render Thread to process work if they hit a wait call
+	const threadID curThreadId = CryGetCurrentThreadId();
+	bool processJobsWhileWaiting = false;
+
+	if (isActiveWaitEnableCVar->GetIVal() == 1)
+	{
+		if (gEnv->pRenderer)
+		{
+			threadID mainThreadID = 0;
+			threadID renderThreadID = 0;
+			gEnv->pRenderer->GetThreadIDs(mainThreadID, renderThreadID);
+			processJobsWhileWaiting = (curThreadId == mainThreadID) || (curThreadId == renderThreadID);
+		}
+		else
+		{
+			processJobsWhileWaiting = (curThreadId == gEnv->mMainThreadId);
+		}
+	}	
+
+	if (processJobsWhileWaiting)
+	{		
+		ActiveWaitOnJobState(rJobState);
+	}
+
+	// Unfortunately we don't know if the jobs that are synced to this job state are in the regular/blocking/streaming job queue
+	// Assume for now  that they are in the regular queue
 	rJobState.syncVar.Wait();
+
 
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
 	pJobProfilingData->nWaitEnd = gEnv->pTimer->GetAsyncTime();
@@ -419,6 +452,7 @@ const bool JobManager::CJobManager::WaitForJob(JobManager::SJobState& rJobState)
 
 	return true;
 }
+
 
 ColorB JobManager::CJobManager::GenerateColorBasedOnName(const char* name)
 {
@@ -1588,6 +1622,20 @@ void JobManager::CJobManager::AddBlockingFallbackJob(JobManager::SInfoBlock* pIn
 {
 	assert(m_pFallBackBackEnd);
 	static_cast<BlockingBackEnd::CBlockingBackEnd*>(m_pBlockingBackEnd)->AddBlockingFallbackJob(pInfoBlock, nWorkerThreadID);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void JobManager::CJobManager::ActiveWaitOnJobState(JobManager::SJobState& jobState) const
+{
+	if (!jobState.syncVar.NeedsToWait())
+	{
+		return;
+	}
+
+	// Unfortunately we do not know if the jobState targets the Regular, Fallback or Blocking backend.
+	// We assume that it is the Regular backend
+	assert(m_pThreadBackEnd);
+	static_cast<ThreadBackEnd::CThreadBackEnd*>(m_pThreadBackEnd)->AddTempWorkerUntilJobStateIsComplete(jobState);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

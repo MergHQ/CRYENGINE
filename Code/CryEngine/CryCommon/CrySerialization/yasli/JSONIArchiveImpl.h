@@ -981,6 +981,15 @@ bool JSONIArchive::operator()(KeyValueDictionaryInterface& ser, const char* name
 	if (findName(name)) {
 		bool containerBracket = openBracket();
 		if (containerBracket) {
+
+			// Skip spaces
+			while (token_.end[0] == ' ')
+				++token_.end;
+
+			// Handle empty container
+			if (token_.end[0] == '}')
+				return false;
+
 			stack_.push_back(Level());
 			stack_.back().start = token_.end;
 
@@ -1012,6 +1021,14 @@ bool JSONIArchive::operator()(KeyValueDictionaryInterface& ser, const char* name
 		}
 		else if(openContainerBracket()) // Fall back to legacy parsing for backwards compatibility
 		{
+			// Skip spaces
+			while (token_.end[0] == ' ')
+				++token_.end;
+
+			// Handle empty container
+			if (token_.end[0] == ']')
+				return false;
+
 			stack_.push_back(Level());
 			stack_.back().start = token_.end;
 

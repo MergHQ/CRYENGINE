@@ -128,7 +128,7 @@ SamplerState ssForwardBilinearWrap : register(s10) = SS_MaterialBilinearWrap;
 
 struct v2f
 {
-	float4 HPosition   : POSITION;
+	float4 HPosition   : SV_POSITION;
 	float4 baseTC      : TEXCOORDN; 
 	float4 screenProj  : TEXCOORDN; 
 	half4 Color        : TEXCOORDN; 

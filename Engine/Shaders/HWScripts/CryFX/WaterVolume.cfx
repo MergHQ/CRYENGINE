@@ -385,7 +385,7 @@ struct a2v
 struct v2f
 {
 #if !%WATER_TESSELLATION_DX11 || %_RT_NO_TESSELLATION
-	float4 Position		: POSITION;
+	float4 Position		: SV_POSITION;
 #endif
 
 	float4 baseTC	  : TEXCOORDN;
@@ -402,7 +402,7 @@ struct v2f
 
 struct v2f_hs
 {
-	float4 Position		: POSITION; 
+	float4 Position		: SV_POSITION; 
 	float4 baseTC	  : TEXCOORDN;
 	float4 screenProj : TEXCOORDN; 
 	half4  vView  	  : TEXCOORDN;

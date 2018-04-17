@@ -46,7 +46,7 @@ CVegetationObject::CVegetationObject(int id)
 
 	// Int vars.
 	mv_size = 1.0f;
-	mv_size->SetLimits(0.1f, 100.0f, 0.0f, true, true);
+	mv_size->SetLimits(0.1f, 3.0f, 0.0f, true, true);
 
 	mv_hmin = GetIEditorImpl()->GetHeightmap()->GetWaterLevel();
 	mv_hmin->SetLimits(0.0f, 4096.0f, 0.0f, true, true);
@@ -71,7 +71,7 @@ CVegetationObject::CVegetationObject(int id)
 	mv_bending = 0.0f;
 	mv_bending->SetLimits(0, 100, 0.0f, true, false);
 	mv_sizevar = 0;
-	mv_sizevar->SetLimits(0, 100, 0.0f, true, false);
+	mv_sizevar->SetLimits(0, 1.0f, 0.0f, true, true);
 	mv_rotationRangeToTerrainNormal = 0;
 	mv_rotationRangeToTerrainNormal->SetLimits(0, 100, 0.0f, true, false);
 

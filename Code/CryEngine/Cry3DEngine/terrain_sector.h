@@ -422,7 +422,8 @@ public:
 		memset(&m_arrfDistance, 0, sizeof(m_arrfDistance));
 		m_nNodesCounter++;
 	}
-	~CTerrainNode();
+	virtual ~CTerrainNode();
+
 	static void   ResetStaticData();
 	bool          CheckVis(bool bAllIN, bool bAllowRenderIntoCBuffer, const SRenderingPassInfo& passInfo, uint32 passCullMask);
 	void          SetupTexturing(bool bMakeUncompressedForEditing, const SRenderingPassInfo& passInfo);

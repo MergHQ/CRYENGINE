@@ -3,7 +3,7 @@
 
 struct v2fCaustic
 {
-	float4 Position		: POSITION;
+	float4 Position		: SV_POSITION;
 
  	float4 baseTC	  : TEXCOORDN;
  	half4  vView  	  : TEXCOORDN;

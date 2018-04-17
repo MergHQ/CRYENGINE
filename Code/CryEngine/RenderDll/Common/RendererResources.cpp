@@ -1765,12 +1765,12 @@ SEnvTexture* CRendererResources::FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool 
 	}
 	else if (fDelta > fTimeInterval)
 		nUpdate = firstForUse;
-	if (nUpdate == -2)
+	if (nUpdate == -2 && firstForUse >= 0)
 	{
 		// No need to update (Up to date)
 		return &s_EnvTexts[firstForUse];
 	}
-	if (!s_EnvTexts[nUpdate].m_pTex)
+	if (nUpdate >= 0 && !s_EnvTexts[nUpdate].m_pTex)
 		return NULL;
 	if (nUpdate >= 0)
 	{

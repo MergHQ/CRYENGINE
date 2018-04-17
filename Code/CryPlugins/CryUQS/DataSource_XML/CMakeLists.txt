@@ -29,21 +29,7 @@ add_sources("UQS_uber_datasource_xml.cpp"
 end_sources()
 #END-FILE-LIST
 
-CryEngineStaticModule(CryUQS_DataSource_XML PCH "datasource_xml/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
-
-target_include_directories(${THIS_PROJECT}
-	PRIVATE datasource_xml
-	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
-	INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../.."
-)
-
-if(OPTION_UQS_SCHEMATYC_SUPPORT)
-	target_include_directories(${THIS_PROJECT}
-		PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface"
-		PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface"
-	)
-endif()
-
+macro (CryUQS_DataSource_XML_SetupOptions)
 if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(${THIS_PROJECT} PRIVATE
 		-Wno-unused-variable
@@ -78,3 +64,26 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		-Wno-switch
 	)
 endif()
+
+target_include_directories(${THIS_PROJECT}
+	PRIVATE datasource_xml
+	PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+	INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../.."
+)
+
+if(OPTION_UQS_SCHEMATYC_SUPPORT)
+	target_include_directories(${THIS_PROJECT}
+		PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface"
+		PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/STDEnv/Interface"
+	)
+endif()
+endmacro()
+
+CryEngineStaticModule(CryUQS_DataSource_XML PCH "datasource_xml/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
+CryUQS_DataSource_XML_SetupOptions()
+
+CryEngineStaticModule(CryUQS_DataSource_XML_shareable FORCE_SHARED PCH "datasource_xml/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
+CryUQS_DataSource_XML_SetupOptions()
+
+
+

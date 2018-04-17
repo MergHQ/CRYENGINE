@@ -428,12 +428,12 @@ struct IClipVolume
 	};
 
 	virtual ~IClipVolume() {};
-	virtual void         GetClipVolumeMesh(_smart_ptr<IRenderMesh>& renderMesh, Matrix34& worldTM) const = 0;
-	virtual const AABB&  GetClipVolumeBBox() const = 0;
-	virtual bool         IsPointInsideClipVolume(const Vec3& point) const = 0;
+	virtual void        GetClipVolumeMesh(_smart_ptr<IRenderMesh>& renderMesh, Matrix34& worldTM) const = 0;
+	virtual const AABB& GetClipVolumeBBox() const = 0;
+	virtual bool        IsPointInsideClipVolume(const Vec3& point) const = 0;
 
-	virtual uint8 GetStencilRef() const = 0;
-	virtual uint  GetClipVolumeFlags() const = 0;
+	virtual uint8       GetStencilRef() const = 0;
+	virtual uint        GetClipVolumeFlags() const = 0;
 };
 
 //! Provides information about the different VisArea volumes.
@@ -2488,62 +2488,62 @@ struct SRenderingPassInfo
 	static SRenderingPassInfo CreateTempRenderingInfo(SRendItemSorter s, const SRenderingPassInfo& rPassInfo);
 
 	// state getter
-	bool                    IsGeneralPass() const;
+	bool                             IsGeneralPass() const;
 
-	bool                    IsRecursivePass() const;
-	uint32                  GetRecursiveLevel() const;
+	bool                             IsRecursivePass() const;
+	uint32                           GetRecursiveLevel() const;
 
-	bool                    IsShadowPass() const;
-	bool                    IsCachedShadowPass() const;
-	EShadowMapType          GetShadowMapType() const;
-	bool                    IsDisableRenderChunkMerge() const;
+	bool                             IsShadowPass() const;
+	bool                             IsCachedShadowPass() const;
+	EShadowMapType                   GetShadowMapType() const;
+	bool                             IsDisableRenderChunkMerge() const;
 
-	bool                    IsAuxWindow() const;
+	bool                             IsAuxWindow() const;
 
-	threadID                ThreadID() const;
-	void                    SetThreadID(threadID id) { m_nThreadID = static_cast<uint8>(id); }
+	threadID                         ThreadID() const;
+	void                             SetThreadID(threadID id) { m_nThreadID = static_cast<uint8>(id); }
 
-	int                     GetFrameID() const;
-	uint32                  GetMainFrameID() const;
+	int                              GetFrameID() const;
+	uint32                           GetMainFrameID() const;
 
-	const CCamera&          GetCamera() const;
-	bool                    IsCameraUnderWater() const;
+	const CCamera&                   GetCamera() const;
+	bool                             IsCameraUnderWater() const;
 
-	float                   GetZoomFactor() const;
-	float                   GetInverseZoomFactor() const;
-	bool                    IsZoomActive() const;
-	bool                    IsZoomInProgress() const;
+	float                            GetZoomFactor() const;
+	float                            GetInverseZoomFactor() const;
+	bool                             IsZoomActive() const;
+	bool                             IsZoomInProgress() const;
 
-	bool                    RenderShadows() const;
-	bool                    RenderBrushes() const;
-	bool                    RenderVegetation() const;
-	bool                    RenderEntities() const;
-	bool                    RenderTerrain() const;
-	bool                    RenderWaterOcean() const;
-	bool                    RenderParticles() const;
-	bool                    RenderDecals() const;
-	bool                    RenderTerrainDetailMaterial() const;
-	bool                    RenderFarSprites() const;
-	bool                    RenderMergedMeshes() const;
-	bool                    RenderWaterWaves() const;
-	bool                    RenderRoads() const;
-	bool                    RenderWaterVolumes() const;
-	bool                    RenderClouds() const;
-	bool                    RenderGeomCaches() const;
+	bool                             RenderShadows() const;
+	bool                             RenderBrushes() const;
+	bool                             RenderVegetation() const;
+	bool                             RenderEntities() const;
+	bool                             RenderTerrain() const;
+	bool                             RenderWaterOcean() const;
+	bool                             RenderParticles() const;
+	bool                             RenderDecals() const;
+	bool                             RenderTerrainDetailMaterial() const;
+	bool                             RenderFarSprites() const;
+	bool                             RenderMergedMeshes() const;
+	bool                             RenderWaterWaves() const;
+	bool                             RenderRoads() const;
+	bool                             RenderWaterVolumes() const;
+	bool                             RenderClouds() const;
+	bool                             RenderGeomCaches() const;
 
-	bool                    IsRenderingCubemap() const;
+	bool                             IsRenderingCubemap() const;
 
-	uint8                   ShadowFrustumSide() const;
-	uint8                   ShadowFrustumLod() const;
-	uint8                   ShadowCacheLod() const;
+	uint8                            ShadowFrustumSide() const;
+	uint8                            ShadowFrustumLod() const;
+	uint8                            ShadowCacheLod() const;
 
-	CRenderView*            GetRenderView() const;
-	IRenderView*            GetIRenderView() const;
+	CRenderView*                     GetRenderView() const;
+	IRenderView*                     GetIRenderView() const;
 
-	SRendItemSorter&        GetRendItemSorter() const                   { return m_renderItemSorter; };
-	void                    OverrideRenderItemSorter(SRendItemSorter s) { m_renderItemSorter = s; }
+	SRendItemSorter&                 GetRendItemSorter() const                                 { return m_renderItemSorter; };
+	void                             OverrideRenderItemSorter(SRendItemSorter s)               { m_renderItemSorter = s; }
 
-	const SDisplayContextKey& GetDisplayContextKey() const   { return m_displayContextKey; }
+	const SDisplayContextKey&        GetDisplayContextKey() const                              { return m_displayContextKey; }
 
 	void                             SetShadowPasses(class std::vector<SRenderingPassInfo>* p) { m_pShadowPasses = p; }
 	std::vector<SRenderingPassInfo>* GetShadowPasses() const                                   { return m_pShadowPasses; }
@@ -2590,12 +2590,12 @@ private:
 	IRenderViewPtr m_pRenderView;
 
 	// members used only in shadow pass
-	uint8   nShadowSide;
-	uint8   nShadowLod;
-	uint8   nShadowCacheLod = 0;
-	uint8   m_nZoomInProgress = false;
-	uint8   m_nZoomMode = 0;
-	uint8   m_bAuxWindow = false;
+	uint8 nShadowSide;
+	uint8 nShadowLod;
+	uint8 nShadowCacheLod = 0;
+	uint8 m_nZoomInProgress = false;
+	uint8 m_nZoomMode = 0;
+	uint8 m_bAuxWindow = false;
 
 	// Windows handle of the target Display Context in the multi-context rendering (in Editor)
 	SDisplayContextKey m_displayContextKey;
@@ -2850,7 +2850,7 @@ inline void SRenderingPassInfo::SetCamera(const CCamera& cam)
 	cam.CalculateRenderMatrices();
 	m_pCamera = gEnv->p3DEngine->GetRenderingPassCamera(cam);
 	m_bCameraUnderWater = gEnv->p3DEngine->IsUnderWater(cam.GetPosition());
-	m_fZoomFactor = 0.2f + 0.8f * (RAD2DEG(cam.GetFov()) / 60.f);
+	m_fZoomFactor = 0.4f + 0.6f * (RAD2DEG(cam.GetFov()) / 60.f);
 	m_nZoomInProgress = 0;
 	m_nZoomMode = 0;
 }

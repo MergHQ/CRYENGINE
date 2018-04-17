@@ -70,10 +70,10 @@ AuxGeomVS( SAuxGeomApp2VS IN )
 }
 
 // Default vertex shader to transform auxiliary 3D geometries
-SAuxGeomApp2VS
+SAuxVS2PSWithColor
 AuxGeomTextureVS( SAuxGeomApp2VS IN )
 {
-  SAuxGeomApp2VS OUT;
+  SAuxVS2PSWithColor OUT;
 
   OUT.pos = mul( cbAuxGeom.matViewProj, IN.pos );
   OUT.col = GetInputColor( IN.col );
@@ -113,7 +113,7 @@ SamplerState smpAux : register(s0);
 
 // Default pixel shader to render auxiliary 2D/3D geometries and geometry objects with texture
 float4
-AuxGeomTexturePS( SAuxGeomApp2VS IN ) : SV_Target0
+AuxGeomTexturePS( SAuxVS2PSWithColor IN ) : SV_Target0
 {
   float4 col = IN.col;
   float4 tex = GetTexture2D(texAux, smpAux, IN.tex.xy);

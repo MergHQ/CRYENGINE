@@ -32,6 +32,7 @@ CRenderOutput::CRenderOutput(CTexture* pColorTexture, uint32 clearFlags, ColorF 
 
 CRenderOutput::CRenderOutput(SDynTexture* pDynTexture, int32 outputWidth, int32 outputHeight, bool useTemporaryDepthBuffer, uint32 clearFlags, ColorF clearColor, float clearDepth)
 	: m_pDynTexture(pDynTexture)
+	, m_pColorTarget(pDynTexture->m_pTexture)
 	, m_outputType(EOutputType::DynTexture)
 	, m_bUseTempDepthBuffer(true)
 	, m_clearTargetFlag(clearFlags)

@@ -131,6 +131,7 @@ void LoadTerrain(TDocMultiArchive& arrXmlAr)
 
 void LoadGameEngineLevel(const string& filename, string currentMissionName)
 {
+	HEAP_CHECK
 	LOADING_TIME_PROFILE_SECTION_NAMED("Game Engine level load");
 	CAutoLogTime logtime("Game Engine level load");
 	string szLevelPath = PathUtil::GetPathWithoutFilename(filename);

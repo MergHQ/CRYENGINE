@@ -189,6 +189,7 @@ void CCryPluginManager::LoadProjectPlugins()
 
 	m_bLoadedProjectPlugins = true;
 
+#if CrySharedLibrarySupported
 	// Load plug-ins specified in the .cryproject file from disk
 	CProjectManager* pProjectManager = static_cast<CProjectManager*>(gEnv->pSystem->GetIProjectManager());
 	const std::vector<SPluginDefinition>& pluginDefinitions = pProjectManager->GetPluginDefinitions();
@@ -231,8 +232,10 @@ void CCryPluginManager::LoadProjectPlugins()
 		LoadPluginFromDisk(userAnalyticsPlugin.type, userAnalyticsPlugin.path, false);
 	}
 #endif
+#endif // CrySharedLibrarySupported
 }
 
+#if CrySharedLibrarySupported
 bool CCryPluginManager::LoadPluginFromDisk(EType type, const char* szPath, bool notifyUserOnFailure)
 {
 	CRY_ASSERT_MESSAGE(m_bLoadedProjectPlugins, "Plug-ins must not be loaded before LoadProjectPlugins!");
@@ -342,6 +345,7 @@ bool CCryPluginManager::LoadPluginFromDisk(EType type, const char* szPath, bool 
 
 	return OnPluginLoaded(notifyUserOnFailure);
 }
+#endif
 
 bool CCryPluginManager::OnPluginLoaded(bool notifyUserOnFailure)
 {

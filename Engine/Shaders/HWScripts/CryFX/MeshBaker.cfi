@@ -28,7 +28,7 @@ struct a2v
 
 struct v2f
 {
-  float4 screenPos : POSITION;
+  float4 screenPos : SV_POSITION;
   float3 pos	   : TEXCOORDN; // starting position of ray
   float3 dir	   : TEXCOORDN; // direction of ray
 

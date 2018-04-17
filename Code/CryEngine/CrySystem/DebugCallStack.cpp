@@ -756,22 +756,20 @@ void DebugCallStack::FillStackTrace(int maxStackEntries, int skipNumFunctions, H
 			if (!funcName.empty())
 			{
 				m_functions.push_back(funcName);
-			}
-			else
-			{
-				void* p = (void*)(uintptr_t)stack_frame.AddrPC.Offset;
-				char str[80];
-				cry_sprintf(str, "function=0x%p", p);
-				m_functions.push_back(str);
+				continue;
 			}
 		}
-		else
-		{
-			void* p = (void*)(uintptr_t)stack_frame.AddrPC.Offset;
-			char str[80];
-			cry_sprintf(str, "function=0x%p", p);
-			m_functions.push_back(str);
-		}
+
+		// If we don't have a symbol for the address, output module name and offset from base address so we can look it up later
+		IMAGEHLP_MODULE64 modInfo;
+		modInfo.SizeOfStruct = sizeof(modInfo);
+		SymGetModuleInfo64(GetCurrentProcess(), stack_frame.AddrPC.Offset, &modInfo);
+		DWORD64 modOffset = stack_frame.AddrPC.Offset - modInfo.BaseOfImage;
+
+		void* p = (void*)(uintptr_t)stack_frame.AddrPC.Offset;
+		char str[300];
+		cry_sprintf(str, "function=%s+0x%" PRIx64, strrchr(modInfo.ImageName, '\\') + 1, modOffset);
+		m_functions.push_back(str);
 	}
 }
 

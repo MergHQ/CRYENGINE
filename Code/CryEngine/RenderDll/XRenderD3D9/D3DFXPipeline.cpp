@@ -109,18 +109,6 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 	if (nPrFlags & FRT_RENDTYPE_CURSCENE)
 		return false;
 
-	if (!pRT->m_pTarget)
-	{
-		if (pRT->m_refSamplerID >= 0 && pRT->m_refSamplerID < EFTT_MAX)
-		{
-			IDynTextureSourceImpl* pDynTexSrc = (IDynTextureSourceImpl*) pRes->m_Textures[pRT->m_refSamplerID]->m_Sampler.m_pDynTexSource;
-			assert(pDynTexSrc);
-			//if (pDynTexSrc)
-				//return m_pRT->RC_DynTexSourceUpdate(pDynTexSrc, pObj->m_fDistance);
-		}
-		return false;
-	}
-
 	CTexture* Tex           = pRT->m_pTarget;
 	SEnvTexture* pEnvTex    = NULL;
 
@@ -143,13 +131,13 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 			return false;
 		pEnvTex = &CRendererResources::s_CustomRT_2D[pRT->m_nIDInPool];
 
-		if (nWidth  == -1) nWidth  = CRendererResources::s_renderWidth;
-		if (nHeight == -1) nHeight = CRendererResources::s_renderHeight;
-
 		// Very hi specs render reflections at half res - lower specs (and consoles) at quarter res
 		float fSizeScale = (CV_r_waterreflections_quality == 5) ? 0.5f : 0.25f;
-		nWidth  = uint32(sTexLimitRes(nWidth , uint32(CRendererResources::s_resourceWidth )) * fSizeScale);
-		nHeight = uint32(sTexLimitRes(nHeight, uint32(CRendererResources::s_resourceHeight)) * fSizeScale);
+
+		if (nWidth == -1)
+			nWidth = uint32(sTexLimitRes(CRendererResources::s_renderWidth, uint32(CRendererResources::s_resourceWidth)) * fSizeScale);
+		if (nHeight == -1)
+			nHeight = uint32(sTexLimitRes(CRendererResources::s_renderHeight, uint32(CRendererResources::s_resourceHeight)) * fSizeScale);
 
 		ETEX_Format eTF = pRT->m_eTF;
 		// $HDR
@@ -158,9 +146,13 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 		if (!pEnvTex->m_pTex || pEnvTex->m_pTex->GetFormat() != eTF)
 		{
 			char name[128];
-			cry_sprintf(name, "$RT_2D_%d", m_TexGenID++);
+			cry_sprintf(name, "$RT_ENV_2D_%d", m_TexGenID++);
 			int flags = FT_NOMIPS | FT_STATE_CLAMP | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
 			pEnvTex->m_pTex = new SDynTexture(nWidth, nHeight, eTF, eTT_2D, flags, name);
+			pEnvTex->m_pTex->Update(nWidth, nHeight);
+			pRT->m_nWidth = nWidth;
+			pRT->m_nHeight = nHeight;
+			pRT->m_pTarget = pEnvTex->m_pTex->m_pTexture;
 		}
 
 		CRY_ASSERT(nWidth  > 0 && nWidth  <= CRendererResources::s_resourceWidth);
@@ -381,7 +373,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 	bool bOceanRefl             = false;
 
 	SRenderViewInfo::EFlags recusriveViewFlags = SRenderViewInfo::eFlags_None;
-
+	passInfo.GetRenderView()->CalculateViewInfo();
 	const auto& viewInfo = passInfo.GetRenderView()->GetViewInfo(CCamera::eEye_Left);
 
 	// Set the camera
@@ -412,13 +404,13 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 		plane[3] = -Pl.d;
 
 		Matrix44 camMat = viewInfo.viewMatrix;
-		Vec3  vPrevDir = Vec3(-camMat(0, 2), -camMat(1, 2), -camMat(2, 2));
-		Vec3  vPrevUp  = Vec3(camMat(0, 1), camMat(1, 1), camMat(2, 1));
-		Vec3  vNewDir  = Pl.MirrorVector(vPrevDir);
-		Vec3  vNewUp   = Pl.MirrorVector(vPrevUp);
-		float fDot     = vPrevPos.Dot(Pl.n) - Pl.d;
-		Vec3  vNewPos  = vPrevPos - Pl.n * 2.0f * fDot;
-		Matrix34 m     = sMatrixLookAt(vNewDir, vNewUp, tmp_cam.GetAngles()[2]);
+		Vec3  vPrevDir  = Vec3(camMat(0, 2), camMat(1, 2), camMat(2, 2));
+		Vec3  vPrevUp   = Vec3(camMat(0, 1), camMat(1, 1), camMat(2, 1));
+		Vec3  vNewDir   = -Pl.MirrorVector(vPrevDir);
+		Vec3  vNewUp    = -Pl.MirrorVector(vPrevUp);
+		float fDot      = vPrevPos.Dot(Pl.n) - Pl.d;
+		Vec3  vNewPos   = vPrevPos - Pl.n * 2.0f * fDot;
+		Matrix34 m      = sMatrixLookAt(vNewDir, vNewUp, tmp_cam.GetAngles()[2]);
 
 		// New position + offset along view direction - minimizes projection artefacts
 		m.SetTranslation(vNewPos + Vec3(vNewDir.x, vNewDir.y, 0));
@@ -435,7 +427,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 
 		assert(pEnvTex);
 		PREFAST_ASSUME(pEnvTex);
-		tmp_cam.SetFrustum((int)(pEnvTex->m_pTex->GetWidth() * tmp_cam.GetProjRatio()), pEnvTex->m_pTex->GetHeight(), tmp_cam.GetFov(), fDistOffset, fMaxDist);       //tmp_cam.GetFarPlane());
+		tmp_cam.SetFrustum((int)(pEnvTex->m_pTex->GetWidth() * tmp_cam.GetProjRatio()), pEnvTex->m_pTex->GetHeight(), tmp_cam.GetFov(), fDistOffset, fMaxDist);
 
 		// Allow camera update
 		if (bMGPUAllowNextUpdate)
@@ -552,16 +544,11 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 	CRenderOutputPtr pRenderOutput = nullptr;
 	if (m_nGraphicsPipeline >= 3)
 	{
-		pRenderOutput = std::make_shared<CRenderOutput>(pEnvTex->m_pTex, nWidth, nHeight, pRT->m_bTempDepth, (pRT->m_nFlags & FRT_CLEAR), pRT->m_ClearColor, pRT->m_fClearDepth);
+		pRenderOutput = std::make_shared<CRenderOutput>(pEnvTex->m_pTex, pEnvTex->m_pTex->m_nWidth, pEnvTex->m_pTex->m_nHeight, pRT->m_bTempDepth, (pRT->m_nFlags & FRT_CLEAR), pRT->m_ClearColor, pRT->m_fClearDepth);
 	}
 
 	float fAnisoScale = 1.0f;
 	{
-		if (bMirror)
-		{
-			pEnvTex->SetMatrix(tmp_cam);
-		}
-
 		//gRenDev->m_renderThreadInfo[nThreadList].m_PersFlags |= RBPF_OBLIQUE_FRUSTUM_CLIPPING | RBPF_MIRRORCAMERA;     // | RBPF_MIRRORCULL; ??
 
 		Plane obliqueClipPlane;
@@ -607,19 +594,24 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 			break;
 		}
 
-		int nRFlags = SHDF_ALLOWHDR | SHDF_NO_DRAWNEAR;
+		int nRFlags = SHDF_ALLOWHDR | SHDF_NO_DRAWNEAR | SHDF_FORWARD_MINIMAL;
 
 		// disable caustics if camera above water
 		if (obliqueClipPlane.d < 0)
 			nRFlags |= SHDF_NO_DRAWCAUSTICS;
 
+		if (bMirror)
+		{
+			pEnvTex->SetMatrix(tmp_cam);
+		}
 
 		auto recursivePassInfo = SRenderingPassInfo::CreateRecursivePassRenderingInfo(bOceanRefl ? tmp_cam_mgpu : tmp_cam, nRenderPassFlags);
 		
 		SRenderViewInfo::EFlags recursiveViewFlags = SRenderViewInfo::eFlags_None;
-
 		recursiveViewFlags |= SRenderViewInfo::eFlags_DrawToTexure;
-		recursiveViewFlags |= SRenderViewInfo::eFlags_MirrorCamera;
+		if (!(nPrFlags & FRT_CAMERA_REFLECTED_WATERPLANE)) // projection matrix is already mirrored for ocean reflections
+			recursiveViewFlags |= SRenderViewInfo::eFlags_MirrorCamera;
+
 		CRenderView* pRecursiveRenderView = recursivePassInfo.GetRenderView();
 		pRecursiveRenderView->SetViewFlags(recursiveViewFlags);
 		pRecursiveRenderView->AssignRenderOutput(pRenderOutput);
