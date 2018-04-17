@@ -1593,8 +1593,8 @@ void CLevelSystem::OnLoadingStart(ILevelInfo* pLevelInfo)
 	m_fFilteredProgress = 0.f;
 	m_fLastTime = gEnv->pTimer->GetAsyncCurTime();
 
-	if(gEnv->IsEditor()) //pure game calls it from CCET_LoadLevel
-		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent( ESYSTEM_EVENT_LEVEL_LOAD_START,0,0 );
+	if (gEnv->IsEditor()) //pure game calls it from CCET_LoadLevel
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_START, 0, 0);
 
 #if CRY_PLATFORM_WINDOWS
 	/*
@@ -1895,6 +1895,15 @@ bool CLevelInfo::OpenLevelPak()
 			gEnv->pCryPak->OpenPack(levelmmpak, (unsigned)0, NULL, &fullLevelPakPath);
 			m_levelMMPakFullPath.assign(fullLevelPakPath.c_str());
 		}
+
+#if defined(FEATURE_SVO_GI)
+		string levelSvoPak = m_levelPath + string("/svogi.pak");
+		if (gEnv->pCryPak->IsFileExist(levelSvoPak))
+		{
+			gEnv->pCryPak->OpenPack(levelSvoPak, (unsigned)0, NULL, &fullLevelPakPath);
+			m_levelSvoPakFullPath.assign(fullLevelPakPath.c_str());
+		}
+#endif
 	}
 
 	gEnv->pCryPak->SetPacksAccessibleForLevel(GetName());
@@ -1916,6 +1925,12 @@ void CLevelInfo::CloseLevelPak()
 	{
 		gEnv->pCryPak->ClosePack(m_levelMMPakFullPath.c_str(), ICryPak::FLAGS_PATH_REAL);
 		stl::free_container(m_levelMMPakFullPath);
+	}
+
+	if (!m_levelSvoPakFullPath.empty())
+	{
+		gEnv->pCryPak->ClosePack(m_levelSvoPakFullPath.c_str(), ICryPak::FLAGS_PATH_REAL);
+		stl::free_container(m_levelSvoPakFullPath);
 	}
 }
 
@@ -2145,7 +2160,7 @@ void CLevelSystem::UnLoadLevel()
 		pRenderer->FlushRTCommands(true, true, true);
 
 		CryComment("Deleting Render meshes, render resources and flush texture streaming");
-		
+
 		// This may also release some of the materials.
 		pRenderer->FreeSystemResources(flags);
 

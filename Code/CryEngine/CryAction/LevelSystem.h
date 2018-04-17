@@ -77,6 +77,7 @@ private:
 
 	string                                 m_levelPakFullPath;
 	string                                 m_levelMMPakFullPath;
+	string                                 m_levelSvoPakFullPath;
 
 	std::vector<string>                    m_gamerules;
 	int                                    m_heightmapSize;

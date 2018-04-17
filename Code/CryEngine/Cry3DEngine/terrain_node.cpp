@@ -247,7 +247,8 @@ bool CTerrainNode::CheckVis(bool bAllInside, bool bAllowRenderIntoCBuffer, const
 	float distance = m_arrfDistance[passInfo.GetRecursiveLevel()] = GetPointToBoxDistance(rCamera.GetPosition(), boxWS);
 
 	// check culling of all passes
-	passCullMask = COctreeNode::UpdateCullMask(m_onePassTraversalFrameId, m_onePassTraversalShadowCascades, 0, passInfo, boxWS, distance, rCamera.GetFarPlane(), false, bAllInside, &m_occlusionTestClient, passCullMask);
+	const float maxViewDistanceUnlimited = 1000000.f; // make sure max view distance check does not cull terrain sectors, only camera far plane is used for that
+	passCullMask = COctreeNode::UpdateCullMask(m_onePassTraversalFrameId, m_onePassTraversalShadowCascades, 0, passInfo, boxWS, distance, maxViewDistanceUnlimited, false, bAllInside, &m_occlusionTestClient, passCullMask);
 
 	// stop if no any passes see this node
 	if (!passCullMask)
@@ -428,13 +429,14 @@ void CTerrainNode::Init(int x1, int y1, int nNodeSize, CTerrainNode* pParent, bo
 	assert(x1 >= 0 && y1 >= 0 && x1 < CTerrain::GetTerrainSize() && y1 < CTerrain::GetTerrainSize());
 	GetTerrain()->m_arrSecInfoPyramid[m_nTreeLevel][x1 / nSectorSize][y1 / nSectorSize] = this;
 
-	m_dwRndFlags |= ERF_CASTSHADOWMAPS;
+	m_dwRndFlags |= (ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS);
 	m_fWSMaxViewDist = 1000000.f;
 }
 
 CTerrainNode::~CTerrainNode()
 {
 	Get3DEngine()->FreeRenderNodeState(this);
+	CRY_ASSERT(!m_pTempData.load());
 
 	if (GetTerrain()->m_pTerrainUpdateDispatcher)
 		GetTerrain()->m_pTerrainUpdateDispatcher->RemoveJob(this);
