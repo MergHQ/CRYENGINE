@@ -87,6 +87,9 @@ public:
 	// Reset any cvar dependent states.
 	virtual void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) {}
 
+	// If this stage should be updated based on the given flags
+	virtual bool IsStageActive(EShaderRenderingFlags flags) const { return true; }
+
 public:
 	void                             SetRenderView(CRenderView* pRenderView) { m_pRenderView = pRenderView; }
 

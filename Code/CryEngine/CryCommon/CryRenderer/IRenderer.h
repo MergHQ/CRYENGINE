@@ -383,6 +383,7 @@ enum EShaderRenderingFlags
 	SHDF_NO_DRAWCAUSTICS    = BIT(14),
 	SHDF_NO_SHADOWGEN       = BIT(15),
 	SHDF_SECONDARY_VIEWPORT = BIT(16),
+	SHDF_FORWARD_MINIMAL    = BIT(17),
 };
 
 //////////////////////////////////////////////////////////////////////
