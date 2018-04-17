@@ -62,6 +62,8 @@ namespace Cry
 			{
 				m_pEntity->UpdateComponentEventMask(this);
 
+				m_axis = m_axis.GetNormalized();
+
 				Reset();
 			}
 		}
@@ -73,5 +75,23 @@ namespace Cry
 
 			return bitFlags;
 		}
+
+#ifndef RELEASE
+		void CPlaneConstraintComponent::Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const
+		{
+			if (context.bSelected)
+			{
+				Quat rot = Quat::CreateRotationV0V1(Vec3(0, 0, 1), m_axis).GetInverted() * Quat(m_pEntity->GetSlotLocalTM(GetEntitySlotId(), false)).GetInverted() * m_pEntity->GetRotation().GetInverted();
+
+				Vec3 pos1 = Vec3(-1, 1, 0) * rot + m_pEntity->GetWorldPos();
+				Vec3 pos2 = Vec3(1, 1, 0) * rot + m_pEntity->GetWorldPos();
+				Vec3 pos3 = Vec3(1, -1, 0) * rot + m_pEntity->GetWorldPos();
+				Vec3 pos4 = Vec3(-1, -1, 0) * rot + m_pEntity->GetWorldPos();
+
+				gEnv->pAuxGeomRenderer->DrawQuad(pos4, context.debugDrawInfo.color, pos3, context.debugDrawInfo.color, pos2, context.debugDrawInfo.color, pos1, context.debugDrawInfo.color);
+				gEnv->pAuxGeomRenderer->DrawQuad(pos1, context.debugDrawInfo.color, pos2, context.debugDrawInfo.color, pos3, context.debugDrawInfo.color, pos4, context.debugDrawInfo.color);
+			}
+		}
+#endif
 	}
 }
