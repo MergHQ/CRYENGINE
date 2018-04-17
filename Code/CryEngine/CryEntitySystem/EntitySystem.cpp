@@ -618,8 +618,8 @@ bool CEntitySystem::InitEntity(IEntity* pEntity, SEntitySpawnParams& params)
 	// initialize entity
 	if (!pCEntity->Init(params))
 	{
-		// The entity may have already be scheduled for deletion [7/6/2010 evgeny]
-		if (std::find(m_deletedEntities.begin(), m_deletedEntities.end(), pCEntity) == m_deletedEntities.end())
+		// The entity may have already be scheduled for deletion
+		if (!pCEntity->IsGarbage() || std::find(m_deletedEntities.begin(), m_deletedEntities.end(), pCEntity) == m_deletedEntities.end())
 		{
 			DeleteEntity(pCEntity);
 		}
@@ -770,19 +770,20 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 				}
 			}
 
+			// Mark the entity for deletion before sending the ENTITY_EVENT_DONE event
+			// This protects against cases where the event results in another deletion request for the same entity
+			pEntity->SetInternalFlag(CEntity::EInternalFlag::MarkedForDeletion, true);
+
 			// Send deactivate event.
 			SEntityEvent entevent;
 			entevent.event = ENTITY_EVENT_DONE;
 			entevent.nParam[0] = pEntity->GetId();
-			pEntity->SendEvent(entevent);
+			pEntity->SendEventInternal(entevent);
 
 			pEntity->PrepareForDeletion();
 
-			pEntity->ClearComponentEventListeners();
-
 			if (!(pEntity->m_flags & ENTITY_FLAG_UNREMOVABLE) && pEntity->m_keepAliveCounter == 0)
 			{
-				pEntity->m_flags |= ENTITY_FLAG_REMOVED;
 				if (forceRemoveImmediately)
 				{
 					DeleteEntity(pEntity);
@@ -798,8 +799,6 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 				// Unremovable entities. are hidden and deactivated.
 				pEntity->Hide(true);
 
-				pEntity->m_flags |= ENTITY_FLAG_REMOVED;
-
 				// remember kept alive entities to get rid of them as soon as they are no longer needed
 				if (pEntity->m_keepAliveCounter > 0 && !(pEntity->m_flags & ENTITY_FLAG_UNREMOVABLE))
 				{
@@ -808,6 +807,16 @@ void CEntitySystem::RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately, 
 			}
 		}
 	}
+}
+
+//////////////////////////////////////////////////////////////////////
+void CEntitySystem::ResurrectGarbageEntity(CEntity* pEntity)
+{
+	CRY_ASSERT(pEntity->HasInternalFlag(CEntity::EInternalFlag::MarkedForDeletion));
+	pEntity->SetInternalFlag(CEntity::EInternalFlag::MarkedForDeletion, false);
+
+	// Entity may have been queued for deletion
+	stl::find_and_erase(m_deletedEntities, pEntity);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -3176,14 +3185,16 @@ void CEntitySystem::EndCreateEntities()
 	m_pEntityLoadManager->OnBatchCreationCompleted();
 }
 
-void CEntitySystem::PurgeDeferredCollisionEvents(bool bForce)
+void CEntitySystem::PurgeDeferredCollisionEvents(bool force)
 {
-	// make sure we deleted entities which needed to keep alive for deferred execution when they are no longer needed
-	for (std::vector<CEntity*>::iterator it = m_deferredUsedEntities.begin(); it != m_deferredUsedEntities.end(); )
+	for (std::vector<CEntity*>::iterator it = m_deferredUsedEntities.begin(); it != m_deferredUsedEntities.end();)
 	{
-		if ((*it)->m_keepAliveCounter == 0 || bForce)
+		CEntity* pEntity = *it;
+
+		if (pEntity->m_keepAliveCounter == 0 || force)
 		{
-			stl::push_back_unique(m_deletedEntities, *it);
+			CRY_ASSERT_MESSAGE(pEntity->IsGarbage(), "Entity must have been marked as removed to be deferred deleted!");
+			stl::push_back_unique(m_deletedEntities, pEntity);
 			it = m_deferredUsedEntities.erase(it);
 		}
 		else

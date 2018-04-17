@@ -251,6 +251,9 @@ public:
 	virtual void                     ReleaseBSPTree3D(IBSPTree3D*& pTree) final;
 
 	void                             RemoveEntity(CEntity* pEntity, bool forceRemoveImmediately = false, bool ignoreSinks = false);
+	// Restore an entity that was marked for deletion (CEntity::IsGarbage)
+	void                             ResurrectGarbageEntity(CEntity* pEntity);
+	
 	void                             EnableComponentUpdates(IEntityComponent* pComponent, bool bEnable);
 	void                             EnableComponentPrePhysicsUpdates(IEntityComponent* pComponent, bool bEnable);
 
