@@ -264,11 +264,10 @@ CLocalizedStringsManager::CLocalizedStringsManager(ISystem* pSystem)
 	ILocalizationManager::TLocalizationBitfield availableLanguages = 0;
 	if (pPak)
 	{
-		stack_string const szLocalizationFolderPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR);
-		stack_string const szLocalizationSearch(szLocalizationFolderPath + "*.pak");
-		size_t const extensionLength = 4; // for ".pak"
+		stack_string const localizationFolderPath(PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR);
+		stack_string const localizationSearch(localizationFolderPath + "*.*");
 		_finddata_t fd;
-		intptr_t const handle = pPak->FindFirst(szLocalizationSearch.c_str(), &fd);
+		intptr_t const handle = pPak->FindFirst(localizationSearch.c_str(), &fd);
 
 		if (handle > -1)
 		{
@@ -276,28 +275,29 @@ CLocalizedStringsManager::CLocalizedStringsManager(ISystem* pSystem)
 
 			do
 			{
-				// drop files with not pak extension
-				if (0 != cry_stricmp(PathUtil::GetExt(fd.name),"pak"))
+				stack_string fileName = PathUtil::GetFileName(fd.name);
+				stack_string languageName;
+
+				if (0 == cry_stricmp(PathUtil::GetExt(fd.name), "pak") && pakSuffix.length() < fileName.length())
 				{
+					languageName = fileName.substr(0, fileName.length() - pakSuffix.length());
+				}
+				else if (fd.attrib & _A_SUBDIR)
+				{
+					size_t languageNameEnd = fileName.find("_xml");
+					if (languageNameEnd != stack_string::npos)
+						languageName = fileName.substr(0, languageNameEnd);
+				}
+
+				if (languageName.empty())
 					continue;
-				}
-				stack_string szLanguageName = PathUtil::GetFileName(fd.name);
-				
-				if (pakSuffix.length() < szLanguageName.length())
-				{
-					szLanguageName = szLanguageName.substr(0,szLanguageName.length()-pakSuffix.length());
-				}
-				else
-				{
-					continue;
-				}
 
 				// test language name against supported languages
 				for (int i = 0; i < ILocalizationManager::ePILID_MAX_OR_INVALID; i++)
 				{
 					char const* const szCurrentLanguage = LangNameFromPILID((ILocalizationManager::EPlatformIndependentLanguageID)i);
 
-					if (szLanguageName.compareNoCase(szCurrentLanguage) == 0)
+					if (languageName.compareNoCase(szCurrentLanguage) == 0)
 					{
 						availableLanguages |= ILocalizationManager::LocalizationBitfieldFromPILID((ILocalizationManager::EPlatformIndependentLanguageID)i);
 
@@ -724,12 +724,12 @@ bool CLocalizedStringsManager::LoadLocalizationDataByTag(
 	}
 
 	bool bResult = true;
-	stack_string const szLocalizationFolderPath(PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + m_pLanguage->sLanguage + GetPakSuffix() + CRY_NATIVE_PATH_SEPSTR);
+	stack_string const localizationFolderPath(PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + m_pLanguage->sLanguage + GetPakSuffix() + CRY_NATIVE_PATH_SEPSTR);
 	TStringVec& vEntries = it->second.filenames;
 
 	for (TStringVec::iterator it2 = vEntries.begin(); it2 != vEntries.end(); ++it2)
 	{
-		bResult &= DoLoadExcelXmlSpreadsheet(szLocalizationFolderPath.c_str() + *it2, it->second.id, bReload);
+		bResult &= DoLoadExcelXmlSpreadsheet(localizationFolderPath.c_str() + *it2, it->second.id, bReload);
 	}
 
 	if (m_cvarLocalizationDebug >= 2)
