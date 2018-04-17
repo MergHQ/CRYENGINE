@@ -113,7 +113,7 @@ struct a2v
 
 struct v2f
 {
-	float4 Position		: POSITION;
+	float4 Position		: SV_POSITION;
 	float4 baseTC		: TEXCOORDN;
 	float3 bumpTC		: TEXCOORDN;
 

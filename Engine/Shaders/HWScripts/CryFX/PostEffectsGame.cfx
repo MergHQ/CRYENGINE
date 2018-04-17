@@ -35,12 +35,6 @@ sampler2D perlinNoiseSampler : register (s6)
   AddressV = Wrap;	
 };
 
-sampler2D chartSampler = sampler_state
-{
-  Texture = $ColorChart;
-};
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Alien Interference techniques //////////////////////////////////////////////////////////////////
 
@@ -50,7 +44,7 @@ float4 AlienInterferenceTint;
 
 struct vtxOutAlienInterference
 {
-  float4 HPosition  : POSITION;
+  float4 HPosition  : SV_POSITION;
   float2 baseTC0    : TEXCOORDN;
   float2 baseTC1    : TEXCOORDN;
   float2 baseTC2    : TEXCOORDN;
@@ -165,7 +159,7 @@ sampler2D waterDropletsBumpSampler : register (s5)
 
 struct vtxOutWaterDroplets
 {
-  float4 HPosition  : POSITION;
+  float4 HPosition  : SV_POSITION;
   float2 baseTC     : TEXCOORDN;
   float4 noiseTC    : TEXCOORDN;
 };
@@ -247,7 +241,7 @@ SamplerState wfTrilinearWrapSampler : register(s1) = SS_TrilinearWrap;
 
 struct vtxOutWaterFlow
 {
-	float4 HPosition  : POSITION;
+	float4 HPosition  : SV_POSITION;
 	float2 baseTC    : TEXCOORDN;
 	float4 noiseTC    : TEXCOORDN;
 	float4 noiseTC2    : TEXCOORDN;
@@ -362,7 +356,7 @@ sampler2D frostAlphaSampler = sampler_state
 
 struct vtxOutScreenFrost
 {
-  float4 HPosition  : POSITION;
+  float4 HPosition  : SV_POSITION;
   float2 baseTC    : TEXCOORDN;
   float2 noiseTC0    : TEXCOORDN;  
   float2 noiseTC1    : TEXCOORDN;  
@@ -435,15 +429,15 @@ pixout ScreenFrostPS(vtxOutScreenFrost IN)
 
 ////////////////// technique /////////////////////
 
-technique ScreenFrost
-{
-  pass p0
-  {
-    VertexShader = ScreenFrostVS();
-    PixelShader = ScreenFrostPS();
-    CullMode = None;    
-  }
-}
+//technique ScreenFrost
+//{
+//  pass p0
+//  {
+//    VertexShader = ScreenFrostVS();
+//    PixelShader = ScreenFrostPS();
+//    CullMode = None;    
+//  }
+//}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// FlashBang technique //////////////////////////////////////////////////////////////////////
@@ -501,7 +495,7 @@ float4 vRainNormalMapParams;
 
 struct vtxOutRainDrops
 {
-  float4 HPosition  : POSITION;
+  float4 HPosition  : SV_POSITION;
   float2 tcBase0 : TEXCOORDN;   
   float2 tcBase1 : TEXCOORDN;   
   float2 tcBase2 : TEXCOORDN;   
@@ -509,7 +503,7 @@ struct vtxOutRainDrops
 
 struct vtxOutRainDropsExtinction
 {
-  float4 HPosition  : POSITION;     
+  float4 HPosition  : SV_POSITION;     
   float2 tcNormal0 : TEXCOORDN;   
   float2 tcNormal1 : TEXCOORDN;   
   float2 tcNormal2 : TEXCOORDN;   
@@ -675,7 +669,7 @@ technique RainDropsFinal
 
 struct vtxOutBinocularView
 {
-  float4 HPosition  : POSITION;
+  float4 HPosition  : SV_POSITION;
   float4 baseTC0     : TEXCOORD0;
   float4 baseTC1     : TEXCOORD1;
   float4 baseTC2     : TEXCOORD2;
@@ -809,15 +803,15 @@ pixout BinocularViewFinalNoTintingPS(vtxOut IN)
 
 ////////////////// technique /////////////////////
 
-technique BinocularView
-{
-  pass p0
-  {
-    VertexShader = BinocularViewVS() PostProcessGameVS;            
-    PixelShader = BinocularViewPS() PostProcessGamePS;
-    CullMode = None;        
-  }
-}
+//technique BinocularView
+//{
+//  pass p0
+//  {
+//    VertexShader = BinocularViewVS() PostProcessGameVS;            
+//    PixelShader = BinocularViewPS() PostProcessGamePS;
+//    CullMode = None;        
+//  }
+//}
 
 technique BinocularViewGlow
 {
@@ -857,7 +851,7 @@ SamplerState SolidFillBufferSampler : register(s0);
 
 struct vtxOutSilhouettes
 {
-  float4 HPosition  : POSITION;
+  float4 HPosition  : SV_POSITION;
   float4 baseTC0     : TEXCOORD0;
   float4 baseTC1     : TEXCOORD1;
   float4 baseTC2     : TEXCOORD2;
@@ -1160,7 +1154,7 @@ struct a2v_cch
 
 struct v2f_cch
 {
-	float4 HPosition : POSITION;	
+	float4 HPosition : SV_POSITION;	
 	float2 baseTC : TEXCOORD0;
 	float3 Color : TEXCOORD1;
 };
@@ -1344,7 +1338,7 @@ float4x4 sceneRainOccMtx;
 
 struct vtxOutRainOcc
 {
-	float4 HPosition    : POSITION;
+	float4 HPosition    : SV_POSITION;
 	float4 baseTC       : TEXCOORDN;
 	float3 occCoords0   : TEXCOORDN;
 	float3 occCoords1   : TEXCOORDN;
@@ -1437,7 +1431,7 @@ cbuffer SceneRainCB : register(b0)
 
 struct vtxOutRain
 {
-  float4 HPosition    : POSITION;
+  float4 HPosition    : SV_POSITION;
   float4 tcProj	      : TEXCOORDN;
   float4 scaledTCProj : TEXCOORDN;
   float4 baseTC       : TEXCOORDN;

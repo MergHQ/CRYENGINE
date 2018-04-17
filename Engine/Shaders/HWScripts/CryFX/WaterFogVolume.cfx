@@ -30,7 +30,7 @@ struct a2v3
 
 struct v2f
 {
-	float4 hPos : POSITION; 
+	float4 hPos : SV_POSITION; 
 	float3 viewDir : TEXCOORD0_centroid;
 };
 
@@ -42,7 +42,7 @@ struct v2fIn
 
 struct v2fOutof
 {
-	float4 hPos : POSITION;
+	float4 hPos : SV_POSITION;
 	float2 baseTC : TEXCOORD0;
 };
 
