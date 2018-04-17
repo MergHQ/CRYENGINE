@@ -142,6 +142,14 @@ string CEditorCommandManager::Execute(const string& module, const string& name, 
 	}
 	else
 	{
+		// Check to see if the command was replaced or deprecated
+		auto it = m_deprecatedCommands.find(fullName);
+		if (it != m_deprecatedCommands.end())
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Using renamed command \"%s\", please switch to using \"%s\" instead", fullName.c_str(), it->second.pCommand->GetCommandString().c_str());
+			return "";
+		}
+
 		string errMsg;
 
 		errMsg.Format("Error: Trying to execute a unknown command, '%s'!", fullName);
@@ -178,6 +186,14 @@ string CEditorCommandManager::Execute(const string& cmdLine)
 	}
 	else
 	{
+		// Check to see if the command was replaced or deprecated
+		auto it = m_deprecatedCommands.find(cmdTxt);
+		if (it != m_deprecatedCommands.end())
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Using renamed command \"%s\", please switch to using \"%s\" instead", cmdTxt.c_str(), it->second.pCommand->GetCommandString().c_str());
+			return "";
+		}
+
 		GetIEditorImpl()->GetSystem()->GetIConsole()->ExecuteString(cmdLine);
 	}
 
