@@ -300,9 +300,20 @@ def copy_directory(project_path, export_path, copy_dir, warn_on_fail=True, silen
         return
 
     dst_path = os.path.join(export_path, copy_dir)
+    
     if os.path.isdir(dst_path):
         shutil.rmtree(dst_path, onerror=on_rm_error)
-    shutil.copytree(src_path, dst_path)
+    try:
+        shutil.copytree(src_path, dst_path)
+    # This exception is thrown when the user still has locked files in the project, 
+    # for example db.lock from Visual Studio.
+    except shutil.Error as e:
+        errors = e.args[0]
+        for error in errors:
+            src, dst, msg = error
+            print('Unable to copy "{}" to "{}"!\nError:{}'.format(src, dst, msg))
+    except IOError as e:
+        print('Error: {}'.format(e.strerror))
 
 def on_rm_error(func, path, exc_info):
     """
