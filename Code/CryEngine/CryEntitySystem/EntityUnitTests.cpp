@@ -512,7 +512,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 			virtual ~CFirstComponent()
 			{
 				CRY_UNIT_TEST_ASSERT(!wasDestroyed);
-				CRY_UNIT_TEST_ASSERT(!wasOtherDestroyed);
+				CRY_UNIT_TEST_ASSERT(wasOtherDestroyed);
 				wasDestroyed = true;
 			}
 		};
@@ -527,7 +527,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 			virtual ~CSecondComponent() 
 			{
 				CRY_UNIT_TEST_ASSERT(!wasDestroyed);
-				CRY_UNIT_TEST_ASSERT(wasOtherDestroyed);
+				CRY_UNIT_TEST_ASSERT(!wasOtherDestroyed);
 				wasDestroyed = true;
 			}
 		};
