@@ -211,13 +211,13 @@ REGISTER_CVAR_AUTO(float, e_svoTI_SkyLightBottomMultiplier, 0, VF_NULL, "Modulat
 REGISTER_CVAR_AUTO(int, e_svoTI_Apply, 0, VF_NULL, "Allows to temporary deactivate GI for debug purposes");
 REGISTER_CVAR_AUTO(float, e_svoTI_Diffuse_Spr, 0, VF_NULL, "Adjusts the kernel of diffuse tracing; big value will merge all cones into single vector");
 REGISTER_CVAR_AUTO(int, e_svoTI_Diffuse_Cache, 0, VF_NULL, "Pre-bake lighting in SVO and use it instead of cone tracing");
-REGISTER_CVAR_AUTO(int, e_svoTI_Specular_Reproj, 1, VF_NULL, "Reuse tracing results from previous frames");
-REGISTER_CVAR_AUTO(int, e_svoTI_Specular_FromDiff, 0, VF_NULL, "Compute specular using intermediate results of diffuse computations");
+REGISTER_CVAR_AUTO(int, e_svoTI_SpecularFromDiffuse, 0, VF_EXPERIMENTAL, "Compute simplified specular lighting using intermediate results of diffuse SVO tracing\nIn this mode environment probes are not used. It works fine for materials with low smoothness but works wrong for mirrors");
 REGISTER_CVAR_AUTO(int, e_svoTI_DynLights, 1, VF_NULL, "Allow single real-time indirect bounce from marked dynamic lights");
 REGISTER_CVAR_AUTO(int, e_svoTI_ForceGIForAllLights, 0, VF_NULL, "Force dynamic GI for all lights except ambient lights and sun\nThis allows to quickly get dynamic GI working in unprepared scenes");
 REGISTER_CVAR_AUTO(float, e_svoTI_ConstantAmbientDebug, 0, VF_NULL, "Replace GI computations with constant ambient color for GI debugging");
-REGISTER_CVAR_AUTO(int, e_svoTI_ShadowsFromSun, 0, VF_NULL, "Calculate sun shadows using SVO ray tracing\nNormally supposed to be used in combination with normal shadow maps and screen space shadows");
-REGISTER_CVAR_AUTO(float, e_svoTI_ShadowsSoftness, 1.25f, VF_NULL, "Controls softness of ray traced shadows");
+REGISTER_CVAR_AUTO(int, e_svoTI_ShadowsFromSun, 0, VF_EXPERIMENTAL, "Calculate sun shadows using SVO ray tracing\nNormally supposed to be used in combination with normal shadow maps and screen space shadows");
+REGISTER_CVAR_AUTO(float, e_svoTI_ShadowsSoftness, 1.25f, VF_EXPERIMENTAL, "Controls softness of ray traced shadows");
+REGISTER_CVAR_AUTO(int, e_svoTI_ShadowsFromHeightmap, 0, VF_EXPERIMENTAL, "Include terrain heightmap (whole level) into ray-traced sun shadows");
 REGISTER_CVAR_AUTO(int, e_svoTI_Troposphere_Active, 0, VF_EXPERIMENTAL, "Activates SVO atmospheric effects (completely replaces default fog computations)\nIt is necessary to re-voxelize the scene after activation");
 REGISTER_CVAR_AUTO(float, e_svoTI_Troposphere_Brightness, 0, VF_EXPERIMENTAL, "Controls intensity of atmospheric effects.");
 REGISTER_CVAR_AUTO(float, e_svoTI_Troposphere_Ground_Height, 0, VF_EXPERIMENTAL, "Minimum height for atmospheric effects");

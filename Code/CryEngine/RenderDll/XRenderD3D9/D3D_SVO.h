@@ -230,10 +230,10 @@ protected:
 	  INIT_SVO_CVAR(int, e_svoTI_Apply);                            \
 	  INIT_SVO_CVAR(float, e_svoTI_Diffuse_Spr);                    \
 	  INIT_SVO_CVAR(int, e_svoTI_Diffuse_Cache);                    \
-	  INIT_SVO_CVAR(int, e_svoTI_Specular_Reproj);                  \
-	  INIT_SVO_CVAR(int, e_svoTI_Specular_FromDiff);                \
+	  INIT_SVO_CVAR(int, e_svoTI_SpecularFromDiffuse);              \
 	  INIT_SVO_CVAR(int, e_svoTI_DynLights);                        \
 	  INIT_SVO_CVAR(int, e_svoTI_ShadowsFromSun);                   \
+	  INIT_SVO_CVAR(int, e_svoTI_ShadowsFromHeightmap);             \
 	  INIT_SVO_CVAR(int, e_svoTI_Troposphere_Active);               \
 	  INIT_SVO_CVAR(float, e_svoTI_Troposphere_Brightness);         \
 	  INIT_SVO_CVAR(float, e_svoTI_Troposphere_Ground_Height);      \

@@ -427,9 +427,9 @@ struct IClipVolume
 	};
 
 	virtual ~IClipVolume() {};
-	virtual void  GetClipVolumeMesh(_smart_ptr<IRenderMesh>& renderMesh, Matrix34& worldTM) const = 0;
+	virtual void         GetClipVolumeMesh(_smart_ptr<IRenderMesh>& renderMesh, Matrix34& worldTM) const = 0;
 	virtual AABB  GetClipVolumeBBox() const = 0;
-	virtual bool  IsPointInsideClipVolume(const Vec3& point) const = 0;
+	virtual bool         IsPointInsideClipVolume(const Vec3& point) const = 0;
 
 	virtual uint8 GetStencilRef() const = 0;
 	virtual uint  GetClipVolumeFlags() const = 0;
@@ -2856,7 +2856,7 @@ inline void SRenderingPassInfo::SetCamera(const CCamera& cam)
 	cam.CalculateRenderMatrices();
 	m_pCamera = gEnv->p3DEngine->GetRenderingPassCamera(cam);
 	m_bCameraUnderWater = gEnv->p3DEngine->IsUnderWater(cam.GetPosition());
-	m_fZoomFactor = 0.2f + 0.8f * (RAD2DEG(cam.GetFov()) / 60.f);
+	m_fZoomFactor = 0.4f + 0.6f * (RAD2DEG(cam.GetFov()) / 60.f);
 	m_nZoomInProgress = 0;
 	m_nZoomMode = 0;
 }

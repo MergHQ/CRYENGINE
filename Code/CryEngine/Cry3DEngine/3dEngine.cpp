@@ -4155,15 +4155,14 @@ void C3DEngine::SetHeightMapMaxHeight(float fMaxHeight)
 
 ITerrain* C3DEngine::CreateTerrain(const STerrainInfo& TerrainInfo)
 {
-	delete m_pTerrain;
+	DeleteTerrain();
 	m_pTerrain = new CTerrain(TerrainInfo);
 	return (ITerrain*)m_pTerrain;
 }
 
 void C3DEngine::DeleteTerrain()
 {
-	delete m_pTerrain;
-	m_pTerrain = NULL;
+	SAFE_DELETE(m_pTerrain);
 }
 
 void C3DEngine::SetStreamableListener(IStreamedObjectListener* pListener)

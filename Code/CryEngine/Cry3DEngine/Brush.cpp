@@ -104,6 +104,9 @@ CLodValue CBrush::ComputeLod(int wantedLod, const SRenderingPassInfo& passInfo)
 		if (passInfo.IsGeneralPass() && passInfo.IsZoomActive())
 		{
 			wantedLod = CObjManager::GetObjectLOD(this, fEntDistance);
+
+			if (auto pTempData = m_pTempData.load())
+				pTempData->userData.nWantedLod = wantedLod;
 		}
 
 		nLodA = CLAMP(wantedLod, pStatObj->GetMinUsableLod(), (int)pStatObj->m_nMaxUsableLod);

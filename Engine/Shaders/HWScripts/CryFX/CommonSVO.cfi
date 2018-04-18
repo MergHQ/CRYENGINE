@@ -1030,7 +1030,7 @@ bool ConeTraceBrick_SSR(const float3 vRayStartPos, Ray r, const float _fDistance
 bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistanceIn, inout float fDistance, const float fDistanceMax,
                     inout float4 vPosOut, inout float4 vNormal, const float3 tcMin, inout float4 vRgbOut, const float fAlphaRef, const float fLodRatio,
                     const float fAlphaRefMin, const float fAlphaRefMax, const int nPredictionMode, const float fMultTriRT, const bool bAirOnlyMode, const bool bApplyGlobalDensity, const bool bSpecular, const bool bUseLighting,
-                    inout float4 vBestHitPosOpa[BEST_POINTS_NUM], const int nDebugMode, const float3 vSurfNormOffset)
+                    inout float4 vBestHitPosOpa[BEST_POINTS_NUM], const int nDebugMode, const float3 vSurfNormOffset, float fStepSize = 0.5f)
 {
 	bool bRes = true;
 
@@ -1066,8 +1066,6 @@ bool ConeTraceBrick(const float3 vRayStartPos, inout Ray r, const float _fDistan
 		const int nMaxSamples = VOX_BRICK_TEXRES * 2;
 		for (int nSample = 0; nSample < nMaxSamples; nSample++)
 		{
-			float fStepSize = bAirOnlyMode ? 1.f : 0.5f; // todo: pass from outside
-
 			if (!bAirOnlyMode)
 			{
 				if (nPredictionMode == SVO_PREDICTION_MIN_DIST_TO_SURFACE)
@@ -1367,7 +1365,7 @@ bool ConeTraceBrick_MB(const float3 vRayStartPos, inout Ray r, const float fDist
 
 float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, out float4 vNormal, float _fDistanceIn, float fDistanceMax,
                      const float fAlphaRefMin = 0.f, float fAlphaRefMax = 1.f, const int nPredictionMode = 0, const float fMultTriRT = 0, const int nTraceMode = 0, const bool bApplyGlobalDensity = false, const bool bSpecular = false,
-                     bool bUseLighting = false, float3 vSurfNorm = 0, const int nDebugMode = 0)
+                     bool bUseLighting = false, float3 vSurfNorm = 0, const int nDebugMode = 0, float fStepSize = 0.5f)
 {
 #if %_RT_SAMPLE5
 	bUseLighting = true;
@@ -1566,7 +1564,7 @@ float4 ConeTraceTree(Ray rayForTree, const float fLodRatio, out float4 vPos0, ou
 			   else*/
 			bGoToNextNode = ConeTraceBrick(vRayStartPos, rayForTree, _fDistanceIn, fDistance, fDistanceMax,
 			                               vPos0, vNormal, curNode.vTC, vRgbOut, fMaxAlpha, fLodRatio, fAlphaRefMin, fAlphaRefMax, nPredictionMode, fMultTriRT, (nTraceMode == SVO_TRACE_MODE_AIR), bApplyGlobalDensity, bSpecular, bUseLighting,
-			                               vBestHitPosOpa, nDebugMode, vSurfNormOffset);
+			                               vBestHitPosOpa, nDebugMode, vSurfNormOffset, fStepSize);
 
 			if (vRgbOut.a >= fMaxAlpha)
 			{
