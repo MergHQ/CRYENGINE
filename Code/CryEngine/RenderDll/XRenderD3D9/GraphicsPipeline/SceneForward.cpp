@@ -57,130 +57,134 @@ void CSceneForwardStage::Init()
 void CSceneForwardStage::Update()
 {
 	CRenderView* pRenderView = RenderView();
-	CTexture* pZTexture = RenderView()->GetDepthTarget();
 
-//	CTexture* pColorTexture = pRenderView->GetColorTarget();
-//	CTexture* pDepthTexture = pRenderView->GetDepthTarget();
+	CStandardGraphicsPipeline* p = static_cast<CStandardGraphicsPipeline*>(&GetGraphicsPipeline());
+	EShaderRenderingFlags flags = (EShaderRenderingFlags)p->GetRenderFlags();
+	const bool isForwardMinimal = (flags & SHDF_FORWARD_MINIMAL) != 0;
 
-	// Opaque forward scene pass
-	m_forwardOpaquePass.SetLabel("FORWARD_OPAQUE");
-	m_forwardOpaquePass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_TILED_FORWARD | FB_GENERAL);
-	m_forwardOpaquePass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
-	m_forwardOpaquePass.SetRenderTargets(
-		// Depth
-		pZTexture,
-		// Color 0
-		CRendererResources::s_ptexHDRTarget
-	);
+	if (!isForwardMinimal)
+	{
+		CTexture* pDepthTexture = pRenderView->GetDepthTarget();
 
-	// Overlay forward scene pass
-	m_forwardOverlayPass.SetLabel("FORWARD_OVERLAY");
-	m_forwardOverlayPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_TILED_FORWARD | FB_GENERAL);
-	m_forwardOverlayPass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
-	m_forwardOverlayPass.SetRenderTargets(
-		// Depth
-		pZTexture,
-		// Color 0
-		CRendererResources::s_ptexHDRTarget
-	);
+		m_forwardOpaquePass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
+		m_forwardOpaquePass.SetRenderTargets(
+			// Depth
+			pDepthTexture,
+			// Color 0
+			CRendererResources::s_ptexHDRTarget
+		);
 
-	// Transparent forward scene passes
-	m_forwardTransparentBWPass.SetLabel("FORWARD_TRANSPARENT_BW");
-	m_forwardTransparentBWPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_BELOW_WATER, EFSLIST_TRANSP, 0);
-	m_forwardTransparentBWPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
-	m_forwardTransparentBWPass.SetRenderTargets(
-		// Depth
-		pZTexture,
-		// Color 0
-		CRendererResources::s_ptexHDRTarget
-	);
+		// Overlay forward scene pass
+		m_forwardOverlayPass.SetLabel("FORWARD_OVERLAY");
+		m_forwardOverlayPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_TILED_FORWARD | FB_GENERAL);
+		m_forwardOverlayPass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
+		m_forwardOverlayPass.SetRenderTargets(
+			// Depth
+			pDepthTexture,
+			// Color 0
+			CRendererResources::s_ptexHDRTarget
+		);
 
-	m_forwardTransparentAWPass.SetLabel("FORWARD_TRANSPARENT_AW");
-	m_forwardTransparentAWPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP, FB_BELOW_WATER);
-	m_forwardTransparentAWPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
-	m_forwardTransparentAWPass.SetRenderTargets(
-		// Depth
-		pZTexture,
-		// Color 0
-		CRendererResources::s_ptexHDRTarget
-	);
+		// Transparent forward scene passes
+		m_forwardTransparentBWPass.SetLabel("FORWARD_TRANSPARENT_BW");
+		m_forwardTransparentBWPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_BELOW_WATER, EFSLIST_TRANSP, 0);
+		m_forwardTransparentBWPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+		m_forwardTransparentBWPass.SetRenderTargets(
+			// Depth
+			pDepthTexture,
+			// Color 0
+			CRendererResources::s_ptexHDRTarget
+		);
 
-	m_forwardTransparentLoResPass.SetLabel("FORWARD_TRANSPARENT_SUBRES");
-	m_forwardTransparentLoResPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_HALFRES_PARTICLES, 0);
-	m_forwardTransparentLoResPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
-	m_forwardTransparentLoResPass.SetRenderTargets(
-		// Depth
-		CRendererResources::s_ptexSceneDepthScaled[0],//[1]//[2]
-		// Color 0
-		CRendererResources::s_ptexHDRTargetScaled[0]//[1]//[2]
-	);
+		m_forwardTransparentAWPass.SetLabel("FORWARD_TRANSPARENT_AW");
+		m_forwardTransparentAWPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP, FB_BELOW_WATER);
+		m_forwardTransparentAWPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+		m_forwardTransparentAWPass.SetRenderTargets(
+			// Depth
+			pDepthTexture,
+			// Color 0
+			CRendererResources::s_ptexHDRTarget
+		);
 
-	// Opaque forward recursive scene pass
-	m_forwardOpaqueRecursivePass.SetLabel("FORWARD_OPAQUE_RECURSIVE");
-	m_forwardOpaqueRecursivePass.SetupPassContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL, EFSLIST_FORWARD_OPAQUE);
-	m_forwardOpaqueRecursivePass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
-	m_forwardOpaqueRecursivePass.SetRenderTargets(
-		// Depth
-		pZTexture, // this texture is used only for initialization.
-		// Color 0
-		CRendererResources::s_ptexHDRTarget // this texture is used only for initialization.
-	);
+		m_forwardTransparentLoResPass.SetLabel("FORWARD_TRANSPARENT_SUBRES");
+		m_forwardTransparentLoResPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_HALFRES_PARTICLES, 0);
+		m_forwardTransparentLoResPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+		m_forwardTransparentLoResPass.SetRenderTargets(
+			// Depth
+			CRendererResources::s_ptexSceneDepthScaled[0],//[1]//[2]
+			// Color 0
+			CRendererResources::s_ptexHDRTargetScaled[0]//[1]//[2]
+		);
 
-	// Overlay forward recursive scene pass
-	m_forwardOverlayRecursivePass.SetLabel("FORWARD_OVERLAY_RECURSIVE");
-	m_forwardOverlayRecursivePass.SetupPassContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL, EFSLIST_DECAL);
-	m_forwardOverlayRecursivePass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
-	m_forwardOverlayRecursivePass.SetRenderTargets(
-		// Depth
-		pZTexture, // this texture is used only for initialization.
-		// Color 0
-		CRendererResources::s_ptexHDRTarget // this texture is used only for initialization.
-	);
+		// Opaque forward scene pass
+		m_forwardOpaquePass.SetLabel("FORWARD_OPAQUE");
+		m_forwardOpaquePass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_TILED_FORWARD | FB_GENERAL);
 
-	m_forwardTransparentRecursivePass.SetLabel("FORWARD_TRANSPARENT_AW_RECURSIVE");
-	m_forwardTransparentRecursivePass.SetupPassContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP, FB_BELOW_WATER);
-	m_forwardTransparentRecursivePass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
-	m_forwardTransparentRecursivePass.SetRenderTargets(
-		// Depth
-		pZTexture, // this texture is used only for initialization.
-		// Color 0
-		CRendererResources::s_ptexHDRTarget // this texture is used only for initialization.
-	);
+		m_forwardEyeOverlayPass.SetLabel("FORWARD_EYE_AO_OVERLAY");
+		m_forwardEyeOverlayPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_EYE_OVERLAY, 0);
+		m_forwardEyeOverlayPass.SetPassResources(m_pEyeOverlayResourceLayout, m_pEyeOverlayPassResourceSet);
+		m_forwardEyeOverlayPass.SetRenderTargets(
+			// Depth
+			pDepthTexture,
+			// Color 0
+			CRendererResources::s_ptexSceneDiffuse
+		);
 
-	m_forwardEyeOverlayPass.SetLabel("FORWARD_EYE_AO_OVERLAY");
-	m_forwardEyeOverlayPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_EYE_OVERLAY, 0);
-	m_forwardEyeOverlayPass.SetPassResources(m_pEyeOverlayResourceLayout, m_pEyeOverlayPassResourceSet);
-	m_forwardEyeOverlayPass.SetRenderTargets(
-		// Depth
-		pZTexture,
-		// Color 0
-		CRendererResources::s_ptexSceneDiffuse
-	);
+		m_forwardHDRPass.SetLabel("FORWARD_AFTER_POSTFX_HDR");
+		m_forwardHDRPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_AFTER_HDRPOSTPROCESS, 0);
+		m_forwardHDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+		m_forwardHDRPass.SetRenderTargets(
+			// Depth
+			pDepthTexture,
+			// Color 0
+			CRendererResources::s_ptexSceneDiffuse
+		);
 
-	m_forwardHDRPass.SetLabel("FORWARD_AFTER_POSTFX_HDR");
-	m_forwardHDRPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_AFTER_HDRPOSTPROCESS, 0);
-	m_forwardHDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
-	m_forwardHDRPass.SetRenderTargets(
-		// Depth
-		pZTexture,
-		// Color 0
-		CRendererResources::s_ptexSceneDiffuse
-	);
+		m_forwardLDRPass.SetLabel("FORWARD_AFTER_POSTFX_LDR");
+		m_forwardLDRPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_AFTER_POSTPROCESS, 0);
+		m_forwardLDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+		m_forwardLDRPass.SetRenderTargets(
+			// Depth
+			pDepthTexture,
+			// Color 0
+			CRendererResources::s_ptexSceneDiffuse
+		);
+	}
+	// Recursive passes need to be updated in the non-recursive update as well because of PSO creation
+	{
+		CTexture* pDepthTexture = pRenderView->GetDepthTarget();
+		CTexture* pColorTexture = pRenderView->GetColorTarget();
 
-	m_forwardLDRPass.SetLabel("FORWARD_AFTER_POSTFX_LDR");
-	m_forwardLDRPass.SetupPassContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL, EFSLIST_AFTER_POSTPROCESS, 0);
-	m_forwardLDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
-	m_forwardLDRPass.SetRenderTargets(
-		// Depth
-		pZTexture,
-		// Color 0
-		CRendererResources::s_ptexSceneDiffuse
-	);
-
-	// Information flow:
-	//  CRendererResources::s_ptexHDRTarget ->
-	//  CRendererResources::s_ptexSceneDiffuse ->
-	//  gcpRendD3D->GetCurrentTargetOutput()
+		// Opaque forward recursive scene pass
+		m_forwardOpaqueRecursivePass.SetLabel("FORWARD_OPAQUE_RECURSIVE");
+		m_forwardOpaqueRecursivePass.SetupPassContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL, EFSLIST_FORWARD_OPAQUE);
+		m_forwardOpaqueRecursivePass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
+		m_forwardOpaqueRecursivePass.SetRenderTargets(
+			// Depth
+			pDepthTexture,
+			// Color 0
+			pColorTexture
+		);
+		// Overlay forward recursive scene pass
+		m_forwardOverlayRecursivePass.SetLabel("FORWARD_OVERLAY_RECURSIVE");
+		m_forwardOverlayRecursivePass.SetupPassContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL, EFSLIST_DECAL);
+		m_forwardOverlayRecursivePass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
+		m_forwardOverlayRecursivePass.SetRenderTargets(
+			// Depth
+			pDepthTexture,
+			// Color 0
+			pColorTexture
+		);
+		m_forwardTransparentRecursivePass.SetLabel("FORWARD_TRANSPARENT_AW_RECURSIVE");
+		m_forwardTransparentRecursivePass.SetupPassContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL, EFSLIST_TRANSP, FB_BELOW_WATER);
+		m_forwardTransparentRecursivePass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+		m_forwardTransparentRecursivePass.SetRenderTargets(
+			// Depth
+			pDepthTexture,
+			// Color 0
+			pColorTexture
+		);
+	}
 }
 
 bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescription& desc,

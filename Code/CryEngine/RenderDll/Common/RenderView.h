@@ -332,6 +332,7 @@ public:
 	size_t                 GetViewInfoCount() const             { return m_viewInfoCount; };
 
 	void                   CompileModifiedRenderObjects();
+	void                   CalculateViewInfo();
 
 private:
 	void                   DeleteThis() const override;
@@ -350,7 +351,6 @@ private:
 	CCompiledRenderObject* AllocCompiledObject(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
 	CCompiledRenderObject* AllocCompiledObjectTemporary(CRenderObject* pObj, CRenderElement* pElem, const SShaderItem& shaderItem);
 
-	void                   CalculateViewInfo();
 
 private:
 	EUsageMode m_usageMode;

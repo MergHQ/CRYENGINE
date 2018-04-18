@@ -39,6 +39,14 @@ public:
 	void Update() final;
 	void Prepare(bool bPostLinearize);
 
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		if (flags & EShaderRenderingFlags::SHDF_FORWARD_MINIMAL)
+			return false;
+
+		return true;
+	}
+
 	void Execute();
 	void ExecuteMicroGBuffer();
 	void ExecuteLinearizeDepth();

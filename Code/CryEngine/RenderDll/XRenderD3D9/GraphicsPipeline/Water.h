@@ -96,6 +96,13 @@ public:
 	void  Update() final;
 	void  Prepare();
 	void Resize(int renderWidth, int renderHeight) override final;
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		if (flags & EShaderRenderingFlags::SHDF_FORWARD_MINIMAL)
+			return false;
+
+		return true;
+	}
 
 	void  ExecuteWaterVolumeCaustics();
 	void  ExecuteDeferredWaterVolumeCaustics();

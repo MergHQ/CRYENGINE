@@ -145,7 +145,6 @@ CREWaterOcean::CREWaterOcean()
 		if ((int)CRendererResources::s_CustomRT_2D.Num() <= m_pRenderTarget->m_nIDInPool)
 			CRendererResources::s_CustomRT_2D.Expand(m_pRenderTarget->m_nIDInPool + 1);
 	}
-	m_pRenderTarget->m_pTarget = CRendererResources::s_ptexRT_2D;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
