@@ -2616,7 +2616,7 @@ bool SerializeWorldBin(CPhysicalWorld *pWorld, const char *fname,int bSave)
 				stm.GrowBuf((phf->size.x+1)*(phf->size.y)*sizeof(int));
 				for(j=0;j<=phf->size.y;j++) for(i=0;i<=phf->size.x;i++)
 					stm.Write(FtoI(min(255.9f,phf->fpGetHeightCallback(i,j)+128.0f)*256.0f) | phf->fpGetSurfTypeCallback(i,j)<<16);
-				for(i=0;i<MAX_TOT_THREADS;i++)
+				for(i=0;i<=MAX_PHYS_THREADS;i++)
 					objs.insert(std::pair<void*,int>(w.m_pHeightfield[i],objs.size()));
 			}
 
@@ -2756,7 +2756,7 @@ bool SerializeWorldBin(CPhysicalWorld *pWorld, const char *fname,int bSave)
 				hf.fpGetHeightCallback = g_getHeightCallback;
 				hf.fpGetSurfTypeCallback = g_getSurfTypeCallback;
 				w.SetHeightfieldData(&hf);
-				for(i=0;i<MAX_TOT_THREADS;i++)
+				for(i=0;i<=MAX_PHYS_THREADS;i++)
 					objs.push_back(w.m_pHeightfield[i]);
 			}
 

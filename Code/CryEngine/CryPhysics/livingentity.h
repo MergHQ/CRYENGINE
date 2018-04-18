@@ -219,7 +219,7 @@ public:
 
 	bool m_forceFly;
 
-	static le_precomp_data s_precompData[MAX_TOT_THREADS]; 
+	static le_precomp_data s_precompData[MAX_PHYS_THREADS+1]; 
 };
 
 #endif

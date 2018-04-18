@@ -2579,7 +2579,7 @@ int CRopeEntity::Update(float time_interval, float damping)
 	return 1;
 }
 
-static geom_contact g_RopeContact[MAX_TOT_THREADS];
+static geom_contact g_RopeContact[MAX_PHYS_THREADS+1];
 
 int CRopeEntity::RayTrace(SRayTraceRes& rtr)
 {

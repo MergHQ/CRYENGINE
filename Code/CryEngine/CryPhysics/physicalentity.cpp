@@ -1994,7 +1994,7 @@ void CPhysicalEntity::GetMemoryStatistics(ICrySizer *pSizer) const
 	}
 	pSizer->AddObject(m_ground, m_nGroundPlanes*sizeof(m_ground[0]));
 	if (m_pUsedParts)
-		pSizer->AddObject(m_pUsedParts, MAX_TOT_THREADS*sizeof(m_pUsedParts[0]));
+		pSizer->AddObject(m_pUsedParts, (MAX_PHYS_THREADS+1)*sizeof(m_pUsedParts[0]));
 }
 
 struct SMemSerializer : ISerialize {
@@ -3793,9 +3793,9 @@ void CPhysicalEntity::RepositionParts()
 	}
 	if (!m_pUsedParts) {
 		if (m_pHeap)
-			m_pUsedParts = (int(*)[16])m_pHeap->Malloc(sizeof(int) * MAX_TOT_THREADS * 16, "Used parts");
+			m_pUsedParts = (int(*)[16])m_pHeap->Malloc(sizeof(int) * (MAX_PHYS_THREADS+1) * 16, "Used parts");
 		else
-			m_pUsedParts = new int[MAX_TOT_THREADS][16];
+			m_pUsedParts = new int[MAX_PHYS_THREADS+1][16];
 		memset(m_pUsedParts, 0, sizeof(*m_pUsedParts));
 	}
 
