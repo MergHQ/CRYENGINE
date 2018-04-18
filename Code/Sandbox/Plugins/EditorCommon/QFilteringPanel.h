@@ -88,6 +88,7 @@ private:
 	void             RenameFilter(const char* filterName, const char* filterNewName);
 	QVector<QString> GetSavedFilters() const;
 
+	bool             IsFilterSet(const QString& filterName) const;
 	QVariant         GetFilterState() const;
 	void             SetFilterState(const QVariant& state);
 
