@@ -115,6 +115,17 @@ void CEntity::SetFlagsExtended(uint32 flagsExtended)
 //////////////////////////////////////////////////////////////////////////
 bool CEntity::SendEvent(const SEntityEvent& event)
 {
+	if (!IsGarbage())
+	{
+		return SendEventInternal(event);
+	}
+
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CEntity::SendEventInternal(const SEntityEvent& event)
+{
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
 #ifdef ENABLE_PROFILING_CODE
@@ -127,7 +138,7 @@ bool CEntity::SendEvent(const SEntityEvent& event)
 	}
 #endif
 
-	if (!IsGarbage() && (m_eventListenerMask & ENTITY_EVENT_BIT(event.event)) != 0)
+	if ((m_eventListenerMask & ENTITY_EVENT_BIT(event.event)) != 0)
 	{
 		CRY_ASSERT_MESSAGE(event.event <= ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL, "Performance critical events should be handled in CEntitySystem!");
 
@@ -387,7 +398,7 @@ void CEntity::ShutDown()
 	ENTITY_PROFILER;
 
 	CRY_ASSERT(m_keepAliveCounter == 0);
-	m_flags |= ENTITY_FLAG_REMOVED;
+	SetInternalFlag(EInternalFlag::MarkedForDeletion, true);
 
 	RemoveAllEntityLinks();
 	m_physics.ReleasePhysicalEntity();
@@ -988,6 +999,8 @@ void CEntity::PrepareForDeletion()
 		pfd.iForeignData = -1;
 		pPhysics->SetParams(&pfd, 1);
 	}
+
+	ClearComponentEventListeners();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1809,7 +1822,10 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 		UpdateSlotForComponent(pComponent.get(), false);
 	}
 
-	OnComponentMaskChanged(storedRecord, 0);
+	if (storedRecord.registeredEventsMask != 0)
+	{
+		OnComponentMaskChanged(storedRecord, 0);
+	}
 
 	// Entity has changed so make the state dirty
 	m_componentChangeState++;
@@ -1859,8 +1875,11 @@ void CEntity::ReplaceComponent(IEntityComponent* pExistingComponent, std::shared
 		m_components.ReSortComponent(it);
 	}
 
-	// Now add the new listeners specified by the new component
-	OnComponentMaskChanged(record, 0);
+	if (record.registeredEventsMask != 0)
+	{
+		// Now add the new listeners specified by the new component
+		OnComponentMaskChanged(record, 0);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3085,15 +3104,17 @@ void CEntity::OnEditorGameModeChanged(bool bEnterGameMode)
 	// Activate entity if was deactivated:
 	if (IsGarbage())
 	{
-		m_flags &= ~ENTITY_FLAG_REMOVED;
+		g_pIEntitySystem->ResurrectGarbageEntity(this);
 
 		// Re-add the component event listener which where removed
 		m_components.ForEach([this](SEntityComponentRecord& record) -> EComponentIterationResult
 		{
 			EntityEventMask prevMask = record.registeredEventsMask;
 			record.registeredEventsMask = record.pComponent->GetEventMask();
-
-			OnComponentMaskChanged(record, prevMask);
+			if (record.registeredEventsMask != prevMask)
+			{
+				OnComponentMaskChanged(record, prevMask);
+			}
 
 			return EComponentIterationResult::Continue;
 		});

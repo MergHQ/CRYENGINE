@@ -6,6 +6,11 @@
 
 SEntityComponentRecord::~SEntityComponentRecord()
 {
+	Shutdown();
+}
+
+void SEntityComponentRecord::Shutdown()
+{
 	if (pComponent != nullptr)
 	{
 		static_cast<CEntity*>(pComponent->GetEntity())->ShutDownComponent(*this);

@@ -46,8 +46,11 @@ struct SEntityComponentRecord
 	// This is done since we are not always able to remove the record from storage immediately
 	void Invalidate()
 	{
+		Shutdown();
 		pComponent.reset();
 	}
+
+	void Shutdown();
 };
 
 //! SMinimalEntityComponent is used to store component without taking ownership of them.
@@ -119,8 +122,7 @@ public:
 	const TRecord& SortedEmplace(TRecord&& componentRecord)
 	{
 		CRY_ASSERT_MESSAGE(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Components vector can only be added to by the main thread!");
-		CRY_ASSERT(!m_cleanupRequired);
-		CRY_ASSERT(m_sortingValid);
+		CRY_ASSERT(m_sortingValid || m_activeScopes > 0);
 
 		CryAutoCriticalSection lock(m_lock);
 		if (m_activeScopes == 0)
@@ -209,31 +211,32 @@ public:
 		CRY_ASSERT(!m_cleanupRequired);
 		CRY_ASSERT(m_activeScopes == 0);
 
-		// Sort components by creation order, to ensure that we destroy in reverse order of creation when the vector is cleared
-		std::stable_sort(m_vector.begin(), m_vector.end(), [](const TRecord& p1, const TRecord& p2) -> bool
-		{
-			return p1.GetCreationOrder() < p2.GetCreationOrder();
-		});
-
-		auto legacyGameObjectComponentIt = std::find_if(m_vector.begin(), m_vector.end(), [](const TRecord& record) -> bool
+		// Delete the game object before all other components, resulting in it and its extensions being removed from the vector
+		typename TRecordStorage::iterator legacyGameObjectComponentIt = std::find_if(m_vector.begin(), m_vector.end(), [](const TRecord& record) -> bool
 		{
 			return record.GetProxyType() == ENTITY_PROXY_USER;
 		});
 
-		// User component must be deleted last after all other components are destroyed (Required by CGameObject)
-		TRecord legacyGameObjectComponentRecord = legacyGameObjectComponentIt != m_vector.end() ? std::move(*legacyGameObjectComponentIt) : TRecord();
+		if (legacyGameObjectComponentIt != m_vector.end())
+		{
+			legacyGameObjectComponentIt->Invalidate();
+		}
 
-		TRecordStorage tempComponents;
 		// Remove all entity components in a temporary vector, in case any components try to modify components in their destructor.
-		tempComponents = std::move(m_vector);
-		tempComponents.clear();
-
+		TRecordStorage tempComponents = std::move(m_vector);
 		m_sortingValid = true;
 
-		// Ensure that game object is destroyed, if any
-		// Note that we call Invalidate explicitly, instead of letting the destructor run its course
-		// This is done because
-		legacyGameObjectComponentRecord.Invalidate();
+		// Sort components by creation order, to ensure that we destroy in reverse order of creation
+		std::stable_sort(tempComponents.begin(), tempComponents.end(), [](const TRecord& p1, const TRecord& p2) -> bool
+		{
+			return p1.GetCreationOrder() < p2.GetCreationOrder();
+		});
+
+		// Now destroy in reverse order of creation
+		for(typename TRecordStorage::reverse_iterator it = tempComponents.rbegin(), end = tempComponents.rend(); it != end; ++it)
+		{
+			it->Invalidate();
+		}
 	}
 
 	//! Reserves space to help avoid runtime reallocation.

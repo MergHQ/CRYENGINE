@@ -181,48 +181,45 @@ enum EEntityHideFlags
 //! These can be set with IEntity::SetFlags, and retrieved with IEntity::GetFlags
 enum EEntityFlags : uint32
 {
-	//! Entity was scheduled for removal, and will be removed soon
-	ENTITY_FLAG_REMOVED = BIT(0),
-
 	//////////////////////////////////////////////////////////////////////////
 	// Persistent flags (can be set from the editor).
-	ENTITY_FLAG_CASTSHADOW          = BIT(1),
-	ENTITY_FLAG_UNREMOVABLE         = BIT(2), //!< This entity cannot be removed using IEntitySystem::RemoveEntity until this flag is cleared.
-	ENTITY_FLAG_GOOD_OCCLUDER       = BIT(3),
-	ENTITY_FLAG_NO_DECALNODE_DECALS = BIT(4),
+	ENTITY_FLAG_CASTSHADOW          = BIT(0),
+	ENTITY_FLAG_UNREMOVABLE         = BIT(1), //!< This entity cannot be removed using IEntitySystem::RemoveEntity until this flag is cleared.
+	ENTITY_FLAG_GOOD_OCCLUDER       = BIT(2),
+	ENTITY_FLAG_NO_DECALNODE_DECALS = BIT(3),
 	//////////////////////////////////////////////////////////////////////////
 
-	ENTITY_FLAG_CLONED                  = BIT(5), //!< Entity was cloned from another
-	ENTITY_FLAG_NOT_REGISTER_IN_SECTORS = BIT(6),
-	ENTITY_FLAG_CALC_PHYSICS            = BIT(7),
+	ENTITY_FLAG_CLONED                  = BIT(4), //!< Entity was cloned from another
+	ENTITY_FLAG_NOT_REGISTER_IN_SECTORS = BIT(5),
+	ENTITY_FLAG_CALC_PHYSICS            = BIT(6),
 	//! Entity should only be present on the client, and not server
-	ENTITY_FLAG_CLIENT_ONLY             = BIT(8),
-	//! Entity sohuld only be present on the server, and not clients
-	ENTITY_FLAG_SERVER_ONLY             = BIT(9),
-	ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO   = BIT(10), //!< This entity have special custom view distance ratio (AI/Vehicles must have it).
-	ENTITY_FLAG_CALCBBOX_USEALL         = BIT(11), //!< use character and objects in BBOx calculations.
-	ENTITY_FLAG_VOLUME_SOUND            = BIT(12), //!< Entity is a volume sound (will get moved around by the sound proxy).
-	ENTITY_FLAG_HAS_AI                  = BIT(13), //!< Entity has an AI object.
-	ENTITY_FLAG_TRIGGER_AREAS           = BIT(14), //!< This entity will trigger areas when it enters them.
-	ENTITY_FLAG_NO_SAVE                 = BIT(15), //!< This entity will not be saved.
-	ENTITY_FLAG_CAMERA_SOURCE           = BIT(16), //!< This entity is a camera source.
-	ENTITY_FLAG_CLIENTSIDE_STATE        = BIT(17), //!< Prevents error when state changes on the client and does not sync state changes to the client.
-	ENTITY_FLAG_SEND_RENDER_EVENT       = BIT(18), //!< When set entity will send ENTITY_EVENT_RENDER_VISIBILITY_CHANGE when starts or stop actual rendering.
-	ENTITY_FLAG_NO_PROXIMITY            = BIT(19), //!< Entity will not be registered in the partition grid and can not be found by proximity queries.
-	ENTITY_FLAG_PROCEDURAL              = BIT(20), //!< Entity has been generated at runtime.
-	ENTITY_FLAG_UPDATE_HIDDEN           = BIT(21), //!< Whether update of game logic should be skipped when the entity is hidden. This does *not* disable update of components unless they specifically request it.
-	ENTITY_FLAG_NEVER_NETWORK_STATIC    = BIT(22), //!< Entity should never be considered a static entity by the network system.
-	ENTITY_FLAG_IGNORE_PHYSICS_UPDATE   = BIT(23), //!< Used by Editor only, (don't set).
-	ENTITY_FLAG_SPAWNED                 = BIT(24), //!< Entity was spawned dynamically without a class.
-	ENTITY_FLAG_SLOTS_CHANGED           = BIT(25), //!< Entity's slots were changed dynamically.
-	ENTITY_FLAG_MODIFIED_BY_PHYSICS     = BIT(26), //!< Entity was procedurally modified by physics.
-	ENTITY_FLAG_OUTDOORONLY             = BIT(27), //!< Same as Brush->Outdoor only.
+	ENTITY_FLAG_CLIENT_ONLY             = BIT(7),
+	//! Entity should only be present on the server, and not clients
+	ENTITY_FLAG_SERVER_ONLY             = BIT(8),
+	ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO   = BIT(9), //!< This entity have special custom view distance ratio (AI/Vehicles must have it).
+	ENTITY_FLAG_CALCBBOX_USEALL         = BIT(10), //!< use character and objects in BBOx calculations.
+	ENTITY_FLAG_VOLUME_SOUND            = BIT(11), //!< Entity is a volume sound (will get moved around by the sound proxy).
+	ENTITY_FLAG_HAS_AI                  = BIT(12), //!< Entity has an AI object.
+	ENTITY_FLAG_TRIGGER_AREAS           = BIT(13), //!< This entity will trigger areas when it enters them.
+	ENTITY_FLAG_NO_SAVE                 = BIT(14), //!< This entity will not be saved.
+	ENTITY_FLAG_CAMERA_SOURCE           = BIT(15), //!< This entity is a camera source.
+	ENTITY_FLAG_CLIENTSIDE_STATE        = BIT(16), //!< Prevents error when state changes on the client and does not sync state changes to the client.
+	ENTITY_FLAG_SEND_RENDER_EVENT       = BIT(17), //!< When set entity will send ENTITY_EVENT_RENDER_VISIBILITY_CHANGE when starts or stop actual rendering.
+	ENTITY_FLAG_NO_PROXIMITY            = BIT(18), //!< Entity will not be registered in the partition grid and can not be found by proximity queries.
+	ENTITY_FLAG_PROCEDURAL              = BIT(19), //!< Entity has been generated at runtime.
+	ENTITY_FLAG_UPDATE_HIDDEN           = BIT(20), //!< Whether update of game logic should be skipped when the entity is hidden. This does *not* disable update of components unless they specifically request it.
+	ENTITY_FLAG_NEVER_NETWORK_STATIC    = BIT(21), //!< Entity should never be considered a static entity by the network system.
+	ENTITY_FLAG_IGNORE_PHYSICS_UPDATE   = BIT(22), //!< Used by Editor only, (don't set).
+	ENTITY_FLAG_SPAWNED                 = BIT(23), //!< Entity was spawned dynamically without a class.
+	ENTITY_FLAG_SLOTS_CHANGED           = BIT(24), //!< Entity's slots were changed dynamically.
+	ENTITY_FLAG_MODIFIED_BY_PHYSICS     = BIT(25), //!< Entity was procedurally modified by physics.
+	ENTITY_FLAG_OUTDOORONLY             = BIT(26), //!< Same as Brush->Outdoor only.
 
-	ENTITY_FLAG_RECVWIND                = BIT(28), //!< Receives wind.
-	ENTITY_FLAG_LOCAL_PLAYER            = BIT(29),
-	ENTITY_FLAG_AI_HIDEABLE             = BIT(30), //!< AI can use the object to calculate automatic hide points.
+	ENTITY_FLAG_RECVWIND                = BIT(27), //!< Receives wind.
+	ENTITY_FLAG_LOCAL_PLAYER            = BIT(28),
+	ENTITY_FLAG_AI_HIDEABLE             = BIT(29), //!< AI can use the object to calculate automatic hide points.
 
-	ENTITY_FLAG_DYNAMIC_DISTANCE_SHADOWS = BIT(31)
+	ENTITY_FLAG_DYNAMIC_DISTANCE_SHADOWS = BIT(30)
 };
 
 enum EEntityFlagsExtended : uint8

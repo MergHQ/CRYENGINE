@@ -2876,13 +2876,8 @@ void CEntityObject::Display(DisplayContext& dc)
 		SGeometryDebugDrawInfo dd;
 		dd.tm = wtm;
 		dd.bDrawInFront = false;
-		dd.color = ColorB(0, 0, 0, 1);
+		dd.color = ColorB(CMFCUtils::Rgb2Vec(col), 120);
 		dd.bNoLines = true;
-		float t = GetTickCount() * 0.001f;
-		const float flashPeriodSeconds = 1.6f;
-		float alpha = sinf(t * g_PI2 / flashPeriodSeconds) * 0.5f + 0.5f;
-
-		dd.color.lerpFloat(dd.color, ColorB(112, 204, 182, 255), alpha);
 
 		SEntityPreviewContext preview(dd);
 		preview.bNoRenderNodes = true;
