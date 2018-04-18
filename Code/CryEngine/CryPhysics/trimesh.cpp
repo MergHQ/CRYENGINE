@@ -18,7 +18,7 @@
 #include <CryMath/GeomQuery.h>
 
 InitTriMeshGlobals::InitTriMeshGlobals() {
-  for(int iCaller=0; iCaller<=MAX_PHYS_THREADS; iCaller++) {
+  for(int iCaller=0; iCaller<MAX_TOT_THREADS; iCaller++) {
     memset(G(UsedVtxMap), 0, sizeof(G(UsedVtxMap)));
     memset(G(UsedTriMap), 0, sizeof(G(UsedTriMap)));
     G(BrdPtBufPos) = 0; G(PolyPtBufPos) = 0;
@@ -677,7 +677,6 @@ CTriMesh *CTriMesh::SplitIntoIslands(plane *pGround,int nPlanes, int bOriginally
 	if (!ExpandVtxList())
 		return 0;
 
-	int iCaller = get_iCaller();
 	int i,j,imask,isle,idx,itri,ivtx,nRemovedTri=0,*pTriMap,*pVtxMap;
 	CTriMesh *pMesh=0,*pPrevMesh=0;
 	bop_meshupdate *pmu,*pmuPrev;

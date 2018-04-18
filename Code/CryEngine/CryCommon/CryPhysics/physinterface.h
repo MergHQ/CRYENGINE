@@ -131,11 +131,14 @@ IPhysicalEntity* const WORLD_ENTITY = (IPhysicalEntity*)-10;
 #if CRY_PLATFORM_ARM
 //FIXME: There's a threading issue in CryPhysics with ARM's weak memory ordering.
 	#define MAX_PHYS_THREADS 1
+	#define MAX_EXT_THREADS  1
 #else
 	#if defined(DEDICATED_SERVER)
 		#define MAX_PHYS_THREADS 1
+		#define MAX_EXT_THREADS  1
 	#else
 		#define MAX_PHYS_THREADS 4
+		#define MAX_EXT_THREADS  2 // the amount of concurrent thread slots for external world queries; currently only 1 and 2 are supported
 	#endif
 #endif
 
@@ -2823,7 +2826,8 @@ enum entity_query_flags
 	ent_delayed_deformations   = 0x80000,  //!< queues procedural breakage requests; can only be used in SimulateExplosion
 	ent_addref_results         = 0x100000, //!< will call AddRef on each entity in the list (expecting the caller call Release)
 	ent_use_sync_coords        = 0x200000, //<! use entity coords that are sync'ed to the last poststep event pump
-	ent_reserved               = 0x40000000 
+	ent_reserved2              = 0x20000000,
+	ent_reserved1              = 0x40000000 
 };
 enum phys_locks { PLOCK_WORLD_STEP = 1, PLOCK_QUEUE, PLOCK_TRACE_PENDING_RAYS, PLOCK_AREAS, PLOCK_CALLER0, PLOCK_CALLER1 };
 

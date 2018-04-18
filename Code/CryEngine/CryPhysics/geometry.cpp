@@ -20,14 +20,14 @@ class CPhysicalWorld;
 extern CPhysicalWorld* g_pPhysWorlds[]; 
 
 
-CRY_ALIGN(128) intersData g_idata[MAX_PHYS_THREADS+1];
+CRY_ALIGN(128) intersData g_idata[MAX_TOT_THREADS];
 
 #undef g_Overlapper
 #define g_Overlapper (g_idata[pGTest->iCaller].Overlapper)
 
 
 InitGeometryGlobals::InitGeometryGlobals() {
-  for(int iCaller=0; iCaller<=MAX_PHYS_THREADS; iCaller++) {
+  for(int iCaller=0; iCaller<MAX_TOT_THREADS; iCaller++) {
     memset(G(UsedNodesMap), 0, sizeof(G(UsedNodesMap)));
     G(EdgeDescBufPos) = 0; G(IdBufPos) = 0;	g_IdxTriBufPos = 0;
     G(SurfaceDescBufPos) = 0; G(UsedNodesMapPos) = 0;	G(UsedNodesIdxPos) = 0;
@@ -886,8 +886,10 @@ int CGeometry::IntersectLocked(IGeometry *pCollider, geom_world_data *pdata1,geo
 		WriteLockCond &lock,int iCaller)
 {
 #if !defined(WriteLockCond)
-	if (iCaller==MAX_PHYS_THREADS && (!IsPODThread(g_pPhysWorlds[0]) || !*g_pLockIntersect))
-		SpinLock(lock.prw=g_pLockIntersect, 0,lock.iActive=WRITE_LOCK_VAL);
+	if (iCaller==MAX_PHYS_THREADS)
+		iCaller = get_iCaller();
+	if (iCaller>=MAX_PHYS_THREADS && (!IsPODThread(g_pPhysWorlds[0]) || !g_pLockIntersect[iCaller-MAX_PHYS_THREADS]))
+		SpinLock(lock.prw=g_pLockIntersect+(iCaller-MAX_PHYS_THREADS), 0,lock.iActive=WRITE_LOCK_VAL);
 	int res = Intersect(pCollider, pdata1,pdata2, pparams, pcontacts);
 	if (!res) {
 		AtomicAdd(lock.prw,-lock.iActive); 
@@ -919,14 +921,14 @@ int SanityCheckTree(CBVTree* pBVtree, int maxDepth)
 {
 	BV* pBV;
 	bool okay = true;
-	int iCaller = get_iCaller(), locked=0;
-	if (iCaller==MAX_PHYS_THREADS && (!IsPODThread(g_pPhysWorlds[0]) || !*g_pLockIntersect))
-		SpinLock(g_pLockIntersect, 0,locked=WRITE_LOCK_VAL);
+	int iCaller = get_iCaller(1), locked=0;
+	if (iCaller>=MAX_PHYS_THREADS && (!IsPODThread(g_pPhysWorlds[0]) || !g_pLockIntersect[iCaller-MAX_PHYS_THREADS]))
+		SpinLock(g_pLockIntersect+(iCaller-MAX_PHYS_THREADS), 0,locked=WRITE_LOCK_VAL);
 	ResetGlobalPrimsBuffers(iCaller);
 	pBVtree->GetNodeBV(pBV, 0, iCaller);
 	TestBV(pBVtree, pBV, iCaller, 0, okay, maxDepth);
 	if (locked)
-		AtomicAdd(g_pLockIntersect, -locked);
+		AtomicAdd(g_pLockIntersect+(iCaller-MAX_PHYS_THREADS), -locked);
 	return okay?1:0;
 }
 
