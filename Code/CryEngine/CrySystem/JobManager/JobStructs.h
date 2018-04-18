@@ -30,15 +30,15 @@ enum
 // configuration for job queue sizes:
 // we have two types of backends, threads and blocking threads
 // each jobqueue has three priority levels, the first value is high priority, then regular, followed by low priority
-static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_HighPriority = 128;
-static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_RegularPriority = 1024;
-static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_LowPriority = 512;
-static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_StreamPriority = 512;
+static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_HighPriority = 2048;
+static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_RegularPriority = 2048;
+static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_LowPriority = 2048;
+static const unsigned int cMaxWorkQueueJobs_ThreadBackEnd_StreamPriority = 2048;
 
-static const unsigned int cMaxWorkQueueJobs_BlockingBackEnd_HighPriority = 64;
-static const unsigned int cMaxWorkQueueJobs_BlockingBackEnd_RegularPriority = 256;
+static const unsigned int cMaxWorkQueueJobs_BlockingBackEnd_HighPriority = 512;
+static const unsigned int cMaxWorkQueueJobs_BlockingBackEnd_RegularPriority = 512;
 static const unsigned int cMaxWorkQueueJobs_BlockingBackEnd_LowPriority = 512;
-static const unsigned int cMaxWorkQueueJobs_BlockingBackEnd_StreamPriority = 128;
+static const unsigned int cMaxWorkQueueJobs_BlockingBackEnd_StreamPriority = 512;
 
 // struct to manage the state of a job slot
 // used to indicate that a info block has been finished writing
@@ -90,6 +90,7 @@ struct SJobQueue
 	JobManager::detail::EAddJobRes GetJobSlot(uint32& rJobSlot, uint32 nPriorityLevel, bool bWaitForFreeJobSlot);
 
 	static uint32                  GetMaxWorkerQueueJobs(uint32 nPriorityLevel);
+	static const char*             PrioToString(uint32 nPriorityLevel);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,12 +144,15 @@ inline JobManager::detail::EAddJobRes JobManager::SJobQueue<nMaxWorkQueueJobsHig
 
 		if (bWait)
 		{
+			CRY_ASSERT_MESSAGE(false, "JobManager: Exceeded job queue size (%u) for priority level \"%s\"", nMaxWorkerQueueJobs, PrioToString(nPriorityLevel));
 			if (bWaitForFreeJobSlot)
 			{
 				pPushInfoBlock->Wait(nRoundID, (1 << JobManager::SJobQueuePos::eBitsPerPriorityLevel) / nMaxWorkerQueueJobs);
 			}
 			else
+			{
 				return JobManager::detail::eAJR_NeedFallbackJobInfoBlock;
+		}
 		}
 
 		rJobSlot = jobSlot;
@@ -231,5 +235,24 @@ ILINE uint32 JobManager::SJobQueue<nMaxWorkQueueJobsHighPriority, nMaxWorkQueueJ
 		return eMaxWorkQueueJobsStreamPriority;
 	default:
 		return ~0;
+	}
+}
+
+
+template<int nMaxWorkQueueJobsHighPriority, int nMaxWorkQueueJobsRegularPriority, int nMaxWorkQueueJobsLowPriority, int nMaxWorkQueueJobsStreamPriority>
+ILINE const char* JobManager::SJobQueue<nMaxWorkQueueJobsHighPriority, nMaxWorkQueueJobsRegularPriority, nMaxWorkQueueJobsLowPriority, nMaxWorkQueueJobsStreamPriority>::PrioToString(uint32 nPriorityLevel)
+{
+	switch (nPriorityLevel)
+	{
+	case eHighPriority:
+		return "High";
+	case eRegularPriority:
+		return "Regular";
+	case eLowPriority:
+		return "Low";
+	case eStreamPriority:
+		return "Stream";
+	default:
+		return "Unknown";
 	}
 }
