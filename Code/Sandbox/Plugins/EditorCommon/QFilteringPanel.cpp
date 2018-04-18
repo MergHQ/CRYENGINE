@@ -240,6 +240,8 @@ public:
 	void        OnSelectOperator(Attributes::IAttributeFilterOperator* op);
 	void        UpdateAttributesComboBox();
 
+	bool        HasSameState(const QVariantMap& state) const;
+
 	void        SetState(const QVariantMap& state);
 	QVariantMap GetState() const;
 
@@ -422,6 +424,32 @@ void QFilteringPanel::CFilterWidget::OnSelectOperator(Attributes::IAttributeFilt
 void QFilteringPanel::CFilterWidget::Remove()
 {
 	deleteLater();
+}
+
+bool QFilteringPanel::CFilterWidget::HasSameState(const QVariantMap& state) const
+{
+	QVariant enabled = state.value("enabled");
+	QVariant attributeName = state.value("attributeName");
+	QVariant operatorName = state.value("operator");
+	QVariant filterValue = state.value("filterValue");
+	QVariant inverted = state.value("inverted");
+
+	if (!attributeName.isValid() || m_pFilter->GetAttribute()->GetName() != attributeName.toString())
+		return false;
+
+	if (!operatorName.isValid() || m_pFilter->GetOperator()->GetName() != operatorName.toString())
+		return false;
+
+	if (!filterValue.isValid() || m_pFilter->GetFilterValue() != filterValue)
+		return false;
+
+	if (!enabled.isValid() || m_pFilter->IsEnabled() != enabled.toBool())
+		return false;
+
+	if (!inverted.isValid() || m_pFilter->IsInverted() != inverted.toBool())
+		return false;
+
+	return true;
 }
 
 void QFilteringPanel::CFilterWidget::SetState(const QVariantMap& state)
@@ -641,9 +669,18 @@ void QFilteringPanel::FillMenu(CAbstractMenu* pMenu, const QString& submenuName)
 	for (QString filterName : filters)
 	{
 		QAction* const pAction = pMenu->CreateAction(filterName, section);
-		connect(pAction, &QAction::triggered, [this, filterName]()
+		pAction->setCheckable(true);
+		pAction->setChecked(IsFilterSet(filterName));
+		connect(pAction, &QAction::triggered, [this, filterName](bool checked)
 		{
-			LoadFilter(filterName);
+			if (checked)
+			{
+				LoadFilter(filterName);
+			}
+			else
+			{
+				Clear();
+			}
 		});
 	}
 
@@ -652,6 +689,39 @@ void QFilteringPanel::FillMenu(CAbstractMenu* pMenu, const QString& submenuName)
 		QAction* const pAction = pMenu->CreateAction(tr("No Saved Filters"), section);
 		pAction->setEnabled(false);
 	}
+}
+
+bool QFilteringPanel::IsFilterSet(const QString& filterName) const
+{
+	auto savedFiltersVariant = GetIEditor()->GetPersonalizationManager()->GetProjectProperty("QFilteringPanel", m_uniqueName);
+	if (!savedFiltersVariant.isValid() || savedFiltersVariant.type() != QVariant::Map)
+		return false;
+
+	QVariantMap map = savedFiltersVariant.toMap();
+	QVariant state = map[filterName];
+	if (!state.isValid() || state.type() != QVariant::List)
+		return false;
+
+	QVariantList filtersList = state.value<QVariantList>();
+
+	if (m_filters.size() != filtersList.size())
+		return false;
+
+	int idx = 0;
+	for (QVariant& var : filtersList)
+	{
+		if (var.isValid() && var.type() == QVariant::Map)
+		{
+			if (!m_filters[idx++]->HasSameState(var.value<QVariantMap>()))
+				return false;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 QVector<QString> QFilteringPanel::GetSavedFilters() const

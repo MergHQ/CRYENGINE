@@ -12,6 +12,9 @@ namespace Cry
 	{
 		class CPlaneConstraintComponent
 			: public IEntityComponent
+#ifndef RELEASE
+			, public IEntityComponentPreviewer
+#endif
 		{
 		protected:
 			friend CPlugin_CryDefaultEntities;
@@ -26,6 +29,15 @@ namespace Cry
 			virtual void OnShutDown() final;
 			// ~IEntityComponent
 
+#ifndef RELEASE
+			// IEntityComponentPreviewer
+			virtual IEntityComponentPreviewer* GetPreviewer() final { return this; }
+
+			virtual void SerializeProperties(Serialization::IArchive& archive) final {}
+			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const final;
+			// ~IEntityComponentPreviewer
+#endif
+
 		public:
 			virtual ~CPlaneConstraintComponent() = default;
 
@@ -39,12 +51,11 @@ namespace Cry
 				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
 				desc.AddMember(&CPlaneConstraintComponent::m_bActive, 'actv', "Active", "Active", "Whether or not the constraint should be added on component reset", true);
-				desc.AddMember(&CPlaneConstraintComponent::m_axis, 'axis', "Axis", "Axis", "Axis around which the physical entity is constrained, as well as the plane's normal", Vec3(0.f, 0.f, 1.f));
 
 				desc.AddMember(&CPlaneConstraintComponent::m_limitMin, 'lmin', "LimitMinX", "Twist rotation min angle", nullptr, -360.0_degrees);
 				desc.AddMember(&CPlaneConstraintComponent::m_limitMax, 'lmax', "LimitMaxX", "Twist rotation max angle", nullptr, 360.0_degrees);
 				desc.AddMember(&CPlaneConstraintComponent::m_limitMaxY, 'lmay', "LimitMaxY", "Bend max angle", nullptr, 0.0_degrees);
-
+				desc.AddMember(&CPlaneConstraintComponent::m_axis, 'axi', "Axis", "Axis", nullptr, Vec3(0, 0, 1));
 				desc.AddMember(&CPlaneConstraintComponent::m_damping, 'damp', "Damping", "Damping", nullptr, 0.f);
 			}
 
@@ -155,6 +166,7 @@ namespace Cry
 
 				m_pEntity->UpdateComponentEventMask(this);
 			}
+
 			bool IsActive() const { return m_bActive; }
 
 			virtual void SetLimitsX(CryTransform::CAngle minLimit, CryTransform::CAngle maxLimit) { m_limitMin = minLimit; m_limitMax = maxLimit; }

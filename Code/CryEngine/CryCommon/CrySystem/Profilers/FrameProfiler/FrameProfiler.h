@@ -6,6 +6,7 @@
 
 #include <CryCore/Platform/platform.h>
 #include <CrySystem/ISystem.h>
+#include <CrySystem/ITimer.h>
 
 #include "FrameProfiler_Shared.h"
 #include "FrameProfiler_Internal.h"
@@ -258,6 +259,74 @@ protected:
 	// Adds the entry to the timer history (current timer value).
 };
 
+struct SCountTraits
+{
+	typedef uint32 TValue;
+	typedef uint32 TDisplay;
+
+	ILINE static TDisplay ToDisplay(TValue val) { return val; }
+	ILINE static TDisplay ToDisplay(float val)  { return pos_round(val); }
+};
+
+struct STickTraits
+{
+	typedef int64 TValue;
+	typedef float TDisplay;
+
+	static TDisplay ToDisplay(TValue val) { return gEnv->pTimer->TicksToSeconds(val) * 1000.0f; }
+	static TDisplay ToDisplay(float val)  { return val / (float)gEnv->pTimer->GetTicksPerSecond() * 1000.0f; }
+};
+
+template<class Traits>
+class CSamplerHistory
+{
+public:
+	using_type(Traits, TValue);
+	using_type(Traits, TDisplay);
+
+	//! Add a new sample to history.
+	void Update(float blendCur)
+	{
+		float last = float(m_current);
+		Blend(m_average, last, blendCur);
+		Blend(m_deviationSqr, sqr(last - m_average), blendCur);
+		Blend(m_minDecay, last, blendCur);
+		if (last <= m_minDecay)
+			m_minDecay = float(m_min = m_current);
+		Blend(m_maxDecay, last, blendCur);
+		if (last >= m_maxDecay)
+			m_maxDecay = float(m_max = m_current);
+	}
+	//! Cleans up the data history.
+	void Clear()                   { *this = {}; }
+
+	operator TValue() const        { return m_current; }
+	TValue& operator=(TValue val)  { return m_current = val; }
+	TValue& operator+=(TValue val) { return m_current += val; }
+	void operator++(int)           { m_current++; }
+
+	TValue Current() const         { return m_current; }
+	TDisplay Last() const          { return Traits::ToDisplay(m_current); }
+	TDisplay Average() const       { return Traits::ToDisplay(m_average); }
+	TDisplay Variance() const      { return Traits::ToDisplay(sqrt(m_deviationSqr)); }
+	TDisplay Max() const           { return Traits::ToDisplay(m_max); }
+	TDisplay Min() const           { return Traits::ToDisplay(m_min); }
+
+protected:
+	TValue m_current      = 0;
+	float  m_average      = 0,
+           m_deviationSqr = 0,
+           m_minDecay     = 0,
+           m_maxDecay     = 0;
+	TValue m_min          = 0,
+           m_max          = 0;
+
+	static void Blend(float& stat, float cur, float blendCur)
+	{
+		stat += (cur - stat) * blendCur;
+	}
+};
+
 //////////////////////////////////////////////////////////////////////////
 class CFrameProfilerGraph
 {
@@ -290,19 +359,20 @@ public:
 	const char*   m_fileName;
 	unsigned long m_fileLine;
 
+	//! How many times this profiler counter was executed.
+	CSamplerHistory<SCountTraits> m_count;
+
 	//! Total time spent in this counter including time of child profilers in current frame.
-	int64 m_totalTime;
+	CSamplerHistory<STickTraits>  m_totalTime;
 
 	//! Self frame time spent only in this counter (But includes recursive calls to same counter) in current frame.
-	int64 m_selfTime;
-
+	CSamplerHistory<STickTraits>  m_selfTime;
+	
 	//! Latest frame ID.
 	uint64 m_latestFrame;
+	
 	//! Displayed quantity (interpolated or average).
 	float  m_displayedValue;
-
-	//! How many times this profiler counter was executed.
-	int m_count;
 
 	//! How variant this value.
 	float m_variance;
@@ -325,6 +395,7 @@ public:
 
 	//! Thread Id of this instance.
 	threadID            m_threadId;
+	uint                m_activeThreads;
 	//! Linked list to other thread instances.
 	CFrameProfiler*     m_pNextThread;
 
@@ -337,10 +408,6 @@ public:
 	//! Tells if this FrameProfiler has yet been added to the FrameProfileSystem.
 	bool m_bInitialized;
 
-	CFrameProfilerSamplesHistory<float, PROFILE_HISTORY_COUNT> m_totalTimeHistory;
-	CFrameProfilerSamplesHistory<float, PROFILE_HISTORY_COUNT> m_selfTimeHistory;
-	CFrameProfilerSamplesHistory<int, PROFILE_HISTORY_COUNT>   m_countHistory;
-
 	//! Graph data for this frame profiler.
 
 	//! Graph associated with this profiler.
@@ -352,11 +419,8 @@ public:
 		: m_name(sCollectorName)
 		, m_fileName(fileName)
 		, m_fileLine(fileLine)
-		, m_totalTime(0)
-		, m_selfTime(0)
 		, m_latestFrame(0)
 		, m_displayedValue(0.0f)
-		, m_count(0)
 		, m_variance(0.0f)
 		, m_peak(0)
 		, m_pParent(nullptr)
@@ -366,6 +430,7 @@ public:
 		, m_colorIdentifier(0)
 		, m_stallCause(nullptr)
 		, m_threadId(0)
+		, m_activeThreads(0)
 		, m_pNextThread(nullptr)
 		, m_description(desc)
 		, m_bInitialized(false)
@@ -394,6 +459,17 @@ public:
 				pFrameProfileSystem->RemoveFrameProfiler(this);
 			}
 		}
+	}
+
+	void Reset()
+	{
+		m_count = {};
+		m_totalTime = {};
+		m_selfTime = {};
+		m_peak = 0;
+		m_displayedValue = 0;
+		m_variance = 0;
+		m_activeThreads = 0;
 	}
 };
 

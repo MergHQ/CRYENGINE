@@ -302,7 +302,7 @@ void CEnvironementProbeObject::Display(DisplayContext& dc)
 		dc.SetColor(GetColor());
 	}
 
-	if (AuxEditorMeshPresent())
+	if (!AuxEditorMeshPresent())
 	{
 		dc.PushMatrix(wtm);
 		Vec3 sz(fScale * 0.5f, fScale * 0.5f, fScale * 0.5f);

@@ -244,6 +244,10 @@ private:
 	int32                    m_customResH;
 	int32                    m_customFPS;
 	bool                     m_bIsLoadingPreset;
+
+	SDisplayContextKey       m_displayContextKey;
+	int32                    m_viewPortResW;
+	int32                    m_viewPortResH;
 };
 
 inline CTrackViewBatchRenderDlg::SInputGroup::SInputGroup()

@@ -1126,11 +1126,9 @@ struct DynArray : Array<T, I, STORE>
 
 	DynArray(std::initializer_list<T> list)
 	{
-		create(list.size(), EInit::eNoInit);
+		reserve(list.size());
 		for (const T& element : list)
-		{
 			emplace_back(element);
-		}
 	}
 
 	template<class Val>

@@ -68,14 +68,14 @@ bool CryAssertIsEnabled()
 namespace Detail
 {
 
-void CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* const szMessage)
+bool CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* const szMessage)
 {
 	CryAssertTrace(szMessage);
-	CryAssertHandler(data, cond);
+	return CryAssertHandler(data, cond);
 }
 
 NO_INLINE
-void CryAssertHandler(SAssertData const& data, SAssertCond& cond)
+bool CryAssertHandler(SAssertData const& data, SAssertCond& cond)
 {
 	if (cond.bLogAssert) // Just log assert the first time
 	{
@@ -86,10 +86,9 @@ void CryAssertHandler(SAssertData const& data, SAssertCond& cond)
 	if (!cond.bIgnoreAssert && CryAssertIsEnabled()) // Don't show assert once it was ignored
 	{
 		if (CryAssert(data.szExpression, data.szFile, data.line, &cond.bIgnoreAssert))
-		{
-			__debugbreak();
-		}
+			return true;
 	}
+	return false;
 }
 } // namespace Detail
 

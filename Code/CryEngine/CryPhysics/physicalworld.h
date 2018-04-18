@@ -26,7 +26,7 @@ struct le_precomp_entity;
 struct le_precomp_part;
 struct le_tmp_contact;
 enum { pef_step_requested = 0x40000000 };
-enum entity_query_flags_aux { ent_GEA_external = ent_reserved };
+enum entity_query_flags_aux { ent_GEA_recursive = ent_reserved1, ent_GEA_external = ent_reserved2 };
 
 template <class T> T *CONTACT_END(T *const &pnext) { return (T*)((INT_PTR)&pnext-(INT_PTR)&((T*)0)->next); }
 

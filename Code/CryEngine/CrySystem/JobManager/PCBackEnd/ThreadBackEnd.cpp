@@ -70,7 +70,7 @@ bool JobManager::ThreadBackEnd::CThreadBackEnd::Init(uint32 nSysMaxWorker)
 	}
 #if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 	m_pBackEndWorkerProfiler = new JobManager::CWorkerBackEndProfiler;
-	m_pBackEndWorkerProfiler->Init(nNumWorkerToCreate);
+	m_pBackEndWorkerProfiler->Init(m_nNumWorkerThreads);
 #endif
 
 	return true;

@@ -122,6 +122,18 @@ void CStaticMeshComponent::ProcessEvent(const SEntityEvent& event)
 	CBaseMeshComponent::ProcessEvent(event);
 }
 
+#ifndef RELEASE
+void CStaticMeshComponent::Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const
+{
+	if (m_type == EMeshType::Collider && context.bSelected)
+	{
+		context.debugDrawInfo.tm = m_pEntity->GetSlotWorldTM(GetEntitySlotId());
+		m_pCachedStatObj->DebugDraw(context.debugDrawInfo);
+	}
+
+}
+#endif
+
 void CStaticMeshComponent::SetFilePath(const char* szPath)
 {
 	m_filePath.value = szPath;

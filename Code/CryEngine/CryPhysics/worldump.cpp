@@ -1863,7 +1863,7 @@ struct CRopeEntitySerializer : CPhysicalEntitySerializer {
 				Vec3 pos; quaternionf q; float scale;
 				pent->m_pTiedTo[i]->GetLocTransform(pent->m_iTiedPart[i], pos,q,scale, pent);
 				pr.ptTiedTo[i] = q*pent->m_ptTiedLoc[i]+pos;
-				pent->m_pTiedTo[0] = 0;
+				pent->m_pTiedTo[i] = 0;
 			}
 			pent->SetParams(&pr);
 		}
@@ -2549,7 +2549,7 @@ struct CLoaderSizer : public CDummySizer {
 };
 
 void PostLoadEntity(CPhysicalEntity *pent, CLoaderSizer&) {
-	pent->m_pNewCoords = (coord_block*)&pent->m_pos;
+	pent->m_pNewCoords = pent->m_pSyncCoords = (coord_block*)&pent->m_pos;
 	for(int i=0;i<pent->m_nParts;i++)	{
 		pent->m_parts[i].pNewCoords = (coord_block_BBox*)&pent->m_parts[i].pos;
 		if (!pent->m_parts[i].pMatMapping) {

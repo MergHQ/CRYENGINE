@@ -78,6 +78,12 @@ struct Init##var { \
 	Init##var() { var##idx = TlsAlloc(); } \
 }; \
 Init##var g_init##var;
+#define TLS_DEFINE_DEFAULT_VALUE(type, var, value)                                    \
+int var ## idx;                                                                       \
+struct Init ## var {                                                                  \
+	Init ## var() { var ## idx = TlsAlloc(); TlsSetValue(var ## idx, (void*)(value)); } \
+};                                                                                    \
+Init ## var g_init ## var;
 #define TLS_GET(type,var) (type)TlsGetValue(var##idx)
 #define TLS_SET(var,val) TlsSetValue(var##idx,(void*)(val))
 inline threadID CryGetCurrentThreadId() { return GetCurrentThreadId();}

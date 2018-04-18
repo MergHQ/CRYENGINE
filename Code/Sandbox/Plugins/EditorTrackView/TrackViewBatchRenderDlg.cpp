@@ -30,6 +30,8 @@
 
 #include "ICommandManager.h"
 #include "GameEngine.h"
+#include "RenderViewport.h"
+#include "Viewmanager.h"
 
 Q_DECLARE_METATYPE(IAnimSequence*)
 
@@ -1285,6 +1287,23 @@ void CTrackViewBatchRenderDlg::InitializeRenderContext()
 	m_renderContext.currentItemIndex = 0;
 	m_renderContext.spentTicks = 0;
 	m_renderContext.expectedTotalTicks = 0;
+	if (gEnv && gEnv->pRenderer)
+	{
+		CRenderViewport* pGameViewport = (CRenderViewport*)GetIEditor()->GetViewManager()->GetGameViewport();
+		if (pGameViewport)
+		{
+			auto displayContext = pGameViewport->GetDisplayContext();
+			m_displayContextKey = displayContext.GetDisplayContextKey();
+			pGameViewport->GetResolution(m_viewPortResW, m_viewPortResH);
+		}
+		else
+		{
+			m_displayContextKey = {};
+			m_viewPortResW = 0;
+			m_viewPortResH = 0;
+		}
+	}
+
 	for (SRenderItem renderItem : m_renderItems)
 	{
 		AnimRange rng = renderItem.frameRange;
@@ -1358,7 +1377,7 @@ void CTrackViewBatchRenderDlg::BegCaptureItem()
 	}
 	cry_strcpy(m_renderContext.captureOptions.m_folder, finalFolder.GetString());
 
-	/// Change the resolution.
+	/// Change the resolution. NOT
 	ICVar* pCVarCustomResWidth = gEnv->pConsole->GetCVar("r_CustomResWidth");
 	ICVar* pCVarCustomResHeight = gEnv->pConsole->GetCVar("r_CustomResHeight");
 	if (pCVarCustomResWidth && pCVarCustomResHeight)
@@ -1369,11 +1388,8 @@ void CTrackViewBatchRenderDlg::BegCaptureItem()
 		pCVarCustomResWidth->Set(renderItem.resW);
 		pCVarCustomResHeight->Set(renderItem.resH);
 	}
-	else
-	{
-		// Otherwise, try to adjust the viewport resolution accordingly.
-		GetIEditor()->ExecuteCommand("general.resize_viewport %d %d", renderItem.resW, renderItem.resH);
-	}
+	// resize viewport for each renderitem during sequence capture
+	gEnv->pRenderer->ResizeContext(m_displayContextKey, renderItem.resW, renderItem.resH);
 
 	// The capturing doesn't actually start here. It just flags the warming-up and
 	// once it's done, then the capturing really begins.
@@ -1388,7 +1404,7 @@ void CTrackViewBatchRenderDlg::EndCaptureItem(IAnimSequence* pSequence)
 	GetIEditor()->SetInGameMode(false);
 	GetIEditor()->GetGameEngine()->Update();
 	GetIEditor()->Notify(eNotify_OnIdleUpdate);
-
+	// to do: remove this cvar diddling?
 	ICVar* pCVarCustomResWidth = gEnv->pConsole->GetCVar("r_CustomResWidth");
 	ICVar* pCVarCustomResHeight = gEnv->pConsole->GetCVar("r_CustomResHeight");
 	if (pCVarCustomResWidth && pCVarCustomResHeight)
@@ -1404,6 +1420,9 @@ void CTrackViewBatchRenderDlg::EndCaptureItem(IAnimSequence* pSequence)
 	pSequence->SetActiveDirector(m_renderContext.pActiveDirectorBU);
 
 	SRenderItem renderItem = m_renderItems[m_renderContext.currentItemIndex];
+	if(m_renderContext.currentItemIndex==m_renderItems.size()-1)  // after last item, reset viewport.
+		gEnv->pRenderer->ResizeContext(m_displayContextKey, m_viewPortResW, m_viewPortResH);
+
 	if (renderItem.bCreateVideo)
 	{
 		// Create a video using the ffmpeg plug-in from captured images.

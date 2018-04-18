@@ -1115,7 +1115,7 @@ public:
 			PhysicsVars* vars = gEnv->pPhysicalWorld->GetPhysVars();
 			vars->lastTimeStep = 0;
 			m_bIsActive = 0;
-			m_stepRequested = min((float)m_stepRequested, 2.f * vars->maxWorldStep);
+			m_stepRequested = 0;
 			while (m_bProcessing);
 			return 1;
 		}

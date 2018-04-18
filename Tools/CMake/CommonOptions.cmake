@@ -43,7 +43,7 @@ if (MSVC_VERSION)
 option(OPTION_SHOW_COMPILE_METRICS "Show MSVC compilation metrics" OFF)
 endif()
 
-if (MSVC_VERSION GREATER 1900) # Visual Studio > 2017
+if (MSVC_VERSION GREATER 1900 AND "${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}" VERSION_GREATER_EQUAL "10.0.16299.0")
 	option(OPTION_MSVC_PERMISSIVE_MINUS "Enable Visual Studio C++ /permissive- compile option for the standards-conforming compiler behavior" ON)
 endif()
 

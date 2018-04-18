@@ -2826,7 +2826,8 @@ enum entity_query_flags
 	ent_delayed_deformations   = 0x80000,  //!< queues procedural breakage requests; can only be used in SimulateExplosion
 	ent_addref_results         = 0x100000, //!< will call AddRef on each entity in the list (expecting the caller call Release)
 	ent_use_sync_coords        = 0x200000, //<! use entity coords that are sync'ed to the last poststep event pump
-	ent_reserved               = 0x40000000 
+	ent_reserved2              = 0x20000000,
+	ent_reserved1              = 0x40000000 
 };
 enum phys_locks { PLOCK_WORLD_STEP = 1, PLOCK_QUEUE, PLOCK_TRACE_PENDING_RAYS, PLOCK_AREAS, PLOCK_CALLER0, PLOCK_CALLER1 };
 

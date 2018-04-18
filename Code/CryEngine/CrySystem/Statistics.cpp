@@ -1568,7 +1568,7 @@ void CEngineStats::CollectProfileStatistics()
 	for (uint32 i = 0; i < num; ++i)
 	{
 		CFrameProfiler* pFrameInfo = pProfiler->GetProfiler(i);
-		if (pFrameInfo && pFrameInfo->m_countHistory.GetAverage() > 0 && pFrameInfo->m_totalTimeHistory.GetAverage() > 0.0f)
+		if (pFrameInfo && pFrameInfo->m_count.Average() > 0 && pFrameInfo->m_totalTime.Average() > 0.0f)
 			++need;
 	}
 
@@ -1577,20 +1577,20 @@ void CEngineStats::CollectProfileStatistics()
 	{
 		CFrameProfiler* pFrameInfo = pProfiler->GetProfiler(j);
 
-		if (pFrameInfo && pFrameInfo->m_countHistory.GetAverage() > 0 && pFrameInfo->m_totalTimeHistory.GetAverage() > 0.0f)
+		if (pFrameInfo && pFrameInfo->m_count.Average() > 0 && pFrameInfo->m_totalTime.Average() > 0.0f)
 		{
 
-			m_stats.profilers[i].m_count = pFrameInfo->m_countHistory.GetAverage();           //pFrameInfo->m_count;
-			m_stats.profilers[i].m_displayedValue = pFrameInfo->m_selfTimeHistory.GetAverage();
+			m_stats.profilers[i].m_count = pFrameInfo->m_count.Average();           //pFrameInfo->m_count;
+			m_stats.profilers[i].m_displayedValue = pFrameInfo->m_selfTime.Average();
 			m_stats.profilers[i].m_name = pFrameInfo->m_name;
 			m_stats.profilers[i].m_module = ((CFrameProfileSystem*)pProfiler)->GetModuleName(pFrameInfo);
 			m_stats.profilers[i].m_selfTime = pFrameInfo->m_selfTime;
-			m_stats.profilers[i].m_totalTime = pFrameInfo->m_totalTimeHistory.GetAverage();
+			m_stats.profilers[i].m_totalTime = pFrameInfo->m_totalTime.Average();
 			m_stats.profilers[i].m_variance = pFrameInfo->m_variance;
-			m_stats.profilers[i].m_min = (float)pFrameInfo->m_selfTimeHistory.GetMin();
-			m_stats.profilers[i].m_max = (float)pFrameInfo->m_selfTimeHistory.GetMax();
-			m_stats.profilers[i].m_mincount = pFrameInfo->m_countHistory.GetMin();
-			m_stats.profilers[i].m_maxcount = pFrameInfo->m_countHistory.GetMax();
+			m_stats.profilers[i].m_min = (float)pFrameInfo->m_selfTime.Min();
+			m_stats.profilers[i].m_max = (float)pFrameInfo->m_selfTime.Max();
+			m_stats.profilers[i].m_mincount = pFrameInfo->m_count.Min();
+			m_stats.profilers[i].m_maxcount = pFrameInfo->m_count.Max();
 			i++;
 		}
 	}
@@ -1614,17 +1614,17 @@ void CEngineStats::CollectProfileStatistics()
 		m_stats.peaks[i].count = pPeak->count;                                                 // Number of times called for peak.
 		m_stats.peaks[i].when = pPeak->when;                                                   // when it added.
 
-		m_stats.peaks[i].profiler.m_count = pFrameInfo->m_countHistory.GetAverage();           //pFrameInfo->m_count;
-		m_stats.peaks[i].profiler.m_displayedValue = pFrameInfo->m_selfTimeHistory.GetAverage();
+		m_stats.peaks[i].profiler.m_count = pFrameInfo->m_count.Average();           //pFrameInfo->m_count;
+		m_stats.peaks[i].profiler.m_displayedValue = pFrameInfo->m_selfTime.Average();
 		m_stats.peaks[i].profiler.m_name = pFrameInfo->m_name;
 		m_stats.peaks[i].profiler.m_module = ((CFrameProfileSystem*)pProfiler)->GetModuleName(pFrameInfo);
 		m_stats.peaks[i].profiler.m_selfTime = pFrameInfo->m_selfTime;
-		m_stats.peaks[i].profiler.m_totalTime = pFrameInfo->m_totalTimeHistory.GetAverage();
+		m_stats.peaks[i].profiler.m_totalTime = pFrameInfo->m_totalTime.Average();
 		m_stats.peaks[i].profiler.m_variance = pFrameInfo->m_variance;
-		m_stats.peaks[i].profiler.m_min = (float)pFrameInfo->m_selfTimeHistory.GetMin();
-		m_stats.peaks[i].profiler.m_max = (float)pFrameInfo->m_selfTimeHistory.GetMax();
-		m_stats.peaks[i].profiler.m_mincount = pFrameInfo->m_countHistory.GetMin();
-		m_stats.peaks[i].profiler.m_maxcount = pFrameInfo->m_countHistory.GetMax();
+		m_stats.peaks[i].profiler.m_min = (float)pFrameInfo->m_selfTime.Min();
+		m_stats.peaks[i].profiler.m_max = (float)pFrameInfo->m_selfTime.Max();
+		m_stats.peaks[i].profiler.m_mincount = pFrameInfo->m_count.Min();
+		m_stats.peaks[i].profiler.m_maxcount = pFrameInfo->m_count.Max();
 	}
 
 	int modules = ((CFrameProfileSystem*)pProfiler)->GetModuleCount();

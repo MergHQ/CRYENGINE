@@ -65,30 +65,31 @@ public:
 	{
 		Initialized            = 1 << 0,
 		InActiveList           = 1 << 1,
-		Hidden                 = 1 << 2,
-		Invisible              = 1 << 3,
-		LoadedFromLevelFile    = 1 << 4,
-		SelectedInEditor       = 1 << 5,
-		HighlightedInEditor    = 1 << 6,
+		MarkedForDeletion      = 1 << 2,
+		Hidden                 = 1 << 3,
+		Invisible              = 1 << 4,
+		LoadedFromLevelFile    = 1 << 5,
+		SelectedInEditor       = 1 << 6,
+		HighlightedInEditor    = 1 << 7,
 		//! Components known at load time were allocated in one contiguous chunk of memory along with the entity
-		PreallocatedComponents = 1 << 7,
+		PreallocatedComponents = 1 << 8,
 
 		// Start CEntityRender entries
 		// Bounding box should not be recalculated
-		FixedBounds  = 1 << 8,
-		ValidBounds  = 1 << 9,
-		HasParticles = 1 << 10,
+		FixedBounds  = 1 << 9,
+		ValidBounds  = 1 << 10,
+		HasParticles = 1 << 11,
 
 		// Start CEntityPhysics entries
-		FirstPhysicsFlag                   = 1 << 11,
+		FirstPhysicsFlag                   = 1 << 12,
 		PhysicsIgnoreTransformEvent        = FirstPhysicsFlag,
-		PhysicsDisabled                    = 1 << 12,
-		PhysicsSyncCharacter               = 1 << 13,
-		PhysicsHasCharacter                = 1 << 14,
-		PhysicsAwakeOnRender               = 1 << 15,
-		PhysicsAttachClothOnRender         = 1 << 16,
-		PhysicsDisableNetworkSerialization = 1 << 17,
-		PhysicsRemoved                     = 1 << 18,
+		PhysicsDisabled                    = 1 << 13,
+		PhysicsSyncCharacter               = 1 << 14,
+		PhysicsHasCharacter                = 1 << 15,
+		PhysicsAwakeOnRender               = 1 << 16,
+		PhysicsAttachClothOnRender         = 1 << 17,
+		PhysicsDisableNetworkSerialization = 1 << 18,
+		PhysicsRemoved                     = 1 << 19,
 		LastPhysicsFlag                    = PhysicsRemoved
 	};
 
@@ -126,7 +127,7 @@ public:
 	virtual void   SetFlagsExtended(uint32 flags) final;
 	virtual uint32 GetFlagsExtended() const final                            { return m_flagsExtended; }
 
-	virtual bool   IsGarbage() const final                                   { return (m_flags & ENTITY_FLAG_REMOVED) != 0; }
+	virtual bool   IsGarbage() const final                                   { return HasInternalFlag(EInternalFlag::MarkedForDeletion); }
 	virtual bool   IsLoadedFromLevelFile() const final                       { return HasInternalFlag(EInternalFlag::LoadedFromLevelFile); }
 	ILINE void     SetLoadedFromLevelFile(const bool wasLoadedFromLevelFile) { SetInternalFlag(EInternalFlag::LoadedFromLevelFile, wasLoadedFromLevelFile); }
 
@@ -367,6 +368,9 @@ public:
 	// For internal use.
 	CEntitySystem* GetCEntitySystem() const { return g_pIEntitySystem; }
 
+	// Sends the event to all listeners, if there are any
+	// Bypasses the main IsGarbage check from SendEvent!
+	bool           SendEventInternal(const SEntityEvent& event);
 	void           PrepareForDeletion();
 
 	// for ProximityTriggerSystem

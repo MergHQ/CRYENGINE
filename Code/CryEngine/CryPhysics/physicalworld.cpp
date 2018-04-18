@@ -89,7 +89,7 @@ void CPhysicalWorld::CPhysicalEntityIt::MoveFirst()
 CPhysicalWorld *g_pPhysWorlds[64];
 int g_nPhysWorlds;
 
-#if MAX_PHYS_THREADS<=1
+#if MAX_TOT_THREADS<=2
 threadID g_physThreadId = THREADID_NULL;
 #else
 TLS_DEFINE(int*, g_pidxPhysThread);
@@ -434,10 +434,11 @@ void CPhysicalWorld::Init()
 	m_lockDeformingEntsList = 0;
 	m_lockAreas = 0; m_lockActiveAreas = 0;
 	m_matWater = -1; m_bCheckWaterHits = 0;
-	if (!g_StaticPhysicalEntity.m_pWorld)
+	if (!g_StaticPhysicalEntity.m_pWorld)	{
 		g_StaticPhysicalEntity.m_pWorld = this;
+		SetGrid(&g_StaticPhysicalEntity, &m_entgrid);
+	}
 	g_StaticPhysicalEntity.m_id = -2;
-	SetGrid(&g_StaticPhysicalEntity, &m_entgrid);
 	memset(&CPhysicalEntity::m_defpart,0,sizeof(geom));
 	CPhysicalEntity::m_defpart.q.SetIdentity();
 	CPhysicalEntity::m_defpart.scale = 1.0f;
@@ -1785,8 +1786,6 @@ static ILINE int getcell_safe(grid& g, int ix, int iy, int iOutOfBounds)
 {
 	return (iOutOfBounds & get_entities_out_of_bounds)==0 ? (iy*g.stride.y + ix*g.stride.x) : g.getcell_safe(ix, iy);
 }
-
-const int ent_GEA_recursive = 1<<30;
 
 int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhysicalEntity **&pList, int objtypes,
 																			CPhysicalEntity *pPetitioner, int szListPrealloc, int iCaller)
