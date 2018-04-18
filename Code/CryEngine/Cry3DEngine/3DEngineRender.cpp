@@ -3098,7 +3098,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 
 					if (pFrameProfiler != NULL && pFrameProfiler->m_subsystem == PROFILE_AUDIO)
 					{
-						fTimeMS += pFrameProfiler->m_selfTimeHistory.GetAverage();
+						fTimeMS += pFrameProfiler->m_selfTime.Average();
 					}
 				}
 			}

@@ -405,6 +405,8 @@ public:
 	void         OnSliceAndSleep();
 	//! Get number of registered frame profilers.
 	int          GetProfilerCount() const { return (int)m_profilers.size(); };
+	//! Return the fraction used to blend current with average values.
+	float        GetSmoothFactor() const;
 
 	virtual int  GetPeaksCount() const
 	{
@@ -460,6 +462,8 @@ public:
 	//! Enable/Disable profile samples gathering.
 	void         Enable(bool bCollect, bool bDisplay);
 	void         SetSubsystemFilter(bool bFilterSubsystem, EProfiledSubsystem subsystem);
+	bool         IsSubSystemFiltered(EProfiledSubsystem subsystem) const { return m_bSubsystemFilterEnabled && m_subsystemFilter != subsystem; }
+	bool         IsSubSystemFiltered(CFrameProfiler* pProfiler) const    { return IsSubSystemFiltered((EProfiledSubsystem)pProfiler->m_subsystem); }
 	void         EnableHistograms(bool bEnableHistograms);
 	bool         IsEnabled() const   { return m_bEnabled; }
 	virtual bool IsVisible() const   { return m_bDisplay; }
