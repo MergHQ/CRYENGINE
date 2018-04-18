@@ -1764,6 +1764,9 @@ inline bool JobManager::SJobSyncVariable::SetStopped(SJobStateBase* pPostCallbac
 
 inline void JobManager::SInfoBlock::Release(uint32 nMaxValue)
 {
+	// Free lambda bound resources prior marking the info block as free
+	jobLambdaInvoker = nullptr;
+
 	JobManager::IJobManager* pJobManager = gEnv->GetJobManager();
 
 	SInfoBlockState currentInfoBlockState;
@@ -1784,15 +1787,10 @@ inline void JobManager::SInfoBlock::Release(uint32 nMaxValue)
 	}
 	while (resultInfoBlockState.nValue != currentInfoBlockState.nValue);
 
-	// do we need to release a semaphore
+	// Release semaphore
+	// Since this is a copy of the state when we succeeded the CAS it is ok to it after original jobState was returned to the free list.
 	if (currentInfoBlockState.nSemaphoreHandle)
 		gEnv->GetJobManager()->GetSemaphore(currentInfoBlockState.nSemaphoreHandle, this)->Release();
-
-	if (jobLambdaInvoker)
-	{
-		std::function<void()> empty;
-		jobLambdaInvoker.swap(empty);
-	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////
