@@ -1,3 +1,5 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #ifndef physicalworld_h
 #define physicalworld_h
 #pragma once

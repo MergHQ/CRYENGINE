@@ -1,4 +1,4 @@
-// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 // This is a direct port from legacy FX_ZTargetReadback.
 // There are still issues here, and refactoring may definitely be needed at some point.

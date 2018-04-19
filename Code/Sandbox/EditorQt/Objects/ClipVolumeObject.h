@@ -1,3 +1,5 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #ifndef __INCLUDE_SANDBOX_CLIPVOLUMEOBJECT_H
 #define __INCLUDE_SANDBOX_CLIPVOLUMEOBJECT_H
 

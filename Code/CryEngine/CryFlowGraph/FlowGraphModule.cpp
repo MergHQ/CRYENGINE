@@ -1,3 +1,5 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 // CryDB.cpp : Defines the exported functions for the DLL application.
 //
 
