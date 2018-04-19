@@ -1,3 +1,5 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #ifndef __QEditToolButton_h__
 #define __QEditToolButton_h__
 

@@ -1,3 +1,5 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 // sigslot.h: Signal/Slot classes
 // 
 // Written by Sarah Thompson (sarah@telergy.com) 2002.

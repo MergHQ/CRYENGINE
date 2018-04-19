@@ -1,3 +1,5 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #define IDEDIT                                                                               3
 #define IDDELETE                                                                             4
 #define IDREFRESH                                                                            5
