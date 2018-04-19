@@ -95,7 +95,13 @@ public:
 		for (auto particleId : context.GetUpdateRange())
 		{
 			if (auto pIObject = audioObjects.Load(particleId))
+			{
+				if (m_stopTrigger)
+					pIObject->ExecuteTrigger(m_stopTrigger);
+				else if (m_playTrigger && m_stopOnDeath)
+					pIObject->StopTrigger(m_playTrigger);
 				gEnv->pAudioSystem->ReleaseObject(pIObject);
+			}
 		}
 	}
 
