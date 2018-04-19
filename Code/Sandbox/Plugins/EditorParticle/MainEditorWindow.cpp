@@ -239,9 +239,7 @@ bool CParticleEditor::OnOpenAsset(CAsset* pAsset)
 {
 	CRY_ASSERT(pAsset);
 
-	// Reload effect from file every time it is opened, since it might be that the effect has changed
-	// in memory. Opening means reading the current state from disk.
-	if (m_pEffectAssetModel->OpenAsset(pAsset, true))
+	if (m_pEffectAssetModel->OpenAsset(pAsset))
 	{
 		m_pEffectToolBar->show();
 		m_pReloadEffectMenuAction->setEnabled(true);
