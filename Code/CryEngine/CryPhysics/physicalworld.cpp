@@ -1811,22 +1811,18 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 		itypePetitioner = 0;
 	}
 
-	const int itype = itypePetitioner;
-	const int bAreasOnly = iszero(objtypes-ent_areas);
-	const int onlyFlagged = m_bUpdateOnlyFlagged & -(iszero(objtypes & ent_GEA_external) & 1-bAreasOnly);
-#ifndef _RELEASE
-	m_nGEA[iCaller]++;
-#endif
-	if ((ptmin-m_prevGEABBox[iCaller][0]).len2()+(ptmax-m_prevGEABBox[iCaller][1]).len2()+(objtypes & ent_GEA_recursive) == 0.0f &&
-		sqr(objtypes-m_prevGEAobjtypes[iCaller])+ 1+(iCaller-MAX_PHYS_THREADS>>31) == 0) {
-		pList = pTmpEntList; return m_nprevGEAEnts[iCaller];
-	}
-
 	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 #ifndef PHYS_FUNC_PROFILER_DISABLED
 	INT_PTR mask = (INT_PTR)pPetitioner;
 	mask = mask>>sizeof(mask)*8-1 ^ (mask-1)>>sizeof(mask)*8-1;
 	PHYS_FUNC_PROFILER((const char*)((INT_PTR)"GetEntitiesAround(Physics)"&~mask | (INT_PTR)"GetEntitiesAround(External)"&mask));
+#endif
+
+	const int itype = itypePetitioner;
+	const int bAreasOnly = iszero(objtypes-ent_areas);
+	const int onlyFlagged = m_bUpdateOnlyFlagged & -(iszero(objtypes & ent_GEA_external) & 1-bAreasOnly);
+#ifndef _RELEASE
+	m_nGEA[iCaller]++;
 #endif
 
 	Vec3 gBBox[2]; grid.BBoxToGrid(ptmin,ptmax, gBBox);
@@ -1856,6 +1852,12 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 	const int igx1 = igx[1];
 	const int igy0 = igy[0];
 	const int igy1 = igy[1];
+
+	if ((ptmin-m_prevGEABBox[iCaller][0]).len2()+(ptmax-m_prevGEABBox[iCaller][1]).len2()+(objtypes & ent_GEA_recursive) == 0.0f &&
+		sqr(objtypes-m_prevGEAobjtypes[iCaller])+ 1+(iCaller-MAX_PHYS_THREADS>>31) == 0) {
+		pList = pTmpEntList; nout = m_nprevGEAEnts[iCaller];
+		goto ReuseList;
+	}
 
 	IF ((igx1-igx0+1)*(igy1-igy0+1)>m_vars.nGEBMaxCells, 0) {
 		if (m_pLog)
@@ -2034,6 +2036,7 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 				pTmpEntList[nout++] = (CPhysicalEntity*)pArea;
 	}
 
+	ReuseList:
 	if (szListPrealloc<nout) {
 		if (!(objtypes & ent_allocate_list))
 			pList = pTmpEntList;
