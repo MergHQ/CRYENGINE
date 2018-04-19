@@ -1249,6 +1249,8 @@ void CharacterAttachment::Serialize(Serialization::IArchive& ar)
 				ar.doc("Disable simulation/enable skinning in dependance of camera distance.");
 				ar(Serialization::Range(m_vclothParams.disableSimulationTimeRange, 0.0f, 1.0f), "disableSimulationTimeRange", "Disable Simulation Time Range");
 				ar.doc("Defines the physical time [in seconds] which is used for fading between simulation and skinning, e.g., 0.5 implies half a second for fading.");
+				ar(Serialization::Range(m_vclothParams.enableSimulationSSaxisSizePerc, 0.0f, 1.0f), "enableSimulationSSaxisSizePerc", "Enable Simulation SS Size");
+				ar.doc("If the size of characters bounding box in screen space exceeds provided percentage of viewport size, simulation is enabled.\nThus, simulation can be controlled according to the characters actual size on screen. This value is used for x- and y-direction, separately.");
 				ar.closeBlock();
 			}
 
@@ -1745,6 +1747,7 @@ bool CharacterDefinition::LoadFromXml(const XmlNodeRef& root)
 					nodeAttach->getAttr("checkAnimationRewind", attach.m_vclothParams.checkAnimationRewind);
 					nodeAttach->getAttr("disableSimulationAtDistance", attach.m_vclothParams.disableSimulationAtDistance);
 					nodeAttach->getAttr("disableSimulationTimeRange", attach.m_vclothParams.disableSimulationTimeRange);
+					nodeAttach->getAttr("enableSimulationSSaxisSizePerc", attach.m_vclothParams.enableSimulationSSaxisSizePerc);
 
 					// Simulation and Collision
 					nodeAttach->getAttr("timeStep", attach.m_vclothParams.timeStep);
@@ -2215,6 +2218,7 @@ void CharacterDefinition::ExportVClothAttachment(const CharacterAttachment& atta
 	nodeAttach->setAttr("checkAnimationRewind", attach.m_vclothParams.checkAnimationRewind);
 	nodeAttach->setAttr("disableSimulationAtDistance", attach.m_vclothParams.disableSimulationAtDistance);
 	nodeAttach->setAttr("disableSimulationTimeRange", attach.m_vclothParams.disableSimulationTimeRange);
+	nodeAttach->setAttr("enableSimulationSSaxisSizePerc", attach.m_vclothParams.enableSimulationSSaxisSizePerc);
 
 	// Simulation and Collision
 	nodeAttach->setAttr("timeStep", attach.m_vclothParams.timeStep);
