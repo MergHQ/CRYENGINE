@@ -1,3 +1,5 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 // CryEngine HeaderFile.
 // Copyright (C), Crytek, 1999-2014.
 

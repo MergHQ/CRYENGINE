@@ -406,6 +406,7 @@ void CParticleEmitter::Activate(bool activate)
 		m_timeStable = m_time + timings.m_equilibriumTime;
 		m_timeDeath = m_time + timings.m_maxTotalLIfe;
 		m_bounds = m_realBounds = m_maxBounds = AABB::RESET;
+		m_alive = true;
 
 		m_effectEditVersion = -1; // Force creation of Runtimes next Update
 	}

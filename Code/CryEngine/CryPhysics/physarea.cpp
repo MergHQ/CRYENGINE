@@ -927,6 +927,10 @@ int CPhysArea::GetStatus(pe_status *_status) const
 		if (status->pMtx3x3)
 			(Matrix33&)*status->pMtx3x3 = m_R*m_scale;
 		status->pGeom=status->pGeomProxy = m_pGeom;
+		if (status->flags & status_addref_geoms) {
+			if (status->pGeom) status->pGeom->AddRef();
+			if (status->pGeomProxy) status->pGeomProxy->AddRef();
+		}
 		return 1;
 	}
 
