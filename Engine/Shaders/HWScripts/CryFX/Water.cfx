@@ -239,6 +239,7 @@ half RipplesNormalsScale
 
 TextureCube envCubeTex : register(t3) = TM_Env;
 
+Texture2D ReflectionSampler : register(t0)
 <
   string Script =
       "RenderOrder=PreProcess;"
@@ -253,15 +254,7 @@ TextureCube envCubeTex : register(t3) = TM_Env;
       "ClearSetDepth=1;"
       "ClearTarget=Color;"
       "ClearTarget=Depth;";
->
-{
-  Texture = $RT_2D;
-  MinFilter = LINEAR;
-  MagFilter = LINEAR;
-  MipFilter = NONE;
-  AddressU = Clamp;
-  AddressV = Clamp;
-};
+>;
 
 //////////////////////////////////////////////////////////////////////////
 // Per instance constant buffer for water ocean.
@@ -1063,9 +1056,6 @@ pixout WaterPS(v2f_hs IN)
 	half2 reflNewst = (IN.envTC.xy / IN.envTC.w) + vNormal.xy * ReflectionBumpScale;
 #if %_RT_COMPUTE_SKINNING
 	half3 cSpecularAcc = oceanReflectionTex.Sample(ssMaterialTrilinearClamp, reflNewst.xy) / PS_HDR_RANGE_ADAPT_MAX;
-#else
-	// TODO: remove after old graphics pipeline is removed.
-	half3 cSpecularAcc = tex2D(ReflectionSampler, reflNewst) / PS_HDR_RANGE_ADAPT_MAX;
 #endif
 
 #endif
