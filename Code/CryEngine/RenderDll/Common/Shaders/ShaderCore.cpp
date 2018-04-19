@@ -1787,7 +1787,6 @@ void CShaderResources::CreateModifiers(SInputShaderResources* pInRes)
 		SEfTexModificator* pMod = InTex.m_Ext.m_pTexModifier;
 		if (i != EFTT_DETAIL_OVERLAY)
 		{
-			//TODO : is this necessary? This makes changing the move type in UI impossible...
 			if (pMod->m_eMoveType[0] >= ETMM_Max)
 				pMod->m_eMoveType[0] = ETMM_NoChange;
 			if (pMod->m_eMoveType[1] >= ETMM_Max)
@@ -1796,31 +1795,6 @@ void CShaderResources::CreateModifiers(SInputShaderResources* pInRes)
 				pMod->m_eTGType = ETG_Stream;
 			if (pMod->m_eRotType >= ETMR_Max)
 				pMod->m_eRotType = ETMR_NoChange;
-
-			if (pMod->m_eMoveType[0] == ETMM_Pan && (pMod->m_OscAmplitude[0] == 0 || pMod->m_OscRate[0] == 0))
-				pMod->m_eMoveType[0] = ETMM_NoChange;
-			if (pMod->m_eMoveType[1] == ETMM_Pan && (pMod->m_OscAmplitude[1] == 0 || pMod->m_OscRate[1] == 0))
-				pMod->m_eMoveType[1] = ETMM_NoChange;
-
-			if (pMod->m_eMoveType[0] == ETMM_Fixed && pMod->m_OscRate[0] == 0)
-				pMod->m_eMoveType[0] = ETMM_NoChange;
-			if (pMod->m_eMoveType[1] == ETMM_Fixed && pMod->m_OscRate[1] == 0)
-				pMod->m_eMoveType[1] = ETMM_NoChange;
-
-			if (pMod->m_eMoveType[0] == ETMM_Constant && (pMod->m_OscAmplitude[0] == 0 || pMod->m_OscRate[0] == 0))
-				pMod->m_eMoveType[0] = ETMM_NoChange;
-			if (pMod->m_eMoveType[1] == ETMM_Constant && (pMod->m_OscAmplitude[1] == 0 || pMod->m_OscRate[1] == 0))
-				pMod->m_eMoveType[1] = ETMM_NoChange;
-
-			if (pMod->m_eMoveType[0] == ETMM_Stretch && (pMod->m_OscAmplitude[0] == 0 || pMod->m_OscRate[0] == 0))
-				pMod->m_eMoveType[0] = ETMM_NoChange;
-			if (pMod->m_eMoveType[1] == ETMM_Stretch && (pMod->m_OscAmplitude[1] == 0 || pMod->m_OscRate[1] == 0))
-				pMod->m_eMoveType[1] = ETMM_NoChange;
-
-			if (pMod->m_eMoveType[0] == ETMM_StretchRepeat && (pMod->m_OscAmplitude[0] == 0 || pMod->m_OscRate[0] == 0))
-				pMod->m_eMoveType[0] = ETMM_NoChange;
-			if (pMod->m_eMoveType[1] == ETMM_StretchRepeat && (pMod->m_OscAmplitude[1] == 0 || pMod->m_OscRate[1] == 0))
-				pMod->m_eMoveType[1] = ETMM_NoChange;
 
 			if (pMod->m_eTGType != ETG_Stream)
 			{
