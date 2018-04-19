@@ -306,8 +306,7 @@ CVisibleRenderNodesManager::Statistics CVisibleRenderNodesManager::GetStatistics
 void CVisibleRenderNodesManager::OnRenderNodeDeleted(IRenderNode* pRenderNode)
 {
 	// Remove pointer atomically
-	SRenderNodeTempData* pNodeTempData = nullptr;
-	pRenderNode->m_pTempData.exchange(pNodeTempData);
+	SRenderNodeTempData* pNodeTempData = pRenderNode->m_pTempData.exchange(nullptr);
 
 	if (pNodeTempData)
 	{
