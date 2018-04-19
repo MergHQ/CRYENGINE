@@ -24,6 +24,7 @@ class CNodeGraphView;
 namespace CryParticleEditor {
 
 class CParentPinItem;
+class CChildPinItem;
 class CFeaturePinItem;
 class CFeatureItem;
 
@@ -61,7 +62,7 @@ public:
 
 	uint32                    GetIndex() const;
 	CParentPinItem*           GetParentPinItem();
-	CFeaturePinItem*          GetConnectorPinItem(uint32 index);
+	CChildPinItem*            GetChildPinItem();
 
 	const FeatureItemArray& GetFeatureItems() const { return m_features; }
 	const size_t            GetNumFeatures() const  { return m_features.size(); }
@@ -99,6 +100,7 @@ enum class EPinType
 {
 	Unset,
 	Parent,
+	Child,
 	Feature
 };
 
@@ -113,8 +115,10 @@ public:
 	typedef CryGraphEditor::CIconArray<CryGraphEditor::CPinWidget::Icon_Count> PinIconMap;
 
 public:
-	CBasePinItem(CNodeItem& node);
-	virtual ~CBasePinItem();
+	CBasePinItem(CNodeItem& node)
+		: CryGraphEditor::CAbstractPinItem(node.GetViewModel())
+		, m_nodeItem(node)
+	{}
 
 	virtual EPinType GetPinType() const { return EPinType::Unset; }
 
@@ -129,26 +133,46 @@ protected:
 class CParentPinItem : public CBasePinItem
 {
 public:
-	CParentPinItem(CNodeItem& node);
-	virtual ~CParentPinItem();
+	CParentPinItem(CNodeItem& node): CBasePinItem(node) {}
 
 	// CBasePinItem
 	virtual EPinType GetPinType() const { return EPinType::Parent; }
 
-	virtual QString  GetName() const override;
-	virtual QString  GetDescription() const override;
-	virtual QString  GetTypeName() const override;
+	virtual QString  GetName() const override { return QString("Parent"); }
+	virtual QString  GetDescription() const override { return QString("Parent effect."); }
+	virtual QString  GetTypeName() const override { return QString("Effect"); }
 
-	virtual QVariant GetId() const override;
-	virtual bool     HasId(QVariant id) const override;
+	virtual QVariant GetId() const override { return QVariant::fromValue(QString("Parent")); }
+	virtual bool     HasId(QVariant id) const override { return QString("Parent") == id.value<QString>(); }
 
 	virtual bool     IsInputPin() const override  { return true; }
 	virtual bool     IsOutputPin() const override { return false; }
 
-	virtual bool     CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const override;
+	virtual bool     CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const override { return pOtherPin && pOtherPin->IsOutputPin() && !IsConnected(); }
 	virtual bool     IsConnected() const override { return GetConnectionItems().size() > 0; }
+	// ~CBasePinItem
+};
 
-	virtual void     Serialize(Serialization::IArchive& archive) override;
+class CChildPinItem : public CBasePinItem
+{
+public:
+	CChildPinItem(CNodeItem& node): CBasePinItem(node) {}
+
+	// CBasePinItem
+	virtual EPinType GetPinType() const { return EPinType::Child; }
+
+	virtual QString  GetName() const override { return QString("Children"); }
+	virtual QString  GetDescription() const override { return QString("Child effects."); }
+	virtual QString  GetTypeName() const override { return QString("Effect"); }
+
+	virtual QVariant GetId() const override { return QVariant::fromValue(QString("Children")); }
+	virtual bool     HasId(QVariant id) const override { return QString("Children") == id.value<QString>(); }
+
+	virtual bool     IsInputPin() const override  { return false; }
+	virtual bool     IsOutputPin() const override { return true; }
+
+	virtual bool     CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const override { return !pOtherPin || pOtherPin->IsInputPin(); }
+	virtual bool     IsConnected() const override { return GetConnectionItems().size() > 0; }
 	// ~CBasePinItem
 };
 
@@ -156,14 +180,14 @@ class CFeaturePinItem : public CBasePinItem
 {
 public:
 	CFeaturePinItem(CFeatureItem& feature);
-	virtual ~CFeaturePinItem();
+	virtual ~CFeaturePinItem() {}
 
 	// CryGraphEditor::CAbstractPinItem
 	virtual EPinType GetPinType() const { return EPinType::Feature; }
 
 	virtual QString  GetName() const override;
-	virtual QString  GetDescription() const override;
-	virtual QString  GetTypeName() const override;
+	virtual QString  GetDescription() const override { return GetName(); }
+	virtual QString  GetTypeName() const override { return QString(); }
 
 	virtual QVariant GetId() const override;
 	virtual bool     HasId(QVariant id) const override;
@@ -173,8 +197,6 @@ public:
 
 	virtual bool     CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const override;
 	virtual bool     IsConnected() const override { return m_connections.size() > 0; }
-
-	virtual void     Serialize(Serialization::IArchive& archive) override;
 	// ~CryGraphEditor::CAbstractPinItem
 
 	CFeatureItem& GetFeatureItem() const { return m_featureItem; }

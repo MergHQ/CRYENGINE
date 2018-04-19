@@ -115,8 +115,8 @@ private:
 	Vec3         m_uniformAcceleration;
 };
 
-extern EParticleDataType
-  EPVF_Acceleration,
-  EPVF_VelocityField;
+extern TDataType<Vec3>
+	EPVF_Acceleration,
+	EPVF_VelocityField;
 
 }

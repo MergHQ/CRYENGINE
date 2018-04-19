@@ -1,11 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     24/09/2014 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #pragma once
 
@@ -75,20 +68,6 @@ typedef SChaosKey SChaosKeyV;
 
 #endif
 
-enum EState
-{
-	ESB_Alive   = BIT(0),   // this particle is alive
-	ESB_Dead    = BIT(1),   // this particle is either dead or expired
-	ESB_NewBorn = BIT(2),   // this particle appeared this frame
-	ESB_Update  = BIT(7),   // this particle can be updated
-
-	ES_Empty    = 0,                                    // nobody home
-	ES_Dead     = ESB_Dead,                             // particle allocated but dead
-	ES_Alive    = ESB_Update | ESB_Alive,               // regular living particle
-	ES_Expired  = ESB_Update | ESB_Dead,                // passed the age time but will only be dead next frame
-	ES_NewBorn  = ESB_Update | ESB_NewBorn | ESB_Alive, // particle appeared this frame
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 // Implement EParticleDataTypes (size, position, etc) with DynamicEnum.
 // Data type entries can be declared in multiple source files, with info about the data type (float, Vec3, etc)
@@ -97,6 +76,34 @@ enum EDataFlags
 {
 	BHasInit    = 1, // indicates data type has an extra init field
 	BNeedsClear = 2  // indicates data type requires clearing after editing
+};
+
+// Traits for extracting element-type info from scalar and vector types
+template<typename T>
+struct TDimInfo
+{
+	using             TElem = T;
+	static const uint Dim   = 1;
+
+	static TElem Elem(const T& t, uint e) { CRY_ASSERT(e == 0); return t; }
+};
+
+template<>
+struct TDimInfo<Vec3>
+{
+	using             TElem = float;
+	static const uint Dim = 3;
+
+	static TElem Elem(const Vec3& t, uint e) { return t[e]; }
+};
+
+template<>
+struct TDimInfo<Quat>
+{
+	using             TElem = float;
+	static const uint Dim = 4;
+
+	static TElem Elem(const Quat& t, uint e) { return t[e]; }
 };
 
 //! Info associated with each EParticleDataType
@@ -113,9 +120,9 @@ struct SDataInfo
 	SDataInfo() {}
 
 	template<typename T>
-	SDataInfo(T*, uint dim = 1, EDataFlags flags = EDataFlags(0))
-		: type(TypeID::get<T>())
-		, typeSize(sizeof(T)), dimension(dim)
+	SDataInfo(T*, EDataFlags flags = EDataFlags(0))
+		: type(TypeID::get<typename TDimInfo<T>::TElem>())
+		, typeSize(sizeof(typename TDimInfo<T>::TElem)), dimension(TDimInfo<T>::Dim)
 		, hasInit(!!(flags & BHasInit)), needsClear(!!(flags & BNeedsClear))
 	{}
 
@@ -130,21 +137,46 @@ struct SDataInfo
 
 //! EParticleDataType implemented as a DynamicEnum, with SDataInfo
 typedef DynamicEnum<SDataInfo, uint, SDataInfo>
-  EParticleDataType;
+	EParticleDataType;
 
 ILINE EParticleDataType InitType(EParticleDataType type)
 {
 	return type + type.info().dimension;
 }
 
+//! DataType implemented as a DynamicEnum, with SDataInfo
+template<typename T>
+struct TDataType: EParticleDataType
+{
+	using EParticleDataType::EParticleDataType;
+
+	// Access element sub-types
+	using             TElem = typename TDimInfo<T>::TElem;
+	static const uint Dim   = TDimInfo<T>::Dim;
+
+	TDataType<TElem> operator[](uint e) const
+	{
+		CRY_ASSERT(e < Dim);
+		return TDataType<TElem>(this->value() + e);
+	}
+
+	// Get following type used for initialisation
+	TDataType InitType() const
+	{
+		CRY_ASSERT(this->info().hasInit);
+		return TDataType(this->value() + Dim);
+	}
+};
+
+
 // Convenient initialization of EParticleDataType
-//  EParticleDataType PDT(EPDT_SpawnID, TParticleID)
-//  EParticleDataType PDT(EPVF_Velocity, float[3])
+//  MakeDataType(EPDT_SpawnID, TParticleID)
+//  MakeDataType(EPVF_Velocity, Vec3)
 
 inline EDataFlags PDT_FLAGS(EDataFlags flags = EDataFlags(0)) { return flags; } // Helper function for variadic macro
 
-#define PDT(Name, T, ...) \
-  Name(SkipPrefix(#Name), 0, SDataInfo((typename std::remove_extent<T>::type*)0, std::max<uint>(std::extent<T>::value, 1), PDT_FLAGS(__VA_ARGS__)))
+#define MakeDataType(Name, T, ...) \
+  TDataType<T> Name(SkipPrefix(#Name), nullptr, SDataInfo((T*)0, PDT_FLAGS(__VA_ARGS__)))
 
 inline cstr SkipPrefix(cstr name)
 {
@@ -155,28 +187,32 @@ inline cstr SkipPrefix(cstr name)
 }
 
 // Standard data types
-extern EParticleDataType
-  EPDT_SpawnId,
-  EPDT_ParentId,
-  EPDT_State,
-  EPDT_NormalAge,
-  EPDT_LifeTime,
-  EPDT_InvLifeTime,
-  EPDT_SpawnFraction,
-  EPDT_Random,
-  EPDT_Size,
-  EPDT_Angle2D,
-  EPDT_Spin2D;
+extern TDataType<TParticleId>
+	EPDT_SpawnId,
+	EPDT_ParentId;
 
-// pose data types
-extern EParticleDataType
-  EPVF_Position,
-  EPVF_Velocity,
-  EPQF_Orientation,
-  EPVF_AngularVelocity,
-  EPVF_LocalPosition,
-  EPVF_LocalVelocity,
-  EPQF_LocalOrientation;
+extern TDataType<float>
+	EPDT_NormalAge,
+	EPDT_LifeTime,
+	EPDT_InvLifeTime,
+	EPDT_SpawnFraction,
+	EPDT_Random,
+	EPDT_Size,
+	EPDT_Angle2D,
+	EPDT_Spin2D;
+
+// Pose data types
+extern TDataType<Vec3>
+	EPVF_Position,
+	EPVF_Velocity,
+	EPVF_AngularVelocity;
+
+extern TDataType<Quat>
+	EPQF_Orientation;
+
+// NormalAge functions
+inline bool IsAlive(float age)   { return age < 1.0f; }
+inline bool IsExpired(float age) { return age >= 1.0f; }
 
 }
 

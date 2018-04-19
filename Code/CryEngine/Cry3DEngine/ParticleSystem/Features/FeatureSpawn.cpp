@@ -25,8 +25,8 @@ struct SSpawnData
 
 	float DeltaTime(float dT) const
 	{
-		const float startTime = clamp(m_timer, 0.0f, m_duration);
-		const float endTime = clamp(m_timer + dT, 0.0f, m_duration);
+		const float startTime = max(m_timer, 0.0f);
+		const float endTime = min(m_timer + dT, m_duration);
 		return endTime - startTime;
 	}
 };
@@ -51,8 +51,27 @@ public:
 		m_duration.AddToComponent(pComponent, this);
 		m_restart.AddToComponent(pComponent, this);
 
-		pParams->m_emitterLifeTime.start += m_delay.GetValueRange().start;
-		pParams->m_emitterLifeTime.end += m_delay.GetValueRange().end + m_duration.GetValueRange().end;
+		// Compute equilibrium and full life times
+		CParticleComponent* pParent = pComponent->GetParentComponent();
+		const float parentParticleLife = pParent ? pParent->ComponentParams().m_maxParticleLife : gInfinity;
+
+		const float preDelay = pParams->m_maxTotalLIfe;
+		float delay = preDelay + m_delay.GetValueRange().end;
+		float stableTime = FiniteOr(pParams->m_maxParticleLife, 0.0f);
+		float equilibriumTime = delay + stableTime;
+		float emitterLife = min(delay + m_duration.GetValueRange().end, parentParticleLife);
+		float maxLife = emitterLife + pParams->m_maxParticleLife;
+
+		if (m_restart.IsEnabled())
+		{
+			stableTime = maxLife;
+			equilibriumTime = maxLife;
+			maxLife = parentParticleLife + pParams->m_maxParticleLife;
+		}
+
+		SetMax(pParams->m_stableTime, stableTime);
+		SetMax(pParams->m_equilibriumTime, equilibriumTime);
+		SetMax(pParams->m_maxTotalLIfe, maxLife);
 	}
 
 	virtual void InitSubInstances(const SUpdateContext& context, SUpdateRange instanceRange) override
@@ -120,7 +139,7 @@ protected:
 		if (isIndependent)
 		{
 			// Skip spawning immortal independent effects
-			float maxLifetime = m_delay.GetValueRange().end + m_duration.GetValueRange().end + context.m_params.m_maxParticleLifeTime;
+			float maxLifetime = m_delay.GetValueRange().end + m_duration.GetValueRange().end + context.m_params.m_maxParticleLife;
 			if (!std::isfinite(maxLifetime))
 				return;
 		}
@@ -147,10 +166,10 @@ protected:
 		if (!runtime.IsChild())
 			countScale *= runtime.GetEmitter()->GetSpawnParams().fCountScale;
 		const float dT = context.m_deltaTime;
-		const float invDT = dT ? 1.0f / dT : 0.0f;
 		SUpdateRange range(0, numInstances);
 
 		TFloatArray amounts(*context.m_pMemHeap, numInstances);
+		IOFStream amountStream(amounts.data());
 		for (uint i = 0; i < numInstances; ++i)
 		{
 			SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
@@ -159,7 +178,7 @@ protected:
 
 		// Pad end of array, for vectorized modifiers
 		std::fill(amounts.end(), amounts.begin() + amounts.capacity(), 0.0f);
-		m_amount.ModifyUpdate(context, amounts.data(), range);
+		m_amount.ModifyUpdate(context, amountStream, range);
 
 		GetSpawnCounts(context, amounts);
 
@@ -167,8 +186,8 @@ protected:
 		{
 			SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
 
-			const float startTime = clamp(spawnData.m_timer, 0.0f, spawnData.m_duration);
-			const float endTime = clamp(spawnData.m_timer + dT, 0.0f, spawnData.m_duration);
+			const float startTime = max(spawnData.m_timer, 0.0f);
+			const float endTime = min(spawnData.m_timer + dT, spawnData.m_duration);
 			const float spawnTime = endTime - startTime;
 			const float spawned = amounts[i] * countScale;
 			
@@ -181,9 +200,10 @@ protected:
 				entry.m_count = uint32(ceil(spawnData.m_spawned + spawned) - ceil(spawnData.m_spawned));
 				if (entry.m_count)
 				{
+					// Set parameters for absolute particle age and spawn fraction
 					entry.m_parentId = runtime.GetParentId(i);
-					entry.m_ageIncrement = rcp(spawned) * spawnTime * invDT;
-					entry.m_ageBegin = (startTime - spawnData.m_timer - dT) * invDT;
+					entry.m_ageIncrement = -spawnTime * rcp(spawned);
+					entry.m_ageBegin = dT + min(spawnData.m_timer, 0.0f);
 					entry.m_ageBegin += (ceil(spawnData.m_spawned) - spawnData.m_spawned) * entry.m_ageIncrement;
 
 					if (std::isfinite(spawnData.m_duration))
@@ -217,16 +237,11 @@ protected:
 
 		CParticleComponentRuntime& runtime = context.m_runtime;
 		SUpdateRange startRange(0, numStarts);
-		TFloatArray amounts(*context.m_pMemHeap, numStarts);
-		TFloatArray delays(*context.m_pMemHeap, numStarts);
-		TFloatArray durations(*context.m_pMemHeap, numStarts);
-		TFloatArray restarts(*context.m_pMemHeap, numStarts);
-		m_amount.ModifyInit(context, amounts.data(), startRange);
-		m_delay.ModifyInit(context, delays.data(), startRange);
-		if (m_duration.IsEnabled())
-			m_duration.ModifyInit(context, durations.data(), startRange);
-		if (m_restart.IsEnabled())
-			m_restart.ModifyInit(context, restarts.data(), startRange);
+
+		STempInitBuffer<float> amounts(context, m_amount, startRange);
+		STempInitBuffer<float> delays(context, m_delay, startRange);
+		STempInitBuffer<float> durations(context, m_duration, startRange);
+		STempInitBuffer<float> restarts(context, m_restart, startRange);
 
 		for (uint i = 0; i < numStarts; ++i)
 		{
@@ -239,8 +254,8 @@ protected:
 			spawnData.m_timer    = -delay;
 			spawnData.m_spawned  = 0.0f;
 			spawnData.m_amount   = amounts[i];
-			spawnData.m_duration = m_duration.IsEnabled() ? durations[i] : gInfinity;
-			spawnData.m_restart = m_restart.IsEnabled() ? max(restarts[i], delay + spawnData.m_duration) : gInfinity;
+			spawnData.m_duration = durations[i];
+			spawnData.m_restart  = max(restarts[i], delay + spawnData.m_duration);
 		}
 	}
 
@@ -272,7 +287,8 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeatureSpawnBase::Serialize(ar);
-		ar(m_mode, "Mode", "Mode");
+		if (m_duration.GetBaseValue())
+			ar(m_mode, "Mode", "Mode");
 	}
 
 	virtual float DefaultDuration() const override { return 0.0f; }
@@ -283,7 +299,7 @@ public:
 
 		const float amount = m_amount.GetValueRange().end;
 		const float spawnTime = m_mode == ESpawnCountMode::TotalParticles ? m_duration.GetValueRange().start
-			: min(pParams->m_maxParticleLifeTime, m_duration.GetValueRange().start);
+			: min(pParams->m_maxParticleLife, m_duration.GetValueRange().start);
 		if (spawnTime > 0.0f)
 			pParams->m_maxParticleRate += amount / spawnTime;
 		else
@@ -296,8 +312,9 @@ public:
 		{
 			SSpawnData& spawnData = context.m_runtime.GetInstanceData(i, m_offsetSpawnData);
 			const float dt = spawnData.DeltaTime(context.m_deltaTime);
-
-			if (m_mode == ESpawnCountMode::TotalParticles || spawnData.m_duration <= context.m_params.m_maxParticleLifeTime)
+			if (dt < 0.0f)
+				continue;
+			if (m_mode == ESpawnCountMode::TotalParticles || spawnData.m_duration <= context.m_params.m_maxParticleLife)
 			{
 				if (spawnData.m_duration > dt)
 					amounts[i] *= dt * rcp(spawnData.m_duration);
@@ -306,7 +323,7 @@ public:
 			}
 			else
 			{
-				amounts[i] *= dt * rcp(context.m_params.m_maxParticleLifeTime);
+				amounts[i] *= dt * rcp(context.m_params.m_maxParticleLife);
 			}
 		}
 	}
@@ -352,9 +369,12 @@ public:
 		for (uint i = 0; i < amounts.size(); ++i)
 		{
 			SSpawnData& spawnData = context.m_runtime.GetInstanceData(i, m_offsetSpawnData);
+			const float dt = spawnData.DeltaTime(context.m_deltaTime);
+			if (dt < 0.0f)
+				continue;
 			amounts[i] =
 				m_mode == ESpawnRateMode::ParticlesPerFrame ? amounts[i]
-				: spawnData.DeltaTime(context.m_deltaTime) * (m_mode == ESpawnRateMode::ParticlesPerSecond ? amounts[i] : rcp(amounts[i]));
+				: dt * (m_mode == ESpawnRateMode::ParticlesPerSecond ? amounts[i] : rcp(amounts[i]));
 		}
 	}
 

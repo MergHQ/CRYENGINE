@@ -17,7 +17,7 @@
 namespace pfx2
 {
 
-EParticleDataType PDT(EPDT_Tile, uint8);
+MakeDataType(EPDT_Tile, uint8);
 
 SERIALIZATION_ENUM_DEFINE(EVariantMode, ,
                           Random,
@@ -89,8 +89,8 @@ private:
 	void AssignTiles(const SUpdateContext& context)
 	{
 		CParticleContainer& container = context.m_container;
-		TIOStream<uint8> tiles = container.GetTIOStream<uint8>(EPDT_Tile);
-		TIStream<uint> spawnIds = container.GetTIStream<uint>(EPDT_SpawnId);
+		TIOStream<uint8> tiles = container.IOStream(EPDT_Tile);
+		TIStream<uint> spawnIds = container.IStream(EPDT_SpawnId);
 		uint variantCount = VariantCount();
 
 		for (auto particleId : context.GetSpawnedRange())

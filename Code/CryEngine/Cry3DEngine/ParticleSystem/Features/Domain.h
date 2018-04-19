@@ -60,7 +60,7 @@ public:
 	void              Dispatch(const SUpdateContext& context, const SUpdateRange& range, TStream stream, EModDomain domain) const;
 
 	EModDomain        GetDomain() const;
-	EParticleDataType GetDataType() const;
+	TDataType<float>  GetDataType() const;
 	string            GetSourceDescription() const;
 	float             Adjust(float sample) const { return sample * m_domainScale + m_domainBias; }
 	void              SerializeInplace(Serialization::IArchive& ar);

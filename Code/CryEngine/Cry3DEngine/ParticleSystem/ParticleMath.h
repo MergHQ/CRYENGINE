@@ -66,6 +66,11 @@ template<typename T, typename U> T ILINE Mul(const T& a, const U& b)            
 
 template<typename T, typename U> T ILINE MAdd(const T& a, const U& b, const T& c) { return a * b + c; }
 
+template<typename T> T& SetMax(T& var, T const& value)                            { return var = std::max(var, value); };
+template<typename T> T& SetMin(T& var, T const& value)                            { return var = std::min(var, value); };
+
+template<typename T> T FiniteOr(T val, T alt)                                     { return std::isfinite(val) ? val : alt; }
+
 ///////////////////////////////////////////////////////////////////////////
 // Vector functions
 
@@ -105,7 +110,7 @@ T DeltaTime(T frameTime, T normAge, T lifeTime);
 
 // Return the start-time of a particle in the previous frame
 template<typename T>
-T StartTime(T curTime, T frameTime, T normAge);
+T StartTime(T curTime, T frameTime, T absAge);
 
 
 // non vectorized

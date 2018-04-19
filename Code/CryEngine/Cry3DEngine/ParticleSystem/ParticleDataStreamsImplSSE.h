@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved. 
 
 namespace pfx2
 {
@@ -40,18 +40,6 @@ ILINE floatv LoadIndexed4(const float* __restrict pStream, const uint32v index, 
 // floatv
 
 template<>
-ILINE floatv TIOStream<float>::Load(TParticleGroupId pgId) const
-{
-	return _mm_load_ps(m_pStream + pgId);
-}
-
-template<>
-ILINE void TIOStream<float>::Store(TParticleGroupId pgId, floatv value)
-{
-	_mm_store_ps(m_pStream + pgId, value);
-}
-
-template<>
 ILINE floatv TIStream<float>::SafeLoad(TParticleGroupId pgId) const
 {
 	return _mm_load_ps(m_pStream + (pgId & m_safeMask));
@@ -67,18 +55,6 @@ ILINE floatv TIStream<float>::SafeLoad(TParticleIdv pIdv) const
 
 //////////////////////////////////////////////////////////////////////////
 // uint32
-
-template<>
-ILINE uint32v TIOStream<uint32>::Load(TParticleGroupId pgId) const
-{
-	return _mm_load_si128(reinterpret_cast<const __m128i*>(m_pStream + pgId));
-}
-
-template<>
-ILINE void TIOStream<uint32>::Store(TParticleGroupId pgId, uint32v value)
-{
-	_mm_store_si128(reinterpret_cast<__m128i*>(m_pStream + pgId), value);
-}
 
 template<>
 ILINE uint32v TIStream<uint32>::SafeLoad(TParticleGroupId pgId) const
@@ -98,18 +74,6 @@ ILINE uint32v TIStream<uint32>::SafeLoad(TParticleIdv pIdv) const
 
 //////////////////////////////////////////////////////////////////////////
 // UColv
-
-template<>
-ILINE UColv TIOStream<UCol>::Load(TParticleGroupId pgId) const
-{
-	return _mm_load_si128(reinterpret_cast<const __m128i*>(m_pStream + pgId));
-}
-
-template<>
-ILINE void TIOStream<UCol>::Store(TParticleGroupId pgId, UColv value)
-{
-	_mm_store_si128(reinterpret_cast<__m128i*>(const_cast<UCol*>(m_pStream) + pgId), value);
-}
 
 template<>
 ILINE UColv TIStream<UCol>::SafeLoad(TParticleGroupId pgId) const

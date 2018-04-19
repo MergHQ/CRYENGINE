@@ -26,6 +26,7 @@ namespace CryParticleEditor {
 
 class CFeaturePinWidget;
 class CParentPinItem;
+class CChildPinItem;
 class CFeatureItem;
 
 class CFeatureGridNodeContentWidget;
@@ -122,7 +123,7 @@ public:
 	typedef std::map<CFeatureItem*, CFeatureWidget*> FeaturesWidgetsByItems;
 
 public:
-	CFeatureGridNodeContentWidget(CryGraphEditor::CNodeWidget& node, CParentPinItem& parentPin, CryGraphEditor::CNodeGraphView& view);
+	CFeatureGridNodeContentWidget(CryGraphEditor::CNodeWidget& node, CParentPinItem& parentPin, CChildPinItem& childPin, CryGraphEditor::CNodeGraphView& view);
 	virtual ~CFeatureGridNodeContentWidget();
 
 	void                          BeginFeatureMove(CFeatureWidget& featureWidget);
@@ -141,6 +142,7 @@ protected:
 private:
 	QGraphicsLinearLayout*      m_pFeaturesLayout;
 	CryGraphEditor::CPinWidget* m_pParentPin;
+	CryGraphEditor::CPinWidget* m_pChildPin;
 	FeaturesWidgetsByItems      m_featureWidgetsByItems;
 
 	QVector<CFeatureSlotWidget> m_featureSlots;

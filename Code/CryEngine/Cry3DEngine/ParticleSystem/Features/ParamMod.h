@@ -1,15 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     25/03/2015 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef PARAMMOD_H
-#define PARAMMOD_H
-
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved. 
 #pragma once
 
 #include "../ParticleComponent.h"
@@ -89,7 +78,7 @@ public:
 	virtual EModDomain GetDomain() const = 0;
 	virtual Range      GetMinMax() const = 0;
 	virtual void       AddToParam(CParticleComponent* pComponent, IParamMod* pParam)                                                                             {}
-	virtual void       Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const {}
+	virtual void       Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const {}
 	virtual void       Sample(float* samples, const int numSamples) const                                                                                        {}
 	virtual void       Serialize(Serialization::IArchive& ar);
 	virtual IModifier* VersionFixReplace() const                                                                                                                 { return nullptr; }
@@ -115,14 +104,14 @@ public:
 	virtual void                   AddToUpdate(IModifier* pMod);
 
 	void                           AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature);
-	void                           AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature, EParticleDataType dataType);
+	void                           AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature, TDataType<TType> dataType);
 	void                           Serialize(Serialization::IArchive& ar);
 
-	void                           InitParticles(const SUpdateContext& context, EParticleDataType dataType) const;
-	void                           ModifyInit(const SUpdateContext& context, TType* data, SUpdateRange range) const;
+	void                           InitParticles(const SUpdateContext& context, TDataType<TType> dataType) const;
+	void                           ModifyInit(const SUpdateContext& context, TIOStream<TType>& stream, SUpdateRange range, TDataType<TType> dataType = TDataType<TType>()) const;
 
-	void                           Update(const SUpdateContext& context, EParticleDataType dataType) const;
-	void                           ModifyUpdate(const SUpdateContext& context, TType* data, SUpdateRange range) const;
+	void                           Update(const SUpdateContext& context, TDataType<TType> dataType) const;
+	void                           ModifyUpdate(const SUpdateContext& context, TIOStream<TType>& stream, SUpdateRange range, TDataType<TType> dataType = TDataType<TType>()) const;
 
 	TRange<TType>                  GetValues(const SUpdateContext& context, TType* data, SUpdateRange range, EModDomain domain, bool updating) const;
 	TRange<TType>                  GetValues(const SUpdateContext& context, TVarArray<TType> data, EModDomain domain, bool updating) const;
@@ -148,59 +137,65 @@ private:
 };
 
 template<typename T>
-struct STempModBuffer
+struct STempBuffer: TIStream<T>
 {
 	template<typename TParamMod>
-	STempModBuffer(const SUpdateContext& context, TParamMod& paramMod)
-		: m_buffer(*context.m_pMemHeap)
-		, m_stream(nullptr, paramMod.GetBaseValue()) {}
+	STempBuffer(const SUpdateContext& context, TParamMod& paramMod)
+		: TIStream<T>(nullptr, paramMod.GetBaseValue())
+		, m_buffer(*context.m_pMemHeap)
+	{}
 
-	T* Allocate(SGroupRange range, T baseValue)
+protected:
+
+	THeapArray<T> m_buffer;
+
+	void Allocate(SGroupRange range)
 	{
 		m_buffer.resize(range.size());
 		T* data = m_buffer.data() - +*range.begin();
-		m_stream = TIStream<T>(data, baseValue);
-		return data;
+		static_cast<TIStream<T>&>(*this) = TIStream<T>(data);
 	}
-
-	template<typename TParamMod>
-	void ModifyInit(const SUpdateContext& context, TParamMod& paramMod, SUpdateRange range)
-	{
-		if (paramMod.HasInitModifiers())
-		{
-			T* data = Allocate(range, paramMod.GetBaseValue());
-			paramMod.ModifyInit(context, data, range);
-		}
-	}
-
-	template<typename TParamMod>
-	void ModifyUpdate(const SUpdateContext& context, TParamMod& paramMod, SUpdateRange range)
-	{
-		if (paramMod.HasUpdateModifiers())
-		{
-			T* data = Allocate(range, paramMod.GetBaseValue());
-			m_stream.Fill(range, paramMod.GetBaseValue());
-			paramMod.ModifyUpdate(context, data, range);
-		}
-	}
-
-	THeapArray<T> m_buffer;
-	TIStream<T>   m_stream;
 };
 
 template<typename T>
-struct STempInitBuffer: STempModBuffer<T>
+struct STempInitBuffer: STempBuffer<T>
 {
 	template<typename TParamMod>
-	STempInitBuffer(const SUpdateContext& context, TParamMod& paramMod)
-		: STempModBuffer<T>(context, paramMod)
+	STempInitBuffer(const SUpdateContext& context, TParamMod& paramMod, SUpdateRange range)
+		: STempBuffer<T>(context, paramMod)
 	{
-		this->ModifyInit(context, paramMod, context.GetSpawnedRange());
+		if (paramMod.HasInitModifiers())
+		{
+			this->Allocate(range);
+			paramMod.ModifyInit(context, *this, range);
+		}
+	}
+
+	template<typename TParamMod>
+	STempInitBuffer(const SUpdateContext& context, TParamMod& paramMod)
+		: STempInitBuffer<T>(context, paramMod, context.GetSpawnedRange())
+	{}
+};
+
+template<typename T>
+struct STempUpdateBuffer: STempBuffer<T>
+{
+	template<typename TParamMod>
+	STempUpdateBuffer(const SUpdateContext& context, TParamMod& paramMod, SUpdateRange range)
+		: STempBuffer<T>(context, paramMod)
+	{
+		if (paramMod.HasModifiers())
+		{
+			this->Allocate(range);
+			paramMod.ModifyInit(context, *this, range);
+			paramMod.ModifyUpdate(context, *this, range);
+		}
 	}
 };
+
+
 
 }
 
 #include "ParamModImpl.h"
 
-#endif // PARAMMOD_H

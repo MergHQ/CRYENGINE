@@ -11,8 +11,8 @@
 namespace pfx2
 {
 
-EParticleDataType PDT(EPDT_Angle2D, float);
-EParticleDataType PDT(EPDT_Spin2D, float);
+MakeDataType(EPDT_Angle2D, float);
+MakeDataType(EPDT_Spin2D, float);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureAnglesRotate2D

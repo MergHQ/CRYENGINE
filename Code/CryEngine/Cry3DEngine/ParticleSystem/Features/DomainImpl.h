@@ -17,7 +17,7 @@ ILINE const CParticleContainer& GetContainer(const SUpdateContext context, EModD
 class CSelfStreamSampler
 {
 public:
-	CSelfStreamSampler(const SUpdateContext& context, EParticleDataType sourceStreamType, EModDomain domain = EMD_PerParticle)
+	CSelfStreamSampler(const SUpdateContext& context, TDataType<float> sourceStreamType, EModDomain domain = EMD_PerParticle)
 		: sourceStream(GetContainer(context, domain).GetIFStream(sourceStreamType))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
@@ -31,7 +31,7 @@ private:
 class CParentStreamSampler
 {
 public:
-	CParentStreamSampler(const SUpdateContext& context, EParticleDataType sourceStreamType)
+	CParentStreamSampler(const SUpdateContext& context, TDataType<float> sourceStreamType)
 		: parentSourceStream(context.m_parentContainer.GetIFStream(sourceStreamType, 1.0f))
 		, parentIds(context.m_container.GetIPidStream(EPDT_ParentId))
 	{}
@@ -78,18 +78,19 @@ private:
 class CLevelTimeSampler
 {
 public:
-	CLevelTimeSampler(const SUpdateContext& context)
+	CLevelTimeSampler(const SUpdateContext& context, EModDomain domain)
 		: deltaTime(ToFloatv(context.m_deltaTime))
-		, selfAges(context.m_container.GetIFStream(EPDT_NormalAge))
+		, ages(GetContainer(context, domain).GetIFStream(EPDT_NormalAge))
+		, lifeTimes(GetContainer(context, domain).GetIFStream(EPDT_LifeTime))
 		, levelTime(ToFloatv(context.m_time))
 	{}
 	ILINE floatv Sample(TParticleGroupId particleId) const
 	{
-		const floatv selfAge = selfAges.Load(particleId);
-		return StartTime(levelTime, deltaTime, selfAge);
+		return StartTime(levelTime, deltaTime, ages.Load(particleId) * lifeTimes.Load(particleId));
 	}
 private:
-	IFStream selfAges;
+	IFStream ages;
+	IFStream lifeTimes;
 	floatv   levelTime;
 	floatv   deltaTime;
 };
@@ -277,7 +278,7 @@ ILINE EModDomain CDomain::GetDomain() const
 		return EMD_PerEffect;
 	}
 }
-ILINE EParticleDataType CDomain::GetDataType() const
+ILINE TDataType<float> CDomain::GetDataType() const
 {
 	switch (m_domain)
 	{
@@ -286,9 +287,9 @@ ILINE EParticleDataType CDomain::GetDataType() const
 	case EDomain::SpawnFraction:
 		return EPDT_SpawnFraction;
 	case EDomain::Field:
-		return EParticleDataType(m_fieldSource);
+		return TDataType<float>(m_fieldSource);
 	default:
-		return EParticleDataType::size();
+		return TDataType<float>(EParticleDataType::size());
 	}
 }
 
@@ -301,7 +302,7 @@ ILINE void CDomain::Dispatch(const SUpdateContext& context, const SUpdateRange& 
 		if (m_sourceGlobal == EDomainGlobal::LevelTime)
 			((TBase*)this)->DoModify(
 				context, range, stream,
-				detail::CLevelTimeSampler(context));
+				detail::CLevelTimeSampler(context, domain));
 		else
 			((TBase*)this)->DoModify(
 				context, range, stream,
@@ -323,7 +324,7 @@ ILINE void CDomain::Dispatch(const SUpdateContext& context, const SUpdateRange& 
 			detail::CViewAngleSampler(context, domain));
 		break;
 	case EDomain::CameraDistance:
-		if (!(C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('u')))
+		if (!(C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('u')) || domain == EMD_PerParticle)
 			((TBase*)this)->DoModify(
 				context, range, stream,
 				detail::CCameraDistanceSampler(context, domain));

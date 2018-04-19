@@ -36,6 +36,7 @@ CNodeItem::CNodeItem(pfx2::IParticleComponent& component, CryGraphEditor::CNodeG
 	m_pins.reserve(featureCount + 1);
 
 	m_pins.push_back(new CParentPinItem(*this));
+	m_pins.push_back(new CChildPinItem(*this));
 
 	for (uint32 i = 0; i < featureCount; ++i)
 	{
@@ -57,7 +58,7 @@ CNodeItem::~CNodeItem()
 	for (CryGraphEditor::CAbstractPinItem* pItem : m_pins)
 	{
 		CBasePinItem* pPintItem = static_cast<CBasePinItem*>(pItem);
-		if (pPintItem->GetPinType() == EPinType::Parent)
+		if (pPintItem->GetPinType() == EPinType::Parent || pPintItem->GetPinType() == EPinType::Child)
 			delete pPintItem;
 	}
 
@@ -82,7 +83,7 @@ CryGraphEditor::CNodeWidget* CNodeItem::CreateWidget(CryGraphEditor::CNodeGraphV
 {
 	CryGraphEditor::CNodeWidget* pNode = new CryGraphEditor::CNodeWidget(*this, view);
 	pNode->SetHeaderNameWidth(120);
-	CFeatureGridNodeContentWidget* pContent = new CFeatureGridNodeContentWidget(*pNode, static_cast<CParentPinItem&>(*m_pins[0]), view);
+	CFeatureGridNodeContentWidget* pContent = new CFeatureGridNodeContentWidget(*pNode, static_cast<CParentPinItem&>(*m_pins[0]), static_cast<CChildPinItem&>(*m_pins[1]), view);
 
 	pNode->AddHeaderIcon(new CEmitterActiveIcon(*pNode), CryGraphEditor::CNodeHeader::EIconSlot::Right);
 	pNode->AddHeaderIcon(new CEmitterVisibleIcon(*pNode), CryGraphEditor::CNodeHeader::EIconSlot::Right);
@@ -125,8 +126,6 @@ void CNodeItem::SetName(const QString& name)
 		CAbstractNodeItem::SetName(GetName());
 
 		// TODO: Move this into an CAbstractNodeItem method.
-		SignalNameChanged();
-
 		if (GetIEditor()->GetIUndoManager()->IsUndoRecording())
 		{
 			CUndo::Record(new CryGraphEditor::CUndoNodeNameChange(*this, oldName.c_str()));
@@ -220,6 +219,11 @@ CParentPinItem* CNodeItem::GetParentPinItem()
 	return static_cast<CParentPinItem*>(m_pins[0]);
 }
 
+CChildPinItem* CNodeItem::GetChildPinItem()
+{
+	return static_cast<CChildPinItem*>(m_pins[1]);
+}
+
 uint32 CNodeItem::GetIndex() const
 {
 	CParticleGraphModel& model = static_cast<CParticleGraphModel&>(GetViewModel());
@@ -233,16 +237,6 @@ uint32 CNodeItem::GetIndex() const
 	}
 
 	return ~0;
-}
-
-CFeaturePinItem* CNodeItem::GetConnectorPinItem(uint32 index)
-{
-	const uint32 i = index + 1;
-	if (i < m_pins.size())
-	{
-		return static_cast<CFeaturePinItem*>(m_pins[i]);
-	}
-	return nullptr;
 }
 
 CFeatureItem* CNodeItem::AddFeature(uint32 index, const pfx2::SParticleFeatureParams& featureParams)
@@ -356,95 +350,15 @@ bool CNodeItem::IsVisible()
 	return m_component.IsVisible();
 }
 
-CBasePinItem::CBasePinItem(CNodeItem& node)
-	: CryGraphEditor::CAbstractPinItem(node.GetViewModel())
-	, m_nodeItem(node)
-{
-
-}
-
-CBasePinItem::~CBasePinItem()
-{
-
-}
-
-CParentPinItem::CParentPinItem(CNodeItem& node)
-	: CBasePinItem(node)
-{
-
-}
-
-CParentPinItem::~CParentPinItem()
-{
-
-}
-
-QString CParentPinItem::GetName() const
-{
-	return QString("Start");
-}
-
-QString CParentPinItem::GetDescription() const
-{
-	return QString("Parent effect.");
-}
-
-QString CParentPinItem::GetTypeName() const
-{
-	return QString("Effect");
-}
-
-QVariant CParentPinItem::GetId() const
-{
-	return QVariant::fromValue(QString("Parent"));
-}
-
-bool CParentPinItem::HasId(QVariant id) const
-{
-	QString name = "Parent";
-	return (name == id.value<QString>());
-}
-
-bool CParentPinItem::CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const
-{
-	if (pOtherPin && !pOtherPin->IsOutputPin())
-	{
-		return false;
-	}
-
-	return !IsConnected();
-}
-
-void CParentPinItem::Serialize(Serialization::IArchive& archive)
-{
-
-}
-
 CFeaturePinItem::CFeaturePinItem(CFeatureItem& feature)
 	: CBasePinItem(feature.GetNodeItem())
 	, m_featureItem(feature)
 {
-
-}
-
-CFeaturePinItem::~CFeaturePinItem()
-{
-
 }
 
 QString CFeaturePinItem::GetName() const
 {
 	return m_featureItem.GetName();
-}
-
-QString CFeaturePinItem::GetDescription() const
-{
-	return GetName();
-}
-
-QString CFeaturePinItem::GetTypeName() const
-{
-	return QString();
 }
 
 QVariant CFeaturePinItem::GetId() const
@@ -460,22 +374,9 @@ bool CFeaturePinItem::HasId(QVariant id) const
 bool CFeaturePinItem::CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const
 {
 	if (pOtherPin)
-	{
-		const CBasePinItem& otherPin = static_cast<const CBasePinItem&>(*pOtherPin);
-		if (otherPin.GetPinType() == EPinType::Feature || IsInputPin())
-		{
-			return false;
-		}
-
-		return !pOtherPin->IsConnected();
-	}
+		return pOtherPin->IsInputPin() && !pOtherPin->IsConnected();
 
 	return true;
-}
-
-void CFeaturePinItem::Serialize(Serialization::IArchive& archive)
-{
-
 }
 
 CFeatureItem::CFeatureItem(pfx2::IParticleFeature& feature, CNodeItem& node, CryGraphEditor::CNodeGraphViewModel& viewModel)
@@ -505,9 +406,7 @@ void CFeatureItem::SetDeactivated(bool isDeactivated)
 	if (!m_featureInterface.IsEnabled() != isDeactivated)
 	{
 		m_featureInterface.SetEnabled(!isDeactivated);
-		// TODO: This should happen in SetEnabled(...)!!!
 		m_node.GetComponentInterface().SetChanged();
-		// ~TODO
 		SignalItemDeactivatedChanged(isDeactivated);
 
 		// Note: Property tree listens only to node properties changed

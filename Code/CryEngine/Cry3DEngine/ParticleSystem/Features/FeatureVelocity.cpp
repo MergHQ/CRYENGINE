@@ -66,8 +66,8 @@ public:
 			const TParticleId parentId = parentIds.Load(particleId);
 			const Vec3 wVelocity0 = velocities.Load(particleId);
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
-			const float angleMult = angles.m_stream.SafeLoad(particleId);
-			const float velocity = velocityMults.m_stream.SafeLoad(particleId);
+			const float angleMult = angles.SafeLoad(particleId);
+			const float velocity = velocityMults.SafeLoad(particleId);
 
 			const Vec2 disc = context.m_spawnRng.RandCircle();
 			const float angle = sqrtf(angleMult * invBaseAngle) * baseAngle;
@@ -138,7 +138,7 @@ public:
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
-			const float scale = scales.m_stream.SafeLoad(particleId);
+			const float scale = scales.SafeLoad(particleId);
 			const Vec3 wVelocity0 = velocities.Load(particleId);
 			const Vec3 oVelocity = m_direction * scale;
 			const Vec3 wVelocity1 = wVelocity0 + wQuat * oVelocity;
@@ -196,7 +196,7 @@ public:
 		for (auto particleId : context.GetSpawnedRange())
 		{
 			const Vec3 wVelocity0 = velocities.Load(particleId);
-			const float velocity = velocityMults.m_stream.SafeLoad(particleId);
+			const float velocity = velocityMults.SafeLoad(particleId);
 			const Vec3 oVelocity = context.m_spawnRng.RandSphere() * velocity;
 			const Vec3 wVelocity1 = wVelocity0 + oVelocity;
 			velocities.Store(particleId, wVelocity1);
@@ -267,7 +267,7 @@ public:
 
 		for (auto particleId : context.GetSpawnedRange())
 		{
-			const float scale = scales.m_stream.SafeLoad(particleId);
+			const float scale = scales.SafeLoad(particleId);
 			const TParticleId parentId = parentIds.Load(particleId);
 			const Vec3 wVelocity0 = velocities.Load(particleId);
 			Vec3 wInheritVelocity = parentVelocities.Load(parentId);
@@ -341,9 +341,9 @@ public:
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
-			const float azimuth = azimuths.m_stream.SafeLoad(particleId) + halfPi;
-			const float altitude = angles.m_stream.SafeLoad(particleId) + halfPi;
-			const float velocity = velocityValues.m_stream.SafeLoad(particleId);
+			const float azimuth = azimuths.SafeLoad(particleId) + halfPi;
+			const float altitude = angles.SafeLoad(particleId) + halfPi;
+			const float velocity = velocityValues.SafeLoad(particleId);
 			const Vec3 oVelocity = PolarCoordToVec3(azimuth, altitude) * velocity;
 			const Vec3 wVelocity0 = velocities.Load(particleId);
 			const Vec3 wVelocity1 = wVelocity0 + wQuat * oVelocity;

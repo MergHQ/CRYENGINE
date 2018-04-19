@@ -1,11 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     25/03/2015 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #include "StdAfx.h"
 #include "ParamMod.h"
@@ -61,7 +54,7 @@ public:
 		}
 	}
 
-	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const
+	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		CDomain::Dispatch<CModCurve>(context, range, stream, domain);
@@ -120,7 +113,7 @@ public:
 		ar(m_spline, "DoubleCurve", "Double Curve");
 	}
 
-	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const
+	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		CDomain::Dispatch<CModDoubleCurve>(context, range, stream, domain);
@@ -184,7 +177,7 @@ public:
 		ar(m_amount, "Amount", "Amount");
 	}
 
-	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const
+	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -254,7 +247,7 @@ public:
 		return nullptr;
 	}
 
-	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const
+	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		CDomain::Dispatch<CModNoise>(context, range, stream, domain);
@@ -414,7 +407,7 @@ public:
 		}
 	}
 
-	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const
+	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		CDomain::Dispatch<CModWave>(context, range, stream, domain);
@@ -548,7 +541,7 @@ public:
 		CDomain::SerializeInplace(ar);
 	}
 
-	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const
+	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 		CDomain::Dispatch<CModLinear>(context, range, stream, domain);
@@ -583,8 +576,8 @@ SERIALIZATION_CLASS_NAME(IModifier, CModLinear, "Linear", "Linear");
 
 struct SSpecData
 {
-	char* m_pName;
-	char* m_pLabel;
+	const char* m_pName;
+	const char* m_pLabel;
 	uint  m_index;
 };
 
@@ -633,6 +626,7 @@ public:
 	{
 		IModifier::Serialize(ar);
 
+
 		for (uint i = 0; i < gNumConfigSpecs; ++i)
 			ar(m_specMultipliers[i], gConfigSpecs[i].m_pName, gConfigSpecs[i].m_pLabel);
 		m_range = Range(m_specMultipliers[0], m_specMultipliers[0]);
@@ -648,7 +642,7 @@ public:
 			ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
 	}
 
-	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const override
+	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -708,7 +702,7 @@ public:
 		ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
 	}
 
-	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const override
+	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -789,7 +783,7 @@ public:
 		ar(m_spawnOnly, "SpawnOnly", "Spawn Only");
 	}
 
-	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, EParticleDataType streamType, EModDomain domain) const
+	virtual void Modify(const SUpdateContext& context, const SUpdateRange& range, IOFStream stream, TDataType<float> streamType, EModDomain domain) const
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 

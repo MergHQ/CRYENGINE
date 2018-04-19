@@ -52,6 +52,7 @@ void CParticleJobManager::ScheduleUpdates()
 		// Update synchronously in main thread
 		for (auto pEmitter : m_emitterRefs)
 			pEmitter->UpdateAll();
+		m_emitterRefs.clear();
 		return;
 	}
 
@@ -68,21 +69,23 @@ void CParticleJobManager::Job_ScheduleUpdates()
 
 	JobManager::TPriorityLevel priority = JobManager::eRegularPriority;
 
-	if (ThreadMode() == 3)
+	if (ThreadMode() >= 3)
 	{
-		// Split emitters into visible and hidden, schedule visible first
-		const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
-
+		// Schedule emitters rendered last frame first
 		TDynArray<CParticleEmitter*> visible, hidden;
+		visible.reserve(m_emitterRefs.size());
+		hidden.reserve(m_emitterRefs.size());
+
 		for (auto pEmitter : m_emitterRefs)
 		{
-			if (camera.IsAABBVisible_F(pEmitter->GetBBox()))
+			if (pEmitter->WasRenderedLastFrame())
 				visible.push_back(pEmitter);
 			else
 				hidden.push_back(pEmitter);
 		}
 
 		// Sort by camera Z
+		const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
 		Vec3 sortDir = -camera.GetViewdir();
 		stl::sort(visible, [sortDir](const CParticleEmitter* pe)
 		{

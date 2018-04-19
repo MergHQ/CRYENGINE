@@ -37,17 +37,30 @@ public:
 			m_killOnParentDeath = true;
 	}
 
+	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
+	{
+		float maxLifetime = m_lifeTime.GetValueRange().end;
+		if (m_killOnParentDeath)
+		{
+			if (CParticleComponent* pParent = pComponent->GetParentComponent())
+				SetMin(maxLifetime, pParent->ComponentParams().m_maxParticleLife);
+		}
+		pComponent->ComponentParams().m_maxParticleLife = maxLifetime;
+		return this;
+	}
+
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		m_lifeTime.AddToComponent(pComponent, this, EPDT_LifeTime);
-		pParams->m_maxParticleLifeTime = m_lifeTime.GetValueRange().end;
+		pComponent->PreInitParticles.add(this);
+		pParams->m_maxParticleLife = m_lifeTime.GetValueRange().end;
 
 		if (m_killOnParentDeath)
 			pComponent->PostUpdateParticles.add(this);
 		pComponent->UpdateGPUParams.add(this);
 	}
 
-	virtual void InitParticles(const SUpdateContext& context) override
+	virtual void PreInitParticles(const SUpdateContext& context) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
@@ -55,18 +68,15 @@ public:
 		IOFStream lifeTimes = container.GetIOFStream(EPDT_LifeTime);
 		IOFStream invLifeTimes = container.GetIOFStream(EPDT_InvLifeTime);
 
-		if (m_lifeTime.IsEnabled())
+		if (m_lifeTime.IsEnabled() && m_lifeTime.GetBaseValue())
 		{
 			m_lifeTime.InitParticles(context, EPDT_LifeTime);
 			if (m_lifeTime.HasModifiers())
 			{
-				const floatv minimum = ToFloatv(std::numeric_limits<float>::min());
 				for (auto particleGroupId : context.GetSpawnedGroupRange())
 				{
 					const floatv lifetime = lifeTimes.Load(particleGroupId);
-					const floatv maxedLifeTime = max(lifetime, minimum);
-					lifeTimes.Store(particleGroupId, maxedLifeTime);
-					const floatv invLifeTime = rcp(lifetime);
+					const floatv invLifeTime = if_else_zero(lifetime != convert<floatv>(), rcp(lifetime));
 					invLifeTimes.Store(particleGroupId, invLifeTime);
 				}
 			}
@@ -89,15 +99,15 @@ public:
 		// Kill on parent death
 		CParticleContainer& container = context.m_container;
 		const CParticleContainer& parentContainer = context.m_parentContainer;
-		const auto parentStates = parentContainer.GetTIStream<uint8>(EPDT_State);
+		const auto parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
+
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		IOFStream ages = container.GetIOFStream(EPDT_NormalAge);
 
 		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
-			const uint8 parentState = (parentId != gInvalidId) ? parentStates.Load(parentId) : ES_Expired;
-			if (parentState & ESB_Dead)
+			if (parentId == gInvalidId || IsExpired(parentAges.Load(parentId)))
 				ages.Store(particleId, 1.0f);
 		}
 	}
@@ -123,7 +133,7 @@ class CFeatureLifeImmortal : public CFeatureLifeTime
 public:
 	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
 	{
-		return new CFeatureLifeTime(gInfinity, true);
+		return (new CFeatureLifeTime(gInfinity, true))->ResolveDependency(pComponent);
 	}
 };
 

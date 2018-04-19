@@ -36,8 +36,6 @@ SUpdateContext::SUpdateContext(CParticleComponentRuntime* pRuntime, const SUpdat
 	, m_time(pRuntime->GetEmitter()->GetTime())
 	, m_spawnRng(pRuntime->MakeSeed(GetSpawnedRange().m_begin))
 	, m_spawnRngv(m_spawnRng)
-	, m_updateRng(pRuntime->MakeSeed(GetUpdateRange().m_begin))
-	, m_updateRngv(m_updateRng)
 {
 }
 

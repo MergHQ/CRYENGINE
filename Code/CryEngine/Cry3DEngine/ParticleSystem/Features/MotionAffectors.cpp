@@ -129,9 +129,9 @@ private:
 		{
 			const Vec3v position = positions.Load(particleGroupId);
 			const Vec3v accel0 = localAccelerations.Load(particleGroupId);
-			const floatv keyX = context.m_updateRngv.RandSNorm();
-			const floatv keyY = context.m_updateRngv.RandSNorm();
-			const floatv keyZ = context.m_updateRngv.RandSNorm();
+			const floatv keyX = context.m_spawnRngv.RandSNorm();
+			const floatv keyY = context.m_spawnRngv.RandSNorm();
+			const floatv keyZ = context.m_spawnRngv.RandSNorm();
 			const Vec3v accel1 = MAdd(Vec3v(keyX, keyY, keyZ), speed, accel0);
 			localAccelerations.Store(particleGroupId, accel1);
 		}
@@ -153,10 +153,12 @@ private:
 		const uint octaves = m_octaves;
 		const Vec3v scale = ToVec3v(m_scale);
 		const IFStream ages = container.GetIFStream(EPDT_NormalAge);
+		const IFStream lifeTimes = container.GetIFStream(EPDT_LifeTime);
 
 		for (auto particleGroupId : context.GetUpdateGroupRange())
 		{
 			const floatv age = ages.Load(particleGroupId);
+			const floatv lifeTime = lifeTimes.Load(particleGroupId);
 			const Vec3v position = positions.Load(particleGroupId);
 			const Vec3v velocity0 = localVelocities.Load(particleGroupId);
 
@@ -164,7 +166,7 @@ private:
 			sample.x = Mul(position.x, invSize);
 			sample.y = Mul(position.y, invSize);
 			sample.z = Mul(position.z, invSize);
-			sample.w = StartTime(time, delta, age);
+			sample.w = StartTime(time, delta, age * lifeTime);
 
 			Vec3v fieldSample = Fractal(sample, octaves, fieldFn);
 			fieldSample.x *= scale.x;
@@ -488,7 +490,6 @@ public:
 		{
 			const Vec3 velocity = velocities.Load(particleId);
 			const float age = normAges.Load(particleId) * lifeTimes.Load(particleId);
-
 			const float angle = speed * (age + fTime);
 			const float rotateSin = sin_tpl(angle) * size;
 			const float rotateCos = cos_tpl(angle) * size;

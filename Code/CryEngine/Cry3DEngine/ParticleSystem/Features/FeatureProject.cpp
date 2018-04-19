@@ -212,7 +212,6 @@ private:
 		const SPhysEnviron& physicsEnvironment = context.m_runtime.GetEmitter()->GetPhysicsEnv();
 		CParticleContainer& container = context.m_container;
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
-		auto states = container.GetTIOStream<uint8>(EPDT_State);
 		IOFStream ages = container.GetIOFStream(EPDT_NormalAge);
 
 		for (auto particleId : range)
@@ -230,7 +229,6 @@ private:
 			{
 				samples[particleId].vPos = Vec3(ZERO);
 				samples[particleId].vNorm = Vec3(ZERO);
-				states.Store(particleId, ES_Expired);
 				ages.Store(particleId, 1.0f);
 			}
 		}

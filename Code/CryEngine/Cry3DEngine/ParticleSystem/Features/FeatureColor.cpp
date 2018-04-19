@@ -17,7 +17,7 @@
 namespace pfx2
 {
 
-EParticleDataType PDT(EPDT_Color, UCol, EDataFlags::BHasInit);
+MakeDataType(EPDT_Color, UCol, EDataFlags::BHasInit);
 
 void IColorModifier::Serialize(Serialization::IArchive& ar)
 {
@@ -41,7 +41,7 @@ void CFeatureFieldColor::AddToComponent(CParticleComponent* pComponent, SCompone
 	}
 	if (!m_modUpdate.empty())
 	{
-		pComponent->AddParticleData(InitType(EPDT_Color));
+		pComponent->AddParticleData(EPDT_Color.InitType());
 		pComponent->UpdateParticles.add(this);
 	}
 
@@ -96,7 +96,7 @@ void CFeatureFieldColor::InitParticles(const SUpdateContext& context)
 	for (auto& pModifier : m_modInit)
 		pModifier->Modify(context, spawnRange, colors);
 
-	container.CopyData(InitType(EPDT_Color), EPDT_Color, container.GetSpawnedRange());
+	container.CopyData(EPDT_Color.InitType(), EPDT_Color, container.GetSpawnedRange());
 }
 
 void CFeatureFieldColor::UpdateParticles(const SUpdateContext& context)

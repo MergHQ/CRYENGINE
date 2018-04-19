@@ -91,7 +91,7 @@ public:
 		for (auto particleId : context.GetSpawnedRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
-			const float scale = scales.m_stream.SafeLoad(particleId);
+			const float scale = scales.SafeLoad(particleId);
 			const Vec3 wPosition0 = positions.Load(particleId);
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
 			const Vec3 wOffset = wQuat * oOffset;
@@ -168,7 +168,7 @@ public:
 		for (auto particleId : context.GetSpawnedRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
-			const float scale = scales.m_stream.SafeLoad(particleId);
+			const float scale = scales.SafeLoad(particleId);
 			const Vec3 wPosition0 = positions.Load(particleId);
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
 			const Vec3 oOffset = Vec3(
@@ -284,8 +284,8 @@ private:
 		{
 			const Vec3 sphere = context.m_spawnRng.RandSphere();
 			const Vec3 sphereDist = sphere.CompMul(m_axisScale);
-			const float radiusMult = abs(radii.m_stream.SafeLoad(particleId));
-			const float velocityMult = velocityMults.m_stream.SafeLoad(particleId);
+			const float radiusMult = abs(radii.SafeLoad(particleId));
+			const float velocityMult = velocityMults.SafeLoad(particleId);
 
 			if (UseRadius)
 			{
@@ -406,8 +406,8 @@ private:
 		for (auto particleId : context.GetSpawnedRange())
 		{
 			TParticleId parentId = parentIds.Load(particleId);
-			const float radiusMult = abs(radii.m_stream.SafeLoad(particleId));
-			const float velocityMult = velocityMults.m_stream.SafeLoad(particleId);
+			const float radiusMult = abs(radii.SafeLoad(particleId));
+			const float velocityMult = velocityMults.SafeLoad(particleId);
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
 
 			const Vec2 disc2 = context.m_spawnRng.RandCircle();
@@ -443,7 +443,8 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationCircle, "Location",
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationGeometry
 
-extern EParticleDataType EPDT_MeshGeometry, EPDT_PhysicalEntity;
+extern TDataType<IMeshObj*>        EPDT_MeshGeometry;
+extern TDataType<IPhysicalEntity*> EPDT_PhysicalEntity;
 
 SERIALIZATION_DECLARE_ENUM(EGeometrySource,
                            Render = GeomType_Render,
@@ -514,8 +515,8 @@ public:
 			if (IMeshObj* pMesh = pParentComponent->GetComponentParams().m_pMesh)
 				emitterGeometry.Set(pMesh);
 		}
-		const TIStream<IMeshObj*> parentMeshes = context.m_parentContainer.GetTIStream<IMeshObj*>(EPDT_MeshGeometry, emitterGeometry.m_pMeshObj);
-		const TIStream<IPhysicalEntity*> parentPhysics = context.m_parentContainer.GetTIStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
+		const TIStream<IMeshObj*> parentMeshes = context.m_parentContainer.IStream(EPDT_MeshGeometry, +emitterGeometry.m_pMeshObj);
+		const TIStream<IPhysicalEntity*> parentPhysics = context.m_parentContainer.IStream(EPDT_PhysicalEntity);
 
 		uint numInstances = context.m_runtime.GetNumInstances();
 		for (uint i = 0; i < numInstances; ++i)
@@ -570,8 +571,8 @@ public:
 		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position, geomLocation.t);
 		const IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, geomLocation.q);
 		const IFStream parentSizes = parentContainer.GetIFStream(EPDT_Size, geomLocation.s);
-		const TIStream<IMeshObj*> parentMeshes = parentContainer.GetTIStream<IMeshObj*>(EPDT_MeshGeometry, emitterGeometry.m_pMeshObj);
-		const TIStream<IPhysicalEntity*> parentPhysics = parentContainer.GetTIStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
+		const TIStream<IMeshObj*> parentMeshes = parentContainer.IStream(EPDT_MeshGeometry, +emitterGeometry.m_pMeshObj);
+		const TIStream<IPhysicalEntity*> parentPhysics = parentContainer.IStream(EPDT_PhysicalEntity);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 		IOQuatStream orientations = container.GetIOQuatStream(EPQF_Orientation);
@@ -669,14 +670,14 @@ public:
 				randPositionNormal <<= geomLocation;
 			}
 			
-			const float offset = offsets.m_stream.SafeLoad(particleId);
+			const float offset = offsets.SafeLoad(particleId);
 			const Vec3 wPosition = randPositionNormal.vPos + randPositionNormal.vNorm * offset;
 			assert((wPosition - geomLocation.t).len() < 100000);
 			positions.Store(particleId, wPosition);
 
 			if (useVelocity)
 			{
-				const float velocityMult = velocityMults.m_stream.SafeLoad(particleId);
+				const float velocityMult = velocityMults.SafeLoad(particleId);
 				const Vec3 wVelocity0 = velocities.Load(particleId);
 				const Vec3 wVelocity1 = wVelocity0 + randPositionNormal.vNorm * velocityMult;
 				velocities.Store(particleId, wVelocity1);
@@ -747,20 +748,22 @@ public:
 		const float delta = m_rate * context.m_deltaTime;
 		CParticleContainer& container = context.m_container;
 		const IFStream ages = container.GetIFStream(EPDT_NormalAge);
+		const IFStream lifeTimes = container.GetIFStream(EPDT_LifeTime);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 
 		STempInitBuffer<float> sizes(context, m_amplitude);
 
 		for (auto particleId : context.GetSpawnedRange())
 		{
-			const float amplitude = sizes.m_stream.SafeLoad(particleId);
+			const float amplitude = sizes.SafeLoad(particleId);
 			const Vec3 wPosition0 = positions.Load(particleId);
 			const float age = ages.Load(particleId);
+			const float lifeTime = lifeTimes.Load(particleId);
 			Vec4 sample;
 			sample.x = wPosition0.x * invSize;
 			sample.y = wPosition0.y * invSize;
 			sample.z = wPosition0.z * invSize;
-			sample.w = StartTime(time, delta, age);
+			sample.w = StartTime(time, delta, age * lifeTime);
 			const Vec3 potential = Fractal(sample, m_octaves);
 			const Vec3 wPosition1 = potential * amplitude + wPosition0;
 			positions.Store(particleId, wPosition1);
@@ -961,16 +964,11 @@ public:
 		const CParticleContainer& parentContainer = context.m_parentContainer;
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
-		const TIStream<uint8> states = container.GetTIStream<uint8>(EPDT_State);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 
-		for (auto particleId : context.GetUpdateRange())
+		for (auto particleId : container.GetNonSpawnedRange())
 		{
-			const uint8 state = states.Load(particleId);
-			if (state == ES_NewBorn)
-				continue;
-
 			const Vec3 wPosition0 = positions.Load(particleId);
 			const Vec3 cPosition0 = wPrevCameraPoseInv * wPosition0;
 			const Vec3 wPosition1 = wCurCameraPose * cPosition0;
@@ -1142,7 +1140,7 @@ CRY_UNIT_TEST(WrapRotationTest)
 };
 }
 
-EParticleDataType PDT(EPVF_AuxPosition, float[3]);
+MakeDataType(EPVF_AuxPosition, Vec3);
 
 class CFeatureLocationOmni : public CParticleFeature
 {

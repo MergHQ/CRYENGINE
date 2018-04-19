@@ -860,7 +860,7 @@ void CStatObj::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm e
 				part.aPoints.fill(ZERO);
 		}
 	}
-	if (m_pRenderMesh)
+	else if (m_pRenderMesh)
 		m_pRenderMesh->GetRandomPoints(points, seed, eForm);
 	else
 		points.fill(ZERO);

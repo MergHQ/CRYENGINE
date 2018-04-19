@@ -1,12 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  Created:     29/01/2015 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include "ParticleCommon.h"
@@ -104,20 +97,20 @@ struct SVisibilityParams
 		: m_indoorVisibility(EIndoorVisibility::Both)
 		, m_waterVisibility(EWaterVisibility::Both)
 	{}
-	void Combine(const SVisibilityParams& o)  // Combination from multiple features chooses most restrictive values
-	{
-		m_viewDistanceMultiple = m_viewDistanceMultiple * o.m_viewDistanceMultiple;
-		m_maxScreenSize = min(m_maxScreenSize, o.m_maxScreenSize);
-		m_minCameraDistance = max(m_minCameraDistance, o.m_minCameraDistance);
-		m_maxCameraDistance = min(m_maxCameraDistance, o.m_maxCameraDistance);
-		if (m_indoorVisibility == EIndoorVisibility::Both)
-			m_indoorVisibility = o.m_indoorVisibility;
-		if (m_waterVisibility == EWaterVisibility::Both)
-			m_waterVisibility = o.m_waterVisibility;
-	}
+	void Combine(const SVisibilityParams& o);  // Combination from multiple features chooses most restrictive values
 };
 
-struct SComponentParams
+struct STimingParams
+{
+	float m_maxParticleLife = 0;  // Max time a particle can live
+	float m_maxTotalLIfe    = 0;  // Max time an emitter can live
+	float m_stableTime      = 0;  // Max time for particles, including children, to die
+	float m_equilibriumTime = 0;  // Time for emitter to reach equilibrium after activation
+
+	bool  IsImmortal() const { return !std::isfinite(m_maxTotalLIfe); }
+};
+
+struct SComponentParams: STimingParams
 {
 	SComponentParams();
 
@@ -136,8 +129,6 @@ struct SComponentParams
 	uint32                    m_maxParticlesPerFrame;
 	float                     m_maxParticleRate;
 	float                     m_scaleParticleCount;
-	Range                     m_emitterLifeTime;
-	float                     m_maxParticleLifeTime;
 	float                     m_maxParticleSize;
 	float                     m_renderObjectSortBias;
 	SVisibilityParams         m_visibility;
@@ -145,7 +136,6 @@ struct SComponentParams
 	uint8                     m_particleObjFlags;
 	bool                      m_meshCentered;
 
-	bool IsImmortal() const { return !std::isfinite(m_emitterLifeTime.end + m_maxParticleLifeTime); }
 	void GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 };
 
@@ -201,22 +191,21 @@ public:
 	template<typename T> TDataOffset<T>   AddInstanceData()                     { return AddInstanceData(sizeof(T)); }
 	void                                  AddParticleData(EParticleDataType type);
 
-	bool                                  UsesGPU() const                       { return m_componentParams.m_usesGPU; }
-	gpu_pfx2::SComponentParams&           GPUComponentParams()                  { return m_GPUComponentParams; };
+	bool                                  UsesGPU() const                       { return m_Params.m_usesGPU; }
+	gpu_pfx2::SComponentParams&           GPUComponentParams()                  { return m_GPUParams; };
 	void                                  AddGPUFeature(gpu_pfx2::IParticleFeature* gpuInterface) { if (gpuInterface) m_gpuFeatures.push_back(gpuInterface); }
 	TConstArray<gpu_pfx2::IParticleFeature*> GetGpuFeatures() const             { return { &*m_gpuFeatures.begin(), &*m_gpuFeatures.end() }; }
 
-	const SComponentParams& GetComponentParams() const                          { return m_componentParams; }
-	SComponentParams&       ComponentParams()                                   { return m_componentParams; }
+	const SComponentParams& GetComponentParams() const                          { return m_Params; }
+	SComponentParams&       ComponentParams()                                   { return m_Params; }
 	bool                    UseParticleData(EParticleDataType type) const       { return m_useParticleData[type]; }
 
-	void                    SetParentComponent(CParticleComponent* pParentComponent, bool delayed);
 	CParticleComponent*     GetParentComponent() const                          { return m_parent; }
 	const TComponents&      GetChildComponents() const                          { return m_children; }
 	void                    ClearChildren()                                     { m_children.resize(0); }
 
 	void                    GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
-	float                   GetEquilibriumTime(Range parentLife = Range()) const;
+	void                    UpdateTimings();
 
 	void                    RenderAll(CParticleEmitter* pEmitter, CParticleComponentRuntime* pRuntime, const SRenderContext& renderContext);
 	bool                    CanMakeRuntime(CParticleEmitter* pEmitter) const;
@@ -232,14 +221,15 @@ private:
 	CParticleComponent*                      m_parent;
 	TComponents                              m_children;
 	Vec2                                     m_nodePosition;
-	SComponentParams                         m_componentParams;
+	SComponentParams                         m_Params;
 	std::vector<TParticleFeaturePtr>         m_features;
+	std::vector<TParticleFeaturePtr>         m_defaultFeatures;
 	StaticEnumArray<bool, EParticleDataType> m_useParticleData;
 	SEnable                                  m_enabled;
 	SEnable                                  m_visible;
 	bool                                     m_dirty;
 
-	gpu_pfx2::SComponentParams               m_GPUComponentParams;
+	gpu_pfx2::SComponentParams               m_GPUParams;
 	std::vector<gpu_pfx2::IParticleFeature*> m_gpuFeatures;
 };
 

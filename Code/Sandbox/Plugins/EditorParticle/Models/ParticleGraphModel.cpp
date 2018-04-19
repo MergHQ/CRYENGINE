@@ -216,9 +216,17 @@ bool CParticleGraphModel::RemoveConnection(CryGraphEditor::CAbstractConnectionIt
 		CNodeItem& sourceNode = static_cast<CNodeItem&>(connection.GetSourcePinItem().GetNodeItem());
 		CNodeItem& targetNode = static_cast<CNodeItem&>(connection.GetTargetPinItem().GetNodeItem());
 
-		CFeaturePinItem& featurePin = static_cast<CFeaturePinItem&>(connection.GetSourcePinItem());
-		pfx2::IParticleFeature& feature = featurePin.GetFeatureItem().GetFeatureInterface();
-		feature.DisconnectFrom(targetNode.GetIdentifier());
+		if (static_cast<CBasePinItem&>(connection.GetSourcePinItem()).GetPinType() == EPinType::Feature)
+		{
+			CFeaturePinItem& featurePin = static_cast<CFeaturePinItem&>(connection.GetSourcePinItem());
+			pfx2::IParticleFeature& feature = featurePin.GetFeatureItem().GetFeatureInterface();
+			feature.DisconnectFrom(targetNode.GetIdentifier());
+		}
+		else if (static_cast<CBasePinItem&>(connection.GetSourcePinItem()).GetPinType() == EPinType::Child)
+		{
+			targetNode.GetComponentInterface().SetParent(nullptr);
+		}
+
 		// TODO: ConnectTo(...) should do the job for us!
 		sourceNode.GetComponentInterface().SetChanged();
 		targetNode.GetComponentInterface().SetChanged();
@@ -241,9 +249,9 @@ CryGraphEditor::CItemCollection* CParticleGraphModel::CreateClipboardItemsCollec
 
 CNodeItem* CParticleGraphModel::GetNodeItemById(string id) const
 {
-	for (const auto& node : m_nodes)
-		if (id == node->GetName())
-			return node;
+	for (CNodeItem* pNodeItem : m_nodes)
+		if (id == pNodeItem->GetName())
+			return pNodeItem;
 
 	return nullptr;
 }
@@ -267,6 +275,26 @@ void CParticleGraphModel::ExtractConnectionsFromNodes()
 						CConnectionItem* pConnectionItem = new CConnectionItem(*pSourcePin, *pTargetPin, *this);
 						m_connections.push_back(pConnectionItem);
 					}
+				}
+			}
+		}
+	}
+
+	for (CNodeItem* pChildNodeItem : m_nodes)
+	{
+		auto& component = pChildNodeItem->GetComponentInterface();
+		if (auto* pParent = component.GetParent())
+		{
+			if (CNodeItem* pParentNodeItem = GetNodeItemById(string(pParent->GetName())))
+			{
+				CBasePinItem* pSourcePin = pParentNodeItem->GetChildPinItem();
+				CBasePinItem* pTargetPin = pChildNodeItem->GetParentPinItem();
+				CRY_ASSERT(pSourcePin && pTargetPin);
+
+				if (pTargetPin->CanConnect(pSourcePin))
+				{
+					CConnectionItem* pConnectionItem = new CConnectionItem(*pSourcePin, *pTargetPin, *this);
+					m_connections.push_back(pConnectionItem);
 				}
 			}
 		}
@@ -332,9 +360,16 @@ CConnectionItem* CParticleGraphModel::CreateConnection(CBasePinItem& sourcePin, 
 		CNodeItem& sourceNode = static_cast<CNodeItem&>(sourcePin.GetNodeItem());
 		CNodeItem& targetNode = static_cast<CNodeItem&>(targetPin.GetNodeItem());
 
-		CFeaturePinItem& featurePin = static_cast<CFeaturePinItem&>(sourcePin);
-		pfx2::IParticleFeature& feature = featurePin.GetFeatureItem().GetFeatureInterface();
-		feature.ConnectTo(targetNode.GetIdentifier());
+		if (sourcePin.GetPinType() == EPinType::Feature)
+		{
+			CFeaturePinItem& featurePin = static_cast<CFeaturePinItem&>(sourcePin);
+			pfx2::IParticleFeature& feature = featurePin.GetFeatureItem().GetFeatureInterface();
+			feature.ConnectTo(targetNode.GetIdentifier());
+		}
+		else if (sourcePin.GetPinType() == EPinType::Child)
+		{
+			targetNode.GetComponentInterface().SetParent(&sourceNode.GetComponentInterface());
+		}
 
 		// TODO: ConnectTo(...) should do the job for us!
 		sourceNode.GetComponentInterface().SetChanged();

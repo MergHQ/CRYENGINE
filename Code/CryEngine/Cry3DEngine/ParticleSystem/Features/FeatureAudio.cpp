@@ -22,7 +22,7 @@ namespace pfx2
 {
 static const ColorB audioColor = ColorB(172, 196, 138);
 
-EParticleDataType PDT(EPDT_AudioObject, CryAudio::IObject*);
+MakeDataType(EPDT_AudioObject, CryAudio::IObject*);
 
 class CFeatureAudioTrigger final : public CParticleFeature
 {
@@ -91,7 +91,7 @@ public:
 
 	void DestroyParticles(const SUpdateContext& context) override
 	{
-		auto audioObjects = context.m_container.GetTIStream<CryAudio::IObject*>(EPDT_AudioObject);
+		auto audioObjects = context.m_container.IStream(EPDT_AudioObject);
 		for (auto particleId : context.GetUpdateRange())
 		{
 			if (auto pIObject = audioObjects.Load(particleId))
@@ -139,16 +139,15 @@ private:
 		const SUpdateContext context(pComponentRuntime);
 		CParticleContainer& container = context.m_container;
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
-		const auto states = container.GetTIStream<uint8>(EPDT_State);
+		const auto normAges = container.GetIFStream(EPDT_NormalAge);
 
 		for (auto particleId : context.GetUpdateRange())
 		{
-			const uint8 state = states.Load(particleId);
-			if (m_playTrigger && state == ES_NewBorn)
+			if (m_playTrigger && container.IsNewBorn(particleId))
 			{
 				Trigger(m_playTrigger, proxyName, positions.Load(particleId));
 			}
-			else if (m_stopTrigger && state == ES_Expired)
+			if (m_stopTrigger && IsExpired(normAges.Load(particleId)))
 			{
 				Trigger(m_stopTrigger, proxyName, positions.Load(particleId));
 			}
@@ -162,36 +161,31 @@ private:
 		const SUpdateContext context(pComponentRuntime);
 		CParticleContainer& container = context.m_container;
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
-		const auto states = container.GetTIStream<uint8>(EPDT_State);
-		auto audioObjects = container.GetTIOStream<CryAudio::IObject*>(EPDT_AudioObject);
+		const auto normAges = container.GetIFStream(EPDT_NormalAge);
+		auto audioObjects = container.IOStream(EPDT_AudioObject);
 
 		for (auto particleId : context.GetUpdateRange())
 		{
 			CryAudio::IObject* pIObject = audioObjects.Load(particleId);
-			const uint8 state = states.Load(particleId);
-			switch (state)
+			if (container.IsNewBorn(particleId))
 			{
-			case ES_NewBorn:
 				if (m_playTrigger && !pIObject)
 				{
 					pIObject = MakeAudioObject(proxyName, positions.Load(particleId));
 					audioObjects.Store(particleId, pIObject);
 					pIObject->ExecuteTrigger(m_playTrigger);
 				}
-				break;
-			case ES_Alive:
-				if (m_followParticle && pIObject)
+			}
+			if (pIObject)
+			{
+				if (m_followParticle)
 					pIObject->SetTransformation(positions.Load(particleId));
-				break;
-			case ES_Expired:
-				if (m_stopTrigger && pIObject)
-					pIObject->ExecuteTrigger(m_stopTrigger);
-				break;
-			case ES_Dead:
-				if (pIObject)
+				if (IsExpired(normAges.Load(particleId)))
 				{
 					if (m_stopOnDeath)
 						pIObject->StopTrigger(m_playTrigger);
+					if (m_stopTrigger)
+						pIObject->ExecuteTrigger(m_stopTrigger);
 					gEnv->pAudioSystem->ReleaseObject(pIObject);
 					audioObjects.Store(particleId, nullptr);
 				}
@@ -271,18 +265,15 @@ public:
 		CParticleContainer& container = context.m_container;
 		if (!container.HasData(EPDT_AudioObject))
 			return;
-		auto audioObjects = container.GetTIOStream<CryAudio::IObject*>(EPDT_AudioObject);
 
-		STempModBuffer<float> values(context, m_value);
-		values.ModifyUpdate(context, m_value, container.GetFullRange());
+		auto audioObjects = container.IOStream(EPDT_AudioObject);
+		STempUpdateBuffer<float> values(context, m_value, context.GetUpdateRange());
 
 		for (auto particleId : context.GetUpdateRange())
 		{
-			const float value = values.m_stream.Load(particleId);
-			CryAudio::IObject* const pIObject = audioObjects.Load(particleId);
-			if (pIObject != nullptr)
+			if (auto* pIObject = audioObjects.Load(particleId))
 			{
-				pIObject->SetParameter(m_parameterId, value);
+				pIObject->SetParameter(m_parameterId, values[particleId]);
 			}
 		}
 	}

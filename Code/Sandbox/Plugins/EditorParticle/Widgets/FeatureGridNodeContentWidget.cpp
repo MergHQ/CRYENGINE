@@ -346,7 +346,7 @@ QSizeF CFeatureSlotWidget::sizeHint(Qt::SizeHint which, const QSizeF& constraint
 	return m_geometry.size();
 }
 
-CFeatureGridNodeContentWidget::CFeatureGridNodeContentWidget(CryGraphEditor::CNodeWidget& node, CParentPinItem& parentPin, CryGraphEditor::CNodeGraphView& view)
+CFeatureGridNodeContentWidget::CFeatureGridNodeContentWidget(CryGraphEditor::CNodeWidget& node, CParentPinItem& parentPin, CChildPinItem& childPin, CryGraphEditor::CNodeGraphView& view)
 	: CAbstractNodeContentWidget(node, view)
 	, m_pGrabbedFeature(nullptr)
 	, m_grabbedFeatureIndex(~0)
@@ -361,6 +361,11 @@ CFeatureGridNodeContentWidget::CFeatureGridNodeContentWidget(CryGraphEditor::CNo
 	m_pins.push_back(m_pParentPin);
 	pLayout->addItem(m_pParentPin);
 	pLayout->setAlignment(m_pParentPin, Qt::AlignVCenter);
+
+	m_pChildPin = new CryGraphEditor::CPinWidget(childPin, node, view);
+	m_pins.push_back(m_pChildPin);
+	pLayout->addItem(m_pChildPin);
+	pLayout->setAlignment(m_pChildPin, Qt::AlignVCenter);
 
 	m_pFeaturesLayout = new QGraphicsLinearLayout();
 	m_pFeaturesLayout->setOrientation(Qt::Orientation::Vertical);
@@ -496,6 +501,7 @@ uint32 CFeatureGridNodeContentWidget::EndFeatureMove()
 void CFeatureGridNodeContentWidget::OnItemInvalidated()
 {
 	m_pParentPin->OnItemInvalidated();
+	m_pChildPin->OnItemInvalidated();
 	for (auto& pair : m_featureWidgetsByItems)
 	{
 		CFeatureWidget* pFeatureWidget = pair.second;

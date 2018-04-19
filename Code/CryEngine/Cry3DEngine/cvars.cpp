@@ -204,8 +204,8 @@ void CVars::Init()
 	                   " c = disable clipping against water and vis area bounds"
 	                   " z = freeze particle system"
 	                   " t = used by developers to debug test algorithms");
-	REGISTER_CVAR(e_ParticlesThread, 1, VF_BITFIELD,
-	              "Enable particle threading");
+	REGISTER_CVAR(e_ParticlesThread, 4, VF_BITFIELD,
+	              "Enable particle threading: 1 = basic, 4 = optimal");
 	REGISTER_CVAR(e_ParticlesObjectCollisions, 2, VF_NULL,
 	              "Enable particle/object collisions for SimpleCollision:\n"
 	              "  1 = against static objects only, 2 = dynamic also");

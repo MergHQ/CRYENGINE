@@ -7,7 +7,8 @@
 namespace pfx2
 {
 
-extern EParticleDataType EPDT_Alpha, EPDT_Tile;
+extern TDataType<float> EPDT_Alpha;
+extern TDataType<uint8> EPDT_Tile;
 
 class CFeatureRenderDecals : public CParticleFeature, public Cry3DEngineBase
 {
@@ -50,7 +51,7 @@ struct SDecalTiler
 		: animation(_params.m_textureAnimation)
 		, ages(_container.GetIFStream(EPDT_NormalAge))
 		, lifetimes(_container.GetIFStream(EPDT_LifeTime))
-		, tiles(_container.GetTIStream<uint8>(EPDT_Tile, 0))
+		, tiles(_container.IStream(EPDT_Tile))
 		, frameCount(float(_params.m_textureAnimation.m_frameCount))
 		, firstTile(_params.m_shaderData.m_firstTile)
 		, tileSize(Vec2(_params.m_shaderData.m_tileSize[0], _params.m_shaderData.m_tileSize[1]))
@@ -124,7 +125,6 @@ void CFeatureRenderDecals::RenderDeferred(CParticleEmitter* pEmitter, CParticleC
 	const IFStream sizes = container.GetIFStream(EPDT_Size);
 	const IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
 	const IFStream angles = container.GetIFStream(EPDT_Angle2D);
-	const TIStream<uint8> states = container.GetTIStream<uint8>(EPDT_State);
 	const bool hasAngles2D = container.HasData(EPDT_Angle2D);
 	const bool hasBlending = params.m_textureAnimation.m_frameBlending;
 
@@ -136,10 +136,6 @@ void CFeatureRenderDecals::RenderDeferred(CParticleEmitter* pEmitter, CParticleC
 
 	for (auto particleId : context.GetUpdateRange())
 	{
-		const uint8 state = states.Load(particleId);
-		if (!(state & ESB_Alive))
-			continue;
-
 		const float size = sizes.Load(particleId);
 		if (size <= 0.0f)
 			continue;

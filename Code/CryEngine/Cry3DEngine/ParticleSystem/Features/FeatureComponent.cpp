@@ -35,9 +35,9 @@ private:
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureComponentEnableIf, "Component", "EnableIf", colorComponent);
 
 //////////////////////////////////////////////////////////////////////////
-// CFeatureComponentSpawnIf
+// CFeatureComponentActivateIf
 
-class CFeatureComponentSpawnIf : public CParticleFeature
+class CFeatureComponentActivateIf : public CParticleFeature
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
@@ -65,7 +65,69 @@ private:
 	CAttributeReference m_attribute;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureComponentSpawnIf, "Component", "SpawnIf", colorComponent);
+CRY_PFX2_LEGACY_FEATURE(CFeatureComponentActivateIf, "Component", "SpawnIf");
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureComponentActivateIf, "Component", "ActivateIf", colorComponent);
+
+//////////////////////////////////////////////////////////////////////////
+// CFeatureComponentActivateRandom
+
+class CFeatureComponentActivateRandom : public CParticleFeature
+{
+public:
+	CRY_PFX2_DECLARE_FEATURE
+
+public:
+	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
+	{
+		pComponent->CullSubInstances.add(this);
+	}
+
+	virtual void Serialize(Serialization::IArchive& ar) override
+	{
+		CParticleFeature::Serialize(ar);
+		SERIALIZE_VAR(ar, m_probability);
+		if (m_probability < 1.0f)
+		{
+			SERIALIZE_VAR(ar, m_siblingExclusive);
+			if (m_siblingExclusive)
+				SERIALIZE_VAR(ar, m_selectionRange);
+		}
+	}
+
+	virtual void CullSubInstances(const SUpdateContext& context, TVarArray<SInstance>& instances) override
+	{
+		if (m_probability < 1.0f && instances.size() > 0)
+		{
+			auto seed = context.m_runtime.GetEmitter()->GetCurrentSeed();
+			SChaosKey childKey(seed ^ instances[0].m_parentId);
+			uint i = 0;
+			for (const auto& instance : instances)
+			{
+				if (m_probability < 1.0f)
+				{
+					if (m_siblingExclusive)
+					{
+						SChaosKey parentKey(seed ^ instance.m_parentId);
+						float select = parentKey.RandUNorm();
+						if (select < m_selectionRange || select > m_selectionRange + m_probability)
+							continue;
+					}
+					else if (childKey.RandUNorm() > m_probability)
+						continue;
+					instances[i++] = instance;
+				}
+			}
+			instances.resize(i);
+		}
+	}
+
+private:
+	bool       m_siblingExclusive = false;
+	UUnitFloat m_selectionRange   = 0.0f;
+	UUnitFloat m_probability      = 1.0f;
+};
+
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureComponentActivateRandom, "Component", "ActivateRandom", colorComponent);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureComponentEnableByConfig

@@ -136,7 +136,6 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 			static_assert(CRY_PFX2_PARTICLESGROUP_STRIDE == 4, "This unit test is assuming vectorization of 4 particles");
 			pContainer = std::unique_ptr<pfx2::CParticleContainer>(new pfx2::CParticleContainer());
 			pContainer->AddParticleData(EPDT_ParentId);
-			pContainer->AddParticleData(EPDT_State);
 		};
 
 		virtual void Done()
@@ -168,30 +167,6 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 			pContainer->Clear();
 		}
 
-		bool TestNewBornFlags(uint numParticles)
-		{
-			const uint bufferSize = 128;
-			const uint8 validMask = ES_Alive;
-			const uint8 overrunMask = 0xff;
-			pContainer->Resize(bufferSize);
-			uint8* pData = pContainer->GetData<uint8>(EPDT_State);
-
-			AddParticles(numParticles);
-			pContainer->ResetSpawnedParticles();
-			memset(pData, validMask | ESB_NewBorn, numParticles);
-			memset(pData + numParticles, overrunMask, bufferSize - numParticles);
-
-			pContainer->RemoveNewBornFlags();
-
-			for (uint i = 0; i < numParticles; ++i)
-				if (pData[i] != validMask)
-					return false;
-			for (uint i = numParticles; i < bufferSize; ++i)
-				if (pData[i] != overrunMask)
-					return false;
-			return true;
-		}
-
 	private:
 		std::unique_ptr<pfx2::CParticleContainer> pContainer;
 	};
@@ -205,17 +180,15 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 		AddParticles(6);
 
 		AddParticles(3);
-		CRY_PFX2_UNIT_TEST_ASSERT(container.GetNumParticles() == 9);
-		CRY_PFX2_UNIT_TEST_ASSERT(container.GetLastParticleId() == 11);
-		CRY_PFX2_UNIT_TEST_ASSERT(container.GetFirstSpawnParticleId() == 8);
+		CRY_PFX2_UNIT_TEST_ASSERT(container.GetRealNumParticles() == 9);
+		CRY_PFX2_UNIT_TEST_ASSERT(container.GetSpawnedRange().m_begin == 8);
 		CRY_PFX2_UNIT_TEST_ASSERT(container.GetNumSpawnedParticles() == 3);
 		CRY_PFX2_UNIT_TEST_ASSERT(container.GetMaxParticles() > 11);
 
 		ResetSpawnedParticles();
 		CRY_PFX2_UNIT_TEST_ASSERT(container.GetNumParticles() == 9);
-		CRY_PFX2_UNIT_TEST_ASSERT(container.GetLastParticleId() == 9);
-		CRY_PFX2_UNIT_TEST_ASSERT(container.GetFirstSpawnParticleId() == 9);
-		CRY_PFX2_UNIT_TEST_ASSERT(container.GetNumSpawnedParticles() == 0);
+		CRY_PFX2_UNIT_TEST_ASSERT(container.GetSpawnedRange().m_begin == 6);
+		CRY_PFX2_UNIT_TEST_ASSERT(container.GetNumSpawnedParticles() == 3);
 		CRY_PFX2_UNIT_TEST_ASSERT(container.GetMaxParticles() > 9);
 	}
 
@@ -237,27 +210,6 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 		CRY_PFX2_UNIT_TEST_ASSERT(container.GetRealId(3) == 3);
 		CRY_PFX2_UNIT_TEST_ASSERT(container.GetRealId(8) == 8);
 		CRY_PFX2_UNIT_TEST_ASSERT(container.GetRealId(6) == 6);
-	}
-
-	CRY_UNIT_TEST_WITH_FIXTURE(CParticleContainer_NewBornFlags_Case1, CParticleContainerSpawn)
-	{
-		const bool result = TestNewBornFlags(16);
-		CRY_PFX2_UNIT_TEST_ASSERT(result);
-	}
-	CRY_UNIT_TEST_WITH_FIXTURE(CParticleContainer_NewBornFlags_Case2, CParticleContainerSpawn)
-	{
-		const bool result = TestNewBornFlags(18);
-		CRY_PFX2_UNIT_TEST_ASSERT(result);
-	}
-	CRY_UNIT_TEST_WITH_FIXTURE(CParticleContainer_NewBornFlags_Case3, CParticleContainerSpawn)
-	{
-		const bool result = TestNewBornFlags(39);
-		CRY_PFX2_UNIT_TEST_ASSERT(result);
-	}
-	CRY_UNIT_TEST_WITH_FIXTURE(CParticleContainer_NewBornFlags_Case4, CParticleContainerSpawn)
-	{
-		const bool result = TestNewBornFlags(52);
-		CRY_PFX2_UNIT_TEST_ASSERT(result);
 	}
 
 	CRY_UNIT_TEST_FIXTURE(CParticleEffectTests)

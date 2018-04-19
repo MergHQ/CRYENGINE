@@ -7,10 +7,10 @@
 namespace pfx2
 {
 
-EParticleDataType PDT(EPDT_ContactPoint, SContactPoint);
-EParticleDataType PDT(EPDT_CollideSpeed, float);
+MakeDataType(EPDT_ContactPoint, SContactPoint);
+MakeDataType(EPDT_CollideSpeed, float);
 
-extern EParticleDataType EPVF_PositionPrev;
+extern TDataType<Vec3>   EPVF_PositionPrev;
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureCollision
@@ -60,7 +60,7 @@ int CFeatureCollision::GetRayTraceFilter() const
 struct SCollisionLimitIgnore
 {
 	SCollisionLimitIgnore(CParticleContainer& container)
-		: m_contactPoints(container.GetTIOStream<SContactPoint>(EPDT_ContactPoint)) {}
+		: m_contactPoints(container.IOStream(EPDT_ContactPoint)) {}
 	void CollisionLimit(TParticleId particleId)
 	{
 		SContactPoint contact = m_contactPoints.Load(particleId);
@@ -73,7 +73,7 @@ struct SCollisionLimitIgnore
 struct SCollisionLimitStop
 {
 	SCollisionLimitStop(CParticleContainer& container)
-		: m_contactPoints(container.GetTIOStream<SContactPoint>(EPDT_ContactPoint))
+		: m_contactPoints(container.IOStream(EPDT_ContactPoint))
 		, m_positions(container.GetIOVec3Stream(EPVF_Position))
 		, m_velocities(container.GetIOVec3Stream(EPVF_Velocity)) {}
 	void CollisionLimit(TParticleId particleId)
@@ -452,7 +452,7 @@ void CFeatureCollision::DoCollisions(const SUpdateContext& context) const
 	IOQuatStream orientations = container.GetIOQuatStream(EPQF_Orientation);
 	IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 	IOFStream collideSpeeds = container.GetIOFStream(EPDT_CollideSpeed);
-	TIOStream<SContactPoint> contactPoints = container.GetTIOStream<SContactPoint>(EPDT_ContactPoint);
+	TIOStream<SContactPoint> contactPoints = container.IOStream(EPDT_ContactPoint);
 
 	for (auto particleId : context.GetUpdateRange())
 	{
@@ -535,7 +535,7 @@ void CFeatureCollision::UpdateCollisionLimit(const SUpdateContext& context) cons
 {
 	CParticleContainer& container = context.m_container;
 	TCollisionLimit limiter(container);
-	const TIStream<SContactPoint> contactPoints = container.GetTIStream<SContactPoint>(EPDT_ContactPoint);
+	const auto contactPoints = container.IStream(EPDT_ContactPoint);
 
 	for (auto particleId : context.GetUpdateRange())
 	{

@@ -79,12 +79,11 @@ public:
 	
 	static TFeatureParams&               GetFeatureParams()                                    { static TFeatureParams params; return params; }
 	static bool                          RegisterFeature(const SParticleFeatureParams& params) { GetFeatureParams().push_back(params); return true; }
+	static const SParticleFeatureParams* FindFeatureParam(cstr groupName, cstr featureName);
 	static const SParticleFeatureParams* GetDefaultFeatureParam(EFeatureType);
 
 private:
 	void              TrimEmitters(bool finished_only);
-	CParticleEffect*  CastEffect(const PParticleEffect& pEffect) const;
-	CParticleEmitter* CastEmitter(const PParticleEmitter& pEmitter) const;
 
 	// PFX1 to PFX2
 	string ConvertPfx1Name(cstr oldEffectName);

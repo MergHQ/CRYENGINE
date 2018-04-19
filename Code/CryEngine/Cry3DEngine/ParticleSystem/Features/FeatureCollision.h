@@ -35,7 +35,7 @@ struct SContactPoint
 template<typename T, typename F = float> struct QuadPathT;
 typedef QuadPathT<Vec3> QuadPath;
 
-extern EParticleDataType EPDT_ContactPoint;
+extern TDataType<SContactPoint> EPDT_ContactPoint;
 
 SERIALIZATION_ENUM_DECLARE(ECollisionLimitMode, ,
 	Unlimited,

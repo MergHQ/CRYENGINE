@@ -8,10 +8,11 @@
 namespace pfx2
 {
 
-extern EParticleDataType
-	EPDT_Color,
+extern TDataType<float>
 	EPDT_Alpha,
 	EPDT_Size;
+extern TDataType<UCol>
+	EPDT_Color;
 
 SERIALIZATION_DECLARE_ENUM(ELightAffectsFog,
 	No,
@@ -95,16 +96,11 @@ public:
 		const IColorStream colors = container.GetIColorStream(EPDT_Color, defaultColor);
 		const IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
 		const IFStream sizes = container.GetIFStream(EPDT_Size);
-		const TIStream<uint8> states = container.GetTIStream<uint8>(EPDT_State);
 
 		const float distRatio = GetFloatCVar(e_ParticlesLightsViewDistRatio);
 
 		for (auto particleId : container.GetFullRange())
 		{
-			const uint8 state = states.Load(particleId);
-			if (state == ES_Expired)
-				continue;
-
 			const Vec3 position = positions.Load(particleId);
 			light.SetPosition(position);
 			const float bulbSize = max(sizes.SafeLoad(particleId), 0.001f);

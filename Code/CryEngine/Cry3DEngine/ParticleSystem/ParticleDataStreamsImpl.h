@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
 
 #ifdef CRY_PFX2_USE_SSE
 template<> ILINE pfx2::UColv convert<pfx2::UColv>(UCol v) { return _mm_set1_epi32(v.dcolor); }
@@ -9,18 +9,6 @@ namespace pfx2
 
 //////////////////////////////////////////////////////////////////////////
 // TIOStream
-
-template<typename T>
-ILINE T TIOStream<T>::Load(TParticleId pId) const
-{
-	return m_pStream[pId];
-}
-
-template<typename T>
-ILINE void TIOStream<T>::Store(TParticleId pId, T value)
-{
-	m_pStream[pId] = value;
-}
 
 template<typename T>
 ILINE void TIOStream<T>::Fill(SUpdateRange range, T value)
@@ -41,28 +29,22 @@ ILINE TIStream<T>::TIStream(const T* pStream, T defaultVal)
 {
 }
 
-template<typename T>
-ILINE T TIStream<T>::SafeLoad(TParticleId pId) const
-{
-	return m_pStream[pId & m_safeMask];
-}
-
 //////////////////////////////////////////////////////////////////////////
-// IOVec3Stream
+// TIOStream<Vec3>
 
-ILINE IOVec3Stream::IOVec3Stream(float* pX, float* pY, float* pZ)
+ILINE TIOStream<Vec3>::TIOStream(float* pX, float* pY, float* pZ)
 	: m_pXStream(pX)
 	, m_pYStream(pY)
 	, m_pZStream(pZ)
 {
 }
 
-ILINE Vec3 IOVec3Stream::Load(TParticleId pId) const
+ILINE Vec3 TIOStream<Vec3>::Load(TParticleId pId) const
 {
 	return Vec3(m_pXStream[pId], m_pYStream[pId], m_pZStream[pId]);
 }
 
-ILINE void IOVec3Stream::Store(TParticleId pId, Vec3 value)
+ILINE void TIOStream<Vec3>::Store(TParticleId pId, Vec3 value)
 {
 	CRY_PFX2_DEBUG_ASSERT(IsValid(value));
 	m_pXStream[pId] = value.x;
@@ -70,8 +52,8 @@ ILINE void IOVec3Stream::Store(TParticleId pId, Vec3 value)
 	m_pZStream[pId] = value.z;
 }
 
-ILINE IVec3Stream::IVec3Stream(const float* pX, const float* pY, const float* pZ, Vec3 defaultVal)
-	: IOVec3Stream((float*)pX, (float*)pY, (float*)pZ)
+ILINE TIStream<Vec3>::TIStream(const float* pX, const float* pY, const float* pZ, Vec3 defaultVal)
+	: TIOStream<Vec3>((float*)pX, (float*)pY, (float*)pZ)
 	, m_safeSink(ToFloatv(defaultVal.x), ToFloatv(defaultVal.y), ToFloatv(defaultVal.z))
 	, m_safeMask((pX && pY && pZ) ? ~0 : 0)
 {
@@ -83,7 +65,7 @@ ILINE IVec3Stream::IVec3Stream(const float* pX, const float* pY, const float* pZ
 	}
 }
 
-ILINE Vec3 IVec3Stream::SafeLoad(TParticleId pId) const
+ILINE Vec3 TIStream<Vec3>::SafeLoad(TParticleId pId) const
 {
 	return Vec3(
 		m_pXStream[pId & m_safeMask],
@@ -92,9 +74,9 @@ ILINE Vec3 IVec3Stream::SafeLoad(TParticleId pId) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-// IOQuatStream
+// TIOStream<Quat>
 
-ILINE IOQuatStream::IOQuatStream(float* pX, float* pY, float* pZ, float* pW)
+ILINE TIOStream<Quat>::TIOStream(float* pX, float* pY, float* pZ, float* pW)
 	: m_pXStream(pX)
 	, m_pYStream(pY)
 	, m_pZStream(pZ)
@@ -102,7 +84,7 @@ ILINE IOQuatStream::IOQuatStream(float* pX, float* pY, float* pZ, float* pW)
 {
 }
 
-ILINE Quat IOQuatStream::Load(TParticleId pId) const
+ILINE Quat TIOStream<Quat>::Load(TParticleId pId) const
 {
 	return Quat(
 		m_pWStream[pId],
@@ -111,7 +93,7 @@ ILINE Quat IOQuatStream::Load(TParticleId pId) const
 		m_pZStream[pId]);
 }
 
-ILINE void IOQuatStream::Store(TParticleId pId, Quat value)
+ILINE void TIOStream<Quat>::Store(TParticleId pId, Quat value)
 {
 	m_pXStream[pId] = value.v.x;
 	m_pYStream[pId] = value.v.y;
@@ -120,8 +102,8 @@ ILINE void IOQuatStream::Store(TParticleId pId, Quat value)
 }
 
 
-ILINE IQuatStream::IQuatStream(const float* pX, const float* pY, const float* pZ, const float* pW, Quat defaultVal)
-	: IOQuatStream((float*)pX, (float*)pY, (float*)pZ, (float*)pW)
+ILINE TIStream<Quat>::TIStream(const float* pX, const float* pY, const float* pZ, const float* pW, Quat defaultVal)
+	: TIOStream<Quat>((float*)pX, (float*)pY, (float*)pZ, (float*)pW)
 	, m_safeSink(ToFloatv(defaultVal.w), ToFloatv(defaultVal.v.x), ToFloatv(defaultVal.v.y), ToFloatv(defaultVal.v.z))
 	, m_safeMask((pX && pY && pZ && pW) ? ~0 : 0)
 {
@@ -135,7 +117,7 @@ ILINE IQuatStream::IQuatStream(const float* pX, const float* pY, const float* pZ
 
 }
 
-ILINE Quat IQuatStream::SafeLoad(TParticleId pId) const
+ILINE Quat TIStream<Quat>::SafeLoad(TParticleId pId) const
 {
 	return Quat(
 		m_pWStream[pId & m_safeMask],

@@ -17,12 +17,13 @@ void ILocalEffector::Serialize(Serialization::IArchive& ar)
 //////////////////////////////////////////////////////////////////////////
 // CFeatureMotionPhysics
 
-EParticleDataType PDT(EPDT_Gravity,       float, EDataFlags::BHasInit);
-EParticleDataType PDT(EPDT_Drag,          float, EDataFlags::BHasInit);
-EParticleDataType PDT(EPVF_Acceleration,  float[3]);
-EParticleDataType PDT(EPVF_VelocityField, float[3]);
-EParticleDataType PDT(EPVF_PositionPrev,  float[3]);
-extern EParticleDataType EPDT_MeshGeometry;
+MakeDataType(EPDT_Gravity,       float, EDataFlags::BHasInit);
+MakeDataType(EPDT_Drag,          float, EDataFlags::BHasInit);
+MakeDataType(EPVF_Acceleration,  Vec3);
+MakeDataType(EPVF_VelocityField, Vec3);
+MakeDataType(EPVF_PositionPrev,  Vec3);
+
+extern TDataType<IMeshObj*> EPDT_MeshGeometry;
 
 CFeatureMotionPhysics::CFeatureMotionPhysics()
 	: m_gravity(0.0f)
@@ -526,7 +527,7 @@ CRY_PFX2_IMPLEMENT_FEATURE_DEFAULT(CParticleFeature, CFeatureMotionPhysics, "Mot
 //////////////////////////////////////////////////////////////////////////
 // CFeatureMotionCryPhysics
 
-EParticleDataType PDT(EPDT_PhysicalEntity, IPhysicalEntity*);
+MakeDataType(EPDT_PhysicalEntity, IPhysicalEntity*);
 
 void PopulateSurfaceTypes()
 {
@@ -595,13 +596,13 @@ void CFeatureMotionCryPhysics::PostInitParticles(const SUpdateContext& context)
 	const SPhysEnviron& physicsEnv = pEmitter->GetPhysicsEnv();
 
 	CParticleContainer& container = context.m_container;
-	auto physicalEntities = container.GetTIOStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
+	auto physicalEntities = container.IOStream(EPDT_PhysicalEntity);
 	const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 	const IVec3Stream velocities = container.GetIVec3Stream(EPVF_Velocity);
 	const IVec3Stream angularVelocities = container.GetIVec3Stream(EPVF_AngularVelocity);
 	const IQuatStream orientations = container.GetIQuatStream(EPQF_Orientation);
 	const IFStream sizes = container.GetIFStream(EPDT_Size);
-	const TIStream<IMeshObj*> meshes = container.GetTIStream<IMeshObj*>(EPDT_MeshGeometry);
+	const TIStream<IMeshObj*> meshes = container.IStream(EPDT_MeshGeometry);
 
 	const float sphereVolume = 4.0f / 3.0f * gf_PI;
 	const Vec3 acceleration = physicsEnv.m_UniformForces.vAccel * m_gravity + m_uniformAcceleration;
@@ -699,12 +700,12 @@ void CFeatureMotionCryPhysics::UpdateParticles(const SUpdateContext& context)
 
 	IPhysicalWorld* pPhysicalWorld = gEnv->pPhysicalWorld;
 	CParticleContainer& container = context.m_container;
-	auto physicalEntities = container.GetTIOStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
+	auto physicalEntities = container.IOStream(EPDT_PhysicalEntity);
 	IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 	IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 	IOVec3Stream angularVelocities = container.GetIOVec3Stream(EPVF_AngularVelocity);
 	IOQuatStream orientations = container.GetIOQuatStream(EPQF_Orientation);
-	auto states = container.GetTIStream<uint8>(EPDT_State);
+	const IFStream ages = container.GetIFStream(EPDT_NormalAge);
 
 	for (auto particleId : context.GetUpdateRange())
 	{
@@ -726,8 +727,7 @@ void CFeatureMotionCryPhysics::UpdateParticles(const SUpdateContext& context)
 			angularVelocities.Store(particleId, statusDynamics.w);
 		}
 
-		const uint8 state = states.Load(particleId);
-		if (state == ES_Expired)
+		if (IsExpired(ages.Load(particleId)))
 		{
 			pPhysicalWorld->DestroyPhysicalEntity(pPhysicalEntity);
 			physicalEntities.Store(particleId, 0);
@@ -737,7 +737,7 @@ void CFeatureMotionCryPhysics::UpdateParticles(const SUpdateContext& context)
 
 void CFeatureMotionCryPhysics::DestroyParticles(const SUpdateContext& context)
 {
-	auto physicalEntities = context.m_container.GetTIStream<IPhysicalEntity*>(EPDT_PhysicalEntity);
+	auto physicalEntities = context.m_container.IStream(EPDT_PhysicalEntity);
 	for (auto particleId : context.GetUpdateRange())
 	{
 		if (auto pPhysicalEntity = physicalEntities.Load(particleId))
@@ -749,6 +749,9 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionCryPhysics, "Motion",
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureMoveRelativeToEmitter
+
+MakeDataType(EPVF_ParentPosition,    Vec3);
+MakeDataType(EPQF_ParentOrientation, Quat);
 
 class CFeatureMoveRelativeToEmitter : public CParticleFeature
 {
@@ -769,16 +772,14 @@ public:
 		const bool inheritVelOnDeath = (m_velocityInheritAfterDeath != 0.0f);
 
 		if (inheritPositions || inheritVelocities || inheritAngles)
-			pComponent->PreUpdateParticles.add(this);
-		if (inheritPositions)
-			pComponent->AddParticleData(EPVF_LocalPosition);
-		if (inheritVelocities)
-			pComponent->AddParticleData(EPVF_LocalVelocity);
-		if (inheritAngles)
 		{
-			pComponent->AddParticleData(EPQF_Orientation);
-			pComponent->AddParticleData(EPQF_LocalOrientation);
+			pComponent->PreUpdateParticles.add(this);
+			pComponent->AddParticleData(EPQF_ParentOrientation);
 		}
+		if (inheritPositions)
+			pComponent->AddParticleData(EPVF_ParentPosition);
+		if (inheritAngles)
+			pComponent->AddParticleData(EPQF_Orientation);
 		if (inheritVelOnDeath)
 			pComponent->UpdateParticles.add(this);
 	}
@@ -799,12 +800,11 @@ public:
 		CParticleContainer& container = context.m_container;
 		const CParticleContainer& parentContainer = context.m_parentContainer;
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-		const auto parentStates = parentContainer.GetTIStream<uint8>(EPDT_State);
+		const IFStream parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
 		const IQuatStream parentOrientations = parentContainer.GetIQuatStream(EPQF_Orientation);
-		const IVec3Stream localPositions = container.GetIVec3Stream(EPVF_LocalPosition);
-		const IVec3Stream localVelocities = container.GetIVec3Stream(EPVF_LocalVelocity);
-		const IQuatStream localOrientations = container.GetIQuatStream(EPQF_LocalOrientation);
+		IOVec3Stream parentPrevPositions = container.GetIOVec3Stream(EPVF_ParentPosition);
+		IOQuatStream parentPrevOrientations = container.GetIOQuatStream(EPQF_ParentOrientation);
 		IOVec3Stream worldPositions = container.GetIOVec3Stream(EPVF_Position);
 		IOVec3Stream worldVelocities = container.GetIOVec3Stream(EPVF_Velocity);
 		IOQuatStream worldOrientations = container.GetIOQuatStream(EPQF_Orientation);
@@ -816,30 +816,31 @@ public:
 		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
-			const uint8 parentState = (parentId != gInvalidId) ? parentStates.Load(parentId) : ES_Dead;
-			if (parentState == ES_Dead)
+			if (parentId == gInvalidId)
 				continue;
 
-			const Vec3 wParentPos = parentPositions.SafeLoad(parentId);
 			const Quat parentOrientation = parentOrientations.SafeLoad(parentId);
-			const QuatT parentToWorld = QuatT(wParentPos, parentOrientation);
+			const Quat parentPrevOrientation = parentPrevOrientations.Load(particleId);
+			const Quat deltaOrientation = parentOrientation * parentPrevOrientation.GetInverted();
+			parentPrevOrientations.Store(particleId, parentOrientation);
 
 			if (inheritPositions)
 			{
+				const Vec3 parentPos = parentPositions.SafeLoad(parentId);
+				const Vec3 parentPrevPos = parentPrevPositions.Load(particleId);
 				const Vec3 wPosition0 = worldPositions.Load(particleId);
-				const Vec3 oPosition = localPositions.Load(particleId);
-				const Vec3 wPosition1 = Lerp(
-					wPosition0, parentToWorld * oPosition,
+				const Vec3 wPosition1 = Lerp(wPosition0, 
+					deltaOrientation * (wPosition0 - parentPrevPos) + parentPos, 
 					m_positionInherit);
 				worldPositions.Store(particleId, wPosition1);
+				parentPrevPositions.Store(particleId, parentPos);
 			}
 
 			if (inheritVelocities)
 			{
 				const Vec3 wVelocity0 = worldVelocities.Load(particleId);
-				const Vec3 oVelocity = localVelocities.Load(particleId);
 				const Vec3 wVelocity1 = Lerp(
-					wVelocity0, parentToWorld.q * oVelocity,
+					wVelocity0, deltaOrientation * wVelocity0,
 					m_velocityInherit);
 				worldVelocities.Store(particleId, wVelocity1);
 			}
@@ -847,9 +848,8 @@ public:
 			if (inheritAngles)
 			{
 				const Quat wOrientation0 = worldOrientations.Load(particleId);
-				const Quat oOrientation = localOrientations.Load(particleId);
 				const Quat wOrientation1 = Lerp(
-					wOrientation0, parentToWorld.q * oOrientation,
+					wOrientation0, deltaOrientation * wOrientation0,
 					m_angularInherit);
 				worldOrientations.Store(particleId, wOrientation1);
 			}
@@ -863,15 +863,14 @@ public:
 		CParticleContainer& container = context.m_container;
 		const CParticleContainer& parentContainer = context.m_parentContainer;
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-		const auto parentStates = parentContainer.GetTIStream<uint8>(EPDT_State);
+		const IFStream parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		const IVec3Stream parentVelocities = parentContainer.GetIVec3Stream(EPVF_Velocity);
 		IOVec3Stream worldVelocities = container.GetIOVec3Stream(EPVF_Velocity);
 
 		for (auto particleId : context.GetUpdateRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
-			const uint8 parentState = (parentId != gInvalidId) ? parentStates.Load(parentId) : 0;
-			if (parentState == ES_Expired)
+			if (parentId != gInvalidId && IsExpired(parentAges.Load(parentId)))
 			{
 				const Vec3 wParentVelocity = parentVelocities.Load(parentId);
 				const Vec3 wVelocity0 = worldVelocities.Load(particleId);

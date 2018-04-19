@@ -93,7 +93,6 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 	const SComponentParams& params = context.m_params;
 	const uint numInstances = pRuntime->GetNumInstances();
 	IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-	TIStream<uint8> states = container.GetTIStream<uint8>(EPDT_State);
 	IFStream normAges = container.GetIFStream(EPDT_NormalAge);
 	const Vec2 screenSz = Vec2(screenWidth, screenHeight);
 	const Vec2 pixSz = Vec2(1.0f / screenWidth, 1.0f / screenHeight);
@@ -131,9 +130,8 @@ void DebugDrawComponentRuntime(CParticleComponentRuntime* pRuntime, size_t emitt
 		box.max.x = box.min.x + std::max(partSz.x, pixSz.x);
 		box.max.y = box.min.y + std::max(partSz.y - pixSz.y, pixSz.y);
 		ColorB color = black;
-		const uint8 state = states.Load(particleId);
 		const float age = normAges.Load(particleId);
-		if (state == ES_Alive)
+		if (IsAlive(age))
 			color = ColorB(ColorF(age, 1.0f - age, 0.0f));
 		pRenderAux->DrawAABB(box, true, color, eBBD_Faceted);
 	}
@@ -178,7 +176,7 @@ void DebugDrawComponentCollisions(CParticleComponentRuntime* pRuntime)
 	const CParticleContainer& container = pRuntime->GetContainer();
 	if (!container.HasData(EPDT_ContactPoint))
 		return;
-	const TIStream<SContactPoint> contactPoints = container.GetTIStream<SContactPoint>(EPDT_ContactPoint);
+	const TIStream<SContactPoint> contactPoints = container.IStream(EPDT_ContactPoint);
 
 	for (auto particleId : context.GetUpdateRange())
 	{
@@ -313,7 +311,7 @@ void DebugParticleSystem(const TParticleEmitters& activeEmitters)
 
 	CVars* pCVars = static_cast<C3DEngine*>(gEnv->p3DEngine)->GetCVars();
 	const bool debugContainers = (pCVars->e_ParticlesDebug & AlphaBit('c')) != 0;
-	const bool debugCollisions = (pCVars->e_ParticlesDebug & AlphaBit('u')) != 0;
+	const bool debugCollisions = (pCVars->e_ParticlesDebug & AlphaBit('k')) != 0;
 
 	if (debugContainers || debugCollisions)
 	{
