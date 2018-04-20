@@ -467,8 +467,6 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 	}
 
 	// Now, we use the selection ID texture to alpha composite highlights and outlines on our scene
-	m_highlightPass.SetViewport(pRenderView->GetViewport());
-
 	static CCryNameTSCRC techSilhouette("SelectionSilhouetteHighlight");
 
 	CTexture* pTargetTex = pRenderView->GetColorTarget();

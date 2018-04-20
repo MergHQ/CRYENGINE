@@ -50,7 +50,6 @@ struct ICryPerfHUD;
 class CNULLRenderAuxGeom;
 class CManualFrameStepController;
 class CProjectManager;
-struct DisplayContext;
 
 namespace minigui
 {
@@ -409,7 +408,7 @@ public:
 
 	virtual Serialization::IArchiveHost* GetArchiveHost() const override { return m_pArchiveHost; }
 
-	void                                 SetViewCamera(CCamera& Camera) override;
+	void                                 SetViewCamera( CCamera& Camera) override;
 	const CCamera&                       GetViewCamera() const override          { return m_ViewCamera; }
 
 	virtual uint32 GetCPUFlags() override               { return m_pCpu ? m_pCpu->GetFeatures() : 0; }

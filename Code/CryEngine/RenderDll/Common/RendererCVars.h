@@ -142,9 +142,6 @@ public:
 	static int CV_r_TexturesStreamingDebugMinSize;
 	static int CV_r_TexturesStreamingDebugMinMip;
 	static int CV_r_enableAltTab;
-	static int CV_r_StereoDevice;
-	static int CV_r_StereoMode;
-	static int CV_r_StereoOutput;
 	static int CV_r_StereoFlipEyes;
 	static int CV_r_StereoEnableMgpu;
 	static int CV_r_DynTexSourceSharedRTWidth;

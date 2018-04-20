@@ -3,8 +3,6 @@
 #pragma once
 
 #include "IViewSystem.h"
-#include <CrySystem/VR/IHMDDevice.h>
-#include <CrySystem/VR/IHMDManager.h>
 
 class CGameObject;
 struct IGameObjectView;
@@ -20,7 +18,7 @@ class CListenerComponent;
 } // namespace Audio
 } // namespace Cry
 
-class CView final : public IView, public IEntityEventListener, public IHmdDevice::IAsyncCameraCallback
+class CView final : public IView, public IEntityEventListener
 {
 public:
 
@@ -150,10 +148,6 @@ protected:
 	void         ApplyFrameAdditiveAngles(Quat& cameraOrientation);
 
 	const float  GetScale();
-
-	// IAsyncCameraCallback
-	virtual bool OnAsyncCameraCallback(const HmdTrackingState& state, IHmdDevice::AsyncCameraContext& context) override;
-	// ~IAsyncCameraCallback
 
 private:
 

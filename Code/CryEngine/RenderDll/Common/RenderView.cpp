@@ -332,8 +332,8 @@ void CRenderView::CalculateViewInfo()
 
 		if (renderingFlags & currentEyeFlag)
 		{
-			auto& cam = pRenderView->GetCamera(eye);
-			auto& previousCam = pRenderView->GetPreviousCamera(eye);
+			const CCamera& cam = pRenderView->GetCamera(eye);
+			const CCamera& previousCam = pRenderView->GetPreviousCamera(eye);
 
 			m_viewInfo[viewInfoCount].flags = viewFlags;
 			m_viewInfo[viewInfoCount].SetCamera(cam, previousCam, m_vProjMatrixSubPixoffset,
@@ -418,7 +418,7 @@ void CRenderView::SwitchUsageMode(EUsageMode mode)
 		//Job_PostWrite();
 		CRY_ASSERT(m_bPostWriteExecuted);
 
-		CRY_ASSERT(m_usageMode == IRenderView::eUsageModeWritingDone);
+		CRY_ASSERT(m_usageMode == IRenderView::eUsageModeWritingDone || m_usageMode == IRenderView::eUsageModeReadingDone);
 
 		if (m_pRenderOutput)
 		{
@@ -958,7 +958,7 @@ void CRenderView::InspectRenderOutput()
 	}
 }
 
-void CRenderView::ChangeRenderResolution(int renderWidth, int renderHeight, bool bForce)
+void CRenderView::ChangeRenderResolution(uint32_t renderWidth, uint32_t renderHeight, bool bForce)
 {
 	// Rule is: factor is natural number
 	CRY_ASSERT((renderWidth  % GetOutputResolution()[0]) == 0);
@@ -976,11 +976,21 @@ void CRenderView::ChangeRenderResolution(int renderWidth, int renderHeight, bool
 	m_RenderHeight = renderHeight;
 	if (renderWidth == GetOutputResolution()[0] && renderHeight == GetOutputResolution()[1] && m_pRenderOutput) 
 	{
-		m_pDepthTarget = m_pRenderOutput->GetDepthTarget();
-		m_pTempDepthTexture = nullptr;
+		if (m_pRenderOutput->RequiresTemporaryDepthBuffer())
+		{
+			m_pDepthTarget = nullptr;
+			m_pTempDepthTexture = CRendererResources::GetTempDepthSurface(GetFrameId(), renderWidth, renderHeight);
+		}
+		else
+		{
+			m_pDepthTarget = m_pRenderOutput->GetDepthTarget();
+			m_pTempDepthTexture = nullptr;
+		}
+
 		m_pColorTarget = m_pRenderOutput->GetColorTarget();
 	}
-	else {
+	else
+	{
 		m_pDepthTarget = nullptr;
 		m_pTempDepthTexture = CRendererResources::GetTempDepthSurface(GetFrameId(), renderWidth, renderHeight);
 		m_pColorTarget = CRendererResources::s_ptexHDRTarget;

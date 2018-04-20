@@ -456,6 +456,15 @@ technique TextureToTexture
   }
 }
 
+technique TextureToTextureReg
+{
+  pass p0
+  {
+    VertexShader = TexToTexRegVS() ResolveVS;
+    PixelShader = TexToTexPS() ResolvePS;
+  }
+}
+
 technique TextureToTextureTinted
 {
   pass p0

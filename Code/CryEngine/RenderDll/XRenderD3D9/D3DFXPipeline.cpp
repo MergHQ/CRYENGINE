@@ -22,11 +22,6 @@
 
 //====================================================================================
 
-CD3D9Renderer::CTempTexture CD3D9Renderer::FX_GetDepthSurface(int nWidth, int nHeight, bool bExactMatch)
-{
-	return GetTempDepthSurface(gRenDev->GetFrameID(), nWidth, nHeight, bExactMatch);
-}
-
 static int sTexLimitRes(uint32 nSrcsize, uint32 nDstSize)
 {
 	while (true)
@@ -621,7 +616,22 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 		pRecursiveRenderView->SetCameras(&cam, 1);
 		pRecursiveRenderView->SetPreviousFrameCameras(&cam, 1);
 
+		ExecuteRenderThreadCommand(
+			[=]	{
+				pRenderOutput->BeginRendering(pRecursiveRenderView);
+			},
+			ERenderCommandFlags::None
+		);
+
 		eng->RenderWorld(nRFlags, recursivePassInfo, __FUNCTION__);
+
+		ExecuteRenderThreadCommand(
+			[=]
+			{
+				pRenderOutput->EndRendering(pRecursiveRenderView);
+			},
+			ERenderCommandFlags::None
+		);
 	}
 
 	// Very Hi specs get anisotropic reflections

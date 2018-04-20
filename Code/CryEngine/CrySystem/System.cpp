@@ -1817,9 +1817,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				rCamera.GetFarPlane(),
 				fNewAspectRatio);
 
-			if (auto pRenderer = gEnv->pRenderer)
-				pRenderer->UpdateAuxDefaultCamera(rCamera);
-
 			SetViewCamera(rCamera);
 		}
 	}
@@ -2494,11 +2491,6 @@ void CSystem::SetViewCamera(CCamera& Camera)
 {
 	m_ViewCamera = Camera;
 	m_ViewCamera.CalculateRenderMatrices();
-
-	if (gEnv && gEnv->pRenderer)
-	{
-		gEnv->pRenderer->UpdateAuxDefaultCamera(m_ViewCamera);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -30,7 +30,33 @@ bool CD3D9Renderer::RT_CreateDevice()
 	return CreateDevice();
 }
 
-void CD3D9Renderer::RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool bStereo, bool bDoRealRender)
+void CD3D9Renderer::RT_FlashRenderInternal(IFlashPlayer* pPlayer)
+{
+	FUNCTION_PROFILER_RENDERER();
+
+	SetProfileMarker("FLASH_RENDERING", CRenderer::ESPM_PUSH);
+
+	// In menu mode we also render to screen in addition to quad layer
+	const bool renderToScreen = !GetS3DRend().IsStereoEnabled() || GetS3DRend().IsMenuModeEnabled();
+
+	if (GetS3DRend().IsStereoEnabled())
+	{
+		if (GetS3DRend().IsQuadLayerEnabled())
+		{
+			auto quadRenderScope = GetS3DRend().PrepareRenderingToVrQuadLayer(RenderLayer::eQuadLayers_0);
+			pPlayer->Render();
+		}
+	}
+
+	if (renderToScreen)
+	{
+		pPlayer->Render();
+	}
+
+	SetProfileMarker("FLASH_RENDERING", CRenderer::ESPM_POP);
+}
+
+void CD3D9Renderer::RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool bDoRealRender)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -38,29 +64,32 @@ void CD3D9Renderer::RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bo
 	{
 		SetProfileMarker("FLASH_RENDERING", CRenderer::ESPM_PUSH);
 
-		if (GetS3DRend().IsStereoEnabled() && bStereo)
+		// In menu mode we also render to screen in addition to quad layer
+		const bool renderToScreen = !GetS3DRend().IsStereoEnabled() || GetS3DRend().IsMenuModeEnabled();
+
+		if (GetS3DRend().IsStereoEnabled())
 		{
 			if (GetS3DRend().IsQuadLayerEnabled())
 			{
-				GetS3DRend().BeginRenderingToVrQuadLayer(RenderLayer::eQuadLayers_0);
-				pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_Mono);
-				GetS3DRend().EndRenderingToVrQuadLayer(RenderLayer::eQuadLayers_0);
+				auto quadRenderScope = GetS3DRend().PrepareRenderingToVrQuadLayer(RenderLayer::eQuadLayers_0);
+				pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_Mono, !renderToScreen);
 			}
 			else
 			{
-				GetS3DRend().BeginRenderingTo(LEFT_EYE);
-				pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_StereoLeft, false);
-				GetS3DRend().EndRenderingTo(LEFT_EYE);
+				{
+					auto eyeRenderScope = GetS3DRend().PrepareRenderingToEye(CCamera::eEye_Left);
+					pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_StereoLeft, false);
+				}
 
 				if (GetS3DRend().RequiresSequentialSubmission())
 				{
-					GetS3DRend().BeginRenderingTo(RIGHT_EYE);
-					pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_StereoRight, true);
-					GetS3DRend().EndRenderingTo(RIGHT_EYE);
+					auto eyeRenderScope = GetS3DRend().PrepareRenderingToEye(CCamera::eEye_Right);
+					pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_StereoRight, !renderToScreen);
 				}
 			}
 		}
-		else
+
+		if (renderToScreen)
 		{
 			pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_Mono);
 		}
@@ -73,35 +102,39 @@ void CD3D9Renderer::RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bo
 	}
 }
 
-void CD3D9Renderer::RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool bStereo, bool bFinalPlayback, bool bDoRealRender)
+void CD3D9Renderer::RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender)
 {
 	if (bDoRealRender)
 	{
 		SetProfileMarker("FLASH_RENDERING", CRenderer::ESPM_PUSH);
 
-		if (GetS3DRend().IsStereoEnabled() && bStereo)
+		// In menu mode we also render to screen in addition to quad layer
+		const bool renderToScreen = !GetS3DRend().IsStereoEnabled() || GetS3DRend().IsMenuModeEnabled();
+
+		if (GetS3DRend().IsStereoEnabled())
 		{
 			if (GetS3DRend().IsQuadLayerEnabled())
 			{
-				GetS3DRend().BeginRenderingToVrQuadLayer(RenderLayer::eQuadLayers_0);
-				pPlayer->RenderPlaybackLocklessCallback(cbIdx, IFlashPlayer_RenderProxy::EFT_Mono, bFinalPlayback);
-				GetS3DRend().EndRenderingToVrQuadLayer(RenderLayer::eQuadLayers_0);
+				auto quadRenderScope = GetS3DRend().PrepareRenderingToVrQuadLayer(RenderLayer::eQuadLayers_0);
+				pPlayer->RenderPlaybackLocklessCallback(cbIdx, IFlashPlayer_RenderProxy::EFT_Mono, bFinalPlayback && !renderToScreen);
 			}
 			else
 			{
-				GetS3DRend().BeginRenderingTo(LEFT_EYE);
-				pPlayer->RenderPlaybackLocklessCallback(cbIdx, IFlashPlayer_RenderProxy::EFT_StereoLeft, false, false);
-				GetS3DRend().EndRenderingTo(LEFT_EYE);
+				{
+					auto eyeRenderScope = GetS3DRend().PrepareRenderingToEye(CCamera::eEye_Left);
+					pPlayer->RenderPlaybackLocklessCallback(cbIdx, IFlashPlayer_RenderProxy::EFT_StereoLeft, false, false);
+				}
 
 				if (GetS3DRend().RequiresSequentialSubmission())
 				{
-					GetS3DRend().BeginRenderingTo(RIGHT_EYE);
-					pPlayer->RenderPlaybackLocklessCallback(cbIdx, IFlashPlayer_RenderProxy::EFT_StereoRight, bFinalPlayback, true);
-					GetS3DRend().EndRenderingTo(RIGHT_EYE);
+					auto eyeRenderScope = GetS3DRend().PrepareRenderingToEye(CCamera::eEye_Right);
+					pPlayer->RenderPlaybackLocklessCallback(cbIdx, IFlashPlayer_RenderProxy::EFT_StereoRight, bFinalPlayback && !renderToScreen, true);
 				}
 			}
 		}
-		else
+
+		// In menu mode we also render to screen in addition to quad layer
+		if (renderToScreen)
 		{
 			pPlayer->RenderPlaybackLocklessCallback(cbIdx, IFlashPlayer_RenderProxy::EFT_Mono, bFinalPlayback);
 		}
@@ -179,9 +212,7 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 	{
 		// Must also delete back buffers from Display Contexts
 		for (auto& pCtx : m_displayContexts)
-		{
-			pCtx.second->ShutDown();
-		}
+			pCtx.second->ReleaseResources();
 
 		CTexture::ShutDown();
 		CRendererResources::ShutDown();

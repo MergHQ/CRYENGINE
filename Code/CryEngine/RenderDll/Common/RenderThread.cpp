@@ -388,46 +388,31 @@ void SRenderThread::RC_TryFlush()
 	SyncMainWithRender();
 }
 
-
-void SRenderThread::RC_RenderScene(CRenderView* pRenderView, int nFlags)
+void SRenderThread::RC_FlashRenderPlayer(IFlashPlayer* pPlayer)
 {
-	if (IsRenderThread())
-	{
-		gRenDev->RT_RenderScene(pRenderView, nFlags);
-		return;
-	}
-
-	// TODO: Lambda as in RC_PrecacheResource
-	pRenderView->AddRef();
-
-	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_RenderScene, Align4(sizeof(void*) + sizeof(nFlags) + sizeof(CRenderView*)));
-	AddDWORD(p, nFlags);
-	AddPointer(p, (void*)nullptr);
-	AddPointer(p, pRenderView);
-	EndCommand(p);
+	assert(IsRenderThread());
+	gRenDev->RT_FlashRenderInternal(pPlayer);
 }
 
-void SRenderThread::RC_FlashRender(IFlashPlayer_RenderProxy* pPlayer, bool stereo)
+void SRenderThread::RC_FlashRender(IFlashPlayer_RenderProxy* pPlayer)
 {
 	if (IsRenderThread())
 	{
-		gRenDev->RT_FlashRenderInternal(pPlayer, stereo, true);
+		gRenDev->RT_FlashRenderInternal(pPlayer, true);
 		return;
 	}
 
 	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_FlashRender, 4 + sizeof(void*));
+	byte* p = AddCommand(eRC_FlashRender, sizeof(void*));
 	AddPointer(p, pPlayer);
-	AddDWORD(p, stereo ? 1 : 0);
 	EndCommand(p);
 }
 
-void SRenderThread::RC_FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool stereo, bool finalPlayback)
+void SRenderThread::RC_FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool finalPlayback)
 {
 	if (IsRenderThread())
 	{
-		gRenDev->RT_FlashRenderPlaybackLocklessInternal(pPlayer, cbIdx, stereo, finalPlayback, true);
+		gRenDev->RT_FlashRenderPlaybackLocklessInternal(pPlayer, cbIdx, finalPlayback, true);
 		return;
 	}
 
@@ -435,7 +420,6 @@ void SRenderThread::RC_FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPl
 	byte* p = AddCommand(eRC_FlashRenderLockless, 12 + sizeof(void*));
 	AddPointer(p, pPlayer);
 	AddDWORD(p, (uint32) cbIdx);
-	AddDWORD(p, stereo ? 1 : 0);
 	AddDWORD(p, finalPlayback ? 1 : 0);
 	EndCommand(p);
 }
@@ -593,53 +577,21 @@ void SRenderThread::ProcessCommands()
 			break;
 
 		case eRC_FlashRender:
-		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_FlashRender");
-			START_PROFILE_RT;
-			IFlashPlayer_RenderProxy* pPlayer = ReadCommand<IFlashPlayer_RenderProxy*>(n);
-			bool stereo = ReadCommand<int>(n) != 0;
-			gRenDev->RT_FlashRenderInternal(pPlayer, stereo, m_eVideoThreadMode == eVTM_Disabled);
-			END_PROFILE_PLUS_RT(gRenDev->m_fRTTimeFlashRender);
-		}
+			{
+				START_PROFILE_RT;
+				IFlashPlayer_RenderProxy* pPlayer = ReadCommand<IFlashPlayer_RenderProxy*>(n);
+				gRenDev->RT_FlashRenderInternal(pPlayer, m_eVideoThreadMode == eVTM_Disabled);
+				END_PROFILE_PLUS_RT(gRenDev->m_fRTTimeFlashRender);
+			}
 			break;
 		case eRC_FlashRenderLockless:
 		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_FlashRenderLockless");
 			IFlashPlayer_RenderProxy* pPlayer = ReadCommand<IFlashPlayer_RenderProxy*>(n);
 			int cbIdx = ReadCommand<int>(n);
-			bool stereo = ReadCommand<int>(n) != 0;
 			bool finalPlayback = ReadCommand<int>(n) != 0;
-			gRenDev->RT_FlashRenderPlaybackLocklessInternal(pPlayer, cbIdx, stereo, finalPlayback, m_eVideoThreadMode == eVTM_Disabled);
+			gRenDev->RT_FlashRenderPlaybackLocklessInternal(pPlayer, cbIdx, finalPlayback, m_eVideoThreadMode == eVTM_Disabled);
 		}
-			break;
-
-		case eRC_RenderScene:
-		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_RenderScene");
-
-			START_PROFILE_RT;
-
-			int nFlags = ReadCommand<int>(n);
-			RenderFunc pRenderFunc = ReadCommand<RenderFunc>(n);
-			CRenderView* pRenderView = ReadCommand<CRenderView*>(n);
-			// when we are in video mode, don't execute the command
-			if (m_eVideoThreadMode == eVTM_Disabled)
-				gRenDev->RT_RenderScene(pRenderView, nFlags);
-			else
-			{
-				// cleanup when showing loading render screen
-				if (!pRenderView->IsRecursive())
-				{
-					////////////////////////////////////////////////
-					// to non-thread safe remaing work for *::Render functions
-					CRenderMesh::RT_PerFrameTick();
-					CMotionBlur::InsertNewElements();
-				}
-			}
-			pRenderView->Release();
-			END_PROFILE_PLUS_RT(gRenDev->m_fRTTimeSceneRender);
-		}
-			break;
+		break;
 
 		case eRC_LambdaCall:
 		{

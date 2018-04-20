@@ -9,15 +9,12 @@
 
 class CD3D9Renderer;
 class CTexture;
-namespace CryVR
-{
-namespace Osvr
-{
+
 class CD3DOsvrRenderer : public IHmdRenderer
 {
 public:
 
-	CD3DOsvrRenderer(IOsvrDevice* pDevice, CD3D9Renderer* pRenderer, CD3DStereoRenderer* pStereoRenderer);
+	CD3DOsvrRenderer(CryVR::Osvr::IOsvrDevice* pDevice, CD3D9Renderer* pRenderer, CD3DStereoRenderer* pStereoRenderer);
 	virtual ~CD3DOsvrRenderer();
 
 	// IHDMRenderer implementation
@@ -25,11 +22,12 @@ public:
 	virtual void                      Shutdown() final;
 	virtual void                      OnResolutionChanged(int newWidth, int newHeight) final;
 	virtual void                      ReleaseBuffers() final;
-	virtual void                      PrepareFrame() final;
+	virtual void                      PrepareFrame(int frameId) final;
 	virtual void                      SubmitFrame() final;
-	virtual void                      RenderSocialScreen() final;
-	virtual RenderLayer::CProperties* GetQuadLayerProperties(RenderLayer::EQuadLayers id) final   { return nullptr; }
-	virtual RenderLayer::CProperties* GetSceneLayerProperties(RenderLayer::ESceneLayers id) final { return nullptr; }
+	// TODO
+	virtual RenderLayer::CProperties*  GetQuadLayerProperties(RenderLayer::EQuadLayers id) final   { return nullptr; }
+	virtual RenderLayer::CProperties*  GetSceneLayerProperties(RenderLayer::ESceneLayers id) final { return nullptr; }
+	virtual std::pair<CTexture*, Vec4> GetMirrorTexture(EEyeType eye) const final { return { nullptr, Vec4{} }; }
 private:
 
 	static const uint32 EyeCount = 2;
@@ -57,6 +55,5 @@ private:
 	void RestoreDeviceStateAfterFrameSubmit();
 
 };
-}
-}
+
 #endif

@@ -287,7 +287,7 @@ namespace stl
 		template <typename Placeholder, typename... Args>
 		optional(typename std::enable_if<std::is_same<Placeholder, optional_ctor_inplace>::value, optional_ctor_inplace>::type,
 			Args&&... args)
-			: Base(optional_ctor_inplace,
+			: Base(optional_ctor_inplace{},
 				std::forward<Args>(args)...)
 		{}
 

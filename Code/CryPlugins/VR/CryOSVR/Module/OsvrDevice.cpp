@@ -115,7 +115,7 @@ Device::Device()
 
 	gEnv->pSystem->GetHmdManager()->AddEventListener(this);
 
-	m_pHmdSocialScreenKeepAspectCVar = gEnv->pConsole->GetCVar("hmd_social_screen_keep_aspect");
+	m_pHmdSocialScreenKeepAspectCVar = gEnv->pConsole->GetCVar("hmd_social_screen_aspect_mode");
 	m_pHmdSocialScreenCVar = gEnv->pConsole->GetCVar("hmd_social_screen");
 }
 
@@ -304,7 +304,7 @@ void Device::RecenterPose()
 	m_recenterQuat = m_nativeTrackingState.pose.orientation.GetInverted();
 }
 
-void Device::UpdateTrackingState(EVRComponent e)
+void Device::UpdateTrackingState(EVRComponent e, int frameId)
 {
 	if ((e & eVRComponent_Hmd) != 0)
 	{
@@ -384,24 +384,6 @@ const HmdTrackingState& Device::GetLocalTrackingState() const
 const IHmdController* Device::GetController() const
 {
 	return nullptr;
-}
-
-const EHmdSocialScreen Device::GetSocialScreenType(bool* pKeepAspect) const
-{
-	const int kFirstInvalidIndex = static_cast<int>(EHmdSocialScreen::FirstInvalidIndex);
-
-	if (pKeepAspect)
-	{
-		*pKeepAspect = m_pHmdSocialScreenKeepAspectCVar->GetIVal() != 0;
-	}
-
-	if (m_pHmdSocialScreenCVar->GetIVal() >= -1 && m_pHmdSocialScreenCVar->GetIVal() < kFirstInvalidIndex)
-	{
-		const EHmdSocialScreen socialScreenType = static_cast<EHmdSocialScreen>(m_pHmdSocialScreenCVar->GetIVal());
-		return socialScreenType;
-	}
-
-	return EHmdSocialScreen::DistortedDualImage;
 }
 
 Device* Device::CreateAndInitializeDevice()
@@ -594,6 +576,8 @@ bool Device::InitializeRenderer(void* d3dDevice, void* d3dContext)
 
 bool Device::PresentTextureSet(int textureSetIndex)
 {
+	this->OnEndFrame();
+
 	if (m_renderBufferSets.size() <= textureSetIndex) return false;
 
 	TArray<OSVR_RenderBufferD3D11>& renderBuffers = m_renderBufferSets[textureSetIndex];

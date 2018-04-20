@@ -2407,6 +2407,20 @@ void CRenderer::ScaleCoord(float& x, float& y) const
 	ScaleCoordInternal(x, y, SRenderViewport(0, 0, CRendererResources::s_displayWidth, CRendererResources::s_displayHeight));
 }
 
+int CRenderer::GetOverlayWidth() const
+{
+	if (GetIStereoRenderer()->GetStereoEnabled() && !GetIStereoRenderer()->IsMenuModeEnabled())
+		return GetIStereoRenderer()->GetOverlayResolution().x;
+	return CRendererResources::s_displayWidth;
+}
+
+int CRenderer::GetOverlayHeight() const
+{
+	if (GetIStereoRenderer()->GetStereoEnabled() && !GetIStereoRenderer()->IsMenuModeEnabled())
+		return GetIStereoRenderer()->GetOverlayResolution().y;
+	return CRendererResources::s_displayHeight;
+}
+
 // used for sprite generation
 void CRenderer::SetTextureAlphaChannelFromRGB(byte* pMemBuffer, int nTexSize)
 {

@@ -1697,7 +1697,7 @@ bool CRenderViewport::CreateRenderContext(HWND hWnd, IRenderer::EViewportType vi
 		desc.screenResolution.x = m_currentResolution.width;
 		desc.screenResolution.y = m_currentResolution.height;
 
-		m_displayContextKey = m_renderer->CreateContext(desc);
+		m_displayContextKey = m_renderer->CreateSwapChainBackedContext(desc);
 		m_bRenderContextCreated = true;
 
 		// Make main context current.

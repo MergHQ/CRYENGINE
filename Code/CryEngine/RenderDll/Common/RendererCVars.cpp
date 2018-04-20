@@ -541,9 +541,6 @@ float CRendererCVars::CV_r_TexelsPerMeter;
 
 int CRendererCVars::CV_r_ConditionalRendering;
 int CRendererCVars::CV_r_enableAltTab;
-int CRendererCVars::CV_r_StereoDevice;
-int CRendererCVars::CV_r_StereoMode;
-int CRendererCVars::CV_r_StereoOutput;
 int CRendererCVars::CV_r_StereoFlipEyes;
 int CRendererCVars::CV_r_StereoEnableMgpu;
 float CRendererCVars::CV_r_stereoScaleCoefficient;
@@ -2708,39 +2705,12 @@ void CRendererCVars::InitCVars()
 	               "Usage: r_enableAltTab [toggle]\n"
 	               "Notes: Should only be added to system.cfg and requires a restart");
 
-	REGISTER_CVAR3("r_StereoDevice", CV_r_StereoDevice, 0, VF_REQUIRE_APP_RESTART | VF_DUMPTODISK,
-	               "Sets stereo device (only possible before app start)\n"
-	               "Usage: r_StereoDevice [0/1/2/3/4]\n"
-	               "0: No stereo support (default)\n"
-	               "1: Frame compatible formats (side-by-side, interlaced, anaglyph)\n"
-	               "2: Stereo driver (PC only, NVidia or AMD)\n"
-	               "100: Auto-detect device for platform");
-
-	REGISTER_CVAR3("r_StereoMode", CV_r_StereoMode, 0, VF_DUMPTODISK,
-	               "Sets stereo rendering mode.\n"
-	               "Usage: r_StereoMode [0=off/1/2]\n"
-	               "1: Dual rendering\n"
-	               "2: Post Stereo\n");
-
 	REGISTER_CVAR3("r_StereoEnableMgpu", CV_r_StereoEnableMgpu, 1, VF_DUMPTODISK,
 	               "Sets support for multi GPU stereo rendering.\n"
 	               "Usage: r_StereoEnableMgpu [0=disabled/else=enabled]\n"
 	               "0: Disable multi-GPU for dual rendering\n"
 	               " 1: Enable multi-GPU for dual rendering\n"
 	               "-1: Enable multi-GPU for dual rendering, but run on only one GPU (simulation)\n");
-
-	REGISTER_CVAR3("r_StereoOutput", CV_r_StereoOutput, 0, VF_DUMPTODISK,
-	               "Sets stereo output. Output depends on the stereo monitor\n"
-	               "Usage: r_StereoOutput [0=off/1/2/3/4/5/6/...]\n"
-	               "0: Standard\n"
-	               "1: Side by Side Squeezed\n"
-	               "2: Checkerboard\n"
-	               "3: Above and Below (not supported)\n"
-	               "4: Side by Side\n"
-	               "5: Line by Line (Interlaced)\n"
-	               "6: Anaglyph\n"
-		           "7: VR Device\n"
-	               );
 
 #undef VRDEVICE_STEREO_OUTPUT_INFO
 

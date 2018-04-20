@@ -122,11 +122,12 @@ public:
 class CRenderAuxGeomD3D final : public IRenderAuxGeomImpl
 {
 public:
-	virtual void RT_Flush(SAuxGeomCBRawDataPackaged& data) override;
+	virtual void RT_Flush(const SAuxGeomCBRawDataPackagedConst& data) override;
 	void RT_Render(const CAuxGeomCBCollector::AUXJobs& auxGeoms);
+	void RT_Reset(CAuxGeomCBCollector::AUXJobs& auxGeoms);
 
 private:
-	void RT_RenderAuxGeom(CAuxGeomCB* pAuxGeom);
+	void RenderAuxGeom(const CAuxGeomCB* pAuxGeom);
 
 public:
 	static CRenderAuxGeomD3D* Create(CD3D9Renderer& renderer)
@@ -223,9 +224,9 @@ private:
 
 	CDeviceGraphicsPSOPtr GetGraphicsPSO(const SAuxGeomRenderFlags& flags, const CCryNameTSCRC& techique, ERenderPrimitiveType topology, InputLayoutHandle format);
 
-	void              DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& rawData,CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj, int texID);
+	void              DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& rawData,CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj, const SRenderViewport& vp, int texID);
 
-	bool              PrepareRendering(CAuxGeomCB::SAuxGeomCBRawData* pAuxGeomData);
+	bool              PrepareRendering(const CAuxGeomCB::SAuxGeomCBRawData* pAuxGeomData, SRenderViewport* viewportOut);
 	void              Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44A& mat, const SDisplayContextKey& displayContextKey);
 	void              FinishRendering();
 	void              ClearCaches();
@@ -320,13 +321,6 @@ private:
 	CPrimitiveRenderPass                      m_textPass;
 
 	SAuxCurrentState                          m_currentState;
-
-
-	uint32                                    m_wndXRes;
-	uint32                                    m_wndYRes;
-	Vec2                                      m_screenResolutionInverse;
-	float                                     m_aspect;
-	float                                     m_aspectInv;
 
 	SMatrices                                 m_matrices;
 

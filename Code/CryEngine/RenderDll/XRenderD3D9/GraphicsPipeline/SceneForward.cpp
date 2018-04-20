@@ -1162,10 +1162,11 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 	{
 		viewport = { 0.f, 0.f, float(pColorTex->GetWidth()), float(pColorTex->GetHeight()), 0.0f, 1.0f };
 	}
+	CRY_ASSERT(pColorTex->GetWidth() == viewport.Width && pColorTex->GetHeight() == viewport.Height);
 
 	const bool bFog = pRenderView->IsGlobalFogEnabled() && !(GetGraphicsPipeline().IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG));
 
-	//if (m_skyPass.InputChanged())
+	//if (m_skyPass.InputChanged(pDepthTex->GetTextureID()))
 	{
 		SSamplerState      samplerDescLinearWrapU(FILTER_LINEAR, eSamplerAddressMode_Wrap, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0);
 		SamplerStateHandle samplerStateLinearWrapU = GetDeviceObjectFactory().GetOrCreateSamplerStateHandle(samplerDescLinearWrapU);
@@ -1180,7 +1181,6 @@ void CSceneForwardStage::ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex)
 		m_skyPass.SetRequirePerViewConstantBuffer(true);
 		m_skyPass.SetRenderTarget(0, pColorTex);
 		m_skyPass.SetDepthTarget(pDepthTex);
-		m_skyPass.SetViewport(viewport);
 		m_skyPass.SetState(GS_DEPTHFUNC_EQUAL);
 		m_skyPass.SetTexture(0, pSkyDomeTex);
 		m_skyPass.SetSampler(0, EDefaultSamplerStates::LinearClamp);

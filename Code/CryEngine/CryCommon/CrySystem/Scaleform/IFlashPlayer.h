@@ -99,8 +99,8 @@ struct IFlashPlayer
 	virtual void           SetScissorRect(int x0, int y0, int width, int height) = 0;
 	virtual void           GetScissorRect(int& x0, int& y0, int& width, int& height) const = 0;
 	virtual void           Advance(float deltaTime) = 0;
+	virtual void           Render() = 0;
 	virtual void           SetClearFlags(uint32 clearFlags, ColorF clearColor = Clr_Transparent) = 0;
-	virtual void           Render(bool stereo = false, int textureId = -1) = 0;
 	virtual void           SetCompositingDepth(float depth) = 0;
 	virtual void           StereoEnforceFixedProjectionDepth(bool enforce) = 0;
 	virtual void           StereoSetCustomMaxParallax(float maxParallax = -1.0f) = 0;
@@ -205,9 +205,10 @@ struct IFlashPlayer_RenderProxy
 	virtual void DummyRenderCallback(EFrameType ft, bool releaseOnExit = true) = 0;
 	// </interfuscator:shuffle>
 
+	virtual IScaleformPlayback* GetPlayback() = 0;
+
 protected:
-	IFlashPlayer_RenderProxy() {}
-	virtual ~IFlashPlayer_RenderProxy() {}
+	virtual ~IFlashPlayer_RenderProxy() noexcept {}
 };
 
 struct IFlashVariableObject

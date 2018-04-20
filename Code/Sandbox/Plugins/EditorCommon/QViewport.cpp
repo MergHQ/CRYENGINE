@@ -312,7 +312,7 @@ bool QViewport::CreateRenderContext()
 		desc.screenResolution.x = m_width;
 		desc.screenResolution.y = m_height;
 
-		m_displayContextKey = gEnv->pRenderer->CreateContext(desc);
+		m_displayContextKey = gEnv->pRenderer->CreateSwapChainBackedContext(desc);
 
 		m_renderContextCreated = true;
 		m_creatingRenderContext = false;

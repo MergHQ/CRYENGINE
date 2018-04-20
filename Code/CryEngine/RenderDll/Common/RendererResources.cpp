@@ -234,9 +234,6 @@ CTexture* CRendererResources::s_ptexSkyDomeMie;
 CTexture* CRendererResources::s_ptexSkyDomeRayleigh;
 CTexture* CRendererResources::s_ptexSkyDomeMoon;
 CTexture* CRendererResources::s_ptexColorChart;
-CTexture* CRendererResources::s_ptexStereoL = NULL;
-CTexture* CRendererResources::s_ptexStereoR = NULL;
-CTexture* CRendererResources::s_ptexQuadLayers[2] = { NULL };
 
 CTexture* CRendererResources::s_ptexFlaresOcclusionRing[MAX_OCCLUSION_READBACK_TEXTURES] = { NULL };
 CTexture* CRendererResources::s_ptexFlaresGather = NULL;
@@ -1419,6 +1416,9 @@ void CRendererResources::OnRenderResolutionChanged(int renderWidth, int renderHe
 		if (gcpRendD3D->m_bSystemTargetsInit)
 			ResizeSystemTargets(renderWidth, renderHeight);
 
+		// Stereo resources are used as temporary targets for deferred shaded viewports
+		gcpRendD3D->GetS3DRend().OnResolutionChanged(renderWidth, renderHeight);
+
 		s_renderWidth  = renderWidth;
 		s_renderHeight = renderHeight;
 		s_renderMinDim = std::min(renderWidth, renderHeight);
@@ -1467,9 +1467,7 @@ void CRendererResources::Clear()
 		s_ptexPrevBackBuffer[1][1],
 		s_ptexSceneTarget,
 		s_ptexLinearDepth,
-		s_ptexHDRTarget,
-		s_ptexStereoL,
-		s_ptexStereoR,
+		s_ptexHDRTarget
 	};
 
 	for (auto pTex : clearTextures)
@@ -1501,10 +1499,6 @@ void CRendererResources::ShutDown()
 		s_ptexSceneTarget = NULL;
 		s_ptexLinearDepth = NULL;
 		s_ptexHDRTarget = NULL;
-		s_ptexStereoL = NULL;
-		s_ptexStereoR = NULL;
-		for (uint32 i = 0; i < 2; ++i)
-			s_ptexQuadLayers[i] = NULL;
 	}
 
 	if (s_ShaderTemplatesInitialized)

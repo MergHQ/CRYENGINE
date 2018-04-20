@@ -386,9 +386,7 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 {
 	PROFILE_LABEL_SCOPE("LINEARIZE_DEPTH");
 
-	CTexture* zTarget = RenderView()->GetDepthTarget();
-
-	if (m_passDepthLinearization.InputChanged(zTarget->GetID()))
+	if (m_passDepthLinearization.InputChanged(RenderView()->GetDepthTarget()->GetTextureID()))
 	{
 		static CCryNameTSCRC techLinearizeDepth("LinearizeDepth");
 
@@ -400,7 +398,7 @@ void CSceneGBufferStage::ExecuteLinearizeDepth()
 		m_passDepthLinearization.SetRequirePerViewConstantBuffer(true);
 		m_passDepthLinearization.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
-		m_passDepthLinearization.SetTexture(0, zTarget);
+		m_passDepthLinearization.SetTexture(0, RenderView()->GetDepthTarget());
 	}
 
 	static CCryNameR paramName("NearProjection");

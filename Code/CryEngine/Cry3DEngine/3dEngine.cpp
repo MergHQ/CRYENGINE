@@ -17,6 +17,8 @@
 #include <CryAudio/IAudioSystem.h>
 #include <CryParticleSystem/IParticlesPfx2.h>
 
+#include <CryRenderer/IStereoRenderer.h>
+
 #include "3dEngine.h"
 #include "terrain.h"
 #include "VisAreas.h"
@@ -1283,7 +1285,8 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 	}
 	m_deferredRenderProxyStreamingPriorityUpdates.resize(0);
 
-	gEnv->pRenderer->UpdateAuxDefaultCamera(m_RenderingCamera);
+	if (!gEnv->pRenderer->GetIStereoRenderer() || !gEnv->pRenderer->GetIStereoRenderer()->GetStereoEnabled())
+		gEnv->pRenderer->UpdateAuxDefaultCamera(m_RenderingCamera);
 }
 
 void C3DEngine::PrepareOcclusion(const CCamera& rCamera)
@@ -6531,36 +6534,13 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 		CVegetation* pInst = (CVegetation*)pEnt;
 		pInst->UpdateRndFlags();
 	}
+	else if (eERType == eERType_Decal)
+	{
+		// register decals, to clean up longer not renders decals and their render meshes
+		m_decalRenderNodes.push_back((IDecalRenderNode*)pEnt);
+	}
 
 	pEnt->m_fWSMaxViewDist = pEnt->GetMaxViewDist();
-
-	if (eERType != eERType_Light)
-	{
-		if (fObjRadiusSqr > sqr(MAX_VALID_OBJECT_VOLUME) || !_finite(fObjRadiusSqr))
-		{
-			Warning("I3DEngine::RegisterEntity: Object has invalid bbox: name: %s, class name: %s, GetRadius() = %.2f",
-			        pEnt->GetName(), pEnt->GetEntityClassName(), fObjRadiusSqr);
-			return; // skip invalid objects - usually only objects with invalid very big scale will reach this point
-		}
-
-		if (dwRndFlags & ERF_RENDER_ALWAYS)
-		{
-			if (m_lstAlwaysVisible.Find(pEnt) < 0)
-				m_lstAlwaysVisible.Add(pEnt);
-
-			if (dwRndFlags & ERF_HUD)
-				return;
-		}
-	}
-	else
-	{
-		CLightEntity* pLight = (CLightEntity*)pEnt;
-		if ((pLight->GetLightProperties().m_Flags & (DLF_IGNORES_VISAREAS | DLF_DEFERRED_LIGHT | DLF_THIS_AREA_ONLY)) == (DLF_IGNORES_VISAREAS | DLF_DEFERRED_LIGHT))
-		{
-			if (m_lstAlwaysVisible.Find(pEnt) < 0)
-				m_lstAlwaysVisible.Add(pEnt);
-		}
-	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Check for occlusion proxy.
@@ -6576,6 +6556,35 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 		}
 	}
 
+	if (eERType != eERType_Light)
+	{
+		if (fObjRadiusSqr > sqr(MAX_VALID_OBJECT_VOLUME) || !_finite(fObjRadiusSqr))
+		{
+			Warning("I3DEngine::RegisterEntity: Object has invalid bbox: name: %s, class name: %s, GetRadius() = %.2f",
+			        pEnt->GetName(), pEnt->GetEntityClassName(), fObjRadiusSqr);
+			return; // skip invalid objects - usually only objects with invalid very big scale will reach this point
+		}
+
+		if (dwRndFlags & ERF_RENDER_ALWAYS)
+		{
+			if (m_lstAlwaysVisible.Find(pEnt) < 0)
+				m_lstAlwaysVisible.Add(pEnt);
+
+			return;
+		}
+	}
+	else
+	{
+		CLightEntity* pLight = (CLightEntity*)pEnt;
+		if ((pLight->GetLightProperties().m_Flags & (DLF_IGNORES_VISAREAS | DLF_DEFERRED_LIGHT | DLF_THIS_AREA_ONLY)) == (DLF_IGNORES_VISAREAS | DLF_DEFERRED_LIGHT))
+		{
+			if (m_lstAlwaysVisible.Find(pEnt) < 0)
+				m_lstAlwaysVisible.Add(pEnt);
+
+			return;
+		}
+	}
+
 	//////////////////////////////////////////////////////////////////////////
 	if (pEnt->m_dwRndFlags & ERF_OUTDOORONLY || !(m_pVisAreaManager && m_pVisAreaManager->SetEntityArea(pEnt, aabb, fObjRadiusSqr)))
 	{
@@ -6583,12 +6592,6 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 		{
 			m_pObjectsTree->InsertObject(pEnt, aabb, fObjRadiusSqr, aabb.GetCenter());
 		}
-	}
-
-	// register decals, to clean up longer not renders decals and their render meshes
-	if (eERType == eERType_Decal)
-	{
-		m_decalRenderNodes.push_back((IDecalRenderNode*)pEnt);
 	}
 }
 

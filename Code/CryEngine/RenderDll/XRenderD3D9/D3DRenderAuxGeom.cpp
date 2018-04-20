@@ -41,10 +41,6 @@ CRenderAuxGeomD3D::CRenderAuxGeomD3D(CD3D9Renderer& renderer)
 	: m_renderer(renderer)
 	, m_geomPass(false)
 	, m_textPass(false)
-	, m_wndXRes(0)
-	, m_wndYRes(0)
-	, m_aspect(1.0f)
-	, m_aspectInv(1.0f)
 	, m_matrices()
 	, m_curPrimType(CAuxGeomCB::e_PrimTypeInvalid)
 	, m_curPointSize(1)
@@ -530,15 +526,6 @@ bool CRenderAuxGeomD3D::PreparePass(const CCamera& camera, const SDisplayContext
 	if (!displayContext)
 		return false;
 
-	// get current window resolution and update aspect ratios
-	m_wndXRes = camera.GetViewSurfaceX();
-	m_wndYRes = camera.GetViewSurfaceZ();
-	m_screenResolutionInverse.x = 1.0f / m_wndXRes;
-	m_screenResolutionInverse.y = 1.0f / m_wndYRes;
-
-	m_aspect = displayContext->GetAspectRatio();
-	m_aspectInv = 1.0f / m_aspect;
-
 	// Toggle current back-buffer if the output is connected to a swap-chain
 	displayContext->PostPresent();
 
@@ -619,7 +606,7 @@ CDeviceGraphicsPSOPtr CRenderAuxGeomD3D::GetGraphicsPSO(const SAuxGeomRenderFlag
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& rawData,CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj, int texID)
+void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& rawData,CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj, const SRenderViewport& vp, int texID)
 {
 	CryStackAllocWithSize(HLSL_AuxGeomObjectConstantBuffer, cbObj, CDeviceBufferManager::AlignBufferSizeForStreaming);
 	CryStackAllocWithSize(HLSL_AuxGeomConstantBuffer, cbPrimObj, CDeviceBufferManager::AlignBufferSizeForStreaming);
@@ -695,7 +682,8 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& r
 		pCB = m_auxConstantBufferHeap.GetUsableConstantBuffer();
 		{
 			cbPrimObj->matViewProj = mViewProj;
-			cbPrimObj->invScreenDim = m_screenResolutionInverse;
+			cbPrimObj->invScreenDim.x = 1.f / static_cast<float>(vp.width);
+			cbPrimObj->invScreenDim.y = 1.f / static_cast<float>(vp.height);
 			pCB->UpdateBuffer(cbPrimObj, cbPrimObjSize);
 		}
 	}
@@ -765,13 +753,9 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& r
 			float scale;
 			CRY_ASSERT(fabs(v0.w - v0.w) < 1e-4);
 			if (fabs(v0.w) < 1e-2)
-			{
 				scale = 0.5f;
-			}
 			else
-			{
-				scale = ((v1.x - v0.x) / v0.w) * (float)max(m_wndXRes, m_wndYRes) / 500.0f;
-			}
+				scale = ((v1.x - v0.x) / v0.w) * std::max(static_cast<float>(vp.width), static_cast<float>(vp.height)) / 500.0f;
 
 			// map scale to detail level
 			uint32 lodLevel((uint32)((scale / 0.5f) * (e_auxObjNumLOD - 1)));
@@ -853,7 +837,7 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& r
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderAuxGeomD3D::PrepareRendering(CAuxGeomCB::SAuxGeomCBRawData *pAuxGeomData)
+bool CRenderAuxGeomD3D::PrepareRendering(const CAuxGeomCB::SAuxGeomCBRawData *pAuxGeomData, SRenderViewport* viewportOut)
 {
 	// reset DrawInFront mode
 	m_curDrawInFrontMode = e_DrawInFrontOff;
@@ -861,10 +845,8 @@ bool CRenderAuxGeomD3D::PrepareRendering(CAuxGeomCB::SAuxGeomCBRawData *pAuxGeom
 	// reset current prim type
 	m_curPrimType = CAuxGeomCB::e_PrimTypeInvalid;
 
-	if (!PreparePass(pAuxGeomData->m_camera, pAuxGeomData->displayContextKey, m_geomPass))
-	{
+	if (!PreparePass(pAuxGeomData->m_camera, pAuxGeomData->displayContextKey, m_geomPass, viewportOut))
 		return false;
-	}
 
 	m_geomPass.BeginAddingPrimitives();
 
@@ -897,8 +879,6 @@ bool CRenderAuxGeomD3D::PrepareRendering(CAuxGeomCB::SAuxGeomCBRawData *pAuxGeom
 
 void CRenderAuxGeomD3D::FinishRendering()
 {
-	m_geomPass.Execute();
-
 	m_currentState = SAuxCurrentState();
 
 	m_auxConstantBufferHeap.FreeUsedConstantBuffers();
@@ -982,7 +962,7 @@ void CRenderAuxGeomD3D::Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44
 }
 
 
-void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data)
+void CRenderAuxGeomD3D::RT_Flush(const SAuxGeomCBRawDataPackagedConst& data)
 {
 	if (!CV_r_auxGeom)
 		return;
@@ -1022,8 +1002,13 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data)
 	m_bufman.FillIB(auxIndexBuffer.data(),  auxIndexBuffer.size()  * sizeof(vtx_idx));
 
 	// prepare rendering
-	if (PrepareRendering(data.m_pData))
+	SRenderViewport vp;
+	if (PrepareRendering(data.m_pData, &vp))
 	{
+		CD3DStereoRenderer& stereoRenderer = gcpRendD3D->GetS3DRend();
+		const bool bStereoEnabled = stereoRenderer.IsStereoEnabled();
+		const bool bStereoSequentialMode = stereoRenderer.RequiresSequentialSubmission();
+
 		// process push buffer
 		for (CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(m_auxSortedPushBuffer.begin()), itEnd(m_auxSortedPushBuffer.end()); it != itEnd; )
 		{
@@ -1064,10 +1049,6 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data)
 				curTexture = -1;
 			}
 
-			CD3DStereoRenderer& stereoRenderer = gcpRendD3D->GetS3DRend();
-			const bool bStereoEnabled = stereoRenderer.IsStereoEnabled();
-			const bool bStereoSequentialMode = stereoRenderer.RequiresSequentialSubmission();
-
 			// draw push buffer entries
 			switch (primType)
 			{
@@ -1079,28 +1060,14 @@ void CRenderAuxGeomD3D::RT_Flush(SAuxGeomCBRawDataPackaged& data)
 			case CAuxGeomCB::e_LineStripInd:
 			case CAuxGeomCB::e_TriListInd:
 			case CAuxGeomCB::e_Obj:
-				if (bStereoEnabled)
-				{
-					stereoRenderer.BeginRenderingTo(LEFT_EYE);
-					DrawAuxPrimitives(*m_pCurCBRawData, itCur, it, mViewProj, curTexture);
-					stereoRenderer.EndRenderingTo(LEFT_EYE);
-
-					if (bStereoSequentialMode)
-					{
-						stereoRenderer.BeginRenderingTo(RIGHT_EYE);
-						DrawAuxPrimitives(*m_pCurCBRawData, itCur, it, mViewProj, curTexture);
-						stereoRenderer.EndRenderingTo(RIGHT_EYE);
-					}
-				}
-				else
-				{
-					DrawAuxPrimitives(*m_pCurCBRawData, itCur, it, mViewProj, curTexture);
-				}
+				DrawAuxPrimitives(*m_pCurCBRawData, itCur, it, mViewProj, vp, curTexture);
 			break;
 			default:
 				assert(0);
 			}
 		}
+
+		m_geomPass.Execute();
 
 		FinishRendering();
 	}
@@ -1114,22 +1081,30 @@ void CRenderAuxGeomD3D::RT_Render(const CAuxGeomCBCollector::AUXJobs& auxGeoms)
 {
 	for (auto& pJob : auxGeoms)
 	{
-		RT_RenderAuxGeom(pJob);
+		RenderAuxGeom(pJob);
 	}
 
 	GetDeviceObjectFactory().GetCoreCommandList().Reset();
 }
 
-void CRenderAuxGeomD3D::RT_RenderAuxGeom(CAuxGeomCB* pAuxGeom)
+void CRenderAuxGeomD3D::RT_Reset(CAuxGeomCBCollector::AUXJobs& auxGeoms)
 {
-	if (auto processed = pAuxGeom->AccessData())
+	for (auto& pJob : auxGeoms)
+	{
+		if (auto* processed = pJob->AccessData())
+			processed->Reset();
+	}
+}
+
+void CRenderAuxGeomD3D::RenderAuxGeom(const CAuxGeomCB* pAuxGeom)
+{
+	if (const auto* processed = pAuxGeom->AccessData())
 	{
 		if (processed->m_auxPushBuffer.size() > 0)
 		{
-			auto processedRawDataPacked = SAuxGeomCBRawDataPackaged(processed);
+			const auto processedRawDataPacked = SAuxGeomCBRawDataPackagedConst(processed);
 			RT_Flush(processedRawDataPacked);
 		}
-		processed->Reset();
 	}
 }
 
@@ -1184,8 +1159,7 @@ void CRenderAuxGeomD3D::SMatrices::UpdateMatrices(const CCamera& camera)
 	m_matProj.SetIdentity();
 	m_matView.SetIdentity();
 
-	Vec2i resolution(camera.GetViewSurfaceX(),camera.GetViewSurfaceZ());
-
+	const Vec2i resolution = { camera.GetViewSurfaceX(), camera.GetViewSurfaceZ() };
 	const bool depthreversed = true;
 
 	//float depth = depthreversed ? 1.0f : -1.0f;
@@ -1353,9 +1327,7 @@ CDeviceResourceSetPtr CRenderAuxGeomD3D::CAuxDeviceResourceSetCacheForTexture::G
 		pTexture->AddInvalidateCallback(this, SResourceBindPoint(), OnTextureInvalidated);
 		
 		if (!m_pDefaultWhite && pTexture == CRendererResources::s_ptexWhite)
-		{
 			m_pDefaultWhite = pResourceSet;
-		}
 
 	}
 	
@@ -1376,9 +1348,7 @@ void CAuxGeomCBCollector::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	m_rwGlobal.RLock();
 	for (auto const& it : m_auxThreadMap)
-	{
 		it.second->GetMemoryUsage(pSizer);
-	}
 	m_rwGlobal.RUnlock();
 }
 
@@ -1391,25 +1361,19 @@ CAuxGeomCBCollector::AUXJobs CAuxGeomCBCollector::SubmitAuxGeomsAndPrepareForRen
 
 	m_rwGlobal.RLock();
 	for (AUXThreadMap::const_iterator it = m_auxThreadMap.begin(); it != m_auxThreadMap.end(); ++it)
-	{
 		tmpThreads.push_back(it->second);
-	}
 	m_rwGlobal.RUnlock();
 
 	for (auto const pTmpThread : tmpThreads)
 	{
 		pTmpThread->m_rwlLocal.RLock();
 		for (CAuxGeomCBCollector::SThread::AUXJobMap::const_iterator job = pTmpThread->m_auxJobMap.begin(); job != pTmpThread->m_auxJobMap.end(); ++job)
-		{
 			auxJobs.push_back(*job);
-		}
 		pTmpThread->m_rwlLocal.RUnlock();
 	}
 
 	for (auto const pJob : auxJobs)
-	{
 		pJob->Submit();
-	}
 
 	tmpThreads.clear();
 
@@ -1421,9 +1385,7 @@ void CAuxGeomCBCollector::SetDefaultCamera(const CCamera& camera)
 	m_camera = camera;
 
 	for (AUXThreadMap::iterator it = m_auxThreadMap.begin(); it != m_auxThreadMap.end(); ++it)
-	{
 		it->second->SetDefaultCamera(camera);
-	}
 }
 
 void CAuxGeomCBCollector::SetDisplayContextKey(const SDisplayContextKey &displayContextKey)

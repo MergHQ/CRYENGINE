@@ -142,7 +142,7 @@ bool CPreviewModelCtrl::CreateRenderContext()
 		desc.screenResolution.x = rc.Width();
 		desc.screenResolution.y = rc.Height();
 
-		m_displayContextKey = m_pRenderer->CreateContext(desc);
+		m_displayContextKey = m_pRenderer->CreateSwapChainBackedContext(desc);
 		m_renderContextCreated = true;
 
 		return true;

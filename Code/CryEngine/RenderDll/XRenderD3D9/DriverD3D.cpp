@@ -106,14 +106,14 @@ void CD3D9Renderer::InitRenderer()
 	m_bInitialized = false;
 	gRenDev = this;
 
-	m_pBaseDisplayContext = std::make_shared<CRenderDisplayContext>();
+	m_pBaseDisplayContext = std::make_shared<CSwapChainBackedRenderDisplayContext>(IRenderer::SDisplayContextDescription{}, m_uniqueDisplayContextId++);
 	{
 		SDisplayContextKey baseContextKey;
-		baseContextKey.key.emplace<HWND>((HWND)gEnv->pSystem->GetHWND());
+		baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetWindowHandle());
 		m_displayContexts.emplace(std::make_pair(std::move(baseContextKey), m_pBaseDisplayContext));
 	}
 
-	m_pStereoRenderer = new CD3DStereoRenderer(*this, (EStereoDevice)CRenderer::CV_r_StereoDevice);
+	m_pStereoRenderer = new CD3DStereoRenderer();
 	m_pGraphicsPipeline.reset(new CStandardGraphicsPipeline);
 
 	m_pPipelineProfiler = NULL;
@@ -276,10 +276,8 @@ void CD3D9Renderer::ChangeViewport(CRenderDisplayContext* pDC, unsigned int view
 
 	// This change will propagate to the other dimensions (output and render)
 	// when HandleDisplayPropertyChanges() is called just before rendering
-	pDC->ChangeDisplayResolution(viewPortOffsetX + viewportWidth, viewPortOffsetY + viewportHeight, IsFullscreen());
-	pDC->SetViewport(SRenderViewport(viewPortOffsetX, viewPortOffsetY, viewportWidth, viewportHeight));
+	pDC->ChangeDisplayResolution(viewPortOffsetX + viewportWidth, viewPortOffsetY + viewportHeight, SRenderViewport(viewPortOffsetX, viewPortOffsetY, viewportWidth, viewportHeight));
 
-	CRendererResources::OnDisplayResolutionChanged(pDC->GetDisplayResolution()[0], pDC->GetDisplayResolution()[1]);
 	if (auto pRenderOutput = pDC->GetRenderOutput().get())
 	{
 		CRendererResources::OnOutputResolutionChanged(pRenderOutput->GetOutputResolution()[0], pRenderOutput->GetOutputResolution()[1]);
@@ -502,24 +500,22 @@ void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayH
 			*pDisplayHeight = 720;
 		}
 	#elif CRY_PLATFORM_WINDOWS
-		RectI monitorBounds = pDC->GetCurrentMonitorBounds();
+		RectI monitorBounds = {};
+		if (pDC->IsSwapChainBacked())
+			monitorBounds = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC)->GetCurrentMonitorBounds();
+		else
+		{
+			monitorBounds.w = pDC->GetDisplayResolution().x;
+			monitorBounds.h = pDC->GetDisplayResolution().y;
+		}
 
 		*pDisplayWidth  = bUseNativeRes ? monitorBounds.w : displayWidthRequested;
 		*pDisplayHeight = bUseNativeRes ? monitorBounds.h : displayHeightRequested;
 	#endif
 	}
 
-	// Make the swap-chain as large as the display size by default //////////////////////////////////////////////////
-	if (!IsEditorMode())
-	{
-		if (m_pStereoRenderer && m_pStereoRenderer->IsStereoEnabled())
-		{
-			m_pStereoRenderer->CalculateResolution(*pDisplayWidth, *pDisplayHeight, pDisplayWidth, pDisplayHeight);
-		}
-	}
-
 	// Calculate the rendering resolution based on inputs ///////////////////////////////////////////////////////////
-	*pOutputWidth  = pDC->IsScalable() && CV_r_CustomResWidth  ? std::min(CV_r_CustomResMaxSize, CV_r_CustomResWidth ) : *pDisplayWidth;
+	*pOutputWidth = pDC->IsScalable() && CV_r_CustomResWidth ? std::min(CV_r_CustomResMaxSize, CV_r_CustomResWidth) : *pDisplayWidth;
 	*pOutputHeight = pDC->IsScalable() && CV_r_CustomResHeight ? std::min(CV_r_CustomResMaxSize, CV_r_CustomResHeight) : *pDisplayHeight;
 
 	const int nMaxResolutionX = std::max(std::min(CV_r_CustomResMaxSize, m_MaxTextureSize ? m_MaxTextureSize : INT_MAX), *pOutputWidth);
@@ -538,7 +534,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 	bool bChangedRendering = false;
 	bool bChangedOutputting = false;
 	bool bResizeSwapchain = false;
-	bool bRecreateSwapchain = !pDC->IsValid();
+	bool bRecreateSwapchain = false;
 	bool bNativeRes = false;
 	bool wasFullscreen = IsFullscreen();
 
@@ -615,6 +611,11 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 
 		CalculateResolutions(displayWidthRequested, displayHeightRequested, bNativeRes, &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
 
+		if (!IsEditorMode() && m_pStereoRenderer && m_pStereoRenderer->IsStereoEnabled())
+		{
+			m_pStereoRenderer->CalculateResolution(renderWidth, renderHeight, &renderWidth, &renderHeight);
+		}
+
 		// Renderer resize
 		if (CRendererResources::s_renderWidth  != renderWidth  ||
 			CRendererResources::s_renderHeight != renderHeight)
@@ -622,6 +623,10 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 			// The global resources are only used for the main viewport currently, but never for
 			// secondary ones, as they are forward shaded minimally without utilizing global resources
 			bChangedRendering = pDC->IsDeferredShadeable();
+
+			// Hack for editor (editor viewports will be resized earlier)
+			if (IsEditorMode())
+				bResizeSwapchain = true;
 		}
 
 		// Output resize
@@ -719,12 +724,15 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 
 	FlushRTCommands(false, false, false);
 
+	m_pRT->ExecuteRenderThreadCommand([=]
+	{
+		GetS3DRend().PrepareStereo();
+	}, ERenderCommandFlags::None);
+
 	CaptureFrameBufferPrepare();
 
 	// Switching of MT mode in run-time
 	//CV_r_multithreaded = 0;
-
-	GetS3DRend().Update();
 
 	m_cEF.mfBeginFrame();
 
@@ -783,7 +791,9 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 		gRenDev->FlushRTCommands(true, true, true);
 	}
 
-	const CCamera camera = gEnv->pSystem->GetViewCamera();
+	const CCamera& camera = !GetS3DRend().IsStereoEnabled() || GetS3DRend().IsMenuModeEnabled() ?
+		gEnv->pSystem->GetViewCamera() :
+		GetS3DRend().GetHeadLockedQuadCamera();
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
 	if (auto pCurrAuxGeomCBCollector = m_currentAuxGeomCBCollector)
@@ -792,16 +802,17 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey)
 		// Technically this may not be correct but for now it fixes the issues.
 		pCurrAuxGeomCBCollector->SetDefaultCamera(camera);
 
-		m_pRT->ExecuteRenderThreadCommand(
-		[=]
+		m_pRT->ExecuteRenderThreadCommand([=]
 		{
 			// Initialize render thread's aux geometry command buffer's camera
 			m_renderThreadAuxGeom.SetCamera(camera);
 
-			pCurrAuxGeomCBCollector->SetDisplayContextKey(displayContextKey);
+			const SDisplayContextKey auxDisplayContextKey = GetS3DRend().IsStereoEnabled() ? 
+				GetS3DRend().GetEyeDisplayContext(CCamera::eEye_Left).second :
+				displayContextKey;
+			pCurrAuxGeomCBCollector->SetDisplayContextKey(auxDisplayContextKey);
 
 			m_nTimeSlicedShadowsUpdatedThisFrame = 0;
-
 		}, ERenderCommandFlags::None);
 	}
 #endif
@@ -813,14 +824,19 @@ void CD3D9Renderer::FillFrame(ColorF clearColor)
 {
 	CRenderDisplayContext* pDisplayContext = GetActiveDisplayContext();
 
-	m_pRT->ExecuteRenderThreadCommand(
-		[=]
+	m_pRT->ExecuteRenderThreadCommand([=]
 	{
 		PROFILE_FRAME(RT_FillFrame);
 
 		pDisplayContext->GetCurrentBackBuffer()->Clear(clearColor);
-
 		pDisplayContext->GetRenderOutput()->m_hasBeenCleared |= FRT_CLEAR_COLOR;
+
+		if (GetS3DRend().IsStereoEnabled())
+		{
+			GetS3DRend().ClearEyes(clearColor);
+			GetS3DRend().ClearVrQuads(Clr_Transparent);   // Force transparent clear for VR quads
+		}
+
 	}, ERenderCommandFlags::SkipDuringLoading);
 }
 
@@ -1289,7 +1305,9 @@ void CD3D9Renderer::ResolveHighDynamicRangeDisplay()
 	PROFILE_LABEL_SCOPE("RESOLVE_HIGHDYNAMICRANGE");
 
 	const CRenderOutput* pOutput = GetGraphicsPipeline().GetCurrentRenderOutput();
-	CRenderDisplayContext* pDC = GetActiveDisplayContext(); pDC->PostPresent();
+	CRenderDisplayContext* pDC = GetActiveDisplayContext();
+	
+	pDC->PostPresent();
 
 	CRY_ASSERT(pOutput->GetColorTarget() == pDC->GetStorableColorOutput());
 	CRY_ASSERT(pOutput->GetColorTarget() != pDC->GetCurrentBackBuffer());
@@ -2509,10 +2527,13 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 
 	const SRenderStatistics& RStats = SRenderStatistics::Write();
 
-	CRenderDisplayContext* pDC = GetActiveDisplayContext();
-	SDisplayContextKey displayContextKey;
-	displayContextKey.key.emplace<HWND>(pDC->GetHandle());
-	gEnv->pRenderer->GetIRenderAuxGeom(/*eType*/)->SetCurrentDisplayContext(displayContextKey);
+	CSwapChainBackedRenderDisplayContext* pDC = GetBaseDisplayContext();
+	if (GetS3DRend().IsStereoEnabled())
+	{
+		SDisplayContextKey displayContextKey;
+		displayContextKey.key.emplace<HWND>(pDC->GetWindowHandle());
+		gEnv->pRenderer->GetIRenderAuxGeom(/*eType*/)->SetCurrentDisplayContext(displayContextKey);
+	}
 
 	#if REFRACTION_PARTIAL_RESOLVE_DEBUG_VIEWS
 	if (CV_r_RefractionPartialResolvesDebug)
@@ -3064,6 +3085,123 @@ void CD3D9Renderer::TryFlush()
 	m_pRT->RC_TryFlush();
 }
 
+void CD3D9Renderer::RenderAux()
+{
+#if defined(ENABLE_RENDER_AUX_GEOM)
+	if (auto currentCollector = m_currentAuxGeomCBCollector)
+	{
+		auto auxData = currentCollector->Get(0);
+		auto renderData = currentCollector->SubmitAuxGeomsAndPrepareForRendering();
+
+		// Commit all Aux Geom buffers except ones from the Render Thread,
+		// Render Thread will commit it's own buffer right before final rendering
+		m_pRT->ExecuteRenderThreadCommand([=/*, renderData = std::move(renderData)*/]() mutable        // Renable the capture-by-move once we support C++14..............
+		{
+			CRY_PROFILE_REGION(PROFILE_RENDERER, "CD3D9Renderer::RenderAux lambda");
+			
+			// Renders the aux geometries collected with the collector assigned to the renderer between begin and end.
+			if (!GetS3DRend().IsStereoEnabled() || GetS3DRend().IsMenuModeEnabled())
+			{
+				// In menu mode we also render to screen in addition to quad layer
+				m_pRenderAuxGeomD3D->RT_Render(renderData);
+			}
+			if (GetS3DRend().IsStereoEnabled())
+			{
+				const auto target = RenderLayer::eQuadLayers_Headlocked_0;
+
+				// Clear VR Quad
+				if (auto dc = GetS3DRend().GetVrQuadLayerDisplayContext(target).first)
+				{
+					if (auto* bb = dc->GetCurrentBackBuffer())
+						CClearSurfacePass::Execute(bb, Clr_Transparent);
+				}
+
+				auto stereoRenderScope = GetS3DRend().PrepareRenderingToVrQuadLayer(target);
+				auxData->SetCamera(GetS3DRend().GetHeadLockedQuadCamera());
+				auxData->SetCurrentDisplayContext(stereoRenderScope.GetDisplayContextKey());
+				m_pRenderAuxGeomD3D->RT_Render(renderData);
+			}
+
+			m_pRenderAuxGeomD3D->RT_Reset(renderData);
+			m_pRenderAuxGeomD3D->FreeMemory();
+			ReturnAuxGeomCollector(currentCollector);
+		}, ERenderCommandFlags::SkipDuringLoading);
+
+		// Prepares aux geometry command buffer collector for next frame in case someone was generating aux commands before beginning next frame.
+		SetCurrentAuxGeomCollector(GetOrCreateAuxGeomCollector(auxData->GetCamera()));
+	}
+#endif //ENABLE_RENDER_AUX_GEOM
+}
+
+void CD3D9Renderer::RenderAux_RT()
+{
+	CRY_ASSERT(m_pRT->IsRenderThread());
+
+	// Add debug icons to Aux
+	if (m_CVDisplayInfo && m_CVDisplayInfo->GetIVal() && iSystem && iSystem->IsDevMode())
+	{
+		static const int nIconSize = 32;
+		int nIconIndex = 0;
+
+		//FX_SetState(GS_NODEPTHTEST);
+
+		const Vec2 overscanOffset = Vec2(s_overscanBorders.x * VIRTUAL_SCREEN_WIDTH, s_overscanBorders.y * VIRTUAL_SCREEN_HEIGHT);
+
+		if (SShaderAsyncInfo::s_nPendingAsyncShaders > 0 && CV_r_shadersasynccompiling > 0 && CRendererResources::s_ptexIconShaderCompiling)
+			IRenderAuxImage::Draw2dImage(nIconSize * nIconIndex + overscanOffset.x, overscanOffset.y, nIconSize, nIconSize, CRendererResources::s_ptexIconShaderCompiling->GetID(), 0, 1, 1, 0);
+
+		++nIconIndex;
+
+		if (CTexture::IsStreamingInProgress() && CRendererResources::s_ptexIconStreaming)
+			IRenderAuxImage::Draw2dImage(nIconSize * nIconIndex + overscanOffset.x, overscanOffset.y, nIconSize, nIconSize, CRendererResources::s_ptexIconStreaming->GetID(), 0, 1, 1, 0);
+
+		++nIconIndex;
+
+		// indicate terrain texture streaming activity
+		if (gEnv->p3DEngine && CRendererResources::s_ptexIconStreamingTerrainTexture && gEnv->p3DEngine->IsTerrainTextureStreamingInProgress())
+			IRenderAuxImage::Draw2dImage(nIconSize * nIconIndex + overscanOffset.x, overscanOffset.y, nIconSize, nIconSize, CRendererResources::s_ptexIconStreamingTerrainTexture->GetID(), 0, 1, 1, 0);
+
+		++nIconIndex;
+
+		if (IAISystem* pAISystem = gEnv->pAISystem)
+		{
+			if (INavigationSystem* pAINavigation = pAISystem->GetNavigationSystem())
+			{
+				if (pAINavigation->GetState() == INavigationSystem::Working)
+					IRenderAuxImage::Draw2dImage(nIconSize * nIconIndex + overscanOffset.x, overscanOffset.y, nIconSize, nIconSize, CRendererResources::s_ptexIconNavigationProcessing->GetID(), 0, 1, 1, 0);
+			}
+		}
+
+		++nIconIndex;
+	}
+
+	m_nDisableTemporalEffects = max(0, m_nDisableTemporalEffects - 1);
+
+#if defined(ENABLE_RENDER_AUX_GEOM)
+	m_renderThreadAuxGeom.Submit();
+
+	auto renderData = std::vector<CAuxGeomCB*>{ &m_renderThreadAuxGeom };
+
+	// In menu mode we also render to screen in addition to quad layer
+	if (!GetS3DRend().IsStereoEnabled() || GetS3DRend().IsMenuModeEnabled())
+	{
+		m_pRenderAuxGeomD3D->RT_Render(renderData);
+	}
+	if (GetS3DRend().IsStereoEnabled())
+	{
+		const auto target = RenderLayer::eQuadLayers_Headlocked_0;
+
+		auto stereoRenderScope = GetS3DRend().PrepareRenderingToVrQuadLayer(target);
+		m_renderThreadAuxGeom.SetCamera(GetS3DRend().GetHeadLockedQuadCamera());
+		m_renderThreadAuxGeom.SetCurrentDisplayContext(stereoRenderScope.GetDisplayContextKey());
+		m_pRenderAuxGeomD3D->RT_Render(renderData);
+	}
+
+	m_pRenderAuxGeomD3D->RT_Reset(renderData);
+	m_renderThreadAuxGeom.FreeMemory();
+#endif //ENABLE_RENDER_AUX_GEOM
+}
+
 void CD3D9Renderer::EndFrame()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
@@ -3075,35 +3213,8 @@ void CD3D9Renderer::EndFrame()
 	// Check for the presence of a D3D device
 	CRY_ASSERT(static_cast<const CD3D9Renderer*>(this)->GetDevice().IsValid());
 
-#if defined(ENABLE_RENDER_AUX_GEOM)
-	if(auto pCurrentCollector = m_currentAuxGeomCBCollector)
-	{
-		// Prepares aux geometry command buffer collector for next frame in case someone was generating aux commands before beginning next frame.
-		SetCurrentAuxGeomCollector(GetOrCreateAuxGeomCollector());
-
-		auto width = pCurrentCollector->Get(0)->GetCamera().GetViewSurfaceX();
-		
-		// Setting the current main thread's aux geometry command buffer to the collector and all containing aux geometry command buffers' camera.
-		// Technically this is not correct but it fixes current issues.
-		m_currentAuxGeomCBCollector->SetDefaultCamera(pCurrentCollector->Get(0)->GetCamera());
-		gEnv->pAuxGeomRenderer = m_currentAuxGeomCBCollector->Get(0);
-
-		auto renderData = pCurrentCollector->SubmitAuxGeomsAndPrepareForRendering();
-
-		// Commit all Aux Geom buffers except ones from the Render Thread,
-		// Render Thread will commit it's own buffer right before final rendering
-		m_pRT->ExecuteRenderThreadCommand(
-			[=]
-			{
-				// Renders the aux geometries collected with the collector assigned to the renderer between begin and end.
-				m_pRenderAuxGeomD3D->RT_Render(renderData);
-				m_pRenderAuxGeomD3D->FreeMemory();
-				ReturnAuxGeomCollector(pCurrentCollector);
-			}
-			, ERenderCommandFlags::SkipDuringLoading)
-			;
-	}
-#endif //ENABLE_RENDER_AUX_GEOM
+	// Aux
+	RenderAux();
 
 	m_pRT->RC_EndFrame(!m_bStartLevelLoading);
 }
@@ -3154,55 +3265,16 @@ void CD3D9Renderer::RT_EndFrame()
 	}
 	CFlashTextureSourceSharedRT::TickRT();
 
-	if (m_CVDisplayInfo && m_CVDisplayInfo->GetIVal() && iSystem && iSystem->IsDevMode())
-	{
-		static const int nIconSize = 32;
-		int nIconIndex = 0;
+	// Rnder-thread Aux
+	RenderAux_RT();
 
-		//FX_SetState(GS_NODEPTHTEST);
+	// VR social screen
+	if (!GetS3DRend().IsMenuModeEnabled())
+		GetS3DRend().DisplaySocialScreen();
 
-		const Vec2 overscanOffset = Vec2(s_overscanBorders.x * VIRTUAL_SCREEN_WIDTH, s_overscanBorders.y * VIRTUAL_SCREEN_HEIGHT);
-
-		if (SShaderAsyncInfo::s_nPendingAsyncShaders > 0 && CV_r_shadersasynccompiling > 0 && CRendererResources::s_ptexIconShaderCompiling)
-			IRenderAuxImage::Draw2dImage(nIconSize * nIconIndex + overscanOffset.x, overscanOffset.y, nIconSize, nIconSize, CRendererResources::s_ptexIconShaderCompiling->GetID(), 0, 1, 1, 0);
-
-		++nIconIndex;
-
-		if (CTexture::IsStreamingInProgress() && CRendererResources::s_ptexIconStreaming)
-			IRenderAuxImage::Draw2dImage(nIconSize * nIconIndex + overscanOffset.x, overscanOffset.y, nIconSize, nIconSize, CRendererResources::s_ptexIconStreaming->GetID(), 0, 1, 1, 0);
-
-		++nIconIndex;
-
-		// indicate terrain texture streaming activity
-		if (gEnv->p3DEngine && CRendererResources::s_ptexIconStreamingTerrainTexture && gEnv->p3DEngine->IsTerrainTextureStreamingInProgress())
-			IRenderAuxImage::Draw2dImage(nIconSize * nIconIndex + overscanOffset.x, overscanOffset.y, nIconSize, nIconSize, CRendererResources::s_ptexIconStreamingTerrainTexture->GetID(), 0, 1, 1, 0);
-
-		++nIconIndex;
-
-		if (IAISystem* pAISystem = gEnv->pAISystem)
-		{
-			if (INavigationSystem* pAINavigation = pAISystem->GetNavigationSystem())
-			{
-				if (pAINavigation->GetState() == INavigationSystem::Working)
-				{
-					IRenderAuxImage::Draw2dImage(nIconSize * nIconIndex + overscanOffset.x, overscanOffset.y, nIconSize, nIconSize, CRendererResources::s_ptexIconNavigationProcessing->GetID(), 0, 1, 1, 0);
-				}
-			}
-		}
-
-		++nIconIndex;
-	}
-
-	m_nDisableTemporalEffects = max(0, m_nDisableTemporalEffects - 1);
-
+	// Hardware mouse
 	if (gEnv->pHardwareMouse)
 		gEnv->pHardwareMouse->Render();
-
-#if defined(ENABLE_RENDER_AUX_GEOM)
-	m_renderThreadAuxGeom.Submit();
-	m_pRenderAuxGeomD3D->RT_Render(std::vector<CAuxGeomCB*>{ &m_renderThreadAuxGeom });
-	m_renderThreadAuxGeom.FreeMemory();
-#endif
 	//////////////////////////////////////////////////////////////////////////
 
 	EF_RemoveParticlesFromScene();
@@ -3223,8 +3295,6 @@ void CD3D9Renderer::RT_EndFrame()
 
 	if (m_pPipelineProfiler && !bProfilerOnSocialScreen)
 		m_pPipelineProfiler->EndFrame();
-
-	GetS3DRend().DisplayStereo();
 
 	CTimeValue timePresentBegin = iTimer->GetAsyncTime();
 	GetS3DRend().SubmitFrameToHMD();
@@ -3280,6 +3350,8 @@ void CD3D9Renderer::RT_EndFrame()
 	if (m_bSwapBuffers)
 	{
 		CRenderDisplayContext* pDC = GetActiveDisplayContext();
+		CRY_ASSERT(pDC->IsSwapChainBacked());
+		auto swapDC = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC);
 
 		CaptureFrameBuffer();
 		CaptureFrameBufferCallBack();
@@ -3308,23 +3380,23 @@ void CD3D9Renderer::RT_EndFrame()
 #if CRY_RENDERER_GNM
 			auto* const pCommandList = GnmCommandList(GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterfaceImpl());
 			const CGnmSwapChain::EFlipMode flipMode = m_VSync ? CGnmSwapChain::kFlipModeSequential : CGnmSwapChain::kFlipModeImmediate;
-			pDC->GetSwapChain()->GnmPresent(pCommandList, flipMode);
+			swapDC->GetSwapChain().Present(pCommandList, flipMode);
 #elif CRY_PLATFORM_ORBIS
-			hReturn = pDC->GetSwapChain()->Present(m_VSync ? 1 : 0, 0);
+			hReturn = swapDC->GetSwapChain().Present(m_VSync ? 1 : 0, 0);
 #elif CRY_PLATFORM_DURANGO
 	#if DURANGO_ENABLE_ASYNC_DIPS
 			WaitForAsynchronousDevice();
 	#endif
-			hReturn = pDC->GetSwapChain()->Present(m_VSync ? 1 : 0, 0);
+			hReturn = swapDC->GetSwapChain().Present(m_VSync ? 1 : 0, 0);
 	#if DURANGO_ENABLE_ASYNC_DIPS
 			WaitForAsynchronousDevice();
 	#endif
 #elif defined(SUPPORT_DEVICE_INFO)
 	#if CRY_PLATFORM_WINDOWS && !CRY_RENDERER_VULKAN
-			pDC->EnforceFullscreenPreemption();
+			swapDC->EnforceFullscreenPreemption();
 	#endif
-			DWORD syncInterval = ComputePresentInterval(pDC->GetSyncInterval() != 0, pDC->GetRefreshRateNumerator(), pDC->GetRefreshRateDemoninator());
-			hReturn = pDC->GetSwapChain()->Present(syncInterval, 0);
+			DWORD syncInterval = ComputePresentInterval(swapDC->GetVSyncHint(), swapDC->GetRefreshRateNumerator(), swapDC->GetRefreshRateDemoninator());
+			hReturn = swapDC->GetSwapChain().Present(syncInterval, 0);
 
 			if (IHmdRenderer* pHmdRenderer = GetS3DRend().GetIHmdRenderer())
 			{
@@ -3384,11 +3456,11 @@ void CD3D9Renderer::RT_EndFrame()
 				dwFlags = DXGI_PRESENT_TEST;
 			else
 				dwFlags = 0;
-			//hReturn = GetSwapChain()->Present(0, dwFlags);
-			if (pDC && pDC->GetSwapChain())
+			//hReturn = GetSwapChain().Present(0, dwFlags);
+			if (swapDC)
 			{
-				pDC->PrePresent();
-				hReturn = pDC->GetSwapChain()->Present(0, dwFlags);
+				swapDC->PrePresent();
+				hReturn = swapDC->GetSwapChain().Present(0, dwFlags);
 				if (hReturn == DXGI_ERROR_INVALID_CALL)
 				{
 					assert(0);
@@ -3521,32 +3593,34 @@ void CD3D9Renderer::RT_PresentFast()
 	CRenderDisplayContext* pDC = GetActiveDisplayContext();
 	pDC->PrePresent();
 
+	CRY_ASSERT(pDC->IsSwapChainBacked());
+	auto swapDC = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC);
+
 	HRESULT hReturn = S_OK;
 #if CRY_PLATFORM_DURANGO
 	#if DURANGO_ENABLE_ASYNC_DIPS
 	WaitForAsynchronousDevice();
 	#endif
-	hReturn = pDC->GetSwapChain()->Present(m_VSync ? 1 : 0, 0);
+	hReturn = swapDC->GetSwapChain().Present(m_VSync ? 1 : 0, 0);
 #elif CRY_RENDERER_GNM
 	auto* const pCommandList = GnmCommandList(GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterfaceImpl());
 	const CGnmSwapChain::EFlipMode flipMode = m_VSync ? CGnmSwapChain::kFlipModeSequential : CGnmSwapChain::kFlipModeImmediate;
-	pDC->GetSwapChain()->GnmPresent(pCommandList, flipMode);
+	swapDC->GetSwapChain().Present(pCommandList, flipMode);
 #elif CRY_PLATFORM_ORBIS
-	hReturn = pDC->GetSwapChain()->Present(m_VSync ? 1 : 0, 0);
+	hReturn = swapDC->GetSwapChain().Present(m_VSync ? 1 : 0, 0);
 #elif defined(SUPPORT_DEVICE_INFO)
 
-	GetS3DRend().DisplayStereo();
 	GetS3DRend().NotifyFrameFinished();
 
 	#if CRY_PLATFORM_WINDOWS
-	pDC->EnforceFullscreenPreemption();
+	swapDC->EnforceFullscreenPreemption();
 	#endif
-	hReturn = pDC->GetSwapChain()->Present(pDC->GetSyncInterval(), 0);
+	hReturn = swapDC->GetSwapChain().Present(pDC->GetVSyncHint() ? 1 : 0, 0);
 #endif
 	assert(hReturn == S_OK);
 
 	m_nRenderThreadFrameID++;
-	pDC->PostPresent();
+	swapDC->PostPresent();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4354,7 +4428,7 @@ void CD3D9Renderer::SetProfileMarker(const char* label, ESPM mode) const
 ///////////////////////////////////////////
 bool CD3D9Renderer::ProjectToScreen(float ptx, float pty, float ptz, float* sx, float* sy, float* sz)
 {
-	auto& camera = GetISystem()->GetViewCamera();	
+	const CCamera& camera = GetISystem()->GetViewCamera();
 	Vec3 out(0, 0, 0);
 	bool visible = camera.Project(Vec3(ptx, pty, ptz), out);
 
@@ -4537,7 +4611,7 @@ int CD3D9Renderer::UnProject(float sx, float sy, float sz, float* px, float* py,
 
 int CD3D9Renderer::UnProjectFromScreen(float sx, float sy, float sz, float* px, float* py, float* pz)
 {
-	auto& camera = GetISystem()->GetViewCamera();
+	const CCamera& camera = GetISystem()->GetViewCamera();
 
 	Matrix44 viewMatrix = camera.GetRenderViewMatrix();
 	Matrix44 projMatrix = camera.GetRenderProjectionMatrix();
@@ -5079,13 +5153,11 @@ void CD3D9Renderer::SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomColle
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CAuxGeomCBCollector* CD3D9Renderer::GetOrCreateAuxGeomCollector()
+CAuxGeomCBCollector* CD3D9Renderer::GetOrCreateAuxGeomCollector(const CCamera &defaultCamera)
 {
-#if defined(ENABLE_RENDER_AUX_GEOM)
-	return m_auxGeometryCollectorPool.GetOrCreateOneElement();
-#else
-	return nullptr;
-#endif
+	auto p = m_auxGeometryCollectorPool.GetOrCreateOneElement();
+	p->SetDefaultCamera(defaultCamera);
+	return p;
 }
 
 void CD3D9Renderer::ReturnAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector)
@@ -5107,14 +5179,14 @@ IColorGradingController* CD3D9Renderer::GetIColorGradingController()
 	return m_pColorGradingControllerD3D;
 }
 
-IStereoRenderer* CD3D9Renderer::GetIStereoRenderer()
+IStereoRenderer* CD3D9Renderer::GetIStereoRenderer() const
 {
 	return m_pStereoRenderer;
 }
 
 bool CD3D9Renderer::IsStereoEnabled() const
 {
-	return GetS3DRend().IsStereoEnabled();
+	return m_pStereoRenderer != nullptr ? m_pStereoRenderer->IsStereoEnabled() : false;
 }
 
 const RPProfilerStats* CD3D9Renderer::GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread /*= true */)
@@ -5403,8 +5475,12 @@ void CD3D9Renderer::BeginRenderDocCapture()
 	{
 		if (pRENDERDOC_StartFrameCapture fpStartFrameCap = (pRENDERDOC_StartFrameCapture)GetProcAddress(rdocDll, "RENDERDOC_StartFrameCapture"))
 		{
+			auto *pDC = gcpRendD3D->GetActiveDisplayContext();
+			CRY_ASSERT(pDC->IsSwapChainBacked());
+			auto swapDC = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC);
+
 			DXGI_SWAP_CHAIN_DESC desc = { 0 };
-			gcpRendD3D->GetActiveDisplayContext()->GetSwapChain()->GetDesc(&desc);
+			swapDC->GetSwapChain().GetSwapChain()->GetDesc(&desc);
 			fpStartFrameCap(desc.OutputWindow);
 			CryLogAlways("Started RenderDoc capture");
 		}
@@ -5422,8 +5498,12 @@ void CD3D9Renderer::EndRenderDocCapture()
 	{
 		if (pRENDERDOC_EndFrameCapture fpEndFrameCap = (pRENDERDOC_EndFrameCapture)GetProcAddress(rdocDll, "RENDERDOC_EndFrameCapture"))
 		{
+			auto *pDC = gcpRendD3D->GetActiveDisplayContext();
+			CRY_ASSERT(pDC->IsSwapChainBacked());
+			auto swapDC = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC);
+
 			DXGI_SWAP_CHAIN_DESC desc = { 0 };
-			gcpRendD3D->GetActiveDisplayContext()->GetSwapChain()->GetDesc(&desc);
+			swapDC->GetSwapChain().GetSwapChain()->GetDesc(&desc);
 			fpEndFrameCap(desc.OutputWindow);
 			CryLogAlways("Finished RenderDoc capture");
 		}
