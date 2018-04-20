@@ -43,8 +43,8 @@ public:
 
 	bool               ApplyToVehicle(string filename = "", bool mergeFile = true);
 
-	void               OnPrototypeEvent(CBaseObject* object, int event);
-	void               OnEntityEvent(CBaseObject* object, int event);
+	void               OnPrototypeEvent(const CBaseObject* pObject, const CObjectEvent& event);
+	void               OnEntityEvent(const CBaseObject* pObject, const CObjectEvent& event);
 
 	void               RecalcLayout(BOOL bNotify = TRUE);
 	void               Close();

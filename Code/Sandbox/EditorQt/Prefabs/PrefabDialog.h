@@ -30,7 +30,7 @@ public:
 	virtual UINT GetDialogMenuID();
 
 	CPrefabItem* GetPrefabFromSelection();
-	void         OnObjectEvent(CBaseObject* pObject, int nEvent);
+	void         OnObjectEvent(const std::vector<CBaseObject*>& objects, const CObjectEvent& event);
 
 protected:
 	void         DoDataExchange(CDataExchange* pDX);

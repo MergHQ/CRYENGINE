@@ -775,9 +775,6 @@ void CBaseObject::Done()
 	}
 	SetFlags(OBJFLAG_DELETED);
 
-	NotifyListeners(OBJECT_ON_DELETE);
-	m_eventListeners.clear();
-
 	if (m_pMaterial)
 	{
 		m_pMaterial->Release();
@@ -793,12 +790,13 @@ void CBaseObject::SetName(const string& name)
 
 	StoreUndo("Name");
 
+	// Store the previous name in the event
+	CObjectRenameEvent renameEvent(m_name);
 	m_name = name;
 	GetObjectManager()->RegisterObjectName(name);
 	SetModified(false, false);
 
-	NotifyListeners(OBJECT_ON_RENAME);
-	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_RENAME);
+	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, renameEvent);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1115,7 +1113,7 @@ void CBaseObject::GetLocalBounds(AABB& box)
 void CBaseObject::UpdateUIVars()
 {
 	// Just notify inspector, he'll take care of the rest
-	NotifyListeners(OBJECT_ON_UI_PROPERTY_CHANGED);
+	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_UI_PROPERTY_CHANGED);
 }
 //////////////////////////////////////////////////////////////////////////
 
@@ -1934,17 +1932,7 @@ void CBaseObject::SetHighlight(bool bHighlight)
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetSelected(bool bSelect)
 {
-	if (bSelect)
-	{
-		SetFlags(OBJFLAG_SELECTED);
-		NotifyListeners(OBJECT_ON_SELECT);
-	}
-	else
-	{
-		ClearFlags(OBJFLAG_SELECTED);
-		NotifyListeners(OBJECT_ON_UNSELECT);
-	}
-
+	bSelect ? SetFlags(OBJFLAG_SELECTED) : ClearFlags(OBJFLAG_SELECTED);
 	UpdateHighlightPassState(bSelect, IsHighlighted());
 }
 
@@ -2353,17 +2341,17 @@ void CBaseObject::SetLayer(IObjectLayer* pLayer)
 	if (pLayer == m_layer && (m_children.empty() || m_linkedObjects.empty()))
 		return;
 
-	IObjectManager* iObjMng = GetIEditor()->GetObjectManager();
+	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 
-	bool bShouldUpdateLayerState = !iObjMng->IsLayerChanging();
-	iObjMng->SetLayerChanging(true);
+	bool bShouldUpdateLayerState = !pObjectManager->IsLayerChanging();
+	pObjectManager->SetLayerChanging(true);
 
 	// guard against same layer (we might have children!)
 	if (pLayer != m_layer)
 	{
 		auto pOldLayer = m_layer;
 		m_layer = pLayer;
-		IObjectManager* iObjMng = GetIEditor()->GetObjectManager();
+		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 		if (CUndo::IsRecording())
 		{
 			CUndo::Record(new CUndoSetLayer(this, pOldLayer));
@@ -2374,8 +2362,7 @@ void CBaseObject::SetLayer(IObjectLayer* pLayer)
 		if (pOldLayer)
 			pOldLayer->SetModified();
 
-		CObjectLayerChangeEvent changeEvt(this, pOldLayer);
-		iObjMng->signalObjectChanged(changeEvt);
+		pObjectManager->NotifyObjectListeners(this, CObjectLayerChangeEvent(pOldLayer));
 
 		if (pLayer)
 			UpdateVisibility(pLayer->IsVisible());
@@ -2394,7 +2381,7 @@ void CBaseObject::SetLayer(IObjectLayer* pLayer)
 	}
 
 	if (bShouldUpdateLayerState)
-		iObjMng->SetLayerChanging(false);
+		pObjectManager->SetLayerChanging(false);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2680,7 +2667,7 @@ bool CBaseObject::IsDescendantOf(const CBaseObject* pObject) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CBaseObject::IsChildOf(CBaseObject* node)
+bool CBaseObject::IsChildOf(const CBaseObject* node) const
 {
 	CBaseObject* p = m_parent;
 	while (p && p != node)
@@ -2693,7 +2680,7 @@ bool CBaseObject::IsChildOf(CBaseObject* node)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CBaseObject::IsLinkedDescendantOf(CBaseObject* pObject)
+bool CBaseObject::IsLinkedDescendantOf(const CBaseObject* pObject) const
 {
 	CBaseObject* pLinkedTo = pObject->GetLinkedTo();
 	while (pLinkedTo)
@@ -3053,7 +3040,7 @@ void CBaseObject::InvalidateTM(int flags)
 			}
 		}
 
-		NotifyListeners(OBJECT_ON_TRANSFORM);
+		GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, CObjectEvent(OBJECT_ON_TRANSFORM));
 
 		// Notify parent that we were modified.
 		if (m_parent)
@@ -3148,7 +3135,7 @@ void CBaseObject::UpdateVisibility(bool bVisible)
 		else
 			m_flags &= ~OBJFLAG_INVISIBLE;
 
-		NotifyListeners(OBJECT_ON_VISIBILITY);
+		GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_VISIBILITY);
 
 		IPhysicalEntity* pPhEn = GetCollisionEntity();
 		if (pPhEn && gEnv->pPhysicalWorld)
@@ -3185,36 +3172,9 @@ bool CBaseObject::IsLookAtTarget() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::AddEventListener(const EventCallback& cb)
+bool IsBaseObjectEventCallbackNULL(const CBaseObject::EventCallback& cb)
 {
-	if (find(m_eventListeners.begin(), m_eventListeners.end(), cb) == m_eventListeners.end())
-		m_eventListeners.push_back(cb);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CBaseObject::RemoveEventListener(const EventCallback& cb)
-{
-	std::vector<EventCallback>::iterator cbFound = find(m_eventListeners.begin(), m_eventListeners.end(), cb);
-	if (cbFound != m_eventListeners.end())
-	{
-		(*cbFound) = EventCallback();
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool IsBaseObjectEventCallbackNULL(const CBaseObject::EventCallback& cb) { return cb.getFunc() == NULL; }
-
-//////////////////////////////////////////////////////////////////////////
-void CBaseObject::NotifyListeners(EObjectListenerEvent event)
-{
-	for (std::vector<EventCallback>::iterator it = m_eventListeners.begin(), end = m_eventListeners.end(); it != end; ++it)
-	{
-		// Call listener callback.
-		if ((*it).getFunc() != NULL)
-			(*it)(this, event);
-	}
-
-	m_eventListeners.erase(remove_if(m_eventListeners.begin(), m_eventListeners.end(), IsBaseObjectEventCallbackNULL), std::end(m_eventListeners));
+	return cb.getFunc() == NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3908,9 +3868,8 @@ void CBaseObject::LinkTo(CBaseObject* pLinkTo, bool bKeepPos/* = true*/)
 			DetachThis(true, true);
 
 		m_bSuppressUpdatePrefab = true;
-		CObjectPreLinkEvent preLinkEvent(this, pLinkTo);
-		GetObjectManager()->signalObjectChanged(preLinkEvent);
-		NotifyListeners(OBJECT_ON_PRELINKED);
+		CObjectPreLinkEvent preLinkEvent(pLinkTo);
+		GetObjectManager()->NotifyObjectListeners(this, preLinkEvent);
 		const Matrix34& xform = GetWorldTM();
 
 		pLinkTo->m_linkedObjects.push_back(this);
@@ -3935,8 +3894,7 @@ void CBaseObject::LinkTo(CBaseObject* pLinkTo, bool bKeepPos/* = true*/)
 			InvalidateTM(eObjectUpdateFlags_ParentChanged);
 		}
 
-		GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_LINKED);
-		NotifyListeners(OBJECT_ON_LINKED);
+		GetObjectManager()->NotifyObjectListeners(this, CObjectEvent(OBJECT_ON_LINKED));
 
 		m_bSuppressUpdatePrefab = false;
 		UpdatePrefab(eOCOT_ModifyTransform);
@@ -3964,8 +3922,7 @@ void CBaseObject::UnLink(bool placeOnRoot /*= false*/)
 
 		{
 			CScopedSuspendUndo suspendUndo;
-			GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_PREUNLINKED);
-			NotifyListeners(OBJECT_ON_PREUNLINKED);
+			GetObjectManager()->NotifyObjectListeners(this, CObjectEvent(OBJECT_ON_PREUNLINKED));
 
 			pTransformDelegate = m_pTransformDelegate;
 			SetTransformDelegate(nullptr, true);
@@ -3996,9 +3953,8 @@ void CBaseObject::UnLink(bool placeOnRoot /*= false*/)
 
 			SetTransformDelegate(pTransformDelegate, true);
 
-			CObjectUnLinkEvent unLinkEvent(this, pLinkedTo);
-			GetObjectManager()->signalObjectChanged(unLinkEvent);
-			NotifyListeners(OBJECT_ON_UNLINKED);
+			CObjectUnLinkEvent unLinkEvent(pLinkedTo);
+			GetObjectManager()->NotifyObjectListeners(this, unLinkEvent);
 		}
 
 		// If the object we were linked to has a parent, then attach to it

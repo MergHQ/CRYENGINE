@@ -76,7 +76,7 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 
 	void        OnLayerChange(const CLayerChangeEvent& event);
-	void        OnObjectChange(CObjectEvent& event);
+	void        OnObjectsChanged(const std::vector<CBaseObject*>& objects, const CObjectEvent& event);
 	void        OnViewportSelectionChanged(const std::vector<CBaseObject*>& selected, const std::vector<CBaseObject*>& deselected);
 	void        OnLayerModelsUpdated();
 	void        OnModelDestroyed();

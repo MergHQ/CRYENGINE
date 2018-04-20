@@ -64,14 +64,10 @@ private:
 	IAnimSequence* OnCreateSequenceObject(const string& name);
 	void           OnDeleteSequenceObject(const string& name);
 
-	void           OnObjectEvent(CObjectEvent& event);
-	void           OnBeforeObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool keepTransform);
-	void           OnObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
-	void           OnBeforeObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool keepTransform);
-	void           OnObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
-	void           HandleObjectRename(CBaseObject* pObject);
-	void           HandleObjectDelete(CBaseObject* pObject);
-	void           HandleAttachmentChange(CBaseObject* pObject, EAttachmentChangeType event);
+	void           OnObjectsChanged(const std::vector<CBaseObject*>& objects, const CObjectEvent& event);
+	void           HandleObjectRename(const CBaseObject* pObject);
+	void           HandleObjectDelete(const CBaseObject* pObject);
+	void           HandleAttachmentChange(const CBaseObject* pObject, EAttachmentChangeType event);
 
 	std::vector<ITrackViewSequenceManagerListener*>  m_listeners;
 	std::vector<std::unique_ptr<CTrackViewSequence>> m_sequences;

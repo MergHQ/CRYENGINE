@@ -239,8 +239,8 @@ public:
 	BOOL           Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd);
 	CXTPTaskPanel& GetTaskPanel() { return m_taskPanel; }
 
-	void      OnObjectEvent(CObjectEvent& event);
-	void      OnObjectEventLegacy(CBaseObject* pObject, int eventType) { OnObjectEvent(CObjectEvent(static_cast<EObjectListenerEvent>(eventType), pObject)); }
+	void      OnObjectChanged(const CBaseObject* pObject, const CObjectEvent& event);
+	void      OnObjectsChanged(const std::vector<CBaseObject*>& objects, const CObjectEvent& event);
 	void      OnSelectionChanged();
 	void      RecalcLayout(BOOL bNotify = TRUE);
 
@@ -312,7 +312,7 @@ protected:
 	void                    CreatePanes();
 	CXTPDockingPaneManager* GetDockingPaneManager() { return &m_paneManager; }
 
-	void                    SinkSelection();
+	void                    SyncSelection();
 	void                    UpdatePropertyTables();
 
 	// Called by the editor to notify the listener about the specified event.

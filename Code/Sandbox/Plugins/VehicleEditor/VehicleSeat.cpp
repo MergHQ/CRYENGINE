@@ -245,20 +245,20 @@ void CVehicleSeat::AddWeapon(int weaponType, CVehicleWeapon* pWeap, IVariable* p
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehicleSeat::OnObjectEvent(CBaseObject* node, int event)
+void CVehicleSeat::OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (event == OBJECT_ON_DELETE)
+	if (event.m_type == OBJECT_ON_DELETE)
 	{
-		VeedLog("[CVehicleSeat]: ON_DELETE for %s", node->GetName());
+		VeedLog("[CVehicleSeat]: ON_DELETE for %s", pObject->GetName());
 		// delete variable
-		if (IVeedObject* pVO = IVeedObject::GetVeedObject(node))
+		if (IVeedObject* pVO = IVeedObject::GetVeedObject(const_cast<CBaseObject*>(pObject)))
 		{
 			if (pVO->DeleteVar())
 			{
 				if (m_pVar)
 					m_pVar->DeleteVariable(pVO->GetVariable(), true);
 				pVO->SetVariable(0);
-				VeedLog("[CVehiclePart] deleting var for %s", node->GetName());
+				VeedLog("[CVehiclePart] deleting var for %s", pObject->GetName());
 			}
 		}
 	}
@@ -267,7 +267,7 @@ void CVehicleSeat::OnObjectEvent(CBaseObject* node, int event)
 //////////////////////////////////////////////////////////////////////////
 void CVehicleSeat::AttachChild(CBaseObject* child, bool bKeepPos, bool bInvalidateTM)
 {
-	child->AddEventListener(functor(*this, &CVehicleSeat::OnObjectEvent));
+	child->signalChanged.Connect(this, &CVehicleSeat::OnObjectEvent);
 
 	CBaseObject::AttachChild(child, bKeepPos, bInvalidateTM);
 }

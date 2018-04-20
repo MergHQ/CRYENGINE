@@ -20,21 +20,13 @@ CTrackViewSequenceManager::CTrackViewSequenceManager() : m_nextSequenceId(0)
 	GetIEditor()->RegisterNotifyListener(this);
 	GetIEditor()->GetMaterialManager()->AddListener(this);
 	auto pManager = GetIEditor()->GetObjectManager();
-	pManager->signalObjectChanged.Connect(this, &CTrackViewSequenceManager::OnObjectEvent);
-	pManager->signalBeforeObjectsAttached.Connect(this, &CTrackViewSequenceManager::OnBeforeObjectsAttached);
-	pManager->signalObjectsAttached.Connect(this, &CTrackViewSequenceManager::OnObjectsAttached);
-	pManager->signalBeforeObjectsDetached.Connect(this, &CTrackViewSequenceManager::OnBeforeObjectsDetached);
-	pManager->signalObjectsDetached.Connect(this, &CTrackViewSequenceManager::OnObjectsDetached);
+	pManager->signalObjectsChanged.Connect(this, &CTrackViewSequenceManager::OnObjectsChanged);
 }
 
 CTrackViewSequenceManager::~CTrackViewSequenceManager()
 {
 	auto pManager = GetIEditor()->GetObjectManager();
-	pManager->signalObjectChanged.DisconnectObject(this);
-	pManager->signalBeforeObjectsAttached.DisconnectObject(this);
-	pManager->signalObjectsAttached.DisconnectObject(this);
-	pManager->signalBeforeObjectsDetached.DisconnectObject(this);
-	pManager->signalObjectsDetached.DisconnectObject(this);
+	pManager->signalObjectsChanged.DisconnectObject(this);
 	GetIEditor()->GetMaterialManager()->RemoveListener(this);
 	GetIEditor()->UnregisterNotifyListener(this);
 }
@@ -320,51 +312,47 @@ CTrackViewAnimNode* CTrackViewSequenceManager::GetActiveAnimNode(const CEntityOb
 	return nullptr;
 }
 
-void CTrackViewSequenceManager::OnObjectEvent(CObjectEvent& event)
+void CTrackViewSequenceManager::OnObjectsChanged(const std::vector<CBaseObject*>& objects, const CObjectEvent& event)
 {
-	if (event.m_type == OBJECT_ON_RENAME)
+	for (const CBaseObject* pObject : objects)
 	{
-		HandleObjectRename(event.m_pObj);
-	}
-	else if (event.m_type == OBJECT_ON_PREDELETE)
-	{
-		HandleObjectDelete(event.m_pObj);
+		switch (event.m_type)
+		{
+		case OBJECT_ON_RENAME:
+		{
+			HandleObjectRename(pObject);
+		}
+		break;
+		case OBJECT_ON_PREDELETE:
+		{
+			HandleObjectDelete(pObject);
+		}
+		break;
+		case OBJECT_ON_PREATTACHED:
+		{
+			HandleAttachmentChange(pObject, EAttachmentChangeType::PreAttached);
+		}
+		case OBJECT_ON_ATTACHED:
+		{
+			HandleAttachmentChange(pObject, EAttachmentChangeType::Attached);
+		}
+		break;
+		case OBJECT_ON_PREDETACHED:
+		{
+			const CObjectPreDetachedEvent& evt = static_cast<const CObjectPreDetachedEvent&>(event);
+			HandleAttachmentChange(pObject, evt.m_shouldKeepPos ? EAttachmentChangeType::PreDetachedKeepTransform : EAttachmentChangeType::PreDetached);
+		}
+		break;
+		case OBJECT_ON_DETACHED:
+		{
+			HandleAttachmentChange(pObject, EAttachmentChangeType::Detached);
+		}
+		break;
+		}
 	}
 }
 
-void CTrackViewSequenceManager::OnBeforeObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool shouldKeepTransform)
-{
-	for (CBaseObject* pObject : objects)
-	{
-		HandleAttachmentChange(pObject, EAttachmentChangeType::PreAttached);
-	}
-}
-
-void CTrackViewSequenceManager::OnObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
-{
-	for (CBaseObject* pObject : objects)
-	{
-		HandleAttachmentChange(pObject, EAttachmentChangeType::Attached);
-	}
-}
-
-void CTrackViewSequenceManager::OnBeforeObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool shouldKeepTransform)
-{
-	for (CBaseObject* pObject : objects)
-	{
-		HandleAttachmentChange(pObject, shouldKeepTransform ? EAttachmentChangeType::PreDetachedKeepTransform : EAttachmentChangeType::PreDetached);
-	}
-}
-
-void CTrackViewSequenceManager::OnObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
-{
-	for (CBaseObject* pObject : objects)
-	{
-		HandleAttachmentChange(pObject, EAttachmentChangeType::Detached);
-	}
-}
-
-void CTrackViewSequenceManager::HandleAttachmentChange(CBaseObject* pObject, EAttachmentChangeType event)
+void CTrackViewSequenceManager::HandleAttachmentChange(const CBaseObject* pObject, EAttachmentChangeType event)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
@@ -376,7 +364,7 @@ void CTrackViewSequenceManager::HandleAttachmentChange(CBaseObject* pObject, EAt
 		return;
 	}
 
-	CEntityObject* pEntityObject = static_cast<CEntityObject*>(pObject);
+	const CEntityObject* pEntityObject = static_cast<const CEntityObject*>(pObject);
 	CTrackViewAnimNodeBundle bundle = GetAllRelatedAnimNodes(pEntityObject);
 
 	const uint numAffectedAnimNodes = bundle.GetCount();
@@ -437,14 +425,14 @@ void CTrackViewSequenceManager::HandleAttachmentChange(CBaseObject* pObject, EAt
 	pAnimationContext->SetTime(time);
 }
 
-void CTrackViewSequenceManager::HandleObjectRename(CBaseObject* pObject)
+void CTrackViewSequenceManager::HandleObjectRename(const CBaseObject* pObject)
 {
 	if (!pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 	{
 		return;
 	}
 
-	CEntityObject* pEntityObject = static_cast<CEntityObject*>(pObject);
+	const CEntityObject* pEntityObject = static_cast<const CEntityObject*>(pObject);
 	CTrackViewAnimNodeBundle bundle = GetAllRelatedAnimNodes(pEntityObject);
 
 	const uint numAffectedAnimNodes = bundle.GetCount();
@@ -455,14 +443,14 @@ void CTrackViewSequenceManager::HandleObjectRename(CBaseObject* pObject)
 	}
 }
 
-void CTrackViewSequenceManager::HandleObjectDelete(CBaseObject* pObject)
+void CTrackViewSequenceManager::HandleObjectDelete(const CBaseObject* pObject)
 {
 	if (!pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 	{
 		return;
 	}
 
-	CEntityObject* pEntityObject = static_cast<CEntityObject*>(pObject);
+	const CEntityObject* pEntityObject = static_cast<const CEntityObject*>(pObject);
 	CTrackViewAnimNodeBundle bundle = GetAllRelatedAnimNodes(pEntityObject);
 
 	const uint numAffectedAnimNodes = bundle.GetCount();

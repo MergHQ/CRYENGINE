@@ -31,7 +31,7 @@ CObjectManipulatorOwner::CObjectManipulatorOwner(CObjectMode* objectModeTool)
 	m_manipulator->signalDragging.Connect(objectModeTool, &CObjectMode::OnManipulatorDrag);
 	m_manipulator->signalEndDrag.Connect(objectModeTool, &CObjectMode::OnManipulatorEndDrag);
 
-	GetIEditorImpl()->GetObjectManager()->signalObjectChanged.Connect(this, &CObjectManipulatorOwner::SingleObjectUpdateCallback);
+	GetIEditorImpl()->GetObjectManager()->signalObjectsChanged.Connect(this, &CObjectManipulatorOwner::OnObjectsChanged);
 	GetIEditorImpl()->GetObjectManager()->signalSelectionChanged.Connect(this, &CObjectManipulatorOwner::OnSelectionChanged);
 
 	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
@@ -41,13 +41,13 @@ CObjectManipulatorOwner::CObjectManipulatorOwner(CObjectMode* objectModeTool)
 	for (int i = 0; i < totCount; ++i)
 	{
 		CBaseObject* pObj = pSelection->GetObject(i);
-		pObj->AddEventListener(functor(*this, &CObjectManipulatorOwner::ObjectUpdateCallback));
+		pObj->signalChanged.Connect(this, &CObjectManipulatorOwner::OnObjectChanged);
 	}
 }
 
 CObjectManipulatorOwner::~CObjectManipulatorOwner()
 {
-	GetIEditorImpl()->GetObjectManager()->signalObjectChanged.DisconnectObject(this);
+	GetIEditorImpl()->GetObjectManager()->signalObjectsChanged.DisconnectObject(this);
 	GetIEditorImpl()->GetObjectManager()->signalSelectionChanged.DisconnectObject(this);
 
 	m_manipulator->signalBeginDrag.DisconnectAll();
@@ -64,7 +64,7 @@ CObjectManipulatorOwner::~CObjectManipulatorOwner()
 	for (int i = 0; i < totCount; ++i)
 	{
 		CBaseObject* pObj = pSelection->GetObject(i);
-		pObj->RemoveEventListener(functor(*this, &CObjectManipulatorOwner::ObjectUpdateCallback));
+		pObj->signalChanged.DisconnectObject(this);
 	}
 }
 
@@ -93,21 +93,21 @@ void CObjectManipulatorOwner::GetManipulatorPosition(Vec3& position)
 	position *= (1.0f / totCount);
 }
 
-void CObjectManipulatorOwner::ObjectUpdateCallback(CBaseObject* pObj, int evt)
+void CObjectManipulatorOwner::OnObjectChanged(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (evt == OBJECT_ON_TRANSFORM)
+	if (event.m_type == OBJECT_ON_TRANSFORM)
 	{
 		// tag for update next cycle
 		m_manipulator->Invalidate();
 	}
-	else if (evt == OBJECT_ON_VISIBILITY)
+	else if (event.m_type == OBJECT_ON_VISIBILITY)
 	{
 		m_manipulator->Invalidate();
 		m_visibilityDirty = true;
 	}
 }
 
-void CObjectManipulatorOwner::SingleObjectUpdateCallback(CObjectEvent& event)
+void CObjectManipulatorOwner::OnObjectsChanged(const std::vector<CBaseObject*>& objects, const CObjectEvent& event)
 {
 	if (event.m_type == OBJECT_ON_TRANSFORM)
 	{
@@ -122,12 +122,12 @@ void CObjectManipulatorOwner::OnSelectionChanged(const std::vector<CBaseObject*>
 	// unregister from all manipulated objects
 	for (auto& pObject : deselected)
 	{
-		pObject->RemoveEventListener(functor(*this, &CObjectManipulatorOwner::ObjectUpdateCallback));
+		pObject->signalChanged.DisconnectObject(this);
 	}
 
 	for (auto& pObject : selected)
 	{
-		pObject->AddEventListener(functor(*this, &CObjectManipulatorOwner::ObjectUpdateCallback));
+		pObject->signalChanged.Connect(this, &CObjectManipulatorOwner::OnObjectChanged);
 	}
 
 	m_manipulator->Invalidate();

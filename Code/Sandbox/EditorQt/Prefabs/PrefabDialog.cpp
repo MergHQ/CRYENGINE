@@ -69,7 +69,7 @@ bool CPrefabPickCallback::m_bActive = false;
 CPrefabDialog::CPrefabDialog(CWnd* pParent)
 	: CBaseLibraryDialog(IDD_DB_ENTITY, pParent)
 {
-	GetIEditorImpl()->GetObjectManager()->AddObjectEventListener(functor(*this, &CPrefabDialog::OnObjectEvent));
+	GetIEditorImpl()->GetObjectManager()->signalObjectsChanged.Connect(this, &CPrefabDialog::OnObjectEvent);
 	m_pPrefabManager = GetIEditorImpl()->GetPrefabManager();
 	m_pItemManager = m_pPrefabManager;
 
@@ -81,7 +81,7 @@ CPrefabDialog::CPrefabDialog(CWnd* pParent)
 
 CPrefabDialog::~CPrefabDialog()
 {
-	GetIEditorImpl()->GetObjectManager()->RemoveObjectEventListener(functor(*this, &CPrefabDialog::OnObjectEvent));
+	GetIEditorImpl()->GetObjectManager()->signalObjectsChanged.DisconnectObject(this);
 }
 
 void CPrefabDialog::DoDataExchange(CDataExchange* pDX)
@@ -670,15 +670,18 @@ void CPrefabDialog::OnLButtonUp(UINT nFlags, CPoint point)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPrefabDialog::OnObjectEvent(CBaseObject* pObject, int nEvent)
+void CPrefabDialog::OnObjectEvent(const std::vector<CBaseObject*>& objects, const CObjectEvent& event)
 {
-	if (m_pLibrary)
+	if (!m_pLibrary)
+		return;
+
+	for (const CBaseObject* pObject : objects)
 	{
 		if (pObject && pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
 		{
-			if (nEvent == OBJECT_ON_ADD || nEvent == OBJECT_ON_DELETE)
+			if (event.m_type == OBJECT_ON_ADD || event.m_type == OBJECT_ON_DELETE)
 			{
-				CPrefabObject* pPrefabObject = (CPrefabObject*)pObject;
+				const CPrefabObject* pPrefabObject = static_cast<const CPrefabObject*>(pObject);
 				for (int i = 0; i < m_pLibrary->GetItemCount(); ++i)
 				{
 					CPrefabItem* pItem = (CPrefabItem*)m_pLibrary->GetItem(i);
@@ -694,6 +697,7 @@ void CPrefabDialog::OnObjectEvent(CBaseObject* pObject, int nEvent)
 			}
 		}
 	}
+	
 }
 
 //////////////////////////////////////////////////////////////////////////

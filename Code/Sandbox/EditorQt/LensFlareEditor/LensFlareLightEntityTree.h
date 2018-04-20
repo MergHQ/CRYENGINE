@@ -19,12 +19,12 @@ public:
 
 	void OnLensFlareDeleteItem(CLensFlareItem* pLensFlareItem);
 	void OnLensFlareChangeItem(CLensFlareItem* pLensFlareItem);
-	void OnObjectEvent(CBaseObject* pObject, int nEvent);
+	void OnObjectEvent(const std::vector<CBaseObject*>& objects, const CObjectEvent& event);
 
 protected:
 
-	HTREEITEM FindItem(HTREEITEM hStartItem, CBaseObject* pObject) const;
-	void      AddLightEntity(CEntityObject* pEntity);
+	HTREEITEM FindItem(HTREEITEM hStartItem, const CBaseObject* pObject) const;
+	void      AddLightEntity(const CEntityObject* pEntity);
 
 	_smart_ptr<CLensFlareItem> m_pLensFlareItem;
 

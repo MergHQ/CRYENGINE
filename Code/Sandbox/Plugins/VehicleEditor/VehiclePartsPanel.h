@@ -107,7 +107,7 @@ public:
 	void          UpdateVariables();
 	void          ReloadTreeCtrl();
 	void          OnApplyChanges(IVariable* pVar);
-	void          OnObjectEvent(CBaseObject* object, int event);
+	void          OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event);
 	void          DeleteTreeObjects(const CRuntimeClass* pClass);
 	CVehiclePart* GetPartForHelper(CVehicleHelper* pHelper);
 

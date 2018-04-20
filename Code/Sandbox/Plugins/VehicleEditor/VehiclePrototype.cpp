@@ -138,26 +138,26 @@ void CVehiclePrototype::AddComponent(CVehicleComponent* pComp)
 //////////////////////////////////////////////////////////////////////////
 void CVehiclePrototype::AttachChild(CBaseObject* child, bool bKeepPos, bool bInvalidateTM)
 {
-	child->AddEventListener(functor(*this, &CVehiclePrototype::OnObjectEvent));
+	child->signalChanged.Connect(this, &CVehiclePrototype::OnObjectEvent);
 
 	CBaseObject::AttachChild(child, bKeepPos, bInvalidateTM);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehiclePrototype::OnObjectEvent(CBaseObject* node, int event)
+void CVehiclePrototype::OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (event == OBJECT_ON_DELETE)
+	if (event.m_type == OBJECT_ON_DELETE)
 	{
-		VeedLog("[CVehiclePrototype]: ON_DELETE for %s", node->GetName());
+		VeedLog("[CVehiclePrototype]: ON_DELETE for %s", pObject->GetName());
 		// when child deleted, remove its variable
-		if (IVeedObject* pVO = IVeedObject::GetVeedObject(node))
+		if (IVeedObject* pVO = IVeedObject::GetVeedObject(const_cast<CBaseObject*>(pObject)))
 		{
 			if (pVO->DeleteVar())
 			{
 				if (GetVariable())
 				{
 					bool del = GetVariable()->DeleteVariable(pVO->GetVariable(), true);
-					VeedLog("[CVehiclePrototype] deleting var for %s: %i", node->GetName(), del);
+					VeedLog("[CVehiclePrototype] deleting var for %s: %i", pObject->GetName(), del);
 				}
 				pVO->SetVariable(0);
 			}

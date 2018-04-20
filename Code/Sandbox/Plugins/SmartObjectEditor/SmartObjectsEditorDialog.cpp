@@ -1318,8 +1318,8 @@ CSmartObjectsEditorDialog::CSmartObjectsEditorDialog()
 {
 	GetIEditor()->RegisterNotifyListener(this);
 	++CSOLibrary::m_iNumEditors;
-	GetIEditor()->GetObjectManager()->signalObjectChanged.Connect(this, &CSmartObjectsEditorDialog::OnObjectEvent);
 
+	GetIEditor()->GetObjectManager()->signalObjectsChanged.Connect(this, &CSmartObjectsEditorDialog::OnObjectsChanged);
 	GetIEditor()->GetObjectManager()->signalSelectionChanged.Connect(this, &CSmartObjectsEditorDialog::OnSelectionChanged);
 	m_bSinkNeeded = true;
 
@@ -1363,7 +1363,7 @@ CSmartObjectsEditorDialog::~CSmartObjectsEditorDialog()
 	}
 
 	--CSOLibrary::m_iNumEditors;
-	GetIEditor()->GetObjectManager()->signalObjectChanged.DisconnectObject(this);
+	GetIEditor()->GetObjectManager()->signalObjectsChanged.DisconnectObject(this);
 	GetIEditor()->GetObjectManager()->signalSelectionChanged.DisconnectObject(this);
 	GetIEditor()->UnregisterNotifyListener(this);
 }
@@ -2000,7 +2000,7 @@ void CSmartObjectsEditorDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	if (event == eNotify_OnIdleUpdate)      // Sent every frame while editor is idle.
 	{
 		if (m_bSinkNeeded)
-			SinkSelection();
+			SyncSelection();
 		return;
 	}
 
@@ -2051,7 +2051,7 @@ void CSmartObjectsEditorDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	// Object events.
 	case eNotify_OnSelectionChange:         // Sent when object selection change.
 		// Unfortunately I have never received this notification!!!
-		// SinkSelection();
+		// SyncSelection();
 		break;
 	case eNotify_OnPlaySequence:            // Sent when editor start playing animation sequence.
 	case eNotify_OnStopSequence:            // Sent when editor stop playing animation sequence.
@@ -2119,7 +2119,7 @@ void CSmartObjectsEditorDialog::ParseClassesFromProperties(CBaseObject* pObject,
 	}
 }
 
-void CSmartObjectsEditorDialog::SinkSelection()
+void CSmartObjectsEditorDialog::SyncSelection()
 {
 	m_bSinkNeeded = false;
 
@@ -2157,7 +2157,7 @@ void CSmartObjectsEditorDialog::SinkSelection()
 		for (it = m_mapHelperObjects.begin(); it != itEnd; ++it)
 		{
 			CSmartObjectHelperObject* pHelperObject = it->second;
-			pHelperObject->RemoveEventListener(functor(*this, &CSmartObjectsEditorDialog::OnObjectEventLegacy));
+			pHelperObject->signalChanged.DisconnectObject(this);
 			pHelperObject->DetachThis();
 			pHelperObject->Release();
 			GetIEditor()->GetObjectManager()->DeleteObject(pHelperObject);
@@ -2198,7 +2198,7 @@ void CSmartObjectsEditorDialog::SinkSelection()
 			{
 				// remove all helpers for this entity
 				it->second = NULL;
-				pHelperObject->RemoveEventListener(functor(*this, &CSmartObjectsEditorDialog::OnObjectEventLegacy));
+				pHelperObject->signalChanged.DisconnectObject(this);
 				pHelperObject->DetachThis();
 				pHelperObject->Release();
 				GetIEditor()->GetObjectManager()->DeleteObject(pHelperObject);
@@ -2209,7 +2209,7 @@ void CSmartObjectsEditorDialog::SinkSelection()
 				if (CSOLibrary::FindHelper(m_sEditedClass, pHelperObject->GetName().GetString()) == CSOLibrary::m_vHelpers.end())
 				{
 					it->second = NULL;
-					pHelperObject->RemoveEventListener(functor(*this, &CSmartObjectsEditorDialog::OnObjectEventLegacy));
+					pHelperObject->signalChanged.DisconnectObject(this);
 					pHelperObject->DetachThis();
 					pHelperObject->Release();
 					GetIEditor()->GetObjectManager()->DeleteObject(pHelperObject);
@@ -2264,7 +2264,7 @@ void CSmartObjectsEditorDialog::SinkSelection()
 						pHelperObject->AddRef();
 						pEntity->AttachChild(pHelperObject);
 						m_mapHelperObjects.insert(std::make_pair(pEntity, pHelperObject));
-						pHelperObject->AddEventListener(functor(*this, &CSmartObjectsEditorDialog::OnObjectEventLegacy));
+						pHelperObject->signalChanged.Connect(this, &CSmartObjectsEditorDialog::OnObjectChanged);
 					}
 				}
 
@@ -2534,40 +2534,43 @@ CSOLibrary::CClassTemplateData const* CSOLibrary::FindClassTemplate(const char* 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSmartObjectsEditorDialog::OnObjectEvent(CObjectEvent& event)
+void CSmartObjectsEditorDialog::OnObjectChanged(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (!m_bIgnoreNotifications)
+	switch (event.m_type)
 	{
-		switch (event.m_type)
+	case OBJECT_ON_DELETE:     // Sent after object was deleted from object manager.
+		if (!m_sEditedClass.IsEmpty() && pObject->IsKindOf(RUNTIME_CLASS(CSmartObjectHelperObject)))
 		{
-			case OBJECT_ON_DELETE:     // Sent after object was deleted from object manager.
-				if (!m_sEditedClass.IsEmpty() && event.m_pObj->IsKindOf(RUNTIME_CLASS(CSmartObjectHelperObject)))
-				{
-					CSmartObjectHelperObject* pHelperObject = (CSmartObjectHelperObject*)event.m_pObj;
-					DeleteHelper(m_sEditedClass, event.m_pObj->GetName().GetString());
-				}
-				m_bSinkNeeded = true;
-				break;
-			case OBJECT_ON_SELECT:     // Sent when objects becomes selected.
-			case OBJECT_ON_UNSELECT:   // Sent when objects unselected.
-				m_bSinkNeeded = true;
-				m_bFilterCanceled = false;
-				break;
-			case OBJECT_ON_TRANSFORM:  // Sent when object transformed.
-				if (event.m_pObj->IsKindOf(RUNTIME_CLASS(CSmartObjectHelperObject)))
-				{
-					CSmartObjectHelperObject* pHelperObject = (CSmartObjectHelperObject*)event.m_pObj;
-					CSOLibrary::VectorHelperData::iterator it = CSOLibrary::FindHelper(m_sEditedClass, pHelperObject->GetName().GetString());
-					if (it != CSOLibrary::m_vHelpers.end())
-					{
-						it->qt.t = event.m_pObj->GetPos();
-						it->qt.q = event.m_pObj->GetRotation();
-						m_bSinkNeeded = true;
-						CSOLibrary::m_bSaveNeeded = true;
-					}
-				}
-				break;
+			DeleteHelper(m_sEditedClass, pObject->GetName().GetString());
 		}
+		m_bSinkNeeded = true;
+		break;
+	case OBJECT_ON_TRANSFORM:  // Sent when object transformed.
+		if (pObject->IsKindOf(RUNTIME_CLASS(CSmartObjectHelperObject)))
+		{
+			const CSmartObjectHelperObject* pHelperObject = (const CSmartObjectHelperObject*)pObject;
+			CSOLibrary::VectorHelperData::iterator it = CSOLibrary::FindHelper(m_sEditedClass, pHelperObject->GetName().GetString());
+			if (it != CSOLibrary::m_vHelpers.end())
+			{
+				it->qt.t = pObject->GetPos();
+				it->qt.q = pObject->GetRotation();
+				m_bSinkNeeded = true;
+				CSOLibrary::m_bSaveNeeded = true;
+			}
+		}
+		break;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSmartObjectsEditorDialog::OnObjectsChanged(const std::vector<CBaseObject*>& objects, const CObjectEvent& event)
+{
+	if (m_bIgnoreNotifications)
+		return;
+
+	for (const CBaseObject* pObject : objects)
+	{
+		OnObjectChanged(pObject, event);
 	}
 }
 
@@ -2916,7 +2919,7 @@ void CSmartObjectsEditorDialog::OnHelpersNew()
 
 			// this will eventually show the new helper
 			m_bSinkNeeded = true;
-			SinkSelection();
+			SyncSelection();
 
 			// try to select the newly created helper
 			CBaseObject* pSelected = GetIEditor()->GetSelectedObject();
@@ -2969,7 +2972,7 @@ void CSmartObjectsEditorDialog::OnHelpersDone()
 		for (it = m_mapHelperObjects.begin(); it != itEnd; ++it)
 		{
 			CSmartObjectHelperObject* pHelperObject = it->second;
-			pHelperObject->RemoveEventListener(functor(*this, &CSmartObjectsEditorDialog::OnObjectEventLegacy));
+			pHelperObject->signalChanged.DisconnectObject(this);
 			pHelperObject->DetachThis();
 			pHelperObject->Release();
 			GetIEditor()->GetObjectManager()->DeleteObject(pHelperObject);

@@ -75,7 +75,7 @@ public:
 	void                  AddHelper(CVehicleHelper* pHelper, IVariable* pHelperVar = 0);
 	const CVehicleHelper* GetHelper(const string& name) const;
 
-	void                  OnObjectEvent(CBaseObject* node, int event);
+	void                  OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event);
 
 protected:
 	CVehiclePrototype();

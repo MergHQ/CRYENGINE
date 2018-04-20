@@ -181,28 +181,16 @@ void CLevelLayerModel::Connect()
 {
 	CObjectManager* pObjManager = static_cast<CObjectManager*>(GetIEditorImpl()->GetObjectManager());
 
-	pObjManager->signalObjectChanged.Connect(this, &CLevelLayerModel::OnObjectEvent);
+	pObjManager->signalObjectsChanged.Connect(this, &CLevelLayerModel::OnObjectEvent);
 	pObjManager->signalSelectionChanged.Connect(this, &CLevelLayerModel::OnSelectionChanged);
-	pObjManager->signalBeforeObjectsAttached.Connect(this, &CLevelLayerModel::OnBeforeObjectsAttached);
-	pObjManager->signalObjectsAttached.Connect(this, &CLevelLayerModel::OnObjectsAttached);
-	pObjManager->signalBeforeObjectsDetached.Connect(this, &CLevelLayerModel::OnBeforeObjectsDetached);
-	pObjManager->signalObjectsDetached.Connect(this, &CLevelLayerModel::OnObjectsDetached);
-	pObjManager->signalBeforeObjectsDeleted.Connect(this, &CLevelLayerModel::OnBeforeObjectsDeleted);
-	pObjManager->signalObjectsDeleted.Connect(this, &CLevelLayerModel::OnObjectsDeleted);
 }
 
 void CLevelLayerModel::Disconnect()
 {
 	CObjectManager* pObjManager = static_cast<CObjectManager*>(GetIEditorImpl()->GetObjectManager());
 
-	pObjManager->signalObjectChanged.DisconnectObject(this);
+	pObjManager->signalObjectsChanged.DisconnectObject(this);
 	pObjManager->signalSelectionChanged.DisconnectObject(this);
-	pObjManager->signalBeforeObjectsAttached.DisconnectObject(this);
-	pObjManager->signalObjectsAttached.DisconnectObject(this);
-	pObjManager->signalBeforeObjectsDetached.DisconnectObject(this);
-	pObjManager->signalObjectsDetached.DisconnectObject(this);
-	pObjManager->signalBeforeObjectsDeleted.DisconnectObject(this);
-	pObjManager->signalObjectsDeleted.DisconnectObject(this);
 }
 
 int CLevelLayerModel::rowCount(const QModelIndex& parent) const
@@ -882,10 +870,10 @@ void CLevelLayerModel::Clear()
 	endResetModel();
 }
 
-void CLevelLayerModel::AddObject(CBaseObject* pObject)
+void CLevelLayerModel::AddObject(const CBaseObject* pObject)
 {
 	// always assume new object is a root object.
-	m_rootObjects.push_back(pObject);
+	m_rootObjects.push_back(const_cast<CBaseObject*>(pObject)); // TODO: REMOVE CONST_CAST
 	UpdateCachedDataForObject(pObject);
 }
 
@@ -901,7 +889,7 @@ void CLevelLayerModel::AddObjects(const std::vector<CBaseObject*>& objects)
 	}
 }
 
-void CLevelLayerModel::RemoveObject(CBaseObject* pObject)
+void CLevelLayerModel::RemoveObject(const CBaseObject* pObject)
 {
 	int i = RowFromObject(pObject);
 	if (i >= 0)
@@ -946,12 +934,12 @@ void CLevelLayerModel::RemoveObjects(const std::vector<CBaseObject*>& objects)
 	}), m_rootObjects.end());
 }
 
-void CLevelLayerModel::UpdateCachedDataForObject(CBaseObject* pObject)
+void CLevelLayerModel::UpdateCachedDataForObject(const CBaseObject* pObject)
 {
 	string flowGraphName = "";
 	if (pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 	{
-		CEntityObject* pEntity = static_cast<CEntityObject*>(pObject);
+		const CEntityObject* pEntity = static_cast<const CEntityObject*>(pObject);
 		std::vector<CHyperFlowGraph*> flowgraphs;
 		CHyperFlowGraph* pEntityFG = nullptr;
 		FlowGraphHelpers::FindGraphsForEntity(pEntity, flowgraphs, pEntityFG);
@@ -974,7 +962,8 @@ void CLevelLayerModel::UpdateCachedDataForObject(CBaseObject* pObject)
 
 	if (!flowGraphName.empty())
 	{
-		m_flowGraphMap[pObject] = flowGraphName;
+		// TODO: Remove CONST_CAST
+		m_flowGraphMap[const_cast<CBaseObject*>(pObject)] = flowGraphName;
 	}
 
 	string geometryFile = GetGeometryFile(pObject);
@@ -984,15 +973,23 @@ void CLevelLayerModel::UpdateCachedDataForObject(CBaseObject* pObject)
 	}
 }
 
-void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
+void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, const CObjectEvent& eventObj)
 {
-	CBaseObject* pObject = eventObj.m_pObj;
+	// TODO: Handle batch events here for certain event types
+	/*if (objects.size() != 1)
+		return;*/
+
+	if (objects.empty())
+		return;
+
+	const CBaseObject* pObject = objects[0];
+	const IObjectLayer* pLayer = pObject->GetLayer();
 
 	if (!pObject)
 	{
 		return;
 	}
-	else if (pObject->GetLayer() != m_pLayer && !(eventObj.m_type == OBJECT_ON_LAYERCHANGE || eventObj.m_type == OBJECT_ON_PRELINKED || 
+	else if (pLayer != m_pLayer && !(eventObj.m_type == OBJECT_ON_LAYERCHANGE || eventObj.m_type == OBJECT_ON_PRELINKED || 
 		eventObj.m_type == OBJECT_ON_LINKED || eventObj.m_type == OBJECT_ON_PREUNLINKED || eventObj.m_type == OBJECT_ON_UNLINKED))
 	{
 		return;
@@ -1021,16 +1018,57 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 			}
 		}
 		break;
+		case OBJECT_ON_PREDELETE:
+		{
+			const CObjectPreDeleteEvent& evt = static_cast<const CObjectPreDeleteEvent&>(eventObj);
+			if (evt.m_pLayer != m_pLayer)
+				return;
+
+			OnBeforeObjectsDeleted(objects);
+		}
+		break;
+		case OBJECT_ON_DELETE:
+		{
+			const CObjectDeleteEvent& evt = static_cast<const CObjectDeleteEvent&>(eventObj);
+			if (evt.m_pLayer != m_pLayer)
+				return;
+
+			OnObjectsDeleted(objects);
+		}
+		case OBJECT_ON_PREATTACHED:
+		{
+			const CObjectPreAttachedEvent& evt = static_cast<const CObjectPreAttachedEvent&>(eventObj);
+			OnBeforeObjectsAttached(evt.m_pParent, objects);
+		}
+		break;
+		case OBJECT_ON_ATTACHED:
+		{
+			const CObjectAttachedEvent& evt = static_cast<const CObjectAttachedEvent&>(eventObj);
+			OnObjectsAttached(evt.m_pParent, objects);
+		}
+		break;
+		case OBJECT_ON_PREDETACHED:
+		{
+			const CObjectPreDetachedEvent& evt = static_cast<const CObjectPreDetachedEvent&>(eventObj);
+			OnBeforeObjectsDetached(evt.m_pParent, objects);
+		}
+		break;
+		case OBJECT_ON_DETACHED:
+		{
+			const CObjectDetachedEvent& evt = static_cast<const CObjectDetachedEvent&>(eventObj);
+			OnObjectsDetached(evt.m_pParent, objects);
+		}
+		break;
 		case OBJECT_ON_PRELINKED:
 		{
-			CObjectPreLinkEvent& evt = static_cast<CObjectPreLinkEvent&>(eventObj);
-			CBaseObject* pLinkedTo = evt.m_pLinkedTo;
+			const CObjectPreLinkEvent& evt = static_cast<const CObjectPreLinkEvent&>(eventObj);
+			const CBaseObject* pLinkedTo = evt.m_pLinkedTo;
 
 			// If the object we're linking to and all it's ancestors are not contained in this layer, then we'll reset the model later on, when handling
 			// OBJECT_ON_LINKED events. We perform a reset in those cases because linking between layers is the only event that will modify several layer 
 			// models ***at the same time*** which means we would need to *begin* modification of several models before calling *end*, this is unsupported
 			// by qt and our mounting/merging proxy models. So what we do is we defer the processing of the events until the object is linked.
-			if (m_isRuningBatchProcess || pObject->GetLayer() != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
+			if (m_isRuningBatchProcess || pLayer != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
 				return;
 
 			QModelIndex objectIdx = IndexFromObject(pObject);
@@ -1041,9 +1079,9 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 		break;
 		case OBJECT_ON_LINKED:
 		{
-			CBaseObject* pLinkedTo = pObject->GetLinkedTo();
+			const CBaseObject* pLinkedTo = pObject->GetLinkedTo();
 
-			if (pObject->GetLayer() != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
+			if (pLayer != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
 			{
 				// Make sure that there is at least a single point in the new hierarchy that belongs to this layer before resetting
 				if (!pObject->IsAnyLinkedAncestorInLayer(m_pLayer))
@@ -1074,10 +1112,10 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 		break;
 		case OBJECT_ON_LAYERCHANGE:
 		{
-			CObjectLayerChangeEvent& evt = static_cast<CObjectLayerChangeEvent&>(eventObj);
+			const CObjectLayerChangeEvent& evt = static_cast<const CObjectLayerChangeEvent&>(eventObj);
 
 			// We need to remove from old layer and add to new layer
-			if (pObject->GetLayer() == m_pLayer && Filter(*pObject, m_pLayer))
+			if (pLayer == m_pLayer && Filter(*pObject, m_pLayer))
 			{
 				int irow = m_rootObjects.size();
 
@@ -1107,7 +1145,7 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 			// OBJECT_ON_UNLINKED events. We perform a reset in those cases because unlinking between layers is the only event that will modify several layer 
 			// models ***at the same time*** which means we would need to *begin* modification of several models before calling *end*, this is unsupported
 			// by qt and our mounting/merging proxy models. So what we do is we defer the processing of the events until the object is linked.
-			if (m_isRuningBatchProcess || pObject->GetLayer() != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
+			if (m_isRuningBatchProcess || pLayer != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
 				return;
 
 			QModelIndex objectIdx = IndexFromObject(pObject);
@@ -1116,12 +1154,12 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 		break;
 		case OBJECT_ON_UNLINKED:
 		{
-			CBaseObject* pLinkedTo = static_cast<CObjectUnLinkEvent&>(eventObj).m_pLinkedTo;
+			const CBaseObject* pLinkedTo = static_cast<const CObjectUnLinkEvent&>(eventObj).m_pLinkedTo;
 
-			if (pObject->GetLayer() != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
+			if (pLayer != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
 			{
 				// Make sure that there is at least a single point in the new hierarchy that belongs to this layer before resetting
-				if (pObject->GetLayer() != m_pLayer && !pLinkedTo->IsAnyLinkedAncestorInLayer(m_pLayer))
+				if (pLayer != m_pLayer && !pLinkedTo->IsAnyLinkedAncestorInLayer(m_pLayer))
 					return;
 
 				// We perform a reset in this case because unlinking between layers is the only event that will modify several layer models ***at the same time*** 
@@ -1153,24 +1191,12 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 			NotifyUpdateObject(pObject, updateRoles);
 		}
 		break;
-
-		case OBJECT_ON_SELECT:
-		case OBJECT_ON_UNSELECT:
-		{
-			// If we're currently deleting this object (or an ancestor of this object) then ignore
-			if (m_pTopLevelNotificationObj == pObject || pObject->IsChildOf(m_pTopLevelNotificationObj))
-				break;
-
-			QVector<int> updateRoles(1, Qt::DecorationRole);
-			NotifyUpdateObject(pObject, updateRoles);
-		}
-		break;
 		default:
 			break;
 	}
 }
 
-void CLevelLayerModel::OnBeforeObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool keepTransform)
+void CLevelLayerModel::OnBeforeObjectsAttached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
 {
 	if (pParent->GetLayer() != m_pLayer || m_isRuningBatchProcess)
 	{
@@ -1198,7 +1224,7 @@ void CLevelLayerModel::OnBeforeObjectsAttached(CBaseObject* pParent, const std::
 	beginMoveRows(QModelIndex(), row, row, parentIdx, parentRow);
 }
 
-void CLevelLayerModel::OnObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
+void CLevelLayerModel::OnObjectsAttached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
 {
 	if (pParent->GetLayer() != m_pLayer)
 	{
@@ -1222,7 +1248,7 @@ void CLevelLayerModel::OnObjectsAttached(CBaseObject* pParent, const std::vector
 	endMoveRows();
 }
 
-void CLevelLayerModel::OnBeforeObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool keepTransform)
+void CLevelLayerModel::OnBeforeObjectsDetached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
 {
 	if (pParent->GetLayer() != m_pLayer || m_isRuningBatchProcess)
 	{
@@ -1245,7 +1271,7 @@ void CLevelLayerModel::OnBeforeObjectsDetached(CBaseObject* pParent, const std::
 	beginMoveRows(parentIdx, index.row(), index.row(), QModelIndex(), m_rootObjects.size());
 }
 
-void CLevelLayerModel::OnObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
+void CLevelLayerModel::OnObjectsDetached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
 {
 	if (pParent->GetLayer() != m_pLayer)
 	{
@@ -1267,9 +1293,9 @@ void CLevelLayerModel::OnObjectsDetached(CBaseObject* pParent, const std::vector
 	endMoveRows();
 }
 
-void CLevelLayerModel::OnBeforeObjectsDeleted(const CObjectLayer& layer, const std::vector<CBaseObject*>& objects)
+void CLevelLayerModel::OnBeforeObjectsDeleted(const std::vector<CBaseObject*>& objects)
 {
-	if (m_isRuningBatchProcess || &layer != m_pLayer)
+	if (m_isRuningBatchProcess)
 	{
 		return;
 	}
@@ -1290,13 +1316,8 @@ void CLevelLayerModel::OnBeforeObjectsDeleted(const CObjectLayer& layer, const s
 	beginRemoveRows(QModelIndex(), row, row);
 }
 
-void CLevelLayerModel::OnObjectsDeleted(const CObjectLayer& layer, const std::vector<CBaseObject*>& objects)
+void CLevelLayerModel::OnObjectsDeleted(const std::vector<CBaseObject*>& objects)
 {
-	if (&layer != m_pLayer)
-	{
-		return;
-	}
-
 	if (m_isRuningBatchProcess || objects.size() > 1)
 	{
 		RemoveObjects(objects);
@@ -1339,7 +1360,7 @@ void CLevelLayerModel::OnSelectionChanged()
 	}
 }
 
-void CLevelLayerModel::OnLink(CBaseObject* pObject)
+void CLevelLayerModel::OnLink(const CBaseObject* pObject)
 {
 	// Make sure to remove any objects that are currently in the model that will eventually end up somewhere in our linked object's hierarchy
 	int row = RowFromObject(pObject);
@@ -1370,7 +1391,7 @@ void CLevelLayerModel::OnLink(CBaseObject* pObject)
 	}
 }
 
-void CLevelLayerModel::OnUnLink(CBaseObject* pObject)
+void CLevelLayerModel::OnUnLink(const CBaseObject* pObject)
 {
 	// Insert children of this object that belong in the layer that were removed when removing it's parent
 	if (pObject->GetLayer() == m_pLayer)
@@ -1523,22 +1544,22 @@ const char* CLevelLayerModel::GetFlowGraphNames(CBaseObject* pObject) const
 	return "";
 }
 
-const char* CLevelLayerModel::GetGeometryFile(CBaseObject* pObject) const
+const char* CLevelLayerModel::GetGeometryFile(const CBaseObject* pObject) const
 {
 	if (pObject->IsKindOf(RUNTIME_CLASS(CBrushObject)))
 	{
-		CBrushObject* pObj = (CBrushObject*)pObject;
+		const CBrushObject* pObj = (const CBrushObject*)pObject;
 		return pObj->GetGeometryFile().c_str();
 	}
 	else if (pObject->IsKindOf(RUNTIME_CLASS(CGeomEntity)))
 	{
-		CGeomEntity* pObj = (CGeomEntity*)pObject;
+		const CGeomEntity* pObj = (const CGeomEntity*)pObject;
 		return pObj->GetGeometryFile().c_str();
 
 	}
 	else if (pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 	{
-		CEntityObject* pEntity = static_cast<CEntityObject*>(pObject);
+		const CEntityObject* pEntity = static_cast<const CEntityObject*>(pObject);
 		IRenderNode* pEngineNode = pEntity->GetEngineNode();
 
 		if (pEngineNode)
@@ -1682,7 +1703,7 @@ int CLevelLayerModel::GetAIGroupID(CBaseObject* pObject) const
 	return -1;
 }
 
-void CLevelLayerModel::NotifyUpdateObject(CBaseObject* pObject, const QVector<int>& updateRoles)
+void CLevelLayerModel::NotifyUpdateObject(const CBaseObject* pObject, const QVector<int>& updateRoles)
 {
 	const QModelIndex leftIndex = IndexFromObject(pObject);
 	if (!leftIndex.isValid())
