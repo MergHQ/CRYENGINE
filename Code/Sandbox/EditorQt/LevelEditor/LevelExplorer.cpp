@@ -536,7 +536,7 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 
 			menu->addSeparator();
 
-			action = menu->addAction(tr("Open Containing Folder"));
+			action = menu->addAction(tr("Show in File Explorer"));
 			connect(action, &QAction::triggered, [&]()
 			{
 				QtUtil::OpenInExplorer((const char*)layer->GetLayerFilepath());

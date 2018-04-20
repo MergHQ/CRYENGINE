@@ -1405,7 +1405,7 @@ void CAssetBrowser::OnContextMenu()
 				bCanReimport = true;
 			}
 
-			if (asset->IsReadOnly())
+			if (asset->IsReadOnly() || !GetISystem()->GetIPak()->IsFileExist(assets.front()->GetFile(0), ICryPak::eFileLocation_OnDisk))
 			{
 				bReadOnly = true;
 			}
@@ -1444,9 +1444,19 @@ void CAssetBrowser::OnContextMenu()
 
 	if (assets.length() == 1)
 	{
+		const bool isAssetOnDisk = GetISystem()->GetIPak()->IsFileExist(assets.front()->GetFile(0), ICryPak::eFileLocation_OnDisk);
+
 		auto action = abstractMenu.CreateAction(tr("Rename"));
-		action->setDisabled(assets.front()->IsReadOnly());
-		connect(action, &QAction::triggered, [this, asset = assets.front()]() { OnRenameAsset(*asset); });
+		action->setDisabled(!isAssetOnDisk || assets.front()->IsReadOnly());
+		connect(action, &QAction::triggered, [this, pAsset = assets.front()]() { OnRenameAsset(*pAsset); });
+
+		action = abstractMenu.CreateAction(tr("Show in File Explorer"));
+		action->setDisabled(!isAssetOnDisk);
+		connect(action, &QAction::triggered, [this, pAsset = assets.front()]()
+		{
+			const string path = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), pAsset->GetFile(0));
+			QtUtil::OpenInExplorer(path);
+		});
 	}
 
 	if (folders.length() == 1)//only one folder selected
@@ -1472,7 +1482,7 @@ void CAssetBrowser::OnContextMenu()
 			connect(action, &QAction::triggered, [this, folder]() { OnRenameFolder(folder); });
 		}
 
-		auto action = abstractMenu.CreateAction(tr("Open in Explorer"));
+		auto action = abstractMenu.CreateAction(tr("Show in File Explorer"));
 		connect(action, &QAction::triggered, [this, folder]()
 		{
 			CAssetFoldersModel::GetInstance()->OpenFolderWithShell(folder);
@@ -1505,7 +1515,7 @@ void CAssetBrowser::OnContextMenu()
 			action = abstractMenu.CreateAction(tr("Import"));
 			connect(action, &QAction::triggered, [this]() { OnImport(); });
 
-			action = abstractMenu.CreateAction(tr("Open in Explorer"));
+			action = abstractMenu.CreateAction(tr("Show in File Explorer"));
 			connect(action, &QAction::triggered, [this, folder]() { OnOpenInExplorer(folder); });
 
 			action = abstractMenu.CreateAction(tr("Generate Thumbnails"));

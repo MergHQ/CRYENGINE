@@ -448,7 +448,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 							{
 								if ((libraries[0]->GetPakStatus() & EPakStatus::OnDisk) != 0)
 								{
-									pContextMenu->addAction(tr("Open Containing Folder"), [&]()
+									pContextMenu->addAction(tr("Show in File Explorer"), [&]()
 										{
 											QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + g_assetsManager.GetConfigFolderPath() + pParent->GetName() + ".xml").c_str());
 									  });
@@ -544,7 +544,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 			{
 				CAsset const* const pLibrary = static_cast<CAsset*>(libraries[0]);
 
-				pContextMenu->addAction(tr("Open Containing Folder"), [&]()
+				pContextMenu->addAction(tr("Show in File Explorer"), [&]()
 					{
 						QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + g_assetsManager.GetConfigFolderPath() + pLibrary->GetName() + ".xml").c_str());
 				  });

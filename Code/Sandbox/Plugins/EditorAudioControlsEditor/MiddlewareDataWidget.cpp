@@ -142,7 +142,7 @@ void CMiddlewareDataWidget::OnContextMenu(QPoint const& pos)
 
 			if ((pIItem != nullptr) && !pIItem->GetFilePath().IsEmpty())
 			{
-				pContextMenu->addAction(tr("Open Containing Folder"), [&]()
+				pContextMenu->addAction(tr("Show in File Explorer"), [&]()
 					{
 						QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pIItem->GetFilePath()).c_str());
 				  });
