@@ -118,6 +118,9 @@ public:
 	static ICVar*       CV_r_ShaderTarget;
 	static int          ShaderTargetFlag;
 #endif
+
+	static ICVar*       CV_r_VkShaderCompiler;
+
 	//  static int CV_r_envcmwrite;
 	static int CV_r_shadersremotecompiler;
 	static int CV_r_shadersasynccompiling;

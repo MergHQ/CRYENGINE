@@ -1400,8 +1400,9 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vec
 	Parser.Preprocess(1, NewTokens, Table);
 	CorrectScriptEnums(Parser, pInst, InstBindVars, Table);
 	RemoveUnaffectedParameters_D3D10(Parser, pInst, InstBindVars);
+	AddResourceLayoutToBinScript(Parser, pInst, Table);
 	ConvertBinScriptToASCII(Parser, pInst, InstBindVars, Table, sNewScr);
-	AddResourceLayoutToScript(pInst, mfProfileString(pInst->m_eClass), m_EntryFunc.c_str(), sNewScr);
+	AddResourceLayoutToScriptHeader(pInst, mfProfileString(pInst->m_eClass), m_EntryFunc.c_str(), sNewScr);
 
 	// Generate geometry shader
 	if (m_Flags & HWSG_GS_MULTIRES)
@@ -1671,6 +1672,204 @@ void CHWShader_D3D::RemoveUnaffectedParameters_D3D10(CParserBin& Parser, SHWSIns
 	   nStart++;
 	   }*/
 	//#endif
+}
+
+#if CRY_RENDERER_VULKAN
+std::string resourceTypeToString(SResourceBindPoint::ESlotType type)
+{
+	switch (type)
+	{
+	case SResourceBindPoint::ESlotType::ConstantBuffer:
+		return "b";
+	case SResourceBindPoint::ESlotType::Sampler:
+		return "s";
+	case SResourceBindPoint::ESlotType::TextureAndBuffer:
+		return "t";
+	case SResourceBindPoint::ESlotType::UnorderedAccessView:
+		return "u";
+	default:
+		CRY_ASSERT_MESSAGE(false, "Type is not defined.");
+		return "";
+	};
+};
+
+struct ResourceSetBindingInfo
+{
+	uint8 set;
+	uint8 binding;
+	SResourceBindPoint::ESlotType type;
+
+	ResourceSetBindingInfo(uint8 s = (uint8)~0u, uint8 b = (uint8)~0u, SResourceBindPoint::ESlotType t = SResourceBindPoint::ESlotType::ConstantBuffer)
+		: set(s), binding(b), type(t) {}
+
+	std::string ToString() const
+	{
+		return resourceTypeToString(type) + std::to_string(binding) + ", space" + std::to_string(set);
+	}
+};
+
+uint32 AddNewTableEntry(FXShaderToken& tokenTable, const char * newTokenStr)
+{
+	uint32 nToken = CParserBin::GetCRC32(newTokenStr);
+	FXShaderTokenItor itor = std::lower_bound(tokenTable.begin(), tokenTable.end(), nToken, SortByToken());
+	if (itor != tokenTable.end() && (*itor).Token == nToken)
+	{
+		assert(!strcmp((*itor).SToken.c_str(), newTokenStr));
+		return nToken;
+	}
+	STokenD TD;
+	TD.SToken = newTokenStr;
+	TD.Token = nToken;
+	tokenTable.insert(itor, TD);
+
+	return nToken;
+}
+
+struct SRegisterRangeDesc
+{
+	SRegisterRangeDesc()
+		: type(SResourceBindPoint::ESlotType::InvalidSlotType)
+		, start(0)
+		, count(0)
+		, shaderStageMask(0)
+	{}
+
+	void setTypeAndStage(uint8_t typeAndStageByte)
+	{
+		shaderStageMask = typeAndStageByte & 0x3F;
+		type = (SResourceBindPoint::ESlotType)(typeAndStageByte >> 6);
+	}
+
+	void setSlotNumberAndDescCount(uint8_t slotNumberAndDescCount)
+	{
+		start = slotNumberAndDescCount & 0x3F;
+		count = slotNumberAndDescCount >> 6;
+	}
+
+	SResourceBindPoint::ESlotType type;
+	uint32_t           start;
+	uint32_t           count;
+	uint32_t           shaderStageMask;
+};
+
+typedef std::vector<std::vector<SRegisterRangeDesc>> RegisterRanges;
+
+RegisterRanges ExtractRegisterRanges(const std::vector<uint8>& RsrcLayoutEncoding)
+{
+	RegisterRanges registerRanges;
+
+	if (RsrcLayoutEncoding.size() > 0)
+	{
+		const uint8_t* pLayoutData = (&RsrcLayoutEncoding[0]);
+
+		int setCount = *pLayoutData++;
+		registerRanges.resize(setCount);
+
+		for (int i = 0; i < setCount; i++)
+		{
+			int rangeCount = *pLayoutData++;
+			registerRanges[i].resize(rangeCount);
+
+			for (int j = 0; j < rangeCount; j++)
+			{
+				uint8_t slotTypeStagesByte = *pLayoutData++;
+				uint8_t slotNumberDescCountByte = *pLayoutData++;
+				registerRanges[i][j].setTypeAndStage(slotTypeStagesByte);
+				registerRanges[i][j].setSlotNumberAndDescCount(slotNumberDescCountByte);
+			}
+		}
+	}
+
+	return registerRanges;
+}
+
+extern VkShaderStageFlags GetShaderStageFlags(EShaderStage shaderStages);
+#endif
+
+void CHWShader_D3D::AddResourceLayoutToBinScript(CParserBin & Parser, SHWSInstance* pInst, FXShaderToken* Table)
+{
+#if CRY_RENDERER_VULKAN
+
+	if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_HLSLCC) == 0)
+		return;
+
+	// Extract mapping from HLSL register definition to vulkan descriptor set and binding.
+	// The mapping is stored in vkResourceMapping and will be used later for modifying the shaders.
+	std::map<std::string, ResourceSetBindingInfo> vkResourceMapping;
+	const std::vector<uint8>* LayoutEncoding = GetDeviceObjectFactory().LookupResourceLayoutEncoding(pInst->m_Ident.m_pipelineState.VULKAN.resourceLayoutHash);
+	if (LayoutEncoding)
+	{
+		RegisterRanges registerRanges = ExtractRegisterRanges(*LayoutEncoding);
+
+		uint32_t bindingIndex;
+		uint32_t setIndex;
+		for (setIndex = 0; setIndex < (uint32_t)registerRanges.size(); setIndex++)
+		{
+			bindingIndex = 0;
+			for (size_t i = 0; i < registerRanges[setIndex].size(); i++)
+			{
+				const SRegisterRangeDesc& rangeDesc = registerRanges[setIndex][i];
+
+				for (uint32_t registerIdxOffset = 0; registerIdxOffset < rangeDesc.count; ++registerIdxOffset)
+				{
+					if (GetShaderStageFlags(SHADERSTAGE_FROM_SHADERCLASS(pInst->m_eClass)) & rangeDesc.shaderStageMask)
+					{
+						std::string resourceRegisterName = resourceTypeToString(rangeDesc.type);
+						resourceRegisterName += std::to_string(rangeDesc.start + registerIdxOffset);
+						vkResourceMapping[resourceRegisterName] = ResourceSetBindingInfo(setIndex, bindingIndex, rangeDesc.type);
+					}
+				}
+
+				bindingIndex += rangeDesc.count;
+			}
+		}
+	}
+
+	// Check for all the used registers in the shader code and replace them with vulkan descriptor set and binding
+	// if they were part of resource layout description.
+	int nCur = 0;
+	int nSize = Parser.m_Tokens.size();
+	const uint32* pTokens = &Parser.m_Tokens[0];
+	std::map<uint32, uint32> alreadyProcessed;
+	while (true)
+	{
+		// Look for "register(*)" in the shader code.
+		nCur = Parser.FindToken(nCur, nSize - 1, eT_register);
+		if (nCur < 0)
+			break;
+		int32 OpenBacketToken = Parser.FindToken(nCur, nSize - 1, eT_br_rnd_1);
+		int32 CloseBacketToken = Parser.FindToken(nCur, nSize - 1, eT_br_rnd_2);
+		assert(OpenBacketToken >= 0 && CloseBacketToken >= 0);
+		if (CloseBacketToken < 0 || OpenBacketToken < 0)
+			break;
+		
+		uint32_t BegRegisterToken = (uint32_t)OpenBacketToken + 1;
+		uint32_t EndRegisterToken = (uint32_t)CloseBacketToken;
+		auto nToken = CParserBin::NextToken(pTokens, BegRegisterToken, EndRegisterToken);
+
+		// if the register is already hit, use the previously created token for it.
+		if (alreadyProcessed.find(nToken) != alreadyProcessed.end())
+		{
+			Parser.m_Tokens[BegRegisterToken - 1] = alreadyProcessed[nToken];
+			nCur = EndRegisterToken;
+			continue;
+		}
+		
+		// Map the newly found register if it is necessary.
+		uint32 newToken = nToken;
+		const char* registerName = Parser.GetString(nToken, *Table, false);
+		auto resource = vkResourceMapping.find(registerName);
+		if (resource != vkResourceMapping.end())
+		{
+			std::string newTokenStr = resource->second.ToString();
+			newToken = AddNewTableEntry(*Table, newTokenStr.c_str());
+			Parser.m_Tokens[BegRegisterToken-1] = newToken;
+		}
+
+		alreadyProcessed[nToken] = newToken;
+		nCur = EndRegisterToken;
+	}
+#endif
 }
 
 struct SStructData
@@ -1994,9 +2193,17 @@ void Base64EncodeBuffer(const void* orig_buf, int orig_buf_size, void* b64_buf)
 	}
 }
 
-bool CHWShader_D3D::AddResourceLayoutToScript(SHWSInstance* pInst, const char* szProfile, const char* pFunCCryName, TArray<char>& Scr)
+bool CHWShader_D3D::AddResourceLayoutToScriptHeader(SHWSInstance* pInst, const char* szProfile, const char* pFunCCryName, TArray<char>& Scr)
 {
 #if CRY_RENDERER_VULKAN
+
+	if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_GLSLANG) == 0)
+	{
+		string pragmaRowMajor = "#pragma pack_matrix(row_major)\n";
+		Scr.Insert(0, pragmaRowMajor.length());
+		memcpy(&Scr[0], pragmaRowMajor.c_str(), pragmaRowMajor.length());
+	}
+
 	if (auto pEncodedLayout = GetDeviceObjectFactory().LookupResourceLayoutEncoding(pInst->m_Ident.m_pipelineState.VULKAN.resourceLayoutHash))
 	{
 		const int TempBufferSize = 4096;
@@ -3867,7 +4074,7 @@ bool CHWShader_D3D::mfCompileHLSL_Int(CShader* pSH, char* prog_text, D3DBlob** p
 		static bool s_logOnce_WrongPlatform = false;
 	#if !CRY_RENDERER_OPENGL
 		#if !defined(_RELEASE)
-		if (!s_logOnce_WrongPlatform && (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO)) == 0)
+		if (!s_logOnce_WrongPlatform && (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_VULKAN)) == 0)
 		{
 			s_logOnce_WrongPlatform = true;
 			iLog->LogError("Trying to build non DX11 shader via internal compiler which is not supported. Please use remote compiler instead!");
@@ -4542,7 +4749,7 @@ bool CAsyncShaderTask::CompileAsyncShader(SShaderAsyncInfo* pAsync)
 	{
 		static bool s_logOnce_WrongPlatform = false;
 		#if !defined(_RELEASE)
-		if (!s_logOnce_WrongPlatform && (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO)) == 0)
+		if (!s_logOnce_WrongPlatform && (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_VULKAN)) == 0)
 		{
 			s_logOnce_WrongPlatform = true;
 			iLog->LogError("Trying to build non DX11 shader via internal compiler which is not supported. Please use remote compiler instead!");

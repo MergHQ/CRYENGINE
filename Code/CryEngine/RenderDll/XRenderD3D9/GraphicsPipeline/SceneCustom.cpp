@@ -142,6 +142,7 @@ bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
 		// Required by particles
 		m_perPassResources.SetSampler(10, EDefaultSamplerStates::BilinearWrap, EShaderStage_AllWithoutCompute);
 		m_perPassResources.SetSampler(11, EDefaultSamplerStates::LinearCompare, EShaderStage_AllWithoutCompute);
+		m_perPassResources.SetSampler(2, EDefaultSamplerStates::TrilinearWrap, EShaderStage_AllWithoutCompute);
 	}
 
 	// Textures

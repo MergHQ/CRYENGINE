@@ -1471,11 +1471,6 @@ uint64 CSvoRenderer::GetRunTimeFlags(bool bDiffuseMode, bool bPixelShader)
 	if ((bPixelShader && e_svoTI_HalfresKernelPrimary) || (!bPixelShader && e_svoTI_HalfresKernelSecondary)) // smaller kernel - less de-mosaic work and faster compute update
 		rtFlags |= g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
 
-	// Added because of the vulkan shader limitation for immediate constant array size (shaders will fail as more than 1024 registers are used)
-	#if CRY_RENDERER_VULKAN
-	rtFlags |= g_HWSR_MaskBit[HWSR_HW_PCF_COMPARE];
-	#endif
-
 	if (bPixelShader && !GetIntegratioMode() && e_svoTI_InjectionMultiplier) // read sun light and shadow map during final cone tracing
 		rtFlags |= g_HWSR_MaskBit[HWSR_LIGHT_TEX_PROJ];
 

@@ -273,6 +273,9 @@ AllocateConstIntCVar(CRendererCVars, CV_r_shadersCompileCompatible);
 ICVar*      CRendererCVars::CV_r_ShaderTarget;
 int         CRendererCVars::ShaderTargetFlag;
 #endif
+
+ICVar*      CRendererCVars::CV_r_VkShaderCompiler = nullptr;
+
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersignoreincludeschanging);
 int CRendererCVars::CV_r_shadersAllowCompilation;
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersediting);
@@ -977,6 +980,12 @@ void CRendererCVars::InitCVars()
 			"Sets the shader generation target ( Orbis/Durango/D3D11/GL4/GLES3/Vulkan ).\n"
 			"Specify in system.cfg like this: r_ShaderTarget = \"D3D11\"", OnChange_CV_r_ShaderTarget);
 		OnChange_CV_r_ShaderTarget(CV_r_ShaderTarget);
+#endif
+#if CRY_RENDERER_VULKAN
+		CV_r_VkShaderCompiler = REGISTER_STRING("r_VkShaderCompiler", "HLSLCC", VF_DUMPTODISK,
+			"Vulkan renderer only CVar."
+			"Sets the HLSL to SPIRV compiler to use for local/remote shader comilation ( HLSLCC/DXC/GLSLANG ).\n"
+			"Specify in system.cfg like this: r_VkShaderCompiler = \"HLSLCC\"");
 #endif
 
 	REGISTER_CVAR3("r_DeferredShadingTiled", CV_r_DeferredShadingTiled, 3, VF_DUMPTODISK,
