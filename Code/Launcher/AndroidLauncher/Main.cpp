@@ -194,8 +194,6 @@ int _main(int argc, char **argv)
 	SSystemInitParams startupParams;
 	memset(&startupParams, 0, sizeof(SSystemInitParams));
 
-	startupParams.szSystemCmdLine = "";
-
 #if CAPTURE_REPLAY_LOG
 	// Since Android doesn't support native command line argument, please
 	// uncomment the following line if -memreplay is needed.

@@ -5,6 +5,7 @@
 #include "ParamTraits.h"
 #include <CrySerialization/SmartPtr.h>
 #include <CrySerialization/IClassFactory.h>
+#include <cmath>
 
 namespace pfx2
 {
@@ -91,7 +92,6 @@ struct IFieldModifier: IModifier
 	virtual IFieldModifier* VersionFixReplace() const { return nullptr; }
 };
 
-
 template<typename TParamModContext, typename T = SFloat>
 class CParamMod : public IParamMod
 {
@@ -124,7 +124,7 @@ public:
 	bool                           HasUpdateModifiers() const { return !m_modUpdate.empty(); }
 	bool                           HasModifiers() const       { return !m_modInit.empty() || !m_modUpdate.empty(); }
 	TType                          GetBaseValue() const       { return m_baseValue; }
-	bool                           IsEnabled() const          { return std::isfinite(m_baseValue); }
+	bool                           IsEnabled() const          { return !std::isinf(m_baseValue) && !std::isnan(m_baseValue); }   // android NDK 16 doesn't provide std::isfinite
 	static const TParamModContext& Context()                  { static TParamModContext context; return context; }
 
 private:

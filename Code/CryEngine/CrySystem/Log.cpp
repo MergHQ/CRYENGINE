@@ -27,9 +27,9 @@
 	#include <time.h>
 #endif
 
-#if !defined(CRY_PLATFORM_ORBIS)
+#if !defined(CRY_PLATFORM_ORBIS) && !defined(CRY_PLATFORM_ANDROID)
 #include <sys/timeb.h>
-#endif //!defined(CRY_PLATFORM_ORBIS)
+#endif //!defined(CRY_PLATFORM_ORBIS) && !defined(CRY_PLATFORM_ANDROID)
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	#include <syslog.h>
@@ -896,7 +896,7 @@ void CLog::SetLogFormat(const char* format)
 
 void CLog::FormatTimestampInternal(stack_string& timeStr, const string& logFormat)
 {
-#if !defined(CRY_PLATFORM_ORBIS)
+#if !defined(CRY_PLATFORM_ORBIS) && !defined(CRY_PLATFORM_ANDROID)
 	bool isUtC = logFormat.find("Z") != string::npos;
 
 	char sTime[128];
@@ -939,7 +939,7 @@ void CLog::FormatTimestampInternal(stack_string& timeStr, const string& logForma
 			timeStr.replace(pos, count, tmpStr.c_str());
 		}
 	}
-#endif //!defined(CRY_PLATFORM_ORBIS)
+#endif //!defined(CRY_PLATFORM_ORBIS) && !defined(CRY_PLATFORM_ANDROID)
 }
 
 //////////////////////////////////////////////////////////////////////

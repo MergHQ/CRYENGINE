@@ -32,7 +32,7 @@ end_sources()
 #END-FILE-LIST
 
 CryEngineStaticModule(lzma SOLUTION_FOLDER "Libs")
-if(LINUX OR ORBIS)
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_compile_options(${THIS_PROJECT} PRIVATE -w)
 endif()
 target_include_directories(${THIS_PROJECT} INTERFACE "${SDK_DIR}")

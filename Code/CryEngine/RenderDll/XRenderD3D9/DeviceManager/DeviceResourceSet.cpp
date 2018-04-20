@@ -72,7 +72,7 @@ template<typename T> T* SResourceBinding::GetDeviceResourceView() const
 template D3DSurface*      SResourceBinding::GetDeviceResourceView<D3DSurface>() const;
 
 // These are #defined to the same thing (NCryVulkan::CImageView) on Linux.
-#if !CRY_PLATFORM_LINUX
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID
 	template D3DDepthSurface* SResourceBinding::GetDeviceResourceView<D3DDepthSurface>() const;
 #endif
 

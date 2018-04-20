@@ -446,6 +446,8 @@ void CSwapChainBackedRenderDisplayContext::SetFullscreenState(bool isFullscreen)
 	
 #if !CRY_PLATFORM_ORBIS && !CRY_PLATFORM_DURANGO
 	m_swapChain.SetFullscreenState(isFullscreen, isFullscreen ? m_pOutput : nullptr);
+#else
+	m_pSwapChain.SetFullscreenState(isFullscreen, nullptr);
 #endif
 #endif
 }

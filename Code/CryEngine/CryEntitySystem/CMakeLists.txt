@@ -162,6 +162,7 @@ macro(setup_CryEntitySystem)
 			-Wno-char-subscripts
 			-Wno-comment
 			-Wno-c++11-narrowing
+			-Wno-tautological-constant-out-of-range-compare
 		)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(${THIS_PROJECT} PRIVATE
