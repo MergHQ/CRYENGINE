@@ -303,9 +303,6 @@ void CParticleComponent::PreCompile()
 	m_Params = {};
 	m_GPUParams = {};
 
-	m_parent = nullptr;
-	m_children.clear();
-
 	static_cast<SFeatureDispatchers&>(*this) = {};
 	m_gpuFeatures.clear();
 
@@ -473,11 +470,13 @@ void CParticleComponent::Serialize(Serialization::IArchive& ar)
 		}
 		else if (ar.isInput())
 		{
+			CParticleComponent* pParent = nullptr;
 			if (ar(parentName, "Parent"))
 			{
 				assert(m_pEffect);
-				SetParent(m_pEffect->FindComponentByName(parentName));
+				pParent = m_pEffect->FindComponentByName(parentName);
 			}
+			SetParent(pParent);
 		}
 	}
 

@@ -582,8 +582,6 @@ void CParticleEmitter::UpdateRuntimes()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	ResetRenderObjects();
-
 	m_componentRuntimesFor.clear();
 	TRuntimes newRuntimes;
 
@@ -616,6 +614,8 @@ void CParticleEmitter::UpdateRuntimes()
 	{
 		m_pEffect = m_pEffectOriginal;
 	}
+
+	ResetRenderObjects();
 
 	for (const auto& pComponent: m_pEffect->GetComponents())
 	{
