@@ -189,7 +189,7 @@ CLevelExplorer::CLevelExplorer(QWidget* pParent)
 
 	CObjectManager* pObjManager = static_cast<CObjectManager*>(GetIEditorImpl()->GetObjectManager());
 	pObjManager->GetLayersManager()->signalChangeEvent.Connect(this, &CLevelExplorer::OnLayerChange);
-	pObjManager->signalObjectChanged.Connect(this, &CLevelExplorer::OnObjectChange);
+	pObjManager->signalObjectsChanged.Connect(this, &CLevelExplorer::OnObjectsChanged);
 	pObjManager->signalSelectionChanged.Connect(this, &CLevelExplorer::OnViewportSelectionChanged);
 
 	CLevelModelsManager::GetInstance().signalLayerModelsUpdated.Connect(this, &CLevelExplorer::OnLayerModelsUpdated);
@@ -200,7 +200,7 @@ CLevelExplorer::~CLevelExplorer()
 {
 	CObjectManager* pObjManager = static_cast<CObjectManager*>(GetIEditorImpl()->GetObjectManager());
 	pObjManager->GetLayersManager()->signalChangeEvent.DisconnectObject(this);
-	pObjManager->signalObjectChanged.DisconnectObject(this);
+	pObjManager->signalObjectsChanged.DisconnectObject(this);
 	pObjManager->signalSelectionChanged.DisconnectObject(this);
 
 	CLevelModelsManager::GetInstance().signalLayerModelsUpdated.DisconnectObject(this);
@@ -536,7 +536,7 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 
 			menu->addSeparator();
 
-			action = menu->addAction(tr("Open Containing Folder"));
+			action = menu->addAction(tr("Show in File Explorer"));
 			connect(action, &QAction::triggered, [&]()
 			{
 				QtUtil::OpenInExplorer((const char*)layer->GetLayerFilepath());
@@ -857,17 +857,20 @@ void CLevelExplorer::OnLayerChange(const CLayerChangeEvent& event)
 	}
 }
 
-void CLevelExplorer::OnObjectChange(CObjectEvent& event)
+void CLevelExplorer::OnObjectsChanged(const std::vector<CBaseObject*>& objects, const CObjectEvent& event)
 {
 	if (!m_syncSelection || m_ignoreSelectionEvents || m_modelType == Layers)
 		return;
 
-	if (event.m_type == OBJECT_ON_LAYERCHANGE && event.m_pObj->IsSelected())
+	for (const CBaseObject* pObject : objects)
 	{
-		auto index = FindObjectIndex(event.m_pObj);
-		if (index.isValid())
+		if (event.m_type == OBJECT_ON_LAYERCHANGE && pObject->IsSelected())
 		{
-			m_treeView->selectionModel()->setCurrentIndex(index, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+			auto index = FindObjectIndex(pObject);
+			if (index.isValid())
+			{
+				m_treeView->selectionModel()->setCurrentIndex(index, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+			}
 		}
 	}
 }

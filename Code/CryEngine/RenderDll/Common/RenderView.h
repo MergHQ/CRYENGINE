@@ -169,11 +169,11 @@ public:
 
 	//! Get resolution of the render target surface(s)
 	//! Note that Viewport can be smaller then this.
-	Vec2i GetRenderResolution() const  { return Vec2i(m_RenderWidth, m_RenderHeight); }
-	Vec2i GetOutputResolution() const  { return m_pRenderOutput ? m_pRenderOutput->GetOutputResolution() : GetRenderResolution(); }
-	Vec2i GetDisplayResolution() const { return m_pRenderOutput ? m_pRenderOutput->GetDisplayResolution() : GetRenderResolution(); }
+	Vec2_tpl<uint32_t> GetRenderResolution() const { return { m_RenderWidth, m_RenderHeight }; }
+	Vec2_tpl<uint32_t> GetOutputResolution() const  { return m_pRenderOutput ? m_pRenderOutput->GetOutputResolution() : GetRenderResolution(); }
+	Vec2_tpl<uint32_t> GetDisplayResolution() const { return m_pRenderOutput ? m_pRenderOutput->GetDisplayResolution() : GetRenderResolution(); }
 
-	void  ChangeRenderResolution(int renderWidth, int renderHeight, bool bForce);
+	void  ChangeRenderResolution(uint32_t  renderWidth, uint32_t  renderHeight, bool bForce);
 	//////////////////////////////////////////////////////////////////////////
 
 public:
@@ -434,8 +434,8 @@ private:
 	SSkinningDataPoolInfo m_SkinningData;
 	//////////////////////////////////////////////////////////////////////////
 
-	int32            m_RenderWidth = -1;
-	int32            m_RenderHeight = -1;
+	uint32           m_RenderWidth = -1;
+	uint32           m_RenderHeight = -1;
 
 	CRenderOutputPtr                 m_pRenderOutput; // Output render target (currently used for recursive pass and secondary viewport)
 	TexSmartPtr                      m_pColorTarget = nullptr;

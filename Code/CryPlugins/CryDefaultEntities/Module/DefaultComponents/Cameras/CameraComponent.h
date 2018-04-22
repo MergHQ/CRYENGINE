@@ -33,7 +33,6 @@ namespace Cry
 
 		class CCameraComponent
 			: public ICameraComponent
-			, public IHmdDevice::IAsyncCameraCallback
 #ifndef RELEASE
 			, public IEntityComponentPreviewer
 #endif
@@ -95,7 +94,8 @@ namespace Cry
 
 				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
 				{
-					pDevice->SetAsyncCameraCallback(nullptr);
+					const auto& worldTranform = GetWorldTransformMatrix();
+					pDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(Quat(worldTranform), worldTranform.GetTranslation()));
 				}
 			}
 			// ~IEntityComponent
@@ -106,21 +106,6 @@ namespace Cry
 			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const final;
 			// ~IEntityComponentPreviewer
 #endif
-
-			// IAsyncCameraCallback
-			virtual bool OnAsyncCameraCallback(const HmdTrackingState& sensorState, IHmdDevice::AsyncCameraContext& context) override
-			{
-				context.outputCameraMatrix = GetWorldTransformMatrix();
-
-				Matrix33 orientation = Matrix33(context.outputCameraMatrix);
-				Vec3 position = context.outputCameraMatrix.GetTranslation();
-
-				context.outputCameraMatrix.AddTranslation(orientation * sensorState.pose.position);
-				context.outputCameraMatrix.SetRotation33(orientation * Matrix33(sensorState.pose.orientation));
-
-				return true;
-			}
-			// ~IAsyncCameraCallback
 
 			// ICameraComponent
 			virtual void DisableAudioListener() final
@@ -159,7 +144,8 @@ namespace Cry
 
 				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
 				{
-					pDevice->SetAsyncCameraCallback(this);
+					const auto& worldTranform = GetWorldTransformMatrix();
+					pDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(Quat(worldTranform), worldTranform.GetTranslation()));
 				}
 				
 				if (m_pAudioListener)

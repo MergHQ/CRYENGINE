@@ -1098,14 +1098,8 @@ void CObjectManager::DeleteObjects(std::vector<CBaseObject*>& objects)
 
 	CObjectLayer::ForEachLayerOf(objects, [this](CObjectLayer* pLayer, const std::vector<CBaseObject*>& layerObjects)
 	{
-		signalBeforeObjectsDeleted(*pLayer, layerObjects);
+		NotifyObjectListeners(layerObjects, CObjectPreDeleteEvent(pLayer));
 	});
-
-	for (auto pObject : objects)
-	{
-		NotifyObjectListeners(pObject, OBJECT_ON_PREDELETE);
-		pObject->NotifyListeners(OBJECT_ON_PREDELETE);
-	}
 
 	for (auto pObject : objects)
 	{
@@ -1313,7 +1307,7 @@ bool CObjectManager::AddObject(CBaseObject* obj)
 	m_objects[obj->GetId()] = obj;
 	RegisterObjectName(obj->GetName());
 	InvalidateVisibleList();
-	NotifyObjectListeners(obj, OBJECT_ON_ADD);
+	NotifyObjectListeners(obj, CObjectEvent(OBJECT_ON_ADD));
 	return true;
 }
 
@@ -1362,7 +1356,7 @@ void CObjectManager::ChangeObjectId(const CryGUID& oldGuid, const CryGUID& newGu
 //////////////////////////////////////////////////////////////////////////
 void CObjectManager::NotifyPrefabObjectChanged(CBaseObject* pObject)
 {
-	NotifyObjectListeners(pObject, OBJECT_ON_PREFAB_CHANGED);
+	NotifyObjectListeners(pObject, CObjectEvent(OBJECT_ON_PREFAB_CHANGED));
 	// When an object is added or removed from a prefab we must update the current list of visible objects
 	InvalidateVisibleList();
 }
@@ -1450,10 +1444,8 @@ bool CObjectManager::ChangeObjectName(CBaseObject* pObject, const string& newNam
 				return false;
 			}
 		}
-
+		
 		pObject->SetName(name);
-
-		NotifyObjectListeners(pObject, OBJECT_ON_RENAME);
 		return true;
 	}
 	return false;
@@ -1595,19 +1587,14 @@ void CObjectManager::RemoveObjectsAndNotify(const std::vector<CBaseObject*>& obj
 	{
 		tempObjects.emplace_back(pObject);
 	}
+
 	RemoveObjects(objects);
 
 	CObjectLayer::ForEachLayerOf(objects, [this](CObjectLayer* pLayer, const std::vector<CBaseObject*>& layerObjects)
 	{
 		pLayer->SetModified();
-		signalObjectsDeleted(*pLayer, layerObjects);
+		NotifyObjectListeners(layerObjects, CObjectDeleteEvent(pLayer));
 	});
-
-	for (auto pObject : objects)
-	{
-		pObject->m_layer = nullptr;
-		NotifyObjectListeners(pObject, OBJECT_ON_DELETE);
-	}
 }
 
 void CObjectManager::UnlinkObjects(const std::vector<CBaseObject*>& objects)
@@ -3296,37 +3283,21 @@ bool CObjectManager::SetObjectSelected(CBaseObject* pObject, bool bSelect, bool 
 		m_currSelection.RemoveObject(pObject);
 	}
 
-	NotifyObjectListeners(pObject, bSelect ? OBJECT_ON_SELECT : OBJECT_ON_UNSELECT);
-
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-void CObjectManager::AddObjectEventListener(const EventCallback& cb)
+void CObjectManager::NotifyObjectListeners(CBaseObject* pObject, const CObjectEvent& event) const
 {
-	// legacy style notification wrapper. For such registration we are only interested in the calling object
-	// New notification code should make sure to initialize CObjectEvent properly with the calling object
-	signalObjectChanged.Connect([=](CObjectEvent& data)
+	NotifyObjectListeners(std::vector<CBaseObject*>({ pObject }), event);
+}
+
+void CObjectManager::NotifyObjectListeners(const std::vector<CBaseObject*>& objects, const CObjectEvent& event) const
+{
+	for (const CBaseObject* pObject : objects)
 	{
-		cb(data.m_pObj, data.m_type);
-	}, reinterpret_cast<uintptr_t>(cb.getCallee()));   // Use ID of callee so we know whom to unregister
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObjectManager::RemoveObjectEventListener(const EventCallback& cb)
-{
-	signalObjectChanged.DisconnectById(reinterpret_cast<uintptr_t>(cb.getCallee()));
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObjectManager::NotifyObjectListeners(CBaseObject* pObject, EObjectListenerEvent event)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
-
-	// Legacy style notification only uses a basic event with just the firing object
-	CObjectEvent e(event, pObject);
-	signalObjectChanged(e);
+		pObject->signalChanged(pObject, event);
+	}
+	signalObjectsChanged(objects, event);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -61,7 +61,7 @@ void GetHumanName(CHyperFlowGraph* pFlowGraph, CString& outName)
 	GetRealName(pFlowGraph, outName);
 }
 
-void FindGraphsForEntity(CEntityObject* pEntity, std::vector<CHyperFlowGraph*>& outFlowGraphs, CHyperFlowGraph*& outEntityFG)
+void FindGraphsForEntity(const CEntityObject* pEntity, std::vector<CHyperFlowGraph*>& outFlowGraphs, CHyperFlowGraph*& outEntityFG)
 {
 	if (pEntity && pEntity->GetEntityId() != INVALID_ENTITYID)
 	{

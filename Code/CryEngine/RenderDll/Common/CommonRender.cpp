@@ -231,7 +231,7 @@ void CResourceBindingInvalidator::AddInvalidateCallback(void* listener, const SR
 {
 	auto context = std::make_pair(listener, bindPoint);
 
-#if !CRY_PLATFORM_LINUX && (!CRY_PLATFORM_ORBIS || defined(__GXX_RTTI))
+#if !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_LINUX && (!CRY_PLATFORM_ORBIS || defined(__GXX_RTTI))
 	CRY_ASSERT(callback.target<SResourceBinding::InvalidateCallbackSignature*>() != nullptr);
 #endif
 
@@ -242,7 +242,7 @@ void CResourceBindingInvalidator::AddInvalidateCallback(void* listener, const SR
 	++insertResult.first->second.refCount;
 
 	// We only allow one callback function per listener
-#if !CRY_PLATFORM_LINUX && (!CRY_PLATFORM_ORBIS || defined(__GXX_RTTI))
+#if !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_LINUX && (!CRY_PLATFORM_ORBIS || defined(__GXX_RTTI))
 	CRY_ASSERT(*callback.target<SResourceBinding::InvalidateCallbackSignature*>() == *insertResult.first->second.callback.target<SResourceBinding::InvalidateCallbackSignature*>());
 #endif
 }

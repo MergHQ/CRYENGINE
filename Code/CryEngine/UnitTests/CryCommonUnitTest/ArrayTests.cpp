@@ -42,6 +42,15 @@ TEST(CryDynArrayTest, Basics)
 	REQUIRE(ai.size() == 17);
 }
 
+TEST(CryDynArrayTest, InitializerList)
+{
+	DynArray<int> arr = { 1, 3, 5 };
+	REQUIRE(arr.size() == 3);
+	REQUIRE(arr[0] == 1);
+	REQUIRE(arr[1] == 3);
+	REQUIRE(arr[2] == 5);
+}
+
 TEST(CryDynArrayTest, InsertEraseAssign)
 {
 	std::basic_string<char> bstr;

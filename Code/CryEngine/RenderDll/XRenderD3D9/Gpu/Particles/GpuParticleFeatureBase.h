@@ -46,8 +46,8 @@ struct CFeatureWithParameterStruct : public CFeature
 	  const EParameterType type,
 	  const SFeatureParametersBase& p) override
 	{
-		m_parameters = p.GetParameters<ParameterStruct>();
-	}
+		m_parameters = p.template GetParameters<ParameterStruct>();
+	};
 protected:
 	const ParameterStruct& GetParameters() const { return m_parameters; }
 private:

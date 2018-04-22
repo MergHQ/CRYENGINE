@@ -203,9 +203,7 @@ protected:
 
 private:
 	void OnEditorNotifyEvent(EEditorNotifyEvent event);
-	void OnObjectEvent(CObjectEvent& eventObj);
-	void OnObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
-	void OnObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
+	void OnObjectEvent(const std::vector<CBaseObject*>& objects, const CObjectEvent& eventObj);
 	virtual void OnHyperGraphManagerEvent(EHyperGraphEvent event, IHyperGraph* pGraph, IHyperNode* pNode);
 
 	void NewFGModule(bool bGlobal = true);

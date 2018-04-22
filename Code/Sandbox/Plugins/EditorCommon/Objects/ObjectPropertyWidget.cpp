@@ -110,7 +110,7 @@ void CObjectPropertyWidget::CreatePropertyTrees()
 	for (size_t i = 0, n = pSelectionGroup->GetCount(); i < n; ++i)
 	{
 		CBaseObject* pObject = pSelectionGroup->GetObject(i);
-		pObject->AddEventListener(functor(*this, &CObjectPropertyWidget::OnObjectEvent));
+		pObject->signalChanged.Connect(this, &CObjectPropertyWidget::OnObjectEvent);
 
 		m_objectSerializers.emplace_back(pObject, bMultiEdit, m_serializationFunc);
 		structs.emplace_back(m_objectSerializers.back());
@@ -122,15 +122,13 @@ void CObjectPropertyWidget::CreatePropertyTrees()
 }
 
 // Separate object updates are processed in a lazy manner, else we risk doing too many updates
-void CObjectPropertyWidget::OnObjectEvent(class CBaseObject* object, int event)
+void CObjectPropertyWidget::OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (event == OBJECT_ON_TRANSFORM ||
-	    event == OBJECT_ON_RENAME ||
-	    event == OBJECT_ON_UI_PROPERTY_CHANGED)
+	if (event.m_type == OBJECT_ON_TRANSFORM || event.m_type == OBJECT_ON_RENAME || event.m_type == OBJECT_ON_UI_PROPERTY_CHANGED)
 	{
 		m_bReloadProperties = true;
 	}
-	else if (event == OBJECT_ON_DELETE)
+	else if (event.m_type == OBJECT_ON_DELETE)
 	{
 		m_bCleanupDeletedObjects = true;
 		m_bReloadProperties = false;
@@ -144,7 +142,7 @@ void CObjectPropertyWidget::UnregisterObjects()
 	{
 		for (SBaseObjectSerializer& pSer : m_objectSerializers)
 		{
-			pSer.m_object->RemoveEventListener(functor(*this, &CObjectPropertyWidget::OnObjectEvent));
+			pSer.m_object->signalChanged.DisconnectObject(this);
 		}
 	}
 }

@@ -142,6 +142,7 @@ bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
 		// Required by particles
 		m_perPassResources.SetSampler(10, EDefaultSamplerStates::BilinearWrap, EShaderStage_AllWithoutCompute);
 		m_perPassResources.SetSampler(11, EDefaultSamplerStates::LinearCompare, EShaderStage_AllWithoutCompute);
+		m_perPassResources.SetSampler(2, EDefaultSamplerStates::TrilinearWrap, EShaderStage_AllWithoutCompute);
 	}
 
 	// Textures
@@ -467,8 +468,6 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 	}
 
 	// Now, we use the selection ID texture to alpha composite highlights and outlines on our scene
-	m_highlightPass.SetViewport(pRenderView->GetViewport());
-
 	static CCryNameTSCRC techSilhouette("SelectionSilhouetteHighlight");
 
 	CTexture* pTargetTex = pRenderView->GetColorTarget();

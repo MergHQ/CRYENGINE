@@ -6,6 +6,8 @@
 
 #include <CryMath/Cry_Geo.h>
 
+#include <CryCore/optional.h>
+
 // TODO: Remove when full VR device implementation (incl. renderer) is in plugin
 enum EHmdClass
 {
@@ -68,16 +70,26 @@ enum class EHmdSocialScreen
 	FirstInvalidIndex
 };
 
+enum class EHmdSocialScreenAspectMode
+{
+	Stretch = 0,
+	Center = 1,
+	Fill = 2,
+
+	FirstInvalidIndex
+};
+
 // Specifies the type of coordinates that will be returned from HMD devices
 // See the hmd_tracking_origin CVar for changing this at runtime
 enum class EHmdTrackingOrigin
 {
-	// Origin at pre-set player eye height
-	// Requires recentering on application start, or when switching users
-	EyeLevel = 0,
 	// Origin at floor height, meaning that the player in-game become as tall as they expect from real life.
 	// Recentering tracking origin will not affect the height when this is set.
-	Floor
+	Standing = 0,
+	// Origin at pre-set player eye height
+	// Requires recentering on application start, or when switching users
+	// Designed for seated experiences where the player only moves the head, e.g. cockpit, camera attached to an entity, etc..
+	Seated = 1,
 };
 
 struct HmdPoseState
@@ -189,30 +201,22 @@ struct IHmdController
 	virtual void* GetDeviceHandle(EHmdController id) const { return nullptr; };
 
 protected:
-	virtual ~IHmdController() {}
+	virtual ~IHmdController() noexcept {}
 };
 
 //! Represents a head-mounted device (Virtual Reality) connected to the system
 struct IHmdDevice
 {
+private:
+	stl::optional<std::pair<Quat, Vec3>> m_orientationForLateCameraInjection;
+
+protected:
+	void OnEndFrame() { m_orientationForLateCameraInjection = stl::nullopt; }
+
+public:
 	enum EInternalUpdate
 	{
 		eInternalUpdate_DebugInfo = 0,
-	};
-	struct AsyncCameraContext
-	{
-		int      frameId;
-		Matrix34 outputCameraMatrix;
-	};
-
-	//! Used to support asynchronous camera injection, called from the render thread to update the VR camera as late as possible to minimize HMD movement <-> rendered frame mismatch
-	//! \par Example
-	//! \include CrySystem/Examples/AsyncHMDCameraCallback.cpp
-	struct IAsyncCameraCallback
-	{
-		//! Called when a source (commonly the render thread) wants to receive the most up to date camera matrix
-		//! \return false if it is not possible to accurately retrieve new camera matrix, otherwise true.
-		virtual bool OnAsyncCameraCallback(const HmdTrackingState& state, AsyncCameraContext& context) = 0;
 	};
 
 	virtual void      AddRef() = 0;
@@ -225,8 +229,8 @@ struct IHmdDevice
 	virtual void      GetAsymmetricCameraSetupInfo(int nEye, float& fov, float& aspectRatio, float& asymH, float& asymV, float& eyeDist) const = 0;
 
 	virtual void      UpdateInternal(EInternalUpdate) = 0;
-	virtual void RecenterPose() = 0;
-	virtual void      UpdateTrackingState(EVRComponent) = 0;
+	virtual void      RecenterPose() = 0;
+	virtual void      UpdateTrackingState(EVRComponent, int frameId) = 0;
 
 	//! \return Tracking state in Hmd's internal coordinates system.
 	virtual const HmdTrackingState& GetNativeTrackingState() const = 0;
@@ -240,8 +244,6 @@ struct IHmdDevice
 	virtual Vec2 GetPlayAreaSize() const = 0;
 
 	virtual const IHmdController*   GetController() const = 0;
-	virtual const EHmdSocialScreen  GetSocialScreenType(bool* pKeepAspect = nullptr) const = 0;
-
 	virtual int                     GetControllerCount() const = 0;
 
 	//useful for querying preferred rendering resolution for devices where the screen resolution is not the resolution the SDK wants for rendering (OSVR)
@@ -249,10 +251,14 @@ struct IHmdDevice
 	//Disables & Resets the tracking state to identity. Useful for benchmarking where we want the HMD to behave normally except that we want to force the direction of the camera.
 	virtual void DisableHMDTracking(bool disable) = 0;
 
-	//! Assign a game side callback to be called asynchronously from any thread to update camera matrix
-	virtual void SetAsyncCameraCallback(IAsyncCameraCallback* pCallback) {};
+	//! Enables a late camera injection to the render thread based on updated HMD tracking feedback, must be called from main thread.
+	void EnableLateCameraInjectionForCurrentFrame(const std::pair<Quat, Vec3> &currentOrientation) { m_orientationForLateCameraInjection = (stl::optional<std::pair<Quat, Vec3>>) currentOrientation; }
+	const stl::optional<std::pair<Quat, Vec3>>& GetOrientationForLateCameraInjection() const { return m_orientationForLateCameraInjection; }
+
 	//! Can be called from any thread to retrieve most up to date camera transformation
-	virtual bool RequestAsyncCameraUpdate(AsyncCameraContext& context)  { return false; };
+	virtual stl::optional<Matrix34> RequestAsyncCameraUpdate(int frameId, const Quat& q, const Vec3 &p) = 0;
+
 protected:
-	virtual ~IHmdDevice() {}
+	virtual ~IHmdDevice() noexcept {}
 };
+

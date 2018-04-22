@@ -6,6 +6,9 @@
 
 class CFullscreenPass : public CPrimitiveRenderPass
 {
+	// Use SetCustomViewport instead
+	using CPrimitiveRenderPass::SetViewport;
+
 public:
 	CFullscreenPass(CRenderPrimitive::EPrimitiveFlags primitiveFlags = CRenderPrimitive::eFlags_ReflectShaderConstants);
 	~CFullscreenPass();
@@ -114,12 +117,22 @@ public:
 
 	bool IsDirty() const { return m_primitive.IsDirty(); }
 
+	void SetCustomViewport(const D3DViewPort& viewport)
+	{
+		SetViewport(viewport);
+		m_bHasCustomViewport = true;
+	}
+	void SetCustomViewport(const SRenderViewport& viewport);
+	void ClearCustomViewport()                              { m_bHasCustomViewport = false; }
+
 private:
 	void                     UpdatePrimitive();
 
 	bool                     m_bRequirePerViewCB;
 	bool                     m_bRequireWorldPos;
 	bool                     m_bPendingConstantUpdate;
+
+	bool                     m_bHasCustomViewport = false;
 
 	f32                      m_clipZ;        // only work for WPos
 	buffer_handle_t          m_vertexBuffer; // only required for WPos

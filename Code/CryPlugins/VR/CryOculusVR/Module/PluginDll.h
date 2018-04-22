@@ -38,7 +38,6 @@ public:
 	static int   s_hmd_projection;
 	static int   s_hmd_perf_hud;
 	static float s_hmd_projection_screen_dist;
-	static int   s_hmd_post_inject_camera;
 };
 
 }      // namespace Oculus

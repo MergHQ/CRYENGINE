@@ -52,7 +52,6 @@
 #include "Objects/EntityObject.h"
 #include "Objects/PrefabObject.h"
 
-
 namespace
 {
 const int FlowGraphLayoutVersion = 0x0004;   // bump this up on every substantial pane layout change
@@ -84,7 +83,6 @@ const int FlowGraphLayoutVersion = 0x0004;   // bump this up on every substantia
 
 #define ID_NODE_INFO                      100
 #define ID_GRAPH_INFO                     110
-
 
 namespace {
 const char* g_EntitiesFolderName = "Entities";
@@ -197,25 +195,23 @@ END_MESSAGE_MAP()
 CHyperGraphDialog::CHyperGraphDialog()
 	: m_isTitleBarVisible(true)
 	, m_componentsViewMask(EFLN_APPROVED | EFLN_ADVANCED | EFLN_DEBUG)
-  , m_pDragImage(nullptr)
-  , m_dragNodeClass("")
+	, m_pDragImage(nullptr)
+	, m_dragNodeClass("")
 	, m_pSearchOptionsView(nullptr)
-  , m_pSearchResultsCtrl(nullptr)
+	, m_pSearchResultsCtrl(nullptr)
 	, m_pPropertiesFolder(nullptr)
 	, m_pPropertiesItem(nullptr)
-  , m_pSelNodeInfo(nullptr)
-  , m_pGraphProperties(nullptr)
-  , m_pGraphTokens(nullptr)
-  , m_pNavGraph(nullptr)
+	, m_pSelNodeInfo(nullptr)
+	, m_pGraphProperties(nullptr)
+	, m_pGraphTokens(nullptr)
+	, m_pNavGraph(nullptr)
 	, m_bIgnoreObjectEvents(false)
 {
 	LOADING_TIME_PROFILE_SECTION;
 	m_pWndProps.reset(new CPropertyCtrl());
 
 	GetIEditorImpl()->RegisterNotifyListener(this);
-	GetIEditorImpl()->GetObjectManager()->signalObjectChanged.Connect(this, &CHyperGraphDialog::OnObjectEvent);
-	GetIEditorImpl()->GetObjectManager()->signalObjectsDetached.Connect(this, &CHyperGraphDialog::OnObjectsDetached);
-	GetIEditorImpl()->GetObjectManager()->signalObjectsAttached.Connect(this, &CHyperGraphDialog::OnObjectsAttached);
+	GetIEditorImpl()->GetObjectManager()->signalObjectsChanged.Connect(this, &CHyperGraphDialog::OnObjectEvent);
 
 	GetIEditorImpl()->GetFlowGraphManager()->AddListener(this);
 
@@ -259,12 +255,9 @@ CHyperGraphDialog::~CHyperGraphDialog()
 	if (GetIEditorImpl()->GetFlowGraphManager())
 		GetIEditorImpl()->GetFlowGraphManager()->RemoveListener(this);
 
-	GetIEditorImpl()->GetObjectManager()->signalObjectChanged.DisconnectObject(this);
-	GetIEditorImpl()->GetObjectManager()->signalObjectsDetached.DisconnectObject(this);
-	GetIEditorImpl()->GetObjectManager()->signalObjectsAttached.DisconnectObject(this);
+	GetIEditorImpl()->GetObjectManager()->signalObjectsChanged.DisconnectObject(this);
 	GetIEditorImpl()->UnregisterNotifyListener(this);
 }
-
 
 void CHyperGraphDialog::SavePersonalization()
 {
@@ -500,9 +493,8 @@ void CHyperGraphDialog::CreateRightPane()
 	m_pGraphTokens = new CFlowGraphTokensCtrl(this, &m_wndTaskPanel);
 	m_pGraphTokens->Create(WS_CHILD | WS_BORDER, CRect(0, 0, 0, 0), this, ID_GRAPH_TOKENS_GROUP);
 
-
 	//////////////////////////////////////////////////////////////////////////
-	// Search 
+	// Search
 	CXTPDockingPane* pSearchPane = GetDockingPaneManager()->CreatePane(IDW_HYPERGRAPH_SEARCH_PANE, CRect(0, 0, panelWidth, 285), xtpPaneDockBottom, pDockPane);
 	pSearchPane->SetTitle(_T("Search"));
 	m_pSearchOptionsView = new CFlowGraphSearchCtrl(this);
@@ -525,7 +517,6 @@ void CHyperGraphDialog::CreateRightPane()
 	pBreakpoints->SetTitle(_T("Breakpoints"));
 	m_breakpointsTreeCtrl.Create(WS_CHILD | WS_TABSTOP, rc, this, IDC_BREAKPOINTS);
 }
-
 
 void CHyperGraphDialog::CreateLeftPane()
 {
@@ -574,7 +565,6 @@ void CHyperGraphDialog::CreateLeftPane()
 	m_graphsTreeCtrl.EnableMultiSelect(TRUE); // some operations support multiple selected graphs, such as Delete or Disable All
 	m_graphsTreeCtrl.FullReload();
 }
-
 
 /////////////////////////////////////////////////////////////////////////
 void CHyperGraphDialog::OnViewSelectionChange()
@@ -720,7 +710,6 @@ void CHyperGraphDialog::NewGraph()
 
 	SetGraph(pGraph);
 }
-
 
 void CHyperGraphDialog::OnFileNew()
 {
@@ -1520,7 +1509,6 @@ void CHyperGraphDialog::RemoveGraph(CHyperGraph* pGraph)
 	}
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 void CHyperGraphDialog::OnGraphsDblClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
@@ -1704,81 +1692,64 @@ void CHyperGraphDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-void CHyperGraphDialog::OnObjectEvent(CObjectEvent& eventObj)
+void CHyperGraphDialog::OnObjectEvent(const std::vector<CBaseObject*>& objects, const CObjectEvent& eventObj)
 {
 	if (m_bIgnoreObjectEvents)
 		return;
 
-	CBaseObject* pObject = eventObj.m_pObj;
-	if (!pObject)
+	for (const CBaseObject* pObject : objects)
 	{
-		return;
-	}
+		if (!pObject)
+			continue;
 
-	switch (eventObj.m_type)
-	{
-	case OBJECT_ON_GROUP_OPEN:
+		switch (eventObj.m_type)
 		{
-			// add all graphs from the prefab entities that have containers
-			if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-			{
-				m_graphsTreeCtrl.SetRedraw(FALSE);
-				CPrefabObject* pPrefabObject = static_cast<CPrefabObject*>(pObject);
-				std::vector<CBaseObject*> prefabChildren;
-				pPrefabObject->GetAllPrefabFlagedChildren(prefabChildren);
-				for (size_t i = 0, numChildren = prefabChildren.size(); i < numChildren; ++i)
-				{
-					if (prefabChildren[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-					{
-						CBaseObject* pEntityObject = prefabChildren[i];
-						CHyperFlowGraph* pFlowGraph = static_cast<CEntityObject*>(pEntityObject)->GetFlowGraph();
-						if (pFlowGraph)
-						{
-							m_graphsTreeCtrl.AddGraphToTree(pFlowGraph, false);
-							m_graphsTreeCtrl.EnsureVisible(pFlowGraph->GetHTreeItem());
-						}
-					}
-				}
-				m_graphsTreeCtrl.SetRedraw(TRUE);
-				m_graphsTreeCtrl.Invalidate(TRUE);
-			}
-		}
-		break;
-	case OBJECT_ON_GROUP_CLOSE:
-		{
-			// remove all graphs from the prefab entities that have containers
-			if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-			{
-				std::vector<CBaseObject*> prefabChildren;
-				pObject->GetAllPrefabFlagedChildren(prefabChildren);
-				for (size_t i = 0, numChildren = prefabChildren.size(); i < numChildren; ++i)
-				{
-					if (prefabChildren[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-					{
-						CBaseObject* pEntityObject = prefabChildren[i];
-						CHyperFlowGraph* pFlowGraph = static_cast<CEntityObject*>(pEntityObject)->GetFlowGraph();
-						if (pFlowGraph)
-						{
-							RemoveGraph(pFlowGraph);
-						}
-					}
-				}
-			}
-		}
-		break;
-	case OBJECT_ON_RENAME:
+		case OBJECT_ON_ATTACHED:
 		{
 			if (pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 			{
-				CHyperFlowGraph* pFlowGraph = static_cast<CEntityObject*>(pObject)->GetFlowGraph();
-				CString newName = pObject->GetName().c_str();
-				RenameFlowGraph(pFlowGraph, newName);
-			}
-			else if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-			{
-				CPrefabObject* pPrefabObject = static_cast<CPrefabObject*>(pObject);
-				if (pPrefabObject->IsOpen())
+				if (CHyperFlowGraph* pFlowGraph = static_cast<const CEntityObject*>(pObject)->GetFlowGraph())
 				{
+					if (CPrefabObject* pPrefab = (CPrefabObject*)pObject->GetPrefab())
+					{
+						GetIEditorImpl()->GetFlowGraphManager()->SendNotifyEvent(EHG_GRAPH_OWNER_CHANGE, pFlowGraph);
+					}
+					else // group
+					{
+						CString newName;
+						newName.Format("[%s] %s", pObject->GetGroup()->GetName(), pObject->GetName());
+						RenameFlowGraph(pFlowGraph, newName);
+					}
+				}
+			}
+		}
+		break;
+		case OBJECT_ON_DETACHED:
+		{
+			if (pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
+			{
+				if (CHyperFlowGraph* pFlowGraph = static_cast<const CEntityObject*>(pObject)->GetFlowGraph())
+				{
+					if (CPrefabObject* pPrefab = (CPrefabObject*)pObject->GetPrefab())
+					{
+						GetIEditorImpl()->GetFlowGraphManager()->SendNotifyEvent(EHG_GRAPH_OWNER_CHANGE, pFlowGraph);
+					}
+					else // group
+					{
+						CString newName = pObject->GetName();
+						RenameFlowGraph(pFlowGraph, newName);
+					}
+				}
+			}
+		}
+		break;
+		case OBJECT_ON_GROUP_OPEN:
+			{
+				// add all graphs from the prefab entities that have containers
+				if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+				{
+					m_graphsTreeCtrl.SetRedraw(FALSE);
+					const CPrefabObject* pPrefabObject = static_cast<const CPrefabObject*>(pObject);
 					std::vector<CBaseObject*> prefabChildren;
 					pPrefabObject->GetAllPrefabFlagedChildren(prefabChildren);
 					for (size_t i = 0, numChildren = prefabChildren.size(); i < numChildren; ++i)
@@ -1789,86 +1760,91 @@ void CHyperGraphDialog::OnObjectEvent(CObjectEvent& eventObj)
 							CHyperFlowGraph* pFlowGraph = static_cast<CEntityObject*>(pEntityObject)->GetFlowGraph();
 							if (pFlowGraph)
 							{
-								CString newName = pObject->GetName().c_str();
-								m_graphsTreeCtrl.RenameParentFolder(pFlowGraph->GetHTreeItem(), newName);
-								if (m_view.GetGraph() == pFlowGraph)
-								{
-									UpdateTitle(pFlowGraph);
-								}
-								return;
+								m_graphsTreeCtrl.AddGraphToTree(pFlowGraph, false);
+								m_graphsTreeCtrl.EnsureVisible(pFlowGraph->GetHTreeItem());
+							}
+						}
+					}
+					m_graphsTreeCtrl.SetRedraw(TRUE);
+					m_graphsTreeCtrl.Invalidate(TRUE);
+				}
+			}
+			break;
+		case OBJECT_ON_GROUP_CLOSE:
+			{
+				// remove all graphs from the prefab entities that have containers
+				if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+				{
+					std::vector<CBaseObject*> prefabChildren;
+					pObject->GetAllPrefabFlagedChildren(prefabChildren);
+					for (size_t i = 0, numChildren = prefabChildren.size(); i < numChildren; ++i)
+					{
+						if (prefabChildren[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
+						{
+							CBaseObject* pEntityObject = prefabChildren[i];
+							CHyperFlowGraph* pFlowGraph = static_cast<const CEntityObject*>(pEntityObject)->GetFlowGraph();
+							if (pFlowGraph)
+							{
+								RemoveGraph(pFlowGraph);
 							}
 						}
 					}
 				}
 			}
-			else if (pObject->IsKindOf(RUNTIME_CLASS(CGroup)))
+			break;
+		case OBJECT_ON_RENAME:
 			{
-				TBaseObjects children;
-				pObject->GetAllChildren(children);
-				for (size_t i = 0, numChildren = children.size(); i < numChildren; ++i)
+				if (pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 				{
-					if (children[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
+					CHyperFlowGraph* pFlowGraph = static_cast<const CEntityObject*>(pObject)->GetFlowGraph();
+					CString newName = pObject->GetName().c_str();
+					RenameFlowGraph(pFlowGraph, newName);
+				}
+				else if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+				{
+					const CPrefabObject* pPrefabObject = static_cast<const CPrefabObject*>(pObject);
+					if (pPrefabObject->IsOpen())
 					{
-						CBaseObject* pEntityObject = children[i];
-						CHyperFlowGraph* pFlowGraph = static_cast<CEntityObject*>(pEntityObject)->GetFlowGraph();
-						CString newName;
-						newName.Format("[%s] %s", pObject->GetName(), pEntityObject->GetName());
-						m_graphsTreeCtrl.RenameGraphItem(pFlowGraph->GetHTreeItem(), newName);
+						std::vector<CBaseObject*> prefabChildren;
+						pPrefabObject->GetAllPrefabFlagedChildren(prefabChildren);
+						for (size_t i = 0, numChildren = prefabChildren.size(); i < numChildren; ++i)
+						{
+							if (prefabChildren[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
+							{
+								CBaseObject* pEntityObject = prefabChildren[i];
+								CHyperFlowGraph* pFlowGraph = static_cast<const CEntityObject*>(pEntityObject)->GetFlowGraph();
+								if (pFlowGraph)
+								{
+									CString newName = pObject->GetName().c_str();
+									m_graphsTreeCtrl.RenameParentFolder(pFlowGraph->GetHTreeItem(), newName);
+									if (m_view.GetGraph() == pFlowGraph)
+									{
+										UpdateTitle(pFlowGraph);
+									}
+									continue;
+								}
+							}
+						}
+					}
+				}
+				else if (pObject->IsKindOf(RUNTIME_CLASS(CGroup)))
+				{
+					TBaseObjects children;
+					pObject->GetAllChildren(children);
+					for (size_t i = 0, numChildren = children.size(); i < numChildren; ++i)
+					{
+						if (children[i]->IsKindOf(RUNTIME_CLASS(CEntityObject)))
+						{
+							CBaseObject* pEntityObject = children[i];
+							CHyperFlowGraph* pFlowGraph = static_cast<const CEntityObject*>(pEntityObject)->GetFlowGraph();
+							CString newName;
+							newName.Format("[%s] %s", pObject->GetName(), pEntityObject->GetName());
+							m_graphsTreeCtrl.RenameGraphItem(pFlowGraph->GetHTreeItem(), newName);
+						}
 					}
 				}
 			}
-		}
-		break;
-	}
-}
-
-void CHyperGraphDialog::OnObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
-{
-	if (m_bIgnoreObjectEvents)
-		return;
-
-	for (CBaseObject* pObject : objects)
-	{
-		if (pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-		{
-			if (CHyperFlowGraph* pFlowGraph = static_cast<CEntityObject*>(pObject)->GetFlowGraph())
-			{
-				if (CPrefabObject* pPrefab = (CPrefabObject*)pObject->GetPrefab())
-				{
-					GetIEditorImpl()->GetFlowGraphManager()->SendNotifyEvent(EHG_GRAPH_OWNER_CHANGE, pFlowGraph);
-				}
-				else // group
-				{
-					CString newName;
-					newName.Format("[%s] %s", pObject->GetGroup()->GetName(), pObject->GetName());
-					RenameFlowGraph(pFlowGraph, newName);
-				}
-			}
-		}
-	}
-}
-
-void CHyperGraphDialog::OnObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
-{
-	if (m_bIgnoreObjectEvents)
-		return;
-
-	for (CBaseObject* pObject : objects)
-	{
-		if (pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-		{
-			if (CHyperFlowGraph* pFlowGraph = static_cast<CEntityObject*>(pObject)->GetFlowGraph())
-			{
-				if (CPrefabObject* pPrefab = (CPrefabObject*)pObject->GetPrefab())
-				{
-					GetIEditorImpl()->GetFlowGraphManager()->SendNotifyEvent(EHG_GRAPH_OWNER_CHANGE, pFlowGraph);
-				}
-				else // group
-				{
-					CString newName = pObject->GetName();
-					RenameFlowGraph(pFlowGraph, newName);
-				}
-			}
+			break;
 		}
 	}
 }
@@ -1895,7 +1871,6 @@ void CHyperGraphDialog::OnHyperGraphManagerEvent(EHyperGraphEvent event, IHyperG
 		break;
 	}
 }
-
 
 void CHyperGraphDialog::SetIgnoreEvents(bool bIgnore, bool bRefresh)
 {
@@ -1928,11 +1903,10 @@ void CHyperGraphDialog::UpdateGraphProperties(CHyperGraph* pGraph)
 
 void CHyperGraphDialog::UpdateTitle(CHyperGraph* pGraph)
 {
-		CString title("");
-		GetGraphPrettyName(pGraph, title, false);
-		m_titleBar.SetPaneText(0, title);
+	CString title("");
+	GetGraphPrettyName(pGraph, title, false);
+	m_titleBar.SetPaneText(0, title);
 }
-
 
 int CHyperGraphDialog::OnCreateControl(LPCREATECONTROLSTRUCT lpCreateControl)
 {
@@ -2507,8 +2481,8 @@ void CHyperGraphDialog::ProcessMenu(int nMenuOption, TDTreeItems& rchSelectedIte
 				if (bDoNew)
 				{
 					QStringDialog dlg(bIsAction == false ?
-						_T("Enter Group Name for the Flow Graph") :
-						_T("Enter Group Name for the AIAction Graph"));
+					                  _T("Enter Group Name for the Flow Graph") :
+					                  _T("Enter Group Name for the AIAction Graph"));
 					dlg.SetString(currentGroupName);
 					if (dlg.exec() == QDialog::Accepted)
 					{
@@ -2731,8 +2705,8 @@ void CHyperGraphDialog::ProcessMenu(int nMenuOption, TDTreeItems& rchSelectedIte
 						if (bDoNew)
 						{
 							QStringDialog dlg(bIsAction == false ?
-								_T("Enter Group Name for the Flow Graph(s)") :
-								_T("Enter Group Name for the AIAction Graph(s)"));
+							                  _T("Enter Group Name for the Flow Graph(s)") :
+							                  _T("Enter Group Name for the AIAction Graph(s)"));
 							dlg.SetString(pFlowGraph->GetGroupName());
 							if (dlg.exec() == QDialog::Accepted)
 							{
@@ -3091,7 +3065,6 @@ void CHyperGraphDialog::OnBreakpointsClick(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 	}
 }
-
 
 void CHyperGraphDialog::GetGraphPrettyName(CHyperGraph* pGraph, CString& computedName, bool shortVersion)
 {

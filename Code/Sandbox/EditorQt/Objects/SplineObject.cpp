@@ -41,7 +41,7 @@ public:
 
 	bool           IsNeedMoveTool() override                 { return true; }
 
-	void           OnSplineEvent(CBaseObject* pObj, int evt);
+	void           OnSplineEvent(const CBaseObject* pObject, const CObjectEvent& event);
 
 	// ITransformManipulatorOwner
 	virtual void GetManipulatorPosition(Vec3& position) override;
@@ -82,7 +82,7 @@ void CEditSplineObjectTool::SetUserData(const char* key, void* userData)
 		m_pSpline->StoreUndo("Spline Modify");
 	}
 
-	m_pSpline->AddEventListener(functor(*this, &CEditSplineObjectTool::OnSplineEvent));
+	m_pSpline->signalChanged.Connect(this, &CEditSplineObjectTool::OnSplineEvent);
 
 	if (GetIEditorImpl()->GetEditMode() == eEditModeSelect)
 	{
@@ -121,7 +121,7 @@ CEditSplineObjectTool::~CEditSplineObjectTool()
 	{
 		m_pSpline->SetEditMode(false);
 		SelectPoint(-1);
-		m_pSpline->RemoveEventListener(functor(*this, &CEditSplineObjectTool::OnSplineEvent));
+		m_pSpline->signalChanged.DisconnectObject(this);
 
 	}
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
@@ -162,9 +162,9 @@ bool CEditSplineObjectTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRep
 	return true;
 }
 
-void CEditSplineObjectTool::OnSplineEvent(CBaseObject* pObj, int evt)
+void CEditSplineObjectTool::OnSplineEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (evt == OBJECT_ON_UI_PROPERTY_CHANGED && m_pManipulator)
+	if (event.m_type == OBJECT_ON_UI_PROPERTY_CHANGED && m_pManipulator)
 	{
 		m_pManipulator->Invalidate();
 	}

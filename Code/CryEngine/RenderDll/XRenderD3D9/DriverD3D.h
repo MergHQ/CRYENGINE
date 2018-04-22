@@ -7,6 +7,7 @@
 #include <CrySystem/IWindowMessageHandler.h>
 #include <CryInput/IHardwareMouse.h>
 #include <Common/ElementPool.h>
+#include <Common/RenderDisplayContext.h>
 
 #if defined(_DEBUG)
 	#define ENABLE_CONTEXT_THREAD_CHECKING 1
@@ -24,7 +25,6 @@
 
 struct SPixFormat;
 struct SGraphicsPipelinePassContext;
-class CRenderDisplayContext;
 
 #include "D3DRenderAuxGeom.h"
 #include "D3DColorGradingController.h"
@@ -235,8 +235,14 @@ public:
 private:
 	void                    DebugShowRenderTarget();
 
-	bool                    SetWindow(int width, int height);
+	bool                    CreateDeviceDurango();
+	bool                    CreateDeviceGNM();
+	bool                    CreateDeviceOrbis();
+	bool                    CreateDeviceMobile();
+	bool                    CreateDeviceDesktop();
 	bool                    CreateDevice();
+
+	bool                    SetWindow(int width, int height);
 	void                    UnSetRes();
 	void                    DisplaySplash(); //!< Load a bitmap from a file, blit it to the windowdc and free it
 
@@ -264,7 +270,9 @@ public:
 	virtual void RT_Init() override;
 	virtual bool RT_CreateDevice() override;
 	virtual void RT_Reset() override;
-	virtual void RT_RenderScene(CRenderView* pRenderView, int nFlags) override;
+	virtual void RT_PreRenderScene(CRenderView* pRenderView);
+	virtual void RT_RenderScene(CRenderView* pRenderView) override;
+	virtual void RT_PostRenderScene(CRenderView* pRenderView);
 
 	virtual void RT_ReleaseRenderResources(uint32 nFlags) override;
 
@@ -279,8 +287,9 @@ public:
 
 	//===============================================================================
 
-	virtual void RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool bStereo, bool bDoRealRender) override;
-	virtual void RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool bStereo, bool bFinalPlayback, bool bDoRealRender) override;
+	virtual void RT_FlashRenderInternal(IFlashPlayer* pPlayer) override;
+	virtual void RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool bDoRealRender) override;
+	virtual void RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender) override;
 
 	//===============================================================================
 
@@ -291,14 +300,18 @@ public:
 	/////////////////////////////////////////////////////////////////////////////////
 	// Render-context management
 	/////////////////////////////////////////////////////////////////////////////////
-	CRenderDisplayContext* GetActiveDisplayContext() const;
-	CRenderDisplayContext* GetBaseDisplayContext() const;
-	CRenderDisplayContext* FindDisplayContext(const SDisplayContextKey& key) threadsafe const;
+	CRenderDisplayContext*                GetActiveDisplayContext() const;
+	CSwapChainBackedRenderDisplayContext* GetBaseDisplayContext() const;
+	CRenderDisplayContext*                FindDisplayContext(const SDisplayContextKey& key) threadsafe const;
 	
-	bool             SetCurrentContext(const SDisplayContextKey& key) threadsafe;
-	virtual WIN_HWND GetCurrentContextHWND() override;
+	// Returns a pair with a success flag, and the previous active context key.
+	// In case of failure the key is the current active context key.
+	std::pair<bool, SDisplayContextKey>   SetCurrentContext(const SDisplayContextKey& key) threadsafe;
+	virtual WIN_HWND                      GetCurrentContextHWND() override;
 
-	virtual SDisplayContextKey CreateContext(const SDisplayContextDescription& desc) threadsafe final;
+	uint32_t                   GenerateUniqueContextId() { return m_uniqueDisplayContextId++; }
+	SDisplayContextKey         AddCustomContext(const CRenderDisplayContextPtr &context) threadsafe;
+	virtual SDisplayContextKey CreateSwapChainBackedContext(const SDisplayContextDescription& desc) threadsafe final;
 	virtual void               ResizeContext(const SDisplayContextKey& key,int width,int height) threadsafe final;
 	virtual bool               DeleteContext(const SDisplayContextKey& key) threadsafe final;
 
@@ -345,6 +358,9 @@ public:
 	void                 DebugDrawStats(const SRenderStatistics& RStats);
 	void                 VidMemLog();
 	//////////////////////////////////////////////////////////////////////////
+
+	void                 RenderAux();
+	void                 RenderAux_RT();
 
 	virtual void         EndFrame() override;
 	virtual void         LimitFramerate(const int maxFPS, const bool bUseSleep) override;
@@ -578,8 +594,6 @@ public:
 	virtual void RT_ResumeDevice() override;
 #endif
 
-	CTempTexture FX_GetDepthSurface(int nWidth, int nHeight, bool bExactMatch = false);
-
 	//========================================================================================
 
 	void EF_Init();
@@ -633,7 +647,7 @@ public:
 	void                 DeleteAuxGeomCBs();
 	void                 SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector);
 	
-	CAuxGeomCBCollector* GetOrCreateAuxGeomCollector() threadsafe;
+	CAuxGeomCBCollector* GetOrCreateAuxGeomCollector(const CCamera &defaultCamera) threadsafe;
 	void ReturnAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector) threadsafe;
 	void DeleteAuxGeomCollectors();
 	
@@ -661,7 +675,7 @@ public:
 	
 	virtual IColorGradingController* GetIColorGradingController() override;
 
-	virtual IStereoRenderer*         GetIStereoRenderer() override;
+	virtual IStereoRenderer*         GetIStereoRenderer() const override;
 
 	virtual void                     StartLoadtimeFlashPlayback(ILoadtimeCallback* pCallback) override;
 	virtual void                     StopLoadtimeFlashPlayback() override;
@@ -697,6 +711,8 @@ private:
 	void                                               ResolveSubsampledOutput();
 	void                                               ResolveHighDynamicRangeDisplay();
 	virtual void                                       EnablePipelineProfiler(bool bEnable) override;
+
+	void                                               UpdateActiveContext(const std::shared_ptr<CRenderDisplayContext> &ctx, const SDisplayContextKey &key);
 
 	// Called before starting drawing new frame
 	virtual void ClearPerFrameData(const SRenderingPassInfo& passInfo) override;
@@ -792,12 +808,6 @@ public:
 	bool                     m_isChangingResolution = false;
 	bool					 m_bWindowRestored = false; // Dirty-flag set when the window was restored from minimized state
 
-	std::map<SDisplayContextKey, std::shared_ptr<CRenderDisplayContext>> m_displayContexts;
-
-	uint32                                              m_uniqueDisplayContextId = 0;
-	std::shared_ptr<CRenderDisplayContext>              m_pActiveContext;
-	std::shared_ptr<CRenderDisplayContext>              m_pBaseDisplayContext;
-
 	static constexpr int         MAX_RT_STACK = 8;
 
 #if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
@@ -832,6 +842,13 @@ private:
 	util::list<SCharacterInstanceCB> m_CharCBActiveList[3];
 	volatile int                     m_CharCBFrameRequired[3];
 	volatile int                     m_CharCBAllocated;
+
+	std::map<SDisplayContextKey, std::shared_ptr<CRenderDisplayContext>> m_displayContexts;
+
+	uint32                                                m_uniqueDisplayContextId = 0;
+	std::shared_ptr<CRenderDisplayContext>                m_pActiveContext;
+	SDisplayContextKey                                    m_activeContextKey;
+	std::shared_ptr<CSwapChainBackedRenderDisplayContext> m_pBaseDisplayContext;
 
 	enum PresentStatus
 	{

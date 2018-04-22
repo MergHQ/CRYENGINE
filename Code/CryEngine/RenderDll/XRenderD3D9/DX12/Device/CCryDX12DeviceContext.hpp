@@ -35,7 +35,7 @@ public:
 		return m_nodeMask;
 	}
 
-	ILINE bool CCryDX12DeviceContext::RecreateCommandListPool(int nPoolId)
+	ILINE bool RecreateCommandListPool(int nPoolId)
 	{
 		return m_Scheduler.RecreateCommandListPool(nPoolId, m_nodeMask);
 	}

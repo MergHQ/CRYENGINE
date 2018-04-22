@@ -73,7 +73,7 @@ public:
 	//! Add Weapon to Seat
 	void AddWeapon(int weaponType, CVehicleWeapon* pWeap, IVariable* pVar = 0);
 
-	void OnObjectEvent(CBaseObject* node, int event);
+	void OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event);
 
 	void OnSetPart(IVariable* pVar);
 

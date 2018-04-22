@@ -474,6 +474,8 @@ if (WIN32 OR WIN64 OR DURANGO)
 endif()
 if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-variable
+		-Wno-tautological-compare
 		-Wno-unused-const-variable
 		-Wno-sometimes-uninitialized
 		-Wno-tautological-constant-out-of-range-compare
@@ -516,6 +518,8 @@ if (WIN32 OR WIN64 OR DURANGO)
 endif()
 if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-variable
+		-Wno-tautological-compare
 		-Wno-unused-const-variable
 		-Wno-sometimes-uninitialized
 		-Wno-tautological-constant-out-of-range-compare

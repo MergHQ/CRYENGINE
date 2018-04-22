@@ -286,12 +286,6 @@ public:
 	virtual void InvalidateVisibleList() = 0;
 
 	//////////////////////////////////////////////////////////////////////////
-	// ObjectManager notification Callbacks.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void AddObjectEventListener(const EventCallback& cb) = 0;
-	virtual void RemoveObjectEventListener(const EventCallback& cb) = 0;
-
-	//////////////////////////////////////////////////////////////////////////
 	// Used to indicate starting and ending of objects loading.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void StartObjectsLoading(int numObjects) = 0;
@@ -328,8 +322,8 @@ public:
 
 	virtual void EmitPopulateInspectorEvent() const = 0;
 
-	// Legacy object notification, use signalObjectChanged(event, data); instead
-	virtual void NotifyObjectListeners(CBaseObject* pObject, enum EObjectListenerEvent event) = 0;
+	virtual void NotifyObjectListeners(CBaseObject* pObject, const CObjectEvent& event) const = 0;
+	virtual void NotifyObjectListeners(const std::vector<CBaseObject*>& objects, const CObjectEvent& event) const = 0;
 
 	// Called when object gets modified.
 	virtual void            OnObjectModified(CBaseObject* pObject, bool shouldDelete, bool isModifiedTransformOnly) = 0;
@@ -345,18 +339,11 @@ private:
 
 public:
 	//! Substitute old interface-based observer
-	CCrySignal<void(CObjectEvent&)> signalObjectChanged;
+	CCrySignal<void(const std::vector<CBaseObject*>&, const CObjectEvent&)> signalObjectsChanged;
 
 	//! New method of determining when selection is changed
 	//! Query IObjectManager::GetSelection to see what selection currently is
 	CCrySignal<void(const std::vector<CBaseObject*>&, const std::vector<CBaseObject*>&)>                 signalSelectionChanged;
-
-	CCrySignal<void(CBaseObject* pParent, const std::vector<CBaseObject*>& objects)>                     signalObjectsDetached;
-	CCrySignal<void(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool keepTransform)> signalBeforeObjectsDetached;
-	CCrySignal<void(CBaseObject* pParent, const std::vector<CBaseObject*>& objects)>                     signalObjectsAttached;
-	CCrySignal<void(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool keepTransform)> signalBeforeObjectsAttached;
-	CCrySignal<void(const CObjectLayer&, const std::vector<CBaseObject*>& objects)>                      signalBeforeObjectsDeleted;
-	CCrySignal<void(const CObjectLayer&, const std::vector<CBaseObject*>& objects)>                      signalObjectsDeleted;
 
 	CCrySignal<void(const std::vector<CBaseObject*>& objects)> signalBatchProcessStarted;
 	CCrySignal<void()> signalBatchProcessFinished;

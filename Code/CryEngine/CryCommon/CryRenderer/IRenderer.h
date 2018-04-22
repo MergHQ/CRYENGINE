@@ -307,6 +307,12 @@ class IManager;
 #define STR_GL4_SHADER_TARGET     "GL4"
 #define STR_GLES3_SHADER_TARGET   "GLES3"
 #define STR_VULKAN_SHADER_TARGET  "VULKAN"
+
+//////////////////////////////////////////////////////////////////////
+#define STR_VK_SHADER_COMPILER_HLSLCC    "HLSLCC"
+#define STR_VK_SHADER_COMPILER_GLSLANG   "GLSLANG"
+#define STR_VK_SHADER_COMPILER_DXC       "DXC"
+
 //////////////////////////////////////////////////////////////////////
 // Render features
 
@@ -941,7 +947,7 @@ struct IRenderer//: public IRendererCallbackServer
 		Vec2i  screenResolution         = { 0, 0 };
 
 		EViewportType type              = eViewportType_Default;
-		uint16 renderFlags              = FRT_CLEAR | FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL;
+		uint16 renderFlags              = FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL;
 	};
 
 	virtual ~IRenderer(){}
@@ -982,7 +988,7 @@ struct IRenderer//: public IRendererCallbackServer
 	// Render-context management
 	/////////////////////////////////////////////////////////////////////////////////
 	// Returns a pair, a success flag and key.
-	virtual SDisplayContextKey CreateContext(const SDisplayContextDescription& desc) = 0;
+	virtual SDisplayContextKey CreateSwapChainBackedContext(const SDisplayContextDescription& desc) = 0;
 	virtual void               ResizeContext(const SDisplayContextKey& key, int width, int height) = 0;
 	virtual bool               DeleteContext(const SDisplayContextKey& key) = 0;
 
@@ -1053,19 +1059,19 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual Vec3 UnprojectFromScreen(int x, int y) = 0;
 
 	//! Gets height of the main rendering resolution.
-	virtual int GetHeight() = 0;
+	virtual int GetHeight() const = 0;
 
 	//! Gets width of the main rendering resolution.
-	virtual int GetWidth() = 0;
+	virtual int GetWidth() const = 0;
 
 	//! Gets Pixel Aspect Ratio.
 	virtual float GetPixelAspectRatio() const = 0;
 
 	//! Gets width of the height of the overlay viewport where UI and debug output are rendered.
-	virtual int GetOverlayHeight() = 0;
+	virtual int GetOverlayHeight() const = 0;
 
 	//! Gets width of the width of the overlay viewport where UI and debug output are rendered.
-	virtual int GetOverlayWidth() = 0;
+	virtual int GetOverlayWidth() const = 0;
 
 	//! Gets memory status information
 	virtual void GetMemoryUsage(ICrySizer* Sizer) = 0;
@@ -1143,8 +1149,9 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual bool FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce) = 0;
 	virtual int  CurThreadList() = 0;
 
-	virtual void FlashRender(IFlashPlayer_RenderProxy* pPlayer, bool stereo, int textureId=0) = 0;
-	virtual void FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool stereo, bool finalPlayback) = 0;
+	virtual void FlashRender(IFlashPlayer_RenderProxy* pPlayer) = 0;
+	virtual void FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool finalPlayback) = 0;
+	virtual void FlashRenderPlayer(IFlashPlayer* pPlayer) = 0;
 	virtual void FlashRemoveTexture(ITexture* pTexture) = 0;
 
 	/////////////////////////////////////////////////////////////////////////////////
@@ -1379,7 +1386,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual ISvoRenderer*            GetISvoRenderer() { return 0; }
 
 	virtual IColorGradingController* GetIColorGradingController() = 0;
-	virtual IStereoRenderer*         GetIStereoRenderer() = 0;
+	virtual IStereoRenderer*         GetIStereoRenderer() const = 0;
 
 	virtual void                     Graph(byte* g, int x, int y, int wdt, int hgt, int nC, int type, const char* text, ColorF& color, float fScale) = 0;
 

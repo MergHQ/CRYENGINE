@@ -75,13 +75,6 @@ namespace Cry
 				}
 			}
 
-			bool CRoomscaleCameraComponent::OnAsyncCameraCallback(const HmdTrackingState& sensorState, IHmdDevice::AsyncCameraContext& context)
-			{
-				context.outputCameraMatrix = m_pEntity->GetWorldTM() * Matrix34::Create(Vec3(1.f), sensorState.pose.orientation, sensorState.pose.position);
-
-				return true;
-			}
-
 			uint64 CRoomscaleCameraComponent::GetEventMask() const
 			{
 				uint64 bitFlags = IsActive() ? BIT64(ENTITY_EVENT_UPDATE) : 0;
@@ -93,11 +86,6 @@ namespace Cry
 			void CRoomscaleCameraComponent::OnShutDown()
 			{
 				m_pCameraManager->RemoveCamera(this);
-
-				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
-				{
-					pDevice->SetAsyncCameraCallback(nullptr);
-				}
 			}
 
 #ifndef RELEASE

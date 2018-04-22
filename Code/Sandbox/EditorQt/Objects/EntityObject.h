@@ -358,7 +358,7 @@ protected:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void OnEventTargetEvent(CBaseObject* target, int event);
+	virtual void OnEventTargetEvent(const CBaseObject* pObject, const CObjectEvent& event);
 	void         ResolveEventTarget(CBaseObject* object, unsigned int index);
 	void         ReleaseEventTargets();
 	void         UpdateMaterialInfo();

@@ -723,7 +723,7 @@ public:
 	virtual bool RT_CreateDevice() = 0;
 	virtual void RT_Reset() = 0;
 
-	virtual void RT_RenderScene(CRenderView* pRenderView, int nFlags) = 0;
+	virtual void RT_RenderScene(CRenderView* pRenderView) = 0;
 
 	virtual void RT_ReleaseRenderResources(uint32 nFlags) = 0;
 
@@ -731,15 +731,16 @@ public:
 	virtual void RT_PrecacheDefaultShaders() = 0;
 	virtual bool RT_ReadTexture(void* pDst, int destinationWidth, int destinationHeight, EReadTextureFormat dstFormat, CTexture* pSrc) = 0;
 	virtual bool RT_StoreTextureToFile(const char* szFilePath, CTexture* pSrc) = 0;
-	virtual void FlashRender(IFlashPlayer_RenderProxy* pPlayer, bool stereo, int textureId=0) override;
-	virtual void FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool stereo, bool finalPlayback) override;
+	virtual void FlashRender(IFlashPlayer_RenderProxy* pPlayer) override;
+	virtual void FlashRenderPlayer(IFlashPlayer* pPlayer) override;
+	virtual void FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool finalPlayback) override;
 	virtual void FlashRemoveTexture(ITexture* pTexture) override;
 
 	virtual void RT_RenderDebug(bool bRenderStats = true) = 0;
 
-	virtual void RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool stereo, bool doRealRender) = 0;
-	virtual void RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool stereo, bool finalPlayback, bool doRealRender) = 0;
-
+	virtual void RT_FlashRenderInternal(IFlashPlayer* pPlayer) = 0;
+	virtual void RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool doRealRender) = 0;
+	virtual void RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool finalPlayback, bool doRealRender) = 0;
 	virtual bool FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce) override;
 	virtual bool ForceFlushRTCommands();
 	virtual void WaitForParticleBuffer() = 0;
@@ -836,13 +837,13 @@ public:
 //	void                 SetHeight(int nH)                             { ChangeRenderResolution(CRendererResources::s_renderWidth, nH); }
 //	void                 SetPixelAspectRatio(float fPAR)               { m_pixelAspectRatio = fPAR; }
 
-	virtual int          GetWidth() override                           { return CRendererResources::s_renderWidth; }
-	virtual int          GetHeight() override                          { return CRendererResources::s_renderHeight; }
+	virtual int          GetWidth() const override                     { return CRendererResources::s_renderWidth; }
+	virtual int          GetHeight() const override                    { return CRendererResources::s_renderHeight; }
 
-	virtual int          GetOverlayWidth() override                    { return CRendererResources::s_displayWidth; }
-	virtual int          GetOverlayHeight() override                   { return CRendererResources::s_displayHeight; }
+	virtual int          GetOverlayWidth() const override;
+	virtual int          GetOverlayHeight() const override;
 
-	virtual float        GetPixelAspectRatio() const override { return (m_pixelAspectRatio); }
+	virtual float        GetPixelAspectRatio() const override          { return (m_pixelAspectRatio); }
 
 	virtual bool         IsStereoEnabled() const override              { return false; }
 

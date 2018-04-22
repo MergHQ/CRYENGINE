@@ -4198,7 +4198,7 @@ void CEntityObject::ResolveEventTarget(CBaseObject* object, unsigned int index)
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ASSERT, "Attempting to link Object %s which is not an EntityObject to entity %s", object->GetName(), GetName());
 		}
-		object->AddEventListener(functor(*this, &CEntityObject::OnEventTargetEvent));
+		object->signalChanged.Connect(this, &CEntityObject::OnEventTargetEvent);
 	}
 	m_eventTargets[index].target = object;
 	if (!m_eventTargets.empty() && m_pEntityScript != 0)
@@ -4299,16 +4299,16 @@ void CEntityObject::SaveLink(XmlNodeRef xmlNode)
 	}
 }
 
-void CEntityObject::OnEventTargetEvent(CBaseObject* target, int event)
+void CEntityObject::OnEventTargetEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
 	// When event target is deleted.
-	if (event == OBJECT_ON_DELETE)
+	if (event.m_type == OBJECT_ON_DELETE)
 	{
 		// Find this target in events list and remove.
 		int numTargets = m_eventTargets.size();
 		for (int i = 0; i < numTargets; i++)
 		{
-			if (m_eventTargets[i].target == target)
+			if (m_eventTargets[i].target == pObject)
 			{
 				RemoveEventTarget(i);
 				numTargets = m_eventTargets.size();
@@ -4316,12 +4316,12 @@ void CEntityObject::OnEventTargetEvent(CBaseObject* target, int event)
 			}
 		}
 	}
-	else if (event == OBJECT_ON_PREDELETE)
+	else if (event.m_type == OBJECT_ON_PREDELETE)
 	{
 		int numTargets = m_links.size();
 		for (int i = 0; i < numTargets; i++)
 		{
-			if (m_links[i].targetId == target->GetId())
+			if (m_links[i].targetId == pObject->GetId())
 			{
 				RemoveEntityLink(i);
 				numTargets = m_eventTargets.size();
@@ -4342,7 +4342,7 @@ int CEntityObject::AddEventTarget(CBaseObject* target, const string& event, cons
 	// Assign event target.
 	if (et.target)
 	{
-		et.target->AddEventListener(functor(*this, &CEntityObject::OnEventTargetEvent));
+		et.target->signalChanged.Connect(this, &CEntityObject::OnEventTargetEvent);
 	}
 
 	m_eventTargets.push_back(et);
@@ -4365,7 +4365,7 @@ void CEntityObject::RemoveEventTarget(int index, bool bUpdateScript)
 
 		if (m_eventTargets[index].target)
 		{
-			m_eventTargets[index].target->RemoveEventListener(functor(*this, &CEntityObject::OnEventTargetEvent));
+			m_eventTargets[index].target->signalChanged.DisconnectObject(this);
 		}
 		m_eventTargets.erase(m_eventTargets.begin() + index);
 
@@ -4410,7 +4410,7 @@ int CEntityObject::AddEntityLink(const string& name, CryGUID targetEntityId)
 	// Assign event target.
 	if (target)
 	{
-		target->AddEventListener(functor(*this, &CEntityObject::OnEventTargetEvent));
+		target->signalChanged.Connect(this, &CEntityObject::OnEventTargetEvent);
 	}
 
 	CEntityLink lnk;
@@ -4454,7 +4454,7 @@ void CEntityObject::RemoveEntityLink(int index)
 
 		if (CEntityObject* pTarget = link.GetTarget())
 		{
-			pTarget->RemoveEventListener(functor(*this, &CEntityObject::OnEventTargetEvent));
+			pTarget->signalChanged.DisconnectObject(this);
 			pTarget->EntityUnlinked(link.name.c_str(), GetId());
 		}
 		m_links.erase(m_links.begin() + index);

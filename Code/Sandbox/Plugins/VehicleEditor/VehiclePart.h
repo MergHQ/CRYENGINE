@@ -77,7 +77,7 @@ public:
 
 	void SetVehicle(CVehiclePrototype* pProt) { m_pVehicle = pProt; }
 
-	void OnObjectEvent(CBaseObject* node, int event);
+	void OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event);
 
 protected:
 	CVehiclePart();

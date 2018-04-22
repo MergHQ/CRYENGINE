@@ -26,6 +26,7 @@ struct IObjectLayer;
 class SubObjectSelectionReferenceFrameCalculator;
 class CPopupMenuItem;
 class CInspectorWidgetCreator;
+class CObjectLayer;
 
 //////////////////////////////////////////////////////////////////////////
 typedef _smart_ptr<CBaseObject>     CBaseObjectPtr;
@@ -182,63 +183,7 @@ public:
  *	Specific object classes must override this class, to provide specific functionality.
  *	Objects are reference counted and only destroyed when last reference to object
  *	is destroyed.
- *
  */
-
- //! Generic object event struct. To be used with EObjectListenerEvent
-struct CObjectEvent
-{
-	CObjectEvent(EObjectListenerEvent type, CBaseObject* pObj)
-		: m_type(type)
-		, m_pObj(pObj)
-	{
-	};
-
-	EObjectListenerEvent m_type;
-	// !Caller of this event
-	CBaseObject*         m_pObj;
-};
-
-//! Data for handling EObjectListenerEvent on multiple objects
-struct CObjectsEvent
-{
-	EObjectListenerEvent m_type;
-	const std::vector<CBaseObject*>& objects;
-};
-
-struct CObjectLayerChangeEvent : public CObjectEvent
-{
-	CObjectLayerChangeEvent(CBaseObject* pObj, IObjectLayer* oldLayer)
-		: CObjectEvent(OBJECT_ON_LAYERCHANGE, pObj)
-		, m_poldLayer(oldLayer)
-	{
-	}
-
-	IObjectLayer* m_poldLayer;
-};
-
-struct CObjectPreLinkEvent : public CObjectEvent
-{
-	CObjectPreLinkEvent(CBaseObject* pObj, CBaseObject* pLinkedTo)
-		: CObjectEvent(OBJECT_ON_PRELINKED, pObj)
-		, m_pLinkedTo(pLinkedTo)
-	{
-	}
-
-	CBaseObject* m_pLinkedTo;
-};
-
-struct CObjectUnLinkEvent : public CObjectEvent
-{
-	CObjectUnLinkEvent(CBaseObject* pObj, CBaseObject* pLinkedTo)
-		: CObjectEvent(OBJECT_ON_UNLINKED, pObj)
-		, m_pLinkedTo(pLinkedTo)
-	{
-	}
-
-	// !Object we are unlinking from. Necessary because pObj has already been detached and has no parent
-	CBaseObject* m_pLinkedTo;
-};
 
 class EDITOR_COMMON_API CBaseObject : public CObject, public _i_reference_target_t
 {
@@ -425,9 +370,9 @@ public:
 	//! Scans hierarchy up to determine if we are a descendant of pObject
 	virtual bool IsDescendantOf(const CBaseObject* pObject) const;
 	//! Scans hierarchy up to determine if we child of specified node.
-	virtual bool IsChildOf(CBaseObject* node);
+	virtual bool IsChildOf(const CBaseObject* node) const;
 	//! Scans hierarchy up to determine if we are linked to the specified object.
-	virtual bool IsLinkedDescendantOf(CBaseObject* pObject);
+	virtual bool IsLinkedDescendantOf(const CBaseObject* pObject) const;
 	//! Get all child objects
 	void         GetAllChildren(TBaseObjects& outAllChildren, CBaseObject* pObj = NULL) const;
 	void         GetAllChildren(DynArray<_smart_ptr<CBaseObject>>& outAllChildren, CBaseObject* pObj = NULL) const;
@@ -597,11 +542,6 @@ public:
 	//! Store undo information for this object.
 	void StoreUndo(const char* undoDescription, bool minimal = false, int flags = 0);
 
-	//! Add event listener callback.
-	void AddEventListener(const EventCallback& cb);
-	//! Remove event listener callback.
-	void RemoveEventListener(const EventCallback& cb);
-
 	//////////////////////////////////////////////////////////////////////////
 	//! Material handling for this base object.
 	//! Override in derived classes.
@@ -704,7 +644,7 @@ public:
 
 protected:
 	friend class CObjectManager;
-	friend class CObjectLayer;
+	friend CObjectLayer;
 
 	//! Ctor is protected to restrict direct usage.
 	CBaseObject();
@@ -797,9 +737,6 @@ protected:
 	// Returns true if game objects should be created.
 	bool IsCreateGameObjects() const;
 
-	//! Notify all listeners about event.
-	void NotifyListeners(EObjectListenerEvent event);
-
 	//! Only used by ObjectManager.
 	bool IsPotentiallyVisible() const;
 
@@ -830,6 +767,9 @@ protected:
 
 	//! This is meant to react on selection state changed, not to select the object. Call the object manager if you need this.
 	virtual void SetSelected(bool bSelect);
+
+public:
+	CCrySignal<void(const CBaseObject*, const CObjectEvent&)> signalChanged;
 
 protected:
 	virtual void SerializeGeneralProperties(Serialization::IArchive& ar, bool bMultiEdit);
@@ -944,10 +884,6 @@ private:
 
 	// The transform delegate
 	ITransformDelegate* m_pTransformDelegate;
-
-	//////////////////////////////////////////////////////////////////////////
-	// Listeners.
-	std::vector<EventCallback> m_eventListeners;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Flags and bit masks.

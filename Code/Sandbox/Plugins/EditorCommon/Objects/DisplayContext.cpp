@@ -58,7 +58,6 @@ void DisplayContext::SetCamera(CCamera* pCamera)
 {
 	assert(pCamera);
 	camera = pCamera;
-	gEnv->pRenderer->UpdateAuxDefaultCamera(*pCamera);
 }
 
 //////////////////////////////////////////////////////////////////////////

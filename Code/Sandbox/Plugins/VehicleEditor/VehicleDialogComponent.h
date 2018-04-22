@@ -112,7 +112,7 @@ protected:
 	void         DisableUpdateObjectOnVarChange(const string& childVarName);
 
 private:
-	void OnObjectEventCallback(CBaseObject* pObject, int eventId);
+	void OnObjectEventCallback(const CBaseObject* pObject, const CObjectEvent& event);
 
 protected:
 	IVariable* m_pVar;

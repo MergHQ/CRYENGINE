@@ -352,11 +352,7 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 			
 			Matrix44A matProj = viewInfo.unjitteredProjMatrix; // Use Projection matrix without the pixel shift
 
-			// Changing stereo mode from dual-rendering to post-stereo causes 1 frame mismatch between projection matrix and stereo mode from GetStereoMode().
-			const bool exceptionalCase = (pRenderer->GetS3DRend().GetStereoMode() == STEREO_MODE_POST_STEREO && CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING);
-
-			assert(pRenderer->GetS3DRend().GetStereoMode() == STEREO_MODE_DUAL_RENDERING
-			       || exceptionalCase
+			assert(pRenderer->GetS3DRend().GetStereoMode() == EStereoMode::STEREO_MODE_DUAL_RENDERING
 			       || (matProj.m20 == 0 && matProj.m21 == 0)); // Ensure jittering is removed from projection matrix
 
 			Matrix44_tpl<f64> matViewInv, matProjInv;

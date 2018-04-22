@@ -642,6 +642,7 @@ add_sources("NoUberFile"
 		"Vulkan/API/VKMemoryResource.hpp"
 		"Vulkan/API/VKMemoryResource.cpp"
 		"Vulkan/API/VKLegacyToBeRemoved.cpp"
+		"Vulkan/API/VkSpirvHelper.hpp"
 		"Vulkan/API/VKShader.hpp"
 		"Vulkan/API/VKShader.cpp"
 		"Vulkan/API/VKSampler.hpp"
@@ -928,6 +929,8 @@ add_sources("CryRenderer_uber_3.cpp"
 		"../Common/RenderOutput.h"
 		"../Common/RenderDisplayContext.cpp"
 		"../Common/RenderDisplayContext.h"
+		"../Common/SwapChain.cpp"
+		"../Common/SwapChain.h"
 		"../Common/RenderItemDrawer.cpp"
 		"../Common/Shadow_Renderer.cpp"
 		"../Common/CommonRender.h"
@@ -1285,11 +1288,13 @@ if (RENDERER_VULKAN)
 		set_libpath_flag()
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}\"${SDK_DIR}/VulkanSDK/Lib\"")
 	elseif(ANDROID)
+		target_compile_options(${THIS_PROJECT} PRIVATE -std=c++14)
+		find_library(LIBVULKAN vulkan PATHS "${CMAKE_ANDROID_NDK}/platforms/android-${CMAKE_SYSTEM_VERSION}/arch-${CMAKE_ANDROID_ARCH}")
+		target_include_directories(${THIS_PROJECT} PRIVATE "${CMAKE_ANDROID_NDK}/sources/third_party/vulkan/src/include")
 		target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/Tools/HLSLCrossCompiler/include")
 		target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
-		target_link_libraries(${THIS_PROJECT} PRIVATE vulkan)
+		target_link_libraries(${THIS_PROJECT} PRIVATE ${LIBVULKAN})
 	elseif(LINUX)
-		#set(CMAKE_CXX_STANDARD 14)
 		target_compile_options(${THIS_PROJECT} PRIVATE -std=c++14)
 		find_library(LIBVULKAN vulkan PATHS "${SDK_DIR}/VulkanSDK/x86_64/lib")
 		target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/VulkanSDK/x86_64/include")

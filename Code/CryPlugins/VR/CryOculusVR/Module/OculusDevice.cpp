@@ -16,15 +16,30 @@
 
 namespace
 {
+inline CryVR::Oculus::OculusStatus CheckStatusAndReturn(ovrResult result) 
+{
+	if (OVR_SUCCESS(result))
+		return CryVR::Oculus::OculusStatus::Success;
+
+	// Unsuccessful
+	ovrErrorInfo errorInfo;
+	ovr_GetLastErrorInfo(&errorInfo);
+	gEnv->pLog->Log("[HMD][Oculus] Unable to submit frame to the Oculus device!: [%s]", *errorInfo.ErrorString ? errorInfo.ErrorString : "unspecified error");
+
+	if (result == ovrError_DisplayLost)
+		return CryVR::Oculus::OculusStatus::DeviceLost;
+	return CryVR::Oculus::OculusStatus::UnknownError;
+}
+
 // Note: This symmetric fov is still used for frustum culling
 ovrFovPort ComputeSymmetricalFov(ovrHmdType hmdType, const ovrFovPort& fovLeftEye, const ovrFovPort& fovRightEye)
 {
 	// CB aspect ratio = 1.8 (2160x1200), DK2 aspect ratio = 1.7777 (1920x1080)
 	const float stereoDeviceAR =
-	  hmdType == ovrHmd_CB ? 1.8f :
-	  (hmdType >= ovrHmd_ES06 || hmdType == ovrHmd_Other) ? 1.8f :
-	  hmdType == ovrHmd_DK2 ? 1.7777f :
-	  1.7777f;   // not clear that we should support anything under DK2
+		hmdType == ovrHmd_CB ? 1.8f :
+		(hmdType >= ovrHmd_ES06 || hmdType == ovrHmd_Other) ? 1.8f :
+		hmdType == ovrHmd_DK2 ? 1.7777f :
+		1.7777f;   // not clear that we should support anything under DK2
 
 	CryLog("[OculusDevice] Aspect Ratio selected: %f", stereoDeviceAR);
 	ovrFovPort fovMax;
@@ -116,23 +131,8 @@ Device::Device()
 	, m_hmdDesc()
 	, m_devInfo()
 	, m_disableHeadTracking(false)
-	, m_pAsyncCameraCallback(nullptr)
 {
-	memset(&m_eyeFovSym, 0, sizeof(m_eyeFovSym));
-	memset(&m_eyeRenderHmdToEyeOffset, 0, sizeof(m_eyeRenderHmdToEyeOffset));
-	memset(&m_frameRenderParams, 0, sizeof(m_frameRenderParams));
-
-	m_pHmdInfoCVar = gEnv->pConsole->GetCVar("hmd_info");
-	m_pHmdSocialScreenKeepAspectCVar = gEnv->pConsole->GetCVar("hmd_social_screen_keep_aspect");
-	m_pHmdSocialScreenCVar = gEnv->pConsole->GetCVar("hmd_social_screen");
-	m_pTrackingOriginCVar = gEnv->pConsole->GetCVar("hmd_tracking_origin");
-
 	CreateDevice();
-	UpdateCurrentIPD();
-
-	if (m_pSession && GetISystem()->GetISystemEventDispatcher())
-		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CryVR::Oculus::Device");
-
 	gEnv->pSystem->GetHmdManager()->AddEventListener(this);
 }
 
@@ -187,6 +187,25 @@ Device* Device::CreateInstance()
 // -------------------------------------------------------------------------
 void Device::CreateDevice()
 {
+	memset(&m_eyeFovSym, 0, sizeof(m_eyeFovSym));
+	memset(&m_eyeRenderHmdToEyeOffset, 0, sizeof(m_eyeRenderHmdToEyeOffset));
+	memset(&m_frameRenderParams, 0, sizeof(m_frameRenderParams));
+
+	m_pHmdInfoCVar = gEnv->pConsole->GetCVar("hmd_info");
+	m_pHmdSocialScreenKeepAspectCVar = gEnv->pConsole->GetCVar("hmd_social_screen_aspect_mode");
+	m_pHmdSocialScreenCVar = gEnv->pConsole->GetCVar("hmd_social_screen");
+	m_pTrackingOriginCVar = gEnv->pConsole->GetCVar("hmd_tracking_origin");
+
+	if (m_pSession)
+	{
+		if (GetISystem()->GetISystemEventDispatcher())
+			GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
+
+		ovr_Destroy(m_pSession);
+
+		m_pSession = 0;
+	}
+
 	ovrGraphicsLuid luid;
 	ovrResult result = ovr_Create(&m_pSession, &luid);
 	if (m_pSession && OVR_SUCCESS(result))
@@ -215,8 +234,8 @@ void Device::CreateDevice()
 		InitLayers();
 
 		// Store eye info for IPD
-		m_eyeRenderHmdToEyeOffset[0] = ovr_GetRenderDesc(m_pSession, ovrEye_Left, m_hmdDesc.DefaultEyeFov[0]).HmdToEyeOffset;
-		m_eyeRenderHmdToEyeOffset[1] = ovr_GetRenderDesc(m_pSession, ovrEye_Right, m_hmdDesc.DefaultEyeFov[1]).HmdToEyeOffset;
+		m_eyeRenderHmdToEyeOffset[0] = ovr_GetRenderDesc(m_pSession, ovrEye_Left, m_hmdDesc.DefaultEyeFov[0]).HmdToEyePose;
+		m_eyeRenderHmdToEyeOffset[1] = ovr_GetRenderDesc(m_pSession, ovrEye_Right, m_hmdDesc.DefaultEyeFov[1]).HmdToEyePose;
 
 		LogHmdCharacteristics(m_hmdDesc, m_devInfo, m_controller);
 
@@ -226,7 +245,7 @@ void Device::CreateDevice()
 		m_preferredSize.w = max(leftEyeSize.w, rightEyeSize.w);
 		m_preferredSize.h = max(leftEyeSize.h, rightEyeSize.h);
 
-		ovr_SetTrackingOriginType(m_pSession, (m_pTrackingOriginCVar->GetIVal() == (int)EHmdTrackingOrigin::Floor) ? ovrTrackingOrigin_FloorLevel : ovrTrackingOrigin_EyeLevel);
+		ovr_SetTrackingOriginType(m_pSession, m_pTrackingOriginCVar->GetIVal() == static_cast<int>(EHmdTrackingOrigin::Standing) ? ovrTrackingOrigin_FloorLevel : ovrTrackingOrigin_EyeLevel);
 	}
 	else
 	{
@@ -234,6 +253,11 @@ void Device::CreateDevice()
 		ovr_GetLastErrorInfo(&errorInfo);
 		CryLogAlways("[HMD][Oculus] Failed to initialize HMD device! [%s]", *errorInfo.ErrorString ? errorInfo.ErrorString : "unspecified error");
 	}
+
+	UpdateCurrentIPD();
+
+	if (m_pSession && GetISystem()->GetISystemEventDispatcher())
+		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CryVR::Oculus::Device");
 }
 
 // -------------------------------------------------------------------------
@@ -345,7 +369,7 @@ void Device::DisableHMDTracking(bool disable)
 }
 
 // -------------------------------------------------------------------------
-void Device::UpdateTrackingState(EVRComponent type)
+void Device::UpdateTrackingState(EVRComponent type, int frameId)
 {
 	if (m_pSession)
 	{
@@ -386,9 +410,6 @@ void Device::UpdateTrackingState(EVRComponent type)
 			}
 		}
 
-		IRenderer* pRenderer = gEnv->pRenderer;
-		const int frameId = pRenderer->GetFrameID(false);
-
 	#if !defined(_RELEASE)
 		// Check we update things in the right thread at not too often
 
@@ -413,20 +434,11 @@ void Device::UpdateTrackingState(EVRComponent type)
 		//Get eye poses, feeding in correct IPD offset
 		// Note: /*halfIPD*/ this is a hack to fix badly projected health & safety text that happens in Oculus runtime 0.7 for EVT devices
 		// Oculus suggested this fix and said that this value is only used for a very specific layer that it is not used at the moment
-		const bool bZeroEyeOffset = true;
-		ovrVector3f hmdToEyeOffset[2]; // hmd to eye offset
-		if (bZeroEyeOffset)
-		{
-			hmdToEyeOffset[0].x = 0.f;
-			hmdToEyeOffset[0].y = 0.f;
-			hmdToEyeOffset[0].z = 0.f;
-			hmdToEyeOffset[1].x = 0.f;
-			hmdToEyeOffset[1].y = 0.f;
-			hmdToEyeOffset[1].z = 0.f;
-		}
+		const bool bZeroEyeOffset = false;
+		ovrPosef hmdToEyeOffset[2] = {};
 
 		// See if user changed the tracking origin, and update in Oculus Runtime if necessary
-		auto desiredTrackingOrigin = (m_pTrackingOriginCVar->GetIVal() == (int)EHmdTrackingOrigin::Floor) ? ovrTrackingOrigin_FloorLevel : ovrTrackingOrigin_EyeLevel;
+		auto desiredTrackingOrigin = m_pTrackingOriginCVar->GetIVal() == static_cast<int>(EHmdTrackingOrigin::Standing) ? ovrTrackingOrigin_FloorLevel : ovrTrackingOrigin_EyeLevel;
 		if(ovr_GetTrackingOriginType(m_pSession) != desiredTrackingOrigin)
 		{
 			ovr_SetTrackingOriginType(m_pSession, desiredTrackingOrigin);
@@ -436,10 +448,6 @@ void Device::UpdateTrackingState(EVRComponent type)
 		const bool kbLatencyMarker = false;
 		double frameTime = ovr_GetPredictedDisplayTime(m_pSession, frameId);
 		ovrTrackingState trackingState = ovr_GetTrackingState(m_pSession, frameTime, kbLatencyMarker);
-
-		//double frameTimeCurrent = ovr_GetTimeInSeconds(); // Get most recent sensor value
-		//double dt = 1000 * (frameTime - frameTimeCurrent);
-		//{ char buf[128]; cry_sprintf(buf, "2)ovr_GetPredictedDisplayTime %d (%f ms)\r\n", frameId, dt); OutputDebugString(buf); }
 
 		ovrPosef eyePose[2];
 		double sensorSampleTime;
@@ -471,10 +479,10 @@ void Device::UpdateTrackingState(EVRComponent type)
 			{
 				frameParams.eyeFovs[eye] = m_hmdDesc.DefaultEyeFov[eye];
 				frameParams.eyePoses[eye] = eyePose[eye];
-				frameParams.viewScaleDesc.HmdToEyeOffset[eye] = hmdToEyeOffset[eye];
-				frameParams.sensorSampleTime = sensorSampleTime;
-				frameParams.frameId = frameId;
+				frameParams.viewScaleDesc.HmdToEyePose[eye] = hmdToEyeOffset[eye];
 			}
+			frameParams.sensorSampleTime = sensorSampleTime;
+			frameParams.frameId = frameId;
 			frameParams.viewScaleDesc.HmdSpaceToWorldScaleInMeters = stereoScaleCoefficient;
 		}
 
@@ -503,25 +511,6 @@ void Device::UpdateTrackingState(EVRComponent type)
 			}
 		}
 	}
-}
-
-// -------------------------------------------------------------------------
-const EHmdSocialScreen Device::GetSocialScreenType(bool* pKeepAspect) const
-{
-	const int kFirstInvalidIndex = static_cast<int>(EHmdSocialScreen::FirstInvalidIndex);
-
-	if (pKeepAspect)
-	{
-		*pKeepAspect = m_pHmdSocialScreenKeepAspectCVar->GetIVal() != 0;
-	}
-
-	if (m_pHmdSocialScreenCVar->GetIVal() >= -1 && m_pHmdSocialScreenCVar->GetIVal() < kFirstInvalidIndex)
-	{
-		const EHmdSocialScreen socialScreenType = static_cast<EHmdSocialScreen>(m_pHmdSocialScreenCVar->GetIVal());
-		return socialScreenType;
-	}
-	return EHmdSocialScreen::DistortedDualImage;
-
 }
 
 // -------------------------------------------------------------------------
@@ -581,7 +570,7 @@ float Device::UpdateCurrentIPD()
 		fov.RightTan = m_devInfo.fovH * 0.5f;
 
 		ovrEyeRenderDesc desc = ovr_GetRenderDesc(m_pSession, ovrEye_Left, fov);
-		const float ipd = fabs(desc.HmdToEyeOffset.x * 2.f);
+		const float ipd = fabs(desc.HmdToEyePose.Position.x * 2.f);
 
 		// let's make sure we read some reasonable values
 		if (ipd >= 0.0000f && ipd < 0.15f)
@@ -855,7 +844,7 @@ bool Device::UpdateEyeFovLayer(ovrLayerEyeFov& layer, const SHmdSwapChainInfo* p
 	{
 		if (pEyeTarget && pEyeTarget->bActive)
 		{
-			const uint32 eye = pEyeTarget->eye;
+			const uint32 eye = static_cast<uint32_t>(pEyeTarget->eye);
 
 			layer.ColorTexture[eye] = pEyeTarget->pDeviceTextureSwapChain;
 			layer.Viewport[eye].Pos.x = pEyeTarget->viewportPosition.x;
@@ -879,7 +868,7 @@ bool Device::UpdateQuadLayer(ovrLayerQuad& layer, const SHmdSwapChainInfo* pEyeT
 
 	if (pEyeTarget->bActive)
 	{
-		const bool bHeadLock = CPlugin_OculusVR::s_hmd_projection == eHmdProjection_Mono_HeadLocked || pEyeTarget->layerType == RenderLayer::eLayer_Quad_HeadLoked;
+		const bool bHeadLock = CPlugin_OculusVR::s_hmd_projection == eHmdProjection_Mono_HeadLocked || pEyeTarget->layerType == RenderLayer::eLayer_Quad_HeadLocked;
 		layer.Header.Flags = bHeadLock ? ovrLayerFlag_HeadLocked : 0;
 
 		layer.ColorTexture = pEyeTarget->pDeviceTextureSwapChain;
@@ -939,8 +928,20 @@ void Device::CommitTextureSwapChain(const SHmdSwapChainInfo* pSwapChain)
 	}
 }
 
-// -------------------------------------------------------------------------
-void Device::SubmitFrame(const SHmdSubmitFrameData pData)
+OculusStatus Device::PrepareFrame(int frameId)
+{
+	CRY_PROFILE_REGION(PROFILE_SYSTEM, "OculusDevice::ovr_WaitToBeginFrame");
+
+	m_currentFrameId = frameId;
+	return CheckStatusAndReturn(ovr_WaitToBeginFrame(m_pSession, m_currentFrameId));
+}
+
+OculusStatus Device::BeginFrame()
+{
+	return CheckStatusAndReturn(ovr_BeginFrame(m_pSession, m_currentFrameId));
+}
+
+OculusStatus Device::SubmitFrame(const SHmdSubmitFrameData &data)
 {
 	// Get the render parameters (as stored by the main thread in UpdateTrackingState)
 	const SRenderParameters& frameParams = GetFrameRenderParameters();
@@ -952,7 +953,7 @@ void Device::SubmitFrame(const SHmdSubmitFrameData pData)
 	uint32 numActiveLayers = 0;
 
 	// Update Scene3D layer
-	const SHmdSwapChainInfo* eyeScene3D[2] = { pData.pLeftEyeScene3D, pData.pRightEyeScene3D };
+	const SHmdSwapChainInfo* eyeScene3D[2] = { data.pLeftEyeScene3D, data.pRightEyeScene3D };
 	uint32 cntActiveEyes = 0;
 	for (uint32 i = 0; i < 2; ++i)
 	{
@@ -977,14 +978,12 @@ void Device::SubmitFrame(const SHmdSubmitFrameData pData)
 	}
 
 	if (cntActiveEyes == 2)
-	{
 		activeLayers[numActiveLayers++] = &m_layers.eyeFov.Header;
-	}
 
 	// Update Quad layers
-	for (uint32 i = 0; i < pData.numQuadLayersSwapChains; ++i)
+	for (uint32 i = 0; i < data.numQuadLayersSwapChains; ++i)
 	{
-		const SHmdSwapChainInfo* pSwapChain = &pData.pQuadLayersSwapChains[i];
+		const SHmdSwapChainInfo* pSwapChain = &data.pQuadLayersSwapChains[i];
 		const RenderLayer::TLayerId layerId = pSwapChain->layerId;
 		if (UpdateQuadLayer(m_layers.quad[layerId], pSwapChain))
 		{
@@ -993,25 +992,13 @@ void Device::SubmitFrame(const SHmdSubmitFrameData pData)
 		}
 	}
 
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, "OculusDevice::ovrSubmitFrame");
-	// Submit all active layers to Oculus runtime
-	ovrResult result = ovr_SubmitFrame(m_pSession, frameParams.frameId, &frameParams.viewScaleDesc, activeLayers, numActiveLayers);
-	if (!OVR_SUCCESS(result))
+	this->OnEndFrame();
+
 	{
-		ovrErrorInfo errorInfo;
-		ovr_GetLastErrorInfo(&errorInfo);
-		gEnv->pLog->Log("[HMD][Oculus] Unable to submit frame to the Oculus device!: [%s]", *errorInfo.ErrorString ? errorInfo.ErrorString : "unspecified error");
+		CRY_PROFILE_REGION(PROFILE_SYSTEM, "OculusDevice::ovr_EndFrame");
+		// Submit all active layers to Oculus runtime
+		return CheckStatusAndReturn(ovr_EndFrame(m_pSession, m_currentFrameId, &frameParams.viewScaleDesc, activeLayers, numActiveLayers));
 	}
-	#if !defined(RELEASE) && !defined(PROFILE)
-	else if (result == ovrSuccess_NotVisible)
-	{
-		gEnv->pLog->Log("[HMD][Oculus] ovrSubmitFrame succeeded BUT returned ovrSuccess_NotVisible (not rendered in the HMD because another App has ownership of the HMD)");
-		///     - ovrSuccess_NotVisible: rendering completed successfully but was not displayed on the HMD,
-		///       usually because another application currently has ownership of the HMD. Applications receiving
-		///       this result should stop rendering new content, but continue to call ovr_SubmitFrame periodically
-		///       until it returns a value other than ovrSuccess_NotVisible.
-	}
-	#endif
 }
 
 int Device::GetCurrentSwapChainIndex(void* pSwapChain) const
@@ -1028,43 +1015,15 @@ int Device::GetControllerCount() const
 	return m_controller.IsConnected(eHmdController_OculusRightHand) ? cnt + 1 : cnt;
 }
 
-void Device::SetAsyncCameraCallback(IAsyncCameraCallback* pCallback)
+stl::optional<Matrix34> Device::RequestAsyncCameraUpdate(int frameId, const Quat& oq, const Vec3 &op)
 {
-	m_pAsyncCameraCallback = pCallback;
-}
-
-bool Device::RequestAsyncCameraUpdate(AsyncCameraContext& context)
-{
-	if (!m_pAsyncCameraCallback)
-		return false;
-
-	if (!CPlugin_OculusVR::s_hmd_post_inject_camera)
-		return false;
-
-	//UpdateTrackingState(eVRComponent_Hmd);
-
-	const bool bZeroEyeOffset = true;
-	ovrVector3f hmdToEyeOffset[2]; // hmd to eye offset
-	if (bZeroEyeOffset)
-	{
-		hmdToEyeOffset[0].x = 0.f;
-		hmdToEyeOffset[0].y = 0.f;
-		hmdToEyeOffset[0].z = 0.f;
-		hmdToEyeOffset[1].x = 0.f;
-		hmdToEyeOffset[1].y = 0.f;
-		hmdToEyeOffset[1].z = 0.f;
-	}
-
-	const int frameId = context.frameId;
+	const bool bZeroEyeOffset = false;
+	ovrPosef hmdToEyeOffset[2] = {};
 
 	// get the current tracking state
 	const bool kbLatencyMarker = true;
 	double frameTime = ovr_GetPredictedDisplayTime(m_pSession, frameId);
 	ovrTrackingState trackingState = ovr_GetTrackingState(m_pSession, frameTime, kbLatencyMarker);
-
-	//double frameTimeCurrent = ovr_GetTimeInSeconds(); // Get most recent sensor value
-	//double dt = 1000 * (frameTime - frameTimeCurrent);
-	//{ char buf[128]; cry_sprintf(buf, "1)ovr_GetPredictedDisplayTime %d (%f ms)\r\n", frameId, dt); OutputDebugString(buf); }
 
 	ovrPosef eyePose[2];
 	double sensorSampleTime;
@@ -1081,8 +1040,11 @@ bool Device::RequestAsyncCameraUpdate(AsyncCameraContext& context)
 	  ((trackingState.StatusFlags & ovrStatus_OrientationTracked) ? eHmdStatus_OrientationTracked : 0) |
 	  ((trackingState.StatusFlags & ovrStatus_PositionTracked) ? eHmdStatus_PositionTracked : 0);
 
-	if (!m_pAsyncCameraCallback->OnAsyncCameraCallback(localTrackingState, context))
-		return false;
+	Vec3 p = oq * localTrackingState.pose.position;
+	Quat q = oq * localTrackingState.pose.orientation;
+
+	Matrix34 viewMtx(q);
+	viewMtx.SetTranslation(op + p);
 
 	// HMD-specific tracking update
 	{
@@ -1097,14 +1059,14 @@ bool Device::RequestAsyncCameraUpdate(AsyncCameraContext& context)
 		{
 			frameParams.eyeFovs[eye] = m_hmdDesc.DefaultEyeFov[eye];
 			frameParams.eyePoses[eye] = eyePose[eye];
-			frameParams.viewScaleDesc.HmdToEyeOffset[eye] = hmdToEyeOffset[eye];
+			frameParams.viewScaleDesc.HmdToEyePose[eye] = hmdToEyeOffset[eye];
 			frameParams.sensorSampleTime = sensorSampleTime;
 			frameParams.frameId = frameId;
 		}
 		frameParams.viewScaleDesc.HmdSpaceToWorldScaleInMeters = stereoScaleCoefficient;
 	}
 
-	return true;
+	return viewMtx;
 }
 
 } // namespace Oculus

@@ -301,7 +301,7 @@ bool C2DViewport::CreateRenderContext(HWND hWnd)
 	desc.screenResolution.x = width;
 	desc.screenResolution.y = height;
 
-	m_displayContextKey = gEnv->pRenderer->CreateContext(desc);
+	m_displayContextKey = gEnv->pRenderer->CreateSwapChainBackedContext(desc);
 
 	m_bRenderContextCreated = true;
 	return true;

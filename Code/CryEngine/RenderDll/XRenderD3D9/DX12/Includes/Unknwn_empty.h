@@ -5,7 +5,9 @@
 #if !defined(_MSC_VER)
 	#define __in
 	#define __in_opt
-	#define __out
+	
+	// NOTE: This definition is breaking spirv-cross linux trybuilds since <locale_conv.h> header is defining a variable called __out.
+	//#define __out
 	#define __out_opt
 	#define __inout
 	#define __inout_opt

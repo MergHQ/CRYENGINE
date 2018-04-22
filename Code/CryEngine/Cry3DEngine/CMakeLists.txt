@@ -395,6 +395,7 @@ MACRO(setup_Cry3DEngine)
 			-Wno-reorder
 			-Wno-unknown-pragmas
 			-Wno-unused-variable
+			-Wno-undefined-var-template
 			-Wno-parentheses
 			-Wno-unused-private-field
 			-Wno-switch

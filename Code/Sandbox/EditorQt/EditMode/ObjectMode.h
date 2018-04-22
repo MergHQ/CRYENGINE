@@ -51,8 +51,8 @@ public:
 	void GetManipulatorPosition(Vec3& position) override;
 	bool IsManipulatorVisible() override;
 
-	void ObjectUpdateCallback(CBaseObject* pObj, int evt);
-	void SingleObjectUpdateCallback(CObjectEvent& event);
+	void OnObjectChanged(const CBaseObject* pObject, const CObjectEvent& event);
+	void OnObjectsChanged(const std::vector<CBaseObject*>& objects, const CObjectEvent& event);
 	void OnSelectionChanged(const std::vector<CBaseObject*>& selected, const std::vector<CBaseObject*>& deselected);
 
 private:

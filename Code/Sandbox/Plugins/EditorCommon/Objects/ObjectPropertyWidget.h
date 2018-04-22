@@ -11,6 +11,7 @@
 class QScrollArea;
 class QVBoxLayout;
 class CBaseObject;
+struct CObjectEvent;
 class QShowEvent;
 class QPropertyTree;
 
@@ -23,7 +24,7 @@ public:
 
 	CObjectPropertyWidget(TSerializationFunc serializationFunc);
 	virtual ~CObjectPropertyWidget();
-	void OnObjectEvent(class CBaseObject* object, int event);
+	void OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event);
 	void OnEditorNotifyEvent(EEditorNotifyEvent event);
 
 public slots:

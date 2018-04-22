@@ -278,7 +278,7 @@ bool QPreviewWidget::CreateContext()
 		desc.screenResolution.x = m_width;
 		desc.screenResolution.y = m_height;
 
-		m_displayContextKey = m_pRenderer->CreateContext(desc);
+		m_displayContextKey = m_pRenderer->CreateSwapChainBackedContext(desc);
 		m_bContextCreated = true;
 
 		return true;

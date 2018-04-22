@@ -276,17 +276,6 @@ public:
 	void InvalidateVisibleList();
 
 	//////////////////////////////////////////////////////////////////////////
-	// ObjectManager notification Callbacks.
-	//////////////////////////////////////////////////////////////////////////
-
-	// Legacy object notification, use signalObjectChanged.Connect(); instead
-	void AddObjectEventListener(const EventCallback& cb);
-
-	// Legacy object notification, use signalObjectChanged.DisconnectById()
-	// or signalObjectChanged.DisconnectByIdDisconnectObject instead
-	void RemoveObjectEventListener(const EventCallback& cb);
-
-	//////////////////////////////////////////////////////////////////////////
 	// Used to indicate starting and ending of objects loading.
 	//////////////////////////////////////////////////////////////////////////
 	void StartObjectsLoading(int numObjects);
@@ -360,8 +349,8 @@ private:
 	void SelectObjectInRect(CBaseObject* pObj, CViewport* view, HitContext hc, ESelectOp bSelect);
 	void HitTestObjectAgainstRect(CBaseObject* pObj, CViewport* view, HitContext hc, std::vector<CryGUID>& guids);
 
-	// Legacy object notification, use signalObjectChanged(event, data); instead
-	void NotifyObjectListeners(CBaseObject* pObject, EObjectListenerEvent event);
+	void NotifyObjectListeners(CBaseObject* pObject, const CObjectEvent& event) const override;
+	void NotifyObjectListeners(const std::vector<CBaseObject*>& objects, const CObjectEvent& event) const override;
 
 	void FindDisplayableObjects(DisplayContext& dc, bool bDisplay);
 

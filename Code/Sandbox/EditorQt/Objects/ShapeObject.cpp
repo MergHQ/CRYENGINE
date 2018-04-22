@@ -87,7 +87,7 @@ public:
 	virtual void   GetManipulatorPosition(Vec3& position) override;
 	virtual bool   IsManipulatorVisible() override;
 
-	void           OnShapePropertyChange(CBaseObject*, int);
+	void           OnShapePropertyChange(const CBaseObject* pObject, const CObjectEvent& event);
 
 protected:
 	virtual ~CEditShapeTool();
@@ -132,7 +132,7 @@ void CEditShapeTool::SetUserData(const char* key, void* userData)
 	}
 
 	m_shape->SelectPoint(-1);
-	m_shape->AddEventListener(functor(*this, &CEditShapeTool::OnShapePropertyChange));
+	m_shape->signalChanged.Connect(this, &CEditShapeTool::OnShapePropertyChange);
 
 	m_shape->SetInEditMode(true);
 }
@@ -153,7 +153,7 @@ CEditShapeTool::~CEditShapeTool()
 
 	GetIEditorImpl()->GetGizmoManager()->RemoveManipulator(m_pManipulator);
 
-	m_shape->RemoveEventListener(functor(*this, &CEditShapeTool::OnShapePropertyChange));
+	m_shape->signalChanged.DisconnectObject(this);
 
 	m_shape->SetInEditMode(false);
 }
@@ -245,13 +245,13 @@ bool CEditShapeTool::IsManipulatorVisible()
 	return m_shape->GetSelectedPoint() != -1;
 }
 
-void CEditShapeTool::OnShapePropertyChange(CBaseObject*, int event)
+void CEditShapeTool::OnShapePropertyChange(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (event == OBJECT_ON_UI_PROPERTY_CHANGED)
+	if (event.m_type == OBJECT_ON_UI_PROPERTY_CHANGED)
 	{
 		m_pManipulator->Invalidate();
 	}
-	else if (event == OBJECT_ON_DELETE)
+	else if (event.m_type == OBJECT_ON_DELETE)
 	{
 		GetIEditorImpl()->SetEditTool(nullptr);
 	}

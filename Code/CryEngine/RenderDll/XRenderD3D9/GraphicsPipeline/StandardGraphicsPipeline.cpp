@@ -785,9 +785,6 @@ void CStandardGraphicsPipeline::Execute()
 		m_pRainStage->ExecuteRainOcclusion();
 	}
 
-	// new graphics pipeline doesn't need clearing stereo render targets.
-	gcpRendD3D->GetS3DRend().SkipEyeTargetClears();
-
 	// GBuffer
 	m_pSceneGBufferStage->Execute();
 

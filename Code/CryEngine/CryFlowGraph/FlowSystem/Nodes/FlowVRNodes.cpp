@@ -791,7 +791,7 @@ public:
 				if (bApplyType && pActInfo->pGraph != nullptr)
 				{
 					const int type = GetPortInt(pActInfo, EIP_Type);
-					if (type == RenderLayer::eLayer_Quad || type == RenderLayer::eLayer_Quad_HeadLoked)
+					if (type == RenderLayer::eLayer_Quad || type == RenderLayer::eLayer_Quad_HeadLocked)
 					{
 						pLayerProps->SetType(static_cast<RenderLayer::ELayerType>(type));
 						ActivateOutput(pActInfo, EOP_Done, true);
@@ -898,7 +898,7 @@ public:
 						}
 					}
 				}
-				else if (layerType == RenderLayer::eLayer_Quad || layerType == RenderLayer::eLayer_Quad_HeadLoked)
+				else if (layerType == RenderLayer::eLayer_Quad || layerType == RenderLayer::eLayer_Quad_HeadLocked)
 				{
 					if (!RenderLayer::IsQuadLayer(layerId))
 					{
@@ -924,8 +924,6 @@ public:
 				// Apply
 				if (IsPortActive(pActInfo, EIP_Apply) && pActInfo->pGraph != nullptr)
 				{
-					ITexture* pCurretnTexture = pLayerProps->GetTexture();
-
 					const string& textureName = GetPortString(pActInfo, EIP_Texture);
 					ITexture* pITexture = nullptr;
 					if (!textureName.empty() && gEnv->pRenderer)

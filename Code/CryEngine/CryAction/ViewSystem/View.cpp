@@ -134,20 +134,12 @@ void CView::Update(float frameTime, bool isActive)
 			if (pHmdDevice)
 			{
 				const HmdTrackingState& sensorState = pHmdDevice->GetLocalTrackingState();
-				if (sensorState.CheckStatusFlags(eHmdStatus_IsUsable) && static_cast<CViewSystem*>(gEnv->pGameFramework->GetIViewSystem())->ShouldApplyHmdOffset())
-				{
-					bHmdTrackingEnabled = true;
-				}
-			}
+				bHmdTrackingEnabled = sensorState.CheckStatusFlags(eHmdStatus_IsUsable) && static_cast<CViewSystem*>(gEnv->pGameFramework->GetIViewSystem())->ShouldApplyHmdOffset();
 
-			if (pHmdManager->IsStereoSetupOk())
-			{
-				const IHmdDevice* pDev = pHmdManager->GetHmdDevice();
-				const HmdTrackingState& sensorState = pDev->GetLocalTrackingState();
-				if (sensorState.CheckStatusFlags(eHmdStatus_IsUsable))
+				if (pHmdManager->IsStereoSetupOk())
 				{
 					float arf_notUsed;
-					pDev->GetCameraSetupInfo(fov, arf_notUsed);
+					pHmdDevice->GetCameraSetupInfo(fov, arf_notUsed);
 				}
 			}
 		}
@@ -219,10 +211,10 @@ void CView::Update(float frameTime, bool isActive)
 			p = q * record.hmdPositionOffset;
 			q = q * record.hmdViewRotation;
 		}
-		else if (bHmdTrackingEnabled)
+		else if (pHmdDevice && bHmdTrackingEnabled)
 		{
-			pHmdDevice->SetAsyncCameraCallback(this);
-			if (Cry::pHmdTrackingOrigin && Cry::pHmdTrackingOrigin->GetIVal() == (int)EHmdTrackingOrigin::Floor)
+			// For seated VR experiences, attach the camera to the actor entity.
+			if (Cry::pHmdTrackingOrigin && Cry::pHmdTrackingOrigin->GetIVal() == (int)EHmdTrackingOrigin::Seated)
 			{
 				const IEntity* pEnt = GetLinkedEntity();
 				if (const IActor* pActor = gEnv->pGameFramework->GetClientActor())
@@ -234,6 +226,7 @@ void CView::Update(float frameTime, bool isActive)
 					}
 				}
 			}
+			pHmdDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(q, pos));
 
 			const HmdTrackingState& sensorState = pHmdDevice->GetLocalTrackingState();
 			p = q * sensorState.pose.position;
@@ -259,41 +252,6 @@ void CView::Update(float frameTime, bool isActive)
 			}
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CView::OnAsyncCameraCallback(const HmdTrackingState& sensorState, IHmdDevice::AsyncCameraContext& context)
-{
-	ITimeDemoRecorder* pTimeDemoRecorder = gEnv->pGameFramework->GetITimeDemoRecorder();
-	if (pTimeDemoRecorder && pTimeDemoRecorder->IsPlaying())
-	{
-		return false;
-	}
-
-	Quat q = m_viewParams.rotation;
-	Vec3 pos = m_viewParams.position;
-	Vec3 p = Vec3(ZERO);
-
-	if (Cry::pHmdTrackingOrigin && Cry::pHmdTrackingOrigin->GetIVal() == (int)EHmdTrackingOrigin::Floor)
-	{
-		const IEntity* pEnt = GetLinkedEntity();
-		if (const IActor* pActor = gEnv->pGameFramework->GetClientActor())
-		{
-			if (pEnt && pActor->GetEntity() == pEnt)
-			{
-				q = pEnt->GetWorldRotation();
-				pos = pEnt->GetWorldPos();
-			}
-		}
-	}
-	p = q * sensorState.pose.position;
-	q = q * sensorState.pose.orientation;
-
-	Matrix34 viewMtx(q);
-	viewMtx.SetTranslation(pos + p);
-	context.outputCameraMatrix = viewMtx;
-
-	return true;
 }
 
 //-----------------------------------------------------------------------

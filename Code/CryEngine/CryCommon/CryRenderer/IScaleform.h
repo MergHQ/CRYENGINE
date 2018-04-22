@@ -3,16 +3,16 @@
 #pragma once
 
 #ifdef INCLUDE_SCALEFORM_SDK
-	#pragma warning(push)
-	#pragma warning(disable : 6326)// Potential comparison of a constant with another constant
-	#pragma warning(disable : 6011)// Dereferencing NULL pointer
-	#include <CryCore/Platform/CryWindows.h>
-	#include <GRenderer.h> // includes <windows.h>
-	#pragma warning(pop)
+#pragma warning(push)
+#pragma warning(disable : 6326)// Potential comparison of a constant with another constant
+#pragma warning(disable : 6011)// Dereferencing NULL pointer
+#include <CryCore/Platform/CryWindows.h>
+#include <GRenderer.h> // includes <windows.h>
+#pragma warning(pop)
 
-	#include <vector>
-	#include <CrySystem/Scaleform/GMemorySTLAlloc.h>
-	#include <CryRenderer/IRenderer.h>
+#include <vector>
+#include <CrySystem/Scaleform/GMemorySTLAlloc.h>
+#include <CryRenderer/IRenderer.h>
 
 struct IScaleformRecording;
 struct IScaleformPlayback;
@@ -39,12 +39,10 @@ public:
 		, m_curWritePos(0)
 		, m_rawData(nullptr)
 		, m_rawLen(0)
-	{
-	}
+	{}
 
 	virtual ~GRendererCommandBufferReadOnly()
-	{
-	}
+	{}
 
 	size_t Size() const
 	{
@@ -598,12 +596,10 @@ protected:
 		: m_refCnt(1)
 		, m_lock(0)
 		, m_pData(pData)
-	{
-	}
+	{}
 
 	virtual ~CCachedData()
-	{
-	}
+	{}
 
 protected:
 	volatile int                          m_refCnt;

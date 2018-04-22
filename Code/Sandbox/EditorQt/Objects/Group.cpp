@@ -887,10 +887,10 @@ void CGroup::Open()
 {
 	if (!m_opened)
 	{
-		NotifyListeners(OBJECT_ON_UI_PROPERTY_CHANGED);
+		GetObjectManager()->NotifyObjectListeners(this, CObjectEvent(OBJECT_ON_UI_PROPERTY_CHANGED));
 	}
 	m_opened = true;
-	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_GROUP_OPEN);
+	GetObjectManager()->NotifyObjectListeners(this, CObjectEvent(OBJECT_ON_GROUP_OPEN));
 
 }
 
@@ -899,11 +899,11 @@ void CGroup::Close()
 {
 	if (m_opened)
 	{
-		NotifyListeners(OBJECT_ON_UI_PROPERTY_CHANGED);
+		GetObjectManager()->NotifyObjectListeners(this, CObjectEvent(OBJECT_ON_UI_PROPERTY_CHANGED));
 	}
 	m_opened = false;
 	UpdateGroup();
-	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_GROUP_CLOSE);
+	GetObjectManager()->NotifyObjectListeners(this, CObjectEvent(OBJECT_ON_GROUP_CLOSE));
 }
 
 void CGroup::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
@@ -1163,7 +1163,7 @@ void CGroup::DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 	std::vector<Matrix34> worldTMs;
 	std::vector<ITransformDelegate*> transformDelegates;
 
-	GetObjectManager()->signalBeforeObjectsDetached(this, objects, shouldKeepPos);
+	GetObjectManager()->NotifyObjectListeners(objects, CObjectPreDetachedEvent(this, shouldKeepPos));
 
 	ResetTransforms(this, objects, shouldKeepPos, worldTMs, transformDelegates);
 
@@ -1179,7 +1179,7 @@ void CGroup::DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 
 	RestoreTransforms(objects, shouldKeepPos, worldTMs, transformDelegates);
 
-	GetObjectManager()->signalObjectsDetached(this, objects);
+	GetObjectManager()->NotifyObjectListeners(objects, CObjectDetachedEvent(this));
 
 	// If we didn't mean to detach from the whole hierarchy, then reattach to it's grandparent
 	CGroup* pGrandParent = static_cast<CGroup*>(GetGroup());
@@ -1254,7 +1254,7 @@ void CGroup::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 		m_children.reserve(m_children.size() + objects.size());
 		m_children.insert(m_children.end(), objects.cbegin(), objects.cend());
 
-		GetObjectManager()->signalBeforeObjectsAttached(this, objects, shouldKeepPos);
+		GetObjectManager()->NotifyObjectListeners(objects, CObjectPreAttachedEvent(this, shouldKeepPos));
 
 		transormatoinsHandler.HandlePreAttach();
 	}
@@ -1269,9 +1269,8 @@ void CGroup::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 
 		transormatoinsHandler.HandleAttach();
 
-		GetObjectManager()->signalObjectsAttached(this, objects);
+		GetObjectManager()->NotifyObjectListeners(objects, CObjectAttachedEvent(this));
 
-		NotifyListeners(OBJECT_ON_CHILDATTACHED);
 		for (auto pChild : objects)
 		{
 			pChild->m_bSuppressUpdatePrefab = false;

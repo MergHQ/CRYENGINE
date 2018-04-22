@@ -13,7 +13,11 @@ public:
 	void CalculateJitterOffsets(int targetWidth, int targetHeight, CRenderView* pTargetRenderView);
 	void CalculateJitterOffsets(CRenderView* pRenderView)
 	{
-		CalculateJitterOffsets(pRenderView->GetRenderResolution()[0], pRenderView->GetRenderResolution()[1], pRenderView);
+		const int32_t w = pRenderView->GetRenderResolution()[0];
+		const int32_t h = pRenderView->GetRenderResolution()[1];
+		CRY_ASSERT(w > 0 && h > 0);
+		if (w > 0 && h > 0)
+			CalculateJitterOffsets(w, h, pRenderView);
 	}
 
 	void Init();

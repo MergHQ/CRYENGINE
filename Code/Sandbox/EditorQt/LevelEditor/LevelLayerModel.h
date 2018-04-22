@@ -101,8 +101,8 @@ public:
 	CObjectLayer* GetLayer() { return m_pLayer; }
 
 private:
-	void              OnLink(CBaseObject* pObject);
-	void              OnUnLink(CBaseObject* pObject);
+	void              OnLink(const CBaseObject* pObject);
+	void              OnUnLink(const CBaseObject* pObject);
 
 	static bool       Filter(CBaseObject const& obj, void* pLayer);
 
@@ -112,32 +112,32 @@ private:
 	void        Connect();
 	void        Rebuild();
 	void        Clear();
-	void        AddObject(CBaseObject* pObject);
+	void        AddObject(const CBaseObject* pObject);
 	void        AddObjects(const std::vector<CBaseObject*>& objects);
-	void        RemoveObject(CBaseObject* pObject);
+	void        RemoveObject(const CBaseObject* pObject);
 	void        RemoveObjects(int row, int count = 1);
 	void        RemoveObjects(const std::vector<CBaseObject*>& objects);
-	void        UpdateCachedDataForObject(CBaseObject* pObject);
+	void        UpdateCachedDataForObject(const CBaseObject* pObject);
 
-	void        OnObjectEvent(CObjectEvent&);
+	void        OnObjectEvent(const std::vector<CBaseObject*>& objects, const CObjectEvent&);
 	void        OnSelectionChanged();
-	void        OnBeforeObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool shouldKeepTransform);
-	void        OnObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
-	void        OnBeforeObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool shouldKeepTransform);
-	void        OnObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
-	void        OnBeforeObjectsDeleted(const CObjectLayer& layer, const std::vector<CBaseObject*>& objects);
-	void        OnObjectsDeleted(const CObjectLayer& layer, const std::vector<CBaseObject*>& objects);
+	void        OnBeforeObjectsAttached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
+	void        OnObjectsAttached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
+	void        OnBeforeObjectsDetached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
+	void        OnObjectsDetached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
+	void        OnBeforeObjectsDeleted(const std::vector<CBaseObject*>& objects);
+	void        OnObjectsDeleted(const std::vector<CBaseObject*>& objects);
 
 	const char* GetMaterialName(CBaseObject* pObject, bool bUseCustomMaterial) const;
 	const char* GetObjectBreakability(CBaseObject* pObject) const;
 	void        GetMaterialBreakability(std::set<string>* breakTypes, CMaterial* pMaterial) const;
 	const char* GetSmartObject(CBaseObject* pObject) const;
 	const char* GetFlowGraphNames(CBaseObject* pObject) const;
-	const char* GetGeometryFile(CBaseObject* pObject) const;
+	const char* GetGeometryFile(const CBaseObject* pObject) const;
 	uint        GetInstancesCount(CBaseObject* pObject) const;
 	uint        GETLODNumber(CBaseObject* pObject) const;
 	int         GetAIGroupID(CBaseObject* pObject) const;
-	void        NotifyUpdateObject(CBaseObject* pObject, const QVector<int>& updateRoles);
+	void        NotifyUpdateObject(const CBaseObject* pObject, const QVector<int>& updateRoles);
 
 	bool        IsRelatedToTopLevelObject(CBaseObject* pObject) const;
 
@@ -145,7 +145,7 @@ private:
 	void FinishBatchProcess();
 
 	CObjectLayer* m_pLayer;
-	CBaseObject*  m_pTopLevelNotificationObj;
+	const CBaseObject*  m_pTopLevelNotificationObj;
 
 	// Cached data
 	CBaseObjectsArray                m_rootObjects;

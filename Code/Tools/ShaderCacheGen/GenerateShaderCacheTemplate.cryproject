@@ -31,6 +31,7 @@
 		{ "name": "r_ShadersSubmitRequestline", "value": "0" },
 		{ "name": "r_ShadersAllowCompilation", "value": "1" },
 		{ "name": "r_ShaderCompilerServer", "value": "192.168.14.176" },
+		{ "name": "r_VkShaderCompiler", "value": "DXC" },
 		{ "name": "r_ShaderCompilerPort", "value": "61453" },
 		{ "name": "r_ShaderCompilerFolderName", "value": "GameSDK" },
 		{ "name": "r_PrecacheShaderList", "value": "1" },

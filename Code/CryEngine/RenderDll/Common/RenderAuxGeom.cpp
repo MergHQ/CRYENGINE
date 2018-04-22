@@ -110,10 +110,8 @@ const CCamera& CAuxGeomCB::GetCamera() const
 void CAuxGeomCB::SetUsingCustomCamera(bool isUsingCustomCam)
 {
 	m_rawData->m_usingCustomCamera = isUsingCustomCam;
-	if (!isUsingCustomCam)
-	{
+	if (!isUsingCustomCam && (!gEnv->pRenderer->GetIStereoRenderer() || !gEnv->pRenderer->GetIStereoRenderer()->GetStereoEnabled()))
 		m_rawData->m_camera = gEnv->pSystem->GetViewCamera();
-	}
 }
 
 bool CAuxGeomCB::IsUsingCustomCamera() const

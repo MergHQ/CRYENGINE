@@ -213,7 +213,12 @@ void CryThreadExitCall()
 //////////////////////////////////////////////////////////////////////////
 bool CryIsThreadAlive(TThreadHandle pThreadHandle)
 {
+#if CRY_PLATFORM_ANDROID
+	// This function is only called when trying to join the thread, so it's okay to block here.
+	const int ret = pthread_join(pThreadHandle, NULL);
+#else
 	const int ret = pthread_tryjoin_np(pThreadHandle, NULL);
+#endif
 	switch (ret)
 	{
 	case 0:
