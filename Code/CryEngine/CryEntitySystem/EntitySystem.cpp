@@ -2548,7 +2548,7 @@ void CEntitySystem::Serialize(TSerialize ser)
 
 				if (CEntity* pEntity = GetEntityFromID(tempEvent.entityId))
 				{
-					if (IEntityComponent* pComponent = pEntity->GetComponentByGUID(tempEvent.componentInstanceGUID))
+					if (tempEvent.pListener = pEntity->GetComponentByGUID(tempEvent.componentInstanceGUID))
 					{
 						AddTimerEvent(tempEvent, start);
 					}
@@ -3223,18 +3223,21 @@ CEntityLayer* CEntitySystem::GetLayerForEntity(EntityId id)
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::EnableDefaultLayers(bool isSerialized)
 {
+	LOADING_TIME_PROFILE_SECTION;
+	
 	for (TLayers::iterator it = m_layers.begin(); it != m_layers.end(); ++it)
 	{
 		CEntityLayer* pLayer = it->second;
-		EnableLayer(it->first, pLayer->IsDefaultLoaded(), isSerialized);
+		EnableLayer(pLayer, pLayer->IsDefaultLoaded(), isSerialized, true);
 	}
 }
 
-void CEntitySystem::EnableLayer(const char* layer, bool isEnable, bool isSerialized)
+void CEntitySystem::EnableLayer(const char* szLayer, bool isEnable, bool isSerialized)
 {
+	LOADING_TIME_PROFILE_SECTION_ARGS(szLayer);
 	if (!gEnv->p3DEngine->IsAreaActivationInUse())
 		return;
-	IEntityLayer* pLayer = FindLayer(layer);
+	IEntityLayer* pLayer = FindLayer(szLayer);
 	if (pLayer)
 	{
 		EnableLayer(pLayer, isEnable, isSerialized, true);
@@ -3243,6 +3246,7 @@ void CEntitySystem::EnableLayer(const char* layer, bool isEnable, bool isSeriali
 
 void CEntitySystem::EnableLayer(IEntityLayer* pLayer, bool bIsEnable, bool bIsSerialized, bool bAffectsChildren)
 {
+	LOADING_TIME_PROFILE_SECTION_ARGS(pLayer->GetName());
 	const bool bEnableChange = pLayer->IsEnabledBrush() != bIsEnable;
 
 #if ENABLE_STATOSCOPE
