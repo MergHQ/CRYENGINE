@@ -1,43 +1,46 @@
 #include <CrySystem/VR/IHMDManager.h>
 #include <CrySystem/VR/IHMDDevice.h>
+#include <CryEntitySystem/IEntitySystem.h>
 
-// Minimal example for how to implement asynchronous camera injection for VR on the game side
-class CMyAsyncCameraCallback final : public IHmdDevice::IAsyncCameraCallback
+class CMyEventComponent final : public IEntityComponent
 {
-	CMyAsyncCameraCallback()
+	// Should be called, from main thread, on each frame.
+	static bool PrepareLateCameraInjection()
 	{
-		// If there is an HMD device available, set the async camera callback to this object
-		if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
-		{
-			pDevice->SetAsyncCameraCallback(this);
-		}
-	}
-
-	virtual ~CMyAsyncCameraCallback()
-	{
-		// Clear the async camera callback on the HMD, assuming that we set it in our constructor
-		if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
-		{
-			pDevice->SetAsyncCameraCallback(nullptr);
-		}
-	}
-
-	virtual bool OnAsyncCameraCallback(const HmdTrackingState& state, IHmdDevice::AsyncCameraContext& context) override
-	{
-		// For the sake of this example we choose not to scale our camera
-		const Vec3 cameraScale = Vec3(1.f);
 		// Keep the camera at the default rotation (identity matrix)
 		const Quat cameraRotation = IDENTITY;
 		// Position the camera at the world-space coordinates {50,50,50}
 		const Vec3 cameraPosition = Vec3(50, 50, 50);
 
-		// Create a matrix from the units specified above
-		const Matrix34 cameraMatrix = Matrix34::Create(cameraScale, cameraRotation, cameraPosition);
+		if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
+		{
+			pDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(cameraRotation, cameraPosition));
 
-		// Apply the latest HMD orientation to our desired camera matrix (thus allowing the user to turn their head around)
-		context.outputCameraMatrix = cameraMatrix * Matrix34::Create(Vec3(1.f), state.pose.orientation, state.pose.position);
+			// Indicate that the late camera injection was prepared successfully for current frame
+			return true;
+		}
 
-		// Indicate that we returned a valid output camera matrix
-		return true;
+		return false;
 	}
+
+public:
+	// Provide a virtual destructor, ensuring correct destruction of IEntityComponent members
+	virtual ~CMyEventComponent() = default;
+
+	static void ReflectType(Schematyc::CTypeDesc<CMyEventComponent>& desc) { /* Reflect the component GUID in here. */ }
+
+	// Override the ProcessEvent function to receive the callback whenever an event specified in GetEventMask is triggered
+	virtual void ProcessEvent(const SEntityEvent& event) override
+	{
+		// Check if this is the update event
+		if (event.event == ENTITY_EVENT_UPDATE)
+		{
+			/* Handle update logic here */
+			PrepareLateCameraInjection();
+		}
+	}
+
+	// As an optimization, components have to specify a bitmask of the events that they want to handle
+	// This is called once at component creation, and then only if IEntity::UpdateComponentEventMask is called, to support dynamic change of desired events (useful for disabling update when you don't need it)
+	virtual uint64 GetEventMask() const override { return BIT64(ENTITY_EVENT_UPDATE); }
 };

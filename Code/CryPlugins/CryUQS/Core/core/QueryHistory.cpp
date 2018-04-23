@@ -351,8 +351,9 @@ namespace UQS
 
 		void CHistoricQuery::CreateItemDebugProxyViaItemFactoryForItem(const Client::IItemFactory& itemFactory, const void* pItem, size_t indexInGeneratedItemsForWhichToCreateTheProxy)
 		{
-			itemFactory.CreateItemDebugProxyForItem(pItem, m_itemDebugProxyFactory);
-			std::unique_ptr<CItemDebugProxyBase> freshlyCreatedItemProxy = m_itemDebugProxyFactory.GetAndForgetLastCreatedDebugItemRenderProxy();
+			CItemDebugProxyFactory itemDebugProxyFactory;
+			itemFactory.CreateItemDebugProxyForItem(pItem, itemDebugProxyFactory);
+			std::unique_ptr<CItemDebugProxyBase> freshlyCreatedItemProxy = itemDebugProxyFactory.GetAndForgetLastCreatedDebugItemRenderProxy();
 			m_items[indexInGeneratedItemsForWhichToCreateTheProxy].pDebugProxy = std::move(freshlyCreatedItemProxy);
 		}
 
@@ -1130,7 +1131,6 @@ namespace UQS
 			ar(m_deferredEvaluatorNames, "m_deferredEvaluatorNames");
 			ar(m_longestEvaluatorName, "m_longestEvaluatorName");
 			ar(m_finalStatistics, "m_finalStatistics");
-			ar(m_itemDebugProxyFactory, "m_itemDebugProxyFactory");		// notice: it wouldn't even be necessary to serialize the CItemDebugProxyFactory as its only member variables is just used for intermediate storage and will always be set to its default value at the time of serialization
 		}
 
 		//===================================================================================

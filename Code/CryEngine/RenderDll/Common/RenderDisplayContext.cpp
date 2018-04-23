@@ -30,6 +30,18 @@ void CRenderDisplayContext::EndRendering()
 	m_bHDRRendering = false;
 }
 
+bool CRenderDisplayContext::IsEditorDisplay() const 
+{ 
+	return m_uniqueId != 0 || gRenDev->IsEditorMode(); 
+}
+
+bool CRenderDisplayContext::IsNativeScalingEnabled() const 
+{ 
+	return GetRenderOutput() ? 
+		GetDisplayResolution() != GetRenderOutput()->GetOutputResolution() : 
+		false; 
+}
+
 void CRenderDisplayContext::SetDisplayResolutionAndRecreateTargets(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp)
 {
 	m_viewport = vp;
@@ -102,7 +114,7 @@ void CSwapChainBackedRenderDisplayContext::SetHWND(HWND hWnd)
 	CRY_ASSERT(hWnd);
 	m_hWnd = hWnd;
 
-#if !CRY_RENDERER_GNM && !CRY_PLATFORM_ORBIS
+#if !CRY_RENDERER_GNM && !CRY_PLATFORM_ORBIS && !CRY_PLATFORM_DURANGO
 	CreateOutput();
 	SetSwapChain(CSwapChain::CreateSwapChain(GetWindowHandle(),
 		m_pOutput,
@@ -292,8 +304,8 @@ void CSwapChainBackedRenderDisplayContext::CreateOutput()
 	// Find the output that matches the monitor our window is currently on
 	IDXGIAdapter1* pAdapter = gcpRendD3D->DevInfo().Adapter();
 	IDXGIOutput* pOutput = nullptr;
-	unsigned int i = 0;
-	while (pAdapter->EnumOutputs(i, &pOutput) != DXGI_ERROR_NOT_FOUND && pOutput)
+	
+	for (unsigned int i = 0; pAdapter->EnumOutputs(i, &pOutput) != DXGI_ERROR_NOT_FOUND && pOutput; ++i)
 	{
 		DXGI_OUTPUT_DESC outputDesc;
 		if (SUCCEEDED(pOutput->GetDesc(&outputDesc)) && outputDesc.Monitor == hMonitor)
@@ -301,10 +313,6 @@ void CSwapChainBackedRenderDisplayContext::CreateOutput()
 			// Promote interfaces to the required level
 			pOutput->QueryInterface(__uuidof(DXGIOutput), (void**)&m_pOutput);
 			break;
-		}
-		else
-		{
-			++i;
 		}
 	}
 
@@ -446,8 +454,6 @@ void CSwapChainBackedRenderDisplayContext::SetFullscreenState(bool isFullscreen)
 	
 #if !CRY_PLATFORM_ORBIS && !CRY_PLATFORM_DURANGO
 	m_swapChain.SetFullscreenState(isFullscreen, isFullscreen ? m_pOutput : nullptr);
-#else
-	m_pSwapChain.SetFullscreenState(isFullscreen, nullptr);
 #endif
 #endif
 }
@@ -548,6 +554,24 @@ void CSwapChainBackedRenderDisplayContext::PostPresent()
 
 
 //////////////////////////////////////////////////////////////////////////
+
+CCustomRenderDisplayContext::CCustomRenderDisplayContext(IRenderer::SDisplayContextDescription desc, uint32 uniqueId, std::vector<TexSmartPtr> &&backBuffersArray, uint32_t initialSwapChainIndex)
+	: CRenderDisplayContext(desc, uniqueId)
+	, m_swapChainIndex(initialSwapChainIndex)
+{
+	CRY_ASSERT(backBuffersArray.size());
+	this->m_backBuffersArray = std::move(backBuffersArray);
+
+	const auto &tex = *this->m_backBuffersArray.begin();
+	this->ChangeDisplayResolution(tex->GetWidth(), tex->GetHeight());
+}
+
+void CCustomRenderDisplayContext::SetSwapChainIndex(uint32_t index)
+{
+	CRY_ASSERT(index < m_backBuffersArray.size());
+	m_swapChainIndex = index;
+	m_pRenderOutput->ReinspectDisplayContext();
+}
 
 CTexture* CCustomRenderDisplayContext::GetStorableColorOutput()
 {

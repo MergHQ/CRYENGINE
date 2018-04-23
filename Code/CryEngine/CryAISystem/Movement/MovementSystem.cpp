@@ -341,7 +341,15 @@ MovementActor& MovementSystem::GetExistingActorOrCreateNewOne(const EntityId ent
 	{
 		// Create new actor
 		MovementActor actor(entityId, &adapter);
-		actor.planner.reset(new Movement::GenericPlanner(adapter.GetNavigationAgentTypeID()));
+		if (actor.callbacks.getMovementPlanner)
+		{
+			actor.planner = actor.callbacks.getMovementPlanner(adapter.GetNavigationAgentTypeID());
+			assert(actor.planner);
+		}
+		else
+		{
+			actor.planner.reset(new Movement::GenericPlanner(adapter.GetNavigationAgentTypeID()));
+		}
 		m_actors.push_back(actor);
 		return m_actors.back();
 	}

@@ -75,12 +75,6 @@ namespace Cry
 				{
 					m_pEntity->UpdateComponentEventMask(this);
 
-					if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
-					{
-						const auto& worldTranform = m_pEntity->GetWorldTM();
-						pDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(Quat(worldTranform), worldTranform.GetTranslation()));
-					}
-
 					if (m_pAudioListener)
 					{
 						m_pAudioListener->SetActive(true);

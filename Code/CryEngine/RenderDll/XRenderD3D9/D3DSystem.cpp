@@ -1898,7 +1898,7 @@ bool CD3D9Renderer::CreateDeviceDurango()
 	}
 #endif
 
-	if (!pDXGIFactory || !pDXGIAdapter || !pDC->IsValid() || !pD3D11Device || !pD3D11Context)
+	if (!pDXGIFactory || !pDXGIAdapter || !pD3D11Device || !pD3D11Context)
 	{
 		CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR, "XBOX::CreateDevice() failed");
 		return false;

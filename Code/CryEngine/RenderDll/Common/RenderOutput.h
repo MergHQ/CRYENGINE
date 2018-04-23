@@ -6,6 +6,8 @@
 #include <CryCore/optional.h>
 
 class CRenderDisplayContext;
+class CTexture;
+struct SDynTexture;
 
 //////////////////////////////////////////////////////////////////////////
 //! Render Output is a target for a Render View rendering.

@@ -200,7 +200,6 @@ namespace UQS
 			std::vector<string>                                 m_deferredEvaluatorNames;           // ditto for deferred-evaluator factories
 			size_t                                              m_longestEvaluatorName;             // length of the longest name of either the instant- or deferred-evaluators; used for nice indentation when drawing item details as 2D text on screen
 			CQueryBase::SStatistics                             m_finalStatistics;                  // final statistics that get passed in when the live query gets destroyed
-			CItemDebugProxyFactory                              m_itemDebugProxyFactory;
 		};
 
 		//===================================================================================

@@ -15,6 +15,7 @@
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/MovementStyle.h>
 #include <CryAISystem/MovementBlock.h>
+#include <CryAISystem/NavigationSystem/NavigationIdTypes.h>
 
 struct MovementRequest;
 struct MovementRequestID;
@@ -45,6 +46,7 @@ typedef Functor1<MNMPathRequest&>               PathRequestFunction;
 typedef Functor0wRet<Movement::PathfinderState> CheckOnPathfinderStateFunction;
 typedef Functor0wRet<INavPath*>                 GetPathFunction;
 typedef Functor0wRet<IPathFollower*>            GetPathFollowerFunction;
+typedef Functor1wRet<NavigationAgentTypeID, std::shared_ptr<Movement::IPlanner>> GetMovementPlanner;	// optional callback; if provided, can be used to provide a custom IPlanner from the game side; returning a nullptr is *not* allowed (will trigger an assert() failure)
 
 struct MovementActorCallbacks
 {
@@ -53,12 +55,14 @@ struct MovementActorCallbacks
 		, checkOnPathfinderStateFunction(NULL)
 		, getPathFunction(NULL)
 		, getPathFollowerFunction(NULL)
+		, getMovementPlanner(NULL)
 	{}
 
 	PathRequestFunction            queuePathRequestFunction;
 	CheckOnPathfinderStateFunction checkOnPathfinderStateFunction;
 	GetPathFunction                getPathFunction;
 	GetPathFollowerFunction        getPathFollowerFunction;
+	GetMovementPlanner             getMovementPlanner;
 };
 
 struct SMovementActionAbilityCallbacks
