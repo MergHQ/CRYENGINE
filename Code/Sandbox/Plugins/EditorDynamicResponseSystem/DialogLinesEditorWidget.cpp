@@ -47,7 +47,7 @@ CDialogLinesEditorWidget::CDialogLinesEditorWidget(QWidget* pParent)
 		m_pTree->resizeColumnToContents(3);
 		m_pTree->resizeColumnToContents(4);
 		m_pTree->setSelectionBehavior(QAbstractItemView::SelectItems);
-		m_pTree->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::SelectedClicked | QAbstractItemView::AnyKeyPressed);
+		m_pTree->setEditTriggers(QAbstractItemView::EditKeyPressed | QAbstractItemView::SelectedClicked);
 
 		m_pTree->setItemDelegate(new QDialogLineDelegate(this));
 
@@ -55,81 +55,81 @@ CDialogLinesEditorWidget::CDialogLinesEditorWidget(QWidget* pParent)
 		m_pTree->setContextMenuPolicy(Qt::CustomContextMenu);
 		connect(m_pTree, &QTreeView::customContextMenuRequested, [&](QPoint pos)
 		{
-			QMenu* pMenu = new QMenu(this);
+			auto pMenu = new QMenu(this);
 			QModelIndex index = m_pTree->indexAt(pos);
 			QAction* pAction = nullptr;
 			bool bLineSetSelected = false;
 
 			if (!index.isValid())
 			{
-				pAction = pMenu->addAction(tr("Insert Line"));
-				connect(pAction, &QAction::triggered, [=]()
+			  pAction = pMenu->addAction(tr("Insert Line"));
+			  connect(pAction, &QAction::triggered, [=]()
 				{
 					m_pModel->insertRow(m_pModel->rowCount(QModelIndex()), QModelIndex());
-				});
+			  });
 			}
 			else
 			{
-				index = m_pFilterModel->mapToSource(index); // convert to from proxy to real model
-				index = index.sibling(index.row(), 0);      // the parents column needs to be zero for insert to work
-				if (m_pModel->ItemType(index) == EItemType::DIALOG_LINE_SET)
-				{
-					pAction = pMenu->addAction(tr("Insert Line"));
-					connect(pAction, &QAction::triggered, [=]()
+			  index = m_pFilterModel->mapToSource(index); // convert to from proxy to real model
+			  index = index.sibling(index.row(), 0);      // the parents column needs to be zero for insert to work
+			  if (m_pModel->ItemType(index) == EItemType::DIALOG_LINE_SET)
+			  {
+			    pAction = pMenu->addAction(tr("Insert Line"));
+			    connect(pAction, &QAction::triggered, [=]()
 					{
 						m_pModel->insertRow(index.row(), index.parent());
-					});
+			    });
 
-					pAction = pMenu->addAction(tr("Add Line Variation"));
-					connect(pAction, &QAction::triggered, [=]()
+			    pAction = pMenu->addAction(tr("Add Line Variation"));
+			    connect(pAction, &QAction::triggered, [=]()
 					{
 						m_pModel->insertRow(m_pModel->rowCount(index), index);
-					});
+			    });
 
-					bLineSetSelected = true;
-				}
-				else
-				{
-					pAction = pMenu->addAction(tr("Add Line Variation"));
-					connect(pAction, &QAction::triggered, [=]()
+			    bLineSetSelected = true;
+			  }
+			  else
+			  {
+			    pAction = pMenu->addAction(tr("Add Line Variation"));
+			    connect(pAction, &QAction::triggered, [=]()
 					{
 						m_pModel->insertRow(index.row(), index.parent());
-					});
-				}
+			    });
+			  }
 
-				if (!m_pTree->selectionModel()->selectedIndexes().empty())
-				{
-					pAction = pMenu->addAction(tr("Delete"));
-					connect(pAction, &QAction::triggered, [&]()
+			  if (!m_pTree->selectionModel()->selectedIndexes().empty())
+			  {
+			    pAction = pMenu->addAction(tr("Delete"));
+			    connect(pAction, &QAction::triggered, [&]()
 					{
 						QModelIndexList indices = m_pTree->selectionModel()->selectedIndexes();
 						if (!indices.empty())
 						{
-							QModelIndex index = m_pFilterModel->mapToSource(indices[0]);
-							m_pModel->removeRow(index.row(), index.parent());
+						  QModelIndex index = m_pFilterModel->mapToSource(indices[0]);
+						  m_pModel->removeRow(index.row(), index.parent());
 						}
-					});
-				}
+			    });
+			  }
 			}
 
 			pMenu->addSeparator();
 			if (bLineSetSelected)
 			{
-				pAction = pMenu->addAction(tr("Run Script on Selected"));
-				connect(pAction, &QAction::triggered, [=]()
+			  pAction = pMenu->addAction(tr("Run Script on Selected"));
+			  connect(pAction, &QAction::triggered, [=]()
 				{
 					if (!m_pModel->ExecuteScript(index.row(), m_pTree->selectionModel()->selectedIndexes().size()))
 					{
-						CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "Could not run script on dialog line(s), make sure 'linescript.bat' exists in your game folder.");
+					  CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "Could not run script on dialog line(s), make sure 'linescript.bat' exists in your game folder.");
 					}
-				});
+			  });
 			}
 			pAction = pMenu->addAction(tr("Run Script on all lines"));
 			connect(pAction, &QAction::triggered, [=]()
 			{
-				if(!m_pModel->ExecuteScript(0, std::numeric_limits<int>::max()))
+				if (!m_pModel->ExecuteScript(0, std::numeric_limits<int>::max()))
 				{
-					CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "Could not run script on dialog line(s), make sure 'linescript.bat' exists in your game folder.");
+				  CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "Could not run script on dialog line(s), make sure 'linescript.bat' exists in your game folder.");
 				}
 			});
 
@@ -146,7 +146,7 @@ CDialogLinesEditorWidget::CDialogLinesEditorWidget(QWidget* pParent)
 	QPushButton* pClearAllButton = new QPushButton("Clear all");
 	pAutoSaveToggleButton->setCheckable(true);
 
-	QHBoxLayout* pHLayout = new QHBoxLayout();
+	auto pHLayout = new QHBoxLayout();
 	pHLayout->addWidget(pSaveButton);
 	pHLayout->addWidget(pAutoSaveToggleButton);
 	pHLayout->addWidget(pImportButton);
@@ -154,7 +154,7 @@ CDialogLinesEditorWidget::CDialogLinesEditorWidget(QWidget* pParent)
 	pHLayout->addWidget(pClearAllButton);
 	pHLayout->addWidget(m_pFilterLineEdit);
 
-	QVBoxLayout* pLayout = new QVBoxLayout();
+	auto pLayout = new QVBoxLayout();
 	pLayout->addLayout(pHLayout);
 	pLayout->addWidget(m_pTree);
 
@@ -166,18 +166,18 @@ CDialogLinesEditorWidget::CDialogLinesEditorWidget(QWidget* pParent)
 		m_pFilterModel->invalidate();
 	});
 	connect(pImportButton, &QPushButton::clicked, this, [this]()
-	{	
+	{
 		string filename;
 		if (CFileUtil::SelectSingleFile(this, EFILE_TYPE_ANY, filename, "tab separated file (*.txt) | *.txt", GetDataFolder().c_str()))
 		{
-			if (m_importExportHelper.ImportFromFile(filename.c_str()))
-			{
-				m_pModel->ForceDataReload();
-			}
-			else
-			{
-				CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "Failed to import file: '%s'", filename.c_str());
-			}
+		  if (m_importExportHelper.ImportFromFile(filename.c_str()))
+		  {
+		    m_pModel->ForceDataReload();
+		  }
+		  else
+		  {
+		    CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "Failed to import file: '%s'", filename.c_str());
+		  }
 		}
 	});
 	connect(pExportButton, &QPushButton::clicked, this, [this]()
@@ -185,14 +185,14 @@ CDialogLinesEditorWidget::CDialogLinesEditorWidget(QWidget* pParent)
 		string filename;
 		if (CFileUtil::SelectSaveFile("tab separated file (*.txt) | *.txt", "txt", GetDataFolder().c_str(), filename))
 		{
-			if (m_importExportHelper.ExportToFile(filename.c_str()))
-			{
-				m_pModel->ForceDataReload();
-			}
-			else
-			{
-				CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "Failed to export to file: '%s'", filename.c_str());
-			}
+		  if (m_importExportHelper.ExportToFile(filename.c_str()))
+		  {
+		    m_pModel->ForceDataReload();
+		  }
+		  else
+		  {
+		    CryWarning(VALIDATOR_MODULE_DRS, VALIDATOR_WARNING, "Failed to export to file: '%s'", filename.c_str());
+		  }
 		}
 	});
 	connect(pSaveButton, &QPushButton::clicked, this, [this]()
@@ -201,23 +201,25 @@ CDialogLinesEditorWidget::CDialogLinesEditorWidget(QWidget* pParent)
 	});
 	connect(pClearAllButton, &QPushButton::clicked, this, [this]()
 	{
-		while (gEnv->pDynamicResponseSystem->GetDialogLineDatabase()->RemoveLineSet(0)) {}
-		 
+		while (gEnv->pDynamicResponseSystem->GetDialogLineDatabase()->RemoveLineSet(0))
+		{
+		}
+
 		m_pModel->ForceDataReload();
 	});
 	connect(pAutoSaveToggleButton, &QPushButton::toggled, this, [=](bool checked)
 	{
 		if (checked)
 		{
-			connect(m_pModel, &QDialogLineDatabaseModel::dataChanged, this, &CDialogLinesEditorWidget::Save);
-			connect(m_pModel, &QDialogLineDatabaseModel::rowsInserted, this, &CDialogLinesEditorWidget::Save);
-			connect(m_pModel, &QDialogLineDatabaseModel::rowsRemoved, this, &CDialogLinesEditorWidget::Save);
+		  connect(m_pModel, &QDialogLineDatabaseModel::dataChanged, this, &CDialogLinesEditorWidget::Save);
+		  connect(m_pModel, &QDialogLineDatabaseModel::rowsInserted, this, &CDialogLinesEditorWidget::Save);
+		  connect(m_pModel, &QDialogLineDatabaseModel::rowsRemoved, this, &CDialogLinesEditorWidget::Save);
 		}
 		else
 		{
-			disconnect(m_pModel, &QDialogLineDatabaseModel::dataChanged, this, &CDialogLinesEditorWidget::Save);
-			disconnect(m_pModel, &QDialogLineDatabaseModel::rowsInserted, this, &CDialogLinesEditorWidget::Save);
-			disconnect(m_pModel, &QDialogLineDatabaseModel::rowsRemoved, this, &CDialogLinesEditorWidget::Save);
+		  disconnect(m_pModel, &QDialogLineDatabaseModel::dataChanged, this, &CDialogLinesEditorWidget::Save);
+		  disconnect(m_pModel, &QDialogLineDatabaseModel::rowsInserted, this, &CDialogLinesEditorWidget::Save);
+		  disconnect(m_pModel, &QDialogLineDatabaseModel::rowsRemoved, this, &CDialogLinesEditorWidget::Save);
 		}
 	});
 
@@ -362,7 +364,7 @@ bool CDialogLinesDatabaseImportExportHelper::ExportToFile(const char* szTargetTs
 		wstring currentLineData;
 
 		//write header column
-		for (wstring currentColumn : m_dataColumns)
+		for (const auto& currentColumn : m_dataColumns)
 		{
 			currentLineData += currentColumn;
 			currentLineData += L'\t';
@@ -456,7 +458,7 @@ bool CDialogLinesDatabaseImportExportHelper::SplitStringList(const wchar_t* szSt
 
 	if (bTrim)
 	{
-		for (wstring& currentString : *outResult)
+		for (wstring& currentString : * outResult)
 		{
 			currentString.Trim();
 		}
@@ -464,4 +466,3 @@ bool CDialogLinesDatabaseImportExportHelper::SplitStringList(const wchar_t* szSt
 
 	return bWasFound;
 }
-
