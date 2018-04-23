@@ -854,6 +854,7 @@ CObjectLayer* CObjectLayerManager::ImportLayer(CObjectArchive& ar, bool bNotify 
 	{
 		if (m_bOverwriteDuplicates)
 		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Duplicate Layer GUID found: Layer %s will be replaced by %s", pPrevLayer->GetName(), pLayer->GetName());
 			pLayer.reset(pPrevLayer);
 			pLayer->Serialize(layerNode, true); // Serialize it again.
 		}
