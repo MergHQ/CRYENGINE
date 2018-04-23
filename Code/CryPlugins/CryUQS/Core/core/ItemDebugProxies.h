@@ -38,7 +38,7 @@ namespace UQS
 		//
 		//===================================================================================
 
-		class CItemDebugProxy_Sphere : public IItemDebugProxy_Sphere, public CItemDebugProxyBase
+		class CItemDebugProxy_Sphere : public CItemDebugProxyBase, public IItemDebugProxy_Sphere
 		{
 		public:
 			explicit              CItemDebugProxy_Sphere();
@@ -64,7 +64,7 @@ namespace UQS
 		//
 		//===================================================================================
 
-		class CItemDebugProxy_Path : public IItemDebugProxy_Path, public CItemDebugProxyBase
+		class CItemDebugProxy_Path : public CItemDebugProxyBase, public IItemDebugProxy_Path
 		{
 		public:
 			explicit              CItemDebugProxy_Path();
@@ -91,7 +91,7 @@ namespace UQS
 		//
 		//===================================================================================
 
-		class CItemDebugProxy_AABB : public IItemDebugProxy_AABB, public CItemDebugProxyBase
+		class CItemDebugProxy_AABB : public CItemDebugProxyBase, public IItemDebugProxy_AABB
 		{
 		public:
 			explicit              CItemDebugProxy_AABB();
