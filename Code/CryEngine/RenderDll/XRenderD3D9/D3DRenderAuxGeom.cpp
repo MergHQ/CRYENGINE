@@ -545,9 +545,6 @@ bool CRenderAuxGeomD3D::PreparePass(const CCamera& camera, const SDisplayContext
 	pass.SetDepthTarget(pDepthTexture);
 	pass.SetViewport(viewport);
 
-	//pass.ClearPrimitives();
-
-	//return (viewInfo[0].flags & SRenderViewInfo::eFlags_ReverseDepth) != 0;
 	return true;
 }
 

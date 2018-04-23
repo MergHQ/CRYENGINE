@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Renderer.h"
+
 #if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
 	#define SUPPORTS_INPLACE_TEXTURE_STREAMING
 #endif

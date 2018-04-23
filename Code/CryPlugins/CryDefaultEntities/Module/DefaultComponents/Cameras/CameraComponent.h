@@ -66,6 +66,12 @@ namespace Cry
 				m_camera.SetMatrix(GetWorldTransformMatrix());
 
 				gEnv->pSystem->SetViewCamera(m_camera);
+
+				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
+				{
+					const auto& worldTranform = GetWorldTransformMatrix();
+					pDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(Quat(worldTranform), worldTranform.GetTranslation()));
+				}
 			}
 				else if (event.event == ENTITY_EVENT_START_GAME || event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 				{
@@ -91,12 +97,6 @@ namespace Cry
 			virtual void OnShutDown() final
 			{
 				m_pCameraManager->RemoveCamera(this);
-
-				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
-				{
-					const auto& worldTranform = GetWorldTransformMatrix();
-					pDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(Quat(worldTranform), worldTranform.GetTranslation()));
-				}
 			}
 			// ~IEntityComponent
 
@@ -141,12 +141,6 @@ namespace Cry
 			virtual void Activate()
 			{
 				m_pEntity->UpdateComponentEventMask(this);
-
-				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
-				{
-					const auto& worldTranform = GetWorldTransformMatrix();
-					pDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(Quat(worldTranform), worldTranform.GetTranslation()));
-				}
 				
 				if (m_pAudioListener)
 				{

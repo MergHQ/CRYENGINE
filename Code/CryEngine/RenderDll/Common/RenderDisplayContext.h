@@ -5,6 +5,10 @@
 #include "SwapChain.h"
 
 class CRenderOutput;
+class CTexture;
+#if CRY_PLATFORM_DURANGO
+class DXGIOutput;
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 //! Display Context represent a target rendering context
@@ -93,12 +97,12 @@ public:
 
 	bool                 IsMainViewport() const { return m_bMainViewport; }
 	bool                 IsMainContext() const { return IsMainViewport(); }
-	bool                 IsEditorDisplay() const { return m_uniqueId != 0 || gRenDev->IsEditorMode(); }
+	bool                 IsEditorDisplay() const;
 	bool                 IsScalable() const { return IsMainViewport() && !IsEditorDisplay(); }
 	bool                 IsHighDynamicRange() const { return m_bHDRRendering; /* SHDF_ALLOWHDR */ }
 	bool                 IsDeferredShadeable() const { return IsMainViewport(); }
 	bool                 IsSuperSamplingEnabled() const { return m_nSSSamplesX * m_nSSSamplesY > 1; }
-	bool                 IsNativeScalingEnabled() const { return GetRenderOutput() ? GetDisplayResolution() != GetRenderOutput()->GetOutputResolution() : false; }
+	bool                 IsNativeScalingEnabled() const;
 	bool                 NeedsDepthStencil() const { return (m_desc.renderFlags & (FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL)) != 0; }
 	bool                 GetVSyncHint() const { return m_bVSync; }
 
@@ -207,26 +211,12 @@ private:
 
 public:
 	// Creates a display context with manual control of the swapchain
-	CCustomRenderDisplayContext(IRenderer::SDisplayContextDescription desc, uint32 uniqueId, std::vector<TexSmartPtr> &&backBuffersArray, uint32_t initialSwapChainIndex = 0)
-		: CRenderDisplayContext(desc, uniqueId)
-		, m_swapChainIndex(initialSwapChainIndex)
-	{
-		CRY_ASSERT(backBuffersArray.size());
-		this->m_backBuffersArray = std::move(backBuffersArray);
-
-		const auto &tex = *this->m_backBuffersArray.begin();
-		this->ChangeDisplayResolution(tex->GetWidth(), tex->GetHeight());
-	}
+	CCustomRenderDisplayContext(IRenderer::SDisplayContextDescription desc, uint32 uniqueId, std::vector<TexSmartPtr> &&backBuffersArray, uint32_t initialSwapChainIndex = 0);
 
 	CCustomRenderDisplayContext(CCustomRenderDisplayContext &&) = default;
 	CCustomRenderDisplayContext &operator=(CCustomRenderDisplayContext &&) = default;
 
-	void             SetSwapChainIndex(uint32_t index) 
-	{
-		CRY_ASSERT(index < m_backBuffersArray.size());
-		m_swapChainIndex = index;
-		m_pRenderOutput->ReinspectDisplayContext();
-	}
+	void             SetSwapChainIndex(uint32_t index);
 
 	void             PrePresent() override;
 	CTexture*        GetCurrentBackBuffer() const override { return this->m_backBuffersArray[m_swapChainIndex]; }
