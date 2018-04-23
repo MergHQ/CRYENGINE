@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Header File.
-// Copyright (C), Crytek, 1999-2014.
-
 #pragma once
 
 #include "Nodes/TrackViewTrack.h"
@@ -305,4 +302,3 @@ private:
 	bool            m_newState;
 	bool            m_oldState;
 };
-
