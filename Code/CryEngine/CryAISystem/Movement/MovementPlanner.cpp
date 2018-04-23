@@ -85,7 +85,7 @@ void GenericPlanner::StartWorkingOnRequest_Internal(const MovementRequestID& req
 	}
 }
 
-void GenericPlanner::CancelCurrentRequest(MovementActor& actor)
+void GenericPlanner::CancelCurrentRequest(IMovementActor& actor)
 {
 	//
 	// The request has been canceled but the plan remains intact.
