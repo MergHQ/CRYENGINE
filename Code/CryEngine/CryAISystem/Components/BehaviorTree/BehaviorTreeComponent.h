@@ -2,9 +2,11 @@
 
 #pragma once
 
+#include <CryAISystem/Components/IEntityBehaviorTreeComponent.h>
+
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-class CEntityAIBehaviorTreeComponent final : public IEntityComponent
+class CEntityAIBehaviorTreeComponent final : public IEntityBehaviorTreeComponent
 {
 private:
 
@@ -33,6 +35,11 @@ public:
 	virtual uint64        GetEventMask() const override;
 	virtual void          ProcessEvent(const SEntityEvent& event) override;
 	// ~IEntityComponent
+
+	// IEntityBehaviorTreeComponent
+	virtual bool IsRunning() const override { return m_bBehaviorTreeIsRunning; }
+	virtual void SendEvent(const char* szEventName) override;
+	// ~IEntityBehaviorTreeComponent
 
 	static void           ReflectType(Schematyc::CTypeDesc<CEntityAIBehaviorTreeComponent>& desc);
 	static void           Register(Schematyc::IEnvRegistrar& registrar);

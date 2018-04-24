@@ -45,6 +45,13 @@ void CCharacterControllerComponent::Register(Schematyc::CEnvRegistrationScope& c
 		componentScope.Register(pFunction);
 	}
 	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::ChangeVelocity, "{B2D208A7-6F80-4580-8AD5-BDD6859872E7}"_cry_guid, "ChangeVelocity");
+		pFunction->SetDescription("Changes the character velocity using specified mode");
+		pFunction->BindInput(1, 'vel', "Velocity");
+		pFunction->BindInput(2, 'mode', "Mode");
+		componentScope.Register(pFunction);
+	}
+	{
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CCharacterControllerComponent::GetMoveDirection, "{7D21BDFC-FE14-4020-A685-6F7917AC759C}"_cry_guid, "GetMovementDirection");
 		pFunction->SetDescription("Gets the direction the character is moving in");
 		pFunction->BindOutput(0, 'dir', "Direction");

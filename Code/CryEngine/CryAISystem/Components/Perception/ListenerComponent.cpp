@@ -52,14 +52,15 @@ CEntityAIListenerComponent::~CEntityAIListenerComponent()
 
 void CEntityAIListenerComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIListenerComponent>& desc)
 {
-	desc.SetGUID(cryiidof<CEntityAIListenerComponent>());
+	desc.AddBase<IEntityListenerComponent>();
+	desc.SetGUID("B8A61764-31CC-4B76-A6CF-05F754E62024"_cry_guid);
 
 	desc.SetLabel("AI Listener");
 	desc.SetDescription("Listener component");
 	desc.SetEditorCategory("AI");
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
-	desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, cryiidof<CEntityAIFactionComponent>());
+	desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, IEntity::SComponentType<CEntityAIFactionComponent>::GetGUID());
 
 	desc.AddMember(&CEntityAIListenerComponent::m_factionsToListen, 'ftl', "factionsToListen", "Factions To Listen To",
 		"Only sound stimuli whose source entities belong to these factions will be processed.", SFactionFlagsMask());
@@ -144,7 +145,7 @@ void CEntityAIListenerComponent::RegisterToAuditionMap()
 	m_params.factionsToListenMask = m_factionsToListen.mask;
 	m_params.onSoundHeardCallback = functor(*this, &CEntityAIListenerComponent::OnSoundHeard);
 
-	if (m_bUserCustomCondition)
+	if (m_bUserCustomCondition || m_userConditionCallback)
 	{
 		m_params.userConditionCallback = functor_ret(*this, &CEntityAIListenerComponent::OnListenerUserCondition);
 	}
@@ -196,8 +197,8 @@ void CEntityAIListenerComponent::ListenerUserConditionResult(bool bResult)
 
 bool CEntityAIListenerComponent::OnListenerUserCondition(const Perception::SSoundStimulusParams& soundParams)
 {
-	m_userConditionResult = true;
-	if (GetEntity()->GetSchematycObject())
+	bool userConditionResult = false;
+	if (m_bUserCustomCondition && GetEntity()->GetSchematycObject())
 	{
 		SListenerUserConditionSignal signal;
 		signal.position = soundParams.position;
@@ -205,8 +206,14 @@ bool CEntityAIListenerComponent::OnListenerUserCondition(const Perception::SSoun
 		signal.sourceEntityId = Schematyc::ExplicitEntityId(soundParams.sourceEntityId);
 
 		GetEntity()->GetSchematycObject()->ProcessSignal(signal, GetGUID());
+
+		userConditionResult |= m_userConditionResult;
 	}
-	return m_userConditionResult;
+	if (m_userConditionCallback)
+	{
+		userConditionResult |= m_userConditionCallback(soundParams);
+	}
+	return userConditionResult;
 }
 
 void CEntityAIListenerComponent::OnSoundHeard(const Perception::SSoundStimulusParams& soundParams)
@@ -219,6 +226,11 @@ void CEntityAIListenerComponent::OnSoundHeard(const Perception::SSoundStimulusPa
 		signal.sourceEntityId = Schematyc::ExplicitEntityId(soundParams.sourceEntityId);
 
 		GetEntity()->GetSchematycObject()->ProcessSignal(signal, GetGUID());
+	}
+
+	if (m_soundHeardCallback)
+	{
+		m_soundHeardCallback(soundParams);
 	}
 }
 
