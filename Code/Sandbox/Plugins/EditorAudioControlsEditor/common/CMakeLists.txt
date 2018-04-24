@@ -6,10 +6,13 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
+		"FileImportInfo.h"
 		"IConnection.h"
 		"IImpl.h"
 		"IItem.h"
+		"IItemModel.h"
 		"ISettings.h"
+		"ModelUtils.h"
 		"SharedData.h"
 )
 

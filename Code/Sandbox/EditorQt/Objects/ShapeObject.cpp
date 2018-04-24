@@ -39,7 +39,7 @@
 REGISTER_CLASS_DESC(CGameShapeLedgeStaticObjectClassDesc);
 REGISTER_CLASS_DESC(CGameShapeLedgeObjectClassDesc);
 REGISTER_CLASS_DESC(CGameShapeObjectClassDesc);
-REGISTER_CLASS_DESC(CAIPerceptionModifierObjectClassDesc);
+//REGISTER_CLASS_DESC(CAIPerceptionModifierObjectClassDesc); 
 REGISTER_CLASS_DESC(CAIOcclusionPlaneObjectClassDesc);
 REGISTER_CLASS_DESC(CAIPathObjectClassDesc);
 REGISTER_CLASS_DESC(CAIShapeObjectClassDesc);

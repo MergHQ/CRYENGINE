@@ -8,12 +8,6 @@ struct CoverID;
 
 struct IEntityCoverUserComponent : public IEntityComponent
 {
-	static const CryGUID& IID()
-	{
-		static CryGUID id = "D3C6A814-DBEE-4CB1-9322-9AC6028A3EB8"_cry_guid;
-		return id;
-	}
-	
 	typedef Functor1<const CoverID&> CoverCallback;
 	typedef Functor1<DynArray<Vec3>&> RefreshEyesCustomFunction;
 
@@ -38,6 +32,6 @@ struct IEntityCoverUserComponent : public IEntityComponent
 
 	static void ReflectType(Schematyc::CTypeDesc<IEntityCoverUserComponent>& desc)
 	{
-		desc.SetGUID(cryiidof<IEntityCoverUserComponent>());
+		desc.SetGUID("D3C6A814-DBEE-4CB1-9322-9AC6028A3EB8"_cry_guid);
 	}
 };

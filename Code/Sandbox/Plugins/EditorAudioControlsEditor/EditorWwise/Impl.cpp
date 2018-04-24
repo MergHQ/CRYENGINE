@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "Impl.h"
 
+#include "Common.h"
 #include "BaseConnection.h"
 #include "ParameterConnection.h"
 #include "ParameterToStateConnection.h"
@@ -153,6 +154,7 @@ CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const typ
 
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
+	: m_pItemModel(new CItemModel(m_rootItem))
 {
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
@@ -163,11 +165,13 @@ CImpl::CImpl()
 CImpl::~CImpl()
 {
 	Clear();
+	delete m_pItemModel;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::Reload(bool const preserveConnectionStatus)
 {
+	m_pItemModel->Reset();
 	Clear();
 
 	CProjectLoader(GetSettings()->GetProjectPath(), GetSettings()->GetAssetsPath(), m_rootItem, m_itemCache);
@@ -207,69 +211,19 @@ IItem* CImpl::GetItem(ControlId const id) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-char const* CImpl::GetTypeIcon(IItem const* const pIItem) const
+CryIcon const& CImpl::GetItemIcon(IItem const* const pIItem) const
 {
-	char const* szIconPath = "icons:Dialogs/dialog-error.ico";
 	auto const pItem = static_cast<CItem const* const>(pIItem);
-
-	if (pItem != nullptr)
-	{
-		EItemType const type = pItem->GetType();
-
-		switch (type)
-		{
-		case EItemType::Event:
-			szIconPath = "icons:audio/wwise/event.ico";
-			break;
-		case EItemType::Parameter:
-			szIconPath = "icons:audio/wwise/gameparameter.ico";
-			break;
-		case EItemType::Switch:
-			szIconPath = "icons:audio/wwise/switch.ico";
-			break;
-		case EItemType::AuxBus:
-			szIconPath = "icons:audio/wwise/auxbus.ico";
-			break;
-		case EItemType::SoundBank:
-			szIconPath = "icons:audio/wwise/soundbank.ico";
-			break;
-		case EItemType::State:
-			szIconPath = "icons:audio/wwise/state.ico";
-			break;
-		case EItemType::SwitchGroup:
-			szIconPath = "icons:audio/wwise/switchgroup.ico";
-			break;
-		case EItemType::StateGroup:
-			szIconPath = "icons:audio/wwise/stategroup.ico";
-			break;
-		case EItemType::WorkUnit:
-			szIconPath = "icons:audio/wwise/workunit.ico";
-			break;
-		case EItemType::VirtualFolder:
-			szIconPath = "icons:audio/wwise/virtualfolder.ico";
-			break;
-		case EItemType::PhysicalFolder:
-			szIconPath = "icons:audio/wwise/physicalfolder.ico";
-			break;
-		default:
-			szIconPath = "icons:Dialogs/dialog-error.ico";
-			break;
-		}
-	}
-
-	return szIconPath;
+	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer.");
+	return GetTypeIcon(pItem->GetType());
 }
 
 //////////////////////////////////////////////////////////////////////////
-string const& CImpl::GetName() const
+QString const& CImpl::GetItemTypeName(IItem const* const pIItem) const
 {
-	return m_implName;
-}
-
-//////////////////////////////////////////////////////////////////////////
-string const& CImpl::GetFolderName() const
-{
-	return m_implFolderName;
+	auto const pItem = static_cast<CItem const* const>(pIItem);
+	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer.");
+	return TypeToString(pItem->GetType());
 }
 
 //////////////////////////////////////////////////////////////////////////

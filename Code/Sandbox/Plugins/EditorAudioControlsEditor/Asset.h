@@ -25,34 +25,34 @@ class CAsset
 {
 public:
 
-	EAssetType   GetType() const   { return m_type; }
+	EAssetType    GetType() const   { return m_type; }
 
-	CAsset*      GetParent() const { return m_pParent; }
-	void         SetParent(CAsset* const pParent);
+	CAsset*       GetParent() const { return m_pParent; }
+	void          SetParent(CAsset* const pParent);
 
-	size_t       ChildCount() const { return m_children.size(); }
-	CAsset*      GetChild(size_t const index) const;
-	void         AddChild(CAsset* const pChildControl);
-	void         RemoveChild(CAsset const* const pChildControl);
+	size_t        ChildCount() const { return m_children.size(); }
+	CAsset*       GetChild(size_t const index) const;
+	void          AddChild(CAsset* const pChildControl);
+	void          RemoveChild(CAsset const* const pChildControl);
 
-	string       GetName() const { return m_name; }
-	virtual void SetName(string const& name);
+	string const& GetName() const { return m_name; }
+	virtual void  SetName(string const& name);
 
-	void         UpdateNameOnMove(CAsset* const pParent);
+	void          UpdateNameOnMove(CAsset* const pParent);
 
-	string       GetDescription() const { return m_description; }
-	virtual void SetDescription(string const& description);
+	string const& GetDescription() const { return m_description; }
+	virtual void  SetDescription(string const& description);
 
-	EAssetFlags  GetFlags() const                  { return m_flags; }
-	void         SetFlags(EAssetFlags const flags) { m_flags = flags; }
+	EAssetFlags   GetFlags() const                  { return m_flags; }
+	void          SetFlags(EAssetFlags const flags) { m_flags = flags; }
 
-	virtual void SetModified(bool const isModified, bool const isForced = false);
+	virtual void  SetModified(bool const isModified, bool const isForced = false);
 
-	string       GetFullHierarchyName() const;
+	string        GetFullHierarchyName() const;
 
-	bool         HasDefaultControlChildren(AssetNames& names) const;
+	bool          HasDefaultControlChildren(AssetNames& names) const;
 
-	virtual void Serialize(Serialization::IArchive& ar);
+	virtual void  Serialize(Serialization::IArchive& ar);
 
 protected:
 

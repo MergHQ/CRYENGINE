@@ -1367,19 +1367,6 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	bNativeResolution = false;
 #endif
 
-#if CRY_PLATFORM_DESKTOP
-	REGISTER_STRING_CB("r_MouseCursorTexture", "%ENGINE%/EngineAssets/Textures/Cursor_Green.dds", VF_NULL,
-	                   "Sets the image (dds file) to be displayed as the mouse cursor",
-	                   SetMouseCursorIconCVar);
-
-#if CRY_PLATFORM_WINDOWS
-	REGISTER_INT_CB("r_MouseUseSystemCursor", 0, VF_NULL,
-		"Should the game use the hardware mouse cursor?",
-		SetMouseUseSystemCursorCVar);
-#endif // CRY_PLATFORM_WINDOWS
-
-#endif // CRY_PLATFORM_DESKTOP
-
 	REGISTER_INT("r_resizableWindow", 1, VF_NULL, "Turn on resizable window borders. Changes are only applied after changing the window style once.");
 
 #if (CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES) && !DXGL_FULL_EMULATION

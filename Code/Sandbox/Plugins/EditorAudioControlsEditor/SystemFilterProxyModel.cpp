@@ -5,7 +5,8 @@
 
 #include "Asset.h"
 #include "SystemSourceModel.h"
-#include "ModelUtils.h"
+
+#include <ModelUtils.h>
 
 namespace ACE
 {

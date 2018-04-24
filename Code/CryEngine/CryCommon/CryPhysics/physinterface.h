@@ -3446,6 +3446,8 @@ struct IPhysicalWorld
 	//! even if this flag is not set, referenced entities (nRefCount>0) will not be physically deleted until freed
 	//! request can get queued if the physics thread is busy, unless bThreadSafe is set
 	virtual int              DestroyPhysicalEntity(IPhysicalEntity* pent, int mode = 0, int bThreadSafe = 0) = 0;
+	enum EDestroyMode { DM_NORMAL = 0, DM_SUSPEND = 1, DM_RESTORE = 2, DM_KEEP_IF_REFERENCED = 4 };
+	int  DestroyPhysicalEntity(IPhysicalEntity* pent, EDestroyMode mode, int bThreadSafe = 0) { return DestroyPhysicalEntity(pent, (int)mode, bThreadSafe); }
 
 	virtual int              SetPhysicalEntityId(IPhysicalEntity* pent, int id, int bReplace = 1, int bThreadSafe = 0) = 0;
 	virtual int              GetPhysicalEntityId(IPhysicalEntity* pent) = 0; //!< special values: NULL : -1, WORLD_ENTITY : -2;

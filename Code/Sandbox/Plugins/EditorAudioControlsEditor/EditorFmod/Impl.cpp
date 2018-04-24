@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "Impl.h"
 
+#include "Common.h"
 #include "BankConnection.h"
 #include "EventConnection.h"
 #include "ParameterConnection.h"
@@ -182,6 +183,7 @@ CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const typ
 
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
+	: m_pItemModel(new CItemModel(m_rootItem))
 {
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
@@ -192,11 +194,13 @@ CImpl::CImpl()
 CImpl::~CImpl()
 {
 	Clear();
+	delete m_pItemModel;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::Reload(bool const preserveConnectionStatus)
 {
+	m_pItemModel->Reset();
 	Clear();
 
 	CProjectLoader(GetSettings()->GetProjectPath(), GetSettings()->GetAssetsPath(), m_rootItem, m_itemCache, *this);
@@ -236,63 +240,19 @@ IItem* CImpl::GetItem(ControlId const id) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-char const* CImpl::GetTypeIcon(IItem const* const pIItem) const
+CryIcon const& CImpl::GetItemIcon(IItem const* const pIItem) const
 {
-	char const* szIconPath = "icons:Dialogs/dialog-error.ico";
 	auto const pItem = static_cast<CItem const* const>(pIItem);
-
-	if (pItem != nullptr)
-	{
-		EItemType const type = pItem->GetType();
-
-		switch (type)
-		{
-		case EItemType::Folder:
-			szIconPath = "icons:audio/fmod/folder_closed.ico";
-			break;
-		case EItemType::Event:
-			szIconPath = "icons:audio/fmod/event.ico";
-			break;
-		case EItemType::Parameter:
-			szIconPath = "icons:audio/fmod/tag.ico";
-			break;
-		case EItemType::Snapshot:
-			szIconPath = "icons:audio/fmod/snapshot.ico";
-			break;
-		case EItemType::Bank:
-			szIconPath = "icons:audio/fmod/bank.ico";
-			break;
-		case EItemType::Return:
-			szIconPath = "icons:audio/fmod/return.ico";
-			break;
-		case EItemType::VCA:
-			szIconPath = "icons:audio/fmod/vca.ico";
-			break;
-		case EItemType::MixerGroup:
-			szIconPath = "icons:audio/fmod/group.ico";
-			break;
-		case EItemType::EditorFolder:
-			szIconPath = "icons:General/Folder.ico";
-			break;
-		default:
-			szIconPath = "icons:Dialogs/dialog-error.ico";
-			break;
-		}
-	}
-
-	return szIconPath;
+	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer.");
+	return GetTypeIcon(pItem->GetType());
 }
 
 //////////////////////////////////////////////////////////////////////////
-string const& CImpl::GetName() const
+QString const& CImpl::GetItemTypeName(IItem const* const pIItem) const
 {
-	return m_implName;
-}
-
-//////////////////////////////////////////////////////////////////////////
-string const& CImpl::GetFolderName() const
-{
-	return m_implFolderName;
+	auto const pItem = static_cast<CItem const* const>(pIItem);
+	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer.");
+	return TypeToString(pItem->GetType());
 }
 
 //////////////////////////////////////////////////////////////////////////

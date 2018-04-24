@@ -12,11 +12,15 @@
 	#define ACE_API DLL_IMPORT
 #endif
 
+class CryIcon;
+class QString;
+
 namespace ACE
 {
 namespace Impl
 {
 struct IItem;
+struct IItemModel;
 struct ISettings;
 
 struct IImpl
@@ -36,10 +40,9 @@ struct IImpl
 	//! Used for platform specific preload requests.
 	virtual void SetPlatforms(Platforms const& platforms) = 0;
 
-	//! Middleware controls are organized in a tree structure.
-	//! This function returns the root of the tree to allow for traversing the tree manually.
-	//! \return A pointer to the root of the control tree.
-	virtual IItem* GetRoot() = 0;
+	//! This function returns the item model that is used to display data in the Middleware Data Panel's treeview.
+	//! \return A pointer to the item model of the middleware.
+	virtual IItemModel* GetItemModel() const = 0;
 
 	//! Gets the middleware control given its unique id.
 	//! \param id - Unique ID of the control.
@@ -48,8 +51,13 @@ struct IImpl
 
 	//! Returns the icon corresponding to the middleware control passed as argument.
 	//! \param pIItem - Middleware control
-	//! \return A string with the path to the icon corresponding to the control type.
-	virtual char const* GetTypeIcon(IItem const* const pIItem) const = 0;
+	//! \return An icon corresponding to the control type.
+	virtual CryIcon const& GetItemIcon(IItem const* const pIItem) const = 0;
+
+	//! Returns the icon corresponding to the middleware control passed as argument.
+	//! \param pIItem - Middleware control
+	//! \return A string with the type name corresponding to the control type.
+	virtual QString const& GetItemTypeName(IItem const* const pIItem) const = 0;
 
 	//! Gets the name of the implementation which might be used in the ACE UI.
 	//! \return A string with the name of the implementation.
@@ -61,6 +69,9 @@ struct IImpl
 
 	//! Gets the settings for this implementation.
 	virtual ISettings* GetSettings() = 0;
+
+	//! Checks if the current middleware allows importing of files to the asset folder.
+	virtual bool IsFileImportAllowed() const = 0;
 
 	//! Checks if the given audio system control type is supported by the middleware implementation.
 	//! \param assetType - An audio system control type.

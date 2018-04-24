@@ -748,6 +748,8 @@ struct IBehaviorTreeManager
 
 	virtual void HandleEvent(const EntityId entityId, Event& event) = 0;
 
+	virtual BehaviorTree::Blackboard* GetBehaviorTreeBlackboard(const EntityId entityId) = 0;
+
 	//! Todo: Remove these functions as the behavior variables are a internal concept of the behavior tree and should not be directly accessed from the outside.
 	//! Instead of changing directly the internal state of the variable, the external systems should inform the tree of a
 	//! particular event and let the behavior tree decide if and what variables should be changed.

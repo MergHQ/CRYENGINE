@@ -42,6 +42,18 @@ void ReleaseCursor()
 #endif
 }
 
+void SetMouseCursorIconCVar(ICVar* pVar)
+{
+	gEnv->pHardwareMouse->SetCursor(pVar->GetString());
+}
+
+#if CRY_PLATFORM_WINDOWS
+void SetMouseUseSystemCursorCVar(ICVar* pVar)
+{
+	gEnv->pHardwareMouse->UseSystemCursor(pVar->GetIVal() != 0);
+}
+#endif //CRY_PLATFORM_WINDOWS
+
 //-----------------------------------------------------------------------------------------------------
 
 CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
@@ -62,6 +74,25 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 	, m_nCurIDCCursorId(~0)
 #endif
 {
+
+#if CRY_PLATFORM_DESKTOP
+	REGISTER_STRING_CB("r_MouseCursorTexture", "%ENGINE%/EngineAssets/Textures/Cursor_Green.dds", VF_NULL,
+		"Sets the image (dds file) to be displayed as the mouse cursor",
+		SetMouseCursorIconCVar);
+
+#if CRY_PLATFORM_WINDOWS
+
+	REGISTER_INT_CB("r_MouseUseSystemCursor", 0, VF_NULL,
+		"Should the game use the hardware mouse cursor?",
+		SetMouseUseSystemCursorCVar);
+#endif // CRY_PLATFORM_WINDOWS
+#endif //CRY_PLATFORM_DESKTOP
+
+	if (gEnv->pSystem)
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CHardwareMouse");
+	}
+
 #if CRY_PLATFORM_WINDOWS
 	atexit(ReleaseCursor);
 
@@ -108,9 +139,6 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 
 	m_hide = false;
 	m_calledShowHWMouse = false;
-
-	if (IsFullscreen())
-		ConfineCursor(true);
 
 #if CRY_PLATFORM_WINDOWS
 	CryLog("Initialized hardware mouse (game is %s to confine mouse to window)", m_allowConfine ? "allowed" : "not allowed");
@@ -192,6 +220,10 @@ void CHardwareMouse::ShowHardwareMouse(bool bShow)
 		pInput->ShowCursor(bShow);
 		pInput->SetExclusiveMode(eIDT_Mouse, false);
 		m_bPrevShowState = bShow;
+	}
+	else
+	{
+		m_bPrevShowState = !m_bPrevShowState; // reset to previous state as we did not succeed
 	}
 
 	m_calledShowHWMouse = true;
@@ -442,8 +474,6 @@ void CHardwareMouse::OnPostInitInput()
 	if (gEnv->pInput)
 		gEnv->pInput->AddEventListener(this);
 
-	if (gEnv->pSystem)
-		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CHardwareMouse");
 }
 
 //-----------------------------------------------------------------------------------------------------

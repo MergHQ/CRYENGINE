@@ -10,9 +10,9 @@
 #include "ImplementationManager.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
-#include "ModelUtils.h"
 #include "TreeView.h"
 
+#include <ModelUtils.h>
 #include <QtUtil.h>
 #include <CrySystem/File/CryFile.h>
 #include <Controls/QuestionDialog.h>
@@ -100,7 +100,6 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 	m_pTreeView->setEditTriggers(QAbstractItemView::EditKeyPressed | QAbstractItemView::SelectedClicked);
 	m_pTreeView->setDragEnabled(true);
 	m_pTreeView->setDragDropMode(QAbstractItemView::DragDrop);
-	m_pTreeView->setDefaultDropAction(Qt::MoveAction);
 	m_pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	m_pTreeView->setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_pTreeView->setTreePosition(m_nameColumn);
@@ -138,9 +137,9 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 
 	g_assetsManager.SignalLibraryAboutToBeRemoved.Connect([this](CLibrary* const pLibrary)
 		{
-			int const libCount = g_assetsManager.GetLibraryCount();
+			size_t const libCount = g_assetsManager.GetLibraryCount();
 
-			for (int i = 0; i < libCount; ++i)
+			for (size_t i = 0; i < libCount; ++i)
 			{
 			  if (g_assetsManager.GetLibrary(i) == pLibrary)
 			  {
@@ -170,6 +169,7 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
 		{
 			StopControlExecution();
+			ClearFilters();
 	  }, reinterpret_cast<uintptr_t>(this));
 
 	g_implementationManager.SignalImplementationChanged.Connect([this]()

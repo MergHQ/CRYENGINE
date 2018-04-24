@@ -6,10 +6,13 @@ start_sources()
 sources_platform(ALL)
 add_sources("EditorPortAudio_uber_0.cpp"
 	SOURCE_GROUP "Root"
+		"Common.h"
 		"Impl.cpp"
 		"Impl.h"
 		"Item.cpp"
 		"Item.h"
+		"ItemModel.cpp"
+		"ItemModel.h"
 		"main.cpp"
 		"ProjectLoader.cpp"
 		"ProjectLoader.h"
@@ -20,6 +23,11 @@ add_sources("EditorPortAudio_uber_0.cpp"
 	SOURCE_GROUP "Connections"
 		"EventConnection.cpp"
 		"EventConnection.h"
+)
+
+add_sources("NoUberFile"
+	SOURCE_GROUP "Resources"
+		"EditorPortAudioUI.qrc"
 )
 
 end_sources()

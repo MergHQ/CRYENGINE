@@ -9,6 +9,7 @@
 #include <ISettings.h>
 #include <QtUtil.h>
 #include <FileDialogs/SystemFileDialog.h>
+#include <CryIcon.h>
 
 #include <QDialogButtonBox>
 #include <QGridLayout>
@@ -51,7 +52,9 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 		pLineEdit->setMinimumWidth(250);
 
 		auto const pBrowseButton = new QToolButton(this);
-		pBrowseButton->setText("...");
+		pBrowseButton->setIcon(CryIcon("icons:General/Folder.ico"));
+		pBrowseButton->setToolTip(tr("Select project path"));
+		pBrowseButton->setIconSize(QSize(16, 16));
 
 		if (pISettings->SupportsProjects())
 		{

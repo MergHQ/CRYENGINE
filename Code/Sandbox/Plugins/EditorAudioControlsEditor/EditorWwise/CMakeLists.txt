@@ -6,10 +6,13 @@ start_sources()
 sources_platform(ALL)
 add_sources("EditorWwise_uber_0.cpp"
 	SOURCE_GROUP "Root"
+		"Common.h"
 		"Impl.cpp"
 		"Impl.h"
 		"Item.cpp"
 		"Item.h"
+		"ItemModel.cpp"
+		"ItemModel.h"
 		"main.cpp"
 		"ProjectLoader.cpp"
 		"ProjectLoader.h"
@@ -26,6 +29,11 @@ add_sources("EditorWwise_uber_0.cpp"
 		"ParameterToStateConnection.h"
 		"SoundbankConnection.cpp"
 		"SoundbankConnection.h"
+)
+
+add_sources("NoUberFile"
+	SOURCE_GROUP "Resources"
+		"EditorWwiseUI.qrc"
 )
 
 end_sources()

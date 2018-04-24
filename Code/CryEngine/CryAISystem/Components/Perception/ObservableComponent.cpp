@@ -33,14 +33,15 @@ CEntityAIObservableComponent::~CEntityAIObservableComponent()
 
 void CEntityAIObservableComponent::ReflectType(Schematyc::CTypeDesc<CEntityAIObservableComponent>& desc)
 {
-	desc.SetGUID(cryiidof<CEntityAIObservableComponent>());
+	desc.AddBase<IEntityObservableComponent>();
+	desc.SetGUID("5A32746A-9CEA-4877-B9E4-5C4E06EEE90C"_cry_guid);
 
 	desc.SetLabel("AI Observable");
 	desc.SetDescription("Observable component");
 	desc.SetEditorCategory("AI");
 	desc.SetIcon("icons:Navigation/Move_Classic.ico");
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
-	desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, cryiidof<CEntityAIFactionComponent>());
+	desc.AddComponentInteraction(SEntityComponentRequirements::EType::SoftDependency, IEntity::SComponentType<CEntityAIFactionComponent>::GetGUID());
 
 	desc.AddMember(&CEntityAIObservableComponent::m_visionMapType, 'vmt', "visionMapType", "Vision Map Type", "", Perception::ComponentHelpers::SVisionMapType());
 	desc.AddMember(&CEntityAIObservableComponent::m_observableLocations, 'oba', "observableLocations", "Observable Locations", "", Perception::ComponentHelpers::SLocationsArray());
@@ -115,7 +116,7 @@ void CEntityAIObservableComponent::RegisterToVisionMap()
 	m_params.typeMask = m_visionMapType.mask;
 
 	CEntityAIFactionComponent* pFactionComponent = pEntity->GetComponent<CEntityAIFactionComponent>();
-	m_params.faction = pFactionComponent ? pFactionComponent->GetFactionId().id : IFactionMap::InvalidFactionID;
+	m_params.faction = pFactionComponent ? pFactionComponent->GetFactionId() : IFactionMap::InvalidFactionID;
 
 	//	, userData(0)
 	//	, skipListSize(0)
@@ -169,6 +170,14 @@ void CEntityAIObservableComponent::UpdateChange()
 	m_changeHintFlags = EChangeHint();
 }
 
+void CEntityAIObservableComponent::UpdateChange(const uint32 changeHintFlags)
+{
+	if (IsRegistered())
+	{
+		gEnv->pAISystem->GetVisionMap()->ObservableChanged(m_observableId, m_params, changeHintFlags);
+	}
+}
+
 void CEntityAIObservableComponent::SyncWithEntity()
 {
 	m_changeHintFlags = EChangeHint(m_changeHintFlags | eChangedPosition);
@@ -188,3 +197,60 @@ void CEntityAIObservableComponent::SyncWithEntity()
 		m_params.observablePositionsCount = 1;
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityAIObservableComponent::SetTypeMask(const uint32 typeMask)
+{
+	m_visionMapType.mask = typeMask;
+
+	m_params.typeMask = typeMask;
+	UpdateChange(eChangedTypeMask);
+}
+
+void CEntityAIObservableComponent::AddObservableLocationOffsetFromPivot(const Vec3& offsetFromPivot)
+{
+	Perception::ComponentHelpers::SLocation location;
+	location.offset = offsetFromPivot;
+	location.type = Perception::ComponentHelpers::SLocation::EType::Pivot;
+	
+	m_observableLocations.locations.push_back(location);
+	Update();
+}
+
+void CEntityAIObservableComponent::AddObservableLocationOffsetFromBone(const Vec3& offsetFromBone, const char* szBoneName)
+{
+	Perception::ComponentHelpers::SLocation location;
+	location.offset = offsetFromBone;
+	location.boneName = szBoneName;
+	location.type = Perception::ComponentHelpers::SLocation::EType::Bone;
+
+	m_observableLocations.locations.push_back(location);
+	Update();
+}
+
+void CEntityAIObservableComponent::SetObservableLocationOffsetFromPivot(const size_t index, const Vec3& offsetFromPivot)
+{
+	if (index < m_observableLocations.locations.size())
+	{
+		Perception::ComponentHelpers::SLocation& location = m_observableLocations.locations[index];
+		location.offset = offsetFromPivot;
+		location.type = Perception::ComponentHelpers::SLocation::EType::Pivot;
+
+		Update();
+	}
+}
+
+void CEntityAIObservableComponent::SetObservableLocationOffsetFromBone(const size_t index, const Vec3& offsetFromBone, const char* szBoneName)
+{
+	if (index < m_observableLocations.locations.size())
+	{
+		Perception::ComponentHelpers::SLocation& location = m_observableLocations.locations[index];		
+		location.offset = offsetFromBone;
+		location.boneName = szBoneName;
+		location.type = Perception::ComponentHelpers::SLocation::EType::Bone;
+
+		Update();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////

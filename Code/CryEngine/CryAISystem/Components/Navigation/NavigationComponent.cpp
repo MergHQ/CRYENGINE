@@ -8,42 +8,6 @@
 
 #include "Navigation/NavigationSystemSchematyc.h"
 
-void CEntityAINavigationComponent::SMovementProperties::ReflectType(Schematyc::CTypeDesc<SMovementProperties>& desc)
-{
-	desc.SetGUID("44888426-aafa-472e-81ac-58bb1be18475"_cry_guid);
-
-	desc.SetLabel("Movement Properties");
-	desc.SetDescription("Movement Properties");
-	desc.SetDefaultValue(SMovementProperties());
-
-	desc.AddMember(&SMovementProperties::normalSpeed, 'nrsp', "normalSpeed", "Normal Speed", "Normal speed of the agent", 4.0f);
-	desc.AddMember(&SMovementProperties::minSpeed, 'mnsp', "minSpeed", "Min Speed", "Minimal speed of the agent", 0.0f);
-	desc.AddMember(&SMovementProperties::maxSpeed, 'mxsp', "maxSpeed", "Max Speed", "Maximal speed of the agent", 6.0f);
-
-	desc.AddMember(&SMovementProperties::maxAcceleration, 'mxac', "maxAcceleration", "Max Acceleration", "Maximal acceleration", 6.0f);
-	desc.AddMember(&SMovementProperties::maxDeceleration, 'mxdc', "maxDeceleration", "Max Deceleration", "Maximal deceleration", 10.0f);
-
-	desc.AddMember(&SMovementProperties::lookAheadDistance, 'lad', "lookAheadDistance", "Look Ahead Distance", "How far is point on path that the agent is following", 0.5f);
-	desc.AddMember(&SMovementProperties::bStopAtEnd, 'sae', "stopAtEnd", "Stop At End", "Should the agent stop when reaching end of the path", true);
-}
-
-void ReflectType(Schematyc::CTypeDesc<CEntityAINavigationComponent::SCollisionAvoidanceProperties::EType>& desc)
-{
-	desc.SetGUID("ff0a97c4-eb3f-44cb-b23a-1626fc073e4c"_cry_guid);
-
-	desc.AddConstant(CEntityAINavigationComponent::SCollisionAvoidanceProperties::EType::None, "None", "None");
-	desc.AddConstant(CEntityAINavigationComponent::SCollisionAvoidanceProperties::EType::Passive, "Passive", "Passive");
-	desc.AddConstant(CEntityAINavigationComponent::SCollisionAvoidanceProperties::EType::Active, "Active", "Active");
-}
-
-void CEntityAINavigationComponent::SCollisionAvoidanceProperties::ReflectType(Schematyc::CTypeDesc<SCollisionAvoidanceProperties>& desc)
-{ 
-	desc.SetGUID("4086c4b2-2300-41ea-aa95-4f119fa4281b"_cry_guid);
-
-	desc.AddMember(&SCollisionAvoidanceProperties::type, 'type', "type", "Type", "How the agent is going to behave in collision avoidance system", SCollisionAvoidanceProperties::EType::Active);
-	desc.AddMember(&SCollisionAvoidanceProperties::radius, 'rad', "radius", "Radius", "Radius of the agent used in collision avoidance calculations", 0.3f);
-}
-
 void CEntityAINavigationComponent::SStateUpdatedSignal::ReflectType(Schematyc::CTypeDesc<SStateUpdatedSignal>& desc)
 {
 	desc.SetGUID("cb398038-bf76-4c32-935a-0956dda8fc69"_cry_guid);
@@ -85,7 +49,8 @@ CEntityAINavigationComponent::~CEntityAINavigationComponent()
 
 void CEntityAINavigationComponent::ReflectType(Schematyc::CTypeDesc<CEntityAINavigationComponent>& desc)
 {
-	desc.SetGUID(CEntityAINavigationComponent::IID());
+	desc.AddBase<IEntityNavigationComponent>();
+	desc.SetGUID("1b988fa3-2cc8-4dfa-9107-a63aded77e91"_cry_guid);
 
 	desc.SetLabel("AI Navigation Agent");
 	desc.SetDescription("Navigation system agent component");
@@ -172,7 +137,9 @@ void CEntityAINavigationComponent::Initialize()
 	m_pPathfollower = gEnv->pAISystem->CreateAndReturnNewDefaultPathFollower(pathFollowerParams, m_pathObstacles);
 	m_movementAdapter.SetPathFollower(m_pPathfollower.get());
 
-	Reset();
+	//Temporary solution, start the component (register to movement system) now, even if the parameters aren't necessarily set
+	Start();
+	GetEntity()->UpdateComponentEventMask(this);
 }
 
 void CEntityAINavigationComponent::OnShutDown()
@@ -274,16 +241,22 @@ void CEntityAINavigationComponent::ProcessEvent(const SEntityEvent& event)
 		{
 			if (GetEntity()->GetSimulationMode() != EEntitySimulationMode::Game)
 			{
+				// Temporary solution, stop and start whole component when leaving game mode
 				Stop();
+				Start();
+
 				GetEntity()->UpdateComponentEventMask(this);
 			}
 			break;
 		}
-		case EEntityEvent::ENTITY_EVENT_LEVEL_LOADED:
+		case EEntityEvent::ENTITY_EVENT_START_GAME:
 		{
 			if (IsGameOrSimulation())
 			{
+				// Temporary solution, stop and start whole component when entering game mode
+				Stop();
 				Start();
+
 				GetEntity()->UpdateComponentEventMask(this);
 			}
 			break;
@@ -395,6 +368,45 @@ bool CEntityAINavigationComponent::IsRayObstructed(const Vec3& toPosition) const
 	return !pPathfinder->CheckIfPointsAreOnStraightWalkableLine(startMeshId, startPosition, toPosition, &m_navigationQueryFilter, 0.0f);
 }
 
+void CEntityAINavigationComponent::SetNavigationAgentType(const char* szTypeName)
+{
+	const NavigationAgentTypeID oldTypeId = m_agentTypeId;
+	
+	m_agentTypeId = gEnv->pAISystem->GetNavigationSystem()->GetAgentTypeID(szTypeName);
+	m_movementAdapter.SetNavigationAgentTypeID(m_agentTypeId);
+	
+	if(oldTypeId != m_agentTypeId)
+	{
+		// Temporary solution, stop and start whole component to re-register in movement system
+		Stop();
+		Start();
+	}
+}
+
+void CEntityAINavigationComponent::SetMovementProperties(const SMovementProperties& properties)
+{
+	m_movementProperties = properties;
+}
+
+void CEntityAINavigationComponent::SetCollisionAvoidanceProperties(const SCollisionAvoidanceProperties& properties)
+{
+	if (IsGameOrSimulation() && properties.type != m_collisionAvoidanceProperties.type)
+	{
+		m_collisionAgent.Initialize((m_collisionAvoidanceProperties.type == SCollisionAvoidanceProperties::EType::None) ? nullptr : GetEntity());
+	}
+	m_collisionAvoidanceProperties = properties;
+}
+
+const IEntityNavigationComponent::SMovementProperties& CEntityAINavigationComponent::GetMovementProperties() const
+{
+	return m_movementProperties;
+}
+
+const IEntityNavigationComponent::SCollisionAvoidanceProperties& CEntityAINavigationComponent::GetCollisionAvoidanceProperties() const
+{
+	return m_collisionAvoidanceProperties;
+}
+
 bool CEntityAINavigationComponent::TestRaycastHit(const Vec3& toPositon, Vec3& hitPos, Vec3& hitNorm) const
 {
 	MNM::SRayHitOutput rayHit;
@@ -481,12 +493,22 @@ void CEntityAINavigationComponent::MovementRequestCompleted(const MovementReques
 		if (result.result == MovementRequestResult::Success)
 		{
 			pSchematycObject->ProcessSignal(SNavigationCompletedSignal(), GetGUID());
+
+			if (m_navigationCompletedCallback)
+			{
+				m_navigationCompletedCallback(true);
+			}
 		}
 		else
 		{
+			StopMovement();
+			
 			pSchematycObject->ProcessSignal(SNavigationFailedSignal(), GetGUID());
 
-			StopMovement();
+			if (m_navigationCompletedCallback)
+			{
+				m_navigationCompletedCallback(false);
+			}
 		}
 	}
 }
@@ -513,14 +535,11 @@ void CEntityAINavigationComponent::CancelRequestedPath()
 void CEntityAINavigationComponent::OnMNMPathfinderResult(const MNM::QueuedPathID& requestId, MNMPathRequestResult& result)
 {
 	m_pathRequestId = 0;
-
-	m_pNavigationPath = result.pPath;
-	m_pPathfollower->AttachToPath(result.pPath.get());
 	
 	if (result.HasPathBeenFound())
 	{
-	/*	m_pNavigationPath = result.pPath;
-		m_pPathfollower->AttachToPath(result.pPath.get());*/
+		m_pNavigationPath = result.pPath;
+		m_pPathfollower->AttachToPath(result.pPath.get());
 	}
 	else
 	{

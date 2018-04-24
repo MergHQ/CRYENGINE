@@ -5067,18 +5067,6 @@ void CD3D9Renderer::SetWindowIconCVar(ICVar* pVar)
 	gRenDev->SetWindowIcon(pVar->GetString());
 }
 
-void CD3D9Renderer::SetMouseCursorIconCVar(ICVar* pVar)
-{
-	gEnv->pHardwareMouse->SetCursor(pVar->GetString());
-}
-
-#if CRY_PLATFORM_WINDOWS
-void CD3D9Renderer::SetMouseUseSystemCursorCVar(ICVar* pVar)
-{
-	gEnv->pHardwareMouse->UseSystemCursor(pVar->GetIVal() != 0);
-}
-#endif //CRY_PLATFORM_WINDOWS
-
 IRenderAuxGeom* CD3D9Renderer::GetIRenderAuxGeom()
 {
 #if defined(ENABLE_RENDER_AUX_GEOM)

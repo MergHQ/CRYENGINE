@@ -7,9 +7,9 @@
 
 #include <CryAISystem/MovementRequest.h>
 #include <CryAISystem/NavigationSystem/INavigationQuery.h>
+#include <CryAISystem/Components/IEntityNavigationComponent.h>
 
 #include <CrySerialization/Forward.h>
-#include <CryEntitySystem/IEntityComponent.h>
 
 namespace Schematyc
 {
@@ -19,66 +19,14 @@ struct IEnvRegistrar;
 struct SUpdateContext;
 }
 
-class CEntityAINavigationComponent final : public IEntityComponent
+class CEntityAINavigationComponent final : public IEntityNavigationComponent
 {
 	const uint64 kDefaultEntityEventMask =
-		ENTITY_EVENT_BIT(ENTITY_EVENT_LEVEL_LOADED)
+		ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME)
 		| ENTITY_EVENT_BIT(ENTITY_EVENT_RESET)
 		| ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
 
 public:
-	static const CryGUID& IID()
-	{
-		static CryGUID id = "1b988fa3-2cc8-4dfa-9107-a63aded77e91"_cry_guid;
-		return id;
-	}
-
-	typedef std::function<void (const Vec3&)> StateUpdatedCallback;
-
-	struct SMovementProperties
-	{
-		static void ReflectType(Schematyc::CTypeDesc<SMovementProperties>& desc);
-
-		bool        operator==(const SMovementProperties& other) const
-		{
-			return normalSpeed == other.normalSpeed
-			       && minSpeed == other.minSpeed
-			       && maxSpeed == other.maxSpeed
-			       && maxAcceleration == other.maxAcceleration
-			       && maxDeceleration == other.maxDeceleration
-			       && lookAheadDistance == other.lookAheadDistance
-			       && bStopAtEnd == other.bStopAtEnd;
-		}
-
-		float normalSpeed = 4.0f;
-		float minSpeed = 0.0f;
-		float maxSpeed = 6.0f;
-		float maxAcceleration = 4.0f;
-		float maxDeceleration = 6.0f;
-		float lookAheadDistance = 0.5f;
-		bool  bStopAtEnd = true;
-	};
-
-	struct SCollisionAvoidanceProperties
-	{
-		enum class EType
-		{
-			None,
-			Passive,
-			Active,
-		};
-
-		static void ReflectType(Schematyc::CTypeDesc<SCollisionAvoidanceProperties>& desc);
-
-		bool        operator==(const SCollisionAvoidanceProperties& other) const
-		{
-			return radius == other.radius && type == other.type;
-		}
-
-		float radius = 0.3;
-		EType type = EType::Active;
-	};
-
 	struct SStateUpdatedSignal
 	{
 		static void ReflectType(Schematyc::CTypeDesc<SStateUpdatedSignal>& typeInfo);
@@ -108,18 +56,28 @@ public:
 	virtual uint64 GetEventMask() const override;
 	// ~IEntityComponent
 
-	bool        TestRaycastHit(const Vec3& toPositon, Vec3& hitPos, Vec3& hitNorm) const;
-	bool        IsRayObstructed(const Vec3& toPosition) const;
-	bool        IsDestinationReachable(const Vec3& destination) const;
-	void        NavigateTo(const Vec3& destination);
-	void        StopMovement();
+	// IEntityNavigationComponent
+	virtual void   SetNavigationAgentType(const char* szTypeName) override;
+	virtual void   SetMovementProperties(const SMovementProperties& properties) override;
+	virtual void   SetCollisionAvoidanceProperties(const SCollisionAvoidanceProperties& properties) override;
+	virtual void   SetNavigationQueryFilter(const SNavMeshQueryFilterDefault& filter) override { m_navigationQueryFilter = filter; }
+	virtual bool   TestRaycastHit(const Vec3& toPositon, Vec3& hitPos, Vec3& hitNorm) const override;
+	virtual bool   IsRayObstructed(const Vec3& toPosition) const override;
+	virtual bool   IsDestinationReachable(const Vec3& destination) const override;
+	virtual void   NavigateTo(const Vec3& destination) override;
+	virtual void   StopMovement() override;
 
-	Vec3        GetRequestedVelocity() const;
-	void        SetRequestedVelocity(const Vec3& velocity);
-	void        SetStateUpdatedCallback(StateUpdatedCallback callback) { m_stateUpdatedCallback = callback; }
+	virtual const SMovementProperties& GetMovementProperties() const override;
+	virtual const SCollisionAvoidanceProperties& GetCollisionAvoidanceProperties() const override;
 
-	NavigationAgentTypeID      GetNavigationTypeId() const { return m_movementAdapter.GetNavigationAgentTypeID(); }
-	const INavMeshQueryFilter* GetNavigationQueryFilter() const { return &m_navigationQueryFilter; }
+	virtual Vec3   GetRequestedVelocity() const override;
+	virtual void   SetRequestedVelocity(const Vec3& velocity) override;
+	virtual void   SetStateUpdatedCallback(const IEntityNavigationComponent::StateUpdatedCallback& callback) override { m_stateUpdatedCallback = callback; }
+	virtual void   SetNavigationCompletedCallback(const NavigationCompletedCallback& callback) override { m_navigationCompletedCallback = callback; }
+
+	virtual NavigationAgentTypeID      GetNavigationTypeId() const  override { return m_movementAdapter.GetNavigationAgentTypeID(); }
+	virtual const INavMeshQueryFilter* GetNavigationQueryFilter() const  override { return &m_navigationQueryFilter; }
+	// ~IEntityNavigationComponent
 
 	static void ReflectType(Schematyc::CTypeDesc<CEntityAINavigationComponent>& desc);
 	static void Register(Schematyc::IEnvRegistrar& registrar);
@@ -152,9 +110,6 @@ private:
 
 	Vec3                                 GetVelocity() const;
 	Vec3                                 GetPosition() const;
-
-	const SMovementProperties&           GetMovementProperties() const           { return m_movementProperties; }
-	const SCollisionAvoidanceProperties& GetCollisionAvoidanceProperties() const { return m_collisionAvoidanceProperties; }
 
 	void                                 FillPathFollowerParams(PathFollowerParams& params) const;
 
@@ -190,6 +145,7 @@ private:
 	bool                          m_lastPathRequestFailed;
 
 	StateUpdatedCallback          m_stateUpdatedCallback;
+	NavigationCompletedCallback   m_navigationCompletedCallback;
 
 	SNavMeshQueryFilterDefault    m_navigationQueryFilter;
 };

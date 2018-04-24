@@ -6,6 +6,7 @@
 
 #include "Item.h"
 #include "Settings.h"
+#include "ItemModel.h"
 
 #include <CrySystem/File/CryFile.h>
 
@@ -25,22 +26,24 @@ public:
 	virtual ~CImpl() override;
 
 	// IImpl
-	virtual void          Reload(bool const preserveConnectionStatus = true) override;
-	virtual void          SetPlatforms(Platforms const& platforms) override { s_platforms = platforms; }
-	virtual IItem*        GetRoot() override                                { return &m_rootItem; }
-	virtual IItem*        GetItem(ControlId const id) const override;
-	virtual char const*   GetTypeIcon(IItem const* const pIItem) const override;
-	virtual string const& GetName() const override;
-	virtual string const& GetFolderName() const override;
-	virtual ISettings*    GetSettings() override                                           { return &m_settings; }
-	virtual bool          IsSystemTypeSupported(EAssetType const assetType) const override { return true; }
-	virtual bool          IsTypeCompatible(EAssetType const assetType, IItem const* const pIItem) const override;
-	virtual EAssetType    ImplTypeToAssetType(IItem const* const pIItem) const override;
-	virtual ConnectionPtr CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) override;
-	virtual ConnectionPtr CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType) override;
-	virtual XmlNodeRef    CreateXMLNodeFromConnection(ConnectionPtr const pConnection, EAssetType const assetType) override;
-	virtual void          EnableConnection(ConnectionPtr const pConnection) override;
-	virtual void          DisableConnection(ConnectionPtr const pConnection) override;
+	virtual void           Reload(bool const preserveConnectionStatus = true) override;
+	virtual void           SetPlatforms(Platforms const& platforms) override { s_platforms = platforms; }
+	virtual IItemModel*    GetItemModel() const override                     { return m_pItemModel; }
+	virtual IItem*         GetItem(ControlId const id) const override;
+	virtual CryIcon const& GetItemIcon(IItem const* const pIItem) const override;
+	virtual QString const& GetItemTypeName(IItem const* const pIItem) const override;
+	virtual string const&  GetName() const override                                         { return m_implName; }
+	virtual string const&  GetFolderName() const override                                   { return m_implFolderName; }
+	virtual ISettings*     GetSettings() override                                           { return &m_settings; }
+	virtual bool           IsFileImportAllowed() const override                             { return false; }
+	virtual bool           IsSystemTypeSupported(EAssetType const assetType) const override { return true; }
+	virtual bool           IsTypeCompatible(EAssetType const assetType, IItem const* const pIItem) const override;
+	virtual EAssetType     ImplTypeToAssetType(IItem const* const pIItem) const override;
+	virtual ConnectionPtr  CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) override;
+	virtual ConnectionPtr  CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType) override;
+	virtual XmlNodeRef     CreateXMLNodeFromConnection(ConnectionPtr const pConnection, EAssetType const assetType) override;
+	virtual void           EnableConnection(ConnectionPtr const pConnection) override;
+	virtual void           DisableConnection(ConnectionPtr const pConnection) override;
 	// ~IImpl
 
 private:
@@ -63,6 +66,7 @@ private:
 	CryAudio::SImplInfo m_implInfo;
 	string              m_implName;
 	string              m_implFolderName;
+	CItemModel* const   m_pItemModel;
 };
 } // namespace Wwise
 } // namespace Impl

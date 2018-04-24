@@ -24,9 +24,9 @@ private:
 
 	void   LoadSoundBanks(string const& folderPath, bool const isLocalized, CItem& parent);
 	void   LoadFolder(string const& folderPath, string const& folderName, CItem& parent);
-	void   LoadWorkUnitFile(string const& filePath, CItem& parent);
-	void   LoadXml(XmlNodeRef const root, CItem& parent);
-	CItem* CreateItem(string const& name, EItemType const type, CItem& pParent);
+	void   LoadWorkUnitFile(string const& filePath, CItem& parent, EPakStatus const pakStatus);
+	void   LoadXml(XmlNodeRef const root, CItem& parent, EPakStatus const pakStatus);
+	CItem* CreateItem(string const& name, EItemType const type, CItem& pParent, EPakStatus const pakStatus);
 	void   LoadEventsMetadata(string const& soundbanksPath);
 
 	void   BuildFileCache(string const& folderPath);
