@@ -3,14 +3,21 @@
 #pragma once
 
 #include <QWidget>
+
 #include <SharedData.h>
+#include <FileImportInfo.h>
 
 class QFilteringPanel;
+class QPushButton;
 
 namespace ACE
 {
+namespace Impl
+{
+struct IItemModel;
+} // namespace Impl
+
 class CControl;
-class CMiddlewareDataModel;
 class CMiddlewareFilterProxyModel;
 class CTreeView;
 
@@ -40,13 +47,17 @@ private slots:
 
 private:
 
+	void SetDragDropMode();
+	void SetColumnResizeModes();
 	void ClearFilters();
+	void OpenFileImporter(FileImportInfos const& fileInfos, QString const& targetFolderName);
+	void OnImportFiles();
 
 	CMiddlewareFilterProxyModel* const m_pMiddlewareFilterProxyModel;
-	CMiddlewareDataModel* const        m_pMiddlewareDataModel;
+	Impl::IItemModel*                  m_pImplItemModel;
+	QPushButton* const                 m_pImportButton;
 	QFilteringPanel*                   m_pFilteringPanel;
 	CTreeView* const                   m_pTreeView;
-	int const                          m_nameColumn;
+	int                                m_nameColumn;
 };
 } // namespace ACE
-

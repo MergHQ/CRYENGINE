@@ -22,6 +22,14 @@ enum class EAssetType
 	NumTypes
 };
 
+enum class EPakStatus
+{
+	None   = 0,
+	InPak  = BIT(0),
+	OnDisk = BIT(1),
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EPakStatus);
+
 enum class EItemFlags
 {
 	None          = 0,

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Controls/EditorDialog.h"
+#include <Controls/EditorDialog.h>
 
 namespace ACE
 {

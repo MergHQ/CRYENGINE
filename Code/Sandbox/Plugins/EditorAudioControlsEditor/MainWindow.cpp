@@ -4,7 +4,6 @@
 #include "MainWindow.h"
 
 #include "AudioControlsEditorPlugin.h"
-#include "AssetIcons.h"
 #include "PreferencesDialog.h"
 #include "ImplementationManager.h"
 #include "SystemControlsWidget.h"
@@ -13,10 +12,10 @@
 #include "FileMonitorMiddleware.h"
 #include "FileMonitorSystem.h"
 
+#include <ModelUtils.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
 #include <QtUtil.h>
-#include <CryIcon.h>
 #include <Controls/QuestionDialog.h>
 
 #include <QAction>
@@ -42,6 +41,8 @@ CMainWindow::CMainWindow()
 	, m_isReloading(false)
 {
 	setObjectName(GetEditorName());
+
+	ModelUtils::InitIcons();
 
 	if (g_assetsManager.IsLoading())
 	{
@@ -354,20 +355,23 @@ void CMainWindow::Reload(bool const hasImplChanged /*= false*/)
 			CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadSystemControls | EReloadFlags::ReloadImplData | EReloadFlags::SendSignals);
 		}
 
-		if (m_pMiddlewareDataWidget != nullptr)
+		if (!hasImplChanged)
 		{
-			m_pMiddlewareDataWidget->Reset();
-		}
+			if (m_pMiddlewareDataWidget != nullptr)
+			{
+				m_pMiddlewareDataWidget->Reset();
+			}
 
-		if (m_pSystemControlsWidget != nullptr)
-		{
-			m_pSystemControlsWidget->Reset();
-		}
+			if (m_pSystemControlsWidget != nullptr)
+			{
+				m_pSystemControlsWidget->Reset();
+			}
 
-		if (m_pPropertiesWidget != nullptr)
-		{
-			m_pPropertiesWidget->OnSetSelectedAssets(GetSelectedAssets(), false);
-			m_pPropertiesWidget->Reset();
+			if (m_pPropertiesWidget != nullptr)
+			{
+				m_pPropertiesWidget->OnSetSelectedAssets(GetSelectedAssets(), false);
+				m_pPropertiesWidget->Reset();
+			}
 		}
 
 		if (g_pIImpl != nullptr)

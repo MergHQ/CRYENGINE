@@ -7,8 +7,8 @@
 #include "ImplementationManager.h"
 #include "TreeView.h"
 #include "ConnectionsModel.h"
-#include "ModelUtils.h"
 
+#include <ModelUtils.h>
 #include <IItem.h>
 #include <QtUtil.h>
 #include <Controls/QuestionDialog.h>
@@ -40,7 +40,6 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 
 	m_pTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	m_pTreeView->setDragEnabled(false);
-	m_pTreeView->setAcceptDrops(true);
 	m_pTreeView->setDragDropMode(QAbstractItemView::DropOnly);
 	m_pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	m_pTreeView->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -83,7 +82,6 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 		{
 			if (!g_assetsManager.IsLoading() && (m_pControl == pControl))
 			{
-			  // Clear the selection if a connection is removed.
 			  m_pTreeView->selectionModel()->clear();
 			  RefreshConnectionProperties();
 			}

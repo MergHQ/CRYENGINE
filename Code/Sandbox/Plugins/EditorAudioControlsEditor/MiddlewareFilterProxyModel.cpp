@@ -3,8 +3,7 @@
 #include "StdAfx.h"
 #include "MiddlewareFilterProxyModel.h"
 
-#include "MiddlewareDataModel.h"
-#include "ModelUtils.h"
+#include <ModelUtils.h>
 
 namespace ACE
 {
@@ -21,7 +20,7 @@ bool CMiddlewareFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex co
 
 	if (matchesFilter)
 	{
-		QModelIndex const& index = sourceModel()->index(sourceRow, static_cast<int>(CMiddlewareDataModel::EColumns::Name), sourceParent);
+		QModelIndex const& index = sourceModel()->index(sourceRow, filterKeyColumn(), sourceParent);
 
 		if (index.isValid())
 		{

@@ -8,8 +8,8 @@
 #include "ImplementationManager.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
-#include "ModelUtils.h"
 
+#include <ModelUtils.h>
 #include <IItem.h>
 #include <QtUtil.h>
 #include <DragDrop.h>
@@ -188,7 +188,7 @@ QVariant CSystemLibraryModel::data(QModelIndex const& index, int role) const
 			}
 			else if (role == static_cast<int>(ModelUtils::ERoles::Name))
 			{
-				variant = static_cast<char const*>(pAsset->GetName());
+				variant = QtUtil::ToQString(pAsset->GetName());
 			}
 			else
 			{
@@ -204,15 +204,15 @@ QVariant CSystemLibraryModel::data(QModelIndex const& index, int role) const
 						case Qt::DecorationRole:
 							if ((flags& EAssetFlags::HasPlaceholderConnection) != 0)
 							{
-								variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder));
+								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder);
 							}
 							else if ((flags& EAssetFlags::HasConnection) == 0)
 							{
-								variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
+								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
 							}
 							else if (((assetType == EAssetType::Folder) || (assetType == EAssetType::Switch)) && ((flags& EAssetFlags::HasControl) == 0))
 							{
-								variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoControl));
+								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoControl);
 							}
 							break;
 						case Qt::ToolTipRole:
@@ -301,27 +301,27 @@ QVariant CSystemLibraryModel::data(QModelIndex const& index, int role) const
 						switch (role)
 						{
 						case Qt::DecorationRole:
-							variant = CryIcon(CSystemSourceModel::GetPakStatusIcon(*m_pLibrary));
+							variant = ModelUtils::GetPakStatusIcon(m_pLibrary->GetPakStatus());
 							break;
 						case Qt::ToolTipRole:
 							{
 								EPakStatus const pakStatus = m_pLibrary->GetPakStatus();
 
-								if ((pakStatus & (EPakStatus::InPak | EPakStatus::OnDisk)) != 0)
+								if (pakStatus == (EPakStatus::InPak | EPakStatus::OnDisk))
 								{
-									variant = "Parent library is in pak and on disk";
+									variant = tr("Parent library is in pak and on disk");
 								}
 								else if ((pakStatus& EPakStatus::InPak) != 0)
 								{
-									variant = "Parent library is only in pak file";
+									variant = tr("Parent library is only in pak file");
 								}
 								else if ((pakStatus& EPakStatus::OnDisk) != 0)
 								{
-									variant = "Parent library is only on disk";
+									variant = tr("Parent library is only on disk");
 								}
 								else
 								{
-									variant = "Parent library does not exist on disk. Save to write file.";
+									variant = tr("Parent library does not exist on disk. Save to write file.");
 								}
 							}
 							break;
@@ -351,7 +351,7 @@ QVariant CSystemLibraryModel::data(QModelIndex const& index, int role) const
 
 						if (pControl != nullptr)
 						{
-							variant = QString(g_assetsManager.GetScopeInfo(pControl->GetScope()).name);
+							variant = QtUtil::ToQString(g_assetsManager.GetScopeInfo(pControl->GetScope()).name);
 						}
 					}
 					break;
@@ -365,24 +365,24 @@ QVariant CSystemLibraryModel::data(QModelIndex const& index, int role) const
 						case Qt::DisplayRole:
 							if ((pAsset->GetFlags() & EAssetFlags::IsModified) != 0)
 							{
-								variant = static_cast<char const*>(pAsset->GetName() + " *");
+								variant = QtUtil::ToQString(pAsset->GetName() + " *");
 							}
 							else
 							{
-								variant = static_cast<char const*>(pAsset->GetName());
+								variant = QtUtil::ToQString(pAsset->GetName());
 							}
 							break;
 						case Qt::EditRole:
-							variant = static_cast<char const*>(pAsset->GetName());
+							variant = QtUtil::ToQString(pAsset->GetName());
 							break;
 						case Qt::ToolTipRole:
 							if (!pAsset->GetDescription().IsEmpty())
 							{
-								variant = tr(pAsset->GetName() + ": " + pAsset->GetDescription());
+								variant = QtUtil::ToQString(pAsset->GetName() + ": " + pAsset->GetDescription());
 							}
 							else
 							{
-								variant = static_cast<char const*>(pAsset->GetName());
+								variant = QtUtil::ToQString(pAsset->GetName());
 							}
 							break;
 						case static_cast<int>(ModelUtils::ERoles::SortPriority):

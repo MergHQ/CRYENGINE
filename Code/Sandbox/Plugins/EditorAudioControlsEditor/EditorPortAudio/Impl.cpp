@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "Impl.h"
 
+#include "Common.h"
 #include "EventConnection.h"
 #include "ProjectLoader.h"
 
@@ -18,6 +19,7 @@ namespace PortAudio
 {
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
+	: m_pItemModel(new CItemModel(m_rootItem))
 {
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
@@ -28,11 +30,13 @@ CImpl::CImpl()
 CImpl::~CImpl()
 {
 	Clear();
+	delete m_pItemModel;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::Reload(bool const preserveConnectionStatus)
 {
+	m_pItemModel->Reset();
 	Clear();
 
 	CProjectLoader(GetSettings()->GetProjectPath(), m_rootItem);
@@ -74,42 +78,19 @@ IItem* CImpl::GetItem(ControlId const id) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-char const* CImpl::GetTypeIcon(IItem const* const pIItem) const
+CryIcon const& CImpl::GetItemIcon(IItem const* const pIItem) const
 {
-	char const* szIconPath = "icons:Dialogs/dialog-error.ico";
 	auto const pItem = static_cast<CItem const* const>(pIItem);
-
-	if (pItem != nullptr)
-	{
-		EItemType const type = pItem->GetType();
-
-		switch (type)
-		{
-		case EItemType::Event:
-			szIconPath = "icons:audio/portaudio/event.ico";
-			break;
-		case EItemType::Folder:
-			szIconPath = "icons:General/Folder.ico";
-			break;
-		default:
-			szIconPath = "icons:Dialogs/dialog-error.ico";
-			break;
-		}
-	}
-
-	return szIconPath;
+	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer.");
+	return GetTypeIcon(pItem->GetType());
 }
 
 //////////////////////////////////////////////////////////////////////////
-string const& CImpl::GetName() const
+QString const& CImpl::GetItemTypeName(IItem const* const pIItem) const
 {
-	return m_implName;
-}
-
-//////////////////////////////////////////////////////////////////////////
-string const& CImpl::GetFolderName() const
-{
-	return m_implFolderName;
+	auto const pItem = static_cast<CItem const* const>(pIItem);
+	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer.");
+	return TypeToString(pItem->GetType());
 }
 
 //////////////////////////////////////////////////////////////////////////

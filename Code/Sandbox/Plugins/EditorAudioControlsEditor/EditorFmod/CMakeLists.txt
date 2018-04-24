@@ -6,10 +6,13 @@ start_sources()
 sources_platform(ALL)
 add_sources("EditorFmod_uber_0.cpp"
 	SOURCE_GROUP "Root"
+		"Common.h"
 		"Impl.cpp"
 		"Impl.h"
 		"Item.cpp"
 		"Item.h"
+		"ItemModel.cpp"
+		"ItemModel.h"
 		"Utils.cpp"
 		"Utils.h"
 		"main.cpp"
@@ -32,6 +35,11 @@ add_sources("EditorFmod_uber_0.cpp"
 		"ParameterToStateConnection.h"
 		"SnapshotConnection.cpp"
 		"SnapshotConnection.h"
+)
+
+add_sources("NoUberFile"
+	SOURCE_GROUP "Resources"
+		"EditorFmodUI.qrc"
 )
 
 end_sources()
