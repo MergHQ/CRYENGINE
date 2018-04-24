@@ -3237,6 +3237,18 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 			m_pHmdManager->SetupAction(IHmdManager::eHmdSetupAction_Init);
 		}
 
+		// Hardware mouse
+		//////////////////////////////////////////////////////////////////////////
+		// - Dedicated server is in console mode by default (Hardware Mouse is always shown when console is)
+		// - Mouse is always visible by default in Editor (we never start directly in Game Mode)
+		// - Mouse has to be enabled manually by the Game (this is typically done in the main menu)
+		// - Hardware mouse is initialize prior Renderer to catch window focus events
+#ifdef DEDICATED_SERVER
+		m_env.pHardwareMouse = NULL;
+#else
+		m_env.pHardwareMouse = new CHardwareMouse(true);
+#endif
+
 		//////////////////////////////////////////////////////////////////////////
 		// RENDERER
 		//////////////////////////////////////////////////////////////////////////
@@ -3294,18 +3306,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 			}
 #endif // CRY_PLATFORM_DESKTOP
 		}
-
-		//////////////////////////////////////////////////////////////////////////
-		// Hardware mouse
-		//////////////////////////////////////////////////////////////////////////
-		// - Dedicated server is in console mode by default (Hardware Mouse is always shown when console is)
-		// - Mouse is always visible by default in Editor (we never start directly in Game Mode)
-		// - Mouse has to be enabled manually by the Game (this is typically done in the main menu)
-#ifdef DEDICATED_SERVER
-		m_env.pHardwareMouse = NULL;
-#else
-		m_env.pHardwareMouse = new CHardwareMouse(true);
-#endif
 
 		//////////////////////////////////////////////////////////////////////////
 		// C# MONO BRIDGE

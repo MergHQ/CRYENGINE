@@ -622,11 +622,6 @@ public:
 	virtual bool     SetWindowIcon(const char* path) override;
 	static void      SetWindowIconCVar(ICVar* pVar);
 
-	static void      SetMouseCursorIconCVar(ICVar* pVar);
-#if CRY_PLATFORM_WINDOWS
-	static void      SetMouseUseSystemCursorCVar(ICVar* pVar);
-#endif //CRY_PLATFORM_WINDOWS
-
 	virtual bool     StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int nSrcHeight, int nDstWidth, int nDstHeight, ITexture* pDataD, ITexture* pDataN) override;
 
 	//////////////////////////////////////////////////////////////////////////
