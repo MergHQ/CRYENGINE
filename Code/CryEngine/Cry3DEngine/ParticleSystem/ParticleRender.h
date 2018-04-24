@@ -96,7 +96,7 @@ protected:
 			const float distSq0 = (pos0 - camPos).GetLengthSquared();
 			const float distSq1 = (pos1 - camPos).GetLengthSquared();
 			const float area = div_min(
-				len * (size0 * distSq1 + size1 * distSq1), 
+				len * (size0 * distSq1 + size1 * distSq0), 
 				distSq0 * distSq1,
 				maxArea);
 			return area;
