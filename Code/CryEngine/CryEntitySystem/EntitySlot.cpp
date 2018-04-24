@@ -61,7 +61,7 @@ void CEntitySlot::ReleaseObjects()
 			pSkeletonAnim->SetEventCallback(0, 0);
 
 		if (ISkeletonPose* pSkeletonPose = GetCharacter()->GetISkeletonPose())
-			pSkeletonPose->DestroyCharacterPhysics(0);
+			pSkeletonPose->DestroyCharacterPhysics(pSkeletonPose->GetCharacterPhysics() == m_pEntity->GetPhysics() ? IPhysicalWorld::DM_KEEP_IF_REFERENCED : IPhysicalWorld::DM_NORMAL);
 
 		m_pCharacter->Release();
 		m_pCharacter = nullptr;

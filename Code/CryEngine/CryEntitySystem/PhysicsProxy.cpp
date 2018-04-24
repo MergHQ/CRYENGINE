@@ -20,9 +20,6 @@
 
 #define MAX_MASS_TO_RESTORE_VELOCITY 500
 
-const int PHYS_ENTITY_SUSPEND = 1;
-const int PHYS_ENTITY_RESTORE = 2;
-
 #define PHYS_DEFAULT_DENSITY 1000.0f
 
 #if !defined(_RELEASE)
@@ -696,11 +693,11 @@ void CEntityPhysics::EnablePhysics(bool bEnable)
 
 	if (bEnable)
 	{
-		PhysicalWorld()->DestroyPhysicalEntity(m_pPhysicalEntity, PHYS_ENTITY_RESTORE);
+		PhysicalWorld()->DestroyPhysicalEntity(m_pPhysicalEntity, IPhysicalWorld::DM_RESTORE);
 	}
 	else
 	{
-		PhysicalWorld()->DestroyPhysicalEntity(m_pPhysicalEntity, PHYS_ENTITY_SUSPEND);
+		PhysicalWorld()->DestroyPhysicalEntity(m_pPhysicalEntity, IPhysicalWorld::DM_SUSPEND);
 	}
 
 	// Enable/Disable character physics characters.
@@ -712,7 +709,7 @@ void CEntityPhysics::EnablePhysics(bool bEnable)
 			{
 				if (IPhysicalEntity* pPhysicalEntity = pCharacter->GetISkeletonPose()->GetCharacterPhysics())
 				{
-					pCharacter->GetISkeletonPose()->DestroyCharacterPhysics((bEnable) ? PHYS_ENTITY_RESTORE : PHYS_ENTITY_SUSPEND);
+					pCharacter->GetISkeletonPose()->DestroyCharacterPhysics((bEnable) ? IPhysicalWorld::DM_RESTORE : IPhysicalWorld::DM_SUSPEND);
 					if (bEnable && pPhysicalEntity && pPhysicalEntity != m_pPhysicalEntity)
 					{
 						pe_params_articulated_body pab;
@@ -880,7 +877,7 @@ void CEntityPhysics::Physicalize(SEntityPhysicalizeParams& params)
 		if (!IsPhysicsEnabled())
 		{
 			// If Physics was disabled disable physics on new physical object now.
-			PhysicalWorld()->DestroyPhysicalEntity(m_pPhysicalEntity, PHYS_ENTITY_SUSPEND);
+			PhysicalWorld()->DestroyPhysicalEntity(m_pPhysicalEntity, IPhysicalWorld::DM_SUSPEND);
 		}
 	}
 
@@ -892,7 +889,7 @@ void CEntityPhysics::Physicalize(SEntityPhysicalizeParams& params)
 			if (ICharacterInstance* pCharacter = GetEntity()->GetCharacter(i))
 			{
 				if (pCharacter->GetISkeletonPose()->GetCharacterPhysics())
-					pCharacter->GetISkeletonPose()->DestroyCharacterPhysics(PHYS_ENTITY_SUSPEND);
+					pCharacter->GetISkeletonPose()->DestroyCharacterPhysics(IPhysicalWorld::DM_SUSPEND);
 			}
 		}
 	}

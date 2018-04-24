@@ -691,12 +691,12 @@ IPhysicalEntity* CSkeletonPhysics::GetCharacterPhysics(int iAuxPhys) const
 	return m_auxPhys[iAuxPhys].pPhysEnt;
 }
 
-void CSkeletonPhysics::DestroyCharacterPhysics(int iMode)
+void CSkeletonPhysics::DestroyCharacterPhysics(int iModeOrg)
 {
 	const CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
 	m_pSkeletonAnim->FinishAnimationComputations();
 
-	int i;
+	int i, iMode = iModeOrg & 3;
 	for (i = 0; i < m_nAuxPhys; i++)
 	{
 		g_pIPhysicalWorld->DestroyPhysicalEntity(m_auxPhys[i].pPhysEnt, iMode);
@@ -715,7 +715,25 @@ void CSkeletonPhysics::DestroyCharacterPhysics(int iMode)
 		m_nAuxPhys = 0;
 
 	if (m_pCharPhysics)
-		g_pIPhysicalWorld->DestroyPhysicalEntity(m_pCharPhysics, iMode);
+	{
+		m_pCharPhysics->AddRef();	// since currently skeleton doesn't keep the physics addref'ed
+		if (!g_pIPhysicalWorld->DestroyPhysicalEntity(m_pCharPhysics, iModeOrg))
+		{	// if the entity wasn't deleted due to still being referenced (in mode 4), just clear the parts
+			pe_action_move_parts amp;
+			amp.idStart = -1;
+			amp.idEnd = 0;
+			for(i = 0; i<(int)rDefaultSkeleton.GetJointCount(); i++)
+			{
+				int id = rDefaultSkeleton.m_arrModelJoints[i].m_NodeID, valid = ~(id>>31);
+				amp.idStart += id + 1 & amp.idStart>>31 & valid;
+				amp.idEnd += id - amp.idEnd & valid;
+			}
+			m_pCharPhysics->Action(&amp);
+		}
+		else // ..if not released by DestroyPhysicalEntity
+			m_pCharPhysics->Release();
+	}
+
 	if (iMode == 0)
 	{
 		m_pCharPhysics = 0;
