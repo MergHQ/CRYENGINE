@@ -534,9 +534,7 @@ bool CRenderAuxGeomD3D::PreparePass(const CCamera& camera, const SDisplayContext
 
 	const SRenderViewport& vp = displayContext->GetViewport();
 	D3DViewPort viewport = { float(vp.x), float(vp.y), float(vp.x) + vp.width, float(vp.y) + vp.height, vp.zmin, vp.zmax };
-
-	if (getViewport)
-		*getViewport = vp;
+	*getViewport = vp;
 
 	CTexture* pTargetTexture = displayContext->GetCurrentColorOutput();
 	CTexture* pDepthTexture  = displayContext->GetCurrentDepthOutput();

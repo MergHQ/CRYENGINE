@@ -220,7 +220,7 @@ private:
 private:
 	CRenderAuxGeomD3D(CD3D9Renderer& renderer);
 
-	bool              PreparePass(const CCamera& camera, const SDisplayContextKey& displayContextKey, CPrimitiveRenderPass& pass, SRenderViewport* getViewport = nullptr);
+	bool              PreparePass(const CCamera& camera, const SDisplayContextKey& displayContextKey, CPrimitiveRenderPass& pass, SRenderViewport* getViewport);
 
 	CDeviceGraphicsPSOPtr GetGraphicsPSO(const SAuxGeomRenderFlags& flags, const CCryNameTSCRC& techique, ERenderPrimitiveType topology, InputLayoutHandle format);
 
