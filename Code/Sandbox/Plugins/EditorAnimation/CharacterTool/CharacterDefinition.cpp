@@ -2496,9 +2496,10 @@ void CharacterDefinition::ApplyPhysAttachments(ICharacterInstance* pICharacterIn
 		const CharacterAttachment& att = attachments[i];
 		if (att.m_attachmentType == CA_PROX && att.m_ProxyPurpose == CharacterAttachment::RAGDOLL)
 		{	
-			for(j = skel.GetJointParentIDByID(i); j >= 0 && !skel.GetJointPhysGeom(j); j = skel.GetJointParentIDByID(j))
+			int idx = skel.GetJointIDByName(att.m_strJointName);
+			for(j = skel.GetJointParentIDByID(idx); j >= 0 && !skel.GetJointPhysGeom(j); j = skel.GetJointParentIDByID(j))
 				;
-			*(Matrix33*)skel.GetJointPhysInfo(i)->framemtx = Matrix33((j >= 0 ? !skel.GetDefaultAbsJointByID(j).q * skel.GetDefaultAbsJointByID(i).q : Quat(IDENTITY)) * Quat(DEG2RAD(att.m_frame0)));
+			*(Matrix33*)skel.GetJointPhysInfo(idx)->framemtx = Matrix33((j >= 0 ? !skel.GetDefaultAbsJointByID(j).q * skel.GetDefaultAbsJointByID(idx).q : Quat(IDENTITY)) * Quat(DEG2RAD(att.m_frame0)));
 		}
 	}
 	m_physNeedsApply = false;
