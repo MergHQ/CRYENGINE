@@ -26,6 +26,11 @@ class CAutoFileRecovery
 public:
 	CAutoFileRecovery(const std::vector<string>& files)
 	{
+		if (files.empty())
+		{
+			return;
+		}
+
 		static const string tempPrefix = GetTemporaryDirectoryPath();
 
 		m_files.reserve(files.size());
@@ -49,7 +54,7 @@ public:
 		}
 	}
 
-	bool IsValid() const { return !m_files.empty(); }
+	bool IsValid() const { return !m_files.empty() || !m_files.capacity(); }
 
 	void Discard()
 	{
