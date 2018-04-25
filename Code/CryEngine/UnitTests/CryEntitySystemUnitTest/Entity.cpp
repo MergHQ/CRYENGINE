@@ -815,4 +815,28 @@ TEST_F(CEntityClassRegistryUnitTest, DefaultClass)
 	REQUIRE(entityClass != nullptr);
 }
 
+TEST(EntityId, RecoverElements)
+{
+	EntityIndex index = 0U;
+	EntitySalt salt = 1U;
+	SEntityIdentifier handle(salt, index);
+
+	REQUIRE(handle.GetSalt() == salt);
+	REQUIRE(handle.GetIndex() == index);
+
+	index = 1337U;
+	salt = 2U;
+	handle = SEntityIdentifier(salt, index);
+
+	REQUIRE(handle.GetSalt() == salt);
+	REQUIRE(handle.GetIndex() == index);
+
+	index = EntityArraySize - 1U;
+	salt = 2U;
+	handle = SEntityIdentifier(salt, index);
+
+	REQUIRE(handle.GetSalt() == salt);
+	REQUIRE(handle.GetIndex() == index);
+}
+
 #pragma warning(pop)

@@ -3,20 +3,59 @@
 #pragma once
 
 #include <CrySchematyc/Utils/EnumFlags.h>
+#include <limits>
 
 //! Unique identifier for each entity instance.
 //! Entity identifiers are unique for the session, but cannot be guaranteed over the network, separate instances of the application and serialization / save games.
 //! Note that the type cannot be changed to increase entity count, since the entity system has specialized salting of entity identifiers
 using EntityId = uint32;
-//! Salt used in entity id in order to facilitate re-use of entity identifiers
+//! Entity salt signifies the number of times an entity index has been re-used, incremented once per use (initially 0)
+//! The EntitySalt can at most take up half the bits of an entity id (32 bits)
 using EntitySalt = uint16;
-//! Index of an entity in the internal array, must be exactly half the size of EntityId!
-using EntityIndex = EntitySalt;
+//! Entity index signifies the position of an entity in the internal array
+//! Must be the same size as EntityId as the number of bits signifying index in an id might exceed half of EntityId.
+using EntityIndex = EntityId;
 
-static_assert(std::numeric_limits<EntityIndex>::digits == std::numeric_limits<EntityId>::digits / 2, "Entity Index must be exactly half the size of EntityId, identifier consists of both index and salt");
+static_assert(std::numeric_limits<EntitySalt>::digits == std::numeric_limits<EntityId>::digits / 2, "Entity Salt must be exactly half the size of EntityId, identifier consists of both index and salt");
+
+//! Number of bits to use for the entity index, determining how many entities can be in the scene
+constexpr size_t EntityIndexBitCount = 16;
+static_assert(EntityIndexBitCount < (std::numeric_limits<EntityId>::digits - 1), "Entity Index must leave at least two bits for the salt (allowing one index re-use)!");
+
+//! Number of reserved entity ids, currently 0 and the last two identifiers
+//! These are only used internally and cannot be given to a spawned entity
+constexpr size_t InternalEntityIndexCount = 3;
+//! Number of entities that can be stored in the entity array
+constexpr size_t EntityArraySize = 1ULL << EntityIndexBitCount;
+//! Maximum number of entities that can be spawned by the game, either dynamically or through exported entities in a level
+constexpr size_t MaximumEntityCount = EntityArraySize - InternalEntityIndexCount;
+//! Number of bits to use for the entity salt, dynamically calculated based on the EntityIndexBitCount value
+constexpr size_t EntitySaltBitCount = std::numeric_limits<EntityId>::digits - EntityIndexBitCount;
 
 //! The entity identifier '0' is always invalid, the minimum valid id is 1.
 constexpr EntityId INVALID_ENTITYID = 0;
+
+//! Entity construct to manage the salt and index contained inside an entity identifier
+struct SEntityIdentifier
+{
+	constexpr SEntityIdentifier() = default;
+	constexpr SEntityIdentifier(EntityId _id) : id(_id) {}
+	constexpr SEntityIdentifier(EntitySalt salt, EntityId index) : id(static_cast<EntityId>(salt) << EntitySaltBitCount | static_cast<uint32>(index)) {}
+
+	constexpr bool operator==(const SEntityIdentifier& rhs) const { return id == rhs.id; }
+	constexpr bool operator!=(const SEntityIdentifier& rhs) const { return !(*this == rhs); }
+	constexpr operator bool() const { return id != 0; }
+
+	//! Extracts the index from an entity identifier, givng the position of the entity in the internal array
+	constexpr EntityId GetIndex() const { return id & (EntityArraySize - 1U); }
+	//! Extracts the salt from an entity salt handle,
+	constexpr EntityIndex GetSalt() const { return id >> EntitySaltBitCount; }
+	constexpr EntityId GetId() const { return id; }
+
+	static constexpr SEntityIdentifier GetHandleFromId(EntityId id) { return SEntityIdentifier(id); }
+
+	EntityId id = INVALID_ENTITYID;
+};
 
 typedef CryGUID EntityGUID;
 
