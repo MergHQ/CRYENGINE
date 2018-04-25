@@ -284,14 +284,12 @@ void Device::GetCameraSetupInfo(float& fov, float& aspectRatioFactor) const
 	aspectRatioFactor = m_maxAspect;     //(not used);
 }
 
-void Device::GetAsymmetricCameraSetupInfo(int nEye, float& fov, float& aspectRatio, float& asymH, float& asymV, float& eyeDist) const
+HMDCameraSetup Device::GetHMDCameraSetup(int nEye, float ratio, float fnear) const
 {
 	const EyeSetup& setup = m_eyes[nEye];
-	fov = setup.fov;
-	aspectRatio = setup.aspectRatio;
-	asymH = setup.asymH;
-	asymV = setup.asymV;
-	eyeDist = setup.eyeDist;
+	// TODO: Generate projection matrix
+	assert(false);
+	return HMDCameraSetup{};
 }
 
 void Device::DisableHMDTracking(bool disable)

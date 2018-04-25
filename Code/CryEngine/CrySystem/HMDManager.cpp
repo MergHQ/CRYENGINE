@@ -184,15 +184,12 @@ bool CHmdManager::IsStereoSetupOk() const
 }
 
 // ------------------------------------------------------------------------
-bool CHmdManager::GetAsymmetricCameraSetupInfo(int nEye, SAsymmetricCameraSetupInfo& o_info) const
+HMDCameraSetup CHmdManager::GetHMDCameraSetup(int nEye, float projRatio, float fnear) const
 {
 	if (m_pHmdDevice)
-	{
-		m_pHmdDevice->GetAsymmetricCameraSetupInfo(nEye, o_info.fov, o_info.aspectRatio, o_info.asymH, o_info.asymV, o_info.eyeDist);
-		return true;
-	}
+		return m_pHmdDevice->GetHMDCameraSetup(nEye, projRatio, fnear);
 
-	return false;
+	return HMDCameraSetup{};
 }
 
 // ------------------------------------------------------------------------

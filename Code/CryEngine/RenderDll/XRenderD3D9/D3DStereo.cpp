@@ -502,31 +502,32 @@ CCamera CD3DStereoRenderer::PrepareCamera(int nEye, const CCamera& currentCamera
 	{
 		if (IHmdManager* pHmdManager = gEnv->pSystem->GetHmdManager())
 		{
-			IHmdManager::SAsymmetricCameraSetupInfo asymCamSetupInfo;
-			if (pHmdManager->GetAsymmetricCameraSetupInfo(nEye, asymCamSetupInfo))
+			int width = 0, height = 0;
+			if (auto *dc = GetEyeDisplayContext(CCamera::EEye(nEye)).first)
 			{
-				int width = 1, height = 1;
-				if (auto *dc = GetEyeDisplayContext(CCamera::EEye(nEye)).first)
-				{
-					const CTexture *tex = dc->GetCurrentBackBuffer();
-					width  = tex->GetWidth();
-					height = tex->GetHeight();
-				}
-
-				// Note:
-				// The inter-pupilar distance (IPD) gets modulated by r_stereoScaleCoefficient in order to be able
-				// to "scale" the feeling of the player's size.
-				// It also modifies the movement of the player's pose tracking
-
-				const float modulatedHalfIpd = asymCamSetupInfo.eyeDist * 0.5f * CRenderer::CV_r_stereoScaleCoefficient;
-				const float transfAsymH = asymCamSetupInfo.asymH * cam.GetNearPlane();
-				const float transfAsymV = asymCamSetupInfo.asymV * cam.GetNearPlane();
-
-				Matrix34 stereoMat = Matrix34::CreateTranslationMat(Vec3(nEye == CCamera::eEye_Left ? -modulatedHalfIpd : modulatedHalfIpd, 0, 0));
-				cam.SetMatrix(cam.GetMatrix() * stereoMat);
-				cam.SetFrustum(width, height, asymCamSetupInfo.fov, cam.GetNearPlane(), cam.GetFarPlane(), 1.0f / asymCamSetupInfo.aspectRatio);
-				cam.SetAsymmetry(transfAsymH, transfAsymH, transfAsymV, transfAsymV);
+				const CTexture *tex = dc->GetCurrentBackBuffer();
+				width  = tex->GetWidth();
+				height = tex->GetHeight();
 			}
+			CRY_ASSERT(width > 0 && height > 0);
+
+			const float n = cam.GetNearPlane();
+			const float f = cam.GetFarPlane();
+			const float projRatio = static_cast<float>(width) / static_cast<float>(height);
+			const HMDCameraSetup cameraSetup = pHmdManager->GetHMDCameraSetup(nEye, projRatio, n);
+
+			// Note:
+			// The inter-pupilar distance (IPD) gets modulated by r_stereoScaleCoefficient in order to be able
+			// to "scale" the feeling of the player's size.
+			// It also modifies the movement of the player's pose tracking
+
+			const float modulatedHalfIpd = cameraSetup.ipd * 0.5f * CRenderer::CV_r_stereoScaleCoefficient;
+			const float fov = cameraSetup.sfov;
+
+			Matrix34 stereoMat = Matrix34::CreateTranslationMat(Vec3(nEye == CCamera::eEye_Left ? -modulatedHalfIpd : modulatedHalfIpd, 0, 0));
+			cam.SetMatrix(cam.GetMatrix() * stereoMat);
+			cam.SetFrustum(width, height, fov, n, f, 1.f);
+			cam.SetAsymmetry(cameraSetup.l, cameraSetup.r, cameraSetup.b, cameraSetup.t);
 		}
 	}
 	else

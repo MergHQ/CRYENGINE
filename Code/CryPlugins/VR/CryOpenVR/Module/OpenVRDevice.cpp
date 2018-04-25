@@ -387,16 +387,18 @@ void Device::GetCameraSetupInfo(float& fov, float& aspectRatioFactor) const
 }
 
 // -------------------------------------------------------------------------
-void Device::GetAsymmetricCameraSetupInfo(int nEye, float& fov, float& aspectRatio, float& asymH, float& asymV, float& eyeDist) const
+HMDCameraSetup Device::GetHMDCameraSetup(int nEye, float projRatio, float fnear) const
 {
-	float fLeft, fRight, fTop, fBottom;
-	m_system->GetProjectionRaw((vr::EVREye)nEye, &fLeft, &fRight, &fTop, &fBottom);
-	fov = 2.0f * atan((fBottom - fTop) / 2.0f);
-	aspectRatio = (fRight - fLeft) / (fBottom - fTop);
-	asymH = (fRight + fLeft) / 2;
-	asymV = (fBottom + fTop) / 2;
+	const vr::HmdMatrix44_t vrproj = m_system->GetProjectionMatrix((vr::EVREye)nEye, fnear, fnear*2.f);	// We do not care about far
+	Matrix44A proj;
+	std::memcpy(proj.GetData(), vrproj.m, sizeof(vrproj.m));
 
-	eyeDist = m_system->GetFloatTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::ETrackedDeviceProperty::Prop_UserIpdMeters_Float, nullptr);
+	HMDCameraSetup ret = HMDCameraSetup::fromProjectionMatrix(proj, projRatio, fnear);
+	ret.ipd = m_system->GetFloatTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::ETrackedDeviceProperty::Prop_UserIpdMeters_Float, nullptr);
+
+	return ret;
+
+
 }
 
 // -------------------------------------------------------------------------
