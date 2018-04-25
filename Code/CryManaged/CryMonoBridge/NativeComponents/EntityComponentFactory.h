@@ -256,7 +256,7 @@ public:
 			, pOwnerObject(std::move(other.pOwnerObject)) {}
 		SPropertyValue& operator=(SPropertyValue&& other) = default;
 
-		void            CacheManagedValueFromOwner() const
+		void CacheManagedValueFromOwner() const
 		{
 			if (pOwnerObject != nullptr)
 			{

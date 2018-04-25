@@ -1,32 +1,38 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 using CryEngine.Common;
+using System.Runtime.InteropServices;
 
 namespace CryEngine
 {
 	/// <summary>
 	/// Wraps System.Drawing.Color object for easier usage.
 	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
 	public struct Color
 	{
 		/// <summary>
 		/// The red value of this <see cref="Color"/>.
 		/// </summary>
+		[MarshalAs(UnmanagedType.R4)]
 		public float R;
-		
+
 		/// <summary>
 		/// The green value of this <see cref="Color"/>.
 		/// </summary>
+		[MarshalAs(UnmanagedType.R4)]
 		public float G;
 
 		/// <summary>
 		/// The blue value of this <see cref="Color"/>.
 		/// </summary>
+		[MarshalAs(UnmanagedType.R4)]
 		public float B;
-		
+
 		/// <summary>
 		/// The alpha value of this <see cref="Color"/>.
 		/// </summary>
+		[MarshalAs(UnmanagedType.R4)]
 		public float A;
 
 		/// <summary>

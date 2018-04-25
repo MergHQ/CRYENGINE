@@ -2,6 +2,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using CryEngine.Common;
 
 namespace CryEngine
@@ -10,10 +11,14 @@ namespace CryEngine
 	/// Helper class to indicate 3D angles in radians
 	/// Allows for converting quaternions to human readable angles easily (and back to a quaternion)
 	/// </summary>
+	[StructLayout(LayoutKind.Sequential)]
 	public struct Angles3 : IEquatable<Angles3>
 	{
+		[MarshalAs(UnmanagedType.R4)]
 		private float _x;
+		[MarshalAs(UnmanagedType.R4)]
 		private float _y;
+		[MarshalAs(UnmanagedType.R4)]
 		private float _z;
 
 		/// <summary>

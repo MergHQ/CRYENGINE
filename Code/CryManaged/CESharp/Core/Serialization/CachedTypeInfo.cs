@@ -96,7 +96,7 @@ namespace CryEngine.Serialization
 			{
 				_serializedType = SerializedObjectType.ISerializable;
 			}
-			else if(_entityComponentType.IsAssignableFrom(type) && _type.GetCustomAttributes(typeof(GuidAttribute), true).Length > 0)
+			else if(_entityComponentType.IsAssignableFrom(type))
             {
                 _serializedType = SerializedObjectType.EntityComponent;
             }
