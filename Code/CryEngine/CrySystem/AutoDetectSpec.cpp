@@ -145,7 +145,7 @@ void Win32SysInspect::GetOS(SPlatformInfo::SWinInfo& win, char* pName, size_t bu
 			win.build = sysInfo.dwBuildNumber;
 		}
 
-		GetWindowsDirectory(win.path.m_strBuf, sizeof(win.path.m_strBuf));
+		GetWindowsDirectory(win.path, sizeof(win.path));
 
 		typedef BOOL (WINAPI * FP_GetSystemWow64Directory)(LPSTR, UINT);
 		FP_GetSystemWow64Directory pgsw64d((FP_GetSystemWow64Directory) GetProcAddress(GetModuleHandle("kernel32"), "GetSystemWow64DirectoryA"));
