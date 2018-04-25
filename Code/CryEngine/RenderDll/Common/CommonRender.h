@@ -361,12 +361,12 @@ struct SSamplerState
 		, m_nAddressV(eSamplerAddressMode_Wrap)
 		, m_nAddressW(eSamplerAddressMode_Wrap)
 		, m_nAnisotropy(0)
+		, m_nPadding(0)
 		, m_dwBorderColor(0)
 		, m_fMipLodBias(0.0f)
-		, m_nPadding(0)
-		, m_bSRGBLookup(false)
 		, m_bActive(false)
 		, m_bComparison(false)
+		, m_bSRGBLookup(false)
 		, m_bPAD(0)
 	{
 	}
@@ -379,12 +379,12 @@ struct SSamplerState
 		, m_nAddressV(bClamp ? eSamplerAddressMode_Clamp : eSamplerAddressMode_Wrap)
 		, m_nAddressW(bClamp ? eSamplerAddressMode_Clamp : eSamplerAddressMode_Wrap)
 		, m_nAnisotropy(ExtractAniso(nFilter))
+		, m_nPadding(0)
 		, m_dwBorderColor(0)
 		, m_fMipLodBias(0.0f)
-		, m_nPadding(0)
-		, m_bSRGBLookup(false)
 		, m_bActive(false)
 		, m_bComparison(false)
+		, m_bSRGBLookup(false)
 		, m_bPAD(0)
 	{
 	}
@@ -397,12 +397,12 @@ struct SSamplerState
 		, m_nAddressV(nAddressV)
 		, m_nAddressW(nAddressW)
 		, m_nAnisotropy(ExtractAniso(nFilter))
+		, m_nPadding(0)
 		, m_dwBorderColor(borderColor)
 		, m_fMipLodBias(0.0f)
-		, m_nPadding(0)
-		, m_bSRGBLookup(false)
 		, m_bActive(false)
 		, m_bComparison(bComparison)
+		, m_bSRGBLookup(false)
 		, m_bPAD(0)
 	{
 	}
@@ -415,12 +415,12 @@ struct SSamplerState
 		, m_nAddressV(src.m_nAddressV)
 		, m_nAddressW(src.m_nAddressW)
 		, m_nAnisotropy(src.m_nAnisotropy)
+		, m_nPadding(src.m_nPadding)
 		, m_dwBorderColor(src.m_dwBorderColor)
 		, m_fMipLodBias(0.0f)
-		, m_nPadding(src.m_nPadding)
-		, m_bSRGBLookup(src.m_bSRGBLookup)
 		, m_bActive(src.m_bActive)
 		, m_bComparison(src.m_bComparison)
+		, m_bSRGBLookup(src.m_bSRGBLookup)
 		, m_bPAD(src.m_bPAD)
 	{
 	}
@@ -749,8 +749,8 @@ private:
 		SResourceBinding::InvalidateCallbackFunction callback;
 
 		SInvalidateCallback(const SResourceBinding::InvalidateCallbackFunction& cb)
-			: callback(cb)
-			, refCount(0)
+			: refCount(0),
+			  callback(cb)
 		{}
 	};
 

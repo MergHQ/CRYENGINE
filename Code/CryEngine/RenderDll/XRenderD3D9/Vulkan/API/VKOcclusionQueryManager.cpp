@@ -7,8 +7,8 @@ namespace NCryVulkan
 {
 
 COcclusionQueryManager::COcclusionQueryManager()
-	: m_queryPool(VK_NULL_HANDLE)
-	, m_bQueryInUse(0)
+	: m_bQueryInUse(0)
+	, m_queryPool(VK_NULL_HANDLE)
 {
 	m_fences.fill(0);
 }

@@ -44,11 +44,11 @@ class CSunShadows
 	struct SCascadePrimitiveContext
 	{
 		SCascadePrimitiveContext(CRenderView* pRenderView, bool renderScreenspaceShadows, bool texelRelativeBias, bool extendLastCachedCascade, uint64 shaderRtFlags)
-			: frustums(pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic))
+			: pMainRenderView(pRenderView)
+			, frustums(pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic))
 			, rtFlags(shaderRtFlags)
 			, renderScreenspaceShadows(renderScreenspaceShadows)
 			, useTexelRelativeBias(texelRelativeBias)
-			, pMainRenderView(pRenderView)
 		{
 			if (extendLastCachedCascade)
 			{
@@ -181,9 +181,9 @@ CShadowMaskStage::CShadowMaskStage()
 	: m_pSunShadows(stl::make_unique<ShadowMaskInternal::CSunShadows>(*this))
 	, m_pLocalLightShadows(stl::make_unique<ShadowMaskInternal::CLocalLightShadows>(*this))
 	, m_pShadowMaskRT(nullptr)
+	, m_viewInfoCount(0)
 	, m_sunShadowPrimitives(0)
 	, m_localLightPrimitives(0)
-	, m_viewInfoCount(0)
 {}
 
 void CShadowMaskStage::Init()

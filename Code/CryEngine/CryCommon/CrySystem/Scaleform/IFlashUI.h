@@ -1072,8 +1072,8 @@ struct SUIParameterDesc
 		eUIPT_WString
 	};
 
-	SUIParameterDesc() : sName("undefined"), sDisplayName("undefined"), sDesc("undefined"), eType(eUIPT_Any), pParent(NULL) {}
-	SUIParameterDesc(const char* name, const char* displ, const char* desc, EUIParameterType type = eUIPT_Any, const SUIParameterDesc* parent = NULL) : sName(name), sDisplayName(displ), sDesc(desc), eType(type), pParent(parent) { CRY_ASSERT_MESSAGE(strstr(sName, " ") == NULL, "Name with whitespaces not allowed! Use display name for descriptive names!"); }
+	SUIParameterDesc() : sName("undefined"), sDisplayName("undefined"), sDesc("undefined"), pParent(NULL), eType(eUIPT_Any) {}
+	SUIParameterDesc(const char* name, const char* displ, const char* desc, EUIParameterType type = eUIPT_Any, const SUIParameterDesc* parent = NULL) : sName(name), sDisplayName(displ), sDesc(desc), pParent(parent), eType(type) { CRY_ASSERT_MESSAGE(strstr(sName, " ") == NULL, "Name with whitespaces not allowed! Use display name for descriptive names!"); }
 	const char*             sName;
 	const char*             sDisplayName;
 	const char*             sDesc;

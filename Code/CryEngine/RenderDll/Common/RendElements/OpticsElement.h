@@ -52,8 +52,8 @@ public:
 		SPreparePrimitivesContext(CPrimitiveRenderPass& targetPass, std::vector<CPrimitiveRenderPass*>& prePasses)
 			: pass(targetPass)
 			, prePasses(prePasses)
-			, viewInfoCount(0)
 			, pViewInfo(nullptr)
+			, viewInfoCount(0)
 			, lightWorldPos(ZERO)
 		{
 			ZeroStruct(auxParams);

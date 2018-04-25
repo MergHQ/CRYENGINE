@@ -576,8 +576,8 @@ public:
 	bool  m_bNative : 1;
 
 	SMipData()
-		: m_bNative(false)
-		, DataArray(NULL)
+		: DataArray(NULL)
+		, m_bNative(false)
 	{}
 	~SMipData()
 	{

@@ -12,11 +12,11 @@ CRenderOutput::CRenderOutput(CRenderDisplayContext* pDisplayContext)
 }
 
 CRenderOutput::CRenderOutput(CTexture* pColorTexture, uint32 clearFlags, ColorF clearColor, float clearDepth)
-	: m_bUseTempDepthBuffer(true)
-	, m_pColorTarget(pColorTexture)
+	: m_pColorTarget(pColorTexture)
 	, m_clearTargetFlag(clearFlags)
 	, m_clearColor(clearColor)
 	, m_clearDepth(clearDepth)
+	, m_bUseTempDepthBuffer(true)
 {
 	int outputWidth  = pColorTexture->GetWidth();
 	int outputHeight = pColorTexture->GetHeight();
@@ -26,12 +26,12 @@ CRenderOutput::CRenderOutput(CTexture* pColorTexture, uint32 clearFlags, ColorF 
 }
 
 CRenderOutput::CRenderOutput(CTexture* pColorTexture, CTexture* pDepthTexture, uint32 clearFlags, ColorF clearColor, float clearDepth)
-	: m_bUseTempDepthBuffer(false)
-	, m_pColorTarget(pColorTexture)
+	: m_pColorTarget(pColorTexture)
 	, m_pDepthTarget(pDepthTexture)
 	, m_clearTargetFlag(clearFlags)
 	, m_clearColor(clearColor)
 	, m_clearDepth(clearDepth)
+	, m_bUseTempDepthBuffer(false)
 {
 	int outputWidth  = pColorTexture->GetWidth();
 	int outputHeight = pColorTexture->GetHeight();
@@ -46,10 +46,10 @@ CRenderOutput::CRenderOutput(CTexture* pColorTexture, CTexture* pDepthTexture, u
 
 CRenderOutput::CRenderOutput(SDynTexture* pDynTexture, int32 outputWidth, int32 outputHeight, bool useTemporaryDepthBuffer, uint32 clearFlags, ColorF clearColor, float clearDepth)
 	: m_pDynTexture(pDynTexture)
-	, m_bUseTempDepthBuffer(useTemporaryDepthBuffer)
 	, m_clearTargetFlag(clearFlags)
 	, m_clearColor(clearColor)
 	, m_clearDepth(clearDepth)
+	, m_bUseTempDepthBuffer(useTemporaryDepthBuffer)
 {
 	ChangeOutputResolution(outputWidth, outputHeight);
 	SetViewport(SRenderViewport(0, 0, outputWidth, outputHeight));

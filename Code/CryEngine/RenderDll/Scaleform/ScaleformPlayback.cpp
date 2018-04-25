@@ -70,6 +70,7 @@ CScaleformPlayback::CScaleformPlayback()
 	, m_curBlendMode(Blend_None)
 	, m_rsIdx(0)
 	, m_renderStats()
+	, m_drawParams()
 	, m_canvasRect(0, 0, 0, 0)
 	, m_clearFlags(0)
 	, m_clearColor(Clr_Transparent)
@@ -84,7 +85,6 @@ CScaleformPlayback::CScaleformPlayback()
 	, m_isLeft(false)
 	, m_mainThreadID(0)
 	, m_renderThreadID(0)
-	, m_drawParams()
 {
 	m_blendOpStack.reserve(16);
 

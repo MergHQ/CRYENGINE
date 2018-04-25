@@ -50,23 +50,28 @@ void CameraOrbs::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
 
 CameraOrbs::CameraOrbs(const char* name, const int numOrbs)
 	: COpticsElement(name, 0.19f)
-	, m_fSizeNoise(0.8f)
-	, m_fBrightnessNoise(0.4f)
-	, m_fRotNoise(0.8f)
-	, m_fClrNoise(0.5f)
-	, m_fIllumRadius(1.f)
 	, m_bUseLensTex(0)
 	, m_bOrbDetailShading(0)
 	, m_bLensDetailShading(0)
+
 	, m_fLensTexStrength(1.f)
 	, m_fLensDetailShadingStrength(0.157f)
 	, m_fLensDetailBumpiness(0.073f)
+
 	, m_bAdvancedShading(false)
 	, m_cAmbientDiffuse(LensOpConst::_LO_DEF_CLR_BLK)
 	, m_fAbsorptance(4.0f)
 	, m_fTransparency(0.37f)
 	, m_fScatteringStrength(1.0f)
+
+	, m_fIllumRadius(1.f)
+	
 	, m_iNoiseSeed(0)
+	, m_fSizeNoise(0.8f)
+	, m_fBrightnessNoise(0.4f)
+	, m_fRotNoise(0.8f)
+	, m_fClrNoise(0.5f)
+
 	, m_spriteAspectRatio(1.0f)
 {
 	m_Color.a = 1.f;

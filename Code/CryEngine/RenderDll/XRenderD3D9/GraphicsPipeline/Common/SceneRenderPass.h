@@ -76,9 +76,9 @@ protected:
 	uint32                   m_numRenderItemGroups;
 	uint32                   m_profilerSectionIndex;
 
-	float                    m_depthConstBias;
-	float                    m_depthSlopeBias;
-	float                    m_depthBiasClamp;
+	float                    m_depthConstBias = 0.0f;
+	float                    m_depthSlopeBias = 0.0f;
+	float                    m_depthBiasClamp = 0.0f;
 
 	std::vector<SGraphicsPipelinePassContext> m_passContexts;
 

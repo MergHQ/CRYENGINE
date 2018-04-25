@@ -168,8 +168,8 @@ public:
 			, m_indexOffs(indexOffs)
 			, m_transMatrixIdx(transMatrixIdx)
 			, m_worldMatrixIdx(worldMatrixIdx)
-			, m_renderFlags(renderFlags)
 			, m_textureID(texID)
+			, m_renderFlags(renderFlags)
 			, m_displayContextKey(displayContextKey)
 		{
 		}
@@ -181,8 +181,8 @@ public:
 			, m_indexOffs(0)
 			, m_transMatrixIdx(transMatrixIdx)
 			, m_worldMatrixIdx(worldMatrixIdx)
-			, m_renderFlags(renderFlags)
 			, m_textureID(texID)
+			, m_renderFlags(renderFlags)
 			, m_displayContextKey(displayContextKey)
 		{
 			CRY_ASSERT(e_Obj == GetPrimType(m_renderFlags));
@@ -227,12 +227,12 @@ public:
 	{
 	public:
 		SAuxGeomCBRawData()
-			: m_isUsed(false)
-			, m_curRenderFlags(e_Def3DPublicRenderflags)
+			: m_curRenderFlags(e_Def3DPublicRenderflags)
 			, m_curTransMatIdx(-1)
 			, m_curWorldMatIdx(-1)
 			, m_textureID(-1)
 			, m_uCount(0)
+			, m_isUsed(false)
 			, m_usingCustomCamera(false)
 		{}
 

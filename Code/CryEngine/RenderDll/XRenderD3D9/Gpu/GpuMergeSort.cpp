@@ -13,7 +13,7 @@
 namespace gpu
 {
 
-CMergeSort::CMergeSort(uint32 maxElements) : m_data(maxElements), m_maxElements(maxElements)
+CMergeSort::CMergeSort(uint32 maxElements) : m_maxElements(maxElements), m_data(maxElements)
 {
 	m_params.CreateDeviceBuffer();
 	m_data.Initialize(true);

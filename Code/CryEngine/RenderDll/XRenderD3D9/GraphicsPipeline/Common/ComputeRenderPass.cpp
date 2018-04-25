@@ -11,10 +11,10 @@ CComputeRenderPass::CComputeRenderPass(EPassFlags flags)
 	, m_dispatchSizeX(1)
 	, m_dispatchSizeY(1)
 	, m_dispatchSizeZ(1)
+	, m_resourceDesc()
 	, m_currentPsoUpdateCount(0)
 	, m_bPendingConstantUpdate(false)
 	, m_bCompiled(false)
-	, m_resourceDesc()
 {
 	m_pResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 

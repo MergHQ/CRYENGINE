@@ -404,16 +404,16 @@ struct SDeviceObjectHelpers
 
 	public:
 		STypedConstants(CConstantBufferPtr pBuffer)
-			: m_pBuffer(pBuffer)
-			, m_pCachedData(AlignCachedData())
+			: m_pCachedData(AlignCachedData())
+			, m_pBuffer(pBuffer)
 			, m_CurrentBufferIndex(0)
 		{
 			ZeroStruct(m_pCachedData[0]);
 		}
 
 		STypedConstants(STypedConstants&& other)
-			: m_pBuffer(std::move(other.m_pBuffer))
-			, m_pCachedData(AlignCachedData())
+			: m_pCachedData(AlignCachedData())
+			, m_pBuffer(std::move(other.m_pBuffer))
 			, m_CurrentBufferIndex(std::move(other.m_CurrentBufferIndex))
 		{
 			*m_pCachedData = *other.m_pCachedData;

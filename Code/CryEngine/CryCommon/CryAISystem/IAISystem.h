@@ -201,9 +201,9 @@ struct SNavigationShapeParams
 		, fHeight(fHeight)
 		, nNavType(nNavType)
 		, nAuxType(nAuxType)
+		, lightLevel(lightLevel)
 		, fReductionPerMetre(fReductionPerMetre)
 		, fReductionMax(fReductionMax)
-		, lightLevel(lightLevel)
 	{}
 
 	const char*          szPathName;

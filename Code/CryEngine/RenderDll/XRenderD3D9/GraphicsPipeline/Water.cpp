@@ -157,11 +157,11 @@ bool CWaterStage::UpdateCausticsGrid(N3DEngineCommon::SCausticInfo& causticInfo,
 
 CWaterStage::CWaterStage()
 	: m_rainRippleTexIndex(0)
+	, m_defaultPerInstanceResources()
+	, m_perPassResources()
 	, m_frameIdWaterSim(0)
 	, m_bWaterNormalGen(false)
 	, m_bOceanMaskGen(false)
-	, m_defaultPerInstanceResources()
-	, m_perPassResources()
 {
 	std::fill(std::begin(m_oceanAnimationParams), std::end(m_oceanAnimationParams), Vec4(0.0f));
 }

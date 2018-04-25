@@ -22,7 +22,7 @@ struct SRGBPixel
 	uint8 blue, green, red, alpha;
 	SRGBPixel()  /* : red(0), green(0), blue(0), alpha(255) {} */
 	{ *(unsigned int*)this = (unsigned int)~RGB_MASK; }
-	SRGBPixel(int r, int g, int b) : red(r), green(g), blue(b), alpha(255) {}
+	SRGBPixel(int r, int g, int b) : blue(b), green(g), red(r), alpha(255) {}
 	//bool eq (const SRGBPixel& p) const { return ((*(unsigned int *)this) & RGB_MASK) == ((*(unsigned int *)&p) & RGB_MASK); }
 };
 

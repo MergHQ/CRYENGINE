@@ -332,7 +332,7 @@ enum EPostProcessRenderFlag
 class CPostEffect
 {
 public:
-	CPostEffect() : m_pActive(0), /*m_nID(ePFX_DefaultID),*/ m_nRenderFlags(PSP_UPDATE_BACKBUFFER)
+	CPostEffect() : m_nRenderFlags(PSP_UPDATE_BACKBUFFER), m_pActive(0) /*, m_nID(ePFX_DefaultID),*/ 
 	{
 	}
 

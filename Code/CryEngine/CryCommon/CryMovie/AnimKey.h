@@ -870,11 +870,6 @@ struct SCommentKey : public STrackDurationKey
 		eTA_Right  = BIT(2)
 	};
 
-	SCommentKey() : m_size(1.f), m_align(eTA_Left), m_color(Vec3(1.0f, 1.0f, 1.0f))
-	{
-		cry_strcpy(m_font, "default");
-	}
-
 	static const char* GetType()              { return "Comment"; }
 	const char*        GetDescription() const { return m_comment.c_str(); }
 
@@ -901,11 +896,11 @@ struct SCommentKey : public STrackDurationKey
 		ar(m_align, "align", "Align");
 	}
 
-	string     m_comment;
+	string     m_comment = {"default"};
 	char       m_font[64];
-	Vec3       m_color;
-	float      m_size;
-	ETextAlign m_align;
+	Vec3       m_color = {1.0f, 1.0f, 1.0f};
+	float      m_size = 1.f;
+	ETextAlign m_align = eTA_Left;
 };
 
 struct SScreenFaderKey : public STrackKey
@@ -925,16 +920,17 @@ struct SScreenFaderKey : public STrackKey
 		eFCT_Sin         = 4
 	};
 
-	SScreenFaderKey() : STrackKey(), m_fadeTime(2.f), m_bUseCurColor(true), m_fadeType(eFT_FadeOut),
-		m_fadeChangeType(eFCT_Linear), m_fadeColor(Vec4(0.0f, 0.0f, 0.0f, 1.0f))
+	SScreenFaderKey() : STrackKey(), m_fadeTime(2.f), m_fadeColor(Vec4(0.0f, 0.0f, 0.0f, 1.0f)),
+		m_bUseCurColor(true), m_fadeType(eFT_FadeOut),
+		m_fadeChangeType(eFCT_Linear)
 	{
 		m_texture[0] = 0;
 	}
 
 	SScreenFaderKey(const SScreenFaderKey& other)
-		: STrackKey(other), m_fadeTime(other.m_fadeTime), m_bUseCurColor(other.m_bUseCurColor),
-		m_fadeType(other.m_fadeType), m_fadeChangeType(other.m_fadeChangeType),
-		m_fadeColor(other.m_fadeColor)
+		: STrackKey(other), m_fadeTime(other.m_fadeTime), m_fadeColor(other.m_fadeColor),
+		  m_bUseCurColor(other.m_bUseCurColor),	m_fadeType(other.m_fadeType),
+		  m_fadeChangeType(other.m_fadeChangeType)
 	{
 		cry_strcpy(m_texture, other.m_texture);
 	}

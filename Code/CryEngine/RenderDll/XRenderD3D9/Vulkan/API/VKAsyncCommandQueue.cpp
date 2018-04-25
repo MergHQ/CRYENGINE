@@ -74,9 +74,9 @@ bool CAsyncCommandQueue::IsSynchronous()
 }
 
 CAsyncCommandQueue::CAsyncCommandQueue()
-	: m_pCmdListPool(nullptr)
-	, m_QueuedFramesCounter(0)
+	: m_QueuedFramesCounter(0)
 	, m_bStopRequested(false)
+	, m_pCmdListPool(nullptr)
 	, m_TaskEvent(INT_MAX, 0)
 {
 }

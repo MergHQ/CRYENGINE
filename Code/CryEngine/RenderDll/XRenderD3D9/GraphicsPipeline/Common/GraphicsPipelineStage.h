@@ -32,8 +32,8 @@ struct SGraphicsPipelinePassContext
 		, pRenderView(renderView)
 		, renderNearest(false)
 		, pCommandList(nullptr)
-		, pDrawCallInfoPerMesh(nullptr)
 		, pDrawCallInfoPerNode(nullptr)
+		, pDrawCallInfoPerMesh(nullptr)
 	{
 	}
 

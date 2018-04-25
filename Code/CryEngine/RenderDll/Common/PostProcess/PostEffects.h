@@ -151,7 +151,7 @@ private:
 
 struct SDepthOfFieldParams
 {
-	SDepthOfFieldParams() : pMaskTex(0), fMaskBlendAmount(0.0f), bGameMode(false)
+	SDepthOfFieldParams() : bGameMode(false), pMaskTex(0), fMaskBlendAmount(0.0f)
 	{
 	};
 
@@ -1240,36 +1240,33 @@ private:
 struct SHudData
 {
 public:
-	SHudData() : pRE(0), pShaderItem(0), pShaderResources(0), pRO(0), pDiffuse(0), pFlashPlayer(0), nSortVal(0), nFlashWidth(0), nFlashHeight(0)
+	SHudData() : pShaderItem(0), pShaderResources(0), pDiffuse(0), pFlashPlayer(0)
 	{
 	}
 
 	SHudData(const CRenderElement* pInRE, const SShaderItem* pInShaderItem, const CShaderResources* pInShaderResources, CRenderObject* pInRO) :
 		pRE(pInRE),
+		pRO(pInRO),
 		pShaderItem(pInShaderItem),
 		pShaderResources(pInShaderResources),
-		pRO(pInRO),
 		pDiffuse(0),
-		pFlashPlayer(0),
-		nSortVal(0),
-		nFlashWidth(0),
-		nFlashHeight(0)
+		pFlashPlayer(0)
 	{
 	}
 
 public:
-	const CRenderElement* pRE;
-	CRenderObject*          pRO;
+	const CRenderElement*   pRE = nullptr;
+	CRenderObject*          pRO = nullptr;
 	const SShaderItem*      pShaderItem; // to be removed after Alpha MS
 	const CShaderResources* pShaderResources;
 
 	SEfResTexture*          pDiffuse;
 	IFlashPlayer*           pFlashPlayer;
 
-	uint32                  nSortVal;
+	uint32                  nSortVal = 0;
 
-	int16                   nFlashWidth;
-	int16                   nFlashHeight;
+	int16                   nFlashWidth = 0;
+	int16                   nFlashHeight = 0;
 
 	static int16            s_nFlashWidthMax;
 	static int16            s_nFlashHeightMax;

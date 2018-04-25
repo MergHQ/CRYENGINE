@@ -126,9 +126,9 @@ SDynTexture_PoolAlloc* g_pSDynTexture_PoolAlloc = 0;
 //#undef PROFILER
 
 CRenderer::CRenderer()
-	: m_bEditor(false)
+	: m_bStopRendererAtFrameEnd(false)
+	, m_bEditor(false)
 	, m_beginFrameCount(0)
-	, m_bStopRendererAtFrameEnd(false)
 {
 	InitRenderViewPool();
 }

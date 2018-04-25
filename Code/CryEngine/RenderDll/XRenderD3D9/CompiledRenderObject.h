@@ -64,8 +64,8 @@ public:
 	CPermanentRenderObject()
 		: m_pNextPermanent(nullptr)
 		, m_compiledReadyMask(0)
-		, m_accessLock(0)
 		, m_lastCompiledFrame(0)
+		, m_accessLock(0)
 	{
 		m_bPermanent = true; // must be in constructor
 	};
@@ -285,8 +285,8 @@ public:
 		, m_bSharedWithShadow(false)
 		, m_bDynamicInstancingPossible(false)
 		, m_bCustomRenderElement(false)
-		, m_nInstances(0)
 		, m_TessellationPatchIDOffset(-1)
+		, m_nInstances(0)
 	{
 		for (int i = 0; i < MAX_PIPELINE_SCENE_STAGES; ++i)
 		{

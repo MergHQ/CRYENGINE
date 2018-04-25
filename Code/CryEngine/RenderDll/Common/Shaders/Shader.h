@@ -886,8 +886,8 @@ public:
 
 	CLightStyle() : m_Color(Col_White),
 		m_vPosOffset(ZERO),
-		m_LastTime(0.0f),
 		m_TimeIncr(60.0f),
+		m_LastTime(0.0f),
 		m_bRandColor(0),
 		m_bRandIntensity(0),
 		m_bRandPosOffset(0),

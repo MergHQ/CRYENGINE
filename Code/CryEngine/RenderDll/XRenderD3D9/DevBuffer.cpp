@@ -399,7 +399,7 @@ struct SBufferPoolItem
 	SBufferPool* m_pool;
 
 	// Base pointer to buffer
-	uint8* m_base_ptr;
+	uint8* m_base_ptr = nullptr;
 
 	// The pointer to the defragging allocator if backed by one
 	IDefragAllocator* m_defrag_allocator;
@@ -417,19 +417,19 @@ struct SBufferPoolItem
 
 	// If this item has been relocated on update, this is the item
 	// handle of the new item (to be swapped)
-	item_handle_t m_cow_handle;
+	item_handle_t m_cow_handle = ~0u;
 
 	// The size of the item in bytes
 	buffer_size_t m_size;
 
 	// The offset in bytes from the start of the buffer
-	buffer_size_t m_offset;
+	buffer_size_t m_offset = ~0u;
 
 	// The bank index this item resides in
-	uint32 m_bank;
+	uint32 m_bank = ~0u;
 
 	// The defrag allocation handle for this item
-	IDefragAllocator::Hdl m_defrag_handle;
+	IDefragAllocator::Hdl m_defrag_handle = IDefragAllocator::InvalidHdl;
 
 	// Set to one if the item was already used once
 	uint8 m_used : 1;
@@ -449,16 +449,11 @@ struct SBufferPoolItem
 	SBufferPoolItem(size_t handle)
 		: m_buffer()
 		, m_pool()
-		, m_size()
-		, m_offset(~0u)
-		, m_bank(~0u)
-		, m_base_ptr(NULL)
 		, m_defrag_allocator()
-		, m_defrag_handle(IDefragAllocator::InvalidHdl)
-		, m_handle(handle)
 		, m_deferred_list()
 		, m_cow_list()
-		, m_cow_handle(~0u)
+		, m_handle(handle)
+		, m_size()
 		, m_used()
 		, m_defrag()
 		, m_cpu_flush()

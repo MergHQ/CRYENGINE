@@ -83,18 +83,21 @@ CD3DStereoRenderer::CD3DStereoRenderer()
 	, m_output(EStereoOutput::STEREO_OUTPUT_STANDARD)
 	, m_submission(EStereoSubmission::STEREO_SUBMISSION_SEQUENTIAL)
 	, m_driver(DRIVER_UNKNOWN)
+	, m_bPreviousCameraValid(false)
+
 	, m_nvStereoHandle(nullptr)
 	, m_nvStereoStrength(0.0f)
 	, m_nvStereoActivated(0)
+
 	, m_stereoStrength(0.0f)
 	, m_zeroParallaxPlaneDist(0.25f)
 	, m_maxSeparationScene(0.0f)
 	, m_nearGeoScale(0.0f)
 	, m_gammaAdjustment(0)
+
 	, m_resourcesPatched(false)
 	, m_needClearVrQuadLayer(true)
 	, m_pHmdRenderer(nullptr)
-	, m_bPreviousCameraValid(false)
 {
 	REGISTER_CVAR3("r_StereoDevice", m_device, m_device, VF_REQUIRE_APP_RESTART | VF_DUMPTODISK,
 		"Sets stereo device (only possible before app start)\n"

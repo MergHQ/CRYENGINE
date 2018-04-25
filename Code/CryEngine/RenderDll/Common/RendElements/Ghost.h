@@ -120,14 +120,14 @@ protected:
 public:
 	CMultipleGhost(const char* name) :
 		COpticsGroup(name),
-		m_nCount(0),
-		m_nRandSeed(0),
-		m_bContentDirty(true),
 		m_fXOffsetNoise(0),
 		m_fYOffsetNoise(0),
+		m_nCount(0),
+		m_nRandSeed(0),
 		m_fSizeNoise(0.4f),
+		m_fBrightnessNoise(0.3f),
 		m_fColorNoise(0.3f),
-		m_fBrightnessNoise(0.3f)
+	    m_bContentDirty(true)
 	{
 		m_vRange.set(0.1f, 0.7f);
 		m_vPositionFactor.set(1, 1);

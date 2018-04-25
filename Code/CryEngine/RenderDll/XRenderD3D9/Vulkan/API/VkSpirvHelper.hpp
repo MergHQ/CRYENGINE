@@ -44,8 +44,8 @@ namespace VkSpvHelper
 		SpirvInstructionReader(const uint32_t * pData, size_t dataSize)
 			: m_pData(pData)
 			, m_dataSize(dataSize)
-			, m_bReadError(false)
 			, m_currentOffset(0)
+			, m_bReadError(false)
 		{
 		}
 		
