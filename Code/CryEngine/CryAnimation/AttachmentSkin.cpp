@@ -80,10 +80,12 @@ uint32 CAttachmentSKIN::Immediate_AddBinding( IAttachmentObject* pIAttachmentObj
 
 	if (NotMatchingNames)
 	{
-		if (pInstanceSkel->m_CharEditMode || nLoadingFlags & CA_ImmediateMode)
+		// For now limited to CharEdit
+		if (pInstanceSkel->m_CharEditMode || (nLoadingFlags & CA_CharEditModel))
 		{
-		  //for now limited to CharEdit
-			RecreateDefaultSkeleton(pInstanceSkel,nLoadingFlags); 
+			assert(pInstanceSkel->m_CharEditMode);
+			assert(nLoadingFlags & CA_CharEditModel);
+			RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags | CA_CharEditModel);
 		}
 		else
 		{
@@ -123,20 +125,25 @@ uint32 CAttachmentSKIN::Immediate_AddBinding( IAttachmentObject* pIAttachmentObj
 	return 1; 
 }
 
-void CAttachmentSKIN::Immediate_ClearBinding(uint32 nLoadingFlags) 
-{ 
+void CAttachmentSKIN::Immediate_ClearBinding(uint32 nLoadingFlags)
+{
 	if (m_pIAttachmentObject)
 	{
 		m_pIAttachmentObject->Release();
 		m_pIAttachmentObject = 0;
 		ReleaseModelSkin();
 
-		if (nLoadingFlags&CA_SkipSkelRecreation)
+		if (nLoadingFlags & CA_SkipSkelRecreation)
 			return;
-		//for now limited to CharEdit
+
+		// For now limited to CharEdit
 		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
-		if (pInstanceSkel->m_CharEditMode)
-			RecreateDefaultSkeleton(pInstanceSkel,CA_CharEditModel|nLoadingFlags); 
+		if (pInstanceSkel->m_CharEditMode || (nLoadingFlags & CA_CharEditModel))
+		{
+			assert(pInstanceSkel->m_CharEditMode);
+			assert(nLoadingFlags & CA_CharEditModel);
+			RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags | CA_CharEditModel);
+		}
 	}
 }; 
 
