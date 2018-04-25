@@ -14,6 +14,8 @@
 #include <d3d11.h>
 #include <d3d12.h>
 
+#include <Extras/OVR_StereoProjection.h>
+
 namespace
 {
 inline CryVR::Oculus::OculusStatus CheckStatusAndReturn(ovrResult result) 
@@ -254,8 +256,6 @@ void Device::CreateDevice()
 		CryLogAlways("[HMD][Oculus] Failed to initialize HMD device! [%s]", *errorInfo.ErrorString ? errorInfo.ErrorString : "unspecified error");
 	}
 
-	UpdateCurrentIPD();
-
 	if (m_pSession && GetISystem()->GetISystemEventDispatcher())
 		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CryVR::Oculus::Device");
 }
@@ -311,46 +311,18 @@ void Device::GetCameraSetupInfo(float& fov, float& aspectRatioFactor) const
 }
 
 // -------------------------------------------------------------------------
-void Device::GetAsymmetricCameraSetupInfo(int nEye, float& fov, float& aspectRatio, float& asymH, float& asymV, float& eyeDist) const
+HMDCameraSetup Device::GetHMDCameraSetup(int nEye, float projRatio, float fnear) const
 {
-	// calculate from projection matrix
-	const float zNear = 0.25f;  // @theo: why these values?
-	const float zFar = 8000.f;
-	const unsigned int kNoFlags = 0;
-	const ovrMatrix4f proj = ovrMatrix4f_Projection(m_hmdDesc.DefaultEyeFov[nEye], zNear, zFar, kNoFlags);
-	fov = 2.0f * atan(1.0f / proj.M[1][1]);
-	aspectRatio = proj.M[1][1] / proj.M[0][0];
-	asymH = proj.M[0][2] / proj.M[1][1] * aspectRatio;
-	asymV = proj.M[1][2] / proj.M[1][1];
+	HMDCameraSetup ret = HMDCameraSetup::fromAsymmetricFrustum(
+		m_hmdDesc.DefaultEyeFov[nEye].RightTan,
+		m_hmdDesc.DefaultEyeFov[nEye].UpTan,
+		m_hmdDesc.DefaultEyeFov[nEye].LeftTan,
+		m_hmdDesc.DefaultEyeFov[nEye].DownTan,
+		projRatio,
+		fnear);
+	ret.ipd = GetCurrentIPD();
 
-	eyeDist = CPlugin_OculusVR::s_hmd_ipd;
-
-	static bool _bPrinted = false;
-	if (!_bPrinted)
-	{
-		const ovrMatrix4f projLeft = ovrMatrix4f_Projection(m_hmdDesc.DefaultEyeFov[ovrEye_Left], zNear, zFar, kNoFlags);
-		const ovrMatrix4f projRight = ovrMatrix4f_Projection(m_hmdDesc.DefaultEyeFov[ovrEye_Right], zNear, zFar, kNoFlags);
-
-		CryLogAlways("Left FOV: %f\t%f\t%f\t%f",
-		             m_hmdDesc.DefaultEyeFov[ovrEye_Left].LeftTan, m_hmdDesc.DefaultEyeFov[ovrEye_Left].RightTan,
-		             m_hmdDesc.DefaultEyeFov[ovrEye_Left].DownTan, m_hmdDesc.DefaultEyeFov[ovrEye_Left].UpTan);
-
-		CryLogAlways("%f\t%f\t%f\t%f", projLeft.M[0][0], projLeft.M[0][1], projLeft.M[0][2], projLeft.M[0][3]);
-		CryLogAlways("%f\t%f\t%f\t%f", projLeft.M[1][0], projLeft.M[1][1], projLeft.M[1][2], projLeft.M[1][3]);
-		CryLogAlways("%f\t%f\t%f\t%f", projLeft.M[2][0], projLeft.M[2][1], projLeft.M[2][2], projLeft.M[2][3]);
-		CryLogAlways("%f\t%f\t%f\t%f", projLeft.M[3][0], projLeft.M[3][1], projLeft.M[3][2], projLeft.M[3][3]);
-
-		CryLogAlways("Right FOV: %f\t%f\t%f\t%f",
-		             m_hmdDesc.DefaultEyeFov[ovrEye_Right].LeftTan, m_hmdDesc.DefaultEyeFov[ovrEye_Right].RightTan,
-		             m_hmdDesc.DefaultEyeFov[ovrEye_Right].DownTan, m_hmdDesc.DefaultEyeFov[ovrEye_Right].UpTan);
-
-		CryLogAlways("%f\t%f\t%f\t%f", projRight.M[0][0], projRight.M[0][1], projRight.M[0][2], projRight.M[0][3]);
-		CryLogAlways("%f\t%f\t%f\t%f", projRight.M[1][0], projRight.M[1][1], projRight.M[1][2], projRight.M[1][3]);
-		CryLogAlways("%f\t%f\t%f\t%f", projRight.M[2][0], projRight.M[2][1], projRight.M[2][2], projRight.M[2][3]);
-		CryLogAlways("%f\t%f\t%f\t%f", projRight.M[3][0], projRight.M[3][1], projRight.M[3][2], projRight.M[3][3]);
-
-		_bPrinted = true;
-	}
+	return ret;
 }
 
 // -------------------------------------------------------------------------
@@ -427,13 +399,6 @@ void Device::UpdateTrackingState(EVRComponent type, int frameId)
 		}
 		m_lastFrameID_UpdateTrackingState = frameId;
 	#endif
-
-		// Update tracking state for HMD and controllers
-		const float halfIPD = UpdateCurrentIPD() * 0.5f;
-
-		//Get eye poses, feeding in correct IPD offset
-		// Note: /*halfIPD*/ this is a hack to fix badly projected health & safety text that happens in Oculus runtime 0.7 for EVT devices
-		// Oculus suggested this fix and said that this value is only used for a very specific layer that it is not used at the moment
 		const bool bZeroEyeOffset = false;
 		ovrPosef hmdToEyeOffset[2] = {};
 
@@ -559,9 +524,11 @@ Device::SRenderParameters& Device::GetFrameRenderParameters()
 }
 
 // -------------------------------------------------------------------------
-float Device::UpdateCurrentIPD()
+float Device::GetCurrentIPD() const
 {
-	if (m_pSession && CPlugin_OculusVR::s_hmd_ipd < 0)
+	if (CPlugin_OculusVR::s_hmd_ipd > 0)
+		return CPlugin_OculusVR::s_hmd_ipd;
+	if (m_pSession)
 	{
 		ovrFovPort fov; // only used to get the IPD
 		fov.UpTan = m_devInfo.fovV * 0.5f;
@@ -574,19 +541,10 @@ float Device::UpdateCurrentIPD()
 
 		// let's make sure we read some reasonable values
 		if (ipd >= 0.0000f && ipd < 0.15f)
-		{
-			CPlugin_OculusVR::s_hmd_ipd = ipd;
-		}
-		else
-		{
-			CPlugin_OculusVR::s_hmd_ipd = 0.064f; // apply a default good value
-			CryLogAlways("[HMD][Oculus] The IPD read from Oculus SDK (ovr_GetRenderDesc) was out of range (0...0.15). Defaulting to a standard valid value: [%f]", ipd, CPlugin_OculusVR::s_hmd_ipd);
-		}
-
-		CryLogAlways("[HMD][Oculus] The current IPD (hmd_ipd) was < 0. Setting it to the value read from Oculus SDK [%f]", CPlugin_OculusVR::s_hmd_ipd);
+			return ipd;
 	}
 
-	return CPlugin_OculusVR::s_hmd_ipd;
+	return 0.064f; // Return a default good value
 }
 
 // -------------------------------------------------------------------------

@@ -11,11 +11,8 @@
 int CSceneRenderPass::s_recursionCounter = 0;
 
 CSceneRenderPass::CSceneRenderPass()
-	: m_passFlags(ePassFlags_None)
-	, m_depthConstBias(0.0f)
-	, m_depthSlopeBias(0.0f)
-	, m_depthBiasClamp(0.0f)
-	, m_renderPassDesc()
+	: m_renderPassDesc()
+	, m_passFlags(ePassFlags_None)
 {
 	m_numRenderItemGroups = 0;
 	m_profilerSectionIndex = ~0u;

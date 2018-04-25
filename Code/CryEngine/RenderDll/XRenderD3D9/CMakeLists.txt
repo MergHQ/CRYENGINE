@@ -1306,7 +1306,6 @@ if (RENDERER_VULKAN)
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-unused-variable
 			-Wno-parentheses
-			-Wno-reorder
 			-Wno-unused-value
 			-Wno-unknown-pragmas
 			-Wno-format

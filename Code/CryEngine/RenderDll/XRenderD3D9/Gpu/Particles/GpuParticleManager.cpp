@@ -13,9 +13,9 @@ namespace gpu_pfx2
 static const int kMaxRuntimes = 4096;
 
 CManager::CManager()
-	: m_readback(kMaxRuntimes)
-	, m_counter(kMaxRuntimes)
+	: m_counter(kMaxRuntimes)
 	, m_scratch(kMaxRuntimes)
+	, m_readback(kMaxRuntimes)
 	, m_numRuntimesReadback(0)
 {
 }

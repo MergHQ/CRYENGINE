@@ -2,16 +2,14 @@
 
 #pragma once
 
-#include "SaltHandle.h"           // CSaltHandle
-
 // use one instance of this class in your object manager
 // quite efficient implementation, avoids use of pointer to save memory and reduce cache misses
 class CSaltBufferArray
 {
 public:
-	static constexpr EntityIndex MaxSize = std::numeric_limits<EntityIndex>::max() - 2;
-	static constexpr EntityIndex UsedMarker = MaxSize + 1;
-	static constexpr EntityIndex EndMarker = MaxSize + 2;
+	// Note that MaximumEntityCount is defined as (1 << num available bits) - internal index count
+	static constexpr EntityIndex UsedMarker = MaximumEntityCount + 1;
+	static constexpr EntityIndex EndMarker = MaximumEntityCount + 2;
 
 	// constructor
 	CSaltBufferArray()
@@ -40,7 +38,7 @@ public:
 
 		// back to front
 		EntityIndex i;
-		for (i = MaxSize - 1; i > 1; --i)
+		for (i = MaximumEntityCount - 1; i > 1; --i)
 		{
 			m_Buffer[i].m_Salt = 0;           //
 			m_Buffer[i].m_NextIndex = i - 1;
@@ -48,8 +46,8 @@ public:
 		assert(i == 1);
 		m_Buffer[1].m_Salt = 0;
 		m_Buffer[1].m_NextIndex = EndMarker;
-		m_maxUsed = MaxSize - 1;
-		m_FreeListStartIndex = MaxSize - 1;
+		m_maxUsed = MaximumEntityCount - 1;
+		m_FreeListStartIndex = MaximumEntityCount - 1;
 
 		// 0 is not used because it's nil
 		m_Buffer[0].m_Salt = ~0;
@@ -59,7 +57,7 @@ public:
 	// max index that is allowed for EntityIndex (max entity count at a time)
 	static constexpr EntityIndex GetTSize()
 	{
-		return MaxSize;
+		return MaximumEntityCount;
 	}
 
 	//!
@@ -72,7 +70,7 @@ public:
 	// useful for serialization (Reset should be called before inserting the first known element)
 	// Arguments:
 	//   Handle - must be not nil
-	void InsertKnownHandle(const CSaltHandle& Handle)
+	void InsertKnownHandle(const SEntityIdentifier& Handle)
 	{
 		assert((bool)Handle);   // must be not nil
 
@@ -91,16 +89,16 @@ public:
 	// O(1) = fast
 	// Returns:
 	//   nil if there was not enough space, valid SaltHandle otherwise
-	CSaltHandle InsertDynamic()
+	SEntityIdentifier InsertDynamic()
 	{
 		if (m_FreeListStartIndex == EndMarker)
-			return CSaltHandle();   // buffer is full
+			return SEntityIdentifier();   // buffer is full
 
 		// update bounds
 		if (m_FreeListStartIndex > m_maxUsed)
 			m_maxUsed = m_FreeListStartIndex;
 
-		CSaltHandle ret(m_Buffer[m_FreeListStartIndex].m_Salt, m_FreeListStartIndex);
+		SEntityIdentifier ret(m_Buffer[m_FreeListStartIndex].m_Salt, m_FreeListStartIndex);
 
 		SSaltBufferElement& rElement = m_Buffer[m_FreeListStartIndex];
 
@@ -115,10 +113,10 @@ public:
 	// O(n) = slow
 	// Returns:
 	//   nil if there was not enough space, valid SaltHandle otherwise
-	CSaltHandle InsertStatic()
+	SEntityIdentifier InsertStatic()
 	{
 		if (m_FreeListStartIndex == EndMarker)
-			return CSaltHandle();   // buffer is full
+			return SEntityIdentifier();   // buffer is full
 
 		// find last available index O(n)
 		EntityIndex LastFreeIndex = m_FreeListStartIndex;
@@ -142,7 +140,7 @@ public:
 		if (LastFreeIndex > m_maxUsed)
 			m_maxUsed = LastFreeIndex;
 
-		CSaltHandle ret(m_Buffer[LastFreeIndex].m_Salt, LastFreeIndex);
+		SEntityIdentifier ret(m_Buffer[LastFreeIndex].m_Salt, LastFreeIndex);
 
 		SSaltBufferElement& rElement = m_Buffer[LastFreeIndex];
 
@@ -154,7 +152,7 @@ public:
 	}
 
 	// O(1) - don't call for invalid handles and don't remove objects twice
-	void Remove(const CSaltHandle& Handle)
+	void Remove(const SEntityIdentifier& Handle)
 	{
 		assert((bool)Handle);     // must be not nil
 
@@ -181,11 +179,11 @@ public:
 	void Debug()
 	{
 		if (m_FreeListStartIndex == EndMarker)
-			printf("Debug (max size:%d, no free element): ", MaxSize);
+			printf("Debug (max size:%d, no free element): ", MaximumEntityCount);
 		else
-			printf("Debug (max size:%d, free index: %d): ", MaxSize, m_FreeListStartIndex);
+			printf("Debug (max size:%d, free index: %d): ", MaximumEntityCount, m_FreeListStartIndex);
 
-		for (EntityIndex i = 0; i < MaxSize; ++i)
+		for (EntityIndex i = 0; i < MaximumEntityCount; ++i)
 		{
 			if (m_Buffer[i].m_NextIndex == EndMarker)
 				printf("%d.%d ", (int)i, (int)m_Buffer[i].m_Salt);
@@ -200,8 +198,8 @@ public:
 
 	// O(1)
 	// Returns:
-	//   true=handle is referenceing to a valid object, false=handle is not or referencing to an object that was removed
-	bool IsValid(const CSaltHandle& rHandle) const
+	//   true=handle is referencing to a valid object, false=handle is not or referencing to an object that was removed
+	bool IsValid(const SEntityIdentifier& rHandle) const
 	{
 		if (!rHandle)
 		{
@@ -209,7 +207,7 @@ public:
 			return false;
 		}
 
-		if (rHandle.GetIndex() > MaxSize)
+		if (rHandle.GetIndex() > MaximumEntityCount)
 		{
 			assert(0);
 			return false;
@@ -274,7 +272,7 @@ private: // --------------------------------------------------------------------
 		EntityIndex m_NextIndex;                             //!< linked list of free or used elements, EndMarker is used as end marker and for not valid elements, UsedMarker is used for used elements
 	};
 
-	SSaltBufferElement m_Buffer[MaxSize];               //!< freelist and salt buffer elements in one, [0] is not used
+	SSaltBufferElement m_Buffer[MaximumEntityCount];               //!< freelist and salt buffer elements in one, [0] is not used
 	EntityIndex             m_FreeListStartIndex;          //!< EndMarker if empty, index in m_Buffer otherwise
 	EntityIndex             m_maxUsed;                     //!< to enable fast iteration through the used elements - is constantly growing execpt when calling Reset()
 };

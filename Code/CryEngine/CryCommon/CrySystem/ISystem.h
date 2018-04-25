@@ -766,7 +766,7 @@ struct SPlatformInfo
 
 	struct SWinInfo
 	{
-		CryPathString path;
+		char          path[MAX_PATH];
 		EWinVersion   ver;
 		uint32_t      build;
 		bool          is64Bit;

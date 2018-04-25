@@ -63,6 +63,7 @@ CRenderPrimitive::CRenderPrimitive(CRenderPrimitive&& other)
 	, m_stencilReadMask(std::move(other.m_stencilReadMask))
 	, m_stencilWriteMask(std::move(other.m_stencilWriteMask))
 	, m_cullMode(std::move(other.m_cullMode))
+	, m_bDepthClip(std::move(other.m_bDepthClip))
 	, m_pShader(std::move(other.m_pShader))
 	, m_techniqueName(std::move(other.m_techniqueName))
 	, m_rtMask(std::move(other.m_rtMask))
@@ -72,7 +73,6 @@ CRenderPrimitive::CRenderPrimitive(CRenderPrimitive&& other)
 	, m_constantManager(std::move(other.m_constantManager))
 	, m_currentPsoUpdateCount(std::move(other.m_currentPsoUpdateCount))
 	, m_renderPassHash(std::move(other.m_renderPassHash))
-	, m_bDepthClip(std::move(other.m_bDepthClip))
 {}
 
 CRenderPrimitive::CRenderPrimitive(EPrimitiveFlags flags)
@@ -84,13 +84,13 @@ CRenderPrimitive::CRenderPrimitive(EPrimitiveFlags flags)
 	, m_stencilReadMask(0xFF)
 	, m_stencilWriteMask(0xFF)
 	, m_cullMode(eCULL_Back)
+	, m_bDepthClip(true)
 	, m_pShader(nullptr)
 	, m_rtMask(0)
 	, m_primitiveType(ePrim_Triangle)
+	, m_resourceDesc()
 	, m_currentPsoUpdateCount(0)
 	, m_renderPassHash(0)
-	, m_bDepthClip(true)
-	, m_resourceDesc()
 {
 }
 
@@ -422,13 +422,13 @@ void CRenderPrimitive::RemovePrimitiveGeometryCacheUser()
 }
 
 CPrimitiveRenderPass::CPrimitiveRenderPass(bool createGeometryCache)
-	: m_scissorEnabled(false)
-	, m_bAddingPrimitives(false)
-	, m_passFlags(ePassFlags_None)
-	, m_clearMask(0)
+	: m_passFlags(ePassFlags_None)
+	, m_renderPassDesc()
 	, m_outputResources()
 	, m_outputNULLResources()
-	, m_renderPassDesc()
+	, m_scissorEnabled(false)
+	, m_bAddingPrimitives(false)
+	, m_clearMask(0)
 {
 	ZeroStruct(m_viewport);
 	ZeroStruct(m_scissor);
@@ -469,17 +469,19 @@ CPrimitiveRenderPass::~CPrimitiveRenderPass()
 
 CPrimitiveRenderPass::CPrimitiveRenderPass(CPrimitiveRenderPass&& other)
 	: CRenderPassBase(std::move(other))
-	, m_scissorEnabled(std::move(other.m_scissorEnabled))
-	, m_bAddingPrimitives(std::move(other.m_bAddingPrimitives))
 	, m_passFlags(ePassFlags_None)
-	, m_pRenderPass(std::move(other.m_pRenderPass))
 	, m_renderPassDesc(std::move(other.m_renderPassDesc))
+	, m_pRenderPass(std::move(other.m_pRenderPass))
+
 	, m_outputResources(std::move(other.m_outputResources))
-	, m_outputNULLResources(std::move(other.m_outputNULLResources))
 	, m_pOutputResourceSet(std::move(other.m_pOutputResourceSet))
+	, m_outputNULLResources(std::move(other.m_outputNULLResources))
 	, m_pOutputNULLResourceSet(std::move(other.m_pOutputNULLResourceSet))
+	
 	, m_viewport(std::move(other.m_viewport))
 	, m_scissor(std::move(other.m_scissor))
+	, m_scissorEnabled(std::move(other.m_scissorEnabled))
+	, m_bAddingPrimitives(std::move(other.m_bAddingPrimitives))
 	, m_compiledPrimitives(std::move(other.m_compiledPrimitives))
 {}
 

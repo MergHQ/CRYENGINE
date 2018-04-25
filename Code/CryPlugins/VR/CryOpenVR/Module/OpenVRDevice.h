@@ -31,7 +31,7 @@ public:
 	virtual void                    GetDeviceInfo(HmdDeviceInfo& info) const override { info = m_devInfo; }
 
 	virtual void                    GetCameraSetupInfo(float& fov, float& aspectRatioFactor) const override;
-	virtual void                    GetAsymmetricCameraSetupInfo(int nEye, float& fov, float& aspectRatio, float& asymH, float& asymV, float& eyeDist) const;
+	virtual HMDCameraSetup GetHMDCameraSetup(int nEye, float projRatio, float fnear) const override;
 	virtual void                    UpdateInternal(EInternalUpdate type) override;
 	virtual void                    RecenterPose() override;
 	virtual void                    UpdateTrackingState(EVRComponent type, int frameId) override;

@@ -361,18 +361,18 @@ void CParticleComponentRuntime::SetInitializationSRV(EFeatureInitializationSrvSl
 }
 
 CParticleComponentRuntime::CParticleComponentRuntime(const SComponentParams& params, TConstArray<IParticleFeature*> features)
-	: m_bounds(AABB::RESET)
-	, m_initialized(false)
+	: m_container(params.maxParticles)
 	, m_blockSums(params.maxParticles)
 	, m_killList(params.maxParticles)
 	, m_newBornIndices(params.maxNewBorns)
 	, m_parentDataRenderThread(params.maxNewBorns)
 	, m_params(params)
-	, m_container(params.maxParticles)
+	, m_bounds(AABB::RESET)
 	, m_updateShaderFlags(0)
-	, m_previousUpdateShaderShaderFlags(std::numeric_limits<uint64>::max())
 	, m_initializationShaderFlags(0)
 	, m_previousInitializationShaderFlags(std::numeric_limits<uint64>::max())
+	, m_previousUpdateShaderShaderFlags(std::numeric_limits<uint64>::max())
+	, m_initialized(false)
 {
 	ZeroStruct(m_updateSrvSlots);
 	ZeroStruct(m_updateTextureSlots);

@@ -38,7 +38,7 @@ public:
 	virtual void                    GetDeviceInfo(HmdDeviceInfo& info) const override;
 
 	virtual void                    GetCameraSetupInfo(float& fov, float& aspectRatioFactor) const override;
-	virtual void                    GetAsymmetricCameraSetupInfo(int nEye, float& fov, float& aspectRatio, float& asymH, float& asymV, float& eyeDist) const override;
+	virtual HMDCameraSetup GetHMDCameraSetup(int nEye, float ratio, float fnear) const override;
 
 	virtual void                    DisableHMDTracking(bool disable) override;
 	virtual void                    UpdateInternal(EInternalUpdate) override {};

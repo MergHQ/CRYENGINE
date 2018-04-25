@@ -686,9 +686,9 @@ CShadowMapStage::CShadowMapPass& CShadowMapStage::CShadowMapPassGroup::AddPass()
 }
 
 CShadowMapStage::CShadowMapPass::CShadowMapPass(CShadowMapStage* pStage)
-	: m_ViewProjMatrix(IDENTITY)
+	: m_perPassResources(pStage->m_perPassResources) // clone per pass resources from stage
+	, m_ViewProjMatrix(IDENTITY)
 	, m_ViewProjMatrixOrig(IDENTITY)
-	, m_perPassResources(pStage->m_perPassResources) // clone per pass resources from stage
 {
 	m_pFrustumToRender = nullptr;
 	m_nShadowFrustumSide = 0;

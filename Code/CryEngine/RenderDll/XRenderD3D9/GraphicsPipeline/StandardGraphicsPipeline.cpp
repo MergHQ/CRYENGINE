@@ -52,9 +52,9 @@
 #include "D3D_SVO.h"
 
 CStandardGraphicsPipeline::CStandardGraphicsPipeline()
-	: m_changedCVars(gEnv->pConsole)
-	, m_defaultMaterialBindPoints()
+	: m_defaultMaterialBindPoints()
 	, m_defaultInstanceExtraResources()
+	, m_changedCVars(gEnv->pConsole)
 {}
 
 void CStandardGraphicsPipeline::Init()

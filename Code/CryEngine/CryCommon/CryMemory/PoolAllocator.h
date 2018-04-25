@@ -76,9 +76,9 @@ protected:
 public:
 
 	SharedSizePoolAllocator(THeap& heap, size_t nSize, size_t nAlign = 0)
-		: _pHeap(&heap),
-		_nAllocSize(AllocSize(nSize)),
+		: _nAllocSize(AllocSize(nSize)),
 		_nAllocAlign(AllocAlign(nSize, nAlign)),
+		_pHeap(&heap),
 		_pFreeList(0)
 	{
 	}

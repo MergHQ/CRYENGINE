@@ -36,6 +36,13 @@ enum EEyeType
 	eEyeType_NumEyes
 };
 
+enum EVRComponent
+{
+	eVRComponent_Hmd = BIT(0),
+	eVRComponent_Controller = BIT(1),
+	eVRComponent_All = eVRComponent_Hmd | eVRComponent_Controller
+};
+
 struct HmdDeviceInfo
 {
 	HmdDeviceInfo()
@@ -128,13 +135,6 @@ struct HmdTrackingState
 	unsigned int statusFlags;
 };
 
-enum EVRComponent
-{
-	eVRComponent_Hmd        = BIT(0),
-	eVRComponent_Controller = BIT(1),
-	eVRComponent_All        = eVRComponent_Hmd | eVRComponent_Controller
-};
-
 enum EHmdController
 {
 	// Oculus
@@ -152,6 +152,73 @@ enum EHmdProjection
 	eHmdProjection_Stereo = 0,
 	eHmdProjection_Mono_Cinema,
 	eHmdProjection_Mono_HeadLocked,
+};
+
+struct HMDCameraSetup
+{
+	// Pupil distance
+	float ipd;
+
+	// Camera asymmetries
+	float l, r, t, b;
+
+	float sfov;
+
+	static HMDCameraSetup fromProjectionMatrix(const Matrix44A &projectionMatrix, float projRatio, float fnear)
+	{
+		HMDCameraSetup params;
+
+		const double x = static_cast<double>(projectionMatrix(0, 0));
+		const double y = static_cast<double>(projectionMatrix(1, 1));
+		const double z = static_cast<double>(projectionMatrix(0, 2));
+		const double w = static_cast<double>(projectionMatrix(1, 2));
+
+		const double n_x = static_cast<double>(fnear) / x;
+		const double n_y = static_cast<double>(fnear) / y;
+		params.sfov = static_cast<float>(2.0 * atan(1.0 / y));
+
+		// Compute symmetric frustum
+		const double st = n_y;
+		const double sb = -st;
+		const double sr = st * static_cast<double>(projRatio);
+		const double sl = -sr;
+
+		// Compute asymmetries
+		const double l = (z - 1) * n_x;
+		const double b = (w - 1) * n_y;
+		const double r = 2 * n_x + l;
+		const double t = 2 * n_y + b;
+
+		params.l = static_cast<float>(l - sl);
+		params.r = static_cast<float>(r - sr);
+		params.b = static_cast<float>(b - sb);
+		params.t = static_cast<float>(t - st);
+
+		return params;
+	}
+
+	static HMDCameraSetup fromAsymmetricFrustum(float r, float t, float l, float b, float projRatio, float fnear)
+	{
+		HMDCameraSetup params;
+
+		const double n = static_cast<double>(fnear);
+		const double y = 2.0 / (static_cast<double>(t) + static_cast<double>(b));
+
+		params.sfov = static_cast<float>(2.0 * atan(1.0 / y));
+
+		// Compute symmetric frustum
+		const double st = n / y;
+		const double sb = -st;
+		const double sr = st * static_cast<double>(projRatio);
+		const double sl = -sr;
+
+		params.l = static_cast<float>(-l * n - sl);
+		params.r = static_cast<float>( r * n - sr);
+		params.b = static_cast<float>(-b * n - sb);
+		params.t = static_cast<float>( t * n - st);
+
+		return params;
+	}
 };
 
 struct IHmdController
@@ -226,7 +293,7 @@ public:
 	virtual void      GetDeviceInfo(HmdDeviceInfo& info) const = 0;
 
 	virtual void      GetCameraSetupInfo(float& fov, float& aspectRatioFactor) const = 0;
-	virtual void      GetAsymmetricCameraSetupInfo(int nEye, float& fov, float& aspectRatio, float& asymH, float& asymV, float& eyeDist) const = 0;
+	virtual HMDCameraSetup GetHMDCameraSetup(int nEye, float projRatio, float fnear) const = 0;
 
 	virtual void      UpdateInternal(EInternalUpdate) = 0;
 	virtual void      RecenterPose() = 0;

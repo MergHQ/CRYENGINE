@@ -25,7 +25,7 @@ public:
 	virtual void                    GetDeviceInfo(HmdDeviceInfo& info) const override { info = m_devInfo; }
 
 	virtual void                    GetCameraSetupInfo(float& fov, float& aspectRatioFactor) const override;
-	virtual void                    GetAsymmetricCameraSetupInfo(int nEye, float& fov, float& aspectRatio, float& asymH, float& asymV, float& eyeDist) const;
+	virtual HMDCameraSetup GetHMDCameraSetup(int nEye, float projRatio, float fnear) const;
 	virtual void                    UpdateInternal(EInternalUpdate type) override;
 	virtual void                    RecenterPose() override;
 	virtual void                    UpdateTrackingState(EVRComponent type, int frameId) override;
@@ -109,7 +109,7 @@ private:
 
 private:
 	SRenderParameters& GetFrameRenderParameters();
-	float              UpdateCurrentIPD();
+	float              GetCurrentIPD() const;
 	void               DebugDraw(float& xPosLabel, float& yPosLabel) const;
 	bool               UpdateEyeFovLayer(ovrLayerEyeFov& layer, const SHmdSwapChainInfo* pEyeTarget, const SRenderParameters& frameParams);
 	bool               UpdateQuadLayer(ovrLayerQuad& layer, const SHmdSwapChainInfo* pEyeTarget);

@@ -76,15 +76,16 @@ namespace
 		IGeneralMemoryHeap *m_MeshDataPool;
 		IGeneralMemoryHeap *m_MeshInstancePool;
 		void* m_MeshDataMemory;
-    void* m_MeshInstanceMemory;
-	  CryCriticalSection m_MeshPoolCS; 
+		void* m_MeshInstanceMemory;
+		CryCriticalSection m_MeshPoolCS;
 		SMeshPoolStatistics m_MeshDataPoolStats; 
+
 		SMeshPool()
-			: m_MeshPoolCS()
-			, m_MeshDataPool()
+			: m_MeshDataPool()
 			, m_MeshInstancePool()
 			, m_MeshDataMemory()
-      , m_MeshInstanceMemory()
+			, m_MeshInstanceMemory()
+			, m_MeshPoolCS()
 			, m_MeshDataPoolStats()
 		{}
 	};

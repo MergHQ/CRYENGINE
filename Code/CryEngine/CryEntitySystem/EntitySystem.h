@@ -6,7 +6,7 @@
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ITimer.h>
 #include "EntityComponentsVector.h"
-#include "SaltBufferArray.h"          // SaltBufferArray<>
+#include "SaltBufferArray.h"
 #include <CryCore/StlUtils.h>
 #include <CryMemory/STLPoolAllocator.h>
 #include <CryMemory/STLGlobalAllocator.h>
@@ -228,9 +228,9 @@ public:
 	CGeomCacheAttachmentManager*     GetGeomCacheAttachmentManager() const     { return m_pGeomCacheAttachmentManager; }
 	CCharacterBoneAttachmentManager* GetCharacterBoneAttachmentManager() const { return m_pCharacterBoneAttachmentManager; }
 
-	static EntityIndex         IdToIndex(const EntityId id) { return CSaltHandle::GetHandleFromId(id).GetIndex(); }
-	static CSaltHandle         IdToHandle(const EntityId id) { return CSaltHandle::GetHandleFromId(id); }
-	static EntityId            HandleToId(const CSaltHandle id) { return id.GetId(); }
+	static EntityIndex         IdToIndex(const EntityId id) { return SEntityIdentifier::GetHandleFromId(id).GetIndex(); }
+	static SEntityIdentifier   IdToHandle(const EntityId id) { return SEntityIdentifier::GetHandleFromId(id); }
+	static EntityId            HandleToId(const SEntityIdentifier id) { return id.GetId(); }
 
 	EntityId                         GenerateEntityId(bool bStaticId);
 

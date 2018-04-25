@@ -153,9 +153,9 @@ class CDeviceComputePSO
 {
 public:
 	CDeviceComputePSO()
-		: m_bValid(false)
+		: m_pHwShaderInstance(nullptr)
+		,  m_bValid(false)
 		, m_nUpdateCount(0)
-		, m_pHwShaderInstance(nullptr)
 	{}
 
 	virtual ~CDeviceComputePSO() {}

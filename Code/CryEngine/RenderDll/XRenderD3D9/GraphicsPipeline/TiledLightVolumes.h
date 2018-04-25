@@ -88,17 +88,13 @@ private:
 		static constexpr uint8 highestMip = 100;
 		static constexpr float mipFactorMinSize = highestMip * highestMip;
 
-		TexSmartPtr texture;
-		int         updateFrameID;
-		int         accessFrameID;
-		float       mipFactorRequested;
-		uint8       lowestTransferedMip;
-		uint8       lowestRenderableMip;
-		bool        invalid;
-
-		AtlasItem() : texture(nullptr), updateFrameID(-1), accessFrameID(0),
-			lowestTransferedMip(highestMip), lowestRenderableMip(highestMip),
-			mipFactorRequested(mipFactorMinSize), invalid(false) {}
+		TexSmartPtr texture = nullptr;
+		int         updateFrameID = -1;
+		int         accessFrameID = 0;
+		float       mipFactorRequested = mipFactorMinSize;
+		uint8       lowestTransferedMip = highestMip;
+		uint8       lowestRenderableMip = highestMip;
+		bool        invalid = false;
 	};
 
 	struct TextureAtlas

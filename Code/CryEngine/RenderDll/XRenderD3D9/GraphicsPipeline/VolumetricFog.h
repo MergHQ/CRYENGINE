@@ -136,9 +136,9 @@ private:
 
 	Matrix44A                m_viewProj[MaxFrameNum];
 	int32                    m_cleared;
-	uint32                   m_numTileLights;
-	uint32                   m_numFogVolumes;
-	int64                    m_frameID;
-	int32                    m_tick;
-	int32                    m_resourceFrameID;
+	uint32                   m_numTileLights = 0;
+	uint32                   m_numFogVolumes = 0;
+	int64                    m_frameID = -1;
+	int32                    m_tick = 0;
+	int32                    m_resourceFrameID = -1;
 };

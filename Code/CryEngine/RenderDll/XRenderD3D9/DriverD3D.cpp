@@ -87,8 +87,8 @@ CD3D9Renderer gcpRendD3D;
 
 // Direct 3D console variables
 CD3D9Renderer::CD3D9Renderer()
-	: m_nAsyncDeviceState(0)
-	, m_DeviceOwningthreadID(0)
+	: m_DeviceOwningthreadID(0),
+	  m_nAsyncDeviceState(0)
 #if CRY_PLATFORM_WINDOWS
 	, m_bDisplayChanged(false)
 	, m_nConnectedMonitors(1)

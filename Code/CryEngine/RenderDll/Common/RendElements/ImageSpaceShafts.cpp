@@ -25,8 +25,8 @@ void ImageSpaceShafts::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups
 
 ImageSpaceShafts::ImageSpaceShafts(const char* name)
 	: COpticsElement(name)
-	, m_bTexDirty(true)
 	, m_bHighQualityMode(false)
+	, m_bTexDirty(true)
 {
 	m_Color.a = 1.f;
 	SetSize(0.7f);

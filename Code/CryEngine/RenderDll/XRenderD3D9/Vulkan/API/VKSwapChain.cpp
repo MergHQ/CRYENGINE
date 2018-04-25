@@ -198,12 +198,12 @@ _smart_ptr<CSwapChain> CSwapChain::Create(CCommandListPool& commandQueue, VkSwap
 CSwapChain::CSwapChain(CCommandListPool& commandQueue, VkSurfaceKHR KHRSurface, VkSwapchainKHR KHRSwapChain, VkSwapchainCreateInfoKHR* pInfo)
 	: CRefCounted()
 	, m_pDevice(commandQueue.GetDevice())
+	, m_asyncQueue(commandQueue.GetAsyncCommandQueue())
+	, m_pCommandQueue(commandQueue)
+	, m_presentFence(commandQueue.GetDevice())
 	, m_NumBackbuffers(0)
 	, m_bChangedBackBufferIndex(true)
 	, m_nCurrentBackBufferIndex(0)
-	, m_pCommandQueue(commandQueue)
-	, m_presentFence(commandQueue.GetDevice())
-	, m_asyncQueue(commandQueue.GetAsyncCommandQueue())
 {
 	VK_ASSERT(pInfo);
 	{

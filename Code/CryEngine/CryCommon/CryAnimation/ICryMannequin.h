@@ -394,8 +394,6 @@ struct SFragmentData
 	};
 
 	SFragmentData()
-		: isOneShot(false)
-		, blendOutDuration(0.0f)
 	{
 		for (uint32 p = 0; p < PART_TOTAL; p++)
 		{
@@ -404,12 +402,12 @@ struct SFragmentData
 		}
 	}
 
-	float                       blendOutDuration;
+	float                       blendOutDuration = 0.0f;
 	DynArray<TAnimClipSequence> animLayers;
 	DynArray<TProcClipSequence> procLayers;
 	float                       duration[PART_TOTAL];
 	EClipType                   transitionType[PART_TOTAL];
-	bool                        isOneShot;
+	bool                        isOneShot = false;
 };
 
 class CFragment

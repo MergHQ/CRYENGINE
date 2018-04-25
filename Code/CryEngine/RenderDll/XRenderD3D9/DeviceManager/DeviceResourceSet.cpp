@@ -139,10 +139,10 @@ SResourceBindPoint::SResourceBindPoint(const SResourceBinding& resource, uint8 _
 }
 
 SResourceBindPoint::SResourceBindPoint(ESlotType _type, uint8 _slotNumber, EShaderStage _shaderStages, EFlags _flags)
-	: slotType(_type)
+	: stages(_shaderStages)
 	, flags(_flags)
 	, slotNumber(_slotNumber)
-	, stages(_shaderStages)
+	, slotType(_type)
 {}
 
 CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::SetResources(const CDeviceResourceSetDesc& other)
@@ -308,8 +308,8 @@ bool CDeviceResourceSetDesc::OnResourceInvalidated(void* pThis, SResourceBindPoi
 }
 
 CDeviceResourceSet::CDeviceResourceSet(EFlags flags)
-	: m_bValid(false)
-	, m_Flags(flags)
+	: m_Flags(flags)
+	, m_bValid(false)
 {}
 
 CDeviceResourceSet::~CDeviceResourceSet()

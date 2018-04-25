@@ -420,11 +420,10 @@ namespace N3DEngineCommon
 
 struct SOceanInfo
 {
-	SOceanInfo() : m_nOceanRenderFlags(0), m_fWaterLevel(0.0f), m_vCausticsParams(0.0f, 0.0f, 0.0f, 0.0f), m_vMeshParams(0.0f, 0.0f, 0.0f, 0.0f) {};
-	Vec4  m_vCausticsParams;
-	Vec4  m_vMeshParams;
-	float m_fWaterLevel;
-	uint8 m_nOceanRenderFlags;
+	Vec4  m_vCausticsParams = {0.0f, 0.0f, 0.0f, 0.0f};
+	Vec4  m_vMeshParams = {0.0f, 0.0f, 0.0f, 0.0f};
+	float m_fWaterLevel = 0.0f;
+	uint8 m_nOceanRenderFlags = 0;
 };
 
 struct SVisAreaInfo

@@ -167,12 +167,12 @@ public:
 		, mLightProjMatrix(IDENTITY)
 		, mLightViewMatrix(IDENTITY)
 		, vFrustInfo(ZERO)
+		, nShadowPoolUpdateRate(0)
 		, bIncrementalUpdate(false)
 		, bOmniDirectionalShadow(false)
 		, bBlendFrustum(false)
 		, fBlendVal(0)
 		, bIsMGPUCopy(false)
-		, nShadowPoolUpdateRate(0)
 		, fWidthS(0)
 		, fWidthT(0)
 		, fBlurS(0)
@@ -206,8 +206,8 @@ public:
 		, nUpdateFrameId(-1000)
 		, pLightOwner(nullptr)
 		, nShadowMapLod(0)
-		, m_Flags(0)
 		, nShadowCacheLod(0)
+		, m_Flags(0)
 	{
 		ZeroArray(nPackID);
 	}

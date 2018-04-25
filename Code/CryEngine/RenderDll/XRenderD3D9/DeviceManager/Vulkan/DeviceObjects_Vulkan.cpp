@@ -43,8 +43,8 @@ static auto lambdaResumeCallback = [](void* cmd, uint nPoolId)
 
 
 CDeviceObjectFactory::CDeviceObjectFactory()
-	: m_fence_handle(0)
-	, m_inlineConstantBufferLayout(VK_NULL_HANDLE)
+	: m_inlineConstantBufferLayout(VK_NULL_HANDLE),
+	  m_fence_handle(0)
 {
 	memset(m_NullResources, 0, sizeof(m_NullResources));
 

@@ -21,12 +21,12 @@ namespace
 }
 
 CParticleSubBuffer::CParticleSubBuffer()
-	: m_pLockedData(nullptr)
+	: m_handle(0)
+	, m_buffer(1)
+	, m_pLockedData(nullptr)
 	, m_elemCount(0)
 	, m_stride(0)
 	, m_flags(0)
-	, m_buffer(1)
-	, m_handle(0)
 {
 }
 
@@ -109,8 +109,8 @@ void CParticleSubBuffer::Unlock(uint32 size)
 }
 
 CParticleBufferSet::CParticleBufferSet()
-	: m_valid(false)
-	, m_maxSpriteCount(0)
+	: m_maxSpriteCount(0),
+	  m_valid(false)
 {
 	for (auto& fence : m_fences)
 	{

@@ -55,9 +55,9 @@ size_t SPerMeshResources::GetSizeBytes()
 }
 
 SPerInstanceResources::SPerInstanceResources(const int numVertices, const int numTriangles)
-	: verticesOut(numVertices)
+	: lastFrameInUse(0)
+	, verticesOut(numVertices)
 	, tangentsOut(numTriangles)
-	, lastFrameInUse(0)
 {
 	verticesOut.CreateDeviceBuffer();
 	tangentsOut.CreateDeviceBuffer();

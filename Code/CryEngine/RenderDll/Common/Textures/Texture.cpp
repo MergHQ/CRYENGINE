@@ -2951,11 +2951,11 @@ CFlashTextureSourceBase::CFlashTextureSourceBase(const char* pFlashFileName, con
 	, m_width(16)
 	, m_height(16)
 	, m_aspectRatio(1.0f)
-	, m_pElement(NULL)
 	, m_autoUpdate(true)
-	, m_pFlashFileName(pFlashFileName)
 	, m_perFrameRendering(false)
+	, m_pFlashFileName(pFlashFileName)
 	, m_pFlashPlayer(CFlashPlayerInstanceWrapperNULL::Get())
+	, m_pElement(NULL)
 	//, m_texStateIDs
 #if defined(ENABLE_DYNTEXSRC_PROFILING)
 	, m_pMatSrc(pArgs ? pArgs->m_pMtlSrc : 0)

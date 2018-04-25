@@ -1241,9 +1241,8 @@ typedef _smart_ptr<CPriorityPulseState> CPriorityPulseStatePtr;
 
 struct SMessagePositionInfo
 {
-	SMessagePositionInfo() : havePosition(false), haveDrawDistance(false) {}
-	bool         haveDrawDistance;
-	bool         havePosition;
+	bool         haveDrawDistance = false;
+	bool         havePosition = false;
 	float        drawDistance;
 	Vec3         position;
 	SNetObjectID obj;
@@ -1271,7 +1270,7 @@ public:
 struct INetSendable : public INetBaseSendable
 {
 public:
-	INetSendable(uint32 flags, ENetReliabilityType reliability) : m_flags(flags), m_group(0), m_priorityDelta(0.0f), m_reliability(reliability) {}
+	INetSendable(uint32 flags, ENetReliabilityType reliability) : m_reliability(reliability), m_group(0), m_flags(flags), m_priorityDelta(0.0f) {}
 
 	// <interfuscator:shuffle>
 	virtual const char* GetDescription() = 0;
@@ -1558,15 +1557,15 @@ enum ERMIBenchmarkLogPoint
 struct SRMIBenchmarkParams
 {
 	SRMIBenchmarkParams()
-		: message(eRMIBM_InvalidMessage),
-		entity(RMI_BENCHMARK_INVALID_ENTITY),
-		seq(RMI_BENCHMARK_INVALID_SEQ)
+		: entity(RMI_BENCHMARK_INVALID_ENTITY),
+		  message(eRMIBM_InvalidMessage),
+		  seq(RMI_BENCHMARK_INVALID_SEQ)
 	{
 	}
 
 	SRMIBenchmarkParams(ERMIBenchmarkMessage msg, EntityId ent, uint8 seq, bool two)
-		: message(msg),
-		entity(ent),
+		: entity(ent),
+		message(msg),
 		seq(seq),
 		twoRoundTrips(two)
 	{
@@ -1895,7 +1894,6 @@ struct IRMIMessageBody
 	  IRMIListener* pListener_,
 	  int userId_,
 	  EntityId dependentId_) :
-		m_cnt(0),
 		reliability(reliability_),
 		attachment(attachment_),
 		objId(objId_),
@@ -1903,7 +1901,8 @@ struct IRMIMessageBody
 		funcId(funcId_),
 		pMessageDef(0),
 		userId(userId_),
-		pListener(pListener_)
+		pListener(pListener_),
+		m_cnt(0)
 	{
 	}
 	IRMIMessageBody(
@@ -1914,7 +1913,6 @@ struct IRMIMessageBody
 	  IRMIListener* pListener_,
 	  int userId_,
 	  EntityId dependentId_) :
-		m_cnt(0),
 		reliability(reliability_),
 		attachment(attachment_),
 		objId(objId_),
@@ -1922,7 +1920,8 @@ struct IRMIMessageBody
 		funcId(0),
 		pMessageDef(pMessageDef_),
 		userId(userId_),
-		pListener(pListener_)
+		pListener(pListener_),
+		m_cnt(0)
 	{
 	}
 	// <interfuscator:shuffle>
@@ -2107,8 +2106,8 @@ class CCyclicStatsBuffer
 public:
 	CCyclicStatsBuffer()
 		: m_count(0)
-		, m_total(T())
 		, m_index(N - 1)
+		, m_total(T())
 	{
 	}
 

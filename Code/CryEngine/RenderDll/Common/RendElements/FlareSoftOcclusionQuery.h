@@ -57,12 +57,12 @@ private:
 
 public:
 	CFlareSoftOcclusionQuery(const uint8 numFaders = 0) :
-		m_fOccPlaneWidth(0.02f),
-		m_fOccPlaneHeight(0.02f),
-		m_PosToBeChecked(0, 0, 0),
-		m_fOccResultCache(1),
 		m_numVisibilityFaders(numFaders),
 		m_pVisbilityFaders(NULL),
+		m_fOccResultCache(1),
+		m_PosToBeChecked(0, 0, 0),
+		m_fOccPlaneWidth(0.02f),
+		m_fOccPlaneHeight(0.02f),
 		m_refCount(1)
 	{
 		InitGlobalResources();

@@ -61,19 +61,21 @@ public:
 		m_bLateralChromaticAbr(false),
 		m_fChromaticAbrOffset(0.002f),
 		m_fChromaticAbrDir(0.785f),
+		m_fEffectiveSensorSize(0.8f),
+		m_bCustomSensorVariationMap(false),
+		m_bPostBlur(false),
+		m_fPostBlurAmount(0),
+
 		m_bOcclusionEnabled(true),
 		m_fFlareVisibilityFactor(1),
 		m_fShaftVisibilityFactor(1),
+		m_bEnableInvertFade(false),
 		m_pOccQuery(NULL),
-		m_fEffectiveSensorSize(0.8f),
-		m_bCustomSensorVariationMap(false),
+
 		m_bAffectedByLightColor(false),
 		m_bAffectedByLightRadius(false),
 		m_bAffectedByLightFOV(true),
-		m_bPostBlur(false),
-		m_fPostBlurAmount(0),
 		m_bMultiplyColor(true),
-		m_bEnableInvertFade(false),
 		m_flareLight()
 	{
 		SetFlareFadingDuration(0.2f);
