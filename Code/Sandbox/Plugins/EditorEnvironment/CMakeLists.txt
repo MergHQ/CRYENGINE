@@ -18,8 +18,6 @@ add_sources("NoUberFile"
 		"QPresetsWidget.cpp"
 		"PresetsModel.cpp"
 		"PresetsModel.h"
-		"QSettingsWidget.cpp"
-		"QSettingsWidget.h"
 		"LightingSettings.h"
 )
 

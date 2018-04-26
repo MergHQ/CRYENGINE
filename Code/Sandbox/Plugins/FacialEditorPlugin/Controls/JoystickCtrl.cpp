@@ -41,11 +41,6 @@ public:
 	}
 
 	// IUndoObject
-	virtual int GetSize()
-	{
-		return sizeof(*this);
-	}
-
 	virtual const char* GetDescription()
 	{
 		return "JoystickCtrl";
@@ -147,11 +142,6 @@ public:
 			m_pContext->SerializeJoystickSet(m_pJoystickSet, m_undo, false);
 	}
 	// IUndoObject
-	virtual int GetSize()
-	{
-		return sizeof(*this);
-	}
-
 	virtual const char* GetDescription()
 	{
 		return "JoystickCtrl";

@@ -7,7 +7,6 @@
 #include "Controls/SharedFonts.h"
 #include "MemDC.h"
 #include "Util/Clipboard.h"
-#include <Preferences/LightingPreferences.h>
 #include "Util/MFCUtil.h"
 
 #define PROPERTY_LEFT_BORDER (m_nFlags & F_NOBITMAPS ? 5 : 30)
@@ -1062,12 +1061,6 @@ void CPropertyCtrl::CreateItems(XmlNodeRef& node, CVarBlockPtr& outBlockPtr, IVa
 					if (!strDescription.IsEmpty())
 						strDescription += CString("\r\n");
 					strDescription = pCVar->GetHelp();
-
-#ifdef FEATURE_SVO_GI
-					// Hide or unlock experimental items
-					if ((pCVar->GetFlags() & VF_EXPERIMENTAL) && !gLightingPreferences.bTotalIlluminationEnabled && strstr(groupNode->getTag(), "Total_Illumination"))
-						continue;
-#endif
 				}
 			}
 

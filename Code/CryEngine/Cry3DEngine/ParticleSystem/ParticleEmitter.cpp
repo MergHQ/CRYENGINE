@@ -127,17 +127,19 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	}
 }
 
-void CParticleEmitter::Update()
+void CParticleEmitter::CheckUpdated()
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-
 	if (m_effectEditVersion < 0 || (gEnv->IsEditing() && m_effectEditVersion != m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion))
 	{
 		m_attributeInstance.Reset(m_pEffectOriginal->GetAttributeTable());
 		UpdateRuntimes();
 	}
-
 	m_alive = m_componentRuntimes.size() && m_time <= m_timeDeath;
+}
+
+void CParticleEmitter::Update()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	if (m_attributeInstance.WasChanged())
 		SetChanged();
@@ -582,8 +584,6 @@ void CParticleEmitter::UpdateRuntimes()
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	ResetRenderObjects();
-
 	m_componentRuntimesFor.clear();
 	TRuntimes newRuntimes;
 
@@ -616,6 +616,8 @@ void CParticleEmitter::UpdateRuntimes()
 	{
 		m_pEffect = m_pEffectOriginal;
 	}
+
+	ResetRenderObjects();
 
 	for (const auto& pComponent: m_pEffect->GetComponents())
 	{

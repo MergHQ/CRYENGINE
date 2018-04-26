@@ -13,7 +13,6 @@
 #include <EditorFramework/Preferences.h>
 #include <EditorFramework/Editor.h>
 #include <Preferences/GeneralPreferences.h>
-#include <Preferences/LightingPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 
 #include <QSettings>
@@ -288,11 +287,6 @@ void SEditorSettings::LoadFrom(const QString& filename)
 	LoadValue("Settings/HyperGraph", "HighlightEdges", gFlowGraphGeneralPreferences.highlightEdges);
 
 	//////////////////////////////////////////////////////////////////////////
-	// Experimental features settings
-	//////////////////////////////////////////////////////////////////////////
-	LoadValue("Settings/ExperimentalFeatures", "TotalIlluminationEnabled", gLightingPreferences.bTotalIlluminationEnabled);
-
-	//////////////////////////////////////////////////////////////////////////
 	// Deep Selection Settings
 	//////////////////////////////////////////////////////////////////////////
 	LoadValue("Settings", "DeepSelectionNearness", gDeepSelectionPreferences.deepSelectionRange);
@@ -328,8 +322,6 @@ void SEditorSettings::LoadFrom(const QString& filename)
 	gViewportSelectionPreferences.colorEntityBBox = ColorB(uint32(entityHighlight), gViewportSelectionPreferences.geomAlpha);
 	gViewportSelectionPreferences.geometryHighlightColor = ColorB(uint32(geometryHighlightColor), gViewportSelectionPreferences.geomAlpha);
 	gViewportSelectionPreferences.solidBrushGeometryColor = ColorB(uint32(solidBrushGeometryColor), gViewportSelectionPreferences.geomAlpha);
-
-	LoadValue("Settings", "ForceSkyUpdate", gLightingPreferences.bForceSkyUpdate);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Vertex snapping settings

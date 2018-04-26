@@ -24,7 +24,7 @@ struct IViewPaneClass : public IClassDesc
 		DOCK_BOTTOM,
 		DOCK_FLOAT,
 	};
-	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VIEWPANE; };
+	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VIEWPANE; }
 
 	// Get view pane window runtime class.
 	virtual CRuntimeClass* GetRuntimeClass() = 0;
@@ -43,7 +43,7 @@ struct IViewPaneClass : public IClassDesc
 
 	//////////////////////////////////////////////////////////////////////////
 	// Creates a Qt QWidget for this ViewPane
-	virtual IPane* CreatePane() const { return 0; };
+	virtual IPane* CreatePane() const { return 0; }
 };
 
 class IPane : public IStateSerializable
@@ -70,7 +70,7 @@ public:
 
 	// Restore transient state
 	virtual void SetState(const QVariantMap& state) {}
-    
+
 	//
 	virtual void LoadLayoutPersonalization() {}
 
@@ -94,26 +94,23 @@ public:
 
 typedef CDockableWidgetT<QWidget> CDockableWidget;
 
-//DEPREACTED, DO NOT USE THIS, QMainWindow is not a suitable baseclass for a dockable pane
+//DEPREACTED, DO NOT USE THIS, QMainWindow is not a suitable base class for a dockable pane
 typedef CDockableWidgetT<QMainWindow> CDockableWindow;
 
-
-
 // Registers the QWidget pane so that it can be opened in the editor as a tool
-#define REGISTER_VIEWPANE_FACTORY_AND_MENU_IMPL(widget, name, category, unique, menuPath, needsItem)    \
-  class widget ## Pane : public IViewPaneClass                                                          \
-  {                                                                                                     \
-    virtual const char* ClassName() override { return name; }                                           \
-    virtual const char* Category()  { return category; }                                                \
-    virtual bool NeedsMenuItem() { return needsItem; }                                                  \
-    virtual const char* GetMenuPath() { return menuPath; }                                              \
-    virtual CRuntimeClass* GetRuntimeClass() { return 0; }                                              \
-    virtual const char* GetPaneTitle()       override { return name; }                                  \
-    virtual bool SinglePane()                override { return unique; }                                \
-    virtual IPane* CreatePane() const        override { return new widget(); }                          \
-  };                                                                                                    \
+#define REGISTER_VIEWPANE_FACTORY_AND_MENU_IMPL(widget, name, category, unique, menuPath, needsItem) \
+  class widget ## Pane : public IViewPaneClass                                                       \
+  {                                                                                                  \
+    virtual const char* ClassName() override { return name; }                                        \
+    virtual const char* Category()  { return category; }                                             \
+    virtual bool NeedsMenuItem() { return needsItem; }                                               \
+    virtual const char* GetMenuPath() { return menuPath; }                                           \
+    virtual CRuntimeClass* GetRuntimeClass() { return 0; }                                           \
+    virtual const char* GetPaneTitle() override { return name; }                                     \
+    virtual bool SinglePane()          override { return unique; }                                   \
+    virtual IPane* CreatePane() const  override { return new widget(); }                             \
+  };                                                                                                 \
   REGISTER_CLASS_DESC(widget ## Pane);
-
 
 #define REGISTER_VIEWPANE_FACTORY(widget, name, category, unique) \
   REGISTER_VIEWPANE_FACTORY_AND_MENU_IMPL(widget, name, category, unique, "", true)

@@ -507,6 +507,8 @@ void CParticleEmitter::RefreshEffect()
 	m_nEmitterFlags |= ePEF_NeedsEntityUpdate;
 
 	m_Vel = ZERO;
+
+	Register(false, true);
 }
 
 void CParticleEmitter::SetEffect(IParticleEffect const* pEffect)

@@ -1817,7 +1817,10 @@ void CAssetBrowser::OnNavBack()
 {
 	m_dontPushNavHistory = true;
 
-	m_navigationIndex--;
+	if (m_navigationIndex >= 0)
+	{
+		m_navigationIndex--;
+	}
 
 	if (m_navigationIndex == -1)
 		m_foldersView->ClearSelection();

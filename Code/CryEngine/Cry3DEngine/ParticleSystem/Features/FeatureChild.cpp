@@ -20,6 +20,8 @@ public:
 
 	void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
+		if (!pComponent->GetParentComponent())
+			return;
 		pComponent->AddSubInstances.add(this);
 		if (IsDelayed())
 			pParams->m_maxTotalLIfe += pComponent->GetParentComponent()->GetComponentParams().m_maxParticleLife;
@@ -34,6 +36,8 @@ class CFeatureChildOnBirth : public CFeatureChildBase
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
+
+	static uint DefaultForType() { return EFT_Child; }
 
 	void AddSubInstances(const SUpdateContext& context) override
 	{
@@ -52,7 +56,7 @@ public:
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE_DEFAULT(CParticleFeature, CFeatureChildOnBirth, "Child", "OnBirth", colorChild, EFT_Child);
+CRY_PFX2_IMPLEMENT_COMPONENT_FEATURE(CParticleFeature, CFeatureChildOnBirth, "Child", "OnBirth", colorChild);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -86,7 +90,7 @@ public:
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureChildOnDeath, "Child", "OnDeath", colorChild);
+CRY_PFX2_IMPLEMENT_COMPONENT_FEATURE(CParticleFeature, CFeatureChildOnDeath, "Child", "OnDeath", colorChild);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -115,7 +119,7 @@ public:
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureChildOnCollide, "Child", "OnCollide", colorChild);
+CRY_PFX2_IMPLEMENT_COMPONENT_FEATURE(CParticleFeature, CFeatureChildOnCollide, "Child", "OnCollide", colorChild);
 
 
 }

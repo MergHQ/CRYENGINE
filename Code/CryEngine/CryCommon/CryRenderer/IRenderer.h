@@ -987,10 +987,9 @@ struct IRenderer//: public IRendererCallbackServer
 	/////////////////////////////////////////////////////////////////////////////////
 	// Render-context management
 	/////////////////////////////////////////////////////////////////////////////////
-	// Returns a pair, a success flag and key.
-	virtual SDisplayContextKey CreateSwapChainBackedContext(const SDisplayContextDescription& desc) = 0;
-	virtual void               ResizeContext(const SDisplayContextKey& key, int width, int height) = 0;
-	virtual bool               DeleteContext(const SDisplayContextKey& key) = 0;
+	virtual SDisplayContextKey     CreateSwapChainBackedContext(const SDisplayContextDescription& desc) = 0;
+	virtual void                   ResizeContext(const SDisplayContextKey& key, int width, int height) = 0;
+	virtual bool                   DeleteContext(const SDisplayContextKey& key) = 0;
 
 #if CRY_PLATFORM_WINDOWS
 	virtual RectI    GetDefaultContextWindowCoordinates() = 0;

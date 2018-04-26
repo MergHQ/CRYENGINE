@@ -28,9 +28,9 @@ CryGUID Create()
 	uint32* pWords = reinterpret_cast<uint32*>(&guid);
 	const size_t numWords = sizeof(guid) / sizeof(uint32);
 
-	static ThreadUtils::CriticalSection cs;
+	static std::recursive_mutex cs;
 	{
-		ThreadUtils::AutoLock lock(cs);
+		std::lock_guard<std::recursive_mutex> lock(cs);
 
 		static CMTRand_int32 state(reinterpret_cast<const uint32*>(&tt), sizeof(tt) / sizeof(uint32));
 

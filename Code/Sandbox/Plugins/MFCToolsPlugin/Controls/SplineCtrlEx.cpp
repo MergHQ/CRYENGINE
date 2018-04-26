@@ -64,8 +64,7 @@ protected:
 			entry.keySelectionFlags.push_back(pSpline->GetKeyFlags(i) & ESPLINE_KEY_UI_SELECTED_MASK);
 	}
 
-	virtual int         GetSize()        { return sizeof(*this); }
-	virtual const char* GetDescription() { return "UndoSplineCtrlEx"; };
+	virtual const char* GetDescription() { return "UndoSplineCtrlEx"; }
 
 	virtual void        Undo(bool bUndo)
 	{

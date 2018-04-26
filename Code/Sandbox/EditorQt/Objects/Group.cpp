@@ -284,7 +284,6 @@ private:
 		}
 	}
 
-	virtual int         GetSize()        { return sizeof(CUndoBatchAttachBaseObject); }
 	virtual const char* GetDescription() { return "Attachment Changed"; }
 
 	std::vector<CryGUID> m_objectsGuids;

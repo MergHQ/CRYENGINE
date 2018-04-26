@@ -507,7 +507,7 @@ void CModelViewport::LoadObject(const string& fileName, float scale)
 		uint32 isCDF = stricmp(PathUtil::GetExt(file), CRY_CHARACTER_DEFINITION_FILE_EXT) == 0;
 		if (isSKEL || isSKIN || isCGA || isCDF)
 		{
-			m_pCharacterBase = m_pAnimationSystem->CreateInstance(file);
+			m_pCharacterBase = m_pAnimationSystem->CreateInstance(file, CA_CharEditModel);
 			if (GetCharacterBase())
 			{
 				f32 radius = GetCharacterBase()->GetAABB().GetRadius();

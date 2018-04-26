@@ -76,7 +76,7 @@ struct SScopeContextData
 			SScopeContextViewData& data = viewData[i];
 
 			data.pStatObj = NULL;
-			data.charInst = gEnv->pCharacterManager->CreateInstance(modelName);
+			data.charInst = gEnv->pCharacterManager->CreateInstance(modelName, CA_CharEditModel);
 
 			if (data.charInst)
 			{

@@ -31,7 +31,6 @@
 
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/IArchiveHost.h>
-//#include <Serialization/Qt.h>
 #include <CryString/CryPath.h>
 
 #include <../../CryPlugins/CryDefaultEntities/Module/DefaultComponents/Effects/ParticleComponent.h>
@@ -78,7 +77,7 @@ static CCurveEditorPanel* CreateCurveEditorPanel(QWidget* pParent = nullptr)
 	curveEditor.SetAllowDiscontinuous(false);
 	curveEditor.SetFitMargin(20);
 	return pCurveEditorPanel;
-	}
+}
 
 ///////////////////////////////////////////////////////////////////////
 CParticleEditor::CParticleEditor()
@@ -240,9 +239,7 @@ bool CParticleEditor::OnOpenAsset(CAsset* pAsset)
 {
 	CRY_ASSERT(pAsset);
 
-	// Reload effect from file every time it is opened, since it might be that the effect has changed
-	// in memory. Opening means reading the current state from disk.
-	if (m_pEffectAssetModel->OpenAsset(pAsset, true))
+	if (m_pEffectAssetModel->OpenAsset(pAsset))
 	{
 		m_pEffectToolBar->show();
 		m_pReloadEffectMenuAction->setEnabled(true);
@@ -454,7 +451,6 @@ void CParticleEditor::OnImportPfx1()
 				if (CAssetManager::GetInstance()->FindAssetForMetadata(assetFilePath.c_str()))
 				{
 					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Particle asset '%s' already exists.", assetFilePath.c_str());
-					return;
 				}
 
 				const CParticlesType* const pParticlesType = (const CParticlesType*)CAssetManager::GetInstance()->FindAssetType("Particles");

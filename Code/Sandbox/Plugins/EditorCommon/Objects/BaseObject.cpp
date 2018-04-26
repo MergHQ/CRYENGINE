@@ -201,8 +201,7 @@ public:
 	CUndoBaseObject(CBaseObject* pObj, const char* undoDescription);
 
 protected:
-	virtual int         GetSize() { return sizeof(*this); }
-	virtual const char* GetDescription() override { return m_undoDescription; };
+	virtual const char* GetDescription() override { return m_undoDescription; }
 	virtual const char* GetObjectName() override;
 
 	virtual void        Undo(bool bUndo) override;
@@ -224,8 +223,7 @@ public:
 	CUndoBaseObjectMinimal(CBaseObject* obj, const char* undoDescription, int flags);
 
 protected:
-	virtual int         GetSize() { return sizeof(*this); }
-	virtual const char* GetDescription() override { return m_undoDescription; };
+	virtual const char* GetDescription() override { return m_undoDescription; }
 	virtual const char* GetObjectName() override;
 
 	virtual void        Undo(bool bUndo) override;
@@ -358,7 +356,6 @@ private:
 		}
 	}
 
-	virtual int         GetSize() { return sizeof(CUndoAttachBaseObject); }
 	virtual const char* GetDescription() override { return "Attachment Changed"; }
 
 	CryGUID m_attachedObjectGUID;
@@ -424,7 +421,6 @@ private:
 			pObject->UnLink();
 	}
 
-	virtual int         GetSize()  { return sizeof(CUndoLinkBaseObject); }
 	virtual const char* GetDescription() override { return m_actionType == ActionType::Link ? "Objects linked" : "Objects unlinked"; }
 
 	CryGUID    m_objectGUID;
@@ -1119,7 +1115,7 @@ void CBaseObject::UpdateUIVars()
 
 void CBaseObject::SetModified(bool boModifiedTransformOnly, bool bNotifyObjectManager)
 {
-	if(bNotifyObjectManager)
+	if (bNotifyObjectManager)
 		GetObjectManager()->OnObjectModified(this, false, boModifiedTransformOnly);
 
 	// Send signal to prefab if this object is part of any
@@ -1499,7 +1495,7 @@ void CBaseObject::DrawDimensionsImpl(DisplayContext& dc, const AABB& localBoundB
 void CBaseObject::DrawTextOn2DBox(DisplayContext& dc, const Vec3& pos, const char* text, float textScale, const ColorF& TextColor, const ColorF& TextBackColor)
 {
 	Vec3 worldPos = dc.ToWorldPos(pos);
-	int vx=0, vy=0, vw=dc.GetWidth(), vh=dc.GetHeight();
+	int vx = 0, vy = 0, vw = dc.GetWidth(), vh = dc.GetHeight();
 
 	const CCamera& camera = dc.GetCamera();
 	Vec3 screenPos;
@@ -1564,8 +1560,8 @@ void CBaseObject::DrawSelectionHelper(DisplayContext& dc, const Vec3& pos, COLOR
 	// Can't use fixed value as we move in world space, so we need to use a fracture of the screenScaleFactor to always have a certain distance from the selection box in the viewport
 	float r = dc.view->GetScreenScaleFactor(pos) * 0.006f;
 	//Draw the Text somewhat below the selection box
-   	Vec3 adjustedPos = pos;
-	adjustedPos[2] -= 2*r;
+	Vec3 adjustedPos = pos;
+	adjustedPos[2] -= 2 * r;
 	DrawLabel(dc, adjustedPos, labelColor);
 
 	dc.SetColor(GetColor());
@@ -1956,7 +1952,7 @@ bool CBaseObject::IsHidden() const
 {
 	if (!m_layer)
 		return false;
-	return (CheckFlags(OBJFLAG_HIDDEN)) || 
+	return (CheckFlags(OBJFLAG_HIDDEN)) ||
 	       (!m_layer->IsVisible()) ||
 	       (gViewportDebugPreferences.GetObjectHideMask() & GetType());
 }
@@ -2027,7 +2023,6 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 		{
 			pLayer = GetObjectManager()->GetIObjectLayerManager()->FindLayerByName(layerName);
 		}
-
 
 		if (!pLayer && ar.IsLoadingToCurrentLayer())
 			pLayer = GetObjectManager()->GetIObjectLayerManager()->GetCurrentLayer();
@@ -2926,7 +2921,7 @@ Matrix34 CBaseObject::GetParentWorldTM() const
 	{
 		return m_parent->GetWorldTM();
 	}
-	
+
 	// If the object doesn't have a parent, use it's attachment world transform
 	return GetLinkAttachPointWorldTM();
 }
@@ -3480,7 +3475,7 @@ void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 	// Linking menu items
 	menu->AddSeparator();
 
-	ICommandManager* pCommandManager =  GetIEditor()->GetICommandManager();
+	ICommandManager* pCommandManager = GetIEditor()->GetICommandManager();
 
 	menu->AddCommand("Link to...", "tools.link_to_pick");
 	CPopupMenuItem& unlinkItem = menu->AddCommand("Unlink", "tools.unlink");
@@ -3545,8 +3540,8 @@ void CBaseObject::OnContextMenu(CPopupMenuItem* menu)
 	{
 		if (!bAddedSeparator)
 		{
-			menu->AddSeparator();
-			bAddedSeparator = true;
+		  menu->AddSeparator();
+		  bAddedSeparator = true;
 		}
 
 		string sMenuTitle;
@@ -3797,7 +3792,7 @@ Matrix33 CBaseObject::GetWorldScaleTM() const
 void CBaseObject::SetTransformDelegate(ITransformDelegate* pTransformDelegate, bool bInvalidateTM)
 {
 	LOADING_TIME_PROFILE_SECTION
-	if(m_pTransformDelegate != pTransformDelegate)
+	if (m_pTransformDelegate != pTransformDelegate)
 	{
 		m_pTransformDelegate = pTransformDelegate;
 		if (bInvalidateTM)
@@ -3840,7 +3835,7 @@ bool CBaseObject::CanLinkTo(CBaseObject* pLinkTo) const
 	return true;
 }
 
-void CBaseObject::LinkTo(CBaseObject* pLinkTo, bool bKeepPos/* = true*/)
+void CBaseObject::LinkTo(CBaseObject* pLinkTo, bool bKeepPos /* = true*/)
 {
 	if (pLinkTo->IsDescendantOf(this))
 	{
@@ -4161,7 +4156,7 @@ void CBaseObject::SerializeTransformProperties(Serialization::IArchive& ar)
 	{
 		SetPos(pos);
 
-		// If rotation changed, then set the new rotation. If there's a transform delegate, let it handle 
+		// If rotation changed, then set the new rotation. If there's a transform delegate, let it handle
 		// rotation if necessary
 		if (m_pTransformDelegate || !Quat::IsEquivalent(m_rotate, rot, 0.0001f))
 			SetRotation(rot);

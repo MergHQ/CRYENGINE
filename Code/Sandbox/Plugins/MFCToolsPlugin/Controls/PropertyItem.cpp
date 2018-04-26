@@ -86,17 +86,6 @@ public:
 		m_undo = m_var->Clone(false);
 	}
 protected:
-	virtual int GetSize()
-	{
-		int size = sizeof(*this);
-		//if (m_var)
-		//size += m_var->GetSize();
-		if (m_undo)
-			size += m_undo->GetSize();
-		if (m_redo)
-			size += m_redo->GetSize();
-		return size;
-	}
 	virtual const char* GetDescription() { return m_undoDescription; };
 	virtual void        Undo(bool bUndo)
 	{

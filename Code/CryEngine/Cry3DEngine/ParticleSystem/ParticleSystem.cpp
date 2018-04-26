@@ -153,9 +153,8 @@ void CParticleSystem::Update()
 	for (auto& pEmitter : m_emitters)
 	{
 		if (sys_spec_changed)
-		{
 			pEmitter->ResetRenderObjects();
-		}
+		pEmitter->CheckUpdated();
 
 		mainData.statsCPU.components.alloc += pEmitter->GetRuntimes().size();
 		if (pEmitter->IsAlive())

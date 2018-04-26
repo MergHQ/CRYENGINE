@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   3dengine.cpp
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description: Implementation of I3DEngine interface methods
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include <CryAnimation/ICryAnimation.h>
 #include <CryGame/IGameFramework.h>
@@ -5174,7 +5163,7 @@ void C3DEngine::ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys
 
 	if (bObjects)
 	{
-		if(m_pObjectsTree)
+		if (m_pObjectsTree)
 			m_pObjectsTree->ActivateObjectsLayer(nLayerId, bActivate, bPhys, pHeap, m_arrObjectLayersActivity[nLayerId].objectsBox);
 
 		if (m_pVisAreaManager)
@@ -5414,7 +5403,7 @@ void static DrawMeter(float scale, float& x, float& y, int nWidth, int nHeight, 
 
 	const int c_yStepSizeTextMeter(8);
 
-	const float barWidth = 0.20f; //normalised screen size
+	const float barWidth = 0.2f; //normalized screen size
 	const float yellowStart = 0.5f * barWidth;
 	const float redStart = 0.75f * barWidth;
 
@@ -5748,7 +5737,7 @@ void C3DEngine::LoadInternalState(struct IDataReadStream& reader, const uint8* p
 	}
 
 	// release the lock on the resources
-	// this will also relase all unused CGF resources
+	// this will also release all unused CGF resources
 	gEnv->p3DEngine->UnlockCGFResources();
 }
 

@@ -46,7 +46,7 @@
 
 #include <iterator>
 
-static ThreadUtils::CriticalSection s_initDiallogSystemLock;
+static std::recursive_mutex s_initDiallogSystemMutex;
 
 
 const char* stristr(const char* szString, const char* szSubstring)
@@ -205,7 +205,7 @@ bool CImageCompiler::SaveOutput(const ImageObject* pImageObject, const char* szT
 
 bool CImageCompiler::InitDialogSystem()
 {
-	ThreadUtils::AutoLock lock(s_initDiallogSystemLock);
+	std::lock_guard<std::recursive_mutex> lock(s_initDiallogSystemMutex);
 
 	if (m_bDialogSystemInitialized)
 	{
@@ -222,7 +222,7 @@ bool CImageCompiler::InitDialogSystem()
 
 void CImageCompiler::ReleaseDialogSystem()
 {
-	ThreadUtils::AutoLock lock(s_initDiallogSystemLock);
+	std::lock_guard<std::recursive_mutex> lock(s_initDiallogSystemMutex);
 
 	if (m_bDialogSystemInitialized)
 	{

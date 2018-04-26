@@ -18,6 +18,7 @@ ILINE T Verify(T in, const char* message)
 #define CRY_PFX2_VERIFY(expr) Verify(expr, #expr)
 
 //////////////////////////////////////////////////////////////////////////
+// Convert legacy SecondGen features, which specify parenting on parents, to Child features, which specify parenting on children
 
 template<typename T>
 void AddValue(XmlNodeRef node, cstr name, const T& value)
@@ -37,12 +38,33 @@ public:
 		: m_probability(1.0f)
 		, m_mode(ESecondGenMode::All) {}
 
-	CParticleFeature* MakeChildFeatures(CParticleComponent* pComponent, cstr featureName) const
+	CParticleFeature* MakeChildFeatures(CParticleComponent* pComponent, cstr featureName)
 	{
 		CParticleEffect* pEffect = pComponent->GetEffect();
 
-		float componentFrac = m_mode == ESecondGenMode::All ? 1.0f : 1.0f / max<int>(m_componentNames.size(), 1);
+		// Count number of real children
+		uint numChildren = 0;
+		for (auto& componentName : m_componentNames)
+			if (pEffect->FindComponentByName(componentName))
+				numChildren++;
+
+		if (numChildren == 0)
+			return nullptr;
+
+		float componentFrac = m_mode == ESecondGenMode::All ? 1.0f : 1.0f / numChildren;
+		float probability = m_probability * componentFrac;
 		float selectionStart = 0.0f;
+
+		static uint                s_childGroup = 1;
+		static CParticleComponent* s_lastComponent = nullptr;
+		static CParticleFeature*   s_lastFeature = nullptr;
+		if (probability < 1.0f && numChildren > 1)
+		{
+			if (pComponent != s_lastComponent || this == s_lastFeature)
+				s_childGroup = 1;
+			s_lastComponent = pComponent;
+			s_lastFeature = this;
+		}
 
 		for (auto& componentName : m_componentNames)
 		{
@@ -55,18 +77,22 @@ public:
 				{
 					pChild->AddFeature(0, *pParam);
 
-					if (m_probability < 1.0f || componentFrac < 1.0f)
+					if (probability < 1.0f)
 					{
 						// Add Spawn Random feature	
 						if (auto pParam = CRY_PFX2_VERIFY(GetPSystem()->FindFeatureParam("Component", "ActivateRandom")))
 						{
 							IParticleFeature* pFeature = pChild->AddFeature(1, *pParam);
 							XmlNodeRef attrs = gEnv->pSystem->CreateXmlNode("ActivateRandom");
-							AddValue(attrs, "Probability", m_probability * componentFrac);
+							AddValue(attrs, "Probability", probability);
+
+							if (numChildren > 1)
+							{
+								AddValue(attrs, "Group", s_childGroup++);
+							}
 							if (componentFrac < 1.0f)
 							{
-								AddValue(attrs, "SiblingExclusive", true);
-								AddValue(attrs, "SelectionRange", selectionStart);
+								AddValue(attrs, "SelectionStart", selectionStart);
 								selectionStart += componentFrac;
 							}
 
@@ -77,6 +103,7 @@ public:
 			}
 		}
 
+		// Delete this feature
 		return nullptr;
 	}
 

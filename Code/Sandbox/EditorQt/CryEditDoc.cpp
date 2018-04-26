@@ -39,7 +39,6 @@
 #include "LevelEditor/LevelEditor.h"
 #include "LevelEditor/LevelAssetType.h"
 #include "FilePathUtil.h"
-#include <Preferences/LightingPreferences.h>
 #include <Preferences/GeneralPreferences.h>
 #include "Util/MFCUtil.h"
 #include "Controls/QuestionDialog.h"
@@ -1349,7 +1348,7 @@ void CCryEditDoc::ForceSkyUpdate()
 
 	if (pTimeOfDay && pCurMission)
 	{
-		pTimeOfDay->SetTime(pCurMission->GetTime(), gLightingPreferences.bForceSkyUpdate);
+		pTimeOfDay->SetTime(pCurMission->GetTime(), true);
 		pCurMission->SetTime(pCurMission->GetTime());
 		GetIEditorImpl()->Notify(eNotify_OnTimeOfDayChange);
 	}

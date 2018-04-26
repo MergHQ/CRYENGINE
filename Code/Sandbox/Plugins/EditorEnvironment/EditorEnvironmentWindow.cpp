@@ -5,121 +5,94 @@
 #include <IEditor.h>
 #include <IPlugin.h>
 
-#include <QLayout>
 #include <QAction>
+#include <QFileInfo>
 #include <QToolBar>
-#include <QStyle>
-#include <QDockWidget>
-#include <QMenu>
-#include <QMenuBar>
 
+#include <CrySerialization/yasli/JSONIArchive.h>
+#include <CrySerialization/yasli/JSONOArchive.h>
 #include <EditorFramework/Events.h>
-
-#include "EditorEnvironmentWindow.h"
-#include "QTimeOfDayWidget.h"
-#include "QPresetsWidget.h"
-#include "QSettingsWidget.h"
 #include "CryIcon.h"
+#include "EditorEnvironmentWindow.h"
 #include "IUndoManager.h"
+#include "Serialization.h"
+#include "QPresetsWidget.h"
+#include "QTimeOfDayWidget.h"
 
-REGISTER_VIEWPANE_FACTORY(CEditorEnvironmentWindow, "Environment Editor", "Tools", false);
-//////////////////////////////////////////////////////////////////////////
+REGISTER_VIEWPANE_FACTORY(CEditorEnvironmentWindow, "Environment Editor", "Tools", true);
 
 CEditorEnvironmentWindow::CEditorEnvironmentWindow()
-	: m_presetsWidget(nullptr)
-	, m_timeOfDayWidget(nullptr)
-	, m_sunSettingsWidget(nullptr)
+	: CDockableEditor(nullptr)
+	, m_presetsWidget(new QPresetsWidget)
+	, m_timeOfDayWidget(new QTimeOfDayWidget)
 {
+	auto* topLayout = new QVBoxLayout;
+	topLayout->setMargin(0);
+	topLayout->addWidget(CreateToolbar());
 
-	QWidget* centralWidget = new QWidget;
-	QHBoxLayout* centralLayout = new QHBoxLayout;
-	centralWidget->setLayout(centralLayout);
-	centralLayout->setContentsMargins(0, 0, 0, 0);
+	auto* centerLayout = new QHBoxLayout;
 
-	QPresetsWidget* presetsWidget = new QPresetsWidget;
-	m_presetsWidget = presetsWidget;
+	QSplitter* splitter = new QSplitter(Qt::Orientation::Horizontal, this);
+	splitter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	splitter->setChildrenCollapsible(false);
+	splitter->addWidget(m_presetsWidget);
+	splitter->addWidget(m_timeOfDayWidget);
 
-	QMenu* pView = menuBar()->addMenu("&View");
+	centerLayout->addWidget(splitter);
 
-	{
-		QWidget* pPresetsContainer = new QWidget();
-		QBoxLayout* pPresetsContainerLayout = new QBoxLayout(QBoxLayout::TopToBottom);
-		pPresetsContainerLayout->setContentsMargins(0, 0, 0, 0);
+	topLayout->addLayout(centerLayout);
 
-		QTabWidget* presetsTabs = new QTabWidget();
-		presetsTabs->addTab(presetsWidget, "File view");
+	SetContent(topLayout);
 
-		pPresetsContainerLayout->addWidget(presetsTabs);
-		pPresetsContainer->setLayout(pPresetsContainerLayout);
+	RestorePersonalizationState();
 
-		m_pPresetsDock = new QDockWidget("Presets");
-		m_pPresetsDock->setWidget(pPresetsContainer);
-		addDockWidget(Qt::LeftDockWidgetArea, m_pPresetsDock);
-
-		QAction* pTogglePresets = new QAction("&Presets", this);
-		pTogglePresets->setCheckable(true);
-		pTogglePresets->setChecked(true);
-		pView->addAction(pTogglePresets);
-		connect(pTogglePresets, &QAction::triggered, [=]() { m_pPresetsDock->setVisible(!m_pPresetsDock->isVisible()); });
-		connect(m_pPresetsDock, &QDockWidget::visibilityChanged, pTogglePresets, &QAction::setChecked);
-	}
-
-	{
-		QSunSettingsWidget* pSunSettingsWidget = new QSunSettingsWidget;
-		m_sunSettingsWidget = pSunSettingsWidget;
-
-		m_pSunSettingsDock = new QDockWidget("Sun settings");
-		m_pSunSettingsDock->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-		m_pSunSettingsDock->setContentsMargins(0, 0, 0, 0);
-		m_pSunSettingsDock->setWidget(pSunSettingsWidget);
-		addDockWidget(Qt::LeftDockWidgetArea, m_pSunSettingsDock);
-
-		QAction* pToggleSunSettings = new QAction("&Sun settings", this);
-		pToggleSunSettings->setCheckable(true);
-		pToggleSunSettings->setChecked(true);
-		pView->addAction(pToggleSunSettings);
-		connect(pToggleSunSettings, &QAction::triggered, [=]() { m_pSunSettingsDock->setVisible(!m_pSunSettingsDock->isVisible()); });
-		connect(m_pSunSettingsDock, &QDockWidget::visibilityChanged, pToggleSunSettings, &QAction::setChecked);
-	}
-
-	QTimeOfDayWidget* pToDWidget = new QTimeOfDayWidget;
-	centralLayout->addWidget(pToDWidget);
-	m_timeOfDayWidget = pToDWidget;
-
-	setCentralWidget(centralWidget);
-
-	connect(presetsWidget, &QPresetsWidget::SignalCurrentPresetChanged, [pToDWidget](){ pToDWidget->Refresh(); });
-
-	{
-		QAction* pUndo = new QAction(CryIcon("icons:General/History_Undo.ico"), ("Undo"), this);
-		pUndo->setShortcuts(QKeySequence::Undo);
-		connect(pUndo, &QAction::triggered, [](){ GetIEditor()->GetIUndoManager()->Undo(); });
-
-		QAction* pRedo = new QAction(CryIcon("icons:General/History_Redo.ico"), ("Redo"), this);
-		pRedo->setShortcuts(QKeySequence::Redo);
-		connect(pRedo, &QAction::triggered, [](){ GetIEditor()->GetIUndoManager()->Redo(); });
-
-		QAction* pRefresh = new QAction(CryIcon("icons:General/Reload.ico"), ("Refresh"), this);
-		connect(pRefresh, &QAction::triggered, [presetsWidget](){ presetsWidget->RefreshPresetList(); });
-
-		QAction* pSaveAll = new QAction(CryIcon("icons:General/File_Save.ico"), ("Save all"), this);
-		connect(pSaveAll, &QAction::triggered, [presetsWidget](){ presetsWidget->SaveAllPresets(); });
-
-		QToolBar* pToolbar = addToolBar(tr("Toolbar"));
-		pToolbar->addAction(pUndo);
-		pToolbar->addAction(pRedo);
-		pToolbar->addSeparator();
-		pToolbar->addAction(pRefresh);
-		pToolbar->addSeparator();
-		pToolbar->addAction(pSaveAll);
-	}
-
+	connect(m_presetsWidget, &QPresetsWidget::SignalCurrentPresetChanged, [&]() { m_timeOfDayWidget->Refresh(); });
 	GetIEditor()->RegisterNotifyListener(this);
 }
 
 CEditorEnvironmentWindow::~CEditorEnvironmentWindow()
 {
 	GetIEditor()->UnregisterNotifyListener(this);
+
+	SavePersonalizationState();
+}
+
+QWidget* CEditorEnvironmentWindow::CreateToolbar()
+{
+	QAction* pUndo = GetIEditor()->GetICommandManager()->GetAction("general.undo");
+	QAction* pRedo = GetIEditor()->GetICommandManager()->GetAction("general.redo");
+
+	QAction* pRefresh = new QAction(CryIcon("icons:General/Reload.ico"), ("Refresh"), this);
+	connect(pRefresh, &QAction::triggered, [&]() { m_presetsWidget->RefreshPresetList(); });
+
+	QAction* pSaveAll = new QAction(CryIcon("icons:General/File_Save.ico"), ("Save all"), this);
+	connect(pSaveAll, &QAction::triggered, [&]() { m_presetsWidget->SaveAllPresets(); });
+
+	QToolBar* pToolbar = new QToolBar(this);
+	pToolbar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	pToolbar->addAction(pUndo);
+	pToolbar->addAction(pRedo);
+	pToolbar->addSeparator();
+	pToolbar->addAction(pRefresh);
+	pToolbar->addSeparator();
+	pToolbar->addAction(pSaveAll);
+
+	return pToolbar;
+}
+
+void CEditorEnvironmentWindow::RestorePersonalizationState()
+{
+	const QVariant& var = GetIEditor()->GetPersonalizationManager()->GetProperty(GetEditorName(), "TimeOfDayWidgetState");
+	if (var.isValid() && var.type() == QVariant::Map)
+	{
+		m_timeOfDayWidget->SetPersonalizationState(var.value<QVariantMap>());
+	}
+}
+
+void CEditorEnvironmentWindow::SavePersonalizationState() const
+{
+	const QVariant state = m_timeOfDayWidget->GetPersonalizationState();
+	GetIEditor()->GetPersonalizationManager()->SetProperty(GetEditorName(), "TimeOfDayWidgetState", state);
 }
 
 void CEditorEnvironmentWindow::customEvent(QEvent* event)
@@ -152,7 +125,6 @@ void CEditorEnvironmentWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	{
 		LOADING_TIME_PROFILE_SECTION_NAMED("CEditorEnvironmentWindow::OnEditorNotifyEvent OnEndSceneOpen/NewScene");
 		m_presetsWidget->OnNewScene();
-		m_sunSettingsWidget->OnNewScene();
 	}
 	else if (event == eNotify_OnEndSceneSave)
 	{
@@ -164,4 +136,3 @@ void CEditorEnvironmentWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		m_timeOfDayWidget->UpdateCurveContent();
 	}
 }
-

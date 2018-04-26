@@ -542,7 +542,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 
 	if (!IsEditorMode())
 	{
-		CRY_ASSERT(pDC == GetBaseDisplayContext());
+		CRY_ASSERT(pDC == pBC);
 
 		// Detect changes in refresh property ///////////////////////////////////////////////////////////////////////////
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
@@ -625,7 +625,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 			bChangedRendering = pDC->IsDeferredShadeable();
 
 			// Hack for editor (editor viewports will be resized earlier)
-			if (IsEditorMode())
+			if (IsEditorMode() && pDC->IsMainViewport())
 				bResizeSwapchain = true;
 		}
 
@@ -848,7 +848,10 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey)
 	m_devInfo.ProcessSystemEventQueue();
 #endif
 
-	SetCurrentContext(displayContextKey);
+	{
+		const auto pair = SetCurrentContext(displayContextKey);
+		CRY_ASSERT_MESSAGE(pair.first, "RT_BeginFrame: SetCurrentContext() failed!");
+	}
 
 	HandleDisplayPropertyChanges();
 
@@ -3584,8 +3587,6 @@ void CD3D9Renderer::RT_EndFrame()
 		m_condStopAtRenderFrameEnd.Wait(m_mtxStopAtRenderFrameEnd);
 		m_mtxStopAtRenderFrameEnd.Unlock();
 	}
-
-//	MakeMainContextActive();
 }
 
 void CD3D9Renderer::RT_PresentFast()
@@ -5136,6 +5137,7 @@ void CD3D9Renderer::SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomColle
 {
 #if defined(ENABLE_RENDER_AUX_GEOM)
 	m_currentAuxGeomCBCollector = auxGeomCollector;
+	gEnv->pAuxGeomRenderer = m_currentAuxGeomCBCollector->Get(0);
 #endif
 }
 

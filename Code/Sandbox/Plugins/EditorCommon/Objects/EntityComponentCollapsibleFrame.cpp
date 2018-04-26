@@ -7,7 +7,7 @@
 
 #include "IObjectManager.h"
 #include "Objects/EntityObject.h"
-#include "IUndoObject.h" 
+#include "IUndoObject.h"
 
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryEntitySystem/IEntity.h>
@@ -24,7 +24,7 @@ public:
 		, m_parentComponentInstanceGUID(pAddedComponent->GetParent() != nullptr ? pAddedComponent->GetParent()->GetGUID() : CryGUID::Null())
 	{
 		// Serialize component properties to buffer
-		gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_propertyBuffer, Serialization::SStruct(IEntityComponent::SPropertySerializer{ pAddedComponent }));
+		gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_propertyBuffer, Serialization::SStruct(IEntityComponent::SPropertySerializer { pAddedComponent }));
 	}
 
 	virtual void Undo(bool bUndo) override
@@ -43,10 +43,10 @@ public:
 			initParams.pParent = pEntity->GetComponentByGUID(m_parentComponentInstanceGUID);
 		}
 
-		IF_LIKELY(IEntityComponent* pComponent = pEntity->CreateComponentByInterfaceID(m_classDescription.GetGUID(), &initParams))
+		IF_LIKELY (IEntityComponent* pComponent = pEntity->CreateComponentByInterfaceID(m_classDescription.GetGUID(), &initParams))
 		{
 			// Deserialize to the target
-			gEnv->pSystem->GetArchiveHost()->LoadBinaryBuffer(Serialization::SStruct(IEntityComponent::SPropertySerializer{ pComponent }), m_propertyBuffer.data(), m_propertyBuffer.size());
+			gEnv->pSystem->GetArchiveHost()->LoadBinaryBuffer(Serialization::SStruct(IEntityComponent::SPropertySerializer { pComponent }), m_propertyBuffer.data(), m_propertyBuffer.size());
 
 			GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
 		}
@@ -75,17 +75,16 @@ public:
 	}
 
 private:
-	virtual int         GetSize() { return sizeof(CUndoRemoveComponent); }
 	virtual const char* GetDescription() { return "Removed Entity Component"; }
 
 	const CEntityComponentClassDesc& m_classDescription;
-	const CryGUID& m_owningEntityGUID;
-	CryGUID m_componentInstanceGUID;
-	EntityComponentFlags m_flags;
-	string m_name;
-	CryTransform::CTransformPtr m_transform;
-	CryGUID m_parentComponentInstanceGUID;
-	DynArray<char> m_propertyBuffer;
+	const CryGUID&                   m_owningEntityGUID;
+	CryGUID                          m_componentInstanceGUID;
+	EntityComponentFlags             m_flags;
+	string                           m_name;
+	CryTransform::CTransformPtr      m_transform;
+	CryGUID                          m_parentComponentInstanceGUID;
+	DynArray<char>                   m_propertyBuffer;
 };
 
 CEntityComponentCollapsibleFrameHeader::CEntityComponentCollapsibleFrameHeader(const QString& title, QCollapsibleFrame* pParentCollapsible, IEntityComponent* pComponent)
@@ -96,24 +95,24 @@ CEntityComponentCollapsibleFrameHeader::CEntityComponentCollapsibleFrameHeader(c
 	QToolButton* pOptionsIcon = new QToolButton();
 	pOptionsIcon->setIcon(CryIcon("icons:General/edit-select-object.ico"));
 	pOptionsIcon->setLayoutDirection(Qt::RightToLeft);
-	connect(pOptionsIcon, &QToolButton::clicked, [pComponent] 
+	connect(pOptionsIcon, &QToolButton::clicked, [pComponent]
 	{
 		CDynamicPopupMenu menu;
 		CPopupMenuItem& root = menu.GetRoot();
 
 		if (pComponent->GetComponentFlags().Check(EEntityComponentFlags::UserAdded))
 		{
-			root.Add("Remove", "icons:General/Remove_Negative.ico", [pComponent]()
+		  root.Add("Remove", "icons:General/Remove_Negative.ico", [pComponent]()
 			{
 				{
-					CUndo undo("Remove Component");
-					CUndo::Record(new CUndoRemoveComponent(pComponent));
+				  CUndo undo("Remove Component");
+				  CUndo::Record(new CUndoRemoveComponent(pComponent));
 
-					pComponent->GetEntity()->RemoveComponent(pComponent);
+				  pComponent->GetEntity()->RemoveComponent(pComponent);
 				}
 
 				GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
-			});
+		  });
 		}
 
 		menu.SpawnAtCursor();

@@ -34,7 +34,7 @@ const char* szPresetsLibsPath = "libs/environmentpresets/";
 ITimeOfDay* GetTimeOfDay()
 {
 	ITimeOfDay* pTimeOfDay = gEnv->p3DEngine->GetTimeOfDay();
-	assert(pTimeOfDay);
+	//pTimeOfDay is always present (look at C3DEngine::GetTimeOfDay() implementation)
 	return pTimeOfDay;
 }
 
@@ -66,21 +66,17 @@ class CPresetAsTempFileUndo
 public:
 	CPresetAsTempFileUndo(const char* name) : m_pTempFile(nullptr), m_presetName(name), m_bOk(false)
 	{
-		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		if (pTimeOfDay)
-		{
-			QFileInfo tfile(m_presetName.c_str());
-			QString presetName = tfile.baseName();
-			const std::string filename = presetName.toStdString();
+		QFileInfo tfile(m_presetName.c_str());
+		QString presetName = tfile.baseName();
+		const std::string filename = presetName.toStdString();
 
-			const QString tempFileName = QDir::tempPath() + "/" + filename.c_str();
-			QTemporaryFile* pTempFile = new QTemporaryFile(tempFileName);
-			if (pTempFile->open())
-			{
-				const std::string tfilename = pTempFile->fileName().toStdString();
-				m_bOk = pTimeOfDay->ExportPreset(name, tfilename.c_str());
-				m_pTempFile = pTempFile;
-			}
+		const QString tempFileName = QDir::tempPath() + "/" + filename.c_str();
+		QTemporaryFile* pTempFile = new QTemporaryFile(tempFileName);
+		if (pTempFile->open())
+		{
+			const std::string tfilename = pTempFile->fileName().toStdString();
+			m_bOk = GetTimeOfDay()->ExportPreset(name, tfilename.c_str());
+			m_pTempFile = pTempFile;
 		}
 	}
 
@@ -142,30 +138,21 @@ public:
 	{
 	}
 
-	virtual int         GetSize()        { return sizeof(*this); }
 	virtual const char* GetDescription() { return "QPresetsWidget: Preset selected"; }
 
 	virtual void        Undo(bool bUndo)
 	{
-		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		if (pTimeOfDay)
+		if (GetTimeOfDay()->SetCurrentPreset(m_oldName.c_str()))
 		{
-			if (pTimeOfDay->SetCurrentPreset(m_oldName.c_str()))
-			{
-				m_pPresetsWidget->RefreshPresetList();
-			}
+			m_pPresetsWidget->RefreshPresetList();
 		}
 	}
 
 	virtual void Redo()
 	{
-		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		if (pTimeOfDay)
+		if (GetTimeOfDay()->SetCurrentPreset(m_newName.c_str()))
 		{
-			if (pTimeOfDay->SetCurrentPreset(m_newName.c_str()))
-			{
-				m_pPresetsWidget->RefreshPresetList();
-			}
+			m_pPresetsWidget->RefreshPresetList();
 		}
 	}
 
@@ -183,33 +170,25 @@ public:
 	{
 	}
 
-	virtual int         GetSize()        { return sizeof(*this); }
 	virtual const char* GetDescription() { return "QPresetsWidget: Preset removed"; }
 
 	virtual void        Undo(bool bUndo)
 	{
 		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		if (pTimeOfDay)
+		const char* sPresetName = getPresetName();
+		if (pTimeOfDay->AddNewPreset(sPresetName))
 		{
-			const char* sPresetName = getPresetName();
-			if (pTimeOfDay->AddNewPreset(sPresetName))
-			{
-				const std::string filename = m_pTempFile->fileName().toStdString();
-				pTimeOfDay->ImportPreset(sPresetName, filename.c_str());
-				m_pPresetsWidget->RefreshPresetList();
-			}
+			const std::string filename = m_pTempFile->fileName().toStdString();
+			pTimeOfDay->ImportPreset(sPresetName, filename.c_str());
+			m_pPresetsWidget->RefreshPresetList();
 		}
 	}
 
 	virtual void Redo()
 	{
-		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		if (pTimeOfDay)
+		if (GetTimeOfDay()->RemovePreset(getPresetName()))
 		{
-			if (pTimeOfDay->RemovePreset(getPresetName()))
-			{
-				m_pPresetsWidget->RefreshPresetList();
-			}
+			m_pPresetsWidget->RefreshPresetList();
 		}
 	}
 
@@ -225,30 +204,21 @@ public:
 	{
 	}
 
-	virtual int         GetSize()        { return sizeof(*this); }
 	virtual const char* GetDescription() { return "QPresetsWidget: Preset removed"; }
 
 	virtual void        Undo(bool bUndo)
 	{
-		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		if (pTimeOfDay)
+		const std::string filename = m_pTempFile->fileName().toStdString();
+		if (GetTimeOfDay()->ImportPreset(getPresetName(), filename.c_str()))
 		{
-			const std::string filename = m_pTempFile->fileName().toStdString();
-			if (pTimeOfDay->ImportPreset(getPresetName(), filename.c_str()))
-			{
-				m_pPresetsWidget->SignalCurrentPresetChanged();
-			}
+			m_pPresetsWidget->SignalCurrentPresetChanged();
 		}
 	}
 
 	virtual void Redo()
 	{
-		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		if (pTimeOfDay)
-		{
-			pTimeOfDay->ResetPreset(getPresetName());
-			m_pPresetsWidget->SignalCurrentPresetChanged();
-		}
+		GetTimeOfDay()->ResetPreset(getPresetName());
+		m_pPresetsWidget->SignalCurrentPresetChanged();
 	}
 
 protected:
@@ -264,34 +234,26 @@ public:
 	{
 	}
 
-	virtual int         GetSize()        { return sizeof(*this); }
 	virtual const char* GetDescription() { return "QPresetsWidget: Preset added"; }
 
 	virtual void        Undo(bool bUndo)
 	{
 		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		if (pTimeOfDay)
+		const char* presetName = m_presetName.c_str();
+		if (pTimeOfDay->RemovePreset(presetName))
 		{
-			const char* presetName = m_presetName.c_str();
-			if (pTimeOfDay->RemovePreset(presetName))
-			{
-				const char* selectedName = m_selectedPresetName.c_str();
-				pTimeOfDay->SetCurrentPreset(selectedName);
-				m_pPresetsWidget->RefreshPresetList();
-			}
+			const char* selectedName = m_selectedPresetName.c_str();
+			pTimeOfDay->SetCurrentPreset(selectedName);
+			m_pPresetsWidget->RefreshPresetList();
 		}
 	}
 
 	virtual void Redo()
 	{
-		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		if (pTimeOfDay)
+		const char* presetName = m_presetName.c_str();
+		if (GetTimeOfDay()->AddNewPreset(presetName))
 		{
-			const char* presetName = m_presetName.c_str();
-			if (pTimeOfDay->AddNewPreset(presetName))
-			{
-				m_pPresetsWidget->RefreshPresetList();
-			}
+			m_pPresetsWidget->RefreshPresetList();
 		}
 	}
 
@@ -309,31 +271,23 @@ public:
 	{
 	}
 
-	virtual int         GetSize()        { return sizeof(*this); }
 	virtual const char* GetDescription() { return "QPresetsWidget: Preset added"; }
 
 	virtual void        Undo(bool bUndo)
 	{
 		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		if (pTimeOfDay)
+		if (pTimeOfDay->RemovePreset(m_presetPath.c_str()))
 		{
-			if (pTimeOfDay->RemovePreset(m_presetPath.c_str()))
-			{
-				pTimeOfDay->SetCurrentPreset(m_selectedPresetName.c_str());
-				m_pPresetsWidget->RefreshPresetList();
-			}
+			pTimeOfDay->SetCurrentPreset(m_selectedPresetName.c_str());
+			m_pPresetsWidget->RefreshPresetList();
 		}
 	}
 
 	virtual void Redo()
 	{
-		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-		if (pTimeOfDay)
+		if (GetTimeOfDay()->LoadPreset(m_presetPath.c_str()))
 		{
-			if (pTimeOfDay->LoadPreset(m_presetPath.c_str()))
-			{
-				m_pPresetsWidget->RefreshPresetList();
-			}
+			m_pPresetsWidget->RefreshPresetList();
 		}
 	}
 
@@ -357,11 +311,6 @@ QPresetsWidget::QPresetsWidget()
 	RefreshPresetList();
 }
 
-QPresetsWidget::~QPresetsWidget()
-{
-
-}
-
 void QPresetsWidget::OnNewScene()
 {
 	RefreshPresetList();
@@ -370,10 +319,7 @@ void QPresetsWidget::OnNewScene()
 void QPresetsWidget::SaveAllPresets() const
 {
 	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	if (pTimeOfDay)
-	{
-		SavePresetsInNode(this, pTimeOfDay, m_presetsViewRoot.get());
-	}
+	SavePresetsInNode(this, pTimeOfDay, m_presetsViewRoot.get());
 }
 
 void QPresetsWidget::CreateUi()
@@ -444,75 +390,72 @@ void QPresetsWidget::RefreshPresetList()
 	SignalEndResetModel();
 
 	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	if (pTimeOfDay)
+	const int nPresetCount = pTimeOfDay->GetPresetCount();
+	std::vector<ITimeOfDay::SPresetInfo> presets;
+
+	if (nPresetCount == 0)
+		return;
+
+	presets.resize(nPresetCount);
+	pTimeOfDay->GetPresetsInfos(&presets[0], nPresetCount);
+
+	for (size_t i = 0; i < presets.size(); ++i)
 	{
-		const int nPresetCount = pTimeOfDay->GetPresetCount();
-		std::vector<ITimeOfDay::SPresetInfo> presets;
-
-		if (nPresetCount == 0)
-			return;
-
-		presets.resize(nPresetCount);
-		pTimeOfDay->GetPresetsInfos(&presets[0], nPresetCount);
-
-		for (size_t i = 0; i < presets.size(); ++i)
+		ITimeOfDay::SPresetInfo& preset = presets[i];
+		CPresetsModelNode* pCurrentGroup = m_presetsViewRoot.get();
+		const char* szCurrentPath = preset.m_pName;
+		while (true)
 		{
-			ITimeOfDay::SPresetInfo& preset = presets[i];
-			CPresetsModelNode* pCurrentGroup = m_presetsViewRoot.get();
-			const char* szCurrentPath = preset.m_pName;
-			while (true)
+			string name;
+			string path;
+
+			const char* szFolderName = szCurrentPath;
+			const char* szFolderNameEnd = strchr(szCurrentPath, '/');
+			if (szFolderNameEnd != 0)
 			{
-				string name;
-				string path;
+				szCurrentPath = szFolderNameEnd + 1;
+				name.assign(szFolderName, szFolderNameEnd);
+				path.assign(preset.m_pName, szFolderNameEnd);
 
-				const char* szFolderName = szCurrentPath;
-				const char* szFolderNameEnd = strchr(szCurrentPath, '/');
-				if (szFolderNameEnd != 0)
+				CPresetsModelNode::ChildNodes& children = pCurrentGroup->children;
+				const auto& result = std::find_if(std::begin(children), std::end(children), [&name](CPresetsModelNode* other){ return name == other->name; });
+				if (result == std::end(pCurrentGroup->children))
 				{
-					szCurrentPath = szFolderNameEnd + 1;
-					name.assign(szFolderName, szFolderNameEnd);
-					path.assign(preset.m_pName, szFolderNameEnd);
-
-					CPresetsModelNode::ChildNodes& children = pCurrentGroup->children;
-					const auto& result = std::find_if(std::begin(children), std::end(children), [&name](CPresetsModelNode* other){ return name == other->name; });
-					if (result == std::end(pCurrentGroup->children))
-					{
-						CPresetsModelNode* pNewGroup = new CPresetsModelNode(CPresetsModelNode::EType_Group, name.c_str(), path.c_str(), pCurrentGroup);
-						SignalBeginAddEntryNode(pNewGroup);
-						children.push_back(pNewGroup);
-						SignalEndAddEntryNode(pNewGroup);
-						pCurrentGroup = pNewGroup;
-					}
-					else
-					{
-						pCurrentGroup = *result;
-					}
+					CPresetsModelNode* pNewGroup = new CPresetsModelNode(CPresetsModelNode::EType_Group, name.c_str(), path.c_str(), pCurrentGroup);
+					SignalBeginAddEntryNode(pNewGroup);
+					children.push_back(pNewGroup);
+					SignalEndAddEntryNode(pNewGroup);
+					pCurrentGroup = pNewGroup;
 				}
 				else
 				{
-					name = szFolderName;
-					path = preset.m_pName;
-					CPresetsModelNode* pNewItem = new CPresetsModelNode(CPresetsModelNode::EType_Leaf, name.c_str(), path.c_str(), pCurrentGroup);
-					SignalBeginAddEntryNode(pNewItem);
-					const bool uniqueInserted = stl::push_back_unique(pCurrentGroup->children, pNewItem);
-					SignalEndAddEntryNode(pNewItem);
-
-					const char* szPresetPath = pNewItem->path.c_str();
-					pNewItem->flags.SetFlags(CPresetsModelNode::EFlags_InFolder, gEnv->pCryPak->IsFileExist(szPresetPath, ICryPak::eFileLocation_OnDisk));
-					pNewItem->flags.SetFlags(CPresetsModelNode::EFlags_InPak, gEnv->pCryPak->IsFileExist(szPresetPath, ICryPak::eFileLocation_InPak));
-					SignalEntryNodeDataChanged(pNewItem);
-
-					if (preset.m_bCurrent)
-					{
-						SelectByNode(pNewItem);
-						m_currentlySelectedNode = pNewItem;
-						SignalCurrentPresetChanged();
-					}
-					break;
+					pCurrentGroup = *result;
 				}
-			} // while(true)
-		}   // for(presets)
-	}
+			}
+			else
+			{
+				name = szFolderName;
+				path = preset.m_pName;
+				CPresetsModelNode* pNewItem = new CPresetsModelNode(CPresetsModelNode::EType_Leaf, name.c_str(), path.c_str(), pCurrentGroup);
+				SignalBeginAddEntryNode(pNewItem);
+				const bool uniqueInserted = stl::push_back_unique(pCurrentGroup->children, pNewItem);
+				SignalEndAddEntryNode(pNewItem);
+
+				const char* szPresetPath = pNewItem->path.c_str();
+				pNewItem->flags.SetFlags(CPresetsModelNode::EFlags_InFolder, gEnv->pCryPak->IsFileExist(szPresetPath, ICryPak::eFileLocation_OnDisk));
+				pNewItem->flags.SetFlags(CPresetsModelNode::EFlags_InPak, gEnv->pCryPak->IsFileExist(szPresetPath, ICryPak::eFileLocation_InPak));
+				SignalEntryNodeDataChanged(pNewItem);
+
+				if (preset.m_bCurrent)
+				{
+					SelectByNode(pNewItem);
+					m_currentlySelectedNode = pNewItem;
+					SignalCurrentPresetChanged();
+				}
+				break;
+			}
+		} // while(true)
+	}   // for(presets)
 }
 
 void QPresetsWidget::SelectByNode(CPresetsModelNode* pEntryNode)
@@ -527,169 +470,141 @@ void QPresetsWidget::SelectByNode(CPresetsModelNode* pEntryNode)
 
 void QPresetsWidget::AddNewPreset()
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	if (pTimeOfDay)
+	CEngineFileDialog::RunParams runParams;
+	runParams.title = tr("Add new preset");
+	runParams.buttonLabel = tr("Add");
+	runParams.initialDir = QString::fromLocal8Bit(szPresetsLibsPath);
+	runParams.extensionFilters << CExtensionFilter(QObject::tr("XML Files"), "xml");
+	QString fileName = CEngineFileDialog::RunGameSave(runParams, this);
+
+	if (!fileName.isEmpty())
 	{
-		CEngineFileDialog::RunParams runParams;
-		runParams.title = tr("Add new preset");
-		runParams.buttonLabel = tr("Add");
-		runParams.initialDir = QString::fromLocal8Bit(szPresetsLibsPath);
-		runParams.extensionFilters << CExtensionFilter(QObject::tr("XML Files"), "xml");
-		QString fileName = CEngineFileDialog::RunGameSave(runParams, this);
+		CUndo undo("EnvironmentEditor: added preset");
 
-		if (!fileName.isEmpty())
+		const std::string sPresetPath = fileName.toStdString();
+		if (GetTimeOfDay()->AddNewPreset(sPresetPath.c_str()))
 		{
-			CUndo undo("EnvironmentEditor: added preset");
+			RefreshPresetList();
 
-			const std::string sPresetPath = fileName.toStdString();
-			if (pTimeOfDay->AddNewPreset(sPresetPath.c_str()))
-			{
-				RefreshPresetList();
-
-				if (CUndo::IsRecording())
-					CUndo::Record(new CPresetAddUndoCommand(this, sPresetPath, m_currentlySelectedNode->path.c_str()));
-			}
-			else
-			{
-				CQuestionDialog::SWarning(tr("Error"), tr("Failed to add preset"), QDialogButtonBox::StandardButton::Ok | QDialogButtonBox::StandardButton::NoButton);
-				undo.Cancel();
-			}
+			if (CUndo::IsRecording())
+				CUndo::Record(new CPresetAddUndoCommand(this, sPresetPath, m_currentlySelectedNode->path.c_str()));
+		}
+		else
+		{
+			CQuestionDialog::SWarning(tr("Error"), tr("Failed to add preset"), QDialogButtonBox::StandardButton::Ok | QDialogButtonBox::StandardButton::NoButton);
+			undo.Cancel();
 		}
 	}
 }
 
 void QPresetsWidget::AddExistingPreset()
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	if (pTimeOfDay)
+	CEngineFileDialog::RunParams runParams;
+	runParams.title = tr("Add existing preset");
+	runParams.initialDir = QString::fromLocal8Bit(szPresetsLibsPath);
+	runParams.extensionFilters << CExtensionFilter(QObject::tr("XML Files"), "xml");
+	QString fileName = CEngineFileDialog::RunGameOpen(runParams, this);
+
+	if (!fileName.isEmpty())
 	{
-		CEngineFileDialog::RunParams runParams;
-		runParams.title = tr("Add existing preset");
-		runParams.initialDir = QString::fromLocal8Bit(szPresetsLibsPath);
-		runParams.extensionFilters << CExtensionFilter(QObject::tr("XML Files"), "xml");
-		QString fileName = CEngineFileDialog::RunGameOpen(runParams, this);
+		CUndo undo("EnvironmentEditor: added preset");
 
-		if (!fileName.isEmpty())
+		const std::string sPresetPath = fileName.toStdString();
+		if (sPresetPath.empty())
 		{
-			CUndo undo("EnvironmentEditor: added preset");
+			CQuestionDialog::SWarning(tr("Error"), tr("Preset should be in the game folder"), QDialogButtonBox::StandardButton::Ok | QDialogButtonBox::StandardButton::NoButton);
+			return;
+		}
 
-			const std::string sPresetPath = fileName.toStdString();
-			if (sPresetPath.empty())
-			{
-				CQuestionDialog::SWarning(tr("Error"), tr("Preset should be in the game folder"), QDialogButtonBox::StandardButton::Ok | QDialogButtonBox::StandardButton::NoButton);
-				return;
-			}
-
-			if (pTimeOfDay->LoadPreset(sPresetPath.c_str()))
-			{
-				RefreshPresetList();
-				if (CUndo::IsRecording())
-					CUndo::Record(new CPresetAddExistingUndoCommand(this, sPresetPath, m_currentlySelectedNode->path.c_str()));
-			}
-			else
-			{
-				const QString title = QString("Failed to load preset '%1'\n").arg(fileName);
-				CQuestionDialog::SWarning(tr("Error"), title, QDialogButtonBox::StandardButton::Ok | QDialogButtonBox::StandardButton::NoButton);
-				undo.Cancel();
-			}
+		if (GetTimeOfDay()->LoadPreset(sPresetPath.c_str()))
+		{
+			RefreshPresetList();
+			if (CUndo::IsRecording())
+				CUndo::Record(new CPresetAddExistingUndoCommand(this, sPresetPath, m_currentlySelectedNode->path.c_str()));
+		}
+		else
+		{
+			const QString title = QString("Failed to load preset '%1'\n").arg(fileName);
+			CQuestionDialog::SWarning(tr("Error"), title, QDialogButtonBox::StandardButton::Ok | QDialogButtonBox::StandardButton::NoButton);
+			undo.Cancel();
 		}
 	}
 }
 
 void QPresetsWidget::ResetPreset(const char* szName)
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	if (pTimeOfDay)
+	if (CQuestionDialog::SQuestion(tr("Reset values"), tr("Are you sure you want to reset all values to their default values?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No, QDialogButtonBox::StandardButton::No) == QDialogButtonBox::StandardButton::Yes)
 	{
-		if (CQuestionDialog::SQuestion(tr("Reset values"), tr("Are you sure you want to reset all values to their default values?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No, QDialogButtonBox::StandardButton::No) == QDialogButtonBox::StandardButton::Yes)
-		{
-			CPresetUndo<CPresetResetUndoCommand> undo(this, szName, "reset preset");
-			pTimeOfDay->ResetPreset(szName);
-			SignalCurrentPresetChanged();
-		}
+		CPresetUndo<CPresetResetUndoCommand> undo(this, szName, "reset preset");
+		GetTimeOfDay()->ResetPreset(szName);
+		SignalCurrentPresetChanged();
 	}
 }
 
 void QPresetsWidget::RemovePreset(const char* szName)
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	if (pTimeOfDay)
+	if (CQuestionDialog::SQuestion(tr("Remove preset"), tr("Are you sure?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No, QDialogButtonBox::StandardButton::No) == QDialogButtonBox::StandardButton::Yes)
 	{
-		if (CQuestionDialog::SQuestion(tr("Remove preset"), tr("Are you sure?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No, QDialogButtonBox::StandardButton::No) == QDialogButtonBox::StandardButton::Yes)
-		{
-			CPresetUndo<CPresetRemovedUndoCommand> undo(this, szName, "remove preset");
-			pTimeOfDay->RemovePreset(szName);
-			RefreshPresetList();
-		}
+		CPresetUndo<CPresetRemovedUndoCommand> undo(this, szName, "remove preset");
+		GetTimeOfDay()->RemovePreset(szName);
+		RefreshPresetList();
 	}
 }
 
 void QPresetsWidget::OpenPreset(const char* szName)
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	if (pTimeOfDay)
+	char fullPath[ICryPak::g_nMaxPath];
+	const char* szTemp = gEnv->pCryPak->AdjustFileName(szPresetsLibsPath, fullPath, 0);
+	const QString dir(fullPath);
+
+	CSystemFileDialog::RunParams runParams;
+	runParams.title = tr("Import Preset");
+	runParams.initialDir = dir;
+	runParams.extensionFilters << CExtensionFilter(QObject::tr("XML Files"), "xml");
+
+	const QString fileName = CSystemFileDialog::RunImportFile(runParams, this);
+	const std::string importPath = fileName.toStdString();
+
+	if (!fileName.isEmpty())
 	{
-		char fullPath[ICryPak::g_nMaxPath];
-		const char* szTemp = gEnv->pCryPak->AdjustFileName(szPresetsLibsPath, fullPath, 0);
-		const QString dir(fullPath);
-
-		CSystemFileDialog::RunParams runParams;
-		runParams.title = tr("Import Preset");
-		runParams.initialDir = dir;
-		runParams.extensionFilters << CExtensionFilter(QObject::tr("XML Files"), "xml");
-
-		const QString fileName = CSystemFileDialog::RunImportFile(runParams, this);
-		const std::string importPath = fileName.toStdString();
-
-		if (!fileName.isEmpty())
+		if (GetTimeOfDay()->ImportPreset(szName, importPath.c_str()))
 		{
-			if (pTimeOfDay->ImportPreset(szName, importPath.c_str()))
-			{
-				SignalCurrentPresetChanged();
-			}
-			else
-			{
-				const QString title = QString("Failed to open preset '%1' from '%2'").arg(szName, fileName);
-				CQuestionDialog::SWarning(tr("Error"), title);
-			}
+			SignalCurrentPresetChanged();
+		}
+		else
+		{
+			const QString title = QString("Failed to open preset '%1' from '%2'").arg(szName, fileName);
+			CQuestionDialog::SWarning(tr("Error"), title);
 		}
 	}
 }
 
 void QPresetsWidget::SavePresetAs(const char* szName)
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	if (pTimeOfDay)
+	char fullPath[ICryPak::g_nMaxPath];
+	const char* szTemp = gEnv->pCryPak->AdjustFileName(szPresetsLibsPath, fullPath, 0);
+	const QString dir(fullPath);
+
+	CSystemFileDialog::RunParams runParams;
+	runParams.title = tr("Export Preset");
+	runParams.initialDir = dir;
+	runParams.extensionFilters << CExtensionFilter(QObject::tr("XML Files"), "xml");
+
+	const QString fileName = CSystemFileDialog::RunExportFile(runParams, this);
+	const std::string exportPath = fileName.toStdString();
+
+	if (!exportPath.empty())
 	{
-		char fullPath[ICryPak::g_nMaxPath];
-		const char* szTemp = gEnv->pCryPak->AdjustFileName(szPresetsLibsPath, fullPath, 0);
-		const QString dir(fullPath);
-
-		CSystemFileDialog::RunParams runParams;
-		runParams.title = tr("Export Preset");
-		runParams.initialDir = dir;
-		runParams.extensionFilters << CExtensionFilter(QObject::tr("XML Files"), "xml");
-
-		const QString fileName = CSystemFileDialog::RunExportFile(runParams, this);
-		const std::string exportPath = fileName.toStdString();
-
-		if (!exportPath.empty())
+		if (!GetTimeOfDay()->ExportPreset(szName, exportPath.c_str()))
 		{
-			if (!pTimeOfDay->ExportPreset(szName, exportPath.c_str()))
-			{
-				const QString title = QString("Failed to export preset '%1' as '%2'").arg(szName, fileName);
-				CQuestionDialog::SWarning(tr("Error"), title);
-			}
+			const QString title = QString("Failed to export preset '%1' as '%2'").arg(szName, fileName);
+			CQuestionDialog::SWarning(tr("Error"), title);
 		}
 	}
 }
 
 void QPresetsWidget::OnSignalTreeSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	if (!pTimeOfDay)
-		return;
-
 	CPresetsModelNode* pSelectedEntry = nullptr;
 
 	QItemSelection selection = m_presetsView->selectionModel()->selection();
@@ -719,7 +634,7 @@ void QPresetsWidget::OnSignalTreeSelectionChanged(const QItemSelection& selected
 	{
 		CUndo undo("EnvironmentEditor: Select preset");
 		m_currentlySelectedNode = pSelectedEntry;
-		if (pTimeOfDay->SetCurrentPreset(pSelectedEntry->path))
+		if (GetTimeOfDay()->SetCurrentPreset(pSelectedEntry->path))
 		{
 			SignalCurrentPresetChanged();
 			if (CUndo::IsRecording() && pPrevSelectedEntry)
@@ -751,21 +666,15 @@ void QPresetsWidget::OnContextMenu(const QPoint& point)
 			menu.addAction(importPresetAction);
 
 			QAction* savePresetAction = new QAction(CryIcon("icons:General/File_Save.ico"), "Save", &menu);
-			connect(savePresetAction, &QAction::triggered,
-			        [presetName, this]()
+			connect(savePresetAction, &QAction::triggered, [presetName, this]()
 			{
-				ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-				if (pTimeOfDay)
+				if (GetTimeOfDay()->SavePreset(presetName.c_str()))
 				{
-				  if (pTimeOfDay->SavePreset(presetName.c_str()))
-				  {
-				    m_currentlySelectedNode->flags.SetFlags(CPresetsModelNode::EFlags_Modified, false);
-				    m_currentlySelectedNode->flags.SetFlags(CPresetsModelNode::EFlags_InFolder, true);
-				    SignalEntryNodeDataChanged(m_currentlySelectedNode);
-				  }
+				  m_currentlySelectedNode->flags.SetFlags(CPresetsModelNode::EFlags_Modified, false);
+				  m_currentlySelectedNode->flags.SetFlags(CPresetsModelNode::EFlags_InFolder, true);
+				  SignalEntryNodeDataChanged(m_currentlySelectedNode);
 				}
-			}
-			        );
+			});
 			menu.addAction(savePresetAction);
 
 			QAction* exportPresetAction = new QAction("Save as...", &menu);
@@ -804,4 +713,3 @@ const char* QPresetsWidget::GetSelectedItem() const
 
 	return nullptr;
 }
-

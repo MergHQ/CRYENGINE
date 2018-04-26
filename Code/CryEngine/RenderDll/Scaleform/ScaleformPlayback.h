@@ -383,7 +383,7 @@ public:
 
 	// Helper functions
 	static void RenderFlashPlayerToTexture(IFlashPlayer* pFlashPlayer, CTexture* pOutput);
-	static void RenderFlashPlayerToOutput(IFlashPlayer* pFlashPlayer, CRenderOutputPtr output);
+	static void RenderFlashPlayerToOutput(IFlashPlayer* pFlashPlayer, const std::shared_ptr<CRenderOutput> &output);
 
 	void SetRenderOutput(std::shared_ptr<CRenderOutput> pRenderOutput);
 	

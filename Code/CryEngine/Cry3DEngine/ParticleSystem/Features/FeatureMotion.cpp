@@ -92,8 +92,7 @@ void CFeatureMotionPhysics::Serialize(Serialization::IArchive& ar)
 	ar(m_gravity, "gravity", "Gravity Scale");
 	ar(m_drag, "drag", "Drag");
 	ar(m_windMultiplier, "windMultiplier", "Level Wind Scale");
-	if (!ar(m_angularDragMultiplier, "AngularDragMultiplier", "Angular Drag Multiplier"))
-		m_angularDragMultiplier = 0.0f;
+	ar(m_angularDragMultiplier, "AngularDragMultiplier", "Angular Drag Multiplier");
 	ar(m_perParticleForceComputation, "perParticleForceComputation", "Per-Particle Force Computation");
 	ar(m_uniformAcceleration, "UniformAcceleration", "Uniform Acceleration");
 	ar(m_uniformWind, "UniformWind", "Uniform Wind");
@@ -522,7 +521,7 @@ void CFeatureMotionPhysics::AngularDragFastIntegral(const SUpdateContext& contex
 }
 
 
-CRY_PFX2_IMPLEMENT_FEATURE_DEFAULT(CParticleFeature, CFeatureMotionPhysics, "Motion", "Physics", colorMotion, EFT_Motion);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionPhysics, "Motion", "Physics", colorMotion);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureMotionCryPhysics

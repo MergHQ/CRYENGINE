@@ -439,19 +439,10 @@ void C2DViewport::Render()
 	// lock while we are rendering to prevent any re-rendering across the application
 	if (CScopedRenderLock lock = CScopedRenderLock())
 	{
-		if (GetIEditorImpl()->IsInGameMode())
-			return;
-
 		if (!gEnv->pRenderer)
 			return;
 
 		if (!IsWindowVisible())
-			return;
-
-		if (!GetIEditorImpl()->GetDocument()->IsDocumentReady())
-			return;
-
-		if (gEnv->pRenderer->IsStereoEnabled())
 			return;
 
 		CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -513,10 +504,8 @@ void C2DViewport::Render()
 			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(GetIEditorImpl()->GetSystem()->GetViewCamera(), SRenderingPassInfo::DEFAULT_FLAGS, false, m_displayContextKey);
 
 			gEnv->pRenderer->EF_StartEf(passInfo);
-
 			dc.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOff | e_DepthTestOn);
 			Draw(dc);
-
 			gEnv->pRenderer->EF_EndEf3D(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
 
 			// Return back from 2D mode.

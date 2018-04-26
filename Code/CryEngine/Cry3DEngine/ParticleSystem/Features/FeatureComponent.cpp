@@ -86,45 +86,43 @@ public:
 	{
 		CParticleFeature::Serialize(ar);
 		SERIALIZE_VAR(ar, m_probability);
-		if (m_probability < 1.0f)
-		{
-			SERIALIZE_VAR(ar, m_siblingExclusive);
-			if (m_siblingExclusive)
-				SERIALIZE_VAR(ar, m_selectionRange);
-		}
+		SERIALIZE_VAR(ar, m_group);
+		if (m_group > 0)
+			SERIALIZE_VAR(ar, m_selectionStart);
 	}
 
 	virtual void CullSubInstances(const SUpdateContext& context, TVarArray<SInstance>& instances) override
 	{
-		if (m_probability < 1.0f && instances.size() > 0)
+		if (m_probability == 1.0f)
+			return;
+		uint32 groupKey = context.m_runtime.GetEmitter()->GetCurrentSeed() ^ m_group;
+		uint newCount = 0;
+		for (const auto& instance : instances)
 		{
-			auto seed = context.m_runtime.GetEmitter()->GetCurrentSeed();
-			SChaosKey childKey(seed ^ instances[0].m_parentId);
-			uint i = 0;
-			for (const auto& instance : instances)
+			if (m_group > 0)
 			{
-				if (m_probability < 1.0f)
-				{
-					if (m_siblingExclusive)
-					{
-						SChaosKey parentKey(seed ^ instance.m_parentId);
-						float select = parentKey.RandUNorm();
-						if (select < m_selectionRange || select > m_selectionRange + m_probability)
-							continue;
-					}
-					else if (childKey.RandUNorm() > m_probability)
-						continue;
-					instances[i++] = instance;
-				}
+				// Same random number for all components in group
+				SChaosKey instanceKey(groupKey ^ instance.m_parentId);
+				float select = instanceKey.RandUNorm();
+				if (select < m_selectionStart || select > m_selectionStart + m_probability)
+					continue;
 			}
-			instances.resize(i);
+			else
+			{
+				// New random number for each component and instance
+				if (context.m_spawnRng.RandUNorm() > m_probability)
+					continue;
+			}
+			instances[newCount++] = instance;
 		}
+		instances.resize(newCount);
 	}
 
 private:
-	bool       m_siblingExclusive = false;
-	UUnitFloat m_selectionRange   = 0.0f;
-	UUnitFloat m_probability      = 1.0f;
+
+	UUnitFloat                   m_probability      = 1.0f;
+	TValue<uint, TDefaultZero<>> m_group;
+	UUnitFloat                   m_selectionStart   = 0.0f;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureComponentActivateRandom, "Component", "ActivateRandom", colorComponent);

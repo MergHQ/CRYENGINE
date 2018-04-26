@@ -23,7 +23,7 @@ struct SPreferencePagesContainer
 
 	virtual ~SPreferencePagesContainer() {}
 
-	virtual bool  Serialize(yasli::Archive& ar)
+	virtual bool Serialize(yasli::Archive& ar)
 	{
 		for (SPreferencePage* pPreferencePage : m_preferences)
 			pPreferencePage->Serialize(ar);
@@ -35,7 +35,7 @@ private:
 	std::vector<SPreferencePage*> m_preferences;
 };
 
-QPreferencePage::QPreferencePage(std::vector<SPreferencePage*> preferences, const char* path, QWidget* pParent/* = nullptr*/)
+QPreferencePage::QPreferencePage(std::vector<SPreferencePage*> preferences, const char* path, QWidget* pParent /* = nullptr*/)
 	: QWidget(pParent)
 	, m_path(path)
 {
@@ -115,7 +115,7 @@ QPreferencesDialog::QPreferencesDialog(QWidget* pParent /*= nullptr*/)
 	for (auto ite = preferences.begin(); ite != preferences.end(); ++ite)
 	{
 		auto moduleIdx = ite->first.find_last_of("/");
-		string module = ite->first.Mid(moduleIdx +1, ite->first.size() - moduleIdx);
+		string module = ite->first.Mid(moduleIdx + 1, ite->first.size() - moduleIdx);
 		m_pTreeView->AddEntry(ite->first, ite->first, module == szGeneral ? "aGeneral" : "z" + module);
 	}
 	m_pTreeView->ExpandAll();

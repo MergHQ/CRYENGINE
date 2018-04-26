@@ -378,6 +378,11 @@ void CD3DStereoRenderer::ShutdownHmdRenderer()
 		SAFE_DELETE(m_pHmdRenderer);
 	}
 
+	ReleaseRenderResources();
+}
+
+void CD3DStereoRenderer::ReleaseRenderResources()
+{
 	m_eyeToScreenPass = nullptr;
 	m_quadLayerPass = nullptr;
 }

@@ -92,7 +92,7 @@ public slots:
 	void OnSignalBeginResetModel();
 	void OnSignalEndResetModel();
 	void OnSignalEntryNodeDataChanged(CPresetsModelNode* pEntryNode);
+
 protected:
 	QPresetsWidget& m_presetsWidget;
 };
-

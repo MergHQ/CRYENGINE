@@ -2227,110 +2227,108 @@ int C3DEngine::GetSvoCompiledData(ICryArchive* pArchive)
 	return CSvoManager::ExportSvo(pArchive);
 }
 
-void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
+void C3DEngine::UpdateTISettings()
 {
-	const char* szXmlNodeName = "Total_Illumination_v2";
+	const auto ti = GetTimeOfDay()->GetTotalIlluminationParams();
+	const auto tiAdv = GetTimeOfDay()->GetTotalIlluminationAdvParams();
 
-	// Total illumination
 	if (GetCVars()->e_svoTI_Active >= 0)
-		GetCVars()->e_svoTI_Apply = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Active", "0"));
+		GetCVars()->e_svoTI_Apply = ti.active ? 1 : 0;
 
 	GetCVars()->e_svoVoxelPoolResolution = 64;
-	int voxelPoolResolution = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "VoxelPoolResolution", "0"));
+	int voxelPoolResolution = tiAdv.voxelPoolResolution;
 	while (GetCVars()->e_svoVoxelPoolResolution < voxelPoolResolution)
 		GetCVars()->e_svoVoxelPoolResolution *= 2;
 
-	GetCVars()->e_svoTI_VoxelizationLODRatio = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "VoxelizationLODRatio", "1"));
-	GetCVars()->e_svoTI_VoxelizationMapBorder = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "VoxelizationMapBorder", "0"));
+	GetCVars()->e_svoTI_VoxelizationLODRatio = tiAdv.voxelizationLodRatio;
+	GetCVars()->e_svoTI_VoxelizationMapBorder = tiAdv.voxelizationMapBorder;
 	GetCVars()->e_svoDVR_DistRatio = GetCVars()->e_svoTI_VoxelizationLODRatio / 2;
 
-	GetCVars()->e_svoTI_InjectionMultiplier = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "InjectionMultiplier", "0"));
-	GetCVars()->e_svoTI_NumberOfBounces = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "NumberOfBounces", "0"));
-	GetCVars()->e_svoTI_Saturation = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Saturation", "0"));
-	GetCVars()->e_svoTI_PropagationBooster = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "PropagationBooster", "0"));
-	GetCVars()->e_svoTI_PointLightsBias = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "PointLightsBias", "0"));
+	GetCVars()->e_svoTI_InjectionMultiplier = ti.injectionMultiplier;
+	GetCVars()->e_svoTI_NumberOfBounces = tiAdv.numberOfBounces;
+	GetCVars()->e_svoTI_Saturation = tiAdv.saturation;
+	GetCVars()->e_svoTI_PropagationBooster = tiAdv.propagationBooster;
+	GetCVars()->e_svoTI_PointLightsBias = ti.pointLightsBias;
 	if (gEnv->IsEditor())
 	{
-		GetCVars()->e_svoTI_UpdateLighting = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "UpdateLighting", "0"));
-		GetCVars()->e_svoTI_UpdateGeometry = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "UpdateGeometry", "0"));
+		GetCVars()->e_svoTI_UpdateLighting = tiAdv.updateLighting ? 1 : 0;
+		GetCVars()->e_svoTI_UpdateGeometry = tiAdv.updateGeometry ? 1 : 0;
 	}
-	GetCVars()->e_svoTI_SkyColorMultiplier = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SkyColorMultiplier", "0"));
-	GetCVars()->e_svoTI_UseLightProbes = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "UseLightProbes", "0"));
+	GetCVars()->e_svoTI_SkyColorMultiplier = ti.skyColorMultiplier;
+	GetCVars()->e_svoTI_UseLightProbes = tiAdv.useLightProbes ? 1 : 0;
 	if (!GetCVars()->e_svoTI_UseLightProbes && GetCVars()->e_svoTI_SkyColorMultiplier >= 0)
 		GetCVars()->e_svoTI_SkyColorMultiplier = -GetCVars()->e_svoTI_SkyColorMultiplier - .0001f;
-	GetCVars()->e_svoTI_ConeMaxLength = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ConeMaxLength", "0"));
+	GetCVars()->e_svoTI_ConeMaxLength = ti.coneMaxLength;
 
-	GetCVars()->e_svoTI_DiffuseConeWidth = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "DiffuseConeWidth", "0"));
-	GetCVars()->e_svoTI_DiffuseBias = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "DiffuseBias", "0"));
-	GetCVars()->e_svoTI_DiffuseAmplifier = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "DiffuseAmplifier", "0"));
+	GetCVars()->e_svoTI_DiffuseConeWidth = tiAdv.diffuseConeWidth;
+	GetCVars()->e_svoTI_DiffuseBias = ti.diffuseBias;
+	GetCVars()->e_svoTI_DiffuseAmplifier = tiAdv.diffuseAmplifier;
 	if (GetCVars()->e_svoTI_Diffuse_Cache)
 		GetCVars()->e_svoTI_NumberOfBounces++;
 
-	GetCVars()->e_svoTI_SpecularAmplifier = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SpecularAmplifier", "0"));
-	GetCVars()->e_svoTI_SpecularFromDiffuse = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SpecularFromDiffuse", "0"));
+	GetCVars()->e_svoTI_SpecularAmplifier = ti.specularAmplifier;
+	GetCVars()->e_svoTI_SpecularFromDiffuse = tiAdv.specularFromDiffuse ? 1 : 0;
 
-	GetCVars()->e_svoMinNodeSize = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "MinNodeSize", "0"));
+	GetCVars()->e_svoMinNodeSize = ti.minNodeSize;
 
-	GetCVars()->e_svoTI_SkipNonGILights = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SkipNonGILights", "0"));
-	GetCVars()->e_svoTI_ForceGIForAllLights = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ForceGIForAllLights", "0"));
-	GetCVars()->e_svoTI_SSAOAmount = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SSAOAmount", "0"));
-	GetCVars()->e_svoTI_PortalsDeform = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "PortalsDeform", "0"));
-	GetCVars()->e_svoTI_PortalsInject = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "PortalsInject", "0"));
-	GetCVars()->e_svoTI_ObjectsMaxViewDistance = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ObjectsMaxViewDistance", "0"));
-	GetCVars()->e_svoTI_SunRSMInject = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SunRSMInject", "0"));
-	GetCVars()->e_svoTI_SSDepthTrace = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SSDepthTrace", "0"));
+	GetCVars()->e_svoTI_SkipNonGILights = tiAdv.skipNonGiLights ? 1 : 0;
+	GetCVars()->e_svoTI_ForceGIForAllLights = tiAdv.forceGIForAllLights;
+	GetCVars()->e_svoTI_SSAOAmount = ti.ssaoAmount;
+	GetCVars()->e_svoTI_PortalsDeform = tiAdv.portalsDeform;
+	GetCVars()->e_svoTI_PortalsInject = tiAdv.portalsInject;
+	GetCVars()->e_svoTI_ObjectsMaxViewDistance = tiAdv.objectsMaxViewDistance;
+	GetCVars()->e_svoTI_SunRSMInject = tiAdv.sunRSMInject;
+	GetCVars()->e_svoTI_SSDepthTrace = tiAdv.SSDepthTrace;
 
-	GetCVars()->e_svoTI_ShadowsFromSun = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ShadowsFromSun", "0"));
-	GetCVars()->e_svoTI_ShadowsSoftness = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ShadowsSoftness", "0"));
-	GetCVars()->e_svoTI_ShadowsFromHeightmap = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ShadowsFromHeightmap", "0"));
-	GetCVars()->e_svoTI_Troposphere_Active = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Active", "0"));
-	GetCVars()->e_svoTI_Troposphere_Brightness = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Brightness", "0"));
-	GetCVars()->e_svoTI_Troposphere_Ground_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Ground_Height", "0"));
-	GetCVars()->e_svoTI_Troposphere_Layer0_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Layer0_Height", "0"));
-	GetCVars()->e_svoTI_Troposphere_Layer1_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Layer1_Height", "0"));
-	GetCVars()->e_svoTI_Troposphere_Snow_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Snow_Height", "0"));
-	GetCVars()->e_svoTI_Troposphere_Layer0_Rand = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Layer0_Rand", "0"));
-	GetCVars()->e_svoTI_Troposphere_Layer1_Rand = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Layer1_Rand", "0"));
-	GetCVars()->e_svoTI_Troposphere_Layer0_Dens = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Layer0_Dens", "0"));
-	GetCVars()->e_svoTI_Troposphere_Layer1_Dens = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Layer1_Dens", "0"));
+	GetCVars()->e_svoTI_ShadowsFromSun = tiAdv.shadowsFromSun ? 1 : 0;
+	GetCVars()->e_svoTI_ShadowsSoftness = tiAdv.shadowsSoftness;
+	GetCVars()->e_svoTI_ShadowsFromHeightmap = tiAdv.shadowsFromHeightmap ? 1 : 0;
+	GetCVars()->e_svoTI_Troposphere_Active = tiAdv.troposphere_Active ? 1 : 0;
+	GetCVars()->e_svoTI_Troposphere_Brightness = tiAdv.troposphere_Brightness;
+	GetCVars()->e_svoTI_Troposphere_Ground_Height = tiAdv.troposphere_Ground_Height;
+	GetCVars()->e_svoTI_Troposphere_Layer0_Height = tiAdv.troposphere_Layer0_Height;
+	GetCVars()->e_svoTI_Troposphere_Layer1_Height = tiAdv.troposphere_Layer1_Height;
+	GetCVars()->e_svoTI_Troposphere_Snow_Height = tiAdv.troposphere_Snow_Height;
+	GetCVars()->e_svoTI_Troposphere_Layer0_Rand = tiAdv.troposphere_Layer0_Rand;
+	GetCVars()->e_svoTI_Troposphere_Layer1_Rand = tiAdv.troposphere_Layer1_Rand;
+	GetCVars()->e_svoTI_Troposphere_Layer0_Dens = tiAdv.troposphere_Layer0_Dens;
+	GetCVars()->e_svoTI_Troposphere_Layer1_Dens = tiAdv.troposphere_Layer1_Dens;
 	//GetCVars()->e_svoTI_Troposphere_CloudGen_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGen_Height", "0"));
-	GetCVars()->e_svoTI_Troposphere_CloudGen_Freq = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGen_Freq", "0"));
-	GetCVars()->e_svoTI_Troposphere_CloudGen_FreqStep = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGen_FreqStep", "0"));
-	GetCVars()->e_svoTI_Troposphere_CloudGen_Scale = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGen_Scale", "0"));
-	GetCVars()->e_svoTI_Troposphere_CloudGenTurb_Freq = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGenTurb_Freq", "0"));
-	GetCVars()->e_svoTI_Troposphere_CloudGenTurb_Scale = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGenTurb_Scale", "0"));
-	GetCVars()->e_svoTI_Troposphere_Density = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Density", "0"));
-	//if (GetCVars()->e_svoTI_Troposphere_Subdivide >= 0)
-	//GetCVars()->e_svoTI_Troposphere_Subdivide = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Subdivide", "0"));
+	GetCVars()->e_svoTI_Troposphere_CloudGen_Freq = tiAdv.troposphere_CloudGen_Freq;
+	GetCVars()->e_svoTI_Troposphere_CloudGen_FreqStep = tiAdv.troposphere_CloudGen_FreqStep;
+	GetCVars()->e_svoTI_Troposphere_CloudGen_Scale = tiAdv.troposphere_CloudGen_Scale;
+	GetCVars()->e_svoTI_Troposphere_CloudGenTurb_Freq = tiAdv.troposphere_CloudGenTurb_Freq;
+	GetCVars()->e_svoTI_Troposphere_CloudGenTurb_Scale = tiAdv.troposphere_CloudGenTurb_Scale;
+	GetCVars()->e_svoTI_Troposphere_Density = tiAdv.troposphere_Density;
 	GetCVars()->e_svoTI_Troposphere_Subdivide = GetCVars()->e_svoTI_Troposphere_Active;
 
-	GetCVars()->e_svoTI_AnalyticalOccluders = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "AnalyticalOccluders", "0"));
-	GetCVars()->e_svoTI_AnalyticalGI = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "AnalyticalGI", "0"));
-	GetCVars()->e_svoTI_TraceVoxels = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "TraceVoxels", "1"));
+	GetCVars()->e_svoTI_AnalyticalOccluders = tiAdv.analyticalOccluders ? 1 : 0;
+	GetCVars()->e_svoTI_AnalyticalGI = tiAdv.analyticalGI ? 1 : 0;
+	GetCVars()->e_svoTI_TraceVoxels = tiAdv.traceVoxels ? 1 : 0;
 
-	int lowSpecMode = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "LowSpecMode", "0"));
+	int lowSpecMode = tiAdv.lowSpecMode;
 	if (lowSpecMode > -2 && gEnv->IsEditor()) // otherwise we use value from sys_spec_Light.cfg
 		GetCVars()->e_svoTI_LowSpecMode = lowSpecMode;
 
-	GetCVars()->e_svoTI_HalfresKernelPrimary = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "HalfresKernelPrimary", "0"));
-	GetCVars()->e_svoTI_HalfresKernelSecondary = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "HalfresKernelSecondary", "0"));
-	GetCVars()->e_svoTI_UseTODSkyColor = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "UseTODSkyColor", "0"));
+	GetCVars()->e_svoTI_HalfresKernelPrimary = tiAdv.halfResKernelPrimary ? 1 : 0;
+	GetCVars()->e_svoTI_HalfresKernelSecondary = tiAdv.halfresKernelSecondary ? 1 : 0;
+	GetCVars()->e_svoTI_UseTODSkyColor = ti.useTodSkyColor;
 
-	GetCVars()->e_svoTI_HighGlossOcclusion = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "HighGlossOcclusion", "0"));
-	GetCVars()->e_svoTI_TranslucentBrightness = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "TranslucentBrightness", "2.5"));
+	GetCVars()->e_svoTI_HighGlossOcclusion = ti.highGlossOcclusion;
+	GetCVars()->e_svoTI_TranslucentBrightness = ti.translucentBrightness;
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	GetCVars()->e_svoTI_IntegrationMode = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "IntegrationMode", "0"));
+	GetCVars()->e_svoTI_IntegrationMode = tiAdv.integrationMode;
 	#else
 	GetCVars()->e_svoTI_IntegrationMode = 0;
 	#endif
 
-	GetCVars()->e_svoTI_RT_MaxDist = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "RT_MaxDist", "0"));
+	GetCVars()->e_svoTI_RT_MaxDist = tiAdv.rtMaxDist;
 
-	GetCVars()->e_svoTI_ConstantAmbientDebug = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ConstantAmbientDebug", "0"));
+	GetCVars()->e_svoTI_ConstantAmbientDebug = tiAdv.constantAmbientDebug;
 
 	if (Cry3DEngineBase::GetCVars()->e_svoStreamVoxels != 2)
-		GetCVars()->e_svoStreamVoxels = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "StreamVoxels", "0"));
+		GetCVars()->e_svoStreamVoxels = tiAdv.streamVoxels ? 1 : 0;
 
 	// fall back to run-time voxelization if voxel file data is not prepared
 	if (CSvoNode::IsStreamingActive())

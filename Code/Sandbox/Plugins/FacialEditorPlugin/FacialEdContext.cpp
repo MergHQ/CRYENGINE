@@ -33,11 +33,6 @@ public:
 	}
 
 	// IUndoObject
-	virtual int GetSize()
-	{
-		return sizeof(*this);
-	}
-
 	virtual const char* GetDescription()
 	{
 		return "Library Change";
@@ -86,11 +81,6 @@ public:
 	}
 
 	// IUndoObject
-	virtual int GetSize()
-	{
-		return sizeof(*this);
-	}
-
 	virtual const char* GetDescription()
 	{
 		return "Sequence Change";

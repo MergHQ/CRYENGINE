@@ -38,6 +38,7 @@
 #include "PropertyRowObject.h"
 
 using yasli::Serializers;
+using std::vector;
 
 // ---------------------------------------------------------------------------
 
