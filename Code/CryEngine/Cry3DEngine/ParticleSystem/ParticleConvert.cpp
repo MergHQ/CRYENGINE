@@ -258,7 +258,7 @@ void ConvertParam(XmlNodeRef node, cstr name, P& param, float inDefault = 0.f, f
 	}
 
 	XmlNodeRef p = node->newChild(name);
-	XmlNodeRef mods = p->newChild(SerializeNames<PT>::mods());
+	XmlNodeRef mods = gEnv->pSystem->CreateXmlNode(SerializeNames<PT>::mods());
 
 	if (bInherit)
 	{
@@ -274,6 +274,9 @@ void ConvertParam(XmlNodeRef node, cstr name, P& param, float inDefault = 0.f, f
 		// Reset param to default value, to mark converted
 		ResetValue(param, inDefault);
 	}
+
+	if (mods->getChildCount())
+		p->addChild(mods);
 }
 
 // Convert just the base value of a pfx1 variant parameter; the variance remains unconverted
@@ -320,7 +323,7 @@ void LogError(const string& error, IParticleComponent* component = 0)
 {
 	if (component)
 	{
-		gEnv->pLog->Log(" Component %s: ! %s", component->GetName(), error.c_str());
+		CryLog(" Component %s: ! %s", component->GetName(), error.c_str());
 
 		static int nest = 0;
 		if (!nest++)
@@ -334,7 +337,7 @@ void LogError(const string& error, IParticleComponent* component = 0)
 	}
 	else
 	{
-		gEnv->pLog->Log("! %s", error.c_str());
+		CryLog("! %s", error.c_str());
 	}
 }
 
@@ -366,6 +369,7 @@ void AddFeature(IParticleComponent& component, XmlNodeRef params, bool force)
 		{
 			if (!Serialization::LoadXmlNode(*feature, params))
 				LogError(string("Feature serialization error: ") + params->getTag(), &component);
+			// CryComment("%s", params->getXML(2).c_str());
 		}
 	}
 }
@@ -387,29 +391,26 @@ IParticleComponent* AddComponent(IParticleEffectPfx2& effect, cstr name)
 ///////////////////////////////////////////////////////////////////////
 // Feature-specific conversion
 
-void ConvertChild(IParticleComponent& parent, IParticleComponent& component, ParticleParams& params)
+void ConvertChild(IParticleComponent& component, ParticleParams& params)
 {
 	XmlNodeRef feature;
 
 	switch (params.eSpawnIndirection)
 	{
 	case ParticleParams::ESpawn::ParentStart:
-		feature = MakeFeature("SecondGenOnSpawn");
-		break;
-	case ParticleParams::ESpawn::ParentCollide:
-		feature = MakeFeature("SecondGenOnCollide");
+		feature = MakeFeature("ChildOnBirth");
 		break;
 	case ParticleParams::ESpawn::ParentDeath:
-		feature = MakeFeature("SecondGenOnDeath");
+		feature = MakeFeature("ChildOnDeath");
+		break;
+	case ParticleParams::ESpawn::ParentCollide:
+		feature = MakeFeature("ChildOnCollide");
 		break;
 	default:
 		return;
 	}
 
-	XmlNodeRef comp = feature->newChild("Components");
-	AddValue(comp, "Element", component.GetName());
-	AddFeature(parent, feature);
-
+	AddFeature(component, feature, true);
 	ResetValue(params.eSpawnIndirection);
 }
 
@@ -420,7 +421,7 @@ void ConvertSpawn(IParticleComponent& component, ParticleParams& params, bool al
 	ConvertParam(spawn, "Amount", params.fCount, 0.0f, 1.0f);
 	ConvertParam(spawn, "Delay", params.fSpawnDelay);
 	ConvertParam(spawn, "Duration", ZeroIsInfinity(params.fEmitterLifeTime, ResetValue(params.bContinuous)));
-	ConvertParam(spawn, "Restart", ZeroIsInfinity(params.fPulsePeriod));
+	ConvertParam(spawn, "Restart", ZeroIsInfinity(params.fPulsePeriod), 0.0f, gInfinity);
 
 	AddFeature(component, spawn);
 
@@ -583,8 +584,9 @@ void ConvertSprites(IParticleComponent& component, ParticleParams& params)
 
 			ConvertValue(render, "CameraOffset", params.fCameraDistanceOffset);
 			ConvertParamBase(render, "AspectRatio", params.fAspect, 1.f);
-			AddValue(render, "Offset", Vec2(params.fPivotX, -params.fPivotY));
-			params.fPivotX.Set(0); params.fPivotY.Set(0);
+			Vec2 pivot(params.fPivotX, -params.fPivotY);
+			ConvertValue(render, "Offset", pivot, Vec2(ZERO));
+ 			params.fPivotX.Set(0); params.fPivotY.Set(0);
 		}
 
 		if (XmlNodeRef project =
@@ -598,6 +600,7 @@ void ConvertSprites(IParticleComponent& component, ParticleParams& params)
 			ResetValue(params.eFacing);
 		}
 
+		AddValue(render, "SortMode", "NewToOld");
 		if (params.eFacing != ParticleParams::EFacing::Decal)
 			if (float bias = ResetValue(params.fSortOffset))
 				AddValue(render, "SortBias", -bias);  // Approximate conversion: pfx1 dist += SortOffset; pfx2 dist -= dist * SortBias / 1024
@@ -893,7 +896,7 @@ void ConvertVisibility(IParticleComponent& component, ParticleParams& params)
 	XmlNodeRef vis = MakeFeature("AppearanceVisibility");
 	ConvertValue(vis, "ViewDistanceMultiple", params.fViewDistanceAdjust, 1.f);
 	ConvertValue(vis, "MinCameraDistance", params.fCameraMinDistance);
-	ConvertValue(vis, "MaxCameraDistance", ZeroIsInfinity(params.fCameraMaxDistance));
+	ConvertValue(vis, "MaxCameraDistance", ZeroIsInfinity(params.fCameraMaxDistance), 0.0f, gInfinity);
 	switch (ResetValue(params.tVisibleIndoors, ETrinary::Both))
 	{
 		case ETrinary::If_True:  AddValue(vis, "IndoorVisibility", "IndoorOnly"); break;
@@ -1068,8 +1071,7 @@ void ConvertParamsToFeatures(IParticleComponent& component, const ParticleParams
 	// Convert params to features, resetting params as we do.
 	// Any non-default params afterwards have not been converted.
 	ConvertConfigSpec(component, params);
-	if (parent)
-		ConvertChild(*parent, component, params);
+	ConvertChild(component, params);
 	ConvertSpawn(component, params);
 	if (!ConvertTail(component, params, newEffect))
 	{
@@ -1114,6 +1116,8 @@ void ConvertSubEffects(IParticleEffectPfx2& newEffect, const ::IParticleEffect& 
 			name = base + 1;
 		}
 		component = AddComponent(newEffect, name);
+		component->SetParent(parent);
+		// CryComment(" Component %s", component->GetName());
 
 		ConvertParamsToFeatures(*component, oldSubEffect.GetParticleParams(), newEffect, parent);
 	}
@@ -1144,10 +1148,11 @@ PParticleEffect CParticleSystem::ConvertEffect(const ::IParticleEffect* pOldEffe
 
 	pNewEffect = CreateEffect();
 	RenameEffect(pNewEffect, newName);
-	gEnv->pLog->Log("PFX1 to PFX2 \"%s\":", oldName.c_str());
+	CryLog("PFX1 to PFX2 \"%s\":", oldName.c_str());
+	non_const(pOldEffect)->LoadResources();
 	ConvertSubEffects(*pNewEffect, *pOldEffect);
 
-	gEnv->pLog->Log(" - Saving as \"%s\":", newName.c_str());
+	CryLog(" - Saving as \"%s\":", newName.c_str());
 	gEnv->pCryPak->MakeDir(PathUtil::GetParentDirectory(newName).c_str());
 	Serialization::SaveJsonFile(newName, *pNewEffect);
 

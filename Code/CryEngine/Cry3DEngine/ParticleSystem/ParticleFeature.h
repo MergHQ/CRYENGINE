@@ -36,6 +36,10 @@ public:
 	const char*                 GetResourceName(uint resourceId) const override   { return nullptr; }
 	// ~IParticleFeature
 
+	// Parameters
+	static bool HasConnector()   { return false; }
+	static uint DefaultForType() { return 0; }
+
 	// Initialization
 	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent)                         { return this; }
 	virtual void              AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) {}
@@ -152,30 +156,27 @@ static const ColorB colorComponent  = HexToColor(0x80c0c0);
   struct SFeatureParams; \
   virtual const SParticleFeatureParams& GetFeatureParams() const override;
 
-#define CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, Color, UseConnector, DefaultForType) \
+// Implement a Feature that can be added to Components
+#define CRY_PFX2_IMPLEMENT_COMPONENT_FEATURE(BaseType, Type, GroupName, FeatureName, Color)                              \
   struct Type::SFeatureParams: SParticleFeatureParams { SFeatureParams() {                                               \
     m_fullName = GroupName ": " FeatureName;                                                                             \
     m_groupName = GroupName;                                                                                             \
     m_featureName = FeatureName;                                                                                         \
     m_color = Color;                                                                                                     \
     m_pFactory = []() -> IParticleFeature* { return new Type(); };                                                       \
-    m_hasComponentConnector = UseConnector;                                                                              \
-    m_defaultForType = DefaultForType;                                                                                   \
+    m_hasComponentConnector = Type::HasConnector();                                                                      \
+    m_defaultForType = Type::DefaultForType();                                                                           \
   } };                                                                                                                   \
   const SParticleFeatureParams& Type::GetFeatureParams() const { static Type::SFeatureParams params; return params; }    \
   static bool sInit ## Type = CParticleFeature::RegisterFeature(Type::SFeatureParams());                                 \
   SERIALIZATION_CLASS_NAME(BaseType, Type, GroupName FeatureName, GroupName FeatureName);                                \
+
+// Implement a Feature that can be added to Components and Emitters
+#define CRY_PFX2_IMPLEMENT_FEATURE(BaseType, Type, GroupName, FeatureName, Color)                                        \
+  CRY_PFX2_IMPLEMENT_COMPONENT_FEATURE(BaseType, Type, GroupName, FeatureName, Color)                                    \
   SERIALIZATION_CLASS_NAME(IParticleFeature, Type, GroupName FeatureName, GroupName ":" FeatureName);                    \
 
-#define CRY_PFX2_IMPLEMENT_FEATURE(BaseType, Type, GroupName, FeatureName, Color) \
-  CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, Color, false, 0)
-
-#define CRY_PFX2_IMPLEMENT_FEATURE_DEFAULT(BaseType, Type, GroupName, FeatureName, Color, ForType) \
-  CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, Color, false, ForType)
-
-#define CRY_PFX2_IMPLEMENT_FEATURE_WITH_CONNECTOR(BaseType, Type, GroupName, FeatureName, Color) \
-  CRY_PFX2_IMPLEMENT_FEATURE_INTERNAL(BaseType, Type, GroupName, FeatureName, Color, true, 0)
-
+// Implement a legacy class name for serializing a Feature
 #define CRY_PFX2_LEGACY_FEATURE(Type, GroupName, FeatureName) \
 	SERIALIZATION_CLASS_NAME(CParticleFeature, Type, GroupName FeatureName, GroupName FeatureName);
 

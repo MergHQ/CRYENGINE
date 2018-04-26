@@ -347,6 +347,8 @@ class CFeatureSpawnRate : public CParticleFeatureSpawnBase
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
+	static uint DefaultForType() { return EFT_Spawn; }
+
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		CParticleFeatureSpawnBase::AddToComponent(pComponent, pParams);
@@ -382,7 +384,7 @@ private:
 	ESpawnRateMode m_mode = ESpawnRateMode::ParticlesPerSecond;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE_DEFAULT(CParticleFeature, CFeatureSpawnRate, "Spawn", "Rate", colorSpawn, EFT_Spawn);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnRate, "Spawn", "Rate", colorSpawn);
 
 //////////////////////////////////////////////////////////////////////////
 

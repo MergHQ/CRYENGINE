@@ -76,8 +76,7 @@ bool TValue<T, TTraits>::Serialize(Serialization::IArchive& ar, const char* name
 	else
 	{
 		if (!ar(Serialization::Range(v, HardMin(), HardMax()), name, label))
-			if (ar.isInput())
-				v = Default();
+			return false;
 	}
 	if (ar.isInput())
 		Set(v);
