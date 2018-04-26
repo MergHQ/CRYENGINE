@@ -5137,6 +5137,7 @@ void CD3D9Renderer::SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomColle
 {
 #if defined(ENABLE_RENDER_AUX_GEOM)
 	m_currentAuxGeomCBCollector = auxGeomCollector;
+	gEnv->pAuxGeomRenderer = m_currentAuxGeomCBCollector->Get(0);
 #endif
 }
 
