@@ -193,6 +193,7 @@ public:
 	void                      TrimResourceLayouts();
 
 #if CRY_RENDERER_VULKAN
+	SDeviceResourceLayoutDesc LookupResourceLayoutDesc(uint64 layoutHash);
 	const std::vector<uint8>* LookupResourceLayoutEncoding(uint64 layoutHash);
 	void RegisterEncodedResourceLayout(uint64 layoutHash, std::vector<uint8>&& encodedLayout);
 	void UnRegisterEncodedResourceLayout(uint64 layoutHash);

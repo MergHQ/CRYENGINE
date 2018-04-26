@@ -380,8 +380,13 @@ const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateI
 
 	// Reflect
 	void* pShaderReflBuf;
-	HRESULT hr = D3DReflect(pVertexShader->m_pShaderData, pVertexShader->m_nDataSize, IID_ID3D11ShaderReflection, &pShaderReflBuf);
-	CRY_ASSERT(SUCCEEDED(hr) && pShaderReflBuf);
+
+	{
+		CRY_PROFILE_SECTION(PROFILE_RENDERER, "D3DReflect");
+		HRESULT hr = D3DReflect(pVertexShader->m_pShaderData, pVertexShader->m_nDataSize, IID_ID3D11ShaderReflection, &pShaderReflBuf);
+		CRY_ASSERT(SUCCEEDED(hr) && pShaderReflBuf);
+	}
+
 	ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pShaderReflBuf;
 
 	// Create the composition descriptor
@@ -398,6 +403,8 @@ const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateI
 		// Insert with hint
 		return &s_InputLayoutCompositions.insert(it, std::make_pair(compositionDescriptor, pair))->second;
 	}
+
+	SAFE_RELEASE(pShaderReflection);
 
 	return &it->second;
 }

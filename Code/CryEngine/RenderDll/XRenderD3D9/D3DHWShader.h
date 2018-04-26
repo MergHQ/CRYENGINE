@@ -687,8 +687,9 @@ public:
 	static void   mfGenName(SHWSInstance* pInst, char* dstname, int nSize, byte bType);
 	void          CorrectScriptEnums(CParserBin& Parser, SHWSInstance* pInst, std::vector<SCGBind>& InstBindVars, FXShaderToken* Table);
 	bool          ConvertBinScriptToASCII(CParserBin& Parser, SHWSInstance* pInst, std::vector<SCGBind>& InstBindVars, FXShaderToken* Table, TArray<char>& Scr);
-	bool          AddResourceLayoutToScript(SHWSInstance* pInst, const char* szProfile, const char* pFunCCryName, TArray<char>& Scr);
+	bool          AddResourceLayoutToScriptHeader(SHWSInstance* pInst, const char* szProfile, const char* pFunCCryName, TArray<char>& Scr);
 	void          RemoveUnaffectedParameters_D3D10(CParserBin& Parser, SHWSInstance* pInst, std::vector<SCGBind>& InstBindVars);
+	void          AddResourceLayoutToBinScript(CParserBin& Parser, SHWSInstance* pInst, FXShaderToken* Table);
 	bool          mfStoreCacheTokenMap(FXShaderToken*& Table, TArray<uint32>*& pSHData, const char* szName);
 	void          mfGetTokenMap(CResFile* pRes, CDirEntry* pDE, FXShaderToken*& Table, TArray<uint32>*& pSHData);
 	void          mfSetDefaultRT(uint64& nAndMask, uint64& nOrMask);

@@ -307,6 +307,12 @@ class IManager;
 #define STR_GL4_SHADER_TARGET     "GL4"
 #define STR_GLES3_SHADER_TARGET   "GLES3"
 #define STR_VULKAN_SHADER_TARGET  "VULKAN"
+
+//////////////////////////////////////////////////////////////////////
+#define STR_VK_SHADER_COMPILER_HLSLCC    "HLSLCC"
+#define STR_VK_SHADER_COMPILER_GLSLANG   "GLSLANG"
+#define STR_VK_SHADER_COMPILER_DXC       "DXC"
+
 //////////////////////////////////////////////////////////////////////
 // Render features
 

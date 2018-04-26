@@ -93,7 +93,10 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 		shaderStageCreateInfos[validShaderCount].flags = 0;
 		shaderStageCreateInfos[validShaderCount].stage = stage;
 		shaderStageCreateInfos[validShaderCount].module = reinterpret_cast<NCryVulkan::CShader*>(hwShaders[shaderClass].pDeviceShader)->GetVulkanShader();
-		shaderStageCreateInfos[validShaderCount].pName = "main"; // SPIR-V compiler (glslangValidator) currently supports this only
+		if(CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_HLSLCC) == 0)
+			shaderStageCreateInfos[validShaderCount].pName = "main"; // SPIR-V compiler (glslangValidator) currently supports this only
+		else
+			shaderStageCreateInfos[validShaderCount].pName = hwShaders[shaderClass].pHwShader->m_EntryFunc;
 		shaderStageCreateInfos[validShaderCount].pSpecializationInfo = nullptr;
 
 		validShaderCount++;
@@ -455,7 +458,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 	dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	dynamicStateCreateInfo.pNext = nullptr;
 	dynamicStateCreateInfo.flags = 0;
-	dynamicStateCreateInfo.dynamicStateCount = dynamicStateCount - !bUsingDynamicDepthBias;
+	dynamicStateCreateInfo.dynamicStateCount = dynamicStateCount;
 	dynamicStateCreateInfo.pDynamicStates = dynamicStates;
 
 	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
@@ -530,7 +533,10 @@ bool CDeviceComputePSO_Vulkan::Init(const CDeviceComputePSODesc& psoDesc)
 	computePipelineCreateInfo.stage.flags = 0;
 	computePipelineCreateInfo.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
 	computePipelineCreateInfo.stage.module = reinterpret_cast<NCryVulkan::CShader*>(hwShaders[eHWSC_Compute].pDeviceShader)->GetVulkanShader();
-	computePipelineCreateInfo.stage.pName = "main"; // SPIR-V compiler (glslangValidator) currently supports this only
+	if(CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_HLSLCC) == 0)
+		computePipelineCreateInfo.stage.pName = "main"; // SPIR-V compiler (glslangValidator) currently supports this only
+	else
+		computePipelineCreateInfo.stage.pName = hwShaders[eHWSC_Compute].pHwShader->m_EntryFunc; // SPIR-V compiler (glslangValidator) currently supports this only
 	computePipelineCreateInfo.stage.pSpecializationInfo = nullptr;
 	computePipelineCreateInfo.layout = static_cast<CDeviceResourceLayout_Vulkan*>(psoDesc.m_pResourceLayout.get())->GetVkPipelineLayout();
 	computePipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;

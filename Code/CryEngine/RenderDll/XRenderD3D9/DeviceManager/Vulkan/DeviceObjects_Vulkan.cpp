@@ -103,6 +103,18 @@ CDeviceResourceLayoutPtr CDeviceObjectFactory::CreateResourceLayoutImpl(const SD
 	return nullptr;
 }
 
+SDeviceResourceLayoutDesc CDeviceObjectFactory::LookupResourceLayoutDesc(uint64 layoutHash)
+{
+	for (auto& it : m_ResourceLayoutCache)
+	{
+		auto pLayout = reinterpret_cast<CDeviceResourceLayout_Vulkan*>(it.second.get());
+		if (pLayout->GetHash() == layoutHash)
+			return it.first;
+	}
+
+	return SDeviceResourceLayoutDesc();
+}
+
 const std::vector<uint8>* CDeviceObjectFactory::LookupResourceLayoutEncoding(uint64 layoutHash)
 {
 	auto encodedLayout = m_encodedResourceLayouts.find(layoutHash);
@@ -408,7 +420,8 @@ void CDeviceObjectFactory::AllocateNullResources()
 		info.flags = 0;
 		info.size = 256;
 		info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT       | VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | 
-		             VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		             VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | 
+					 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT        | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
 		info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		info.queueFamilyIndexCount = 0;

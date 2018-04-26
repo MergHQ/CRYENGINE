@@ -1157,7 +1157,18 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 	const char* pCompilerOrbis   = "ORBIS/V033/DXOrbisShaderCompiler.exe %s %s %s %s";
 	const char* pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
 	const char* pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
-	const char *pCompilerSPIRV   = "SPIRV/V002/HLSL2SPIRV.exe %s %s %s %s";
+	
+	string compilerSPIRV = "";
+	if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_HLSLCC) == 0)
+	{
+		compilerSPIRV = "SPIRV/V002/HLSL2SPIRV.exe %s %s %s %s";
+	}
+	else if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_DXC) == 0)
+	{
+		// " -spirv -Od -Zpr \"%s.%s\" -Fo \"%s.%s\" -Fc \"%s.%s\" -T %s -E \"%s\" %s %s"
+		compilerSPIRV.Format("SPIRV/V003/dxc/dxc.exe %s %s ", eClass == eHWSC_Vertex ? "-fvk-invert-y" : "", CRenderer::CV_r_shadersdebug == 3 ? "-Od" : "-O3");
+		compilerSPIRV += "-spirv -no-warnings -E %s -T %s -Zpr -Fo %s %s";
+	}
 
 #define ESSL_VERSION   "es310"
 #if DXGL_REQUIRED_VERSION >= DXGL_VERSION_45
@@ -1275,7 +1286,7 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 	else if (CParserBin::m_nPlatform == SF_GLES3)
 		result = pCompilerGLES3;
 	else if (CParserBin::m_nPlatform == SF_VULKAN)
-		result = pCompilerSPIRV;
+		result = compilerSPIRV;
 	else
 	{
 		CryFatalError("Compiling shaders for unsupported platform");
