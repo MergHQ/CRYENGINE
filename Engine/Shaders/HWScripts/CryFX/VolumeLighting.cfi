@@ -2492,7 +2492,7 @@ technique ReprojectVolumetricFog
 ////////////////////////////////////////////////////////////////////////////
 struct vtxOutVolumetricFog
 {
-  float4 HPosition : POSITION;
+  float4 HPosition : SV_POSITION;
   float2 baseTC : TEXCOORD;
 };
 
@@ -2507,8 +2507,8 @@ vtxOutVolumetricFog StoreJitteringDepthToClipVolumeDepthVS(uint VertexID : SV_Ve
 }
 
 void StoreJitteringDepthToClipVolumeDepthPS(vtxOutVolumetricFog IN,
-                                            out float4 Color : COLOR0,
-                                            out float Depth : DEPTH)
+                                            out float4 Color : SV_Target0,
+                                            out float Depth : SV_Depth)
 {
 	Color = 0.0f;
 
@@ -2552,7 +2552,7 @@ vtxOutVolumetricFog RenderDownscaledShadowMapVS(uint VertexID : SV_VertexID)
 	return OUT;
 }
 
-void RenderDownscaledShadowMapPS(vtxOutVolumetricFog IN, out float Depth : DEPTH)
+void RenderDownscaledShadowMapPS(vtxOutVolumetricFog IN, out float Depth : SV_Depth)
 {
 #if %_RT_LIGHTVOLUME0 && %_RT_LIGHTVOLUME1
 	Texture2D depthMap = SrcShadowMapTex2;
@@ -2572,7 +2572,7 @@ void RenderDownscaledShadowMapPS(vtxOutVolumetricFog IN, out float Depth : DEPTH
 	Depth = min(min(min(shadow.x, shadow.y), shadow.z), shadow.w);
 }
 
-void DownscaleShadowMap2PS(vtxOutVolumetricFog IN, out float Depth : DEPTH)
+void DownscaleShadowMap2PS(vtxOutVolumetricFog IN, out float Depth : SV_Depth)
 {
 	// downscale depth shadow map
 #if ENABLE_DOWNSCALE_AVERAGED_DEPTH_SHADOW_MAP
@@ -2584,7 +2584,7 @@ void DownscaleShadowMap2PS(vtxOutVolumetricFog IN, out float Depth : DEPTH)
 #endif
 }
 
-void DownscaleShadowMap4PS(vtxOutVolumetricFog IN, out float Depth : DEPTH)
+void DownscaleShadowMap4PS(vtxOutVolumetricFog IN, out float Depth : SV_Depth)
 {
 	// downscale depth shadow map
 #if ENABLE_DOWNSCALE_AVERAGED_DEPTH_SHADOW_MAP

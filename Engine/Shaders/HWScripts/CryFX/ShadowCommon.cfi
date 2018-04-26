@@ -347,13 +347,6 @@ float GetVolumetricCloudShadow(Texture3D volCloudShadowTex, SamplerState volClou
 	return max(decayAboveCloud, exp(-opticalThickness));
 }
 
-float GetCloudShadowCommon(float3 worldPos, sampler2D sShadowMap, float4 vAnimParams, float4 vParams)
-{
-	float2 uv = ComputeCloudShadowMapUV(worldPos);
-	float fCloudsShadow = saturate( GetTexture2DLod(sShadowMap, float4((uv * vAnimParams.xy - vAnimParams.zw) , 0, 0)).r * vParams.w );
-	return vParams.z>0 ? 1 - fCloudsShadow : fCloudsShadow;
-}
-
 float GetCloudShadowCommon(float3 worldPos, Texture2D cloudShadowTex, SamplerState bilinearSamplerWrap, float4 vAnimParams, float4 vParams)
 {
 	float2 uv = ComputeCloudShadowMapUV(worldPos);

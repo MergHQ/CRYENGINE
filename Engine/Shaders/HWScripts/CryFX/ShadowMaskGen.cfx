@@ -86,7 +86,7 @@ struct app2vertStencilCull
 
 struct vert2fragStencilCull
 {
-	float4 HPosition : POSITION;
+	float4 HPosition : SV_POSITION;
 };
 
 struct pixout_StencilCull

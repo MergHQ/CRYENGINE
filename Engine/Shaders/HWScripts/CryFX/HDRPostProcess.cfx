@@ -772,7 +772,7 @@ pixout MultiGSMShadowedFogPS(fragInShadowFog IN)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //===================================================================================
 
-pixout FogPassVolShadowsInterleavePassPS(vert2fragFog IN, float4 WPos : SV_POSITION)
+pixout FogPassVolShadowsInterleavePassPS(vert2fragFog IN)
 {
 	pixout OUT = (pixout) 0;
 
@@ -809,7 +809,7 @@ pixout FogPassVolShadowsInterleavePassPS(vert2fragFog IN, float4 WPos : SV_POSIT
 	shadowContext.bilinearSamplerWrap = fogShadowBilinearWrapSS;
 	shadowContext.noiseTex = fogShadowRotTex;
 	
-	const float3 cameraToWorldPos = ReconstructWorldPos(WPos.xy, sceneDepth, true);
+	const float3 cameraToWorldPos = ReconstructWorldPos(IN.WPos.xy, sceneDepth, true);
 
 	half shadowOccl = 0;
 	for (int i=0; i<numShadowSamples; i++)
@@ -1001,7 +1001,7 @@ float4 GetVolumetricFog(in vert2fragFog IN, in float4 WPos)
 	return localFogColor;
 }
 
-pixout FogPassPS(vert2fragFog IN, float4 WPos : SV_POSITION)
+pixout FogPassPS(vert2fragFog IN)
 {
 	pixout OUT;
 
@@ -1019,14 +1019,14 @@ pixout FogPassPS(vert2fragFog IN, float4 WPos : SV_POSITION)
 	float4 localFogColor;
 
 #if %_RT_VOLUMETRIC_FOG
-	localFogColor = GetVolumetricFog(IN, WPos);
+	localFogColor = GetVolumetricFog(IN, IN.WPos);
 
 	localFogColor.a = saturate(localFogColor.a);
 #else
 	float sceneDepth;
 	float3 worldPos, cameraToWorldPos;
 
-	FogPassCommon(IN, WPos, sceneDepth, localFogColor, worldPos, cameraToWorldPos);
+	FogPassCommon(IN, IN.WPos, sceneDepth, localFogColor, worldPos, cameraToWorldPos);
 
 	localFogColor.a = saturate(1.0 - localFogColor.a);
 
@@ -1044,7 +1044,7 @@ pixout FogPassPS(vert2fragFog IN, float4 WPos : SV_POSITION)
 float4 LightningPos;
 float4 LightningColSize;
 
-pixout FogPassWithLightningPS(vert2fragFog IN, float4 WPos : SV_POSITION)
+pixout FogPassWithLightningPS(vert2fragFog IN)
 {
   pixout OUT;
 
@@ -1058,7 +1058,7 @@ pixout FogPassWithLightningPS(vert2fragFog IN, float4 WPos : SV_POSITION)
 
 	sceneDepth = GetLinearDepth(zMap, IN.baseTC.xy);
 
-	cameraToWorldPos = ReconstructWorldPos(WPos.xy, sceneDepth, true);
+	cameraToWorldPos = ReconstructWorldPos(IN.WPos.xy, sceneDepth, true);
 
 
 	/////////////////////////////////////////////////////////////

@@ -42,7 +42,7 @@ struct a2vBokehQuad
 
 struct v2fBokehQuad
 {
-	float4 Position  : POSITION;  
+	float4 Position  : SV_POSITION;  
 	float4 QuadPos   : TEXCOORD0; //zw dof params
 	float4 Color     : COLOR0;
 };
@@ -374,7 +374,7 @@ SamplerState DnScDoF_HDRTargSamp           : register(s1);  //LinearClamp
 
 struct vtxOutDownscaleDof
 {
-	float4 HPosition  : POSITION;
+	float4 HPosition  : SV_POSITION;
 	float4 tc0 : TEXCOORD0;
 	float4 tc1 : TEXCOORD1;
 	float4 tc2 : TEXCOORD2;

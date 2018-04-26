@@ -68,7 +68,7 @@ struct a2v
 
 struct v2f
 {
-  float4 Position  : POSITION;  //in projection space
+  float4 Position  : SV_POSITION;  //in projection space
 #if %_FT_DIFFUSE
   float4 Color     : COLOR0;
 #endif  

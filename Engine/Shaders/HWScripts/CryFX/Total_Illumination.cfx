@@ -80,7 +80,7 @@ Texture2D levelHeightmap: register (t8);
 // Structures
 struct vtxOutWPOS
 {
-	float4 HPosition: POSITION;
+	float4 HPosition: SV_POSITION;
 	float4 baseTC: TEXCOORD0;
 	float4 CamVec: TEXCOORD1;
 };

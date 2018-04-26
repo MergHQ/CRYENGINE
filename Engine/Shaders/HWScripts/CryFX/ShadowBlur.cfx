@@ -39,7 +39,7 @@ struct app2vertShadow
 
 struct vtxOut
 {
-  float4 HPosition  : POSITION;
+  float4 HPosition  : SV_POSITION;
   float4 baseTC     : TEXCOORD0;
 };
 

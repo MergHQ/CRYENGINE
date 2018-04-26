@@ -30,35 +30,35 @@
 
 #define ISOLATE
 
-#define OUT_P float4 HPosition : POSITION;		
+#define OUT_P float4 HPosition : SV_POSITION;		
 
 #define OUT_HPOS										\
 	#if !%_PS										\
-		float4 HPosition : SV_Position;							\
+		float4 HPosition : SV_POSITION;							\
 	#endif	
 
 #if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
-	#define IN_WPOS sample float4 WPos : SV_Position;
+	#define IN_WPOS sample float4 WPos : SV_POSITION;
 #else
-	#define IN_WPOS float4 WPos : SV_Position;
+	#define IN_WPOS float4 WPos : SV_POSITION;
 #endif
 
 #if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
 
 #define OUT_HPOS_IN_WPOS									\
 	#if %_PS										            \
-		sample float4 WPos : SV_Position;			\
+		sample float4 WPos : SV_POSITION;			\
 	#else											              \
-		float4 HPosition : SV_Position;			  \
+		float4 HPosition : SV_POSITION;			  \
 	#endif
 
 #else
 
 #define OUT_HPOS_IN_WPOS									\
 	#if %_PS										            \
-		float4 WPos : SV_Position;			      \
+		float4 WPos : SV_POSITION;			      \
 	#else											              \
-		float4 HPosition : SV_Position;			  \
+		float4 HPosition : SV_POSITION;			  \
 	#endif
 	
 #endif

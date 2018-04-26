@@ -183,7 +183,7 @@ struct a2v
 
 struct v2f
 {
-	float4 Position		: POSITION;
+	float4 Position		: SV_POSITION;
 	float2 baseTC		: TEXCOORD0;
 	float3 toSun		: TEXCOORD1;
 };
@@ -191,7 +191,7 @@ struct v2f
 
 struct v2f_simple
 {
-	float4 Position		: POSITION;
+	float4 Position		: SV_POSITION;
 	float2 baseTC		: TEXCOORD0;
 };
 

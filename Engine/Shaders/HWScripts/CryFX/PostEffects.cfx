@@ -586,7 +586,7 @@ float4 clrScrParams;
 
 struct vtxOutClrScr
 {
-  float4 HPosition  : POSITION;
+  float4 HPosition  : SV_POSITION;
 };
 
 vtxOutClrScr ClearScreenVS(vtxIn IN)
@@ -744,9 +744,9 @@ technique DownsampleDepth
 
 Texture2D<float4> CopyToDeviceDepth_Tex0 : register(t0);
 
-void CopyToDeviceDepthPS(vtxOut IN, out float Depth : SV_Depth, float4 WPos : SV_Position)
+void CopyToDeviceDepthPS(vtxOut IN, out float Depth : SV_Depth)
 {
-	float linearDepth = CopyToDeviceDepth_Tex0.Load(int3(WPos.xy, 0)).x;
+	float linearDepth = CopyToDeviceDepth_Tex0.Load(int3(IN.WPos.xy, 0)).x;
 	Depth = g_PS_ProjRatio.y / linearDepth + g_PS_ProjRatio.x;
 }
 
@@ -799,7 +799,7 @@ float4 clampTC; // minU, maxU, minV, maxV
 
 struct vtxOutGauss
 {
-  float4 HPosition : POSITION;
+  float4 HPosition : SV_POSITION;
   float4 tc0 : TEXCOORDN;    
   float4 tc1 : TEXCOORDN;    
   float4 tc2 : TEXCOORDN;    
@@ -809,7 +809,7 @@ struct vtxOutGauss
 
 struct vtxOutGaussMasked
 {
-  float4 HPosition : POSITION;
+  float4 HPosition : SV_POSITION;
   float4 tc0 : TEXCOORDN;    
   float4 tc1 : TEXCOORDN;    
   float2 tc2 : TEXCOORDN;    
@@ -977,7 +977,7 @@ technique MaskedGaussBlurBilinear
 // FIX:: optimize
 struct vtxOutAlphaBlur
 {
-  float4 HPosition : POSITION;
+  float4 HPosition : SV_POSITION;
   float4 tc0 : TEXCOORDN;    
   float2 tc1 : TEXCOORDN;    
   float2 tc2 : TEXCOORDN;    
@@ -1178,7 +1178,7 @@ struct vtxInDilate
 
 struct vtxOutDilate
 {
-  float4 HPosition  : POSITION;
+  float4 HPosition  : SV_POSITION;
   float3 baseTC     : TEXCOORD0;    
 };
 
@@ -1393,7 +1393,7 @@ SamplerState ugTrilinearWrapSampler : register(s1) = SS_TrilinearWrap;
 
 struct vtxOutGodRays
 {
-  float4 HPosition  : POSITION; 
+  float4 HPosition  : SV_POSITION; 
   float4 baseTC     : TEXCOORDN; // zw unused
   
   float4 waveTC      : TEXCOORDN;
@@ -1799,7 +1799,7 @@ SamplerState SelSil_Sampler             : register(s0);
 
 struct vtxOutSilhouette
 {
-    float4 HPosition : POSITION;
+    float4 HPosition : SV_POSITION;
     float4 baseTC0 : TEXCOORD0;
     float4 baseTC1 : TEXCOORD1;
     float4 baseTC2 : TEXCOORD2;

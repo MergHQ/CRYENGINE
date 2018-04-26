@@ -27,7 +27,7 @@ struct SDebugLightApp2VS
 
 struct SDebugLightVS2PS
 {
-	float4 pos : POSITION0;
+	float4 pos : SV_Position;
 	float4 col : COLOR0;
 };
 

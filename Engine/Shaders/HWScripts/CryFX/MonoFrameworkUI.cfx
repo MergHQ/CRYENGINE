@@ -6,7 +6,7 @@
 
 struct v2f
 {
-	float4 HPosition  : POSITION;   
+	float4 HPosition  : SV_POSITION;   
 	float4 baseTC     : TEXCOORDN;
 	float4 vTangent   : TEXCOORDN;
 	float4 vBinormal  : TEXCOORDN;

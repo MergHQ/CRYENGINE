@@ -136,16 +136,6 @@ float CalcClipVolumeBlendWeight(uint nClipVolumeID, uint nClipVolumeData, float 
 	}
 }
 
-float CalcClipVolumeBlendWeight(sampler2D stencilMask, float2 tc, float lightStencilID)
-{
-	float4 maskVal = tex2D(stencilMask, tc );
-	const uint nClipVolumeID = maskVal.r * 255.0f;
-	const uint nClipVolumeData = asuint(g_vVisAreasParams[nClipVolumeID & (MAX_CLIPVOLUMES-1)].a);
-	const uint nLightStencilID = asuint(lightStencilID);
-		
-	return CalcClipVolumeBlendWeight(nClipVolumeID, nClipVolumeData, maskVal.g, nLightStencilID);
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1278,7 +1268,7 @@ technique ResolveStencil
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////// Clip Volumes ///////////////////////////////////////////
-struct vtxOutClipVolume  { float4 HPosition   : POSITION; };
+struct vtxOutClipVolume  { float4 HPosition   : SV_POSITION; };
 struct pixOutClipVolume {};
 
 cbuffer CBClipVolume : register(b0)
@@ -1440,7 +1430,7 @@ technique ResolveStencilVolFog
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-struct vtxOutShadowMaskVolume { float4 HPosition : POSITION; };
+struct vtxOutShadowMaskVolume { float4 HPosition : SV_POSITION; };
 
 Texture2D         sceneDepthTex : register(t0);
 Texture2D<float4> ShadowMap     : register(t1);
