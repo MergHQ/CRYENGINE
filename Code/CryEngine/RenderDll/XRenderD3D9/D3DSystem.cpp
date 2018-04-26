@@ -159,7 +159,7 @@ SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayCon
 	auto pDC = std::make_shared<CSwapChainBackedRenderDisplayContext>(desc, m_uniqueDisplayContextId++);
 
 	pDC->m_bMainViewport = desc.type == IRenderer::eViewportType_Default;
-	pDC->m_desc.renderFlags |= pDC->m_bMainViewport * (FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL);
+	pDC->m_desc.renderFlags |= pDC->m_bMainViewport ? FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL : 0;
 	pDC->m_desc.superSamplingFactor.x = std::max<int>(1, desc.superSamplingFactor.x);
 	pDC->m_desc.superSamplingFactor.y = std::max<int>(1, desc.superSamplingFactor.y);
 	pDC->m_desc.screenResolution.x = 0;

@@ -371,7 +371,7 @@ protected:
 	friend class CViewManager;
 
 	// Called to create viewport rendering context.
-	virtual bool CreateRenderContext(uintptr_t hCtx) { return true; };
+	virtual bool CreateRenderContext(HWND hCtx) { return true; };
 
 	bool         IsVectorInValidRange(const Vec3& v) const { return fabs(v.x) < 1e+8 && fabs(v.y) < 1e+8 && fabs(v.z) < 1e+8; }
 	void         AssignConstructionPlane(const Vec3& p1, const Vec3& p2, const Vec3& p3);

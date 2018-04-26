@@ -109,7 +109,8 @@ CViewport::CViewport()
 void CViewport::SetViewWidget(QWidget* view)
 {
 	m_viewWidget = view;
-	CreateRenderContext(reinterpret_cast<uintptr_t>(GetSafeHwnd()));
+
+	this->CreateRenderContext(GetSafeHwnd());
 }
 
 //////////////////////////////////////////////////////////////////////////

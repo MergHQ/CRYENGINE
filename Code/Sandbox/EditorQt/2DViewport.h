@@ -84,7 +84,7 @@ protected:
 		VPA_YZ,
 		VPA_YX,
 	};
-	virtual bool CreateRenderContext(HWND hWnd);
+	virtual bool CreateRenderContext(HWND hWnd) override;
 
 	void         SetAxis(EViewportAxis axis);
 
