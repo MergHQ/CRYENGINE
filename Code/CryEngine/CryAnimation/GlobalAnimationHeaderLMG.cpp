@@ -676,54 +676,6 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 					}
 				}
 
-				for (const BSBlendable& block : m_arrBSAnnotations)
-				{
-					const size_t vertexCount = block.num;
-					assert(vertexCount <= 8);
-
-					Vec3 vertices[8];
-
-					// we cannot check auto initialized parameters, so skip those cases
-					bool hasAutoInitParam = false;
-
-					for (size_t i = 0; i < vertexCount; ++i)
-					{
-						const auto parameterId = block.idx[i];
-						for(int dim = 0; dim < m_Dimensions; ++dim)
-						{
-							if (m_arrParameter[parameterId].m_PreInitialized[dim] == 0)
-							{
-								hasAutoInitParam = true;
-							}
-						}
-	
-						vertices[i] = Vec3(m_arrParameter[parameterId].m_Para.x, m_arrParameter[parameterId].m_Para.y, m_arrParameter[parameterId].m_Para.z);
-					}
-
-					if (hasAutoInitParam)
-					{
-						continue;
-					}
-
-					bool issueWarning = false;
-					for (size_t i = 0; i < vertexCount; ++i)
-					{
-						const Vec3& v0 = vertices[i];
-						const Vec3& v1 = vertices[(i + 1) % vertexCount];
-						if ((v0 - v1).GetLength() < 0.01f)
-						{
-							issueWarning = true;
-							break;
-						}
-					}
-
-					if (issueWarning)
-					{
-						g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, 0, "CryAnimation: parameters in a BlendSpace are too close to each other: %s", pathnameLMG);
-						break;
-					}
-				}
-
 				continue;
 			}
 
