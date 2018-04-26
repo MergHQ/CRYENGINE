@@ -13,7 +13,6 @@ Copyright (C), Crytek Studios, 2014.
 //#include "TopologyGraph.h"
 //#include "TopologyTransform.h"
 #include "AutoGeneratorUVUnwrap.h"
-#include <CryThreading/CryThreadImpl.h>
 #include <Cry3DEngine/CGF/CGFContent.h>
 
 // Provides definition for PushProfilingMarker() in debug builds.

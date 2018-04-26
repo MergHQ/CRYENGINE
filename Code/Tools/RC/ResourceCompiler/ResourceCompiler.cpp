@@ -8,7 +8,8 @@
 #include <CryCore/Assert/CryAssert_impl.h>
 #include <platform_implRC.inl>
 
-#include <time.h>
+#include <ctime>
+#include <mutex>
 
 #include <CryCore/Platform/CryWindows.h>   // needed for DbgHelp.h
 #include <DbgHelp.h>
@@ -234,17 +235,17 @@ public:
 	std::vector<RcFile> m_convertedFiles;
 
 private:
-	ThreadUtils::CriticalSection m_lock;
+	std::recursive_mutex m_lock;
 
 public:
 	void lock()
 	{
-		m_lock.Lock();
+		m_lock.lock();
 	}
 
 	void unlock()
 	{
-		m_lock.Unlock();
+		m_lock.unlock();
 	}
 };
 
@@ -1178,8 +1179,7 @@ void ResourceCompiler::AddInputOutputFilePair(const char* inputFilename, const c
 {
 	assert(outputFilename && outputFilename[0]);
 	assert(inputFilename && inputFilename[0]); 
-
-	ThreadUtils::AutoLock lock(m_inputOutputFilesLock);
+	std::lock_guard<std::recursive_mutex> lock(m_inputOutputFilesMutex);
 
 	m_inputOutputFileList.Add(inputFilename, outputFilename);
 }
@@ -1188,7 +1188,7 @@ void ResourceCompiler::MarkOutputFileForRemoval(const char* outputFilename)
 {
 	assert(outputFilename && outputFilename[0]);
 
-	ThreadUtils::AutoLock lock(m_inputOutputFilesLock);
+	std::lock_guard<std::recursive_mutex> lock(m_inputOutputFilesMutex);
 
 	// using empty input file name will force CleanTargetFolder(false) to delete the output file
 	m_inputOutputFileList.Add("", outputFilename);
@@ -1212,8 +1212,7 @@ void ResourceCompiler::InitializeThreadIds()
 
 void ResourceCompiler::LogLine(const IRCLog::EType eType, const char* szText)
 {
-	ThreadUtils::AutoLock lock(m_logLock);
-
+	std::lock_guard<std::recursive_mutex> lock(m_logMutex);
 	if (eType == IRCLog::eType_Warning)
 	{
 		++m_numWarnings;
@@ -2962,7 +2961,7 @@ void ResourceCompiler::AddExitObserver(IResourceCompiler::IExitObserver* p)
 		return;
 	}
 
-	ThreadUtils::AutoLock lock(m_exitObserversLock);
+	std::lock_guard<std::recursive_mutex> lock(m_exitObserversMutex);
 
 	m_exitObservers.push_back(p);
 }
@@ -2974,7 +2973,7 @@ void ResourceCompiler::RemoveExitObserver(IResourceCompiler::IExitObserver* p)
 		return;
 	}
 
-	ThreadUtils::AutoLock lock(m_exitObserversLock);
+	std::lock_guard<std::recursive_mutex> lock(m_exitObserversMutex);
 
 	for (size_t i = 0; i < m_exitObservers.size(); ++i)
 	{
@@ -2988,7 +2987,7 @@ void ResourceCompiler::RemoveExitObserver(IResourceCompiler::IExitObserver* p)
 
 void ResourceCompiler::NotifyExitObservers()
 {
-	ThreadUtils::AutoLock lock(m_exitObserversLock);
+	std::lock_guard<std::recursive_mutex> lock(m_exitObserversMutex);
 
 	for (size_t i = 0; i < m_exitObservers.size(); ++i)
 	{
@@ -4173,7 +4172,7 @@ void ResourceCompiler::LogMemoryUsage(bool bReportProblemsOnly)
 
 	bool bReportProblem = false;
 	{
-		ThreadUtils::AutoLock lock(m_memorySizeLock);
+		std::lock_guard<std::recursive_mutex> lock(m_memorySizeMutex);
 		if (peakSizeMb > m_memorySizePeakMb)
 		{
 			m_memorySizePeakMb = peakSizeMb;

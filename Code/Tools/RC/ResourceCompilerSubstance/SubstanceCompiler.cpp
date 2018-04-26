@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include <assert.h>                         // assert()
 
+#include "ResourceCompiler.h"
 #include "IRCLog.h"                         // IRCLog
 #include "IConfig.h"                        // IConfig
 #include "IAssetManager.h"

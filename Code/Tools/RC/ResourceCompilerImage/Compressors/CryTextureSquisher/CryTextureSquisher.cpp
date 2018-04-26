@@ -18,7 +18,7 @@
 #define PROCESS_IN_PARALLEL
 #endif
 
-static ThreadUtils::CriticalSection s_squishLock;
+static std::recursive_mutex s_squishMutex;
 
 // preserve the ability to link with the old squish (which is in NvTT)
 #define squish	squishccr
@@ -341,7 +341,7 @@ void CryTextureSquisher::Compress(const CryTextureSquisher::CompressorParameters
 	const struct squish::sqio sqio = squish::GetSquishIO(w, h, datatype, flags);
 
 	if (compress.perceptual && (flags & squish::kColourMetricPerceptual))
-		s_squishLock.Lock();
+		s_squishMutex.lock();
 	if (compress.perceptual && (flags & squish::kColourMetricPerceptual))
 		squish::SetWeights(sqio.flags, &compress.weights[0]);
 
@@ -478,7 +478,7 @@ void CryTextureSquisher::Compress(const CryTextureSquisher::CompressorParameters
 	}
 
 	if (compress.perceptual && (flags & squish::kColourMetricPerceptual))
-		s_squishLock.Unlock();
+		s_squishMutex.unlock();
 
 	MathHelpers::EnableFloatingPointExceptions(savedFpeMask);
 }

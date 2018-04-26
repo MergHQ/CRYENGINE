@@ -147,7 +147,7 @@ void SimpleThreadPool::Submit(const Job& job)
 
 bool SimpleThreadPool::GetJob(Job& job, int threadIndex)
 {
-	AutoLock lock(m_lockJobs);
+	std::lock_guard<std::recursive_mutex> lock(m_lockJobs);
 
 	if (m_numProcessedJobs >= m_jobs.size())
 		return false;

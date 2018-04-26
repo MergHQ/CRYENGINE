@@ -32,6 +32,7 @@
 #include "IProgress.h"
 
 #include <map>                 // stl multimap<>
+#include <mutex>
 
 class CPropertyVars;
 class XmlNodeRef;
@@ -234,22 +235,22 @@ private:
 
 	ExtensionManager        m_extensionManager;
 
-	ThreadUtils::CriticalSection m_inputOutputFilesLock;
-	CDependencyList         m_inputOutputFileList;
+	std::recursive_mutex m_inputOutputFilesMutex;
+	CDependencyList              m_inputOutputFileList;
 
-	std::vector<IExitObserver*> m_exitObservers;
-	ThreadUtils::CriticalSection m_exitObserversLock;
+	std::vector<IExitObserver*>  m_exitObservers;
+	std::recursive_mutex m_exitObserversMutex;
 
 	float                   m_memorySizePeakMb;
-	ThreadUtils::CriticalSection m_memorySizeLock;
+	std::recursive_mutex              m_memorySizeMutex;
 
 	// log files
-	string                  m_logPrefix;
-	string                  m_mainLogFileName;      //!< for all messages, might be empty (no file logging)
-	string                  m_warningLogFileName;   //!< for warnings only, might be empty (no file logging)
-	string                  m_errorLogFileName;     //!< for errors only, might be empty (no file logging)
-	string                  m_logHeaderLine;
-	ThreadUtils::CriticalSection m_logLock;
+	string                       m_logPrefix;
+	string                       m_mainLogFileName;      //!< for all messages, might be empty (no file logging)
+	string                       m_warningLogFileName;   //!< for warnings only, might be empty (no file logging)
+	string                       m_errorLogFileName;     //!< for errors only, might be empty (no file logging)
+	string                       m_logHeaderLine;
+	std::recursive_mutex m_logMutex;
 
 	clock_t                 m_startTime;
 	bool                    m_bTimeLogging;
