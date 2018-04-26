@@ -245,7 +245,7 @@ private:
 	int32                    m_customFPS;
 	bool                     m_bIsLoadingPreset;
 
-	CryDisplayContextHandle  m_displayContext;
+	SDisplayContextKey       m_displayContextKey;
 	int32                    m_viewPortResW;
 	int32                    m_viewPortResH;
 };

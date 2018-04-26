@@ -569,7 +569,7 @@ void CFlashUI::OnLoadingProgress(ILevelInfo* pLevel, int progressAmount)
 			gEnv->pRenderer->EF_Query(EFQ_RecurseLevel, nRecursionLevel);
 			const bool bStandAlone = (nRecursionLevel <= 0);
 			if (bStandAlone)
-				gEnv->pSystem->RenderBegin(0);
+				gEnv->pSystem->RenderBegin({});
 
 			const float currTime = gEnv->pTimer->GetAsyncCurTime();
 			OnPostUpdate(currTime - m_fLastAdvance);
@@ -618,11 +618,6 @@ void CFlashUI::LoadtimeUpdate(float fDeltaTime)
 	{
 		(*it)->Advance(fDeltaTime);
 	}
-
-	if (IHmdManager* pHmdManager = gEnv->pSystem->GetHmdManager())
-	{
-		pHmdManager->UpdateTracking(eVRComponent_Hmd);
-	}
 }
 
 //------------------------------------------------------------------------------------
@@ -632,20 +627,24 @@ void CFlashUI::LoadtimeRender()
 
 	if (CV_gfx_draw == 1)
 	{
-		if (IStereoRenderer* pStereoRenderer = gEnv->pRenderer->GetIStereoRenderer())
-		{
-			if (IHmdRenderer* pHmdRender = pStereoRenderer->GetIHmdRenderer())
-			{
-				pHmdRender->PrepareFrame();
-			}
-		}
+		IStereoRenderer* stereoRenderer = gEnv->pRenderer->GetIStereoRenderer();
+
+		if (stereoRenderer->GetStereoEnabled())
+			stereoRenderer->PrepareFrame();
 
 		for (TPlayerList::const_iterator it = m_loadtimePlayerList.begin(); it != m_loadtimePlayerList.end(); ++it)
 		{
 			IFlashPlayer* pFlashPlayer = (*it);
 
 			pFlashPlayer->SetClearFlags(FRT_CLEAR_COLOR, Clr_Transparent);
-			pFlashPlayer->Render(gEnv->pRenderer->IsStereoEnabled());
+			gEnv->pRenderer->FlashRenderPlayer(pFlashPlayer);
+		}
+
+		if (stereoRenderer->GetStereoEnabled())
+		{
+			if (!stereoRenderer->IsMenuModeEnabled())
+				stereoRenderer->DisplaySocialScreen();
+			stereoRenderer->SubmitFrameToHMD();
 		}
 	}
 }

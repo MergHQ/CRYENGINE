@@ -37,7 +37,7 @@ struct IRenderAuxGeom
 	virtual const CCamera&      GetCamera() const = 0;
 
 	//! Set current display context for the following auxiliary rendering.
-	virtual void SetCurrentDisplayContext(CryDisplayContextHandle context) = 0;
+	virtual void SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey) = 0;
 
 	// 2D/3D rendering functions.
 
@@ -965,7 +965,7 @@ struct SRender2DImageDescription
 	uint32 textureId = 0;
 	uint32 targetId = 0;
 
-	CryDisplayContextHandle context = 0;
+	SDisplayContextKey displayContextKey;
 	SAuxGeomRenderFlags renderFlags = e_Def2DImageRenderflags;
 };
 

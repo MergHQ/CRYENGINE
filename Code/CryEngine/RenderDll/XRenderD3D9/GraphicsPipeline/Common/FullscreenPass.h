@@ -6,27 +6,18 @@
 
 class CFullscreenPass : public CPrimitiveRenderPass
 {
+	// Use SetCustomViewport instead
+	using CPrimitiveRenderPass::SetViewport;
+
 public:
 	CFullscreenPass(CRenderPrimitive::EPrimitiveFlags primitiveFlags = CRenderPrimitive::eFlags_ReflectShaderConstants);
 	~CFullscreenPass();
 
-	bool InputChanged(int var0 = 0, int var1 = 0, int var2 = 0, int var3 = 0)
+	bool InputChanged() const override final
 	{
-		bool bChanged = IsOutputDirty() || 
-		                m_primitive.IsDirty() ||
-		                var0 != m_inputVars[0] || var1 != m_inputVars[1] ||
-		                var2 != m_inputVars[2] || var3 != m_inputVars[3];
-
-		if (bChanged)
-		{
-			m_inputVars[0] = var0;
-			m_inputVars[1] = var1;
-			m_inputVars[2] = var2;
-			m_inputVars[3] = var3;
-		}
-
-		return bChanged;
+		return IsDirty();
 	}
+	using CRenderPassBase::InputChanged;
 
 	void SetPrimitiveFlags(CRenderPrimitive::EPrimitiveFlags flags);
 
@@ -126,14 +117,22 @@ public:
 
 	bool IsDirty() const { return m_primitive.IsDirty(); }
 
+	void SetCustomViewport(const D3DViewPort& viewport)
+	{
+		SetViewport(viewport);
+		m_bHasCustomViewport = true;
+	}
+	void SetCustomViewport(const SRenderViewport& viewport);
+	void ClearCustomViewport()                              { m_bHasCustomViewport = false; }
+
 private:
 	void                     UpdatePrimitive();
-
-	int                      m_inputVars[4];
 
 	bool                     m_bRequirePerViewCB;
 	bool                     m_bRequireWorldPos;
 	bool                     m_bPendingConstantUpdate;
+
+	bool                     m_bHasCustomViewport = false;
 
 	f32                      m_clipZ;        // only work for WPos
 	buffer_handle_t          m_vertexBuffer; // only required for WPos

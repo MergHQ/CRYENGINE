@@ -1294,12 +1294,12 @@ void CTrackViewBatchRenderDlg::InitializeRenderContext()
 		if (pGameViewport)
 		{
 			auto displayContext = pGameViewport->GetDisplayContext();
-			m_displayContext = displayContext.GetDisplayContextHandle();
+			m_displayContextKey = displayContext.GetDisplayContextKey();
 			pGameViewport->GetResolution(m_viewPortResW, m_viewPortResH);
 		}
 		else
 		{
-			m_displayContext = 0;
+			m_displayContextKey = {};
 			m_viewPortResW = 0;
 			m_viewPortResH = 0;
 		}
@@ -1390,7 +1390,7 @@ void CTrackViewBatchRenderDlg::BegCaptureItem()
 		pCVarCustomResHeight->Set(renderItem.resH);
 	}
 	// resize viewport for each renderitem during sequence capture
-	gEnv->pRenderer->ResizeContext(m_displayContext, renderItem.resW, renderItem.resH);
+	gEnv->pRenderer->ResizeContext(m_displayContextKey, renderItem.resW, renderItem.resH);
 
 	// The capturing doesn't actually start here. It just flags the warming-up and
 	// once it's done, then the capturing really begins.
@@ -1422,7 +1422,7 @@ void CTrackViewBatchRenderDlg::EndCaptureItem(IAnimSequence* pSequence)
 
 	SRenderItem renderItem = m_renderItems[m_renderContext.currentItemIndex];
 	if(m_renderContext.currentItemIndex==m_renderItems.size()-1)  // after last item, reset viewport.
-		gEnv->pRenderer->ResizeContext(m_displayContext, m_viewPortResW, m_viewPortResH);
+		gEnv->pRenderer->ResizeContext(m_displayContextKey, m_viewPortResW, m_viewPortResH);
 
 	if (renderItem.bCreateVideo)
 	{

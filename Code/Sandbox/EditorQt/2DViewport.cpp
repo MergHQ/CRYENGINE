@@ -91,9 +91,8 @@ C2DViewport::~C2DViewport()
 	if (m_bRenderContextCreated)
 	{
 		// Do not delete primary context.
-		HWND window = (HWND)GetSafeHwnd();
-		if (window != gEnv->pRenderer->GetHWND())
-			gEnv->pRenderer->DeleteContext((CryDisplayContextHandle)window);
+		if (m_displayContextKey != reinterpret_cast<HWND>(gEnv->pRenderer->GetHWND()))
+			gEnv->pRenderer->DeleteContext(m_displayContextKey);
 		m_bRenderContextCreated = false;
 	}
 }
@@ -285,7 +284,7 @@ void C2DViewport::OnPaint()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool C2DViewport::CreateRenderContext(uintptr_t hCtx)
+bool C2DViewport::CreateRenderContext(HWND hWnd)
 {
 	Vec3 clCol = CMFCUtils::Rgb2Vec(m_colorBackground);
 
@@ -295,14 +294,14 @@ bool C2DViewport::CreateRenderContext(uintptr_t hCtx)
 
 	IRenderer::SDisplayContextDescription desc;
 
-	desc.handle = reinterpret_cast<CryDisplayContextHandle>(GetSafeHwnd());
+	desc.handle = hWnd;
 	desc.type = IRenderer::eViewportType_Secondary;
 	desc.clearColor = ColorF(clCol);
 	desc.renderFlags = FRT_CLEAR | FRT_OVERLAY_DEPTH;
 	desc.screenResolution.x = width;
 	desc.screenResolution.y = height;
 
-	gEnv->pRenderer->CreateContext(desc);
+	m_displayContextKey = gEnv->pRenderer->CreateSwapChainBackedContext(desc);
 
 	m_bRenderContextCreated = true;
 	return true;
@@ -440,19 +439,10 @@ void C2DViewport::Render()
 	// lock while we are rendering to prevent any re-rendering across the application
 	if (CScopedRenderLock lock = CScopedRenderLock())
 	{
-		if (GetIEditorImpl()->IsInGameMode())
-			return;
-
 		if (!gEnv->pRenderer)
 			return;
 
 		if (!IsWindowVisible())
-			return;
-
-		if (!GetIEditorImpl()->GetDocument()->IsDocumentReady())
-			return;
-
-		if (gEnv->pRenderer->IsStereoEnabled())
 			return;
 
 		CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -477,8 +467,6 @@ void C2DViewport::Render()
 			// Calc world bounding box for objects rendering.
 			m_displayBounds = GetWorldBounds(CPoint(0, 0), CPoint(rc.Width(), rc.Height()));
 
-			uintptr_t displayContextHandle = reinterpret_cast<uintptr_t>(GetSafeHwnd());
-
 			// Draw all objects.
 			DisplayContext& dc = m_displayContext;
 			
@@ -491,7 +479,7 @@ void C2DViewport::Render()
 			// Should be setting orthogonal camera
 			m_camera.SetFrustum(rc.Width(), rc.Height(), m_camera.GetFov(), m_camera.GetNearPlane(), m_camera.GetFarPlane());
 			dc.SetCamera(&m_camera);
-			dc.SetDisplayContext(displayContextHandle);
+			dc.SetDisplayContext(m_displayContextKey);
 
 			if (!gViewportPreferences.displayLabels || !(GetIEditor()->IsHelpersDisplayed()))
 			{
@@ -507,16 +495,15 @@ void C2DViewport::Render()
 			}
 
 			// Render
-			gEnv->pRenderer->BeginFrame(displayContextHandle);
+			gEnv->pRenderer->BeginFrame(m_displayContextKey);
 
 			// TODO: BeginFrame/EndFrame calls can be droped and replaced by RT_AuxRender
 			auto oldCamera = gEnv->pRenderer->GetIRenderAuxGeom()->GetCamera();
 			gEnv->pRenderer->UpdateAuxDefaultCamera(m_camera);
 
-			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(GetIEditorImpl()->GetSystem()->GetViewCamera(), SRenderingPassInfo::DEFAULT_FLAGS, false, displayContextHandle);
+			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(GetIEditorImpl()->GetSystem()->GetViewCamera(), SRenderingPassInfo::DEFAULT_FLAGS, false, m_displayContextKey);
 
 			gEnv->pRenderer->EF_StartEf(passInfo);
-
 			dc.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOff | e_DepthTestOn);
 			Draw(CObjectRenderHelper{ dc, passInfo });
 			gEnv->pRenderer->EF_EndEf3D(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
@@ -1073,7 +1060,7 @@ void C2DViewport::OnResize()
 	int height = 0;
 	GetDimensions(&width, &height);
 
-	gEnv->pRenderer->ResizeContext((CryDisplayContextHandle)GetSafeHwnd(),width,height);
+	gEnv->pRenderer->ResizeContext(m_displayContextKey,width,height);
 
 	GetClientRect(&m_rcClient);
 	CalculateViewTM();

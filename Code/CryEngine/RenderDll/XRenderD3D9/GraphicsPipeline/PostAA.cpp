@@ -95,7 +95,7 @@ static const Vec2 vSGSSAA8x8[8] =
 	Vec2(5.0f / 7.0f, 6.0f / 7.0f) - Vec2(0.5f, 0.5f), Vec2(1.0f / 7.0f, 7.0f / 7.0f) - Vec2(0.5f, 0.5f)
 };
 
-void CPostAAStage::CalculateJitterOffsets(CRenderView* pRenderView)
+void CPostAAStage::CalculateJitterOffsets(int renderWidth, int renderHeight, CRenderView* pRenderView)
 {
 	pRenderView->m_vProjMatrixSubPixoffset = Vec2(0.0f, 0.0f);
 
@@ -156,10 +156,7 @@ void CPostAAStage::CalculateJitterOffsets(CRenderView* pRenderView)
 
 		const auto& downscaleFactor = gRenDev->GetRenderQuality().downscaleFactor;
 
-		const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
-		const int32 renderHeight = pRenderView->GetRenderResolution()[1];
-
-		pRenderView->m_vProjMatrixSubPixoffset.x = (vCurrSubSample.x * 2.0f / (float)renderWidth ) / downscaleFactor.x;
+		pRenderView->m_vProjMatrixSubPixoffset.x = (vCurrSubSample.x * 2.0f / (float)renderWidth) / downscaleFactor.x;
 		pRenderView->m_vProjMatrixSubPixoffset.y = (vCurrSubSample.y * 2.0f / (float)renderHeight) / downscaleFactor.y;
 	}
 }
@@ -356,11 +353,7 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 			
 			Matrix44A matProj = viewInfo.unjitteredProjMatrix; // Use Projection matrix without the pixel shift
 
-			// Changing stereo mode from dual-rendering to post-stereo causes 1 frame mismatch between projection matrix and stereo mode from GetStereoMode().
-			const bool exceptionalCase = (pRenderer->GetS3DRend().GetStereoMode() == STEREO_MODE_POST_STEREO && CRenderer::CV_r_StereoMode == STEREO_MODE_DUAL_RENDERING);
-
-			assert(pRenderer->GetS3DRend().GetStereoMode() == STEREO_MODE_DUAL_RENDERING
-			       || exceptionalCase
+			assert(pRenderer->GetS3DRend().GetStereoMode() == EStereoMode::STEREO_MODE_DUAL_RENDERING
 			       || (matProj.m20 == 0 && matProj.m21 == 0)); // Ensure jittering is removed from projection matrix
 
 			Matrix44_tpl<f64> matViewInv, matProjInv;
@@ -408,7 +401,6 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 	CTexture* pTexLensOptics = CRendererResources::s_ptexSceneTargetR11G11B10F[0];
 	CRY_ASSERT(pCurrRT != pDestRT);
 
-	static uint64 prevRTMask = 0;
 	uint64 rtMask = 0;
 	if (aaMode & (eAT_SMAA_2TX_MASK | eAT_TSAA_MASK))
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2];
@@ -435,7 +427,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		}
 	}
 
-	if (m_passComposition.InputChanged(pCurrRT->GetID(), pDestRT->GetID(), CRendererResources::s_ptexCurLumTexture->GetID(), pColorChartTex->GetID()) || rtMask != prevRTMask)
+	if (m_passComposition.InputChanged(pCurrRT->GetID(), pDestRT->GetID(), CRendererResources::s_ptexCurLumTexture->GetID(), pColorChartTex->GetID(), rtMask))
 	{
 		static CCryNameTSCRC techComposition("PostAAComposites");
 
@@ -454,8 +446,6 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 		m_passComposition.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 		m_passComposition.SetSampler(1, EDefaultSamplerStates::PointClamp);
 		m_passComposition.SetSampler(2, EDefaultSamplerStates::PointWrap);
-
-		prevRTMask = rtMask;
 	}
 
 	m_passComposition.BeginConstantUpdate();

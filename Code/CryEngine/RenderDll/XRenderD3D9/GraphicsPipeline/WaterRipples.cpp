@@ -282,7 +282,6 @@ void CWaterRipplesStage::Execute()
 				pass.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 
 				pass.SetRenderTarget(0, pTempTex);
-				pass.SetViewport(viewport);
 
 				pass.SetState(GS_NODEPTHTEST);
 			}
@@ -308,7 +307,6 @@ void CWaterRipplesStage::Execute()
 				pass.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 
 				pass.SetRenderTarget(0, m_pTexWaterRipplesDDN);
-				pass.SetViewport(viewport);
 
 				pass.SetState(GS_NODEPTHTEST);
 			}

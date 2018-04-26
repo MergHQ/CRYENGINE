@@ -1041,7 +1041,7 @@ void CScaleformPlayback::BeginDisplay(ColorF backgroundColor, const Viewport& vi
 		pDC->PostPresent();
 	}
 
-	m_pRenderOutput->BeginRendering(nullptr);
+	m_pRenderOutput->BeginRendering(nullptr, 0); // Override clear flag
 
 	assert(x0x1y0y1.Width() != 0 && x0x1y0y1.Height() != 0);
 
@@ -1918,11 +1918,6 @@ std::shared_ptr<CRenderOutput> CScaleformPlayback::GetRenderOutput() const
 	return m_pRenderOutput;
 }
 
-void CScaleformPlayback::RenderFlashPlayerToDisplay(IFlashPlayer* pFlashPlayer, bool bStereo)
-{
-	pFlashPlayer->Render(bStereo);
-}
-
 void CScaleformPlayback::RenderFlashPlayerToTexture(IFlashPlayer* pFlashPlayer, CTexture* pOutput)
 {
 	CRenderOutputPtr pTempRenderOutput = std::make_shared<CRenderOutput>(pOutput, FRT_CLEAR_COLOR /* no automatic clears */, Clr_Transparent, 0.0f);
@@ -1937,7 +1932,25 @@ void CScaleformPlayback::RenderFlashPlayerToTexture(IFlashPlayer* pFlashPlayer, 
 	pScaleformPlayback->SetRenderOutput(pTempRenderOutput);
 
 	pTempRenderOutput->SetViewport(SRenderViewport(x, y, width, height));
-	pFlashPlayer->Render(false);
+	pFlashPlayer->Render();
+
+	// Restore previous Flash render output.
+	pScaleformPlayback->SetRenderOutput(pLastOutput);
+}
+
+void CScaleformPlayback::RenderFlashPlayerToOutput(IFlashPlayer* pFlashPlayer, CRenderOutputPtr output)
+{
+	CScaleformPlayback* pScaleformPlayback = static_cast<CScaleformPlayback*>(pFlashPlayer->GetPlayback());
+	CRY_ASSERT(pScaleformPlayback->IsRenderThread());
+
+	int x, y, width, height; float aspect;
+	pFlashPlayer->GetViewport(x, y, width, height, aspect);
+
+	// Remember currently used Render Target
+	std::shared_ptr<CRenderOutput> pLastOutput = pScaleformPlayback->GetRenderOutput();
+	pScaleformPlayback->SetRenderOutput(output);
+
+	pFlashPlayer->Render();
 
 	// Restore previous Flash render output.
 	pScaleformPlayback->SetRenderOutput(pLastOutput);

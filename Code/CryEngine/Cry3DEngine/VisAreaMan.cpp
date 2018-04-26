@@ -1526,7 +1526,7 @@ void CVisAreaManager::PrecacheLevel(bool bPrecacheAllVisAreas, Vec3* pPrecachePo
 			cam.SetFrustum(GetRenderer()->GetOverlayWidth(), GetRenderer()->GetOverlayHeight(), gf_PI / 2, cam.GetNearPlane(), cam.GetFarPlane());
 			//	Get3DEngine()->SetupCamera(cam);
 
-			GetRenderer()->BeginFrame(0);
+			GetRenderer()->BeginFrame({});
 			Get3DEngine()->RenderWorld(SHDF_ZPASS | SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOW_AO, SRenderingPassInfo::CreateGeneralPassRenderingInfo(cam), "PrecacheVisAreas");
 			GetRenderer()->RenderDebug();
 			GetRenderer()->EndFrame();
@@ -1555,7 +1555,7 @@ void CVisAreaManager::PrecacheLevel(bool bPrecacheAllVisAreas, Vec3* pPrecachePo
 			cam.SetPosition(pPrecachePoints[p]);
 			cam.SetFrustum(GetRenderer()->GetOverlayWidth(), GetRenderer()->GetOverlayHeight(), gf_PI / 2, cam.GetNearPlane(), cam.GetFarPlane());
 
-			GetRenderer()->BeginFrame(0);
+			GetRenderer()->BeginFrame({});
 			Get3DEngine()->RenderWorld(SHDF_ZPASS | SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOW_AO, SRenderingPassInfo::CreateGeneralPassRenderingInfo(cam), "PrecacheOutdoor");
 			GetRenderer()->RenderDebug();
 			GetRenderer()->EndFrame();

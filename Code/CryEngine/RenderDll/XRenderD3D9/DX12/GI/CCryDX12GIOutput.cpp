@@ -8,7 +8,9 @@
 CCryDX12GIOutput* CCryDX12GIOutput::Create(CCryDX12GIAdapter* pAdapter, UINT Output)
 {
 	IDXGIOutputToCall* pOutput;
-	pAdapter->GetDXGIAdapter()->EnumOutputs(Output, &pOutput);
+	if (!SUCCEEDED(pAdapter->GetDXGIAdapter()->EnumOutputs(Output, &pOutput)))
+		return nullptr;
+
 	IDXGIOutput4ToCall* pOutput4;
 	pOutput->QueryInterface(__uuidof(IDXGIOutput4ToCall), (void**)&pOutput4);
 

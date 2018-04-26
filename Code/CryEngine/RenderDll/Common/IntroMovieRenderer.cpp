@@ -138,7 +138,7 @@ void CIntroMovieRenderer::LoadtimeUpdate(float deltaTime)
 void CIntroMovieRenderer::LoadtimeRender()
 {
 	if (m_pFlashPlayer)
-		m_pFlashPlayer->Render(true);
+		m_pFlashPlayer->Render();
 }
 
 void CIntroMovieRenderer::UpdateViewport()

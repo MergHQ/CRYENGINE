@@ -248,14 +248,10 @@ void IDebugCallStack::Screenshot(const char* szFileName)
 	static int g_numScreenshots = 0;
 	if (gEnv && gEnv->pRenderer && !g_numScreenshots++)
 	{
-		if (gEnv->pRenderer->ScreenShot(szFileName, 0))
-		{
-			WriteLineToLog("Successfully created screenshot.");
-		}
-		else
-		{
-			WriteLineToLog("Error creating screenshot.");
-		}
+		const bool result = gEnv->pRenderer->ScreenShot(szFileName);
+		WriteLineToLog(result ?
+			"Successfully created screenshot." :
+			"Error creating screenshot.");
 	}
 	else
 	{

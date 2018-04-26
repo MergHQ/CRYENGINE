@@ -663,7 +663,7 @@ void SEnvTexture::ReleaseDeviceObjects()
 
 //////////////////////////////////////////////////////////////////////////
 
-static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, Vec3& Pos, int tex_size, int side)
+static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, const Vec3& Pos, int tex_size, int side)
 {
 	CRY_ASSERT(gRenDev->m_pRT->IsMainThread());
 	if (!iSystem)
@@ -719,7 +719,7 @@ static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, Vec3& Pos, int t
 #endif
 }
 
-bool CTexture::RenderEnvironmentCMHDR(int size, Vec3& Pos, TArray<unsigned short>& vecData)
+bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned short>& vecData)
 {
 #if CRY_PLATFORM_DESKTOP
 

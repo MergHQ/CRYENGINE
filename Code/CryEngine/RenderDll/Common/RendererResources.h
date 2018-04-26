@@ -325,9 +325,6 @@ public:
 	// Display resolution [dependent] targets ==================================================================
 	static CTexture* s_ptexCached3DHud;                                          // CHud3DPass, 3d hud cached overframes
 	static CTexture* s_ptexCached3DHudScaled;                                    // CHud3DPass, downsampled 3d hud cached overframes
-	static CTexture* s_ptexStereoL;                                              // Used as temporary buffer when native textures can't  be allocated by us (MultiGPU Oculus)
-	static CTexture* s_ptexStereoR;                                              // Used as temporary buffer when native textures can't  be allocated by us (MultiGPU Oculus)
-	static CTexture* s_ptexQuadLayers[2];                                        // CD3DStereoRenderer, CD3DOculusRenderer
 	
 	// Pools ===================================================================================================
 	static SEnvTexture         s_EnvTexts[MAX_ENVTEXTURES];                      // FX_DrawToRenderTarget, SHRenderTarget::GetEnv2D

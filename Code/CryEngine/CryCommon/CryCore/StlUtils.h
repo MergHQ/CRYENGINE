@@ -1,27 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _STL_UTILS_HEADER_
-#define _STL_UTILS_HEADER_
+#pragma once
 
 #include <CryMath/Range.h>
 
 #include <map>
 #include <set>
+#include <type_traits>
 #include <algorithm>
+#include <functional>
 #include <deque>
 #include <unordered_map>
 #include <unordered_set>
-
-//! Auto-cleaner: upon destruction, calls the clear() method.
-template<class T>
-class CAutoClear
-{
-public:
-	CAutoClear(T* p) : m_p(p) {}
-	~CAutoClear() { m_p->clear(); }
-protected:
-	T* m_p;
-};
 
 template<class Container>
 unsigned sizeofArray(const Container& arr)
@@ -857,4 +847,30 @@ struct SSerialCompare
 	}
 };
 
-#endif
+
+/**
+ *! Remove once we move to C++17
+ */
+namespace stl {
+
+	template <typename T> struct always_false : std::false_type {};
+
+
+	// conjuction and negation helpers
+	//! Remove once we move to C++17
+	template <typename T>
+	struct negation {
+		static constexpr bool value = !T::value;
+	};
+	template <typename... Ts>
+	struct conjuction : std::true_type {};
+	template <typename T, typename... Ts>
+	struct conjuction<T, Ts...> {
+		static constexpr bool value = T::value && conjuction<Ts...>::value;
+	};
+	template <typename T>
+	struct conjuction<T> {
+		static constexpr bool value = T::value;
+	};
+
+}

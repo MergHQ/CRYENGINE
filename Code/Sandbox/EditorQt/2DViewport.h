@@ -84,7 +84,7 @@ protected:
 		VPA_YZ,
 		VPA_YX,
 	};
-	virtual bool CreateRenderContext(uintptr_t hCtx);
+	virtual bool CreateRenderContext(HWND hWnd) override;
 
 	void         SetAxis(EViewportAxis axis);
 
@@ -176,6 +176,8 @@ protected:
 	bool           m_bRenderContextCreated;
 
 	CCamera        m_camera;
+
+	SDisplayContextKey m_displayContextKey;
 };
 
 #endif // __2dviewport_h__

@@ -362,7 +362,7 @@ void CEnvironementProbeObject::Display(CObjectRenderHelper& objRenderHelper)
 		rp.pMatrix = &tm;
 		rp.pMaterial = m_visualObject->GetMaterial();
 
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->p3DEngine->GetRenderingCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextHandle());
+		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->p3DEngine->GetRenderingCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
 		m_visualObject->Render(rp, passInfo);
 	}
 }

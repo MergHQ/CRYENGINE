@@ -4,7 +4,7 @@
 #include "CCryVKSwapChain.hpp"
 #include "../../API/VKSwapChain.hpp"
 
-_smart_ptr<CCryVKSwapChain> CCryVKSwapChain::Create(_smart_ptr<NCryVulkan::CDevice> pDevice, CONST DXGI_SWAP_CHAIN_DESC* pDesc)
+_smart_ptr<CCryVKSwapChain> CCryVKSwapChain::Create(_smart_ptr<NCryVulkan::CDevice> pDevice, CONST DXGI_SWAP_CHAIN_DESC* pDesc, VkSurfaceKHR surface)
 {
 	// We might not be able to create the swapchain with the desired values. Copy desired desc and update to actual values.
 	DXGI_SWAP_CHAIN_DESC correctedDesc = *pDesc;
@@ -19,7 +19,7 @@ _smart_ptr<CCryVKSwapChain> CCryVKSwapChain::Create(_smart_ptr<NCryVulkan::CDevi
 	VkPresentModeKHR presentMode = GetPresentMode(correctedDesc.SwapEffect, bVsync);
 
 	_smart_ptr<NCryVulkan::CSwapChain> pVKSwapChain = NCryVulkan::CSwapChain::Create(pDevice->GetScheduler().GetCommandListPool(CMDQUEUE_GRAPHICS), VK_NULL_HANDLE,
-		pDesc->BufferCount, pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, NCryVulkan::DXGIFormatToVKFormat(pDesc->BufferDesc.Format),
+		pDesc->BufferCount, pDesc->BufferDesc.Width, pDesc->BufferDesc.Height, surface, NCryVulkan::DXGIFormatToVKFormat(pDesc->BufferDesc.Format),
 		presentMode, NCryVulkan::DXGIUsagetoVkUsage((DXGI_USAGE)pDesc->BufferUsage));
 
 	if (pVKSwapChain)
@@ -111,7 +111,7 @@ HRESULT STDMETHODCALLTYPE CCryVKSwapChain::ResizeBuffers(
 	NCryVulkan::CDevice* pVKDevice = m_pDevice.get();
 
 	_smart_ptr<NCryVulkan::CSwapChain> pVKSwapChain = NCryVulkan::CSwapChain::Create(pVKDevice->GetScheduler().GetCommandListPool(CMDQUEUE_GRAPHICS), m_pVKSwapChain->GetKHRSwapChain(),
-		Desc.BufferCount, Desc.BufferDesc.Width, Desc.BufferDesc.Height, NCryVulkan::DXGIFormatToVKFormat(Desc.BufferDesc.Format),
+		Desc.BufferCount, Desc.BufferDesc.Width, Desc.BufferDesc.Height, m_pVKSwapChain->GetKHRSurface(), NCryVulkan::DXGIFormatToVKFormat(Desc.BufferDesc.Format),
 		presentMode, NCryVulkan::DXGIUsagetoVkUsage((DXGI_USAGE)Desc.BufferUsage));
 
 	m_pDevice->FlushAndWaitForGPU();

@@ -202,12 +202,6 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 
 	return IsOk();
 #elif (CRY_RENDERER_VULKAN >= 10)
-	HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
-	if (!hWnd)
-	{
-		Release();
-		return false;
-	}
 
 	const int r_overrideDXGIAdapter = GetDXGIAdapterOverride();
 	const int r_multithreaded = GetMultithreaded();
@@ -238,7 +232,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 #endif //!defined(_RELEASE)
 
 			const D3D_DRIVER_TYPE driverType = m_driverType == D3D_DRIVER_TYPE_HARDWARE ? D3D_DRIVER_TYPE_UNKNOWN : m_driverType;
-			HRESULT hr = VKCreateDevice(m_pAdapter, driverType, 0, m_creationFlags, aFeatureLevels, uNumFeatureLevels, D3D11_SDK_VERSION, hWnd, &m_pDevice, &m_featureLevel, &m_pContext);
+			HRESULT hr = VKCreateDevice(m_pAdapter, driverType, 0, m_creationFlags, aFeatureLevels, uNumFeatureLevels, D3D11_SDK_VERSION, &m_pDevice, &m_featureLevel, &m_pContext);
 			if (SUCCEEDED(hr) && m_pDevice)
 			{
 				m_pAdapter->GetDesc1(&m_adapterDesc);
@@ -253,6 +247,13 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 	}
 
 	if (!m_pDevice || !m_pAdapter)
+	{
+		Release();
+		return false;
+	}
+
+	HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
+	if (!hWnd)
 	{
 		Release();
 		return false;

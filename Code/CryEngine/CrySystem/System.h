@@ -255,13 +255,13 @@ public:
 
 	const char*                       GetRootFolder() const override  { return m_root.c_str(); }
 
-	virtual bool                        DoFrame(uintptr_t hWnd = 0, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
+	virtual bool                        DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
 	virtual IManualFrameStepController* GetManualFrameStepController() const override;
 
 	virtual bool                      UpdateLoadtime() override;
 
 	//! Begin rendering frame.
-	virtual void RenderBegin(uintptr_t hWnd) override;
+	virtual void RenderBegin(const SDisplayContextKey& displayContextKey) override;
 	//! Render subsystems.
 	void Render();
 	//! End rendering frame and swap back buffer.
@@ -406,7 +406,7 @@ public:
 
 	virtual Serialization::IArchiveHost* GetArchiveHost() const override         { return m_pArchiveHost; }
 
-	void                                 SetViewCamera(CCamera& Camera) override;
+	void                                 SetViewCamera( CCamera& Camera) override;
 	CCamera&                             GetViewCamera() override                { return m_ViewCamera; }
 
 	virtual uint32                       GetCPUFlags() override                  { return m_pCpu ? m_pCpu->GetFeatures() : 0; }

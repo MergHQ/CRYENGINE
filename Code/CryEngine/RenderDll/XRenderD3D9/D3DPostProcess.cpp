@@ -183,7 +183,7 @@ void CPostEffectsMgr::End(CRenderView* pRenderView)
 	//gcpRendD3D->RT_SetViewport(PostProcessUtils().m_pScreenRect.left, PostProcessUtils().m_pScreenRect.top, PostProcessUtils().m_pScreenRect.right, PostProcessUtils().m_pScreenRect.bottom);
 	const int kFloatMaxContinuousInt = 0x1000000;  // 2^24
 	const bool bStereo = gcpRendD3D->GetS3DRend().IsStereoEnabled();
-	const bool bStereoSequentialSubmission = gcpRendD3D->GetS3DRend().GetStereoSubmissionMode() == STEREO_SUBMISSION_SEQUENTIAL;
+	const bool bStereoSequentialSubmission = gcpRendD3D->GetS3DRend().GetStereoSubmissionMode() == EStereoSubmission::STEREO_SUBMISSION_SEQUENTIAL;
 
 	if (!bStereo || (bStereo && (!bStereoSequentialSubmission || pRenderView->GetCurrentEye() == CCamera::eEye_Right)))
 		SPostEffectsUtils::m_iFrameCounter = (SPostEffectsUtils::m_iFrameCounter + 1) % kFloatMaxContinuousInt;

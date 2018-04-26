@@ -200,15 +200,10 @@ protected:
 class CClearSurfacePass : public IUtilityRenderPass
 {
 public:
-	CClearSurfacePass();
-	virtual ~CClearSurfacePass();
-
 	static void Execute(const CTexture* pDepthTex, const int nFlags, const float cDepth, const uint8 cStencil);
 	static void Execute(const CTexture* pTex, const ColorF& cClear);
 
 	static EPassId GetPassId() { return EPassId::ClearSurfacePass; }
-
-protected:
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

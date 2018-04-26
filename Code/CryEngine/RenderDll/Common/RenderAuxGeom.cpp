@@ -111,10 +111,8 @@ const CCamera& CAuxGeomCB::GetCamera() const
 void CAuxGeomCB::SetUsingCustomCamera(bool isUsingCustomCam)
 {
 	m_rawData->m_usingCustomCamera = isUsingCustomCam;
-	if (!isUsingCustomCam)
-	{
+	if (!isUsingCustomCam && (!gEnv->pRenderer->GetIStereoRenderer() || !gEnv->pRenderer->GetIStereoRenderer()->GetStereoEnabled()))
 		m_rawData->m_camera = gEnv->pSystem->GetViewCamera();
-	}
 }
 
 bool CAuxGeomCB::IsUsingCustomCamera() const
@@ -2496,9 +2494,9 @@ void CAuxGeomCB::SAuxGeomCBRawData::GetSortedPushBuffer(size_t begin, size_t end
 	std::sort(auxSortedPushBuffer.begin(), auxSortedPushBuffer.end(), PushBufferSortFunc());
 }
 
-void CAuxGeomCB::SetCurrentDisplayContext(CryDisplayContextHandle context)
+void CAuxGeomCB::SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey)
 {
-	m_rawData->m_displayContextHandle = context;
+	m_rawData->displayContextKey = displayContextKey;
 }
 
 void CAuxGeomCB::AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const SAuxGeomRenderFlags& renderFlags)
@@ -2512,11 +2510,11 @@ void CAuxGeomCB::AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const
 
 	if (false == auxPushBuffer.empty() &&
 		(e_PtList == primType || e_LineList == primType || e_TriList == primType || e_LineStrip == primType) &&
-	    auxPushBuffer[auxPushBuffer.size() - 1].m_displayContextHandle == m_rawData->m_displayContextHandle &&
-	    auxPushBuffer[auxPushBuffer.size() - 1].m_textureID       == textureID &&
-	    auxPushBuffer[auxPushBuffer.size() - 1].m_renderFlags     == renderFlags &&
-	    auxPushBuffer[auxPushBuffer.size() - 1].m_transMatrixIdx  == GetTransMatrixIndex() &&
-	    auxPushBuffer[auxPushBuffer.size() - 1].m_worldMatrixIdx  == GetWorldMatrixIndex())
+	    auxPushBuffer[auxPushBuffer.size() - 1].m_displayContextKey == m_rawData->displayContextKey &&
+	    auxPushBuffer[auxPushBuffer.size() - 1].m_textureID         == textureID &&
+	    auxPushBuffer[auxPushBuffer.size() - 1].m_renderFlags       == renderFlags &&
+	    auxPushBuffer[auxPushBuffer.size() - 1].m_transMatrixIdx    == GetTransMatrixIndex() &&
+	    auxPushBuffer[auxPushBuffer.size() - 1].m_worldMatrixIdx    == GetWorldMatrixIndex())
 	{
 		// Perform a runtime optimization (pre-merging) which effectively reduces the number of PB entries created.
 		// We can merge this entry with the previous one as its render flags match with the ones of the previous entry
@@ -2534,7 +2532,7 @@ void CAuxGeomCB::AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const
 	else
 	{
 		// create new push buffer entry
-		auxPushBuffer.emplace_back(numVertices, numIndices, AccessData()->m_auxVertexBuffer.size(), AccessData()->m_auxIndexBuffer.size(), GetTransMatrixIndex(), GetWorldMatrixIndex(), renderFlags, textureID, m_rawData->m_displayContextHandle);
+		auxPushBuffer.emplace_back(numVertices, numIndices, AccessData()->m_auxVertexBuffer.size(), AccessData()->m_auxIndexBuffer.size(), GetTransMatrixIndex(), GetWorldMatrixIndex(), renderFlags, textureID, m_rawData->displayContextKey);
 	}
 }
 
@@ -2583,7 +2581,7 @@ void CAuxGeomCB::AddObject(SAuxDrawObjParams*& pDrawParams, const SAuxGeomRender
 	// create new push buffer entry
 	AuxPushBuffer& auxPushBuffer(AccessData()->m_auxPushBuffer);
 	AuxDrawObjParamBuffer& auxDrawObjParamBuffer(AccessData()->m_auxDrawObjParamBuffer);
-	auxPushBuffer.emplace_back(auxDrawObjParamBuffer.size(), GetTransMatrixIndex(), GetWorldMatrixIndex(), renderFlags, 0, m_rawData->m_displayContextHandle);
+	auxPushBuffer.emplace_back(auxDrawObjParamBuffer.size(), GetTransMatrixIndex(), GetWorldMatrixIndex(), renderFlags, 0, m_rawData->displayContextKey);
 
 	// get draw param buffer ptr
 	AuxDrawObjParamBuffer::size_type oldSize(auxDrawObjParamBuffer.size());

@@ -1960,8 +1960,7 @@ void CVolumetricFogStage::ExecuteInjectInscatteringLight(const SScopedComputeCom
 	inputFlag |= bStaticShadowMap ? BIT(1) : 0;
 
 	if (pass.InputChanged(inputFlag,
-	                      (rtMask & 0xFFFFFFFF),
-	                      ((rtMask >> 32) & 0xFFFFFFFF),
+	                      rtMask,
 	                      m_resourceFrameID))
 	{
 		static CCryNameTSCRC techName("InjectVolumetricInscattering");

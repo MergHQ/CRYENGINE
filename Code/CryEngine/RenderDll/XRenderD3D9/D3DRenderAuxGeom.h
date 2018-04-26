@@ -86,7 +86,9 @@ private:
 		CAuxGeomCB*       m_cbCurrent;
 		AUXJobMap         m_auxJobMap;
 		CCamera			  m_camera;
-		CryDisplayContextHandle m_hWnd;
+
+		SDisplayContextKey displayContextKey;
+
 		mutable CryRWLock m_rwlLocal;
 	public:
 		SThread();
@@ -96,13 +98,14 @@ private:
 		//void AppendJob(AUXJobs& auxJobs);
 		void FreeMemory();
 		void SetDefaultCamera(const CCamera& camera);
-		void SetDisplayContextHandle(CryDisplayContextHandle hWnd);
+		void SetDisplayContextKey(const SDisplayContextKey& displayContextKey);
 		void GetMemoryUsage(ICrySizer* pSizer) const;
 	};
 	AUXThreadMap      m_auxThreadMap;
 	mutable CryRWLock m_rwGlobal;
-	CCamera m_camera;
-	CryDisplayContextHandle m_hWnd;
+	CCamera           m_camera;
+
+	SDisplayContextKey m_displayContextKey;
 public:
 	~CAuxGeomCBCollector();
 	CAuxGeomCB* Get(int jobID);
@@ -110,20 +113,21 @@ public:
 	void FreeMemory();
 	AUXJobs SubmitAuxGeomsAndPrepareForRendering();
 	void SetDefaultCamera(const CCamera& camera);
-	void SetDisplayContextHandle(CryDisplayContextHandle hWnd);
+	void SetDisplayContextKey(const SDisplayContextKey& displayContextKey);
 	CCamera                 GetCamera() const;
-	CryDisplayContextHandle GetDisplayContextHandle() const;
+	const SDisplayContextKey& GetDisplayContextKey() const;
 	void GetMemoryUsage(ICrySizer* pSizer) const;
 };
 
 class CRenderAuxGeomD3D final : public IRenderAuxGeomImpl
 {
 public:
-	virtual void RT_Flush(SAuxGeomCBRawDataPackaged& data) override;
+	virtual void RT_Flush(const SAuxGeomCBRawDataPackagedConst& data) override;
 	void RT_Render(const CAuxGeomCBCollector::AUXJobs& auxGeoms);
+	void RT_Reset(CAuxGeomCBCollector::AUXJobs& auxGeoms);
 
 private:
-	void RT_RenderAuxGeom(CAuxGeomCB* pAuxGeom);
+	void RenderAuxGeom(const CAuxGeomCB* pAuxGeom);
 
 public:
 	static CRenderAuxGeomD3D* Create(CD3D9Renderer& renderer)
@@ -216,14 +220,14 @@ private:
 private:
 	CRenderAuxGeomD3D(CD3D9Renderer& renderer);
 
-	bool              PreparePass(const CCamera& camera,CPrimitiveRenderPass& pass, SRenderViewport* getViewport = nullptr);
+	bool              PreparePass(const CCamera& camera, const SDisplayContextKey& displayContextKey, CPrimitiveRenderPass& pass, SRenderViewport* getViewport);
 
 	CDeviceGraphicsPSOPtr GetGraphicsPSO(const SAuxGeomRenderFlags& flags, const CCryNameTSCRC& techique, ERenderPrimitiveType topology, InputLayoutHandle format);
 
-	void              DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& rawData,CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj, int texID);
+	void              DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& rawData,CAuxGeomCB::AuxSortedPushBuffer::const_iterator itBegin, CAuxGeomCB::AuxSortedPushBuffer::const_iterator itEnd, const Matrix44& mViewProj, const SRenderViewport& vp, int texID);
 
-	bool              PrepareRendering(CAuxGeomCB::SAuxGeomCBRawData* pAuxGeomData);
-	void              Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44A& mat, CryDisplayContextHandle displayContext);
+	bool              PrepareRendering(const CAuxGeomCB::SAuxGeomCBRawData* pAuxGeomData, SRenderViewport* viewportOut);
+	void              Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44A& mat, const SDisplayContextKey& displayContextKey);
 	void              FinishRendering();
 	void              ClearCaches();
 
@@ -318,13 +322,6 @@ private:
 
 	SAuxCurrentState                          m_currentState;
 
-
-	uint32                                    m_wndXRes;
-	uint32                                    m_wndYRes;
-	Vec2                                      m_screenResolutionInverse;
-	float                                     m_aspect;
-	float                                     m_aspectInv;
-
 	SMatrices                                 m_matrices;
 
 	CAuxGeomCB::EPrimType                     m_curPrimType;
@@ -333,8 +330,6 @@ private:
 
 	int                                       m_curTransMatrixIdx;
 	int                                       m_curWorldMatrixIdx;
-
-	CRenderDisplayContext*                    m_pCurrentDisplayContext = nullptr;
 
 	CShader*                                  m_pAuxGeomShader;
 	EAuxGeomPublicRenderflags_DrawInFrontMode m_curDrawInFrontMode;
@@ -348,8 +343,6 @@ private:
 	SDrawObjMesh                              m_sphereObj[e_auxObjNumLOD];
 	SDrawObjMesh                              m_coneObj[e_auxObjNumLOD];
 	SDrawObjMesh                              m_cylinderObj[e_auxObjNumLOD];
-
-	CryDisplayContextHandle                   m_currentDisplayHandle = 0;
 
 	CAuxPSOCache                              m_auxPsoCache;
 	CAuxDeviceResourceSetCacheForTexture      m_auxTextureCache;

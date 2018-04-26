@@ -67,7 +67,7 @@ CDevice* CDevice::Create(CCryDX12GIAdapter* pAdapter, D3D_FEATURE_LEVEL* pFeatur
 
 #ifdef DX12_LINKEDADAPTER
 	nodeCount = pDevice12->GetNodeCount();
-	if (!CRenderer::CV_r_StereoDevice || !CRenderer::CV_r_StereoEnableMgpu)
+	if (gcpRendD3D->GetS3DRend().GetDevice() != EStereoDevice::STEREO_DEVICE_NONE || !CRenderer::CV_r_StereoEnableMgpu)
 		nodeCount = 1;
 
 	if (CRenderer::CV_r_StereoEnableMgpu && int(nodeCount) > 1)

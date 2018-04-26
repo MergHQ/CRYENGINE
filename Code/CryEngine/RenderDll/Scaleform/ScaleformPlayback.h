@@ -382,11 +382,12 @@ public:
 	virtual std::vector<ITexture*> GetTempRenderTargets() const override;
 
 	// Helper functions
-	static void RenderFlashPlayerToDisplay(IFlashPlayer* pFlashPlayer, bool bStereo);
 	static void RenderFlashPlayerToTexture(IFlashPlayer* pFlashPlayer, CTexture* pOutput);
+	static void RenderFlashPlayerToOutput(IFlashPlayer* pFlashPlayer, CRenderOutputPtr output);
+
+	void SetRenderOutput(std::shared_ptr<CRenderOutput> pRenderOutput);
 	
 private:
-	void SetRenderOutput(std::shared_ptr<CRenderOutput> pRenderOutput);
 	std::shared_ptr<CRenderOutput> GetRenderOutput() const;
 
 	void PushOutputTarget(const Viewport &viewport);

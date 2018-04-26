@@ -65,25 +65,27 @@ void CShadowUtils::ProjectScreenToWorldExpansionBasis(const Matrix44r& mShadowTe
 {
 	const Matrix34& camMatrix = cam.GetMatrix();
 
-	Vec3 vNearEdge = cam.GetEdgeN();
-
 	//all values are in camera space
-	float fFar = cam.GetFarPlane();
-	float fNear = abs(vNearEdge.y);
-	float fWorldWidthDiv2 = abs(vNearEdge.x);
-	float fWorldHeightDiv2 = abs(vNearEdge.z);
+	const float fFar = cam.GetFarPlane();
+	const float fNear = abs(cam.GetEdgeN().y);
 
-	float k = fFar / fNear;
+	const float k = fFar / fNear;
 
-	//simple non-general hack to shift stereo with off center projection
-	Vec3 vStereoShift = camMatrix.GetColumn0().GetNormalized() * cam.GetAsymL() + camMatrix.GetColumn2() * cam.GetAsymB();
+	//simple general non-hack to shift stereo with off center projection
+	float l, r, b, t;
+	cam.GetAsymmetricFrustumParams(l, r, b, t);
+	Vec3 vStereoShift = 
+		camMatrix.GetColumn0().GetNormalized() * (r+l) * .5f +
+		camMatrix.GetColumn2().GetNormalized() * (t+b) * .5f;
+	const float fWorldWidthDiv2 = (r-l) * .5f;
+	const float fWorldHeightDiv2 = (t-b) * .5f;
 
-	Vec3 vNearX = camMatrix.GetColumn0().GetNormalized() * fWorldWidthDiv2;
-	Vec3 vNearY = camMatrix.GetColumn2().GetNormalized() * fWorldHeightDiv2;
-	Vec3 vNearZ = camMatrix.GetColumn1().GetNormalized() * fNear;
+	const Vec3 vNearX = camMatrix.GetColumn0().GetNormalized() * fWorldWidthDiv2;
+	const Vec3 vNearY = camMatrix.GetColumn2().GetNormalized() * fWorldHeightDiv2;
+	const Vec3 vNearZ = camMatrix.GetColumn1().GetNormalized() * fNear;
 
-	Vec3 vJitterShiftX = vNearX * vJitter.x;
-	Vec3 vJitterShiftY = vNearY * vJitter.y;
+	const Vec3 vJitterShiftX = vNearX * vJitter.x;
+	const Vec3 vJitterShiftY = vNearY * vJitter.y;
 
 	Vec3 vZ = (vNearZ + vJitterShiftX + vJitterShiftY + vStereoShift) * k; // size of vZ is the distance from camera pos to near plane
 

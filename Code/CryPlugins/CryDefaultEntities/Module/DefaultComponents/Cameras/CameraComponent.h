@@ -33,7 +33,6 @@ namespace Cry
 
 		class CCameraComponent
 			: public ICameraComponent
-			, public IHmdDevice::IAsyncCameraCallback
 #ifndef RELEASE
 			, public IEntityComponentPreviewer
 #endif
@@ -67,6 +66,12 @@ namespace Cry
 				m_camera.SetMatrix(GetWorldTransformMatrix());
 
 				gEnv->pSystem->SetViewCamera(m_camera);
+
+				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
+				{
+					const auto& worldTranform = GetWorldTransformMatrix();
+					pDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(Quat(worldTranform), worldTranform.GetTranslation()));
+				}
 			}
 				else if (event.event == ENTITY_EVENT_START_GAME || event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 				{
@@ -92,11 +97,6 @@ namespace Cry
 			virtual void OnShutDown() final
 			{
 				m_pCameraManager->RemoveCamera(this);
-
-				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
-				{
-					pDevice->SetAsyncCameraCallback(nullptr);
-				}
 			}
 			// ~IEntityComponent
 
@@ -106,21 +106,6 @@ namespace Cry
 			virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const final;
 			// ~IEntityComponentPreviewer
 #endif
-
-			// IAsyncCameraCallback
-			virtual bool OnAsyncCameraCallback(const HmdTrackingState& sensorState, IHmdDevice::AsyncCameraContext& context) override
-			{
-				context.outputCameraMatrix = GetWorldTransformMatrix();
-
-				Matrix33 orientation = Matrix33(context.outputCameraMatrix);
-				Vec3 position = context.outputCameraMatrix.GetTranslation();
-
-				context.outputCameraMatrix.AddTranslation(orientation * sensorState.pose.position);
-				context.outputCameraMatrix.SetRotation33(orientation * Matrix33(sensorState.pose.orientation));
-
-				return true;
-			}
-			// ~IAsyncCameraCallback
 
 			// ICameraComponent
 			virtual void DisableAudioListener() final
@@ -156,11 +141,6 @@ namespace Cry
 			virtual void Activate()
 			{
 				m_pEntity->UpdateComponentEventMask(this);
-
-				if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
-				{
-					pDevice->SetAsyncCameraCallback(this);
-				}
 				
 				if (m_pAudioListener)
 				{

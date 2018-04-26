@@ -3233,6 +3233,19 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		// Note: IME manager needs to be created before Scaleform is initialized
 		m_pImeManager = new CImeManager();
 
+		InlineInitializationProcessing("CSystem::Init LoadProjectPlugins");
+		m_pPluginManager->LoadProjectPlugins();
+
+		InlineInitializationProcessing("CSystem::Init InitRenderer");
+
+		m_pSystemEventDispatcher->OnSystemEvent(ESYSTEM_EVENT_PRE_RENDERER_INIT, 0, 0);
+
+		// [VR]
+		if (m_pHmdManager)
+		{
+			m_pHmdManager->SetupAction(IHmdManager::eHmdSetupAction_Init);
+		}
+
 		//////////////////////////////////////////////////////////////////////////
 		// RENDERER
 		//////////////////////////////////////////////////////////////////////////
@@ -3252,6 +3265,31 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 				m_env.pRenderer->EF_Query(EFQ_MultiGPUEnabled, bMultiGPUEnabled);
 				if (bMultiGPUEnabled)
 					LoadConfiguration("mgpu.cfg");
+
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+				if (!m_bShaderCacheGenMode)
+				{
+					if (!InitializeEngineModule(startupParams, DLL_SCALEFORM, cryiidof<IScaleformHelperEngineModule>(), false))
+					{
+						m_env.pScaleformHelper = nullptr;
+						CryLog("Attempt to load Scaleform helper library from '%s' failed, this feature will not be available", DLL_SCALEFORM);
+					}
+					else if (!m_env.pScaleformHelper->Init())
+					{
+						m_env.pScaleformHelper->Destroy();
+						m_env.pScaleformHelper = nullptr;
+						CryLog("Unable to initialize Scaleform helper library, this feature will not be available");
+					}
+					else
+					{
+						m_env.pScaleformHelper->SetAmpEnabled(false);
+					}
+				}
+#endif
+				else
+				{
+					m_env.pScaleformHelper = nullptr;
+				}
 			}
 		}
 		else
@@ -3297,45 +3335,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 			}
 		}
 
-		InlineInitializationProcessing("CSystem::Init LoadProjectPlugins");
-		m_pPluginManager->LoadProjectPlugins();
-
 		m_pUserAnalyticsSystem->Initialize();
-
-		InlineInitializationProcessing("CSystem::Init InitRenderer");
-
-		m_pSystemEventDispatcher->OnSystemEvent(ESYSTEM_EVENT_PRE_RENDERER_INIT, 0, 0);
-
-		// [VR]
-		if (m_pHmdManager)
-		{
-			m_pHmdManager->SetupAction(IHmdManager::eHmdSetupAction_Init);
-		}
-
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-		if (m_env.pRenderer && !m_bShaderCacheGenMode)
-		{
-			if (!InitializeEngineModule(startupParams, DLL_SCALEFORM, cryiidof<IScaleformHelperEngineModule>(), false))
-			{
-				m_env.pScaleformHelper = nullptr;
-				CryLog("Attempt to load Scaleform helper library from '%s' failed, this feature will not be available", DLL_SCALEFORM);
-			}
-			else if (!m_env.pScaleformHelper->Init())
-			{
-				m_env.pScaleformHelper->Destroy();
-				m_env.pScaleformHelper = nullptr;
-				CryLog("Unable to initialize Scaleform helper library, this feature will not be available");
-			}
-			else
-			{
-				m_env.pScaleformHelper->SetAmpEnabled(false);
-			}
-		}
-		else
-#endif
-		{
-			m_env.pScaleformHelper = nullptr;
-		}
 
 		InlineInitializationProcessing("CSystem::Init CSharedFlashPlayerResources::Init");
 
@@ -3377,7 +3377,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 					// make sure it's rendered in full screen mode when triple buffering is enabled as well
 					for (size_t n = 0; n < 3; n++)
 					{
-						m_env.pRenderer->BeginFrame(0);
+						m_env.pRenderer->BeginFrame({});
 						IRenderAuxImage::Draw2dImage(x, y, w, h, pTex->GetTextureID(), 0.0f, 1.0f, 1.0f, 0.0f);
 						m_env.pRenderer->EndFrame();
 					}

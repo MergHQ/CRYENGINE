@@ -782,9 +782,6 @@ void CStandardGraphicsPipeline::Execute()
 		m_pRainStage->ExecuteRainOcclusion();
 	}
 
-	// new graphics pipeline doesn't need clearing stereo render targets.
-	gcpRendD3D->GetS3DRend().SkipEyeTargetClears();
-
 	if (!pRenderView->IsRecursive() && pRenderView->GetCurrentEye() != CCamera::eEye_Right)
 	{
 		// compile shadow renderitems. needs to happen before gbuffer pass accesses renderitems

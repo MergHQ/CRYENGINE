@@ -28,7 +28,7 @@ public:
 	const CCamera&      GetCamera() const final                                                                                                              { static CCamera camera; return camera; }
 
 	//! Set current display context for the following auxiliary rendering.
-	void                SetCurrentDisplayContext(CryDisplayContextHandle context) final                                                                      {}
+	void                SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey) final                                               {}
 
 	void                DrawPoint(const Vec3& v, const ColorB& col, uint8 size = 1) final;
 	void                DrawPoints(const Vec3* v, uint32 numPoints, const ColorB& col, uint8 size = 1) final;

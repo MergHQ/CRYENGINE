@@ -870,7 +870,7 @@ void CFlashUIElement::Render()
 
 	if (!HasExtTexture())
 	{
-		m_pFlashplayer->Render(gEnv->pRenderer->IsStereoEnabled());
+		m_pFlashplayer->Render();
 	}
 }
 
@@ -882,7 +882,7 @@ void CFlashUIElement::RenderLockless()
 
 	if (!HasExtTexture())
 	{
-		m_pFlashplayer->Render(gEnv->pRenderer->IsStereoEnabled());
+		m_pFlashplayer->Render();
 	}
 }
 

@@ -104,12 +104,6 @@ void CD3D9Renderer::EF_Init()
 
 	CDeferredShading::CreateDeferredShading();
 
-	if (m_pStereoRenderer)
-	{
-		m_pStereoRenderer->CreateResources();
-		m_pStereoRenderer->Update();
-	}
-
 #ifdef ENABLE_BENCHMARK_SENSOR
 	if (!m_benchmarkRendererSensor)
 	{
@@ -517,24 +511,14 @@ void CD3D9Renderer::FX_ClearCharInstCB(uint32 frameId)
 	m_CharCBFreeList.splice_tail(&m_CharCBActiveList[poolId]);
 }
 
-// Render thread only scene rendering
-void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags)
+void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 {
-	PROFILE_LABEL_SCOPE(pRenderView->IsRecursive() ? "SCENE_REC" : "SCENE");
-
-	pRenderView->SetShaderRenderingFlags(nFlags);
-
-	gcpRendD3D->SetCurDownscaleFactor(gcpRendD3D->m_CurViewportScale);
-
-	// Skip scene rendering when device is lost
-	if (m_bDeviceLost)
-		return;
-
-	// Only Billboard rendering doesn't use CRenderOutput
-	if (!pRenderView->GetRenderOutput() && !pRenderView->IsBillboardGenView())
-	{
-		pRenderView->AssignRenderOutput(GetActiveDisplayContext()->GetRenderOutput());
-	}
+	const uint32 shaderRenderingFlags = pRenderView->GetShaderRenderingFlags();
+	const bool bRecurse = pRenderView->IsRecursive();
+	const bool bAllowPostProcess = pRenderView->IsPostProcessingEnabled();
+	const bool bAllowPostAA = bAllowPostProcess
+		&& (GetWireframeMode() == R_SOLID_MODE)
+		&& (CRenderer::CV_r_DeferredShadingDebugGBuffer == 0);
 
 	// Update the character CBs (only active on D3D11 style platforms)
 	// Needs to be done before objects are compiled
@@ -543,31 +527,23 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags)
 	CRenderMesh::RT_PerFrameTick();
 	CMotionBlur::InsertNewElements();
 	CRenderMesh::UpdateModified();
-
-	const bool bRecurse = pRenderView->IsRecursive() ? true : false;
-	const bool bSecondaryViewport = (nFlags & SHDF_SECONDARY_VIEWPORT) ? true : false;
-
-	// Prepare post processing
-	bool bAllowPostProcess = pRenderView->IsPostProcessingEnabled();
-
-	bool bAllowPostAA = bAllowPostProcess
-		&& (GetWireframeMode() == R_SOLID_MODE)
-		&& (CRenderer::CV_r_DeferredShadingDebugGBuffer == 0);
-
+	
 	if (bAllowPostAA)
 	{
-		GetGraphicsPipeline().GetPostAAStage()->CalculateJitterOffsets(pRenderView);
+		if (GetS3DRend().IsStereoEnabled())
+		{
+			const auto* eye = GetS3DRend().GetEyeDisplayContext(CCamera::eEye_Left).first;
+			if (eye)
+				GetGraphicsPipeline().GetPostAAStage()->CalculateJitterOffsets(eye->GetCurrentBackBuffer()->GetWidth(), eye->GetCurrentBackBuffer()->GetHeight(), pRenderView);
+		}
+		else
+		{
+			GetGraphicsPipeline().GetPostAAStage()->CalculateJitterOffsets(pRenderView);
+		}
 	}
 
-	////////////////////////////////////////////////
-
 	{
-		PROFILE_FRAME(WaitForRenderView);
-		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReading);
-	}
-
-	{
-		PROFILE_FRAME(CompileModifiedShaderItems)
+		PROFILE_FRAME(CompileModifiedShaderItems);
 		for (auto pShaderResources : CShader::s_ShaderResources_known)
 		{
 			// TODO: Check why s_ShaderResources_known can contain null pointers
@@ -580,40 +556,85 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags)
 		}
 	}
 
-	CFlashTextureSourceSharedRT::SetupSharedRenderTargetRT();
-
-	CTimeValue Time = iTimer->GetAsyncTime();
-
-	if (!bRecurse)
-	{
-		D3D11_VIEWPORT viewport = RenderViewportToD3D11Viewport(pRenderView->GetViewport());
-
-		bool bRightEye = (nFlags & SHDF_STEREO_RIGHT_EYE) != 0;
-
-		CVrProjectionManager::Instance()->Configure(viewport, bRightEye);
-	}
-
 	static int lightVolumeOldFrameID = -1;
-	int newFrameID = pRenderView->GetFrameId();
+	const int newFrameID = pRenderView->GetFrameId();
 
 	// Update light volumes info
 	const bool updateLightVolumes =
 		lightVolumeOldFrameID != newFrameID &&
 		!bRecurse &&
-		(nFlags & SHDF_ALLOWPOSTPROCESS) != 0;
-		// bAllowPostProcess???
-
+		(shaderRenderingFlags & SHDF_ALLOWPOSTPROCESS) != 0;
 	if (updateLightVolumes)
 	{
 		GetGraphicsPipeline().GetLightVolumeBuffer().UpdateContent();
 		lightVolumeOldFrameID = newFrameID;
 	}
+}
+
+void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
+{
+	const bool bRecurse = pRenderView->IsRecursive();
+
+	{
+		PROFILE_FRAME(ShadowViewsEndFrame);
+		for (auto& fr : pRenderView->m_shadows.m_renderFrustums)
+		{
+			auto pShadowView = reinterpret_cast<CRenderView*>(fr.pShadowsView.get());
+			pShadowView->SwitchUsageMode(IRenderView::eUsageModeReadingDone);
+		}
+	}
+
+	if (!bRecurse)
+	{
+		gRenDev->GetIRenderAuxGeom()->Submit();
+	}
+}
+
+// Render thread only scene rendering
+void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
+{
+	PROFILE_LABEL_SCOPE(pRenderView->IsRecursive() ? "SCENE_REC" : "SCENE");
+
+	gcpRendD3D->SetCurDownscaleFactor(gcpRendD3D->m_CurViewportScale);
+
+	// Skip scene rendering when device is lost
+	if (m_bDeviceLost)
+		return;
+
+	{
+		PROFILE_FRAME(WaitForRenderView);
+		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReading);
+	}
+
+	// Only Billboard rendering doesn't use CRenderOutput
+	if (!pRenderView->GetRenderOutput() && !pRenderView->IsBillboardGenView())
+	{
+		pRenderView->AssignRenderOutput(GetActiveDisplayContext()->GetRenderOutput());
+		pRenderView->GetRenderOutput()->BeginRendering(pRenderView);
+	}
+
+	const uint32 shaderRenderingFlags = pRenderView->GetShaderRenderingFlags();
+
+	const bool bRecurse = pRenderView->IsRecursive();
+	const bool bSecondaryViewport = (shaderRenderingFlags & SHDF_SECONDARY_VIEWPORT) != 0;
+	const bool bAllowPostProcess = pRenderView->IsPostProcessingEnabled();
+	const CTimeValue Time = iTimer->GetAsyncTime();
+
+	CFlashTextureSourceSharedRT::SetupSharedRenderTargetRT();
+
+	if (!bRecurse)
+	{
+		D3D11_VIEWPORT viewport = RenderViewportToD3D11Viewport(pRenderView->GetViewport());
+
+		const bool bRightEye = (shaderRenderingFlags & SHDF_STEREO_RIGHT_EYE) != 0;
+		CVrProjectionManager::Instance()->Configure(viewport, bRightEye);
+	}
 
 	int nSaveDrawNear     = CV_r_nodrawnear;
 	int nSaveDrawCaustics = CV_r_watercaustics;
-	if (nFlags & SHDF_NO_DRAWCAUSTICS)
+	if (shaderRenderingFlags & SHDF_NO_DRAWCAUSTICS)
 		CV_r_watercaustics = 0;
-	if (nFlags & SHDF_NO_DRAWNEAR)
+	if (shaderRenderingFlags & SHDF_NO_DRAWNEAR)
 		CV_r_nodrawnear = 1;
 
 	m_bDeferredDecals = false;
@@ -635,10 +656,9 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags)
 
 	// This scope is the only one allowed to utilize the graphics pipeline
 	{
-		CRY_ASSERT(nFlags & SHDF_ALLOWHDR);
+		CRY_ASSERT(shaderRenderingFlags & SHDF_ALLOWHDR);
 
-		gcpRendD3D->GetS3DRend().TryInjectHmdCameraAsync(pRenderView);
-		GetGraphicsPipeline().Update(pRenderView, EShaderRenderingFlags(nFlags));
+		GetGraphicsPipeline().Update(pRenderView, EShaderRenderingFlags(shaderRenderingFlags));
 
 		// Creating CompiledRenederObjects should happen after Update() call of the GraphicsPipeline, as it requires access to initialized Render Targets
 		// If some pipeline stage manages/retires resources used in compiled objects, they should also be handled in Update()
@@ -656,14 +676,14 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags)
 		{
 			GetGraphicsPipeline().ExecuteDebugger();
 		}
-		else if ((nFlags & SHDF_ZPASS) && (nFlags & SHDF_ALLOWPOSTPROCESS))
+		else if ((shaderRenderingFlags & SHDF_ZPASS) && (shaderRenderingFlags & SHDF_ALLOWPOSTPROCESS))
 		{
 			GetGraphicsPipeline().Execute();
 		}
 		else
 		{
-			CRY_ASSERT((nFlags & SHDF_ZPASS) == 0);
-			CRY_ASSERT((nFlags & SHDF_ALLOWPOSTPROCESS) == 0);
+			CRY_ASSERT((shaderRenderingFlags & SHDF_ZPASS) == 0);
+			CRY_ASSERT((shaderRenderingFlags & SHDF_ALLOWPOSTPROCESS) == 0);
 			GetGraphicsPipeline().ExecuteMinimumForwardShading();
 		}
 
@@ -688,17 +708,6 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags)
 	}
 
 	////////////////////////////////////////////////
-	// Lists still needed for right eye when stereo is active
-	if (!GetS3DRend().RequiresSequentialSubmission() || !(nFlags & SHDF_STEREO_LEFT_EYE))
-	{
-		PROFILE_FRAME(RenderViewEndFrame);
-		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReadingDone);
-		for (auto& fr : pRenderView->m_shadows.m_renderFrustums)
-		{
-			auto pShadowView = reinterpret_cast<CRenderView*>(fr.pShadowsView.get());
-			pShadowView->SwitchUsageMode(IRenderView::eUsageModeReadingDone);
-		}
-	}
 
 	CFlashTextureSourceBase::RenderLights();
 
@@ -707,9 +716,9 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags)
 	CV_r_nodrawnear            = nSaveDrawNear;
 	CV_r_watercaustics         = nSaveDrawCaustics;
 
-	if (!bRecurse)
 	{
-		gRenDev->GetIRenderAuxGeom()->Submit();
+		PROFILE_FRAME(RenderViewEndFrame);
+		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReadingDone);
 	}
 }
 
@@ -718,7 +727,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView, int nFlags)
 void CD3D9Renderer::SubmitRenderViewForRendering(int nFlags, const SRenderingPassInfo& passInfo)
 {
 	ASSERT_IS_MAIN_THREAD(m_pRT)
-	CRenderView* pRenderView = passInfo.GetRenderView();
+	_smart_ptr<CRenderView> pRenderView = passInfo.GetRenderView();
 
 	// Writing to this render view from this thread should be done.
 	pRenderView->SwitchUsageMode(CRenderView::eUsageModeWritingDone);
@@ -731,16 +740,56 @@ void CD3D9Renderer::SubmitRenderViewForRendering(int nFlags, const SRenderingPas
 			auto& postProcessRenderItems = pRenderView->GetRenderItems(EFSLIST_PREPROCESS);
 			if (!postProcessRenderItems.empty() && pRenderView->GetBatchFlags(EFSLIST_PREPROCESS) & FSPR_MASK)
 			{
-				int nums = 0;
-				int nume = nums + postProcessRenderItems.size();
+				const int size = static_cast<int>(postProcessRenderItems.size());
+
 				// Sort render items as we need them
-				SRendItem::mfSortPreprocess(&postProcessRenderItems[nums], nume - nums);
-				EF_Preprocess(&postProcessRenderItems[0], nums, nume, passInfo);
+				SRendItem::mfSortPreprocess(&postProcessRenderItems[0], size);
+				EF_Preprocess(&postProcessRenderItems[0], 0, size, passInfo);
 			}
 		}
 	}
 
-	m_pRT->RC_RenderScene(pRenderView, nFlags);
+	// Setup stereo rendering context
+	const bool performStereoRendering = m_pStereoRenderer->IsStereoEnabled() && !passInfo.IsRecursivePass();
+	SStereoRenderContext stereoContext = {};
+	if (performStereoRendering)
+		stereoContext = m_pStereoRenderer->PrepareStereoRenderingContext(nFlags, passInfo);
+
+	ExecuteRenderThreadCommand([=]()
+	{
+		CTimeValue timeRenderSceneBegin = iTimer->GetAsyncTime();
+
+		// when we are in video mode, don't execute the command
+		if (m_pRT->IsRenderThread() && m_pRT->m_eVideoThreadMode == SRenderThread::eVTM_Disabled)
+		{
+			RT_PreRenderScene(pRenderView);
+
+			if (performStereoRendering)
+			{
+				m_pStereoRenderer->RenderScene(stereoContext);
+			}
+			else
+			{
+				pRenderView->SetShaderRenderingFlags(nFlags);
+				RT_RenderScene(pRenderView);
+			}
+
+			RT_PostRenderScene(pRenderView);
+		}
+		else
+		{
+			// cleanup when showing loading render screen
+			if (!pRenderView->IsRecursive())
+			{
+				////////////////////////////////////////////////
+				// to non-thread safe remaing work for *::Render functions
+				CRenderMesh::RT_PerFrameTick();
+				CMotionBlur::InsertNewElements();
+			}
+		}
+
+		m_fRTTimeSceneRender += iTimer->GetAsyncTime().GetDifferenceInSeconds(timeRenderSceneBegin);
+	}, ERenderCommandFlags::None);
 }
 
 // Process all render item lists

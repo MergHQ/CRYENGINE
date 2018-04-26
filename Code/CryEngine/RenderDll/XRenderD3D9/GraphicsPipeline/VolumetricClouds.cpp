@@ -276,7 +276,7 @@ Matrix44 VCGetReprojectionMatrix(
 	Matrix44_tpl<f64> matReprojection64;
 
 	Matrix44A matProj = matProjCurrent;
-	if (gcpRendD3D->GetS3DRend().GetStereoMode() != STEREO_MODE_DUAL_RENDERING)
+	if (gcpRendD3D->GetS3DRend().GetStereoMode() != EStereoMode::STEREO_MODE_DUAL_RENDERING)
 	{
 		// Ensure jittering is removed from projection matrix
 		matProj.m20 = 0.0f;
@@ -617,8 +617,8 @@ void CVolumetricCloudsStage::ExecuteShadowGen()
 
 	const int64 nCurrentFrameID = RenderView()->GetFrameId();
 	const int32 currEye = static_cast<int32>(RenderView()->GetCurrentEye());
-	const bool bLeftEye = (nCurrentFrameID != m_nUpdateFrameID[currEye]) && (currEye == StereoEye::LEFT_EYE);
-	const bool bRightEye = (nCurrentFrameID != m_nUpdateFrameID[currEye]) && (currEye == StereoEye::RIGHT_EYE);
+	const bool bLeftEye = (nCurrentFrameID != m_nUpdateFrameID[currEye]) && (currEye == CCamera::eEye_Left);
+	const bool bRightEye = (nCurrentFrameID != m_nUpdateFrameID[currEye]) && (currEye == CCamera::eEye_Right);
 
 	if (!AreTexturesValid())
 		return;
@@ -644,10 +644,10 @@ void CVolumetricCloudsStage::ExecuteShadowGen()
 
 		if (bStereoMultiGPURendering)
 		{
-			m_viewMatrix[StereoEye::LEFT_EYE][currentFrameIndex] = viewInfos[StereoEye::LEFT_EYE].viewMatrix;
-			m_projMatrix[StereoEye::LEFT_EYE][currentFrameIndex] = viewInfos[StereoEye::LEFT_EYE].projMatrix;
-			m_viewMatrix[StereoEye::RIGHT_EYE][currentFrameIndex] = viewInfos[StereoEye::RIGHT_EYE].viewMatrix;
-			m_projMatrix[StereoEye::RIGHT_EYE][currentFrameIndex] = viewInfos[StereoEye::RIGHT_EYE].projMatrix;
+			m_viewMatrix[CCamera::eEye_Left][currentFrameIndex] = viewInfos[CCamera::eEye_Left].viewMatrix;
+			m_projMatrix[CCamera::eEye_Left][currentFrameIndex] = viewInfos[CCamera::eEye_Left].projMatrix;
+			m_viewMatrix[CCamera::eEye_Right][currentFrameIndex] = viewInfos[CCamera::eEye_Right].viewMatrix;
+			m_projMatrix[CCamera::eEye_Right][currentFrameIndex] = viewInfos[CCamera::eEye_Right].projMatrix;
 		}
 		else
 		{
@@ -824,7 +824,9 @@ void CVolumetricCloudsStage::Execute()
 			inputFlag |= context.renderFogShadow ? BIT(3) : 0;
 #endif
 
-			if (pass.InputChanged(inputFlag, CRenderer::CV_r_VolumetricClouds))
+			CTexture* zTarget = RenderView()->GetDepthTarget();
+
+			if (pass.InputChanged(inputFlag, CRenderer::CV_r_VolumetricClouds, currMinTex->GetID(), currMaxTex->GetID(), zTarget->GetID()))
 			{
 				uint64 rtMask = 0;
 				rtMask |= context.bScreenSpaceCloudBlocker ? g_HWSR_MaskBit[HWSR_SAMPLE4] : 0;
@@ -981,7 +983,7 @@ void CVolumetricCloudsStage::ExecuteVolumetricCloudShadowGen()
 		pass.PrepareResourcesForUse(GetDeviceObjectFactory().GetCoreCommandList());
 
 		{
-			const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute & BIT((eStage_VolumetricClouds - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
+			const bool bAsynchronousCompute = (CRenderer::CV_r_D3D12AsynchronousCompute & BIT(eStage_VolumetricClouds - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
 			SScopedComputeCommandList computeCommandList(bAsynchronousCompute);
 
 			pass.Execute(computeCommandList, EShaderStage_Compute);
@@ -1102,8 +1104,7 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 			}
 		}
 
-		if (pass.InputChanged((rtMask & 0xFFFFFFFF),
-		                      ((rtMask >> 32) & 0xFFFFFFFF),
+		if (pass.InputChanged(rtMask,
 		                      CRenderer::CV_r_VolumetricClouds,
 		                      cloudVolumeTex->GetID()))
 		{
@@ -1116,7 +1117,7 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 			pass.SetTexture(0, context.scaledZTarget);
 
 			const bool bLtoR = context.bReprojectionFromLeftToRight;
-			pass.SetTexture(2, bLtoR ? m_pScaledPrevDepthTex[StereoEye::LEFT_EYE].get() : CRendererResources::s_ptexBlack);
+			pass.SetTexture(2, bLtoR ? m_pScaledPrevDepthTex[CCamera::eEye_Left].get() : CRendererResources::s_ptexBlack);
 
 			pass.SetTexture(5, CRendererResources::s_ptexVolCloudShadow);
 
@@ -1180,7 +1181,7 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 			pass.PrepareResourcesForUse(GetDeviceObjectFactory().GetCoreCommandList());
 
 			{
-				const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute & BIT((eStage_VolumetricClouds - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
+				const bool bAsynchronousCompute = (CRenderer::CV_r_D3D12AsynchronousCompute & BIT(eStage_VolumetricClouds - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
 				SScopedComputeCommandList computeCommandList(bAsynchronousCompute);
 
 				pass.Execute(computeCommandList, EShaderStage_Compute);
@@ -1221,8 +1222,7 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 		}
 	}
 
-	if (pass.InputChanged((rtMask & 0xFFFFFFFF),
-	                      ((rtMask >> 32) & 0xFFFFFFFF),
+	if (pass.InputChanged(rtMask,
 	                      inputFlag,
 	                      cloudVolumeTex->GetID()))
 	{
@@ -1240,7 +1240,7 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 
 		const bool bLtoR = context.bReprojectionFromLeftToRight;
 		pass.SetTexture(1, bLtoR ? m_pDownscaledLeftEyeTex.get() : CRendererResources::s_ptexBlack);
-		pass.SetTexture(2, bLtoR ? m_pScaledPrevDepthTex[StereoEye::LEFT_EYE].get() : CRendererResources::s_ptexBlack);
+		pass.SetTexture(2, bLtoR ? m_pScaledPrevDepthTex[CCamera::eEye_Left].get() : CRendererResources::s_ptexBlack);
 
 		pass.SetTexture(3, bMono ? CRendererResources::s_ptexBlack : m_pCloudDensityTex.get());
 		pass.SetTexture(4, bMono ? CRendererResources::s_ptexBlack : m_pCloudShadowTex.get());
@@ -1320,7 +1320,7 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 		pass.PrepareResourcesForUse(GetDeviceObjectFactory().GetCoreCommandList());
 
 		{
-			const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute & BIT((eStage_VolumetricClouds - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
+			const bool bAsynchronousCompute = (CRenderer::CV_r_D3D12AsynchronousCompute & BIT(eStage_VolumetricClouds - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
 			SScopedComputeCommandList computeCommandList(bAsynchronousCompute);
 
 			pass.Execute(computeCommandList, EShaderStage_Compute);
@@ -1360,7 +1360,7 @@ void CVolumetricCloudsStage::GenerateCloudShaderParam(::VCCloudRenderContext& co
 	context.cloudVolumeTexId = texInfo.cloudTexId;
 	context.cloudNoiseTexId = texInfo.cloudNoiseTexId;
 	context.edgeNoiseTexId = texInfo.edgeNoiseTexId;
-	context.bRightEye = (curEye == StereoEye::RIGHT_EYE);
+	context.bRightEye = (curEye == CCamera::eEye_Right);
 	context.bFog = (RenderView()->IsGlobalFogEnabled() && !(GetGraphicsPipeline().IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG)));
 
 #if defined(VOLUMETRIC_FOG_SHADOWS)
@@ -1548,8 +1548,8 @@ void CVolumetricCloudsStage::GenerateCloudShaderParam(::VCCloudRenderContext& co
 			// don't need to take care of stereo multi-GPU rendering because stereo reprojection isn't used with it.
 			const int32 currentFrameIndex = GetCurrentFrameIndex();
 			cb.leftToRightReprojMatrix = VCGetReprojectionMatrix(
-			  m_viewMatrix[StereoEye::LEFT_EYE][currentFrameIndex],
-			  m_projMatrix[StereoEye::LEFT_EYE][currentFrameIndex],
+			  m_viewMatrix[CCamera::eEye_Left][currentFrameIndex],
+			  m_projMatrix[CCamera::eEye_Left][currentFrameIndex],
 			  viewInfo.viewMatrix,
 			  viewInfo.projMatrix);
 

@@ -93,7 +93,7 @@ public:
 
 	bool CreateRenderContext();
 	void DestroyRenderContext();
-	void InitDisplayContext(uintptr_t displayContextHandle);
+	void InitDisplayContext(HWND hWnd);
 
 	void ReleaseObject();
 
@@ -182,6 +182,9 @@ protected:
 	CameraChangeCallback     m_cameraChangeCallback;
 	void*                    m_pCameraChangeUserData;
 	int                      m_physHelpers0;
+
+private:
+	SDisplayContextKey m_displayContextKey;
 
 protected:
 	virtual void PreSubclassWindow();

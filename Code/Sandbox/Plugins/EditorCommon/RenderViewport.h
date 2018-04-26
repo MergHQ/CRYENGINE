@@ -182,7 +182,7 @@ protected:
 
 	void             DrawAxis();
 	void             DrawBackground();
-	void             InitDisplayContext(uintptr_t displayContextHandle);
+	void             InitDisplayContext(SDisplayContextKey displayContextKey);
 	void             Accelerate(const int acceleration);
 	float            GetCameraSpeedScale() const;
 
@@ -205,7 +205,7 @@ protected:
 	// Draw a selected region if it has been selected
 	void         RenderSelectedRegion();
 
-	virtual bool CreateRenderContext(uintptr_t displayContextHandle, IRenderer::EViewportType viewportType = IRenderer::EViewportType::eViewportType_Secondary);
+	virtual bool CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType = IRenderer::EViewportType::eViewportType_Secondary);
 	virtual void DestroyRenderContext();
 
 	void         OnMenuCommandChangeAspectRatio(unsigned int commandId);
@@ -312,6 +312,8 @@ protected:
 	bool m_bPendingResizeNotification;
 	int  m_pendingResizeWidth;
 	int  m_pendingResizeHeight;
+
+	SDisplayContextKey            m_displayContextKey;
 };
 
 

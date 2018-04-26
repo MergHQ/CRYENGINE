@@ -429,8 +429,7 @@ void CRenderViewport::Update()
 	{
 		if (CScopedRenderLock lock = CScopedRenderLock())
 		{
-			uintptr_t displayContextHandle = reinterpret_cast<uintptr_t>(GetSafeHwnd());
-			gEnv->pRenderer->GetIRenderAuxGeom()->SetCurrentDisplayContext(displayContextHandle);
+			gEnv->pRenderer->GetIRenderAuxGeom()->SetCurrentDisplayContext(m_displayContextKey);
 
 			if (m_renderer)
 			{
@@ -440,8 +439,9 @@ void CRenderViewport::Update()
 				// Why 16? Internal effects can use half or quarter renderbuffer size so this ensures some leeway in resolution (see CE-8648)
 				if (rcClient.right > 16 && rcClient.bottom > 16)
 				{
-					CCamera& ccam = gEnv->pSystem->GetViewCamera();
+					CCamera ccam = gEnv->pSystem->GetViewCamera();
 					ccam.SetFrustum(m_currentResolution.width, m_currentResolution.height, ccam.GetFov(), ccam.GetNearPlane(), ccam.GetFarPlane(), ccam.GetPixelAspectRatio());
+					gEnv->pSystem->SetViewCamera(ccam);
 				}
 			}
 
@@ -452,14 +452,13 @@ void CRenderViewport::Update()
 
 	if (CScopedRenderLock lock = CScopedRenderLock())
 	{
-		uintptr_t displayContextHandle = reinterpret_cast<uintptr_t>(GetSafeHwnd());
-
 		m_viewTM = m_Camera.GetMatrix(); // synchronize.
 
 		// Render
 		if (!m_bRenderContextCreated)
 		{
-			if (!CreateRenderContext(displayContextHandle))
+			HWND hWnd = GetSafeHwnd();
+			if (!CreateRenderContext(hWnd))
 				return;
 		}
 
@@ -473,10 +472,10 @@ void CRenderViewport::Update()
 		SScopedCurrentContext context(this);
 
 		// Configures Aux to draw to the current display-context
-		InitDisplayContext(displayContextHandle);
+		InitDisplayContext(m_displayContextKey);
 
 		// 3D engine stats
-		GetIEditor()->GetSystem()->RenderBegin(displayContextHandle);
+		GetIEditor()->GetSystem()->RenderBegin(m_displayContextKey);
 
 		bool bRenderStats = m_bRenderStats;
 
@@ -671,13 +670,13 @@ void CRenderViewport::RenderSelectionRectangle()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderViewport::InitDisplayContext(uintptr_t displayContextHandle)
+void CRenderViewport::InitDisplayContext(SDisplayContextKey displayContextKey)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
 	// Draw all objects.
 	DisplayContext& dctx = m_displayContext;
-	dctx.SetDisplayContext(displayContextHandle, IRenderer::eViewportType_Default);
+	dctx.SetDisplayContext(displayContextKey, IRenderer::eViewportType_Default);
 	dctx.SetView(this);
 	dctx.SetCamera(&m_Camera);
 	dctx.renderer = m_renderer;
@@ -990,7 +989,7 @@ void CRenderViewport::ToggleCameraObject()
 //////////////////////////////////////////////////////////////////////////
 void CRenderViewport::SetCamera(const CCamera& camera)
 {
-	CCamera& ccam = gEnv->pSystem->GetViewCamera();
+	const CCamera& ccam = gEnv->pSystem->GetViewCamera();
 
 	m_Camera = camera;
 	m_Camera.SetFrustum(m_currentResolution.width, m_currentResolution.height, ccam.GetFov(), ccam.GetNearPlane(), ccam.GetFarPlane(), ccam.GetPixelAspectRatio());
@@ -1623,7 +1622,7 @@ void CRenderViewport::SetResolution(int x, int y)
 {
 	if (gEnv && gEnv->pRenderer)
 	{
-		gEnv->pRenderer->ResizeContext(m_displayContext.GetDisplayContextHandle(), x, y);
+		gEnv->pRenderer->ResizeContext(m_displayContextKey, x, y);
 	}
 
 	m_currentResolution.width = x;
@@ -1655,14 +1654,14 @@ void CRenderViewport::GetResolution(int& x, int& y)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderViewport::CreateRenderContext(uintptr_t displayContextHandle, IRenderer::EViewportType viewportType)
+bool CRenderViewport::CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType)
 {
 	// Create context.
-	if (displayContextHandle && m_renderer && !m_bRenderContextCreated)
+	if (hWnd && m_renderer && !m_bRenderContextCreated)
 	{
 		IRenderer::SDisplayContextDescription desc;
 
-		desc.handle = displayContextHandle;
+		desc.handle = hWnd;
 		desc.type = viewportType;
 		desc.clearColor = ColorF(0.4f, 0.4f, 0.4f, 1.0f);
 		desc.renderFlags = FRT_CLEAR | FRT_OVERLAY_DEPTH;
@@ -1671,7 +1670,7 @@ bool CRenderViewport::CreateRenderContext(uintptr_t displayContextHandle, IRende
 		desc.screenResolution.x = m_currentResolution.width;
 		desc.screenResolution.y = m_currentResolution.height;
 
-		m_renderer->CreateContext(desc);
+		m_displayContextKey = m_renderer->CreateSwapChainBackedContext(desc);
 		m_bRenderContextCreated = true;
 
 		// Make main context current.
@@ -1689,9 +1688,8 @@ void CRenderViewport::DestroyRenderContext()
 	if (m_renderer && m_bRenderContextCreated)
 	{
 		// Do not delete primary context.
-		HWND window = (HWND)GetSafeHwnd();
-		if (window != m_renderer->GetHWND())
-			m_renderer->DeleteContext(reinterpret_cast<CryDisplayContextHandle>(window));
+		if (m_displayContextKey != static_cast<HWND>(m_renderer->GetHWND()))
+			m_renderer->DeleteContext(m_displayContextKey);
 
 		m_bRenderContextCreated = false;
 	}
@@ -1790,7 +1788,7 @@ void CRenderViewport::OnResizeInternal(int width, int height)
 	{
 		if (gEnv && gEnv->pRenderer)
 		{
-			gEnv->pRenderer->ResizeContext(m_displayContext.GetDisplayContextHandle(), width, height);
+			gEnv->pRenderer->ResizeContext(m_displayContextKey, width, height);
 		}
 
 		m_currentResolution.width = width;

@@ -69,7 +69,7 @@ string D3DDebug_GetLastMessage();
 #endif
 
 // Enum -> Bitmask lookup table
-uint32 ColorMasks[(GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)][4] =
+uint32 ColorMasks[(ColorMask::GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)][4] =
 {
 	{ 0x0, 0x0, 0x0, 0x0 }, // GS_NOCOLMASK_NONE
 	{ 0x1, 0x1, 0x1, 0x1 }, // GS_NOCOLMASK_R
@@ -85,7 +85,7 @@ uint32 ColorMasks[(GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)][4] =
 };
 
 // Bitmask -> Enum lookup table
-std::array<uint32, (GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)> AvailableColorMasks =
+std::array<uint32, (ColorMask::GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)> AvailableColorMasks =
 {
 	{
 		0x0, // GS_NOCOLMASK_NONE
@@ -1105,7 +1105,7 @@ _smart_ptr<IImageFile> CRenderer::EF_LoadImage(const char* szFileName, uint32 nF
 	return CImageFile::mfLoad_file(szFileName, nFlags);
 }
 
-bool CRenderer::EF_RenderEnvironmentCubeHDR (int size, Vec3& Pos, TArray<unsigned short>& vecData)
+bool CRenderer::EF_RenderEnvironmentCubeHDR (int size, const Vec3& Pos, TArray<unsigned short>& vecData)
 {
 	return CTexture::RenderEnvironmentCMHDR(size, Pos, vecData);
 }
@@ -2395,6 +2395,20 @@ float CRenderer::ScaleCoordY(float value) const
 void CRenderer::ScaleCoord(float& x, float& y) const
 {
 	ScaleCoordInternal(x, y, SRenderViewport(0, 0, CRendererResources::s_displayWidth, CRendererResources::s_displayHeight));
+}
+
+int CRenderer::GetOverlayWidth() const
+{
+	if (GetIStereoRenderer()->GetStereoEnabled() && !GetIStereoRenderer()->IsMenuModeEnabled())
+		return GetIStereoRenderer()->GetOverlayResolution().x;
+	return CRendererResources::s_displayWidth;
+}
+
+int CRenderer::GetOverlayHeight() const
+{
+	if (GetIStereoRenderer()->GetStereoEnabled() && !GetIStereoRenderer()->IsMenuModeEnabled())
+		return GetIStereoRenderer()->GetOverlayResolution().y;
+	return CRendererResources::s_displayHeight;
 }
 
 // used for sprite generation

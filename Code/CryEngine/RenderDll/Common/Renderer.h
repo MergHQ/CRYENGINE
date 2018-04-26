@@ -48,8 +48,8 @@ static const char* s_pszAAModes[eAT_AAMODES_COUNT] =
 	"TSAA"
 };
 
-extern uint32 ColorMasks[(GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)][4];
-extern std::array<uint32, (GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)> AvailableColorMasks;
+extern uint32 ColorMasks[(ColorMask::GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)][4];
+extern std::array<uint32, (ColorMask::GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)> AvailableColorMasks;
 
 struct ShadowMapFrustum;
 struct IStatObj;
@@ -718,7 +718,7 @@ public:
 	virtual void RT_PresentFast() = 0;
 
 	virtual int  CurThreadList() override;
-	virtual void RT_BeginFrame(CryDisplayContextHandle hWnd) = 0;
+	virtual void RT_BeginFrame(const SDisplayContextKey& displayContextKey) = 0;
 	virtual void RT_EndFrame() = 0;
 
 	virtual void RT_Init() = 0;
@@ -726,7 +726,7 @@ public:
 	virtual bool RT_CreateDevice() = 0;
 	virtual void RT_Reset() = 0;
 
-	virtual void RT_RenderScene(CRenderView* pRenderView, int nFlags) = 0;
+	virtual void RT_RenderScene(CRenderView* pRenderView) = 0;
 
 	virtual void RT_ReleaseRenderResources(uint32 nFlags) = 0;
 
@@ -734,14 +734,16 @@ public:
 	virtual void RT_PrecacheDefaultShaders() = 0;
 	virtual bool RT_ReadTexture(void* pDst, int destinationWidth, int destinationHeight, EReadTextureFormat dstFormat, CTexture* pSrc) = 0;
 	virtual bool RT_StoreTextureToFile(const char* szFilePath, CTexture* pSrc) = 0;
-	virtual void FlashRender(IFlashPlayer_RenderProxy* pPlayer, bool stereo) override;
-	virtual void FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool stereo, bool finalPlayback) override;
+	virtual void FlashRender(IFlashPlayer_RenderProxy* pPlayer) override;
+	virtual void FlashRenderPlayer(IFlashPlayer* pPlayer) override;
+	virtual void FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool finalPlayback) override;
 	virtual void FlashRemoveTexture(ITexture* pTexture) override;
 
 	virtual void RT_RenderDebug(bool bRenderStats = true) = 0;
 
-	virtual void RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool stereo, bool doRealRender) = 0;
-	virtual void RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool stereo, bool finalPlayback, bool doRealRender) = 0;
+	virtual void RT_FlashRenderInternal(IFlashPlayer* pPlayer) = 0;
+	virtual void RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool doRealRender) = 0;
+	virtual void RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool finalPlayback, bool doRealRender) = 0;
 	virtual bool FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce) override;
 	virtual bool ForceFlushRTCommands();
 	virtual void WaitForParticleBuffer() = 0;
@@ -794,7 +796,7 @@ public:
 	virtual void         FreeSystemResources(int nFlags) override;
 	virtual void         InitSystemResources(int nFlags) override;
 
-	virtual void         BeginFrame(CryDisplayContextHandle hWnd) override = 0;
+	virtual void         BeginFrame(const SDisplayContextKey& displayContextKey) override = 0;
 	virtual void         FillFrame(ColorF clearColor) override = 0;
 	virtual void         RenderDebug(bool bRenderStats = true) override = 0;
 	virtual void         EndFrame() override = 0;
@@ -841,13 +843,13 @@ public:
 //	void                 SetHeight(int nH)                             { ChangeRenderResolution(CRendererResources::s_renderWidth, nH); }
 //	void                 SetPixelAspectRatio(float fPAR)               { m_pixelAspectRatio = fPAR; }
 
-	virtual int          GetWidth() override                           { return CRendererResources::s_renderWidth; }
-	virtual int          GetHeight() override                          { return CRendererResources::s_renderHeight; }
+	virtual int          GetWidth() const override                     { return CRendererResources::s_renderWidth; }
+	virtual int          GetHeight() const override                    { return CRendererResources::s_renderHeight; }
 
-	virtual int          GetOverlayWidth() override                    { return CRendererResources::s_displayWidth; }
-	virtual int          GetOverlayHeight() override                   { return CRendererResources::s_displayHeight; }
+	virtual int          GetOverlayWidth() const override;
+	virtual int          GetOverlayHeight() const override;
 
-	virtual float        GetPixelAspectRatio() const override { return (m_pixelAspectRatio); }
+	virtual float        GetPixelAspectRatio() const override          { return (m_pixelAspectRatio); }
 
 	virtual bool         IsStereoEnabled() const override              { return false; }
 
@@ -910,7 +912,7 @@ public:
 	Vec4&   GetHighlightParams()        { return m_highlightParams; }
 
 	//misc
-	virtual bool                ScreenShot(const char* filename = NULL, CryDisplayContextHandle displayContext = 0) override = 0;
+	virtual bool                ScreenShot(const char* filename = NULL, const SDisplayContextKey& displayContextKey = {}) override = 0;
 	virtual bool                ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight) override = 0;
 
 	virtual int                 GetColorBpp() override   { return m_cbpp; }
@@ -977,7 +979,7 @@ public:
 	virtual void                   EF_ReloadShaderFiles(int nCategory) override;
 	virtual void                   EF_ReloadTextures() override;
 	virtual int                    EF_LoadLightmap(const char* nameTex) override;
-	virtual bool                   EF_RenderEnvironmentCubeHDR(int size, Vec3& Pos, TArray<unsigned short>& vecData) override;
+	virtual bool                   EF_RenderEnvironmentCubeHDR(int size, const Vec3& Pos, TArray<unsigned short>& vecData) override;
 	virtual bool                   WriteTIFToDisk(const void* pData, int width, int height, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName) override;
 	virtual ITexture*              EF_GetTextureByID(int Id) override;
 	virtual ITexture*              EF_GetTextureByName(const char* name, uint32 flags = 0) override;

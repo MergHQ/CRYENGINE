@@ -31,25 +31,32 @@ CD3DOpenVRRenderer::CD3DOpenVRRenderer(CryVR::OpenVR::IOpenVRDevice* openVRDevic
 	ZeroArray(m_quadLayerRenderData);
 	ZeroArray(m_mirrorTextures);
 
-	for (uint32 i = RenderLayer::eQuadLayers_0; i < RenderLayer::eQuadLayers_Total; ++i)
+	for (uint32 i = RenderLayer::eQuadLayers_0; i < RenderLayer::eQuadLayers_Headlocked_0; ++i)
 	{
 		m_quadLayerProperties[i].SetType(RenderLayer::eLayer_Quad);
-		m_quadLayerProperties[i].SetPose(QuatTS(Quat(IDENTITY), Vec3(0.f, 0.f, -0.6f), 1.f));
+		m_quadLayerProperties[i].SetPose(QuatTS(Quat(IDENTITY), Vec3(0.f, 0.f, -0.8f), 1.f));
 		m_quadLayerProperties[i].SetId(i);
 	}
-
-	m_Param0Name = CCryNameR("texToTexParams0");
-	m_Param1Name = CCryNameR("texToTexParams1");
-	m_textureToTexture = CCryNameTSCRC("TextureToTexture");
-}
-
-CD3DOpenVRRenderer::~CD3DOpenVRRenderer()
-{
+	for (uint32 i = RenderLayer::eQuadLayers_Headlocked_0; i < RenderLayer::eQuadLayers_Total; ++i)
+	{
+		m_quadLayerProperties[i].SetType(RenderLayer::eLayer_Quad_HeadLocked);
+		m_quadLayerProperties[i].SetPose(QuatTS(Quat(IDENTITY), Vec3(0.f, 0.f, -0.8f), 1.f));
+		m_quadLayerProperties[i].SetId(i);
+	}
 }
 
 bool CD3DOpenVRRenderer::Initialize(int initialWidth, int initialeight)
 {
 	D3DDevice* d3d11Device = m_pRenderer->GetDevice_Unsynchronized().GetRealDevice();
+
+#if CRY_RENDERER_DIRECT3D >= 120
+	ID3D12CommandQueue* pD3d12Queue = GetDeviceObjectFactory().GetNativeCoreCommandQueue();
+	const auto type = CryVR::OpenVR::ERenderAPI::eRenderAPI_DirectX12;
+#elif CRY_RENDERER_DIRECT3D >= 110
+	const auto type = CryVR::OpenVR::ERenderAPI::eRenderAPI_DirectX;
+#else
+	CRY_ASSERT(false, "Unsuported");
+#endif
 
 	m_eyeWidth  = initialWidth;
 	m_eyeHeight = initialeight;
@@ -72,7 +79,8 @@ bool CD3DOpenVRRenderer::Initialize(int initialWidth, int initialeight)
 	if (!InitializeEyeTarget(d3d11Device, EEyeType::eEyeType_LeftEye, eyeTextureDesc, "$LeftEye") ||
 	    !InitializeEyeTarget(d3d11Device, EEyeType::eEyeType_RightEye, eyeTextureDesc, "$RightEye") ||
 	    !InitializeQuadLayer(d3d11Device, RenderLayer::eQuadLayers_0, quadTextureDesc, "$QuadLayer0") ||
-	    !InitializeQuadLayer(d3d11Device, RenderLayer::eQuadLayers_1, quadTextureDesc, "$QuadLayer1") ||
+		!InitializeQuadLayer(d3d11Device, RenderLayer::eQuadLayers_Headlocked_0, quadTextureDesc, "$QuadLayerHeadLocked0_") ||
+		!InitializeQuadLayer(d3d11Device, RenderLayer::eQuadLayers_Headlocked_1, quadTextureDesc, "$QuadLayerHeadLocked1_") ||
 	    !InitializeMirrorTexture(d3d11Device, EEyeType::eEyeType_LeftEye, mirrorTextureDesc, "$LeftMirror") ||
 	    !InitializeMirrorTexture(d3d11Device, EEyeType::eEyeType_RightEye, mirrorTextureDesc, "$RightMirror"))
 	{
@@ -80,32 +88,103 @@ bool CD3DOpenVRRenderer::Initialize(int initialWidth, int initialeight)
 		Shutdown();
 		return false;
 	}
-	
+
+	// Create display contexts for eyes
+	for (uint32 eye = 0; eye < eEyeType_NumEyes; ++eye)
+	{
+		std::vector<_smart_ptr<CTexture>> swapChain = { m_scene3DRenderData[eye].texture };
+		m_pStereoRenderer->CreateEyeDisplayContext(CCamera::EEye(eye), std::move(swapChain));
+	}
+	// Create display contexts for quad layers
+	for (uint32 quad = RenderLayer::eQuadLayers_0; quad < RenderLayer::eQuadLayers_Total; ++quad)
+	{
+		std::vector<_smart_ptr<CTexture>> swapChain = { m_quadLayerRenderData[quad].texture };
+		m_pStereoRenderer->CreateVrQuadLayerDisplayContext(RenderLayer::EQuadLayers(quad), std::move(swapChain));
+	}
+
+#if CRY_RENDERER_DIRECT3D >= 120
+	// Transition
+	{
+		// Transition resources
+		NCryDX12::CCommandList* pCL = ((CCryDX12Device*)d3d11Device)->GetDeviceContext()->GetCoreGraphicsCommandList();
+
+		CCryDX12RenderTargetView* lRV = (CCryDX12RenderTargetView*)m_scene3DRenderData[EEyeType::eEyeType_LeftEye].texture->GetSurface(-1, 0);
+		CCryDX12RenderTargetView* rRV = (CCryDX12RenderTargetView*)m_scene3DRenderData[EEyeType::eEyeType_RightEye].texture->GetSurface(-1, 0);
+
+		NCryDX12::CView& lV = lRV->GetDX12View();
+		NCryDX12::CView& rV = rRV->GetDX12View();
+
+		lV.GetDX12Resource().TransitionBarrier(pCL, lV, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		rV.GetDX12Resource().TransitionBarrier(pCL, rV, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+		((CCryDX12Device*)d3d11Device)->GetDeviceContext()->Finish();
+	}
+
+	void* leftTexture = m_pOpenVRDevice->GetD3D12EyeTextureData(EEyeType::eEyeType_LeftEye,
+		m_scene3DRenderData[EEyeType::eEyeType_LeftEye].texture->GetDevTexture()->Get2DTexture()->GetDX12Resource().GetD3D12Resource(),
+		pD3d12Queue);
+	void* rightTexture = m_pOpenVRDevice->GetD3D12EyeTextureData(EEyeType::eEyeType_RightEye,
+		m_scene3DRenderData[EEyeType::eEyeType_RightEye].texture->GetDevTexture()->Get2DTexture()->GetDX12Resource().GetD3D12Resource(),
+		pD3d12Queue);
+#elif CRY_RENDERER_DIRECT3D >= 110
+	void* leftTexture = m_scene3DRenderData[EEyeType::eEyeType_LeftEye].texture->GetDevTexture()->Get2DTexture();
+	void* rightTexture = m_scene3DRenderData[EEyeType::eEyeType_RightEye].texture->GetDevTexture()->Get2DTexture();
+#endif
+
 	// Scene3D layers
 	m_pOpenVRDevice->OnSetupEyeTargets(
-		CryVR::OpenVR::ERenderAPI::eRenderAPI_DirectX,
+		type,
 		CryVR::OpenVR::ERenderColorSpace::eRenderColorSpace_Auto,
-		m_scene3DRenderData[EEyeType::eEyeType_LeftEye].texture->GetDevTexture()->Get2DTexture(),
-		m_scene3DRenderData[EEyeType::eEyeType_RightEye].texture->GetDevTexture()->Get2DTexture()
+		leftTexture,
+		rightTexture
 	);
 
 	// Quad layers
-	for (int i = 0; i < RenderLayer::eQuadLayers_Total; i++)
+	for (int i = RenderLayer::eQuadLayers_0; i < RenderLayer::eQuadLayers_Total; ++i)
 	{
+#if CRY_RENDERER_DIRECT3D >= 120
+		// Transition
+		{
+			// Transition resources
+			NCryDX12::CCommandList* pCL = ((CCryDX12Device*)d3d11Device)->GetDeviceContext()->GetCoreGraphicsCommandList();
+
+			CCryDX12RenderTargetView* s = (CCryDX12RenderTargetView*)m_quadLayerRenderData[i].texture->GetSurface(-1, 0);
+			NCryDX12::CView& v = s->GetDX12View();
+			v.GetDX12Resource().TransitionBarrier(pCL, v, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+			((CCryDX12Device*)d3d11Device)->GetDeviceContext()->Finish();
+		}
+
+		const auto texture = m_pOpenVRDevice->GetD3D12QuadTextureData(i, 
+			m_quadLayerRenderData[i].texture->GetDevTexture()->Get2DTexture()->GetDX12Resource().GetD3D12Resource(),
+			pD3d12Queue);
+#elif CRY_RENDERER_DIRECT3D >= 110
+		const auto texture = m_quadLayerRenderData[i].texture->GetDevTexture()->Get2DTexture();
+#endif
+
+		const bool headLocked = i >= RenderLayer::eQuadLayers_Headlocked_0;
+		const bool higestQuality = i == RenderLayer::eQuadLayers_Headlocked_1;
 		m_pOpenVRDevice->OnSetupOverlay(i,
-	  CryVR::OpenVR::ERenderAPI::eRenderAPI_DirectX,
-	  CryVR::OpenVR::ERenderColorSpace::eRenderColorSpace_Auto,
-			m_quadLayerRenderData[i].texture->GetDevTexture()->Get2DTexture()
-	  );
+			type,
+			CryVR::OpenVR::ERenderColorSpace::eRenderColorSpace_Auto,
+			texture,
+			GetQuadLayerProperties(RenderLayer::EQuadLayers(i))->GetPose(),
+			!headLocked,
+			higestQuality
+		);
 	}
 
 	// Mirror texture
 	void* srv = nullptr;
 	for (uint32 eye = 0; eye < 2; ++eye)
 	{
+#if CRY_RENDERER_DIRECT3D >= 120
+		// No mirror textures in D3D12
 		// Request the resource-view from openVR
+#elif CRY_RENDERER_DIRECT3D >= 110
 		m_pOpenVRDevice->GetMirrorImageView(static_cast<EEyeType>(eye), m_mirrorTextures[eye]->GetDevTexture()->Get2DTexture(), &srv);
 		m_mirrorTextures[eye]->SetDefaultShaderResourceView(static_cast<D3DShaderResource*>(srv), false);
+#endif
 	}
 
 	return true;
@@ -183,12 +262,11 @@ bool CD3DOpenVRRenderer::InitializeMirrorTexture(D3DDevice* d3d11Device, EEyeTyp
 
 void CD3DOpenVRRenderer::Shutdown()
 {
-	m_pStereoRenderer->SetEyeTextures(nullptr, nullptr);
+// 	m_pStereoRenderer->SetEyeTextures(nullptr, nullptr);
 
 	// Scene3D layers
 	for (uint32 eye = 0; eye < 2; ++eye)
 	{
-		m_scene3DRenderData[eye].texture->ReleaseForce();
 		m_scene3DRenderData[eye].texture = nullptr;
 	}
 
@@ -196,18 +274,14 @@ void CD3DOpenVRRenderer::Shutdown()
 	for (uint32 i = 0; i < RenderLayer::eQuadLayers_Total; ++i)
 	{
 		m_pOpenVRDevice->OnDeleteOverlay(i);
-		m_quadLayerRenderData[i].texture->ReleaseForce();
 		m_quadLayerRenderData[i].texture = nullptr;
 	}
 
 	// Mirror texture
 	for (uint32 eye = 0; eye < 2; ++eye)
 	{
-		if (m_mirrorTextures[eye] != nullptr)
-		{
-			m_mirrorTextures[eye]->ReleaseForce();
+		if (m_mirrorTextures[eye])
 			m_mirrorTextures[eye] = nullptr;
-		}
 	}
 	
 	ReleaseBuffers();
@@ -223,49 +297,70 @@ void CD3DOpenVRRenderer::OnResolutionChanged(int newWidth, int newHeight)
 	}
 }
 
-void CD3DOpenVRRenderer::ReleaseBuffers()
+void CD3DOpenVRRenderer::PrepareFrame(int frameId)
 {
-}
-
-void CD3DOpenVRRenderer::PrepareFrame()
-{
-	// Scene3D layer
-	m_pStereoRenderer->SetEyeTextures(m_scene3DRenderData[0].texture, m_scene3DRenderData[1].texture);
-
-	// Quad layers
-	for (int i = 0; i < RenderLayer::eQuadLayers_Total; i++)
-		m_pStereoRenderer->SetVrQuadLayerTexture(static_cast<RenderLayer::EQuadLayers>(i), m_quadLayerRenderData[i].texture);
-
 	m_pOpenVRDevice->OnPrepare();
 }
 
 void CD3DOpenVRRenderer::SubmitFrame()
 {
-	#ifdef ENABLE_BENCHMARK_SENSOR
+#ifdef ENABLE_BENCHMARK_SENSOR
 	gcpRendD3D->m_benchmarkRendererSensor->PreStereoFrameSubmit(m_scene3DRenderData[0].texture, m_scene3DRenderData[1].texture);
-	#endif
+#endif
+
+#if (CRY_RENDERER_DIRECT3D >= 120)
+	{
+		// Transition resources
+		ID3D11Device* pD3d11Device = m_pRenderer->GetDevice_Unsynchronized().GetRealDevice();
+		NCryDX12::CCommandList* pCL = ((CCryDX12Device*)pD3d11Device)->GetDeviceContext()->GetCoreGraphicsCommandList();
+
+		CCryDX12RenderTargetView* lRV = (CCryDX12RenderTargetView*)m_scene3DRenderData[EEyeType::eEyeType_LeftEye].texture->GetSurface(-1, 0);
+		CCryDX12RenderTargetView* rRV = (CCryDX12RenderTargetView*)m_scene3DRenderData[EEyeType::eEyeType_RightEye].texture->GetSurface(-1, 0);
+
+		NCryDX12::CView& lV = lRV->GetDX12View();
+		NCryDX12::CView& rV = rRV->GetDX12View();
+		lV.GetDX12Resource().TransitionBarrier(pCL, lV, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		rV.GetDX12Resource().TransitionBarrier(pCL, rV, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+		// Quad layers
+		for (uint32 i = 0; i < RenderLayer::eQuadLayers_Total; ++i)
+		{
+			const RenderLayer::CProperties* pQuadProperties = GetQuadLayerProperties(static_cast<RenderLayer::EQuadLayers>(i));
+			if (!pQuadProperties->IsActive())
+				continue;
+
+			if (m_quadLayerRenderData[i].texture)
+			{
+				CCryDX12RenderTargetView* qRV = (CCryDX12RenderTargetView*)m_quadLayerRenderData[i].texture->GetSurface(-1, 0);
+				if (qRV)
+				{
+					NCryDX12::CView& qV = qRV->GetDX12View();
+					qV.GetDX12Resource().TransitionBarrier(pCL, qV, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+				}
+			}
+		}
+
+		((CCryDX12Device*)pD3d11Device)->GetDeviceContext()->Finish();
+	}
+#endif
 
 	// Quad layers
 	for (uint32 i = 0; i < RenderLayer::eQuadLayers_Total; ++i)
 	{
-		const RenderLayer::CProperties* pQuadProperties = GetQuadLayerProperties(static_cast<RenderLayer::EQuadLayers>(i));
-
+		RenderLayer::CProperties* pQuadProperties = GetQuadLayerProperties(static_cast<RenderLayer::EQuadLayers>(i));
 		if (pQuadProperties->IsActive())
 		{
 			m_pOpenVRDevice->SubmitOverlay(i, pQuadProperties);
+			pQuadProperties->SetActive(false);
 		}
 	}
 
 	// Pass the final images and layer configuration to the OpenVR device
 	m_pOpenVRDevice->SubmitFrame();
 
-	#ifdef ENABLE_BENCHMARK_SENSOR
+#ifdef ENABLE_BENCHMARK_SENSOR
 	gcpRendD3D->m_benchmarkRendererSensor->AfterStereoFrameSubmit();
-	#endif
-
-	// Deactivate layers
-	GetQuadLayerProperties(RenderLayer::eQuadLayers_0)->SetActive(false);
-	GetQuadLayerProperties(RenderLayer::eQuadLayers_1)->SetActive(false);
+#endif
 }
 
 void CD3DOpenVRRenderer::OnPostPresent()
@@ -273,194 +368,16 @@ void CD3DOpenVRRenderer::OnPostPresent()
 	m_pOpenVRDevice->OnPostPresent();
 }
 
-struct CD3DOpenVRRenderer::SSocialScreenRenderAutoRestore
-{
-	SSocialScreenRenderAutoRestore(CTexture* pRenderTarget)
-	{
-		ASSERT_LEGACY_PIPELINE
-
-		#if 0
-		shaderFlags = gRenDev->m_RP.m_FlagsShader_RT;
-		gRenDev->GetViewport(&x, &y, &w, &h);
-
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE0];
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE2];
-		gRenDev->m_RP.m_FlagsShader_RT &= ~g_HWSR_MaskBit[HWSR_SAMPLE5];
-
-		gcpRendD3D->FX_PushRenderTarget(0, pRenderTarget, nullptr);
-		gcpRendD3D->FX_SetActiveRenderTargets();
-
-		gcpRendD3D->FX_SetState(GS_NODEPTHTEST);
-		#endif
-	}
-	~SSocialScreenRenderAutoRestore()
-	{
-		ASSERT_LEGACY_PIPELINE
-
-		#if 0
-		gRenDev->m_RP.m_FlagsShader_RT = shaderFlags;
-
-		gcpRendD3D->FX_PopRenderTarget(0);
-		gcpRendD3D->SetViewport(x, y, w, h);
-		#endif
-	}
-
-	int x;
-	int y;
-	int w;
-	int h;
-	uint64 shaderFlags;
-};
-
-void CD3DOpenVRRenderer::RenderQuadLayers()
-{
-	// Since Quad layers do not get rendered (yet) with orientation in the social screen, we will render only the first quad layer which is the one that contains the Flash textures
-	const uint32 numQuadLayersToRender = 2;
-
-	for (uint32 layerIdx = 0; layerIdx < numQuadLayersToRender; ++layerIdx)
-	{
-		if (m_pOpenVRDevice->IsActiveOverlay(layerIdx))
-		{
-			if (CTexture* pQuadTex = m_quadLayerRenderData[layerIdx].texture)
-			{
-				ASSERT_LEGACY_PIPELINE
-
-				#if 0
-				GetUtils().ShBeginPass(CShaderMan::s_shPostEffects, m_textureToTexture, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-
-				gRenDev->FX_SetState(GS_NODEPTHTEST | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
-				pQuadTex->Apply(0, EDefaultSamplerStates::LinearClamp);
-
-				GetUtils().DrawFullScreenTri(0, 0);
-				GetUtils().ShEndPass();
-				#endif
-			}
-		}
-	}
-}
-
-void CD3DOpenVRRenderer::RenderSocialScreen()
-{
-	CTexture* pBackbufferTexture = gcpRendD3D->GetActiveDisplayContext()->GetCurrentBackBuffer();
-	
-	if (const IHmdManager* pHmdManager = gEnv->pSystem->GetHmdManager())
-	{
-		if (const IHmdDevice* pDev = pHmdManager->GetHmdDevice())
-		{
-			const int backBufferWidth = pBackbufferTexture->GetWidth();
-			const int backBufferHeight = pBackbufferTexture->GetHeight();
-
-			bool bKeepAspect = false;
-			const EHmdSocialScreen socialScreen = pDev->GetSocialScreenType(&bKeepAspect);
-
-			switch (socialScreen)
-			{
-			case EHmdSocialScreen::Off:
-				// TODO: Clear backbuffer texture? Show a selected wallpaper?
-					GetUtils().ClearScreen(0.1f, 0.1f, 0.1f, 1.0f); // we don't want true black, to distinguish between rendering error and no-social-screen. NOTE: THE CONSOLE WILL NOT BE DISPLAYED!!!
-				break;
-			// intentional fall through
-			case EHmdSocialScreen::UndistortedLeftEye:
-			case EHmdSocialScreen::UndistortedRightEye:
-				{
-				ASSERT_LEGACY_PIPELINE
-
-				#if 0
-				if (CShaderMan::s_shPostEffects)
-				{
-					CTexture* pTex = m_pStereoRenderer->GetEyeTarget(socialScreen == EHmdSocialScreen::UndistortedLeftEye ? LEFT_EYE : RIGHT_EYE);
-					if (bKeepAspect)
-					{
-						const SSocialScreenRenderAutoRestore renderStateAutoRestore(pBackbufferTexture);
-
-						gcpRendD3D->RT_SetViewport(backBufferWidth >> 2, 0, backBufferWidth >> 1, backBufferHeight);
-						gcpRendD3D->FX_ClearTarget(pBackbufferTexture, Clr_Empty);
-
-						uint nPasses;
-						CShaderMan::s_shPostEffects->FXSetTechnique(m_textureToTexture); // TextureToTexture technique
-						CShaderMan::s_shPostEffects->FXBegin(&nPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-						CShaderMan::s_shPostEffects->FXBeginPass(0);
-						pTex->Apply(0, EDefaultSamplerStates::LinearClamp); // Bind left-eye texture for rendering
-						GetUtils().DrawFullScreenTri(pTex->GetWidth(), pTex->GetHeight(), 0);
-						CShaderMan::s_shPostEffects->FXEndPass();
-						CShaderMan::s_shPostEffects->FXEnd();
-
-						RenderQuadLayers();
-					}
-					else
-					{
-						GetUtils().StretchRect(pTex, pBackbufferTexture);
-					}
-				}
-				#endif
-
-				}
-				break;
-
-			case EHmdSocialScreen::UndistortedDualImage: // intentional fall through - default to undistorted dual image
-			case EHmdSocialScreen::DistortedDualImage:   // intentional fall through - OpenVR does not return distorted eye targets, therefore the only display the undistorted eye targets
-			default:
-				if (CShaderMan::s_shPostEffects)
-				{
-					ASSERT_LEGACY_PIPELINE
-
-				#if 0
-					const bool bUseMirrorTexture = socialScreen == EHmdSocialScreen::DistortedDualImage;
-
-					// Get eye textures
-					CTexture* pTexLeft = bUseMirrorTexture ? m_mirrorTextures[LEFT_EYE] : m_pStereoRenderer->GetEyeTarget(LEFT_EYE);
-					CTexture* pTexRight = bUseMirrorTexture ? m_mirrorTextures[RIGHT_EYE] : m_pStereoRenderer->GetEyeTarget(RIGHT_EYE);
-
-					// Store previous viewport and set new render target. Use RAII to restore previous state.
-					const SSocialScreenRenderAutoRestore renderStateAutoRestore(pBackbufferTexture);
-
-					// Left-Eye Pass
-					gcpRendD3D->RT_SetViewport(0, 0, backBufferWidth >> 1, backBufferHeight); // Set viewport (left half of backbuffer)
-
-					uint nPasses;
-					CShaderMan::s_shPostEffects->FXSetTechnique(m_textureToTexture); // TextureToTexture technique
-					CShaderMan::s_shPostEffects->FXBegin(&nPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-					CShaderMan::s_shPostEffects->FXBeginPass(0);
-					pTexLeft->Apply(0, EDefaultSamplerStates::LinearClamp); // Bind left-eye texture for rendering
-					GetUtils().DrawFullScreenTri(pTexLeft->GetWidth(), pTexLeft->GetHeight(), 0);
-					CShaderMan::s_shPostEffects->FXEndPass();
-					CShaderMan::s_shPostEffects->FXEnd();
-
-					if (!bUseMirrorTexture)
-					{
-						RenderQuadLayers();
-					}
-
-					// Right-Eye Pass
-					gcpRendD3D->RT_SetViewport(backBufferWidth >> 1, 0, backBufferWidth >> 1, backBufferHeight); // set viewport (right half of backbuffer)
-
-					CShaderMan::s_shPostEffects->FXSetTechnique(m_textureToTexture); // TextureToTexture technique
-					CShaderMan::s_shPostEffects->FXBegin(&nPasses, FEF_DONTSETTEXTURES | FEF_DONTSETSTATES);
-					CShaderMan::s_shPostEffects->FXBeginPass(0);
-					pTexRight->Apply(0, EDefaultSamplerStates::LinearClamp); // Bind right-eye texture for rendering
-					GetUtils().DrawFullScreenTri(pTexRight->GetWidth(), pTexRight->GetHeight(), 1);
-					CShaderMan::s_shPostEffects->FXEndPass();
-					CShaderMan::s_shPostEffects->FXEnd();
-
-					if (!bUseMirrorTexture)
-					{
-						RenderQuadLayers();
-					}
-				#endif
-				}
-				break;
-			}
-		}
-	}
-}
-
 RenderLayer::CProperties* CD3DOpenVRRenderer::GetQuadLayerProperties(RenderLayer::EQuadLayers id)
 {
 	if (id < RenderLayer::eQuadLayers_Total)
-	{
 		return &(m_quadLayerProperties[id]);
-	}
 	return nullptr;
+}
+
+std::pair<CTexture*, Vec4> CD3DOpenVRRenderer::GetMirrorTexture(EEyeType eye) const
+{
+	return std::make_pair(m_mirrorTextures[eye], Vec4(0,0,1,1));
 }
 
 #endif //defined(INCLUDE_VR_RENDERING)

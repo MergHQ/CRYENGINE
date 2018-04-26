@@ -58,7 +58,6 @@ void DisplayContext::SetCamera(CCamera* pCamera)
 {
 	assert(pCamera);
 	camera = pCamera;
-	gEnv->pRenderer->UpdateAuxDefaultCamera(*pCamera);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1182,12 +1181,12 @@ void DisplayContext::Flush2D()
 	m_textureLabels.clear();
 }
 
-void DisplayContext::SetDisplayContext(uintptr_t displayContext, IRenderer::EViewportType eType)
+void DisplayContext::SetDisplayContext(const SDisplayContextKey &displayContextKey, IRenderer::EViewportType eType)
 {
-	m_displayContextHandle = displayContext;
+	m_displayContextKey = displayContextKey;
 	m_eType = eType;
 
 	pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom(/*eType*/);
-	pRenderAuxGeom->SetCurrentDisplayContext(displayContext);
+	pRenderAuxGeom->SetCurrentDisplayContext(displayContextKey);
 }
 

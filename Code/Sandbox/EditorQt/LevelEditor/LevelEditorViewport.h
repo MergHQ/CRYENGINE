@@ -17,7 +17,7 @@ public:
 	CLevelEditorViewport();
 	~CLevelEditorViewport();
 
-	bool CreateRenderContext(uintptr_t displayContextHandle, IRenderer::EViewportType viewportType = IRenderer::eViewportType_Default) override;
+	bool        CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType = IRenderer::eViewportType_Default) override;
 
 	void		SetHeaderWidget(QViewportHeader* headerWidget) { m_headerWidget = headerWidget; }
 

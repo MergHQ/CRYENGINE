@@ -101,7 +101,7 @@ private:
 	void  DestroyRenderContext();
 	void  SetCurrentContext();
 	void  RestorePreviousContext();
-	void  InitDisplayContext(uintptr_t displayContextHandle);
+	void  InitDisplayContext(HWND hWnd);
 	void  UpdateBackgroundColor();
 
 	void  CreateGridLine(ColorB col, const float alpha, const float alphaFalloff, const float slide, const float halfSlide, const float maxSlide, const Vec3& stepDir, const Vec3& orthoDir);
@@ -121,8 +121,9 @@ private:
 	void  CreateLookAt(const Vec3& target, float radius, QuatT& cameraTarget) const;
 	struct SPreviousContext;
 	std::vector<SPreviousContext>      m_previousContexts;
-	std::auto_ptr<CCamera>             m_camera;
+	std::unique_ptr<CCamera>           m_camera;
 	DisplayContext                     m_displayContext;
+	SDisplayContextKey      m_displayContextKey;
 
 	int                                m_width;
 	int                                m_height;

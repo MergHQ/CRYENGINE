@@ -271,14 +271,14 @@ bool QPreviewWidget::CreateContext()
 	{
 		IRenderer::SDisplayContextDescription desc;
 
-		desc.handle = static_cast<CryDisplayContextHandle>(winId());
+		desc.handle = reinterpret_cast<HWND>(winId());
 		desc.type = IRenderer::eViewportType_Secondary;
 		desc.clearColor = ColorF(m_clearColor.redF(), m_clearColor.greenF(), m_clearColor.blueF());
 		desc.renderFlags = FRT_CLEAR_COLOR | FRT_CLEAR_DEPTH | FRT_TEMPORARY_DEPTH;
 		desc.screenResolution.x = m_width;
 		desc.screenResolution.y = m_height;
 
-		m_pRenderer->CreateContext(desc);
+		m_displayContextKey = m_pRenderer->CreateSwapChainBackedContext(desc);
 		m_bContextCreated = true;
 
 		return true;
@@ -772,8 +772,8 @@ void QPreviewWidget::resizeEvent(QResizeEvent *ev)
 		m_width = cx;
 		m_height = cy;
 	}
-	CryDisplayContextHandle displayContext = static_cast<CryDisplayContextHandle>(winId());
-	gEnv->pRenderer->ResizeContext(displayContext, m_width, m_height);
+
+	gEnv->pRenderer->ResizeContext(m_displayContextKey, m_width, m_height);
 }
 
 void QPreviewWidget::SetCamera(const CCamera& camera)
@@ -805,14 +805,12 @@ bool QPreviewWidget::Render()
 			}
 		}
 
-		CryDisplayContextHandle displayContextHandle = static_cast<CryDisplayContextHandle>(winId());
-
 		float tod = GetIEditorImpl()->GetCurrentMissionTime();
 		GetIEditorImpl()->SetCurrentMissionTime(12.0f);
 
 		SetCamera(m_camera);
 
-		m_pRenderer->BeginFrame(displayContextHandle);
+		m_pRenderer->BeginFrame(m_displayContextKey);
 
 		DrawBackground();
 		if (m_bGrid || m_bAxis)
@@ -830,7 +828,7 @@ bool QPreviewWidget::Render()
 		gEnv->pConsole->GetCVar("r_displayInfo")->Set((int)m_bShowRenderInfo);
 
 		// Render object.
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, displayContextHandle);
+		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, m_displayContextKey);
 		m_pRenderer->EF_StartEf(passInfo);
 
 		{
@@ -1101,9 +1099,8 @@ void QPreviewWidget::DeleteRenderContex()
 	if (m_pRenderer && m_bContextCreated)
 	{
 		// Do not delete primary context.
-		HWND window = (HWND)QWidget::winId();
-		if (window != m_pRenderer->GetHWND())
-			m_pRenderer->DeleteContext((CryDisplayContextHandle)window);
+		if (m_displayContextKey != reinterpret_cast<HWND>(m_pRenderer->GetHWND()))
+			m_pRenderer->DeleteContext(m_displayContextKey);
 		m_bContextCreated = false;
 	}
 }
@@ -1246,7 +1243,7 @@ void QPreviewWidget::SavePreview(const char* outFile)
 	Render();
 
 	QDir().mkpath(QtUtil::ToQString(PathUtil::GetPathWithoutFilename(outFile)));
-	m_pRenderer->ScreenShot(outFile, static_cast<CryDisplayContextHandle>(winId()));
+	m_pRenderer->ScreenShot(outFile, m_displayContextKey);
 }
 
 QImage QPreviewWidget::GetImage()

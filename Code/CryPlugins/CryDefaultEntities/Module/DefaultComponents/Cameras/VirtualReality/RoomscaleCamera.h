@@ -17,7 +17,6 @@ namespace Cry
 		{
 			class CRoomscaleCameraComponent
 				: public ICameraComponent
-				, public IHmdDevice::IAsyncCameraCallback
 #ifndef RELEASE
 				, public IEntityComponentPreviewer
 #endif
@@ -45,10 +44,6 @@ namespace Cry
 				virtual void Render(const IEntity& entity, const IEntityComponent& component, SEntityPreviewContext &context) const final;
 				// ~IEntityComponentPreviewer
 #endif
-
-				// IAsyncCameraCallback
-				virtual bool OnAsyncCameraCallback(const HmdTrackingState& sensorState, IHmdDevice::AsyncCameraContext& context) override;
-				// ~IAsyncCameraCallback
 
 				// ICameraComponent
 				virtual void DisableAudioListener() final
@@ -79,11 +74,6 @@ namespace Cry
 				virtual void Activate()
 				{
 					m_pEntity->UpdateComponentEventMask(this);
-
-					if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
-					{
-						pDevice->SetAsyncCameraCallback(this);
-					}
 
 					if (m_pAudioListener)
 					{

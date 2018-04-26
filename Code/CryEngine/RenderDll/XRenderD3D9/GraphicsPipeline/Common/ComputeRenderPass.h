@@ -1,10 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <array>
-#include <atomic>
 
 #include "RenderPassBase.h"
+
 
 class CComputeRenderPass : public CRenderPassBase
 {
@@ -31,22 +30,11 @@ public:
 public:
 	CComputeRenderPass(EPassFlags flags = eFlags_None);
 
-	bool InputChanged(int var0 = 0, int var1 = 0, int var2 = 0, int var3 = 0)
+	bool InputChanged() const override final
 	{
-		bool bChanged = IsDirty() || 
-		                var0 != m_inputVars[0] || var1 != m_inputVars[1] ||
-		                var2 != m_inputVars[2] || var3 != m_inputVars[3];
-
-		if (bChanged)
-		{
-			m_inputVars[0] = var0;
-			m_inputVars[1] = var1;
-			m_inputVars[2] = var2;
-			m_inputVars[3] = var3;
-		}
-
-		return bChanged;
+		return IsDirty();
 	}
+	using CRenderPassBase::InputChanged;
 
 	void SetOutputUAV(uint32 slot, CTexture* pTexture, ResourceViewHandle resourceViewID = EDefaultResourceViews::UnorderedAccess, ::EShaderStage shaderStages = EShaderStage_Compute);
 	void SetOutputUAV(uint32 slot, CGpuBuffer* pBuffer, ResourceViewHandle resourceViewID = EDefaultResourceViews::UnorderedAccess, ::EShaderStage shaderStages = EShaderStage_Compute);
@@ -83,10 +71,8 @@ private:
 	static bool OnResourceInvalidated(void* pThis, SResourceBindPoint bindPoint, UResourceReference pResource, uint32 flags) threadsafe;
 
 	typedef SDeviceObjectHelpers::CShaderConstantManager ConstantManager;
+
 private:
-
-	int                      m_inputVars[4];
-
 	EPassFlags               m_flags;
 	EDirtyFlags              m_dirtyMask;
 	CShader*                 m_pShader;

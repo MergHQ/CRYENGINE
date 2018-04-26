@@ -2,168 +2,224 @@
 
 #pragma once
 
+#include "SwapChain.h"
+
 class CRenderOutput;
+class CTexture;
+#if CRY_PLATFORM_DURANGO
+class DXGIOutput;
+#endif
 
 //////////////////////////////////////////////////////////////////////////
-//! Display Context represent a target rendering window with a swap chain.
+//! Display Context represent a target rendering context
 //////////////////////////////////////////////////////////////////////////
 class CRenderDisplayContext
 {
+	friend class CD3D9Renderer;
+	friend class CRenderOutput;
+	friend class CRenderView;
+
 public:
-	typedef      _smart_ptr<CTexture     > TexSmartPtr;
-	typedef std::shared_ptr<CRenderOutput> OutputSmartPtr;
+	using TexSmartPtr = _smart_ptr<CTexture>;
+	using OutputSmartPtr = std::shared_ptr<CRenderOutput>;
 
-	//! Debug name for this Display Context
-	string                  m_name;
+protected:
 	// Unique id to identify each context
-	uint32                  m_uniqueId = 0;
-	// Handle and a pointer to WIN32 window
-	CryDisplayContextHandle m_hWnd = 0;
-
-	std::vector<TexSmartPtr> m_backBuffersArray;
-	CTexture*                m_pBackBufferPresented = nullptr;
-	TexSmartPtr              m_pBackBufferProxy = nullptr;
-	bool                     m_bSwapProxy = true;
-	//	unsigned int m_nCurrentBackBufferIndex;
-
-	//	std::vector<_smart_ptr<D3DSurface> > m_pBackBuffers;
-	// Currently active back-buffer
-	//	D3DSurface*  m_pBackBuffer;
-
-	// Number of samples per output (real offscreen) pixel used in X/Y
-	int m_nSSSamplesX = 1;
-	int m_nSSSamplesY = 1;
+	uint32                   m_uniqueId;
 
 	// Denotes if context refers to main viewport
-	bool m_bMainViewport = true;
-
+	bool                     m_bMainViewport = true;
 	// Denotes if input is HDR content
-	bool m_bHDRRendering = false;
-
+	bool                     m_bHDRRendering = false;
 	// Description of the DisplayContext
 	IRenderer::SDisplayContextDescription m_desc;
 
-public:
-	CRenderDisplayContext();
-	~CRenderDisplayContext();
+	// Number of samples per output (real offscreen) pixel used in X/Y
+	int                      m_nSSSamplesX = 1;
+	int                      m_nSSSamplesY = 1;
 
-	bool                     IsValid() const { return m_pSwapChain != nullptr; }
-	bool                     IsEditorDisplay() const { return (m_uniqueId != 0) || gRenDev->IsEditorMode(); }
-	bool                     IsScalable() const { return m_bMainViewport && !IsEditorDisplay(); }
-	bool                     IsHighDynamicRange() const { return m_bHDRRendering; /* SHDF_ALLOWHDR */ }
-	bool                     IsDeferredShadeable() const { return m_bMainViewport; }
-	bool                     IsSuperSamplingEnabled() const { return (m_nSSSamplesX * m_nSSSamplesY) > 1; }
-	bool                     IsNativeScalingEnabled() const { return m_pRenderOutput ? GetDisplayResolution() != m_pRenderOutput->GetOutputResolution() : false; }
-	bool                     IsMainContext() const { return m_bMainViewport; }
-
-	bool                     NeedsDepthStencil() const { return (m_desc.renderFlags & (FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL)) != 0; }
-
-	void                     SetHWND(CryDisplayContextHandle hWnd);
-	CryDisplayContextHandle  GetHandle() const { return m_hWnd; }
-
-	OutputSmartPtr           GetRenderOutput() const { return m_pRenderOutput; };
-	void                     BeginRendering(bool isHighDynamicRangeEnabled);
-	void                     EndRendering();
-
-	CTexture*                GetCurrentBackBuffer();
-	CTexture*                GetPresentedBackBuffer();
-	CTexture*                GetCurrentColorOutput();
-	CTexture*                GetCurrentDepthOutput();
-	CTexture*                GetStorableColorOutput();
-	CTexture*                GetStorableDepthOutput();
-
-	void                     SetViewport(const SRenderViewport& vp);
-	const SRenderViewport&   GetViewport() const { return m_viewport; }
-
-	Vec2i                    GetDisplayResolution() const { return Vec2i(m_DisplayWidth, m_DisplayHeight); }
-	//! Gets the resolution of the monitor that this context's window is currently present on
-	RectI                    GetCurrentMonitorBounds() const;
-
-	void                     InitializeDisplayResolution(int displayWidth, int displayHeight);
-	void                     ChangeDisplayResolution(int displayWidth, int displayHeight, bool fullscreen, bool bResizeTarget = false, bool bForce = false);
-	void                     SetFullscreenState(bool isFullscreen);
-	void                     EnableVerticalSync(bool enable);
-	void                     ChangeOutputIfNecessary(bool isFullscreen);
-
-#if CRY_PLATFORM_DURANGO
-#if (CRY_RENDERER_DIRECT3D >= 120)
-	void                     CreateXboxSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID3D12Device* pD3D12Device, CCryDX12Device* pDX12Device);
-#else
-	void                     CreateXboxSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID3D11Device* pD3D11Device);
-#endif
-#elif CRY_RENDERER_GNM
-	void                     CreateGNMSwapChain();
-#endif
-
-	void                     ShutDown();
-
-	float                    GetAspectRatio() const { return m_aspectRatio; }
-	const DXGI_SURFACE_DESC& GetSwapChainDesc() const { return m_swapChainDesc; }
-
-#if defined(SUPPORT_DEVICE_INFO)
-	uint32                   GetRefreshRateNumerator() const { return m_refreshRateNumerator; }
-	uint32                   GetRefreshRateDemoninator() const { return m_refreshRateDenominator; }
-	unsigned int             GetSyncInterval() const { return m_syncInterval; }
-#endif
-
-	DXGISwapChain*           GetSwapChain() const { return m_pSwapChain; }
-
-#if CRY_PLATFORM_WINDOWS
-	DXGIOutput*              GetOutput() const { return m_pOutput; }
-#endif
-
-	void                     PrePresent();
-	void                     PostPresent();
-
-#if CRY_PLATFORM_WINDOWS
-	void                     EnforceFullscreenPreemption();
-#endif
-
-	void                     SetLastCamera(CCamera::EEye eye, const CCamera& camera);
-	const CCamera&           GetLastCamera(CCamera::EEye eye) const { return m_lastRenderCamera[eye]; }
-
-private:
 	// Dimensions of viewport on output to render content into
-	int                      m_DisplayWidth = 0;
-	int                      m_DisplayHeight = 0;
+	uint32_t                 m_DisplayWidth = 0;
+	uint32_t                 m_DisplayHeight = 0;
 
 	// Render output for this display context;
 	OutputSmartPtr           m_pRenderOutput = nullptr;
 	TexSmartPtr              m_pColorTarget = nullptr;
 	TexSmartPtr              m_pDepthTarget = nullptr;
-	bool                     m_fullscreen = false;
+	float                    m_aspectRatio = 1.0f;
+	int                      m_backbufferCount = 2;
 
 	SRenderViewport          m_viewport;
 
-	DXGI_SURFACE_DESC        m_swapChainDesc;      // Surface description of the BackBuffer
-	float                    m_aspectRatio = 1.0f;
+	bool                     m_bVSync = false;
 
-#if defined(SUPPORT_DEVICE_INFO)
-	uint32                   m_refreshRateNumerator = 0;
-	uint32                   m_refreshRateDenominator = 0;
-	unsigned int             m_syncInterval = 0;
-#endif
+protected:
+	CRenderDisplayContext(IRenderer::SDisplayContextDescription desc, uint32 uniqueId) : m_uniqueId(uniqueId), m_desc(desc)
+	{
+		m_pRenderOutput = std::make_shared<CRenderOutput>(this);
+	}
 
-#if CRY_PLATFORM_WINDOWS
-	DXGIOutput*              m_pOutput = nullptr;
-#endif
+	CRenderDisplayContext(CRenderDisplayContext &&) = default;
+	CRenderDisplayContext &operator=(CRenderDisplayContext &&) = default;
 
-	DXGISwapChain*           m_pSwapChain = nullptr;
+	virtual void         ReleaseResources();
 
-	//! Camera last used in main Rendering to this DisplayContext.
-	CCamera                  m_lastRenderCamera[CCamera::eEye_eCount];
+	void                 SetDisplayResolutionAndRecreateTargets(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp);
+	void                 SetVSyncHint(bool enable) { m_bVSync = enable; }
+
+	virtual void         ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp);
+	void                 ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight)
+	{
+		ChangeDisplayResolution(displayWidth, displayHeight, SRenderViewport(0, 0, displayWidth, displayHeight));
+	}
+
+public:
+	virtual ~CRenderDisplayContext() noexcept {}
+
+	virtual bool         IsSwapChainBacked() const { return false; }
+
+	void                 BeginRendering(bool isHighDynamicRangeEnabled);
+	void                 EndRendering();
+
+	virtual void         PrePresent() {}
+	virtual void         PostPresent() {}
+	virtual CTexture*    GetCurrentBackBuffer() const = 0;
+	virtual CTexture*    GetPresentedBackBuffer() const = 0;
+	virtual CTexture*    GetStorableColorOutput() = 0;
+	int                  GetBackBufferCount()      const { return m_backbufferCount; }
+	void                 SetBackBufferCount(int count) { m_backbufferCount = count; }
+
+	uint32_t             GetID() const { return m_uniqueId; }
+	OutputSmartPtr       GetRenderOutput() const { return m_pRenderOutput; };
+	Vec2_tpl<uint32_t>   GetDisplayResolution() const { return Vec2_tpl<uint32_t>(m_DisplayWidth, m_DisplayHeight); }
+	const SRenderViewport& GetViewport() const { return m_viewport; }
+	float                GetAspectRatio() const { return m_aspectRatio; }
+
+	bool                 IsMainViewport() const { return m_bMainViewport; }
+	bool                 IsMainContext() const { return IsMainViewport(); }
+	bool                 IsEditorDisplay() const;
+	bool                 IsScalable() const { return IsMainViewport() && !IsEditorDisplay(); }
+	bool                 IsHighDynamicRange() const { return m_bHDRRendering; /* SHDF_ALLOWHDR */ }
+	bool                 IsDeferredShadeable() const { return IsMainViewport(); }
+	bool                 IsSuperSamplingEnabled() const { return m_nSSSamplesX * m_nSSSamplesY > 1; }
+	bool                 IsNativeScalingEnabled() const;
+	bool                 NeedsDepthStencil() const { return (m_desc.renderFlags & (FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL)) != 0; }
+	bool                 GetVSyncHint() const { return m_bVSync; }
+
+	CTexture* GetCurrentColorOutput() const
+	{
+		if (IsHighDynamicRange())
+		{
+			CRY_ASSERT(m_pColorTarget);
+			return m_pColorTarget.get();
+		}
+
+		return GetCurrentBackBuffer();
+	}
+
+	CTexture* GetCurrentDepthOutput() const
+	{
+		CRY_ASSERT(m_pDepthTarget || !NeedsDepthStencil());
+		return m_pDepthTarget.get();
+	}
+	CTexture* GetStorableDepthOutput() const { return GetCurrentDepthOutput(); }
 
 private:
-	void ReleaseResources();
-	void ReleaseBackBuffers();
-
-	void ResizeSwapChain(bool bResizeTarget = false);
-	void AllocateSwapChain();
-
-	void AllocateBackBuffers();
 	void AllocateColorTarget();
 	void AllocateDepthTarget();
-
-	bool ReadSwapChainSurfaceDesc();
 };
-typedef std::shared_ptr<CRenderDisplayContext> CRenderDisplayContextPtr;
+
+using CRenderDisplayContextPtr = std::shared_ptr<CRenderDisplayContext>;
+
+
+class CSwapChainBackedRenderDisplayContext : public CRenderDisplayContext
+{
+	friend class CD3D9Renderer;
+
+private:
+	// Handle and a pointer to WIN32 window
+	HWND                     m_hWnd = 0;
+
+	CSwapChain               m_swapChain;
+	DXGIOutput*              m_pOutput = nullptr;
+
+	std::vector<TexSmartPtr> m_backBuffersArray;
+	CTexture*                m_pBackBufferPresented = nullptr;
+	TexSmartPtr              m_pBackBufferProxy = nullptr;
+	bool                     m_bSwapProxy = true;
+	bool                     m_fullscreen = false;
+
+private:
+	void                 SetHWND(HWND hWnd);
+	void                 CreateOutput();
+	void                 ShutDown();
+	void                 ReleaseResources() override;
+#if CRY_PLATFORM_WINDOWS
+	void                 EnforceFullscreenPreemption();
+#endif
+	void                 ChangeOutputIfNecessary(bool isFullscreen);
+	void                 ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp) override;
+	void                 ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight)
+	{
+		ChangeDisplayResolution(displayWidth, displayHeight, SRenderViewport(0, 0, displayWidth, displayHeight));
+	}
+
+	CSwapChain&          GetSwapChain() { return m_swapChain; }
+	const CSwapChain&    GetSwapChain() const { return m_swapChain; }
+	void                 SetSwapChain(CSwapChain &&sc) { m_swapChain = std::move(sc); }
+
+public:
+	CSwapChainBackedRenderDisplayContext(IRenderer::SDisplayContextDescription desc, uint32 uniqueId) : CRenderDisplayContext(desc, uniqueId) {}
+	~CSwapChainBackedRenderDisplayContext() { ShutDown(); }
+
+	CSwapChainBackedRenderDisplayContext(CSwapChainBackedRenderDisplayContext &&) = default;
+	CSwapChainBackedRenderDisplayContext &operator=(CSwapChainBackedRenderDisplayContext &&) = default;
+
+	bool                 IsSwapChainBacked() const override final { return true; }
+
+	void                 PrePresent() override;
+	void                 PostPresent() override;
+	CTexture*            GetCurrentBackBuffer() const override;
+	CTexture*            GetPresentedBackBuffer() const override { return m_pBackBufferPresented; }
+	CTexture*            GetStorableColorOutput() override;
+
+	HWND                 GetWindowHandle() const { return m_hWnd; }
+	//! Gets the resolution of the monitor that this context's window is currently present on
+	RectI                GetCurrentMonitorBounds() const;
+
+	void                 SetFullscreenState(bool isFullscreen);
+	bool                 IsFullscreen() const { return m_fullscreen; }
+
+#if defined(SUPPORT_DEVICE_INFO)
+	uint32               GetRefreshRateNumerator() const { return m_swapChain.GetRefreshRateNumerator(); }
+	uint32               GetRefreshRateDemoninator() const { return m_swapChain.GetRefreshRateDemoninator(); }
+#endif
+
+private:
+	void ReleaseBackBuffers();
+	void AllocateBackBuffers();
+};
+
+
+class CCustomRenderDisplayContext : public CRenderDisplayContext
+{
+private:
+	uint32_t                 m_swapChainIndex = 0;
+	std::vector<TexSmartPtr> m_backBuffersArray;
+	CTexture*                m_pBackBufferPresented = nullptr;
+	TexSmartPtr              m_pBackBufferProxy = nullptr;
+
+public:
+	// Creates a display context with manual control of the swapchain
+	CCustomRenderDisplayContext(IRenderer::SDisplayContextDescription desc, uint32 uniqueId, std::vector<TexSmartPtr> &&backBuffersArray, uint32_t initialSwapChainIndex = 0);
+
+	CCustomRenderDisplayContext(CCustomRenderDisplayContext &&) = default;
+	CCustomRenderDisplayContext &operator=(CCustomRenderDisplayContext &&) = default;
+
+	void             SetSwapChainIndex(uint32_t index);
+
+	void             PrePresent() override;
+	CTexture*        GetCurrentBackBuffer() const override { return this->m_backBuffersArray[m_swapChainIndex]; }
+	CTexture*        GetPresentedBackBuffer() const override { return m_pBackBufferPresented; }
+	CTexture*        GetStorableColorOutput() override;
+};

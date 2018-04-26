@@ -605,10 +605,7 @@ void C3DEngine::ScreenshotDispatcher(const int nRenderFlags, const SRenderingPas
 	case ESST_MAP:
 		{
 			static const unsigned int nMipMapSnapshotSize = 512;
-			Vec2i origRes;
-			origRes.x = passInfo.GetIRenderView()->GetViewport().width;
-			origRes.y = passInfo.GetIRenderView()->GetViewport().height;
-			GetRenderer()->ResizeContext(passInfo.GetDisplayContextHandle(), nMipMapSnapshotSize, nMipMapSnapshotSize);
+			GetRenderer()->ResizeContext(passInfo.GetDisplayContextKey(), nMipMapSnapshotSize, nMipMapSnapshotSize);
 			uint32 TmpHeight, TmpWidth, TmpVirtualHeight, TmpVirtualWidth;
 			TmpHeight = TmpWidth = TmpVirtualHeight = TmpVirtualWidth = 1;
 
@@ -652,8 +649,6 @@ void C3DEngine::ScreenshotDispatcher(const int nRenderFlags, const SRenderingPas
 
 			pStitchedImage->Clear();    // good for debugging
 			delete pStitchedImage;
-
-			GetRenderer()->ResizeContext(passInfo.GetDisplayContextHandle(), origRes.x, origRes.y);  // restore context size!!
 
 		}
 		if (GetCVars()->e_ScreenShot > 0)      // <0 is used for multiple frames (videos)
@@ -3586,7 +3581,7 @@ void C3DEngine::ScreenShotHighRes(CStitchedImage* pStitchedImage, const int nRen
 	{
 		for (uint32 xx = 0; xx < SliceCount; xx++)
 		{
-			GetRenderer()->BeginFrame(0);
+			GetRenderer()->BeginFrame({});
 
 			SRenderingPassInfo screenShotPassInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(passInfo.GetCamera());
 			PrintMessage("Rendering tile %d of %d ... ", xx + yy * SliceCount + 1, SliceCount * SliceCount);
@@ -3617,7 +3612,7 @@ void C3DEngine::ScreenShotHighRes(CStitchedImage* pStitchedImage, const int nRen
 	delete[] pImage;
 
 	// re-start frame so system can safely finish it
-	GetRenderer()->BeginFrame(passInfo.GetDisplayContextHandle());
+	GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey());
 
 	// restore initial state
 	GetConsole()->SetScrollMax(300);
@@ -3732,7 +3727,7 @@ bool C3DEngine::ScreenShotPanorama(CStitchedImage* pStitchedImage, const int nRe
 		cam.SetFrustum(cam.GetViewSurfaceX(), cam.GetViewSurfaceZ(), pStitchedImage->m_fPanoramaShotVertFOV, cam.GetNearPlane(), cam.GetFarPlane(), cam.GetPixelAspectRatio());
 
 		// render scene
-		GetRenderer()->BeginFrame(0);
+		GetRenderer()->BeginFrame({});
 
 		SRenderingPassInfo screenShotPassInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(cam);
 		RenderInternal(nRenderFlags, screenShotPassInfo, "ScreenShotPanorama");

@@ -125,6 +125,8 @@ private:
 		Zoom
 	};
 
+	SDisplayContextKey m_displayContextKey;
+
 protected:
 	CCamera                  m_camera;
 	float                    m_fov;

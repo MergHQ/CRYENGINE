@@ -116,7 +116,7 @@ public:
 	virtual void           SetScissorRect(int x0, int y0, int width, int height);
 	virtual void           GetScissorRect(int& x0, int& y0, int& width, int& height) const;
 	virtual void           Advance(float deltaTime);
-	virtual void           Render(bool stereo = false);
+	virtual void           Render();
 	virtual void           SetClearFlags(uint32 clearFlags, ColorF clearColor = Clr_Transparent);
 	virtual void           SetCompositingDepth(float depth);
 	virtual void           StereoEnforceFixedProjectionDepth(bool enforce);

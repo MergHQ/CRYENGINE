@@ -162,9 +162,9 @@ CLevelEditorViewport::~CLevelEditorViewport()
 	}
 }
 
-bool CLevelEditorViewport::CreateRenderContext(uintptr_t displayContextHandle, IRenderer::EViewportType viewportType)
+bool CLevelEditorViewport::CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType)
 {
-	return CRenderViewport::CreateRenderContext(displayContextHandle, IRenderer::eViewportType_Default);
+	return CRenderViewport::CreateRenderContext(hWnd, IRenderer::eViewportType_Default);
 }
 
 bool CLevelEditorViewport::DragEvent(EDragEvent eventId, QEvent* event, int flags)
@@ -438,7 +438,6 @@ void CLevelEditorViewport::OnRender()
 		m_Camera.m_bOmniCamera = false;
 	}
 
-	CryDisplayContextHandle displayContextHandle = (CryDisplayContextHandle)(GetSafeHwnd());
 	const int32 renderFlags = (GetType() == ET_ViewportCamera) ? 0 : SHDF_SECONDARY_VIEWPORT;
 
 	if (m_Camera.m_bOmniCamera)
@@ -476,7 +475,7 @@ void CLevelEditorViewport::OnRender()
 			tmpCamera.SetFrustum(cubeRes, cubeRes, DEG2RAD(90), tmpCamera.GetNearPlane(), tmpCamera.GetFarPlane(), 1.0f);
 
 			// Display Context handle forces rendering of the world go to the current viewport output window.
-			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(tmpCamera, SRenderingPassInfo::DEFAULT_FLAGS, false, displayContextHandle);
+			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(tmpCamera, SRenderingPassInfo::DEFAULT_FLAGS, false, this->m_displayContextKey);
 			RenderAll(passInfo);
 			m_engine->RenderWorld(renderFlags | SHDF_ALLOW_AO | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_NOASYNC, passInfo, __FUNCTION__);
 		}
@@ -492,7 +491,7 @@ void CLevelEditorViewport::OnRender()
 		m_engine->Update();
 
 		// Display Context handle forces rendering of the world go to the current viewport output window.
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_Camera, SRenderingPassInfo::DEFAULT_FLAGS, false, displayContextHandle);
+		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_Camera, SRenderingPassInfo::DEFAULT_FLAGS, false, this->m_displayContextKey);
 		RenderAll(passInfo);
 		m_engine->RenderWorld(renderFlags | SHDF_ALLOW_AO | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOWHDR | SHDF_ZPASS, passInfo, __FUNCTION__);
 	}

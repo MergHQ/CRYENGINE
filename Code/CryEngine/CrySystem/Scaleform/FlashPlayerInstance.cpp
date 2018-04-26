@@ -3190,7 +3190,7 @@ void CFlashPlayer::Advance(float deltaTime)
 	}
 }
 
-void CFlashPlayer::Render(bool stereo)
+void CFlashPlayer::Render()
 {
 	//FLASH_PROFILER_LIGHT; // don't add profiling macro to this dispatch function (cost is neglectable and would be double counted if MT rendering is off), callback will measure real cost
 
@@ -3198,7 +3198,7 @@ void CFlashPlayer::Render(bool stereo)
 		return;
 
 	AddRef();
-	gEnv->pRenderer->FlashRender(this, stereo);
+	gEnv->pRenderer->FlashRender(this);
 }
 
 IScaleformPlayback* CFlashPlayer::GetPlayback()
@@ -3236,11 +3236,16 @@ void CFlashPlayer::RenderCallback(EFrameType ft, bool releaseOnExit)
 				m_pRenderer->AvoidStencilClear(m_avoidStencilClear);
 				m_pRenderer->EnableMaskedRendering(m_maskedRendering);
 				m_pRenderer->ExtendCanvasToViewport(m_extendCanvasToVP);
-				SYNC_DISPLAY_BEGIN
-				CAPTURE_DRAW_STATS_BEGIN
-				m_pMovieView->Display();
-				CAPTURE_DRAW_STATS_END
-				  SYNC_DISPLAY_END
+
+				{
+					SYNC_DISPLAY_BEGIN
+					CAPTURE_DRAW_STATS_BEGIN
+
+					m_pMovieView->Display();
+
+					CAPTURE_DRAW_STATS_END
+					SYNC_DISPLAY_END
+				}
 			}
 			//#if defined(ENABLE_FLASH_INFO)
 			//			if (ms_sys_flash_info)

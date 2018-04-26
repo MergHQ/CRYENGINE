@@ -31,6 +31,10 @@
 
 #include <Cry3DEngine/ImageExtensionHelper.h>
 
+#include "../RendererResources.h"
+#include "../Renderer.h"
+#include "../RendererCVars.h"
+
 class CDeviceTexture;
 class CTexture;
 class CImageFile;
@@ -1644,7 +1648,7 @@ public:
 	static ETEX_Format  TextureFormatForName(const char* str)    { return CImageExtensionHelper::TextureFormatForName(str); }
 	static ETEX_Type    TextureTypeForName(const char* str)      { return CImageExtensionHelper::TextureTypeForName(str); }
 
-	static bool         RenderEnvironmentCMHDR(int size, Vec3& Pos, TArray<unsigned short>& vecData);
+	static bool         RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned short>& vecData);
 
 public:
 

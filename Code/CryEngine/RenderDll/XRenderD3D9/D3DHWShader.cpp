@@ -1788,7 +1788,7 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 			case ECGP_PB_StereoParams:
 				if (gRenDev->IsStereoEnabled())
 				{
-					sData[0].f[0] = gcpRendD3D->GetS3DRend().GetMaxSeparationScene() * (gcpRendD3D->GetS3DRend().GetCurrentEye() == LEFT_EYE ? 1 : -1);
+					sData[0].f[0] = gcpRendD3D->GetS3DRend().GetMaxSeparationScene() * (gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView()->GetCurrentEye() == CCamera::eEye_Left ? 1 : -1);
 					sData[0].f[1] = gcpRendD3D->GetS3DRend().GetZeroParallaxPlaneDist();
 					sData[0].f[2] = gcpRendD3D->GetS3DRend().GetNearGeoShift();
 					sData[0].f[3] = gcpRendD3D->GetS3DRend().GetNearGeoScale();

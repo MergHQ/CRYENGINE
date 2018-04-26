@@ -2916,7 +2916,7 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 		rp.pMatrix = &tm;
 		rp.pMaterial = GetIEditorImpl()->GetIconManager()->GetHelperMaterial();
 
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->p3DEngine->GetRenderingCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextHandle());
+		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->p3DEngine->GetRenderingCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
 		m_visualObject->Render(rp, passInfo);
 	}
 

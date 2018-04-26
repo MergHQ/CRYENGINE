@@ -303,7 +303,7 @@ bool QViewport::CreateRenderContext()
 	{
 		IRenderer::SDisplayContextDescription desc;
 
-		desc.handle = reinterpret_cast<uintptr_t>(window);
+		desc.handle = window;
 		desc.type = IRenderer::eViewportType_Secondary;
 		desc.clearColor = ColorF(m_settings->background.topColor);
 		desc.renderFlags = FRT_CLEAR | FRT_OVERLAY_DEPTH;
@@ -312,11 +312,7 @@ bool QViewport::CreateRenderContext()
 		desc.screenResolution.x = m_width;
 		desc.screenResolution.y = m_height;
 
-		if (!gEnv->pRenderer->CreateContext(desc))
-		{
-			m_creatingRenderContext = false;
-			return false;
-		}
+		m_displayContextKey = gEnv->pRenderer->CreateSwapChainBackedContext(desc);
 
 		m_renderContextCreated = true;
 		m_creatingRenderContext = false;
@@ -335,9 +331,8 @@ void QViewport::DestroyRenderContext()
 	if (m_env->pRenderer && m_renderContextCreated)
 	{
 		// Do not delete primary context.
-		HWND window = (HWND)QWidget::winId();
-		if (window != m_env->pRenderer->GetHWND())
-			m_env->pRenderer->DeleteContext(reinterpret_cast<CryDisplayContextHandle>(window));
+		if (m_displayContextKey != static_cast<HWND>(m_env->pRenderer->GetHWND()))
+			m_env->pRenderer->DeleteContext(m_displayContextKey);
 
 		m_renderContextCreated = false;
 	}
@@ -368,13 +363,15 @@ void QViewport::RestorePreviousContext()
 	m_env->pSystem->SetViewCamera(x.systemCamera);
 }
 
-void QViewport::InitDisplayContext(uintptr_t displayContextHandle)
+void QViewport::InitDisplayContext(HWND hWnd)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
 	// Draw all objects.
+	SDisplayContextKey displayContextKey;
+	displayContextKey.key.emplace<HWND>(hWnd);
 	DisplayContext& dctx = m_displayContext;
-	dctx.SetDisplayContext(displayContextHandle);
+	dctx.SetDisplayContext(displayContextKey);
 	dctx.SetView(m_pViewportAdapter.get());
 	dctx.SetCamera(m_camera.get());
 	dctx.renderer = m_env->pRenderer;
@@ -786,7 +783,7 @@ void QViewport::Render()
 	// wireframe mode
 	CScopedWireFrameMode scopedWireFrame(m_env->pRenderer, m_settings->rendering.wireframe ? R_WIREFRAME_MODE : R_SOLID_MODE);
 
-	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(*m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextHandle());
+	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(*m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
 
 	if (m_settings->background.useGradient)
 	{
@@ -924,21 +921,23 @@ void QViewport::RenderInternal()
 	// lock while we are rendering to prevent any recursive rendering across the application
 	if (CScopedRenderLock lock = CScopedRenderLock())
 	{
-		uintptr_t displayContextHandle = static_cast<uintptr_t>(QWidget::winId());
+		const HWND hWnd = reinterpret_cast<HWND>(QWidget::winId());
+		SDisplayContextKey displayContextKey;
+		displayContextKey.key.emplace<HWND>(hWnd);
 
 		SetCurrentContext();
 
 		// Configures Aux to draw to the current display-context
-		InitDisplayContext(displayContextHandle);
+		InitDisplayContext(hWnd);
 
 		// Request for a new aux geometry to capture aux commands in the current viewport
 		CCamera camera = *m_camera;
 		m_pAuxGeom = gEnv->pRenderer->GetOrCreateIRenderAuxGeom(&camera);
 
-		m_env->pSystem->RenderBegin(displayContextHandle);
+		m_env->pSystem->RenderBegin(displayContextKey);
 
 		// Sets the current viewport's aux geometry display context
-		m_pAuxGeom->SetCurrentDisplayContext(displayContextHandle);
+		m_pAuxGeom->SetCurrentDisplayContext(displayContextKey);
 
 		// Do the pre-rendering. This call updates the member camera (applying transformation to the camera).
 		PreRender();
@@ -1155,7 +1154,7 @@ void QViewport::resizeEvent(QResizeEvent* ev)
 	m_height = cy;
 
 	m_env->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RESIZE, cx, cy);
-	gEnv->pRenderer->ResizeContext(static_cast<CryDisplayContextHandle>(QWidget::winId()), m_width, m_height);
+	gEnv->pRenderer->ResizeContext(m_displayContextKey, m_width, m_height);
 
 	SignalUpdate();
 }

@@ -8,8 +8,6 @@
 CFullscreenPass::CFullscreenPass(CRenderPrimitive::EPrimitiveFlags primitiveFlags)
 : m_primitiveFlags(CRenderPrimitive::eFlags_None)
 {
-	m_inputVars[0] = m_inputVars[1] = m_inputVars[2] = m_inputVars[3] = 0;
-
 	m_bRequirePerViewCB = false;
 	m_bRequireWorldPos = false;
 	m_bPendingConstantUpdate = false;
@@ -133,15 +131,18 @@ void CFullscreenPass::UpdatePrimitive()
 		nRenderTargetWidth  = pTarget->GetWidth () >> mip;
 		nRenderTargetHeight = pTarget->GetHeight() >> mip;
 
-		D3DViewPort viewport;
+		if (!m_bHasCustomViewport)
+		{
+			// Default to full-screen viewport
+			D3DViewPort viewport;
+			viewport.TopLeftX = viewport.TopLeftY = 0;
+			viewport.Width = float(nRenderTargetWidth);
+			viewport.Height = float(nRenderTargetHeight);
+			viewport.MinDepth = 0.0f;
+			viewport.MaxDepth = 1.0f;
 
-		viewport.TopLeftX = viewport.TopLeftY = 0;
-		viewport.MinDepth = 0.0f;
-		viewport.MaxDepth = 1.0f;
-		viewport.Width  = float(nRenderTargetWidth);
-		viewport.Height = float(nRenderTargetHeight);
-
-		SetViewport(viewport);
+			SetViewport(viewport);
+		}
 	}
 	
 	if (m_bRequirePerViewCB)
@@ -224,4 +225,9 @@ bool CFullscreenPass::Execute()
 	}
 
 	return success;
+}
+
+void CFullscreenPass::SetCustomViewport(const SRenderViewport& viewport)
+{
+	SetCustomViewport(RenderViewportToD3D11Viewport(viewport));
 }

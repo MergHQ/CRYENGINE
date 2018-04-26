@@ -109,7 +109,8 @@ CViewport::CViewport()
 void CViewport::SetViewWidget(QWidget* view)
 {
 	m_viewWidget = view;
-	CreateRenderContext(reinterpret_cast<uintptr_t>(GetSafeHwnd()));
+
+	this->CreateRenderContext(GetSafeHwnd());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1031,7 +1032,7 @@ bool CViewport::IsWindowVisible() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void* CViewport::GetSafeHwnd() const
+HWND CViewport::GetSafeHwnd() const
 {
 	//QWindow *window = m_viewWidget->windowHandle();
 	//HWND h = static_cast<HWND>(QGuiApplication::platformNativeInterface()->nativeResourceForWindow("handle", window));

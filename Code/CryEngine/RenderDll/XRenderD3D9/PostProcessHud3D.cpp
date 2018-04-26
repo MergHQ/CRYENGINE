@@ -840,16 +840,16 @@ void CHud3D::Render()
 			float maxParallax = 0.005f * pS3DRend.GetStereoStrength();
 
 			// Render left eye
-			pS3DRend.BeginRenderingTo(LEFT_EYE);
+			pS3DRend.BeginRenderingTo(CCamera::eEye_Left);
 			m_maxParallax = -maxParallax;
 			FinalPass();
-			pS3DRend.EndRenderingTo(LEFT_EYE);
+			pS3DRend.EndRenderingTo(CCamera::eEye_Left);
 
 			// Render right eye
-			pS3DRend.BeginRenderingTo(RIGHT_EYE);
+			pS3DRend.BeginRenderingTo(CCamera::eEye_Right);
 			m_maxParallax = maxParallax;
 			FinalPass();
-			pS3DRend.EndRenderingTo(RIGHT_EYE);
+			pS3DRend.EndRenderingTo(CCamera::eEye_Right);
 
 			m_maxParallax = 0;
 		}

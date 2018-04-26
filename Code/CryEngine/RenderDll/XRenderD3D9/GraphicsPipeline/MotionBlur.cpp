@@ -64,7 +64,7 @@ void CMotionBlurStage::Execute()
 
 		const bool bRadialBlur = amount + (blurDir.x * blurDir.x) + (blurDir.y * blurDir.y) > 1.0f / (float)vpWidth;
 
-		if (m_passPacking.InputChanged((int)bRadialBlur, GetUtils().GetVelocityObjectRT(RenderView())->GetTextureID()))
+		if (m_passPacking.InputChanged(bRadialBlur, GetUtils().GetVelocityObjectRT(RenderView())->GetTextureID()))
 		{
 			static CCryNameTSCRC techPackVelocities("PackVelocities");
 			m_passPacking.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -175,7 +175,7 @@ void CMotionBlurStage::Execute()
 			m_passCopy.Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexSceneTargetR11G11B10F[0]);
 		}
 
-		if (m_passMotionBlur.InputChanged(CRenderer::CV_r_MotionBlurQuality, (int)bGatherDofEnabled))
+		if (m_passMotionBlur.InputChanged(CRenderer::CV_r_MotionBlurQuality, bGatherDofEnabled))
 		{
 			uint64 rtMask = 0;
 			rtMask |= (CRenderer::CV_r_MotionBlurQuality >= 2) ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;

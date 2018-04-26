@@ -399,6 +399,7 @@ void CPostEffectStage::Execute3DHudFlashUpdate()
 		{
 			auto* pHud3dPass = static_cast<CHud3DPass*>(pPostEffect.get());
 			auto& hud3d = *static_cast<CHud3D*>(p3DHUD);
+
 			pHud3dPass->ExecuteFlashUpdate(context, hud3d);
 		}
 	}
@@ -466,7 +467,7 @@ void CUnderwaterGodRaysPass::Execute(const CPostEffectContext& context)
 		{
 			auto& pass = m_passUnderwaterGodRaysGen[r];
 
-			if (pass.InputChanged((rtMask & 0xFFFFFFFF), ((rtMask >> 32) & 0xFFFFFFFF)), pSrcBackBufferTexture->GetID())
+			if (pass.InputChanged(rtMask, pSrcBackBufferTexture->GetID()))
 			{
 				static CCryNameTSCRC techName("UnderwaterGodRays");
 				pass.SetTechnique(CShaderMan::s_shPostEffects, techName, rtMask);
@@ -981,7 +982,7 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	CD3DStereoRenderer* const RESTRICT_POINTER rendS3D = &(gcpRendD3D.GetS3DRend());
 	
-	if (!rendS3D->IsPostStereoEnabled())
+ 	if (!rendS3D->IsPostStereoEnabled())
 	{
 		return;
 	}
@@ -1032,8 +1033,13 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 	{
 		auto& pass = m_passPostStereo;
 
-		auto* pLeftEyeTex = rendS3D->GetEyeTarget(LEFT_EYE);
-		auto* pRightEyeTex = rendS3D->GetEyeTarget(RIGHT_EYE);
+		auto *leftDc = rendS3D->GetEyeDisplayContext(CCamera::eEye_Left).first;
+		auto *rightDc = rendS3D->GetEyeDisplayContext(CCamera::eEye_Right).first;
+		if (!leftDc || !rightDc)
+			return;
+
+		auto* pLeftEyeTex = leftDc->GetCurrentBackBuffer();
+		auto* pRightEyeTex = rightDc->GetCurrentBackBuffer();
 
 		if (pass.InputChanged(pLeftEyeTex->GetID(), pRightEyeTex->GetID(), pSrcBackBufferTexture->GetID()))
 		{
@@ -1463,43 +1469,17 @@ void CHud3DPass::Execute(const CPostEffectContext& context)
 		auto& hud3d = *static_cast<CHud3D*>(pPostEffect);
 
 		CD3DStereoRenderer& pS3DRend = rd->GetS3DRend();
-		bool bPostProcStereoAndSequential = pS3DRend.IsPostStereoEnabled() && pS3DRend.RequiresSequentialSubmission();
 
 		// Update interference rand timer
 		hud3d.m_interferenceRandTimer += gEnv->pTimer->GetFrameTime();
 
-		// Render hud with projection offset or with same projection offset in MRT mode (a bit faster)
-		if (bPostProcStereoAndSequential)
-		{
-			auto* pOutputRTLeft = pS3DRend.GetEyeTarget(LEFT_EYE);
-			auto* pOutputRTRight = pS3DRend.GetEyeTarget(RIGHT_EYE);
-			CTexture* pDepthS = context.GetDstDepthStencilTexture();
+		CTexture* pDstTex = context.GetDstBackBufferTexture();
+		CTexture* pDepthS = context.GetDstDepthStencilTexture();
+		if (pS3DRend.IsPostStereoEnabled())
+			pDstTex = pS3DRend.GetVrQuadLayerDisplayContext(RenderLayer::eQuadLayers_Headlocked_0).first->GetCurrentBackBuffer();
 
-			float maxParallax = 0.005f * pS3DRend.GetStereoStrength();
-
-			// Render left eye
-			hud3d.m_maxParallax = -maxParallax;
-			ExecuteBloomTexUpdate(context, hud3d);
-			ExecuteFinalPass(context, pOutputRTLeft, pDepthS, hud3d);
-
-			// ensure CRendererResources::s_ptexBackBufferScaled[1] used in ExecuteBloomTexUpdate() can be bound to SRV slot 1 on dx11.
-			GetDeviceObjectFactory().GetCoreCommandList().Reset();
-
-			// Render right eye
-			hud3d.m_maxParallax = maxParallax;
-			ExecuteBloomTexUpdate(context, hud3d);
-			ExecuteFinalPass(context, pOutputRTRight, pDepthS, hud3d);
-
-			hud3d.m_maxParallax = 0;
-		}
-		else
-		{
-			CTexture* pDstTex = context.GetDstBackBufferTexture();
-			CTexture* pDepthS = context.GetDstDepthStencilTexture();
-
-			ExecuteBloomTexUpdate(context, hud3d);
-			ExecuteFinalPass(context, pDstTex, pDepthS, hud3d);
-		}
+		ExecuteBloomTexUpdate(context, hud3d);
+		ExecuteFinalPass(context, pDstTex, pDepthS, hud3d);
 	}
 }
 
@@ -1547,6 +1527,8 @@ void CHud3DPass::ExecuteFlashUpdate(const CPostEffectContext& context, CHud3D& h
 		hud3d.m_nFlashUpdateFrameID = context.GetRenderView()->GetFrameId();
 
 		PROFILE_LABEL_SCOPE("3D HUD FLASHPLAYER UPDATES");
+
+		CClearSurfacePass::Execute(hud3d.m_pHUD_RT, Clr_Transparent);
 
 		const int rtWidth  = std::min<int>(SHudData::s_nFlashWidthMax , hud3d.m_pHUD_RT->GetWidth());
 		const int rtHeight = std::min<int>(SHudData::s_nFlashHeightMax, hud3d.m_pHUD_RT->GetHeight());

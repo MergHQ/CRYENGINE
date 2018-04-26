@@ -12,17 +12,18 @@
 	#include <CryRenderer/IRenderAuxGeom.h>
 	#include <CryRenderer/VertexFormats.h>
 	#include <CryMemory/CrySizer.h>
+	#include "RenderOutput.h"
 	#include "TextMessages.h"
 
 class ICrySizer;
 class CAuxGeomCB;
-struct SAuxGeomCBRawDataPackaged;
+struct SAuxGeomCBRawDataPackagedConst;
 struct IRenderAuxGeom;
 
 struct IRenderAuxGeomImpl
 {
 public:
-	virtual void RT_Flush(SAuxGeomCBRawDataPackaged& data) = 0;
+	virtual void RT_Flush(const SAuxGeomCBRawDataPackagedConst& data) = 0;
 };
 
 class CRenderAuxGeomD3D;
@@ -44,7 +45,7 @@ public:
 
 	const CCamera&      GetCamera() const final;
 
-	void                SetCurrentDisplayContext(CryDisplayContextHandle context) override;
+	void                SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey) override;
 
 	void                DrawPoint(const Vec3& v, const ColorB& col, uint8 size = 1) override;
 	void                DrawPoints(const Vec3* v, uint32 numPoints, const ColorB& col, uint8 size = 1) override;
@@ -160,7 +161,7 @@ public:
 		{
 		}
 
-		SAuxPushBufferEntry(uint32 numVertices, uint32 numIndices, uint32 vertexOffs, uint32 indexOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags, int texID = -1, CryDisplayContextHandle handle = 0)
+		SAuxPushBufferEntry(uint32 numVertices, uint32 numIndices, uint32 vertexOffs, uint32 indexOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags, int texID = -1, const SDisplayContextKey& displayContextKey = {})
 			: m_numVertices(numVertices)
 			, m_numIndices(numIndices)
 			, m_vertexOffs(vertexOffs)
@@ -169,11 +170,11 @@ public:
 			, m_worldMatrixIdx(worldMatrixIdx)
 			, m_renderFlags(renderFlags)
 			, m_textureID(texID)
-			, m_displayContextHandle(handle)
+			, m_displayContextKey(displayContextKey)
 		{
 		}
 
-		SAuxPushBufferEntry(uint32 drawParamOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags, int texID = -1, CryDisplayContextHandle handle = 0)
+		SAuxPushBufferEntry(uint32 drawParamOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags, int texID = -1, const SDisplayContextKey& displayContextKey = {})
 			: m_numVertices(0)
 			, m_numIndices(0)
 			, m_vertexOffs(drawParamOffs)
@@ -182,7 +183,7 @@ public:
 			, m_worldMatrixIdx(worldMatrixIdx)
 			, m_renderFlags(renderFlags)
 			, m_textureID(texID)
-			, m_displayContextHandle(handle)
+			, m_displayContextKey(displayContextKey)
 		{
 			CRY_ASSERT(e_Obj == GetPrimType(m_renderFlags));
 		}
@@ -210,7 +211,8 @@ public:
 		int                     m_worldMatrixIdx;
 		int                     m_textureID;
 		SAuxGeomRenderFlags     m_renderFlags;
-		CryDisplayContextHandle m_displayContextHandle = 0;
+
+		SDisplayContextKey m_displayContextKey;
 	};
 
 	using AuxPushBuffer = std::vector<SAuxPushBufferEntry>;
@@ -255,7 +257,7 @@ public:
 			m_uCount = 0;
 		}
 
-		bool IsUsed()
+		bool IsUsed() const
 		{
 			return m_isUsed;
 		}
@@ -290,7 +292,8 @@ public:
 		int                     m_textureID;
 		uint                    m_uCount;
 		bool                    m_isUsed = false;
-		CryDisplayContextHandle m_displayContextHandle = 0;
+
+		SDisplayContextKey displayContextKey;
 		
 		// Camera used for 3D->2D elements projection
 		CCamera                 m_camera;
@@ -421,14 +424,18 @@ protected:
 	{
 		return m_rawData;
 	}
+	const SAuxGeomCBRawData* AccessData() const
+	{
+		return m_rawData;
+	}
 
 protected:
 	struct PushBufferSortFunc
 	{
 		bool operator()(const SAuxPushBufferEntry* lhs, const SAuxPushBufferEntry* rhs) const
 		{
-			if (lhs->m_displayContextHandle != rhs->m_displayContextHandle)
-				return lhs->m_displayContextHandle < rhs->m_displayContextHandle;
+			if (lhs->m_displayContextKey != rhs->m_displayContextKey)
+				return lhs->m_displayContextKey < rhs->m_displayContextKey;
 
 			if (lhs->m_renderFlags.m_renderFlags != rhs->m_renderFlags.m_renderFlags)
 				return lhs->m_renderFlags.m_renderFlags < rhs->m_renderFlags.m_renderFlags;
@@ -448,15 +455,15 @@ DEFINE_ENUM_FLAG_OPERATORS(CAuxGeomCB::SActiveDrawBufferInfo::State);
 
 
 // package CAuxGeomCB::SAuxGeomCBRawData ptr via seperate struct as nested types cannot be forward declared
-struct SAuxGeomCBRawDataPackaged
+struct SAuxGeomCBRawDataPackagedConst
 {
-	SAuxGeomCBRawDataPackaged(CAuxGeomCB::SAuxGeomCBRawData* pData)
+	SAuxGeomCBRawDataPackagedConst(const CAuxGeomCB::SAuxGeomCBRawData* pData)
 		: m_pData(pData)
 	{
 		CRY_ASSERT(m_pData);
 	}
 
-	CAuxGeomCB::SAuxGeomCBRawData* m_pData;
+	const CAuxGeomCB::SAuxGeomCBRawData* m_pData;
 };
 
 inline uint32 CAuxGeomCB::CreatePointRenderFlags(uint8 size)
@@ -618,7 +625,7 @@ public:
 
 	const CCamera&      GetCamera() const final                                                                                                              { static CCamera camera; return camera; }
 
-	void                SetCurrentDisplayContext(CryDisplayContextHandle context) final                                                                      {};
+	void                SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey) final                                               {};
 
 	void                DrawPoint(const Vec3& v, const ColorB& col, uint8 size = 1) final                                                                    {}
 	void                DrawPoints(const Vec3* v, uint32 numPoints, const ColorB& col, uint8 size = 1) final                                                 {}

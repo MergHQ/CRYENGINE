@@ -129,8 +129,7 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 
 	auto& pass = m_passDeferredSnowGBuffer;
 
-	if (pass.InputChanged((rtMask & 0xFFFFFFFF),
-	                      ((rtMask >> 32) & 0xFFFFFFFF),
+	if (pass.InputChanged(rtMask,
 	                      CRenderer::CV_r_snow_displacement,
 	                      m_pSnowDisplacementTex->GetID()))
 	{

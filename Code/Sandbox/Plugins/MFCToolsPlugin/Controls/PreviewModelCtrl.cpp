@@ -133,7 +133,7 @@ bool CPreviewModelCtrl::CreateRenderContext()
 		CRect rc; GetClientRect(rc);
 		IRenderer::SDisplayContextDescription desc;
 
-		desc.handle = reinterpret_cast<CryDisplayContextHandle>(m_hWnd);
+		desc.handle = m_hWnd;
 		desc.type = IRenderer::eViewportType_Secondary;
 		desc.clearColor = m_clearColor;
 		desc.renderFlags = FRT_CLEAR_COLOR | FRT_CLEAR_DEPTH | FRT_TEMPORARY_DEPTH;
@@ -142,7 +142,7 @@ bool CPreviewModelCtrl::CreateRenderContext()
 		desc.screenResolution.x = rc.Width();
 		desc.screenResolution.y = rc.Height();
 
-		m_pRenderer->CreateContext(desc);
+		m_displayContextKey = m_pRenderer->CreateSwapChainBackedContext(desc);
 		m_renderContextCreated = true;
 
 		return true;
@@ -157,21 +157,23 @@ void CPreviewModelCtrl::DestroyRenderContext()
 	if (m_pRenderer && m_renderContextCreated)
 	{
 		// Do not delete primary context.
-		HWND window = m_hWnd;
-		if (window != m_pRenderer->GetHWND())
-			m_pRenderer->DeleteContext(reinterpret_cast<CryDisplayContextHandle>(window));
+		if (m_displayContextKey != reinterpret_cast<HWND>(m_pRenderer->GetHWND()))
+			m_pRenderer->DeleteContext(m_displayContextKey);
 
 		m_renderContextCreated = false;
 	}
 }
 
-void CPreviewModelCtrl::InitDisplayContext(uintptr_t displayContextHandle)
+void CPreviewModelCtrl::InitDisplayContext(HWND hWnd)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
 	// Draw all objects.
+	SDisplayContextKey displayContextKey;
+	displayContextKey.key.emplace<HWND>(hWnd);
+
 	DisplayContext& dctx = m_displayContext;
-	dctx.SetDisplayContext(displayContextHandle, IRenderer::eViewportType_Secondary);
+	dctx.SetDisplayContext(displayContextKey, IRenderer::eViewportType_Secondary);
 //	dctx.SetView(m_pViewportAdapter.get());
 	dctx.SetCamera(&m_camera);
 	dctx.renderer = m_pRenderer;
@@ -466,8 +468,6 @@ bool CPreviewModelCtrl::Render()
 	// lock while we are rendering to prevent any recursive rendering across the application
 	if (CScopedRenderLock lock = CScopedRenderLock())
 	{
-		uintptr_t displayContextHandle = reinterpret_cast<uintptr_t>(m_hWnd);
-
 		if (!m_renderContextCreated)
 		{
 			if (!CreateRenderContext())
@@ -475,9 +475,9 @@ bool CPreviewModelCtrl::Render()
 		}
 
 		// Configures Aux to draw to the current display-context
-		InitDisplayContext(displayContextHandle);
+		InitDisplayContext(m_hWnd);
 
-		m_pRenderer->BeginFrame(displayContextHandle);
+		m_pRenderer->BeginFrame(m_displayContextKey);
 
 		result = RenderInternal();
 
@@ -515,7 +515,7 @@ bool CPreviewModelCtrl::RenderInternal()
 	gEnv->pConsole->GetCVar("r_displayInfo")->Set((int)m_bShowRenderInfo);
 
 	// Render object.
-	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextHandle());
+	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
 	m_pRenderer->EF_StartEf(passInfo);
 
 	{

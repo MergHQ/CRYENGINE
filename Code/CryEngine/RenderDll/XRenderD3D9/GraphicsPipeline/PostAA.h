@@ -8,7 +8,17 @@
 class CPostAAStage : public CGraphicsPipelineStage
 {
 public:
-	void CalculateJitterOffsets(CRenderView* pRenderView);
+	// Width and height should be the actual dimensions of the texture to be antialiased, 
+	// which might be different than the provided renderview's output resolution (e.g. VR).
+	void CalculateJitterOffsets(int targetWidth, int targetHeight, CRenderView* pTargetRenderView);
+	void CalculateJitterOffsets(CRenderView* pRenderView)
+	{
+		const int32_t w = pRenderView->GetRenderResolution()[0];
+		const int32_t h = pRenderView->GetRenderResolution()[1];
+		CRY_ASSERT(w > 0 && h > 0);
+		if (w > 0 && h > 0)
+			CalculateJitterOffsets(w, h, pRenderView);
+	}
 
 	void Init();
 	void Execute();

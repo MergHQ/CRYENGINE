@@ -65,7 +65,7 @@ struct EDITOR_COMMON_API DisplayContext
 	int               GetWidth() const { return static_cast<int>(m_width); }
 	int               GetHeight() const { return static_cast<int>(m_height); }
 
-	void              SetDisplayContext(uintptr_t displayContext, IRenderer::EViewportType eType = IRenderer::eViewportType_Default);
+	void              SetDisplayContext(const SDisplayContextKey &displayContextKey, IRenderer::EViewportType eType = IRenderer::eViewportType_Default);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Draw functions
@@ -196,7 +196,7 @@ struct EDITOR_COMMON_API DisplayContext
 	Vec3  ToWorldPos(const Vec3& v) { return ToWS(v); }
 	float GetLineWidth() const { return m_thickness; }
 
-	uintptr_t GetDisplayContextHandle() const { return m_displayContextHandle; }
+	SDisplayContextKey GetDisplayContextKey() const { return m_displayContextKey; }
 
 private:
 	// Convert vector to world space.
@@ -218,7 +218,7 @@ private:
 	// Display Helper Sizes
 	const int displayHelperSizeLarge = 32;
 	const int displayHelperSizeSmall = 4;
-	uintptr_t m_displayContextHandle = 0;
+	SDisplayContextKey m_displayContextKey;
 	IRenderer::EViewportType m_eType = IRenderer::eViewportType_Default;
 
 	struct STextureLabel

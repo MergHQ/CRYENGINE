@@ -463,7 +463,7 @@ void CStableDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bK
 	if (!pSrcRT || !pDestRT)
 		return;
 
-	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), (int)bKillFireflies))
+	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), bKillFireflies))
 	{
 		m_pass.Execute();
 		return;
@@ -492,7 +492,7 @@ void CDepthDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bLi
 	if (!pSrcRT || !pDestRT)
 		return;
 
-	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), (int)bLinearizeSrcDepth, (int)bFromSingleChannel))
+	if (!m_pass.InputChanged(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), bLinearizeSrcDepth, bFromSingleChannel))
 	{
 		m_pass.Execute();
 		return;
@@ -702,14 +702,6 @@ void CMipmapGenPass::Execute(CTexture* pScrDestRT, int mipCount)
 // CClearSurfacePass
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CClearSurfacePass::CClearSurfacePass()
-{
-}
-
-CClearSurfacePass::~CClearSurfacePass()
-{
-}
-
 void CClearSurfacePass::Execute(const CTexture* pDepthTex, const int nFlags, const float cDepth, const uint8 cStencil)
 {
 	// Full screen clear, no need to do custom pass
@@ -910,14 +902,6 @@ void CAnisotropicVerticalBlurPass::Execute(CTexture* pTex, int nAmount, float fS
 	static CCryNameTSCRC techName("AnisotropicVertical");
 	static CCryNameR paramName("blurParams0");
 
-	D3DViewPort viewport;
-	viewport.TopLeftX = 0.0f;
-	viewport.TopLeftY = 0.0f;
-	viewport.Width = static_cast<float>(pTex->GetWidth());
-	viewport.Height = static_cast<float>(pTex->GetHeight());
-	viewport.MinDepth = 0.0f;
-	viewport.MaxDepth = 1.0f;
-
 	// setup texture offsets, for texture sampling
 	float s1 = 1.0f / (float)pTex->GetWidth();
 	float t1 = 1.0f / (float)pTex->GetHeight();
@@ -940,7 +924,6 @@ void CAnisotropicVerticalBlurPass::Execute(CTexture* pTex, int nAmount, float fS
 			pass.SetTechnique(CShaderMan::s_shPostEffects, techName, 0);
 
 			pass.SetRenderTarget(0, pBlurTempTex->m_pTexture);
-			pass.SetViewport(viewport);
 
 			pass.SetState(GS_NODEPTHTEST);
 
@@ -963,7 +946,6 @@ void CAnisotropicVerticalBlurPass::Execute(CTexture* pTex, int nAmount, float fS
 			pass.SetTechnique(CShaderMan::s_shPostEffects, techName, 0);
 
 			pass.SetRenderTarget(0, pTex);
-			pass.SetViewport(viewport);
 
 			pass.SetState(GS_NODEPTHTEST);
 
