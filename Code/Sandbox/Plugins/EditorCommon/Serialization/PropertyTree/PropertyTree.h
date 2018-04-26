@@ -1,41 +1,43 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <memory>
+#include "Rect.h"
+#include "sigslot.h"
 #include "TreeConfig.h"
-#include <vector>
 #include <CrySerialization/yasli/Config.h>
 #include <CrySerialization/yasli/Archive.h>
 #include <CrySerialization/yasli/Pointers.h>
-#include "Rect.h"
-#include "sigslot.h"
-using std::vector;
+#include <memory>
+#include <vector>
 
-class PropertyTreeModel;
-class PropertyTreeModel;
-class PropertyRow;
-typedef vector<yasli::SharedPtr<PropertyRow> > PropertyRows;
-class PropertyTreeOperator;
 struct PropertyRowMenuHandler;
+struct PropertyTreeStyle;
+
 class Entry;
+class PropertyRow;
+class PropertyTreeModel;
+class PropertyTreeOperator;
+class ValidatorBlock;
+
+typedef std::vector<yasli::SharedPtr<PropertyRow>> PropertyRows;
 
 namespace yasli { class Object; struct Context; }
 
-
-namespace property_tree{ 
-class InplaceWidget;
-struct Color;
-class QDrawContext;
-
+namespace property_tree { 
 enum Modifier;
-class IMenu;
-struct IUIFacade; 
+
+struct Color;
+struct IUIFacade;
 struct KeyEvent;
+
+class IMenu;
+class InplaceWidget;
+class QDrawContext;
 }
+
 using property_tree::IUIFacade;
 using property_tree::KeyEvent;
-class ValidatorBlock;
-struct PropertyTreeStyle;
+
 class PROPERTY_TREE_API PropertyTree
 {
 public:
@@ -66,7 +68,7 @@ public:
 	void attach(const yasli::Object& object);
 	// Used for two-trees setup. In this case master tree acts as an outliner, that shows
 	// top level of the data (either by using setOutlineMode or setting different filter).
-	// Attached, slave tree then shows properties ot the item selected in the main tree.
+	// Attached, slave tree then shows properties of the item selected in the main tree.
 	// Temporary structures (e.g. created on the stack) should not be used in this mode
 	// (except for decorators), as this may cause access to deallocated object when
 	// selecting it in the tree.
@@ -95,7 +97,7 @@ public:
 	// data effectively not saved.
 	void applyInplaceEditor();
 
-	int revertObjects(vector<void*> objectAddresses);
+	int revertObjects(std::vector<void*> objectAddresses);
 	bool revertObject(void* objectAddress);
 
 	// Reduces width of the tree by removing expansion arrow/plus on the first level of the
@@ -153,7 +155,7 @@ public:
 	// Can be used to select once serialized object(s) in the tree.
 	bool selectByAddress(const void*, bool keepSelectionIfChildSelected = false);
 	bool selectByAddresses(const void* const* addresses, size_t addressCount, bool keepSelectionIfChildSelected);
-	bool selectByAddresses(const vector<const void*>& addresses, bool keepSelectionIfChildSelected);
+	bool selectByAddresses(const std::vector<const void*>& addresses, bool keepSelectionIfChildSelected);
 	// Can be used to query information about selection in the tree.
 	bool setSelectedRow(PropertyRow* row);
 	PropertyRow* selectedRow();
@@ -309,10 +311,10 @@ protected:
 	std::unique_ptr<PropertyTreeModel> model_;
 	std::unique_ptr<property_tree::InplaceWidget> widget_; // in-place widget
 	PropertyRow* widgetRow_;
-	vector<PropertyRowMenuHandler*> menuHandlers_;
+	std::vector<PropertyRowMenuHandler*> menuHandlers_;
 	IUIFacade* ui_;
 
-	typedef vector<yasli::Object> Objects;
+	typedef std::vector<yasli::Object> Objects;
 	Objects attached_;
 	PropertyTree* attachedPropertyTree_;
 	RowFilter rowFilter_;
@@ -358,4 +360,3 @@ protected:
 	friend struct ContainerMenuHandler;
 	friend class PropertyTreeModel;
 };
-

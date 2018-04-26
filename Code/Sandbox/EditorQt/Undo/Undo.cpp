@@ -18,9 +18,9 @@ public:
 	virtual ~CUndoStep() { ClearObjects(); }
 
 	//! Set undo object name.
-	void           SetName(const string& name) { m_name = name; };
+	void          SetName(const string& name) { m_name = name; }
 	//! Get undo object name.
-	const string& GetName()                    { return m_name; };
+	const string& GetName()                   { return m_name; }
 
 	//! Add new undo object to undo step.
 	void AddUndoObject(IUndoObject* o)
@@ -53,7 +53,7 @@ public:
 		}
 		m_undoObjects.clear();
 	};
-	virtual bool IsEmpty() const { return m_undoObjects.empty(); };
+	virtual bool IsEmpty() const { return m_undoObjects.empty(); }
 	virtual void Undo(bool bUndo)
 	{
 		for (int i = m_undoObjects.size() - 1; i >= 0; i--)
@@ -107,7 +107,7 @@ public:
 private: // ------------------------------------------------------
 
 	friend class CUndoManager;
-	string                   m_name;
+	string                    m_name;
 	// Undo objects registered for this step.
 	std::vector<IUndoObject*> m_undoObjects;
 };
@@ -247,7 +247,7 @@ void CUndoManager::Accept(const char* szName)
 			m_undoStack.push_back(m_currentUndo);
 
 			signalBufferChanged(m_currentUndo, CUndoManager::eCommandChangeType_Insert, (int)m_undoStack.size() - 1);
-			
+
 			QString logLine = name + ": " + m_currentUndo->GetObjectNames();
 			//CryLog(logLine.toStdString().c_str());
 		}
@@ -641,4 +641,3 @@ void CUndoManager::EndRestoreTransaction()
 		(*iter)->EndRestoreTransaction();
 	}
 }
-

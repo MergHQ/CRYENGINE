@@ -24,68 +24,68 @@
 
 namespace Private_EditorFramework
 {
-	static const int s_maxRecentFiles = 10;
+static const int s_maxRecentFiles = 10;
 
-	class CBroadcastManagerFilter : public QObject
+class CBroadcastManagerFilter : public QObject
+{
+public:
+	explicit CBroadcastManagerFilter(CBroadcastManager& broadcastManager)
+		: m_broadcastManager(broadcastManager)
 	{
-	public:
-		explicit CBroadcastManagerFilter(CBroadcastManager& broadcastManager)
-			: m_broadcastManager(broadcastManager)
-		{
-		}
-
-	protected:
-		virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override
-		{
-			if (pEvent->type() == SandboxEvent::GetBroadcastManager)
-			{
-				static_cast<GetBroadcastManagerEvent*>(pEvent)->SetManager(&m_broadcastManager);
-				pEvent->accept();
-				return true;
-			}
-			else
-			{
-				return QObject::eventFilter(pObject, pEvent);
-			}
-		}
-
-	private:
-		CBroadcastManager& m_broadcastManager;
-	};
-
-	class CReleaseMouseFilter : public QObject
-	{
-	public:
-		explicit CReleaseMouseFilter(CDockableEditor& dockableEditor)
-			: m_dockableEditor(dockableEditor)
-		{
-			m_connection = connect(&m_eventTimer, &QTimer::timeout, [this]()
-			{ 
-				m_dockableEditor.SaveLayoutPersonalization();  
-			});
-			m_eventTimer.setSingleShot(true);
-
-			connect(&dockableEditor, &QObject::destroyed, [this]()
-			{
-				disconnect(m_connection);
-			});
-		}
-
-	protected:
-		virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override
-		{	
-			if (pEvent->type() == QEvent::MouseButtonRelease)
-			{
-				m_eventTimer.start(1000);
-			}
-			return QObject::eventFilter(pObject, pEvent);            
 	}
 
-	private:
-		QTimer           m_eventTimer;
-		CDockableEditor& m_dockableEditor;
-		QMetaObject::Connection m_connection;
-	};
+protected:
+	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override
+	{
+		if (pEvent->type() == SandboxEvent::GetBroadcastManager)
+		{
+			static_cast<GetBroadcastManagerEvent*>(pEvent)->SetManager(&m_broadcastManager);
+			pEvent->accept();
+			return true;
+		}
+		else
+		{
+			return QObject::eventFilter(pObject, pEvent);
+		}
+	}
+
+private:
+	CBroadcastManager& m_broadcastManager;
+};
+
+class CReleaseMouseFilter : public QObject
+{
+public:
+	explicit CReleaseMouseFilter(CDockableEditor& dockableEditor)
+		: m_dockableEditor(dockableEditor)
+	{
+		m_connection = connect(&m_eventTimer, &QTimer::timeout, [this]()
+			{
+				m_dockableEditor.SaveLayoutPersonalization();
+		  });
+		m_eventTimer.setSingleShot(true);
+
+		connect(&dockableEditor, &QObject::destroyed, [this]()
+			{
+				disconnect(m_connection);
+		  });
+	}
+
+protected:
+	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override
+	{
+		if (pEvent->type() == QEvent::MouseButtonRelease)
+		{
+			m_eventTimer.start(1000);
+		}
+		return QObject::eventFilter(pObject, pEvent);
+	}
+
+private:
+	QTimer                  m_eventTimer;
+	CDockableEditor&        m_dockableEditor;
+	QMetaObject::Connection m_connection;
+};
 
 } // namespace Private_EditorFramework
 
@@ -139,40 +139,40 @@ void CEditor::InitMenuDesc()
 	// #TODO: Make this static?
 	m_pMenuDesc.reset(new CDesc<MenuItems>());
 	m_pMenuDesc->Init(
-		MenuDesc::AddMenu ( MenuItems::FileMenu, 0, 0, "File",
-			AddAction(MenuItems::New,    0, 0, GetAction("general.new")),
-			AddAction(MenuItems::Open,   0, 1, GetAction("general.open")),
-			AddAction(MenuItems::Close,  0, 2, GetAction("general.close")),
-			AddAction(MenuItems::Save,   0, 3, GetAction("general.save")),
-			AddAction(MenuItems::SaveAs, 0, 4, GetAction("general.save_as")),
-			AddMenu(MenuItems::RecentFiles, 0, 5, "Recent Files")
-		),
-		MenuDesc::AddMenu ( MenuItems::EditMenu, 0, 1, "Edit",
-			AddAction ( MenuItems::Undo, 0, 0, GetAction("general.undo") ),
-			AddAction ( MenuItems::Redo, 0, 1, GetAction("general.redo") ),
+	  MenuDesc::AddMenu(MenuItems::FileMenu, 0, 0, "File",
+	                    AddAction(MenuItems::New, 0, 0, GetAction("general.new")),
+	                    AddAction(MenuItems::Open, 0, 1, GetAction("general.open")),
+	                    AddAction(MenuItems::Close, 0, 2, GetAction("general.close")),
+	                    AddAction(MenuItems::Save, 0, 3, GetAction("general.save")),
+	                    AddAction(MenuItems::SaveAs, 0, 4, GetAction("general.save_as")),
+	                    AddMenu(MenuItems::RecentFiles, 0, 5, "Recent Files")
+	                    ),
+	  MenuDesc::AddMenu(MenuItems::EditMenu, 0, 1, "Edit",
+	                    AddAction(MenuItems::Undo, 0, 0, GetAction("general.undo")),
+	                    AddAction(MenuItems::Redo, 0, 1, GetAction("general.redo")),
 
-			AddAction ( MenuItems::Copy,   1, 0, GetAction("general.copy") ),
-			AddAction ( MenuItems::Cut,    1, 1, GetAction("general.cut") ),
-			AddAction ( MenuItems::Paste,  1, 2, GetAction("general.paste") ),
-			AddAction ( MenuItems::Delete, 1, 3, GetAction("general.delete") ),
+	                    AddAction(MenuItems::Copy, 1, 0, GetAction("general.copy")),
+	                    AddAction(MenuItems::Cut, 1, 1, GetAction("general.cut")),
+	                    AddAction(MenuItems::Paste, 1, 2, GetAction("general.paste")),
+	                    AddAction(MenuItems::Delete, 1, 3, GetAction("general.delete")),
 
-			AddAction ( MenuItems::Find,         2, 0, GetAction("general.find") ),
-			AddAction ( MenuItems::FindPrevious, 2, 1, GetAction("general.find_previous") ),
-			AddAction ( MenuItems::FindNext,     2, 2, GetAction("general.find_next") ),
-			AddAction ( MenuItems::SelectAll,    2, 3, GetAction("general.select_all") ),
+	                    AddAction(MenuItems::Find, 2, 0, GetAction("general.find")),
+	                    AddAction(MenuItems::FindPrevious, 2, 1, GetAction("general.find_previous")),
+	                    AddAction(MenuItems::FindNext, 2, 2, GetAction("general.find_next")),
+	                    AddAction(MenuItems::SelectAll, 2, 3, GetAction("general.select_all")),
 
-			AddAction ( MenuItems::Duplicate, 3, 0, GetAction("general.duplicate") )
-		),
-		MenuDesc::AddMenu ( MenuItems::ViewMenu, 0, 2, "View",
-			AddAction ( MenuItems::ZoomIn,  0, 0, GetAction("general.zoom_in") ),
-			AddAction ( MenuItems::ZoomOut, 0, 1, GetAction("general.zoom_out") )
-		),
-		MenuDesc::AddMenu ( MenuItems::WindowMenu, 0, 20, "Window"
-		),
-		MenuDesc::AddMenu ( MenuItems::HelpMenu,   0, 21, "Help",
-			AddAction ( MenuItems::Help, 0, 0, GetAction("general.help") )
-		)
-	);
+	                    AddAction(MenuItems::Duplicate, 3, 0, GetAction("general.duplicate"))
+	                    ),
+	  MenuDesc::AddMenu(MenuItems::ViewMenu, 0, 2, "View",
+	                    AddAction(MenuItems::ZoomIn, 0, 0, GetAction("general.zoom_in")),
+	                    AddAction(MenuItems::ZoomOut, 0, 1, GetAction("general.zoom_out"))
+	                    ),
+	  MenuDesc::AddMenu(MenuItems::WindowMenu, 0, 20, "Window"
+	                    ),
+	  MenuDesc::AddMenu(MenuItems::HelpMenu, 0, 21, "Help",
+	                    AddAction(MenuItems::Help, 0, 0, GetAction("general.help"))
+	                    )
+	  );
 
 }
 
@@ -198,8 +198,8 @@ void CEditor::AddToMenu(CAbstractMenu* pMenu, const char* command)
 		return;
 
 	auto action = GetAction(command);
-	if(action)
-		pMenu->AddAction(action, 0 , 0);
+	if (action)
+		pMenu->AddAction(action, 0, 0);
 }
 
 QAction* CEditor::GetAction(const char* command)
@@ -262,7 +262,7 @@ CAbstractMenu* CEditor::GetMenu(const char* menuName)
 	auto pMenu = m_pMenu->FindMenu(menuName);
 	if (!pMenu)
 		pMenu = m_pMenu->CreateMenu(menuName);
-	
+
 	return pMenu;
 }
 
@@ -294,11 +294,11 @@ void CEditor::EnableDockingSystem()
 	SetContent(m_dockingRegistry);
 }
 
-void CEditor::RegisterDockableWidget(QString name, std::function<QWidget * ()> factory, bool isUnique, bool isInternal)
+void CEditor::RegisterDockableWidget(QString name, std::function<QWidget* ()> factory, bool isUnique, bool isInternal)
 {
 	using namespace Private_EditorFramework;
 
-	if(!m_pBroadcastManagerFilter)
+	if (!m_pBroadcastManagerFilter)
 	{
 		m_pBroadcastManagerFilter = new Private_EditorFramework::CBroadcastManagerFilter(GetBroadcastManager());
 	}
@@ -488,7 +488,7 @@ CBroadcastManager& CEditor::GetBroadcastManager()
 }
 
 CDockableEditor::CDockableEditor(QWidget* pParent)
-    : CEditor(pParent)
+	: CEditor(pParent)
 {
 	m_pReleaseMouseFilter = new Private_EditorFramework::CReleaseMouseFilter(*this);
 	setAttribute(Qt::WA_DeleteOnClose);
@@ -496,7 +496,7 @@ CDockableEditor::CDockableEditor(QWidget* pParent)
 
 CDockableEditor::~CDockableEditor()
 {
-	if(m_pReleaseMouseFilter)
+	if (m_pReleaseMouseFilter)
 	{
 		m_pReleaseMouseFilter->deleteLater();
 		m_pReleaseMouseFilter = nullptr;

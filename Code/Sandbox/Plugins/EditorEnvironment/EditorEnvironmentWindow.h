@@ -1,33 +1,30 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <QtViewPane.h>
+#include <CrySerialization/Forward.h>
 #include <IEditor.h>
+#include <QtViewPane.h>
 
 class QTimeOfDayWidget;
 class QPresetsWidget;
-class QSunSettingsWidget;
 
-class CEditorEnvironmentWindow : public CDockableWindow, public IEditorNotifyListener
+class CEditorEnvironmentWindow : public CDockableEditor, public IEditorNotifyListener
 {
 	Q_OBJECT
 public:
 	CEditorEnvironmentWindow();
 	~CEditorEnvironmentWindow();
 
-	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
+private:
+	const char* GetEditorName() const override { return "Environment Editor"; }
+	void        OnEditorNotifyEvent(EEditorNotifyEvent event) override;
+	void        customEvent(QEvent* event) override;
 
-	virtual const char*                       GetPaneTitle() const override        { return "Environment Editor"; }
+	QWidget*    CreateToolbar();
+	void        RestorePersonalizationState();
+	void        SavePersonalizationState() const;
 
-protected:
-	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
-	void customEvent(QEvent* event) override;
-
-protected:
-	QPresetsWidget*     m_presetsWidget;
-	QTimeOfDayWidget*   m_timeOfDayWidget;
-	QSunSettingsWidget* m_sunSettingsWidget;
-	QDockWidget*        m_pPresetsDock;
-	QDockWidget*        m_pSunSettingsDock;
+	QPresetsWidget*   m_presetsWidget;
+	QTimeOfDayWidget* m_timeOfDayWidget;
+	QDockWidget*      m_pPresetsDock;
 };
-

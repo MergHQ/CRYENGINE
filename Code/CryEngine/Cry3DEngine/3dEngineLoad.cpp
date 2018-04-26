@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   3dengineload.cpp
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description: Level loading
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 
 #include "3dEngine.h"
@@ -569,7 +558,7 @@ void C3DEngine::UnloadLevel()
 		SAFE_RELEASE_FORCE(m_ptexIconEditorConnectedToConsole);
 
 		//////////////////////////////////////////////////////////////////////////
-		// Relases loaded default loaded textures.
+		// Releases loaded default loaded textures.
 		//////////////////////////////////////////////////////////////////////////
 		{
 			SAFE_RELEASE(m_ptexIconAverageMemoryUsage);
@@ -857,11 +846,8 @@ bool C3DEngine::LoadLevel(const char* szFolderName, const char* szMissionName)
 	if (GetCVars()->e_svoTI_Active >= 0)
 	{
 		// Load SVOGI settings (must be called before loading of brushes, vegetation and textures)
-		char szFileName[256];
-		cry_sprintf(szFileName, "mission_%s.xml", szMissionName);
-		XmlNodeRef xmlMission = GetSystem()->LoadXmlFromFile(Get3DEngine()->GetLevelFilePath(szFileName));
-		if (xmlMission)
-			LoadTISettings(xmlMission->findChild("Environment"));
+		// SVOGI is taken from environment presets, which is already loaded by TimeOfTheDay
+		UpdateTISettings();
 	}
 #endif
 
@@ -1158,24 +1144,7 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 		m_duskStart = m_dawnEnd;
 	}
 
-	// get moon info
-	m_moonRotationLatitude = (float) atof(GetXMLAttribText(pInputNode, "Moon", "Latitude", "240"));
-	m_moonRotationLongitude = (float) atof(GetXMLAttribText(pInputNode, "Moon", "Longitude", "45"));
-	UpdateMoonDirection();
-
-	m_nightMoonSize = (float) atof(GetXMLAttribText(pInputNode, "Moon", "Size", "0.5"));
-
-	{
-		char moonTexture[256];
-		cry_strcpy(moonTexture, GetXMLAttribText(pInputNode, "Moon", "Texture", ""));
-
-		ITexture* pTex(0);
-		if (moonTexture[0] != '\0' && GetRenderer())
-		{
-			pTex = GetRenderer()->EF_LoadTexture(moonTexture, FT_DONT_STREAM);
-		}
-		m_nNightMoonTexId = pTex ? pTex->GetTextureID() : 0;
-	}
+	UpdateMoonParams();
 
 	// max view distance
 	m_fMaxViewDistHighSpec = (float)atol(GetXMLAttribText(pInputNode, "Fog", "ViewDistance", "8000"));
@@ -1225,48 +1194,10 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 	m_oceanCausticDepth = (float) atof(GetXMLAttribText(pInputNode, "Ocean", "CausticDepth", "8.0"));
 	m_oceanCausticIntensity = (float) atof(GetXMLAttribText(pInputNode, "Ocean", "CausticIntensity", "1.0"));
 
-	// get wind
-	Vec3 vWindSpeed = StringToVector(GetXMLAttribText(pInputNode, "EnvState", "WindVector", "1,0,0"));
-	SetWind(vWindSpeed);
+	UpdateWindParams();
 
-	// Define breeze generation
-	if (m_pBreezeGenerator)
-	{
-		m_pBreezeGenerator->Shutdown();
-
-		m_pBreezeGenerator->m_enabled = GetXMLAttribBool(pInputNode, "EnvState", "BreezeGeneration", false);
-		m_pBreezeGenerator->m_strength = (float)atof(GetXMLAttribText(pInputNode, "EnvState", "BreezeStrength", "1.f"));
-		m_pBreezeGenerator->m_variance = (float)atof(GetXMLAttribText(pInputNode, "EnvState", "BreezeVariation", "1.f"));
-		m_pBreezeGenerator->m_lifetime = (float)atof(GetXMLAttribText(pInputNode, "EnvState", "BreezeLifeTime", "15.f"));
-		m_pBreezeGenerator->m_count = (uint32)max(0, atoi(GetXMLAttribText(pInputNode, "EnvState", "BreezeCount", "4")));
-		m_pBreezeGenerator->m_radius = (float)atof(GetXMLAttribText(pInputNode, "EnvState", "BreezeRadius", "5.f"));
-		m_pBreezeGenerator->m_spawn_radius = (float)atof(GetXMLAttribText(pInputNode, "EnvState", "BreezeSpawnRadius", "25.f"));
-		m_pBreezeGenerator->m_spread = (float)atof(GetXMLAttribText(pInputNode, "EnvState", "BreezeSpread", "0.f"));
-		m_pBreezeGenerator->m_movement_speed = (float)atof(GetXMLAttribText(pInputNode, "EnvState", "BreezeMovementSpeed", "8.f"));
-		m_pBreezeGenerator->m_awake_thresh = (float)atof(GetXMLAttribText(pInputNode, "EnvState", "BreezeAwakeThreshold", "0"));
-		m_pBreezeGenerator->m_wind_speed = vWindSpeed;
-		m_pBreezeGenerator->m_fixed_height = (float)atof(GetXMLAttribText(pInputNode, "EnvState", "BreezeFixedHeight", "-1.f"));
-
-		m_pBreezeGenerator->Initialize();
-	}
-
-	// Per-level mergedmeshes pool size (on consoles)
+	// Per-level merged meshes pool size (on consoles)
 	Cry3DEngineBase::m_mergedMeshesPoolSize = atoi(GetXMLAttribText(pInputNode, "EnvState", "ConsoleMergedMeshesPool", MMRM_DEFAULT_POOLSIZE_STR));
-
-	// update relevant time of day settings
-	ITimeOfDay* pTimeOfDay(GetTimeOfDay());
-	if (pTimeOfDay)
-	{
-		CTimeOfDay::SEnvironmentInfo envTODInfo;
-		{
-			envTODInfo.bSunLinkedToTOD = GetXMLAttribBool(pInputNode, "EnvState", "SunLinkedToTOD", true);
-		}
-		// get rotation of sun around z axis (needed to define an arbitrary path over zenit for day/night cycle position calculations)
-		envTODInfo.sunRotationLatitude = (float) atof(GetXMLAttribText(pInputNode, "Lighting", "SunRotation", "240"));
-		envTODInfo.sunRotationLongitude = (float) atof(GetXMLAttribText(pInputNode, "Lighting", "Longitude", "90"));
-
-		pTimeOfDay->SetEnvironmentSettings(envTODInfo);
-	}
 
 	{
 		m_bShowTerrainSurface = GetXMLAttribBool(pInputNode, "EnvState", "ShowTerrainSurface", true);
@@ -1341,30 +1272,7 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 		Get3DEngine()->m_bAreaActivationInUse = GetXMLAttribBool(pInputNode, "EnvState", "UseLayersActivation", false);
 	}
 
-	// load cloud shadow parameters
-	{
-		char cloudShadowTexture[256];
-		cry_strcpy(cloudShadowTexture, GetXMLAttribText(pInputNode, "CloudShadows", "CloudShadowTexture", ""));
-
-		ITexture* pTex = 0;
-		if (cloudShadowTexture[0] != '\0' && GetRenderer())
-			pTex = GetRenderer()->EF_LoadTexture(cloudShadowTexture, FT_DONT_STREAM);
-
-		m_nCloudShadowTexId = pTex ? pTex->GetTextureID() : 0;
-
-		// Get animation parameters
-		const Vec3 cloudShadowSpeed = StringToVector(GetXMLAttribText(pInputNode, "CloudShadows", "CloudShadowSpeed", "0,0,0"));
-
-		const float cloudShadowTiling = (float)atof(GetXMLAttribText(pInputNode, "CloudShadows", "CloudShadowTiling", "1.0"));
-		const float cloudShadowBrightness = (float)atof(GetXMLAttribText(pInputNode, "CloudShadows", "CloudShadowBrightness", "1.0"));
-
-		const bool cloudShadowInvert = GetXMLAttribBool(pInputNode, "CloudShadows", "CloudShadowInvert", false);
-
-		if (GetRenderer())
-		{
-			GetRenderer()->SetCloudShadowsParams(m_nCloudShadowTexId, cloudShadowSpeed, cloudShadowTiling, cloudShadowInvert, cloudShadowBrightness);
-		}
-	}
+	UpdateCloudShadows();
 
 	// load volumetric cloud parameters
 	{
@@ -1456,14 +1364,75 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 	}
 
 #if defined(FEATURE_SVO_GI)
-	LoadTISettings(pInputNode);
+	UpdateTISettings();
 #endif
 
-	if (pTimeOfDay)
-		pTimeOfDay->Update();
+	GetTimeOfDay()->Update();
 
 	if (GetSystem()->GetISystemEventDispatcher())
 		GetSystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_ENVIRONMENT_SETTINGS_CHANGED, 0, 0);
+}
+
+void C3DEngine::UpdateMoonParams()
+{
+	const auto& moon = GetTimeOfDay()->GetMoonParams();
+
+	m_moonRotationLatitude = moon.latitude;
+	m_moonRotationLongitude = moon.longitude;
+	m_nightMoonSize = moon.size;
+
+	//Texture
+	ITexture* pTex = 0;
+	if (moon.texture[0] != '\0' && GetRenderer())
+		pTex = GetRenderer()->EF_LoadTexture(moon.texture, FT_DONT_STREAM);
+
+	m_nNightMoonTexId = pTex ? pTex->GetTextureID() : 0;
+
+	UpdateMoonDirection();
+}
+
+void C3DEngine::UpdateWindParams()
+{
+	const auto& wind = GetTimeOfDay()->GetWindParams();
+	SetWind(wind.windVector);
+
+	// Define breeze generation
+	if (m_pBreezeGenerator)
+	{
+		m_pBreezeGenerator->Shutdown();
+
+		m_pBreezeGenerator->m_enabled = wind.breezeGenerationEnabled;
+		m_pBreezeGenerator->m_strength = wind.breezeStrength;
+		m_pBreezeGenerator->m_variance = wind.breezeVariance;
+		m_pBreezeGenerator->m_lifetime = wind.breezeLifeTime;
+		m_pBreezeGenerator->m_count = wind.breezeCount;
+		m_pBreezeGenerator->m_radius = wind.breezeRadius;
+		m_pBreezeGenerator->m_spawn_radius = wind.breezeSpawnRadius;
+		m_pBreezeGenerator->m_spread = wind.breezeSpread;
+		m_pBreezeGenerator->m_movement_speed = wind.breezeMovementSpeed;
+		m_pBreezeGenerator->m_awake_thresh = wind.breezeAwakeThreshold;
+		m_pBreezeGenerator->m_wind_speed = wind.windVector;
+		m_pBreezeGenerator->m_fixed_height = wind.breezeFixedHeight;
+
+		m_pBreezeGenerator->Initialize();
+	}
+}
+
+void C3DEngine::UpdateCloudShadows()
+{
+	// load cloud shadow parameters
+	const auto& cloudParams = GetTimeOfDay()->GetCloudShadowsParams();
+
+	ITexture* pTex = 0;
+	if (cloudParams.texture[0] != '\0' && GetRenderer())
+		pTex = GetRenderer()->EF_LoadTexture(cloudParams.texture, FT_DONT_STREAM);
+
+	m_nCloudShadowTexId = pTex ? pTex->GetTextureID() : 0;
+
+	if (GetRenderer())
+	{
+		GetRenderer()->SetCloudShadowsParams(m_nCloudShadowTexId, cloudParams.speed, cloudParams.tiling, cloudParams.invert, cloudParams.brightness);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

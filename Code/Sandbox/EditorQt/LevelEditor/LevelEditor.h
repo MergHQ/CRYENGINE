@@ -47,9 +47,9 @@ public:
 	bool IsSurfaceNormalSnappingEnabled() const;
 	bool IsHelpersDisplayed() const;
 
-	//ILevelEditor.h interface
+	//ILevelEditor interface
 	virtual bool IsLevelLoaded() override;
-	//end ILevelEditor.h
+	//end ILevelEditor
 
 private:
 	virtual bool IsOnlyBackend() const override { return true; }

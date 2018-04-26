@@ -566,8 +566,6 @@ add_sources("Uber_Preferences.cpp"
 		"Grid.h"
 		"Preferences/GeneralPreferences.cpp"
 		"Preferences/GeneralPreferences.h"
-		"Preferences/LightingPreferences.cpp"
-		"Preferences/LightingPreferences.h"
 		"Preferences/ViewportPreferences.cpp"
 		"Preferences/ViewportPreferences.h"
 )

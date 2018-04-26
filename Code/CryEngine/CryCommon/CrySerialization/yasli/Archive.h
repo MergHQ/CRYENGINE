@@ -163,7 +163,7 @@ public:
 	// Used to add tooltips in PropertyTree
 	void doc(const char* docString);
 
-	// block call are osbolete, please do not use
+	// block call are obsolete, please do not use
 	virtual bool openBlock(const char* name, const char* label,const char* icon=0) { return true; }
 	virtual void closeBlock() {}
 

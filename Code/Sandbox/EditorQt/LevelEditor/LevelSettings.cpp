@@ -8,7 +8,6 @@
 #include <QDir>
 
 #include <Serialization/QPropertyTree/QPropertyTree.h>
-#include <Preferences/LightingPreferences.h>
 #include <QtUtil.h>
 #include <CrySerialization/IArchiveHost.h>
 #include "GameEngine.h"
@@ -157,12 +156,6 @@ void CreateItems(XmlNodeRef& node, CVarBlockPtr& outBlockPtr, IVariable::OnSetCa
 					if (!strDescription.IsEmpty())
 						strDescription += string("\r\n");
 					strDescription = pCVar->GetHelp();
-
-#ifdef FEATURE_SVO_GI
-					// Hide or unlock experimental items
-					if ((pCVar->GetFlags() & VF_EXPERIMENTAL) && !gLightingPreferences.bTotalIlluminationEnabled && strstr(groupNode->getTag(), "Total_Illumination"))
-						continue;
-#endif
 				}
 			}
 

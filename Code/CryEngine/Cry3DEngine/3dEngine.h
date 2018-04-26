@@ -1,22 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   3dengine.h
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef C3DENGINE_H
-#define C3DENGINE_H
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CryThreading/CryThreadSafeRendererContainer.h>
 #include <CryCore/Containers/CryListenerSet.h>
@@ -639,9 +623,7 @@ public:
 	SImageInfo*  GetBaseTextureData(int nLayerId);
 	SImageInfo*  GetBaseTextureDataFromSurfType(int nSurfTypeId);
 
-	const char*  GetLevelFolder() { return m_szLevelFolder; }
-
-	bool         SaveCGF(std::vector<IStatObj*>& pObjs);
+	const char*  GetLevelFolder()        { return m_szLevelFolder; }
 
 	virtual bool IsAreaActivationInUse() { return m_bAreaActivationInUse && GetCVars()->e_ObjectLayersActivation; }
 
@@ -716,8 +698,11 @@ public:
 	//void CreateDecalOnCharacterComponents(ICharacterInstance * pChar, const struct CryEngineDecalInfo & decal);
 	Vec3 GetTerrainSurfaceNormal(Vec3 vPos);
 	void LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode);
+	void UpdateMoonParams();
+	void UpdateWindParams();
+	void UpdateCloudShadows();
 #if defined(FEATURE_SVO_GI)
-	void LoadTISettings(XmlNodeRef pInputNode);
+	void UpdateTISettings();
 #endif
 	void LoadDefaultAssets();
 
@@ -1129,8 +1114,6 @@ public:
 	SRenderNodeTempData* CreateRenderNodeTempData(IRenderNode* pRNode, const SRenderingPassInfo& passInfo);
 	SRenderNodeTempData* CheckAndCreateRenderNodeTempData(IRenderNode* pRNode, const SRenderingPassInfo& passInfo);
 
-	void                 UpdateRNTmpDataPool(bool bFreeAll);
-
 	void                 UpdateStatInstGroups();
 	void                 UpdateRenderTypeEnableLookup();
 	void                 ProcessOcean(const SRenderingPassInfo& passInfo);
@@ -1314,5 +1297,3 @@ private:
 
 	friend struct SRenderNodeTempData;
 };
-
-#endif // C3DENGINE_H

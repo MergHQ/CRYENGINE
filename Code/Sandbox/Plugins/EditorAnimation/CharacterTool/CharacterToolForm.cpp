@@ -93,7 +93,7 @@ struct ViewportPlaybackHotkeyConsumer : public QViewportConsumer
 	}
 };
 
-static string GetStateFilename()
+string GetStateFilename()
 {
 	string result = GetIEditor()->GetUserFolder();
 	result += "\\CharacterTool\\State.json";

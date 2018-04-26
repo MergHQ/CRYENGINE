@@ -14,7 +14,6 @@ class QPresetsWidget : public QWidget
 	Q_OBJECT
 public:
 	QPresetsWidget();
-	~QPresetsWidget();
 
 	void               OnNewScene();
 	void               SaveAllPresets() const;
@@ -65,4 +64,3 @@ protected:
 	QAction*             m_addNewPresetAction;
 	QAction*             m_addExistingPresetAction;
 };
-

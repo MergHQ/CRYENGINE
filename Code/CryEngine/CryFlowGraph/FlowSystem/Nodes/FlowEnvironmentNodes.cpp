@@ -139,8 +139,8 @@ public:
 				ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
 				if (pTOD)
 				{
-					ActivateOutput(pActInfo, eOP_Latitude, pTOD->GetSunLatitude());
-					ActivateOutput(pActInfo, eOP_Longitude, pTOD->GetSunLongitude());
+					ActivateOutput(pActInfo, eOP_Latitude, pTOD->GetSunParams().latitude);
+					ActivateOutput(pActInfo, eOP_Longitude, pTOD->GetSunParams().longitude);
 				}
 			}
 			if (IsPortActive(pActInfo, eIP_Set))
@@ -151,7 +151,8 @@ public:
 					float latitude = GetPortFloat(pActInfo, eIP_Latitude);
 					float longitude = GetPortFloat(pActInfo, eIP_Longitude);
 
-					pTOD->SetSunPos(longitude, latitude);
+					pTOD->GetSunParams().longitude = longitude;
+					pTOD->GetSunParams().latitude = latitude;
 					bool forceUpdate = GetPortBool(pActInfo, eIP_ForceUpdate);
 					pTOD->Update(true, forceUpdate);
 
@@ -287,8 +288,8 @@ public:
 					m_durationLeft = GetPortFloat(pActInfo, IN_DURATION);
 					m_sunTimeToUpdate = GetPortFloat(pActInfo, IN_SUN_POSITION_UPDATE_INTERVAL);
 					m_TODTimeToUpdate = GetPortFloat(pActInfo, IN_TOD_FORCE_UPDATE_INTERVAL);
-					m_startSunLongitude = pTOD->GetSunLongitude();
-					m_startSunLatitude = pTOD->GetSunLatitude();
+					m_startSunLongitude = pTOD->GetSunParams().longitude;
+					m_startSunLatitude = pTOD->GetSunParams().latitude;
 					m_startTOD = pTOD->GetTime();
 					m_blending = true;
 					m_paused = false;
@@ -370,7 +371,7 @@ public:
 		m_sunTimeToUpdate = GetPortFloat(pActInfo, IN_SUN_POSITION_UPDATE_INTERVAL);
 
 		float endLatitude = GetPortFloat(pActInfo, IN_SUN_LATITUDE);
-		float currLatitude = pTOD->GetSunLatitude();
+		float currLatitude = pTOD->GetSunParams().latitude;
 		if (endLatitude >= 0)
 		{
 			currLatitude = m_startSunLatitude + (endLatitude - m_startSunLatitude) * blendPos;
@@ -378,14 +379,19 @@ public:
 		}
 
 		float endLongitude = GetPortFloat(pActInfo, IN_SUN_LONGITUDE);
-		float currLongitude = pTOD->GetSunLongitude();
+		float currLongitude = pTOD->GetSunParams().longitude;
 		if (endLongitude >= 0)
 		{
 			currLongitude = m_startSunLongitude + (endLongitude - m_startSunLongitude) * blendPos;
 			needUpdate = true;
 		}
+
 		if (needUpdate)
-			pTOD->SetSunPos(currLongitude, currLatitude);
+		{
+			pTOD->GetSunParams().longitude = currLongitude;
+			pTOD->GetSunParams().latitude = currLatitude;
+		}
+
 		return needUpdate;
 	}
 
@@ -431,19 +437,19 @@ public:
 	void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void("Get", _HELP("Get Wind Parameters")),
-			InputPortConfig_Void("Set", _HELP("Set Wind Parameters")),
-			InputPortConfig<Vec3>("WindVector", Vec3(1.f,0.f,0.f), _HELP("Environment Wind Vector")),
-			InputPortConfig<bool>("BreezeGeneration", false, _HELP("Breeze Generation Enabled")),
-			InputPortConfig<float>("BreezeStrength", 1.f, _HELP("Breeze Strength")),
-			InputPortConfig<float>("BreezeMovementSpeed", 8.f, _HELP("Breeze Movement Speed")),
-			InputPortConfig<float>("BreezeVariance", 1.f, _HELP("Breeze Variation")),
-			InputPortConfig<float>("BreezeLifeTime", 15.f, _HELP("Breeze Life Time")),
-			InputPortConfig<int>("BreezeCount", 4, _HELP("Breeze Count")),
-			InputPortConfig<float>("BreezeSpawnRadius", 25.f, _HELP("Breeze Spawn Radius")),
-			InputPortConfig<float>("BreezeSpread", 0.f, _HELP("Breeze Spread")),
-			InputPortConfig<float>("BreezeRadius", 5.f, _HELP("Breeze Radius")),
-			InputPortConfig<float>("BreezeAwakeThreshold", 0.f, _HELP("Breeze Awake Threshold")),
+			InputPortConfig_Void("Get",                    _HELP("Get Wind Parameters")),
+			InputPortConfig_Void("Set",                    _HELP("Set Wind Parameters")),
+			InputPortConfig<Vec3>("WindVector",            Vec3(1.f,                     0.f,                                  0.f), _HELP("Environment Wind Vector")),
+			InputPortConfig<bool>("BreezeGeneration",      false,                        _HELP("Breeze Generation Enabled")),
+			InputPortConfig<float>("BreezeStrength",       1.f,                          _HELP("Breeze Strength")),
+			InputPortConfig<float>("BreezeMovementSpeed",  8.f,                          _HELP("Breeze Movement Speed")),
+			InputPortConfig<float>("BreezeVariance",       1.f,                          _HELP("Breeze Variation")),
+			InputPortConfig<float>("BreezeLifeTime",       15.f,                         _HELP("Breeze Life Time")),
+			InputPortConfig<int>("BreezeCount",            4,                            _HELP("Breeze Count")),
+			InputPortConfig<float>("BreezeSpawnRadius",    25.f,                         _HELP("Breeze Spawn Radius")),
+			InputPortConfig<float>("BreezeSpread",         0.f,                          _HELP("Breeze Spread")),
+			InputPortConfig<float>("BreezeRadius",         5.f,                          _HELP("Breeze Radius")),
+			InputPortConfig<float>("BreezeAwakeThreshold", 0.f,                          _HELP("Breeze Awake Threshold")),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
@@ -481,7 +487,7 @@ public:
 					{
 						pBreezeGenerator->Shutdown();
 					}
-					
+
 					pBreezeGenerator->SetEnabled(isEnabled);
 
 					pBreezeGenerator->SetStrength(GetPortFloat(pActInfo, eIP_BreezeStrength));
@@ -883,8 +889,6 @@ public:
 	}
 };
 
-
-
 class CFlowNode_GetCurrentPreset : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
@@ -910,7 +914,7 @@ public:
 	void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void("Get",  _HELP("Get the current Preset name")),
+			InputPortConfig_Void("Get", _HELP("Get the current Preset name")),
 			//blend time might be here
 			{ 0 }
 		};
@@ -931,21 +935,20 @@ public:
 		switch (event)
 		{
 		case eFE_Activate:
-		{
-			if (IsPortActive(pActInfo, eIP_Get))
 			{
-				ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
+				if (IsPortActive(pActInfo, eIP_Get))
+				{
+					ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
 
-				string presetName = (pTOD ? pTOD->GetCurrentPresetName() : "");
+					string presetName = (pTOD ? pTOD->GetCurrentPresetName() : "");
 
-				ActivateOutput(pActInfo, eOP_PresetName, presetName);
+					ActivateOutput(pActInfo, eOP_PresetName, presetName);
+				}
 			}
-		}
-		break;
+			break;
 		}
 	}
 };
-
 
 REGISTER_FLOW_NODE("Environment:MoonDirection", CFlowNode_EnvMoonDirection);
 REGISTER_FLOW_NODE("Environment:Sun", CFlowNode_EnvSun);

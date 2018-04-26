@@ -3,25 +3,18 @@
 #include "stdafx.h"
 
 #include <QApplication>
-#include <QShortcut>
-#include <QPainter>
+#include <QClipboard>
+#include <QJsonDocument>
 #include <QKeyEvent>
-#include <QFileDialog>
 #include <QLabel>
-#include <QSlider>
-#include <QSplitter>
-#include <QGroupBox>
 #include <QLayout>
-#include <QPushButton>
-#include <QCheckBox>
-#include <QTimeEdit>
 #include <QLineEdit>
+#include <QMimeData>
+#include <QPainter>
+#include <QSplitter>
+#include <QTimeEdit>
 #include <QToolBar>
 #include <QToolButton>
-#include <QBrush>
-#include <QStyle>
-#include <QClipboard>
-#include <QMimeData>
 
 #include "QTimeOfDayWidget.h"
 
@@ -36,19 +29,18 @@
 #include <CrySerialization/Enum.h>
 #include <CrySerialization/Math.h>
 #include <CrySerialization/IArchiveHost.h>
-
-#include "QViewport.h"
+#include <CrySerialization/yasli/JSONIArchive.h>
+#include <CrySerialization/yasli/JSONOArchive.h>
 
 #include "QPropertyTree/ContextList.h"
 #include "Serialization/QPropertyTree/QPropertyTree.h"
 #include "Serialization/PropertyTree/PropertyTreeModel.h"
 #include "CurveEditor.h"
 #include "TimeEditControl.h"
+#include "QViewport.h"
 #include <CryIcon.h>
 #include <EditorStyleHelper.h>
 #include "CryMath/Bezier_impl.h"
-
-#include <Preferences/LightingPreferences.h>
 
 SERIALIZATION_ENUM_BEGIN(ETODParamType, "ETodParamType")
 SERIALIZATION_ENUM(eFloatType, "eFloatType", "eFloatType")
@@ -67,7 +59,7 @@ const char* sClipboardCurveContentMimeTypeColor = "binary/curveeditorcontentcolo
 ITimeOfDay* GetTimeOfDay()
 {
 	ITimeOfDay* pTimeOfDay = gEnv->p3DEngine->GetTimeOfDay();
-	assert(pTimeOfDay);
+	assert(pTimeOfDay); //pTimeOfDay is always exists
 	return pTimeOfDay;
 }
 
@@ -107,15 +99,13 @@ void SetQTimeEditTimeBlocking(CTimeEditControl* timeEdit, QTime time)
 void UpdateToDAdvancedInfo(std::function<void (ITimeOfDay::SAdvancedInfo& sAdvInfo)> updateFunc)
 {
 	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	if (pTimeOfDay)
-	{
-		ITimeOfDay::SAdvancedInfo sAdvInfo;
-		pTimeOfDay->GetAdvancedInfo(sAdvInfo);
-		updateFunc(sAdvInfo);
-		pTimeOfDay->SetAdvancedInfo(sAdvInfo);
-		pTimeOfDay->Update(false, true);
-		GetIEditor()->Notify(eNotify_OnTimeOfDayChange);
-	}
+
+	ITimeOfDay::SAdvancedInfo sAdvInfo;
+	pTimeOfDay->GetAdvancedInfo(sAdvInfo);
+	updateFunc(sAdvInfo);
+	pTimeOfDay->SetAdvancedInfo(sAdvInfo);
+	pTimeOfDay->Update(false, true);
+	GetIEditor()->Notify(eNotify_OnTimeOfDayChange);
 }
 
 void UpdateCurveContentFromToDVar(int nVarId, int nSplineId, SCurveEditorContent* pContent)
@@ -236,7 +226,7 @@ void DrawGradient(ITimeOfDay* pTimeOfDay, int selectedParam, QPainter& painter, 
 		}
 	}
 }
-}
+} // unnamed namespace
 
 //////////////////////////////////////////////////////////////////////////
 STODParameter::STODParameter() : m_value(ZERO), m_ID(0), m_Type(eFloatType), m_pGroup(NULL), m_IDWithinGroup(-1)
@@ -298,39 +288,36 @@ void STODParameterGroupSet::Serialize(IArchive& ar)
 }
 
 //////////////////////////////////////////////////////////////////////////
-
 class QTimeOfDayWidget::CContentChangedUndoCommand : public IUndoObject
 {
 public:
-	CContentChangedUndoCommand(QTimeOfDayWidget* pWidget)
+	explicit CContentChangedUndoCommand(QTimeOfDayWidget* pWidget)
 	{
 		m_paramId = pWidget->m_selectedParamId;
-		gLightingPreferences.bForceSkyUpdate = pWidget->m_forceSkyUpdateBtn->isChecked();
 		SCurveEditorContent* pContent = pWidget->m_curveContent.get();
 		Serialization::SaveBinaryBuffer(m_oldState, *pContent);
 	}
 
-	virtual int         GetSize()        { return sizeof(*this) + m_oldState.size() + m_newState.size(); }
-	virtual const char* GetDescription() { return "QTimeOfDayWidget content changed"; }
-
-	void                SaveNewState(QTimeOfDayWidget* pWidget)
+	void SaveNewState(QTimeOfDayWidget* pWidget)
 	{
 		SCurveEditorContent* pContent = pWidget->m_curveContent.get();
 		Serialization::SaveBinaryBuffer(m_newState, *pContent);
 	}
 
-	virtual void Undo(bool bUndo)
+	int GetParamId() const { return m_paramId; }
+
+private:
+	virtual const char* GetDescription() override { return "QTimeOfDayWidget content changed"; }
+
+	virtual void        Undo(bool bUndo) override
 	{
 		Update(m_oldState);
 	}
 
-	virtual void Redo()
+	virtual void Redo() override
 	{
 		Update(m_newState);
 	}
-
-	int GetParamId() const { return m_paramId; }
-protected:
 
 	void Update(DynArray<char>& array)
 	{
@@ -345,8 +332,7 @@ protected:
 			UpdateToDVarFromCurveContent(paramID, 1, pContent);
 			UpdateToDVarFromCurveContent(paramID, 2, pContent);
 
-			ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-			pTimeOfDay->Update(true, gLightingPreferences.bForceSkyUpdate);
+			GetTimeOfDay()->Update(true, true);
 			GetIEditor()->Notify(eNotify_OnTimeOfDayChange);
 		}
 	}
@@ -357,29 +343,77 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
+class QTimeOfDayWidget::CUndoConstPropTreeCommand : public IUndoObject
+{
+public:
+	explicit CUndoConstPropTreeCommand(QTimeOfDayWidget* pTodWidget)
+		: m_pTodWidget(pTodWidget)
+	{
+		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
+		gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_undoState, pTimeOfDay->GetConstantParams());
+	}
 
-QTimeOfDayWidget::QTimeOfDayWidget() : m_pContextList(new Serialization::CContextList()),
-	m_propertyTree(NULL), m_forceSkyUpdateBtn(NULL),
-	m_currentTimeEdit(NULL), m_startTimeEdit(NULL), m_endTimeEdit(NULL), m_playSpeedEdit(NULL), //m_playSpeedSpinBox(NULL),
-	m_curveEdit(NULL), m_curveContent(new SCurveEditorContent), m_selectedParamId(-1), m_pUndoCommand(NULL),
-	m_fAnimTimeSecondsIn24h(0.0), m_bIsEditing(false)
+private:
+	virtual const char* GetDescription() override { return "Set Environment constant properties"; }
+
+	virtual void        Undo(bool bUndo = true) override
+	{
+		if (bUndo)
+		{
+			ITimeOfDay* pTimeOfDay = GetTimeOfDay();
+			gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_redoState, pTimeOfDay->GetConstantParams());
+		}
+
+		ApplyState(m_undoState);
+	}
+
+	virtual void Redo() override
+	{
+		ApplyState(m_redoState);
+	}
+
+	void ApplyState(const DynArray<char>& state)
+	{
+		ITimeOfDay* pTimeOfDay = GetTimeOfDay();
+		pTimeOfDay->ResetConstants(state);
+		m_pTodWidget->UpdateConstPropTree();
+	}
+
+	QTimeOfDayWidget* m_pTodWidget;
+	DynArray<char>    m_undoState;
+	DynArray<char>    m_redoState;
+};
+
+//////////////////////////////////////////////////////////////////////////
+QTimeOfDayWidget::QTimeOfDayWidget()
+	: m_pContextList(new Serialization::CContextList())
+	, m_propertyTreeVar(nullptr)
+	, m_currentTimeEdit(nullptr)
+	, m_startTimeEdit(nullptr)
+	, m_endTimeEdit(nullptr)
+	, m_playSpeedEdit(nullptr)
+	, m_curveEdit(nullptr)
+	, m_curveContent(new SCurveEditorContent)
+	, m_selectedParamId(-1)
+	, m_pUndoCommand(nullptr)
+	, m_fAnimTimeSecondsIn24h(0.0f)
+	, m_bIsPlaying(false)
+	, m_bIsEditing(false)
+	, m_splitterBetweenTrees(nullptr)
+	, m_propertyTreeConst(nullptr)
 {
 	m_pContextList->Update<QTimeOfDayWidget>(this);
 
-	m_bIsPlaying = false;
-
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	m_fAnimTimeSecondsIn24h = pTimeOfDay->GetAnimTimeSecondsIn24h();
+	m_fAnimTimeSecondsIn24h = GetTimeOfDay()->GetAnimTimeSecondsIn24h();
 
 	CreateUi();
-	LoadPropertiesTree();
+	LoadPropertiesTrees();
 
 	Refresh();
 
 	GetIEditor()->RegisterNotifyListener(this);
 }
 
-//---------------------------------------------
 QTimeOfDayWidget::~QTimeOfDayWidget()
 {
 	GetIEditor()->UnregisterNotifyListener(this);
@@ -394,7 +428,6 @@ void QTimeOfDayWidget::Refresh()
 	{
 		m_curveEdit->SetFitMargin(0.0f);
 		m_curveEdit->ZoomToTimeRange(SAnimTime(0.0f), SAnimTime(m_fAnimTimeSecondsIn24h));
-
 	}
 	else
 	{
@@ -468,7 +501,7 @@ void QTimeOfDayWidget::CurveEditTimeChanged()
 	float fTODTime = time * 24.0f;
 	SetTODTime(fTODTime);
 	UpdateCurrentTimeEdit();
-	UpdateProperties();
+	UpdateVarPropTree();
 }
 
 void QTimeOfDayWidget::CurrentTimeEdited()
@@ -476,16 +509,7 @@ void QTimeOfDayWidget::CurrentTimeEdited()
 	const float fTODTime = QTimeToFloat(m_currentTimeEdit->time());
 	SetTODTime(fTODTime);
 	UpdateCurveTime();
-	UpdateProperties();
-}
-
-void QTimeOfDayWidget::OnForceSkyUpdateChk()
-{
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	gLightingPreferences.bForceSkyUpdate = m_forceSkyUpdateBtn->isChecked();
-	pTimeOfDay->SetTime(pTimeOfDay->GetTime(), gLightingPreferences.bForceSkyUpdate);
-	pTimeOfDay->Update(false, gLightingPreferences.bForceSkyUpdate);
-	GetIEditor()->Notify(eNotify_OnTimeOfDayChange);
+	UpdateVarPropTree();
 }
 
 void QTimeOfDayWidget::OnPropertySelected()
@@ -547,44 +571,99 @@ void QTimeOfDayWidget::UndoEnd()
 	}
 }
 
+void QTimeOfDayWidget::UndoConstantProperties()
+{
+	CUndo undo("Update Environment Constants");
+	CUndo::Record(new CUndoConstPropTreeCommand(this));
+}
+
 void QTimeOfDayWidget::CheckParameterChanged(STODParameter& param, const Vec3& newValue)
 {
 	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	if (pTimeOfDay)
+	const int paramID = param.GetParamID();
+	const float fTime = pTimeOfDay->GetTime();
+	const float fSplineTime = (fTime / 24.0f) * m_fAnimTimeSecondsIn24h;
+
+	bool bChanged = false;
+	const Vec3 oldValue = param.GetValue();
+	if (fabs(oldValue.x - newValue.x) > fToDParameterComareEpsilon)
 	{
-		const int paramID = param.GetParamID();
-		const float fTime = pTimeOfDay->GetTime();
-		const float fSplineTime = (fTime / 24.0f) * m_fAnimTimeSecondsIn24h;
-
-		bool bChanged = false;
-		const Vec3 oldValue = param.GetValue();
-		if (fabs(oldValue.x - newValue.x) > fToDParameterComareEpsilon)
-		{
-			bChanged = true;
-			pTimeOfDay->UpdateSplineKeyForVar(paramID, 0, fSplineTime, newValue.x);
-		}
-		if (fabs(oldValue.y - newValue.y) > fToDParameterComareEpsilon)
-		{
-			bChanged = true;
-			pTimeOfDay->UpdateSplineKeyForVar(paramID, 1, fSplineTime, newValue.y);
-		}
-		if (fabs(oldValue.z - newValue.z) > fToDParameterComareEpsilon)
-		{
-			bChanged = true;
-			pTimeOfDay->UpdateSplineKeyForVar(paramID, 2, fSplineTime, newValue.z);
-		}
-
-		if (bChanged)
-		{
-			param.SetValue(newValue);
-			gLightingPreferences.bForceSkyUpdate = m_forceSkyUpdateBtn->isChecked();
-			pTimeOfDay->Update(true, gLightingPreferences.bForceSkyUpdate);
-			m_bIsEditing = true;
-			GetIEditor()->Notify(eNotify_OnTimeOfDayChange);
-			m_bIsEditing = false;
-			UpdateCurveContent();
-		}
+		bChanged = true;
+		pTimeOfDay->UpdateSplineKeyForVar(paramID, 0, fSplineTime, newValue.x);
 	}
+	if (fabs(oldValue.y - newValue.y) > fToDParameterComareEpsilon)
+	{
+		bChanged = true;
+		pTimeOfDay->UpdateSplineKeyForVar(paramID, 1, fSplineTime, newValue.y);
+	}
+	if (fabs(oldValue.z - newValue.z) > fToDParameterComareEpsilon)
+	{
+		bChanged = true;
+		pTimeOfDay->UpdateSplineKeyForVar(paramID, 2, fSplineTime, newValue.z);
+	}
+
+	if (bChanged)
+	{
+		param.SetValue(newValue);
+		pTimeOfDay->Update(true, true);
+		m_bIsEditing = true;
+		GetIEditor()->Notify(eNotify_OnTimeOfDayChange);
+		m_bIsEditing = false;
+		UpdateCurveContent();
+	}
+}
+
+namespace {
+
+void RestoreTreeState(const QVariantMap& state, const char* name, QPropertyTree* pTree)
+{
+	QVariant var = state.value(name);
+	if (!var.isValid())
+	{
+		return;
+	}
+
+	auto arr = var.toByteArray();
+	yasli::JSONIArchive ia;
+	if (!ia.open(arr, arr.size()))
+	{
+		return;
+	}
+
+	ia(*pTree);
+}
+
+void SaveTreeState(const QPropertyTree* pTree, const char* name, QVariantMap& state)
+{
+	yasli::JSONOArchive oa;
+	oa(*pTree, name);
+	QVariant variant = QString(oa.buffer());
+	state.insert(name, variant);
+}
+
+} //~unnamed namespace
+
+void QTimeOfDayWidget::SetPersonalizationState(const QVariantMap& state)
+{
+	QVariant var = state.value("TreeSplitter");
+	if (var.isValid())
+	{
+		m_splitterBetweenTrees->restoreState(QByteArray::fromBase64(var.toByteArray()));
+	}
+
+	RestoreTreeState(state, "TreeVar", m_propertyTreeVar);
+	RestoreTreeState(state, "TreeConst", m_propertyTreeConst);
+}
+
+QVariantMap QTimeOfDayWidget::GetPersonalizationState() const
+{
+	QVariantMap state;
+	state.insert("TreeSplitter", m_splitterBetweenTrees->saveState().toBase64());
+
+	SaveTreeState(m_propertyTreeVar, "TreeVar", state);
+	SaveTreeState(m_propertyTreeConst, "TreeConst", state);
+
+	return state;
 }
 
 void QTimeOfDayWidget::OnSplineEditing()
@@ -620,12 +699,11 @@ void QTimeOfDayWidget::OnSplineEditing()
 	UpdateToDVarFromCurveContent(m_selectedParamId, 1, pContent);
 	UpdateToDVarFromCurveContent(m_selectedParamId, 2, pContent);
 
-	gLightingPreferences.bForceSkyUpdate = m_forceSkyUpdateBtn->isChecked();
-	GetTimeOfDay()->Update(true, gLightingPreferences.bForceSkyUpdate);
+	GetTimeOfDay()->Update(true, true);
 	m_bIsEditing = true;
 	GetIEditor()->Notify(eNotify_OnTimeOfDayChange);
 	m_bIsEditing = false;
-	UpdateProperties();
+	UpdateVarPropTree();
 }
 
 void QTimeOfDayWidget::OnCopyCurveContent()
@@ -681,9 +759,7 @@ void QTimeOfDayWidget::OnPasteCurveContent()
 
 void QTimeOfDayWidget::SetTODTime(const float fTime)
 {
-	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
-	gLightingPreferences.bForceSkyUpdate = m_forceSkyUpdateBtn->isChecked();
-	pTimeOfDay->SetTime(fTime, gLightingPreferences.bForceSkyUpdate);
+	GetTimeOfDay()->SetTime(fTime, true);
 
 	GetIEditor()->SetCurrentMissionTime(fTime);
 
@@ -694,206 +770,217 @@ void QTimeOfDayWidget::SetTODTime(const float fTime)
 
 void QTimeOfDayWidget::CreateUi()
 {
-	QStyle* style = this->style();
-
-	QBoxLayout* rootVerticalLayput = new QBoxLayout(QBoxLayout::TopToBottom);
-	rootVerticalLayput->setContentsMargins(1, 1, 1, 1);
-	setLayout(rootVerticalLayput);
+	QBoxLayout* rootLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+	rootLayout->setContentsMargins(1, 1, 1, 1);
+	setLayout(rootLayout);
 
 	QSplitter* splitter = new QSplitter(Qt::Orientation::Horizontal);
 	splitter->setChildrenCollapsible(false);
-	rootVerticalLayput->addWidget(splitter, Qt::AlignCenter);
+	rootLayout->addWidget(splitter, Qt::AlignCenter);
 
-	{
-		// left part
-		m_propertyTree = new QPropertyTree(this);
-		m_propertyTree->setMinimumWidth(310);
-		//m_propertyTree->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Expanding);
-		//m_propertyTree->setValueColumnWidth(0.6f);
-		m_propertyTree->setHideSelection(false);
-		m_propertyTree->setUndoEnabled(false, false);
-		connect(m_propertyTree, &QPropertyTree::signalSelected, this, &QTimeOfDayWidget::OnPropertySelected);
+	CreatePropertyTrees(splitter);
+	CreateCurveEditor(splitter);
 
-		connect(m_propertyTree, &QPropertyTree::signalPushUndo, this, &QTimeOfDayWidget::UndoBegin);
-		connect(m_propertyTree, &QPropertyTree::signalChanged, this, &QTimeOfDayWidget::UndoEnd);
-
-		splitter->addWidget(m_propertyTree);
-	}
-
-	{
-		//center
-		QBoxLayout* centralVerticalLayout = new QBoxLayout(QBoxLayout::TopToBottom);
-		QWidget* w = new QWidget();
-		w->setLayout(centralVerticalLayout);
-		splitter->addWidget(w);
-
-		QToolBar* toolBar = new QToolBar(this);
-		centralVerticalLayout->addWidget(toolBar, Qt::AlignTop);
-
-		CCurveEditor* curveEditor = new CCurveEditor(this);
-		curveEditor->FillWithCurveToolsAndConnect(toolBar);
-		curveEditor->SetContent(m_curveContent.get());
-		curveEditor->SetTimeRange(SAnimTime(0.0f), SAnimTime(m_fAnimTimeSecondsIn24h));
-		curveEditor->SetRulerVisible(true);
-		curveEditor->SetRulerHeight(nRulerHeight);
-		curveEditor->SetRulerTicksYOffset(nRulerGradientHeight);
-		curveEditor->SetHandlesVisible(false);
-		curveEditor->SetGridVisible(true);
-		curveEditor->OnFitCurvesHorizontally();
-		curveEditor->OnFitCurvesVertically();
-		curveEditor->installEventFilter(this);
-		curveEditor->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-		//curveEditor->setEnabled()
-
-		connect(curveEditor, &CCurveEditor::SignalScrub, this, &QTimeOfDayWidget::CurveEditTimeChanged);
-		connect(curveEditor, &CCurveEditor::SignalDrawRulerBackground,
-		        [this](QPainter& painter, const QRect& rulerRect, const Range& visibleRange)
-		{
-			DrawGradient(GetTimeOfDay(), m_selectedParamId, painter, rulerRect, visibleRange);
-		}
-		        );
-		connect(curveEditor, &CCurveEditor::SignalContentAboutToBeChanged, this, &QTimeOfDayWidget::UndoBegin);
-		connect(curveEditor, &CCurveEditor::SignalContentChanging, this, &QTimeOfDayWidget::OnSplineEditing);
-		connect(curveEditor, &CCurveEditor::SignalContentChanged, [this](){ OnSplineEditing(); UndoEnd(); });
-
-		centralVerticalLayout->addWidget(curveEditor, Qt::AlignTop);
-		m_curveEdit = curveEditor;
-
-		toolBar->addSeparator();
-		toolBar->addAction(CryIcon("icons:CurveEditor/Copy_Curve.ico"), "Copy curve content", this, SLOT(OnCopyCurveContent()));
-		toolBar->addAction(CryIcon("icons:CurveEditor/Paste_Curve.ico"), "Paste curve content", this, SLOT(OnPasteCurveContent()));
-
-		QBoxLayout* bottomLayout = new QBoxLayout(QBoxLayout::TopToBottom);
-		bottomLayout->setContentsMargins(5, 1, 5, 3);
-		centralVerticalLayout->addLayout(bottomLayout, Qt::AlignBottom);
-
-		{
-			QBoxLayout* pMediaBarLayout = new QHBoxLayout;
-			pMediaBarLayout->setContentsMargins(QMargins(0, 0, 0, 0));
-
-			QBoxLayout* pMediaBarLayoutLeft = new QHBoxLayout;
-			QBoxLayout* pMediaBarLayoutCenter = new QHBoxLayout;
-			QBoxLayout* pMediaBarLayoutRight = new QHBoxLayout;
-
-			pMediaBarLayout->addLayout(pMediaBarLayoutLeft);
-			pMediaBarLayout->addLayout(pMediaBarLayoutCenter);
-			pMediaBarLayout->addLayout(pMediaBarLayoutRight);
-
-			QLabel* startTimeLabel = new QLabel("Start:");
-			startTimeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-			//QTimeEdit* startTimeEdit = new QTimeEdit(this);
-			CTimeEditControl* startTimeEdit = new CTimeEditControl(this);
-			startTimeEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-			//startTimeEdit->setDisplayFormat("hh:mm");
-			connect(startTimeEdit, &CTimeEditControl::timeChanged,
-			        [](const QTime& time)
-			{
-				const float fTODTime = QTimeToFloat(time);
-				UpdateToDAdvancedInfo([fTODTime](ITimeOfDay::SAdvancedInfo& sAdvInfo) { sAdvInfo.fStartTime = fTODTime; });
-			}
-			        );
-			m_startTimeEdit = startTimeEdit;
-			pMediaBarLayoutLeft->addWidget(startTimeLabel);
-			pMediaBarLayoutLeft->addWidget(startTimeEdit);
-			pMediaBarLayoutLeft->addStretch();
-
-			QLabel* currentTimeLabel = new QLabel("Current:");
-			currentTimeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-			CTimeEditControl* currentTimeEdit = new CTimeEditControl(this);
-			//currentTimeEdit = new QTimeEdit(this);
-			currentTimeEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-			m_currentTimeEdit = currentTimeEdit;
-			//m_currentTimeEdit->setDisplayFormat("hh:mm");
-			connect(m_currentTimeEdit, &CTimeEditControl::timeChanged, this, &QTimeOfDayWidget::CurrentTimeEdited);
-
-			QToolButton* stopButton = new QToolButton;
-			stopButton->setIcon(CryIcon("icons:Trackview/Stop_Sequence.ico"));
-			stopButton->setCheckable(true);
-			stopButton->setChecked(!m_bIsPlaying);
-			stopButton->setAutoExclusive(true);
-
-			QToolButton* playButton = new QToolButton;
-			playButton->setIcon(CryIcon("icons:Trackview/Play_Sequence.ico"));
-			playButton->setCheckable(true);
-			playButton->setChecked(m_bIsPlaying);
-			playButton->setAutoExclusive(true);
-
-			QLabel* playSpeedLabel = new QLabel("Speed: ");
-			playSpeedLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-			QLineEdit* playSpeedEdit = new QLineEdit;
-			playSpeedEdit->setFixedWidth(37);
-			playSpeedEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-			QDoubleValidator* validator = new QDoubleValidator(0.0, 99.999, 3, playSpeedEdit);
-			validator->setNotation(QDoubleValidator::StandardNotation);
-			playSpeedEdit->setValidator(validator);
-			playSpeedEdit->setToolTip("TimeOfDay play speed\n Valid range:[0.000 - 99.999]");
-
-			connect(playSpeedEdit, &QLineEdit::editingFinished,
-			        [this, playSpeedEdit]()
-			{
-				m_curveEdit->setFocus();
-				const QString value = playSpeedEdit->text();
-				const float fFloatValue = value.toFloat();
-				UpdateToDAdvancedInfo([fFloatValue](ITimeOfDay::SAdvancedInfo& sAdvInfo) { sAdvInfo.fAnimSpeed = fFloatValue; });
-			}
-			        );
-			m_playSpeedEdit = playSpeedEdit;
-
-			connect(stopButton, &QToolButton::clicked, [this]() { m_bIsPlaying = false; m_playSpeedEdit->clearFocus(); m_propertyTree->setEnabled(true); });
-			connect(playButton, &QToolButton::clicked, [this]() { m_bIsPlaying = true; m_playSpeedEdit->clearFocus();  m_propertyTree->setEnabled(false); });
-
-			m_forceSkyUpdateBtn = new QCheckBox;
-			m_forceSkyUpdateBtn->setText("Force Sky Update");
-			m_forceSkyUpdateBtn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-			m_forceSkyUpdateBtn->setChecked(gLightingPreferences.bForceSkyUpdate);
-			m_forceSkyUpdateBtn->setChecked(true);
-
-			pMediaBarLayoutCenter->setSpacing(0);
-			pMediaBarLayoutCenter->setMargin(0);
-
-			pMediaBarLayoutCenter->addWidget(currentTimeLabel);
-			pMediaBarLayoutCenter->addWidget(m_currentTimeEdit);
-			pMediaBarLayoutCenter->addSpacing(5);
-			pMediaBarLayoutCenter->addWidget(stopButton);
-			pMediaBarLayoutCenter->addWidget(playButton);
-			pMediaBarLayoutCenter->addSpacing(5);
-			pMediaBarLayoutCenter->addWidget(playSpeedLabel);
-			pMediaBarLayoutCenter->addWidget(playSpeedEdit);
-			pMediaBarLayoutCenter->addSpacing(15);
-			pMediaBarLayoutCenter->addWidget(m_forceSkyUpdateBtn);
-
-			QLabel* endTimeLabel = new QLabel("End:");
-			endTimeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-			//QTimeEdit* endTimeEdit = new QTimeEdit(QTime(23, 59, 59, 99), this);
-			CTimeEditControl* endTimeEdit = new CTimeEditControl(this);
-			endTimeEdit->setTime(QTime(23, 59));
-			endTimeEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-			//endTimeEdit->setDisplayFormat("hh:mm");
-			connect(endTimeEdit, &CTimeEditControl::timeChanged,
-			        [](const QTime& time)
-			{
-				const float fTODTime = QTimeToFloat(time);
-				UpdateToDAdvancedInfo([fTODTime](ITimeOfDay::SAdvancedInfo& sAdvInfo) { sAdvInfo.fEndTime = fTODTime; });
-			}
-			        );
-			m_endTimeEdit = endTimeEdit;
-
-			pMediaBarLayoutRight->addStretch();
-			pMediaBarLayoutRight->addWidget(endTimeLabel, Qt::AlignRight);
-			pMediaBarLayoutRight->addWidget(endTimeEdit, Qt::AlignRight);
-
-			bottomLayout->addLayout(pMediaBarLayout, Qt::AlignTop);
-		}
-	}
 	setMinimumSize(size());
-} // setupUi
+}
 
-void QTimeOfDayWidget::LoadPropertiesTree()
+void QTimeOfDayWidget::CreatePropertyTrees(QSplitter* pParent)
 {
-	m_propertyTree->setArchiveContext(m_pContextList->Tail());
-	m_propertyTree->detach();
+	QWidget* varWidget = new QWidget;
+	{
+		QLabel* label = new QLabel("Variables");
+		label->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
-	ITimeOfDay* pTimeOfDay = gEnv->p3DEngine->GetTimeOfDay();
+		m_propertyTreeVar = new QPropertyTree(this);
+		m_propertyTreeVar->setHideSelection(false);
+		m_propertyTreeVar->setUndoEnabled(false, false);
+		connect(m_propertyTreeVar, &QPropertyTree::signalSelected, this, &QTimeOfDayWidget::OnPropertySelected);
+		connect(m_propertyTreeVar, &QPropertyTree::signalPushUndo, this, &QTimeOfDayWidget::UndoBegin);
+		connect(m_propertyTreeVar, &QPropertyTree::signalChanged, this, &QTimeOfDayWidget::UndoEnd);
+
+		auto* layout = new QVBoxLayout;
+		layout->setContentsMargins(QMargins(0, 0, 0, 0));
+		layout->addWidget(label);
+		layout->addWidget(m_propertyTreeVar);
+		varWidget->setLayout(layout);
+	}
+
+	QWidget* constWidget = new QWidget;
+	{
+		QLabel* label = new QLabel("Constants");
+		label->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+		m_propertyTreeConst = new QPropertyTree(this);
+		m_propertyTreeConst->setHideSelection(false);
+		m_propertyTreeConst->setUndoEnabled(false, false);
+		connect(m_propertyTreeConst, &QPropertyTree::signalChanged, this, []() { GetTimeOfDay()->ConstantsChanged(); });
+		connect(m_propertyTreeConst, &QPropertyTree::signalPushUndo, this, &QTimeOfDayWidget::UndoConstantProperties);
+
+		auto* layout = new QVBoxLayout;
+		layout->setContentsMargins(QMargins(0, 0, 0, 0));
+		layout->addWidget(label);
+		layout->addWidget(m_propertyTreeConst);
+		constWidget->setLayout(layout);
+	}
+
+	m_splitterBetweenTrees = new QSplitter(Qt::Orientation::Vertical);
+	m_splitterBetweenTrees->setChildrenCollapsible(false);
+
+	m_splitterBetweenTrees->addWidget(varWidget);
+	m_splitterBetweenTrees->addWidget(constWidget);
+
+	pParent->addWidget(m_splitterBetweenTrees);
+}
+
+void QTimeOfDayWidget::CreateCurveEditor(QSplitter* pParent)
+{
+	QBoxLayout* centralVerticalLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+	QWidget* w = new QWidget();
+	w->setLayout(centralVerticalLayout);
+	pParent->addWidget(w);
+
+	QToolBar* toolBar = new QToolBar(this);
+	centralVerticalLayout->addWidget(toolBar, Qt::AlignTop);
+
+	m_curveEdit = new CCurveEditor(this);
+	m_curveEdit->FillWithCurveToolsAndConnect(toolBar);
+	m_curveEdit->SetContent(m_curveContent.get());
+	m_curveEdit->SetTimeRange(SAnimTime(0.0f), SAnimTime(m_fAnimTimeSecondsIn24h));
+	m_curveEdit->SetRulerVisible(true);
+	m_curveEdit->SetRulerHeight(nRulerHeight);
+	m_curveEdit->SetRulerTicksYOffset(nRulerGradientHeight);
+	m_curveEdit->SetHandlesVisible(false);
+	m_curveEdit->SetGridVisible(true);
+	m_curveEdit->OnFitCurvesHorizontally();
+	m_curveEdit->OnFitCurvesVertically();
+	m_curveEdit->installEventFilter(this);
+	m_curveEdit->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+
+	connect(m_curveEdit, &CCurveEditor::SignalScrub, this, &QTimeOfDayWidget::CurveEditTimeChanged);
+	connect(m_curveEdit, &CCurveEditor::SignalDrawRulerBackground, [this](QPainter& painter, const QRect& rulerRect, const Range& visibleRange)
+	{
+		DrawGradient(GetTimeOfDay(), m_selectedParamId, painter, rulerRect, visibleRange);
+	});
+	connect(m_curveEdit, &CCurveEditor::SignalContentAboutToBeChanged, this, &QTimeOfDayWidget::UndoBegin);
+	connect(m_curveEdit, &CCurveEditor::SignalContentChanging, this, &QTimeOfDayWidget::OnSplineEditing);
+	connect(m_curveEdit, &CCurveEditor::SignalContentChanged, [this]() { OnSplineEditing(); UndoEnd(); });
+
+	centralVerticalLayout->addWidget(m_curveEdit, Qt::AlignTop);
+
+	toolBar->addSeparator();
+	toolBar->addAction(CryIcon("icons:CurveEditor/Copy_Curve.ico"), "Copy curve content", this, SLOT(OnCopyCurveContent()));
+	toolBar->addAction(CryIcon("icons:CurveEditor/Paste_Curve.ico"), "Paste curve content", this, SLOT(OnPasteCurveContent()));
+
+	QBoxLayout* bottomLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+	bottomLayout->setContentsMargins(5, 1, 5, 3);
+	centralVerticalLayout->addLayout(bottomLayout, Qt::AlignBottom);
+
+	{
+		QBoxLayout* pMediaBarLayout = new QHBoxLayout;
+		pMediaBarLayout->setContentsMargins(QMargins(0, 0, 0, 0));
+
+		QBoxLayout* pMediaBarLayoutLeft = new QHBoxLayout;
+		QBoxLayout* pMediaBarLayoutCenter = new QHBoxLayout;
+		QBoxLayout* pMediaBarLayoutRight = new QHBoxLayout;
+
+		pMediaBarLayout->addLayout(pMediaBarLayoutLeft);
+		pMediaBarLayout->addLayout(pMediaBarLayoutCenter);
+		pMediaBarLayout->addLayout(pMediaBarLayoutRight);
+
+		QLabel* startTimeLabel = new QLabel("Start:");
+		startTimeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+		m_startTimeEdit = new CTimeEditControl(this);
+		m_startTimeEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		connect(m_startTimeEdit, &CTimeEditControl::timeChanged, [](const QTime& time)
+		{
+			const float fTODTime = QTimeToFloat(time);
+			UpdateToDAdvancedInfo([fTODTime](ITimeOfDay::SAdvancedInfo& sAdvInfo) { sAdvInfo.fStartTime = fTODTime; });
+		});
+		pMediaBarLayoutLeft->addWidget(startTimeLabel);
+		pMediaBarLayoutLeft->addWidget(m_startTimeEdit);
+		pMediaBarLayoutLeft->addStretch();
+
+		QLabel* currentTimeLabel = new QLabel("Current:");
+		currentTimeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+		m_currentTimeEdit = new CTimeEditControl(this);
+		m_currentTimeEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		connect(m_currentTimeEdit, &CTimeEditControl::timeChanged, this, &QTimeOfDayWidget::CurrentTimeEdited);
+
+		QToolButton* stopButton = new QToolButton;
+		stopButton->setIcon(CryIcon("icons:Trackview/Stop_Sequence.ico"));
+		stopButton->setCheckable(true);
+		stopButton->setChecked(!m_bIsPlaying);
+		stopButton->setAutoExclusive(true);
+
+		QToolButton* playButton = new QToolButton;
+		playButton->setIcon(CryIcon("icons:Trackview/Play_Sequence.ico"));
+		playButton->setCheckable(true);
+		playButton->setChecked(m_bIsPlaying);
+		playButton->setAutoExclusive(true);
+
+		QLabel* playSpeedLabel = new QLabel("Speed: ");
+		playSpeedLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+		m_playSpeedEdit = new QLineEdit;
+		m_playSpeedEdit->setFixedWidth(37);
+		m_playSpeedEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		QDoubleValidator* validator = new QDoubleValidator(0.0, 99.999, 3, m_playSpeedEdit);
+		validator->setNotation(QDoubleValidator::StandardNotation);
+		m_playSpeedEdit->setValidator(validator);
+		m_playSpeedEdit->setToolTip("TimeOfDay play speed\n Valid range:[0.000 - 99.999]");
+
+		connect(m_playSpeedEdit, &QLineEdit::editingFinished, [this]()
+		{
+			m_curveEdit->setFocus();
+			const QString value = m_playSpeedEdit->text();
+			const float fFloatValue = value.toFloat();
+			UpdateToDAdvancedInfo([fFloatValue](ITimeOfDay::SAdvancedInfo& sAdvInfo) { sAdvInfo.fAnimSpeed = fFloatValue; });
+		});
+
+		connect(stopButton, &QToolButton::clicked, [this]() { m_bIsPlaying = false; m_playSpeedEdit->clearFocus(); m_propertyTreeVar->setEnabled(true); });
+		connect(playButton, &QToolButton::clicked, [this]() { m_bIsPlaying = true; m_playSpeedEdit->clearFocus();  m_propertyTreeVar->setEnabled(false); });
+
+		pMediaBarLayoutCenter->setSpacing(0);
+		pMediaBarLayoutCenter->setMargin(0);
+
+		pMediaBarLayoutCenter->addWidget(currentTimeLabel);
+		pMediaBarLayoutCenter->addWidget(m_currentTimeEdit);
+		pMediaBarLayoutCenter->addSpacing(5);
+		pMediaBarLayoutCenter->addWidget(stopButton);
+		pMediaBarLayoutCenter->addWidget(playButton);
+		pMediaBarLayoutCenter->addSpacing(5);
+		pMediaBarLayoutCenter->addWidget(playSpeedLabel);
+		pMediaBarLayoutCenter->addWidget(m_playSpeedEdit);
+		pMediaBarLayoutCenter->addSpacing(15);
+
+		QLabel* endTimeLabel = new QLabel("End:");
+		endTimeLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+		m_endTimeEdit = new CTimeEditControl(this);
+		m_endTimeEdit->setTime(QTime(23, 59));
+		m_endTimeEdit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+		connect(m_endTimeEdit, &CTimeEditControl::timeChanged, [](const QTime& time)
+		{
+			const float fTODTime = QTimeToFloat(time);
+			UpdateToDAdvancedInfo([fTODTime](ITimeOfDay::SAdvancedInfo& sAdvInfo) { sAdvInfo.fEndTime = fTODTime; });
+		});
+
+		pMediaBarLayoutRight->addStretch();
+		pMediaBarLayoutRight->addWidget(endTimeLabel, Qt::AlignRight);
+		pMediaBarLayoutRight->addWidget(m_endTimeEdit, Qt::AlignRight);
+
+		bottomLayout->addLayout(pMediaBarLayout, Qt::AlignTop);
+	}
+}
+
+void QTimeOfDayWidget::LoadPropertiesTrees()
+{
+	m_propertyTreeVar->setArchiveContext(m_pContextList->Tail());
+	m_propertyTreeVar->detach();
+
+	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
 	const int nTODParamCount = pTimeOfDay->GetVariableCount();
 
 	std::map<string, size_t> tempMap;
@@ -961,13 +1048,17 @@ void QTimeOfDayWidget::LoadPropertiesTree()
 		}
 	}
 
-	m_propertyTree->attach(Serialization::SStruct(m_groups));
-	m_propertyTree->expandAll();
+	m_propertyTreeVar->attach(Serialization::SStruct(m_groups));
+	m_propertyTreeConst->attach(pTimeOfDay->GetConstantParams());
+
+	//By default, trees are collapsed. If layout is present, it will restore state
+	m_propertyTreeVar->collapseAll();
+	m_propertyTreeConst->collapseAll();
 }
 
 void QTimeOfDayWidget::UpdateValues()
 {
-	UpdateProperties();
+	UpdateVarPropTree();
 	UpdateCurveTime();
 	UpdateCurrentTimeEdit();
 
@@ -982,14 +1073,15 @@ void QTimeOfDayWidget::UpdateValues()
 	SetQTimeEditTimeBlocking(m_endTimeEdit, endTime);
 
 	m_playSpeedEdit->blockSignals(true);
-	//m_playSpeedEdit->setValue(advInfo.fAnimSpeed);
 	m_playSpeedEdit->setText(QString::number(advInfo.fAnimSpeed));
 	m_playSpeedEdit->blockSignals(false);
+
+	UpdateConstPropTree();
 }
 
 void QTimeOfDayWidget::UpdateSelectedParamId()
 {
-	PropertyRow* row = m_propertyTree->selectedRow();
+	PropertyRow* row = m_propertyTreeVar->selectedRow();
 	if (!row)
 	{
 		m_selectedParamId = -1;
@@ -1012,9 +1104,9 @@ void QTimeOfDayWidget::UpdateSelectedParamId()
 	m_selectedParamId = pParam ? pParam->GetParamID() : -1;
 }
 
-void QTimeOfDayWidget::UpdateProperties()
+void QTimeOfDayWidget::UpdateVarPropTree()
 {
-	ITimeOfDay* pTimeOfDay = gEnv->p3DEngine->GetTimeOfDay();
+	ITimeOfDay* pTimeOfDay = GetTimeOfDay();
 	const int nToDVarCount = pTimeOfDay->GetVariableCount();
 	for (int varID = 0; varID < nToDVarCount; ++varID)
 	{
@@ -1028,8 +1120,6 @@ void QTimeOfDayWidget::UpdateProperties()
 			}
 		}
 	}
-
-	m_propertyTree->revert();
 }
 
 void QTimeOfDayWidget::UpdateCurrentTimeEdit()
@@ -1053,7 +1143,7 @@ bool QTimeOfDayWidget::eventFilter(QObject* obj, QEvent* event)
 {
 	if (obj == m_curveEdit)
 	{
-		//forward some keys to m_propertyTree, when its not focused
+		//forward some keys to m_propertyTreeVar, when its not focused
 		if (event->type() == QEvent::KeyPress)
 		{
 			QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
@@ -1063,7 +1153,7 @@ bool QTimeOfDayWidget::eventFilter(QObject* obj, QEvent* event)
 			    (keyEvent->key() == Qt::Key_Enter) || (keyEvent->key() == Qt::Key_Return)
 			    )
 			{
-				return QApplication::sendEvent(m_propertyTree, event);
+				return QApplication::sendEvent(m_propertyTreeVar, event);
 			}
 		}
 	}
@@ -1071,12 +1161,18 @@ bool QTimeOfDayWidget::eventFilter(QObject* obj, QEvent* event)
 	return QObject::eventFilter(obj, event);
 }
 
+void QTimeOfDayWidget::UpdateConstPropTree()
+{
+	m_propertyTreeVar->revert();
+	m_propertyTreeConst->attach(GetTimeOfDay()->GetConstantParams());
+}
+
 void QTimeOfDayWidget::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	if (event == eNotify_OnTimeOfDayChange && !m_bIsEditing)
 	{
 		UpdateCurveContent();
-		UpdateProperties();
+		UpdateVarPropTree();
+		UpdateConstPropTree(); //Sun can be changed
 	}
 }
-

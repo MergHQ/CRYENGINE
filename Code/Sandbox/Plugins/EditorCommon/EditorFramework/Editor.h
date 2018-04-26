@@ -16,7 +16,7 @@ class CMenuBarUpdater;
 
 class QEvent;
 
-//! Base class for Editor(s) which means this should be the base class 
+//! Base class for Editor(s) which means this should be the base class
 //! for most if not all tools that are not simply dialogs
 //! Prefer inheriting from CDockableEditor if this needs to be dockable
 //! Inherit from CAssetEditor if this needs to be integrated with the AssetSystem
@@ -40,10 +40,8 @@ public slots:
 	virtual QMenuBar* GetMenuBar();
 
 protected:
-	void                    AddRecentFile(const QString& filePath);
-	QStringList				GetRecentFiles();
-
-	
+	void        AddRecentFile(const QString& filePath);
+	QStringList GetRecentFiles();
 
 	// Serialized in personalization
 	//Properties that can be shared between all projects
@@ -90,24 +88,24 @@ protected:
 	virtual bool OnSaveAs()                      { return false; }
 
 	//Edit menu methods
-	virtual bool OnUndo()                        { return false; }
-	virtual bool OnRedo()                        { return false; }
-	virtual bool OnCopy()                        { return false; }
-	virtual bool OnCut()                         { return false; }
-	virtual bool OnPaste()                       { return false; }
-	virtual bool OnDelete()                      { return false; }
-	virtual bool OnFind()                        { return false; }
+	virtual bool OnUndo()   { return false; }
+	virtual bool OnRedo()   { return false; }
+	virtual bool OnCopy()   { return false; }
+	virtual bool OnCut()    { return false; }
+	virtual bool OnPaste()  { return false; }
+	virtual bool OnDelete() { return false; }
+	virtual bool OnFind()   { return false; }
 	//By default, these call OnFind.
 	//if FindNext() is called before Find(), it is expected that the Find functionnality is called instead
-	virtual bool OnFindPrevious()                { return OnFind(); }
-	virtual bool OnFindNext()                    { return OnFind(); }
-	virtual bool OnDuplicate()                   { return false; }
-	virtual bool OnSelectAll()                   { return false; }
+	virtual bool OnFindPrevious() { return OnFind(); }
+	virtual bool OnFindNext()     { return OnFind(); }
+	virtual bool OnDuplicate()    { return false; }
+	virtual bool OnSelectAll()    { return false; }
 	virtual bool OnHelp();
 
 	//View menu methods
-	virtual bool OnZoomIn()                      { return false; }
-	virtual bool OnZoomOut()                     { return false; }
+	virtual bool OnZoomIn()  { return false; }
+	virtual bool OnZoomOut() { return false; }
 
 	enum class MenuItems : uint8
 	{
@@ -184,8 +182,8 @@ protected:
 
 	//! Use this method to register all possible dockable widgets for this editor
 	//! isUnique: only one of these widgets can be spawned
-	//! isInternal: the widget is not in the menu 
-	void RegisterDockableWidget(QString name, std::function<QWidget * ()> factory, bool isUnique = false, bool isInternal = false);
+	//! isInternal: the widget is not in the menu
+	void RegisterDockableWidget(QString name, std::function<QWidget* ()> factory, bool isUnique = false, bool isInternal = false);
 
 	//! Implement this method and use CDockableContainer::SpawnWidget to define the default layout
 	virtual void CreateDefaultLayout(CDockableContainer* sender) { CRY_ASSERT_MESSAGE(false, "Not implemented"); };
@@ -200,17 +198,17 @@ private:
 	void InitMenuDesc();
 
 protected:
-	QMenuBar* m_pMenuBar;
+	QMenuBar*          m_pMenuBar;
 
 	CBroadcastManager* m_broadcastManager;
 	bool               m_bIsOnlybackend;
 
 private:
-	CDockableContainer* m_dockingRegistry;
-	QObject* m_pBroadcastManagerFilter;
+	CDockableContainer*                         m_dockingRegistry;
+	QObject*                                    m_pBroadcastManagerFilter;
 	std::unique_ptr<MenuDesc::CDesc<MenuItems>> m_pMenuDesc;
-	std::unique_ptr<CAbstractMenu> m_pMenu;
-	std::unique_ptr<CMenuBarUpdater> m_pMenuBarBar;
+	std::unique_ptr<CAbstractMenu>              m_pMenu;
+	std::unique_ptr<CMenuBarUpdater>            m_pMenuBarBar;
 };
 
 //! Inherit from this class to create a dockable editor
@@ -220,9 +218,9 @@ public:
 	CDockableEditor(QWidget* pParent = nullptr);
 	virtual ~CDockableEditor();
 
-	virtual QWidget*    GetWidget() final { return this; };
-	virtual const char* GetPaneTitle() const final { return GetEditorName(); };
-	virtual QVariantMap GetState() const final { return GetLayout(); }
+	virtual QWidget*    GetWidget() final                        { return this; }
+	virtual const char* GetPaneTitle() const final               { return GetEditorName(); }
+	virtual QVariantMap GetState() const final                   { return GetLayout(); }
 	virtual void        SetState(const QVariantMap& state) final { SetLayout(state); }
 	virtual void        LoadLayoutPersonalization();
 	virtual void        SaveLayoutPersonalization();
@@ -236,8 +234,6 @@ public:
 protected:
 	void InstallReleaseMouseFilter(QObject* object);
 
-private:    
+private:
 	QObject* m_pReleaseMouseFilter;
-
 };
-
