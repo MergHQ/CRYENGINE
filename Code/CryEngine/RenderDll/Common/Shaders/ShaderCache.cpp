@@ -1182,7 +1182,7 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 	else if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_DXC) == 0)
 	{
 		// " -spirv -Od -Zpr \"%s.%s\" -Fo \"%s.%s\" -Fc \"%s.%s\" -T %s -E \"%s\" %s %s"
-		compilerSPIRV.Format("SPIRV/V003/dxc/dxc.exe %s %s ", eClass == eHWSC_Vertex ? "-fvk-invert-y" : "", CRenderer::CV_r_shadersdebug == 3 ? "-Od" : "O3");
+		compilerSPIRV.Format("SPIRV/V003/dxc/dxc.exe %s %s ", eClass == eHWSC_Vertex ? "-fvk-invert-y" : "", CRenderer::CV_r_shadersdebug == 3 ? "-Od" : "-O3");
 		compilerSPIRV += "-spirv -no-warnings -E %s -T %s -Zpr -Fo %s %s";
 	}
 

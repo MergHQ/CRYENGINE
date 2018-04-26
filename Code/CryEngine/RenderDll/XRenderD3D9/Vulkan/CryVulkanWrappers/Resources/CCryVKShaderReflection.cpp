@@ -30,8 +30,8 @@ void DumpError(const char* str)
 	CryLogAlways("[Vk Compiler] ERROR: %s", str);
 	fwrite(str, sizeof(char), strlen(str), stderr);
 }
-
-bool ShellExecute(const std::string& file, const std::string& parameters)
+ 
+bool ShellExecute(const std::string& file, const std::string& parameters, const std::string& workingDir = "")
 {
 #ifdef WIN32
 	HANDLE childStdInRead;
@@ -64,7 +64,7 @@ bool ShellExecute(const std::string& file, const std::string& parameters)
 
 	std::string output;
 
-	CreateProcess(nullptr, parametersTemp, nullptr, nullptr, true, CREATE_NO_WINDOW, nullptr, nullptr, &startUpInfo, &processInfo);
+	CreateProcess(nullptr, parametersTemp, nullptr, nullptr, true, CREATE_NO_WINDOW, nullptr, workingDir.size() == 0 ? nullptr : workingDir.c_str(), &startUpInfo, &processInfo);
 	while (WaitForSingleObject(processInfo.hProcess, 100) == WAIT_TIMEOUT)
 	{
 		unsigned long size = GetFileSize(childStdOutRead, nullptr);
@@ -131,6 +131,39 @@ bool ShellExecute(const std::string& file, const std::string& parameters)
 #endif
 }
 
+static const char* GetGLSLANGTargetName(const char* pDxTarget)
+{
+	if (strncmp(pDxTarget, "vs", 2) == 0)
+	{
+		return "vert";
+	}
+	else if (strncmp(pDxTarget, "ps", 2) == 0)
+	{
+		return "frag";
+	}
+	else if (strncmp(pDxTarget, "gs", 2) == 0)
+	{
+		return "geom";
+	}
+	else if (strncmp(pDxTarget, "ds", 2) == 0)
+	{
+		return "tesc";
+	}
+	else if (strncmp(pDxTarget, "hs", 2) == 0)
+	{
+		return "tese";
+	}
+	else if (strncmp(pDxTarget, "cs", 2) == 0)
+	{
+		return "comp";
+	}
+
+	return "invalid";
+}
+
+#define INPUT_HLSL_FORMAT                    ".in"
+#define OUTPUT_SPIRV_FORMAT                  ".out"
+#define OUTPUT_HUMAN_READABLE_SPIRV_FORMAT   ".h_spv"
 HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T SrcDataSize, _In_opt_ LPCSTR pSourceName, CONST D3D_SHADER_MACRO* pDefines,
                    _In_opt_ ID3DInclude* pInclude, _In_opt_ LPCSTR pEntrypoint, _In_ LPCSTR pTarget, _In_ UINT Flags1, _In_ UINT Flags2, _Out_ ID3DBlob** ppCode,
                    _Always_(_Outptr_opt_result_maybenull_) ID3DBlob** ppErrorMsgs)
@@ -149,10 +182,10 @@ HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T S
 	shaderFileLocationWithoutFormat += pEntrypoint;
 
 	std::ofstream shaderFile;
-	shaderFile.open(shaderFileLocationWithoutFormat + ".hlsl");
+	shaderFile.open(shaderFileLocationWithoutFormat + INPUT_HLSL_FORMAT);
 	if (!shaderFile.good())
 	{
-		CRY_ASSERT_MESSAGE(shaderFile.good(), ("Cannot create " + shaderFileLocationWithoutFormat + ".hlsl" + " shader file.").c_str());
+		CRY_ASSERT_MESSAGE(shaderFile.good(), ("Cannot create " + shaderFileLocationWithoutFormat + INPUT_HLSL_FORMAT + " shader file.").c_str());
 		return E_FAIL;
 	}
 
@@ -162,17 +195,25 @@ HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T S
 	std::string vkShaderCompiler(CRendererCVars::CV_r_VkShaderCompiler->GetString());
 	if (vkShaderCompiler == STR_VK_SHADER_COMPILER_HLSLCC)
 	{
-		CryFatalError("Local shader compiler is not supported by HLSLcc.");
+		char params[1001];
+		cry_sprintf(params, "%s %s \"%s%s\" \"%s%s\"",
+			pEntrypoint,
+			pTarget,
+			shaderFileLocationWithoutFormat.c_str(), OUTPUT_SPIRV_FORMAT,
+			shaderFileLocationWithoutFormat.c_str(), INPUT_HLSL_FORMAT
+			);
+
+		ShellExecute("%ENGINE%\\..\\Tools\\RemoteShaderCompiler\\Compiler\\SPIRV\\V002\\HLSL2SPIRV.exe", params, "%ENGINE%\\..\\Tools\\RemoteShaderCompiler\\Compiler\\SPIRV\\V002");
 	}
 	else if (vkShaderCompiler == STR_VK_SHADER_COMPILER_DXC)
 	{
 		bool showWarnings = false;
-		//-fvk-use-glsl-layout
+		
 		char params[1001];
-		cry_sprintf(params, " -spirv -Od -Zpr \"%s.%s\" -Fo \"%s.%s\" -Fc \"%s.%s\" -T %s -E \"%s\" %s %s",
-			shaderFileLocationWithoutFormat.c_str(), "hlsl",
-			shaderFileLocationWithoutFormat.c_str(), "spirv",
-			shaderFileLocationWithoutFormat.c_str(), "h_spirv",
+		cry_sprintf(params, " -spirv -O3 -Zpr \"%s%s\" -Fo \"%s%s\" -Fc \"%s%s\" -T %s -E \"%s\" %s %s",
+			shaderFileLocationWithoutFormat.c_str(), INPUT_HLSL_FORMAT,
+			shaderFileLocationWithoutFormat.c_str(), OUTPUT_SPIRV_FORMAT,
+			shaderFileLocationWithoutFormat.c_str(), OUTPUT_HUMAN_READABLE_SPIRV_FORMAT,
 			pTarget,
 			pEntrypoint,
 			strncmp(pTarget, "vs", 2) == 0 ? "-fvk-invert-y" : "",
@@ -182,50 +223,24 @@ HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T S
 	}
 	else if (vkShaderCompiler == STR_VK_SHADER_COMPILER_GLSLANG)
 	{
-		std::string glslangTarget = "vert";
-		if (strncmp(pTarget, "vs", 2) == 0)
-		{
-			glslangTarget = "vert";
-		}
-		else if (strncmp(pTarget, "ps", 2) == 0)
-		{
-			glslangTarget = "frag";
-		}
-		else if (strncmp(pTarget, "gs", 2) == 0)
-		{
-			glslangTarget = "geom";
-		}
-		else if (strncmp(pTarget, "ds", 2) == 0)
-		{
-			glslangTarget = "tesc";
-		}
-		else if (strncmp(pTarget, "hs", 2) == 0)
-		{
-			glslangTarget = "tese";
-		}
-		else if (strncmp(pTarget, "cs", 2) == 0)
-		{
-			glslangTarget = "comp";
-		}
-
 		std::string targetEnv = "vulkan1.0";
 		
 		char params[1001];
-		cry_sprintf(params, " -D -fhlsl_functionality1 \"%s.%s\" -o \"%s.%s\" --target-env %s -S %s -e %s -V100 %s",
-			shaderFileLocationWithoutFormat.c_str(), "hlsl",
-			shaderFileLocationWithoutFormat.c_str(), "spirv",
+		cry_sprintf(params, " -D -fhlsl_functionality1 \"%s%s\" -o \"%s%s\" --target-env %s -S %s -e %s -V100 %s",
+			shaderFileLocationWithoutFormat.c_str(), INPUT_HLSL_FORMAT,
+			shaderFileLocationWithoutFormat.c_str(), OUTPUT_SPIRV_FORMAT,
 			targetEnv.c_str(),
-			glslangTarget.c_str(),
+			GetGLSLANGTargetName(pTarget),
 			pEntrypoint,
 			strncmp(pTarget, "vs", 2) == 0 ? "--invert-y" : "");
 
 		ShellExecute("%ENGINE%\\..\\Tools\\RemoteShaderCompiler\\Compiler\\SPIRV\\V003\\glslang\\glslangValidator.exe", params);
 	}
 
-	std::ifstream spirvShaderFile(shaderFileLocationWithoutFormat + ".spirv", std::ios::binary);
+	std::ifstream spirvShaderFile(shaderFileLocationWithoutFormat + OUTPUT_SPIRV_FORMAT, std::ios::binary);
 	if (!spirvShaderFile.good())
 	{
-		CRY_ASSERT_MESSAGE(false, (shaderFileLocationWithoutFormat + ".spirv cannot be opened").c_str());
+		CRY_ASSERT_MESSAGE(false, (shaderFileLocationWithoutFormat + OUTPUT_SPIRV_FORMAT + " cannot be opened").c_str());
 		return E_FAIL;
 	}
 
