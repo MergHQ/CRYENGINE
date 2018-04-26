@@ -741,6 +741,10 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 	// Disable/set cvars that can affect cube map generation. This is thread unsafe (we assume editor will not run in mt mode), no other way around at this time
 	//	- coverage buffer unreliable for multiple views
 	//	- custom view distance ratios
+	ICVar* pCheckOcclusionCV = gEnv->pConsole->GetCVar("e_CheckOcclusion");
+	const int32 nCheckOcclusion = pCheckOcclusionCV ? pCheckOcclusionCV->GetIVal() : 1;
+	if (pCheckOcclusionCV)
+		pCheckOcclusionCV->Set(0);
 
 	ICVar* pCoverageBufferCV = gEnv->pConsole->GetCVar("e_CoverageBuffer");
 	const int32 nCoverageBuffer = pCoverageBufferCV ? pCoverageBufferCV->GetIVal() : 0;
@@ -816,6 +820,9 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 	}
 
 	SAFE_RELEASE(ptexGenEnvironmentCM);
+
+	if (pCheckOcclusionCV)
+		pCheckOcclusionCV->Set(nCheckOcclusion);
 
 	if (pCoverageBufferCV)
 		pCoverageBufferCV->Set(nCoverageBuffer);
