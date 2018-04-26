@@ -41,6 +41,8 @@ private:
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
+	static uint DefaultForType() { return EFT_Motion; }
+
 	CFeatureMotionPhysics();
 
 	// CParticleFeature

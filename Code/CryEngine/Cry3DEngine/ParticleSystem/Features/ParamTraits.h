@@ -45,9 +45,10 @@ ILINE float RemoveNegZero(float val)
 
 struct BaseTraits
 {
-	template<typename T> static T Default()   { return T(); }
 	template<typename T> static T HardMin()   { return std::numeric_limits<T>::lowest(); }
 	template<typename T> static T HardMax()   { return std::numeric_limits<T>::max(); }
+	template<typename T> static T Default()   { return T(); }
+	template<typename T> static T Enabled()   { return T(); }
 	template<typename T> static T To(T val)   { return RemoveNegZero(val); } // write to value
 	template<typename T> static T From(T val) { return RemoveNegZero(val); } // read from value
 	static bool HideDefault()                 { return false;  }
@@ -55,7 +56,7 @@ struct BaseTraits
 };
 
 template<typename T, typename TTraits = BaseTraits>
-struct TValue: TTraits
+struct TValue
 {
 public:
 	typedef T TType;
@@ -72,9 +73,10 @@ public:
 	T Get() const             { return m_value; }
 	T operator+() const       { return m_value; }
 
-	static T Default()        { return TTraits::template Default<T>(); }
 	static T HardMin()        { return TTraits::template HardMin<T>(); }
 	static T HardMax()        { return TTraits::template HardMax<T>(); }
+	static T Default()        { return TTraits::template Default<T>(); }
+	static T Enabled()        { return TTraits::template Enabled<T>(); }
 
 private:
 
@@ -111,6 +113,13 @@ template<typename Base = BaseTraits>
 struct TDefaultMax: Base
 {
 	template<typename T> static T Default() { return Base::template HardMax<T>(); }
+	static bool HideDefault()               { return true; }
+};
+
+template<typename Base = BaseTraits>
+struct TDefaultZero: Base
+{
+	template<typename T> static T Enabled() { return T(1); }
 	static bool HideDefault()               { return true; }
 };
 

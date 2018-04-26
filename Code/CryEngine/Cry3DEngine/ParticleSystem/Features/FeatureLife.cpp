@@ -22,6 +22,8 @@ public:
 	CFeatureLifeTime(float lifetime = 1, bool killOnParentDeath = false)
 		: m_lifeTime(lifetime), m_killOnParentDeath(killOnParentDeath) {}
 
+	static uint DefaultForType() { return EFT_Life; }
+
 	virtual EFeatureType GetFeatureType() override
 	{
 		return EFT_Life;
@@ -122,7 +124,7 @@ protected:
 	bool                                        m_killOnParentDeath = false;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE_DEFAULT(CParticleFeature, CFeatureLifeTime, "Life", "Time", colorLife, EFT_Life);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLifeTime, "Life", "Time", colorLife);
 
 //////////////////////////////////////////////////////////////////////////
 
