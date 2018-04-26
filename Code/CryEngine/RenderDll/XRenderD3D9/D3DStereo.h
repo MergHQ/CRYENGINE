@@ -116,7 +116,7 @@ public:
 		return { nullptr,{} };
 	}
 
-	void              Clear(ColorF clearColor) override
+	void Clear(ColorF clearColor) override
 	{
 		ClearEyes(clearColor);
 		ClearVrQuads(clearColor);
@@ -149,28 +149,30 @@ public:
 
 public:
 	// IStereoRenderer Interface
-	virtual EStereoDevice      GetDevice() const override { return m_device; }
-	virtual EStereoDeviceState GetDeviceState() const override { return m_deviceState; }
-	virtual void               GetInfo(EStereoDevice* device, EStereoMode* mode, EStereoOutput* output, EStereoDeviceState* state) const override;
+	EStereoDevice      GetDevice() const override final { return m_device; }
+	EStereoDeviceState GetDeviceState() const override final { return m_deviceState; }
+	void               GetInfo(EStereoDevice* device, EStereoMode* mode, EStereoOutput* output, EStereoDeviceState* state) const override final;
 
-	virtual void               ReleaseDevice() override;
+	void               ReleaseDevice() override final;
 
-	virtual bool               GetStereoEnabled() const override { return IsStereoEnabled(); }
-	virtual float              GetStereoStrength() const override { return m_stereoStrength; }
-	virtual float              GetMaxSeparationScene(bool half = true) const override { return m_maxSeparationScene * (half ? 0.5f : 1.0f); }
-	virtual float              GetZeroParallaxPlaneDist() const override { return m_zeroParallaxPlaneDist; }
-	virtual void               GetNVControlValues(bool& stereoEnabled, float& stereoStrength) const override;
+	bool               GetStereoEnabled() const override final { return IsStereoEnabled(); }
+	float              GetStereoStrength() const override final { return m_stereoStrength; }
+	float              GetMaxSeparationScene(bool half = true) const override final { return m_maxSeparationScene * (half ? 0.5f : 1.0f); }
+	float              GetZeroParallaxPlaneDist() const override final { return m_zeroParallaxPlaneDist; }
+	void               GetNVControlValues(bool& stereoEnabled, float& stereoStrength) const override final;
 
-	virtual void               PrepareFrame() override;
-	virtual void               SubmitFrameToHMD() override;
-	virtual void               DisplaySocialScreen() override;
+	void               PrepareFrame() override final;
+	void               SubmitFrameToHMD() override final;
+	void               DisplaySocialScreen() override final;
+
+	void               ReleaseRenderResources() override final;
 
 	// Hmd specific
-	virtual void               OnHmdDeviceChanged(IHmdDevice* pHmdDevice) override;
-	virtual IHmdRenderer*      GetIHmdRenderer() const override { return m_pHmdRenderer; }
+	void               OnHmdDeviceChanged(IHmdDevice* pHmdDevice) override final;
+	IHmdRenderer*      GetIHmdRenderer() const override final { return m_pHmdRenderer; }
 
 	// This returns the size of the headlocked quad layers
-	virtual Vec2_tpl<int>      GetOverlayResolution() const override { return { m_headlockedQuadCamera.GetViewSurfaceX(), m_headlockedQuadCamera.GetViewSurfaceZ() }; }
+	Vec2_tpl<int>      GetOverlayResolution() const override final { return { m_headlockedQuadCamera.GetViewSurfaceX(), m_headlockedQuadCamera.GetViewSurfaceZ() }; }
 	// ~IStereoRenderer Interface
 
 private:
