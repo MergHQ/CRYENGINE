@@ -194,6 +194,11 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 #if RENDERER_SUPPORT_SCALEFORM
 		SF_DestroyResources();
 #endif
+
+		// Drop stereo resources
+		if (gRenDev->GetIStereoRenderer())
+			gRenDev->GetIStereoRenderer()->ReleaseRenderResources();
+
 		RT_GraphicsPipelineShutdown();
 
 		// 3) At this point all device objects should be gone and we can safely reset PSOs, ResourceLayouts,..

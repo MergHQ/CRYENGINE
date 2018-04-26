@@ -172,6 +172,8 @@ struct IStereoRenderer
 	virtual void               DisplaySocialScreen() = 0;
 	virtual void               Clear(ColorF clearColor) = 0;
 
+	virtual void               ReleaseRenderResources() = 0;
+
 	// </interfuscator:shuffle>
 };
 
