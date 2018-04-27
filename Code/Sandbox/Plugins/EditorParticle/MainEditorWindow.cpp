@@ -31,7 +31,6 @@
 
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/IArchiveHost.h>
-//#include <Serialization/Qt.h>
 #include <CryString/CryPath.h>
 
 #include <../../CryPlugins/CryDefaultEntities/Module/DefaultComponents/Effects/ParticleComponent.h>
@@ -78,7 +77,7 @@ static CCurveEditorPanel* CreateCurveEditorPanel(QWidget* pParent = nullptr)
 	curveEditor.SetAllowDiscontinuous(false);
 	curveEditor.SetFitMargin(20);
 	return pCurveEditorPanel;
-	}
+}
 
 ///////////////////////////////////////////////////////////////////////
 CParticleEditor::CParticleEditor()
@@ -255,6 +254,14 @@ bool CParticleEditor::OnSaveAsset(CEditableAsset& editAsset)
 	SaveEffect(editAsset);
 
 	return true;
+}
+
+void CParticleEditor::OnDiscardAssetChanges()
+{
+	// Reload from file
+	if (auto* pAffectAsset = m_pEffectAssetModel->GetEffectAsset())
+		if (auto* pAsset = pAffectAsset->GetAsset())
+			m_pEffectAssetModel->OpenAsset(pAsset);
 }
 
 void CParticleEditor::OnCloseAsset()
@@ -451,7 +458,6 @@ void CParticleEditor::OnImportPfx1()
 				if (CAssetManager::GetInstance()->FindAssetForMetadata(assetFilePath.c_str()))
 				{
 					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Particle asset '%s' already exists.", assetFilePath.c_str());
-					return;
 				}
 
 				const CParticlesType* const pParticlesType = (const CParticlesType*)CAssetManager::GetInstance()->FindAssetType("Particles");
@@ -459,10 +465,9 @@ void CParticleEditor::OnImportPfx1()
 
 				if (pParticlesType->CreateForExistingEffect(assetFilePath.c_str()))
 				{
-					CAsset* const pAsset = CAssetManager::GetInstance()->FindAssetForMetadata(assetFilePath.c_str());
-					if (pAsset)
+					if (CAsset* const pAsset = CAssetManager::GetInstance()->FindAssetForMetadata(assetFilePath.c_str()))
 					{
-						(void)OpenAsset(pAsset);
+						OpenAsset(pAsset);
 					}
 				}
 			}
