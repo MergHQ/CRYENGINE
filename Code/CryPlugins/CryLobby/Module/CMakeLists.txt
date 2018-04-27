@@ -109,7 +109,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(CryLobby FORCE_SHARED PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
+CryEngineModule(CryLobby FORCE_SHARED_WIN PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 target_include_directories(${THIS_PROJECT}
 PUBLIC
 	"$<BUILD_INTERFACE:${CRYENGINE_DIR}/Code/CryPlugins/CryLobby/Interface>" "$<INSTALL_INTERFACE:include/CryLobby>"
@@ -134,7 +134,7 @@ if (WIN32 OR WIN64)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Ws2_32 Mswsock "${SPEEX}")
 elseif(DURANGO)
 	target_link_libraries(${THIS_PROJECT} PRIVATE Ws2_32 uuid)
-	set_property( TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY VS_CONFIG_PROPERTY_GROUP_ReferencePath "${CMAKE_CURRENT_SOURCE_DIR}/DurangoLive/DurangoChat/Microsoft.Xbox.GameChat;${DURANGO_SDK}/ExtensionSDKs/xbox services api/8.0/references/commonconfiguration/neutral")		
+	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY VS_CONFIG_PROPERTY_GROUP_ReferencePath "${CMAKE_CURRENT_SOURCE_DIR}/DurangoLive/DurangoChat/Microsoft.Xbox.GameChat;${DURANGO_SDK}/ExtensionSDKs/xbox services api/8.0/references/commonconfiguration/neutral")		
 	target_compile_options(${THIS_PROJECT} PRIVATE /ZW /wd4530)
 elseif(ORBIS)
 	target_compile_options(${THIS_PROJECT} PRIVATE -Wno-deprecated-declarations)

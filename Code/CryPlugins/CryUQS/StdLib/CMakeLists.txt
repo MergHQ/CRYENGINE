@@ -93,5 +93,5 @@ endmacro()
 CryEngineStaticModule(CryUQS_StdLib PCH "stdlib/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
 CryUQS_StdLib_SetupOptions()
 
-CryEngineStaticModule(CryUQS_StdLib_shareable FORCE_SHARED PCH "stdlib/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
+CryEngineStaticModule(CryUQS_StdLib_shareable FORCE_SHARED_WIN PCH "stdlib/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
 CryUQS_StdLib_SetupOptions()

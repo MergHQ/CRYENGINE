@@ -82,7 +82,7 @@ endmacro()
 CryEngineStaticModule(CryUQS_DataSource_XML PCH "datasource_xml/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
 CryUQS_DataSource_XML_SetupOptions()
 
-CryEngineStaticModule(CryUQS_DataSource_XML_shareable FORCE_SHARED PCH "datasource_xml/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
+CryEngineStaticModule(CryUQS_DataSource_XML_shareable FORCE_SHARED_WIN PCH "datasource_xml/StdAfx.cpp" SOLUTION_FOLDER "CryPlugins/CryUQS")
 CryUQS_DataSource_XML_SetupOptions()
 
 
