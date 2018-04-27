@@ -43,13 +43,13 @@ public:
 	virtual void                    DisableHMDTracking(bool disable) override;
 	virtual void                    UpdateInternal(EInternalUpdate) override {};
 	virtual void                    RecenterPose() override;
-	virtual void                    UpdateTrackingState(EVRComponent, int frameId) override;
+	virtual void                    UpdateTrackingState(EVRComponent, std::uint64_t frameId) override;
 	virtual const HmdTrackingState& GetNativeTrackingState() const override;
 	virtual const HmdTrackingState& GetLocalTrackingState() const override;
 	virtual Quad GetPlayArea() const override { return Quad(ZERO); }
 	virtual Vec2 GetPlayAreaSize() const override { return Vec2(ZERO); }
 
-	virtual stl::optional<Matrix34> RequestAsyncCameraUpdate(int frameId, const Quat& q, const Vec3 &p) override { return stl::nullopt; }
+	virtual stl::optional<Matrix34> RequestAsyncCameraUpdate(uint64_t frameId, const Quat& q, const Vec3 &p) override { return stl::nullopt; }
 
 	virtual const IHmdController*   GetController() const override;
 	virtual void                    GetPreferredRenderResolution(unsigned int& width, unsigned int& height);

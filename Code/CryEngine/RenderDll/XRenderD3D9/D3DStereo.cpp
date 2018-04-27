@@ -643,11 +643,13 @@ SStereoRenderContext CD3DStereoRenderer::PrepareStereoRenderingContext(int nFlag
 
 void CD3DStereoRenderer::PrepareFrame()
 {
+	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
+
 	if (!m_pHmdRenderer)
 		return;
 
 	CTimeValue timePresentBegin = gEnv->pTimer->GetAsyncTime();
-	m_pHmdRenderer->PrepareFrame(gcpRendD3D->GetFrameID());
+	m_pHmdRenderer->PrepareFrame(static_cast<uint64_t>(gcpRendD3D->GetRenderFrameID()));
 	gRenDev->m_fTimeWaitForGPU[gRenDev->GetRenderThreadID()] += gEnv->pTimer->GetAsyncTime().GetDifferenceInSeconds(timePresentBegin);
 }
 
@@ -773,7 +775,7 @@ void CD3DStereoRenderer::SubmitFrameToHMD()
 	if (!m_pHmdRenderer || gcpRendD3D->m_bDeviceLost)  // When unloading level, m_bDeviceLost is set to 2
 		return;
 
-	// If we have never rendered a frame, clear to black and submit layers
+	// Hack: If we have never rendered a frame, clear to black and submit layers
 	// This allows updating layer content during times when we do not render world, menu/loading/etc..
 	if (!m_frameRendered)
 	{
@@ -781,7 +783,7 @@ void CD3DStereoRenderer::SubmitFrameToHMD()
 
 		// Wait to begin frame, might block
 		CTimeValue timePresentBegin = gEnv->pTimer->GetAsyncTime();
-		m_pHmdRenderer->PrepareFrame(gcpRendD3D->GetFrameID());
+		m_pHmdRenderer->PrepareFrame(static_cast<uint64_t>(gcpRendD3D->GetRenderFrameID()));
 		gRenDev->m_fTimeWaitForGPU[gRenDev->GetRenderThreadID()] += gEnv->pTimer->GetAsyncTime().GetDifferenceInSeconds(timePresentBegin);
 	}
 

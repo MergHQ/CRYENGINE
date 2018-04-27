@@ -328,7 +328,7 @@ void CD3DOculusRenderer::OnResolutionChanged(int newWidth, int newHeight)
 	}
 }
 
-void CD3DOculusRenderer::PrepareFrame(int frameId)
+void CD3DOculusRenderer::PrepareFrame(uint64_t frameId)
 {
 	SetupRenderTargets();
 
@@ -342,8 +342,7 @@ void CD3DOculusRenderer::PrepareFrame(int frameId)
 		Initialize(m_eyeWidth, m_eyeHeight);
 	}
 
-	if (m_pOculusDevice->PrepareFrame(frameId) == CryVR::Oculus::OculusStatus::DeviceLost ||
-		m_pOculusDevice->BeginFrame()          == CryVR::Oculus::OculusStatus::DeviceLost)
+	if (m_pOculusDevice->BeginFrame(frameId) == CryVR::Oculus::OculusStatus::DeviceLost)
 		m_deviceLostFlag = true;
 }
 

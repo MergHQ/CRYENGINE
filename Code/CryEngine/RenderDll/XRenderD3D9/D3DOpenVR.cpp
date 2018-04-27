@@ -296,7 +296,7 @@ void CD3DOpenVRRenderer::OnResolutionChanged(int newWidth, int newHeight)
 	}
 }
 
-void CD3DOpenVRRenderer::PrepareFrame(int frameId)
+void CD3DOpenVRRenderer::PrepareFrame(uint64_t frameId)
 {
 	m_pOpenVRDevice->OnPrepare();
 }

@@ -302,7 +302,7 @@ void Device::RecenterPose()
 	m_recenterQuat = m_nativeTrackingState.pose.orientation.GetInverted();
 }
 
-void Device::UpdateTrackingState(EVRComponent e, int frameId)
+void Device::UpdateTrackingState(EVRComponent e, uint64_t frameId)
 {
 	if ((e & eVRComponent_Hmd) != 0)
 	{

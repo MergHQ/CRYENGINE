@@ -135,26 +135,7 @@ void CD3DOsvrRenderer::OnResolutionChanged(int newWidth, int newHeight)
 	}
 }
 
-void CD3DOsvrRenderer::ReleaseBuffers()
-{
-
-}
-
-void CD3DOsvrRenderer::PrepareFrame(int frameId){}
-
-void CD3DOsvrRenderer::RestoreDeviceStateAfterFrameSubmit()
-{
-
-	//refresh viewport. Have to actually change the viewport so that it gets changed to the device itself
-	//int ox, oy, ow, oh;
-	//m_pRenderer->GetViewport(&ox, &oy, &ow, &oh);
-	//m_pRenderer->RT_SetViewport(ox, oy, ow, oh + 1);
-	//m_pRenderer->FX_SetViewport();
-	//m_pRenderer->RT_SetViewport(ox, oy, ow, oh);
-	//m_pRenderer->FX_SetViewport();
-
-	//m_pRenderer->FX_RestoreRenderTarget(0);
-}
+void CD3DOsvrRenderer::PrepareFrame(uint64_t frameId){}
 
 void CD3DOsvrRenderer::SubmitFrame()
 {
@@ -167,9 +148,6 @@ void CD3DOsvrRenderer::SubmitFrame()
 	{
 		CryLogAlways("[CD3DEOsvrRenderer] failed to present textureset %d!", m_currentFrame);
 	}
-
-	//OSVR RenderManager changes the DX device state and does not restore the state previously set. Thus, need to force Cryengine to reset it's state.
-	RestoreDeviceStateAfterFrameSubmit();
 
 	#ifdef ENABLE_BENCHMARK_SENSOR
 	gcpRendD3D->m_benchmarkRendererSensor->AfterStereoFrameSubmit();

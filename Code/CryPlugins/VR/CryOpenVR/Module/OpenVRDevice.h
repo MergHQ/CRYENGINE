@@ -34,7 +34,7 @@ public:
 	virtual HMDCameraSetup GetHMDCameraSetup(int nEye, float projRatio, float fnear) const override;
 	virtual void                    UpdateInternal(EInternalUpdate type) override;
 	virtual void                    RecenterPose() override;
-	virtual void                    UpdateTrackingState(EVRComponent type, int frameId) override;
+	virtual void                    UpdateTrackingState(EVRComponent type, uint64_t frameId) override;
 	virtual const HmdTrackingState& GetNativeTrackingState() const override;
 	virtual const HmdTrackingState& GetLocalTrackingState() const override;
 	virtual Quad                    GetPlayArea() const override;
@@ -44,7 +44,7 @@ public:
 	virtual void                    GetPreferredRenderResolution(unsigned int& width, unsigned int& height) override;
 	virtual void                    DisableHMDTracking(bool disable) override;
 
-	virtual stl::optional<Matrix34> RequestAsyncCameraUpdate(int frameId, const Quat& q, const Vec3 &p) override;
+	virtual stl::optional<Matrix34> RequestAsyncCameraUpdate(uint64_t frameId, const Quat& q, const Vec3 &p) override;
 	// ~IHmdDevice
 
 	// IOpenVRDevice
@@ -143,7 +143,7 @@ private:
 	// General device fields:
 	bool                    m_bLoadingScreenActive;
 	volatile int            m_refCount;
-	int                     m_lastFrameID_UpdateTrackingState; // we could remove this. at some point we may want to sample more than once the tracking state per frame.
+	uint64_t                m_lastFrameID_UpdateTrackingState; // we could remove this. at some point we may want to sample more than once the tracking state per frame.
 	HmdDeviceInfo           m_devInfo;
 	EHmdSocialScreen        m_defaultSocialScreenBehavior;
 	// Tracking related:

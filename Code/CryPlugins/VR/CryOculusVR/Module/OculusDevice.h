@@ -8,6 +8,8 @@
 
 #include <CrySystem/vr/IHMDManager.h>
 
+#include <atomic>
+
 struct IConsoleCmdArgs;
 struct IRenderer;
 
@@ -28,7 +30,7 @@ public:
 	virtual HMDCameraSetup GetHMDCameraSetup(int nEye, float projRatio, float fnear) const;
 	virtual void                    UpdateInternal(EInternalUpdate type) override;
 	virtual void                    RecenterPose() override;
-	virtual void                    UpdateTrackingState(EVRComponent type, int frameId) override;
+	virtual void                    UpdateTrackingState(EVRComponent type, uint64_t frameId) override;
 	virtual const HmdTrackingState& GetNativeTrackingState() const override;
 	virtual const HmdTrackingState& GetLocalTrackingState() const override;
 	virtual Quad                    GetPlayArea() const override { return Quad(ZERO); }
@@ -38,7 +40,7 @@ public:
 	virtual void                    GetPreferredRenderResolution(unsigned int& width, unsigned int& height) override;
 	virtual int                     GetControllerCount() const override;
 
-	virtual stl::optional<Matrix34> RequestAsyncCameraUpdate(int frameId, const Quat& q, const Vec3 &p) override;
+	virtual stl::optional<Matrix34> RequestAsyncCameraUpdate(uint64_t frameId, const Quat& q, const Vec3 &p) override;
 	// ~IHMDDevice interface
 
 	// IOculusDevice interface
@@ -53,15 +55,13 @@ public:
 
 	/* 
 	 *	Rendering order: 
-	 * 1. UpdateTrackingState() should be called from main thread.
-	 * 2. PrepareFrame() should be called first and can be called from any thread.
-	 * 3. BeginFrame() should be called from render thread before submitting any rendering commands.
-	 * 4. SubmitFrame() should be called from render thread to finiliaze a frame.
+	 * 1. UpdateTrackingState() should be called from main thread with a unique frameid.
+	 * 2. BeginFrame() should be called from render thread before submitting any rendering commands.
+	 * 3. SubmitFrame() should be called from render thread to finiliaze a frame.
 	 *
 	 *	If the return is DeviceLost. Device needs to be destroyed and recreated along with all textures and swapchains.
 	*/	
-	virtual OculusStatus PrepareFrame(int frameId) override;
-	virtual OculusStatus BeginFrame() override;
+	virtual OculusStatus BeginFrame(uint64_t frameId) override;
 	virtual OculusStatus SubmitFrame(const SHmdSubmitFrameData& data) override;
 
 	virtual int  GetCurrentSwapChainIndex(void* pSwapChain) const override;
@@ -98,7 +98,7 @@ private:
 		ovrFovPort       eyeFovs[ovrEye_Count];
 		ovrViewScaleDesc viewScaleDesc;
 		double           sensorSampleTime;
-		int              frameId;
+		uint64_t         frameId;
 	};
 
 	struct SDeviceLayers
@@ -118,7 +118,7 @@ private:
 
 private:
 	volatile int     m_refCount;
-	int              m_lastFrameID_UpdateTrackingState; // we could remove this. at some point we may want to sample more than once the tracking state per frame.
+	uint64_t         m_lastFrameID_UpdateTrackingState; // we could remove this. at some point we may want to sample more than once the tracking state per frame.
 	int              m_perf_hud_info;
 	bool             m_queueAhead;
 	bool             m_bLoadingScreenActive;
@@ -133,7 +133,7 @@ private:
 
 	enum { BUFFER_SIZE_RENDER_PARAMS = 2 };
 	SRenderParameters     m_frameRenderParams[BUFFER_SIZE_RENDER_PARAMS]; // double buffer params since write happens in main thread and read in render thread
-	int                   m_currentFrameId;
+	uint64_t              m_currentFrameId;
 
 	ovrFovPort            m_eyeFovSym;
 

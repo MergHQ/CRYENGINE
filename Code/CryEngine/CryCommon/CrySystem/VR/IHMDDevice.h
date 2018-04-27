@@ -297,7 +297,7 @@ public:
 
 	virtual void      UpdateInternal(EInternalUpdate) = 0;
 	virtual void      RecenterPose() = 0;
-	virtual void      UpdateTrackingState(EVRComponent, int frameId) = 0;
+	virtual void      UpdateTrackingState(EVRComponent, uint64_t frameId) = 0;
 
 	//! \return Tracking state in Hmd's internal coordinates system.
 	virtual const HmdTrackingState& GetNativeTrackingState() const = 0;
@@ -323,7 +323,7 @@ public:
 	const stl::optional<std::pair<Quat, Vec3>>& GetOrientationForLateCameraInjection() const { return m_orientationForLateCameraInjection; }
 
 	//! Can be called from any thread to retrieve most up to date camera transformation
-	virtual stl::optional<Matrix34> RequestAsyncCameraUpdate(int frameId, const Quat& q, const Vec3 &p) = 0;
+	virtual stl::optional<Matrix34> RequestAsyncCameraUpdate(uint64_t frameId, const Quat& q, const Vec3 &p) = 0;
 
 protected:
 	virtual ~IHmdDevice() noexcept {}
