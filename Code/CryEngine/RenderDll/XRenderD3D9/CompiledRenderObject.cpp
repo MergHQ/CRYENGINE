@@ -437,38 +437,44 @@ void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTR
 				//Add to per node map for r_stats 6
 				if (pRenderer->CV_r_stats == 6 || pRenderer->m_pDebugRenderNode || pRenderer->m_bCollectDrawCallsInfoPerNode)
 				{
-					auto& drawCallsInfoPerNode = *passContext.pDrawCallInfoPerNode;
-					auto pItor = drawCallsInfoPerNode.find(pRenderNode);
-					
-					if (pItor != drawCallsInfoPerNode.end())
+					if (passContext.pDrawCallInfoPerNode)
 					{
-						CRenderer::SDrawCallCountInfo& pInfoDP = pItor->second;
-						pInfoDP.Update(pRenderObject, pRenderMesh, passContext.techniqueID);
-					}
-					else
-					{
-						CRenderer::SDrawCallCountInfo pInfoDP;
-						pInfoDP.Update(pRenderObject, pRenderMesh, passContext.techniqueID);
-						drawCallsInfoPerNode.insert(std::make_pair(pRenderNode, pInfoDP));
+						auto& drawCallsInfoPerNode = *passContext.pDrawCallInfoPerNode;
+						auto pItor = drawCallsInfoPerNode.find(pRenderNode);
+
+						if (pItor != drawCallsInfoPerNode.end())
+						{
+							CRenderer::SDrawCallCountInfo& pInfoDP = pItor->second;
+							pInfoDP.Update(pRenderObject, pRenderMesh, passContext.techniqueID);
+						}
+						else
+						{
+							CRenderer::SDrawCallCountInfo pInfoDP;
+							pInfoDP.Update(pRenderObject, pRenderMesh, passContext.techniqueID);
+							drawCallsInfoPerNode.insert(std::make_pair(pRenderNode, pInfoDP));
+						}
 					}
 				}
 
 				//Add to per mesh map for perfHUD / Statoscope
 				if (pRenderer->m_bCollectDrawCallsInfo)
 				{
-					IRenderer::RNDrawcallsMapMesh& drawCallsInfoPerMesh = *passContext.pDrawCallInfoPerMesh;
-					auto pItor = drawCallsInfoPerMesh.find(pRenderMesh);
+					if (passContext.pDrawCallInfoPerMesh)
+					{
+						IRenderer::RNDrawcallsMapMesh& drawCallsInfoPerMesh = *passContext.pDrawCallInfoPerMesh;
+						auto pItor = drawCallsInfoPerMesh.find(pRenderMesh);
 
-					if (pItor != drawCallsInfoPerMesh.end())
-					{
-						CRenderer::SDrawCallCountInfo& pInfoDP = pItor->second;
-						pInfoDP.Update(pRenderObject, pRenderMesh, passContext.techniqueID);
-					}
-					else
-					{
-						CRenderer::SDrawCallCountInfo pInfoDP;
-						pInfoDP.Update(pRenderObject, pRenderMesh, passContext.techniqueID);
-						drawCallsInfoPerMesh.insert(std::make_pair(pRenderMesh, pInfoDP));
+						if (pItor != drawCallsInfoPerMesh.end())
+						{
+							CRenderer::SDrawCallCountInfo& pInfoDP = pItor->second;
+							pInfoDP.Update(pRenderObject, pRenderMesh, passContext.techniqueID);
+						}
+						else
+						{
+							CRenderer::SDrawCallCountInfo pInfoDP;
+							pInfoDP.Update(pRenderObject, pRenderMesh, passContext.techniqueID);
+							drawCallsInfoPerMesh.insert(std::make_pair(pRenderMesh, pInfoDP));
+						}
 					}
 				}
 			}
