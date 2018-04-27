@@ -18,7 +18,7 @@
 
 namespace
 {
-inline CryVR::Oculus::OculusStatus CheckStatusAndReturn(ovrResult result) 
+inline CryVR::Oculus::OculusStatus CheckOvrResult(ovrResult result) 
 {
 	if (OVR_SUCCESS(result))
 		return CryVR::Oculus::OculusStatus::Success;
@@ -341,7 +341,7 @@ void Device::DisableHMDTracking(bool disable)
 }
 
 // -------------------------------------------------------------------------
-void Device::UpdateTrackingState(EVRComponent type, int frameId)
+void Device::UpdateTrackingState(EVRComponent type, uint64_t frameId)
 {
 	if (m_pSession)
 	{
@@ -886,17 +886,17 @@ void Device::CommitTextureSwapChain(const SHmdSwapChainInfo* pSwapChain)
 	}
 }
 
-OculusStatus Device::PrepareFrame(int frameId)
+OculusStatus Device::BeginFrame(uint64_t frameId)
 {
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, "OculusDevice::ovr_WaitToBeginFrame");
+	CRY_PROFILE_REGION(PROFILE_SYSTEM, "OculusDevice::BeginFrame()");
 
+	const auto waitResult = CheckOvrResult(ovr_WaitToBeginFrame(m_pSession, frameId));
+	const auto beginResult = CheckOvrResult(ovr_BeginFrame(m_pSession, frameId));
+	
 	m_currentFrameId = frameId;
-	return CheckStatusAndReturn(ovr_WaitToBeginFrame(m_pSession, m_currentFrameId));
-}
 
-OculusStatus Device::BeginFrame()
-{
-	return CheckStatusAndReturn(ovr_BeginFrame(m_pSession, m_currentFrameId));
+	// Return the unsuccessful one, if any.
+	return waitResult == CryVR::Oculus::OculusStatus::Success ? beginResult : waitResult;
 }
 
 OculusStatus Device::SubmitFrame(const SHmdSubmitFrameData &data)
@@ -955,7 +955,8 @@ OculusStatus Device::SubmitFrame(const SHmdSubmitFrameData &data)
 	{
 		CRY_PROFILE_REGION(PROFILE_SYSTEM, "OculusDevice::ovr_EndFrame");
 		// Submit all active layers to Oculus runtime
-		return CheckStatusAndReturn(ovr_EndFrame(m_pSession, m_currentFrameId, &frameParams.viewScaleDesc, activeLayers, numActiveLayers));
+		// (Is expected to be called after PrepareFrame() on same thread)
+		return CheckOvrResult(ovr_EndFrame(m_pSession, m_currentFrameId, &frameParams.viewScaleDesc, activeLayers, numActiveLayers));
 	}
 }
 
@@ -973,19 +974,19 @@ int Device::GetControllerCount() const
 	return m_controller.IsConnected(eHmdController_OculusRightHand) ? cnt + 1 : cnt;
 }
 
-stl::optional<Matrix34> Device::RequestAsyncCameraUpdate(int frameId, const Quat& oq, const Vec3 &op)
+stl::optional<Matrix34> Device::RequestAsyncCameraUpdate(std::uint64_t frameId, const Quat& oq, const Vec3 &op)
 {
 	const bool bZeroEyeOffset = false;
 	ovrPosef hmdToEyeOffset[2] = {};
 
 	// get the current tracking state
 	const bool kbLatencyMarker = true;
-	double frameTime = ovr_GetPredictedDisplayTime(m_pSession, frameId);
+	double frameTime = ovr_GetPredictedDisplayTime(m_pSession, static_cast<int64_t>(frameId));
 	ovrTrackingState trackingState = ovr_GetTrackingState(m_pSession, frameTime, kbLatencyMarker);
 
 	ovrPosef eyePose[2];
 	double sensorSampleTime;
-	ovr_GetEyePoses(m_pSession, frameId, kbLatencyMarker, bZeroEyeOffset ? hmdToEyeOffset : m_eyeRenderHmdToEyeOffset, eyePose, &sensorSampleTime);
+	ovr_GetEyePoses(m_pSession, static_cast<int64_t>(frameId), kbLatencyMarker, bZeroEyeOffset ? hmdToEyeOffset : m_eyeRenderHmdToEyeOffset, eyePose, &sensorSampleTime);
 
 	const ICVar* pStereoScaleCoefficient = gEnv->pConsole ? gEnv->pConsole->GetCVar("r_stereoScaleCoefficient") : 0;
 	const float stereoScaleCoefficient = pStereoScaleCoefficient ? pStereoScaleCoefficient->GetFVal() : 1.f;

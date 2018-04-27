@@ -427,7 +427,7 @@ void Device::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 }
 
 // -------------------------------------------------------------------------
-void Device::UpdateTrackingState(EVRComponent type, int frameID)
+void Device::UpdateTrackingState(EVRComponent type, uint64_t frameID)
 {
 	IRenderer* pRenderer = gEnv->pRenderer;
 
@@ -1005,7 +1005,7 @@ void Device::OnPostPresent()
 }
 
 // -------------------------------------------------------------------------
-stl::optional<Matrix34> Device::RequestAsyncCameraUpdate(int frameId, const Quat& oq, const Vec3 &op)
+stl::optional<Matrix34> Device::RequestAsyncCameraUpdate(uint64_t frameId, const Quat& oq, const Vec3 &op)
 {
 	// Predict time till photons in seconds
 	float secondsSinceLastVsync;
