@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "VehicleHelperObject.h"
 #include "Viewport.h"
-
+#include "Util/MFCUtil.h"
 #include "VehicleData.h"
 #include "VehiclePrototype.h"
 #include "VehiclePart.h"
@@ -15,10 +15,10 @@ REGISTER_CLASS_DESC(CVehicleHelperClassDesc);
 //////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CVehicleHelper, CBaseObject)
 
-#define RADIUS                     0.05f
+#define RADIUS 0.05f
 
-#define VEHICLE_HELPER_COLOR       (RGB(255, 255, 120))
-#define VEHICLE_ASSET_HELPER_COLOR (RGB(120, 255, 120))
+const ColorB g_vehicleHelperColor(255, 255, 120);
+const ColorB g_vehicleAssetHelperColor(120, 255, 120);
 
 //////////////////////////////////////////////////////////////////////////
 CVehicleHelper::CVehicleHelper()
@@ -27,7 +27,7 @@ CVehicleHelper::CVehicleHelper()
 	m_fromGeometry = false;
 	m_pVehicle = 0;
 
-	ChangeColor(VEHICLE_HELPER_COLOR);
+	ChangeColor(g_vehicleHelperColor);
 
 	InitOnTransformCallback(this);
 }
@@ -130,7 +130,7 @@ void CVehicleHelper::Done()
 //////////////////////////////////////////////////////////////////////////
 bool CVehicleHelper::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(RGB(255, 255, 0));
+	SetColor(ColorB(255, 255, 0));
 	bool res = CBaseObject::Init(prev, file);
 
 	return res;
@@ -183,7 +183,7 @@ bool CVehicleHelper::HitTest(HitContext& hc)
 //////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::Display(DisplayContext& dc)
 {
-	COLORREF color = GetColor();
+	COLORREF color = CMFCUtils::ColorBToColorRef(GetColor());
 	float radius = RADIUS;
 
 	//dc.SetColor( color, 0.5f );
@@ -266,12 +266,12 @@ void CVehicleHelper::SetIsFromGeometry(bool b)
 	m_fromGeometry = b;
 	if (m_fromGeometry)
 	{
-		ChangeColor(VEHICLE_ASSET_HELPER_COLOR);
+		ChangeColor(g_vehicleAssetHelperColor);
 		SetFrozen(true);
 	}
 	else
 	{
-		ChangeColor(VEHICLE_HELPER_COLOR);
+		ChangeColor(g_vehicleHelperColor);
 		SetFrozen(false);
 	}
 }

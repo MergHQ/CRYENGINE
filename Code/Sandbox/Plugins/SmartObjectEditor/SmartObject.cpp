@@ -41,7 +41,7 @@ void CSmartObject::Done()
 
 bool CSmartObject::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(RGB(255, 255, 0));
+	SetColor(ColorB(255, 255, 0));
 	bool res = __super::Init(prev, file);
 
 	return res;

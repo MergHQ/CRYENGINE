@@ -327,7 +327,7 @@ bool ClipVolumeObject::HitTest(HitContext& hc)
 bool ClipVolumeObject::Init(CBaseObject* prev, const string& file)
 {
 	bool res = __super::Init(prev, file);
-	SetColor(RGB(0, 0, 255));
+	SetColor(ColorB(0, 0, 255));
 
 	if (m_pEntity)
 		m_pEntity->CreateProxy(ENTITY_PROXY_CLIPVOLUME);
@@ -399,29 +399,29 @@ void ClipVolumeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	CEntityObject::CreateInspectorWidgets(creator);
 
 	creator.AddPropertyTree<ClipVolumeObject>("Clip Volume", [](ClipVolumeObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)
-	{
-		pObject->m_pVarObject->SerializeVariable(&pObject->mv_filled, ar);
-		pObject->m_pVarObject->SerializeVariable(&pObject->mv_ignoreOutdoorAO, ar);
-		pObject->m_pVarObject->SerializeVariable(&pObject->mv_ratioViewDist, ar);
-
-		if (ar.openBlock("operators", "Operators"))
 		{
-			if (ar.openBlock("volume", "Volume"))
+			pObject->m_pVarObject->SerializeVariable(&pObject->mv_filled, ar);
+			pObject->m_pVarObject->SerializeVariable(&pObject->mv_ignoreOutdoorAO, ar);
+			pObject->m_pVarObject->SerializeVariable(&pObject->mv_ratioViewDist, ar);
+
+			if (ar.openBlock("operators", "Operators"))
 			{
-				ar(Serialization::ActionButton([=]
-				{
-					GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
+			  if (ar.openBlock("volume", "Volume"))
+			  {
+			    ar(Serialization::ActionButton([ = ]
+					{
+						GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
 
-					GetIEditor()->SetEditTool("EditTool.ClipVolumeTool", false);
-				}),
-					"edit", "^Edit");
+						GetIEditor()->SetEditTool("EditTool.ClipVolumeTool", false);
+			    }),
+			       "edit", "^Edit");
 
-				ar(Serialization::ActionButton(std::bind(&ClipVolumeObject::LoadFromCGF, pObject)), "load_cgf", "^Load CGF");
-				ar.closeBlock();
+			    ar(Serialization::ActionButton(std::bind(&ClipVolumeObject::LoadFromCGF, pObject)), "load_cgf", "^Load CGF");
+			    ar.closeBlock();
+			  }
+			  ar.closeBlock();
 			}
-			ar.closeBlock();
-		}
-	});
+	  });
 }
 
 void ClipVolumeObject::OnPropertyChanged(IVariable* var)
@@ -455,7 +455,6 @@ std::vector<EDesignerTool> ClipVolumeObject::GetIncompatibleSubtools()
 
 	return toolList;
 }
-
 
 string ClipVolumeObject::GenerateGameFilename()
 {
@@ -499,10 +498,10 @@ void ClipVolumeObject::OnEvent(ObjectEvent event)
 	case EVENT_HIDE_HELPER:
 	case EVENT_OUTOFGAME:
 	case EVENT_SHOW_HELPER:
-	{
-		UpdateHiddenIStatObjState();
-		break;
-	}
+		{
+			UpdateHiddenIStatObjState();
+			break;
+		}
 	}
 }
 

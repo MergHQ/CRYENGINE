@@ -9,7 +9,7 @@ class CXTPShortcutManager;
 struct IVariable;
 
 /*! Collection of Utility MFC functions.
-*/
+ */
 struct PLUGIN_API CMFCUtils
 {
 	//////////////////////////////////////////////////////////////////////////
@@ -18,16 +18,14 @@ struct PLUGIN_API CMFCUtils
 
 	//////////////////////////////////////////////////////////////////////////
 	static void TransparentBlt(HDC hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, HBITMAP hBitmap, int nXSrc, int nYSrc,
-		COLORREF colorTransparent);
+	                           COLORREF colorTransparent);
 
-	static void LoadShortcuts(CXTPCommandBars* pCommandBars, UINT nMenuIDResource, const char* pSectionNameForLoading);
-	static void ShowShortcutsCustomizeDlg(CXTPCommandBars* pCommandBars, UINT nMenuIDResource, const char* pSectionNameForSaving);
-	static void ExportShortcuts(CXTPShortcutManager* pShortcutMgr);
-	static void ImportShortcuts(CXTPShortcutManager* pShortcutMgr, const char* pSectionNameForSaving);
-
+	static void       LoadShortcuts(CXTPCommandBars* pCommandBars, UINT nMenuIDResource, const char* pSectionNameForLoading);
+	static void       ShowShortcutsCustomizeDlg(CXTPCommandBars* pCommandBars, UINT nMenuIDResource, const char* pSectionNameForSaving);
+	static void       ExportShortcuts(CXTPShortcutManager* pShortcutMgr);
+	static void       ImportShortcuts(CXTPShortcutManager* pShortcutMgr, const char* pSectionNameForSaving);
 
 	static IVariable* GetChildVar(const IVariable* array, const char* name, bool recursive = false);
-
 
 	//////////////////////////////////////////////////////////////////////////
 	// Color utils
@@ -41,6 +39,16 @@ struct PLUGIN_API CMFCUtils
 	inline static int Vec2Rgb(const Vec3& color)
 	{
 		return RGB(color.x * 255, color.y * 255, color.z * 255);
+	}
+
+	inline static ColorB ColorRefToColorB(COLORREF color)
+	{
+		return ColorB(GetRValue(color), GetGValue(color), GetBValue(color));
+	}
+
+	inline static COLORREF ColorBToColorRef(ColorB color)
+	{
+		return RGB(color.r, color.g, color.b);
 	}
 
 	static COLORREF ColorLinearToGamma(ColorF col);
@@ -59,11 +67,11 @@ struct PLUGIN_API CMFCUtils
 //Do not use anymore, only kept for compatibility with old MFC based tools
 namespace Deprecated
 {
-	inline bool CheckVirtualKey(int virtualKey)
-	{
-		GetAsyncKeyState(virtualKey);
-		if (GetAsyncKeyState(virtualKey) & (1 << 15))
-			return true;
-		return false;
-	}
+inline bool CheckVirtualKey(int virtualKey)
+{
+	GetAsyncKeyState(virtualKey);
+	if (GetAsyncKeyState(virtualKey) & (1 << 15))
+		return true;
+	return false;
+}
 }

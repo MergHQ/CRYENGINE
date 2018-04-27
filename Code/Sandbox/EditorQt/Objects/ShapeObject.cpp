@@ -39,7 +39,7 @@
 REGISTER_CLASS_DESC(CGameShapeLedgeStaticObjectClassDesc);
 REGISTER_CLASS_DESC(CGameShapeLedgeObjectClassDesc);
 REGISTER_CLASS_DESC(CGameShapeObjectClassDesc);
-//REGISTER_CLASS_DESC(CAIPerceptionModifierObjectClassDesc); 
+//REGISTER_CLASS_DESC(CAIPerceptionModifierObjectClassDesc);
 REGISTER_CLASS_DESC(CAIOcclusionPlaneObjectClassDesc);
 REGISTER_CLASS_DESC(CAIPathObjectClassDesc);
 REGISTER_CLASS_DESC(CAIShapeObjectClassDesc);
@@ -667,25 +667,22 @@ void CSplitShapeTool::Display(DisplayContext& dc)
 	{
 		float fPointSize = 1.0f;
 		const Matrix34& wtm = m_shape->GetWorldTM();
-
-		COLORREF col = m_shape->GetColor();
 		if (m_bSnap)
 		{
-			dc.SetColor(RGB(127, 255, 127));
+			dc.SetColor(ColorB(127, 255, 127));
 			Vec3 p0 = wtm.TransformPoint(m_shape->GetPoint(m_curIndex));
 			float fScale = fPointSize * dc.view->GetScreenScaleFactor(p0) * 0.02f;
 			dc.DrawBall(p0, fScale);
 		}
 		else
 		{
-			dc.SetColor(RGB(255, 127, 127));
+			dc.SetColor(ColorB(255, 127, 127));
 			Vec3 p0 = wtm.TransformPoint(m_curPoint);
 			float fScale = fPointSize * dc.view->GetScreenScaleFactor(p0) * 0.01f;
 			Vec3 vScale(fScale, fScale, fScale);
 			dc.DrawSolidBox(p0 - vScale, p0 + vScale);
 		}
-
-		dc.SetColor(col);
+		dc.SetColor(m_shape->GetColor());
 	}
 };
 
@@ -917,7 +914,7 @@ CShapeObject::CShapeObject()
 
 	m_bBeingManuallyCreated = false;
 
-	SetColor(CMFCUtils::Vec2Rgb(Vec3(0.0f, 0.8f, 1.0f)));
+	SetColor(ColorB(0, 204, 255));
 	UseMaterialLayersMask(false);
 
 	m_pOwnSoundVarBlock = new CVarBlock;
@@ -1312,7 +1309,7 @@ void CShapeObject::DisplayNormal(DisplayContext& dc)
 				dc.SetFreezeColor();
 			else
 				dc.SetColor(GetColor());
-			col = GetColor();
+			col = CMFCUtils::ColorBToColorRef(GetColor());
 		}
 		dc.SetAlpha(0.8f);
 
@@ -1387,7 +1384,7 @@ void CShapeObject::DisplayNormal(DisplayContext& dc)
 		if (IsFrozen())
 			col = dc.GetFreezeColor();
 		else
-			col = GetColor();
+			col = CMFCUtils::ColorBToColorRef(GetColor());
 
 		for (int i = 0; i < num; i++)
 		{
@@ -1428,10 +1425,17 @@ void CShapeObject::DisplayNormal(DisplayContext& dc)
 	{
 		if (mv_displayFilled || (gViewportPreferences.fillSelectedShapes && IsSelected()))
 		{
+			ColorB color = GetColor();
 			if (IsHighlighted())
-				dc.SetColor(GetColor(), 0.1f);
+			{
+				color.a = 25;
+			}
 			else
-				dc.SetColor(GetColor(), 0.3f);
+			{
+				color.a = 77;
+			}
+			dc.SetColor(color);
+
 			static AreaPoints tris;
 			tris.resize(0);
 			tris.reserve(m_points.size() * 3);
@@ -1483,7 +1487,7 @@ void CShapeObject::DisplayNormal(DisplayContext& dc)
 		}
 	}
 
-	DrawDefault(dc, GetColor());
+	DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 }
 
 namespace Private_SoundDisplayColors
@@ -1560,7 +1564,7 @@ void CShapeObject::DisplaySoundInfo(DisplayContext& dc)
 				dc.SetFreezeColor();
 			else
 				dc.SetColor(GetColor());
-			col = GetColor();
+			col = CMFCUtils::ColorBToColorRef(GetColor());
 		}
 		dc.SetAlpha(0.8f);
 
@@ -1634,9 +1638,13 @@ void CShapeObject::DisplaySoundInfo(DisplayContext& dc)
 			dc.DepthTestOff();
 
 		if (IsFrozen())
+		{
 			col = dc.GetFreezeColor();
+		}
 		else
-			col = GetColor();
+		{
+			col = CMFCUtils::ColorBToColorRef(GetColor());
+		}
 
 		for (int i = 0; i < num; i++)
 		{
@@ -1681,7 +1689,7 @@ void CShapeObject::DisplaySoundInfo(DisplayContext& dc)
 	if (bLineWidth)
 		dc.SetLineWidth(0);
 
-	DrawDefault(dc, GetColor());
+	DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 }
 
 void CShapeObject::DisplaySoundRoofAndFloor(DisplayContext& dc)
@@ -3014,7 +3022,7 @@ void CShapeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiE
 //////////////////////////////////////////////////////////////////////////
 CAIPathObject::CAIPathObject()
 {
-	SetColor(RGB(180, 180, 180));
+	SetColor(ColorB(180, 180, 180));
 	SetClosed(false);
 	m_bRoad = false;
 	m_bValidatePath = false;
@@ -3301,7 +3309,7 @@ void CAIPathObject::RemovePoint(int index)
 //////////////////////////////////////////////////////////////////////////
 CAIShapeObject::CAIShapeObject()
 {
-	SetColor(RGB(30, 65, 120));
+	SetColor(ColorB(30, 65, 120));
 	SetClosed(true);
 
 	if (m_pVarObject == nullptr)
@@ -3394,7 +3402,7 @@ void CAIShapeObject::UpdateGameArea()
 CAIOcclusionPlaneObject::CAIOcclusionPlaneObject()
 {
 	m_bDisplayFilledWhenSelected = true;
-	SetColor(RGB(24, 90, 231));
+	SetColor(ColorB(24, 90, 231));
 	m_bForce2D = true;
 	mv_closed = true;
 	mv_displayFilled = true;
@@ -3458,7 +3466,7 @@ void CAIOcclusionPlaneObject::UpdateGameArea()
 CAIPerceptionModifierObject::CAIPerceptionModifierObject()
 {
 	m_bDisplayFilledWhenSelected = true;
-	SetColor(RGB(24, 90, 231));
+	SetColor(ColorB(24, 90, 231));
 	m_bForce2D = false;
 	mv_closed = false;
 	mv_displayFilled = true;
@@ -3573,7 +3581,7 @@ CAITerritoryObject::CAITerritoryObject()
 	m_entityClass = "AITerritory";
 
 	m_bDisplayFilledWhenSelected = true;
-	SetColor(RGB(24, 90, 231));
+	SetColor(ColorB(24, 90, 231));
 	m_bForce2D = false;
 	mv_closed = true;
 	mv_displayFilled = false;
@@ -3682,10 +3690,10 @@ CGameShapeObject::CGameShapeObject()
 	m_entityClass = "";
 }
 
-bool CGameShapeObject::Init(CBaseObject * prev, const string & file)
+bool CGameShapeObject::Init(CBaseObject* prev, const string& file)
 {
 	// Init will be called twice here since the OnClassChanged function deletes the entity and respawns it with the new class type.
-	// therefore we have to check if the object was already initializing or not. 
+	// therefore we have to check if the object was already initializing or not.
 	m_bInitialized = false;
 
 	bool bResult = CShapeObject::Init(prev, file);
@@ -4256,7 +4264,6 @@ void CNavigationAreaObject::Serialize(CObjectArchive& ar)
 	__super::Serialize(ar);
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 void CNavigationAreaObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
@@ -4270,30 +4277,30 @@ void CNavigationAreaObject::CreateInspectorWidgets(CInspectorWidgetCreator& crea
 
 		for (int i = 0, n = pObject->mv_agentTypes.GetNumVariables(); i < n; ++i)
 		{
-			pObject->m_pVarObject->SerializeVariable(pObject->mv_agentTypes.GetVariable(i), ar);
+		  pObject->m_pVarObject->SerializeVariable(pObject->mv_agentTypes.GetVariable(i), ar);
 		}
 
 		if (ar.openBlock("Operators", "<Operators"))
 		{
-			if (bMultiEdit)
-			{
-				Serialization::SEditToolButton mergeButton("");
-				mergeButton.SetToolClass(RUNTIME_CLASS(CMergeShapesTool), 0);
-				ar(mergeButton, "merge", "^Merge");
-				ar.closeBlock();
-			}
-			else
-			{
-				Serialization::SEditToolButton editShapeButton("");
-				editShapeButton.SetToolClass(RUNTIME_CLASS(CEditShapeTool), "object", pObject);
-				ar(editShapeButton, "edit_shape", "^Edit");
+		  if (bMultiEdit)
+		  {
+		    Serialization::SEditToolButton mergeButton("");
+		    mergeButton.SetToolClass(RUNTIME_CLASS(CMergeShapesTool), 0);
+		    ar(mergeButton, "merge", "^Merge");
+		    ar.closeBlock();
+		  }
+		  else
+		  {
+		    Serialization::SEditToolButton editShapeButton("");
+		    editShapeButton.SetToolClass(RUNTIME_CLASS(CEditShapeTool), "object", pObject);
+		    ar(editShapeButton, "edit_shape", "^Edit");
 
-				Serialization::SEditToolButton splitShapeButton("");
-				splitShapeButton.SetToolClass(RUNTIME_CLASS(CSplitShapeTool), "object", pObject);
-				ar(splitShapeButton, "split_shape", "^Split");
-				ar.closeBlock();
-			}
-			ar.closeBlock();
+		    Serialization::SEditToolButton splitShapeButton("");
+		    splitShapeButton.SetToolClass(RUNTIME_CLASS(CSplitShapeTool), "object", pObject);
+		    ar(splitShapeButton, "split_shape", "^Split");
+		    ar.closeBlock();
+		  }
+		  ar.closeBlock();
 		}
 	});
 }
@@ -4303,7 +4310,7 @@ void CNavigationAreaObject::Display(DisplayContext& dc)
 {
 	if (IsSelected() || gAINavigationPreferences.navigationShowAreas())
 	{
-		SetColor(mv_exclusion ? RGB(200, 0, 0) : RGB(0, 126, 255));
+		SetColor(mv_exclusion ? ColorB(200, 0, 0) : ColorB(0, 126, 255));
 
 		float lineWidth = dc.GetLineWidth();
 		dc.SetLineWidth(8.0f);
@@ -4832,7 +4839,7 @@ void CNavigationAreaObject::EndCreation()
 	Vec3 position = GetPos();
 	position.z += gAINavigationPreferences.initialNavigationAreaHeightOffset() - zOffset;
 	SetPos(position);
-	
+
 	__super::EndCreation();
 }
 

@@ -37,7 +37,7 @@ public:
 	virtual void             SetMinSpec(uint32 nSpec, bool bSetChildren = true);
 	virtual IPhysicalEntity* GetCollisionEntity() const;
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void                     CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	virtual float            GetCreationOffsetFromTerrain() const override { return 0.f; }
 
@@ -57,32 +57,32 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual IStatObj* GetIStatObj();
-	int               GetRenderFlags() const                       { return m_renderFlags; };
-	IRenderNode*      GetEngineNode() const                        { return m_pRenderNode; };
-	float             GetRatioLod() const                          { return mv_ratioLOD; };
-	float             GetRatioViewDist() const                     { return mv_ratioViewDist; };
-	const string&     GetGeometryFile() const                      { return mv_geometryFile; }
-	void              SetGeometryFile(const string& geometryFile) { mv_geometryFile = geometryFile; }
+	int               GetRenderFlags() const   { return m_renderFlags; };
+	IRenderNode*      GetEngineNode() const    { return m_pRenderNode; };
+	float             GetRatioLod() const      { return mv_ratioLOD; };
+	float             GetRatioViewDist() const { return mv_ratioViewDist; };
+	const string& GetGeometryFile() const  { return mv_geometryFile; }
+	void          SetGeometryFile(const string& geometryFile);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Material
 	//////////////////////////////////////////////////////////////////////////
-	virtual void       SetMaterial(IEditorMaterial* mtl);
+	virtual void             SetMaterial(IEditorMaterial* mtl);
 	virtual IEditorMaterial* GetRenderMaterial() const;
-	virtual void       SetMaterialLayersMask(uint32 nLayersMask);
+	virtual void             SetMaterialLayersMask(uint32 nLayersMask);
 
-	virtual void InvalidateGeometryFile(const string& gamePath) override;
+	virtual void             InvalidateGeometryFile(const string& gamePath) override;
 
-	bool  ApplyIndirLighting() const { return false; }
+	bool                     ApplyIndirLighting() const { return false; }
 
-	void  SaveToCGF();
-	void  ReloadGeometry();
+	void                     SaveToCGF();
+	void                     ReloadGeometry();
 
-	bool  IncludeForGI();
+	bool                     IncludeForGI();
 
-	void  CreateBrushFromMesh(const char* meshFilname);
+	void                     CreateBrushFromMesh(const char* meshFilname);
 
-	void  GetVerticesInWorld(std::vector<Vec3>& vertices) const;
+	void                     GetVerticesInWorld(std::vector<Vec3>& vertices) const;
 
 protected:
 	//! Dtor must be protected.
@@ -112,7 +112,7 @@ protected:
 
 	virtual string GetMouseOverStatisticsText() const;
 
-	virtual void UpdateHighlightPassState(bool bSelected, bool bHighlighted);
+	virtual void   UpdateHighlightPassState(bool bSelected, bool bHighlighted);
 
 	AABB     m_bbox;
 	Matrix34 m_invertTM;
@@ -134,29 +134,29 @@ protected:
 
 	CCollisionFilteringProperties m_collisionFiltering;
 	CVariable<bool>               mv_outdoor;
-	CVariable<bool>    mv_castShadowMaps;
-	CSmartVariable<bool> mv_giMode;
-	CVariable<bool>    mv_dynamicDistanceShadows;
-	CVariable<bool>    mv_rainOccluder;
-	CVariable<bool>    mv_registerByBBox;
-	CVariableEnum<int> mv_hideable;
-	CVariable<int>   mv_ratioLOD;
-	CVariable<int>   mv_ratioViewDist;
-	CVariable<bool>  mv_excludeFromTriangulation;
-	CVariable<bool>  mv_noDynWater;
-	CVariable<float> mv_aiRadius;
-	CVariable<bool>  mv_noDecals;
-	CVariable<bool>  mv_recvWind;
-	CVariable<bool>  mv_Occluder;
-	CVariable<bool>  mv_drawLast;
-	CVariable<int>   mv_shadowLodBias;
+	CVariable<bool>               mv_castShadowMaps;
+	CSmartVariable<bool>          mv_giMode;
+	CVariable<bool>               mv_dynamicDistanceShadows;
+	CVariable<bool>               mv_rainOccluder;
+	CVariable<bool>               mv_registerByBBox;
+	CVariableEnum<int>            mv_hideable;
+	CVariable<int>                mv_ratioLOD;
+	CVariable<int>                mv_ratioViewDist;
+	CVariable<bool>               mv_excludeFromTriangulation;
+	CVariable<bool>               mv_noDynWater;
+	CVariable<float>              mv_aiRadius;
+	CVariable<bool>               mv_noDecals;
+	CVariable<bool>               mv_recvWind;
+	CVariable<bool>               mv_Occluder;
+	CVariable<bool>               mv_drawLast;
+	CVariable<int>                mv_shadowLodBias;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Rendering flags.
-	int               m_renderFlags;
+	int  m_renderFlags;
 
-	bool              m_bIgnoreNodeUpdate;
-	bool              m_RePhysicalizeOnVisible;
+	bool m_bIgnoreNodeUpdate;
+	bool m_RePhysicalizeOnVisible;
 
 private:
 	// Brushes need to explicitly notify the NavMesh of their old AABB *before* it gets changed by transformation, because

@@ -48,11 +48,11 @@ protected:
 	void DeleteThis() { delete this; };
 
 private:
-	CGravityVolumeObject* m_GravityVolume;
-	int                   m_currPoint;
-	bool                  m_modifying;
-	CPoint                m_mouseDownPos;
-	Vec3                  m_pointPos;
+	CGravityVolumeObject*  m_GravityVolume;
+	int                    m_currPoint;
+	bool                   m_modifying;
+	CPoint                 m_mouseDownPos;
+	Vec3                   m_pointPos;
 	ITransformManipulator* m_pManipulator;
 };
 
@@ -382,7 +382,7 @@ CGravityVolumeObject::CGravityVolumeObject()
 	m_selectedPoint = -1;
 	m_entityClass = "AreaBezierVolume";
 
-	SetColor(CMFCUtils::Vec2Rgb(Vec3(0, 0.8f, 1)));
+	SetColor(ColorB(0, 204, 255));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -453,19 +453,19 @@ void CGravityVolumeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creat
 
 		if (ar.openBlock("Operators", "<Operators"))
 		{
-			size_t num_points = pObject->m_points.size();
-			ar(num_points, "num_points", "!Number Of Points:");
+		  size_t num_points = pObject->m_points.size();
+		  ar(num_points, "num_points", "!Number Of Points:");
 
-			Serialization::SEditToolButton editShapeButton("");
-			editShapeButton.SetToolClass(RUNTIME_CLASS(CEditGravityVolumeTool), "object", pObject);
-			ar(editShapeButton, "edit_shape", "^Edit Shape");
+		  Serialization::SEditToolButton editShapeButton("");
+		  editShapeButton.SetToolClass(RUNTIME_CLASS(CEditGravityVolumeTool), "object", pObject);
+		  ar(editShapeButton, "edit_shape", "^Edit Shape");
 
-			ar.closeBlock();
+		  ar.closeBlock();
 		}
 
 		if (ar.isInput())
 		{
-			pObject->CalcBBox();
+		  pObject->CalcBBox();
 		}
 	});
 }
@@ -784,7 +784,7 @@ void CGravityVolumeObject::Display(DisplayContext& dc)
 				dc.SetFreezeColor();
 			else
 				dc.SetColor(GetColor());
-			col = GetColor();
+			col = CMFCUtils::ColorBToColorRef(GetColor());
 		}
 
 		DrawBezierSpline(dc, m_points, col, false, IsSelected());
@@ -810,7 +810,7 @@ void CGravityVolumeObject::Display(DisplayContext& dc)
 		}
 	}
 
-	DrawDefault(dc, GetColor());
+	DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 }
 
 //////////////////////////////////////////////////////////////////////////

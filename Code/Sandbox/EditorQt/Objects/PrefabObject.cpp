@@ -19,7 +19,7 @@
 #include "Grid.h"
 #include "Viewport.h"
 #include <Preferences/ViewportPreferences.h>
-
+#include "Util/MFCUtil.h"
 #include <CryCore/ToolsHelpers/GuidUtil.h>
 #include "Util/BoostPythonHelpers.h"
 #include "Objects/EntityObject.h"
@@ -75,7 +75,7 @@ public:
 	}
 
 private:
-	bool m_resumed{ false };
+	bool m_resumed { false };
 };
 
 }
@@ -195,7 +195,7 @@ IMPLEMENT_DYNCREATE(PrefabLinkTool, CPickObjectTool)
 //////////////////////////////////////////////////////////////////////////
 CPrefabObject::CPrefabObject()
 {
-	SetColor(RGB(255, 220, 0)); // Yellowish
+	SetColor(ColorB(255, 220, 0)); // Yellowish
 	ZeroStruct(m_prefabGUID);
 
 	m_bbox.min = m_bbox.max = Vec3(0, 0, 0);
@@ -378,7 +378,7 @@ void CPrefabObject::Display(DisplayContext& dc)
 	if (!gViewportDebugPreferences.showPrefabObjectHelper)
 		return;
 
-	DrawDefault(dc, GetColor());
+	DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 
 	dc.PushMatrix(GetWorldTM());
 
@@ -398,9 +398,15 @@ void CPrefabObject::Display(DisplayContext& dc)
 		if (gViewportPreferences.alwaysShowPrefabBox)
 		{
 			if (IsFrozen())
+			{
 				dc.SetFreezeColor();
+			}
 			else
-				dc.SetColor(GetColor(), 0.2f);
+			{
+				ColorB color = GetColor();
+				color.a = 51;
+				dc.SetColor(color);
+			}
 
 			dc.DepthWriteOff();
 			;
@@ -669,7 +675,7 @@ void CPrefabObject::SetPrefab(CPrefabItem* pPrefab, bool bForceReload)
 	pPrefabManager->SetSkipPrefabUpdate(false);
 }
 
-void CPrefabObject::AttachLoadedChildrenToPrefab(CObjectArchive &ar, IObjectLayer* pLayer)
+void CPrefabObject::AttachLoadedChildrenToPrefab(CObjectArchive& ar, IObjectLayer* pLayer)
 {
 	int numObjects = ar.GetLoadedObjectsCount();
 	std::vector<CBaseObject*> objects;
@@ -899,7 +905,7 @@ void CPrefabObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 
 		if (ar.openBlock("operators", "Operators"))
 		{
-		CPrefabManager* pPrefabManager = GetIEditor()->GetPrefabManager();
+		  CPrefabManager* pPrefabManager = GetIEditor()->GetPrefabManager();
 		  if (ar.openBlock("objects", "Objects"))
 		  {
 		    ar(Serialization::ActionButton(std::bind(&CPrefabManager::ExtractAllFromSelection, pPrefabManager)), "extract_all", "^Extract All");
@@ -1102,7 +1108,7 @@ void CPrefabObject::AddMember(CBaseObject* pObj, bool bKeepPos /*=true */)
 		pObjectManager->EmitPopulateInspectorEvent();
 }
 
-void CPrefabObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKeepPos/* = true*/)
+void CPrefabObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKeepPos /* = true*/)
 {
 	CGroup::AddMembers(objects, shouldKeepPos);
 
@@ -1132,7 +1138,7 @@ void CPrefabObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKe
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPrefabObject::RemoveMembers(std::vector<CBaseObject*>& members, bool keepPos /*= true*/, bool placeOnRoot /*= false*/) 
+void CPrefabObject::RemoveMembers(std::vector<CBaseObject*>& members, bool keepPos /*= true*/, bool placeOnRoot /*= false*/)
 {
 	LOADING_TIME_PROFILE_SECTION;
 	if (!m_pPrefabItem)
@@ -1158,7 +1164,7 @@ void CPrefabObject::RemoveMembers(std::vector<CBaseObject*>& members, bool keepP
 	{
 		if (pParent == this)
 		{
-			pParent->DetachChildren(children, true, placeOnRoot);
+		  pParent->DetachChildren(children, true, placeOnRoot);
 		}
 	});
 

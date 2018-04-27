@@ -32,7 +32,6 @@ CSmartObjectHelperObject::~CSmartObjectHelperObject()
 {
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 void CSmartObjectHelperObject::UpdateVarFromObject()
 {
@@ -72,7 +71,7 @@ void CSmartObjectHelperObject::Done()
 //////////////////////////////////////////////////////////////////////////
 bool CSmartObjectHelperObject::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(RGB(255, 255, 0));
+	SetColor(ColorB(255, 255, 0));
 	return CBaseObject::Init(prev, file);
 }
 
@@ -104,7 +103,7 @@ bool CSmartObjectHelperObject::HitTest(HitContext& hc)
 //////////////////////////////////////////////////////////////////////////
 void CSmartObjectHelperObject::Display(DisplayContext& dc)
 {
-	COLORREF color = GetColor();
+	COLORREF color = CMFCUtils::ColorBToColorRef(GetColor());
 	float radius = RADIUS;
 
 	//dc.SetColor( color, 0.5f );

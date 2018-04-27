@@ -27,7 +27,7 @@ CAICoverSurface::CAICoverSurface()
 {
 	m_aabbLocal.Reset();
 	UseMaterialLayersMask(false);
-	SetColor(RGB(70, 130, 180));
+	SetColor(ColorB(70, 130, 180));
 }
 
 CAICoverSurface::~CAICoverSurface()
@@ -227,12 +227,12 @@ void CAICoverSurface::ValidateGenerated()
 {
 	ICoverSystem::SurfaceInfo surfaceInfo;
 	// Check surface is not empty
-	if (!m_surfaceID ||	!gEnv->pAISystem->GetCoverSystem()->GetSurfaceInfo(m_surfaceID, &surfaceInfo) || (surfaceInfo.sampleCount < 2))
+	if (!m_surfaceID || !gEnv->pAISystem->GetCoverSystem()->GetSurfaceInfo(m_surfaceID, &surfaceInfo) || (surfaceInfo.sampleCount < 2))
 	{
 		Vec3 pos = GetWorldPos();
 
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "AI Cover Surface '%s' at (%.2f, %.2f, %.2f) is empty! %s", (const char*)GetName(), pos.x, pos.y, pos.z,
-			CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "selection.select_and_go_to %s", GetName()));
+		           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "selection.select_and_go_to %s", GetName()));
 	}
 }
 

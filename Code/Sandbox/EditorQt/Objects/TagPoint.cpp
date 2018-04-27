@@ -31,7 +31,7 @@ CTagPoint::CTagPoint()
 //////////////////////////////////////////////////////////////////////////
 bool CTagPoint::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(RGB(0, 0, 255));
+	SetColor(ColorB(0, 0, 255));
 	SetTextureIcon(GetClassDesc()->GetTextureIconId());
 
 	bool res = CEntityObject::Init(prev, file);
@@ -84,9 +84,15 @@ void CTagPoint::Display(DisplayContext& dc)
 	dc.DrawArrow(wp, wp + dir * 2, fHelperScale);
 
 	if (IsFrozen())
+	{
 		dc.SetFreezeColor();
+	}
 	else
-		dc.SetColor(GetColor(), 0.8f);
+	{
+		ColorB color = GetColor();
+		color.a = 204;
+		dc.SetColor(color);
+	}
 
 	dc.DrawBall(wp, GetRadius());
 

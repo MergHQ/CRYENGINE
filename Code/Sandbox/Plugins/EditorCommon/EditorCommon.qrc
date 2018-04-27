@@ -393,7 +393,15 @@
         <file alias="General/edit-save-selected-objects.ico">icons/general_edit-save-selected-objects.ico</file>
         <file alias="General/edit-select-object.ico">icons/general_edit-select-object.ico</file>
         <file alias="General/file-open.ico">icons/general_file_open.ico</file>
-
+		
+	    <file alias="General/colour_blue.ico">icons/general_colour_blue.ico</file>
+	    <file alias="General/colour_green.ico">icons/general_colour_green.ico</file>
+	    <file alias="General/colour_orange.ico">icons/general_colour_orange.ico</file>
+	    <file alias="General/colour_other.ico">icons/general_colour_other.ico</file>
+	    <file alias="General/colour_purple.ico">icons/general_colour_purple.ico</file>
+	    <file alias="General/colour_red.ico">icons/general_colour_red.ico</file>
+	    <file alias="General/colour_yellow.ico">icons/general_colour_yellow.ico</file>
+		
         <file alias="common/general_physics_play.ico">icons/general_physics_play.ico</file>
         <file alias="common/general_physics_stop.ico">icons/general_physics_stop.ico</file>
         <file alias="common/general_physics_pause.ico">icons/general_physics_pause.ico</file>

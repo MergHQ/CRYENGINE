@@ -53,7 +53,9 @@ namespace Private_LevelExplorer
 class Delegate : public QAdvancedItemDelegate
 {
 public:
-	Delegate(QAdvancedTreeView* pParent = nullptr) : QAdvancedItemDelegate(pParent) {}
+	Delegate(QAdvancedTreeView* pParent = nullptr) : QAdvancedItemDelegate(pParent)
+	{
+	}
 
 	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override
 	{
@@ -86,12 +88,15 @@ public:
 CActiveLayerWidget::CActiveLayerWidget(CLevelExplorer* parent)
 	: QWidget(parent)
 {
-	m_label = new QLabel();
+	m_label = new           QLabel();
 
 	auto searchButton = new QToolButton();
 	searchButton->setIcon(CryIcon("icons:General/Search.ico"));
 	searchButton->setToolTip(tr("Focus on Active Layer"));
-	connect(searchButton, &QToolButton::clicked, [parent]() { parent->FocusActiveLayer(); });
+	connect(searchButton, &QToolButton::clicked, [parent]()
+	{
+		parent->FocusActiveLayer();
+	});
 	searchButton->setMaximumSize(QSize(20, 20));
 
 	auto hbox = new QHBoxLayout();
@@ -220,15 +225,24 @@ void CLevelExplorer::InitMenuBar()
 
 	//TODO : this could use the default new action to inherit the shortcut (and icon)
 	auto action = fileMenu->CreateAction(CryIcon("icons:General/File_New.ico"), tr("New Layer"));
-	connect(action, &QAction::triggered, [&]() { OnNewLayer(nullptr); });
+	connect(action, &QAction::triggered, [&]()
+	{
+		OnNewLayer(nullptr);
+	});
 
 	action = fileMenu->CreateAction(CryIcon("icons:General/Folder_Add.ico"), tr("New Folder"));
-	connect(action, &QAction::triggered, [&]() { OnNewFolder(nullptr); });
+	connect(action, &QAction::triggered, [&]()
+	{
+		OnNewFolder(nullptr);
+	});
 
 	int sec = fileMenu->GetNextEmptySection();
 
 	action = fileMenu->CreateAction(tr("Import Layer"), sec);
-	connect(action, &QAction::triggered, this, [this]() { OnImportLayer(); });
+	connect(action, &QAction::triggered, this, [this]()
+	{
+		OnImportLayer();
+	});
 
 	//Edit
 	CAbstractMenu* editMenu = GetMenu(MenuItems::EditMenu);
@@ -256,42 +270,66 @@ void CLevelExplorer::InitMenuBar()
 		auto action = menuView->CreateAction(tr("Show All Objects"), sec);
 		action->setCheckable(true);
 		action->setChecked(m_modelType == Objects);
-		connect(action, &QAction::triggered, this, [&]() { SetModelType(Objects); });
+		connect(action, &QAction::triggered, this, [&]()
+		{
+			SetModelType(Objects);
+		});
 
 		action = menuView->CreateAction(tr("Show Layers"), sec);
 		action->setCheckable(true);
 		action->setChecked(m_modelType == Layers);
-		connect(action, &QAction::triggered, this, [&]() { SetModelType(Layers); });
+		connect(action, &QAction::triggered, this, [&]()
+		{
+			SetModelType(Layers);
+		});
 
 		action = menuView->CreateAction(tr("Show Full Hierarchy"), sec);
 		action->setCheckable(true);
 		action->setChecked(m_modelType == FullHierarchy);
-		connect(action, &QAction::triggered, this, [&]() { SetModelType(FullHierarchy); });
+		connect(action, &QAction::triggered, this, [&]()
+		{
+			SetModelType(FullHierarchy);
+		});
 
 		action = menuView->CreateAction(tr("Show Active Layer Contents"), sec);
 		action->setCheckable(true);
 		action->setChecked(m_modelType == ActiveLayer);
-		connect(action, &QAction::triggered, this, [&]() { SetModelType(ActiveLayer); });
+		connect(action, &QAction::triggered, this, [&]()
+		{
+			SetModelType(ActiveLayer);
+		});
 
 		sec = menuView->GetNextEmptySection();
 
 		action = menuView->CreateAction(tr("Expand All"), sec);
-		connect(action, &QAction::triggered, this, [&]() { OnExpandAllLayers(); });
+		connect(action, &QAction::triggered, this, [&]()
+		{
+			OnExpandAllLayers();
+		});
 
 		action = menuView->CreateAction(tr("Collapse All"), sec);
-		connect(action, &QAction::triggered, this, [&]() { OnCollapseAllLayers(); });
+		connect(action, &QAction::triggered, this, [&]()
+		{
+			OnCollapseAllLayers();
+		});
 
 		sec = menuView->GetNextEmptySection();
 
 		action = menuView->CreateAction(tr("Show Active Layer Label"), sec);
 		action->setCheckable(true);
 		action->setChecked(m_activeLayerWidget->isVisible());
-		connect(action, &QAction::triggered, [&]() { m_activeLayerWidget->setVisible(!m_activeLayerWidget->isVisible()); });
+		connect(action, &QAction::triggered, [&]()
+		{
+			m_activeLayerWidget->setVisible(!m_activeLayerWidget->isVisible());
+		});
 
 		action = menuView->CreateAction(tr("Sync Selection"), sec);
 		action->setCheckable(true);
 		action->setChecked(m_syncSelection);
-		connect(action, &QAction::triggered, [&]() { SetSyncSelection(!m_syncSelection); });
+		connect(action, &QAction::triggered, [&]()
+		{
+			SetSyncSelection(!m_syncSelection);
+		});
 
 		if (m_filterPanel)
 		{
@@ -381,6 +419,20 @@ void CLevelExplorer::customEvent(QEvent* event)
 void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 {
 	QMenu* menu = new QMenu();
+	static std::vector<SColorPreset> colorPresets = {
+		{ "Blue",   "icons:General/colour_blue.ico",   { 77,  155, 214 }
+		},
+		{ "Green",  "icons:General/colour_green.ico",  { 125, 209, 77  }
+		},
+		{ "Orange", "icons:General/colour_orange.ico", { 214, 155, 77  }
+		},
+		{ "Purple", "icons:General/colour_purple.ico", { 144, 92,  235 }
+		},
+		{ "Red",    "icons:General/colour_red.ico",    { 210, 86,  86  }
+		},
+		{ "Yellow", "icons:General/colour_yellow.ico", { 225, 225, 80  }
+		}
+	};
 
 	std::vector<CBaseObject*> objects;
 	std::vector<CObjectLayer*> layers;
@@ -395,15 +447,24 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 		menu->addAction(new QMenuLabelSeparator("Folder"));
 
 		auto action = menu->addAction(CryIcon("icons:General/File_New.ico"), tr("New Layer"));
-		connect(action, &QAction::triggered, [&]() { OnNewLayer(layerFolders[0]); });
+		connect(action, &QAction::triggered, [&]()
+		{
+			OnNewLayer(layerFolders[0]);
+		});
 
 		action = menu->addAction(CryIcon("icons:General/Folder_Add.ico"), tr("New Folder"));
-		connect(action, &QAction::triggered, [&]() { OnNewFolder(layerFolders[0]); });
+		connect(action, &QAction::triggered, [&]()
+		{
+			OnNewFolder(layerFolders[0]);
+		});
 
 		menu->addSeparator();
 
 		action = menu->addAction(tr("Import Layer"));
-		connect(action, &QAction::triggered, this, [this, layerFolders]() { OnImportLayer(layerFolders[0]); });
+		connect(action, &QAction::triggered, this, [this, layerFolders]()
+		{
+			OnImportLayer(layerFolders[0]);
+		});
 
 		menu->addSeparator();
 
@@ -425,7 +486,10 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 		}
 
 		auto action = menu->addAction(tr("Reload"));
-		connect(action, &QAction::triggered, [&]() { OnReloadLayers(layers); });
+		connect(action, &QAction::triggered, [&]()
+		{
+			OnReloadLayers(layers);
+		});
 
 		menu->addSeparator();
 
@@ -452,8 +516,6 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 		if (layers.size() == 1)
 		{
 			QMenu* pAdvancedMenu = menu->addMenu(tr("Advanced"));
-			action = pAdvancedMenu->addAction(tr("Color..."));
-			connect(action, &QAction::triggered, [&]() { OnSelectColor(layers); });
 
 			pAdvancedMenu->addSeparator();
 
@@ -522,10 +584,12 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 				});
 			}
 		}
-		else
+
+		CDynamicPopupMenu menuVisitor;
+		OnLayerColorMenu(menuVisitor, layers, colorPresets);
+		if (!menuVisitor.IsEmpty())
 		{
-			action = menu->addAction(tr("Color..."));
-			connect(action, &QAction::triggered, [&]() { OnSelectColor(layers); });
+			menuVisitor.PopulateQMenu(menu);
 		}
 
 		//Another thing if only one layer selected
@@ -579,23 +643,38 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 			actionSeparatorAdded = true;
 
 			auto action = menu->addAction(CryIcon("icons:General/File_New.ico"), tr("New Layer"));
-			connect(action, &QAction::triggered, [&]() { OnNewLayer(nullptr); });
+			connect(action, &QAction::triggered, [&]()
+			{
+				OnNewLayer(nullptr);
+			});
 
 			action = menu->addAction(CryIcon("icons:General/Folder_Add.ico"), tr("New Folder"));
-			connect(action, &QAction::triggered, [&]() { OnNewFolder(nullptr); });
+			connect(action, &QAction::triggered, [&]()
+			{
+				OnNewFolder(nullptr);
+			});
 
 			menu->addSeparator();
 
 			action = menu->addAction(tr("Import Layer"));
-			connect(action, &QAction::triggered, this, [this, layerFolders]() { OnImportLayer(); });
+			connect(action, &QAction::triggered, this, [this, layerFolders]()
+			{
+				OnImportLayer();
+			});
 
 			menu->addSeparator();
 
 			action = menu->addAction(tr("Expand all"));
-			connect(action, &QAction::triggered, [this]() { OnExpandAllLayers(); });
+			connect(action, &QAction::triggered, [this]()
+			{
+				OnExpandAllLayers();
+			});
 
 			action = menu->addAction(tr("Collapse all"));
-			connect(action, &QAction::triggered, [this]() { OnCollapseAllLayers(); });
+			connect(action, &QAction::triggered, [this]()
+			{
+				OnCollapseAllLayers();
+			});
 		}
 	}
 	else if (selection.count() == 1)
@@ -605,7 +684,10 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 
 		QModelIndex index = selection.first();
 		auto action = menu->addAction(tr("Rename"));
-		connect(action, &QAction::triggered, [index, this]() { OnRename(index); });
+		connect(action, &QAction::triggered, [index, this]()
+		{
+			OnRename(index);
+		});
 	}
 
 	if (!layers.empty() || !layerFolders.empty())
@@ -615,13 +697,37 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 
 		auto action = menu->addAction(tr("Delete"));
 		layers.insert(layers.end(), layerFolders.cbegin(), layerFolders.cend());
-		connect(action, &QAction::triggered, [&]() { OnDeleteLayers(layers); });
+		connect(action, &QAction::triggered, [&]()
+		{
+			OnDeleteLayers(layers);
+		});
 	}
 
 	if (objects.size() == 1)//TODO : support menu for multiple selection of objects !
 	{
 		CDynamicPopupMenu menuVisitor;
 		objects[0]->OnContextMenu(&menuVisitor.GetRoot());
+
+		CPopupMenuItem& colorMenu = menuVisitor.GetRoot().Add("Color");
+		colorMenu.Add("None", [&objects]()
+		{
+			objects[0]->UseColorOverride(false);
+		});
+
+		for (SColorPreset& preset : colorPresets)
+		{
+			colorMenu.Add(preset.name, preset.icon, [&objects, &preset]()
+			{
+				objects[0]->ChangeColor(preset.value);
+			});
+		}
+
+		colorMenu.Add("Other...", "icons:General/colour_other.ico", [&objects, this]()
+		{
+			ColorB currentColor = objects[0]->GetColor();
+			ColorB finalColor = AskForColor(currentColor, nullptr);
+			objects[0]->ChangeColor(finalColor);
+		});
 
 		if (!menuVisitor.IsEmpty())
 		{
@@ -642,33 +748,51 @@ void CLevelExplorer::OnContextMenuForSingleLayer(QMenu* menu, CObjectLayer* laye
 	menu->addSeparator();
 
 	auto action = menu->addAction(tr("Expand all"));
-	connect(action, &QAction::triggered, [this]() { OnExpandAllLayers(); });
+	connect(action, &QAction::triggered, [this]()
+	{
+		OnExpandAllLayers();
+	});
 
 	action = menu->addAction(tr("Collapse all"));
-	connect(action, &QAction::triggered, [this]() { OnCollapseAllLayers(); });
+	connect(action, &QAction::triggered, [this]()
+	{
+		OnCollapseAllLayers();
+	});
 
 	menu->addSeparator();
 
 	if (AllFrozenInLayer(layer))
 	{
 		action = menu->addAction(tr("Unfreeze objects in layer"));
-		connect(action, &QAction::triggered, [layer, this]() { OnUnfreezeAllInLayer(layer); });
+		connect(action, &QAction::triggered, [layer, this]()
+		{
+			OnUnfreezeAllInLayer(layer);
+		});
 	}
 	else
 	{
 		action = menu->addAction(tr("Freeze objects in layer"));
-		connect(action, &QAction::triggered, [layer, this]() { OnFreezeAllInLayer(layer); });
+		connect(action, &QAction::triggered, [layer, this]()
+		{
+			OnFreezeAllInLayer(layer);
+		});
 	}
 
 	if (AllHiddenInLayer(layer))
 	{
 		action = menu->addAction(tr("Unhide objects in layer"));
-		connect(action, &QAction::triggered, [layer, this]() { OnUnhideAllInLayer(layer); });
+		connect(action, &QAction::triggered, [layer, this]()
+		{
+			OnUnhideAllInLayer(layer);
+		});
 	}
 	else
 	{
 		action = menu->addAction(tr("Hide objects in layer"));
-		connect(action, &QAction::triggered, [layer, this]() { OnHideAllInLayer(layer); });
+		connect(action, &QAction::triggered, [layer, this]()
+		{
+			OnHideAllInLayer(layer);
+		});
 	}
 
 	menu->addSeparator();
@@ -687,6 +811,39 @@ void CLevelExplorer::OnContextMenuForSingleLayer(QMenu* menu, CObjectLayer* laye
 	connect(action, &QAction::toggled, [layer](bool bChecked)
 	{
 		layer->SetFrozen(bChecked);
+	});
+}
+
+void CLevelExplorer::OnLayerColorMenu(CDynamicPopupMenu& menuVisitor, const std::vector<CObjectLayer*>& layers, const std::vector<SColorPreset>& presets) const
+{
+	CPopupMenuItem& colorMenu = menuVisitor.GetRoot().Add("Color");
+	colorMenu.Add("None", [&layers]()
+	{
+		for (CObjectLayer* layer : layers)
+		{
+		  layer->UseColorOverride(false);
+		}
+	});
+
+	for (const SColorPreset& presets : presets)
+	{
+		colorMenu.Add(presets.name, presets.icon, [&presets, &layers]()
+		{
+			for (CObjectLayer* layer : layers)
+			{
+			  layer->SetColor(presets.value, true);
+			}
+		});
+	}
+
+	colorMenu.Add("Other...", "icons:General/colour_other.ico", [&layers, this]()
+	{
+		ColorB currentColor = layers[0]->GetColor();
+		ColorB finalColor = AskForColor(currentColor, nullptr);
+		for (CObjectLayer* layer : layers)
+		{
+		  layer->SetColor(finalColor, true);
+		}
 	});
 }
 
@@ -1310,6 +1467,25 @@ void CLevelExplorer::EditLayer(CObjectLayer* pLayer) const
 	}
 }
 
+ColorB CLevelExplorer::AskForColor(const ColorB& color, QWidget* pParent) const
+{
+	QColor qtColor(color.r, color.g, color.b);
+	QColor selectedColor = QColorDialog::getColor(qtColor, pParent, "Choose color");
+	if (selectedColor.isValid())
+	{
+		int r;
+		int g;
+		int b;
+		selectedColor.getRgb(&r, &g, &b);
+		ColorB finalColor
+		{
+			static_cast<uint8>(r), static_cast<uint8>(g), static_cast<uint8>(b)
+		};
+		return finalColor;
+	}
+	return ColorB(0, 0, 0);
+}
+
 void CLevelExplorer::OnReloadLayers(const std::vector<CObjectLayer*>& layers) const
 {
 	bool modified = false;
@@ -1525,21 +1701,15 @@ void CLevelExplorer::OnCollapseAllLayers() const
 
 void CLevelExplorer::OnSelectColor(const std::vector<CObjectLayer*>& layers) const
 {
-	QColor color(Qt::white);
+	ColorB color(255, 255, 255);
 	if (layers.size() == 1)
 	{
-		COLORREF initialColor = layers[0]->GetColor();
-		color = QColor::fromRgb(GetRValue(initialColor), GetGValue(initialColor), GetBValue(initialColor));
+		color = layers[0]->GetColor();
 	}
-
-	color = QColorDialog::getColor(color, const_cast<CLevelExplorer*>(this), tr("Choose color"));
-	if (!color.isValid())
-	{
-		return;
-	}
+	color = AskForColor(color, const_cast<CLevelExplorer*>(this));
 	for (auto& layer : layers)
 	{
-		layer->SetColor(RGB(color.red(), color.green(), color.blue()));
+		layer->SetColor(color, true);
 	}
 }
 

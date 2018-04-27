@@ -18,7 +18,7 @@ IMPLEMENT_DYNCREATE(CWaterWaveObject, CRoadObject)
 CWaterWaveObject::CWaterWaveObject()
 {
 	//m_entityClass = "AreaWaterWave";
-	SetColor(CMFCUtils::Vec2Rgb(Vec3(0, 0, 1)));
+	SetColor(ColorB(0, 0, 255));
 
 	m_nID = -1;
 
@@ -397,10 +397,10 @@ int CWaterWaveObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent ev
 class CWaterWaveObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_ROAD; };
-	const char*    ClassName()         { return "Water wave"; };
-	const char*    Category()          { return "Misc"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CWaterWaveObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_ROAD; };
+	const char*    ClassName()       { return "Water wave"; };
+	const char*    Category()        { return "Misc"; };
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CWaterWaveObject); };
 };
 
 // Disabled by AdamJ 10/04/2014 - Causing crashes on adding. This needs complete removal! See CL 43640

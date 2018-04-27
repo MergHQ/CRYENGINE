@@ -45,7 +45,7 @@ bool CDistanceCloudObject::Init(CBaseObject* prev, const string& file)
 {
 	CDistanceCloudObject* pSrcObj((CDistanceCloudObject*) prev);
 
-	SetColor(RGB(127, 127, 255));
+	SetColor(ColorB(127, 127, 255));
 
 	if (IsCreateGameObjects())
 	{

@@ -138,11 +138,11 @@ void CDecalObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 
 		if (ar.openBlock("decal", "<Decal"))
 		{
-			Serialization::SEditToolButton reorientateButton("");
-			reorientateButton.SetToolClass(RUNTIME_CLASS(CDecalObjectTool), "decal", pObject);
-			ar(reorientateButton, "reorientate", "^Reorientate");
-			ar(Serialization::ActionButton(std::bind(&CDecalObject::UpdateProjection, pObject)), "update_projection", "^Update Projection");
-			ar.closeBlock();
+		  Serialization::SEditToolButton reorientateButton("");
+		  reorientateButton.SetToolClass(RUNTIME_CLASS(CDecalObjectTool), "decal", pObject);
+		  ar(reorientateButton, "reorientate", "^Reorientate");
+		  ar(Serialization::ActionButton(std::bind(&CDecalObject::UpdateProjection, pObject)), "update_projection", "^Update Projection");
+		  ar.closeBlock();
 		}
 	});
 }
@@ -179,7 +179,7 @@ bool CDecalObject::Init(CBaseObject* prev, const string& file)
 {
 	CDecalObject* pSrcDecalObj((CDecalObject*) prev);
 
-	SetColor(RGB(127, 127, 255));
+	SetColor(ColorB(127, 127, 255));
 
 	if (IsCreateGameObjects())
 	{

@@ -83,6 +83,7 @@ enum EObjectListenerEvent
 	OBJECT_ON_LINKED,               // Sent after the object is linked
 	OBJECT_ON_PREUNLINKED,          // Sent before the object is linked
 	OBJECT_ON_UNLINKED,             // Sent after the object is linked
+	OBJECT_ON_COLOR_CHANGED,        // Sent when an object color is changed
 
 	OBJECT_EVENT_LAST
 };
@@ -133,7 +134,7 @@ struct CObjectPreAttachedEvent : public CObjectEvent
 	};
 
 	const CBaseObject* m_pParent;
-	bool m_shouldKeepPos;
+	bool               m_shouldKeepPos;
 };
 
 struct CObjectAttachedEvent : public CObjectEvent
@@ -157,7 +158,7 @@ struct CObjectPreDetachedEvent : public CObjectEvent
 	};
 
 	const CBaseObject* m_pParent;
-	bool m_shouldKeepPos;
+	bool               m_shouldKeepPos;
 };
 
 struct CObjectDetachedEvent : public CObjectEvent

@@ -62,10 +62,17 @@ public:
 
 private:
 
+	struct SColorPreset
+	{
+		string name;
+		string icon;
+		ColorB value;
+	};
+
 	void         InitMenuBar();
 
 	virtual void OnContextMenu(const QPoint& pos) const;
-	void         OnContextMenuForSingleLayer(QMenu *menu, CObjectLayer* layer) const;
+	void         OnContextMenuForSingleLayer(QMenu* menu, CObjectLayer* layer) const;
 	void         OnClick(const QModelIndex& index);
 	void         OnDoubleClick(const QModelIndex& index);
 
@@ -100,6 +107,8 @@ private:
 	void        OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 	void        OnRename(const QModelIndex& index) const;
 	void        EditLayer(CObjectLayer* pLayer) const;
+	void        OnLayerColorMenu(CDynamicPopupMenu& menuVisitor, const std::vector<CObjectLayer*>& layers, const std::vector<SColorPreset>& presets) const;
+	ColorB      AskForColor(const ColorB& color, QWidget* pParent) const;
 
 	void        SetSourceModel(QAbstractItemModel* model);
 	void        SyncSelection();
@@ -121,4 +130,3 @@ private:
 	bool                        m_syncSelection;
 	bool                        m_ignoreSelectionEvents;
 };
-
