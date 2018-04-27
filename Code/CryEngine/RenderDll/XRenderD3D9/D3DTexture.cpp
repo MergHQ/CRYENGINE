@@ -589,8 +589,17 @@ void CTexture::RT_UpdateTextureRegion(byte* pSrcData, int nX, int nY, int nZ, in
 				CTexture::TextureDataSize(USize, VSize, 1    , 1, 1, m_eDstFormat, eTM_None),
 				CTexture::TextureDataSize(USize, VSize, ZSize, 1, 1, m_eDstFormat, eTM_None),
 			},
-			{ nX, nY, nZ, D3D11CalcSubresource(i, 0, m_nMips) }, // dst position
-			{ USize, VSize, ZSize, 1 }                           // dst size
+			{
+				static_cast<UINT>(nX),
+				static_cast<UINT>(nY),
+				static_cast<UINT>(nZ),
+				D3D11CalcSubresource(i, 0, m_nMips) }, // dst position
+			{
+				static_cast<UINT>(USize),
+				static_cast<UINT>(VSize),
+				static_cast<UINT>(ZSize),
+				1
+			}                                 // dst size
 		};
 
 		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pSrcData, pDevTex, mapping);

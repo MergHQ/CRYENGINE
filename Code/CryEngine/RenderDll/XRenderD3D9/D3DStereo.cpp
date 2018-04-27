@@ -922,7 +922,7 @@ void CD3DStereoRenderer::RenderSocialScreen(CTexture* pColorTarget, const std::p
 
 		// Calculate viewport rect and scissor area
 		const auto rect = rescaleViewport(displayContext->GetDisplayResolution());
-		D3DRectangle scissor = { x, 0, x + static_cast<uint32_t>(targetSize.x), static_cast<uint32_t>(targetSize.y) };
+		D3DRectangle scissor = { x, 0, static_cast<LONG>(x + targetSize.x), static_cast<LONG>(targetSize.y) };
 
 		// draw eye
 		m_eyeToScreenPass->SetCustomViewport(SRenderViewport{ x + rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top });

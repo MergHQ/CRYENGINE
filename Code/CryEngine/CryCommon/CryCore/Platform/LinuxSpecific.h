@@ -106,7 +106,7 @@ typedef const WCHAR* LPCUWSTR, * PCUWSTR;
 typedef int      BOOL;
 typedef int32_t  LONG;
 typedef uint32_t ULONG;
-typedef int      HRESULT;
+typedef long     HRESULT;
 typedef uint32_t HMONITOR;
 
 #if !_MSC_EXTENSIONS

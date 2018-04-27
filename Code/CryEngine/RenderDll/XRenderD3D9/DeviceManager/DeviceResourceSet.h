@@ -69,9 +69,9 @@ struct SResourceMemoryAlignment
 		SResourceMemoryAlignment linear =
 		{
 			sizeof(T),
-			sizeof(T) * width,
-			sizeof(T) * width * height,
-			sizeof(T) * width * height * depth
+			static_cast<UINT>(sizeof(T) * width),			// We can be confident that the values passed fit in a UINT, even if T is an unsigned long.
+			static_cast<UINT>(sizeof(T) * width * height),
+			static_cast<UINT>(sizeof(T) * width * height * depth)
 		};
 
 		return linear;

@@ -355,7 +355,7 @@ bool CDeviceResourceSet::UpdateWithReevaluation(CDeviceResourceSetPtr& pSet, CDe
 
 void SDeviceResourceLayoutDesc::SetResourceSet(uint32 bindSlot, const CDeviceResourceSetDesc& resourceSet)
 {
-	SLayoutBindPoint bindPoint = { SDeviceResourceLayoutDesc::ELayoutSlotType::ResourceSet, bindSlot };
+	SLayoutBindPoint bindPoint = { SDeviceResourceLayoutDesc::ELayoutSlotType::ResourceSet, static_cast<uint8>(bindSlot) };
 	m_resourceBindings[bindPoint] = resourceSet.GetResources();
 }
 
@@ -363,7 +363,7 @@ void SDeviceResourceLayoutDesc::SetConstantBuffer(uint32 bindSlot, EConstantBuff
 {
 	SResourceBinding resource((CConstantBuffer*)nullptr, 0);
 	SResourceBindPoint resourceBindPoint(resource, shaderSlot, shaderStages);
-	SLayoutBindPoint layoutBindPoint = { SDeviceResourceLayoutDesc::ELayoutSlotType::InlineConstantBuffer, bindSlot };
+	SLayoutBindPoint layoutBindPoint = { SDeviceResourceLayoutDesc::ELayoutSlotType::InlineConstantBuffer, static_cast<uint8>(bindSlot) };
 
 	m_resourceBindings[layoutBindPoint].clear();
 	m_resourceBindings[layoutBindPoint].insert(std::make_pair(resourceBindPoint, resource));
@@ -434,9 +434,9 @@ uint64 SDeviceResourceLayoutDesc::GetHash() const
 
 				uint32 hashedValues[] =
 				{
-					samplerDesc.m_nMinFilter, samplerDesc.m_nMagFilter,     samplerDesc.m_nMipFilter,
-					samplerDesc.m_nAddressU,  samplerDesc.m_nAddressV,      samplerDesc.m_nAddressW,
-					samplerDesc.m_nAnisotropy, samplerDesc.m_dwBorderColor, samplerDesc.m_bComparison,
+					static_cast<UINT>(samplerDesc.m_nMinFilter),  static_cast<UINT>(samplerDesc.m_nMagFilter),    static_cast<UINT>(samplerDesc.m_nMipFilter),
+					static_cast<UINT>(samplerDesc.m_nAddressU),   static_cast<UINT>(samplerDesc.m_nAddressV),     static_cast<UINT>(samplerDesc.m_nAddressW),
+					static_cast<UINT>(samplerDesc.m_nAnisotropy), static_cast<UINT>(samplerDesc.m_dwBorderColor), samplerDesc.m_bComparison,
 				};
 
 				XXH64_update(&hashState, hashedValues, sizeof(hashedValues));
