@@ -5,6 +5,7 @@
 #include <CryNetwork/INetwork.h>
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryMemory/PoolAllocator.h>
+#include <CryGame/IGameFramework.h>
 
 template<size_t N>
 stl::PoolAllocator<N>& GetRMIAllocator()

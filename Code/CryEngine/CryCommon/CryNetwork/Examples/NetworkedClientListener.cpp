@@ -1,4 +1,6 @@
 #include <CryNetwork/INetwork.h>
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryGame/IGameFramework.h>
 #include <unordered_map>
 
 // Simple example of how to handle client connection events, and spawning entities for players automatically

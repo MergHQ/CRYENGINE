@@ -1,4 +1,5 @@
 #include <CryAnimation/ICryAnimation.h>
+#include <CryExtension/CryCreateClassInstance.h>
 
 // Example of using operator queues to offset the positioning of one specific joint in a character
 void OffsetJointPosition(ICharacterInstance& character)

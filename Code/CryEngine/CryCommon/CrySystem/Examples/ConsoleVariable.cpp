@@ -1,3 +1,4 @@
+#include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>
 
 // Minimal example of how a console variable can be implemented and used

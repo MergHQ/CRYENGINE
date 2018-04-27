@@ -1,4 +1,5 @@
 #include <CryAction/IActionMapManager.h>
+#include <CryGame/IGameFramework.h>
 
 // Example of how action maps can be registered, and how to receive callbacks when their actions are triggered
 class CMyActionListener final : public IActionListener

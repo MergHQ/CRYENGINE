@@ -1159,7 +1159,7 @@ install_headers(CryMemory CryMono CryMovie CryNetwork CryParticleSystem CryPhysi
 install_headers(CryRenderer CrySandbox CryScriptSystem CrySerialization CryString)
 install_headers(CrySystem CryThreading)
 
-	add_sources("CryEntitySystem_Examples.cpp"
+	add_sources("NoUberFile"
 		PROJECTS CryAPIExamples
 		SOURCE_GROUP "CryEntitySystem"
 			"CryEntitySystem/Examples/SpawnEntity.cpp"
