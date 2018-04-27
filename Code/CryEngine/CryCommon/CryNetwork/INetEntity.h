@@ -7,6 +7,8 @@
 #include <CryEntitySystem/IEntityBasicTypes.h>
 #include <CrySchematyc/Utils/EnumFlags.h>
 
+struct IEntityComponent;
+
 struct ISerializableInfo : public CMultiThreadRefCount, public ISerializable {};
 typedef _smart_ptr<ISerializableInfo> ISerializableInfoPtr;
 
@@ -195,7 +197,8 @@ struct INetEntity
 	//! Sent by the entity when its transformation changes
 	virtual void OnNetworkedEntityTransformChanged(EntityTransformationFlagsMask transformReasons) = 0;
 
-	virtual void OnEntityInitialized() {}
+	virtual void OnComponentAddedDuringInitialization(IEntityComponent* pComponent) const = 0;
+	virtual void OnEntityInitialized() = 0;
 
 	//--------------------------------------------------------------------------
 
