@@ -442,7 +442,6 @@ void C3DEngine::UnloadLevel()
 		FreeLightSourceComponents(pLight);
 	}
 	m_lstDynLights.Reset();
-	DeleteAllStaticLightSources();
 	SAFE_DELETE(m_pSun);
 	CryComment("done");
 	//////////////////////////////////////////////////////////////////////////
@@ -499,6 +498,15 @@ void C3DEngine::UnloadLevel()
 			tex->Release();
 
 		m_nNightMoonTexId = 0;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// delete all rendernodes marked for deletion
+	{
+		CryComment("Deleting render nodes");
+		for (int i=0; i<CRY_ARRAY_COUNT(m_renderNodesToDelete); ++i)
+			TickDelayedRenderNodeDeletion();
+		CryComment("done");
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -646,6 +654,10 @@ void C3DEngine::UnloadLevel()
 	stl::free_container(m_lstCustomShadowFrustums);
 
 	stl::free_container(m_collisionClasses);
+
+	CRY_ASSERT(m_lstStaticLights.empty());
+	for (auto& renderNodes : m_renderNodesToDelete)
+		CRY_ASSERT(renderNodes.empty());
 }
 
 //////////////////////////////////////////////////////////////////////////

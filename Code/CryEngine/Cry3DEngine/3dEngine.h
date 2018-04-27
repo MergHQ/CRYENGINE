@@ -529,6 +529,7 @@ public:
 	virtual void                           ResetParticlesAndDecals();
 	virtual IRenderNode*                   CreateRenderNode(EERType type);
 	virtual void                           DeleteRenderNode(IRenderNode* pRenderNode);
+	void                                   TickDelayedRenderNodeDeletion();
 	virtual void                           SetWind(const Vec3& vWind);
 	virtual Vec3                           GetWind(const AABB& box, bool bIndoors) const;
 	virtual void                           AddForcedWindArea(const Vec3& vPos, float fAmountOfForce, float fRadius);
@@ -957,7 +958,6 @@ private:
 	void ResetCasterCombinationsCache();
 
 	void FindPotentialLightSources(const SRenderingPassInfo& passInfo);
-	void DeleteAllStaticLightSources();
 	void LoadParticleEffects(const char* szFolderName);
 
 	void UpdateSunLightSource(const SRenderingPassInfo& passInfo);
@@ -1281,6 +1281,8 @@ private:
 	ITexture*                      m_ptexIconEditorConnectedToConsole;
 
 	std::vector<IDecalRenderNode*> m_decalRenderNodes; // list of registered decal render nodes, used to clean up longer not drawn decals
+	std::vector<IRenderNode*>      m_renderNodesToDelete[2];    // delay deletion of rendernodes by 1 frame to make sure 
+	uint32                         m_renderNodesToDeleteID = 0; // they can be safely used on renderthread 
 
 	SImageSubInfo* RegisterImageInfo(byte** pMips, int nDim, const char* pName);
 	SImageSubInfo* GetImageInfo(const char* pName);

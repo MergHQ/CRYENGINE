@@ -121,6 +121,8 @@ bool CBreakableGlassRenderNode::InitialiseNode(const SBreakableGlassInitParams& 
 //--------------------------------------------------------------------------------------------------
 void CBreakableGlassRenderNode::ReleaseNode(bool bImmediate)
 {
+	CRY_ASSERT((m_dwRndFlags & ERF_PENDING_DELETE) == 0);
+
 	// Remove all remaining glass physics
 	DephysicalizeGlass();
 
