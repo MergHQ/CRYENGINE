@@ -13,8 +13,9 @@ namespace NCryVulkan
 
 class CSwapChain : public CRefCounted
 {
-	static bool GetSupportedSurfaceFormats(VkPhysicalDevice& physicalDevice, VkSurfaceKHR& surface, std::vector<VkSurfaceFormatKHR>& outFormatsSupported);
-	static bool GetSupportedPresentModes(VkPhysicalDevice& physicalDevice, VkSurfaceKHR& surface, std::vector<VkPresentModeKHR>& outPresentModes);
+public:
+	static bool GetSupportedSurfaceFormats(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface, std::vector<VkSurfaceFormatKHR>& outFormatsSupported);
+	static std::vector<VkPresentModeKHR> GetSupportedPresentModes(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface);
 
 public:
 	static _smart_ptr<CSwapChain> Create(CCommandListPool& commandQueue, VkSwapchainKHR KHRSwapChain, uint32_t numberOfBuffers, uint32_t width, uint32_t height, VkSurfaceKHR surface, VkFormat format, VkPresentModeKHR presentMode, VkImageUsageFlags imageUsage);

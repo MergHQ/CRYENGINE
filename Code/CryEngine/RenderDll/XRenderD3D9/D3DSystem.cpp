@@ -168,7 +168,7 @@ SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayCon
 	pDC->m_nSSSamplesX = pDC->m_desc.superSamplingFactor.x;
 	pDC->m_nSSSamplesY = pDC->m_desc.superSamplingFactor.y;
 
-	pDC->SetHWND(desc.handle);
+	pDC->CreateSwapChain(desc.handle, desc.vsync);
 
 	SDisplayContextKey key;
 	if (desc.handle)
@@ -344,12 +344,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 	m_overrideScanlineOrder = CV_r_overrideScanlineOrder;
 #endif
 
-	if (!IsEditorMode())
-		m_VSync = CV_r_vsync;
-	else
-		m_VSync = 0;
-
-	pDC->SetVSyncHint(m_VSync != 0);
+	m_VSync = !IsEditorMode() ? CV_r_vsync : 0;
 
 	if (IsFullscreen() && nNewColDepth == 16)
 	{
@@ -383,7 +378,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 		AdjustWindowForChange(nNewDisplayWidth, nNewDisplayHeight, previousWindowState);
 
-		pBC->ChangeOutputIfNecessary(IsFullscreen());
+		pBC->ChangeOutputIfNecessary(IsFullscreen(), m_VSync != 0);
 
 #if DURANGO_ENABLE_ASYNC_DIPS
 		WaitForAsynchronousDevice();
@@ -1114,10 +1109,12 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 		}
 	}
 
+	m_VSync = !IsEditorMode() ? CV_r_vsync : 0;
+
 	// Update base context hWnd and key
 	SDisplayContextKey baseContextKey;
 	baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetWindowHandle());
-	m_pBaseDisplayContext->SetHWND(m_hWnd);
+	m_pBaseDisplayContext->CreateSwapChain(m_hWnd, m_VSync != 0);
 	{
 		AUTO_LOCK(gs_contextLock);
 		m_displayContexts.erase(baseContextKey);
@@ -1947,11 +1944,11 @@ bool CD3D9Renderer::CreateDeviceMobile()
 	if (!m_devInfo.CreateDevice(false, pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y, m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
 		return false;
 
-	pDC->SetVSyncHint(m_VSync != 0);
-
 	OnD3D11PostCreateDevice(m_devInfo.Device());
 
 	AdjustWindowForChange(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y, EWindowState::Fullscreen);
+
+	pDC->ChangeOutputIfNecessary(true, m_VSync != 0);
 
 	return true;
 }
@@ -1966,8 +1963,6 @@ bool CD3D9Renderer::CreateDeviceDesktop()
 #if defined(SUPPORT_DEVICE_INFO)
 	if (!m_devInfo.CreateDevice(m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
 		return false;
-
-	pDC->SetVSyncHint(m_VSync != 0);
 
 	//query adapter name
 	const DXGI_ADAPTER_DESC1& desc = m_devInfo.AdapterDesc();
@@ -1984,6 +1979,8 @@ bool CD3D9Renderer::CreateDeviceDesktop()
 #endif
 
 	AdjustWindowForChange(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y, EWindowState::Fullscreen);
+
+	pDC->ChangeOutputIfNecessary(true, m_VSync != 0);
 
 	return true;
 }

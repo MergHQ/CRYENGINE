@@ -948,6 +948,8 @@ struct IRenderer//: public IRendererCallbackServer
 
 		EViewportType type              = eViewportType_Default;
 		uint16 renderFlags              = FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL;
+
+		bool vsync                      = true;
 	};
 
 	virtual ~IRenderer(){}

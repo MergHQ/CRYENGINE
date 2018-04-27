@@ -3398,7 +3398,7 @@ void CD3D9Renderer::RT_EndFrame()
 	#if CRY_PLATFORM_WINDOWS && !CRY_RENDERER_VULKAN
 			swapDC->EnforceFullscreenPreemption();
 	#endif
-			DWORD syncInterval = ComputePresentInterval(swapDC->GetVSyncHint(), swapDC->GetRefreshRateNumerator(), swapDC->GetRefreshRateDemoninator());
+			DWORD syncInterval = ComputePresentInterval(swapDC->GetVSyncState() != 0, swapDC->GetRefreshRateNumerator(), swapDC->GetRefreshRateDemoninator());
 			hReturn = swapDC->GetSwapChain().Present(syncInterval, 0);
 
 			if (IHmdRenderer* pHmdRenderer = GetS3DRend().GetIHmdRenderer())
@@ -3616,7 +3616,7 @@ void CD3D9Renderer::RT_PresentFast()
 	#if CRY_PLATFORM_WINDOWS
 	swapDC->EnforceFullscreenPreemption();
 	#endif
-	hReturn = swapDC->GetSwapChain().Present(pDC->GetVSyncHint() ? 1 : 0, 0);
+	hReturn = swapDC->GetSwapChain().Present(swapDC->GetVSyncState() ? 1 : 0, 0);
 #endif
 	assert(hReturn == S_OK);
 
