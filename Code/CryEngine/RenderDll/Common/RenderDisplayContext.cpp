@@ -44,6 +44,8 @@ bool CRenderDisplayContext::IsNativeScalingEnabled() const
 
 void CRenderDisplayContext::SetDisplayResolutionAndRecreateTargets(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp)
 {
+	CRY_ASSERT(displayWidth > 0 && displayHeight > 0);
+
 	m_viewport = vp;
 
 	if (m_DisplayWidth == displayWidth && m_DisplayHeight == displayHeight)
@@ -528,7 +530,9 @@ CTexture* CSwapChainBackedRenderDisplayContext::GetCurrentBackBuffer() const
 	index = m_swapChain.GetSwapChain()->GnmGetCurrentBackBufferIndex(pCommandList);
 #endif
 
-	assert(index < m_backBuffersArray.size());
+	CRY_ASSERT(index < m_backBuffersArray.size());
+	if (index >= m_backBuffersArray.size())
+		return nullptr;
 
 	return m_backBuffersArray[index];
 }

@@ -425,8 +425,8 @@ void QViewport::Update()
 	if (!m_width || !m_height)
 		return;
 
-	if (!m_renderContextCreated)
-		return;
+	if (!m_renderContextCreated && !m_creatingRenderContext)
+		CreateRenderContext();
 
 	if (m_updating)
 		return;

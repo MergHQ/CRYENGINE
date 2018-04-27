@@ -312,7 +312,8 @@ public:
 	uint32_t                   GenerateUniqueContextId() { return m_uniqueDisplayContextId++; }
 	SDisplayContextKey         AddCustomContext(const CRenderDisplayContextPtr &context) threadsafe;
 	virtual SDisplayContextKey CreateSwapChainBackedContext(const SDisplayContextDescription& desc) threadsafe final;
-	virtual void               ResizeContext(const SDisplayContextKey& key,int width,int height) threadsafe final;
+	void                       ResizeContext(CRenderDisplayContext *, int width, int height) threadsafe;
+	virtual void               ResizeContext(const SDisplayContextKey& key, int width, int height) threadsafe final;
 	virtual bool               DeleteContext(const SDisplayContextKey& key) threadsafe final;
 
 #ifdef CRY_PLATFORM_WINDOWS

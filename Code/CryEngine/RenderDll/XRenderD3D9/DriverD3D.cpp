@@ -272,16 +272,24 @@ void CD3D9Renderer::ChangeViewport(CRenderDisplayContext* pDC, unsigned int view
 	if (m_bDeviceLost)
 		return;
 
-	SetCurDownscaleFactor(Vec2(1, 1));
+	gRenDev->ExecuteRenderThreadCommand([=]
+		{
+			SetCurDownscaleFactor(Vec2(1, 1));
+
+			if (pDC->IsMainViewport())
+			{
+				if (auto pRenderOutput = pDC->GetRenderOutput().get())
+				{
+					pRenderOutput->ReinspectDisplayContext();
+					CRendererResources::OnOutputResolutionChanged(pRenderOutput->GetOutputResolution()[0], pRenderOutput->GetOutputResolution()[1]);
+				}
+			}
+		}, ERenderCommandFlags::None
+	);
 
 	// This change will propagate to the other dimensions (output and render)
 	// when HandleDisplayPropertyChanges() is called just before rendering
 	pDC->ChangeDisplayResolution(viewPortOffsetX + viewportWidth, viewPortOffsetY + viewportHeight, SRenderViewport(viewPortOffsetX, viewPortOffsetY, viewportWidth, viewportHeight));
-
-	if (auto pRenderOutput = pDC->GetRenderOutput().get())
-	{
-		CRendererResources::OnOutputResolutionChanged(pRenderOutput->GetOutputResolution()[0], pRenderOutput->GetOutputResolution()[1]);
-	}
 }
 
 void CD3D9Renderer::SetCurDownscaleFactor(Vec2 sf)
