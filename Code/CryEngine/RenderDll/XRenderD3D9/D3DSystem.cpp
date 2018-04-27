@@ -150,8 +150,8 @@ SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayCon
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	const int windowWidth = desc.screenResolution.x;
-	const int windowHeight = desc.screenResolution.y;
+	const int width = desc.screenResolution.x;
+	const int height = desc.screenResolution.y;
 
 	auto pDC = std::make_shared<CSwapChainBackedRenderDisplayContext>(desc, m_uniqueDisplayContextId++);
 
@@ -173,38 +173,39 @@ SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayCon
 	else
 		key.key.emplace<uint32_t>(pDC->m_uniqueId);
 
+	if (width * height)
+		ResizeContext(pDC.get(), width, height);
+
 	{
 		AUTO_LOCK(gs_contextLock); // Not thread safe without this
 		m_displayContexts.emplace(std::make_pair(key, std::move(pDC)));
 	}
 
-	if (windowWidth * windowHeight)
-		ResizeContext(key, windowWidth, windowHeight);
-
 	return key;
 }
 
-void CD3D9Renderer::ResizeContext(const SDisplayContextKey& key, int windowWidth, int windowHeight) threadsafe
+void CD3D9Renderer::ResizeContext(CRenderDisplayContext *pDC, int width, int height) threadsafe
+{
+	if (pDC->m_desc.screenResolution.x != width ||
+		pDC->m_desc.screenResolution.y != height)
+	{
+		pDC->m_desc.screenResolution.x = width;
+		pDC->m_desc.screenResolution.y = height;
+
+		ChangeViewport(pDC, 0, 0, width, height);
+
+		// Must be deferred to Render Thread
+		gRenDev->ExecuteRenderThreadCommand([=] { EF_DisableTemporalEffects(); }, 
+			ERenderCommandFlags::None
+		);
+	}
+}
+
+void CD3D9Renderer::ResizeContext(const SDisplayContextKey& key, int width, int height) threadsafe
 {
 	CRenderDisplayContext* pDC = FindDisplayContext(key);
 	if (pDC)
-	{
-		if (pDC->m_desc.screenResolution.x != windowWidth ||
-			pDC->m_desc.screenResolution.y != windowHeight)
-		{
-			pDC->m_desc.screenResolution.x = windowWidth;
-			pDC->m_desc.screenResolution.y = windowHeight;
-
-			gRenDev->ExecuteRenderThreadCommand(
-				[=] {
-				// Must be deferred to Render Thread
-					ChangeViewport(pDC, 0, 0, windowWidth, windowHeight);
-					EF_DisableTemporalEffects();
-				},
-				ERenderCommandFlags::None
-			);
-		}
-	}
+		ResizeContext(pDC, width, height);
 }
 
 bool CD3D9Renderer::DeleteContext(const SDisplayContextKey& key) threadsafe
