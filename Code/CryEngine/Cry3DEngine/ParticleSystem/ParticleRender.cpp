@@ -97,6 +97,7 @@ void CParticleRenderBase::AddRenderObject(CParticleEmitter* pEmitter, CParticleC
 
 	pRenderObject->m_ObjFlags = objFlags;
 	pRenderObject->m_fDistance = renderContext.m_distance - sortBias;
+	pRenderObject->m_bInstanceDataDirty = true;
 	pObjData->m_FogVolumeContribIdx = renderContext.m_fogVolumeId;
 	pObjData->m_LightVolumeId = renderContext.m_lightVolumeId;
 	if (const auto p = pEmitter->m_pTempData.load())

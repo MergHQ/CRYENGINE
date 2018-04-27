@@ -30,7 +30,7 @@ public:
 		pSizer->AddObject(this, sizeof(*this));
 	}
 
-	virtual bool            Compile(CRenderObject* pObj, CRenderView *pRenderView) override;
+	virtual bool            Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly) override;
 	virtual void            DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx) override;
 
 	virtual bool            RequestVerticesBuffer(SVF_P3F_C4B_T2F** pOutputVertices, uint8** pOutputIndices, uint32 nVerticesCount, uint32 nIndicesCount, uint32 nIndexSizeof);

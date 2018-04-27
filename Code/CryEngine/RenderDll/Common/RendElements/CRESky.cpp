@@ -22,7 +22,7 @@ bool CRESky::GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation)
 	return true;
 }
 
-bool CRESky::Compile(CRenderObject* pObj, CRenderView *pRenderView)
+bool CRESky::Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	return true;
 }
@@ -94,7 +94,7 @@ static void FillSkyTextureData(CTexture* pTexture, const void* pData, const uint
 	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pData, pDevTex, layout);
 }
 
-bool CREHDRSky::Compile(CRenderObject* pObj, CRenderView *pRenderView)
+bool CREHDRSky::Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	return true;
 }

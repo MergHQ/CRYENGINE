@@ -108,7 +108,7 @@ public:
 		return sizeof(*this);
 	}
 
-	virtual bool Compile(CRenderObject* pObj, CRenderView *pRenderView) override;
+	virtual bool Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly) override;
 	virtual void DrawToCommandList(CRenderObject* pRenderObject, const struct SGraphicsPipelinePassContext& context) override;
 
 	// Additional methods.

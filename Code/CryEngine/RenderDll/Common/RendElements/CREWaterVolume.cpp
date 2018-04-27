@@ -135,7 +135,7 @@ void CREWaterVolume::mfCenter(Vec3& vCenter, CRenderObject* pObj)
 		vCenter += pObj->GetTranslation();
 }
 
-bool CREWaterVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView)
+bool CREWaterVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	if (!m_pCompiledObject)
 	{

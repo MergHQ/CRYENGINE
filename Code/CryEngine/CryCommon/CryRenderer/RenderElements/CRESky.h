@@ -34,7 +34,7 @@ public:
 	virtual InputLayoutHandle GetVertexFormat() const override;
 	virtual bool          GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation = false) override;
 
-	virtual bool          Compile(CRenderObject* pObj, CRenderView *pRenderView) override;
+	virtual bool          Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly) override;
 	virtual void          DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx) override;
 
 	virtual void          GetMemoryUsage(ICrySizer* pSizer) const override
@@ -66,7 +66,7 @@ public:
 	virtual InputLayoutHandle GetVertexFormat() const override;
 	virtual bool          GetGeometryInfo(SGeometryInfo& streams, bool bSupportTessellation = false) override;
 
-	virtual bool          Compile(CRenderObject* pObj, CRenderView *pRenderView) override;
+	virtual bool          Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly) override;
 	virtual void          DrawToCommandList(CRenderObject* pObj, const struct SGraphicsPipelinePassContext& ctx) override;
 
 	virtual void          GetMemoryUsage(ICrySizer* pSizer) const override
