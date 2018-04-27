@@ -5174,6 +5174,7 @@ void CD3D9Renderer::DeleteAuxGeomCBs()
 void CD3D9Renderer::SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector)
 {
 	m_currentAuxGeomCBCollector = auxGeomCollector;
+	gEnv->pAuxGeomRenderer = m_currentAuxGeomCBCollector->Get(0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
