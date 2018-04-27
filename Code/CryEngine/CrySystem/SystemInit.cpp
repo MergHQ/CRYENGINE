@@ -3146,16 +3146,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 				m_rDriver->Set(STR_DX11_RENDERER);
 			}
 		}
-
-		if (m_env.IsEditor())
-		{
-			if (!(stricmp(m_rDriver->GetString(), STR_DX11_RENDERER) == 0 ||
-			      stricmp(m_rDriver->GetString(), STR_DX12_RENDERER) == 0))
-			{
-				m_env.pLog->LogWarning("Editor only supports DX11 & DX12. Switching to DX11 Renderer.");
-				m_rDriver->Set(STR_DX11_RENDERER);
-			}
-		}
 #endif
 
 #if CRY_PLATFORM_WINDOWS
