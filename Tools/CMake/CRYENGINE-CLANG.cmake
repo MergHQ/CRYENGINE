@@ -19,6 +19,7 @@ set(CLANG_COMMON_FLAGS
 
 	# clang 3.8 -> 5.0 upgrade
 	-Wno-unknown-warning-option      # Allows multiple versions of clang to be used
+	-Wno-delete-non-virtual-dtor     # Needed to provide virtual dispatch to allow strings to be modified on CryCommon types
 )
 
 if(NOT ANDROID)

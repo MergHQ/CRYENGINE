@@ -578,11 +578,11 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 			if (!ar.openBlock(m_textureSlotLabels[texId].c_str(), m_textureSlotLabels[texId].c_str()))
 				continue;
 
-			string textureFilePath = shaderTexture.m_Name;
+			string textureFilePath = shaderTexture.m_Name.c_str();
 
 			//New material editor only deals with dds files, not tifs
 			if (!textureFilePath.IsEmpty() && stricmp(PathUtil::GetExt(textureFilePath), "dds") != 0)
-				textureFilePath = PathUtil::ReplaceExtension(textureFilePath, "dds");
+				textureFilePath = PathUtil::ReplaceExtension(textureFilePath, "dds").c_str();
 
 			ar(Serialization::TextureFilename(textureFilePath), "textureName", "^Texture Name");
 			if (pSlot)
@@ -599,7 +599,7 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 				DestroyTexOfFlashFile(sr.m_Textures[tex].m_Name);
 			}
 			*/
-			shaderTexture.m_Name = textureFilePath;
+			shaderTexture.SetName(textureFilePath.c_str());
 		}
 
 
