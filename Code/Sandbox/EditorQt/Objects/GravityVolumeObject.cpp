@@ -1397,6 +1397,9 @@ void CGravityVolumeObject::OnEvent(ObjectEvent event)
 {
 	if (event == EVENT_INGAME)
 	{
+		if(m_pLuaProperties == nullptr)
+			return;
+		
 		bool bEnabled = false;
 		IVariable* pVarEn = m_pLuaProperties->FindVariable("bEnabled");
 		if (pVarEn)
