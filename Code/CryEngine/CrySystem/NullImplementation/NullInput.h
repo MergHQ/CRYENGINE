@@ -22,7 +22,8 @@ public:
 	virtual IInputEventListener* GetExclusiveListener() override                                                                                             { return nullptr; }
 
 	virtual bool                 AddInputDevice(IInputDevice* pDevice) override                                                                              { return false; }
-
+	virtual bool                 RemoveInputDevice(IInputDevice* pDevice) override                                                                           { return false; }
+	
 	virtual void                 EnableEventPosting(bool bEnable) override                                                                                   {}
 	virtual bool                 IsEventPostingEnabled() const override                                                                                      { return false; }
 	virtual void                 PostInputEvent(const SInputEvent& event, bool bForce = false) override                                                      {}

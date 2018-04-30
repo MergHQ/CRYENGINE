@@ -442,6 +442,20 @@ bool CBaseInput::AddInputDevice(IInputDevice* pDevice)
 	return false;
 }
 
+bool CBaseInput::RemoveInputDevice(IInputDevice* pDevice)
+{
+	for(auto it = m_inputDevices.begin(), end = m_inputDevices.end(); it != end; ++it)
+	{
+		if (*it == pDevice)
+		{
+			m_inputDevices.erase(it);
+			delete pDevice;
+			return true;
+		}
+	}
+	return false;
+}
+
 void CBaseInput::EnableEventPosting(bool bEnable)
 {
 	m_enableEventPosting = bEnable;

@@ -1218,6 +1218,7 @@ struct IInput
 	virtual IInputEventListener* GetExclusiveListener() = 0;
 
 	virtual bool                 AddInputDevice(IInputDevice* pDevice) = 0;
+	virtual bool                 RemoveInputDevice(IInputDevice* pDevice) = 0;
 	virtual void                 EnableEventPosting(bool bEnable) = 0;
 	virtual bool                 IsEventPostingEnabled() const = 0;
 	virtual void                 PostInputEvent(const SInputEvent& event, bool bForce = false) = 0;
