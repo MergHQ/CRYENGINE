@@ -33,6 +33,7 @@ endif()
 if(ANDROID)
   set(CLANG_COMMON_FLAGS ${CLANG_COMMON_FLAGS}
 	-Wno-deprecated
+	-Wno-nonportable-include-path		# This will be caught be submissions tests.
     -fno-exceptions
     -fms-extensions
 	-D_MSC_EXTENSIONS=1

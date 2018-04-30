@@ -6,6 +6,8 @@
 #include <limits>
 #include <cmath>
 
+#include "Cry_Math.h"
+
 //--------------------------------------------------------------------------------
 // IsValid() overloads for basic types
 
@@ -19,7 +21,7 @@ template<typename T, bool Converted> struct Float
 	}
 	static bool IsValid(T val)
 	{
-		return std::isfinite(val);
+		return crymath::valueisfinite(val);
 	}
 	static bool IsEquivalent(T a, T b, T e = std::numeric_limits<T>::epsilon())
 	{

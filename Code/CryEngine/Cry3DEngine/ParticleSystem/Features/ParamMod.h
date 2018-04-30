@@ -124,7 +124,7 @@ public:
 	bool                           HasUpdateModifiers() const { return !m_modUpdate.empty(); }
 	bool                           HasModifiers() const       { return !m_modInit.empty() || !m_modUpdate.empty(); }
 	TType                          GetBaseValue() const       { return m_baseValue; }
-	bool                           IsEnabled() const          { return !std::isinf(m_baseValue) && !std::isnan(m_baseValue); }   // android NDK 16 doesn't provide std::isfinite
+	bool                           IsEnabled() const          { return crymath::valueisfinite(m_baseValue); }
 	static const TParamModContext& Context()                  { static TParamModContext context; return context; }
 
 private:

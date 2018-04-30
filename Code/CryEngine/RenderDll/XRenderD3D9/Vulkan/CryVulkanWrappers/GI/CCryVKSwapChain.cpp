@@ -208,6 +208,10 @@ bool CCryVKSwapChain::ApplyFullscreenState(bool bFullscreen, uint32_t width, uin
 	CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING,
 			   "CCryVKSwapChain::ApplyFullscreenState not implemented on Linux.");
 	return false;
+#elif CRY_PLATFORM_ANDROID
+	CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING,
+			   "CCryVKSwapChain::ApplyFullscreenState not implemented on Android.");
+	return false;
 #else
 	#error "Unknown platform in CCryVKSwapChain::ApplyFullscreenState."
 #endif

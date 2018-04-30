@@ -295,6 +295,16 @@ template<typename T> ILINE T hsum(T v) { return v; }
 template<typename T> ILINE T hmin(T v) { return v; }
 template<typename T> ILINE T hmax(T v) { return v; }
 
+// Name it so in order to avoid conflicts with cmath.h's "isfinite" function.
+template<typename T> ILINE bool valueisfinite(T val)
+{
+#if CRY_PLATFORM_ANDROID
+	return !std::isinf(val) && !std::isnan(val);   // Android NDK r16b/clang does not provide std::isfinite.
+#else
+	return std::isfinite(val);
+#endif
+}
+
 } // namespace crymath
 
 template<typename F> ILINE F sqr(const F& op)         { return op * op; }

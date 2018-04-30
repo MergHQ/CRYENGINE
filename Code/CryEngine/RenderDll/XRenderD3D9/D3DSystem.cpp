@@ -1942,7 +1942,7 @@ bool CD3D9Renderer::CreateDeviceMobile()
 {
 	auto* pDC = GetBaseDisplayContext();
 
-	if (!m_devInfo.CreateDevice(false, pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y, m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
+	if (!m_devInfo.CreateDevice(m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
 		return false;
 
 	OnD3D11PostCreateDevice(m_devInfo.Device());
