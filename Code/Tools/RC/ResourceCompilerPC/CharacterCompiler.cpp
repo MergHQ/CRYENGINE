@@ -289,7 +289,7 @@ bool CharacterCompiler::ProcessInternal(CLoaderCGF* cgfLoader, CContentCGF* pCGF
 	bool bStorePositionsAsF16;
 	{
 		const char* const optionName = "vertexPositionFormat";
-		const string s = m_CC.config->GetAsString(optionName, "f32", "f32");
+		const string s = m_CC.config->GetAsString(optionName, "exporter", "f32");
 
 		if (StringHelpers::EqualsIgnoreCase(s, "f32"))
 		{
