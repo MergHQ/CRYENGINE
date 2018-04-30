@@ -1,5 +1,5 @@
 #include <CryEntitySystem/IEntitySystem.h>
-#include <Cry3DEngine/IRenderNode.h>
+#include <CryRenderer/IRenderer.h>
 
 // Loads a dynamic point light into the next available entity slot
 void LoadPointLight(IEntity& entity)

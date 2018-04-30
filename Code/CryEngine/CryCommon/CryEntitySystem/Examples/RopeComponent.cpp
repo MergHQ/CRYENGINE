@@ -1,5 +1,6 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryPhysics/physinterface.h>
+#include <CryRenderer/IRenderer.h>
 #include <Cry3DEngine/IRenderNode.h>
 
 void CreateRopeComponent(IEntity& entity)
