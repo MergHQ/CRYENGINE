@@ -127,8 +127,6 @@ CAIHandler::CAIHandler(IGameObject* pGameObject)
 	m_actorTargetStartedQueryID(0),
 	m_actorTargetEndQueryID(0),
 	m_eActorTargetPhase(eATP_None),
-	m_changeActionInputQueryId(0),
-	m_changeSignalInputQueryId(0),
 	m_playingSignalAnimation(false),
 	m_playingActionAnimation(false),
 	m_actorTargetId(0),
@@ -249,7 +247,6 @@ const char* CAIHandler::GetInitialBehaviorName()
 //------------------------------------------------------------------------------
 void CAIHandler::Init()
 {
-	m_ActionQueryID = m_SignalQueryID = 0;
 	m_sQueriedActionAnimation.clear();
 	m_sQueriedSignalAnimation.clear();
 	m_bSignaledAnimationStarted = false;
@@ -357,7 +354,6 @@ void CAIHandler::SetInitialBehaviorAndCharacter()
 //------------------------------------------------------------------------------
 void CAIHandler::ResetAnimationData()
 {
-	m_ActionQueryID = m_SignalQueryID = 0;
 	m_sQueriedActionAnimation.clear();
 	m_sQueriedSignalAnimation.clear();
 	m_bSignaledAnimationStarted = false;
@@ -1579,14 +1575,6 @@ IAnimationGraphState* CAIHandler::GetAGState()
 	if (!m_pAGState)
 		return NULL;
 
-	if (!GetActionController())
-	{
-		// When using Mannequin, we don't need to wait for these
-		// signals anymore.
-		m_pAGState->QueryChangeInput(GetAGInputName(AIAG_ACTION), &m_changeActionInputQueryId);
-		m_pAGState->QueryChangeInput(GetAGInputName(AIAG_SIGNAL), &m_changeSignalInputQueryId);
-	}
-
 	m_pAGState->AddListener("AIHandler", this);
 	return m_pAGState;
 }
@@ -1910,94 +1898,7 @@ void CAIHandler::HandleExactPositioning(SOBJECTSTATE& state, CMovementRequest& m
 
 void CAIHandler::QueryComplete(TAnimationGraphQueryID queryID, bool succeeded)
 {
-	if (queryID == m_ActionQueryID)
-	{
-		CRY_ASSERT(!GetActionController()); // this code-path should not be called anymore when using mannequin
-
-		if (!m_sQueriedActionAnimation.empty())
-		{
-			m_setStartedActionAnimations.insert(m_sQueriedActionAnimation);
-			m_sQueriedActionAnimation.clear();
-		}
-	}
-	else if (queryID == m_SignalQueryID)
-	{
-		CRY_ASSERT(!GetActionController()); // this code-path should not be called anymore when using mannequin
-
-		if (m_bSignaledAnimationStarted || !succeeded)
-		{
-			if (!m_sQueriedSignalAnimation.empty() || !succeeded)
-			{
-				m_setPlayedSignalAnimations.insert(m_sQueriedSignalAnimation);
-				m_sQueriedSignalAnimation.clear();
-			}
-			m_bSignaledAnimationStarted = false;
-		}
-		else if (!m_sQueriedSignalAnimation.empty())
-		{
-			GetAGState()->QueryLeaveState(&m_SignalQueryID);
-			m_bSignaledAnimationStarted = true;
-		}
-	}
-	else if (queryID == m_changeActionInputQueryId)
-	{
-		CRY_ASSERT(!GetActionController()); // this code-path should not be called anymore when using mannequin
-
-		AnimationGraphInputID idAction = m_pAGState->GetInputId(GetAGInputName(AIAG_ACTION));
-		char value[64] = "\0";
-		string newValue;
-		m_pAGState->GetInput(idAction, value);
-
-		bool defaultValue = m_pAGState->IsDefaultInputValue(idAction);   // _stricmp(value,"idle") == 0 || _stricmp(value,"weaponAlerted") == 0 || _stricmp(value,"<<not set>>") == 0;
-		if (!defaultValue)
-			newValue = value;
-
-		m_playingActionAnimation = !defaultValue;
-
-		if (m_playingActionAnimation)
-			m_currentActionAnimName = value;
-		else
-			m_currentActionAnimName.clear();
-
-		// update smart object state if changed
-		if (m_sAGActionSOAutoState != newValue)
-		{
-			if (!m_sAGActionSOAutoState.empty())
-				gEnv->pAISystem->GetSmartObjectManager()->RemoveSmartObjectState(m_pEntity, m_sAGActionSOAutoState);
-			m_sAGActionSOAutoState = newValue;
-			if (!m_sAGActionSOAutoState.empty())
-				gEnv->pAISystem->GetSmartObjectManager()->AddSmartObjectState(m_pEntity, m_sAGActionSOAutoState);
-		}
-
-		// query the next change
-		if (idAction != (AnimationGraphInputID) ~0)
-		{
-			m_pAGState->QueryChangeInput(idAction, &m_changeActionInputQueryId);
-		}
-	}
-	else if (queryID == m_changeSignalInputQueryId)
-	{
-		CRY_ASSERT(!GetActionController()); // this code-path should not be called anymore when using mannequin
-
-		AnimationGraphInputID idSignal = m_pAGState->GetInputId(GetAGInputName(AIAG_SIGNAL));
-		char value[64] = "\0";
-		m_pAGState->GetInput(idSignal, value);
-
-		bool defaultValue = m_pAGState->IsDefaultInputValue(idSignal);    // _stricmp(value,"none") == 0 || _stricmp(value,"<<not set>>") == 0;
-
-		m_playingSignalAnimation = !defaultValue;
-		if (m_playingSignalAnimation)
-			m_currentSignalAnimName = value;
-		else
-			m_currentSignalAnimName.clear();
-
-		// query the next change
-		if (idSignal != (AnimationGraphInputID) ~0)
-		{
-			m_pAGState->QueryChangeInput(idSignal, &m_changeSignalInputQueryId);
-		}
-	}
-	else if (queryID == *m_curActorTargetStartedQueryID)
+	if (queryID == *m_curActorTargetStartedQueryID)
 	{
 		if (succeeded)
 		{
@@ -2276,12 +2177,6 @@ void CAIHandler::Serialize(TSerialize ser)
 		m_FaceManager.Reset();
 
 		ResetAnimationData();
-		m_changeActionInputQueryId = m_changeSignalInputQueryId = 0;
-		if (pAGState && !GetActionController())
-		{
-			pAGState->QueryChangeInput(GetAGInputName(AIAG_ACTION), &m_changeActionInputQueryId);
-			pAGState->QueryChangeInput(GetAGInputName(AIAG_SIGNAL), &m_changeSignalInputQueryId);
-		}
 	}
 
 	ser.EnumValue("m_eActorTargetPhase", m_eActorTargetPhase, eATP_None, eATP_Error);

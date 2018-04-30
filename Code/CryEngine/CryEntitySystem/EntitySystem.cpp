@@ -339,6 +339,9 @@ void CEntitySystem::Reset()
 
 	m_genIdMap.clear();
 
+	m_updatedEntityComponents.Clear();
+	m_prePhysicsUpdatedEntityComponents.Clear();
+
 	// Delete entities that have already been added to the delete list.
 	DeletePendingEntities();
 
@@ -364,8 +367,6 @@ void CEntitySystem::Reset()
 	DeletePendingEntities();
 
 	ClearEntityArray();
-	m_updatedEntityComponents.Clear();
-	m_prePhysicsUpdatedEntityComponents.Clear();
 
 	stl::free_container(m_deletedEntities);
 	m_guidMap.clear();
