@@ -39,7 +39,7 @@ class UncrustifyRunner:
         elif changelist and filelist:
             raise ValueError('Either use a changelist or pass the list of files.')
         success = True
-        filelist = filter_cpp_files(filelist)
+        filelist = self.filter_cpp_files(filelist)
         if not filelist:
             print('No files to process.')
         else:
@@ -69,10 +69,10 @@ class UncrustifyRunner:
 
     def get_changelist_files(self, changelist):
         """
-        From a changelist number, retrieve the local paths of CPP the files in the changelist that match the patterns.
+        From a changelist number, retrieve the local paths of the files in the changelist.
 
         :param changelist: Changelist number.
-        :return: The local paths of the CPP files in the changelist.
+        :return: The local paths of the files in the changelist.
         """
         description = self.p4.run_describe('-s', changelist)[0]
         if 'depotFile' not in description:
@@ -80,20 +80,37 @@ class UncrustifyRunner:
         if self.trigger:
             if 'shelved' not in description:
                 raise ValueError('The changelist does not have shelved files.')
-            #  HACK, do not unshelve the uncrustify script or it will fail
-            if any(f.endswith('p4v_uncrustify.py') for f in description['depotFile']):
-                return []
             self.unshelve_changelist = self.create_changelist('!X For style check')
             self.p4.run_unshelve('-s', changelist, '-c', self.unshelve_changelist)
         # Retrieve local paths for all files in the changelist.
         fstat_results = self.p4.run_fstat(['-Op', *(f'{filename}#have' for filename in description['depotFile'])])
-        changelist_files = [f['path'] for f in fstat_results if 'delete' not in f['action']]
+        return [f['path'] for f in fstat_results]
+
+    def filter_cpp_files(self, filelist):
+        """
+        Take the list of files and remove CryPhysics and non-C++ files.
+        Uncrustify will attempt to format any file as C++ if we tell it to, which can ruin shaders, for instance.
+        If patterns are set, it will apply them too to filter the files that do not match.
+
+        :return: List of C++ files that should be formatted.
+        """
+        to_style = []
+        for filepath in filelist:
+            # CryPhysics does not receive code formatting.
+            if 'cryphysics' in filepath.lower():
+                continue
+
+            # Only try to format actual C++ files.
+            if os.path.splitext(filepath)[1].lower() not in CPP_FILE_ENDINGS:
+                continue
+
+            to_style.append(filepath)
         filtered_files = set()
         if self.allowed_patterns:
             for pattern in self.allowed_patterns:
-                filtered_files.update(fnmatch.filter(changelist_files, pattern))
+                filtered_files.update(fnmatch.filter(to_style, pattern))
         else:
-            filtered_files.update(changelist_files)
+            filtered_files.update(to_style)
         return sorted(filtered_files)
 
 
@@ -126,27 +143,6 @@ def main():
     except ValueError as e:
         print(f'Error: {e}')
         return 1
-
-
-def filter_cpp_files(filelist):
-    """
-    Take the list of files and remove CryPhysics and non-C++ files.
-    Uncrustify will attempt to format any file as C++ if we tell it to, which can ruin shaders, for instance.
-
-    :return: List of C++ files that should be formatted.
-    """
-    to_style = []
-    for filepath in filelist:
-        # CryPhysics does not receive code formatting.
-        if 'cryphysics' in filepath.lower():
-            continue
-
-        # Only try to format actual C++ files.
-        if os.path.splitext(filepath)[1].lower() not in CPP_FILE_ENDINGS:
-            continue
-
-        to_style.append(filepath)
-    return to_style
 
 
 def parse_arguments():
