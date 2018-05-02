@@ -901,6 +901,16 @@ half4 DecodeHDRCubemap(half4 color)
 	return color;
 }
 
+half4 GetEnvironmentCMap(samplerCUBE envCubeTex, in half3 envTC, in half fGloss)
+{
+	const half numCMapMips = 6.0;  // TODO: Use real cubemap size
+	
+	half fGlossinessLod = numCMapMips - fGloss * numCMapMips;
+	half4 envColor = DecodeHDRCubemap(texCUBElod(envCubeTex, half4(envTC, fGlossinessLod)));
+
+	return envColor;
+}
+
 half4 GetEnvironmentCMap(TextureCube envCubeTex, in half3 envTC, in half fGloss)
 {
 	const half numCMapMips = 6.0;  // TODO: Use real cubemap size
