@@ -514,6 +514,7 @@ technique General
 	#if !%GRASS
 		"TechniqueMotionBlur=MotionBlurPass;"         
 	#endif
+		"TechniqueCustomRender=CustomRenderVegetation;"
 		"TechniqueShadowGen=ShadowGen;" 
 		"TechniqueDebug=DebugPass;"
 >
@@ -550,3 +551,65 @@ technique General
 #include "ShadowCommon.cfi"
 #include "CommonShadowGenPass.cfi"
 #include "CommonDebugPass.cfi"
+#include "CommonViewsPass.cfi"
+
+
+
+
+vert2fragCustomRender Vegetation_CustomRenderPassVS(app2vertGeneral IN)
+{
+	vert2fragCustomRender OUT = (vert2fragCustomRender)0;
+
+	streamPos vertPassPos = (streamPos)0;
+	streamPos_FromCustomViews(IN, vertPassPos);
+
+	OUT.cVision = PerInstanceCustomData1;
+
+#if !ENABLE_TESSELLATION || %_RT_NO_TESSELLATION
+	OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
+	OUT.screenProj = HPosToScreenTC(OUT.HPosition);
+#else
+	OUT.screenProj = HPosToScreenTC(Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos));
+#endif
+
+	// Apply texture modifiers
+	_TCModify(vertPassPos.baseTC, OUT.baseTC, vertPassPos.Position, vertPassPos.ObjToTangentSpace[2], TS_DIFFUSE);
+
+	float3 worldTangentS = normalize(mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[0]));
+	float3 worldTangentT = normalize(mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[1]));
+	float3 worldTangentN = normalize(mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[2]));
+
+	float3 outPos = vertPassPos.WorldPos.xyz;
+#if %_RT_OBJ_IDENTITY
+	outPos.xyz -= g_VS_WorldViewPos.xyz;
+#else
+	vertPassPos.WorldPos.xyz += g_VS_WorldViewPos.xyz;
+#endif
+
+	OUT.vView.xyz = outPos.xyz;
+
+#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
+	OUT.vNormal.xyz = normalize(mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.Normal.xyz));
+#endif
+
+	return OUT;
+}
+
+
+technique CustomRenderVegetation
+{
+	pass p0
+	{
+		VertexShader = Vegetation_CustomRenderPassVS() CustomRenderVS;
+		PixelShader = Common_CustomRenderPassPS() CustomRenderPS;
+
+		ZEnable = true;
+		ZWriteEnable = true;
+
+#if %GRASS || %LEAVES
+		CullMode = None;
+#else
+		CullMode = Back;
+#endif
+	}
+}
