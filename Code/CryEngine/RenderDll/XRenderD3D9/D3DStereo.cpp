@@ -1196,8 +1196,11 @@ _smart_ptr<CTexture> CD3DStereoRenderer::WrapD3DRenderTarget(D3DTexture* d3dText
 	}
 
 	// CTexture::CreateTextureObject does not set width and height if the texture already existed
-	assert(texture->GetWidth() == width);
-	assert(texture->GetHeight() == height);
+	if (texture->GetWidth() != width || texture->GetHeight() != height)
+	{
+		texture->SetWidth(width);
+		texture->SetHeight(height);
+	}
 	assert(texture->GetDepth() == 1);
 
 	d3dTexture->AddRef();

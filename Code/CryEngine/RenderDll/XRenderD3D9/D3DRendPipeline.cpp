@@ -624,10 +624,8 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 
 	if (!bRecurse)
 	{
-		D3D11_VIEWPORT viewport = RenderViewportToD3D11Viewport(pRenderView->GetViewport());
-
 		const bool bRightEye = (shaderRenderingFlags & SHDF_STEREO_RIGHT_EYE) != 0;
-		CVrProjectionManager::Instance()->Configure(viewport, bRightEye);
+		CVrProjectionManager::Instance()->Configure(pRenderView->GetViewport(), bRightEye);
 	}
 
 	int nSaveDrawNear     = CV_r_nodrawnear;

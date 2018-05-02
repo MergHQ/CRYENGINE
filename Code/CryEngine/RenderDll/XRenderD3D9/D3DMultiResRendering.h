@@ -32,7 +32,7 @@ public:
 
 	bool IsMultiResEnabled() const;
 	bool IsProjectionConfigured() const;
-	void Configure(const D3D11_VIEWPORT& originalViewport, bool bMirrored);
+	void Configure(const SRenderViewport& originalViewport, bool bMirrored);
 	
 	// creates a cached configuration and prepares the constant buffer for use
 	void PrepareProjectionParameters(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const D3D11_VIEWPORT& viewport);

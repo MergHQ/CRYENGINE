@@ -199,8 +199,14 @@ void CTiledLightVolumesStage::Resize(int renderWidth, int renderHeight)
 {
 	// Tiled Light Lists =================================================================
 
-	uint32 dispatchSizeX = renderWidth  / LightTileSizeX + (renderWidth  % LightTileSizeX > 0 ? 1 : 0);
-	uint32 dispatchSizeY = renderHeight / LightTileSizeY + (renderHeight % LightTileSizeY > 0 ? 1 : 0);
+	int gridWidth = renderWidth;
+	int gridHeight = renderHeight;
+	
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
+		CVrProjectionManager::Instance()->GetProjectionSize(renderWidth, renderHeight, gridWidth, gridHeight);
+	
+	const uint32 dispatchSizeX = gridWidth  / LightTileSizeX + (gridWidth  % LightTileSizeX > 0 ? 1 : 0);
+	const uint32 dispatchSizeY = gridHeight / LightTileSizeY + (gridHeight % LightTileSizeY > 0 ? 1 : 0);
 
 	if (m_dispatchSizeX == dispatchSizeX &&
 		m_dispatchSizeY == dispatchSizeY)

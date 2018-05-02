@@ -47,11 +47,6 @@ void CTiledShadingStage::Execute()
 
 	int screenWidth = GetViewport().width;
 	int screenHeight = GetViewport().height;
-	int gridWidth = screenWidth;
-	int gridHeight = screenHeight;
-
-	if (CVrProjectionManager::IsMultiResEnabledStatic())
-		CVrProjectionManager::Instance()->GetProjectionSize(screenWidth, screenHeight, gridWidth, gridHeight);
 	
 	bool bSeparateCullingPass = tiledLights->IsSeparateVolumeListGen();
 	
@@ -154,6 +149,12 @@ void CTiledShadingStage::Execute()
 	GetStdGraphicsPipeline().GeneratePerViewConstantBuffer(viewInfo, viewInfoCount, m_pPerViewConstantBuffer,&viewport);
 	m_passCullingShading.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, m_pPerViewConstantBuffer);
 
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
+	{
+		auto constantBuffer = CVrProjectionManager::Instance()->GetProjectionConstantBuffer(screenWidth, screenHeight);
+		m_passCullingShading.SetInlineConstantBuffer(eConstantBufferShaderSlot_VrProjection, constantBuffer);
+	}
+	
 	m_passCullingShading.BeginConstantUpdate();
 	{
 		const auto &projMatrix = viewInfo[0].projMatrix;
@@ -201,12 +202,6 @@ void CTiledShadingStage::Execute()
 #endif
 		Vec4 ssdoNullParams(0, 0, 0, 0);
 		m_passCullingShading.SetConstant(ssdoParamsName, CRenderer::CV_r_ssdo ? ssdoParams : ssdoNullParams);
-	}
-
-	if (CVrProjectionManager::IsMultiResEnabledStatic())
-	{
-		auto constantBuffer = CVrProjectionManager::Instance()->GetProjectionConstantBuffer(screenWidth, screenHeight);
-		m_passCullingShading.SetInlineConstantBuffer(eConstantBufferShaderSlot_VrProjection, constantBuffer);
 	}
 
 	m_passCullingShading.SetDispatchSize(

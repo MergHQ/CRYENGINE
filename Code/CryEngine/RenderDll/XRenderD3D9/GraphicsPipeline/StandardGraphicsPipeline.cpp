@@ -148,6 +148,11 @@ void CStandardGraphicsPipeline::Init()
 //////////////////////////////////////////////////////////////////////////
 void CStandardGraphicsPipeline::Resize(int renderWidth, int renderHeight)
 {
+	if (CVrProjectionManager::IsMultiResEnabledStatic())
+	{
+		CVrProjectionManager::Instance()->Configure(SRenderViewport(0, 0, renderWidth, renderHeight), false);
+	}
+	
 	CGraphicsPipeline::Resize(renderWidth, renderHeight);
 }
 
@@ -820,9 +825,6 @@ void CStandardGraphicsPipeline::Execute()
 	// Wait for Shadow Map draw jobs to finish (also required for HeightMap AO and SVOGI)
 	renderItemDrawer.WaitForDrawSubmission();
 
-	if (CVrProjectionManager::IsMultiResEnabledStatic())
-		CVrProjectionManager::Instance()->ExecuteFlattenDepth(CRendererResources::s_ptexLinearDepth, CVrProjectionManager::Instance()->GetZTargetFlattened());
-
 	// Depth downsampling
 	{
 		CTexture* pSourceDepth = CRendererResources::s_ptexLinearDepth;
@@ -830,6 +832,9 @@ void CStandardGraphicsPipeline::Execute()
 #if CRY_PLATFORM_DURANGO
 		pSourceDepth = pZTexture;  // On Durango reading device depth is faster since it is in ESRAM
 #endif
+
+		if (CVrProjectionManager::IsMultiResEnabledStatic())
+			CVrProjectionManager::Instance()->ExecuteFlattenDepth(pSourceDepth, CVrProjectionManager::Instance()->GetZTargetFlattened());
 
 		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(pSourceDepth, CRendererResources::s_ptexLinearDepthScaled[0], (pSourceDepth == pZTexture), true);
 		GetOrCreateUtilityPass<CDepthDownsamplePass>()->Execute(CRendererResources::s_ptexLinearDepthScaled[0], CRendererResources::s_ptexLinearDepthScaled[1], false, false);
