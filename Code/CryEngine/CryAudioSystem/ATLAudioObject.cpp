@@ -1646,7 +1646,7 @@ void CATLAudioObject::SetEnvironment(EnvironmentId const audioEnvironmentId, flo
 //////////////////////////////////////////////////////////////////////////
 void CATLAudioObject::SetCurrentEnvironments(EntityId const entityToIgnore, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SAudioObjectRequestData<EAudioObjectRequestType::SetCurrentEnvironments> requestData(entityToIgnore, m_attributes.transformation.GetPosition());
+	SAudioObjectRequestData<EAudioObjectRequestType::SetCurrentEnvironments> requestData(entityToIgnore);
 	PushRequest(requestData, userData);
 }
 

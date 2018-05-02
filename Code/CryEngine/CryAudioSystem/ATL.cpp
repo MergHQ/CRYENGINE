@@ -793,7 +793,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 				if (pRequestData->setCurrentEnvironments)
 				{
-					SetCurrentEnvironmentsOnObject(pNewObject, INVALID_ENTITYID, pRequestData->transformation.GetPosition());
+					SetCurrentEnvironmentsOnObject(pNewObject, INVALID_ENTITYID);
 				}
 
 				if (pRequestData->occlusionType < EOcclusionType::Count)
@@ -904,7 +904,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 			SAudioObjectRequestData<EAudioObjectRequestType::SetCurrentEnvironments> const* const pRequestData =
 			  static_cast<SAudioObjectRequestData<EAudioObjectRequestType::SetCurrentEnvironments> const* const>(request.GetData());
 
-			SetCurrentEnvironmentsOnObject(pObject, pRequestData->entityToIgnore, pRequestData->position);
+			SetCurrentEnvironmentsOnObject(pObject, pRequestData->entityToIgnore);
 
 			break;
 		}
@@ -951,7 +951,7 @@ ERequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequest c
 
 			if (pRequestData->setCurrentEnvironments)
 			{
-				SetCurrentEnvironmentsOnObject(pObject, INVALID_ENTITYID, pRequestData->transformation.GetPosition());
+				SetCurrentEnvironmentsOnObject(pObject, INVALID_ENTITYID);
 			}
 
 			if (pRequestData->occlusionType < EOcclusionType::Count)
@@ -1428,14 +1428,14 @@ void CAudioTranslationLayer::CreateInternalSwitch(char const* const szSwitchName
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioTranslationLayer::SetCurrentEnvironmentsOnObject(CATLAudioObject* const pObject, EntityId const entityToIgnore, Vec3 const& position)
+void CAudioTranslationLayer::SetCurrentEnvironmentsOnObject(CATLAudioObject* const pObject, EntityId const entityToIgnore)
 {
 	IAreaManager* const pIAreaManager = gEnv->pEntitySystem->GetAreaManager();
 	size_t numAreas = 0;
 	static size_t const s_maxAreas = 10;
 	static SAudioAreaInfo s_areaInfos[s_maxAreas];
 
-	if (pIAreaManager->QueryAudioAreas(position, s_areaInfos, s_maxAreas, numAreas))
+	if (pIAreaManager->QueryAudioAreas(pObject->GetTransformation().GetPosition(), s_areaInfos, s_maxAreas, numAreas))
 	{
 		for (size_t i = 0; i < numAreas; ++i)
 		{
