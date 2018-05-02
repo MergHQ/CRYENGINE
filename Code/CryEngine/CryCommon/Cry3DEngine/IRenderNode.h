@@ -571,8 +571,7 @@ public:
 	void RemoveAndMarkForAutoDeleteTempData()
 	{
 		// Remove pointer atomically
-		SRenderNodeTempData* pTempData = nullptr;
-		m_pTempData.exchange(pTempData);
+		SRenderNodeTempData* pTempData = m_pTempData.exchange(nullptr);
 
 		// Keep the contents of the object valid, but schedule it for removal at the end of the frame
 		if (pTempData)
