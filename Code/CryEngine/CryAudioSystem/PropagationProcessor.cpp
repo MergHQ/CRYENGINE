@@ -208,14 +208,13 @@ void CPropagationProcessor::SetOcclusionType(EOcclusionType const occlusionType,
 		CAudioRayInfo& rayInfo = m_raysInfo[0];
 		static int const physicsFlags = ent_water | ent_static | ent_sleeping_rigid | ent_rigid | ent_terrain;
 
-		// Note: The very first entry of rayInfo.hits is only filled by CryPhysics if the ray encountered a "solid hit".
-		// This is determined via formula "rwi pierceability (set in flags) >= surfacetype pierceability". We use "rwi_pierceability0" for "strongest" pierceability.
-		// Meaning the ray needs to encounter a surface type set to pierceability 0 to qualify as solid hit.
+		// We use "rwi_max_piercing" to allow audio rays to always pierce surfaces regardless of the "pierceability" attribute.
+		// Note: The very first entry of rayInfo.hits (solid slot) is always empty.
 		rayInfo.numHits = static_cast<size_t>(gEnv->pPhysicalWorld->RayWorldIntersection(
 		                                        listenerPosition,
 		                                        finalDirection,
 		                                        physicsFlags,
-		                                        rwi_pierceability0,
+		                                        rwi_max_piercing,
 		                                        rayInfo.hits,
 		                                        static_cast<int>(s_maxRayHits),
 		                                        nullptr,
@@ -461,13 +460,12 @@ void CPropagationProcessor::CastObstructionRay(
 	directionNormalized.Normalize();
 	Vec3 const finalDirection(direction - (directionNormalized * g_cvars.m_occlusionRayLengthOffset));
 
-	// Note: The very first entry of rayInfo.hits is only filled by CryPhysics if the ray encountered a "solid hit".
-	// This is determined via formula "rwi pierceability (set in flags) >= surfacetype pierceability". We use "rwi_pierceability0" for "strongest" pierceability.
-	// Meaning the ray needs to encounter a surface type set to pierceability 0 to qualify as solid hit.
+	// We use "rwi_max_piercing" to allow audio rays to always pierce surfaces regardless of the "pierceability" attribute.
+	// Note: The very first entry of rayInfo.hits (solid slot) is always empty.
 	int const numHits = gEnv->pPhysicalWorld->RayWorldIntersection(
 	  origin,
 	  finalDirection, physicsFlags,
-	  bSynch ? rwi_pierceability0 : rwi_pierceability0 | rwi_queue,
+	  bSynch ? rwi_max_piercing : rwi_max_piercing | rwi_queue,
 	  rayInfo.hits,
 	  static_cast<int>(s_maxRayHits),
 	  nullptr,
