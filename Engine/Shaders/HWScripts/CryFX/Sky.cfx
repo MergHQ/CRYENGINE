@@ -78,7 +78,7 @@ pixout SkyPS(v2f IN)
 {
   pixout OUT;
 
-  half4 baseColor = GetTexture2D(whiteSampler, IN.baseTC.xy);
+  half4 baseColor = float4(1,1,1,1);//GetTexture2D(whiteSampler, IN.baseTC.xy);
   half4 Color = baseColor; // * CV_GlobalColor
 
    // Debug output
@@ -107,7 +107,12 @@ pixout_gbuffer SkyZPS(v2fZ IN)
 	
 	MaterialAttribsCommon attribs = MaterialAttribsDefault();
 	attribs.Albedo = 0;  // Output black albedo for emissive surface
+
+#if %_RT_SAMPLE0
+	EncodeMicroGBuffer( attribs, OUT.GBufferA, IN.Position.xy );
+#else
 	EncodeGBuffer( attribs, OUT.GBufferA, OUT.GBufferB, OUT.GBufferC );
+#endif
 
   return OUT;
 }
