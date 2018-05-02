@@ -344,11 +344,12 @@ gotcontacts:
 		for(j--; j>=0; j--) 
 		if (pcontacts[j].t<phits[0].dist && (flags & rwi_ignore_back_faces)*(facing=pcontacts[j].n*aray.m_dirn)<=0) {
 			imat = pentFlags->GetMatId(pcontacts[j].id[0],i);
+			int rayPierceability = (int)((flags & rwi_pierceability_mask)-(flags & rwi_max_piercing));
 			int pierceability = pWorld->m_SurfaceFlagsTable[imat&NSURFACETYPES-1] & sf_pierceable_mask;
 			ihit = -(int)(flags&rwi_force_pierceable_noncoll)>>31 & -iszero((int)pentFlags->m_parts[i].flags & (geom_colltype_solid|geom_colltype_ray));
 			pierceability += sf_max_pierceable+1-pierceability & ihit;
 			ihit = 0;
-			if ((int)(flags & rwi_pierceability_mask) < pierceability) {
+			if (rayPierceability < pierceability) {
 				if ((pWorld->m_SurfaceFlagsTable[imat&NSURFACETYPES-1]|flags) & sf_important) {
 					for(ihit=1; ihit<=nThroughHits && phits[ihit].dist<pcontacts[j].t; ihit++);
 					if (ihit<=nThroughHits)	{
