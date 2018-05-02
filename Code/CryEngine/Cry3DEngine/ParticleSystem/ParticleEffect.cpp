@@ -185,6 +185,10 @@ void CParticleEffect::Serialize(Serialization::IArchive& ar)
 	SSerializationContext documentContext(documentVersion);
 	Serialization::SContext context(ar, &documentContext);
 
+	if (documentVersion < gMinimumVersion || documentVersion > gCurrentVersion)
+		gEnv->pLog->LogError("Particle effect %s has unsupported version %d. Valid versions are %d to %d. Some values may be incorrectly read.", 
+			GetName(), documentVersion, gMinimumVersion, gCurrentVersion);
+
 	ar(*m_pAttributes, "Attributes");
 
 	if (ar.isInput() && documentVersion < 3)
