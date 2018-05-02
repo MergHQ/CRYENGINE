@@ -30,6 +30,7 @@
       "AttachmentPRow.h", 
       "AttachmentVCloth.h", 
       "AttachmentVCloth.cpp", 
+      "AttachmentVClothPreProcessDijkstra.h", 
       "AttachmentVClothPreProcess.h", 
       "AttachmentVClothPreProcess.cpp", 
       "AttachmentMerger.h", 
