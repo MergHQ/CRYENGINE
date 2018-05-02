@@ -40,30 +40,31 @@ struct Rect
 typedef void (* ClickCallback)(void* data, bool onOff);
 typedef void (* RenderCallback)(float x, float y);
 
-enum EMiniCtrlStatus
+enum EMiniCtrlStatus : uint32
 {
-	eCtrl_Hidden          = BIT(0),    //!< Control is hidden.
-	eCtrl_Highlight       = BIT(1),    //!< Control is highlight (probably mouse over).
-	eCtrl_Focus           = BIT(2),    //!< Control have focus (from keyboard).
-	eCtrl_Checked         = BIT(3),    //!< Control have checked mark.
-	eCtrl_NoBorder        = BIT(4),    //!< Control have no border.
-	eCtrl_CheckButton     = BIT(5),    //!< Button control behave as a check button.
-	eCtrl_TextAlignCentre = BIT(6),    //!< Draw text aligned centre.
-	eCtrl_AutoResize      = BIT(7),    //!< Auto resize depending on text length.
-	eCtrl_Moveable        = BIT(8),    //!< Dynamically reposition ctrl.
-	eCtrl_CloseButton     = BIT(9),    //!< Control has close button.
+	eCtrl_Hidden          = BIT32(0),    //!< Control is hidden.
+	eCtrl_Highlight       = BIT32(1),    //!< Control is highlight (probably mouse over).
+	eCtrl_Focus           = BIT32(2),    //!< Control have focus (from keyboard).
+	eCtrl_Checked         = BIT32(3),    //!< Control have checked mark.
+	eCtrl_NoBorder        = BIT32(4),    //!< Control have no border.
+	eCtrl_CheckButton     = BIT32(5),    //!< Button control behave as a check button.
+	eCtrl_TextAlignCentre = BIT32(6),    //!< Draw text aligned centre.
+	eCtrl_AutoResize      = BIT32(7),    //!< Auto resize depending on text length.
+	eCtrl_Moveable        = BIT32(8),    //!< Dynamically reposition ctrl.
+	eCtrl_CloseButton     = BIT32(9),    //!< Control has close button.
 };
-enum EMiniCtrlEvent
+
+enum EMiniCtrlEvent : uint32
 {
-	eCtrlEvent_LButtonDown    = BIT(0),
-	eCtrlEvent_LButtonUp      = BIT(1),
-	eCtrlEvent_LButtonPressed = BIT(2),
-	eCtrlEvent_MouseOver      = BIT(3),
-	eCtrlEvent_MouseOff       = BIT(4),
-	eCtrlEvent_DPadLeft       = BIT(5),
-	eCtrlEvent_DPadRight      = BIT(6),
-	eCtrlEvent_DPadUp         = BIT(7),
-	eCtrlEvent_DPadDown       = BIT(8),
+	eCtrlEvent_LButtonDown    = BIT32(0),
+	eCtrlEvent_LButtonUp      = BIT32(1),
+	eCtrlEvent_LButtonPressed = BIT32(2),
+	eCtrlEvent_MouseOver      = BIT32(3),
+	eCtrlEvent_MouseOff       = BIT32(4),
+	eCtrlEvent_DPadLeft       = BIT32(5),
+	eCtrlEvent_DPadRight      = BIT32(6),
+	eCtrlEvent_DPadUp         = BIT32(7),
+	eCtrlEvent_DPadDown       = BIT32(8),
 };
 
 //! Types of the supported controls.

@@ -360,7 +360,7 @@ void CTexture::StreamCopyMipsTexToMem(int nStartMip, int nEndMip, bool bToDevice
 					{
 						pDevTexture->GetAlignment(nDevTexMip),                          // src alignment == hardware alignment
 						{ 0, 0, 0, D3D11CalcSubresource(nDevTexMip, iSide, nTexMips) }, // dst position
-						{ nMipW, nMipH, 1, 1 }                                          // dst size
+						{ static_cast<UINT>(nMipW), static_cast<UINT>(nMipH), 1, 1 }    // dst size
 					};
 
 					GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(&mp->DataArray[0], pDevTexture, mapping);

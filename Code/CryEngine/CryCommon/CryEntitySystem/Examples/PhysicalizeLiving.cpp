@@ -1,4 +1,5 @@
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryPhysics/physinterface.h>
 
 // Example for how a living (walking) character can be physicalized
 void PhysicalizeLiving(IEntity& entity)

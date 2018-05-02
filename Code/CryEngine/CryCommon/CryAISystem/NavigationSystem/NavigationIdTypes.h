@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <limits>
+
 enum ENavigationIDTag
 {
 	MeshIDTag = 0,
@@ -33,8 +35,8 @@ typedef TNavigationID<MeshIDTag>                   NavigationMeshID;
 typedef TNavigationID<AgentTypeIDTag>              NavigationAgentTypeID;
 typedef TNavigationID<VolumeIDTag>                 NavigationVolumeID;
 typedef TNavigationID<TileGeneratorExtensionIDTag> TileGeneratorExtensionID;
-typedef TNavigationID<AreaTypeIDTag, -1>           NavigationAreaTypeID;
-typedef TNavigationID<AreaFlagIDTag, -1>           NavigationAreaFlagID;
+typedef TNavigationID<AreaTypeIDTag, std::numeric_limits<UINT>::max()>     NavigationAreaTypeID;
+typedef TNavigationID<AreaFlagIDTag, std::numeric_limits<UINT>::max()>     NavigationAreaFlagID;
 
 namespace std
 {

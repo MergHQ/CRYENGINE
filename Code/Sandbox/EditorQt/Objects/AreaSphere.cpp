@@ -6,6 +6,8 @@
 #include <Preferences/ViewportPreferences.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include "Objects/ObjectLoader.h"
+
+#include "Util/MFCUtil.h"
 #include "Objects/InspectorWidgetCreator.h"
 
 REGISTER_CLASS_DESC(CAreaSphereClassDesc);
@@ -26,7 +28,7 @@ CAreaSphere::CAreaSphere()
 	mv_priority = 0;
 	m_entityClass = "AreaSphere";
 
-	SetColor(RGB(0, 0, 255));
+	SetColor(ColorB(0, 0, 255));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -165,13 +167,13 @@ void CAreaSphere::Display(DisplayContext& dc)
 	if (IsSelected())
 	{
 		wireColor = dc.GetSelectedColor();
-		solidColor = GetColor();
+		solidColor = CMFCUtils::ColorBToColorRef(GetColor());
 		wireOffset = -0.1f;
 	}
 	else
 	{
-		wireColor = GetColor();
-		solidColor = GetColor();
+		wireColor = CMFCUtils::ColorBToColorRef(GetColor());
+		solidColor = CMFCUtils::ColorBToColorRef(GetColor());
 	}
 
 	const Matrix34& tm = GetWorldTM();

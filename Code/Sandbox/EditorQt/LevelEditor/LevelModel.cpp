@@ -308,11 +308,11 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 				{
 					//IsChildOf also checks for indirect ancestory (if it's a grandchild etc.)
 					auto currentLayer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer();
-					if(currentLayer && currentLayer->IsChildOf(pLayer))
+					if (currentLayer && currentLayer->IsChildOf(pLayer))
 						return CryIcon("icons:General/Folder_Tree_Active.ico").pixmap(16, 16);
 					else
 						return CryIcon("icons:General/Folder_Tree.ico").pixmap(16, 16);
-				} 
+				}
 				else if (pLayer->GetLayerType() == eObjectLayerType_Terrain)
 				{
 					return CryIcon("icons:Tools/tools_terrain-editor.ico").pixmap(16, 16);
@@ -344,7 +344,7 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 			switch (role)
 			{
 			case Qt::CheckStateRole:
-					return pLayer->IsFrozen(false) ? Qt::Checked : Qt::Unchecked;
+				return pLayer->IsFrozen(false) ? Qt::Checked : Qt::Unchecked;
 			case QAdvancedItemDelegate::s_IconOverrideRole:
 				if (pLayer->IsFrozen(false))
 					return CryIcon("icons:General/editable_false.ico");
@@ -394,20 +394,20 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 			switch (role)
 			{
 			case Qt::DecorationRole:
-			{
-				COLORREF colorRef = pLayer->GetColor();
-				return QColor::fromRgb(GetRValue(colorRef), GetGValue(colorRef), GetBValue(colorRef));
-			}
+				{
+					ColorB color = pLayer->GetColor();
+					return QColor::fromRgb(color.r, color.g, color.b);
+				}
 			case QAdvancedItemDelegate::s_DrawRectOverrideRole:
-			{
-				// Force the layer color to take the full height of the item in the tree
-				QRect decorationRect;
-				decorationRect.setX(-3);
-				decorationRect.setY(-4);
-				decorationRect.setWidth(4);
-				decorationRect.setHeight(24);
-				return decorationRect;
-			}
+				{
+					// Force the layer color to take the full height of the item in the tree
+					QRect decorationRect;
+					decorationRect.setX(-3);
+					decorationRect.setY(-4);
+					decorationRect.setWidth(4);
+					decorationRect.setHeight(24);
+					return decorationRect;
+				}
 			default:
 				break;
 			}
@@ -428,7 +428,7 @@ bool CLevelModel::setData(const QModelIndex& index, const QVariant& value, int r
 			if (role == Qt::EditRole)
 			{
 				string newName = QtUtil::ToString(value.toString());
-				
+
 				// Make sure the name actually changed before attempting to rename
 				const char* szName = newName.c_str();
 				if (szName == pLayer->GetName())
@@ -688,21 +688,21 @@ bool CLevelModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, in
 	switch (targetLayer->GetLayerType())
 	{
 	case eObjectLayerType_Folder:
-	{
-		CUndo undo("Move Layers");
-		if (!hasOnlyLayers)
 		{
-			return false;
-		}
-		for (auto& layer : layers)
-		{
-			if (!targetLayer->IsChildOf(layer) && layer->GetParent() != targetLayer)
+			CUndo undo("Move Layers");
+			if (!hasOnlyLayers)
 			{
-				targetLayer->AddChild(layer);
+				return false;
 			}
+			for (auto& layer : layers)
+			{
+				if (!targetLayer->IsChildOf(layer) && layer->GetParent() != targetLayer)
+				{
+					targetLayer->AddChild(layer);
+				}
+			}
+			return true;
 		}
-		return true;
-	}
 	case eObjectLayerType_Layer:
 		{
 			CUndo undo("Move Objects & Layers");
@@ -781,20 +781,20 @@ bool CLevelModel::canDropMimeData(const QMimeData* pData, Qt::DropAction action,
 	switch (targetLayer->GetLayerType())
 	{
 	case eObjectLayerType_Folder:
-	{
-		if (std::any_of(layers.begin(), layers.end(), [&](CObjectLayer* layer) { return targetLayer->IsChildOf(layer) || layer->GetParent() == targetLayer; }))
 		{
-			return false;
+			if (std::any_of(layers.begin(), layers.end(), [&](CObjectLayer* layer) { return targetLayer->IsChildOf(layer) || layer->GetParent() == targetLayer; }))
+			{
+				return false;
+			}
+
+			bool result = hasOnlyLayers && QAbstractItemModel::canDropMimeData(pData, action, row, column, parent);
+			if (result)
+				CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), QString("Move to %1").arg(QtUtil::ToQString(targetLayer->GetName())));
+			else
+				CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), QString("Invalid operation"));
+
+			return result;
 		}
-
-		bool result = hasOnlyLayers && QAbstractItemModel::canDropMimeData(pData, action, row, column, parent);
-		if (result)
-			CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), QString("Move to %1").arg(QtUtil::ToQString(targetLayer->GetName())));
-		else
-			CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), QString("Invalid operation"));
-
-		return result;
-	}
 	case eObjectLayerType_Layer:
 		{
 			auto targetParentLayer = targetLayer->GetParent();
@@ -1005,7 +1005,7 @@ void CLevelModel::OnLayerUpdate(const CLayerChangeEvent& event)
 		endInsertRows();
 		break;
 	case CLayerChangeEvent::LE_AFTER_REMOVE:
-		// we don't handle LE_BEFORE_REMOVE event and reset the whole model here because we can't have 2 layer models 
+		// we don't handle LE_BEFORE_REMOVE event and reset the whole model here because we can't have 2 layer models
 		// changing at the same time. Let say we have 2 layers and an object from one layer is linked to an object form
 		// another layer. If you delete one of the layers, then during the deletion another layer has to be updated.
 		// That's why we can't use beginRemoveRows() on LE_BEFORE_REMOVE and then endRemoveRows() on LE_AFTER_REMOVE.

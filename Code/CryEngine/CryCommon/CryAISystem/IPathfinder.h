@@ -517,10 +517,10 @@ class IMNMCustomPathCostComputer
 {
 public:
 
-	enum class EComputationType
+	enum class EComputationType : uint32
 	{
-		Cost                  = BIT(0),  // compute the cost it takes to move along the path-segment (-> SComputationOutput::cost)
-		StringPullingAllowed  = BIT(1)   // compute whether string-pulling is still allowed on given path-segment (-> SComputationOutput::bStringPullingAllowed)
+		Cost                  = BIT32(0),  // compute the cost it takes to move along the path-segment (-> SComputationOutput::cost)
+		StringPullingAllowed  = BIT32(1)   // compute whether string-pulling is still allowed on given path-segment (-> SComputationOutput::bStringPullingAllowed)
 	};
 	
 	typedef CEnumFlags<EComputationType> ComputationFlags;
@@ -605,12 +605,12 @@ private:
 };
 
 
-enum EMNMDangers
+enum EMNMDangers : uint32
 {
 	eMNMDangers_None            = 0,
-	eMNMDangers_AttentionTarget = BIT(0),
-	eMNMDangers_Explosive       = BIT(1),
-	eMNMDangers_GroupMates      = BIT(2),
+	eMNMDangers_AttentionTarget = BIT32(0),
+	eMNMDangers_Explosive       = BIT32(1),
+	eMNMDangers_GroupMates      = BIT32(2),
 };
 
 typedef uint32 MNMDangersFlags;

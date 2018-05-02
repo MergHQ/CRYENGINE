@@ -5,7 +5,7 @@
 
 #include "Viewport.h"
 #include <CryEntitySystem/IEntitySystem.h>
-
+#include "Util/MFCUtil.h"
 #include <CryScriptSystem/IScriptSystem.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -231,7 +231,7 @@ void CVehiclePrototype::Display(DisplayContext& dc)
 		}
 
 		// display CEntity stuff
-		DrawDefault(dc, GetColor());
+		DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 	}
 	else
 	{
@@ -246,9 +246,15 @@ void CVehiclePrototype::Display(DisplayContext& dc)
 		dc.DrawArrow(wp, wp + dir * 2, fHelperScale);
 
 		if (IsFrozen())
+		{
 			dc.SetFreezeColor();
+		}
 		else
-			dc.SetColor(GetColor(), 0.8f);
+		{
+			ColorB color = GetColor();
+			color.a = 204;
+			dc.SetColor(color);
+		}
 
 		dc.DrawBall(wp, VEHICLE_RADIUS);
 

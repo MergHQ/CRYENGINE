@@ -1,4 +1,5 @@
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryGame/IGameFramework.h>
 #include <CryNetwork/Rmi.h>
 
 // Example for how authority / control of an entity can be delegated to a specific client channel

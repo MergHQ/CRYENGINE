@@ -50,24 +50,24 @@ enum EStaticSubObjectType
 };
 
 //! Flags that can be set on static object.
-enum EStaticObjectFlags
+enum EStaticObjectFlags : uint32
 {
-	STATIC_OBJECT_HIDDEN           = BIT(0),  //!< When set static object will not be displayed.
-	STATIC_OBJECT_CLONE            = BIT(1),  //!< specifies whether this object was cloned for modification.
-	STATIC_OBJECT_GENERATED        = BIT(2),  //!< tells that the object was generated procedurally (breakable obj., f.i.).
-	STATIC_OBJECT_CANT_BREAK       = BIT(3),  //!< StatObj has geometry unsuitable for procedural breaking.
-	STATIC_OBJECT_DEFORMABLE       = BIT(4),  //!< StatObj can be procedurally smeared (using SmearStatObj).
-	STATIC_OBJECT_COMPOUND         = BIT(5),  //!< StatObj has subobject meshes.
-	STATIC_OBJECT_MULTIPLE_PARENTS = BIT(6),  //!< Child StatObj referenced by several parents.
+	STATIC_OBJECT_HIDDEN           = BIT32(0),  //!< When set static object will not be displayed.
+	STATIC_OBJECT_CLONE            = BIT32(1),  //!< specifies whether this object was cloned for modification.
+	STATIC_OBJECT_GENERATED        = BIT32(2),  //!< tells that the object was generated procedurally (breakable obj., f.i.).
+	STATIC_OBJECT_CANT_BREAK       = BIT32(3),  //!< StatObj has geometry unsuitable for procedural breaking.
+	STATIC_OBJECT_DEFORMABLE       = BIT32(4),  //!< StatObj can be procedurally smeared (using SmearStatObj).
+	STATIC_OBJECT_COMPOUND         = BIT32(5),  //!< StatObj has subobject meshes.
+	STATIC_OBJECT_MULTIPLE_PARENTS = BIT32(6),  //!< Child StatObj referenced by several parents.
 
 	// Collisions
-	STATIC_OBJECT_NO_PLAYER_COLLIDE = BIT(10),
+	STATIC_OBJECT_NO_PLAYER_COLLIDE = BIT32(10),
 
 	// Special flags.
-	STATIC_OBJECT_SPAWN_ENTITY       = BIT(20),  //!< StatObj spawns entity when broken.
-	STATIC_OBJECT_PICKABLE           = BIT(21),  //!< StatObj can be picked by players.
-	STATIC_OBJECT_NO_AUTO_HIDEPOINTS = BIT(22),  //!< Do not generate AI auto hide points around object if it's dynamic.
-	STATIC_OBJECT_DYNAMIC            = BIT(23),  //!< mesh data should be kept in system memory (and yes, the name *is* an oxymoron).
+	STATIC_OBJECT_SPAWN_ENTITY       = BIT32(20),  //!< StatObj spawns entity when broken.
+	STATIC_OBJECT_PICKABLE           = BIT32(21),  //!< StatObj can be picked by players.
+	STATIC_OBJECT_NO_AUTO_HIDEPOINTS = BIT32(22),  //!< Do not generate AI auto hide points around object if it's dynamic.
+	STATIC_OBJECT_DYNAMIC            = BIT32(23),  //!< mesh data should be kept in system memory (and yes, the name *is* an oxymoron).
 
 };
 
@@ -205,14 +205,14 @@ struct IStreamable
 struct IStatObj : IMeshObj, IStreamable
 {
 	//! Loading flags.
-	enum ELoadingFlags
+	enum ELoadingFlags : uint32
 	{
-		ELoadingFlagsPreviewMode    = BIT(0),
-		ELoadingFlagsForceBreakable = BIT(1),
-		ELoadingFlagsIgnoreLoDs     = BIT(2),
-		ELoadingFlagsTessellate     = BIT(3), //!< If e_StatObjTessellation enabled.
-		ELoadingFlagsJustGeometry   = BIT(4), //!< For streaming, to avoid parsing all chunks.
-		ELoadingFlagsNoErrorIfFail  = BIT(5), //!< Don't log error message if the file is not found
+		ELoadingFlagsPreviewMode    = BIT32(0),
+		ELoadingFlagsForceBreakable = BIT32(1),
+		ELoadingFlagsIgnoreLoDs     = BIT32(2),
+		ELoadingFlagsTessellate     = BIT32(3), //!< If e_StatObjTessellation enabled.
+		ELoadingFlagsJustGeometry   = BIT32(4), //!< For streaming, to avoid parsing all chunks.
+		ELoadingFlagsNoErrorIfFail  = BIT32(5), //!< Don't log error message if the file is not found
 	};
 
 	struct SSubObject
@@ -289,10 +289,10 @@ struct IStatObj : IMeshObj, IStreamable
 	// <interfuscator:shuffle>
 	//! Set static object flags.
 	//! \param nFlags Flags to set, a combination of EStaticObjectFlags values.
-	virtual void SetFlags(int nFlags) = 0;
+	virtual void SetFlags(uint nFlags) = 0;
 
 	//! Retrieve flags set on the static object.
-	virtual int GetFlags() const = 0;
+	virtual uint GetFlags() const = 0;
 
 	//! Retrieves the internal flag m_nVehicleOnlyPhysics.
 	virtual unsigned int GetVehicleOnlyPhysics() = 0;

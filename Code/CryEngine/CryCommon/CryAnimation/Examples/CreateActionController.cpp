@@ -1,4 +1,5 @@
 #include <CryAnimation/ICryMannequin.h>
+#include <CryGame/IGameFramework.h>
 
 // Creates a Mannequin action controller for the specified entity
 void CreateActionController(IEntity* pEntity)

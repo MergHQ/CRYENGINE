@@ -153,8 +153,8 @@ SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayCon
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	const int windowWidth = desc.screenResolution.x;
-	const int windowHeight = desc.screenResolution.y;
+	const int width = desc.screenResolution.x;
+	const int height = desc.screenResolution.y;
 
 	auto pDC = std::make_shared<CSwapChainBackedRenderDisplayContext>(desc, m_uniqueDisplayContextId++);
 
@@ -168,7 +168,7 @@ SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayCon
 	pDC->m_nSSSamplesX = pDC->m_desc.superSamplingFactor.x;
 	pDC->m_nSSSamplesY = pDC->m_desc.superSamplingFactor.y;
 
-	pDC->SetHWND(desc.handle);
+	pDC->CreateSwapChain(desc.handle, desc.vsync);
 
 	SDisplayContextKey key;
 	if (desc.handle)
@@ -176,38 +176,39 @@ SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayCon
 	else
 		key.key.emplace<uint32_t>(pDC->m_uniqueId);
 
+	if (width * height)
+		ResizeContext(pDC.get(), width, height);
+
 	{
 		AUTO_LOCK(gs_contextLock); // Not thread safe without this
 		m_displayContexts.emplace(std::make_pair(key, std::move(pDC)));
 	}
 
-	if (windowWidth * windowHeight)
-		ResizeContext(key, windowWidth, windowHeight);
-
 	return key;
 }
 
-void CD3D9Renderer::ResizeContext(const SDisplayContextKey& key, int windowWidth, int windowHeight) threadsafe
+void CD3D9Renderer::ResizeContext(CRenderDisplayContext *pDC, int width, int height) threadsafe
+{
+	if (pDC->m_desc.screenResolution.x != width ||
+		pDC->m_desc.screenResolution.y != height)
+	{
+		pDC->m_desc.screenResolution.x = width;
+		pDC->m_desc.screenResolution.y = height;
+
+		ChangeViewport(pDC, 0, 0, width, height);
+
+		// Must be deferred to Render Thread
+		gRenDev->ExecuteRenderThreadCommand([=] { EF_DisableTemporalEffects(); }, 
+			ERenderCommandFlags::None
+		);
+	}
+}
+
+void CD3D9Renderer::ResizeContext(const SDisplayContextKey& key, int width, int height) threadsafe
 {
 	CRenderDisplayContext* pDC = FindDisplayContext(key);
 	if (pDC)
-	{
-		if (pDC->m_desc.screenResolution.x != windowWidth ||
-			pDC->m_desc.screenResolution.y != windowHeight)
-		{
-			pDC->m_desc.screenResolution.x = windowWidth;
-			pDC->m_desc.screenResolution.y = windowHeight;
-
-			gRenDev->ExecuteRenderThreadCommand(
-				[=] {
-				// Must be deferred to Render Thread
-					ChangeViewport(pDC, 0, 0, windowWidth, windowHeight);
-					EF_DisableTemporalEffects();
-				},
-				ERenderCommandFlags::None
-			);
-		}
-	}
+		ResizeContext(pDC, width, height);
 }
 
 bool CD3D9Renderer::DeleteContext(const SDisplayContextKey& key) threadsafe
@@ -344,12 +345,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 	m_overrideScanlineOrder = CV_r_overrideScanlineOrder;
 #endif
 
-	if (!IsEditorMode())
-		m_VSync = CV_r_vsync;
-	else
-		m_VSync = 0;
-
-	pDC->SetVSyncHint(m_VSync != 0);
+	m_VSync = !IsEditorMode() ? CV_r_vsync : 0;
 
 	if (IsFullscreen() && nNewColDepth == 16)
 	{
@@ -383,7 +379,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 		AdjustWindowForChange(nNewDisplayWidth, nNewDisplayHeight, previousWindowState);
 
-		pBC->ChangeOutputIfNecessary(IsFullscreen());
+		pBC->ChangeOutputIfNecessary(IsFullscreen(), m_VSync != 0);
 
 #if DURANGO_ENABLE_ASYNC_DIPS
 		WaitForAsynchronousDevice();
@@ -1114,10 +1110,12 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 		}
 	}
 
+	m_VSync = !IsEditorMode() ? CV_r_vsync : 0;
+
 	// Update base context hWnd and key
 	SDisplayContextKey baseContextKey;
 	baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetWindowHandle());
-	m_pBaseDisplayContext->SetHWND(m_hWnd);
+	m_pBaseDisplayContext->CreateSwapChain(m_hWnd, m_VSync != 0);
 	{
 		AUTO_LOCK(gs_contextLock);
 		m_displayContexts.erase(baseContextKey);
@@ -1944,14 +1942,14 @@ bool CD3D9Renderer::CreateDeviceMobile()
 {
 	auto* pDC = GetBaseDisplayContext();
 
-	if (!m_devInfo.CreateDevice(false, pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y, m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
+	if (!m_devInfo.CreateDevice(m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
 		return false;
-
-	pDC->SetVSyncHint(m_VSync != 0);
 
 	OnD3D11PostCreateDevice(m_devInfo.Device());
 
 	AdjustWindowForChange(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y, EWindowState::Fullscreen);
+
+	pDC->ChangeOutputIfNecessary(true, m_VSync != 0);
 
 	return true;
 }
@@ -1966,8 +1964,6 @@ bool CD3D9Renderer::CreateDeviceDesktop()
 #if defined(SUPPORT_DEVICE_INFO)
 	if (!m_devInfo.CreateDevice(m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
 		return false;
-
-	pDC->SetVSyncHint(m_VSync != 0);
 
 	//query adapter name
 	const DXGI_ADAPTER_DESC1& desc = m_devInfo.AdapterDesc();
@@ -1984,6 +1980,8 @@ bool CD3D9Renderer::CreateDeviceDesktop()
 #endif
 
 	AdjustWindowForChange(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y, EWindowState::Fullscreen);
+
+	pDC->ChangeOutputIfNecessary(true, m_VSync != 0);
 
 	return true;
 }

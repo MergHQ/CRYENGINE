@@ -29,7 +29,7 @@ CAIAnchor::CAIAnchor()
 //////////////////////////////////////////////////////////////////////////
 bool CAIAnchor::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(RGB(0, 255, 0));
+	SetColor(ColorB(0, 255, 0));
 	return __super::Init(prev, file);
 }
 
@@ -124,7 +124,7 @@ void CAIAnchor::Display(DisplayContext& dc)
 			const int npts(20);
 			Vec3 circle[npts + 1];
 			// Collision
-			dc.SetColor(GetColor(), 0.3f);
+			dc.SetColor(GetColor().toVec3(), 0.3f);
 			for (int i = 0; i < npts; i++)
 			{
 				float a = ((float)i / (float)npts) * gf_PI2;
@@ -133,7 +133,7 @@ void CAIAnchor::Display(DisplayContext& dc)
 			for (int i = 0; i < npts; i++)
 				dc.DrawTri(pos, circle[i], circle[(i + 1) % npts]);
 			// Safe
-			dc.SetColor(RGB(255, 0, 0), 0.5f);
+			dc.SetColor(ColorB(255, 0, 0).toVec3(), 0.5f);
 			for (int i = 0; i <= 20; i++)
 			{
 				float a = ((float)i / (float)npts) * gf_PI2;

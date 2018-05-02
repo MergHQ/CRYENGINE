@@ -1,4 +1,5 @@
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryPhysics/physinterface.h>
 
 // Simple example for physicalizing an entity and all of its slots
 void Physicalize(IEntity& entity)

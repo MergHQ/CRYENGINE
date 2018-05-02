@@ -48,7 +48,7 @@ CCloudObject::CCloudObject()
 	m_pVarObject->AddVariable(mv_randomSizeValue, "SizeVariation", "Size Variation", functor(*this, &CCloudObject::OnSizeChange));
 	mv_randomSizeValue.SetLimits(0, 99999);
 
-	SetColor(RGB(127, 127, 255));
+	SetColor(ColorB(127, 127, 255));
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -47,6 +47,15 @@
 #include <CryAction/ILipSyncProvider.h>
 %}
 
+%typemap(csbase) EEntityAspects "uint"
+%typemap(csbase) EGroundAlignment "uint"
+%typemap(csbase) EActionActivationMode "uint"
+%typemap(csbase) EActionInputDevice "uint"
+%typemap(csbase) IAnimatedCharacter::EBlendWeightParamTargets "byte"
+%typemap(csbase) EMFXPlayFlags "uint"
+%typemap(csbase) SMFXBreakageParams::EBreakageRequestFlags "uint"
+
+
 %ignore IGameFrameworkEngineModule;
 
 %feature("director") IGameFrameworkListener;
@@ -57,7 +66,6 @@
 %import "../../../../CryEngine/CryCommon/CryNetwork/INetwork.h"
 
 %csconstvalue("0xFFFFFFFF") eEA_All;
-%typemap(csbase) EEntityAspects "uint"
 %ignore GameWarning;
 
 %feature("director") ILevelSystemListener;

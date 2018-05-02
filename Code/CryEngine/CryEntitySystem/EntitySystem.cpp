@@ -3224,6 +3224,9 @@ CEntityLayer* CEntitySystem::GetLayerForEntity(EntityId id)
 void CEntitySystem::EnableDefaultLayers(bool isSerialized)
 {
 	LOADING_TIME_PROFILE_SECTION;
+
+	if (!gEnv->p3DEngine->IsAreaActivationInUse())
+		return;
 	
 	for (TLayers::iterator it = m_layers.begin(); it != m_layers.end(); ++it)
 	{

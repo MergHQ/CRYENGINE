@@ -154,38 +154,38 @@ public:
 // RenderNode flags
 enum ERenderNodeFlags : uint64
 {
-	ERF_GOOD_OCCLUDER                 = BIT(0),
-	ERF_PROCEDURAL                    = BIT(1),
-	ERF_CLONE_SOURCE                  = BIT(2), //!< set if this object was cloned from another one
-	ERF_CASTSHADOWMAPS                = BIT(3), //!< if you ever set this flag, be sure also to set ERF_HAS_CASTSHADOWMAPS
-	ERF_RENDER_ALWAYS                 = BIT(4),
-	ERF_DYNAMIC_DISTANCESHADOWS       = BIT(5),
-	ERF_HIDABLE                       = BIT(6),
-	ERF_HIDABLE_SECONDARY             = BIT(7),
-	ERF_HIDDEN                        = BIT(8),
-	ERF_SELECTED                      = BIT(9),
-	ERF_GI_MODE_BIT0                  = BIT(10), //!< Bit0 of GI mode.
-	ERF_OUTDOORONLY                   = BIT(11),
-	ERF_NODYNWATER                    = BIT(12),
-	ERF_EXCLUDE_FROM_TRIANGULATION    = BIT(13),
-	ERF_REGISTER_BY_BBOX              = BIT(14),
-	ERF_PICKABLE                      = BIT(15),
-	ERF_GI_MODE_BIT1                  = BIT(16), //!< Bit1 of GI mode.
-	ERF_NO_PHYSICS                    = BIT(17),
-	ERF_NO_DECALNODE_DECALS           = BIT(18),
-	ERF_REGISTER_BY_POSITION          = BIT(19),
-	ERF_STATIC_INSTANCING             = BIT(20),
-	ERF_RECVWIND                      = BIT(21),
-	ERF_COLLISION_PROXY               = BIT(22), //!< Collision proxy is a special object that is only visible in editor and used for physical collisions with player and vehicles.
-	ERF_GI_MODE_BIT2                  = BIT(23), //!< Bit2 of GI mode.
-	ERF_SPEC_BIT0                     = BIT(24), //!< Bit0 of min config specification.
-	ERF_SPEC_BIT1                     = BIT(25), //!< Bit1 of min config specification.
-	ERF_SPEC_BIT2                     = BIT(26), //!< Bit2 of min config specification.
-	ERF_RAYCAST_PROXY                 = BIT(27), //!< raycast proxy is only used for raycasting
-	ERF_HUD                           = BIT(28), //!< Hud object that can avoid some visibility tests
-	ERF_RAIN_OCCLUDER                 = BIT(29), //!< Is used for rain occlusion map
-	ERF_HAS_CASTSHADOWMAPS            = BIT(30), //!< at one point had ERF_CASTSHADOWMAPS set
-	ERF_ACTIVE_LAYER                  = BIT(31), //!< the node is on a currently active layer
+	ERF_GOOD_OCCLUDER                 = BIT64(0),
+	ERF_PROCEDURAL                    = BIT64(1),
+	ERF_CLONE_SOURCE                  = BIT64(2), //!< set if this object was cloned from another one
+	ERF_CASTSHADOWMAPS                = BIT64(3), //!< if you ever set this flag, be sure also to set ERF_HAS_CASTSHADOWMAPS
+	ERF_RENDER_ALWAYS                 = BIT64(4),
+	ERF_DYNAMIC_DISTANCESHADOWS       = BIT64(5),
+	ERF_HIDABLE                       = BIT64(6),
+	ERF_HIDABLE_SECONDARY             = BIT64(7),
+	ERF_HIDDEN                        = BIT64(8),
+	ERF_SELECTED                      = BIT64(9),
+	ERF_GI_MODE_BIT0                  = BIT64(10), //!< Bit0 of GI mode.
+	ERF_OUTDOORONLY                   = BIT64(11),
+	ERF_NODYNWATER                    = BIT64(12),
+	ERF_EXCLUDE_FROM_TRIANGULATION    = BIT64(13),
+	ERF_REGISTER_BY_BBOX              = BIT64(14),
+	ERF_PICKABLE                      = BIT64(15),
+	ERF_GI_MODE_BIT1                  = BIT64(16), //!< Bit1 of GI mode.
+	ERF_NO_PHYSICS                    = BIT64(17),
+	ERF_NO_DECALNODE_DECALS           = BIT64(18),
+	ERF_REGISTER_BY_POSITION          = BIT64(19),
+	ERF_STATIC_INSTANCING             = BIT64(20),
+	ERF_RECVWIND                      = BIT64(21),
+	ERF_COLLISION_PROXY               = BIT64(22), //!< Collision proxy is a special object that is only visible in editor and used for physical collisions with player and vehicles.
+	ERF_GI_MODE_BIT2                  = BIT64(23), //!< Bit2 of GI mode.
+	ERF_SPEC_BIT0                     = BIT64(24), //!< Bit0 of min config specification.
+	ERF_SPEC_BIT1                     = BIT64(25), //!< Bit1 of min config specification.
+	ERF_SPEC_BIT2                     = BIT64(26), //!< Bit2 of min config specification.
+	ERF_RAYCAST_PROXY                 = BIT64(27), //!< raycast proxy is only used for raycasting
+	ERF_HUD                           = BIT64(28), //!< Hud object that can avoid some visibility tests
+	ERF_RAIN_OCCLUDER                 = BIT64(29), //!< Is used for rain occlusion map
+	ERF_HAS_CASTSHADOWMAPS            = BIT64(30), //!< at one point had ERF_CASTSHADOWMAPS set
+	ERF_ACTIVE_LAYER                  = BIT64(31), //!< the node is on a currently active layer
 
 	ERF_ENABLE_ENTITY_RENDER_CALLBACK = BIT64(32),  //!< Enables render nodes to send a special render callback to their entity owner
 
@@ -256,14 +256,14 @@ struct IRenderNode : public IShadowCaster
 {
 	enum EInternalFlags : uint8
 	{
-		DECAL_OWNER                = BIT(0),   //!< Owns some decals.
-		REQUIRES_NEAREST_CUBEMAP   = BIT(1),   //!< Pick nearest cube map.
-		UPDATE_DECALS              = BIT(2),   //!< The node changed geometry - decals must be updated.
-		REQUIRES_FORWARD_RENDERING = BIT(3),   //!< Special shadow processing needed.
-		WAS_INVISIBLE              = BIT(4),   //!< Was invisible last frame.
-		WAS_IN_VISAREA             = BIT(5),   //!< Was inside vis-ares last frame.
-		WAS_FARAWAY                = BIT(6),   //!< Was considered 'far away' for the purposes of physics deactivation.
-		HAS_OCCLUSION_PROXY        = BIT(7),   //!< This node has occlusion proxy.
+		DECAL_OWNER                = BIT8(0),   //!< Owns some decals.
+		REQUIRES_NEAREST_CUBEMAP   = BIT8(1),   //!< Pick nearest cube map.
+		UPDATE_DECALS              = BIT8(2),   //!< The node changed geometry - decals must be updated.
+		REQUIRES_FORWARD_RENDERING = BIT8(3),   //!< Special shadow processing needed.
+		WAS_INVISIBLE              = BIT8(4),   //!< Was invisible last frame.
+		WAS_IN_VISAREA             = BIT8(5),   //!< Was inside vis-ares last frame.
+		WAS_FARAWAY                = BIT8(6),   //!< Was considered 'far away' for the purposes of physics deactivation.
+		HAS_OCCLUSION_PROXY        = BIT8(7),   //!< This node has occlusion proxy.
 	};
 	typedef uint64 RenderFlagsType;
 

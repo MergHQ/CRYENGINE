@@ -417,14 +417,14 @@ struct IWaterVolume
 struct IClipVolume
 {
 	enum { MaxBlendPlaneCount = 2 };
-	enum EClipVolumeFlags
+	enum EClipVolumeFlags : uint32
 	{
-		eClipVolumeConnectedToOutdoor = BIT(0),
-		eClipVolumeIgnoreGI           = BIT(1),
-		eClipVolumeAffectedBySun      = BIT(2),
-		eClipVolumeBlend              = BIT(3),
-		eClipVolumeIsVisArea          = BIT(4),
-		eClipVolumeIgnoreOutdoorAO    = BIT(5),
+		eClipVolumeConnectedToOutdoor = BIT32(0),
+		eClipVolumeIgnoreGI           = BIT32(1),
+		eClipVolumeAffectedBySun      = BIT32(2),
+		eClipVolumeBlend              = BIT32(3),
+		eClipVolumeIsVisArea          = BIT32(4),
+		eClipVolumeIgnoreOutdoorAO    = BIT32(5)
 	};
 
 	virtual ~IClipVolume() {};
@@ -839,14 +839,14 @@ struct ITerrain
 //! Warning: deprecated Segmented World implementation is not supported by CryEngine anymore
 struct ISegmentsManager
 {
-	enum ESegmentLoadFlags
+	enum ESegmentLoadFlags : uint32
 	{
-		slfTerrain    = BIT(1),
-		slfVisArea    = BIT(2),
-		slfEntity     = BIT(3),
-		slfNavigation = BIT(4),
+		slfTerrain    = BIT32(1),
+		slfVisArea    = BIT32(2),
+		slfEntity     = BIT32(3),
+		slfNavigation = BIT32(4),
 
-		slfAll        = slfTerrain | slfVisArea | slfEntity | slfNavigation,
+		slfAll        = slfTerrain | slfVisArea | slfEntity | slfNavigation
 	};
 	virtual ~ISegmentsManager() {}
 	virtual void WorldVecToGlobalSegVec(const Vec3& inPos, Vec3& outPos, Vec2& outAbsCoords)         {}
@@ -1022,8 +1022,8 @@ struct IFoliage
 	virtual ~IFoliage(){}
 	enum EFoliageFlags { FLAG_FROZEN = 1 };
 	virtual int              Serialize(TSerialize ser) = 0;
-	virtual void             SetFlags(int flags) = 0;
-	virtual int              GetFlags() = 0;
+	virtual void             SetFlags(uint flags) = 0;
+	virtual uint             GetFlags() = 0;
 	virtual IRenderNode*     GetIRenderNode() = 0;
 	virtual int              GetBranchCount() = 0;
 	virtual IPhysicalEntity* GetBranchPhysics(int iBranch) = 0;
@@ -1406,13 +1406,13 @@ struct I3DEngine : public IProcess
 	virtual void SelectEntity(IRenderNode* pEntity) = 0;
 
 #ifndef _RELEASE
-	enum EDebugDrawListAssetTypes
+	enum EDebugDrawListAssetTypes : uint32
 	{
 		DLOT_ALL        = 0,
-		DLOT_BRUSH      = BIT(0),
-		DLOT_VEGETATION = BIT(1),
-		DLOT_CHARACTER  = BIT(2),
-		DLOT_STATOBJ    = BIT(3)
+		DLOT_BRUSH      = BIT32(0),
+		DLOT_VEGETATION = BIT32(1),
+		DLOT_CHARACTER  = BIT32(2),
+		DLOT_STATOBJ    = BIT32(3)
 	};
 
 	struct SObjectInfoToAddToDebugDrawList
@@ -2380,9 +2380,9 @@ struct SRendItemSorter
 
 	//! Deferred PreProcess needs a special ordering, use these to prefix the values
 	//! to ensure the deferred shading pass is after all LPV objects.
-	enum EDeferredPreprocess
+	enum EDeferredPreprocess : uint32
 	{
-		eDeferredShadingPass = BIT(30)
+		eDeferredShadingPass = BIT32(30)
 	};
 	void   IncreaseOctreeCounter()   { nValue += eOctreeNodeCounter; }
 	void   IncreaseObjectCounter()   { nValue += eObjectCounter; }
@@ -2450,26 +2450,26 @@ struct SRenderingPassInfo
 	};
 
 	//! Enum flags to identify which objects to skip for this pass.
-	enum ESkipRenderingFlags
+	enum ESkipRenderingFlags : uint32
 	{
-		SHADOWS                    = BIT(0),
-		BRUSHES                    = BIT(1),
-		VEGETATION                 = BIT(2),
-		ENTITIES                   = BIT(3),
-		TERRAIN                    = BIT(4),
-		WATEROCEAN                 = BIT(5),
-		PARTICLES                  = BIT(6),
-		DECALS                     = BIT(7),
-		TERRAIN_DETAIL_MATERIALS   = BIT(8),
-		FAR_SPRITES                = BIT(9),
-		MERGED_MESHES              = BIT(10),
-		WATER_WAVES                = BIT(12),
-		ROADS                      = BIT(13),
-		WATER_VOLUMES              = BIT(14),
-		CLOUDS                     = BIT(15),
-		CUBEMAP_GEN                = BIT(16),
-		GEOM_CACHES                = BIT(17),
-		DISABLE_RENDER_CHUNK_MERGE = BIT(18),
+		SHADOWS                    = BIT32(0),
+		BRUSHES                    = BIT32(1),
+		VEGETATION                 = BIT32(2),
+		ENTITIES                   = BIT32(3),
+		TERRAIN                    = BIT32(4),
+		WATEROCEAN                 = BIT32(5),
+		PARTICLES                  = BIT32(6),
+		DECALS                     = BIT32(7),
+		TERRAIN_DETAIL_MATERIALS   = BIT32(8),
+		FAR_SPRITES                = BIT32(9),
+		MERGED_MESHES              = BIT32(10),
+		WATER_WAVES                = BIT32(12),
+		ROADS                      = BIT32(13),
+		WATER_VOLUMES              = BIT32(14),
+		CLOUDS                     = BIT32(15),
+		CUBEMAP_GEN                = BIT32(16),
+		GEOM_CACHES                = BIT32(17),
+		DISABLE_RENDER_CHUNK_MERGE = BIT32(18),
 
 		// below are precombined flags
 		STATIC_OBJECTS          = BRUSHES | VEGETATION,

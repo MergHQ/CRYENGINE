@@ -454,7 +454,7 @@ CEntityObject::CEntityObject() : m_listeners(1)
 
 	UseMaterialLayersMask();
 
-	SetColor(RGB(255, 255, 0));
+	SetColor(ColorB(255, 255, 0));
 
 	// Init Variables.
 	mv_castShadow = true;
@@ -2669,7 +2669,7 @@ void CEntityObject::Display(DisplayContext& dc)
 
 	Matrix34 wtm = GetWorldTM();
 
-	COLORREF col = GetColor();
+	COLORREF col = CMFCUtils::ColorBToColorRef(GetColor());
 	if (IsFrozen())
 	{
 		col = dc.GetFreezeColor();

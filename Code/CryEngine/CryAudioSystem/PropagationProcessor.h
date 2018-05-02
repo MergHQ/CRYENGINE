@@ -11,7 +11,7 @@ namespace CryAudio
 class CATLAudioObject;
 struct SATLSoundPropagationData;
 
-static const size_t s_maxRayHits = 5;
+static const size_t s_maxRayHits = 10;
 
 class CAudioRayInfo
 {

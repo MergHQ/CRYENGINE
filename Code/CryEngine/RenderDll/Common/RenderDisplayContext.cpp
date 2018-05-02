@@ -44,6 +44,8 @@ bool CRenderDisplayContext::IsNativeScalingEnabled() const
 
 void CRenderDisplayContext::SetDisplayResolutionAndRecreateTargets(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp)
 {
+	CRY_ASSERT(displayWidth > 0 && displayHeight > 0);
+
 	m_viewport = vp;
 
 	if (m_DisplayWidth == displayWidth && m_DisplayHeight == displayHeight)
@@ -109,7 +111,7 @@ void CRenderDisplayContext::ReleaseResources()
 
 //////////////////////////////////////////////////////////////////////////
 
-void CSwapChainBackedRenderDisplayContext::SetHWND(HWND hWnd)
+void CSwapChainBackedRenderDisplayContext::CreateSwapChain(HWND hWnd, bool vsync)
 {
 	CRY_ASSERT(hWnd);
 	m_hWnd = hWnd;
@@ -121,7 +123,8 @@ void CSwapChainBackedRenderDisplayContext::SetHWND(HWND hWnd)
 		GetDisplayResolution().x,
 		GetDisplayResolution().y,
 		IsMainContext(),
-		IsFullscreen()));
+		IsFullscreen(),
+		vsync));
 #endif
 
 	auto w = m_DisplayWidth, h = m_DisplayHeight;
@@ -336,18 +339,17 @@ void CSwapChainBackedRenderDisplayContext::CreateOutput()
 #endif
 }
 
-void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullscreen)
+void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullscreen, bool vsync)
 {
+	bool recreatedSwapChain = false;
+
 #if CRY_PLATFORM_WINDOWS
 	HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST);
 
 	bool isWindowOnExistingOutputMonitor = false;
-
 	DXGI_OUTPUT_DESC outputDesc;
 	if (m_pOutput != nullptr && SUCCEEDED(m_pOutput->GetDesc(&outputDesc)))
-	{
 		isWindowOnExistingOutputMonitor = outputDesc.Monitor == hMonitor;
-	}
 
 #if !CRY_PLATFORM_DURANGO && !CRY_RENDERER_GNM
 	// Output will need to be recreated if we switched to fullscreen on a different monitor
@@ -356,7 +358,8 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 		ReleaseBackBuffers();
 
 		// Swap chain needs to be recreated with the new output in mind
-		SetSwapChain(CSwapChain::CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, IsMainContext(), isFullscreen));
+		SetSwapChain(CSwapChain::CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, IsMainContext(), isFullscreen, vsync));
+		recreatedSwapChain = true;
 
 		if (m_pOutput != nullptr)
 		{
@@ -369,6 +372,21 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 
 	CreateOutput();
 #endif
+
+	// Handle vSync changes
+	if (vsync != m_bVSync)
+	{
+#if CRY_RENDERER_VULKAN
+		if (!recreatedSwapChain)
+		{
+			// For Vulkan only: Recreate swapchain when vsync flag changes
+			SetSwapChain(CSwapChain::CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, IsMainContext(), isFullscreen, vsync));
+			recreatedSwapChain = true;
+		}
+#endif
+
+		m_bVSync = vsync;
+	}
 
 #ifdef SUPPORT_DEVICE_INFO
 	// Disable automatic DXGI alt + enter behavior
@@ -512,7 +530,9 @@ CTexture* CSwapChainBackedRenderDisplayContext::GetCurrentBackBuffer() const
 	index = m_swapChain.GetSwapChain()->GnmGetCurrentBackBufferIndex(pCommandList);
 #endif
 
-	assert(index < m_backBuffersArray.size());
+	CRY_ASSERT(index < m_backBuffersArray.size());
+	if (index >= m_backBuffersArray.size())
+		return nullptr;
 
 	return m_backBuffersArray[index];
 }

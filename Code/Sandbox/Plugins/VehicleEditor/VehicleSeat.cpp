@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 #include "VehicleSeat.h"
-
+#include "Util/MFCUtil.h"
 #include "VehiclePrototype.h"
 #include "VehicleData.h"
 #include "VehiclePart.h"
@@ -57,7 +57,7 @@ void CVehicleSeat::Display(DisplayContext& dc)
 {
 	return;
 
-	COLORREF color = GetColor();
+	COLORREF color = CMFCUtils::ColorBToColorRef(GetColor());
 
 	if (IsSelected())
 	{

@@ -174,7 +174,7 @@ enum EEntityEvent
 	//! nParam[0] = TriggerEntityId, nParam[1] = AreaId, nParam[2] = EntityId of Area, fParam[0] = FadeRatio (0-1)
 	ENTITY_EVENT_MOVENEARAREA,
 
-	//! Sent when an entity with pef_monitor_poststep receives a poststep notification (the hamdler should be thread safe!)
+	//! Sent when an entity with pef_monitor_poststep receives a poststep notification (the handler should be thread safe!)
 	//! fParam[0] = time interval
 	ENTITY_EVENT_PHYS_POSTSTEP,
 
@@ -361,20 +361,20 @@ struct SEntityEvent
 	Vec3         vec;
 };
 
-enum EEntityXFormFlags
+enum EEntityXFormFlags : uint32
 {
-	ENTITY_XFORM_POS            = BIT(1),
-	ENTITY_XFORM_ROT            = BIT(2),
-	ENTITY_XFORM_SCL            = BIT(3),
-	ENTITY_XFORM_NO_PROPOGATE   = BIT(4),
-	ENTITY_XFORM_FROM_PARENT    = BIT(5), //!< When parent changes his transformation.
-	ENTITY_XFORM_PHYSICS_STEP   = BIT(6),
-	ENTITY_XFORM_EDITOR         = BIT(7),
-	ENTITY_XFORM_TRACKVIEW      = BIT(8),
-	ENTITY_XFORM_TIMEDEMO       = BIT(9),
-	ENTITY_XFORM_NOT_REREGISTER = BIT(10), //!< Optimization flag, when set object will not be re-registered in 3D engine.
-	ENTITY_XFORM_NO_EVENT       = BIT(11), //!< Suppresses ENTITY_EVENT_XFORM event.
-	ENTITY_XFORM_IGNORE_PHYSICS = BIT(12), //!< When set physics ignore xform event handling.
+	ENTITY_XFORM_POS            = BIT32(1),
+	ENTITY_XFORM_ROT            = BIT32(2),
+	ENTITY_XFORM_SCL            = BIT32(3),
+	ENTITY_XFORM_NO_PROPOGATE   = BIT32(4),
+	ENTITY_XFORM_FROM_PARENT    = BIT32(5), //!< When parent changes his transformation.
+	ENTITY_XFORM_PHYSICS_STEP   = BIT32(6),
+	ENTITY_XFORM_EDITOR         = BIT32(7),
+	ENTITY_XFORM_TRACKVIEW      = BIT32(8),
+	ENTITY_XFORM_TIMEDEMO       = BIT32(9),
+	ENTITY_XFORM_NOT_REREGISTER = BIT32(10), //!< Optimization flag, when set object will not be re-registered in 3D engine.
+	ENTITY_XFORM_NO_EVENT       = BIT32(11), //!< Suppresses ENTITY_EVENT_XFORM event.
+	ENTITY_XFORM_IGNORE_PHYSICS = BIT32(12), //!< When set physics ignore xform event handling.
 
 	ENTITY_XFORM_EVENT_COUNT    = 13,
 
@@ -410,18 +410,18 @@ enum EEntityProxy
 //! Flags the can be set on each of the entity object slots.
 enum EEntitySlotFlags : uint16
 {
-	ENTITY_SLOT_RENDER                      = BIT(0), //!< Draw this slot.
-	ENTITY_SLOT_RENDER_NEAREST              = BIT(1), //!< Draw this slot as nearest. [Rendered in camera space].
-	ENTITY_SLOT_RENDER_WITH_CUSTOM_CAMERA   = BIT(2), //!< Draw this slot using custom camera passed as a Public ShaderParameter to the entity.
-	ENTITY_SLOT_IGNORE_PHYSICS              = BIT(3), //!< This slot will ignore physics events sent to it.
-	ENTITY_SLOT_BREAK_AS_ENTITY             = BIT(4),
-	ENTITY_SLOT_RENDER_AFTER_POSTPROCESSING = BIT(5),
-	ENTITY_SLOT_BREAK_AS_ENTITY_MP          = BIT(6), //!< In MP this an entity that shouldn't fade or participate in network breakage.
-	ENTITY_SLOT_CAST_SHADOW                 = BIT(7),
-	ENTITY_SLOT_IGNORE_VISAREAS             = BIT(8),
-	ENTITY_SLOT_GI_MODE_BIT0                = BIT(9),
-	ENTITY_SLOT_GI_MODE_BIT1                = BIT(10),
-	ENTITY_SLOT_GI_MODE_BIT2                = BIT(11)
+	ENTITY_SLOT_RENDER                      = BIT16(0), //!< Draw this slot.
+	ENTITY_SLOT_RENDER_NEAREST              = BIT16(1), //!< Draw this slot as nearest. [Rendered in camera space].
+	ENTITY_SLOT_RENDER_WITH_CUSTOM_CAMERA   = BIT16(2), //!< Draw this slot using custom camera passed as a Public ShaderParameter to the entity.
+	ENTITY_SLOT_IGNORE_PHYSICS              = BIT16(3), //!< This slot will ignore physics events sent to it.
+	ENTITY_SLOT_BREAK_AS_ENTITY             = BIT16(4),
+	ENTITY_SLOT_RENDER_AFTER_POSTPROCESSING = BIT16(5),
+	ENTITY_SLOT_BREAK_AS_ENTITY_MP          = BIT16(6), //!< In MP this an entity that shouldn't fade or participate in network breakage.
+	ENTITY_SLOT_CAST_SHADOW                 = BIT16(7),
+	ENTITY_SLOT_IGNORE_VISAREAS             = BIT16(8),
+	ENTITY_SLOT_GI_MODE_BIT0                = BIT16(9),
+	ENTITY_SLOT_GI_MODE_BIT1                = BIT16(10),
+	ENTITY_SLOT_GI_MODE_BIT2                = BIT16(11)
 };
 
 struct ISimpleEntityEventListener

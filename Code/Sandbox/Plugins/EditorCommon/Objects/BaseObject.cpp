@@ -201,7 +201,7 @@ public:
 	CUndoBaseObject(CBaseObject* pObj, const char* undoDescription);
 
 protected:
-	virtual const char* GetDescription() override { return m_undoDescription; }
+	virtual const char* GetDescription() override { return m_undoDescription; };
 	virtual const char* GetObjectName() override;
 
 	virtual void        Undo(bool bUndo) override;
@@ -232,12 +232,13 @@ protected:
 private:
 	struct StateStruct
 	{
-		Vec3     pos;
-		Quat     rotate;
-		Vec3     scale;
-		COLORREF color;
-		float    area;
-		int      minSpec;
+		Vec3   pos;
+		Quat   rotate;
+		Vec3   scale;
+		ColorB color;
+		bool   usingColorOverride;
+		float  area;
+		int    minSpec;
 	};
 
 	void SetTransformsFromState(CBaseObject* pObject, const StateStruct& state, bool bUndo);
@@ -534,6 +535,7 @@ CUndoBaseObjectMinimal::CUndoBaseObjectMinimal(CBaseObject* pObj, const char* un
 	m_undoState.rotate = pObj->GetRotation();
 	m_undoState.scale = pObj->GetScale();
 	m_undoState.color = pObj->GetColor();
+	m_undoState.usingColorOverride = pObj->IsUsingColorOverride();
 	m_undoState.minSpec = pObj->GetMinSpec();
 
 	pObj->SetLayerModified();
@@ -562,12 +564,14 @@ void CUndoBaseObjectMinimal::Undo(bool bUndo)
 		m_redoState.scale = pObject->GetScale();
 		m_redoState.rotate = pObject->GetRotation();
 		m_redoState.color = pObject->GetColor();
+		m_redoState.usingColorOverride = pObject->IsUsingColorOverride();
 		m_redoState.minSpec = pObject->GetMinSpec();
 	}
 
 	SetTransformsFromState(pObject, m_undoState, bUndo);
 
 	pObject->ChangeColor(m_undoState.color);
+	pObject->UseColorOverride(m_undoState.usingColorOverride);
 	pObject->SetMinSpec(m_undoState.minSpec, false);
 	pObject->SetLayerModified();
 
@@ -585,6 +589,7 @@ void CUndoBaseObjectMinimal::Redo()
 	SetTransformsFromState(pObject, m_redoState, true);
 
 	pObject->ChangeColor(m_redoState.color);
+	pObject->UseColorOverride(m_redoState.usingColorOverride);
 	pObject->SetMinSpec(m_redoState.minSpec, false);
 	pObject->SetLayerModified();
 	pObject->UpdateGroup();
@@ -633,7 +638,8 @@ CBaseObject::CBaseObject()
 	m_rotate.SetIdentity();
 	m_scale(1, 1, 1);
 
-	m_color = RGB(255, 255, 255);
+	m_useColorOverride = false;
+	m_color = ColorB(255, 255, 255);
 	m_pMaterial = NULL;
 
 	m_flags = 0;
@@ -1061,21 +1067,61 @@ const Vec3 CBaseObject::GetScale() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::ChangeColor(COLORREF color)
+void CBaseObject::ChangeColor(ColorB color)
 {
-	if (color == m_color)
+	if (color == m_color && m_useColorOverride)
+	{
 		return;
-
+	}
+	CUndo changeColorUndo("Set Object Color");
 	StoreUndo("Color", true);
-
 	SetColor(color);
-	SetModified(false, false);
+	UseColorOverride(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBaseObject::SetColor(COLORREF color)
+void CBaseObject::SetColor(ColorB color)
 {
 	m_color = color;
+	GetIEditor()->GetObjectManager()->signalObjectsChanged({ this }, CObjectEvent(OBJECT_ON_COLOR_CHANGED));
+}
+
+void CBaseObject::UseColorOverride(bool color)
+{
+	if (m_useColorOverride == color)
+	{
+		return;
+	}
+	if (!CUndo::IsRecording())
+	{
+		CUndo colorOverrideUndo("Set Object Color Override");
+		StoreUndo("Color Override", true);
+	}
+	m_useColorOverride = color;
+	GetIEditor()->GetObjectManager()->signalObjectsChanged({ this }, CObjectEvent(OBJECT_ON_COLOR_CHANGED));
+}
+
+bool CBaseObject::IsUsingColorOverride() const
+{
+	return m_useColorOverride;
+}
+
+std::pair<bool, ColorB> CBaseObject::GetColorOverrideInAncestry()
+{
+	CBaseObject* pOwner = FindOwner(false);
+	ColorB finalColor = { 255, 255, 255 };
+	bool found = false;
+	while (pOwner)
+	{
+		if (pOwner->IsUsingColorOverride())
+		{
+			finalColor = pOwner->GetColor();
+			found = true;
+			break;
+		}
+		pOwner = pOwner->FindOwner(false);
+	}
+	return std::pair<bool, ColorB>(found, finalColor);
 }
 
 void CBaseObject::GetDisplayBoundBox(AABB& box)
@@ -2036,9 +2082,8 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 		Quat quat = m_rotate;
 		Ang3 angles(0, 0, 0);
 		uint32 nMinSpec = m_nMinSpec;
-
-		COLORREF color = m_color;
-
+		COLORREF color = RGB(m_color.r, m_color.g, m_color.b);
+		bool useCustomLevelLayerColor = m_useColorOverride;
 		CryGUID parentId = CryGUID::Null();
 		CryGUID linkToId = CryGUID::Null();
 		CryGUID idInPrefab = CryGUID::Null();
@@ -2059,6 +2104,7 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 
 		xmlNode->getAttr("Scale", scale);
 		xmlNode->getAttr("ColorRGB", color);
+		xmlNode->getAttr("UseCustomLevelLayerColor", useCustomLevelLayerColor);
 		xmlNode->getAttr("Flags", flags);
 		xmlNode->getAttr("Parent", parentId);
 		xmlNode->getAttr("LinkedTo", linkToId);
@@ -2121,7 +2167,8 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 			SetIdInPrefab(idInPrefab);
 		}
 
-		SetColor(color);
+		SetColor(ColorB(GetRValue(color), GetGValue(color), GetBValue(color)));
+		UseColorOverride(useCustomLevelLayerColor);
 
 		if (pLayer)
 		{
@@ -2199,7 +2246,9 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 		if (scale != Vec3(1, 1, 1))
 			xmlNode->setAttr("Scale", scale);
 
-		xmlNode->setAttr("ColorRGB", GetColor());
+		COLORREF colorToStore = RGB(m_color.r, m_color.g, m_color.b);
+		xmlNode->setAttr("ColorRGB", colorToStore);
+		xmlNode->setAttr("UseCustomLevelLayerColor", m_useColorOverride);
 
 		int flags = m_flags & OBJFLAG_PERSISTMASK;
 		if (flags != 0)
@@ -2659,6 +2708,16 @@ bool CBaseObject::IsDescendantOf(const CBaseObject* pObject) const
 	}
 
 	return false;
+}
+
+CBaseObject* CBaseObject::FindOwner(bool onSameLayer) const
+{
+	CBaseObject* owner = m_parent ? m_parent : GetLinkedTo();
+	if (onSameLayer && owner && m_layer != owner->GetLayer())
+	{
+		owner = nullptr;
+	}
+	return owner;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4048,11 +4107,8 @@ void CBaseObject::SerializeGeneralProperties(Serialization::IArchive& ar, bool b
 	ar(typeDescr, "type_name", "!Type");
 	string name = (const char*)m_name;
 	ar(name, "name", "Name");
-
-	int abgr = m_color;
-	ColorB color = ColorB((uint32)abgr);
+	ColorB color = m_color;
 	ar(color, "color", "Color");
-
 	string layer = (const char*)m_layer->GetFullName();
 	ar(Serialization::LevelLayerPicker(layer), "layer", "Layer");
 
@@ -4085,11 +4141,11 @@ void CBaseObject::SerializeGeneralProperties(Serialization::IArchive& ar, bool b
 	if (ar.isInput())
 	{
 		bool objectChanged = false;
-		abgr = color.pack_abgr8888();
-		if (abgr != m_color)
+
+		if (color != m_color)
 		{
 			objectChanged = true;
-			SetColor(abgr);
+			SetColor(color);
 		}
 
 		if (!name.empty() && strcmp(name.c_str(), (LPCSTR)m_name) != 0)

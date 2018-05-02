@@ -14,7 +14,7 @@ IMPLEMENT_DYNCREATE(CTagComment, CEntityObject)
 //////////////////////////////////////////////////////////////////////////
 CTagComment::CTagComment()
 {
-	SetColor(RGB(255, 160, 0));
+	SetColor(ColorB(255, 160, 0));
 
 	m_entityClass = "Comment";
 

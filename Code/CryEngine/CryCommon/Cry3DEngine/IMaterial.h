@@ -120,12 +120,12 @@ enum EMaterialLayerFlags : uint32
 };
 
 //! Copy flags.
-enum EMaterialCopyFlags
+enum EMaterialCopyFlags : uint32
 {
 	MTL_COPY_DEFAULT  = 0,
-	MTL_COPY_NAME     = BIT(0),
-	MTL_COPY_TEMPLATE = BIT(1),
-	MTL_COPY_TEXTURES = BIT(2),
+	MTL_COPY_NAME     = BIT32(0),
+	MTL_COPY_TEMPLATE = BIT32(1),
+	MTL_COPY_TEXTURES = BIT32(2),
 };
 
 struct IMaterialHelpers
@@ -401,9 +401,9 @@ struct IMaterialManagerListener
 struct IMaterialManager
 {
 	//! Loading flags.
-	enum ELoadingFlags
+	enum ELoadingFlags : uint32
 	{
-		ELoadingFlagsPreviewMode = BIT(0),
+		ELoadingFlagsPreviewMode = BIT32(0),
 	};
 
 	// <interfuscator:shuffle>

@@ -1313,13 +1313,7 @@ if (RENDERER_VULKAN)
 			-Wno-multichar
 			-Wno-switch
 			-Wno-unused-function
-			-Wno-overloaded-virtual
-			-Wno-tautological-compare
-			-Wno-unused-lambda-capture
 			-Wno-invalid-offsetof
-			-Wno-c++11-narrowing
-			-Wno-empty-body
-			-Wno-self-assign
 			-Wno-null-conversion
 		)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

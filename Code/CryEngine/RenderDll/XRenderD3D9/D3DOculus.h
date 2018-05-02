@@ -24,7 +24,7 @@ public:
 	virtual void                      Shutdown() final;
 	virtual void                      OnResolutionChanged(int newWidth, int newHeight) final;
 	virtual void                      ReleaseBuffers() final {}
-	virtual void                      PrepareFrame(int frameId) final;
+	virtual void                      PrepareFrame(uint64_t frameId) final;
 	virtual void                      SubmitFrame() final;
 
 	virtual RenderLayer::CProperties*  GetQuadLayerProperties(RenderLayer::EQuadLayers id) final;

@@ -272,16 +272,24 @@ void CD3D9Renderer::ChangeViewport(CRenderDisplayContext* pDC, unsigned int view
 	if (m_bDeviceLost)
 		return;
 
-	SetCurDownscaleFactor(Vec2(1, 1));
+	gRenDev->ExecuteRenderThreadCommand([=]
+		{
+			SetCurDownscaleFactor(Vec2(1, 1));
+
+			if (pDC->IsMainViewport())
+			{
+				if (auto pRenderOutput = pDC->GetRenderOutput().get())
+				{
+					pRenderOutput->ReinspectDisplayContext();
+					CRendererResources::OnOutputResolutionChanged(pRenderOutput->GetOutputResolution()[0], pRenderOutput->GetOutputResolution()[1]);
+				}
+			}
+		}, ERenderCommandFlags::None
+	);
 
 	// This change will propagate to the other dimensions (output and render)
 	// when HandleDisplayPropertyChanges() is called just before rendering
 	pDC->ChangeDisplayResolution(viewPortOffsetX + viewportWidth, viewPortOffsetY + viewportHeight, SRenderViewport(viewPortOffsetX, viewPortOffsetY, viewportWidth, viewportHeight));
-
-	if (auto pRenderOutput = pDC->GetRenderOutput().get())
-	{
-		CRendererResources::OnOutputResolutionChanged(pRenderOutput->GetOutputResolution()[0], pRenderOutput->GetOutputResolution()[1]);
-	}
 }
 
 void CD3D9Renderer::SetCurDownscaleFactor(Vec2 sf)
@@ -3398,7 +3406,7 @@ void CD3D9Renderer::RT_EndFrame()
 	#if CRY_PLATFORM_WINDOWS && !CRY_RENDERER_VULKAN
 			swapDC->EnforceFullscreenPreemption();
 	#endif
-			DWORD syncInterval = ComputePresentInterval(swapDC->GetVSyncHint(), swapDC->GetRefreshRateNumerator(), swapDC->GetRefreshRateDemoninator());
+			DWORD syncInterval = ComputePresentInterval(swapDC->GetVSyncState() != 0, swapDC->GetRefreshRateNumerator(), swapDC->GetRefreshRateDemoninator());
 			hReturn = swapDC->GetSwapChain().Present(syncInterval, 0);
 
 			if (IHmdRenderer* pHmdRenderer = GetS3DRend().GetIHmdRenderer())
@@ -3616,7 +3624,7 @@ void CD3D9Renderer::RT_PresentFast()
 	#if CRY_PLATFORM_WINDOWS
 	swapDC->EnforceFullscreenPreemption();
 	#endif
-	hReturn = swapDC->GetSwapChain().Present(pDC->GetVSyncHint() ? 1 : 0, 0);
+	hReturn = swapDC->GetSwapChain().Present(swapDC->GetVSyncState() ? 1 : 0, 0);
 #endif
 	assert(hReturn == S_OK);
 

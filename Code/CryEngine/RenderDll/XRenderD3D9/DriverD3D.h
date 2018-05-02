@@ -107,6 +107,8 @@ class CD3D9Renderer final : public CRenderer, public IWindowMessageHandler
 	friend struct IScaleformPlayback;
 	friend class CScaleformPlayback;
 
+	using CRenderer::EF_PrecacheResource;	// We want to override CRenderer functions *and* allow the overloads.
+	
 public:
 	struct SCharacterInstanceCB
 	{
@@ -312,7 +314,8 @@ public:
 	uint32_t                   GenerateUniqueContextId() { return m_uniqueDisplayContextId++; }
 	SDisplayContextKey         AddCustomContext(const CRenderDisplayContextPtr &context) threadsafe;
 	virtual SDisplayContextKey CreateSwapChainBackedContext(const SDisplayContextDescription& desc) threadsafe final;
-	virtual void               ResizeContext(const SDisplayContextKey& key,int width,int height) threadsafe final;
+	void                       ResizeContext(CRenderDisplayContext *, int width, int height) threadsafe;
+	virtual void               ResizeContext(const SDisplayContextKey& key, int width, int height) threadsafe final;
 	virtual bool               DeleteContext(const SDisplayContextKey& key) threadsafe final;
 
 #ifdef CRY_PLATFORM_WINDOWS

@@ -6,43 +6,42 @@ using CryEngine.Common;
 
 namespace CryEngine.Animations
 {
-	// This mirrors EResumeFlags in ICryMannequin.h
 	/// <summary>
-	/// Flags for definining the behaviour when Resume is being called on an <see cref="ActionController"/>.
+	/// Flags for defining the behaviour when Resume is being called on an <see cref="ActionController"/>.
 	/// </summary>
 	[Flags]
-	public enum ResumeFlags
+	public enum ResumeFlags : uint
 	{
 		/// <summary>
 		/// Restart the animations when resuming.
 		/// </summary>
-		RestartAnimations              = 1,
+		RestartAnimations = IActionController.EResumeFlags.ERF_RestartAnimations,
 		/// <summary>
 		/// Preserves the progress for looping animations when restarting.
 		/// </summary>
-		RestoreLoopingAnimationTime    = 2,
+		RestoreLoopingAnimationTime = IActionController.EResumeFlags.ERF_RestoreLoopingAnimationTime,
 		/// <summary>
 		/// Preserves the progress for non-looping animations when restarting.
 		/// </summary>
-		RestoreNonLoopingAnimationTime = 4,
+		RestoreNonLoopingAnimationTime = IActionController.EResumeFlags.ERF_RestoreNonLoopingAnimationTime,
 		/// <summary>
 		/// Restarts the animations and preserves the progress for all animations.
 		/// </summary>
-		Default                        = RestartAnimations | RestoreLoopingAnimationTime | RestoreNonLoopingAnimationTime
+		Default = IActionController.EResumeFlags.ERF_Default
 	}
 
 	/// <summary>
 	/// Flags to set various options on the <see cref="ActionController"/>.
 	/// </summary>
 	[Flags]
-	public enum ActionControllerFlags
+	public enum ActionControllerFlags : uint
 	{
 		/// <summary>
 		/// Flag indicating that the <see cref="ActionController"/> is paused.
 		/// </summary>
 		PausedUpdate = EActionControllerFlags.AC_PausedUpdate,
 		/// <summary>
-		/// Flag indicating that the <see cref="ActionController"/> should draw debud information.
+		/// Flag indicating that the <see cref="ActionController"/> should draw debug information.
 		/// </summary>
 		DebugDraw = EActionControllerFlags.AC_DebugDraw,
 		/// <summary>
@@ -61,7 +60,7 @@ namespace CryEngine.Animations
 
 	/// <summary>
 	/// The root object controlling mannequin for a character. It is configured using a controller definition (defining the fragmentIDs, scopes, scope contexts, etc). 
-	/// It schedules actions onto scopes and holds the global tagstate.
+	/// It schedules actions onto scopes and holds the global tag state.
 	/// </summary>
 	public sealed class ActionController
 	{

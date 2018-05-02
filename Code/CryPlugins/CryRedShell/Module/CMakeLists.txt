@@ -19,7 +19,7 @@ add_sources("CryRedShellPlugin_uber.cpp"
 )
 end_sources()
 
-CryEngineModule(CryRedShell FORCE_SHARED PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
+CryEngineModule(CryRedShell FORCE_SHARED_WIN PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
 target_include_directories(${THIS_PROJECT}
 PRIVATE 

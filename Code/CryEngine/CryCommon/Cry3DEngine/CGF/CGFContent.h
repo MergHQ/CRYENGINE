@@ -27,10 +27,10 @@ struct CNodeCGF : public _cfg_reference_target<CNodeCGF>
 		NODE_LIGHT,
 		NODE_HELPER,
 	};
-	enum EPhysicalizeFlags
+	enum EPhysicalizeFlags : uint32
 	{
-		ePhysicsalizeFlag_MeshNotNeeded = BIT(2), //!< When set physics data doesn't need additional Mesh indices or vertices.
-		ePhysicsalizeFlag_NoBreaking    = BIT(3), //!< node is unsuitable for procedural 3d breaking
+		ePhysicsalizeFlag_MeshNotNeeded = BIT32(2), //!< When set physics data doesn't need additional Mesh indices or vertices.
+		ePhysicsalizeFlag_NoBreaking    = BIT32(3), //!< node is unsuitable for procedural 3d breaking
 	};
 
 	ENodeType     type;

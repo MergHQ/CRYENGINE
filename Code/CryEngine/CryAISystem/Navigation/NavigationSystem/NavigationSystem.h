@@ -24,16 +24,12 @@
 
 #include <CryThreading/IThreadManager.h>
 
-#if CRY_PLATFORM_WINDOWS
+#define NAV_MESH_REGENERATION_ENABLED 1
+
+#if CRY_PLATFORM_WINDOWS && NAV_MESH_REGENERATION_ENABLED
 	#define NAVIGATION_SYSTEM_EDITOR_BACKGROUND_UPDATE 1
 #else
 	#define NAVIGATION_SYSTEM_EDITOR_BACKGROUND_UPDATE 0
-#endif
-
-#if CRY_PLATFORM_WINDOWS
-	#define NAVIGATION_SYSTEM_PC_ONLY 1
-#else
-	#define NAVIGATION_SYSTEM_PC_ONLY 0
 #endif
 
 struct RayCastRequest;
@@ -241,10 +237,7 @@ class NavigationSystemBackgroundUpdate
 {
 public:
 	NavigationSystemBackgroundUpdate(NavigationSystem& navigationSystem)
-	{
-
-	}
-
+	{}
 	bool IsRunning() const                     { return false; }
 	void Pause(const bool readingOrSavingMesh) {}
 };
@@ -679,7 +672,7 @@ private:
 		std::vector<NavigationVolumeID>  markupIds;
 	};
 
-#if NAVIGATION_SYSTEM_PC_ONLY
+#if NAV_MESH_REGENERATION_ENABLED
 	void UpdateMeshes(const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground);
 	void SetupGenerator(const NavigationMeshID meshID, const MNM::CNavMesh::SGridParams& paramsGrid,
 	                    uint16 x, uint16 y, uint16 z, MNM::CTileGenerator::Params& params, const VolumeDefCopy& pDef, bool bMarkupUpdate);

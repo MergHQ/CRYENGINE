@@ -44,7 +44,7 @@ struct IFlashPlayer
 		DEFAULT_NO_MOUSE     = RENDER_EDGE_AA | INIT_FIRST_FRAME
 	};
 
-	enum ECategory
+	enum ECategory : uint32
 	{
 		eCat_RequestMeshCacheResetBit = 0x80000000,
 

@@ -95,8 +95,7 @@ public:
 	virtual void DestroySwapTextureSet(STextureSwapChain* set) = 0;
 	virtual void DestroyMirrorTexture(STexture* texture) = 0;
 
-	virtual OculusStatus PrepareFrame(int frameId) = 0;
-	virtual OculusStatus BeginFrame() = 0;
+	virtual OculusStatus BeginFrame(uint64_t frameId) = 0;
 	virtual OculusStatus SubmitFrame(const SHmdSubmitFrameData &pData) = 0;
 	virtual void CreateDevice() = 0;
 

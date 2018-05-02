@@ -23,7 +23,6 @@ public:
 	{
 	}
 
-	int         GetSize()        { return sizeof(*this); }
 	const char* GetDescription() { return "Undo for Designer Exclusive Mode"; }
 
 	void        Undo(bool bUndo = true) override
@@ -434,7 +433,7 @@ void DesignerSettings::Serialize(Serialization::IArchive& ar)
 	{
 		if (ar.isEdit())
 		{
-			// Exclusive mode was hack using layers and will probably come back as a standalone editor later, 
+			// Exclusive mode was hack using layers and will probably come back as a standalone editor later,
 			// hide option for now
 			// TODO: clean this up completely this later
 			//ar(bExclusiveMode, "ExclusiveMode", "Exclusive Mode");

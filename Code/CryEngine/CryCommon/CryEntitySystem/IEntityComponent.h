@@ -751,10 +751,10 @@ struct IEntityAreaComponent : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_GUID(IEntityAreaComponent, "98eda61f-de8b-e2b1-a1ca-2a88e4eede66"_cry_guid)
 
-	enum EAreaComponentFlags
+	enum EAreaComponentFlags : uint32
 	{
-		FLAG_NOT_UPDATE_AREA = BIT(1), //!< When set points in the area will not be updated.
-		FLAG_NOT_SERIALIZE   = BIT(2)  //!< Areas with this flag will not be serialized.
+		FLAG_NOT_UPDATE_AREA = BIT32(1), //!< When set points in the area will not be updated.
+		FLAG_NOT_SERIALIZE   = BIT32(2)  //!< Areas with this flag will not be serialized.
 	};
 
 	//! Area flags.

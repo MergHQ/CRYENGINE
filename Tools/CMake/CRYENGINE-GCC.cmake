@@ -19,6 +19,7 @@ set(GCC_CPP_COMMON_FLAGS
 	-Wno-conversion-null
 	-Wno-unused-result
 	-Wno-reorder
+	-Wno-delete-non-virtual-dtor # Needed to provide virtual dispatch to allow strings to be modified on CryCommon types
 )
 
 string(REPLACE ";" " " GCC_COMMON_FLAGS "${GCC_COMMON_FLAGS}")

@@ -33,7 +33,7 @@ CSplineDistributor::CSplineDistributor() :
 	mv_integrQuality = 0;
 	mv_Occluder = false;
 
-	SetColor(CMFCUtils::Vec2Rgb(Vec3(0.4f, 0.5f, 0.4f)));
+	SetColor(ColorB(102, 128, 102));
 
 	if (m_pVarObject == nullptr)
 	{
@@ -349,10 +349,10 @@ void CSplineDistributor::SetLayerId(uint16 nLayerId)
 class CSplineDistributorClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_SHAPE; }
-	const char*    ClassName()         { return "SplineDistributor"; }
-	const char*    Category()          { return "Misc"; }
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CSplineDistributor); }
+	ObjectType     GetObjectType()   { return OBJTYPE_SHAPE; }
+	const char*    ClassName()       { return "SplineDistributor"; }
+	const char*    Category()        { return "Misc"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CSplineDistributor); }
 };
 
 REGISTER_CLASS_DESC(CSplineDistributorClassDesc);

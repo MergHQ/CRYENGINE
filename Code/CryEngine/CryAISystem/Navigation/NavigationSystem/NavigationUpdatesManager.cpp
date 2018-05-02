@@ -160,7 +160,7 @@ void CMNMUpdatesManager::RemoveMeshUpdatesFromVector(TileUpdatesVector& tileUpda
 //------------------------------------------------------------------------
 void CMNMUpdatesManager::EntityChanged(int physicalEntityId, const AABB& aabb)
 {
-#if NAVIGATION_SYSTEM_PC_ONLY
+#if NAV_MESH_REGENERATION_ENABLED
 	if (physicalEntityId == -1)
 	{
 		WorldChanged(aabb);
@@ -182,20 +182,20 @@ void CMNMUpdatesManager::EntityChanged(int physicalEntityId, const AABB& aabb)
 		entityUpdate.aabbNew = AABB(AABB::RESET);
 		m_postponedEntityUpdatesMap[physicalEntityId] = entityUpdate;
 	}
-#endif //NAVIGATION_SYSTEM_PC_ONLY
+#endif //NAV_MESH_REGENERATION_ENABLED
 }
 
 //------------------------------------------------------------------------
 void CMNMUpdatesManager::WorldChanged(const AABB& aabb)
 {
-#if NAVIGATION_SYSTEM_PC_ONLY
+#if NAV_MESH_REGENERATION_ENABLED
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	m_lastUpdateTime = gEnv->pTimer->GetFrameStartTime();
 
 	SRequestParams queueAndState = GetRequestParams(false);
 	RequestQueueWorldUpdate(queueAndState, aabb);
-#endif //NAVIGATION_SYSTEM_PC_ONLY
+#endif //NAV_MESH_REGENERATION_ENABLED
 }
 
 //------------------------------------------------------------------------
@@ -416,7 +416,7 @@ bool CMNMUpdatesManager::RequestQueueMeshUpdate(const SRequestParams& requestPar
 {
 	assert(meshID != 0);
 
-#if NAVIGATION_SYSTEM_PC_ONLY
+#if NAV_MESH_REGENERATION_ENABLED
 	if (!meshID || !m_pNavigationSystem->m_meshes.validate(meshID))
 	{
 		return false;
@@ -433,9 +433,9 @@ bool CMNMUpdatesManager::RequestQueueMeshUpdate(const SRequestParams& requestPar
 
 	SheduleTileUpdateRequests(requestParams, meshID, ComputeMeshUpdateBoundaries(mesh, aabb));
 	return true;
-#else //!NAVIGATION_SYSTEM_PC_ONLY
+#else //!NAV_MESH_REGENERATION_ENABLED
 	return false;
-#endif //!NAVIGATION_SYSTEM_PC_ONLY
+#endif //!NAV_MESH_REGENERATION_ENABLED
 }
 
 //------------------------------------------------------------------------
@@ -445,7 +445,7 @@ bool CMNMUpdatesManager::RequestQueueMeshDifferenceUpdate(
 	const NavigationBoundingVolume& oldVolume,
 	const NavigationBoundingVolume& newVolume)
 {
-#if NAVIGATION_SYSTEM_PC_ONLY
+#if NAV_MESH_REGENERATION_ENABLED
 	// TODO: implement properly by verifying what didn't change
 	// since there will be loads of volume-aabb intersection tests,
 	// this should be a new job running in a different thread
@@ -465,9 +465,9 @@ bool CMNMUpdatesManager::RequestQueueMeshDifferenceUpdate(
 	MeshUpdateBoundaries bounds = ComputeMeshUpdateDifferenceBoundaries(mesh, oldVolume.aabb, newVolume.aabb);
 	SheduleTileUpdateRequests(queueAndState, meshID, bounds);
 	return true;
-#else //!NAVIGATION_SYSTEM_PC_ONLY
+#else //!NAV_MESH_REGENERATION_ENABLED
 	return false;
-#endif //!NAVIGATION_SYSTEM_PC_ONLY
+#endif //!NAV_MESH_REGENERATION_ENABLED
 }
 
 //------------------------------------------------------------------------

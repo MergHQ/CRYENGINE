@@ -2520,7 +2520,7 @@ std::pair<std::unique_ptr<byte[]>, uint32> SShaderCache::DecompressResource(int 
 
 	case RESVERSION_DEBUG:
 		decompressedSize = size - 20;
-		if (decompressedSize < 0 || decompressedSize > 128 * 1024 * 1024)
+		if (size <= 20 || decompressedSize > 128 * 1024 * 1024)
 		{
 			CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_ERROR, "FileRead - Corrupt DirEntiy size");
 			return ReturnType{};

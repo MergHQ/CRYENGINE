@@ -868,22 +868,19 @@ struct SAudioObjectRequestData<EAudioObjectRequestType::SetSwitchState> final : 
 template<>
 struct SAudioObjectRequestData<EAudioObjectRequestType::SetCurrentEnvironments> final : public SAudioObjectRequestDataBase
 {
-	explicit SAudioObjectRequestData(EntityId const entityToIgnore_, Vec3 const& position_)
+	explicit SAudioObjectRequestData(EntityId const entityToIgnore_)
 		: SAudioObjectRequestDataBase(EAudioObjectRequestType::SetCurrentEnvironments)
 		, entityToIgnore(entityToIgnore_)
-		, position(position_)
 	{}
 
 	explicit SAudioObjectRequestData(SAudioObjectRequestData<EAudioObjectRequestType::SetCurrentEnvironments> const* const pAORData)
 		: SAudioObjectRequestDataBase(EAudioObjectRequestType::SetCurrentEnvironments)
 		, entityToIgnore(pAORData->entityToIgnore)
-		, position(pAORData->position)
 	{}
 
 	virtual ~SAudioObjectRequestData() override = default;
 
 	EntityId const entityToIgnore;
-	Vec3 const     position;
 };
 
 //////////////////////////////////////////////////////////////////////////

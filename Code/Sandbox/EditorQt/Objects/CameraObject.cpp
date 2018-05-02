@@ -17,7 +17,8 @@ REGISTER_CLASS_DESC(CCameraObjectTargetClassDesc);
 IMPLEMENT_DYNCREATE(CCameraObject, CEntityObject)
 IMPLEMENT_DYNCREATE(CCameraObjectTarget, CEntityObject)
 
-#define CAMERA_COLOR       RGB(0, 255, 255)
+const ColorB g_cameraColor(0, 255, 255);
+
 #define CAMERA_CONE_LENGTH 4
 #define CAMERABOX_RADIUS   0.7f
 #define MIN_FOV_IN_DEG     0.1f
@@ -56,7 +57,7 @@ CCameraObject::CCameraObject() : m_listeners(1)
 	mv_cameraShakeSeed = 0;
 	mv_omniCamera = 0;
 
-	SetColor(CAMERA_COLOR);
+	SetColor(g_cameraColor);
 	UseMaterialLayersMask(false);
 }
 
@@ -582,7 +583,7 @@ void CCameraObject::OnCameraShakeSeedChange(IVariable* var)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCameraObject::OnOmniCameraChange(IVariable *var)
+void CCameraObject::OnOmniCameraChange(IVariable* var)
 {
 	for (CListenerSet<ICameraObjectListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
 	{
@@ -645,13 +646,13 @@ void CCameraObject::SetFrequencyBMult(const float frequencyBMult)
 //////////////////////////////////////////////////////////////////////////
 CCameraObjectTarget::CCameraObjectTarget()
 {
-	SetColor(CAMERA_COLOR);
+	SetColor(g_cameraColor);
 	UseMaterialLayersMask(false);
 }
 
 bool CCameraObjectTarget::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(CAMERA_COLOR);
+	SetColor(g_cameraColor);
 	bool res = CEntityObject::Init(prev, file);
 	m_entityClass = "CameraTarget";
 	return res;

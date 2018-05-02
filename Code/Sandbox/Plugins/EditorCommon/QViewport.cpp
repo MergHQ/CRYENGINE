@@ -200,8 +200,6 @@ QViewport::QViewport(SSystemGlobalEnvironment* env, QWidget* parent, int supersa
 	if (!gEnv)
 		gEnv = m_env; // Shhh!
 
-	CreateRenderContext();
-
 	m_camera.reset(new CCamera());
 	ResetCamera();
 
@@ -427,8 +425,8 @@ void QViewport::Update()
 	if (!m_width || !m_height)
 		return;
 
-	if (!m_renderContextCreated)
-		return;
+	if (!m_renderContextCreated && !m_creatingRenderContext)
+		CreateRenderContext();
 
 	if (m_updating)
 		return;

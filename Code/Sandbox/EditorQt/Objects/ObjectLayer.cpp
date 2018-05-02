@@ -18,6 +18,8 @@ public:
 		m_undoIsVisible = pLayer->IsVisible();
 		m_undoIsFrozen = pLayer->IsFrozen();
 		m_layerGUID = pLayer->GetGUID();
+		m_undoLayerColorOverride = pLayer->GetColor();
+		m_undoUseColorOverride = pLayer->IsUsingColorOverride();
 	}
 protected:
 	virtual const char* GetDescription() { return "Set Layer State"; }
@@ -31,10 +33,13 @@ protected:
 			{
 				m_redoIsVisible = pLayer->IsVisible();
 				m_redoIsFrozen = pLayer->IsFrozen();
+				m_redoLayerColorOverride = pLayer->GetColor();
+				m_redoUseColorOverride = pLayer->IsUsingColorOverride();
 			}
-
 			pLayer->SetVisible(m_undoIsVisible);
 			pLayer->SetFrozen(m_undoIsFrozen);
+			pLayer->SetColor(m_undoLayerColorOverride, m_undoUseColorOverride);
+			CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, pLayer).Send();
 		}
 	}
 
@@ -45,14 +50,20 @@ protected:
 		{
 			pLayer->SetVisible(m_redoIsVisible);
 			pLayer->SetFrozen(m_redoIsFrozen);
+			pLayer->SetColor(m_redoLayerColorOverride, m_redoUseColorOverride);
+			CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, pLayer).Send();
 		}
 	}
 
 private:
-	bool   m_undoIsVisible;
-	bool   m_redoIsVisible;
-	bool   m_undoIsFrozen;
-	bool   m_redoIsFrozen;
+	bool    m_undoIsVisible;
+	bool    m_redoIsVisible;
+	bool    m_undoIsFrozen;
+	bool    m_redoIsFrozen;
+	ColorB  m_undoLayerColorOverride;
+	ColorB  m_redoLayerColorOverride;
+	bool    m_undoUseColorOverride;
+	bool    m_redoUseColorOverride;
 	CryGUID m_layerGUID;
 };
 
@@ -76,8 +87,9 @@ protected:
 		if (pLayer)
 		{
 			if (bUndo)
+			{
 				m_redoName = pLayer->GetName();
-
+			}
 			pLayer->SetName(m_undoName);
 			CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, pLayer).Send();
 		}
@@ -95,8 +107,8 @@ protected:
 	}
 
 private:
-	string m_undoName;
-	string m_redoName;
+	string  m_undoName;
+	string  m_redoName;
 	CryGUID m_layerGUID;
 };
 
@@ -120,7 +132,7 @@ public:
 
 	}
 protected:
-	virtual const char* GetDescription() { return "Change Layer Name"; }
+	virtual const char* GetDescription() { return "Change Layer Parent"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -214,6 +226,8 @@ public:
 	}
 };
 
+const ColorB g_defaultLayerColor(71, 71, 71);
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -230,7 +244,7 @@ CObjectLayer::CObjectLayer()
 	, m_havePhysics(true)
 	, m_isModified(true)
 	, m_nLayerId(0)
-	, m_isDefaultColor(true)
+	, m_useColorOverride(false)
 	, m_specs(eSpecType_All)
 	, m_layerType(eObjectLayerType_Layer)
 {
@@ -249,11 +263,11 @@ CObjectLayer::CObjectLayer(const char* szName, EObjectLayerType type)
 	, m_havePhysics(true)
 	, m_isModified(true)
 	, m_nLayerId(0)
-	, m_isDefaultColor(true)
+	, m_useColorOverride(false)
 	, m_specs(eSpecType_All)
 	, m_layerType(type)
 {
-	m_color = GetSysColor(COLOR_BTNFACE);
+	m_color = Private_ObjectLayer::g_defaultLayerColor;
 	ZeroStruct(m_parentGUID);
 }
 
@@ -300,13 +314,15 @@ void CObjectLayer::Serialize(XmlNodeRef& node, bool isLoading)
 		node->getAttr("HavePhysics", m_havePhysics);
 		node->getAttr("Specs", m_specs);
 
-		m_isDefaultColor = false;
-		node->getAttr("IsDefaultColor", m_isDefaultColor);
-
-		m_color = GetSysColor(COLOR_BTNFACE);
-		if (!m_isDefaultColor)
-			node->getAttr("Color", m_color);
-		SetColor(m_color); // Update default state
+		//To be coherent with objects behavior m_isDefaultColor is now m_useColorOverride
+		//still, for backward compatibility this flags needs to be inverted when loading the object
+		bool colorOverride = !m_useColorOverride;
+		node->getAttr("IsDefaultColor", colorOverride);
+		m_useColorOverride = !colorOverride;
+		m_color = Private_ObjectLayer::g_defaultLayerColor;
+		COLORREF color = RGB(m_color.r, m_color.g, m_color.b);
+		node->getAttr("Color", color);
+		m_color = ColorB(GetRValue(color), GetGValue(color), GetBValue(color));
 
 		ZeroStruct(m_parentGUID);
 		node->getAttr("ParentGUID", m_parentGUID);
@@ -322,11 +338,11 @@ void CObjectLayer::Serialize(XmlNodeRef& node, bool isLoading)
 		node->setAttr("ExportLayerPak", m_exportLayerPak);
 		node->setAttr("DefaultLoaded", m_defaultLoaded);
 		node->setAttr("HavePhysics", m_havePhysics);
-		node->setAttr("IsDefaultColor", m_isDefaultColor);
+		node->setAttr("IsDefaultColor", !m_useColorOverride);
+		node->setAttr("Color", RGB(m_color.r, m_color.g, m_color.b));
+
 		if (m_specs != eSpecType_All)
 			node->setAttr("Specs", m_specs);
-		if (!m_isDefaultColor)
-			node->setAttr("Color", m_color);
 
 		CryGUID parentGUID = m_parentGUID;
 		if (parentGUID != CryGUID::Null())
@@ -579,18 +595,37 @@ string CObjectLayer::GetLayerFilepath()
 }
 
 //////////////////////////////////////////////////////////////////////////
-COLORREF CObjectLayer::GetColor() const
+ColorB CObjectLayer::GetColor() const
 {
-	if (m_isDefaultColor)
-		return GetSysColor(COLOR_BTNFACE);
+	if (!m_useColorOverride)
+	{
+		return ColorB(Private_ObjectLayer::g_defaultLayerColor);
+	}
 	return m_color;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectLayer::SetColor(COLORREF color)
+void CObjectLayer::SetColor(ColorB color, bool useColorOverride)
 {
+	if (color == m_color && useColorOverride == m_useColorOverride)
+	{
+		return;
+	}
+	CUndo setColorUndo("Set Layer Color");
+	CUndo::Record(new CUndoLayerStates(this));
+	UseColorOverride(useColorOverride);
 	m_color = color;
-	m_isDefaultColor = (color == GetSysColor(COLOR_BTNFACE));
+}
+
+void CObjectLayer::UseColorOverride(bool useColorOverride)
+{
+	if (useColorOverride == m_useColorOverride)
+	{
+		return;
+	}
+	CUndo setColorColorOverrideUndo("Set Layer Color Override");
+	CUndo::Record(new CUndoLayerStates(this));
+	m_useColorOverride = useColorOverride;
 }
 
 //////////////////////////////////////////////////////////////////////////

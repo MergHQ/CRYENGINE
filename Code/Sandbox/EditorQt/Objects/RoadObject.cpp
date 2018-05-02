@@ -50,7 +50,7 @@ CRoadObject::CRoadObject()
 
 	m_bIgnoreParamUpdate = false;
 
-	SetColor(CMFCUtils::Vec2Rgb(Vec3(0, 0.8f, 1)));
+	SetColor(ColorB(0, 204, 255));
 	mv_ratioViewDist = 100;
 }
 
@@ -117,9 +117,9 @@ void CRoadObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 
 		if (ar.openBlock("operators", "<operators"))
 		{
-			ar(Serialization::ActionButton(std::bind(&CRoadObject::AlignHeightMap, pObject)), "align_heightmap", "^Align Height Map");
-			ar(Serialization::ActionButton(std::bind(&CRoadObject::EraseVegetation, pObject)), "erase_vegetation", "^Erase Vegetation");
-			ar.closeBlock();
+		  ar(Serialization::ActionButton(std::bind(&CRoadObject::AlignHeightMap, pObject)), "align_heightmap", "^Align Height Map");
+		  ar(Serialization::ActionButton(std::bind(&CRoadObject::EraseVegetation, pObject)), "erase_vegetation", "^Erase Vegetation");
+		  ar.closeBlock();
 		}
 	});
 }
@@ -450,7 +450,7 @@ void CRoadObject::Display(DisplayContext& dc)
 				dc.SetFreezeColor();
 			else
 				dc.SetColor(GetColor());
-			col = GetColor();
+			col = CMFCUtils::ColorBToColorRef(GetColor());
 		}
 
 		DrawRoadObject(dc, col);
@@ -834,7 +834,6 @@ void CRoadObject::UpdateHighlightPassState(bool bSelected, bool bHighlighted)
 	}
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetPhysics(bool isPhysics)
 {
@@ -858,10 +857,10 @@ void CRoadObject::SetPhysics(bool isPhysics)
 class CRoadObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_ROAD; };
-	const char*    ClassName()         { return "Road"; };
-	const char*    Category()          { return "Misc"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CRoadObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_ROAD; };
+	const char*    ClassName()       { return "Road"; };
+	const char*    Category()        { return "Misc"; };
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CRoadObject); };
 };
 
 REGISTER_CLASS_DESC(CRoadObjectClassDesc);

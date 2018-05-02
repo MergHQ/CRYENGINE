@@ -1,4 +1,6 @@
+#include <CryEntitySystem/IEntitySystem.h>
 #include <CryPhysics/physinterface.h>
+#include <CryRenderer/IRenderer.h>
 #include <array>
 
 // Example of how we can cast a ray through the physical world and receive hit information

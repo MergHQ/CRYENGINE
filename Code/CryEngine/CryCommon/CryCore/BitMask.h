@@ -106,7 +106,7 @@ template<class Data, int MaxSize> struct bitmask_t
 	template<class Data1> bitmask_t(bitmask_t<Data1, MaxSize>&& src) { bmcopy(src.data, data); }
 	template<class Data1> bitmask_t& operator=(const bitmask_t<Data1, MaxSize>& src) { bmcopy(src.data, data); return *this; }
 
-	bool                             operator!() const                               { int i, j; for (i = j = 0; i < data.getsize(); j |= data[i++]) ; return !j; }
+	bool                             operator!() const                               { int j=0; for (int i = 0; i < data.getsize();) j |= data[i++]; return !j; }
 	bool                             operator!=(int) const                           { return !!*this; } //!< Should only be used to compare with 0.
 	bitmask_t&                       operator<<=(int shift)                          { return *this = *this << shift; }
 	bitmask_t&                       operator<<=(uint shift)                         { return *this = *this << (int)shift; }

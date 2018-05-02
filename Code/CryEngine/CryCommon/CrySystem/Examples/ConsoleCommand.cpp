@@ -1,3 +1,4 @@
+#include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>
 
 // The function that will be executed with the command

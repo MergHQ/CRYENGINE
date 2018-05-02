@@ -373,23 +373,23 @@ class IManager;
 
 //====================================================================
 // Draw shaders flags (EF_EndEf3d)
-enum EShaderRenderingFlags
+enum EShaderRenderingFlags : uint32
 {
-	SHDF_ALLOWHDR           = BIT(0),
-	SHDF_CUBEMAPGEN         = BIT(1),
-	SHDF_ZPASS              = BIT(2),
-	SHDF_STEREO_LEFT_EYE    = BIT(3),
-	SHDF_STEREO_RIGHT_EYE   = BIT(4),
-	SHDF_ALLOWPOSTPROCESS   = BIT(5),
-	SHDF_BILLBOARDS         = BIT(6),
-	SHDF_ALLOW_AO           = BIT(8),
-	SHDF_ALLOW_WATER        = BIT(9),
-	SHDF_NOASYNC            = BIT(10),
-	SHDF_NO_DRAWNEAR        = BIT(11),
-	SHDF_NO_DRAWCAUSTICS    = BIT(14),
-	SHDF_NO_SHADOWGEN       = BIT(15),
-	SHDF_SECONDARY_VIEWPORT = BIT(16),
-	SHDF_FORWARD_MINIMAL    = BIT(17),
+	SHDF_ALLOWHDR           = BIT32(0),
+	SHDF_CUBEMAPGEN         = BIT32(1),
+	SHDF_ZPASS              = BIT32(2),
+	SHDF_STEREO_LEFT_EYE    = BIT32(3),
+	SHDF_STEREO_RIGHT_EYE   = BIT32(4),
+	SHDF_ALLOWPOSTPROCESS   = BIT32(5),
+	SHDF_BILLBOARDS         = BIT32(6),
+	SHDF_ALLOW_AO           = BIT32(8),
+	SHDF_ALLOW_WATER        = BIT32(9),
+	SHDF_NOASYNC            = BIT32(10),
+	SHDF_NO_DRAWNEAR        = BIT32(11),
+	SHDF_NO_DRAWCAUSTICS    = BIT32(14),
+	SHDF_NO_SHADOWGEN       = BIT32(15),
+	SHDF_SECONDARY_VIEWPORT = BIT32(16),
+	SHDF_FORWARD_MINIMAL    = BIT32(17),
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -448,19 +448,19 @@ const float VIRTUAL_SCREEN_HEIGHT = 600.0f;
 // Note: Do not concatenate!
 enum ColorMask
 {
-	GS_NOCOLMASK_NONE				= 0,
-	GS_NOCOLMASK_R					= 0x00001000,
-	GS_NOCOLMASK_G					= 0x00002000,
-	GS_NOCOLMASK_B					= 0x00003000,
-	GS_NOCOLMASK_A					= 0x00004000,
-	GS_NOCOLMASK_GBA				= 0x00005000,
-	GS_NOCOLMASK_RBA				= 0x00006000,
-	GS_NOCOLMASK_RGA				= 0x00007000,
-	GS_NOCOLMASK_RGB				= 0x00008000,
-	GS_NOCOLMASK_RGBA				= 0x00009000,
-	GS_NOCOLMASK_GBUFFER_OVERLAY	= 0x0000A000,
+	GS_NOCOLMASK_NONE               = 0,
+	GS_NOCOLMASK_R                  = 0x00001000,
+	GS_NOCOLMASK_G                  = 0x00002000,
+	GS_NOCOLMASK_B                  = 0x00003000,
+	GS_NOCOLMASK_A                  = 0x00004000,
+	GS_NOCOLMASK_GBA                = 0x00005000,
+	GS_NOCOLMASK_RBA                = 0x00006000,
+	GS_NOCOLMASK_RGA                = 0x00007000,
+	GS_NOCOLMASK_RGB                = 0x00008000,
+	GS_NOCOLMASK_RGBA               = 0x00009000,
+	GS_NOCOLMASK_GBUFFER_OVERLAY    = 0x0000A000,
 
-	GS_NOCOLMASK_COUNT				= 0x0000B000,
+	GS_NOCOLMASK_COUNT              = 0x0000B000,
 };
 static_assert(GS_NOCOLMASK_COUNT <= GS_COLMASK_MASK, "Exceeded count limit of possible color masks (16)");
 
@@ -634,26 +634,26 @@ public:
 #define FRT_CLEAR                       (FRT_CLEAR_COLOR | FRT_CLEAR_DEPTH | FRT_CLEAR_STENCIL)
 
 //! Flags used in DrawText function.
-enum EDrawTextFlags
+enum EDrawTextFlags : uint32
 {
 	eDrawText_Default,
-	eDrawText_Center         = BIT(0),  //!< Centered alignment, otherwise right or left.
-	eDrawText_Right          = BIT(1),  //!< Right alignment, otherwise center or left.
-	eDrawText_CenterV        = BIT(2),  //!< Center vertically, oterhwise top.
-	eDrawText_Bottom         = BIT(3),  //!< Bottom alignment.
+	eDrawText_Center         = BIT32(0),  //!< Centered alignment, otherwise right or left.
+	eDrawText_Right          = BIT32(1),  //!< Right alignment, otherwise center or left.
+	eDrawText_CenterV        = BIT32(2),  //!< Center vertically, oterhwise top.
+	eDrawText_Bottom         = BIT32(3),  //!< Bottom alignment.
 
-	eDrawText_2D             = BIT(4),  //!< 3-component vector is used for xy screen position, otherwise it's 3d world space position.
+	eDrawText_2D             = BIT32(4),  //!< 3-component vector is used for xy screen position, otherwise it's 3d world space position.
 
-	eDrawText_FixedSize      = BIT(5),  //!< Font size is defined in the actual pixel resolution, otherwise it's in the virtual 800x600.
-	eDrawText_800x600        = BIT(6),  //!< Position are specified in the virtual 800x600 resolution, otherwise coordinates are in pixels.
+	eDrawText_FixedSize      = BIT32(5),  //!< Font size is defined in the actual pixel resolution, otherwise it's in the virtual 800x600.
+	eDrawText_800x600        = BIT32(6),  //!< Position are specified in the virtual 800x600 resolution, otherwise coordinates are in pixels.
 
-	eDrawText_Monospace      = BIT(7),  //!< Non proportional font rendering (Font width is same for all characters).
+	eDrawText_Monospace      = BIT32(7),  //!< Non proportional font rendering (Font width is same for all characters).
 
-	eDrawText_Framed         = BIT(8),  //!< Draw a transparent, rectangular frame behind the text to ease readability independent from the background.
+	eDrawText_Framed         = BIT32(8),  //!< Draw a transparent, rectangular frame behind the text to ease readability independent from the background.
 
-	eDrawText_DepthTest      = BIT(9),  //!< Text should be occluded by world geometry using the depth buffer.
-	eDrawText_IgnoreOverscan = BIT(10), //!< Ignore the overscan borders, text should be drawn at the location specified.
-	eDrawText_LegacyBehavior = BIT(11)  //!< Reserved for internal system use.
+	eDrawText_DepthTest      = BIT32(9),  //!< Text should be occluded by world geometry using the depth buffer.
+	eDrawText_IgnoreOverscan = BIT32(10), //!< Ignore the overscan borders, text should be drawn at the location specified.
+	eDrawText_LegacyBehavior = BIT32(11)  //!< Reserved for internal system use.
 };
 
 // Debug stats/views for Partial resolves
@@ -948,6 +948,8 @@ struct IRenderer//: public IRendererCallbackServer
 
 		EViewportType type              = eViewportType_Default;
 		uint16 renderFlags              = FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL;
+
+		bool vsync                      = true;
 	};
 
 	virtual ~IRenderer(){}

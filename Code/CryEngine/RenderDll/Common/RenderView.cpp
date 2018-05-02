@@ -706,7 +706,7 @@ void CRenderView::SetClipVolumeBlendInfo(const IClipVolume* pClipVolume, int ble
 
 	SDeferredClipVolume& volume = m_clipVolumes[nClipVolumeIndex];
 
-	SDeferredClipVolume::BlendInfo emptyBlendInfo = { -1, Vec4(ZERO) };
+	SDeferredClipVolume::BlendInfo emptyBlendInfo = { std::numeric_limits<uint8>::max(), Vec4(ZERO) };
 	std::fill(volume.blendInfo, volume.blendInfo + SDeferredClipVolume::MaxBlendInfoCount, emptyBlendInfo);
 
 	for (int i = 0; i < blendInfoCount; ++i)

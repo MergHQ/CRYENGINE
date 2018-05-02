@@ -126,9 +126,9 @@ struct IPlatformOS
 {
 	virtual const char* GetPlatformName() const = 0;
 
-	enum ECreateFlags
+	enum ECreateFlags : uint32
 	{
-		eCF_EarlyCorruptionDetected = BIT(1)
+		eCF_EarlyCorruptionDetected = BIT32(1)
 	};
 
 	enum

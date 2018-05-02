@@ -510,11 +510,11 @@ private:
 //---------------------------------------------------------------------------------------------------------
 struct SFragmentBlend
 {
-	enum EFlags
+	enum EFlags : uint8
 	{
-		Cyclic = BIT(0),
-		CycleLocked = BIT(1),
-		ExitTransition = BIT(2)
+		Cyclic = BIT8(0),
+		CycleLocked = BIT8(1),
+		ExitTransition = BIT8(2)
 	};
 
 	SFragmentBlend()
@@ -551,10 +551,10 @@ typedef TTagSortedList<ActionScopes> TTagListActionScope;
 
 struct SFragmentDef
 {
-	enum EFlags
+	enum EFlags : uint8
 	{
-		PERSISTENT = BIT(0),
-		AUTO_REINSTALL_BEST_MATCH = BIT(1)
+		PERSISTENT = BIT8(0),
+		AUTO_REINSTALL_BEST_MATCH = BIT8(1)
 	};
 
 	SFragmentDef()
@@ -831,12 +831,12 @@ struct SBlendQueryResult
 
 struct SBlendQuery
 {
-	enum EFlags
+	enum EFlags : uint32
 	{
-		fromInstalled = BIT(0),
-		toInstalled = BIT(1),
-		higherPriority = BIT(2),
-		noTransitions = BIT(3)
+		fromInstalled = BIT32(0),
+		toInstalled = BIT32(1),
+		higherPriority = BIT32(2),
+		noTransitions = BIT32(3)
 	};
 
 	SBlendQuery()
@@ -1078,13 +1078,13 @@ public:
 	bool GetParam(uint32 paramNameCRC, PODTYPE& value) const;
 };
 
-enum EActionControllerFlags
+enum EActionControllerFlags : uint32
 {
-	AC_PausedUpdate = BIT(0),
-	AC_DebugDraw = BIT(1),
-	AC_DumpState = BIT(2),
-	AC_IsInUpdate = BIT(3),
-	AC_NoTransitions = BIT(4),
+	AC_PausedUpdate = BIT32(0),
+	AC_DebugDraw = BIT32(1),
+	AC_DumpState = BIT32(2),
+	AC_IsInUpdate = BIT32(3),
+	AC_NoTransitions = BIT32(4),
 };
 
 enum EActionFailure
@@ -1246,11 +1246,11 @@ public:
 	virtual const SAnimationContext& GetContext() const = 0;
 
 	virtual void                     Pause() = 0;
-	enum EResumeFlags
+	enum EResumeFlags : uint32
 	{
-		ERF_RestartAnimations = BIT(0),
-		ERF_RestoreLoopingAnimationTime = BIT(1),
-		ERF_RestoreNonLoopingAnimationTime = BIT(2),
+		ERF_RestartAnimations = BIT32(0),
+		ERF_RestoreLoopingAnimationTime = BIT32(1),
+		ERF_RestoreNonLoopingAnimationTime = BIT32(2),
 
 		ERF_Default = ERF_RestartAnimations | ERF_RestoreLoopingAnimationTime | ERF_RestoreNonLoopingAnimationTime
 	};
@@ -1384,21 +1384,21 @@ public:
 	// FragmentIsOneShot			- This action is a one-shot & so will end itself at the end of the sequence
 	// Stopping								- This action is marked for stopping
 	//---------------------------------------------------------------------------------------------------------
-	enum EFlags
+	enum EFlags : uint32
 	{
-		BlendOut = BIT(0),
-		NoAutoBlendOut = BIT(1),
-		Interruptable = BIT(2),
-		Installing = BIT(4),
-		Started = BIT(5),
-		Requeued = BIT(6),
-		TrumpSelf = BIT(7),
-		Transitioning = BIT(8),
-		PlayingFragment = BIT(9),
-		TransitioningOut = BIT(10),
-		TransitionPending = BIT(11),
-		FragmentIsOneShot = BIT(12),
-		Stopping = BIT(13),
+		BlendOut = BIT32(0),
+		NoAutoBlendOut = BIT32(1),
+		Interruptable = BIT32(2),
+		Installing = BIT32(4),
+		Started = BIT32(5),
+		Requeued = BIT32(6),
+		TrumpSelf = BIT32(7),
+		Transitioning = BIT32(8),
+		PlayingFragment = BIT32(9),
+		TransitioningOut = BIT32(10),
+		TransitionPending = BIT32(11),
+		FragmentIsOneShot = BIT32(12),
+		Stopping = BIT32(13),
 		PlaybackStateMask = (Transitioning | PlayingFragment | TransitioningOut)
 	};
 

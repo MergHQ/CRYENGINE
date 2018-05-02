@@ -24,7 +24,13 @@
 %ignore SMinMaxBox::ViewFrustumCull;
 %ignore IRenderer::SDrawCallCountInfo::Update;
 %csconstvalue("(uint)0x80000000") FT_USAGE_UAV_RWTEXTURE;
+
 %typemap(csbase) ETextureFlags "uint"
+%typemap(csbase) IFlashPlayer::ECategory "uint"
+%typemap(csbase) eDynamicLightFlags "uint"
+%typemap(csbase) EHWSkinningRuntimeFlags "uint"
+%typemap(csbase) EShaderRenderingFlags "uint"
+%typemap(csbase) EDrawTextFlags "uint"
 
 %include "../../../../CryEngine/CryCommon/CryRenderer/IImage.h"
 %include "../../../../CryEngine/CryCommon/CryRenderer/ITexture.h"
@@ -104,7 +110,7 @@ public:
 %include "../../../../CryEngine/CryCommon/CryRenderer/IRenderAuxGeom.h"
 %include "../../../../CryEngine/CryCommon/CryRenderer/RenderElements/CREMesh.h"
 %include "../../../../CryEngine/CryCommon/CryRenderer/IColorGradingController.h"
-%typemap(csbase) IFlashPlayer::ECategory "uint"
+
 %include "../../../../CryEngine/CryCommon/CrySystem/Scaleform/IFlashPlayer.h"
 %include "../../../../CryEngine/CryCommon/CryRenderer/IStereoRenderer.h"
 %include "../../../../CryEngine/CryCommon/CryRenderer/IMeshBaking.h"

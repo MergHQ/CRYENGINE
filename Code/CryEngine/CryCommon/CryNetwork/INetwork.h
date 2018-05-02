@@ -8,6 +8,7 @@
 	#define CRYNETWORK_API DLL_IMPORT
 #endif
 
+#include <CryCore/Platform/platform.h>
 #include <CryNetwork/ISerialize.h> // <> required for Interfuscator
 #include <CrySystem/TimeValue.h>
 #include <CrySystem/ITimer.h>           // <> required for Interfuscator
@@ -752,9 +753,9 @@ struct INetwork
 		NETWORK_MT_PRIORITY_HIGH,
 	};
 
-	enum ENetContextCreationFlags
+	enum ENetContextCreationFlags : uint32
 	{
-		eNCCF_Multiplayer = BIT(0)
+		eNCCF_Multiplayer = BIT32(0)
 	};
 
 	// <interfuscator:shuffle>

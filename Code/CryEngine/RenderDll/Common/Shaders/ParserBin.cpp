@@ -2150,7 +2150,7 @@ int CParserBin::GetNextToken(uint32& nStart, ETokenStorageClass& nTokenStorageCl
 		{
 			m_CurFrame.m_nCurToken = nStart;
 			// Check for function
-			uint32 nLastTok = nStart;
+			int32 nLastTok = nStart;
 			uint32 nFnName;
 			int nBrIndex = -1;
 			if (m_CurFrame.m_nCurToken + 4 < m_CurFrame.m_nLastToken)
@@ -2165,10 +2165,10 @@ int CParserBin::GetNextToken(uint32& nStart, ETokenStorageClass& nTokenStorageCl
 					switch (nFnRet)
 					{
 					case eT_br_sq_1: 
-					nCount++;
-					nLastTok = FindToken(nCur, m_CurFrame.m_nLastToken, eT_br_sq_2);
+						nCount++;
+						nLastTok = FindToken(nCur, m_CurFrame.m_nLastToken, eT_br_sq_2);
 						if (nLastTok < 0)
-					{
+						{
 							Warning("Unmatched [");
 							assert(0);
 							nLastTok = nCur;
@@ -2193,9 +2193,9 @@ int CParserBin::GetNextToken(uint32& nStart, ETokenStorageClass& nTokenStorageCl
 						continue;
 
 					case eT_skip:
-							pTokens[nLastTok + 1] = eT_skip;
-							nLastTok += 2;
-							nFnRet = pTokens[nLastTok];
+						pTokens[nLastTok + 1] = eT_skip;
+						nLastTok += 2;
+						nFnRet = pTokens[nLastTok];
 						nCur = nLastTok + 1;
 						continue;
 					}

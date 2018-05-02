@@ -21,8 +21,8 @@ public:
 	virtual bool                      Initialize(int initialWidth, int initialHeight) final;
 	virtual void                      Shutdown() final;
 	virtual void                      OnResolutionChanged(int newWidth, int newHeight) final;
-	virtual void                      ReleaseBuffers() final;
-	virtual void                      PrepareFrame(int frameId) final;
+	virtual void                      ReleaseBuffers() final {}
+	virtual void                      PrepareFrame(uint64_t frameId) final;
 	virtual void                      SubmitFrame() final;
 	// TODO
 	virtual RenderLayer::CProperties*  GetQuadLayerProperties(RenderLayer::EQuadLayers id) final   { return nullptr; }
@@ -51,8 +51,6 @@ private:
 
 	void CreateTextureSwapSets(uint32 width, uint32 height, uint32 swapSetCount);
 	void ReleaseTextureSwapSets();
-
-	void RestoreDeviceStateAfterFrameSubmit();
 
 };
 

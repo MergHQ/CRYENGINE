@@ -117,7 +117,6 @@ CBrushObject::CBrushObject()
 	m_pVarObject->AddVariable(mv_giMode, sVarName_GIMode, "Global Illumination", functor(*this, &CBrushObject::OnRenderVarChange));
 	m_pVarObject->AddVariable(mv_rainOccluder, sVarName_RainOccluder, functor(*this, &CBrushObject::OnRenderVarChange));
 	m_pVarObject->AddVariable(mv_registerByBBox, sVarName_RegisterByBBox, functor(*this, &CBrushObject::OnRenderVarChange));
-	
 	m_pVarObject->AddVariable(mv_dynamicDistanceShadows, sVarName_DynamicDistanceShadows, functor(*this, &CBrushObject::OnRenderVarChange));
 	m_pVarObject->AddVariable(mv_hideable, sVarName_Hideable, functor(*this, &CBrushObject::OnRenderVarChange));
 	m_pVarObject->AddVariable(mv_ratioLOD, sVarName_LodRatio, functor(*this, &CBrushObject::OnRenderVarChange));
@@ -172,7 +171,7 @@ void CBrushObject::FreeGameData()
 //////////////////////////////////////////////////////////////////////////
 bool CBrushObject::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(RGB(255, 255, 255));
+	SetColor(ColorB(255, 255, 255));
 
 	if (IsCreateGameObjects())
 	{
@@ -1074,6 +1073,11 @@ CEdGeometry* CBrushObject::GetGeometry()
 {
 	// Return our geometry.
 	return m_pGeometry;
+}
+
+void CBrushObject::SetGeometryFile(const string& geometryFile)
+{
+	mv_geometryFile = geometryFile;
 }
 
 //////////////////////////////////////////////////////////////////////////

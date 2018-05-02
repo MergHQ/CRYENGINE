@@ -21,7 +21,24 @@
 %ignore I3DEngine::SerializeState;
 %ignore I3DEngine::SaveStatObj;
 %ignore I3DEngine::LoadStatObj;
+
+%typemap(csbase) ERenderNodeFlags "ulong"
 %typemap(csbase) EMaterialLayerFlags "uint"
+%typemap(csbase) EMaterialCopyFlags "uint"
+%typemap(csbase) ESurfaceTypeFlags "uint"
+%typemap(csbase) IStreamEngine::EFlags "uint"
+%typemap(csbase) IClipVolume::EClipVolumeFlags "uint"
+%typemap(csbase) ISegmentsManager::ESegmentLoadFlags "uint"
+%typemap(csbase) I3DEngine::EDebugDrawListAssetTypes "uint"
+%typemap(csbase) SRendItemSorter::EDeferredPreprocess "uint"
+%typemap(csbase) SRenderingPassInfo::ESkipRenderingFlags "uint"
+%typemap(csbase) CNodeCGF::EPhysicalizeFlags "uint"
+%typemap(csbase) IRenderNode::EInternalFlags "byte"
+%typemap(csbase) IRenderNode::EInternalFlags "byte"
+%typemap(csbase) IMaterialManager::ELoadingFlags "uint"
+%typemap(csbase) IStatObj::ELoadingFlags "uint"
+%typemap(csbase) EStaticObjectFlags "uint"
+
 %template(IMaterialPtr) _smart_ptr<IMaterial>;
 %template(IStatObjPtr) _smart_ptr<IStatObj>;
 %template(IReadStreamPtr) _smart_ptr<IReadStream>;
@@ -62,8 +79,6 @@
 %ignore PQLog::blendPQ;
 %include "../../../../CryEngine/CryCommon/Cry3DEngine/CGF/CGFContent.h"
 %include "../../../../CryEngine/CryCommon/Cry3DEngine/CGF/IChunkFile.h"
-
-%typemap(csbase) ERenderNodeFlags "long"
 
 %include "../../../../CryEngine/CryCommon/Cry3DEngine/IRenderNode.h"
 %include "../../../../CryEngine/CryCommon/CryPhysics/IDeferredCollisionEvent.h"

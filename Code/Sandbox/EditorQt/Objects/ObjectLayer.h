@@ -24,7 +24,7 @@ class SANDBOX_API CObjectLayer : public IObjectLayer, public _i_reference_target
 public:
 	static CObjectLayer* Create(const char* szName, EObjectLayerType type);
 
-	static void ForEachLayerOf(const std::vector<CBaseObject*>& objects, std::function<void(CObjectLayer*, const std::vector<CBaseObject*>&)> func);
+	static void          ForEachLayerOf(const std::vector<CBaseObject*>& objects, std::function<void(CObjectLayer*, const std::vector<CBaseObject*>&)> func);
 
 	//! Set layer name.
 	void          SetName(const string& name, bool IsUpdateDepends = false);
@@ -44,13 +44,14 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool IsVisible(bool isRecursive = true) const override;
 	virtual bool IsFrozen(bool isRecursive = true) const override;
-	bool         IsExportable() const     { return m_exportable; };
-	bool         IsExporLayerPak() const  { return m_exportLayerPak; };
-	bool         IsDefaultLoaded() const  { return m_defaultLoaded; };
-	bool         HasPhysics() const       { return m_havePhysics; }
-	int          GetSpecs() const         { return m_specs; }
-	COLORREF     GetColor() const;
-	bool         UsesDefaultColor() const { return m_isDefaultColor; }
+	bool         IsExportable() const         { return m_exportable; };
+	bool         IsExporLayerPak() const      { return m_exportLayerPak; };
+	bool         IsDefaultLoaded() const      { return m_defaultLoaded; };
+	bool         HasPhysics() const           { return m_havePhysics; }
+	int          GetSpecs() const             { return m_specs; }
+	ColorB       GetColor() const;
+	bool         IsUsingColorOverride() const { return m_useColorOverride; }
+	void         UseColorOverride(bool useColorOverride);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Set layer status.
@@ -61,8 +62,8 @@ public:
 	void         SetExportLayerPak(bool isExportLayerPak) { m_exportLayerPak = isExportLayerPak; };
 	void         SetDefaultLoaded(bool isDefaultLoaded)   { m_defaultLoaded = isDefaultLoaded; };
 	void         SetHavePhysics(bool isHavePhysics)       { m_havePhysics = isHavePhysics; }
-	void         SetSpecs(int specs)                     { m_specs = specs; }
-	void         SetColor(COLORREF color);
+	void         SetSpecs(int specs)                      { m_specs = specs; }
+	void         SetColor(ColorB color, bool useColorOverride);
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Save/Load layer to/from xml node.
@@ -88,7 +89,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual void SetModified(bool isModified = true) override;
-	bool IsModified() { return m_isModified; }
+	bool         IsModified() { return m_isModified; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// User interface support.
@@ -103,9 +104,12 @@ public:
 	//! Returns the filepath of this layer. The path may not exist if the level has not been saved yet.
 	string              GetLayerFilepath();
 
-	EObjectLayerType    GetLayerType() const                     { return m_layerType; }
+	EObjectLayerType    GetLayerType() const { return m_layerType; }
 
-	std::vector<string> GetAttacments()                          { return m_files; };
+	std::vector<string> GetAttacments()
+	{
+		return m_files;
+	};
 
 protected:
 	friend class CObjectLayerManager;
@@ -148,8 +152,8 @@ protected:
 	bool m_isModified;
 
 	//! Background color in list box
-	COLORREF m_color;
-	bool     m_isDefaultColor;
+	ColorB m_color;
+	bool   m_useColorOverride;
 
 	// List of child layers.
 	typedef std::vector<TSmartPtr<CObjectLayer>> ChildLayers;

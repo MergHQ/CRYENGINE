@@ -9,6 +9,8 @@
 #include "Objects/InspectorWidgetCreator.h"
 #include <CryEntitySystem/IEntity.h>
 
+#include "Util/MFCUtil.h"
+
 #include <Serialization/Decorators/EntityLink.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <Serialization/Decorators/EditToolButton.h>
@@ -371,7 +373,7 @@ bool CAreaBox::Init(CBaseObject* prev, const string& file)
 {
 	m_bIgnoreGameUpdate = 1;
 
-	SetColor(RGB(0, 0, 255));
+	SetColor(ColorB(0, 0, 255));
 	bool res = CEntityObject::Init(prev, file);
 
 	if (m_pEntity != nullptr)
@@ -555,13 +557,13 @@ void CAreaBox::Display(DisplayContext& dc)
 		if (IsSelected())
 		{
 			wireColor = dc.GetSelectedColor();
-			solidColor = GetColor();
+			solidColor = CMFCUtils::ColorBToColorRef(GetColor());
 			wireOffset = -0.1f;
 		}
 		else
 		{
-			wireColor = GetColor();
-			solidColor = GetColor();
+			wireColor = CMFCUtils::ColorBToColorRef(GetColor());
+			solidColor = CMFCUtils::ColorBToColorRef(GetColor());
 		}
 
 		//dc.renderer->SetCullMode( R_CULL_DISABLE );
@@ -633,7 +635,7 @@ void CAreaBox::Display(DisplayContext& dc)
 		if (IsSelected())
 			oWireColor = dc.GetSelectedColor();
 		else
-			oWireColor = GetColor();
+			oWireColor = CMFCUtils::ColorBToColorRef(GetColor());
 
 		dc.SetColor(oWireColor);
 

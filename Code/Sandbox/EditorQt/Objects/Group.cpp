@@ -12,7 +12,7 @@
 #include "EntityObject.h"
 #include "Objects/ObjectLayerManager.h"
 #include <algorithm>
-
+#include "Util/MFCUtil.h"
 #include <Grid.h>
 #include <Serialization/Decorators/EditToolButton.h>
 #include <Serialization/Decorators/EditorActionButton.h>
@@ -304,7 +304,7 @@ CGroup::CGroup()
 	m_bbox.min = m_bbox.max = Vec3(0, 0, 0);
 	m_bBBoxValid = false;
 	m_bUpdatingPivot = false;
-	SetColor(RGB(0, 255, 0)); // Green
+	SetColor(ColorB(0, 255, 0)); // Green
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -362,7 +362,6 @@ void CGroup::ForEachParentOf(const std::vector<CBaseObject*>& objects, std::func
 	}
 }
 
-
 bool CGroup::CanCreateFrom(std::vector<CBaseObject*>& objects)
 {
 	if (objects.empty())
@@ -377,7 +376,7 @@ bool CGroup::CanCreateFrom(std::vector<CBaseObject*>& objects)
 		{
 			string message;
 			message.Format("The objects you are trying to group objects from different layers. All objects will be moved to %s layer\n\n"
-				"Do you want to continue?", pDestLayer->GetName());
+			               "Do you want to continue?", pDestLayer->GetName());
 
 			if (QDialogButtonBox::StandardButton::Yes != CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr(message)))
 			{
@@ -539,7 +538,7 @@ void CGroup::RemoveMember(CBaseObject* pMember, bool keepPos, bool placeOnRoot)
 void CGroup::RemoveMembers(std::vector<CBaseObject*>& members, bool keepPos /*= true*/, bool placeOnRoot /*= false*/)
 {
 	LOADING_TIME_PROFILE_SECTION
-	FilterOutNonMembers(members);
+	  FilterOutNonMembers(members);
 
 	CBaseObject* pPrefab = GetPrefab();
 	if (pPrefab)
@@ -711,7 +710,7 @@ void CGroup::Display(DisplayContext& dc)
 
 	bool hideNames = dc.flags & DISPLAY_HIDENAMES;
 
-	DrawDefault(dc, GetColor());
+	DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 
 	dc.PushMatrix(GetWorldTM());
 
@@ -724,7 +723,9 @@ void CGroup::Display(DisplayContext& dc)
 		dc.DrawWireBox(boundbox.min, boundbox.max);
 		dc.DepthTestOff();
 		dc.DepthWriteOff();
-		dc.SetColor(GetColor(), 0.15f);
+		ColorB color = GetColor();
+		color.a = 38;
+		dc.SetColor(color);
 		dc.DrawSolidBox(boundbox.min, boundbox.max);
 		dc.DepthWriteOn();
 		dc.DepthTestOn();
@@ -755,22 +756,22 @@ void CGroup::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 			if (ar.openBlock("group", "<Group"))
 			{
 			  ar(Serialization::ActionButton([]()
-			  {
-				  GetIEditor()->GetICommandManager()->Execute("group.ungroup");
+				{
+					GetIEditor()->GetICommandManager()->Execute("group.ungroup");
 			  }), "ungroup", "^Ungroup");
 			  if (pObject->IsOpen())
 			  {
-				  ar(Serialization::ActionButton([]()
-				  {
-					  GetIEditor()->GetICommandManager()->Execute("group.close");
-				  }), "close", "^Close");
+			    ar(Serialization::ActionButton([]()
+					{
+						GetIEditor()->GetICommandManager()->Execute("group.close");
+			    }), "close", "^Close");
 			  }
 			  else
 			  {
-				  ar(Serialization::ActionButton([]()
-				  {
-					  GetIEditor()->GetICommandManager()->Execute("group.open");
-				  }), "open", "^Open");
+			    ar(Serialization::ActionButton([]()
+					{
+						GetIEditor()->GetICommandManager()->Execute("group.open");
+			    }), "open", "^Open");
 			  }
 			  ar.closeBlock();
 			}
@@ -907,7 +908,7 @@ void CGroup::Close()
 
 void CGroup::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 {
-	// TODO: We need a way of creating objects outside the context of the level/layer. 
+	// TODO: We need a way of creating objects outside the context of the level/layer.
 	// That way we only need to handle adding the final created object and ignore all child events before final creation
 	auto dispatcher = GetIEditor()->GetObjectManager()->GetBatchProcessDispatcher();
 	dispatcher.Start({ this }, true);
@@ -1207,7 +1208,7 @@ void CGroup::DetachAll(bool keepPos /*= true*/, bool placeOnRoot /*= false*/)
 void CGroup::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos /*= true*/, bool shouldInvalidateTM /*= true*/)
 {
 	using namespace Private_Group;
-	
+
 	// Make sure there's really objects to attach
 	if (objects.empty())
 		return;

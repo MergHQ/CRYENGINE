@@ -29,11 +29,26 @@
 
 %ignore IEntitySystemEngineModule;
 
+
+%typemap(csbase) IEntitySystem::SinkEventSubscriptions "uint"
+%typemap(csbase) EEntityAspects "uint"
+%typemap(csbase) EEntityFlags "uint"
+%typemap(csbase) EEntityXFormFlags "uint"
+%typemap(csbase) EEntitySlotFlags "ushort"
+%typemap(csbase) EEntityComponentFlags "uint"
+%typemap(csbase) IEntityAreaComponent::EAreaComponentFlags "uint"
+%typemap(csbase) EEntityClassFlags "uint"
+%typemap(csbase) EEntityHideFlags "uint"
+%typemap(csbase) EEntityFlagsExtended "byte"
+%typemap(csbase) EEntitySerializeFlags "uint"
+%typemap(csbase) IEntity::EAttachmentFlags "uint"
+%typemap(csbase) ESpecType "uint"
+
 %include "../../../CryEngine/CryCommon/CryEntitySystem/IEntityBasicTypes.h"
 %import "../../../../CryEngine/CryCommon/CryNetwork/INetwork.h"
 
 %csconstvalue("0xFFFFFFFF") eEA_All;
-%typemap(csbase) EEntityAspects "uint"
+
 %ignore GameWarning;
 
 %ignore GetType;
@@ -100,7 +115,7 @@
 //(maybe) TODO: %include "../../../CryEngine/CryCommon/IEntityRenderState.h"
 //(maybe) TODO: %include "../../../CryEngine/CryCommon/IEntityRenderState_info.h"
 //TODO: %include "../../../CryEngine/CryCommon/IEntitySerialize.h"
-%typemap(csbase) IEntitySystem::SinkEventSubscriptions "uint"
+
 %ignore CreateEntitySystem;
 %feature("director") IEntityEventListener;
 %feature("director") IEntitySystemSink;

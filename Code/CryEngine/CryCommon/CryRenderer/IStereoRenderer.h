@@ -190,7 +190,7 @@ struct IHmdRenderer
 	virtual void OnResolutionChanged(int newWidth, int newHeight) = 0;
 
 	// To be called from render thread when preparing a render frame, might block.
-	virtual void PrepareFrame(int frameId) = 0;
+	virtual void PrepareFrame(uint64_t frameId) = 0;
 	// Submits the frame to the Hmd device, to be called from render thread.
 	virtual void SubmitFrame() = 0;
 

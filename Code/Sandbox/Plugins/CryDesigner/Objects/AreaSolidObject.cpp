@@ -43,7 +43,7 @@ AreaSolidObject::AreaSolidObject()
 
 	CBaseObject::SetMaterial("%EDITOR%/Materials/areasolid");
 	m_pSizer = GetIEditor()->GetSystem()->CreateSizer();
-	SetColor(RGB(0, 0, 255));
+	SetColor(ColorB(0, 0, 255));
 
 	m_bIgnoreGameUpdate = true;
 }
@@ -154,31 +154,30 @@ void AreaSolidObject::GetLocalBounds(AABB& box)
 		box = AABB(Vec3(0, 0, 0), Vec3(0, 0, 0));
 }
 
-
 void AreaSolidObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CAreaObjectBase::CreateInspectorWidgets(creator);
 
 	creator.AddPropertyTree<AreaSolidObject>("Area Solid", [](AreaSolidObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)
-	{
-		pObject->m_pVarObject->SerializeVariable(&pObject->m_innerFadeDistance, ar);
-		pObject->m_pVarObject->SerializeVariable(&pObject->m_areaId, ar);
-		pObject->m_pVarObject->SerializeVariable(&pObject->m_edgeWidth, ar);
-		pObject->m_pVarObject->SerializeVariable(&pObject->mv_groupId, ar);
-		pObject->m_pVarObject->SerializeVariable(&pObject->mv_priority, ar);
-		pObject->m_pVarObject->SerializeVariable(&pObject->mv_filled, ar);
-
-		if (ar.openBlock("area", "<Area"))
 		{
-			ar(Serialization::ActionButton([=]
-			{
-				GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
+			pObject->m_pVarObject->SerializeVariable(&pObject->m_innerFadeDistance, ar);
+			pObject->m_pVarObject->SerializeVariable(&pObject->m_areaId, ar);
+			pObject->m_pVarObject->SerializeVariable(&pObject->m_edgeWidth, ar);
+			pObject->m_pVarObject->SerializeVariable(&pObject->mv_groupId, ar);
+			pObject->m_pVarObject->SerializeVariable(&pObject->mv_priority, ar);
+			pObject->m_pVarObject->SerializeVariable(&pObject->mv_filled, ar);
 
-				GetIEditor()->SetEditTool("EditTool.AreaSolidTool", false);
-			}), "edit", "^Edit");
-			ar.closeBlock();
-		}
-	});
+			if (ar.openBlock("area", "<Area"))
+			{
+			  ar(Serialization::ActionButton([ = ]
+				{
+					GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
+
+					GetIEditor()->SetEditTool("EditTool.AreaSolidTool", false);
+			  }), "edit", "^Edit");
+			  ar.closeBlock();
+			}
+	  });
 }
 
 void AreaSolidObject::Serialize(CObjectArchive& ar)
@@ -467,10 +466,10 @@ void AreaSolidObject::OnEvent(ObjectEvent event)
 	case EVENT_HIDE_HELPER:
 	case EVENT_OUTOFGAME:
 	case EVENT_SHOW_HELPER:
-	{
-		UpdateHiddenIStatObjState();
-		break;
-	}
+		{
+			UpdateHiddenIStatObjState();
+			break;
+		}
 	}
 }
 
@@ -549,7 +548,6 @@ void AreaSolidObject::OnEntityRemoved(IEntity const* const pIEntity)
 		}
 	}
 }
-
 
 std::vector<EDesignerTool> AreaSolidObject::GetIncompatibleSubtools()
 {

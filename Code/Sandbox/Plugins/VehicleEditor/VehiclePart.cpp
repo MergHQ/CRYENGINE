@@ -4,7 +4,7 @@
 #include "VehiclePart.h"
 
 #include "Viewport.h"
-
+#include "Util/MFCUtil.h"
 #include "VehiclePrototype.h"
 #include "VehicleHelperObject.h"
 #include "VehicleSeat.h"
@@ -185,7 +185,7 @@ void CVehiclePart::Display(DisplayContext& dc)
 	COLORREF wireColor, solidColor;
 	float alpha = 0.4f;
 	wireColor = dc.GetSelectedColor();
-	solidColor = GetColor();
+	solidColor = CMFCUtils::ColorBToColorRef(GetColor());
 
 	// mass box rendering
 	if (GetPartClass() == PARTCLASS_MASS)

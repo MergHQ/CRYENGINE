@@ -4016,7 +4016,7 @@ void CStatObjFoliage::Update(float dt, const CCamera& rCamera)
 	ComputeSkinningTransformations(nThreadID);
 }
 
-void CStatObjFoliage::SetFlags(int flags)
+void CStatObjFoliage::SetFlags(uint flags)
 {
 	if (flags != m_flags)
 	{

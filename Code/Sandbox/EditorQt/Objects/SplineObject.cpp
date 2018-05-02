@@ -2,12 +2,11 @@
 
 #include "StdAfx.h"
 #include "Viewport.h"
-
 #include "SplineObject.h"
 #include "Objects/ObjectLoader.h"
 #include "Objects/InspectorWidgetCreator.h"
 #include "Gizmos/IGizmoManager.h"
-
+#include "Util/MFCUtil.h"
 #include "Serialization/Decorators/EditToolButton.h"
 #include "Controls/DynamicPopupMenu.h"
 
@@ -39,7 +38,7 @@ public:
 	virtual void   Display(DisplayContext& dc) {}
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 
-	bool           IsNeedMoveTool() override                 { return true; }
+	bool           IsNeedMoveTool() override { return true; }
 
 	void           OnSplineEvent(const CBaseObject* pObject, const CObjectEvent& event);
 
@@ -256,8 +255,6 @@ void CEditSplineObjectTool::OnManipulatorEnd(IDisplayViewport* view, ITransformM
 		m_modifying = false;
 	}
 }
-
-
 
 //////////////////////////////////////////////////////////////////////////
 bool CEditSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
@@ -1250,8 +1247,8 @@ void CSplineObject::Display(DisplayContext& dc)
 
 	float fPointSize = isSelected ? 0.005f : 0.0025f;
 
-	COLORREF colLine = GetColor();
-	COLORREF colPoint = GetColor();
+	COLORREF colLine = CMFCUtils::ColorBToColorRef(GetColor());
+	COLORREF colPoint = CMFCUtils::ColorBToColorRef(GetColor());
 
 	const Matrix34& wtm = GetWorldTM();
 
@@ -1322,7 +1319,7 @@ void CSplineObject::Display(DisplayContext& dc)
 			dc.DepthTestOn();
 	}
 
-	DrawDefault(dc, GetColor());
+	DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 }
 
 //////////////////////////////////////////////////////////////////////////

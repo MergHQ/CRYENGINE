@@ -749,9 +749,9 @@ bool CD3D9Renderer::SF_UpdateTexture(int texId, int mipLevel, int numRects, cons
 		const size_t planePitch = rowPitch * pRects[i].height;
 		const SResourceMemoryMapping mapping =
 		{
-			{ sizePixel, rowPitch, planePitch, planePitch }, // src alignment
-			{ pRects[i].dstX, pRects[i].dstY, 0, 0 },     // dst position
-			{ pRects[i].width, pRects[i].height, 1, 1 }   // dst size
+			{ static_cast<UINT>(sizePixel), static_cast<UINT>(rowPitch), static_cast<UINT>(planePitch), static_cast<UINT>(planePitch) }, // src alignment
+			{ pRects[i].dstX, pRects[i].dstY, 0, 0 },        // dst position
+			{ pRects[i].width, pRects[i].height, 1, 1 }      // dst size
 		};
 
 		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pSrc, pDevTex, mapping);
@@ -791,7 +791,10 @@ bool CD3D9Renderer::SF_ClearTexture(int texId, int mipLevel, int numRects, const
 		}
 		else
 		{
-			D3D11_RECT box = { pRects[i].dstX, pRects[i].dstY, pRects[i].dstX + pRects[i].width, pRects[i].dstY + pRects[i].height };
+			D3D11_RECT box = { static_cast<LONG>(pRects[i].dstX),
+							   static_cast<LONG>(pRects[i].dstY),
+							   static_cast<LONG>(pRects[i].dstX + pRects[i].width),
+							   static_cast<LONG>(pRects[i].dstY + pRects[i].height) };
 			CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
 			commandList.GetGraphicsInterface()->ClearSurface(pTexture->GetSurface(0, mipLevel), clearValue, 1, &box);
 		}

@@ -66,7 +66,7 @@ SERIALIZATION_ENUM(OBJTYPE_GEOMCACHE, "geomcache", "Geometry Cache");
 SERIALIZATION_ENUM(OBJTYPE_VOLUMESOLID, "volumesolid", "Volume Solid");
 SERIALIZATION_ENUM_END()
 
-CItemModelAttribute* CLevelLayerModel::GetAttributeForColumn(EObjectColumns column)
+CItemModelAttribute * CLevelLayerModel::GetAttributeForColumn(EObjectColumns column)
 {
 	switch (column)
 	{
@@ -232,14 +232,14 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 				case eObjectColumns_Name:
 					return (const char*)pObject->GetName();
 				case eObjectColumns_Layer:
-				{
-					IObjectLayer* pLayer = pObject->GetLayer();
-					// There are cases where layers might not be set for certain objects yet the model will try and display it
-					// an example of this is when grouping. When grouping, the root object is not attached to any layer to avoid
-					// spamming with meaningless events. When the full group hierarchy is constructed the layer is changed
-					// and children layers are slowly set. At this point the object may have children than are on a null layer
-					return pLayer ? pLayer->GetName().c_str() : "";
-				}
+					{
+						IObjectLayer* pLayer = pObject->GetLayer();
+						// There are cases where layers might not be set for certain objects yet the model will try and display it
+						// an example of this is when grouping. When grouping, the root object is not attached to any layer to avoid
+						// spamming with meaningless events. When the full group hierarchy is constructed the layer is changed
+						// and children layers are slowly set. At this point the object may have children than are on a null layer
+						return pLayer ? pLayer->GetName().c_str() : "";
+					}
 				case eObjectColumns_Type:
 					return Serialization::getEnumDescription<ObjectType>().label(pObject->GetType());
 				case eObjectColumns_TypeDesc:
@@ -305,7 +305,7 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 				return CryIcon("icons:ObjectTypes/Link.ico").pixmap(16, 16, QIcon::Active, pObject->IsSelected() ? QIcon::On : QIcon::Off);
 
 			CObjectClassDesc* const classDesc = pObject->GetClassDesc();
-			if(classDesc == nullptr)
+			if (classDesc == nullptr)
 				return CryIcon("icons:General/Placeholder.ico").pixmap(16, 16, QIcon::Active, pObject->IsSelected() ? QIcon::On : QIcon::Off);
 
 			QString category = classDesc->Category();
@@ -316,7 +316,7 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 				category = "Brush";
 			else if (category == "Static Mesh Entity")
 				category = "Legacy_Entities";
-			
+
 			//Special Case 2: Use specific Group Icon
 			ObjectType objType = classDesc->GetObjectType();
 			if (classDesc->GetObjectType() == ObjectType::OBJTYPE_GROUP)
@@ -338,8 +338,35 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 		}
 		if (index.column() == eObjectColumns_LayerColor)
 		{
-			COLORREF colorRef = m_pLayer->GetColor();
-			return QColor::fromRgb(GetRValue(colorRef), GetGValue(colorRef), GetBValue(colorRef));
+			ColorB colorToUse = m_pLayer->GetColor();
+			CBaseObject* pObject = ObjectFromIndex(index);
+			if (pObject->IsUsingColorOverride())
+			{
+				CBaseObject* pObject = ObjectFromIndex(index);
+				colorToUse = pObject->GetColor();
+			}
+			else
+			{
+				std::pair<bool, ColorB> foundColor = pObject->GetColorOverrideInAncestry();
+				if (foundColor.first)
+				{
+					colorToUse = foundColor.second;
+				}
+				else
+				{
+					CObjectLayer* pLayer = m_pLayer;
+					while (pLayer)
+					{
+						if (pLayer->IsUsingColorOverride())
+						{
+							colorToUse = pLayer->GetColor();
+							break;
+						}
+						pLayer = pLayer->GetParent();
+					}
+				}
+			}
+			return QColor::fromRgb(colorToUse.r, colorToUse.g, colorToUse.b);
 		}
 	case Qt::CheckStateRole:
 		{
@@ -380,16 +407,16 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 			switch (index.column())
 			{
 			case eObjectColumns_LayerColor:
-			{
-				// Force the layer color to take the full height of the item in the tree
-				QRect decorationRect;
-				decorationRect.setX(-3);
-				decorationRect.setY(-4);
-				decorationRect.setWidth(4);
-				decorationRect.setHeight(24);
+				{
+					// Force the layer color to take the full height of the item in the tree
+					QRect decorationRect;
+					decorationRect.setX(-3);
+					decorationRect.setY(-4);
+					decorationRect.setWidth(4);
+					decorationRect.setHeight(24);
 
-				return decorationRect;
-			}
+					return decorationRect;
+				}
 			default:
 				break;
 			}
@@ -513,7 +540,7 @@ bool CLevelLayerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 			// Cannot drag onto self
 			if (object == pTargetObject)
 				return true;
-			
+
 			// If not a group check if it's a valid link target
 			if (!object->CanLinkTo(pTargetObject))
 				return true;
@@ -560,7 +587,7 @@ bool CLevelLayerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 	switch (parentLayer->GetLayerType())
 	{
 	case eObjectLayerType_Terrain:
-		// intentional fall through
+	// intentional fall through
 	case eObjectLayerType_Layer:
 		// layers cannot be dropped on other layers. So the parent has to be
 		// determined and the layers need to be added there
@@ -568,15 +595,15 @@ bool CLevelLayerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 	// intentional fall through
 
 	case eObjectLayerType_Folder:
-	{
-		// do not drop an layer on a layer if it is already a child of it
-		if (std::any_of(layers.begin(), layers.end(), [&](CObjectLayer* layer) { return (parentLayer ? parentLayer->IsChildOf(layer) : false) || layer->GetParent() == parentLayer; }))
 		{
-			return false;
-		}
+			// do not drop an layer on a layer if it is already a child of it
+			if (std::any_of(layers.begin(), layers.end(), [&](CObjectLayer* layer) { return (parentLayer ? parentLayer->IsChildOf(layer) : false) || layer->GetParent() == parentLayer; }))
+			{
+				return false;
+			}
 
-		return QAbstractItemModel::canDropMimeData(pData, action, row, column, parent);
-	}
+			return QAbstractItemModel::canDropMimeData(pData, action, row, column, parent);
+		}
 	default:
 		return false;
 	}
@@ -631,7 +658,7 @@ bool CLevelLayerModel::dropMimeData(const QMimeData* pData, Qt::DropAction actio
 
 		for (auto pObject : toBeAdded)
 			pAttachTo->AddMember(pObject);
-		
+
 		if (toBeLinked.size())
 			pObjectManager->Link(toBeLinked, pTargetObject);
 
@@ -646,36 +673,8 @@ bool CLevelLayerModel::dropMimeData(const QMimeData* pData, Qt::DropAction actio
 	switch (parentLayer->GetLayerType())
 	{
 	case eObjectLayerType_Folder:
-	{
-		CUndo undo("Move Layers");
-		for (auto layer : layers)
 		{
-			if (!parentLayer->IsChildOf(layer) && layer->GetParent() != parentLayer)
-			{
-				parentLayer->AddChild(layer);
-			}
-		}
-
-		return true;
-	}
-	case eObjectLayerType_Terrain:
-		// intentional fall through
-	case eObjectLayerType_Layer:
-	{
-		CUndo undo("Move Layers");
-		// layers cannot be dropped on other layers. So the parent has to be
-		// determined and the layers need to be added there
-		parentLayer = parentLayer->GetParent();
-
-		if (!parentLayer)
-		{
-			for (auto layer : layers)
-			{
-				layer->SetAsRootLayer();
-			}
-		}
-		else
-		{
+			CUndo undo("Move Layers");
 			for (auto layer : layers)
 			{
 				if (!parentLayer->IsChildOf(layer) && layer->GetParent() != parentLayer)
@@ -683,9 +682,37 @@ bool CLevelLayerModel::dropMimeData(const QMimeData* pData, Qt::DropAction actio
 					parentLayer->AddChild(layer);
 				}
 			}
+
+			return true;
 		}
-		return true;
-	}
+	case eObjectLayerType_Terrain:
+	// intentional fall through
+	case eObjectLayerType_Layer:
+		{
+			CUndo undo("Move Layers");
+			// layers cannot be dropped on other layers. So the parent has to be
+			// determined and the layers need to be added there
+			parentLayer = parentLayer->GetParent();
+
+			if (!parentLayer)
+			{
+				for (auto layer : layers)
+				{
+					layer->SetAsRootLayer();
+				}
+			}
+			else
+			{
+				for (auto layer : layers)
+				{
+					if (!parentLayer->IsChildOf(layer) && layer->GetParent() != parentLayer)
+					{
+						parentLayer->AddChild(layer);
+					}
+				}
+			}
+			return true;
+		}
 
 	default:
 		return false;
@@ -977,7 +1004,7 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 {
 	// TODO: Handle batch events here for certain event types
 	/*if (objects.size() != 1)
-		return;*/
+	   return;*/
 
 	if (objects.empty())
 		return;
@@ -989,15 +1016,15 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 	{
 		return;
 	}
-	else if (pLayer != m_pLayer && !(eventObj.m_type == OBJECT_ON_LAYERCHANGE || eventObj.m_type == OBJECT_ON_PRELINKED || 
-		eventObj.m_type == OBJECT_ON_LINKED || eventObj.m_type == OBJECT_ON_PREUNLINKED || eventObj.m_type == OBJECT_ON_UNLINKED))
+	else if (pLayer != m_pLayer && !(eventObj.m_type == OBJECT_ON_LAYERCHANGE || eventObj.m_type == OBJECT_ON_PRELINKED ||
+	                                 eventObj.m_type == OBJECT_ON_LINKED || eventObj.m_type == OBJECT_ON_PREUNLINKED || eventObj.m_type == OBJECT_ON_UNLINKED))
 	{
 		return;
 	}
 
 	switch (eventObj.m_type)
 	{
-		case OBJECT_ON_ADD:
+	case OBJECT_ON_ADD:
 		{
 			// we need to be slightly careful here because objects get named before being added, so we might try to access an invalid index.
 			int irow = RowFromObject(pObject);
@@ -1018,7 +1045,7 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 			}
 		}
 		break;
-		case OBJECT_ON_PREDELETE:
+	case OBJECT_ON_PREDELETE:
 		{
 			const CObjectPreDeleteEvent& evt = static_cast<const CObjectPreDeleteEvent&>(eventObj);
 			if (evt.m_pLayer != m_pLayer)
@@ -1027,7 +1054,7 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 			OnBeforeObjectsDeleted(objects);
 		}
 		break;
-		case OBJECT_ON_DELETE:
+	case OBJECT_ON_DELETE:
 		{
 			const CObjectDeleteEvent& evt = static_cast<const CObjectDeleteEvent&>(eventObj);
 			if (evt.m_pLayer != m_pLayer)
@@ -1035,37 +1062,37 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 
 			OnObjectsDeleted(objects);
 		}
-		case OBJECT_ON_PREATTACHED:
+	case OBJECT_ON_PREATTACHED:
 		{
 			const CObjectPreAttachedEvent& evt = static_cast<const CObjectPreAttachedEvent&>(eventObj);
 			OnBeforeObjectsAttached(evt.m_pParent, objects);
 		}
 		break;
-		case OBJECT_ON_ATTACHED:
+	case OBJECT_ON_ATTACHED:
 		{
 			const CObjectAttachedEvent& evt = static_cast<const CObjectAttachedEvent&>(eventObj);
 			OnObjectsAttached(evt.m_pParent, objects);
 		}
 		break;
-		case OBJECT_ON_PREDETACHED:
+	case OBJECT_ON_PREDETACHED:
 		{
 			const CObjectPreDetachedEvent& evt = static_cast<const CObjectPreDetachedEvent&>(eventObj);
 			OnBeforeObjectsDetached(evt.m_pParent, objects);
 		}
 		break;
-		case OBJECT_ON_DETACHED:
+	case OBJECT_ON_DETACHED:
 		{
 			const CObjectDetachedEvent& evt = static_cast<const CObjectDetachedEvent&>(eventObj);
 			OnObjectsDetached(evt.m_pParent, objects);
 		}
 		break;
-		case OBJECT_ON_PRELINKED:
+	case OBJECT_ON_PRELINKED:
 		{
 			const CObjectPreLinkEvent& evt = static_cast<const CObjectPreLinkEvent&>(eventObj);
 			const CBaseObject* pLinkedTo = evt.m_pLinkedTo;
 
 			// If the object we're linking to and all it's ancestors are not contained in this layer, then we'll reset the model later on, when handling
-			// OBJECT_ON_LINKED events. We perform a reset in those cases because linking between layers is the only event that will modify several layer 
+			// OBJECT_ON_LINKED events. We perform a reset in those cases because linking between layers is the only event that will modify several layer
 			// models ***at the same time*** which means we would need to *begin* modification of several models before calling *end*, this is unsupported
 			// by qt and our mounting/merging proxy models. So what we do is we defer the processing of the events until the object is linked.
 			if (m_isRuningBatchProcess || pLayer != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
@@ -1077,7 +1104,7 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 			beginMoveRows(objectIdx.parent(), objectIdx.row(), objectIdx.row(), linkedToIdx, rowCount(linkedToIdx));
 		}
 		break;
-		case OBJECT_ON_LINKED:
+	case OBJECT_ON_LINKED:
 		{
 			const CBaseObject* pLinkedTo = pObject->GetLinkedTo();
 
@@ -1087,8 +1114,8 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 				if (!pObject->IsAnyLinkedAncestorInLayer(m_pLayer))
 					return;
 
-				// We perform a reset in those cases because linking between layers is the only event that will modify several layer models ***at the same time*** 
-				// which means we would need to *begin* modification of several models before calling *end*, this is unsupported by qt and our mounting/merging 
+				// We perform a reset in those cases because linking between layers is the only event that will modify several layer models ***at the same time***
+				// which means we would need to *begin* modification of several models before calling *end*, this is unsupported by qt and our mounting/merging
 				// proxy models. So what we do is we defer the processing of the events until the object is linked.
 				if (m_isRuningBatchProcess)
 				{
@@ -1110,7 +1137,7 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 			}
 		}
 		break;
-		case OBJECT_ON_LAYERCHANGE:
+	case OBJECT_ON_LAYERCHANGE:
 		{
 			const CObjectLayerChangeEvent& evt = static_cast<const CObjectLayerChangeEvent&>(eventObj);
 
@@ -1138,11 +1165,11 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 			}
 			break;
 		}
-		case OBJECT_ON_PREUNLINKED:
+	case OBJECT_ON_PREUNLINKED:
 		{
 			CBaseObject* pLinkedTo = pObject->GetLinkedTo();
 			// If the object we're unlinking and all it's ancestors are not contained in this layer, then we'll reset the model later on, when handling
-			// OBJECT_ON_UNLINKED events. We perform a reset in those cases because unlinking between layers is the only event that will modify several layer 
+			// OBJECT_ON_UNLINKED events. We perform a reset in those cases because unlinking between layers is the only event that will modify several layer
 			// models ***at the same time*** which means we would need to *begin* modification of several models before calling *end*, this is unsupported
 			// by qt and our mounting/merging proxy models. So what we do is we defer the processing of the events until the object is linked.
 			if (m_isRuningBatchProcess || pLayer != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
@@ -1152,7 +1179,7 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 			beginMoveRows(objectIdx.parent(), objectIdx.row(), objectIdx.row(), QModelIndex(), m_rootObjects.size());
 		}
 		break;
-		case OBJECT_ON_UNLINKED:
+	case OBJECT_ON_UNLINKED:
 		{
 			const CBaseObject* pLinkedTo = static_cast<const CObjectUnLinkEvent&>(eventObj).m_pLinkedTo;
 
@@ -1162,8 +1189,8 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 				if (pLayer != m_pLayer && !pLinkedTo->IsAnyLinkedAncestorInLayer(m_pLayer))
 					return;
 
-				// We perform a reset in this case because unlinking between layers is the only event that will modify several layer models ***at the same time*** 
-				// which means we would need to *begin* modification of several models before calling *end*, this is unsupported by qt and our mounting/merging 
+				// We perform a reset in this case because unlinking between layers is the only event that will modify several layer models ***at the same time***
+				// which means we would need to *begin* modification of several models before calling *end*, this is unsupported by qt and our mounting/merging
 				// proxy models. So what we do is we defer the processing of the events until the object is unlinked.
 				if (m_isRuningBatchProcess)
 				{
@@ -1184,15 +1211,23 @@ void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, c
 			}
 		}
 		break;
-		case OBJECT_ON_RENAME:
+	case OBJECT_ON_RENAME:
 		{
 			// we need to be slightly careful here because objects get named before being added, so we might try to access an invalid index.
 			QVector<int> updateRoles(1, Qt::DisplayRole);
 			NotifyUpdateObject(pObject, updateRoles);
 		}
 		break;
-		default:
-			break;
+
+	case OBJECT_ON_COLOR_CHANGED:
+		{
+			QVector<int> updateRoles(1, Qt::DisplayRole);
+			NotifyUpdateObject(pObject, updateRoles);
+		}
+		break;
+
+	default:
+		break;
 	}
 }
 
@@ -1242,7 +1277,7 @@ void CLevelLayerModel::OnObjectsAttached(const CBaseObject* pParent, const std::
 		endResetModel();
 		return;
 	}
-	
+
 	CRY_ASSERT_MESSAGE(objects[0]->GetParent()->GetLayer() == m_pLayer, "Layer Model: Attaching children between layers is unsupported");
 
 	endMoveRows();
@@ -1345,7 +1380,7 @@ void CLevelLayerModel::OnSelectionChanged()
 
 	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
 
-	for(int i = 0, count = pSelection->GetCount(); i < count; ++i)
+	for (int i = 0, count = pSelection->GetCount(); i < count; ++i)
 	{
 		CBaseObject* pObject = pSelection->GetObject(i);
 		if (pObject->GetLayer() != m_pLayer)
@@ -1380,7 +1415,7 @@ void CLevelLayerModel::OnLink(const CBaseObject* pObject)
 
 	if (pObject->GetLayer() != m_pLayer && pObject->GetLinkedTo()->GetLayer() != m_pLayer)
 		return;
-	
+
 	for (auto i = 0; i < pObject->GetLinkedObjectCount(); ++i)
 	{
 		CBaseObject* pLinkedObject = pObject->GetLinkedObject(i);
@@ -1715,7 +1750,7 @@ void CLevelLayerModel::NotifyUpdateObject(const CBaseObject* pObject, const QVec
 	dataChanged(leftIndex, rightIndex, updateRoles);
 }
 
-bool CLevelLayerModel::IsRelatedToTopLevelObject(CBaseObject* pObject) const 
+bool CLevelLayerModel::IsRelatedToTopLevelObject(CBaseObject* pObject) const
 {
 	return (m_pTopLevelNotificationObj && (pObject == m_pTopLevelNotificationObj || pObject->IsChildOf(m_pTopLevelNotificationObj)));
 }

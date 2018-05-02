@@ -3,6 +3,7 @@
 #ifndef physinterface_h
 #define physinterface_h
 
+#include <CryCore/Platform/platform.h>
 #include <CryNetwork/SerializeFwd.h>
 #include <CryMemory/CrySizer.h>
 #include <CryMath/Cry_Geo.h>
@@ -2800,6 +2801,7 @@ enum rwi_flags
 {
 	rwi_ignore_terrain_holes     = 0x20, rwi_ignore_noncolliding = 0x40, rwi_ignore_back_faces = 0x80, rwi_ignore_solid_back_faces = 0x100,
 	rwi_pierceability_mask       = 0x0F, rwi_pierceability0 = 0, rwi_stop_at_pierceable = 0x0F,
+	rwi_max_piercing             = 0x10,         //!< the ray will pierce all surfaces (including those with pierceability 0)
 	rwi_separate_important_hits  = sf_important, //!< among pierceble hits, materials with sf_important will have priority
 	rwi_colltype_bit             = 16,           //!< used to manually specify collision geometry types (default is geom_colltype_ray)
 	rwi_colltype_any             = 0x400,        //!< if several colltype flag are specified, switches between requiring all or any of them in a geometry

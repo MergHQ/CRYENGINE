@@ -21,9 +21,10 @@ IMPLEMENT_DYNCREATE(CRopeObject, CShapeObject)
 
 //////////////////////////////////////////////////////////////////////////
 
-#define LINE_CONNECTED_COLOR    RGB(0, 255, 0)
-#define LINE_DISCONNECTED_COLOR RGB(255, 255, 0)
-#define ROPE_PHYS_SEGMENTS_MAX  100
+const ColorB g_lineConnectedColor(0, 255, 0);
+const ColorB g_lineDisconnectedColor(255, 255, 0);
+
+#define ROPE_PHYS_SEGMENTS_MAX 100
 
 SERIALIZATION_ENUM_BEGIN_NESTED(CryAudio, EOcclusionType, "OcclusionType")
 SERIALIZATION_ENUM(CryAudio::EOcclusionType::Ignore, "ignore_state_name", "Ignore");
@@ -126,7 +127,7 @@ CRopeObject::CRopeObject()
 	UseMaterialLayersMask(true);
 
 	m_bPerVertexHeight = false;
-	SetColor(LINE_DISCONNECTED_COLOR);
+	SetColor(g_lineDisconnectedColor);
 
 	m_entityClass = "RopeEntity";
 
@@ -297,9 +298,9 @@ void CRopeObject::Display(DisplayContext& dc)
 		}
 
 		if ((nLinkedMask & 3) == 3)
-			SetColor(LINE_CONNECTED_COLOR);
+			SetColor(g_lineConnectedColor);
 		else
-			SetColor(LINE_DISCONNECTED_COLOR);
+			SetColor(g_lineDisconnectedColor);
 	}
 
 	__super::Display(dc);
@@ -330,10 +331,10 @@ void CRopeObject::UpdateGameArea()
 
 				pRopeNode->SetName(GetName());
 
-				IMaterial *pCurMtl = pRopeNode->GetMaterial();
+				IMaterial* pCurMtl = pRopeNode->GetMaterial();
 				if (!m_ropeParams.segmentObj.empty() && (!pCurMtl || pCurMtl == gEnv->p3DEngine->GetMaterialManager()->GetDefaultMaterial()))
 				{
-					IStatObj *pSegObj = gEnv->p3DEngine->LoadStatObj(m_ropeParams.segmentObj, nullptr,nullptr, false);
+					IStatObj* pSegObj = gEnv->p3DEngine->LoadStatObj(m_ropeParams.segmentObj, nullptr, nullptr, false);
 					if (pSegObj && pSegObj->GetMaterial() != pCurMtl)
 						SetMaterial(GetIEditorImpl()->GetMaterialManager()->FromIMaterial(pSegObj->GetMaterial()));
 				}
@@ -411,7 +412,6 @@ static void SerializeBitflag(Serialization::IArchive& ar, int& flag, int field, 
 	}
 
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 void CRopeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)

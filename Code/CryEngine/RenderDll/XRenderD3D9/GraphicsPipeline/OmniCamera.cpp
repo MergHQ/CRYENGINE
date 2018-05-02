@@ -46,8 +46,8 @@ void COmniCameraStage::Execute()
 			const SResourceRegionMapping region =
 			{
 				{ 0, 0, 0, 0 },
-				{ defaultRect.left, defaultRect.top, 0, 0 },
-				{ defaultRect.right - defaultRect.left, defaultRect.bottom - defaultRect.top, 1, 1 }
+				{ static_cast<UINT>(defaultRect.left), static_cast<UINT>(defaultRect.top), 0, 0 },
+				{ static_cast<UINT>(defaultRect.right - defaultRect.left), static_cast<UINT>(defaultRect.bottom - defaultRect.top), 1, 1 }
 			};
 
 			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pTargetTexture->GetDevTexture(), pScreenTexture->GetDevTexture(), region);
@@ -65,7 +65,12 @@ void COmniCameraStage::Execute()
 			{
 				{ 0, 0, 0, 0 }, // src position
 				{ 0, 0, 0, D3D11CalcSubresource(0, cubeFaceIdx, m_pOmniCameraTexture->GetNumMips()) }, // dst position
-				{ m_pOmniCameraCubeFaceStagingTexture->GetWidth(), m_pOmniCameraCubeFaceStagingTexture->GetHeight(), m_pOmniCameraCubeFaceStagingTexture->GetDepth(), m_pOmniCameraTexture->GetNumMips() }, // size
+				{
+					static_cast<UINT>(m_pOmniCameraCubeFaceStagingTexture->GetWidth()),
+					static_cast<UINT>(m_pOmniCameraCubeFaceStagingTexture->GetHeight()),
+					static_cast<UINT>(m_pOmniCameraCubeFaceStagingTexture->GetDepth()),
+					static_cast<UINT>(m_pOmniCameraTexture->GetNumMips())
+				}, // size
 				D3D11_COPY_NO_OVERWRITE_REVERT
 			};
 

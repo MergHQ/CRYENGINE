@@ -30,7 +30,7 @@ bool CSequenceObject::Init(CBaseObject* pPrev, const string& file)
 		return false;
 	}
 
-	SetColor(RGB(127, 127, 255));
+	SetColor(ColorB(127, 127, 255));
 
 	if (!file.IsEmpty())
 	{

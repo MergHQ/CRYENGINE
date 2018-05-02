@@ -1,4 +1,5 @@
 #include <CryAction/IActionMapManager.h>
+#include <CryGame/IGameFramework.h>
 
 void ReBindActionInput()
 {

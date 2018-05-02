@@ -8,7 +8,7 @@ namespace CryEngine
 	/// Flags that can be used to set the parameters of dynamic lights.
 	/// </summary>
 	[System.Flags]
-	public enum DynamicLightFlags
+	public enum DynamicLightFlags : uint
 	{
 		/// <summary>
 		/// Flag for AreaSpecTex.

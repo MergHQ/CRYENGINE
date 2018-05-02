@@ -54,7 +54,7 @@ SAgentTypeListAutoComplete s_agentTypeListAutoComplete;
 enum { MaxTaskCountPerWorkerThread = 12, };
 enum { MaxVolumeDefCopyCount = 8 }; // volume copies for access in other threads
 
-#if NAVIGATION_SYSTEM_PC_ONLY
+#if NAV_MESH_REGENERATION_ENABLED
 void GenerateTileJob(MNM::CTileGenerator::Params params, volatile uint16* state, MNM::STile* tile, MNM::CTileGenerator::SMetaData* metaData, uint32* hashValue)
 {
 	if (*state != NavigationSystem::TileTaskResult::Failed)
@@ -1051,8 +1051,11 @@ void NavigationSystem::UpdateNavigationSystemUsersForSynchronousOrAsynchronousRe
 
 void NavigationSystem::UpdateInternalNavigationSystemData(const bool blocking)
 {
-#if NAVIGATION_SYSTEM_PC_ONLY
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
+	
+	ApplyAnnotationChanges();
+
+#if NAV_MESH_REGENERATION_ENABLED
 
 	CRY_ASSERT_MESSAGE(m_pEditorBackgroundUpdate->IsRunning() == false, "Background update for editor is still running while the application has the focus!!");
 
@@ -1062,8 +1065,6 @@ void NavigationSystem::UpdateInternalNavigationSystemData(const bool blocking)
 		AIError("NavigationSystem - Editor background thread is still running, while the main thread is updating, skipping update");
 		return;
 	}
-
-	ApplyAnnotationChanges();
 
 	m_worldMonitor.FlushPendingAABBChanges();
 
@@ -1126,7 +1127,7 @@ uint32 NavigationSystem::GetWorkingQueueSize() const
 	return (uint32)m_updatesManager.GetRequestQueueSize();
 }
 
-#if NAVIGATION_SYSTEM_PC_ONLY
+#if NAV_MESH_REGENERATION_ENABLED
 void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground)
 {
 	m_updatesManager.Update();
@@ -1593,7 +1594,7 @@ void NavigationSystem::CommitTile(TileTaskResult& result)
 
 void NavigationSystem::ProcessQueuedMeshUpdates()
 {
-#if NAVIGATION_SYSTEM_PC_ONLY
+#if NAV_MESH_REGENERATION_ENABLED
 	do
 	{
 		UpdateMeshes(0.0333f, false, gAIEnv.CVars.NavigationSystemMT != 0, false);
@@ -3616,7 +3617,7 @@ void NavigationSystem::GatherNavigationVolumesToSave(std::vector<NavigationVolum
 
 bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_WARNING(6262)
 {
-#if NAVIGATION_SYSTEM_PC_ONLY
+#if NAV_MESH_REGENERATION_ENABLED
 
 	m_pEditorBackgroundUpdate->Pause(true);
 
@@ -4195,10 +4196,10 @@ void NavigationSystemDebugDraw::UpdateWorkingProgress(const float frameTime, con
 MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem& navigationSystem, const DebugDrawSettings& settings)
 {
 	MNM::TileID debugTileID(0);
-	#if DEBUG_MNM_ENABLED
+
+	#if DEBUG_MNM_ENABLED && NAV_MESH_REGENERATION_ENABLED
 
 	// TODO pavloi 2016.03.09: instead of calling GetAsyncKeyState(), register for events with GetISystem()->GetIInput()->AddEventListener().
-
 	static MNM::CTileGenerator debugGenerator;
 	static MNM::TileID tileID(0);
 	static bool prevKeyState = false;

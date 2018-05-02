@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryMath/Cry_Geo.h>
+#include <CryMath/Cry_Color.h>
 #include "HitContext.h"
 #include "ClassDesc.h"
 #include "Util/Variable.h"
@@ -78,14 +79,14 @@ struct SObjectChangedContext
 //////////////////////////////////////////////////////////////////////////
 enum ObjectFlags
 {
-	OBJFLAG_SELECTED    = 0x0001, //!< Object is selected. (Do not set this flag explicitly).
-	OBJFLAG_HIDDEN      = 0x0002, //!< Object is hidden.
-	OBJFLAG_FROZEN      = 0x0004, //!< Object is frozen (Visible but cannot be selected)
-	OBJFLAG_SHARED      = 0x0010, //!< This object is shared between missions.
+	OBJFLAG_SELECTED       = 0x0001, //!< Object is selected. (Do not set this flag explicitly).
+	OBJFLAG_HIDDEN         = 0x0002, //!< Object is hidden.
+	OBJFLAG_FROZEN         = 0x0004, //!< Object is frozen (Visible but cannot be selected)
+	OBJFLAG_SHARED         = 0x0010, //!< This object is shared between missions.
 
-	OBJFLAG_PREFAB      = 0x0020, //!< This object is part of prefab object.
+	OBJFLAG_PREFAB         = 0x0020, //!< This object is part of prefab object.
 
-	OBJFLAG_NO_HITTEST  = 0x0080, //!< This object will be not a target of ray hit test for deep selection mode.
+	OBJFLAG_NO_HITTEST     = 0x0080, //!< This object will be not a target of ray hit test for deep selection mode.
 
 	OBJFLAG_DELETED        = 0x04000, //!< This object is deleted.
 	OBJFLAG_HIGHLIGHT      = 0x08000, //!< Object is highlighted (When mouse over).
@@ -136,7 +137,7 @@ enum EObjectUpdateFlags
 	eObjectUpdateFlags_UserInputUndo   = 0x10000,  // Undo operation related to user input rather than actual Undo
 };
 
-#define OBJECT_TEXTURE_ICON_SIZE 32
+#define OBJECT_TEXTURE_ICON_SIZE  32
 #define OBJECT_TEXTURE_ICON_SCALE 10.0f
 
 enum EScaleWarningLevel
@@ -221,9 +222,9 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Flags.
 	//////////////////////////////////////////////////////////////////////////
-	void SetFlags(int flags) { m_flags |= flags; };
-	int  GetFlags() const { return m_flags; }
-	void ClearFlags(int flags) { m_flags &= ~flags; };
+	void SetFlags(int flags)         { m_flags |= flags; };
+	int  GetFlags() const            { return m_flags; }
+	void ClearFlags(int flags)       { m_flags &= ~flags; };
 	bool CheckFlags(int flags) const { return (m_flags & flags) != 0; };
 
 	//! Returns true if object visible.
@@ -237,7 +238,7 @@ public:
 	//! Returns true if object is selected.
 	bool IsSelected() const { return CheckFlags(OBJFLAG_SELECTED); }
 	//! Returns true if object is shared between missions.
-	bool IsShared() const { return CheckFlags(OBJFLAG_SHARED); }
+	bool IsShared() const   { return CheckFlags(OBJFLAG_SHARED); }
 
 	//! Returns the Game entity associated with this object if applicable, i.e. if this is an entity object
 	virtual IEntity* GetIEntity() { return nullptr; }
@@ -246,30 +247,36 @@ public:
 	bool IsSelectable() const;
 
 	// Return texture icon.
-	bool HaveTextureIcon() const { return m_nTextureIcon != 0; };
-	int  GetTextureIcon() const { return m_nTextureIcon; }
+	bool HaveTextureIcon() const      { return m_nTextureIcon != 0; };
+	int  GetTextureIcon() const       { return m_nTextureIcon; }
 	void SetTextureIcon(int nTexIcon) { m_nTextureIcon = nTexIcon; }
 
 	//! Set the name of the entity script. (This is temporary workaround allowing to mark CEntityObject as light source before CEntityObject::InitVariables() call. TODO: Remove it when light object is converted into separate class.)
 	virtual void SetScriptName(const string& file, CBaseObject* pPrev) {};
 
 	//! Set shared between missions flag.
-	virtual void                SetShared(bool bShared);
+	virtual void SetShared(bool bShared);
 	//! Set object hidden status.
-	virtual void                SetHidden(bool bHidden, bool bAnimated = false);
+	virtual void SetHidden(bool bHidden, bool bAnimated = false);
 	//! Set object visible status.
-	virtual void                SetVisible(bool bVisible, bool bAnimated = false) { SetHidden(!bVisible, bAnimated); }
+	virtual void SetVisible(bool bVisible, bool bAnimated = false) { SetHidden(!bVisible, bAnimated); }
 	//! Set object frozen status.
-	virtual void                SetFrozen(bool bFrozen);
+	virtual void SetFrozen(bool bFrozen);
 
 	//! Return associated 3DEngine render node
 	virtual struct IRenderNode* GetEngineNode() const { return NULL; };
 	//! Set object highlighted (Note: not selected)
 	void                        SetHighlight(bool bHighlight);
 	//! Check if object is highlighted.
-	bool                        IsHighlighted() const { return CheckFlags(OBJFLAG_HIGHLIGHT); }
+	bool                        IsHighlighted() const      { return CheckFlags(OBJFLAG_HIGHLIGHT); }
 	//! Check if object can have measurement axises.
 	virtual bool                HasMeasurementAxis() const { return true; }
+	//! Set the color of the object.
+	void                        UseColorOverride(bool color);
+	//! Use the color of this object instead of the layer color in the level explorer.
+	bool                        IsUsingColorOverride() const;
+	//! Find the override color of the parent or link that owns this object, if they exist.
+	std::pair<bool, ColorB>     GetColorOverrideInAncestry();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Object Id.
@@ -282,7 +289,7 @@ public:
 	// Prefabs support
 	//////////////////////////////////////////////////////////////////////////
 	//! To identify an object WHITHIN a prefab uniquely use this GUID
-	const CryGUID& GetIdInPrefab() const { return m_guidInPrefab; }
+	const CryGUID& GetIdInPrefab() const              { return m_guidInPrefab; }
 	void           SetIdInPrefab(const CryGUID& guid) { m_guidInPrefab = guid; }
 	bool           IsPartOfPrefab() const;
 	//! Called when something changed and we have to sync a prefab representation
@@ -330,13 +337,13 @@ public:
 	//! This will get scale from delegate if delegate is set
 	const Vec3   GetScale() const;
 
-	virtual bool IsScalable() const { return true; }
+	virtual bool IsScalable() const  { return true; }
 	virtual bool IsRotatable() const { return true; }
 
 	//! Assign display color to the object.
-	virtual void ChangeColor(COLORREF color);
+	virtual void ChangeColor(ColorB color);
 	//! Get object color.
-	COLORREF     GetColor() const { return m_color; };
+	ColorB       GetColor() const { return m_color; };
 
 	//! Set current transform delegate. Pass nullptr to unset.
 	//! When this is set, the delegate takes over the transform of the object. Used for instance for preview with the TrackView.
@@ -352,7 +359,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Return true if node have children.
-	bool   HaveChilds() const { return !m_children.empty(); }
+	bool   HaveChilds() const    { return !m_children.empty(); }
 	//! Return the number of attached children.
 	size_t GetChildCount() const { return m_children.size(); }
 
@@ -362,23 +369,25 @@ public:
 	CBaseObject* GetLinkedObject(size_t i) const;
 
 	//! Get child by index.
-	CBaseObject* GetChild(size_t const i) const;
+	CBaseObject*         GetChild(size_t const i) const;
 	//! Return parent node if exist.
-	CBaseObject* GetParent() const { return m_parent; };
+	CBaseObject*         GetParent() const   { return m_parent; };
 	//! Return object we're linked to
-	CBaseObject* GetLinkedTo() const { return m_pLinkedTo; };
+	CBaseObject*         GetLinkedTo() const { return m_pLinkedTo; };
 	//! Scans hierarchy up to determine if we are a descendant of pObject
-	virtual bool IsDescendantOf(const CBaseObject* pObject) const;
+	virtual bool         IsDescendantOf(const CBaseObject* pObject) const;
+	//! Find the link or the parent that owns this object, return null if none exist
+	virtual CBaseObject* FindOwner(bool onSameLayer) const;
 	//! Scans hierarchy up to determine if we child of specified node.
-	virtual bool IsChildOf(const CBaseObject* node) const;
+	virtual bool         IsChildOf(const CBaseObject* node) const;
 	//! Scans hierarchy up to determine if we are linked to the specified object.
-	virtual bool IsLinkedDescendantOf(const CBaseObject* pObject) const;
+	virtual bool         IsLinkedDescendantOf(const CBaseObject* pObject) const;
 	//! Get all child objects
-	void         GetAllChildren(TBaseObjects& outAllChildren, CBaseObject* pObj = NULL) const;
-	void         GetAllChildren(DynArray<_smart_ptr<CBaseObject>>& outAllChildren, CBaseObject* pObj = NULL) const;
-	void         GetAllChildren(ISelectionGroup& outAllChildren, CBaseObject* pObj = NULL) const;
-	void         GetAllPrefabFlagedChildren(std::vector<CBaseObject*>& outAllChildren, CBaseObject* pObj = NULL) const;
-	void         GetAllPrefabFlagedChildren(ISelectionGroup& outAllChildren, CBaseObject* pObj = NULL) const;
+	void                 GetAllChildren(TBaseObjects& outAllChildren, CBaseObject* pObj = NULL) const;
+	void                 GetAllChildren(DynArray<_smart_ptr<CBaseObject>>& outAllChildren, CBaseObject* pObj = NULL) const;
+	void                 GetAllChildren(ISelectionGroup& outAllChildren, CBaseObject* pObj = NULL) const;
+	void                 GetAllPrefabFlagedChildren(std::vector<CBaseObject*>& outAllChildren, CBaseObject* pObj = NULL) const;
+	void                 GetAllPrefabFlagedChildren(ISelectionGroup& outAllChildren, CBaseObject* pObj = NULL) const;
 	//! Attach new child node.
 	//! @param bKeepPos if true Child node will keep its world space position.
 	//! @param bInvalidateTM if true, trigger InvalidateTM() on parent and child nodes.
@@ -391,17 +400,17 @@ public:
 	virtual void RemoveMember(CBaseObject* pMember, bool bKeepPos = true, bool bPlaceOnRoot = false) {};
 
 	//! Detach all children of this node.
-	virtual void DetachAll(bool bKeepPos = true, bool bPlaceOnRoot = false) {};
+	virtual void DetachAll(bool bKeepPos = true, bool bPlaceOnRoot = false)                                                    {};
 
 	virtual void AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldInvalidateTM = true) {}
 	virtual void DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false) {}
-	virtual void AddMembers(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true) {}
-	virtual void RemoveMembers(std::vector<CBaseObject*>& members, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false) {}
+	virtual void AddMembers(std::vector<CBaseObject*>& objects, bool shouldKeepPos = true)                                     {}
+	virtual void RemoveMembers(std::vector<CBaseObject*>& members, bool shouldKeepPos = true, bool shouldPlaceOnRoot = false)  {}
 
 	// Detach this node from parent.
 	virtual void DetachThis(bool bKeepPos = true, bool bPlaceOnRoot = false);
 	//! Checks if the object we want to link to is a valid target
-	bool CanLinkTo(CBaseObject* pLinkTo) const;
+	bool         CanLinkTo(CBaseObject* pLinkTo) const;
 	//! Link to object
 	virtual void LinkTo(CBaseObject* pParent, bool bKeepPos = true);
 	// Unlink this object from parent
@@ -424,7 +433,7 @@ public:
 
 	//! Get objects' world-space transformation matrix.
 	const Matrix34& GetWorldTM() const;
-	//! Get parent world matrix. 
+	//! Get parent world matrix.
 	//! If parented to a group it will return to group's world matrix
 	//! If linked to an object it will return the object's world matrix
 	//! If attached to an entity's bone, it'll return the world matrix of the bone
@@ -478,7 +487,7 @@ public:
 	//! Return true if was hit.
 	virtual bool HitHelperTest(HitContext& hc);
 
-		//! Get bounding box for display of object in world coordinate space.
+	//! Get bounding box for display of object in world coordinate space.
 	virtual void GetDisplayBoundBox(AABB& box);
 
 	//! Get bounding box of object in world coordinate space.
@@ -637,7 +646,7 @@ public:
 	//! This will make sure object references are cloned correctly.
 	virtual void PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx);
 
-	CVarObject*   GetVarObject() const { return m_pVarObject.get(); }
+	CVarObject*  GetVarObject() const { return m_pVarObject.get(); }
 
 	// Recursive set descendant's layer
 	void SetDescendantsLayer(IObjectLayer* pLayer);
@@ -690,7 +699,7 @@ protected:
 	void ResolveParent(CBaseObject* object);
 	//! Resolve linkedTo from callback.
 	void ResolveLinkedTo(CBaseObject* object);
-	void SetColor(COLORREF color);
+	void SetColor(ColorB color);
 
 	//! Draw default object items.
 	virtual void DrawDefault(DisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255));
@@ -749,8 +758,8 @@ protected:
 	//////////////////////////////////////////////////////////////////////////
 	// May be overridden in derived classes to handle helpers scaling.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void  SetHelperScale(float scale)         {};
-	virtual float GetHelperScale()                    { return 1; };
+	virtual void  SetHelperScale(float scale) {};
+	virtual float GetHelperScale()            { return 1; };
 
 	void          SetDrawTextureIconProperties(DisplayContext& dc, const Vec3& pos, float alpha = 1.0f);
 	const Vec3& GetTextureIconDrawPos() { return m_vDrawIconPos; };
@@ -792,8 +801,6 @@ private:
 
 	void OnMenuProperties();
 
-	
-
 	//! Set class description for this object,
 	//! Only called once after creation by ObjectManager.
 	void SetClassDesc(CObjectClassDesc* classDesc);
@@ -811,7 +818,7 @@ private:
 
 	// For subclasses to do actual attach/detach work
 	virtual void OnAttachChild(CBaseObject* pChild) {}
-	virtual void OnDetachThis() {}
+	virtual void OnDetachThis()                     {}
 	void         SetMaterialByName(const char* mtlName);
 
 	virtual void OnLink(CBaseObject* pParent) {}
@@ -845,7 +852,10 @@ private:
 	int m_nTextureIcon;
 
 	//! Display color.
-	COLORREF m_color;
+	ColorB m_color;
+
+	//! Use the m_levelLayerColor in the Layer Model instead of the layer color.
+	bool m_useColorOverride;
 
 	//! World transformation matrix of this object.
 	mutable Matrix34 m_worldTM;
@@ -855,7 +865,7 @@ private:
 	_smart_ptr<CBaseObject> m_lookat;
 	//! If we are lookat target. this is pointer to source.
 	//Note that this model doesn't work when several objects look at the same object
-	CBaseObject*            m_lookatSource;
+	CBaseObject* m_lookatSource;
 
 	//! Object's name.
 	string            m_name;
@@ -904,7 +914,7 @@ private:
 
 protected:
 	// child classes should override this if they don't want to display a bounding box during highlight
-	bool           m_bSupportsBoxHighlight;
+	bool                        m_bSupportsBoxHighlight;
 
 	std::unique_ptr<CVarObject> m_pVarObject;
 };
@@ -915,11 +925,11 @@ protected:
 class CBaseObjectsCache
 {
 public:
-	int          GetObjectCount() const { return m_objects.size(); }
-	CBaseObject* GetObject(int nIndex) const { return m_objects[nIndex]; }
+	int          GetObjectCount() const          { return m_objects.size(); }
+	CBaseObject* GetObject(int nIndex) const     { return m_objects[nIndex]; }
 	void         AddObject(CBaseObject* pObject) { m_objects.push_back(pObject); }
-	void         ClearObjects() { m_objects.clear(); }
-	void         Reserve(int nCount) { m_objects.reserve(nCount); }
+	void         ClearObjects()                  { m_objects.clear(); }
+	void         Reserve(int nCount)             { m_objects.reserve(nCount); }
 private:
 	//! List of objects that was displayed at last frame.
 	std::vector<_smart_ptr<CBaseObject>> m_objects;

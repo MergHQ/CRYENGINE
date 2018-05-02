@@ -41,6 +41,13 @@
 using namespace BehaviorTree;
 %}
 
+%typemap(csbase) EEntityAspects "ushort"
+%typemap(csbase) EAILoadDataFlag "ushort"
+%typemap(csbase) IMNMCustomPathCostComputer::EComputationType "uint"
+%typemap(csbase) MNM::Constants::Edges "uint"
+%typemap(csbase) EMNMDangers "uint"
+%typemap(csbase) ICoverUser::EStateFlags "byte"
+
 %ignore IAIEngineModule;
 
 %include "../../../../CryEngine/CryCommon/CryAISystem/NavigationSystem/NavigationIdTypes.h"
@@ -120,7 +127,6 @@ public:
 %include "../../../../CryEngine/CryCommon/CryAISystem/MovementStyle.h"
 %include "../../../../CryEngine/CryCommon/CryAISystem/IMovementSystem.h"
 %include "../../../../CryEngine/CryCommon/CryAISystem/IOffMeshNavigationManager.h"
-%typemap(csbase) MNM::Constants::Edges "uint"
 %include "../../../../CryEngine/CryCommon/CryAISystem/IMNM.h"
 
 %ignore BehaviorTree::BehaviorVariablesContext;
