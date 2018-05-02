@@ -107,6 +107,8 @@ class CD3D9Renderer final : public CRenderer, public IWindowMessageHandler
 	friend struct IScaleformPlayback;
 	friend class CScaleformPlayback;
 
+	using CRenderer::EF_PrecacheResource;	// We want to override CRenderer functions *and* allow the overloads.
+	
 public:
 	struct SCharacterInstanceCB
 	{

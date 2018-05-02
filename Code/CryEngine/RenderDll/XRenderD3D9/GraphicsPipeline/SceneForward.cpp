@@ -270,8 +270,6 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 			}
 			if (CRenderer::CV_r_DeferredShadingTiled)
 				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
-
-			pSceneRenderPass = pSceneRenderPass;
 		}
 
 		if (bRecursive && (bHair || bAfterHDRPostProcess || bAfterLDRPostProcess || bEyeOverlay))

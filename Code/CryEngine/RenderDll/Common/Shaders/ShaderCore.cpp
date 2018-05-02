@@ -2971,8 +2971,7 @@ void CShaderMan::FilterShaderCacheGenListForOrbis(FXShaderCacheCombinations& com
 		}
 		else
 		{
-			uint8 isa = item.second.Ident.m_pipelineState.GNM.GetISA(item.second.eCL);
-			const auto insertIsa = [&result, &item, isa](uint8 targetIsa)
+			const auto insertIsa = [&result, &item](uint8 targetIsa)
 			{
 				item.second.Ident.m_pipelineState.GNM.SetISA(item.second.eCL, targetIsa);
 
