@@ -270,11 +270,11 @@ typedef SCRCRef<1>                      TProcClipTypeName;
 
 typedef CCryName                        TProcClipString;
 
-enum eSequenceFlags
+enum eSequenceFlags : uint32
 {
-	eSF_Fragment        = BIT(0),
-	eSF_TransitionOutro = BIT(1),
-	eSF_Transition      = BIT(2)
+	eSF_Fragment        = BIT32(0),
+	eSF_TransitionOutro = BIT32(1),
+	eSF_Transition      = BIT32(2)
 };
 
 struct SWeightData

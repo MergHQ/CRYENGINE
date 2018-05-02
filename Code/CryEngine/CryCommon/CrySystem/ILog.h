@@ -9,10 +9,10 @@
 // this code is disable by default due it's runtime cost
 //#define SUPPORT_LOG_IDENTER
 
-enum ELogMode
+enum ELogMode : uint16
 {
-	eLogMode_Normal   = BIT(0),
-	eLogMode_AppCrash = BIT(1), //!< Log straight to file. Do not write to console.
+	eLogMode_Normal   = BIT16(0),
+	eLogMode_AppCrash = BIT16(1) //!< Log straight to file. Do not write to console.
 };
 
 // forward declarations

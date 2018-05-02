@@ -169,12 +169,12 @@ struct SEntityUpdateContext
 	uint32 frameID;
 };
 
-enum EEntityHideFlags
+enum EEntityHideFlags : uint32
 {
 	ENTITY_HIDE_NO_FLAG = 0,
 
-	ENTITY_HIDE_LAYER   = BIT(0),
-	ENTITY_HIDE_PARENT  = BIT(1),
+	ENTITY_HIDE_LAYER   = BIT32(0),
+	ENTITY_HIDE_PARENT  = BIT32(1),
 };
 
 //! Each entity instance holds flags that indicate special behavior within the system
@@ -183,69 +183,69 @@ enum EEntityFlags : uint32
 {
 	//////////////////////////////////////////////////////////////////////////
 	// Persistent flags (can be set from the editor).
-	ENTITY_FLAG_CASTSHADOW          = BIT(0),
-	ENTITY_FLAG_UNREMOVABLE         = BIT(1), //!< This entity cannot be removed using IEntitySystem::RemoveEntity until this flag is cleared.
-	ENTITY_FLAG_GOOD_OCCLUDER       = BIT(2),
-	ENTITY_FLAG_NO_DECALNODE_DECALS = BIT(3),
+	ENTITY_FLAG_CASTSHADOW          = BIT32(0), //!< Indicates that the entity can cast shadows.
+	ENTITY_FLAG_UNREMOVABLE         = BIT32(1), //!< This entity cannot be removed using IEntitySystem::RemoveEntity until this flag is cleared.
+	ENTITY_FLAG_GOOD_OCCLUDER       = BIT32(2), //!< Indicates that the entity can be very effective as an occluder.
+	ENTITY_FLAG_NO_DECALNODE_DECALS = BIT32(3), //!< Indicates that the entity can't receive static decal projections.
 	//////////////////////////////////////////////////////////////////////////
 
-	ENTITY_FLAG_CLONED                  = BIT(4), //!< Entity was cloned from another
-	ENTITY_FLAG_NOT_REGISTER_IN_SECTORS = BIT(5),
-	ENTITY_FLAG_CALC_PHYSICS            = BIT(6),
-	//! Entity should only be present on the client, and not server
-	ENTITY_FLAG_CLIENT_ONLY             = BIT(7),
-	//! Entity should only be present on the server, and not clients
-	ENTITY_FLAG_SERVER_ONLY             = BIT(8),
-	ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO   = BIT(9), //!< This entity have special custom view distance ratio (AI/Vehicles must have it).
-	ENTITY_FLAG_CALCBBOX_USEALL         = BIT(10), //!< use character and objects in BBOx calculations.
-	ENTITY_FLAG_VOLUME_SOUND            = BIT(11), //!< Entity is a volume sound (will get moved around by the sound proxy).
-	ENTITY_FLAG_HAS_AI                  = BIT(12), //!< Entity has an AI object.
-	ENTITY_FLAG_TRIGGER_AREAS           = BIT(13), //!< This entity will trigger areas when it enters them.
-	ENTITY_FLAG_NO_SAVE                 = BIT(14), //!< This entity will not be saved.
-	ENTITY_FLAG_CAMERA_SOURCE           = BIT(15), //!< This entity is a camera source.
-	ENTITY_FLAG_CLIENTSIDE_STATE        = BIT(16), //!< Prevents error when state changes on the client and does not sync state changes to the client.
-	ENTITY_FLAG_SEND_RENDER_EVENT       = BIT(17), //!< When set entity will send ENTITY_EVENT_RENDER_VISIBILITY_CHANGE when starts or stop actual rendering.
-	ENTITY_FLAG_NO_PROXIMITY            = BIT(18), //!< Entity will not be registered in the partition grid and can not be found by proximity queries.
-	ENTITY_FLAG_PROCEDURAL              = BIT(19), //!< Entity has been generated at runtime.
-	ENTITY_FLAG_UPDATE_HIDDEN           = BIT(20), //!< Whether update of game logic should be skipped when the entity is hidden. This does *not* disable update of components unless they specifically request it.
-	ENTITY_FLAG_NEVER_NETWORK_STATIC    = BIT(21), //!< Entity should never be considered a static entity by the network system.
-	ENTITY_FLAG_IGNORE_PHYSICS_UPDATE   = BIT(22), //!< Used by Editor only, (don't set).
-	ENTITY_FLAG_SPAWNED                 = BIT(23), //!< Entity was spawned dynamically without a class.
-	ENTITY_FLAG_SLOTS_CHANGED           = BIT(24), //!< Entity's slots were changed dynamically.
-	ENTITY_FLAG_MODIFIED_BY_PHYSICS     = BIT(25), //!< Entity was procedurally modified by physics.
-	ENTITY_FLAG_OUTDOORONLY             = BIT(26), //!< Same as Brush->Outdoor only.
+	ENTITY_FLAG_CLONED                  = BIT32(4), //!< Entity was cloned from another
+	ENTITY_FLAG_NOT_REGISTER_IN_SECTORS = BIT32(5),
+	ENTITY_FLAG_CALC_PHYSICS            = BIT32(6),
+	//! Entity should only be present on the client, and not server.
+	ENTITY_FLAG_CLIENT_ONLY             = BIT32(7),
+	//! Entity should only be present on the server, and not clients.
+	ENTITY_FLAG_SERVER_ONLY             = BIT32(8),
+	ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO   = BIT32(9),  //!< This entity has a special custom view distance ratio (AI/Vehicles require it).
+	ENTITY_FLAG_CALCBBOX_USEALL         = BIT32(10), //!< Use character and objects in BBox calculations.
+	ENTITY_FLAG_VOLUME_SOUND            = BIT32(11), //!< Entity is a volume sound (will get moved around by the sound proxy).
+	ENTITY_FLAG_HAS_AI                  = BIT32(12), //!< Entity has an AI object.
+	ENTITY_FLAG_TRIGGER_AREAS           = BIT32(13), //!< This entity will trigger areas when it enters them.
+	ENTITY_FLAG_NO_SAVE                 = BIT32(14), //!< This entity will not be saved.
+	ENTITY_FLAG_CAMERA_SOURCE           = BIT32(15), //!< This entity is a camera source.
+	ENTITY_FLAG_CLIENTSIDE_STATE        = BIT32(16), //!< Prevents error when state changes on the client and does not sync state changes to the client.
+	ENTITY_FLAG_SEND_RENDER_EVENT       = BIT32(17), //!< When set entity will send ENTITY_EVENT_RENDER_VISIBILITY_CHANGE when starts or stop actual rendering.
+	ENTITY_FLAG_NO_PROXIMITY            = BIT32(18), //!< Entity will not be registered in the partition grid and can not be found by proximity queries.
+	ENTITY_FLAG_PROCEDURAL              = BIT32(19), //!< Entity has been generated at runtime.
+	ENTITY_FLAG_UPDATE_HIDDEN           = BIT32(20), //!< Whether update of game logic should be skipped when the entity is hidden. This does *not* disable update of components unless they specifically request it.
+	ENTITY_FLAG_NEVER_NETWORK_STATIC    = BIT32(21), //!< Entity should never be considered a static entity by the network system.
+	ENTITY_FLAG_IGNORE_PHYSICS_UPDATE   = BIT32(22), //!< Used by the Editor only, don't set.
+	ENTITY_FLAG_SPAWNED                 = BIT32(23), //!< Entity was spawned dynamically without a class.
+	ENTITY_FLAG_SLOTS_CHANGED           = BIT32(24), //!< Entity's slots were changed dynamically.
+	ENTITY_FLAG_MODIFIED_BY_PHYSICS     = BIT32(25), //!< Entity was procedurally modified by physics.
+	ENTITY_FLAG_OUTDOORONLY             = BIT32(26), //!< Same as Brush->Outdoor only.
 
-	ENTITY_FLAG_RECVWIND                = BIT(27), //!< Receives wind.
-	ENTITY_FLAG_LOCAL_PLAYER            = BIT(28),
-	ENTITY_FLAG_AI_HIDEABLE             = BIT(29), //!< AI can use the object to calculate automatic hide points.
+	ENTITY_FLAG_RECVWIND                = BIT32(27), //!< Receives wind.
+	ENTITY_FLAG_LOCAL_PLAYER            = BIT32(28), //!< Indicates the entity is a local player.
+	ENTITY_FLAG_AI_HIDEABLE             = BIT32(29), //!< AI can use the object to calculate automatic hide points.
 
-	ENTITY_FLAG_DYNAMIC_DISTANCE_SHADOWS = BIT(30)
+	ENTITY_FLAG_DYNAMIC_DISTANCE_SHADOWS = BIT32(30)
 };
 
 enum EEntityFlagsExtended : uint8
 {
-	ENTITY_FLAG_EXTENDED_AUDIO_LISTENER                 = BIT(0),
-	ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE               = BIT(1),
-	ENTITY_FLAG_EXTENDED_CAN_COLLIDE_WITH_MERGED_MESHES = BIT(2),
-	ENTITY_FLAG_EXTENDED_GI_MODE_BIT0                   = BIT(3), // Bit0 of entity GI mode, see IRenderNode::EGIMode
-	ENTITY_FLAG_EXTENDED_GI_MODE_BIT1                   = BIT(4), // Bit1 of entity GI mode, see IRenderNode::EGIMode
-	ENTITY_FLAG_EXTENDED_GI_MODE_BIT2                   = BIT(5), // Bit2 of entity GI mode, see IRenderNode::EGIMode
-	ENTITY_FLAG_EXTENDED_PREVIEW                        = BIT(6), //!< Entity is spawn for the previewing
-	ENTITY_FLAG_EXTENDED_IGNORED_IN_NAVMESH_GENERATION  = BIT(7), //!< Entity's geometry doesn't contribute to NavMesh generation
+	ENTITY_FLAG_EXTENDED_AUDIO_LISTENER                 = BIT8(0),
+	ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE               = BIT8(1),
+	ENTITY_FLAG_EXTENDED_CAN_COLLIDE_WITH_MERGED_MESHES = BIT8(2),
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT0                   = BIT8(3), // Bit0 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT1                   = BIT8(4), // Bit1 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_GI_MODE_BIT2                   = BIT8(5), // Bit2 of entity GI mode, see IRenderNode::EGIMode
+	ENTITY_FLAG_EXTENDED_PREVIEW                        = BIT8(6), //!< Entity is spawn for the previewing
+	ENTITY_FLAG_EXTENDED_IGNORED_IN_NAVMESH_GENERATION  = BIT8(7), //!< Entity's geometry doesn't contribute to NavMesh generation
 };
 
 #define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET 4                                                                                                           // Bit offset of entity GI mode in EEntityFlagsExtended. Must be equal to the bit id of ENTITY_FLAG_EXTENDED_GI_MODE_BIT0
 #define ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK   (ENTITY_FLAG_EXTENDED_GI_MODE_BIT0 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT1 | ENTITY_FLAG_EXTENDED_GI_MODE_BIT2) // Bit mask of entity GI mode.
 
 //! Flags can be passed to IEntity::Serialize().
-enum EEntitySerializeFlags
+enum EEntitySerializeFlags : uint32
 {
-	ENTITY_SERIALIZE_PROXIES    = BIT(1), //!< Serialize proxies.
-	ENTITY_SERIALIZE_POSITION   = BIT(2), //!< Serialize properties common to all entities (position, rotation, scale).
-	ENTITY_SERIALIZE_ROTATION   = BIT(3),
-	ENTITY_SERIALIZE_SCALE      = BIT(4),
-	ENTITY_SERIALIZE_GEOMETRIES = BIT(5),
-	ENTITY_SERIALIZE_PROPERTIES = BIT(6),
+	ENTITY_SERIALIZE_PROXIES    = BIT32(1), //!< Serialize proxies.
+	ENTITY_SERIALIZE_POSITION   = BIT32(2), //!< Serialize properties common to all entities (position, rotation, scale).
+	ENTITY_SERIALIZE_ROTATION   = BIT32(3),
+	ENTITY_SERIALIZE_SCALE      = BIT32(4),
+	ENTITY_SERIALIZE_GEOMETRIES = BIT32(5),
+	ENTITY_SERIALIZE_PROPERTIES = BIT32(6),
 };
 
 enum EEntityGetSetSlotFlags
@@ -428,13 +428,14 @@ struct IEntity
 		EF_AUTO_PHYSICALIZE = 0x0001,
 		EF_NO_STREAMING     = 0x0002,
 	};
-	enum EAttachmentFlags
+
+	enum EAttachmentFlags : uint32
 	{
-		ATTACHMENT_KEEP_TRANSFORMATION = BIT(0), //!< Keeps world transformation of entity when attaching or detaching it.
-		ATTACHMENT_GEOMCACHENODE       = BIT(1), //!< Attach to geom cache node.
-		ATTACHMENT_CHARACTERBONE       = BIT(2), //!< Attached to character bone.
-		ATTACHMENT_LOCAL_SIM           = BIT(3), //!< Simulated inside the parent by the physics
-		ATTACHMENT_SUPPRESS_UPDATE     = BIT(4), //!< Suppresses attachment event and matrix update
+		ATTACHMENT_KEEP_TRANSFORMATION = BIT32(0), //!< Keeps world transformation of entity when attaching or detaching it.
+		ATTACHMENT_GEOMCACHENODE       = BIT32(1), //!< Attach to geom cache node.
+		ATTACHMENT_CHARACTERBONE       = BIT32(2), //!< Attached to character bone.
+		ATTACHMENT_LOCAL_SIM           = BIT32(3), //!< Simulated inside the parent by the physics
+		ATTACHMENT_SUPPRESS_UPDATE     = BIT32(4), //!< Suppresses attachment event and matrix update
 
 		ATTACHMENT_COUNT               = 5,
 	};

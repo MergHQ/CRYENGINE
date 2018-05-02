@@ -13,14 +13,14 @@ struct IEntityClass;
 struct ISurfaceType;
 
 //////////////////////////////////////////////////////////////////////////
-enum EMFXPlayFlags
+enum EMFXPlayFlags : uint32
 {
-	eMFXPF_Disable_Delay = BIT(0),
-	eMFXPF_Audio         = BIT(1),
-	eMFXPF_Decal         = BIT(2),
-	eMFXPF_Particles     = BIT(3),
-	eMFXPF_Flowgraph     = BIT(4),
-	eMFXPF_ForceFeedback = BIT(5),
+	eMFXPF_Disable_Delay = BIT32(0),
+	eMFXPF_Audio         = BIT32(1),
+	eMFXPF_Decal         = BIT32(2),
+	eMFXPF_Particles     = BIT32(3),
+	eMFXPF_Flowgraph     = BIT32(4),
+	eMFXPF_ForceFeedback = BIT32(5),
 	eMFXPF_All           = (eMFXPF_Audio | eMFXPF_Decal | eMFXPF_Particles | eMFXPF_Flowgraph | eMFXPF_ForceFeedback),
 };
 
@@ -171,15 +171,15 @@ public:
 
 struct SMFXBreakageParams
 {
-	enum EBreakageRequestFlags
+	enum EBreakageRequestFlags : uint32
 	{
-		eBRF_Matrix           = BIT(0),
-		eBRF_HitPos           = BIT(1),
-		eBRF_HitImpulse       = BIT(2),
-		eBRF_Velocity         = BIT(3),
-		eBRF_ExplosionImpulse = BIT(4),
-		eBRF_Mass             = BIT(5),
-		eBFR_Entity           = BIT(6),
+		eBRF_Matrix           = BIT32(0),
+		eBRF_HitPos           = BIT32(1),
+		eBRF_HitImpulse       = BIT32(2),
+		eBRF_Velocity         = BIT32(3),
+		eBRF_ExplosionImpulse = BIT32(4),
+		eBRF_Mass             = BIT32(5),
+		eBFR_Entity           = BIT32(6),
 	};
 
 	SMFXBreakageParams() :

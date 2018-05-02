@@ -12,7 +12,9 @@
 %ignore operator==(const char *str,const TKeyName &n);
 
 %typemap(csbase) EKeyId "uint"
+%typemap(csbase) EInputDeviceType "byte"
 %typemap(csbase) KIN_IDENTITY_ENROLLMENT "uint"
+
 %feature("director") IInputEventListener;
 %feature("director") ITouchEventListener;
 %feature("director") IKinectInputAudioListener;

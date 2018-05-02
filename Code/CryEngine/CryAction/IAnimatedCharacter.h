@@ -91,7 +91,7 @@ enum EAnimatedCharacterArms
 
 //--------------------------------------------------------------------------------
 
-enum EGroundAlignment
+enum EGroundAlignment : uint32
 {
 	eGA_Enable                     = BIT(0),
 	eGA_AllowWithNoCollision       = BIT(1),
@@ -311,12 +311,12 @@ struct IAnimatedCharacter : public IGameObjectExtension
 	virtual const SPredictedCharacterStates& GetOverriddenMotionParameters() const = 0;
 	virtual void                             SetOverriddenMotionParameters(const SPredictedCharacterStates& motionParameters) = 0;
 
-	enum EBlendWeightParamTargets
+	enum EBlendWeightParamTargets : uint8
 	{
 		eBWPT_None                = 0,
-		eBWPT_FirstPersonSkeleton = BIT(0),
-		eBWPT_ShadowSkeleton      = BIT(1),
-		eBWPT_All                 = 3
+		eBWPT_FirstPersonSkeleton = BIT8(0),
+		eBWPT_ShadowSkeleton      = BIT8(1),
+		eBWPT_All                 = 0xFF
 	};
 	virtual void SetBlendWeightParam(const EMotionParamID motionParamID, const float value, const uint8 targetFlags = eBWPT_All) = 0;
 

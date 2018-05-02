@@ -106,8 +106,8 @@ public:
 	virtual void             Release() { if (--m_nRefCount <= 0) m_bDelete = 2; }
 
 	virtual int              Serialize(TSerialize ser);
-	virtual void             SetFlags(int flags);
-	virtual int              GetFlags()                    { return m_flags; }
+	virtual void             SetFlags(uint flags);
+	virtual uint             GetFlags()                    { return m_flags; }
 	virtual IRenderNode*     GetIRenderNode()              { return m_pVegInst; }
 	virtual int              GetBranchCount()              { return m_nRopes; }
 	virtual IPhysicalEntity* GetBranchPhysics(int iBranch) { return (unsigned int)iBranch < (unsigned int)m_nRopes ? m_pRopes[iBranch] : 0; }
@@ -123,7 +123,7 @@ public:
 
 	CStatObjFoliage*  m_next, * m_prev;
 	int               m_nRefCount;
-	int               m_flags;
+	uint              m_flags;
 	CStatObj*         m_pStatObj;
 	IPhysicalEntity** m_pRopes;
 	float*            m_pRopesActiveTime;
@@ -319,7 +319,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Externally set flags from enum EStaticObjectFlags.
 	//////////////////////////////////////////////////////////////////////////
-	int m_nFlags;
+	uint m_nFlags;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Internal Flags.
@@ -444,8 +444,8 @@ public:
 	void ReleaseIndexedMesh(bool bRenderMeshUpdated = false);
 	virtual ILINE const Vec3 GetVegCenter() final          { return m_vVegCenter; }
 
-	virtual void             SetFlags(int nFlags) final		{ m_nFlags = nFlags; IncrementModificationId(); }
-	virtual int              GetFlags() const final         { return m_nFlags; };
+	virtual void             SetFlags(uint nFlags) final   { m_nFlags = nFlags; IncrementModificationId(); }
+	virtual uint             GetFlags() const final        { return m_nFlags; };
 
 	virtual unsigned int     GetVehicleOnlyPhysics() final { return m_bVehicleOnlyPhysics; };
 	virtual int              GetIDMatBreakable() final     { return m_idmatBreakable; };

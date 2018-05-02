@@ -56,7 +56,7 @@ enum EInputState
 	eIS_Changed  = (1 << 3),
 };
 
-enum EInputDeviceType
+enum EInputDeviceType : uint8
 {
 	eIDT_Keyboard,
 	eIDT_Mouse,

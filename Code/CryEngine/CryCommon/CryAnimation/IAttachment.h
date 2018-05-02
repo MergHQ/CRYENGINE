@@ -29,36 +29,36 @@ enum AttachmentTypes
 	CA_Invalid,
 };
 
-enum AttachmentFlags
+enum AttachmentFlags : uint32
 {
 	//Static Flags
-	FLAGS_ATTACH_HIDE_ATTACHMENT          = BIT(0),  //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_PHYSICALIZED_RAYS        = BIT(1),  //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_PHYSICALIZED_COLLISIONS  = BIT(2),  //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_SW_SKINNING              = BIT(3),  //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD = BIT(4),  //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_LINEAR_SKINNING          = BIT(5),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_HIDE_ATTACHMENT          = BIT32(0),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_PHYSICALIZED_RAYS        = BIT32(1),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_PHYSICALIZED_COLLISIONS  = BIT32(2),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_SW_SKINNING              = BIT32(3),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_RENDER_ONLY_EXISTING_LOD = BIT32(4),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_LINEAR_SKINNING          = BIT32(5),  //!< Already stored in CDF, so don't change this.
 	FLAGS_ATTACH_PHYSICALIZED             = FLAGS_ATTACH_PHYSICALIZED_RAYS | FLAGS_ATTACH_PHYSICALIZED_COLLISIONS,
 
 	// Geometry deformation using direct compute
-	FLAGS_ATTACH_COMPUTE_SKINNING           = BIT(6),  //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_COMPUTE_SKINNING_PREMORPHS = BIT(7),  //!< Already stored in CDF, so don't change this.
-	FLAGS_ATTACH_COMPUTE_SKINNING_TANGENTS  = BIT(8),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_COMPUTE_SKINNING           = BIT32(6),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_COMPUTE_SKINNING_PREMORPHS = BIT32(7),  //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_COMPUTE_SKINNING_TANGENTS  = BIT32(8),  //!< Already stored in CDF, so don't change this.
 
-	FLAGS_ATTACH_EXCLUDE_FROM_NEAREST	    = BIT(9), //!< Already stored in CDF, so don't change this.
+	FLAGS_ATTACH_EXCLUDE_FROM_NEAREST       = BIT32(9), //!< Already stored in CDF, so don't change this.
 
 	// Dynamic Flags.
-	FLAGS_ATTACH_VISIBLE            = BIT(13),    //!< We set this flag if we can render the object.
-	FLAGS_ATTACH_PROJECTED          = BIT(14),    //!< We set this flag if we can attacht the object to a triangle.
-	FLAGS_ATTACH_WAS_PHYSICALIZED   = BIT(15),    //!< The attachment actually was physicalized.
-	FLAGS_ATTACH_HIDE_MAIN_PASS     = BIT(16),
-	FLAGS_ATTACH_HIDE_SHADOW_PASS   = BIT(17),
-	FLAGS_ATTACH_HIDE_RECURSION     = BIT(18),
-	FLAGS_ATTACH_NEAREST_NOFOV      = BIT(19),
-	FLAGS_ATTACH_NO_BBOX_INFLUENCE  = BIT(21),
-	FLAGS_ATTACH_COMBINEATTACHMENT  = BIT(24),
-	FLAGS_ATTACH_ID_MASK            = BIT(25) | BIT(26) | BIT(27) | BIT(28) | BIT(29),
-	FLAGS_ATTACH_MERGED_FOR_SHADOWS = BIT(30),    //!< The attachment has been merged with other attachments for shadow rendering.
+	FLAGS_ATTACH_VISIBLE            = BIT32(13),    //!< We set this flag if we can render the object.
+	FLAGS_ATTACH_PROJECTED          = BIT32(14),    //!< We set this flag if we can attacht the object to a triangle.
+	FLAGS_ATTACH_WAS_PHYSICALIZED   = BIT32(15),    //!< The attachment actually was physicalized.
+	FLAGS_ATTACH_HIDE_MAIN_PASS     = BIT32(16),
+	FLAGS_ATTACH_HIDE_SHADOW_PASS   = BIT32(17),
+	FLAGS_ATTACH_HIDE_RECURSION     = BIT32(18),
+	FLAGS_ATTACH_NEAREST_NOFOV      = BIT32(19),
+	FLAGS_ATTACH_NO_BBOX_INFLUENCE  = BIT32(21),
+	FLAGS_ATTACH_COMBINEATTACHMENT  = BIT32(24),
+	FLAGS_ATTACH_ID_MASK            = BIT32(25) | BIT32(26) | BIT32(27) | BIT32(28) | BIT32(29),
+	FLAGS_ATTACH_MERGED_FOR_SHADOWS = BIT32(30),    //!< The attachment has been merged with other attachments for shadow rendering.
 };
 
 struct SVClothParams

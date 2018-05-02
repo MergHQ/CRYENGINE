@@ -132,40 +132,40 @@ enum ETEX_TileMode : uint8
 
 //! T = applies to texture objects read from disk.
 //! R = applies to texture objects allocated for render-targets.
-enum ETextureFlags
+enum ETextureFlags : uint32
 {
-	FT_NOMIPS                  = BIT(0),  // TR: don't allocate or use any mip-maps (even if they exist)
-	FT_TEX_NORMAL_MAP          = BIT(1),  // T: indicator that a texture contains normal vectors (used for tracking statistics, debug messages and the default texture)
-	FT______________________00 = BIT(2),  // UNUSED
-	FT_USAGE_DEPTHSTENCIL      = BIT(3),  // R: use as depth-stencil render-target
-	FT_USAGE_ALLOWREADSRGB     = BIT(4),  // TR: allows the renderer to cast the texture-format to a sRGB type if available
-	FT_FILESINGLE              = BIT(5),  // T: suppress loading of additional files like _DDNDIF (faster, RC can tag the file for that)
-	FT_TEX_FONT                = BIT(6),  // T: indicator that a texture contains font glyphs (used solely for tracking statistics!)
-	FT_HAS_ATTACHED_ALPHA      = BIT(7),  // T: indicator that the texture has another texture attached (see FT_ALPHA)
-	FT_USAGE_UNORDERED_ACCESS  = BIT(8),  // R: allow write-only UAVs for the texture object
-	FT______________________01 = BIT(9),  // UNUSED
-	FT_USAGE_MSAA              = BIT(10), // R: use as MSAA render-target
-	FT_FORCE_MIPS              = BIT(11), // TR: always allocate mips (even if normally this would be optimized away)
-	FT_USAGE_RENDERTARGET      = BIT(12), // R: use as render-target
-	FT______________________02 = BIT(13), // UNUSED
-	FT_STAGE_READBACK          = BIT(14), // R: allow read-back of the texture contents by the CPU through a persistent staging texture (otherwise the staging is dynamic)
-	FT_STAGE_UPLOAD            = BIT(15), // R: allow up-load of the texture contents by the CPU through a persistent staging texture (otherwise the staging is dynamic)
-	FT_DONT_RELEASE            = BIT(16), // TR: texture will not be freed automatically when ref counter goes to 0. Use ReleaseForce() to free the texture.
-	FT_ASYNC_PREPARE           = BIT(17), // T: run the streaming preparation of this texture asynchronously
-	FT_DONT_STREAM             = BIT(18), // T: prevent progressive streaming-in/out of the texture, it's fully loaded or not at all
-	FT_DONT_READ               = BIT(19), // TR: the texture is write-only (backbuffers fe.)
-	FT_FAILED                  = BIT(20), // TR: indicator that the allocation of the texture failed the last time it has been tried, for render-targets this is fatal
-	FT_FROMIMAGE               = BIT(21), // T: indicator that the textures originates from disk
-	FT_STATE_CLAMP             = BIT(22), // T: set the sampling mode to clamp in the corresponding sampler-state
-	FT_USAGE_ATLAS             = BIT(23), // R: indicator that the texture's contents form an atlas or flip-book (used solely for tracking statistics!)
-	FT_ALPHA                   = BIT(24), // T: indicator that this is a texture attached to another one (see FT_HAS_ATTACHED_ALPHA)
-	FT_REPLICATE_TO_ALL_SIDES  = BIT(25), // T: Replicate single texture to all cube-map sides on allocation and on file-load
-	FT_KEEP_LOWRES_SYSCOPY     = BIT(26), // ?: keep low res copy in system memory for voxelization on CPU
-	FT_SPLITTED                = BIT(27), // T: indicator that the texture is available splitted on disk
-	FT_STREAMED_PREPARE        = BIT(28), // REMOVE
-	FT_STREAMED_FADEIN         = BIT(29), // T: smoothly fade the texture in after MIPs have been added
-	FT______________________03 = BIT(30), // UNUSED
-	FT_USAGE_UAV_RWTEXTURE     = BIT(31), // R: enable RW usage for the UAV, otherwise UAVs are write-only (see FT_USAGE_UNORDERED_ACCESS)
+	FT_NOMIPS                  = BIT32(0),  // TR: don't allocate or use any mip-maps (even if they exist)
+	FT_TEX_NORMAL_MAP          = BIT32(1),  // T: indicator that a texture contains normal vectors (used for tracking statistics, debug messages and the default texture)
+	FT______________________00 = BIT32(2),  // UNUSED
+	FT_USAGE_DEPTHSTENCIL      = BIT32(3),  // R: use as depth-stencil render-target
+	FT_USAGE_ALLOWREADSRGB     = BIT32(4),  // TR: allows the renderer to cast the texture-format to a sRGB type if available
+	FT_FILESINGLE              = BIT32(5),  // T: suppress loading of additional files like _DDNDIF (faster, RC can tag the file for that)
+	FT_TEX_FONT                = BIT32(6),  // T: indicator that a texture contains font glyphs (used solely for tracking statistics!)
+	FT_HAS_ATTACHED_ALPHA      = BIT32(7),  // T: indicator that the texture has another texture attached (see FT_ALPHA)
+	FT_USAGE_UNORDERED_ACCESS  = BIT32(8),  // R: allow write-only UAVs for the texture object
+	FT______________________01 = BIT32(9),  // UNUSED
+	FT_USAGE_MSAA              = BIT32(10), // R: use as MSAA render-target
+	FT_FORCE_MIPS              = BIT32(11), // TR: always allocate mips (even if normally this would be optimized away)
+	FT_USAGE_RENDERTARGET      = BIT32(12), // R: use as render-target
+	FT______________________02 = BIT32(13), // UNUSED
+	FT_STAGE_READBACK          = BIT32(14), // R: allow read-back of the texture contents by the CPU through a persistent staging texture (otherwise the staging is dynamic)
+	FT_STAGE_UPLOAD            = BIT32(15), // R: allow up-load of the texture contents by the CPU through a persistent staging texture (otherwise the staging is dynamic)
+	FT_DONT_RELEASE            = BIT32(16), // TR: texture will not be freed automatically when ref counter goes to 0. Use ReleaseForce() to free the texture.
+	FT_ASYNC_PREPARE           = BIT32(17), // T: run the streaming preparation of this texture asynchronously
+	FT_DONT_STREAM             = BIT32(18), // T: prevent progressive streaming-in/out of the texture, it's fully loaded or not at all
+	FT_DONT_READ               = BIT32(19), // TR: the texture is write-only (backbuffers fe.)
+	FT_FAILED                  = BIT32(20), // TR: indicator that the allocation of the texture failed the last time it has been tried, for render-targets this is fatal
+	FT_FROMIMAGE               = BIT32(21), // T: indicator that the textures originates from disk
+	FT_STATE_CLAMP             = BIT32(22), // T: set the sampling mode to clamp in the corresponding sampler-state
+	FT_USAGE_ATLAS             = BIT32(23), // R: indicator that the texture's contents form an atlas or flip-book (used solely for tracking statistics!)
+	FT_ALPHA                   = BIT32(24), // T: indicator that this is a texture attached to another one (see FT_HAS_ATTACHED_ALPHA)
+	FT_REPLICATE_TO_ALL_SIDES  = BIT32(25), // T: Replicate single texture to all cube-map sides on allocation and on file-load
+	FT_KEEP_LOWRES_SYSCOPY     = BIT32(26), // ?: keep low res copy in system memory for voxelization on CPU
+	FT_SPLITTED                = BIT32(27), // T: indicator that the texture is available splitted on disk
+	FT_STREAMED_PREPARE        = BIT32(28), // REMOVE
+	FT_STREAMED_FADEIN         = BIT32(29), // T: smoothly fade the texture in after MIPs have been added
+	FT______________________03 = BIT32(30), // UNUSED
+	FT_USAGE_UAV_RWTEXTURE     = BIT32(31), // R: enable RW usage for the UAV, otherwise UAVs are write-only (see FT_USAGE_UNORDERED_ACCESS)
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(ETextureFlags);

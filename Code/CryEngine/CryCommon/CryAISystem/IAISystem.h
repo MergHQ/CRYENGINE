@@ -175,12 +175,12 @@ typedef uint16 EAILoadDataFlags;
 enum EAILoadDataFlag : EAILoadDataFlags
 {
 	eAILoadDataFlag_None          = 0,
-	eAILoadDataFlag_MNM           = BIT(0),
-	eAILoadDataFlag_DesignedAreas = BIT(1),
-	eAILoadDataFlag_Covers        = BIT(2),
+	eAILoadDataFlag_MNM           = BIT16(0),
+	eAILoadDataFlag_DesignedAreas = BIT16(1),
+	eAILoadDataFlag_Covers        = BIT16(2),
 
-	eAILoadDataFlag_AfterExport   = BIT(14),
-	eAILoadDataFlag_QuickLoad     = BIT(15),
+	eAILoadDataFlag_AfterExport   = BIT16(14),
+	eAILoadDataFlag_QuickLoad     = BIT16(15),
 
 	eAILoadDataFlag_Navigation    = eAILoadDataFlag_MNM | eAILoadDataFlag_DesignedAreas,
 	eAILoadDataFlag_AllSystems    = 0xFFFF & ~(eAILoadDataFlag_AfterExport | eAILoadDataFlag_QuickLoad),

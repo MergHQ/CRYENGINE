@@ -863,11 +863,11 @@ struct SBoolKey : public STrackKey
 
 struct SCommentKey : public STrackDurationKey
 {
-	enum ETextAlign
+	enum ETextAlign : uint32
 	{
 		eTA_Left   = 0,
-		eTA_Center = BIT(1),
-		eTA_Right  = BIT(2)
+		eTA_Center = BIT32(1),
+		eTA_Right  = BIT32(2)
 	};
 
 	static const char* GetType()              { return "Comment"; }

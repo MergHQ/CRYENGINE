@@ -54,16 +54,16 @@ enum ECharRenderFlags
 	CS_FLAG_RENDER_NODE_VISIBLE  = 1 << 13, //!< Set by 3DEngine when render node owning character is potentially visible and needs rendering
 };
 
-enum CHRLOADINGFLAGS
+enum CHRLOADINGFLAGS : uint32
 {
-	CA_IGNORE_LOD               = BIT(0),
-	CA_CharEditModel            = BIT(1),
-	CA_PreviewMode              = BIT(2),
-	CA_DoNotStreamStaticObjects = BIT(3),
-	CA_SkipSkelRecreation       = BIT(4),
-	CA_DisableLogWarnings       = BIT(5),
-	CA_SkipBoneRemapping        = BIT(6),
-	CA_ImmediateMode            = BIT(7)
+	CA_IGNORE_LOD               = BIT32(0),
+	CA_CharEditModel            = BIT32(1),
+	CA_PreviewMode              = BIT32(2),
+	CA_DoNotStreamStaticObjects = BIT32(3),
+	CA_SkipSkelRecreation       = BIT32(4),
+	CA_DisableLogWarnings       = BIT32(5),
+	CA_SkipBoneRemapping        = BIT32(6),
+	CA_ImmediateMode            = BIT32(7)
 };
 
 enum EReloadCAFResult

@@ -40,11 +40,11 @@ class CEntity;
 
 //! SpecType for entity layers.
 //! Add new bits to update. Do not just rename, cause values are used for saving levels.
-enum ESpecType
+enum ESpecType : uint32
 {
-	eSpecType_PC      = BIT(0),
-	eSpecType_XBoxOne = BIT(1),
-	eSpecType_PS4     = BIT(2),
+	eSpecType_PC      = BIT32(0),
+	eSpecType_XBoxOne = BIT32(1),
+	eSpecType_PS4     = BIT32(2),
 	eSpecType_All     = eSpecType_PC | eSpecType_XBoxOne | eSpecType_PS4
 };
 

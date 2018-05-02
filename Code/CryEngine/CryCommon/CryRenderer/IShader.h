@@ -2094,43 +2094,43 @@ typedef DynArray<CRenderChunk> TRenderChunkArray;
 
 //////////////////////////////////////////////////////////////////////
 // DLights
-enum eDynamicLightFlags
+enum eDynamicLightFlags : uint32
 {
-	DLF_AREA_SPEC_TEX           = BIT(0),
-	DLF_DIRECTIONAL             = BIT(1),
-	DLF_BOX_PROJECTED_CM        = BIT(2),
+	DLF_AREA_SPEC_TEX           = BIT32(0),
+	DLF_DIRECTIONAL             = BIT32(1),
+	DLF_BOX_PROJECTED_CM        = BIT32(2),
 	// UNUSED										= BIT(3),
-	DLF_POST_3D_RENDERER        = BIT(4),
-	DLF_CASTSHADOW_MAPS         = BIT(5),
-	DLF_POINT                   = BIT(6),
-	DLF_PROJECT                 = BIT(7),
-	// UNUSED                   = BIT(8),
+	DLF_POST_3D_RENDERER        = BIT32(4),
+	DLF_CASTSHADOW_MAPS         = BIT32(5),
+	DLF_POINT                   = BIT32(6),
+	DLF_PROJECT                 = BIT32(7),
+	// UNUSED                   = BIT32(8),
 	//	UNUSED										= BIT(9),
-	DLF_IGNORES_VISAREAS        = BIT(10),
-	DLF_DEFERRED_CUBEMAPS       = BIT(11),
-	DLF_HAS_CLIP_VOLUME         = BIT(12),
-	DLF_DISABLED                = BIT(13),
-	DLF_AREA_LIGHT              = BIT(14),
-	DLF_USE_FOR_SVOGI           = BIT(15),
+	DLF_IGNORES_VISAREAS        = BIT32(10),
+	DLF_DEFERRED_CUBEMAPS       = BIT32(11),
+	DLF_HAS_CLIP_VOLUME         = BIT32(12),
+	DLF_DISABLED                = BIT32(13),
+	DLF_AREA_LIGHT              = BIT32(14),
+	DLF_USE_FOR_SVOGI           = BIT32(15),
 	// UNUSED										=	BIT(16),
-	DLF_FAKE                    = BIT(17),   //!< No lighting, used for Flares, beams and such.
-	DLF_SUN                     = BIT(18),
-	DLF_LM                      = BIT(19),
-	DLF_THIS_AREA_ONLY          = BIT(20),   //!< Affects only current area/sector.
-	DLF_AMBIENT                 = BIT(21),   //!< Ambient light (has name indicates, used for replacing ambient).
-	DLF_INDOOR_ONLY             = BIT(22),   //!< Do not affect height map.
-	DLF_VOLUMETRIC_FOG          = BIT(23),   //!< Affects volumetric fog.
-	DLF_LINK_TO_SKY_COLOR       = BIT(24),   //!< Multiply light color with current sky color (use GI sky color if available).
-	DLF_ATTACH_TO_SUN           = BIT(25),   //!< Add only to  Light Propagation Volume if it's possible.
-	DLF_TRACKVIEW_TIMESCRUBBING = BIT(26),   //!< Add only to  Light Propagation Volume if it's possible.
-	DLF_VOLUMETRIC_FOG_ONLY     = BIT(27),   //!< Affects only volumetric fog.
+	DLF_FAKE                    = BIT32(17),   //!< No lighting, used for Flares, beams and such.
+	DLF_SUN                     = BIT32(18),
+	DLF_LM                      = BIT32(19),
+	DLF_THIS_AREA_ONLY          = BIT32(20),   //!< Affects only current area/sector.
+	DLF_AMBIENT                 = BIT32(21),   //!< Ambient light (has name indicates, used for replacing ambient).
+	DLF_INDOOR_ONLY             = BIT32(22),   //!< Do not affect height map.
+	DLF_VOLUMETRIC_FOG          = BIT32(23),   //!< Affects volumetric fog.
+	DLF_LINK_TO_SKY_COLOR       = BIT32(24),   //!< Multiply light color with current sky color (use GI sky color if available).
+	DLF_ATTACH_TO_SUN           = BIT32(25),   //!< Add only to  Light Propagation Volume if it's possible.
+	DLF_TRACKVIEW_TIMESCRUBBING = BIT32(26),   //!< Add only to  Light Propagation Volume if it's possible.
+	DLF_VOLUMETRIC_FOG_ONLY     = BIT32(27),   //!< Affects only volumetric fog.
 
 	//! Deprecated. Remove once deferred shading by default.
-	DLF_DEFERRED_LIGHT = BIT(29),
+	DLF_DEFERRED_LIGHT = BIT32(29),
 
 	//! Deprecated. Remove all dependencies editor side, etc.
-	DLF_SPECULAROCCLUSION = BIT(30),
-	DLF_DIFFUSEOCCLUSION  = BIT(31),
+	DLF_SPECULAROCCLUSION = BIT32(30),
+	DLF_DIFFUSEOCCLUSION  = BIT32(31),
 
 	DLF_LIGHTTYPE_MASK    = (DLF_DIRECTIONAL | DLF_POINT | DLF_PROJECT | DLF_AREA_LIGHT)
 };
@@ -2675,13 +2675,13 @@ struct SWaterRippleInfo
 };
 
 //! Runtime shader flags for HW skinning.
-enum EHWSkinningRuntimeFlags
+enum EHWSkinningRuntimeFlags : uint32
 {
-	eHWS_MotionBlured             = BIT(2),
-	eHWS_SkinnedLinear            = BIT(3),
-	eHWS_DC_deformation_Skinning  = BIT(4),
-	eHWS_DC_Deformation_PreMorphs = BIT(5),
-	eHWS_DC_Deformation_Tangents  = BIT(6)
+	eHWS_MotionBlured             = BIT32(2),
+	eHWS_SkinnedLinear            = BIT32(3),
+	eHWS_DC_deformation_Skinning  = BIT32(4),
+	eHWS_DC_Deformation_PreMorphs = BIT32(5),
+	eHWS_DC_Deformation_Tangents  = BIT32(6)
 };
 
 //! Shader graph support.

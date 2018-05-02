@@ -54,16 +54,30 @@ namespace minigui { class CDrawContext{ public: virtual ~CDrawContext() {} }; }
 
 using JobManager::SJobStateBase;
 %}
+
+%typemap(csbase) ICryPak::EPathResolutionRules "uint"
+%typemap(csbase) ICryPak::EFOpenFlags "uint"
+%typemap(csbase) ICryArchive::EPakFlags "uint"
+%typemap(csbase) ELoadConfigurationFlags "uint"
+%typemap(csbase) EVRComponent "uint"
+%typemap(csbase) ELogMode "ushort"
+%typemap(csbase) ESystemUpdateFlags "ushort"
+%typemap(csbase) EVarFlags "uint"
+%typemap(csbase) IHmdController::ECaps "uint"
+%typemap(csbase) IPlatformOS::ECreateFlags "uint"
+%typemap(csbase) minigui::EMiniCtrlStatus "uint"
+%typemap(csbase) minigui::EMiniCtrlEvent "uint"
+
 %feature("director") ILogCallback;
 %include "../../../../CryEngine/CryCommon/CrySystem/ILog.h"
 %feature("director") ISystemEventListener;
 %feature("director") ILoadingProgressListener;
 %ignore CreateSystemInterface;
 %include "../../../../CryEngine/CryCommon/CrySystem/ISystem.h"
-%typemap(csbase) ICryPak::EPathResolutionRules "long"
+
 %include "../../../../CryEngine/CryCommon/CrySystem/File/ICryPak.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/ICmdLine.h"
-%typemap(csbase) EVarFlags "uint"
+
 %feature("director") IRemoteConsoleListener;
 %include "../../../../CryEngine/CryCommon/CryCore/SFunctor.h"
 %typemap(cscode) ICVar %{

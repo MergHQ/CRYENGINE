@@ -197,8 +197,8 @@ struct ICoverUser
 	enum EStateFlags : uint8
 	{
 		None = 0,
-		MovingToCover = BIT(0),
-		InCover = BIT(1),
+		MovingToCover = BIT8(0),
+		InCover = BIT8(1),
 	};
 	typedef CEnumFlags<EStateFlags> StateFlags;
 

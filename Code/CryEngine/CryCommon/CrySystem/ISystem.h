@@ -194,13 +194,13 @@ namespace minigui
 
 enum ESystemUpdateFlags : uint8
 {
-	ESYSUPDATE_IGNORE_AI         = BIT(0),
-	ESYSUPDATE_IGNORE_PHYSICS    = BIT(2),
+	ESYSUPDATE_IGNORE_AI         = BIT8(0),
+	ESYSUPDATE_IGNORE_PHYSICS    = BIT8(2),
 	//! Special update mode for editor.
-	ESYSUPDATE_EDITOR            = BIT(3),
-	ESYSUPDATE_MULTIPLAYER       = BIT(4),
-	ESYSUPDATE_EDITOR_AI_PHYSICS = BIT(5),
-	ESYSUPDATE_EDITOR_ONLY       = BIT(6)
+	ESYSUPDATE_EDITOR            = BIT8(3),
+	ESYSUPDATE_MULTIPLAYER       = BIT8(4),
+	ESYSUPDATE_EDITOR_AI_PHYSICS = BIT8(5),
+	ESYSUPDATE_EDITOR_ONLY       = BIT8(6)
 };
 
 //! Configuration specification, depends on user selected machine specification.

@@ -2431,7 +2431,7 @@ void CActionGame::PerformPlaneBreak(const EventPhysCollision& epc, SBreakEvent* 
 
 		//CryLogAlways("CActionGame::PerformPlaneBreak() - ProcessImpact returned pStatObjNew: 0x%p\n  pStatObjAux: 0x%p", pStatObjNew, pStatObjAux);
 
-		be.bFirstBreak = iszero(pStatObj->GetFlags() & STATIC_OBJECT_GENERATED);  // keep note whether this is a primary or secondary break
+		be.bFirstBreak = (pStatObj->GetFlags() & STATIC_OBJECT_GENERATED) == 0;  // keep note whether this is a primary or secondary break
 
 		EventPhysMono mono;
 		mono.pEntity = epc.pEntity[1];
