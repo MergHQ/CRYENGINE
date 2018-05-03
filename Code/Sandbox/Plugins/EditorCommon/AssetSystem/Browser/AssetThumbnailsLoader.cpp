@@ -224,7 +224,7 @@ void CAssetThumbnailsLoader::ThreadFunc()
 void CAssetThumbnailsLoader::OnCVarChanged(ICVar* const pGenerateThumbnais)
 {
 	CRY_ASSERT(pGenerateThumbnais);
-	CRY_ASSERT(pGenerateThumbnais->GetType() == CVAR_INT);
+	CRY_ASSERT(pGenerateThumbnais->GetType() == ECVarType::Int);
 	CRY_ASSERT(strcmp(pGenerateThumbnais->GetName(), "ed_generateThumbnails") == 0);
 
 	GetInstance().SetGenerateThumbnais(pGenerateThumbnais->GetIVal() != 0);

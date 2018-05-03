@@ -3152,7 +3152,7 @@ void CSystem::SetLoadOrigin(LevelLoadOrigin origin)
 //////////////////////////////////////////////////////////////////////
 void CSystem::OnLanguageCVarChanged(ICVar* const pLanguage)
 {
-	if (pLanguage != nullptr && pLanguage->GetType() == CVAR_STRING)
+	if (pLanguage != nullptr && pLanguage->GetType() == ECVarType::String)
 	{
 		CSystem* const pSystem = static_cast<CSystem*>(gEnv->pSystem);
 
@@ -3196,7 +3196,7 @@ void CSystem::OnLanguageCVarChanged(ICVar* const pLanguage)
 //////////////////////////////////////////////////////////////////////
 void CSystem::OnLanguageAudioCVarChanged(ICVar* const pLanguageAudio)
 {
-	if (pLanguageAudio != nullptr && pLanguageAudio->GetType() == CVAR_STRING)
+	if (pLanguageAudio != nullptr && pLanguageAudio->GetType() == ECVarType::String)
 	{
 		CSystem* const pSystem = static_cast<CSystem*>(gEnv->pSystem);
 
@@ -3223,7 +3223,7 @@ void CSystem::OnLanguageAudioCVarChanged(ICVar* const pLanguageAudio)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::OnLocalizationFolderCVarChanged(ICVar* const pLocalizationFolder)
 {
-	if (pLocalizationFolder && pLocalizationFolder->GetType() == CVAR_STRING)
+	if (pLocalizationFolder && pLocalizationFolder->GetType() == ECVarType::String)
 	{
 		CSystem* const pSystem = static_cast<CSystem* const>(gEnv->pSystem);
 

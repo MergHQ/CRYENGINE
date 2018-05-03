@@ -304,8 +304,8 @@ public:
 	void GetGameModeProfileOptionName(const uint32 index, CryFixedStringT<32> &result);
 
 	uint16 PackCustomVariantOption(uint32 index);
-	int UnpackCustomVariantOption(uint16 value, uint32 index, int* pIntValue, float* pFloatValue);
-	int UnpackCustomVariantOptionProfileValues(uint16 value, uint32 index, int* pIntValue, float* pFloatValue, int* pFloatPrecision);
+	ECVarType UnpackCustomVariantOption(uint16 value, uint32 index, int* pIntValue, float* pFloatValue);
+	ECVarType UnpackCustomVariantOptionProfileValues(uint16 value, uint32 index, int* pIntValue, float* pFloatValue, int* pFloatPrecision);
 	void ReadDetailedServerInfo(uint16 *pOptions, uint32 numOptions);
 
 	void WriteSetCustomVariantOptions(CCryLobbyPacket* pPacket, CPlaylistManager::TOptionsVec pOptions, uint32 numOptions);

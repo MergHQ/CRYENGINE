@@ -13,9 +13,51 @@ class ITexture;
 class ICrySizer;
 enum ELoadConfigurationType;
 
-#define     CVAR_INT    1
-#define     CVAR_FLOAT  2
-#define     CVAR_STRING 3
+enum class ECVarType : uint32
+{
+	Invalid = 0,
+	Int     = 1,
+	Float   = 2,
+	String  = 3
+};
+
+namespace ECVarTypeHelper
+{
+	template <typename T>
+	constexpr ECVarType GetTypeForT();
+	template<>
+	constexpr ECVarType GetTypeForT<int>() { return ECVarType::Int; }
+	template<>
+	constexpr ECVarType GetTypeForT<float>() { return ECVarType::Float; }
+	template<>
+	constexpr ECVarType GetTypeForT<const char*>() { return ECVarType::String; }
+
+	template <typename T>
+	constexpr const char* GetNameForT();
+	template<>
+	constexpr const char* GetNameForT<int>() { return "int"; }
+	template<>
+	constexpr const char* GetNameForT<float>() { return "float"; }
+	template<>
+	constexpr const char* GetNameForT<const char*>() { return "string"; }
+	
+	inline const char* GetNameForECVar(ECVarType type)
+	{
+		switch (type)
+		{
+		case ECVarType::Invalid:    return "?";
+		case ECVarType::Int:        return "int";
+		case ECVarType::Float:      return "float";
+		case ECVarType::String:     return "string";
+		default: CRY_ASSERT(false); return "?";
+		}
+	}
+}
+
+// Defines for backwards compatibility
+#define CVAR_INT     ECVarType::Int
+#define CVAR_FLOAT   ECVarType::Float
+#define CVAR_STRING  ECVarType::String
 
 #if defined(_RELEASE)
 	#define ALLOW_AUDIT_CVARS    0
@@ -596,8 +638,8 @@ struct ICVar
 	//! Set the variable's flags.
 	virtual int SetFlags(int flags) = 0;
 
-	//! \return the primary variable's type, e.g. CVAR_INT, CVAR_FLOAT, CVAR_STRING.
-	virtual int GetType() = 0;
+	//! \return the primary variable's type, e.g. ECVarType::Int, ECVarType::Float, ECVarType::String.
+	virtual ECVarType GetType() = 0;
 
 	//! \return The variable's name.
 	virtual const char* GetName() const = 0;

@@ -254,13 +254,13 @@ QVariant CCVarModel::data(const QModelIndex& index, int role /*= Qt::DisplayRole
 		case eCVarListColumn_Value:
 			switch (pCVar->GetType())
 			{
-			case CVAR_INT:
+			case ECVarType::Int:
 				return pCVar->GetIVal();
 
-			case CVAR_FLOAT:
+			case ECVarType::Float:
 				return pCVar->GetFVal();
 
-			case CVAR_STRING:
+			case ECVarType::String:
 				return pCVar->GetString();
 
 			default:
@@ -288,13 +288,13 @@ QVariant CCVarModel::data(const QModelIndex& index, int role /*= Qt::DisplayRole
 			{
 				switch (pCVar->GetType())
 				{
-				case CVAR_INT:
+				case ECVarType::Int:
 					return "Integer";
 
-				case CVAR_FLOAT:
+				case ECVarType::Float:
 					return "Floating point";
 
-				case CVAR_STRING:
+				case ECVarType::String:
 					return "String";
 
 				default:
@@ -318,13 +318,13 @@ QVariant CCVarModel::data(const QModelIndex& index, int role /*= Qt::DisplayRole
 	{
 		switch (pCVar->GetType())
 		{
-		case CVAR_INT:
+		case ECVarType::Int:
 			return DataTypes::Int;
 
-		case CVAR_FLOAT:
+		case ECVarType::Float:
 			return DataTypes::Float;
 
-		case CVAR_STRING:
+		case ECVarType::String:
 			return DataTypes::String;
 
 		default:
@@ -391,21 +391,21 @@ bool CCVarModel::setData(const QModelIndex& index, const QVariant& value, int ro
 				ICVar *pCVar = GetCVar(index);
 				switch (pCVar->GetType())
 				{
-				case CVAR_INT:
+				case ECVarType::Int:
 				{
 					const auto valueInt = value.toInt();
 					pCVar->Set(valueInt);
 					return true;
 				}
 
-				case CVAR_FLOAT:
+				case ECVarType::Float:
 				{
 					const auto valueFloat = value.toFloat();
 					pCVar->Set(valueFloat);
 					return true;
 				}
 
-				case CVAR_STRING:
+				case ECVarType::String:
 				{
 					const auto valueString = value.toString().toStdString();
 					pCVar->Set(valueString.c_str());
@@ -675,15 +675,15 @@ QVariant CCVarListDockable::GetState()
 		{
 			switch (pCVar->GetType())
 			{
-			case CVAR_INT:
+			case ECVarType::Int:
 				map.insert(pCVar->GetName(), pCVar->GetIVal());
 				break;
 
-			case CVAR_FLOAT:
+			case ECVarType::Float:
 				map.insert(pCVar->GetName(), pCVar->GetFVal());
 				break;
 
-			case CVAR_STRING:
+			case ECVarType::String:
 				map.insert(pCVar->GetName(), pCVar->GetString());
 				break;
 

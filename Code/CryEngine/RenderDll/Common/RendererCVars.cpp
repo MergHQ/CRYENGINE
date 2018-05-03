@@ -3094,9 +3094,9 @@ CCVarUpdateRecorder::SUpdateRecord::SUpdateRecord(ICVar* pCVar)
 
 	switch (type)
 	{
-		case CVAR_INT:    intValue = pCVar->GetIVal();                 break;
-		case CVAR_FLOAT:  floatValue = pCVar->GetFVal();               break;
-		case CVAR_STRING: cry_strcpy(stringValue, pCVar->GetString()); break;
+		case ECVarType::Int:    intValue = pCVar->GetIVal();                 break;
+		case ECVarType::Float:  floatValue = pCVar->GetFVal();               break;
+		case ECVarType::String: cry_strcpy(stringValue, pCVar->GetString()); break;
 		default: assert(false);
 	};
 }

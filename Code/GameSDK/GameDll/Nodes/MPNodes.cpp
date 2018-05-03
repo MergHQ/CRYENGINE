@@ -2169,21 +2169,21 @@ public:
 			ICVar* pICVar = gEnv->pConsole->GetCVar(cvar.c_str());
 			if (pICVar != 0)
 			{
-				if (pICVar->GetType() == CVAR_INT)
+				if (pICVar->GetType() == ECVarType::Int)
 				{
 					const int ival = pICVar->GetIVal();
 					ActivateOutput(pActInfo, INTVALUE, ival);
 					ActivateOutput(pActInfo, BOOLVALUE, ival != 0);
 					ActivateOutput(pActInfo, FLTVALUE, (float)ival);
 				}
-				if (pICVar->GetType() == CVAR_FLOAT)
+				if (pICVar->GetType() == ECVarType::Float)
 				{
 					const float fval = pICVar->GetFVal();
 					ActivateOutput(pActInfo, FLTVALUE, fval);
 					ActivateOutput(pActInfo, BOOLVALUE, fabs_tpl(fval) > FLT_EPSILON);
 					ActivateOutput(pActInfo, INTVALUE, (int)fval);
 				}
-				if (pICVar->GetType() == CVAR_STRING)
+				if (pICVar->GetType() == ECVarType::String)
 				{
 					const string sVal = pICVar->GetString();
 					ActivateOutput(pActInfo, STRVALUE, sVal);

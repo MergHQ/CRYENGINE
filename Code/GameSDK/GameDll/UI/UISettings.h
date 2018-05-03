@@ -45,7 +45,7 @@ struct SNullCVar : public ICVar
 	virtual void ClearFlags (int flags) override { return; }
 	virtual int GetFlags() const override { return 0; }
 	virtual int SetFlags(int flags) override { return 0; }
-	virtual int GetType() override { return 0; }
+	virtual ECVarType GetType() override { return ECVarType::Invalid; }
 	virtual const char* GetName() const override { return "NULL"; }
 	virtual const char* GetHelp() override { return "NULL"; }
 	virtual bool IsConstCVar() const override { return 0; }

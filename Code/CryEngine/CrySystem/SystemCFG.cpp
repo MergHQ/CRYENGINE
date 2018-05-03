@@ -252,7 +252,7 @@ public:
 
 			string szLine = pCVar->GetName();
 
-			if (pCVar->GetType() == CVAR_STRING)
+			if (pCVar->GetType() == ECVarType::String)
 				szLine += " = \"" + szValue + "\"\r\n";
 			else
 				szLine += " = " + szValue + "\r\n";

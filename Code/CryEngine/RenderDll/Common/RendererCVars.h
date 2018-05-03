@@ -656,7 +656,7 @@ public:
 		};
 
 		const char* name;
-		int         type;
+		ECVarType   type;
 
 		SUpdateRecord(ICVar* pCVar);
 		bool operator==(const SUpdateRecord& rhs)

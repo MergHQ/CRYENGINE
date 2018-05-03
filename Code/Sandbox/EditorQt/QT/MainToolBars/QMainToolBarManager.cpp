@@ -655,7 +655,7 @@ void QMainToolBarManager::CreateToolBar(const std::shared_ptr<QToolBarDesc> tool
 					QVariant variant = pCVarDesc->GetValue();
 					switch (pCVar->GetType())
 					{
-					case CVAR_INT:
+					case ECVarType::Int:
 					{
 						int currValue = pCVar->GetIVal();
 						int newValue = variant.toInt();
@@ -668,10 +668,10 @@ void QMainToolBarManager::CreateToolBar(const std::shared_ptr<QToolBarDesc> tool
 							pCVar->Set(pCVar->GetIVal() == newValue ? 0 : newValue);
 					}
 						break;
-					case CVAR_FLOAT:
+					case ECVarType::Float:
 						pCVar->Set(pCVar->GetFVal() == variant.toFloat() ? 0.0f : variant.toFloat());
 						break;
-					case CVAR_STRING:
+					case ECVarType::String:
 						pCVar->Set(variant.toString().toStdString().c_str());
 					default:
 						break;
@@ -715,7 +715,7 @@ void QMainToolBarManager::OnCVarChanged(ICVar* pCVar)
 	bool bChecked = false;
 	switch (pCVar->GetType())
 	{
-	case CVAR_INT:
+	case ECVarType::Int:
 		for (QAction* pAction : actions)
 		{
 			bool isBitFlag = pAction->property(s_actionCVarBitFlagName).toBool();
@@ -723,11 +723,11 @@ void QMainToolBarManager::OnCVarChanged(ICVar* pCVar)
 			pAction->setChecked(isBitFlag ?  value & pCVar->GetIVal() : value == pCVar->GetIVal());
 		}
 		break;
-	case CVAR_FLOAT:
+	case ECVarType::Float:
 		for (QAction* pAction : actions)
 			pAction->setChecked(pAction->property(s_actionPropertyName) == pCVar->GetFVal());
 		break;
-	case CVAR_STRING:
+	case ECVarType::String:
 		for (QAction* pAction : actions)
 			pAction->setChecked(pAction->property(s_actionPropertyName) == QString(pCVar->GetString()));
 	default:
