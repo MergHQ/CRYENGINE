@@ -327,6 +327,24 @@ namespace Cry
 				return false;
 			}
 
+			const DynArray<IUser*>& CPlugin::GetFriends()
+			{
+				if (ISteamFriends* const pSteamFriends = SteamFriends())
+				{
+					m_friends.clear();
+
+					constexpr int friendFlags = k_EFriendFlagAll;
+					const int friendCount = pSteamFriends->GetFriendCount(friendFlags);
+					for (int i = 0; i < friendCount; ++i)
+					{
+						CSteamID friendId = pSteamFriends->GetFriendByIndex(i, friendFlags);
+						m_friends.push_back(TryGetUser(friendId));
+					}
+				}
+
+				return m_friends;
+			}
+
 			bool CPlugin::IsFriendWith(IUser::Identifier otherUserId) const
 			{
 				if (auto* pSteamFriends = SteamFriends())
@@ -335,6 +353,35 @@ namespace Cry
 				}
 
 				return false;
+			}
+
+			EFriendRelationship CPlugin::GetFriendRelationship(IUser::Identifier otherUserId) const
+			{
+				if (auto pSteamFriends = SteamFriends())
+				{
+					switch (pSteamFriends->GetFriendRelationship(otherUserId))
+					{
+					case k_EFriendRelationshipNone:
+						return EFriendRelationship::None;
+
+					case k_EFriendRelationshipRequestRecipient:
+						return EFriendRelationship::RequestReceived;
+
+					case k_EFriendRelationshipFriend:
+						return EFriendRelationship::Friend;
+
+					case k_EFriendRelationshipRequestInitiator:
+						return EFriendRelationship::RequestSent;
+
+					case k_EFriendRelationshipIgnored:
+						return EFriendRelationship::Blocked;
+
+					default:
+						break;
+					}
+				}
+
+				return EFriendRelationship::None;
 			}
 
 			ApplicationIdentifier CPlugin::GetAppId() const
