@@ -696,7 +696,7 @@ void SkipComments(char** buf, bool bSkipWhiteSpace)
 	int n;
 	static int m;
 
-	while (n = IsComment(buf))
+	while ((n = IsComment(buf)))
 	{
 		switch (n)
 		{

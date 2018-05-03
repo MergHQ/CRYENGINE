@@ -581,7 +581,7 @@ D3DResource* CDeviceObjectFactory::AllocateStagingResource(D3DResource* pForTex,
 
 	if (result == VK_SUCCESS)
 	{
-		if (pMappedAddress = pStaging->Map())
+		if ((pMappedAddress = pStaging->Map()))
 		{
 			return pStaging;
 		}

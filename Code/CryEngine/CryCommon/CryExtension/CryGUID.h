@@ -56,10 +56,10 @@ struct CryGUID
 
 	constexpr bool operator==(const CryGUID& rhs) const { return hipart == rhs.hipart && lopart == rhs.lopart; }
 	constexpr bool operator!=(const CryGUID& rhs) const { return hipart != rhs.hipart || lopart != rhs.lopart; }
-	constexpr bool operator<(const CryGUID& rhs) const  { return hipart < rhs.hipart || (hipart == rhs.hipart) && lopart < rhs.lopart; }
-	constexpr bool operator>(const CryGUID& rhs) const  { return hipart > rhs.hipart || (hipart == rhs.hipart) && lopart > rhs.lopart; }
-	constexpr bool operator<=(const CryGUID& rhs) const { return hipart < rhs.hipart || (hipart == rhs.hipart) && lopart <= rhs.lopart; }
-	constexpr bool operator>=(const CryGUID& rhs) const { return hipart > rhs.hipart || (hipart == rhs.hipart) && lopart >= rhs.lopart; }
+	constexpr bool operator<(const CryGUID& rhs) const  { return hipart < rhs.hipart || ((hipart == rhs.hipart) && lopart < rhs.lopart); }
+	constexpr bool operator>(const CryGUID& rhs) const  { return hipart > rhs.hipart || ((hipart == rhs.hipart) && lopart > rhs.lopart); }
+	constexpr bool operator<=(const CryGUID& rhs) const { return hipart < rhs.hipart || ((hipart == rhs.hipart) && lopart <= rhs.lopart); }
+	constexpr bool operator>=(const CryGUID& rhs) const { return hipart > rhs.hipart || ((hipart == rhs.hipart) && lopart >= rhs.lopart); }
 
 	struct StringUtils
 	{

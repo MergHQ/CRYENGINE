@@ -457,7 +457,7 @@ void CREWaterVolume::UpdatePerInstanceCB(
 
 	cb->cFogColorDensity = Vec4(0.0f);
 
-	if (!m_drawWaterSurface || m_drawFastPath && !m_pParams->m_viewerInsideVolume)
+	if (!m_drawWaterSurface || (m_drawFastPath && !m_pParams->m_viewerInsideVolume))
 	{
 		const float log2e = 1.44269502f; // log2(e) = 1.44269502
 
@@ -490,7 +490,7 @@ void CREWaterVolume::UpdatePerInstanceCB(
 	}
 
 	// Disable fog when inside volume or when not using fast path - could assign custom RT flag for this instead
-	if (m_drawFastPath && m_pParams->m_viewerInsideVolume || !m_drawFastPath && m_drawWaterSurface)
+	if ((m_drawFastPath && m_pParams->m_viewerInsideVolume) || (!m_drawFastPath && m_drawWaterSurface))
 	{
 		// fog color & density
 		cb->cFogColorDensity = Vec4(0.0f);

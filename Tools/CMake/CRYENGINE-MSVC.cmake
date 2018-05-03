@@ -16,6 +16,7 @@ set(MSVC_COMMON_FLAGS
 	/wd4653     # Ignore PCH for any individual file that has different optimization settings
     /wd4275     # non dll-interface class '' used as base for dll-interface class ''
 	/wd4961     # No profile data was merged into '', profile-guided optimizations disabled
+	/wd4068		# 'Unknown pragma' - sometimes need these in code to prevent global suppression.
 )
 string(REPLACE ";" " " MSVC_COMMON_FLAGS "${MSVC_COMMON_FLAGS}")
  

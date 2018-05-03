@@ -136,7 +136,7 @@ void CRenderOutput::BeginRendering(CRenderView* pRenderView, stl::optional<uint3
 		clearColor = pRenderView->GetTargetClearColor();
 	}
 
-	if (clearTargetFlag = clearTargetFlag & ~m_hasBeenCleared)
+	if ((clearTargetFlag = clearTargetFlag & ~m_hasBeenCleared))
 	{
 		const bool reverseDepth = true;
 		const auto depthClearFlags = clearTargetFlag & (FRT_CLEAR_DEPTH | FRT_CLEAR_STENCIL);

@@ -580,7 +580,7 @@ bool CHWShader_D3D::mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallb
 	uint64 OrRTMask = 0;
 	mfSetDefaultRT(AndRTMask, OrRTMask);
 	SShaderCombIdent Ident;
-	Ident.m_RTMask = cmb.m_RTMask & AndRTMask | OrRTMask;
+	Ident.m_RTMask = (cmb.m_RTMask & AndRTMask) | OrRTMask;
 	Ident.m_pipelineState.opaque = cmb.m_pipelineState.opaque;
 	Ident.m_MDVMask = cmb.m_MDVMask;
 	if (m_eSHClass == eHWSC_Pixel)
@@ -1467,7 +1467,7 @@ bool CHWShader_D3D::PrecacheShader(CShader* pShader, const SShaderCombIdent &cac
 {
 	SShaderCombIdent Ident;
 	Ident.m_LightMask = cacheIdent.m_LightMask;
-	Ident.m_RTMask = cacheIdent.m_RTMask & m_nMaskAnd_RT | m_nMaskOr_RT;
+	Ident.m_RTMask = (cacheIdent.m_RTMask & m_nMaskAnd_RT) | m_nMaskOr_RT;
 	Ident.m_MDMask = cacheIdent.m_MDMask;
 	Ident.m_MDVMask = cacheIdent.m_MDVMask | CParserBin::m_nPlatform;
 	Ident.m_GLMask = m_nMaskGenShader;

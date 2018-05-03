@@ -1217,12 +1217,12 @@ inline bool CCamera::IsOBBVisible_E(const Vec3& wpos, const OBB& obb, f32 uscale
 	//is larger then the "radius" of the OBB, then the OBB is outside the frustum.
 	f32 t0, t1, t2, t3, t4, t5;
 	bool mt0, mt1, mt2, mt3, mt4, mt5;
-	if (mt0 = (t0 = m_fp[0] | p) > 0.0f)  if (t0 > (fabsf(m_fp[0].n | ax) + fabsf(m_fp[0].n | ay) + fabsf(m_fp[0].n | az))) return CULL_EXCLUSION;
-	if (mt1 = (t1 = m_fp[1] | p) > 0.0f)  if (t1 > (fabsf(m_fp[1].n | ax) + fabsf(m_fp[1].n | ay) + fabsf(m_fp[1].n | az))) return CULL_EXCLUSION;
-	if (mt2 = (t2 = m_fp[2] | p) > 0.0f)  if (t2 > (fabsf(m_fp[2].n | ax) + fabsf(m_fp[2].n | ay) + fabsf(m_fp[2].n | az))) return CULL_EXCLUSION;
-	if (mt3 = (t3 = m_fp[3] | p) > 0.0f)  if (t3 > (fabsf(m_fp[3].n | ax) + fabsf(m_fp[3].n | ay) + fabsf(m_fp[3].n | az))) return CULL_EXCLUSION;
-	if (mt4 = (t4 = m_fp[4] | p) > 0.0f)  if (t4 > (fabsf(m_fp[4].n | ax) + fabsf(m_fp[4].n | ay) + fabsf(m_fp[4].n | az))) return CULL_EXCLUSION;
-	if (mt5 = (t5 = m_fp[5] | p) > 0.0f)  if (t5 > (fabsf(m_fp[5].n | ax) + fabsf(m_fp[5].n | ay) + fabsf(m_fp[5].n | az))) return CULL_EXCLUSION;
+	if ((mt0 = ((t0 = m_fp[0] | p) > 0.0f)))  if (t0 > (fabsf(m_fp[0].n | ax) + fabsf(m_fp[0].n | ay) + fabsf(m_fp[0].n | az))) return CULL_EXCLUSION;
+	if ((mt1 = ((t1 = m_fp[1] | p) > 0.0f)))  if (t1 > (fabsf(m_fp[1].n | ax) + fabsf(m_fp[1].n | ay) + fabsf(m_fp[1].n | az))) return CULL_EXCLUSION;
+	if ((mt2 = ((t2 = m_fp[2] | p) > 0.0f)))  if (t2 > (fabsf(m_fp[2].n | ax) + fabsf(m_fp[2].n | ay) + fabsf(m_fp[2].n | az))) return CULL_EXCLUSION;
+	if ((mt3 = ((t3 = m_fp[3] | p) > 0.0f)))  if (t3 > (fabsf(m_fp[3].n | ax) + fabsf(m_fp[3].n | ay) + fabsf(m_fp[3].n | az))) return CULL_EXCLUSION;
+	if ((mt4 = ((t4 = m_fp[4] | p) > 0.0f)))  if (t4 > (fabsf(m_fp[4].n | ax) + fabsf(m_fp[4].n | ay) + fabsf(m_fp[4].n | az))) return CULL_EXCLUSION;
+	if ((mt5 = ((t5 = m_fp[5] | p) > 0.0f)))  if (t5 > (fabsf(m_fp[5].n | ax) + fabsf(m_fp[5].n | ay) + fabsf(m_fp[5].n | az))) return CULL_EXCLUSION;
 
 	//if obb-center is in view-frustum, then stop further calculation
 	if (!(mt0 | mt1 | mt2 | mt3 | mt4 | mt5)) return CULL_OVERLAP;
@@ -1254,12 +1254,12 @@ inline uint8 CCamera::IsOBBVisible_EH(const Vec3& wpos, const OBB& obb, f32 usca
 	//is larger then the "radius" of the OBB, then the OBB is outside the frustum.
 	f32 t0, t1, t2, t3, t4, t5;
 	bool mt0, mt1, mt2, mt3, mt4, mt5;
-	if (mt0 = (t0 = m_fp[0] | p) > 0.0f)  if (t0 > (fabsf(m_fp[0].n | ax) + fabsf(m_fp[0].n | ay) + fabsf(m_fp[0].n | az))) return CULL_EXCLUSION;
-	if (mt1 = (t1 = m_fp[1] | p) > 0.0f)  if (t1 > (fabsf(m_fp[1].n | ax) + fabsf(m_fp[1].n | ay) + fabsf(m_fp[1].n | az))) return CULL_EXCLUSION;
-	if (mt2 = (t2 = m_fp[2] | p) > 0.0f)  if (t2 > (fabsf(m_fp[2].n | ax) + fabsf(m_fp[2].n | ay) + fabsf(m_fp[2].n | az))) return CULL_EXCLUSION;
-	if (mt3 = (t3 = m_fp[3] | p) > 0.0f)  if (t3 > (fabsf(m_fp[3].n | ax) + fabsf(m_fp[3].n | ay) + fabsf(m_fp[3].n | az))) return CULL_EXCLUSION;
-	if (mt4 = (t4 = m_fp[4] | p) > 0.0f)  if (t4 > (fabsf(m_fp[4].n | ax) + fabsf(m_fp[4].n | ay) + fabsf(m_fp[4].n | az))) return CULL_EXCLUSION;
-	if (mt5 = (t5 = m_fp[5] | p) > 0.0f)  if (t5 > (fabsf(m_fp[5].n | ax) + fabsf(m_fp[5].n | ay) + fabsf(m_fp[5].n | az))) return CULL_EXCLUSION;
+	if ((mt0 = ((t0 = m_fp[0] | p) > 0.0f)))  if (t0 > (fabsf(m_fp[0].n | ax) + fabsf(m_fp[0].n | ay) + fabsf(m_fp[0].n | az))) return CULL_EXCLUSION;
+	if ((mt1 = ((t1 = m_fp[1] | p) > 0.0f)))  if (t1 > (fabsf(m_fp[1].n | ax) + fabsf(m_fp[1].n | ay) + fabsf(m_fp[1].n | az))) return CULL_EXCLUSION;
+	if ((mt2 = ((t2 = m_fp[2] | p) > 0.0f)))  if (t2 > (fabsf(m_fp[2].n | ax) + fabsf(m_fp[2].n | ay) + fabsf(m_fp[2].n | az))) return CULL_EXCLUSION;
+	if ((mt3 = ((t3 = m_fp[3] | p) > 0.0f)))  if (t3 > (fabsf(m_fp[3].n | ax) + fabsf(m_fp[3].n | ay) + fabsf(m_fp[3].n | az))) return CULL_EXCLUSION;
+	if ((mt4 = ((t4 = m_fp[4] | p) > 0.0f)))  if (t4 > (fabsf(m_fp[4].n | ax) + fabsf(m_fp[4].n | ay) + fabsf(m_fp[4].n | az))) return CULL_EXCLUSION;
+	if ((mt5 = ((t5 = m_fp[5] | p) > 0.0f)))  if (t5 > (fabsf(m_fp[5].n | ax) + fabsf(m_fp[5].n | ay) + fabsf(m_fp[5].n | az))) return CULL_EXCLUSION;
 
 	//check if obb-center is in view-frustum
 	if (!(mt0 | mt1 | mt2 | mt3 | mt4 | mt5))

@@ -347,7 +347,7 @@ CDeviceResourceLayoutPtr CDeviceObjectFactory::CreateResourceLayout(const SDevic
 
 	if (resourceLayoutDesc.IsValid())
 	{
-		if (pResult = CreateResourceLayoutImpl(resourceLayoutDesc))
+		if ((pResult = CreateResourceLayoutImpl(resourceLayoutDesc)))
 		{
 			m_ResourceLayoutCache[resourceLayoutDesc] = pResult;
 		}

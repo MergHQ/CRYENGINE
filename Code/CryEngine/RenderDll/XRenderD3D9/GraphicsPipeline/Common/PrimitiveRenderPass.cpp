@@ -505,7 +505,7 @@ void CPrimitiveRenderPass::SetViewport(const SRenderViewport& viewport)
 
 void CPrimitiveRenderPass::SetScissor(bool bEnable, const D3DRectangle& scissor)
 {
-	if (m_scissorEnabled = bEnable)
+	if ((m_scissorEnabled = bEnable))
 	{
 		m_scissor = scissor;
 	}

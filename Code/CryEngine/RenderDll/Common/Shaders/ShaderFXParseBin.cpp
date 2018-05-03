@@ -4294,7 +4294,7 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 	int nInd = 0;
 
 	ETokenStorageClass nTokenStorageClass;
-	while (nTokenStorageClass = Parser.ParseObject(sCommands))
+	while ((nTokenStorageClass = Parser.ParseObject(sCommands)))
 	{
 		EToken eT = Parser.GetToken();
 		SCodeFragment Fr;
@@ -5029,7 +5029,7 @@ bool CShaderManBin::ParseBinFX_Dummy(SShaderBin* pBin, std::vector<string>& Shad
 
 	ETokenStorageClass nTokenStorageClass;
 
-	while (nTokenStorageClass = Parser.ParseObject(sCommands))
+	while ((nTokenStorageClass = Parser.ParseObject(sCommands)))
 	{
 		EToken eT = Parser.GetToken();
 		SCodeFragment Fr;

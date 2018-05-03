@@ -4818,7 +4818,7 @@ unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, 
 	CTexture* pTex = 0;
 	if (Id > 0)
 	{
-		if (pTex = CTexture::GetByID(Id))
+		if ((pTex = CTexture::GetByID(Id)))
 		{
 			if (pRegion)
 				pTex->UpdateTextureRegion(pSrcData, pRegion->x, pRegion->y, 0, pRegion->w, pRegion->h, 1, eSrcFormat);

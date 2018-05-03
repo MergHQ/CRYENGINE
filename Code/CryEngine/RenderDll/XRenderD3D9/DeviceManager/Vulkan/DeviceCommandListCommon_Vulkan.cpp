@@ -782,7 +782,7 @@ bool GetBlockSize(VkFormat format, uint32_t& blockWidth, uint32_t& blockHeight, 
 		// Attribute (base > 21)            : 0000 0000 0000 0000 0000 0011
 		// Attribute ((base & 30) == 10)    : 0000 0000 0011 0000 0000 0000
 		const uint32_t base = format - VK_FORMAT_BC1_RGB_UNORM_BLOCK;
-		const uint32_t pickBit = (base >> 2) ^ (base > 21) | ((base & 30) == 10) | (base > 23);
+		const uint32_t pickBit = ((base >> 2) ^ (base > 21)) | ((base & 30) == 10) | (base > 23);
 		blockWidth = 4;
 		blockHeight = 4;
 		blockBytes = 8 << (pickBit & 1);

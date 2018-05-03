@@ -864,7 +864,7 @@ void CRenderView::AddPolygon(const SRenderPolygonDescription& poly, const SRende
 			renderListId = EFSLIST_PREPROCESS;
 		}
 
-		if ((pShader->GetFlags() & EF_DECAL) || poly.pRenderObject && (poly.pRenderObject->m_ObjFlags & FOB_DECAL))
+		if ((pShader->GetFlags() & EF_DECAL) || (poly.pRenderObject && (poly.pRenderObject->m_ObjFlags & FOB_DECAL)))
 		{
 			if (pTech && pTech->m_nTechnique[TTYPE_Z] > 0 && (pShader && (pShader->m_Flags & EF_SUPPORTSDEFERREDSHADING)))
 			{
@@ -1558,7 +1558,7 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		const bool bRefractive = (pShader->m_Flags & EF_REFRACTIVE) != 0;
 		const bool bTransparent = shaderItem.m_pShaderResources && static_cast<CShaderResources*>(shaderItem.m_pShaderResources)->IsTransparent();
 
-		if (nList == EFSLIST_GENERAL && (bHair || bTransparent) || 
+		if ((nList == EFSLIST_GENERAL && (bHair || bTransparent)) || 
 		   (nList == EFSLIST_TRANSP && bRefractive))
 		{
 			nList = (pObj->m_ObjFlags & FOB_NEAREST) ? EFSLIST_TRANSP_NEAREST : EFSLIST_TRANSP;

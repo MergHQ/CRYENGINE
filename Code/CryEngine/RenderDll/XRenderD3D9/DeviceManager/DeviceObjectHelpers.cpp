@@ -60,7 +60,7 @@ EShaderStage SDeviceObjectHelpers::GetShaderInstanceInfo(THwShaderInfo& result, 
 			{
 				SShaderCombIdent Ident;
 				Ident.m_LightMask = 0;
-				Ident.m_RTMask = rtFlags & pHWShaderD3D->m_nMaskAnd_RT | pHWShaderD3D->m_nMaskOr_RT;
+				Ident.m_RTMask = (rtFlags & pHWShaderD3D->m_nMaskAnd_RT) | pHWShaderD3D->m_nMaskOr_RT;
 				Ident.m_MDMask = mdFlags & (shaderStage != eHWSC_Pixel ? 0xFFFFFFFF : ~HWMD_TEXCOORD_FLAG_MASK);
 				Ident.m_MDVMask = ((shaderStage != eHWSC_Pixel) ? mdvFlags : 0) | CParserBin::m_nPlatform;
 				Ident.m_GLMask = pHWShaderD3D->m_nMaskGenShader;

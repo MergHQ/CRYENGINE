@@ -102,7 +102,7 @@ bool Float4SplineKey::FromString(char* str, Formatting format)
 
 		if (FromString(this->value, str, format))
 		{
-			if (s = tokenize(str, format.field))
+			if( (s = tokenize(str, format.field)))
 				this->flags = atoi(s);
 
 			// TangentType = Custom implies tangent data follows; otherwise reset to Auto
