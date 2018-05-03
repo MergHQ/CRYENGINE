@@ -1404,7 +1404,7 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	m_sbpp = stencilBits;
 
 	CRenderDisplayContext* pDC = GetBaseDisplayContext();
-	CalculateResolutions(width, height, bNativeResolution, &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
+	CalculateResolutions(width, height, bNativeResolution, IsFullscreen(), &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
 
 	pDC->m_DisplayWidth =  displayWidth;
 	pDC->m_DisplayHeight = displayHeight;
