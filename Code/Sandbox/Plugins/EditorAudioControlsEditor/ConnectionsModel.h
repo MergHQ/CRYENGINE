@@ -5,8 +5,6 @@
 #include <QAbstractItemModel>
 #include <SharedData.h>
 
-class CItemModelAttribute;
-
 namespace ACE
 {
 class CControl;
@@ -30,11 +28,8 @@ public:
 
 	CConnectionsModel() = delete;
 
-	void                        Init(CControl* const pControl);
-	void                        DisconnectSignals();
-
-	static CItemModelAttribute* GetAttributeForColumn(EColumns const column);
-	static QVariant             GetHeaderData(int const section, Qt::Orientation const orientation, int const role);
+	void Init(CControl* const pControl);
+	void DisconnectSignals();
 
 	// QAbstractItemModel
 	virtual int             rowCount(QModelIndex const& parent) const override;

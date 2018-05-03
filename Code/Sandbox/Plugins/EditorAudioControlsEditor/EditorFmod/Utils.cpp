@@ -16,8 +16,8 @@ namespace Utils
 //////////////////////////////////////////////////////////////////////////
 ControlId GetId(EItemType const type, string const& name, CItem* const pParent, CItem const& rootItem)
 {
-	string const fullname = Utils::GetTypeName(type) + Utils::GetPathName(pParent, rootItem) + "/" + name;
-	return CryAudio::StringToId(fullname.c_str());
+	string const fullName = GetTypeName(type) + GetPathName(pParent, rootItem) + "/" + name;
+	return CryAudio::StringToId(fullName.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -28,17 +28,17 @@ string GetPathName(CItem const* const pItem, CItem const& rootItem)
 
 	if (pItem != nullptr)
 	{
-		string fullname = pItem->GetName();
+		string fullName = pItem->GetName();
 		auto pParent = static_cast<CItem const*>(pItem->GetParent());
 
 		while ((pParent != nullptr) && (pParent->GetType() != editorFolderType) && (pParent != &rootItem))
 		{
 			// The id needs to represent the full path, as we can have items with the same name in different folders
-			fullname = pParent->GetName() + "/" + fullname;
+			fullName = pParent->GetName() + "/" + fullName;
 			pParent = static_cast<CItem const*>(pParent->GetParent());
 		}
 
-		pathName = fullname;
+		pathName = fullName;
 	}
 
 	return pathName;

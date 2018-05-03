@@ -6,7 +6,6 @@
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 
-#include <ISettings.h>
 #include <CryString/CryPath.h>
 
 namespace ACE
@@ -23,26 +22,21 @@ void CFileMonitorMiddleware::Enable()
 {
 	if (g_pIImpl != nullptr)
 	{
-		Impl::ISettings const* const pISettings = g_pIImpl->GetSettings();
+		stop();
+		m_monitorFolders.clear();
+		GetIEditor()->GetFileMonitor()->UnregisterListener(this);
 
-		if (pISettings != nullptr)
+		m_monitorFolders.push_back(g_pIImpl->GetAssetsPath());
+		m_monitorFolders.push_back(PathUtil::GetLocalizationFolder().c_str());
+
+		if (g_pIImpl->SupportsProjects())
 		{
-			stop();
-			m_monitorFolders.clear();
-			GetIEditor()->GetFileMonitor()->UnregisterListener(this);
+			m_monitorFolders.push_back(g_pIImpl->GetProjectPath());
+		}
 
-			m_monitorFolders.push_back(pISettings->GetAssetsPath());
-			m_monitorFolders.push_back(PathUtil::GetLocalizationFolder().c_str());
-
-			if (pISettings->SupportsProjects())
-			{
-				m_monitorFolders.push_back(pISettings->GetProjectPath());
-			}
-
-			for (auto const& folder : m_monitorFolders)
-			{
-				GetIEditor()->GetFileMonitor()->RegisterListener(this, folder);
-			}
+		for (auto const& folder : m_monitorFolders)
+		{
+			GetIEditor()->GetFileMonitor()->RegisterListener(this, folder);
 		}
 	}
 }

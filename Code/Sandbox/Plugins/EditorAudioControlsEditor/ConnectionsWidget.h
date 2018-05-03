@@ -27,8 +27,8 @@ public:
 
 	void SetControl(CControl* const pControl, bool const restoreSelection);
 	void Reset();
-	void BackupTreeViewStates();
-	void RestoreTreeViewStates();
+	void OnAboutToReload();
+	void OnReloaded();
 
 signals:
 

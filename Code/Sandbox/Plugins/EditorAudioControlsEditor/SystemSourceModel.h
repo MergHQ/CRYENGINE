@@ -43,7 +43,6 @@ public:
 
 	static bool                 CanDropData(QMimeData const* const pData, CAsset const& parent);
 	static bool                 DropData(QMimeData const* const pData, CAsset* const pParent);
-	static char const*          GetPakStatusIcon(CLibrary const& library);
 
 protected:
 

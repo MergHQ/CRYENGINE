@@ -7,42 +7,62 @@
 
 namespace ACE
 {
-inline CryIcon GetAssetIcon(EAssetType const type)
-{
-	CryIcon icon = CryIcon("icons:Dialogs/dialog-error.ico");
+static CryIcon s_errorIcon;
+static CryIcon s_environmentIcon;
+static CryIcon s_folderIcon;
+static CryIcon s_libraryIcon;
+static CryIcon s_parameterIcon;
+static CryIcon s_preloadIcon;
+static CryIcon s_stateIcon;
+static CryIcon s_switchIcon;
+static CryIcon s_triggerIcon;
 
+//////////////////////////////////////////////////////////////////////////
+inline void InitAssetIcons()
+{
+	s_errorIcon = CryIcon("icons:Dialogs/dialog-error.ico");
+	s_environmentIcon = CryIcon("icons:audio/assets/environment.ico");
+	s_folderIcon = CryIcon("icons:General/Folder.ico");
+	s_libraryIcon = CryIcon("icons:General/File.ico");
+	s_parameterIcon = CryIcon("icons:audio/assets/parameter.ico");
+	s_preloadIcon = CryIcon("icons:audio/assets/preload.ico");
+	s_stateIcon = CryIcon("icons:audio/assets/state.ico");
+	s_switchIcon = CryIcon("icons:audio/assets/switch.ico");
+	s_triggerIcon = CryIcon("icons:audio/assets/trigger.ico");
+}
+
+//////////////////////////////////////////////////////////////////////////
+inline CryIcon const& GetAssetIcon(EAssetType const type)
+{
 	switch (type)
 	{
 	case EAssetType::Trigger:
-		icon = CryIcon("icons:audio/system/trigger.ico");
+		return s_triggerIcon;
 		break;
 	case EAssetType::Parameter:
-		icon = CryIcon("icons:audio/system/parameter.ico");
+		return s_parameterIcon;
 		break;
 	case EAssetType::Switch:
-		icon = CryIcon("icons:audio/system/switch.ico");
+		return s_switchIcon;
 		break;
 	case EAssetType::State:
-		icon = CryIcon("icons:audio/system/state.ico");
+		return s_stateIcon;
 		break;
 	case EAssetType::Environment:
-		icon = CryIcon("icons:audio/system/environment.ico");
+		return s_environmentIcon;
 		break;
 	case EAssetType::Preload:
-		icon = CryIcon("icons:audio/system/preload.ico");
+		return s_preloadIcon;
 		break;
 	case EAssetType::Folder:
-		icon = CryIcon("icons:General/Folder.ico");
+		return s_folderIcon;
 		break;
 	case EAssetType::Library:
-		icon = CryIcon("icons:General/File.ico");
+		return s_libraryIcon;
 		break;
 	default:
-		icon = CryIcon("icons:Dialogs/dialog-error.ico");
+		return s_errorIcon;
 		break;
 	}
-
-	return icon;
 }
 } // namespace ACE
-

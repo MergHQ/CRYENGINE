@@ -8,6 +8,7 @@
 #include "FileWriter.h"
 #include "FileLoader.h"
 #include "ImplementationManager.h"
+#include "AssetIcons.h"
 
 #include <CryAudio/IObject.h>
 #include <CryMath/Cry_Camera.h>
@@ -41,6 +42,7 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 	s_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
 
 	InitPlatforms();
+	InitAssetIcons();
 
 	g_assetsManager.Initialize();
 	g_implementationManager.LoadImplementation();

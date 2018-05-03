@@ -119,7 +119,7 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 	LoadFolder("", g_eventsFolderName, m_rootItem);
 	LoadFolder("", g_environmentsFolderName, m_rootItem);
 
-	CItem* const pSoundBanks = CreateItem(g_soundBanksFolderName, EItemType::PhysicalFolder, m_rootItem);
+	CItem* const pSoundBanks = CreateItem(g_soundBanksFolderName, EItemType::PhysicalFolder, m_rootItem, EPakStatus::None);
 	g_soundBanksFolderId = pSoundBanks->GetId();
 	LoadSoundBanks(soundbanksPath, false, *pSoundBanks);
 
@@ -179,16 +179,13 @@ void CProjectLoader::LoadSoundBanks(string const& folderPath, bool const isLocal
 								flags = EItemFlags::IsLocalized;
 							}
 
-							auto const pSoundBank = new CItem(name, id, EItemType::SoundBank, flags, fullname);
+							EPakStatus const pakStatus = gEnv->pCryPak->IsFileExist(fullname.c_str(), ICryPak::eFileLocation_OnDisk) ? EPakStatus::OnDisk : EPakStatus::None;
+							auto const pSoundBank = new CItem(name, id, EItemType::SoundBank, flags, pakStatus, fullname);
+
 							parent.AddChild(pSoundBank);
 							m_itemCache[id] = pSoundBank;
 						}
 					}
-				}
-				else
-				{
-					CItem* const pParent = CreateItem(name, EItemType::PhysicalFolder, parent);
-					LoadSoundBanks(folderPath + "/" + name, isLocalized, *pParent);
 				}
 			}
 		}
@@ -203,11 +200,13 @@ void CProjectLoader::LoadFolder(string const& folderPath, string const& folderNa
 {
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
+	string const fullFolderPath = m_projectPath + "/" + folderPath + "/" + folderName;
 	intptr_t const handle = pCryPak->FindFirst(m_projectPath + "/" + folderPath + "/" + folderName + "/*.*", &fd);
 
 	if (handle != -1)
 	{
-		CItem* const pParent = CreateItem(folderName, EItemType::PhysicalFolder, parent);
+		EPakStatus const folderPakStatus = gEnv->pCryPak->IsFileExist(fullFolderPath.c_str(), ICryPak::eFileLocation_OnDisk) ? EPakStatus::OnDisk : EPakStatus::None;
+		CItem* const pParent = CreateItem(folderName, EItemType::PhysicalFolder, parent, folderPakStatus);
 
 		do
 		{
@@ -221,7 +220,10 @@ void CProjectLoader::LoadFolder(string const& folderPath, string const& folderNa
 				}
 				else
 				{
-					LoadWorkUnitFile(folderPath + "/" + folderName + "/" + name, *pParent);
+					string const fullPath = m_projectPath + "/" + folderPath + "/" + folderName + "/" + name;
+					EPakStatus const pakStatus = gEnv->pCryPak->IsFileExist(fullPath.c_str(), ICryPak::eFileLocation_OnDisk) ? EPakStatus::OnDisk : EPakStatus::None;
+
+					LoadWorkUnitFile(folderPath + "/" + folderName + "/" + name, *pParent, pakStatus);
 				}
 			}
 		}
@@ -232,7 +234,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, string const& folderNa
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadWorkUnitFile(const string& filePath, CItem& parent)
+void CProjectLoader::LoadWorkUnitFile(const string& filePath, CItem& parent, EPakStatus const pakStatus)
 {
 	XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectPath + "/" + filePath);
 
@@ -254,7 +256,7 @@ void CProjectLoader::LoadWorkUnitFile(const string& filePath, CItem& parent)
 
 					if (it != m_filesCache.end())
 					{
-						LoadWorkUnitFile(it->second, parent);
+						LoadWorkUnitFile(it->second, parent, pakStatus);
 					}
 					else
 					{
@@ -268,7 +270,7 @@ void CProjectLoader::LoadWorkUnitFile(const string& filePath, CItem& parent)
 
 			for (int i = 0; i < childCount; ++i)
 			{
-				LoadXml(pRoot->getChild(i)->findChild("WorkUnit"), parent);
+				LoadXml(pRoot->getChild(i)->findChild("WorkUnit"), parent, pakStatus);
 			}
 
 			m_filesLoaded.insert(fileId);
@@ -277,7 +279,7 @@ void CProjectLoader::LoadWorkUnitFile(const string& filePath, CItem& parent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadXml(XmlNodeRef const pRoot, CItem& parent)
+void CProjectLoader::LoadXml(XmlNodeRef const pRoot, CItem& parent, EPakStatus const pakStatus)
 {
 	if (pRoot != nullptr)
 	{
@@ -299,7 +301,7 @@ void CProjectLoader::LoadXml(XmlNodeRef const pRoot, CItem& parent)
 			}
 			else
 			{
-				pItem = CreateItem(name, type, parent);
+				pItem = CreateItem(name, type, parent, pakStatus);
 				m_items[itemId] = pItem;
 			}
 		}
@@ -311,14 +313,14 @@ void CProjectLoader::LoadXml(XmlNodeRef const pRoot, CItem& parent)
 			int const childCount = pChildren->getChildCount();
 			for (int i = 0; i < childCount; ++i)
 			{
-				LoadXml(pChildren->getChild(i), *pItem);
+				LoadXml(pChildren->getChild(i), *pItem, pakStatus);
 			}
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-CItem* CProjectLoader::CreateItem(const string& name, EItemType const type, CItem& parent)
+CItem* CProjectLoader::CreateItem(const string& name, EItemType const type, CItem& parent, EPakStatus const pakStatus)
 {
 	string const path = BuildPath(&parent);
 	string const fullPathName = path + "/" + name;
@@ -334,14 +336,14 @@ CItem* CProjectLoader::CreateItem(const string& name, EItemType const type, CIte
 		{
 		case EItemType::WorkUnit:
 			{
-				pItem = new CItem(name, id, type, EItemFlags::IsContainer, m_projectPath + fullPathName + ".wwu");
+				pItem = new CItem(name, id, type, EItemFlags::IsContainer, pakStatus, m_projectPath + fullPathName + ".wwu");
 			}
 			break;
 		case EItemType::PhysicalFolder:
 			{
 				if (id != g_soundBanksFolderId)
 				{
-					pItem = new CItem(name, id, type, EItemFlags::IsContainer, m_projectPath + fullPathName);
+					pItem = new CItem(name, id, type, EItemFlags::IsContainer, pakStatus, m_projectPath + fullPathName);
 				}
 				else
 				{
@@ -353,12 +355,12 @@ CItem* CProjectLoader::CreateItem(const string& name, EItemType const type, CIte
 		case EItemType::SwitchGroup:
 		case EItemType::StateGroup:
 			{
-				pItem = new CItem(name, id, type, EItemFlags::IsContainer);
+				pItem = new CItem(name, id, type, EItemFlags::IsContainer, pakStatus);
 			}
 			break;
 		default:
 			{
-				pItem = new CItem(name, id, type);
+				pItem = new CItem(name, id, type, EItemFlags::None, pakStatus);
 
 				if (type == EItemType::Event)
 				{
@@ -465,4 +467,3 @@ void CProjectLoader::BuildFileCache(string const& folderPath)
 } // namespace Wwise
 } // namespace Impl
 } // namespace ACE
-

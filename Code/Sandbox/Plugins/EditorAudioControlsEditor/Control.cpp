@@ -94,10 +94,10 @@ void CControl::Serialize(Serialization::IArchive& ar)
 	if (((m_flags& EAssetFlags::IsDefaultControl) == 0) && (m_type != EAssetType::State))
 	{
 		Serialization::StringList scopeList;
-		ScopeInfoList scopeInfoList;
-		g_assetsManager.GetScopeInfoList(scopeInfoList);
+		ScopeInfos scopeInfos;
+		g_assetsManager.GetScopeInfos(scopeInfos);
 
-		for (auto const& scopeInfo : scopeInfoList)
+		for (auto const& scopeInfo : scopeInfos)
 		{
 			scopeList.emplace_back(scopeInfo.name);
 		}
@@ -120,32 +120,29 @@ void CControl::Serialize(Serialization::IArchive& ar)
 
 	if (((m_flags& EAssetFlags::IsDefaultControl) == 0) && (m_type == EAssetType::Trigger))
 	{
-		if (g_pIImpl != nullptr)
+		bool hasPlaceholderConnections = false;
+		float connectionMaxRadius = 0.0f;
+
+		for (auto const& connection : m_connections)
 		{
-			bool hasPlaceholderConnections = false;
-			float connectionMaxRadius = 0.0f;
+			Impl::IItem const* const pIItem = g_pIImpl->GetItem(connection->GetID());
 
-			for (auto const& connection : m_connections)
+			if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == 0))
 			{
-				Impl::IItem const* const pIItem = g_pIImpl->GetItem(connection->GetID());
-
-				if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == 0))
-				{
-					connectionMaxRadius = std::max(connectionMaxRadius, pIItem->GetRadius());
-				}
-				else
-				{
-					// If control has placeholder connection we cannot enforce the link between activity radius
-					// and attenuation as the user could be missing the middleware project.
-					hasPlaceholderConnections = true;
-					break;
-				}
+				connectionMaxRadius = std::max(connectionMaxRadius, pIItem->GetRadius());
 			}
-
-			if (!hasPlaceholderConnections)
+			else
 			{
-				radius = connectionMaxRadius;
+				// If control has placeholder connection we cannot enforce the link between activity radius
+				// and attenuation as the user could be missing the middleware project.
+				hasPlaceholderConnections = true;
+				break;
 			}
+		}
+
+		if (!hasPlaceholderConnections)
+		{
+			radius = connectionMaxRadius;
 		}
 	}
 
@@ -233,19 +230,16 @@ void CControl::AddConnection(ConnectionPtr const pConnection)
 {
 	if (pConnection != nullptr)
 	{
-		if (g_pIImpl != nullptr)
-		{
-			Impl::IItem* const pIItem = g_pIImpl->GetItem(pConnection->GetID());
+		Impl::IItem* const pIItem = g_pIImpl->GetItem(pConnection->GetID());
 
-			if (pIItem != nullptr)
-			{
-				g_pIImpl->EnableConnection(pConnection);
-				pConnection->SignalConnectionChanged.Connect(this, &CControl::SignalConnectionModified);
-				m_connections.push_back(pConnection);
-				MatchRadiusToAttenuation();
-				SignalConnectionAdded(pIItem);
-				SignalControlModified();
-			}
+		if (pIItem != nullptr)
+		{
+			g_pIImpl->EnableConnection(pConnection, g_assetsManager.IsLoading());
+			pConnection->SignalConnectionChanged.Connect(this, &CControl::SignalConnectionModified);
+			m_connections.push_back(pConnection);
+			MatchRadiusToAttenuation();
+			SignalConnectionAdded(pIItem);
+			SignalControlModified();
 		}
 	}
 }
@@ -263,7 +257,7 @@ void CControl::RemoveConnection(ConnectionPtr const pConnection)
 
 			if (pIItem != nullptr)
 			{
-				g_pIImpl->DisableConnection(pConnection);
+				g_pIImpl->DisableConnection(pConnection, g_assetsManager.IsLoading());
 				pConnection->SignalConnectionChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 				m_connections.erase(it);
 				MatchRadiusToAttenuation();
@@ -279,17 +273,16 @@ void CControl::ClearConnections()
 {
 	if (!m_connections.empty())
 	{
-		if (g_pIImpl != nullptr)
-		{
-			for (ConnectionPtr const& connection : m_connections)
-			{
-				g_pIImpl->DisableConnection(connection);
-				Impl::IItem* const pIItem = g_pIImpl->GetItem(connection->GetID());
+		bool const isLoading = g_assetsManager.IsLoading();
 
-				if (pIItem != nullptr)
-				{
-					SignalConnectionRemoved(pIItem);
-				}
+		for (auto const& connection : m_connections)
+		{
+			g_pIImpl->DisableConnection(connection, isLoading);
+			Impl::IItem* const pIItem = g_pIImpl->GetItem(connection->GetID());
+
+			if (pIItem != nullptr)
+			{
+				SignalConnectionRemoved(pIItem);
 			}
 		}
 
@@ -302,40 +295,37 @@ void CControl::ClearConnections()
 //////////////////////////////////////////////////////////////////////////
 void CControl::BackupAndClearConnections()
 {
-	m_rawConnections.clear();
-
 	// Raw connections are used to temporarily store connections in XML format
 	// when middleware data gets reloaded.
-	if (g_pIImpl != nullptr)
-	{
-		if (m_type != EAssetType::Preload)
-		{
-			for (auto const& connection : m_connections)
-			{
-				XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(connection, m_type);
+	m_rawConnections.clear();
 
-				if (pRawConnection != nullptr)
-				{
-					m_rawConnections[-1].push_back(pRawConnection);
-				}
+	if (m_type != EAssetType::Preload)
+	{
+		for (auto const& connection : m_connections)
+		{
+			XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(connection, m_type);
+
+			if (pRawConnection != nullptr)
+			{
+				m_rawConnections[-1].push_back(pRawConnection);
 			}
 		}
-		else
+	}
+	else
+	{
+		auto const numPlatforms = static_cast<int>(g_platforms.size());
+
+		for (auto const& connection : m_connections)
 		{
-			auto const numPlatforms = static_cast<int>(g_platforms.size());
+			XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(connection, m_type);
 
-			for (auto const& connection : m_connections)
+			if (pRawConnection != nullptr)
 			{
-				XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(connection, m_type);
-
-				if (pRawConnection != nullptr)
+				for (int i = 0; i < numPlatforms; ++i)
 				{
-					for (int i = 0; i < numPlatforms; ++i)
+					if (connection->IsPlatformEnabled(static_cast<PlatformIndexType>(i)))
 					{
-						if (connection->IsPlatformEnabled(static_cast<PlatformIndexType>(i)))
-						{
-							m_rawConnections[i].push_back(pRawConnection);
-						}
+						m_rawConnections[i].push_back(pRawConnection);
 					}
 				}
 			}
@@ -348,7 +338,7 @@ void CControl::BackupAndClearConnections()
 //////////////////////////////////////////////////////////////////////////
 void CControl::ReloadConnections()
 {
-	if (!m_rawConnections.empty() && (g_pIImpl != nullptr))
+	if (!m_rawConnections.empty())
 	{
 		for (auto const& connectionPair : m_rawConnections)
 		{
@@ -370,12 +360,13 @@ void CControl::RemoveConnection(Impl::IItem* const pIItem)
 		ControlId const id = pIItem->GetId();
 		auto it = m_connections.begin();
 		auto const end = m_connections.end();
+		bool const isLoading = g_assetsManager.IsLoading();
 
 		for (; it != end; ++it)
 		{
 			if ((*it)->GetID() == id)
 			{
-				g_pIImpl->DisableConnection(*it);
+				g_pIImpl->DisableConnection(*it, isLoading);
 
 				m_connections.erase(it);
 				MatchRadiusToAttenuation();
@@ -428,40 +419,37 @@ void CControl::SignalConnectionModified()
 //////////////////////////////////////////////////////////////////////////
 void CControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex /*= -1*/)
 {
-	if (g_pIImpl != nullptr)
+	ConnectionPtr pConnection = g_pIImpl->CreateConnectionFromXMLNode(xmlNode, m_type);
+
+	if (pConnection != nullptr)
 	{
-		ConnectionPtr pConnection = g_pIImpl->CreateConnectionFromXMLNode(xmlNode, m_type);
-
-		if (pConnection != nullptr)
+		if (m_type == EAssetType::Preload)
 		{
-			if (m_type == EAssetType::Preload)
+			// The connection could already exist but using a different platform
+			ConnectionPtr const pPreviousConnection = GetConnection(pConnection->GetID());
+
+			if (pPreviousConnection == nullptr)
 			{
-				// The connection could already exist but using a different platform
-				ConnectionPtr const pPreviousConnection = GetConnection(pConnection->GetID());
-
-				if (pPreviousConnection == nullptr)
-				{
-					if (platformIndex != -1)
-					{
-						pConnection->ClearPlatforms();
-					}
-
-					AddConnection(pConnection);
-				}
-				else
-				{
-					pConnection = pPreviousConnection;
-				}
-
 				if (platformIndex != -1)
 				{
-					pConnection->SetPlatformEnabled(static_cast<PlatformIndexType>(platformIndex), true);
+					pConnection->ClearPlatforms();
 				}
+
+				AddConnection(pConnection);
 			}
 			else
 			{
-				AddConnection(pConnection);
+				pConnection = pPreviousConnection;
 			}
+
+			if (platformIndex != -1)
+			{
+				pConnection->SetPlatformEnabled(static_cast<PlatformIndexType>(platformIndex), true);
+			}
+		}
+		else
+		{
+			AddConnection(pConnection);
 		}
 	}
 }
@@ -469,32 +457,29 @@ void CControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platfor
 //////////////////////////////////////////////////////////////////////////
 void CControl::MatchRadiusToAttenuation()
 {
-	if (g_pIImpl != nullptr)
+	float radius = 0.0f;
+	bool isPlaceHolder = false;
+
+	for (auto const& connection : m_connections)
 	{
-		float radius = 0.0f;
-		bool isPlaceHolder = false;
+		Impl::IItem const* const pIItem = g_pIImpl->GetItem(connection->GetID());
 
-		for (auto const& connection : m_connections)
+		if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == 0))
 		{
-			Impl::IItem const* const pIItem = g_pIImpl->GetItem(connection->GetID());
-
-			if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == 0))
-			{
-				radius = std::max(radius, pIItem->GetRadius());
-			}
-			else
-			{
-				// We don't match controls that have placeholder
-				// connections as we don't know what the real values should be.
-				isPlaceHolder = true;
-				break;
-			}
+			radius = std::max(radius, pIItem->GetRadius());
 		}
-
-		if (!isPlaceHolder)
+		else
 		{
-			SetRadius(radius);
+			// We don't match controls that have placeholder
+			// connections as we don't know what the real values should be.
+			isPlaceHolder = true;
+			break;
 		}
+	}
+
+	if (!isPlaceHolder)
+	{
+		SetRadius(radius);
 	}
 }
 } // namespace ACE

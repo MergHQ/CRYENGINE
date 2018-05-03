@@ -32,10 +32,10 @@ public:
 
 	bool   IsEditing() const;
 	Assets GetSelectedAssets() const;
-	void   SelectConnectedSystemControl(CControl& control, ControlId const itemId);
+	void   SelectConnectedSystemControl(ControlId const systemControlId, ControlId const implItemId);
 	void   Reset();
-	void   BackupTreeViewStates();
-	void   RestoreTreeViewStates();
+	void   OnAboutToReload();
+	void   OnReloaded();
 
 signals:
 

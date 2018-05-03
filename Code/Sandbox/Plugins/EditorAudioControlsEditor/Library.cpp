@@ -10,7 +10,7 @@ namespace ACE
 //////////////////////////////////////////////////////////////////////////
 CLibrary::CLibrary(string const& name)
 	: CAsset(name, EAssetType::Library)
-	, m_pakStatusFlags(EPakStatus::None)
+	, m_pakStatus(EPakStatus::None)
 {}
 
 //////////////////////////////////////////////////////////////////////////
@@ -27,6 +27,6 @@ void CLibrary::SetModified(bool const isModified, bool const isForced /* = false
 //////////////////////////////////////////////////////////////////////////
 void CLibrary::SetPakStatus(EPakStatus const pakStatus, bool const exists)
 {
-	exists ? (m_pakStatusFlags |= pakStatus) : (m_pakStatusFlags &= ~pakStatus);
+	exists ? (m_pakStatus |= pakStatus) : (m_pakStatus &= ~pakStatus);
 }
 } // namespace ACE

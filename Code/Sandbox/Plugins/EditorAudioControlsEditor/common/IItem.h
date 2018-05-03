@@ -21,18 +21,11 @@ struct IItem
 	virtual ControlId GetId() const = 0;
 
 	//! Returns name of the item.
-	virtual string GetName() const = 0;
-
-	//! Returns file path of the item.
-	//! If the item is not a file, an empty path is returned.
-	virtual string const& GetFilePath() const = 0;
+	virtual string const& GetName() const = 0;
 
 	//! Returns radius of the item.
 	//! The radius is used to calculate the activity radius of the connected audio system trigger.
 	virtual float GetRadius() const = 0;
-
-	//! \return An integer of the sort priority, used for sort order in models.
-	virtual int GetSortPriority() const = 0;
 
 	//! Returns the number of children.
 	virtual size_t GetNumChildren() const = 0;

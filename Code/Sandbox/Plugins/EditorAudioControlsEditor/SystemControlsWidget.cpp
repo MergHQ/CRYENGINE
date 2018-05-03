@@ -10,9 +10,9 @@
 #include "ImplementationManager.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
-#include "ModelUtils.h"
 #include "TreeView.h"
 
+#include <ModelUtils.h>
 #include <QtUtil.h>
 #include <CrySystem/File/CryFile.h>
 #include <Controls/QuestionDialog.h>
@@ -100,7 +100,6 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 	m_pTreeView->setEditTriggers(QAbstractItemView::EditKeyPressed | QAbstractItemView::SelectedClicked);
 	m_pTreeView->setDragEnabled(true);
 	m_pTreeView->setDragDropMode(QAbstractItemView::DragDrop);
-	m_pTreeView->setDefaultDropAction(Qt::MoveAction);
 	m_pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	m_pTreeView->setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_pTreeView->setTreePosition(m_nameColumn);
@@ -117,7 +116,7 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 	m_pTreeView->SetNameRole(static_cast<int>(ModelUtils::ERoles::Name));
 	m_pTreeView->TriggerRefreshHeaderColumns();
 
-	m_pFilteringPanel = new QFilteringPanel("ACESystemControls", m_pSystemFilterProxyModel, this);
+	m_pFilteringPanel = new QFilteringPanel("ACESystemControlsPanel", m_pSystemFilterProxyModel, this);
 	m_pFilteringPanel->SetContent(m_pTreeView);
 	m_pFilteringPanel->GetSearchBox()->SetAutoExpandOnSearch(m_pTreeView);
 
@@ -138,9 +137,9 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 
 	g_assetsManager.SignalLibraryAboutToBeRemoved.Connect([this](CLibrary* const pLibrary)
 		{
-			int const libCount = g_assetsManager.GetLibraryCount();
+			size_t const libCount = g_assetsManager.GetLibraryCount();
 
-			for (int i = 0; i < libCount; ++i)
+			for (size_t i = 0; i < libCount; ++i)
 			{
 			  if (g_assetsManager.GetLibrary(i) == pLibrary)
 			  {
@@ -170,6 +169,7 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
 		{
 			StopControlExecution();
+			ClearFilters();
 	  }, reinterpret_cast<uintptr_t>(this));
 
 	g_implementationManager.SignalImplementationChanged.Connect([this]()
@@ -424,34 +424,31 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 							pAddMenu->addAction(GetAssetIcon(EAssetType::Folder), tr("Folder"), [&]() { CreateFolder(pParent); });
 							pAddMenu->addAction(GetAssetIcon(EAssetType::Trigger), tr("Trigger"), [&]() { CreateControl("new_trigger", EAssetType::Trigger, pParent); });
 
-							if (g_pIImpl != nullptr)
+							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Parameter))
 							{
-								if (g_pIImpl->IsSystemTypeSupported(EAssetType::Parameter))
-								{
-									pAddMenu->addAction(GetAssetIcon(EAssetType::Parameter), tr("Parameter"), [&]() { CreateControl("new_parameter", EAssetType::Parameter, pParent); });
-								}
+								pAddMenu->addAction(GetAssetIcon(EAssetType::Parameter), tr("Parameter"), [&]() { CreateControl("new_parameter", EAssetType::Parameter, pParent); });
+							}
 
-								if (g_pIImpl->IsSystemTypeSupported(EAssetType::Switch))
-								{
-									pAddMenu->addAction(GetAssetIcon(EAssetType::Switch), tr("Switch"), [&]() { CreateControl("new_switch", EAssetType::Switch, pParent); });
-								}
+							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Switch))
+							{
+								pAddMenu->addAction(GetAssetIcon(EAssetType::Switch), tr("Switch"), [&]() { CreateControl("new_switch", EAssetType::Switch, pParent); });
+							}
 
-								if (g_pIImpl->IsSystemTypeSupported(EAssetType::Environment))
-								{
-									pAddMenu->addAction(GetAssetIcon(EAssetType::Environment), tr("Environment"), [&]() { CreateControl("new_environment", EAssetType::Environment, pParent); });
-								}
+							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Environment))
+							{
+								pAddMenu->addAction(GetAssetIcon(EAssetType::Environment), tr("Environment"), [&]() { CreateControl("new_environment", EAssetType::Environment, pParent); });
+							}
 
-								if (g_pIImpl->IsSystemTypeSupported(EAssetType::Preload))
-								{
-									pAddMenu->addAction(GetAssetIcon(EAssetType::Preload), tr("Preload"), [&]() { CreateControl("new_preload", EAssetType::Preload, pParent); });
-								}
+							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Preload))
+							{
+								pAddMenu->addAction(GetAssetIcon(EAssetType::Preload), tr("Preload"), [&]() { CreateControl("new_preload", EAssetType::Preload, pParent); });
 							}
 
 							if (pParent->GetType() == EAssetType::Library)
 							{
 								if ((libraries[0]->GetPakStatus() & EPakStatus::OnDisk) != 0)
 								{
-									pContextMenu->addAction(tr("Open Containing Folder"), [&]()
+									pContextMenu->addAction(tr("Show in File Explorer"), [&]()
 										{
 											QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + g_assetsManager.GetConfigFolderPath() + pParent->GetName() + ".xml").c_str());
 									  });
@@ -477,7 +474,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 					}
 					else if (controlType == EAssetType::Switch)
 					{
-						if ((g_pIImpl != nullptr) && g_pIImpl->IsSystemTypeSupported(EAssetType::State))
+						if (g_pIImpl->IsSystemTypeSupported(EAssetType::State))
 						{
 							pAddMenu->addAction(GetAssetIcon(EAssetType::State), tr("State"), [&]() { CreateControl("new_state", EAssetType::State, pControl); });
 						}
@@ -547,7 +544,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 			{
 				CAsset const* const pLibrary = static_cast<CAsset*>(libraries[0]);
 
-				pContextMenu->addAction(tr("Open Containing Folder"), [&]()
+				pContextMenu->addAction(tr("Show in File Explorer"), [&]()
 					{
 						QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + g_assetsManager.GetConfigFolderPath() + pLibrary->GetName() + ".xml").c_str());
 				  });
@@ -564,8 +561,8 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 		pContextMenu->addAction(tr("Delete"), [&]() { OnDeleteSelectedControls(); });
 		pContextMenu->addSeparator();
-		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(m_pTreeView->GetSelectedIndexes()); });
-		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(m_pTreeView->GetSelectedIndexes()); });
+		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(); });
+		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(); });
 		pContextMenu->addSeparator();
 	}
 
@@ -830,28 +827,25 @@ void CSystemControlsWidget::OnUpdateCreateButtons()
 					m_pCreateFolderAction->setVisible(isLibraryOrFolder);
 					m_pCreateTriggerAction->setVisible(isLibraryOrFolder);
 
-					if (g_pIImpl != nullptr)
+					if (g_pIImpl->IsSystemTypeSupported(EAssetType::Parameter))
 					{
-						if (g_pIImpl->IsSystemTypeSupported(EAssetType::Parameter))
-						{
-							m_pCreateParameterAction->setVisible(isLibraryOrFolder);
-						}
+						m_pCreateParameterAction->setVisible(isLibraryOrFolder);
+					}
 
-						if (g_pIImpl->IsSystemTypeSupported(EAssetType::Switch))
-						{
-							m_pCreateSwitchAction->setVisible(isLibraryOrFolder);
-							m_pCreateStateAction->setVisible(assetType == EAssetType::Switch);
-						}
+					if (g_pIImpl->IsSystemTypeSupported(EAssetType::Switch))
+					{
+						m_pCreateSwitchAction->setVisible(isLibraryOrFolder);
+						m_pCreateStateAction->setVisible(assetType == EAssetType::Switch);
+					}
 
-						if (g_pIImpl->IsSystemTypeSupported(EAssetType::Environment))
-						{
-							m_pCreateEnvironmentAction->setVisible(isLibraryOrFolder);
-						}
+					if (g_pIImpl->IsSystemTypeSupported(EAssetType::Environment))
+					{
+						m_pCreateEnvironmentAction->setVisible(isLibraryOrFolder);
+					}
 
-						if (g_pIImpl->IsSystemTypeSupported(EAssetType::Preload))
-						{
-							m_pCreatePreloadAction->setVisible(isLibraryOrFolder);
-						}
+					if (g_pIImpl->IsSystemTypeSupported(EAssetType::Preload))
+					{
+						m_pCreatePreloadAction->setVisible(isLibraryOrFolder);
 					}
 
 					isActionVisible = true;
@@ -955,14 +949,14 @@ bool CSystemControlsWidget::IsDefaultControlSelected() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControlsWidget::BackupTreeViewStates()
+void CSystemControlsWidget::OnAboutToReload()
 {
 	m_pTreeView->BackupExpanded();
 	m_pTreeView->BackupSelection();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControlsWidget::RestoreTreeViewStates()
+void CSystemControlsWidget::OnReloaded()
 {
 	m_pTreeView->RestoreExpanded();
 	m_pTreeView->RestoreSelection();
@@ -975,17 +969,24 @@ bool CSystemControlsWidget::IsEditing() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControlsWidget::SelectConnectedSystemControl(CControl& systemControl, ControlId const itemId)
+void CSystemControlsWidget::SelectConnectedSystemControl(ControlId const systemControlId, ControlId const implItemId)
 {
 	ClearFilters();
-	auto const& matches = m_pSystemFilterProxyModel->match(m_pSystemFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(ModelUtils::ERoles::Id), systemControl.GetId(), 1, Qt::MatchRecursive);
+	auto const& matches = m_pSystemFilterProxyModel->match(m_pSystemFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(ModelUtils::ERoles::Id), systemControlId, 1, Qt::MatchRecursive);
 
 	if (!matches.isEmpty())
 	{
 		ControlIds selectedConnection {
-			itemId
+			implItemId
 		};
-		systemControl.SetSelectedConnections(selectedConnection);
+
+		CControl* const pControl = g_assetsManager.FindControlById(systemControlId);
+
+		if (pControl != nullptr)
+		{
+			pControl->SetSelectedConnections(selectedConnection);
+		}
+
 		m_pTreeView->setFocus();
 		m_pTreeView->selectionModel()->setCurrentIndex(matches.first(), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 	}

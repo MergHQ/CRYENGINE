@@ -17,7 +17,7 @@ static constexpr char* s_szFolderTag = "Folder";
 static constexpr char* s_szPathAttribute = "path";
 static constexpr char* s_szDescriptionAttribute = "description";
 
-struct SLibraryScope
+struct SLibraryScope final
 {
 	SLibraryScope()
 		: isDirty(false)

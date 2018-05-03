@@ -6,6 +6,7 @@ start_sources()
 sources_platform(ALL)
 add_sources("EditorFmod_uber_0.cpp"
 	SOURCE_GROUP "Root"
+		"Common.h"
 		"Impl.cpp"
 		"Impl.h"
 		"Item.cpp"
@@ -15,8 +16,6 @@ add_sources("EditorFmod_uber_0.cpp"
 		"main.cpp"
 		"ProjectLoader.cpp"
 		"ProjectLoader.h"
-		"Settings.cpp"
-		"Settings.h"
 		"StdAfx.cpp"
 		"StdAfx.h"
 	SOURCE_GROUP "Connections"
@@ -32,6 +31,20 @@ add_sources("EditorFmod_uber_0.cpp"
 		"ParameterToStateConnection.h"
 		"SnapshotConnection.cpp"
 		"SnapshotConnection.h"
+	SOURCE_GROUP "DataPanel"
+		"DataPanel.cpp"
+		"DataPanel.h"
+		"FilterProxyModel.cpp"
+		"FilterProxyModel.h"
+		"ItemModel.cpp"
+		"ItemModel.h"
+		"TreeView.cpp"
+		"TreeView.h"
+)
+
+add_sources("NoUberFile"
+	SOURCE_GROUP "Resources"
+		"EditorFmodUI.qrc"
 )
 
 end_sources()

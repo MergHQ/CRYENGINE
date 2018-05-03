@@ -3,14 +3,17 @@
 #include "StdAfx.h"
 #include "Impl.h"
 
+#include "Common.h"
 #include "BaseConnection.h"
 #include "ParameterConnection.h"
 #include "ParameterToStateConnection.h"
 #include "SoundbankConnection.h"
 #include "ProjectLoader.h"
+#include "DataPanel.h"
 
 #include <CrySystem/ISystem.h>
 #include <CryCore/StlUtils.h>
+#include <CrySerialization/IArchiveHost.h>
 
 namespace ACE
 {
@@ -134,9 +137,9 @@ CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const typ
 	}
 	else
 	{
-		int const count = pItem->GetNumChildren();
+		size_t const numChildren = pItem->GetNumChildren();
 
-		for (int i = 0; i < count; ++i)
+		for (size_t i = 0; i < numChildren; ++i)
 		{
 			CItem* const pFoundItem = SearchForItem(static_cast<CItem* const>(pItem->GetChildAt(i)), name, type);
 
@@ -153,16 +156,40 @@ CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const typ
 
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
+	: m_pDataPanel(nullptr)
+	, m_projectPath(AUDIO_SYSTEM_DATA_ROOT "/wwise_project")
+	, m_assetsPath(AUDIO_SYSTEM_DATA_ROOT "/" + string(CryAudio::Impl::Wwise::s_szImplFolderName) + "/" + string(CryAudio::s_szAssetsFolderName))
+	, m_szUserSettingsFile("%USER%/audiocontrolseditor_wwise.user")
 {
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
 	m_implFolderName = CryAudio::Impl::Wwise::s_szImplFolderName;
+
+	Serialization::LoadJsonFile(*this, m_szUserSettingsFile);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImpl::~CImpl()
 {
 	Clear();
+	DestroyDataPanel();
+}
+
+//////////////////////////////////////////////////////////////////////////
+QWidget* CImpl::CreateDataPanel()
+{
+	m_pDataPanel = new CDataPanel(*this);
+	return m_pDataPanel;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DestroyDataPanel()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		delete m_pDataPanel;
+		m_pDataPanel = nullptr;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -170,7 +197,7 @@ void CImpl::Reload(bool const preserveConnectionStatus)
 {
 	Clear();
 
-	CProjectLoader(GetSettings()->GetProjectPath(), GetSettings()->GetAssetsPath(), m_rootItem, m_itemCache);
+	CProjectLoader(m_projectPath, m_assetsPath, m_rootItem, m_itemCache);
 
 	if (preserveConnectionStatus)
 	{
@@ -191,6 +218,11 @@ void CImpl::Reload(bool const preserveConnectionStatus)
 	{
 		m_connectionsByID.clear();
 	}
+
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->Reset();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -207,69 +239,32 @@ IItem* CImpl::GetItem(ControlId const id) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-char const* CImpl::GetTypeIcon(IItem const* const pIItem) const
+CryIcon const& CImpl::GetItemIcon(IItem const* const pIItem) const
 {
-	char const* szIconPath = "icons:Dialogs/dialog-error.ico";
 	auto const pItem = static_cast<CItem const* const>(pIItem);
-
-	if (pItem != nullptr)
-	{
-		EItemType const type = pItem->GetType();
-
-		switch (type)
-		{
-		case EItemType::Event:
-			szIconPath = "icons:audio/wwise/event.ico";
-			break;
-		case EItemType::Parameter:
-			szIconPath = "icons:audio/wwise/gameparameter.ico";
-			break;
-		case EItemType::Switch:
-			szIconPath = "icons:audio/wwise/switch.ico";
-			break;
-		case EItemType::AuxBus:
-			szIconPath = "icons:audio/wwise/auxbus.ico";
-			break;
-		case EItemType::SoundBank:
-			szIconPath = "icons:audio/wwise/soundbank.ico";
-			break;
-		case EItemType::State:
-			szIconPath = "icons:audio/wwise/state.ico";
-			break;
-		case EItemType::SwitchGroup:
-			szIconPath = "icons:audio/wwise/switchgroup.ico";
-			break;
-		case EItemType::StateGroup:
-			szIconPath = "icons:audio/wwise/stategroup.ico";
-			break;
-		case EItemType::WorkUnit:
-			szIconPath = "icons:audio/wwise/workunit.ico";
-			break;
-		case EItemType::VirtualFolder:
-			szIconPath = "icons:audio/wwise/virtualfolder.ico";
-			break;
-		case EItemType::PhysicalFolder:
-			szIconPath = "icons:audio/wwise/physicalfolder.ico";
-			break;
-		default:
-			szIconPath = "icons:Dialogs/dialog-error.ico";
-			break;
-		}
-	}
-
-	return szIconPath;
+	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer.");
+	return GetTypeIcon(pItem->GetType());
 }
 
 //////////////////////////////////////////////////////////////////////////
-string const& CImpl::GetName() const
+QString const& CImpl::GetItemTypeName(IItem const* const pIItem) const
 {
-	return m_implName;
+	auto const pItem = static_cast<CItem const* const>(pIItem);
+	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer.");
+	return TypeToString(pItem->GetType());
 }
 
 //////////////////////////////////////////////////////////////////////////
-string const& CImpl::GetFolderName() const
+void CImpl::SetProjectPath(char const* const szPath)
 {
-	return m_implFolderName;
+	m_projectPath = szPath;
+	Serialization::SaveJsonFile(m_szUserSettingsFile, *this);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::Serialize(Serialization::IArchive& ar)
+{
+	ar(m_projectPath, "projectPath", "Project Path");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -446,9 +441,9 @@ ConnectionPtr CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType co
 #endif            // USE_BACKWARDS_COMPATIBILITY
 
 						CItem* pStateItem = nullptr;
-						size_t const count = pItem->GetNumChildren();
+						size_t const numChildren = pItem->GetNumChildren();
 
-						for (size_t i = 0; i < count; ++i)
+						for (size_t i = 0; i < numChildren; ++i)
 						{
 							auto const pChild = static_cast<CItem* const>(pItem->GetChildAt(i));
 
@@ -645,7 +640,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::EnableConnection(ConnectionPtr const pConnection)
+void CImpl::EnableConnection(ConnectionPtr const pConnection, bool const isLoading)
 {
 	auto const pItem = static_cast<CItem* const>(GetItem(pConnection->GetID()));
 
@@ -653,11 +648,16 @@ void CImpl::EnableConnection(ConnectionPtr const pConnection)
 	{
 		++m_connectionsByID[pItem->GetId()];
 		pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
+
+		if ((m_pDataPanel != nullptr) && !isLoading)
+		{
+			m_pDataPanel->OnConnectionAdded();
+		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DisableConnection(ConnectionPtr const pConnection)
+void CImpl::DisableConnection(ConnectionPtr const pConnection, bool const isLoading)
 {
 	auto const pItem = static_cast<CItem* const>(GetItem(pConnection->GetID()));
 
@@ -673,6 +673,38 @@ void CImpl::DisableConnection(ConnectionPtr const pConnection)
 		}
 
 		m_connectionsByID[pItem->GetId()] = connectionCount;
+
+		if ((m_pDataPanel != nullptr) && !isLoading)
+		{
+			m_pDataPanel->OnConnectionRemoved();
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAboutToReload()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnAboutToReload();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnReloaded()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnReloaded();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnSelectConnectedItem(ControlId const id) const
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnSelectConnectedItem(id);
 	}
 }
 

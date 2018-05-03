@@ -3,17 +3,16 @@
 #pragma once
 
 #include <QWidget>
-#include <SharedData.h>
 
-class QFilteringPanel;
+#include <ControlInfo.h>
+#include <FileImportInfo.h>
+
+#include <FileDialogs/ExtensionFilter.h>
+
+class QVBoxLayout;
 
 namespace ACE
 {
-class CControl;
-class CMiddlewareDataModel;
-class CMiddlewareFilterProxyModel;
-class CTreeView;
-
 class CMiddlewareDataWidget final : public QWidget
 {
 	Q_OBJECT
@@ -25,28 +24,19 @@ public:
 
 	CMiddlewareDataWidget() = delete;
 
-	void Reset();
-	void BackupTreeViewStates();
-	void RestoreTreeViewStates();
-	void SelectConnectedImplItem(ControlId const itemId);
-
 signals:
 
-	void SignalSelectConnectedSystemControl(CControl& sytemControl, ControlId const itemId);
-
-private slots:
-
-	void OnContextMenu(QPoint const& pos);
+	void SignalSelectConnectedSystemControl(ControlId const systemControlId, ControlId const implItemId);
 
 private:
 
-	void ClearFilters();
+	void InitImplDataWidget();
+	void ClearImplDataWidget();
+	void GetConnectedControls(ControlId const implItemId, SControlInfos& controlInfos);
+	void OnImportFiles(ExtensionFilterVector const& extensionFilters, QStringList const& supportedTypes, QString const& targetFolderName);
+	void OpenFileImporter(FileImportInfos const& fileImportInfos, QString const& targetFolderName);
 
-	CMiddlewareFilterProxyModel* const m_pMiddlewareFilterProxyModel;
-	CMiddlewareDataModel* const        m_pMiddlewareDataModel;
-	QFilteringPanel*                   m_pFilteringPanel;
-	CTreeView* const                   m_pTreeView;
-	int const                          m_nameColumn;
+	QVBoxLayout* const m_pLayout;
+	QWidget*           m_pImplDataPanel;
 };
 } // namespace ACE
-

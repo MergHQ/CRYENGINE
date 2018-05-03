@@ -15,6 +15,16 @@ namespace Impl
 namespace PortAudio
 {
 //////////////////////////////////////////////////////////////////////////
+void SetParentPakStatus(CItem* pParent, EPakStatus const pakStatus)
+{
+	while (pParent != nullptr)
+	{
+		pParent->SetPakStatus(pParent->GetPakStatus() | pakStatus);
+		pParent = static_cast<CItem*>(pParent->GetParent());
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CProjectLoader::CProjectLoader(string const& assetsPath, CItem& rootItem)
 	: m_assetsPath(assetsPath)
 {
@@ -69,7 +79,7 @@ void CProjectLoader::LoadFolder(string const& folderPath, CItem& parent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CItem* CProjectLoader::CreateItem(string const& name, string const& path, EItemType const type, CItem& rootItem)
+CItem* CProjectLoader::CreateItem(string const& name, string const& path, EItemType const type, CItem& parent)
 {
 	ControlId id;
 	string filePath = m_assetsPath + "/";
@@ -86,12 +96,28 @@ CItem* CProjectLoader::CreateItem(string const& name, string const& path, EItemT
 	}
 
 	EItemFlags const flags = type == EItemType::Folder ? EItemFlags::IsContainer : EItemFlags::None;
-	auto const pItem = new CItem(name, id, type, flags, filePath);
+	EPakStatus pakStatus = EPakStatus::None;
 
-	rootItem.AddChild(pItem);
+	if (gEnv->pCryPak->IsFileExist(filePath.c_str(), ICryPak::eFileLocation_InPak))
+	{
+		pakStatus |= EPakStatus::InPak;
+	}
+
+	if (gEnv->pCryPak->IsFileExist(filePath.c_str(), ICryPak::eFileLocation_OnDisk))
+	{
+		pakStatus |= EPakStatus::OnDisk;
+	}
+
+	if (type == EItemType::Event)
+	{
+		SetParentPakStatus(&parent, pakStatus);
+	}
+
+	auto const pItem = new CItem(name, id, type, flags, pakStatus, filePath);
+
+	parent.AddChild(pItem);
 	return pItem;
 }
 } // namespace PortAudio
 } // namespace Impl
 } // namespace ACE
-

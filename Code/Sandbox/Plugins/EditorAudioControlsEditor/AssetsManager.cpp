@@ -189,9 +189,9 @@ bool CAssetsManager::ScopeExists(string const& name) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::GetScopeInfoList(ScopeInfoList& scopeList) const
+void CAssetsManager::GetScopeInfos(ScopeInfos& scopeInfos) const
 {
-	stl::map_to_vector(m_scopes, scopeList);
+	stl::map_to_vector(m_scopes, scopeInfos);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -451,6 +451,23 @@ CControl* CAssetsManager::FindControl(string const& name, EAssetType const type,
 }
 
 //////////////////////////////////////////////////////////////////////////
+CControl* CAssetsManager::FindControlById(ControlId const id) const
+{
+	CControl* pSearchedControl = nullptr;
+
+	for (auto const pControl : m_controls)
+	{
+		if (pControl->GetId() == id)
+		{
+			pSearchedControl = pControl;
+			break;
+		}
+	}
+
+	return pSearchedControl;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CAssetsManager::ClearAllConnections()
 {
 	m_isLoading = true;
@@ -571,17 +588,14 @@ void CAssetsManager::UpdateAssetConnectionStates(CAsset* const pAsset)
 				for (size_t i = 0; i < connectionCount; ++i)
 				{
 					hasConnection = true;
+					Impl::IItem const* const pIItem = g_pIImpl->GetItem(pControl->GetConnectionAt(i)->GetID());
 
-					if (g_pIImpl != nullptr)
+					if (pIItem != nullptr)
 					{
-						Impl::IItem const* const pIItem = g_pIImpl->GetItem(pControl->GetConnectionAt(i)->GetID());
-
-						if (pIItem != nullptr)
+						if ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) != 0)
 						{
-							if ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) != 0)
-							{
-								hasPlaceholder = true;
-							}
+							hasPlaceholder = true;
+							break;
 						}
 					}
 				}

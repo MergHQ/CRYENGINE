@@ -7,8 +7,8 @@
 #include "ImplementationManager.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
-#include "ModelUtils.h"
 
+#include <ModelUtils.h>
 #include <IItem.h>
 #include <QtUtil.h>
 #include <DragDrop.h>
@@ -17,6 +17,30 @@
 
 namespace ACE
 {
+//////////////////////////////////////////////////////////////////////////
+QStringList GetScopeNames()
+{
+	QStringList scopeNames;
+	ScopeInfos scopeInfos;
+	g_assetsManager.GetScopeInfos(scopeInfos);
+
+	for (auto const& scopeInfo : scopeInfos)
+	{
+		scopeNames.append(QString(scopeInfo.name));
+	}
+
+	scopeNames.sort(Qt::CaseInsensitive);
+
+	return scopeNames;
+}
+
+static QStringList const s_typeFilterList {
+	"Trigger", "Parameter", "Switch", "State", "Environment", "Preload"
+};
+
+static CItemModelAttributeEnum s_typeAttribute("Type", s_typeFilterList, CItemModelAttribute::AlwaysHidden, true);
+static CItemModelAttributeEnumFunc s_scopeAttribute("Scope", &GetScopeNames, CItemModelAttribute::StartHidden, true);
+
 //////////////////////////////////////////////////////////////////////////
 bool IsParentValid(EAssetType const parentType, EAssetType const assetType)
 {
@@ -42,7 +66,7 @@ bool IsParentValid(EAssetType const parentType, EAssetType const assetType)
 //////////////////////////////////////////////////////////////////////////
 bool ProcessDragDropData(QMimeData const* const pData, Assets& outItems)
 {
-	bool hasValidData = false;
+	CRY_ASSERT_MESSAGE(outItems.empty(), "Passed container must be empty.");
 	CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
 
 	if (pDragDropData->HasCustomData(ModelUtils::s_szSystemMimeType))
@@ -55,17 +79,16 @@ bool ProcessDragDropData(QMimeData const* const pData, Assets& outItems)
 			intptr_t ptr;
 			stream >> ptr;
 			outItems.push_back(reinterpret_cast<CAsset*>(ptr));
-			hasValidData = true;
 		}
 	}
 
-	return hasValidData;
+	return !outItems.empty();
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool ProcessImplDragDropData(QMimeData const* const pData, std::vector<Impl::IItem*>& outItems)
 {
-	bool hasValidData = false;
+	CRY_ASSERT_MESSAGE(outItems.empty(), "Passed container must be empty.");
 	CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
 
 	if (pDragDropData->HasCustomData(ModelUtils::s_szImplMimeType))
@@ -85,13 +108,12 @@ bool ProcessImplDragDropData(QMimeData const* const pData, std::vector<Impl::IIt
 				if (pIItem != nullptr)
 				{
 					outItems.push_back(pIItem);
-					hasValidData = true;
 				}
 			}
 		}
 	}
 
-	return hasValidData;
+	return !outItems.empty();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -184,28 +206,6 @@ bool CSystemSourceModel::DropData(QMimeData const* const pData, CAsset* const pP
 	}
 
 	return wasDropped;
-}
-
-//////////////////////////////////////////////////////////////////////////
-char const* CSystemSourceModel::GetPakStatusIcon(CLibrary const& library)
-{
-	char const* szIconPath = "icons:Dialogs/dialog-error.ico";
-	EPakStatus const pakStatus = library.GetPakStatus();
-
-	if ((pakStatus & (EPakStatus::InPak | EPakStatus::OnDisk)) != 0)
-	{
-		szIconPath = "icons:General/Pakfile_Folder.ico";
-	}
-	else if ((pakStatus& EPakStatus::InPak) != 0)
-	{
-		szIconPath = "icons:General/Pakfile.ico";
-	}
-	else if ((pakStatus& EPakStatus::OnDisk) != 0)
-	{
-		szIconPath = "icons:General/Folder.ico";
-	}
-
-	return szIconPath;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -306,7 +306,7 @@ CItemModelAttribute* CSystemSourceModel::GetAttributeForColumn(EColumns const co
 		pAttribute = &ModelUtils::s_notificationAttribute;
 		break;
 	case EColumns::Type:
-		pAttribute = &ModelUtils::s_typeAttribute;
+		pAttribute = &s_typeAttribute;
 		break;
 	case EColumns::Placeholder:
 		pAttribute = &ModelUtils::s_placeholderAttribute;
@@ -327,7 +327,7 @@ CItemModelAttribute* CSystemSourceModel::GetAttributeForColumn(EColumns const co
 		pAttribute = &ModelUtils::s_onDiskAttribute;
 		break;
 	case EColumns::Scope:
-		pAttribute = &ModelUtils::s_scopeAttribute;
+		pAttribute = &s_scopeAttribute;
 		break;
 	case EColumns::Name:
 		pAttribute = &Attributes::s_nameAttribute;
@@ -356,7 +356,7 @@ QVariant CSystemSourceModel::GetHeaderData(int const section, Qt::Orientation co
 			case Qt::DecorationRole:
 				if (section == static_cast<int>(EColumns::Notification))
 				{
-					variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NotificationHeader));
+					variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NotificationHeader);
 				}
 				break;
 			case Qt::DisplayRole:
@@ -429,7 +429,7 @@ int CSystemSourceModel::rowCount(QModelIndex const& parent) const
 
 	if (!m_ignoreLibraryUpdates && !parent.isValid())
 	{
-		rowCount = g_assetsManager.GetLibraryCount();
+		rowCount = static_cast<int>(g_assetsManager.GetLibraryCount());
 	}
 
 	return rowCount;
@@ -455,7 +455,7 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 		}
 		else if (role == static_cast<int>(ModelUtils::ERoles::Name))
 		{
-			variant = static_cast<char const*>(pLibrary->GetName());
+			variant = QtUtil::ToQString(pLibrary->GetName());
 		}
 		else
 		{
@@ -470,15 +470,15 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 					case Qt::DecorationRole:
 						if ((flags& EAssetFlags::HasPlaceholderConnection) != 0)
 						{
-							variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder));
+							variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder);
 						}
 						else if ((flags& EAssetFlags::HasConnection) == 0)
 						{
-							variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection));
+							variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
 						}
 						else if ((flags& EAssetFlags::HasControl) == 0)
 						{
-							variant = CryIcon(ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoControl));
+							variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoControl);
 						}
 						break;
 					case Qt::ToolTipRole:
@@ -527,27 +527,27 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 					switch (role)
 					{
 					case Qt::DecorationRole:
-						variant = CryIcon(GetPakStatusIcon(*pLibrary));
+						variant = ModelUtils::GetPakStatusIcon(pLibrary->GetPakStatus());
 						break;
 					case Qt::ToolTipRole:
 						{
 							EPakStatus const pakStatus = pLibrary->GetPakStatus();
 
-							if ((pakStatus & (EPakStatus::InPak | EPakStatus::OnDisk)) != 0)
+							if (pakStatus == (EPakStatus::InPak | EPakStatus::OnDisk))
 							{
-								variant = "Library is in pak and on disk";
+								variant = tr("Library is in pak and on disk");
 							}
 							else if ((pakStatus& EPakStatus::InPak) != 0)
 							{
-								variant = "Library is only in pak file";
+								variant = tr("Library is only in pak file");
 							}
 							else if ((pakStatus& EPakStatus::OnDisk) != 0)
 							{
-								variant = "Library is only on disk";
+								variant = tr("Library is only on disk");
 							}
 							else
 							{
-								variant = "Library does not exist on disk. Save to write file.";
+								variant = tr("Library does not exist on disk. Save to write file.");
 							}
 						}
 						break;
@@ -581,25 +581,25 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 
 						if ((pLibrary->GetFlags() & EAssetFlags::IsModified) != 0)
 						{
-							variant = static_cast<char const*>(pLibrary->GetName() + " *");
+							variant = QtUtil::ToQString(pLibrary->GetName() + " *");
 						}
 						else
 						{
-							variant = static_cast<char const*>(pLibrary->GetName());
+							variant = QtUtil::ToQString(pLibrary->GetName());
 						}
 						break;
 					case Qt::EditRole:
-						variant = static_cast<char const*>(pLibrary->GetName());
+						variant = QtUtil::ToQString(pLibrary->GetName());
 						break;
 					case Qt::ToolTipRole:
 						{
 							if (!pLibrary->GetDescription().IsEmpty())
 							{
-								variant = tr(pLibrary->GetName() + ": " + pLibrary->GetDescription());
+								variant = QtUtil::ToQString(pLibrary->GetName() + ": " + pLibrary->GetDescription());
 							}
 							else
 							{
-								variant = static_cast<char const*>(pLibrary->GetName());
+								variant = QtUtil::ToQString(pLibrary->GetName());
 							}
 						}
 						break;
@@ -607,7 +607,7 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 						variant = static_cast<int>(EAssetType::Library);
 						break;
 					case static_cast<int>(ModelUtils::ERoles::Name):
-						variant = static_cast<char const*>(pLibrary->GetName());
+						variant = QtUtil::ToQString(pLibrary->GetName());
 						break;
 					case static_cast<int>(ModelUtils::ERoles::InternalPointer):
 						variant = reinterpret_cast<intptr_t>(pLibrary);
@@ -694,7 +694,7 @@ QModelIndex CSystemSourceModel::index(int row, int column, QModelIndex const& pa
 
 	if ((row >= 0) && (column >= 0))
 	{
-		modelIndex = createIndex(row, column, reinterpret_cast<quintptr>(g_assetsManager.GetLibrary(row)));
+		modelIndex = createIndex(row, column, reinterpret_cast<quintptr>(g_assetsManager.GetLibrary(static_cast<size_t>(row))));
 	}
 
 	return modelIndex;

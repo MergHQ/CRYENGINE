@@ -7,8 +7,8 @@
 #include "ImplementationManager.h"
 #include "TreeView.h"
 #include "ConnectionsModel.h"
-#include "ModelUtils.h"
 
+#include <ModelUtils.h>
 #include <IItem.h>
 #include <QtUtil.h>
 #include <Controls/QuestionDialog.h>
@@ -40,7 +40,6 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 
 	m_pTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	m_pTreeView->setDragEnabled(false);
-	m_pTreeView->setAcceptDrops(true);
 	m_pTreeView->setDragDropMode(QAbstractItemView::DropOnly);
 	m_pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	m_pTreeView->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -83,7 +82,6 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 		{
 			if (!g_assetsManager.IsLoading() && (m_pControl == pControl))
 			{
-			  // Clear the selection if a connection is removed.
 			  m_pTreeView->selectionModel()->clear();
 			  RefreshConnectionProperties();
 			}
@@ -153,19 +151,16 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 
 		if (selectionCount == 1)
 		{
-			if (g_pIImpl != nullptr)
-			{
-				ControlId const itemId = static_cast<ControlId>(selection[0].data(static_cast<int>(ModelUtils::ERoles::Id)).toInt());
-				Impl::IItem const* const pIItem = g_pIImpl->GetItem(itemId);
+			ControlId const itemId = static_cast<ControlId>(selection[0].data(static_cast<int>(ModelUtils::ERoles::Id)).toInt());
+			Impl::IItem const* const pIItem = g_pIImpl->GetItem(itemId);
 
-				if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == 0))
-				{
-					pContextMenu->addSeparator();
-					pContextMenu->addAction(tr("Select in Middleware Data"), [=]()
-						{
-							SignalSelectConnectedImplItem(itemId);
-					  });
-				}
+			if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == 0))
+			{
+				pContextMenu->addSeparator();
+				pContextMenu->addAction(tr("Select in Middleware Data"), [=]()
+					{
+						SignalSelectConnectedImplItem(itemId);
+				  });
 			}
 		}
 
@@ -215,23 +210,20 @@ void CConnectionsWidget::RemoveSelectedConnection()
 
 			if (messageBox->Execute() == QDialogButtonBox::Yes)
 			{
-				if (g_pIImpl != nullptr)
+				std::vector<Impl::IItem*> implItems;
+				implItems.reserve(selectedIndexes.size());
+
+				for (QModelIndex const& index : selectedIndexes)
 				{
-					std::vector<Impl::IItem*> implItems;
-					implItems.reserve(selectedIndexes.size());
+					ControlId const id = static_cast<ControlId>(index.data(static_cast<int>(ModelUtils::ERoles::Id)).toInt());
+					implItems.push_back(g_pIImpl->GetItem(id));
+				}
 
-					for (QModelIndex const& index : selectedIndexes)
+				for (Impl::IItem* const pIItem : implItems)
+				{
+					if (pIItem != nullptr)
 					{
-						ControlId const id = static_cast<ControlId>(index.data(static_cast<int>(ModelUtils::ERoles::Id)).toInt());
-						implItems.push_back(g_pIImpl->GetItem(id));
-					}
-
-					for (Impl::IItem* const pIItem : implItems)
-					{
-						if (pIItem != nullptr)
-						{
-							m_pControl->RemoveConnection(pIItem);
-						}
+						m_pControl->RemoveConnection(pIItem);
 					}
 				}
 
@@ -349,13 +341,13 @@ void CConnectionsWidget::ResizeColumns()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionsWidget::BackupTreeViewStates()
+void CConnectionsWidget::OnAboutToReload()
 {
 	m_pTreeView->BackupSelection();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionsWidget::RestoreTreeViewStates()
+void CConnectionsWidget::OnReloaded()
 {
 	m_pTreeView->RestoreSelection();
 }

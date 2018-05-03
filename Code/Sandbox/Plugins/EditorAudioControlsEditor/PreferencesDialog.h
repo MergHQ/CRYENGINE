@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Controls/EditorDialog.h"
+#include <Controls/EditorDialog.h>
 
 namespace ACE
 {
@@ -24,8 +24,6 @@ signals:
 
 private:
 
-	QString m_projectPath;
-	bool    m_saveButtonEnable = false;
+	QString const m_projectPath;
 };
 } // namespace ACE
-

@@ -18,7 +18,6 @@
 #include <QHeaderView>
 #include <QPushButton>
 #include <QMenu>
-#include <QModelIndex>
 #include <QKeyEvent>
 
 namespace ACE
@@ -48,13 +47,13 @@ CResourceSelectorDialog::CResourceSelectorDialog(EAssetType const type, Scope co
 	m_pTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	m_pTreeView->setDragEnabled(false);
 	m_pTreeView->setDragDropMode(QAbstractItemView::NoDragDrop);
-	m_pTreeView->setDefaultDropAction(Qt::IgnoreAction);
 	m_pTreeView->setSelectionMode(QAbstractItemView::SingleSelection);
 	m_pTreeView->setUniformRowHeights(true);
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_pTreeView->setModel(m_pFilterProxyModel);
 	m_pTreeView->sortByColumn(0, Qt::AscendingOrder);
 	m_pTreeView->installEventFilter(this);
+	m_pTreeView->header()->setContextMenuPolicy(Qt::PreventContextMenu);
 
 	m_pSearchBox->SetModel(m_pFilterProxyModel);
 	m_pSearchBox->SetAutoExpandOnSearch(m_pTreeView);
@@ -71,7 +70,6 @@ CResourceSelectorDialog::CResourceSelectorDialog(EAssetType const type, Scope co
 
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CResourceSelectorDialog::OnContextMenu);
 	QObject::connect(m_pTreeView, &CTreeView::doubleClicked, this, &CResourceSelectorDialog::OnItemDoubleClicked);
-	QObject::connect(m_pTreeView->header(), &QHeaderView::sortIndicatorChanged, [&]() { m_pTreeView->scrollTo(m_pTreeView->currentIndex()); });
 	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &CResourceSelectorDialog::OnUpdateSelectedControl);
 	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::currentChanged, this, &CResourceSelectorDialog::OnStopTrigger);
 	QObject::connect(m_pDialogButtons, &QDialogButtonBox::accepted, this, &CResourceSelectorDialog::accept);
@@ -286,8 +284,8 @@ void CResourceSelectorDialog::OnContextMenu(QPoint const& pos)
 
 		}
 
-		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(QModelIndexList { index }); });
-		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(QModelIndexList { index }); });
+		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(); });
+		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(); });
 		pContextMenu->addSeparator();
 	}
 

@@ -4,16 +4,15 @@
 
 #include <QAbstractItemModel>
 
-class CItemModelAttribute;
-
 namespace ACE
 {
 namespace Impl
 {
-struct IItem;
-} // namespace Impl
+namespace Wwise
+{
+class CItem;
 
-class CMiddlewareDataModel final : public QAbstractItemModel
+class CItemModel final : public QAbstractItemModel
 {
 public:
 
@@ -26,16 +25,11 @@ public:
 		Count,
 	};
 
-	explicit CMiddlewareDataModel(QObject* const pParent);
-	virtual ~CMiddlewareDataModel() override;
+	explicit CItemModel(CItem const& rootItem, QObject* const pParent);
 
-	CMiddlewareDataModel() = delete;
+	CItemModel() = delete;
 
-	static CItemModelAttribute* GetAttributeForColumn(EColumns const column);
-	static QVariant             GetHeaderData(int const section, Qt::Orientation const orientation, int const role);
-
-	void                        DisconnectSignals();
-	void                        Reset();
+	void Reset();
 
 protected:
 
@@ -47,6 +41,8 @@ protected:
 	virtual Qt::ItemFlags   flags(QModelIndex const& index) const override;
 	virtual QModelIndex     index(int row, int column, QModelIndex const& parent = QModelIndex()) const override;
 	virtual QModelIndex     parent(QModelIndex const& index) const override;
+	virtual bool            canDropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const override;
+	virtual bool            dropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) override;
 	virtual Qt::DropActions supportedDragActions() const override;
 	virtual QStringList     mimeTypes() const override;
 	virtual QMimeData*      mimeData(QModelIndexList const& indexes) const override;
@@ -54,9 +50,12 @@ protected:
 
 private:
 
-	void         ConnectSignals();
-	Impl::IItem* ItemFromIndex(QModelIndex const& index) const;
-	QModelIndex  IndexFromItem(Impl::IItem const* const pIItem) const;
+	CItem*      ItemFromIndex(QModelIndex const& index) const;
+	QModelIndex IndexFromItem(CItem const* const pItem) const;
+
+	CItem const& m_rootItem;
 };
+} // namespace Wwise
+} // namespace Impl
 } // namespace ACE
 

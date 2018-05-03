@@ -6,6 +6,7 @@ start_sources()
 sources_platform(ALL)
 add_sources("EditorWwise_uber_0.cpp"
 	SOURCE_GROUP "Root"
+		"Common.h"
 		"Impl.cpp"
 		"Impl.h"
 		"Item.cpp"
@@ -13,8 +14,6 @@ add_sources("EditorWwise_uber_0.cpp"
 		"main.cpp"
 		"ProjectLoader.cpp"
 		"ProjectLoader.h"
-		"Settings.cpp"
-		"Settings.h"
 		"StdAfx.cpp"
 		"StdAfx.h"
 	SOURCE_GROUP "Connections"
@@ -26,6 +25,20 @@ add_sources("EditorWwise_uber_0.cpp"
 		"ParameterToStateConnection.h"
 		"SoundbankConnection.cpp"
 		"SoundbankConnection.h"
+	SOURCE_GROUP "DataPanel"
+		"DataPanel.cpp"
+		"DataPanel.h"
+		"FilterProxyModel.cpp"
+		"FilterProxyModel.h"
+		"ItemModel.cpp"
+		"ItemModel.h"
+		"TreeView.cpp"
+		"TreeView.h"
+)
+
+add_sources("NoUberFile"
+	SOURCE_GROUP "Resources"
+		"EditorWwiseUI.qrc"
 )
 
 end_sources()
