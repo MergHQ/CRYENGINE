@@ -526,6 +526,37 @@ CTimeDemoRecorder::CTimeDemoRecorder()
 CTimeDemoRecorder::~CTimeDemoRecorder()
 {
 	s_pTimeDemoRecorder = 0;
+
+	gEnv->pConsole->UnregisterVariable("demo_file");
+	gEnv->pConsole->UnregisterVariable("demo_game_state");
+	gEnv->pConsole->UnregisterVariable("demo_profile");
+	gEnv->pConsole->UnregisterVariable("demo_noinfo");
+	
+	gEnv->pConsole->RemoveCommand("record");
+	gEnv->pConsole->RemoveCommand("stoprecording");
+	gEnv->pConsole->RemoveCommand("demo");
+	gEnv->pConsole->RemoveCommand("stopdemo");
+	gEnv->pConsole->RemoveCommand("demo_StartDemoChain");
+	gEnv->pConsole->RemoveCommand("demo_StartDemoLevel");
+
+	gEnv->pConsole->UnregisterVariable("demo_num_runs");
+	gEnv->pConsole->UnregisterVariable("demo_scroll_pause");
+	gEnv->pConsole->UnregisterVariable("demo_quit");
+	gEnv->pConsole->UnregisterVariable("demo_finish_memreplay_sizer");
+	gEnv->pConsole->UnregisterVariable("demo_finish_memreplay_stop");
+	gEnv->pConsole->UnregisterVariable("demo_screenshot_frame");
+	gEnv->pConsole->UnregisterVariable("demo_max_frames");
+	gEnv->pConsole->UnregisterVariable("demo_savestats");
+	gEnv->pConsole->UnregisterVariable("demo_ai");
+	gEnv->pConsole->UnregisterVariable("demo_restart_level");
+	gEnv->pConsole->UnregisterVariable("demo_panoramic");
+	gEnv->pConsole->UnregisterVariable("demo_fixed_timestep");
+	gEnv->pConsole->UnregisterVariable("demo_vtune");
+	gEnv->pConsole->UnregisterVariable("demo_time_of_day");
+	gEnv->pConsole->UnregisterVariable("demo_save_every_frame");
+	gEnv->pConsole->UnregisterVariable("demo_use_hmd_rotation");
+	gEnv->pConsole->UnregisterVariable("demo_finish_cmd");
+	gEnv->pConsole->UnregisterVariable("demo_num_orientations");
 }
 
 //////////////////////////////////////////////////////////////////////////
