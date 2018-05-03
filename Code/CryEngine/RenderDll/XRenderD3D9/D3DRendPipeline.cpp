@@ -519,11 +519,6 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 		&& (GetWireframeMode() == R_SOLID_MODE)
 		&& (CRenderer::CV_r_DeferredShadingDebugGBuffer == 0);
 
-	{
-		PROFILE_FRAME(WaitForRenderView);
-		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReading);
-	}
-
 	// Update the character CBs (only active on D3D11 style platforms)
 	// Needs to be done before objects are compiled
 	RT_UpdateSkinningConstantBuffers(pRenderView);
@@ -580,10 +575,6 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 
 void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
 {
-	{
-		PROFILE_FRAME(RenderViewEndFrame);
-		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReadingDone);
-	}
 
 	{
 		PROFILE_FRAME(ShadowViewsEndFrame);
@@ -611,6 +602,11 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 	// Skip scene rendering when device is lost
 	if (m_bDeviceLost)
 		return;
+
+	{
+		PROFILE_FRAME(WaitForRenderView);
+		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReading);
+	}
 
 	const uint32 shaderRenderingFlags = pRenderView->GetShaderRenderingFlags();
 
@@ -721,6 +717,11 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 
 	CV_r_nodrawnear            = nSaveDrawNear;
 	CV_r_watercaustics         = nSaveDrawCaustics;
+
+	{
+		PROFILE_FRAME(RenderViewEndFrame);
+		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReadingDone);
+	}
 }
 
 //======================================================================================================
