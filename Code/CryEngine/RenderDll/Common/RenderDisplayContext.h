@@ -190,6 +190,8 @@ public:
 	void                 SetFullscreenState(bool isFullscreen);
 	bool                 IsFullscreen() const { return m_fullscreen; }
 
+	Vec2_tpl<uint32_t>   FindClosestMatchingScreenResolution(const Vec2_tpl<uint32_t> &resolution) const;
+
 #if defined(SUPPORT_DEVICE_INFO)
 	uint32               GetRefreshRateNumerator() const { return m_swapChain.GetRefreshRateNumerator(); }
 	uint32               GetRefreshRateDemoninator() const { return m_swapChain.GetRefreshRateDemoninator(); }

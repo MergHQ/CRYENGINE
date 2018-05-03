@@ -445,6 +445,28 @@ void CSwapChainBackedRenderDisplayContext::SetFullscreenState(bool isFullscreen)
 #endif
 }
 
+Vec2_tpl<uint32_t> CSwapChainBackedRenderDisplayContext::FindClosestMatchingScreenResolution(const Vec2_tpl<uint32_t> &resolution) const
+{
+#if CRY_PLATFORM_WINDOWS
+	if (m_swapChain.GetSwapChain() && m_pOutput)
+	{
+		DXGI_SWAP_CHAIN_DESC scDesc;
+		m_swapChain.GetSwapChain()->GetDesc(&scDesc);
+
+		scDesc.BufferDesc.Width = resolution.x;
+		scDesc.BufferDesc.Height = resolution.y;
+
+		DXGI_MODE_DESC match;
+		if (SUCCEEDED(m_pOutput->FindClosestMatchingMode(&scDesc.BufferDesc, &match, gcpRendD3D.DevInfo().Device())))
+		{
+			return Vec2_tpl<uint32_t>{ match.Width, match.Height };
+		}
+	}
+#endif
+
+	return resolution;
+}
+
 #if CRY_PLATFORM_WINDOWS
 void CSwapChainBackedRenderDisplayContext::EnforceFullscreenPreemption()
 {
