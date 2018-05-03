@@ -3214,6 +3214,24 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		// Note: IME manager needs to be created before Scaleform is initialized
 		m_pImeManager = new CImeManager();
 
+		// Initialize CryMono / C# integration
+		// Notet that this has to occur before plug-ins are loaded as this is a prerequisite for C# plug-ins!
+		{
+			CryLogAlways("C# Backend initialization");
+			INDENT_LOG_DURING_SCOPE();
+
+			if (m_pUserCallback)
+			{
+				m_pUserCallback->OnInitProgress("Initializing C#...");
+			}
+
+			ICVar* pCVar = m_env.pConsole->GetCVar("sys_use_mono");
+			if (pCVar && pCVar->GetIVal())
+			{
+				InitMonoBridge(startupParams);
+			}
+		}
+
 		InlineInitializationProcessing("CSystem::Init LoadProjectPlugins");
 		m_pPluginManager->LoadProjectPlugins();
 
@@ -3298,24 +3316,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		}
 
 		//////////////////////////////////////////////////////////////////////////
-		// C# MONO BRIDGE
-		//////////////////////////////////////////////////////////////////////////
-		{
-			CryLogAlways("CryMonoBridge initialization");
-			INDENT_LOG_DURING_SCOPE();
-
-			if (m_pUserCallback)
-			{
-				m_pUserCallback->OnInitProgress("Initializing MonoBridge...");
-			}
-
-			ICVar* pCVar = m_env.pConsole->GetCVar("sys_use_mono");
-			if (pCVar && pCVar->GetIVal())
-			{
-				InitMonoBridge(startupParams);
-			}
-		}
-
 		m_pUserAnalyticsSystem->Initialize();
 
 		InlineInitializationProcessing("CSystem::Init CSharedFlashPlayerResources::Init");

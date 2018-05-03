@@ -84,6 +84,7 @@ public:
 	virtual void                 SetExclusiveListener(IInputEventListener* pListener);
 	virtual IInputEventListener* GetExclusiveListener();
 	virtual bool                 AddInputDevice(IInputDevice* pDevice);
+	virtual bool                 RemoveInputDevice(IInputDevice* pDevice);
 	virtual void                 EnableEventPosting(bool bEnable);
 	virtual bool                 IsEventPostingEnabled() const;
 	virtual void                 PostInputEvent(const SInputEvent& event, bool bForce = false);

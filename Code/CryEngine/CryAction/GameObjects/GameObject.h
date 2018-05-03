@@ -217,8 +217,6 @@ public:
 	virtual void EnablePrePhysicsUpdate(EPrePhysicsUpdate updateRule) override;
 	// needed for debug
 	virtual bool ShouldUpdate() override;
-
-	virtual void OnEntityInitialized() override { m_pNetEntity->OnEntityInitialized(); }
 	// ~IGameObject
 
 	virtual void     UpdateView(SViewParams& viewParams);
@@ -268,6 +266,9 @@ public:
 	};
 
 	virtual void OnNetworkedEntityTransformChanged(EntityTransformationFlagsMask transformReasons) override;
+
+	virtual void OnComponentAddedDuringInitialization(IEntityComponent* pComponent) const override { return m_pNetEntity->OnComponentAddedDuringInitialization(pComponent); }
+	virtual void OnEntityInitialized() override { m_pNetEntity->OnEntityInitialized(); }
 
 private:
 	INetEntity*      m_pNetEntity;
