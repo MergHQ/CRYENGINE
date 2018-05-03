@@ -16,27 +16,30 @@ public:
 
 	CTreeView() = delete;
 
-	QModelIndexList GetSelectedIndexes() const { return selectedIndexes(); }
-	bool            IsEditing() const;
+	bool IsEditing() const { return state() == QAbstractItemView::EditingState; }
 
-	void            ExpandSelection(QModelIndexList const& indexList);
-	void            CollapseSelection(QModelIndexList const& indexList);
+	void ExpandSelection();
+	void CollapseSelection();
 
-	void            BackupExpanded();
-	void            RestoreExpanded();
+	void BackupExpanded();
+	void RestoreExpanded();
 
-	void            BackupSelection();
-	void            RestoreSelection();
+	void BackupSelection();
+	void RestoreSelection();
 
-	void            SetNameRole(int const nameRole)     { m_nameRole = nameRole; }
-	void            SetNameColumn(int const nameColumn) { m_nameColumn = nameColumn; }
+	void SetNameRole(int const nameRole)     { m_nameRole = nameRole; }
+	void SetNameColumn(int const nameColumn) { m_nameColumn = nameColumn; }
 
 private:
 
 	uint32 GetItemId(QModelIndex const& index) const;
-	void   BackupExpandedChildren(QModelIndex const& index);
-	void   RestoreExpandedChildren(QModelIndex const& index);
-	void   RestoreSelectionChildren(QModelIndex const& index);
+
+	void   ExpandSelectionRecursively(QModelIndexList const& indexList);
+	void   CollapseSelectionRecursively(QModelIndexList const& indexList);
+
+	void   BackupExpandedRecursively(QModelIndex const& index);
+	void   RestoreExpandedRecursively(QModelIndex const& index);
+	void   RestoreSelectionRecursively(QModelIndex const& index);
 
 	int          m_nameRole = 0;
 	int          m_nameColumn = 0;

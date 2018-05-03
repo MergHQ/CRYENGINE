@@ -11,6 +11,7 @@ namespace ACE
 QString const CFileImporterModel::s_newAction("Import (as new)");
 QString const CFileImporterModel::s_replaceAction("Import (as replacement)");
 QString const CFileImporterModel::s_unsupportedAction("Unsupported file type");
+QString const CFileImporterModel::s_sameFileAction("Source file is target file");
 
 static CItemModelAttribute s_sourceAttribute("Source", eAttributeType_String, CItemModelAttribute::Visible, false);
 static CItemModelAttribute s_targetAttribute("Target", eAttributeType_String, CItemModelAttribute::Visible, false);
@@ -70,7 +71,7 @@ QVariant CFileImporterModel::data(QModelIndex const& index, int role) const
 	{
 		if (role == Qt::ForegroundRole)
 		{
-			if (!m_fileImportInfos[index.row()].isTypeSupported)
+			if (!m_fileImportInfos[index.row()].isTypeSupported || (m_fileImportInfos[index.row()].actionType == SFileImportInfo::EActionType::SameFile))
 			{
 				variant = GetStyleHelper()->errorColor();
 			}
@@ -135,6 +136,9 @@ QVariant CFileImporterModel::data(QModelIndex const& index, int role) const
 						case SFileImportInfo::EActionType::None:
 							variant = s_unsupportedAction;
 							break;
+						case SFileImportInfo::EActionType::SameFile:
+							variant = s_sameFileAction;
+							break;
 						}
 						break;
 					case Qt::ToolTipRole:
@@ -152,13 +156,16 @@ QVariant CFileImporterModel::data(QModelIndex const& index, int role) const
 						case SFileImportInfo::EActionType::None:
 							variant = tr("File type is not supported.");
 							break;
+						case SFileImportInfo::EActionType::SameFile:
+							variant = tr("Source files is target file.");
+							break;
 						}
 						break;
 					case Qt::CheckStateRole:
 						{
 							SFileImportInfo const& fileInfo = m_fileImportInfos[index.row()];
 
-							if (fileInfo.isTypeSupported)
+							if (fileInfo.isTypeSupported && (fileInfo.actionType != SFileImportInfo::EActionType::SameFile))
 							{
 								variant = (fileInfo.actionType != SFileImportInfo::EActionType::Ignore) ? Qt::Checked : Qt::Unchecked;
 							}
@@ -249,7 +256,9 @@ Qt::ItemFlags CFileImporterModel::flags(QModelIndex const& index) const
 
 	if (index.isValid())
 	{
-		if (index.column() == static_cast<int>(EColumns::Import) && m_fileImportInfos[index.row()].isTypeSupported)
+		if (index.column() == static_cast<int>(EColumns::Import) &&
+		    (m_fileImportInfos[index.row()].isTypeSupported) &&
+		    (m_fileImportInfos[index.row()].actionType != SFileImportInfo::EActionType::SameFile))
 		{
 			flags = QAbstractItemModel::flags(index) | Qt::ItemIsUserCheckable;
 		}

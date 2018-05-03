@@ -1,20 +1,24 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "MiddlewareFilterProxyModel.h"
+#include "FilterProxyModel.h"
 
 #include <ModelUtils.h>
 
 namespace ACE
 {
+namespace Impl
+{
+namespace Wwise
+{
 //////////////////////////////////////////////////////////////////////////
-CMiddlewareFilterProxyModel::CMiddlewareFilterProxyModel(QObject* const pParent)
+CFilterProxyModel::CFilterProxyModel(QObject* const pParent)
 	: QAttributeFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CMiddlewareFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex const& sourceParent) const
+bool CFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex const& sourceParent) const
 {
 	bool matchesFilter = QAttributeFilterProxyModel::rowMatchesFilter(sourceRow, sourceParent);
 
@@ -33,14 +37,14 @@ bool CMiddlewareFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex co
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CMiddlewareFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex const& right) const
+bool CFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex const& right) const
 {
 	bool isLessThan = false;
 
 	// First sort by type, then by name.
 	if (left.column() == right.column())
 	{
-		int const sortPriorityRole = static_cast<int>(ModelUtils::ERoles::SortPriority);
+		auto const sortPriorityRole = static_cast<int>(ModelUtils::ERoles::SortPriority);
 		int const leftPriority = sourceModel()->data(left, sortPriorityRole).toInt();
 		int const rightPriority = sourceModel()->data(right, sortPriorityRole).toInt();
 
@@ -62,4 +66,6 @@ bool CMiddlewareFilterProxyModel::lessThan(QModelIndex const& left, QModelIndex 
 
 	return isLessThan;
 }
+} // namespace Wwise
+} // namespace Impl
 } // namespace ACE

@@ -5,7 +5,7 @@
 
 #include "FileImporterModel.h"
 #include "TreeView.h"
-#include "DirectorySelectorDialog.h"
+#include "FolderSelectorDialog.h"
 
 #include <ProxyModels/AttributeFilterProxyModel.h>
 #include <QtUtil.h>
@@ -35,16 +35,17 @@ CFileImporterDialog::CFileImporterDialog(FileImportInfos const& fileInfos, QStri
 	, m_pAttributeFilterProxyModel(new QAttributeFilterProxyModel(QAttributeFilterProxyModel::BaseBehavior, this))
 	, m_pTreeView(new CTreeView(this, QAdvancedTreeView::BehaviorFlags(QAdvancedTreeView::Behavior::PreserveSelectionAfterReset | QAdvancedTreeView::Behavior::UseItemModelAttribute)))
 {
+	setAttribute(Qt::WA_DeleteOnClose);
 	setWindowTitle(tr("Audio File Importer"));
 
-	auto const pTargetDirLabel = new QLabel(tr("Target directory:"));
+	auto const pTargetDirLabel = new QLabel(tr("Target folder:"));
 	m_pTargetDirLineEdit->setText(m_targetPath);
 	m_pTargetDirLineEdit->setToolTip(m_targetPath);
 	m_pTargetDirLineEdit->setReadOnly(true);
 
 	auto const pBrowseButton = new QToolButton(this);
 	pBrowseButton->setIcon(CryIcon("icons:General/Folder.ico"));
-	pBrowseButton->setToolTip(tr("Select target directory"));
+	pBrowseButton->setToolTip(tr("Select target folder"));
 	pBrowseButton->setIconSize(QSize(16, 16));
 
 	auto const pSetAllLabel = new QLabel(tr("Set all to:"));
@@ -96,7 +97,7 @@ CFileImporterDialog::CFileImporterDialog(FileImportInfos const& fileInfos, QStri
 	pMainLayout->addWidget(pDialogButtons);
 	setLayout(pMainLayout);
 
-	QObject::connect(pBrowseButton, &QToolButton::clicked, this, &CFileImporterDialog::OnCreateDirectorySelector);
+	QObject::connect(pBrowseButton, &QToolButton::clicked, this, &CFileImporterDialog::OnCreateFolderSelector);
 
 	QObject::connect(m_pFileImporterModel, &CFileImporterModel::SignalActionChanged, this, &CFileImporterDialog::OnActionChanged);
 
@@ -114,11 +115,11 @@ QSize CFileImporterDialog::sizeHint() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileImporterDialog::OnCreateDirectorySelector()
+void CFileImporterDialog::OnCreateFolderSelector()
 {
-	auto const pDirectorySelectorDialog = new CDirectorySelectorDialog(m_assetFolderPath, m_targetPath, this);
-	QObject::connect(pDirectorySelectorDialog, &CDirectorySelectorDialog::SignalSetTargetPath, this, &CFileImporterDialog::OnTargetPathChanged);
-	pDirectorySelectorDialog->exec();
+	auto const pFolderSelectorDialog = new CFolderSelectorDialog(m_assetFolderPath, m_targetPath, this);
+	QObject::connect(pFolderSelectorDialog, &CFolderSelectorDialog::SignalSetTargetPath, this, &CFileImporterDialog::OnTargetPathChanged);
+	pFolderSelectorDialog->exec();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -138,7 +139,15 @@ void CFileImporterDialog::OnTargetPathChanged(QString const& targetPath)
 				QFileInfo const targetFile(targetPath);
 
 				fileInfo.targetInfo = targetFile;
-				fileInfo.actionType = (targetFile.isFile() ? SFileImportInfo::EActionType::Replace : SFileImportInfo::EActionType::New);
+
+				if (fileInfo.sourceInfo == fileInfo.targetInfo)
+				{
+					fileInfo.actionType = SFileImportInfo::EActionType::SameFile;
+				}
+				else
+				{
+					fileInfo.actionType = (targetFile.isFile() ? SFileImportInfo::EActionType::Replace : SFileImportInfo::EActionType::New);
+				}
 			}
 		}
 
@@ -157,7 +166,7 @@ void CFileImporterDialog::OnActionChanged(Qt::CheckState const isChecked)
 		{
 			SFileImportInfo& fileInfo = m_pFileImporterModel->ItemFromIndex(m_pAttributeFilterProxyModel->mapToSource(index));
 
-			if (fileInfo.isTypeSupported)
+			if (fileInfo.isTypeSupported && (fileInfo.actionType != SFileImportInfo::EActionType::SameFile))
 			{
 				if (isChecked == Qt::Checked)
 				{
@@ -179,7 +188,7 @@ void CFileImporterDialog::OnSetImportAll()
 {
 	for (auto& fileInfo : m_fileImportInfos)
 	{
-		if (fileInfo.isTypeSupported)
+		if (fileInfo.isTypeSupported && (fileInfo.actionType != SFileImportInfo::EActionType::SameFile))
 		{
 			if (fileInfo.targetInfo.isFile())
 			{
@@ -200,7 +209,7 @@ void CFileImporterDialog::OnSetIgnoreAll()
 {
 	for (auto& fileInfo : m_fileImportInfos)
 	{
-		if (fileInfo.isTypeSupported)
+		if (fileInfo.isTypeSupported && (fileInfo.actionType != SFileImportInfo::EActionType::SameFile))
 		{
 			fileInfo.actionType = SFileImportInfo::EActionType::Ignore;
 		}
@@ -214,7 +223,7 @@ void CFileImporterDialog::OnApplyImport()
 {
 	for (auto const& fileInfo : m_fileImportInfos)
 	{
-		if (fileInfo.isTypeSupported && (fileInfo.actionType != SFileImportInfo::EActionType::Ignore))
+		if ((fileInfo.actionType == SFileImportInfo::EActionType::New) || (fileInfo.actionType == SFileImportInfo::EActionType::Replace))
 		{
 			QFile sourceFile(fileInfo.sourceInfo.absoluteFilePath());
 
@@ -263,12 +272,5 @@ void CFileImporterDialog::OnApplyImport()
 	}
 
 	accept();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileImporterDialog::closeEvent(QCloseEvent* pEvent)
-{
-	SignalImporterClosed();
-	pEvent->accept();
 }
 } // namespace ACE

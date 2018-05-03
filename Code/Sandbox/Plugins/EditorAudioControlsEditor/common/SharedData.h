@@ -76,22 +76,5 @@ static constexpr char const* const s_szGlobalScopeName = "global";
 static constexpr Scope GlobalScopeId = CryAudio::StringToId(s_szGlobalScopeName);
 
 using PlatformIndexType = uint16;
-
-// Available levels where the controls can be stored.
-struct SScopeInfo
-{
-	SScopeInfo(string const& name_ = "", bool const isLocalOnly_ = false)
-		: name(name_)
-		, isLocalOnly(isLocalOnly_)
-	{}
-
-	string name;
-
-	// If true, there is a level in the game audio data that doesn't
-	// exist in the global list of levels for your project.
-	bool isLocalOnly;
-};
-
-using ScopeInfoList = std::vector<SScopeInfo>;
 } // namespace ACE
 

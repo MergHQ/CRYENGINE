@@ -53,26 +53,24 @@ public:
 
 	// IItem
 	virtual ControlId     GetId() const override                        { return m_id; }
-
 	virtual string const& GetName() const override                      { return m_name; }
-	virtual string const& GetFilePath() const override                  { return m_filePath; }
 	virtual float         GetRadius() const override                    { return m_radius; }
-
 	virtual size_t        GetNumChildren() const override               { return m_children.size(); }
 	virtual IItem*        GetChildAt(size_t const index) const override { return m_children[index]; }
 	virtual IItem*        GetParent() const override                    { return m_pParent; }
-
 	virtual EItemFlags    GetFlags() const override                     { return m_flags; }
-	virtual EPakStatus    GetPakStatus() const override                 { return m_pakStatus; }
 	// ~IItem
 
-	EItemType GetType() const                  { return m_type; }
+	EItemType     GetType() const                  { return m_type; }
+	string const& GetFilePath() const              { return m_filePath; }
+	EPakStatus    GetPakStatus() const             { return m_pakStatus; }
 
-	void      SetFlags(EItemFlags const flags) { m_flags = flags; }
-	void      SetRadius(float const radius)    { m_radius = radius; }
-	void      AddChild(CItem* const pChild);
-	void      RemoveChild(CItem* const pChild);
-	void      Clear();
+	void          SetFlags(EItemFlags const flags) { m_flags = flags; }
+	void          SetRadius(float const radius)    { m_radius = radius; }
+
+	void          AddChild(CItem* const pChild);
+	void          RemoveChild(CItem* const pChild);
+	void          Clear();
 
 private:
 

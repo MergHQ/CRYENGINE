@@ -14,6 +14,7 @@ struct SFileImportInfo final
 		New,
 		Replace,
 		Ignore,
+		SameFile,
 	};
 
 	explicit SFileImportInfo(QFileInfo const& sourceInfo_, bool const isTypeSupported_, QString const& parentFolderName_ = "")

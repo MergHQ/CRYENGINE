@@ -40,6 +40,7 @@ CMainWindow::CMainWindow()
 	, m_isModified(false)
 	, m_isReloading(false)
 {
+	setAttribute(Qt::WA_DeleteOnClose);
 	setObjectName(GetEditorName());
 
 	ModelUtils::InitIcons();
@@ -219,7 +220,13 @@ CMiddlewareDataWidget* CMainWindow::CreateMiddlewareDataWidget()
 
 	QObject::connect(pMiddlewareDataWidget, &QObject::destroyed, this, &CMainWindow::OnMiddlewareDataWidgetDestruction);
 	QObject::connect(pMiddlewareDataWidget, &CMiddlewareDataWidget::SignalSelectConnectedSystemControl, this, &CMainWindow::SignalSelectConnectedSystemControl);
-	QObject::connect(this, &CMainWindow::SignalSelectConnectedImplItem, pMiddlewareDataWidget, &CMiddlewareDataWidget::SelectConnectedImplItem);
+	QObject::connect(this, &CMainWindow::SignalSelectConnectedImplItem, [&](ControlId const itemId)
+		{
+			if (g_pIImpl != nullptr)
+			{
+			  g_pIImpl->OnSelectConnectedItem(itemId);
+			}
+	  });
 
 	return pMiddlewareDataWidget;
 }
@@ -341,7 +348,7 @@ void CMainWindow::Reload(bool const hasImplChanged /*= false*/)
 
 		if (!hasImplChanged)
 		{
-			BackupTreeViewStates();
+			OnAboutToReload();
 		}
 
 		if (g_assetsManager.IsLoading())
@@ -357,11 +364,6 @@ void CMainWindow::Reload(bool const hasImplChanged /*= false*/)
 
 		if (!hasImplChanged)
 		{
-			if (m_pMiddlewareDataWidget != nullptr)
-			{
-				m_pMiddlewareDataWidget->Reset();
-			}
-
 			if (m_pSystemControlsWidget != nullptr)
 			{
 				m_pSystemControlsWidget->Reset();
@@ -382,7 +384,7 @@ void CMainWindow::Reload(bool const hasImplChanged /*= false*/)
 
 		if (!hasImplChanged)
 		{
-			RestoreTreeViewStates();
+			OnReloaded();
 		}
 
 		QGuiApplication::restoreOverrideCursor();
@@ -528,59 +530,54 @@ void CMainWindow::ReloadSystemData()
 void CMainWindow::ReloadMiddlewareData()
 {
 	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
-	BackupTreeViewStates();
+	OnAboutToReload();
 
 	CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData | EReloadFlags::BackupConnections);
-
-	if (m_pMiddlewareDataWidget != nullptr)
-	{
-		m_pMiddlewareDataWidget->Reset();
-	}
 
 	if (m_pPropertiesWidget != nullptr)
 	{
 		m_pPropertiesWidget->Reset();
 	}
 
-	RestoreTreeViewStates();
+	OnReloaded();
 	QGuiApplication::restoreOverrideCursor();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMainWindow::BackupTreeViewStates()
+void CMainWindow::OnAboutToReload()
 {
 	if (m_pSystemControlsWidget != nullptr)
 	{
-		m_pSystemControlsWidget->BackupTreeViewStates();
+		m_pSystemControlsWidget->OnAboutToReload();
 	}
 
-	if (m_pMiddlewareDataWidget != nullptr)
+	if (g_pIImpl != nullptr)
 	{
-		m_pMiddlewareDataWidget->BackupTreeViewStates();
+		g_pIImpl->OnAboutToReload();
 	}
 
 	if (m_pPropertiesWidget != nullptr)
 	{
-		m_pPropertiesWidget->BackupTreeViewStates();
+		m_pPropertiesWidget->OnAboutToReload();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMainWindow::RestoreTreeViewStates()
+void CMainWindow::OnReloaded()
 {
 	if (m_pSystemControlsWidget != nullptr)
 	{
-		m_pSystemControlsWidget->RestoreTreeViewStates();
+		m_pSystemControlsWidget->OnReloaded();
 	}
 
-	if (m_pMiddlewareDataWidget != nullptr)
+	if (g_pIImpl != nullptr)
 	{
-		m_pMiddlewareDataWidget->RestoreTreeViewStates();
+		g_pIImpl->OnReloaded();
 	}
 
 	if (m_pPropertiesWidget != nullptr)
 	{
-		m_pPropertiesWidget->RestoreTreeViewStates();
+		m_pPropertiesWidget->OnReloaded();
 	}
 }
 
@@ -591,22 +588,17 @@ void CMainWindow::OnPreferencesDialog()
 
 	QObject::connect(pPreferencesDialog, &CPreferencesDialog::SignalImplementationSettingsAboutToChange, [&]()
 		{
-			BackupTreeViewStates();
+			OnAboutToReload();
 	  });
 
 	QObject::connect(pPreferencesDialog, &CPreferencesDialog::SignalImplementationSettingsChanged, [&]()
 		{
-			if (m_pMiddlewareDataWidget != nullptr)
-			{
-			  m_pMiddlewareDataWidget->Reset();
-			}
-
 			if (m_pPropertiesWidget != nullptr)
 			{
 			  m_pPropertiesWidget->Reset();
 			}
 
-			RestoreTreeViewStates();
+			OnReloaded();
 			m_pMonitorMiddleware->Enable();
 	  });
 

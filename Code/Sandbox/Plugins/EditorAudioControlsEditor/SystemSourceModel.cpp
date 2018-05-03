@@ -21,10 +21,10 @@ namespace ACE
 QStringList GetScopeNames()
 {
 	QStringList scopeNames;
-	ScopeInfoList scopeInfoList;
-	g_assetsManager.GetScopeInfoList(scopeInfoList);
+	ScopeInfos scopeInfos;
+	g_assetsManager.GetScopeInfos(scopeInfos);
 
-	for (auto const& scopeInfo : scopeInfoList)
+	for (auto const& scopeInfo : scopeInfos)
 	{
 		scopeNames.append(QString(scopeInfo.name));
 	}

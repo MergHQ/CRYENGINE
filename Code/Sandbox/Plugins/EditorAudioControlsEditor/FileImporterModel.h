@@ -23,11 +23,13 @@ public:
 	};
 
 	explicit CFileImporterModel(FileImportInfos& fileImportInfos, QString const& assetFolderPath, QString const& targetPath, QObject* const pParent);
+
 	CFileImporterModel() = delete;
 
 	static QString const s_newAction;
 	static QString const s_replaceAction;
 	static QString const s_unsupportedAction;
+	static QString const s_sameFileAction;
 
 	void             Reset();
 	SFileImportInfo& ItemFromIndex(QModelIndex const& index);

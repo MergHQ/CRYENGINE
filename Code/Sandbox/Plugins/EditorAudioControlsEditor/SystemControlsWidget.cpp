@@ -116,7 +116,7 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 	m_pTreeView->SetNameRole(static_cast<int>(ModelUtils::ERoles::Name));
 	m_pTreeView->TriggerRefreshHeaderColumns();
 
-	m_pFilteringPanel = new QFilteringPanel("ACESystemControls", m_pSystemFilterProxyModel, this);
+	m_pFilteringPanel = new QFilteringPanel("ACESystemControlsPanel", m_pSystemFilterProxyModel, this);
 	m_pFilteringPanel->SetContent(m_pTreeView);
 	m_pFilteringPanel->GetSearchBox()->SetAutoExpandOnSearch(m_pTreeView);
 
@@ -561,8 +561,8 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 		pContextMenu->addAction(tr("Delete"), [&]() { OnDeleteSelectedControls(); });
 		pContextMenu->addSeparator();
-		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(m_pTreeView->GetSelectedIndexes()); });
-		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(m_pTreeView->GetSelectedIndexes()); });
+		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(); });
+		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(); });
 		pContextMenu->addSeparator();
 	}
 
@@ -949,14 +949,14 @@ bool CSystemControlsWidget::IsDefaultControlSelected() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControlsWidget::BackupTreeViewStates()
+void CSystemControlsWidget::OnAboutToReload()
 {
 	m_pTreeView->BackupExpanded();
 	m_pTreeView->BackupSelection();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControlsWidget::RestoreTreeViewStates()
+void CSystemControlsWidget::OnReloaded()
 {
 	m_pTreeView->RestoreExpanded();
 	m_pTreeView->RestoreSelection();
@@ -969,17 +969,24 @@ bool CSystemControlsWidget::IsEditing() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystemControlsWidget::SelectConnectedSystemControl(CControl& systemControl, ControlId const itemId)
+void CSystemControlsWidget::SelectConnectedSystemControl(ControlId const systemControlId, ControlId const implItemId)
 {
 	ClearFilters();
-	auto const& matches = m_pSystemFilterProxyModel->match(m_pSystemFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(ModelUtils::ERoles::Id), systemControl.GetId(), 1, Qt::MatchRecursive);
+	auto const& matches = m_pSystemFilterProxyModel->match(m_pSystemFilterProxyModel->index(0, 0, QModelIndex()), static_cast<int>(ModelUtils::ERoles::Id), systemControlId, 1, Qt::MatchRecursive);
 
 	if (!matches.isEmpty())
 	{
 		ControlIds selectedConnection {
-			itemId
+			implItemId
 		};
-		systemControl.SetSelectedConnections(selectedConnection);
+
+		CControl* const pControl = g_assetsManager.FindControlById(systemControlId);
+
+		if (pControl != nullptr)
+		{
+			pControl->SetSelectedConnections(selectedConnection);
+		}
+
 		m_pTreeView->setFocus();
 		m_pTreeView->selectionModel()->setCurrentIndex(matches.first(), QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 	}

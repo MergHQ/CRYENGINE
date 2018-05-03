@@ -41,9 +41,9 @@ CItemModelAttribute* GetAttributeForColumn(CItemModel::EColumns const column)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CItemModel::CItemModel(CItem const& rootItem)
-	: m_rootItem(rootItem)
-	, m_columnResizeModes{{ static_cast<int>(EColumns::Notification), QHeaderView::ResizeToContents }}
+CItemModel::CItemModel(CItem const& rootItem, QObject* const pParent)
+	: QAbstractItemModel(pParent)
+	, m_rootItem(rootItem)
 {
 	InitIcons();
 	ModelUtils::InitIcons();
@@ -68,7 +68,7 @@ int CItemModel::rowCount(QModelIndex const& parent) const
 		pItem = &m_rootItem;
 	}
 
-	rowCount = pItem->GetNumChildren();
+	rowCount = static_cast<int>(pItem->GetNumChildren());
 
 	return rowCount;
 }
@@ -183,7 +183,7 @@ QVariant CItemModel::headerData(int section, Qt::Orientation orientation, int ro
 				}
 				break;
 			case Qt::DisplayRole:
-				// For Notification we use an icons instead of text.
+				// For the notification header an icon is used instead of text.
 				if (section != static_cast<int>(EColumns::Notification))
 				{
 					variant = pAttribute->GetName();
@@ -236,7 +236,7 @@ QModelIndex CItemModel::index(int row, int column, QModelIndex const& parent /*=
 			pParent = &m_rootItem;
 		}
 
-		if ((pParent != nullptr) && pParent->GetNumChildren() > row)
+		if ((pParent != nullptr) && (static_cast<int>(pParent->GetNumChildren()) > row))
 		{
 			auto const pItem = static_cast<CItem const*>(pParent->GetChildAt(row));
 

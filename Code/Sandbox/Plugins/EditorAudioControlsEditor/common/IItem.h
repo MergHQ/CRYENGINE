@@ -23,10 +23,6 @@ struct IItem
 	//! Returns name of the item.
 	virtual string const& GetName() const = 0;
 
-	//! Returns file path of the item.
-	//! If the item is not a file, an empty path is returned.
-	virtual string const& GetFilePath() const = 0;
-
 	//! Returns radius of the item.
 	//! The radius is used to calculate the activity radius of the connected audio system trigger.
 	virtual float GetRadius() const = 0;
@@ -43,9 +39,6 @@ struct IItem
 
 	//! Returns flags of the item.
 	virtual EItemFlags GetFlags() const = 0;
-
-	//! Returns pak status flags of the item.
-	virtual EPakStatus GetPakStatus() const = 0;
 };
 } // namespace Impl
 } // namespace ACE

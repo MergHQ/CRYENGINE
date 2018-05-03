@@ -24,8 +24,6 @@ signals:
 
 private:
 
-	QString m_projectPath;
-	bool    m_saveButtonEnable = false;
+	QString const m_projectPath;
 };
 } // namespace ACE
-

@@ -341,13 +341,13 @@ void CConnectionsWidget::ResizeColumns()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionsWidget::BackupTreeViewStates()
+void CConnectionsWidget::OnAboutToReload()
 {
 	m_pTreeView->BackupSelection();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CConnectionsWidget::RestoreTreeViewStates()
+void CConnectionsWidget::OnReloaded()
 {
 	m_pTreeView->RestoreSelection();
 }

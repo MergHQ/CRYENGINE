@@ -6,13 +6,17 @@
 
 namespace ACE
 {
-class CMiddlewareFilterProxyModel final : public QAttributeFilterProxyModel
+namespace Impl
+{
+namespace PortAudio
+{
+class CFilterProxyModel final : public QAttributeFilterProxyModel
 {
 public:
 
-	explicit CMiddlewareFilterProxyModel(QObject* const pParent);
+	explicit CFilterProxyModel(QObject* const pParent);
 
-	CMiddlewareFilterProxyModel() = delete;
+	CFilterProxyModel() = delete;
 
 private:
 
@@ -24,4 +28,6 @@ private:
 	virtual bool lessThan(QModelIndex const& left, QModelIndex const& right) const override;
 	// ~QSortFilterProxyModel
 };
+} // namespace PortAudio
+} // namespace Impl
 } // namespace ACE

@@ -189,9 +189,9 @@ bool CAssetsManager::ScopeExists(string const& name) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::GetScopeInfoList(ScopeInfoList& scopeList) const
+void CAssetsManager::GetScopeInfos(ScopeInfos& scopeInfos) const
 {
-	stl::map_to_vector(m_scopes, scopeList);
+	stl::map_to_vector(m_scopes, scopeInfos);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -444,6 +444,23 @@ CControl* CAssetsManager::FindControl(string const& name, EAssetType const type,
 				pSearchedControl = pControl;
 				break;
 			}
+		}
+	}
+
+	return pSearchedControl;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CControl* CAssetsManager::FindControlById(ControlId const id) const
+{
+	CControl* pSearchedControl = nullptr;
+
+	for (auto const pControl : m_controls)
+	{
+		if (pControl->GetId() == id)
+		{
+			pSearchedControl = pControl;
+			break;
 		}
 	}
 

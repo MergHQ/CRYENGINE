@@ -9,6 +9,7 @@
 #include "ParameterConnection.h"
 #include "StateConnection.h"
 #include "ProjectLoader.h"
+#include "DataPanel.h"
 
 #include <CrySystem/ISystem.h>
 #include <CryCore/StlUtils.h>
@@ -49,7 +50,11 @@ string GetPath(CItem const* const pItem)
 
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
-	: m_pItemModel(new CItemModel(m_rootItem))
+	: m_pDataPanel(nullptr)
+	, m_assetAndProjectPath(AUDIO_SYSTEM_DATA_ROOT "/" +
+	                        string(CryAudio::Impl::SDL_mixer::s_szImplFolderName) +
+	                        "/"
+	                        + string(CryAudio::s_szAssetsFolderName))
 {
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
@@ -60,16 +65,32 @@ CImpl::CImpl()
 CImpl::~CImpl()
 {
 	Clear();
-	delete m_pItemModel;
+	DestroyDataPanel();
+}
+
+//////////////////////////////////////////////////////////////////////////
+QWidget* CImpl::CreateDataPanel()
+{
+	m_pDataPanel = new CDataPanel(*this);
+	return m_pDataPanel;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DestroyDataPanel()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		delete m_pDataPanel;
+		m_pDataPanel = nullptr;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::Reload(bool const preserveConnectionStatus)
 {
-	m_pItemModel->Reset();
 	Clear();
 
-	CProjectLoader(GetSettings()->GetProjectPath(), m_rootItem);
+	CProjectLoader(m_assetAndProjectPath, m_rootItem);
 
 	CreateItemCache(&m_rootItem);
 
@@ -494,7 +515,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, E
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::EnableConnection(ConnectionPtr const pConnection)
+void CImpl::EnableConnection(ConnectionPtr const pConnection, bool const isLoading)
 {
 	auto const pItem = static_cast<CItem* const>(GetItem(pConnection->GetID()));
 
@@ -502,11 +523,16 @@ void CImpl::EnableConnection(ConnectionPtr const pConnection)
 	{
 		++m_connectionsByID[pItem->GetId()];
 		pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
+
+		if ((m_pDataPanel != nullptr) && !isLoading)
+		{
+			m_pDataPanel->OnConnectionAdded();
+		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DisableConnection(ConnectionPtr const pConnection)
+void CImpl::DisableConnection(ConnectionPtr const pConnection, bool const isLoading)
 {
 	auto const pItem = static_cast<CItem* const>(GetItem(pConnection->GetID()));
 
@@ -522,6 +548,56 @@ void CImpl::DisableConnection(ConnectionPtr const pConnection)
 		}
 
 		m_connectionsByID[pItem->GetId()] = connectionCount;
+
+		if ((m_pDataPanel != nullptr) && !isLoading)
+		{
+			m_pDataPanel->OnConnectionRemoved();
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAboutToReload()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnAboutToReload();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnReloaded()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnReloaded();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnSelectConnectedItem(ControlId const id) const
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnSelectConnectedItem(id);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnFileImporterOpened()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnFileImporterOpened();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnFileImporterClosed()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnFileImporterClosed();
 	}
 }
 
@@ -542,9 +618,9 @@ void CImpl::CreateItemCache(CItem const* const pParent)
 {
 	if (pParent != nullptr)
 	{
-		size_t const count = pParent->GetNumChildren();
+		size_t const numChildren = pParent->GetNumChildren();
 
-		for (size_t i = 0; i < count; ++i)
+		for (size_t i = 0; i < numChildren; ++i)
 		{
 			auto const pChild = static_cast<CItem* const>(pParent->GetChildAt(i));
 
