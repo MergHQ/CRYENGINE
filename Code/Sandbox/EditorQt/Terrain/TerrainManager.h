@@ -1,23 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef TerrainManager_h__
-#define TerrainManager_h__
-
 #pragma once
 
-//////////////////////////////////////////////////////////////////////////
-// Dependencies
 #include "Terrain/Heightmap.h"
+#include "Terrain/Layer.h"
 #include "DocMultiArchive.h"
 
-//////////////////////////////////////////////////////////////////////////
-// Forward declarations
-class CLayer;
 class CSurfaceType;
-//////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////
-// Class
 class SANDBOX_API CTerrainManager
 {
 public:
@@ -26,10 +16,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Surface Types.
-	//////////////////////////////////////////////////////////////////////////
-	// Returns:
-	//   can be 0 if the id does not exit
-	CSurfaceType* GetSurfaceTypePtr(int i) const { if (i >= 0 && i < m_surfaceTypes.size()) return m_surfaceTypes[i]; return 0; }
+	CSurfaceType* GetSurfaceTypePtr(int i) const { if (i >= 0 && i < m_surfaceTypes.size()) return m_surfaceTypes[i]; return nullptr; }
 	int           GetSurfaceTypeCount() const    { return m_surfaceTypes.size(); }
 	//! Find surface type by name, return -1 if name not found.
 	int           FindSurfaceType(const string& name);
@@ -39,15 +26,13 @@ public:
 	void          SerializeSurfaceTypes(CXmlArchive& xmlAr, bool bUpdateEngineTerrain = true);
 	void          ConsolidateSurfaceTypes();
 
-	/** Put surface types from Editor to game.
-	 */
+	// Put surface types from Editor to game.
 	void ReloadSurfaceTypes(bool bUpdateEngineTerrain = true, bool bUpdateHeightmap = true);
 
 	//////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////
 	// Layers
-	int     GetLayerCount() const     { return m_layers.size(); };
-	CLayer* GetLayer(int layer) const { return m_layers[layer]; };
+	int     GetLayerCount() const     { return m_layers.size(); }
+	CLayer* GetLayer(int layer) const { return m_layers[layer]; }
 	void    SelectLayer(int layerIndex);
 	int     GetSelectedLayerIndex();
 	CLayer* GetSelectedLayer();
@@ -60,7 +45,7 @@ public:
 	void    InvalidateLayers();
 	void    ClearLayers();
 	void    SerializeLayerSettings(CXmlArchive& xmlAr);
-	void    MarkUsedLayerIds(bool bFree[256]) const;
+	void    MarkUsedLayerIds(bool bFree[CLayer::e_undefined]) const;
 
 	void    CreateDefaultLayer();
 
@@ -73,9 +58,8 @@ public:
 	bool ConvertLayersToRGBLayer();
 
 	//////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////
 	// Heightmap
-	CHeightmap* GetHeightmap() { return &m_heightmap; };
+	CHeightmap* GetHeightmap() { return &m_heightmap; }
 	CRGBLayer*  GetRGBLayer();
 
 	void        SetTerrainSize(int resolution, float unitSize);
@@ -98,7 +82,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	// Get the number of terrain data files in the level data folder.
-	// \sa GetIEditorImpl()->GetLevelDataFolder(). 
+	// \sa GetIEditorImpl()->GetLevelDataFolder().
 	int         GetDataFilesCount() const;
 	const char* GetDataFilename(int i) const;
 
@@ -110,6 +94,4 @@ protected:
 	std::vector<CLayer*>                  m_layers;
 	CHeightmap                            m_heightmap;
 };
-
-#endif // TerrainManager_h__
 
