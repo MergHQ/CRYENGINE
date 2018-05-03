@@ -485,7 +485,7 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 			SetWindowLongPtrW(m_hWnd, GWL_STYLE, fullscreenStyle);
 		}
 			
-		SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, displayWidth, displayHeight, SWP_SHOWWINDOW | SWP_NOMOVE);
+		SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, displayWidth, displayHeight, SWP_SHOWWINDOW);
 	}
 	else if (m_windowState == EWindowState::BorderlessWindow || m_windowState == EWindowState::BorderlessFullscreen)
 	{
