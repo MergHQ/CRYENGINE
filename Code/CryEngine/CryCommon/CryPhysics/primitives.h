@@ -54,8 +54,8 @@ struct grid : primitive
 	Vec2i    stride;
 	int      bCyclic;
 	grid() { bCyclic = 0; }
-	int   inrange(int ix, int iy)                       { return bCyclic | -((ix - size.x & - 1 - ix & iy - size.y & - 1 - iy) >> 31); }
-	int   getcell_safe(int ix, int iy)                  { int mask = -inrange(ix, iy); return (iy & size.y - 1) * stride.y + (ix & size.x - 1) * stride.x & mask | size.x * size.y & ~mask; }
+	int   inrange(int ix, int iy)                       { return bCyclic | -(((ix - size.x) & (-1 - ix) & (iy - size.y) & (-1 - iy)) >> 31); } 
+	int   getcell_safe(int ix, int iy)                  { int mask = -inrange(ix, iy); return (((iy & (size.y - 1)) * stride.y + (ix & (size.x - 1)) * stride.x) & mask) | ((size.x * size.y) & ~mask); }
 	int   crop(int i, int icoord, int bAllowBorder = 1) { int brd = bAllowBorder + (1 << 30 & - bCyclic); return max(-brd, min(size[icoord] - 1 + brd, i)); }
 	Vec2i cropxy(const Vec2i& ic, int bAllowBorder = 1) { int brd = bAllowBorder + (1 << 30 & - bCyclic); return Vec2i(max(-brd, min(size.x - 1 + brd, ic.x)), max(-brd, min(size.y - 1 + brd, ic.y))); }
 	int   iscyclic()                                    { return bCyclic; }

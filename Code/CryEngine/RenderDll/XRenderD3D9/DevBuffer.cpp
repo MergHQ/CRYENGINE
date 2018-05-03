@@ -1214,7 +1214,7 @@ struct CDynamicDefragAllocator
 	bool Initialize(IDefragAllocatorPolicy* policy, bool bestFit)
 	{
 		MEMORY_SCOPE_CHECK_HEAP();
-		if (m_defrag_allocator = CryGetIMemoryManager()->CreateDefragAllocator())
+		if ((m_defrag_allocator = CryGetIMemoryManager()->CreateDefragAllocator()))
 		{
 			IDefragAllocator::Policy pol;
 			pol.pDefragPolicy = m_defrag_policy = policy;

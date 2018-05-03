@@ -1033,7 +1033,8 @@ void CBrush::CalcNearestTransform(Matrix34& transformMatrix, const SRenderingPas
 	if (m_pCameraSpacePos)
 	{
 		// Use camera space relative position
-		transformMatrix.SetTranslation(*m_pCameraSpacePos);
+		const Matrix33 cameraRotation = Matrix33(passInfo.GetCamera().GetViewMatrix());
+		transformMatrix.SetTranslation(*m_pCameraSpacePos * cameraRotation);
 	}
 	else
 	{

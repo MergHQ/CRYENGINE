@@ -483,7 +483,7 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 			SetWindowLongPtrW(m_hWnd, GWL_STYLE, fullscreenStyle);
 		}
 			
-		SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, displayWidth, displayHeight, SWP_SHOWWINDOW | SWP_NOMOVE);
+		SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, displayWidth, displayHeight, SWP_SHOWWINDOW);
 	}
 	else if (m_windowState == EWindowState::BorderlessWindow || m_windowState == EWindowState::BorderlessFullscreen)
 	{
@@ -1404,7 +1404,7 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	m_sbpp = stencilBits;
 
 	CRenderDisplayContext* pDC = GetBaseDisplayContext();
-	CalculateResolutions(width, height, bNativeResolution, &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
+	CalculateResolutions(width, height, bNativeResolution, IsFullscreen(), &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
 
 	pDC->m_DisplayWidth =  displayWidth;
 	pDC->m_DisplayHeight = displayHeight;

@@ -1081,7 +1081,7 @@ CGpuHeap::THandle CGpuHeap::AllocateTiny(uint32_t memoryType, uint32_t bin)
 	if (!pPage)
 	{
 		const uint32_t blockSize = GetBinSize(bin);
-		if (pPage = AllocatePage<STinyPage>(m_pPages))
+		if ((pPage = AllocatePage<STinyPage>(m_pPages)))
 		{
 			static_assert(kDistribution2 == STinyPage::kBlockBits * 2U && kSmallBlockBins == kTinyBlockBins * 2, "Need to revise this mapping");
 			const uint32_t smallBin = (5U - kDistribution1) + bin + bin;

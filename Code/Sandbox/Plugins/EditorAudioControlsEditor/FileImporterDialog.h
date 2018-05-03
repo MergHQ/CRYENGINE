@@ -28,24 +28,14 @@ public:
 	virtual QSize sizeHint() const override;
 	// ~QDialog
 
-	// QWidget
-	virtual void closeEvent(QCloseEvent* pEvent) override;
-	// ~QWidget
+private:
 
-signals:
-
-	void SignalImporterClosed();
-
-private slots:
-
-	void OnCreateDirectorySelector();
+	void OnCreateFolderSelector();
 	void OnTargetPathChanged(QString const& targetPath);
 	void OnActionChanged(Qt::CheckState const isChecked);
 	void OnSetImportAll();
 	void OnSetIgnoreAll();
 	void OnApplyImport();
-
-private:
 
 	CTreeView* const                  m_pTreeView;
 	CFileImporterModel* const         m_pFileImporterModel;

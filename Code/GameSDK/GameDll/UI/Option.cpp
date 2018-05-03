@@ -227,7 +227,7 @@ void CCVarOption::GetWriteToConfigString(CryFixedStringT<128> &outString, ICVar*
 	if(!param || !pCVar)
 		return;
 
-	if(pCVar->GetType()==CVAR_STRING)
+	if(pCVar->GetType() == ECVarType::String)
 	{
 		outString.Format("%s = \"%s\"\r\n", m_cVar.c_str(), param);
 	}

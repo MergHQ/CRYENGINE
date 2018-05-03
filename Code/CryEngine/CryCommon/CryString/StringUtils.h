@@ -583,7 +583,7 @@ ILINE void portable_makepath(char* path, const char* drive, const char* dir, con
 
 	/* copy fname */
 
-	if (p = fname)
+	if ((p = fname))
 	{
 		while (*p)
 		{
@@ -595,13 +595,13 @@ ILINE void portable_makepath(char* path, const char* drive, const char* dir, con
 	 * to be inserted.
 	 */
 
-	if (p = ext)
+	if ((p = ext))
 	{
 		if (*p && *p != ('.'))
 		{
 			*path++ = ('.');
 		}
-		while (*path++ = *p++)
+		while ((*path++ = *p++))
 			;
 	}
 	else

@@ -1487,11 +1487,11 @@ int CScriptBind_System::GetCVar(IFunctionHandler* pH)
 		ScriptWarning("Script.GetCVar('%s') console variable not found", sCVarName);
 	else
 	{
-		if (pCVar->GetType() == CVAR_FLOAT || pCVar->GetType() == CVAR_INT)
+		if (pCVar->GetType() == ECVarType::Float || pCVar->GetType() == ECVarType::Int)
 		{
 			return pH->EndFunction(pCVar->GetFVal());
 		}
-		else if (pCVar->GetType() == CVAR_STRING)
+		else if (pCVar->GetType() == ECVarType::String)
 		{
 			return pH->EndFunction(pCVar->GetString());
 		}

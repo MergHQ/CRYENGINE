@@ -1226,8 +1226,13 @@ ISerializableInfoPtr CEntity::GetSerializableNetworkSpawnInfo() const
 
 	m_components.NonRecursiveForEach([&pContainer](const SEntityComponentRecord& record) -> EComponentIterationResult
 	{
-		CRY_ASSERT(!record.pComponent->GetGUID().IsNull());
-		pContainer->componentInstanceGUIDs.emplace_back(record.pComponent->GetGUID());
+		const bool isNetworked = !record.pComponent->GetComponentFlags().CheckAny({ EEntityComponentFlags::ServerOnly, EEntityComponentFlags::ClientOnly, EEntityComponentFlags::NetNotReplicate });
+		if (isNetworked)
+		{
+			CRY_ASSERT(!record.pComponent->GetGUID().IsNull());
+			pContainer->componentInstanceGUIDs.emplace_back(record.pComponent->GetGUID());
+		}
+
 		return EComponentIterationResult::Continue;
 	});
 
@@ -1829,6 +1834,11 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 
 	// Entity has changed so make the state dirty
 	m_componentChangeState++;
+
+	if (!IsInitialized() && m_pNetEntity != nullptr)
+	{
+		m_pNetEntity->OnComponentAddedDuringInitialization(pComponent.get());
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

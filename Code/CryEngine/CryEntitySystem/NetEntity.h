@@ -50,6 +50,7 @@ public:
 
 	virtual void                  OnNetworkedEntityTransformChanged(EntityTransformationFlagsMask transformReasons) override;
 
+	virtual void                  OnComponentAddedDuringInitialization(IEntityComponent* pComponent) const override;
 	virtual void                  OnEntityInitialized() override;
 
 	static void                   UpdateSchedulingProfiles();

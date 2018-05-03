@@ -2691,10 +2691,10 @@ bool CHWShader_D3D::mfAddEmptyCombination(CShader* pSH, uint64 nRT, uint64 nGL, 
 {
 	SEmptyCombination Comb;
 	Comb.nGLNew = m_nMaskGenShader;
-	Comb.nRTNew = cmbSaved.Ident.m_RTMask & m_nMaskAnd_RT | m_nMaskOr_RT;
+	Comb.nRTNew = (cmbSaved.Ident.m_RTMask & m_nMaskAnd_RT) | m_nMaskOr_RT;
 	Comb.nLTNew = cmbSaved.Ident.m_LightMask;
 	Comb.nGLOrg = nGL;
-	Comb.nRTOrg = nRT & m_nMaskAnd_RT | m_nMaskOr_RT;
+	Comb.nRTOrg = (nRT & m_nMaskAnd_RT) | m_nMaskOr_RT;
 	Comb.nLTOrg = nLT;
 	Comb.nMD = cmbSaved.Ident.m_MDMask;
 	Comb.nMDV = cmbSaved.Ident.m_MDVMask;

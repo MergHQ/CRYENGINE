@@ -472,7 +472,7 @@ static char* sSetParameterExp(const char* szExpr, Vec4& vVal, DynArray<SShaderPa
 	int n = 0;
 	int nc = 0;
 	char theChar;
-	while (theChar = *szExpr)
+	while ((theChar = *szExpr))
 	{
 		if (theChar == '(')
 		{

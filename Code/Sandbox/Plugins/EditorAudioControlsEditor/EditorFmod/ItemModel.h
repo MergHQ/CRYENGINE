@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include <IItemModel.h>
-#include <SharedData.h>
+#include <QAbstractItemModel>
 
 namespace ACE
 {
@@ -13,7 +12,7 @@ namespace Fmod
 {
 class CItem;
 
-class CItemModel final : public IItemModel
+class CItemModel final : public QAbstractItemModel
 {
 public:
 
@@ -25,17 +24,9 @@ public:
 		Count,
 	};
 
-	explicit CItemModel(CItem const& rootItem);
+	explicit CItemModel(CItem const& rootItem, QObject* const pParent);
 
 	CItemModel() = delete;
-
-	// IItemModel
-	virtual int                          GetNameColumn() const override                               { return static_cast<int>(EColumns::Name); }
-	virtual ColumnResizeModes const&     GetColumnResizeModes() const override                        { return m_columnResizeModes; }
-	virtual QString const                GetTargetFolderName(QModelIndex const& index) const override { return ""; }
-	virtual QStringList const&           GetSupportedFileTypes() const override                       { return m_supportedFileTypes; }
-	virtual ExtensionFilterVector const& GetExtensionFilters() const override                         { return m_extensionFilters; }
-	// ~IItemModel
 
 	void Reset();
 
@@ -61,10 +52,7 @@ private:
 	CItem*      ItemFromIndex(QModelIndex const& index) const;
 	QModelIndex IndexFromItem(CItem const* const pItem) const;
 
-	CItem const&                m_rootItem;
-	ColumnResizeModes const     m_columnResizeModes;
-	QStringList const           m_supportedFileTypes {};
-	ExtensionFilterVector const m_extensionFilters {};
+	CItem const& m_rootItem;
 };
 } // namespace Fmod
 } // namespace Impl

@@ -284,8 +284,8 @@ void CResourceSelectorDialog::OnContextMenu(QPoint const& pos)
 
 		}
 
-		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(QModelIndexList { index }); });
-		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(QModelIndexList { index }); });
+		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(); });
+		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(); });
 		pContextMenu->addSeparator();
 	}
 

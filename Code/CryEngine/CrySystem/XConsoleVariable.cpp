@@ -675,7 +675,7 @@ bool CXConsoleVariableCVarGroup::_TestCVars(const SCVarGroup& rGroup, const ICVa
 			// can cause problems
 			switch (pVar->GetType())
 			{
-			case CVAR_INT:
+			case ECVarType::Int:
 				{
 					int iVal;
 					if (sscanf(rValue.c_str(), "%d", &iVal) == 1)
@@ -686,7 +686,7 @@ bool CXConsoleVariableCVarGroup::_TestCVars(const SCVarGroup& rGroup, const ICVa
 					{ bOk = false; break; }
 				}
 				break;
-			case CVAR_FLOAT:
+			case ECVarType::Float:
 				{
 					float fVal;
 					if (sscanf(rValue.c_str(), "%f", &fVal) == 1)
@@ -694,7 +694,7 @@ bool CXConsoleVariableCVarGroup::_TestCVars(const SCVarGroup& rGroup, const ICVa
 						{ bOk = false; break; }
 				}
 				break;
-			case CVAR_STRING:
+			case ECVarType::String:
 				if (rValue != pVar->GetString())
 				{ bOk = false; break; }
 				break;

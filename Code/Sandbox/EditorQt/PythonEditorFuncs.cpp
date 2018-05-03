@@ -39,15 +39,15 @@ void PySetCVar(const char* pName, pSPyWrappedProperty pValue)
 		throw std::logic_error(string("\"") + pName + " is an invalid cvar.");
 	}
 
-	if (pCVar->GetType() == CVAR_INT && pValue->type == SPyWrappedProperty::eType_Int)
+	if (pCVar->GetType() == ECVarType::Int && pValue->type == SPyWrappedProperty::eType_Int)
 	{
 		pCVar->Set(pValue->property.intValue);
 	}
-	else if (pCVar->GetType() == CVAR_FLOAT && pValue->type == SPyWrappedProperty::eType_Float)
+	else if (pCVar->GetType() == ECVarType::Float && pValue->type == SPyWrappedProperty::eType_Float)
 	{
 		pCVar->Set(pValue->property.floatValue);
 	}
-	else if (pCVar->GetType() == CVAR_STRING && pValue->type == SPyWrappedProperty::eType_String)
+	else if (pCVar->GetType() == ECVarType::String && pValue->type == SPyWrappedProperty::eType_String)
 	{
 		pCVar->Set((LPCTSTR)pValue->stringValue);
 	}

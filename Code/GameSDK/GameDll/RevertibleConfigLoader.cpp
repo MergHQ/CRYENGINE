@@ -114,7 +114,7 @@ void CRevertibleConfigLoader::RevertCVarChanges()
 		{
 			ICVar * var = gEnv->pConsole->GetCVar(m_savedCVars[n].m_name);
 			
-			if (var && var->GetType() == CVAR_STRING && strlen(m_savedCVars[n].m_value) == 0)
+			if (var && var->GetType() == ECVarType::String && strlen(m_savedCVars[n].m_value) == 0)
 			{
 				var->Set(m_savedCVars[n].m_value);
 			}

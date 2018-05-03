@@ -1511,7 +1511,7 @@ inline int AllocPartIdRange(int partId, int nSlots)
 {
 	int nLevels, nBits;
 	ParsePartId(partId, nLevels, nBits);
-	return partId & 1 << 30 | nLevels << 28 | (partId & (1 << 28) - 1) << PARTID_MAX_SLOTS_log2;
+	return (partId & (1 << 30)) | nLevels << 28 | (partId & (1 << 28) - 1) << PARTID_MAX_SLOTS_log2;
 }
 
 //! Extract slot index from partid; 0 = top level.

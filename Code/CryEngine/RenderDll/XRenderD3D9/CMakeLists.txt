@@ -1305,7 +1305,6 @@ if (RENDERER_VULKAN)
 	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-unused-variable
-			-Wno-parentheses
 			-Wno-unused-value
 			-Wno-unknown-pragmas
 			-Wno-format

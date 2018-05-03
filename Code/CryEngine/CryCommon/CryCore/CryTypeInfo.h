@@ -184,7 +184,7 @@ struct CTypeInfo
 	inline bool             HasSubVars() const
 	{ return NextSubVar(0) != 0; }
 #define ForAllSubVars(pVar, Info) \
-  for (const CTypeInfo::CVarInfo* pVar = 0; pVar = (Info).NextSubVar(pVar); )
+  for (const CTypeInfo::CVarInfo* pVar = 0; (pVar = (Info).NextSubVar(pVar)); )
 
 	//! Named var search.
 	virtual const CVarInfo* FindSubVar(cstr name) const

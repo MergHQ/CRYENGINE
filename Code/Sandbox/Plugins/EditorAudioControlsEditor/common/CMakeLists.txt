@@ -6,12 +6,11 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
+		"ControlInfo.h"
 		"FileImportInfo.h"
 		"IConnection.h"
 		"IImpl.h"
 		"IItem.h"
-		"IItemModel.h"
-		"ISettings.h"
 		"ModelUtils.h"
 		"SharedData.h"
 )
@@ -20,4 +19,3 @@ end_sources()
 #END-FILE-LIST
 
 CryFileContainer(EditorAudioControlsEditorCommon SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor")
-

@@ -684,7 +684,7 @@ void CShaderMan::mfCreateCommonGlobalFlags(const char* szName)
 				pszShaderName.MakeUpper();
 				m_pShadersRemapList += string("%") + pszShaderName;
 
-				while (pCurrOffset = strstr(pCurrOffset, "Name"))
+				while ((pCurrOffset = strstr(pCurrOffset, "Name")))
 				{
 					pCurrOffset += 4;
 					char dummy[256] = "\n";
@@ -1603,7 +1603,7 @@ void CShaderMan::mfGatherFilesList(const char* szPath, std::vector<CCryNameR>& N
 			continue;
 		if (fileinfo.attrib & _A_SUBDIR)
 		{
-			if (!bUseFilter || nLevel != 1 || !m_ShadersFilter && !stricmp(fileinfo.name, m_ShadersFilter))
+			if (!bUseFilter || nLevel != 1 || (!m_ShadersFilter && !stricmp(fileinfo.name, m_ShadersFilter)))
 			{
 				char ddd[256];
 				cry_sprintf(ddd, "%s%s/", szPath, fileinfo.name);

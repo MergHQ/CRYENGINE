@@ -35,6 +35,61 @@ REGISTER_CLASS_DESC(CBrushObjectClassDesc);
 
 IMPLEMENT_DYNCREATE(CBrushObject, CBaseObject)
 
+class CUndoSetGeometryFile : public IUndoObject
+{
+public:
+	CUndoSetGeometryFile(CBrushObject* pObject, const char* pUndoDescription);
+protected:
+	virtual int         GetSize()                 { return sizeof(*this); }
+	virtual const char* GetDescription() override { return m_undoDescription; };
+	virtual const char* GetObjectName() override;
+	virtual void        Undo(bool bUndo) override;
+	virtual void        Redo() override;
+private:
+	string        m_undoDescription;
+	CryGUID       m_guid;
+	string        m_redoGeometryFile;
+	string        m_undoGeometryFile;
+};
+
+CUndoSetGeometryFile::CUndoSetGeometryFile(CBrushObject* pObject, const char* pUndoDescription)
+	: m_guid(pObject->GetId()),
+	m_undoDescription(pUndoDescription)
+{
+	m_undoGeometryFile = pObject->GetGeometryFile();
+}
+
+const char* CUndoSetGeometryFile::GetObjectName()
+{
+	if (CBaseObject* obj = GetIEditor()->GetObjectManager()->FindObject(m_guid))
+	{
+		return obj->GetName();
+	}
+	return "";
+}
+
+void CUndoSetGeometryFile::Undo(bool bUndo)
+{
+	CBrushObject* pObject = static_cast<CBrushObject *>(GetIEditor()->GetObjectManager()->FindObject(m_guid));
+	if (pObject)
+	{
+		if (bUndo)
+		{
+			m_redoGeometryFile = pObject->GetGeometryFile();
+		}
+		pObject->SetGeometryFile(m_undoGeometryFile);
+	}
+}
+
+void CUndoSetGeometryFile::Redo()
+{
+	CBrushObject* pObject = static_cast<CBrushObject *>(GetIEditor()->GetObjectManager()->FindObject(m_guid));
+	if (pObject)
+	{
+		pObject->SetGeometryFile(m_redoGeometryFile);
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 CBrushObject::CBrushObject()
 {
@@ -1077,6 +1132,8 @@ CEdGeometry* CBrushObject::GetGeometry()
 
 void CBrushObject::SetGeometryFile(const string& geometryFile)
 {
+	CUndo geometryFileUndo("Undo Brush Set Geometry File ");
+	CUndo::Record(new CUndoSetGeometryFile(this, "Undo geometry file"));
 	mv_geometryFile = geometryFile;
 }
 

@@ -3707,14 +3707,14 @@ void CRenderer::UpdateRenderingModesInfo()
 	//	return;
 	//}
 
-	if (m_nSonarVisionMode = (pSonarVision->IsActive() && CV_r_SonarVision || CV_r_SonarVision == 2))
+	if ((m_nSonarVisionMode = ((pSonarVision->IsActive() && CV_r_SonarVision) || CV_r_SonarVision == 2)))
 	{
 		m_nNightVisionMode   = 0;
 		m_nThermalVisionMode = 0;
 		return;
 	}
 
-	m_nNightVisionMode = (pNightVision->IsActive() && (CV_r_NightVision == 2) || (CV_r_NightVision == 3)) && gRenDev->IsHDRModeEnabled();             // check only for HDR version
+	m_nNightVisionMode = ((pNightVision->IsActive() && (CV_r_NightVision == 2)) || ((CV_r_NightVision == 3) && gRenDev->IsHDRModeEnabled()));             // check only for HDR version
 
 	if (!m_nNightVisionMode && pThermalVision->GetTransitionEffectState())
 		m_nThermalVisionMode = 0;

@@ -810,11 +810,11 @@ void QToolBarCreator::SetCVarValueRegExp()
 
 	switch (pCVar->GetType())
 	{
-	case CVAR_INT:
+	case ECVarType::Int:
 		m_pCVarValueInput->setValidator(new QIntValidator());
 		break;
 
-	case CVAR_FLOAT:
+	case ECVarType::Float:
 		m_pCVarValueInput->setValidator(new QDoubleValidator());
 		break;
 
@@ -835,10 +835,10 @@ void QToolBarCreator::SetCVarValue(const char* cvarValue)
 	QString valueStr(cvarValue);
 	switch (pCVar->GetType())
 	{
-	case CVAR_INT:
+	case ECVarType::Int:
 		std::static_pointer_cast<QMainToolBarManager::QCVarDesc>(m_pSelectedItem)->SetCVarValue(valueStr.toInt());
 		break;
-	case CVAR_FLOAT:
+	case ECVarType::Float:
 		std::static_pointer_cast<QMainToolBarManager::QCVarDesc>(m_pSelectedItem)->SetCVarValue(valueStr.toDouble());
 		break;
 

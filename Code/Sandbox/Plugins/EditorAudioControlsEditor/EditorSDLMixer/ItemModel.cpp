@@ -4,6 +4,7 @@
 #include "ItemModel.h"
 
 #include "Common.h"
+#include "Impl.h"
 
 #include <ModelUtils.h>
 #include <FileImportInfo.h>
@@ -19,10 +20,6 @@ namespace Impl
 {
 namespace SDLMixer
 {
-QStringList const CItemModel::s_supportedFileTypes {
-	"mp3", "ogg", "wav"
-};
-
 //////////////////////////////////////////////////////////////////////////
 bool HasDirValidData(QDir const& dir)
 {
@@ -74,7 +71,7 @@ void GetFilesFromDir(QDir const& dir, QString const& folderName, FileImportInfos
 		{
 			if (fileInfo.isFile())
 			{
-				outFileImportInfos.emplace_back(fileInfo, CItemModel::s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive), parentFolderName);
+				outFileImportInfos.emplace_back(fileInfo, s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive), parentFolderName);
 			}
 		}
 
@@ -100,7 +97,7 @@ bool CanDropExternalData(QMimeData const* const pData)
 		{
 			QFileInfo const& fileInfo(filePath);
 
-			if (fileInfo.isFile() && CItemModel::s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive))
+			if (fileInfo.isFile() && s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive))
 			{
 				hasValidData = true;
 				break;
@@ -144,7 +141,7 @@ bool DropExternalData(QMimeData const* const pData, FileImportInfos& outFileImpo
 
 				if (fileInfo.isFile())
 				{
-					outFileImportInfos.emplace_back(fileInfo, CItemModel::s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive));
+					outFileImportInfos.emplace_back(fileInfo, s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive));
 				}
 				else
 				{
@@ -226,17 +223,10 @@ CItemModelAttribute* GetAttributeForColumn(CItemModel::EColumns const column)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CItemModel::CItemModel(CItem const& rootItem)
-	: m_rootItem(rootItem)
-	, m_columnResizeModes{{ static_cast<int>(EColumns::Notification), QHeaderView::ResizeToContents }, {
-					static_cast<int>(EColumns::PakStatus), QHeaderView::ResizeToContents
-	      }}
-	, m_extensionFilters(
-			{
-				CExtensionFilter("MP3 Audio", "mp3"),
-				CExtensionFilter("Ogg Vorbis", "ogg"),
-				CExtensionFilter("Wave (Microsoft)", "wav")
-	    })
+CItemModel::CItemModel(CImpl const& impl, CItem const& rootItem, QObject* const pParent)
+	: QAbstractItemModel(pParent)
+	, m_impl(impl)
+	, m_rootItem(rootItem)
 {
 	InitIcons();
 	ModelUtils::InitIcons();
@@ -261,7 +251,7 @@ int CItemModel::rowCount(QModelIndex const& parent) const
 		pItem = &m_rootItem;
 	}
 
-	rowCount = pItem->GetNumChildren();
+	rowCount = static_cast<int>(pItem->GetNumChildren());
 
 	return rowCount;
 }
@@ -427,7 +417,7 @@ QVariant CItemModel::headerData(int section, Qt::Orientation orientation, int ro
 				}
 				break;
 			case Qt::DisplayRole:
-				// For Notification we use an icons instead.
+				// For the notification header an icon is used instead of text.
 				if (section != static_cast<int>(EColumns::Notification))
 				{
 					variant = pAttribute->GetName();
@@ -480,7 +470,7 @@ QModelIndex CItemModel::index(int row, int column, QModelIndex const& parent /*=
 			pParent = &m_rootItem;
 		}
 
-		if ((pParent != nullptr) && pParent->GetNumChildren() > row)
+		if ((pParent != nullptr) && (static_cast<int>(pParent->GetNumChildren()) > row))
 		{
 			auto const pItem = static_cast<CItem const*>(pParent->GetChildAt(row));
 
@@ -522,10 +512,8 @@ bool CItemModel::canDropMimeData(QMimeData const* pData, Qt::DropAction action, 
 //////////////////////////////////////////////////////////////////////////
 bool CItemModel::dropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent)
 {
-	bool wasDropped = false;
-
 	FileImportInfos fileImportInfos;
-	wasDropped = DropExternalData(pData, fileImportInfos);
+	bool const wasDropped = DropExternalData(pData, fileImportInfos);
 
 	if (wasDropped)
 	{
@@ -541,7 +529,7 @@ bool CItemModel::dropMimeData(QMimeData const* pData, Qt::DropAction action, int
 			}
 		}
 
-		SignalDroppedFiles(fileImportInfos, targetFolderName);
+		m_impl.SignalFilesDropped(fileImportInfos, targetFolderName);
 	}
 
 	return wasDropped;
@@ -637,7 +625,7 @@ QModelIndex CItemModel::IndexFromItem(CItem const* const pItem) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-QString const CItemModel::GetTargetFolderName(QModelIndex const& index) const
+QString CItemModel::GetTargetFolderName(QModelIndex const& index) const
 {
 	QString targetFolderName;
 

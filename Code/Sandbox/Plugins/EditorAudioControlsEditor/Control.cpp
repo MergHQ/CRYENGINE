@@ -94,10 +94,10 @@ void CControl::Serialize(Serialization::IArchive& ar)
 	if (((m_flags& EAssetFlags::IsDefaultControl) == 0) && (m_type != EAssetType::State))
 	{
 		Serialization::StringList scopeList;
-		ScopeInfoList scopeInfoList;
-		g_assetsManager.GetScopeInfoList(scopeInfoList);
+		ScopeInfos scopeInfos;
+		g_assetsManager.GetScopeInfos(scopeInfos);
 
-		for (auto const& scopeInfo : scopeInfoList)
+		for (auto const& scopeInfo : scopeInfos)
 		{
 			scopeList.emplace_back(scopeInfo.name);
 		}
@@ -234,7 +234,7 @@ void CControl::AddConnection(ConnectionPtr const pConnection)
 
 		if (pIItem != nullptr)
 		{
-			g_pIImpl->EnableConnection(pConnection);
+			g_pIImpl->EnableConnection(pConnection, g_assetsManager.IsLoading());
 			pConnection->SignalConnectionChanged.Connect(this, &CControl::SignalConnectionModified);
 			m_connections.push_back(pConnection);
 			MatchRadiusToAttenuation();
@@ -257,7 +257,7 @@ void CControl::RemoveConnection(ConnectionPtr const pConnection)
 
 			if (pIItem != nullptr)
 			{
-				g_pIImpl->DisableConnection(pConnection);
+				g_pIImpl->DisableConnection(pConnection, g_assetsManager.IsLoading());
 				pConnection->SignalConnectionChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
 				m_connections.erase(it);
 				MatchRadiusToAttenuation();
@@ -273,9 +273,11 @@ void CControl::ClearConnections()
 {
 	if (!m_connections.empty())
 	{
+		bool const isLoading = g_assetsManager.IsLoading();
+
 		for (auto const& connection : m_connections)
 		{
-			g_pIImpl->DisableConnection(connection);
+			g_pIImpl->DisableConnection(connection, isLoading);
 			Impl::IItem* const pIItem = g_pIImpl->GetItem(connection->GetID());
 
 			if (pIItem != nullptr)
@@ -358,12 +360,13 @@ void CControl::RemoveConnection(Impl::IItem* const pIItem)
 		ControlId const id = pIItem->GetId();
 		auto it = m_connections.begin();
 		auto const end = m_connections.end();
+		bool const isLoading = g_assetsManager.IsLoading();
 
 		for (; it != end; ++it)
 		{
 			if ((*it)->GetID() == id)
 			{
-				g_pIImpl->DisableConnection(*it);
+				g_pIImpl->DisableConnection(*it, isLoading);
 
 				m_connections.erase(it);
 				MatchRadiusToAttenuation();

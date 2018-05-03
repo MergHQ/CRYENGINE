@@ -17,13 +17,13 @@ CTreeView::CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags co
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CTreeView::IsEditing() const
+void CTreeView::ExpandSelection()
 {
-	return state() == QAbstractItemView::EditingState;
+	ExpandSelectionRecursively(selectedIndexes());
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTreeView::ExpandSelection(QModelIndexList const& indexList)
+void CTreeView::ExpandSelectionRecursively(QModelIndexList const& indexList)
 {
 	for (auto const& index : indexList)
 	{
@@ -35,7 +35,7 @@ void CTreeView::ExpandSelection(QModelIndexList const& indexList)
 			{
 				QModelIndexList childList;
 				childList.append(index.child(i, 0));
-				ExpandSelection(childList);
+				ExpandSelectionRecursively(childList);
 			}
 
 			expand(index);
@@ -44,7 +44,13 @@ void CTreeView::ExpandSelection(QModelIndexList const& indexList)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTreeView::CollapseSelection(QModelIndexList const& indexList)
+void CTreeView::CollapseSelection()
+{
+	CollapseSelectionRecursively(selectedIndexes());
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CTreeView::CollapseSelectionRecursively(QModelIndexList const& indexList)
 {
 	for (auto const& index : indexList)
 	{
@@ -56,7 +62,7 @@ void CTreeView::CollapseSelection(QModelIndexList const& indexList)
 			{
 				QModelIndexList childList;
 				childList.append(index.child(i, 0));
-				CollapseSelection(childList);
+				CollapseSelectionRecursively(childList);
 			}
 
 			collapse(index);
@@ -100,12 +106,12 @@ void CTreeView::BackupExpanded()
 
 	for (int i = 0; i < rowCount; ++i)
 	{
-		BackupExpandedChildren(model()->index(i, 0));
+		BackupExpandedRecursively(model()->index(i, 0));
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTreeView::BackupExpandedChildren(QModelIndex const& index)
+void CTreeView::BackupExpandedRecursively(QModelIndex const& index)
 {
 	if (index.isValid())
 	{
@@ -115,7 +121,7 @@ void CTreeView::BackupExpandedChildren(QModelIndex const& index)
 		{
 			for (int i = 0; i < rowCount; ++i)
 			{
-				BackupExpandedChildren(index.child(i, 0));
+				BackupExpandedRecursively(index.child(i, 0));
 			}
 		}
 
@@ -135,7 +141,7 @@ void CTreeView::RestoreExpanded()
 
 		for (int i = 0; i < rowCount; ++i)
 		{
-			RestoreExpandedChildren(model()->index(i, 0));
+			RestoreExpandedRecursively(model()->index(i, 0));
 		}
 
 		m_expandedBackup.clear();
@@ -143,7 +149,7 @@ void CTreeView::RestoreExpanded()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTreeView::RestoreExpandedChildren(QModelIndex const& index)
+void CTreeView::RestoreExpandedRecursively(QModelIndex const& index)
 {
 	if (index.isValid())
 	{
@@ -153,7 +159,7 @@ void CTreeView::RestoreExpandedChildren(QModelIndex const& index)
 		{
 			for (int i = 0; i < rowCount; ++i)
 			{
-				RestoreExpandedChildren(index.child(i, 0));
+				RestoreExpandedRecursively(index.child(i, 0));
 			}
 		}
 
@@ -186,7 +192,7 @@ void CTreeView::RestoreSelection()
 
 		for (int i = 0; i < rowCount; ++i)
 		{
-			RestoreSelectionChildren(model()->index(i, 0));
+			RestoreSelectionRecursively(model()->index(i, 0));
 		}
 	}
 	else
@@ -199,7 +205,7 @@ void CTreeView::RestoreSelection()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTreeView::RestoreSelectionChildren(QModelIndex const& index)
+void CTreeView::RestoreSelectionRecursively(QModelIndex const& index)
 {
 	if (index.isValid())
 	{
@@ -209,7 +215,7 @@ void CTreeView::RestoreSelectionChildren(QModelIndex const& index)
 		{
 			for (int i = 0; i < rowCount; ++i)
 			{
-				RestoreSelectionChildren(index.child(i, 0));
+				RestoreSelectionRecursively(index.child(i, 0));
 			}
 		}
 

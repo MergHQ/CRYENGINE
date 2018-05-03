@@ -1890,13 +1890,13 @@ struct SQueryTypeEnum;
 template<>
 struct SQueryTypeEnum<int>
 {
-	static const int type = CVAR_INT;
+	static const ECVarType type = ECVarType::Int;
 	static int ParseString(const char* s) { return atoi(s); }
 };
 template<>
 struct SQueryTypeEnum<float>
 {
-	static const int type = CVAR_FLOAT;
+	static const ECVarType type = ECVarType::Float;
 	static float ParseString(const char* s) { return (float)atof(s); }
 };
 
@@ -1947,7 +1947,7 @@ struct SDummyCVar : ICVar
 	void            ClearFlags(int flags) override                                  {}
 	int             GetFlags() const override                                       { return VF_CONST_CVAR | VF_READONLY; }
 	int             SetFlags(int flags) override                                    { return 0; }
-	int             GetType() override                                              { return SQueryTypeEnum<T>::type; }
+	ECVarType       GetType() override                                              { return SQueryTypeEnum<T>::type; }
 	const char*     GetHelp() override                                              { return NULL; }
 	bool            IsConstCVar() const override                                    { return true; }
 	void            SetOnChangeCallback(ConsoleVarFunc pChangeFunc) override        { (void)pChangeFunc; }

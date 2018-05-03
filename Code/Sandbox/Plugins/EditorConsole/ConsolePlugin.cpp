@@ -63,11 +63,11 @@ inline Messages::EVarType GetVarType(ICVar* pVar)
 	{
 		switch (pVar->GetType())
 		{
-		case CVAR_INT:
+		case ECVarType::Int:
 			return Messages::eVarType_Int;
-		case CVAR_FLOAT:
+		case ECVarType::Float:
 			return Messages::eVarType_Float;
-		case CVAR_STRING:
+		case ECVarType::String:
 			return Messages::eVarType_String;
 		}
 	}

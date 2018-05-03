@@ -1,21 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "DirectorySelectorFilterModel.h"
+#include "FolderSelectorFilterModel.h"
 
 #include <FileSystem/OsFileSystemModels/AdvancedFileSystemModel.h>
 
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CDirectorySelectorFilterModel::CDirectorySelectorFilterModel(QString const& assetpath, QObject* const pParent)
+CFolderSelectorFilterModel::CFolderSelectorFilterModel(QString const& assetpath, QObject* const pParent)
 	: QDeepFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
 	, m_assetPath(assetpath)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CDirectorySelectorFilterModel::rowMatchesFilter(int sourceRow, QModelIndex const& sourceParent) const
+bool CFolderSelectorFilterModel::rowMatchesFilter(int sourceRow, QModelIndex const& sourceParent) const
 {
 	bool matchesFilter = false;
 

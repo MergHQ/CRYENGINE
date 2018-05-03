@@ -161,15 +161,15 @@ void CPropertiesWidget::OnSetSelectedAssets(Assets const& selectedAssets, bool c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropertiesWidget::BackupTreeViewStates()
+void CPropertiesWidget::OnAboutToReload()
 {
-	m_pConnectionsWidget->BackupTreeViewStates();
+	m_pConnectionsWidget->OnAboutToReload();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPropertiesWidget::RestoreTreeViewStates()
+void CPropertiesWidget::OnReloaded()
 {
-	m_pConnectionsWidget->RestoreTreeViewStates();
+	m_pConnectionsWidget->OnReloaded();
 }
 
 //////////////////////////////////////////////////////////////////////////

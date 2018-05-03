@@ -26,7 +26,7 @@ struct bitmaskPtr
 	int         getsize() const         { return size; }
 	bitmaskPtr& setsize(int newSize)
 	{
-		if (size != newSize || refCounted && size > 0 && newSize > 0 && data[-1] > 1)
+		if (size != newSize || (refCounted && size > 0 && newSize > 0 && data[-1] > 1))
 		{
 			uint* newData = 0;
 			if (newSize)

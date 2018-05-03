@@ -54,6 +54,15 @@ namespace Cry
 			Online
 		};
 
+		enum class EFriendRelationship
+		{
+			None,
+			Friend,
+			RequestSent,
+			RequestReceived,
+			Blocked,
+		};
+
 		//! The main interface to a game platform (Steam, PSN etc.)
 		//! This can be queried via gEnv->pSystem->GetIPluginManager()->QueryPlugin<IGamePlatform>();
 		struct IPlugin : public Cry::IEnginePlugin
@@ -90,8 +99,12 @@ namespace Cry
 			//! Note that this function cannot fail, and will always return a valid pointer even if the id is invalid - no server checks are made.
 			virtual IUser* GetUserById(IUser::Identifier id) = 0;
 
+			//! Gets a list of all users that are friends with the local user
+			virtual const DynArray<IUser*>& GetFriends() = 0;
 			//! Checks if the local user has the other user in their friends list
 			virtual bool IsFriendWith(IUser::Identifier otherUserId) const = 0;
+			//! Gets the relationship status between the local user and another user
+			virtual EFriendRelationship GetFriendRelationship(IUser::Identifier otherUserId) const = 0;
 
 			//! Starts a server on the platform, registering it with the network - thus allowing future discovery through the matchmaking systems
 			virtual IServer* CreateServer(bool bLocal) = 0;

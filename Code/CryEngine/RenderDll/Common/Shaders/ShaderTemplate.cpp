@@ -169,7 +169,7 @@ uint32 SShaderItem::PostLoad()
 			{
 				const bool bAlphaTested = (pR && pR->IsAlphaTested());
 				const bool bVegetation = (pSH && pSH->GetShaderType() == eST_Vegetation);
-				if (!bAlphaTested && !bVegetation || bAlphaTested && bVegetation)
+				if ((!bAlphaTested && !bVegetation) || (bAlphaTested && bVegetation))
 					nPreprocessFlags |= FB_ZPREPASS;
 			}
 		}
@@ -446,7 +446,7 @@ STexAnim* CShaderMan::mfReadTexSequence(const char* na, int Flags, bool bFindOnl
 		{
 			name[nm - nName] = 0;
 			char* speed = &nName[nm - nName + 1];
-			if (nm = strchr(speed, ')'))
+			if ((nm = strchr(speed, ')')))
 				speed[nm - speed] = 0;
 			fSpeed = (float)atof(speed);
 		}

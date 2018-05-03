@@ -868,7 +868,7 @@ void CTexture::RT_Precache()
 	int pakLogFileAccess = 0;
 	if (!CRenderer::CV_r_texturesstreaming)
 	{
-		if (sysPakLogInvalidAccess = gEnv->pConsole->GetCVar("sys_PakLogInvalidFileAccess"))
+		if ((sysPakLogInvalidAccess = gEnv->pConsole->GetCVar("sys_PakLogInvalidFileAccess")))
 		{
 			pakLogFileAccess = sysPakLogInvalidAccess->GetIVal();
 		}

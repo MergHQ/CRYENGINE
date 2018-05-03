@@ -2,8 +2,11 @@
 
 #pragma once
 
-#include <IItemModel.h>
+#include <QAbstractItemModel>
+
 #include <SharedData.h>
+#include <FileImportInfo.h>
+#include <FileDialogs/ExtensionFilter.h>
 
 namespace ACE
 {
@@ -11,9 +14,10 @@ namespace Impl
 {
 namespace PortAudio
 {
+class CImpl;
 class CItem;
 
-class CItemModel final : public IItemModel
+class CItemModel final : public QAbstractItemModel
 {
 public:
 
@@ -28,21 +32,12 @@ public:
 		Count,
 	};
 
-	explicit CItemModel(CItem const& rootItem);
+	explicit CItemModel(CImpl const& impl, CItem const& rootItem, QObject* const pParent);
 
 	CItemModel() = delete;
 
-	// IItemModel
-	virtual int                          GetNameColumn() const override         { return static_cast<int>(EColumns::Name); }
-	virtual ColumnResizeModes const&     GetColumnResizeModes() const override  { return m_columnResizeModes; }
-	virtual QString const                GetTargetFolderName(QModelIndex const& index) const override;
-	virtual QStringList const&           GetSupportedFileTypes() const override { return s_supportedFileTypes; }
-	virtual ExtensionFilterVector const& GetExtensionFilters() const override   { return m_extensionFilters; }
-	// ~IItemModel
-
-	void Reset();
-
-	static QStringList const s_supportedFileTypes;
+	QString GetTargetFolderName(QModelIndex const& index) const;
+	void    Reset();
 
 protected:
 
@@ -66,9 +61,8 @@ private:
 	CItem*      ItemFromIndex(QModelIndex const& index) const;
 	QModelIndex IndexFromItem(CItem const* const pItem) const;
 
-	CItem const&                m_rootItem;
-	ColumnResizeModes const     m_columnResizeModes;
-	ExtensionFilterVector const m_extensionFilters;
+	CImpl const& m_impl;
+	CItem const& m_rootItem;
 };
 } // namespace PortAudio
 } // namespace Impl

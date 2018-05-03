@@ -272,6 +272,10 @@ void CD3D9Renderer::ChangeViewport(CRenderDisplayContext* pDC, unsigned int view
 	if (m_bDeviceLost)
 		return;
 
+	// This change will propagate to the other dimensions (output and render)
+	// when HandleDisplayPropertyChanges() is called just before rendering
+	pDC->ChangeDisplayResolution(viewPortOffsetX + viewportWidth, viewPortOffsetY + viewportHeight, SRenderViewport(viewPortOffsetX, viewPortOffsetY, viewportWidth, viewportHeight));
+
 	gRenDev->ExecuteRenderThreadCommand([=]
 		{
 			SetCurDownscaleFactor(Vec2(1, 1));
@@ -280,16 +284,12 @@ void CD3D9Renderer::ChangeViewport(CRenderDisplayContext* pDC, unsigned int view
 			{
 				if (auto pRenderOutput = pDC->GetRenderOutput().get())
 				{
+					CRendererResources::OnOutputResolutionChanged(pDC->GetDisplayResolution()[0], pDC->GetDisplayResolution()[1]);
 					pRenderOutput->ReinspectDisplayContext();
-					CRendererResources::OnOutputResolutionChanged(pRenderOutput->GetOutputResolution()[0], pRenderOutput->GetOutputResolution()[1]);
 				}
 			}
 		}, ERenderCommandFlags::None
 	);
-
-	// This change will propagate to the other dimensions (output and render)
-	// when HandleDisplayPropertyChanges() is called just before rendering
-	pDC->ChangeDisplayResolution(viewPortOffsetX + viewportWidth, viewPortOffsetY + viewportHeight, SRenderViewport(viewPortOffsetX, viewPortOffsetY, viewportWidth, viewportHeight));
 }
 
 void CD3D9Renderer::SetCurDownscaleFactor(Vec2 sf)
@@ -478,7 +478,7 @@ void CD3D9Renderer::RT_ResumeDevice()
 }
 #endif
 
-void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayHeightRequested, bool bUseNativeRes, int* pRenderWidth, int* pRenderHeight, int* pOutputWidth, int* pOutputHeight, int* pDisplayWidth, int* pDisplayHeight)
+void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayHeightRequested, bool bUseNativeRes, bool findClosestMatching, int* pRenderWidth, int* pRenderHeight, int* pOutputWidth, int* pOutputHeight, int* pDisplayWidth, int* pDisplayHeight)
 {
 	CRenderDisplayContext* pDC = GetActiveDisplayContext();
 
@@ -510,11 +510,18 @@ void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayH
 	#elif CRY_PLATFORM_WINDOWS
 		RectI monitorBounds = {};
 		if (pDC->IsSwapChainBacked())
-			monitorBounds = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC)->GetCurrentMonitorBounds();
+			monitorBounds = static_cast<const CSwapChainBackedRenderDisplayContext*>(pDC)->GetCurrentMonitorBounds();
 		else
 		{
 			monitorBounds.w = pDC->GetDisplayResolution().x;
 			monitorBounds.h = pDC->GetDisplayResolution().y;
+		}
+		
+		if (findClosestMatching && pDC->IsSwapChainBacked())
+		{
+			const auto match = static_cast<const CSwapChainBackedRenderDisplayContext*>(pDC)->FindClosestMatchingScreenResolution(Vec2_tpl<uint32_t>{ static_cast<uint32_t>(displayWidthRequested), static_cast<uint32_t>(displayHeightRequested) });
+			displayWidthRequested  = match.x;
+			displayHeightRequested = match.y;
 		}
 
 		*pDisplayWidth  = bUseNativeRes ? monitorBounds.w : displayWidthRequested;
@@ -617,7 +624,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges()
 		// Tweak, adjust and fudge any of the requested changes
 		int renderWidth, renderHeight, outputWidth, outputHeight, displayWidth, displayHeight;
 
-		CalculateResolutions(displayWidthRequested, displayHeightRequested, bNativeRes, &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
+		CalculateResolutions(displayWidthRequested, displayHeightRequested, bNativeRes, IsFullscreen(), &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
 
 		if (!IsEditorMode() && m_pStereoRenderer && m_pStereoRenderer->IsStereoEnabled())
 		{
@@ -4818,7 +4825,7 @@ unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, 
 	CTexture* pTex = 0;
 	if (Id > 0)
 	{
-		if (pTex = CTexture::GetByID(Id))
+		if ((pTex = CTexture::GetByID(Id)))
 		{
 			if (pRegion)
 				pTex->UpdateTextureRegion(pSrcData, pRegion->x, pRegion->y, 0, pRegion->w, pRegion->h, 1, eSrcFormat);

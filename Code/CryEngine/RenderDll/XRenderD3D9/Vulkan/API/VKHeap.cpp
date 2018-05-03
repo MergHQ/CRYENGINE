@@ -400,7 +400,7 @@ NCryVulkan::CMemoryHandle NCryVulkan::CHeap::Allocate(const VkMemoryRequirements
 			const uint32_t bit = countTrailingZeros32(remainingPools); // Order intended here, try lowest pool index first, as this is what Vulkan drivers may use to express their preference.
 			remainingPools ^= 1U << bit;
 
-			if (result.handle = CGpuHeap::Allocate(bit, static_cast<uint32_t>(requirements.size), static_cast<uint32_t>(requirements.alignment)))
+			if ((result.handle = CGpuHeap::Allocate(bit, static_cast<uint32_t>(requirements.size), static_cast<uint32_t>(requirements.alignment))))
 			{
 				return result;
 			}

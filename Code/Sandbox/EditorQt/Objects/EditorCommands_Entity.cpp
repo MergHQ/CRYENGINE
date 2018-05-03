@@ -60,14 +60,6 @@ void SetEntityGeometryFile(const char* objName, const char* filePath)
 	{
 		static_cast<CBrushObject*>(pObject)->SetGeometryFile(filePath);
 	}
-	else if (pObject->IsKindOf(RUNTIME_CLASS(CGeomEntity)))
-	{
-		static_cast<CGeomEntity*>(pObject)->SetGeometryFile(filePath);
-	}
-	else if (pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-	{
-		static_cast<CEntityObject*>(pObject)->SetEntityPropertyString("object_Model", filePath);
-	}
 }
 
 void AddEntityLink(const char* pObjectName, const char* pTargetName, const char* pName)
@@ -184,6 +176,6 @@ REGISTER_EDITOR_UI_COMMAND_DESC(entity, reload_all_archetypes, "Reload Archetype
 REGISTER_COMMAND_REMAPPING(ui_action, actionReload_Archetypes, entity, reload_all_archetypes)
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::CompileScript, entity, compile_scripts,
-	CCommandDescription("Compiles selected scripts"))
-	REGISTER_EDITOR_UI_COMMAND_DESC(entity, compile_scripts, "Compile Script", "", "", false)
-	REGISTER_COMMAND_REMAPPING(ui_action, actionCompile_Script, entity, compile_scripts)
+                                   CCommandDescription("Compiles selected scripts"))
+REGISTER_EDITOR_UI_COMMAND_DESC(entity, compile_scripts, "Compile Script", "", "", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionCompile_Script, entity, compile_scripts)

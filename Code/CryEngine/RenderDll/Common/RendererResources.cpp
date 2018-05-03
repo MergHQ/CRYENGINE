@@ -1131,7 +1131,7 @@ void CRendererResources::DestroyHDRMaps()
 
 bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 {
-	const bool bCreatePostAA = CRenderer::CV_r_AntialiasingMode && (!CTexture::IsTextureExist(s_ptexPrevBackBuffer[0][0])) || (gRenDev->IsStereoEnabled() && !s_ptexPrevBackBuffer[0][1]);
+	const bool bCreatePostAA = (CRenderer::CV_r_AntialiasingMode && !CTexture::IsTextureExist(s_ptexPrevBackBuffer[0][0])) || (gRenDev->IsStereoEnabled() && !s_ptexPrevBackBuffer[0][1]);
 	const bool bCreateCaustics = (CRenderer::CV_r_watervolumecaustics && CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred) && !CTexture::IsTextureExist(s_ptexWaterCaustics[0]);
 
 	const int width = resourceWidth, width_r2 = (width + 1) / 2, width_r4 = (width_r2 + 1) / 2, width_r8 = (width_r4 + 1) / 2;

@@ -256,7 +256,7 @@ VkResult CDevice::CommitResource(EHeapType heapHint, CResource* pInputResource) 
 	vkGetResourceMemoryRequirements(GetVkDevice(), pInputResource->GetHandle(), &requirements);
 
 	CMemoryHandle boundMemory;
-	if (boundMemory = GetHeap().Allocate(requirements, heapHint))
+	if ((boundMemory = GetHeap().Allocate(requirements, heapHint)))
 	{
 		VkDeviceMemoryLocation memloc = GetHeap().GetBindAddress(boundMemory);
 

@@ -116,4 +116,3 @@ static CItemModelAttribute s_onDiskAttribute("On disk", eAttributeType_Boolean, 
 static CItemModelAttribute s_pathAttribute("Path", eAttributeType_String, CItemModelAttribute::Visible, false);
 } // namespace ModelUtils
 } // namespace ACE
-

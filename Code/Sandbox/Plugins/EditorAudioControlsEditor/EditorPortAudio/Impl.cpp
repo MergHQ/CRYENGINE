@@ -6,6 +6,7 @@
 #include "Common.h"
 #include "EventConnection.h"
 #include "ProjectLoader.h"
+#include "DataPanel.h"
 
 #include <CryAudioImplPortAudio/GlobalData.h>
 #include <CrySystem/ISystem.h>
@@ -18,8 +19,40 @@ namespace Impl
 namespace PortAudio
 {
 //////////////////////////////////////////////////////////////////////////
+string GetPath(CItem const* const pItem)
+{
+	string path;
+	IItem const* pParent = pItem->GetParent();
+
+	while (pParent != nullptr)
+	{
+		string const parentName = pParent->GetName();
+
+		if (!parentName.empty())
+		{
+			if (path.empty())
+			{
+				path = parentName;
+			}
+			else
+			{
+				path = parentName + "/" + path;
+			}
+		}
+
+		pParent = pParent->GetParent();
+	}
+
+	return path;
+}
+
+//////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
-	: m_pItemModel(new CItemModel(m_rootItem))
+	: m_pDataPanel(nullptr)
+	, m_assetAndProjectPath(AUDIO_SYSTEM_DATA_ROOT "/" +
+	                        string(CryAudio::Impl::PortAudio::s_szImplFolderName) +
+	                        "/" +
+	                        string(CryAudio::s_szAssetsFolderName))
 {
 	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
 	m_implName = m_implInfo.name.c_str();
@@ -30,16 +63,32 @@ CImpl::CImpl()
 CImpl::~CImpl()
 {
 	Clear();
-	delete m_pItemModel;
+	DestroyDataPanel();
+}
+
+//////////////////////////////////////////////////////////////////////////
+QWidget* CImpl::CreateDataPanel()
+{
+	m_pDataPanel = new CDataPanel(*this);
+	return m_pDataPanel;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::DestroyDataPanel()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		delete m_pDataPanel;
+		m_pDataPanel = nullptr;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::Reload(bool const preserveConnectionStatus)
 {
-	m_pItemModel->Reset();
 	Clear();
 
-	CProjectLoader(GetSettings()->GetProjectPath(), m_rootItem);
+	CProjectLoader(m_assetAndProjectPath, m_rootItem);
 
 	CreateItemCache(&m_rootItem);
 
@@ -247,64 +296,43 @@ ConnectionPtr CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType co
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, EAssetType const assetType)
 {
-	XmlNodeRef pConnectionNode = nullptr;
+	XmlNodeRef pNode = nullptr;
 
 	std::shared_ptr<CEventConnection const> const pImplConnection = std::static_pointer_cast<CEventConnection const>(pConnection);
 	auto const pItem = static_cast<CItem const* const>(GetItem(pConnection->GetID()));
 
 	if ((pItem != nullptr) && (pImplConnection != nullptr) && (assetType == EAssetType::Trigger))
 	{
-		pConnectionNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
-		pConnectionNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+		pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
+		pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
 
-		string path;
-		IItem const* pParent = pItem->GetParent();
-
-		while (pParent != nullptr)
-		{
-			string const parentName = pParent->GetName();
-
-			if (!parentName.empty())
-			{
-				if (path.empty())
-				{
-					path = parentName;
-				}
-				else
-				{
-					path = parentName + "/" + path;
-				}
-			}
-
-			pParent = pParent->GetParent();
-		}
-
-		pConnectionNode->setAttr(CryAudio::Impl::PortAudio::s_szPathAttribute, path);
+		string const path = GetPath(pItem);
+		pNode->setAttr(CryAudio::Impl::PortAudio::s_szPathAttribute, path);
 
 		if (pImplConnection->m_actionType == CEventConnection::EActionType::Start)
 		{
-			pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::s_szStartValue);
+			pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::s_szStartValue);
 
 			if (pImplConnection->m_isInfiniteLoop)
 			{
-				pConnectionNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, 0);
+				pNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, 0);
 			}
 			else
 			{
-				pConnectionNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, pImplConnection->m_loopCount);
+				pNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, pImplConnection->m_loopCount);
 			}
 		}
 		else
 		{
-			pConnectionNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::s_szStopValue);
+			pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::s_szStopValue);
 		}
 	}
 
-	return pConnectionNode;
+	return pNode;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::EnableConnection(ConnectionPtr const pConnection)
+void CImpl::EnableConnection(ConnectionPtr const pConnection, bool const isLoading)
 {
 	auto const pItem = static_cast<CItem* const>(GetItem(pConnection->GetID()));
 
@@ -312,11 +340,16 @@ void CImpl::EnableConnection(ConnectionPtr const pConnection)
 	{
 		++m_connectionsByID[pItem->GetId()];
 		pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
+
+		if ((m_pDataPanel != nullptr) && !isLoading)
+		{
+			m_pDataPanel->OnConnectionAdded();
+		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DisableConnection(ConnectionPtr const pConnection)
+void CImpl::DisableConnection(ConnectionPtr const pConnection, bool const isLoading)
 {
 	auto const pItem = static_cast<CItem* const>(GetItem(pConnection->GetID()));
 
@@ -332,6 +365,56 @@ void CImpl::DisableConnection(ConnectionPtr const pConnection)
 		}
 
 		m_connectionsByID[pItem->GetId()] = connectionCount;
+
+		if ((m_pDataPanel != nullptr) && !isLoading)
+		{
+			m_pDataPanel->OnConnectionRemoved();
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAboutToReload()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnAboutToReload();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnReloaded()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnReloaded();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnSelectConnectedItem(ControlId const id) const
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnSelectConnectedItem(id);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnFileImporterOpened()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnFileImporterOpened();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnFileImporterClosed()
+{
+	if (m_pDataPanel != nullptr)
+	{
+		m_pDataPanel->OnFileImporterClosed();
 	}
 }
 
@@ -352,9 +435,9 @@ void CImpl::CreateItemCache(CItem const* const pParent)
 {
 	if (pParent != nullptr)
 	{
-		size_t const count = pParent->GetNumChildren();
+		size_t const numChildren = pParent->GetNumChildren();
 
-		for (size_t i = 0; i < count; ++i)
+		for (size_t i = 0; i < numChildren; ++i)
 		{
 			auto const pChild = static_cast<CItem* const>(pParent->GetChildAt(i));
 

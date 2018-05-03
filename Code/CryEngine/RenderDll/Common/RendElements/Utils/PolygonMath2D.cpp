@@ -562,7 +562,7 @@ bool FindPolygonCircleSplitPoints(const Vec2* pPolygon, const int numPts, const 
 		}
 
 		// Valid polygon segment?
-		if (split.validSegment = (split.A >= 0 && split.B >= 0 && split.A != split.B))
+		if ((split.validSegment = (split.A >= 0 && split.B >= 0 && split.A != split.B)))
 		{
 			// May need to swap points to ensure generating inner polygon
 			const float splitADistSq = (pPolygon[split.A] - splitPt).GetLength2();

@@ -693,11 +693,19 @@ void CVolumetricCloudsStage::Execute()
 		CRY_ASSERT(prevScaledDepth->GetWidth() == context.scaledZTarget->GetWidth());
 		CRY_ASSERT(prevScaledDepth->GetHeight() == context.scaledZTarget->GetHeight());
 
+		const SResourceRegionMapping mapping =
+		{
+			{ 0, 0, 0, 0 },                                             // src position
+			{ 0, 0, 0, 0 },                                             // dst position
+			m_pDownscaledMinTempTex->GetDevTexture()->GetDimension(),   // dst size
+			1, //D3D11_COPY_NO_OVERWRITE
+		};
+
 		if (m_cleared > 0)
 		{
-			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(context.scaledTarget->GetDevTexture(), prevMaxTex->GetDevTexture());
-			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(m_pDownscaledMinTempTex->GetDevTexture(), prevMinTex->GetDevTexture());
-			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(context.scaledZTarget->GetDevTexture(), prevScaledDepth->GetDevTexture());
+			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(context.scaledTarget->GetDevTexture(), prevMaxTex->GetDevTexture(), mapping);
+			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(m_pDownscaledMinTempTex->GetDevTexture(), prevMinTex->GetDevTexture(), mapping);
+			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(context.scaledZTarget->GetDevTexture(), prevScaledDepth->GetDevTexture(), mapping);
 
 			m_cleared -= 1;
 		}
@@ -793,7 +801,7 @@ void CVolumetricCloudsStage::Execute()
 		}
 
 		// copy current downscaled depth for next frame's temporal re-projection
-		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(context.scaledZTarget->GetDevTexture(), prevScaledDepth->GetDevTexture());
+		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(context.scaledZTarget->GetDevTexture(), prevScaledDepth->GetDevTexture(), mapping);
 
 		// upscale and blend it with scene.
 		{

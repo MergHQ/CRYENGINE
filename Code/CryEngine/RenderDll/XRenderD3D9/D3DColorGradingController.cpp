@@ -138,7 +138,7 @@ bool CColorGradingController::Update(const SColorGradingMergeParams* pMergeParam
 	if (!gRenDev->CV_r_colorgrading_charts)
 		return true;
 
-	if (m_pChartToUse = m_pChartStatic)
+	if ((m_pChartToUse = m_pChartStatic))
 		return true;
 
 	if (!InitResources())

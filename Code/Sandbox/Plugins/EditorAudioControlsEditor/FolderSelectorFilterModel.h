@@ -6,13 +6,13 @@
 
 namespace ACE
 {
-class CDirectorySelectorFilterModel final : public QDeepFilterProxyModel
+class CFolderSelectorFilterModel final : public QDeepFilterProxyModel
 {
 public:
 
-	explicit CDirectorySelectorFilterModel(QString const& assetpath, QObject* const pParent);
+	explicit CFolderSelectorFilterModel(QString const& assetpath, QObject* const pParent);
 
-	CDirectorySelectorFilterModel() = delete;
+	CFolderSelectorFilterModel() = delete;
 
 protected:
 

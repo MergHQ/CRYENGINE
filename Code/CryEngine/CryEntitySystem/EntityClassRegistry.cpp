@@ -660,6 +660,10 @@ bool CEntityClassRegistry::OnClientConnectionReceived(int channelId, bool bIsRes
 
 bool CEntityClassRegistry::OnClientReadyForGameplay(int channelId, bool bIsReset)
 {
+	// Simulation mode in editor should be handled by the editor's own events
+	if (gEnv->IsEditor())
+		return true;
+
 	if ((size_t)channelId < m_channelEntityInstances.size())
 	{
 		for (EntityId entityId : m_channelEntityInstances[channelId])

@@ -702,7 +702,7 @@ lSysUpdate:
 			if (!MS->m_pLockedData)
 			{
 				MESSAGE_VIDEO_BUFFER_ACC_ATTEMPT;
-				if (MS->m_pLockedData = gRenDev->m_DevBufMan.BeginRead(nVB))
+				if ((MS->m_pLockedData = gRenDev->m_DevBufMan.BeginRead(nVB)))
 					MS->m_nLockFlags |= FSL_LOCKED;
 			}
 			if (MS->m_pLockedData)
@@ -839,7 +839,7 @@ lSysUpdate:
 			if (!m_IBStream.m_pLockedData)
 			{
 				MESSAGE_VIDEO_BUFFER_ACC_ATTEMPT;
-				if (m_IBStream.m_pLockedData = gRenDev->m_DevBufMan.BeginRead(nIB))
+				if ((m_IBStream.m_pLockedData = gRenDev->m_DevBufMan.BeginRead(nIB)))
 					m_IBStream.m_nLockFlags |= FSL_LOCKED;
 			}
 			if (m_IBStream.m_pLockedData)
@@ -3717,7 +3717,7 @@ void CRenderMesh::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomFor
 	{
 		PosNormData vdata;
 		vdata.aPosNorms = m_PosNorms;
-		if (vdata.pSkinningData = pSkinning)
+		if ((vdata.pSkinningData = pSkinning))
 		{
 			GetStridedArray(vdata.aSkinning, VSF_HWSKIN_INFO);
 		#if SKIN_MORPHING

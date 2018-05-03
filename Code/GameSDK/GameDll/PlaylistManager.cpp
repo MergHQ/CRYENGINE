@@ -267,30 +267,30 @@ void SGameModeOption::CopyToCVar( CProfileOptions *pProfileOptions, bool useDefa
 
 		if ((!optionName.empty()) && pProfileOptions->IsOption(optionName.c_str()))
 		{
-			if (m_pCVar->GetType() == CVAR_INT)
+			if (m_pCVar->GetType() == ECVarType::Int)
 			{
 				m_pCVar->Set(pProfileOptions->GetOptionValueAsInt(optionName.c_str(), useDefault));
 			}
-			else if (m_pCVar->GetType() == CVAR_FLOAT)
+			else if (m_pCVar->GetType() == ECVarType::Float)
 			{
 				m_pCVar->Set(pProfileOptions->GetOptionValueAsFloat(optionName.c_str(), useDefault) * m_profileMultiplyer);
 			}
-			else if (m_pCVar->GetType() == CVAR_STRING)
+			else if (m_pCVar->GetType() == ECVarType::String)
 			{
 				m_pCVar->Set(pProfileOptions->GetOptionValue(optionName.c_str(), useDefault));
 			}
 		}
 		else
 		{
-			if (m_pCVar->GetType() == CVAR_INT)
+			if (m_pCVar->GetType() == ECVarType::Int)
 			{
 				m_pCVar->Set(m_iDefault);
 			}
-			else if (m_pCVar->GetType() == CVAR_FLOAT)
+			else if (m_pCVar->GetType() == ECVarType::Float)
 			{
 				m_pCVar->Set(m_fDefault);
 			}
-			else if (m_pCVar->GetType() == CVAR_STRING)
+			else if (m_pCVar->GetType() == ECVarType::String)
 			{
 				m_pCVar->Set("");
 			}
@@ -313,11 +313,11 @@ void SGameModeOption::CopyToProfile( CProfileOptions *pProfileOptions, const cha
 			optionName = m_profileOption.c_str();
 		}
 
-		if (m_pCVar->GetType() == CVAR_INT)
+		if (m_pCVar->GetType() == ECVarType::Int)
 		{
 			pProfileOptions->SetOptionValue(optionName.c_str(), m_pCVar->GetIVal());
 		}
-		else if (m_pCVar->GetType() == CVAR_FLOAT)
+		else if (m_pCVar->GetType() == ECVarType::Float)
 		{
 			pProfileOptions->SetOptionValue(optionName.c_str(), int_round(m_pCVar->GetFVal() / m_profileMultiplyer));
 		}
@@ -656,15 +656,15 @@ void CPlaylistManager::ClearAllVariantCVars()
 				continue;
 			}
 #endif
-			if (option.m_pCVar->GetType() == CVAR_INT)
+			if (option.m_pCVar->GetType() == ECVarType::Int)
 			{
 				option.m_pCVar->Set(option.m_iDefault);
 			}
-			else if (option.m_pCVar->GetType() == CVAR_FLOAT)
+			else if (option.m_pCVar->GetType() == ECVarType::Float)
 			{
 				option.m_pCVar->Set(option.m_fDefault);
 			}
-			else if (option.m_pCVar->GetType() == CVAR_STRING)
+			else if (option.m_pCVar->GetType() == ECVarType::String)
 			{
 				option.m_pCVar->Set("");
 			}
@@ -1664,11 +1664,11 @@ void CPlaylistManager::GetGameModeOption(const char *pOption, CryFixedStringT<32
 		CRY_ASSERT(pOptionStruct && pOptionStruct->m_pCVar);
 		if (pOptionStruct && pOptionStruct->m_pCVar)
 		{
-			if (pOptionStruct->m_pCVar->GetType() == CVAR_INT)
+			if (pOptionStruct->m_pCVar->GetType() == ECVarType::Int)
 			{
 				result.Format("%d", pOptionStruct->m_pCVar->GetIVal());
 			}
-			else if (pOptionStruct->m_pCVar->GetType() == CVAR_FLOAT)
+			else if (pOptionStruct->m_pCVar->GetType() == ECVarType::Float)
 			{
 				const float scaledFloat = pOptionStruct->m_pCVar->GetFVal() / pOptionStruct->m_profileMultiplyer;
 				if ((pOptionStruct->m_floatPrecision == 0) || (floorf(scaledFloat) == scaledFloat))
@@ -1715,15 +1715,15 @@ uint16 CPlaylistManager::PackCustomVariantOption(uint32 index)
 		SGameModeOption &option = m_options[index];
 		CRY_ASSERT(option.m_pCVar);
 		int iValue = 0;
-		int cvarType = option.m_pCVar->GetType();
+		ECVarType cvarType = option.m_pCVar->GetType();
 		
 		if (option.m_pCVar)
 		{
-			if (cvarType == CVAR_INT)
+			if (cvarType == ECVarType::Int)
 			{
 				iValue = option.m_pCVar->GetIVal();
 			}
-			else if (cvarType == CVAR_FLOAT)
+			else if (cvarType == ECVarType::Float)
 			{
 				// Convert into int (same as if saving to the profile)
 				iValue = int_round((option.m_pCVar->GetFVal() / option.m_netMultiplyer));
@@ -1741,7 +1741,7 @@ uint16 CPlaylistManager::PackCustomVariantOption(uint32 index)
 }
 
 // Unpacks both int and float as some Gamemode options have both as options e.g. timelimit 2.5f. The option will know which it wants to use.
-int CPlaylistManager::UnpackCustomVariantOptionProfileValues(uint16 value, uint32 index, int* pIntValue, float* pFloatValue, int* pFloatPrecision)
+ECVarType CPlaylistManager::UnpackCustomVariantOptionProfileValues(uint16 value, uint32 index, int* pIntValue, float* pFloatValue, int* pFloatPrecision)
 {
 	if (index < m_options.size())
 	{
@@ -1751,7 +1751,7 @@ int CPlaylistManager::UnpackCustomVariantOptionProfileValues(uint16 value, uint3
 		{
 			// Read the value and convert back into an int
 			int iValue = ((int)value) - MAX_ALLOWED_NEGATIVE_OPTION_AMOUNT;
-			if (option.m_pCVar->GetType() == CVAR_INT) 
+			if (option.m_pCVar->GetType() == ECVarType::Int)
 			{
 				if (pIntValue)
 				{
@@ -1763,7 +1763,7 @@ int CPlaylistManager::UnpackCustomVariantOptionProfileValues(uint16 value, uint3
 					*pFloatValue = (float)iValue;
 				}
 			}
-			else if (option.m_pCVar->GetType() == CVAR_FLOAT)
+			else if (option.m_pCVar->GetType() == ECVarType::Float)
 			{
 				float fValue = ((float)iValue * option.m_netMultiplyer) / option.m_profileMultiplyer;
 
@@ -1803,10 +1803,10 @@ int CPlaylistManager::UnpackCustomVariantOptionProfileValues(uint16 value, uint3
 		}
 	}	
 
-	return 0;
+	return ECVarType::Invalid;
 }
 
-int CPlaylistManager::UnpackCustomVariantOption(uint16 value, uint32 index, int* pIntValue, float* pFloatValue)
+ECVarType CPlaylistManager::UnpackCustomVariantOption(uint16 value, uint32 index, int* pIntValue, float* pFloatValue)
 {
 	if (index < m_options.size())
 	{
@@ -1817,15 +1817,15 @@ int CPlaylistManager::UnpackCustomVariantOption(uint16 value, uint32 index, int*
 			// Read the value and convert back into an int
 			int iValue = ((int)value) - MAX_ALLOWED_NEGATIVE_OPTION_AMOUNT;
 
-			if (option.m_pCVar->GetType() == CVAR_INT) 
+			if (option.m_pCVar->GetType() == ECVarType::Int)
 			{
 				if (pIntValue)
 				{
 					*pIntValue = iValue;
-					return CVAR_INT;
+					return ECVarType::Int;
 				}
 			}
-			else if (option.m_pCVar->GetType() == CVAR_FLOAT)
+			else if (option.m_pCVar->GetType() == ECVarType::Float)
 			{
 				// Convert into float (same as if reading from the profile)
 				float fValue = ((float)iValue) * option.m_netMultiplyer;
@@ -1833,13 +1833,13 @@ int CPlaylistManager::UnpackCustomVariantOption(uint16 value, uint32 index, int*
 				if (pFloatValue)
 				{
 					*pFloatValue = fValue;
-					return CVAR_FLOAT;
+					return ECVarType::Float;
 				}
 			}
 		}
 	}	
 
-	return 0;
+	return ECVarType::Invalid;
 }
 
 void CPlaylistManager::ReadDetailedServerInfo(uint16 *pOptions, uint32 numOptions)
@@ -1855,16 +1855,16 @@ void CPlaylistManager::ReadDetailedServerInfo(uint16 *pOptions, uint32 numOption
 			// Read the value and convert back into an int
 			int iValue = 0;
 			float fValue = 0.f;
-			int cvarType = 0;
+			ECVarType cvarType = ECVarType::Invalid;
 			
 			m_bIsSettingOptions = true;
 
 			cvarType = UnpackCustomVariantOption(pOptions[i], i, &iValue, &fValue);
-			if (cvarType == CVAR_INT)
+			if (cvarType == ECVarType::Int)
 			{
 				option.m_pCVar->Set(iValue);
 			}
-			else if (cvarType == CVAR_FLOAT)
+			else if (cvarType == ECVarType::Float)
 			{
 				option.m_pCVar->Set(fValue);
 			}
@@ -1941,7 +1941,7 @@ int CPlaylistManager::GetSynchedVarsSize()
 	{
 		if (m_configVars[i].m_bNetSynched)
 		{
-			if(m_configVars[i].m_pCVar->GetType() != CVAR_STRING)
+			if(m_configVars[i].m_pCVar->GetType() != ECVarType::String)
 			{
 				size += CryLobbyPacketUINT16Size;				
 			}
@@ -1965,13 +1965,13 @@ void CPlaylistManager::WriteSynchedVars(CCryLobbyPacket* pPacket)
 		{
 			switch (m_configVars[i].m_pCVar->GetType())
 			{
-			case CVAR_INT:
+			case ECVarType::Int:
 				pPacket->WriteUINT16((uint16)m_configVars[i].m_pCVar->GetIVal());
 				break;
-			case CVAR_FLOAT:
+			case ECVarType::Float:
 				pPacket->WriteUINT16((uint16)m_configVars[i].m_pCVar->GetFVal());
 				break;
-			case CVAR_STRING:
+			case ECVarType::String:
 				CryFixedStringT<24> temp;
 				temp.Format("%s", m_configVars[i].m_pCVar->GetString());
 				const uint8 length = static_cast<uint8> (strlen(m_configVars[i].m_pCVar->GetString()) + 1); //+1 == escape character
@@ -1993,19 +1993,19 @@ void CPlaylistManager::ReadSynchedVars(CCryLobbyPacket* pPacket)
 		{
 			switch (m_configVars[i].m_pCVar->GetType())
 			{
-			case CVAR_INT:
+			case ECVarType::Int:
 				{
 					const uint16 intVal = pPacket->ReadUINT16();
 					m_configVars[i].m_pCVar->Set((int) intVal);
 					break;
 				}
-			case CVAR_FLOAT:
+			case ECVarType::Float:
 				{
 					const uint16 floatVal = pPacket->ReadUINT16();
 					m_configVars[i].m_pCVar->Set((float) floatVal);
 					break;
 				}
-			case CVAR_STRING:
+			case ECVarType::String:
 				{
 					const uint8 length = pPacket->ReadUINT8();
 					char strVal[24];
@@ -2031,14 +2031,14 @@ void CPlaylistManager::ReadSetCustomVariantOptions(CCryLobbyPacket* pPacket, CPl
 			// Read the value and convert back into an int
 			int iValue = 0;
 			float fValue = 0.f;
-			int cvarType = 0;
+			ECVarType cvarType = ECVarType::Invalid;
 			
 			cvarType = UnpackCustomVariantOption(pPacket->ReadUINT16(), i, &iValue, &fValue);
-			if (cvarType == CVAR_INT)
+			if (cvarType == ECVarType::Int)
 			{
 				option.m_pCVar->Set(iValue);
 			}
-			else if (cvarType == CVAR_FLOAT)
+			else if (cvarType == ECVarType::Float)
 			{
 				option.m_pCVar->Set(fValue);
 			}
@@ -2857,18 +2857,18 @@ bool CPlaylistManager::LoadOperand( XmlNodeRef operandXml, SOptionRestriction::S
 				const char *pFallbackValue;
 				if (operandXml->getAttr("fallback", &pFallbackValue))
 				{
-					int varType = outResult.m_pVar->GetType();
+					ECVarType varType = outResult.m_pVar->GetType();
 					switch (varType)
 					{
-					case CVAR_INT:
+					case ECVarType::Int:
 						outResult.m_comparisionValue.m_int = atoi(pValue);
 						outResult.m_fallbackValue.m_int = atoi(pFallbackValue);
 						break;
-					case CVAR_FLOAT:
+					case ECVarType::Float:
 						outResult.m_comparisionValue.m_float = (float) atof(pValue);
 						outResult.m_fallbackValue.m_float = (float) atof(pFallbackValue);
 						break;
-					case CVAR_STRING:
+					case ECVarType::String:
 						outResult.m_comparisionValue.m_string = pValue;
 						outResult.m_fallbackValue.m_string = pFallbackValue;
 						break;
@@ -2923,10 +2923,10 @@ bool CPlaylistManager::CheckOperation( SOptionRestriction::SOperand &operand, bo
 {
 	bool bComparisonResult = false;
 
-	int varType = operand.m_pVar->GetType();
+	ECVarType varType = operand.m_pVar->GetType();
 	switch (varType)
 	{
-	case CVAR_INT:
+	case ECVarType::Int:
 		{
 			switch (operand.m_type)
 			{
@@ -2949,7 +2949,7 @@ bool CPlaylistManager::CheckOperation( SOptionRestriction::SOperand &operand, bo
 			}
 		}
 		break;
-	case CVAR_FLOAT:
+	case ECVarType::Float:
 		{
 			switch (operand.m_type)
 			{
@@ -2972,7 +2972,7 @@ bool CPlaylistManager::CheckOperation( SOptionRestriction::SOperand &operand, bo
 			}
 		}
 		break;
-	case CVAR_STRING:
+	case ECVarType::String:
 		{
 			switch (operand.m_type)
 			{

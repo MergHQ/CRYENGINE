@@ -795,19 +795,19 @@ void CXConsole::SaveInternalState(struct IDataWriteStream& writer) const
 
 			switch (pCVar->GetType())
 			{
-			case CVAR_INT:
+			case ECVarType::Int:
 				{
 					writer.WriteInt32(pCVar->GetIVal());
 					break;
 				}
 
-			case CVAR_FLOAT:
+			case ECVarType::Float:
 				{
 					writer.WriteFloat(pCVar->GetFVal());
 					break;
 				}
 
-			case CVAR_STRING:
+			case ECVarType::String:
 				{
 					writer.WriteString(pCVar->GetString());
 					break;
@@ -824,7 +824,7 @@ void CXConsole::LoadInternalState(struct IDataReadStream& reader)
 	for (uint32 i = 0; i < numVars; ++i)
 	{
 		const string varName = reader.ReadString();
-		const uint8 varType = reader.ReadUint8();
+		const ECVarType varType = static_cast<ECVarType>(reader.ReadUint8());
 
 		// find the CVar
 		ICVar* pVar = this->GetCVar(varName.c_str());
@@ -832,10 +832,10 @@ void CXConsole::LoadInternalState(struct IDataReadStream& reader)
 		// restore data
 		switch (varType)
 		{
-		case CVAR_INT:
+		case ECVarType::Int:
 			{
 				const int iValue = reader.ReadInt32();
-				if ((NULL != pVar) && (pVar->GetType() == CVAR_INT))
+				if ((NULL != pVar) && (pVar->GetType() == ECVarType::Int))
 				{
 					pVar->Set(iValue);
 				}
@@ -846,10 +846,10 @@ void CXConsole::LoadInternalState(struct IDataReadStream& reader)
 				break;
 			}
 
-		case CVAR_FLOAT:
+		case ECVarType::Float:
 			{
 				const float fValue = reader.ReadFloat();
-				if ((NULL != pVar) && (pVar->GetType() == CVAR_FLOAT))
+				if ((NULL != pVar) && (pVar->GetType() == ECVarType::Float))
 				{
 					pVar->Set(fValue);
 				}
@@ -860,10 +860,10 @@ void CXConsole::LoadInternalState(struct IDataReadStream& reader)
 				break;
 			}
 
-		case CVAR_STRING:
+		case ECVarType::String:
 			{
 				const string strValue = reader.ReadString();
-				if ((NULL != pVar) && (pVar->GetType() == CVAR_STRING))
+				if ((NULL != pVar) && (pVar->GetType() == ECVarType::String))
 				{
 					pVar->Set(strValue);
 				}
@@ -2123,15 +2123,13 @@ void CXConsole::DumpCommandsVarsTxt(const char* prefix)
 	for (itrVar = m_mapVariables.begin(); itrVar != itrVarEnd; ++itrVar)
 	{
 		ICVar* var = itrVar->second;
-		const char* types[] = { "?", "int", "float", "string", "?" };
 
 		var->GetRealIVal();     // assert inside checks consistency for all cvars
 
 		if (hasprefix(var->GetName(), prefix))
 		{
 			const char* sFlags = GetFlagsString(var->GetFlags());
-
-			fprintf(f0, "variable: %s %s\ntype: %s\ncurrent: %s\nhelp: %s\n\n", var->GetName(), sFlags, types[var->GetType()], var->GetString(), var->GetHelp());
+			fprintf(f0, "variable: %s %s\ntype: %s\ncurrent: %s\nhelp: %s\n\n", var->GetName(), sFlags, ECVarTypeHelper::GetNameForECVar(var->GetType()), var->GetString(), var->GetHelp());
 		}
 	}
 
@@ -2158,7 +2156,6 @@ void CXConsole::DumpVarsTxt(const bool includeCheat)
 	for (itrVar = m_mapVariables.begin(); itrVar != itrVarEnd; ++itrVar)
 	{
 		ICVar* var = itrVar->second;
-		const char* types[] = { "?", "int", "float", "string", "?" };
 
 		var->GetRealIVal();     // assert inside checks consistency for all cvars
 		const int flags = var->GetFlags();
@@ -2166,7 +2163,7 @@ void CXConsole::DumpVarsTxt(const bool includeCheat)
 		if ((includeCheat == true) || (flags & VF_CHEAT) == 0)
 		{
 			const char* sFlags = GetFlagsString(flags);
-			fprintf(f0, "variable: %s %s\ntype: %s\ncurrent: %s\nhelp: %s\n\n", var->GetName(), sFlags, types[var->GetType()], var->GetString(), var->GetHelp());
+			fprintf(f0, "variable: %s %s\ntype: %s\ncurrent: %s\nhelp: %s\n\n", var->GetName(), sFlags, ECVarTypeHelper::GetNameForECVar(var->GetType()), var->GetString(), var->GetHelp());
 		}
 	}
 
@@ -2391,7 +2388,7 @@ void CXConsole::ExecuteStringInternal(const char* command, const bool bFromConso
 						return;
 					}
 
-					if (!sTemp.empty() || (pCVar->GetType() == CVAR_STRING))
+					if (!sTemp.empty() || (pCVar->GetType() == ECVarType::String))
 					{
 						// renderer cvars will be updated in the render thread
 						if ((pCVar->GetFlags() & VF_RENDERER_CVAR) && m_pRenderer)
@@ -2904,7 +2901,7 @@ void CXConsole::DisplayVarValue(ICVar* pVar)
 
 	char szRealState[40] = "";
 
-	if (pVar->GetType() == CVAR_INT)
+	if (pVar->GetType() == ECVarType::Int)
 	{
 		int iRealState = pVar->GetRealIVal();
 
@@ -3464,7 +3461,7 @@ void CXConsole::PrintCheatVars(bool bUseLastHashRange)
 		// add name & variable to string. We add both since adding only the value could cause
 		// many collisions with variables all having value 0 or all 1.
 		string hashStr = it->first;
-		if (it->second->GetType() == CVAR_FLOAT)
+		if (it->second->GetType() == ECVarType::Float)
 		{
 			cry_sprintf(floatFormatBuf, "%.1g", it->second->GetFVal());
 			hashStr += floatFormatBuf;

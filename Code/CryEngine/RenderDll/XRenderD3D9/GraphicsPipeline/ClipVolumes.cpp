@@ -252,7 +252,7 @@ void CClipVolumesStage::Prepare()
 			buffer_handle_t hIndexStream = ~0u;
 			CRenderMesh* pRenderMesh = nullptr;
 
-			if (pRenderMesh = reinterpret_cast<CRenderMesh*>(volume.m_pRenderMesh.get()))
+			if ((pRenderMesh = reinterpret_cast<CRenderMesh*>(volume.m_pRenderMesh.get())))
 			{
 				hVertexStream = pRenderMesh->_GetVBStream(VSF_GENERAL);
 				hIndexStream = pRenderMesh->_GetIBStream();
@@ -486,10 +486,10 @@ void CClipVolumesStage::PrepareVolumetricFog()
 
 #ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 		CRY_ASSERT(m_pClipVolumeStencilVolumeTex);
-		if (m_pClipVolumeStencilVolumeTex
+		if ((m_pClipVolumeStencilVolumeTex
 		    && (m_pClipVolumeStencilVolumeTex->GetWidth() != scaledWidth
 		        || m_pClipVolumeStencilVolumeTex->GetHeight() != scaledHeight
-		        || !CTexture::IsTextureExist(m_pClipVolumeStencilVolumeTex))
+		        || !CTexture::IsTextureExist(m_pClipVolumeStencilVolumeTex)))
 		    || m_depthTargetArrayVolFog.empty()
 		    || m_depthTargetArrayVolFog.size() != depth)
 		{

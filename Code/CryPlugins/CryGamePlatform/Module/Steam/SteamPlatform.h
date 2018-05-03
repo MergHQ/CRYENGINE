@@ -41,7 +41,9 @@ namespace Cry
 				virtual IUser* GetLocalClient() override;
 				virtual IUser* GetUserById(IUser::Identifier id) override;
 
+				virtual const DynArray<IUser*>& GetFriends() override;
 				virtual bool IsFriendWith(IUser::Identifier otherUserId) const override;
+				virtual EFriendRelationship GetFriendRelationship(IUser::Identifier otherUserId) const override;
 
 				virtual IServer* CreateServer(bool bLocal) override;
 				virtual IServer* GetLocalServer() const override { return m_pServer.get(); }
@@ -96,6 +98,7 @@ namespace Cry
 				std::map<string, ILocalizationManager::EPlatformIndependentLanguageID> m_translationMappings;
 
 				std::vector<std::unique_ptr<IUser>> m_users;
+				DynArray<IUser*> m_friends;
 
 				int m_awaitingCallbacks;
 				std::vector<IListener*> m_listeners;

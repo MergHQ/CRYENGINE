@@ -26,8 +26,8 @@ public:
 	CPropertiesWidget() = delete;
 
 	void Reset();
-	void BackupTreeViewStates();
-	void RestoreTreeViewStates();
+	void OnAboutToReload();
+	void OnReloaded();
 
 signals:
 

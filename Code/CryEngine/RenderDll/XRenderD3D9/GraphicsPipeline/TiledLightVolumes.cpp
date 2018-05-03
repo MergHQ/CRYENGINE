@@ -1170,7 +1170,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 			const AtlasItem* pItem = nullptr;
 			if ((lightShadeInfo.resIndex != lightShadeInfo.resNoIndex))
 			{
-				if ((lightShadeInfo.lightType == tlTypeProbe))
+				if (lightShadeInfo.lightType == tlTypeProbe)
 					pItem = &m_specularProbeAtlas.items[lightShadeInfo.resIndex];
 				if ((lightShadeInfo.lightType == tlTypeAmbientProjector || lightShadeInfo.lightType == tlTypeRegularProjector))
 					pItem = &m_spotTexAtlas.items[lightShadeInfo.resIndex];

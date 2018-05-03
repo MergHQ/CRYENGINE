@@ -5,6 +5,7 @@
 #include "Control.h"
 #include "Folder.h"
 #include "Library.h"
+#include "ScopeInfo.h"
 
 #include <CrySandbox/CrySignal.h>
 
@@ -34,6 +35,7 @@ public:
 	CControl*        CreateDefaultControl(string const& name, EAssetType const type, CAsset* const pParent, bool const isInternal, string const& description);
 
 	CControl*        FindControl(string const& name, EAssetType const type, CAsset* const pParent = nullptr) const;
+	CControl*        FindControlById(ControlId const id) const;
 
 	Controls const&  GetControls() const { return m_controls; }
 
@@ -42,7 +44,7 @@ public:
 	bool             ScopeExists(string const& name) const;
 	Scope            GetScope(string const& name) const;
 	SScopeInfo       GetScopeInfo(Scope const id) const;
-	void             GetScopeInfoList(ScopeInfoList& scopeList) const;
+	void             GetScopeInfos(ScopeInfos& scopeInfos) const;
 
 	void             ClearAllConnections();
 	void             BackupAndClearAllConnections();

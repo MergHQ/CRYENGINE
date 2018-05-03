@@ -1822,9 +1822,9 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 						for (int i = 0; i < 2; i++)
 						{
 							CHWShader* shader = shaders[i];
-							if (shader && (!m_szShaderPrecache || !stricmp(m_szShaderPrecache, shader->m_EntryFunc.c_str()) != 0))
+							if (shader && (!m_szShaderPrecache || (stricmp(m_szShaderPrecache, shader->m_EntryFunc.c_str()) == 0)))
 							{
-								uint64 nFlagsOrigShader_RT = cmbSaved.Ident.m_RTMask & shader->m_nMaskAnd_RT | shader->m_nMaskOr_RT;
+								uint64 nFlagsOrigShader_RT = (cmbSaved.Ident.m_RTMask & shader->m_nMaskAnd_RT) | shader->m_nMaskOr_RT;
 								uint64 nFlagsOrigShader_GL = shader->m_nMaskGenShader;
 								uint32 nFlagsOrigShader_LT = cmbSaved.Ident.m_LightMask;
 
@@ -1846,7 +1846,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 							for (int i = 0; i < 4; i++)
 							{
 								CHWShader* shader = d3d11Shaders[i];
-								if (shader && (!m_szShaderPrecache || !stricmp(m_szShaderPrecache, shader->m_EntryFunc.c_str()) != 0))
+								if (shader && (!m_szShaderPrecache || (stricmp(m_szShaderPrecache, shader->m_EntryFunc.c_str()) == 0)))
 								{
 									shader->PrecacheShader(pSH,cmba->Ident,nFlags);
 								}

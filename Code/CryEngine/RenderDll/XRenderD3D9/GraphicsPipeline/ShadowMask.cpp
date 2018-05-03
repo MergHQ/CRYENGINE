@@ -400,7 +400,7 @@ int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firs
 {
 	const bool bPrepareCustomPrimitives  = !pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_Custom).empty();
 	const bool bPrepareCascadePrimitives = !pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunDynamic).empty() || 
-	                                       !pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunCached).empty() && !extendLastCachedCascade;
+	                                       (!pRenderView->GetShadowFrustumsByType(CRenderView::eShadowFrustumRenderType_SunCached).empty() && !extendLastCachedCascade);
 	const int previousPrimitiveCount = sliceGenPass.GetPrimitiveCount();
 
 	uint64 rtFlags = qualityFlags;

@@ -4794,7 +4794,7 @@ bool CCryAction::SaveServerConfig(const char* path)
 
 			string szLine = pV->GetName();
 
-			if (pV->GetType() == CVAR_STRING)
+			if (pV->GetType() == ECVarType::String)
 				szLine += " = \"" + szValue + "\"\r\n";
 			else
 				szLine += " = " + szValue + "\r\n";

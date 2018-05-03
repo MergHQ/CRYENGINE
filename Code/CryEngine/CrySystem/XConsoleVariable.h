@@ -232,7 +232,7 @@ public:
 		Set(m_sValue.c_str());
 	}
 
-	virtual int  GetType() override                                     { return CVAR_STRING; }
+	virtual ECVarType GetType() override                                     { return ECVarType::String; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
 private:           // --------------------------------------------------------------------------------------------
@@ -319,7 +319,7 @@ public:
 	virtual void SetAllowedValues(std::initializer_list<float> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed float values on an int CVar."); }
 	virtual void SetAllowedValues(std::initializer_list<string> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed string values on an int CVar."); }
 	
-	virtual int  GetType() override                                     { return CVAR_INT; }
+	virtual ECVarType GetType() override                                     { return ECVarType::Int; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
 protected: // --------------------------------------------------------------------------------------------
@@ -388,7 +388,7 @@ public:
 			m_pConsole->OnAfterVarChange(this);
 		}
 	}
-	virtual int  GetType() override                                     { return CVAR_INT; }
+	virtual ECVarType GetType() override                                     { return ECVarType::Int; }
 
 	virtual void SetMinValue(int64 min)
 	{
@@ -542,7 +542,7 @@ public:
 	}
 	virtual void SetAllowedValues(std::initializer_list<string> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a float CVar."); }
 
-	virtual int  GetType() override                                     { return CVAR_FLOAT; }
+	virtual ECVarType GetType() override                                     { return ECVarType::Float; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
 
@@ -668,7 +668,7 @@ public:
 	virtual void SetAllowedValues(std::initializer_list<float> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed float values on an int CVar."); }
 	virtual void SetAllowedValues(std::initializer_list<string> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed string values on an int CVar."); }
 
-	virtual int  GetType() override                                     { return CVAR_INT; }
+	virtual ECVarType GetType() override                                     { return ECVarType::Int; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
 private: // --------------------------------------------------------------------------------------------
@@ -785,7 +785,7 @@ public:
 	}
 	virtual void SetAllowedValues(std::initializer_list<string> values) override { CRY_ASSERT_MESSAGE(false, "Trying to set allowed string values on a float CVar."); }
 
-	virtual int  GetType() override                                     { return CVAR_FLOAT; }
+	virtual ECVarType GetType() override                                     { return ECVarType::Float; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
 
@@ -898,7 +898,7 @@ public:
 		Set(m_sValue.c_str());
 	}
 
-	virtual int  GetType() override                                     { return CVAR_STRING; }
+	virtual ECVarType GetType() override                                     { return ECVarType::String; }
 
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const override { pSizer->AddObject(this, sizeof(*this)); }
 private: // --------------------------------------------------------------------------------------------

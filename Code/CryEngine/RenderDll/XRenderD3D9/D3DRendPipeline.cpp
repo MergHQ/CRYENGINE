@@ -526,7 +526,8 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 	CRenderMesh::RT_PerFrameTick();
 	CMotionBlur::InsertNewElements();
 	CRenderMesh::UpdateModified();
-	
+
+	// Calcualte AA jitter
 	if (bAllowPostAA)
 	{
 		if (GetS3DRend().IsStereoEnabled())
@@ -537,7 +538,9 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 		}
 		else
 		{
-			GetGraphicsPipeline().GetPostAAStage()->CalculateJitterOffsets(pRenderView);
+			const auto& ro = GetActiveDisplayContext()->GetRenderOutput();
+			if (ro)
+				GetGraphicsPipeline().GetPostAAStage()->CalculateJitterOffsets(ro->GetOutputResolution().x, ro->GetOutputResolution().y, pRenderView);
 		}
 	}
 
@@ -572,7 +575,6 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 
 void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
 {
-	const bool bRecurse = pRenderView->IsRecursive();
 
 	{
 		PROFILE_FRAME(ShadowViewsEndFrame);
@@ -583,6 +585,7 @@ void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
 		}
 	}
 
+	const bool bRecurse = pRenderView->IsRecursive();
 	if (!bRecurse)
 	{
 		gRenDev->GetIRenderAuxGeom()->Submit();
@@ -605,19 +608,19 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReading);
 	}
 
-	// Only Billboard rendering doesn't use CRenderOutput
-	if (!pRenderView->GetRenderOutput() && !pRenderView->IsBillboardGenView())
-	{
-		pRenderView->AssignRenderOutput(GetActiveDisplayContext()->GetRenderOutput());
-		pRenderView->GetRenderOutput()->BeginRendering(pRenderView);
-	}
-
 	const uint32 shaderRenderingFlags = pRenderView->GetShaderRenderingFlags();
 
 	const bool bRecurse = pRenderView->IsRecursive();
 	const bool bSecondaryViewport = (shaderRenderingFlags & SHDF_SECONDARY_VIEWPORT) != 0;
 	const bool bAllowPostProcess = pRenderView->IsPostProcessingEnabled();
 	const CTimeValue Time = iTimer->GetAsyncTime();
+
+	// Only Billboard rendering doesn't use CRenderOutput
+	if (!pRenderView->GetRenderOutput() && !pRenderView->IsBillboardGenView())
+	{
+		pRenderView->AssignRenderOutput(GetActiveDisplayContext()->GetRenderOutput());
+		pRenderView->GetRenderOutput()->BeginRendering(pRenderView);
+	}
 
 	CFlashTextureSourceSharedRT::SetupSharedRenderTargetRT();
 

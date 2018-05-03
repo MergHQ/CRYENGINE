@@ -403,19 +403,22 @@ void CNetEntity::OnNetworkedEntityTransformChanged(EntityTransformationFlagsMask
 	}
 }
 
+void CNetEntity::OnComponentAddedDuringInitialization(IEntityComponent* pComponent) const
+{
+	if (m_pSpawnSerializer == nullptr)
+		return;
+
+	const bool isNetworked = !pComponent->GetComponentFlags().CheckAny({ EEntityComponentFlags::ServerOnly, EEntityComponentFlags::ClientOnly, EEntityComponentFlags::NetNotReplicate });
+	if (isNetworked)
+	{
+		pComponent->NetReplicateSerialize(*m_pSpawnSerializer);
+	}
+}
+
 void CNetEntity::OnEntityInitialized()
 {
-	if(m_pSpawnSerializer != nullptr)
-	{
-		m_pEntity->m_components.ForEach([this](const SEntityComponentRecord& componentRecord) -> EComponentIterationResult
-		{
-			componentRecord.pComponent->NetReplicateSerialize(*m_pSpawnSerializer);
-			return EComponentIterationResult::Continue;
-		});
-
-		// Spawn serializer will be released after entity initialization
-		m_pSpawnSerializer = nullptr;
-	}
+	// Spawn serializer will be released after entity initialization
+	m_pSpawnSerializer = nullptr;
 }
 
 /* static */ void CNetEntity::UpdateSchedulingProfiles()

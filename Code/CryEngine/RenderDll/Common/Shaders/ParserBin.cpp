@@ -2036,7 +2036,7 @@ int32 CParserBin::FindToken(uint32 nStart, uint32 nLast, const uint32* pToks)
 	{
 		int n = 0;
 		uint32 nTok;
-		while (nTok = pToks[n])
+		while ((nTok = pToks[n]))
 		{
 			if (pTokens[nStart] == nTok)
 				return nStart;
@@ -2134,7 +2134,7 @@ int CParserBin::GetNextToken(uint32& nStart, ETokenStorageClass& nTokenStorageCl
 		{
 			SCodeFragment Fr;
 			Fr.m_nFirstToken = m_CurFrame.m_nCurToken;
-			if (nToken >= eT_if && nToken <= eT_elif || nToken == eT_define || nToken == eT_define_2)
+			if ((nToken >= eT_if && nToken <= eT_elif) || nToken == eT_define || nToken == eT_define_2)
 			{
 				while (pTokens[m_CurFrame.m_nCurToken])
 				{
