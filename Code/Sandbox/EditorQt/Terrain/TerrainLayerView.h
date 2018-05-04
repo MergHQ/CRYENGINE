@@ -24,5 +24,3 @@ private:
 	class CTerrainManager*     m_pTerrainManager;
 	bool                       m_selecting;
 };
-
-

@@ -1,14 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "Heightmap.h"
 #include "TerrainBeachGen.h"
-#include ".\Terrain\Heightmap.h"
 
 //min size of water area with beaches
 #define MIN_UNITS_IN_WATER_AREA 8
 #define BOTTOM_LEVEL            (-10000)
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainBeachGenerator::CTerrainBeachGenerator(CHeightmap* pTerrain)
 {
 	m_pFile = 0;
@@ -35,7 +34,6 @@ CTerrainBeachGenerator::CTerrainBeachGenerator(CHeightmap* pTerrain)
 	m_WaterAreaMap.Allocate(m_terrainSize / m_unitSize + 1);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainBeachGenerator::Generate(CFile& file)
 {
 	m_pFile = &file;
@@ -79,7 +77,6 @@ void CTerrainBeachGenerator::Generate(CFile& file)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CTerrainBeachGenerator::GetZSafe(int x, int y)
 {
 	if (x >= 0 && y >= 0 && x < m_terrainSize && y < m_terrainSize)
@@ -93,7 +90,6 @@ float CTerrainBeachGenerator::GetZSafe(int x, int y)
 	return BOTTOM_LEVEL;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CTerrainBeachGenerator::GetZSafe(float fx, float fy)
 {
 	int x = int(fx);
@@ -109,7 +105,6 @@ float CTerrainBeachGenerator::GetZSafe(float fx, float fy)
 	return BOTTOM_LEVEL;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CTerrainBeachGenerator::GetZApr(float x1, float y1)
 {
 	float dDownLandZ;
@@ -148,7 +143,6 @@ float CTerrainBeachGenerator::GetZApr(float x1, float y1)
 	return dDownLandZ;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CTerrainBeachGenerator::MarkWaterAreas()
 {
 	uint16 nMaxAreaId = 0;
@@ -176,7 +170,6 @@ int CTerrainBeachGenerator::MarkWaterAreas()
 	return 1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainBeachGenerator::MakeBeachStage1(CTerrainSectorBeachInfo* pSector)
 {
 	for (int x = pSector->m_nOriginX; x <= pSector->m_nOriginX + m_sectorSize; x += m_unitSize)
@@ -596,4 +589,3 @@ void CTerrainBeachGenerator::MakeBeachStage2(CTerrainSectorBeachInfo* pSector)
 	delete[] m_pVertBufferBeach;
 	m_pVertBufferBeach = 0;
 }
-

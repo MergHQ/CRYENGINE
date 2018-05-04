@@ -24,13 +24,13 @@ namespace Private_TerrainLayerListView
 {
 CItemModelAttribute s_LayerAttributes[] = {
 	Attributes::s_nameAttribute,
-	CItemModelAttribute("Filter Color", eAttributeType_String, CItemModelAttribute::StartHidden, false, ""),
-	CItemModelAttribute("Min Height", eAttributeType_Float, CItemModelAttribute::StartHidden, false, ""),
-	CItemModelAttribute("Max Height", eAttributeType_Float, CItemModelAttribute::StartHidden, false, ""),
-	CItemModelAttribute("Min Angle", eAttributeType_Float, CItemModelAttribute::StartHidden, false, ""),
-	CItemModelAttribute("Max Angle", eAttributeType_Float, CItemModelAttribute::StartHidden, false, ""),
-	CItemModelAttribute("Texture", eAttributeType_String, CItemModelAttribute::StartHidden, false, ""),
-	CItemModelAttribute("Material", eAttributeType_String, CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Filter Color",eAttributeType_String,  CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Min Height",  eAttributeType_Float,   CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Max Height",  eAttributeType_Float,   CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Min Angle",   eAttributeType_Float,   CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Max Angle",   eAttributeType_Float,   CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Texture",     eAttributeType_String,  CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Material",    eAttributeType_String,  CItemModelAttribute::StartHidden, false, ""),
 };
 
 const int s_attributeCount = sizeof(s_LayerAttributes) / sizeof(CItemModelAttribute);
@@ -61,9 +61,9 @@ public:
 	Qt::ItemFlags flags(const QModelIndex& index) const;
 
 private:
-	CTerrainManager*       m_pTerrainManager;
-	int                    m_layersCount;
-	QList<QIcon>           m_previews;
+	CTerrainManager* m_pTerrainManager;
+	int              m_layersCount;
+	QList<QIcon>     m_previews;
 };
 
 QLayerModel::QLayerModel(QWidget* parent, CTerrainManager* pTerrainManager)
@@ -387,4 +387,3 @@ void QTerrainLayerView::mousePressEvent(QMouseEvent* event)
 		}
 	}
 }
-

@@ -38,7 +38,7 @@ private:
 	struct Ui
 	{
 		CTerrainTextureDimensionsUi* m_pTerrainTextureDimensionsUi;
-		QNumericBox*           m_pColorMultiplierSpinBox;
+		QNumericBox*                 m_pColorMultiplierSpinBox;
 		QCheckBox*                   m_pHighQualityCompressionCheckBox;
 	};
 	Ui m_ui;

@@ -15,7 +15,7 @@ public:
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 800, 500); }
 
-	virtual const char*                       GetEditorName() const override       { return "Terrain Editor"; };
+	virtual const char*                       GetEditorName() const override       { return "Terrain Editor"; }
 	void                                      InitTerrainMenu();
 
 	virtual void                              SetLayout(const QVariantMap& state);
@@ -23,4 +23,3 @@ public:
 
 	static class CTerrainTextureDialog*       GetTextureLayerEditor();
 };
-

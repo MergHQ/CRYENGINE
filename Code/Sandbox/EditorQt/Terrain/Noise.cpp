@@ -9,19 +9,6 @@
 #pragma warning (push)
 #pragma warning (disable : 4244)
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-CNoise::CNoise()
-{
-
-}
-
-CNoise::~CNoise()
-{
-
-}
-
 __forceinline float CNoise::Spline(float x, float* knot)
 {
 	/*
@@ -218,4 +205,3 @@ cleanup:
 }
 
 #pragma warning (pop)
-

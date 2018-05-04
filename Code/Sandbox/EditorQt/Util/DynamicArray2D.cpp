@@ -2,20 +2,10 @@
 
 #include "stdafx.h"
 #include "DynamicArray2D.h"
-#include <CryMemory/CrySizer.h>             // ICrySizer
-
-//////////////////////////////////////////////////////////////////////
-// Construction / destruction
-//////////////////////////////////////////////////////////////////////
+#include <CryMemory/CrySizer.h>
 
 CDynamicArray2D::CDynamicArray2D(unsigned int iDimension1, unsigned int iDimension2)
 {
-	////////////////////////////////////////////////////////////////////////
-	// Declare a 2D array on the free store
-	////////////////////////////////////////////////////////////////////////
-
-	unsigned int i;
-
 	// Save the position of the array dimensions
 	m_Dimension1 = iDimension1;
 	m_Dimension2 = iDimension2;
@@ -25,7 +15,7 @@ CDynamicArray2D::CDynamicArray2D(unsigned int iDimension1, unsigned int iDimensi
 	VERIFY(m_Array);
 
 	// Second dimension
-	for (i = 0; i < m_Dimension1; ++i)
+	for (unsigned int i = 0; i < m_Dimension1; ++i)
 	{
 		m_Array[i] = new float[m_Dimension2];
 
@@ -36,13 +26,7 @@ CDynamicArray2D::CDynamicArray2D(unsigned int iDimension1, unsigned int iDimensi
 
 CDynamicArray2D::~CDynamicArray2D()
 {
-	////////////////////////////////////////////////////////////////////////
-	// Remove the 2D array and all its sub arrays from the free store
-	////////////////////////////////////////////////////////////////////////
-
-	unsigned int i;
-
-	for (i = 0; i < m_Dimension1; ++i)
+	for (unsigned int i = 0; i < m_Dimension1; ++i)
 		delete[] m_Array[i];
 
 	delete[] m_Array;
@@ -140,4 +124,3 @@ void CDynamicArray2D::ScaleImage(CDynamicArray2D* pDestination)
 		}
 	}
 }
-

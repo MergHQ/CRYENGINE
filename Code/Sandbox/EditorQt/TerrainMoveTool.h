@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TerrainMoveTool_h__
-#define __TerrainMoveTool_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "EditTool.h"
 #include "Gizmos/ITransformManipulator.h"
@@ -46,7 +41,7 @@ public:
 
 	virtual void   Display(DisplayContext& dc);
 
-	// Ovverides from CEditTool
+	// Overrides from CEditTool
 	bool MouseCallback(CViewport* pView, EMouseEvent event, CPoint& point, int flags);
 
 	// Key down.
@@ -56,7 +51,7 @@ public:
 	void OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& p0, const Vec3& value, int nFlags);
 
 	// Delete itself.
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	void Move(bool bOnlyVegetation = true, bool bOnlyTerrain = true);
 
@@ -74,7 +69,7 @@ public:
 
 	void         SetArchive(CXmlArchive* ar);
 
-	bool         IsNeedMoveTool() { return true; };
+	bool         IsNeedMoveTool() { return true; }
 
 	static void  AddListener(ITerrainMoveToolListener* pListener);
 	static void  RemoveListener(ITerrainMoveToolListener* pListener);
@@ -94,16 +89,16 @@ private:
 
 	//static SMTBox m_source;
 	//static SMTBox m_target;
-	SMTBox      m_source;
-	SMTBox      m_target;
+	SMTBox                 m_source;
+	SMTBox                 m_target;
 
-	bool        m_isSyncHeight;
-	bool        m_onlyVegetation;
-	bool        m_onlyTerrain;
-	bool		m_moveObjects;
+	bool                   m_isSyncHeight;
+	bool                   m_onlyVegetation;
+	bool                   m_onlyTerrain;
+	bool                   m_moveObjects;
 
-	static Vec3 m_dym;
-	static int  m_targetRot;
+	static Vec3            m_dym;
+	static int             m_targetRot;
 
 	ITransformManipulator* m_manipulator;
 
@@ -112,6 +107,3 @@ private:
 	typedef CListenerSet<ITerrainMoveToolListener*> TMoveListener;
 	static TMoveListener ms_listeners;
 };
-
-#endif // __TerrainMoveTool_h__
-

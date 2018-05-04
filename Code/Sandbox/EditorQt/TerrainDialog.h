@@ -9,9 +9,7 @@ struct SNoiseParams;
 class CHeightmap;
 class CTopRendererWnd;
 
-/////////////////////////////////////////////////////////////////////////////
-// CTerrainDialog dialog
-//TODO : This class should be entirely deleted, the UI is not used, but it should be made into a terrain manager 
+//TODO : This class should be entirely deleted, the UI is not used, but it should be made into a terrain manager
 class CTerrainDialog : public CBaseFrameWnd, public IEditorNotifyListener
 {
 	DECLARE_DYNCREATE(CTerrainDialog)
@@ -20,7 +18,7 @@ public:
 	CTerrainDialog();
 	~CTerrainDialog();
 
-	SNoiseParams* GetLastParam() { return m_sLastParam; };
+	SNoiseParams* GetLastParam() { return m_sLastParam; }
 
 	enum { IDD = IDD_TERRAIN };
 
@@ -37,7 +35,7 @@ public:
 	virtual LRESULT OnDockingPaneNotify(WPARAM wParam, LPARAM lParam);
 
 	afx_msg LRESULT OnKickIdle(WPARAM wParam, LPARAM);
-	
+
 	virtual BOOL OnInitDialog();
 	afx_msg void OnTerrainLoad();
 	afx_msg void OnTerrainErase();
@@ -97,7 +95,3 @@ private:
 	//Panes
 	CXTPDockingPane* m_pDockPane_Rollup;
 };
-
-//{{AFX_INSERT_LOCATION}}
-// Microsoft Visual C++ will insert additional declarations immediately before the previous line.
-

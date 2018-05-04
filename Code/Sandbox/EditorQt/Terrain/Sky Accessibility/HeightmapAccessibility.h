@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "HorizonTracker.h"           // CHorizonTracker
+#include "HorizonTracker.h"
 
-#include <math.h>                     // sin()
-#include <vector>                     // STL vector<>
+#include <math.h>
+#include <vector>
 #include "QT/Widgets/QWaitProgress.h"
 
 // you can use CHemisphereSolid
@@ -65,13 +65,13 @@ public:
 	//called when calculation has been finished to post process data if required
 	void OnCalcEnd(SampleType&) {}
 
-protected: // ---------------------------------------------------------------------------------
+protected:
 
 	float m_fScale;           //!<  to scale the input to the intermediate range
 
 	static float CurvedTriangleArea(const float fAngle) { return 1.0f - cosf(fAngle); }
 
-}; // CHemisphereSink_Solid
+};
 
 // ------------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------------
@@ -220,22 +220,22 @@ public:
 				// lines are mainly vertical
 				float dx = fDx / fabsf(fDy);
 
-				CalcHeightmapAccessWedge(inpHeightmap,    //
+				CalcHeightmapAccessWedge(inpHeightmap,
 				                         fAngle,
 				                         0, fDy > 0 ? 1 : -1,                           // line direction
 				                         dx > 0 ? 1 : -1, 0,                            // line start direction (to fill area) = line step direction
-				                         fabsf(dx), m_dwResultWidth, m_dwResultHeight); //
+				                         fabsf(dx), m_dwResultWidth, m_dwResultHeight);
 			}
 			else
 			{
 				// lines are mainly horizontal
 				float dy = fDy / fabsf(fDx);
 
-				CalcHeightmapAccessWedge(inpHeightmap,    //
+				CalcHeightmapAccessWedge(inpHeightmap,
 				                         fAngle,
 				                         fDx > 0 ? 1 : -1, 0,                           // line direction
 				                         0, dy > 0 ? 1 : -1,                            // line start direction (to fill area) = line step direction
-				                         fabsf(dy), m_dwResultHeight, m_dwResultWidth); //
+				                         fabsf(dy), m_dwResultHeight, m_dwResultWidth);
 			}
 		}
 
@@ -251,7 +251,7 @@ public:
 
 		m_fScale = 0.0f;
 
-		return true;    // success
+		return true;
 	}
 
 	const TSampleType GetSampleAt(const unsigned int indwX, const unsigned int indwY) const
@@ -284,14 +284,9 @@ public:
 		}
 	}
 
-	// ---------------------------------------------------------------------------------
-
 	// public to make if more convenient for the user
-
 	THemisphereSink m_Sink;               //!< is
 	bool            m_bTiling;            //!< true with tiling, false=faster
-
-	// ---------------------------------------------------------------------------------
 
 private:
 
@@ -314,8 +309,6 @@ private:
 	unsigned int  m_PartMapping;        //!< mapping to allocation part
 
 	bool          m_SamplesInitialized;   //!< true if samples have been initialized
-
-	// ---------------------------------------------------------------------------------
 
 	//! U is the direction we go always one pixel in positive direction (start point of the lines)
 	//! V is the line direction we go one pixel in negative or in positive or not (depending on iniFix8)
@@ -349,7 +342,7 @@ private:
 			int iX, iY;
 
 			// start position of each line
-			if (iLineDirY == 0)        // mainly horizonal lines
+			if (iLineDirY == 0)        // mainly horizontal lines
 			{
 				iX = iLineDirX > 0 ? 0 : m_dwResultWidth - 1;
 				iY = dwLine;
@@ -436,5 +429,4 @@ private:
 		}
 	}
 
-}; // CHeightmapAccessibility
-
+};

@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __raster_h__
-#define __raster_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CryMath/Cry_Math.h>
 #include "../LightmapCompiler/SimpleTriangleRasterizer.h"
@@ -46,20 +41,6 @@ public:
 		eBS_ZX
 	};
 
-	CBBoxRaster();  //default ctor
-	~CBBoxRaster(); //dtor
-
-	//project once, each subsequent call will invalidate results from before
-	void ExecuteProjectTrianglesOS
-	(
-	  const Vec3& crWorldMin,
-	  const Vec3& crWorldMax,
-	  const Matrix34& crOSToWorldRotMatrix,
-	  const std::vector<SMatChunk>& crChunks,
-	  bool useConservativeFill,
-	  const ITriangleValidator* cpTriangleValidator
-	);//projects triangles into scaled object space raster tables
-
 	//returns result of ray-material query
 	const bool    RayTriangleIntersection(const Vec3& crWSOrigin, const Vec3& crWSDir, const bool cOffsetXY, const float cStepWidth = 1.5f) const;
 
@@ -99,12 +80,6 @@ private:
 
 	static const float cMaxExt;
 };
-
-inline CBBoxRaster::CBBoxRaster()
-{}
-
-inline CBBoxRaster::~CBBoxRaster()
-{}
 
 inline const bool CBBoxRaster::GetEntry(const uint32* const cpBuffer, const uint32 cX, const uint32 cY) const
 {
@@ -178,6 +153,3 @@ inline void CRasterTriangleSink::SetFillMode(const bool cNegative)
 {
 	m_FillMode = cNegative;
 }
-
-#endif // __raster_h__
-

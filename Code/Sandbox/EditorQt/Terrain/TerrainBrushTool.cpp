@@ -142,7 +142,7 @@ bool CBrushTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point
 			// clean the list of affected objects (it is needed only in case if previous eMouseLUp was not called)
 			m_objElevations.clear();
 			m_vegBox.Reset();
-			
+
 			// reset previous brush position
 			s_pointerPosPrev = Vec3(-MAX_TERRAIN_HEIGHT);
 
@@ -403,7 +403,7 @@ bool CFlattenTool::PickHeight(QPoint point)
 void CFlattenTool::PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int tsize, float fInsideRadius, float brushSpeed)
 {
 	pHeightmap->DrawSpot(tx, ty, tsize, fInsideRadius, getBrush().height, getBrush().hardness * brushSpeed,
-		(getBrush().bDisplacement && getBrush().displacementMapData.GetData()) ? &getBrush().displacementMapData : nullptr, getBrush().displacementScale);
+	                     (getBrush().bDisplacement && getBrush().displacementMapData.GetData()) ? &getBrush().displacementMapData : nullptr, getBrush().displacementScale);
 }
 
 IMPLEMENT_DYNCREATE(CFlattenTool, CTerrainTool)
@@ -574,7 +574,7 @@ void CRiseLowerTool::Serialize(Serialization::IArchive& ar)
 void CRiseLowerTool::PaintTerrain(CHeightmap* pHeightmap, int tx, int ty, int tsize, float fInsideRadius, float brushSpeed)
 {
 	pHeightmap->RiseLowerSpot(tx, ty, tsize, fInsideRadius, getBrush().riseHeight, getBrush().hardness * brushSpeed,
-		(getBrush().bDisplacement && getBrush().displacementMapData.GetData()) ? &getBrush().displacementMapData : nullptr, getBrush().displacementScale);
+	                          (getBrush().bDisplacement && getBrush().displacementMapData.GetData()) ? &getBrush().displacementMapData : nullptr, getBrush().displacementScale);
 }
 
 IMPLEMENT_DYNCREATE(CRiseLowerTool, CTerrainTool)

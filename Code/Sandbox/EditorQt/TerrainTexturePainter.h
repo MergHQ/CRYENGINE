@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __terraintexturepainter_h__
-#define __terraintexturepainter_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 class CHeightmap;
 class CLayer;
@@ -64,18 +59,18 @@ public:
 
 	virtual void   Display(DisplayContext& dc);
 
-	// Ovverides from CEditTool
+	// Overrides from CEditTool
 	bool MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 
 	// Key down.
 	bool OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
-	bool OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) { return false; };
+	bool OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) { return false; }
 
 	// Delete itself.
-	void DeleteThis()                         { delete this; };
+	void DeleteThis()                         { delete this; }
 
-	void SetBrush(const CTextureBrush& brush) { m_brush = brush; };
-	void GetBrush(CTextureBrush& brush) const { brush = m_brush; };
+	void SetBrush(const CTextureBrush& brush) { m_brush = brush; }
+	void GetBrush(CTextureBrush& brush) const { brush = m_brush; }
 	void SelectLayer(const CLayer* pLayer);
 	void ReloadLayers();
 
@@ -115,6 +110,3 @@ private:
 
 	friend class CUndoTexturePainter;
 };
-
-#endif // __terraintexturepainter_h__
-

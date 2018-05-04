@@ -11,10 +11,8 @@ struct SEditorPaintBrush;
 class SANDBOX_API CRGBLayer
 {
 public:
-	// constructor
-	CRGBLayer(const char* szFilename);
-	// destructor
-	virtual ~CRGBLayer();
+	explicit CRGBLayer(const char* szFilename);
+	~CRGBLayer();
 
 	// Serialization
 	void Serialize(XmlNodeRef& node, bool bLoading);
@@ -43,7 +41,7 @@ public:
 	// Arguments:
 	//   dwTileX -  0..GetTileCountX()-1
 	//   dwTileY -  0..GetTileCountY()-1
-	//   bRaise - true=raise, flase=lower
+	//   bRaise - true=raise, false=lower
 	bool ChangeTileResolution(const uint32 dwTileX, const uint32 dwTileY, uint32 dwNewSize);
 
 	// 1:1
@@ -223,4 +221,3 @@ private:
 	static const uint32               m_dwMaxTileMemory = 1024 * 1024 * 1024; // Stall free support for up to 16k x 16k terrain texture
 	string                            m_TerrainRGBFileName;
 };
-

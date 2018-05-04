@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __terrainbeachgen_h__
-#define __terrainbeachgen_h__
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////
@@ -114,6 +112,3 @@ private:
 
 	CFile* m_pFile;
 };
-
-#endif // __terrainbeachgen_h__
-

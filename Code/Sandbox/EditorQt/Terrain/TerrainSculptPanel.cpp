@@ -66,4 +66,3 @@ bool QTerrainSculptPanel::CanEditTool(CEditTool* pTool)
 
 	return pTool->IsKindOf(RUNTIME_CLASS(CTerrainTool)) || pTool->IsKindOf(RUNTIME_CLASS(CTerrainMoveTool));
 }
-

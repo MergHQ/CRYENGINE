@@ -1,12 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 /*
    quadtree definition
  */
-#ifndef QUADTREE_H
-#define QUADTREE_H
-
-#pragma once
 
 #include "QuadtreeHelper.h"
 #include <CryCore/Platform/platform.h>
@@ -707,5 +705,3 @@ private:
 #include "QuadtreeUtilities.inl"
 #include "Quadtree.inl"
 #include "QuadtreeNodeLeaf.inl"
-#endif//QUADTREE_H
-

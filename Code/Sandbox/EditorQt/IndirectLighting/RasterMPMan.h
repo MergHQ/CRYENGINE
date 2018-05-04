@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __raster_mpman_h__
-#define __raster_mpman_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Raster.h"
 #include <CryThreading/IThreadManager.h>
@@ -153,6 +148,3 @@ inline CRasterMPMan::CRasterMPMan() : m_ThreadActive(false), m_CoreCount(1)
 	CRasterMPMan::scMPDataCount[0] = 0;
 	CRasterMPMan::scMPDataCount[1] = 0;
 }
-
-#endif // __raster_mpman_h__
-

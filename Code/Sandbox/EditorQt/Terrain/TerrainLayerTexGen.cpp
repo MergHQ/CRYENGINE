@@ -12,13 +12,12 @@
 
 #include "Terrain/TerrainManager.h"
 
-// Sector flags.
+// Sector flags
 enum
 {
 	eSectorLayersValid = 0x04
 };
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainLayerTexGen::CTerrainLayerTexGen(const int resolution)
 {
 	m_bLog = true;
@@ -413,9 +412,6 @@ CLayer* CTerrainLayerTexGen::GetLayer(int index) const
 //////////////////////////////////////////////////////////////////////////
 void CTerrainLayerTexGen::ClearLayers()
 {
-	//	for (int i = 0; i < m_layers.size(); i++)
-	//	{
-	//	}
 	m_layers.clear();
 }
 
@@ -431,4 +427,3 @@ CByteImage* CTerrainLayerTexGen::GetLayerMask(CLayer* layer)
 	}
 	return 0;
 }
-
