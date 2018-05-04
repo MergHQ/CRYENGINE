@@ -273,16 +273,14 @@ void CD3D9Renderer::ChangeViewport(CRenderDisplayContext* pDC, unsigned int view
 	if (m_bDeviceLost)
 		return;
 
-	// This change will propagate to the other dimensions (output and render)
-	// when HandleDisplayPropertyChanges() is called just before rendering
-	pDC->ChangeDisplayResolution(viewPortOffsetX + viewportWidth, viewPortOffsetY + viewportHeight, SRenderViewport(viewPortOffsetX, viewPortOffsetY, viewportWidth, viewportHeight));
-
-	gRenDev->ExecuteRenderThreadCommand([=]
-		{
-			SetCurDownscaleFactor(Vec2(1, 1));
+	gRenDev->ExecuteRenderThreadCommand([=]{
+			// This change will propagate to the other dimensions (output and render)
+			// when HandleDisplayPropertyChanges() is called just before rendering
+			pDC->ChangeDisplayResolution(viewPortOffsetX + viewportWidth, viewPortOffsetY + viewportHeight, SRenderViewport(viewPortOffsetX, viewPortOffsetY, viewportWidth, viewportHeight));
 
 			if (pDC->IsMainViewport())
 			{
+				SetCurDownscaleFactor(Vec2(1, 1));
 				if (auto pRenderOutput = pDC->GetRenderOutput().get())
 				{
 					CRendererResources::OnOutputResolutionChanged(pDC->GetDisplayResolution()[0], pDC->GetDisplayResolution()[1]);

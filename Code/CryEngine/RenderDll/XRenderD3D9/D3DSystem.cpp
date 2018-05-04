@@ -174,7 +174,9 @@ SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayCon
 		key.key.emplace<uint32_t>(pDC->m_uniqueId);
 
 	if (width * height)
-		ResizeContext(pDC.get(), width, height);
+	{
+		pDC->ChangeDisplayResolution(width, height);
+	}
 
 	{
 		AUTO_LOCK(gs_contextLock); // Not thread safe without this
