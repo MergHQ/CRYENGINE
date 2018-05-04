@@ -38,12 +38,11 @@ CCSharpEditorPlugin::CCSharpEditorPlugin()
 	{
 		gEnv->pMonoRuntime->RegisterCompileListener(this);
 
-		OnCompileFinished(gEnv->pMonoRuntime->GetLatestCompileMessage());
+		m_compileMessage = gEnv->pMonoRuntime->GetLatestCompileMessage();
 	}
 
 	// Regenerate the plugins in case the files were changed when the Sandbox was closed
 	RegenerateSolution();
-	ReloadPlugins();
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CCSharpEditorPlugin");
 }
@@ -109,19 +108,10 @@ void CCSharpEditorPlugin::OnFileChange(const char* szFilename, EChangeType type)
 void CCSharpEditorPlugin::OnCompileFinished(const char* szCompileMessage)
 {
 	m_compileMessage = szCompileMessage;
-	bool messageSend = false;
+	
 	for (CSharpMessageListeners::Notifier notifier(m_messageListeners); notifier.IsValid(); notifier.Next())
 	{
 		notifier->OnMessagesUpdated(m_compileMessage);
-		messageSend = true;
-	}
-
-	// If no message was send, it means no window is currently open.
-	// If the message contains content the window is forced open to show any potential errors.
-	if (!messageSend && m_compileMessage.length() > 0)
-	{
-		GetIEditor()->OpenView("C# Output");
-		CryLogAlways(m_compileMessage);
 	}
 }
 
@@ -221,6 +211,20 @@ void CCSharpEditorPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UIN
 			// Got focus back
 			m_isSandboxInFocus = true;
 			UpdatePluginsAndSolution();
+		}
+	}
+}
+
+void CCSharpEditorPlugin::OnEditorNotifyEvent(EEditorNotifyEvent aEventId)
+{
+	if (aEventId == eNotify_OnIdleUpdate)
+	{
+		// If a compile message was sent during compilation, open when Editor is fully initialized
+		if (!m_compileMessage.empty())
+		{
+			GetIEditor()->OpenView("C# Output");
+			CryLogAlways(m_compileMessage);
+			m_compileMessage.clear();
 		}
 	}
 }

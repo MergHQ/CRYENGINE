@@ -24,7 +24,8 @@ class CCSharpEditorPlugin final
 	  public Schematyc::IEnvRegistryListener,
 	  public IFileChangeListener,
 	  public IMonoCompileListener,
-	  public ISystemEventListener
+	  public ISystemEventListener,
+	  public IAutoEditorNotifyListener
 {
 public:
 	// IPlugin
@@ -67,6 +68,10 @@ public:
 	// ISystemEventListener
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 	// ~ISystemEventListener
+
+	// IAutoEditorNotifyListener
+	virtual void OnEditorNotifyEvent(EEditorNotifyEvent aEventId) override;
+	// ~IAutoEditorNotifyListener
 
 	static CCSharpEditorPlugin* GetInstance() { return s_pInstance; }
 

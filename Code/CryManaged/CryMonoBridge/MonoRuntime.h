@@ -147,6 +147,9 @@ private:
 	static void MonoPrintCallback(const char* szMessage, MonoInternals::mono_bool is_stdout);
 	static void MonoPrintErrorCallback(const char* szMessage, MonoInternals::mono_bool is_stdout);
 
+	bool InitializeRuntime();
+	void InitializePluginDomain();
+
 	void RegisterInternalInterfaces();
 
 	void InvokeManagedConsoleCommandNotification(const char* szCommandName, IConsoleCmdArgs* pConsoleCommandArguments);
@@ -155,6 +158,7 @@ private:
 	std::vector<std::shared_ptr<CMonoDomain>> m_domains;
 	std::vector<std::shared_ptr<CManagedNodeCreatorProxy>> m_nodeCreators;
 
+	bool                                        m_initialized = false;
 	std::shared_ptr<CRootMonoDomain>            m_pRootDomain;
 	CAppDomain*                                 m_pPluginDomain;
 	std::vector<std::weak_ptr<IManagedPlugin>>  m_plugins;

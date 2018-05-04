@@ -1259,6 +1259,10 @@ void CSystem::InitGameFramework(SSystemInitParams& startupParams)
 		m_env.pGameFramework = nullptr;
 		return;
 	}
+
+#if !defined(CRY_IS_MONOLITHIC_BUILD)
+	m_gameLibrary.Free();
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
