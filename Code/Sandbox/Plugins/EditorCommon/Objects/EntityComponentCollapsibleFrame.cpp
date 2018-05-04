@@ -21,6 +21,7 @@ public:
 		, m_flags(pAddedComponent->GetComponentFlags())
 		, m_name(pAddedComponent->GetName())
 		, m_transform(pAddedComponent->GetTransform())
+		, m_componentInstanceGUID(pAddedComponent->GetGUID())
 		, m_parentComponentInstanceGUID(pAddedComponent->GetParent() != nullptr ? pAddedComponent->GetParent()->GetGUID() : CryGUID::Null())
 	{
 		// Serialize component properties to buffer
