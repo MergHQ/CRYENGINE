@@ -147,8 +147,8 @@ bool CSvoEnv::Render()
 	CRenderObject* pObjVox = 0;
 	{
 		pObjVox = Cry3DEngineBase::GetIdentityCRenderObject((*CVoxelSegment::m_pCurrPassInfo));
-		pObjVox->m_II.m_AmbColor = Cry3DEngineBase::Get3DEngine()->GetSkyColor();
-		pObjVox->m_II.m_Matrix.SetIdentity();
+		pObjVox->SetAmbientColor(Cry3DEngineBase::Get3DEngine()->GetSkyColor(), (*CVoxelSegment::m_pCurrPassInfo));
+		pObjVox->SetMatrix(Matrix34::CreateIdentity(), (*CVoxelSegment::m_pCurrPassInfo));
 		pObjVox->m_nSort = 0;
 		pObjVox->m_ObjFlags |= (/*FOB_NO_Z_PASS | */ FOB_NO_FOG);
 

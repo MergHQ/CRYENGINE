@@ -2735,6 +2735,8 @@ void COctreeNode::RenderBrushes(TDoublyLinkedList<IRenderNode>* lstObjects, cons
 
 void COctreeNode::RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfoGeneral, float fEntDistance, IRenderNode* pObj, const AABB& objBox, const uint32 passCullMask)
 {
+	CRY_ASSERT_MESSAGE(!passInfoGeneral.IsShadowPass(), "RenderObjectIntoShadowViews expects to get a general pass as input.");
+
 	if (IsShadowCaster(pObj) &&
 	    passCullMask & ~kPassCullMainMask &&
 	    pObj->m_fWSMaxViewDist > fMinShadowCasterViewDist &&

@@ -1741,7 +1741,7 @@ SEnvTexture* SHRenderTarget::GetEnv2D()
 		bool bReflect = false;
 		if (m_nFlags & (FRT_CAMERA_REFLECTED_PLANE | FRT_CAMERA_REFLECTED_WATERPLANE))
 			bReflect = true;
-		pEnvTex = CRendererResources::FindSuitableEnvTex(Pos, Angs, true, 0, false, nullptr, nullptr, nullptr, bReflect, nullptr, NULL);
+		pEnvTex = CRendererResources::FindSuitableEnvTex(Pos, Angs, true, 0, false, nullptr, nullptr, nullptr, bReflect, nullptr, NULL, nullptr);
 	}
 	return pEnvTex;
 }

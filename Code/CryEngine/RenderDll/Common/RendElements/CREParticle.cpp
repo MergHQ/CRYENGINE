@@ -285,7 +285,7 @@ void CRenderer::EF_AddParticle(CREParticle* pParticle, SShaderItem& shaderItem, 
 		int nList;
 		auto nThreadID = gRenDev->GetMainThreadID();
 		EF_GetParticleListAndBatchFlags(nBatchFlags, nList, pRO, shaderItem, passInfo);
-		passInfo.GetRenderView()->AddRenderItem(pParticle, pRO, shaderItem, nList, nBatchFlags, passInfo.GetRendItemSorter(), passInfo.IsShadowPass(), passInfo.IsAuxWindow());
+		passInfo.GetRenderView()->AddRenderItem(pParticle, pRO, shaderItem, nList, nBatchFlags, passInfo, passInfo.GetRendItemSorter(), passInfo.IsShadowPass(), passInfo.IsAuxWindow());
 	}
 }
 
@@ -379,8 +379,8 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 		if (!pRE->AddedToView())
 		{
 			passInfo.GetRenderView()->AddRenderItem(
-				pRE, pRenderObject, shaderItem, nList, nBatchFlags,
-				passInfo.GetRendItemSorter(), passInfo.IsShadowPass(),
+				pRE, pRenderObject, shaderItem, nList, nBatchFlags, 
+				passInfo, passInfo.GetRendItemSorter(), passInfo.IsShadowPass(), 
 				passInfo.IsAuxWindow());
 
 			pRE->SetAddedToView();

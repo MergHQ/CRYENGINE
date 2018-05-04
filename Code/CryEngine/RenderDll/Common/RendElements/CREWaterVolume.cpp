@@ -128,11 +128,11 @@ void CREWaterVolume::mfGetPlane(Plane& pl)
 	pl.d = -pl.d;
 }
 
-void CREWaterVolume::mfCenter(Vec3& vCenter, CRenderObject* pObj)
+void CREWaterVolume::mfCenter(Vec3& vCenter, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
 {
 	vCenter = m_pParams->m_center;
 	if (pObj)
-		vCenter += pObj->GetTranslation();
+		vCenter += pObj->GetMatrix(passInfo).GetTranslation();
 }
 
 bool CREWaterVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool updateInstanceDataOnly)
@@ -439,7 +439,7 @@ void CREWaterVolume::UpdatePerInstanceCB(
 	}
 	else
 	{
-		cb->PerInstanceWorldMatrix = renderObj.m_II.m_Matrix;
+		cb->PerInstanceWorldMatrix = renderObj.GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
 	}
 
 	if (m_CustomData)

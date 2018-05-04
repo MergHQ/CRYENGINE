@@ -211,7 +211,7 @@ CRenderElement* CRenderElement::mfCopyConstruct(void)
 	*re = *this;
 	return re;
 }
-void CRenderElement::mfCenter(Vec3& centr, CRenderObject* pObj)
+void CRenderElement::mfCenter(Vec3& centr, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
 {
 	centr(0, 0, 0);
 }

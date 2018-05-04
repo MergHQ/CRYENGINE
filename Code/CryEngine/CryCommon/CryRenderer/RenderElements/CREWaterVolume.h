@@ -15,7 +15,7 @@ public:
 	virtual ~CREWaterVolume();
 
 	virtual void mfGetPlane(Plane& pl) override;
-	virtual void mfCenter(Vec3& vCenter, CRenderObject* pObj) override;
+	virtual void mfCenter(Vec3& vCenter, CRenderObject* pObj, const SRenderingPassInfo& passInfo) override;
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{

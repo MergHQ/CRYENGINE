@@ -1156,13 +1156,12 @@ void CObjManager::UnregisterForGarbage(CStatObj* pObject)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const IRenderView::SInstanceUpdateInfo& instanceUpdateInfo, const SRenderingPassInfo& passInfo) const
+bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const Matrix34& transformationMatrix, const SRenderingPassInfo& passInfo) const
 {
 	CRY_ASSERT(pRenderObject == nullptr);
-
-	const auto shouldCreatePermanentObject = (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0 && (!pLodValue || !pLodValue->DissolveRefA())) &&
+	const bool shouldGetOrCreatePermanentObject = (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0 && (!pLodValue || !pLodValue->DissolveRefA())) && 
 		!(passInfo.IsRecursivePass() || (pTempData && (pTempData->userData.m_pFoliage || (pTempData->userData.pOwnerNode && (pTempData->userData.pOwnerNode->GetRndFlags() & ERF_SELECTED)))));
-	if (shouldCreatePermanentObject)
+	if (shouldGetOrCreatePermanentObject)
 	{
 		if (pLodValue && pLodValue->LodA() == -1 && pLodValue->LodB() == -1)
 			return true;
@@ -1176,13 +1175,13 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 		int nLod = pLodValue ? CLAMP(0, pLodValue->LodA(), MAX_STATOBJ_LODS_NUM - 1) : 0;
 
 		uint32 passId = passInfo.IsShadowPass() ? 1 : 0;
-		uint32 passMask = 1 << passId;
+		uint32 passMask = BIT(passId);
 
 		pRenderObject = pTempData->GetRenderObject(nLod);
 
 		// Update instance only for dirty objects
-		const auto instanceDataDirty = pRenderObject->m_bInstanceDataDirty;
-		passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, instanceUpdateInfo, instanceDataDirty, passInfo);
+		const auto instanceDataDirty = pRenderObject->m_bInstanceDataDirty[passId];
+		passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, passInfo);
 
 		// Has this object already been filled?
 		int previousMask = CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);
@@ -1191,8 +1190,8 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 			if (instanceDataDirty)
 			{
 				// Update instance matrix
-				pRenderObject->m_II.m_Matrix = instanceUpdateInfo.objectMatrix;
-				pRenderObject->m_bInstanceDataDirty = false;
+				pRenderObject->SetMatrix(transformationMatrix, passInfo);
+				pRenderObject->m_bInstanceDataDirty[passId] = false;
 			}
 
 			if (GetCVars()->e_BBoxes && pTempData && pTempData->userData.pOwnerNode)
@@ -1213,7 +1212,7 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 
 	// We do not have a persistant render object
 	// Always update instance matrix
-	pRenderObject->m_II.m_Matrix = instanceUpdateInfo.objectMatrix;
+	pRenderObject->SetMatrix(transformationMatrix, passInfo);
 
 	return false;
 }
@@ -1235,6 +1234,7 @@ uint32 CObjManager::GetResourcesModificationChecksum(IRenderNode* pOwnerNode) co
 	return nModificationId;
 }
 
+//////////////////////////////////////////////////////////////////////////
 IRenderMesh* CObjManager::GetBillboardRenderMesh(IMaterial* pMaterial)
 {
 	if(!m_pBillboardMesh)

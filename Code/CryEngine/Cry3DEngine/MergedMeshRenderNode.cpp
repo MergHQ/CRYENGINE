@@ -2939,7 +2939,7 @@ void CMergedMeshRenderNode::RenderRenderMesh(
 	const auto objMat = Matrix34::CreateTranslationMat(m_pos);
 
 	CRenderObject* ro = nullptr;
-	if (GetObjManager()->AddOrCreatePersistentRenderObject(type == RUT_STATIC ? pTempData : nullptr, ro, nullptr, IRenderView::SInstanceUpdateInfo{ objMat }, passInfo))
+	if (GetObjManager()->AddOrCreatePersistentRenderObject(type == RUT_STATIC ? pTempData : nullptr, ro, nullptr, objMat, passInfo))
 		return;
 
 	SSectorTextureSet* pTerrainTexInfo = nullptr;
@@ -2965,13 +2965,15 @@ void CMergedMeshRenderNode::RenderRenderMesh(
 			static_cast<COctreeNode*>(m_pOcNode)->GetObjectsBBox());
 	}
 
-	ro->m_II.m_AmbColor = m_rendParams.AmbientColor;
+	ColorF ambientColor = m_rendParams.AmbientColor;
+	ro->SetAmbientColor(ambientColor, passInfo);
 	ro->m_fAlpha = m_rendParams.fAlpha;
 	ro->m_ObjFlags = FOB_TRANS_MASK | FOB_INSHADOW | FOB_DYNAMIC_OBJECT;
 	if (pTerrainTexInfo)
 	{
 		pTempData->userData.bTerrainColorWasUsed = true;
-		ro->m_II.m_AmbColor.a = clamp_tpl((1.0f / 255.f * ucSunDotTerrain), 0.f, 1.f);
+		ambientColor.a = clamp_tpl((1.0f / 255.f * ucSunDotTerrain), 0.f, 1.f);
+		ro->SetAmbientColor(ambientColor, passInfo);
 		ro->m_ObjFlags |= FOB_BLEND_WITH_TERRAIN_COLOR;
 		ro->m_data.m_pTerrainSectorTextureInfo = pTerrainTexInfo;
 		ro->m_nTextureID = -(int)pTerrainTexInfo->nSlot0 - 1; // nTextureID is set only for proper batching, actual texture id is same for all terrain sectors
@@ -4855,7 +4857,7 @@ void CDeformableNode::UpdateInternalDeform(
 	if (pData->m_State == SDeformableData::READY)
 	{
 		FUNCTION_PROFILER_3DENGINE;
-		Matrix34 worldTM = pRenderObject->GetMatrix();
+		Matrix34 worldTM = pRenderObject->GetMatrix(passInfo);
 
 		// Create a new render mesh and dispatch the asynchronous updates
 		size_t indices = group->procGeom->numIdx, vertices = group->procGeom->numVtx;
@@ -4938,7 +4940,7 @@ void CDeformableNode::RenderInternalDeform(
 
 		if (m_bbox.IsReset() == false)
 		{
-			Matrix34 worldTM = pRenderObject->GetMatrix();
+			Matrix34 worldTM = pRenderObject->GetMatrix(passInfo);
 			AABB cbbox = AABB::CreateTransformedAABB(worldTM, m_bbox);
 			QueryColliders(m_Colliders, m_nColliders, cbbox);
 			QueryProjectiles(m_Projectiles, m_nProjectiles, cbbox);
@@ -5042,7 +5044,7 @@ void CDeformableNode::RenderInternalDeform(
 	if (!ro)
 		return;
 	ro->m_ObjFlags |= FOB_DYNAMIC_OBJECT;
-	ro->m_II.m_Matrix.SetTranslationMat(centre);
+	ro->SetMatrix(Matrix34::CreateTranslationMat(centre), passInfo);
 	m_renderMesh->Render(ro, passInfo);
 }
 

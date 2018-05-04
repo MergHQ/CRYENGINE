@@ -806,13 +806,18 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	 */
 
 	Matrix34 transformMatrix = m_Matrix;
-	if (GetRndFlags() & ERF_FOB_NEAREST)
+	bool isNearestObject = (GetRndFlags() & ERF_FOB_NEAREST) != 0;
+	if (isNearestObject)
 	{
 		if (passInfo.IsRecursivePass()) // Nearest objects are not rendered in the recursive passes.
 			return;
 
-		// Nearest objects recalculate instance matrix every frame
-		CalcNearestTransform(transformMatrix, passInfo);
+		bool isNearestShadowPass = passInfo.IsShadowPass() && passInfo.GetIRenderView()->GetShadowFrustumOwner()->m_eFrustumType == ShadowMapFrustum::e_Nearest;
+		if (passInfo.IsGeneralPass() || isNearestShadowPass)
+		{
+			// Nearest objects recalculate instance matrix every frame
+			CalcNearestTransform(transformMatrix, passInfo);
+		}
 	}
 
 	auto pTempData = m_pTempData.load();
@@ -823,16 +828,16 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	}
 
 	CRenderObject* pObj = nullptr;
-	if (m_pFoliage || m_pDeform || (m_dwRndFlags & ERF_HUD))
+	if (m_pFoliage || m_pDeform || (m_dwRndFlags & ERF_HUD) || isNearestObject)
 	{
 		// Foliage and deform do not support permanent render objects
 		// HUD is managed in custom render-lists and also doesn't support it
 		pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
-		pObj->m_II.m_Matrix = transformMatrix;
+		pObj->SetMatrix(transformMatrix, passInfo);
 	}
 	if (!pObj)
 	{
-		if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pObj, &lodValue, IRenderView::SInstanceUpdateInfo{ transformMatrix }, passInfo))
+		if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pObj, &lodValue, transformMatrix, passInfo))
 			return;
 	}
 
@@ -888,9 +893,9 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	// temp fix to update ambient color (Vlad please review!)
 	pObj->m_nClipVolumeStencilRef = userData.m_pClipVolume ? userData.m_pClipVolume->GetStencilRef() : 0;
 	if (m_pOcNode && m_pOcNode->GetVisArea())
-		pObj->m_II.m_AmbColor = m_pOcNode->GetVisArea()->GetFinalAmbientColor();
+		pObj->SetAmbientColor(m_pOcNode->GetVisArea()->GetFinalAmbientColor(), passInfo);
 	else
-		pObj->m_II.m_AmbColor = Get3DEngine()->GetSkyColor();
+		pObj->SetAmbientColor(Get3DEngine()->GetSkyColor(), passInfo);
 	//////////////////////////////////////////////////////////////////////////
 	pObj->m_editorSelectionID = m_nEditorSelectionID;
 

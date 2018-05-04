@@ -167,7 +167,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 			Ang3 Angs            = CCamera::CreateAnglesYPR(orientation);
 			Vec3 Pos             = passInfo.GetCamera().GetPosition();
 			bool bNeedUpdate     = false;
-			pEnvTex = CRendererResources::FindSuitableEnvTex(Pos, Angs, false, -1, false, pShader, pRes, pObj, bReflect, pRE, &bNeedUpdate);
+			pEnvTex = CRendererResources::FindSuitableEnvTex(Pos, Angs, false, -1, false, pShader, pRes, pObj, bReflect, pRE, &bNeedUpdate, &passInfo);
 
 			if (!bNeedUpdate)
 			{
@@ -460,7 +460,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 			//Pl.d = -Pl.d;
 			if (pObj)
 			{
-				Matrix44 mat = pObj->m_II.m_Matrix.GetTransposed();
+				Matrix44 mat = pObj->GetMatrix(passInfo).GetTransposed();
 				Pl = TransformPlane(mat, Pl);
 			}
 			if ((vPrevPos | Pl.n) - Pl.d < 0)

@@ -356,7 +356,7 @@ void CREFogVolume::UpdatePerInstanceCB(render_element::fogvolume::SCompiledFogVo
 
 	CryStackAllocWithSize(render_element::fogvolume::SPerInstanceConstantBuffer, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-	cb->objMatrix = renderObj.m_II.m_Matrix;
+	cb->objMatrix = renderObj.GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
 	cb->invObjSpaceMatrix = m_matWSInv;
 	cb->globalDensity = Vec4(m_globalDensity, 1.44269502f * m_globalDensity, 0, 0);
 	cb->densityOffset = Vec4(m_densityOffset, m_densityOffset, m_densityOffset, m_densityOffset);

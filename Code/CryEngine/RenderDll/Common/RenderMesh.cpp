@@ -3071,7 +3071,7 @@ void CRenderMesh::AddRenderElements(IMaterial *pIMatInfo, CRenderObject *pObj, c
 		IShader* pShader = pIMatInfo->GetShaderItem().m_pShader;
 		bool bIsTerrainShader = pShader ? (pShader->GetShaderType() == eST_Terrain) : false;
 
-		if((nList == EFSLIST_TERRAINLAYER || bIsTerrainShader) && pObj->GetMatrix().GetTranslation().GetLength()>1)
+		if((nList == EFSLIST_TERRAINLAYER || bIsTerrainShader) && pObj->GetMatrix(passInfo).GetTranslation().GetLength()>1)
 		{
 			pIMatInfo = gRenDev->m_pTerrainDefaultMaterial;
 

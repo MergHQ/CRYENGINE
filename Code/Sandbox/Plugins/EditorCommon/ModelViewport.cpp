@@ -608,7 +608,7 @@ void CModelViewport::OnRender()
 void CModelViewport::DrawSkyBox(const SRenderingPassInfo& passInfo)
 {
 	CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
-	pObj->m_II.m_Matrix.SetTranslationMat(GetViewTM().GetTranslation());
+	pObj->SetMatrix(Matrix34::CreateTranslationMat(GetViewTM().GetTranslation()), passInfo);
 
 	if (m_pSkyboxName)
 	{

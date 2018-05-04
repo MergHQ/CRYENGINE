@@ -2030,7 +2030,7 @@ void C3DEngine::RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo
 			CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 			if (!pObj)
 				return;
-			pObj->m_II.m_Matrix.SetTranslationMat(passInfo.GetCamera().GetPosition());
+			pObj->SetMatrix(Matrix34::CreateTranslationMat(passInfo.GetCamera().GetPosition()), passInfo);
 			pObj->m_ObjFlags |= FOB_TRANS_TRANSLATE;
 			pObj->m_pRenderNode = 0;//m_pREHDRSky;
 			pObj->m_fSort = fForceDrawLastSortOffset; // force sky to draw last
@@ -2068,8 +2068,8 @@ void C3DEngine::RenderSkyBox(IMaterial* pMat, const SRenderingPassInfo& passInfo
 			CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 			if (!pObj)
 				return;
-			pObj->m_II.m_Matrix.SetTranslationMat(passInfo.GetCamera().GetPosition());
-			pObj->m_II.m_Matrix = pObj->m_II.m_Matrix * Matrix33::CreateRotationZ(DEG2RAD(m_fSkyBoxAngle));
+			Matrix34 mat = Matrix34::CreateTranslationMat(passInfo.GetCamera().GetPosition());
+			pObj->SetMatrix(mat * Matrix33::CreateRotationZ(DEG2RAD(m_fSkyBoxAngle)), passInfo);
 			pObj->m_ObjFlags |= FOB_TRANS_TRANSLATE | FOB_TRANS_ROTATE;
 			pObj->m_fSort = fForceDrawLastSortOffset; // force sky to draw last
 

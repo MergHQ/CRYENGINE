@@ -26,7 +26,7 @@ public:
 	}
 	void  mfGetPlane(Plane& pl);
 
-	void  mfCenter(Vec3& Pos, CRenderObject* pObj);
+	void  mfCenter(Vec3& Pos, CRenderObject* pObj, const SRenderingPassInfo& passInfo);
 
 	void* mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags);
 	bool  mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation = false);

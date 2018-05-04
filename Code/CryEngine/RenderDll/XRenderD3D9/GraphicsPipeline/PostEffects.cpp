@@ -2074,7 +2074,8 @@ void CHud3DPass::SetShaderParams(
 
 	const CRenderObject* pRO = data.pRO;
 	Matrix44A mObjCurr, mViewProj;
-	mObjCurr = pRO->m_II.m_Matrix.GetTransposed();
+	mObjCurr = pRO->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
+	mObjCurr.Transpose();
 
 	// Render in camera space to remove precision bugs
 	const bool bCameraSpace = (pRO->m_ObjFlags & FOB_NEAREST) ? true : false;

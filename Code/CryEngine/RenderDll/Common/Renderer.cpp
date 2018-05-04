@@ -1423,7 +1423,7 @@ void CRenderer::EF_CheckLightMaterial(SRenderLight* pLight, uint16 nRenderLightI
 		{
 			CRenderObject* pRO = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 			pRO->m_fAlpha        = 1.0f;
-			pRO->m_II.m_AmbColor = Vec3(0, 0, 0);
+			pRO->SetAmbientColor(Vec3(0, 0, 0), passInfo);
 
 			SRenderObjData* pOD = pRO->GetObjData();
 
@@ -1432,8 +1432,8 @@ void CRenderer::EF_CheckLightMaterial(SRenderLight* pLight, uint16 nRenderLightI
 			pOD->m_fTempVars[3] = pLight->m_fRadius;
 			pOD->m_nLightID     = nRenderLightID;
 
-			pRO->m_II.m_AmbColor = pLight->m_Color;
-			pRO->m_II.m_Matrix   = pLight->m_ObjMatrix;
+			pRO->SetAmbientColor(pLight->m_Color, passInfo);
+			pRO->SetMatrix(pLight->m_ObjMatrix, passInfo);
 			pRO->m_ObjFlags     |= FOB_TRANS_MASK;
 
 			CRenderElement* pRE = pRendElemBase->Get(0);
@@ -3263,7 +3263,7 @@ void IRenderer::SDrawCallCountInfo::Update(CRenderObject* pObj, IRenderMesh* pRM
 {
 	if (((IRenderNode*)pObj->m_pRenderNode))
 	{
-		pPos = pObj->GetTranslation();
+		pPos = pObj->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig()).GetTranslation();
 
 		if (meshName[0] == '\0')
 		{

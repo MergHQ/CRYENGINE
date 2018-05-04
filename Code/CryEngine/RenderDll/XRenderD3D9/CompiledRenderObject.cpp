@@ -151,7 +151,7 @@ void CCompiledRenderObject::UpdatePerInstanceCB(void* pData, size_t size)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject, const IRenderView::SInstanceUpdateInfo& instanceInfo)
+void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRenderObject)
 {
 	const CCompiledRenderObject* pRootCompiled = pRenderObject->m_pCompiledObject;
 	if (pRootCompiled && pRootCompiled != this && pRootCompiled->m_perInstanceCB)
@@ -200,7 +200,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		m_bDynamicInstancingPossible = false;
 
 	// Common shader per instance data.
-	m_instanceShaderData.matrix = instanceInfo.objectMatrix;
+	m_instanceShaderData.matrix = pRenderObject->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
 	m_instanceShaderData.dissolve = dissolve;
 	m_instanceShaderData.tesselationPatchId = tessellationPatchIDOffset;
 	m_instanceShaderData.vegetationBendingRadius = pRenderObject->m_vegetationBendingData.verticalRadius;
@@ -214,7 +214,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 		CryStackAllocWithSize(HLSL_PerInstanceConstantBuffer_TerrainVegetation, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		cb->PerInstanceWorldMatrix = instanceInfo.objectMatrix;
+		cb->PerInstanceWorldMatrix = pRenderObject->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
 		cb->PerInstancePrevWorldMatrix = Matrix34(objPrevMatr);
 
 		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
@@ -250,7 +250,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 		CryStackAllocWithSizeCleared(HLSL_PerInstanceConstantBuffer_Skin, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		cb->PerInstanceWorldMatrix = instanceInfo.objectMatrix;
+		cb->PerInstanceWorldMatrix = pRenderObject->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
 		cb->PerInstancePrevWorldMatrix = Matrix34(objPrevMatr);
 
 		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
@@ -292,7 +292,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 		// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
 		CryStackAllocWithSize(HLSL_PerInstanceConstantBuffer_Base, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-		cb->PerInstanceWorldMatrix = instanceInfo.objectMatrix;
+		cb->PerInstanceWorldMatrix = pRenderObject->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
 		cb->PerInstancePrevWorldMatrix = Matrix34(objPrevMatr);
 		// [x=VegetationBendingVerticalRadius, y=VegetationBendingScale, z=tessellation patch id offset, w=dissolve]
 		cb->PerInstanceCustomData =
@@ -307,7 +307,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 
 		cb->PerInstanceCustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
 
-		ColorF& ambColor = pRenderObject->m_II.m_AmbColor;
+		ColorF ambColor = pRenderObject->GetAmbientColor(gcpRendD3D->GetObjectAccessorThreadConfig());
 		uint32 ambColorPacked =
 			((static_cast<uint32>(ambColor.r * 255.0f) & 0xFF) << 24)
 			| ((static_cast<uint32>(ambColor.g * 255.0f) & 0xFF) << 16)
@@ -317,6 +317,8 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 
 		UpdatePerInstanceCB(cb, cbSize);
 	}
+
+	CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_PerInstanceConstantBuffer);
 }
 
 void CCompiledRenderObject::CompileInstancingData(CRenderObject* pRenderObject, bool bForce)
@@ -369,6 +371,7 @@ void CCompiledRenderObject::CompilePerInstanceExtraResources(CRenderObject* pRen
 	{
 		m_perInstanceExtraResources = pGraphicsPipeline.GetDefaultInstanceExtraResourceSet();
 		assert(m_perInstanceExtraResources && m_perInstanceExtraResources->IsValid() && "Bad shared default resources");
+		CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_PerInstanceExtraResources);
 		return;
 	}
 
@@ -415,6 +418,8 @@ void CCompiledRenderObject::CompilePerInstanceExtraResources(CRenderObject* pRen
 
 	m_perInstanceExtraResources = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 	m_perInstanceExtraResources->Update(perInstanceExtraResources);
+
+	CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_PerInstanceExtraResources);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -484,7 +489,7 @@ void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTR
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const IRenderView::SInstanceUpdateInfo& instanceInfo, CRenderView *pRenderView, bool updateInstanceDataOnly)
+bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const EObjectCompilationOptions& compilationOptions, CRenderView *pRenderView)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
@@ -493,6 +498,8 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const IRenderV
 
 	m_pRO = pRenderObject;
 	const bool bMuteWarnings = true;  // @TODO: Remove later
+
+	bool updateInstanceDataOnly = (compilationOptions & eObjCompilationOption_PerInstanceDataOnly) == compilationOptions;
 
 	m_bCustomRenderElement = false;
 
@@ -552,8 +559,11 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const IRenderV
 		m_pTessellationAdjacencyBuffer = reinterpret_cast<CGpuBuffer*>(geomInfo.pTessellationAdjacencyBuffer);
 	}
 
-	CompilePerInstanceConstantBuffer(pRenderObject, instanceInfo);
-	CompilePerInstanceExtraResources(pRenderObject);
+	if (compilationOptions & eObjCompilationOption_PerInstanceConstantBuffer)
+		CompilePerInstanceConstantBuffer(pRenderObject);
+
+	if (compilationOptions & eObjCompilationOption_PerInstanceExtraResources)
+		CompilePerInstanceExtraResources(pRenderObject);
 
 	// Data may come in later
 	if (!m_perInstanceExtraResources || !m_perInstanceExtraResources->IsValid())
@@ -589,15 +599,20 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const IRenderV
 	m_materialResourceSet = pResources->m_pCompiledResourceSet;
 
 	// Fill stream pointers.
-	m_indexStreamSet = GetDeviceObjectFactory().CreateIndexStreamSet(&geomInfo.indexStream);
-	m_vertexStreamSet = GetDeviceObjectFactory().CreateVertexStreamSet(geomInfo.nNumVertexStreams, &geomInfo.vertexStreams[0]);
+	if (compilationOptions & eObjCompilationOption_InputStreams)
+	{
+		m_indexStreamSet = GetDeviceObjectFactory().CreateIndexStreamSet(&geomInfo.indexStream);
+		m_vertexStreamSet = GetDeviceObjectFactory().CreateVertexStreamSet(geomInfo.nNumVertexStreams, &geomInfo.vertexStreams[0]);
 
-	m_nNumVertexStreams = geomInfo.nNumVertexStreams;
-	m_nLastVertexStreamSlot = geomInfo.CalcLastStreamSlot();
+		m_nNumVertexStreams = geomInfo.nNumVertexStreams;
+		m_nLastVertexStreamSlot = geomInfo.CalcLastStreamSlot();
 
-	m_drawParams[eDrawParam_General].m_nNumIndices = m_drawParams[eDrawParam_Shadow].m_nNumIndices = geomInfo.nNumIndices;
-	m_drawParams[eDrawParam_General].m_nStartIndex = m_drawParams[eDrawParam_Shadow].m_nStartIndex = geomInfo.nFirstIndex;
-	m_drawParams[eDrawParam_General].m_nVerticesCount = m_drawParams[eDrawParam_Shadow].m_nVerticesCount = geomInfo.nNumVertices;
+		m_drawParams[eDrawParam_General].m_nNumIndices = m_drawParams[eDrawParam_Shadow].m_nNumIndices = geomInfo.nNumIndices;
+		m_drawParams[eDrawParam_General].m_nStartIndex = m_drawParams[eDrawParam_Shadow].m_nStartIndex = geomInfo.nFirstIndex;
+		m_drawParams[eDrawParam_General].m_nVerticesCount = m_drawParams[eDrawParam_Shadow].m_nVerticesCount = geomInfo.nNumVertices;
+
+		CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_InputStreams);
+	}
 
 	if (pRenderObject->m_bPermanent && reType == eDATA_Mesh)
 	{
@@ -622,31 +637,36 @@ bool CCompiledRenderObject::Compile(CRenderObject* pRenderObject, const IRenderV
 	}
 
 	// Create Pipeline States
-	SGraphicsPipelineStateDescription psoDescription(pRenderObject, pRenderElement, m_shaderItem, TTYPE_GENERAL, geomInfo.eVertFormat, 0 /*geomInfo.CalcStreamMask()*/, ERenderPrimitiveType(geomInfo.primitiveType));
-	if (m_pInstancingConstBuffer)
+	if(compilationOptions & eObjCompilationOption_PipelineState)
 	{
-		//#TODO: Rename HWSR_ENVIRONMENT_CUBEMAP to HWSR_GEOM_INSTANCING
-		psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ENVIRONMENT_CUBEMAP];  // Enable flag to use static instancing
-	}
-	if (pRenderView->IsBillboardGenView())
-		psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_SPRITE];               // Enable flag to output alpha in G-Buffer shader
-
-	// Issue the barriers on the core command-list, which executes directly before the Draw()s in multi-threaded jobs
-	PrepareForUse(GetDeviceObjectFactory().GetCoreCommandList(), false);
-
-	if (!gcpRendD3D->GetGraphicsPipeline().CreatePipelineStates(m_pso, psoDescription, pResources->m_pipelineStateCache.get()))
-	{
-		m_bIncomplete = true;
-
-		if (!CRenderer::CV_r_shadersAllowCompilation)
+		SGraphicsPipelineStateDescription psoDescription(pRenderObject, pRenderElement, m_shaderItem, TTYPE_GENERAL, geomInfo.eVertFormat, 0 /*geomInfo.CalcStreamMask()*/, ERenderPrimitiveType(geomInfo.primitiveType));
+		if (m_pInstancingConstBuffer)
 		{
-			if (!bMuteWarnings) Warning("[CCompiledRenderObject] Compile failed, PSO creation failed");
-			return true;
+			//#TODO: Rename HWSR_ENVIRONMENT_CUBEMAP to HWSR_GEOM_INSTANCING
+			psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_ENVIRONMENT_CUBEMAP];  // Enable flag to use static instancing
 		}
-		else
+		if (pRenderView->IsBillboardGenView())
+			psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_SPRITE];               // Enable flag to output alpha in G-Buffer shader
+
+		// Issue the barriers on the core command-list, which executes directly before the Draw()s in multi-threaded jobs
+		PrepareForUse(GetDeviceObjectFactory().GetCoreCommandList(), false);
+
+		if (!gcpRendD3D->GetGraphicsPipeline().CreatePipelineStates(m_pso, psoDescription, pResources->m_pipelineStateCache.get()))
 		{
-			return false;  // Shaders might still compile; try recompiling object later
+			m_bIncomplete = true;
+
+			if (!CRenderer::CV_r_shadersAllowCompilation)
+			{
+				if (!bMuteWarnings) Warning("[CCompiledRenderObject] Compile failed, PSO creation failed");
+				return true;
+			}
+			else
+			{
+				return false;  // Shaders might still compile; try recompiling object later
+			}
 		}
+
+		CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_PipelineState);
 	}
 
 	m_bIncomplete = false;

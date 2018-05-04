@@ -318,7 +318,7 @@ void CWaterWaveRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 
 	// Fill in data for render object
 
-	pRenderObj->m_II.m_Matrix = m_pWorldTM;
+	pRenderObj->SetMatrix(m_pWorldTM, passInfo);
 	pRenderObj->m_fSort = 0;
 	pRenderObj->m_ObjFlags |= FOB_TRANS_MASK;
 	SRenderObjData* pOD = pRenderObj->GetObjData();

@@ -19,6 +19,7 @@ class CPermanentRenderObject;
 struct SGraphicsPipelinePassContext;
 class CRenderPolygonDataPool;
 class CREClientPoly;
+enum EObjectCompilationOptions : uint8;
 
 //////////////////////////////////////////////////////////////////////////
 // Contain information about view need to render
@@ -140,7 +141,7 @@ public:
 	virtual CryJobState*         GetWriteMutex() override { return &m_jobstate_Write; };
 
 	virtual void                 AddRenderObject(CRenderElement* pRenderElement, SShaderItem& pShaderItem, CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo, int list, int afterWater) threadsafe final;
-	virtual void                 AddPermanentObject(CRenderObject* pObject, const SInstanceUpdateInfo& pInstanceUpdateInfo, bool instanceDataDirty, const SRenderingPassInfo& passInfo) final;
+	virtual void                 AddPermanentObject(CRenderObject* pObject, const SRenderingPassInfo& passInfo) final;
 
 	virtual void                 SetGlobalFog(const SRenderGlobalFogDescription& fogDescription) final { m_globalFogDescription = fogDescription; };
 
@@ -202,11 +203,11 @@ public:
 	RenderItems& GetRenderItems(int nRenderList);
 	uint32       GetBatchFlags(int nRenderList) const;
 
-	void         AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags,
-	                           SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward) threadsafe;
+	void         AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_POINTER pObj, const SShaderItem& shaderItem, uint32 nList, uint32 nBatchFlags, const SRenderingPassInfo& passInfo,
+							   SRendItemSorter sorter, bool bShadowPass, bool bForceOpaqueForward) threadsafe;
 
 	bool       CheckPermanentRenderObjects() const { return !m_permanentObjects.empty(); }
-	void       AddPermanentObjectImpl(CPermanentRenderObject* pObject, const SInstanceUpdateInfo& pInstanceUpdateInfo, bool instanceDataDirty, SRendItemSorter sorter, int shadowFrustumSide);
+	void       AddPermanentObjectImpl(CPermanentRenderObject* pObject, const SRenderingPassInfo& passInfo);
 
 	ItemsRange GetItemsRange(ERenderListID renderList);
 
@@ -455,8 +456,7 @@ private:
 	struct SPermanentRenderObjectCompilationData
 	{
 		CPermanentRenderObject* pObject;
-		SInstanceUpdateInfo     instanceUpdateInfo;
-		bool                    updateInstanceDataOnly;
+		EObjectCompilationOptions     compilationFlags;
 	};
 	lockfree_add_vector<SPermanentRenderObjectCompilationData> m_permanentRenderObjectsToCompile;
 
@@ -473,7 +473,6 @@ private:
 		CPermanentRenderObject* pRenderObject;
 		uint32                  itemSorter;
 		int                     shadowFrustumSide;
-		SInstanceUpdateInfo     instanceUpdateInfo;
 		bool                    requiresInstanceDataUpdate;
 	};
 	lockfree_add_vector<SPermanentObjectRecord> m_permanentObjects;
@@ -515,7 +514,7 @@ private:
 		CThreadSafeRendererContainer<AABB>                            m_nearestCasterBoxes;
 
 		void Clear();
-		void AddNearestCaster(CRenderObject* pObj);
+		void AddNearestCaster(CRenderObject* pObj, const SRenderingPassInfo& passInfo);
 		void CreateFrustumGroups();
 		void PrepareNearestShadows();
 	};

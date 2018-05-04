@@ -1657,7 +1657,7 @@ Ang3 sDeltAngles(Ang3& Ang0, Ang3& Ang1)
 	return out;
 }
 
-SEnvTexture* CRendererResources::FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool bMustExist, int RendFlags, bool bUseExistingREs, CShader* pSH, CShaderResources* pRes, CRenderObject* pObj, bool bReflect, CRenderElement* pRE, bool* bMustUpdate)
+SEnvTexture* CRendererResources::FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool bMustExist, int RendFlags, bool bUseExistingREs, CShader* pSH, CShaderResources* pRes, CRenderObject* pObj, bool bReflect, CRenderElement* pRE, bool* bMustUpdate, const SRenderingPassInfo* pPassInfo)
 {
 	SEnvTexture* cm = NULL;
 	float time0 = iTimer->GetAsyncCurTime();
@@ -1681,9 +1681,13 @@ SEnvTexture* CRendererResources::FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool 
 			objPos = pl.MirrorPosition(Vec3(0, 0, 0));
 		}
 		else if (pRE)
-			pRE->mfCenter(objPos, pObj);
+			pRE->mfCenter(objPos, pObj, *pPassInfo);
 		else
-			objPos = pObj->GetTranslation();
+		{
+			CRY_ASSERT(!pPassInfo);
+			CRY_ASSERT(!gcpRendD3D->m_pRT->IsRenderThread());
+			objPos = pObj->GetMatrix(*pPassInfo).GetTranslation();
+		}
 	}
 	float dist = 999999;
 	for (i = 0; i < MAX_ENVTEXTURES; i++)

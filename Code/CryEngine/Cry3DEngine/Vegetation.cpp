@@ -236,7 +236,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	const auto& objMat = userData.objMat;
 
 	CRenderObject* pRenderObject = nullptr;
-	if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pRenderObject, &lodValue, IRenderView::SInstanceUpdateInfo{ objMat }, passInfo))
+	if (GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pRenderObject, &lodValue, objMat, passInfo))
 	{
 		if (GetCVars()->e_StaticInstancing == 3 && m_pInstancingInfo)
 			DrawBBox(GetBBox());
@@ -310,10 +310,9 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	else if (vegetGroup.GetStatObj())
 		pRenderObject->m_pCurrMaterial = vegetGroup.GetStatObj()->GetMaterial();
 
-	pRenderObject->m_II.m_AmbColor.a = vegetGroup.fBrightness;
-
-	if (pRenderObject->m_II.m_AmbColor.a > 1.f)
-		pRenderObject->m_II.m_AmbColor.a = 1.f;
+	ColorF color = pRenderObject->GetAmbientColor(passInfo);
+	color.a = vegetGroup.fBrightness > 1.f ? 1.f : vegetGroup.fBrightness;
+	pRenderObject->SetAmbientColor(color, passInfo);
 
 	float fRenderQuality = vegetGroup.bUseSprites ?
 	                       min(1.f, max(1.f - fEntDistance2D / GetSpriteSwitchDist(), 0.f)) :
@@ -361,7 +360,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 		SRenderObjData* pOD = pRenderObject->GetObjData();
 		if (pOD)
 		{
-			pOD->m_pSkinningData = pFoliage->GetSkinningData(pRenderObject->m_II.m_Matrix, passInfo);
+			pOD->m_pSkinningData = pFoliage->GetSkinningData(pRenderObject->GetMatrix(passInfo), passInfo);
 			pRenderObject->m_ObjFlags |= FOB_SKINNED | FOB_DYNAMIC_OBJECT;
 			pFoliage->SetFlags(pFoliage->GetFlags() & ~IFoliage::FLAG_FROZEN | -(int)(pRenderObject->m_nMaterialLayers & MTL_LAYER_FROZEN) & IFoliage::FLAG_FROZEN);
 		}
@@ -447,14 +446,15 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 				matRotZ.SetIdentity();
 			}
 
+			Matrix34 mat;
 			// set sprite scale
-			pRenderObject->m_II.m_Matrix.SetScale(Vec3(pStatObj->GetRadiusVert() * 2.f * GetScale()));
-
+			mat.SetScale(Vec3(pStatObj->GetRadiusVert() * 2.f * GetScale()));
 			// set instance size
-			pRenderObject->m_II.m_Matrix = matRotZ * pRenderObject->m_II.m_Matrix;
-
+			mat = matRotZ * mat;
 			// set sprite translation
-			pRenderObject->m_II.m_Matrix.SetTranslation(m_vPos + matRotZ * pStatObj->GetVegCenter() * GetScale());
+			mat.SetTranslation(m_vPos + matRotZ * pStatObj->GetVegCenter() * GetScale());
+			
+			pRenderObject->SetMatrix(mat, passInfo);
 
 			// disable selection on sprites
 			pRenderObject->m_editorSelectionID = 0;

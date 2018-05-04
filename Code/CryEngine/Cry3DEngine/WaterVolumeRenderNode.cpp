@@ -751,11 +751,11 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 			// fill in data for render object
 			if (!IsAttachedToEntity())
 			{
-				pROVol->m_II.m_Matrix.SetIdentity();
+				pROVol->SetMatrix(Matrix34::CreateIdentity(), passInfo);
 			}
 			else
 			{
-				pROVol->m_II.m_Matrix = m_parentEntityWorldTM;
+				pROVol->SetMatrix(m_parentEntityWorldTM, passInfo);
 				pROVol->m_ObjFlags |= FOB_TRANS_MASK;
 			}
 			pROVol->m_fSort = 0;
@@ -778,11 +778,11 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 		// fill in data for render object
 		if (!IsAttachedToEntity())
 		{
-			pROSurf->m_II.m_Matrix.SetIdentity();
+			pROSurf->SetMatrix(Matrix34::CreateIdentity(), passInfo);
 		}
 		else
 		{
-			pROSurf->m_II.m_Matrix = m_parentEntityWorldTM;
+			pROSurf->SetMatrix(m_parentEntityWorldTM, passInfo);
 			pROSurf->m_ObjFlags |= FOB_TRANS_MASK;
 		}
 		pROSurf->m_fSort = 0;

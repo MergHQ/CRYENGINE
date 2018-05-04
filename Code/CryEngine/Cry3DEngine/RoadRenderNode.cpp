@@ -485,12 +485,12 @@ void CRoadRenderNode::Render(const SRendParams& RendParams, const SRenderingPass
 	const auto objMat = Matrix34::CreateTranslationMat(vWSBoxCenter);
 
 	CRenderObject* pObj = nullptr;
-	if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData.load(), pObj, nullptr, IRenderView::SInstanceUpdateInfo{ objMat }, passInfo))
+	if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData.load(), pObj, nullptr, objMat, passInfo))
 		return;
 
 	pObj->m_pRenderNode = this;
 	pObj->m_ObjFlags |= RendParams.dwFObjFlags;
-	pObj->m_II.m_AmbColor = RendParams.AmbientColor;
+	pObj->SetAmbientColor(RendParams.AmbientColor, passInfo);
 	pObj->m_editorSelectionID = m_nEditorSelectionID;
 
 	//RendParams.nRenderList = EFSLIST_DECAL;

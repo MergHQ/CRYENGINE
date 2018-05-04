@@ -266,7 +266,7 @@ void CGeomCacheRenderNode::Render(const struct SRendParams& rendParams, const SR
 									}
 
 									auto pInstanceRenderObject = pRenderer->EF_DuplicateRO(pRenderObject, passInfo);
-									pInstanceRenderObject->m_II.m_Matrix = pieceMatrix;
+									pInstanceRenderObject->SetMatrix(pieceMatrix, passInfo);
 
 									if (pMotionVectorsCV->GetIVal() && passInfo.IsGeneralPass() && ((pInstanceRenderObject->m_ObjFlags & FOB_DYNAMIC_OBJECT) != 0))
 									{
@@ -882,14 +882,14 @@ void CGeomCacheRenderNode::FillRenderObject(const SRendParams& rendParams, const
 	pRenderObject->m_ObjFlags |= FOB_TRANS_MASK | FOB_DYNAMIC_OBJECT;
 	pRenderObject->m_ObjFlags |= rendParams.dwFObjFlags;
 
-	pRenderObject->m_II.m_AmbColor = rendParams.AmbientColor;
+	pRenderObject->SetAmbientColor(rendParams.AmbientColor, passInfo);
 
 	if (rendParams.nTextureID >= 0)
 	{
 		pRenderObject->m_nTextureID = rendParams.nTextureID;
 	}
 
-	pRenderObject->m_II.m_Matrix = *rendParams.pMatrix;
+	pRenderObject->SetMatrix(*rendParams.pMatrix, passInfo);
 	pRenderObject->m_nClipVolumeStencilRef = rendParams.nClipVolumeStencilRef;
 
 	SRenderObjData* pRenderObjData = pRenderObject->GetObjData();

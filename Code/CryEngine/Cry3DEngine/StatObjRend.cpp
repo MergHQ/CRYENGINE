@@ -49,7 +49,7 @@ void CStatObj::Render(const SRendParams& rParams, const SRenderingPassInfo& pass
 	RenderInternal(pObj, rParams.nSubObjHideMask, rParams.lodValue, passInfo);
 }
 
-void CStatObj::RenderStreamingDebugInfo(CRenderObject* pRenderObject)
+void CStatObj::RenderStreamingDebugInfo(CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo)
 {
 #ifndef _RELEASE
 	//	CStatObj * pStreamable = m_pParentObject ? m_pParentObject : this;
@@ -92,14 +92,14 @@ void CStatObj::RenderStreamingDebugInfo(CRenderObject* pRenderObject)
 			pComment = "No LODs";
 
 		int nDiff = SATURATEB(int(float(nKB - GetCVars()->e_StreamCgfDebugMinObjSize) / max((int)1, GetCVars()->e_StreamCgfDebugMinObjSize) * 255));
-		DrawBBoxLabeled(m_AABB, pRenderObject->m_II.m_Matrix, ColorB(nDiff, 255 - nDiff, 0, 255),
+		DrawBBoxLabeled(m_AABB, pRenderObject->GetMatrix(passInfo), ColorB(nDiff, 255 - nDiff, 0, 255),
 		                "%.2f mb, %s", 1.f / 1024.f * (float)nKB, pComment);
 	}
 #endif //_RELEASE
 }
 
 //////////////////////////////////////////////////////////////////////
-void CStatObj::RenderCoverInfo(CRenderObject* pRenderObject)
+void CStatObj::RenderCoverInfo(CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo)
 {
 	for (int i = 0; i < GetSubObjectCount(); ++i)
 	{
@@ -114,7 +114,7 @@ void CStatObj::RenderCoverInfo(CRenderObject* pRenderObject)
 
 		GetRenderer()->GetIRenderAuxGeom()->DrawAABB(
 		  AABB(localBoxMin, localBoxMax),
-		  pRenderObject->m_II.m_Matrix * subObject->localTM,
+		  pRenderObject->GetMatrix(passInfo) * subObject->localTM,
 		  true, ColorB(192, 0, 255, 255),
 		  eBBD_Faceted);
 	}
@@ -179,10 +179,10 @@ void CStatObj::FillRenderObject(const SRendParams& rParams, IRenderNode* pRender
 
 	assert(rParams.pMatrix);
 	{
-		pObj->m_II.m_Matrix = *rParams.pMatrix;
+		pObj->SetMatrix(*rParams.pMatrix, passInfo);
 	}
 
-	pObj->m_II.m_AmbColor = rParams.AmbientColor;
+	pObj->SetAmbientColor(rParams.AmbientColor, passInfo);
 	pObj->m_nClipVolumeStencilRef = rParams.nClipVolumeStencilRef;
 
 	pObj->m_ObjFlags |= FOB_INSHADOW;
@@ -295,7 +295,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 	if (!pAuxGeom)
 		return false;
 
-	Matrix34 tm = pObj->m_II.m_Matrix;
+	Matrix34 tm = pObj->GetMatrix(passInfo);
 
 	// Convert "camera space" to "world space"
 	if (pObj->m_ObjFlags & FOB_NEAREST)
@@ -541,7 +541,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				if (pObj)
 				{
 					pObj->m_nMaterialLayers = 0;
-					col = pObj->m_II.m_AmbColor;
+					col = pObj->GetAmbientColor(passInfo);
 				}
 
 				IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d,%d,%d,%d", (int)(col.r * 255.0f), (int)(col.g * 255.0f), (int)(col.b * 255.0f), (int)(col.a * 255.0f));
@@ -1074,7 +1074,7 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 			}
 
 			hidemaskOneBit nBitIndex = hidemask1;
-			Matrix34A renderTM = pRenderObject->m_II.m_Matrix;
+			Matrix34A renderTM = pRenderObject->GetMatrix(passInfo);
 			for (int32 i = 0, subObjectsSize = m_subObjects.size(); i < subObjectsSize; ++i, nBitIndex <<= 1)
 			{
 				const SSubObject& subObj = m_subObjects[i];
@@ -1148,7 +1148,7 @@ void CStatObj::RenderSubObject(CRenderObject* pRenderObject, int nLod,
 	{
 		pRenderObject = GetRenderer()->EF_DuplicateRO(pRenderObject, passInfo);
 		pOD = pRenderObject->GetObjData();
-		pOD->m_pSkinningData = subObj.pFoliage->GetSkinningData(pRenderObject->m_II.m_Matrix, passInfo);
+		pOD->m_pSkinningData = subObj.pFoliage->GetSkinningData(pRenderObject->GetMatrix(passInfo), passInfo);
 		pOD->m_uniqueObjectId = reinterpret_cast<uintptr_t>(subObj.pFoliage);
 		pRenderObject->m_ObjFlags |= FOB_SKINNED | FOB_DYNAMIC_OBJECT;
 		((CStatObjFoliage*)subObj.pFoliage)->m_pRenderObject = pRenderObject;
@@ -1165,7 +1165,7 @@ void CStatObj::RenderSubObject(CRenderObject* pRenderObject, int nLod,
 	else
 	{
 		pRenderObject = GetRenderer()->EF_DuplicateRO(pRenderObject, passInfo);
-		pRenderObject->m_II.m_Matrix = renderTM * subObj.tm;
+		pRenderObject->SetMatrix(renderTM * subObj.tm, passInfo);
 
 		SRenderObjData* pRenderObjectData = pRenderObject->GetObjData();
 		pRenderObjectData->m_uniqueObjectId = pRenderObjectData->m_uniqueObjectId + nSubObjId;
@@ -1358,12 +1358,12 @@ void CStatObj::RenderRenderMesh(CRenderObject* pRenderObject, SInstancingInfo* p
 	{
 		if (GetCVars()->e_StreamCgfDebug == 1)
 		{
-			RenderStreamingDebugInfo(pRenderObject);
+			RenderStreamingDebugInfo(pRenderObject, passInfo);
 		}
 
 		if (GetCVars()->e_CoverCgfDebug == 1)
 		{
-			RenderCoverInfo(pRenderObject);
+			RenderCoverInfo(pRenderObject, passInfo);
 		}
 	}
 #endif

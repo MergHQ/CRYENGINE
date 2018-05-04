@@ -764,7 +764,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		CRenderObject* pRenderObject = pCachedRO[threadId];
 		if (!pRenderObject)
 		{
-			pRenderObject = CreateRenderObject(nObjFlags);
+			pRenderObject = CreateRenderObject(nObjFlags, passInfo);
 			pCachedRO[threadId] = pRenderObject;
 		}
 
@@ -783,7 +783,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		}
 		
 		job.pRenderObject->m_ObjFlags = (nObjFlags & ~0xFF) | RenParams.dwFObjFlags;
-		job.pRenderObject->m_bInstanceDataDirty = true;
+		job.pRenderObject->SetInstanceDataDirty();
 
 		pOD->m_FogVolumeContribIdx = PRParams.m_nFogVolumeContribIdx;
 
@@ -813,22 +813,24 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 
 		job.nCustomTexId = RenParams.nTextureID;
 
+		int passId = passInfo.IsShadowPass() ? 1 : 0;
+		int passMask = BIT(passId);
+		pRenderObject->m_passReadyMask |= passMask;
+
 		passInfo.GetIRenderView()->AddPermanentObject(
 			pRenderObject,
-			IRenderView::SInstanceUpdateInfo{ pRenderObject->m_II.m_Matrix },
-			pRenderObject->m_bInstanceDataDirty,
 			passInfo);
 	}
 }
 
-CRenderObject* CParticleContainer::CreateRenderObject(uint64 nObjFlags)
+CRenderObject* CParticleContainer::CreateRenderObject(uint64 nObjFlags, const SRenderingPassInfo& passInfo)
 {
 	const ResourceParticleParams* pParams = m_pParams;
 	CRenderObject* pRenderObject = gEnv->pRenderer->EF_GetObject();
 	SRenderObjData* pOD = pRenderObject->GetObjData();
 
 	pRenderObject->m_pRE = gEnv->pRenderer->EF_CreateRE(eDATA_Particle);
-	pRenderObject->m_II.m_Matrix.SetIdentity();
+	pRenderObject->SetMatrix(Matrix34::CreateIdentity(), passInfo);
 	pRenderObject->m_RState = uint8(nObjFlags);
 	pRenderObject->m_pCurrMaterial = pParams->pMaterial;
 	pOD->m_pParticleShaderData = &GetEffect()->GetParams().ShaderData;

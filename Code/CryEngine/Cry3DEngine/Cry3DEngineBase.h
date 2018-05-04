@@ -145,7 +145,7 @@ struct Cry3DEngineBase
 		CRenderObject* pCRenderObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 		if (!pCRenderObject)
 			return NULL;
-		pCRenderObject->m_II.m_Matrix.SetIdentity();
+		pCRenderObject->SetMatrix(Matrix34::CreateIdentity(), passInfo);
 		return pCRenderObject;
 	}
 

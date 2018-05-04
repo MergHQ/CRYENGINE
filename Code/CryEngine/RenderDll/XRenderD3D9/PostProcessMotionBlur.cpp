@@ -43,7 +43,7 @@ bool CMotionBlur::GetPrevObjToWorldMat(CRenderObject* pObj, Matrix44A& res)
 		}
 	}
 
-	res = pObj->m_II.m_Matrix;
+	res = pObj->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
 	return false;
 }
 

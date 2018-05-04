@@ -1303,6 +1303,11 @@ public:
 
 	threadID GetMainThreadID() const { return m_nFillThreadID; }
 	threadID GetRenderThreadID() const { return m_nProcessThreadID; }
+	SRenderObjectAccessThreadConfig GetObjectAccessorThreadConfig() const
+	{
+		CRY_ASSERT(m_pRT->IsRenderThread());
+		return SRenderObjectAccessThreadConfig(GetRenderThreadID());
+	}
 	
 	//////////////////////////////////////////////////////////////////////////
 	// Query Anti-Aliasing information.
