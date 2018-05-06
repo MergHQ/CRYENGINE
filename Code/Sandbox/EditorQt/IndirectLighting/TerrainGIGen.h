@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __terraingigen_h__
-#define __terraingigen_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Quadtree/Quadtree.h"
 #include <PRT/SHFramework.h>
@@ -84,7 +79,7 @@ public:
 	static const uint32 scUnUsed = 0x4;             //force to set it as UnUsed
 	static const uint32 scLowResShift = 5;          //32x32 units for each low res texel
 
-private: // ---------------------------------------------------------------------
+private:
 
 	// Description:
 	//		editor representation of a grid point
@@ -528,6 +523,3 @@ struct SHeightmapTriangleValidator : public ITriangleValidator
 		return m_crTerrainGen.IsTriangleAboveTerrain(crA, crB, crC);
 	}
 };
-
-#endif // __terraingigen_h__
-

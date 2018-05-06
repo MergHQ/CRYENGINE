@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(AFX_NOISE_H__D47F4AD3_03B3_4E25_957A_697628BCDDEA__INCLUDED_)
-#define AFX_NOISE_H__D47F4AD3_03B3_4E25_957A_697628BCDDEA__INCLUDED_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
+#pragma once
 
 class CDynamicArray2D;
 
@@ -48,13 +43,6 @@ struct SNoiseParams
 class CNoise
 {
 public:
-	CNoise();
-	virtual ~CNoise();
-
 	void  FracSynthPass(CDynamicArray2D* hBuf, float freq, float zscale, int xres, int zres, BOOL bLoop);
 	float Spline(float x, /*int nknots,*/ float* knot);
-
 };
-
-#endif // !defined(AFX_NOISE_H__D47F4AD3_03B3_4E25_957A_697628BCDDEA__INCLUDED_)
-

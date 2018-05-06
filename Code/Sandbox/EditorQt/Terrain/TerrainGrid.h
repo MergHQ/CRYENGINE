@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __terraingrid_h__
-#define __terraingrid_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 /** Represent single terrain sector.
  */
@@ -27,9 +22,7 @@ public:
 class SANDBOX_API CTerrainGrid
 {
 public:
-	// constructor
 	CTerrainGrid();
-	// destructor
 	~CTerrainGrid();
 
 	//! Initialize grid.
@@ -63,7 +56,7 @@ public:
 
 	void GetMemoryUsage(ICrySizer* pSizer);
 
-private: // ---------------------------------------------------------------
+private:
 
 	std::vector<CTerrainSector*> m_sectorGrid;            // Sector grid.
 	int                          m_numSectors;            // Number of sectors per side.
@@ -75,6 +68,3 @@ private: // ---------------------------------------------------------------
 	//! Clear all sectors.
 	void ReleaseSectorGrid();
 };
-
-#endif // __terraingrid_h__
-

@@ -20,17 +20,9 @@
 #define TERRAIN_PREVIEW_RESOLUTION 256
 const char* szFileProperty = "File";
 
-/////////////////////////////////////////////////////////////////////////////
-// CTerrainTextureExport dialog
-
-//CDC CTerrainTextureExport::m_dcLightmap;
-
 CTerrainTextureExport::CTerrainTextureExport(CWnd* pParent /*=NULL*/)
 	: CDialog(CTerrainTextureExport::IDD, pParent)
 {
-	//{{AFX_DATA_INIT(CTerrainTextureExport)
-	//}}AFX_DATA_INIT
-
 	m_cx = 19;
 	m_cy = 24;
 
@@ -487,4 +479,3 @@ void CTerrainTextureExport::OnChangeResolutionBtn()
 
 	GetIEditorImpl()->GetActiveView()->Update();
 }
-

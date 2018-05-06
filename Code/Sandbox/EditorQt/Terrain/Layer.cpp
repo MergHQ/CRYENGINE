@@ -4,9 +4,9 @@
 #include "Layer.h"
 
 #include "TerrainGrid.h"
-#include "CryEditDoc.h"           // will be removed
-#include <CryMemory/CrySizer.h>   // ICrySizer
-#include "SurfaceType.h"          // CSurfaceType
+#include "CryEditDoc.h"
+#include <CryMemory/CrySizer.h>
+#include "SurfaceType.h"
 #include "FilePathUtil.h"
 #include <Preferences/ViewportPreferences.h>
 
@@ -27,15 +27,8 @@ UINT CLayer::m_iInstanceCount = 0;
 
 static const char* szReplaceMe = "%ENGINE%/EngineAssets/TextureMsg/ReplaceMe.tif";
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
 CLayer::CLayer() : m_cLayerFilterColor(1, 1, 1), m_fLayerTiling(1), m_fSpecularAmount(0), m_fSortOrder(0), m_fUseRemeshing(0)
 {
-	////////////////////////////////////////////////////////////////////////
-	// Initialize member variables
-	////////////////////////////////////////////////////////////////////////
 	// One more instance
 	m_iInstanceCount++;
 
@@ -109,10 +102,6 @@ uint32 CLayer::GetOrRequestLayerId()
 
 CLayer::~CLayer()
 {
-	////////////////////////////////////////////////////////////////////////
-	// Clean up on exit
-	////////////////////////////////////////////////////////////////////////
-
 	CCryEditDoc* doc = GetIEditorImpl()->GetDocument();
 
 	SetSurfaceType(NULL);
@@ -136,13 +125,8 @@ string CLayer::GetTextureFilenameWithPath() const
 	return m_strLayerTexPath;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::DrawLayerTexturePreview(LPRECT rcPos, CDC* pDC)
 {
-	////////////////////////////////////////////////////////////////////////
-	// Draw the preview of the layer texture
-	////////////////////////////////////////////////////////////////////////
-
 	ASSERT(rcPos);
 	ASSERT(pDC);
 	CBrush brshGray;
@@ -165,17 +149,10 @@ void CLayer::Serialize(CXmlArchive& xmlAr)
 {
 	CCryEditDoc* doc = GetIEditorImpl()->GetDocument();
 
-	////////////////////////////////////////////////////////////////////////
-	// Save or restore the class
-	////////////////////////////////////////////////////////////////////////
 	if (xmlAr.bLoading)
 	{
 		// We need an update
 		InvalidateMask();
-
-		////////////////////////////////////////////////////////////////////////
-		// Loading
-		////////////////////////////////////////////////////////////////////////
 
 		XmlNodeRef layer = xmlAr.root;
 
@@ -316,7 +293,7 @@ void CLayer::Serialize(CXmlArchive& xmlAr)
 				}
 				else
 				{
-					// No compressed block, fallback to back-compatability mode.
+					// No compressed block, fallback to back-compatibility mode.
 					if (xmlAr.pNamedData->GetDataBlock(string("LayerMask_") + m_strLayerName, pData, nSize))
 					{
 						CByteImage mask;
@@ -337,16 +314,9 @@ void CLayer::Serialize(CXmlArchive& xmlAr)
 	}
 	else
 	{
-		////////////////////////////////////////////////////////////////////////
-		// Storing
-		////////////////////////////////////////////////////////////////////////
-
 		XmlNodeRef layer = xmlAr.root;
 
-		// Name
 		layer->setAttr("Name", m_strLayerName);
-
-		//GUID
 		layer->setAttr("GUID", m_guid);
 
 		// Texture
@@ -362,7 +332,6 @@ void CLayer::Serialize(CXmlArchive& xmlAr)
 		layer->setAttr("MinSlopeAngle", m_minSlopeAngle);
 		layer->setAttr("MaxSlopeAngle", m_maxSlopeAngle);
 
-		// In use flag
 		layer->setAttr("InUse", m_bLayerInUse);
 
 		// Auto mask or explicit mask.
@@ -370,7 +339,7 @@ void CLayer::Serialize(CXmlArchive& xmlAr)
 		layer->setAttr("LayerId", m_dwLayerId);
 
 		{
-			string sSurfaceType = "";
+			string sSurfaceType;
 
 			CSurfaceType* pSurfaceType = m_pSurfaceType;
 
@@ -382,25 +351,13 @@ void CLayer::Serialize(CXmlArchive& xmlAr)
 
 		{
 			Vec3 vFilterColor = Vec3(m_cLayerFilterColor.r, m_cLayerFilterColor.g, m_cLayerFilterColor.b);
-
 			layer->setAttr("FilterColor", vFilterColor);
 		}
 
-		{
-			layer->setAttr("UseRemeshing", m_fUseRemeshing);
-		}
-
-		{
-			layer->setAttr("LayerTiling", m_fLayerTiling);
-		}
-
-		{
-			layer->setAttr("SpecularAmount", m_fSpecularAmount);
-		}
-
-		{
-			layer->setAttr("SortOrder", m_fSortOrder);
-		}
+		layer->setAttr("UseRemeshing", m_fUseRemeshing);
+		layer->setAttr("LayerTiling", m_fLayerTiling);
+		layer->setAttr("SpecularAmount", m_fSpecularAmount);
+		layer->setAttr("SortOrder", m_fSortOrder);
 
 		int layerTexureSize = m_cTextureDimensions.cx * m_cTextureDimensions.cy * sizeof(DWORD);
 
@@ -425,18 +382,13 @@ void CLayer::Serialize(CXmlArchive& xmlAr)
 			{
 				CompressMask();
 			}
+
 			if (m_bCompressedMaskValid)
 			{
 				// Store uncompressed block of data.
 				if (xmlAr.pNamedData)
 					xmlAr.pNamedData->AddDataBlock(string("LayerMask_") + m_strLayerName, m_compressedMask);
 			}
-			else
-			{
-				// no mask.
-			}
-
-			//////////////////////////////////////////////////////////////////////////
 		}
 	}
 }
@@ -463,7 +415,7 @@ void CLayer::Serialize(Serialization::IArchive& ar)
 		ar(filterColor, "filtercolor", "Filter Color");
 		ar(minHeight, "minheight", "Min Height");
 		ar(maxHeight, "maxheight", "Max Height");
-		
+
 		// Limit the slope values from 0.0 to slightly less than 90. We later calculate the slope as
 		// tan(angle) and tan(90) will result in disaster
 		const float slopeLimitDeg = 90.f - 0.01;
@@ -553,7 +505,7 @@ void CLayer::FillWithColor(COLORREF col, int width, int height)
 bool CLayer::LoadTexture(LPCTSTR lpBitmapName, UINT iWidth, UINT iHeight)
 {
 	////////////////////////////////////////////////////////////////////////
-	// Load a layer texture out of a ressource
+	// Load a layer texture out of a resource
 	////////////////////////////////////////////////////////////////////////
 
 	CBitmap bmpLoad;
@@ -575,7 +527,7 @@ bool CLayer::LoadTexture(LPCTSTR lpBitmapName, UINT iWidth, UINT iHeight)
 	// Save the bitmap's dimensions
 	m_cTextureDimensions = CSize(iWidth, iHeight);
 
-	// Free old tetxure data
+	// Free old texture data
 
 	// Allocate new memory to hold the bitmap data
 	m_cTextureDimensions = CSize(iWidth, iHeight);
@@ -718,19 +670,15 @@ void CLayer::Update3dengineInfo()
 		}
 
 		GetIEditorImpl()->Get3DEngine()->SetTerrainLayerBaseTextureData(m_dwLayerId,
-		                                                            (byte*)m_texture.GetData(), m_texture.GetWidth(), m_strLayerTexPath,
-		                                                            pMat, 1.0f, GetLayerTiling(), iSurfaceTypeId, pSrfType ? pSrfType->GetDetailTextureScale().x : 0.f,
-		                                                            GetLayerSpecularAmount(), GetLayerSortOrder(), /*GetLayerFilterColor()*/ Col_White, GetLayerUseRemeshing(),
-		                                                            (m_bSelected));
+		                                                                (byte*)m_texture.GetData(), m_texture.GetWidth(), m_strLayerTexPath,
+		                                                                pMat, 1.0f, GetLayerTiling(), iSurfaceTypeId, pSrfType ? pSrfType->GetDetailTextureScale().x : 0.f,
+		                                                                GetLayerSpecularAmount(), GetLayerSortOrder(), /*GetLayerFilterColor()*/ Col_White, GetLayerUseRemeshing(),
+		                                                                (m_bSelected));
 	}
 }
 
 bool CLayer::LoadTexture(DWORD* pBitmapData, UINT iWidth, UINT iHeight)
 {
-	////////////////////////////////////////////////////////////////////////
-	// Load a texture from an array into the layer
-	////////////////////////////////////////////////////////////////////////
-
 	CDC dcLoad;
 	CBitmap bmpLoad;
 	DWORD* pPixData = NULL, * pPixDataEnd = NULL;
@@ -824,7 +772,6 @@ bool CLayer::LoadMask(const string& strFileName)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::GenerateLayerMask(CByteImage& mask, int width, int height)
 {
 	// Mask is not valid anymore.
@@ -994,11 +941,6 @@ void CLayer::ExportTexture(string strFileName)
 
 void CLayer::ExportMask(const string& strFileName)
 {
-	////////////////////////////////////////////////////////////////////////
-	// Save the texture data of this layer into a BMP file
-	////////////////////////////////////////////////////////////////////////
-	DWORD* pTempBGR = NULL;
-
 	CLogFile::WriteLine("Exporting layer mask to BMP...");
 
 	CByteImage layerMask;
@@ -1038,7 +980,7 @@ void CLayer::ExportMask(const string& strFileName)
 	// Make a copy of the layer data
 	CImageEx image;
 	image.Allocate(w, h);
-	pTempBGR = (DWORD*)image.GetData();
+	DWORD* pTempBGR = (DWORD*)image.GetData();
 	for (int i = 0; i < w * h; i++)
 	{
 		uint32 col = pLayerMask[i];
@@ -1096,7 +1038,6 @@ void CLayer::PrecacheTexture()
 	//BGRToRGB();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::InvalidateAllSectors()
 {
 	// Fill all sectors with 0, (clears all flags).
@@ -1104,7 +1045,6 @@ void CLayer::InvalidateAllSectors()
 		memset(&m_maskGrid[0], 0, m_maskGrid.size() * sizeof(m_maskGrid[0]));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::SetAllSectorsValid()
 {
 	// Fill all sectors with 0xFF, (Set all flags).
@@ -1112,14 +1052,12 @@ void CLayer::SetAllSectorsValid()
 		memset(&m_maskGrid[0], 0xFF, m_maskGrid.size() * sizeof(m_maskGrid[0]));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::InvalidateMaskSector(CPoint sector)
 {
 	GetSector(sector) = 0;
 	m_bCompressedMaskValid = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::InvalidateMask()
 {
 	m_bNeedUpdate = true;
@@ -1140,7 +1078,6 @@ void CLayer::InvalidateMask()
 	signalPropertiesChanged(this);
 };
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::PrecacheMask()
 {
 	if (!m_bCompressedMaskValid)
@@ -1175,14 +1112,12 @@ void CLayer::PrecacheMask()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CByteImage& CLayer::GetMask()
 {
 	PrecacheMask();
 	return m_layerMask;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CLayer::UpdateMaskForSector(CPoint sector, const CRect& sectorRect, const int resolution, const CPoint vTexOffset,
                                  const CFloatImage& hmap, CByteImage& mask)
 {
@@ -1257,7 +1192,6 @@ bool CLayer::UpdateMaskForSector(CPoint sector, const CRect& sectorRect, const i
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CLayer::UpdateMask(const CFloatImage& hmap, CByteImage& mask)
 {
 	PrecacheTexture();
@@ -1318,7 +1252,6 @@ bool CLayer::UpdateMask(const CFloatImage& hmap, CByteImage& mask)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::AutogenLayerMask(const CRect& rc, const int resolution, const CPoint vHTexOffset, const CFloatImage& hmap, CByteImage& mask)
 {
 	CRect rect = rc;
@@ -1434,7 +1367,6 @@ void CLayer::AutogenLayerMask(const CRect& rc, const int resolution, const CPoin
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::AllocateMaskGrid()
 {
 	CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();
@@ -1449,7 +1381,6 @@ void CLayer::AllocateMaskGrid()
 	m_maskResolution = si.surfaceTextureSize;
 }
 
-//////////////////////////////////////////////////////////////////////////
 uint8& CLayer::GetSector(CPoint sector)
 {
 	int p = sector.x + sector.y * m_numSectors;
@@ -1457,7 +1388,6 @@ uint8& CLayer::GetSector(CPoint sector)
 	return m_maskGrid[p];
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::SetLayerId(const uint32 dwLayerId)
 {
 	assert(dwLayerId < e_undefined);
@@ -1467,7 +1397,6 @@ void CLayer::SetLayerId(const uint32 dwLayerId)
 	//	CryLog("SetLayerId() '%s' m_dwLayerId=%d",GetLayerName(),m_dwLayerId);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::CompressMask()
 {
 	if (m_bCompressedMaskValid)
@@ -1486,7 +1415,6 @@ void CLayer::CompressMask()
 	m_scaledMask.Release();
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CLayer::GetSize() const
 {
 	int size = sizeof(*this);
@@ -1498,8 +1426,6 @@ int CLayer::GetSize() const
 	return size;
 }
 
-//////////////////////////////////////////////////////////////////////////
-//! Export layer block.
 void CLayer::ExportBlock(const CRect& rect, CXmlArchive& xmlAr)
 {
 	// ignore autogenerated layers.
@@ -1534,7 +1460,6 @@ void CLayer::ExportBlock(const CRect& rect, CXmlArchive& xmlAr)
 	}
 }
 
-//! Import layer block.
 void CLayer::ImportBlock(CXmlArchive& xmlAr, const CPoint& offset, int nRot)
 {
 	// ignore autogenerated layers.
@@ -1577,7 +1502,6 @@ void CLayer::ImportBlock(CXmlArchive& xmlAr, const CPoint& offset, int nRot)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CLayer::GetNativeMaskResolution() const
 {
 	CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();
@@ -1586,13 +1510,11 @@ int CLayer::GetNativeMaskResolution() const
 	return si.surfaceTextureSize;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBitmap& CLayer::GetTexturePreviewBitmap()
 {
 	return m_bmpLayerTexPrev;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CImageEx& CLayer::GetTexturePreviewImage()
 {
 	return m_previewImage;
@@ -1608,7 +1530,6 @@ void CLayer::GetMemoryUsage(ICrySizer* pSizer)
 	pSizer->Add(m_scaledMask);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::AssignMaterial(const string& materialName)
 {
 	m_materialName = materialName;
@@ -1656,7 +1577,6 @@ void CLayer::AssignMaterial(const string& materialName)
 	Update3dengineInfo();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::SetSurfaceType(CSurfaceType* pSurfaceType)
 {
 	if (pSurfaceType != m_pSurfaceType)
@@ -1677,7 +1597,6 @@ void CLayer::SetSurfaceType(CSurfaceType* pSurfaceType)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CLayer::GetEngineSurfaceTypeId() const
 {
 	if (m_pSurfaceType)
@@ -1716,4 +1635,3 @@ string CLayer::GetLayerPath() const
 
 	return "";
 }
-

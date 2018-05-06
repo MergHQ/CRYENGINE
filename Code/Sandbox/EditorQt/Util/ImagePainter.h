@@ -1,17 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __imagepainter_h__
-#define __imagepainter_h__
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
 #include "Terrain/Heightmap.h"
 
 // Brush structure used for painting.
 struct SEditorPaintBrush
 {
-	// constructor
 	SEditorPaintBrush(class CHeightmap& rHeightmap, class CLayer& rLayer,
 												const bool bMaskByLayerSettings, const uint32 dwLayerIdMask, const bool bFlood);
 
@@ -32,8 +27,7 @@ struct SEditorPaintBrush
 	//   0=paint there 0% .. 1=paint there 100%
 	float GetMask(const float fX, const float fY) const;
 
-protected: // --------------------------------------------------------------------------
-
+protected:
 	float m_fMinSlope;                    // in m per m
 	float m_fMaxSlope;                    // in m per me
 	float m_fMinAltitude;                 // in m
@@ -70,6 +64,3 @@ public:
 	// Calculate interpolated terrain surface type item
 	SSurfaceTypeItem LerpTerrainSurfaceType(const SSurfaceTypeItem& s0, const SSurfaceTypeItem& s1, float t);
 };
-
-#endif // __imagepainter_h__
-

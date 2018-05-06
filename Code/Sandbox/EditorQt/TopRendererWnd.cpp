@@ -43,10 +43,6 @@ static uint32 sVegetationColors[16] =
 
 IMPLEMENT_DYNCREATE(CTopRendererWnd, C2DViewport)
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
 CTopRendererWnd::CTopRendererWnd()
 {
 	////////////////////////////////////////////////////////////////////////
@@ -89,15 +85,6 @@ CTopRendererWnd::CTopRendererWnd()
 	m_colorBackground = RGB(128, 128, 128);
 }
 
-//////////////////////////////////////////////////////////////////////////
-CTopRendererWnd::~CTopRendererWnd()
-{
-	////////////////////////////////////////////////////////////////////////
-	// Destroy the attached render and free the surface texture
-	////////////////////////////////////////////////////////////////////////
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::SetType(EViewportType type)
 {
 	m_viewType = type;
@@ -105,7 +92,6 @@ void CTopRendererWnd::SetType(EViewportType type)
 	SetAxis(m_axis);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::ResetContent()
 {
 	C2DViewport::ResetContent();
@@ -116,7 +102,6 @@ void CTopRendererWnd::ResetContent()
 	m_vegetationTextureId = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::UpdateContent(int flags)
 {
 	if (gViewportPreferences.mapViewportSwapXY)
@@ -149,7 +134,6 @@ void CTopRendererWnd::UpdateContent(int flags)
 	m_bFirstTerrainUpdate = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::InitHeightmapAlignment()
 {
 	CHeightmap* heightmap = GetIEditorImpl()->GetHeightmap();
@@ -166,7 +150,6 @@ void CTopRendererWnd::InitHeightmapAlignment()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::UpdateSurfaceTexture(int flags)
 {
 	////////////////////////////////////////////////////////////////////////
@@ -230,7 +213,6 @@ void CTopRendererWnd::UpdateSurfaceTexture(int flags)
 	m_bContentValid = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::DrawStaticObjects()
 {
 	if (!m_bShowStatObjects)
@@ -266,7 +248,6 @@ void CTopRendererWnd::DrawStaticObjects()
 	vegetationMap->DrawToTexture(trg, trgW, trgH, rc.left, rc.top);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::ResetSurfaceTexture()
 {
 	////////////////////////////////////////////////////////////////////////
@@ -303,7 +284,6 @@ void CTopRendererWnd::ResetSurfaceTexture()
 	m_bContentValid = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::Draw(DisplayContext& dc)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -457,7 +437,6 @@ void CTopRendererWnd::Draw(DisplayContext& dc)
 	C2DViewport::Draw(dc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CTopRendererWnd::ViewToWorld(CPoint vp, bool* collideWithTerrain, bool onlyTerrain, bool bSkipVegetation, bool bTestRenderMesh)
 {
 	Vec3 wp = C2DViewport::ViewToWorld(vp, collideWithTerrain, onlyTerrain, bSkipVegetation, bTestRenderMesh);

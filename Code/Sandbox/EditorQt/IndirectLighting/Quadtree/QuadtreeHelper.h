@@ -1,19 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 /*
    quadtree helper functions and structures
  */
-#ifndef QUADTREE_HELPER_H
-#define QUADTREE_HELPER_H
-
-#pragma once
 
 #include <CryMath/Cry_Math.h>
 #include <vector>
 #include <set>
-#include <limits>     //numeric_limits
-#include <memory.h>   //memcpy
-#include <algorithm>  //sort
+#include <limits>
+#include <memory.h>
+#include <algorithm>
 
 namespace
 {
@@ -241,6 +239,4 @@ const bool RayLeafIntersection
   const float cRayLength                //ray length
 );
 }//NQT
-
-#endif//QUADTREE_HELPER
 

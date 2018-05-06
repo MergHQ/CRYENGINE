@@ -85,7 +85,6 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //class CTerrainMoveTool
 
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CTerrainMoveTool, CEditTool)
 
 Vec3 CTerrainMoveTool::m_dym(512, 512, 1024);
@@ -93,7 +92,6 @@ int CTerrainMoveTool::m_targetRot = 0.0f;
 //SMTBox CTerrainMoveTool::m_source;
 //SMTBox CTerrainMoveTool::m_target;
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainMoveTool::CTerrainMoveTool() :
 	m_archive(0),
 	m_isSyncHeight(false),
@@ -114,7 +112,6 @@ CTerrainMoveTool::CTerrainMoveTool() :
 	m_manipulator->signalDragging.Connect(this, &CTerrainMoveTool::OnManipulatorDrag);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainMoveTool::~CTerrainMoveTool()
 {
 	Select(0);
@@ -132,7 +129,6 @@ CTerrainMoveTool::~CTerrainMoveTool()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainMoveTool::MouseCallback(CViewport* pView, EMouseEvent event, CPoint& point, int flags)
 {
 	if (event == eMouseMove)
@@ -188,7 +184,6 @@ bool CTerrainMoveTool::MouseCallback(CViewport* pView, EMouseEvent event, CPoint
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMoveTool::Display(DisplayContext& dc)
 {
 	if (m_source.isShow)
@@ -234,20 +229,17 @@ void CTerrainMoveTool::Display(DisplayContext& dc)
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainMoveTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	bool bProcessed = false;
 	return bProcessed;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainMoveTool::OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMoveTool::Move(bool bOnlyVegetation, bool bOnlyTerrain)
 {
 	// Move terrain area.
@@ -261,7 +253,7 @@ void CTerrainMoveTool::Move(bool bOnlyVegetation, bool bOnlyTerrain)
 
 	AABB srcBox(m_source.pos - m_dym / 2, m_source.pos + m_dym / 2);
 	pHeightmap->Copy(srcBox, m_targetRot, m_target.pos, m_dym, m_source.pos, bOnlyVegetation, bOnlyTerrain);
-	
+
 	if (bOnlyVegetation || (!bOnlyVegetation && !bOnlyTerrain))
 	{
 		GetIEditorImpl()->GetVegetationMap()->RepositionArea(srcBox, m_target.pos - m_source.pos, m_targetRot, isCopy);
@@ -280,7 +272,6 @@ void CTerrainMoveTool::Move(bool bOnlyVegetation, bool bOnlyTerrain)
 	GetIEditorImpl()->ClearSelection();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMoveTool::SetArchive(CXmlArchive* ar)
 {
 	if (m_archive)
@@ -297,7 +288,6 @@ void CTerrainMoveTool::SetArchive(CXmlArchive* ar)
 	m_srcRect.SetRect(x1, y1, x2, y2);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMoveTool::Select(int nBox)
 {
 	m_source.isSelected = false;
@@ -320,19 +310,18 @@ void CTerrainMoveTool::Select(int nBox)
 	{
 		m_source.isSelected = true;
 		m_source.isShow = true;
-		
+
 		m_manipulator->Invalidate();
 	}
 	else if (nBox == 2)
 	{
 		m_target.isSelected = true;
 		m_target.isShow = true;
-		
+
 		m_manipulator->Invalidate();
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMoveTool::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& p0, const Vec3& value, int nFlags)
 {
 	int editMode = GetIEditorImpl()->GetEditMode();
@@ -373,19 +362,16 @@ void CTerrainMoveTool::OnManipulatorDrag(IDisplayViewport* view, ITransformManip
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMoveTool::SetDym(Vec3 dym)
 {
 	m_dym = dym;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMoveTool::SetTargetRot(int targetRot)
 {
 	m_targetRot = targetRot;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMoveTool::SetSyncHeight(bool isSyncHeight)
 {
 	m_isSyncHeight = isSyncHeight;
@@ -426,7 +412,7 @@ void CTerrainMoveTool::Serialize(Serialization::IArchive& ar)
 		ar(m_onlyTerrain, "onlyterrain", "Only Terrain");
 		ar(m_isSyncHeight, "syncheight", "Sync Height");
 		ar(m_moveObjects, "moveobjects", "Move Objects");
-		
+
 		if (ar.openBlock("action_buttons", "<Terrain"))
 		{
 			ar(Serialization::ActionButton([this] { Move(m_onlyVegetation, m_onlyTerrain); }), "move", "^Move");
@@ -468,4 +454,3 @@ bool CTerrainMoveTool::IsManipulatorVisible()
 {
 	return m_source.isSelected || m_target.isSelected;
 }
-

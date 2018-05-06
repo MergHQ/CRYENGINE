@@ -3,9 +3,6 @@
 #include "stdafx.h"
 #include "ResizeResolutionDialog.h"
 
-/////////////////////////////////////////////////////////////////////////////
-// CResizeResolutionDialog dialog
-
 CResizeResolutionDialog::CResizeResolutionDialog(CWnd* pParent /*=NULL*/)
 	: CDialog(CResizeResolutionDialog::IDD, pParent)
 {
@@ -14,20 +11,12 @@ CResizeResolutionDialog::CResizeResolutionDialog(CWnd* pParent /*=NULL*/)
 void CResizeResolutionDialog::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(CResizeResolutionDialog)
 	DDX_Control(pDX, IDC_RESOLUTION, m_resolution);
-	//}}AFX_DATA_MAP
 }
 
 BEGIN_MESSAGE_MAP(CResizeResolutionDialog, CDialog)
-//{{AFX_MSG_MAP(CResizeResolutionDialog)
-// NOTE: the ClassWizard will add message map macros here
 ON_CBN_SELENDOK(IDC_RESOLUTION, OnCbnSelendokResolution)
-//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
-
-/////////////////////////////////////////////////////////////////////////////
-// CResizeResolutionDialog message handlers
 
 BOOL CResizeResolutionDialog::OnInitDialog()
 {
@@ -62,13 +51,11 @@ void CResizeResolutionDialog::OnCbnSelendokResolution()
 	m_curSel = m_resolution.GetCurSel();
 }
 
-/////////////////////////////////////////////////////////////////////////////
 void CResizeResolutionDialog::SetSize(uint32 dwSize)
 {
 	m_dwInitSize = dwSize;
 }
 
-/////////////////////////////////////////////////////////////////////////////
 uint32 CResizeResolutionDialog::GetSize()
 {
 	int sel = m_curSel;
@@ -78,4 +65,3 @@ uint32 CResizeResolutionDialog::GetSize()
 	}
 	return m_dwInitSize;
 }
-

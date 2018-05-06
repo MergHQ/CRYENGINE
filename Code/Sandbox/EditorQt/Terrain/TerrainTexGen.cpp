@@ -8,20 +8,14 @@
 #include "TerrainLighting.h"
 #include "QT/Widgets/QWaitProgress.h"
 
-CTerrainTexGen::CTerrainTexGen() : m_LayerTexGen(), m_LightGen()
-{
-}
-
 bool CTerrainTexGen::GenerateSectorTexture(CPoint sector, const CRect& rect, int flags, CImageEx& surfaceTexture)
 {
-	bool bOk;
+	if (!m_LayerTexGen.GenerateSectorTexture(sector, rect, flags, surfaceTexture))
+	{
+		return false;
+	}
 
-	bOk = m_LayerTexGen.GenerateSectorTexture(sector, rect, flags, surfaceTexture);
-
-	if (bOk)
-		bOk = m_LightGen.GenerateSectorTexture(sector, rect, flags, surfaceTexture);
-
-	return bOk;
+	return m_LightGen.GenerateSectorTexture(sector, rect, flags, surfaceTexture);
 }
 
 const CImageEx* CTerrainTexGen::GetOcclusionSurfaceTexture() const
@@ -36,8 +30,6 @@ void CTerrainTexGen::ReleaseOcclusionSurfaceTexture()
 
 bool CTerrainTexGen::GenerateSurfaceTexture(int flags, CImageEx& surfaceTexture)
 {
-	int num = 0;        // progress
-
 	if (!gEnv->p3DEngine->GetITerrain())
 		return false;
 
@@ -64,7 +56,7 @@ bool CTerrainTexGen::GenerateSurfaceTexture(int flags, CImageEx& surfaceTexture)
 
 	if (flags & ETTG_INVALIDATE_LAYERS)
 	{
-		// Only invalidate layres ones at start.
+		// Only invalidate layers ones at start.
 		m_LayerTexGen.InvalidateLayers();
 		flags &= ~ETTG_INVALIDATE_LAYERS;
 	}
@@ -95,7 +87,7 @@ bool CTerrainTexGen::GenerateSurfaceTexture(int flags, CImageEx& surfaceTexture)
 			return false;
 		}
 
-		// diffuse texture should not include lighting because in this mode this info is in the occlusionmap
+		// diffuse texture should not include lighting because in this mode this info is in the occlusion map
 		flags &= ~ETTG_LIGHTING;
 	}
 
@@ -108,6 +100,8 @@ bool CTerrainTexGen::GenerateSurfaceTexture(int flags, CImageEx& surfaceTexture)
 		m_LightGen.m_bNotValid = true;
 		return false;
 	}
+
+	int num = 0; // progress
 
 	// Normal, not multithreaded surface generation code.
 	for (int y = 0; y < m_LightGen.m_numSectors; y++)
@@ -216,4 +210,3 @@ void CTerrainTexGen::InvalidateLighting()
 {
 	return m_LightGen.InvalidateLighting();
 }
-

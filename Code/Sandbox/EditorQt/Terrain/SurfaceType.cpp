@@ -10,7 +10,6 @@
 #include "Terrain/TerrainManager.h"
 #include "Terrain/Layer.h"
 
-//////////////////////////////////////////////////////////////////////////
 CSurfaceType::CSurfaceType()
 {
 	m_layerReferences = 0;
@@ -20,19 +19,17 @@ CSurfaceType::CSurfaceType()
 	m_surfaceTypeID = CLayer::e_undefined;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSurfaceType::~CSurfaceType()
 {
 	m_detailScale[0] = 1;
 	m_detailScale[1] = 1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSurfaceType::Serialize(CXmlArchive& xmlAr)
 {
 	Serialize(xmlAr.root, xmlAr.bLoading);
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CSurfaceType::Serialize(XmlNodeRef xmlRootNode, bool boLoading)
 {
 	if (boLoading)
@@ -62,9 +59,6 @@ void CSurfaceType::Serialize(XmlNodeRef xmlRootNode, bool boLoading)
 	}
 	else
 	{
-		////////////////////////////////////////////////////////////////////////
-		// Storing
-		////////////////////////////////////////////////////////////////////////
 		XmlNodeRef sfType = xmlRootNode;
 
 		// Name
@@ -89,7 +83,6 @@ void CSurfaceType::Serialize(XmlNodeRef xmlRootNode, bool boLoading)
 		default:
 			sfType->setAttr("ProjAxis", "Z");
 		}
-		;
 
 		/*
 		   XmlNodeRef sfDetObjs = sfType->newChild( "DetailObjects" );
@@ -104,11 +97,11 @@ void CSurfaceType::Serialize(XmlNodeRef xmlRootNode, bool boLoading)
 		SaveVegetationIds(sfType);
 	}
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CSurfaceType::SaveVegetationIds(XmlNodeRef& node)
 {
 	CVegetationMap* pVegMap = GetIEditorImpl()->GetVegetationMap();
-	// Go thru all vegetation groups, and see who uses us.
+	// Go through all vegetation groups, and see who uses us.
 
 	if (!pVegMap)
 	{
@@ -166,13 +159,11 @@ void CSurfaceType::SaveVegetationIds(XmlNodeRef& node)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSurfaceType::SetMaterial(const string& mtl)
 {
 	m_material = mtl;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSurfaceType::AssignUnusedSurfaceTypeID()
 {
 	// Inefficient function to find a free unused surface type id.
@@ -210,4 +201,3 @@ void CSurfaceType::AssignUnusedSurfaceTypeID()
 
 	m_surfaceTypeID = nID;
 }
-

@@ -627,7 +627,7 @@ void CTerrainDialog::OnFetch()
 
 	// Ask first
 	iResult = MessageBox("Do you really want to restore the previous heightmap state ?",
-		"Fetch", MB_YESNO | MB_ICONQUESTION);
+	                     "Fetch", MB_YESNO | MB_ICONQUESTION);
 
 	// Abort
 	if (iResult == IDNO)
@@ -996,11 +996,11 @@ void CTerrainDialog::OnTerrainImportBlock()
 		ar = 0;
 
 		/*
-		// Archive will be deleted within Move tool.
-		CTerrainMoveTool *mt = new CTerrainMoveTool;
-		mt->SetArchive( ar );
-		GetIEditorImpl()->SetEditTool( mt );
-		*/
+		   // Archive will be deleted within Move tool.
+		   CTerrainMoveTool *mt = new CTerrainMoveTool;
+		   mt->SetArchive( ar );
+		   GetIEditorImpl()->SetEditTool( mt );
+		 */
 	}
 }
 

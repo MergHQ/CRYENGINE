@@ -71,13 +71,13 @@ void PyReloadTerrain()                { GetTerrainDialog()->OnReloadTerrain(); }
 void PySelectTerrain()                { GetIEditorImpl()->SetEditMode(eEditModeSelectArea); }
 
 // Layer Functions
-void PyImportLayers()        { GetTerrainLayers()->OnImport(); }
-void PyExportLayers()        { GetTerrainLayers()->OnExport(); }
-void PyRefineTiles()         { GetTerrainLayers()->OnRefineTerrainTextureTiles(); }
-void PyNewLayer()            { GetTerrainLayers()->OnLayersNewItem(); }
-void PyDeleteLayer()         { GetTerrainLayers()->OnLayersDeleteItem(); }
-void PyMoveLayerUp()         { GetTerrainLayers()->OnLayersMoveItemUp(); }
-void PyMoveLayerDown()       { GetTerrainLayers()->OnLayersMoveItemDown(); }
+void PyImportLayers()   { GetTerrainLayers()->OnImport(); }
+void PyExportLayers()   { GetTerrainLayers()->OnExport(); }
+void PyRefineTiles()    { GetTerrainLayers()->OnRefineTerrainTextureTiles(); }
+void PyNewLayer()       { GetTerrainLayers()->OnLayersNewItem(); }
+void PyDeleteLayer()    { GetTerrainLayers()->OnLayersDeleteItem(); }
+void PyMoveLayerUp()    { GetTerrainLayers()->OnLayersMoveItemUp(); }
+void PyMoveLayerDown()  { GetTerrainLayers()->OnLayersMoveItemDown(); }
 void PyDuplicateLayer() { GetTerrainLayers()->OnDuplicateItem(); }
 
 void PyFloodLayer()
@@ -303,7 +303,7 @@ void CTerrainEditor::SetLayout(const QVariantMap& state)
 {
 	CEditor::SetLayout(state);
 	QTerrainLayerView* pLayerView = findChild<QTerrainLayerView*>();
-	
+
 	QVariant layerStateVar = state.value("layerView");
 	if (layerStateVar.isValid() && layerStateVar.type() == QVariant::Map)
 	{
@@ -340,9 +340,7 @@ void CTerrainEditor::InitTerrainMenu()
 	CRY_ASSERT(pFileMenu);
 	if (pFileMenu)
 	{
-		int sec;
-		
-		sec = pFileMenu->GetNextEmptySection();
+		int sec = pFileMenu->GetNextEmptySection();
 		pFileMenu->AddAction(GetAction("terrain.generate_terrain_texture"), sec);
 		pFileMenu->AddAction(GetAction("terrain.generate_terrain"), sec);
 
@@ -364,9 +362,7 @@ void CTerrainEditor::InitTerrainMenu()
 	CRY_ASSERT(pEditMenu);
 	if (pEditMenu)
 	{
-		int sec = 0;
-
-		sec = pEditMenu->GetNextEmptySection();
+		int sec = pEditMenu->GetNextEmptySection();
 		pEditMenu->AddAction(GetAction("terrain.select_terrain"), sec);
 
 		sec = pEditMenu->GetNextEmptySection();
@@ -411,4 +407,3 @@ void CTerrainEditor::InitTerrainMenu()
 	int sec = pLayerMenu->GetNextEmptySection();
 	pLayerMenu->AddAction(GetAction("terrain.flood_layer"), sec);
 }
-

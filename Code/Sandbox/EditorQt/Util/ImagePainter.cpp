@@ -64,7 +64,6 @@ float SEditorPaintBrush::GetMask(const float fX, const float fY) const
 	return 1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 SSurfaceTypeItem CImagePainter::LerpTerrainSurfaceType(const SSurfaceTypeItem& s0, const SSurfaceTypeItem& s1, float t)
 {
 	byte arrUnroll[CLayer::e_hole];
@@ -126,7 +125,6 @@ SSurfaceTypeItem CImagePainter::LerpTerrainSurfaceType(const SSurfaceTypeItem& s
 	return out;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CImagePainter::PaintBrush(const float fpx, const float fpy, CSurfTypeImage& image, const SEditorPaintBrush& brush)
 {
 	float fX = fpx * image.GetWidth(), fY = fpy * image.GetHeight();

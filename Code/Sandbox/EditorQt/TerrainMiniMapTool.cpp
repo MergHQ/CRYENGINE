@@ -142,7 +142,6 @@ void CTerrainMiniMapTool::SetCameraHeight(float fHeight)
 	GetIEditorImpl()->GetIUndoManager()->Accept("Mini Map Camera Height");
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainMiniMapTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (event == eMouseLDown || (event == eMouseMove && (flags & MK_LBUTTON)))
@@ -182,7 +181,6 @@ bool CTerrainMiniMapTool::MouseCallback(CViewport* view, EMouseEvent event, CPoi
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMiniMapTool::Display(DisplayContext& dc)
 {
 	dc.SetColor(0, 0, 1);
@@ -268,7 +266,6 @@ void CTerrainMiniMapTool::SendParameters(void* data, uint32 width, uint32 height
 	m_bGenerationFinished = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMiniMapTool::Generate(bool bHideProxy)
 {
 	m_ConstClearList.clear();
@@ -340,7 +337,6 @@ void CTerrainMiniMapTool::Generate(bool bHideProxy)
 	b_stateScreenShot = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMiniMapTool::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
@@ -357,7 +353,6 @@ void CTerrainMiniMapTool::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMiniMapTool::LoadSettingsXML()
 {
 	string settingsXmlPath = m_path;
@@ -381,7 +376,6 @@ void CTerrainMiniMapTool::LoadSettingsXML()
 	m_minimap.vExtends.y = max(0.5f * (endY - startY), kMinExtend);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMiniMapTool::ResetToDefault()
 {
 	if (b_stateScreenShot)
@@ -443,4 +437,3 @@ void CTerrainMiniMapTool::Serialize(Serialization::IArchive& ar)
 		}
 	}
 }
-
