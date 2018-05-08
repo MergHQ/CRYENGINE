@@ -42,6 +42,14 @@ void PrepareEventCallback(
 }
 
 //////////////////////////////////////////////////////////////////////////
+CObject::CObject(AkGameObjectID const id)
+	: m_id(id)
+	, m_bNeedsToUpdateEnvironments(false)
+{
+	m_auxSendValues.reserve(4);
+}
+
+//////////////////////////////////////////////////////////////////////////
 ERequestStatus CObject::Update()
 {
 	ERequestStatus result = ERequestStatus::Failure;
@@ -84,11 +92,28 @@ ERequestStatus CObject::SetEnvironment(IEnvironment const* const pIEnvironment, 
 		{
 		case EEnvironmentType::AuxBus:
 			{
-				float const currentAmount = stl::find_in_map(m_environmentImplAmounts, pEnvironment->busId, -1.0f);
+				bool addAuxSendValue = true;
 
-				if ((currentAmount == -1.0f) || (fabs(currentAmount - amount) > envEpsilon))
+				for (auto& auxSendValue : m_auxSendValues)
 				{
-					m_environmentImplAmounts[pEnvironment->busId] = amount;
+					if (auxSendValue.auxBusID == pEnvironment->busId)
+					{
+						addAuxSendValue = false;
+
+						if (fabs(auxSendValue.fControlValue - amount) > envEpsilon)
+						{
+							auxSendValue.fControlValue = amount;
+							m_bNeedsToUpdateEnvironments = true;
+						}
+
+						break;
+					}
+				}
+
+				if (addAuxSendValue)
+				{
+					// This temporary copy is needed until AK equips AkAuxSendValue with a ctor.
+					m_auxSendValues.emplace_back(AkAuxSendValue { g_listenerId, pEnvironment->busId, amount });
 					m_bNeedsToUpdateEnvironments = true;
 				}
 
@@ -368,38 +393,11 @@ ERequestStatus CObject::SetName(char const* const szName)
 ERequestStatus CObject::PostEnvironmentAmounts()
 {
 	ERequestStatus result = ERequestStatus::Failure;
-	std::size_t const numEnvironments = m_environmentImplAmounts.size();
+	std::size_t const numEnvironments = m_auxSendValues.size();
 
 	if (numEnvironments > 0)
 	{
-		std::vector<AkAuxSendValue> auxValues;
-		auxValues.reserve(numEnvironments);
-
-		auto iter(m_environmentImplAmounts.cbegin());
-		auto const iterEnd(m_environmentImplAmounts.cend());
-
-		while (iter != iterEnd)
-		{
-			float const amount = iter->second;
-			auxValues.emplace_back();
-			AkAuxSendValue& auxValue = auxValues.back();
-			auxValue.auxBusID = iter->first;
-			auxValue.fControlValue = amount;
-			auxValue.listenerID = g_listenerId;
-
-			// If an amount is zero, we still want to send it to the middleware, but we also want to remove it from the map.
-			if (amount == 0.0f)
-			{
-				m_environmentImplAmounts.erase(iter++);
-			}
-			else
-			{
-				++iter;
-			}
-		}
-
-		CRY_ASSERT_MESSAGE(numEnvironments == auxValues.size(), "Number of environments after preparing the list for Wwise don't match!");
-		AKRESULT const wwiseResult = AK::SoundEngine::SetGameObjectAuxSendValues(m_id, &auxValues[0], static_cast<AkUInt32>(numEnvironments));
+		AKRESULT const wwiseResult = AK::SoundEngine::SetGameObjectAuxSendValues(m_id, &m_auxSendValues[0], static_cast<AkUInt32>(numEnvironments));
 
 		if (IS_WWISE_OK(wwiseResult))
 		{
@@ -409,6 +407,15 @@ ERequestStatus CObject::PostEnvironmentAmounts()
 		{
 			Cry::Audio::Log(ELogType::Warning, "Wwise - SetGameObjectAuxSendValues failed on object %" PRISIZE_T " with AKRESULT: %d", m_id, wwiseResult);
 		}
+
+		m_auxSendValues.erase(
+		  std::remove_if(
+		    m_auxSendValues.begin(),
+		    m_auxSendValues.end(),
+		    [](AkAuxSendValue const& auxSendValue) -> bool { return auxSendValue.fControlValue == 0.0f; }
+		    ),
+		  m_auxSendValues.end()
+		  );
 	}
 
 	m_bNeedsToUpdateEnvironments = false;
