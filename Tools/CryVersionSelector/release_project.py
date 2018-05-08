@@ -279,10 +279,11 @@ def copy_engine_binaries(engine_path, export_path, rel_dir, include_symbols):
             copypaths.append(os.path.normpath(os.path.join(root, filename)))
     os.chdir(pwd)
 
+    clean_dir = sanitize_for_fn(rel_dir)
     for path in copypaths:
         excluded = False
         for pattern in excludes:
-            excluded = fnmatch.fnmatch(path, os.path.join(rel_dir, pattern))
+            excluded = fnmatch.fnmatch(path, os.path.join(clean_dir, pattern))
             if excluded:
                 break
         if excluded:
@@ -390,6 +391,7 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
     If the include_patterns are empty every file will be included.
     If the exclude_patterns are emtpty no file will be excluded.
     """
+    clean_dir = sanitize_for_fn(src_dir)
     for file in os.listdir(src_dir):
         srcpath = os.path.join(src_dir, file)
         dstpath = os.path.join(dst_dir, file)
@@ -401,7 +403,7 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
         if exclude_patterns:
             exclude = False
             for pattern in exclude_patterns:
-                exclude = fnmatch.fnmatch(srcpath, os.path.join(src_dir, pattern))
+                exclude = fnmatch.fnmatch(srcpath, os.path.join(clean_dir, pattern))
                 if exclude:
                     break
             if exclude:
@@ -410,7 +412,7 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
         if include_patterns:
             include = False
             for pattern in include_patterns:
-                include = fnmatch.fnmatch(srcpath, os.path.join(src_dir, pattern))
+                include = fnmatch.fnmatch(srcpath, os.path.join(clean_dir, pattern))
                 if include:
                     break
             if not include:
@@ -427,6 +429,7 @@ def directory_contains_file(directory, include_patterns, exclude_patterns=None, 
     """
     Checks if a directory contains a file that matches the specified pattern.
     """
+    clean_dir = sanitize_for_fn(directory)
     for file in os.listdir(directory):
         file_path = os.path.join(directory, file)
 
@@ -438,7 +441,7 @@ def directory_contains_file(directory, include_patterns, exclude_patterns=None, 
         if exclude_patterns:
             exclude = False
             for pattern in exclude_patterns:
-                exclude = fnmatch.fnmatch(file_path, os.path.join(directory, pattern))
+                exclude = fnmatch.fnmatch(file_path, os.path.join(clean_dir, pattern))
                 if exclude:
                     break
             if exclude:
@@ -447,7 +450,7 @@ def directory_contains_file(directory, include_patterns, exclude_patterns=None, 
         if include_patterns:
             include = False
             for pattern in include_patterns:
-                include = fnmatch.fnmatch(file_path, os.path.join(directory, pattern))
+                include = fnmatch.fnmatch(file_path, os.path.join(clean_dir, pattern))
                 if include:
                     break
             if include:
@@ -455,6 +458,11 @@ def directory_contains_file(directory, include_patterns, exclude_patterns=None, 
 
     return False
 
+def sanitize_for_fn(text):
+    """
+    Escapes the [ and ] characters by wrapping them in [].
+    """
+    return text.translate(str.maketrans({'[': '[[]', ']': '[]]'}))
 
 def package_assets(project, engine_path, project_path, export_path):
     """

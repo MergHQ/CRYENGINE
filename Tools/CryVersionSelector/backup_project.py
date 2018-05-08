@@ -141,6 +141,12 @@ def get_percentage(index, count):
     """
     return (100.0 / count) * index
 
+def sanitize_for_fn(text):
+    """
+    Escapes the [ and ] characters by wrapping them in [].
+    """
+    return text.translate(str.maketrans({'[': '[[]', ']': '[]]'}))
+
 def copy_code(project, project_path, export_path, silent):
     """
     Copies the code and solutions to the backup folder.
@@ -300,12 +306,12 @@ def copy_directory(project_path, export_path, copy_dir, warn_on_fail=True, silen
         return
 
     dst_path = os.path.join(export_path, copy_dir)
-    
+
     if os.path.isdir(dst_path):
         shutil.rmtree(dst_path, onerror=on_rm_error)
     try:
         shutil.copytree(src_path, dst_path)
-    # This exception is thrown when the user still has locked files in the project, 
+    # This exception is thrown when the user still has locked files in the project,
     # for example db.lock from Visual Studio.
     except shutil.Error as e:
         errors = e.args[0]
@@ -332,6 +338,7 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
     If the include_patterns are empty every file will be included.
     If the exclude_patterns are emtpty no file will be excluded.
     """
+    clean_dir = sanitize_for_fn(src_dir)
     for file in os.listdir(src_dir):
         src_path = os.path.join(src_dir, file)
         dst_path = os.path.join(dst_dir, file)
@@ -343,7 +350,7 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
         if exclude_patterns:
             exclude = False
             for pattern in exclude_patterns:
-                exclude = fnmatch.fnmatch(src_path, os.path.join(src_dir, pattern))
+                exclude = fnmatch.fnmatch(src_path, os.path.join(clean_dir, pattern))
                 if exclude:
                     break
             if exclude:
@@ -352,7 +359,7 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
         if include_patterns:
             include = False
             for pattern in include_patterns:
-                include = fnmatch.fnmatch(src_path, os.path.join(src_dir, pattern))
+                include = fnmatch.fnmatch(src_path, os.path.join(clean_dir, pattern))
                 if include:
                     break
             if not include:
@@ -364,7 +371,6 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
         os.makedirs(dst_dir, exist_ok=True)
 
         shutil.copy2(src_path, dst_path)
-
 
 # Path validation retrieved from https://stackoverflow.com/questions/9532499/check-whether-a-path-is-valid-in-python-without-creating-a-file-at-the-paths-ta
 # Sadly, Python fails to provide the following magic number for us.
