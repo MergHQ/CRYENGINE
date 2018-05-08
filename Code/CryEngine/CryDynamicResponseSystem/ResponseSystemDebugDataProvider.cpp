@@ -24,6 +24,7 @@ enum EDrsLoggingOptions
 	eDrsLoggingOptions_Variables  = BIT(11)  // f
 };
 
+//////////////////////////////////////////////////////////////////////////
 const char* GetStringFromEnum(CResponseSystemDebugDataProvider::EStatus valueToConvert)
 {
 	switch (valueToConvert)
@@ -47,7 +48,7 @@ const char* GetStringFromEnum(CResponseSystemDebugDataProvider::EStatus valueToC
 	return CryStringUtils::toString(static_cast<int>(valueToConvert));
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 CResponseSystemDebugDataProvider::CResponseSystemDebugDataProvider()
 	: m_currentResponse(MAX_NUMBER_OF_TRACKED_SIGNALS + 1)
 	, m_loggingOptions(0)
@@ -64,17 +65,18 @@ CResponseSystemDebugDataProvider::CResponseSystemDebugDataProvider()
 	               "f: Changed Variables\n");
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 CResponseSystemDebugDataProvider::~CResponseSystemDebugDataProvider()
 {
 	if (auto pResponseSystem = CResponseSystem::GetInstance())
 	{
 		pResponseSystem->GetSpeakerManager()->RemoveListener(this);
 	}
+
 	gEnv->pConsole->UnregisterVariable("drs_loggingOptions", true);
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::AddVariableSet(const string& variableName, const string& collectionName, const CVariableValue& oldValue, const CVariableValue& newValue, float time)
 {
 	if (cry_strncmp(collectionName.c_str(), "Context") == 0 || cry_strncmp(variableName.c_str(), "CurrentTime") == 0)
@@ -95,8 +97,8 @@ void CResponseSystemDebugDataProvider::AddVariableSet(const string& variableName
 	VariableChangeInfo newEntry;
 	newEntry.timeOfChange = time;
 	newEntry.variableName = collectionName + "::" + variableName;
-	if (oldValue.GetType() == eDRVT_Undefined 
-		&& oldValue.GetValue() == CVariableValue::DEFAULT_VALUE)
+
+	if ((oldValue.GetType() == eDRVT_Undefined) && (oldValue.GetValue() == CVariableValue::DEFAULT_VALUE))
 	{
 		newEntry.change = "'Not Existing' to " + newValue.GetValueAsString() + "', Type: " + newValue.GetTypeAsString();
 	}
@@ -104,6 +106,7 @@ void CResponseSystemDebugDataProvider::AddVariableSet(const string& variableName
 	{
 		newEntry.change = "'" + oldValue.GetValueAsString() + "' to '" + newValue.GetValueAsString() + "', Type: " + newValue.GetTypeAsString();
 	}
+
 	newEntry.drsUserName = CResponseSystem::GetInstance()->GetCurrentDrsUserName();
 
 	//hard coded limit
@@ -111,6 +114,7 @@ void CResponseSystemDebugDataProvider::AddVariableSet(const string& variableName
 	{
 		m_variableChangeHistory.erase(m_variableChangeHistory.begin());
 	}
+
 	m_variableChangeHistory.push_back(newEntry);
 
 	if (m_loggingOptions & eDrsLoggingOptions_Variables)
@@ -119,7 +123,7 @@ void CResponseSystemDebugDataProvider::AddVariableSet(const string& variableName
 	}
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::AddResponseStarted(const string& signalName)
 {
 	if (m_loggingOptions & eDrsLoggingOptions_Responses)
@@ -128,9 +132,11 @@ void CResponseSystemDebugDataProvider::AddResponseStarted(const string& signalNa
 	}
 
 	const size_t numExecutedResponses = m_executedResponses.size();
+
 	for (int i = 0; i < numExecutedResponses; i++)
 	{
 		SStartedResponses& current = m_executedResponses[i];
+
 		if (current.currentState == CResponseSystemDebugDataProvider::eER_Queued && current.signalName.compareNoCase(signalName) == 0)
 		{
 			current.currentState = CResponseSystemDebugDataProvider::eER_Running;
@@ -140,7 +146,7 @@ void CResponseSystemDebugDataProvider::AddResponseStarted(const string& signalNa
 	}
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 bool CResponseSystemDebugDataProvider::AddResponseSegmentEvaluated(CResponseSegment* pResponseSegment)
 {
 	if (m_currentResponse >= m_executedResponses.size())
@@ -154,6 +160,7 @@ bool CResponseSystemDebugDataProvider::AddResponseSegmentEvaluated(CResponseSegm
 	{
 		segment.bRunning = false;
 	}
+
 	SStartedResponsesSegment newResponseSegment;
 	newResponseSegment.bStarted = false;
 	newResponseSegment.bRunning = false;
@@ -170,7 +177,7 @@ bool CResponseSystemDebugDataProvider::AddResponseSegmentEvaluated(CResponseSegm
 	return true;
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 bool CResponseSystemDebugDataProvider::AddConditionChecked(const CConditionsCollection::SConditionInfo* pCondition, bool result)
 {
 	if (m_currentResponse >= m_executedResponses.size())
@@ -180,16 +187,18 @@ bool CResponseSystemDebugDataProvider::AddConditionChecked(const CConditionsColl
 
 	SStartedResponses& response = m_executedResponses[m_currentResponse];
 
-
 	SCheckedCondition newCondition;
 	newCondition.bMet = result;
+
 	if (pCondition->m_bNegated)
 	{
 		newCondition.conditionDesc = "NOT ";
 	}
+
 	IVariableUsingBase::s_bDoDisplayCurrentValueInDebugOutput = true;
 	newCondition.conditionDesc += pCondition->m_pCondition->GetVerboseInfoWithType();
 	IVariableUsingBase::s_bDoDisplayCurrentValueInDebugOutput = false;
+
 	if (!response.responseSegments.empty())
 	{
 		response.responseSegments.back().checkedConditions.push_back(newCondition);
@@ -203,14 +212,16 @@ bool CResponseSystemDebugDataProvider::AddConditionChecked(const CConditionsColl
 	return true;
 }
 
-//--------------------------------------------------------------------------------------------------
-bool CryDRS::CResponseSystemDebugDataProvider::AddResponseSegmentStarted(CResponseSegment* pResponseSegment)
+//////////////////////////////////////////////////////////////////////////
+bool CResponseSystemDebugDataProvider::AddResponseSegmentStarted(CResponseSegment* pResponseSegment)
 {
 	if (m_currentResponse >= m_executedResponses.size())
 	{
 		return false;
 	}
+
 	SStartedResponses& response = m_executedResponses[m_currentResponse];
+
 	for (SStartedResponsesSegment& currentSegment : response.responseSegments)
 	{
 		if (pResponseSegment == currentSegment.pResponseSegment)
@@ -220,22 +231,25 @@ bool CryDRS::CResponseSystemDebugDataProvider::AddResponseSegmentStarted(CRespon
 			return true;
 		}
 	}
+
 	return false;
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 bool CResponseSystemDebugDataProvider::AddActionStarted(const string& actionDesc, DRS::IResponseActionInstance* pInstance, DRS::IResponseActor* pActor, CResponseSegment* pResponseSegment)
 {
 	if (m_currentResponse >= m_executedResponses.size())
 	{
 		return false;
 	}
+
 	SExecutedAction newAction;
 	newAction.actorName = (pActor) ? pActor->GetName() : "NoActor";
 	newAction.actionDesc = actionDesc;
 	newAction.pInstance = pInstance;
 	newAction.bEnded = false;
 	SStartedResponses& response = m_executedResponses[m_currentResponse];
+
 	for (SStartedResponsesSegment& currentSegment : response.responseSegments)
 	{
 		if (pResponseSegment == currentSegment.pResponseSegment)
@@ -250,10 +264,11 @@ bool CResponseSystemDebugDataProvider::AddActionStarted(const string& actionDesc
 			return true;
 		}
 	}
+
 	return false;
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 bool CResponseSystemDebugDataProvider::AddActionFinished(DRS::IResponseActionInstance* pInstance)
 {
 	if (m_currentResponse >= m_executedResponses.size())
@@ -262,6 +277,7 @@ bool CResponseSystemDebugDataProvider::AddActionFinished(DRS::IResponseActionIns
 	}
 
 	SStartedResponses& response = m_executedResponses[m_currentResponse];
+
 	for (SStartedResponsesSegment& currentSegment : response.responseSegments)
 	{
 		for (SExecutedAction& currentAction : currentSegment.executedAction)
@@ -278,16 +294,18 @@ bool CResponseSystemDebugDataProvider::AddActionFinished(DRS::IResponseActionIns
 			}
 		}
 	}
+
 	return true;
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 bool CResponseSystemDebugDataProvider::AddResponseInstanceFinished(EStatus reason)
 {
 	if (m_currentResponse >= m_executedResponses.size())
 	{
 		return false;
 	}
+
 	SStartedResponses& response = m_executedResponses[m_currentResponse];
 
 	if (m_loggingOptions & eDrsLoggingOptions_Responses)
@@ -321,7 +339,7 @@ bool CResponseSystemDebugDataProvider::AddResponseInstanceFinished(EStatus reaso
 	return true;
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 SERIALIZATION_ENUM_BEGIN_NESTED(CResponseSystemDebugDataProvider, EStatus, "EndReason")
 SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_NoValidSegment, "NoValidSegment", "NotStarted - No Valid Responses")
 SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_Canceled, "Canceled", "Canceled")
@@ -332,15 +350,13 @@ SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_NoResponse, "NoResponse
 SERIALIZATION_ENUM(CResponseSystemDebugDataProvider::eER_Queued, "Queued", "Queued")
 SERIALIZATION_ENUM_END()
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::SStartedResponses::Serialize(Serialization::IArchive& ar)
 {
-	int numStartedResponses = 0;
-
-	bool bRunning = currentState == CResponseSystemDebugDataProvider::eER_Running;
-
-	if (ar.openBlock("signalInfos2", "+ "))
+	if (ar.openBlock("signalInfos2", "!+ "))
 	{
+		int numStartedResponses = 0;
+
 		for (SStartedResponsesSegment& current : responseSegments)
 		{
 			if (current.bStarted)
@@ -348,47 +364,50 @@ void CResponseSystemDebugDataProvider::SStartedResponses::Serialize(Serializatio
 				++numStartedResponses;
 			}
 		}
-		ar(currentState, "status", "^^>200>Status:");
-		ar(CryStringUtils::toString(numStartedResponses), "responses", "^^ StartedResponses:");
+
+		ar(currentState, "status", "!^^>200>Status:");
+		ar(CryStringUtils::toString(numStartedResponses), "responses", "!^^ StartedResponses:");
 		ar.closeBlock();
 	}
 
-	if (numStartedResponses > 0)
-	{
-		ar(timeOfEvent, "time", "^>80>Time:");
-		ar(signalName, "signal", "^< Signal:");
-	}
-	else
-	{
-		ar(timeOfEvent, "time", "!^>80>Time:");
-		ar(signalName, "signal", "!^< Signal:");
-	}
+	ar(timeOfEvent, "time", "!^>80>Time:");
+	ar(signalName, "signal", "!^< Signal:");
 
-	if (ar.openBlock("signalInfos2", "- "))
+	if (ar.openBlock("signalInfos2", "!- "))
 	{
-		ar(senderName, "sender", "^^>200> Actor:");
-		ar(contextVariables, "ContextVariables", "^^ ContextVariables");
-		ar(drsUserName, "source", "Source:");
+		ar(senderName, "sender", "!^^>200> Actor:");
+		ar(contextVariables, "ContextVariables", "!^^ ContextVariables");
+		ar(drsUserName, "source", "!Source:");
 		ar.closeBlock();
 	}
 
 	int currentBlockDepth = 0;
+
 	for (SStartedResponsesSegment& segment : responseSegments)
 	{
 		if (currentBlockDepth < segment.levelInHierarchy)
 		{
-			if (ar.openBlock("FollowUpEx", "+ ") && ar.openBlock("FollowUp", "+ FOLLOW UP RESPONSES "))
+			if (ar.openBlock("FollowUpEx", "!+ ") && ar.openBlock("FollowUp", "!+ FOLLOW UP RESPONSES "))
+			{
 				currentBlockDepth++;
+			}
 		}
+
 		if (segment.segmentUiName.empty())
 		{
 			if (segment.bStarted)
-				segment.segmentUiName.Format("+Response: '%s'", segment.segmentName.c_str());
+			{
+				segment.segmentUiName.Format("!+Response: '%s'", segment.segmentName.c_str());
+			}
 			else
+			{
 				segment.segmentUiName.Format("!Response: '%s'", segment.segmentName.c_str());
+			}
 		}
+
 		ar(segment, "segment", segment.segmentUiName);
 	}
+
 	for (int i = 0; i < currentBlockDepth; i++)
 	{
 		ar.closeBlock();
@@ -399,16 +418,17 @@ void CResponseSystemDebugDataProvider::SStartedResponses::Serialize(Serializatio
 	ar(seperator, "seperator", "!< ");
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::SStartedResponsesSegment::Serialize(Serialization::IArchive& ar)
 {
 	if (checkedConditions.empty())
 	{
-		ar(checkedConditions, "checkedConditions", "  No conditions" );
+		ar(checkedConditions, "checkedConditions", "!  No conditions");
 	}
 	else
 	{
 		bool bConditionsMet = true;
+
 		for (SCheckedCondition& currentCondition : checkedConditions)
 		{
 			if (!currentCondition.bMet)
@@ -416,43 +436,45 @@ void CResponseSystemDebugDataProvider::SStartedResponsesSegment::Serialize(Seria
 				bConditionsMet = false;
 				break;
 			}
-		}		
+		}
+
 		if (bConditionsMet)
 		{
-			ar(bConditionsMet, "conditionsMet", ">85>^ ConditionsMet");
+			ar(bConditionsMet, "conditionsMet", "!>85>^ ConditionsMet");
 		}
-		ar(checkedConditions, "checkedConditions", (bConditionsMet) ? "+  CheckedConditions" : "!+  CheckedConditions");
+		ar(checkedConditions, "checkedConditions", "!+  CheckedConditions");
 	}
 
 	if (!executedAction.empty())
 	{
-		ar(executedAction, "executedAction", (bStarted) ? "+<  ExecutedAction" : "!+<  ExecutedAction");
+		ar(executedAction, "executedAction", "!+<  ExecutedAction");
 	}
 	else
 	{
-		ar(executedAction, "executedAction", (bStarted) ? "  No actions" : "!  No actions executed");
+		ar(executedAction, "executedAction", (bStarted) ? "!  No actions" : "!  No actions executed");
 	}
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::SExecutedAction::Serialize(Serialization::IArchive& ar)
 {
-	ar(bEnded, "hasEnded", (bEnded) ? "^Done" : "!^Done");
-	ar(actionDesc, "actionDesc", "<^");
-	ar(actorName, "actor", "^Actor:");
+	ar(bEnded, "hasEnded", "!^Done");
+	ar(actionDesc, "actionDesc", "!<^");
+	ar(actorName, "actor", "!^Actor:");
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::SCheckedCondition::Serialize(Serialization::IArchive& ar)
 {
-	ar(bMet, "wasMet", (bMet) ? "^Was Met" : "^!Was Met");
-	ar(conditionDesc, "conditionDesc", "^ Condition:");
+	ar(bMet, "wasMet", "^!Was Met");
+	ar(conditionDesc, "conditionDesc", "!^ Condition:");
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::SetCurrentResponseInstance(CResponseInstance* pInstanceForCurrentID)
 {
-	ResponseInstanceToResponseInstanceIDMapping::iterator foundIT = m_InstanceToID.find(pInstanceForCurrentID);
+	const auto foundIT = m_InstanceToID.find(pInstanceForCurrentID);
+
 	if (foundIT == m_InstanceToID.end())
 	{
 		m_currentResponse = MAX_NUMBER_OF_TRACKED_SIGNALS + 1;
@@ -463,14 +485,14 @@ void CResponseSystemDebugDataProvider::SetCurrentResponseInstance(CResponseInsta
 	}
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 bool CResponseSystemDebugDataProvider::AddResponseInstanceCreated(CResponseInstance* pInstanceForCurrentID)
 {
 	m_InstanceToID[pInstanceForCurrentID] = m_currentResponse;
 	return true;
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::Reset()
 {
 	m_executedResponses.clear();
@@ -479,12 +501,13 @@ void CResponseSystemDebugDataProvider::Reset()
 	m_lineHistory.clear();
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::VariableChangeInfo::Serialize(Serialization::IArchive& ar)
 {
 	ar(timeOfChange, "time", "!^Time");
 	ar(variableName, "variableName", "!^Variable");
 	ar(change, "change", "!^< Changed from");
+
 	if (!drsUserName.empty())
 	{
 		ar(drsUserName, "Changer", "!^< Source");
@@ -495,7 +518,7 @@ void CResponseSystemDebugDataProvider::VariableChangeInfo::Serialize(Serializati
 	}
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::OnLineEvent(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const DRS::IDialogLine* pLine)
 {
 	string speakerName = (pSpeaker) ? pSpeaker->GetName() : "Missing Speaker";
@@ -528,16 +551,15 @@ void CResponseSystemDebugDataProvider::OnLineEvent(const DRS::IResponseActor* pS
 		AddDialogLineFinished(lineID, speakerName, eER_NotStarted, "Timed out of the queue");
 		break;
 	}
-	return;
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::Init()
 {
 	CResponseSystem::GetInstance()->GetSpeakerManager()->AddListener(this);
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::AddSignalFired(const string& signalName, const string& senderName, const string& contextVariables)
 {
 	//hard coded limit
@@ -566,7 +588,7 @@ void CResponseSystemDebugDataProvider::AddSignalFired(const string& signalName, 
 	}
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 bool CResponseSystemDebugDataProvider::IncrementSegmentHierarchyLevel()
 {
 	if (m_currentResponse >= m_executedResponses.size())
@@ -579,17 +601,15 @@ bool CResponseSystemDebugDataProvider::IncrementSegmentHierarchyLevel()
 	return true;
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::AddDialogLineFinished(const CHashedString& lineID, const string& speakerName, EStatus status, const string& reason)
 {
-	for (LineHistoryList::iterator it = m_lineHistory.begin(); it != m_lineHistory.end(); ++it)
+	for (auto& it : m_lineHistory)
 	{
-		if ((it->status == eER_Running || it->status == eER_Queued) &&
-		    it->lineID == lineID &&
-		    it->speakerName == speakerName)
+		if ((it.status == eER_Running || it.status == eER_Queued) && (it.lineID == lineID) && (it.speakerName == speakerName))
 		{
-			it->status = status;
-			it->description = reason;
+			it.status = status;
+			it.description = reason;
 		}
 	}
 
@@ -599,7 +619,7 @@ void CResponseSystemDebugDataProvider::AddDialogLineFinished(const CHashedString
 	}
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::AddDialogLineStarted(const CHashedString& lineID, const string& lineText, const string& speakerName, EStatus status, const string& reason)
 {
 	SLineHistory temp;
@@ -611,16 +631,15 @@ void CResponseSystemDebugDataProvider::AddDialogLineStarted(const CHashedString&
 	temp.timeOfEvent = CResponseSystem::GetInstance()->GetCurrentDrsTime();
 
 	bool bWasHandled = false;
+
 	if (status == eER_Running)  //if a line is started, after it was queued, then we do already have an entry, which we just can update
 	{
-		for (LineHistoryList::iterator it = m_lineHistory.begin(); it != m_lineHistory.end(); ++it)
+		for (auto& it : m_lineHistory)
 		{
-			if (it->status == eER_Queued
-				&& it->lineID == lineID
-				&& it->speakerName == speakerName)
+			if ((it.status == eER_Queued) && (it.lineID == lineID) && (it.speakerName == speakerName))
 			{
 				temp.description = "Started (After Queue)";
-				*it = temp;
+				it = temp;
 				bWasHandled = true;
 			}
 		}
@@ -638,7 +657,7 @@ void CResponseSystemDebugDataProvider::AddDialogLineStarted(const CHashedString&
 	}
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::GetRecentSignals(DynArray<const char*>& outResults, DRS::IResponseManager::eSignalFilter filter /* = eSF_All */)
 {
 	for (StartedResponsesList::const_iterator it = m_executedResponses.begin(); it != m_executedResponses.end(); ++it)
@@ -652,7 +671,7 @@ void CResponseSystemDebugDataProvider::GetRecentSignals(DynArray<const char*>& o
 	}
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::SerializeRecentResponse(Serialization::IArchive& ar, const DynArray<stack_string>& signalNames, int maxElemets)
 {
 	if (ar.getFilter() != 0)
@@ -663,11 +682,11 @@ void CResponseSystemDebugDataProvider::SerializeRecentResponse(Serialization::IA
 		}
 		else
 		{
-			for (DynArray<stack_string>::const_iterator itSignalNames = signalNames.begin(); itSignalNames != signalNames.end(); ++itSignalNames)
+			for (const auto& itSignalNames : signalNames)
 			{
-				string signalName = itSignalNames->c_str();
+				string signalName = itSignalNames.c_str();
 
-				for (StartedResponsesList::iterator it = m_executedResponses.begin(); it != m_executedResponses.end(); )
+				for (auto it = m_executedResponses.begin(); it != m_executedResponses.end(); )
 				{
 					if (it->signalName.compareNoCase(signalName) == 0)
 					{
@@ -692,26 +711,33 @@ void CResponseSystemDebugDataProvider::SerializeRecentResponse(Serialization::IA
 			{
 				maxElemets = m_executedResponses.size();
 			}
+
 			tempcopy.assign(m_executedResponses.rbegin(), m_executedResponses.rbegin() + maxElemets);
 			signalslist = "ALL";
 		}
 		else
 		{
 			signalslist.clear();
-			for (DynArray<stack_string>::const_iterator itSignalNames = signalNames.begin(); itSignalNames != signalNames.end(); ++itSignalNames)
+
+			for (const auto& itSignalNames : signalNames)
 			{
-				string signalName = itSignalNames->c_str();
+				string signalName = itSignalNames.c_str();
+
 				if (!signalslist.empty())
+				{
 					signalslist += ", ";
+				}
+
 				signalslist += signalName;
 			}
+
 			tempcopy.clear();
 
 			for (StartedResponsesList::const_reverse_iterator it = m_executedResponses.rbegin(); it != m_executedResponses.rend(); ++it)
 			{
-				for (DynArray<stack_string>::const_iterator itSignalNames = signalNames.begin(); itSignalNames != signalNames.end(); ++itSignalNames)
+				for (const auto& signalName : signalNames)
 				{
-					if (it->signalName.compareNoCase(itSignalNames->c_str()) == 0 && (maxElemets <= 0 || tempcopy.size() < maxElemets))
+					if (it->signalName.compareNoCase(signalName.c_str()) == 0 && (maxElemets <= 0 || tempcopy.size() < maxElemets))
 					{
 						tempcopy.push_back(*it);
 					}
@@ -720,20 +746,21 @@ void CResponseSystemDebugDataProvider::SerializeRecentResponse(Serialization::IA
 		}
 
 		static string label;
+
 		if (tempcopy.empty())
 		{
-			label = "No history for signal '" + signalslist + "'";
+			label = "!No history for signal '" + signalslist + "'";
 			ar(tempcopy, "ExecutedResponses", label.c_str());
 		}
 		else
 		{
-			label = "+History for signal '" + signalslist + "'";
+			label = "!+History for signal '" + signalslist + "'";
 			ar(tempcopy, "ExecutedResponses", label.c_str());
 		}
 	}
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::SerializeVariableChanges(Serialization::IArchive& ar, const string& variableName, int maxElemets)
 {
 	bool bSerializeAll = variableName == "ALL";
@@ -746,12 +773,16 @@ void CResponseSystemDebugDataProvider::SerializeVariableChanges(Serialization::I
 		}
 		else
 		{
-			for (VariableChangeInfoList::iterator it = m_variableChangeHistory.begin(); it != m_variableChangeHistory.end(); )
+			for (auto it = m_variableChangeHistory.begin(); it != m_variableChangeHistory.end(); )
 			{
 				if (it->variableName.compareNoCase(variableName) == 0)
+				{
 					it = m_variableChangeHistory.erase(it);
+				}
 				else
+				{
 					++it;
+				}
 			}
 		}
 	}
@@ -772,12 +803,12 @@ void CResponseSystemDebugDataProvider::SerializeVariableChanges(Serialization::I
 		}
 
 		static string label;
-		label = "History of changes for '" + variableName + "'";
+		label = "!History of changes for '" + variableName + "'";
 		ar(tempcopy, "VariableChanges", label.c_str());
 	}
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::SerializeDialogLinesHistory(Serialization::IArchive& ar)
 {
 	if (ar.getFilter() != 0)
@@ -790,7 +821,7 @@ void CResponseSystemDebugDataProvider::SerializeDialogLinesHistory(Serialization
 	}
 }
 
-//--------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::SLineHistory::Serialize(Serialization::IArchive& ar)
 {
 	ar(timeOfEvent, "time", "!^Time:");
