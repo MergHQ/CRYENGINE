@@ -284,13 +284,13 @@ void CResourceSelectorDialog::OnContextMenu(QPoint const& pos)
 
 		}
 
-		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(); });
-		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(); });
+		pContextMenu->addAction(tr("Expand Selection"), [=]() { m_pTreeView->ExpandSelection(); });
+		pContextMenu->addAction(tr("Collapse Selection"), [=]() { m_pTreeView->CollapseSelection(); });
 		pContextMenu->addSeparator();
 	}
 
-	pContextMenu->addAction(tr("Expand All"), [&]() { m_pTreeView->expandAll(); });
-	pContextMenu->addAction(tr("Collapse All"), [&]() { m_pTreeView->collapseAll(); });
+	pContextMenu->addAction(tr("Expand All"), [=]() { m_pTreeView->expandAll(); });
+	pContextMenu->addAction(tr("Collapse All"), [=]() { m_pTreeView->collapseAll(); });
 
 	pContextMenu->exec(QCursor::pos());
 }
