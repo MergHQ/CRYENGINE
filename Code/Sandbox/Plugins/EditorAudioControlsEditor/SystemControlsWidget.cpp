@@ -421,34 +421,34 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 								pParent = static_cast<CAsset*>(libraries[0]);
 							}
 
-							pAddMenu->addAction(GetAssetIcon(EAssetType::Folder), tr("Folder"), [&]() { CreateFolder(pParent); });
-							pAddMenu->addAction(GetAssetIcon(EAssetType::Trigger), tr("Trigger"), [&]() { CreateControl("new_trigger", EAssetType::Trigger, pParent); });
+							pAddMenu->addAction(GetAssetIcon(EAssetType::Folder), tr("Folder"), [=]() { CreateFolder(pParent); });
+							pAddMenu->addAction(GetAssetIcon(EAssetType::Trigger), tr("Trigger"), [=]() { CreateControl("new_trigger", EAssetType::Trigger, pParent); });
 
 							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Parameter))
 							{
-								pAddMenu->addAction(GetAssetIcon(EAssetType::Parameter), tr("Parameter"), [&]() { CreateControl("new_parameter", EAssetType::Parameter, pParent); });
+								pAddMenu->addAction(GetAssetIcon(EAssetType::Parameter), tr("Parameter"), [=]() { CreateControl("new_parameter", EAssetType::Parameter, pParent); });
 							}
 
 							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Switch))
 							{
-								pAddMenu->addAction(GetAssetIcon(EAssetType::Switch), tr("Switch"), [&]() { CreateControl("new_switch", EAssetType::Switch, pParent); });
+								pAddMenu->addAction(GetAssetIcon(EAssetType::Switch), tr("Switch"), [=]() { CreateControl("new_switch", EAssetType::Switch, pParent); });
 							}
 
 							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Environment))
 							{
-								pAddMenu->addAction(GetAssetIcon(EAssetType::Environment), tr("Environment"), [&]() { CreateControl("new_environment", EAssetType::Environment, pParent); });
+								pAddMenu->addAction(GetAssetIcon(EAssetType::Environment), tr("Environment"), [=]() { CreateControl("new_environment", EAssetType::Environment, pParent); });
 							}
 
 							if (g_pIImpl->IsSystemTypeSupported(EAssetType::Preload))
 							{
-								pAddMenu->addAction(GetAssetIcon(EAssetType::Preload), tr("Preload"), [&]() { CreateControl("new_preload", EAssetType::Preload, pParent); });
+								pAddMenu->addAction(GetAssetIcon(EAssetType::Preload), tr("Preload"), [=]() { CreateControl("new_preload", EAssetType::Preload, pParent); });
 							}
 
 							if (pParent->GetType() == EAssetType::Library)
 							{
 								if ((libraries[0]->GetPakStatus() & EPakStatus::OnDisk) != 0)
 								{
-									pContextMenu->addAction(tr("Show in File Explorer"), [&]()
+									pContextMenu->addAction(tr("Show in File Explorer"), [=]()
 										{
 											QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + g_assetsManager.GetConfigFolderPath() + pParent->GetName() + ".xml").c_str());
 									  });
@@ -485,8 +485,8 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 						{
 							QAction* const pLoadAction = new QAction(tr("Load Global Preload Request"), pContextMenu);
 							QAction* const pUnloadAction = new QAction(tr("Unload Global Preload Request"), pContextMenu);
-							QObject::connect(pLoadAction, &QAction::triggered, [&]() { gEnv->pAudioSystem->PreloadSingleRequest(CryAudio::StringToId(pControl->GetName()), false); });
-							QObject::connect(pUnloadAction, &QAction::triggered, [&]() { gEnv->pAudioSystem->UnloadSingleRequest(CryAudio::StringToId(pControl->GetName())); });
+							QObject::connect(pLoadAction, &QAction::triggered, [=]() { gEnv->pAudioSystem->PreloadSingleRequest(CryAudio::StringToId(pControl->GetName()), false); });
+							QObject::connect(pUnloadAction, &QAction::triggered, [=]() { gEnv->pAudioSystem->UnloadSingleRequest(CryAudio::StringToId(pControl->GetName())); });
 							pContextMenu->insertSeparator(pContextMenu->actions().at(0));
 							pContextMenu->insertAction(pContextMenu->actions().at(0), pUnloadAction);
 							pContextMenu->insertAction(pContextMenu->actions().at(0), pLoadAction);
@@ -544,7 +544,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 			{
 				CAsset const* const pLibrary = static_cast<CAsset*>(libraries[0]);
 
-				pContextMenu->addAction(tr("Show in File Explorer"), [&]()
+				pContextMenu->addAction(tr("Show in File Explorer"), [=]()
 					{
 						QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + g_assetsManager.GetConfigFolderPath() + pLibrary->GetName() + ".xml").c_str());
 				  });
@@ -553,7 +553,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 			}
 		}
 
-		pContextMenu->addAction(tr("Rename"), [&]()
+		pContextMenu->addAction(tr("Rename"), [=]()
 			{
 				QModelIndex const& nameColumnIndex = m_pTreeView->currentIndex().sibling(m_pTreeView->currentIndex().row(), m_nameColumn);
 				m_pTreeView->edit(nameColumnIndex);
@@ -561,13 +561,13 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 		pContextMenu->addAction(tr("Delete"), [&]() { OnDeleteSelectedControls(); });
 		pContextMenu->addSeparator();
-		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(); });
-		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(); });
+		pContextMenu->addAction(tr("Expand Selection"), [=]() { m_pTreeView->ExpandSelection(); });
+		pContextMenu->addAction(tr("Collapse Selection"), [=]() { m_pTreeView->CollapseSelection(); });
 		pContextMenu->addSeparator();
 	}
 
-	pContextMenu->addAction(tr("Expand All"), [&]() { m_pTreeView->expandAll(); });
-	pContextMenu->addAction(tr("Collapse All"), [&]() { m_pTreeView->collapseAll(); });
+	pContextMenu->addAction(tr("Expand All"), [=]() { m_pTreeView->expandAll(); });
+	pContextMenu->addAction(tr("Collapse All"), [=]() { m_pTreeView->collapseAll(); });
 
 	pContextMenu->exec(QCursor::pos());
 }

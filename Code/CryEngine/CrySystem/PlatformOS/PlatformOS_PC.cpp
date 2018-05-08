@@ -655,6 +655,43 @@ bool CPlatformOS_PC::SxmlMissingFromHDD(ZipDir::FileEntryTree* pZipRoot, const c
 	}
 }
 
+void SetTimerResolution(bool setToBackgroundMode)
+	{
+#if CRY_PLATFORM_WINDOWS
+		// Handle system timer resolution
+		// The smaller the resolution, the more accurate a thread will wake up from a suspension 
+		// Example: 
+		// Timer Resolution(1 ms): Sleep(1) -> max thread suspention time 1.99ms
+		// Timer Resolution(15 ms): Sleep(1) -> max thread suspention time 15.99ms
+		//  
+		// This is due to the scheduler running more frequently.
+		// This is a system wide global though which is set to the smallest value requested by a process.
+		// When the process dies it is set back to its original value.
+		static UINT prevTimer = ~0;
+		ICVar* pSystemTimerResolution = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_system_timer_resolution") : NULL;
+		TIMECAPS tc;		
+		if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR)
+		{
+			const UINT minTimerRes =  std::min(std::max((UINT)pSystemTimerResolution->GetIVal(), tc.wPeriodMin), tc.wPeriodMax);
+		UINT newTime = setToBackgroundMode ? tc.wPeriodMax : minTimerRes;
+
+		if (newTime != prevTimer)
+		{
+			if (prevTimer != (UINT)~0)
+			{
+				timeEndPeriod(prevTimer);
+			}
+			timeBeginPeriod(newTime);
+			prevTimer = newTime;
+		}
+		}
+		else
+		{
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Warning: System Timer Resolution could not be obtained.");
+		}
+#endif
+}
+
 void CPlatformOS_PC::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 {
 	switch (event)
@@ -667,35 +704,12 @@ void CPlatformOS_PC::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 		m_bLevelLoad = false;
 		m_bSaveDuringLevelLoad = true;
 		break;
-	case ESYSTEM_EVENT_CHANGE_FOCUS:
-	{
-#if CRY_PLATFORM_WINDOWS
-		// Handle system timer resolution
-		// The smaller the resolution, the more accurate a thread will wake up from a suspension 
-		// Example: 
-		// Timer Resolution(1 ms): Sleep(1) -> max thread suspention time 1.99ms
-		// Timer Resolution(15 ms): Sleep(1) -> max thread suspention time 15.99ms
-		//  
-		// This is due to the scheduler running more frequently.
-		// This is a system wide global though which is set to the smallest value requested by a process.
-		// When the process dies it is set back to its original value.
-		ICVar* pSystemTimerResolution = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_system_timer_resolution") : NULL;
-		TIMECAPS tc;		
-		if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR)
-		{
-			const UINT minTimerRes =  std::min(std::max((UINT)pSystemTimerResolution->GetIVal(), tc.wPeriodMin), tc.wPeriodMax);
-
-			// wparam != 0 is focused, wparam == 0 is not focused
-			timeBeginPeriod(wparam != 0 ? minTimerRes : tc.wPeriodMax);
-		}
-		else
-		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Warning: System Timer Resolution could not be obtained.");
-		}
-
+	case ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE:
+		SetTimerResolution(false); // Set timer to minimum period
 		break;
-#endif
-	}
+	case ESYSTEM_EVENT_CHANGE_FOCUS:	
+		SetTimerResolution(wparam == 0);  // wparam != 0 is focused, wparam == 0 is not focused 
+		break;
 	}
 }
 

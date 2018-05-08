@@ -181,7 +181,7 @@ void OffMeshNavigationManager::RemoveCustomLink(const MNM::OffMeshLinkID& linkID
 		// NOTE: There should only ever be one element in the link array
 		offMeshNavigation.RemoveLink(mesh, linkInfo.startTriangleID, linkID);
 
-		gAIEnv.pNavigationSystem->RemoveOffMeshLinkIslandsConnectionBetweenTriangles(linkInfo.meshID, linkInfo.startTriangleID, linkInfo.endTriangleID, linkID);
+		gAIEnv.pNavigationSystem->RemoveOffMeshLinkIslandConnection(linkID);
 
 		// Remove cached data
 		m_links.erase(linkIt);
@@ -632,6 +632,8 @@ void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshID,
 				continue;
 			}
 
+			const MNM::OffMeshLinkID linkID = iter->first;
+			
 			// is the link incoming from a different tile?
 			// -> need to remove it before it can potentially become a dangling link (i. e. the triangleID where it ends would no longer exist or would have morphed into a different one)
 			//    (in fact, it *is* already a dangling link because given tile has just been regenerated and all its triangleIDs most likely have changed!)
@@ -639,21 +641,15 @@ void OffMeshNavigationManager::RefreshConnections(const NavigationMeshID meshID,
 			//    to call RemoveLink() to get the NavMesh patched as well.
 			if (isLinkIncomingToThisTile && !isLinkOutgoingFromThisTile)
 			{
-				const MNM::OffMeshLinkID& linkID = iter->first;
 				offMeshNavigation.RemoveLink(mesh, linkInfo.startTriangleID, linkID);
 			}
 
 			// disconnect whatever islands were connected by the offmesh-link
-			// TODO pavloi 2016.02.05: actually, it will remove all links, which have the same owner as this link, from same meshID.
-			// We probably should call RemoveOffMeshLinkIslandsConnectionBetweenTriangles(), but we need to know start and end triangles to
-			// get the start and end island. Right now, I'm not sure, whether the triangleId's in linkInfo are valid at this stage, so I leave this
-			// call as it is.
-			gAIEnv.pNavigationSystem->RemoveAllIslandConnectionsForObject(linkInfo.meshID, linkInfo.offMeshLink->GetEntityIdForOffMeshLink());
+			gAIEnv.pNavigationSystem->RemoveOffMeshLinkIslandConnection(linkID);
 
 			// Try to re-connect everything later on, but only if it was not explicitly requested to be deleted by an outside source.
 			// For example: if, at the exact same update the tile was refreshed but an outside source also requested the explicit
 			// removal of a link then we should basically not re-apply the link.
-			const MNM::OffMeshLinkID& linkID = iter->first;
 			if (!IsLinkRemovalRequested(linkID))
 			{
 				MNM::LinkAdditionRequest request(linkInfo.offMeshLink->GetEntityIdForOffMeshLink(), meshID, linkInfo.offMeshLink, linkID);

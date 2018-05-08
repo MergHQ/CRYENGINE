@@ -2594,13 +2594,11 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	// Fix to improve wait() time within third-party APIs
 #if CRY_PLATFORM_WINDOWS
 	TIMECAPS tc;
-	UINT wTimerRes;
 	if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR)
 	{
 		CryFatalError("Error while changing the system timer resolution!");
 	}
-	wTimerRes = std::min(std::max(tc.wPeriodMin, 1u), tc.wPeriodMax);
-	timeBeginPeriod(wTimerRes);
+	timeBeginPeriod(tc.wPeriodMin);
 #endif // CRY_PLATFORM_WINDOWS
 
 	LOADING_TIME_PROFILE_SECTION;

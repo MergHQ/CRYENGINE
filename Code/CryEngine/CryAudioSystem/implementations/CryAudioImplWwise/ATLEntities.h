@@ -20,13 +20,11 @@ class CObject final : public IObject, public CPoolObject<CObject, stl::PSyncNone
 {
 public:
 
-	using EnvironmentImplMap = std::map<AkAuxBusID, float>;
+	using AuxSendValues = std::vector<AkAuxSendValue>;
 
-	explicit CObject(AkGameObjectID const id)
-		: m_id(id)
-		, m_bNeedsToUpdateEnvironments(false)
-	{}
+	explicit CObject(AkGameObjectID const id);
 
+	CObject() = delete;
 	CObject(CObject const&) = delete;
 	CObject(CObject&&) = delete;
 	CObject& operator=(CObject const&) = delete;
@@ -48,7 +46,7 @@ public:
 
 	AkGameObjectID const m_id;
 	bool                 m_bNeedsToUpdateEnvironments;
-	EnvironmentImplMap   m_environmentImplAmounts;
+	AuxSendValues        m_auxSendValues;
 
 private:
 

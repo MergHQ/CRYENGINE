@@ -404,7 +404,7 @@ JobManager::CJobManager::CJobManager()
 
 const bool JobManager::CJobManager::WaitForJob(JobManager::SJobState& rJobState) const
 {
-	static ICVar* isActiveWaitEnableCVar = gEnv->pConsole->GetCVar("sys_job_system_active_wait_enabled");
+	static ICVar* isActiveWaitEnableCVar = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_job_system_active_wait_enabled") : nullptr;
 	if (!rJobState.syncVar.NeedsToWait())
 	{
 		return true;
@@ -420,7 +420,7 @@ const bool JobManager::CJobManager::WaitForJob(JobManager::SJobState& rJobState)
 	const threadID curThreadId = CryGetCurrentThreadId();
 	bool processJobsWhileWaiting = false;
 
-	if (isActiveWaitEnableCVar->GetIVal() == 1)
+	if (isActiveWaitEnableCVar && isActiveWaitEnableCVar->GetIVal() == 1)
 	{
 		if (gEnv->pRenderer)
 		{

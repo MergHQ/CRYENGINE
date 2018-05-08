@@ -843,13 +843,11 @@ void CSystem::ShutDown()
 	// Fix to improve wait() time within third party APIs using sleep()
 #if CRY_PLATFORM_WINDOWS
 	TIMECAPS tc;
-	UINT wTimerRes;
 	if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR)
 	{
 		CryFatalError("Error while changing the system timer resolution!");
 	}
-	wTimerRes = std::min(std::max(tc.wPeriodMin, 1u), tc.wPeriodMax);
-	timeEndPeriod(wTimerRes);
+	timeEndPeriod(tc.wPeriodMin);
 #endif // CRY_PLATFORM_WINDOWS
 }
 
