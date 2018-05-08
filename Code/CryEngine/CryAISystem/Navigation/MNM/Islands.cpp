@@ -568,6 +568,7 @@ void CIslands::ResolvePendingConnectionRequests(CNavMesh& navMesh, SConnectionRe
 		while (!connectionRequests.offmeshConnections.empty())
 		{
 			const SConnectionRequests::OffmeshConnectionRequest& request = connectionRequests.offmeshConnections.back();
+			const SIsland& startingIsland = GetIsland(request.startingIslandID);
 			const OffMeshNavigation::QueryLinksResult links = offMeshNavigation.GetLinksForTriangle(request.startingTriangleID, request.offMeshLinkIndex);
 			while (const WayTriangleData nextTri = links.GetNextTriangle())
 			{
@@ -576,8 +577,14 @@ void CIslands::ResolvePendingConnectionRequests(CNavMesh& navMesh, SConnectionRe
 				{
 					const OffMeshLink* pLink = pOffMeshNavigationManager->GetOffMeshLink(nextTri.offMeshLinkID);
 					CRY_ASSERT(pLink);
-					const MNM::IslandConnections::Link link(nextTri.triangleID, nextTri.offMeshLinkID, GlobalIslandID(meshID, endTriangle.islandID), endTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
-					islandConnections.SetOneWayOffmeshConnectionBetweenIslands(GlobalIslandID(meshID, request.startingIslandID), link);
+					islandConnections.SetOneWayOffmeshConnectionBetweenIslands(
+						GlobalIslandID(meshID, request.startingIslandID),
+						startingIsland.annotation,
+						GlobalIslandID(meshID, endTriangle.islandID),
+						endTriangle.areaAnnotation,
+						nextTri.offMeshLinkID,
+						nextTri.triangleID,
+						pLink->GetEntityIdForOffMeshLink());
 				}
 			}
 			connectionRequests.offmeshConnections.pop_back();

@@ -1651,103 +1651,10 @@ void NavigationSystem::ComputeIslands()
 	}
 }
 
-void NavigationSystem::AddIslandConnectionsBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID,
-                                                            const MNM::TriangleID endingTriangleID)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	if (m_meshes.validate(meshID))
-	{
-		NavigationMesh& mesh = m_meshes[meshID];
-		MNM::Tile::STriangle startingTriangle, endingTriangle;
-		if (mesh.navMesh.GetTriangle(startingTriangleID, startingTriangle))
-		{
-			if (mesh.navMesh.GetTriangle(endingTriangleID, endingTriangle))
-			{
-				MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
-
-				MNM::STile& tile = mesh.navMesh.GetTile(MNM::ComputeTileID(startingTriangleID));
-				for (uint16 l = 0; l < startingTriangle.linkCount; ++l)
-				{
-					const MNM::Tile::SLink& link = tile.GetLinks()[startingTriangle.firstLink + l];
-					if (link.side == MNM::Tile::SLink::OffMesh)
-					{
-#if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
-						AILogCommentID("<MNM:OffMeshLink>", "NavigationSystem::AddIslandConnectionsBetweenTriangles link from %u to %u (mesh %u)", startingTriangle.islandID, endingTriangle.islandID, meshID);
-#endif
-						MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
-						MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
-						MNM::OffMeshNavigation::QueryLinksResult linksResult = offMeshNavigation.GetLinksForTriangle(startingTriangleID, link.triangle);
-						while (MNM::WayTriangleData nextTri = linksResult.GetNextTriangle())
-						{
-							if (nextTri.triangleID == endingTriangleID)
-							{
-								const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID);
-								assert(pLink);
-								MNM::IslandConnections::Link islandLink(nextTri.triangleID, nextTri.offMeshLinkID, endingIslandID, endingTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
-								MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-								islandConnections.SetOneWayOffmeshConnectionBetweenIslands(startingIslandID, islandLink);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-void NavigationSystem::RemoveAllIslandConnectionsForObject(const NavigationMeshID& meshID, const uint32 objectId)
+void NavigationSystem::RemoveOffMeshLinkIslandConnection(const MNM::OffMeshLinkID offMeshLinkId)
 {
 	MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-	islandConnections.RemoveAllIslandConnectionsForObject(meshID, objectId);
-}
-
-void NavigationSystem::RemoveIslandsConnectionBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID,
-                                                               const MNM::TriangleID endingTriangleID)
-{
-	// NOTE pavloi 2016.02.05: be advised, that this function is not use anywhere. It should be called before triangles are unlinked
-	// from each other, but currently OffMeshNavigationManager first unlinks triangles and only then unlinks islands.
-
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	if (m_meshes.validate(meshID))
-	{
-		NavigationMesh& mesh = m_meshes[meshID];
-		MNM::Tile::STriangle startingTriangle, endingTriangle;
-		if (mesh.navMesh.GetTriangle(startingTriangleID, startingTriangle))
-		{
-			if (mesh.navMesh.GetTriangle(endingTriangleID, endingTriangle))
-			{
-				MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
-
-				MNM::STile& tile = mesh.navMesh.GetTile(MNM::ComputeTileID(startingTriangleID));
-				for (uint16 l = 0; l < startingTriangle.linkCount; ++l)
-				{
-					const MNM::Tile::SLink& link = tile.GetLinks()[startingTriangle.firstLink + l];
-					if (link.side == MNM::Tile::SLink::OffMesh)
-					{
-#if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
-						AILogCommentID("<MNM:OffMeshLink>", "NavigationSystem::RemoveIslandsConnectionBetweenTriangles link from %u to %u (mesh %u)", startingTriangle.islandID, endingTriangle.islandID, meshID);
-#endif
-						MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
-						MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
-						MNM::OffMeshNavigation::QueryLinksResult linksResult = offMeshNavigation.GetLinksForTriangle(startingTriangleID, link.triangle);
-						while (MNM::WayTriangleData nextTri = linksResult.GetNextTriangle())
-						{
-							if (nextTri.triangleID == endingTriangleID)
-							{
-								const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID);
-								assert(pLink);
-								MNM::IslandConnections::Link islandLink(nextTri.triangleID, nextTri.offMeshLinkID, endingIslandID, endingTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
-								MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-								islandConnections.RemoveOneWayConnectionBetweenIslands(startingIslandID, islandLink);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+	islandConnections.RemoveOffMeshLinkConnection(offMeshLinkId);
 }
 
 void NavigationSystem::AddOffMeshLinkIslandConnectionsBetweenTriangles(
@@ -1825,93 +1732,11 @@ void NavigationSystem::AddOffMeshLinkIslandConnectionsBetweenTriangles(
 				const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(linkID);
 				if (pLink)
 				{
-					const MNM::IslandConnections::Link islandLink(endingTriangleID, linkID, endingIslandID, endingTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
 					MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-					islandConnections.SetOneWayOffmeshConnectionBetweenIslands(startingIslandID, islandLink);
-				}
-			}
-		}
-	}
-}
-
-void NavigationSystem::RemoveOffMeshLinkIslandsConnectionBetweenTriangles(
-  const NavigationMeshID& meshID,
-  const MNM::TriangleID startingTriangleID,
-  const MNM::TriangleID endingTriangleID,
-  const MNM::OffMeshLinkID& linkID)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-#if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
-	{
-		bool bLinkIsFound = false;
-		// Next piece code is an almost exact copy from RemoveIslandConnectionsBetweenTriangles()
-		if (m_meshes.validate(meshID))
-		{
-			const NavigationMesh& mesh = m_meshes[meshID];
-			MNM::Tile::STriangle startingTriangle, endingTriangle;
-			if (mesh.navMesh.GetTriangle(startingTriangleID, startingTriangle))
-			{
-				if (mesh.navMesh.GetTriangle(endingTriangleID, endingTriangle))
-				{
-					const MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
-
-					const MNM::STile& tile = mesh.navMesh.GetTile(MNM::ComputeTileID(startingTriangleID));
-					for (uint16 l = 0; l < startingTriangle.linkCount && !bLinkIsFound; ++l)
-					{
-						const MNM::Tile::SLink& link = tile.GetLinks()[startingTriangle.firstLink + l];
-						if (link.side == MNM::Tile::SLink::OffMesh)
-						{
-							const MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
-							const MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
-							const MNM::OffMeshNavigation::QueryLinksResult linksResult = offMeshNavigation.GetLinksForTriangle(startingTriangleID, link.triangle);
-							while (MNM::WayTriangleData nextTri = linksResult.GetNextTriangle())
-							{
-								if (nextTri.triangleID == endingTriangleID)
-								{
-									if (nextTri.offMeshLinkID == linkID)
-									{
-										if (const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID))
-										{
-											bLinkIsFound = true;
-											break;
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
-		if (bLinkIsFound)
-		{
-			// It's expected, that the triangles in tiles are already unlinked from each other before this function is called.
-			// But validation actually found, that the link is still there.
-			AIErrorID("<MNM:OffMeshLink>", "NavigationSystem::RemoveOffMeshLinkIslandsConnectionBetweenTriangles is called with wrong input");
-		}
-	}
-#endif // DEBUG_MNM_DATA_CONSISTENCY_ENABLED
-
-	// TODO pavloi 2016.02.05: whole piece is suboptimal - this function is called from m_offMeshNavigationManager already, where
-	// it unlinked triangles and had full info about them. I leave it like this to be consistent with RemoveIslandConnectionsBetweenTriangles()
-	if (m_meshes.validate(meshID))
-	{
-		NavigationMesh& mesh = m_meshes[meshID];
-		MNM::Tile::STriangle startingTriangle, endingTriangle;
-		if (mesh.navMesh.GetTriangle(startingTriangleID, startingTriangle))
-		{
-			if (mesh.navMesh.GetTriangle(endingTriangleID, endingTriangle))
-			{
-				const MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
-				const MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
-
-				const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(linkID);
-				if (pLink)
-				{
-					const MNM::IslandConnections::Link islandLink(endingTriangleID, linkID, endingIslandID, endingTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
-					MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-					islandConnections.RemoveOneWayConnectionBetweenIslands(startingIslandID, islandLink);
+					islandConnections.SetOneWayOffmeshConnectionBetweenIslands(
+						startingIslandID, startingTriangle.areaAnnotation,
+						endingIslandID, endingTriangle.areaAnnotation, 
+						linkID, endingTriangleID, pLink->GetEntityIdForOffMeshLink());
 				}
 			}
 		}
@@ -2729,7 +2554,6 @@ bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID 
 			endingIslandID = MNM::GlobalIslandID(endingMeshID, triangle.islandID);
 		}
 	}
-
 	return m_islandConnectionsManager.AreIslandsConnected(pEntityToTestOffGridLinks, startingIslandID, endingIslandID, pFilter);
 }
 
