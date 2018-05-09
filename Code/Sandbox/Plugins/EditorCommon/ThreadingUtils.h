@@ -74,7 +74,7 @@ class CAsyncTask : public CBaseTask<Tuple>, public IBackgroundTask
 public:
 	template<typename... T>
 	CAsyncTask(T&&... other)
-		: CBaseTask(std::forward<T>(other)...)
+		: CBaseTask<Tuple>(std::forward<T>(other)...)
 	{
 	}
 

@@ -8,6 +8,10 @@
 	#define CRYNETWORK_API DLL_IMPORT
 #endif
 
+#if !defined(NET_ASSERT_LOGGING) && !defined(NET_ASSERT)
+#define NET_ASSERT assert
+#endif
+
 #include <CryCore/Platform/platform.h>
 #include <CryNetwork/ISerialize.h> // <> required for Interfuscator
 #include <CrySystem/TimeValue.h>

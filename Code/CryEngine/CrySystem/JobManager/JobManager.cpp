@@ -778,12 +778,12 @@ void DrawGraph(ColorB* pGraph, int nGraphSize, float fBaseX, float fbaseY, float
 	}
 }
 
-void WriteShortLabel(float fTextSideOffset, float fTopOffset, float fTextSize, float* fTextColor, char* tmpBuffer, int nCapChars)
+void WriteShortLabel(float fTextSideOffset, float fTopOffset, float fTextSize, float* fTextColor, const char* tmpBuffer, int nCapChars)
 {
 	char textBuffer[512] = { 0 };
 	char* pDst = textBuffer;
 	char* pEnd = textBuffer + nCapChars;   // keep space for tailing '\0'
-	char* pSrc = tmpBuffer;
+	const char* pSrc = tmpBuffer;
 	while (*pSrc != '\0' && pDst < pEnd)
 	{
 		*pDst = *pSrc;

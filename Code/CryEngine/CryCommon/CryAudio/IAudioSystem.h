@@ -28,55 +28,55 @@
  */
 namespace CryAudio
 {
-static constexpr char* s_szRelativeVelocityTrackingSwitchName = "relative_velocity_tracking";
-static constexpr char* s_szRelativeVelocityParameterName = "relative_velocity";
-static constexpr char* s_szAbsoluteVelocityTrackingSwitchName = "absolute_velocity_tracking";
-static constexpr char* s_szAbsoluteVelocityParameterName = "absolute_velocity";
-static constexpr char* s_szLoseFocusTriggerName = "lose_focus";
-static constexpr char* s_szGetFocusTriggerName = "get_focus";
-static constexpr char* s_szMuteAllTriggerName = "mute_all";
-static constexpr char* s_szUnmuteAllTriggerName = "unmute_all";
-static constexpr char* s_szPauseAllTriggerName = "pause_all";
-static constexpr char* s_szResumeAllTriggerName = "resume_all";
-static constexpr char* s_szDoNothingTriggerName = "do_nothing";
-static constexpr char* s_szOcclCalcSwitchName = "occlusion_calculation_type";
-static constexpr char* s_szIgnoreStateName = "ignore";
-static constexpr char* s_szAdaptiveStateName = "adaptive";
-static constexpr char* s_szLowStateName = "low";
-static constexpr char* s_szMediumStateName = "medium";
-static constexpr char* s_szHighStateName = "high";
-static constexpr char* s_szOnStateName = "on";
-static constexpr char* s_szOffStateName = "off";
-static constexpr char* s_szGlobalPreloadRequestName = "global_audio_system_preload";
+static constexpr char const* s_szRelativeVelocityTrackingSwitchName = "relative_velocity_tracking";
+static constexpr char const* s_szRelativeVelocityParameterName = "relative_velocity";
+static constexpr char const* s_szAbsoluteVelocityTrackingSwitchName = "absolute_velocity_tracking";
+static constexpr char const* s_szAbsoluteVelocityParameterName = "absolute_velocity";
+static constexpr char const* s_szLoseFocusTriggerName = "lose_focus";
+static constexpr char const* s_szGetFocusTriggerName = "get_focus";
+static constexpr char const* s_szMuteAllTriggerName = "mute_all";
+static constexpr char const* s_szUnmuteAllTriggerName = "unmute_all";
+static constexpr char const* s_szPauseAllTriggerName = "pause_all";
+static constexpr char const* s_szResumeAllTriggerName = "resume_all";
+static constexpr char const* s_szDoNothingTriggerName = "do_nothing";
+static constexpr char const* s_szOcclCalcSwitchName = "occlusion_calculation_type";
+static constexpr char const* s_szIgnoreStateName = "ignore";
+static constexpr char const* s_szAdaptiveStateName = "adaptive";
+static constexpr char const* s_szLowStateName = "low";
+static constexpr char const* s_szMediumStateName = "medium";
+static constexpr char const* s_szHighStateName = "high";
+static constexpr char const* s_szOnStateName = "on";
+static constexpr char const* s_szOffStateName = "off";
+static constexpr char const* s_szGlobalPreloadRequestName = "global_audio_system_preload";
 
-static constexpr char* s_szDefaultLibraryName = "default_controls";
-static constexpr char* s_szRootNodeTag = "AudioSystemData";
-static constexpr char* s_szEditorDataTag = "EditorData";
-static constexpr char* s_szTriggersNodeTag = "Triggers";
-static constexpr char* s_szParametersNodeTag = "Parameters";
-static constexpr char* s_szSwitchesNodeTag = "Switches";
-static constexpr char* s_szPreloadsNodeTag = "Preloads";
-static constexpr char* s_szEnvironmentsNodeTag = "Environments";
+static constexpr char const* s_szDefaultLibraryName = "default_controls";
+static constexpr char const* s_szRootNodeTag = "AudioSystemData";
+static constexpr char const* s_szEditorDataTag = "EditorData";
+static constexpr char const* s_szTriggersNodeTag = "Triggers";
+static constexpr char const* s_szParametersNodeTag = "Parameters";
+static constexpr char const* s_szSwitchesNodeTag = "Switches";
+static constexpr char const* s_szPreloadsNodeTag = "Preloads";
+static constexpr char const* s_szEnvironmentsNodeTag = "Environments";
 
-static constexpr char* s_szTriggerTag = "Trigger";
-static constexpr char* s_szParameterTag = "Parameter";
-static constexpr char* s_szSwitchTag = "Switch";
-static constexpr char* s_szStateTag = "State";
-static constexpr char* s_szEnvironmentTag = "Environment";
-static constexpr char* s_szPreloadRequestTag = "PreloadRequest";
-static constexpr char* s_szPlatformTag = "Platform";
-static constexpr char* s_szEventTag = "Event";
+static constexpr char const* s_szTriggerTag = "Trigger";
+static constexpr char const* s_szParameterTag = "Parameter";
+static constexpr char const* s_szSwitchTag = "Switch";
+static constexpr char const* s_szStateTag = "State";
+static constexpr char const* s_szEnvironmentTag = "Environment";
+static constexpr char const* s_szPreloadRequestTag = "PreloadRequest";
+static constexpr char const* s_szPlatformTag = "Platform";
+static constexpr char const* s_szEventTag = "Event";
 
-static constexpr char* s_szNameAttribute = "name";
-static constexpr char* s_szVersionAttribute = "version";
-static constexpr char* s_szTypeAttribute = "type";
-static constexpr char* s_szRadiusAttribute = "radius";
+static constexpr char const* s_szNameAttribute = "name";
+static constexpr char const* s_szVersionAttribute = "version";
+static constexpr char const* s_szTypeAttribute = "type";
+static constexpr char const* s_szRadiusAttribute = "radius";
 
-static constexpr char* s_szDataLoadType = "autoload";
+static constexpr char const* s_szDataLoadType = "autoload";
 
-static constexpr char* s_szConfigFolderName = "ace";
-static constexpr char* s_szAssetsFolderName = "assets";
-static constexpr char* s_szLevelsFolderName = "levels";
+static constexpr char const* s_szConfigFolderName = "ace";
+static constexpr char const* s_szAssetsFolderName = "assets";
+static constexpr char const* s_szLevelsFolderName = "levels";
 
 /**
  * A utility function to convert a string value to an Id.

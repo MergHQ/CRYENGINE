@@ -3328,17 +3328,6 @@ void CSystem::SetSystemGlobalState(const ESystemGlobalState systemGlobalState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void* CSystem::GetRootWindowMessageHandler()
-{
-#if CRY_PLATFORM_WINDOWS
-	return &WndProc;
-#else
-	assert(false && "This platform does not support window message handlers");
-	return NULL;
-#endif
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSystem::RegisterWindowMessageHandler(IWindowMessageHandler* pHandler)
 {
 	assert(pHandler && !stl::find(m_windowMessageHandlers, pHandler) && "This IWindowMessageHandler is already registered");
@@ -3667,5 +3656,16 @@ static LRESULT WINAPI WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
 #endif
+
+//////////////////////////////////////////////////////////////////////////
+void* CSystem::GetRootWindowMessageHandler()
+{
+#if CRY_PLATFORM_WINDOWS
+	return &WndProc;
+#else
+	assert(false && "This platform does not support window message handlers");
+	return NULL;
+#endif
+}
 
 #undef EXCLUDE_UPDATE_ON_CONSOLE
