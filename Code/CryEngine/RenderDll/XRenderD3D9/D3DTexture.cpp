@@ -761,6 +761,11 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 	if (pViewDistRatioCV)
 		pViewDistRatioCV->Set(10000.f);
 
+	ICVar* pLodTransitionTime = gEnv->pConsole->GetCVar("e_LodTransitionTime");
+	const float fOldLodTransitionTime = pLodTransitionTime ? pLodTransitionTime->GetFVal() : .0f;
+	if (pLodTransitionTime)
+		pLodTransitionTime->Set(.0f);
+
 	ICVar* pViewDistRatioVegetationCV = gEnv->pConsole->GetCVar("e_ViewDistRatioVegetation");
 	const float fOldViewDistRatioVegetation = pViewDistRatioVegetationCV ? pViewDistRatioVegetationCV->GetFVal() : 100.f;
 	if (pViewDistRatioVegetationCV)
@@ -832,6 +837,9 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 
 	if (pViewDistRatioCV)
 		pViewDistRatioCV->Set(fOldViewDistRatio);
+
+	if (pLodTransitionTime)
+		pLodTransitionTime->Set(fOldLodTransitionTime);
 
 	if (pViewDistRatioVegetationCV)
 		pViewDistRatioVegetationCV->Set(fOldViewDistRatioVegetation);
