@@ -19,7 +19,7 @@
 #elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 #endif
 
-static void sParseTimeExpr(const char* szScr, const char* szAnnotations, std::vector<STexSamplerFX>* pSamplers, SCGParam* vpp, int nComp, CShader* ef)
+static void sParseTimeExpr(const char* szScr, const char* szAnnotations, SCGParam* vpp, int nComp, CShader* ef)
 {
 	if (szScr)
 	{
@@ -35,7 +35,7 @@ static void sParseTimeExpr(const char* szScr, const char* szAnnotations, std::ve
 	}
 }
 
-static void sParseRuntimeShaderFlag(const char* szScr, const char* szAnnotations, std::vector<STexSamplerFX>* pSamplers, SCGParam* vpp, int nComp, CShader* ef)
+static void sParseRuntimeShaderFlag(const char* szScr, const char* szAnnotations, SCGParam* vpp, int nComp, CShader* ef)
 {
 	if (szScr)
 	{
@@ -301,7 +301,7 @@ bool CShaderMan::mfParseParamComp(int comp, SCGParam* pCurParam, const char* szS
 				}
 			}
 			if (sParams[n].ParserFunc)
-				sParams[n].ParserFunc(params ? params : szSemantic, szAnnotations, &FXParams.m_FXSamplersOld, pCurParam, comp, ef);
+				sParams[n].ParserFunc(params ? params : szSemantic, szAnnotations, pCurParam, comp, ef);
 			break;
 		}
 		n++;

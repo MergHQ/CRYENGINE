@@ -160,13 +160,13 @@ void GenericPlanner::GetStatus(MovementRequestStatus& status) const
 
 		switch (m_plan.GetLastStatus())
 		{
-		case Plan::Status::Running:
+		case IPlan::Status::Running:
 			status.planStatus.status = MovementRequestStatus::PlanStatus::Running;
 			break;
-		case Plan::Status::CantBeFinished:
+		case IPlan::Status::CantBeFinished:
 			status.planStatus.status = MovementRequestStatus::PlanStatus::CantFinish;
 			break;
-		case Plan::Status::Finished:
+		case IPlan::Status::Finished:
 			status.planStatus.status = MovementRequestStatus::PlanStatus::Finished;
 			break;
 		default:
@@ -184,7 +184,7 @@ void GenericPlanner::GetStatus(MovementRequestStatus& status) const
 	{
 		status.planStatus.status = MovementRequestStatus::PlanStatus::None;
 		status.planStatus.abandoned = false;
-		status.planStatus.currentBlockIndex = Plan::NoBlockIndex;
+		status.planStatus.currentBlockIndex = Plan::kNoBlockIndex;
 	}
 }
 
@@ -226,14 +226,14 @@ void GenericPlanner::ExecuteCurrentPlan(const MovementUpdateContext& context, OU
 {
 	if (m_plan.HasBlocks())
 	{
-		const Plan::Status s = m_plan.Execute(context);
+		const IPlan::Status s = m_plan.Execute(context);
 
-		if (s == Plan::Finished)
+		if (s == IPlan::Status::Finished)
 		{
 			status.SetRequestSatisfied(m_plan.GetRequestId());
 			m_plan.Clear(context.actor);
 		}
-		else if (s == Plan::CantBeFinished)
+		else if (s == IPlan::Status::CantBeFinished)
 		{
 			// The current plan can't be finished. We'll re-plan as soon as
 			// we can to see if we can satisfy the request.
@@ -260,7 +260,7 @@ void GenericPlanner::ExecuteCurrentPlan(const MovementUpdateContext& context, OU
 		}
 		else
 		{
-			assert(s == Plan::Running);
+			assert(s == IPlan::Status::Running);
 		}
 	}
 }

@@ -260,8 +260,7 @@ typedef _reference_target<int> _reference_target_t;
 template<typename T, typename Counter = int> class _cfg_reference_target
 {
 public:
-	using DeleteFnc = void(void*);
-	using DeleteFncPtr = DeleteFnc*;
+	using DeleteFncPtr = void(*)(void*);
 
 	_cfg_reference_target() :
 		m_nRefCounter(0),

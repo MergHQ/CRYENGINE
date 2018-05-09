@@ -6,6 +6,7 @@
 
 #include "Wrappers/MonoLibrary.h"
 #include "Wrappers/RootMonoDomain.h"
+#include "Wrappers/AppDomain.h"
 
 #include <CryPhysics/physinterface.h>
 
@@ -46,7 +47,7 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 	CMonoClass* pEntityComponentClass = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetClass("CryEngine", "EntityComponent");
 
 	auto prevEventMask = m_eventMask;
-	m_eventMask = BIT64(ENTITY_EVENT_LEVEL_LOADED);
+	m_eventMask = ENTITY_EVENT_BIT(ENTITY_EVENT_LEVEL_LOADED);
 
 	if (m_pClass.get() == pEntityComponentClass)
 	{
@@ -75,7 +76,7 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 		}
 		else
 		{
-			m_eventMask &= ~BIT64(associatedEvent);
+			m_eventMask &= ~ENTITY_EVENT_BIT(associatedEvent);
 		}
 
 		return pMethod;
@@ -93,25 +94,25 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 	m_pUpdateMethodEditing = tryGetMethod("OnEditorUpdate(single)", ENTITY_EVENT_UPDATE);
 	if (!m_pUpdateMethod.expired() || !m_pUpdateMethodEditing.expired())
 	{
-		m_eventMask |= BIT64(ENTITY_EVENT_UPDATE);
+		m_eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
 	}
 
 	if (!m_pClass->FindMethodWithDescInInheritedClasses("OnCollision(CollisionEvent)", pEntityComponentClass).expired())
 	{
 		m_pCollisionMethod = pEntityComponentClass->FindMethod("OnCollisionInternal", 12);
-		m_eventMask |= BIT64(ENTITY_EVENT_COLLISION);
+		m_eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
 	}
 	else
 	{
 		m_pCollisionMethod.reset();
-		m_eventMask &= ~BIT64(ENTITY_EVENT_COLLISION);
+		m_eventMask &= ~ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
 	}
 
 	if (prevEventMask != m_eventMask)
 	{
-		for (auto it = m_componentInstances.begin(); it != m_componentInstances.end(); )
+		for (const std::weak_ptr<CManagedEntityComponent>& weakComponent : m_componentInstances)
 		{
-			if (std::shared_ptr<CManagedEntityComponent> pComponent = it->lock())
+			if (std::shared_ptr<CManagedEntityComponent> pComponent = weakComponent.lock())
 			{
 				pComponent->GetEntity()->UpdateComponentEventMask(pComponent.get());
 			}
@@ -382,7 +383,7 @@ void CManagedEntityComponentFactory::AddSignalParameter(int signalId, const char
 	signal.AddParameter(szParameter, pType);
 }
 
-Schematyc::ETypeCategory GetSchematycPropertyType(MonoInternals::MonoTypeEnum type)
+Schematyc::ETypeCategory GetSchematycPropertyType(MonoInternals::MonoTypeEnum type, std::shared_ptr<CMonoProperty> pMonoProperty)
 {
 	switch (type)
 	{
@@ -404,6 +405,22 @@ Schematyc::ETypeCategory GetSchematycPropertyType(MonoInternals::MonoTypeEnum ty
 		return Schematyc::ETypeCategory::String;
 	}
 
+	if (type == MonoInternals::MONO_TYPE_VALUETYPE)
+	{
+		auto pClass = pMonoProperty->GetUnderlyingClass();
+		CAppDomain* pAppDomain = static_cast<CAppDomain*>(GetMonoRuntime()->GetActiveDomain());
+
+		if (pClass.get() == pAppDomain->GetVector2Class() ||
+			pClass.get() == pAppDomain->GetVector3Class() ||
+			pClass.get() == pAppDomain->GetVector4Class() ||
+			pClass.get() == pAppDomain->GetQuaternionClass() ||
+			pClass.get() == pAppDomain->GetAngles3Class() ||
+			pClass.get() == pAppDomain->GetColorClass())
+		{
+			return Schematyc::ETypeCategory::Class;
+		}
+	}
+
 	// Tried to use unsupported type
 	CRY_ASSERT(false);
 	return Schematyc::ETypeCategory::Unknown;
@@ -420,10 +437,16 @@ static bool SerializePrimitive(Serialization::IArchive& archive, const CManagedE
 		value = *propertyValue.pObject->Unbox<T>();
 	}
 
-	archive(value, szName, szLabel);
+	bool validValue = archive(value, szName, szLabel);
 
 	if (archive.isInput())
 	{
+		if (!validValue)
+		{
+			propertyValue.CacheManagedValueFromOwner();
+			value = *propertyValue.pObject->Unbox<T>();
+		}
+
 		void* pParams[1];
 		pParams[0] = &value;
 
@@ -447,7 +470,7 @@ static bool SerializePrimitive(Serialization::IArchive& archive, const CManagedE
 }
 
 CManagedEntityComponentFactory::SPropertyTypeDescription::SPropertyTypeDescription(std::shared_ptr<CMonoProperty> pMonoProperty, EEntityPropertyType serType, MonoInternals::MonoTypeEnum type, std::shared_ptr<CMonoObject> pDefaultValue)
-	: Schematyc::CCommonTypeDesc(GetSchematycPropertyType(type))
+	: Schematyc::CCommonTypeDesc(GetSchematycPropertyType(type, pMonoProperty))
 	, pProperty(pMonoProperty)
 	, serializationType(serType)
 	, monoType(type)
@@ -664,6 +687,37 @@ bool CManagedEntityComponentFactory::SPropertyTypeDescription::Serialize(Seriali
 			return SerializePrimitive<double>(archive, *pPropertyValue, szName, szLabel, MonoInternals::mono_get_double_class());
 		}
 		break;
+	case MonoInternals::MONO_TYPE_VALUETYPE:
+		{
+			std::shared_ptr<CMonoClass> pClass = pPropertyValue->typeDescription.pProperty->GetUnderlyingClass();
+
+			CAppDomain* pAppDomain = static_cast<CAppDomain*>(GetMonoRuntime()->GetActiveDomain());
+
+			if (pClass.get() == pAppDomain->GetVector2Class())
+			{
+				return SerializePrimitive<Vec2>(archive, *pPropertyValue, szName, szLabel, pClass->GetMonoClass());
+			}
+			else if (pClass.get() == pAppDomain->GetVector3Class())
+			{
+				return SerializePrimitive<Vec3>(archive, *pPropertyValue, szName, szLabel, pClass->GetMonoClass());
+			}
+			else if (pClass.get() == pAppDomain->GetVector4Class())
+			{
+				return SerializePrimitive<Vec4>(archive, *pPropertyValue, szName, szLabel, pClass->GetMonoClass());
+			}
+			else if (pClass.get() == pAppDomain->GetQuaternionClass())
+			{
+				return SerializePrimitive<Quat>(archive, *pPropertyValue, szName, szLabel, pClass->GetMonoClass());
+			}
+			else if (pClass.get() == pAppDomain->GetAngles3Class())
+			{
+				return SerializePrimitive<Ang3>(archive, *pPropertyValue, szName, szLabel, pClass->GetMonoClass());
+			}
+			else if (pClass.get() == pAppDomain->GetColorClass())
+			{
+				return SerializePrimitive<ColorF>(archive, *pPropertyValue, szName, szLabel, pClass->GetMonoClass());
+			}
+		}
 	}
 
 	return false;

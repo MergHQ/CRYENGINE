@@ -292,10 +292,9 @@ void Device::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 }
 
 // -------------------------------------------------------------------------
-// DARIO_NOTE: This is called to get the FOV that will be passed to the camera for frustum culling
-// Later (D3DStereo) the camera frustum and asymmetry is overwritten before rendering the scene
 void Device::GetCameraSetupInfo(float& fov, float& aspectRatioFactor) const
 {
+	// Calculate a single camera with a fov that encapsulates the two eyes asymmetries
 	if (m_pSession)
 	{
 		fov = m_devInfo.fovV;

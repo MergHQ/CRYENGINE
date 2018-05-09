@@ -491,6 +491,7 @@ public:
 	virtual void                           NotifyTargetDead(IAIObject* pDeadObject);
 
 	virtual std::shared_ptr<IPathFollower> CreateAndReturnNewDefaultPathFollower(const PathFollowerParams& params, const IPathObstacles& pathObstacleObject);
+	virtual std::shared_ptr<INavPath>      CreateAndReturnNewNavPath();
 
 	const AIActorSet& GetEnabledAIActorSet() const;
 

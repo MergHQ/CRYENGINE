@@ -8,10 +8,52 @@
 #include "AIConsoleVariables.h"
 
 #include "MovementBlock_DefaultEmpty.h"
+#include "MovementBlock_FollowPath.h"
+#include "MovementBlock_UseExactPositioning.h"
+#include "MovementBlock_UseSmartObject.h"
+#include "MovementBlock_HarshStop.h"
+#include "MovementBlock_TurnTowardsPosition.h"
+#include "MovementPlan.h"
 
 #if defined(COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG)
 	#include <CryAISystem/IAIDebugRenderer.h>
 #endif
+
+//#pragma optimize("", off)
+//#pragma inline_depth(0)
+
+
+Movement::BlockPtr StandardMovementBlocksFactory::CreateFollowPathBlock(Movement::IPlan& plan, NavigationAgentTypeID navigationAgentTypeID, const INavPath& path, const float endDistance, const MovementStyle& style, const bool endsInCover) const
+{
+	return std::make_shared<Movement::MovementBlocks::FollowPath>(plan, navigationAgentTypeID, static_cast<const CNavPath&>(path), endDistance, style, endsInCover);
+}
+
+Movement::BlockPtr StandardMovementBlocksFactory::CreateUseExactPositioningBlock(const INavPath& path, const MovementStyle& style) const
+{
+	return std::make_shared<Movement::MovementBlocks::UseExactPositioning>(static_cast<const CNavPath&>(path), style);
+}
+
+Movement::BlockPtr StandardMovementBlocksFactory::CreateUseSmartObjectBlock(const INavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style, IUseSmartObjectAdapter* & pOutUseSmartObjectAdapter) const
+{
+	std::shared_ptr<Movement::MovementBlocks::UseSmartObject> pUseSmartObjectBlock = std::make_shared<Movement::MovementBlocks::UseSmartObject>(static_cast<const CNavPath&>(path), mnmData, style);
+	pOutUseSmartObjectAdapter = pUseSmartObjectBlock.get();
+	return pUseSmartObjectBlock;
+}
+
+Movement::BlockPtr StandardMovementBlocksFactory::CreateHarshStopBlock() const
+{
+	return std::make_shared<Movement::MovementBlocks::HarshStop>();
+}
+
+Movement::BlockPtr StandardMovementBlocksFactory::CreateTurnTowardsPosition(const Vec3& positionToTurnTowards) const
+{
+	return std::make_shared<Movement::MovementBlocks::TurnTowardsPosition>(positionToTurnTowards);
+}
+
+Movement::BlockPtr StandardMovementBlocksFactory::CreateCustomBlock(const INavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style) const
+{
+	return static_cast<MovementSystem*>(gAIEnv.pMovementSystem)->CreateCustomBlock(static_cast<const CNavPath&>(path), mnmData, style);
+}
 
 bool IsActorValidForMovementUpdateContextCreation(MovementActor& actor)
 {
@@ -65,7 +107,7 @@ MovementSystem::MovementSystem() : m_nextUniqueRequestID(0)
 
 void MovementSystem::RegisterEntity(const EntityId entityId, MovementActorCallbacks callbacksConfiguration, IMovementActorAdapter& adapter)
 {
-	MovementActor& actor = MovementSystem::GetExistingActorOrCreateNewOne(entityId, adapter);
+	MovementActor& actor = MovementSystem::GetExistingActorOrCreateNewOne(entityId, adapter, callbacksConfiguration);
 
 	actor.callbacks = callbacksConfiguration;
 }
@@ -239,6 +281,17 @@ bool MovementSystem::RemoveActionAbilityCallbacks(const EntityId entityId, const
 
 	return pActor->RemoveActionAbilityCallbacks(ability);
 }
+
+const IStandardMovementBlocksFactory& MovementSystem::GetStandardMovementBlocksFactory() const
+{
+	return m_builtinMovementBlocksFactory;
+}
+
+std::shared_ptr<Movement::IPlan> MovementSystem::CreateAndReturnDefaultPlan()
+{
+	return std::make_shared<Movement::Plan>();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 Movement::BlockPtr MovementSystem::CreateCustomBlock(const CNavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style)
@@ -328,7 +381,7 @@ MovementRequest& MovementSystem::GetActiveRequest(MovementActor& actor, Movement
 	}
 }
 
-MovementActor& MovementSystem::GetExistingActorOrCreateNewOne(const EntityId entityId, IMovementActorAdapter& adapter)
+MovementActor& MovementSystem::GetExistingActorOrCreateNewOne(const EntityId entityId, IMovementActorAdapter& adapter, const MovementActorCallbacks& callbacks)
 {
 	Actors::iterator actorIt = std::find_if(m_actors.begin(), m_actors.end(), ActorMatchesIdPredicate(entityId));
 
@@ -340,13 +393,13 @@ MovementActor& MovementSystem::GetExistingActorOrCreateNewOne(const EntityId ent
 	else
 	{
 		// Create new actor
-		MovementActor actor(entityId, &adapter);
+		MovementActor actor(entityId, &adapter, callbacks);
 		if (actor.callbacks.getMovementPlanner)
 		{
 			actor.planner = actor.callbacks.getMovementPlanner(adapter.GetNavigationAgentTypeID());
-			assert(actor.planner);
 		}
-		else
+
+		if (!actor.planner)
 		{
 			actor.planner.reset(new Movement::GenericPlanner(adapter.GetNavigationAgentTypeID()));
 		}

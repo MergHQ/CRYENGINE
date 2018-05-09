@@ -97,6 +97,13 @@ CFileImporterDialog::CFileImporterDialog(FileImportInfos const& fileInfos, QStri
 	pMainLayout->addWidget(pDialogButtons);
 	setLayout(pMainLayout);
 
+	QDir targetFolder(m_targetPath);
+
+	if (!targetFolder.exists())
+	{
+		targetFolder.mkpath(m_targetPath);
+	}
+
 	QObject::connect(pBrowseButton, &QToolButton::clicked, this, &CFileImporterDialog::OnCreateFolderSelector);
 
 	QObject::connect(m_pFileImporterModel, &CFileImporterModel::SignalActionChanged, this, &CFileImporterDialog::OnActionChanged);

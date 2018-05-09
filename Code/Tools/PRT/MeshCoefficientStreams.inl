@@ -123,8 +123,8 @@ void NSH::CMeshCoefficientStreams<DirectCoeffType>::Compress
 						rCoeff *= rCompressionInfo.compressionValue[c].first;	  //scale into 0..255.0
 						assert(rCoeff > -0.1f && rCoeff < 255.1f);
 						//clamp values, it is just about some inaccuracies
-						rCoeff = std::max(rCoeff, (CoeffType::TComponentType)0.0);
-						rCoeff = std::min(rCoeff, (CoeffType::TComponentType)255.0);
+						rCoeff = std::max(rCoeff, (typename CoeffType::TComponentType)0.0);
+						rCoeff = std::min(rCoeff, (typename CoeffType::TComponentType)255.0);
 					}
 				}
 			}
@@ -198,9 +198,9 @@ void NSH::CMeshCoefficientStreams<DirectCoeffType>::PrepareCoefficientsForExport
 			double v0[4] = {cv1 * rCoeff[3], cv1 * rCoeff[1], cv1 * rCoeff[2], cv0 * rCoeff[0] - cv3 * rCoeff[6]};
 			double v1[4] = {cv4 * rCoeff[8], cv2 * rCoeff[5], 3 * cv3 * rCoeff[6], cv2 * rCoeff[7]};
 			for(int c0=0; c0<4; ++c0)
-				rCoeff[c0] = (DirectCoeffType::TComponentType)v0[c0];
+				rCoeff[c0] = (typename DirectCoeffType::TComponentType)v0[c0];
 			for(int c1=0; c1<4; ++c1)
-				rCoeff[4+c1] = (DirectCoeffType::TComponentType)v1[c1];
+				rCoeff[4+c1] = (typename DirectCoeffType::TComponentType)v1[c1];
 			rCoeff[8] = 0;
 		}
 	}
@@ -223,7 +223,7 @@ void NSH::CMeshCoefficientStreams<DirectCoeffType>::PrepareCoefficientsForExport
 			shRotMatrix.Transform(coeff, rCoeff);
 
 			for(int c=4; c<8; ++c)
-				rCoeff[c] = (DirectCoeffType::TComponentType)rCoeff[c+1];
+				rCoeff[c] = (typename DirectCoeffType::TComponentType)rCoeff[c+1];
 			rCoeff[8] = 0;			
 		}
 	}
@@ -247,8 +247,8 @@ void NSH::CMeshCoefficientStreams<DirectCoeffType>::CreateSingleStream
 			//will be deleted in destructor
 			float *pStream((float*)(sAllocator.new_mem_array(sizeof(float) * (uint32)rCoeffsToStreamConvert.size() * cCoeffsPerSet)));
 			int j=0;
-			const TCoeffList::const_iterator cEnd = rCoeffsToStreamConvert.end();
-			for(TCoeffList::const_iterator iter=rCoeffsToStreamConvert.begin(); iter != cEnd; ++iter)
+			const auto cEnd = rCoeffsToStreamConvert.end();
+			for(auto iter=rCoeffsToStreamConvert.begin(); iter != cEnd; ++iter)
 			{
 				const SCoeffList_tpl<CoeffType>& rCoeff = *iter;
 				for(uint8 v=0; v<cCoeffsPerSet; ++v)

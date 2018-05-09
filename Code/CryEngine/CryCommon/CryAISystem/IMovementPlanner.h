@@ -5,6 +5,7 @@
 #include <CryAISystem/MovementUpdateContext.h>
 #include <CryAISystem/MovementBlock.h>
 #include <CryAISystem/IMovementActor.h>
+#include <CryAISystem/MovementRequestID.h>
 
 
 namespace Movement

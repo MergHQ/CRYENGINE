@@ -69,7 +69,7 @@ template<typename K>
 struct SActionItem : SItem<K>
 {
 	SActionItem(QAction* pAction, int priority, int section, const K& key)
-		: SItem(priority, section, key)
+		: SItem<K>(priority, section, key)
 		, m_pAction(pAction)
 	{
 	}
@@ -90,7 +90,7 @@ struct SMenuItem : SItem<K>
 {
 	template<typename... ARGS>
 	SMenuItem(const char* szName, int priority, int section, const K& key, ARGS... args)
-		: SItem(priority, section, key)
+		: SItem<K>(priority, section, key)
 		, m_name(szName)
 	{
 		Init(std::forward<ARGS>(args)...);
