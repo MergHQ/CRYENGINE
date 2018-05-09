@@ -70,3 +70,32 @@
 %include "../../../../CryEngine/CryCommon/CrySystem/IProcess.h"
 %include "../../../../CryEngine/CryCommon/Cry3DEngine/IStatObj.h"
 %include "../../../../CryEngine/CryCommon/Cry3DEngine/IGeomCache.h"
+
+%extend IMaterial
+{
+	void SetMaterialParamFloat(const char* sParamName, float v)
+	{
+		$self->SetGetMaterialParamFloat(sParamName,v,false);
+	}
+
+	float GetMaterialParamFloat(const char* sParamName)
+	{
+		float v = 0.0f;
+		$self->SetGetMaterialParamFloat(sParamName,v,true);
+
+		return v;
+	}
+
+	void SetMaterialParamVec3(const char* sParamName, Vec3 v)
+	{
+		$self->SetGetMaterialParamVec3(sParamName,v,false);
+	}
+
+	Vec3 GetMaterialParamVec3(const char* sParamName)
+	{
+		Vec3 v(0.0f,0.0f,0.0f);
+		$self->SetGetMaterialParamVec3(sParamName,v,true);
+
+		return v;
+	}
+}
