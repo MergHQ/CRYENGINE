@@ -24,14 +24,14 @@ namespace CryEngine.Serialization
 
 		private FormatterConverter Converter { get; set; }
 
-		private void Write(object obj)
+		internal void Write(object obj)
 		{
 			WriteInstance(obj);
 
 			Writer.Flush();
 		}
 
-		private void WriteStatics(Assembly assembly)
+		internal void WriteStatics(Assembly assembly)
 		{
 			if(assembly != null)
 			{
