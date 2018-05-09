@@ -53,6 +53,7 @@ add_sources("CryDefaultEntities_uber_0.cpp"
 		"DefaultComponents/Lights/ProjectorLightComponent.cpp"
 		"DefaultComponents/Lights/ProjectorLightComponent.h"
 	SOURCE_GROUP "Geometry"
+		"DefaultComponents/Geometry/BaseMeshComponent.cpp"
 		"DefaultComponents/Geometry/BaseMeshComponent.h"
 		"DefaultComponents/Geometry/StaticMeshComponent.cpp"
 		"DefaultComponents/Geometry/StaticMeshComponent.h"
@@ -98,6 +99,7 @@ add_sources("CryDefaultEntities_uber_0.cpp"
 		"DefaultComponents/Physics/CharacterControllerComponent.h"
 		"DefaultComponents/Physics/RigidBodyComponent.cpp"
 		"DefaultComponents/Physics/RigidBodyComponent.h"
+		"DefaultComponents/Physics/PhysicsPrimitiveComponent.cpp"
 		"DefaultComponents/Physics/PhysicsPrimitiveComponent.h"
 		"DefaultComponents/Physics/BoxPrimitiveComponent.cpp"
 		"DefaultComponents/Physics/BoxPrimitiveComponent.h"
@@ -147,6 +149,8 @@ add_sources("CryDefaultEntities_uber_0.cpp"
 	SOURCE_GROUP "Utilities"
 		"DefaultComponents/Utilities/ChildEntityComponent.cpp"
 		"DefaultComponents/Utilities/ChildEntityComponent.h"
+	SOURCE_GROUP "ComponentHelpers"
+		"DefaultComponents/ComponentHelpers/PhysicsParameters.h"
 	SOURCE_GROUP "Root"
 		"PluginDll.cpp"
 		"PluginDll.h"
@@ -171,7 +175,7 @@ if(WIN32 OR WIN64)
 endif()
 
 target_include_directories(${THIS_PROJECT}
-PRIVATE 
+PRIVATE
 	"${CRYENGINE_DIR}/Code/CryEngine/CryCommon"
 	# Remove when we've switched to entity components
 	"${CRYENGINE_DIR}/Code/CryEngine/CryAction"
