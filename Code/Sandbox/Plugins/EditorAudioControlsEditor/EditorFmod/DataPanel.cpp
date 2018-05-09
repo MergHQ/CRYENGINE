@@ -75,7 +75,7 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 		{
 			ControlId const itemId = selection[0].data(static_cast<int>(ModelUtils::ERoles::Id)).toInt();
 			auto const pItem = static_cast<CItem const*>(m_impl.GetItem(itemId));
-			
+
 			if ((pItem != nullptr) && ((pItem->GetFlags() & EItemFlags::IsConnected) != 0))
 			{
 				SControlInfos controlInfos;
@@ -88,9 +88,9 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 					for (auto const& info : controlInfos)
 					{
 						pConnectionsMenu->addAction(info.icon, QtUtil::ToQString(info.name), [=]()
-						{
-							m_impl.SignalSelectConnectedSystemControl(info.id, pItem->GetId());
-						});
+									{
+										m_impl.SignalSelectConnectedSystemControl(info.id, pItem->GetId());
+						      });
 					}
 
 					pConnectionsMenu->setTitle(tr("Connections (" + ToString(controlInfos.size()) + ")"));
@@ -101,22 +101,22 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 
 			if ((pItem != nullptr) && ((pItem->GetPakStatus() & EPakStatus::OnDisk) != 0) && !pItem->GetFilePath().IsEmpty())
 			{
-				pContextMenu->addAction(tr("Show in File Explorer"), [&]()
-				{
-					QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pItem->GetFilePath()).c_str());
-				});
+				pContextMenu->addAction(tr("Show in File Explorer"), [=]()
+							{
+								QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pItem->GetFilePath()).c_str());
+				      });
 
 				pContextMenu->addSeparator();
 			}
 		}
 
-		pContextMenu->addAction(tr("Expand Selection"), [&]() { m_pTreeView->ExpandSelection(); });
-		pContextMenu->addAction(tr("Collapse Selection"), [&]() { m_pTreeView->CollapseSelection(); });
+		pContextMenu->addAction(tr("Expand Selection"), [=]() { m_pTreeView->ExpandSelection(); });
+		pContextMenu->addAction(tr("Collapse Selection"), [=]() { m_pTreeView->CollapseSelection(); });
 		pContextMenu->addSeparator();
 	}
 
-	pContextMenu->addAction(tr("Expand All"), [&]() { m_pTreeView->expandAll(); });
-	pContextMenu->addAction(tr("Collapse All"), [&]() { m_pTreeView->collapseAll(); });
+	pContextMenu->addAction(tr("Expand All"), [=]() { m_pTreeView->expandAll(); });
+	pContextMenu->addAction(tr("Collapse All"), [=]() { m_pTreeView->collapseAll(); });
 
 	pContextMenu->exec(QCursor::pos());
 }
