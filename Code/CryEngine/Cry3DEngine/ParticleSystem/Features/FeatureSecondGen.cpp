@@ -57,13 +57,13 @@ public:
 
 		static uint                s_childGroup = 1;
 		static CParticleComponent* s_lastComponent = nullptr;
-		static CParticleFeature*   s_lastFeature = nullptr;
 		if (probability < 1.0f && numChildren > 1)
 		{
-			if (pComponent != s_lastComponent || this == s_lastFeature)
+			if (pComponent != s_lastComponent)
 				s_childGroup = 1;
+			else
+				s_childGroup++;
 			s_lastComponent = pComponent;
-			s_lastFeature = this;
 		}
 
 		for (auto& componentName : m_componentNames)
@@ -88,7 +88,7 @@ public:
 
 							if (numChildren > 1)
 							{
-								AddValue(attrs, "Group", s_childGroup++);
+								AddValue(attrs, "Group", s_childGroup);
 							}
 							if (componentFrac < 1.0f)
 							{

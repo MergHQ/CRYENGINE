@@ -285,12 +285,14 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 		for (auto& pRuntime : m_componentRuntimes)
 		{
 			if (!pRuntime->GetBounds().IsReset())
+			{
 				pRenderAux->DrawAABB(pRuntime->GetBounds(), false, componentColor, eBBD_Faceted);
+				string label = string().Format("%s #%d", pRuntime->GetComponent()->GetName(),
+					pRuntime->GetContainer().GetNumParticles());
+				IRenderAuxText::DrawLabelEx(pRuntime->GetBounds().GetCenter(), 1.5f, componentColor, true, true, label);
+			}
 		}
 		string label = string().Format("%s #%d Age %.3f", m_pEffect->GetShortName().c_str(), m_stats.particles.alive, GetAge());
-		float stableTime = max(m_timeStable - m_time, 0.0f);
-		if (stableTime > 0.0f)
-			label += string().Format(" Stable %.3f", stableTime);
 		IRenderAuxText::DrawLabelEx(m_location.t, 1.5f, (float*)&alphaColor, true, true, label);
 	}
 	if (!m_maxBounds.IsReset())
