@@ -922,13 +922,6 @@ void CRenderView::AddPermanentObject(CRenderObject* pObject, const SRenderingPas
 		assert(pRenderObject->m_bPermanent);
 
 		CRY_ASSERT_MESSAGE(pRenderObject != pObject, "Adding RenderObject twice is suspicious!");
-		if (pRenderObject == pObject)
-		{
-			// Record already exists, update instance data.
-			record.instanceUpdateInfo = instanceUpdateInfo;
-			record.requiresInstanceDataUpdate = instanceDataDirty;
-			return;
-		}
 	}
 #endif
 
