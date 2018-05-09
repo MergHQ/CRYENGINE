@@ -51,8 +51,6 @@ protected:
 
 	SRenderViewport          m_viewport;
 
-	bool                     m_bVSync = false;
-
 protected:
 	CRenderDisplayContext(IRenderer::SDisplayContextDescription desc, uint32 uniqueId) : m_uniqueId(uniqueId), m_desc(desc)
 	{
@@ -65,7 +63,6 @@ protected:
 	virtual void         ReleaseResources();
 
 	void                 SetDisplayResolutionAndRecreateTargets(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp);
-	void                 SetVSyncHint(bool enable) { m_bVSync = enable; }
 
 	virtual void         ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp);
 	void                 ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight)
@@ -104,7 +101,6 @@ public:
 	bool                 IsSuperSamplingEnabled() const { return m_nSSSamplesX * m_nSSSamplesY > 1; }
 	bool                 IsNativeScalingEnabled() const;
 	bool                 NeedsDepthStencil() const { return (m_desc.renderFlags & (FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL)) != 0; }
-	bool                 GetVSyncHint() const { return m_bVSync; }
 
 	CTexture* GetCurrentColorOutput() const
 	{
@@ -148,16 +144,17 @@ private:
 	TexSmartPtr              m_pBackBufferProxy = nullptr;
 	bool                     m_bSwapProxy = true;
 	bool                     m_fullscreen = false;
+	bool                     m_bVSync = false;
 
 private:
-	void                 SetHWND(HWND hWnd);
+	void                 CreateSwapChain(HWND hWnd, bool vsync);
 	void                 CreateOutput();
 	void                 ShutDown();
 	void                 ReleaseResources() override;
 #if CRY_PLATFORM_WINDOWS
 	void                 EnforceFullscreenPreemption();
 #endif
-	void                 ChangeOutputIfNecessary(bool isFullscreen);
+	void                 ChangeOutputIfNecessary(bool isFullscreen, bool vsync = true);
 	void                 ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp) override;
 	void                 ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight)
 	{
@@ -189,6 +186,7 @@ public:
 
 	void                 SetFullscreenState(bool isFullscreen);
 	bool                 IsFullscreen() const { return m_fullscreen; }
+	bool                 GetVSyncState() const { return m_bVSync; }
 
 	Vec2_tpl<uint32_t>   FindClosestMatchingScreenResolution(const Vec2_tpl<uint32_t> &resolution) const;
 

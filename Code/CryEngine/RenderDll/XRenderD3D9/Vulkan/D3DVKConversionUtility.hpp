@@ -336,15 +336,6 @@ static const DXGI_FORMAT s_VkFormatToDXGI[] =
 	DXGI_FORMAT_UNKNOWN               // VK_FORMAT_ASTC_12x12_SRGB_BLOCK = 184,
 };
 
-static const VkPresentModeKHR s_presentModes[] =
-{
-	//For now always use FIFO since it's always supported
-	VK_PRESENT_MODE_MAILBOX_KHR, //DXGI_SWAP_EFFECT_DISCARD,
-	VK_PRESENT_MODE_FIFO_KHR,    //DXGI_SWAP_EFFECT_SEQUENTIAL,
-	VK_PRESENT_MODE_FIFO_KHR,    //DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
-	VK_PRESENT_MODE_FIFO_KHR     //DXGI_SWAP_EFFECT_FLIP_DISCARD
-};
-
 ILINE static VkFormat DXGIFormatToVKFormat(DXGI_FORMAT format)
 {
 	return s_FormatWithSize[format].Format;

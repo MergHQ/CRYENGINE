@@ -26,10 +26,7 @@ void CSwapChain::ReadSwapChainSurfaceDesc()
 
 	m_swapChainDesc.Width = (UINT)backBufferSurfaceDesc.BufferDesc.Width;
 	m_swapChainDesc.Height = (UINT)backBufferSurfaceDesc.BufferDesc.Height;
-#if defined(SUPPORT_DEVICE_INFO)
-	m_swapChainDesc.Format = backBufferSurfaceDesc.BufferDesc.Format;
-	m_swapChainDesc.SampleDesc = backBufferSurfaceDesc.SampleDesc;
-#elif CRY_RENDERER_VULKAN
+#if defined(SUPPORT_DEVICE_INFO) || CRY_RENDERER_VULKAN
 	m_swapChainDesc.Format = backBufferSurfaceDesc.BufferDesc.Format;
 	m_swapChainDesc.SampleDesc = backBufferSurfaceDesc.SampleDesc;
 #elif CRY_PLATFORM_DURANGO
@@ -43,12 +40,12 @@ void CSwapChain::ReadSwapChainSurfaceDesc()
 }
 
 #if !CRY_PLATFORM_DURANGO && !CRY_RENDERER_GNM
-CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t width, uint32_t height, bool isMainContext, bool isFullscreen)
+CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t width, uint32_t height, bool isMainContext, bool isFullscreen, bool vsync)
 {
 #if defined(USE_SDL2_VIDEO)
-	DXGI_FORMAT fmt = DXGI_FORMAT_B8G8R8X8_UNORM;
+	const DXGI_FORMAT fmt = DXGI_FORMAT_B8G8R8X8_UNORM;
 #else
-	DXGI_FORMAT fmt = DXGI_FORMAT_R8G8B8A8_UNORM;
+	const DXGI_FORMAT fmt = DXGI_FORMAT_R8G8B8A8_UNORM;
 #endif
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
@@ -86,6 +83,10 @@ CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t 
 	scDesc.Windowed = 1;
 	scDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	scDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+#if CRY_RENDERER_VULKAN
+	if (!vsync)
+		scDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+#endif
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
 	if (bWaitable)

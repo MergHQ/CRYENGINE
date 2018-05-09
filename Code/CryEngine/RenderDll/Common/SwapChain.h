@@ -82,6 +82,6 @@ public:
 #elif CRY_RENDERER_GNM
 	static CSwapChain        CreateGNMSwapChain(uint32_t width, uint32_t height);
 #else
-	static CSwapChain        CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t width, uint32_t height, bool isMainContext, bool isFullscreen);
+	static CSwapChain        CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t width, uint32_t height, bool isMainContext, bool isFullscreen, bool vsync);
 #endif
 };
