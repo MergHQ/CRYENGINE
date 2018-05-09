@@ -129,7 +129,6 @@ struct SFXSampler
 	}
 	uint32 GetFlags() { return m_nFlags; }
 	void   PostLoad(class CParserBin& Parser, SParserFrame& Name, SParserFrame& Annotations, SParserFrame& Values, SParserFrame& Assign);
-	void   PostLoad();
 	bool   Export(SShaderSerializeContext& SC);
 	bool   Import(SShaderSerializeContext& SC, SSFXSampler* pPR);
 	uint32 Size()
@@ -168,6 +167,7 @@ struct SFXTexture
 	CCryNameR           m_Semantic;    // Parameter semantic type (after ':')
 	CCryNameR           m_Values;      // Parameter values (after '=')
 	string              m_szTexture;   // Texture source name
+	SHRenderTarget*     m_pTarget = nullptr;
 	string              m_szUIName;    // UI name
 	string              m_szUIDesc;    // UI description
 	bool                m_bSRGBLookup; // Lookup
@@ -192,7 +192,6 @@ struct SFXTexture
 	uint32 GetFlags()    { return m_nFlags; }
 	uint32 GetTexFlags() { return m_nTexFlags; }
 	void   PostLoad(class CParserBin& Parser, SParserFrame& Name, SParserFrame& Annotations, SParserFrame& Values, SParserFrame& Assign);
-	void   PostLoad();
 	bool   Export(SShaderSerializeContext& SC);
 	bool   Import(SShaderSerializeContext& SC, SSFXTexture* pPR);
 	uint32 Size()

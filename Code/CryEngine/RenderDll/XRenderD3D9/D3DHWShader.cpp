@@ -2228,27 +2228,23 @@ void CHWShader_D3D::mfUpdatePreprocessFlags(SShaderTechnique* pTech)
 	for (uint32 i = 0; i < (uint32)m_Insts.size(); i++)
 	{
 		SHWSInstance* pInst = m_Insts[i];
-		if (pInst->m_pSamplers.size())
+		for (const auto &t : pInst->m_pFXTextures)
 		{
-			for (uint32 j = 0; j < (uint32)pInst->m_pSamplers.size(); j++)
+			if (t && t->m_pTarget)
 			{
-				STexSamplerRT* pSamp = &pInst->m_pSamplers[j];
-				if (pSamp && pSamp->m_pTarget)
+				SHRenderTarget* pTarg = t->m_pTarget;
+				if (pTarg->m_eOrder == eRO_PreProcess)
+					nFlags |= pTarg->m_nProcessFlags;
+				if (pTech)
 				{
-					SHRenderTarget* pTarg = pSamp->m_pTarget;
-					if (pTarg->m_eOrder == eRO_PreProcess)
-						nFlags |= pTarg->m_nProcessFlags;
-					if (pTech)
+					uint32 n = 0;
+					for (n = 0; n < pTech->m_RTargets.Num(); n++)
 					{
-						uint32 n = 0;
-						for (n = 0; n < pTech->m_RTargets.Num(); n++)
-						{
-							if (pTarg == pTech->m_RTargets[n])
-								break;
-						}
-						if (n == pTech->m_RTargets.Num())
-							pTech->m_RTargets.AddElem(pTarg);
+						if (pTarg == pTech->m_RTargets[n])
+							break;
 					}
+					if (n == pTech->m_RTargets.Num())
+						pTech->m_RTargets.AddElem(pTarg);
 				}
 			}
 		}

@@ -112,7 +112,7 @@ struct SParamDB
 	const char* szAliasName;
 	ECGParam    eParamType;
 	uint32      nFlags;
-	void        (* ParserFunc)(const char* szScr, const char* szAnnotations, std::vector<STexSamplerFX>* pSamplers, SCGParam* vpp, int nComp, CShader* ef);
+	void        (* ParserFunc)(const char* szScr, const char* szAnnotations, SCGParam* vpp, int nComp, CShader* ef);
 	SParamDB()
 		: szName(nullptr)
 		, szAliasName(nullptr)
@@ -129,7 +129,7 @@ struct SParamDB
 		ParserFunc = NULL;
 		eParamType = ePrmType;
 	}
-	SParamDB(const char* inName, ECGParam ePrmType, uint32 inFlags, void(*InParserFunc)(const char* szScr, const char* szAnnotations, std::vector<STexSamplerFX>* pSamplers, SCGParam * vpp, int nComp, CShader * ef))
+	SParamDB(const char* inName, ECGParam ePrmType, uint32 inFlags, void(*InParserFunc)(const char* szScr, const char* szAnnotations, SCGParam * vpp, int nComp, CShader * ef))
 	{
 		szName = inName;
 		szAliasName = NULL;
@@ -480,18 +480,12 @@ public:
 	void              mfParseFX_Annotations(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, bool* bPublic, CCryNameR techStart[2]);
 	void              mfParseFXTechnique_Annotations_Script(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, SShaderTechnique* pShTech, bool* bPublic, std::vector<SShaderTechParseParams>& techParams);
 	void              mfParseFXTechnique_Annotations(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, SShaderTechnique* pShTech, bool* bPublic, std::vector<SShaderTechParseParams>& techParams);
-	void              mfParseFXSampler_Annotations_Script(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, STexSamplerFX* pSamp);
-	void              mfParseFXSampler_Annotations(char* buf, CShader* ef, std::vector<SFXStruct>& Structs, STexSamplerFX* pSamp);
 	void              mfParseFX_Global(SFXParam& pr, CShader* ef, std::vector<SFXStruct>& Structs, CCryNameR techStart[2]);
 	bool              mfParseDummyFX_Global(std::vector<SFXStruct>& Structs, char* annot, CCryNameR techStart[2]);
 	const string&     mfParseFXTechnique_GenerateShaderScript(std::vector<SFXStruct>& Structs, FXMacro& Macros, std::vector<SFXParam>& Params, std::vector<SFXParam>& AffectedParams, const char* szEntryFunc, CShader* ef, EHWShaderClass eSHClass, const char* szShaderName, uint32& nAffectMask, const char* szType);
 	bool              mfParseFXTechnique_MergeParameters(std::vector<SFXStruct>& Structs, std::vector<SFXParam>& Params, std::vector<int>& AffectedFunc, SFXStruct* pMainFunc, CShader* ef, EHWShaderClass eSHClass, const char* szShaderName, std::vector<SFXParam>& NewParams);
 	CTexture*         mfParseFXTechnique_LoadShaderTexture(STexSamplerRT* smp, const char* szName, SShaderPass* pShPass, CShader* ef, int nIndex, byte ColorOp, byte AlphaOp, byte ColorArg, byte AlphaArg);
-	bool              mfParseFXTechnique_LoadShader(const char* szShaderCom, SShaderPass* pShPass, CShader* ef, std::vector<STexSamplerFX>& Samplers, std::vector<SFXStruct>& Structs, std::vector<SFXParam>& Params, FXMacro& Macros, EHWShaderClass eSHClass);
-	bool              mfParseFXTechniquePass(char* buf, char* annotations, SShaderTechnique* pShTech, CShader* ef, std::vector<STexSamplerFX>& Samplers, std::vector<SFXStruct>& Structs, std::vector<SFXParam>& Params);
 	bool              mfParseFXTechnique_CustomRE(char* buf, const char* name, SShaderTechnique* pShTech, CShader* ef);
-	SShaderTechnique* mfParseFXTechnique(char* buf, char* annotations, CShader* ef, std::vector<STexSamplerFX>& Samplers, std::vector<SFXStruct>& Structs, std::vector<SFXParam>& Params, bool* bPublic, std::vector<SShaderTechParseParams>& techParams);
-	bool              mfParseFXSampler(char* buf, char* name, char* annotations, CShader* ef, std::vector<STexSamplerFX>& Samplers, std::vector<SFXStruct>& Structs);
 	bool              mfParseLightStyle(CLightStyle* ls, char* buf);
 	bool              mfParseFXLightStyle(char* buf, int nID, CShader* ef, std::vector<SFXStruct>& Structs);
 	CShader*          mfParseFX(char* buf, CShader* ef, CShader* efGen, uint64 nMaskGen);

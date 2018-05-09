@@ -847,8 +847,6 @@ class CParserBin
 	EToken m_eToken;
 	uint32 m_nFirstToken;
 	TArray<SCodeFragment> m_CodeFragments;
-	//std::vector<SFXParam> m_Parameters;
-	//std::vector<STexSamplerFX> m_Samplers;
 
 	SParserFrame m_CurFrame;
 
