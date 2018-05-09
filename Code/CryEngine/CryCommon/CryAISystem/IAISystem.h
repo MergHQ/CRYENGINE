@@ -25,6 +25,7 @@ struct ICoordinationManager;
 struct ICommunicationManager;
 struct ICoverSystem;
 struct INavigationSystem;
+class INavPath;
 namespace BehaviorTree
 {
 struct IBehaviorTreeManager;
@@ -779,6 +780,7 @@ struct IAISystem
 	virtual void                           NotifyTargetDead(IAIObject* pDeadObject) = 0;
 
 	virtual std::shared_ptr<IPathFollower> CreateAndReturnNewDefaultPathFollower(const PathFollowerParams& params, const IPathObstacles& pathObstacleObject) = 0;
+	virtual std::shared_ptr<INavPath>      CreateAndReturnNewNavPath() = 0;
 	// </interfuscator:shuffle>
 };
 

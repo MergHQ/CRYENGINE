@@ -32,16 +32,16 @@ bool Plan::CheckForNeedToReplan(const MovementUpdateContext& context) const
 	return false;
 }
 
-Plan::Status Plan::Execute(const MovementUpdateContext& context)
+IPlan::Status Plan::Execute(const MovementUpdateContext& context)
 {
-	if (m_current == NoBlockIndex)
+	if (m_current == kNoBlockIndex)
 		ChangeToIndex(0, context.actor);
 
-	m_lastStatus = Plan::Status::Running;
+	m_lastStatus = IPlan::Status::Running;
 
 	while (true)
 	{
-		assert(m_current != NoBlockIndex);
+		assert(m_current != kNoBlockIndex);
 		assert(m_current < m_blocks.size());
 
 		const Block::Status blockStatus = m_blocks[m_current]->Update(context);
@@ -54,15 +54,15 @@ Plan::Status Plan::Execute(const MovementUpdateContext& context)
 				ChangeToIndex(m_current + 1, context.actor);
 				continue;
 			}			
-			ChangeToIndex(NoBlockIndex, context.actor);
-			m_lastStatus = Plan::Status::Finished;
+			ChangeToIndex(kNoBlockIndex, context.actor);
+			m_lastStatus = IPlan::Status::Finished;
 			break;
 		}
 		case Block::CantBeFinished:
-			m_lastStatus = Plan::Status::CantBeFinished;
+			m_lastStatus = IPlan::Status::CantBeFinished;
 			break;
 		case Block::Running:
-			m_lastStatus = Plan::Status::Running;
+			m_lastStatus = IPlan::Status::Running;
 			break;
 		default:
 			assert(0);
@@ -77,10 +77,10 @@ void Plan::ChangeToIndex(const uint newIndex, IMovementActor& actor)
 {
 	const uint oldIndex = m_current;
 
-	if (oldIndex != NoBlockIndex)
+	if (oldIndex != kNoBlockIndex)
 		m_blocks[oldIndex]->End(actor);
 
-	if (newIndex != NoBlockIndex)
+	if (newIndex != kNoBlockIndex)
 		m_blocks[newIndex]->Begin(actor);
 
 	m_current = newIndex;
@@ -88,10 +88,10 @@ void Plan::ChangeToIndex(const uint newIndex, IMovementActor& actor)
 
 void Plan::Clear(IMovementActor& actor)
 {
-	ChangeToIndex(NoBlockIndex, actor);
+	ChangeToIndex(kNoBlockIndex, actor);
 	m_blocks.clear();
 	m_requestId = MovementRequestID();
-	m_lastStatus = Plan::Status::None;
+	m_lastStatus = IPlan::Status::None;
 }
 
 void Plan::CutOffAfterCurrentBlock()
@@ -102,7 +102,7 @@ void Plan::CutOffAfterCurrentBlock()
 
 bool Plan::InterruptibleNow() const
 {
-	if (m_current == NoBlockIndex)
+	if (m_current == kNoBlockIndex)
 		return true;
 
 	return m_blocks[m_current]->InterruptibleNow();

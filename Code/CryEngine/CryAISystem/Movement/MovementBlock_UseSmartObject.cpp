@@ -44,9 +44,9 @@ Movement::Block::Status UseSmartObject::Update(const MovementUpdateContext& cont
 	return baseStatus;
 }
 
-void UseSmartObject::SetUpcomingPath(const CNavPath& upcomingPath)
+void UseSmartObject::SetUpcomingPath(const INavPath& upcomingPath)
 {
-	m_upcomingPath = upcomingPath;
+	upcomingPath.CopyTo(&m_upcomingPath);
 }
 
 void UseSmartObject::SetUpcomingStyle(const MovementStyle& upcomingStyle)

@@ -31,6 +31,7 @@ class CSmartObject;
 namespace Movement
 {
 struct IPlanner;
+struct IPlan;
 
 enum PathfinderState
 {
@@ -46,7 +47,7 @@ typedef Functor1<MNMPathRequest&>               PathRequestFunction;
 typedef Functor0wRet<Movement::PathfinderState> CheckOnPathfinderStateFunction;
 typedef Functor0wRet<INavPath*>                 GetPathFunction;
 typedef Functor0wRet<IPathFollower*>            GetPathFollowerFunction;
-typedef Functor1wRet<NavigationAgentTypeID, std::shared_ptr<Movement::IPlanner>> GetMovementPlanner;	// optional callback; if provided, can be used to provide a custom IPlanner from the game side; returning a nullptr is *not* allowed (will trigger an assert() failure)
+typedef Functor1wRet<NavigationAgentTypeID, std::shared_ptr<Movement::IPlanner>> GetMovementPlanner;	// optional callback; if provided, can be used to provide a custom IPlanner from the game side; returning a nullptr *is* allowed (and will then cause the built-in default planner to be used instead)
 
 struct MovementActorCallbacks
 {
@@ -123,6 +124,32 @@ struct IMovementActorAdapter
 	virtual void                  UpdateLooking(float updateTime, std::shared_ptr<Vec3> lookTarget, const bool targetReachable, const float pathDistanceToEnd, const Vec3& followTargetPosition, const MovementStyle& style) = 0;
 };
 
+// - some movement blocks are already built in the CryAISystem.dll
+// - this interface now allows the game code to use these movement blocks when building a custom movement plan
+struct IStandardMovementBlocksFactory
+{
+	// - for backwards compatibility with the currently existing built-in MovemenPlanner [as of 2018-05-07], in case someone wants to clone its functionality in the game code
+	// - CreateUseSmartObjectBlock() returns a pointer to it as output paramter, so that the caller can invoke the SrtUpcoming*() methods on the underlying smart-object movement block
+	struct IUseSmartObjectAdapter
+	{
+		virtual void              SetUpcomingPath(const INavPath& upcomgingPath) = 0;
+		virtual void              SetUpcomingStyle(const MovementStyle& upcomingStyle) = 0;
+
+	protected:
+		~IUseSmartObjectAdapter() {}
+	};
+
+	virtual Movement::BlockPtr    CreateFollowPathBlock(Movement::IPlan& plan, NavigationAgentTypeID navigationAgentTypeID, const INavPath& path, const float endDistance, const MovementStyle& style, const bool endsInCover) const = 0;
+	virtual Movement::BlockPtr    CreateUseExactPositioningBlock(const INavPath& path, const MovementStyle& style) const = 0;
+	virtual Movement::BlockPtr    CreateUseSmartObjectBlock(const INavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style, IUseSmartObjectAdapter* & pOutUseSmartObjectAdapter) const = 0;
+	virtual Movement::BlockPtr    CreateHarshStopBlock() const = 0;
+	virtual Movement::BlockPtr    CreateTurnTowardsPosition(const Vec3& positionToTurnTowards) const = 0;
+	virtual Movement::BlockPtr    CreateCustomBlock(const INavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style) const = 0;
+
+protected:
+	~IStandardMovementBlocksFactory() {}
+};
+
 struct IMovementSystem
 {
 	virtual ~IMovementSystem() {}
@@ -168,4 +195,10 @@ struct IMovementSystem
 	//! Unregister callbacks for special movement ability (extending planner)
 	virtual bool RemoveActionAbilityCallbacks(const EntityId entityId, const SMovementActionAbilityCallbacks& ability) = 0;
 
+	// ! Returns the factory which can be used to construct some of the built-in movement blocks while building a path
+	virtual const IStandardMovementBlocksFactory& GetStandardMovementBlocksFactory() const = 0;
+
+	// ! Creates and instance of the default plan and returns it for being directly used in the game code's implementaion of Movement::IPlanner.
+	// ! That way, the game code doesn't need to come up with its own implementation of Movement::IPlan.
+	virtual std::shared_ptr<Movement::IPlan> CreateAndReturnDefaultPlan() = 0;
 };

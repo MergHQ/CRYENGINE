@@ -4097,6 +4097,11 @@ std::shared_ptr<IPathFollower> CAISystem::CreateAndReturnNewDefaultPathFollower(
 	return IPathFollowerPtr(new CSmartPathFollower(params, pathObstacleObject));
 }
 
+std::shared_ptr<INavPath> CAISystem::CreateAndReturnNewNavPath()
+{
+	return std::make_shared<CNavPath>();
+}
+
 //
 //-----------------------------------------------------------------------------------------------------------
 void CAISystem::DumpStateOf(IAIObject* pObject)

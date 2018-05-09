@@ -59,10 +59,11 @@ typedef std::deque<MovementRequestID> MovementRequestQueue;
 // Retrieve information about an actor through this object.
 struct MovementActor : public IMovementActor
 {
-	MovementActor(const EntityId _entityID, IMovementActorAdapter* _pAdapter)
+	MovementActor(const EntityId _entityID, IMovementActorAdapter* _pAdapter, const MovementActorCallbacks& _callbacks)
 		: entityID(_entityID)
 		, requestIdCurrentlyInPlanner(0)
 		, pAdapter(_pAdapter)
+		, callbacks(_callbacks)
 	{
 		assert(pAdapter);
 	}
