@@ -42,7 +42,7 @@ void CPersistantDebug::AddSphere(const Vec3& pos, float radius, ColorF clr, floa
 	obj.clr = clr;
 	obj.pos = pos;
 	obj.radius = radius;
-	obj.timeRemaining = timeout < 0.0f ? kUnlimitedTime : timeout;
+	obj.timeRemaining = timeout <= 0.0f ? kUnlimitedTime : timeout;
 	obj.totalTime = obj.timeRemaining;
 	m_current->second.push_back(obj);
 }
@@ -55,7 +55,7 @@ void CPersistantDebug::AddQuat(const Vec3& pos, const Quat& q, float r, ColorF c
 	obj.pos = pos;
 	obj.q = q;
 	obj.radius = r;
-	obj.timeRemaining = timeout < 0.0f ? kUnlimitedTime : timeout;
+	obj.timeRemaining = timeout <= 0.0f ? kUnlimitedTime : timeout;
 	obj.totalTime = obj.timeRemaining;
 	m_current->second.push_back(obj);
 }
@@ -67,7 +67,7 @@ void CPersistantDebug::AddAABB(const Vec3& min, const Vec3& max, ColorF clr, flo
 	obj.clr = clr;
 	obj.pos = min;
 	obj.dir = max;
-	obj.timeRemaining = timeout < 0.0f ? kUnlimitedTime : timeout;
+	obj.timeRemaining = timeout <= 0.0f ? kUnlimitedTime : timeout;
 	obj.totalTime = obj.timeRemaining;
 	m_current->second.push_back(obj);
 }
@@ -79,7 +79,7 @@ void CPersistantDebug::AddDirection(const Vec3& pos, float radius, const Vec3& d
 	obj.clr = clr;
 	obj.pos = pos;
 	obj.radius = radius;
-	obj.timeRemaining = timeout < 0.0f ? kUnlimitedTime : timeout;
+	obj.timeRemaining = timeout <= 0.0f ? kUnlimitedTime : timeout;
 	obj.totalTime = obj.timeRemaining;
 	obj.dir = dir.GetNormalizedSafe();
 	if (obj.dir.GetLengthSquared() > 0.001f)
@@ -94,7 +94,7 @@ void CPersistantDebug::AddLine(const Vec3& pos1, const Vec3& pos2, ColorF clr, f
 	obj.pos = pos1;
 	obj.dir = pos2 - pos1;
 	obj.radius = 0.0f;
-	obj.timeRemaining = timeout < 0.0f ? kUnlimitedTime : timeout;
+	obj.timeRemaining = timeout <= 0.0f ? kUnlimitedTime : timeout;
 	obj.totalTime = obj.timeRemaining;
 	m_current->second.push_back(obj);
 }
@@ -107,7 +107,7 @@ void CPersistantDebug::AddPlanarDisc(const Vec3& pos, float innerRadius, float o
 	obj.pos = pos;
 	obj.radius = std::max(0.0f, std::min(innerRadius, outerRadius));
 	obj.radius2 = std::min(100.0f, std::max(0.0f, std::max(innerRadius, outerRadius)));
-	obj.timeRemaining = timeout < 0.0f ? kUnlimitedTime : timeout;
+	obj.timeRemaining = timeout <= 0.0f ? kUnlimitedTime : timeout;
 	obj.totalTime = obj.timeRemaining;
 	if (obj.radius2)
 		m_current->second.push_back(obj);
@@ -122,7 +122,7 @@ void CPersistantDebug::AddCone(const Vec3& pos, const Vec3& dir, float baseRadiu
 	obj.dir = dir;
 	obj.radius = std::max(0.001f, baseRadius);
 	obj.radius2 = std::max(0.001f, height);
-	obj.timeRemaining = timeout < 0.0f ? kUnlimitedTime : timeout;
+	obj.timeRemaining = timeout <= 0.0f ? kUnlimitedTime : timeout;
 	obj.totalTime = obj.timeRemaining;
 	m_current->second.push_back(obj);
 }
@@ -136,7 +136,7 @@ void CPersistantDebug::AddCylinder(const Vec3& pos, const Vec3& dir, float radiu
 	obj.dir = dir;
 	obj.radius = std::max(0.001f, radius);
 	obj.radius2 = std::max(0.001f, height);
-	obj.timeRemaining = timeout < 0.0f ? kUnlimitedTime : timeout;
+	obj.timeRemaining = timeout <= 0.0f ? kUnlimitedTime : timeout;
 	obj.totalTime = obj.timeRemaining;
 	m_current->second.push_back(obj);
 }
@@ -156,7 +156,7 @@ void CPersistantDebug::AddText(float x, float y, float size, ColorF clr, float t
 	obj.pos.y = y;
 	obj.radius = size;
 	obj.text = buffer;
-	obj.timeRemaining = timeout < 0.0f ? kUnlimitedTime : timeout;
+	obj.timeRemaining = timeout <= 0.0f ? kUnlimitedTime : timeout;
 	obj.totalTime = obj.timeRemaining;
 	m_current->second.push_back(obj);
 }
@@ -175,7 +175,7 @@ void CPersistantDebug::AddText3D(const Vec3& pos, float size, ColorF clr, float 
 	obj.pos = pos;
 	obj.radius = size;
 	obj.text = buffer;
-	obj.timeRemaining = timeout < 0.0f ? kUnlimitedTime : timeout;
+	obj.timeRemaining = timeout <= 0.0f ? kUnlimitedTime : timeout;
 	obj.totalTime = obj.timeRemaining;
 	m_current->second.push_back(obj);
 }

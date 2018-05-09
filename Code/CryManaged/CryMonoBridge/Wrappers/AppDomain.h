@@ -32,6 +32,13 @@ public:
 	void SerializeObject(CMonoObject* pSerializer, MonoInternals::MonoObject* pObject, bool bIsAssembly);
 	std::shared_ptr<CMonoObject> DeserializeObject(CMonoObject* pSerializer, const CMonoClass* const pObjectClass);
 
+	CMonoClass* GetVector2Class() const { return m_pVector2Class; }
+	CMonoClass* GetVector3Class() const { return m_pVector3Class; }
+	CMonoClass* GetVector4Class() const { return m_pVector4Class; }
+	CMonoClass* GetQuaternionClass() const { return m_pQuaternionClass; }
+	CMonoClass* GetAngles3Class() const { return m_pAngles3Class; }
+	CMonoClass* GetColorClass() const { return m_pColorClass; }
+
 protected:
 	void CreateDomain(const char *name, bool bActivate);
 
@@ -46,4 +53,11 @@ protected:
 
 	CMonoLibrary* m_pLibCore;
 	CMonoLibrary* m_pLibCommon;
+
+	CMonoClass* m_pVector2Class;
+	CMonoClass* m_pVector3Class;
+	CMonoClass* m_pVector4Class;
+	CMonoClass* m_pQuaternionClass;
+	CMonoClass* m_pAngles3Class;
+	CMonoClass* m_pColorClass;
 };

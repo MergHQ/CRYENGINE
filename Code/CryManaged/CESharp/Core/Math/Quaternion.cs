@@ -2,16 +2,19 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using CryEngine.Common;
 
 namespace CryEngine
 {
+	[StructLayout(LayoutKind.Sequential)]
 	public struct Quaternion : IEquatable<Quaternion>
-
 	{
 		public static readonly Quaternion Identity = new Quaternion(1, new Vector3(0, 0, 0));
 
+		[MarshalAs(UnmanagedType.Struct)]
 		private Vector3 _v;
+		[MarshalAs(UnmanagedType.R4)]
 		private float _w;
 
 		public float x { get { return _v.x; } set { _v.x = value; } }

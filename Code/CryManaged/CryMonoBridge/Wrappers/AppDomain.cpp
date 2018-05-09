@@ -40,6 +40,13 @@ CAppDomain::CAppDomain(const char *name, bool bActivate)
 		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to load managed core library!");
 		return;
 	}
+
+	m_pVector2Class = m_pLibCore->GetClass("CryEngine", "Vector2");
+	m_pVector3Class = m_pLibCore->GetClass("CryEngine", "Vector3");
+	m_pVector4Class = m_pLibCore->GetClass("CryEngine", "Vector4");
+	m_pQuaternionClass = m_pLibCore->GetClass("CryEngine", "Quaternion");
+	m_pAngles3Class = m_pLibCore->GetClass("CryEngine", "Angles3");
+	m_pColorClass = m_pLibCore->GetClass("CryEngine", "Color");
 }
 
 CAppDomain::CAppDomain(MonoInternals::MonoDomain* pMonoDomain)

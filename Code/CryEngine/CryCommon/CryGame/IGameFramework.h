@@ -357,7 +357,7 @@ struct IBreakReplicator
 	// </interfuscator:shuffle>
 };
 
-//! Persistent debug exposes functionality for drawing debug geometry over a specific period of time, without having to continuously re-render manually each frmae.
+//! Persistent debug exposes functionality for drawing debug geometry over a specific period of time, without having to continuously re-render manually each frame.
 //! This can be extremely useful to debug gameplay logic.
 struct IPersistantDebug
 {

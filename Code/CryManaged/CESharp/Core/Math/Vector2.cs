@@ -3,11 +3,13 @@
 using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Diagnostics;
 using CryEngine.Common;
 
 namespace CryEngine
 {
+	[StructLayout(LayoutKind.Sequential)]
 	public struct Vector2 : IEquatable<Vector2>
 	{
 		public static readonly Vector2 Zero = new Vector2(0, 0);
@@ -17,7 +19,9 @@ namespace CryEngine
 		public static readonly Vector2 Left = new Vector2(-1, 0);
 		public static readonly Vector2 Right = new Vector2(1, 0);
 
+		[MarshalAs(UnmanagedType.R4)]
 		private float _x;
+		[MarshalAs(UnmanagedType.R4)]
 		private float _y;
 
 		public float x { get { return _x; } set { _x = value; } }

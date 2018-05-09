@@ -9,29 +9,29 @@ using System.Runtime.Serialization;
 
 namespace CryEngine.Serialization
 {
-	public class ObjectWriter
+	internal class ObjectWriter
 	{
-		public ObjectWriter(Stream stream)
+		internal ObjectWriter(Stream stream)
 		{
 			Writer = new BinaryWriter(stream);
 
 			Converter = new FormatterConverter();
 		}
 
-		Dictionary<Type, CachedTypeInfo> _typeCache = new Dictionary<Type, CachedTypeInfo>();
+		private Dictionary<Type, CachedTypeInfo> _typeCache = new Dictionary<Type, CachedTypeInfo>();
 
-		BinaryWriter Writer { get; set; }
+		private BinaryWriter Writer { get; set; }
 
-		FormatterConverter Converter { get; set; }
+		private FormatterConverter Converter { get; set; }
 
-		public void Write(object obj)
+		private void Write(object obj)
 		{
 			WriteInstance(obj);
 
 			Writer.Flush();
 		}
 
-		public void WriteStatics(Assembly assembly)
+		private void WriteStatics(Assembly assembly)
 		{
 			if(assembly != null)
 			{
@@ -61,7 +61,7 @@ namespace CryEngine.Serialization
 			Writer.Flush();
 		}
 
-		void WriteInstance(object obj)
+		private void WriteInstance(object obj)
 		{
 			if(obj == null)
 			{
@@ -218,7 +218,7 @@ namespace CryEngine.Serialization
 			}
 		}
 
-		CachedTypeInfo GetTypeInfo(Type type)
+		private CachedTypeInfo GetTypeInfo(Type type)
 		{
 			CachedTypeInfo cachedTypeInfo;
 			if(!_typeCache.TryGetValue(type, out cachedTypeInfo))
@@ -230,7 +230,7 @@ namespace CryEngine.Serialization
 			return cachedTypeInfo;
 		}
 
-		void WriteEntityComponent(object obj, Type objectType)
+		private void WriteEntityComponent(object obj, Type objectType)
 		{
 			var componentTypeGUID = EntityComponent.GetComponentTypeGUID(objectType);
 			Write(componentTypeGUID);
@@ -238,14 +238,14 @@ namespace CryEngine.Serialization
 			WriteObjectMembers(obj, objectType);
 		}
 
-		void WriteObject(object obj, Type objectType)
+		private void WriteObject(object obj, Type objectType)
 		{
 			WriteType(objectType);
 
 			WriteObjectMembers(obj, objectType);
 		}
 
-		void WriteObjectMembers(object obj, Type objectType)
+		private void WriteObjectMembers(object obj, Type objectType)
 		{
 			var baseType = objectType.BaseType;
 			var baseTypes = new List<Type>();
@@ -269,7 +269,7 @@ namespace CryEngine.Serialization
 			}
 		}
 
-		void WriteObjectMembers(object obj, Type objectType, BindingFlags flags)
+		private void WriteObjectMembers(object obj, Type objectType, BindingFlags flags)
 		{
 			var fields = new List<FieldInfo>(objectType.GetFields(flags));
 			for(int i = fields.Count - 1; i > -1; --i)
@@ -336,7 +336,7 @@ namespace CryEngine.Serialization
 			}
 		}
 
-		void WriteArray(object obj, Type type)
+		private void WriteArray(object obj, Type type)
 		{
 			var array = obj as Array;
 			Writer.Write(array.Length);
@@ -349,7 +349,7 @@ namespace CryEngine.Serialization
 			}
 		}
 
-		void WriteMemberInfo(object obj)
+		private void WriteMemberInfo(object obj)
 		{
 			var memberInfo = obj as MemberInfo;
 
@@ -385,7 +385,7 @@ namespace CryEngine.Serialization
 			}
 		}
 
-		void WriteISerializable(object obj, Type type)
+		private void WriteISerializable(object obj, Type type)
 		{
 			var serializable = obj as ISerializable;
 
@@ -405,7 +405,7 @@ namespace CryEngine.Serialization
 			}
 		}
 
-		void WriteType(Type type)
+		private void WriteType(Type type)
 		{
 			Writer.Write(type.IsArray);
 			if(type.IsArray)
@@ -442,8 +442,8 @@ namespace CryEngine.Serialization
 				}
 			}
 		}
-		
-		void WriteAssembly(Assembly assembly)
+
+		private void WriteAssembly(Assembly assembly)
 		{
 			Write(assembly.Location);
 		}
