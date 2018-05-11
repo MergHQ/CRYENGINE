@@ -207,7 +207,7 @@ add_sources("Schematyc_Uber_Core_4.cpp"
 end_sources()
 #END-FILE-LIST
 
-if(PLUGIN_SCHEMATYC)
+if(PLUGIN_SCHEMATYC_EXPERIMENTAL)
 	CryEngineModule(CrySchematyc PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 	
 	target_compile_definitions(${THIS_PROJECT}
