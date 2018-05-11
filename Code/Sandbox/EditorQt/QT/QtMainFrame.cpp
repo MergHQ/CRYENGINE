@@ -1500,7 +1500,7 @@ void CEditorMainFrame::UpdateWindowTitle(const QString& levelPath /*= "" */)
 
 	// Show active game project as "ProjectDir/GameDll".
 	const QString game = QtUtil::ToQString(gEnv->pSystem->GetIProjectManager()->GetCurrentProjectName());
-	QString title = QString("CRYENGINE Sandbox - Preview Build %2 - Project '%3'").arg(QString::number(v[0])).arg(game);
+	QString title = QString("CRYENGINE Sandbox - Build %2 - Project '%3'").arg(QString::number(v[0])).arg(game);
 
 	if (!levelPath.isEmpty())
 		title.prepend(levelPath.mid(levelPath.lastIndexOf(QRegExp("[/\\\\]")) + 1) + " - ");

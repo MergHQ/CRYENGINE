@@ -52,7 +52,7 @@ CAboutDialog::~CAboutDialog()
 void CAboutDialog::SetVersion(const Version& version)
 {
 	char versionText[256];
-	cry_sprintf(versionText, "Version %d.%d.%d - Preview Build %d", version[3], version[2], version[1], version[0]);
+	cry_sprintf(versionText, "Version %d.%d.%d - Build %d", version[3], version[2], version[1], version[0]);
 	m_versionText->setText(versionText);
 }
 
