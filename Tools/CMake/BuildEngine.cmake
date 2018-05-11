@@ -1,7 +1,7 @@
 
 #options
 
-option(PLUGIN_SCHEMATYC "Enables compilation of the Schematyc plugin" ON)
+option(PLUGIN_SCHEMATYC_EXPERIMENTAL "Enables compilation of the Experimental Schematyc plugin" ON)
 
 option(OPTION_PAKTOOLS "Build .pak encryption tools" OFF)
 option(OPTION_RC "Include RC in the build" OFF)
@@ -367,9 +367,16 @@ if (OPTION_ENGINE)
 	add_subdirectory ("Code/CryEngine/CryMovie")
 	add_subdirectory ("Code/CryEngine/CryNetwork")
 	#add_subdirectory ("Code/CryEngine/CryReflection")
-	add_subdirectory ("Code/CryEngine/CrySchematyc")
-	if(NOT ANDROID)
-		add_subdirectory ("Code/CryEngine/CrySchematyc2")
+	if (PLUGIN_SCHEMATYC_EXPERIMENTAL)
+		target_compile_definitions(CrySystem PUBLIC USE_SCHEMATYC_EXPERIMENTAL=1)
+		if (TARGET CrySystemLib)
+			target_compile_definitions(CrySystemLib PUBLIC USE_SCHEMATYC_EXPERIMENTAL=1)
+		endif()
+		add_subdirectory ("Code/CryEngine/CrySchematyc")
+	else()
+		if (NOT ANDROID)
+			add_subdirectory ("Code/CryEngine/CrySchematyc2")
+		endif()
 	endif()
 	add_subdirectory ("Code/CryEngine/CryScriptSystem")
 	add_subdirectory ("Code/CryEngine/CryFlowGraph")
