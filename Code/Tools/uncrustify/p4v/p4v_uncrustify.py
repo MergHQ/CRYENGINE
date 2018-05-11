@@ -35,7 +35,7 @@ class UncrustifyRunner:
         """
         cmd = uncrustify_cmd(check=check)
         if changelist and not filelist:
-            filelist = self.get_changelist_files(changelist)
+            filelist = self.get_changelist_files(changelist, check=check)
         elif changelist and filelist:
             raise ValueError('Either use a changelist or pass the list of files.')
         success = True
@@ -67,7 +67,7 @@ class UncrustifyRunner:
         message = self.p4.save_change(change_spec)[0]
         return message.split()[1]
 
-    def get_changelist_files(self, changelist):
+    def get_changelist_files(self, changelist, *, check=True):
         """
         From a changelist number, retrieve the local paths of the files in the changelist.
 
@@ -80,11 +80,23 @@ class UncrustifyRunner:
         if self.trigger:
             if 'shelved' not in description:
                 raise ValueError('The changelist does not have shelved files.')
+            #  HACK, do not unshelve the uncrustify script or it will fail
+            if any(f.endswith('p4v_uncrustify.py') for f in description['depotFile']):
+                return []
             self.unshelve_changelist = self.create_changelist('!X For style check')
             self.p4.run_unshelve('-s', changelist, '-c', self.unshelve_changelist)
         # Retrieve local paths for all files in the changelist.
-        fstat_results = self.p4.run_fstat(['-Op', *(f'{filename}#have' for filename in description['depotFile'])])
-        return [f['path'] for f in fstat_results]
+        depot_paths = []
+        to_checkout = []
+        for depot_path, action in zip(description['depotFile'], description['action']):
+            if 'delete' not in action:
+                depot_paths.append(depot_path)
+                if action == 'branch':
+                    to_checkout.append(depot_path)
+        if not check and to_checkout:
+            self.p4.run_edit(to_checkout)
+        where_results = self.p4.run_where(depot_paths)
+        return [f['path'] for f in where_results]
 
     def filter_cpp_files(self, filelist):
         """
