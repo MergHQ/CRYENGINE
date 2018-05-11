@@ -26,10 +26,12 @@ struct SPhysicsParameters
 	{
 		if (!archive.isEdit())
 		{
+			const bool wasLegacyType = !archive(m_weightType, "WeightType", "Weight Type");
+			archive(m_density, "Density", "Density");
+			archive(m_mass, "Mass", "Mass");
+
 			if (archive.isInput())
 			{
-				const bool wasLegacyType = !archive(m_weightType, "WeightType", "Weight Type");
-
 				if (wasLegacyType)
 				{
 					if (m_mass <= 0 && m_density <= 0)
@@ -42,10 +44,6 @@ struct SPhysicsParameters
 					}
 				}
 			}
-
-			archive(m_density, "Density", "Density");
-			archive(m_mass, "Mass", "Mass");
-
 			return;
 		}
 
