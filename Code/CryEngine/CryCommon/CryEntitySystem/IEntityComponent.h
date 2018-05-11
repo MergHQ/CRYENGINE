@@ -558,6 +558,10 @@ public:
 	//! For user-facing properties, see GetProperties.
 	virtual void LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) {}
 
+	//! Optionally serialize component to/from XML.
+	//! For user-facing properties, see GetProperties.
+	virtual void Serialize(Serialization::IArchive& archive) {}
+
 	//! Only for backward compatibility to Release 5.3.0 for loading
 	virtual struct IEntityPropertyGroup* GetPropertyGroup() { return nullptr; }
 

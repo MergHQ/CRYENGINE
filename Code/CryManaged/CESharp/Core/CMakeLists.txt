@@ -96,6 +96,10 @@ if(OPTION_BUILD_CSHARP_WITH_CSC)
 	source_group("Physics" FILES ${Physics_FILES})
 
 
+	set(Properties_FILES Properties/AssemblyInfo.cs)
+	source_group("Properties" FILES ${Properties_FILES})
+
+
 	set(Rendering_FILES Rendering/Renderer.cs)
 	source_group("Rendering" FILES ${Rendering_FILES})
 
@@ -116,7 +120,7 @@ if(OPTION_BUILD_CSHARP_WITH_CSC)
 	source_group("Core" FILES ${Core_FILES})
 
 
-	set(SOURCE ${AI_FILES} ${Animations_FILES} ${Audio_Native_FILES} ${Audio_FILES} ${Compilation_FILES} ${Console_Native_FILES} ${Console_FILES} ${Debugging_FILES} ${EntitySystem_Attributes_FILES} ${EntitySystem_Enums_FILES} ${EntitySystem_Native_FILES} ${EntitySystem_FILES} ${FileSystem_FILES} ${Input_Enums_FILES} ${Input_FILES} ${Lights_FILES} ${Math_FILES} ${Particles_FILES} ${Physics_Enums_FILES} ${Physics_Parameters_FILES} ${Physics_PhysicalizeParameters_FILES} ${Physics_PhysicsStatus_FILES} ${Physics_FILES} ${Rendering_FILES} ${Resources_FILES} ${Serialization_FILES} ${Util_FILES} ${Core_FILES})
+	set(SOURCE ${AI_FILES} ${Animations_FILES} ${Audio_Native_FILES} ${Audio_FILES} ${Compilation_FILES} ${Console_Native_FILES} ${Console_FILES} ${Debugging_FILES} ${EntitySystem_Attributes_FILES} ${EntitySystem_Enums_FILES} ${EntitySystem_Native_FILES} ${EntitySystem_FILES} ${FileSystem_FILES} ${Input_Enums_FILES} ${Input_FILES} ${Lights_FILES} ${Math_FILES} ${Particles_FILES} ${Physics_Enums_FILES} ${Physics_Parameters_FILES} ${Physics_PhysicalizeParameters_FILES} ${Physics_PhysicsStatus_FILES} ${Physics_FILES} ${Properties_FILES} ${Rendering_FILES} ${Resources_FILES} ${Serialization_FILES} ${Util_FILES} ${Core_FILES})
 
 	add_custom_target(CryEngine.Core ALL
 		COMMAND "${CSC_PATH}" /target:library /langversion:${MONO_LANGUAGE_VERSION} /platform:${MONO_CPU_PLATFORM} /optimize /debug:portable /define:${MONO_PREPROCESSOR_DEFINE} /reference:System.dll /reference:System.Data.dll /reference:System.Drawing.dll /reference:System.Runtime.Serialization.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll "${MONO_SWIG_OUTPUT_ASSEMBLY_REFERENCE}" ${SOURCE} /out:"${OUTPUT_DIRECTORY}/CryEngine.Core.dll" /doc:"${OUTPUT_DIRECTORY}/CryEngine.Core.xml"

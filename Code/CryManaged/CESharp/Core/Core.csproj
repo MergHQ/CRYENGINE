@@ -149,6 +149,7 @@
     <Compile Include="Physics\PhysicsStatus\VehicleStatus.cs" />
     <Compile Include="Physics\Ray.cs" />
     <Compile Include="Physics\RaycastHit.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rendering\Renderer.cs" />
     <Compile Include="Serialization\CachedTypeInfo.cs" />
     <Compile Include="Serialization\DomainSerializer.cs" />

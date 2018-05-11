@@ -52,7 +52,7 @@ namespace CryEngine.Serialization
 			}
 		}
 
-		private object Read()
+		internal object Read()
 		{
 			return ReadInternal();
 		}
@@ -120,7 +120,7 @@ namespace CryEngine.Serialization
 			throw new ArgumentException("Tried to deserialize unknown object type!");
 		}
 
-		private void ReadStatics()
+		internal void ReadStatics()
 		{
 			var numTypes = Reader.ReadInt32();
 

@@ -280,7 +280,7 @@ struct SEntityPhysicalizeParams
 	//! Index of object slot. -1 if all slots should be used.
 	int nSlot;
 
-	//! Only one either density or mass must be set, parameter set to 0 is ignored.
+	//! Only one either density or mass must be set, parameter set to a negative value will be ignored.
 	float density;
 	float mass;
 

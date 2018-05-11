@@ -1,3 +1,5 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
 #include <CryRenderer/IRenderer.h>
@@ -7,15 +9,17 @@
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
 
+#include "DefaultComponents/ComponentHelpers/PhysicsParameters.h"
+
 namespace Cry
 {
 namespace DefaultComponents
 {
 enum class EMeshType : uint32
 {
-	None = 0,
-	Render = 1 << 0,
-	Collider = 1 << 1,
+	None              = 0,
+	Render            = 1 << 0,
+	Collider          = 1 << 1,
 	RenderAndCollider = Render | Collider,
 };
 
@@ -29,27 +33,6 @@ static void ReflectType(Schematyc::CTypeDesc<EMeshType>& desc)
 	desc.AddConstant(EMeshType::Render, "Render", "Render");
 	desc.AddConstant(EMeshType::Collider, "Collider", "Collider");
 	desc.AddConstant(EMeshType::RenderAndCollider, "RenderAndCollider", "Render and Collider");
-}
-
-struct SPhysicsParameters
-{
-	inline bool operator==(const SPhysicsParameters& rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
-
-	Schematyc::Range<0, 100000> m_mass = 10.f;
-	Schematyc::Range<0, 100000> m_density = 0.f;
-
-	// Used to reset mass or density to -1 in the UI
-#ifndef RELEASE
-	float m_prevMass = 0.f;
-	float m_prevDensity = 0.f;
-#endif
-};
-
-static void ReflectType(Schematyc::CTypeDesc<SPhysicsParameters>& desc)
-{
-	desc.SetGUID("{6CE17866-A74D-437D-98DB-F72E7AD7234E}"_cry_guid);
-	desc.AddMember(&SPhysicsParameters::m_mass, 'mass', "Mass", "Mass", "Mass of the object in kg, note that this cannot be set at the same time as density. Both being set to 0 means no physics.", 10.f);
-	desc.AddMember(&SPhysicsParameters::m_density, 'dens', "Density", "Density", "Density of the object, note that this cannot be set at the same time as mass. Both being set to 0 means no physics.", 0.f);
 }
 
 // Used to indicate the minimum graphical setting for an effect
@@ -78,11 +61,11 @@ static void ReflectType(Schematyc::CTypeDesc<EMiniumSystemSpec>& desc)
 // Used to indicate the minimum graphical setting for an effect
 enum class EMeshGIMode
 {
-	Disabled = IRenderNode::EGIMode::eGM_None,
-	StaticVoxelization = IRenderNode::EGIMode::eGM_StaticVoxelization,
-	AnalyticalProxySoft = IRenderNode::EGIMode::eGM_AnalyticalProxy_Soft,
-	AnalyticalProxyHard = IRenderNode::EGIMode::eGM_AnalyticalProxy_Hard,
-	AnalyticalOccluder = IRenderNode::EGIMode::eGM_AnalytPostOccluder,
+	Disabled             = IRenderNode::EGIMode::eGM_None,
+	StaticVoxelization   = IRenderNode::EGIMode::eGM_StaticVoxelization,
+	AnalyticalProxySoft  = IRenderNode::EGIMode::eGM_AnalyticalProxy_Soft,
+	AnalyticalProxyHard  = IRenderNode::EGIMode::eGM_AnalyticalProxy_Hard,
+	AnalyticalOccluder   = IRenderNode::EGIMode::eGM_AnalytPostOccluder,
 	IntegrateIntoTerrain = IRenderNode::EGIMode::eGM_IntegrateIntoTerrain
 };
 
@@ -133,11 +116,11 @@ struct SRenderParameters
 {
 	inline bool operator==(const SRenderParameters& rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
 
-	EMiniumSystemSpec m_castShadowSpec = EMiniumSystemSpec::Always;
-	bool m_bIgnoreVisAreas = false;
+	EMiniumSystemSpec                     m_castShadowSpec = EMiniumSystemSpec::Always;
+	bool                                  m_bIgnoreVisAreas = false;
 	Schematyc::Range<0, 100, 0, 100, int> m_viewDistanceRatio = 100;
 	Schematyc::Range<0, 100, 0, 100, int> m_lodDistance = 100;
-	EMeshGIMode m_giMode = EMeshGIMode::Disabled;
+	EMeshGIMode                           m_giMode = EMeshGIMode::Disabled;
 };
 
 static void ReflectType(Schematyc::CTypeDesc<SRenderParameters>& desc)
@@ -156,37 +139,7 @@ class CBaseMeshComponent
 {
 protected:
 	// IEntityComponent
-	virtual void ProcessEvent(const SEntityEvent& event) override
-	{
-		if (event.event == ENTITY_EVENT_PHYSICAL_TYPE_CHANGED || event.event == ENTITY_EVENT_SLOT_CHANGED)
-		{
-			ApplyBaseMeshProperties();
-		}
-		else
-		{
-			if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
-			{
-#ifndef RELEASE
-				// Reset mass or density to 0 in the UI if the other is changed to be positive.
-				// It is not possible to use both at the same time, this makes that clearer for the designer.
-				if (m_physics.m_mass != m_physics.m_prevMass && !isneg(m_physics.m_mass))
-				{
-					m_physics.m_density = m_physics.m_prevDensity = 0;
-					m_physics.m_prevMass = m_physics.m_mass;
-				}
-				if (m_physics.m_density != m_physics.m_prevDensity && m_physics.m_density >= 0)
-				{
-					m_physics.m_mass = m_physics.m_prevMass = -1;
-					m_physics.m_prevDensity = m_physics.m_density;
-				}
-#endif
-
-				m_pEntity->UpdateComponentEventMask(this);
-
-				ApplyBaseMeshProperties();
-			}
-		}
-	}
+	virtual void   ProcessEvent(const SEntityEvent& event) override;
 
 	virtual uint64 GetEventMask() const override
 	{
@@ -201,68 +154,7 @@ protected:
 	}
 	// ~IEntityComponent
 
-	void ApplyBaseMeshProperties()
-	{
-		if (GetEntitySlotId() != EmptySlotId)
-		{
-			if (((uint32)m_type & (uint32)EMeshType::Render) != 0)
-			{
-				m_pEntity->SetSlotFlags(GetEntitySlotId(), ENTITY_SLOT_RENDER);
-			}
-			else
-			{
-				m_pEntity->SetSlotFlags(GetEntitySlotId(), 0);
-			}
-
-			if (IRenderNode* pRenderNode = m_pEntity->GetSlotRenderNode(GetEntitySlotId()))
-			{
-				uint32 slotFlags = m_pEntity->GetSlotFlags(GetEntitySlotId());
-				if (m_renderParameters.m_castShadowSpec != EMiniumSystemSpec::Disabled && (int)gEnv->pSystem->GetConfigSpec() >= (int)m_renderParameters.m_castShadowSpec)
-				{
-					slotFlags |= ENTITY_SLOT_CAST_SHADOW;
-				}
-				if (m_renderParameters.m_bIgnoreVisAreas)
-				{
-					slotFlags |= ENTITY_SLOT_IGNORE_VISAREAS;
-				}
-
-				UpdateGIModeEntitySlotFlags((uint8)m_renderParameters.m_giMode, slotFlags);
-
-				m_pEntity->SetSlotFlags(GetEntitySlotId(), slotFlags);
-
-				// We want to manage our own view distance ratio
-				m_pEntity->AddFlags(ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO);
-				pRenderNode->SetViewDistRatio((int)floor(((float)m_renderParameters.m_viewDistanceRatio / 100.f) * 255));
-				pRenderNode->SetLodRatio((int)floor(((float)m_renderParameters.m_lodDistance / 100.f) * 255));
-			}
-
-			m_pEntity->UnphysicalizeSlot(GetEntitySlotId());
-
-			if ((!isneg(m_physics.m_mass) || m_physics.m_density > 0) && ((uint32)m_type & (uint32)EMeshType::Collider) != 0)
-			{
-				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity())
-				{
-					SEntityPhysicalizeParams physParams;
-					physParams.nSlot = GetEntitySlotId();
-					physParams.type = pPhysicalEntity->GetType();
-
-					if(!isneg(m_physics.m_mass))
-					{
-						physParams.mass = m_physics.m_mass;
-						physParams.density = -1.f;
-					}
-					else
-					{
-						CRY_ASSERT(m_physics.m_density > 0);
-						physParams.density = m_physics.m_density;
-						physParams.mass = -1.f;
-					}
-
-					m_pEntity->PhysicalizeSlot(GetEntitySlotId(), physParams);
-				}
-			}
-		}
-	}
+	void ApplyBaseMeshProperties();
 
 public:
 	virtual void SetType(EMeshType type)
@@ -271,15 +163,15 @@ public:
 
 		ApplyBaseMeshProperties();
 	}
-	EMeshType GetType() const { return m_type; }
+	EMeshType                   GetType() const              { return m_type; }
 
-	virtual SPhysicsParameters&       GetPhysicsParameters()       { return m_physics; }
-	const SPhysicsParameters&         GetPhysicsParameters() const { return m_physics; }
+	virtual SPhysicsParameters& GetPhysicsParameters()       { return m_physics; }
+	const SPhysicsParameters&   GetPhysicsParameters() const { return m_physics; }
 
 protected:
-	SPhysicsParameters      m_physics;
-	EMeshType               m_type = EMeshType::RenderAndCollider;
-	SRenderParameters       m_renderParameters;
+	SPhysicsParameters m_physics;
+	EMeshType          m_type = EMeshType::RenderAndCollider;
+	SRenderParameters  m_renderParameters;
 };
 }
 }
