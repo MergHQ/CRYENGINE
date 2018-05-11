@@ -309,8 +309,6 @@ void CAssetManager::DeleteAssets(const std::vector<CAsset*>& assets, bool bDelet
 
 	for (auto x : assets)
 	{
-		MAKE_SURE(!x->IsReadOnly(), continue);
-
 		for (size_t i = 0, N = m_assets.size(); i < N; ++i)
 		{
 			if (x != m_assets[i])
