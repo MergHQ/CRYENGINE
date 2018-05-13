@@ -1,14 +1,15 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("CRYENGINE C# Tests")]
-[assembly: AssemblyDescription("Unit test for the CryEngine.Core assembly.")]
+[assembly: AssemblyTitle("CRYENGINE C# UI")]
+[assembly: AssemblyDescription("Provides access to an API to create a GUI in the CRYENGINE.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Crytek GmbH")]
-[assembly: AssemblyProduct("Core.Tests")]
+[assembly: AssemblyProduct("CryEngine.Properties")]
 [assembly: AssemblyCopyright("Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -19,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("512cca78-56d8-4d5f-8114-747ba105b207")]
+[assembly: Guid("6d9d405a-af4f-4eab-83eb-a85d3937ef6d")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -28,8 +29,5 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
-// You can specify all the values or you can default the Build and Revision Numbers 
-// by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("5.5.0.0")]
 [assembly: AssemblyFileVersion("5.5.0.0")]

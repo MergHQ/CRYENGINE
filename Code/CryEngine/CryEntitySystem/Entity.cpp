@@ -1380,6 +1380,8 @@ void CEntity::LoadComponent(Serialization::IArchive& archive, uint8*& pComponent
 		//classProperties.Apply(componentClassDesc, pComponent.get());
 		Schematyc::Utils::SerializeClass(archive, componentClassDesc, pComponent.get(), "properties", "properties");
 	}
+
+	pComponent->Serialize(archive);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1428,6 +1430,8 @@ void CEntity::SaveComponent(Serialization::IArchive& archive, IEntityComponent& 
 
 	// Save component members
 	Schematyc::Utils::SerializeClass(archive, component.GetClassDesc(), &component, "properties", "properties");
+
+	component.Serialize(archive);
 }
 
 static bool SerializePropertiesWrapper(void* rawPointer, yasli::Archive& ar)
