@@ -35,7 +35,7 @@ void CEffectAssetModel::MakeNewAsset()
 	signalEndEffectAssetChange();
 }
 
-bool CEffectAssetModel::OpenAsset(CAsset* pAsset, bool reload)
+bool CEffectAssetModel::OpenAsset(CAsset* pAsset)
 {
 	CRY_ASSERT(pAsset);
 
@@ -44,25 +44,23 @@ bool CEffectAssetModel::OpenAsset(CAsset* pAsset, bool reload)
 		return false;
 	}
 
+	signalBeginEffectAssetChange();
+
 	const string pfxFilePath = pAsset->GetFile(0);
 
-	pfx2::PParticleEffect pEffect;
-	if (reload)
+	pfx2::PParticleEffect pEffect = GetParticleSystem()->FindEffect(pfxFilePath.c_str());
+	if (!pEffect)
 	{
-		pEffect = GetParticleSystem()->CreateEffect();
-		Serialization::LoadJsonFile(*pEffect, pfxFilePath.c_str());
+		pEffect = GetParticleSystem()->FindEffect(pfxFilePath.c_str(), true);
+		if (!pEffect)
+			return false;
 	}
 	else
 	{
-		pEffect = GetParticleSystem()->FindEffect(pfxFilePath.c_str());
+		// Reload effect from file every time it is opened, since it might be that the effect has changed
+		// in memory. Opening means reading the current state from disk.
+		Serialization::LoadJsonFile(*pEffect, pfxFilePath.c_str());
 	}
-
-	if (!pEffect)
-	{
-		return false;
-	}
-
-	signalBeginEffectAssetChange();
 
 	m_pEffectAsset.reset(new CEffectAsset());
 	m_pEffectAsset->SetAsset(pAsset);
@@ -77,22 +75,6 @@ void CEffectAssetModel::ClearAsset()
 {
 	signalBeginEffectAssetChange();
 	m_pEffectAsset.reset();
-	signalEndEffectAssetChange();
-}
-
-void CEffectAssetModel::ReloadFromFile(CEffectAsset* pEffectAsset)
-{
-	CRY_ASSERT(pEffectAsset && pEffectAsset->GetAsset() && pEffectAsset->GetAsset()->GetFilesCount());
-	const string pfxFilePath = pEffectAsset->GetAsset()->GetFile(0);
-	pfx2::IParticleEffectPfx2* pEffect = pEffectAsset->GetEffect();
-
-	// Observers need to disconnect from the effect asset's model.
-	signalBeginEffectAssetChange();
-
-	pEffectAsset->SetEffect(nullptr);
-	Serialization::LoadJsonFile(*pEffect, pfxFilePath.c_str());
-	pEffectAsset->SetEffect(pEffect);
-
 	signalEndEffectAssetChange();
 }
 

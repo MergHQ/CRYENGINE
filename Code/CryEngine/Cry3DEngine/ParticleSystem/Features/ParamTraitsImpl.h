@@ -71,8 +71,6 @@ bool TValue<T, TTraits>::Serialize(Serialization::IArchive& ar, const char* name
 		if (!ar(EnabledValue {v}, name, label))
 			return false;
 	}
-	else if (TTraits::HideDefault() && ar.isOutput() && v == Default())
-		return true;
 	else
 	{
 		if (!ar(Serialization::Range(v, HardMin(), HardMax()), name, label))

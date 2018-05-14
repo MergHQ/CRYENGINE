@@ -237,6 +237,15 @@ void CFeatureRenderRibbon::MakeRibbons(CParticleComponentRuntime* pComponentRunt
 	}
 }
 
+inline void NormalizeSafe(Vec3& v, const Vec3& safe, float size)
+{
+	float lensqr = v.len2();
+	if (lensqr > FLT_EPSILON)
+		v *= rsqrt(lensqr) * size;
+	else
+		v = safe * size;
+}
+
 class CRibbonAxesCamera
 {
 public:
@@ -250,7 +259,7 @@ public:
 		const float size = m_sizes.Load(particleId);
 		const Vec3 front = movingPositions[1] - m_cameraPosition;
 		axes.xAxis = (movingPositions[0] - movingPositions[2]) ^ front;
-		axes.xAxis *= size * axes.xAxis.GetInvLength();
+		NormalizeSafe(axes.xAxis, Vec3(0, 0, 1), size);
 		axes.yAxis = axes.xAxis ^ front;
 		axes.yAxis *= size * axes.yAxis.GetInvLength();
 		return axes;
@@ -275,7 +284,7 @@ public:
 		const Quat orientation = m_orientations.Load(particleId);
 		axes.xAxis = orientation.GetColumn0() * -size;
 		axes.yAxis = movingPositions[0] - movingPositions[2];
-		axes.yAxis *= size * axes.yAxis.GetInvLength();
+		NormalizeSafe(axes.yAxis, Vec3(0, 0, 1), size);
 		return axes;
 	}
 
