@@ -7,6 +7,7 @@
 #include AMD_API_HEADER
 #endif
 
+#if CRY_PLATFORM_WINDOWS
 HRESULT WINAPI DX11CreateDevice(
   IDXGIAdapter* pAdapter,
   D3D_DRIVER_TYPE DriverType,
@@ -71,3 +72,4 @@ HRESULT WINAPI DX11CreateDevice(
 
 	return pD3D11CD(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, ppDevice, pFeatureLevel, ppImmediateContext);
 }
+#endif

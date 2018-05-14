@@ -26,6 +26,7 @@ extern int g_nPrintDX11;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if CRY_PLATFORM_WINDOWS
 HRESULT WINAPI DX11CreateDevice(
 	IDXGIAdapter* pAdapter,
 	D3D_DRIVER_TYPE DriverType,
@@ -37,3 +38,4 @@ HRESULT WINAPI DX11CreateDevice(
 	ID3D11Device** ppDevice,
 	D3D_FEATURE_LEVEL* pFeatureLevel,
 	ID3D11DeviceContext** ppImmediateContext);
+#endif
