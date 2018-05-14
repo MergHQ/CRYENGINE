@@ -4,6 +4,7 @@
 #include "AudioEventManager.h"
 #include "AudioCVars.h"
 #include "ATLAudioObject.h"
+#include "Common.h"
 #include <IAudioImpl.h>
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
@@ -103,17 +104,11 @@ size_t CEventManager::GetNumConstructed() const
 //////////////////////////////////////////////////////////////////////////
 void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float const posX, float posY) const
 {
-	static float const headerColor[4] = { 1.0f, 0.5f, 0.0f, 0.7f };
-	static float const itemPlayingColor[4] = { 0.1f, 0.7f, 0.1f, 0.9f };
-	static float const itemLoadingColor[4] = { 0.9f, 0.2f, 0.2f, 0.9f };
-	static float const itemVirtualColor[4] = { 0.1f, 0.8f, 0.8f, 0.9f };
-	static float const itemOtherColor[4] = { 0.8f, 0.8f, 0.8f, 0.9f };
-
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
 
-	auxGeom.Draw2dLabel(posX, posY, 1.5f, headerColor, false, "Audio Events [%" PRISIZE_T "]", m_constructedEvents.size());
-	posY += 16.0f;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_managerColorHeader.data(), false, "Audio Events [%" PRISIZE_T "]", m_constructedEvents.size());
+	posY += Debug::g_managerHeaderLineHeight;
 
 	for (auto const pEvent : m_constructedEvents)
 	{
@@ -127,28 +122,28 @@ void CEventManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerP
 				char const* const szTriggerName = pEvent->m_pTrigger->m_name.c_str();
 				CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
 				lowerCaseTriggerName.MakeLower();
-				bool const bDraw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
+				bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
 
-				if (bDraw)
+				if (draw)
 				{
-					float const* pColor = itemOtherColor;
+					float const* pColor = Debug::g_managerColorItemInactive.data();
 
 					if (pEvent->IsPlaying())
 					{
-						pColor = itemPlayingColor;
+						pColor = Debug::g_managerColorItemActive.data();
 					}
 					else if (pEvent->m_state == EEventState::Loading)
 					{
-						pColor = itemLoadingColor;
+						pColor = Debug::g_managerColorItemLoading.data();
 					}
 					else if (pEvent->m_state == EEventState::Virtual)
 					{
-						pColor = itemVirtualColor;
+						pColor = Debug::g_managerColorItemVirtual.data();
 					}
 
-					auxGeom.Draw2dLabel(posX, posY, 1.25f, pColor, false, "%s on %s", szTriggerName, pEvent->m_pAudioObject->m_name.c_str());
+					auxGeom.Draw2dLabel(posX, posY, Debug::g_managerFontSize, pColor, false, "%s on %s", szTriggerName, pEvent->m_pAudioObject->m_name.c_str());
 
-					posY += 11.0f;
+					posY += Debug::g_managerLineHeight;
 				}
 			}
 		}

@@ -7,6 +7,7 @@
 #include "IAudioImpl.h"
 #include "SharedAudioData.h"
 #include "Common/Logger.h"
+#include "Common.h"
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
 	#include <CryRenderer/IRenderAuxGeom.h>
@@ -303,17 +304,12 @@ void CObjectManager::DrawPerObjectDebugInfo(
 //////////////////////////////////////////////////////////////////////////
 void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float const posX, float posY) const
 {
-	static float const headerColor[4] = { 1.0f, 0.5f, 0.0f, 0.7f };
-	static float const itemActiveColor[4] = { 0.1f, 0.7f, 0.1f, 0.9f };
-	static float const itemInactiveColor[4] = { 0.8f, 0.8f, 0.8f, 0.9f };
-	static float const itemVirtualColor[4] = { 0.1f, 0.8f, 0.8f, 0.9f };
-
 	size_t numAudioObjects = 0;
 	float const headerPosY = posY;
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
 
-	posY += 16.0f;
+	posY += Debug::g_managerHeaderLineHeight;
 
 	for (auto const pObject : m_constructedObjects)
 	{
@@ -333,20 +329,20 @@ void CObjectManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listener
 			{
 				bool const isVirtual = (pObject->GetFlags() & EObjectFlags::Virtual) != 0;
 
-				auxGeom.Draw2dLabel(posX, posY, 1.25f,
-				                    isVirtual ? itemVirtualColor : (hasActiveData ? itemActiveColor : itemInactiveColor),
+				auxGeom.Draw2dLabel(posX, posY, Debug::g_managerFontSize,
+				                    isVirtual ? Debug::g_managerColorItemVirtual.data() : (hasActiveData ? Debug::g_managerColorItemActive.data() : Debug::g_managerColorItemInactive.data()),
 				                    false,
 				                    "%s : %.2f",
 				                    szObjectName,
 				                    pObject->GetMaxRadius());
 
-				posY += 11.0f;
+				posY += Debug::g_managerLineHeight;
 				++numAudioObjects;
 			}
 		}
 	}
 
-	auxGeom.Draw2dLabel(posX, headerPosY, 1.5f, headerColor, false, "Audio Objects [%" PRISIZE_T "]", numAudioObjects);
+	auxGeom.Draw2dLabel(posX, headerPosY, Debug::g_managerHeaderFontSize, Debug::g_managerColorHeader.data(), false, "Audio Objects [%" PRISIZE_T "]", numAudioObjects);
 }
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 }      // namespace CryAudio
