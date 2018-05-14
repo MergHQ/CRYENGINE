@@ -670,6 +670,11 @@ void CDeviceGraphicsCommandInterfaceImpl::SetDepthBiasImpl(float constBias, floa
 	CRY_ASSERT_MESSAGE(false, "Depth bias can only be set via PSO on DirectX 12");
 }
 
+void CDeviceGraphicsCommandInterfaceImpl::SetDepthBoundsImpl(float fMin, float fMax)
+{
+	GetDX12CommandList()->SetDepthBounds(fMin, fMax);
+}
+
 void CDeviceGraphicsCommandInterfaceImpl::DrawImpl(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation)
 {
 	GetDX12CommandList()->DrawInstanced(VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation);

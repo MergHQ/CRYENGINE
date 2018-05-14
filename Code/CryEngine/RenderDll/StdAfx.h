@@ -233,20 +233,27 @@ typedef void (*RenderFunc)(void);
 #if CRY_PLATFORM_WINDOWS && CRY_RENDERER_DIRECT3D && !CRY_RENDERER_OPENGL && !CRY_RENDERER_OPENGLES && !CRY_RENDERER_VULKAN
 // nv API
 	#if !defined(EXCLUDE_NV_API)
-	#define USE_NV_API 1
-	#define NV_API_HEADER "NVIDIA/NVAPI_r386/nvapi.h"
+		#define USE_NV_API 1
+		#define NV_API_HEADER "NVIDIA/NVAPI_r386/nvapi.h"
 
-	#if CRY_PLATFORM_64BIT
-		#define NV_API_LIB "SDKs/NVIDIA/NVAPI_r386/amd64/nvapi64.lib"
-	#else
-		#define NV_API_LIB "SDKs/NVIDIA/NVAPI_r386/x86/nvapi.lib"
+		#if CRY_PLATFORM_64BIT
+			#define NV_API_LIB "SDKs/NVIDIA/NVAPI_r386/amd64/nvapi64.lib"
+		#else
+			#define NV_API_LIB "SDKs/NVIDIA/NVAPI_r386/x86/nvapi.lib"
+		#endif
 	#endif
-#endif
 
 	// AMD EXT (DX11 only)
 	#if !defined(EXCLUDE_AMD_API) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	#define USE_AMD_EXT 1
-#endif
+		#define USE_AMD_API 1
+		#define AMD_API_HEADER "AMD/AGS Lib/inc/amd_ags.h"
+
+		#if CRY_PLATFORM_64BIT
+			#define AMD_API_LIB "SDKs/AMD/AGS Lib/lib/amd_ags_x64.lib"
+		#else
+			#define AMD_API_LIB "SDKs/AMD/AGS Lib/lib/amd_ags_x86.lib"
+		#endif
+	#endif
 #endif
 
 
@@ -333,13 +340,6 @@ typedef void (*RenderFunc)(void);
 	#else
 		#include <d3d12.h>       // includes <windows.h>
 		#include <dxgi1_5.h>     // includes <windows.h>
-		
-		#if (CRY_RENDERER_DIRECT3D >= 121)
-			#include <d3d12_1.h> // includes <windows.h>
-		#endif
-		#if (CRY_RENDERER_DIRECT3D >= 122)
-			#include <d3d12_2.h> // includes <windows.h>
-		#endif
 
 		#include <d3d12sdklayers.h>
 		#include <d3d11shader.h>
@@ -751,7 +751,9 @@ typedef void (*RenderFunc)(void);
 	typedef uintptr_t SOCKET;
 
 #elif (CRY_RENDERER_DIRECT3D < 120)
-    typedef     ID3D11Resource            ID3D11BaseTexture;
+	typedef     ID3D11Resource            ID3D11BaseTexture;
+
+	#include "XRenderD3D9/DX11/CryDX11.hpp"
 #endif
 
 typedef D3DSamplerState CDeviceSamplerState;
