@@ -238,14 +238,15 @@ namespace CryEngine.Serialization
 		private void ReadObjectBaseTypeMembers(object obj, Type objectType, BindingFlags flags, bool setSerializedFieldsOnly)
 		{
 			var numFields = Reader.ReadInt32();
+			var typeChanged = obj == null ? false : objectType != obj.GetType();
 			for(var iField = 0; iField < numFields; iField++)
 			{
 				var fieldName = Reader.ReadString();
 				var fieldInfo = objectType != null ? objectType.GetField(fieldName, flags) : null;
-				var existingObject = obj != null && fieldInfo != null ? fieldInfo.GetValue(obj) : null;
+				var existingObject = !typeChanged && obj != null && fieldInfo != null ? fieldInfo.GetValue(obj) : null;
 				var fieldValue = ReadInternal(existingObject, false);
 				
-				if(fieldInfo != null && !fieldInfo.IsLiteral && (obj == null) == fieldInfo.IsStatic)
+				if(!typeChanged && fieldInfo != null && !fieldInfo.IsLiteral && (obj == null) == fieldInfo.IsStatic)
 				{
 					if(setSerializedFieldsOnly)
 					{
