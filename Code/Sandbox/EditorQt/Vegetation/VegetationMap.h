@@ -1,32 +1,15 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2002.
-// -------------------------------------------------------------------------
-//  File name:   VegetationMap.h
-//  Version:     v1.00
-//  Created:     31/7/2002 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//               12/08/2011: Refactored by Sergiy Shaykin
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
-#include <CrySandbox/CrySignal.h>
 #include "VegetationObject.h"
+#include <CrySandbox/CrySignal.h>
+#include <list>
 #include <unordered_map>
+#include <vector>
 
 #define RAD2BYTE(x) ((x) * 255.0f / float(g_PI2))
 #define BYTE2RAD(x) ((x) * float(g_PI2) / 255.0f)
-
-template<class T>
-class QVector;
 
 //////////////////////////////////////////////////////////////////////////
 /** CVegetationMap stores static objects distributed over terrain.
@@ -58,7 +41,7 @@ public:
 	void PlaceObjectsOnTerrain();
 
 	//! Get total number of vegetation instances.
-	int GetNumInstances() const { return m_numInstances; };
+	int GetNumInstances() const { return m_numInstances; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Vegetation Objects
@@ -119,7 +102,7 @@ public:
 	//! Unload all rendering geometry from objects.
 	void UnloadObjectsGeometry();
 
-	//! Rather ugly way to ensure the radius is synchronised between editor objects and
+	//! Rather ugly way to ensure the radius is synchronized between editor objects and
 	//! IStatObjects. Must change after E3 - hassle Danny if you see it after this!
 	void SetAIRadius(IStatObj* pObj, float radius);
 
@@ -134,14 +117,14 @@ public:
 	CVegetationInstance* PlaceObjectInstance(const Vec3& worldPos, CVegetationObject* brush);
 	//! Clone object instance
 	CVegetationInstance* CloneInstance(CVegetationInstance* pOriginal);
-	void                 DeleteObjInstance(CVegetationInstance* obj);
+	void                 DeleteObjInstance(CVegetationInstance* pInst);
 	void                 RemoveDuplVegetation(int x1 = -1, int y1 = -1, int x2 = -1, int y2 = -1);
 	//! Find object instances closest to the point within given radius.
 	CVegetationInstance* GetNearestInstance(const Vec3& worldPos, float radius);
 	void                 GetObjectInstances(float x1, float y1, float x2, float y2, std::vector<CVegetationInstance*>& instances);
 	void                 GetAllInstances(std::vector<CVegetationInstance*>& instances);
 	//! Move instance to new position.
-	bool                 MoveInstance(CVegetationInstance* obj, const Vec3& newPos, bool bTerrainAlign = true);
+	bool                 MoveInstance(CVegetationInstance* pInst, const Vec3& newPos, bool bTerrainAlign = true);
 	//! Remove object from 3D engine and place it back again.
 	void                 RepositionObject(CVegetationObject* object);
 
@@ -153,7 +136,7 @@ public:
 
 	//! Scale all instances of this objects.
 	void ScaleObjectInstances(CVegetationObject* object, float fScale, AABB* outModifiedArea = NULL);
-	//! Randomally rotate all instances of this objects.
+	//! Randomly rotate all instances of this objects.
 	void RandomRotateInstances(CVegetationObject* object);
 	//! Clear rotation for all instances of this objects.
 	void ClearRotateInstances(CVegetationObject* object);
@@ -174,7 +157,7 @@ public:
 	//! Clear all object within mask.
 	void ClearMask(const string& maskFile);
 
-	//! Sets this brighness to all objects within specified rectangle.
+	//! Sets this brightness to all objects within specified rectangle.
 	//! x,y,w,h are specified in world units (meters).
 	//! \param brightness 0..255 brightness without ground texture, with hill shadows but without object shadows
 	//! \param brightness_shadowmap 0..255 brightness without ground texture, with hill shadows and with object shadows
@@ -202,11 +185,10 @@ public:
 	void DrawToTexture(uint32* texture, int textureWidth, int textureHeight, int srcX, int srcY);
 
 	//! Record undo info for vegetation instance.
-	void RecordUndo(CVegetationInstance* obj);
+	void RecordUndo(CVegetationInstance* pInst);
 
 	// Calculates texture memory usage for the vegetation objects.
 	int  GetTexureMemoryUsage(bool bOnlySelectedObjects);
-	int  GetSpritesMemoryUsage(bool bOnlySelectedObjects);
 
 	void GetMemoryUsage(ICrySizer* pSizer);
 
@@ -217,14 +199,14 @@ public:
 	float CalcHeightOnBrushes(const Vec3& p, const Vec3& posUpper, bool& bHitBrush);
 
 	// Call this function if global config spec is changed
-	void UpdateConfigSpec();
+	void        UpdateConfigSpec();
 
-	void ReloadGeometry();
+	void        ReloadGeometry();
 
 	static void GenerateBillboards(IConsoleCmdArgs*);
-	bool SaveBillboardTIFF(const CString& texName, ITexture *pTexture, const char *szPreset, bool bConvertToSRGB);
+	bool        SaveBillboardTIFF(const CString& texName, ITexture* pTexture, const char* szPreset, bool bConvertToSRGB);
 
-	bool IsAreaEmpty(const AABB& bbox);
+	bool        IsAreaEmpty(const AABB& bbox);
 
 	//! States for optimal storing Undo
 	enum EStoreUndo
@@ -234,40 +216,31 @@ public:
 		eStoreUndo_Once,
 		eStoreUndo_End,
 	};
-	void   StoreBaseUndo(EStoreUndo state = eStoreUndo_Normal);
+	void StoreBaseUndo(EStoreUndo state = eStoreUndo_Normal);
 
-	uint32 GetFilterLayerId() const                 { return m_uiFilterLayerId; }
-	void   SetFilterLayerId(uint32 uiFilterLayerId) { m_uiFilterLayerId = uiFilterLayerId; }
-	
-	void  RegisterInstance(CVegetationInstance* obj);
-	
+	void RegisterInstance(CVegetationInstance* pInst);
+
 	CCrySignal<void(CVegetationObject*)> signalVegetationObjectChanged;
 	CCrySignal<void(bool)>               signalAllVegetationObjectsChanged; //bool - Reload vegetation objects in VegetationModel
 	CCrySignal<void()>                   signalVegetationObjectsMerged;
 
 private:
-	struct SectorInfo
-	{
-		CVegetationInstance* first; // First vegetation object instance in this sector.
-	};
+	typedef std::list<CVegetationInstance*> SectorInfo;
 
 	//! Get sector by world coordinates.
 	SectorInfo* GetVegSector(const Vec3& worldPos);
 
 	//! Get sector by 2d map coordinates.
-	SectorInfo* GetVegSector(int x, int y);
+	SectorInfo& GetVegSector(int x, int y);
 
 	//! Remove all object in vegetation map from 3d engine terrain.
 	void RemoveObjectsFromTerrain();
 
 	//! Create new object instance in map.
-	CVegetationInstance* CreateObjInstance(CVegetationObject* object, const Vec3& pos, CVegetationInstance* pCopy = nullptr);
-	void                 DeleteObjInstance(CVegetationInstance* obj, SectorInfo* sector);
+	CVegetationInstance* CreateObjInstance(CVegetationObject* object, const Vec3& pos, CVegetationInstance* pCopy = nullptr, SectorInfo* si = nullptr);
+	void                 DeleteObjInstance(CVegetationInstance* pInst, SectorInfo* sector);
 	//! Only to be used by undo/redo.
-	void                 AddObjInstance(CVegetationInstance* obj);
-
-	void                 SectorLink(CVegetationInstance* object, SectorInfo* sector);
-	void                 SectorUnlink(CVegetationInstance* object, SectorInfo* sector);
+	void                 AddObjInstance(CVegetationInstance* pInst);
 
 	//! Return true if there is no specified objects within radius from given position.
 	bool CanPlace(CVegetationObject* object, const Vec3& pos, float radius);
@@ -280,41 +253,28 @@ private:
 
 	void  LoadOldStuff(CXmlArchive& xmlAr);
 
-	void UpdateGroundDecal(CVegetationInstance* obj);
+	void  UpdateGroundDecal(CVegetationInstance* pInst);
 
 	float GenerateRotation(CVegetationObject* pObject, const Vec3& vPos);
 
-private:
-	//! 2D Array of sectors that store vegetation objects.
-	SectorInfo* m_sectors;
-	//! Size of single sector in meters.
-	int         m_sectorSize;
-	//! Number of sectors in each dimension in map (Resolution of sectors map).
-	int         m_numSectors;
-	//! Size of all map in meters.
-	int         m_mapSize;
+	//Instances
+	std::vector<SectorInfo> m_sectors;         // 2D Array of sectors that store vegetation objects
+	int                     m_sectorSize;      // Size of single sector in meters
+	int                     m_numSectors;      // Number of sectors in each dimension in map (Resolution of sectors map)
+	int                     m_mapSize;         // Size of all map in meters
+	float                   m_minimalDistance; // Minimal distance between two objects. Objects cannot be placed closer together than this distance
+	float                   m_worldToSector;   // World to sector scaling ratio
 
-	//! Minimal distance between two objects.
-	//! Objects cannot be placed closer together that this distance.
-	float m_minimalDistance;
+	int                     m_numInstances;
 
-	//! world to sector scaling ratio.
-	float m_worldToSector;
-
+	// Vegetation objects
 	typedef std::vector<TSmartPtr<CVegetationObject>> Objects;
 	Objects m_objects;
+	std::unordered_map<int, CVegetationObject*> m_idToObject; // Used for mapping id to object taken group ids
 
-	//! Used for mapping id to object taken group ids.
-	std::unordered_map<int, CVegetationObject*> m_idToObject;
+	int        m_nVersion;
 
-	int    m_numInstances;
-
-	int    m_nVersion;
-	uint32 m_uiFilterLayerId;
-
-	//! For optimization: Update UI once while Undo
-	EStoreUndo m_storeBaseUndoState;
+	EStoreUndo m_storeBaseUndoState; // For optimization: Update UI once while Undo
 
 	friend class CUndoVegInstanceCreate;
 };
-

@@ -30,6 +30,7 @@ struct ITerrainMoveToolListener
 class CXmlArchive;
 
 //////////////////////////////////////////////////////////////////////////
+//This tool actually mostly does Cloning from source to destination place, and in some cases it moves objects.
 class CTerrainMoveTool : public CEditTool, public ITransformManipulatorOwner
 {
 	DECLARE_DYNCREATE(CTerrainMoveTool)
@@ -37,7 +38,7 @@ public:
 	CTerrainMoveTool();
 	virtual ~CTerrainMoveTool();
 
-	virtual string GetDisplayName() const override { return "Move Terrain"; }
+	virtual string GetDisplayName() const override { return "Clone Terrain"; }
 
 	virtual void   Display(DisplayContext& dc);
 
