@@ -344,7 +344,7 @@ void CAIActor::SetPos(const Vec3& pos, const Vec3& dirFwrd)
 
 			vEyeDir = bodyInfo.GetEyeDir();
 
-			assert(vEyeDir.IsUnit());
+			CRY_ASSERT_MESSAGE(vEyeDir.IsUnit(), "vEyeDir must be unit vector! vEyeDir = %f, %f, %f", vEyeDir.x, vEyeDir.y, vEyeDir.z);
 
 			SetViewDir(vEyeDir);
 			SetBodyDir(bodyInfo.GetBodyDir());
