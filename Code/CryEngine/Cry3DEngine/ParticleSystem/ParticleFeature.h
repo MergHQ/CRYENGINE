@@ -181,3 +181,21 @@ static const ColorB colorComponent  = HexToColor(0x80c0c0);
 	SERIALIZATION_CLASS_NAME(CParticleFeature, Type, GroupName FeatureName, GroupName FeatureName);
 
 }
+
+namespace yasli
+{
+	// Copied and specialized from Serialization library to provide error message for nonexistent features
+	template<> inline
+	pfx2::CParticleFeature* ClassFactory<pfx2::CParticleFeature>::create(cstr registeredName) const
+	{
+		if (!registeredName || !*registeredName)
+			return nullptr;
+		auto it = typeToCreatorMap_.find(registeredName);
+		if (it == typeToCreatorMap_.end())
+		{
+			gEnv->pLog->LogError("Particle effect has nonexistent feature %s", registeredName);
+			return nullptr;
+		}
+		return it->second->create();
+	}
+}

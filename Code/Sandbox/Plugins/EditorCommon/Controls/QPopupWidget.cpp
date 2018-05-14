@@ -270,7 +270,7 @@ void QPopupWidget::mousePressEvent(QMouseEvent* pEvent)
 	m_initialGeometry = geometry();
 	m_resizeConstraint = QPoint(0, 0);
 
-	// Calculate the resizing contraint based on the edge that was grabbed
+	// Calculate the resizing constraint based on the edge that was grabbed
 	QRect contentBounds = m_pContent->contentsRect();
 
 	// This should ideally be based off the content's rect rather than a predefined offset

@@ -78,7 +78,7 @@ public:
 				for (auto particleGroupId : context.GetSpawnedGroupRange())
 				{
 					const floatv lifetime = lifeTimes.Load(particleGroupId);
-					const floatv invLifeTime = if_else_zero(lifetime != convert<floatv>(), rcp(lifetime));
+					const floatv invLifeTime = rcp(max(lifetime, ToFloatv(FLT_EPSILON)));
 					invLifeTimes.Store(particleGroupId, invLifeTime);
 				}
 			}

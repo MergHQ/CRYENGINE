@@ -239,6 +239,13 @@ add_sources("CryRenderer_uber_5_dx12_dx12.cpp"
 )
 
 add_sources("NoUberFile"
+	PROJECTS CryRenderD3D11
+	SOURCE_GROUP "DX11"
+		"DX11/CryDX11.cpp"
+		"DX11/CryDX11.hpp"
+)
+
+add_sources("NoUberFile"
 	PROJECTS CryRenderD3D12
 	SOURCE_GROUP "DX12"
 		"DX12/CCryDX12Object.cpp"
@@ -1180,7 +1187,7 @@ if (NOT EXISTS "${SDK_DIR}/NVIDIA/NVAPI_r386")
 	list(APPEND extra_defines -DEXCLUDE_NV_API)
 endif()
 
-if (NOT EXISTS "${SDK_DIR}/AMD")
+if (NOT EXISTS "${SDK_DIR}/AMD/AGS Lib")
 	message(STATUS "AMD AGS SDK not found, excluding from the build.")
 	list(APPEND extra_defines -DEXCLUDE_AMD_API)
 endif()

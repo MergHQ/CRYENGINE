@@ -225,7 +225,7 @@ struct INumberVector: INumberArray<T, N>
 		if (lensqr > minsqr)
 			*this *= crymath::rsqrt(lensqr);
 		else
-			*this = safe;
+			final() = safe;
 		return crymath::sqrt(lensqr);
 	}
 

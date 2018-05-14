@@ -84,6 +84,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX12::Init(const CDeviceGraph
 	// depth stencil and rasterizer state
 	memcpy(&psoInitParams.m_Desc.DepthStencilState, &depthStencilDesc, sizeof(depthStencilDesc));
 	memcpy(&psoInitParams.m_Desc.RasterizerState, &rasterizerDesc, sizeof(rasterizerDesc));
+	psoInitParams.m_DepthBoundsTestEnable = psoDesc.m_bDepthBoundsTest;
 
 	auto extractShaderBytecode = [&](EHWShaderClass shaderClass)
 	{
@@ -114,7 +115,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX12::Init(const CDeviceGraph
 
 		m_PrimitiveTopology = static_cast<D3DPrimitiveType>(psoDesc.m_PrimitiveType);
 
-		struct
+		static const struct
 		{
 			ERenderPrimitiveType          primitiveType;
 			D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopology;

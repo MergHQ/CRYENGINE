@@ -4,6 +4,7 @@
 #include "AudioStandaloneFileManager.h"
 #include "ATLAudioObject.h"
 #include "AudioCVars.h"
+#include "Common.h"
 #include <IAudioImpl.h>
 #include <CryString/HashedString.h>
 
@@ -76,19 +77,13 @@ void CAudioStandaloneFileManager::ReleaseStandaloneFile(CATLStandaloneFile* cons
 //////////////////////////////////////////////////////////////////////////
 void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 const& listenerPosition, float posX, float posY) const
 {
-	static float const headerColor[4] = { 1.0f, 0.5f, 0.0f, 0.7f };
-	static float const itemPlayingColor[4] = { 0.1f, 0.7f, 0.1f, 0.9f };
-	static float const itemStoppingColor[4] = { 0.8f, 0.7f, 0.1f, 0.9f };
-	static float const itemLoadingColor[4] = { 0.9f, 0.2f, 0.2f, 0.9f };
-	static float const itemOtherColor[4] = { 0.8f, 0.8f, 0.8f, 0.9f };
-
-	auxGeom.Draw2dLabel(posX, posY, 1.5f, headerColor, false, "Standalone Files [%" PRISIZE_T "]", m_constructedStandaloneFiles.size());
-	posY += 16.0f;
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_managerHeaderFontSize, Debug::g_managerColorHeader.data(), false, "Standalone Files [%" PRISIZE_T "]", m_constructedStandaloneFiles.size());
+	posY += Debug::g_managerHeaderLineHeight;
 
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
 
-	bool const bIsFilterNotSet = (lowerCaseSearchString.empty() || (lowerCaseSearchString == "0"));
+	bool const isFilterNotSet = (lowerCaseSearchString.empty() || (lowerCaseSearchString == "0"));
 
 	for (auto const pStandaloneFile : m_constructedStandaloneFiles)
 	{
@@ -104,38 +99,38 @@ void CAudioStandaloneFileManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, Vec3 co
 			CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
 			lowerCaseObjectName.MakeLower();
 
-			bool const bDraw = bIsFilterNotSet ||
-			                   (lowerCaseStandaloneFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos) ||
-			                   (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+			bool const draw = isFilterNotSet ||
+			                  (lowerCaseStandaloneFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos) ||
+			                  (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 
-			if (bDraw)
+			if (draw)
 			{
-				float const* pColor = itemOtherColor;
+				float const* pColor = Debug::g_managerColorItemInactive.data();
 
 				switch (pStandaloneFile->m_state)
 				{
 				case EAudioStandaloneFileState::Playing:
-					pColor = itemPlayingColor;
+					pColor = Debug::g_managerColorItemActive.data();
 					break;
 				case EAudioStandaloneFileState::Loading:
-					pColor = itemLoadingColor;
+					pColor = Debug::g_managerColorItemLoading.data();
 					break;
 				case EAudioStandaloneFileState::Stopping:
-					pColor = itemStoppingColor;
+					pColor = Debug::g_managerColorItemStopping.data();
 					break;
 				default:
 					CRY_ASSERT_MESSAGE(false, "Standalone file is in an unknown state.");
 					break;
 				}
 
-				auxGeom.Draw2dLabel(posX, posY, 1.2f,
+				auxGeom.Draw2dLabel(posX, posY, Debug::g_managerFontSize,
 				                    pColor,
 				                    false,
 				                    "%s on %s",
 				                    szStandaloneFileName,
 				                    szObjectName);
 
-				posY += 11.0f;
+				posY += Debug::g_managerLineHeight;
 			}
 		}
 	}

@@ -257,6 +257,14 @@ bool CParticleEditor::OnSaveAsset(CEditableAsset& editAsset)
 	return true;
 }
 
+void CParticleEditor::OnDiscardAssetChanges()
+{
+	// Reload from file
+	if (auto* pAffectAsset = m_pEffectAssetModel->GetEffectAsset())
+		if (auto* pAsset = pAffectAsset->GetAsset())
+			m_pEffectAssetModel->OpenAsset(pAsset);
+}
+
 void CParticleEditor::OnCloseAsset()
 {
 	m_pEffectAssetModel->ClearAsset();
@@ -458,10 +466,9 @@ void CParticleEditor::OnImportPfx1()
 
 				if (pParticlesType->CreateForExistingEffect(assetFilePath.c_str()))
 				{
-					CAsset* const pAsset = CAssetManager::GetInstance()->FindAssetForMetadata(assetFilePath.c_str());
-					if (pAsset)
+					if (CAsset* const pAsset = CAssetManager::GetInstance()->FindAssetForMetadata(assetFilePath.c_str()))
 					{
-						(void)OpenAsset(pAsset);
+						OpenAsset(pAsset);
 					}
 				}
 			}

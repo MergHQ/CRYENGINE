@@ -63,14 +63,3 @@ void CD3D9Renderer::CreateDeferredUnitBox(t_arrDeferredMeshIndBuff& indBuff, t_a
 		indBuff.push_back((uint16)  nFaces[i][3]);
 	}
 }
-
-#if defined(USE_NV_API)
-	#include NV_API_HEADER
-#endif
-#if defined(USE_AMD_API)
-	#include <AMD/AGS Lib/inc/amd_ags.h>
-#endif
-#if defined(USE_AMD_EXT)
-	#include <AMD/AMD_Extensions/AmdDxExtDepthBoundsApi.h>
-#endif
-

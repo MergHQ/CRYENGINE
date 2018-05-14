@@ -1139,45 +1139,47 @@ private:
 };
 
 #if defined(INCLUDE_AUDIO_PRODUCTION_CODE)
-// Filter for drawing debug info to the screen
-enum class EAudioDebugDrawFilter : EnumFlagsType
+namespace Debug
 {
-	All                        = 0,
-	ShowSpheres                = BIT(6),  // a
-	ShowObjectLabel            = BIT(7),  // b
-	ShowObjectTriggers         = BIT(8),  // c
-	ShowObjectStates           = BIT(9),  // d
-	ShowObjectParameters       = BIT(10), // e
-	ShowObjectEnvironments     = BIT(11), // f
-	ShowObjectDistance         = BIT(12), // g
-	ShowOcclusionRayLabels     = BIT(13), // h
-	ShowOcclusionRays          = BIT(14), // i
-	DrawListenerOcclusionPlane = BIT(15), // j
-	ShowObjectStandaloneFiles  = BIT(16), // k
+// Filter for drawing debug info to the screen
+enum class EDrawFilter : EnumFlagsType
+{
+	All                    = 0,
+	Spheres                = BIT(6),  // a
+	ObjectLabel            = BIT(7),  // b
+	ObjectTriggers         = BIT(8),  // c
+	ObjectStates           = BIT(9),  // d
+	ObjectParameters       = BIT(10), // e
+	ObjectEnvironments     = BIT(11), // f
+	ObjectDistance         = BIT(12), // g
+	OcclusionRayLabels     = BIT(13), // h
+	OcclusionRays          = BIT(14), // i
+	ListenerOcclusionPlane = BIT(15), // j
+	ObjectStandaloneFiles  = BIT(16), // k
 
-	HideMemoryInfo             = BIT(18), // m
-	FilterAllObjectInfo        = BIT(19), // n
+	HideMemoryInfo         = BIT(18), // m
+	FilterAllObjectInfo    = BIT(19), // n
 
-	ShowStandaloneFiles        = BIT(26), // u
-	ShowActiveEvents           = BIT(27), // v
-	ShowActiveObjects          = BIT(28), // w
-	ShowFileCacheManagerInfo   = BIT(29), // x
+	StandaloneFiles        = BIT(26), // u
+	ActiveEvents           = BIT(27), // v
+	ActiveObjects          = BIT(28), // w
+	FileCacheManagerInfo   = BIT(29), // x
 };
-CRY_CREATE_ENUM_FLAG_OPERATORS(EAudioDebugDrawFilter);
+CRY_CREATE_ENUM_FLAG_OPERATORS(EDrawFilter);
 
-static constexpr EAudioDebugDrawFilter objectDebugMask =
-  EAudioDebugDrawFilter::ShowSpheres |
-  EAudioDebugDrawFilter::ShowObjectLabel |
-  EAudioDebugDrawFilter::ShowObjectTriggers |
-  EAudioDebugDrawFilter::ShowObjectStates |
-  EAudioDebugDrawFilter::ShowObjectParameters |
-  EAudioDebugDrawFilter::ShowObjectEnvironments |
-  EAudioDebugDrawFilter::ShowObjectDistance |
-  EAudioDebugDrawFilter::ShowOcclusionRayLabels |
-  EAudioDebugDrawFilter::ShowOcclusionRays |
-  EAudioDebugDrawFilter::DrawListenerOcclusionPlane |
-  EAudioDebugDrawFilter::ShowObjectStandaloneFiles;
-
+static constexpr EDrawFilter objectMask =
+  EDrawFilter::Spheres |
+  EDrawFilter::ObjectLabel |
+  EDrawFilter::ObjectTriggers |
+  EDrawFilter::ObjectStates |
+  EDrawFilter::ObjectParameters |
+  EDrawFilter::ObjectEnvironments |
+  EDrawFilter::ObjectDistance |
+  EDrawFilter::OcclusionRayLabels |
+  EDrawFilter::OcclusionRays |
+  EDrawFilter::ListenerOcclusionPlane |
+  EDrawFilter::ObjectStandaloneFiles;
+}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
 } // namespace CryAudio

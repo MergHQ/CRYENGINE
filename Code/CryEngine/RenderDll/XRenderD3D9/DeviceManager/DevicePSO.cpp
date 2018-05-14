@@ -65,6 +65,7 @@ void CDeviceGraphicsPSODesc::InitWithDefaults()
 	m_CullMode = eCULL_Back;
 	m_PrimitiveType = eptTriangleList;
 	m_bDepthClip = true;
+	m_bDepthBoundsTest = false;
 	m_bDynamicDepthBias = false;
 }
 

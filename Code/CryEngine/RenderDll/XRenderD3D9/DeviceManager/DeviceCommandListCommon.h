@@ -122,6 +122,7 @@ public:
 
 	void SetViewports(uint32 vpCount, const D3DViewPort* pViewports);
 	void SetScissorRects(uint32 rcCount, const D3DRectangle* pRects);
+	void SetDepthBounds(float fMin, float fMax);
 	void SetPipelineState(const CDeviceGraphicsPSO* devicePSO);
 	void SetResourceLayout(const CDeviceResourceLayout* resourceLayout);
 	void SetResources(uint32 bindSlot, const CDeviceResourceSet* pResources);

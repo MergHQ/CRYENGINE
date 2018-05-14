@@ -488,6 +488,11 @@ void CDeviceGraphicsCommandInterfaceImpl::SetDepthBiasImpl(float constBias, floa
 	vkCmdSetDepthBias(GetVKCommandList()->GetVkCommandList(), constBias, biasClamp, slopeBias);
 }
 
+void CDeviceGraphicsCommandInterfaceImpl::SetDepthBoundsImpl(float fMin, float fMax)
+{
+	vkCmdSetDepthBounds(GetVKCommandList()->GetVkCommandList(), fMin, fMax);
+}
+
 void CDeviceGraphicsCommandInterfaceImpl::DrawImpl(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation)
 {
 	const CDeviceResourceLayout_Vulkan* pVkLayout = reinterpret_cast<const CDeviceResourceLayout_Vulkan*>(m_graphicsState.pResourceLayout.cachedValue);

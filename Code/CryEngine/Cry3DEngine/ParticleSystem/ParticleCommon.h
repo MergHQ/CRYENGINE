@@ -11,7 +11,7 @@
 #endif
 // #define CRY_PFX1_BAIL_UNSUPPORTED	// disable pfx1 features that not yet supported by pfx2 for precision profiling
 // #define CRY_PFX2_LOAD_PRIORITY		// when trying to load a pfx1 effect, try to load pfx2 effect with the same name first
-#define CRY_PFX2_PROFILE_DETAILS        // more in detail profile of pfx2. Individual features and sub update parts will appear here.
+// #define CRY_PFX2_PROFILE_DETAILS        // more in detail profile of pfx2. Individual features and sub update parts will appear here.
 // ~compile options
 
 #if defined(CRY_PFX2_DEBUG) && CRY_PLATFORM_WINDOWS
@@ -58,7 +58,7 @@ namespace pfx2
 {
 
 const uint gMinimumVersion = 1;
-const uint gCurrentVersion = 11;
+const uint gCurrentVersion = 12;
 
 class CParticleSystem;
 class CParticleEffect;

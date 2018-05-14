@@ -242,6 +242,21 @@ CDevice::CDevice(ID3D12Device* d3d12Device, D3D_FEATURE_LEVEL featureLevel, UINT
 	// Must be constructed last as it relies on functionality from the heaps
 	, m_Scheduler(this, nodeMask)
 {
+	// Anniversary Update
+#if NTDDI_WIN10_RS1 && (WDK_NTDDI_VERSION >= NTDDI_WIN10_RS1)
+	ID3D12Device1* pDevice1 = nullptr;
+	m_pDevice->QueryInterface(__uuidof(ID3D12Device1), (void**)&pDevice1);
+	if (m_pDevice1 = pDevice1)
+		pDevice1->Release();
+#endif
+	// Creator's Update
+#if NTDDI_WIN10_RS2 && (WDK_NTDDI_VERSION >= NTDDI_WIN10_RS2)
+	ID3D12Device2* pDevice2 = nullptr;
+	m_pDevice->QueryInterface(__uuidof(ID3D12Device2), (void**)&pDevice2);
+	if (m_pDevice2 = pDevice2)
+		pDevice2->Release();
+#endif
+
 #if !defined(_ALLOW_INITIALIZER_LISTS)
 #ifdef __d3d12_x_h__
 	m_GlobalDescriptorHeaps.emplace_back(this);

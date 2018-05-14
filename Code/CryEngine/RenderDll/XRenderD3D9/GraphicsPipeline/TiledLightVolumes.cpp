@@ -564,7 +564,6 @@ int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, float mipFactor,
 	return arrayIndex;
 }
 
-#pragma optimize("", off)
 void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);

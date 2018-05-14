@@ -41,8 +41,8 @@ public:
 		m_posSourceUndo = pMoveTool->m_source.pos;
 		m_posTargetUndo = pMoveTool->m_target.pos;
 	}
-protected:
-	virtual const char* GetDescription() { return ""; };
+private:
+	virtual const char* GetDescription() { return ""; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -92,13 +92,13 @@ int CTerrainMoveTool::m_targetRot = 0.0f;
 //SMTBox CTerrainMoveTool::m_source;
 //SMTBox CTerrainMoveTool::m_target;
 
-CTerrainMoveTool::CTerrainMoveTool() :
-	m_archive(0),
-	m_isSyncHeight(false),
-	m_onlyVegetation(false),
-	m_onlyTerrain(false),
-	m_moveObjects(false),
-	m_manipulator(nullptr)
+CTerrainMoveTool::CTerrainMoveTool()
+	: m_archive(nullptr)
+	, m_isSyncHeight(false)
+	, m_onlyVegetation(false)
+	, m_onlyTerrain(false)
+	, m_moveObjects(false)
+	, m_manipulator(nullptr)
 {
 	CUndo undo("Unselect All");
 	GetIEditorImpl()->ClearSelection();
@@ -395,7 +395,7 @@ void CTerrainMoveTool::RemoveListener(ITerrainMoveToolListener* pListener)
 
 void CTerrainMoveTool::Serialize(Serialization::IArchive& ar)
 {
-	if (ar.openBlock("moveterrain", "Move Terrain"))
+	if (ar.openBlock("cloneTerrain", "Clone Terrain"))
 	{
 		if (ar.openBlock("target_source", "<Select"))
 		{
@@ -413,9 +413,10 @@ void CTerrainMoveTool::Serialize(Serialization::IArchive& ar)
 		ar(m_isSyncHeight, "syncheight", "Sync Height");
 		ar(m_moveObjects, "moveobjects", "Move Objects");
 
-		if (ar.openBlock("action_buttons", "<Terrain"))
+		if (ar.openBlock("action_buttons", "<Action"))
 		{
-			ar(Serialization::ActionButton([this] { Move(m_onlyVegetation, m_onlyTerrain); }), "move", "^Move");
+			ar(Serialization::ActionButton([this] { Move(m_onlyVegetation, m_onlyTerrain);
+			                               }), "clone", "^Apply");
 			ar.closeBlock();
 		}
 		ar.closeBlock();

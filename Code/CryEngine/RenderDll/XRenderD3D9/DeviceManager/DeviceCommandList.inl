@@ -264,6 +264,11 @@ inline void CDeviceGraphicsCommandInterface::SetDepthBias(float constBias, float
 	SetDepthBiasImpl(constBias, slopeBias, biasClamp);
 }
 
+inline void CDeviceGraphicsCommandInterface::SetDepthBounds(float fMin, float fMax)
+{
+	SetDepthBoundsImpl(fMin, fMax);
+}
+
 inline void CDeviceGraphicsCommandInterface::Draw(uint32 VertexCountPerInstance, uint32 InstanceCount, uint32 StartVertexLocation, uint32 StartInstanceLocation)
 {
 	if (m_graphicsState.validResourceBindings == m_graphicsState.requiredResourceBindings)

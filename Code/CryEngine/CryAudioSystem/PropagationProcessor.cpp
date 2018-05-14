@@ -5,6 +5,7 @@
 #include "AudioCVars.h"
 #include "ATLAudioObject.h"
 #include "AudioSystem.h"
+#include "Common.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/ISurfaceType.h>
 
@@ -742,7 +743,7 @@ void CPropagationProcessor::UpdateOcclusionPlanes()
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom, EObjectFlags const objectFlags, Vec3 const& listenerPosition) const
 {
-	if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowOcclusionRays) != 0)
+	if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::OcclusionRays) != 0)
 	{
 		if (CanRunObstructionOcclusion() && (objectFlags& EObjectFlags::Virtual) == 0)
 		{
@@ -756,7 +757,7 @@ void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom, EObjectFlags 
 		}
 	}
 
-	if ((g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::DrawListenerOcclusionPlane) != 0)
+	if ((g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ListenerOcclusionPlane) != 0)
 	{
 		if (CanRunObstructionOcclusion() && (objectFlags& EObjectFlags::Virtual) == 0)
 		{
@@ -790,25 +791,24 @@ void CPropagationProcessor::DrawRay(IRenderAuxGeom& auxGeom, size_t const rayInd
 {
 	static ColorB const obstructedRayColor(200, 20, 1, 255);
 	static ColorB const freeRayColor(20, 200, 1, 255);
-	static ColorB const intersectionSphereColor(250, 200, 1, 240);
-	static float const collisionPtSphereRadius = 0.01f;
+	static ColorB const collisionSphereColor(250, 200, 1, 240);
 	SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
 	SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
 	newRenderFlags.SetCullMode(e_CullModeNone);
 
-	bool const bRayObstructed = (m_rayDebugInfos[rayIndex].numHits > 0);
-	Vec3 const rayEnd = bRayObstructed ?
+	bool const isRayObstructed = (m_rayDebugInfos[rayIndex].numHits > 0);
+	Vec3 const rayEnd = isRayObstructed ?
 	                    m_rayDebugInfos[rayIndex].begin + (m_rayDebugInfos[rayIndex].end - m_rayDebugInfos[rayIndex].begin).GetNormalized() * m_rayDebugInfos[rayIndex].distanceToNearestObstacle :
-	                    m_rayDebugInfos[rayIndex].end; // only draw the ray to the first collision point
+	                    m_rayDebugInfos[rayIndex].end; // Only draw the ray to the first collision point.
 
-	ColorB const& rayColor = bRayObstructed ? obstructedRayColor : freeRayColor;
+	ColorB const& rayColor = isRayObstructed ? obstructedRayColor : freeRayColor;
 
 	auxGeom.SetRenderFlags(newRenderFlags);
 
-	if (bRayObstructed)
+	if (isRayObstructed)
 	{
-		// mark the nearest collision with a small sphere
-		auxGeom.DrawSphere(rayEnd, collisionPtSphereRadius, intersectionSphereColor);
+		// Mark the nearest collision with a small sphere.
+		auxGeom.DrawSphere(rayEnd, Debug::g_rayRadiusCollisionSphere, collisionSphereColor);
 	}
 
 	auxGeom.DrawLine(m_rayDebugInfos[rayIndex].begin, rayColor, rayEnd, rayColor, 1.0f);

@@ -1,44 +1,25 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2002.
-// -------------------------------------------------------------------------
-//  File name:   vegetationmap.cpp
-//  Version:     v1.00
-//  Created:     31/7/2002 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "VegetationMap.h"
+#include "VegetationObject.h"
+#include "VegetationSelectTool.h"
+#include "Material/Material.h"
 #include "Terrain/Heightmap.h"
 #include "Terrain/Layer.h"
-#include "VegetationObject.h"
+#include "CryEditDoc.h"
 #include "DataBaseDialog.h"
-#include "VegetationSelectTool.h"
-
-#include <Cry3DEngine/I3DEngine.h>
-#include "Material/Material.h"
-
 #include "GameEngine.h"
 
-#include <QVector>
-#include "QT/Widgets/QWaitProgress.h"
 #include "Controls/QuestionDialog.h"
-
+#include "QT/Widgets/QWaitProgress.h"
 #include "Util/ImageTIF.h"
 #include "IAIManager.h"
-#include "CryEditDoc.h"
 
-//////////////////////////////////////////////////////////////////////////
-// CVegetationMap implementation.
-//////////////////////////////////////////////////////////////////////////
+#include <Cry3DEngine/I3DEngine.h>
+
+namespace
+{
 
 #pragma pack(push,1)
 // Structure of vegetation object instance in file.
@@ -81,78 +62,74 @@ struct SVegInst
 };
 #pragma pack(pop)
 
-namespace
-{
 const char* kVegetationMapFile = "VegetationMap.dat";
-const char* kVegetationMapFileOld = "VegetationMap.xml";   //TODO: Remove support after January 2012 (support old extension at least for convertion levels time)
 const int kMaxMapSize = 1024;
 const int kMinMaskValue = 32;
-};
+}
 
-#define SAFE_RELEASE_NODE(node) if (node) { (node)->ReleaseNode(); node = 0; }
+#define SAFE_RELEASE_NODE(node) if (node) { (node)->ReleaseNode(); node = nullptr; }
 
 //////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-//! Undo object for vegetation instance operations.
+//! Undo object for vegetation instance operations
 class CUndoVegInstance : public IUndoObject
 {
 public:
-	CUndoVegInstance(CVegetationInstance* obj)
+	CUndoVegInstance(CVegetationInstance* pInst)
 	{
 		// Stores the current state of this object.
-		assert(obj != 0);
-		m_obj = obj;
-		m_obj->AddRef();
+		assert(pInst != 0);
+		m_pInstance = pInst;
+		m_pInstance->AddRef();
 
 		ZeroStruct(m_redo);
-		m_undo.pos = m_obj->pos;
-		m_undo.scale = m_obj->scale;
-		m_undo.objectIndex = m_obj->object->GetIndex();
-		m_undo.brightness = m_obj->brightness;
-		m_undo.angle = m_obj->angle;
-		m_undo.angleX = m_obj->angleX;
-		m_undo.angleY = m_obj->angleY;
+		m_undo.pos = m_pInstance->pos;
+		m_undo.scale = m_pInstance->scale;
+		m_undo.objectIndex = m_pInstance->object->GetIndex();
+		m_undo.brightness = m_pInstance->brightness;
+		m_undo.angle = m_pInstance->angle;
+		m_undo.angleX = m_pInstance->angleX;
+		m_undo.angleY = m_pInstance->angleY;
 	}
 	~CUndoVegInstance()
 	{
-		m_obj->Release();
+		m_pInstance->Release();
 	}
 protected:
-	virtual const char* GetDescription() { return "Vegetation Modify"; };
+	virtual const char* GetDescription() { return "Vegetation Modify"; }
 
 	virtual void        Undo(bool bUndo)
 	{
 		if (bUndo)
 		{
-			m_redo.pos = m_obj->pos;
-			m_redo.scale = m_obj->scale;
-			m_redo.objectIndex = m_obj->object->GetIndex();
-			m_redo.brightness = m_obj->brightness;
-			m_redo.angle = m_obj->angle;
-			m_redo.angleX = m_obj->angleX;
-			m_redo.angleY = m_obj->angleY;
+			m_redo.pos = m_pInstance->pos;
+			m_redo.scale = m_pInstance->scale;
+			m_redo.objectIndex = m_pInstance->object->GetIndex();
+			m_redo.brightness = m_pInstance->brightness;
+			m_redo.angle = m_pInstance->angle;
+			m_redo.angleX = m_pInstance->angleX;
+			m_redo.angleY = m_pInstance->angleY;
 		}
-		m_obj->scale = m_undo.scale;
-		m_obj->brightness = m_undo.brightness;
-		m_obj->angle = m_undo.angle;
-		m_obj->angleX = m_undo.angleX;
-		m_obj->angleY = m_undo.angleY;
+		m_pInstance->scale = m_undo.scale;
+		m_pInstance->brightness = m_undo.brightness;
+		m_pInstance->angle = m_undo.angle;
+		m_pInstance->angleX = m_undo.angleX;
+		m_pInstance->angleY = m_undo.angleY;
 
 		// move instance to new position
-		GetIEditorImpl()->GetVegetationMap()->MoveInstance(m_obj, m_undo.pos, false);
+		GetIEditorImpl()->GetVegetationMap()->MoveInstance(m_pInstance, m_undo.pos, false);
 
 		Update();
 	}
 	virtual void Redo()
 	{
-		m_obj->scale = m_redo.scale;
-		m_obj->brightness = m_redo.brightness;
-		m_obj->angle = m_redo.angle;
-		m_obj->angleX = m_redo.angleX;
-		m_obj->angleY = m_redo.angleY;
+		m_pInstance->scale = m_redo.scale;
+		m_pInstance->brightness = m_redo.brightness;
+		m_pInstance->angle = m_redo.angle;
+		m_pInstance->angleX = m_redo.angleX;
+		m_pInstance->angleY = m_redo.angleY;
 
 		// move instance to new position
-		GetIEditorImpl()->GetVegetationMap()->MoveInstance(m_obj, m_redo.pos, false);
+		GetIEditorImpl()->GetVegetationMap()->MoveInstance(m_pInstance, m_redo.pos, false);
 		Update();
 	}
 	void Update()
@@ -166,7 +143,7 @@ protected:
 	}
 
 protected:
-	CVegetationInstance* m_obj;
+	CVegetationInstance* m_pInstance;
 
 private:
 	SVegInst m_undo;
@@ -174,15 +151,14 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 //! Undo object for vegetation instance operations with vegetation object relationships.
 class CUndoVegInstanceEx : public CUndoVegInstance
 {
 public:
-	CUndoVegInstanceEx(CVegetationInstance* obj) :
-		CUndoVegInstance(obj)
+	CUndoVegInstanceEx(CVegetationInstance* pInst)
+		: CUndoVegInstance(pInst)
 	{
-		m_undo = obj->object;
+		m_undo = pInst->object;
 	}
 protected:
 
@@ -190,15 +166,15 @@ protected:
 	{
 		if (bUndo)
 		{
-			m_redo = m_obj->object;
+			m_redo = m_pInstance->object;
 		}
-		m_obj->object = m_undo;
+		m_pInstance->object = m_undo;
 
 		CUndoVegInstance::Undo(bUndo);
 	}
 	virtual void Redo()
 	{
-		m_obj->object = m_redo;
+		m_pInstance->object = m_redo;
 		CUndoVegInstance::Redo();
 	}
 private:
@@ -207,27 +183,26 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 //! Undo object for CBaseObject.
 class CUndoVegInstanceCreate : public IUndoObject
 {
 public:
-	CUndoVegInstanceCreate(CVegetationInstance* obj, bool bDeleted)
+	CUndoVegInstanceCreate(CVegetationInstance* pInst, bool bDeleted)
 	{
 		// Stores the current state of this object.
-		assert(obj != 0);
-		m_obj = obj;
-		m_obj->AddRef();
+		assert(pInst != 0);
+		m_pInstance = pInst;
+		m_pInstance->AddRef();
 		m_bDeleted = bDeleted;
 	}
 
 	~CUndoVegInstanceCreate()
 	{
-		m_obj->Release();
+		m_pInstance->Release();
 	}
 
 protected:
-	virtual const char* GetDescription() { return "Vegetation Create"; };
+	virtual const char* GetDescription() { return "Vegetation Create"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -239,13 +214,13 @@ protected:
 		CVegetationMap* vegMap = GetIEditorImpl()->GetVegetationMap();
 		if (m_bDeleted)
 		{
-			vegMap->AddObjInstance(m_obj);
-			vegMap->MoveInstance(m_obj, m_obj->pos, false);
+			vegMap->AddObjInstance(m_pInstance);
+			vegMap->MoveInstance(m_pInstance, m_pInstance->pos, false);
 		}
 		else
 		{
 			// invalidate area occupied by deleted instance
-			vegMap->DeleteObjInstance(m_obj);
+			vegMap->DeleteObjInstance(m_pInstance);
 		}
 		NotifyListeners();
 	}
@@ -256,12 +231,12 @@ protected:
 		CVegetationMap* vegMap = GetIEditorImpl()->GetVegetationMap();
 		if (!m_bDeleted)
 		{
-			vegMap->AddObjInstance(m_obj);
-			vegMap->MoveInstance(m_obj, m_obj->pos, false);
+			vegMap->AddObjInstance(m_pInstance);
+			vegMap->MoveInstance(m_pInstance, m_pInstance->pos, false);
 		}
 		else
 		{
-			vegMap->DeleteObjInstance(m_obj);
+			vegMap->DeleteObjInstance(m_pInstance);
 		}
 		NotifyListeners();
 	}
@@ -279,22 +254,21 @@ protected:
 	void NotifyListeners()
 	{
 		auto pVegetationMap = GetIEditorImpl()->GetVegetationMap();
-		pVegetationMap->signalVegetationObjectChanged(m_obj->object);
+		pVegetationMap->signalVegetationObjectChanged(m_pInstance->object);
 	}
 
 private:
-	CVegetationInstance* m_obj;
+	CVegetationInstance* m_pInstance;
 	bool                 m_bDeleted;
 };
 
-//////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 //! Base Undo object for CVegetationObject.
 class CUndoVegetationBase : public IUndoObject
 {
 public:
-	CUndoVegetationBase(bool bIsReloadObjectsInPanel) :
-		m_bIsReloadObjectsInEditor(bIsReloadObjectsInPanel)
+	CUndoVegetationBase(bool bIsReloadObjectsInPanel)
+		: m_bIsReloadObjectsInEditor(bIsReloadObjectsInPanel)
 	{
 	}
 
@@ -322,13 +296,12 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 //! Undo object for vegetation object.
 class CUndoVegetationObject : public CUndoVegetationBase
 {
 public:
-	CUndoVegetationObject(CVegetationObject* pObj) :
-		CUndoVegetationBase(true)
+	CUndoVegetationObject(CVegetationObject* pObj)
+		: CUndoVegetationBase(true)
 	{
 		m_pObj = pObj;
 		m_undo = m_pObj->GetNumInstances();
@@ -344,7 +317,7 @@ protected:
 		m_pObj->SetNumInstances(m_undo);
 		// Set hidden flag
 		m_pObj->SetHidden(true);
-		// Show instancies
+		// Show instances
 		GetIEditorImpl()->GetVegetationMap()->HideObject(m_pObj, false);
 		__super::Undo(bUndo);
 	}
@@ -361,23 +334,22 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 //! Undo object for creation and deleting CVegetationObject
 class CUndoVegetationObjectCreate : public CUndoVegetationBase
 {
 public:
-	CUndoVegetationObjectCreate(CVegetationObject* obj, bool bDeleted) :
-		CUndoVegetationBase(true)
+	CUndoVegetationObjectCreate(CVegetationObject* pObj, bool bDeleted)
+		: CUndoVegetationBase(true)
 	{
 		// Stores the current state of this object.
-		assert(obj != 0);
-		m_obj = obj;
-		m_obj->AddRef();
+		assert(pObj != 0);
+		m_pObj = pObj;
+		m_pObj->AddRef();
 		m_bDeleted = bDeleted;
 	}
 	~CUndoVegetationObjectCreate()
 	{
-		m_obj->Release();
+		m_pObj->Release();
 	}
 protected:
 	virtual const char* GetDescription() { return "Vegetation Object Create"; }
@@ -387,11 +359,11 @@ protected:
 		CVegetationMap* vegMap = GetIEditorImpl()->GetVegetationMap();
 		if (m_bDeleted)
 		{
-			vegMap->InsertObject(m_obj);
+			vegMap->InsertObject(m_pObj);
 		}
 		else
 		{
-			vegMap->RemoveObject(m_obj);
+			vegMap->RemoveObject(m_pObj);
 		}
 		__super::Undo(bUndo);
 	}
@@ -400,50 +372,41 @@ protected:
 		CVegetationMap* vegMap = GetIEditorImpl()->GetVegetationMap();
 		if (!m_bDeleted)
 		{
-			vegMap->InsertObject(m_obj);
+			vegMap->InsertObject(m_pObj);
 		}
 		else
 		{
-			vegMap->RemoveObject(m_obj);
+			vegMap->RemoveObject(m_pObj);
 		}
 		__super::Redo();
 	}
 
 private:
-	CVegetationObject* m_obj;
+	CVegetationObject* m_pObj;
 	bool               m_bDeleted;
 };
 
 //////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-// class CVegetationMap
-//////////////////////////////////////////////////////////////////////////
 CVegetationMap::CVegetationMap()
+	: m_sectorSize{0}
+	, m_numSectors{0}
+	, m_mapSize{0}
+	, m_minimalDistance{0.1f}
+	, m_worldToSector{0}
+	, m_numInstances{0}
+	, m_nVersion{1}
+	, m_storeBaseUndoState{eStoreUndo_Normal}
 {
-	m_sectors = 0;
-	m_sectorSize = 0;
-	m_numSectors = 0;
-	m_mapSize = 0;
-	m_minimalDistance = 0.1f;
-	m_worldToSector = 0;
-	m_numInstances = 0;
-	m_nVersion = 1;
-	m_uiFilterLayerId = -1;
-	m_storeBaseUndoState = eStoreUndo_Normal;
-
-	// Initialize the random number generator
 	srand(GetTickCount());
 
 	REGISTER_COMMAND("ed_GenerateBillboardTextures", GenerateBillboards, 0, "Generate billboard textures for all level vegetations having UseSprites flag enabled. Textures are stored into <Objects> folder");
 }
 
-//////////////////////////////////////////////////////////////////////////
 CVegetationMap::~CVegetationMap()
 {
 	ClearAll();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ClearObjects()
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -451,20 +414,14 @@ void CVegetationMap::ClearObjects()
 	m_objects.clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ClearAll()
 {
 	ClearObjects();
 
-	if (m_sectors)
-	{
-		free(m_sectors);
-		m_sectors = 0;
-	}
+	m_sectors.clear();
 
 	m_idToObject.clear();
 
-	m_sectors = 0;
 	m_sectorSize = 0;
 	m_numSectors = 0;
 	m_mapSize = 0;
@@ -473,39 +430,38 @@ void CVegetationMap::ClearAll()
 	m_numInstances = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CVegetationMap::RegisterInstance(CVegetationInstance* obj)
+void CVegetationMap::RegisterInstance(CVegetationInstance* pInst)
 {
 	// re-create vegetation render node
-	SAFE_RELEASE_NODE(obj->pRenderNode);
+	SAFE_RELEASE_NODE(pInst->pRenderNode);
 
 	I3DEngine* p3DEngine = GetIEditorImpl()->Get3DEngine();
 
-	if (obj->object && !obj->object->IsHidden())
-		obj->pRenderNode = p3DEngine->GetITerrain()->AddVegetationInstance(obj->object->GetId(), obj->pos, obj->scale, obj->brightness, RAD2BYTE(obj->angle), RAD2BYTE(obj->angleX), RAD2BYTE(obj->angleY));
+	if (pInst->object && !pInst->object->IsHidden())
+		pInst->pRenderNode = p3DEngine->GetITerrain()->AddVegetationInstance(pInst->object->GetId(), pInst->pos, pInst->scale, pInst->brightness, RAD2BYTE(pInst->angle), RAD2BYTE(pInst->angleX), RAD2BYTE(pInst->angleY));
 
-	if (obj->pRenderNode && !obj->object->IsAutoMerged())
+	if (pInst->pRenderNode && !pInst->object->IsAutoMerged())
 	{
-		GetIEditorImpl()->GetAIManager()->OnAreaModified(obj->pRenderNode->GetBBox());
-		p3DEngine->OnObjectModified(obj->pRenderNode, obj->pRenderNode->GetRndFlags());
+		GetIEditorImpl()->GetAIManager()->OnAreaModified(pInst->pRenderNode->GetBBox());
+		p3DEngine->OnObjectModified(pInst->pRenderNode, pInst->pRenderNode->GetRndFlags());
 	}
 
 	// re-create ground decal render node
-	UpdateGroundDecal(obj);
+	UpdateGroundDecal(pInst);
 }
 
-void CVegetationMap::UpdateGroundDecal(CVegetationInstance* obj)
+void CVegetationMap::UpdateGroundDecal(CVegetationInstance* pInst)
 {
-	SAFE_RELEASE_NODE(obj->pRenderNodeGroundDecal);
-	if (obj->object && (obj->object->m_pMaterialGroundDecal != NULL) && obj->pRenderNode)
+	SAFE_RELEASE_NODE(pInst->pRenderNodeGroundDecal);
+	if (pInst->object && pInst->object->m_pMaterialGroundDecal && pInst->pRenderNode)
 	{
-		obj->pRenderNodeGroundDecal = (IDecalRenderNode*)GetIEditorImpl()->Get3DEngine()->CreateRenderNode(eERType_Decal);
+		pInst->pRenderNodeGroundDecal = (IDecalRenderNode*)GetIEditorImpl()->Get3DEngine()->CreateRenderNode(eERType_Decal);
 
-		bool boIsSelected(0);
+		bool boIsSelected = false;
 
 		// update basic entity render flags
 		unsigned int renderFlags = 0;
-		obj->pRenderNodeGroundDecal->SetRndFlags(renderFlags);
+		pInst->pRenderNodeGroundDecal->SetRndFlags(renderFlags);
 
 		// set properties
 		SDecalProperties decalProperties;
@@ -513,10 +469,10 @@ void CVegetationMap::UpdateGroundDecal(CVegetationInstance* obj)
 
 		Matrix34 wtm;
 		wtm.SetIdentity();
-		float fRadiusXY = ((obj->object && obj->object->GetObject()) ? obj->object->GetObject()->GetRadiusHors() : 1.f) * obj->scale * 0.25f;
+		float fRadiusXY = ((pInst->object && pInst->object->GetObject()) ? pInst->object->GetObject()->GetRadiusHors() : 1.f) * pInst->scale * 0.25f;
 		wtm.SetScale(Vec3(fRadiusXY, fRadiusXY, fRadiusXY));
-		wtm = wtm * Matrix34::CreateRotationZ(obj->angle);
-		wtm.SetTranslation(obj->pos);
+		wtm = wtm * Matrix34::CreateRotationZ(pInst->angle);
+		wtm.SetTranslation(pInst->pos);
 
 		// get normalized rotation (remove scaling)
 		Matrix33 rotation(wtm);
@@ -526,18 +482,17 @@ void CVegetationMap::UpdateGroundDecal(CVegetationInstance* obj)
 
 		decalProperties.m_pos = wtm.TransformPoint(Vec3(0, 0, 0));
 		decalProperties.m_normal = wtm.TransformVector(Vec3(0, 0, 1));
-		decalProperties.m_pMaterialName = obj->object->m_pMaterialGroundDecal->GetName();
+		decalProperties.m_pMaterialName = pInst->object->m_pMaterialGroundDecal->GetName();
 		decalProperties.m_radius = decalProperties.m_normal.GetLength();
 		decalProperties.m_explicitRightUpFront = rotation;
 		decalProperties.m_sortPrio = 10;
-		obj->pRenderNodeGroundDecal->SetDecalProperties(decalProperties);
+		pInst->pRenderNodeGroundDecal->SetDecalProperties(decalProperties);
 
-		obj->pRenderNodeGroundDecal->SetMatrix(wtm);
-		obj->pRenderNodeGroundDecal->SetViewDistRatio(200);
+		pInst->pRenderNodeGroundDecal->SetMatrix(wtm);
+		pInst->pRenderNodeGroundDecal->SetViewDistRatio(200);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CVegetationMap::GenerateRotation(CVegetationObject* pObject, const Vec3& vPos)
 {
 	const bool bRandomRotation = pObject->IsRandomRotation();
@@ -565,30 +520,23 @@ float CVegetationMap::GenerateRotation(CVegetationObject* pObject, const Vec3& v
 	return 0.f;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ClearSectors()
 {
 	RemoveObjectsFromTerrain();
-	// Delete all objects in sectors.
-	// Iterator over all sectors.
-	CVegetationInstance* next;
-	for (int i = 0; i < m_numSectors * m_numSectors; i++)
+
+	for (auto& sector : m_sectors)
 	{
-		SectorInfo* si = &m_sectors[i];
-		// Iterate on every object in sector.
-		for (CVegetationInstance* obj = si->first; obj; obj = next)
+		for (auto& pInst : sector)
 		{
-			next = obj->next;
-			obj->pRenderNode = 0;
-			SAFE_RELEASE_NODE(obj->pRenderNodeGroundDecal);
-			obj->Release();
+			pInst->pRenderNode = nullptr;
+			SAFE_RELEASE_NODE(pInst->pRenderNodeGroundDecal);
+			pInst->Release();
 		}
-		si->first = 0;
+		sector.clear();
 	}
 	m_numInstances = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::Allocate(int nMapSize, bool bKeepData)
 {
 	CXmlArchive ar("Temp");
@@ -604,10 +552,8 @@ void CVegetationMap::Allocate(int nMapSize, bool bKeepData)
 	m_numSectors = m_mapSize / m_sectorSize;
 	m_worldToSector = 1.0f / m_sectorSize;
 
-	// allocate sectors map.
-	int sz = sizeof(SectorInfo) * m_numSectors * m_numSectors;
-	m_sectors = (SectorInfo*)malloc(sz);
-	memset(m_sectors, 0, sz);
+	// Allocate sectors map
+	m_sectors.resize(m_numSectors * m_numSectors);
 
 	if (bKeepData)
 	{
@@ -616,13 +562,11 @@ void CVegetationMap::Allocate(int nMapSize, bool bKeepData)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CVegetationMap::GetSize() const
 {
 	return m_numSectors * m_sectorSize;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::PlaceObjectsOnTerrain()
 {
 	I3DEngine* p3DEngine = GetIEditorImpl()->Get3DEngine();
@@ -634,36 +578,33 @@ void CVegetationMap::PlaceObjectsOnTerrain()
 
 	CWaitProgress progress(_T("Placing Objects on Terrain"));
 
-	// Iterator over all sectors.
-	for (int i = 0; i < m_numSectors * m_numSectors; i++)
+	int i = 0;
+	for (auto& sector : m_sectors)
 	{
-		SectorInfo* si = &m_sectors[i];
-		// Iterate on every object in sector.
-		for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+		for (auto& pInst : sector)
 		{
-			if (!obj->object->IsHidden())
+			if (!pInst->object->IsHidden())
 			{
 				// Stick vegetation to terrain.
-				if (!obj->object->IsAffectedByBrushes() && obj->object->IsAffectedByTerrain())
-					obj->pos.z = p3DEngine->GetTerrainElevation(obj->pos.x, obj->pos.y);
-				obj->pRenderNode = 0;
-				SAFE_RELEASE_NODE(obj->pRenderNodeGroundDecal);
-				RegisterInstance(obj);
+				if (!pInst->object->IsAffectedByBrushes() && pInst->object->IsAffectedByTerrain())
+					pInst->pos.z = p3DEngine->GetTerrainElevation(pInst->pos.x, pInst->pos.y);
+				pInst->pRenderNode = nullptr;
+				SAFE_RELEASE_NODE(pInst->pRenderNodeGroundDecal);
+				RegisterInstance(pInst);
 			}
 		}
 
+		++i;
 		progress.Step(100 * i / (m_numSectors * m_numSectors));
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::RemoveObjectsFromTerrain()
 {
 	if (GetIEditorImpl()->Get3DEngine())
 		GetIEditorImpl()->Get3DEngine()->RemoveAllStaticObjects();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::HideObject(CVegetationObject* object, bool bHide)
 {
 	if (object->IsHidden() == bHide)
@@ -671,38 +612,37 @@ void CVegetationMap::HideObject(CVegetationObject* object, bool bHide)
 
 	object->SetHidden(bHide);
 
-	if (object->GetNumInstances() > 0)
+	if (object->GetNumInstances() == 0)
 	{
-		I3DEngine* p3DEngine = GetIEditorImpl()->Get3DEngine();
-		// Iterate over all sectors.
-		for (int i = 0; i < m_numSectors * m_numSectors; i++)
+		return;
+	}
+
+	I3DEngine* p3DEngine = GetIEditorImpl()->Get3DEngine();
+
+	for (auto& sector : m_sectors)
+	{
+		for (auto& pInst : sector)
 		{
-			SectorInfo* si = &m_sectors[i];
-			// Iterate on every object in sector.
-			for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+			if (pInst->object == object)
 			{
-				if (obj->object == object)
+				// Remove/Add to terrain.
+				if (bHide)
 				{
-					// Remove/Add to terrain.
-					if (bHide)
-					{
-						SAFE_RELEASE_NODE(obj->pRenderNode);
-						SAFE_RELEASE_NODE(obj->pRenderNodeGroundDecal);
-					}
-					else
-					{
-						// Stick vegetation to terrain.
-						if (!obj->object->IsAffectedByBrushes() && obj->object->IsAffectedByTerrain())
-							obj->pos.z = p3DEngine->GetTerrainElevation(obj->pos.x, obj->pos.y);
-						RegisterInstance(obj);
-					}
+					SAFE_RELEASE_NODE(pInst->pRenderNode);
+					SAFE_RELEASE_NODE(pInst->pRenderNodeGroundDecal);
+				}
+				else
+				{
+					// Stick vegetation to terrain.
+					if (!pInst->object->IsAffectedByBrushes() && pInst->object->IsAffectedByTerrain())
+						pInst->pos.z = p3DEngine->GetTerrainElevation(pInst->pos.x, pInst->pos.y);
+					RegisterInstance(pInst);
 				}
 			}
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::HideAllObjects(bool bHide)
 {
 	for (int i = 0; i < m_objects.size(); i++)
@@ -711,7 +651,6 @@ void CVegetationMap::HideAllObjects(bool bHide)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::MergeObjects(CVegetationObject* object, CVegetationObject* objectMerged)
 {
 	if (objectMerged->GetNumInstances() > 0)
@@ -723,18 +662,16 @@ void CVegetationMap::MergeObjects(CVegetationObject* object, CVegetationObject* 
 		}
 		HideObject(object, true);
 		HideObject(objectMerged, true);
-		// Iterate over all sectors.
-		for (int i = 0; i < m_numSectors * m_numSectors; i++)
+
+		for (auto& sector : m_sectors)
 		{
-			SectorInfo* si = &m_sectors[i];
-			// Iterate on every object in sector.
-			for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+			for (auto& pInst : sector)
 			{
-				if (obj->object == objectMerged)
+				if (pInst->object == objectMerged)
 				{
 					if (CUndo::IsRecording())
-						CUndo::Record(new CUndoVegInstanceEx(obj));
-					obj->object = object;
+						CUndo::Record(new CUndoVegInstanceEx(pInst));
+					pInst->object = object;
 					object->SetNumInstances(object->GetNumInstances() + 1);
 					objectMerged->SetNumInstances(objectMerged->GetNumInstances() - 1);
 				}
@@ -746,72 +683,12 @@ void CVegetationMap::MergeObjects(CVegetationObject* object, CVegetationObject* 
 	assert(objectMerged->GetNumInstances() == 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CVegetationMap::SectorLink(CVegetationInstance* obj, SectorInfo* sector)
-{
-	/*
-	   if (sector->first)
-	   {
-	   // Add to the end of current list.
-	   CVegetationInstance *head = sector->first;
-	   CVegetationInstance *tail = head->prev;
-	   obj->prev = tail;
-	   obj->next = 0;
-
-	   tail->next = obj;
-	   head->prev = obj; // obj is now last object.
-	   }
-	   else
-	   {
-	   sector->first = obj;
-	   obj->prev = obj;
-	   obj->next = 0;
-	   }
-	 */
-	if (sector->first)
-	{
-		// Add to the end of current list.
-		CVegetationInstance* head = sector->first;
-		obj->prev = 0;
-		obj->next = head;
-		head->prev = obj;
-		sector->first = obj;
-	}
-	else
-	{
-		sector->first = obj;
-		obj->prev = 0;
-		obj->next = 0;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CVegetationMap::SectorUnlink(CVegetationInstance* obj, SectorInfo* sector)
-{
-	if (obj == sector->first) // if head of list.
-	{
-		sector->first = obj->next;
-		if (sector->first)
-			sector->first->prev = 0;
-	}
-	else
-	{
-		//assert( obj->prev != 0 );
-		if (obj->prev)
-			obj->prev->next = obj->next;
-		if (obj->next)
-			obj->next->prev = obj->prev;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-inline CVegetationMap::SectorInfo* CVegetationMap::GetVegSector(int x, int y)
+inline CVegetationMap::SectorInfo& CVegetationMap::GetVegSector(int x, int y)
 {
 	assert(x >= 0 && x < m_numSectors && y >= 0 && y < m_numSectors);
-	return &m_sectors[y * m_numSectors + x];
+	return m_sectors[y * m_numSectors + x];
 }
 
-//////////////////////////////////////////////////////////////////////////
 inline CVegetationMap::SectorInfo* CVegetationMap::GetVegSector(const Vec3& worldPos)
 {
 	int x = int(worldPos.x * m_worldToSector);
@@ -819,104 +696,100 @@ inline CVegetationMap::SectorInfo* CVegetationMap::GetVegSector(const Vec3& worl
 	if (x >= 0 && x < m_numSectors && y >= 0 && y < m_numSectors)
 		return &m_sectors[y * m_numSectors + x];
 	else
-		return 0;
+		return nullptr;
 }
 
-void CVegetationMap::AddObjInstance(CVegetationInstance* obj)
+void CVegetationMap::AddObjInstance(CVegetationInstance* pInst)
 {
-	SectorInfo* si = GetVegSector(obj->pos);
+	SectorInfo* si = GetVegSector(pInst->pos);
 	if (!si)
 	{
-		obj->next = obj->prev = 0;
 		return;
 	}
-	obj->AddRef();
+	pInst->AddRef();
 
-	CVegetationObject* object = obj->object;
-	// Add object to end of the list of instances in sector.
+	si->push_back(pInst);
+
 	// Increase number of instances.
+	CVegetationObject* object = pInst->object;
 	object->SetNumInstances(object->GetNumInstances() + 1);
 	m_numInstances++;
-
-	SectorLink(obj, si);
 }
 
-//////////////////////////////////////////////////////////////////////////
-CVegetationInstance* CVegetationMap::CreateObjInstance(CVegetationObject* object, const Vec3& pos, CVegetationInstance* pCopy)
+CVegetationInstance* CVegetationMap::CreateObjInstance(CVegetationObject* object, const Vec3& pos, CVegetationInstance* pCopy, SectorInfo* si)
 {
-	SectorInfo* si = GetVegSector(pos);
 	if (!si)
-		return 0;
+	{
+		si = GetVegSector(pos);
+		if (!si)
+			return 0;
+	}
 
-	CVegetationInstance* obj = new CVegetationInstance();
-	obj->m_refCount = 1; // Starts with 1 reference.
-	obj->object = object;
-	obj->pos = pos;
-	obj->pRenderNode = 0;
+	CVegetationInstance* pInst = new CVegetationInstance;
+	pInst->m_refCount = 1; // Starts with 1 reference.
+	pInst->object = object;
+	pInst->pos = pos;
+	pInst->pRenderNode = nullptr;
 
 	if (pCopy)
 	{
-		obj->scale = pCopy->scale;
-		obj->brightness = pCopy->brightness;
-		obj->angleX = pCopy->angleX;
-		obj->angleY = pCopy->angleY;
-		obj->angle = pCopy->angle;
-		obj->pRenderNodeGroundDecal = pCopy->pRenderNodeGroundDecal;
-		obj->m_boIsSelected = pCopy->m_boIsSelected;
+		pInst->scale = pCopy->scale;
+		pInst->brightness = pCopy->brightness;
+		pInst->angleX = pCopy->angleX;
+		pInst->angleY = pCopy->angleY;
+		pInst->angle = pCopy->angle;
+		pInst->pRenderNodeGroundDecal = pCopy->pRenderNodeGroundDecal;
+		pInst->m_boIsSelected = pCopy->m_boIsSelected;
 	}
 	else
 	{
-		obj->scale = 1;
-		obj->brightness = 255;
-		obj->angleX = 0;
-		obj->angleY = 0;
-		obj->angle = 0;
-		obj->pRenderNodeGroundDecal = 0;
-		obj->m_boIsSelected = false;
+		pInst->scale = 1;
+		pInst->brightness = 255;
+		pInst->angleX = 0;
+		pInst->angleY = 0;
+		pInst->angle = 0;
+		pInst->pRenderNodeGroundDecal = 0;
+		pInst->m_boIsSelected = false;
 	}
 
 	if (CUndo::IsRecording())
-		CUndo::Record(new CUndoVegInstanceCreate(obj, false));
+		CUndo::Record(new CUndoVegInstanceCreate(pInst, false));
 
 	// Add object to end of the list of instances in sector.
 	// Increase number of instances.
 	object->SetNumInstances(object->GetNumInstances() + 1);
 	m_numInstances++;
 
-	SectorLink(obj, si);
-	return obj;
+	si->push_back(pInst);
+	return pInst;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CVegetationMap::DeleteObjInstance(CVegetationInstance* obj, SectorInfo* sector)
+void CVegetationMap::DeleteObjInstance(CVegetationInstance* pInst, SectorInfo* sector)
 {
 	if (CUndo::IsRecording())
-		CUndo::Record(new CUndoVegInstanceCreate(obj, true));
+		CUndo::Record(new CUndoVegInstanceCreate(pInst, true));
 
-	if (obj->pRenderNode)
+	if (pInst->pRenderNode)
 	{
-		GetIEditorImpl()->GetAIManager()->OnAreaModified(obj->pRenderNode->GetBBox());
+		GetIEditorImpl()->GetAIManager()->OnAreaModified(pInst->pRenderNode->GetBBox());
 	}
 
-	SAFE_RELEASE_NODE(obj->pRenderNode);
-	SAFE_RELEASE_NODE(obj->pRenderNodeGroundDecal);
-
-	SectorUnlink(obj, sector);
-	obj->object->SetNumInstances(obj->object->GetNumInstances() - 1);
+	SAFE_RELEASE_NODE(pInst->pRenderNode);
+	SAFE_RELEASE_NODE(pInst->pRenderNodeGroundDecal);
+	sector->remove(pInst);
+	pInst->object->SetNumInstances(pInst->object->GetNumInstances() - 1);
 	m_numInstances--;
 	assert(m_numInstances >= 0);
-	obj->Release();
+	pInst->Release();
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CVegetationMap::DeleteObjInstance(CVegetationInstance* obj)
+void CVegetationMap::DeleteObjInstance(CVegetationInstance* pInst)
 {
-	SectorInfo* sector = GetVegSector(obj->pos);
+	SectorInfo* sector = GetVegSector(pInst->pos);
 	if (sector)
-		DeleteObjInstance(obj, sector);
+		DeleteObjInstance(pInst, sector);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::RemoveDuplVegetation(int x1, int y1, int x2, int y2)
 {
 	if (x1 == -1)
@@ -926,25 +799,29 @@ void CVegetationMap::RemoveDuplVegetation(int x1, int y1, int x2, int y2)
 		x2 = m_numSectors - 1;
 		y2 = m_numSectors - 1;
 	}
+
 	for (int j = y1; j <= y2; j++)
+	{
 		for (int i = x1; i <= x2; i++)
 		{
-			SectorInfo* si = &m_sectors[i + j * m_numSectors];
+			SectorInfo& sector = m_sectors[i + j * m_numSectors];
 
-			for (CVegetationInstance* objChk = si->first; objChk; objChk = objChk->next)
-				for (CVegetationInstance* objRem = objChk; objRem && objRem->next; objRem = objRem->next)
+			for (auto curr = sector.begin(); curr != sector.end(); ++curr)
+			{
+				for (auto next = std::next(curr); next != sector.end(); ++next)
 				{
-					if (fabs(objChk->pos.x - objRem->next->pos.x) < m_minimalDistance &&
-					    fabs(objChk->pos.y - objRem->next->pos.y) < m_minimalDistance)
+					if (fabs((*curr)->pos.x - (*next)->pos.x) < m_minimalDistance &&
+					    fabs((*curr)->pos.y - (*next)->pos.y) < m_minimalDistance)
 					{
-						DeleteObjInstance(objRem->next, si);
+						DeleteObjInstance(*next, &sector);
 					}
 				}
+			}
 		}
+	}
 	signalAllVegetationObjectsChanged(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CVegetationInstance* CVegetationMap::GetNearestInstance(const Vec3& pos, float radius)
 {
 	// check all sectors intersected by radius.
@@ -968,19 +845,16 @@ CVegetationInstance* CVegetationMap::GetNearestInstance(const Vec3& pos, float r
 		for (int x = sx1; x <= sx2; x++)
 		{
 			// For each sector check if any object is nearby.
-			SectorInfo* si = GetVegSector(x, y);
-			if (si->first)
+			SectorInfo& si = GetVegSector(x, y);
+			for (auto& pInst : si)
 			{
-				for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+				if (fabs(pInst->pos.x - pos.x) < radius && fabs(pInst->pos.y - pos.y) < radius)
 				{
-					if (fabs(obj->pos.x - pos.x) < radius && fabs(obj->pos.y - pos.y) < radius)
+					float dist = pos.GetSquaredDistance(pInst->pos);
+					if (dist < minDist)
 					{
-						float dist = pos.GetSquaredDistance(obj->pos);
-						if (dist < minDist)
-						{
-							minDist = dist;
-							nearest = obj;
-						}
+						minDist = dist;
+						nearest = pInst;
 					}
 				}
 			}
@@ -989,7 +863,6 @@ CVegetationInstance* CVegetationMap::GetNearestInstance(const Vec3& pos, float r
 	return nearest;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::GetObjectInstances(float x1, float y1, float x2, float y2, std::vector<CVegetationInstance*>& instances)
 {
 	instances.reserve(100);
@@ -1002,42 +875,37 @@ void CVegetationMap::GetObjectInstances(float x1, float y1, float x2, float y2, 
 	sy1 = max(sy1, 0);
 	int sy2 = int(y2 * m_worldToSector);
 	sy2 = min(sy2, m_numSectors - 1);
+
 	for (int y = sy1; y <= sy2; y++)
 	{
 		for (int x = sx1; x <= sx2; x++)
 		{
 			// For each sector check if any object is nearby.
-			SectorInfo* si = GetVegSector(x, y);
-			if (si->first)
+			SectorInfo& si = GetVegSector(x, y);
+			for (auto& pInst : si)
 			{
-				for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+				if (pInst->pos.x >= x1 && pInst->pos.x <= x2 && pInst->pos.y >= y1 && pInst->pos.y <= y2)
 				{
-					if (obj->pos.x >= x1 && obj->pos.x <= x2 && obj->pos.y >= y1 && obj->pos.y <= y2)
-					{
-						instances.push_back(obj);
-					}
+					instances.push_back(pInst);
 				}
 			}
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::GetAllInstances(std::vector<CVegetationInstance*>& instances)
 {
 	int k = 0;
 	instances.resize(m_numInstances);
-	for (int i = 0; i < m_numSectors * m_numSectors; i++)
+	for (const auto& sector : m_sectors)
 	{
-		// Iterate on every object in sector.
-		for (CVegetationInstance* obj = m_sectors[i].first; obj; obj = obj->next)
+		for (const auto& pInst : sector)
 		{
-			instances[k++] = obj;
+			instances[k++] = pInst;
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVegetationMap::IsPlaceEmpty(const Vec3& pos, float radius, CVegetationInstance* ignore)
 {
 	// check all sectors intersected by radius.
@@ -1061,13 +929,12 @@ bool CVegetationMap::IsPlaceEmpty(const Vec3& pos, float radius, CVegetationInst
 		for (int x = sx1; x <= sx2; x++)
 		{
 			// For each sector check if any object is within this radius.
-			SectorInfo* si = GetVegSector(x, y);
-			if (si->first)
+			SectorInfo& si = GetVegSector(x, y);
+			for (auto& pInst : si)
 			{
-				for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+				if (pInst != ignore && fabs(pInst->pos.x - pos.x) < radius && fabs(pInst->pos.y - pos.y) < radius)
 				{
-					if (obj != ignore && fabs(obj->pos.x - pos.x) < radius && fabs(obj->pos.y - pos.y) < radius)
-						return false;
+					return false;
 				}
 			}
 		}
@@ -1075,26 +942,25 @@ bool CVegetationMap::IsPlaceEmpty(const Vec3& pos, float radius, CVegetationInst
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-bool CVegetationMap::MoveInstance(CVegetationInstance* obj, const Vec3& newPos, bool bTerrainAlign)
+bool CVegetationMap::MoveInstance(CVegetationInstance* pInst, const Vec3& newPos, bool bTerrainAlign)
 {
-	if (!IsPlaceEmpty(newPos, m_minimalDistance, obj))
+	if (!IsPlaceEmpty(newPos, m_minimalDistance, pInst))
 	{
 		return false;
 	}
 
-	if (obj->pos != newPos)
-		RecordUndo(obj);
+	if (pInst->pos != newPos)
+		RecordUndo(pInst);
 
 	// Then delete object.
 	uint32 dwOldFlags = 0;
-	if (obj->pRenderNode)
-		dwOldFlags = obj->pRenderNode->m_nEditorSelectionID;
+	if (pInst->pRenderNode)
+		dwOldFlags = pInst->pRenderNode->m_nEditorSelectionID;
 
-	SAFE_RELEASE_NODE(obj->pRenderNode);
-	SAFE_RELEASE_NODE(obj->pRenderNodeGroundDecal);
+	SAFE_RELEASE_NODE(pInst->pRenderNode);
+	SAFE_RELEASE_NODE(pInst->pRenderNodeGroundDecal);
 
-	SectorInfo* from = GetVegSector(obj->pos);
+	SectorInfo* from = GetVegSector(pInst->pos);
 	SectorInfo* to = GetVegSector(newPos);
 
 	if (!from || !to)
@@ -1103,34 +969,32 @@ bool CVegetationMap::MoveInstance(CVegetationInstance* obj, const Vec3& newPos, 
 	if (from != to)
 	{
 		// Relink object between sectors.
-		SectorUnlink(obj, from);
+		from->remove(pInst);
 		if (to)
 		{
-			SectorLink(obj, to);
+			to->push_back(pInst);
 		}
 	}
 
-	obj->pos = newPos;
+	pInst->pos = newPos;
 
 	// Stick vegetation to terrain.
 	if (bTerrainAlign)
 	{
-		if (!obj->object->IsAffectedByBrushes() && obj->object->IsAffectedByTerrain())
-			obj->pos.z = GetIEditorImpl()->Get3DEngine()->GetTerrainElevation(obj->pos.x, obj->pos.y);
+		if (!pInst->object->IsAffectedByBrushes() && pInst->object->IsAffectedByTerrain())
+			pInst->pos.z = GetIEditorImpl()->Get3DEngine()->GetTerrainElevation(pInst->pos.x, pInst->pos.y);
 	}
-	//GetIEditorImpl()->Get3DEngine()->AddStaticObject( obj->object->GetId(),newPos,obj->scale,obj->brightness );
 
-	RegisterInstance(obj);
+	RegisterInstance(pInst);
 
-	if (obj->pRenderNode)
+	if (pInst->pRenderNode)
 	{
-		obj->pRenderNode->m_nEditorSelectionID = dwOldFlags;
+		pInst->pRenderNode->m_nEditorSelectionID = dwOldFlags;
 	}
 
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVegetationMap::CanPlace(CVegetationObject* object, const Vec3& pos, float radius)
 {
 	// check all sectors intersected by radius.
@@ -1153,22 +1017,19 @@ bool CVegetationMap::CanPlace(CVegetationObject* object, const Vec3& pos, float 
 		for (int x = sx1; x <= sx2; x++)
 		{
 			// For each sector check if any object is within this radius.
-			SectorInfo* si = GetVegSector(x, y);
-			if (si->first)
+			SectorInfo& si = GetVegSector(x, y);
+			for (auto& pInst : si)
 			{
-				for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+				// Only check objects that we need.
+				if (pInst->object == object)
 				{
-					// Only check objects that we need.
-					if (obj->object == object)
-					{
-						if (fabs(obj->pos.x - pos.x) < radius && fabs(obj->pos.y - pos.y) < radius)
-							return false;
-					}
-					else
-					{
-						if (fabs(obj->pos.x - pos.x) < m_minimalDistance && fabs(obj->pos.y - pos.y) < m_minimalDistance)
-							return false;
-					}
+					if (fabs(pInst->pos.x - pos.x) < radius && fabs(pInst->pos.y - pos.y) < radius)
+						return false;
+				}
+				else
+				{
+					if (fabs(pInst->pos.x - pos.x) < m_minimalDistance && fabs(pInst->pos.y - pos.y) < m_minimalDistance)
+						return false;
 				}
 			}
 		}
@@ -1176,32 +1037,32 @@ bool CVegetationMap::CanPlace(CVegetationObject* object, const Vec3& pos, float 
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CVegetationInstance* CVegetationMap::PlaceObjectInstance(const Vec3& worldPos, CVegetationObject* object)
 {
-	float fScale = object->CalcVariableSize();
-	// Check if this place is empty.
-	if (CanPlace(object, worldPos, m_minimalDistance))
+	if (!CanPlace(object, worldPos, m_minimalDistance))
 	{
-		CVegetationInstance* obj = CreateObjInstance(object, worldPos);
-		if (obj)
-		{
-			obj->angle = GenerateRotation(object, worldPos);
-			obj->scale = fScale;
-
-			// Stick vegetation to terrain.
-			if (!obj->object->IsAffectedByBrushes())
-				obj->pos.z = GetIEditorImpl()->Get3DEngine()->GetTerrainElevation(obj->pos.x, obj->pos.y);
-
-			RegisterInstance(obj);
-			signalVegetationObjectChanged(object);
-		}
-		return obj;
+		return nullptr;
 	}
-	return 0;
+
+	CVegetationInstance* pInst = CreateObjInstance(object, worldPos);
+	if (!pInst)
+	{
+		return nullptr;
+	}
+
+	pInst->angle = GenerateRotation(object, worldPos);
+	pInst->scale = object->CalcVariableSize();
+
+	// Stick vegetation to terrain.
+	if (!pInst->object->IsAffectedByBrushes())
+		pInst->pos.z = GetIEditorImpl()->Get3DEngine()->GetTerrainElevation(pInst->pos.x, pInst->pos.y);
+
+	RegisterInstance(pInst);
+	signalVegetationObjectChanged(object);
+
+	return pInst;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::PaintBrush(CRect& rc, bool bCircle, CVegetationObject* object, Vec3* pPos)
 {
 	assert(object != 0);
@@ -1314,12 +1175,12 @@ void CVegetationMap::PaintBrush(CRect& rc, bool bCircle, CVegetationObject* obje
 			bUndoStored = true;
 		}
 
-		CVegetationInstance* obj = CreateObjInstance(object, p);
-		if (obj)
+		CVegetationInstance* pInst = CreateObjInstance(object, p);
+		if (pInst)
 		{
-			obj->angle = GenerateRotation(object, p);
-			obj->scale = fScale;
-			RegisterInstance(obj);
+			pInst->angle = GenerateRotation(object, p);
+			pInst->scale = fScale;
+			RegisterInstance(pInst);
 		}
 	}
 
@@ -1330,7 +1191,6 @@ void CVegetationMap::PaintBrush(CRect& rc, bool bCircle, CVegetationObject* obje
 	signalVegetationObjectChanged(object);
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CVegetationMap::CalcHeightOnBrushes(const Vec3& p, const Vec3& posUpper, bool& bHitBrush)
 {
 	IPhysicalWorld* world = GetIEditorImpl()->GetSystem()->GetIPhysicalWorld();
@@ -1366,7 +1226,6 @@ float CVegetationMap::CalcHeightOnBrushes(const Vec3& p, const Vec3& posUpper, b
 	return p.z;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::PaintBrightness(float x, float y, float w, float h, uint8 brightness, uint8 brightness_shadowmap)
 {
 	// Find sector range from world positions.
@@ -1394,26 +1253,24 @@ void CVegetationMap::PaintBrightness(float x, float y, float w, float h, uint8 b
 		for (int sx = startSectorX; sx <= endSectorX; sx++)
 		{
 			// Iterate all objects in sector.
-			SectorInfo* si = &m_sectors[sy * m_numSectors + sx];
-			if (!si->first)
-				continue;
-			for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+			SectorInfo& si = GetVegSector(sx, sy);
+			for (auto& pInst : si)
 			{
-				if (obj->pos.x >= x && obj->pos.x < x2 && obj->pos.y >= y && obj->pos.y <= y2)
+				if (pInst->pos.x >= x && pInst->pos.x < x2 && pInst->pos.y >= y && pInst->pos.y <= y2)
 				{
 					bool bNeedUpdate = false;
-					if (obj->object->HasDynamicDistanceShadows())
+					if (pInst->object->HasDynamicDistanceShadows())
 					{
-						if (obj->brightness != brightness_shadowmap)
+						if (pInst->brightness != brightness_shadowmap)
 							bNeedUpdate = true;
 						// If object is not casting precalculated shadow (small grass etc..) affect it by shadow map.
-						obj->brightness = brightness_shadowmap;
+						pInst->brightness = brightness_shadowmap;
 					}
 					else
 					{
-						if (obj->brightness != brightness)
+						if (pInst->brightness != brightness)
 							bNeedUpdate = true;
-						obj->brightness = brightness;
+						pInst->brightness = brightness;
 					}
 				}
 			}
@@ -1421,7 +1278,6 @@ void CVegetationMap::PaintBrightness(float x, float y, float w, float h, uint8 b
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ClearBrush(CRect& rc, bool bCircle, CVegetationObject* pObject)
 {
 	StoreBaseUndo();
@@ -1462,32 +1318,28 @@ void CVegetationMap::ClearBrush(CRect& rc, bool bCircle, CVegetationObject* pObj
 		for (int x = sx1; x <= sx2; x++)
 		{
 			// For each sector check if any object is within this radius.
-			SectorInfo* si = GetVegSector(x, y);
-			if (si->first)
+			SectorInfo& si = GetVegSector(x, y);
+			for (auto& pInst : si)
 			{
-				for (CVegetationInstance* obj = si->first; obj; obj = next)
+				if (pInst->object != pObject && pObject != nullptr)
+					continue;
+
+				if (bCircle)
 				{
-					next = obj->next;
-					if (obj->object != pObject && pObject != NULL)
+					// Skip objects outside the brush circle
+					if (((pInst->pos.x - cx) * (pInst->pos.x - cx) + (pInst->pos.y - cy) * (pInst->pos.y - cy)) > brushRadius2)
 						continue;
-
-					if (bCircle)
-					{
-						// Skip objects outside the brush circle
-						if (((obj->pos.x - cx) * (obj->pos.x - cx) + (obj->pos.y - cy) * (obj->pos.y - cy)) > brushRadius2)
-							continue;
-					}
-					else
-					{
-						// Within rectangle.
-						if (obj->pos.x < x1 || obj->pos.x > x2 || obj->pos.y < y1 || obj->pos.y > y2)
-							continue;
-					}
-
-					// Then delete object.
-					StoreBaseUndo(eStoreUndo_Once);
-					DeleteObjInstance(obj, si);
 				}
+				else
+				{
+					// Within rectangle.
+					if (pInst->pos.x < x1 || pInst->pos.x > x2 || pInst->pos.y < y1 || pInst->pos.y > y2)
+						continue;
+				}
+
+				// Then delete object.
+				StoreBaseUndo(eStoreUndo_Once);
+				DeleteObjInstance(pInst, &si);
 			}
 		}
 	}
@@ -1500,7 +1352,6 @@ void CVegetationMap::ClearBrush(CRect& rc, bool bCircle, CVegetationObject* pObj
 	StoreBaseUndo();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ClearMask(const string& maskFile)
 {
 	CLayer layer;
@@ -1525,37 +1376,37 @@ void CVegetationMap::ClearMask(const string& maskFile)
 	{
 		if (!wait.Step(100 * y / layerSize))
 			break;
+
 		for (int x = 0; x < layerSize; x++)
 		{
 			if (layer.GetLayerMaskPoint(x, y) > kMinMaskValue)
 			{
 				// Find sector.
 				// Swap X/Y.
-				SectorInfo* si = &m_sectors[y + x * m_numSectors];
+				SectorInfo& sector = m_sectors[y + x * m_numSectors];
+
 				// Delete all instances in this sectors.
-				CVegetationInstance* next = 0;
-				for (CVegetationInstance* obj = si->first; obj; obj = next)
+				for (auto& pInst : sector)
 				{
-					next = obj->next;
-					DeleteObjInstance(obj, si);
+					DeleteObjInstance(pInst, &sector);
 				}
+
+				sector.clear();
 			}
 		}
 	}
 	signalAllVegetationObjectsChanged(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 CVegetationObject* CVegetationMap::CreateObject(CVegetationObject* prev)
 {
-	int id(GenerateVegetationObjectId());
+	int id = GenerateVegetationObjectId();
 
 	if (id < 0)
 	{
 		// Free id not found
 		CQuestionDialog::SWarning(QObject::tr(""), QObject::tr("Vegetation objects limit is reached."));
-		return 0;
+		return nullptr;
 	}
 
 	CVegetationObject* obj = new CVegetationObject(id);
@@ -1571,7 +1422,6 @@ CVegetationObject* CVegetationMap::CreateObject(CVegetationObject* prev)
 	return obj;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVegetationMap::InsertObject(CVegetationObject* obj)
 {
 	int id(GenerateVegetationObjectId());
@@ -1596,7 +1446,6 @@ bool CVegetationMap::InsertObject(CVegetationObject* obj)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CVegetationObject* CVegetationMap::GetObjectById(int id) const
 {
 	auto findIt = m_idToObject.find(id);
@@ -1607,7 +1456,6 @@ CVegetationObject* CVegetationMap::GetObjectById(int id) const
 	return findIt->second;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::SetAIRadius(IStatObj* pObj, float radius)
 {
 	if (!pObj)
@@ -1622,7 +1470,6 @@ void CVegetationMap::SetAIRadius(IStatObj* pObj, float radius)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 std::vector<CVegetationObject*> CVegetationMap::GetSelectedObjects() const
 {
 	std::vector<CVegetationObject*> selectedObjects;
@@ -1637,7 +1484,6 @@ std::vector<CVegetationObject*> CVegetationMap::GetSelectedObjects() const
 	return selectedObjects;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::RemoveObject(CVegetationObject* object)
 {
 	// Free id for this object.
@@ -1647,18 +1493,13 @@ void CVegetationMap::RemoveObject(CVegetationObject* object)
 	// Undo will be stored in DeleteObjInstance()
 	if (object->GetNumInstances() > 0)
 	{
-		CVegetationInstance* next = 0;
-		// Delete this object in sectors.
-		for (int i = 0; i < m_numSectors * m_numSectors; i++)
+		for (auto& sector : m_sectors)
 		{
-			SectorInfo* si = &m_sectors[i];
-			// Iterate on every object in sector.
-			for (CVegetationInstance* obj = si->first; obj; obj = next)
+			for (auto& pInst : sector)
 			{
-				next = obj->next;
-				if (obj->object == object)
+				if (pInst->object == object)
 				{
-					DeleteObjInstance(obj, si);
+					DeleteObjInstance(pInst, &sector);
 				}
 			}
 		}
@@ -1668,29 +1509,22 @@ void CVegetationMap::RemoveObject(CVegetationObject* object)
 	if (CUndo::IsRecording())
 		CUndo::Record(new CUndoVegetationObjectCreate(object, true));
 
-	Objects::iterator it = std::find(m_objects.begin(), m_objects.end(), object);
-	if (it != m_objects.end())
-		m_objects.erase(it);
+	m_objects.erase(std::remove(m_objects.begin(), m_objects.end(), object), m_objects.end());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ReplaceObject(CVegetationObject* pOldObject, CVegetationObject* pNewObject)
 {
 	if (pOldObject->GetNumInstances() > 0)
 	{
 		pNewObject->SetNumInstances(pNewObject->GetNumInstances() + pOldObject->GetNumInstances());
-		CVegetationInstance* next = 0;
-		// Delete this object in sectors.
-		for (int i = 0; i < m_numSectors * m_numSectors; i++)
+
+		for (auto& sector : m_sectors)
 		{
-			SectorInfo* si = &m_sectors[i];
-			// Iterate on every object in sector.
-			for (CVegetationInstance* obj = si->first; obj; obj = next)
+			for (auto& pInst : sector)
 			{
-				next = obj->next;
-				if (obj->object == pOldObject)
+				if (pInst->object == pOldObject)
 				{
-					obj->object = pNewObject;
+					pInst->object = pNewObject;
 				}
 			}
 		}
@@ -1698,146 +1532,126 @@ void CVegetationMap::ReplaceObject(CVegetationObject* pOldObject, CVegetationObj
 	RemoveObject(pOldObject);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::RepositionObject(CVegetationObject* object)
 {
-	// Iterator over all sectors.
-	for (int i = 0; i < m_numSectors * m_numSectors; i++)
+	for (auto& sector : m_sectors)
 	{
-		SectorInfo* si = &m_sectors[i];
-		// Iterate on every object in sector.
-		for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+		for (auto& pInst : sector)
 		{
-			if (obj->object == object)
+			if (pInst->object == object)
 			{
-				RegisterInstance(obj);
+				RegisterInstance(pInst);
 			}
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::OnHeightMapChanged()
 {
 	// Iterator over all sectors.
 	I3DEngine* p3DEngine = GetIEditorImpl()->Get3DEngine();
-	for (int i = 0; i < m_numSectors * m_numSectors; i++)
+	for (auto& sector : m_sectors)
 	{
-		SectorInfo* si = &m_sectors[i];
-		// Iterate on every object in sector.
-		for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+		for (auto& pInst : sector)
 		{
-			if (!obj->object->IsAffectedByBrushes() && obj->object->IsAffectedByTerrain())
-				obj->pos.z = p3DEngine->GetTerrainElevation(obj->pos.x, obj->pos.y);
+			if (!pInst->object->IsAffectedByBrushes() && pInst->object->IsAffectedByTerrain())
+				pInst->pos.z = p3DEngine->GetTerrainElevation(pInst->pos.x, pInst->pos.y);
 
-			if (obj->pRenderNode && !obj->object->IsAutoMerged())
+			if (pInst->pRenderNode && !pInst->object->IsAutoMerged())
 			{
 				// fix vegetation position
 				{
-					p3DEngine->UnRegisterEntityAsJob(obj->pRenderNode);
+					p3DEngine->UnRegisterEntityAsJob(pInst->pRenderNode);
 					Matrix34 mat;
 					mat.SetIdentity();
-					mat.SetTranslation(obj->pos);
-					obj->pRenderNode->SetMatrix(mat);
-					p3DEngine->RegisterEntity(obj->pRenderNode);
+					mat.SetTranslation(pInst->pos);
+					pInst->pRenderNode->SetMatrix(mat);
+					p3DEngine->RegisterEntity(pInst->pRenderNode);
 				}
 
 				// fix ground decal position
-				if (obj->pRenderNodeGroundDecal)
+				if (pInst->pRenderNodeGroundDecal)
 				{
-					p3DEngine->UnRegisterEntityAsJob(obj->pRenderNodeGroundDecal);
+					p3DEngine->UnRegisterEntityAsJob(pInst->pRenderNodeGroundDecal);
 					Matrix34 wtm;
 					wtm.SetIdentity();
-					float fRadiusXY = ((obj->object && obj->object->GetObject()) ? obj->object->GetObject()->GetRadiusHors() : 1.f) * obj->scale * 0.25f;
+					float fRadiusXY = ((pInst->object && pInst->object->GetObject()) ? pInst->object->GetObject()->GetRadiusHors() : 1.f) * pInst->scale * 0.25f;
 					wtm.SetScale(Vec3(fRadiusXY, fRadiusXY, fRadiusXY));
-					wtm = wtm * Matrix34::CreateRotationZ(obj->angle);
-					wtm.SetTranslation(obj->pos);
+					wtm = wtm * Matrix34::CreateRotationZ(pInst->angle);
+					wtm.SetTranslation(pInst->pos);
 
-					obj->pRenderNodeGroundDecal->SetMatrix(wtm);
-					p3DEngine->RegisterEntity(obj->pRenderNodeGroundDecal);
+					pInst->pRenderNodeGroundDecal->SetMatrix(wtm);
+					p3DEngine->RegisterEntity(pInst->pRenderNodeGroundDecal);
 				}
 			}
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ScaleObjectInstances(CVegetationObject* object, float fScale, AABB* outModifiedArea)
 {
-	// Iterator over all sectors.
-	for (int i = 0; i < m_numSectors * m_numSectors; i++)
+	for (auto& sector : m_sectors)
 	{
-		SectorInfo* si = &m_sectors[i];
-		// Iterate on every object in sector.
-		for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+		for (auto& pInst : sector)
 		{
-			if (obj->object == object)
+			if (pInst->object == object)
 			{
 				// add the box before instance scaling
-				if (NULL != outModifiedArea)
+				if (nullptr != outModifiedArea)
 				{
-					outModifiedArea->Add(obj->pRenderNode->GetBBox());
+					outModifiedArea->Add(pInst->pRenderNode->GetBBox());
 				}
 
 				// scale instance
-				obj->scale *= fScale;
-				RegisterInstance(obj);
+				pInst->scale *= fScale;
+				RegisterInstance(pInst);
 
 				// add the box after the instance scaling
-				if (NULL != outModifiedArea)
+				if (nullptr != outModifiedArea)
 				{
-					outModifiedArea->Add(obj->pRenderNode->GetBBox());
+					outModifiedArea->Add(pInst->pRenderNode->GetBBox());
 				}
 			}
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::RandomRotateInstances(CVegetationObject* object)
 {
 	bool bUndo = CUndo::IsRecording();
-	// Iterator over all sectors.
-	for (int i = 0; i < m_numSectors * m_numSectors; i++)
+	for (auto& sector : m_sectors)
 	{
-		SectorInfo* si = &m_sectors[i];
-		// Iterate on every object in sector.
-		for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+		for (auto& pInst : sector)
 		{
-			if (obj->object == object)
+			if (pInst->object == object)
 			{
 				if (bUndo)
-					RecordUndo(obj);
-				obj->angle = rand();
-				RegisterInstance(obj);
+					RecordUndo(pInst);
+				pInst->angle = rand();
+				RegisterInstance(pInst);
 			}
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ClearRotateInstances(CVegetationObject* object)
 {
 	bool bUndo = CUndo::IsRecording();
-	// Iterator over all sectors.
-	for (int i = 0; i < m_numSectors * m_numSectors; i++)
+	for (auto& sector : m_sectors)
 	{
-		SectorInfo* si = &m_sectors[i];
-		// Iterate on every object in sector.
-		for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+		for (auto& pInst : sector)
 		{
-			if (obj->object == object && obj->angle != 0)
+			if (pInst->object == object && pInst->angle != 0)
 			{
 				if (bUndo)
-					RecordUndo(obj);
-				obj->angle = 0;
-				RegisterInstance(obj);
+					RecordUndo(pInst);
+				pInst->angle = 0;
+				RegisterInstance(pInst);
 			}
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::DistributeVegetationObject(CVegetationObject* object)
 {
 	auto numInstances = object->GetNumInstances();
@@ -1846,7 +1660,6 @@ void CVegetationMap::DistributeVegetationObject(CVegetationObject* object)
 	PaintBrush(rc, false, object);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ClearVegetationObject(CVegetationObject* object)
 {
 	auto numInstances = object->GetNumInstances();
@@ -1855,7 +1668,6 @@ void CVegetationMap::ClearVegetationObject(CVegetationObject* object)
 	ClearBrush(rc, false, object);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::MergeVegetationObjects(const std::vector<CVegetationObject*>& objects)
 {
 	if (objects.size() < 2)
@@ -1879,7 +1691,6 @@ void CVegetationMap::MergeVegetationObjects(const std::vector<CVegetationObject*
 	signalVegetationObjectsMerged();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::Serialize(CXmlArchive& xmlAr)
 {
 	if (xmlAr.bLoading)
@@ -1889,9 +1700,6 @@ void CVegetationMap::Serialize(CXmlArchive& xmlAr)
 		ClearObjects();
 
 		CWaitProgress progress(_T("Loading Static Objects"));
-
-		//if (!progress.Step( 100*i/numObjects ))
-		//break;
 
 		XmlNodeRef mainNode = xmlAr.root;
 
@@ -1916,12 +1724,11 @@ void CVegetationMap::Serialize(CXmlArchive& xmlAr)
 		SerializeInstances(xmlAr);
 		LoadOldStuff(xmlAr);
 
-		// Now display all objects on terrain.
+		// Now display all objects on terrain
 		PlaceObjectsOnTerrain();
 	}
 	else
 	{
-		// Storing
 		CLogFile::WriteLine("Saving Vegetation Map...");
 
 		xmlAr.root = XmlHelpers::CreateXmlNode("VegetationMap");
@@ -1936,7 +1743,6 @@ void CVegetationMap::Serialize(CXmlArchive& xmlAr)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::SerializeObjects(XmlNodeRef& vegetationNode)
 {
 	for (size_t i = 0, cnt = m_objects.size(); i < cnt; ++i)
@@ -1946,13 +1752,11 @@ void CVegetationMap::SerializeObjects(XmlNodeRef& vegetationNode)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::SerializeInstances(CXmlArchive& xmlAr, CRect* saveRect)
 {
 	if (xmlAr.bLoading)
 	{
 		Vec3 posofs(0, 0, 0);
-		// Loading.
 		if (!saveRect)
 		{
 			ClearSectors();
@@ -1965,7 +1769,7 @@ void CVegetationMap::SerializeInstances(CXmlArchive& xmlAr, CRect* saveRect)
 
 		int numObjects = m_objects.size();
 		int arraySize;
-		void* pData = 0;
+		void* pData = nullptr;
 		if (!xmlAr.pNamedData->GetDataBlock("VegetationInstancesArray", pData, arraySize))
 			return;
 
@@ -2000,14 +1804,14 @@ void CVegetationMap::SerializeInstances(CXmlArchive& xmlAr, CRect* saveRect)
 					continue;
 				}
 				CVegetationObject* object = m_objects[pVegInst[i].objectIndex];
-				CVegetationInstance* obj = CreateObjInstance(object, pVegInst[i].pos + posofs);
-				if (obj)
+				CVegetationInstance* pInst = CreateObjInstance(object, pVegInst[i].pos + posofs);
+				if (pInst)
 				{
-					obj->scale = pVegInst[i].scale;
-					obj->brightness = pVegInst[i].brightness;
-					obj->angle = pVegInst[i].angle;
-					obj->angleX = pVegInst[i].angleX;
-					obj->angleY = pVegInst[i].angleY;
+					pInst->scale = pVegInst[i].scale;
+					pInst->brightness = pVegInst[i].brightness;
+					pInst->angle = pVegInst[i].angle;
+					pInst->angleX = pVegInst[i].angleX;
+					pInst->angleY = pVegInst[i].angleY;
 				}
 			}
 		}
@@ -2020,14 +1824,14 @@ void CVegetationMap::SerializeInstances(CXmlArchive& xmlAr, CRect* saveRect)
 				if (pVegInst[i].objectIndex < numObjects)
 				{
 					CVegetationObject* object = m_objects[pVegInst[i].objectIndex];
-					CVegetationInstance* obj = CreateObjInstance(object, pVegInst[i].pos + posofs);
-					if (obj)
+					CVegetationInstance* pInst = CreateObjInstance(object, pVegInst[i].pos + posofs);
+					if (pInst)
 					{
-						obj->scale = pVegInst[i].scale;
-						obj->brightness = pVegInst[i].brightness;
-						obj->angle = pVegInst[i].angle;
-						obj->angleX = pVegInst[i].angleX;
-						obj->angleY = pVegInst[i].angleY;
+						pInst->scale = pVegInst[i].scale;
+						pInst->brightness = pVegInst[i].brightness;
+						pInst->angle = pVegInst[i].angle;
+						pInst->angleX = pVegInst[i].angleX;
+						pInst->angleY = pVegInst[i].angleY;
 					}
 				}
 			}
@@ -2036,9 +1840,9 @@ void CVegetationMap::SerializeInstances(CXmlArchive& xmlAr, CRect* saveRect)
 	}
 	else
 	{
-		// Saving.
 		if (m_numInstances == 0)
 			return;
+
 		int arraySize = sizeof(SVegInst) * m_numInstances;
 		SVegInst* array = (SVegInst*)malloc(arraySize);
 
@@ -2059,24 +1863,22 @@ void CVegetationMap::SerializeInstances(CXmlArchive& xmlAr, CRect* saveRect)
 
 		// Fill array.
 		int k = 0;
-		for (int i = 0; i < m_numSectors * m_numSectors; ++i)
+		for (auto& sector : m_sectors)
 		{
-			SectorInfo* si = &m_sectors[i];
-			// Iterate on every object in sector.
-			for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+			for (auto& pInst : sector)
 			{
 				if (saveRect)
 				{
-					if (obj->pos.x < x1 || obj->pos.x > x2 || obj->pos.y < y1 || obj->pos.y > y2)
+					if (pInst->pos.x < x1 || pInst->pos.x > x2 || pInst->pos.y < y1 || pInst->pos.y > y2)
 						continue;
 				}
-				array[k].pos = obj->pos;
-				array[k].scale = obj->scale;
-				array[k].brightness = obj->brightness;
-				array[k].angle = obj->angle;
-				array[k].angleX = obj->angleX;
-				array[k].angleY = obj->angleY;
-				array[k].objectIndex = obj->object->GetIndex();
+				array[k].pos = pInst->pos;
+				array[k].scale = pInst->scale;
+				array[k].brightness = pInst->brightness;
+				array[k].angle = pInst->angle;
+				array[k].angleX = pInst->angleX;
+				array[k].angleY = pInst->angleY;
+				array[k].objectIndex = pInst->object->GetIndex();
 				k++;
 			}
 		}
@@ -2089,33 +1891,29 @@ void CVegetationMap::SerializeInstances(CXmlArchive& xmlAr, CRect* saveRect)
 
 void CVegetationMap::ClearSegment(const AABB& bb)
 {
-	for (int i = 0; i < m_numSectors * m_numSectors; i++)
+	for (auto& sector : m_sectors)
 	{
-		SectorInfo* si = &m_sectors[i];
-		PodArray<CVegetationInstance*> lstDel;
-		for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+		for (auto& pInst : sector)
 		{
-			if (obj->pos.x < bb.min.x || obj->pos.x >= bb.max.x || obj->pos.y < bb.min.y || obj->pos.y >= bb.max.y)
+			if (pInst->pos.x < bb.min.x || pInst->pos.x >= bb.max.x || pInst->pos.y < bb.min.y || pInst->pos.y >= bb.max.y)
 				continue;
-			lstDel.push_back(obj);
+			DeleteObjInstance(pInst, &sector);
 		}
-		for (int j = 0; j < lstDel.size(); ++j)
-			DeleteObjInstance(lstDel[j], si);
 	}
+
 	signalAllVegetationObjectsChanged(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ImportSegment(CMemoryBlock& mem, const Vec3& vOfs)
 {
-	//TODO: load vegetation objects info, update m_objects, remap indicies
+	//TODO: load vegetation objects info, update m_objects, remap indices
 	int iInstances = 0;
 
 	typedef std::map<int, CryGUID>  TIntGuidMap;
 	typedef std::pair<int, CryGUID> TIntGuidPair;
 
-	typedef std::map<int, int>   TIntIntMap;
-	typedef std::pair<int, int>  TIntIntPair;
+	typedef std::map<int, int>      TIntIntMap;
+	typedef std::pair<int, int>     TIntIntPair;
 
 	bool bIsVegetationObjectInfoSaved = false;
 	unsigned char* p = (unsigned char*)mem.GetBuffer();
@@ -2204,14 +2002,14 @@ void CVegetationMap::ImportSegment(CMemoryBlock& mem, const Vec3& vOfs)
 		if (objectIndex >= numObjects)
 			continue;
 		CVegetationObject* object = m_objects[objectIndex];
-		CVegetationInstance* obj = CreateObjInstance(object, array[i].pos + vOfs);
-		if (obj)
+		CVegetationInstance* pInst = CreateObjInstance(object, array[i].pos + vOfs);
+		if (pInst)
 		{
-			obj->scale = array[i].scale;
-			obj->brightness = array[i].brightness;
-			obj->angle = array[i].angle;
+			pInst->scale = array[i].scale;
+			pInst->brightness = array[i].brightness;
+			pInst->angle = array[i].angle;
 			if (!object->IsHidden())
-				RegisterInstance(obj);
+				RegisterInstance(pInst);
 		}
 	}
 	signalAllVegetationObjectsChanged(false);
@@ -2220,42 +2018,33 @@ void CVegetationMap::ImportSegment(CMemoryBlock& mem, const Vec3& vOfs)
 void CVegetationMap::ExportSegment(CMemoryBlock& mem, const AABB& bb, const Vec3& vOfs)
 {
 	//TODO: save vegetation objects info with number of instances per object
-	int i;
 
 	// Assign indices to objects.
-	for (i = 0; i < GetObjectCount(); i++)
+	for (int i = 0; i < GetObjectCount(); i++)
 	{
 		GetObject(i)->SetIndex(i);
 	}
 
-	// count instances
-	int iInstances = 0;
+	int totalInstanceCount = 0;
+	std::map<int, CryGUID> vegetationIndexGuidMap;
 
-	typedef std::map<int, CryGUID>  TIntGuidMap;
-	typedef std::pair<int, CryGUID> TIntGuidPair;
-
-	TIntGuidMap VegetationIndexGuidMap;
-
-	for (i = 0; i < m_numSectors * m_numSectors; i++)
+	for (auto& sector : m_sectors)
 	{
-		SectorInfo* si = &m_sectors[i];
-		// Iterate on every object in sector.
-		for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+		for (auto& pInst : sector)
 		{
-			if (obj->pos.x < bb.min.x || obj->pos.x >= bb.max.x || obj->pos.y < bb.min.y || obj->pos.y >= bb.max.y)
+			if (pInst->pos.x < bb.min.x || pInst->pos.x >= bb.max.x || pInst->pos.y < bb.min.y || pInst->pos.y >= bb.max.y)
 				continue;
-			iInstances++;
 
-			if (VegetationIndexGuidMap.find(obj->object->GetIndex()) == VegetationIndexGuidMap.end())
+			++totalInstanceCount;
+
+			if (vegetationIndexGuidMap.find(pInst->object->GetIndex()) == vegetationIndexGuidMap.end())
 			{
-				TIntGuidPair tPair;
-				tPair.first = obj->object->GetIndex();
-				tPair.second = obj->object->GetGUID();
-				VegetationIndexGuidMap.insert(tPair);
+				vegetationIndexGuidMap.insert(std::make_pair<>(pInst->object->GetIndex(), pInst->object->GetGUID()));
 			}
 		}
 	}
-	if (!iInstances)
+
+	if (totalInstanceCount == 0)
 	{
 		mem.Free();
 		return;
@@ -2266,18 +2055,12 @@ void CVegetationMap::ExportSegment(CMemoryBlock& mem, const AABB& bb, const Vec3
 	sizeOfMem += sizeof(int); // flag for backward compatibility
 	sizeOfMem += sizeof(int); // num of objects
 
-	TIntGuidMap::iterator it;
+	sizeOfMem += vegetationIndexGuidMap.size() * (sizeof(int) + sizeof(GUID));
 
-	for (it = VegetationIndexGuidMap.begin(); it != VegetationIndexGuidMap.end(); ++it)
-	{
-		sizeOfMem += sizeof(int);  //object index
-		sizeOfMem += sizeof(GUID); // size of GUID;
-	}
+	sizeOfMem += sizeof(totalInstanceCount);            // num of instances
+	sizeOfMem += sizeof(SVegInst) * totalInstanceCount; // instances
 
-	sizeOfMem += sizeof(int);                   // num of instances
-	sizeOfMem += sizeof(SVegInst) * iInstances; // instances
-
-	int numElems = VegetationIndexGuidMap.size();
+	int numElems = vegetationIndexGuidMap.size();
 
 	CMemoryBlock tmp;
 	tmp.Allocate(sizeOfMem);
@@ -2291,42 +2074,40 @@ void CVegetationMap::ExportSegment(CMemoryBlock& mem, const AABB& bb, const Vec3
 	memcpy(&p[curr], &numElems, sizeof(int)); // num of objects
 	curr += sizeof(int);
 
-	for (it = VegetationIndexGuidMap.begin(); it != VegetationIndexGuidMap.end(); ++it)
+	for (const auto& it : vegetationIndexGuidMap)
 	{
-		memcpy(&p[curr], &it->first, sizeof(int));
+		memcpy(&p[curr], &(it.first), sizeof(int));
 		curr += sizeof(int); //object index
 
-		memcpy(&p[curr], &it->second, sizeof(GUID));
+		memcpy(&p[curr], &(it.second), sizeof(GUID));
 		curr += sizeof(GUID); // GUID;
 	}
 
 	// save instances
-	memcpy(&p[curr], &iInstances, sizeof(int)); // num of instances
+	memcpy(&p[curr], &totalInstanceCount, sizeof(int)); // num of instances
 	curr += sizeof(int);
 
 	SVegInst* array = (SVegInst*) &p[curr];
 	int k = 0;
-	for (i = 0; i < m_numSectors * m_numSectors; i++)
+	for (auto& sector : m_sectors)
 	{
-		SectorInfo* si = &m_sectors[i];
-		// Iterate on every object in sector.
-		for (CVegetationInstance* obj = si->first; obj; obj = obj->next)
+		for (auto& pInst : sector)
 		{
-			if (obj->pos.x < bb.min.x || obj->pos.x >= bb.max.x || obj->pos.y < bb.min.y || obj->pos.y >= bb.max.y)
+			if (pInst->pos.x < bb.min.x || pInst->pos.x >= bb.max.x || pInst->pos.y < bb.min.y || pInst->pos.y >= bb.max.y)
 				continue;
-			array[k].pos = obj->pos + vOfs;
-			array[k].scale = obj->scale;
-			array[k].brightness = obj->brightness;
-			array[k].angle = obj->angle;
-			array[k].objectIndex = obj->object->GetIndex();
+
+			array[k].pos = pInst->pos + vOfs;
+			array[k].scale = pInst->scale;
+			array[k].brightness = pInst->brightness;
+			array[k].angle = pInst->angle;
+			array[k].objectIndex = pInst->object->GetIndex();
 			k++;
 		}
 	}
-	assert(k == iInstances);
+	assert(k == totalInstanceCount);
 	tmp.Compress(mem);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::LoadOldStuff(CXmlArchive& xmlAr)
 {
 	if (!xmlAr.root)
@@ -2389,10 +2170,10 @@ void CVegetationMap::LoadOldStuff(CXmlArchive& xmlAr)
 				pos.x = y;
 				pos.y = x;
 				pos.z = GetIEditorImpl()->Get3DEngine()->GetTerrainElevation(pos.x, pos.y);
-				CVegetationInstance* obj = CreateObjInstance(usedObjects[objIndex], pos);
-				if (obj)
+				CVegetationInstance* pInst = CreateObjInstance(usedObjects[objIndex], pos);
+				if (pInst)
 				{
-					obj->scale = usedObjects[objIndex]->CalcVariableSize();
+					pInst->scale = usedObjects[objIndex]->CalcVariableSize();
 				}
 			}
 		}
@@ -2400,7 +2181,6 @@ void CVegetationMap::LoadOldStuff(CXmlArchive& xmlAr)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 //! Generate shadows from static objects and place them in shadow map bitarray.
 void CVegetationMap::GenerateShadowMap(CByteImage& shadowmap, float shadowAmmount, const Vec3& sunVector)
 {
@@ -2472,7 +2252,6 @@ void CVegetationMap::GenerateShadowMap(CByteImage& shadowmap, float shadowAmmoun
 	free(sectorImage2);
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CVegetationMap::ExportObject(CVegetationObject* object, XmlNodeRef& node, CRect* saveRect)
 {
 	int numSaved = 0;
@@ -2480,38 +2259,28 @@ int CVegetationMap::ExportObject(CVegetationObject* object, XmlNodeRef& node, CR
 	object->Serialize(node, false);
 	if (object->GetNumInstances() > 0)
 	{
-		float x1, y1, x2, y2;
-		if (saveRect)
-		{
-			x1 = saveRect->left;
-			y1 = saveRect->top;
-			x2 = saveRect->right;
-			y2 = saveRect->bottom;
-		}
-		// Export instances.
+		// Export instances
 		XmlNodeRef instancesNode = node->newChild("Instances");
-		// Iterator over all sectors.
-		for (int i = 0; i < m_numSectors * m_numSectors; i++)
+		for (const auto& sector : m_sectors)
 		{
-			// Iterate on every object in sector.
-			for (CVegetationInstance* obj = m_sectors[i].first; obj; obj = obj->next)
+			for (const auto& pInst : sector)
 			{
-				if (obj->object == object)
+				if (pInst->object == object)
 				{
 					if (saveRect)
 					{
-						if (obj->pos.x < x1 || obj->pos.x > x2 || obj->pos.y < y1 || obj->pos.y > y2)
+						if (pInst->pos.x < saveRect->left || pInst->pos.x > saveRect->right || pInst->pos.y <  saveRect->top || pInst->pos.y > saveRect->bottom)
 							continue;
 					}
 					numSaved++;
-					XmlNodeRef inst = instancesNode->newChild("Instance");
-					inst->setAttr("Pos", obj->pos);
-					if (obj->scale != 1)
-						inst->setAttr("Scale", obj->scale);
-					if (obj->brightness != 255)
-						inst->setAttr("Brightness", (int)obj->brightness);
-					if (obj->angle != 0)
-						inst->setAttr("Angle", (int)obj->angle);
+					XmlNodeRef node = instancesNode->newChild("Instance");
+					node->setAttr("Pos", pInst->pos);
+					if (pInst->scale != 1)
+						node->setAttr("Scale", pInst->scale);
+					if (pInst->brightness != 255)
+						node->setAttr("Brightness", (int)pInst->brightness);
+					if (pInst->angle != 0)
+						node->setAttr("Angle", (int)pInst->angle);
 				}
 			}
 		}
@@ -2519,7 +2288,6 @@ int CVegetationMap::ExportObject(CVegetationObject* object, XmlNodeRef& node, CR
 	return numSaved;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ImportObject(XmlNodeRef& node, const Vec3& offset)
 {
 	CVegetationObject* object = CreateObject();
@@ -2577,7 +2345,7 @@ void CVegetationMap::ImportObject(XmlNodeRef& node, const Vec3& offset)
 			CVegetationInstance* obj = GetNearestInstance(pos, 0.01f);
 			if (obj && obj->pos == pos)
 			{
-				// Delete pevious object at same position.
+				// Delete previous object at same position.
 				DeleteObjInstance(obj);
 			}
 			obj = CreateObjInstance(object, pos);
@@ -2595,7 +2363,6 @@ void CVegetationMap::ImportObject(XmlNodeRef& node, const Vec3& offset)
 	RepositionObject(object);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ImportObjectsFromXml(const string& filename)
 {
 	auto pXmlRoot = XmlHelpers::LoadXmlFromFile(filename);
@@ -2611,7 +2378,6 @@ void CVegetationMap::ImportObjectsFromXml(const string& filename)
 	signalAllVegetationObjectsChanged(true);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ExportObjectsToXml(const string& filename)
 {
 	const auto selectedObjects = GetSelectedObjects();
@@ -2629,7 +2395,6 @@ void CVegetationMap::ExportObjectsToXml(const string& filename)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::DrawToTexture(uint32* texture, int texWidth, int texHeight, int srcX, int srcY)
 {
 	assert(texture != 0);
@@ -2642,22 +2407,20 @@ void CVegetationMap::DrawToTexture(uint32* texture, int texWidth, int texHeight,
 			int sx = x + srcX;
 			int sy = y + srcY;
 			// Swap X/Y
-			SectorInfo* si = &m_sectors[sy + sx * m_numSectors];
-			if (si->first)
-				texture[x + trgYOfs] = 0xFFFFFFFF;
-			else
+			SectorInfo& si = m_sectors[sy + sx * m_numSectors];
+			if (si.empty())
 				texture[x + trgYOfs] = 0;
+			else
+				texture[x + trgYOfs] = 0xFFFFFFFF;
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CVegetationMap::WorldToSector(float worldCoord) const
 {
 	return int(worldCoord * m_worldToSector);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::UnloadObjectsGeometry()
 {
 	for (int i = 0; i < GetObjectCount(); i++)
@@ -2666,7 +2429,6 @@ void CVegetationMap::UnloadObjectsGeometry()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ExportBlock(const CRect& subRc, CXmlArchive& ar)
 {
 	XmlNodeRef mainNode = ar.root->newChild("VegetationMap");
@@ -2690,7 +2452,6 @@ void CVegetationMap::ExportBlock(const CRect& subRc, CXmlArchive& ar)
 	//SerializeInstances( ar,&rect );
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ImportBlock(CXmlArchive& ar, CPoint placeOffset)
 {
 	XmlNodeRef mainNode = ar.root->findChild("VegetationMap");
@@ -2708,7 +2469,7 @@ void CVegetationMap::ImportBlock(CXmlArchive& ar, CPoint placeOffset)
 	// Clear all vegetation instances in this rectangle.
 	ClearBrush(subRc, false, NULL);
 
-	// Serialize vegitation objects.
+	// Serialize vegetation objects
 	for (int i = 0; i < mainNode->getChildCount(); i++)
 	{
 		XmlNodeRef vegObjNode = mainNode->getChild(i);
@@ -2732,7 +2493,6 @@ void CVegetationMap::ImportBlock(CXmlArchive& ar, CPoint placeOffset)
 	destBox.max.z = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::RepositionArea(const AABB& box, const Vec3& offset, int nRot, bool isCopy)
 {
 	Vec3 src = (box.min + box.max) / 2;
@@ -2756,6 +2516,90 @@ void CVegetationMap::RepositionArea(const AABB& box, const Vec3& offset, int nRo
 	sy1 = max(sy1, 0);
 	sy2 = min(sy2, m_numSectors - 1);
 
+	//Objects will be moved or copied here
+	//After all sectors will be processed, current and this area will be swapped
+	std::vector<SectorInfo> tempArea(m_sectors.size());
+
+	// 1. Move/Copy objects from map to tempArea
+	for (int sectY = 0; sectY < m_numSectors; ++sectY)
+	{
+		for (int sectX = 0; sectX < m_numSectors; ++sectX)
+		{
+			//Entire sector is out of AABB
+			if (sectY < sy1 || sectY > sy2 || sectX < sx1 || sectX > sx2)
+			{
+				//Out of moving area: move entire sector and process the next one
+				// Swap is not good: when if something is moved to tempArea, it will returned back to m_sectors
+				const int sectorIndex = sectY * m_numSectors + sectX;
+
+				tempArea[sectorIndex].splice(tempArea[sectorIndex].begin(), m_sectors[sectorIndex]);
+				continue;
+			}
+
+			SectorInfo& sector = GetVegSector(sectX, sectY);
+			for (auto pInst : sector)
+			{
+				if (pInst->object == nullptr)
+				{
+					//No attached Vegetation object: will not process it
+					continue;
+				}
+
+				if (x1 <= pInst->pos.x && pInst->pos.x <= x2 && y1 <= pInst->pos.y && pInst->pos.y <= y2)
+				{
+					// Inside of AABB
+					const Vec3 pos = pInst->pos - src;
+					Vec3 newPos = Vec3(cosa * pos.x - sina * pos.y, sina * pos.x + cosa * pos.y, pos.z) + dst;
+
+					const int newSectorX = int(newPos.x * m_worldToSector);
+					const int newSectorY = int(newPos.y * m_worldToSector);
+					if (newSectorX < 0 || newSectorX >= m_numSectors || newSectorY < 0 || newSectorY >= m_numSectors)
+					{
+						//New position is out of map, the object will be cut. Need to store it for undo
+						SAFE_RELEASE_NODE(pInst->pRenderNode);
+						RecordUndo(pInst);
+						continue;
+					}
+
+					const int newSectorId = newSectorX + newSectorY * m_numSectors;
+
+					if (!pInst->object->IsAffectedByBrushes() && pInst->object->IsAffectedByTerrain())
+					{
+						newPos.z = GetIEditorImpl()->Get3DEngine()->GetTerrainElevation(newPos.x, newPos.y);
+					}
+
+
+					if (isCopy)
+					{
+						// Keep this instance in same position in tempArea
+						tempArea[sectY * m_numSectors + sectX].push_back(pInst);
+
+						//New instance with new position
+						auto* pSi = &tempArea[newSectorId];
+						CreateObjInstance(pInst->object, newPos, pInst, pSi);
+					}
+					else
+					{
+						//Move the instance to the new position in tempArea. No registration is required
+						RecordUndo(pInst);
+
+						pInst->pos = newPos;
+						tempArea[newSectorId].push_back(pInst);
+					}
+				}
+				else
+				{
+					//Outside of AABB: just copy without modifications at the same sector
+					tempArea[sectY * m_numSectors + sectX].push_back(pInst);
+				}
+			}
+		}
+	}
+
+	//2. Swap
+	std::swap(m_sectors, tempArea);
+
+	//3. Remove objects that are too close
 	int px1 = int((x1 + offset.x) * m_worldToSector);
 	int px2 = int((x2 + offset.x) * m_worldToSector);
 	int py1 = int((y1 + offset.y) * m_worldToSector);
@@ -2774,129 +2618,18 @@ void CVegetationMap::RepositionArea(const AABB& box, const Vec3& offset, int nRo
 	py1 = max(py1, 0);
 	py2 = min(py2, m_numSectors - 1);
 
-	CVegetationInstance* next = 0;
-
-	// Change sector
-	// cycle trough sectors under source
-	for (int y = sy1; y <= sy2; y++)
-		for (int x = sx1; x <= sx2; x++)
-		{
-			// For each sector check if any object is within this radius.
-			SectorInfo* si = GetVegSector(x, y);
-			CVegetationInstance* obj = si->first;
-			while (obj)
-			{
-				next = obj->next;
-				bool isUnlink = false;
-
-				if (obj->object &&
-				    x1 <= obj->pos.x && obj->pos.x <= x2 &&
-				    y1 <= obj->pos.y && obj->pos.y <= y2)
-				{
-					Vec3 pos = obj->pos - src;
-					Vec3 newPos = Vec3(cosa * pos.x - sina * pos.y, sina * pos.x + cosa * pos.y, pos.z) + dst;
-
-					if (isCopy)
-					{
-						if (!obj->object->IsAffectedByBrushes() && obj->object->IsAffectedByTerrain())
-							newPos.z = GetIEditorImpl()->Get3DEngine()->GetTerrainElevation(newPos.x, newPos.y);
-
-						if (CanPlace(obj->object, newPos, m_minimalDistance))
-						{
-							CVegetationInstance* pInst = CreateObjInstance(obj->object, newPos, obj);
-							RegisterInstance(pInst);
-						}
-					}
-					else // if move instances
-					{
-						SectorInfo* to = GetVegSector(newPos);
-
-						if (to && si != to)
-						{
-							// Relink object between sectors.
-							SectorUnlink(obj, si);
-							if (to)
-								SectorLink(obj, to);
-							isUnlink = true;
-						}
-					}
-				}
-
-				if (isUnlink)
-					obj = si->first;
-				else
-					obj = next;
-			}
-		}
-
-	if (!isCopy) // if move instances
-	{
-		// Change position
-		for (int y = py1; y <= py2; y++)
-		{
-			for (int x = px1; x <= px2; x++)
-			{
-				// For each sector check if any object is within this radius.
-				SectorInfo* si = GetVegSector(x, y);
-				CVegetationInstance* obj = si->first;
-				while (obj)
-				{
-					next = obj->next;
-
-					if (obj->object &&
-					    x1 <= obj->pos.x && obj->pos.x <= x2 &&
-					    y1 <= obj->pos.y && obj->pos.y <= y2)
-					{
-						Vec3 pos = obj->pos - src;
-						Vec3 newPos = Vec3(cosa * pos.x - sina * pos.y, sina * pos.x + cosa * pos.y, pos.z) + dst;
-
-						float newz = newPos.z;
-						if (!obj->object->IsAffectedByBrushes() && obj->object->IsAffectedByTerrain())
-						{
-							newz = GetIEditorImpl()->Get3DEngine()->GetTerrainElevation(newPos.x, newPos.y);
-							if (newPos.z != newz)
-							{
-								RecordUndo(obj);
-								newPos.z = newz;
-							}
-						}
-
-						obj->pos = newPos;
-						if (!obj->object->IsHidden())
-						{
-							RegisterInstance(obj);
-						}
-					}
-
-					obj = next;
-				}
-			}
-		}
-	}
-
 	RemoveDuplVegetation(px1, py1, px2, py2);
 
-	if (offset.x != 0 || offset.y != 0)
-	{
-		AABB destBox = box;
-		destBox.min.x = min(box.min.x, box.max.x) + offset.x;
-		destBox.min.y = min(box.min.y, box.max.y) + offset.y;
-		destBox.min.z = min(box.min.z, box.max.z) + offset.z;
-
-		destBox.max.x = max(box.min.x, box.max.x) + offset.x;
-		destBox.max.y = max(box.min.y, box.max.y) + offset.y;
-		destBox.max.z = max(box.min.z, box.max.z) + offset.z;
-	}
+	//4. Update all vegetation in 3D Engine
+	PlaceObjectsOnTerrain();
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CVegetationMap::RecordUndo(CVegetationInstance* obj)
+void CVegetationMap::RecordUndo(CVegetationInstance* pInst)
 {
 	if (CUndo::IsRecording())
-		CUndo::Record(new CUndoVegInstance(obj));
+		CUndo::Record(new CUndoVegInstance(pInst));
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CVegetationMap::GetTexureMemoryUsage(bool bOnlySelectedObjects)
 {
 	ICrySizer* pSizer = GetISystem()->CreateSizer();
@@ -2914,33 +2647,6 @@ int CVegetationMap::GetTexureMemoryUsage(bool bOnlySelectedObjects)
 	return nSize;
 }
 
-//////////////////////////////////////////////////////////////////////////
-int CVegetationMap::GetSpritesMemoryUsage(bool bOnlySelectedObjects)
-{
-	int nSize = 0;
-	std::set<IStatObj*> objset;
-
-	for (int i = 0; i < GetObjectCount(); i++)
-	{
-		CVegetationObject* pObject = GetObject(i);
-		if (!pObject->IsSelected() && bOnlySelectedObjects)
-			continue;
-
-		if (!pObject->IsUseSprites())
-			continue;
-
-		IStatObj* pStatObj = pObject->GetObject();
-		if (objset.find(pStatObj) != objset.end())
-			continue;
-
-		objset.insert(pStatObj);
-
-		//		nSize += pStatObj->GetSpritesTexMemoryUsage(); // statobj does not contain sprites in it
-	}
-	return nSize;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::GetMemoryUsage(ICrySizer* pSizer)
 {
 	pSizer->Add(*this);
@@ -2950,37 +2656,24 @@ void CVegetationMap::GetMemoryUsage(ICrySizer* pSizer)
 	{
 		pSizer->Add(m_objects);
 
-		Objects::iterator it, end = m_objects.end();
-
-		for (it = m_objects.begin(); it != end; ++it)
+		for (auto& obj : m_objects)
 		{
-			TSmartPtr<CVegetationObject>& ref = *it;
-
-			pSizer->Add(*ref);
+			pSizer->Add(*obj);
 		}
 	}
 
 	{
-		pSizer->Add(m_sectors, sizeof(SectorInfo) * m_numSectors * m_numSectors);
-
-		CVegetationInstance* next;
-		for (int i = 0; i < m_numSectors * m_numSectors; i++)
+		pSizer->Add(m_sectors);
+		for (const auto& sector : m_sectors)
 		{
-			SectorInfo* si = &m_sectors[i];
-			// Iterate on every object in sector.
-			for (CVegetationInstance* obj = si->first; obj; obj = next)
+			for (const auto& pInst : sector)
 			{
-				next = obj->next;
-
-				pSizer->Add(*obj);
+				pSizer->Add(*pInst);
 			}
 		}
 	}
-
-	// todo : finish m_objects
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::SetEngineObjectsParams()
 {
 	for (int i = 0; i < GetObjectCount(); i++)
@@ -2990,7 +2683,6 @@ void CVegetationMap::SetEngineObjectsParams()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CVegetationMap::GenerateVegetationObjectId()
 {
 	// Generate New id.
@@ -3005,7 +2697,6 @@ int CVegetationMap::GenerateVegetationObjectId()
 	return -1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::UpdateConfigSpec()
 {
 	for (int i = 0; i < GetObjectCount(); i++)
@@ -3015,7 +2706,6 @@ void CVegetationMap::UpdateConfigSpec()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::Save(bool bBackup)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -3028,7 +2718,6 @@ void CVegetationMap::Save(bool bBackup)
 	helper.UpdateFile(bBackup);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVegetationMap::Load()
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -3037,18 +2726,13 @@ bool CVegetationMap::Load()
 	xmlAr.bLoading = true;
 	if (!xmlAr.Load(filename))
 	{
-		string filename = GetIEditorImpl()->GetLevelDataFolder() + kVegetationMapFileOld;
-		if (!xmlAr.Load(filename))
-		{
-			return false;
-		}
+		return false;
 	}
 
 	Serialize(xmlAr);
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::ReloadGeometry()
 {
 	for (int i = 0; i < GetObjectCount(); i++)
@@ -3059,27 +2743,26 @@ void CVegetationMap::ReloadGeometry()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 {
 	CVegetationMap* vegMap = GetIEditorImpl()->GetVegetationMap();
 
 	struct SBillboardInfo
 	{
-		IStatObj *pModel;
-		float fDistRatio;
+		IStatObj* pModel;
+		float     fDistRatio;
 	};
 
-	int i, j;
 	std::vector<SBillboardInfo> Billboards;
 	for (int i = 0; i < vegMap->GetObjectCount(); i++)
 	{
-		CVegetationObject *pVO = vegMap->GetObject(i);
+		CVegetationObject* pVO = vegMap->GetObject(i);
 		if (!pVO->IsUseSprites())
 			continue;
 
 		IStatObj* pObject = pVO->GetObject();
-		for (j = 0; j < Billboards.size(); j++)
+		int j = 0;
+		for (; j < Billboards.size(); j++)
 		{
 			SBillboardInfo& BI = Billboards[j];
 			if (BI.pModel == pObject)
@@ -3106,20 +2789,20 @@ void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 	int nSpriteResInt = nSpriteResFinal << 1;
 	int nLine = (int)sqrtf(FAR_TEX_COUNT);
 	int nAtlasRes = nLine * nSpriteResFinal;
-	ITexture *pAtlasD = gEnv->pRenderer->CreateTexture("$BillboardsAtlasD", nAtlasRes, nAtlasRes, 1, NULL, eTF_B8G8R8A8, FT_USAGE_RENDERTARGET);
-	ITexture *pAtlasN = gEnv->pRenderer->CreateTexture("$BillboardsAtlasN", nAtlasRes, nAtlasRes, 1, NULL, eTF_B8G8R8A8, FT_USAGE_RENDERTARGET);
+	ITexture* pAtlasD = gEnv->pRenderer->CreateTexture("$BillboardsAtlasD", nAtlasRes, nAtlasRes, 1, NULL, eTF_B8G8R8A8, FT_USAGE_RENDERTARGET);
+	ITexture* pAtlasN = gEnv->pRenderer->CreateTexture("$BillboardsAtlasN", nAtlasRes, nAtlasRes, 1, NULL, eTF_B8G8R8A8, FT_USAGE_RENDERTARGET);
 	int nProducedTexturesCounter = 0;
 
-	for (i = 0; i < Billboards.size(); i++)
+	for (int i = 0; i < Billboards.size(); i++)
 	{
 		SBillboardInfo& BI = Billboards[i];
-		IStatObj *pObj = BI.pModel;
+		IStatObj* pObj = BI.pModel;
 
 		gEnv->pLog->Log("Generating billboards for %s", pObj->GetFilePath());
 
 		CCamera tmpCam = GetISystem()->GetViewCamera();
 
-		for (j = 0; j < FAR_TEX_COUNT; j++)
+		for (int j = 0; j < FAR_TEX_COUNT; j++)
 		{
 			float fRadiusHors = pObj->GetRadiusHors();
 			float fRadiusVert = pObj->GetRadiusVert();
@@ -3135,7 +2818,7 @@ void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 			tmpCam.SetFrustum(nSpriteResInt, nSpriteResInt, fFOV, max(0.1f, fDrawDist - fRadiusHors), fDrawDist + fRadiusHors);
 
 			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateBillBoardGenPassRenderingInfo(tmpCam, nRenderingFlags);
-			IRenderView *pView = passInfo.GetIRenderView();
+			IRenderView* pView = passInfo.GetIRenderView();
 			pView->SetCameras(&tmpCam, 1);
 
 			gEnv->pRenderer->EF_StartEf(passInfo);
@@ -3153,7 +2836,6 @@ void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 			matCenter.SetTranslation(-vCenter);
 			matCenter = matRotation * matCenter;
 			Matrix34 InstMatrix = matTrans * matCenter;
-
 
 			SRendParams rParams;
 			rParams.pMatrix = &InstMatrix;
@@ -3174,7 +2856,7 @@ void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 				assert(0);
 			}
 		}
-		const char *szName = pObj->GetFilePath();
+		const char* szName = pObj->GetFilePath();
 
 		CString fileName = PathUtil::GetFileName(szName);
 		CString pathName = PathUtil::GetPathWithoutFilename(szName);
@@ -3188,7 +2870,7 @@ void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 
 		vegMap->SaveBillboardTIFF(nameAlbedo, pAtlasD, "Diffuse_highQ", true);
 		vegMap->SaveBillboardTIFF(nameNormal, pAtlasN, "Normalmap_highQ", false);
-		
+
 		nProducedTexturesCounter += 2;
 	}
 	SAFE_RELEASE(pAtlasD);
@@ -3197,18 +2879,18 @@ void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 	gEnv->pLog->Log("%d billboard textures produced", nProducedTexturesCounter);
 }
 
-bool CVegetationMap::SaveBillboardTIFF(const CString& fileName, ITexture *pTexture, const char *szPreset, bool bConvertToSRGB)
+bool CVegetationMap::SaveBillboardTIFF(const CString& fileName, ITexture* pTexture, const char* szPreset, bool bConvertToSRGB)
 {
 	int nWidth = pTexture->GetWidth();
 	int nHeight = pTexture->GetHeight();
 	int nPitch = nWidth * 4;
 
-	uint8 *pSrcData = new uint8[nPitch * nHeight];
+	uint8* pSrcData = new uint8[nPitch * nHeight];
 	pTexture->GetData32(0, 0, pSrcData, eTF_B8G8R8A8);
 
 	if (bConvertToSRGB)
 	{
-		byte *pSrc = pSrcData;
+		byte* pSrc = pSrcData;
 		for (int i = 0; i < nWidth * nHeight; i++)
 		{
 			byte r = pSrc[0];
@@ -3222,17 +2904,17 @@ bool CVegetationMap::SaveBillboardTIFF(const CString& fileName, ITexture *pTextu
 		}
 	}
 	/*else
-	{
-		byte *pSrc = pSrcData;
-		for (int i = 0; i < nWidth * nHeight; i++)
-		{
-			byte r = pSrc[0];
-			pSrc[0] = pSrc[2];
-			pSrc[2] = r;
+	   {
+	   byte *pSrc = pSrcData;
+	   for (int i = 0; i < nWidth * nHeight; i++)
+	   {
+	    byte r = pSrc[0];
+	    pSrc[0] = pSrc[2];
+	    pSrc[2] = r;
 
-			pSrc += 4;
-		}
-	}*/
+	    pSrc += 4;
+	   }
+	   }*/
 
 	// save data to tiff
 
@@ -3245,8 +2927,6 @@ bool CVegetationMap::SaveBillboardTIFF(const CString& fileName, ITexture *pTextu
 	return res;
 }
 
-
-//////////////////////////////////////////////////////////////////////////
 bool CVegetationMap::IsAreaEmpty(const AABB& bbox)
 {
 	std::vector<CVegetationInstance*> foundVegetationIstances;
@@ -3313,7 +2993,6 @@ void CVegetationMap::StoreBaseUndo(EStoreUndo state)
 		m_storeBaseUndoState = eStoreUndo_Normal;
 		break;
 	}
-	;
 
 	if (bRecordUndo)
 	{
@@ -3327,28 +3006,26 @@ CVegetationInstance* CVegetationMap::CloneInstance(CVegetationInstance* pOrigina
 	SectorInfo* si = GetVegSector(pOriginal->pos);
 
 	if (!si)
-		return 0;
+		return nullptr;
 
-	CVegetationInstance* obj = new CVegetationInstance;
-	obj->m_refCount = 1; // Starts with 1 reference.
-	//obj->AddRef();
-	obj->pos = pOriginal->pos;
-	obj->scale = pOriginal->scale;
-	obj->object = pOriginal->object;
-	obj->brightness = pOriginal->brightness;
-	obj->angle = pOriginal->angle;
-	obj->pRenderNode = 0;
-	obj->pRenderNodeGroundDecal = 0;
-	obj->m_boIsSelected = false;
+	CVegetationInstance* pInst = new CVegetationInstance;
+	pInst->m_refCount = 1; // Starts with 1 reference.
+	pInst->pos = pOriginal->pos;
+	pInst->scale = pOriginal->scale;
+	pInst->object = pOriginal->object;
+	pInst->brightness = pOriginal->brightness;
+	pInst->angle = pOriginal->angle;
+	pInst->pRenderNode = 0;
+	pInst->pRenderNodeGroundDecal = 0;
+	pInst->m_boIsSelected = false;
 
 	if (CUndo::IsRecording())
-		CUndo::Record(new CUndoVegInstanceCreate(obj, false));
+		CUndo::Record(new CUndoVegInstanceCreate(pInst, false));
 
 	// Add object to end of the list of instances in sector.
 	// Increase number of instances.
-	obj->object->SetNumInstances(obj->object->GetNumInstances() + 1);
+	pInst->object->SetNumInstances(pInst->object->GetNumInstances() + 1);
 	m_numInstances++;
-	SectorLink(obj, si);
-	return obj;
+	si->push_front(pInst);
+	return pInst;
 }
-

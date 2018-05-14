@@ -7,6 +7,7 @@
 #include "AudioSystem.h"
 #include "AudioStandaloneFileManager.h"
 #include "Common/Logger.h"
+#include "Common.h"
 #include <IAudioImpl.h>
 #include <CryString/HashedString.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -984,42 +985,40 @@ void CATLAudioObject::DrawDebugInfo(
 
 		if ((g_cvars.m_debugDistance <= 0.0f) || ((g_cvars.m_debugDistance > 0.0f) && (distance <= g_cvars.m_debugDistance)))
 		{
-			float const fontSize = 1.35f;
-			float const lineHeight = 14.0f;
 			float offsetOnY = 0.0f;
 
 			// Check if text filter is enabled.
 			CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 			lowerCaseSearchString.MakeLower();
-			bool const bTextFilterDisabled = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0));
-			bool const bShowSphere = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowSpheres) != 0;
-			bool const bShowLabel = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectLabel) != 0;
-			bool const bShowTriggers = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectTriggers) != 0;
-			bool const bShowStandaloneFiles = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectStandaloneFiles) != 0;
-			bool const bShowStates = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectStates) != 0;
-			bool const bShowParameters = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectParameters) != 0;
-			bool const bShowEnvironments = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectEnvironments) != 0;
-			bool const bShowDistance = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowObjectDistance) != 0;
-			bool const bShowOcclusionRayLabel = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::ShowOcclusionRayLabels) != 0;
-			bool const bFilterAllObjectInfo = (g_cvars.m_drawAudioDebug & EAudioDebugDrawFilter::FilterAllObjectInfo) != 0;
+			bool const isTextFilterDisabled = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0));
+			bool const drawSphere = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::Spheres) != 0;
+			bool const drawLabel = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectLabel) != 0;
+			bool const drawTriggers = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectTriggers) != 0;
+			bool const drawStandaloneFiles = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectStandaloneFiles) != 0;
+			bool const drawStates = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectStates) != 0;
+			bool const drawParameters = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectParameters) != 0;
+			bool const drawEnvironments = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectEnvironments) != 0;
+			bool const drawDistance = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::ObjectDistance) != 0;
+			bool const drawOcclusionRayLabel = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::OcclusionRayLabels) != 0;
+			bool const filterAllObjectInfo = (g_cvars.m_drawAudioDebug & Debug::EDrawFilter::FilterAllObjectInfo) != 0;
 
 			// Check if object name matches text filter.
-			CATLAudioObject* const pAudioObject = const_cast<CATLAudioObject*>(this);
+			auto const pAudioObject = const_cast<CATLAudioObject*>(this);
 			char const* const szObjectName = pAudioObject->m_name.c_str();
-			bool bObjectNameMatchesFilter = false;
+			bool doesObjectNameMatchFilter = false;
 
-			if (bShowLabel || bFilterAllObjectInfo)
+			if (drawLabel || filterAllObjectInfo)
 			{
 				CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
 				lowerCaseObjectName.MakeLower();
-				bObjectNameMatchesFilter = (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+				doesObjectNameMatchFilter = (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 			}
 
 			// Check if any trigger matches text filter.
-			bool bTriggerMatchesFilter = false;
+			bool doesTriggerMatchFilter = false;
 			std::vector<CryFixedStringT<MaxMiscStringLength>> triggerInfo;
 
-			if ((bShowTriggers && !m_triggerStates.empty()) || bFilterAllObjectInfo)
+			if ((drawTriggers && !m_triggerStates.empty()) || filterAllObjectInfo)
 			{
 				TriggerCountMap triggerCounts;
 
@@ -1040,7 +1039,7 @@ void CATLAudioObject::DrawDebugInfo(
 
 						if (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
 						{
-							bTriggerMatchesFilter = true;
+							doesTriggerMatchFilter = true;
 						}
 
 						CryFixedStringT<MaxMiscStringLength> debugText;
@@ -1061,10 +1060,10 @@ void CATLAudioObject::DrawDebugInfo(
 			}
 
 			// Check if any standalone file matches text filter.
-			bool bStandaloneFileMatchesFilter = false;
+			bool doesStandaloneFileMatchFilter = false;
 			std::vector<CryFixedStringT<MaxMiscStringLength>> standaloneFileInfo;
 
-			if ((bShowStandaloneFiles && !m_activeStandaloneFiles.empty()) || bFilterAllObjectInfo)
+			if ((drawStandaloneFiles && !m_activeStandaloneFiles.empty()) || filterAllObjectInfo)
 			{
 				std::map<CHashedString, size_t> numStandaloneFiles;
 
@@ -1081,7 +1080,7 @@ void CATLAudioObject::DrawDebugInfo(
 
 					if (lowerCaseStandaloneFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
 					{
-						bStandaloneFileMatchesFilter = true;
+						doesStandaloneFileMatchFilter = true;
 					}
 
 					CryFixedStringT<MaxMiscStringLength> debugText;
@@ -1101,10 +1100,10 @@ void CATLAudioObject::DrawDebugInfo(
 			}
 
 			// Check if any state or switch matches text filter.
-			bool bStateSwitchMatchesFilter = false;
+			bool doesStateSwitchMatchFilter = false;
 			std::map<CATLSwitch const* const, CATLSwitchState const* const> switchStateInfo;
 
-			if ((bShowStates && !m_switchStates.empty()) || bFilterAllObjectInfo)
+			if ((drawStates && !m_switchStates.empty()) || filterAllObjectInfo)
 			{
 				for (auto const& switchStatePair : m_switchStates)
 				{
@@ -1128,7 +1127,7 @@ void CATLAudioObject::DrawDebugInfo(
 								if ((lowerCaseSwitchName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos) ||
 								    (lowerCaseStateName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
 								{
-									bStateSwitchMatchesFilter = true;
+									doesStateSwitchMatchFilter = true;
 								}
 
 								switchStateInfo.emplace(pSwitch, pSwitchState);
@@ -1139,10 +1138,10 @@ void CATLAudioObject::DrawDebugInfo(
 			}
 
 			// Check if any parameter matches text filter.
-			bool bParameterMatchesFilter = false;
+			bool doesParameterMatchFilter = false;
 			std::map<char const* const, float const> parameterInfo;
 
-			if ((bShowParameters && !m_parameters.empty()) || bFilterAllObjectInfo)
+			if ((drawParameters && !m_parameters.empty()) || filterAllObjectInfo)
 			{
 				for (auto const& parameterPair : m_parameters)
 				{
@@ -1156,7 +1155,7 @@ void CATLAudioObject::DrawDebugInfo(
 
 						if (lowerCaseParameterName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
 						{
-							bParameterMatchesFilter = true;
+							doesParameterMatchFilter = true;
 						}
 
 						parameterInfo.emplace(szParameterName, parameterPair.second);
@@ -1165,10 +1164,10 @@ void CATLAudioObject::DrawDebugInfo(
 			}
 
 			// Check if any environment matches text filter.
-			bool bEnvironmentMatchesFilter = false;
+			bool doesEnvironmentMatchFilter = false;
 			std::map<char const* const, float const> environmentInfo;
 
-			if ((bShowEnvironments && !m_environments.empty()) || bFilterAllObjectInfo)
+			if ((drawEnvironments && !m_environments.empty()) || filterAllObjectInfo)
 			{
 				for (auto const& environmentPair : m_environments)
 				{
@@ -1182,7 +1181,7 @@ void CATLAudioObject::DrawDebugInfo(
 
 						if (lowerCaseEnvironmentName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
 						{
-							bEnvironmentMatchesFilter = true;
+							doesEnvironmentMatchFilter = true;
 						}
 
 						environmentInfo.emplace(szEnvironmentName, environmentPair.second);
@@ -1191,92 +1190,84 @@ void CATLAudioObject::DrawDebugInfo(
 			}
 
 			// Check if any object info text matches text filter.
-			bool const bShowObjectDebugInfo =
-			  bTextFilterDisabled ||
-			  bObjectNameMatchesFilter ||
-			  bTriggerMatchesFilter ||
-			  bStandaloneFileMatchesFilter ||
-			  bStateSwitchMatchesFilter ||
-			  bParameterMatchesFilter ||
-			  bEnvironmentMatchesFilter;
+			bool const drawObjectDebugInfo =
+			  isTextFilterDisabled ||
+			  doesObjectNameMatchFilter ||
+			  doesTriggerMatchFilter ||
+			  doesStandaloneFileMatchFilter ||
+			  doesStateSwitchMatchFilter ||
+			  doesParameterMatchFilter ||
+			  doesEnvironmentMatchFilter;
 
-			if (bShowObjectDebugInfo)
+			if (drawObjectDebugInfo)
 			{
-				if (bShowSphere)
+				if (drawSphere)
 				{
 					SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
 					SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
 					newRenderFlags.SetCullMode(e_CullModeNone);
 					auxGeom.SetRenderFlags(newRenderFlags);
-					float const radius = 0.15f;
-					auxGeom.DrawSphere(position, radius, ColorB(255, 1, 1, 255));
+					auxGeom.DrawSphere(position, Debug::g_objectRadiusPositionSphere, ColorB(255, 1, 1, 255));
 					auxGeom.SetRenderFlags(previousRenderFlags);
 				}
 
-				if (bShowLabel)
+				if (drawLabel)
 				{
-					bool const bHasActiveData = HasActiveData(pAudioObject);
-					bool const bDraw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects > 0) && bHasActiveData);
+					bool const hasActiveData = HasActiveData(pAudioObject);
+					bool const draw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects > 0) && hasActiveData);
 
-					if (bDraw)
+					if (draw)
 					{
-						bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
-						static float const objectActiveColor[4] = { 0.9f, 0.9f, 0.9f, 0.9f };
-						static float const objectInactiveColor[4] = { 0.5f, 0.5f, 0.5f, 0.9f };
-						static float const objectVirtualColor[4] = { 0.1f, 0.8f, 0.8f, 0.9f };
+						bool const isVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
 
 						auxGeom.Draw2dLabel(
 						  screenPos.x,
 						  screenPos.y + offsetOnY,
-						  fontSize,
-						  bIsVirtual ? objectVirtualColor : (bHasActiveData ? objectActiveColor : objectInactiveColor),
+						  Debug::g_objectFontSize,
+						  isVirtual ? Debug::g_objectColorVirtual.data() : (hasActiveData ? Debug::g_objectColorActive.data() : Debug::g_objectColorInactive.data()),
 						  false,
 						  "%s",
 						  szObjectName);
 
-						offsetOnY += lineHeight;
+						offsetOnY += Debug::g_objectLineHeight;
 					}
 				}
 
-				if (bShowTriggers && !triggerInfo.empty())
+				if (drawTriggers && !triggerInfo.empty())
 				{
-					float const triggerTextColor[4] = { 0.1f, 0.7f, 0.1f, 0.9f };
-
 					for (auto const& debugText : triggerInfo)
 					{
 						auxGeom.Draw2dLabel(
 						  screenPos.x,
 						  screenPos.y + offsetOnY,
-						  fontSize,
-						  triggerTextColor,
+						  Debug::g_objectFontSize,
+						  Debug::g_objectColorTrigger.data(),
 						  false,
 						  "%s",
 						  debugText.c_str());
 
-						offsetOnY += lineHeight;
+						offsetOnY += Debug::g_objectLineHeight;
 					}
 				}
 
-				if (bShowStandaloneFiles && !standaloneFileInfo.empty())
+				if (drawStandaloneFiles && !standaloneFileInfo.empty())
 				{
-					float const standalonFileTextColor[4] = { 0.9f, 0.9f, 0.0f, 0.9f };
-
 					for (auto const& debugText : standaloneFileInfo)
 					{
 						auxGeom.Draw2dLabel(
 						  screenPos.x,
 						  screenPos.y + offsetOnY,
-						  fontSize,
-						  standalonFileTextColor,
+						  Debug::g_objectFontSize,
+						  Debug::g_objectColorStandaloneFile.data(),
 						  false,
 						  "%s",
 						  debugText.c_str());
 
-						offsetOnY += lineHeight;
+						offsetOnY += Debug::g_objectLineHeight;
 					}
 				}
 
-				if (bShowStates && !switchStateInfo.empty())
+				if (drawStates && !switchStateInfo.empty())
 				{
 					for (auto const& switchStatePair : switchStateInfo)
 					{
@@ -1290,83 +1281,79 @@ void CATLAudioObject::DrawDebugInfo(
 						auxGeom.Draw2dLabel(
 						  screenPos.x,
 						  screenPos.y + offsetOnY,
-						  fontSize,
+						  Debug::g_objectFontSize,
 						  switchTextColor,
 						  false,
 						  "%s: %s\n",
 						  pSwitch->m_name.c_str(),
 						  pSwitchState->m_name.c_str());
 
-						offsetOnY += lineHeight;
+						offsetOnY += Debug::g_objectLineHeight;
 					}
 				}
 
-				if (bShowParameters && !parameterInfo.empty())
+				if (drawParameters && !parameterInfo.empty())
 				{
-					static float const parameterTextColor[4] = { 0.4f, 0.4f, 1.0f, 1.0f };
-
 					for (auto const& parameterPair : parameterInfo)
 					{
 						auxGeom.Draw2dLabel(
 						  screenPos.x,
 						  screenPos.y + offsetOnY,
-						  fontSize,
-						  parameterTextColor,
+						  Debug::g_objectFontSize,
+						  Debug::g_objectColorParameter.data(),
 						  false,
 						  "%s: %2.2f\n",
 						  parameterPair.first,
 						  parameterPair.second);
 
-						offsetOnY += lineHeight;
+						offsetOnY += Debug::g_objectLineHeight;
 					}
 				}
 
-				if (bShowEnvironments && !environmentInfo.empty())
+				if (drawEnvironments && !environmentInfo.empty())
 				{
-					static float const environmentTextColor[4] = { 9.0f, 0.5f, 0.0f, 0.7f };
-
 					for (auto const& environmentPair : environmentInfo)
 					{
 						auxGeom.Draw2dLabel(
 						  screenPos.x,
 						  screenPos.y + offsetOnY,
-						  fontSize,
-						  environmentTextColor,
+						  Debug::g_objectFontSize,
+						  Debug::g_objectColorEnvironment.data(),
 						  false,
 						  "%s: %.2f\n",
 						  environmentPair.first,
 						  environmentPair.second);
 
-						offsetOnY += lineHeight;
+						offsetOnY += Debug::g_objectLineHeight;
 					}
 				}
 
-				if (bShowDistance)
+				if (drawDistance)
 				{
-					static float const distanceTextColor[4] = { 0.9f, 0.9f, 0.9f, 0.9f };
+					bool const isVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
 
 					auxGeom.Draw2dLabel(
 					  screenPos.x,
 					  screenPos.y + offsetOnY,
-					  fontSize,
-					  distanceTextColor,
+					  Debug::g_objectFontSize,
+					  isVirtual ? Debug::g_objectColorVirtual.data() : Debug::g_objectColorActive.data(),
 					  false,
 					  "Dist: %4.1fm",
 					  distance);
 
-					offsetOnY += lineHeight;
+					offsetOnY += Debug::g_objectLineHeight;
 				}
 
-				if (bShowOcclusionRayLabel)
+				if (drawOcclusionRayLabel)
 				{
 					EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
 					SATLSoundPropagationData propagationData;
 					m_propagationProcessor.GetPropagationData(propagationData);
 
-					bool const bHasActiveData = HasActiveData(pAudioObject);
-					bool const bDraw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects > 0) && bHasActiveData);
+					bool const hasActiveData = HasActiveData(pAudioObject);
+					bool const draw = (g_cvars.m_hideInactiveAudioObjects == 0) || ((g_cvars.m_hideInactiveAudioObjects > 0) && hasActiveData);
 
-					if (bDraw)
+					if (draw)
 					{
 						CryFixedStringT<MaxMiscStringLength> debugText;
 
@@ -1389,22 +1376,20 @@ void CATLAudioObject::DrawDebugInfo(
 							debugText.Format("Ignore (exceeded activity range)");
 						}
 
-						bool const bIsVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
+						bool const isVirtual = (pAudioObject->GetFlags() & EObjectFlags::Virtual) != 0;
 						float const activeRayLabelColor[4] = { propagationData.occlusion, 1.0f - propagationData.occlusion, 0.0f, 0.9f };
-						static float const ignoredRayLabelColor[4] = { 0.5f, 0.5f, 0.5f, 0.9f };
-						static float const virtualRayLabelColor[4] = { 0.1f, 0.8f, 0.8f, 0.9f };
 
 						auxGeom.Draw2dLabel(
 						  screenPos.x,
 						  screenPos.y + offsetOnY,
-						  fontSize,
-						  ((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? (bIsVirtual ? virtualRayLabelColor : activeRayLabelColor) : ignoredRayLabelColor,
+						  Debug::g_objectFontSize,
+						  ((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? (isVirtual ? Debug::g_objectColorVirtual.data() : activeRayLabelColor) : Debug::g_objectColorInactive.data(),
 						  false,
 						  "Occl: %3.2f | Type: %s", // Add obstruction again once the engine supports it.
 						  propagationData.occlusion,
 						  debugText.c_str());
 
-						offsetOnY += lineHeight;
+						offsetOnY += Debug::g_objectLineHeight;
 					}
 				}
 

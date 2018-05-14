@@ -22,7 +22,7 @@ QTerrainSculptButtons::QTerrainSculptButtons(QWidget* parent)
 	AddTool(RUNTIME_CLASS(CFlattenTool), "Flatten");
 	AddTool(RUNTIME_CLASS(CSmoothTool), "Smooth");
 	AddTool(RUNTIME_CLASS(CRiseLowerTool), "Raise/Lower");
-	AddTool(RUNTIME_CLASS(CTerrainMoveTool), "Move");
+	AddTool(RUNTIME_CLASS(CTerrainMoveTool), "Clone");
 	AddTool(RUNTIME_CLASS(CMakeHolesTool), "Make Holes");
 	AddTool(RUNTIME_CLASS(CFillHolesTool), "Fill Holes");
 }
