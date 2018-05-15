@@ -14,7 +14,7 @@ class CEngineModule_CryAction : public IGameFrameworkEngineModule
 
 	virtual ~CEngineModule_CryAction()
 	{
-		SAFE_DELETE(gEnv->pGameFramework);
+		m_pCryAction.reset();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -25,9 +25,12 @@ class CEngineModule_CryAction : public IGameFrameworkEngineModule
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
 		// Special case: cast away the const to maintain legacy compatibility for the game framework
-		env.pGameFramework = new CCryAction(const_cast<SSystemInitParams&>(initParams));
+		m_pCryAction.reset(new CCryAction(const_cast<SSystemInitParams&>(initParams)));
 		return true;
 	}
+
+private:
+	std::unique_ptr<CCryAction> m_pCryAction;
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryAction)

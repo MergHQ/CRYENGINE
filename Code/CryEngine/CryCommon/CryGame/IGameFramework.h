@@ -1042,12 +1042,16 @@ struct IGameFramework
 
 	// sets game level loader
 	virtual void SetGameLevelLoadListener(IGameLevelLoadListener* pTasks) = 0;
+	virtual IGameLevelLoadListener* GetGameLevelLoadListener() const = 0;
+
+
 	virtual void AddNetworkedClientListener(INetworkedClientListener& listener) = 0;
 	virtual void RemoveNetworkedClientListener(INetworkedClientListener& listener) = 0;
 
 	virtual void DoInvokeRMI(_smart_ptr<IRMIMessageBody> pBody, unsigned where, int channel, const bool isGameObjectRmi) = 0;
 
-protected:
+	virtual void OnActionEvent(const SActionEvent& ev) = 0;
+
 	//! Retrieves an extension interface by interface id.
 	//! Internal, client uses 'QueryExtension<ExtensionInterface>()
 	//! \param interfaceID Interface id.

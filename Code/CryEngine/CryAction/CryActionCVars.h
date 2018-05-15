@@ -73,6 +73,8 @@ public:
 	int g_useProfileManager;
 	int g_legacyItemSystem;
 
+	int g_enableActionGame;
+
 	// AI stances
 	ICVar* ag_defaultAIStance;
 

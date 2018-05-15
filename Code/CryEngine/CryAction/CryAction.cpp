@@ -383,6 +383,7 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 
 CCryAction::~CCryAction()
 {
+	gEnv->pGameFramework = nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -2592,8 +2593,8 @@ void CCryAction::PreSystemUpdate()
 	CheckConnectRepeatedly();   // handle repeated connect mode - mainly for autotests to not get broken by timeouts on initial connect
 #endif
 
-	bool bGameIsPaused = !IsGameStarted() || IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
-	if (m_pTimeDemoRecorder && !IsGamePaused())
+	bool bGameIsPaused = !gEnv->pGameFramework->IsGameStarted() || gEnv->pGameFramework->IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
+	if (m_pTimeDemoRecorder && !gEnv->pGameFramework->IsGamePaused())
 		m_pTimeDemoRecorder->PreUpdate();
 
 	// update the callback system
@@ -2622,8 +2623,8 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 	updateStart.QuadPart = 0;
 	updateEnd.QuadPart = 0;
 
-	bool isGamePaused = !IsGameStarted() || IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
-	bool isGameRunning = IsGameStarted();
+	bool isGamePaused = !gEnv->pGameFramework->IsGameStarted() || gEnv->pGameFramework->IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
+	bool isGameRunning = gEnv->pGameFramework->IsGameStarted();
 
 	// when we are updated by the editor, we should not update the system
 	if (!(updateFlags & ESYSUPDATE_EDITOR))
@@ -2638,8 +2639,15 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 		OnActionEvent(SActionEvent(eAE_earlyPreUpdate));
 
 		// during m_pSystem->Update call the Game might have been paused or un-paused
-		isGameRunning = IsGameStarted() && m_pGame && m_pGame->IsInited();
-		isGamePaused = !isGameRunning || IsGamePaused();
+		if (m_pCryActionCVars->g_enableActionGame)
+		{
+			isGameRunning = gEnv->pGameFramework->IsGameStarted() && m_pGame && m_pGame->IsInited();
+		}
+		else
+		{
+			isGameRunning = gEnv->pGameFramework->IsGameStarted();
+		}
+		isGamePaused = !isGameRunning || gEnv->pGameFramework->IsGamePaused();
 
 		if (!isGamePaused && !wasGamePaused) // don't update gameplayrecorder if paused
 			if (m_pGameplayRecorder)
@@ -2775,7 +2783,7 @@ void CCryAction::PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags)
 	}
 
 	float delta = gEnv->pTimer->GetFrameTime();
-	const bool bGameIsPaused = IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
+	const bool bGameIsPaused = gEnv->pGameFramework->IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
 
 	if (!bGameIsPaused)
 	{
@@ -2877,7 +2885,7 @@ void CCryAction::PostRenderSubmit()
 	if (CGameServerNub* pServerNub = GetGameServerNub())
 		pServerNub->Update();
 
-	if (m_pTimeDemoRecorder && !IsGamePaused())
+	if (m_pTimeDemoRecorder && !gEnv->pGameFramework->IsGamePaused())
 		m_pTimeDemoRecorder->PostUpdate();
 
 	if (m_delayedSaveCountDown)
@@ -3127,8 +3135,10 @@ void CCryAction::EndGameContext()
 		m_pScriptRMI->UnloadLevel();
 	}
 
-	if (gEnv && gEnv->IsEditor())
+	if (gEnv && gEnv->IsEditor() && m_pCryActionCVars->g_enableActionGame)
+	{
 		m_pGame = new CActionGame(m_pScriptRMI);
+	}
 
 	if (m_pActorSystem)
 	{
@@ -3841,7 +3851,13 @@ void CCryAction::ReleaseCVars()
 void CCryAction::InitCommands()
 {
 	// create built-in commands
+	if (!m_pCryActionCVars->g_enableActionGame)
+	{
+		return;
+	}
+		
 	REGISTER_COMMAND("map", MapCmd, VF_BLOCKFRAME, "Load a map");
+	
 	// for testing purposes
 	REGISTER_COMMAND("readabilityReload", ReloadReadabilityXML, 0, "Reloads readability xml files.");
 	REGISTER_COMMAND("unload", UnloadCmd, 0, "Unload current map");
@@ -4917,17 +4933,7 @@ void CCryAction::SetGameGUID(const char* gameGUID)
 
 INetContext* CCryAction::GetNetContext()
 {
-	//return GetGameContext()->GetNetContext();
-
-	// Julien: This was crashing sometimes when exiting game!
-	// I've replaced with a safe pointer access and an assert so that anyone who
-	// knows why we were accessing this unsafe pointer->func() can fix it the correct way
-
-	CGameContext* pGameContext = GetGameContext();
-	//CRY_ASSERT(pGameContext); - GameContext can be NULL when the game is exiting
-	if (!pGameContext)
-		return NULL;
-	return pGameContext->GetNetContext();
+	return gEnv->pNetContext;
 }
 
 void CCryAction::EnableVoiceRecording(const bool enable)

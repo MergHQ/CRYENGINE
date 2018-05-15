@@ -344,7 +344,7 @@ public:
 	virtual bool                  StartProcess(const char* cmd_line);
 	virtual bool                  SaveServerConfig(const char* path);
 
-	void                          OnActionEvent(const SActionEvent& ev);
+	virtual void                  OnActionEvent(const SActionEvent& ev);
 
 	bool                          IsPbSvEnabled() const { return m_pbSvEnabled; }
 	bool                          IsPbClEnabled() const { return m_pbClEnabled; }
@@ -367,7 +367,7 @@ public:
 	void                    GoToSegment(int x, int y);
 
 	void SetGameLevelLoadListener(IGameLevelLoadListener* pLoader) { m_pGameLevelLoadListener = pLoader; }
-	IGameLevelLoadListener* GetGameLevelLoadListener() { return m_pGameLevelLoadListener; }
+	IGameLevelLoadListener* GetGameLevelLoadListener() const { return m_pGameLevelLoadListener; }
 	const std::vector<INetworkedClientListener*>& GetNetworkClientListeners() const { return m_networkClientListeners; }
 	void FastShutdown();
 

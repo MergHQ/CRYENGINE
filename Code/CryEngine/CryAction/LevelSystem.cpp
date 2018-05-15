@@ -204,7 +204,7 @@ void CLevelRotation::AddGameMode(int level, const char* gameMode)
 //------------------------------------------------------------------------
 void CLevelRotation::AddGameMode(SLevelRotationEntry& level, const char* gameMode)
 {
-	const char* pActualGameModeName = CCryAction::GetCryAction()->GetIGameRulesSystem()->GetGameRulesName(gameMode);
+	const char* pActualGameModeName = gEnv->pGameFramework->GetIGameRulesSystem() ?  gEnv->pGameFramework->GetIGameRulesSystem()->GetGameRulesName(gameMode) : nullptr;
 	if (pActualGameModeName)
 	{
 		int idx = level.gameRulesNames.size();
@@ -449,9 +449,9 @@ void CLevelRotation::ChangeLevel(IConsoleCmdArgs* pArgs)
 	const char* nextGameRules = GetNextGameRules();
 	if (nextGameRules && nextGameRules[0])
 		ctx.gameRules = nextGameRules;
-	else if (IEntity* pEntity = CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRulesEntity())
+	else if (IEntity* pEntity = gEnv->pGameFramework->GetIGameRulesSystem() ? gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRulesEntity() : nullptr)
 		ctx.gameRules = pEntity->GetClass()->GetName();
-	else if (ILevelInfo* pLevelInfo = CCryAction::GetCryAction()->GetILevelSystem()->GetLevelInfo(GetNextLevel()))
+	else if (ILevelInfo* pLevelInfo = gEnv->pGameFramework->GetILevelSystem()->GetLevelInfo(GetNextLevel()))
 		ctx.gameRules = pLevelInfo->GetDefaultGameType()->name;
 
 	ctx.levelName = GetNextLevel();
@@ -1343,7 +1343,10 @@ ILevelInfo* CLevelSystem::LoadLevel(const char* _levelName)
 			pCustomActionManager->LoadLibraryActions(CUSTOM_ACTIONS_PATH);
 		}
 
-		CCryAction::GetCryAction()->GetIGameRulesSystem()->CreateGameRules(CCryAction::GetCryAction()->GetGameContext()->GetRequestedGameRules());
+		if (gEnv->pGameFramework->GetIGameRulesSystem())
+		{
+			gEnv->pGameFramework->GetIGameRulesSystem()->CreateGameRules(CCryAction::GetCryAction()->GetGameContext()->GetRequestedGameRules());
+		}
 
 		string missionXml = pLevelInfo->GetDefaultGameType()->xmlFile;
 		string xmlFile = string(pLevelInfo->GetPath()) + "/" + missionXml;
@@ -1411,10 +1414,13 @@ ILevelInfo* CLevelSystem::LoadLevel(const char* _levelName)
 		}
 
 		gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_PRECACHE);
-		// Let gamerules precache anything needed
-		if (IGameRules* pGameRules = CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules())
+		if (gEnv->pGameFramework->GetIGameRulesSystem())
 		{
-			pGameRules->PrecacheLevel();
+			// Let gamerules precache anything needed
+			if (IGameRules* pGameRules = gEnv->pGameFramework->GetIGameRulesSystem()->GetCurrentGameRules())
+			{
+				pGameRules->PrecacheLevel();
+			}
 		}
 
 		//////////////////////////////////////////////////////////////////////////

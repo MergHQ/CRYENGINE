@@ -1641,7 +1641,10 @@ void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
 
 			auto* pGameRulesVar = gEnv->pConsole->GetCVar("sv_gamerules");
 
-			gEnv->pGameFramework->GetIGameRulesSystem()->CreateGameRules(pGameRulesVar->GetString());
+			if (gEnv->pGameFramework->GetIGameRulesSystem())
+			{
+				gEnv->pGameFramework->GetIGameRulesSystem()->CreateGameRules(pGameRulesVar->GetString());
+			}
 			gEnv->pGameFramework->GetILevelSystem()->OnLoadingStart(0);
 
 			if (!gEnv->pGameFramework->BlockingSpawnPlayer())

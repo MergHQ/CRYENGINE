@@ -679,7 +679,8 @@ CEntityObject* CEntityObject::FindFromEntityId(EntityId id)
 
 bool CEntityObject::IsLegacyObject() const
 {
-	return (m_pEntityClass != nullptr && gEnv->pGameFramework->GetIGameObjectSystem()->GetID(m_pEntityClass->GetName()) != IGameObjectSystem::InvalidExtensionID)
+	return (m_pEntityClass != nullptr && 
+					(gEnv->pGameFramework->GetIGameObjectSystem() && gEnv->pGameFramework->GetIGameObjectSystem()->GetID(m_pEntityClass->GetName()) != IGameObjectSystem::InvalidExtensionID))
 	       || (m_pEntityScript != nullptr && strlen(m_pEntityScript->GetClass()->GetScriptFile()) > 0)
 	       || m_prototype != nullptr;
 }

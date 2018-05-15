@@ -210,6 +210,8 @@ void CNetContext::Die()
 
 	m_pState->Die();
 
+	CNetwork::Get()->GetCompressionManager().Reset(false, true);
+
 	m_bDead = true;
 }
 
@@ -223,9 +225,7 @@ void CNetContext::SetSessionID(const CSessionID& id)
 CNetContext::~CNetContext()
 {
 	SCOPED_GLOBAL_LOCK;
-	TIMER.CancelTimer(m_backgroundPassthrough);
 
-	CNetwork::Get()->GetCompressionManager().Reset(false, true);
 	--g_objcnt.netContext;
 
 	NET_PROFILE_SHUTDOWN();

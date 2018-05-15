@@ -953,7 +953,7 @@ bool CActionGame::ConditionHavePlayer(CGameClientChannel* pChannel)
 
 bool CActionGame::ConditionInGame(CGameClientChannel* pChannel)
 {
-	return CCryAction::GetCryAction()->IsGameStarted() && !CCryAction::GetCryAction()->IsGamePaused();
+	return gEnv->pGameFramework->IsGameStarted() && !gEnv->pGameFramework->IsGamePaused();
 }
 
 CActionGame::eInitTaskState CActionGame::NonBlockingConnect(BlockingConditionFunction condition, bool requireClientChannel, const char* conditionText)
