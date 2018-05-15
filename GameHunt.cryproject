@@ -21,29 +21,31 @@
 		]
 	},
 	"console_variables": {
-		"ca_ForceAnimationLod": "0",
-		"ca_PreloadAllCAFs": "1",
-		"ca_ResetCulledJointsToBindPose": "1",
-		"ca_SampleQuatHemisphereFromCurrentPose": "1",
-		"cl_AISystem": "0",
-		"cl_initClientActor": "0",
-		"e_LodFaceAreaTargetSize": "0.01",
-		"e_svoTI_VoxelizeUnderTerrain": "1",
-		"g_PlayerSilhouettes": "0",
-		"g_hideHuntHud": "1",
-		"g_hunt_telemetry_enable": "1",
+		"sys_archive_host_xml_version": "1",
+		"sys_localization_folder": "Localization",
+		"sys_target_platforms": "pc,ps4,xboxone",
+		"sc_LogToFile": "2",
+		"sc_LogFileStreams": "Default System Game AI AI_Nav",
+		
 		"net_availableBandwidthClient": "512",
 		"net_availableBandwidthServer": "8192",
 		"net_numNetIDHighBitBits": "15",
 		"net_sim_loadprofiles": "SimProfiles_HUNT.xml",
+
+		"ca_SampleQuatHemisphereFromCurrentPose": "1",
+		"ca_ForceAnimationLod": "0",
+		
+		"cl_AISystem": "0",
+		"cl_initClientActor": "0",
+
 		"r_HDREyeAdaptationMode": "1",
+		"e_svoTI_VoxelizeUnderTerrain": "1",
 		"s_OcclusionMaxDistance": "200",
-		"sc_LogFileStreams": "Default System Game AI AI_Nav",
-		"sc_LogToFile": "2",
-		"sys_archive_host_xml_version": "1",
-		"sys_localization_folder": "Localization",
-		"sys_target_platforms": "pc,ps4,xboxone",
+		"g_hideHuntHud": "1",
+		"g_hunt_telemetry_enable": "1",
+		"g_PlayerSilhouettes": "0",
+		
 		"uqs_printTimeExcessWarningsToConsole": "0"
 	},
-	"console_commands": { "sys_ignore_asserts_from_module": "CryGame" }
+	"console_commands": [ "sys_ignore_asserts_from_module": "CryGame" ]
 }
