@@ -65,6 +65,7 @@ public:
 	virtual bool        IsImported() const override        { return false; }
 	virtual bool        CanBeEdited() const override       { return false; }
 	virtual QColor      GetThumbnailColor() const override { return QColor(210, 75, 64); }
+	virtual const char* GetObjectClassName() const         { return "EntityWithAnimatedMeshComponent"; }
 
 private:
 	virtual CryIcon GetIconInternal() const override

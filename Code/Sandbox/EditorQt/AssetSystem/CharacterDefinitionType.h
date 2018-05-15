@@ -20,6 +20,7 @@ public:
 	virtual QColor      GetThumbnailColor() const override { return QColor(210, 75, 64); }
 
 	virtual void        GenerateThumbnail(const CAsset* pAsset) const override;
+	virtual const char* GetObjectClassName() const { return "EntityWithAnimatedMeshComponent"; }
 
 private:
 	virtual CryIcon GetIconInternal() const override;
