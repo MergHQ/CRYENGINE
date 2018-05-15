@@ -107,10 +107,11 @@ struct SParentData
 struct IParticleEffectPfx2 : public IParticleEffect
 {
 	virtual void                   SetChanged() = 0;
+	virtual void                   Update() = 0;
 	virtual uint                   GetNumComponents() const = 0;
 	virtual IParticleComponent*    GetComponent(uint componentIdx) const = 0;
 	virtual IParticleComponent*    AddComponent() = 0;
-	virtual void                   RemoveComponent(uint componentIdx) = 0;
+	virtual void                   RemoveComponent(uint componentIdx, bool bRecursive = false) = 0;
 	virtual Serialization::SStruct GetEffectOptionsSerializer() const = 0;
 	virtual TParticleAttributesPtr CreateAttributesInstance() const = 0;
 	virtual bool                   IsSubstitutedPfx1() const = 0;

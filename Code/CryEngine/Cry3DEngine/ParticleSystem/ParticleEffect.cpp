@@ -119,10 +119,10 @@ string CParticleEffect::MakeUniqueName(const CParticleComponent* forComponent, c
 		return string(name);
 
 	string newName = name;
-	int pos = newName.length() - 1;
 
 	do
 	{
+		int pos = newName.length() - 1;
 		while (pos >= 0 && newName[pos] == '9')
 		{
 			newName.replace(pos, 1, 1, '0');
@@ -133,7 +133,7 @@ string CParticleEffect::MakeUniqueName(const CParticleComponent* forComponent, c
 		else
 			newName.replace(pos, 1, 1, newName[pos] + 1);
 	}
-	while (FindComponentByName(newName));
+	while ((found = FindComponentByName(newName)) && found != forComponent);
 
 	return newName;
 }
@@ -242,9 +242,25 @@ IParticleComponent* CParticleEffect::AddComponent()
 	return pNewComponent;
 }
 
-void CParticleEffect::RemoveComponent(uint componentIdx)
+void CParticleEffect::RemoveComponent(uint componentIdx, bool bRecursive)
 {
-	m_components.erase(m_components.begin() + componentIdx);
+	if (componentIdx >= m_components.size())
+		return;
+	CParticleComponent* pComponent = m_components[componentIdx];
+	CParticleComponent* pParent = pComponent->GetParentComponent();
+	uint last = componentIdx + 1;
+	if (bRecursive)
+	{
+		while (last < m_components.size() && m_components[last]->GetParent() != pParent)
+			last++;
+	}
+	else
+	{
+		for (auto child : pComponent->GetChildComponents())
+			child->SetParent(pParent);
+	}
+	pComponent->SetParent(nullptr);
+	m_components.erase(m_components.begin() + componentIdx, m_components.begin() + last);
 	SetChanged();
 }
 
@@ -253,6 +269,11 @@ void CParticleEffect::SetChanged()
 	if (!m_dirty)
 		++m_editVersion;
 	m_dirty = true;
+}
+
+void CParticleEffect::Update()
+{
+	Compile();
 }
 
 Serialization::SStruct CParticleEffect::GetEffectOptionsSerializer() const
