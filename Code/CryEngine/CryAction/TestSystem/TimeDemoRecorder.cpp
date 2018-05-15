@@ -525,6 +525,39 @@ CTimeDemoRecorder::CTimeDemoRecorder()
 //////////////////////////////////////////////////////////////////////////
 CTimeDemoRecorder::~CTimeDemoRecorder()
 {
+	IConsole* pConsole = gEnv->pConsole;
+
+	pConsole->UnregisterVariable("demo_file");
+	pConsole->UnregisterVariable("demo_game_state");
+	pConsole->UnregisterVariable("demo_profile");
+	pConsole->UnregisterVariable("demo_noinfo");
+
+	pConsole->RemoveCommand("record");
+	pConsole->RemoveCommand("stoprecording");
+	pConsole->RemoveCommand("demo");
+	pConsole->RemoveCommand("stopdemo");
+	pConsole->RemoveCommand("demo_StartDemoChain");
+	pConsole->RemoveCommand("demo_StartDemoLevel");
+
+	pConsole->UnregisterVariable("demo_num_runs");
+	pConsole->UnregisterVariable("demo_scroll_pause");
+	pConsole->UnregisterVariable("demo_quit");
+	pConsole->UnregisterVariable("demo_finish_memreplay_sizer");
+	pConsole->UnregisterVariable("demo_finish_memreplay_stop");
+	pConsole->UnregisterVariable("demo_screenshot_frame");
+	pConsole->UnregisterVariable("demo_max_frames");
+	pConsole->UnregisterVariable("demo_savestats");
+	pConsole->UnregisterVariable("demo_ai");
+	pConsole->UnregisterVariable("demo_restart_level");
+	pConsole->UnregisterVariable("demo_panoramic");
+	pConsole->UnregisterVariable("demo_fixed_timestep");
+	pConsole->UnregisterVariable("demo_vtune");
+	pConsole->UnregisterVariable("demo_time_of_day");
+	pConsole->UnregisterVariable("demo_save_every_frame");
+	pConsole->UnregisterVariable("demo_use_hmd_rotation");
+	pConsole->UnregisterVariable("demo_finish_cmd");
+	pConsole->UnregisterVariable("demo_num_orientations");
+
 	s_pTimeDemoRecorder = 0;
 }
 

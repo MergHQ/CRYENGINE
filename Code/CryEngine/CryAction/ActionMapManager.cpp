@@ -52,6 +52,11 @@ CActionMapManager::CActionMapManager(IInput* pInput)
 //------------------------------------------------------------------------
 CActionMapManager::~CActionMapManager()
 {
+#ifndef _RELEASE
+	gEnv->pConsole->UnregisterVariable("i_listActionMaps");
+	gEnv->pConsole->RemoveCommand("i_reloadActionMaps");
+#endif
+
 	if (m_pInput)
 	{
 		m_pInput->RemoveEventListener(this);
