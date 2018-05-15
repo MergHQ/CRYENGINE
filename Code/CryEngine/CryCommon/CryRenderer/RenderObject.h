@@ -101,7 +101,7 @@ struct SSkinningData
 	void*                            pCustomData;             // client specific data, used for example for sw-skinning on animation side
 	SSkinningData**                  pMasterSkinningDataList; // used by the SkinningData for a Character Instance, contains a list of all Skin Instances which need SW-Skinning
 	SSkinningData*                   pNextSkinningData;       // List to the next element which needs SW-Skinning
-	float                            vecPrecisionOffset[3];   // Special precision offset correction when 16bit precision floats used
+	Vec3                             vecAdditionalOffset;     //!< Contains MeshNode translation and in case of floats with 16bit precision: an additional precision-offset-correction
 
 	IRenderMesh*                     pRenderMesh;
 };
