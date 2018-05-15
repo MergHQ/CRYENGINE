@@ -623,9 +623,7 @@ void CAttachmentSKIN::DrawAttachment(SRendParams& RendParams, const SRenderingPa
 	pD->m_pSkinningData = GetVertexTransformationData(bUseCPUDeformation, nRenderLOD, passInfo);
 
 	Vec3 skinOffset = m_pModelSkin->m_arrModelMeshes[nRenderLOD].m_vRenderMeshOffset;
-	pD->m_pSkinningData->vecPrecisionOffset[0] = skinOffset.x;
-	pD->m_pSkinningData->vecPrecisionOffset[1] = skinOffset.y;
-	pD->m_pSkinningData->vecPrecisionOffset[2] = skinOffset.z;
+	pD->m_pSkinningData->vecAdditionalOffset = skinOffset;
 
 	IRenderMesh* pRenderMesh = m_pModelSkin->GetIRenderMesh(nRenderLOD);
 

@@ -263,9 +263,7 @@ void CCompiledRenderObject::CompilePerInstanceConstantBuffer(CRenderObject* pRen
 			// Skinning precision offset
 			if (pOD->m_pSkinningData)
 			{
-				cb->SkinningInfo[0] = pOD->m_pSkinningData->vecPrecisionOffset[0];
-				cb->SkinningInfo[1] = pOD->m_pSkinningData->vecPrecisionOffset[1];
-				cb->SkinningInfo[2] = pOD->m_pSkinningData->vecPrecisionOffset[2];
+				cb->SkinningInfo = Vec4(pOD->m_pSkinningData->vecAdditionalOffset, 0.0f);
 			}
 			// wrinkles mask
 			if (pOD->m_pShaderParams)

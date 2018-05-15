@@ -29,12 +29,12 @@ cbuffer CBPerInstanceNewBackend : register(b12)
 	float4    PerInstanceCustomData1;      // [xyzw=ShilouetteColor]
 	// TODO: Should be moved after all the data below
 	float4    PerInstanceCustomData2;      // [x=selectionIDs in debug pass, y=AmbientColor, zw=Not used]
+	float4    PerInstanceSkinningInfo;     // Additional offset
 
 #if %TEMP_TERRAIN || %TEMP_VEGETATION
 	float4    PerInstanceBlendTerrainColInfo;
 	float4x4  PerInstanceTerrainLayerInfo;
 #elif %WRINKLE_BLENDING || %_RT_SKELETON_SSD_LINEAR || %_RT_SKELETON_SSD
-	float4    PerInstanceSkinningInfo;
 	float4    PerInstanceWrinklesMask0;
 	float4    PerInstanceWrinklesMask1;
 	float4    PerInstanceWrinklesMask2;
@@ -65,7 +65,7 @@ cbuffer CBPerInstanceNewBackend : register(b12)
 
 float4 Get_SPI_SkinningInfo()
 {
-#if !%TEMP_TERRAIN && !%TEMP_VEGETATION && (%_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR)
+#if !%TEMP_TERRAIN && !%TEMP_VEGETATION && (%_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR || %_RT_COMPUTE_SKINNING)
 	return PerInstanceSkinningInfo;
 #else
 	return float4(0, 0, 0, 0);
@@ -1378,23 +1378,23 @@ float4 _pos_WaterLevel(float4x4 VPMatrix, inout float4 InPos, float _Level)
 float4 _pos_Modificators(float4x4 VPMatrix, float4x4 InstMatrix, inout streamPos IN, bool bRelativeToCam=true, bool bPrevFrame=false, float fPrevDelta = 0)
 {
   int nType = 0;
-	float4 InPos = IN.Position;
+  float4 InPos = IN.Position;
 
 #if %_VT_TYPE
   nType = %_VT_TYPE;
 #endif
 
-#if %_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR
+#if %_RT_SKELETON_SSD || %_RT_SKELETON_SSD_LINEAR || %_RT_COMPUTE_SKINNING
 	#if !%TEMP_TERRAIN
 		#if ENABLE_TESSELLATION && !%_RT_NO_TESSELLATION
 			float3 vNormal = IN.Normal.xyz;
 		#else
 			float3 vNormal = 0;
 		#endif
+
+		InPos.xyz += Get_SPI_SkinningInfo().xyz;
 		
 		#if !%_RT_COMPUTE_SKINNING
-			InPos.xyz += Get_SPI_SkinningInfo().xyz;
-			
 			if (bPrevFrame == false)
 			{
 				SkinPositionTangent(

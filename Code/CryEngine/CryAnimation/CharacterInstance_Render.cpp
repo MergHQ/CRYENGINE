@@ -290,9 +290,7 @@ void CCharInstance::RenderCHR(const SRendParams& RendParams, const Matrix34& rRe
 	Vec3 skinOffset(ZERO);
 	if (m_pDefaultSkeleton->GetModelMesh())
 		skinOffset = m_pDefaultSkeleton->GetModelMesh()->m_vRenderMeshOffset;
-	pD->m_pSkinningData->vecPrecisionOffset[0] = skinOffset.x;
-	pD->m_pSkinningData->vecPrecisionOffset[1] = skinOffset.y;
-	pD->m_pSkinningData->vecPrecisionOffset[2] = skinOffset.z;
+	pD->m_pSkinningData->vecAdditionalOffset = skinOffset;
 
 	if (g_pI3DEngine->IsTessellationAllowed(pObj, passInfo))
 	{
