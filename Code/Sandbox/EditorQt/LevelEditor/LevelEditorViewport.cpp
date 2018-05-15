@@ -78,11 +78,11 @@ static CPopupMenuItem& AddCheckbox(CPopupMenuItem& menu, const char* text, int* 
 
 namespace Private_AssetDrag
 {
-static bool TryAssetDragCreate(const CDragDropData* pDragDropData, string& className)
+static CAsset* GetAsset(const CDragDropData* pDragDropData)
 {
 	if (!pDragDropData->HasCustomData("Assets"))
 	{
-		return false;
+		return nullptr;
 	}
 
 	QVector<quintptr> assets;
@@ -96,22 +96,10 @@ static bool TryAssetDragCreate(const CDragDropData* pDragDropData, string& class
 	if (assets.size() > 1)
 	{
 		// We do not handle multi-asset drops.
-		return false;
+		return nullptr;
 	}
 
-	CAssetManager* const pAssetManager = GetIEditor()->GetAssetManager();
-
-	CAsset* const pAsset = (CAsset*)assets[0];
-	assert(pAsset);
-
-	const char* szClassName = pAsset->GetType()->GetObjectClassName();
-	if (!szClassName)
-	{
-		return false;
-	}
-
-	className = szClassName;
-	return true;
+	return reinterpret_cast<CAsset*>(assets[0]);
 }
 
 static bool TryObjectCreate(const CDragDropData* pDragDropData, string& className)
@@ -172,21 +160,71 @@ bool CLevelEditorViewport::DragEvent(EDragEvent eventId, QEvent* event, int flag
 	bool result = Super::DragEvent(eventId, event, flags);
 	if (!result)
 	{
-		return AssetDragCreate(eventId, event, flags);
+		return AssetDragEvent(eventId, event, flags);
 	}
 	return result;
 }
 
-bool CLevelEditorViewport::AssetDragCreate(EDragEvent eventId, QEvent* event, int flags)
+bool CLevelEditorViewport::AssetDragEvent(EDragEvent eventId, QEvent* event, int flags)
 {
 	using namespace Private_AssetDrag;
 
-	QDropEvent* const pDragEvent = (QDropEvent*)event;
-	const CDragDropData* const pDragDropData = CDragDropData::FromMimeData(pDragEvent->mimeData());
+	QDropEvent* const pDragEvent = eventId != EDragEvent::eDragLeave ? (QDropEvent*)event : nullptr;
+	const CDragDropData* const pDragDropData = pDragEvent != nullptr ? CDragDropData::FromMimeData(pDragEvent->mimeData()) : nullptr;
 
 	string className;
+	CAsset* pAsset = pDragDropData != nullptr ? GetAsset(pDragDropData) : nullptr;
+	if (pAsset != nullptr)
+	{
+		QDropEvent* drop = static_cast<QDropEvent*>(event);
+		CPoint point(drop->pos().x(), drop->pos().y());
+		HitContext hitContext;
+		string dragText;
+		if (HitTest(point, hitContext) && hitContext.object != nullptr && hitContext.object->CanApplyAsset(*pAsset, &dragText))
+		{
+			switch (eventId)
+			{
+				case eDragMove:
+				{
+					QDragMoveEvent* dragMove = static_cast<QDragMoveEvent*>(event);
 
-	if (!TryAssetDragCreate(pDragDropData, className) && !TryObjectCreate(pDragDropData, className))
+					CDragDropData::ShowDragText(GetViewWidget(), QString(dragText));
+				}
+				break;
+				case eDragLeave:
+				{
+					CDragDropData::ClearDragTooltip(GetViewWidget());
+				}
+				break;
+				case eDrop:
+				{
+					auto action = drop->proposedAction();
+					drop->acceptProposedAction();
+
+					CUndo undo("Apply asset");
+					hitContext.object->ApplyAsset(*pAsset, &hitContext);
+				}
+				break;
+			}
+
+			event->accept();
+
+			return true;
+		}
+
+		className = pAsset->GetType()->GetObjectClassName();
+		if (className.empty())
+		{
+			if (eventId == eDragEnter)
+			{
+				event->accept();
+				return true;
+			}
+
+			return false;
+		}
+	}
+	else if (pDragDropData != nullptr && !TryObjectCreate(pDragDropData, className))
 	{
 		return false;
 	}

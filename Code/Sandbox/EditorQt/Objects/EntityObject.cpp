@@ -1602,13 +1602,13 @@ bool CEntityObject::HitTestCharacter(ICharacterInstance* pCharacter, HitContext&
 
 bool CEntityObject::HitTestEntity(HitContext& hc, bool& bHavePhysics)
 {
+	AABB bbox;
+	m_pEntity->GetLocalBounds(bbox);
+
 	Matrix34 invertedWorldTransform = m_pEntity->GetWorldTM().GetInverted();
 
 	Vec3 raySrc = invertedWorldTransform.TransformPoint(hc.raySrc);
 	Vec3 rayDir = invertedWorldTransform.TransformVector(hc.rayDir).GetNormalized();
-
-	AABB bbox;
-	m_pEntity->GetLocalBounds(bbox);
 
 	// Early exit, check bounding box
 	Vec3 point;
@@ -1617,12 +1617,17 @@ bool CEntityObject::HitTestEntity(HitContext& hc, bool& bHavePhysics)
 		return false;
 	}
 
-	SRayHitInfo hitInfo;
-	hitInfo.inReferencePoint = raySrc;
-	hitInfo.inRay = Ray(raySrc, rayDir);
-
 	for (int i = 0, n = m_pEntity->GetSlotCount(); i < n; ++i)
 	{
+		invertedWorldTransform = m_pEntity->GetSlotWorldTM(i).GetInverted();
+
+		raySrc = invertedWorldTransform.TransformPoint(hc.raySrc);
+		rayDir = invertedWorldTransform.TransformVector(hc.rayDir).GetNormalized();
+
+		SRayHitInfo hitInfo;
+		hitInfo.inReferencePoint = raySrc;
+		hitInfo.inRay = Ray(raySrc, rayDir);
+
 		if (IStatObj* pStatObj = m_pEntity->GetStatObj(i))
 		{
 			if (pStatObj->RayIntersection(hitInfo))
@@ -4719,6 +4724,158 @@ void CEntityObject::SetMaterial(IEditorMaterial* mtl)
 {
 	CBaseObject::SetMaterial(mtl);
 	UpdateMaterialInfo();
+}
+
+class CUndoComponentSlotMaterialChange : public IUndoObject
+{
+public:
+	CUndoComponentSlotMaterialChange(IEditorEntityComponent* pComponent, int slotIndex, const char* szMaterialName)
+		: m_owningEntityGUID(pComponent->GetEntity()->GetGuid())
+		, m_componentInstanceGUID(pComponent->GetGUID())
+		, m_slotId(slotIndex)
+		, m_materialAfterChange(szMaterialName)
+	{
+		if (IMaterial* pMaterial = pComponent->GetEntity()->GetSlotMaterial(slotIndex))
+		{
+			m_materialBeforeChange = pMaterial->GetName();
+		}
+	}
+
+	virtual void Undo(bool bUndo) override
+	{
+		CEntityObject* pEntityObject = static_cast<CEntityObject*>(GetIEditor()->GetObjectManager()->FindObject(m_owningEntityGUID));
+		if (pEntityObject == nullptr)
+			return;
+
+		IEntity* pEntity = pEntityObject->GetIEntity();
+		if (pEntity == nullptr)
+			return;
+
+		IEditorEntityComponent* pComponent = static_cast<IEditorEntityComponent*>(pEntity->GetComponentByGUID(m_componentInstanceGUID));
+		if (pComponent == nullptr)
+			return;
+
+		pComponent->SetMaterial(m_slotId, m_materialBeforeChange.c_str());
+		GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
+	}
+
+	virtual void Redo() override
+	{
+		CEntityObject* pEntityObject = static_cast<CEntityObject*>(GetIEditor()->GetObjectManager()->FindObject(m_owningEntityGUID));
+		if (pEntityObject == nullptr)
+			return;
+
+		IEntity* pEntity = pEntityObject->GetIEntity();
+		if (pEntity == nullptr)
+			return;
+
+		if (IEditorEntityComponent* pComponent = static_cast<IEditorEntityComponent*>(pEntity->GetComponentByGUID(m_componentInstanceGUID)))
+		{
+			pComponent->SetMaterial(m_slotId, m_materialAfterChange.c_str());
+			GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
+		}
+	}
+
+private:
+	virtual int         GetSize() { return sizeof(CUndoComponentSlotMaterialChange); }
+	virtual const char* GetDescription() { return "Entity Component Material Change"; }
+
+	const CryGUID& m_owningEntityGUID;
+	CryGUID m_componentInstanceGUID;
+	int m_slotId;
+	string m_materialBeforeChange;
+	string m_materialAfterChange;
+};
+
+bool CEntityObject::ApplyAsset(const CAsset& asset, HitContext* pHitContext)
+{
+	if (!strcmp(asset.GetType()->GetTypeName(), "Material"))
+	{
+		// This function will go through all slots in order to find out which sub-slot of the entity the material was dragged on to
+		// We then apply the material to the component that owns that instance.
+		if (m_pEntity != nullptr)
+		{
+			int hitSlotIndex = -1;
+
+			for (int slotIndex = 0, slotCount = m_pEntity->GetSlotCount(); slotIndex < slotCount; ++slotIndex)
+			{
+				Matrix34 invertedWorldTransform = m_pEntity->GetSlotWorldTM(slotIndex).GetInverted();
+
+				Vec3 raySrc = invertedWorldTransform.TransformPoint(pHitContext->raySrc);
+				Vec3 rayDir = invertedWorldTransform.TransformVector(pHitContext->rayDir).GetNormalized();
+
+				SRayHitInfo hitInfo;
+				hitInfo.inReferencePoint = raySrc;
+				hitInfo.inRay = Ray(raySrc, rayDir);
+
+				if (IStatObj* pStatObj = m_pEntity->GetStatObj(slotIndex))
+				{
+					if (pStatObj->RayIntersection(hitInfo))
+					{
+						float distance = pHitContext->raySrc.GetDistance(GetWorldTM().TransformPoint(hitInfo.vHitPos));
+						if (isneg(hitSlotIndex) || distance < pHitContext->dist)
+						{
+							hitSlotIndex = slotIndex;
+							pHitContext->dist = distance;
+						}
+					}
+				}
+				else if (ICharacterInstance* pCharacter = m_pEntity->GetCharacter(slotIndex))
+				{
+					bool hasPhysics = false;
+					if (HitTestCharacter(pCharacter, *pHitContext, hitInfo, hasPhysics))
+					{
+						float distance = pHitContext->raySrc.GetDistance(GetWorldTM().TransformPoint(hitInfo.vHitPos));
+						if (isneg(hitSlotIndex) || distance < pHitContext->dist)
+						{
+							hitSlotIndex = slotIndex;
+							pHitContext->dist = distance;
+						}
+					}
+				}
+				else if (IGeomCacheRenderNode* pGeomCache = m_pEntity->GetGeomCacheRenderNode(slotIndex))
+				{
+					if (pGeomCache->RayIntersection(hitInfo))
+					{
+						float distance = pHitContext->raySrc.GetDistance(GetWorldTM().TransformPoint(hitInfo.vHitPos));
+						if (isneg(hitSlotIndex) || distance < pHitContext->dist)
+						{
+							hitSlotIndex = slotIndex;
+							pHitContext->dist = distance;
+						}
+					}
+				}
+			}
+
+			if (!isneg(hitSlotIndex))
+			{
+				DynArray<IEditorEntityComponent*> components;
+				m_pEntity->GetAllComponents(components);
+
+				const char* szMaterialFileName = asset.GetFile(0);
+				if (szMaterialFileName == nullptr)
+				{
+					szMaterialFileName = "";
+				}
+
+				for (IEditorEntityComponent* pComponent : components)
+				{
+					CUndo::Record(new CUndoComponentSlotMaterialChange(pComponent, hitSlotIndex, szMaterialFileName));
+
+					if (pComponent->SetMaterial(hitSlotIndex, szMaterialFileName))
+					{
+						GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
+						return true;
+					}
+				}
+			}
+		}
+
+		// Fall back to setting legacy "global" material
+		return CBaseObject::ApplyAsset(asset);
+	}
+
+	return CBaseObject::ApplyAsset(asset);
 }
 
 IEditorMaterial* CEntityObject::GetRenderMaterial() const

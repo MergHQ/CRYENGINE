@@ -983,3 +983,16 @@ struct IParticleEntityComponent : public IEntityComponent
 
 	virtual void SetParticleEffectName(const char* szEffectName) = 0;
 };
+
+//! Component interface in order for Editor actions such as material drag and drop to work
+struct IEditorEntityComponent : public IEntityComponent
+{
+	static void ReflectType(Schematyc::CTypeDesc<IEditorEntityComponent>& desc)
+	{
+		desc.SetGUID("{BB42BB62-E91A-4AD2-A75F-363C866A2332}"_cry_guid);
+	}
+
+	//! Called to permanently set the material on a slot
+	//! Only handle this if your component owns the specified slot
+	virtual bool SetMaterial(int slotId, const char* szMaterial) = 0;
+};

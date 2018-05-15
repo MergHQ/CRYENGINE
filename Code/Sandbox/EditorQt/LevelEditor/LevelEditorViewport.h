@@ -53,7 +53,7 @@ private:
 	void        RenderSnappingGrid();
 	void        AddCameraMenuItems(CPopupMenuItem& menu);
 
-	bool AssetDragCreate(EDragEvent eventId, QEvent* event, int flags);
+	bool AssetDragEvent(EDragEvent eventId, QEvent* event, int flags);
 
 	float                m_camFOV;
 	QViewportHeader* m_headerWidget;

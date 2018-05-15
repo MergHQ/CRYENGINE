@@ -28,6 +28,8 @@ class SubObjectSelectionReferenceFrameCalculator;
 class CPopupMenuItem;
 class CInspectorWidgetCreator;
 class CObjectLayer;
+struct HitContext;
+class CAsset;
 
 //////////////////////////////////////////////////////////////////////////
 typedef _smart_ptr<CBaseObject>     CBaseObjectPtr;
@@ -565,6 +567,11 @@ public:
 	virtual IEditorMaterial* GetRenderMaterial() const { return m_pMaterial; };
 	// Get the material name. Even though the material pointer is null, the material name can exist separately.
 	virtual string           GetMaterialName() const;
+
+	//! Assigns the specified asset to the object, for example to apply material
+	//! \param pHitContext Specifies raycast context, if we are applying the asset via a drag action
+	virtual bool             ApplyAsset(const CAsset& asset, HitContext* pHitContext = nullptr);
+	virtual bool             CanApplyAsset(const CAsset& asset, string* pApplyTextOut = nullptr) const;
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Analyze errors for this object.

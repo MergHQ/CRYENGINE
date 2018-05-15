@@ -160,6 +160,15 @@ namespace Cry
 			{
 				LoadFromDisk();
 				ResetCharacter();
+
+				// Update Editor UI to show the default object material
+				if (m_materialPath.value.empty() && m_pCachedCharacter != nullptr)
+				{
+					if (IMaterial* pMaterial = m_pCachedCharacter->GetMaterial())
+					{
+						m_materialPath = pMaterial->GetName();
+					}
+				}
 			}
 
 			CBaseMeshComponent::ProcessEvent(event);
@@ -211,6 +220,27 @@ namespace Cry
 		void CAdvancedAnimationComponent::SetDefaultFragmentName(const char* szName)
 		{
 			m_defaultScopeSettings.m_fragmentName = szName;
+		}
+
+		bool CAdvancedAnimationComponent::SetMaterial(int slotId, const char* szMaterial)
+		{
+			if (slotId == GetEntitySlotId())
+			{
+				if (IMaterial* pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(szMaterial, false))
+				{
+					m_materialPath = szMaterial;
+					m_pEntity->SetSlotMaterial(GetEntitySlotId(), pMaterial);
+				}
+				else if (szMaterial[0] == '\0')
+				{
+					m_materialPath.value.clear();
+					m_pEntity->SetSlotMaterial(GetEntitySlotId(), nullptr);
+				}
+
+				return true;
+			}
+
+			return false;
 		}
 	}
 }

@@ -143,6 +143,8 @@ public:
 	virtual void             SetMaterial(IEditorMaterial* mtl);
 	virtual IEditorMaterial* GetRenderMaterial() const;
 
+	virtual bool ApplyAsset(const CAsset& asset, HitContext* pHitContext = nullptr) override;
+
 	virtual void             InvalidateGeometryFile(const string& gamePath) override;
 
 	//////////////////////////////////////////////////////////////////////////

@@ -21,6 +21,10 @@ namespace Cry
 			virtual void   ProcessEvent(const SEntityEvent& event) final;
 			// ~IEntityComponent
 
+			// IEditorEntityComponent
+			virtual bool SetMaterial(int slotId, const char* szMaterial) override;
+			// ~IEditorEntityComponent
+
 		public:
 			CAnimatedMeshComponent() {}
 			virtual ~CAnimatedMeshComponent() {}
@@ -33,9 +37,12 @@ namespace Cry
 				desc.SetDescription("A component containing a simple mesh that can be animated");
 				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
+				desc.AddBase<IEditorEntityComponent>();
+
 				desc.AddMember(&CAnimatedMeshComponent::m_type, 'type', "Type", "Type", "Determines the behavior of the static mesh", EMeshType::RenderAndCollider);
 
 				desc.AddMember(&CAnimatedMeshComponent::m_filePath, 'file', "FilePath", "File", "Determines the animated mesh to load", "");
+				desc.AddMember(&CAnimatedMeshComponent::m_materialPath, 'mat', "Material", "Material", "Specifies the override material for the selected object", "");
 				desc.AddMember(&CAnimatedMeshComponent::m_renderParameters, 'rend', "Render", "Rendering Settings", "Settings for the rendered representation of the component", SRenderParameters());
 
 				desc.AddMember(&CAnimatedMeshComponent::m_defaultAnimation, 'anim', "Animation", "Default Animation", "Specifies the animation we want to play by default", "");
@@ -88,6 +95,7 @@ namespace Cry
 			CryCharAnimationParams m_animationParams;
 
 			Schematyc::CharacterFileName m_filePath;
+			Schematyc::MaterialFileName m_materialPath;
 
 			Schematyc::LowLevelAnimationName m_defaultAnimation;
 			bool m_bLoopDefaultAnimation = false;

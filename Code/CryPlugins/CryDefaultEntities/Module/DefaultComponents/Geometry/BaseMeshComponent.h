@@ -135,7 +135,7 @@ static void ReflectType(Schematyc::CTypeDesc<SRenderParameters>& desc)
 
 // Base implementation for our physics mesh components
 class CBaseMeshComponent
-	: public IEntityComponent
+	: public IEditorEntityComponent
 {
 protected:
 	// IEntityComponent

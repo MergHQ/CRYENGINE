@@ -21,6 +21,7 @@
 #include "UsedResources.h"
 #include "IEditorMaterial.h"
 #include "Grid.h"
+#include "QtUtil.h"
 
 #include "IAIManager.h"
 #include "IUndoObject.h"
@@ -3457,6 +3458,40 @@ void CBaseObject::OnMtlResolved(uint32 id, bool success, const char* orgName, co
 			pMaterial = GetIEditor()->LoadMaterial(materialName);
 		SetMaterial(pMaterial);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CBaseObject::ApplyAsset(const CAsset& asset, HitContext* pHitContext)
+{
+	if (!strcmp(asset.GetType()->GetTypeName(), "Material"))
+	{
+		const char* szMaterialFileName = asset.GetFile(0);
+		if (szMaterialFileName == nullptr)
+		{
+			szMaterialFileName = "";
+		}
+
+		SetMaterial(szMaterialFileName);
+		return true;
+	}
+
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CBaseObject::CanApplyAsset(const CAsset& asset, string* pApplyTextOut) const
+{
+	if (!strcmp(asset.GetType()->GetTypeName(), "Material"))
+	{
+		if (pApplyTextOut != nullptr)
+		{
+			*pApplyTextOut = QtUtil::ToString(QObject::tr("Assign Material"));
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////

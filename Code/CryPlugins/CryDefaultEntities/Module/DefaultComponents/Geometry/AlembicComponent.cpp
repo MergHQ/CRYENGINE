@@ -52,6 +52,14 @@ namespace Cry
 			if (m_filePath.value.size() > 0)
 			{
 				m_pEntity->LoadGeomCache(GetOrMakeEntitySlotId(), m_filePath.value);
+
+				if (!m_materialPath.value.empty())
+				{
+					if (IMaterial* pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialPath.value, false))
+					{
+						m_pEntity->SetSlotMaterial(GetEntitySlotId(), pMaterial);
+					}
+				}
 			}
 		}
 
@@ -60,6 +68,18 @@ namespace Cry
 			if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
 			{
 				Initialize();
+
+				// Update Editor UI to show the default object material
+				if (m_materialPath.value.empty())
+				{
+					if (IGeomCacheRenderNode* pRenderNode = m_pEntity->GetGeomCacheRenderNode(GetEntitySlotId()))
+					{
+						if (IMaterial* pMaterial = pRenderNode->GetMaterial())
+						{
+							m_materialPath = pMaterial->GetName();
+						}
+					}
+				}
 			}
 		}
 
@@ -115,6 +135,27 @@ namespace Cry
 		void CAlembicComponent::SetFilePath(const char* szFilePath)
 		{
 			m_filePath = szFilePath;
+		}
+
+		bool CAlembicComponent::SetMaterial(int slotId, const char* szMaterial)
+		{
+			if (slotId == GetEntitySlotId())
+			{
+				if (IMaterial* pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(szMaterial, false))
+				{
+					m_materialPath = szMaterial;
+					m_pEntity->SetSlotMaterial(GetEntitySlotId(), pMaterial);
+				}
+				else if (szMaterial[0] == '\0')
+				{
+					m_materialPath.value.clear();
+					m_pEntity->SetSlotMaterial(GetEntitySlotId(), nullptr);
+				}
+
+				return true;
+			}
+
+			return false;
 		}
 	}
 }
