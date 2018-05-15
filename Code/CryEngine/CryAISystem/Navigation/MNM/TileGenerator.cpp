@@ -2702,7 +2702,7 @@ bool CTileGenerator::SimplifyContour(const Contour& contour, const real_t& toler
 		}
 		else
 		{
-			if (boundary && i && (simplified[simplifiedCount - 1] != (i - 1)))
+			if (boundary && i && simplifiedCount && (simplified[simplifiedCount - 1] != (i - 1)))
 				simplified[simplifiedCount++] = i - 1;
 
 			if (!ContourVertexRemovable(v))
