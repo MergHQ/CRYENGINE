@@ -338,7 +338,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_bShaderCacheGenMode = false;
 	m_bRelaunch = false;
 	m_iLoadingMode = 0;
-	m_bEditor = false;
 	m_bPreviewMode = false;
 	m_bIgnoreUpdates = false;
 	m_bNoCrashDialog = false;
@@ -576,7 +575,7 @@ void CSystem::ShutDown()
 	if (m_sys_firstlaunch)
 		m_sys_firstlaunch->Set("0");
 
-	if (m_bEditor)
+	if (m_env.IsEditor())
 	{
 		// restore the old saved cvars
 		if (m_env.pConsole->GetCVar("r_Width"))
@@ -587,14 +586,14 @@ void CSystem::ShutDown()
 			m_env.pConsole->GetCVar("r_ColorBits")->Set(m_iColorBits);
 	}
 
-	if (m_bEditor && !m_bRelaunch)
+	if (m_env.IsEditor() && !m_bRelaunch)
 	{
 		SaveConfiguration();
 	}
 
 	//if (!m_bEditor && !bRelaunch)
 #if !CRY_PLATFORM_DURANGO && !CRY_PLATFORM_ORBIS
-	if (!m_bEditor)
+	if (!m_env.IsEditor())
 	{
 		if (m_pCVarQuit && m_pCVarQuit->GetIVal())
 		{
@@ -1254,7 +1253,7 @@ void CSystem::SleepIfInactive()
 #endif
 
 	// ProcessSleep()
-	if (m_env.IsDedicated() || m_bEditor || gEnv->bMultiplayer)
+	if (m_env.IsDedicated() || m_env.IsEditor() || gEnv->bMultiplayer)
 		return;
 
 #if CRY_PLATFORM_WINDOWS
@@ -1720,7 +1719,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	if (g_cvars.sys_keyboard_break && !g_breakListenerOn)
 	{
 	#if CRY_PLATFORM_WINDOWS
-		if (m_bEditor && !g_pBreakHotkeyThread)
+		if (m_env.IsEditor() && !g_pBreakHotkeyThread)
 		{
 			g_pBreakHotkeyThread = new SBreakHotKeyThread();
 			if (!gEnv->pThreadManager->SpawnThread(g_pBreakHotkeyThread, "WINAPI_BreakHotkeyListener"))
@@ -1950,7 +1949,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 #if !CRY_PLATFORM_WINDOWS
 			m_env.pInput->Update(true);
 #else
-			bool bFocus = (::GetForegroundWindow() == m_hWnd) || m_bEditor;
+			bool bFocus = (::GetForegroundWindow() == m_hWnd) || m_env.IsEditor();
 			{
 				WriteLock lock(g_lockInput);
 				m_env.pInput->Update(bFocus);

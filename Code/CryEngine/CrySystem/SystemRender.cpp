@@ -579,7 +579,7 @@ void CSystem::UpdateLoadingScreen()
 #endif
 	t0 = t;
 
-	if (!m_bEditor && !m_bQuit)
+	if (!m_env.IsEditor() && !m_bQuit)
 	{
 		if (m_pProgressListener)
 		{

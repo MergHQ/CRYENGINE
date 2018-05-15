@@ -1283,7 +1283,7 @@ bool CSystem::InitConsole()
 
 	//	m_Console->Init(this);
 	// Ignore when run in Editor.
-	if (m_bEditor && !m_env.pRenderer)
+	if (m_env.IsEditor() && !m_env.pRenderer)
 		return true;
 
 	// Ignore for dedicated server.
@@ -1340,7 +1340,7 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 	if (m_pUserCallback)
 		m_pUserCallback->OnInitProgress("Initializing Renderer...");
 
-	if (m_bEditor)
+	if (m_env.IsEditor())
 	{
 		m_env.pConsole->GetCVar("r_Width");
 
@@ -1358,7 +1358,11 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 		if (m_env.pHardwareMouse)
 			m_env.pHardwareMouse->OnPreInitRenderer();
 
-		WIN_HWND hwnd = (startupParams.bEditor) ? (WIN_HWND)1 : m_hWnd;
+#ifndef RELEASE
+		const WIN_HWND hwnd = (startupParams.bEditor) ? (WIN_HWND)1 : m_hWnd;
+#else
+		const WIN_HWND hwnd = m_hWnd;
+#endif
 
 		int width = m_rWidth->GetIVal();
 		int height = m_rHeight->GetIVal();
@@ -1769,7 +1773,7 @@ bool CSystem::InitPhysics(const SSystemInitParams& startupParams)
 	pVars->flagsANDDebris = ~(geom_colltype_vehicle | geom_colltype6);
 	pVars->ticksPerSecond = gEnv->pTimer->GetTicksPerSecond();
 
-	if (m_bEditor)
+	if (m_env.IsEditor())
 	{
 		// Setup physical grid for Editor.
 		int nCellSize = 16;
@@ -1932,7 +1936,7 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 			m_root = temp;
 	}
 
-	if (m_bEditor || bLvlRes)
+	if (m_env.IsEditor() || bLvlRes)
 		m_env.pCryPak->RecordFileOpen(ICryPak::RFOM_EngineStartup);
 
 	{
@@ -1945,7 +1949,7 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 		m_env.pCryPak->SetAlias("%ENGINE%", engineDir.c_str(), true);
 
 #ifndef RELEASE
-		if (m_bEditor)
+		if (m_env.IsEditor())
 		{
 			const CryPathString editorDir = PathUtil::Make(CryPathString(engineRootDir.c_str()), CryPathString("Editor"));
 			m_env.pCryPak->SetAlias("%EDITOR%", editorDir.c_str(), true);
@@ -2659,7 +2663,13 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	m_hWnd = (WIN_HWND)startupParams.hWnd;
 
 	m_binariesDir = startupParams.szBinariesDir;
-	m_bEditor = startupParams.bEditor;
+	
+#if CRY_PLATFORM_DESKTOP && !defined(_RELEASE)
+	m_env.SetIsEditor(startupParams.bEditor);
+	m_env.SetIsEditorGameMode(false);
+	m_env.SetIsEditorSimulationMode(false);
+#endif
+
 	m_bPreviewMode = startupParams.bPreview;
 	m_bUIFrameworkMode = startupParams.bUIFramework;
 	m_pUserCallback = startupParams.pUserCallback;
@@ -2705,12 +2715,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 	memcpy(gEnv->pProtectedFunctions, startupParams.pProtectedFunctions, sizeof(startupParams.pProtectedFunctions));
 
-#if CRY_PLATFORM_DESKTOP
-	m_env.SetIsEditor(m_bEditor);
-	m_env.SetIsEditorGameMode(false);
-	m_env.SetIsEditorSimulationMode(false);
-#endif
-
 	m_env.bIsOutOfMemory = false;
 
 	{
@@ -2718,11 +2722,11 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 #if defined(_RELEASE)
 		// disable devmode by default in release builds outside the editor
-		devModeEnable = m_bEditor;
+		devModeEnable = m_env.IsEditor();
 #endif
 
 		// disable devmode in launcher if someone really wants to (even in non release builds)
-		if (!m_bEditor && m_pCmdLine->FindArg(eCLAT_Pre, "nodevmode"))
+		if (!m_env.IsEditor() && m_pCmdLine->FindArg(eCLAT_Pre, "nodevmode"))
 		{
 			devModeEnable = false;
 		}
@@ -2937,7 +2941,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		// May need access to engine folder .pak files
 		gEnv->pThreadManager->GetThreadConfigManager()->LoadConfig("%engine%/config/engine_core.thread_config");
 
-		if (m_bEditor)
+		if (m_env.IsEditor())
 			gEnv->pThreadManager->GetThreadConfigManager()->LoadConfig("%engine%/config/engine_sandbox.thread_config");
 
 		// Setup main thread
@@ -3318,8 +3322,10 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		InlineInitializationProcessing("CSystem::Init CSharedFlashPlayerResources::Init");
 
-		const bool bStartScreensAllowed = !startupParams.bEditor
-		                                  && !startupParams.bShaderCacheGen
+		const bool bStartScreensAllowed = !startupParams.bShaderCacheGen
+#ifndef RELEASE
+		                                  && !startupParams.bEditor
+#endif
 		                                  && !m_env.IsDedicated()
 		                                  && m_env.pRenderer;
 
@@ -3797,7 +3803,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		m_env.pThreadManager->EnableFloatExceptions((EFPE_Severity)g_cvars.sys_float_exceptions);
 
 #if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) && defined(SECUROM_64)
-		if (!m_bEditor && !IsDedicated())
+		if (!m_env.IsEditor() && !IsDedicated())
 		{
 			int res = TestSecurom64();
 			if (res != b64_ok)
@@ -4961,7 +4967,7 @@ void CSystem::CreateSystemVars()
 
 	//TODO this cvar should be replaced by fixed shutdown logic considering the particularities of each platform
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX
-	if (m_bEditor)
+	if (m_env.IsEditor())
 	{
 		// in editor we must exit on quit.
 		m_pCVarQuit = REGISTER_INT("ExitOnQuit", 1, VF_NULL, "");
@@ -4993,7 +4999,7 @@ void CSystem::CreateSystemVars()
 	m_cvMemStatsThreshold = REGISTER_INT("MemStatsThreshold", 32000, VF_NULL, "");
 	m_cvMemStatsMaxDepth = REGISTER_INT("MemStatsMaxDepth", 4, VF_NULL, "");
 
-	if (m_bEditor)
+	if (m_env.IsEditor())
 	{
 		// In Editor our Pak priority is always 0
 		g_cvars.pakVars.nPriority = ePakPriorityFileFirst;

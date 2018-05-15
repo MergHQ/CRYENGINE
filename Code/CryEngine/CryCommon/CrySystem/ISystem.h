@@ -631,7 +631,10 @@ struct SSystemInitParams
 	char                 szUserPath[256];       //!< User alias path relative to My Documents folder.
 	char                 szBinariesDir[256];
 
-	bool                 bEditor;             //!< When running in Editor mode.
+#if !defined(RELEASE)
+	bool                 bEditor = false;       //!< When running in Editor mode.
+#endif
+
 	bool                 bPreview;            //!< When running in Preview mode (Minimal initialization).
 	bool                 bDedicatedServer;    //!< When running a dedicated server.
 	bool                 bExecuteCommandLine; //!< can be switched of to suppress the feature or do it later during the initialization.
@@ -678,7 +681,6 @@ struct SSystemInitParams
 		memset(szSystemCmdLine, 0, sizeof(szSystemCmdLine));
 		memset(szUserPath, 0, sizeof(szUserPath));
 		memset(szBinariesDir, 0, sizeof(szBinariesDir));
-		bEditor = false;
 		bPreview = false;
 		bDedicatedServer = false;
 		bExecuteCommandLine = true;
@@ -896,7 +898,7 @@ struct SSystemGlobalEnvironment
 	bool bMultiplayer;
 	bool bHostMigrating;
 
-#if defined(CRY_PLATFORM_ORBIS) && (!defined(_RELEASE) || defined(PERFORMANCE_BUILD))
+#if defined(CRY_PLATFORM_ORBIS) && (!defined(RELEASE) || defined(PERFORMANCE_BUILD))
 	//! Specifies if we are on a PS4 development kit
 	bool bPS4DevKit;
 #endif
@@ -935,7 +937,9 @@ struct SSystemGlobalEnvironment
 
 	ILINE const bool IsClient() const
 	{
-#if CRY_PLATFORM_DESKTOP
+#if defined(DEDICATED_SERVER)
+		return false;
+#elif CRY_PLATFORM_DESKTOP
 		return bClient;
 #else
 		return true;
@@ -954,6 +958,7 @@ struct SSystemGlobalEnvironment
 	}
 
 #if CRY_PLATFORM_DESKTOP
+#if !defined(RELEASE)
 	ILINE void SetIsEditor(bool isEditor)
 	{
 		bEditor = isEditor;
@@ -968,26 +973,27 @@ struct SSystemGlobalEnvironment
 	{
 		bEditorSimulationMode = isEditorSimulationMode;
 	}
+#endif
 
 	ILINE void SetIsDedicated(bool isDedicated)
 	{
-	#if defined(DEDICATED_SERVER)
-		bDedicated = true;
-	#else
+	#if !defined(DEDICATED_SERVER)
 		bDedicated = isDedicated;
 	#endif
 	}
 
 	ILINE void SetIsClient(bool isClient)
 	{
+#if !defined(DEDICATED_SERVER)
 		bClient = isClient;
+#endif
 	}
 #endif
 
 	//! This way the compiler can strip out code for consoles.
 	ILINE const bool IsEditor() const
 	{
-#if CRY_PLATFORM_DESKTOP
+#if CRY_PLATFORM_DESKTOP && !defined(RELEASE)
 		return bEditor;
 #else
 		return false;
@@ -996,7 +1002,7 @@ struct SSystemGlobalEnvironment
 
 	ILINE const bool IsEditorGameMode() const
 	{
-#if CRY_PLATFORM_DESKTOP
+#if CRY_PLATFORM_DESKTOP && !defined(RELEASE)
 		return bEditorGameMode;
 #else
 		return false;
@@ -1005,7 +1011,7 @@ struct SSystemGlobalEnvironment
 
 	ILINE const bool IsEditorSimulationMode() const
 	{
-#if CRY_PLATFORM_DESKTOP
+#if CRY_PLATFORM_DESKTOP && !defined(RELEASE)
 		return bEditorSimulationMode;
 #else
 		return false;
@@ -1014,7 +1020,7 @@ struct SSystemGlobalEnvironment
 
 	ILINE const bool IsGameOrSimulation() const
 	{
-#if CRY_PLATFORM_DESKTOP
+#if CRY_PLATFORM_DESKTOP && !defined(RELEASE)
 		return !bEditor || bEditorGameMode || bEditorSimulationMode;
 #else
 		return true;
@@ -1023,7 +1029,7 @@ struct SSystemGlobalEnvironment
 
 	ILINE const bool IsEditing() const
 	{
-#if CRY_PLATFORM_DESKTOP
+#if CRY_PLATFORM_DESKTOP && !defined(RELEASE)
 		return bEditor && !bEditorGameMode;
 #else
 		return false;
@@ -1083,11 +1089,16 @@ struct SSystemGlobalEnvironment
 	bool bDedicatedArbitrator;
 
 private:
-	bool bClient;
+#if !defined(RELEASE)
 	bool bEditor;          //!< Engine is running under editor.
 	bool bEditorGameMode;  //!< Engine is in editor game mode.
-	bool bDedicated;       //!< Engine is in dedicated.
 	bool bEditorSimulationMode; //!< Engine is in editor Physics/AI simulation mode.
+#endif
+
+#if !defined(DEDICATED_SERVER)
+	bool bDedicated;       //!< Engine is in dedicated.
+	bool bClient;
+#endif
 #endif
 
 	bool m_isFMVPlaying;
@@ -1136,7 +1147,7 @@ struct ISystem
 		// </interfuscator:shuffle>
 	};
 
-#ifndef _RELEASE
+#if !defined(RELEASE)
 	enum LevelLoadOrigin
 	{
 		eLLO_Unknown,
@@ -1588,7 +1599,7 @@ struct ISystem
 
 	virtual bool IsCVarWhitelisted(const char* szName, bool silent) const = 0;
 
-#ifndef _RELEASE
+#if !defined(RELEASE)
 	virtual void GetCheckpointData(ICheckpointData& data) = 0;
 	virtual void IncreaseCheckpointLoadCount() = 0;
 	virtual void SetLoadOrigin(LevelLoadOrigin origin) = 0;
@@ -1598,7 +1609,7 @@ struct ISystem
 	virtual void OnPLMEvent(EPLM_Event event) = 0;
 #endif
 
-#if !defined(_RELEASE)
+#if !defined(RELEASE)
 	virtual bool IsSavingResourceList() const = 0;
 #endif
 
@@ -1877,7 +1888,7 @@ private:
 #undef MODULE_REGISTER_COMMAND
 #undef MODULE_REGISTER_CVAR
 
-#if defined(_RELEASE) && !CRY_PLATFORM_DESKTOP
+#if defined(RELEASE) && !CRY_PLATFORM_DESKTOP
 	#ifndef LOG_CONST_CVAR_ACCESS
 		#error LOG_CONST_CVAR_ACCESS should be defined in ProjectDefines.h
 	#endif
@@ -2069,7 +2080,7 @@ struct SDummyCVar : ICVar
 //! Cvar potentially won't exist in a release build.
 #define ILLEGAL_DEV_FLAGS (VF_NET_SYNCED | VF_CHEAT | VF_CHEAT_ALWAYS_CHECK | VF_CHEAT_NOCHECK | VF_READONLY | VF_CONST_CVAR)
 
-#if defined(_RELEASE)
+#if defined(RELEASE)
 	#define REGISTER_CVAR_DEV_ONLY(_var, _def_val, _flags, _comment)                               NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!"); _var = _def_val
 	#define REGISTER_CVAR_CB_DEV_ONLY(_var, _def_val, _flags, _comment, _onchangefunction)         NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!"); _var = _def_val /* _onchangefunction consumed; callback not available */
 	#define REGISTER_STRING_DEV_ONLY(_name, _def_val, _flags, _comment)                            NULL; static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")                  /* consumed; pure cvar not available */
@@ -2097,14 +2108,14 @@ struct SDummyCVar : ICVar
 	#define REGISTER_CVAR3_DEV_ONLY(_name, _var, _def_val, _flags, _comment)                       REGISTER_CVAR3(_name, _var, _def_val, ((_flags) | VF_DEV_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
 	#define REGISTER_CVAR3_CB_DEV_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) REGISTER_CVAR3_CB(_name, _var, _def_val, ((_flags) | VF_DEV_ONLY), _comment, _onchangefunction); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
 	#define REGISTER_COMMAND_DEV_ONLY(_name, _func, _flags, _comment)                              REGISTER_COMMAND(_name, _func, ((_flags) | VF_DEV_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
-#endif // defined(_RELEASE)
+#endif // defined(RELEASE)
 ////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
 //! Dedicated server only cvars
 //! (1) Registered as real cvars in all non release builds
 //! (2) Registered as real cvars in release on dedi servers only, otherwise treated as DEV_ONLY type cvars (see above)
-#if defined(_RELEASE) && defined(DEDICATED_SERVER)
+#if defined(RELEASE) && defined(DEDICATED_SERVER)
 	#define REGISTER_CVAR_DEDI_ONLY(_var, _def_val, _flags, _comment)                               REGISTER_CVAR(_var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
 	#define REGISTER_CVAR_CB_DEDI_ONLY(_var, _def_val, _flags, _comment, _onchangefunction)         REGISTER_CVAR_CB(_var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
 	#define REGISTER_STRING_DEDI_ONLY(_name, _def_val, _flags, _comment)                            REGISTER_STRING(_name, _def_val, ((_flags) | VF_DEDI_ONLY), _comment); static_assert((_flags & ILLEGAL_DEV_FLAGS) == 0, "Flags must not contain any development flags!")
@@ -2132,7 +2143,7 @@ struct SDummyCVar : ICVar
 	#define REGISTER_CVAR3_DEDI_ONLY(_name, _var, _def_val, _flags, _comment)                       REGISTER_CVAR3_DEV_ONLY(_name, _var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment)
 	#define REGISTER_CVAR3_CB_DEDI_ONLY(_name, _var, _def_val, _flags, _comment, _onchangefunction) REGISTER_CVAR3_CB_DEV_ONLY(_name, _var, _def_val, ((_flags) | VF_DEDI_ONLY), _comment, _onchangefunction)
 	#define REGISTER_COMMAND_DEDI_ONLY(_name, _func, _flags, _comment)                              REGISTER_COMMAND_DEV_ONLY(_name, _func, ((_flags) | VF_DEDI_ONLY), _comment)
-#endif // defined(_RELEASE)
+#endif // defined(RELEASE)
 //////////////////////////////////////////////////////////////////////////////
 
 #ifdef EXCLUDE_NORMAL_LOG       // setting this removes a lot of logging to reduced code size (useful for consoles)
