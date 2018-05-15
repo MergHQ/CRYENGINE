@@ -1556,7 +1556,7 @@ void NavigationSystem::CommitTile(TileTaskResult& result)
 			CRY_PROFILE_REGION(PROFILE_AI, "Navigation System::CommitTile() - Running Task Processing - ConnectToNetwork");
 
 			MNM::TileID tileID = mesh.navMesh.SetTile(result.x, result.y, result.z, result.tile);
-			mesh.navMesh.ConnectToNetwork(tileID);
+			mesh.navMesh.ConnectToNetwork(tileID, &result.metaData.connectivityData);
 
 			CommitMarkupData(result, tileID);
 
@@ -3448,8 +3448,9 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 	CCryFile file;
 	if (false != file.Open(fileName, "wb"))
 	{
-		const int maxTriangles = 1024;
-		const int maxLinks = maxTriangles * 6;
+		const size_t maxTriangles = MNM::Constants::TileTrianglesMaxCount;
+		const size_t maxLinks = MNM::Constants::TileLinksMaxCount;
+		
 		MNM::Tile::STriangle triangleBuffer[maxTriangles];
 		MNM::Tile::SLink linkBuffer[maxLinks];
 
@@ -4160,7 +4161,7 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 		{
 			tileID = mesh.navMesh.SetTile(selectedX, selectedY, selectedZ, tile);
 
-			mesh.navMesh.ConnectToNetwork(tileID);
+			mesh.navMesh.ConnectToNetwork(tileID, &metaData.connectivityData);
 		}
 		else if (tileID = mesh.navMesh.GetTileID(selectedX, selectedY, selectedZ))
 			mesh.navMesh.ClearTile(tileID);

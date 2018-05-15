@@ -155,8 +155,7 @@ void STile::AddOffMeshLink(const TriangleID triangleID, const uint16 offMeshInde
 		//Off-mesh link is always the first if exists
 		Tile::STriangle& triangle = triangles[triangleIdx];
 
-		const size_t MaxLinkCount = 1024 * 6;
-		Tile::SLink tempLinks[MaxLinkCount];
+		Tile::SLink tempLinks[MNM::Constants::TileLinksMaxCount];
 
 		bool hasOffMeshLink = links && (triangle.linkCount > 0) && (triangle.firstLink < linkCount) && (links[triangle.firstLink].side == Tile::SLink::OffMesh);
 
@@ -249,8 +248,7 @@ void STile::RemoveOffMeshLink(const TriangleID triangleID)
 	{
 		assert(linkCount > 1);
 
-		const size_t MaxLinkCount = 1024 * 6;
-		Tile::SLink tempLinks[MaxLinkCount];
+		Tile::SLink tempLinks[MNM::Constants::TileLinksMaxCount];
 
 		if (linkToRemoveIdx)
 			memcpy(tempLinks, links, sizeof(Tile::SLink) * linkToRemoveIdx);
@@ -686,4 +684,102 @@ void STile::ResetConnectivity(uint8 accessible)
 }
 
 #endif
+
+//////////////////////////////////////////////////////////////////////////
+
+void STileConnectivityData::ComputeTriangleAdjacency(const Tile::STriangle* triangles, const size_t triangleCount, const size_t vertexCount)
+{
+	Edge tmpEdges[MNM::Constants::TileTrianglesMaxCount * 3];
+
+	const size_t adjacencyCount = triangleCount * 3;
+	adjacency.resize(adjacencyCount);
+
+	const size_t edgesCount = STileConnectivityData::ComputeTriangleAdjacency(triangles, triangleCount, vertexCount, tmpEdges, adjacency.data());
+	edges.assign(tmpEdges, tmpEdges + edgesCount);
+}
+
+size_t STileConnectivityData::ComputeTriangleAdjacency(
+	const Tile::STriangle* triangles, const size_t triangleCount, const size_t vertexCount,
+	STileConnectivityData::Edge* pEdges, uint16* pAdjacency)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+
+	enum { Unused = 0xffff, };
+
+	//TODO: is this buffer always big enough?
+	const size_t MaxLookUp = 4096;
+	uint16 edgeLookUp[MaxLookUp];
+	CRY_ASSERT(MaxLookUp > vertexCount + triangleCount * 3);
+
+	std::fill(&edgeLookUp[0], &edgeLookUp[0] + vertexCount, static_cast<uint16>(Unused));
+
+	uint16 edgesCount = 0;
+
+	for (uint16 i = 0; i < triangleCount; ++i)
+	{
+		const Tile::STriangle& triangle = triangles[i];
+
+		for (size_t v = 0; v < 3; ++v)
+		{
+			const uint16 i1 = triangle.vertex[v];
+			const uint16 i2 = triangle.vertex[next_mod3(v)];
+
+			if (i1 < i2)
+			{
+				const uint16 edgeIdx = edgesCount++;
+				pAdjacency[i * 3 + v] = edgeIdx;
+
+				Edge& edge = pEdges[edgeIdx];
+				edge.triangle[0] = i;
+				edge.triangle[1] = i;
+				edge.vertex[0] = i1;
+				edge.vertex[1] = i2;
+
+				edgeLookUp[vertexCount + edgeIdx] = edgeLookUp[i1];
+				edgeLookUp[i1] = edgeIdx;
+			}
+		}
+	}
+
+	for (uint16 i = 0; i < triangleCount; ++i)
+	{
+		const Tile::STriangle& triangle = triangles[i];
+
+		for (size_t v = 0; v < 3; ++v)
+		{
+			const uint16 i1 = triangle.vertex[v];
+			const uint16 i2 = triangle.vertex[next_mod3(v)];
+
+			if (i1 > i2)
+			{
+				uint16 edgeIndex = edgeLookUp[i2];
+				for (; edgeIndex != Unused; edgeIndex = edgeLookUp[vertexCount + edgeIndex])
+				{
+					Edge& edge = pEdges[edgeIndex];
+
+					if ((edge.vertex[1] == i1) && (edge.triangle[0] == edge.triangle[1]))
+					{
+						edge.triangle[1] = i;
+						pAdjacency[i * 3 + v] = edgeIndex;
+						break;
+					}
+				}
+
+				if (edgeIndex == Unused)
+				{
+					const uint16 edgeIdx = edgesCount++;
+					pAdjacency[i * 3 + v] = edgeIdx;
+
+					Edge& edge = pEdges[edgeIdx];
+					edge.vertex[0] = i1;
+					edge.vertex[1] = i2;
+					edge.triangle[0] = i;
+					edge.triangle[1] = i;
+				}
+			}
+		}
+	}
+	return edgesCount;
+}
+
 }

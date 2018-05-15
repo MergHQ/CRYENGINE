@@ -413,7 +413,7 @@ public:
 	void           ClearTile(TileID tileID, bool clearNetwork = true);
 
 	void           CreateNetwork();
-	void           ConnectToNetwork(TileID tileID);
+	void           ConnectToNetwork(const TileID tileID, const STileConnectivityData* pConnectivityData);
 
 	inline bool    Empty() const
 	{
@@ -566,7 +566,7 @@ private:
 	TriangleID FindClosestTriangleInternal(const vector3_t& localPosition, const TriangleID* pCandidateTriangles, const size_t candidateTrianglesCount, vector3_t* pOutClosestLocalPosition, real_t::unsigned_overflow_type* pOutClosestDistanceSq) const;
 
 protected:
-	void ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile);
+	void ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile, const STileConnectivityData* pConnectivityData);
 	void ReComputeAdjacency(size_t x, size_t y, size_t z, const real_t& toleranceSq, STile& tile,
 	                        size_t side, size_t tx, size_t ty, size_t tz, TileID targetID);
 
