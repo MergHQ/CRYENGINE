@@ -5158,9 +5158,13 @@ void CD3D9Renderer::SetCurrentAuxGeomCollector(CAuxGeomCBCollector* auxGeomColle
 
 CAuxGeomCBCollector* CD3D9Renderer::GetOrCreateAuxGeomCollector(const CCamera &defaultCamera)
 {
+#if defined(ENABLE_RENDER_AUX_GEOM)
 	auto p = m_auxGeometryCollectorPool.GetOrCreateOneElement();
 	p->SetDefaultCamera(defaultCamera);
 	return p;
+#else
+	return nullptr;
+#endif
 }
 
 void CD3D9Renderer::ReturnAuxGeomCollector(CAuxGeomCBCollector* auxGeomCollector)
