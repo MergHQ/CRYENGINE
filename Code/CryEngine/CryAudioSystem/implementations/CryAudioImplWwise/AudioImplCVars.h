@@ -33,6 +33,8 @@ public:
 	int m_lowerEngineDefaultPoolSize = 0;
 	int m_enableEventManagerThread = 0;
 	int m_enableSoundBankManagerThread = 0;
+	int m_numSamplesPerFrame = 0;
+	int m_numRefillsInVoice = 0;
 	int m_panningRule = 0;
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)

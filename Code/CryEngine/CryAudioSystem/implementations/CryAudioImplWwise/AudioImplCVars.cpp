@@ -38,10 +38,12 @@ void CCVars::RegisterVariables()
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
 	m_enableEventManagerThread = 1;
 	m_enableSoundBankManagerThread = 1;
+	m_numSamplesPerFrame = 512;
+	m_numRefillsInVoice = 3;
+	m_panningRule = 0;                 // Speakers
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
-	m_panningRule = 0;                 // Speakers
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_DURANGO
 	m_secondaryMemoryPoolSize = 32 << 10;          // 32 MiB
@@ -53,10 +55,12 @@ void CCVars::RegisterVariables()
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
 	m_enableEventManagerThread = 1;
 	m_enableSoundBankManagerThread = 1;
+	m_numSamplesPerFrame = 512;
+	m_numRefillsInVoice = 3;
+	m_panningRule = 0;                 // Speakers
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
-	m_panningRule = 0;                 // Speakers
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_ORBIS
 	m_secondaryMemoryPoolSize = 0;
@@ -68,10 +72,12 @@ void CCVars::RegisterVariables()
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
 	m_enableEventManagerThread = 1;
 	m_enableSoundBankManagerThread = 1;
+	m_numSamplesPerFrame = 512;
+	m_numRefillsInVoice = 3;
+	m_panningRule = 0;                 // Speakers
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
-	m_panningRule = 0;                 // Speakers
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_MAC
 	m_secondaryMemoryPoolSize = 0;
@@ -83,10 +89,12 @@ void CCVars::RegisterVariables()
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
 	m_enableEventManagerThread = 1;
 	m_enableSoundBankManagerThread = 1;
+	m_numSamplesPerFrame = 512;
+	m_numRefillsInVoice = 3;
+	m_panningRule = 0;                 // Speakers
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
-	m_panningRule = 0;                 // Speakers
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_LINUX
 	m_secondaryMemoryPoolSize = 0;
@@ -98,10 +106,12 @@ void CCVars::RegisterVariables()
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
 	m_enableEventManagerThread = 1;
 	m_enableSoundBankManagerThread = 1;
+	m_numSamplesPerFrame = 512;
+	m_numRefillsInVoice = 3;
+	m_panningRule = 0;                 // Speakers
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
-	m_panningRule = 0;                 // Speakers
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif defined(CRY_PLATFORM_IOS)
 	m_secondaryMemoryPoolSize = 0;
@@ -113,10 +123,12 @@ void CCVars::RegisterVariables()
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
 	m_enableEventManagerThread = 1;
 	m_enableSoundBankManagerThread = 1;
+	m_numSamplesPerFrame = 512;
+	m_numRefillsInVoice = 3;
+	m_panningRule = 1;                 // Headphones
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
-	m_panningRule = 1;                 // Headphones
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #elif CRY_PLATFORM_ANDROID
 	m_secondaryMemoryPoolSize = 0;
@@ -128,10 +140,12 @@ void CCVars::RegisterVariables()
 	m_lowerEngineDefaultPoolSize = 24 << 10;       // 24 MiB
 	m_enableEventManagerThread = 1;
 	m_enableSoundBankManagerThread = 1;
+	m_numSamplesPerFrame = 512;
+	m_numRefillsInVoice = 3;
+	m_panningRule = 1;                 // Headphones
 	#if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
-	m_panningRule = 1;                 // Headphones
 	#endif                             // INCLUDE_WWISE_IMPL_PRODUCTION_CODE
 #else
 	#error "Undefined platform."
@@ -181,6 +195,16 @@ void CCVars::RegisterVariables()
 	               "Specifies whether Wwise should initialize using its SoundBankManager thread or not.\n"
 	               "Usage: s_WwiseEnableSoundBankManagerThread [0/1]\n"
 	               "Default: 1 (on)\n");
+
+	REGISTER_CVAR2("s_WwiseNumSamplesPerFrame", &m_numSamplesPerFrame, m_numSamplesPerFrame, VF_REQUIRE_APP_RESTART,
+	               "Specifies the number of samples per audio frame (256, 512, 1024 or 2048).\n"
+	               "Usage: s_WwiseNumSamplesPerFrame [256/...]\n"
+	               "Default: 512\n");
+
+	REGISTER_CVAR2("s_WwiseNumRefillsInVoice", &m_numRefillsInVoice, m_numRefillsInVoice, VF_REQUIRE_APP_RESTART,
+	               "Specifies the number of refill buffers in voice buffer.\n"
+	               "Usage: s_WwiseNumRefillsInVoice [2/...]\n"
+	               "Default: 3\n");
 
 	REGISTER_CVAR2_CB("s_WwisePanningRule", &m_panningRule, m_panningRule, VF_NULL,
 	                  "Specifies the Wwise panning rule.\n"

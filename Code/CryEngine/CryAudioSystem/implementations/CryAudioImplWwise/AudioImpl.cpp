@@ -373,6 +373,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 
 	initSettings.bUseLEngineThread = g_cvars.m_enableEventManagerThread > 0;
 	initSettings.bUseSoundBankMgrThread = g_cvars.m_enableSoundBankManagerThread > 0;
+	initSettings.uNumSamplesPerFrame = static_cast<AkUInt32>(g_cvars.m_numSamplesPerFrame);
 
 	// We need this additional thread during bank unloading if the user decided to run Wwise without the EventManager thread.
 	if (g_cvars.m_enableEventManagerThread == 0)
@@ -383,6 +384,7 @@ ERequestStatus CImpl::Init(uint32 const objectPoolSize, uint32 const eventPoolSi
 	AkPlatformInitSettings platformInitSettings;
 	AK::SoundEngine::GetDefaultPlatformInitSettings(platformInitSettings);
 	platformInitSettings.uLEngineDefaultPoolSize = g_cvars.m_lowerEngineDefaultPoolSize << 10;
+	platformInitSettings.uNumRefillsInVoice = static_cast<AkUInt16>(g_cvars.m_numRefillsInVoice);
 
 	// Bank Manager thread settings
 	if (pBankManger->paramActivityFlag & SThreadConfig::eThreadParamFlag_Affinity)
