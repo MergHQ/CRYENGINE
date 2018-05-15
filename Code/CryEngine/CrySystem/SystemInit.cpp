@@ -1096,10 +1096,6 @@ bool CSystem::InitSchematyc(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
-#ifdef USE_SCHEMATYC_EXPERIMENTAL
-	sys_SchematycPlugin = 2;
-#endif
-
 	if (sys_SchematycPlugin == 0 || sys_SchematycPlugin == 1)
 	{
 		if (!InitializeEngineModule(startupParams, "CrySchematyc2", cryiidof<Schematyc2::IFramework>(), true))
@@ -5304,7 +5300,15 @@ void CSystem::CreateSystemVars()
 
 	REGISTER_CVAR_CB(sys_ProfileLevelLoadingDump, 0, VF_CHEAT, "Output level loading dump stats into log\n", OnLevelLoadingDump);
 
-	REGISTER_CVAR(sys_SchematycPlugin, 1, VF_REQUIRE_APP_RESTART,
+#if defined(USE_SCHEMATYC) && defined(USE_SCHEMATYC_EXPERIMENTAL)
+	static const int default_sys_SchematycPlugin = 0;
+#elif defined(USE_SCHEMATYC_EXPERIMENTAL)
+	static const int default_sys_SchematycPlugin = 2;
+#else // default = USE_SCHEMATYC
+	static const int default_sys_SchematycPlugin = 1;
+#endif
+
+	REGISTER_CVAR(sys_SchematycPlugin, default_sys_SchematycPlugin, VF_REQUIRE_APP_RESTART,
 	              "Set whether default Schematyc and/or experimental plugin is loaded\n"
 	              "0 = Both plugins\n"
 	              "1 = Loads default Schematyc plugin only\n"
