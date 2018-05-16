@@ -1506,6 +1506,14 @@ int CRigidEntity::CheckForNewContacts(geom_world_data *pgwd0,intersection_params
 			//	m_parts[i].pPhysGeomProxy->pGeom->IsConvex(0.02f) && pentlist[ient]->m_parts[j].pPhysGeomProxy->pGeom->IsConvex(0.02f);
 
 			if (pGeom!=&aray) {
+				if (!(pentlist[ient]->m_BBox[0].len2()+pentlist[ient]->m_BBox[1].len2()) && pGeom->GetType()==GEOM_BOX) {	// box vs the terrain
+					Vec2 coords[] = { Vec2(((BBox[1]+BBox[0])*0.5f-gwd1.offset)*gwd1.R), Vec2(((BBox[1]-BBox[0])*0.5f)*gwd1.R) }, frac(ZERO);
+					float *pcoords = &coords[0].x;
+					for(int ic=0;ic<4;ic++) 
+						frac[ic&1] += fabs(pcoords[ic]-float2int(pcoords[ic]));
+					if (min(frac.x,frac.y) < 0.001f) 
+						pgwd0->scale *= 0.99f; // if either x or y bounds on the terrain are aligned with ints, perturb the scale a bit to avoid 'singularity'
+				}
 				ncontacts = ((CGeometry*)pGeom)->IntersectQueued(pentlist[ient]->m_parts[j].pPhysGeomProxy->pGeom, pgwd0,&gwd1, pip, pcontacts,
 					this,pentlist[ient],i,j);
 				#if MAX_PHYS_THREADS>1
