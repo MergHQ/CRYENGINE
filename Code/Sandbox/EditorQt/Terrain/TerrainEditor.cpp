@@ -395,6 +395,9 @@ void CTerrainEditor::InitTerrainMenu()
 
 		sec = pEditMenu->GetNextEmptySection();
 		pEditMenu->AddAction(GetAction("terrain.refine_tiles"), sec);
+
+		sec = pEditMenu->GetNextEmptySection();
+		pEditMenu->AddAction(new QCommandAction("Brush Settings...", "general.open_pane 'Brush Settings'", nullptr));
 	}
 
 	CAbstractMenu* pLayerMenu = GetMenu(tr("Layers"));

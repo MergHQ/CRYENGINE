@@ -8,23 +8,69 @@
 #include "Viewport.h"
 #include "Vegetation/VegetationMap.h"
 #include "QtUtil.h"
-#include "EditorFramework/PersonalizationManager.h"
+#include <EditorFramework/PersonalizationManager.h>
+#include <EditorFramework/Preferences.h>
 #include <CrySerialization/Decorators/ActionButton.h>
 #include "Serialization/Decorators/EditorActionButton.h"
 
 #define MAX_BRUSH_SIZE     500.0f
+#define MAX_BRUSH_HARDNESS 1.0f
 #define MAX_TERRAIN_HEIGHT 1000.0f
 #define MAX_RISE_HEIGHT    50.0f
 
 bool CBrushTool::s_shareBrushParameters;
-QPoint CBrushTool::s_lastMousePoint;
 Vec3 CBrushTool::s_pointerPos;
 Vec3 CBrushTool::s_pointerPosPrev;
+
+struct SBrushPreferences : public SPreferencePage
+{
+	SBrushPreferences()
+		: SPreferencePage("Brush", "Painting/General")
+		, m_hardnessSensistivity(0.0001f)
+		, m_radiusSensitivity(0.01f)
+	{
+
+	}
+	virtual bool Serialize(yasli::Archive& ar) override
+	{
+		ar(yasli::Range(m_hardnessSensistivity, -4.0f, 4.0f), "hardnessSensistivity", "Hardness Sensitivity");
+		ar(yasli::Range(m_radiusSensitivity, -4.0f, 4.0f), "radiusSensitivity", "Radius Sensitivity");
+
+		return true;
+	}
+
+	ADD_PREFERENCE_PAGE_PROPERTY(float, hardnessSensistivity, setHardnessSensistivity);
+	ADD_PREFERENCE_PAGE_PROPERTY(float, radiusSensitivity, setRadiusSensitivity);
+};
+
+class CBrushPreferencesDialog : public CDockableWidget
+{
+public:
+	CBrushPreferencesDialog(QWidget* parent = nullptr)
+	{
+		QVBoxLayout* pLayout = new QVBoxLayout();
+		pLayout->setMargin(0);
+		pLayout->setSpacing(0);
+
+		pLayout->addWidget(GetIEditor()->GetPreferences()->GetPageWidget("Painting/General"));
+		setLayout(pLayout);
+	}
+
+	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
+	virtual const char*                       GetPaneTitle() const override { return "Brush Preferences"; }
+	virtual QRect                             GetPaneRect() override { return QRect(0, 0, 270, 200); }
+};
+
+REGISTER_HIDDEN_VIEWPANE_FACTORY(CBrushPreferencesDialog, "Brush Settings", "Preferences", true)
+
+SBrushPreferences gBrushPreferences;
+REGISTER_PREFERENCES_PAGE_PTR(SBrushPreferences, &gBrushPreferences)
 
 CBrushTool::CBrushTool()
 	: m_pBrush(&m_brush)
 	, m_nPaintingMode(ePaintMode_None)
 	, m_bPickHeight(false)
+	, m_LMButtonDownPoint(0, 0)
 {
 	CPersonalizationManager* pManager = GetIEditorImpl()->GetPersonalizationManager();
 	const char* toolName = GetRuntimeClass()->m_lpszClassName;
@@ -99,8 +145,12 @@ void CBrushTool::SetHeight(float height)
 
 bool CBrushTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
-	if (eMouseWheel == event)
+	// If it's a mouse wheel event and Alt is not pressed, then early out
+	if (event == eMouseWheel && MK_ALT & ~flags)
 		return false;
+
+	if (event == eMouseLDown)
+		m_LMButtonDownPoint = point;
 
 	if (m_nPaintingMode == ePaintMode_InProgress)
 		m_nPaintingMode = ePaintMode_Ready;
@@ -108,19 +158,71 @@ bool CBrushTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point
 	bool bCollideWithTerrain = true;
 	Vec3 pointerPos = view->ViewToWorld(point, &bCollideWithTerrain, true);
 
+	// Initialize it to the first position so we can avoid a huge delta on the first call
+	static CPoint s_lastMousePoint = point;
+
 	if (MK_ALT & flags)
 	{
-		if (event == eMouseMove && bCollideWithTerrain && (flags & MK_LBUTTON))
-		{
-			Vec3 lastPointer = view->ViewToWorld(CPoint(s_lastMousePoint.x(), s_lastMousePoint.y()), &bCollideWithTerrain, true);
-			Vec2 offset(lastPointer.x - pointerPos.x, lastPointer.y - pointerPos.y);
+		static float oldHardness, oldRadius, oldRadiusInside;
+		static bool modifyRadiusSensitivity = true;
 
-			if (bCollideWithTerrain)
+		CTerrainBrush& brush = getBrush();
+
+		if (event == eMouseLDown)
+		{
+			oldHardness = brush.hardness;
+			oldRadius = brush.radius;
+			oldRadiusInside = brush.radiusInside;
+		}
+		else if (event == eMouseWheel)
+		{
+			float mouseDelta = static_cast<float>(point.y);
+
+			// Most mouse types work in steps of 15 degrees, in which case the delta value is a multiple of 120.
+			// i.e., 120 units * 1/8 = 15 degrees. http://doc.qt.io/qt-5/qwheelevent.html#angleDelta
+			mouseDelta /= 120.0f;
+
+			if (modifyRadiusSensitivity)
 			{
-				getBrush().radius = min(MAX_BRUSH_SIZE, max(0.0f, getBrush().radius + ((0 > (point.x - s_lastMousePoint.x())) ? -offset.GetLength() : offset.GetLength())));
-				getBrush().radiusInside = min(getBrush().radiusInside, getBrush().radius);
-				signalPropertiesChanged(this);
+				float currValue = gBrushPreferences.radiusSensitivity();
+				float deltaValue = (fabs(currValue) * 1.1f - currValue) * static_cast<float>(mouseDelta);
+				gBrushPreferences.setRadiusSensitivity(currValue + deltaValue);
 			}
+			else
+			{
+				float currValue = gBrushPreferences.hardnessSensistivity();
+				float deltaValue = (fabs(currValue) * 1.1f - currValue) * static_cast<float>(mouseDelta);
+				gBrushPreferences.setHardnessSensistivity(currValue + deltaValue);
+			}
+		}
+		else if (event == eMouseMove && bCollideWithTerrain && (flags & MK_LBUTTON))
+		{
+			const CPoint delta = s_lastMousePoint - point;
+			const CPoint magnitudeFromStart(abs(m_LMButtonDownPoint.x - point.x), abs(m_LMButtonDownPoint.y - point.y));
+
+			if (magnitudeFromStart.x > magnitudeFromStart.y)
+			{
+				// When calculating the weight for changing radius, make sure to invert the axis as well
+				const float finalAmount = static_cast<float>(delta.x) * -gBrushPreferences.radiusSensitivity();
+
+				brush.radius = min(MAX_BRUSH_SIZE, max(0.0f, brush.radius + finalAmount));
+				brush.radiusInside = min(brush.radiusInside, brush.radius);
+
+				brush.hardness = oldHardness;
+				// Set the flag so the user can modify radius sensitivity
+				modifyRadiusSensitivity = true;
+			}
+			else
+			{
+				const float finalAmount = static_cast<float>(delta.y) * gBrushPreferences.hardnessSensistivity();
+
+				brush.radius = oldRadius;
+				brush.radiusInside = oldRadiusInside;
+				brush.hardness = min(MAX_BRUSH_HARDNESS, max(0.0f, brush.hardness + finalAmount));
+				// Set the flag so the user can modify hardness sensitivity
+				modifyRadiusSensitivity = false;
+			}
+			signalPropertiesChanged(this);
 		}
 	}
 	else
@@ -168,7 +270,7 @@ bool CBrushTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point
 		}
 	}
 
-	s_lastMousePoint = QPoint(point.x, point.y);
+	s_lastMousePoint = point;
 
 	return true;
 }
@@ -353,7 +455,7 @@ void CFlattenTool::Serialize(Serialization::IArchive& ar)
 		ar(shareParams, "shareparams", "Share Parameters");
 		ar(Serialization::Range(outRadius, 0.0f, MAX_BRUSH_SIZE), "outradius", "Outside Radius");
 		ar(Serialization::Range(inRadius, 0.0f, MAX_BRUSH_SIZE), "inradius", "Inside Radius");
-		ar(Serialization::Range(getBrush().hardness, 0.0f, 1.0f), "hardness", "Hardness");
+		ar(Serialization::Range(getBrush().hardness, 0.0f, MAX_BRUSH_HARDNESS), "hardness", "Hardness");
 
 		if (ar.openBlock("height", "Height"))
 		{
@@ -625,19 +727,12 @@ bool CHolesTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point
 
 	stPointerPos = view->ViewToWorld(point, &bHitTerrain, true);
 
+	// Initialize it to the first position so we can avoid a huge delta on the first call
+	static CPoint s_lastMousePoint = point;
+
 	if (MK_ALT & flags)
 	{
-		if (event == eMouseMove && bHitTerrain && (flags & MK_LBUTTON))
-		{
-			Vec3 lastPointer = view->ViewToWorld(CPoint(s_lastMousePoint.x(), s_lastMousePoint.y()), &bHitTerrain, true);
-			Vec2 offset(lastPointer.x - stPointerPos.x, lastPointer.y - stPointerPos.y);
-
-			if (bHitTerrain)
-			{
-				getBrush().radius = min(MAX_BRUSH_SIZE, max(0.0f, getBrush().radius + ((0 > (point.x - s_lastMousePoint.x())) ? -offset.GetLength() : offset.GetLength())));
-				signalPropertiesChanged(this);
-			}
-		}
+		return CTerrainTool::MouseCallback(view, event, point, flags);
 	}
 	else
 	{
@@ -670,7 +765,7 @@ bool CHolesTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point
 		}
 	}
 
-	s_lastMousePoint = QPoint(point.x, point.y);
+	s_lastMousePoint = point;
 
 	return true;
 }
