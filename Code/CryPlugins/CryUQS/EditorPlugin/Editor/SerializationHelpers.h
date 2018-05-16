@@ -193,8 +193,8 @@ private:
 
 	SSerializeResult SerializeInternal(Serialization::IArchive& archive, const char* szName, const char* szLabel, const TData* pOldValue, const std::function<void(const TData&)>& setterFunc, const SValidatorKey* pRecord, const string* pLabelForDisplayInDropDownList) const
 	{
-		assert( (pOldValue && !pLabelForDisplayInDropDownList ||
-				(!pOldValue && pLabelForDisplayInDropDownList)));
+		CRY_ASSERT((pOldValue && !pLabelForDisplayInDropDownList ||
+		           (!pOldValue && pLabelForDisplayInDropDownList)));
 
 		const bool bSerializeByData = (pOldValue != nullptr);
 
@@ -227,7 +227,7 @@ private:
 		if (bChanged)
 		{
 			const int newIndex = FindIndexByLabel(strValue.c_str());
-			//assert(newIndex != -1);
+			//CRY_ASSERT(newIndex != -1);
 			if (newIndex != -1)
 			{
 				const TData& newValue = m_entries[newIndex].second;

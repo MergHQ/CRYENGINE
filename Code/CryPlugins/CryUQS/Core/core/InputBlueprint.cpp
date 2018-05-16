@@ -116,7 +116,7 @@ namespace UQS
 
 		const ITextualInputBlueprint& CTextualInputBlueprint::GetChild(size_t index) const
 		{
-			assert(index < m_children.size());
+			CRY_ASSERT(index < m_children.size());
 			return *m_children[index];
 		}
 
@@ -426,8 +426,8 @@ namespace UQS
 						// notice: the type of the shuttle actually specifies the *container* type of items, hence we need access to the *contained* type
 						const Shared::CTypeInfo* pContainedType = pNewChild->m_pFunctionFactory->GetContainedType();
 
-						// if this assert fails, then something must have become inconsistent between Client::Internal::CFunc_ShuttledItems<> and Client::Internal::SContainedTypeRetriever<>
-						assert(pContainedType);
+						// if this CRY_ASSERT fails, then something must have become inconsistent between Client::Internal::CFunc_ShuttledItems<> and Client::Internal::SContainedTypeRetriever<>
+						CRY_ASSERT(pContainedType);
 
 						if (*pContainedType != *pTypeOfPossiblyShuttledItems)
 						{
@@ -472,7 +472,7 @@ namespace UQS
 
 		const CInputBlueprint& CInputBlueprint::GetChild(size_t index) const
 		{
-			assert(index < m_children.size());
+			CRY_ASSERT(index < m_children.size());
 			return *m_children[index];
 		}
 

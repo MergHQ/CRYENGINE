@@ -21,7 +21,7 @@ namespace UQS
 
 		bool Hub_HaveConsistencyChecksBeenDoneAlready()
 		{
-			assert(g_pHub);
+			CRY_ASSERT(g_pHub);
 			return g_pHub->HaveConsistencyChecksBeenDoneAlready();
 		}
 
@@ -40,7 +40,7 @@ namespace UQS
 			, m_queryManager(m_queryHistoryManager)
 			, m_pEditorLibraryProvider(nullptr)
 		{
-			assert(!g_pHub);
+			CRY_ASSERT(!g_pHub);
 			g_pHub = this;
 			GetISystem()->GetISystemEventDispatcher()->RegisterListener(this,"CHub");
 			m_utils.SubscribeToStuffInHub(*this);
@@ -85,9 +85,9 @@ namespace UQS
 		{
 			CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);
 
-			// - if this assert fails, then the game code tries to do the update when it hasn't declared to do so
+			// - if this CRY_ASSERT fails, then the game code tries to do the update when it hasn't declared to do so
 			// - this check is done to prevent updating from more than one place
-			assert(gEnv->IsEditing() || (m_bAutomaticUpdateInProgress == !m_overrideFlags.Check(EHubOverrideFlags::CallUpdate)));
+			CRY_ASSERT(gEnv->IsEditing() || (m_bAutomaticUpdateInProgress == !m_overrideFlags.Check(EHubOverrideFlags::CallUpdate)));
 
 			//
 			// query manager
@@ -207,13 +207,13 @@ namespace UQS
 
 		void CHub::AutomaticUpdateBegin()
 		{
-			assert(!m_bAutomaticUpdateInProgress);
+			CRY_ASSERT(!m_bAutomaticUpdateInProgress);
 			m_bAutomaticUpdateInProgress = true;
 		}
 
 		void CHub::AutomaticUpdateEnd()
 		{
-			assert(m_bAutomaticUpdateInProgress);
+			CRY_ASSERT(m_bAutomaticUpdateInProgress);
 			m_bAutomaticUpdateInProgress = false;
 		}
 
@@ -266,7 +266,7 @@ namespace UQS
 					}
 				}
 
-				// from now on, don't allow any further factory registrations (UQS::Core::CFactoryDatabase<>::RegisterFactory() will assert for it)
+				// from now on, don't allow any further factory registrations (UQS::Core::CFactoryDatabase<>::RegisterFactory() will CRY_ASSERT for it)
 				m_bConsistencyChecksDoneAlready = true;
 
 #if UQS_SCHEMATYC_SUPPORT

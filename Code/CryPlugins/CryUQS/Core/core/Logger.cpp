@@ -25,7 +25,7 @@ namespace UQS
 
 		CLoggerIndentation::~CLoggerIndentation()
 		{
-			assert(s_indentLevel > 0);
+			CRY_ASSERT(s_indentLevel > 0);
 			--s_indentLevel;
 		}
 

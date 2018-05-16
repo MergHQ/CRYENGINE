@@ -174,7 +174,7 @@ namespace UQS
 				m_pHub = nullptr;
 
 				IHubPlugin* pHubPlugin = gEnv->pSystem->GetIPluginManager()->QueryPlugin<IHubPlugin>();
-				assert(pHubPlugin);
+				CRY_ASSERT(pHubPlugin);
 				pHubPlugin->UnregisterHubPluginEventListener(this);
 			}
 		}

@@ -61,9 +61,9 @@ namespace UQS
 				const CInputParameterID id = CInputParameterID::CreateFromString(idAsFourCharacterString);
 
 				// prevent duplicates (these checks will also be done by the StartupConsistencyChecker)
-				assert(std::find_if(m_parametersInOrder.cbegin(), m_parametersInOrder.cend(), [szParamName](const SStoredParameterInfo& p) { return p.name == szParamName; }) == m_parametersInOrder.cend());
-				assert(std::find_if(m_parametersInOrder.cbegin(), m_parametersInOrder.cend(), [id](const SStoredParameterInfo& p) { return p.id == id; }) == m_parametersInOrder.cend());
-				assert(std::find_if(m_parametersInOrder.cbegin(), m_parametersInOrder.cend(), [offset](const SStoredParameterInfo& p) { return p.offset == offset; }) == m_parametersInOrder.cend());
+				CRY_ASSERT(std::find_if(m_parametersInOrder.cbegin(), m_parametersInOrder.cend(), [szParamName](const SStoredParameterInfo& p) { return p.name == szParamName; }) == m_parametersInOrder.cend());
+				CRY_ASSERT(std::find_if(m_parametersInOrder.cbegin(), m_parametersInOrder.cend(), [id](const SStoredParameterInfo& p) { return p.id == id; }) == m_parametersInOrder.cend());
+				CRY_ASSERT(std::find_if(m_parametersInOrder.cbegin(), m_parametersInOrder.cend(), [offset](const SStoredParameterInfo& p) { return p.offset == offset; }) == m_parametersInOrder.cend());
 
 				SStoredParameterInfo pi(szParamName, id, typeInfo, offset, szDescription);
 				m_parametersInOrder.push_back(pi);
@@ -76,7 +76,7 @@ namespace UQS
 
 			inline IInputParameterRegistry::SParameterInfo CInputParameterRegistry::GetParameter(size_t index) const
 			{
-				assert(index < m_parametersInOrder.size());
+				CRY_ASSERT(index < m_parametersInOrder.size());
 				const SStoredParameterInfo& pi = m_parametersInOrder[index];
 				return SParameterInfo(pi.name.c_str(), pi.id, pi.type, pi.offset, pi.description.c_str());
 			}

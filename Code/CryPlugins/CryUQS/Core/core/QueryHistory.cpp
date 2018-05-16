@@ -258,7 +258,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricInstantEvaluatorResult& result = item.resultOfAllInstantEvaluators[instantEvaluatorIndex];
-			assert(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
 			result.nonWeightedScore = nonWeightedSingleScore;
 			result.weightedScore = weightedSingleScore;
 			result.status = SHistoricInstantEvaluatorResult::EStatus::HasFinishedAndScoredTheItem;
@@ -269,7 +269,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricInstantEvaluatorResult& result = item.resultOfAllInstantEvaluators[instantEvaluatorIndex];
-			assert(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricInstantEvaluatorResult::EStatus::HasFinishedAndDiscardedTheItem;
 		}
 
@@ -277,7 +277,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricInstantEvaluatorResult& result = item.resultOfAllInstantEvaluators[instantEvaluatorIndex];
-			assert(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricInstantEvaluatorResult::EStatus::ExceptionOccurredInFunctionCall;
 			result.furtherInformationAboutStatus = szExceptionMessage;
 		}
@@ -286,7 +286,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricInstantEvaluatorResult& result = item.resultOfAllInstantEvaluators[instantEvaluatorIndex];
-			assert(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricInstantEvaluatorResult::EStatus::ExceptionOccurredInHimself;
 			result.furtherInformationAboutStatus = szExceptionMessage;
 		}
@@ -295,7 +295,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
-			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow;
 		}
 
@@ -303,7 +303,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
-			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
+			CRY_ASSERT(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
 			result.nonWeightedScore = nonWeightedSingleScore;
 			result.weightedScore = weightedSingleScore;
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::HasFinishedAndScoredTheItem;
@@ -314,14 +314,14 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
-			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
+			CRY_ASSERT(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::HasFinishedAndDiscardedTheItem;
 		}
 
 		void CHistoricQuery::OnDeferredEvaluatorGotAborted(size_t deferredEvaluatorIndex, size_t itemIndex, const char* szReasonForAbort)
 		{
 			SHistoricDeferredEvaluatorResult& result = m_items[itemIndex].resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
-			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
+			CRY_ASSERT(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::GotAborted;
 			result.furtherInformationAboutStatus = szReasonForAbort;
 		}
@@ -330,7 +330,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
-			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::ExceptionOccurredInFunctionCall;
 			result.furtherInformationAboutStatus = szExceptionMessage;
 		}
@@ -339,7 +339,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
-			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::ExceptionOccurredInHimself;
 			result.furtherInformationAboutStatus = szExceptionMessage;
 		}
@@ -518,7 +518,7 @@ namespace UQS
 				return (m_queryDestroyedFrame - m_queryCreatedFrame);
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 				return 0;
 			}
 		}
@@ -538,7 +538,7 @@ namespace UQS
 				return (m_queryDestroyedTimestamp - m_queryCreatedTimestamp);
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 				return CTimeValue();
 			}
 		}
@@ -605,7 +605,7 @@ namespace UQS
 
 				// accept all remaining item stati
 
-				assert(status == EItemAnalyzeStatus::DisqualifiedDueToBadScoreAfterAllEvaluatorsHadRun || status == EItemAnalyzeStatus::StillBeingEvaluated || status == EItemAnalyzeStatus::SurvivedAllEvaluators);
+				CRY_ASSERT(status == EItemAnalyzeStatus::DisqualifiedDueToBadScoreAfterAllEvaluatorsHadRun || status == EItemAnalyzeStatus::StillBeingEvaluated || status == EItemAnalyzeStatus::SurvivedAllEvaluators);
 
 				//
 				// update the range of best/worst score
@@ -677,7 +677,7 @@ namespace UQS
 					break;
 
 				default:
-					assert(0);
+					CRY_ASSERT(0);
 				}
 
 				m_debugRenderWorldPersistent.DrawAllAddedPrimitivesAssociatedWithItem(i, evaluatorDrawMasks, color, bShowDetails);
@@ -929,7 +929,7 @@ namespace UQS
 
 		void CHistoricQuery::FillQueryHistoryConsumerWithDetailedInfoAboutItem(IQueryHistoryConsumer& consumer, size_t itemIndex) const
 		{
-			assert(itemIndex < m_items.size());
+			CRY_ASSERT(itemIndex < m_items.size());
 
 			const SHistoricItem& item = m_items[itemIndex];
 
@@ -1198,7 +1198,7 @@ namespace UQS
 
 		const CHistoricQuery& CQueryHistory::GetHistoryEntryByIndex(size_t index) const
 		{
-			assert(index < m_history.size());
+			CRY_ASSERT(index < m_history.size());
 			return *m_history[index];
 		}
 

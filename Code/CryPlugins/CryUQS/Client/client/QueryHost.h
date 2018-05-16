@@ -319,14 +319,14 @@ namespace UQS
 
 		inline const Core::IQueryResultSet& CQueryHost::GetResultSet() const
 		{
-			assert(m_runningStatus == ERunningStatus::FinishedWithSuccess);
-			assert(m_pResultSet);
+			CRY_ASSERT(m_runningStatus == ERunningStatus::FinishedWithSuccess);
+			CRY_ASSERT(m_pResultSet);
 			return *m_pResultSet;
 		}
 
 		inline const char* CQueryHost::GetExceptionMessage() const
 		{
-			assert(m_runningStatus == ERunningStatus::ExceptionOccurred);
+			CRY_ASSERT(m_runningStatus == ERunningStatus::ExceptionOccurred);
 			return m_exceptionMessageIfAny.c_str();
 		}
 
@@ -337,7 +337,7 @@ namespace UQS
 
 		inline void CQueryHost::OnUQSQueryFinished(const Core::SQueryResult& result)
 		{
-			assert(result.queryID == m_queryID);
+			CRY_ASSERT(result.queryID == m_queryID);
 
 			m_queryID = Core::CQueryID::CreateInvalid();
 
@@ -360,7 +360,7 @@ namespace UQS
 				break;
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 				m_exceptionMessageIfAny = "CQueryHost::OnUQSQueryFinished: unhandled status enum.";
 				m_runningStatus = ERunningStatus::ExceptionOccurred;
 				break;
@@ -429,7 +429,7 @@ namespace UQS
 		template <class TItem>
 		typename CQueryHostT<TItem>::SResultingItemWithScore CQueryHostT<TItem>::GetResultSetItem(size_t index) const
 		{
-			assert(GetResultSet().GetItemFactory().GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
+			CRY_ASSERT(GetResultSet().GetItemFactory().GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
 			const Core::IQueryResultSet::SResultSetEntry& resultSetEntry = GetResultSet().GetResult(index);
 			SResultingItemWithScore res = { *static_cast<const TItem*>(resultSetEntry.pItem), resultSetEntry.score };
 			return res;

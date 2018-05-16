@@ -22,7 +22,7 @@ namespace UQS
 			const CLeafFunctionReturnValue* pLeafFunctionReturnValue = m_returnValueInCaseOfLeafFunction.IsActuallyALeafFunction() ? &m_returnValueInCaseOfLeafFunction : nullptr;
 			const Client::IFunction::SCtorContext ctorContext(pLeafFunctionReturnValue, blackboard, m_functionFactory.GetInputParameterRegistry(), m_bAddReturnValueToDebugRenderWorldUponExecution);
 			Client::FunctionUniquePtr pFunc = m_functionFactory.CreateFunction(ctorContext);
-			assert(pFunc);       // function factories are never supposed to return nullptr
+			CRY_ASSERT(pFunc);       // function factories are never supposed to return nullptr
 
 			//
 			// recursively build our input parameters (which are live functions that return the parameter value when getting called)

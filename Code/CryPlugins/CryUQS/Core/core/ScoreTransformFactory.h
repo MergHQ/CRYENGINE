@@ -29,7 +29,7 @@ namespace UQS
 			// ~IScoreTransformFactory
 
 			static void                           InstantiateFactories();
-			static const CScoreTransformFactory&  GetDefaultScoreTransformFactory();   // this may only be called after InstantiateFactories(); will assert() and crash otherwise
+			static const CScoreTransformFactory&  GetDefaultScoreTransformFactory();   // this may only be called after InstantiateFactories(); will CRY_ASSERT() and crash otherwise
 
 		private:
 

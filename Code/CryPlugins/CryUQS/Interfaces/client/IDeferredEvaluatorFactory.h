@@ -69,7 +69,7 @@ namespace UQS
 
 			inline void CDeferredEvaluatorDeleter::operator()(IDeferredEvaluator* pDeferredEvaluatorToDelete)
 			{
-				assert(m_pDeferredEvaluatorFactory);
+				CRY_ASSERT(m_pDeferredEvaluatorFactory);
 				m_pDeferredEvaluatorFactory->DestroyDeferredEvaluator(pDeferredEvaluatorToDelete);
 			}
 

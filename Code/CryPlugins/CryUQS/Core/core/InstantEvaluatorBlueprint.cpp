@@ -24,7 +24,7 @@ namespace UQS
 
 		Client::IInstantEvaluatorFactory& CInstantEvaluatorBlueprint::GetFactory() const
 		{
-			assert(m_pInstantEvaluatorFactory);
+			CRY_ASSERT(m_pInstantEvaluatorFactory);
 			return *m_pInstantEvaluatorFactory;
 		}
 
@@ -106,7 +106,7 @@ namespace UQS
 
 		const Client::IInputParameterRegistry& CInstantEvaluatorBlueprint::GetInputParameterRegistry() const
 		{
-			assert(m_pInstantEvaluatorFactory);
+			CRY_ASSERT(m_pInstantEvaluatorFactory);
 			return m_pInstantEvaluatorFactory->GetInputParameterRegistry();
 		}
 

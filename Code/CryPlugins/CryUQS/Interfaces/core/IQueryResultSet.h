@@ -62,7 +62,7 @@ namespace UQS
 		{
 			void operator()(IQueryResultSet* pQueryResultSetToDelete)
 			{
-				assert(pQueryResultSetToDelete);
+				CRY_ASSERT(pQueryResultSetToDelete);
 				pQueryResultSetToDelete->DeleteSelf();
 			}
 		};

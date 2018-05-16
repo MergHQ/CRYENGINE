@@ -24,7 +24,7 @@ namespace UQS
 
 		Client::IDeferredEvaluatorFactory& CDeferredEvaluatorBlueprint::GetFactory() const
 		{
-			assert(m_pDeferredEvaluatorFactory);
+			CRY_ASSERT(m_pDeferredEvaluatorFactory);
 			return *m_pDeferredEvaluatorFactory;
 		}
 
@@ -73,7 +73,7 @@ namespace UQS
 
 		const Client::IInputParameterRegistry& CDeferredEvaluatorBlueprint::GetInputParameterRegistry() const
 		{
-			assert(m_pDeferredEvaluatorFactory);
+			CRY_ASSERT(m_pDeferredEvaluatorFactory);
 			return m_pDeferredEvaluatorFactory->GetInputParameterRegistry();
 		}
 

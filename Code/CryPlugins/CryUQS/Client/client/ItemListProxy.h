@@ -43,7 +43,7 @@ namespace UQS
 			, m_itemCount(itemList.GetItemCount())
 		{
 			// ensure type correctness (this presumes that given item-list has already been provided with an item-factory)
-			assert(m_pItemFactory->GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
+			CRY_ASSERT(m_pItemFactory->GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
 		}
 
 		template <class TItem>
@@ -64,7 +64,7 @@ namespace UQS
 		template <class TItem>
 		const TItem& CItemListProxy_Readable<TItem>::GetItemAtIndex(size_t index) const
 		{
-			assert(index < m_itemCount);
+			CRY_ASSERT(index < m_itemCount);
 			return *static_cast<const TItem*>(m_pItemFactory->GetItemAtIndex(m_pItems, index));
 		}
 
@@ -106,7 +106,7 @@ namespace UQS
 			, m_itemCount(itemList.GetItemCount())  // ditto
 		{
 			// ensure type correctness (this presumes that given item-list has already been provided with an item-factory)
-			assert(itemList.GetItemFactory().GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
+			CRY_ASSERT(itemList.GetItemFactory().GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
 		}
 
 		template <class TItem>
@@ -122,7 +122,7 @@ namespace UQS
 		template <class TItem>
 		void CItemListProxy_Writable<TItem>::CloneItems(const TItem* pOriginalItems, size_t numItemsToClone)
 		{
-			assert(pOriginalItems);
+			CRY_ASSERT(pOriginalItems);
 
 			m_itemList.CloneItems(pOriginalItems, numItemsToClone);
 
@@ -134,7 +134,7 @@ namespace UQS
 		template <class TItem>
 		TItem& CItemListProxy_Writable<TItem>::GetItemAtIndex(size_t index)
 		{
-			assert(index < m_itemCount);
+			CRY_ASSERT(index < m_itemCount);
 			return *static_cast<TItem*>(m_itemFactory.GetItemAtIndex(m_pItems, index));
 		}
 

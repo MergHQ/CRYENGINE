@@ -63,7 +63,7 @@ namespace UQS
 
 		inline void CSyntaxErrorCollectorDeleter::operator()(ISyntaxErrorCollector* pSyntaxErrorCollectorToDelete)
 		{
-			assert(m_pDeleteFunc);
+			CRY_ASSERT(m_pDeleteFunc);
 			(*m_pDeleteFunc)(pSyntaxErrorCollectorToDelete);
 		}
 

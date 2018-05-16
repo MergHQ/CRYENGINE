@@ -17,7 +17,7 @@ namespace UQS
 
 		void CQuery_Fallbacks::HandleChildQueryFinishedWithSuccess(const CQueryID& childQueryID, QueryResultSetUniquePtr&& pResultSet)
 		{
-			assert(pResultSet != nullptr);
+			CRY_ASSERT(pResultSet != nullptr);
 
 			if (pResultSet->GetResultCount() == 0 && HasMoreChildrenLeftToInstantiate())
 			{
@@ -33,7 +33,7 @@ namespace UQS
 
 				// transfer all item-monitors from the child to ourself to keep monitoring until a higher-level query decides differently
 				CQueryBase* pChildQuery = g_pHub->GetQueryManager().FindQueryByQueryID(childQueryID);
-				assert(pChildQuery);
+				CRY_ASSERT(pChildQuery);
 				pChildQuery->TransferAllItemMonitorsToOtherQuery(*this);
 			}
 		}

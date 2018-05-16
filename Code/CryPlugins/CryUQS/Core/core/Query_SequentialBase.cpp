@@ -88,14 +88,14 @@ namespace UQS
 
 		void CQuery_SequentialBase::OnChildQueryFinished(const SQueryResult& result)
 		{
-			assert(m_queryIDOfCurrentlyRunningChild == result.queryID);
+			CRY_ASSERT(m_queryIDOfCurrentlyRunningChild == result.queryID);
 
 			m_queryIDOfCurrentlyRunningChild = CQueryID::CreateInvalid();
 
 			switch (result.status)
 			{
 			case SQueryResult::EStatus::Success:
-				assert(result.pResultSet != nullptr);
+				CRY_ASSERT(result.pResultSet != nullptr);
 				HandleChildQueryFinishedWithSuccess(result.queryID, std::move(result.pResultSet));
 				break;
 
@@ -110,7 +110,7 @@ namespace UQS
 				break;
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 			}
 		}
 
@@ -121,8 +121,8 @@ namespace UQS
 
 		void CQuery_SequentialBase::InstantiateNextChildQueryBlueprint(const std::shared_ptr<CItemList>& pResultingItemsOfPotentialPreviousChildQuery)
 		{
-			assert(m_indexOfNextChildToInstantiate < m_pQueryBlueprint->GetChildCount());
-			assert(!m_queryIDOfCurrentlyRunningChild.IsValid());
+			CRY_ASSERT(m_indexOfNextChildToInstantiate < m_pQueryBlueprint->GetChildCount());
+			CRY_ASSERT(!m_queryIDOfCurrentlyRunningChild.IsValid());
 
 			const size_t indexOfChildToInstantiate = m_indexOfNextChildToInstantiate++;
 			std::shared_ptr<const CQueryBlueprint> pChildQueryBlueprintToInstantiate = m_pQueryBlueprint->GetChild(indexOfChildToInstantiate);

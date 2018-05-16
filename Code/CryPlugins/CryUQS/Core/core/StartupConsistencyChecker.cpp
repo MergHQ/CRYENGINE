@@ -397,7 +397,7 @@ namespace UQS
 
 		const char* CStartupConsistencyChecker::GetError(size_t index) const
 		{
-			assert(index < m_errors.size());
+			CRY_ASSERT(index < m_errors.size());
 			return m_errors[index].c_str();
 		}
 

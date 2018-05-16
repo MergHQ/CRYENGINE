@@ -129,7 +129,7 @@ struct SQuery
 
 	static void HelpSerializeEvaluatorsBitfield(Serialization::IArchive& ar, UQS::Core::evaluatorsBitfield_t& bitfieldToSerialize, const std::vector<string>& evaluatorNames, const std::vector<string>& evaluatorLabelsForUI)
 	{
-		assert(evaluatorNames.size() == evaluatorLabelsForUI.size());
+		CRY_ASSERT(evaluatorNames.size() == evaluatorLabelsForUI.size());
 
 		for (size_t i = 0, n = evaluatorNames.size(); i < n; ++i)
 		{
@@ -227,7 +227,7 @@ public:
 
 	Q_INVOKABLE virtual QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override
 	{
-		assert(row >= 0 && column >= 0);
+		CRY_ASSERT(row >= 0 && column >= 0);
 
 		const SQuery* pParentQuery;
 
@@ -260,7 +260,7 @@ public:
 
 		const SQuery* pChildQuery = static_cast<SQuery*>(child.internalPointer());
 		const SQuery* pParentQuery = pChildQuery->pParent;
-		assert(pParentQuery);
+		CRY_ASSERT(pParentQuery);
 
 		if (pParentQuery == &m_root)
 		{
@@ -275,7 +275,7 @@ public:
 			}
 		}
 
-		assert(0);
+		CRY_ASSERT(0);
 		return QModelIndex();
 	}
 
@@ -358,11 +358,11 @@ public:
 		switch (role)
 		{
 		case Qt::DisplayRole:
-			assert(section >= 0 && section < SQuery::ColumnCount);
+			CRY_ASSERT(section >= 0 && section < SQuery::ColumnCount);
 			return SQuery::headers[section];
 
 		case Qt::ToolTipRole:
-			assert(section >= 0 && section < SQuery::ColumnCount);
+			CRY_ASSERT(section >= 0 && section < SQuery::ColumnCount);
 			return SQuery::toolTips[section];
 
 		default:
@@ -379,12 +379,12 @@ public:
 		{
 			pParent = SQuery::FindQueryByQueryID(&m_root, overview.parentQueryID);
 
-			// FIXME: this assert() should be handled properly.
+			// FIXME: this CRY_ASSERT() should be handled properly.
 			//        -> What most likely happend is:
 			//           The history got cleared inbetween having already stored information about the parent and this child now receiving its information.
 			//           A typical scenario is when a parent query keeps running for a while, then the user clears the history and *then* the parent query starts its next child
 			//           => Once that child finishes and reports back to the history, the historic counterpart of its parent is already gone.
-			assert(pParent);
+			CRY_ASSERT(pParent);
 		}
 		else
 		{
@@ -681,7 +681,7 @@ void CMainEditorWindow::OnQueryHistoryEvent(const UQS::Core::IQueryHistoryListen
 	case UQS::Core::IQueryHistoryListener::EEventType::HistoricQueryJustFinishedInLiveQueryHistory:
 		if (m_pQueryHistoryManager->GetCurrentQueryHistory() == UQS::Core::IQueryHistoryManager::EHistoryOrigin::Live)
 		{
-			assert(ev.relatedQueryID.IsValid());
+			CRY_ASSERT(ev.relatedQueryID.IsValid());
 			m_pQueryHistoryManager->EnumerateSingleHistoricQuery(m_pQueryHistoryManager->GetCurrentQueryHistory(), ev.relatedQueryID, *this);
 		}
 		break;
@@ -734,7 +734,7 @@ void CMainEditorWindow::OnQueryHistoryEvent(const UQS::Core::IQueryHistoryListen
 
 void CMainEditorWindow::AddOrUpdateHistoricQuery(const SHistoricQueryOverview& overview)
 {
-	assert(m_pFreshlyAddedOrUpdatedQuery == nullptr);
+	CRY_ASSERT(m_pFreshlyAddedOrUpdatedQuery == nullptr);
 	
 	m_pFreshlyAddedOrUpdatedQuery = m_pTreeModel->AddOrUpdateHistoricQuery(overview);
 
@@ -778,7 +778,7 @@ void CMainEditorWindow::AddTextLineToFocusedItem(const ColorF& color, const char
 
 void CMainEditorWindow::AddInstantEvaluatorName(const char* szInstantEvaluatorName)
 {
-	assert(m_pFreshlyAddedOrUpdatedQuery);
+	CRY_ASSERT(m_pFreshlyAddedOrUpdatedQuery);
 
 	m_pFreshlyAddedOrUpdatedQuery->instantEvaluatorNames.push_back(szInstantEvaluatorName);
 
@@ -789,7 +789,7 @@ void CMainEditorWindow::AddInstantEvaluatorName(const char* szInstantEvaluatorNa
 
 void CMainEditorWindow::AddDeferredEvaluatorName(const char* szDeferredEvaluatorName)
 {
-	assert(m_pFreshlyAddedOrUpdatedQuery);
+	CRY_ASSERT(m_pFreshlyAddedOrUpdatedQuery);
 
 	m_pFreshlyAddedOrUpdatedQuery->deferredEvaluatorNames.push_back(szDeferredEvaluatorName);
 
@@ -823,7 +823,7 @@ void CMainEditorWindow::OnHistoryOriginComboBoxSelectionChanged(int index)
 	if (m_pQueryHistoryManager)
 	{
 		const QVariant data = m_pComboBoxHistoryOrigin->itemData(index);
-		assert(data.type() == QVariant::Int);
+		CRY_ASSERT(data.type() == QVariant::Int);
 		const UQS::Core::IQueryHistoryManager::EHistoryOrigin origin = (UQS::Core::IQueryHistoryManager::EHistoryOrigin)data.toInt();
 		m_pQueryHistoryManager->MakeQueryHistoryCurrent(origin);
 	}

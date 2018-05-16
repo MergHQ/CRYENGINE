@@ -98,7 +98,7 @@ namespace UQS
 		};
 
 		// - this gets set to a valid instance in CHub::CHub() and reset in CHub::~CHub()
-		// - only one instance can exist at a time (or an assert() will fail)
+		// - only one instance can exist at a time (or an CRY_ASSERT() will fail)
 		extern CHub*   g_pHub;
 
 	}

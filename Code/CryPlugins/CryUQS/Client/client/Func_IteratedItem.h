@@ -43,7 +43,7 @@ namespace UQS
 				: BaseClass(ctorContext)
 				, m_pGeneratedItems(nullptr)
 			{
-				assert(ctorContext.pOptionalReturnValueInCaseOfLeafFunction);
+				CRY_ASSERT(ctorContext.pOptionalReturnValueInCaseOfLeafFunction);
 
 				const Core::ILeafFunctionReturnValue::SItemIterationInfo itemIterationInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetItemIteration(ctorContext.blackboard);
 
@@ -77,8 +77,8 @@ namespace UQS
 			template <class TItem>
 			TItem CFunc_IteratedItem<TItem>::DoExecute(const SExecuteContext& executeContext) const
 			{
-				assert(m_pGeneratedItems);
-				assert(m_pGeneratedItems->GetItemFactory().GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
+				CRY_ASSERT(m_pGeneratedItems);
+				CRY_ASSERT(m_pGeneratedItems->GetItemFactory().GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
 				const Client::CItemListProxy_Readable<TItem> actualItems(*m_pGeneratedItems);
 				return actualItems.GetItemAtIndex(executeContext.currentItemIndex);
 			}
