@@ -277,14 +277,14 @@ void CGameVolume_Water::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CGameVolume_Water::GetEventMask() const
+Cry::Entity::EventFlags CGameVolume_Water::GetEventMask() const
 {
 	return 
-		BIT64(ENTITY_EVENT_EDITOR_PROPERTY_CHANGED) |
-		BIT64(ENTITY_EVENT_RESET) |
-		BIT64(ENTITY_EVENT_XFORM) |
-		BIT64(ENTITY_EVENT_HIDE) |
-		BIT64(ENTITY_EVENT_UNHIDE);
+		ENTITY_EVENT_EDITOR_PROPERTY_CHANGED |
+		ENTITY_EVENT_RESET |
+		ENTITY_EVENT_XFORM |
+		ENTITY_EVENT_HIDE |
+		ENTITY_EVENT_UNHIDE;
 }
 
 void CGameVolume_Water::GetMemoryUsage(ICrySizer* pSizer) const

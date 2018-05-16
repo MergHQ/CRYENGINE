@@ -194,20 +194,20 @@ bool CEntityAINavigationComponent::IsGameOrSimulation() const
 	return gEnv->IsGameOrSimulation();
 }
 
-uint64 CEntityAINavigationComponent::GetEventMask() const 
+Cry::Entity::EventFlags CEntityAINavigationComponent::GetEventMask() const
 { 
-	uint64 eventMask = kDefaultEntityEventMask;
+	Cry::Entity::EventFlags eventMask = kDefaultEntityEventMask;
 
 	IEntity* pEntity = GetEntity();
 	if (IsGameOrSimulation())
 	{
 		if (m_bUpdateTransformation)
 		{
-			eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
+			eventMask |= ENTITY_EVENT_UPDATE;
 		}
 		if (!pEntity->GetPhysics())
 		{
-			eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_PREPHYSICSUPDATE);
+			eventMask |= ENTITY_EVENT_PREPHYSICSUPDATE;
 		}
 	}
 	return eventMask;
@@ -217,18 +217,18 @@ void CEntityAINavigationComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
-		case EEntityEvent::ENTITY_EVENT_UPDATE:
+		case ENTITY_EVENT_UPDATE:
 		{
 			SEntityUpdateContext* updateContext = reinterpret_cast<SEntityUpdateContext*>(event.nParam[0]);
 			UpdateTransformation(updateContext->fFrameTime);
 			break;
 		}
-		case EEntityEvent::ENTITY_EVENT_PREPHYSICSUPDATE:
+		case ENTITY_EVENT_PREPHYSICSUPDATE:
 		{
 			UpdateVelocity(event.fParam[0]);
 			break;
 		}
-		case EEntityEvent::ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
+		case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED:
 		{
 			if (IsGameOrSimulation())
 			{
@@ -237,7 +237,7 @@ void CEntityAINavigationComponent::ProcessEvent(const SEntityEvent& event)
 			GetEntity()->UpdateComponentEventMask(this);
 			break;
 		}
-		case EEntityEvent::ENTITY_EVENT_RESET:
+		case ENTITY_EVENT_RESET:
 		{
 			if (GetEntity()->GetSimulationMode() != EEntitySimulationMode::Game)
 			{
@@ -249,7 +249,7 @@ void CEntityAINavigationComponent::ProcessEvent(const SEntityEvent& event)
 			}
 			break;
 		}
-		case EEntityEvent::ENTITY_EVENT_START_GAME:
+		case ENTITY_EVENT_START_GAME:
 		{
 			if (IsGameOrSimulation())
 			{

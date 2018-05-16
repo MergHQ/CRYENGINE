@@ -214,9 +214,9 @@ void CWaterRipplesGenerator::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CWaterRipplesGenerator::GetEventMask() const
+Cry::Entity::EventFlags CWaterRipplesGenerator::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_RESET;
 }
 
 void CWaterRipplesGenerator::ProcessHit(bool isMoving)

@@ -80,17 +80,9 @@ void CEntityComponentRope::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CEntityComponentRope::GetEventMask() const
+Cry::Entity::EventFlags CEntityComponentRope::GetEventMask() const
 {
-	return
-	  BIT64(ENTITY_EVENT_HIDE) |
-	  BIT64(ENTITY_EVENT_UNHIDE) |
-	  BIT64(ENTITY_EVENT_VISIBLE) |
-	  BIT64(ENTITY_EVENT_INVISIBLE) |
-	  BIT64(ENTITY_EVENT_DONE) |
-	  BIT64(ENTITY_EVENT_PHYS_BREAK) |
-	  BIT64(ENTITY_EVENT_LEVEL_LOADED) |
-	  BIT64(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_HIDE | ENTITY_EVENT_UNHIDE | ENTITY_EVENT_VISIBLE | ENTITY_EVENT_INVISIBLE | ENTITY_EVENT_DONE | ENTITY_EVENT_PHYS_BREAK | ENTITY_EVENT_LEVEL_LOADED | ENTITY_EVENT_RESET;
 }
 
 //////////////////////////////////////////////////////////////////////////

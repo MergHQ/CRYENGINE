@@ -1364,12 +1364,18 @@ struct ISystem
 	//////////////////////////////////////////////////////////////////////////
 	// IXmlNode interface.
 	//!	 Creates new xml node.
+	//! \par Example
+	//! \include CrySystem/Examples/XmlWriting.cpp
 	virtual XmlNodeRef CreateXmlNode(const char* sNodeName = "", bool bReuseStrings = false) = 0;
 
 	//! Loads xml from memory buffer, returns 0 if load failed.
+	//! \par Example
+	//! \include CrySystem/Examples/XmlParsing.cpp
 	virtual XmlNodeRef LoadXmlFromBuffer(const char* buffer, size_t size, bool bReuseStrings = false) = 0;
 
 	//! Loads xml file, returns 0 if load failed.
+	//! \par Example
+	//! \include CrySystem/Examples/XmlParsing.cpp
 	virtual XmlNodeRef LoadXmlFromFile(const char* sFilename, bool bReuseStrings = false) = 0;
 
 	//! Retrieves access to XML utilities interface.

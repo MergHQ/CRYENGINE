@@ -23,7 +23,7 @@ public:
 	virtual void OnShutDown() override;
 
 	virtual void ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const override { return m_entityEventMask; };
+	virtual Cry::Entity::EventFlags GetEventMask() const override { return m_entityEventMask; };
 	// ~IEntityComponent
 
 	// IEntityListenerComponent
@@ -55,7 +55,7 @@ private:
 
 	Perception::SListenerParams m_params;
 	Perception::ListenerParamsChangeOptions::Value m_changeHintFlags;
-	uint64 m_entityEventMask;
+	Cry::Entity::EventFlags m_entityEventMask;
 
 	EntityId m_registeredEntityId = INVALID_ENTITYID;
 	bool     m_userConditionResult = false;

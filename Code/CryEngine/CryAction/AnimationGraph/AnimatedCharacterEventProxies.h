@@ -20,7 +20,7 @@ protected:
 	explicit CAnimatedCharacterComponent_Base();
 
 	virtual void ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override;
 	virtual void OnPrePhysicsUpdate(float elapseTime) = 0;
 
 	virtual void GameSerialize(TSerialize ser) override {};

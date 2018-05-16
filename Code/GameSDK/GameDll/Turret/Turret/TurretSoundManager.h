@@ -176,6 +176,11 @@ public:
 		ReleaseResources();
 	}
 
+	Cry::Entity::EventFlags GetEventMask() const
+	{
+		return ENTITY_EVENT_HIDE | ENTITY_EVENT_UNHIDE | ENTITY_EVENT_DEACTIVATED | ENTITY_EVENT_ACTIVATED;
+	}
+
 	void ProcessEvent( const SEntityEvent& event )
 	{
 		switch( event.event )

@@ -125,12 +125,12 @@ void CTriggerComponent::OnShutDown()
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CTriggerComponent::GetEventMask() const
+Cry::Entity::EventFlags CTriggerComponent::GetEventMask() const
 {
-	uint64 mask = ENTITY_EVENT_BIT(ENTITY_EVENT_AUDIO_TRIGGER_STARTED) | ENTITY_EVENT_BIT(ENTITY_EVENT_AUDIO_TRIGGER_ENDED) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME);
+	Cry::Entity::EventFlags mask = ENTITY_EVENT_AUDIO_TRIGGER_STARTED | ENTITY_EVENT_AUDIO_TRIGGER_ENDED | ENTITY_EVENT_START_GAME;
 
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
-	mask |= ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	mask |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 #endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 
 	return mask;

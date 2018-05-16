@@ -108,9 +108,9 @@ namespace SchematycBaseEnv
 
 	void CEntityGameObjectExtension::PostRemoteSpawn() {}
 
-	uint64 CEntityGameObjectExtension::GetEventMask() const
+	Cry::Entity::EventFlags CEntityGameObjectExtension::GetEventMask() const
 	{
-		return BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_START_LEVEL) | BIT64(ENTITY_EVENT_DONE);
+		return ENTITY_EVENT_RESET | ENTITY_EVENT_START_LEVEL | ENTITY_EVENT_DONE;
 	}
 
 	void CEntityGameObjectExtension::ProcessEvent(const SEntityEvent& event)

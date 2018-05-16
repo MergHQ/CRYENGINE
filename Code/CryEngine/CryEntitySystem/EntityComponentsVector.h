@@ -16,8 +16,8 @@ struct SEntityComponentRecord
 {
 	int                               proxyType;            //!< Proxy id associated with this component (Only when component correspond to know proxy, -1 overwise)
 	int                               eventPriority;        //!< Event dispatch priority
-	uint16                            creationOrder;        //!< Determines when an order was constructed, i.e. 0 = first component, 1 = second. Not necessarily sequential.
-	EntityEventMask                   registeredEventsMask; //!< Bitmask of the EEntityEvent values
+	uint16                            creationOrder;        //!< Determines when an order was constructed, i.e. 0 = first component, 1 = second. Not necessarily sequential.	
+	Cry::Entity::EventFlags           registeredEventsMask; //!< Bitmask of the EEntityEvent values
 	CryInterfaceID                    typeId;               //!< Interface IDD for the registered component.
 	std::shared_ptr<IEntityComponent> pComponent;           //!< Pointer to the owned component, Only the entity owns the component life time
 

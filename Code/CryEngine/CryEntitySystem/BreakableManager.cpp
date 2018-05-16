@@ -1604,7 +1604,7 @@ public:
 			}
 		}
 	}
-	virtual uint64 GetEventMask() const final { return BIT64(ENTITY_EVENT_TIMER) | BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE); }
+	virtual Cry::Entity::EventFlags GetEventMask() const final { return ENTITY_EVENT_TIMER | ENTITY_EVENT_RENDER_VISIBILITY_CHANGE; }
 	virtual void   Initialize() final
 	{
 		m_pEntity->AddFlags(ENTITY_FLAG_NO_SAVE | ENTITY_FLAG_SEND_RENDER_EVENT);

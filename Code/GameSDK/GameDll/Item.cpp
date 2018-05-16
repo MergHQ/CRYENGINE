@@ -822,9 +822,9 @@ void CItem::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CItem::GetEventMask() const
+Cry::Entity::EventFlags CItem::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_ANIM_EVENT) | BIT64(ENTITY_EVENT_TIMER) | BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_PRE_SERIALIZE) | BIT64(ENTITY_EVENT_DEACTIVATED);
+	return ENTITY_EVENT_ANIM_EVENT | ENTITY_EVENT_TIMER | ENTITY_EVENT_RESET | ENTITY_EVENT_PRE_SERIALIZE | ENTITY_EVENT_DEACTIVATED;
 }
 
 //------------------------------------------------------------------------

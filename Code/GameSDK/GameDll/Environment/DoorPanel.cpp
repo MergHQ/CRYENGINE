@@ -318,9 +318,9 @@ void CDoorPanel::ProcessEvent( const SEntityEvent& entityEvent )
 	}
 }
 
-uint64 CDoorPanel::GetEventMask() const
+Cry::Entity::EventFlags CDoorPanel::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_UNHIDE) | BIT64(ENTITY_EVENT_HIDE) | BIT64(ENTITY_EVENT_LINK) | BIT64(ENTITY_EVENT_DELINK);
+	return ENTITY_EVENT_RESET | ENTITY_EVENT_UNHIDE | ENTITY_EVENT_HIDE | ENTITY_EVENT_LINK | ENTITY_EVENT_DELINK;
 }
 
 void CDoorPanel::GetMemoryUsage( ICrySizer *pSizer ) const

@@ -51,9 +51,9 @@ void CEntityComponentClipVolume::ProcessEvent(const SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CEntityComponentClipVolume::GetEventMask() const
+Cry::Entity::EventFlags CEntityComponentClipVolume::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_HIDE) | BIT64(ENTITY_EVENT_UNHIDE);
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_HIDE | ENTITY_EVENT_UNHIDE;
 }
 
 void CEntityComponentClipVolume::UpdateRenderMesh(IRenderMesh* pRenderMesh, const DynArray<Vec3>& meshFaces)

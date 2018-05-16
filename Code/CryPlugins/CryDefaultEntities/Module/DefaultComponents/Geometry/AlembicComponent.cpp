@@ -83,9 +83,9 @@ namespace Cry
 			}
 		}
 
-		uint64 CAlembicComponent::GetEventMask() const
+		Cry::Entity::EventFlags CAlembicComponent::GetEventMask() const
 		{
-			return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+			return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 		}
 
 		void CAlembicComponent::Enable(bool bEnable)

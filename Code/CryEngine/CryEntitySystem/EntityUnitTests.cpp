@@ -312,7 +312,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 				m_wasHit = true;
 			}
 
-			virtual uint64 GetEventMask() const override { return BIT64(ENTITY_EVENT_PHYSICS_CHANGE_STATE); }
+			virtual Cry::Entity::EventFlags GetEventMask() const override { return ENTITY_EVENT_PHYSICS_CHANGE_STATE; }
 
 			bool m_wasHit = false;
 		};
@@ -364,7 +364,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 				}
 			}
 
-			virtual uint64 GetEventMask() const override { return BIT64(ENTITY_EVENT_PHYSICS_CHANGE_STATE) | BIT64(ENTITY_EVENT_SCRIPT_EVENT); }
+			virtual Cry::Entity::EventFlags GetEventMask() const override { return ENTITY_EVENT_PHYSICS_CHANGE_STATE | ENTITY_EVENT_SCRIPT_EVENT; }
 
 			uint8 m_receivedEvents = 0;
 		};

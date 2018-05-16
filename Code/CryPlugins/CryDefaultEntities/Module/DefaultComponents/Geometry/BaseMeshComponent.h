@@ -141,13 +141,13 @@ protected:
 	// IEntityComponent
 	virtual void   ProcessEvent(const SEntityEvent& event) override;
 
-	virtual uint64 GetEventMask() const override
+	virtual Cry::Entity::EventFlags GetEventMask() const override
 	{
-		uint64 bitFlags = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | BIT64(ENTITY_EVENT_SLOT_CHANGED);
+		Cry::Entity::EventFlags bitFlags = ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_SLOT_CHANGED;
 
 		if (((uint32)m_type & (uint32)EMeshType::Collider) != 0)
 		{
-			bitFlags |= BIT64(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED);
+			bitFlags |= ENTITY_EVENT_PHYSICAL_TYPE_CHANGED;
 		}
 
 		return bitFlags;

@@ -104,18 +104,18 @@ void CAreaComponent::Initialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CAreaComponent::GetEventMask() const
+Cry::Entity::EventFlags CAreaComponent::GetEventMask() const
 {
 	return
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
-	  BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) |
+	  ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED |
 #endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
-	  BIT64(ENTITY_EVENT_ENTERNEARAREA) |
-	  BIT64(ENTITY_EVENT_MOVENEARAREA) |
-	  BIT64(ENTITY_EVENT_LEAVENEARAREA) |
-	  BIT64(ENTITY_EVENT_MOVEINSIDEAREA) |
-	  BIT64(ENTITY_EVENT_ENTERAREA) |
-	  BIT64(ENTITY_EVENT_LEAVEAREA);
+	  ENTITY_EVENT_ENTERNEARAREA |
+	  ENTITY_EVENT_MOVENEARAREA |
+	  ENTITY_EVENT_LEAVENEARAREA |
+	  ENTITY_EVENT_MOVEINSIDEAREA |
+	  ENTITY_EVENT_ENTERAREA |
+	  ENTITY_EVENT_LEAVEAREA;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -65,7 +65,7 @@ public:
 
 	// IEntityComponent
 	virtual	void ProcessEvent( const SEntityEvent &event );
-	virtual uint64 GetEventMask() const final;
+	virtual Cry::Entity::EventFlags GetEventMask() const final;
 	// ~IEntityComponent
 
 	virtual void PostInit(IGameObject *pGameObject);

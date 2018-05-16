@@ -26,7 +26,7 @@ namespace Cry
 				}
 			}
 
-			virtual uint64 GetEventMask() const final	{	return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED); }
+			virtual Cry::Entity::EventFlags GetEventMask() const final	{	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED; }
 
 			// ~IEntityComponent
 

@@ -22,7 +22,7 @@ public:
 	// IEntityComponent
 	virtual void         ProcessEvent(const SEntityEvent& event) override;
 	virtual void         Initialize() override;
-	virtual uint64       GetEventMask() const override;
+	virtual Cry::Entity::EventFlags       GetEventMask() const override;
 	virtual EEntityProxy GetProxyType() const override                    { return ENTITY_PROXY_AUDIO; }
 	virtual void         GameSerialize(TSerialize ser) override;
 	virtual bool         NeedGameSerialize() override                     { return false; }

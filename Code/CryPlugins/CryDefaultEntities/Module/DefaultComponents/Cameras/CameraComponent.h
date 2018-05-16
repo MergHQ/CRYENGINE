@@ -82,10 +82,10 @@ namespace Cry
 				}
 			}
 
-			virtual uint64 GetEventMask() const override
+			virtual Cry::Entity::EventFlags GetEventMask() const override
 			{
-				uint64 bitFlags = IsActive() ? ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE) : 0;
-				bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME) | ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+				Cry::Entity::EventFlags bitFlags = IsActive() ? ENTITY_EVENT_UPDATE : Cry::Entity::EventFlags();
+				bitFlags |= ENTITY_EVENT_START_GAME | ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 				return bitFlags;
 			}

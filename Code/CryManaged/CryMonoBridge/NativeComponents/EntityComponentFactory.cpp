@@ -47,7 +47,7 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 	CMonoClass* pEntityComponentClass = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetClass("CryEngine", "EntityComponent");
 
 	auto prevEventMask = m_eventMask;
-	m_eventMask = ENTITY_EVENT_BIT(ENTITY_EVENT_LEVEL_LOADED);
+	m_eventMask = ENTITY_EVENT_LEVEL_LOADED;
 
 	if (m_pClass.get() == pEntityComponentClass)
 	{
@@ -72,11 +72,11 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 		std::weak_ptr<CMonoMethod> pMethod = m_pClass->FindMethodWithDescInInheritedClasses(szMethodSignature, pEntityComponentClass);
 		if (!pMethod.expired())
 		{
-			m_eventMask |= ENTITY_EVENT_BIT(associatedEvent);
+			m_eventMask.Add(associatedEvent);
 		}
 		else
 		{
-			m_eventMask &= ~ENTITY_EVENT_BIT(associatedEvent);
+			m_eventMask.Remove(associatedEvent);
 		}
 
 		return pMethod;
@@ -94,18 +94,18 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 	m_pUpdateMethodEditing = tryGetMethod("OnEditorUpdate(single)", ENTITY_EVENT_UPDATE);
 	if (!m_pUpdateMethod.expired() || !m_pUpdateMethodEditing.expired())
 	{
-		m_eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
+		m_eventMask |= ENTITY_EVENT_UPDATE;
 	}
 
 	if (!m_pClass->FindMethodWithDescInInheritedClasses("OnCollision(CollisionEvent)", pEntityComponentClass).expired())
 	{
 		m_pCollisionMethod = pEntityComponentClass->FindMethod("OnCollisionInternal", 12);
-		m_eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
+		m_eventMask |= ENTITY_EVENT_COLLISION;
 	}
 	else
 	{
 		m_pCollisionMethod.reset();
-		m_eventMask &= ~ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
+		m_eventMask &= ~ENTITY_EVENT_COLLISION;
 	}
 
 	if (prevEventMask != m_eventMask)

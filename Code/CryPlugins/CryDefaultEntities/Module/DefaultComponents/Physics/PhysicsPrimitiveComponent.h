@@ -29,13 +29,13 @@ class CPhysicsPrimitiveComponent
 
 	virtual void   ProcessEvent(const SEntityEvent& event) final;
 
-	virtual uint64 GetEventMask() const final
+	virtual Cry::Entity::EventFlags GetEventMask() const final
 	{
-		uint64 bitFlags = ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+		Cry::Entity::EventFlags bitFlags = ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 		if (!isneg(m_physics.m_mass) || m_physics.m_density > 0)
 		{
-			bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED);
+			bitFlags |= ENTITY_EVENT_PHYSICAL_TYPE_CHANGED;
 		}
 
 		return bitFlags;

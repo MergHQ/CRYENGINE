@@ -297,9 +297,9 @@ void CMineField::ProcessEvent( const SEntityEvent& entityEvent )
 	}
 }
 
-uint64 CMineField::GetEventMask() const
+Cry::Entity::EventFlags CMineField::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_LEVEL_LOADED) | BIT64(ENTITY_EVENT_LINK) | BIT64(ENTITY_EVENT_DELINK);
+	return ENTITY_EVENT_RESET | ENTITY_EVENT_LEVEL_LOADED | ENTITY_EVENT_LINK | ENTITY_EVENT_DELINK;
 }
 
 void CMineField::GetMemoryUsage( ICrySizer *pSizer ) const

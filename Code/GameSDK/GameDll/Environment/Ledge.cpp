@@ -243,9 +243,9 @@ void CLedgeObject::ProcessEvent( const SEntityEvent& entityEvent )
 	}
 }
 
-uint64 CLedgeObject::GetEventMask() const
+Cry::Entity::EventFlags CLedgeObject::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_EDITOR_PROPERTY_CHANGED);
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_EDITOR_PROPERTY_CHANGED;
 }
 
 void CLedgeObject::GetMemoryUsage( ICrySizer *pSizer ) const

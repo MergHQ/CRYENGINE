@@ -109,9 +109,9 @@ void CSnow::HandleEvent(const SGameObjectEvent &event)
 {
 }
 
-uint64 CSnow::GetEventMask() const
+Cry::Entity::EventFlags CSnow::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_HIDE) | BIT64(ENTITY_EVENT_DONE);
+	return ENTITY_EVENT_RESET | ENTITY_EVENT_HIDE | ENTITY_EVENT_DONE;
 }
 
 //------------------------------------------------------------------------

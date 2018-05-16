@@ -26,9 +26,9 @@ namespace Cry
 			// IEntityComponent
 			virtual void Initialize() final {}
 			virtual void ProcessEvent(const SEntityEvent& event) final;
-			virtual uint64 GetEventMask() const final	
+			virtual Cry::Entity::EventFlags GetEventMask() const final	
 			{	
-				return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | BIT64(ENTITY_EVENT_START_GAME) | BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_ATTACH) | BIT64(ENTITY_EVENT_DETACH); 
+				return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_START_GAME | ENTITY_EVENT_RESET | ENTITY_EVENT_ATTACH | ENTITY_EVENT_DETACH; 
 			}
 			// ~IEntityComponent
 

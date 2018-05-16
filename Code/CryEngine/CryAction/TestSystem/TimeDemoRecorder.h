@@ -128,10 +128,10 @@ private:
 		EntityId   entityId;      // What entity performed event.
 		EntityGUID guid;          // What entity performed event.
 
-		uint32     eventType;     // What event.
-		uint64     nParam[4];     // event params.
-		Vec3       pos;
-		Quat       q;
+		EEntityEvent eventType;     // What event.
+		uint64       nParam[4];     // event params.
+		Vec3         pos;
+		Quat         q;
 
 		enum Flags
 		{

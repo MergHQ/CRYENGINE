@@ -21,10 +21,10 @@ struct SUpdateContext;
 
 class CEntityAINavigationComponent final : public IEntityNavigationComponent
 {
-	const uint64 kDefaultEntityEventMask =
-		ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME)
-		| ENTITY_EVENT_BIT(ENTITY_EVENT_RESET)
-		| ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	const Cry::Entity::EventFlags kDefaultEntityEventMask =
+		ENTITY_EVENT_START_GAME
+		| ENTITY_EVENT_RESET
+		| ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 public:
 	struct SStateUpdatedSignal
@@ -53,7 +53,7 @@ public:
 	virtual void   OnShutDown() override;
 
 	virtual void   ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override;
 	// ~IEntityComponent
 
 	// IEntityNavigationComponent

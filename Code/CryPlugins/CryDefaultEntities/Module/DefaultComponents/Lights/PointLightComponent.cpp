@@ -101,9 +101,9 @@ namespace Cry
 			}
 		}
 
-		uint64 CPointLightComponent::GetEventMask() const
+		Cry::Entity::EventFlags CPointLightComponent::GetEventMask() const
 		{
-			return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+			return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 		}
 
 #ifndef RELEASE

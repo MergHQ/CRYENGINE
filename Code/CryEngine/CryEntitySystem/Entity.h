@@ -409,7 +409,7 @@ public:
 
 	CEntityComponentsVector<SEntityComponentRecord>& GetComponentsVector() { return m_components; };
 
-	void                     AddSimpleEventListeners(EntityEventMask events, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority);
+	void                     AddSimpleEventListeners(Cry::Entity::EventFlags events, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority);
 	void                     AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority);
 	void                     RemoveSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener);
 	void                     ClearComponentEventListeners();
@@ -418,14 +418,14 @@ public:
 	{
 		if (set)
 		{
-			m_internalFlags |= static_cast<std::underlying_type<EInternalFlag>::type>(flag);
+			m_internalFlags.Add(flag);
 		}
 		else
 		{
-			m_internalFlags &= ~static_cast<std::underlying_type<EInternalFlag>::type>(flag);
+			m_internalFlags.Remove(flag);
 		}
 	}
-	bool HasInternalFlag(EInternalFlag flag) const { return (m_internalFlags & static_cast<std::underlying_type<EInternalFlag>::type>(flag)) != 0; }
+	bool HasInternalFlag(EInternalFlag flag) const { return m_internalFlags.Check(flag); }
 
 protected:
 	//////////////////////////////////////////////////////////////////////////
@@ -457,8 +457,10 @@ private:
 	void SaveComponentLegacy(CryGUID typeId, XmlNodeRef& entityNode, XmlNodeRef& componentNode, IEntityComponent& component, bool bIncludeScriptProxy);
 	//////////////////////////////////////////////////////////////////////////
 
-	void OnComponentMaskChanged(const SEntityComponentRecord& componentRecord, EntityEventMask prevMask);
-	void UpdateComponentEventListeners(const SEntityComponentRecord& componentRecord, EntityEventMask prevMask);
+	void OnComponentMaskChanged(const SEntityComponentRecord& componentRecord, Cry::Entity::EventFlags prevMask);
+	void UpdateComponentEventListeners(const SEntityComponentRecord& componentRecord, Cry::Entity::EventFlags prevMask);
+
+	static inline uint8 GetEntityEventIndex(EEntityEvent event) { return static_cast<uint8>(ilog2(static_cast<std::underlying_type<EEntityEvent>::type>(event))); }
 
 private:
 	friend class CEntitySystem;
@@ -491,7 +493,7 @@ private:
 	};
 
 private:
-	std::underlying_type<EInternalFlag>::type m_internalFlags = 0;
+	CEnumFlags<EInternalFlag> m_internalFlags;
 
 	uint8 m_sendEventRecursionCount = 0;
 	uint16 m_componentChangeState = 0;
@@ -550,7 +552,7 @@ private:
 
 	DynArray<std::unique_ptr<SExternalEventListener>> m_externalEventListeners;
 	// Mask of entity events that are present in m_simpleEventListeners, avoiding find operation every time
-	uint64 m_eventListenerMask = 0;
+	Cry::Entity::EventFlags m_eventListenerMask;
 
 	struct SEventListener
 	{

@@ -1171,9 +1171,9 @@ void CEnvironmentalWeapon::RenderDebugStats() const
 }
 #endif // #ifndef _RELEASE
 
-uint64 CEnvironmentalWeapon::GetEventMask() const
+Cry::Entity::EventFlags CEnvironmentalWeapon::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_LEVEL_LOADED) | BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_LINK) | BIT64(ENTITY_EVENT_DELINK) | BIT64(ENTITY_EVENT_START_LEVEL) | BIT64(ENTITY_EVENT_XFORM);
+	return ENTITY_EVENT_LEVEL_LOADED | ENTITY_EVENT_RESET | ENTITY_EVENT_LINK | ENTITY_EVENT_DELINK | ENTITY_EVENT_START_LEVEL | ENTITY_EVENT_XFORM;
 }
 
 void CEnvironmentalWeapon::ProcessEvent(const SEntityEvent& event)

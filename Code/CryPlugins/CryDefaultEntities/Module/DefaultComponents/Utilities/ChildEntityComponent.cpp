@@ -85,14 +85,14 @@ namespace Cry
 #endif
 		}
 
-		uint64 CChildEntityComponent::GetEventMask() const
+		Cry::Entity::EventFlags CChildEntityComponent::GetEventMask() const
 		{
-			return BIT64(ENTITY_EVENT_DETACH)
-				| BIT64(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED)
-				| BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+			return ENTITY_EVENT_DETACH
+				| ENTITY_EVENT_PHYSICAL_TYPE_CHANGED
+				| ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED
 #ifndef RELEASE
-				| BIT64(ENTITY_EVENT_XFORM)
-				| BIT64(ENTITY_EVENT_START_GAME)
+				| ENTITY_EVENT_XFORM
+				| ENTITY_EVENT_START_GAME
 #endif
 				;
 		}

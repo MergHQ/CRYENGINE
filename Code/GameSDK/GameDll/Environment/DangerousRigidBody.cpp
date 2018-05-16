@@ -101,9 +101,9 @@ void CDangerousRigidBody::ProcessEvent( const SEntityEvent& event )
 	}
 }
 
-uint64 CDangerousRigidBody::GetEventMask() const
+Cry::Entity::EventFlags CDangerousRigidBody::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_COLLISION) | BIT64(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_COLLISION | ENTITY_EVENT_RESET;
 }
 
 void CDangerousRigidBody::GetMemoryUsage( ICrySizer *pSizer ) const

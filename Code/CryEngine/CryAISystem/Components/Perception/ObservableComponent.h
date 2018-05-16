@@ -25,7 +25,7 @@ protected:
 	virtual void OnShutDown() override;
 
 	virtual void ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const override { return m_entityEventMask; };
+	virtual Cry::Entity::EventFlags GetEventMask() const override { return m_entityEventMask; };
 	// ~IEntityComponent
 
 	// IEntityObservableComponent
@@ -60,7 +60,7 @@ private:
 		return false;
 	}
 
-	uint64 m_entityEventMask;
+	Cry::Entity::EventFlags m_entityEventMask;
 
 	ObservableID m_observableId;
 	ObservableParams m_params;

@@ -39,7 +39,7 @@ struct SObserverVisibilityChangeSignal
 //////////////////////////////////////////////////////////////////////////
 
 CEntityAIObserverComponent::CEntityAIObserverComponent()
-	: m_entityEventMask(ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME))
+	: m_entityEventMask(ENTITY_EVENT_RESET | ENTITY_EVENT_START_GAME)
 {
 }
 
@@ -103,17 +103,17 @@ void CEntityAIObserverComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
-	case EEntityEvent::ENTITY_EVENT_UPDATE:
-	case EEntityEvent::ENTITY_EVENT_XFORM:
+	case ENTITY_EVENT_UPDATE:
+	case ENTITY_EVENT_XFORM:
 		Update();
 		break;
-	case EEntityEvent::ENTITY_EVENT_RESET:
+	case ENTITY_EVENT_RESET:
 		Reset(GetEntity()->GetSimulationMode());
 		break;
-	case EEntityEvent::ENTITY_EVENT_START_GAME:
+	case ENTITY_EVENT_START_GAME:
 		{
 			m_entityEventMask |= m_visionProperties.location.type == Perception::ComponentHelpers::SLocation::EType::Bone
-			                     ? ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE) : ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM);
+			                     ? ENTITY_EVENT_UPDATE : ENTITY_EVENT_XFORM;
 			GetEntity()->UpdateComponentEventMask(this);
 			break;
 		}
@@ -129,7 +129,7 @@ void CEntityAIObserverComponent::Reset(EEntitySimulationMode simulationMode)
 	else
 	{
 		UnregisterFromVisionMap();
-		m_entityEventMask = ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME);
+		m_entityEventMask = ENTITY_EVENT_RESET | ENTITY_EVENT_START_GAME;
 	}
 }
 

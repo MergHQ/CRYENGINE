@@ -79,7 +79,7 @@ public:
 	virtual void PostRemoteSpawn() {};
 	virtual void HandleEvent( const SGameObjectEvent &gameObjectEvent );
 	virtual void ProcessEvent(const SEntityEvent& );
-	virtual uint64 GetEventMask() const;
+	virtual Cry::Entity::EventFlags GetEventMask() const;
 	virtual void ProcessHit(bool isMoving);
 	virtual void SetChannelId(uint16 id) {}
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const { pSizer->Add(*this); }

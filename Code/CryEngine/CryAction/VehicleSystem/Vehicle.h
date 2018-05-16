@@ -178,7 +178,7 @@ public:
 
 	//IEntityEvent
 	virtual void                   ProcessEvent(const SEntityEvent& entityEvent) final;
-	virtual uint64                 GetEventMask() const final;
+	virtual Cry::Entity::EventFlags GetEventMask() const final;
 	virtual ComponentEventPriority GetEventPriority() const final;
 	//~IEntityEvent
 

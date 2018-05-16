@@ -1307,18 +1307,18 @@ void CVehicle::ProcessEvent(const SEntityEvent& entityEvent)
 		m_pMovement->ProcessEvent(entityEvent);
 }
 
-uint64 CVehicle::GetEventMask() const
+Cry::Entity::EventFlags CVehicle::GetEventMask() const
 {
 	return
-	  BIT64(ENTITY_EVENT_RESET) |
-	  BIT64(ENTITY_EVENT_DONE) |
-	  BIT64(ENTITY_EVENT_TIMER) |
-	  BIT64(ENTITY_EVENT_HIDE) |
-	  BIT64(ENTITY_EVENT_UNHIDE) |
-	  BIT64(ENTITY_EVENT_ANIM_EVENT) |
-	  BIT64(ENTITY_EVENT_START_GAME) |
-	  BIT64(ENTITY_EVENT_SET_AUTHORITY) |
-	  BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
+	  ENTITY_EVENT_RESET |
+	  ENTITY_EVENT_DONE |
+	  ENTITY_EVENT_TIMER |
+	  ENTITY_EVENT_HIDE |
+	  ENTITY_EVENT_UNHIDE |
+	  ENTITY_EVENT_ANIM_EVENT |
+	  ENTITY_EVENT_START_GAME |
+	  ENTITY_EVENT_SET_AUTHORITY |
+	  ENTITY_EVENT_PREPHYSICSUPDATE;
 }
 
 //------------------------------------------------------------------------

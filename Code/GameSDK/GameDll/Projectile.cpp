@@ -861,9 +861,9 @@ void CProjectile::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CProjectile::GetEventMask() const
+Cry::Entity::EventFlags CProjectile::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_TIMER);
+	return ENTITY_EVENT_TIMER;
 }
 
 //------------------------------------------------------------------------

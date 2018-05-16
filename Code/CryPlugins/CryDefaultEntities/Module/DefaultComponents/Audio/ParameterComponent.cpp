@@ -48,12 +48,12 @@ void CParameterComponent::Initialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CParameterComponent::GetEventMask() const
+Cry::Entity::EventFlags CParameterComponent::GetEventMask() const
 {
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 #else
-	return 0;
+	return Cry::Entity::EventFlags();
 #endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 }
 

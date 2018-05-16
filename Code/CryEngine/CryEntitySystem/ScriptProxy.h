@@ -30,8 +30,7 @@ public:
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void   ProcessEvent(const SEntityEvent& event) final;
-	virtual uint64 GetEventMask() const final; // Need all events except pre-physics update
-	static  uint64 GetEventMaskStatic();
+	virtual Cry::Entity::EventFlags GetEventMask() const final; // Need all events except pre-physics update
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////

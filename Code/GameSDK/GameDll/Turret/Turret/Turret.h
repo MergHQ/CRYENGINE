@@ -53,7 +53,7 @@ public:
 	virtual ~CTurret();
 
 	// IEntityEvent
-	virtual uint64 GetEventMask() const { return ~(0); } // All events
+	virtual Cry::Entity::EventFlags GetEventMask() const { return Cry::Entity::EventFlags(static_cast<Cry::Entity::EEvent>(~0)); }
 	virtual	void ProcessEvent( const SEntityEvent &event );
 	// ~IEntityEvent
 

@@ -396,11 +396,11 @@ protected:
 
 public:
 	//! Return bit mask of the EEntityEvent flags that we want to receive in ProcessEvent
-	//! (ex: BIT64(ENTITY_EVENT_HIDE) | BIT64(ENTITY_EVENT_UNHIDE))
+	//! (ex: ENTITY_EVENT_HIDE | ENTITY_EVENT_UNHIDE)
 	//! Only events matching the returned bit mask will be sent to the ProcessEvent method
 	//! \par Example
 	//! \include CryEntitySystem/Examples/ComponentEvents.cpp
-	virtual uint64 GetEventMask() const { return 0; }
+	virtual Cry::Entity::EventFlags GetEventMask() const { return {}; }
 
 	//! Determines the order in which this component will receive entity events (including update). Lower number indicates a higher priority.
 	virtual ComponentEventPriority GetEventPriority() const { return (ComponentEventPriority)GetProxyType(); }
@@ -530,7 +530,7 @@ public:
 	//! \param receiving component
 	inline void SendEvent(const SEntityEvent& event)
 	{
-		if ((GetEventMask() & BIT64(event.event)) != 0)
+		if (GetEventMask().Check(event.event))
 		{
 			ProcessEvent(event);
 		}

@@ -51,7 +51,7 @@ protected:
 	virtual void   Initialize() override;
 
 	virtual void   ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override;
 	// ~IEntityComponent
 
 	// IEditorEntityComponent

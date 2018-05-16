@@ -125,7 +125,7 @@ public:
 	virtual void                   OnShutDown() final;
 	virtual void                   Release() final;
 	virtual void                   ProcessEvent(const SEntityEvent& event) final;
-	virtual uint64                 GetEventMask() const final;
+	virtual Cry::Entity::EventFlags                 GetEventMask() const final;
 	virtual ComponentEventPriority GetEventPriority() const override;
 
 	virtual NetworkAspectType      GetNetSerializeAspectMask() const override;

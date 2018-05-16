@@ -128,7 +128,7 @@ public:
 	virtual void Update(SEntityUpdateContext& ctx, int) override;
 	virtual void PostUpdate( float frameTime ) override;
 	virtual void ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override;
 	virtual void HandleEvent(const SGameObjectEvent &evt) override;
 	virtual void SetChannelId(uint16 id) override {}
 	virtual void GetMemoryUsage(ICrySizer * s) const override;

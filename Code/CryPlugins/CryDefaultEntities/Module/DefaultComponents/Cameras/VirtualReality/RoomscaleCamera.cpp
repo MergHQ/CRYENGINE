@@ -78,10 +78,10 @@ namespace Cry
 				}
 			}
 
-			uint64 CRoomscaleCameraComponent::GetEventMask() const
+			Cry::Entity::EventFlags CRoomscaleCameraComponent::GetEventMask() const
 			{
-				uint64 bitFlags = IsActive() ? BIT64(ENTITY_EVENT_UPDATE) : 0;
-				bitFlags |= BIT64(ENTITY_EVENT_START_GAME) | BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+				Cry::Entity::EventFlags bitFlags = IsActive() ? ENTITY_EVENT_UPDATE : Cry::Entity::EventFlags();
+				bitFlags |= ENTITY_EVENT_START_GAME | ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 				return bitFlags;
 			}

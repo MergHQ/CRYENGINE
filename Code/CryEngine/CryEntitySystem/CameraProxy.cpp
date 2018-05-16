@@ -34,9 +34,9 @@ void CEntityComponentCamera::ProcessEvent(const SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CEntityComponentCamera::GetEventMask() const
+Cry::Entity::EventFlags CEntityComponentCamera::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_INIT);
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_INIT;
 }
 
 //////////////////////////////////////////////////////////////////////////

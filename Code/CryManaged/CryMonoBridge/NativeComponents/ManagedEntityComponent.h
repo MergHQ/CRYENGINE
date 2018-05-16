@@ -16,7 +16,7 @@ public:
 	virtual void Initialize() override;
 
 	virtual	void ProcessEvent(const SEntityEvent &event) override;
-	virtual uint64 GetEventMask() const override { return m_factory.m_eventMask; }
+	virtual Cry::Entity::EventFlags GetEventMask() const override { return m_factory.m_eventMask; }
 	// ~IEntityComponent
 
 	std::shared_ptr<CMonoObject> GetObject() const { return m_pMonoObject; }

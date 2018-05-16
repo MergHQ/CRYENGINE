@@ -1770,9 +1770,9 @@ void CGameRules::ProcessEvent( const SEntityEvent& event)
 
 }
 
-uint64 CGameRules::GetEventMask() const
+Cry::Entity::EventFlags CGameRules::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_PRE_SERIALIZE) | BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_START_GAME) | BIT64(ENTITY_EVENT_ENTER_SCRIPT_STATE);
+	return ENTITY_EVENT_PRE_SERIALIZE | ENTITY_EVENT_RESET | ENTITY_EVENT_START_GAME | ENTITY_EVENT_ENTER_SCRIPT_STATE;
 }
 
 //------------------------------------------------------------------------
