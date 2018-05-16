@@ -29,12 +29,12 @@ cbuffer CBPerInstanceNewBackend : register(b12)
 	float4    PerInstanceCustomData1;      // [xyzw=ShilouetteColor]
 	// TODO: Should be moved after all the data below
 	float4    PerInstanceCustomData2;      // [x=selectionIDs in debug pass, y=AmbientColor, zw=Not used]
-	float4    PerInstanceSkinningInfo;     // Additional offset
 
 #if %TEMP_TERRAIN || %TEMP_VEGETATION
 	float4    PerInstanceBlendTerrainColInfo;
 	float4x4  PerInstanceTerrainLayerInfo;
-#elif %WRINKLE_BLENDING || %_RT_SKELETON_SSD_LINEAR || %_RT_SKELETON_SSD
+#elif %WRINKLE_BLENDING || %_RT_SKELETON_SSD_LINEAR || %_RT_SKELETON_SSD || %_RT_COMPUTE_SKINNING
+	float4    PerInstanceSkinningInfo;     // Additional offset
 	float4    PerInstanceWrinklesMask0;
 	float4    PerInstanceWrinklesMask1;
 	float4    PerInstanceWrinklesMask2;
