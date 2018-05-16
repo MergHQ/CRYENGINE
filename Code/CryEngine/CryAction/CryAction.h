@@ -340,7 +340,7 @@ public:
 	virtual void                  ClearNextFrameCommand();
 	virtual void                  PrefetchLevelAssets(const bool bEnforceAll);
 
-	virtual void                  ShowPageInBrowser(const char* URL);
+	virtual void                  ShowPageInBrowser(const char* szUrl);
 	virtual bool                  StartProcess(const char* cmd_line);
 	virtual bool                  SaveServerConfig(const char* path);
 

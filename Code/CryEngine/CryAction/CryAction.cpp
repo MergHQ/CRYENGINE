@@ -4740,10 +4740,13 @@ void CCryAction::PrefetchLevelAssets(const bool bEnforceAll)
 		m_pItemSystem->PrecacheLevel();
 }
 
-void CCryAction::ShowPageInBrowser(const char* URL)
+void CCryAction::ShowPageInBrowser(const char* szUrl)
 {
 #if CRY_PLATFORM_WINDOWS
-	ShellExecute(0, 0, URL, 0, 0, SW_SHOWNORMAL);
+	if (szUrl != nullptr && szUrl[0] != '\0')
+		ShellExecute(nullptr, nullptr, szUrl, nullptr, nullptr, SW_SHOWNORMAL);
+#else
+	CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR_DBGBRK, "CCryAction::ShowPageInBrowser is not implemented for this platform");
 #endif
 }
 
