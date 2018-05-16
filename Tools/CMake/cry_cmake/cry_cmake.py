@@ -16,6 +16,22 @@ CODE_SDKS_DIR = os.path.abspath(os.path.join(CRYENGINE_DIR,'Code','SDKs'))
 SDK_DOWNLOAD_EXE = os.path.abspath(os.path.join(CRYENGINE_DIR,'download_sdks.exe'))
 
 CONFIGS = [
+#Visual Studio 2015 Express 
+    {
+        'title':'Visual Studio 2015 Express Win64',
+        'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
+        'cmake_generator': 'Visual Studio 14 2015 Win64',
+        'cmake_builddir': 'solutions/win64',
+        'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\WDExpress.DTE.14.0'}
+    },
+    {
+        'title':'Visual Studio 2015 Express Win32',
+        'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
+        'cmake_generator': 'Visual Studio 14 2015',
+        'cmake_builddir': 'solutions/win32',
+        'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\WDExpress.DTE.14.0'}
+    },
+#Visual Studio 2015
     {
         'title':'Visual Studio 2015 Win64',
         'cmake_toolchain': r'toolchain\windows\WindowsPC-MSVC.cmake',
@@ -37,7 +53,7 @@ CONFIGS = [
 #        'cmake_builddir': 'solutions_cmake/android',
 #    },
 
-#Visual Studio 15 2017
+#Visual Studio 2017
     {
         'title':'Visual Studio 2017 Win64',
         'cmake_toolchain': r'toolchain\windows\WindowsPC-MSVC.cmake',
