@@ -305,9 +305,9 @@ void CInteractiveObjectEx::ProcessEvent( const SEntityEvent &entityEvent )
 	}
 }
 
-uint64 CInteractiveObjectEx::GetEventMask() const
+Cry::Entity::EventFlags CInteractiveObjectEx::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_ATTACH_THIS) | BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_START_LEVEL);
+	return ENTITY_EVENT_RESET | ENTITY_EVENT_ATTACH_THIS | ENTITY_EVENT_XFORM | ENTITY_EVENT_START_LEVEL;
 }
 
 void CInteractiveObjectEx::SetChannelId( uint16 id )

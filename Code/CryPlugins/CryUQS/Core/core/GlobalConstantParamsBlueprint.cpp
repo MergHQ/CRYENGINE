@@ -33,7 +33,7 @@ namespace UQS
 
 		ITextualGlobalConstantParamsBlueprint::SParameterInfo CTextualGlobalConstantParamsBlueprint::GetParameter(size_t index) const
 		{
-			assert(index < m_parameters.size());
+			CRY_ASSERT(index < m_parameters.size());
 			const SStoredParameterInfo& pi = m_parameters[index];
 			return SParameterInfo(pi.name.c_str(), pi.typeName.c_str(), pi.typeGUID, pi.value.c_str(), pi.bAddToDebugRenderWorld, pi.pSyntaxErrorCollector.get());
 		}
@@ -151,7 +151,7 @@ namespace UQS
 					const char* szParamName = e.first.c_str();
 					const Client::IItemFactory* pItemFactory = e.second.pItemFactory;
 					Shared::CUqsString itemAsString;
-					assert(pItemFactory->CanBePersistantlySerialized()); // constant params can *always* be represented in textual form (how else should the query author provide them via e. g. an XML file?)
+					CRY_ASSERT(pItemFactory->CanBePersistantlySerialized()); // constant params can *always* be represented in textual form (how else should the query author provide them via e. g. an XML file?)
 					itemSerializationSupport.SerializeItemToStringLiteral(e.second.pItem, *pItemFactory, itemAsString);
 					logger.Printf("\"%s\" = %s [%s]", szParamName, itemAsString.c_str(), pItemFactory->GetName());
 				}

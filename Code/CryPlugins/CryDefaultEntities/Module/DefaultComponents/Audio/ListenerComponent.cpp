@@ -58,12 +58,12 @@ void CListenerComponent::OnShutDown()
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CListenerComponent::GetEventMask() const
+Cry::Entity::EventFlags CListenerComponent::GetEventMask() const
 {
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
-	return BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_SET_NAME);
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_SET_NAME;
 #else
-	return BIT64(ENTITY_EVENT_XFORM);
+	return ENTITY_EVENT_XFORM;
 #endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 }
 

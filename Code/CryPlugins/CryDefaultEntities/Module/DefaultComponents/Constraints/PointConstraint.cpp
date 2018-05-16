@@ -66,10 +66,10 @@ namespace Cry
 			}
 		}
 
-		uint64 CPointConstraintComponent::GetEventMask() const
+		Cry::Entity::EventFlags CPointConstraintComponent::GetEventMask() const
 		{
-			uint64 bitFlags = m_bActive ? BIT64(ENTITY_EVENT_START_GAME) : 0;
-			bitFlags |= BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+			Cry::Entity::EventFlags bitFlags = m_bActive ? ENTITY_EVENT_START_GAME : Cry::Entity::EventFlags();
+			bitFlags |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 			return bitFlags;
 		}

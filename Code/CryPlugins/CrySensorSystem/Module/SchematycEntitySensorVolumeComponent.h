@@ -98,7 +98,7 @@ namespace Cry
 
 			// IEntityComponent
 			virtual void                       Initialize() override;
-			virtual uint64                     GetEventMask() const override;
+			virtual Cry::Entity::EventFlags                     GetEventMask() const override;
 			virtual void                       ProcessEvent(const SEntityEvent& event) override;
 			virtual void                       OnShutDown() override;
 			// ~IEntityComponent

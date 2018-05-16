@@ -76,9 +76,9 @@ void CEntityComponentFlowGraph::ProcessEvent(const SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CEntityComponentFlowGraph::GetEventMask() const
+Cry::Entity::EventFlags CEntityComponentFlowGraph::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_INIT) | BIT64(ENTITY_EVENT_DONE) | BIT64(ENTITY_EVENT_POST_SERIALIZE);
+	return ENTITY_EVENT_INIT | ENTITY_EVENT_DONE | ENTITY_EVENT_POST_SERIALIZE;
 }
 
 void CEntityComponentFlowGraph::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading)

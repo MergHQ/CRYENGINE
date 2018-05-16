@@ -134,13 +134,13 @@ bool CEntity::SendEventInternal(const SEntityEvent& event)
 	{
 		timeBeforeEventSend = gEnv->pTimer->GetAsyncTime();
 
-		g_pIEntitySystem->m_profiledEvents[event.event].numEvents++;
+		g_pIEntitySystem->m_profiledEvents[GetEntityEventIndex(event.event)].numEvents++;
 	}
 #endif
 
-	if ((m_eventListenerMask & ENTITY_EVENT_BIT(event.event)) != 0)
+	if (m_eventListenerMask.Check(event.event))
 	{
-		CRY_ASSERT_MESSAGE(event.event <= ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL, "Performance critical events should be handled in CEntitySystem!");
+		CRY_ASSERT_MESSAGE(event.event <= Cry::Entity::EEvent::LastNonPerformanceCritical, "Performance critical events should be handled in CEntitySystem!");
 
 		auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), event.event, [](const std::unique_ptr<SEventListenerSet>& a, const EEntityEvent event) -> bool { return a->event < event; });
 		CRY_ASSERT_MESSAGE(it != m_simpleEventListeners.end() && it->get()->event == event.event, "Listener must be contained in storage if m_eventListenerMask is set!");
@@ -164,13 +164,14 @@ bool CEntity::SendEventInternal(const SEntityEvent& event)
 #ifdef ENABLE_PROFILING_CODE
 		const CTimeValue timeAfterEventSent = gEnv->pTimer->GetAsyncTime();
 		const float eventCostMs = (timeAfterEventSent - timeBeforeEventSend).GetMilliSeconds();
+		const uint8 eventIndex = GetEntityEventIndex(event.event);
 
-		g_pIEntitySystem->m_profiledEvents[event.event].totalCostMs += eventCostMs;
+		g_pIEntitySystem->m_profiledEvents[eventIndex].totalCostMs += eventCostMs;
 
-		if (eventCostMs > g_pIEntitySystem->m_profiledEvents[event.event].mostExpensiveEntityCostMs)
+		if (eventCostMs > g_pIEntitySystem->m_profiledEvents[eventIndex].mostExpensiveEntityCostMs)
 		{
-			g_pIEntitySystem->m_profiledEvents[event.event].mostExpensiveEntityCostMs = eventCostMs;
-			g_pIEntitySystem->m_profiledEvents[event.event].mostExpensiveEntity = m_id;
+			g_pIEntitySystem->m_profiledEvents[eventIndex].mostExpensiveEntityCostMs = eventCostMs;
+			g_pIEntitySystem->m_profiledEvents[eventIndex].mostExpensiveEntity = m_id;
 		}
 #endif
 
@@ -183,14 +184,14 @@ bool CEntity::SendEventInternal(const SEntityEvent& event)
 #define FOR_ENABLED_ENTITY_EVENTS_IN_MASK(mask) \
 	const uint8 firstEventIndex = static_cast<uint8>(countTrailingZeros64(mask)); /* Index of the first set bit in mask */ \
 	const uint8 lastUsedEventIndex = static_cast<uint8>(std::numeric_limits<EntityEventMask>::digits - static_cast<uint8>(countLeadingZeros64(mask)));  /* Index of the last set bit in mask */ \
-	const uint8 lastEventIndex = min(lastUsedEventIndex, static_cast<uint8>(ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL)); /* Index of the last usable set bit in mask, perf critical events don't matter */ \
+	const uint8 lastEventIndex = min(lastUsedEventIndex, CEntity::GetEntityEventIndex(Cry::Entity::EEvent::LastNonPerformanceCritical)); /* Index of the last usable set bit in mask, perf critical events don't matter */ \
 	for (uint8 i = firstEventIndex; i < lastEventIndex; i += static_cast<uint8>(countTrailingZeros64(mask >> (i + 1)) + 1)) /* Iterate through the set events, skip past segments that are set to 0 - faster than check inside since majority of events will have the majority of mask bits set to 0 */ \
 	
 
 /////////////////////////////////////////////////////////////////////////
-void CEntity::AddSimpleEventListeners(EntityEventMask events, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority)
+void CEntity::AddSimpleEventListeners(Cry::Entity::EventFlags events, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority)
 {
-	FOR_ENABLED_ENTITY_EVENTS_IN_MASK(events)
+	FOR_ENABLED_ENTITY_EVENTS_IN_MASK(events.UnderlyingValue())
 	{
 		AddSimpleEventListener((EEntityEvent)i, pListener, priority);
 	}
@@ -201,10 +202,10 @@ void CEntity::ClearComponentEventListeners()
 {
 	m_components.ForEach([this](SEntityComponentRecord& record) -> EComponentIterationResult
 	{
-		if (record.registeredEventsMask != 0)
+		if (!record.registeredEventsMask.IsEmpty())
 		{
-			EntityEventMask prevMask = record.registeredEventsMask;
-			record.registeredEventsMask = 0;
+			Cry::Entity::EventFlags prevMask = record.registeredEventsMask;
+			record.registeredEventsMask.Clear();
 
 			OnComponentMaskChanged(record, prevMask);
 		}
@@ -217,14 +218,14 @@ void CEntity::ClearComponentEventListeners()
 void CEntity::AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
-	CRY_ASSERT_MESSAGE(event <= ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL, "Performance critical events should not add listeners, as they are sent by the entity system and not entity instances");
+	CRY_ASSERT_MESSAGE(event <= Cry::Entity::EEvent::LastNonPerformanceCritical, "Performance critical events should not add listeners, as they are sent by the entity system and not entity instances");
 
 	SEventListener eventListener = SEventListener {
 		pListener, priority
 	};
 
 #ifdef ENABLE_PROFILING_CODE
-	g_pIEntitySystem->m_profiledEvents[event].numListenerAdditions++;
+	g_pIEntitySystem->m_profiledEvents[GetEntityEventIndex(event)].numListenerAdditions++;
 #endif
 
 	auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), event, [](const std::unique_ptr<SEventListenerSet>& a, const EEntityEvent event) -> bool { return a->event < event; });
@@ -263,12 +264,13 @@ void CEntity::AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListe
 void CEntity::RemoveSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
-	CRY_ASSERT_MESSAGE(event <= ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL, "Performance critical events should not add listeners, as they are sent by the entity system and not entity instances");
+	CRY_ASSERT_MESSAGE(event <= Cry::Entity::EEvent::LastNonPerformanceCritical, "Performance critical events should not add listeners, as they are sent by the entity system and not entity instances");
+
 #ifdef ENABLE_PROFILING_CODE
-	g_pIEntitySystem->m_profiledEvents[event].numListenerRemovals++;
+	g_pIEntitySystem->m_profiledEvents[GetEntityEventIndex(event)].numListenerRemovals++;
 #endif
 
-	CRY_ASSERT((m_eventListenerMask & ENTITY_EVENT_BIT(event)) != 0);
+	CRY_ASSERT(m_eventListenerMask.Check(event));
 
 	auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), event, [](const std::unique_ptr<SEventListenerSet>& a, const EEntityEvent& event) -> bool { return a->event < event; });
 	CRY_ASSERT(it != m_simpleEventListeners.end() && it->get()->event == event);
@@ -432,7 +434,7 @@ void CEntity::ShutDown()
 
 
 	m_simpleEventListeners.clear();
-	m_eventListenerMask = 0;
+	m_eventListenerMask.Clear();
 
 	g_pIEntitySystem->RemoveAllTimerEvents(GetId());
 	g_pIEntitySystem->RemoveEntityFromLayers(GetId());
@@ -444,11 +446,11 @@ void CEntity::ShutDown()
 
 	m_externalEventListeners.clear();
 	m_simpleEventListeners.clear();
-	m_eventListenerMask = 0;
+	m_eventListenerMask.Clear();
 	// Update the registered event mask in all components, as to indicate that no listeners were registered
 	m_components.NonRecursiveForEach([](SEntityComponentRecord& record) -> EComponentIterationResult
 	{
-		record.registeredEventsMask = 0;
+		record.registeredEventsMask.Clear();
 		return EComponentIterationResult::Continue;
 	});
 
@@ -1010,8 +1012,8 @@ void CEntity::UpdateComponentEventMask(const IEntityComponent* pComponent)
 	{
 		if (record.pComponent.get() == pComponent)
 		{
-			const EntityEventMask newMask = (EntityEventMask)record.pComponent->GetEventMask();
-			const EntityEventMask prevMask = record.registeredEventsMask;
+			const Cry::Entity::EventFlags newMask = record.pComponent->GetEventMask();
+			const Cry::Entity::EventFlags prevMask = record.registeredEventsMask;
 			if (prevMask != newMask)
 			{
 				record.registeredEventsMask = newMask;
@@ -1026,9 +1028,9 @@ void CEntity::UpdateComponentEventMask(const IEntityComponent* pComponent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::OnComponentMaskChanged(const SEntityComponentRecord& componentRecord, EntityEventMask prevMask)
+void CEntity::OnComponentMaskChanged(const SEntityComponentRecord& componentRecord, Cry::Entity::EventFlags prevMask)
 {
-	if ((componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE)) != 0)
+	if (componentRecord.registeredEventsMask.Check(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE))
 	{
 		// If any component want to process ENTITY_EVENT_RENDER_VISIBILITY_CHANGE we have to enable ENTITY_FLAG_SEND_RENDER_EVENT flag on the entity
 		SetFlags(GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
@@ -1037,29 +1039,29 @@ void CEntity::OnComponentMaskChanged(const SEntityComponentRecord& componentReco
 	UpdateComponentEventListeners(componentRecord, prevMask);
 }
 
-void CEntity::UpdateComponentEventListeners(const SEntityComponentRecord& componentRecord, EntityEventMask prevMask)
+void CEntity::UpdateComponentEventListeners(const SEntityComponentRecord& componentRecord, Cry::Entity::EventFlags prevMask)
 {
-	const EntityEventMask maskDifference = componentRecord.registeredEventsMask ^ prevMask;
+	const Cry::Entity::EventFlags maskDifference = componentRecord.registeredEventsMask ^ prevMask;
 
-	FOR_ENABLED_ENTITY_EVENTS_IN_MASK(maskDifference)
+	FOR_ENABLED_ENTITY_EVENTS_IN_MASK(maskDifference.UnderlyingValue())
 	{
-		bool hasEvent = (componentRecord.registeredEventsMask & (1ull << i)) != 0;
-		bool hadEvent = (prevMask & (1ull << i)) != 0;
+		const bool hasEvent = componentRecord.registeredEventsMask.Check(EEntityEvent(1ull << i));
+		const bool hadEvent = prevMask.Check(EEntityEvent(1ull << i));
 
 		if (hasEvent && !hadEvent)
 		{
-			AddSimpleEventListener(EEntityEvent(i), componentRecord.pComponent.get(), componentRecord.eventPriority);
+			AddSimpleEventListener(EEntityEvent(1ull << i), componentRecord.pComponent.get(), componentRecord.eventPriority);
 		}
 		else if (hadEvent && !hasEvent)
 		{
-			RemoveSimpleEventListener(EEntityEvent(i), componentRecord.pComponent.get());
+			RemoveSimpleEventListener(EEntityEvent(1ull << i), componentRecord.pComponent.get());
 		}
 	}
 
-	if (maskDifference & BIT64(ENTITY_EVENT_UPDATE))
+	if (maskDifference.Check(ENTITY_EVENT_UPDATE))
 	{
-		const bool wantsUpdates = (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE)) != 0;
-		const bool hadUpdates = (prevMask & BIT64(ENTITY_EVENT_UPDATE)) != 0;
+		const bool wantsUpdates = componentRecord.registeredEventsMask.Check(ENTITY_EVENT_UPDATE);
+		const bool hadUpdates = prevMask.Check(ENTITY_EVENT_UPDATE);
 
 		if (wantsUpdates && !hadUpdates)
 		{
@@ -1071,10 +1073,10 @@ void CEntity::UpdateComponentEventListeners(const SEntityComponentRecord& compon
 		}
 	}
 
-	if (maskDifference & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE))
+	if (maskDifference.Check(ENTITY_EVENT_PREPHYSICSUPDATE))
 	{
-		const bool wantsPrePhysicsUpdates = (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)) != 0;
-		const bool hadPrePhysicsUpdates = (prevMask & BIT64(ENTITY_EVENT_PREPHYSICSUPDATE)) != 0;
+		const bool wantsPrePhysicsUpdates = componentRecord.registeredEventsMask.Check(ENTITY_EVENT_PREPHYSICSUPDATE);
+		const bool hadPrePhysicsUpdates = prevMask.Check(ENTITY_EVENT_PREPHYSICSUPDATE);
 
 		if (wantsPrePhysicsUpdates && !hadPrePhysicsUpdates)
 		{
@@ -1086,10 +1088,10 @@ void CEntity::UpdateComponentEventListeners(const SEntityComponentRecord& compon
 		}
 	}
 
-	if (maskDifference & BIT64(ENTITY_EVENT_TIMER))
+	if (maskDifference.Check(ENTITY_EVENT_TIMER))
 	{
-		const bool wantsTimerEvents = (componentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_TIMER)) != 0;
-		const bool hadTimerEvents = (prevMask & BIT64(ENTITY_EVENT_TIMER)) != 0;
+		const bool wantsTimerEvents = componentRecord.registeredEventsMask.Check(ENTITY_EVENT_TIMER);
+		const bool hadTimerEvents = prevMask.Check(ENTITY_EVENT_TIMER);
 
 		if (hadTimerEvents && !wantsTimerEvents)
 		{
@@ -1812,7 +1814,7 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 	SEntityComponentRecord componentRecord;
 	componentRecord.pComponent = pComponent;
 	componentRecord.typeId = componentTypeID;
-	componentRecord.registeredEventsMask = (EntityEventMask)pComponent->GetEventMask();
+	componentRecord.registeredEventsMask = pComponent->GetEventMask();
 	componentRecord.proxyType = (int)pComponent->GetProxyType();
 	componentRecord.eventPriority = pComponent->GetEventPriority();
 	componentRecord.creationOrder = m_componentChangeState;
@@ -1831,9 +1833,9 @@ void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent,
 		UpdateSlotForComponent(pComponent.get(), false);
 	}
 
-	if (storedRecord.registeredEventsMask != 0)
+	if (!storedRecord.registeredEventsMask.IsEmpty())
 	{
-		OnComponentMaskChanged(storedRecord, 0);
+		OnComponentMaskChanged(storedRecord, {});
 	}
 
 	// Entity has changed so make the state dirty
@@ -1869,11 +1871,11 @@ void CEntity::ReplaceComponent(IEntityComponent* pExistingComponent, std::shared
 	record.eventPriority = record.pComponent->GetEventPriority();
 
 	// If the existing record had registered event listeners, make sure to remove them
-	if (record.registeredEventsMask != 0)
+	if (!record.registeredEventsMask.IsEmpty())
 	{
 		// First remove all listeners that point to the old pointer (pExistingComponent)
 		const EntityEventMask prevMask = record.registeredEventsMask;
-		record.registeredEventsMask = 0;
+		record.registeredEventsMask.Clear();
 		OnComponentMaskChanged(record, prevMask);
 	}
 
@@ -1889,10 +1891,10 @@ void CEntity::ReplaceComponent(IEntityComponent* pExistingComponent, std::shared
 		m_components.ReSortComponent(it);
 	}
 
-	if (record.registeredEventsMask != 0)
+	if (!record.registeredEventsMask.IsEmpty())
 	{
 		// Now add the new listeners specified by the new component
-		OnComponentMaskChanged(record, 0);
+		OnComponentMaskChanged(record, {});
 	}
 }
 
@@ -3123,8 +3125,9 @@ void CEntity::OnEditorGameModeChanged(bool bEnterGameMode)
 		// Re-add the component event listener which where removed
 		m_components.ForEach([this](SEntityComponentRecord& record) -> EComponentIterationResult
 		{
-			EntityEventMask prevMask = record.registeredEventsMask;
+			Cry::Entity::EventFlags prevMask = record.registeredEventsMask;
 			record.registeredEventsMask = record.pComponent->GetEventMask();
+
 			if (record.registeredEventsMask != prevMask)
 			{
 				OnComponentMaskChanged(record, prevMask);
@@ -3275,10 +3278,10 @@ void CEntity::SetEditorObjectInfo(bool selected, bool highlighted)
 
 void CEntity::ShutDownComponent(SEntityComponentRecord& componentRecord)
 {
-	if (componentRecord.registeredEventsMask != 0)
+	if (!componentRecord.registeredEventsMask.IsEmpty())
 	{
-		const EntityEventMask prevMask = componentRecord.registeredEventsMask;
-		componentRecord.registeredEventsMask = 0;
+		const Cry::Entity::EventFlags prevMask = componentRecord.registeredEventsMask;
+		componentRecord.registeredEventsMask.Clear();
 		UpdateComponentEventListeners(componentRecord, prevMask);
 	}
 

@@ -253,7 +253,7 @@ namespace UQS
 
 		void CGenerator_PointsOnGridProjectedOntoNavMesh::PerformOneFloodStep(const SUpdateContext& updateContext)
 		{
-			assert(!m_openList.empty());
+			CRY_ASSERT(!m_openList.empty());
 
 			const int compressedGridIndex = m_openList.front();
 			const int gridIndexX = compressedGridIndex % m_numCellsOnOneAxis;

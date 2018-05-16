@@ -181,9 +181,9 @@ void CProjectorLightComponent::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CProjectorLightComponent::GetEventMask() const
+Cry::Entity::EventFlags CProjectorLightComponent::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 }
 
 #ifndef RELEASE

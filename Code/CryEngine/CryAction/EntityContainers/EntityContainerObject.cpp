@@ -82,9 +82,9 @@ void CEntityContainerObject::ProcessEvent(const SEntityEvent& entityEvent)
 	}
 }
 
-uint64 CEntityContainerObject::GetEventMask() const
+Cry::Entity::EventFlags CEntityContainerObject::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_LEVEL_LOADED) | BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_EDITOR_PROPERTY_CHANGED) | BIT64(ENTITY_EVENT_DONE);
+	return ENTITY_EVENT_LEVEL_LOADED | ENTITY_EVENT_RESET | ENTITY_EVENT_EDITOR_PROPERTY_CHANGED | ENTITY_EVENT_DONE;
 }
 
 bool CEntityContainerObject::ReadEditorProperties()

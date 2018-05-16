@@ -84,7 +84,7 @@ namespace UQS
 
 			inline void CInstantEvaluatorDeleter::operator()(IInstantEvaluator* pInstantEvaluatorToDelete)
 			{
-				assert(m_pInstantEvaluatorFactory);
+				CRY_ASSERT(m_pInstantEvaluatorFactory);
 				m_pInstantEvaluatorFactory->DestroyInstantEvaluator(pInstantEvaluatorToDelete);
 			}
 

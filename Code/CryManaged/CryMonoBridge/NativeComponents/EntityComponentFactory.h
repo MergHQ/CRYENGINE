@@ -325,7 +325,7 @@ public:
 	CManagedComponentClassDescription                      m_classDescription;
 	std::shared_ptr<CMonoClass>                            m_pClass;
 
-	uint64                                                 m_eventMask;
+	Cry::Entity::EventFlags                        m_eventMask;
 
 	std::vector<std::unique_ptr<SPropertyTypeDescription>> m_properties;
 

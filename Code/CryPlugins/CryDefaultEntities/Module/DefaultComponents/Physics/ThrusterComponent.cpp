@@ -60,12 +60,12 @@ void CThrusterComponent::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CThrusterComponent::GetEventMask() const
+Cry::Entity::EventFlags CThrusterComponent::GetEventMask() const
 {
-	uint64 bitFlags = BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	Cry::Entity::EventFlags bitFlags = ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 	if (m_bConstantThrustActive)
 	{
-		bitFlags |= BIT64(ENTITY_EVENT_PREPHYSICSUPDATE);
+		bitFlags |= ENTITY_EVENT_PREPHYSICSUPDATE;
 	}
 
 	return bitFlags;

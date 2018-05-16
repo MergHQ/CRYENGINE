@@ -70,7 +70,7 @@ void CAIEntityComponent::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CAIEntityComponent::GetEventMask() const
+Cry::Entity::EventFlags CAIEntityComponent::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_SET_NAME) | BIT64(ENTITY_EVENT_ACTIVATED) | BIT64(ENTITY_EVENT_DEACTIVATED);
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_SET_NAME | ENTITY_EVENT_ACTIVATED | ENTITY_EVENT_DEACTIVATED;
 }

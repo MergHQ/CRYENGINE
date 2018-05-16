@@ -152,7 +152,7 @@ namespace UQS
 
 		CQuery_Regular::EUpdateState CQuery_Regular::OnUpdate(Shared::CUqsString& error)
 		{
-			assert(m_currentPhaseFn);	// query has already finished before; cannot recycle a query
+			CRY_ASSERT(m_currentPhaseFn);	// query has already finished before; cannot recycle a query
 
 			const SPhaseUpdateContext phaseUpdateContext(error);
 
@@ -288,7 +288,7 @@ namespace UQS
 			//
 
 			const CGeneratorBlueprint* pGenBP = m_pQueryBlueprint->GetGeneratorBlueprint();
-			assert(pGenBP);   // should have been detected by OnInstantiateFromQueryBlueprint() already
+			CRY_ASSERT(pGenBP);   // should have been detected by OnInstantiateFromQueryBlueprint() already
 			m_pGenerator = pGenBP->InstantiateGenerator(m_blackboard, phaseUpdateContext.error);
 			if (!m_pGenerator)
 			{
@@ -332,7 +332,7 @@ namespace UQS
 				return EPhaseStatus::ExceptionOccurred;
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 				return EPhaseStatus::ExceptionOccurred;
 			}
 		}
@@ -444,7 +444,7 @@ namespace UQS
 						break;
 
 					default:
-						assert(0);
+						CRY_ASSERT(0);
 					}
 				}
 			}
@@ -479,16 +479,16 @@ namespace UQS
 
 		void CQuery_Regular::RunInstantEvaluator(const SInstantEvaluatorWithIndex& instantEvaluatorToRun, SItemWorkingData& workingDataToWriteResultTo)
 		{
-			assert(workingDataToWriteResultTo.bitsDiscardedByInstantEvaluators == 0);
-			assert(workingDataToWriteResultTo.bitsWorkingDeferredEvaluators == 0);
-			assert(workingDataToWriteResultTo.bitsDiscardedByDeferredEvaluators == 0);
-			assert(workingDataToWriteResultTo.bitsFinishedDeferredEvaluators == 0);
-			assert(workingDataToWriteResultTo.bitsAbortedDeferredEvaluators == 0);
-			assert(!workingDataToWriteResultTo.bDisqualifiedDueToBadScore);
-			assert(workingDataToWriteResultTo.bitsExceptionByInstantEvaluatorFunctionCalls == 0);
-			assert(workingDataToWriteResultTo.bitsExceptionByInstantEvaluatorsThemselves == 0);
-			assert(workingDataToWriteResultTo.bitsExceptionByDeferredEvaluatorFunctionCalls == 0);
-			assert(workingDataToWriteResultTo.bitsExceptionByDeferredEvaluatorsThemselves == 0);
+			CRY_ASSERT(workingDataToWriteResultTo.bitsDiscardedByInstantEvaluators == 0);
+			CRY_ASSERT(workingDataToWriteResultTo.bitsWorkingDeferredEvaluators == 0);
+			CRY_ASSERT(workingDataToWriteResultTo.bitsDiscardedByDeferredEvaluators == 0);
+			CRY_ASSERT(workingDataToWriteResultTo.bitsFinishedDeferredEvaluators == 0);
+			CRY_ASSERT(workingDataToWriteResultTo.bitsAbortedDeferredEvaluators == 0);
+			CRY_ASSERT(!workingDataToWriteResultTo.bDisqualifiedDueToBadScore);
+			CRY_ASSERT(workingDataToWriteResultTo.bitsExceptionByInstantEvaluatorFunctionCalls == 0);
+			CRY_ASSERT(workingDataToWriteResultTo.bitsExceptionByInstantEvaluatorsThemselves == 0);
+			CRY_ASSERT(workingDataToWriteResultTo.bitsExceptionByDeferredEvaluatorFunctionCalls == 0);
+			CRY_ASSERT(workingDataToWriteResultTo.bitsExceptionByDeferredEvaluatorsThemselves == 0);
 
 			// original index of the instant-evaluator as it appears in the blueprint
 			const size_t instantEvaluatorIndex = instantEvaluatorToRun.originalIndexInQueryBlueprint;
@@ -580,7 +580,7 @@ namespace UQS
 				break;
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 			}
 		}
 
@@ -605,11 +605,11 @@ namespace UQS
 			{
 				SItemWorkingData* pWorkingData = m_remainingItemWorkingDatasToInspect[m_remainingItemWorkingDatasIndexForCheapInstantEvaluators];
 
-				assert(pWorkingData->bitsDiscardedByInstantEvaluators == 0);
-				assert(pWorkingData->bitsDiscardedByDeferredEvaluators == 0);
-				assert(pWorkingData->bitsFinishedDeferredEvaluators == 0);
-				assert(pWorkingData->bitsAbortedDeferredEvaluators == 0);
-				assert(!pWorkingData->bDisqualifiedDueToBadScore);
+				CRY_ASSERT(pWorkingData->bitsDiscardedByInstantEvaluators == 0);
+				CRY_ASSERT(pWorkingData->bitsDiscardedByDeferredEvaluators == 0);
+				CRY_ASSERT(pWorkingData->bitsFinishedDeferredEvaluators == 0);
+				CRY_ASSERT(pWorkingData->bitsAbortedDeferredEvaluators == 0);
+				CRY_ASSERT(!pWorkingData->bDisqualifiedDueToBadScore);
 
 				bool bDiscardedItem = false;
 
@@ -638,7 +638,7 @@ namespace UQS
 					break;
 			}
 
-			assert(m_remainingItemWorkingDatasIndexForCheapInstantEvaluators <= m_remainingItemWorkingDatasToInspect.size());
+			CRY_ASSERT(m_remainingItemWorkingDatasIndexForCheapInstantEvaluators <= m_remainingItemWorkingDatasToInspect.size());
 
 			// examined all items? -> proceed to next phase
 			if (m_remainingItemWorkingDatasIndexForCheapInstantEvaluators == m_remainingItemWorkingDatasToInspect.size())
@@ -685,14 +685,14 @@ namespace UQS
 
 		void CQuery_Regular::UpdateDeferredTask(SDeferredTask& taskToUpdate)
 		{
-			assert(taskToUpdate.pWorkingData->bitsDiscardedByInstantEvaluators == 0);
-			assert(taskToUpdate.pWorkingData->bitsDiscardedByDeferredEvaluators == 0);
-			assert(taskToUpdate.pWorkingData->bitsWorkingDeferredEvaluators != 0);
-			assert(!taskToUpdate.pWorkingData->bDisqualifiedDueToBadScore);
-			assert(taskToUpdate.pWorkingData->bitsExceptionByInstantEvaluatorFunctionCalls == 0);
-			assert(taskToUpdate.pWorkingData->bitsExceptionByInstantEvaluatorsThemselves == 0);
-			assert(taskToUpdate.pWorkingData->bitsExceptionByDeferredEvaluatorFunctionCalls == 0);
-			assert(taskToUpdate.pWorkingData->bitsExceptionByDeferredEvaluatorsThemselves == 0);
+			CRY_ASSERT(taskToUpdate.pWorkingData->bitsDiscardedByInstantEvaluators == 0);
+			CRY_ASSERT(taskToUpdate.pWorkingData->bitsDiscardedByDeferredEvaluators == 0);
+			CRY_ASSERT(taskToUpdate.pWorkingData->bitsWorkingDeferredEvaluators != 0);
+			CRY_ASSERT(!taskToUpdate.pWorkingData->bDisqualifiedDueToBadScore);
+			CRY_ASSERT(taskToUpdate.pWorkingData->bitsExceptionByInstantEvaluatorFunctionCalls == 0);
+			CRY_ASSERT(taskToUpdate.pWorkingData->bitsExceptionByInstantEvaluatorsThemselves == 0);
+			CRY_ASSERT(taskToUpdate.pWorkingData->bitsExceptionByDeferredEvaluatorFunctionCalls == 0);
+			CRY_ASSERT(taskToUpdate.pWorkingData->bitsExceptionByDeferredEvaluatorsThemselves == 0);
 
 			taskToUpdate.status = 0;
 
@@ -809,7 +809,7 @@ namespace UQS
 					break;
 
 				default:
-					assert(0);
+					CRY_ASSERT(0);
 				}
 			}
 
@@ -832,7 +832,7 @@ namespace UQS
 				const evaluatorsBitfield_t myOwnBit = (evaluatorsBitfield_t)1 << originalIndexInQueryBlueprint;
 
 				// the deferred-evaluator must have been working already before (to be consistent)
-				assert(taskToAbort.pWorkingData->bitsWorkingDeferredEvaluators & myOwnBit);
+				CRY_ASSERT(taskToAbort.pWorkingData->bitsWorkingDeferredEvaluators & myOwnBit);
 
 				// prematurely destroy it (this can save processing time on those doing time-sliced work)
 				taskToAbort.deferredEvaluators.pop_front();
@@ -853,13 +853,13 @@ namespace UQS
 		bool CQuery_Regular::CanItemStillBeatTheWorstCandidate(const SItemWorkingData& itemToCheck) const
 		{
 			// the list of final candidates must be already full
-			assert(m_candidates.size() == m_maxCandidates);
+			CRY_ASSERT(m_candidates.size() == m_maxCandidates);
 
 			// given item must not have encountered any kind of exception
-			assert(itemToCheck.bitsExceptionByInstantEvaluatorFunctionCalls == 0);
-			assert(itemToCheck.bitsExceptionByInstantEvaluatorsThemselves == 0);
-			assert(itemToCheck.bitsExceptionByDeferredEvaluatorFunctionCalls == 0);
-			assert(itemToCheck.bitsExceptionByDeferredEvaluatorsThemselves == 0);
+			CRY_ASSERT(itemToCheck.bitsExceptionByInstantEvaluatorFunctionCalls == 0);
+			CRY_ASSERT(itemToCheck.bitsExceptionByInstantEvaluatorsThemselves == 0);
+			CRY_ASSERT(itemToCheck.bitsExceptionByDeferredEvaluatorFunctionCalls == 0);
+			CRY_ASSERT(itemToCheck.bitsExceptionByDeferredEvaluatorsThemselves == 0);
 
 			// - assume that all cheap instant-evaluators have already run and didn't discard the item, as we don't check for them here
 			// - in other words: we may only get called from the expensive evaluators phase
@@ -890,9 +890,9 @@ namespace UQS
 				for (size_t blueprintIndex = 0; blueprintIndex < numDeferredEvaluatorBlueprints; ++blueprintIndex)
 				{
 					// assume that no deferred-evaluator has run or attempted to run yet (check for exception has been done above already)
-					assert((itemToCheck.bitsFinishedDeferredEvaluators & ((evaluatorsBitfield_t)1 << blueprintIndex)) == 0);
-					assert((itemToCheck.bitsWorkingDeferredEvaluators & ((evaluatorsBitfield_t)1 << blueprintIndex)) == 0);
-					assert((itemToCheck.bitsAbortedDeferredEvaluators & ((evaluatorsBitfield_t)1 << blueprintIndex)) == 0);
+					CRY_ASSERT((itemToCheck.bitsFinishedDeferredEvaluators & ((evaluatorsBitfield_t)1 << blueprintIndex)) == 0);
+					CRY_ASSERT((itemToCheck.bitsWorkingDeferredEvaluators & ((evaluatorsBitfield_t)1 << blueprintIndex)) == 0);
+					CRY_ASSERT((itemToCheck.bitsAbortedDeferredEvaluators & ((evaluatorsBitfield_t)1 << blueprintIndex)) == 0);
 
 					// TODO: cache the weights upfront
 					bestPossibleScore += deferredEvaluatorBlueprints[blueprintIndex]->GetWeight();
@@ -905,14 +905,14 @@ namespace UQS
 
 		void CQuery_Regular::AddItemToResultSetOrDisqualifyIt(SItemWorkingData& itemThatJustFinishedAndSurvivedAllEvaluators)
 		{
-			assert(itemThatJustFinishedAndSurvivedAllEvaluators.bitsDiscardedByInstantEvaluators == 0);
-			assert(itemThatJustFinishedAndSurvivedAllEvaluators.bitsDiscardedByDeferredEvaluators == 0);
-			assert(itemThatJustFinishedAndSurvivedAllEvaluators.bitsWorkingDeferredEvaluators == 0);
-			assert(itemThatJustFinishedAndSurvivedAllEvaluators.bitsAbortedDeferredEvaluators == 0);
-			assert(itemThatJustFinishedAndSurvivedAllEvaluators.bitsExceptionByInstantEvaluatorFunctionCalls == 0);
-			assert(itemThatJustFinishedAndSurvivedAllEvaluators.bitsExceptionByInstantEvaluatorsThemselves == 0);
-			assert(itemThatJustFinishedAndSurvivedAllEvaluators.bitsExceptionByDeferredEvaluatorFunctionCalls == 0);
-			assert(itemThatJustFinishedAndSurvivedAllEvaluators.bitsExceptionByDeferredEvaluatorsThemselves == 0);
+			CRY_ASSERT(itemThatJustFinishedAndSurvivedAllEvaluators.bitsDiscardedByInstantEvaluators == 0);
+			CRY_ASSERT(itemThatJustFinishedAndSurvivedAllEvaluators.bitsDiscardedByDeferredEvaluators == 0);
+			CRY_ASSERT(itemThatJustFinishedAndSurvivedAllEvaluators.bitsWorkingDeferredEvaluators == 0);
+			CRY_ASSERT(itemThatJustFinishedAndSurvivedAllEvaluators.bitsAbortedDeferredEvaluators == 0);
+			CRY_ASSERT(itemThatJustFinishedAndSurvivedAllEvaluators.bitsExceptionByInstantEvaluatorFunctionCalls == 0);
+			CRY_ASSERT(itemThatJustFinishedAndSurvivedAllEvaluators.bitsExceptionByInstantEvaluatorsThemselves == 0);
+			CRY_ASSERT(itemThatJustFinishedAndSurvivedAllEvaluators.bitsExceptionByDeferredEvaluatorFunctionCalls == 0);
+			CRY_ASSERT(itemThatJustFinishedAndSurvivedAllEvaluators.bitsExceptionByDeferredEvaluatorsThemselves == 0);
 
 			bool bKeepItemAsCandidate = true;
 
@@ -968,17 +968,17 @@ namespace UQS
 			//
 
 			// none of the deferred-evaluators shall be working on the item anymore
-			assert(itemToFinalize.bitsWorkingDeferredEvaluators == 0);
+			CRY_ASSERT(itemToFinalize.bitsWorkingDeferredEvaluators == 0);
 
 			// items that already got discarded by an instant-evaluator shouldn't even make it until here
-			assert(itemToFinalize.bitsDiscardedByInstantEvaluators == 0);
+			CRY_ASSERT(itemToFinalize.bitsDiscardedByInstantEvaluators == 0);
 
 			// only we (this method) shall figure out if an item can no longer make it into the final result set
-			assert(!itemToFinalize.bDisqualifiedDueToBadScore);
+			CRY_ASSERT(!itemToFinalize.bDisqualifiedDueToBadScore);
 
 			// items that encountered any kind of exception in the context of past instant-evaluators shouldn't have made it until here
-			assert(itemToFinalize.bitsExceptionByInstantEvaluatorFunctionCalls == 0);
-			assert(itemToFinalize.bitsExceptionByInstantEvaluatorsThemselves == 0);
+			CRY_ASSERT(itemToFinalize.bitsExceptionByInstantEvaluatorFunctionCalls == 0);
+			CRY_ASSERT(itemToFinalize.bitsExceptionByInstantEvaluatorsThemselves == 0);
 
 			// did this item encounter an exception in the context of deferred-evaluators?
 			if (itemToFinalize.bitsExceptionByDeferredEvaluatorFunctionCalls != 0 || itemToFinalize.bitsExceptionByDeferredEvaluatorsThemselves != 0)
@@ -999,7 +999,7 @@ namespace UQS
 			//
 
 			// all deferred-evaluators must have had their say on the item
-			assert(itemToFinalize.bitsFinishedDeferredEvaluators == ((evaluatorsBitfield_t)1 << m_pQueryBlueprint->GetDeferredEvaluatorBlueprints().size()) - 1);
+			CRY_ASSERT(itemToFinalize.bitsFinishedDeferredEvaluators == ((evaluatorsBitfield_t)1 << m_pQueryBlueprint->GetDeferredEvaluatorBlueprints().size()) - 1);
 
 			AddItemToResultSetOrDisqualifyIt(itemToFinalize);
 		}
@@ -1012,7 +1012,7 @@ namespace UQS
 
 			while (!m_remainingItemWorkingDatasToInspect.empty())
 			{
-				assert(m_candidates.size() <= m_maxCandidates);
+				CRY_ASSERT(m_candidates.size() <= m_maxCandidates);
 
 				//
 				// - check for whether there's still room in the potential result set
@@ -1029,16 +1029,16 @@ namespace UQS
 				auto itWorkingDataToInspectNext = m_remainingItemWorkingDatasToInspect.begin();
 				SItemWorkingData* pWorkingDataToInspectNext = *itWorkingDataToInspectNext;
 
-				assert(pWorkingDataToInspectNext->bitsDiscardedByInstantEvaluators == 0);
-				assert(pWorkingDataToInspectNext->bitsDiscardedByDeferredEvaluators == 0);
-				assert(pWorkingDataToInspectNext->bitsWorkingDeferredEvaluators == 0);
-				assert(pWorkingDataToInspectNext->bitsFinishedDeferredEvaluators == 0);
-				assert(pWorkingDataToInspectNext->bitsAbortedDeferredEvaluators == 0);
-				assert(!pWorkingDataToInspectNext->bDisqualifiedDueToBadScore);
-				assert(pWorkingDataToInspectNext->bitsExceptionByInstantEvaluatorFunctionCalls == 0);
-				assert(pWorkingDataToInspectNext->bitsExceptionByInstantEvaluatorsThemselves == 0);
-				assert(pWorkingDataToInspectNext->bitsExceptionByDeferredEvaluatorFunctionCalls == 0);
-				assert(pWorkingDataToInspectNext->bitsExceptionByDeferredEvaluatorsThemselves == 0);
+				CRY_ASSERT(pWorkingDataToInspectNext->bitsDiscardedByInstantEvaluators == 0);
+				CRY_ASSERT(pWorkingDataToInspectNext->bitsDiscardedByDeferredEvaluators == 0);
+				CRY_ASSERT(pWorkingDataToInspectNext->bitsWorkingDeferredEvaluators == 0);
+				CRY_ASSERT(pWorkingDataToInspectNext->bitsFinishedDeferredEvaluators == 0);
+				CRY_ASSERT(pWorkingDataToInspectNext->bitsAbortedDeferredEvaluators == 0);
+				CRY_ASSERT(!pWorkingDataToInspectNext->bDisqualifiedDueToBadScore);
+				CRY_ASSERT(pWorkingDataToInspectNext->bitsExceptionByInstantEvaluatorFunctionCalls == 0);
+				CRY_ASSERT(pWorkingDataToInspectNext->bitsExceptionByInstantEvaluatorsThemselves == 0);
+				CRY_ASSERT(pWorkingDataToInspectNext->bitsExceptionByDeferredEvaluatorFunctionCalls == 0);
+				CRY_ASSERT(pWorkingDataToInspectNext->bitsExceptionByDeferredEvaluatorsThemselves == 0);
 
 				//
 				// if the potential result set is already full, check for whether the upcoming item (and all remaining ones) can still make it into the result set
@@ -1108,7 +1108,7 @@ namespace UQS
 							// yep => schedule a deferred task on it
 							if (SDeferredTask* pNewTask = StartDeferredTask(pWorkingDataToInspectNext))
 							{
-								assert(&m_deferredTasks.back() == pNewTask);
+								CRY_ASSERT(&m_deferredTasks.back() == pNewTask);
 
 								UpdateDeferredTask(*pNewTask);
 
@@ -1249,39 +1249,39 @@ namespace UQS
 				m_pResultSet.reset(new CQueryResultSet(m_generatedItems, std::move(itemIndexes), std::move(itemScores)));
 
 #ifdef UQS_CHECK_PROPER_CLEANUP_ONCE_ALL_ITEMS_ARE_INSPECTED
-				assert(m_deferredTasks.empty());
+				CRY_ASSERT(m_deferredTasks.empty());
 
 				// check the working data of all items for consistency
 				for (const SItemWorkingData& wd : m_itemWorkingDatas)
 				{
 					// none of the deferred-evaluators must be working anymore
-					assert(wd.bitsWorkingDeferredEvaluators == 0);
+					CRY_ASSERT(wd.bitsWorkingDeferredEvaluators == 0);
 
 					// if instant-evaluators discarded the item, then exactly those instant-evaluators must have fully finished their work
-					assert(wd.bitsDiscardedByInstantEvaluators == 0 || (wd.bitsFinishedInstantEvaluators & wd.bitsDiscardedByInstantEvaluators) != 0);
+					CRY_ASSERT(wd.bitsDiscardedByInstantEvaluators == 0 || (wd.bitsFinishedInstantEvaluators & wd.bitsDiscardedByInstantEvaluators) != 0);
 
 					// instant-evaluators whose function calls caused an exception cannot have done any work (read: cannot have finished)
-					assert((wd.bitsExceptionByInstantEvaluatorFunctionCalls & wd.bitsFinishedInstantEvaluators) == 0);
+					CRY_ASSERT((wd.bitsExceptionByInstantEvaluatorFunctionCalls & wd.bitsFinishedInstantEvaluators) == 0);
 
 					// instant-evaluators that caused an exception themselves cannot have finished their work
-					assert((wd.bitsExceptionByInstantEvaluatorsThemselves & wd.bitsFinishedInstantEvaluators) == 0);
+					CRY_ASSERT((wd.bitsExceptionByInstantEvaluatorsThemselves & wd.bitsFinishedInstantEvaluators) == 0);
 
 					// if deferred-evaluators discarded the item, then exactly those deferred-evaluators must have fully finished their work
-					assert(wd.bitsDiscardedByDeferredEvaluators == 0 || (wd.bitsFinishedDeferredEvaluators & wd.bitsDiscardedByDeferredEvaluators) != 0);
+					CRY_ASSERT(wd.bitsDiscardedByDeferredEvaluators == 0 || (wd.bitsFinishedDeferredEvaluators & wd.bitsDiscardedByDeferredEvaluators) != 0);
 
 					// if instant-evaluator discarded the item, then none of the deferred-evaluators must have been started on that item
 					// (instant-evaluators [no matter if cheap or expensive] always run before deferred-evaluators)
-					assert((wd.bitsDiscardedByInstantEvaluators & (wd.bitsFinishedDeferredEvaluators | wd.bitsAbortedDeferredEvaluators)) == 0);
+					CRY_ASSERT((wd.bitsDiscardedByInstantEvaluators & (wd.bitsFinishedDeferredEvaluators | wd.bitsAbortedDeferredEvaluators)) == 0);
 
 					// those deferred-evaluators that discarded the item cannot have been aborted
 					// (the deferred-evaluator who discards an item aborts all other deferred-evaluators, but he never aborts himself)
-					assert((wd.bitsDiscardedByDeferredEvaluators & wd.bitsAbortedDeferredEvaluators) == 0);
+					CRY_ASSERT((wd.bitsDiscardedByDeferredEvaluators & wd.bitsAbortedDeferredEvaluators) == 0);
 
 					// deferred-evaluators whose function calls caused an exception cannot have done any work (read: cannot have finished)
-					assert((wd.bitsExceptionByDeferredEvaluatorFunctionCalls & (wd.bitsAbortedDeferredEvaluators | wd.bitsFinishedDeferredEvaluators)) == 0);
+					CRY_ASSERT((wd.bitsExceptionByDeferredEvaluatorFunctionCalls & (wd.bitsAbortedDeferredEvaluators | wd.bitsFinishedDeferredEvaluators)) == 0);
 
 					// deferred-evaluators that caused an exception themselves cannot have finished their work
-					assert((wd.bitsExceptionByDeferredEvaluatorsThemselves & (wd.bitsAbortedDeferredEvaluators | wd.bitsFinishedDeferredEvaluators)) == 0);
+					CRY_ASSERT((wd.bitsExceptionByDeferredEvaluatorsThemselves & (wd.bitsAbortedDeferredEvaluators | wd.bitsFinishedDeferredEvaluators)) == 0);
 				}
 #endif
 			}

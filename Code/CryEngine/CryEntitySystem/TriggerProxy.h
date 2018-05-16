@@ -24,7 +24,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void   Initialize() final;
 	virtual void   ProcessEvent(const SEntityEvent& event) final;
-	virtual uint64 GetEventMask() const final { return BIT64(ENTITY_EVENT_XFORM) | BIT64(ENTITY_EVENT_ENTERAREA) | BIT64(ENTITY_EVENT_LEAVEAREA); };
+	virtual Cry::Entity::EventFlags GetEventMask() const final { return ENTITY_EVENT_XFORM | ENTITY_EVENT_ENTERAREA | ENTITY_EVENT_LEAVEAREA; };
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////

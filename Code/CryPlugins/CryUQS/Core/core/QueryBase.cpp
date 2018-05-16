@@ -140,7 +140,7 @@ namespace UQS
 
 		bool CQueryBase::InstantiateFromQueryBlueprint(const std::shared_ptr<const CQueryBlueprint>& pQueryBlueprint, const Shared::IVariantDict& runtimeParams, Shared::CUqsString& error)
 		{
-			assert(!m_pQueryBlueprint);	// we don't support recycling the query
+			CRY_ASSERT(!m_pQueryBlueprint);	// we don't support recycling the query
 
 			m_pQueryBlueprint = pQueryBlueprint;
 
@@ -235,7 +235,7 @@ namespace UQS
 
 		void CQueryBase::AddItemMonitor(Client::ItemMonitorUniquePtr&& pItemMonitor)
 		{
-			assert(pItemMonitor);
+			CRY_ASSERT(pItemMonitor);
 			m_itemMonitors.push_back(std::move(pItemMonitor));
 		}
 
@@ -281,7 +281,7 @@ namespace UQS
 			{
 				for (const Client::ItemMonitorUniquePtr& pItemMonitor : m_itemMonitors)
 				{
-					assert(pItemMonitor);
+					CRY_ASSERT(pItemMonitor);
 
 					const Client::IItemMonitor::EHealthState healthState = pItemMonitor->UpdateAndCheckForCorruption(error);
 
@@ -403,7 +403,7 @@ namespace UQS
 						{
 							const string& paramName = pair.first;
 							auto it = globalParamsAsMap.find(paramName);
-							assert(it != globalParamsAsMap.cend());
+							CRY_ASSERT(it != globalParamsAsMap.cend());
 
 							const Shared::CVariantDict::SDataEntry& entry = it->second;
 							entry.pItemFactory->AddItemToDebugRenderWorld(entry.pObject, debugRW);
@@ -424,7 +424,7 @@ namespace UQS
 						{
 							const string& paramName = pair.first;
 							auto it = globalParamsAsMap.find(paramName);
-							assert(it != globalParamsAsMap.cend());
+							CRY_ASSERT(it != globalParamsAsMap.cend());
 
 							const Shared::CVariantDict::SDataEntry& entry = it->second;
 							entry.pItemFactory->AddItemToDebugRenderWorld(entry.pObject, debugRW);

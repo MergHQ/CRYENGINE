@@ -20,7 +20,7 @@ namespace UQS
 
 		void CQueryHistoryManager::RegisterQueryHistoryListener(IQueryHistoryListener* pListener)
 		{
-			assert(pListener);
+			CRY_ASSERT(pListener);
 			stl::push_back_unique(m_listeners, pListener);
 		}
 
@@ -31,9 +31,9 @@ namespace UQS
 
 		void CQueryHistoryManager::UpdateDebugRendering3D(const SDebugCameraView* pOptionalView, const SEvaluatorDrawMasks& evaluatorDrawMasks)
 		{
-			// - if this assert fails, then the game code tries to do the debug-render when it hasn't declared to do so
+			// - if this CRY_ASSERT fails, then the game code tries to do the debug-render when it hasn't declared to do so
 			// - this check is done to prevent updating from more than one place
-			assert(gEnv->IsEditing() || (m_bAutomaticUpdateDebugRendering3DInProgress == !g_pHub->GetOverrideFlags().Check(EHubOverrideFlags::CallUpdateDebugRendering3D)));
+			CRY_ASSERT(gEnv->IsEditing() || (m_bAutomaticUpdateDebugRendering3DInProgress == !g_pHub->GetOverrideFlags().Check(EHubOverrideFlags::CallUpdateDebugRendering3D)));
 
 			const CQueryHistory& history = m_queryHistories[m_historyToManage];
 			const CQueryID& queryIdOfSelectedHistoricQuery = m_queryIDOfCurrentHistoricQuery[m_historyToManage];
@@ -188,7 +188,7 @@ namespace UQS
 				break;
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 			}
 		}
 
@@ -315,13 +315,13 @@ namespace UQS
 
 		void CQueryHistoryManager::AutomaticUpdateDebugRendering3DBegin()
 		{
-			assert(!m_bAutomaticUpdateDebugRendering3DInProgress);
+			CRY_ASSERT(!m_bAutomaticUpdateDebugRendering3DInProgress);
 			m_bAutomaticUpdateDebugRendering3DInProgress = true;
 		}
 
 		void CQueryHistoryManager::AutomaticUpdateDebugRendering3DEnd()
 		{
-			assert(m_bAutomaticUpdateDebugRendering3DInProgress);
+			CRY_ASSERT(m_bAutomaticUpdateDebugRendering3DInProgress);
 			m_bAutomaticUpdateDebugRendering3DInProgress = false;
 		}
 

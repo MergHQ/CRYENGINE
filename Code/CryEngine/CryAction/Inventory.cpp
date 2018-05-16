@@ -498,9 +498,9 @@ void CInventory::ProcessEvent(const SEntityEvent& event)
 }
 
 //------------------------------------------------------------------------
-uint64 CInventory::GetEventMask() const 
+Cry::Entity::EventFlags CInventory::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_RESET;
 }
 
 //------------------------------------------------------------------------

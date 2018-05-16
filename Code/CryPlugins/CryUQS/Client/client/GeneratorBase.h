@@ -41,21 +41,21 @@ namespace UQS
 			m_pItemFactory = UQS::Core::IHubPlugin::GetHub().GetUtils().FindItemFactoryByType(itemTypeToGenerate);
 
 			// if this fails, then no such item factory was registered by the client code (in fact, this error must have been detected by StartupConsistencyChecker already)
-			assert(m_pItemFactory);
+			CRY_ASSERT(m_pItemFactory);
 		}
 
 		template <class TGenerator, class TItem>
 		IItemFactory& CGeneratorBase<TGenerator, TItem>::GetItemFactory() const
 		{
-			assert(m_pItemFactory);   // should have been detected in the ctor already (and, of course, by the StartupConsistencyChecker)
+			CRY_ASSERT(m_pItemFactory);   // should have been detected in the ctor already (and, of course, by the StartupConsistencyChecker)
 			return *m_pItemFactory;
 		}
 
 		template <class TGenerator, class TItem>
 		IGenerator::EUpdateStatus CGeneratorBase<TGenerator, TItem>::Update(const SUpdateContext& updateContext, Core::IItemList& itemListToPopulate)
 		{
-			// if this assert() fails, then something must have gone wrong in InitItemListWithProperItemFactory()
-			assert(itemListToPopulate.GetItemFactory().GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
+			// if this CRY_ASSERT() fails, then something must have gone wrong in InitItemListWithProperItemFactory()
+			CRY_ASSERT(itemListToPopulate.GetItemFactory().GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
 			CItemListProxy_Writable<TItem> actualItemListToPopulate(itemListToPopulate);
 			TGenerator* pActualGenerator = static_cast<TGenerator*>(this);
 			return pActualGenerator->DoUpdate(updateContext, actualItemListToPopulate);

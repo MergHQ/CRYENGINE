@@ -77,12 +77,12 @@ void CMannequinObject::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CMannequinObject::GetEventMask() const
+Cry::Entity::EventFlags CMannequinObject::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_START_LEVEL)
-	       | BIT64(ENTITY_EVENT_EDITOR_PROPERTY_CHANGED)
-	       | BIT64(ENTITY_EVENT_RESET)
-	       | BIT64(ENTITY_EVENT_XFORM_FINISHED_EDITOR);
+	return ENTITY_EVENT_START_LEVEL
+	       | ENTITY_EVENT_EDITOR_PROPERTY_CHANGED
+	       | ENTITY_EVENT_RESET
+	       | ENTITY_EVENT_XFORM_FINISHED_EDITOR;
 }
 
 IEntityPropertyGroup* CMannequinObject::GetPropertyGroup()

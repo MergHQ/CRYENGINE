@@ -29,10 +29,10 @@ namespace UQS
 		void CItemList::CreateItemsByItemFactory(size_t numItemsToCreate)
 		{
 			// ensure SetItemFactory() has been called prior
-			assert(m_pItemFactory);
+			CRY_ASSERT(m_pItemFactory);
 
 			// ensure that no items have been created yet (we don't support recycling the item list)
-			assert(!m_pItems);
+			CRY_ASSERT(!m_pItems);
 
 			m_pItems = m_pItemFactory->CreateItems(numItemsToCreate, Client::IItemFactory::EItemInitMode::UseDefaultConstructor);
 			m_numItems = numItemsToCreate;
@@ -40,13 +40,13 @@ namespace UQS
 
 		void CItemList::CloneItems(const void* pOriginalItems, size_t numItemsToClone)
 		{
-			assert(pOriginalItems);
+			CRY_ASSERT(pOriginalItems);
 
 			// ensure SetItemFactory() has been called prior
-			assert(m_pItemFactory);
+			CRY_ASSERT(m_pItemFactory);
 
 			// ensure that no items have been created yet (we don't support recycling the item list)
-			assert(!m_pItems);
+			CRY_ASSERT(!m_pItems);
 
 			m_pItems = m_pItemFactory->CloneItems(pOriginalItems, numItemsToClone);
 			m_numItems = numItemsToClone;
@@ -59,7 +59,7 @@ namespace UQS
 
 		Client::IItemFactory& CItemList::GetItemFactory() const
 		{
-			assert(m_pItemFactory);    // CreateItemsByItemFactory() should have been called before; I cannot see a use-case where it would make sense the other way round
+			CRY_ASSERT(m_pItemFactory);    // CreateItemsByItemFactory() should have been called before; I cannot see a use-case where it would make sense the other way round
 			return *m_pItemFactory;
 		}
 
@@ -82,7 +82,7 @@ namespace UQS
 
 		void CItemList::SetItemFactory(Client::IItemFactory& itemFactory)
 		{
-			assert(!m_pItemFactory);  // changing the item-factory is not supported (which use-case would it tackle?)
+			CRY_ASSERT(!m_pItemFactory);  // changing the item-factory is not supported (which use-case would it tackle?)
 			m_pItemFactory = &itemFactory;
 		}
 
@@ -100,9 +100,9 @@ namespace UQS
 
 		void* CItemList::GetItemAtIndex(size_t index) const
 		{
-			assert(m_pItemFactory);
-			assert(m_pItems);
-			assert(index < m_numItems);
+			CRY_ASSERT(m_pItemFactory);
+			CRY_ASSERT(m_pItems);
+			CRY_ASSERT(index < m_numItems);
 			return m_pItemFactory->GetItemAtIndex(m_pItems, index);
 		}
 

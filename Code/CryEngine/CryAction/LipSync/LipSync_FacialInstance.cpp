@@ -180,9 +180,9 @@ void CLipSync_FacialInstance::ProcessEvent(const SEntityEvent& event)
 {
 }
 
-uint64 CLipSync_FacialInstance::GetEventMask() const
+Cry::Entity::EventFlags CLipSync_FacialInstance::GetEventMask() const
 {
-	return 0;
+	return Cry::Entity::EventFlags();
 }
 
 void CLipSync_FacialInstance::SetChannelId(uint16 id)

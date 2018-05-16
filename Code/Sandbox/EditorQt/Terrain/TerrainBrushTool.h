@@ -96,7 +96,6 @@ private:
 protected:
 	static Vec3                   s_pointerPos;
 	static Vec3                   s_pointerPosPrev;
-	static QPoint                 s_lastMousePoint;
 	bool                          m_bPickHeight;
 	CTerrainBrush*                m_pBrush;
 	std::map<CBaseObject*, float> m_objElevations;
@@ -105,6 +104,7 @@ protected:
 private:
 	static bool   s_shareBrushParameters;
 	CTerrainBrush m_brush;
+	CPoint        m_LMButtonDownPoint;
 	EPaintMode    m_nPaintingMode;
 };
 

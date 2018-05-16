@@ -220,9 +220,9 @@ void CSmartMine::ProcessEvent( const SEntityEvent& entityEvent )
 	}
 }
 
-uint64 CSmartMine::GetEventMask() const
+Cry::Entity::EventFlags CSmartMine::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_RESET) | BIT64(ENTITY_EVENT_ENTERAREA) | BIT64(ENTITY_EVENT_LEAVEAREA) | BIT64(ENTITY_EVENT_HIDE) | BIT64(ENTITY_EVENT_UNHIDE);
+	return ENTITY_EVENT_RESET | ENTITY_EVENT_ENTERAREA | ENTITY_EVENT_LEAVEAREA | ENTITY_EVENT_HIDE | ENTITY_EVENT_UNHIDE;
 }
 
 void CSmartMine::GetMemoryUsage( ICrySizer *pSizer ) const

@@ -142,11 +142,11 @@ void CReplayActor::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CReplayActor::GetEventMask() const
+Cry::Entity::EventFlags CReplayActor::GetEventMask() const
 {
 	return 
-		BIT64(ENTITY_EVENT_PREPHYSICSUPDATE) |
-		BIT64(ENTITY_EVENT_DONE);
+		ENTITY_EVENT_PREPHYSICSUPDATE |
+		ENTITY_EVENT_DONE;
 }
 
 //------------------------------------------------------------------------

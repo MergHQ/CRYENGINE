@@ -50,7 +50,7 @@ namespace UQS
 
 		inline SQueryResult SQueryResult::CreateSuccess(const CQueryID& _queryID, QueryResultSetUniquePtr& _pResultSet)
 		{
-			assert(_pResultSet != nullptr);
+			CRY_ASSERT(_pResultSet != nullptr);
 			return SQueryResult(_queryID, EStatus::Success, _pResultSet, "");
 		}
 

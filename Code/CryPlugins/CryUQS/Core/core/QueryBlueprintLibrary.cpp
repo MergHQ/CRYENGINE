@@ -40,7 +40,7 @@ namespace UQS
 				return ELoadAndStoreResult::ExceptionOccurred;
 			}
 
-			assert(strcmp(szQueryBPName, pNewBP->GetName()) == 0);
+			CRY_ASSERT(strcmp(szQueryBPName, pNewBP->GetName()) == 0);
 
 			if (blueprintID.IsOrHasBeenValid())
 			{
@@ -90,7 +90,7 @@ namespace UQS
 
 		CQueryBlueprintID CQueryBlueprintLibrary::GetQueryBlueprintID(size_t index) const
 		{
-			assert(index < m_queryBlueprintsVector.size());
+			CRY_ASSERT(index < m_queryBlueprintsVector.size());
 
 			CQueryBlueprintID blueprintID(CQueryBlueprintID::s_invalidIndex, "");
 
@@ -103,7 +103,7 @@ namespace UQS
 			}
 
 			// cannot reach here
-			assert(0);
+			CRY_ASSERT(0);
 			return CQueryBlueprintID();
 		}
 

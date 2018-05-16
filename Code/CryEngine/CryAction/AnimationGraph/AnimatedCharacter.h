@@ -183,7 +183,7 @@ public:
 	virtual void                 FullSerialize(TSerialize ser);
 	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; }
 	virtual void                 ProcessEvent(const SEntityEvent& event);
-	virtual uint64               GetEventMask() const;
+	virtual Cry::Entity::EventFlags               GetEventMask() const;
 	virtual void                 PostSerialize();
 	virtual void                 SerializeSpawnInfo(TSerialize ser) {}
 	virtual ISerializableInfoPtr GetSpawnInfo()                     { return 0; }

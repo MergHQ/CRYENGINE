@@ -266,7 +266,7 @@ namespace UQS
 							break;
 
 						default:
-							assert(0);
+							CRY_ASSERT(0);
 						}
 						bSwallowEvent = true;
 					}
@@ -450,7 +450,7 @@ namespace UQS
 						break;
 					}
 				}
-				assert(pQueryShortInfo);
+				CRY_ASSERT(pQueryShortInfo);
 
 				if (pQueryShortInfo->parentQueryID.IsValid())
 				{

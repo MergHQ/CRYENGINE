@@ -141,13 +141,13 @@ namespace UQS
 
 		const Shared::CTypeInfo& CGeneratorBlueprint::GetTypeOfItemsToGenerate() const
 		{
-			assert(m_pGeneratorFactory);
+			CRY_ASSERT(m_pGeneratorFactory);
 			return m_pGeneratorFactory->GetTypeOfItemsToGenerate();
 		}
 
 		Client::GeneratorUniquePtr CGeneratorBlueprint::InstantiateGenerator(const SQueryBlackboard& blackboard, Shared::CUqsString& error) const
 		{
-			assert(m_pGeneratorFactory);
+			CRY_ASSERT(m_pGeneratorFactory);
 
 			//
 			// create the input parameters (they will get filled by the function calls below)
@@ -182,7 +182,7 @@ namespace UQS
 			//
 
 			Client::GeneratorUniquePtr pGenerator = m_pGeneratorFactory->CreateGenerator(pParams);   // never returns NULL
-			assert(pGenerator);
+			CRY_ASSERT(pGenerator);
 			return pGenerator;
 		}
 

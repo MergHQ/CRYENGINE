@@ -1182,6 +1182,7 @@ install_headers(CrySystem CryThreading)
 			"CryEntitySystem/Examples/PhysicalizeEntity.cpp"
 			"CryEntitySystem/Examples/PhysicalizeEntitySlot.cpp"
 			"CryEntitySystem/Examples/PhysicalizeLiving.cpp"
+			"CryEntitySystem/Examples/MonitorCollisions.cpp"
 		SOURCE_GROUP "CryEntitySystem\\\\Networking"
 			"CryEntitySystem/Examples/ComponentNetReplicate.cpp"
 			"CryEntitySystem/Examples/ComponentNetSerialize.cpp"
@@ -1219,6 +1220,10 @@ install_headers(CrySystem CryThreading)
 			"CrySystem/Examples/MinimalPlugin.cpp"
 			"CrySystem/Examples/ConsoleVariable.cpp"
 			"CrySystem/Examples/ConsoleCommand.cpp"
+		SOURCE_GROUP "CrySystem\\\\Filesystem"
+			"CrySystem/Examples/XmlParsing.cpp"
+			"CrySystem/Examples/XmlWriting.cpp"
+			"CrySystem/Examples/JsonSerialization.cpp"
 		SOURCE_GROUP "CrySystem\\\\VirtualReality"
 			"CrySystem/Examples/AsyncHMDCameraCallback.cpp"
 	)

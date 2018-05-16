@@ -25,7 +25,7 @@ namespace Cry
 			virtual void Initialize() final;
 
 			virtual void ProcessEvent(const SEntityEvent& event) final;
-			virtual uint64 GetEventMask() const final;
+			virtual Cry::Entity::EventFlags GetEventMask() const final;
 
 			virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override;
 			virtual NetworkAspectType GetNetSerializeAspectMask() const override { return eEA_Physics; };

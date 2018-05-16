@@ -43,6 +43,7 @@
 %typemap(csbase) EEntitySerializeFlags "uint"
 %typemap(csbase) IEntity::EAttachmentFlags "uint"
 %typemap(csbase) ESpecType "uint"
+%typemap(csbase) Cry::Entity::EEvent "ulong"
 
 %include "../../../CryEngine/CryCommon/CryEntitySystem/IEntityBasicTypes.h"
 %import "../../../../CryEngine/CryCommon/CryNetwork/INetwork.h"

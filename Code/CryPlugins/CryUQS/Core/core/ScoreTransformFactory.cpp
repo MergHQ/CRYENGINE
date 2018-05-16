@@ -66,7 +66,7 @@ namespace UQS
 
 		const CScoreTransformFactory& CScoreTransformFactory::GetDefaultScoreTransformFactory()
 		{
-			assert(s_pDefaultScoreTransformFactory);
+			CRY_ASSERT(s_pDefaultScoreTransformFactory);
 			return *s_pDefaultScoreTransformFactory;
 		}
 

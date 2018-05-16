@@ -281,9 +281,9 @@ namespace Cry
 			}
 		}
 
-		uint64 CSchematycEntitySensorVolumeComponent::GetEventMask() const
+		Cry::Entity::EventFlags CSchematycEntitySensorVolumeComponent::GetEventMask() const
 		{
-			return BIT64(ENTITY_EVENT_XFORM);
+			return ENTITY_EVENT_XFORM;
 		}
 
 		void CSchematycEntitySensorVolumeComponent::ProcessEvent(const SEntityEvent& event)

@@ -21,9 +21,11 @@ void SpawnEntityOnAllClients()
 {
 	CRY_ASSERT(gEnv->bServer);
 
+	SEntitySpawnParams spawnParams;
+
 	// Spawn a new entity, but do *not* automatically initialize it
 	// This is delayed as want to add our component before network replication occurs
-	if (IEntity* pEntity = gEnv->pEntitySystem->SpawnEntity(SEntitySpawnParams(), false))
+	if (IEntity* pEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams, false))
 	{
 		// Create an instance of our component and attach it to the entity
 		CMyReplicatedComponent* pComponent = pEntity->CreateComponentClass<CMyReplicatedComponent>();
@@ -31,6 +33,6 @@ void SpawnEntityOnAllClients()
 		pComponent->SetHealth(0.f);
 
 		// Now initialize the entity, resulting in CMyComponent::NetReplicateSerialize first being called on the server (this instance) to write the data to network, and then on all clients to deserialize.
-		gEnv->pEntitySystem->InitEntity(pEntity, SEntitySpawnParams());
+		gEnv->pEntitySystem->InitEntity(pEntity, spawnParams);
 	}
 }

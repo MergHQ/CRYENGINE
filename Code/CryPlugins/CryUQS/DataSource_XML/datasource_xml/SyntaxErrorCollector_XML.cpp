@@ -49,7 +49,7 @@ namespace UQS
 
 		const char* CXMLDataErrorCollector::GetError(size_t index) const
 		{
-			assert(index < m_errorCollection.size());
+			CRY_ASSERT(index < m_errorCollection.size());
 			return m_errorCollection[index].c_str();
 		}
 

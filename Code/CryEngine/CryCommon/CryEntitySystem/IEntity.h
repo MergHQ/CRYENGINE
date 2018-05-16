@@ -703,6 +703,7 @@ public:
 	virtual void KillAllTimers(ISimpleEntityEventListener* pListener) = 0;
 
 	//! Hides this entity, makes it invisible and disable its physics.
+	//! Note that the difference between Invisible and Hide is that hiding will also disable certain update logic, such as physics.
 	//! \param bHide If true hide the entity, is false unhides it.
 	virtual void Hide(bool bHide, EEntityHideFlags hideFlags = ENTITY_HIDE_NO_FLAG) = 0;
 
@@ -710,7 +711,7 @@ public:
 	virtual bool IsHidden() const = 0;
 
 	//! Makes the entity invisible and disable its physics.
-	//! Different from hide in that the entity is still updated.
+	//! Different from hide in that the entity is still updated, and physics is still active
 	virtual void Invisible(bool bInvisible) = 0;
 
 	//! Checks if the entity is invisible.

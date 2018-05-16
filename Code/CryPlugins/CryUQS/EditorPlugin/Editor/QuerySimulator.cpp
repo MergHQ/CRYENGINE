@@ -47,9 +47,9 @@ CSimulatedRuntimeParam& CSimulatedRuntimeParam::operator=(const CSimulatedRuntim
 {
 	if (this != &rhs)
 	{
-		assert(m_pItemFactory);
-		assert(rhs.m_pItemFactory);
-		assert(rhs.m_pItem);
+		CRY_ASSERT(m_pItemFactory);
+		CRY_ASSERT(rhs.m_pItemFactory);
+		CRY_ASSERT(rhs.m_pItem);
 
 		m_name = rhs.m_name;
 		m_pItemFactory->DestroyItems(m_pItem);
@@ -88,7 +88,7 @@ CSimulatedRuntimeParam::~CSimulatedRuntimeParam()
 
 bool CSimulatedRuntimeParam::Serialize(Serialization::IArchive& archive)
 {
-	//assert(m_pItemFactory);
+	//CRY_ASSERT(m_pItemFactory);
 
 	// happens when yasli uses a temporary object during its serialization
 	if (!m_pItemFactory)
@@ -117,7 +117,7 @@ bool CSimulatedRuntimeParam::Serialize(Serialization::IArchive& archive)
 	}
 	else
 	{
-		assert(archive.isInput());
+		CRY_ASSERT(archive.isInput());
 		return m_pItemFactory->TryDeserializeItem(m_pItem, archive, "value", m_name.c_str());
 	}
 }

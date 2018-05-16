@@ -62,7 +62,7 @@ public:
 	virtual void Update( SEntityUpdateContext& ctx, int slot ) {};
 	virtual void HandleEvent( const SGameObjectEvent& gameObjectEvent );
 	virtual void ProcessEvent( const SEntityEvent& entityEvent ) {};
-	virtual uint64 GetEventMask() const { return 0; }
+	virtual Cry::Entity::EventFlags GetEventMask() const { return Cry::Entity::EventFlags(); }
 	virtual void SetChannelId( uint16 id ) {};
 	virtual void PostUpdate( float frameTime ) { CRY_ASSERT(false); }
 	virtual void PostRemoteSpawn() {};

@@ -70,11 +70,11 @@ namespace UQS
 
 		inline void CVariantDict::AddOrReplace(const char* szKey, Client::IItemFactory& itemFactory, const void* pItemToClone)
 		{
-			assert(pItemToClone);
+			CRY_ASSERT(pItemToClone);
 
 			SDataEntry& entry = m_dataItems[szKey];
 
-			assert((entry.pItemFactory && entry.pObject) || (!entry.pItemFactory && !entry.pObject));
+			CRY_ASSERT((entry.pItemFactory && entry.pObject) || (!entry.pItemFactory && !entry.pObject));
 
 			// same item-factory as before? -> just change the object's value
 			if (entry.pItemFactory && entry.pItemFactory == &itemFactory)
@@ -96,14 +96,14 @@ namespace UQS
 
 		inline void CVariantDict::AddSelfToOtherAndReplace(IVariantDict& out) const
 		{
-			assert(this != &out);
+			CRY_ASSERT(this != &out);
 
 			for (const auto& pair : m_dataItems)
 			{
 				const char* szKey = pair.first.c_str();
 				const SDataEntry& entry = pair.second;
 
-				assert(entry.pItemFactory && entry.pObject);
+				CRY_ASSERT(entry.pItemFactory && entry.pObject);
 
 				out.AddOrReplace(szKey, *entry.pItemFactory, entry.pObject);
 			}
@@ -145,7 +145,7 @@ namespace UQS
 			for (auto pair : m_dataItems)
 			{
 				SDataEntry& entry = pair.second;
-				assert(entry.pItemFactory && entry.pObject);
+				CRY_ASSERT(entry.pItemFactory && entry.pObject);
 				entry.pItemFactory->DestroyItems(entry.pObject);
 			}
 			m_dataItems.clear();
@@ -162,7 +162,7 @@ namespace UQS
 				return;
 			}
 
-			// FIXME: searching for the item-factory might not be the best approach; we could have the caller pass in the item-factory and assert() type matching,
+			// FIXME: searching for the item-factory might not be the best approach; we could have the caller pass in the item-factory and CRY_ASSERT() type matching,
 			//        but that would also mean more responsibility on the client side
 			const CTypeInfo& typeOfOriginalValue = Shared::SDataTypeHelper<TItem>::GetTypeInfo();
 			Client::IItemFactory* pItemFactoryOfOriginalValue = pHub->GetUtils().FindItemFactoryByType(typeOfOriginalValue);
@@ -170,7 +170,7 @@ namespace UQS
 			// If this fails then there is obviously no item-factory registered that can create items of given type.
 			// Currently we do nothing about it since it should be the responsibility of the caller to ensure consistency beforehand.
 			// Ideally, we should trigger a CryFatalError(), but that sounds a bit too harsh?! For now, we only issue a warning.
-			assert(pItemFactoryOfOriginalValue);
+			CRY_ASSERT(pItemFactoryOfOriginalValue);
 			if (pItemFactoryOfOriginalValue)
 			{
 				AddOrReplace(szKey, *pItemFactoryOfOriginalValue, &originalValueToClone);

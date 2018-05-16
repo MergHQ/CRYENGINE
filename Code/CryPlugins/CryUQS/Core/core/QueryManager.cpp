@@ -112,7 +112,7 @@ namespace UQS
 
 		void CQueryManager::CancelQuery(const CQueryID& idOfQueryToCancel)
 		{
-			assert(!m_bQueriesUpdateInProgress);
+			CRY_ASSERT(!m_bQueriesUpdateInProgress);
 
 			auto it = std::find_if(m_queries.begin(), m_queries.end(), CPredEqualQueryID(idOfQueryToCancel));
 			if (it != m_queries.end())
@@ -125,7 +125,7 @@ namespace UQS
 
 		void CQueryManager::AddItemMonitorToQuery(const CQueryID& queryID, Client::ItemMonitorUniquePtr&& pItemMonitorToInstall)
 		{
-			assert(pItemMonitorToInstall);
+			CRY_ASSERT(pItemMonitorToInstall);
 
 			if (CQueryBase* pQuery = FindQueryByQueryID(queryID))
 			{
@@ -415,7 +415,7 @@ namespace UQS
 						break;
 
 					default:
-						assert(0);
+						CRY_ASSERT(0);
 					}
 
 					//
@@ -460,7 +460,7 @@ namespace UQS
 
 							if (overallFractionUsedSoFar > 1.0f + SCvars::timeBudgetExcessThresholdInPercent * 0.01f)
 							{
-								assert(worstPerformingQuery.itInQueries != m_queries.end());
+								CRY_ASSERT(worstPerformingQuery.itInQueries != m_queries.end());
 
 								NotifyOfQueryPerformanceWarning(*worstPerformingQuery.itInQueries, "system frame #%i: query has just been flagged as a performance offender (consumed %.1f%% of its granted time: %fms vs %fms)", (int)gEnv->nMainFrameID, worstPerformingQuery.usedFractionOfTimeBudget * 100.0f, timeUsedByThisQuery.GetMilliSeconds(), timeBudgetForThisQuery.GetMilliSeconds());
 
@@ -696,7 +696,7 @@ namespace UQS
 
 			// Deferred-Evaluators
 			{
-				assert(stats.deferredEvaluatorsFullRuns.size() == stats.deferredEvaluatorsAbortedRuns.size());
+				CRY_ASSERT(stats.deferredEvaluatorsFullRuns.size() == stats.deferredEvaluatorsAbortedRuns.size());
 				const size_t numDeferredEvaluators = stats.deferredEvaluatorsFullRuns.size();
 				for (size_t i = 0; i < numDeferredEvaluators; ++i)
 				{

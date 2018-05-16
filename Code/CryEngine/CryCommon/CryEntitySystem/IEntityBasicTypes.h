@@ -4,6 +4,7 @@
 
 #include <CrySchematyc/Utils/EnumFlags.h>
 #include <limits>
+#include <CryCore/CryEnumMacro.h>
 
 //! Unique identifier for each entity instance.
 //! Entity identifiers are unique for the session, but cannot be guaranteed over the network, separate instances of the application and serialization / save games.
@@ -75,246 +76,344 @@ typedef uint32 tAIObjectID;
 	#define INVALID_AIOBJECTID ((tAIObjectID)(0))
 #endif
 
-//! EEntityEvent defines all events that can be sent to an entity.
-enum EEntityEvent
+namespace Cry
+{
+//! Main namespace for the entity system
+//! Note that moving entity types under this namespace is still early in the works!
+namespace Entity
+{
+//! EEvent defines all events that can be sent to an entity.
+enum class EEvent : uint64
 {
 	//! Sent when the entity local or world transformation matrix change (position/rotation/scale).
 	//! nParam[0] = combination of the EEntityXFormFlags.
-	ENTITY_EVENT_XFORM = 0,
+	TransformChanged = BIT64(0),
 
 	//! Called when the entity is moved/scaled/rotated in the editor. Only send on mouseButtonUp (hence finished).
-	ENTITY_EVENT_XFORM_FINISHED_EDITOR,
+	//! This is useful since the TransformChanged event will be continuously fired as the user is dragging the entity around.
+	TransformChangeFinishedInEditor = BIT64(1),
 
-	//! Sent for unremovable entities when they are respawn.
-	ENTITY_EVENT_INIT,
+	//! Sent at the very end of CEntity::Init, called by IEntitySystem::InitEntity
+	//! This indicates that the entity has finished initializing, and that custom logic can start
+	//! Note that this only applies for components that are part of the entity before initialization occurs.
+	//! Additionally, this event is also sent to unremovable entities (ENTITY_FLAG_UNREMOVABLE) to reset their state on entity system reset or deserialize from save game.
+	Initialize = BIT64(2),
 
 	//! Sent before entity is removed.
-	ENTITY_EVENT_DONE,
+	Remove = BIT64(3),
 
 	//! Sent to reset the state of the entity (used from Editor).
-	//! nParam[0] is 1 if entering gamemode, 0 if exiting
-	ENTITY_EVENT_RESET,
+	//! nParam[0] is 1 if entering game mode, 0 if exiting
+	Reset = BIT64(4),
 
 	//! Sent to parent entity after child entity have been attached.
 	//! nParam[0] contains ID of child entity.
-	ENTITY_EVENT_ATTACH,
+	ChildAttached = BIT64(5),
 
 	//! Sent to child entity after it has been attached to the parent.
 	//! nParam[0] contains ID of parent entity.
-	ENTITY_EVENT_ATTACH_THIS,
+	AttachedToParent = BIT64(6),
 
 	//! Sent to parent entity after child entity have been detached.
 	//! nParam[0] contains ID of child entity.
-	ENTITY_EVENT_DETACH,
+	ChildDetached = BIT64(7),
 
 	//! Sent to child entity after it has been detached from the parent.
 	//! nParam[0] contains ID of parent entity.
-	ENTITY_EVENT_DETACH_THIS,
+	DetachedFromParent = BIT64(8),
 
-	//! Sent to parent entity after child entity have been linked.
+	//! Sent to an entity when a new named link was added to it (normally through the Editor)
+	//! \see IEntity::GetEntityLinks
+	//! \see IEntity::AddEntityLink
 	//! nParam[0] contains IEntityLink ptr.
-	ENTITY_EVENT_LINK,
+	LinkAdded = BIT64(9),
 
-	//! Sent to parent entity before child entity have been delinked.
+	//! Sent to an entity when a named link was removed from it (normally through the Editor)
+	//! \see IEntity::RemoveEntityLink
 	//! nParam[0] contains IEntityLink ptr.
-	ENTITY_EVENT_DELINK,
+	LinkRemoved = BIT64(10),
 
-	//! Sent when the entity must be hidden.
-	ENTITY_EVENT_HIDE,
+	//! Sent after the entity was hidden
+	//! \see IEntity::Hide
+	Hidden = BIT64(11),
 
-	//! Sent when the entity must become not hidden.
-	ENTITY_EVENT_UNHIDE,
+	//! Sent after the entity was unhidden
+	//! \see IEntity::Hide
+	Unhidden = BIT64(12),
 
-	//! Sent when the entity must be hidden.
-	ENTITY_EVENT_LAYER_HIDE,
+	//! Sent after the layer the entity resides in was hidden
+	LayerHidden = BIT64(13),
 
-	//! Sent when the entity must become not hidden.
-	ENTITY_EVENT_LAYER_UNHIDE,
+	//! Sent after the layer the entity resides in was unhidden
+	LayerUnhidden = BIT64(14),
 
 	//! Sent when a physics processing for the entity must be enabled/disabled.
 	//! nParam[0] == 1 physics must be enabled if 0 physics must be disabled.
-	ENTITY_EVENT_ENABLE_PHYSICS,
+	PhysicsToggled = BIT64(15),
 
 	//! Sent when a physics in an entity changes state.
-	//! nParam[0] == 1 physics entity awakes, 0 physics entity get to a sleep state.
-	ENTITY_EVENT_PHYSICS_CHANGE_STATE,
+	//! nParam[0] == 1 physics entity awakes), 0 physics entity get to a sleep state.
+	PhysicsStateChanged = BIT64(16),
 
 	//! Sent when script is broadcasting its events.
 	//! nParam[0] = Pointer to the ASCIIZ string with the name of the script event.
 	//! nParam[1] = Type of the event value from IEntityClass::EventValueType.
 	//! nParam[2] = Pointer to the event value depending on the type.
-	ENTITY_EVENT_SCRIPT_EVENT,
+	LuaScriptEvent = BIT64(17),
 
-	//! Sent when triggering entity enters to the area proximity, this event sent to all target entities of the area.
-	//! nParam[0] = TriggerEntityId, nParam[1] = AreaId, nParam[2] = EntityId of Area
-	ENTITY_EVENT_ENTERAREA,
+	//! Sent when another entity enters an area linked to this entity
+	//! nParam[0] = EntityId of the entity in our area
+	//! nParam[1] = Area identifier
+	//! nParam[2] = Entity identifier assigned to the area (normally ours)
+	EntityEnteredThisArea = BIT64(18),
 
-	//! Sent when triggering entity leaves the area proximity, this event sent to all target entities of the area.
-	//! nParam[0] = TriggerEntityId, nParam[1] = AreaId, nParam[2] = EntityId of Area
-	ENTITY_EVENT_LEAVEAREA,
+	//! Sent when another entity leaves an area linked to this entity
+	//! nParam[0] = EntityId of the entity in our area
+	//! nParam[1] = Area identifier
+	//! nParam[2] = Entity identifier assigned to the area (normally ours)
+	EntityLeftThisArea = BIT64(19),
 
-	//! Sent when triggering entity is near to the area proximity, this event sent to all target entities of the area.
-	//! nParam[0] = TriggerEntityId, nParam[1] = AreaId, nParam[2] = EntityId of Area
-	//! fParam[0] = distance
-	ENTITY_EVENT_ENTERNEARAREA,
+	//! Sent when another entity becomes close to the area linked to this entity
+	//! nParam[0] = EntityId of the entity in our area
+	//! nParam[1] = Area identifier
+	//! nParam[2] = Entity identifier assigned to the area (normally ours)
+	//! fParam[0] = Distance to our area
+	EntityEnteredNearThisArea = BIT64(20),
 
-	//! Sent when triggering entity leaves the near area within proximity region of the outside area border.
-	//! nParam[0] = TriggerEntityId, nParam[1] = AreaId, nParam[2] = EntityId of Area
-	ENTITY_EVENT_LEAVENEARAREA,
 
-	//! Sent when triggering entity moves inside the area within proximity region of the outside area border.
-	//! nParam[0] = TriggerEntityId, nParam[1] = AreaId, nParam[2] = EntityId of Area
-	ENTITY_EVENT_MOVEINSIDEAREA,
+	//! Sent when another entity is no longer close to the area linked to this entity
+	//! nParam[0] = EntityId of the entity in our area
+	//! nParam[1] = Area identifier
+	//! nParam[2] = Entity identifier assigned to the area (normally ours)
+	EntityLeftNearThisArea = BIT64(21),
 
-	// Sent when triggering entity moves inside an area of higher priority then the area this entity is linked to.
-	// nParam[0] = TriggerEntityId, nParam[1] = AreaId, nParam[2] = EntityId of Area with low prio, nParam[3] = EntityId of Area with high prio
-	//ENTITY_EVENT_EXCLUSIVEMOVEINSIDEAREA,
+	//! Sent when another entity moves inside the area linked to this entity
+	//! nParam[0] = EntityId of the entity in our area
+	//! nParam[1] = Area identifier
+	//! nParam[2] = Entity identifier assigned to the area (normally ours)
+	EntityMoveInsideThisArea = BIT64(22),
 
-	//! Sent when triggering entity moves inside the area within the near region of the outside area border.
-	//! nParam[0] = TriggerEntityId, nParam[1] = AreaId, nParam[2] = EntityId of Area, fParam[0] = FadeRatio (0-1)
-	ENTITY_EVENT_MOVENEARAREA,
+	//! Sent when another entity moves inside the near area linked to this entity
+	//! nParam[0] = EntityId of the entity in our area
+	//! nParam[1] = Area identifier
+	//! nParam[2] = Entity identifier assigned to the area (normally ours)
+	//! fParam[0] = Fade ratio (0 to 1)
+	EntityMoveNearThisArea = BIT64(23),
 
 	//! Sent when an entity with pef_monitor_poststep receives a poststep notification (the handler should be thread safe!)
 	//! fParam[0] = time interval
-	ENTITY_EVENT_PHYS_POSTSTEP,
+	PhysicsThreadPostStep = BIT64(24),
 
 	//! Sent when Breakable object is broken in physics.
-	ENTITY_EVENT_PHYS_BREAK,
+	PhysicalObjectBroken = BIT64(25),
 
-	//! Sent when a logged physical collision is processed on the Main thread. The collision has already occurred since this event is logged, but can be handled on the main thread without considering threading.
-	//! nParam[0] = const EventPhysCollision *, contains collision info and can be obtained as: reinterpret_cast<const EventPhysCollision*>(event.nParam[0])
-	//! nParam[1] 0 if we are the source of the collision, otherwise 1.
-	ENTITY_EVENT_COLLISION,
+	//! Sent when a logged physical collision is processed on the Main thread. The collision has already occurred since this event is logged), but can be handled on the main thread without considering threading.
+	//! nParam[0] = const EventPhysCollision *), contains collision info and can be obtained as: reinterpret_cast<const EventPhysCollision*>(event.nParam[0])
+	//! nParam[1] 0 if we are the source of the collision), otherwise 1.
+	//! \par Example
+	//! \include CryEntitySystem/Examples/MonitorCollision.cpp
+	PhysicsCollision = BIT64(26),
 
-	//! Sent when a physical collision is reported just as it occurred, most likely on the physics thread. This callback has to be thread-safe!
-	//! nParam[0] = const EventPhysCollision *, contains collision info and can be obtained as: reinterpret_cast<const EventPhysCollision*>(event.nParam[0])
-	//! nParam[1] 0 if we are the source of the collision, otherwise 1.
-	ENTITY_EVENT_COLLISION_IMMEDIATE,
+	//! Sent when a physical collision is reported just as it occurred), most likely on the physics thread. This callback has to be thread-safe!
+	//! nParam[0] = const EventPhysCollision *), contains collision info and can be obtained as: reinterpret_cast<const EventPhysCollision*>(event.nParam[0])
+	//! nParam[1] 0 if we are the source of the collision), otherwise 1.
+	PhysicsThreadCollision = BIT64(27),
 
 	//! Sent only if ENTITY_FLAG_SEND_RENDER_EVENT is set
 	//! Called when entity is first rendered (When any of the entity render nodes are considered by 3D engine for rendering this frame)
 	//! Or called when entity is not being rendered for at least several frames
 	//! nParam[0] == 0 if rendeing Stops.
 	//! nParam[0] == 1 if rendeing Starts.
-	ENTITY_EVENT_RENDER_VISIBILITY_CHANGE,
+	RenderVisibilityChanged = BIT64(28),
 
 	//! Called when the level loading is complete.
-	ENTITY_EVENT_LEVEL_LOADED,
+	LevelLoaded = BIT64(29),
 
 	//! Called when the level is started.
-	ENTITY_EVENT_START_LEVEL,
+	LevelStarted = BIT64(30),
 
 	//! Called when the game is started (games may start multiple times).
-	ENTITY_EVENT_START_GAME,
+	GameplayStarted = BIT64(31),
 
 	//! Called when the entity enters a script state.
-	ENTITY_EVENT_ENTER_SCRIPT_STATE,
+	EnterLuaScriptState = BIT64(32),
 
 	//! Called when the entity leaves a script state.
-	ENTITY_EVENT_LEAVE_SCRIPT_STATE,
+	LeaveLuaScriptState = BIT64(33),
 
 	//! Called before we serialized the game from file.
-	ENTITY_EVENT_PRE_SERIALIZE,
+	DeserializeSaveGameStart = BIT64(34),
 
 	//! Called after we serialized the game from file.
-	ENTITY_EVENT_POST_SERIALIZE,
+	DeserializeSaveGameDone = BIT64(35),
 
 	//! Called when the entity becomes invisible.
-	ENTITY_EVENT_INVISIBLE,
+	//! \see IEntity::Invisible
+	BecomeInvisible = BIT64(36),
 
 	//! Called when the entity gets out of invisibility.
 	//! nParam[0] = if 1 physics will ignore this event
-	ENTITY_EVENT_VISIBLE,
+	//! \see IEntity::Invisible
+	BecomeVisible = BIT64(37),
 
 	//! Called when the entity material change.
 	//! nParam[0] = pointer to the new IMaterial.
-	ENTITY_EVENT_MATERIAL,
+	OverrideMaterialChanged = BIT64(38),
 
 	//! Called when an animation event (placed on animations in editor) is encountered.
 	//! nParam[0] = AnimEventInstance* pEventParameters.
 	//! nParam[1] = ICharacterInstance* that this event occurred on
-	ENTITY_EVENT_ANIM_EVENT,
+	AnimationEvent = BIT64(39),
 
 	//! Called from ScriptBind_Entity when script requests to set collidermode.
 	//! nParam[0] = ColliderMode
-	ENTITY_EVENT_SCRIPT_REQUEST_COLLIDERMODE,
+	LuaScriptSetColliderMode = BIT64(40),
 
 	//! Called to activate some output in a flow node connected to the entity
 	//! nParam[0] = Output port index
 	//! nParam[1] = TFlowInputData* to send to output
-	ENTITY_EVENT_ACTIVATE_FLOW_NODE_OUTPUT,
+	ActivateFlowNodeOutput = BIT64(41),
 
-	//! Called in the editor when a Lua property of the selected entity changes. This is *not* sent when using IEntityPropertyGroup
-	ENTITY_EVENT_EDITOR_PROPERTY_CHANGED,
-
-	//! Sent when property of the component changes
+	//! Called in the editor when a property of the selected entity changes. This is *not* sent when using IEntityPropertyGroup
 	//! nParam[0] = IEntityComponent pointer or nullptr
-	//! nParam[1] = Member id of the changed property, (@see IEntityComponent::GetClassDesc() FindMemberById(nParam[1]))
-	ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED = ENTITY_EVENT_EDITOR_PROPERTY_CHANGED,
+	//! nParam[1] = Member id of the changed property), (@see IEntityComponent::GetClassDesc() FindMemberById(nParam[1]))
+	EditorPropertyChanged = BIT64(42),
 
 	//! Called when a script reloading is requested and done in the editor.
-	ENTITY_EVENT_RELOAD_SCRIPT,
+	ReloadLuaScript = BIT64(43),
 
 	//! Called when the entity is added to the list of entities that are updated.
-	ENTITY_EVENT_ACTIVATED,
+	//! Note that this event is deprecated), and should not be used
+	SubscribedForUpdates = BIT64(44),
 
 	//! Called when the entity is removed from the list of entities that are updated.
-	ENTITY_EVENT_DEACTIVATED,
+	//! Note that this event is deprecated), and should not be used
+	UnsubscribedFromUpdates = BIT64(45),
 
 	//! Called when the entity's network authority changes. Only the server is able
 	//! to delegate/revoke the authority to/from the client.
 	//! nParam[0] stores the new authority value.
-	ENTITY_EVENT_SET_AUTHORITY,
+	NetworkAuthorityChanged = BIT64(46),
 
 	//! Sent once to the to the client when the special player entity has spawned.
 	//! \see ENTITY_FLAG_LOCAL_PLAYER
-	ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER,
+	BecomeLocalPlayer = BIT64(47),
 
 	//! Called when the entity's name is set.
-	ENTITY_EVENT_SET_NAME,
+	NameChanged = BIT64(48),
 
 	//! Called when an event related to an audio trigger occurred.
 	//! REMARK:: Only sent for triggers that have their ERequestFlags set to receive Callbacks via (CallbackOnExternalOrCallingThread | DoneCallbackOnExternalThread) from the main-thread
 	//! nParam[0] stores a const CryAudio::SRequestInfo* const
-	ENTITY_EVENT_AUDIO_TRIGGER_STARTED,
-	ENTITY_EVENT_AUDIO_TRIGGER_ENDED,   //Remark: Will also be sent, if the trigger failed to start
+	AudioTriggerStarted = BIT64(49),
+	//! Remark: Will also be sent), if the trigger failed to start
+	AudioTriggerEnded = BIT64(50),
 
-	//! Sent when an entity slot changes, i.e. geometry was added
+	//! Sent when an entity slot changes), i.e. geometry was added
 	//! nParam[0] stores the slot index
-	ENTITY_EVENT_SLOT_CHANGED,
+	SlotChanged = BIT64(51),
 
-	//! Sent when the physical type of an entity changed, i.e. physicalized or dephysicalized.
-	ENTITY_EVENT_PHYSICAL_TYPE_CHANGED,
+	//! Sent when the physical type of an entity changed), i.e. physicalized or dephysicalized.
+	PhysicalTypeChanged = BIT64(52),
 
 	//! Entity was just spawned on this machine as requested by the server
-	ENTITY_EVENT_SPAWNED_REMOTELY,
+	NetworkReplicatedFromServer = BIT64(53),
 
-	//! Not an entity event, but signifies the last event that is sent via CEntity::SendEvent
+	//! Not an entity event), but signifies the last event that is sent via CEntity::SendEvent
 	//! Others are grouped in the entity system due to being sent by batch every frame.
-	ENTITY_EVENT_LAST_NON_PERFORMANCE_CRITICAL = ENTITY_EVENT_SPAWNED_REMOTELY,
+	LastNonPerformanceCritical = NetworkReplicatedFromServer,
 
 	//! Called when the pre-physics update is done; fParam[0] is the frame time.
-	ENTITY_EVENT_PREPHYSICSUPDATE,
+	PrePhysicsUpdate = BIT64(54),
 
 	//! Sent when the entity is updating every frame.
 	//! nParam[0] = pointer to SEntityUpdateContext structure.
 	//! fParam[0] = frame time
-	ENTITY_EVENT_UPDATE,
+	Update = BIT64(55),
 
 	//! Sent when the entity timer expire.
-	//! nParam[0] = TimerId, nParam[1] = milliseconds.
-	ENTITY_EVENT_TIMER,
+	//! nParam[0] = TimerId), nParam[1] = milliseconds.
+	TimerExpired = BIT64(56),
 
 	//! Last entity event in list.
-	ENTITY_EVENT_LAST,
+	Last = BIT64(57),
+	Count = 57,
 };
 
-#define ENTITY_PERFORMANCE_EXPENSIVE_EVENTS_MASK (BIT64(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE) | BIT64(ENTITY_EVENT_PREPHYSICSUPDATE) | BIT64(ENTITY_EVENT_UPDATE))
+using EventFlags = CEnumFlags<EEvent>;
+CRY_CREATE_ENUM_FLAG_OPERATORS(EEvent);
 
-//! Variant of default BIT macro to safely handle 64-bit numbers.
-#define ENTITY_EVENT_BIT(x) BIT64((x))
+namespace Deprecated_With_5_5
+{
+using EEntityEvent = Cry::Entity::EEvent;
 
-using EntityEventMask = uint64;
+constexpr EEntityEvent ENTITY_EVENT_XFORM = EEntityEvent::TransformChanged;
+constexpr EEntityEvent ENTITY_EVENT_XFORM_FINISHED_EDITOR = EEntityEvent::TransformChangeFinishedInEditor;
+constexpr EEntityEvent ENTITY_EVENT_TIMER = EEntityEvent::TimerExpired;
+constexpr EEntityEvent ENTITY_EVENT_INIT = EEntityEvent::Initialize;
+constexpr EEntityEvent ENTITY_EVENT_DONE = EEntityEvent::Remove;
+constexpr EEntityEvent ENTITY_EVENT_RESET = EEntityEvent::Reset;
+constexpr EEntityEvent ENTITY_EVENT_ATTACH = EEntityEvent::ChildAttached;
+constexpr EEntityEvent ENTITY_EVENT_ATTACH_THIS = EEntityEvent::AttachedToParent;
+constexpr EEntityEvent ENTITY_EVENT_DETACH = EEntityEvent::ChildDetached;
+constexpr EEntityEvent ENTITY_EVENT_DETACH_THIS = EEntityEvent::DetachedFromParent;
+constexpr EEntityEvent ENTITY_EVENT_LINK = EEntityEvent::LinkAdded;
+constexpr EEntityEvent ENTITY_EVENT_DELINK = EEntityEvent::LinkRemoved;
+constexpr EEntityEvent ENTITY_EVENT_HIDE = EEntityEvent::Hidden;
+constexpr EEntityEvent ENTITY_EVENT_UNHIDE = EEntityEvent::Unhidden;
+constexpr EEntityEvent ENTITY_EVENT_LAYER_HIDE = EEntityEvent::LayerHidden;
+constexpr EEntityEvent ENTITY_EVENT_LAYER_UNHIDE = EEntityEvent::LayerUnhidden;
+constexpr EEntityEvent ENTITY_EVENT_ENABLE_PHYSICS = EEntityEvent::PhysicsToggled;
+constexpr EEntityEvent ENTITY_EVENT_PHYSICS_CHANGE_STATE = EEntityEvent::PhysicsStateChanged;
+constexpr EEntityEvent ENTITY_EVENT_SCRIPT_EVENT = EEntityEvent::LuaScriptEvent;
+constexpr EEntityEvent ENTITY_EVENT_ENTERAREA = EEntityEvent::EntityEnteredThisArea;
+constexpr EEntityEvent ENTITY_EVENT_LEAVEAREA = EEntityEvent::EntityLeftThisArea;
+constexpr EEntityEvent ENTITY_EVENT_ENTERNEARAREA = EEntityEvent::EntityEnteredNearThisArea;
+constexpr EEntityEvent ENTITY_EVENT_LEAVENEARAREA = EEntityEvent::EntityLeftNearThisArea;
+constexpr EEntityEvent ENTITY_EVENT_MOVEINSIDEAREA = EEntityEvent::EntityMoveInsideThisArea;
+constexpr EEntityEvent ENTITY_EVENT_MOVENEARAREA = EEntityEvent::EntityMoveNearThisArea;
+constexpr EEntityEvent ENTITY_EVENT_PHYS_POSTSTEP = EEntityEvent::PhysicsThreadPostStep;
+constexpr EEntityEvent ENTITY_EVENT_PHYS_BREAK = EEntityEvent::PhysicalObjectBroken;
+constexpr EEntityEvent ENTITY_EVENT_COLLISION = EEntityEvent::PhysicsCollision;
+constexpr EEntityEvent ENTITY_EVENT_COLLISION_IMMEDIATE = EEntityEvent::PhysicsThreadCollision;
+constexpr EEntityEvent ENTITY_EVENT_RENDER_VISIBILITY_CHANGE = EEntityEvent::RenderVisibilityChanged;
+constexpr EEntityEvent ENTITY_EVENT_LEVEL_LOADED = EEntityEvent::LevelLoaded;
+constexpr EEntityEvent ENTITY_EVENT_START_LEVEL = EEntityEvent::LevelStarted;
+constexpr EEntityEvent ENTITY_EVENT_START_GAME = EEntityEvent::GameplayStarted;
+constexpr EEntityEvent ENTITY_EVENT_ENTER_SCRIPT_STATE = EEntityEvent::EnterLuaScriptState;
+constexpr EEntityEvent ENTITY_EVENT_LEAVE_SCRIPT_STATE = EEntityEvent::LeaveLuaScriptState;
+constexpr EEntityEvent ENTITY_EVENT_PRE_SERIALIZE = EEntityEvent::DeserializeSaveGameStart;
+constexpr EEntityEvent ENTITY_EVENT_POST_SERIALIZE = EEntityEvent::DeserializeSaveGameDone;
+constexpr EEntityEvent ENTITY_EVENT_INVISIBLE = EEntityEvent::BecomeInvisible;
+constexpr EEntityEvent ENTITY_EVENT_VISIBLE = EEntityEvent::BecomeVisible;
+constexpr EEntityEvent ENTITY_EVENT_MATERIAL = EEntityEvent::OverrideMaterialChanged;
+constexpr EEntityEvent ENTITY_EVENT_ANIM_EVENT = EEntityEvent::AnimationEvent;
+constexpr EEntityEvent ENTITY_EVENT_SCRIPT_REQUEST_COLLIDERMODE = EEntityEvent::LuaScriptSetColliderMode;
+constexpr EEntityEvent ENTITY_EVENT_ACTIVATE_FLOW_NODE_OUTPUT = EEntityEvent::ActivateFlowNodeOutput;
+constexpr EEntityEvent ENTITY_EVENT_EDITOR_PROPERTY_CHANGED = EEntityEvent::EditorPropertyChanged;
+constexpr EEntityEvent ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED = EEntityEvent::EditorPropertyChanged;
+constexpr EEntityEvent ENTITY_EVENT_RELOAD_SCRIPT = EEntityEvent::ReloadLuaScript;
+constexpr EEntityEvent ENTITY_EVENT_ACTIVATED = EEntityEvent::SubscribedForUpdates;
+constexpr EEntityEvent ENTITY_EVENT_DEACTIVATED = EEntityEvent::UnsubscribedFromUpdates;
+constexpr EEntityEvent ENTITY_EVENT_SET_AUTHORITY = EEntityEvent::NetworkAuthorityChanged;
+constexpr EEntityEvent ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER = EEntityEvent::BecomeLocalPlayer;
+constexpr EEntityEvent ENTITY_EVENT_SET_NAME = EEntityEvent::NameChanged;
+constexpr EEntityEvent ENTITY_EVENT_AUDIO_TRIGGER_STARTED = EEntityEvent::AudioTriggerStarted;
+constexpr EEntityEvent ENTITY_EVENT_AUDIO_TRIGGER_ENDED = EEntityEvent::AudioTriggerEnded;
+constexpr EEntityEvent ENTITY_EVENT_SLOT_CHANGED = EEntityEvent::SlotChanged;
+constexpr EEntityEvent ENTITY_EVENT_PHYSICAL_TYPE_CHANGED = EEntityEvent::PhysicalTypeChanged;
+constexpr EEntityEvent ENTITY_EVENT_SPAWNED_REMOTELY = EEntityEvent::NetworkReplicatedFromServer;
+constexpr EEntityEvent ENTITY_EVENT_PREPHYSICSUPDATE = EEntityEvent::PrePhysicsUpdate;
+constexpr EEntityEvent ENTITY_EVENT_UPDATE = EEntityEvent::Update;
+constexpr EEntityEvent ENTITY_EVENT_LAST = EEntityEvent::Last;
+
+using EntityEventMask = Cry::Entity::EventFlags;
+constexpr EEntityEvent ENTITY_EVENT_BIT(EEntityEvent event) { return event; }
+}
+}
+}
+
+using namespace Cry::Entity::Deprecated_With_5_5;
 
 //! SEntityEvent structure describe event id and parameters that can be sent to an entity.
 struct SEntityEvent

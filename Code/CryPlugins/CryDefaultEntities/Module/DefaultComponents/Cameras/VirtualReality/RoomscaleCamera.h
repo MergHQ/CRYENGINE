@@ -29,7 +29,7 @@ namespace Cry
 				virtual void Initialize() override;
 
 				virtual void ProcessEvent(const SEntityEvent& event) override;
-				virtual uint64 GetEventMask() const override;
+				virtual Cry::Entity::EventFlags GetEventMask() const override;
 
 #ifndef RELEASE
 				virtual IEntityComponentPreviewer* GetPreviewer() final { return this; }

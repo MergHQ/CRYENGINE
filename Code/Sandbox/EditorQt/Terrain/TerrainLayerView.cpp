@@ -307,16 +307,25 @@ void QTerrainLayerView::SelectedLayerChanged(CLayer* pLayer)
 {
 	RECURSION_GUARD(m_selecting);
 
-	if (m_pTerrainManager)
+	if (!m_pTerrainManager)
 	{
-		int layerCount = m_pTerrainManager->GetLayerCount();
-		for (int i = 0; i < layerCount; ++i)
+		return;
+	}
+
+	int layerCount = m_pTerrainManager->GetLayerCount();
+	for (int i = 0; i < layerCount; ++i)
+	{
+		if (pLayer == m_pTerrainManager->GetLayer(i))
 		{
-			if (pLayer == m_pTerrainManager->GetLayer(i))
+			selectRow(i);
+
+			const auto currSelection = selectedIndexes();
+			if (!currSelection.empty())
 			{
-				selectRow(i);
-				return;
+				scrollTo(currSelection.front());
 			}
+
+			return;
 		}
 	}
 }

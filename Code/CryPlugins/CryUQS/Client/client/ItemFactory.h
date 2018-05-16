@@ -570,14 +570,14 @@ namespace UQS
 			template <class TItem>
 			void* CItemFactoryInternal<TItem>::GetItemAtIndex(void* pItems, size_t index) const
 			{
-				assert(pItems);
+				CRY_ASSERT(pItems);
 				return static_cast<TItem*>(pItems) + index;
 			}
 
 			template <class TItem>
 			const void* CItemFactoryInternal<TItem>::GetItemAtIndex(const void* pItems, size_t index) const
 			{
-				assert(pItems);
+				CRY_ASSERT(pItems);
 				return static_cast<const TItem*>(pItems) + index;
 			}
 
@@ -590,7 +590,7 @@ namespace UQS
 			template <class TItem>
 			bool CItemFactoryInternal<TItem>::TryDeserializeItemIntoDict(Shared::IVariantDict& out, const char* szKey, Serialization::IArchive& archive, const char* szName, const char* szLabel)
 			{
-				assert(m_callbacks.pSerialize != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
+				CRY_ASSERT(m_callbacks.pSerialize != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
 				if (m_callbacks.pSerialize == nullptr)
 				{
 					return false;
@@ -611,13 +611,13 @@ namespace UQS
 			template <class TItem>
 			bool CItemFactoryInternal<TItem>::TrySerializeItem(const void* pItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const
 			{
-				assert(m_callbacks.pSerialize != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
+				CRY_ASSERT(m_callbacks.pSerialize != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
 				if (m_callbacks.pSerialize == nullptr)
 				{
 					return false;
 				}
 
-				assert(archive.isOutput());
+				CRY_ASSERT(archive.isOutput());
 				if (!archive.isOutput())
 				{
 					return false;
@@ -632,13 +632,13 @@ namespace UQS
 			template <class TItem>
 			bool CItemFactoryInternal<TItem>::TryDeserializeItem(void* pOutItem, Serialization::IArchive& archive, const char* szName, const char* szLabel) const
 			{
-				assert(m_callbacks.pSerialize != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
+				CRY_ASSERT(m_callbacks.pSerialize != nullptr);  // callers should check with CanBePersistantlySerialized() beforehand
 				if (m_callbacks.pSerialize == nullptr)
 				{
 					return false;
 				}
 
-				assert(archive.isInput());
+				CRY_ASSERT(archive.isInput());
 				if (!archive.isInput())
 				{
 					return false;

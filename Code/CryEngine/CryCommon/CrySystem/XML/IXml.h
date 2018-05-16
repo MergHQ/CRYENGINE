@@ -195,9 +195,13 @@ public:
 	virtual void removeAllChilds() = 0;
 
 	//! Get number of child XML nodes.
+	//! \par Example
+	//! \include CrySystem/Examples/XmlParsing.cpp
 	virtual int getChildCount() const = 0;
 
 	//! Get XML Node child nodes.
+	//! \par Example
+	//! \include CrySystem/Examples/XmlParsing.cpp
 	virtual XmlNodeRef getChild(int i) const = 0;
 
 	//! Find node with specified tag.
@@ -231,6 +235,9 @@ public:
 
 	//! Returns XML of this node and sub nodes.
 	virtual XmlString getXML(int level = 0) const = 0;
+	//! Saves the XML node to disk
+	//! \par Example
+	//! \include CrySystem/Examples/XmlWriting.cpp
 	virtual bool      saveToFile(const char* fileName) = 0;
 
 	//! Set new XML Node attribute (or override attribute with same key).

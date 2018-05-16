@@ -66,9 +66,9 @@ void CEntityComponentSubstitution::ProcessEvent(const SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CEntityComponentSubstitution::GetEventMask() const
+Cry::Entity::EventFlags CEntityComponentSubstitution::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_DONE) | BIT64(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED) | BIT64(ENTITY_EVENT_ENABLE_PHYSICS);
+	return ENTITY_EVENT_DONE | ENTITY_EVENT_PHYSICAL_TYPE_CHANGED | ENTITY_EVENT_ENABLE_PHYSICS;
 }
 
 //////////////////////////////////////////////////////////////////////////

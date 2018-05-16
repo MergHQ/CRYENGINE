@@ -941,6 +941,8 @@ void CEntitySystem::PrePhysicsUpdate()
 	event.fParam[0] = gEnv->pTimer->GetFrameTime();
 
 #ifdef ENABLE_PROFILING_CODE
+	const uint8 eventIndex = CEntity::GetEntityEventIndex(event.event);
+
 	if (CVar::es_profileComponentUpdates != 0)
 	{
 		const CTimeValue timeBeforePrePhysicsUpdate = gEnv->pTimer->GetAsyncTime();
@@ -953,10 +955,10 @@ void CEntitySystem::PrePhysicsUpdate()
 
 			const CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
 			const float componentUpdateTime = (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds();
-			if (componentUpdateTime > m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].mostExpensiveEntityCostMs)
+			if (componentUpdateTime > m_profiledEvents[eventIndex].mostExpensiveEntityCostMs)
 			{
-				m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].mostExpensiveEntityCostMs = componentUpdateTime;
-				m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].mostExpensiveEntity = rec.pComponent->GetEntityId();
+				m_profiledEvents[eventIndex].mostExpensiveEntityCostMs = componentUpdateTime;
+				m_profiledEvents[eventIndex].mostExpensiveEntity = rec.pComponent->GetEntityId();
 			}
 
 			return EComponentIterationResult::Continue;
@@ -965,8 +967,8 @@ void CEntitySystem::PrePhysicsUpdate()
 		const CTimeValue timeAfterPrePhysicsUpdate = gEnv->pTimer->GetAsyncTime();
 
 		const float componentsUpdateTime = (timeAfterPrePhysicsUpdate - timeBeforePrePhysicsUpdate).GetMilliSeconds();
-		m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].numEvents = m_prePhysicsUpdatedEntityComponents.Size();
-		m_profiledEvents[ENTITY_EVENT_PREPHYSICSUPDATE].totalCostMs = componentsUpdateTime;
+		m_profiledEvents[eventIndex].numEvents = m_prePhysicsUpdatedEntityComponents.Size();
+		m_profiledEvents[eventIndex].totalCostMs = componentsUpdateTime;
 	}
 	else
 #endif
@@ -1467,7 +1469,7 @@ void CEntitySystem::DebugDrawLayerInfo()
 #ifdef ENABLE_PROFILING_CODE
 #define DEF_ENTITY_EVENT_NAME(x) #x
 
-std::array<const char*, ENTITY_EVENT_LAST> s_eventNames =
+std::array<const char*, static_cast<size_t>(Cry::Entity::EEvent::Count)> s_eventNames =
 { {
 		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_XFORM),
 		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_XFORM_FINISHED_EDITOR),
@@ -1525,7 +1527,7 @@ std::array<const char*, ENTITY_EVENT_LAST> s_eventNames =
 		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_SPAWNED_REMOTELY),
 		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_PREPHYSICSUPDATE),
 		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_UPDATE),
-		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_TIMER),
+		DEF_ENTITY_EVENT_NAME(ENTITY_EVENT_TIMER)
 	} };
 #endif
 
@@ -1715,6 +1717,7 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 	case (int)EComponentProfilingType::EventCostBreakdown:
 		{
 			const CTimeValue timeBeforeComponentsUpdate = gEnv->pTimer->GetAsyncTime();
+			const uint8 eventIndex = CEntity::GetEntityEventIndex(event.event);
 
 			m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 			{
@@ -1724,10 +1727,10 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 
 				const CTimeValue timeAfterComponentsUpdate = gEnv->pTimer->GetAsyncTime();
 				const float componentUpdateTime = (timeAfterComponentsUpdate - timeBeforeComponentsUpdate).GetMilliSeconds();
-				if (componentUpdateTime > m_profiledEvents[ENTITY_EVENT_UPDATE].mostExpensiveEntityCostMs)
+				if (componentUpdateTime > m_profiledEvents[eventIndex].mostExpensiveEntityCostMs)
 				{
-					m_profiledEvents[ENTITY_EVENT_UPDATE].mostExpensiveEntityCostMs = componentUpdateTime;
-					m_profiledEvents[ENTITY_EVENT_UPDATE].mostExpensiveEntity = rec.pComponent->GetEntityId();
+					m_profiledEvents[eventIndex].mostExpensiveEntityCostMs = componentUpdateTime;
+					m_profiledEvents[eventIndex].mostExpensiveEntity = rec.pComponent->GetEntityId();
 				}
 
 				return EComponentIterationResult::Continue;
@@ -1738,8 +1741,8 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 			IRenderAuxGeom* pRenderAuxGeom = gEnv->pAuxGeomRenderer;
 
 			const float componentsUpdateTime = (timeAfterComponentsUpdate - timeBeforeComponentsUpdate).GetMilliSeconds();
-			m_profiledEvents[ENTITY_EVENT_UPDATE].numEvents = m_updatedEntityComponents.Size();
-			m_profiledEvents[ENTITY_EVENT_UPDATE].totalCostMs = componentsUpdateTime;
+			m_profiledEvents[eventIndex].numEvents = m_updatedEntityComponents.Size();
+			m_profiledEvents[eventIndex].totalCostMs = componentsUpdateTime;
 
 			const float eventNameColumnPositionX = positionX;
 			pRenderAuxGeom->Draw2dLabel(eventNameColumnPositionX, positionY, fontSize, textColor, false, "Event Name");
@@ -1761,7 +1764,7 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 
 			positionY += yOffset;
 			
-			for(int i = 0; i < ENTITY_EVENT_LAST; ++i)
+			for(uint8 i = 0; i < static_cast<uint8>(Cry::Entity::EEvent::Count); ++i)
 			{
 				const SProfiledEntityEvent& profiledEvent = m_profiledEvents[i];
 				const char* szEventName = s_eventNames[i];
@@ -2088,6 +2091,7 @@ void CEntitySystem::UpdateTimers()
 
 #ifdef ENABLE_PROFILING_CODE
 		const CTimeValue timeBeforeTimerEvents = gEnv->pTimer->GetAsyncTime();
+		const uint8 eventIndex = CEntity::GetEntityEventIndex(entityEvent.event);
 #endif
 
 		for(const SEntityTimerEvent& event : m_currentTimers)
@@ -2106,10 +2110,10 @@ void CEntitySystem::UpdateTimers()
 			const CTimeValue timeAfterTimerEvent = gEnv->pTimer->GetAsyncTime();
 			const float timerEventCostMs = (timeAfterTimerEvent - timeBeforeTimerEvent).GetMilliSeconds();
 
-			if (timerEventCostMs > m_profiledEvents[ENTITY_EVENT_TIMER].mostExpensiveEntityCostMs)
+			if (timerEventCostMs > m_profiledEvents[eventIndex].mostExpensiveEntityCostMs)
 			{
-				m_profiledEvents[ENTITY_EVENT_TIMER].mostExpensiveEntityCostMs = timerEventCostMs;
-				m_profiledEvents[ENTITY_EVENT_TIMER].mostExpensiveEntity = event.entityId;
+				m_profiledEvents[eventIndex].mostExpensiveEntityCostMs = timerEventCostMs;
+				m_profiledEvents[eventIndex].mostExpensiveEntity = event.entityId;
 			}
 #endif
 		}
@@ -2117,8 +2121,8 @@ void CEntitySystem::UpdateTimers()
 #ifdef ENABLE_PROFILING_CODE
 		const CTimeValue timeAfterTimerEvents = gEnv->pTimer->GetAsyncTime();
 
-		m_profiledEvents[ENTITY_EVENT_TIMER].numEvents = m_currentTimers.size();
-		m_profiledEvents[ENTITY_EVENT_TIMER].totalCostMs = (timeAfterTimerEvents - timeBeforeTimerEvents).GetMilliSeconds();
+		m_profiledEvents[eventIndex].numEvents = m_currentTimers.size();
+		m_profiledEvents[eventIndex].totalCostMs = (timeAfterTimerEvents - timeBeforeTimerEvents).GetMilliSeconds();
 #endif
 	}
 }
@@ -3452,7 +3456,7 @@ void CEntitySystem::EnableComponentUpdates(IEntityComponent* pComponent, bool bE
 		// Check if any other components need the update event
 		pEntity->m_components.NonRecursiveForEach([pComponent, &bRequiresUpdate](const SEntityComponentRecord& otherComponentRecord) -> EComponentIterationResult
 		{
-			if (otherComponentRecord.pComponent.get() != pComponent && (otherComponentRecord.registeredEventsMask & BIT64(ENTITY_EVENT_UPDATE)) != 0)
+			if (otherComponentRecord.pComponent.get() != pComponent && otherComponentRecord.registeredEventsMask.Check(ENTITY_EVENT_UPDATE))
 			{
 				bRequiresUpdate = true;
 				return EComponentIterationResult::Break;

@@ -74,7 +74,7 @@ namespace UQS
 
 		inline void CParamsHolderDeleter::operator()(IParamsHolder* pParamsHolderToDelete)
 		{
-			assert(m_pParamsHolderFactory);
+			CRY_ASSERT(m_pParamsHolderFactory);
 			m_pParamsHolderFactory->DestroyParamsHolder(pParamsHolderToDelete);
 		}
 

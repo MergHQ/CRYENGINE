@@ -211,7 +211,7 @@ namespace UQS
 		inline const T& CSchematycUqsComponentEnvFunctionBase::GetTypedInputParam(const Schematyc::CRuntimeParamMap& params, uint32 inputIdx) const
 		{
 			Schematyc::CAnyConstRef ref = GetUntypedInputParam(params, inputIdx);
-			assert(ref.GetTypeDesc().GetName() == Schematyc::GetTypeName<T>());
+			CRY_ASSERT(ref.GetTypeDesc().GetName() == Schematyc::GetTypeName<T>());
 			return *static_cast<const T*>(ref.GetValue());
 		}
 
@@ -219,7 +219,7 @@ namespace UQS
 		inline T& CSchematycUqsComponentEnvFunctionBase::GetTypedOutputParam(Schematyc::CRuntimeParamMap& params, uint32 outputIdx) const
 		{
 			Schematyc::CAnyRef ref = GetUntypedOutputParam(params, outputIdx);
-			assert(ref.GetTypeDesc().GetName() == Schematyc::GetTypeName<T>());
+			CRY_ASSERT(ref.GetTypeDesc().GetName() == Schematyc::GetTypeName<T>());
 			return *static_cast<T*>(ref.GetValue());
 		}
 

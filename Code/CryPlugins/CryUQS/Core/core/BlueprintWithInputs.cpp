@@ -23,7 +23,7 @@ namespace UQS
 			for (size_t i = 0; i < m_resolvedInputs.size(); ++i)
 			{
 				const CFunctionBlueprint* pFuncBP = m_resolvedInputs[i];
-				assert(pFuncBP);
+				CRY_ASSERT(pFuncBP);
 				if (!out.AddAndInstantiateFunctionBlueprint(*pFuncBP, blackboard, error))
 				{
 					return false;
@@ -38,7 +38,7 @@ namespace UQS
 			{
 				const CInputBlueprint& input = rootOfInputs.GetChild(i);
 				Client::IFunctionFactory* pFunctionFactory = input.GetFunctionFactory();
-				assert(pFunctionFactory);
+				CRY_ASSERT(pFunctionFactory);
 				const CLeafFunctionReturnValue& returnValueInCaseOfLeafFunction = input.GetLeafFunctionReturnValue();
 				bool bAddReturnValueToDebugRenderWorldUponExecution = input.GetAddReturnValueToDebugRenderWorldUponExecution();
 				CFunctionBlueprint* pFunctionBlueprint = new CFunctionBlueprint(*pFunctionFactory, returnValueInCaseOfLeafFunction, bAddReturnValueToDebugRenderWorldUponExecution);

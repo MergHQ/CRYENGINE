@@ -36,7 +36,7 @@ public:
 	virtual ~CAudioAreaEntity() {}
 
 	// CNativeEntityBase
-	virtual uint64                GetEventMask() const override { return CDesignerEntityComponent::GetEventMask() | BIT64(ENTITY_EVENT_ENTERNEARAREA) | BIT64(ENTITY_EVENT_MOVENEARAREA) | BIT64(ENTITY_EVENT_ENTERAREA) | BIT64(ENTITY_EVENT_MOVEINSIDEAREA) | BIT64(ENTITY_EVENT_LEAVEAREA) | BIT64(ENTITY_EVENT_LEAVENEARAREA) | BIT64(ENTITY_EVENT_TIMER); }
+	virtual Cry::Entity::EventFlags GetEventMask() const override { return CDesignerEntityComponent::GetEventMask() | ENTITY_EVENT_ENTERNEARAREA | ENTITY_EVENT_MOVENEARAREA | ENTITY_EVENT_ENTERAREA | ENTITY_EVENT_MOVEINSIDEAREA | ENTITY_EVENT_LEAVEAREA | ENTITY_EVENT_LEAVENEARAREA | ENTITY_EVENT_TIMER; }
 	virtual void                  ProcessEvent(const SEntityEvent& event) override;
 
 	virtual IEntityPropertyGroup* GetPropertyGroup() final { return this; }

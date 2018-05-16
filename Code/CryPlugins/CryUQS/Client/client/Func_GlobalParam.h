@@ -48,7 +48,7 @@ namespace UQS
 				, m_pTypeOfGlobalParam(nullptr)
 				, m_pValueOfGlobalParam(nullptr)
 			{
-				assert(ctorContext.pOptionalReturnValueInCaseOfLeafFunction);
+				CRY_ASSERT(ctorContext.pOptionalReturnValueInCaseOfLeafFunction);
 
 				const Core::ILeafFunctionReturnValue::SGlobalParamInfo globalParamInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetGlobalParam(ctorContext.blackboard);
 
@@ -90,8 +90,8 @@ namespace UQS
 			template <class TGlobalParam>
 			TGlobalParam CFunc_GlobalParam<TGlobalParam>::DoExecute(const SExecuteContext& executeContext) const
 			{
-				assert(m_bGlobalParamExists);
-				assert(*m_pTypeOfGlobalParam == Shared::SDataTypeHelper<TGlobalParam>::GetTypeInfo());	// cannot fail if the validation succeeded (presuming the caller did not cheat)
+				CRY_ASSERT(m_bGlobalParamExists);
+				CRY_ASSERT(*m_pTypeOfGlobalParam == Shared::SDataTypeHelper<TGlobalParam>::GetTypeInfo());	// cannot fail if the validation succeeded (presuming the caller did not cheat)
 				return *static_cast<const TGlobalParam*>(m_pValueOfGlobalParam);
 			}
 

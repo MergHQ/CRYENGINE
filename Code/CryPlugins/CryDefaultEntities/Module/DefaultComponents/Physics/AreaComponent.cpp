@@ -150,9 +150,9 @@ void CAreaComponent::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CAreaComponent::GetEventMask() const
+Cry::Entity::EventFlags CAreaComponent::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 }
 
 #ifndef RELEASE

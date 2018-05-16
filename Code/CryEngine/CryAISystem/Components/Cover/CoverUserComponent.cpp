@@ -206,16 +206,16 @@ bool CEntityAICoverUserComponent::IsGameOrSimulation() const
 	return gEnv->IsGameOrSimulation();
 }
 
-uint64 CEntityAICoverUserComponent::GetEventMask() const 
+Cry::Entity::EventFlags CEntityAICoverUserComponent::GetEventMask() const
 { 
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_LEVEL_LOADED) | ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_LEVEL_LOADED | ENTITY_EVENT_RESET;
 }
 
 void CEntityAICoverUserComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
-		case EEntityEvent::ENTITY_EVENT_LEVEL_LOADED:
+		case ENTITY_EVENT_LEVEL_LOADED:
 		{
 			if (IsGameOrSimulation())
 			{
@@ -223,7 +223,7 @@ void CEntityAICoverUserComponent::ProcessEvent(const SEntityEvent& event)
 			}
 			break;
 		}
-		case EEntityEvent::ENTITY_EVENT_RESET:
+		case ENTITY_EVENT_RESET:
 		{
 			if (GetEntity()->GetSimulationMode() != EEntitySimulationMode::Game)
 			{

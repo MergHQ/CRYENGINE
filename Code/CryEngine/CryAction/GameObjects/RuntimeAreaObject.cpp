@@ -96,9 +96,9 @@ void CRuntimeAreaObject::ProcessEvent(const SEntityEvent& entityEvent)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-uint64 CRuntimeAreaObject::GetEventMask() const
+Cry::Entity::EventFlags CRuntimeAreaObject::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_ENTERAREA) | BIT64(ENTITY_EVENT_LEAVEAREA) | BIT64(ENTITY_EVENT_MOVEINSIDEAREA);
+	return ENTITY_EVENT_ENTERAREA | ENTITY_EVENT_LEAVEAREA | ENTITY_EVENT_MOVEINSIDEAREA;
 }
 
 ///////////////////////////////////////////////////////////////////////////

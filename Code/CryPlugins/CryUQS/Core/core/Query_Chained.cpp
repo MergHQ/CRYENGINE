@@ -25,7 +25,7 @@ namespace UQS
 		{
 			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());	// mainly for keeping an eye on the copy operation of the items below
 
-			assert(pResultSet != nullptr);
+			CRY_ASSERT(pResultSet != nullptr);
 
 			// * if there are more queries in chain, then do the following:
 			//    - convert the result set to a list of "pre-generated" items
@@ -52,7 +52,7 @@ namespace UQS
 
 			// transfer all item-monitors from the child to ourself to keep monitoring until a higher-level query decides differently
 			CQueryBase* pChildQuery = g_pHub->GetQueryManager().FindQueryByQueryID(childQueryID);
-			assert(pChildQuery);
+			CRY_ASSERT(pChildQuery);
 			pChildQuery->TransferAllItemMonitorsToOtherQuery(*this);
 		}
 

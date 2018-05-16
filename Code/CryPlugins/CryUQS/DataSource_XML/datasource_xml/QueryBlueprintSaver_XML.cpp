@@ -39,7 +39,7 @@ namespace UQS
 
 		void CQueryBlueprintSaver_XML::SaveQueryElement(const XmlNodeRef& queryElementToSaveTo)
 		{
-			assert(queryElementToSaveTo->isTag("Query"));
+			CRY_ASSERT(queryElementToSaveTo->isTag("Query"));
 
 			// notice: we don't save the name of the query blueprint here, as the caller has a better understanding of how to deal with that
 			//         (e. g. the name might be that of the file in which the query blueprint is stored)
@@ -96,7 +96,7 @@ namespace UQS
 
 		void CQueryBlueprintSaver_XML::SaveGlobalParamsElement(const XmlNodeRef& globalParamsElementToSaveTo)
 		{
-			assert(globalParamsElementToSaveTo->isTag("GlobalParams"));
+			CRY_ASSERT(globalParamsElementToSaveTo->isTag("GlobalParams"));
 
 			// <ConstantParam>s
 			{
@@ -134,8 +134,8 @@ namespace UQS
 
 		void CQueryBlueprintSaver_XML::SaveGeneratorElement(const XmlNodeRef& generatorElementToSaveTo)
 		{
-			assert(generatorElementToSaveTo->isTag("Generator"));
-			assert(m_pQuery->GetGenerator() != nullptr);
+			CRY_ASSERT(generatorElementToSaveTo->isTag("Generator"));
+			CRY_ASSERT(m_pQuery->GetGenerator() != nullptr);
 
 			const Core::ITextualGeneratorBlueprint* pGeneratorBP = m_pQuery->GetGenerator();
 
@@ -161,21 +161,21 @@ namespace UQS
 
 		void CQueryBlueprintSaver_XML::SaveInstantEvaluatorElement(const XmlNodeRef& instantEvaluatorElementToSaveTo, const Core::ITextualEvaluatorBlueprint& instantEvaluatorBP)
 		{
-			assert(instantEvaluatorElementToSaveTo->isTag("InstantEvaluator"));
+			CRY_ASSERT(instantEvaluatorElementToSaveTo->isTag("InstantEvaluator"));
 
 			CommonSaveEvaluatorElement(instantEvaluatorElementToSaveTo, "instantEvaluatorFactoryGUID", instantEvaluatorBP);
 		}
 
 		void CQueryBlueprintSaver_XML::SaveDeferredEvaluatorElement(const XmlNodeRef& deferredEvaluatorElementToSaveTo, const Core::ITextualEvaluatorBlueprint& deferredEvaluatorBP)
 		{
-			assert(deferredEvaluatorElementToSaveTo->isTag("DeferredEvaluator"));
+			CRY_ASSERT(deferredEvaluatorElementToSaveTo->isTag("DeferredEvaluator"));
 
 			CommonSaveEvaluatorElement(deferredEvaluatorElementToSaveTo, "deferredEvaluatorFactoryGUID", deferredEvaluatorBP);
 		}
 
 		void CQueryBlueprintSaver_XML::SaveFunctionElement(const XmlNodeRef& functionElementToSaveTo, const Core::ITextualInputBlueprint& parentInput)
 		{
-			assert(functionElementToSaveTo->isTag("Function"));
+			CRY_ASSERT(functionElementToSaveTo->isTag("Function"));
 
 			// <Function>'s "name" attribute (name of the function)
 			functionElementToSaveTo->setAttr("name", parentInput.GetFuncName());
@@ -207,7 +207,7 @@ namespace UQS
 
 		void CQueryBlueprintSaver_XML::SaveInputElement(const XmlNodeRef& inputElementToSaveTo, const Core::ITextualInputBlueprint& inputBP)
 		{
-			assert(inputElementToSaveTo->isTag("Input"));
+			CRY_ASSERT(inputElementToSaveTo->isTag("Input"));
 
 			// "name" attribute (name of the parameter)
 			inputElementToSaveTo->setAttr("name", inputBP.GetParamName());

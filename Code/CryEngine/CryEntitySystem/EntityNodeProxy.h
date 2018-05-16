@@ -19,7 +19,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void   Initialize() final;
 	virtual void   ProcessEvent(const SEntityEvent& event) final;
-	virtual uint64 GetEventMask() const final;
+	virtual Cry::Entity::EventFlags GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual void         GetMemoryUsage(ICrySizer* pSizer) const final {};

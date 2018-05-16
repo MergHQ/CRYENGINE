@@ -69,7 +69,7 @@ namespace UQS
 
 			inline void CFunctionDeleter::operator()(IFunction* pFunctionToDestroy)
 			{
-				assert(m_pFunctionFactory);
+				CRY_ASSERT(m_pFunctionFactory);
 				m_pFunctionFactory->DestroyFunction(pFunctionToDestroy);
 			}
 		} // namespace Internal

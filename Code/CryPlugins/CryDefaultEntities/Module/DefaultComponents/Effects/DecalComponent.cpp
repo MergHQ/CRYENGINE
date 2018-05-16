@@ -52,12 +52,12 @@ void CDecalComponent::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CDecalComponent::GetEventMask() const
+Cry::Entity::EventFlags CDecalComponent::GetEventMask() const
 {
-	uint64 bitFlags = (m_bFollowEntityAfterSpawn && m_bSpawned) ? BIT64(ENTITY_EVENT_XFORM) : 0;
+	Cry::Entity::EventFlags bitFlags = (m_bFollowEntityAfterSpawn && m_bSpawned) ? ENTITY_EVENT_XFORM : Cry::Entity::EventFlags();
 	if (m_bSpawned)
 	{
-		bitFlags |= BIT64(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+		bitFlags |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 	}
 
 	return bitFlags;

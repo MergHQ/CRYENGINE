@@ -129,8 +129,8 @@ namespace UQS
 
 		IHub& CHubPlugin::GetHubImplementation()
 		{
-			// if this assert fails, then some client code tried to access the one and only UQS Hub instance before ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE (where it gets instantiated).
-			assert(m_pHub.get());
+			// if this CRY_ASSERT fails, then some client code tried to access the one and only UQS Hub instance before ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE (where it gets instantiated).
+			CRY_ASSERT(m_pHub.get());
 			return *m_pHub.get();
 		}
 

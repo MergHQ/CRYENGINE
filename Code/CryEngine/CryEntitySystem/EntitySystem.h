@@ -384,7 +384,7 @@ public:
 		float mostExpensiveEntityCostMs = 0.f;
 	};
 
-	std::array<SProfiledEntityEvent, ENTITY_EVENT_LAST> m_profiledEvents;
+	std::array<SProfiledEntityEvent, static_cast<size_t>(Cry::Entity::EEvent::Count)> m_profiledEvents;
 #endif //ENABLE_PROFILING_CODE
 };
 

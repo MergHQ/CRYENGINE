@@ -34,7 +34,7 @@ protected:
 	// IEntityComponent
 	virtual void   Initialize() override                      {}
 	virtual void   OnShutDown() override;
-	virtual uint64 GetEventMask() const override              { return 0; }
+	virtual Cry::Entity::EventFlags GetEventMask() const override              { return Cry::Entity::EventFlags(); }
 	virtual void   ProcessEvent(const SEntityEvent& event) override {}
 	// ~IEntityComponent
 

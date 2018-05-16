@@ -119,11 +119,11 @@ void CPlayerComponent::InitializeLocalPlayer()
 	m_pInputComponent->BindAction("player", "jump", eAID_KeyboardMouse, EKeyId::eKI_Space);
 }
 
-uint64 CPlayerComponent::GetEventMask() const
+Cry::Entity::EventFlags CPlayerComponent::GetEventMask() const
 {
-	return BIT64(ENTITY_EVENT_START_GAME)
-		| BIT64(ENTITY_EVENT_UPDATE)
-		| BIT64(ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER);
+	return ENTITY_EVENT_START_GAME
+		| ENTITY_EVENT_UPDATE
+		| ENTITY_EVENT_NET_BECOME_LOCAL_PLAYER;
 }
 
 void CPlayerComponent::ProcessEvent(const SEntityEvent& event)

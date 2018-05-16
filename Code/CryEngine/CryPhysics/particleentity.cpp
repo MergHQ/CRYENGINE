@@ -376,6 +376,11 @@ int CParticleEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 			ser.EndGroup();
 			m_heading=m_vel.normalized();
 		}
+		else // Make sure we don't move
+		{
+			m_vel = Vec3(ZERO);
+			m_wspin = Vec3(ZERO);
+		}
 
 		ser.Value("pos", m_pos, 'wrl3');
 	}

@@ -29,7 +29,7 @@ namespace UQS
 		//       -> probably requires caching of these offsets by CBlueprintWithInputs::ResolveInputs() already and then propagate them from CBlueprintWithInputs::InstantiateFunctionCallHierarchy() to here
 		void CFunctionCallHierarchy::ExecuteAll(const Client::IFunction::SExecuteContext& executeContext, void* pParamsToWriteTheReturnValuesTo, const Client::IInputParameterRegistry& registryToLookupParamsOffsets) const
 		{
-			assert(m_functionsToCall.size() == registryToLookupParamsOffsets.GetParameterCount());
+			CRY_ASSERT(m_functionsToCall.size() == registryToLookupParamsOffsets.GetParameterCount());
 
 			for (size_t i = 0, n = m_functionsToCall.size(); i < n; ++i)
 			{

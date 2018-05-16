@@ -96,15 +96,9 @@ void CEntityComponentAudio::OnListenerMoveNear(Vec3 const& closestPointToArea)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CEntityComponentAudio::GetEventMask() const
+Cry::Entity::EventFlags CEntityComponentAudio::GetEventMask() const
 {
-	return
-	  BIT64(ENTITY_EVENT_XFORM) |
-	  BIT64(ENTITY_EVENT_ENTERAREA) |
-	  BIT64(ENTITY_EVENT_MOVENEARAREA) |
-	  BIT64(ENTITY_EVENT_ENTERNEARAREA) |
-	  BIT64(ENTITY_EVENT_MOVEINSIDEAREA) |
-	  BIT64(ENTITY_EVENT_SET_NAME);
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_ENTERAREA | ENTITY_EVENT_MOVENEARAREA | ENTITY_EVENT_ENTERNEARAREA | ENTITY_EVENT_MOVEINSIDEAREA | ENTITY_EVENT_SET_NAME;
 }
 
 //////////////////////////////////////////////////////////////////////////

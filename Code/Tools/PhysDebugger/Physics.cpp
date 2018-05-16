@@ -500,7 +500,8 @@ void OnMouseEvent(uint evtWin, int x, int y, int flags)
 		case WM_MOUSEMOVE  : evt = eMouseMove; break;
 		default: return;
 	}
-	g_Tool.MouseCallback((CViewport*)&g_Cam, evt, CPoint(x,y), flags);
+	CPoint pt(x,y);
+	g_Tool.MouseCallback((CViewport*)&g_Cam, evt, pt, flags);
 }
 
 void OnSetCursor() 
