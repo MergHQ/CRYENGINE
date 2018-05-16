@@ -122,11 +122,11 @@ extern SEnv *gEnv;
 
 extern int g_iLastProfilerId;
 struct CFrameProfiler {
-	CFrameProfiler(char *name) {
+	CFrameProfiler(const char *name) {
 		m_name = name;
 		m_id = ++g_iLastProfilerId;
 	}
-	char *m_name;
+	const char *m_name;
 	int m_id;
 };
 
