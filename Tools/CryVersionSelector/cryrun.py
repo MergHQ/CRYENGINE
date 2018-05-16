@@ -213,39 +213,59 @@ def cmd_engine_gen(args):
         generate_engine_solution(engine_path)
 
 def generate_project_solution(project_path, cmakelists_dir, open_cmake=False):
+    """
+    Opens the configurations selection UI, and generates the project solution with the selected configuration.
+    """
     if not HAS_WIN_MODULES:
         error_winreg_not_available()
 
     configs = [
+        #Visual Studio 14 2015 Express
         {
-            'title':'Visual Studio 2015 Win64',
-            'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+            'title':'Visual Studio 2015 Express Win64',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015 Win64',
             'cmake_builddir': 'solutions/win64',
-            'compiler': { 'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': '\VisualStudio.DTE.14.0' }
+            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\WDExpress.DTE.14.0'}
+        },
+        {
+            'title':'Visual Studio 2015 Express Win32',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
+            'cmake_generator': 'Visual Studio 14 2015',
+            'cmake_builddir': 'solutions/win32',
+            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\WDExpress.DTE.14.0'}
+        },
+
+        #Visual Studio 14 2015
+        {
+            'title':'Visual Studio 2015 Win64',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
+            'cmake_generator': 'Visual Studio 14 2015 Win64',
+            'cmake_builddir': 'solutions/win64',
+            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.14.0'}
         },
         {
             'title':'Visual Studio 2015 Win32',
-            'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015',
             'cmake_builddir': 'solutions/win32',
-            'compiler': { 'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': '\VisualStudio.DTE.14.0' }
+            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.14.0'}
         },
 
         #Visual Studio 15 2017
         {
             'title':'Visual Studio 2017 Win64',
-            'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 15 2017 Win64',
             'cmake_builddir': 'solutions/win64',
-            'compiler': { 'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': '\VisualStudio.DTE.15.0' }
+            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.15.0'}
         },
         {
             'title':'Visual Studio 2017 Win32',
-            'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 15 2017',
             'cmake_builddir': 'solutions/win32',
-            'compiler': { 'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': '\VisualStudio.DTE.15.0' }
+            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.15.0'}
         }
     ]
 
@@ -259,41 +279,62 @@ def generate_project_solution(project_path, cmakelists_dir, open_cmake=False):
     generate_solution(project_path, cmakelists_dir, config, open_cmake)
 
 def generate_engine_solution(engine_path):
+    """
+    Opens the configurations selection UI, and generates the engine solution with the selected configuration.
+    """
     if not HAS_WIN_MODULES:
         error_winreg_not_available()
 
     configs = [
+        #Visual Studio 14 2015 Express
+        {
+            'title':'Visual Studio 2015 Express Win64',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
+            'cmake_generator': 'Visual Studio 14 2015 Win64',
+            'cmake_builddir': 'solutions/win64',
+            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\WDExpress.DTE.14.0'}
+        },
+        {
+            'title':'Visual Studio 2015 Express Win32',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
+            'cmake_generator': 'Visual Studio 14 2015',
+            'cmake_builddir': 'solutions/win32',
+            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\WDExpress.DTE.14.0'}
+        },
+
+        #Visual Studio 14 2015
         {
             'title':'Visual Studio 2015 Win64',
-            'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015 Win64',
             'cmake_builddir': 'solutions_cmake/win64',
-            'compiler': { 'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': '\VisualStudio.DTE.14.0' }
+            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.14.0'}
         },
         {
             'title':'Visual Studio 2015 Win32',
-            'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 14 2015',
             'cmake_builddir': 'solutions_cmake/win32',
-            'compiler': { 'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': '\VisualStudio.DTE.14.0' }
+            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.14.0'}
         },
 
         #Visual Studio 15 2017
         {
             'title':'Visual Studio 2017 Win64',
-            'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 15 2017 Win64',
             'cmake_builddir': 'solutions_cmake/win64',
-            'compiler': { 'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': '\VisualStudio.DTE.15.0' }
+            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.15.0'}
         },
         {
             'title':'Visual Studio 2017 Win32',
-            'cmake_toolchain': 'toolchain\windows\WindowsPC-MSVC.cmake',
+            'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
             'cmake_generator': 'Visual Studio 15 2017',
             'cmake_builddir': 'solutions_cmake/win32',
-            'compiler': { 'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': '\VisualStudio.DTE.15.0' }
+            'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\VisualStudio.DTE.15.0'}
         }
     ]
+
     # Run the GUI to select a config for CMake.
     config = cryrun_gui.select_config(configs)
 
