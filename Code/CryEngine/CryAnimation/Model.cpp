@@ -22,7 +22,7 @@ CDefaultSkeleton::CDefaultSkeleton(const char* pSkeletonFilePath, uint32 type, u
 	m_pJointsCRCToIDMap = NULL;
 	m_AABBExtension.min = Vec3(ZERO);
 	m_AABBExtension.max = Vec3(ZERO);
-	m_bHasPhysics2 = 0;
+	m_bHasPhysics[0] = m_bHasPhysics[1] = false;
 	m_usePhysProxyBBox = 0;
 
 	m_ModelMeshEnabled = false;
@@ -36,9 +36,10 @@ CDefaultSkeleton::~CDefaultSkeleton()
 	if (pPhysGeomManager)
 	{
 		uint32 numJoints = m_arrModelJoints.size();
-		for (uint32 i = 0; i < numJoints; i++)
+		for (uint32 j = 0; j < numJoints*2; j++)
 		{
-			phys_geometry* pPhysGeom = m_arrModelJoints[i].m_PhysInfo.pPhysGeom;
+			int i = j >> 1, nLod = j & 1;
+			phys_geometry* pPhysGeom = m_arrModelJoints[i].m_PhysInfoRef[nLod].pPhysGeom;
 			if (pPhysGeom == 0)
 				continue; //joint is not physical geometry
 			if ((INT_PTR)pPhysGeom == -1)
@@ -193,7 +194,7 @@ template<class T> void _swap(T& op1, T& op2) { T tmp = op1; op1 = op2; op2 = tmp
 bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<PhysicalProxy>& arrPhyBoneMeshes, const DynArray<BONE_ENTITY>& arrBoneEntitiesSrc, IMaterial* pIMaterial, const char* filename)
 {
 	//set children
-	m_bHasPhysics2 = false;
+	m_bHasPhysics[0] = m_bHasPhysics[1] = false;
 	uint32 numBoneEntities = arrBoneEntitiesSrc.size();
 	uint32 numJoints = m_arrModelJoints.size();
 	if (numBoneEntities > numJoints)
@@ -221,6 +222,7 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 
 	//return 1;
 
+	int nLod = 0;
 	BONE_ENTITY be;
 	memset(&be, 0, sizeof(BONE_ENTITY));
 	be.ParentID = -1;
@@ -243,20 +245,20 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 			dfltApproxTol = 0.05f;
 	}
 
-	//loop over all BoneEntities and set the flags "joint_no_gravity" and "joint_isolated_accelerations" in m_PhysInfo.flags
+	//loop over all BoneEntities and set the flags "joint_no_gravity" and "joint_isolated_accelerations" in m_PhysInfoRef[nLod].flags
 	for (uint32 i = 0; i < numBoneEntities; i++)
 	{
-		m_arrModelJoints[i].m_PhysInfo.flags &= ~(joint_no_gravity | joint_isolated_accelerations);
+		m_arrModelJoints[i].m_PhysInfoRef[nLod].flags &= ~(joint_no_gravity | joint_isolated_accelerations);
 		if (arrBoneEntitiesSorted[i].prop[0] == 0)
 		{
-			m_arrModelJoints[i].m_PhysInfo.flags |= joint_no_gravity | joint_isolated_accelerations;
+			m_arrModelJoints[i].m_PhysInfoRef[nLod].flags |= joint_no_gravity | joint_isolated_accelerations;
 		}
 		else
 		{
 			if (!CryStringUtils::strnstr(arrBoneEntitiesSorted[i].prop, "gravity", sizeof(arrBoneEntitiesSorted[i].prop)))
-				m_arrModelJoints[i].m_PhysInfo.flags |= joint_no_gravity;
+				m_arrModelJoints[i].m_PhysInfoRef[nLod].flags |= joint_no_gravity;
 			if (!CryStringUtils::strnstr(arrBoneEntitiesSorted[i].prop, "active_phys", sizeof(arrBoneEntitiesSorted[i].prop)))
-				m_arrModelJoints[i].m_PhysInfo.flags |= joint_isolated_accelerations;
+				m_arrModelJoints[i].m_PhysInfoRef[nLod].flags |= joint_isolated_accelerations;
 			if (const char* ptr = CryStringUtils::strnstr(arrBoneEntitiesSorted[i].prop, "mass", sizeof(arrBoneEntitiesSorted[i].prop)))
 			{
 				//CryFatalError("did we ever use this path???");
@@ -309,7 +311,7 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 		//To initialize a bone with a proxy, we loop over all joints and replace the ChunkID in pPhysGeom with the actual physical geometry object pointers.
 		for (uint32 i = 0; i < numJoints; ++i)
 		{
-			INT_PTR cid = INT_PTR(m_arrModelJoints[i].m_PhysInfo.pPhysGeom);
+			INT_PTR cid = INT_PTR(m_arrModelJoints[i].m_PhysInfoRef[nLod].pPhysGeom);
 			if (pbm.ChunkID != cid)
 				continue;
 
@@ -329,25 +331,25 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 				id = pg->surface_idx;
 			if (uint32(id) < uint32(pg->nMats))
 				id = pg->pMatMapping[id];
-			*(int*)(m_arrModelJoints[i].m_PhysInfo.spring_angle + 1) = id; //surface type index for rope physicalization (it's not ready at rc stage)
+			*(int*)(m_arrModelJoints[i].m_PhysInfoRef[nLod].spring_angle + 1) = id; //surface type index for rope physicalization (it's not ready at rc stage)
 			if (strnicmp(m_arrModelJoints[i].m_strJointName.c_str(), "rope", 4))
-				m_arrModelJoints[i].m_PhysInfo.pPhysGeom = pg, nHasPhysicsGeom++;
+				m_arrModelJoints[i].m_PhysInfoRef[nLod].pPhysGeom = pg, nHasPhysicsGeom++;
 			else
-				g_pIPhysicalWorld->GetGeomManager()->UnregisterGeometry(pg), m_arrModelJoints[i].m_PhysInfo.flags = -1;
+				g_pIPhysicalWorld->GetGeomManager()->UnregisterGeometry(pg), m_arrModelJoints[i].m_PhysInfoRef[nLod].flags = -1;
 			pPhysicalGeometry->Release();
 		}
 	}
 
 	for (uint32 i = 0; i < numJoints; ++i)
 	{
-		INT_PTR cid = INT_PTR(m_arrModelJoints[i].m_PhysInfo.pPhysGeom);
+		INT_PTR cid = INT_PTR(m_arrModelJoints[i].m_PhysInfoRef[nLod].pPhysGeom);
 		if (cid >= -1 && cid < 0x400)
-			m_arrModelJoints[i].m_PhysInfo.pPhysGeom = 0;
+			m_arrModelJoints[i].m_PhysInfoRef[nLod].pPhysGeom = 0;
 
-		for (int j = 0; m_arrModelJoints[i].m_PhysInfo.flags != -1 && m_arrModelJoints[i].m_PhysInfo.pPhysGeom && j < 3; j++)
+		for (int j = 0; m_arrModelJoints[i].m_PhysInfoRef[nLod].flags != -1 && m_arrModelJoints[i].m_PhysInfoRef[nLod].pPhysGeom && j < 3; j++)
 		{
 			// lock axes with 0 limits range
-			m_arrModelJoints[i].m_PhysInfo.flags |= (m_arrModelJoints[i].m_PhysInfo.max[j] - m_arrModelJoints[i].m_PhysInfo.min[j] <= 0.0f) * angle0_locked << j;
+			m_arrModelJoints[i].m_PhysInfoRef[nLod].flags |= (m_arrModelJoints[i].m_PhysInfoRef[nLod].max[j] - m_arrModelJoints[i].m_PhysInfoRef[nLod].min[j] <= 0.0f) * angle0_locked << j;
 		}
 	}
 
@@ -362,12 +364,12 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 			if (arrBoneEntitiesSorted[i].prop[0] == 0)
 				continue;
 			CDefaultSkeleton::SJoint* pBone = &m_arrModelJoints[i];
-			if (pBone->m_PhysInfo.pPhysGeom == 0)
+			if (pBone->m_PhysInfoRef[nLod].pPhysGeom == 0)
 				continue;
-			uint32 type = pBone->m_PhysInfo.pPhysGeom->pGeom->GetType();
+			uint32 type = pBone->m_PhysInfoRef[nLod].pPhysGeom->pGeom->GetType();
 			if (type == GEOM_TRIMESH)
 			{
-				pmesh = (mesh_data*)(pMeshGeom = pBone->m_PhysInfo.pPhysGeom->pGeom)->GetData();
+				pmesh = (mesh_data*)(pMeshGeom = pBone->m_PhysInfoRef[nLod].pPhysGeom->pGeom)->GetData();
 				if (pmesh->nIslands == 2 && (pcloth = CryStringUtils::strnstr(arrBoneEntitiesSorted[i].prop, "cloth_proxy", sizeof(arrBoneEntitiesSorted[i].prop))))
 				{
 					//CryFatalError("cloth proxy found");
@@ -383,16 +385,16 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 					int flags = GetMeshApproxFlags(arrBoneEntitiesSorted[i].prop, static_cast<int>(pcloth - arrBoneEntitiesSorted[i].prop));
 					flags |= (flags || pmesh->pIslands[isle ^ 1].nTris < 20) ? mesh_SingleBB : mesh_OBB;
 					pMeshGeom = pGeoman->CreateMesh(pmesh->pVertices, pmesh->pIndices + j, pmesh->pMats + j, 0, pmesh->pIslands[isle ^ 1].nTris, flags, 1.0f);
-					pgeomMain = pGeoman->RegisterGeometry(pMeshGeom, pBone->m_PhysInfo.pPhysGeom->surface_idx, pBone->m_PhysInfo.pPhysGeom->pMatMapping, pBone->m_PhysInfo.pPhysGeom->nMats);
+					pgeomMain = pGeoman->RegisterGeometry(pMeshGeom, pBone->m_PhysInfoRef[nLod].pPhysGeom->surface_idx, pBone->m_PhysInfoRef[nLod].pPhysGeom->pMatMapping, pBone->m_PhysInfoRef[nLod].pPhysGeom->nMats);
 
 					flags = GetMeshApproxFlags(pcloth, sizeof(arrBoneEntitiesSorted[i].prop) - (pcloth - arrBoneEntitiesSorted[i].prop));
 					flags |= (flags || pmesh->pIslands[isle].nTris < 20) ? mesh_SingleBB : mesh_OBB;
 					pMeshGeom = pGeoman->CreateMesh(pmesh->pVertices, pmesh->pIndices, pmesh->pMats, 0, j, flags, 1.0f);
-					pgeomCloth = pGeoman->RegisterGeometry(pMeshGeom, pBone->m_PhysInfo.pPhysGeom->surface_idx, pBone->m_PhysInfo.pPhysGeom->pMatMapping, pBone->m_PhysInfo.pPhysGeom->nMats);
+					pgeomCloth = pGeoman->RegisterGeometry(pMeshGeom, pBone->m_PhysInfoRef[nLod].pPhysGeom->surface_idx, pBone->m_PhysInfoRef[nLod].pPhysGeom->pMatMapping, pBone->m_PhysInfoRef[nLod].pPhysGeom->nMats);
 					pgeomMain->pForeignData = pgeomCloth;
 
-					pGeoman->UnregisterGeometry(pBone->m_PhysInfo.pPhysGeom);
-					pBone->m_PhysInfo.pPhysGeom = pgeomMain;
+					pGeoman->UnregisterGeometry(pBone->m_PhysInfoRef[nLod].pPhysGeom);
+					pBone->m_PhysInfoRef[nLod].pPhysGeom = pgeomMain;
 					continue;
 				}
 
@@ -400,68 +402,70 @@ bool                   CDefaultSkeleton::SetupPhysicalProxies(const DynArray<Phy
 				if (!flags)
 					continue;
 
-				pBone->m_PhysInfo.pPhysGeom->pGeom = pGeoman->CreateMesh(pmesh->pVertices, pmesh->pIndices, pmesh->pMats, 0, pmesh->nTris, flags | mesh_SingleBB, 1.0f);
+				pBone->m_PhysInfoRef[nLod].pPhysGeom->pGeom = pGeoman->CreateMesh(pmesh->pVertices, pmesh->pIndices, pmesh->pMats, 0, pmesh->nTris, flags | mesh_SingleBB, 1.0f);
 				pMeshGeom->Release();
 			}
 		}
-		m_bHasPhysics2 = true;
+		m_bHasPhysics[0] = true;
 	}
 
-	IStatObj *pSkelCGF = gEnv->p3DEngine->LoadStatObj(string(filename) + ".cgf", nullptr, nullptr, false, IStatObj::ELoadingFlagsNoErrorIfFail);
-	if (pSkelCGF && !pSkelCGF->IsDefaultObject())
+	for(nLod = 0; nLod < 2; nLod++)
 	{
-		std::map<uint32,int> mapJoints;
-		for(uint32 i = 0; i < numJoints; i++)
+		IStatObj *pSkelCGF = gEnv->p3DEngine->LoadStatObj(string(filename) + (nLod ? ".ragdoll.cgf" : ".cgf"), nullptr, nullptr, false, IStatObj::ELoadingFlagsNoErrorIfFail);
+		if (pSkelCGF && !pSkelCGF->IsDefaultObject())
 		{
-			mapJoints.insert(std::pair<uint32,int>(CCrc32::ComputeLowercase(m_arrModelJoints[i].m_strJointName), i));
-			CryBonePhysics& phys = m_arrModelJoints[i].m_PhysInfo;
-			if (phys.pPhysGeom)
+			std::map<uint32,int> mapJoints;
+			for(uint32 i = 0; i < numJoints; i++)
 			{
-				gEnv->pPhysicalWorld->GetGeomManager()->UnregisterGeometry(phys.pPhysGeom);
-				phys.pPhysGeom = nullptr;
-			}
-		}
-		m_bHasPhysics2 = true;
-		for(int i = 0; i < pSkelCGF->GetSubObjectCount(); i++)
-		{
-			IStatObj::SSubObject& slot = *pSkelCGF->GetSubObject(i);
-			auto idx = mapJoints.find(CCrc32::ComputeLowercase(slot.name));
-			if (idx != mapJoints.end() && !slot.name.compareNoCase(m_arrModelJoints[idx->second].m_strJointName) && slot.pStatObj && slot.pStatObj->GetPhysGeom())
-			{
-				CryBonePhysics& phys = m_arrModelJoints[idx->second].m_PhysInfo;
-				(phys.pPhysGeom = slot.pStatObj->GetPhysGeom())->nRefCount++;
-				Vec3i lim[2];
-				Ang3 frame0;
-				sscanf_s(slot.properties.c_str(), "%d %d %d %d %d %d %f %f %f %f %f %f %f %f %f",
-					&lim[0].x, &lim[0].y, &lim[0].z, &lim[1].x, &lim[1].y, &lim[1].z, 
-					&phys.spring_tension[0], &phys.spring_tension[1], &phys.spring_tension[2], 
-					&phys.damping[0], &phys.damping[1], &phys.damping[2],
-					&frame0.x, &frame0.y, &frame0.z);
-				*(Vec3*)phys.min = DEG2RAD(Vec3(lim[0]));
-				*(Vec3*)phys.max = DEG2RAD(Vec3(lim[1]));
-				phys.flags = joint_no_gravity | joint_isolated_accelerations;
-				for(int j = 0; j < 3; j++)
+				mapJoints.insert(std::pair<uint32,int>(CCrc32::ComputeLowercase(m_arrModelJoints[i].m_strJointName), i));
+				CryBonePhysics& phys = m_arrModelJoints[i].m_PhysInfoRef(nLod);
+				if (phys.pPhysGeom)
 				{
-					phys.flags |= (angle0_locked << j) * isneg(phys.max[j] - phys.min[j] - 0.01f);
-					float unlim = 1.0f + isneg(gf_PI*1.999f - phys.max[j] + phys.min[j]);
-					phys.max[j] *= unlim; phys.min[j] *= unlim;
+					gEnv->pPhysicalWorld->GetGeomManager()->UnregisterGeometry(phys.pPhysGeom);
+					phys.pPhysGeom = nullptr;
 				}
-				*(Matrix33*)phys.framemtx = Matrix33(DEG2RAD(frame0));
-				m_bHasPhysics2 = true;
 			}
-		}
-		pSkelCGF->Release();
-
-		// transform framemtx from child frame to phys parent frame
-		for(uint32 i = 0; i < numJoints; i++)
-			if (m_arrModelJoints[i].m_PhysInfo.pPhysGeom)
+			for(int i = 0; i < pSkelCGF->GetSubObjectCount(); i++)
 			{
-				int idxParent = m_arrModelJoints[i].m_idxParent;
-				while (idxParent >= 0 && !m_arrModelJoints[idxParent].m_PhysInfo.pPhysGeom)
-					idxParent = m_arrModelJoints[idxParent].m_idxParent;
-				if (idxParent >= 0)
-					*(Matrix33*)m_arrModelJoints[i].m_PhysInfo.framemtx = Matrix33(!GetDefaultAbsJointByID(idxParent).q * GetDefaultAbsJointByID(i).q) * *(Matrix33*)m_arrModelJoints[i].m_PhysInfo.framemtx;
+				IStatObj::SSubObject& slot = *pSkelCGF->GetSubObject(i);
+				auto idx = mapJoints.find(CCrc32::ComputeLowercase(slot.name));
+				if (idx != mapJoints.end() && !slot.name.compareNoCase(m_arrModelJoints[idx->second].m_strJointName) && slot.pStatObj && slot.pStatObj->GetPhysGeom())
+				{
+					CryBonePhysics& phys = m_arrModelJoints[idx->second].m_PhysInfoRef(nLod);
+					(phys.pPhysGeom = slot.pStatObj->GetPhysGeom())->nRefCount++;
+					Vec3i lim[2];
+					Ang3 frame0;
+					sscanf_s(slot.properties.c_str(), "%d %d %d %d %d %d %f %f %f %f %f %f %f %f %f",
+						&lim[0].x, &lim[0].y, &lim[0].z, &lim[1].x, &lim[1].y, &lim[1].z, 
+						&phys.spring_tension[0], &phys.spring_tension[1], &phys.spring_tension[2], 
+						&phys.damping[0], &phys.damping[1], &phys.damping[2],
+						&frame0.x, &frame0.y, &frame0.z);
+					*(Vec3*)phys.min = DEG2RAD(Vec3(lim[0]));
+					*(Vec3*)phys.max = DEG2RAD(Vec3(lim[1]));
+					phys.flags = joint_no_gravity | joint_isolated_accelerations;
+					for(int j = 0; j < 3; j++)
+					{
+						phys.flags |= (angle0_locked << j) * isneg(phys.max[j] - phys.min[j] - 0.01f);
+						float unlim = 1.0f + isneg(gf_PI*1.999f - phys.max[j] + phys.min[j]);
+						phys.max[j] *= unlim; phys.min[j] *= unlim;
+					}
+					*(Matrix33*)phys.framemtx = Matrix33(DEG2RAD(frame0));
+					m_bHasPhysics[nLod] = true;
+				}
 			}
+			pSkelCGF->Release();
+
+			// transform framemtx from child frame to phys parent frame
+			for(uint32 i = 0; i < numJoints; i++)
+				if (m_arrModelJoints[i].m_PhysInfoRef[nLod].pPhysGeom)
+				{
+					int idxParent = m_arrModelJoints[i].m_idxParent;
+					while (idxParent >= 0 && !m_arrModelJoints[idxParent].m_PhysInfoRef[nLod].pPhysGeom)
+						idxParent = m_arrModelJoints[idxParent].m_idxParent;
+					if (idxParent >= 0)
+						*(Matrix33*)m_arrModelJoints[i].m_PhysInfoRef[nLod].framemtx = Matrix33(!GetDefaultAbsJointByID(idxParent).q * GetDefaultAbsJointByID(i).q) * *(Matrix33*)m_arrModelJoints[i].m_PhysInfoRef[nLod].framemtx;
+				}
+		}
 	}
 
 	return true;

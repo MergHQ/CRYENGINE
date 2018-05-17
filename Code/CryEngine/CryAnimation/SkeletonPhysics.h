@@ -200,7 +200,7 @@ public:
 private:
 	int    getBonePhysChildIndex(int nBoneIndex, int nLod = 0) const;
 	uint32 getBoneParentIndex(uint32 nBoneIndex) const;
-	int    GetPhysRoot() const;
+	int    GetPhysRoot(int nLod = 0) const;
 
 	int    GetModelJointChildIndex(int nBone, int i) const
 	{
@@ -301,6 +301,7 @@ public:
 	bool              m_bPhysicsAwake         : 1;
 	bool              m_bPhysicsWasAwake      : 1;
 	bool              m_bPhysicsRelinquished  : 1;
+	int               m_physLod;
 
 private:
 	QuatTS                  m_location;

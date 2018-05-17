@@ -583,7 +583,7 @@ void CharacterDocument::OnSceneCharacterChanged()
 	LoadCharacter(m_system->scene->characterPath.c_str());
 }
 
-void CharacterDocument::Physicalize()
+void CharacterDocument::Physicalize(int physLod)
 {
 	IPhysicalWorld* pPhysWorld = gEnv->pPhysicalWorld;
 	if (!pPhysWorld)
@@ -606,7 +606,7 @@ void CharacterDocument::Physicalize()
 	{
 		character->GetISkeletonPose()->DestroyCharacterPhysics();
 		m_pPhysicalEntity = pPhysWorld->CreatePhysicalEntity(PE_LIVING);
-		IPhysicalEntity* pCharPhys = character->GetISkeletonPose()->CreateCharacterPhysics(m_pPhysicalEntity, 80.0f, -1, 70.0f);
+		IPhysicalEntity* pCharPhys = character->GetISkeletonPose()->CreateCharacterPhysics(m_pPhysicalEntity, 80.0f, -1, 70.0f, physLod);
 		character->GetISkeletonPose()->CreateAuxilaryPhysics(pCharPhys, Matrix34(IDENTITY));
 		pe_player_dynamics pd;
 		pd.bActive = 0;
@@ -1017,7 +1017,7 @@ void CharacterDocument::OnCharacterModified(EntryModifiedEvent& ev)
 			emptyRig.ApplyToCharacter(m_uncompressedCharacter);
 	}
 
-	Physicalize();
+	Physicalize(entry->content.cdf.m_physLod);
 
 	if (!ev.continuousChange)
 		SignalActiveCharacterChanged();

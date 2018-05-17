@@ -265,6 +265,55 @@ struct ADIKTarget
 	void GetMemoryUsage(ICrySizer* pSizer) const {}
 };
 
+struct CryBonePhysicsLinked : CryBonePhysics
+{
+	static CryBonePhysicsLinked  g_empty;
+	CryBonePhysicsLinked* next = nullptr;
+	int                   refCount = 0;
+	CryBonePhysicsLinked() 	{	pPhysGeom = nullptr; }
+	~CryBonePhysicsLinked() { if (next) delete next; }
+	int AddRef()  { return ++refCount; }
+	int Release() 
+	{ 
+		if (this == &g_empty)	return 1;
+		int res = --refCount; 
+		if (refCount <= 0) delete this; 
+		return res; 
+	}
+};
+
+struct SBonePhysicsRef 
+{
+	_smart_ptr<CryBonePhysicsLinked> data = &CryBonePhysicsLinked::g_empty;
+	CryBonePhysics& operator()(int i) // unlike [], allocates lod info if necessary
+	{ 
+		CryBonePhysicsLinked *ptr = data == &CryBonePhysicsLinked::g_empty ? (data = new CryBonePhysicsLinked) : data;
+		for(; i>0; --i, ptr = ptr->next ? ptr->next : (ptr->next = new CryBonePhysicsLinked))
+			;
+		return *ptr;
+	}
+	const CryBonePhysics& operator[](int i) const
+	{ 
+		CryBonePhysicsLinked *res = data; 
+		for(; i>0 && res && res->next; --i, res=res->next)
+			;
+		return *res;
+	}
+	CryBonePhysics& operator[](int i)	{ return const_cast<CryBonePhysics&>(const_cast<const SBonePhysicsRef&>(*this)[i]); }
+	SBonePhysicsRef& operator=(const CryBonePhysics &src)	
+	{ 
+		if (src.pPhysGeom && src.pPhysGeom != (phys_geometry*)(INT_PTR)-1)
+		{
+			if (data == &CryBonePhysicsLinked::g_empty)
+				data = new CryBonePhysicsLinked;
+			*(CryBonePhysics*)data = src;
+		}
+		else 
+			data = &CryBonePhysicsLinked::g_empty;
+		return *this;
+	}
+};
+
 //----------------------------------------------------------------------
 // CDefault Skeleton
 //----------------------------------------------------------------------
@@ -337,7 +386,6 @@ public:
 			m_CGAObject = 0;
 			m_ObjectID = -1;
 			m_NodeID = ~0;
-			m_PhysInfo.pPhysGeom = 0;
 			m_fMass = 0.0f;
 		}
 
@@ -358,7 +406,7 @@ public:
 		//#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 		//--------> the rest is deprecated and will disappear sooner or later
 		//#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
-		CryBonePhysics       m_PhysInfo;
+		SBonePhysicsRef      m_PhysInfoRef;
 		f32                  m_fMass;     //this doesn't need to be in every joint
 		_smart_ptr<IStatObj> m_CGAObject; // Static object controlled by this joint.
 		uint32               m_NodeID;    // CGA-node
@@ -467,13 +515,13 @@ public:
 		assert(false);
 		return g_IdentityQuatT;
 	};
-	virtual const phys_geometry* GetJointPhysGeom(uint32 jointIndex) const
+	virtual const phys_geometry* GetJointPhysGeom(uint32 jointIndex, int nLod = 0) const
 	{
-		return m_arrModelJoints[jointIndex].m_PhysInfo.pPhysGeom;
+		return m_arrModelJoints[jointIndex].m_PhysInfoRef[nLod].pPhysGeom;
 	}
-	virtual CryBonePhysics* GetJointPhysInfo(uint32 jointIndex)
+	virtual CryBonePhysics* GetJointPhysInfo(uint32 jointIndex, int nLod = 0, bool allocIfLodAbsent = true)
 	{
-		return &m_arrModelJoints[jointIndex].m_PhysInfo;
+		return &(allocIfLodAbsent ? m_arrModelJoints[jointIndex].m_PhysInfoRef(nLod) : m_arrModelJoints[jointIndex].m_PhysInfoRef[nLod]);
 	}
 	virtual const DynArray<SBoneShadowCapsule>& GetShadowCapsules() const
 	{
@@ -558,7 +606,7 @@ public:
 	DynArray<SBoneShadowCapsule>     m_ShadowCapsulesList;
 	AABB                             m_AABBExtension;
 	AABB                             m_ModelAABB; //AABB of the model in default pose
-	bool                             m_bHasPhysics2;
+	bool                             m_bHasPhysics[2];
 	DynArray<PhysicalProxy>          m_arrBackupPhyBoneMeshes; //collision proxi
 	DynArray<BONE_ENTITY>            m_arrBackupBoneEntities;  //physical-bones
 	DynArray<CryBonePhysics>         m_arrBackupPhysInfo;

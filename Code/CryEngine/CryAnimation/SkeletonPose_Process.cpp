@@ -149,7 +149,7 @@ void CSkeletonPose::UpdateBBox(uint32 update)
 		{
 			for (uint32 i = 0; i < numJoints; i++)
 			{
-				phys_geometry* pPhysGeom = rCModelSkeleton.m_arrModelJoints[i].m_PhysInfo.pPhysGeom;
+				phys_geometry* pPhysGeom = rCModelSkeleton.m_arrModelJoints[i].m_PhysInfoRef[0].pPhysGeom;
 				if (pPhysGeom == 0)
 					continue; //joint is not physical geometry
 				primitives::box bbox;

@@ -156,6 +156,7 @@ struct CharacterDefinition
 {
 	bool                        m_initialized;
 	bool                        m_physEdit, m_physNeedsApply;
+	int                         m_physLod;
 	string                      skeleton;
 	string                      materialPath;
 	string                      physics;
@@ -172,6 +173,7 @@ struct CharacterDefinition
 	CharacterDefinition()
 	{
 		m_initialized = m_physEdit = m_physNeedsApply = false;
+		m_physLod = 0;
 		++g_meshArchiveUsed;
 	}
 	~CharacterDefinition()

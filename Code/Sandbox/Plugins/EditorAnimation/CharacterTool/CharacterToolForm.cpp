@@ -245,14 +245,28 @@ void CharacterToolForm::Initialize()
 			topLayout->addWidget(m_displayParametersButton);
 
 			m_createProxyModeButton = new QToolButton();
-			m_createProxyModeButton->setText("Edit Proxies");
-			m_createProxyModeButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+			m_createProxyModeButton->setText("Edit Phys Proxies");
+			m_createProxyModeButton->setToolTip("Create/edit the main set of character proxies");
+			m_createProxyModeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
 			m_createProxyModeButton->setCheckable(true);
-			m_createProxyModeButton->setIcon(CryIcon("icons:common/animation_skeleton.ico"));
+			m_createProxyModeButton->setIcon(CryIcon("icons:common/animation_character.ico"));
+			EXPECTED(connect(m_createProxyModeButton, &QToolButton::pressed, [this](){ m_createRagdollModeButton->setChecked(false); }));
 			topLayout->addWidget(m_createProxyModeButton);
+
+			m_createRagdollModeButton = new QToolButton();
+			m_createRagdollModeButton->setText("Edit Ragdoll Proxies");
+			m_createRagdollModeButton->setToolTip("Create/edit dedicated ragdoll proxies (if different from the main set)");
+			m_createRagdollModeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+			m_createRagdollModeButton->setCheckable(true);
+			EXPECTED(connect(m_createRagdollModeButton, &QToolButton::pressed, [this](){ m_createProxyModeButton->setChecked(false); }));
+			m_createRagdollModeButton->setIcon(CryIcon("icons:common/animation_skeleton.ico"));
+			topLayout->addWidget(m_createRagdollModeButton);
 
 			m_clearProxiesButton = new QToolButton();
 			m_clearProxiesButton->setText("Clear Proxies");
+			m_clearProxiesButton->setToolTip("Clears the current set of physics proxies");
+			m_clearProxiesButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+			m_clearProxiesButton->setIcon(CryIcon("icons:General/Remove_Negative.ico"));
 			EXPECTED(connect(m_clearProxiesButton, SIGNAL(clicked()), this, SLOT(OnClearProxiesButton())));
 			topLayout->addWidget(m_clearProxiesButton);
 

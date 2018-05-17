@@ -105,7 +105,7 @@ public slots:
 
 	IViewportMode*   ViewportMode() const { return m_mode; }
 	PlaybackPanel*   GetPlaybackPanel()   { return m_playbackPanel; }
-	bool             ProxyMakingMode()    { return m_createProxyModeButton->isChecked(); }
+	int              ProxyMakingMode()    { return m_createProxyModeButton->isChecked() ? 1 : (m_createRagdollModeButton->isChecked() ? 2 : 0); }
 	PropertiesPanel* GetPropertiesPanel() { return m_propertiesPanel; }
 protected:
 	bool             event(QEvent* ev) override;
@@ -152,6 +152,7 @@ private:
 	QToolBar*                                  m_modeToolBar;
 	QToolButton*                               m_displayParametersButton;
 	QToolButton*                               m_createProxyModeButton;
+	QToolButton*                               m_createRagdollModeButton;
 	QToolButton*                               m_clearProxiesButton;
 	QToolButton*                               m_testRagdollButton;
 	TransformPanel*                            m_transformPanel;
