@@ -92,16 +92,15 @@ struct SMeshStream
   ~SMeshStream() { memset(this, 0x0, sizeof(*this)); }
 };
 
-// Flags for CRenderMesh::m_nFlags
-// Starting with BIT(8), to avoid double occupancy - since flags FSM_XXX (e.g., FSM_USE_COMPUTE_SKINNING, see IRenderMesh.h) are used in CRenderMesh::m_nFlags as well
-#define FRM_RELEASED              BIT(8)
-#define FRM_DEPRECTATED_FLAG      BIT(9)
-#define FRM_READYTOUPLOAD         BIT(10)
-#define FRM_ALLOCFAILURE          BIT(11)
-#define FRM_SKINNED               BIT(12)
-#define FRM_SKINNEDNEXTDRAW       BIT(13) // no proper support yet for objects that can be skinned and not skinned.
-#define FRM_ENABLE_NORMALSTREAM   BIT(14)
-#define FRM_SKINNED_EIGHT_WEIGHTS BIT(15)
+// CRenderMesh::m_nFlags
+#define FRM_RELEASED              BIT(0)
+#define FRM_DEPRECTATED_FLAG      BIT(1)
+#define FRM_READYTOUPLOAD         BIT(2)
+#define FRM_ALLOCFAILURE          BIT(3)
+#define FRM_SKINNED               BIT(4)
+#define FRM_SKINNEDNEXTDRAW       BIT(5) // no proper support yet for objects that can be skinned and not skinned.
+#define FRM_ENABLE_NORMALSTREAM   BIT(6)
+#define FRM_SKINNED_EIGHT_WEIGHTS BIT(7)
 
 #if defined(FEATURE_SVO_GI)
   #define MAX_RELEASED_MESH_FRAMES (4) // GI voxelization threads may keep using render mesh for several frames
