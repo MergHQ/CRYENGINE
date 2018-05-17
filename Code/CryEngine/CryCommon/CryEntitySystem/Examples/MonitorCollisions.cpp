@@ -1,4 +1,7 @@
-#include <CryEntitySystem/IEntitySystem.h>
+#include <CryEntitySystem/IEntityComponent.h>
+#include <CryPhysics/physinterface.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 // Example of how a component can listen to collision events
 // Note that this example assumes that the entity has already been physicalized
