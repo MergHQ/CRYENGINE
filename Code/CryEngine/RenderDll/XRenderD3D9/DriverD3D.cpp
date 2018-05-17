@@ -3824,13 +3824,13 @@ bool CD3D9Renderer::DestroyRenderTarget(int nHandle)
 	return true;
 }
 
-bool CD3D9Renderer::ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight)
+bool CD3D9Renderer::ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight, bool readPresentedBackBuffer)
 {
 	bool bResult = false;
 
 	ExecuteRenderThreadCommand([=, &bResult]
 		{
-			if (CTexture* pSourceTexture = GetActiveDisplayContext()->GetPresentedBackBuffer())
+			if (CTexture* pSourceTexture = readPresentedBackBuffer ? GetActiveDisplayContext()->GetPresentedBackBuffer() : GetActiveDisplayContext()->GetCurrentBackBuffer())
 			{
 				bResult = gRenDev->RT_ReadTexture(pDstRGBA8, destinationWidth, destinationHeight, EReadTextureFormat::RGB8, pSourceTexture);
 			}
@@ -3872,9 +3872,9 @@ bool CD3D9Renderer::RT_ReadTexture(void* pDst, int destinationWidth, int destina
 
 			for (unsigned int j = 0; j < destinationWidth; ++j, pSrc += srcStride, pDst += dstStride)
 			{
-				pDst[0] = pSrc[0];
+				pDst[2] = pSrc[0];
 				pDst[1] = pSrc[1];
-				pDst[2] = pSrc[2];
+				pDst[0] = pSrc[2];
 
 				if (dstFormat == EReadTextureFormat::RGBA8)
 					pDst[3] = 255;

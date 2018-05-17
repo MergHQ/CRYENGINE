@@ -19,6 +19,8 @@
 #define MAP_SCREENSHOT_SETTINGS "MapScreenshotSettings.xml"
 #define MAX_RESOLUTION_SHIFT    11
 
+const float kMinExtend = 16.0f;
+
 namespace
 {
 enum EMiniMapResolution
@@ -33,7 +35,7 @@ enum EMiniMapResolution
 	eMiniMapResolution_1024 = 1024,
 	eMiniMapResolution_2048 = 2048,
 	eMiniMapResolution_4096 = 4096,
-	eMiniMapResolution_8192 = 8192,
+	//eMiniMapResolution_8192 = 8192, // res > 4096 not supported at the moment
 };
 
 SERIALIZATION_ENUM_BEGIN(EMiniMapResolution, "MiniMapResolution")
@@ -47,7 +49,7 @@ SERIALIZATION_ENUM(eMiniMapResolution_512, "512", "512");
 SERIALIZATION_ENUM(eMiniMapResolution_1024, "1024", "1024");
 SERIALIZATION_ENUM(eMiniMapResolution_2048, "2048", "2048");
 SERIALIZATION_ENUM(eMiniMapResolution_4096, "4096", "4096");
-SERIALIZATION_ENUM(eMiniMapResolution_8192, "8192", "8192");
+//SERIALIZATION_ENUM(eMiniMapResolution_8192, "8192", "8192"); // res > 4096 not supported at the moment
 SERIALIZATION_ENUM_END()
 };
 
@@ -221,7 +223,7 @@ void CTerrainMiniMapTool::SendParameters(void* data, uint32 width, uint32 height
 	{
 		for (int y = 0; y < height; y++)
 			for (int x = 0; x < width; x++)
-				image.ValueAt(x, height - 1 - y) = RGBA8(buf[x * 3 + y * width * 3], buf[x * 3 + 1 + y * width * 3], buf[x * 3 + 2 + y * width * 3], 255);
+				image.ValueAt(x, y) = RGBA8(buf[x * 3 + y * width * 3], buf[x * 3 + 1 + y * width * 3], buf[x * 3 + 2 + y * width * 3], 255);
 
 		GetIEditorImpl()->GetRenderer()->WriteDDS((byte*)image.GetData(), width, height, 4, imageDDSFile, eTF_BC2, 1);
 	}
@@ -230,7 +232,7 @@ void CTerrainMiniMapTool::SendParameters(void* data, uint32 width, uint32 height
 	{
 		for (int y = 0; y < height; y++)
 			for (int x = 0; x < width; x++)
-				image.ValueAt(x, height - 1 - y) = RGBA8(buf[x * 3 + 2 + y * width * 3], buf[x * 3 + 1 + y * width * 3], buf[x * 3 + y * width * 3], 255);
+				image.ValueAt(x, y) = RGBA8(buf[x * 3 + 2 + y * width * 3], buf[x * 3 + 1 + y * width * 3], buf[x * 3 + y * width * 3], 255);
 
 		CImageTIF imageTIF;
 		imageTIF.SaveRAW(imageTIFFile, image.GetData(), image.GetWidth(), image.GetHeight(), 1, 4, false, "Minimap");
@@ -376,7 +378,6 @@ void CTerrainMiniMapTool::LoadSettingsXML()
 	mapNode->getAttr("endY", endY);
 	m_minimap.vCenter.x = 0.5f * (startX + endX);
 	m_minimap.vCenter.y = 0.5f * (startY + endY);
-	const float kMinExtend = 16.0f;
 	m_minimap.vExtends.x = max(0.5f * (endX - startX), kMinExtend);
 	m_minimap.vExtends.y = max(0.5f * (endY - startY), kMinExtend);
 }
@@ -407,6 +408,11 @@ void CTerrainMiniMapTool::ResetToDefault()
 void CTerrainMiniMapTool::Serialize(Serialization::IArchive& ar)
 {
 	EMiniMapResolution minimapRes = (EMiniMapResolution)m_minimap.textureWidth;
+	if (ICVar *pResolution = gEnv->pConsole->GetCVar("e_ScreenShotMapResolution"))
+	{
+		pResolution->Set(m_minimap.textureWidth);
+	}
+
 	float extends = m_minimap.vExtends.x;
 	string fileName(m_filename.GetBuffer());
 	bool orientation = m_minimap.orientation > 0;
@@ -414,11 +420,10 @@ void CTerrainMiniMapTool::Serialize(Serialization::IArchive& ar)
 	if (ar.openBlock("minimap", "Mini Map"))
 	{
 		ar(minimapRes, "resolution", "Resolution");
-		ar(extends, "size", "Size");
+		ar(Serialization::Range(extends, kMinExtend, 10000.0f), "size", "Size");
 		ar(fileName, "filename", "File Name");
 		ar(m_exportDds, "dds", "Export as DDS");
 		ar(m_exportTif, "tif", "Export as TIF");
-		ar(orientation, "xaxis", "Along X Axis");
 
 		if (ar.isInput())
 		{

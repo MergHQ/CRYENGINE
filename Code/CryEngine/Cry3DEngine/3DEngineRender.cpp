@@ -552,36 +552,42 @@ void C3DEngine::ScreenshotDispatcher(const int nRenderFlags, const SRenderingPas
 {
 #if CRY_PLATFORM_WINDOWS
 	CStitchedImage* pStitchedImage = 0;
-	const uint32 dwPanWidth = max(1, GetCVars()->e_ScreenShotWidth);
-	const uint32 dwPanHeight = max(1, GetCVars()->e_ScreenShotHeight);
-	const f32 fTransitionSize = min(1.f, abs(GetCVars()->e_ScreenShotQuality) * 0.01f);
-	const uint32 MinSlices = max(max(1, GetCVars()->e_ScreenShotMinSlices),
-	                             max(static_cast<int>((dwPanWidth + GetRenderer()->GetOverlayWidth() - 1) / GetRenderer()->GetOverlayWidth()),
-	                                 static_cast<int>((dwPanHeight + GetRenderer()->GetOverlayHeight() - 1) / GetRenderer()->GetOverlayHeight())));
-	const uint32 dwVirtualWidth = GetRenderer()->GetOverlayWidth() * MinSlices;
-	const uint32 dwVirtualHeight = GetRenderer()->GetOverlayHeight() * MinSlices;
+
+	const uint32 ImageWidth = max(1, min(4096, GetCVars()->e_ScreenShotWidth));
+	const uint32 ImageHeight = max(1, min(4096, GetCVars()->e_ScreenShotHeight));
 
 	switch (abs(GetCVars()->e_ScreenShot))
 	{
 	case ESST_HIGHRES:
-		GetConsole()->ShowConsole(false);
-		pStitchedImage = new CStitchedImage(*this, dwPanWidth, dwPanHeight, dwVirtualWidth, dwVirtualHeight, MinSlices, fTransitionSize);
-		ScreenShotHighRes(pStitchedImage, nRenderFlags, passInfo, MinSlices, fTransitionSize);
-		pStitchedImage->SaveImage("HiRes");
-		pStitchedImage->Clear();    // good for debugging
-		delete pStitchedImage;
-		if (GetCVars()->e_ScreenShot > 0)      // <0 is used for multiple frames (videos)
-			GetCVars()->e_ScreenShot = 0;
+		{
+			GetConsole()->ShowConsole(false);
+			pStitchedImage = new CStitchedImage(*this, ImageWidth, ImageHeight, 0, 0, 1, 0);
+
+			CCamera newCamera = passInfo.GetCamera();
+			newCamera.SetFrustum(ImageWidth, ImageHeight, passInfo.GetCamera().GetFov(), passInfo.GetCamera().GetNearPlane(),
+								 passInfo.GetCamera().GetFarPlane(), passInfo.GetCamera().GetPixelAspectRatio());
+
+			ScreenShotHighRes(pStitchedImage, nRenderFlags, SRenderingPassInfo::CreateTempRenderingInfo(newCamera, passInfo), 0, 0);
+
+			pStitchedImage->SaveImage("HiRes");
+			pStitchedImage->Clear();    // good for debugging
+			delete pStitchedImage;
+			if (GetCVars()->e_ScreenShot > 0)      // <0 is used for multiple frames (videos)
+				GetCVars()->e_ScreenShot = 0;
+		}
 		break;
 	case ESST_PANORAMA:
-		GetConsole()->ShowConsole(false);
-		pStitchedImage = new CStitchedImage(*this, dwPanWidth, dwPanHeight, dwVirtualWidth, dwVirtualHeight, MinSlices, fTransitionSize);
-		ScreenShotPanorama(pStitchedImage, nRenderFlags, passInfo, MinSlices, fTransitionSize);
-		pStitchedImage->SaveImage("Panorama");
-		pStitchedImage->Clear();    // good for debugging
-		delete pStitchedImage;
-		if (GetCVars()->e_ScreenShot > 0)      // <0 is used for multiple frames (videos)
-			GetCVars()->e_ScreenShot = 0;
+		{
+			CRY_ASSERT_MESSAGE(0, "Panorama screenshot not supported right now !");
+			GetConsole()->ShowConsole(false);
+			pStitchedImage = new CStitchedImage(*this, ImageWidth, ImageHeight, 0, 0, 1, 0);
+			ScreenShotPanorama(pStitchedImage, nRenderFlags, passInfo, 0, 0);
+			pStitchedImage->SaveImage("Panorama");
+			pStitchedImage->Clear();    // good for debugging
+			delete pStitchedImage;
+			if (GetCVars()->e_ScreenShot > 0)      // <0 is used for multiple frames (videos)
+				GetCVars()->e_ScreenShot = 0;
+		}
 		break;
 	case ESST_MAP_DELAYED:
 		{
@@ -604,34 +610,16 @@ void C3DEngine::ScreenshotDispatcher(const int nRenderFlags, const SRenderingPas
 	case ESST_SWMAP:
 	case ESST_MAP:
 		{
-			static const unsigned int nMipMapSnapshotSize = 512;
-			GetRenderer()->ResizeContext(passInfo.GetDisplayContextKey(), nMipMapSnapshotSize, nMipMapSnapshotSize);
-			uint32 TmpHeight, TmpWidth, TmpVirtualHeight, TmpVirtualWidth;
-			TmpHeight = TmpWidth = TmpVirtualHeight = TmpVirtualWidth = 1;
-
-			while ((TmpHeight << 1) <= dwPanHeight)
+			uint32 mipMapSnapshotSize = 512;
+			if (ICVar *pMiniMapRes = gEnv->pConsole->GetCVar("e_ScreenShotMapResolution"))
 			{
-				TmpHeight <<= 1;
+				mipMapSnapshotSize = pMiniMapRes->GetIVal();
 			}
-			while ((TmpWidth << 1) <= dwPanWidth)
-			{
-				TmpWidth <<= 1;
-			}
-			const uint32 TmpMinSlices = max(max(1, GetCVars()->e_ScreenShotMinSlices),
-			                                max(static_cast<int>((TmpWidth + nMipMapSnapshotSize - 1) / nMipMapSnapshotSize),
-			                                    static_cast<int>((TmpHeight + nMipMapSnapshotSize - 1) / nMipMapSnapshotSize)));
-			while ((TmpVirtualHeight << 1) <= TmpMinSlices * nMipMapSnapshotSize)
-			{
-				TmpVirtualHeight <<= 1;
-			}
-			while ((TmpVirtualWidth << 1) <= TmpMinSlices * nMipMapSnapshotSize)
-			{
-				TmpVirtualWidth <<= 1;
-			}
-
+			
 			GetConsole()->ShowConsole(false);
-			pStitchedImage = new CStitchedImage(*this, TmpWidth, TmpHeight, TmpVirtualWidth, TmpVirtualHeight, TmpMinSlices, fTransitionSize, true);
-			ScreenShotMap(pStitchedImage, nRenderFlags, passInfo, TmpMinSlices, fTransitionSize);
+			pStitchedImage = new CStitchedImage(*this, mipMapSnapshotSize, mipMapSnapshotSize, 0, 0, 1, 0, true);
+
+			ScreenShotMap(pStitchedImage, nRenderFlags, passInfo, 0, 0);
 			if (abs(GetCVars()->e_ScreenShot) == ESST_MAP)
 				pStitchedImage->SaveImage("Map");
 
@@ -644,7 +632,7 @@ void C3DEngine::ScreenshotDispatcher(const int nRenderFlags, const SRenderingPas
 				const f32 fBRX = GetCVars()->e_ScreenShotMapCenterX + fSizeX;
 				const f32 fBRY = GetCVars()->e_ScreenShotMapCenterY + fSizeY;
 
-				m_pScreenshotCallback->SendParameters(pStitchedImage->GetBuffer(), pStitchedImage->GetWidth(), pStitchedImage->GetHeight(), fTLX, fTLY, fBRX, fBRY);
+				m_pScreenshotCallback->SendParameters(pStitchedImage->GetBuffer(), mipMapSnapshotSize, mipMapSnapshotSize, fTLX, fTLY, fBRX, fBRY);
 			}
 
 			pStitchedImage->Clear();    // good for debugging
@@ -861,8 +849,6 @@ void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& pa
 	{
 		if (GetCVars()->e_ScreenShot)
 		{
-			CRY_ASSERT_MESSAGE(0, "TODO: verify functionality of screenshot triggers");
-
 			ScreenshotDispatcher(nRenderFlags, passInfo);
 			// screenshots can mess up the frame ids, be safe and recreate the rendering passinfo object after a screenshot
 			const_cast<SRenderingPassInfo&>(passInfo) = SRenderingPassInfo::CreateGeneralPassRenderingInfo(passInfo.GetCamera());
@@ -3568,56 +3554,42 @@ void C3DEngine::GenerateFarTrees(const SRenderingPassInfo& passInfo)
 void C3DEngine::ScreenShotHighRes(CStitchedImage* pStitchedImage, const int nRenderFlags, const SRenderingPassInfo& passInfo, uint32 SliceCount, f32 fTransitionSize)
 {
 #if CRY_PLATFORM_WINDOWS
-	CRY_ASSERT_MESSAGE(0, "TODO: This does not work currently (Temporal AA and also increasing frameID)");
+
+	const uint32 prevScreenWidth = GetRenderer()->GetOverlayWidth();
+	const uint32 prevScreenHeight = GetRenderer()->GetOverlayHeight();
 
 	// finish frame started by system
 	GetRenderer()->EndFrame();
 	GetConsole()->SetScrollMax(0);
 
-	const uint32 ScreenWidth = GetRenderer()->GetOverlayWidth();
-	const uint32 ScreenHeight = GetRenderer()->GetOverlayHeight();
-	uint32* pImage = new uint32[ScreenWidth * ScreenHeight];
-	for (uint32 yy = 0; yy < SliceCount; yy++)
-	{
-		for (uint32 xx = 0; xx < SliceCount; xx++)
-		{
-			GetRenderer()->BeginFrame({});
+	GetRenderer()->EnableSwapBuffers(false);
 
-			SRenderingPassInfo screenShotPassInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(passInfo.GetCamera());
-			PrintMessage("Rendering tile %d of %d ... ", xx + yy * SliceCount + 1, SliceCount * SliceCount);
+	GetRenderer()->ResizeContext(passInfo.GetDisplayContextKey(), pStitchedImage->GetWidth(), pStitchedImage->GetHeight());
 
-			const int BlendX = xx * 2 / SliceCount;
-			const int BlendY = yy * 2 / SliceCount;
-			const int x = ((xx * 2) % SliceCount & ~1) + BlendX;
-			const int y = ((yy * 2) % SliceCount & ~1) + BlendY;
-
-			// start new frame and define needed tile
-			const f32 ScreenScale = 1.f / (1.f / static_cast<f32>(SliceCount) * (1.f + fTransitionSize));
-
-			UpdateRenderingCamera("ScreenShotHighRes", screenShotPassInfo);
-
-			RenderInternal(nRenderFlags, screenShotPassInfo, "ScreenShotHighRes");
-
-			GetRenderer()->EndFrame();
-
-			PrintMessagePlus("reading frame buffer ... ");
-			GetRenderer()->ReadFrameBuffer(pImage, ScreenWidth, ScreenHeight);
-			PrintMessagePlus("ok");
-
-			pStitchedImage->RasterizeRect(pImage, ScreenWidth, ScreenHeight, x, y, fTransitionSize,
-			                              fTransitionSize > 0.0001f && BlendX,
-			                              fTransitionSize > 0.0001f && BlendY);
-		}
-	}
-	delete[] pImage;
-
-	// re-start frame so system can safely finish it
 	GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey());
+
+	SRenderingPassInfo screenShotPassInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(passInfo.GetCamera());
+	UpdateRenderingCamera("ScreenShotHighRes", screenShotPassInfo);
+	RenderInternal(nRenderFlags, screenShotPassInfo, "ScreenShotHighRes");
+
+	GetRenderer()->EndFrame();
+	
+	GetRenderer()->ReadFrameBuffer((uint32*)pStitchedImage->GetBuffer(), pStitchedImage->GetWidth(), pStitchedImage->GetHeight(), false);
+	GetRenderer()->ResizeContext(passInfo.GetDisplayContextKey(), prevScreenWidth, prevScreenHeight);	
+
+	GetRenderer()->EnableSwapBuffers(true);
+
+	// Re-start frame so system can safely finish it
+	GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey());
+
+	if(!m_bEditor)
+	{
+		// Making sure we don't run into trouble with the culling thread in pure-game mode
+		m_pObjManager->PrepareCullbufferAsync(passInfo.GetCamera());
+	}
 
 	// restore initial state
 	GetConsole()->SetScrollMax(300);
-
-	PrintMessagePlus(" ok");
 #endif // #if CRY_PLATFORM_WINDOWS
 }
 
@@ -3629,17 +3601,12 @@ bool C3DEngine::ScreenShotMap(CStitchedImage* pStitchedImage,
 {
 #if CRY_PLATFORM_WINDOWS
 
-	const uint32 nTSize = GetTerrain()->GetTerrainSize();    //*GetTerrain()->GetSectorSize();
-	//	const f32			fTLX			=	GetCVars()->e_ScreenShot_map_topleft_x*static_cast<f32>(nTSize)+fTransitionSize*GetRenderer()->GetWidth();
-	//	const f32			fTLY			=	(1.f-GetCVars()->e_ScreenShot_map_topleft_y)*static_cast<f32>(nTSize)+fTransitionSize*GetRenderer()->GetHeight();
-	//	const f32			fBRX			=	GetCVars()->e_ScreenShot_map_bottomright_x*static_cast<f32>(nTSize)+fTransitionSize*GetRenderer()->GetWidth();
-	//	const f32			fBRY			=	(1.f-GetCVars()->e_ScreenShot_map_bottomright_y)*static_cast<f32>(nTSize)+fTransitionSize*GetRenderer()->GetHeight();
-	const f32 fTLX = GetCVars()->e_ScreenShotMapCenterX - GetCVars()->e_ScreenShotMapSizeX + fTransitionSize * GetRenderer()->GetOverlayWidth();
-	const f32 fTLY = GetCVars()->e_ScreenShotMapCenterY - GetCVars()->e_ScreenShotMapSizeY + fTransitionSize * GetRenderer()->GetOverlayHeight();
-	const f32 fBRX = GetCVars()->e_ScreenShotMapCenterX + GetCVars()->e_ScreenShotMapSizeX + fTransitionSize * GetRenderer()->GetOverlayWidth();
-	const f32 fBRY = GetCVars()->e_ScreenShotMapCenterY + GetCVars()->e_ScreenShotMapSizeY + fTransitionSize * GetRenderer()->GetOverlayHeight();
+	const f32 fTLX = GetCVars()->e_ScreenShotMapCenterX - GetCVars()->e_ScreenShotMapSizeX;
+	const f32 fTLY = GetCVars()->e_ScreenShotMapCenterY - GetCVars()->e_ScreenShotMapSizeY;
+	const f32 fBRX = GetCVars()->e_ScreenShotMapCenterX + GetCVars()->e_ScreenShotMapSizeX;
+	const f32 fBRY = GetCVars()->e_ScreenShotMapCenterY + GetCVars()->e_ScreenShotMapSizeY;
 	const f32 Height = GetCVars()->e_ScreenShotMapCamHeight;
-	const int Orient = GetCVars()->e_ScreenShotMapOrientation;
+	const int Orient = 0;
 
 	string SettingsFileName = GetLevelFilePath("ScreenshotMap.Settings");
 
@@ -3676,10 +3643,9 @@ bool C3DEngine::ScreenShotMap(CStitchedImage* pStitchedImage,
 	ICVar* r_drawnearfov = GetConsole()->GetCVar("r_DrawNearFoV");
 	assert(r_drawnearfov);
 	const f32 drawnearfov_backup = r_drawnearfov->GetFVal();
-	const f32 ViewingSize = (float)min(cam.GetViewSurfaceX(), cam.GetViewSurfaceZ());
 	if (max(AngleX, AngleY) <= 0)
 		return false;
-	cam.SetFrustum((int)ViewingSize, (int)ViewingSize, max(0.001f, max(AngleX, AngleY) * 2.f), Height - 8000.f, Height + 1000.f);
+	cam.SetFrustum(pStitchedImage->GetWidth(), pStitchedImage->GetHeight(), max(0.001f, max(AngleX, AngleY) * 2.f), Height - 8000.f, Height + 1000.f);
 	r_drawnearfov->Set(-1);
 	ScreenShotHighRes(pStitchedImage, nRenderFlags, SRenderingPassInfo::CreateTempRenderingInfo(cam, passInfo), SliceCount, fTransitionSize);
 	r_drawnearfov->Set(drawnearfov_backup);
@@ -3693,68 +3659,61 @@ bool C3DEngine::ScreenShotMap(CStitchedImage* pStitchedImage,
 bool C3DEngine::ScreenShotPanorama(CStitchedImage* pStitchedImage, const int nRenderFlags, const SRenderingPassInfo& passInfo, uint32 SliceCount, f32 fTransitionSize)
 {
 #if CRY_PLATFORM_WINDOWS
+	GetRenderer()->EndFrame();
 
-	//GetRenderer()->Update();
+	CRY_ASSERT_MESSAGE(0, "TODO: Fix omnidirectional camera");
 
-	ICVar* r_drawnearfov = GetConsole()->GetCVar("r_DrawNearFoV");
-	assert(r_drawnearfov);
+	const uint32 prevScreenWidth = GetRenderer()->GetOverlayWidth();
+	const uint32 prevScreenHeight = GetRenderer()->GetOverlayHeight();
+	const uint32 ImageWidth = pStitchedImage->GetWidth();
+	const uint32 ImageHeight = pStitchedImage->GetHeight();
 
-	float r_drawnearfov_backup = r_drawnearfov->GetFVal();
-	r_drawnearfov->Set(-1);   // means the fov override should be switched off
+	Matrix34 cubeFaceOrientation[6] = 
+	{ 
+		Matrix34::CreateRotationZ(DEG2RAD(-90)),
+		Matrix34::CreateRotationZ(DEG2RAD(90)),
+		Matrix34::CreateRotationX(DEG2RAD(90)),
+		Matrix34::CreateRotationX(DEG2RAD(-90)),
+		Matrix34::CreateIdentity(),
+		Matrix34::CreateRotationZ(DEG2RAD(180)) 
+	};
 
-	GetTimer()->EnableTimer(false);
+	CCamera newCamera = passInfo.GetCamera();
+	newCamera.m_bOmniCamera = true;
 
-	uint32* pImage = new uint32[GetRenderer()->GetOverlayWidth() * GetRenderer()->GetOverlayHeight()];
+	GetRenderer()->EnableSwapBuffers(false);
 
-	for (int iSlice = SliceCount - 1; iSlice >= 0; --iSlice)
+	GetRenderer()->ResizeContext(passInfo.GetDisplayContextKey(), ImageWidth, ImageHeight);
+
+	for (int i = 0; i < 1; i++)
 	{
-		if (iSlice == 0)                       // the last one should do eye adaption
-			GetTimer()->EnableTimer(true);
-
-		Matrix33 rot;
-		rot.SetIdentity();
-
-		float fAngle = pStitchedImage->GetSliceAngle(iSlice);
-
-		rot.SetRotationZ(fAngle);
-
-		CCamera cam = passInfo.GetCamera();
-
-		Matrix34 tm = cam.GetMatrix();
-		tm = tm * rot;
-		tm.SetTranslation(passInfo.GetCamera().GetPosition());
-		cam.SetMatrix(tm);
-		cam.SetFrustum(cam.GetViewSurfaceX(), cam.GetViewSurfaceZ(), pStitchedImage->m_fPanoramaShotVertFOV, cam.GetNearPlane(), cam.GetFarPlane(), cam.GetPixelAspectRatio());
+		newCamera.m_curCubeFace = i;
+		newCamera.SetMatrix(newCamera.GetMatrix() * cubeFaceOrientation[i]);
+		newCamera.SetFrustum(ImageWidth, ImageHeight, DEG2RAD(90), newCamera.GetNearPlane(), newCamera.GetFarPlane(), 1.0f);
 
 		// render scene
-		GetRenderer()->BeginFrame({});
-
-		SRenderingPassInfo screenShotPassInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(cam);
+		GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey());
+		
+		SRenderingPassInfo screenShotPassInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(newCamera);
+		UpdateRenderingCamera("ScreenShotPanorama", screenShotPassInfo);
 		RenderInternal(nRenderFlags, screenShotPassInfo, "ScreenShotPanorama");
 
-		GetRenderer()->ReadFrameBuffer(pImage, GetRenderer()->GetOverlayWidth(), GetRenderer()->GetOverlayHeight());
-		GetRenderer()->EndFrame();                // show last frame (from direction)
-
-		const bool bFadeBorders = (iSlice + 1) * 2 <= (int)SliceCount;
-
-		PrintMessage("PanoramaScreenShot %d/%d FadeBorders:%c (id: %d/%d)", iSlice + 1, SliceCount, bFadeBorders ? 't' : 'f', GetRenderer()->GetFrameID(false), GetRenderer()->GetFrameID(true));
-
-		pStitchedImage->RasterizeCylinder(pImage, GetRenderer()->GetOverlayWidth(), GetRenderer()->GetOverlayHeight(), iSlice + 1, bFadeBorders, cam);
-
-		// debug
-		//		m_pCurrentStitchedImage->SaveImage("PanoramaScreenShotsTest");
-
-		if (GetCVars()->e_ScreenShotQuality < 0)   // to debug FadeBorders
-			if (iSlice * 2 == SliceCount)
-			{
-				pStitchedImage->Clear();
-				PrintMessage("PanoramaScreenShot clear");
-			}
-
+		GetRenderer()->EndFrame();
 	}
-	delete[] pImage;
+	
+	GetRenderer()->ReadFrameBuffer((uint32*)pStitchedImage->GetBuffer(), ImageWidth, ImageHeight, false);
+	GetRenderer()->ResizeContext(passInfo.GetDisplayContextKey(), prevScreenWidth, prevScreenHeight);
 
-	r_drawnearfov->Set(r_drawnearfov_backup);
+	GetRenderer()->EnableSwapBuffers(true);
+
+	// Re-start frame so system can safely finish it
+	GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey());
+
+	if (!m_bEditor)
+	{
+		// Making sure we don't run into trouble with the culling thread in pure-game mode
+		m_pObjManager->PrepareCullbufferAsync(passInfo.GetCamera());
+	}
 
 	return true;
 #else   // #if CRY_PLATFORM_WINDOWS

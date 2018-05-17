@@ -383,6 +383,7 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstFloatCVar(e_TerrainTextureLodRatio);
 	float e_ShadowsAdaptScale;
 	float e_ScreenShotMapSizeX;
+	int	e_ScreenShotMapResolution;
 	float e_OcclusionCullingViewDistRatio;
 	DeclareConstIntCVar(e_WaterOceanBottom, 1);
 	DeclareConstIntCVar(e_WaterRipplesDebug, 0);
