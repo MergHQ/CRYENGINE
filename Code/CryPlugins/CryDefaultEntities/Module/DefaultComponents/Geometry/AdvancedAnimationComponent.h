@@ -147,6 +147,11 @@ public:
 		m_pActiveAction = new TAction<SAnimationContext>(priority, fragmentId);
 		m_pActionController->Queue(*m_pActiveAction);
 	}
+	
+	virtual void QueueCustomFragment(IAction& action)
+	{
+		m_pActionController->Queue(action);
+	}
 
 	// TODO: Expose resource selector for tags
 	virtual void SetTag(const Schematyc::CSharedString& tagName, bool bSet)
