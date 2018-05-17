@@ -30,7 +30,7 @@ bool CD3D9Renderer::RT_CreateDevice()
 	return CreateDevice();
 }
 
-void CD3D9Renderer::RT_FlashRenderInternal(IFlashPlayer* pPlayer)
+void CD3D9Renderer::RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer> &&pPlayer)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -56,7 +56,7 @@ void CD3D9Renderer::RT_FlashRenderInternal(IFlashPlayer* pPlayer)
 	SetProfileMarker("FLASH_RENDERING", CRenderer::ESPM_POP);
 }
 
-void CD3D9Renderer::RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool bDoRealRender)
+void CD3D9Renderer::RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, bool bDoRealRender)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -72,19 +72,19 @@ void CD3D9Renderer::RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bo
 			if (GetS3DRend().IsQuadLayerEnabled())
 			{
 				auto quadRenderScope = GetS3DRend().PrepareRenderingToVrQuadLayer(RenderLayer::eQuadLayers_0);
-				pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_Mono, !renderToScreen);
+				pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_Mono);
 			}
 			else
 			{
 				{
 					auto eyeRenderScope = GetS3DRend().PrepareRenderingToEye(CCamera::eEye_Left);
-					pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_StereoLeft, false);
+					pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_StereoLeft);
 				}
 
 				if (GetS3DRend().RequiresSequentialSubmission())
 				{
 					auto eyeRenderScope = GetS3DRend().PrepareRenderingToEye(CCamera::eEye_Right);
-					pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_StereoRight, !renderToScreen);
+					pPlayer->RenderCallback(IFlashPlayer_RenderProxy::EFT_StereoRight);
 				}
 			}
 		}
@@ -98,11 +98,11 @@ void CD3D9Renderer::RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bo
 	}
 	else
 	{
-		pPlayer->DummyRenderCallback(IFlashPlayer_RenderProxy::EFT_Mono, true);
+		pPlayer->DummyRenderCallback(IFlashPlayer_RenderProxy::EFT_Mono);
 	}
 }
 
-void CD3D9Renderer::RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender)
+void CD3D9Renderer::RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender)
 {
 	if (bDoRealRender)
 	{
@@ -122,13 +122,13 @@ void CD3D9Renderer::RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderPr
 			{
 				{
 					auto eyeRenderScope = GetS3DRend().PrepareRenderingToEye(CCamera::eEye_Left);
-					pPlayer->RenderPlaybackLocklessCallback(cbIdx, IFlashPlayer_RenderProxy::EFT_StereoLeft, false, false);
+					pPlayer->RenderPlaybackLocklessCallback(cbIdx, IFlashPlayer_RenderProxy::EFT_StereoLeft, false);
 				}
 
 				if (GetS3DRend().RequiresSequentialSubmission())
 				{
 					auto eyeRenderScope = GetS3DRend().PrepareRenderingToEye(CCamera::eEye_Right);
-					pPlayer->RenderPlaybackLocklessCallback(cbIdx, IFlashPlayer_RenderProxy::EFT_StereoRight, bFinalPlayback && !renderToScreen, true);
+					pPlayer->RenderPlaybackLocklessCallback(cbIdx, IFlashPlayer_RenderProxy::EFT_StereoRight, bFinalPlayback && !renderToScreen);
 				}
 			}
 		}
@@ -143,7 +143,7 @@ void CD3D9Renderer::RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderPr
 	}
 	else
 	{
-		pPlayer->DummyRenderCallback(IFlashPlayer_RenderProxy::EFT_Mono, true);
+		pPlayer->DummyRenderCallback(IFlashPlayer_RenderProxy::EFT_Mono);
 	}
 }
 

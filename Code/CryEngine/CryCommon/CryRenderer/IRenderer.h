@@ -1150,9 +1150,9 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual bool FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce) = 0;
 	virtual int  CurThreadList() = 0;
 
-	virtual void FlashRender(IFlashPlayer_RenderProxy* pPlayer) = 0;
-	virtual void FlashRenderPlaybackLockless(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool finalPlayback) = 0;
-	virtual void FlashRenderPlayer(IFlashPlayer* pPlayer) = 0;
+	virtual void FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer) = 0;
+	virtual void FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool finalPlayback) = 0;
+	virtual void FlashRenderPlayer(std::shared_ptr<IFlashPlayer> &&pPlayer) = 0;
 	virtual void FlashRemoveTexture(ITexture* pTexture) = 0;
 
 	/////////////////////////////////////////////////////////////////////////////////

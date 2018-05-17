@@ -1196,28 +1196,6 @@ static CryCriticalSection s_displaySync;
 	  s_displaySync.Unlock(); \
 	  }
 
-class CReleaseOnExit
-{
-public:
-	CReleaseOnExit(CFlashPlayer* pFlashPlayer, bool releaseOnExit)
-		: m_pFlashPlayer(pFlashPlayer)
-		, m_releaseOnExit(releaseOnExit)
-	{
-	}
-
-	~CReleaseOnExit()
-	{
-		if (m_releaseOnExit)
-			m_pFlashPlayer->Release();
-	}
-
-private:
-	CFlashPlayer* m_pFlashPlayer;
-	bool          m_releaseOnExit;
-};
-
-	#define RELEASE_ON_EXIT(releaseOnExit) CReleaseOnExit relOnExit(this, releaseOnExit);
-
 //////////////////////////////////////////////////////////////////////////
 // GFxValue <-> SFlashVarValue translation
 
@@ -2352,10 +2330,11 @@ public:
 	// IFlashPlayerBootStrapper interface
 	virtual void          Release();
 	virtual bool          Load(const char* pFilePath);
-	virtual IFlashPlayer* CreatePlayerInstance(unsigned int options = IFlashPlayer::DEFAULT, unsigned int cat = IFlashPlayer::eCat_Default);
 	virtual const char*   GetFilePath() const;
 	virtual size_t        GetMetadata(char* pBuff, unsigned int buffSize) const;
 	virtual bool          HasMetadata(const char* pTag) const;
+
+	virtual std::shared_ptr<IFlashPlayer> CreatePlayerInstance(unsigned int options = IFlashPlayer::DEFAULT, unsigned int cat = IFlashPlayer::eCat_Default);
 
 public:
 	CFlashPlayerBootStrapper();
@@ -2435,7 +2414,7 @@ bool CFlashPlayerBootStrapper::Load(const char* pFilePath)
 	return m_pMovieDef.GetPtr() != 0;
 }
 
-IFlashPlayer* CFlashPlayerBootStrapper::CreatePlayerInstance(unsigned int options, unsigned int cat)
+std::shared_ptr<IFlashPlayer> CFlashPlayerBootStrapper::CreatePlayerInstance(unsigned int options, unsigned int cat)
 {
 	return m_pMovieDef.GetPtr() != 0 ? CFlashPlayer::CreateBootstrapped(m_pMovieDef, options, cat) : 0;
 }
@@ -2496,9 +2475,7 @@ CFlashPlayer::PlayerList CFlashPlayer::ms_playerList;
 IFlashLoadMovieHandler* CFlashPlayer::ms_pLoadMovieHandler(0);
 
 CFlashPlayer::CFlashPlayer()
-	: m_refCount(1)
-	, m_releaseGuardCount(0)
-	, m_clearFlags(0)
+	: m_clearFlags(0)
 	, m_clearColor(Clr_Transparent)
 	, m_compDepth(0)
 	, m_stereoCustomMaxParallax(-1.0f)
@@ -2582,36 +2559,6 @@ CFlashPlayer::~CFlashPlayer()
 	#if defined(ENABLE_FLASH_INFO)
 	SAFE_DELETE(m_pProfilerData);
 	#endif
-}
-
-void CFlashPlayer::AddRef()
-{
-	FLASH_PROFILER_LIGHT;
-
-	CryInterlockedIncrement(&m_refCount);
-}
-
-void CFlashPlayer::Release()
-{
-	FLASH_PROFILER_LIGHT;
-
-	LONG refCount(CryInterlockedDecrement(&m_refCount));
-	assert(refCount >= 0);
-	IF (refCount == 0, 0)
-	{
-	#if !defined(_RELEASE)
-		{
-			const int curRelaseGuardCount = m_releaseGuardCount;
-			IF (0 != CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&m_releaseGuardCount), (LONG) curRelaseGuardCount, (LONG) curRelaseGuardCount), 0)
-			{
-				SET_LOG_CONTEXT(m_filePath);
-				CryGFxLog::GetAccess().LogError("Releasing flash player object while in a guarded section (AS callbacks into C++ code, etc)! Enforce breaking into the debugger...");
-				__debugbreak();
-			}
-		}
-	#endif
-		delete this;
-	}
 }
 
 static void OnSysFlashInfoLogOptionsChanged(ICVar*)
@@ -2790,7 +2737,6 @@ bool CFlashPlayer::ConstructInternal(const char* pFilePath, GFxMovieDef* pMovieD
 
 	return true;
 }
-
 bool CFlashPlayer::Load(const char* pFilePath, unsigned int options, unsigned int cat)
 {
 	if (!pFilePath || !pFilePath[0])
@@ -2808,72 +2754,72 @@ bool CFlashPlayer::Load(const char* pFilePath, unsigned int options, unsigned in
 
 	SET_LOG_CONTEXT_CSTR(pFilePath);
 
-	#if defined(USE_GFX_VIDEO)
+#if defined(USE_GFX_VIDEO)
 	string videoPlayerArgString;
 	int vidWidth = 0;
 	int vidHeight = 0;
 	const bool isVideoFile = IsVideoFile(pFilePath);
 	if (!isVideoFile)
 	{
-	#endif
-	const int warningLevel = GetWarningLevel();
-	if (warningLevel)
-	{
-		GFxMovieInfo movieInfo;
-		if (!m_pLoader->GetMovieInfo(pFilePath, &movieInfo))
-			return false;
-
-		if (!movieInfo.IsStripped())
+#endif
+		const int warningLevel = GetWarningLevel();
+		if (warningLevel)
 		{
-			switch (warningLevel)
+			GFxMovieInfo movieInfo;
+			if (!m_pLoader->GetMovieInfo(pFilePath, &movieInfo))
+				return false;
+
+			if (!movieInfo.IsStripped())
 			{
-			case 1:
-				CryGFxLog::GetAccess().LogWarning("Trying to load non-stripped flash movie! Use gfxexport to strip movies and generate optimized assets.");
-				break;
-			case 2:
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "!Trying to load non-stripped flash movie! "
-				                                                       "Use gfxexport to strip movies and generate optimized assets. [%s]", pFilePath);
-				break;
-			default:
-				break;
+				switch (warningLevel)
+				{
+				case 1:
+					CryGFxLog::GetAccess().LogWarning("Trying to load non-stripped flash movie! Use gfxexport to strip movies and generate optimized assets.");
+					break;
+				case 2:
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "!Trying to load non-stripped flash movie! "
+						"Use gfxexport to strip movies and generate optimized assets. [%s]", pFilePath);
+					break;
+				default:
+					break;
+				}
 			}
 		}
-	}
-	#if defined(USE_GFX_VIDEO)
-}
-else
-{
-	GFxVideoPlayer::VideoInfo videoInfo;
-	if (GFxVideoPlayer::LoadVideoInfo(pFilePath, &videoInfo, m_pLoader->GetFileOpener()))
-	{
-		vidWidth = videoInfo.Width;
-		vidHeight = videoInfo.Height;
-		if (IsStereoVideoFile(pFilePath))
-			vidWidth = (vidWidth << 1) / 3;
+#if defined(USE_GFX_VIDEO)
 	}
 	else
 	{
-		CryGFxLog::GetAccess().LogError("Error: GFxLoader failed to open '%s'", pFilePath);
-		return false;
-	}
+		GFxVideoPlayer::VideoInfo videoInfo;
+		if (GFxVideoPlayer::LoadVideoInfo(pFilePath, &videoInfo, m_pLoader->GetFileOpener()))
+		{
+			vidWidth = videoInfo.Width;
+			vidHeight = videoInfo.Height;
+			if (IsStereoVideoFile(pFilePath))
+				vidWidth = (vidWidth << 1) / 3;
+		}
+		else
+		{
+			CryGFxLog::GetAccess().LogError("Error: GFxLoader failed to open '%s'", pFilePath);
+			return false;
+		}
 
-	videoPlayerArgString = pFilePath;
-	pFilePath = internal_video_player;
-}
-	#endif
+		videoPlayerArgString = pFilePath;
+		pFilePath = internal_video_player;
+	}
+#endif
 
 	// create movie
 	GPtr<GFxMovieDef> pMovieDef = *m_pLoader->CreateMovie(pFilePath, GFxLoader::LoadAll);
 	if (!pMovieDef)
 		return false;
 
-	#if defined(USE_GFX_VIDEO)
+#if defined(USE_GFX_VIDEO)
 	options = isVideoFile ? (options & ~INIT_FIRST_FRAME) : options;
-	#endif
+#endif
 	if (!ConstructInternal(pMovieDef->GetFileURL(), pMovieDef, options, cat))
 		return false;
 
-	#if defined(USE_GFX_VIDEO)
+#if defined(USE_GFX_VIDEO)
 	if (isVideoFile)
 	{
 		*const_cast<int*>(&m_width) = vidWidth;
@@ -2881,7 +2827,7 @@ else
 		if (!videoPlayerArgString.empty())
 			m_pMovieView->SetVariable("_global.gfxArg", videoPlayerArgString.c_str());
 	}
-	#endif
+#endif
 
 	// done
 	return true;
@@ -2909,17 +2855,14 @@ bool CFlashPlayer::Bootstrap(GFxMovieDef* pMovieDef, unsigned int options, unsig
 	return ConstructInternal(pFilePath, pMovieDef, options, cat);
 }
 
-CFlashPlayer* CFlashPlayer::CreateBootstrapped(GFxMovieDef* pMovieDef, unsigned int options, unsigned int cat)
+std::shared_ptr<CFlashPlayer> CFlashPlayer::CreateBootstrapped(GFxMovieDef* pMovieDef, unsigned int options, unsigned int cat)
 {
-	CFlashPlayer* pPlayer = 0;
+	std::shared_ptr<CFlashPlayer> pPlayer;
 	if (pMovieDef)
 	{
-		pPlayer = new CFlashPlayer;
+		pPlayer = std::make_shared<CFlashPlayer>();
 		if (pPlayer && !pPlayer->Bootstrap(pMovieDef, options, cat))
-		{
-			pPlayer->Release();
-			pPlayer = 0;
-		}
+			pPlayer = nullptr;
 	}
 	return pPlayer;
 }
@@ -3244,8 +3187,7 @@ void CFlashPlayer::Render()
 	if (!IsFlashEnabled())
 		return;
 
-	AddRef();
-	gEnv->pRenderer->FlashRender(this);
+	gEnv->pRenderer->FlashRender(shared_from_this());
 }
 
 IScaleformPlayback* CFlashPlayer::GetPlayback()
@@ -3253,13 +3195,12 @@ IScaleformPlayback* CFlashPlayer::GetPlayback()
 	return m_pRenderer->GetPlayback();
 }
 
-void CFlashPlayer::RenderCallback(EFrameType ft, bool releaseOnExit)
+void CFlashPlayer::RenderCallback(EFrameType ft)
 {
 	FLASH_PROFILER_LIGHT;
 
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Flash RenderCallback %s", m_filePath->c_str());
 
-	RELEASE_ON_EXIT(releaseOnExit);
 	{
 		SYNC_THREADS;
 		//#if defined(ENABLE_FLASH_INFO)
@@ -3302,13 +3243,12 @@ void CFlashPlayer::RenderCallback(EFrameType ft, bool releaseOnExit)
 	}
 }
 
-void CFlashPlayer::RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool finalPlayback, bool releaseOnExit)
+void CFlashPlayer::RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool finalPlayback)
 {
 	FLASH_PROFILER_LIGHT;
 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Flash RenderPlaybackLocklessCallback");
 
-	RELEASE_ON_EXIT(releaseOnExit);
 	{
 		//#if defined(ENABLE_FLASH_INFO)
 		//		if (ms_sys_flash_info)
@@ -3354,11 +3294,8 @@ void CFlashPlayer::RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool
 	}
 }
 
-void CFlashPlayer::DummyRenderCallback(EFrameType ft, bool releaseOnExit)
-{
-	if (releaseOnExit)
-		Release();
-}
+void CFlashPlayer::DummyRenderCallback(EFrameType ft)
+{}
 
 void CFlashPlayer::SetClearFlags(uint32 clearFlags, ColorF clearColor)
 {
@@ -4073,9 +4010,7 @@ struct FunctionHandlerAdaptor : public GFxFunctionHandler
 		assert(params.pMovie);
 		ReturnValue retVal(params.pMovie);
 
-		CryInterlockedIncrement(&m_pPlayer->m_releaseGuardCount);
 		m_pFunc->Call(translatedParams, &retVal);
-		CryInterlockedDecrement(&m_pPlayer->m_releaseGuardCount);
 
 		// translate return value
 		if (params.pRetVal)
@@ -4237,9 +4172,7 @@ void CFlashPlayer::DelegateFSCommandCallback(const char* pCommand, const char* p
 	// delegate action script command to client
 	if (m_pFSCmdHandler)
 	{
-		CryInterlockedIncrement(&m_releaseGuardCount);
 		m_pFSCmdHandler->HandleFSCommand(pCommand, pArgs, m_pFSCmdHandlerUserData);
-		CryInterlockedDecrement(&m_releaseGuardCount);
 	}
 }
 
@@ -4252,8 +4185,6 @@ void CFlashPlayer::DelegateExternalInterfaceCallback(const char* pMethodName, co
 		GFxValue retVal(GFxValue::VT_Undefined);
 		if (m_pEIHandler)
 		{
-			CryInterlockedIncrement(&m_releaseGuardCount);
-
 			assert(!pArgs || numArgs);
 			SFlashVarValue* pTranslatedArgs(0);
 			if (pArgs && numArgs)
@@ -4275,8 +4206,6 @@ void CFlashPlayer::DelegateExternalInterfaceCallback(const char* pMethodName, co
 				for (unsigned int i(0); i < numArgs; ++i)
 					pTranslatedArgs[i].~SFlashVarValue();
 			}
-
-			CryInterlockedDecrement(&m_releaseGuardCount);
 		}
 		m_pMovieView->SetExternalInterfaceRetVal(retVal);
 	}
@@ -4971,9 +4900,9 @@ void CFlashPlayer::RenderFlashInfo()
 						pLocklessDisparityMsgCol = ((curFrameID / 10) & 1) != 0 ? "$8" : "$4";
 					}
 
-					DrawText(xAdj + 50.0f, yAdj + ypos, col, " %s[ar: %d|def: 0x%p, %4dk|view: 0x%p, %4dk|cb: %4dk|vis: %d|rc: %4d] %s%s%s%s%s",
+					DrawText(xAdj + 50.0f, yAdj + ypos, col, " %s[ar: %d|def: 0x%p, %4dk|view: 0x%p, %4dk|cb: %4dk|vis: %d] %s%s%s%s%s",
 					         pVisExpChar, pFlashPlayer->m_memArenaID, pFlashPlayer->m_pMovieDef.GetPtr(), InKB(memMovieDef), pFlashPlayer->m_pMovieView.GetPtr(),
-					         InKB(memMovieView), InKB(pFlashPlayer->GetCommandBufferSize()), !inactive && pFlashPlayer->GetVisible() ? 1 : 0, pFlashPlayer->m_refCount,
+					         InKB(memMovieView), InKB(pFlashPlayer->GetCommandBufferSize()), !inactive && pFlashPlayer->GetVisible() ? 1 : 0,
 					         pLocklessDisparityMsgCol, pLocklessDisparityMsg, pDisabled, pFileName, pInstanceInfo);
 				}
 				else
@@ -5371,13 +5300,6 @@ void CFlashPlayer::DumpAndFixLeaks()
 			while (CFlashVariableObject::GetListRoot().m_pNext != &CFlashVariableObject::GetListRoot())
 			{
 				CFlashVariableObject::GetListRoot().m_pNext->m_pHandle->Release();
-			}
-		}
-		{
-			CryAutoCriticalSection lock(GetList().GetLock());
-			while (GetListRoot().m_pNext != &GetListRoot())
-			{
-				GetListRoot().m_pNext->m_pHandle->Release();
 			}
 		}
 		{

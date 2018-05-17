@@ -29,19 +29,8 @@ static const size_t g_subtitleMappingCount = (CRY_ARRAY_COUNT(g_subtitleMapping)
 
 //////////////////////////////////////////////////////////////////////////
 
-CIntroMovieRenderer::CIntroMovieRenderer() : m_pFlashPlayer(0)
-{
-}
-
-CIntroMovieRenderer::~CIntroMovieRenderer()
-{
-	SAFE_RELEASE(m_pFlashPlayer);
-}
-
 bool CIntroMovieRenderer::Initialize()
 {
-	SAFE_RELEASE(m_pFlashPlayer);
-
 	m_pFlashPlayer = gEnv->pScaleformHelper ? gEnv->pScaleformHelper->CreateFlashPlayerInstance() : nullptr;
 
 	if (m_pFlashPlayer)
@@ -128,26 +117,29 @@ int CIntroMovieRenderer::GetSubtitleChannelForSystemLanguage()
 
 void CIntroMovieRenderer::LoadtimeUpdate(float deltaTime)
 {
-	if (m_pFlashPlayer)
+	auto pPlayer = m_pFlashPlayer;
+	if (pPlayer)
 	{
 		UpdateViewport();
-		m_pFlashPlayer->Advance(deltaTime);
+		pPlayer->Advance(deltaTime);
 	}
 }
 
 void CIntroMovieRenderer::LoadtimeRender()
 {
-	if (m_pFlashPlayer)
-		m_pFlashPlayer->Render();
+	auto pPlayer = m_pFlashPlayer;
+	if (pPlayer)
+		pPlayer->Render();
 }
 
 void CIntroMovieRenderer::UpdateViewport()
 {
-	if (!m_pFlashPlayer)
+	auto pPlayer = m_pFlashPlayer;
+	if (!pPlayer)
 		return;
 
-	int videoWidth (m_pFlashPlayer->GetWidth());
-	int videoHeight(m_pFlashPlayer->GetHeight());
+	int videoWidth (pPlayer->GetWidth());
+	int videoHeight(pPlayer->GetHeight());
 
 	const int screenWidth (gEnv->pRenderer->GetWidth ());
 	const int screenHeight(gEnv->pRenderer->GetHeight());

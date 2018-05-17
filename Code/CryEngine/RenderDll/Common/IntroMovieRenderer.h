@@ -20,8 +20,8 @@ protected:
 
 public:
 
-	CIntroMovieRenderer();
-	virtual ~CIntroMovieRenderer();
+	CIntroMovieRenderer() = default;
+	virtual ~CIntroMovieRenderer() = default;
 
 	bool Initialize();
 	void WaitForCompletion();
@@ -45,7 +45,7 @@ protected:
 
 	//////////////////////////////////////////////////////////////////////////
 
-	IFlashPlayer* m_pFlashPlayer;
+	std::shared_ptr<IFlashPlayer> m_pFlashPlayer;
 
 };
 

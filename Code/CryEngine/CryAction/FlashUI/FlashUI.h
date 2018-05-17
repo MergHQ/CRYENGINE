@@ -248,7 +248,7 @@ private:
 	bool                  m_bSortedElementsInvalidated;
 
 	bool                  m_bLoadtimeThread;
-	typedef std::vector<IFlashPlayer*> TPlayerList;
+	typedef std::vector<std::shared_ptr<IFlashPlayer>> TPlayerList;
 	TPlayerList           m_loadtimePlayerList;
 
 	std::vector<CFlashUiFlowNodeFactory*> m_UINodes;

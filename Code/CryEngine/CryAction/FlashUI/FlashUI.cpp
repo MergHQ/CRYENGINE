@@ -592,11 +592,6 @@ void CFlashUI::LoadtimeUpdate(float fDeltaTime)
 
 	if (m_bSortedElementsInvalidated)
 	{
-		for (TPlayerList::const_iterator it = m_loadtimePlayerList.begin(); it != m_loadtimePlayerList.end(); ++it)
-		{
-			IFlashPlayer* pPlayer = *it;
-			pPlayer->Release();
-		}
 		m_loadtimePlayerList.clear();
 
 		for (TUIElementsLookup::iterator iter = m_elements.begin(); iter != m_elements.end(); ++iter)
@@ -605,11 +600,7 @@ void CFlashUI::LoadtimeUpdate(float fDeltaTime)
 			while (IUIElement* pInstance = instances->Next())
 			{
 				if (pInstance->IsVisible())
-				{
-					IFlashPlayer* pPlayer = pInstance->GetFlashPlayer();
-					pPlayer->AddRef();
-					m_loadtimePlayerList.push_back(pPlayer);
-				}
+					m_loadtimePlayerList.emplace_back(pInstance->GetFlashPlayer());
 			}
 		}
 
@@ -634,12 +625,11 @@ void CFlashUI::LoadtimeRender()
 		if (stereoRenderer->GetStereoEnabled())
 			stereoRenderer->PrepareFrame();
 
-		for (TPlayerList::const_iterator it = m_loadtimePlayerList.begin(); it != m_loadtimePlayerList.end(); ++it)
+		for (auto &pFlashPlayer : m_loadtimePlayerList)
 		{
-			IFlashPlayer* pFlashPlayer = (*it);
-
-			pFlashPlayer->SetClearFlags(FRT_CLEAR_COLOR, Clr_Transparent);
-			gEnv->pRenderer->FlashRenderPlayer(pFlashPlayer);
+			auto p = pFlashPlayer;
+			p->SetClearFlags(FRT_CLEAR_COLOR, Clr_Transparent);
+			gEnv->pRenderer->FlashRenderPlayer(std::move(p));
 		}
 
 		if (stereoRenderer->GetStereoEnabled())
@@ -1523,9 +1513,7 @@ void CFlashUI::StartRenderThread()
 		const TSortedElementList& activeElements = GetSortedElements();
 		for (TSortedElementList::const_iterator it = activeElements.begin(); it != activeElements.end(); ++it)
 		{
-			IFlashPlayer* pPlayer = it->second->GetFlashPlayer();
-			pPlayer->AddRef();
-			m_loadtimePlayerList.push_back(pPlayer);
+			m_loadtimePlayerList.emplace_back(it->second->GetFlashPlayer());
 		}
 		m_bLoadtimeThread = true;
 		gEnv->pCryPak->LockReadIO(true);
@@ -1540,11 +1528,6 @@ void CFlashUI::StopRenderThread()
 	if (m_bLoadtimeThread == true)
 	{
 		gEnv->pRenderer->StopLoadtimeFlashPlayback();
-		for (TPlayerList::const_iterator it = m_loadtimePlayerList.begin(); it != m_loadtimePlayerList.end(); ++it)
-		{
-			IFlashPlayer* pPlayer = *it;
-			pPlayer->Release();
-		}
 		m_loadtimePlayerList.clear();
 		gEnv->pCryPak->LockReadIO(false);
 		m_bLoadtimeThread = false;
@@ -1925,11 +1908,9 @@ void CFlashUI::ResetDirtyFlags()
 {
 	if (m_elements.size() > 0)
 	{
-		IFlashPlayer* flash_player = m_elements[0]->GetFlashPlayer();
+		auto flash_player = m_elements[0]->GetFlashPlayer();
 		if (flash_player)
-		{
 			flash_player->ResetDirtyFlags();
-		}
 	}
 }
 

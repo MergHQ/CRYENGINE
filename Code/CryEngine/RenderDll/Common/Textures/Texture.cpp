@@ -2676,20 +2676,14 @@ int FlashTextureSourceSharedRT_AutoUpdate::ms_lastTickRTFrameID = 0;
 CFlashTextureSourceBase::CFlashPlayerInstanceWrapper::~CFlashPlayerInstanceWrapper()
 {
 	SAFE_RELEASE(m_pBootStrapper);
-	SAFE_RELEASE(m_pPlayer);
 }
 
-IFlashPlayer* CFlashTextureSourceBase::CFlashPlayerInstanceWrapper::GetTempPtr() const
+std::shared_ptr<IFlashPlayer> CFlashTextureSourceBase::CFlashPlayerInstanceWrapper::GetTempPtr() const
 {
-	CryAutoCriticalSection lock(m_lock);
-
-	if (m_pPlayer)
-		m_pPlayer->AddRef();
-
 	return m_pPlayer;
 }
 
-IFlashPlayer* CFlashTextureSourceBase::CFlashPlayerInstanceWrapper::GetPermPtr(CFlashTextureSourceBase* pSrc)
+std::shared_ptr<IFlashPlayer> CFlashTextureSourceBase::CFlashPlayerInstanceWrapper::GetPermPtr(CFlashTextureSourceBase* pSrc)
 {
 	CryAutoCriticalSection lock(m_lock);
 
@@ -2701,18 +2695,14 @@ IFlashPlayer* CFlashTextureSourceBase::CFlashPlayerInstanceWrapper::GetPermPtr(C
 
 void CFlashTextureSourceBase::CFlashPlayerInstanceWrapper::Activate(bool activate, CFlashTextureSourceBase* pSrc)
 {
-	CryAutoCriticalSection lock(m_lock);
-
 	if (activate)
 	{
+		CryAutoCriticalSection lock(m_lock);
 		CreateInstance(pSrc);
 	}
-	else
+	else if (m_canDeactivate)
 	{
-		if (m_canDeactivate)
-		{
-			SAFE_RELEASE(m_pPlayer);
-		}
+		m_pPlayer = nullptr;
 	}
 }
 
@@ -2754,17 +2744,12 @@ CFlashTextureSourceBase::CFlashPlayerInstanceWrapperLayoutElement::~CFlashPlayer
 	m_pPlayer = NULL;
 }
 
-IFlashPlayer* CFlashTextureSourceBase::CFlashPlayerInstanceWrapperLayoutElement::GetTempPtr() const
+std::shared_ptr<IFlashPlayer> CFlashTextureSourceBase::CFlashPlayerInstanceWrapperLayoutElement::GetTempPtr() const
 {
-	CryAutoCriticalSection lock(m_lock);
-
-	if (m_pPlayer)
-		m_pPlayer->AddRef();
-
 	return m_pPlayer;
 }
 
-IFlashPlayer* CFlashTextureSourceBase::CFlashPlayerInstanceWrapperLayoutElement::GetPermPtr(CFlashTextureSourceBase* pSrc)
+std::shared_ptr<IFlashPlayer> CFlashTextureSourceBase::CFlashPlayerInstanceWrapperLayoutElement::GetPermPtr(CFlashTextureSourceBase* pSrc)
 {
 	CryAutoCriticalSection lock(m_lock);
 
@@ -2776,18 +2761,14 @@ IFlashPlayer* CFlashTextureSourceBase::CFlashPlayerInstanceWrapperLayoutElement:
 
 void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperLayoutElement::Activate(bool activate, CFlashTextureSourceBase* pSrc)
 {
-	CryAutoCriticalSection lock(m_lock);
-
 	if (activate)
 	{
+		CryAutoCriticalSection lock(m_lock);
 		CreateInstance(pSrc, m_layoutName.c_str());
 	}
-	else
+	else if (m_canDeactivate)
 	{
-		if (m_canDeactivate)
-		{
-			SAFE_RELEASE(m_pPlayer);
-		}
+		m_pPlayer = nullptr;
 	}
 }
 
@@ -2843,7 +2824,6 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperLayoutElement::Advance(
 CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::~CFlashPlayerInstanceWrapperUIElement()
 {
 	SAFE_RELEASE(m_pUIElement);
-	SAFE_RELEASE(m_pPlayer);
 }
 
 void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::SetUIElement(IUIElement* p)
@@ -2853,17 +2833,12 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::SetUIElement
 	m_pUIElement->AddRef();
 }
 
-IFlashPlayer* CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::GetTempPtr() const
+std::shared_ptr<IFlashPlayer> CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::GetTempPtr() const
 {
-	CryAutoCriticalSection lock(m_lock);
-
-	if (m_pPlayer)
-		m_pPlayer->AddRef();
-
 	return m_pPlayer;
 }
 
-IFlashPlayer* CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::GetPermPtr(CFlashTextureSourceBase* pSrc)
+std::shared_ptr<IFlashPlayer> CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::GetPermPtr(CFlashTextureSourceBase* pSrc)
 {
 	CryAutoCriticalSection lock(m_lock);
 
@@ -2889,7 +2864,7 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::Clear(CFlash
 	if (m_pUIElement && m_pPlayer)
 		m_pUIElement->RemoveTexture(pSrc);
 
-	SAFE_RELEASE(m_pPlayer);
+	m_pPlayer = nullptr;
 }
 
 const char* CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::GetSourceFilePath() const
@@ -2911,13 +2886,12 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElem
 		if (m_activated)
 		{
 			const bool isVisible = m_pUIElement->IsVisible();
-			IFlashPlayer* pPlayer = isVisible ? m_pUIElement->GetFlashPlayer() : NULL;
+			std::shared_ptr<IFlashPlayer> pPlayer = isVisible ? m_pUIElement->GetFlashPlayer() : NULL;
 			if (pPlayer != m_pPlayer)
 			{
 				assert(gRenDev->m_pRT->IsMainThread());
 
-				const bool addTex = m_pPlayer == NULL;
-				SAFE_RELEASE(m_pPlayer);
+				const bool addTex = m_pPlayer == nullptr;
 				if (isVisible)
 					m_pPlayer = pPlayer;
 
@@ -2925,7 +2899,6 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElem
 				{
 					m_width = m_pPlayer->GetWidth();
 					m_height = m_pPlayer->GetHeight();
-					m_pPlayer->AddRef();
 					if (addTex)
 						m_pUIElement->AddTexture(pSrc);
 				}
@@ -2939,7 +2912,6 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElem
 
 			if (m_pPlayer)
 				m_pUIElement->RemoveTexture(pSrc);
-			SAFE_RELEASE(m_pPlayer);
 		}
 	}
 }
@@ -2979,7 +2951,7 @@ CFlashTextureSourceBase::CFlashTextureSourceBase(const char* pFlashFileName, con
 			if (m_pFlashPlayer)
 				m_pFlashPlayer->Clear(this);
 
-			SAFE_RELEASE(m_pFlashPlayer);
+			m_pFlashPlayer = nullptr;
 
 			CFlashPlayerInstanceWrapperLayoutElement* pInstanceWrapper = new CFlashPlayerInstanceWrapperLayoutElement();
 			pInstanceWrapper->CreateInstance(this, pFlashFileName);
@@ -3100,7 +3072,7 @@ bool CFlashTextureSourceBase::CreateTexFromFlashFile(const char* name)
 		//delete old one
 		if (m_pFlashPlayer)
 			m_pFlashPlayer->Clear(this);
-		SAFE_RELEASE(m_pFlashPlayer);
+		m_pFlashPlayer = nullptr;
 
 		m_pElement = gEnv->pFlashUI->GetUIElementByInstanceStr(name);
 		if (m_pElement)
@@ -3129,7 +3101,7 @@ CFlashTextureSourceBase::~CFlashTextureSourceBase()
 	if (m_pFlashPlayer)
 		m_pFlashPlayer->Clear(this);
 
-	SAFE_RELEASE(m_pFlashPlayer);
+	m_pFlashPlayer = nullptr;
 }
 
 void CFlashTextureSourceBase::AddRef()
@@ -3193,7 +3165,7 @@ void* CFlashTextureSourceBase::GetSourceTemp(EDynTextureSource type) const
 {
 	if (m_pFlashPlayer != nullptr && type == DTS_I_FLASHPLAYER)
 	{
-		return m_pFlashPlayer->GetTempPtr();
+		return m_pFlashPlayer->GetTempPtr().get();
 	}
 	return nullptr;
 }
@@ -3202,7 +3174,7 @@ void* CFlashTextureSourceBase::GetSourcePerm(EDynTextureSource type)
 {
 	if (m_pFlashPlayer != nullptr && type == DTS_I_FLASHPLAYER)
 	{
-		return m_pFlashPlayer->GetPermPtr(this);
+		return m_pFlashPlayer->GetPermPtr(this).get();
 	}
 	return nullptr;
 }

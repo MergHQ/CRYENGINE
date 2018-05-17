@@ -289,9 +289,9 @@ public:
 
 	//===============================================================================
 
-	virtual void RT_FlashRenderInternal(IFlashPlayer* pPlayer) override;
-	virtual void RT_FlashRenderInternal(IFlashPlayer_RenderProxy* pPlayer, bool bDoRealRender) override;
-	virtual void RT_FlashRenderPlaybackLocklessInternal(IFlashPlayer_RenderProxy* pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender) override;
+	virtual void RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer> &&pPlayer) override;
+	virtual void RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, bool bDoRealRender) override;
+	virtual void RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender) override;
 
 	//===============================================================================
 

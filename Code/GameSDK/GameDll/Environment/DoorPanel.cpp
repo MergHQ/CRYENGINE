@@ -418,7 +418,6 @@ void CDoorPanel::AssignAsFSCommandHandler()
 			if (pFlashPlayer) // Valid to not have a flash player, since will update when flash setup
 			{
 				pFlashPlayer->SetFSCommandHandler(this);
-				pFlashPlayer->Release();
 			}
 		}
 	}
