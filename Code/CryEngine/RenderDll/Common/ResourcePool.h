@@ -22,6 +22,7 @@ private:
 	using pool_t = std::vector<value_type>;
 
 	pool_t pool;
+	size_t allocs = 0;
 
 public:
 	CResourcePool() = default;
@@ -39,17 +40,20 @@ public:
 	void allocate(Ts&&... ts) 
 	{
 		auto ptr = value_type(new T(std::forward<Ts>(ts)...));
+		++allocs;
+
 		pool.emplace_back(std::move(ptr));
 	}
+
 	void clear() 
 	{
 		for (auto &p : *this)
 		{
 			// Resource in use?
 			CRY_ASSERT(p->UseCount() == 1);
-
 			delete p.ReleaseOwnership();
 		}
+
 		pool.clear();
 	}
 
@@ -57,6 +61,7 @@ public:
 	{
 		CRY_ASSERT((*it)->UseCount() == 1);
 		delete it->ReleaseOwnership();
+
 		return pool.erase(it);
 	}
 
@@ -79,6 +84,7 @@ public:
 	value_type& front() const { return pool.front(); }
 
 	size_t size() const noexcept { return pool.size(); }
+	size_t allocations() const noexcept { return allocs; }
 
 	value_type& operator[](int idx) { return pool[idx]; }
 	value_type& operator[](int idx) const { return pool[idx]; }
