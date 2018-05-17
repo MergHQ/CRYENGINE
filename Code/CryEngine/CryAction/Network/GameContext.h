@@ -200,6 +200,8 @@ public:
 	bool   ChangeContext(bool isServer, const SGameContextParams* pParams);
 
 	void   SetContextInfo(unsigned flags, uint16 port, const char* connectionString);
+	void   SetContextFlag(EGameStartFlags flag) { m_flags |= flag; }
+	void   ClearContextFlag(EGameStartFlags flag) { m_flags &= ~flag; }
 	bool   HasContextFlag(EGameStartFlags flag) const { return (m_flags & flag) != 0; }
 	uint16 GetServerPort() const                      { return m_port; }
 	string GetConnectionString(CryFixedStringT<HOST_MIGRATION_MAX_PLAYER_NAME_SIZE>* pNameOverride, bool fake) const;

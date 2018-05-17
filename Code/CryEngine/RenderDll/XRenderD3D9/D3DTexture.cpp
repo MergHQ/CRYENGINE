@@ -1100,7 +1100,7 @@ void CFlashTextureSourceBase::Advance(const float delta, bool isPaused)
 	if (!m_pFlashPlayer)
 		return;
 
-	AutoReleasedFlashPlayerPtr pFlashPlayer(m_pFlashPlayer->GetTempPtr());
+	const auto& pFlashPlayer = m_pFlashPlayer->GetTempPtr();
 	if (!pFlashPlayer)
 		return;
 
@@ -1118,7 +1118,7 @@ bool CFlashTextureSourceBase::Update()
 	if (!m_pFlashPlayer)
 		return false;
 
-	AutoReleasedFlashPlayerPtr pFlashPlayer(m_pFlashPlayer->GetTempPtr());
+	const auto& pFlashPlayer = m_pFlashPlayer->GetTempPtr();
 	if (!pFlashPlayer)
 		return false;
 
@@ -1146,7 +1146,7 @@ bool CFlashTextureSourceBase::Update()
 	{
 		PROFILE_LABEL_SCOPE("FlashDynTexture");
 
-		CScaleformPlayback::RenderFlashPlayerToTexture(*pFlashPlayer, pDynTexture->m_pTexture);
+		CScaleformPlayback::RenderFlashPlayerToTexture(pFlashPlayer.get(), pDynTexture->m_pTexture);
 
 		pDynTexture->SetUpdateMask();
 	}

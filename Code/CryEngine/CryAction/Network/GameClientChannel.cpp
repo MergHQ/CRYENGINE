@@ -255,11 +255,18 @@ NET_IMPLEMENT_SIMPLE_ATSYNC_MESSAGE(CGameClientChannel, SetGameType, eNRT_Reliab
 {
 	string rulesClass;
 	string levelName = param.levelName;
-	bool hasGameRules = !CCryAction::GetCryAction()->GetGameContext()->HasContextFlag(eGSF_NoGameRules);
+	const uint16 invalidClassId = ~uint16(0);
+	bool hasGameRules = !GetGameContext()->HasContextFlag(eGSF_NoGameRules) && (param.rulesClass != invalidClassId);
 
 	if (hasGameRules && !GetGameContext()->ClassNameFromId(rulesClass, param.rulesClass))
 	{
+		hasGameRules = false;
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "No GameRules");
+	}
+
+	if (!hasGameRules)
+	{
+		GetGameContext()->SetContextFlag(eGSF_NoGameRules);
 	}
 
 	bool ok = true;

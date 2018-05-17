@@ -951,6 +951,9 @@ void CEntitySystem::PrePhysicsUpdate()
 		{
 			const CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
+			// Cache entity info before sending the event, as the entity may be removed by the event
+			const SProfiledEntityEvent::SEntityInfo componentEntityInfo(*rec.pComponent->GetEntity());
+
 			rec.pComponent->ProcessEvent(event);
 
 			const CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
@@ -958,7 +961,7 @@ void CEntitySystem::PrePhysicsUpdate()
 			if (componentUpdateTime > m_profiledEvents[eventIndex].mostExpensiveEntityCostMs)
 			{
 				m_profiledEvents[eventIndex].mostExpensiveEntityCostMs = componentUpdateTime;
-				m_profiledEvents[eventIndex].mostExpensiveEntity = rec.pComponent->GetEntityId();
+				m_profiledEvents[eventIndex].mostExpensiveEntity = componentEntityInfo;
 			}
 
 			return EComponentIterationResult::Continue;
@@ -1653,34 +1656,44 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 			m_updatedEntityComponents.ForEach([&](const SMinimalEntityComponentRecord& rec) -> EComponentIterationResult
 			{
 				const CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
-
 				rec.pComponent->ProcessEvent(event);
-
 				const CTimeValue timeAfterComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
-				CryGUID typeGUID = rec.pComponent->GetClassDesc().GetGUID();
-				const char* szName = rec.pComponent->GetClassDesc().GetLabel();
-				if (szName == nullptr || szName[0] == '\0')
+				CryGUID typeGUID;
+				const char* szName;
+
+				// The component may have been removed during its own update
+				if (rec.pComponent != nullptr)
 				{
-					szName = rec.pComponent->GetClassDesc().GetName().c_str();
+					typeGUID = rec.pComponent->GetClassDesc().GetGUID();
+					szName = rec.pComponent->GetClassDesc().GetLabel();
+
+					if (szName == nullptr || szName[0] == '\0')
+					{
+						szName = rec.pComponent->GetClassDesc().GetName().c_str();
+					}
+
+					if (typeGUID.IsNull() && rec.pComponent->GetFactory() != nullptr)
+					{
+						typeGUID = rec.pComponent->GetFactory()->GetClassID();
+						szName = rec.pComponent->GetFactory()->GetName();
+					}
+				}
+				else
+				{
+					szName = nullptr;
 				}
 
-				if (typeGUID.IsNull() && rec.pComponent->GetFactory() != nullptr)
-				{
-					typeGUID = rec.pComponent->GetFactory()->GetClassID();
-					szName = rec.pComponent->GetFactory()->GetName();
-				}
-
 				if (szName == nullptr || szName[0] == '\0')
 				{
-					szName = "Unknown Legacy Entity Component";
+					szName = "Unknown Entity Component";
 				}
 
 				auto it = componentTypeCostMap.find(typeGUID);
 
 				if (it == componentTypeCostMap.end())
 				{
-					componentTypeCostMap.emplace(typeGUID, SComponentTypeInfo { szName, (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds() });
+					componentTypeCostMap.emplace(typeGUID, SComponentTypeInfo{ szName, (timeAfterComponentUpdate - timeBeforeComponentUpdate).GetMilliSeconds() });
 				}
 				else
 				{
@@ -1723,6 +1736,9 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 			{
 				const CTimeValue timeBeforeComponentUpdate = gEnv->pTimer->GetAsyncTime();
 
+				// Cache entity info before sending the event, as the entity may be removed by the event
+				const SProfiledEntityEvent::SEntityInfo componentEntityInfo(*rec.pComponent->GetEntity());
+
 				rec.pComponent->ProcessEvent(event);
 
 				const CTimeValue timeAfterComponentsUpdate = gEnv->pTimer->GetAsyncTime();
@@ -1730,7 +1746,7 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 				if (componentUpdateTime > m_profiledEvents[eventIndex].mostExpensiveEntityCostMs)
 				{
 					m_profiledEvents[eventIndex].mostExpensiveEntityCostMs = componentUpdateTime;
-					m_profiledEvents[eventIndex].mostExpensiveEntity = rec.pComponent->GetEntityId();
+					m_profiledEvents[eventIndex].mostExpensiveEntity = componentEntityInfo;
 				}
 
 				return EComponentIterationResult::Continue;
@@ -1775,10 +1791,7 @@ void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 				pRenderAuxGeom->Draw2dLabel(numListenerAdditionsPositionX, positionY, fontSize, textColor, false, "| %i", profiledEvent.numListenerAdditions);
 				pRenderAuxGeom->Draw2dLabel(numListenerRemovalsPositionX, positionY, fontSize, textColor, false, "| %i", profiledEvent.numListenerRemovals);
 
-				if (CEntity* pEntity = GetEntityFromID(profiledEvent.mostExpensiveEntity))
-				{
-					pRenderAuxGeom->Draw2dLabel(mostExpensiveEntityPositionX, positionY, fontSize, textColor, false, "| %s (%u): %f ms", pEntity->GetName(), pEntity->GetId(), profiledEvent.mostExpensiveEntityCostMs);
-				}
+				pRenderAuxGeom->Draw2dLabel(mostExpensiveEntityPositionX, positionY, fontSize, textColor, false, "| %s (%u): %f ms", profiledEvent.mostExpensiveEntity.name.c_str(), profiledEvent.mostExpensiveEntity.id, profiledEvent.mostExpensiveEntityCostMs);
 
 				positionY += yOffset;
 			}
@@ -2066,11 +2079,11 @@ void CEntitySystem::UpdateTimers()
 
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 
-	CTimeValue nCurrTimeMillis = gEnv->pTimer->GetFrameStartTime();
+	const CTimeValue currentTime = gEnv->pTimer->GetFrameStartTime();
 
 	// Iterate through all matching timers.
-	EntityTimersMap::const_iterator first = m_timersMap.begin();
-	EntityTimersMap::const_iterator last = m_timersMap.upper_bound(nCurrTimeMillis);
+	const EntityTimersMap::const_iterator first = m_timersMap.begin();
+	const EntityTimersMap::const_iterator last = m_timersMap.upper_bound(currentTime);
 	if (last != first)
 	{
 		// Make a separate list, because OnTrigger call can modify original timers map.
@@ -2078,7 +2091,9 @@ void CEntitySystem::UpdateTimers()
 		m_currentTimers.reserve(std::distance(first, last));
 
 		for (EntityTimersMap::const_iterator it = first; it != last; ++it)
+		{
 			m_currentTimers.emplace_back(it->second);
+		}
 
 		// Delete these items from map.
 		m_timersMap.erase(first, last);
@@ -2090,39 +2105,49 @@ void CEntitySystem::UpdateTimers()
 		entityEvent.event = ENTITY_EVENT_TIMER;
 
 #ifdef ENABLE_PROFILING_CODE
-		const CTimeValue timeBeforeTimerEvents = gEnv->pTimer->GetAsyncTime();
-		const uint8 eventIndex = CEntity::GetEntityEventIndex(entityEvent.event);
-#endif
+		if (CVar::es_profileComponentUpdates != 0)
+		{
+			const CTimeValue timeBeforeTimerEvents = gEnv->pTimer->GetAsyncTime();
+			const uint8 eventIndex = CEntity::GetEntityEventIndex(entityEvent.event);
 
-		for(const SEntityTimerEvent& event : m_currentTimers)
+			for (const SEntityTimerEvent& event : m_currentTimers)
+			{
+				// Send Timer event to the entity.
+				entityEvent.nParam[0] = event.nTimerId;
+				entityEvent.nParam[1] = event.nMilliSeconds;
+
+				const CTimeValue timeBeforeTimerEvent = gEnv->pTimer->GetAsyncTime();
+
+				const CEntity* const pEntity = GetEntityFromID(event.entityId);
+				// Cache entity info before sending the event, as the entity may be removed by the event
+				const SProfiledEntityEvent::SEntityInfo listenerEntityInfo = pEntity != nullptr ? SProfiledEntityEvent::SEntityInfo(*pEntity) : SProfiledEntityEvent::SEntityInfo();
+
+				event.pListener->ProcessEvent(entityEvent);
+
+				const CTimeValue timeAfterTimerEvent = gEnv->pTimer->GetAsyncTime();
+				const float timerEventCostMs = (timeAfterTimerEvent - timeBeforeTimerEvent).GetMilliSeconds();
+
+				if (timerEventCostMs > m_profiledEvents[eventIndex].mostExpensiveEntityCostMs)
+				{
+					m_profiledEvents[eventIndex].mostExpensiveEntityCostMs = timerEventCostMs;
+					m_profiledEvents[eventIndex].mostExpensiveEntity = listenerEntityInfo;
+				}
+			}
+
+			const CTimeValue timeAfterTimerEvents = gEnv->pTimer->GetAsyncTime();
+
+			m_profiledEvents[eventIndex].numEvents = m_currentTimers.size();
+			m_profiledEvents[eventIndex].totalCostMs = (timeAfterTimerEvents - timeBeforeTimerEvents).GetMilliSeconds();
+		}
+#else
+		for (const SEntityTimerEvent& event : m_currentTimers)
 		{
 			// Send Timer event to the entity.
 			entityEvent.nParam[0] = event.nTimerId;
 			entityEvent.nParam[1] = event.nMilliSeconds;
 
-#ifdef ENABLE_PROFILING_CODE
-			const CTimeValue timeBeforeTimerEvent = gEnv->pTimer->GetAsyncTime();
-#endif
-
 			event.pListener->ProcessEvent(entityEvent);
-
-#ifdef ENABLE_PROFILING_CODE
-			const CTimeValue timeAfterTimerEvent = gEnv->pTimer->GetAsyncTime();
-			const float timerEventCostMs = (timeAfterTimerEvent - timeBeforeTimerEvent).GetMilliSeconds();
-
-			if (timerEventCostMs > m_profiledEvents[eventIndex].mostExpensiveEntityCostMs)
-			{
-				m_profiledEvents[eventIndex].mostExpensiveEntityCostMs = timerEventCostMs;
-				m_profiledEvents[eventIndex].mostExpensiveEntity = event.entityId;
-			}
-#endif
 		}
-
-#ifdef ENABLE_PROFILING_CODE
-		const CTimeValue timeAfterTimerEvents = gEnv->pTimer->GetAsyncTime();
-
-		m_profiledEvents[eventIndex].numEvents = m_currentTimers.size();
-		m_profiledEvents[eventIndex].totalCostMs = (timeAfterTimerEvents - timeBeforeTimerEvents).GetMilliSeconds();
 #endif
 	}
 }

@@ -22,6 +22,8 @@
 	#include "ScaleformRecording.h"
 	#include <CryString/CryString.h>
 
+#include <memory>
+
 DECLARE_SHARED_POINTERS(CryCriticalSection);
 DECLARE_SHARED_POINTERS(string);
 
@@ -93,14 +95,11 @@ private:
 
 } // namespace FlashHelpers
 
-class CFlashPlayer : public IFlashPlayer, public IFlashPlayer_RenderProxy
+class CFlashPlayer : public IFlashPlayer, public IFlashPlayer_RenderProxy, public std::enable_shared_from_this<CFlashPlayer>
 {
 	friend struct FunctionHandlerAdaptor;
 
 public:
-	// IFlashPlayer interface
-	virtual void           AddRef();
-	virtual void           Release();
 
 	virtual bool           Load(const char* pFilePath, unsigned int options = DEFAULT, unsigned int cat = eCat_Default);
 
@@ -183,9 +182,9 @@ public:
 	IScaleformPlayback* GetPlayback();
 
 	// IFlashPlayer_RenderProxy interface
-	virtual void RenderCallback(EFrameType ft, bool releaseOnExit = true);
-	virtual void RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool finalPlayback, bool releaseOnExit = true);
-	virtual void DummyRenderCallback(EFrameType ft, bool releaseOnExit = true);
+	virtual void RenderCallback(EFrameType ft);
+	virtual void RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool finalPlayback);
+	virtual void DummyRenderCallback(EFrameType ft);
 
 public:
 	CFlashPlayer();
@@ -226,7 +225,7 @@ public:
 	};
 	static unsigned int  GetLogOptions();
 
-	static CFlashPlayer* CreateBootstrapped(GFxMovieDef* pMovieDef, unsigned int options, unsigned int cat);
+	static std::shared_ptr<CFlashPlayer> CreateBootstrapped(GFxMovieDef* pMovieDef, unsigned int options, unsigned int cat);
 
 private:
 	bool   IsEdgeAaAllowed() const;
@@ -380,8 +379,6 @@ private:
 	};
 
 private:
-	volatile int m_refCount;
-	volatile int m_releaseGuardCount;
 	uint32 m_clearFlags;
 	ColorF m_clearColor;
 	float m_compDepth;

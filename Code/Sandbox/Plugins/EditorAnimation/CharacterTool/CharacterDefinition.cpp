@@ -1430,6 +1430,7 @@ void CharacterDefinition::Serialize(Serialization::IArchive& ar)
 	ar(CharacterRigPath(rig), "rig", 0);
 	bool physEditPrev = m_physEdit;
 	ar(m_physEdit, "physedit");
+	ar(m_physLod, "physlod");
 	ar(attachments, "attachments", "Attachments");
 	m_initialized = ar.context<ICharacterInstance>() != 0;
 
@@ -2399,7 +2400,7 @@ bool CharacterDefinition::Save(const char* filename)
 	if (!root)
 		return false;
 	bool result = root->saveToFile(filename);
-	SavePhysProxiesToCGF(PathUtil::GetGameFolder() + "/" + skeleton + ".cgf");
+	SavePhysProxiesToCGF(PathUtil::GetGameFolder() + "/" + skeleton + (m_physLod ? ".ragdoll.cgf" : ".cgf"));
 	if (result)
 	{
 		GetIEditor()->RequestScriptReload(eReloadScriptsType_Entity);
@@ -2430,10 +2431,10 @@ void CharacterDefinition::ApplyPhysAttachments(ICharacterInstance* pICharacterIn
 	IDefaultSkeleton& skel = pICharacterInstance->GetIDefaultSkeleton();
 	IGeomManager *pGeoman = gEnv->pPhysicalWorld->GetGeomManager();
 	for(int i = 0; i < skel.GetJointCount(); i++)
-		if (skel.GetJointPhysInfo(i)->pPhysGeom)
+		if (skel.GetJointPhysInfo(i, m_physLod)->pPhysGeom)
 		{
-			pGeoman->UnregisterGeometry(skel.GetJointPhysInfo(i)->pPhysGeom);
-			skel.GetJointPhysInfo(i)->pPhysGeom = nullptr;
+			pGeoman->UnregisterGeometry(skel.GetJointPhysInfo(i, m_physLod)->pPhysGeom);
+			skel.GetJointPhysInfo(i, m_physLod)->pPhysGeom = nullptr;
 		}
 
 	int numAttachments = attachments.size();
@@ -2444,7 +2445,7 @@ void CharacterDefinition::ApplyPhysAttachments(ICharacterInstance* pICharacterIn
 		{
 			if (IGeometry *pGeom = attachment.CreateProxyGeom())
 			{
-				CryBonePhysics& phys = *skel.GetJointPhysInfo(skel.GetJointIDByName(attachment.m_strJointName));
+				CryBonePhysics& phys = *skel.GetJointPhysInfo(skel.GetJointIDByName(attachment.m_strJointName), m_physLod);
 				phys.pPhysGeom = pGeoman->RegisterGeometry(pGeom);
 				pGeom->Release();
 				phys.flags = joint_no_gravity | joint_isolated_accelerations;
@@ -2463,34 +2464,36 @@ void CharacterDefinition::ApplyPhysAttachments(ICharacterInstance* pICharacterIn
 	}
 
 	int nRoots = 0, idummyRoot = -1;
-	for(int i = 0, j; i < skel.GetJointCount(); i++)	if (skel.GetJointPhysGeom(i)) 
+	for(int i = 0, j; i < skel.GetJointCount(); i++)	if (skel.GetJointPhysGeom(i, m_physLod)) 
 	{
-		for(j = skel.GetJointParentIDByID(i); j >= 0 && !skel.GetJointPhysGeom(j); j = skel.GetJointParentIDByID(j))
-			skel.GetJointPhysInfo(j)->flags = 0;
+		for(j = skel.GetJointParentIDByID(i); j >= 0 && !skel.GetJointPhysGeom(j, m_physLod); j = skel.GetJointParentIDByID(j))
+			skel.GetJointPhysInfo(j, m_physLod)->flags = 0;
 		nRoots -= j >> 31;
 	}
 	// for skeleton consistency, if multiple phys roots are present, create a temp phys root at their closest common ancestor
 	if (nRoots > 1)
 	{
-		for(int i = 0, j; i < skel.GetJointCount(); i++)	if (skel.GetJointPhysGeom(i)) 
+		for(int i = 0, j; i < skel.GetJointCount(); i++)	if (skel.GetJointPhysGeom(i, m_physLod)) 
 		{
-			for(j = skel.GetJointParentIDByID(i); j >= 0 && !skel.GetJointPhysGeom(j); j = skel.GetJointParentIDByID(j))
+			for(j = skel.GetJointParentIDByID(i); j >= 0 && !skel.GetJointPhysGeom(j, m_physLod); j = skel.GetJointParentIDByID(j))
 				;
 			if (j < 0) for(j = skel.GetJointParentIDByID(i); j >= 0; j = skel.GetJointParentIDByID(j))
-				if (++skel.GetJointPhysInfo(j)->flags == nRoots)
+				if (++skel.GetJointPhysInfo(j, m_physLod)->flags == nRoots)
 				{
 					idummyRoot = j; break;
 				}
 			if (idummyRoot >= 0)
 				break;
 		}
-		CryBonePhysics& phys = *skel.GetJointPhysInfo(idummyRoot);
+		CryBonePhysics& phys = *skel.GetJointPhysInfo(idummyRoot, m_physLod);
 		memset(&phys, 0, sizeof(CryBonePhysics));
 		((Matrix33*)phys.framemtx)->SetIdentity();
 		IGeomManager *pGeoman = gEnv->pPhysicalWorld->GetGeomManager();
 		primitives::sphere sph;
 		sph.center.zero(); sph.r = 0.01f;
 		phys.pPhysGeom = pGeoman->RegisterGeometry(pGeoman->CreatePrimitive(primitives::sphere::type, &sph));
+		phys.pPhysGeom->V = 0.03f;
+		phys.pPhysGeom->Ibody = Vec3(0.0005f);
 		phys.pPhysGeom->pGeom->SetForeignData(nullptr, -1);
 		phys.pPhysGeom->pGeom->Release();
 	}
@@ -2501,9 +2504,9 @@ void CharacterDefinition::ApplyPhysAttachments(ICharacterInstance* pICharacterIn
 		if (att.m_attachmentType == CA_PROX && att.m_ProxyPurpose == CharacterAttachment::RAGDOLL)
 		{	
 			int idx = skel.GetJointIDByName(att.m_strJointName);
-			for(j = skel.GetJointParentIDByID(idx); j >= 0 && !skel.GetJointPhysGeom(j); j = skel.GetJointParentIDByID(j))
+			for(j = skel.GetJointParentIDByID(idx); j >= 0 && !skel.GetJointPhysGeom(j, m_physLod); j = skel.GetJointParentIDByID(j))
 				;
-			*(Matrix33*)skel.GetJointPhysInfo(idx)->framemtx = Matrix33((j >= 0 ? !skel.GetDefaultAbsJointByID(j).q * skel.GetDefaultAbsJointByID(idx).q : Quat(IDENTITY)) * Quat(DEG2RAD(att.m_frame0)));
+			*(Matrix33*)skel.GetJointPhysInfo(idx, m_physLod)->framemtx = Matrix33((j >= 0 ? !skel.GetDefaultAbsJointByID(j).q * skel.GetDefaultAbsJointByID(idx).q : Quat(IDENTITY)) * Quat(DEG2RAD(att.m_frame0)));
 		}
 	}
 	m_physNeedsApply = false;
@@ -2728,8 +2731,11 @@ void CharacterDefinition::LoadPhysProxiesFromCharacter(ICharacterInstance *chara
 {
 	IDefaultSkeleton& skel = character->GetIDefaultSkeleton();
 	origBonePhysAtt.clear();
+	attachments.erase(
+		std::remove_if(attachments.begin(), attachments.end(), [](const auto &att)->bool { return att.m_attachmentType == CA_PROX && att.m_ProxyPurpose == CharacterAttachment::RAGDOLL; }),
+		attachments.end());
 	for(int i = 0; i < skel.GetJointCount(); i++)
-		if (const phys_geometry *pPhys = skel.GetJointPhysGeom(i))
+		if (const phys_geometry *pPhys = skel.GetJointPhysGeom(i, m_physLod))
 		{
 			CharacterAttachment att;
 			att.m_strJointName = skel.GetJointNameByID(i);
@@ -2745,14 +2751,14 @@ void CharacterDefinition::LoadPhysProxiesFromCharacter(ICharacterInstance *chara
 				(att.m_proxySrc = new CharacterAttachment::ProxySource)->m_proxyMesh = pPhys->pGeom;
 			att.m_meshSmooth = att.m_prevMeshSmooth = 0;
 			att.m_characterSpacePosition = (att.m_boneTrans = skel.GetDefaultAbsJointByID(i)) * att.m_jointSpacePosition;
-			const CryBonePhysics& bp = *skel.GetJointPhysInfo(i);
+			const CryBonePhysics& bp = *skel.GetJointPhysInfo(i, m_physLod);
 			for(int l = 0; l < 2; l++) for(int j = 0; j < 3; j++)
 				att.m_limits[l][j] = (int)(min(180.0f, max(-180.0f, RAD2DEG(bp.min[l * 3 + j] * (~bp.flags >> j & 1)))) + 180) - 180;
 			att.m_damping = *(Vec3*)bp.damping;
 			att.m_tension = *(Vec3*)bp.spring_tension;
 			Quat q0 = Quat((Matrix33&)bp.framemtx[0][0]);
 			int j;
-			for(j = skel.GetJointParentIDByID(i); j >= 0 && !skel.GetJointPhysGeom(j); j = skel.GetJointParentIDByID(j))
+			for(j = skel.GetJointParentIDByID(i); j >= 0 && !skel.GetJointPhysGeom(j, m_physLod); j = skel.GetJointParentIDByID(j))
 				;
 			if (j >= 0)
 				q0 = !skel.GetDefaultAbsJointByID(i).q * skel.GetDefaultAbsJointByID(j).q * q0;
@@ -3174,4 +3180,3 @@ void CharacterDefinition::SynchModifiers(ICharacterInstance& character)
 }
 
 }
-

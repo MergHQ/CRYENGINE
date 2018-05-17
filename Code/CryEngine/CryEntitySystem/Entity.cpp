@@ -171,7 +171,7 @@ bool CEntity::SendEventInternal(const SEntityEvent& event)
 		if (eventCostMs > g_pIEntitySystem->m_profiledEvents[eventIndex].mostExpensiveEntityCostMs)
 		{
 			g_pIEntitySystem->m_profiledEvents[eventIndex].mostExpensiveEntityCostMs = eventCostMs;
-			g_pIEntitySystem->m_profiledEvents[eventIndex].mostExpensiveEntity = m_id;
+			g_pIEntitySystem->m_profiledEvents[eventIndex].mostExpensiveEntity = CEntitySystem::SProfiledEntityEvent::SEntityInfo(*this);
 		}
 #endif
 

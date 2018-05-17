@@ -1433,7 +1433,7 @@ struct IUIElement
 	virtual bool NeedLazyRender() const = 0;
 
 	//! Raw IFlashPlayer.
-	virtual IFlashPlayer* GetFlashPlayer() = 0;
+	virtual std::shared_ptr<IFlashPlayer> GetFlashPlayer() = 0;
 
 	// definitions
 	virtual const SUIParameterDesc* GetVariableDesc(int index) const = 0;
@@ -1729,7 +1729,9 @@ public:
 	virtual IUIElement* GetUIElement(int index) const = 0;
 	virtual int         GetUIElementCount() const = 0;
 
-	virtual IUIElement* GetUIElementByInstanceStr(const char* UIInstanceStr) const = 0;
+	virtual                        IUIElement*  GetUIElementByInstanceStr(const char* UIInstanceStr) const = 0;
+	virtual std::pair<IUIElement*, IUIElement*> GetUIElementsByInstanceStr(const char* UIInstanceStr) const = 0;
+	virtual std::pair<string, int>              GetUIIdentifiersByInstanceStr(const char* sUIInstanceStr) const = 0;
 
 	//! Access for IUIActions.
 	virtual IUIAction*        GetUIAction(const char* name) const = 0;

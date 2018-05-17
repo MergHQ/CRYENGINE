@@ -5,6 +5,8 @@
 #include <CryMath/Cry_Color.h>
 #include <CryMath/Cry_Math.h>
 
+#include <memory>
+
 struct IFlashVariableObject;
 struct IFlashPlayerBootStrapper;
 struct IFSCommandHandler;
@@ -75,14 +77,7 @@ struct IFlashPlayer
 		eAT_BottomLeft,
 		eAT_BottomRight
 	};
-
-	// <interfuscator:shuffle>
-	//! Lifetime.
-	//! ##@{
-	virtual void AddRef() = 0;
-	virtual void Release() = 0;
-	//! ##@}
-
+	
 	//! Initialization.
 	virtual bool Load(const char* pFilePath, unsigned int options = DEFAULT, unsigned int cat = eCat_Default) = 0;
 
@@ -200,9 +195,9 @@ struct IFlashPlayer_RenderProxy
 	};
 
 	// <interfuscator:shuffle>
-	virtual void RenderCallback(EFrameType ft, bool releaseOnExit = true) = 0;
-	virtual void RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool finalPlayback = true, bool releaseOnExit = true) = 0;
-	virtual void DummyRenderCallback(EFrameType ft, bool releaseOnExit = true) = 0;
+	virtual void RenderCallback(EFrameType ft) = 0;
+	virtual void RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool finalPlayback = true) = 0;
+	virtual void DummyRenderCallback(EFrameType ft) = 0;
 	// </interfuscator:shuffle>
 
 	virtual IScaleformPlayback* GetPlayback() = 0;
@@ -318,7 +313,7 @@ struct IFlashPlayerBootStrapper
 	virtual bool Load(const char* pFilePath) = 0;
 
 	//! Bootstrapping.
-	virtual IFlashPlayer* CreatePlayerInstance(unsigned int options = IFlashPlayer::DEFAULT, unsigned int cat = IFlashPlayer::eCat_Default) = 0;
+	virtual std::shared_ptr<IFlashPlayer> CreatePlayerInstance(unsigned int options = IFlashPlayer::DEFAULT, unsigned int cat = IFlashPlayer::eCat_Default) = 0;
 
 	//! General property queries
 	//! ##@{

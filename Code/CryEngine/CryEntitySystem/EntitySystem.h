@@ -380,7 +380,18 @@ public:
 		int numListenerAdditions = 0;
 		int numListenerRemovals = 0;
 
-		EntityId mostExpensiveEntity = INVALID_ENTITYID;
+		struct SEntityInfo
+		{
+			SEntityInfo() = default;
+			SEntityInfo(const IEntity& entity)
+				: name(entity.GetName())
+				, id(entity.GetId()) {}
+
+			string name;
+			EntityId id = INVALID_ENTITYID;
+		};
+
+		SEntityInfo mostExpensiveEntity;
 		float mostExpensiveEntityCostMs = 0.f;
 	};
 

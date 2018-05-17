@@ -31,7 +31,8 @@ struct IUILayoutBase
 {
 	virtual ~IUILayoutBase(){}
 	virtual void          Unload() = 0;
-	virtual IFlashPlayer* GetPlayer() = 0;
+
+	virtual std::shared_ptr<IFlashPlayer> GetPlayer() = 0;
 };
 
 namespace UIFramework

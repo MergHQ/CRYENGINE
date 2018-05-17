@@ -97,8 +97,8 @@ void CCharInstance::RuntimeInit(CDefaultSkeleton* pExtDefaultSkeleton)
 
 	//
 	m_SkeletonPose.UpdateBBox(1);
-	m_SkeletonPose.m_physics.m_bHasPhysics = m_pDefaultSkeleton->m_bHasPhysics2;
-	m_SkeletonPose.m_physics.m_bHasPhysicsProxies = false;
+	m_SkeletonPose.m_physics.m_bHasPhysics = m_pDefaultSkeleton->m_bHasPhysics[0];
+	m_SkeletonPose.m_physics.m_bHasPhysicsProxies = m_pDefaultSkeleton->m_bHasPhysics[1];
 
 	m_bHasVertexAnimation = false;
 }

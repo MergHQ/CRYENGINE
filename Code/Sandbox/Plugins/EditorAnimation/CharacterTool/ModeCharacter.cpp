@@ -343,8 +343,10 @@ void ModeCharacter::OnViewportRender(const SRenderContext& rc)
 	if (cdf && m_character)
 	{
 		bool applyPhys = cdf->m_physNeedsApply;
-		if (m_window->ProxyMakingMode() && !cdf->m_physEdit)
+		int mode = m_window->ProxyMakingMode();
+		if (mode && (!cdf->m_physEdit || mode-1 != cdf->m_physLod))
 		{
+			cdf->m_physLod = mode - 1;
 			DisplayOptions* opt = m_document->GetDisplayOptions().get();
 			int changed = 0;
 			if (opt->physics.showPhysicalProxies == DisplayPhysicsOptions::DISABLED)
@@ -359,6 +361,8 @@ void ModeCharacter::OnViewportRender(const SRenderContext& rc)
 			}
 			if (changed)
 				m_document->DisplayOptionsChanged();
+			m_character->GetISkeletonAnim()->StopAnimationsAllLayers();
+			m_document->SetBindPoseEnabled(m_system->scene->layers.bindPose = true);
 			cdf->LoadPhysProxiesFromCharacter(m_character);
 			m_window->GetPropertiesPanel()->PropertyTree()->revert();
 			m_window->GetPropertiesPanel()->OnChanged();
@@ -465,7 +469,7 @@ bool ModeCharacter::OnViewportMouseProxy(const SMouseEvent& ev)
 
 	if (ibone0 > 0)
 	{
-		if (skel.GetJointPhysGeom(ibone0) && skel.GetJointPhysGeom(ibone0)->pGeom->GetiForeignData() != -1)
+		if (skel.GetJointPhysGeom(ibone0, cdf->m_physLod) && skel.GetJointPhysGeom(ibone0, cdf->m_physLod)->pGeom->GetiForeignData() != -1)
 		{
 			m_isCurBoneFree = false;
 			if (ev.type != SMouseEvent::TYPE_PRESS || ev.button != SMouseEvent::BUTTON_LEFT)
@@ -491,17 +495,17 @@ bool ModeCharacter::OnViewportMouseProxy(const SMouseEvent& ev)
 		else if (ev.type == SMouseEvent::TYPE_PRESS && ev.button == SMouseEvent::BUTTON_LEFT)
 		{
 			m_document->GetDisplayOptions()->physics.selectedBone = ibone0;
-			strided_pointer<CryBonePhysics> bonePhys;
-			bonePhys.data = skel.GetJointPhysInfo(0);
-			bonePhys.iStride = (int)((INT_PTR)skel.GetJointPhysInfo(1) - (INT_PTR)bonePhys.data);
-			phys_geometry *pgeom0 = bonePhys[ibone0].pPhysGeom;
-			bonePhys[ibone0].pPhysGeom = nullptr;
+			static std::vector<const phys_geometry*> bonePhys;
+			bonePhys.resize(max(bonePhys.size(), (size_t)skel.GetJointCount()));
+			for(int i = bonePhys.size()-1; i >= 0; --i)
+				bonePhys[i] = skel.GetJointPhysGeom(i, cdf->m_physLod);
+			bonePhys[ibone0] = nullptr;
 			// mark that bone's subtree, stop at bones that are already physicalized
 			std::function<void(int,const phys_geometry*,const phys_geometry*)> IterateChildren = [&](int ibone, const phys_geometry *pCheckVal, const phys_geometry *pMarkVal)
 			{
-				if (bonePhys[ibone].pPhysGeom != pCheckVal)
+				if (bonePhys[ibone] != pCheckVal)
 					return;
-				bonePhys[ibone].pPhysGeom = const_cast<phys_geometry*>(pMarkVal);
+				bonePhys[ibone] = const_cast<phys_geometry*>(pMarkVal);
 				for(int i = skel.GetJointChildrenCountByID(ibone)-1; i >= 0; i--)
 					IterateChildren(skel.GetJointChildIDAtIndexByID(ibone, i), pCheckVal, pMarkVal);
 			};
@@ -534,7 +538,7 @@ bool ModeCharacter::OnViewportMouseProxy(const SMouseEvent& ev)
 				for(int i = pRM->GetVerticesCount()-1, w; i >= 0; i--)
 				{
 					for(int j = w = 0; j < 4; j++)
-						w += bonePhys[skinData[i].indices[j] & ~mapMask | mapJoints[skinData[i].indices[j] & mapMask]].pPhysGeom == pMarkVal ? skinData[i].weights.bcolor[j] : 0;
+						w += bonePhys[skinData[i].indices[j] & ~mapMask | mapJoints[skinData[i].indices[j] & mapMask]] == pMarkVal ? skinData[i].weights.bcolor[j] : 0;
 					if (w > 127)
 						vtxBone.push_back(qBone * vtx[i]);
 				}
@@ -545,7 +549,6 @@ bool ModeCharacter::OnViewportMouseProxy(const SMouseEvent& ev)
 				if (IAttachmentSkin *pSkin = pAtman->GetInterfaceByIndex(i)->GetIAttachmentSkin())
 					PickVertices(pSkin->GetISkin()->GetIRenderMesh(0), MARKED_BONE, pSkin);
 			IterateChildren(ibone0, MARKED_BONE, nullptr);
-			bonePhys[ibone0].pPhysGeom = pgeom0;
 
 			if (vtxBone.size())
 			{
@@ -628,7 +631,7 @@ void ModeCharacter::CommenceRagdollTest()
 	pp.iSimClass = 2;
 	IPhysicalEntity *pents[6];
 	pents[0] = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_ARTICULATED, &pp);
-	skel.BuildPhysicalEntity(pents[0], 80, 0, 0, 1);
+	skel.BuildPhysicalEntity(pents[0], 80, 0, 0, max(0, m_window->ProxyMakingMode()-1));
 	skel.CreateAuxilaryPhysics(pents[0], Matrix34(Vec3(1), pp.q, pp.pos), 1);
 	pe_action_reset ar;
 	pents[0]->Action(&ar, 1);

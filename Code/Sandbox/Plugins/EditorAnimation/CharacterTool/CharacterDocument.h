@@ -246,7 +246,7 @@ private:
 	string     GetDefaultSkeletonAlias();
 	void       ReloadCHRPARAMS();
 	void       ReleaseObject();
-	void       Physicalize();
+	void       Physicalize(int physLod = 0);
 	void       CreateShaderParamCallbacks();
 	void       CreateShaderParamCallback(const char* name, const char* UIname, uint32 iIndex);
 	void       DrawCharacter(ICharacterInstance* pInstanceBase, const SRenderContext& context);

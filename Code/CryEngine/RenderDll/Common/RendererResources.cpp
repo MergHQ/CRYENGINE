@@ -1520,6 +1520,7 @@ void CRendererResources::ShutDown()
 
 CRendererResources::tempTexturePool_t CRendererResources::m_TempDepths;
 std::vector<CTexture*> CRendererResources::m_RTargets;
+size_t CRendererResources::m_RTallocs = 0;
 
 STempDepthTexture::~STempDepthTexture() 
 {
@@ -1591,6 +1592,22 @@ void CRendererResources::ReleaseTempDepthSurfaces()
 	m_TempDepths.clear();
 }
 
+// Erases temporaries that have been unused for a specified frames count
+void CRendererResources::TrimTempDepthSurfaces(int currentFrameID, int delayFrames)
+{
+	for (auto it = m_TempDepths.begin(); it != m_TempDepths.end();)
+	{
+		const auto &tex = *it;
+
+		const auto unused = tex->UseCount() == 1 && !tex->texture.IsLocked();
+		const auto shouldDelete = unused && currentFrameID - tex->lastAccessFrameID >= delayFrames;
+
+		it = shouldDelete ?
+			m_TempDepths.erase(it) :
+			std::next(it);
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1610,8 +1627,8 @@ SDepthTexture CRendererResources::CreateDepthSurface(int nWidth, int nHeight, bo
 	depthSurface.nHeight = nHeight;
 	depthSurface.nFrameAccess = -1;
 
-	char pName[128];
-	cry_sprintf(pName, "$DepthStencil_%d", m_TempDepths.size());
+	char pName[128]; // Create unique names for every allocation, otherwise name-matches would occur in GetOrCreateDepthStencil()
+	cry_sprintf(pName, "$DepthStencil%8x", m_TempDepths.allocations());
 
 	depthSurface.pTexture = CTexture::GetOrCreateDepthStencil(pName, nWidth, nHeight, clearValues, eTT_2D, FT_NOMIPS, preferredDepthFormat);
 	depthSurface.pTarget = depthSurface.pTexture->GetDevTexture()->Get2DTexture();
@@ -1652,8 +1669,8 @@ int CRendererResources::CreateRenderTarget(int nWidth, int nHeight, const ColorF
 		m_RTargets.push_back(nullptr);
 	}
 
-	char pName[128];
-	cry_sprintf(pName, "$RenderTarget_%d", n);
+	char pName[128]; // Create unique names for every allocation, otherwise name-matches would occur in GetOrCreateRenderTarget()
+	cry_sprintf(pName, "$RenderTarget%8x", ++m_RTallocs);
 	m_RTargets[n] = CTexture::GetOrCreateRenderTarget(pName, nWidth, nHeight, cClear, eTT_2D, FT_NOMIPS, eTF);
 
 	return m_RTargets[n]->GetID();

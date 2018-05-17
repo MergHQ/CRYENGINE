@@ -401,8 +401,8 @@ struct IDefaultSkeleton
 
 	// All render-meshes will be removed from the CDefaultSkeleton-class.
 	// The following functions will become deprecated.
-	virtual const phys_geometry* GetJointPhysGeom(uint32 jointIndex) const = 0;                 //!< just for statistics of physics proxies.
-	virtual CryBonePhysics*      GetJointPhysInfo(uint32 jointIndex) = 0;
+	virtual const phys_geometry* GetJointPhysGeom(uint32 jointIndex, int nLod = 0) const = 0;                 //!< just for statistics of physics proxies.
+	virtual CryBonePhysics*      GetJointPhysInfo(uint32 jointIndex, int nLod = 0, bool allocIfLodAbsent = true) = 0;
 	virtual int32                GetLimbDefinitionIdx(LimbIKDefinitionHandle handle) const = 0;
 	virtual void                 PrecacheMesh(bool bFullUpdate, int nRoundId, int nLod) = 0;
 	virtual IRenderMesh*         GetIRenderMesh() const = 0;

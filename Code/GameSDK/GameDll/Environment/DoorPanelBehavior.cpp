@@ -611,8 +611,6 @@ bool CDoorPanelBehavior::SetupFlashFromMaterial( IMaterial* pMaterial, CDoorPane
 		{
 			GameWarning("CDoorPanelBehavior::SetupFlashFromMaterial: Failed to get flash object: %s", DOOR_PANEL_FLASHOBJECT_ROOT);
 		}
-
-		pFlashPlayer->Release();
 	}
 	else
 	{
@@ -667,8 +665,6 @@ void CDoorPanelBehavior::DeinitFlashResources( CDoorPanel& doorPanel )
 					if (pFlashPlayer)
 					{
 						pFlashPlayer->SetFSCommandHandler(NULL);
-
-						pFlashPlayer->Release();
 					}
 
 					CDoorPanelBehavior::DecrementNumUniqueFlashInstances(pMaterial->GetName());

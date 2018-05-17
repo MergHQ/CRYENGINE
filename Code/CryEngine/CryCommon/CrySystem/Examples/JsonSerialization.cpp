@@ -1,4 +1,5 @@
 #include <CrySystem/ISystem.h>
+#include <CrySerialization/IArchiveHost.h>
 
 // Expose an enumeration that can be saved to disk
 enum class EMyEnum

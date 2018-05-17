@@ -5,105 +5,101 @@
 class CTimeValue
 {
 public:
-	static const int64 TIMEVALUE_PRECISION = 100000; //!< One second.
+	static constexpr int64 TIMEVALUE_PRECISION = 100000; //!< One second.
 
 public:
 	void GetMemoryUsage(class ICrySizer* pSizer) const { /*nothing*/ }
 
-	ILINE CTimeValue()
-	{
-		m_lValue = 0;
-	}
-
-	ILINE CTimeValue(const float fSeconds)
-	{
-		SetSeconds(fSeconds);
-	}
-
-	ILINE CTimeValue(const double fSeconds)
-	{
-		SetSeconds(fSeconds);
-	}
+	constexpr CTimeValue() : m_value(0) {}
+	constexpr CTimeValue(const float fSeconds) : m_value(static_cast<int64>(fSeconds * TIMEVALUE_PRECISION)) {}
+	constexpr CTimeValue(const double fSeconds) : m_value(static_cast<int64>(fSeconds * TIMEVALUE_PRECISION)) {}
 
 	//! \param inllValue Positive negative, absolute or relative in 1 second= TIMEVALUE_PRECISION units.
-	ILINE CTimeValue(const int64 inllValue)
-	{
-		m_lValue = inllValue;
-	}
+	constexpr CTimeValue(const int64 inllValue) : m_value(inllValue) {}
 
 	//! Copy constructor.
-	ILINE CTimeValue(const CTimeValue& inValue)
-	{
-		m_lValue = inValue.m_lValue;
-	}
-
-	ILINE ~CTimeValue() {}
+	constexpr CTimeValue(const CTimeValue& inValue) : m_value(inValue.m_value) {}
 
 	//! Assignment operator.
 	//! \param inRhs Right side.
-	ILINE CTimeValue& operator=(const CTimeValue& inRhs)
+	CTimeValue& operator=(const CTimeValue& inRhs)
 	{
-		m_lValue = inRhs.m_lValue;
+		m_value = inRhs.m_value;
 		return *this;
 	};
 
 	//! Use only for relative value, absolute values suffer a lot from precision loss.
-	ILINE float GetSeconds() const
+	constexpr float GetSeconds() const
 	{
-		return m_lValue * (1.f / TIMEVALUE_PRECISION);
+		return m_value * (1.f / TIMEVALUE_PRECISION);
 	}
 
 	//! Get relative time difference in seconds.
 	//! Call this on the endTime object: endTime.GetDifferenceInSeconds( startTime );
-	ILINE float GetDifferenceInSeconds(const CTimeValue& startTime) const
+	float GetDifferenceInSeconds(const CTimeValue& startTime) const
 	{
-		return (m_lValue - startTime.m_lValue) * (1.f / TIMEVALUE_PRECISION);
+		return (*this - startTime).GetSeconds();
 	}
 
-	ILINE void SetSeconds(const float infSec)
+	void SetSeconds(const float infSec)
 	{
-		m_lValue = (int64)(infSec * TIMEVALUE_PRECISION);
+		m_value = (int64)(infSec * TIMEVALUE_PRECISION);
 	}
 
-	ILINE void SetSeconds(const double infSec)
+	void SetSeconds(const double infSec)
 	{
-		m_lValue = (int64)(infSec * TIMEVALUE_PRECISION);
+		m_value = (int64)(infSec * TIMEVALUE_PRECISION);
 	}
 
-	ILINE void SetSeconds(const int64 indwSec)
+	void SetSeconds(const int64 indwSec)
 	{
-		m_lValue = indwSec * TIMEVALUE_PRECISION;
+		m_value = indwSec * TIMEVALUE_PRECISION;
 	}
 
-	ILINE void SetMilliSeconds(const int64 indwMilliSec)
+	static constexpr CTimeValue CreateFromMilliSeconds(const int64 indwMilliSec)
 	{
-		m_lValue = indwMilliSec * (TIMEVALUE_PRECISION / 1000);
+		return CTimeValue(indwMilliSec * (TIMEVALUE_PRECISION / 1000));
+	}
+
+	void SetMilliSeconds(const int64 indwMilliSec)
+	{
+		*this = CreateFromMilliSeconds(indwMilliSec);
 	}
 
 	//! Use only for relative value, absolute values suffer a lot from precision loss.
-	ILINE float GetMilliSeconds() const
+	constexpr float GetMilliSeconds() const
 	{
-		return m_lValue * (1000.f / TIMEVALUE_PRECISION);
+		return m_value * (1000.f / TIMEVALUE_PRECISION);
 	}
 
-	ILINE int64 GetMilliSecondsAsInt64() const
+	constexpr int64 GetMilliSecondsAsInt64() const
 	{
-		return m_lValue * 1000 / TIMEVALUE_PRECISION;
+		return m_value * 1000 / TIMEVALUE_PRECISION;
 	}
 
-	ILINE int64 GetMicroSecondsAsInt64() const
+	constexpr int64 GetMicroSecondsAsInt64() const
 	{
-		return m_lValue * (1000 * 1000) / TIMEVALUE_PRECISION;
+		return m_value * (1000 * 1000) / TIMEVALUE_PRECISION;
 	}
 
-	ILINE int64 GetValue() const
+	constexpr int64 GetValue() const
 	{
-		return m_lValue;
+		return m_value;
 	}
 
-	ILINE void SetValue(int64 val)
+	void SetValue(int64 val)
 	{
-		m_lValue = val;
+		m_value = val;
+	}
+
+	void Invalidate()
+	{
+		m_value = 0;
+	}
+
+	constexpr bool IsValid() const
+	{
+		return m_value != 0;
 	}
 
 	//! Useful for periodic events (e.g. water wave, blinking).
@@ -119,31 +115,31 @@ public:
 	// math operations
 
 	//! Binary subtraction.
-	ILINE CTimeValue operator-(const CTimeValue& inRhs) const { CTimeValue ret; ret.m_lValue = m_lValue - inRhs.m_lValue; return ret; };
+	CTimeValue operator-(const CTimeValue& inRhs) const { CTimeValue ret; ret.m_value = m_value - inRhs.m_value; return ret; };
 
 	//! Binary addition.
-	ILINE CTimeValue operator+(const CTimeValue& inRhs) const { CTimeValue ret; ret.m_lValue = m_lValue + inRhs.m_lValue; return ret;  };
+	CTimeValue operator+(const CTimeValue& inRhs) const { CTimeValue ret; ret.m_value = m_value + inRhs.m_value; return ret; };
 
 	//! Sign inversion.
-	ILINE CTimeValue  operator-() const                   { CTimeValue ret; ret.m_lValue = -m_lValue; return ret; };
+	CTimeValue  operator-() const { CTimeValue ret; ret.m_value = -m_value; return ret; };
 
-	ILINE CTimeValue& operator+=(const CTimeValue& inRhs) { m_lValue += inRhs.m_lValue; return *this; }
-	ILINE CTimeValue& operator-=(const CTimeValue& inRhs) { m_lValue -= inRhs.m_lValue; return *this; }
+	CTimeValue& operator+=(const CTimeValue& inRhs) { m_value += inRhs.m_value; return *this; }
+	CTimeValue& operator-=(const CTimeValue& inRhs) { m_value -= inRhs.m_value; return *this; }
 
-	ILINE CTimeValue& operator/=(int inRhs)               { m_lValue /= inRhs; return *this; }
+	CTimeValue& operator/=(int inRhs) { m_value /= inRhs; return *this; }
 
 	// comparison -----------------------
 
-	ILINE bool operator<(const CTimeValue& inRhs) const  { return m_lValue < inRhs.m_lValue; };
-	ILINE bool operator>(const CTimeValue& inRhs) const  { return m_lValue > inRhs.m_lValue; };
-	ILINE bool operator>=(const CTimeValue& inRhs) const { return m_lValue >= inRhs.m_lValue; };
-	ILINE bool operator<=(const CTimeValue& inRhs) const { return m_lValue <= inRhs.m_lValue; };
-	ILINE bool operator==(const CTimeValue& inRhs) const { return m_lValue == inRhs.m_lValue; };
-	ILINE bool operator!=(const CTimeValue& inRhs) const { return m_lValue != inRhs.m_lValue; };
+	constexpr bool operator<(const CTimeValue& inRhs) const { return m_value < inRhs.m_value; };
+	constexpr bool operator>(const CTimeValue& inRhs) const { return m_value > inRhs.m_value; };
+	constexpr bool operator>=(const CTimeValue& inRhs) const { return m_value >= inRhs.m_value; };
+	constexpr bool operator<=(const CTimeValue& inRhs) const { return m_value <= inRhs.m_value; };
+	constexpr bool operator==(const CTimeValue& inRhs) const { return m_value == inRhs.m_value; };
+	constexpr bool operator!=(const CTimeValue& inRhs) const { return m_value != inRhs.m_value; };
 
 	//! Splits the time value into hours, minutes, seconds, milliseconds.
 	//! All output parameters are optional (can be nullptr).
-	ILINE void Split(int* pHours, int* pMinutes, int* pSeconds, int* pMilliseconds) const
+	void Split(int* pHours, int* pMinutes, int* pSeconds, int* pMilliseconds) const
 	{
 		const int64 totalMilliseconds = GetMilliSecondsAsInt64();
 
@@ -173,7 +169,52 @@ public:
 	void GetMemoryStatistics(class ICrySizer* pSizer) const { /*nothing*/ }
 
 private:
-	int64 m_lValue;     //!< Absolute or relative value in 1/TIMEVALUE_PRECISION, might be negative.
+	int64 m_value;     //!< Absolute or relative value in 1/TIMEVALUE_PRECISION, might be negative.
 
 	friend class CTimer;
 };
+
+constexpr CTimeValue operator"" _days(unsigned long long value)
+{
+	return CTimeValue(static_cast<double>(value * 86400));
+}
+
+constexpr CTimeValue operator"" _days(long double value)
+{
+	return CTimeValue(static_cast<double>(value) * 86400.0);
+}
+
+constexpr CTimeValue operator"" _hours(unsigned long long value)
+{
+	return CTimeValue(static_cast<double>(value * 3600));
+}
+
+constexpr CTimeValue operator"" _hours(long double value)
+{
+	return CTimeValue(static_cast<double>(value) * 3600.0);
+}
+
+constexpr CTimeValue operator"" _minutes(unsigned long long value)
+{
+	return CTimeValue(static_cast<double>(value * 60));
+}
+
+constexpr CTimeValue operator"" _minutes(long double value)
+{
+	return CTimeValue(static_cast<double>(value) * 60.0);
+}
+
+constexpr CTimeValue operator"" _seconds(unsigned long long value)
+{
+	return CTimeValue(static_cast<double>(value));
+}
+
+constexpr CTimeValue operator"" _seconds(long double value)
+{
+	return CTimeValue(static_cast<double>(value));
+}
+
+constexpr CTimeValue operator"" _milliseconds(unsigned long long value)
+{
+	return CTimeValue::CreateFromMilliSeconds(static_cast<int64>(value));
+}

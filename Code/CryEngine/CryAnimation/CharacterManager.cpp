@@ -3254,7 +3254,7 @@ CDefaultSkeleton* CharacterManager::CreateExtendedSkel(CCharInstance* pCharInsta
 	pExtDefaultSkeleton->m_arrModelJoints[0].m_strJointName = lh.m_arrExtModelJoints[0].m_strJointName;
 	pExtDefaultSkeleton->m_arrModelJoints[0].m_nJointCRC32Lower = lh.m_arrExtModelJoints[0].m_nJointCRC32Lower;
 	pExtDefaultSkeleton->m_arrModelJoints[0].m_nJointCRC32 = CCrc32::Compute(lh.m_arrExtModelJoints[0].m_strJointName);
-	pExtDefaultSkeleton->m_arrModelJoints[0].m_PhysInfo = lh.m_arrExtModelJoints[0].m_PhysInfo;
+	pExtDefaultSkeleton->m_arrModelJoints[0].m_PhysInfoRef = lh.m_arrExtModelJoints[0].m_PhysInfo;
 	pExtDefaultSkeleton->m_arrModelJoints[0].m_fMass = lh.m_arrExtModelJoints[0].m_fMass;
 	pExtDefaultSkeleton->m_poseDefaultData.GetJointsRelative()[0] = lh.m_arrExtModelJoints[0].m_DefaultAbsolute;
 	pExtDefaultSkeleton->m_poseDefaultData.GetJointsAbsolute()[0] = lh.m_arrExtModelJoints[0].m_DefaultAbsolute;
@@ -3265,7 +3265,7 @@ CDefaultSkeleton* CharacterManager::CreateExtendedSkel(CCharInstance* pCharInsta
 		pExtDefaultSkeleton->m_arrModelJoints[i].m_strJointName = lh.m_arrExtModelJoints[i].m_strJointName;
 		pExtDefaultSkeleton->m_arrModelJoints[i].m_nJointCRC32Lower = lh.m_arrExtModelJoints[i].m_nJointCRC32Lower;
 		pExtDefaultSkeleton->m_arrModelJoints[i].m_nJointCRC32 = CCrc32::Compute(lh.m_arrExtModelJoints[i].m_strJointName);
-		pExtDefaultSkeleton->m_arrModelJoints[i].m_PhysInfo = lh.m_arrExtModelJoints[i].m_PhysInfo;
+		pExtDefaultSkeleton->m_arrModelJoints[i].m_PhysInfoRef = lh.m_arrExtModelJoints[i].m_PhysInfo;
 		pExtDefaultSkeleton->m_arrModelJoints[i].m_fMass = lh.m_arrExtModelJoints[i].m_fMass;
 		pExtDefaultSkeleton->m_poseDefaultData.GetJointsAbsolute()[i] = lh.m_arrExtModelJoints[i].m_DefaultAbsolute;
 		pExtDefaultSkeleton->m_poseDefaultData.GetJointsRelative()[i] = pExtDefaultSkeleton->m_poseDefaultData.GetJointsAbsolute()[p].GetInverted() * lh.m_arrExtModelJoints[i].m_DefaultAbsolute;

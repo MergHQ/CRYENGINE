@@ -61,9 +61,9 @@ public:
 		CSharedFlashPlayerResources::GetAccess().ResetMeshCache();
 	}
 
-	virtual IFlashPlayer* CreateFlashPlayerInstance() override
+	virtual std::shared_ptr<IFlashPlayer> CreateFlashPlayerInstance() override
 	{
-		return new CFlashPlayer;
+		return std::make_shared<CFlashPlayer>();
 	}
 
 	virtual IFlashPlayerBootStrapper* CreateFlashPlayerBootStrapper() override

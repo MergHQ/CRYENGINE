@@ -541,7 +541,7 @@ void CHud3D::ReleaseFlashPlayerRef(const uint32 nThreadID)
 	for (uint32 r = 0; r < nRECount; ++r)
 	{
 		SHudData& pData = m_pRenderData[nThreadID][r];
-		SAFE_RELEASE(pData.pFlashPlayer);
+		pData.pFlashPlayer = nullptr;
 	}
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
