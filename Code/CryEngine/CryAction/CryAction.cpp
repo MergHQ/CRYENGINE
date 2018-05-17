@@ -903,11 +903,6 @@ void CCryAction::ConnectCmd(IConsoleCmdArgs* args)
 	params.pContextParams = NULL;
 	params.port = (gEnv->pLobby && gEnv->bMultiplayer) ? gEnv->pLobby->GetLobbyParameters().m_connectPort : pConsole->GetCVar("cl_serverport")->GetIVal();
 
-	if (!CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules())
-	{
-		params.flags |= eGSF_NoGameRules;
-	}
-
 	GetCryAction()->StartGameContext(&params);
 }
 
