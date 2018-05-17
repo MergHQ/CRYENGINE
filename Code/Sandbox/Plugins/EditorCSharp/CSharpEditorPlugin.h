@@ -76,6 +76,7 @@ public:
 	static CCSharpEditorPlugin* GetInstance() { return s_pInstance; }
 
 private:
+	bool                   m_initialized = false;
 	HANDLE                 m_textEditorHandle;
 	string                 m_createdTextEditor;
 	std::vector<string>    m_changedFiles;
@@ -85,6 +86,8 @@ private:
 	CSharpMessageListeners m_messageListeners;
 	string                 m_csharpSolutionPath;
 
+	// Checks the machine for an installation of VS2017+, and sets this as the default text editor.
+	void SetDefaultTextEditor();
 	// Updates the plugins and solutions if required.
 	void UpdatePluginsAndSolution();
 	// Reloads the managed plugings.

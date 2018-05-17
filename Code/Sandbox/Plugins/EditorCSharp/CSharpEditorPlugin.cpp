@@ -8,6 +8,7 @@
 #include <Include/SandboxAPI.h>
 #include <IEditorImpl.h>
 #include "QT/QToolTabManager.h"
+#include <QProcess>
 
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/AssetManager.h>
@@ -59,6 +60,67 @@ CCSharpEditorPlugin::~CCSharpEditorPlugin()
 	}
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+}
+
+void CCSharpEditorPlugin::SetDefaultTextEditor()
+{
+	string textEditor = gEditorFilePreferences.textEditorCSharp;
+
+	ICryPak* pCryPak = gEnv->pCryPak;
+
+	// Only change it when it's set to the default value or no value.
+	if (!textEditor.IsEmpty() && textEditor != "devenv.exe")
+	{
+		return;
+	}
+
+	char szVSWherePath[_MAX_PATH];
+	ExpandEnvironmentStringsA("%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe", szVSWherePath, CRY_ARRAY_COUNT(szVSWherePath));
+
+	if (!pCryPak->IsFileExist(szVSWherePath))
+	{
+		return;
+	}
+
+	QProcess process;
+	process.start(szVSWherePath, QStringList() << "-format" << "value" << "-property" << "installationPath");
+	if(!process.waitForStarted())
+	{
+		CryLog("Unable to detect installed versions of Visual Studio because vswhere.exe could not be started.");
+		return;
+	}
+	if (!process.waitForFinished() && process.exitStatus() != QProcess::ExitStatus::NormalExit)
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to find Visual Studio installations because vswhere.exe crashed!");
+		return;
+	}
+
+	QByteArray qtOutput = process.readAllStandardOutput();
+	string output = qtOutput.toStdString().c_str();
+	
+	string installationPath;
+	bool exists = false;
+	int pos = 0;
+	string path;
+	while (!(path = output.Tokenize("\r\n", pos)).empty())
+	{
+		installationPath = string().Format("%s/Common7/IDE/devenv.exe", path);
+		if (pCryPak->IsFileExist(installationPath))
+		{
+			exists = true;
+			break;
+		}
+	}
+	
+	if (exists && !installationPath.IsEmpty())
+	{
+		gEditorFilePreferences.textEditorCSharp = string().Format("\"%s\"", installationPath);
+		GetIEditor()->GetPreferences()->Save();
+	}
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to find the executable of Visual Studio 2017 or later!");
+	}
 }
 
 void CCSharpEditorPlugin::OnFileChange(const char* szFilename, EChangeType type)
@@ -219,6 +281,12 @@ void CCSharpEditorPlugin::OnEditorNotifyEvent(EEditorNotifyEvent aEventId)
 {
 	if (aEventId == eNotify_OnIdleUpdate)
 	{
+		if (!m_initialized)
+		{
+			m_initialized = true;
+			SetDefaultTextEditor();
+		}
+		
 		// If a compile message was sent during compilation, open when Editor is fully initialized
 		if (!m_compileMessage.empty())
 		{
