@@ -71,7 +71,10 @@ public:
 	virtual IUIElement*               GetUIElement(const char* sName) const override { return const_cast<IUIElement*>(m_elements(sName)); }
 	virtual IUIElement*               GetUIElement(int index) const override         { return index < m_elements.size() ? const_cast<IUIElement*>(m_elements[index]) : NULL; }
 	virtual int                       GetUIElementCount() const override             { return m_elements.size(); }
-	virtual IUIElement*               GetUIElementByInstanceStr(const char* sUIInstanceStr) const override;
+
+	virtual                        IUIElement*  GetUIElementByInstanceStr(const char* sUIInstanceStr) const override;
+	virtual std::pair<IUIElement*, IUIElement*> GetUIElementsByInstanceStr(const char* sUIInstanceStr) const override;
+	virtual std::pair<string, int>              GetUIIdentifiersByInstanceStr(const char* sUIInstanceStr) const override;
 
 	virtual IUIAction*                GetUIAction(const char* sName) const override { return const_cast<IUIAction*>(m_actions(sName)); }
 	virtual IUIAction*                GetUIAction(int index) const override         { return index < m_actions.size() ? const_cast<IUIAction*>(m_actions[index]) : NULL; }
