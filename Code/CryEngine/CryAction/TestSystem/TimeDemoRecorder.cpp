@@ -1546,19 +1546,13 @@ bool CTimeDemoRecorder::RecordFrame()
 
 	rec.frameTime = (time - m_lastFrameTime).GetSeconds();
 
-	IEntity* pPlayerEntity = NULL;
-
-	IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
-	if (pClientActor)
-	{
-		pPlayerEntity = pClientActor->GetEntity();
-	}
-
-	if (pPlayerEntity)
+	if (IEntity* pPlayerEntity = gEnv->pGameFramework->GetClientEntity())
 	{
 		rec.playerPosition = pPlayerEntity->GetPos();
 		rec.playerRotation = pPlayerEntity->GetRotation();
-		rec.playerViewRotation = pClientActor == NULL ? pPlayerEntity->GetRotation() : pClientActor->GetViewRotation();
+
+		IActor* pClientActor = gEnv->pGameFramework->GetClientActor();
+		rec.playerViewRotation = pClientActor ? pClientActor->GetViewRotation() : pPlayerEntity->GetRotation();
 	}
 
 	// Legacy
@@ -1668,20 +1662,13 @@ bool CTimeDemoRecorder::PlayFrame()
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////
-
-	IEntity* pPlayer = NULL;
-	IActor* pClActor = gEnv->pGameFramework->GetClientActor();
-	if (pClActor)
+	
+	if (IEntity* pPlayerEntity = gEnv->pGameFramework->GetClientEntity())
 	{
-		pPlayer = pClActor->GetEntity();
-	}
-
-	if (pPlayer)
-	{
-		if (pPlayer->GetParent() == 0)
+		if (pPlayerEntity->GetParent() == 0)
 		{
 			// Only if player is not linked to anything.
-			pPlayer->SetPos(rec.playerPosition, ENTITY_XFORM_TIMEDEMO);
+			pPlayerEntity->SetPos(rec.playerPosition, ENTITY_XFORM_TIMEDEMO);
 
 			int orientationIndex = m_numLoops % m_numOrientations;
 			float zAngle = ((float)orientationIndex / m_numOrientations) * gf_PI2;
@@ -1690,7 +1677,7 @@ bool CTimeDemoRecorder::PlayFrame()
 			Quat adjustedPlayerRotation = Quat::CreateRotationZ(zAngle) * rotation;
 			CRY_ASSERT(adjustedPlayerRotation.IsValid());
 
-			pPlayer->SetRotation(adjustedPlayerRotation, ENTITY_XFORM_TIMEDEMO);
+			pPlayerEntity->SetRotation(adjustedPlayerRotation, ENTITY_XFORM_TIMEDEMO);
 		}
 	}
 
