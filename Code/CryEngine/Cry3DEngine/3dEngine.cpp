@@ -2984,7 +2984,7 @@ void C3DEngine::SetWind(const Vec3& vWind)
 
 	if (m_pBreezeGenerator)
 	{
-		m_pBreezeGenerator->m_wind_speed = vWind;
+		m_pBreezeGenerator->m_params.windVector = vWind;
 	}
 
 	if (!m_vWindSpeed.IsZero())
@@ -3106,7 +3106,7 @@ bool C3DEngine::SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, boo
 	return true;
 }
 
-IBreezeGenerator* C3DEngine::GetBreezeGenerator()
+IBreezeGenerator* C3DEngine::GetBreezeGenerator() const
 {
 	return Cry3DEngineBase::GetBreezeGenerator();
 }

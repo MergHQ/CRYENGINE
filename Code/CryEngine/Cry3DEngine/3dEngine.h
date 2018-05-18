@@ -525,7 +525,7 @@ public:
 
 	virtual Vec3                           GetGlobalWind(bool bIndoors) const;
 	virtual bool                           SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, bool bIndoors) const;
-	virtual IBreezeGenerator*              GetBreezeGenerator();
+	virtual IBreezeGenerator*              GetBreezeGenerator() const;
 	virtual IVisArea*                      GetVisAreaFromPos(const Vec3& vPos);
 	virtual bool                           IntersectsVisAreas(const AABB& box, void** pNodeCache = 0);
 	virtual bool                           ClipToVisAreas(IVisArea* pInside, Sphere& sphere, Vec3 const& vNormal, void* pNodeCache = 0);

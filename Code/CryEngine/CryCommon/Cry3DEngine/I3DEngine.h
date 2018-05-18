@@ -1887,7 +1887,7 @@ struct I3DEngine : public IProcess
 	virtual bool SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, bool bIndoors) const = 0;
 
 	//! Retrieve pointer to the breeze generator interface.
-	virtual IBreezeGenerator* GetBreezeGenerator() = 0;
+	virtual IBreezeGenerator* GetBreezeGenerator() const = 0;
 
 	//! Gets the VisArea which is present at a specified point.
 	//! \return VisArea containing point, if any, 0 otherwise.

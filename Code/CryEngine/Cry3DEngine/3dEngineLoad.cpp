@@ -1401,18 +1401,7 @@ void C3DEngine::UpdateWindParams()
 	{
 		m_pBreezeGenerator->Shutdown();
 
-		m_pBreezeGenerator->m_enabled = wind.breezeGenerationEnabled;
-		m_pBreezeGenerator->m_strength = wind.breezeStrength;
-		m_pBreezeGenerator->m_variance = wind.breezeVariance;
-		m_pBreezeGenerator->m_lifetime = wind.breezeLifeTime;
-		m_pBreezeGenerator->m_count = wind.breezeCount;
-		m_pBreezeGenerator->m_radius = wind.breezeRadius;
-		m_pBreezeGenerator->m_spawn_radius = wind.breezeSpawnRadius;
-		m_pBreezeGenerator->m_spread = wind.breezeSpread;
-		m_pBreezeGenerator->m_movement_speed = wind.breezeMovementSpeed;
-		m_pBreezeGenerator->m_awake_thresh = wind.breezeAwakeThreshold;
-		m_pBreezeGenerator->m_wind_speed = wind.windVector;
-		m_pBreezeGenerator->m_fixed_height = wind.breezeFixedHeight;
+		m_pBreezeGenerator->SetParams(wind);
 
 		m_pBreezeGenerator->Initialize();
 	}
