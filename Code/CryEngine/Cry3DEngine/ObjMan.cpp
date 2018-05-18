@@ -210,138 +210,321 @@ struct CLevelStatObjLoader : public IStreamCallback, public Cry3DEngineBase
 //////////////////////////////////////////////////////////////////////////
 // Preload in efficient way all CGF's used in level
 //////////////////////////////////////////////////////////////////////////
-void CObjManager::PreloadLevelObjects()
+
+class CObjManager::CPreloadTimeslicer
 {
+public:
+	enum class EStep
+	{
+		Init,
+		BrushListParse,
+		BrushListLoad,
+		ResourceListStream,
+		Finish,
+
+		// Results
+		Done,
+		Failed,
+		Count
+	};
+
+	CPreloadTimeslicer(CObjManager& owner)
+		: m_owner(owner)
+	{}
+
+	I3DEngine::ELevelLoadStatus DoStep(const float fTimeslicingLimitSec);
+
+
+private:
+
+	I3DEngine::ELevelLoadStatus SetInProgress(EStep nextStep)
+	{
+		m_currentStep = nextStep;
+		return I3DEngine::ELevelLoadStatus::InProgress;
+	}
+
+	I3DEngine::ELevelLoadStatus SetDone()
+	{
+		m_currentStep = EStep::Done;
+		return I3DEngine::ELevelLoadStatus::Done;
+	}
+
+	I3DEngine::ELevelLoadStatus SetFailed()
+	{
+		m_currentStep = EStep::Failed;
+		return I3DEngine::ELevelLoadStatus::Failed;
+	}
+
+	// inputs
+	CObjManager& m_owner;
+
+	// state support
+	EStep m_currentStep = EStep::Init;
+
+	// intermediate
+	float m_startTime = 0;
+	bool m_isCgfCacheExist = false;
+	CLevelStatObjLoader m_cgfStreamer;
+	int m_loadedCgfCounter = 0;
+	int m_inLevelCacheCount = 0;
+	bool m_isVerboseLogging = GetCVars()->e_StatObjPreload > 1;
+
+	// brush list loading
+	std::vector<string> m_brushes;
+	std::vector<string>::iterator m_brushesIter;
+
+	// streaming loading
+	IResourceList* m_pResList = nullptr;
+	const char* m_szCgfName = nullptr;
+};
+
+
+
+I3DEngine::ELevelLoadStatus CObjManager::CPreloadTimeslicer::DoStep(const float timeSlicingLimitSec)
+{
+#define NEXT_STEP(step) return SetInProgress(step); case step: 
+
 	LOADING_TIME_PROFILE_SECTION;
-
-	// Starting a new level, so make sure the round ids are ahead of what they were in the last level
-	m_nUpdateStreamingPrioriryRoundId += 8;
-	m_nUpdateStreamingPrioriryRoundIdFast += 8;
-
-	PrintMessage("Starting loading level CGF's ...");
 	INDENT_LOG_DURING_SCOPE();
 
-	float fStartTime = GetCurAsyncTimeSec();
-
-	bool bCgfCacheExist = false;
-	if (GetCVars()->e_StreamCgf != 0)
+	switch (m_currentStep)
 	{
-		// Only when streaming enable use no-mesh cgf pak.
-		//bCgfCacheExist = GetISystem()->GetIResourceManager()->LoadLevelCachePak( CGF_LEVEL_CACHE_PAK,"" );
-	}
-	IResourceList* pResList = GetISystem()->GetIResourceManager()->GetLevelResourceList();
-
-	// Construct streamer object
-	CLevelStatObjLoader cgfStreamer;
-
-	CryPathString cgfFilename;
-	int nCgfCounter = 0;
-	int nInLevelCacheCount = 0;
-
-	bool bVerboseLogging = GetCVars()->e_StatObjPreload > 1;
-
-	//////////////////////////////////////////////////////////////////////////
-	// Enumerate all .CGF inside level from the "brushlist.txt" file.
-	{
-		string brushListFilename = Get3DEngine()->GetLevelFilePath(BRUSH_LIST_FILE);
-		CCryFile file;
-		if (file.Open(brushListFilename.c_str(), "rb") && file.GetLength() > 0)
+	case EStep::Init:
 		{
-			int nFileLength = file.GetLength();
-			char* buf = new char[nFileLength + 1];
-			buf[nFileLength] = 0; // Null terminate
-			file.ReadRaw(buf, nFileLength);
+			// Starting a new level, so make sure the round ids are ahead of what they were in the last level
+			m_owner.m_nUpdateStreamingPrioriryRoundId += 8;
+			m_owner.m_nUpdateStreamingPrioriryRoundIdFast += 8;
 
-			// Parse file, every line in a file represents a resource filename.
-			char seps[] = "\r\n";
-			char* token = strtok(buf, seps);
-			while (token != NULL)
+			m_owner.PrintMessage("Starting loading level CGF's ...");
+
+
+			m_startTime = GetCurAsyncTimeSec();
+
+			m_isCgfCacheExist = false;
+			if (GetCVars()->e_StreamCgf != 0)
 			{
-				int nAliasLen = sizeof("%level%") - 1;
-				if (strncmp(token, "%level%", nAliasLen) == 0)
-				{
-					cgfFilename = Get3DEngine()->GetLevelFilePath(token + nAliasLen);
-				}
-				else
-				{
-					cgfFilename = token;
-				}
-
-				if (bVerboseLogging)
-				{
-					CryLog("%s", cgfFilename.c_str());
-				}
-				// Do not use streaming for the Brushes from level.pak.
-				GetObjManager()->LoadStatObj(cgfFilename.c_str(), NULL, 0, false, 0);
-				//cgfStreamer.StartStreaming(cgfFilename.c_str());
-				nCgfCounter++;
-
-				token = strtok(NULL, seps);
-
-				//This loop can take a few seconds, so we should refresh the loading screen and call the loading tick functions to ensure that no big gaps in coverage occur.
-				SYNCHRONOUS_LOADING_TICK();
+				// Only when streaming enable use no-mesh cgf pak.
+				//m_bCgfCacheExist = GetISystem()->GetIResourceManager()->LoadLevelCachePak( CGF_LEVEL_CACHE_PAK,"" );
 			}
-			delete[]buf;
+
+			m_loadedCgfCounter = 0;
+			m_inLevelCacheCount = 0;
+
+			m_isVerboseLogging = GetCVars()->e_StatObjPreload > 1;
 		}
-	}
-	//////////////////////////////////////////////////////////////////////////
 
-	// Request objects loading from Streaming System.
-	if (const char* pCgfName = pResList->GetFirst())
-	{
-		while (pCgfName)
+		NEXT_STEP(EStep::BrushListParse)
 		{
-			if (strstr(pCgfName, ".cgf"))
+			CryPathString cgfFilename;
+
+			//////////////////////////////////////////////////////////////////////////
+			// Enumerate all .CGF inside level from the "brushlist.txt" file.
 			{
-				const char* sLodName = strstr(pCgfName, "_lod");
-				if (sLodName && (sLodName[4] >= '0' && sLodName[4] <= '9'))
+				string brushListFilename = Get3DEngine()->GetLevelFilePath(BRUSH_LIST_FILE);
+				CCryFile file;
+				if (file.Open(brushListFilename.c_str(), "rb") && file.GetLength() > 0)
 				{
-					// Ignore Lod files.
-					pCgfName = pResList->GetNext();
-					continue;
-				}
+					const size_t fileLength = file.GetLength();
 
-				cgfFilename = pCgfName;
+					std::unique_ptr<char[]> brushListBuffer(new char[fileLength + 1]);
 
-				if (bVerboseLogging)
-				{
-					CryLog("%s", cgfFilename.c_str());
-				}
-				CStatObj* pStatObj = GetObjManager()->LoadStatObj(cgfFilename.c_str(), NULL, 0, true, 0);
-				if (pStatObj)
-				{
-					if (pStatObj->m_bMeshStrippedCGF)
+					brushListBuffer[fileLength] = 0; // Null terminate
+					file.ReadRaw(brushListBuffer.get(), fileLength);
+
+					// Parse file, every line in a file represents a resource filename.
+					char seps[] = "\r\n";
+					char* token = strtok(brushListBuffer.get(), seps);
+					while (token != NULL)
 					{
-						nInLevelCacheCount++;
+						int nAliasLen = sizeof("%level%") - 1;
+						if (strncmp(token, "%level%", nAliasLen) == 0)
+						{
+							cgfFilename = Get3DEngine()->GetLevelFilePath(token + nAliasLen);
+						}
+						else
+						{
+							cgfFilename = token;
+						}
+
+
+						m_brushes.push_back(cgfFilename);
+
+						// Do not use streaming for the Brushes from level.pak.
+						//GetObjManager()->LoadStatObj(cgfFilename.c_str(), NULL, 0, false, 0);
+						//cgfStreamer.StartStreaming(cgfFilename.c_str());
+						m_loadedCgfCounter++;
+
+						token = strtok(NULL, seps);
 					}
 				}
-				//cgfStreamer.StartStreaming(cgfFilename.c_str());
-				nCgfCounter++;
+
+			}
+
+			m_brushesIter = m_brushes.begin();
+		}
+
+		NEXT_STEP(EStep::BrushListLoad)
+		{
+			const float fStartTime = GetCurAsyncTimeSec();
+			while (m_brushesIter != m_brushes.end())
+			{
+				if (m_isVerboseLogging)
+				{
+					CryLog("%s", m_brushesIter->c_str());
+				}
+
+				// Do not use streaming for the Brushes from level.pak.
+				GetObjManager()->LoadStatObj(m_brushesIter->c_str(), NULL, 0, false, 0);
+				++m_brushesIter;
+				if (m_brushesIter == m_brushes.end())
+					break;
 
 				//This loop can take a few seconds, so we should refresh the loading screen and call the loading tick functions to ensure that no big gaps in coverage occur.
 				SYNCHRONOUS_LOADING_TICK();
+
+				if (timeSlicingLimitSec > 0.0f && GetCurAsyncTimeSec() - fStartTime > timeSlicingLimitSec)
+				{
+					return SetInProgress(m_currentStep);
+				}
 			}
 
-			pCgfName = pResList->GetNext();
+			m_brushesIter = std::vector<string>::iterator();
+			m_brushes.clear();
 		}
+
+	NEXT_STEP(EStep::ResourceListStream)
+		{
+			if (!m_pResList)
+			{
+				m_pResList = GetISystem()->GetIResourceManager()->GetLevelResourceList();
+				m_szCgfName = m_pResList->GetFirst();
+			}
+
+			CryPathString cgfFilename;
+			const float fStartTime = GetCurAsyncTimeSec();
+
+			// Request objects loading from Streaming System.
+			if (m_szCgfName)
+			{
+				while (m_szCgfName)
+				{
+					if (strstr(m_szCgfName, ".cgf"))
+					{
+						const char* sLodName = strstr(m_szCgfName, "_lod");
+						if (sLodName && (sLodName[4] >= '0' && sLodName[4] <= '9'))
+						{
+							// Ignore Lod files.
+							m_szCgfName = m_pResList->GetNext();
+							continue;
+						}
+
+						cgfFilename = m_szCgfName;
+
+						if (m_isVerboseLogging)
+						{
+							CryLog("%s", cgfFilename.c_str());
+						}
+						CStatObj* pStatObj = GetObjManager()->LoadStatObj(cgfFilename.c_str(), NULL, 0, true, 0);
+						if (pStatObj)
+						{
+							if (pStatObj->m_bMeshStrippedCGF)
+							{
+								m_inLevelCacheCount++;
+							}
+						}
+						//cgfStreamer.StartStreaming(cgfFilename.c_str());
+						m_loadedCgfCounter++;
+
+						//This loop can take a few seconds, so we should refresh the loading screen and call the loading tick functions to ensure that no big gaps in coverage occur.
+						SYNCHRONOUS_LOADING_TICK();
+					}
+
+					m_szCgfName = m_pResList->GetNext();
+
+					if (timeSlicingLimitSec > 0.0f && GetCurAsyncTimeSec() - fStartTime > timeSlicingLimitSec)
+					{
+						return SetInProgress(m_currentStep);
+					}
+				}
+			}
+
+			//  PrintMessage("Finished requesting level CGF's: %d objects in %.1f sec", nCgfCounter, GetCurAsyncTimeSec()-fStartTime);
+		}
+
+	NEXT_STEP(EStep::Finish)
+		{
+			// Continue updating streaming system until all CGF's are loaded
+			if (m_cgfStreamer.m_nTasksNum > 0)
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("CObjManager::PreloadLevelObjects_StreamEngine_Update");
+				GetSystem()->GetStreamEngine()->UpdateAndWait();
+			}
+
+			if (m_isCgfCacheExist)
+			{
+				//GetISystem()->GetIResourceManager()->UnloadLevelCachePak( CGF_LEVEL_CACHE_PAK );
+			}
+
+			float dt = GetCurAsyncTimeSec() - m_startTime;
+			PrintMessage("Finished loading level CGF's: %d objects loaded (%d from LevelCache) in %.1f sec", m_loadedCgfCounter, m_inLevelCacheCount, dt);
+		}
+
+	case EStep::Done:
+		return SetDone();
+
+	case EStep::Failed:
+	default:
+		return SetFailed();
 	}
+#undef NEXT_STEP
+}
 
-	//  PrintMessage("Finished requesting level CGF's: %d objects in %.1f sec", nCgfCounter, GetCurAsyncTimeSec()-fStartTime);
-
-	// Continue updating streaming system until all CGF's are loaded
-	if (cgfStreamer.m_nTasksNum > 0)
+void CObjManager::PreloadLevelObjects()
+{
+	CPreloadTimeslicer slicer(*this);
+	I3DEngine::ELevelLoadStatus result = I3DEngine::ELevelLoadStatus::InProgress;
+	const float infiniteTimeSlicingLimit = -1.0f;
+	do
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CObjManager::PreloadLevelObjects_StreamEngine_Update");
-		GetSystem()->GetStreamEngine()->UpdateAndWait();
-	}
+		result = slicer.DoStep(infiniteTimeSlicingLimit);
+	} while (result == I3DEngine::ELevelLoadStatus::InProgress);
+}
 
-	if (bCgfCacheExist)
+void CObjManager::StartPreloadLevelObjects()
+{
+	if (m_pPreloadTimeSlicer)
 	{
-		//GetISystem()->GetIResourceManager()->UnloadLevelCachePak( CGF_LEVEL_CACHE_PAK );
+		return;
 	}
 
-	float dt = GetCurAsyncTimeSec() - fStartTime;
-	PrintMessage("Finished loading level CGF's: %d objects loaded (%d from LevelCache) in %.1f sec", nCgfCounter, nInLevelCacheCount, dt);
+	m_pPreloadTimeSlicer.reset(new CPreloadTimeslicer(*this));
+}
+
+I3DEngine::ELevelLoadStatus CObjManager::UpdatePreloadLevelObjects()
+{
+	if (!m_pPreloadTimeSlicer)
+	{
+		return I3DEngine::ELevelLoadStatus::Failed;
+	}
+
+	LOADING_TIME_PROFILE_SECTION;
+
+	const float timeSlicingLimitSec = 1.0f;
+
+	switch (m_pPreloadTimeSlicer->DoStep(timeSlicingLimitSec))
+	{
+	case I3DEngine::ELevelLoadStatus::InProgress:
+		return I3DEngine::ELevelLoadStatus::InProgress;
+
+	case I3DEngine::ELevelLoadStatus::Done:
+		m_pPreloadTimeSlicer.reset();
+		return I3DEngine::ELevelLoadStatus::Done;
+
+	case I3DEngine::ELevelLoadStatus::Failed:
+	default:
+		m_pPreloadTimeSlicer.reset();
+		return I3DEngine::ELevelLoadStatus::Failed;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////

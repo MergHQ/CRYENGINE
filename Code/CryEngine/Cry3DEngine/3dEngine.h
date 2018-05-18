@@ -15,6 +15,7 @@
 struct SNodeInfo;
 class CStitchedImage;
 class CWaterRippleManager;
+class C3DEngineLevelLoadTimeslicer;
 
 struct SEntInFoliage
 {
@@ -356,6 +357,8 @@ public:
 	virtual void      Release() { CryAlignedDelete(this); };
 	virtual void      SetLevelPath(const char* szFolderName);
 	virtual bool      LoadLevel(const char* szFolderName, const char* szMissionName);
+	virtual bool      StartLoadLevel(const char* szFolderName, const char* szMissionName);
+	virtual ELevelLoadStatus UpdateLoadLevelStatus();
 	virtual void      UnloadLevel();
 	virtual void      PostLoadLevel();
 	virtual bool      InitLevelForEditor(const char* szFolderName, const char* szMissionName);
@@ -1295,5 +1298,8 @@ private:
 
 	std::unique_ptr<CWaterRippleManager>   m_pWaterRippleManager;
 
+	std::unique_ptr<C3DEngineLevelLoadTimeslicer> m_pLevelLoadTimeslicer;
+
 	friend struct SRenderNodeTempData;
+	friend class C3DEngineLevelLoadTimeslicer;
 };

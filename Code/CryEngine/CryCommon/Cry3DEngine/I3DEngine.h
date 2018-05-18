@@ -1300,6 +1300,15 @@ struct I3DEngine : public IProcess
 		eStreamingSubsystem_Audio,
 	};
 
+	//! Result of time-sliced level loading
+	enum class ELevelLoadStatus
+	{
+		InProgress,  //!< Loading in progress
+		Done,        //!< Loading done
+		Failed       //!< Loading failed 
+	};
+
+
 	// <interfuscator:shuffle>
 	//! Initializes the 3D Engine.
 	virtual bool Init() = 0;
@@ -1319,6 +1328,16 @@ struct I3DEngine : public IProcess
 	//! \return A boolean which indicate the result of the function; true if succeeded, false if failed.
 	virtual bool LoadLevel(const char* szFolderName, const char* szMissionName) = 0;
 	virtual bool InitLevelForEditor(const char* szFolderName, const char* szMissionName) = 0;
+
+	//! Start time-sliced loading of a level.
+	//! \param szFolderName - Name of the subfolder to load
+	//! \param szMissionName - Name of the mission
+	//! \return A boolean which indicate the result of the function; true if succeeded, false if failed.
+	virtual bool StartLoadLevel(const char* szFolderName, const char* szMissionName) = 0;
+
+	//! Updates time-sliced level loading.
+	//! \return Loading status result.
+	virtual ELevelLoadStatus UpdateLoadLevelStatus() = 0;
 
 	//! Handles any work needed at start of new frame.
 	//! \note Should be called for every frame.

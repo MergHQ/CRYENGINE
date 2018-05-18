@@ -9,6 +9,7 @@
 #include <CryRenderer/IStereoRenderer.h>
 
 #include "3dEngine.h"
+#include "3dEngineLoad.h"
 #include "terrain.h"
 #include "VisAreas.h"
 #include "ObjMan.h"

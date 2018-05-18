@@ -176,6 +176,14 @@ struct ILevelSystem :
 		TAG_UNKNOWN = 'ZZZZ'
 	};
 
+	//! Result of time-sliced level loading
+	enum class ELevelLoadStatus
+	{
+		InProgress,  //!< Loading in progress
+		Done,        //!< Loading done
+		Failed       //!< Loading failed 
+	};
+
 	virtual void              Rescan(const char* levelsFolder, const uint32 tag) = 0;
 	virtual void              LoadRotation() = 0;
 	virtual int               GetLevelCount() = 0;
@@ -188,6 +196,8 @@ struct ILevelSystem :
 
 	virtual ILevelInfo*       GetCurrentLevel() const = 0;
 	virtual ILevelInfo*       LoadLevel(const char* levelName) = 0;
+	virtual bool              StartLoadLevel(const char* szLevelName) = 0;
+	virtual ELevelLoadStatus  UpdateLoadLevelStatus() = 0;
 	virtual void              UnLoadLevel() = 0;
 	virtual ILevelInfo*       SetEditorLoadedLevel(const char* levelName, bool bReadLevelInfoMetaData = false) = 0;
 	virtual bool              IsLevelLoaded() = 0;

@@ -26,6 +26,8 @@
 
 #include "ObjManCullQueue.h"
 
+#include <Cry3DEngine/I3DEngine.h>
+
 #define ENTITY_MAX_DIST_FACTOR  100
 #define MAX_VALID_OBJECT_VOLUME (10000000000.f)
 #define DEFAULT_CGF_NAME        ("%ENGINE%\\EngineAssets\\Objects\\primitive_sphere.cgf")
@@ -180,6 +182,9 @@ public:
 	~CObjManager();
 
 	void      PreloadLevelObjects();
+	void      StartPreloadLevelObjects();
+	I3DEngine::ELevelLoadStatus UpdatePreloadLevelObjects();
+
 	void      UnloadObjects(bool bDeleteAll);
 	void      UnloadVegetationModels(bool bDeleteAll);
 	void      UnloadFarObjects();
@@ -520,6 +525,9 @@ private:
 
 	CryMT::SingleProducerSingleConsumerQueue<SCheckOcclusionJobData> m_CheckOcclusionQueue;
 	CryMT::N_ProducerSingleConsumerQueue<SCheckOcclusionOutput>      m_CheckOcclusionOutputQueue;
+
+	class CPreloadTimeslicer;
+	std::unique_ptr<CPreloadTimeslicer> m_pPreloadTimeSlicer;
 };
 
 #endif // CObjManager_H
