@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -28,7 +27,8 @@ namespace CryEngine.Serialization
 		private Dictionary<string, Type> _guidLookup = new Dictionary<string, Type>();
 
 		private Type _deserializationCallbackType = typeof(IDeserializationCallback);
-		private MethodInfo _deserializationMethod = typeof(IDeserializationCallback).GetMethod("OnDeserialization", BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
+		private MethodInfo _deserializationMethod = typeof(IDeserializationCallback).GetMethod(nameof(IDeserializationCallback.OnDeserialization), BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
+		private Type _entityComponentType = typeof(EntityComponent);
 
 		private void PopulateGuidLookup()
 		{
@@ -183,7 +183,7 @@ namespace CryEngine.Serialization
 			var componentTypeGuid = (EntityComponent.GUID)Read();
 
 			var type = EntityComponent.GetComponentTypeByGUID(componentTypeGuid);
-			
+
 			var obj = type != null ? Activator.CreateInstance(type) : null;
 			if(type != null)
 			{
@@ -238,15 +238,21 @@ namespace CryEngine.Serialization
 		private void ReadObjectBaseTypeMembers(object obj, Type objectType, BindingFlags flags, bool setSerializedFieldsOnly)
 		{
 			var numFields = Reader.ReadInt32();
-			var typeChanged = obj == null ? false : objectType != obj.GetType();
+			var typeChanged = obj == null ? false : !objectType.IsAssignableFrom(obj.GetType());
 			for(var iField = 0; iField < numFields; iField++)
 			{
 				var fieldName = Reader.ReadString();
-				var fieldInfo = objectType != null ? objectType.GetField(fieldName, flags) : null;
-				var existingObject = !typeChanged && obj != null && fieldInfo != null ? fieldInfo.GetValue(obj) : null;
+				var fieldInfo = objectType?.GetField(fieldName, flags);
+
+				var canWrite = !typeChanged // Writing a new type is not possible.
+					&& fieldInfo != null // Can't write to non-existing field.
+					&& !fieldInfo.IsLiteral // Can't write to const objects
+					&& (obj == null) == fieldInfo.IsStatic; // If the object is null it can't be written, unless the field is static.
+
+				var existingObject = canWrite ? fieldInfo.GetValue(obj) : null;
 				var fieldValue = ReadInternal(existingObject, false);
-				
-				if(!typeChanged && fieldInfo != null && !fieldInfo.IsLiteral && (obj == null) == fieldInfo.IsStatic)
+
+				if(canWrite)
 				{
 					if(setSerializedFieldsOnly)
 					{
@@ -269,7 +275,8 @@ namespace CryEngine.Serialization
 
 							var isEntityProperty = propertyInfo.GetCustomAttributes(typeof(EntityPropertyAttribute), false).Length != 0;
 
-							if(isEntityProperty)
+							// Always write to EntityComponents, otherwise the Entity property will be null.
+							if(isEntityProperty || objectType == _entityComponentType)
 							{
 								fieldInfo.SetValue(obj, fieldValue);
 							}
@@ -281,7 +288,7 @@ namespace CryEngine.Serialization
 					}
 				}
 			}
-			
+
 			var numEvents = Reader.ReadInt32();
 			for(var iEvent = 0; iEvent < numEvents; iEvent++)
 			{
@@ -407,22 +414,26 @@ namespace CryEngine.Serialization
 			switch(memberType)
 			{
 				case MemberTypes.Method:
-					{
-						var parameterCount = Reader.ReadInt32();
-						var parameters = new Type[parameterCount];
+				{
+					var parameterCount = Reader.ReadInt32();
+					var parameters = new Type[parameterCount];
 
-						for(int i = 0; i < parameterCount; i++)
-							parameters[i] = ReadType();
+					for(int i = 0; i < parameterCount; i++)
+						parameters[i] = ReadType();
 
-						memberInfo = declaringType.GetMethod(memberName, bindingFlags, null, parameters, null);
-					}
+					memberInfo = declaringType.GetMethod(memberName, bindingFlags, null, parameters, null);
 					break;
+				}
 				case MemberTypes.Field:
+				{
 					memberInfo = declaringType.GetField(memberName, bindingFlags);
 					break;
+				}
 				case MemberTypes.Property:
+				{
 					memberInfo = declaringType.GetProperty(memberName, bindingFlags);
 					break;
+				}
 			}
 
 			AddReference(memberInfo.GetType(), memberInfo, referenceId);

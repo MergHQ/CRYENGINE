@@ -24,7 +24,8 @@ class CCSharpEditorPlugin final
 	  public Schematyc::IEnvRegistryListener,
 	  public IFileChangeListener,
 	  public IMonoCompileListener,
-	  public ISystemEventListener
+	  public ISystemEventListener,
+	  public IAutoEditorNotifyListener
 {
 public:
 	// IPlugin
@@ -68,9 +69,14 @@ public:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 	// ~ISystemEventListener
 
+	// IAutoEditorNotifyListener
+	virtual void OnEditorNotifyEvent(EEditorNotifyEvent aEventId) override;
+	// ~IAutoEditorNotifyListener
+
 	static CCSharpEditorPlugin* GetInstance() { return s_pInstance; }
 
 private:
+	bool                   m_initialized = false;
 	HANDLE                 m_textEditorHandle;
 	string                 m_createdTextEditor;
 	std::vector<string>    m_changedFiles;
@@ -80,6 +86,8 @@ private:
 	CSharpMessageListeners m_messageListeners;
 	string                 m_csharpSolutionPath;
 
+	// Checks the machine for an installation of VS2017+, and sets this as the default text editor.
+	void SetDefaultTextEditor();
 	// Updates the plugins and solutions if required.
 	void UpdatePluginsAndSolution();
 	// Reloads the managed plugings.

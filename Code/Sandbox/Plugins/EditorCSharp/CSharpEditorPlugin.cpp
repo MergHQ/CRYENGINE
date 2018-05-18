@@ -8,6 +8,7 @@
 #include <Include/SandboxAPI.h>
 #include <IEditorImpl.h>
 #include "QT/QToolTabManager.h"
+#include <QProcess>
 
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/AssetManager.h>
@@ -38,12 +39,11 @@ CCSharpEditorPlugin::CCSharpEditorPlugin()
 	{
 		gEnv->pMonoRuntime->RegisterCompileListener(this);
 
-		OnCompileFinished(gEnv->pMonoRuntime->GetLatestCompileMessage());
+		m_compileMessage = gEnv->pMonoRuntime->GetLatestCompileMessage();
 	}
 
 	// Regenerate the plugins in case the files were changed when the Sandbox was closed
 	RegenerateSolution();
-	ReloadPlugins();
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CCSharpEditorPlugin");
 }
@@ -60,6 +60,67 @@ CCSharpEditorPlugin::~CCSharpEditorPlugin()
 	}
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+}
+
+void CCSharpEditorPlugin::SetDefaultTextEditor()
+{
+	string textEditor = gEditorFilePreferences.textEditorCSharp;
+
+	ICryPak* pCryPak = gEnv->pCryPak;
+
+	// Only change it when it's set to the default value or no value.
+	if (!textEditor.IsEmpty() && textEditor != "devenv.exe")
+	{
+		return;
+	}
+
+	char szVSWherePath[_MAX_PATH];
+	ExpandEnvironmentStringsA("%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe", szVSWherePath, CRY_ARRAY_COUNT(szVSWherePath));
+
+	if (!pCryPak->IsFileExist(szVSWherePath))
+	{
+		return;
+	}
+
+	QProcess process;
+	process.start(szVSWherePath, QStringList() << "-format" << "value" << "-property" << "installationPath");
+	if(!process.waitForStarted())
+	{
+		CryLog("Unable to detect installed versions of Visual Studio because vswhere.exe could not be started.");
+		return;
+	}
+	if (!process.waitForFinished() && process.exitStatus() != QProcess::ExitStatus::NormalExit)
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to find Visual Studio installations because vswhere.exe crashed!");
+		return;
+	}
+
+	QByteArray qtOutput = process.readAllStandardOutput();
+	string output = qtOutput.toStdString().c_str();
+	
+	string installationPath;
+	bool exists = false;
+	int pos = 0;
+	string path;
+	while (!(path = output.Tokenize("\r\n", pos)).empty())
+	{
+		installationPath = string().Format("%s/Common7/IDE/devenv.exe", path);
+		if (pCryPak->IsFileExist(installationPath))
+		{
+			exists = true;
+			break;
+		}
+	}
+	
+	if (exists && !installationPath.IsEmpty())
+	{
+		gEditorFilePreferences.textEditorCSharp = string().Format("\"%s\"", installationPath);
+		GetIEditor()->GetPreferences()->Save();
+	}
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to find the executable of Visual Studio 2017 or later!");
+	}
 }
 
 void CCSharpEditorPlugin::OnFileChange(const char* szFilename, EChangeType type)
@@ -109,19 +170,10 @@ void CCSharpEditorPlugin::OnFileChange(const char* szFilename, EChangeType type)
 void CCSharpEditorPlugin::OnCompileFinished(const char* szCompileMessage)
 {
 	m_compileMessage = szCompileMessage;
-	bool messageSend = false;
+	
 	for (CSharpMessageListeners::Notifier notifier(m_messageListeners); notifier.IsValid(); notifier.Next())
 	{
 		notifier->OnMessagesUpdated(m_compileMessage);
-		messageSend = true;
-	}
-
-	// If no message was send, it means no window is currently open.
-	// If the message contains content the window is forced open to show any potential errors.
-	if (!messageSend && m_compileMessage.length() > 0)
-	{
-		GetIEditor()->OpenView("C# Output");
-		CryLogAlways(m_compileMessage);
 	}
 }
 
@@ -221,6 +273,26 @@ void CCSharpEditorPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UIN
 			// Got focus back
 			m_isSandboxInFocus = true;
 			UpdatePluginsAndSolution();
+		}
+	}
+}
+
+void CCSharpEditorPlugin::OnEditorNotifyEvent(EEditorNotifyEvent aEventId)
+{
+	if (aEventId == eNotify_OnIdleUpdate)
+	{
+		if (!m_initialized)
+		{
+			m_initialized = true;
+			SetDefaultTextEditor();
+		}
+		
+		// If a compile message was sent during compilation, open when Editor is fully initialized
+		if (!m_compileMessage.empty())
+		{
+			GetIEditor()->OpenView("C# Output");
+			CryLogAlways(m_compileMessage);
+			m_compileMessage.clear();
 		}
 	}
 }
@@ -499,7 +571,7 @@ bool CCSharpEditorPlugin::OpenCSharpSolution()
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
-		shellInfo.lpParameters = solutionFile.c_str();
+		shellInfo.lpParameters = string().Format("\"%s\"", solutionFile).c_str();
 		shellInfo.nShow = SW_SHOWNORMAL;
 		shellInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shellInfo.cbSize = sizeof(shellInfo);
@@ -535,7 +607,7 @@ bool CCSharpEditorPlugin::OpenFileInSolution(const string& filePath)
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
-		shellInfo.lpParameters = string("%s %s").Format(solutionFile, filePath).c_str();
+		shellInfo.lpParameters = string().Format("\"%s\" \"%s\"", solutionFile, filePath).c_str();
 		shellInfo.nShow = SW_SHOWNORMAL;
 		shellInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shellInfo.cbSize = sizeof(shellInfo);
@@ -583,10 +655,7 @@ bool CCSharpEditorPlugin::OpenFileInSolution(const string& filePath, const int l
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
-
-		string arguments;
-		arguments.Format("%s %s%s", solutionFile, filePath, commandFormat, line);
-		shellInfo.lpParameters = arguments.c_str();
+		shellInfo.lpParameters = string().Format("\"%s\" \"%s\"%s", solutionFile, filePath, commandFormat).c_str();
 		shellInfo.nShow = SW_SHOWNORMAL;
 		shellInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shellInfo.cbSize = sizeof(shellInfo);
@@ -610,14 +679,10 @@ bool CCSharpEditorPlugin::OpenFileInTextEditor(const string& filePath) const
 	// No active process found, so open the solution file with the selected text editor.
 	if (!textEditor.empty())
 	{
-		string solutionFile = GetCSharpSolutionPath();
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
-
-		string arguments;
-		arguments.Format("%s /edit", filePath);
-		shellInfo.lpParameters = arguments.c_str();
+		shellInfo.lpParameters = string().Format("\"%s\" /edit", filePath).c_str();
 		shellInfo.nShow = SW_SHOWNORMAL;
 		shellInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shellInfo.cbSize = sizeof(shellInfo);
@@ -650,14 +715,10 @@ bool CCSharpEditorPlugin::OpenFileInTextEditor(const string& filePath, const int
 	// No active process found, so open the solution file with the selected text editor.
 	if (!textEditor.empty())
 	{
-		string solutionFile = GetCSharpSolutionPath();
 		SHELLEXECUTEINFO shellInfo = SHELLEXECUTEINFO();
 		shellInfo.lpVerb = "open";
 		shellInfo.lpFile = textEditor.c_str();
-
-		string arguments;
-		arguments.Format("%s%s /edit", filePath, commandFormat, line);
-		shellInfo.lpParameters = arguments.c_str();
+		shellInfo.lpParameters = string().Format("\"%s\"%s /edit", filePath, commandFormat).c_str();
 		shellInfo.nShow = SW_SHOWNORMAL;
 		shellInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shellInfo.cbSize = sizeof(shellInfo);

@@ -72,7 +72,7 @@ namespace CryEngine
 		/// <value><c>true</c> if shift down; otherwise, <c>false</c>.</value>
 		public static bool ShiftDown { get { return _lShiftDown || _rShiftDown; } }
 
-		private static Dictionary<string, string> _charByDescription = new Dictionary<string, string> { { "comma", "," }, { "period", "." }, { "minus", "-" }, { "plus", "+" } };
+		private static readonly Dictionary<string, string> _charByDescription = new Dictionary<string, string> { { "comma", "," }, { "period", "." }, { "minus", "-" }, { "plus", "+" } };
 
 		static Input()
 		{
