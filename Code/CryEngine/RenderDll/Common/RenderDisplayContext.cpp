@@ -118,13 +118,13 @@ void CSwapChainBackedRenderDisplayContext::CreateSwapChain(HWND hWnd, bool vsync
 
 #if !CRY_RENDERER_GNM && !CRY_PLATFORM_ORBIS && !CRY_PLATFORM_DURANGO
 	CreateOutput();
-	SetSwapChain(CSwapChain::CreateSwapChain(GetWindowHandle(),
+	CreateSwapChain(GetWindowHandle(),
 		m_pOutput,
 		GetDisplayResolution().x,
 		GetDisplayResolution().y,
 		IsMainContext(),
 		IsFullscreen(),
-		vsync));
+		vsync);
 #endif
 
 	auto w = m_DisplayWidth, h = m_DisplayHeight;
@@ -358,7 +358,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 		ReleaseBackBuffers();
 
 		// Swap chain needs to be recreated with the new output in mind
-		SetSwapChain(CSwapChain::CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, IsMainContext(), isFullscreen, vsync));
+		CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, IsMainContext(), isFullscreen, vsync);
 		recreatedSwapChain = true;
 
 		if (m_pOutput != nullptr)
@@ -380,7 +380,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 		if (!recreatedSwapChain)
 		{
 			// For Vulkan only: Recreate swapchain when vsync flag changes
-			SetSwapChain(CSwapChain::CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, IsMainContext(), isFullscreen, vsync));
+			CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, IsMainContext(), isFullscreen, vsync);
 			recreatedSwapChain = true;
 		}
 #endif

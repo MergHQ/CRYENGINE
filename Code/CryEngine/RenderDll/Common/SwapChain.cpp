@@ -118,15 +118,18 @@ CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t 
 #else
 #error UNKNOWN PLATFORM TRYING TO CREATE SWAP CHAIN
 #endif
-	DXGISwapChain* pSwapChain = nullptr;
+	DXGISwapChain* pSwapChainRawPtr = nullptr;
 
 	CRY_ASSERT(SUCCEEDED(hr) && piSwapChain != nullptr);
-	hr = piSwapChain->QueryInterface(__uuidof(DXGISwapChain), (void**)&pSwapChain);
-	CRY_ASSERT(SUCCEEDED(hr) && pSwapChain != 0);
+	hr = piSwapChain->QueryInterface(__uuidof(DXGISwapChain), (void**)&pSwapChainRawPtr);
+	CRY_ASSERT(SUCCEEDED(hr) && pSwapChainRawPtr != 0);
 
 	piSwapChain->Release();
 
-	CSwapChain sc = { pSwapChain };
+	_smart_ptr<DXGISwapChain> pSmartSwapChain;
+	pSmartSwapChain.Assign_NoAddRef(pSwapChainRawPtr);
+
+	CSwapChain sc = { std::move(pSmartSwapChain) };
 #if defined(SUPPORT_DEVICE_INFO)
 	auto refreshRate = !windowed ? scDesc.BufferDesc.RefreshRate : desktopRefreshRate;
 	sc.m_refreshRateNumerator = refreshRate.Numerator;
@@ -139,9 +142,9 @@ CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t 
 
 #if CRY_PLATFORM_DURANGO
 #if (CRY_RENDERER_DIRECT3D >= 120)
-CSwapChain CSwapChain::CreateXboxSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID3D12Device* pD3D12Device, CCryDX12Device* pDX12Device, uint32_t width, uint32_t height)
+CSwapChain CSwapChain::CreateSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID3D12Device* pD3D12Device, CCryDX12Device* pDX12Device, uint32_t width, uint32_t height)
 #else
-CSwapChain CSwapChain::CreateXboxSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID3D11Device* pD3D11Device, uint32_t width, uint32_t height)
+CSwapChain CSwapChain::CreateSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID3D11Device* pD3D11Device, uint32_t width, uint32_t height)
 #endif
 {
 	// Create full HD swap chain with backbuffer
@@ -160,7 +163,7 @@ CSwapChain CSwapChain::CreateXboxSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID
 
 	DXGISwapChain* pSwapChain = nullptr;
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CRenderDisplayContext::CreateXboxSwapChain: CreateSwapChainForCoreWindow()");
+		LOADING_TIME_PROFILE_SECTION_NAMED("Xbox -- CRenderDisplayContext::CreateSwapChain: CreateSwapChainForCoreWindow()");
 #if (CRY_RENDERER_DIRECT3D >= 120)
 		IDXGISwapChain1ToCall* pDXGISwapChain = nullptr;
 		HRESULT hr = pDXGIFactory->CreateSwapChainForCoreWindow(pD3D12Device, (IUnknown*)gEnv->pWindow, &swapChainDesc, nullptr, &pDXGISwapChain);
@@ -178,7 +181,7 @@ CSwapChain CSwapChain::CreateXboxSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID
 #endif
 
 #if CRY_RENDERER_GNM
-CSwapChain CSwapChain::CreateGNMSwapChain(uint32_t width, uint32_t height)
+CSwapChain CSwapChain::CreateSwapChain(uint32_t width, uint32_t height)
 {
 	CGnmSwapChain::SDesc desc;
 	desc.type = CGnmSwapChain::kTypeTelevision;
