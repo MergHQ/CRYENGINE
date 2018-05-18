@@ -1847,7 +1847,7 @@ bool CD3D9Renderer::CreateDeviceDurango()
 
 	if (pDXGIFactory != nullptr)
 	{
-		pDC->SetSwapChain(CSwapChain::CreateXboxSwapChain(pDXGIFactory, pD3D12Device, pDX12Device, pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y));
+		pDC->CreateSwapChain(pDXGIFactory, pD3D12Device, pDX12Device, pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y);
 	}
 #else
 	hr |= pD3D11Device->QueryInterface(IID_GFX_ARGS(&pDXGIDevice));
@@ -1856,7 +1856,7 @@ bool CD3D9Renderer::CreateDeviceDurango()
 
 	if (pDXGIFactory != nullptr)
 	{
-		pDC->SetSwapChain(CSwapChain::CreateXboxSwapChain(pDXGIFactory, pD3D11Device, pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y));
+		pDC->CreateSwapChain(pDXGIFactory, pD3D11Device, pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y);
 	}
 #endif
 
@@ -1969,7 +1969,7 @@ bool CD3D9Renderer::CreateDeviceGNM()
 
 	CGnmDevice::Create();
 
-	pDC->SetSwapChain(CSwapChain::CreateGNMSwapChain(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y));
+	pDC->CreateSwapChain(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y);
 
 	GetDevice().AssignDevice(gGnmDevice);
 

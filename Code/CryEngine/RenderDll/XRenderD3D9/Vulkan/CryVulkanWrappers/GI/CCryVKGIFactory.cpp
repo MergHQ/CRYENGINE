@@ -5,9 +5,6 @@
 #include "CCryVKGIAdapter.hpp"
 #include "CCryVKSwapChain.hpp"
 #include "../../API/VKInstance.hpp"
-#if USE_SDL2 && (CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS || CRY_PLATFORM_LINUX)
-#include <SDL_syswm.h>
-#endif
 
 
 CCryVKGIFactory* CCryVKGIFactory::Create()
@@ -53,40 +50,8 @@ HRESULT STDMETHODCALLTYPE CCryVKGIFactory::GetWindowAssociation(_Out_ HWND* pWin
 HRESULT STDMETHODCALLTYPE CCryVKGIFactory::CreateSwapChain(_In_ IUnknown* pDevice, _In_ DXGI_SWAP_CHAIN_DESC* pDesc, _Out_ IDXGISwapChain** ppSwapChain)
 {
 	VK_FUNC_LOG();
-	
-	NCryVulkan::SSurfaceCreationInfo surfaceInfo;
-#if CRY_PLATFORM_WINDOWS
-	surfaceInfo.windowHandle = pDesc->OutputWindow;
-	surfaceInfo.appHandle = (HINSTANCE)GetWindowLongPtr(surfaceInfo.windowHandle, GWLP_HINSTANCE);
-#else
-	SDL_Window* pWindowContext = reinterpret_cast<SDL_Window*>(pDesc->OutputWindow);
-	struct SDL_SysWMinfo info;
-	ZeroStruct(info);
-	info.version.major = SDL_MAJOR_VERSION;
-	info.version.minor = SDL_MINOR_VERSION;
-	if (!SDL_GetWindowWMInfo(pWindowContext, &info))
-	{
-		return S_FALSE;
-	}
 
-	surfaceInfo.pWindow = pWindowContext;
-#if CRY_PLATFORM_ANDROID
-	surfaceInfo.pNativeWindow = info.info.android.window;
-	//	surfaceInfo.hNativeSurface = info.info.android.surface;
-#elif CRY_PLATFORM_LINUX
-	surfaceInfo.window = static_cast<xcb_window_t>(info.info.x11.window);
-#endif  // CRY_PLATFORM_ANDROID
-
-#endif
-
-	VkSurfaceKHR surface ;
-	if (GetVkInstance()->CreateSurface(surfaceInfo, &surface) != VK_SUCCESS)
-	{
-		VK_ERROR("Failed to create KHR Surface");
-		return E_FAIL;
-	}
-	
-	*ppSwapChain = CCryVKSwapChain::Create(static_cast<D3DDevice*>(pDevice), pDesc, surface);
+	*ppSwapChain = CCryVKSwapChain::Create(static_cast<D3DDevice*>(pDevice), pDesc);
 	return *ppSwapChain ? S_OK : E_FAIL;
 }
 

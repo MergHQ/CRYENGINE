@@ -170,7 +170,11 @@ VkResult CInstance::CreateSurface(const SSurfaceCreationInfo& info, VkSurfaceKHR
 #else
 	#error  "Not implemented!"
 #endif
+}
 
+void CInstance::DestroySurface(VkSurfaceKHR surface)
+{
+	
 }
 
 bool CInstance::Initialize(const char* appName, uint32_t appVersion, const char* engineName, uint32_t engineVersion)

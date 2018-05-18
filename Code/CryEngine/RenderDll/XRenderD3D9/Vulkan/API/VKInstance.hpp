@@ -55,6 +55,7 @@ public:
 
 	//platform dependant function to create platform independant VkSurfaceKHR handle
 	VkResult CreateSurface(const SSurfaceCreationInfo& info, VkSurfaceKHR* surface);
+	void DestroySurface(VkSurfaceKHR surface);
 
 private:
 	VkResult InitializeInstanceLayerInfos();

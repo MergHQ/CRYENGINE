@@ -163,7 +163,12 @@ private:
 
 	CSwapChain&          GetSwapChain() { return m_swapChain; }
 	const CSwapChain&    GetSwapChain() const { return m_swapChain; }
-	void                 SetSwapChain(CSwapChain &&sc) { m_swapChain = std::move(sc); }
+
+	template <typename... Args>
+	void                 CreateSwapChain(Args&&... args) {
+		m_swapChain = {};
+		m_swapChain = CSwapChain::CreateSwapChain(std::forward<Args>(args)...);
+	}
 
 public:
 	CSwapChainBackedRenderDisplayContext(IRenderer::SDisplayContextDescription desc, uint32 uniqueId) : CRenderDisplayContext(desc, uniqueId) {}
