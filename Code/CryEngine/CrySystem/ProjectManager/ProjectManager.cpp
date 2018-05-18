@@ -366,8 +366,8 @@ void CProjectManager::MigrateFromLegacyWorkflowIfNecessary()
 
 void CProjectManager::RegisterCVars()
 {
-	// Default to no project when running unit tests or shader cache generator
-	bool bDefaultToNoProject = gEnv->bTesting || gEnv->pSystem->IsShaderCacheGenMode();
+	// Default to no project when running shader cache generator
+	bool bDefaultToNoProject = gEnv->pSystem->IsShaderCacheGenMode();
 
 	m_sys_project = REGISTER_STRING("sys_project", bDefaultToNoProject ? "" : "game.cryproject", VF_NULL, "Specifies which project to load.\nLoads from the engine root if relative path, otherwise full paths are allowed to allow out-of-engine projects\nHas no effect if -project switch is used!");
 

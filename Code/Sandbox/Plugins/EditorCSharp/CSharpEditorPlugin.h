@@ -113,5 +113,3 @@ private:
 	static CCSharpEditorPlugin* s_pInstance;
 };
 
-REGISTER_PLUGIN(CCSharpEditorPlugin)
-

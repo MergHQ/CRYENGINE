@@ -38,7 +38,7 @@
 #include <CryNetwork/INotificationNetwork.h>
 #include <CrySystem/ICodeCheckpointMgr.h>
 #include <CrySystem/Profilers/IStatoscope.h>
-#include "TestSystemLegacy.h"             // CTestSystem
+#include "TestSystem.h"             // CTestSystem
 #include "VisRegTest.h"
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <Cry3DEngine/ITimeOfDay.h>
@@ -383,8 +383,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pXMLUtils = new CXmlUtils(this);
 	m_pArchiveHost = Serialization::CreateArchiveHost();
 
-	m_pTestSystem = stl::make_unique<CTestSystemLegacy>(this);
-
 	m_pMemoryManager = CryGetIMemoryManager();
 	m_pResourceManager = new CResourceManager;
 	m_pTextModeConsole = nullptr;
@@ -400,6 +398,8 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 #endif
 
 	InitThreadSystem();
+
+	m_pTestSystem = stl::make_unique<CryTest::CTestSystem>(this);
 
 	LOADING_TIME_PROFILE_SECTION_NAMED("CSystem Boot");
 
@@ -473,12 +473,12 @@ CSystem::~CSystem()
 	//	SAFE_DELETE(m_pMemoryManager);
 	SAFE_DELETE(m_pNULLRenderAuxGeom);
 
+	m_pTestSystem.reset();
+
 	gEnv->pThreadManager->UnRegisterThirdPartyThread("Main");
 	ShutDownThreadSystem();
 
 	SAFE_DELETE(g_pPakHeap);
-
-	m_pTestSystem.reset();
 
 	m_env.pSystem = nullptr;
 #if !defined(SYS_ENV_AS_STRUCT)
@@ -2907,13 +2907,6 @@ void CSystem::debug_GetCallStackRaw(void** callstack, uint32& callstackLength)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::ApplicationTest(const char* szParam)
-{
-	assert(szParam);
-	if (m_pTestSystem)
-		m_pTestSystem->ApplicationTest(szParam);
-}
-
 void CSystem::ExecuteCommandLine()
 {
 	LOADING_TIME_PROFILE_SECTION;

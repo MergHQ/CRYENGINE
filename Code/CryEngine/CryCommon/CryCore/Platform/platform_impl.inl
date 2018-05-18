@@ -5,7 +5,8 @@
 #include <CryString/StringUtils.h>
 #include <CryCore/Platform/platform.h>
 #include <CrySystem/ISystem.h>
-#include <CrySystem/CryUnitTest.h>
+#include <CrySystem/Testing/ITestSystem.h>
+#include <CrySystem/Testing/CryTest.h>
 #include <CryExtension/RegFactoryNode.h>
 #include <CryExtension/ICryFactoryRegistryImpl.h>
 #include <CryString/UnicodeFunctions.h>
@@ -213,8 +214,17 @@ extern "C" DLL_EXPORT void ModuleInitISystem(ISystem* pSystem, const char* modul
 	// Register All unit tests of this module.
 	if (pSystem)
 	{
-		if (CryUnitTest::IUnitTestManager* pTestManager = pSystem->GetITestSystem()->GetIUnitTestManager())
-			pTestManager->CreateTests(moduleName);
+		auto pTestSystem = pSystem->GetITestSystem();
+		if (pTestSystem)
+		{
+			for (CryTest::CTestFactory* pFactory = CryTest::CTestFactory::GetFirstInstance();
+				pFactory != nullptr;
+				pFactory = pFactory->GetNextInstance())
+			{
+				pFactory->SetModuleName(moduleName);
+				pTestSystem->AddFactory(pFactory);
+			}
+		}
 	}
 	#endif //CRY_UNIT_TESTING
 }

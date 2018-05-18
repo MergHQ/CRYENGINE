@@ -11,7 +11,7 @@
 #include <CrySystem/ITimer.h>
 #include <CrySystem/IValidator.h>
 #include <CrySystem/IConsole.h>
-#include <CrySystem/ITestSystem.h>
+#include <CrySystem/Testing/CryTest.h>
 
 // these should all be in sync - so testing one for 0 should be the same for all
 ISystem* pSystem = 0;
@@ -271,13 +271,7 @@ void AIError(const char* format, ...)
 	va_end(args);
 	pSystem->Warning(VALIDATOR_MODULE_AI, VALIDATOR_ERROR, VALIDATOR_FLAG_AI, 0, "AI: Error: %s", outputBufferLog);
 
-	if (GetISystem()->GetITestSystem())
-	{
-		// supress user interaction for automated test
-		if (GetISystem()->GetITestSystem()->GetILog())
-			GetISystem()->GetITestSystem()->GetILog()->LogError(outputBufferLog);
-	}
-	else
+	if (!gEnv->bTesting)
 	{
 		static bool sDoMsgBox = true;
 		if (sDoMsgBox && !gEnv->IsEditor())

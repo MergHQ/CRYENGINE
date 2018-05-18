@@ -18,12 +18,10 @@
 #include <IActorSystem.h>
 #include <CryAISystem/IAgent.h>
 #include <ILevelSystem.h>
-#include <CrySystem/ITestSystem.h>
 #include <CryMovie/IMovieSystem.h>
 #include "IMovementController.h"
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <Cry3DEngine/ITimeOfDay.h>
-#include <ITimeDemoRecorder.h>
 #include <CrySystem/VR/IHMDManager.h>
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CryCore/Platform/CryWindows.h>
@@ -2135,7 +2133,6 @@ void CTimeDemoRecorder::LogEndOfLoop()
 		pTD->maxFPS_Frame = m_maxFPS_Frame;
 		pTD->nTotalPolysRecorded = m_nTotalPolysRecorded;
 		pTD->nTotalPolysPlayed = m_nTotalPolysPlayed;
-		GetISystem()->GetITestSystem()->SetTimeDemoInfo(m_pTimeDemoInfo);
 	}
 
 	int numFrames = GetNumberOfFrames();//m_records.size();
@@ -2715,6 +2712,12 @@ void CTimeDemoRecorder::GetCurrentFrameRecord(STimeDemoFrameRecord& externalReco
 	externalRecord.playerViewRotation = record.playerViewRotation;
 	externalRecord.hmdPositionOffset = record.hmdPositionOffset;
 	externalRecord.hmdViewRotation = record.hmdViewRotation;
+}
+
+//////////////////////////////////////////////////////////////////////////
+STimeDemoInfo* CTimeDemoRecorder::GetLastPlayedTimeDemo() const
+{
+	return m_pTimeDemoInfo;
 }
 
 //////////////////////////////////////////////////////////////////////////

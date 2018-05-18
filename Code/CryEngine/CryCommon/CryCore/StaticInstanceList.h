@@ -16,45 +16,41 @@
 
 template<typename TYPE> class CStaticInstanceList
 {
-private:
-
-	struct SInstanceList
-	{
-		CStaticInstanceList* pFirstInstance = nullptr;
-	};
-
 public:
+
+	CStaticInstanceList(const CStaticInstanceList&) = delete;
+	CStaticInstanceList(CStaticInstanceList&&) = delete;
 
 	inline CStaticInstanceList()
 	{
-		SInstanceList& instanceList = GetInstanceList();
-		m_pNextInstance = instanceList.pFirstInstance;
-		instanceList.pFirstInstance = this;
+		CStaticInstanceList*& head = Head();
+		this->m_pNext = head;
+		head = this;
 	}
 
 	virtual ~CStaticInstanceList() {}
 
 	static inline TYPE* GetFirstInstance()
 	{
-		return static_cast<TYPE*>(GetInstanceList().pFirstInstance);
+		return static_cast<TYPE*>(Head());
 	}
 
 	inline TYPE* GetNextInstance() const
 	{
-		return static_cast<TYPE*>(m_pNextInstance);
+		return static_cast<TYPE*>(m_pNext);
 	}
 
 private:
 
-	static inline SInstanceList& GetInstanceList()
+	static inline CStaticInstanceList*& Head()
 	{
-		static SInstanceList instanceList;
-		return instanceList;
+		static CStaticInstanceList* pHead;
+		return pHead;
 	}
 
 private:
 
-	CStaticInstanceList* m_pNextInstance;
+	CStaticInstanceList* m_pNext;
 };
 
 #define CRY_PP_JOIN_XY_(x, y)                         x ## y

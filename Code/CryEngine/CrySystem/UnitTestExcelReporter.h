@@ -11,48 +11,63 @@
 
 #pragma once
 
-#include <CrySystem/CryUnitTest.h>
+#include <CrySystem/Testing/IReporter.h>
+#include <CryString/CryString.h>
+#include <CrySystem/ILog.h>
+#include <CrySerialization/IArchive.h>
+#include <CrySerialization/STL.h>
 #include "ExcelExport.h"
-#include "CryString/CryString.h"
-#include "CrySystem/ILog.h"
+#include <CrySystem/Testing/TestInfo.h>
 
-namespace CryUnitTest
+namespace CryTest
 {
 //! Writes multiple excel documents for detailed results
-class CUnitTestExcelReporter : public CExcelExportBase, public IUnitTestReporter
+class CTestExcelReporter : public CExcelExportBase, public IReporter
 {
 public:
-	explicit CUnitTestExcelReporter(ILog& log) : m_log(log) {}
+	explicit CTestExcelReporter(ILog& log) : m_log(log) {}
+
+	void Serialize(Serialization::IArchive& ar)
+	{
+		ar(m_results, "m_results");
+	}
 
 protected:
-	virtual void OnStartTesting(const SUnitTestRunContext& context) override {}
-	virtual void OnFinishTesting(const SUnitTestRunContext& context) override;
-	virtual void OnSingleTestStart(const IUnitTest& test) override;
-	virtual void OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* szFailureDescription) override;
+	virtual void OnStartTesting(const SRunContext& context) override {}
+	virtual void OnFinishTesting(const SRunContext& context) override;
+	virtual void OnSingleTestStart(const STestInfo& testInfo) override;
+	virtual void OnSingleTestFinish(const STestInfo& testInfo, float fRunTimeInMs, bool bSuccess, const std::vector<SError>& failures) override;
+	virtual void OnBreakTesting(const SRunContext& context) override;
+	virtual void OnRecoverTesting(const SRunContext& context) override;
 
-	virtual void PostFinishTesting(const SUnitTestRunContext& context, bool bSavedReports) const {}
-
-	bool         SaveJUnitCompatableXml();
+	virtual void PostFinishTesting(const SRunContext& context, bool bSavedReports) const {}
 
 	ILog& m_log;
 
 	struct STestResult
 	{
-		CUnitTestInfo testInfo;
-		SAutoTestInfo autoTestInfo;
-		float         fRunTimeInMs;
-		bool          bSuccess;
-		string        failureDescription;
+		STestInfo           testInfo;
+		float               runTimeInMs;
+		bool                isSuccessful;
+		std::vector<SError> failures;
+
+		void                Serialize(Serialization::IArchive& ar)
+		{
+			ar(testInfo, "testInfo");
+			ar(runTimeInMs, "runTimeInMs");
+			ar(isSuccessful, "isSuccessful");
+			ar(failures, "failures");
+		}
 	};
 	std::vector<STestResult> m_results;
 };
 
 //! Extends Excel reporter by opening failed report
-class CUnitTestExcelNotificationReporter : public CUnitTestExcelReporter
+class CTestExcelNotificationReporter : public CTestExcelReporter
 {
 public:
-	using CUnitTestExcelReporter::CUnitTestExcelReporter;
+	using CTestExcelReporter::CTestExcelReporter;
 protected:
-	virtual void PostFinishTesting(const SUnitTestRunContext& context, bool bSavedReports) const override;
+	virtual void PostFinishTesting(const SRunContext& context, bool bSavedReports) const override;
 };
 }

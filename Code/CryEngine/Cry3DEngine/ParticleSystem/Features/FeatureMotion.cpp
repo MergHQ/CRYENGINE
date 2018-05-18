@@ -4,7 +4,7 @@
 #include "FeatureMotion.h"
 #include "ParticleSystem/ParticleEmitter.h"
 #include <CrySerialization/Math.h>
-#include <CrySystem/CryUnitTest.h>
+#include <CrySystem/Testing/CryTest.h>
 
 namespace pfx2
 {
@@ -291,7 +291,7 @@ ILINE void DragAdjust(T& velAdjust, T& accAdjust, T in, const T coeffs[6])
 	velAdjust = convert<T>(1.0) - accAdjust * in;
 }
 
-CRY_UNIT_TEST(DragFast)
+CRY_TEST(DragFast)
 {
 	float x1 = 1.0e-12f;
 	for (int i = 0; i < 24; ++i, x1 *= 10.f)

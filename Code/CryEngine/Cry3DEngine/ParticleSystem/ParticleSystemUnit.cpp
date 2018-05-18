@@ -8,25 +8,25 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include <CrySystem/CryUnitTest.h>
+#include <CrySystem/Testing/CryTest.h>
 #include "ParticleSystem.h"
 #include "../ParticleEffect.h"
 #include "ParticleEffect.h"
 
 #include <CrySerialization/IArchiveHost.h>
 
-CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
+CRY_TEST_SUITE(CryParticleSystemTest)
 {
 	using namespace pfx2;
 
-#define CRY_PFX2_UNIT_TEST_ASSERT(cond) \
-  CRY_UNIT_TEST_ASSERT(cond)
+#define CRY_PFX2_TEST_ASSERT(cond) \
+  CRY_TEST_ASSERT(cond)
 
 
 #if CRY_PFX2_PARTICLESGROUP_STRIDE == 4
 
 	//These tests require the particle system to be running
-	CRY_UNIT_TEST_FIXTURE(CParticleEffectTests)
+	CRY_TEST_FIXTURE(CParticleEffectTests)
 	{
 	public:
 		virtual void Init() override
@@ -73,24 +73,24 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 		std::unique_ptr<pfx2::CParticleEffect> m_pEffect;
 	};
 
-	CRY_UNIT_TEST_WITH_FIXTURE(CParticleSystem_USimpleEffect, CParticleEffectTests)
+	CRY_TEST_WITH_FIXTURE(CParticleSystem_USimpleEffect, CParticleEffectTests)
 	{
 		pfx2::CParticleEffect& effect = GetEffect();
 		LoadSimpleEffect();
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Test01") == 0);
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Test02") == 0);
+		CRY_PFX2_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Test01") == 0);
+		CRY_PFX2_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Test02") == 0);
 	}
 
-	CRY_UNIT_TEST_WITH_FIXTURE(CParticleSystem_UniqueAutoName, CParticleEffectTests)
+	CRY_TEST_WITH_FIXTURE(CParticleSystem_UniqueAutoName, CParticleEffectTests)
 	{
 		pfx2::CParticleEffect& effect = GetEffect();
 		effect.AddComponent();
 		effect.AddComponent();
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Component01") == 0);
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Component02") == 0);
+		CRY_PFX2_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Component01") == 0);
+		CRY_PFX2_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Component02") == 0);
 	}
 
-	CRY_UNIT_TEST_WITH_FIXTURE(CParticleSystem_UniqueCustomName, CParticleEffectTests)
+	CRY_TEST_WITH_FIXTURE(CParticleSystem_UniqueCustomName, CParticleEffectTests)
 	{
 		pfx2::CParticleEffect& effect = GetEffect();
 		effect.AddComponent();
@@ -99,12 +99,12 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 		effect.GetComponent(1)->SetName("Test");
 		effect.AddComponent();
 		effect.GetComponent(2)->SetName("Test");
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Test") == 0);
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Test1") == 0);
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(2)->GetName(), "Test2") == 0);
+		CRY_PFX2_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Test") == 0);
+		CRY_PFX2_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Test1") == 0);
+		CRY_PFX2_TEST_ASSERT(strcmp(effect.GetComponent(2)->GetName(), "Test2") == 0);
 	}
 
-	CRY_UNIT_TEST_WITH_FIXTURE(CParticleSystem_UniqueLoadedName, CParticleEffectTests)
+	CRY_TEST_WITH_FIXTURE(CParticleSystem_UniqueLoadedName, CParticleEffectTests)
 	{
 		pfx2::CParticleEffect& effect = GetEffect();
 		effect.AddComponent();
@@ -113,9 +113,9 @@ CRY_UNIT_TEST_SUITE(CryParticleSystemTest)
 		LoadDefaultComponent(1);
 		effect.AddComponent();
 		LoadDefaultComponent(2);
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Default") == 0);
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Default1") == 0);
-		CRY_PFX2_UNIT_TEST_ASSERT(strcmp(effect.GetComponent(2)->GetName(), "Default2") == 0);
+		CRY_PFX2_TEST_ASSERT(strcmp(effect.GetComponent(0)->GetName(), "Default") == 0);
+		CRY_PFX2_TEST_ASSERT(strcmp(effect.GetComponent(1)->GetName(), "Default1") == 0);
+		CRY_PFX2_TEST_ASSERT(strcmp(effect.GetComponent(2)->GetName(), "Default2") == 0);
 	}
 
 #endif

@@ -8,7 +8,6 @@
 #include <CrySystem/IConsole.h>
 #include <CrySystem/ITimer.h>
 #include <CryInput/IInput.h>
-#include <CrySystem/ITestSystem.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "CryMath/Cry_GeoIntersect.h"
 #include <CryInput/IHardwareMouse.h>
@@ -527,8 +526,6 @@ void CLevelEditorViewport::OnRender()
 	else
 	{
 		GetIEditor()->GetSystem()->SetViewCamera(m_Camera);
-		if (ITestSystem* pTestSystem = GetISystem()->GetITestSystem())
-			pTestSystem->BeforeRender();
 
 		m_engine->Tick();
 		m_engine->Update();
@@ -602,9 +599,6 @@ void CLevelEditorViewport::OnRender()
 
 		RenderSelectionRectangle();
 	}
-
-	if (ITestSystem* pTestSystem = GetISystem()->GetITestSystem())
-		pTestSystem->AfterRender();
 }
 
 void CLevelEditorViewport::RenderAll()

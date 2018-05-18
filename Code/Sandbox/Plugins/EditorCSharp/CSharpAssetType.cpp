@@ -10,6 +10,7 @@
 
 #include <cctype> 
 #include <clocale>
+#include "CSharpEditorPlugin.h"
 
 REGISTER_ASSET_TYPE(CSharpSourcefileAssetType)
 

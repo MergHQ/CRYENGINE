@@ -2,10 +2,14 @@
 
 #pragma once
 
-#ifdef CRYSYSTEM_EXPORTS
-	#define CRYSYSTEM_API DLL_EXPORT
+#ifdef _DLL
+	#ifdef CRYSYSTEM_EXPORTS
+		#define CRYSYSTEM_API DLL_EXPORT
+	#else
+		#define CRYSYSTEM_API DLL_IMPORT
+	#endif
 #else
-	#define CRYSYSTEM_API DLL_IMPORT
+	#define CRYSYSTEM_API
 #endif
 
 #include <CryCore/Platform/platform.h> // Needed for LARGE_INTEGER (for consoles).
@@ -95,7 +99,9 @@ struct IFlashPlayerBootStrapper;
 struct IFlashLoadMovieHandler;
 struct IHmdDevice;
 class ICrySizer;
+namespace CryTest {
 struct ITestSystem;
+}
 class IXMLBinarySerializer;
 struct IReadWriteXMLSink;
 struct IResourceManager;
@@ -1569,13 +1575,8 @@ struct ISystem
 	//! \note For debugging use only!, queries current C++ call stack.
 	virtual void debug_LogCallStack(int nMaxFuncs = 32, int nFlags = 0) = 0;
 
-	//! Can be called through console
-	//! Example: #System.ApplicationTest("testcase0")
-	//! \param szParam 0 generates error.
-	virtual void ApplicationTest(const char* szParam) = 0;
-
 	//! \return 0 if not activated, activate through #System.ApplicationTest.
-	virtual ITestSystem* GetITestSystem() = 0;
+	virtual CryTest::ITestSystem* GetITestSystem() = 0;
 
 	//! Execute command line arguments. Should be after init game.
 	//! Example: +g_gametype ASSAULT +map "testy"

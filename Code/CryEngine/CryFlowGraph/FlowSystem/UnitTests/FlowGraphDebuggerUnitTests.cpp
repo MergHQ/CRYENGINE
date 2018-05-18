@@ -16,58 +16,58 @@
 
 	#include <CryFlowGraph/IFlowGraphDebugger.h>
 	#include <CryFlowGraph/IFlowSystem.h>
-	#include <CrySystem/CryUnitTest.h>
+	#include <CrySystem/Testing/CryTest.h>
 
-CRY_UNIT_TEST_SUITE(CryFlowgraphDebuggerUnitTest)
+CRY_TEST_SUITE(CryFlowgraphDebuggerUnitTest)
 {
 	namespace FGD_UT_HELPER
 	{
 	IFlowGraphDebuggerPtr GetFlowGraphDebugger()
 	{
 		IFlowGraphDebuggerPtr pFlowgraphDebugger = GetIFlowGraphDebuggerPtr();
-		CRY_UNIT_TEST_ASSERT(pFlowgraphDebugger.get() != NULL);
+		CRY_TEST_ASSERT(pFlowgraphDebugger.get() != NULL);
 		return pFlowgraphDebugger;
 	}
 
 	IFlowGraphPtr CreateFlowGraph()
 	{
-		CRY_UNIT_TEST_ASSERT(gEnv->pFlowSystem != NULL);
+		CRY_TEST_ASSERT(gEnv->pFlowSystem != NULL);
 		IFlowGraphPtr pFlowGraph = gEnv->pFlowSystem->CreateFlowGraph();
-		CRY_UNIT_TEST_ASSERT(pFlowGraph.get() != NULL);
+		CRY_TEST_ASSERT(pFlowGraph.get() != NULL);
 		return pFlowGraph;
 	}
 
 	TFlowNodeId CreateTestNode(IFlowGraphPtr pFlowGraph, const TFlowNodeTypeId& typeID)
 	{
 		const TFlowNodeId flowNodeID = pFlowGraph->CreateNode(typeID, "UnitTestNode");
-		CRY_UNIT_TEST_ASSERT(flowNodeID != InvalidFlowNodeId);
+		CRY_TEST_ASSERT(flowNodeID != InvalidFlowNodeId);
 		return flowNodeID;
 	}
 
 	void AddBreakPoint(IFlowGraphDebuggerPtr pFlowGraphDebugger, IFlowGraphPtr pFlowGraph, const SFlowAddress& addrIn)
 	{
 		DynArray<SBreakPoint> breakpointsDynArray;
-		CRY_UNIT_TEST_ASSERT(pFlowGraphDebugger->AddBreakpoint(pFlowGraph, addrIn));
-		CRY_UNIT_TEST_ASSERT(pFlowGraphDebugger->GetBreakpoints(breakpointsDynArray));
-		CRY_UNIT_TEST_CHECK_EQUAL(breakpointsDynArray.size(), 1);
+		CRY_TEST_ASSERT(pFlowGraphDebugger->AddBreakpoint(pFlowGraph, addrIn));
+		CRY_TEST_ASSERT(pFlowGraphDebugger->GetBreakpoints(breakpointsDynArray));
+		CRY_TEST_CHECK_EQUAL(breakpointsDynArray.size(), 1);
 
 		SBreakPoint breakpoint = breakpointsDynArray[0];
-		CRY_UNIT_TEST_ASSERT(breakpoint.flowGraph == pFlowGraph);
-		CRY_UNIT_TEST_ASSERT(breakpoint.addr == addrIn);
+		CRY_TEST_ASSERT(breakpoint.flowGraph == pFlowGraph);
+		CRY_TEST_ASSERT(breakpoint.addr == addrIn);
 		breakpointsDynArray.clear();
-		CRY_UNIT_TEST_ASSERT(breakpointsDynArray.empty());
+		CRY_TEST_ASSERT(breakpointsDynArray.empty());
 	}
 	}
 
-	CRY_UNIT_TEST(CUT_INVALID_FLOWGRAPH_BREAKPOINT)
+	CRY_TEST(CUT_INVALID_FLOWGRAPH_BREAKPOINT)
 	{
 		IFlowGraphDebuggerPtr pFlowGraphDebugger = FGD_UT_HELPER::GetFlowGraphDebugger();
 		const SBreakPoint& breakpoint = pFlowGraphDebugger->GetBreakpoint();
 
-		CRY_UNIT_TEST_CHECK_EQUAL(breakpoint.type, eBT_Invalid);
-		CRY_UNIT_TEST_CHECK_EQUAL(breakpoint.edgeIndex, -1);
-		CRY_UNIT_TEST_ASSERT(breakpoint.flowGraph.get() == NULL);
-		CRY_UNIT_TEST_CHECK_EQUAL(pFlowGraphDebugger->BreakpointHit(), false);
+		CRY_TEST_CHECK_EQUAL(breakpoint.type, eBT_Invalid);
+		CRY_TEST_CHECK_EQUAL(breakpoint.edgeIndex, -1);
+		CRY_TEST_ASSERT(breakpoint.flowGraph.get() == NULL);
+		CRY_TEST_CHECK_EQUAL(pFlowGraphDebugger->BreakpointHit(), false);
 	}
 
 #if 0 // Test fails but disabled until we have time again. Flowgraph breakpoint currently works as intended for users. (Mid 2017)

@@ -74,7 +74,7 @@
 #include "DiskProfiler.h"
 #include "Watchdog.h"
 #include "Statoscope.h"
-#include "TestSystemLegacy.h"
+#include "TestSystem.h"
 #include "VisRegTest.h"
 #include "MTSafeAllocator.h"
 #include "NotificationNetwork.h"
@@ -2937,7 +2937,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		if (m_env.pConsole != nullptr)
 		{
-			CTestSystemLegacy::InitCommands();
+			CryTest::CTestSystem::InitCommands();
 		}
 
 		// Initialise after pLog and CPU feature initialization
@@ -3731,16 +3731,13 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 
 #if defined(USE_PERFHUD)
-		if (!gEnv->bTesting)
+		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init PerfHUD");
+		//Create late in Init so that associated CVars have already been created
+		ICryPerfHUDPtr pPerfHUD;
+		if (CryCreateClassInstanceForInterface(cryiidof<ICryPerfHUD>(), pPerfHUD))
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init PerfHUD");
-			//Create late in Init so that associated CVars have already been created
-			ICryPerfHUDPtr pPerfHUD;
-			if (CryCreateClassInstanceForInterface(cryiidof<ICryPerfHUD>(), pPerfHUD))
-			{
-				m_pPerfHUD = pPerfHUD.get();
-				m_pPerfHUD->Init();
-			}
+			m_pPerfHUD = pPerfHUD.get();
+			m_pPerfHUD->Init();
 		}
 #endif
 

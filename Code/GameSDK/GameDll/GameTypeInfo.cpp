@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <CrySystem/CryUnitTest.h>
+#include <CrySystem/Testing/CryTest.h>
 #include "GameTypeInfo.h"
 
 #include <cstring>
@@ -48,111 +48,111 @@ CRY_IMPLEMENT_GTI(CType2, CBase);
 
 
 
-CRY_UNIT_TEST_SUITE(CryGameTypeInfoTest)
+CRY_TEST_SUITE(CryGameTypeInfoTest)
 {
-	CRY_UNIT_TEST(GoodDownCast)
+	CRY_TEST(GoodDownCast)
 	{
 		CBase* obj = new CType2();
 		CType2* casted = crygti_cast<CType2*>(obj);
-		CRY_UNIT_TEST_ASSERT(casted==obj);
+		CRY_TEST_ASSERT(casted==obj);
 		delete obj;
 	}
 
-	CRY_UNIT_TEST(BadDownCast)
+	CRY_TEST(BadDownCast)
 	{
 		CBase* obj = new CType2();
 		CType1* casted = crygti_cast<CType1*>(obj);
-		CRY_UNIT_TEST_ASSERT(casted == 0);
+		CRY_TEST_ASSERT(casted == 0);
 		delete obj;
 	}
 
-	CRY_UNIT_TEST(UpCast)
+	CRY_TEST(UpCast)
 	{
 		CType2* obj = new CType2();
 		CBase* casted = crygti_cast<CBase*>(obj);
-		CRY_UNIT_TEST_ASSERT(casted == obj);
+		CRY_TEST_ASSERT(casted == obj);
 		delete obj;
 	}
 
-	CRY_UNIT_TEST(ConstGoodDownCast)
+	CRY_TEST(ConstGoodDownCast)
 	{
 		const CBase* obj = new CType2();
 		const CType2* casted = crygti_cast<const CType2*>(obj);
-		CRY_UNIT_TEST_ASSERT(casted==obj);
+		CRY_TEST_ASSERT(casted==obj);
 		delete obj;
 	}
 
-	CRY_UNIT_TEST(ConstBadDownCast)
+	CRY_TEST(ConstBadDownCast)
 	{
 		const CBase* obj = new CType2();
 		const CType1* casted = crygti_cast<const CType1*>(obj);
-		CRY_UNIT_TEST_ASSERT(casted == 0);
+		CRY_TEST_ASSERT(casted == 0);
 		delete obj;
 	}
 
-	CRY_UNIT_TEST(ConstUpCast)
+	CRY_TEST(ConstUpCast)
 	{
 		const CType2* obj = new CType2();
 		const CBase* casted = crygti_cast<const CBase*>(obj);
-		CRY_UNIT_TEST_ASSERT(casted == obj);
+		CRY_TEST_ASSERT(casted == obj);
 		delete obj;
 	}
 
-	CRY_UNIT_TEST(SameCast)
+	CRY_TEST(SameCast)
 	{
 		CType2* obj = new CType2();
 		CType2* casted = crygti_cast<CType2*>(obj);
-		CRY_UNIT_TEST_ASSERT(casted == obj);
+		CRY_TEST_ASSERT(casted == obj);
 		delete obj;
 	}
 
-	CRY_UNIT_TEST(NullCast)
+	CRY_TEST(NullCast)
 	{
 		CType2* obj = 0;
 		CType2* casted = crygti_cast<CType2*>(obj);
-		CRY_UNIT_TEST_ASSERT(casted == 0);
+		CRY_TEST_ASSERT(casted == 0);
 	}
 
-	CRY_UNIT_TEST(BaseTypeNotCastableToSubType_BugFix)
+	CRY_TEST(BaseTypeNotCastableToSubType_BugFix)
 	{
 		CBase* obj = new CBase();
 		CType1* casted = crygti_cast<CType1*>(obj);
-		CRY_UNIT_TEST_ASSERT(casted == 0);
+		CRY_TEST_ASSERT(casted == 0);
 		delete obj;
 	}
 
-	CRY_UNIT_TEST(TrueDownCastIsOf)
+	CRY_TEST(TrueDownCastIsOf)
 	{
 		CBase* obj = new CType2();
-		CRY_UNIT_TEST_ASSERT(crygti_isof<CType2>(obj) == true);
+		CRY_TEST_ASSERT(crygti_isof<CType2>(obj) == true);
 		delete obj;
 	}
 
-	CRY_UNIT_TEST(FalseDownCastIsOf)
+	CRY_TEST(FalseDownCastIsOf)
 	{
 		CBase* obj = new CType2();
-		CRY_UNIT_TEST_ASSERT(crygti_isof<CType1>(obj) == false);
+		CRY_TEST_ASSERT(crygti_isof<CType1>(obj) == false);
 		delete obj;
 	}
 
-	CRY_UNIT_TEST(TrueUpCastIsOf)
+	CRY_TEST(TrueUpCastIsOf)
 	{
 		CBase* obj = new CType2();
-		CRY_UNIT_TEST_ASSERT(crygti_isof<CBase>(obj) == true);
+		CRY_TEST_ASSERT(crygti_isof<CBase>(obj) == true);
 		delete obj;
 	}
 
-	CRY_UNIT_TEST(NullIsOf)
+	CRY_TEST(NullIsOf)
 	{
 		CBase* obj = 0;
-		CRY_UNIT_TEST_ASSERT(crygti_isof<CBase>(obj) == false);
+		CRY_TEST_ASSERT(crygti_isof<CBase>(obj) == false);
 		delete obj;
 	}
 
-	CRY_UNIT_TEST(GetName)
+	CRY_TEST(GetName)
 	{
 		CBase* obj = new CType2();
-		CRY_UNIT_TEST_ASSERT(std::strcmp(obj->GetRunTimeType()->GetName(), "CType2") == 0);
+		CRY_TEST_ASSERT(std::strcmp(obj->GetRunTimeType()->GetName(), "CType2") == 0);
 		delete obj;
 	}
 

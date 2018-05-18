@@ -10,7 +10,6 @@
 #include <CrySystem/IConsole.h>
 #include <CrySystem/ITimer.h>
 #include <CryInput/IInput.h>
-#include <CrySystem/ITestSystem.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryMath/Cry_GeoIntersect.h>
 #include <CryMath/Cry_Math.h>

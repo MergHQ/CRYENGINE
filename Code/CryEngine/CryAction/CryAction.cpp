@@ -2307,20 +2307,20 @@ bool CCryAction::CompleteInit()
 		m_pRuntimeAreaManager = new CRuntimeAreaManager();
 	}
 
+	InitCommands();
+
 #if defined(CRY_UNIT_TESTING)
 	if (gEnv->bTesting)
 	{
 		//in local unit tests we pass in -unit_test_open_failed to notify the user, in automated tests we don't pass in.
-		CryUnitTest::EReporterType reporterType = m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "unit_test_open_failed") ? 
-			CryUnitTest::EReporterType::ExcelWithNotification : CryUnitTest::EReporterType::Excel;
-		ITestSystem* pTestSystem = m_pSystem->GetITestSystem();
+		CryTest::EReporterType reporterType = m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "unit_test_open_failed") ? 
+			CryTest::EReporterType::ExcelWithNotification : CryTest::EReporterType::Excel;
+		CryTest::ITestSystem* pTestSystem = m_pSystem->GetITestSystem();
 		CRY_ASSERT(pTestSystem != nullptr);
-		pTestSystem->GetIUnitTestManager()->RunAllTests(reporterType);
-		pTestSystem->QuitInNSeconds(1.f);
+		pTestSystem->SetQuitAfterTests(true);
+		pTestSystem->Run(reporterType);
 	}
 #endif
-
-	InitCommands();
 
 	InlineInitializationProcessing("CCryAction::CompleteInit End");
 	return true;

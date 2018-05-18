@@ -549,16 +549,6 @@ public:
 	//! <description>Dumps memory coverage.</description>
 	int DumpMemoryCoverage(IFunctionHandler* pH);
 
-	//! <code>System.ApplicationTest( pszParam )</code>
-	//!		<param name="pszParam">Parameters.</param>
-	//! <description>Test the application with the specified parameters.</description>
-	int ApplicationTest(IFunctionHandler* pH);
-
-	//! <code>System.QuitInNSeconds( fInNSeconds )</code>
-	//!		<param name="fInNSeconds">Number of seconds before quitting.</param>
-	//! <description>Quits the application in the specified number of seconds.</description>
-	int QuitInNSeconds(IFunctionHandler* pH);
-
 	//! <code>System.DumpWinHeaps()</code>
 	//! <description>Dumps windows heaps.</description>
 	int DumpWinHeaps(IFunctionHandler* pH);

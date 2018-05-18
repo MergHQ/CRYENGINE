@@ -351,7 +351,7 @@ public:
 	DRS::IDynamicResponseSystem* GetIDynamicResponseSystem()          { return m_env.pDynamicResponseSystem; }
 	IHardwareMouse*              GetIHardwareMouse() override         { return m_env.pHardwareMouse; }
 	ISystemEventDispatcher*      GetISystemEventDispatcher() override { return m_pSystemEventDispatcher; }
-	ITestSystem*                 GetITestSystem() override            { return m_pTestSystem.get(); }
+	CryTest::ITestSystem*        GetITestSystem() override            { return m_pTestSystem.get(); }
 	IUserAnalyticsSystem*        GetIUserAnalyticsSystem() override   { return m_pUserAnalyticsSystem; }
 	Cry::IPluginManager*         GetIPluginManager() override         { return m_pPluginManager; }
 	IProjectManager*             GetIProjectManager() override;
@@ -478,7 +478,6 @@ public:
 	// Get the current callstack in raw address form (more lightweight than the above functions)
 	// static as memReplay needs it before CSystem has been setup - expose a ISystem interface to this function if you need it outside CrySystem
 	static void                  debug_GetCallStackRaw(void** callstack, uint32& callstackLength);
-	virtual void                 ApplicationTest(const char* szParam) override;
 
 	virtual ICryFactoryRegistry* GetCryFactoryRegistry() const override;
 
@@ -1000,7 +999,7 @@ public:
 protected: // -------------------------------------------------------------
 	ILoadingProgressListener*                 m_pProgressListener;
 	CCmdLine*                                 m_pCmdLine;
-	std::unique_ptr<ITestSystem>              m_pTestSystem; // needed for external test application (0 if not activated yet)
+	std::unique_ptr<CryTest::ITestSystem>     m_pTestSystem;
 	CVisRegTest*                              m_pVisRegTest;
 	CThreadManager*                           m_pThreadManager;
 	CResourceManager*                         m_pResourceManager;

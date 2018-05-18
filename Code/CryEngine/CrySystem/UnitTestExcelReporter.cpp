@@ -21,12 +21,11 @@
 	#include <shellapi.h> // requires <windows.h>
 #endif
 
-using namespace CryUnitTest;
-
+namespace CryTest
+{
 constexpr char kOutputFileName[] = "%USER%/TestResults/UnitTest.xml";
-constexpr char kOutputFileNameJUnit[] = "%USER%/TestResults/UnitTestJUnit.xml";
 
-void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
+void CTestExcelReporter::OnFinishTesting(const SRunContext& context)
 {
 	// Generate report.
 	XmlNodeRef Workbook = GetISystem()->CreateXmlNode("Workbook");
@@ -41,7 +40,7 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 	Column = m_CurrTable->newChild("Column");
 	Column->setAttr("ss:Width", 80);
 	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 200);
+	Column->setAttr("ss:Width", 300);
 	Column = m_CurrTable->newChild("Column");
 	Column->setAttr("ss:Width", 200);
 	Column = m_CurrTable->newChild("Column");
@@ -79,7 +78,7 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 	AddCell("Test Name");
 	AddCell("Status");
 	AddCell("Run Time(ms)");
-	AddCell("Failure Description");
+	AddCell("Failures");
 	AddCell("File");
 	AddCell("Line");
 
@@ -87,26 +86,27 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 
 	for (const STestResult& res : m_results)
 	{
-		if (res.bSuccess)
+		if (res.isSuccessful)
 		{
 			continue;
 		}
 
 		AddRow();
-		if (res.autoTestInfo.szTaskName != 0)
-		{
-			name.Format("[%s] %s:%s.%s", res.testInfo.GetModule(), res.testInfo.GetSuite(), res.testInfo.GetName(), res.autoTestInfo.szTaskName);
-		}
-		else
-		{
-			name.Format("[%s] %s:%s", res.testInfo.GetModule(), res.testInfo.GetSuite(), res.testInfo.GetName());
-		}
+		name.Format("[%s] %s:%s", res.testInfo.module.c_str(), res.testInfo.suite.c_str(), res.testInfo.name.c_str());
 		AddCell(name);
 		AddCell("FAIL", CELL_CENTERED);
-		AddCell((int)res.fRunTimeInMs);
-		AddCell(res.failureDescription, CELL_CENTERED);
-		AddCell(res.testInfo.GetFileName());
-		AddCell(res.testInfo.GetLineNumber());
+		AddCell((int)res.runTimeInMs);
+		AddCell((uint64)res.failures.size());
+		AddCell(res.testInfo.fileName.c_str());
+		AddCell(res.testInfo.lineNumber);
+
+		for (auto& failure : res.failures)
+		{
+			AddRow();
+			AddCellAtIndex(4, failure.message);
+			AddCell(failure.fileName);
+			AddCell(failure.lineNumber);
+		}
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -119,7 +119,7 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 	Column = m_CurrTable->newChild("Column");
 	Column->setAttr("ss:Width", 80);
 	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 200);
+	Column->setAttr("ss:Width", 60);
 	Column = m_CurrTable->newChild("Column");
 	Column->setAttr("ss:Width", 200);
 	Column = m_CurrTable->newChild("Column");
@@ -130,23 +130,16 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 	AddCell("Test Name");
 	AddCell("Status");
 	AddCell("Run Time(ms)");
-	AddCell("Failure Description");
+	AddCell("Failures");
 	AddCell("File");
 	AddCell("Line");
 
 	for (const STestResult& res : m_results)
 	{
 		AddRow();
-		if (res.autoTestInfo.szTaskName != 0)
-		{
-			name.Format("[%s] %s:%s.%s", res.testInfo.GetModule(), res.testInfo.GetSuite(), res.testInfo.GetName(), res.autoTestInfo.szTaskName);
-		}
-		else
-		{
-			name.Format("[%s] %s:%s", res.testInfo.GetModule(), res.testInfo.GetSuite(), res.testInfo.GetName());
-		}
+		name.Format("[%s] %s:%s", res.testInfo.module.c_str(), res.testInfo.suite.c_str(), res.testInfo.name.c_str());
 		AddCell(name);
-		if (res.bSuccess)
+		if (res.isSuccessful)
 		{
 			AddCell("OK", CELL_CENTERED);
 		}
@@ -154,100 +147,61 @@ void CUnitTestExcelReporter::OnFinishTesting(const SUnitTestRunContext& context)
 		{
 			AddCell("FAIL", CELL_CENTERED);
 		}
-		AddCell((int)res.fRunTimeInMs);
-		AddCell(res.failureDescription, CELL_CENTERED);
-		AddCell(res.testInfo.GetFileName());
-		AddCell(res.testInfo.GetLineNumber());
+		AddCell(static_cast<int>(res.runTimeInMs));
+		AddCell(static_cast<uint32>(res.failures.size()));
+		AddCell(res.testInfo.fileName.c_str());
+		AddCell(res.testInfo.lineNumber);
 	}
 
 	bool bSaveSucceed = SaveToFile(kOutputFileName);
-	bSaveSucceed &= SaveJUnitCompatableXml();
 	PostFinishTesting(context, bSaveSucceed);
 }
 
-//////////////////////////////////////////////////////////////////////////
-bool CUnitTestExcelReporter::SaveJUnitCompatableXml()
+void CTestExcelReporter::OnSingleTestStart(const STestInfo& testInfo)
 {
-	XmlNodeRef root = GetISystem()->CreateXmlNode("testsuite");
-
-	//<testsuite failures="0" time="0.289" errors="0" tests="3" skipped="0"	name="UnitTests.MainClassTest">
-
-	int errors = 0;
-	int skipped = 0;
-	int failures = 0;
-	float totalTime = 0;
-	for (const STestResult& res : m_results)
-	{
-		totalTime += res.fRunTimeInMs;
-		failures += (res.bSuccess) ? 0 : 1;
-	}
-	XmlNodeRef suiteNode = root;
-	suiteNode->setAttr("time", totalTime);
-	suiteNode->setAttr("errors", errors);
-	suiteNode->setAttr("failures", failures);
-	suiteNode->setAttr("tests", (int)m_results.size());
-	suiteNode->setAttr("skipped", skipped);
-	suiteNode->setAttr("name", "UnitTests");
-
-	for (const STestResult& res : m_results)
-	{
-		XmlNodeRef testNode = suiteNode->newChild("testcase");
-		testNode->setAttr("time", res.fRunTimeInMs);
-		testNode->setAttr("name", res.testInfo.GetName());
-		//<testcase time="0.146" name="TestPropertyValue"	classname="UnitTests.MainClassTest"/>
-
-		if (!res.bSuccess)
-		{
-			XmlNodeRef failNode = testNode->newChild("failure");
-			failNode->setAttr("type", res.testInfo.GetModule());
-			failNode->setAttr("message", res.failureDescription);
-			string err;
-			err.Format("%s at line %d", res.testInfo.GetFileName(), res.testInfo.GetLineNumber());
-			failNode->setContent(err);
-		}
-	}
-
-	return root->saveToFile(kOutputFileNameJUnit);
-}
-
-void CUnitTestExcelReporter::OnSingleTestStart(const IUnitTest& test)
-{
-	const CUnitTestInfo& testInfo = test.GetInfo();
 	string text;
-	text.Format("Test Started: [%s] %s:%s", testInfo.GetModule(), testInfo.GetSuite(), testInfo.GetName());
+	text.Format("Test Started: [%s] %s:%s", testInfo.module.c_str(), testInfo.suite.c_str(), testInfo.name.c_str());
 	m_log.Log(text);
 }
 
-void CUnitTestExcelReporter::OnSingleTestFinish(const IUnitTest& test, float fRunTimeInMs, bool bSuccess, char const* szFailureDescription)
+void CTestExcelReporter::OnSingleTestFinish(const STestInfo& testInfo, float fRunTimeInMs, bool bSuccess, const std::vector<SError>& failures)
 {
-	const CUnitTestInfo& info = test.GetInfo();
 	if (bSuccess)
 	{
-		m_log.Log("UnitTestFinish: [%s]%s:%s | OK (%3.2fms)", info.GetModule(), info.GetSuite(), info.GetName(), fRunTimeInMs);
+		m_log.Log("Test result: [%s]%s:%s | OK (%3.2fms)", testInfo.module.c_str(), testInfo.suite.c_str(), testInfo.name.c_str(), fRunTimeInMs);
 	}
 	else
 	{
-		m_log.Log("UnitTestFinish: [%s]%s:%s | FAIL (%s)", info.GetModule(), info.GetSuite(), info.GetName(), szFailureDescription);
+		m_log.Log("Test result: [%s]%s:%s | %d failures:", testInfo.module.c_str(), testInfo.suite.c_str(), testInfo.name.c_str(), failures.size());
+		for (const SError& err : failures)
+		{
+			m_log.Log("at %s line %d:\t%s", err.fileName.c_str(), err.lineNumber, err.message.c_str());
+		}
 	}
 
-	STestResult testResult
-	{
-		info,
-		test.GetAutoTestInfo(),
-		fRunTimeInMs,
-		bSuccess,
-		szFailureDescription
-	};
-	m_results.push_back(testResult);
+	m_results.push_back(STestResult { testInfo, fRunTimeInMs, bSuccess, failures });
 }
 
-void CryUnitTest::CUnitTestExcelNotificationReporter::PostFinishTesting(const SUnitTestRunContext& context, bool bSavedReports) const
+static constexpr const char* szExcelReporterSave = "%USER%/TestResults/UnitTestTemp.json";
+
+void CTestExcelReporter::OnBreakTesting(const SRunContext& context)
+{
+	Serialization::SaveJsonFile(szExcelReporterSave, *this);
+}
+
+void CTestExcelReporter::OnRecoverTesting(const SRunContext& context)
+{
+	Serialization::LoadJsonFile(*this, szExcelReporterSave);
+	gEnv->pCryPak->RemoveFile(szExcelReporterSave);
+}
+
+void CTestExcelNotificationReporter::PostFinishTesting(const SRunContext& context, bool bSavedReports) const
 {
 #if CRY_PLATFORM_WINDOWS
 	if (!bSavedReports)
 	{
 		// For local unit testing notify user to close previously opened report.
-		// Use primitive windows msgbox because we are supposed to hide all pop-ups during auto testing. 
+		// Use primitive windows msgbox because we are supposed to hide all pop-ups during auto testing.
 		CryMessageBox("Unit test failed to save one or more report documents, make sure the file is writable!", "Unit Test", eMB_Error);
 	}
 	else
@@ -263,7 +217,7 @@ void CryUnitTest::CUnitTestExcelNotificationReporter::PostFinishTesting(const SU
 			{
 				//should open it with Excel
 				int err = (int)::ShellExecute(NULL, "open", szAdjustedPath, NULL, NULL, SW_SHOW);
-				if (err <= 32)//returns a value greater than 32 if succeeds.
+				if (err <= 32)  //returns a value greater than 32 if succeeds.
 				{
 					m_log.Log("Failed to open report %s, error code: %d", szAdjustedPath, err);
 				}
@@ -271,4 +225,6 @@ void CryUnitTest::CUnitTestExcelNotificationReporter::PostFinishTesting(const SU
 		}
 	}
 #endif
+}
+
 }

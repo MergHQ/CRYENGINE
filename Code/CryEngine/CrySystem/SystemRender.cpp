@@ -33,7 +33,6 @@
 
 #include "CrySizerStats.h"
 #include "CrySizerImpl.h"
-#include <CrySystem/ITestSystem.h>   // ITestSystem
 #include "VisRegTest.h"
 #include "ThreadProfiler.h"
 #include <CrySystem/Profilers/IDiskProfiler.h>
@@ -689,12 +688,6 @@ void CSystem::Render()
 		{
 			if (!m_env.IsEditing())  // Editor calls it's own rendering update
 			{
-
-#if !defined(_RELEASE)
-				if (m_pTestSystem)
-					m_pTestSystem->BeforeRender();
-#endif
-
 				if (m_env.p3DEngine && !m_env.IsFMVPlaying())
 				{
 					if ((!IsEquivalent(m_ViewCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON) && (!IsLoading())) || // never pass undefined camera to p3DEngine->RenderWorld()
@@ -711,8 +704,6 @@ void CSystem::Render()
 #if !defined(_RELEASE)
 				if (m_pVisRegTest)
 					m_pVisRegTest->AfterRender();
-				if (m_pTestSystem)
-					m_pTestSystem->AfterRender();
 
 				//			m_pProcess->Draw();
 
