@@ -6,13 +6,16 @@
 class CGeometryCacheType : public CAssetType
 {
 public:
-	DECLARE_ASSET_TYPE_DESC(CGeometryCacheType);
+	DECLARE_ASSET_TYPE_DESC(CGeometryCacheType)
 
-	virtual const char* GetTypeName() const override { return "GeometryCache"; }
-	virtual const char* GetUiTypeName() const override { return QT_TR_NOOP("Geometry Cache"); }
-	virtual const char* GetFileExtension() const override { return "cax"; }
-	virtual bool IsImported() const override { return false; }
-	virtual bool CanBeEdited() const override { return false; }
+	virtual const char*   GetTypeName() const override      { return GetTypeNameStatic(); }
+	virtual const char*   GetUiTypeName() const override    { return QT_TR_NOOP("Geometry Cache"); }
+	virtual const char*   GetFileExtension() const override { return "cax"; }
+	virtual bool          IsImported() const override       { return true; }
+	virtual bool          CanBeEdited() const override      { return true; }
+	virtual CAssetEditor* Edit(CAsset* pAsset) const override;
+
+	static const char*    GetTypeNameStatic() { return "GeometryCache"; }
 
 private:
 	virtual CryIcon GetIconInternal() const override;

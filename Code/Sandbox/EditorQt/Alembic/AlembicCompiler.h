@@ -5,6 +5,6 @@
 class CAlembicCompiler
 {
 public:
-	bool CompileAlembic(CString& fileName, const CString& fullPath);
+	bool CompileAlembic(string& fileName, const string& fullPath, bool showDialog);
 };
 

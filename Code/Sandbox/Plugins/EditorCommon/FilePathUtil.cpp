@@ -77,6 +77,19 @@ bool MoveFileAllowOverwrite(const char* szOldFilePath, const char* szNewFilePath
 	return QFile::remove(szNewFilePath) && QFile::rename(szOldFilePath, szNewFilePath);
 }
 
+EDITOR_COMMON_API bool CopyFileAllowOverwrite(const char* szSourceFilePath, const char* szDestinationFilePath)
+{
+	GetISystem()->GetIPak()->MakeDir(GetDirectory(szDestinationFilePath));
+
+	if (QFile::copy(szSourceFilePath, szDestinationFilePath))
+	{
+		return true;
+	}
+
+	// Try to overwrite existing file.
+	return QFile::remove(szDestinationFilePath) && QFile::copy(szSourceFilePath, szDestinationFilePath);
+}
+
 bool RemoveDirectory(const char* szPath, bool bRecursive/* = true*/)
 {
 	QDir dir(szPath);
@@ -99,6 +112,12 @@ bool RemoveDirectory(const char* szPath, bool bRecursive/* = true*/)
 
 	CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to remove directory: %s", szPath);
 	return false;
+}
+
+EDITOR_COMMON_API bool MakeFileWritable(const char* szFilePath)
+{
+	QFile f(QtUtil::ToQString(szFilePath));
+	return f.setPermissions(f.permissions() | QFileDevice::WriteOwner);
 }
 
 // The pak should be opened.
