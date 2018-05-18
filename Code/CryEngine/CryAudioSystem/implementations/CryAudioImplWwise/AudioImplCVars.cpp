@@ -255,6 +255,8 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_WwiseLowerEngineDefaultPoolSize");
 		pConsole->UnregisterVariable("s_WwiseEnableEventManagerThread");
 		pConsole->UnregisterVariable("s_WwiseEnableSoundBankManagerThread");
+		pConsole->UnregisterVariable("s_WwiseNumSamplesPerFrame");
+		pConsole->UnregisterVariable("s_WwiseNumRefillsInVoice");
 		pConsole->UnregisterVariable("s_WwisePanningRule");
 
 #if defined(INCLUDE_WWISE_IMPL_PRODUCTION_CODE)
