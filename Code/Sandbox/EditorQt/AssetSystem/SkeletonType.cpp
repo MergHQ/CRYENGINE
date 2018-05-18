@@ -13,7 +13,7 @@
 REGISTER_ASSET_TYPE(CSkeletonType)
 
 // Detail attributes.
-CItemModelAttribute CSkeletonType::s_bonesCountAttribute("Bones count", eAttributeType_Int, CItemModelAttribute::StartHidden);
+CItemModelAttribute CSkeletonType::s_bonesCountAttribute("Bones count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
 
 CAssetEditor* CSkeletonType::Edit(CAsset* asset) const
 {

@@ -430,7 +430,6 @@ protected:
 	void           OnMenuCreateFlowGraph();
 	void           OnMenuScriptEvent(int eventIndex);
 	void           OnMenuReloadAllScripts();
-	void           OnMenuConvertToPrefab();
 
 	virtual string GetMouseOverStatisticsText() const override;
 

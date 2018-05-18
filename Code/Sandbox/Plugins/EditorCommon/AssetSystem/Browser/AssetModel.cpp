@@ -36,19 +36,47 @@ QStringList CAssetModel::GetStatusesList()
 
 namespace AssetModelAttributes
 {
-	CItemModelAttributeEnumFunc s_AssetTypeAttribute("Type", &CAssetModel::GetAssetTypesStrList);
-	CItemModelAttributeEnumFunc s_AssetStatusAttribute("Status", &CAssetModel::GetStatusesList);
-	CItemModelAttribute s_AssetFolderAttribute("Folder", eAttributeType_String, CItemModelAttribute::StartHidden, false, "");
-	CItemModelAttribute s_AssetUidAttribute("Unique Id", eAttributeType_String, CItemModelAttribute::StartHidden);
-	CItemModelAttribute s_FilterStringAttribute("_filter_string_", eAttributeType_String, CItemModelAttribute::AlwaysHidden, false, "");
+
+CItemModelAttributeEnumFunc s_AssetTypeAttribute("Type", &CAssetModel::GetAssetTypesStrList);
+CItemModelAttributeEnumFunc s_AssetStatusAttribute("Status", &CAssetModel::GetStatusesList);
+CItemModelAttribute s_AssetFolderAttribute("Folder", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden, false, "");
+CItemModelAttribute s_AssetUidAttribute("Unique Id", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_FilterStringAttribute("_filter_string_", &Attributes::s_stringAttributeType, CItemModelAttribute::AlwaysHidden, false, "");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
 
+void CAssetModel::AddPredefinedComputedColumns()
+{
+	static CItemModelAttribute fileExtensionAttribute("File extension", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+	AddColumn(&fileExtensionAttribute, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute)
+	{
+		CRY_ASSERT(&fileExtensionAttribute == pAttribute);
+		return QVariant(QtUtil::ToQString(pAsset->GetType()->GetFileExtension()));
+	});
+
+	static CItemModelAttribute filesCountAttribute("Files count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+	AddColumn(&filesCountAttribute, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute)
+	{
+		CRY_ASSERT(&filesCountAttribute == pAttribute);
+		return QVariant(pAsset->GetFilesCount());
+	});
+}
+
+
 void CAssetModel::BuildDetailAttributes()
 {
+	AddPredefinedComputedColumns();
+
 	for (CAssetType* pAssetType : CAssetManager::GetInstance()->GetAssetTypes())
 	{
+		static const auto getDetailValue = [](const CAsset* pAsset, const CItemModelAttribute* pAttribute)
+		{
+			const CAssetType* const pAssetType = pAsset->GetType();
+			return  pAssetType->GetDetailValue(pAsset, pAttribute);
+		};
+
 		for (CItemModelAttribute* pAttribute : pAssetType->GetDetails())
 		{
 			if (!pAttribute)
@@ -69,6 +97,7 @@ void CAssetModel::BuildDetailAttributes()
 			{
 				SDetailAttribute attrib;
 				attrib.pAttribute = pAttribute;
+				attrib.getValueFn = getDetailValue;
 				attrib.assetTypes.emplace_back(pAssetType);
 
 				m_detailAttributes.push_back(attrib);
@@ -90,7 +119,7 @@ CAssetModel::CAssetModel(QObject* parent /*= nullptr*/)
 
 void CAssetModel::Init()
 {
-	AddPredefinedComputedColumns();
+	CAutoRegisterColumn::RegisterAll();
 	BuildDetailAttributes();
 
 	CAssetManager::GetInstance()->signalBeforeAssetsUpdated.Connect(this, &CAssetModel::PreUpdate);
@@ -121,23 +150,6 @@ CAssetModel::~CAssetModel()
 	CAssetManager::GetInstance()->signalAssetChanged.DisconnectObject(this);
 
 	CAssetThumbnailsLoader::GetInstance().signalAssetThumbnailLoaded.DisconnectObject(this);
-}
-
-void CAssetModel::AddPredefinedComputedColumns()
-{
-	static CItemModelAttribute fileExtensionAttribute("File extension", eAttributeType_String, CItemModelAttribute::StartHidden);
-	AddComputedColumn(&fileExtensionAttribute, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute)
-	{
-		CRY_ASSERT(&fileExtensionAttribute == pAttribute);
-		return pAsset ? QVariant(QtUtil::ToQString(pAsset->GetType()->GetFileExtension())) : QVariant();
-	});
-
-	static CItemModelAttribute filesCountAttribute("Files count", eAttributeType_Int, CItemModelAttribute::StartHidden);
-	AddComputedColumn(&filesCountAttribute, [](const CAsset* pAsset, const CItemModelAttribute* pAttribute)
-	{
-		CRY_ASSERT(&filesCountAttribute == pAttribute);
-		return pAsset ? QVariant(pAsset->GetFilesCount()) : QVariant();
-	});
 }
 
 const CItemModelAttribute* CAssetModel::GetColumnAttribute(int column)
@@ -191,14 +203,19 @@ int CAssetModel::GetColumnCount()
 	return eAssetColumns_Details + GetInstance()->m_detailAttributes.size();
 }
 
-bool CAssetModel::AddComputedColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute)> computeFn)
+bool CAssetModel::AddColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute)> getValueFn)
 {
 	if (std::any_of(m_detailAttributes.begin(), m_detailAttributes.end(), [pAttribute](const SDetailAttribute& attrib)
 	{
-		return attrib.computeFn == nullptr;
+		return attrib.getValueFn == nullptr;
 	}))
 	{
 		CRY_ASSERT_MESSAGE(false, "Adding computed columns after CAssetModel::Init() is not allowed.");
+		return false;
+	}
+
+	if (!getValueFn)
+	{
 		return false;
 	}
 
@@ -208,12 +225,13 @@ bool CAssetModel::AddComputedColumn(const CItemModelAttribute* pAttribute, std::
 	});
 	if (otherIt != m_detailAttributes.end())
 	{
+		CRY_ASSERT_MESSAGE(false, "The column is already registered: %s", pAttribute->GetName());
 		return false;
 	}
 
 	SDetailAttribute attrib;
 	attrib.pAttribute = pAttribute;
-	attrib.computeFn = std::move(computeFn);
+	attrib.getValueFn = std::move(getValueFn);
 
 	m_detailAttributes.push_back(attrib);
 	return true;
@@ -356,16 +374,7 @@ QVariant CAssetModel::data(const QModelIndex& index, int role) const
 		const int detailColumn = index.column() - (int)eAssetColumns_Details;
 		if (detailColumn >= 0 && detailColumn < m_detailAttributes.size())
 		{
-			QVariant value;
-			if (!m_detailAttributes[detailColumn].computeFn)
-			{ 
-				const CAssetType* const pAssetType = pAsset->GetType();
-				value = pAssetType->GetDetailValue(pAsset, m_detailAttributes[detailColumn].pAttribute);
-			}
-			else
-			{
-				value = m_detailAttributes[detailColumn].computeFn(pAsset, m_detailAttributes[detailColumn].pAttribute);
-			}
+			QVariant value = m_detailAttributes[detailColumn].getValueFn(pAsset, m_detailAttributes[detailColumn].pAttribute);
 
 			// By returning a string, we ensure proper sorting of assets where this detail does not apply.
 			// Note that invalid variants (QVariant()) have unnatural sorting characteristics.
@@ -632,3 +641,10 @@ QMimeData* CAssetModel::mimeData(const QModelIndexList& indexes) const
 	return pDragDropData;
 }
 
+CAssetModel::CAutoRegisterColumn::CAutoRegisterColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute)> computeFn)
+	: CAutoRegister([pAttribute, computeFn = std::move(computeFn)]()
+{
+	CAssetManager::GetInstance()->GetAssetModel()->AddColumn(pAttribute, computeFn);
+})
+{
+}

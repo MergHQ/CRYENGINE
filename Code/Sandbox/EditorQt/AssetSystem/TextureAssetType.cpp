@@ -40,9 +40,9 @@ static bool CallRcWithUserDialog(const string& filename, const string& options =
 } // namespace Private_TextureType
 
  // Detail attributes.
-CItemModelAttribute CTextureType::s_widthAttribute("Width", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute CTextureType::s_heightAttribute("Height", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute CTextureType::s_mipCountAttribute("Mip count", eAttributeType_Int, CItemModelAttribute::StartHidden);
+CItemModelAttribute CTextureType::s_widthAttribute("Width", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CTextureType::s_heightAttribute("Height", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CTextureType::s_mipCountAttribute("Mip count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
 
 
 CryIcon CTextureType::GetIconInternal() const

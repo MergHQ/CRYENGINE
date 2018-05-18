@@ -234,7 +234,7 @@ inline void SplitString(const string& rSrcStr, std::vector<string>& rDestStrings
 
 			if (crtPos != lastPos)
 			{
-				rDestStrings.push_back(string((const char*)(rSrcStr.GetString() + lastPos), crtPos - lastPos));
+				rDestStrings.emplace_back((const char*)(rSrcStr.GetString() + lastPos), crtPos - lastPos);
 			}
 
 			break;
@@ -243,7 +243,7 @@ inline void SplitString(const string& rSrcStr, std::vector<string>& rDestStrings
 		{
 			if (crtPos != lastPos)
 			{
-				rDestStrings.push_back(string((const char*)(rSrcStr.GetString() + lastPos), crtPos - lastPos));
+				rDestStrings.emplace_back((const char*)(rSrcStr.GetString() + lastPos), crtPos - lastPos);
 			}
 		}
 
@@ -267,7 +267,7 @@ inline void SplitString(string& rSrcStr, std::vector<string>& rDestStrings, char
 
 			if (crtPos != lastPos)
 			{
-				rDestStrings.push_back(string((const char*)(rSrcStr.c_str() + lastPos), crtPos - lastPos));
+				rDestStrings.emplace_back((const char*)(rSrcStr.c_str() + lastPos), crtPos - lastPos);
 			}
 
 			break;
@@ -276,7 +276,7 @@ inline void SplitString(string& rSrcStr, std::vector<string>& rDestStrings, char
 		{
 			if (crtPos != lastPos)
 			{
-				rDestStrings.push_back(string((const char*)(rSrcStr.c_str() + lastPos), crtPos - lastPos));
+				rDestStrings.emplace_back((const char*)(rSrcStr.c_str() + lastPos), crtPos - lastPos);
 			}
 		}
 

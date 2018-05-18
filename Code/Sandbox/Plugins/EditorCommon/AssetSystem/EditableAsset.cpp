@@ -46,9 +46,9 @@ void CEditableAsset::SetSourceFile(const char* szFilepath)
 	m_asset.SetSourceFile(szFilepath);
 }
 
-void CEditableAsset::SetFiles(const char* szCommonPath, const std::vector<string>& filenames)
+void CEditableAsset::SetFiles(const std::vector<string>& filenames)
 {
-	m_asset.SetFiles(szCommonPath, filenames);
+	m_asset.SetFiles(filenames);
 }
 
 void CEditableAsset::AddFile(const char* szFilepath)
@@ -64,9 +64,9 @@ void CEditableAsset::SetDetails(const std::vector<std::pair<string, string>>& de
 	}
 }
 
-void CEditableAsset::SetDependencies(std::vector<SAssetDependencyInfo> dependencies)
+void CEditableAsset::SetDependencies(const std::vector<SAssetDependencyInfo>& dependencies)
 {
-	m_asset.SetDependencies(std::move(dependencies));
+	m_asset.SetDependencies(dependencies);
 }
 
 void CEditableAsset::InvalidateThumbnail()
@@ -79,3 +79,17 @@ void CEditableAsset::SetOpenedInAssetEditor(CAssetEditor* pEditor)
 	m_asset.OnOpenedInEditor(pEditor);
 }
 
+const char* CEditableAsset::GetMetadataFile() const
+{
+	return m_asset.GetMetadataFile();
+}
+
+const char* CEditableAsset::GetFolder() const 
+{
+	return m_asset.GetFolder();
+}
+
+const char* CEditableAsset::GetName() const
+{
+	return m_asset.GetName();
+}

@@ -18,7 +18,7 @@ public:
 	CUndoAddObjectsToPrefab(CPrefabObject* prefabObj, TBaseObjects& objects);
 
 protected:
-	virtual const char* GetDescription() { return "Add Objects To Prefab"; };
+	virtual const char* GetDescription() { return "Add Objects To Prefab"; }
 
 	virtual void        Undo(bool bUndo);
 	virtual void        Redo();
@@ -61,21 +61,27 @@ public:
 	// Clear all prototypes
 	void ClearAll();
 
+	IDataBaseItem*  CreateItem(const string& filename);
+	//virtual IDataBaseItem* CreateItem(IDataBaseLibrary* pLibrary) override { return CBaseLibraryManager::CreateItem(pLibrary); };
+
 	//! Delete item from library and manager.
-	void DeleteItem(IDataBaseItem* pItem);
+	void           DeleteItem(IDataBaseItem* pItem);
+
+	//! Load item by its GUID.
+	IDataBaseItem* LoadItem(const CryGUID& guid);
 
 	//! Serialize manager.
-	virtual void Serialize(XmlNodeRef& node, bool bLoading);
+	virtual void Serialize(XmlNodeRef& node, bool bLoading) override;
 
-	//! Make new prefab item from selection.
-	CPrefabItem* MakeFromSelection();
+	//! Make new prefab item from selection. Displays a pop-up dialog to save new prefab.
+	CPrefabItem* MakeFromSelection(CSelectionGroup* pSelectionGroup = nullptr);
 
 	//! Add selected objects to prefab (which selected too)
-	void AddSelectionToPrefab();
-	void AddSelectionToPrefab(CPrefabObject* pPrefab);
+	void         AddSelectionToPrefab();
+	void         AddSelectionToPrefab(CPrefabObject* pPrefab);
 
-	void OpenSelected();
-	void CloseSelected();
+	void         OpenSelected();
+	void         CloseSelected();
 
 	virtual void CloneObjectsFromPrefabs(std::vector<CBaseObject*>& childObjects);
 	void         CloneAllFromPrefabs(std::vector<CPrefabObject*>& pPrefabs);
@@ -94,32 +100,33 @@ public:
 	void GetPrefabObjects(std::vector<CPrefabObject*>& outPrefabObjects);
 
 	//! Get prefab instance count used in level
-	int GetPrefabInstanceCount(CPrefabItem* pPrefabItem);
+	int GetPrefabInstanceCount(IDataBaseItem* pPrefabItem);
 
 	//! Get prefab events
-	ILINE CPrefabEvents* GetPrefabEvents() const { return m_pPrefabEvents; }
+	ILINE CPrefabEvents*      GetPrefabEvents() const { return m_pPrefabEvents; }
 
-	IDataBaseLibrary*    LoadLibrary(const string& filename, bool bReload = false);
+	bool                      ShouldSkipPrefabUpdate() const     { return m_skipPrefabUpdate; }
+	void                      SetSkipPrefabUpdate(bool skip)     { m_skipPrefabUpdate = skip; }
 
-	bool                 ShouldSkipPrefabUpdate() const { return m_skipPrefabUpdate; }
-	void                 SetSkipPrefabUpdate(bool skip) { m_skipPrefabUpdate = skip; }
+	virtual void              BeginRestoreTransaction() override { SetSkipPrefabUpdate(true); }
+	virtual void              EndRestoreTransaction() override   { SetSkipPrefabUpdate(false); }
 
-	virtual void BeginRestoreTransaction() override { SetSkipPrefabUpdate(true); }
-	virtual void EndRestoreTransaction() override { SetSkipPrefabUpdate(false); }
+	// Allows to generate prefab assets from level files of CE5.5
+	static void importAssetsFromLevel(XmlNodeRef& levelRoot);
+
+protected:
+	virtual IDataBaseLibrary* LoadLibrary(const string& filename, bool bReload = false) override;
+
+	virtual CBaseLibraryItem* MakeNewItem() override;
+	virtual CBaseLibrary*     MakeNewLibrary() override;
+	virtual string            GetRootNodeName() override;
+	virtual string            GetLibsPath() override;
+	virtual const char*       GetFileExtension() const override { return "prefab"; }
 
 private:
 	void ExpandGroup(CBaseObject* pObject, CSelectionGroup& selection) const;
 
-protected:
-	virtual CBaseLibraryItem* MakeNewItem();
-	virtual CBaseLibrary*     MakeNewLibrary();
-	//! Root node where this library will be saved.
-	virtual string           GetRootNodeName();
-	//! Path to libraries in this manager.
-	virtual string           GetLibsPath();
-
-	string        m_libsPath;
-
+private:
 	CPrefabEvents* m_pPrefabEvents;
 	bool           m_skipPrefabUpdate;
 };

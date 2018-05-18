@@ -25,7 +25,7 @@ public:
 
 	virtual CAssetEditor* Edit(CAsset* asset) const override;
 	virtual void          AppendContextMenuActions(const std::vector<CAsset*>& assets, CAbstractMenu* menu) const override;
-	virtual bool          OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const override;
+	virtual bool          OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const override;
 };
 }
 }

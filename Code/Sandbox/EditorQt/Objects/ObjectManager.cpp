@@ -3093,7 +3093,6 @@ void CObjectManager::LoadObjects(CObjectArchive& objectArchive, bool bSelect)
 	objects.reserve(numObjects);
 	for (int i = 0; i < numObjects; i++)
 	{
-		objectArchive.node = objectsNode->getChild(i);
 		CBaseObject* obj = objectArchive.LoadObject(objectsNode->getChild(i));
 		if (obj && bSelect)
 		{

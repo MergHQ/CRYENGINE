@@ -25,7 +25,7 @@ public:
 	void         RemoveFilter(AttributeFilterSharedPtr pFilter);
 	void         ClearFilters();
 
-	void         InvalidateFilter() { QDeepFilterProxyModel::invalidateFilter(); }
+	virtual void InvalidateFilter() { QDeepFilterProxyModel::invalidateFilter(); }
 
 	CCrySignal<void()> signalAttributesChanged;
 

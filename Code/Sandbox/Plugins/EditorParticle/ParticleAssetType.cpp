@@ -95,13 +95,12 @@ bool CParticlesType::CreateForExistingEffect(const char* szFilePath) const
 	return Create(szFilePath, &params);
 }
 
-bool CParticlesType::OnCreate(CEditableAsset& editAsset, const void* pCreateParams) const
+bool CParticlesType::OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const
 {
 	using namespace Private_ParticleAssetType;
 
-	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetAsset().GetMetadataFile()));
-
-	const string pfxFilePath = basePath + ".pfx";
+	const string pfxFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
+	CRY_ASSERT(stricmp(PathUtil::GetExt(pfxFilePath.c_str()), GetFileExtension()) == 0);
 
 	std::shared_ptr<pfx2::IParticleSystem> pParticleSystem = pfx2::GetIParticleSystem();
 	if (!pParticleSystem)
@@ -109,7 +108,7 @@ bool CParticlesType::OnCreate(CEditableAsset& editAsset, const void* pCreatePara
 		return false;
 	}
 
-	const bool bCreatePfxFile = !(pCreateParams && ((SCreateParams*)pCreateParams)->bUseExistingEffect);
+	const bool bCreatePfxFile = !(pTypeSpecificParameter && ((SCreateParams*)pTypeSpecificParameter)->bUseExistingEffect);
 
 	if (bCreatePfxFile)
 	{
@@ -123,7 +122,7 @@ bool CParticlesType::OnCreate(CEditableAsset& editAsset, const void* pCreatePara
 		}
 	}
 
-	editAsset.SetFiles("", { pfxFilePath });
+	asset.AddFile(pfxFilePath.c_str());
 
 	return true;
 }

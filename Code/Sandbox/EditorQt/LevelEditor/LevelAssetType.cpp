@@ -13,6 +13,7 @@
 #include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/DependencyTracker.h"
+#include "Prefabs/PrefabManager.h"
 #include "ThreadingUtils.h"
 #include <Preferences/GeneralPreferences.h>
 #include <CrySandbox/ScopedVariableSetter.h>
@@ -26,21 +27,23 @@ REGISTER_ASSET_TYPE(CLevelType)
 namespace Private_LevelAssetType
 {
 
-std::vector<SAssetDependencyInfo> GetDependencies(const CAsset& asset)
+std::vector<SAssetDependencyInfo> GetDependencies(const string& levelFolder)
 {
-	CRY_ASSERT(asset.GetFilesCount());
-
 	const CAssetManager* const pAssetManager = GetIEditorImpl()->GetAssetManager();
 	std::vector<CAssetType*> types(pAssetManager->GetAssetTypes());
+	types.erase(std::remove_if(types.begin(), types.end(), [](const auto x)
+	{
+		return strcmp(x->GetTypeName(), "Level") == 0;
+	}), types.end());
+
 	std::sort(types.begin(), types.end(), [](const auto a, const auto b)
-{
+	{
 		return strcmp(a->GetFileExtension(), b->GetFileExtension()) < 0;
 	});
 
 	std::vector<SAssetDependencyInfo> dependencies;
 	dependencies.reserve(32);
 
-	const string levelFolder(PathUtil::GetPathWithoutFilename(asset.GetFile(0)));
 	const string gameFolder(PathUtil::AddSlash(gEnv->pCryPak->GetGameFolder()));
 
 	IResourceList* pResList = gEnv->pCryPak->GetResourceList(ICryPak::RFOM_Level);
@@ -79,6 +82,9 @@ std::vector<SAssetDependencyInfo> GetDependencies(const CAsset& asset)
 		return a.path < b.path;
 	});
 
+	CAssetType* const pPrefabType = pAssetManager->FindAssetType("Prefab");
+	CPrefabManager* const pPrefabManager = GetIEditorImpl()->GetPrefabManager();
+
 	for (size_t i = 0, N = dependencies.size(); i < N; ++i)
 	{
 		if (dependencies[i].path.empty())
@@ -103,14 +109,23 @@ std::vector<SAssetDependencyInfo> GetDependencies(const CAsset& asset)
 
 			if (it != dependencies.end() && it->path.Compare(szFilename) == 0)
 			{
-				it->path.clear();
+				it->usageCount = -1;
+			}
+		}
+
+		if (pSubAsset->GetType() == pPrefabType)
+		{
+			IDataBaseItem* const pPrefabItem = pPrefabManager->FindItem(pSubAsset->GetGUID());
+			if (pPrefabItem)
+			{
+				dependencies[i].usageCount = pPrefabManager->GetPrefabInstanceCount(pPrefabItem);
 			}
 		}
 	}
 
 	dependencies.erase(std::remove_if(dependencies.begin(), dependencies.end(), [](const auto x) 
 	{
-		return x.path.empty();
+		return x.usageCount == -1;
 	}), dependencies.end());
 
 	return dependencies;
@@ -160,16 +175,16 @@ CryIcon CLevelType::GetIconInternal() const
 	return CryIcon("icons:FileType/Level.ico");
 }
 
-void CLevelType::UpdateDependencies(CEditableAsset& editAsset)
+void CLevelType::UpdateDependencies(IEditableAsset& editAsset)
 {
-	std::vector<SAssetDependencyInfo> dependencies = Private_LevelAssetType::GetDependencies(editAsset.GetAsset());
+	std::vector<SAssetDependencyInfo> dependencies = Private_LevelAssetType::GetDependencies(PathUtil::RemoveExtension(editAsset.GetMetadataFile()));
 	if (dependencies.size())
 	{
-		editAsset.SetDependencies(std::move(dependencies));
+		editAsset.SetDependencies(dependencies);
 	}
 }
 
-bool CLevelType::OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const
+bool CLevelType::OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const
 {
 	SCreateParams params;
 
@@ -205,7 +220,7 @@ bool CLevelType::OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificPa
 		m_asyncAction.get();
 	}
 
-	string levelFolder = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetAsset().GetMetadataFile()));
+	string levelFolder = PathUtil::RemoveExtension(PathUtil::RemoveExtension(asset.GetMetadataFile()));
 	
 	auto createResult = CCryEditApp::GetInstance()->CreateLevel(levelFolder.c_str(), params.resolution, params.unitSize, params.bUseTerrain);
 
@@ -250,8 +265,9 @@ bool CLevelType::OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificPa
 		gameExporter.Export(exportFlags, ".");
 	}
 
-	editAsset.AddFile(string().Format("%s/%s.%s", levelFolder.c_str(), PathUtil::GetFile(levelFolder).c_str(), editAsset.GetAsset().GetType()->GetFileExtension()));
-	UpdateDependencies(editAsset);
+	const string filename = string().Format("%s/%s.%s", levelFolder.c_str(), PathUtil::GetFile(levelFolder).c_str(), GetFileExtension());
+	asset.SetFiles({ filename });
+	UpdateDependencies(asset);
 	return true;
 }
 

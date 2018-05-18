@@ -13,9 +13,9 @@ QString const CFileImporterModel::s_replaceAction("Import (as replacement)");
 QString const CFileImporterModel::s_unsupportedAction("Unsupported file type");
 QString const CFileImporterModel::s_sameFileAction("Source file is target file");
 
-static CItemModelAttribute s_sourceAttribute("Source", eAttributeType_String, CItemModelAttribute::Visible, false);
-static CItemModelAttribute s_targetAttribute("Target", eAttributeType_String, CItemModelAttribute::Visible, false);
-static CItemModelAttribute s_importAttribute("Import", eAttributeType_Boolean, CItemModelAttribute::Visible, false);
+static CItemModelAttribute s_sourceAttribute("Source", &Attributes::s_stringAttributeType, CItemModelAttribute::Visible, false);
+static CItemModelAttribute s_targetAttribute("Target", &Attributes::s_stringAttributeType, CItemModelAttribute::Visible, false);
+static CItemModelAttribute s_importAttribute("Import", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, false);
 
 //////////////////////////////////////////////////////////////////////////
 CItemModelAttribute* GetAttributeForColumn(CFileImporterModel::EColumns const column)

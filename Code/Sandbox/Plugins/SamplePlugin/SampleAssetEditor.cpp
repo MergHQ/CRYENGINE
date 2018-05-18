@@ -107,7 +107,7 @@ bool CSampleAssetEditor::OnSaveAsset(CEditableAsset& editAsset)
 		return false;
 	}
 
-	editAsset.SetFiles("", { dataFilePath });
+	editAsset.SetFiles({ dataFilePath });
 
 	return true;
 }

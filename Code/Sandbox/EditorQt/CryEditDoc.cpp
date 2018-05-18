@@ -198,9 +198,9 @@ void LoadEntityPrototypeDatabase(TDocMultiArchive& arrXmlAr)
 
 void LoadPrefabDatabase(TDocMultiArchive& arrXmlAr)
 {
-	LOADING_TIME_PROFILE_SECTION_NAMED("Load Prefabs Database");
-	CAutoLogTime logtime("Load Prefabs Database");
-	GetIEditorImpl()->GetPrefabManager()->Serialize((*arrXmlAr[DMAS_GENERAL]).root, (*arrXmlAr[DMAS_GENERAL]).bLoading);
+	LOADING_TIME_PROFILE_SECTION_NAMED("Importing Prefabs");
+	CAutoLogTime logtime("Importing Prefabs");
+	GetIEditorImpl()->GetPrefabManager()->importAssetsFromLevel((*arrXmlAr[DMAS_GENERAL]).root);
 }
 
 void CreateMovieSystemSequenceObjects()
@@ -370,6 +370,7 @@ void CCryEditDoc::Save(TDocMultiArchive& arrXmlAr)
 		//! Serialize entity prototype manager.
 		GetIEditorImpl()->GetEntityProtManager()->Serialize((*arrXmlAr[DMAS_GENERAL]).root, (*arrXmlAr[DMAS_GENERAL]).bLoading);
 		//! Serialize prefabs manager.
+		// TODO: remove when DEV-5324 is done, since prefabs are assets.
 		GetIEditorImpl()->GetPrefabManager()->Serialize((*arrXmlAr[DMAS_GENERAL]).root, (*arrXmlAr[DMAS_GENERAL]).bLoading);
 		//! Serialize material manager.
 		GetIEditorImpl()->GetMaterialManager()->Serialize((*arrXmlAr[DMAS_GENERAL]).root, (*arrXmlAr[DMAS_GENERAL]).bLoading);

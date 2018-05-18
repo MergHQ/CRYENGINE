@@ -5,6 +5,7 @@
 #include "AssetType.h"
 #include "AssetManager.h"
 #include "AssetEditor.h"
+#include "DependencyTracker.h"
 #include "Loader/Metadata.h"
 
 #include "FilePathUtil.h"
@@ -43,13 +44,13 @@ static AssetLoader::SAssetMetadata GetMetadata(const CAsset& asset)
 		}
 	}
 
-	// Depencencies may be relative to:
+	// Dependencies may be relative to:
 	// - the asset 
 	// - the assets root directory.
 	for (auto& item : metadata.dependencies)
 	{
 		string& str = item.first;
-		if (strncmp(path.c_str(), str.c_str(), path.size()) == 0)
+		if (!path.empty() && strncmp(path.c_str(), str.c_str(), path.size()) == 0)
 		{
 			// The path is relative to the asset. 
 			str.Format("./%s", str.substr(path.size()));
@@ -122,6 +123,23 @@ const string CAsset::GetDetailValue(const string& detailName) const
 		return detail.first < detailName;
 	});
 	return it != m_details.end() && it->first == detailName ? it->second : string();
+}
+
+std::pair<bool, int> CAsset::IsAssetUsedBy(const char* szAnotherAssetPath) const
+{
+	const CDependencyTracker* const pDependencyTracker = CAssetManager::GetInstance()->GetDependencyTracker();
+	return pDependencyTracker->IsAssetUsedBy(GetFile(0), szAnotherAssetPath);
+}
+
+std::pair<bool, int> CAsset::DoesAssetUse(const char* szAnotherAssetPath) const
+{
+	// TODO: binary search
+	auto i = std::find_if(m_dependencies.cbegin(), m_dependencies.cend(), [szAnotherAssetPath](const SAssetDependencyInfo& x)
+	{
+		return x.path.CompareNoCase(szAnotherAssetPath) == 0;
+	});
+
+	return (i != m_dependencies.cend()) ? std::make_pair(true, (*i).usageCount) : std::make_pair(false, 0);
 }
 
 void CAsset::Reimport()
@@ -299,24 +317,13 @@ void CAsset::AddFile(const string& file)
 	m_files.push_back(file);
 }
 
-void CAsset::SetFiles(const char* szCommonPath, const std::vector<string>& filenames)
+void CAsset::SetFiles(const std::vector<string>& filenames)
 {
 	m_files.clear();
-
-	if (szCommonPath && *szCommonPath)
+	m_files.reserve(filenames.size());
+	for (const string& filename : filenames)
 	{
-		for (const string& filename : filenames)
-		{
-			const string filepath = PathUtil::Make(szCommonPath, filename.c_str());
-			AddFile(filepath);
-		}
-	}
-	else
-	{
-		for (const string& filename : filenames)
-		{
-			AddFile(filename);
-		}
+		AddFile(filename);
 	}
 }
 
@@ -343,13 +350,13 @@ void CAsset::SetDetail(const string& name, const string& value)
 	}
 }
 
-void CAsset::SetDependencies(std::vector<SAssetDependencyInfo> dependencies)
+void CAsset::SetDependencies(const std::vector<SAssetDependencyInfo>& dependencies)
 {
-	for (SAssetDependencyInfo& filename : dependencies)
+	m_dependencies.clear();
+	for (const SAssetDependencyInfo& info : dependencies)
 	{
-		filename.path = PathUtil::ToUnixPath(filename.path);
+		m_dependencies.emplace_back(PathUtil::ToUnixPath(info.path), info.usageCount);
 	}
-	m_dependencies = std::move(dependencies);
 }
 
 string CAsset::GetThumbnailPath() const

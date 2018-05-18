@@ -29,23 +29,23 @@ namespace EditorSubstance
 
 		void CSubstanceInstanceType::AppendContextMenuActions(const std::vector<CAsset*>& assets, CAbstractMenu* menu) const
 		{
-			// todo support more instances slected
+			// todo support more instances selected
 			if (assets.size() == 1)
 			{
 				EditorSubstance::CManager::Instance()->AddSubstanceInstanceContextMenu(assets[0], menu);
 			}
 		}
 
-		bool CSubstanceInstanceType::OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const
+		bool CSubstanceInstanceType::OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const
 		{
-			const string relativeFileName = PathUtil::AbsolutePathToGamePath(editAsset.GetAsset().GetName());
-			editAsset.SetFiles("",{ relativeFileName + ".crysub" });
+			const string dataFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
+			asset.AddFile(dataFilePath);
 
 			CRY_ASSERT(pTypeSpecificParameter);
 			if (pTypeSpecificParameter)
 			{
 				string& archiveName = *(string*)(pTypeSpecificParameter);
-				editAsset.SetDependencies({ {archiveName, 1} });
+				asset.SetDependencies({ {archiveName, 1} });
 			}
 			return true;
 		}

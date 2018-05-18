@@ -138,10 +138,10 @@ private:
 
 const CItemModelAttribute CNodesDictionary::s_columnAttributes[] =
 {
-	CItemModelAttribute("Name",            eAttributeType_String, CItemModelAttribute::Visible,      false, ""),
-	CItemModelAttribute("_filter_string_", eAttributeType_String, CItemModelAttribute::AlwaysHidden, false, ""),
+	CItemModelAttribute("Name",            &Attributes::s_stringAttributeType, CItemModelAttribute::Visible,      false, ""),
+	CItemModelAttribute("_filter_string_", &Attributes::s_stringAttributeType, CItemModelAttribute::AlwaysHidden, false, ""),
 	// TODO: This should be a guid string later.
-	CItemModelAttribute("_identifier_",    eAttributeType_Int,    CItemModelAttribute::AlwaysHidden, false, "")
+	CItemModelAttribute("_identifier_",    &Attributes::s_intAttributeType,    CItemModelAttribute::AlwaysHidden, false, "")
 	// ~TODO
 };
 

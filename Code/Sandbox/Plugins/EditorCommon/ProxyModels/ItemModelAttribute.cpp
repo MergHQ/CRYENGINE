@@ -14,12 +14,12 @@
 //////////////////////////////////////////////////////////////////////////
 
 CItemModelAttributeEnum::CItemModelAttributeEnum(const char* szName, QStringList enumEntries, Visibility visibility, bool filterable, QVariant defaultFilterValue)
-	: CItemModelAttribute(szName, eAttributeType_Enum, visibility, filterable, defaultFilterValue)
+	: CItemModelAttribute(szName, &Attributes::s_enumAttributeType, visibility, filterable, defaultFilterValue)
 	, m_enumEntries(enumEntries)
 {}
 
 CItemModelAttributeEnum::CItemModelAttributeEnum(const char* szName, char** enumEntries, int enumEntryCount, Visibility visibility, bool filterable, QVariant defaultFilterValue)
-	: CItemModelAttribute(szName, eAttributeType_Enum, visibility, filterable, defaultFilterValue)
+	: CItemModelAttribute(szName, &Attributes::s_enumAttributeType, visibility, filterable, defaultFilterValue)
 {
 	for (int i = 0; i < enumEntryCount; i++)
 	{
@@ -28,7 +28,7 @@ CItemModelAttributeEnum::CItemModelAttributeEnum(const char* szName, char** enum
 }
 
 CItemModelAttributeEnum::CItemModelAttributeEnum(const char* szName, char* commaSeparatedString, Visibility visibility, bool filterable, QVariant defaultFilterValue)
-	: CItemModelAttribute(szName, eAttributeType_Enum, visibility, filterable, defaultFilterValue)
+	: CItemModelAttribute(szName, &Attributes::s_enumAttributeType, visibility, filterable, defaultFilterValue)
 {
 	QString qstring(commaSeparatedString);
 	m_enumEntries = qstring.split(',', QString::SkipEmptyParts);
@@ -60,10 +60,6 @@ void CItemModelAttributeEnumFunc::Populate()
 
 namespace Attributes
 {
-CItemModelAttribute s_nameAttribute("Name", eAttributeType_String);
-CItemModelAttribute s_visibleAttribute("Visible", eAttributeType_Boolean);
-CItemModelAttribute s_favoriteAttribute("Favorite", eAttributeType_Boolean, CItemModelAttribute::Visible, false);
-CItemModelAttribute s_thumbnailAttribute("_thumb_", eAttributeType_String, CItemModelAttribute::AlwaysHidden, false);
 
 //////////////////////////////////////////////////////////////////////////
 // Operators
@@ -366,64 +362,26 @@ public:
 	}
 };
 
-//////////////////////////////////////////////////////////////////////////
-
-class AttributeFilterOperatorRegistry
+CAttributeType<QString> s_stringAttributeType(new CContainsOperator());
+CAttributeType<bool> s_booleanAttributeType(new CBoolTestOperator());
+CAttributeType<int> s_enumAttributeType(new CEnumTestOperator());
+CAttributeType<int> s_intAttributeType(
 {
-public:
-	AttributeFilterOperatorRegistry()
-	{
-		//Register all operators
-
-		{
-			std::vector<IAttributeFilterOperator*> operators;
-			operators.push_back(new CContainsOperator());
-			m_registry[eAttributeType_String] = operators;
-		}
-
-		{
-			std::vector<IAttributeFilterOperator*> operators;
-			operators.push_back(new CEqualOperator<CBaseIntOperator>());
-			operators.push_back(new CGreaterThanOperator<CBaseIntOperator>());
-			operators.push_back(new CLessThanOperator<CBaseIntOperator>());
-			m_registry[eAttributeType_Int] = operators;
-		}
-
-		{
-			std::vector<IAttributeFilterOperator*> operators;
-			operators.push_back(new CEqualOperator<CBaseFloatOperator>());
-			operators.push_back(new CGreaterThanOperator<CBaseFloatOperator>());
-			operators.push_back(new CLessThanOperator<CBaseFloatOperator>());
-			m_registry[eAttributeType_Float] = operators;
-		}
-
-		{
-			std::vector<IAttributeFilterOperator*> operators;
-			operators.push_back(new CBoolTestOperator());
-			m_registry[eAttributeType_Boolean] = operators;
-		}
-
-		{
-			std::vector<IAttributeFilterOperator*> operators;
-			operators.push_back(new CEnumTestOperator());
-			m_registry[eAttributeType_Enum] = operators;
-		}
-	}
-
-	std::map<EAttributeType, std::vector<IAttributeFilterOperator*>> m_registry;
-};
-
-static AttributeFilterOperatorRegistry g_registry;
-
-void GetOperatorsForType(EAttributeType type, std::vector<IAttributeFilterOperator*>& operatorsOut)
+	new CEqualOperator<CBaseIntOperator>(),
+	new CGreaterThanOperator<CBaseIntOperator>(),
+	new CLessThanOperator<CBaseIntOperator>()
+});
+CAttributeType<float> s_floatAttributeType(
 {
-	operatorsOut = g_registry.m_registry[type];
-}
+	new CEqualOperator<CBaseFloatOperator>(),
+	new CGreaterThanOperator<CBaseFloatOperator>(),
+	new CLessThanOperator<CBaseFloatOperator>()
+});
 
-IAttributeFilterOperator* GetDefaultOperatorForType(EAttributeType type)
-{
-	return g_registry.m_registry[type][0];
-}
+CItemModelAttribute s_nameAttribute("Name", &s_stringAttributeType);
+CItemModelAttribute s_visibleAttribute("Visible", &s_booleanAttributeType);
+CItemModelAttribute s_favoriteAttribute("Favorite", &s_booleanAttributeType, CItemModelAttribute::Visible, false);
+CItemModelAttribute s_thumbnailAttribute("_thumb_", &s_stringAttributeType, CItemModelAttribute::AlwaysHidden, false);
 
 }
 
@@ -438,7 +396,7 @@ CAttributeFilter::CAttributeFilter(CItemModelAttribute* pAttribute)
 	//set operator by default
 	if (m_pAttribute)
 	{
-		m_pOperator = Attributes::GetDefaultOperatorForType(pAttribute->GetType());
+		m_pOperator = m_pAttribute->GetType()->GetDefaultOperator();
 	}
 }
 
@@ -530,4 +488,3 @@ void CAttributeFilter::SetOperator(Attributes::IAttributeFilterOperator* pOperat
 		}
 	}
 }
-

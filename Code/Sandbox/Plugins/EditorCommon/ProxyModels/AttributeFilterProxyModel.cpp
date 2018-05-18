@@ -87,7 +87,7 @@ bool QAttributeFilterProxyModel::rowMatchesFilter(int sourceRow, const QModelInd
 				QModelIndex index = sourceModel()->index(sourceRow, m_attributes.at(filter->GetAttribute()), sourceParent);
 				if (index.isValid())
 				{
-					const int role = filter->GetAttribute()->GetType() == eAttributeType_Boolean ? Qt::CheckStateRole : Qt::DisplayRole;
+					const int role = filter->GetAttribute()->GetFilterRole();
 					QVariant val = sourceModel()->data(index, role);
 					if (!filter->Match(val))
 					{

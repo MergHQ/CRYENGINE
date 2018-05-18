@@ -44,6 +44,7 @@
         <file alias="common/assets_skin.ico">icons/assets_skin.ico</file>
         <file alias="common/assets_sound.ico">icons/assets_sound.ico</file>
         <file alias="common/assets_texture.ico">icons/assets_texture.ico</file>
+        <file alias="common/assets_prefab.ico">icons/assets_prefab.ico</file>
 
         <file alias="CreateEditor/Add_To_Scene_AI.ico">icons/assets_ai.ico</file>
         <file alias="CreateEditor/Add_To_Scene_Archetype_Entity.ico">icons/assets_archetype_entity.ico</file>

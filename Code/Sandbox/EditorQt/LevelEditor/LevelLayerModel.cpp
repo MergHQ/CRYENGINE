@@ -23,22 +23,22 @@
 
 namespace LevelModelsAttributes
 {
-CItemModelAttribute s_visibleAttribute("Visible", eAttributeType_Boolean, CItemModelAttribute::Visible, true, Qt::Checked);
-CItemModelAttribute s_frozenAttribute("Frozen", eAttributeType_Boolean);
-CItemModelAttribute s_layerNameAttribute("Layer", eAttributeType_String);
-CItemModelAttribute s_objectTypeDescAttribute("Type", eAttributeType_String);
-CItemModelAttribute s_defaultMaterialAttribute("Default Material", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_customMaterialAttribute("Custom Material", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_breakableAttribute("Breakable", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_smartObjectAttribute("Smart Object", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_flowGraphAttribute("Flow Graph", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_geometryAttribute("Geometry", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_geometryInstancesAttribute("Instances", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_lodCountAttribute("LOD Count", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_specAttribute("Spec", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_aiGroupIdAttribute("AI GroupID", eAttributeType_String, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_visibleAttribute("Visible", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Checked);
+CItemModelAttribute s_frozenAttribute("Frozen", &Attributes::s_booleanAttributeType);
+CItemModelAttribute s_layerNameAttribute("Layer", &Attributes::s_stringAttributeType);
+CItemModelAttribute s_objectTypeDescAttribute("Type", &Attributes::s_stringAttributeType);
+CItemModelAttribute s_defaultMaterialAttribute("Default Material", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_customMaterialAttribute("Custom Material", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_breakableAttribute("Breakable", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_smartObjectAttribute("Smart Object", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_flowGraphAttribute("Flow Graph", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_geometryAttribute("Geometry", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_geometryInstancesAttribute("Instances", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_lodCountAttribute("LOD Count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_specAttribute("Spec", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_aiGroupIdAttribute("AI GroupID", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
 CItemModelAttributeEnumT<ObjectType> s_objectTypeAttribute("Object Type", CItemModelAttribute::StartHidden);
-CItemModelAttribute s_LayerColorAttribute("Layer Color", eAttributeType_String, CItemModelAttribute::Visible, false);
+CItemModelAttribute s_LayerColorAttribute("Layer Color", &Attributes::s_stringAttributeType, CItemModelAttribute::Visible, false);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Temporary hot-fix to get ObjectType enum in Sandbox, since the enum registration works

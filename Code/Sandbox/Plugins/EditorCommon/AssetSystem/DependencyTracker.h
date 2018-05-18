@@ -21,8 +21,16 @@ public:
 	// the string part of each item is the path relative to the assets root directory, and 
 	// the integer value contains the instance count for the dependency or 0 if such information is not available.
 	std::vector<SAssetDependencyInfo> GetReverseDependencies(const char* szAssetPath) const;
+
+	//! Tests if the specified asset is used by another asset.
+	std::pair<bool,int> IsAssetUsedBy(const char* szAssetPath, const char* szAnotherAssetPath) const;
+
+private:
+	typedef std::vector<std::pair<string, SAssetDependencyInfo>>::const_iterator IndexIterator;
+
 private:
 	void CreateIndex();
+	 std::pair<IndexIterator, IndexIterator> GetRange(const char* szAssetPath) const;
 
 private:
 	std::vector<std::pair<string, SAssetDependencyInfo>> m_index;

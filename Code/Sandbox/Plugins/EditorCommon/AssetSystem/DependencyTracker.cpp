@@ -4,6 +4,38 @@
 #include "DependencyTracker.h"
 #include "AssetManager.h"
 
+namespace Private_DependencyTracker
+{
+
+struct SLessKey
+{
+	bool operator()(const std::pair<string, SAssetDependencyInfo>& a, const string& b)
+	{
+		return stricmp(a.first.c_str(), b.c_str()) < 0;
+	}
+
+	bool operator()(const string& a, const std::pair<string, SAssetDependencyInfo>& b)
+	{
+		return stricmp(a.c_str(), b.first.c_str()) < 0;
+	}
+};
+
+struct SLessValue
+{
+	bool operator()(const std::pair<string, SAssetDependencyInfo>& a, const string& b)
+	{
+		return stricmp(a.second.path.c_str(), b.c_str()) < 0;
+	}
+
+	bool operator()(const string& a, const std::pair<string, SAssetDependencyInfo>& b)
+	{
+		return stricmp(a.c_str(), b.second.path.c_str()) < 0;
+	}
+};
+
+}
+
+
 CDependencyTracker::CDependencyTracker()
 {
 	CAssetManager* pAssetManager = CAssetManager::GetInstance();
@@ -40,36 +72,37 @@ CDependencyTracker::~CDependencyTracker()
 
 std::vector<SAssetDependencyInfo> CDependencyTracker::GetReverseDependencies(const char* szAssetPath) const
 {
-	const string key = PathUtil::ToUnixPath(szAssetPath);
+	const auto range = GetRange(szAssetPath);
+
 	std::vector<SAssetDependencyInfo> dependencies;
+	dependencies.reserve(3); // just an empirical expectation.
 
-	struct SLess
-	{
-		bool operator() (const std::pair<string, SAssetDependencyInfo>& a, const string& b)
-		{
-			return stricmp(a.first.c_str(), b.c_str()) < 0;
-		}
-
-		bool operator() (const string& a, const std::pair<string, SAssetDependencyInfo>& b)
-		{
-			return stricmp(a.c_str(), b.first.c_str()) < 0;
-		}
-	};
-
-	if (m_future.valid())
-	{
-		m_future.wait();
-	}
-
-	const auto lowerBound = std::lower_bound(m_index.begin(), m_index.end(), key, SLess());
-	const auto upperBound = std::upper_bound(lowerBound, m_index.end(), key, SLess());
-
-	std::transform(lowerBound, upperBound, std::back_inserter(dependencies), [](const auto& x) 
+	std::transform(range.first, range.second, std::back_inserter(dependencies), [](const auto& x)
 	{
 		return x.second;
 	});
 
 	return dependencies;
+}
+
+std::pair<bool, int>  CDependencyTracker::IsAssetUsedBy(const char* szAssetPath, const char* szAnotherAssetPath) const
+{
+	using namespace Private_DependencyTracker;
+
+	const auto range = GetRange(szAssetPath);
+	if (range.first == range.second)
+	{
+		return { false, 0 };
+	}
+
+	const string value = PathUtil::ToUnixPath(szAnotherAssetPath);
+	const auto lowerBound = std::lower_bound(range.first, range.second, value, SLessValue());
+	if (lowerBound != range.second && (*lowerBound).second.path.CompareNoCase(value) == 0)
+	{
+		return { true, (*lowerBound).second.usageCount };
+	}
+
+	return { false, 0 };
 }
 
 void CDependencyTracker::CreateIndex()
@@ -97,8 +130,29 @@ void CDependencyTracker::CreateIndex()
 
 		std::sort(m_index.begin(), m_index.end(), [](const auto& a, const auto& b)
 		{
-			return stricmp(a.first.c_str(), b.first.c_str()) < 0;
+			const int first = stricmp(a.first.c_str(), b.first.c_str());
+			if (first != 0)
+			{
+				return first < 0;
+			}
+
+			return stricmp(a.second.path.c_str(), b.second.path.c_str()) < 0;
 		});
 	});
+}
+
+std::pair<CDependencyTracker::IndexIterator, CDependencyTracker::IndexIterator> CDependencyTracker::GetRange(const char* szAssetPath) const
+{
+	using namespace Private_DependencyTracker;
+
+	if (m_future.valid())
+	{
+		m_future.wait();
+	}
+
+	const string key = PathUtil::ToUnixPath(szAssetPath);
+	const auto lowerBound = std::lower_bound(m_index.cbegin(), m_index.cend(), key, SLessKey());
+	const auto upperBound = std::upper_bound(lowerBound, m_index.cend(), key, SLessKey());
+	return { lowerBound, upperBound };
 }
 

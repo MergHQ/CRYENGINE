@@ -114,7 +114,7 @@ void CAssetManager::Init()
 		"Any other value disables asset pickers for all types.");
 }
 
-CAssetType* CAssetManager::FindAssetType(const char* name)
+CAssetType* CAssetManager::FindAssetType(const char* name) const
 {
 	auto it = std::lower_bound(m_assetTypes.cbegin(), m_assetTypes.cend(), name, [](const auto a, const auto b)
 	{
@@ -188,6 +188,25 @@ CAsset* CAssetManager::FindAssetForFile(const char* szFilePath) const
 	return nullptr;
 }
 
+CAsset* CAssetManager::FindAssetById(const CryGUID& guid)
+{
+	if (!m_orderedByGUID)
+	{
+		std::sort(m_assets.begin(), m_assets.end(), [](const CAsset* a, const CAsset* b)
+		{
+			return a->GetGUID() < b->GetGUID();
+		});
+		m_orderedByGUID = true;
+	}
+
+	auto it = std::lower_bound(m_assets.cbegin(), m_assets.cend(), guid, [](const CAsset* pAsset, const CryGUID& guid)
+	{
+		return pAsset->GetGUID() < guid;
+	});
+
+	return it != m_assets.cend() && (*it)->GetGUID() == guid ? *it : nullptr;
+}
+
 void CAssetManager::AsyncScanForAssets()
 {
 	m_isScanning = true;
@@ -227,10 +246,11 @@ void CAssetManager::InsertAssets(const std::vector<CAsset*>& assets)
 
 	m_assets.reserve(m_assets.size() + assets.size());
 
-	for (auto& asset : assets)
+	for (CAsset* pAsset : assets)
 	{
-		m_assets.push_back(asset);
-		AddAssetFilesToMap(m_fileToAssetMap, asset);
+		m_assets.push_back(pAsset);
+		m_orderedByGUID = false;
+		AddAssetFilesToMap(m_fileToAssetMap, pAsset);
 	}
 
 	signalAfterAssetsInserted(assets);
@@ -256,29 +276,28 @@ void CAssetManager::MergeAssets(std::vector<CAsset*> assets)
 			if (pOther != assets[i])
 			{
 				// TODO: Better error handling.
-				CRY_ASSERT(pOther->GetType() == assets[i]->GetType());
-				// CRY_ASSERT(pOther->GetGUID() == assets[i]->GetGUID());  Re-enable this after stabilization.
-				CRY_ASSERT(!stricmp(pOther->GetName(), assets[i]->GetName()));
-
-				// TODO: Support of this is error prone. Probably we need something like an assignment operator.
-				CEditableAsset editable(*pOther);
-				editable.SetSourceFile(assets[i]->GetSourceFile());
-				DeleteAssetFilesFromMap(m_fileToAssetMap, pOther, false);
-				editable.SetFiles(nullptr, assets[i]->GetFiles());
-				AddAssetFilesToMap(m_fileToAssetMap, pOther, false);
-				editable.SetLastModifiedTime(assets[i]->GetLastModifiedTime());
-				editable.SetDependencies(assets[i]->GetDependencies());
-				editable.SetDetails(assets[i]->GetDetails());
-
-				// Force to update the thumbnail.
-				if (!pOther->IsReadOnly())
+				if (pOther->GetGUID() == assets[i]->GetGUID() && pOther->GetType() == assets[i]->GetType())
 				{
-					pPak->RemoveFile(pOther->GetThumbnailPath());
-				}
-				editable.InvalidateThumbnail();
+					// TODO: Support of this is error prone. Probably we need something like an assignment operator.
+					CEditableAsset editable(*pOther);
+					editable.SetSourceFile(assets[i]->GetSourceFile());
+					DeleteAssetFilesFromMap(m_fileToAssetMap, pOther, false);
+					editable.SetFiles(assets[i]->GetFiles());
+					AddAssetFilesToMap(m_fileToAssetMap, pOther, false);
+					editable.SetLastModifiedTime(assets[i]->GetLastModifiedTime());
+					editable.SetDependencies(assets[i]->GetDependencies());
+					editable.SetDetails(assets[i]->GetDetails());
 
-				delete assets[i];
-				assets[i] = nullptr;
+					// Force to update the thumbnail.
+					if (!pOther->IsReadOnly())
+					{
+						pPak->RemoveFile(pOther->GetThumbnailPath());
+					}
+					editable.InvalidateThumbnail();
+
+					delete assets[i];
+					assets[i] = nullptr;
+				}
 			}
 
 			std::swap(assets[i], assets[--count]);
@@ -309,8 +328,6 @@ void CAssetManager::DeleteAssets(const std::vector<CAsset*>& assets, bool bDelet
 
 	for (auto x : assets)
 	{
-		MAKE_SURE(!x->IsReadOnly(), continue);
-
 		for (size_t i = 0, N = m_assets.size(); i < N; ++i)
 		{
 			if (x != m_assets[i])
@@ -324,6 +341,7 @@ void CAssetManager::DeleteAssets(const std::vector<CAsset*>& assets, bool bDelet
 			const CAssetPtr pAssetToDelete = std::move(m_assets[i]);
 			m_assets[i] = std::move(m_assets[--N]);
 			m_assets.resize(N);
+			m_orderedByGUID = false;
 
 			if (bDeleteAssetsFiles)
 			{
@@ -333,16 +351,11 @@ void CAssetManager::DeleteAssets(const std::vector<CAsset*>& assets, bool bDelet
 				{
 					// Restore the asset if unable to delete.
 					m_assets.push_back(pAssetToDelete);
-				}
-				else
-				{
-					DeleteAssetFilesFromMap(m_fileToAssetMap, pAssetToDelete);
+					break;
 				}
 			}
-			else
-			{
-				DeleteAssetFilesFromMap(m_fileToAssetMap, pAssetToDelete);
-			}
+
+			DeleteAssetFilesFromMap(m_fileToAssetMap, pAssetToDelete);
 			break;
 		}
 	}

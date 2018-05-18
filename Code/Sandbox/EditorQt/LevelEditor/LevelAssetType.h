@@ -46,8 +46,8 @@ private:
 
 protected:
 	//! \sa CLevelType::SCreateParams
-	virtual bool OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const override;
-	static void  UpdateDependencies(CEditableAsset& editAsset);
+	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const override;
+	static void UpdateDependencies(IEditableAsset& editAsset);
 
 protected:
 	mutable std::future<bool> m_asyncAction;

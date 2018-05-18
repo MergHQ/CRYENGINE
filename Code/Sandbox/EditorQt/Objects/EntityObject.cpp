@@ -5288,90 +5288,8 @@ void CEntityObject::OnMenuReloadAllScripts()
 	gEnv->pEntitySystem->SendEventToAll(event);
 }
 
-void CEntityObject::OnMenuConvertToPrefab()
-{
-	const string& libraryFileName = this->GetEntityPropertyString("filePrefabLibrary");
-
-	IDataBaseLibrary* pLibrary = GetIEditorImpl()->GetPrefabManager()->FindLibrary(libraryFileName);
-	if (pLibrary == NULL)
-		IDataBaseLibrary* pLibrary = GetIEditorImpl()->GetPrefabManager()->LoadLibrary(libraryFileName);
-
-	if (pLibrary == NULL)
-	{
-		string sError = "Could not convert procedural object " + this->GetName() + "to prefab library " + libraryFileName;
-		CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_ERROR, sError);
-		return;
-	}
-
-	GetIEditorImpl()->GetObjectManager()->ClearSelection();
-
-	GetIEditorImpl()->GetIUndoManager()->Suspend();
-	GetIEditorImpl()->SetModifiedFlag();
-
-	string strFullName = this->GetEntityPropertyString("sPrefabVariation");
-
-	// check if we have the info we need from the script
-	IEntity* pEnt = gEnv->pEntitySystem->GetEntity(this->GetEntityId());
-	if (pEnt)
-	{
-		IScriptTable* pScriptTable(pEnt->GetScriptTable());
-		if (pScriptTable)
-		{
-			ScriptAnyValue value;
-			if (pScriptTable->GetValueAny("PrefabSourceName", value))
-			{
-				char* szPrefabName = NULL;
-				if (value.CopyTo(szPrefabName))
-				{
-					strFullName = string(szPrefabName);
-				}
-			}
-		}
-	}
-
-	// strip the library name if it was added (for example it happens when automatically converting from prefab to procedural object)
-	const string& sLibraryName = pLibrary->GetName();
-	int nIdx = 0;
-	int nLen = sLibraryName.GetLength();
-	int nLen2 = strFullName.GetLength();
-	if (nLen2 > nLen && strncmp(strFullName.GetString(), sLibraryName.GetString(), nLen) == 0)
-		nIdx = nLen + 1;  // counts the . separating the library names
-
-	// check if the prefab item exists inside the library
-	const char* szItemName = strFullName.GetString();
-	IDataBaseItem* pItem = pLibrary->FindItem(&szItemName[nIdx]);
-
-	if (pItem)
-	{
-		string guid = pItem->GetGUID().ToString();
-		CBaseObject* pObject = GetIEditorImpl()->GetObjectManager()->NewObject("Prefab", 0, guid);
-		if (!pObject)
-		{
-			string sError = "Could not convert procedural object to " + strFullName;
-			CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_ERROR, sError);
-		}
-		else
-		{
-			pObject->SetLayer(GetLayer());
-
-			GetIEditorImpl()->SelectObject(pObject);
-
-			pObject->SetWorldTM(this->GetWorldTM());
-			GetIEditorImpl()->GetObjectManager()->DeleteObject(this);
-		}
-	}
-	else
-	{
-		string sError = "Library not found " + sLibraryName;
-		CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_ERROR, sError);
-	}
-
-	GetIEditorImpl()->GetIUndoManager()->Resume();
-}
-
 void CEntityObject::OnContextMenu(CPopupMenuItem* pMenu)
 {
-	CEntityObject* p = new CEntityObject();
 	if (!pMenu->Empty())
 	{
 		pMenu->AddSeparator();
@@ -5439,11 +5357,6 @@ void CEntityObject::OnContextMenu(CPopupMenuItem* pMenu)
 		pMenu->Add("Reload All Scripts", functor(*this, &CEntityObject::OnMenuReloadAllScripts));
 	}
 
-	if (pScript && pScript->GetClass() && stricmp(pScript->GetClass()->GetName(), "ProceduralObject") == 0)
-	{
-		pMenu->Add("Convert to prefab", functor(*this, &CEntityObject::OnMenuConvertToPrefab));
-		//pMenu->AddSeparator();
-	}
 	__super::OnContextMenu(pMenu);
 }
 

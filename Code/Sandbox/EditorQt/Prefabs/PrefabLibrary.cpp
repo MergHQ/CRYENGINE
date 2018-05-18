@@ -4,21 +4,19 @@
 #include "PrefabLibrary.h"
 #include "PrefabItem.h"
 
-//////////////////////////////////////////////////////////////////////////
-// CPrefabLibrary implementation.
-//////////////////////////////////////////////////////////////////////////
 bool CPrefabLibrary::Save()
 {
-	return SaveLibrary("PrefabsLibrary");
+	return SaveLibrary("Prefab");
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CPrefabLibrary::Load(const string& filename)
 {
 	if (filename.IsEmpty())
 		return false;
 
 	SetFilename(filename);
+	SetName(PathUtil::RemoveExtension(filename));
+
 	XmlNodeRef root = XmlHelpers::LoadXmlFromFile(filename);
 	if (!root)
 		return false;
@@ -28,45 +26,33 @@ bool CPrefabLibrary::Load(const string& filename)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabLibrary::Serialize(XmlNodeRef& root, bool bLoading)
 {
 	if (bLoading)
 	{
 		// Loading.
 		RemoveAllItems();
-		string name = GetName();
-		root->getAttr("Name", name);
-		SetName(name);
-		for (int i = 0; i < root->getChildCount(); i++)
-		{
-			XmlNodeRef itemNode = root->getChild(i);
-			// Only accept nodes with correct name.
-			if (stricmp(itemNode->getTag(), "Prefab") != 0)
-				continue;
-			CBaseLibraryItem* pItem = new CPrefabItem;
-			AddItem(pItem);
 
-			CBaseLibraryItem::SerializeContext ctx(itemNode, bLoading);
-			pItem->Serialize(ctx);
-		}
-		SetModified(false);
-	}
-	else
-	{
-		// Saving.
-		root->setAttr("Name", GetName());
-		// Serialize prototypes.
-		for (int i = 0; i < GetItemCount(); i++)
+		if (stricmp(root->getTag(), "Prefab") == 0)
 		{
-			XmlNodeRef itemNode = root->newChild("Prefab");
-			CBaseLibraryItem::SerializeContext ctx(itemNode, bLoading);
-			GetItem(i)->Serialize(ctx);
+			CBaseLibraryItem* pItem = new CPrefabItem;
+			AddItem(pItem, false);
+
+			CBaseLibraryItem::SerializeContext ctx(root, bLoading);
+			pItem->Serialize(ctx);
+
+			SetModified(false);
+
 		}
 	}
+	else if(GetItemCount()) // saving
+	{
+		CBaseLibraryItem::SerializeContext ctx(root, bLoading);
+		GetItem(0)->Serialize(ctx);
+	}
+
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabLibrary::UpdatePrefabObjects()
 {
 	for (int i = 0, iItemSize(m_items.size()); i < iItemSize; ++i)

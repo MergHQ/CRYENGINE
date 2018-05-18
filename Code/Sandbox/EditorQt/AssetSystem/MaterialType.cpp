@@ -13,8 +13,8 @@
 REGISTER_ASSET_TYPE(CMaterialType)
 
 // Detail attributes.
-CItemModelAttribute CMaterialType::s_subMaterialCountAttribute("Sub Mtl count", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute CMaterialType::s_textureCountAttribute("Texture count", eAttributeType_Int, CItemModelAttribute::StartHidden);
+CItemModelAttribute CMaterialType::s_subMaterialCountAttribute("Sub Mtl count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CMaterialType::s_textureCountAttribute("Texture count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
 
 CryIcon CMaterialType::GetIconInternal() const
 {
@@ -68,7 +68,7 @@ std::vector<CItemModelAttribute*> CMaterialType::GetDetails() const
 	};
 }
 
-QVariant CMaterialType::GetDetailValue(const CAsset * pAsset, const CItemModelAttribute * pDetail) const
+QVariant CMaterialType::GetDetailValue(const CAsset* pAsset, const CItemModelAttribute* pDetail) const
 {
 	if (pDetail == &s_subMaterialCountAttribute)
 	{
@@ -91,14 +91,14 @@ CAssetEditor* CMaterialType::Edit(CAsset* pAsset) const
 	return CAssetEditor::OpenAssetForEdit("Material Editor", pAsset);
 }
 
-bool CMaterialType::OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const
+bool CMaterialType::OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const
 {
 	string materialName;
-	materialName.Format("%s%s", editAsset.GetAsset().GetFolder(), editAsset.GetAsset().GetName());
+	materialName.Format("%s%s", asset.GetFolder(), asset.GetName());
 	CMaterial* newMaterial = GetIEditor()->GetMaterialManager()->CreateMaterial(materialName);
 	CRY_ASSERT(newMaterial->Save());
 
-	editAsset.AddFile(newMaterial->GetFilename(true));
+	asset.AddFile( newMaterial->GetFilename(true).c_str() );
 
 	return true;
 }

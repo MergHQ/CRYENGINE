@@ -66,8 +66,8 @@ IDataBaseItem* CBaseLibraryManager::FindItem(CryGUID guid) const
 	if (!m_bUniqGuidMap)
 		return nullptr;
 
-	CBaseLibraryItem* pMtl = stl::find_in_map(m_itemsGuidMap, guid, (CBaseLibraryItem*)0);
-	return pMtl;
+	CBaseLibraryItem* pItem = stl::find_in_map(m_itemsGuidMap, guid, (CBaseLibraryItem*) nullptr);
+	return pItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -151,21 +151,21 @@ IDataBaseLibrary* CBaseLibraryManager::LoadLibrary(const string& inFilename, boo
 	{
 		if (stricmp(filename, m_libs[i]->GetFilename()) == 0 || stricmp(inFilename, m_libs[i]->GetFilename()) == 0)
 		{
-			Error(_T("Loading Duplicate Library: %s"), (const char*)filename);
-			return 0;
+			Error(_T("Loading Duplicate Library: %s"), filename.c_str());
+			return nullptr;
 		}
 	}
 
 	TSmartPtr<CBaseLibrary> pLib = MakeNewLibrary();
 	if (!pLib->Load(filename))
 	{
-		Error(_T("Failed to Load Item Library: %s"), (const char*)filename);
-		return 0;
+		Error(_T("Failed to Load Item Library: %s"), filename.c_str());
+		return nullptr;
 	}
 	if (FindLibrary(pLib->GetName()) != 0)
 	{
-		Error(_T("Loading Duplicate Library: %s"), (const char*)pLib->GetName());
-		return 0;
+		Error(_T("Loading Duplicate Library: %s"), pLib->GetName().c_str());
+		return nullptr;
 	}
 	m_libs.push_back(pLib);
 	return pLib;
@@ -202,11 +202,11 @@ IDataBaseLibrary* CBaseLibraryManager::AddLibrary(const string& library, bool bS
 	// therefore it will be delayed later in order to get the proper game path when overriding.
 	if (bSetFullFilename)
 	{
-		filename = GetLibsPath() + filename + ".xml";
+		filename.Format("%s.%s", PathUtil::Make(GetLibsPath(), filename).c_str(), GetFileExtension());
 	}
 	else
 	{
-		filename = filename + ".xml";
+		filename.Format("%s.%s", filename.c_str(), GetFileExtension());
 	}
 	lib->SetFilename(filename);
 	lib->SetModified(false);
@@ -220,7 +220,8 @@ string CBaseLibraryManager::MakeFilename(const string& library)
 {
 	string filename = library;
 	filename.Replace(' ', '_');
-	return GetLibsPath() + filename + ".xml";
+	filename.Format("%s.%s", PathUtil::Make(GetLibsPath(), filename).c_str(), GetFileExtension());
+	return filename;
 }
 
 //////////////////////////////////////////////////////////////////////////
