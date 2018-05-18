@@ -726,6 +726,7 @@ public:
 	virtual const char* mfGetEntryName() override { return m_EntryFunc.c_str(); }
 	virtual bool        mfFlushCacheFile() override;
 	virtual bool        Export(SShaderSerializeContext& SC) override;
+	virtual bool        mfPrecacheAllCombinations(CShader* pSH, int cacheType = CACHE_READONLY) override;
 	virtual bool        mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallback, CShader* pSH, CShaderResources* pRes) override;
 
 	// Vertex shader specific functions

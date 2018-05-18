@@ -3295,7 +3295,7 @@ bool CHWShader_D3D::mfActivateCacheItem(CShader* pSH, SShaderCacheHeaderItem* pI
 			iLog->Log("WARNING: cannot create shader '%s' (FX: %s)", m_EntryFunc.c_str(), GetName());
 			return true;
 		}
-		pCache->m_DeviceShaders.insert(FXDeviceShaderItor::value_type(pInst->m_DeviceObjectID, pInst->m_Handle.m_pShader));
+		pCache->m_DeviceShaders.insert(std::make_pair(pInst->m_DeviceObjectID, pInst->m_Handle.m_pShader));
 	}
 	void* pConstantTable = NULL;
 	void* pShaderReflBuf = NULL;
@@ -4245,23 +4245,23 @@ bool CHWShader_D3D::mfActivate(CShader* pSH, uint32 nFlags, FXShaderToken* Table
 				pCacheItemBuffer = mfGetCacheItem(nFlags, nSize);
 			}
 
-			auto pCacheItem = reinterpret_cast<SShaderCacheHeaderItem*>(pCacheItemBuffer.get());
-			if (pCacheItem && pCacheItem->m_Class != 255)
+			if (auto pCacheItem = reinterpret_cast<SShaderCacheHeaderItem*>(pCacheItemBuffer.get()))
 			{
-				if (Table && CRenderer::CV_r_shadersAllowCompilation)
-					mfGetCacheTokenMap(Table, pSHData, m_nMaskGenShader);
-				if (((m_Flags & HWSG_PRECACHEPHASE) || gRenDev->m_cEF.m_nCombinationsProcess >= 0))
+				if (pCacheItem->m_Class != 255)
 				{
-					return true;
-				}
-				bool bRes = mfActivateCacheItem(pSH, pCacheItem, nSize, nFlags);
+					if (Table && CRenderer::CV_r_shadersAllowCompilation)
+						mfGetCacheTokenMap(Table, pSHData, m_nMaskGenShader);
 
-				if (bRes)
-					return (pInst->m_Handle.m_pShader != NULL);
-			}
-			else if (pCacheItem && pCacheItem->m_Class == 255 && (nFlags & HWSF_PRECACHE) == 0)
-			{
-				return false;
+					if ((m_Flags & HWSG_PRECACHEPHASE) || gRenDev->m_cEF.m_nCombinationsProcess >= 0)
+						return true;
+
+					if (mfActivateCacheItem(pSH, pCacheItem, nSize, nFlags))
+						return (pInst->m_Handle.m_pShader != NULL);
+				}
+				else if ((nFlags & HWSF_PRECACHE) == 0)
+				{
+					return false;
+				}
 			}
 		}
 		

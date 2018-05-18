@@ -522,8 +522,8 @@ struct SCompressedData
 	}
 };
 
-typedef std::map<int, struct SD3DShader*> FXDeviceShader;
-typedef FXDeviceShader::iterator          FXDeviceShaderItor;
+typedef std::unordered_map<int, struct SD3DShader*> FXDeviceShader;
+typedef FXDeviceShader::iterator                    FXDeviceShaderItor;
 
 #define CACHE_READONLY 0
 #define CACHE_USER     1
@@ -750,6 +750,7 @@ public:
 	virtual const char* mfGetEntryName() = 0;
 	virtual void        mfUpdatePreprocessFlags(SShaderTechnique* pTech) = 0;
 	virtual bool        mfFlushCacheFile() = 0;
+	virtual bool        mfPrecacheAllCombinations(CShader* pSH, int cacheType = CACHE_READONLY) = 0;
 	virtual bool        mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallback, CShader* pSH, CShaderResources* pRes) = 0;
 
 	// Used to precache shader combination during shader cache generation.
@@ -768,6 +769,7 @@ public:
 	static EHWShaderClass mfStringProfile(const char* profile);
 	static EHWShaderClass mfStringClass(const char* szClass);
 	static void           mfGenName(uint64 GLMask, uint64 RTMask, uint32 LightMask, uint32 MDMask, uint32 MDVMask, uint64 PSS, EHWShaderClass eClass, char* dstname, int nSize, byte bType);
+	static void           mfGenMasksFromName(char* srcName, uint64& GLMask, uint64 RTMask, uint32 LightMask, uint32 MDMask, uint32 MDVMask, uint64 PSS, EHWShaderClass eClass, int nSize, byte bType);
 
 	static void           mfLazyUnload();
 	static void           mfCleanupCache();
@@ -1300,7 +1302,7 @@ public:
 	virtual uint32                     GetVertexModificator() { return m_nMDV; }
 
 	//=======================================================================================
-
+	bool              mfPrecacheAllCombinations();
 	bool              mfPrecache(SShaderCombination& cmb, bool bForce, CShaderResources* pRes);
 
 	SShaderTechnique* mfFindTechnique(const CCryNameTSCRC& name)

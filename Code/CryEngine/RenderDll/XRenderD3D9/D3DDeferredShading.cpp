@@ -317,7 +317,6 @@ void CDeferredShading::SetupPasses(CRenderView* pRenderView)
 
 	m_mViewProj.Transpose();
 
-	gRenDev->m_cEF.mfRefreshSystemShader("DeferredShading", CShaderMan::s_shDeferredShading);
 	m_pShader = CShaderMan::s_shDeferredShading;
 
 	//gcpRendD3D->SetCullMode(R_CULL_BACK);

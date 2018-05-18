@@ -563,6 +563,169 @@ void CHWShader_D3D::mfConstructFX(FXShaderToken* Table, TArray<uint32>* pSHData)
 	}
 }
 
+bool CHWShader_D3D::mfPrecacheAllCombinations(CShader* pSH, int cacheType)
+{
+#if CRY_RENDERER_VULKAN || CRY_RENDERER_GNM
+	return false;
+#endif
+
+	if (gcpRendD3D->m_cEF.m_nCombinationsProcess > 0)
+		return false;
+
+	CRY_PROFILE_REGION(PROFILE_RENDERER, "CHWShader_D3D::mfPrecacheAllCombinations()");
+
+	CRY_ASSERT(CRendererCVars::CV_r_shaderscacheinmemory);
+	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
+
+	char nameCache[256];
+	mfGetDstFileName(nullptr, this, nameCache, CRY_ARRAY_COUNT(nameCache), 0);
+	PathUtil::ReplaceExtension(nameCache, "fxcb");
+
+	if (!m_pDevCache)
+	{
+		// init device shader cache
+		m_pDevCache = mfInitDevCache(nameCache, this);
+	}
+
+	// open shader cache file if not open already
+	const bool readOnly = CRenderer::CV_r_shadersAllowCompilation == 0;
+	const bool async = false;
+	if (!m_pGlobalCache || m_pGlobalCache->m_nPlatform != CParserBin::m_nPlatform ||
+		(!readOnly && !m_pGlobalCache->m_pRes[CACHE_USER]))
+	{
+		SAFE_RELEASE(m_pGlobalCache);
+		m_pGlobalCache = mfInitCache(nameCache, this, true, m_CRC32, readOnly, async);
+	}
+
+	if (m_pGlobalCache->isValid() && m_pGlobalCache->m_pRes[cacheType])
+	{
+		// preload entire file
+		CResFile& cacheResourceFile = *m_pGlobalCache->m_pRes[cacheType];
+		if (!m_pGlobalCache->m_pBinary[cacheType] && !m_pGlobalCache->ReadResource(&cacheResourceFile, cacheType))
+			return false;
+		// Don't precache twice
+		if (m_pDevCache->m_DeviceShaders.size())
+			return false;
+
+		// decompress and upload all shaders in file
+		CResFileOpenScope rfOpenGuard(&cacheResourceFile);
+		rfOpenGuard.open(RA_READ | (CParserBin::m_bEndians ? RA_ENDIANS : 0), &gRenDev->m_cEF.m_ResLookupDataMan[cacheType], nullptr);
+
+		// Vector of pairs of offset and shader pointer
+		std::vector<std::pair<size_t, SD3DShader*>> entries;
+		const auto entries_pred = [](const std::pair<size_t, SD3DShader*> &lhs, std::size_t rhs) noexcept { return lhs.first < rhs; };
+		// Vector of duplicated entries (offset and name)
+		std::vector<std::pair<size_t, int>> duplicates;
+		// Go over all entries
+		for (const auto& shaderEntry : *cacheResourceFile.mfGetDirectory())
+		{
+			const auto offset = shaderEntry.GetOffset(); 
+			const auto size = shaderEntry.GetSize();
+			const auto name = shaderEntry.GetName().get();
+
+			if (!shaderEntry.IsValid() || (shaderEntry.GetFlags() & (RF_RES_$TOKENS | RF_RES_$)))
+				continue;
+
+			// Store duplicates for later and continue
+			if (shaderEntry.IsDuplicate())
+			{
+				duplicates.emplace_back(offset, name);
+				continue;
+			}
+
+			// Decompress from library
+			auto decompressedDataAndSize = m_pGlobalCache->DecompressResource(
+				cacheResourceFile.mfGetVersion(),
+				CACHE_READONLY,
+				offset,
+				size,
+				cacheResourceFile.RequiresSwapEndianOnRead());
+
+			std::unique_ptr<byte[]> pData = std::move(decompressedDataAndSize.first);
+			const int32 dataSize = static_cast<int32>(decompressedDataAndSize.second);
+			if (dataSize == 0 || !pData)
+				continue;
+
+			// skip header and binds
+			auto pCacheItem = reinterpret_cast<SShaderCacheHeaderItem*>(pData.get());
+			byte* pShaderData = pData.get() + sizeof(SShaderCacheHeaderItem);
+
+			const uint32_t nFlags = 0;
+			if (pCacheItem->m_Class == 255)
+				continue;
+
+			// Create fake instance
+			SHWSInstance instance = {};
+			instance.m_DeviceObjectID = name;
+			instance.m_eClass = (EHWShaderClass)pCacheItem->m_Class;
+			instance.m_nVertexFormat = pCacheItem->m_nVertexFormat;
+			instance.m_nInstructions = pCacheItem->m_nInstructions;
+			instance.m_VStreamMask_Decl = pCacheItem->m_StreamMask_Decl;
+			instance.m_VStreamMask_Stream = pCacheItem->m_StreamMask_Stream;
+
+			std::vector<SCGBind>* pInstBinds = nullptr;
+			byte* pBuf = mfBindsFromCache(pInstBinds, pCacheItem->m_nInstBinds, pShaderData);
+			const auto nSize = dataSize - sizeof(SShaderCacheHeaderItem) - std::distance(pBuf, pShaderData);
+
+			// Upload to device
+			if (!mfUploadHW(&instance, pBuf, nSize, pSH, nFlags))
+			{
+				CRY_ASSERT_MESSAGE(false, "mfUploadHW() failed");
+				SAFE_DELETE(pInstBinds);
+				continue;
+			}
+
+			m_pDevCache->m_DeviceShaders.insert(std::make_pair(name, instance.m_Handle.m_pShader));
+			{
+				// Store in entries vector
+				auto it = std::lower_bound(entries.begin(), entries.end(), offset, entries_pred);
+				CRY_ASSERT_MESSAGE(it == entries.end() || it->first > offset, "Duplicate!");
+				entries.emplace(it, offset, instance.m_Handle.m_pShader);
+			}
+
+			// Generate reflection stuff
+			void* pConstantTable = nullptr;
+			void* pShaderReflBuf = nullptr;
+			auto hr = D3DReflect(pBuf, nSize, IID_ID3D11ShaderReflection, &pShaderReflBuf);
+			ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pShaderReflBuf;
+			if (SUCCEEDED(hr))
+				pConstantTable = (void*)pShaderReflection;
+			if (m_eSHClass == eHWSC_Vertex || gRenDev->IsEditorMode())
+			{
+				instance.m_Shader.m_pShaderData = new byte[nSize];
+				instance.m_Shader.m_nDataSize = nSize;
+				memcpy(instance.m_Shader.m_pShaderData, pBuf, nSize);
+			}
+
+			CRY_ASSERT(hr == S_OK);
+
+			if (pConstantTable)
+				mfCreateBinds(&instance, pConstantTable, pBuf, nSize);
+
+			mfGatherFXParameters(&instance, &instance.m_pBindVars, pInstBinds, this, 0, pSH);
+			SAFE_DELETE(pInstBinds);
+			SAFE_RELEASE(pShaderReflection);
+		}
+
+		// Handle duplicates
+		for (const auto &p : duplicates)
+		{
+			const auto offset = p.first;
+			auto it = std::lower_bound(entries.begin(), entries.end(), offset, entries_pred);
+			CRY_ASSERT_MESSAGE(it != entries.end() && it->first == offset, "Entry not found!");
+
+			// Add duplicate entry
+			if (it != entries.end() && it->first == offset)
+				m_pDevCache->m_DeviceShaders.insert(std::make_pair(p.second, it->second));
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+
 bool CHWShader_D3D::mfPrecache(SShaderCombination& cmb, bool bForce, bool bFallback, CShader* pSH, CShaderResources* pRes)
 {
 #if CRY_RENDERER_VULKAN || CRY_RENDERER_GNM
@@ -2188,7 +2351,7 @@ CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(CShader* pSH, SShaderC
 	InstContainerIt it;
 	pInst = mfGetHashInst(pInstCont, identHash, Ident, it);
 
-	if (pInst == 0)
+	if (!pInst)
 	{
 		pInst = new SHWSInstance;
 		pInst->m_nVertexFormat = 1;
