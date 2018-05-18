@@ -33,6 +33,7 @@ struct SPerPassWaterParams
 {
 	float4x4 causticViewProjMatr;
 	float4   waterRippleLookup;
+	float4   ssrParams;
 };
 
 struct SVolumetricFogShadowParams
@@ -47,6 +48,7 @@ cbuffer CBPerPassWater : register(b5)
 	{
 		float4x4 causticViewProjMatr;
 		float4   waterRippleLookup;
+		float4   ssrParams;
 	} cbPerPassWater;
 
 	// fog parameters
@@ -113,9 +115,11 @@ SPerPassWaterParams GetPerPassWaterParams()
 #if %_RT_COMPUTE_SKINNING
 	params.causticViewProjMatr = cbPerPassWater.causticViewProjMatr;
 	params.waterRippleLookup = cbPerPassWater.waterRippleLookup;
+	params.ssrParams = cbPerPassWater.ssrParams;
 #else
 	params.causticViewProjMatr = CV_ViewProjMatr;
 	params.waterRippleLookup = WaterRipplesLookupParams;
+	params.ssrParams = float4(1, 1, 1, 28);
 #endif
 
 	return params;

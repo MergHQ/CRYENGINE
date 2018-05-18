@@ -61,7 +61,11 @@ void CScreenSpaceReflectionsStage::Execute()
 
 		static CCryNameR viewProjprevName("g_mViewProjPrev");
 		static CCryNameR ssrParamsName("g_mSSRParams"); // we need to tell the shader to read from a depth buffer with twice the size of the output in halfres mode
-		Vec4 ssrParams(CRenderer::CV_r_SSReflHalfRes ? 2.0f : 1.0f, CRenderer::CV_r_SSReflHalfRes ? 2.0f : 1.0f, 0.f, 0.f);
+		Vec4 ssrParams(
+			CRenderer::CV_r_SSReflHalfRes ? 2.0f : 1.0f,
+			CRenderer::CV_r_SSReflHalfRes ? 2.0f : 1.0f,
+			CRenderer::CV_r_SSReflDistance,
+			CRenderer::CV_r_SSReflSamples * 1.0f);
 
 		m_passRaytracing.BeginConstantUpdate();
 		m_passRaytracing.SetConstantArray(viewProjprevName, (Vec4*)mViewProjPrev.GetData(), 4, eHWSC_Pixel);

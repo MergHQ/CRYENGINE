@@ -18,6 +18,7 @@ struct SPerPassWater
 {
 	Matrix44 causticViewProjMatr;
 	Vec4     waterRippleLookup;
+	Vec4     ssrParams;
 };
 
 // fog parameters
@@ -857,6 +858,9 @@ bool CWaterStage::CreatePipelineState(
 		{
 			psoDesc.m_pRenderPass = m_passWaterSurface.GetRenderPass();
 
+			if (CRenderer::CV_r_DeferredShadingTiled > 0)
+				psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
+
 			bWaterRipples = true;
 		}
 		break;
@@ -1051,6 +1055,7 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 		resources.SetBuffer(32, pTiledLights->GetTiledTranspLightMaskBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		resources.SetBuffer(33, pTiledLights->GetLightShadeInfoBuffer(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		resources.SetTexture(34, pTiledLights->GetSpecularProbeAtlas(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+		resources.SetTexture(40, CRendererResources::s_ptexEnvironmentBRDF, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 	}
 
 	// Constant buffers
@@ -1104,6 +1109,11 @@ void CWaterStage::UpdatePerPassResources(EPass passId)
 		auto& cbWater = cb->cbPerPassWater;
 		cbWater.causticViewProjMatr = causticInfo.m_mCausticMatr;
 		cbWater.waterRippleLookup = pWaterRipplesStage->GetWaterRippleLookupParam();
+		cbWater.ssrParams = Vec4(
+			false ? 2.0f : 1.0f,
+			false ? 2.0f : 1.0f,
+			CRenderer::CV_r_SSReflDistance,
+			CRenderer::CV_r_SSReflSamples * 1.0f);
 
 		// fog
 		auto& cbFog = cb->cbPerPassFog;
@@ -1481,7 +1491,7 @@ void CWaterStage::ExecuteReflection()
 	if ((batchMask & FB_WATER_REFL)
 	    && CTexture::IsTextureExist(CRendererResources::s_ptexWaterVolumeRefl[0]))
 	{
-		PROFILE_LABEL_SCOPE("WATER_REFLECTION_GEN");
+		PROFILE_LABEL_SCOPE("WATER_VOLUME_REFLECTION_GEN");
 
 		const int32 currWaterVolID = GetCurrentFrameID(frameID);
 		CTexture* pCurrWaterVolRefl = CRendererResources::s_ptexWaterVolumeRefl[currWaterVolID];
