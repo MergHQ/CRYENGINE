@@ -2905,6 +2905,8 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdatePlayer
 
 void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElementPlayer(CFlashTextureSourceBase* pSrc)
 {
+	CRY_ASSERT(gRenDev->m_pRT->IsMainThread() || gRenDev->m_pRT->IsLevelLoadingThread());
+
 	if (m_pUIElement)
 	{
 		if (m_activated)
@@ -2913,8 +2915,6 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElem
 			IFlashPlayer* pPlayer = isVisible ? m_pUIElement->GetFlashPlayer() : NULL;
 			if (pPlayer != m_pPlayer)
 			{
-				assert(gRenDev->m_pRT->IsMainThread());
-
 				const bool addTex = m_pPlayer == NULL;
 				SAFE_RELEASE(m_pPlayer);
 				if (isVisible)
@@ -2934,8 +2934,6 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElem
 		}
 		else
 		{
-			assert(gRenDev->m_pRT->IsMainThread());
-
 			if (m_pPlayer)
 				m_pUIElement->RemoveTexture(pSrc);
 			SAFE_RELEASE(m_pPlayer);
@@ -2971,6 +2969,20 @@ CFlashTextureSourceBase::CFlashTextureSourceBase(const char* pFlashFileName, con
 			if (valid)
 			{
 				gEnv->pFlashUI->RegisterModule(this, pFlashFileName);
+			}
+			else
+			{
+#ifndef _RELEASE
+				std::pair<IUIElement*, IUIElement*> result = gEnv->pFlashUI->GetUIElementsByInstanceStr(pFlashFileName);
+				std::pair<string, int> identifiers = gEnv->pFlashUI->GetUIIdentifiersByInstanceStr(pFlashFileName);
+
+				if (!result.first)
+					CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING,
+						"UI-Element identifier \"%s\" can't be found in the UI-Database.\n", identifiers.first.c_str());
+				else if (!result.second)
+					CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING,
+						"UI-Element \"%s\" doesn't have an instance %d.\n", identifiers.first.c_str(), identifiers.second);
+#endif
 			}
 		}
 		else if (IsFlashUILayoutFile(pFlashFileName))

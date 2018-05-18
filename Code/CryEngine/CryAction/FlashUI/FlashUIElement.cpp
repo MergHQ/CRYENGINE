@@ -506,10 +506,8 @@ IUIElementIteratorPtr CFlashUIElement::GetInstances() const
 bool CFlashUIElement::LazyInit()
 {
 	if (!m_pFlashplayer)
-	{
 		Init();
-		return m_pFlashplayer != NULL;
-	}
+
 	return m_pFlashplayer != NULL;
 }
 
