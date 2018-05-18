@@ -17,7 +17,8 @@
 		"plugins": [
 			{ "type": "EPluginType::Native", "path": "CryDefaultEntities" },
 			{ "type": "EPluginType::Native", "path": "CryUQS_Core" },
-			{ "type": "EPluginType::Native", "path": "CryLobby" }
+			{ "type": "EPluginType::Native", "path": "CryGamePlatform" },
+			{ "type": "EPluginType::Native", "path": "CryRedShell" }
 		]
 	},
 	"console_variables": {
@@ -40,12 +41,13 @@
 
 		"r_HDREyeAdaptationMode": "1",
 		"e_svoTI_VoxelizeUnderTerrain": "1",
-		"s_OcclusionMaxDistance": "200",
 		"g_hideHuntHud": "1",
 		"g_hunt_telemetry_enable": "1",
 		"g_PlayerSilhouettes": "0",
 		
-		"uqs_printTimeExcessWarningsToConsole": "0"
+		"uqs_printTimeExcessWarningsToConsole": "0",
+
+		"ui_enableUILoadtimeFlashPlayback": "1"
 	},
-	"console_commands": [ "sys_ignore_asserts_from_module": "CryGame" ]
+	"console_commands": {"sys_ignore_asserts_from_module": "CryGame"}
 }
