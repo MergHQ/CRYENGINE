@@ -7,7 +7,6 @@
 #include "DataBaseDialog.h"
 #include "EntityProtLibDialog.h"
 #include "Particles\ParticleDialog.h"
-#include "Prefabs\PrefabDialog.h"
 #include "GameTokens\GameTokenDialog.h"
 #include "Controls/SharedFonts.h"
 #include "QtViewPane.h"
@@ -90,7 +89,6 @@ BOOL CDataBaseDialog::OnInitDialog()
 	m_tabCtrl.SetFont(CFont::FromHandle((HFONT)SMFCFonts::GetInstance().hSystemFont));
 
 	AddTab(_T("Entity Library"), new CEntityProtLibDialog(&m_tabCtrl));
-	AddTab(_T("Prefabs Library"), new CPrefabDialog(&m_tabCtrl));
 	AddTab(_T("Particles"), new CParticleDialog(&m_tabCtrl));
 	AddTab(_T("GameTokens"), new CGameTokenDialog(&m_tabCtrl));    // deactivated for now
 
@@ -191,14 +189,11 @@ CDataBaseDialogPage* CDataBaseDialog::SelectDialog(EDataBaseItemType type, IData
 	case EDB_TYPE_ENTITY_ARCHETYPE:
 		Select(0);
 		break;
-	case EDB_TYPE_PREFAB:
+	case EDB_TYPE_PARTICLE:
 		Select(1);
 		break;
-	case EDB_TYPE_PARTICLE:
-		Select(2);
-		break;
 	case EDB_TYPE_GAMETOKEN:
-		Select(3);
+		Select(2);
 		break;
 	default:
 		return 0;

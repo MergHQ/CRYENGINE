@@ -224,7 +224,7 @@ bool CMaterialEditor::OnSaveAsset(CEditableAsset& editAsset)
 	//Fill metadata and dependencies to update cryasset file
 	if (ret)
 	{
-		editAsset.SetFiles("", { m_pMaterial->GetFilename() });
+		editAsset.SetFiles({ m_pMaterial->GetFilename() });
 
 		std::vector<SAssetDependencyInfo> filenames;
 

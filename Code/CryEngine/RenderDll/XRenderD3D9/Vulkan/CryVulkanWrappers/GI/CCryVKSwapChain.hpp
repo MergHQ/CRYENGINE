@@ -6,6 +6,8 @@
 
 #include "Vulkan/API/VKSwapChain.hpp"
 
+#include <functional>
+
 namespace NCryVulkan
 {
 class CSwapChain;
@@ -15,9 +17,9 @@ class CCryVKGIFactory;
 class CCryVKSwapChain : public CCryVKGIObject
 {
 public:
-	IMPLEMENT_INTERFACES(CCryVKSwapChain)
+	IMPLEMENT_INTERFACES(CCryVKSwapChain);
 
-	static _smart_ptr<CCryVKSwapChain> Create(_smart_ptr<NCryVulkan::CDevice> pDevice, CONST DXGI_SWAP_CHAIN_DESC * pDesc, VkSurfaceKHR surface);
+	static _smart_ptr<CCryVKSwapChain> Create(_smart_ptr<NCryVulkan::CDevice> pDevice, CONST DXGI_SWAP_CHAIN_DESC * pDesc);
 
 	virtual ~CCryVKSwapChain();
 

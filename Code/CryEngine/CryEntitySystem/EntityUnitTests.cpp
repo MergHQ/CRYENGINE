@@ -4,7 +4,10 @@
 #include "Entity.h"
 #include "EntitySystem.h"
 
-#include <CrySystem/CryUnitTest.h>
+#include <CrySystem/Testing/CryTest.h>
+#include <CrySystem/Testing/CryTestCommands.h>
+#include <CryMath/LCGRandom.h>
+
 #include <CrySchematyc/Env/IEnvRegistrar.h>
 #include <CrySchematyc/Env/Elements/EnvComponent.h>
 
@@ -13,7 +16,7 @@
 #include <CrySchematyc/Env/IEnvRegistrar.h>
 #include <CrySchematyc/Env/Elements/EnvComponent.h>
 
-CRY_UNIT_TEST_SUITE(EntityTestsSuit)
+CRY_TEST_SUITE(EntityTestsSuit)
 {
 	struct IUnifiedEntityComponent : public IEntityComponent
 	{
@@ -54,7 +57,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 			params.nFlags = ENTITY_FLAG_CLIENT_ONLY;
 
 			pEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(params));
-			CRY_UNIT_TEST_ASSERT(pEntity != nullptr);
+			CRY_TEST_ASSERT(pEntity != nullptr);
 		}
 
 		~SScopedSpawnEntity()
@@ -65,20 +68,20 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		CEntity* pEntity;
 	};
 
-	CRY_UNIT_TEST(SpawnTest)
+	CRY_TEST(SpawnTest)
 	{
 		SScopedSpawnEntity entity("TestEntity");
 		EntityId id = entity.pEntity->GetId();
 
-		CRY_UNIT_TEST_ASSERT(entity.pEntity->GetGuid() != CryGUID::Null());
+		CRY_TEST_ASSERT(entity.pEntity->GetGuid() != CryGUID::Null());
 
-		CRY_UNIT_TEST_CHECK_EQUAL(id, g_pIEntitySystem->FindEntityByGuid(entity.pEntity->GetGuid()));
-		CRY_UNIT_TEST_CHECK_EQUAL(entity.pEntity, g_pIEntitySystem->FindEntityByName("TestEntity"));
+		CRY_TEST_CHECK_EQUAL(id, g_pIEntitySystem->FindEntityByGuid(entity.pEntity->GetGuid()));
+		CRY_TEST_CHECK_EQUAL(entity.pEntity, g_pIEntitySystem->FindEntityByName("TestEntity"));
 
 		// Test Entity components
 		IEntitySubstitutionComponent* pComponent = entity.pEntity->GetOrCreateComponent<IEntitySubstitutionComponent>();
-		CRY_UNIT_TEST_ASSERT(nullptr != pComponent);
-		CRY_UNIT_TEST_ASSERT(1 == entity.pEntity->GetComponentsCount());
+		CRY_TEST_ASSERT(nullptr != pComponent);
+		CRY_TEST_ASSERT(1 == entity.pEntity->GetComponentsCount());
 	}
 
 	class CLegacyEntityComponent : public IEntityComponent
@@ -89,16 +92,16 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 
 	CRYREGISTER_CLASS(CLegacyEntityComponent);
 
-	CRY_UNIT_TEST(CreateLegacyComponent)
+	CRY_TEST(CreateLegacyComponent)
 	{
 		SScopedSpawnEntity entity("LegacyComponentTestEntity");
 
 		CLegacyEntityComponent* pComponent = entity.pEntity->GetOrCreateComponent<CLegacyEntityComponent>();
-		CRY_UNIT_TEST_CHECK_DIFFERENT(pComponent, nullptr);
-		CRY_UNIT_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 1);
+		CRY_TEST_CHECK_DIFFERENT(pComponent, nullptr);
+		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 1);
 
 		entity.pEntity->RemoveComponent(pComponent);
-		CRY_UNIT_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 0);
+		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 0);
 	}
 
 	struct ILegacyComponentInterface : public IEntityComponent
@@ -118,73 +121,73 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 
 	CRYREGISTER_CLASS(CLegacyEntityComponentWithInterface);
 
-	CRY_UNIT_TEST(CreateLegacyComponentWithInterface)
+	CRY_TEST(CreateLegacyComponentWithInterface)
 	{
 		SScopedSpawnEntity entity("LegacyComponentTestInterfaceEntity");
 
 		ILegacyComponentInterface* pComponent = entity.pEntity->GetOrCreateComponent<ILegacyComponentInterface>();
-		CRY_UNIT_TEST_CHECK_DIFFERENT(pComponent, nullptr);
-		CRY_UNIT_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 1);
-		CRY_UNIT_TEST_ASSERT(pComponent->IsValid());
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<CLegacyEntityComponentWithInterface>());
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<ILegacyComponentInterface>());
+		CRY_TEST_CHECK_DIFFERENT(pComponent, nullptr);
+		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 1);
+		CRY_TEST_ASSERT(pComponent->IsValid());
+		CRY_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<CLegacyEntityComponentWithInterface>());
+		CRY_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<ILegacyComponentInterface>());
 
 		entity.pEntity->RemoveComponent(pComponent);
-		CRY_UNIT_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 0);
+		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 0);
 
 		pComponent = entity.pEntity->GetOrCreateComponent<CLegacyEntityComponentWithInterface>();
-		CRY_UNIT_TEST_CHECK_DIFFERENT(pComponent, nullptr);
-		CRY_UNIT_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 1);
-		CRY_UNIT_TEST_ASSERT(pComponent->IsValid());
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<CLegacyEntityComponentWithInterface>());
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<ILegacyComponentInterface>());
+		CRY_TEST_CHECK_DIFFERENT(pComponent, nullptr);
+		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 1);
+		CRY_TEST_ASSERT(pComponent->IsValid());
+		CRY_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<CLegacyEntityComponentWithInterface>());
+		CRY_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<ILegacyComponentInterface>());
 
 		DynArray<CLegacyEntityComponentWithInterface*> components;
 		entity.pEntity->GetAllComponents<CLegacyEntityComponentWithInterface>(components);
-		CRY_UNIT_TEST_CHECK_EQUAL(components.size(), 1);
-		CRY_UNIT_TEST_CHECK_EQUAL(components.at(0), static_cast<CLegacyEntityComponentWithInterface*>(pComponent));
+		CRY_TEST_CHECK_EQUAL(components.size(), 1);
+		CRY_TEST_CHECK_EQUAL(components.at(0), static_cast<CLegacyEntityComponentWithInterface*>(pComponent));
 
 		DynArray<ILegacyComponentInterface*> componentsbyInterface;
 		entity.pEntity->GetAllComponents<ILegacyComponentInterface>(componentsbyInterface);
-		CRY_UNIT_TEST_CHECK_EQUAL(componentsbyInterface.size(), 1);
-		CRY_UNIT_TEST_CHECK_EQUAL(componentsbyInterface.at(0), static_cast<CLegacyEntityComponentWithInterface*>(pComponent));
+		CRY_TEST_CHECK_EQUAL(componentsbyInterface.size(), 1);
+		CRY_TEST_CHECK_EQUAL(componentsbyInterface.at(0), static_cast<CLegacyEntityComponentWithInterface*>(pComponent));
 	}
 
-	CRY_UNIT_TEST(CreateUnifiedComponent)
+	CRY_TEST(CreateUnifiedComponent)
 	{
 		SScopedSpawnEntity entity("UnifiedComponentTestEntity");
 
 		CUnifiedEntityComponent* pComponent = entity.pEntity->GetOrCreateComponent<CUnifiedEntityComponent>();
-		CRY_UNIT_TEST_CHECK_DIFFERENT(pComponent, nullptr);
-		CRY_UNIT_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 1);
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent->m_bMyBool, false);
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent->m_myFloat, 0.f);
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<CUnifiedEntityComponent>());
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<IUnifiedEntityComponent>());
+		CRY_TEST_CHECK_DIFFERENT(pComponent, nullptr);
+		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 1);
+		CRY_TEST_CHECK_EQUAL(pComponent->m_bMyBool, false);
+		CRY_TEST_CHECK_EQUAL(pComponent->m_myFloat, 0.f);
+		CRY_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<CUnifiedEntityComponent>());
+		CRY_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<IUnifiedEntityComponent>());
 
 		entity.pEntity->RemoveComponent(pComponent);
-		CRY_UNIT_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 0);
+		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 0);
 
 		pComponent = static_cast<CUnifiedEntityComponent*>(entity.pEntity->GetOrCreateComponent<IUnifiedEntityComponent>());
-		CRY_UNIT_TEST_CHECK_DIFFERENT(pComponent, nullptr);
-		CRY_UNIT_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 1);
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent->m_bMyBool, false);
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent->m_myFloat, 0.f);
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<CUnifiedEntityComponent>());
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<IUnifiedEntityComponent>());
+		CRY_TEST_CHECK_DIFFERENT(pComponent, nullptr);
+		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 1);
+		CRY_TEST_CHECK_EQUAL(pComponent->m_bMyBool, false);
+		CRY_TEST_CHECK_EQUAL(pComponent->m_myFloat, 0.f);
+		CRY_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<CUnifiedEntityComponent>());
+		CRY_TEST_CHECK_EQUAL(pComponent, entity.pEntity->GetComponent<IUnifiedEntityComponent>());
 
 		DynArray<CUnifiedEntityComponent*> components;
 		entity.pEntity->GetAllComponents<CUnifiedEntityComponent>(components);
-		CRY_UNIT_TEST_CHECK_EQUAL(components.size(), 1);
-		CRY_UNIT_TEST_CHECK_EQUAL(components.at(0), static_cast<CUnifiedEntityComponent*>(pComponent));
+		CRY_TEST_CHECK_EQUAL(components.size(), 1);
+		CRY_TEST_CHECK_EQUAL(components.at(0), static_cast<CUnifiedEntityComponent*>(pComponent));
 
 		DynArray<IUnifiedEntityComponent*> componentsbyInterface;
 		entity.pEntity->GetAllComponents<IUnifiedEntityComponent>(componentsbyInterface);
-		CRY_UNIT_TEST_CHECK_EQUAL(componentsbyInterface.size(), 1);
-		CRY_UNIT_TEST_CHECK_EQUAL(componentsbyInterface.at(0), static_cast<CUnifiedEntityComponent*>(pComponent));
+		CRY_TEST_CHECK_EQUAL(componentsbyInterface.size(), 1);
+		CRY_TEST_CHECK_EQUAL(componentsbyInterface.at(0), static_cast<CUnifiedEntityComponent*>(pComponent));
 	}
 
-	CRY_UNIT_TEST(UnifiedComponentSerialization)
+	CRY_TEST(UnifiedComponentSerialization)
 	{
 		XmlNodeRef node = gEnv->pSystem->CreateXmlNode();
 		CryGUID instanceGUID;
@@ -193,10 +196,10 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 			SScopedSpawnEntity entity("UnifiedComponentSerializationTestEntity");
 
 			CUnifiedEntityComponent* pComponent = entity.pEntity->GetOrCreateComponent<CUnifiedEntityComponent>();
-			CRY_UNIT_TEST_CHECK_DIFFERENT(pComponent, nullptr);
+			CRY_TEST_CHECK_DIFFERENT(pComponent, nullptr);
 			// Check default values
-			CRY_UNIT_TEST_CHECK_EQUAL(pComponent->m_bMyBool, false);
-			CRY_UNIT_TEST_CHECK_EQUAL(pComponent->m_myFloat, 0.f);
+			CRY_TEST_CHECK_EQUAL(pComponent->m_bMyBool, false);
+			CRY_TEST_CHECK_EQUAL(pComponent->m_myFloat, 0.f);
 
 			pComponent->m_bMyBool = true;
 			pComponent->m_myFloat = 1337.f;
@@ -213,21 +216,21 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		entity.pEntity->SerializeXML(node, true);
 
 		CUnifiedEntityComponent* pComponent = entity.pEntity->GetComponent<CUnifiedEntityComponent>();
-		CRY_UNIT_TEST_CHECK_DIFFERENT(pComponent, nullptr);
+		CRY_TEST_CHECK_DIFFERENT(pComponent, nullptr);
 		// Check deserialized values
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent->m_bMyBool, true);
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent->m_myFloat, 1337.f);
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent->GetGUID(), instanceGUID);
+		CRY_TEST_CHECK_EQUAL(pComponent->m_bMyBool, true);
+		CRY_TEST_CHECK_EQUAL(pComponent->m_myFloat, 1337.f);
+		CRY_TEST_CHECK_EQUAL(pComponent->GetGUID(), instanceGUID);
 	}
 
-	CRY_UNIT_TEST(QueryInvalidGUID)
+	CRY_TEST(QueryInvalidGUID)
 	{
 		SScopedSpawnEntity entity("UnifiedComponentTestEntity");
 		CUnifiedEntityComponent* pComponent = entity.pEntity->GetOrCreateComponent<CUnifiedEntityComponent>();
 		CLegacyEntityComponentWithInterface* pLegacyComponent = entity.pEntity->GetOrCreateComponent<CLegacyEntityComponentWithInterface>();
-		CRY_UNIT_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 2);
+		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponentsCount(), 2);
 		// Querying the lowest level GUIDs is disallowed
-		CRY_UNIT_TEST_CHECK_EQUAL(entity.pEntity->GetComponent<IEntityComponent>(), nullptr);
+		CRY_TEST_CHECK_EQUAL(entity.pEntity->GetComponent<IEntityComponent>(), nullptr);
 	}
 
 	class CComponent2 : public IEntityComponent
@@ -263,10 +266,10 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 			{
 				// Make sure that CComponent2 is already available (but uninitialized)
 				CComponent2* pOtherComponent = m_pEntity->GetComponent<CComponent2>();
-				CRY_UNIT_TEST_CHECK_DIFFERENT(pOtherComponent, nullptr);
+				CRY_TEST_CHECK_DIFFERENT(pOtherComponent, nullptr);
 				if (pOtherComponent != nullptr)
 				{
-					CRY_UNIT_TEST_CHECK_EQUAL(pOtherComponent->m_bInitialized, false);
+					CRY_TEST_CHECK_EQUAL(pOtherComponent->m_bInitialized, false);
 				}
 			}
 		}
@@ -276,7 +279,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 
 	// Test whether two components will be deserialized into CEntity::m_components before being Initialized
 	// Initialize must never be called during loading from disk if another component (in the same entity) has yet to be loaded
-	CRY_UNIT_TEST(LoadMultipleComponents)
+	CRY_TEST(LoadMultipleComponents)
 	{
 		XmlNodeRef xmlNode;
 
@@ -297,18 +300,18 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		SScopedSpawnEntity entity("LoadMultipleComponents");
 		entity.pEntity->SerializeXML(xmlNode, true);
 
-		CRY_UNIT_TEST_CHECK_DIFFERENT(entity.pEntity->GetComponent<CComponent1>(), nullptr);
-		CRY_UNIT_TEST_CHECK_DIFFERENT(entity.pEntity->GetComponent<CComponent2>(), nullptr);
+		CRY_TEST_CHECK_DIFFERENT(entity.pEntity->GetComponent<CComponent1>(), nullptr);
+		CRY_TEST_CHECK_DIFFERENT(entity.pEntity->GetComponent<CComponent2>(), nullptr);
 	}
 
-	CRY_UNIT_TEST(TestComponentEvent)
+	CRY_TEST(TestComponentEvent)
 	{
 		class CComponentWithEvent : public IEntityComponent
 		{
 		public:
 			virtual void ProcessEvent(const SEntityEvent& event) override
 			{
-				CRY_UNIT_TEST_CHECK_EQUAL(event.event, ENTITY_EVENT_PHYSICS_CHANGE_STATE);
+				CRY_TEST_CHECK_EQUAL(event.event, ENTITY_EVENT_PHYSICS_CHANGE_STATE);
 				m_wasHit = true;
 			}
 
@@ -322,7 +325,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		public:
 			virtual void ProcessEvent(const SEntityEvent& event) override
 			{
-				CRY_UNIT_TEST_ASSERT(false);
+				CRY_TEST_ASSERT(false);
 			}
 		};
 
@@ -331,36 +334,36 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		entity.pEntity->CreateComponentClass<CComponentWithoutEvent>();
 		pComponent->m_wasHit = false;
 		pComponent->SendEvent(SEntityEvent(ENTITY_EVENT_PHYSICS_CHANGE_STATE));
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent->m_wasHit, true);
+		CRY_TEST_CHECK_EQUAL(pComponent->m_wasHit, true);
 
 		pComponent->m_wasHit = false;
 		entity.pEntity->SendEvent(SEntityEvent(ENTITY_EVENT_PHYSICS_CHANGE_STATE));
-		CRY_UNIT_TEST_CHECK_EQUAL(pComponent->m_wasHit, true);
+		CRY_TEST_CHECK_EQUAL(pComponent->m_wasHit, true);
 
 		// Ensure that we can send the events without any issues
 		entity.pEntity->SendEvent(SEntityEvent(ENTITY_EVENT_PHYSICS_CHANGE_STATE));
 	}
 
-	CRY_UNIT_TEST(TestNestedComponentEvent)
+	CRY_TEST(TestNestedComponentEvent)
 	{
 		class CComponentWithEvent : public IEntityComponent
 		{
 		public:
 			virtual void ProcessEvent(const SEntityEvent& event) override
 			{
-				CRY_UNIT_TEST_ASSERT(event.event == ENTITY_EVENT_PHYSICS_CHANGE_STATE || event.event == ENTITY_EVENT_SCRIPT_EVENT);
+				CRY_TEST_ASSERT(event.event == ENTITY_EVENT_PHYSICS_CHANGE_STATE || event.event == ENTITY_EVENT_SCRIPT_EVENT);
 
 				m_receivedEvents++;
 
 				if (event.event == ENTITY_EVENT_PHYSICS_CHANGE_STATE)
 				{
-					CRY_UNIT_TEST_CHECK_EQUAL(m_receivedEvents, 1);
+					CRY_TEST_CHECK_EQUAL(m_receivedEvents, 1);
 					m_pEntity->SendEvent(SEntityEvent(ENTITY_EVENT_SCRIPT_EVENT));
-					CRY_UNIT_TEST_CHECK_EQUAL(m_receivedEvents, 2);
+					CRY_TEST_CHECK_EQUAL(m_receivedEvents, 2);
 				}
 				else if (event.event == ENTITY_EVENT_SCRIPT_EVENT)
 				{
-					CRY_UNIT_TEST_CHECK_EQUAL(m_receivedEvents, 2);
+					CRY_TEST_CHECK_EQUAL(m_receivedEvents, 2);
 				}
 			}
 
@@ -379,7 +382,7 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		entity.pEntity->SendEvent(SEntityEvent(ENTITY_EVENT_SCRIPT_EVENT));
 	}
 
-	CRY_UNIT_TEST(TestSpawnedTransformation)
+	CRY_TEST(TestSpawnedTransformation)
 	{
 		SEntitySpawnParams params;
 		params.guid = CryGUID::Create();
@@ -392,37 +395,37 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		params.vScale = Vec3(1.5f, 1.f, 0.8f);
 
 		CEntity* pEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(params));
-		CRY_UNIT_TEST_ASSERT(pEntity != nullptr);
-		CRY_UNIT_TEST_ASSERT(pEntity->GetParent() == nullptr);
+		CRY_TEST_ASSERT(pEntity != nullptr);
+		CRY_TEST_ASSERT(pEntity->GetParent() == nullptr);
 
 		// Check world-space position
-		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetWorldPos(), params.vPosition);
-		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetWorldTM().GetTranslation(), params.vPosition);
+		CRY_TEST_CHECK_EQUAL(pEntity->GetWorldPos(), params.vPosition);
+		CRY_TEST_CHECK_EQUAL(pEntity->GetWorldTM().GetTranslation(), params.vPosition);
 
 		// Check world-space rotation
-		CRY_UNIT_TEST_CHECK_CLOSE(pEntity->GetWorldRotation(), params.qRotation, VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(Quat(pEntity->GetWorldTM()), params.qRotation, VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(pEntity->GetRightDir(), params.qRotation.GetColumn0(), VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(pEntity->GetForwardDir(), params.qRotation.GetColumn1(), VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(pEntity->GetUpDir(), params.qRotation.GetColumn2(), VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(pEntity->GetWorldAngles(), Ang3(params.qRotation), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pEntity->GetWorldRotation(), params.qRotation, VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(Quat(pEntity->GetWorldTM()), params.qRotation, VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pEntity->GetRightDir(), params.qRotation.GetColumn0(), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pEntity->GetForwardDir(), params.qRotation.GetColumn1(), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pEntity->GetUpDir(), params.qRotation.GetColumn2(), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pEntity->GetWorldAngles(), Ang3(params.qRotation), VEC_EPSILON);
 
 		// Check world-space scale
-		CRY_UNIT_TEST_CHECK_CLOSE(pEntity->GetWorldScale(), params.vScale, VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(pEntity->GetWorldTM().GetScale(), params.vScale, VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(pEntity->GetWorldTM(), Matrix34::Create(params.vScale, params.qRotation, params.vPosition), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pEntity->GetWorldScale(), params.vScale, VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pEntity->GetWorldTM().GetScale(), params.vScale, VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pEntity->GetWorldTM(), Matrix34::Create(params.vScale, params.qRotation, params.vPosition), VEC_EPSILON);
 
 		// Entities with parents currently return the world space position for the local Get functions
 		// Ensure that this still works, while it remains intended
-		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetPos(), params.vPosition);
-		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetRotation(), params.qRotation);
-		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetScale(), params.vScale);
-		CRY_UNIT_TEST_CHECK_EQUAL(pEntity->GetLocalTM(), Matrix34::Create(params.vScale, params.qRotation, params.vPosition));
+		CRY_TEST_CHECK_EQUAL(pEntity->GetPos(), params.vPosition);
+		CRY_TEST_CHECK_EQUAL(pEntity->GetRotation(), params.qRotation);
+		CRY_TEST_CHECK_EQUAL(pEntity->GetScale(), params.vScale);
+		CRY_TEST_CHECK_EQUAL(pEntity->GetLocalTM(), Matrix34::Create(params.vScale, params.qRotation, params.vPosition));
 
 		g_pIEntitySystem->RemoveEntity(pEntity->GetId());
 	}
 
-	CRY_UNIT_TEST(TestSpawnedChildTransformation)
+	CRY_TEST(TestSpawnedChildTransformation)
 	{
 		SEntitySpawnParams parentParams;
 		parentParams.guid = CryGUID::Create();
@@ -435,8 +438,8 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		parentParams.vScale = Vec3(1.5f, 1.f, 0.8f);
 
 		CEntity* const pParentEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(parentParams));
-		CRY_UNIT_TEST_ASSERT(pParentEntity != nullptr);
-		CRY_UNIT_TEST_ASSERT(pParentEntity->GetParent() == nullptr);
+		CRY_TEST_ASSERT(pParentEntity != nullptr);
+		CRY_TEST_ASSERT(pParentEntity->GetParent() == nullptr);
 
 		SEntitySpawnParams childParams = parentParams;
 		childParams.id = INVALID_ENTITYID;
@@ -447,44 +450,44 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		childParams.pParent = pParentEntity;
 
 		const CEntity* const pChildEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(childParams));
-		CRY_UNIT_TEST_ASSERT(pChildEntity != nullptr);
-		CRY_UNIT_TEST_ASSERT(pChildEntity->GetParent() == pParentEntity);
+		CRY_TEST_ASSERT(pChildEntity != nullptr);
+		CRY_TEST_ASSERT(pChildEntity->GetParent() == pParentEntity);
 
 		// Ensure that parent world transform is correct
-		CRY_UNIT_TEST_CHECK_CLOSE(pParentEntity->GetWorldTM(), Matrix34::Create(parentParams.vScale, parentParams.qRotation, parentParams.vPosition), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pParentEntity->GetWorldTM(), Matrix34::Create(parentParams.vScale, parentParams.qRotation, parentParams.vPosition), VEC_EPSILON);
 
 		// Check world-space position
-		CRY_UNIT_TEST_CHECK_EQUAL(pChildEntity->GetWorldPos(), pParentEntity->GetWorldTM().TransformPoint(childParams.vPosition));
-		CRY_UNIT_TEST_CHECK_EQUAL(pChildEntity->GetWorldTM().GetTranslation(), pParentEntity->GetWorldTM().TransformPoint(childParams.vPosition));
+		CRY_TEST_CHECK_EQUAL(pChildEntity->GetWorldPos(), pParentEntity->GetWorldTM().TransformPoint(childParams.vPosition));
+		CRY_TEST_CHECK_EQUAL(pChildEntity->GetWorldTM().GetTranslation(), pParentEntity->GetWorldTM().TransformPoint(childParams.vPosition));
 
 		// Check world-space rotation
-		CRY_UNIT_TEST_CHECK_CLOSE(pChildEntity->GetWorldRotation(), pParentEntity->GetWorldRotation() * childParams.qRotation, VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(Quat(pChildEntity->GetWorldTM()), pParentEntity->GetWorldRotation() * childParams.qRotation, VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pChildEntity->GetWorldRotation(), pParentEntity->GetWorldRotation() * childParams.qRotation, VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(Quat(pChildEntity->GetWorldTM()), pParentEntity->GetWorldRotation() * childParams.qRotation, VEC_EPSILON);
 
 		Matrix34 childWorldTransform = pParentEntity->GetWorldTM() * Matrix34::Create(childParams.vScale, childParams.qRotation, childParams.vPosition);
 		childWorldTransform.OrthonormalizeFast();
 
-		CRY_UNIT_TEST_CHECK_CLOSE(pChildEntity->GetRightDir(), childWorldTransform.GetColumn0(), VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(pChildEntity->GetForwardDir(), childWorldTransform.GetColumn1(), VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(pChildEntity->GetUpDir(), childWorldTransform.GetColumn2(), VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(pChildEntity->GetWorldAngles(), Ang3(pParentEntity->GetWorldRotation() * childParams.qRotation), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pChildEntity->GetRightDir(), childWorldTransform.GetColumn0(), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pChildEntity->GetForwardDir(), childWorldTransform.GetColumn1(), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pChildEntity->GetUpDir(), childWorldTransform.GetColumn2(), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pChildEntity->GetWorldAngles(), Ang3(pParentEntity->GetWorldRotation() * childParams.qRotation), VEC_EPSILON);
 
 		// Check world-space scale
-		CRY_UNIT_TEST_CHECK_CLOSE(pChildEntity->GetWorldScale(), pParentEntity->GetWorldScale().CompMul(childParams.vScale), VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(pChildEntity->GetWorldTM().GetScale(), pParentEntity->GetWorldScale().CompMul(childParams.vScale), VEC_EPSILON);
-		CRY_UNIT_TEST_CHECK_CLOSE(pChildEntity->GetWorldTM(), pParentEntity->GetWorldTM() * Matrix34::Create(childParams.vScale, childParams.qRotation, childParams.vPosition), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pChildEntity->GetWorldScale(), pParentEntity->GetWorldScale().CompMul(childParams.vScale), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pChildEntity->GetWorldTM().GetScale(), pParentEntity->GetWorldScale().CompMul(childParams.vScale), VEC_EPSILON);
+		CRY_TEST_CHECK_CLOSE(pChildEntity->GetWorldTM(), pParentEntity->GetWorldTM() * Matrix34::Create(childParams.vScale, childParams.qRotation, childParams.vPosition), VEC_EPSILON);
 
 		// Check local-space
-		CRY_UNIT_TEST_CHECK_EQUAL(pChildEntity->GetPos(), childParams.vPosition);
-		CRY_UNIT_TEST_CHECK_EQUAL(pChildEntity->GetRotation(), childParams.qRotation);
-		CRY_UNIT_TEST_CHECK_EQUAL(pChildEntity->GetScale(), childParams.vScale);
-		CRY_UNIT_TEST_CHECK_EQUAL(pChildEntity->GetLocalTM(), Matrix34::Create(childParams.vScale, childParams.qRotation, childParams.vPosition));
+		CRY_TEST_CHECK_EQUAL(pChildEntity->GetPos(), childParams.vPosition);
+		CRY_TEST_CHECK_EQUAL(pChildEntity->GetRotation(), childParams.qRotation);
+		CRY_TEST_CHECK_EQUAL(pChildEntity->GetScale(), childParams.vScale);
+		CRY_TEST_CHECK_EQUAL(pChildEntity->GetLocalTM(), Matrix34::Create(childParams.vScale, childParams.qRotation, childParams.vPosition));
 
 		g_pIEntitySystem->RemoveEntity(pParentEntity->GetId());
 		g_pIEntitySystem->RemoveEntity(pChildEntity->GetId());
 	}
 
-	CRY_UNIT_TEST(TestDefaultEntitySpawnClass)
+	CRY_TEST(TestDefaultEntitySpawnClass)
 	{
 		SEntitySpawnParams spawnParams;
 		spawnParams.guid = CryGUID::Create();
@@ -492,42 +495,42 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		spawnParams.nFlags = ENTITY_FLAG_CLIENT_ONLY;
 
 		CEntity* const pEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(spawnParams));
-		CRY_UNIT_TEST_ASSERT(pEntity != nullptr);
-		CRY_UNIT_TEST_ASSERT(pEntity->GetClass() != nullptr);
-		CRY_UNIT_TEST_ASSERT(pEntity->GetClass() == g_pIEntitySystem->GetClassRegistry()->GetDefaultClass());
+		CRY_TEST_ASSERT(pEntity != nullptr);
+		CRY_TEST_ASSERT(pEntity->GetClass() != nullptr);
+		CRY_TEST_ASSERT(pEntity->GetClass() == g_pIEntitySystem->GetClassRegistry()->GetDefaultClass());
 	}
 
-	CRY_UNIT_TEST(TestComponentShutdownOrder)
+	CRY_TEST(TestComponentShutdownOrder)
 	{
 		bool firstComponentDestroyed = false;
 		bool secondComponentDestroyed = false;
 
 		class CFirstComponent : public IEntityComponent
 		{
-			bool& wasDestroyed;
+			bool&       wasDestroyed;
 			const bool& wasOtherDestroyed;
 
 		public:
 			CFirstComponent(bool& destroyed, bool& otherDestroyed) : wasDestroyed(destroyed), wasOtherDestroyed(otherDestroyed) {}
 			virtual ~CFirstComponent()
 			{
-				CRY_UNIT_TEST_ASSERT(!wasDestroyed);
-				CRY_UNIT_TEST_ASSERT(wasOtherDestroyed);
+				CRY_TEST_ASSERT(!wasDestroyed);
+				CRY_TEST_ASSERT(wasOtherDestroyed);
 				wasDestroyed = true;
 			}
 		};
 
 		class CSecondComponent : public IEntityComponent
 		{
-			bool& wasDestroyed;
+			bool&       wasDestroyed;
 			const bool& wasOtherDestroyed;
 
 		public:
 			CSecondComponent(bool& destroyed, bool& otherDestroyed) : wasDestroyed(destroyed), wasOtherDestroyed(otherDestroyed) {}
-			virtual ~CSecondComponent() 
+			virtual ~CSecondComponent()
 			{
-				CRY_UNIT_TEST_ASSERT(!wasDestroyed);
-				CRY_UNIT_TEST_ASSERT(!wasOtherDestroyed);
+				CRY_TEST_ASSERT(!wasDestroyed);
+				CRY_TEST_ASSERT(!wasOtherDestroyed);
 				wasDestroyed = true;
 			}
 		};
@@ -538,15 +541,70 @@ CRY_UNIT_TEST_SUITE(EntityTestsSuit)
 		spawnParams.nFlags = ENTITY_FLAG_CLIENT_ONLY;
 
 		CEntity* const pEntity = static_cast<CEntity*>(g_pIEntitySystem->SpawnEntity(spawnParams));
-		CRY_UNIT_TEST_ASSERT(pEntity != nullptr);
+		CRY_TEST_ASSERT(pEntity != nullptr);
 
 		pEntity->CreateComponentClass<CFirstComponent>(firstComponentDestroyed, secondComponentDestroyed);
-		CRY_UNIT_TEST_ASSERT(!firstComponentDestroyed && !secondComponentDestroyed);
+		CRY_TEST_ASSERT(!firstComponentDestroyed && !secondComponentDestroyed);
 		pEntity->CreateComponentClass<CSecondComponent>(secondComponentDestroyed, firstComponentDestroyed);
-		CRY_UNIT_TEST_ASSERT(!firstComponentDestroyed && !secondComponentDestroyed);
+		CRY_TEST_ASSERT(!firstComponentDestroyed && !secondComponentDestroyed);
 
 		g_pIEntitySystem->RemoveEntity(pEntity->GetId(), true);
-		CRY_UNIT_TEST_ASSERT(firstComponentDestroyed && secondComponentDestroyed);
+		CRY_TEST_ASSERT(firstComponentDestroyed && secondComponentDestroyed);
+	}
+
+	CRndGen MathRand;
+
+	class CEntityTimerAccuracyTestCommand : public ISimpleEntityEventListener
+	{
+	public:
+
+		explicit CEntityTimerAccuracyTestCommand()
+		{
+			m_expectedDuration.SetMilliSeconds(MathRand.GetRandom(50, 1500));
+		}
+
+		virtual void ProcessEvent(const SEntityEvent& event) override
+		{
+			if (event.event == ENTITY_EVENT_TIMER)
+				m_isCalled = true;
+		}
+
+		bool Update()
+		{
+			if (!m_pTimerEntity)
+				Start();
+
+			if (m_isCalled)
+			{
+				const CTimeValue duration = gEnv->pTimer->GetFrameStartTime() - m_startTime;
+
+				//To be replaced with direct CTimeValue multiplication after it is supported
+				CRY_TEST_ASSERT(duration.GetSeconds() > m_expectedDuration.GetSeconds() * 0.8f && duration.GetSeconds() < m_expectedDuration.GetSeconds() * 1.2f);
+			}
+			return m_isCalled;
+		}
+
+		IEntity* m_pTimerEntity = nullptr;
+		bool m_isCalled = false;
+		CTimeValue m_startTime;
+		CTimeValue m_expectedDuration;
+
+		void Start()
+		{
+			SEntitySpawnParams spawnParams;
+			m_pTimerEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams);
+			m_pTimerEntity->SetTimer(this, m_pTimerEntity->GetId(), CryGUID(), 0, static_cast<int>(m_expectedDuration.GetMilliSeconds()));
+			m_startTime = gEnv->pTimer->GetFrameStartTime().GetMilliSeconds();
+		}
+	};
+
+	CRY_TEST(EntityTimerTest, timeout = 60)
+	{
+		commands = {
+			CryTest::CCommandConsoleCmd("map woodland"),
+			CryTest::CCommandWait(2.f),
+			CryTest::CCommandRepeat(10, CEntityTimerAccuracyTestCommand()),
+		};
 	}
 }
 

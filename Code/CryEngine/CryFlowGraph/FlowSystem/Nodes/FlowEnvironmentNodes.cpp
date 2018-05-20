@@ -427,11 +427,23 @@ public:
 		eIP_BreezeSpread,
 		eIP_BreezeRadius,
 		eIP_BreezeAwakeThreshold,
+		eIP_BreezeFixedHeight
 	};
 
 	enum EOutputPorts
 	{
 		eOP_WindVector,
+		eOP_BreezeEnabled,
+		eOP_BreezeStrength,
+		eOP_BreezeMovementSpeed,
+		eOP_BreezeVariance,
+		eOP_BreezeLifetime,
+		eOP_BreezeCount,
+		eOP_BreezeSpawnRadius,
+		eOP_BreezeSpread,
+		eOP_BreezeRadius,
+		eOP_BreezeAwakeThreshold,
+		eOP_BreezeFixedHeight
 	};
 
 	void GetConfiguration(SFlowNodeConfig& config)
@@ -439,7 +451,7 @@ public:
 		static const SInputPortConfig in_config[] = {
 			InputPortConfig_Void("Get",                    _HELP("Get Wind Parameters")),
 			InputPortConfig_Void("Set",                    _HELP("Set Wind Parameters")),
-			InputPortConfig<Vec3>("WindVector",            Vec3(1.f,                     0.f,                                  0.f), _HELP("Environment Wind Vector")),
+			InputPortConfig<Vec3>("WindVector",            Vec3(1.f, 0.f, 0.f),          _HELP("Environment Wind Vector")),
 			InputPortConfig<bool>("BreezeGeneration",      false,                        _HELP("Breeze Generation Enabled")),
 			InputPortConfig<float>("BreezeStrength",       1.f,                          _HELP("Breeze Strength")),
 			InputPortConfig<float>("BreezeMovementSpeed",  8.f,                          _HELP("Breeze Movement Speed")),
@@ -450,10 +462,22 @@ public:
 			InputPortConfig<float>("BreezeSpread",         0.f,                          _HELP("Breeze Spread")),
 			InputPortConfig<float>("BreezeRadius",         5.f,                          _HELP("Breeze Radius")),
 			InputPortConfig<float>("BreezeAwakeThreshold", 0.f,                          _HELP("Breeze Awake Threshold")),
+			InputPortConfig<float>("FixedHeight",          -1.f,                         _HELP("Breeze Height. If -1, use terrain height")),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig<Vec3>("WindVector", _HELP("Current Environment Wind Vector")),
+			OutputPortConfig<Vec3>("WindVector",                                          _HELP("Current Environment Wind Vector")),
+			OutputPortConfig<bool>("BreezeGeneration",                                    _HELP("Breeze Generation Enabled")),
+			OutputPortConfig<float>("BreezeStrength",                                     _HELP("Breeze Strength")),
+			OutputPortConfig<float>("BreezeMovementSpeed",                                _HELP("Breeze Movement Speed")),
+			OutputPortConfig<float>("BreezeVariance",                                     _HELP("Breeze Variation")),
+			OutputPortConfig<float>("BreezeLifeTime",                                     _HELP("Breeze Life Time")),
+			OutputPortConfig<int>("BreezeCount",                                          _HELP("Breeze Count")),
+			OutputPortConfig<float>("BreezeSpawnRadius",                                  _HELP("Breeze Spawn Radius")),
+			OutputPortConfig<float>("BreezeSpread",                                       _HELP("Breeze Spread")),
+			OutputPortConfig<float>("BreezeRadius",                                       _HELP("Breeze Radius")),
+			OutputPortConfig<float>("BreezeAwakeThreshold",                               _HELP("Breeze Awake Threshold")),
+			OutputPortConfig<float>("FixedHeight",                                        _HELP("Breeze Height. If -1, use terrain height")),
 			{ 0 }
 		};
 		config.pInputPorts = in_config;
@@ -470,43 +494,50 @@ public:
 			if (IsPortActive(pActInfo, eIP_Get))
 			{
 				ActivateOutput(pActInfo, eOP_WindVector, gEnv->p3DEngine->GetGlobalWind(false));
+
+				if (const IBreezeGenerator* pBreezeGenerator = gEnv->p3DEngine->GetBreezeGenerator())
+				{
+					const BreezeGeneratorParams params = pBreezeGenerator->GetParams();
+					
+					ActivateOutput(pActInfo, eOP_BreezeEnabled,        params.breezeGenerationEnabled);
+					ActivateOutput(pActInfo, eOP_BreezeStrength,       params.breezeStrength);
+					ActivateOutput(pActInfo, eOP_BreezeMovementSpeed,  params.breezeMovementSpeed);
+					ActivateOutput(pActInfo, eOP_BreezeVariance,       params.breezeVariance);
+					ActivateOutput(pActInfo, eOP_BreezeLifetime,       params.breezeLifeTime);
+					ActivateOutput(pActInfo, eOP_BreezeCount,          params.breezeCount);
+					ActivateOutput(pActInfo, eOP_BreezeSpawnRadius,    params.breezeSpawnRadius);
+					ActivateOutput(pActInfo, eOP_BreezeSpread,         params.breezeSpread);
+					ActivateOutput(pActInfo, eOP_BreezeRadius,         params.breezeRadius);
+					ActivateOutput(pActInfo, eOP_BreezeAwakeThreshold, params.breezeAwakeThreshold);
+					ActivateOutput(pActInfo, eOP_BreezeFixedHeight,    params.breezeFixedHeight);
+				}
 			}
 			if (IsPortActive(pActInfo, eIP_Set))
 			{
 				const Vec3 wind = GetPortVec3(pActInfo, eIP_WindVector);
 				gEnv->p3DEngine->SetWind(wind);
 
-				IBreezeGenerator* pBreezeGenerator = gEnv->p3DEngine->GetBreezeGenerator();
-
-				if (pBreezeGenerator)
+				if (IBreezeGenerator* pBreezeGenerator = gEnv->p3DEngine->GetBreezeGenerator())
 				{
-					const bool wasEnabled = pBreezeGenerator->GetEnabled();
-					const bool isEnabled = GetPortBool(pActInfo, eIP_BreezeEnabled);
+					BreezeGeneratorParams params = pBreezeGenerator->GetParams();
 
-					if (!isEnabled)
-					{
-						pBreezeGenerator->Shutdown();
-					}
+					params.windVector = wind;
+					params.breezeGenerationEnabled = GetPortBool(pActInfo, eIP_BreezeEnabled);
+					params.breezeStrength          = GetPortFloat(pActInfo, eIP_BreezeStrength);
+					params.breezeVariance          = GetPortFloat(pActInfo, eIP_BreezeVariance);
+					params.breezeLifeTime          = GetPortFloat(pActInfo, eIP_BreezeLifetime);
 
-					pBreezeGenerator->SetEnabled(isEnabled);
+					const int breezeCount          = GetPortInt(pActInfo, eIP_BreezeCount);
+					params.breezeCount = breezeCount > 0 ? breezeCount : 0;
 
-					pBreezeGenerator->SetStrength(GetPortFloat(pActInfo, eIP_BreezeStrength));
-					pBreezeGenerator->SetVariance(GetPortFloat(pActInfo, eIP_BreezeVariance));
-					pBreezeGenerator->SetLifetime(GetPortFloat(pActInfo, eIP_BreezeLifetime));
-
-					const int breezeCount = GetPortInt(pActInfo, eIP_BreezeCount);
-					pBreezeGenerator->SetCount(breezeCount > 0 ? breezeCount : 0);
-
-					pBreezeGenerator->SetRadius(GetPortFloat(pActInfo, eIP_BreezeRadius));
-					pBreezeGenerator->SetSpawnRadius(GetPortFloat(pActInfo, eIP_BreezeSpawnRadius));
-					pBreezeGenerator->SetSpread(GetPortFloat(pActInfo, eIP_BreezeSpread));
-					pBreezeGenerator->SetMovementSpeed(GetPortFloat(pActInfo, eIP_BreezeMovementSpeed));
-					pBreezeGenerator->SetAwakeThreshold(GetPortFloat(pActInfo, eIP_BreezeAwakeThreshold));
-
-					if (!wasEnabled && isEnabled)
-					{
-						pBreezeGenerator->Initialize();
-					}
+					params.breezeRadius            = GetPortFloat(pActInfo, eIP_BreezeRadius);
+					params.breezeSpawnRadius       = GetPortFloat(pActInfo, eIP_BreezeSpawnRadius);
+					params.breezeSpread            = GetPortFloat(pActInfo, eIP_BreezeSpread);
+					params.breezeMovementSpeed     = GetPortFloat(pActInfo, eIP_BreezeMovementSpeed);
+					params.breezeAwakeThreshold    = GetPortFloat(pActInfo, eIP_BreezeAwakeThreshold);
+					params.breezeFixedHeight       = GetPortFloat(pActInfo, eIP_BreezeFixedHeight);
+					
+					pBreezeGenerator->SetParams(params);
 				}
 			}
 			break;

@@ -184,7 +184,7 @@
 #include <CrySerialization/ClassFactory.h>
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
-#include <CrySystem/CryUnitTest.h>
+#include <CrySystem/Testing/CryTest.h>
 
 #include <IPerceptionManager.h>
 

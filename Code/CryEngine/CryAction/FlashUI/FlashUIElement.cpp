@@ -379,7 +379,7 @@ CFlashUIElement::~CFlashUIElement()
 	}
 
 	CRY_ASSERT_MESSAGE(m_variableObjects.empty(), "Variable objects not cleared!");
-	CRY_ASSERT_MESSAGE(!!m_pFlashplayer, "Flash player not correct unloaded!");
+	CRY_ASSERT_MESSAGE(!m_pFlashplayer, "Flash player not correct unloaded!");
 	CRY_ASSERT_MESSAGE(m_pBootStrapper == NULL, "Flash bootstrapper not correct unloaded!");
 
 #if !defined (_RELEASE)

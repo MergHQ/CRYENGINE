@@ -38,6 +38,7 @@ struct SAssetDependencyInfo
 	int32  usageCount;  //!< The instance count for the path or 0 if such information is not available.
 };
 
+//! Assets are the "unit of work" of CRYENGINE Asset Sytem and represent one or several files on disk, as well as a *.cryasset metadata file to carry extra information relevant to this asset.
 class EDITOR_COMMON_API CAsset : public _i_multithread_reference_target_t
 {
 	//TODO : remove this
@@ -90,6 +91,19 @@ public:
 	//! Returns asset dependencies as a collection of SAssetDependencyInfo
 	// \sa SAssetDependencyInfo
 	const std::vector<SAssetDependencyInfo>& GetDependencies() const { return m_dependencies; };
+
+	//! Tests if the specified asset is used by another asset.
+	//! \param szAnotherAssetPath paths to the main data file of another asset. The path must be relative to the assets root directory, as it returns by CAsset::GetFile.
+	//! \return Returns a pair of {isUsedBy, usageCount}.
+	//! \sa CAsset::GetFile
+	std::pair<bool, int> IsAssetUsedBy(const char* szAnotherAssetPath) const;
+
+	//! Tests if the specified asset uses another asset.
+	//! \param szAnotherAssetPath paths to the main data file of another asset. The path  must be relative to the assets root directory.
+	//! \return Returns a pair of {true/false, usageCount}.
+	//! \sa CAsset::GetFile
+	std::pair<bool, int> DoesAssetUse(const char* szAnotherAssetPath) const;
+
 
 	//Importing methods
 	void Reimport();
@@ -151,10 +165,9 @@ private:
 	void SetMetadataFile(const char* szFilepath);
 	void SetSourceFile(const char* szFilepath);
 	void AddFile(const string& filePath);
-	void SetFiles(const char* szCommonPath, const std::vector<string>& filenames);
+	void SetFiles(const std::vector<string>& filenames);
 	void SetDetail(const string& name, const string& value);
-	// intentionally passes vector as value to use move semantics.
-	void SetDependencies(std::vector<SAssetDependencyInfo> dependencies);
+	void SetDependencies(const std::vector<SAssetDependencyInfo>& dependencies);
 
 	//! Enables the asset to adjust its internal state once opened by an editor. Called by the AssetEditor through CEditableAsset, when it has opened this asset. 
 	void OnOpenedInEditor(CAssetEditor* pEditor);

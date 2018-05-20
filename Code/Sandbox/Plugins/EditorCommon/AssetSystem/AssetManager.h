@@ -37,7 +37,7 @@ public:
 
 	int GetAssetsCount() const { return m_assets.size(); }
 
-	CAssetType* FindAssetType(const char* name);
+	CAssetType* FindAssetType(const char* name) const;
 
 	const std::vector<CAssetType*>& GetAssetTypes() const;
 	const std::vector<CAssetImporter*>& GetAssetImporters() const;
@@ -50,6 +50,10 @@ public:
 	//! Finds an asset with matching file associated. Includes data and metadata files
 	//! \param szFilePath Relative to the assets root directory.
 	CAsset* FindAssetForFile(const char* szFilePath) const;
+
+	//! Finds an asset by id.
+	//! \param guid.
+	CAsset* FindAssetById(const CryGUID& guid);
 
 	void InsertAssets(const std::vector<CAsset*>& assets);
 
@@ -122,6 +126,10 @@ public:
 	//! \sa CAsset::GetDependencies to get a list of forward dependencies.
 	bool HasAnyReverseDependencies(const std::vector<CAsset*>& assets) const;
 
+	//! Accessor to the Dependency Tracker instance.
+	//! \sa CDependencyTracker
+	CDependencyTracker* GetDependencyTracker() const { return m_pDependencyTracker.get(); }
+
 	//! Returns a user friendly name for the alias or the parameter string if the alias is not known.
 	const char* GetAliasName(const char* alias) const;
 
@@ -185,18 +193,18 @@ private:
 	std::vector<SStaticAssetSelectorEntry> m_resourceSelectors;
 	std::vector<CAssetImporter*> m_assetImporters;
 
-	//TODO : investigate storing them with a different array for each type, 
-	//meaning less need for contiguous memory but also
-	//possibility to store them in separate model with model merging
 	std::vector<CAssetPtr> m_assets;
 
 	std::unordered_map<string, CAsset*, stl::hash_stricmp<string>, stl::hash_stricmp<string>> m_fileToAssetMap;
-
+	
 	// There might be assets inserted while the initial scan for assets is still running (e.g., by the file monitor).
 	// Every asset inserted before the initial scanning is completed is added to a batch that will be inserted once scanning is completed.
 	std::vector<CAsset*> m_deferredInsertBatch;
 	
 	bool m_isScanning;
+
+	// The asset collection can be sorted by guids on demand of FindAssetById.
+	bool m_orderedByGUID;
 
 	//Managing of asset models for optimization, all views should refer to those
 	//Keep model logic in the models themselves, i.e. models observe the manager. Do not call models methods within AssetManager

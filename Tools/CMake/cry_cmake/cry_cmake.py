@@ -16,20 +16,20 @@ CODE_SDKS_DIR = os.path.abspath(os.path.join(CRYENGINE_DIR,'Code','SDKs'))
 SDK_DOWNLOAD_EXE = os.path.abspath(os.path.join(CRYENGINE_DIR,'download_sdks.exe'))
 
 CONFIGS = [
-#Visual Studio 2015 Express 
+#Visual Studio 2015 Express
     {
         'title':'Visual Studio 2015 Express Win64',
         'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
         'cmake_generator': 'Visual Studio 14 2015 Win64',
         'cmake_builddir': 'solutions/win64',
-        'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\WDExpress.DTE.14.0'}
+        'compiler':{'key_path': r'\WDExpress.DTE.14.0'}
     },
     {
         'title':'Visual Studio 2015 Express Win32',
         'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
         'cmake_generator': 'Visual Studio 14 2015',
         'cmake_builddir': 'solutions/win32',
-        'compiler':{'reg_key': winreg.HKEY_CLASSES_ROOT, 'key_path': r'\WDExpress.DTE.14.0'}
+        'compiler':{'key_path': r'\WDExpress.DTE.14.0'}
     },
 #Visual Studio 2015
     {
@@ -200,45 +200,45 @@ class dlgMissingSDKs(tk.Frame):
         self.parent.minsize(300,100);
         self.pack()
         self.create_widgets()
-        
+
     def create_widgets(self):
-        self.lblText = tk.Label(self, text="Missing 3rd-party SDKs folder at \n'" + CODE_SDKS_DIR + "'.\n") 
+        self.lblText = tk.Label(self, text="Missing 3rd-party SDKs folder at \n'" + CODE_SDKS_DIR + "'.\n")
         self.lblText.grid(row=0, column=0, columnspan=1)
-        
+
         self.frmButtons = tk.Frame(self)
         self.frmButtons.grid(row=1, column=0, columnspan=1)
-        
+
         self.btnDownload = tk.Button(self.frmButtons)
         self.btnDownload["text"] = "Download SDKs"
         self.btnDownload["command"] = self.handleDownload
         self.btnDownload.grid(row=0, column=1, padx=10, pady=10)
-        
+
         self.btnContinue = tk.Button(self.frmButtons)
         self.btnContinue["text"] = "Continue (Skip)"
         self.btnContinue["command"] = self.handleContinue
         self.btnContinue.grid(row=0, column=2, padx=10, pady=10)
-        
+
         self.btnCancel = tk.Button(self.frmButtons)
         self.btnCancel["text"] = "Cancel (Quit)"
         self.btnCancel["command"] = self.handleCancel
         self.btnCancel.grid(row=0, column=3, padx=10, pady=10)
-        
-        
-    
+
+
+
     def handleDownload(self):
         self.parent.destroy()
-        
+
         try:
             os.system("\"" + SDK_DOWNLOAD_EXE + "\"")
         except:
             self.showDialog("CRYENGINE Error!", ("Cannot execute download_sdks.exe at:\n(%s)" % SDK_DOWNLOAD_EXE))
-        
+
         if not os.path.isdir(CODE_SDKS_DIR):
             self.showDialog("CRYENGINE Error!", "SDKs were not downloaded (download_sdks.exe failed or was closed too early?).")
             sys.exit()
-        
+
         self.quit()
-    
+
     def showDialog(self, title, msg):
         global iconfile
         popup = tk.Tk()
@@ -249,10 +249,10 @@ class dlgMissingSDKs(tk.Frame):
         btnOk.pack(pady=20, padx=10)
         center_window(popup)
         self.mainloop()
-    
+
     def handleContinue(self):
         self.parent.destroy()
-        
+
     def handleCancel(self):
         self.parent.destroy()
         sys.exit()

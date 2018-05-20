@@ -22,6 +22,7 @@
 
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/AssetType.h>
+#include <AssetSystem/EditableAsset.h>
 #include <IUndoManager.h>
 
 #include <CrySchematyc/Compiler/ICompiler.h>

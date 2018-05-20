@@ -36,6 +36,7 @@
 #include <EditorFramework/PreferencesDialog.h>
 #include <Preferences/GeneralPreferences.h>
 #include "Objects/ObjectLoader.h"
+#include "AssetSystem/EditableAsset.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/Browser/AssetBrowser.h"
 #include "Controls/DockableDialog.h"
@@ -369,11 +370,16 @@ void CLevelEditor::customEvent(QEvent* pEvent)
 			}
 			else if (command == "show_in_asset_browser")
 			{
-				if (!m_assetBrowser || !m_assetBrowser->isActiveWindow())
-					OnToggleAssetBrowser();
-
-				CAssetBrowser* pAssetBrowser = m_assetBrowser->GetPaneT<CAssetBrowser>();
-				pAssetBrowser->SelectAsset(params[0].toLocal8Bit());
+				CAssetBrowser* pAssetBrowser = static_cast<CAssetBrowser*>(CTabPaneManager::GetInstance()->FindPaneByClass("Asset Browser"));
+				if (!pAssetBrowser)
+				{
+					if (!m_assetBrowser || !m_assetBrowser->isActiveWindow())
+					{
+						OnToggleAssetBrowser();
+					}
+					pAssetBrowser = m_assetBrowser->GetPaneT<CAssetBrowser>();
+				}
+				pAssetBrowser->SelectAsset(QtUtil::ToString(params[0]));
 			}
 		}
 		else if (module == "general")

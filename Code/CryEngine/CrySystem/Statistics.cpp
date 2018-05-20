@@ -14,7 +14,6 @@
 #include "CrySizerStats.h"
 #include "System.h"
 #include <CryMemory/CryMemoryManager.h>
-#include <CrySystem/ITestSystem.h>
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>    // CResourceCompilerHelper
 #include "LoadingProfiler.h"
@@ -22,6 +21,7 @@
 #include <CrySystem/File/IResourceManager.h>
 #include <CrySystem/Scaleform/IFlashPlayer.h>
 #include <CrySystem/IStreamEngine.h>
+#include <CryAction/ITimeDemoRecorder.h>
 
 // Access to some game info.
 #include <CryGame/IGameFramework.h>    // IGameFramework
@@ -3980,9 +3980,7 @@ void CStatsToExcelExporter::ExportMemInfo(SCryEngineStats& stats)
 //////////////////////////////////////////////////////////////////////////
 void CStatsToExcelExporter::ExportTimeDemoInfo()
 {
-	if (!GetISystem()->GetITestSystem())
-		return;
-	STimeDemoInfo* pTD = GetISystem()->GetITestSystem()->GetTimeDemoInfo();
+	STimeDemoInfo* pTD = gEnv->pGameFramework->GetITimeDemoRecorder()->GetLastPlayedTimeDemo();
 	if (!pTD)
 		return;
 

@@ -16,7 +16,7 @@
 #pragma once
 
 #include <CryCore/Containers/CryListenerSet.h>
-#include <ITimeDemoRecorder.h>
+#include <CryAction/ITimeDemoRecorder.h>
 #include "ITestModule.h"
 
 struct SRecordedGameEvent;
@@ -85,11 +85,12 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Implements ITimeDemoRecorder interface.
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool IsRecording() const override { return m_bRecording; };
-	virtual bool IsPlaying() const override   { return m_bPlaying; };
-	virtual void RegisterListener(ITimeDemoListener* pListener) override;
-	virtual void UnregisterListener(ITimeDemoListener* pListener) override;
-	virtual void GetCurrentFrameRecord(STimeDemoFrameRecord& externalRecord) const override;
+	virtual bool            IsRecording() const override { return m_bRecording; };
+	virtual bool            IsPlaying() const override   { return m_bPlaying; };
+	virtual void            RegisterListener(ITimeDemoListener* pListener) override;
+	virtual void            UnregisterListener(ITimeDemoListener* pListener) override;
+	virtual void            GetCurrentFrameRecord(STimeDemoFrameRecord& externalRecord) const override;
+	virtual STimeDemoInfo*  GetLastPlayedTimeDemo() const override;
 	//////////////////////////////////////////////////////////////////////////
 
 private:

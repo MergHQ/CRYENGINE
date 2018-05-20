@@ -2,14 +2,22 @@
 
 #pragma once
 
+#include "ITimeOfDay.h"
+
+typedef ITimeOfDay::Wind BreezeGeneratorParams;
+
 //! Interface to the Breeze Generator functionality.
 struct IBreezeGenerator
 {
 	// <interfuscator:shuffle>
-	virtual ~IBreezeGenerator(){}
+	virtual ~IBreezeGenerator() = default;
 	
 	virtual void Initialize() = 0;
 	virtual void Shutdown() = 0;
+
+	// Set/get all parameters at once
+	virtual void SetParams(const BreezeGeneratorParams& params) = 0;
+	virtual BreezeGeneratorParams GetParams() const = 0;
 
 	// Breeze generation enabled?
 	virtual void SetEnabled(bool enabled) = 0;
@@ -50,12 +58,9 @@ struct IBreezeGenerator
 	// Approximate threshold velocity that the wind can add to an entity part per second that will awake it (0 disables)
 	virtual void SetAwakeThreshold(float awakeThreshSpeed) = 0;
 	virtual float GetAwakeThreshold() const = 0;
-// 
-// 	virtual void SetWindSpeed(const Vec3& speed) = 0;
-// 	virtual void GetWindSpeed(Vec3& speed) const = 0;
 
-// 	virtual void SetFixedHeight(float terrainHeight) = 0;
-// 	virtual float GetTerrainHeight() const = 0;
-	
+	// Set a fixed height for the breeze, for levels without terrain. -1 uses the terrain height
+	virtual void SetFixedHeight(float fixedHeight) = 0;
+	virtual float GetFixedHeight() const = 0;
 	// </interfuscator:shuffle>
 };

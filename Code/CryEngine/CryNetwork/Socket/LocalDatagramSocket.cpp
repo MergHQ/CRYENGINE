@@ -86,6 +86,8 @@ void CLocalDatagramSocket::OnRead()
 	}
 	else if (!m_packets.empty())
 	{
+		CRY_ASSERT(m_pManager);
+
 		SPacket* pPacket = m_packets.front();
 		m_packets.pop();
 		SPacketCleanup cleanupPacket(pPacket);
@@ -139,7 +141,15 @@ bool CLocalDatagramSocket::CManager::Unregister(CLocalDatagramSocket* pSock)
 {
 	if (pSock->m_addr && pSock->m_addr <= MAX_FREE_ADDRESSES)
 		m_freeAddresses.push_back(pSock->m_addr);
-	m_sockets.erase(pSock->m_addr);
+	TSocketsMap::iterator it = m_sockets.find(pSock->m_addr);
+	if (it->second == pSock)
+	{
+		m_sockets.erase(it);
+	}
+	else
+	{
+		NetWarning("CLocalDatagramSocket::CManager: trying to unregister wrong socket with address %u", pSock->m_addr);
+	}
 	return m_sockets.empty();
 }
 

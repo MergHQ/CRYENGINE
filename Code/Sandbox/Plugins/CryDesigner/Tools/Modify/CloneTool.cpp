@@ -11,8 +11,8 @@
 #include "DesignerEditor.h"
 #include "ToolFactory.h"
 #include <CrySerialization/Enum.h>
+#include <AssetSystem\Browser\AssetBrowserDialog.h>
 #include "Serialization/Decorators/EditorActionButton.h"
-#include "Objects/DisplayContext.h"
 
 namespace Designer
 {
@@ -265,15 +265,15 @@ void CloneTool::Confirm()
 void CloneTool::FreezeClones()
 {
 	if (!m_SelectedClone || m_Clones.empty())
+	{
 		return;
+	}
 
 	CPrefabManager* pPrefabManager = GetIEditor()->GetPrefabManager();
 	if (!pPrefabManager)
+	{
 		return;
-
-	IDataBaseLibrary* pLibrary = pPrefabManager->FindLibrary("Level");
-	if (!pLibrary)
-		return;
+	}
 
 	CUndo undo("Clone Designer Object");
 
@@ -294,8 +294,11 @@ void CloneTool::FreezeClones()
 		--iCloneCount;
 	}
 
-	CPrefabItem* pPrefabItem = (CPrefabItem*)GetIEditor()->GetPrefabManager()->CreateItem(pLibrary);
-	pPrefabItem->MakeFromSelection(selectionGroup);
+	CPrefabItem* pPrefabItem = pPrefabManager->MakeFromSelection(&selectionGroup);
+	if (!pPrefabItem)
+	{
+		return;
+	}
 
 	const CSelectionGroup* pSelection = GetIEditor()->GetObjectManager()->GetSelection();
 	if (pSelection && !pSelection->IsEmpty())

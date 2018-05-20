@@ -8,7 +8,7 @@
 
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 #include <CrySystem/File/IFileChangeMonitor.h>
-#include <CrySerialization/IArchiveHost.h> 
+#include <CrySerialization/IArchiveHost.h>
 #include "CrySerialization/Serializer.h"
 #include "CrySerialization/STL.h"
 #include "IEditor.h"
@@ -33,7 +33,7 @@
 
 #include <QMenu>
 
-namespace EditorSubstance 
+namespace EditorSubstance
 {
 
 CManager* CManager::s_pInstance = nullptr;
@@ -76,7 +76,7 @@ public:
 			// TODO for now it looks like sandbox isn't reloading the texture when tif is not existent and dd
 			// is written directly, so we need to write the tif
 			//additionalSettings += " /directdds /sourceroot=\"" + gameFolderPath + "\"";
-			additionalSettings += "/sourceroot=\"" + gameFolderPath + "\"";
+			additionalSettings += " /sourceroot=\"" + gameFolderPath + "\"";
 
 			AssetManagerHelpers::RCLogger logger;
 
@@ -84,10 +84,10 @@ public:
 				assetPath.c_str(),
 				additionalSettings,
 				&logger,
-				false, // may show window?
+				false,   // may show window?
 				CResourceCompilerHelper::eRcExePath_editor,
-				true,  // silent?
-				true); // no user dialog?
+				true,    // silent?
+				true);   // no user dialog?
 		});
 
 		return true;
@@ -95,9 +95,9 @@ public:
 
 };
 
-CManager* CManager::Instance() 
+CManager* CManager::Instance()
 {
-	if (!s_pInstance) 
+	if (!s_pInstance)
 	{
 		s_pInstance = new CManager;
 	}
@@ -171,90 +171,95 @@ void CManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	switch (event)
 	{
 	case eNotify_OnIdleUpdate:
-	{
-		if (m_currentRendererID > m_renderQueue.size() - 1)
 		{
-			m_currentRendererID = 0;
-		}
+			if (m_currentRendererID > m_renderQueue.size() - 1)
+			{
+				m_currentRendererID = 0;
+			}
 
-		for (auto& renderJob : m_renderQueue)
-		{
-			renderJob.renderer->ProcessComputedOutputs();
-		}
-
-		if (!m_pushedRenderJob.presets.empty() && m_renderUID != 0 && !ISubstanceManager::Instance()->IsRenderPending(m_renderUID) && !m_pushedRenderJob.renderer->OutputsInQueue())
-		{
-			m_renderUID = 0;
-			m_pushedRenderJob.presets.clear();
-		}
-
-		if (!m_presetsToDelete.empty() && m_pushedRenderJob.presets.empty())
-		{
-			std::unordered_set<ISubstancePreset*> usedPresets;
 			for (auto& renderJob : m_renderQueue)
 			{
-				std::unordered_set<ISubstancePreset*> s(renderJob.presets.begin(), renderJob.presets.end());
-				usedPresets.insert(s.begin(), s.end());
+				renderJob.renderer->ProcessComputedOutputs();
 			}
 
-			std::vector<ISubstancePreset*>::iterator it = m_presetsToDelete.begin();
-
-			while (it != m_presetsToDelete.end()) {
-
-				if (!usedPresets.count(*it))
-				{
-					ISubstancePreset* preset = *it;
-					for (auto& renderJob : m_renderQueue)
-					{
-						renderJob.renderer->RemovePresetRenderData(preset);
-					}
-					// before preset gets deleted, we need to go trough images it potentially loaded.
-					for (auto iit = m_loadedImages.begin(); iit != m_loadedImages.end();) {
-						SInputImageRefCount* refCount = &iit->second;
-						refCount->usedByInstances.erase(preset->GetInstanceID());
-						if (refCount->usedByInstances.empty()) {
-							iit = m_loadedImages.erase(iit);
-						}
-						else
-							iit++;
-					}
-					it = m_presetsToDelete.erase(it);
-					preset->Destroy();
-				}
-				else
-				{
-					++it;
-				}
-			}
-		}
-
-		if (!m_renderQueue[m_currentRendererID].presets.empty() && m_pushedRenderJob.presets.empty())
-		{
-			while (m_renderQueue[m_currentRendererID].presets.size() != 0 && m_pushedRenderJob.presets.size() <= MAXIMUM_SUBSTANCE_INSTANCES_TO_RENDER)
+			if (!m_pushedRenderJob.presets.empty() && m_renderUID != 0 && !ISubstanceManager::Instance()->IsRenderPending(m_renderUID) && !m_pushedRenderJob.renderer->OutputsInQueue())
 			{
-				m_pushedRenderJob.presets.push_back(*m_renderQueue[m_currentRendererID].presets.begin());
-				m_renderQueue[m_currentRendererID].presets.erase(m_renderQueue[m_currentRendererID].presets.begin());
-			}
-			m_pushedRenderJob.renderer = m_renderQueue[m_currentRendererID].renderer;
-			m_renderUID = ISubstanceManager::Instance()->GenerateOutputsAsync(m_pushedRenderJob.presets, m_pushedRenderJob.renderer);
-			// when something fails, renderUID can be zero, we just need to forget current queue and pretend nothing happened
-			if (m_renderUID == 0)
-			{
+				m_renderUID = 0;
 				m_pushedRenderJob.presets.clear();
 			}
-		}
 
-		if (m_currentRendererID >= m_renderQueue.size() - 1)
-		{
-			m_currentRendererID = 0;
-		}
-		else
-		{
-			m_currentRendererID++;
-		}
+			if (!m_presetsToDelete.empty() && m_pushedRenderJob.presets.empty())
+			{
+				std::unordered_set<ISubstancePreset*> usedPresets;
+				for (auto& renderJob : m_renderQueue)
+				{
+					std::unordered_set<ISubstancePreset*> s(renderJob.presets.begin(), renderJob.presets.end());
+					usedPresets.insert(s.begin(), s.end());
+				}
 
-	}
-	break;
+				std::vector<ISubstancePreset*>::iterator it = m_presetsToDelete.begin();
+
+				while (it != m_presetsToDelete.end())
+				{
+
+					if (!usedPresets.count(*it))
+					{
+						ISubstancePreset* preset = *it;
+						for (auto& renderJob : m_renderQueue)
+						{
+							renderJob.renderer->RemovePresetRenderData(preset);
+						}
+						// before preset gets deleted, we need to go trough images it potentially loaded.
+						for (auto iit = m_loadedImages.begin(); iit != m_loadedImages.end(); )
+						{
+							SInputImageRefCount* refCount = &iit->second;
+							refCount->usedByInstances.erase(preset->GetInstanceID());
+							if (refCount->usedByInstances.empty())
+							{
+								iit = m_loadedImages.erase(iit);
+							}
+							else
+							{
+								iit++;
+							}
+						}
+						it = m_presetsToDelete.erase(it);
+						preset->Destroy();
+					}
+					else
+					{
+						++it;
+					}
+				}
+			}
+
+			if (!m_renderQueue[m_currentRendererID].presets.empty() && m_pushedRenderJob.presets.empty())
+			{
+				while (m_renderQueue[m_currentRendererID].presets.size() != 0 && m_pushedRenderJob.presets.size() <= MAXIMUM_SUBSTANCE_INSTANCES_TO_RENDER)
+				{
+					m_pushedRenderJob.presets.push_back(*m_renderQueue[m_currentRendererID].presets.begin());
+					m_renderQueue[m_currentRendererID].presets.erase(m_renderQueue[m_currentRendererID].presets.begin());
+				}
+				m_pushedRenderJob.renderer = m_renderQueue[m_currentRendererID].renderer;
+				m_renderUID = ISubstanceManager::Instance()->GenerateOutputsAsync(m_pushedRenderJob.presets, m_pushedRenderJob.renderer);
+				// when something fails, renderUID can be zero, we just need to forget current queue and pretend nothing happened
+				if (m_renderUID == 0)
+				{
+					m_pushedRenderJob.presets.clear();
+				}
+			}
+
+			if (m_currentRendererID >= m_renderQueue.size() - 1)
+			{
+				m_currentRendererID = 0;
+			}
+			else
+			{
+				m_currentRendererID++;
+			}
+
+		}
+		break;
 	}
 }
 
@@ -275,7 +280,7 @@ const SubstanceAir::InputImage::SPtr& CManager::GetInputImage(const ISubstancePr
 	string nameLow(path);
 	nameLow.MakeLower();
 	const uint32 crc = CCrc32::Compute(nameLow);
-		
+
 	if (m_loadedImages.count(crc) == 0)
 	{
 		CImageEx image;
@@ -283,14 +288,16 @@ const SubstanceAir::InputImage::SPtr& CManager::GetInputImage(const ISubstancePr
 		{
 			CImageUtil::LoadImage("engineassets/texturemsg/replaceme.dds", image);
 		}
-			
-		SubstanceTexture texture = {
-			image.GetData(), // No buffer (content will be set later for demo purposes)
+
+		SubstanceTexture texture = 
+		{
+			image.GetData(),   // No buffer (content will be set later for demo purposes)
 			image.GetWidth(),  // Width;
-			image.GetHeight(),  // Height
+			image.GetHeight(), // Height
 			Substance_PF_RGBA,
 			Substance_ChanOrder_RGBA,
-			1 }; 
+			1
+		};
 
 		SInputImageRefCount& data = m_loadedImages[crc];
 		// Create InputImage object from texture description
@@ -330,7 +337,7 @@ struct DefaultPresetsSerializer
 {
 	std::vector<SSubstanceOutput> presets;
 
-	void Serialize(Serialization::IArchive& ar)
+	void                          Serialize(Serialization::IArchive& ar)
 	{
 		ar(presets, "presets");
 	}
@@ -363,7 +370,7 @@ void CManager::AddSubstanceArchiveContextMenu(CAsset* asset, CAbstractMenu* menu
 
 	CAbstractMenu* subMenu = menu->CreateMenu("Create Instance");
 	string archivePath(asset->GetFile(0));
-	for each(string graphName in GetArchiveGraphs(archivePath))
+	for each (string graphName in GetArchiveGraphs(archivePath))
 	{
 		QAction* newAct = subMenu->CreateAction(graphName.c_str());
 		QStringList info;
@@ -372,7 +379,7 @@ void CManager::AddSubstanceArchiveContextMenu(CAsset* asset, CAbstractMenu* menu
 		QObject::connect(newAct, &QAction::triggered, this, &CManager::OnCreateInstance);
 	}
 	QAction* rebuild = menu->CreateAction("Rebuild All Instances");
-	QObject::connect(rebuild, &QAction::triggered, this, [=]() 
+	QObject::connect(rebuild, &QAction::triggered, this, [=]()
 	{
 		for (auto& item : CAssetManager::GetInstance()->GetReverseDependencies(*asset))
 		{
@@ -389,10 +396,12 @@ void CManager::AddSubstanceArchiveContextMenu(CAsset* asset, CAbstractMenu* menu
 void CManager::AddSubstanceInstanceContextMenu(CAsset* asset, CAbstractMenu* menu)
 {
 	QAction* rebuild = menu->CreateAction("Rebuild Instance");
-	QObject::connect(rebuild, &QAction::triggered, this, [=]() {
+	QObject::connect(rebuild, &QAction::triggered, this, [=]()
+	{
 		ForcePresetRegeneration(asset);
 	});
 }
+
 void CManager::OnCreateInstance()
 {
 	if (m_pPresetCreator)
@@ -401,7 +410,6 @@ void CManager::OnCreateInstance()
 		m_pPresetCreator->setFocus();
 		return;
 	}
-
 
 	QAction* sourceAction = qobject_cast<QAction*>(sender());
 	QStringList data = sourceAction->data().toStringList();
@@ -414,7 +422,7 @@ void CManager::OnCreateInstance()
 	AssetTypes::CSubstanceArchiveType::SSubstanceArchiveCache cache = static_cast<const AssetTypes::CSubstanceArchiveType*>(archiveAsset->GetType())->GetArchiveCache(archiveAsset);
 	if (cache.HasGraph(graphName))
 	{
-		const AssetTypes::CSubstanceArchiveType::SSubstanceArchiveCache::Graph& graph = cache.GetGraph(graphName);		
+		const AssetTypes::CSubstanceArchiveType::SSubstanceArchiveCache::Graph& graph = cache.GetGraph(graphName);
 		for (const SSubstanceOutput& output : graph.GetOutputsConfiguration())
 		{
 			grapOutputs.push_back(output);
@@ -462,15 +470,13 @@ void CManager::OnAssetModified(CAsset& asset)
 					ForcePresetRegeneration(pDepAsset);
 				}
 			}
-			
 		}
 	}
-		
 }
 
 void CManager::OnAssetsRemoved(const std::vector<CAsset*>& assets)
 {
-	for (const CAsset* asset: assets)
+	for (const CAsset* asset : assets)
 	{
 		// manualy deleting *.tif files with the same name as dds that has crysub as source.
 		string typeName(asset->GetType()->GetTypeName());
@@ -490,9 +496,7 @@ void CManager::OnAssetsRemoved(const std::vector<CAsset*>& assets)
 				gEnv->pCryPak->RemoveFile(fileName);
 			}
 		}
-
 	}
-
 }
 
 void CManager::CreateInstance(const string& archiveName, const string& instanceName, const string& instanceGraph, const std::vector<SSubstanceOutput>& outputs, const Vec2i& resolution) const
@@ -500,10 +504,9 @@ void CManager::CreateInstance(const string& archiveName, const string& instanceN
 	const string absToDir = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), PathUtil::GetDirectory(instanceName));
 	CFileUtil::CreatePath(absToDir);
 	ISubstanceManager::Instance()->CreateInstance(archiveName, instanceName, instanceGraph, outputs, resolution);
-	CAssetType* presetType = CAssetManager::GetInstance()->FindAssetType("SubstanceInstance");
 	const auto absTargetFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), instanceName);
 	CAssetType* at = CAssetManager::GetInstance()->FindAssetType("SubstanceInstance");
-	at->Create(instanceName+".cryasset", &archiveName);
+	at->Create(instanceName + ".cryasset", &archiveName);
 }
 
 void CManager::EnquePresetRender(ISubstancePreset* preset, ISubstanceInstanceRenderer* renderer)
@@ -518,7 +521,6 @@ void CManager::EnquePresetRender(ISubstancePreset* preset, ISubstanceInstanceRen
 			return;
 		}
 	}
-
 }
 
 void CManager::ForcePresetRegeneration(CAsset* asset)
@@ -532,7 +534,7 @@ std::vector<string> CManager::GetGraphOutputs(const string& archiveName, const s
 	CAsset* asset = CAssetManager::GetInstance()->FindAssetForMetadata(archiveName + ".cryasset");
 	if (!asset)
 	{
-		return{};
+		return {};
 	}
 	return static_cast<const AssetTypes::CSubstanceArchiveType*>(asset->GetType())->GetArchiveCache(asset).GetGraph(graphName).GetOutputNames();
 }
@@ -542,7 +544,7 @@ std::vector<string> CManager::GetArchiveGraphs(const string& archiveName)
 	CAsset* asset = CAssetManager::GetInstance()->FindAssetForMetadata(archiveName + ".cryasset");
 	if (!asset)
 	{
-		return{};
+		return {};
 	}
 
 	return static_cast<const AssetTypes::CSubstanceArchiveType*>(asset->GetType())->GetArchiveCache(asset).GetGraphNames();
@@ -559,7 +561,7 @@ std::set<string> CManager::GetTexturePresetsForFile(const string& mask)
 	string filename("_");
 	filename += mask;
 	// Collect names of all matching presets
-	std::map<string, std::set<string> >::const_iterator s;
+	std::map<string, std::set<string>>::const_iterator s;
 	for (s = m_FilteredPresets.begin(); s != m_FilteredPresets.end(); ++s)
 	{
 		const string& suffix = s->first;
@@ -585,17 +587,35 @@ std::set<string> CManager::GetTexturePresetsForFile(const string& mask)
 #include "RCConfigParser.inl"
 
 typedef std::map<const string, EditorSubstance::EPixelFormat> PixelFormatsMap;
-PixelFormatsMap pixelFormatsMap{
-	{ "BC1", EditorSubstance::ePixelFormat_BC1 },
-	{ "BC1a", EditorSubstance::ePixelFormat_BC1a },
-	{ "BC3", EditorSubstance::ePixelFormat_BC3 },
-	{ "BC4", EditorSubstance::ePixelFormat_BC4 },
-	{ "BC5", EditorSubstance::ePixelFormat_BC5 },
-	{ "BC5s", EditorSubstance::ePixelFormat_BC5s },
-	{ "BC7", EditorSubstance::ePixelFormat_BC7 },
-	{ "BC7t", EditorSubstance::ePixelFormat_BC7t },
-	{ "A8R8G8B8", EditorSubstance::ePixelFormat_A8R8G8B8 },
-
+PixelFormatsMap pixelFormatsMap 
+{
+	{
+		"BC1", EditorSubstance::ePixelFormat_BC1
+	},
+	{
+		"BC1a", EditorSubstance::ePixelFormat_BC1a
+	},
+	{
+		"BC3", EditorSubstance::ePixelFormat_BC3
+	},
+	{
+		"BC4", EditorSubstance::ePixelFormat_BC4
+	},
+	{
+		"BC5", EditorSubstance::ePixelFormat_BC5
+	},
+	{
+		"BC5s", EditorSubstance::ePixelFormat_BC5s
+	},
+	{
+		"BC7", EditorSubstance::ePixelFormat_BC7
+	},
+	{
+		"BC7t", EditorSubstance::ePixelFormat_BC7t
+	},
+	{
+		"A8R8G8B8", EditorSubstance::ePixelFormat_A8R8G8B8
+	},
 };
 
 EditorSubstance::EPixelFormat GetPixelFormatFromString(const string& pxFormat)
@@ -604,7 +624,8 @@ EditorSubstance::EPixelFormat GetPixelFormatFromString(const string& pxFormat)
 	{
 		return pixelFormatsMap[pxFormat];
 	}
-	else {
+	else
+	{
 		return EditorSubstance::ePixelFormat_Unsupported;
 	}
 
@@ -626,7 +647,8 @@ void CManager::LoadTexturePresets(const string& configPath)
 		texPreset.name = name;
 		const RCConfigParser::ConfigSection& section = sectionInfo.second;
 		RCConfigParser::ConfigEntries::const_iterator iter;
-		for (iter = section.GetEntries().begin(); iter != section.GetEntries().end(); ++iter) {
+		for (iter = section.GetEntries().begin(); iter != section.GetEntries().end(); ++iter)
+		{
 			string entryName = iter->first;
 			RCConfigParser::ConfigEntry* entry = iter->second.get();
 			if (entryName == "pixelformat")
@@ -674,6 +696,7 @@ void CManager::LoadTexturePresets(const string& configPath)
 		}
 
 	}
+
 	for each (auto var in m_Presets)
 	{
 		m_FilteredPresets[""].insert(var.first);

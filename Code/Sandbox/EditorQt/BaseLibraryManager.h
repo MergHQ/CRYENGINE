@@ -34,7 +34,7 @@ public:
 	// Library items.
 	//////////////////////////////////////////////////////////////////////////
 	//! Make a new item in specified library.
-	virtual IDataBaseItem* CreateItem(IDataBaseLibrary* pLibrary);
+	virtual IDataBaseItem* CreateItem(IDataBaseLibrary* pLibrary) override;
 	//! Delete item from library and manager.
 	virtual void           DeleteItem(IDataBaseItem* pItem);
 
@@ -137,6 +137,8 @@ protected:
 	void NotifyLibraryEvent(IDataBaseLibrary* pLibrary, EDataBaseLibraryEvent event);
 	void NotifyDatabaseEvent(EDataBaseEvent event);
 	void SetRegisteredFlag(CBaseLibraryItem* pItem, bool bFlag);
+
+	virtual const char* GetFileExtension() const { return "xml"; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Must be overriden.

@@ -63,6 +63,7 @@
 #include "LevelEditor/LevelEditorSharedState.h"
 #include "EditorCommonInit.h"
 #include "AssetSystem/AssetManager.h"
+#include "AssetSystem/Browser/AssetModel.h"
 #include <Preferences/ViewportPreferences.h>
 #include "MainThreadWorker.h"
 
@@ -158,6 +159,7 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	m_pPythonManager = new CEditorPythonManager();
 	m_pPythonManager->Init();//must be initialized before plugins are initialized
 	m_pAssetManager = new CAssetManager();
+	CAssetModel::CAutoRegisterColumn::RegisterAll();
 	m_pPolledKeyManager = new CPolledKeyManager();
 	m_pConsoleSync = 0;
 	m_pEditorFileMonitor.reset(new CEditorFileMonitor());
@@ -1194,8 +1196,6 @@ IDataBaseManager* CEditorImpl::GetDBItemManager(EDataBaseItemType itemType)
 		return m_pMaterialManager;
 	case EDB_TYPE_ENTITY_ARCHETYPE:
 		return m_pEntityManager;
-	case EDB_TYPE_PREFAB:
-		return m_pPrefabManager;
 	case EDB_TYPE_GAMETOKEN:
 		return m_pGameTokenManager;
 	case EDB_TYPE_PARTICLE:

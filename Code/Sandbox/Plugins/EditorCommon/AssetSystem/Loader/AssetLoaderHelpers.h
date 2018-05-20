@@ -11,6 +11,8 @@ class CAsset;
 namespace AssetLoader
 {
 
+struct SAssetMetadata;
+
 //! \brief Returns the name of the asset with path \p szPath.
 //! If \p szPath is a path to a file, the function returns the filename without extension.
 //! If it is path to a directory instead, everything but the last directory is removed.
@@ -23,6 +25,8 @@ string GetAssetName(const char* szPath);
 class EDITOR_COMMON_API CAssetFactory
 {
 public:
+	static CAsset* CreateFromMetadata(const char* szAssetPath, const SAssetMetadata& metadata);
+
 	//! Reads xml with metadata from memory.
 	//! \param szAssetPath Must be relative to the assets root. 
 	static CAsset* LoadAssetFromXmlFile(const char* szAssetPath);

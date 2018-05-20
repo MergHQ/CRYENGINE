@@ -31,7 +31,7 @@ public:
 	virtual bool IsUsingGenericPropertyTreePicker() const override { return false; }
 
 protected:
-	virtual bool OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const override;
+	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const override;
 
 private:
 	virtual CryIcon GetIconInternal() const override;

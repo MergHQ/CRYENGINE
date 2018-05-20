@@ -40,7 +40,7 @@ public:
 	//! Check if object contained in selection list.
 	bool         IsContainObject(CBaseObject* obj) const;
 	//! Return true if selection doesnt contain any object.
-	bool         IsEmpty() const;
+	bool         IsEmpty() const override;
 	//! Number of selected object.
 	int          GetCount() const;
 	//! Get object at given index.

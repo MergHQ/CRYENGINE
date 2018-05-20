@@ -40,7 +40,6 @@
 #include <CrySystem/ZLib/ILZ4Decompressor.h>
 #include <CryNetwork/INotificationNetwork.h>
 #include <CrySystem/XML/IReadWriteXMLSink.h>
-#include <CrySystem/ITestSystem.h>
 #include <CrySystem/ITextModeConsole.h>
 #include <CrySystem/IValidator.h>
 #include <CrySystem/ZLib/IZLibCompressor.h>
@@ -124,7 +123,6 @@ using JobManager::SJobStateBase;
 %include "../../../../CryEngine/CryCommon/CrySystem/ZLib/ILZ4Decompressor.h"
 %include "../../../../CryEngine/CryCommon/CryNetwork/INotificationNetwork.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/XML/IReadWriteXMLSink.h"
-%include "../../../../CryEngine/CryCommon/CrySystem/ITestSystem.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/ITextModeConsole.h"
 %include "../../../../CryEngine/CryCommon/CryThreading/IThreadManager.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/IValidator.h"

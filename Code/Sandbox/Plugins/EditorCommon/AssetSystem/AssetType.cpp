@@ -8,6 +8,7 @@
 #include "AssetImporter.h"
 #include "AssetManager.h"
 #include "Loader/AssetLoaderHelpers.h"
+#include "Loader/Metadata.h"
 
 #include "FilePathUtil.h"
 #include "ProxyModels/ItemModelAttribute.h"
@@ -15,6 +16,7 @@
 #include <QFile>
 
 #include <CryString/CryPath.h>
+#include "EditableAsset.h"
 
 namespace Private_AssetType
 {
@@ -79,6 +81,84 @@ static bool CopyAssetFile(const string& oldFilename, const string& newFilename)
 	return false;
 }
 
+class CAssetMetadata : public INewAsset
+{
+public:
+	CAssetMetadata(const CAssetType& type, const char* szMetadataFile)
+		: m_metadataFile(szMetadataFile)
+		, m_name(AssetLoader::GetAssetName(szMetadataFile))
+		, m_folder(PathUtil::GetDirectory(m_metadataFile))
+	{
+		m_metadata.type = type.GetTypeName();
+	}
+
+	virtual void SetGUID(const CryGUID& guid) override
+	{
+		m_metadata.guid = guid;
+	}
+
+	virtual void SetSourceFile(const char* szFilepath) override
+	{
+		m_metadata.sourceFile = szFilepath;
+	}
+
+	virtual void AddFile(const char* szFilepath) override
+	{
+		m_metadata.files.emplace_back(PathUtil::GetFile(szFilepath));
+	}
+
+	virtual void SetFiles(const std::vector<string>& filenames) override
+	{
+		m_metadata.files.clear();
+		m_metadata.files.reserve(filenames.size());
+		for (const string& filename : filenames)
+		{
+			AddFile(filename);
+		}
+	}
+
+	virtual void SetDetails(const std::vector<std::pair<string, string>>& details) override
+	{
+		m_metadata.details = details;
+	}
+
+	virtual void SetDependencies(const std::vector<SAssetDependencyInfo>& dependencies) override
+	{
+		m_metadata.dependencies.clear();
+		m_metadata.dependencies.reserve(dependencies.size());
+		std::transform(dependencies.cbegin(), dependencies.cend(), std::back_inserter(m_metadata.dependencies), [](const auto& x)
+		{
+			return std::make_pair(x.path, x.usageCount);
+		});
+	}
+
+	const AssetLoader::SAssetMetadata& GetMetadata() 
+	{ 
+		return m_metadata; 
+	}
+
+	virtual const char* GetMetadataFile() const override
+	{
+		return m_metadataFile;
+	}
+
+	virtual const char* GetFolder() const override
+	{
+		return m_folder;
+	}
+
+	virtual const char* GetName() const override
+	{
+		return m_name;
+	}
+
+private:
+	AssetLoader::SAssetMetadata m_metadata;
+	const string m_metadataFile;
+	const string m_name;
+	const string m_folder;
+};
+
 }
 
 void CAssetType::Init()
@@ -89,41 +169,28 @@ void CAssetType::Init()
 QVariant CAssetType::GetVariantFromDetail(const string& detailValue, const CItemModelAttribute* pAttrib)
 {
 	CRY_ASSERT(pAttrib);
-	const QVariant v(QtUtil::ToQString(detailValue));
-	switch (pAttrib->GetType())
-	{
-	case eAttributeType_String:
-		return v.value<QString>();
-	case eAttributeType_Int:
-		return v.value<int>();
-	case eAttributeType_Float:
-		return v.value<float>();
-	case eAttributeType_Boolean:
-		return v.value<bool>();
-	case eAttributeType_Enum:
-		return v.value<int>();
-	default:
-		CRY_ASSERT(0 && "Unknown attribute type");
-		return v;
-	}
+	return 	pAttrib->GetType()->ToQVariant(detailValue);
 }
 
 bool CAssetType::Create(const char* szFilepath, const void* pTypeSpecificParameter) const
 {
-	if (!QDir().mkpath(QtUtil::ToQString(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), PathUtil::GetPathWithoutFilename(szFilepath)))))
+	using namespace Private_AssetType;
+
+	ICryPak* const pIPak = GetISystem()->GetIPak();
+	if (!pIPak->MakeDir(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), PathUtil::GetPathWithoutFilename(szFilepath)).c_str()))
 	{
 		return false;
 	}
 
-	CAsset* const pNewAsset(new CAsset(GetTypeName(), CryGUID::Create(), AssetLoader::GetAssetName(szFilepath)));
+	CAssetMetadata metadata(*this, szFilepath);
+	if (!OnCreate(metadata, pTypeSpecificParameter))
+	{
+		return false;
+	}
+
+	CAsset* const pNewAsset = AssetLoader::CAssetFactory::CreateFromMetadata(szFilepath, metadata.GetMetadata());
+
 	CEditableAsset editAsset(*pNewAsset);
-	editAsset.SetMetadataFile(szFilepath);
-
-	if (!OnCreate(editAsset, pTypeSpecificParameter))
-	{
-		return false;
-	}
-
 	editAsset.WriteToFile();
 
 	CAssetManager::GetInstance()->MergeAssets({ pNewAsset });
@@ -345,7 +412,7 @@ bool CAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 			}
 		}
 	}
-	editableAsset.SetFiles(nullptr, files);
+	editableAsset.SetFiles(files);
 	editableAsset.SetName(szNewName);
 	// The asset file monitor will handle this as if the asset had been modified.
 	// See also CAssetManager::CAssetFileMonitor.
@@ -439,7 +506,7 @@ bool CAssetType::MoveAsset(CAsset* pAsset, const char* szDestinationFolder, bool
 			file = newFile;
 		}
 	}
-	editableAsset.SetFiles(nullptr, files);
+	editableAsset.SetFiles(files);
 	editableAsset.WriteToFile();
 	return true;
 }
@@ -502,7 +569,7 @@ bool CAssetType::CopyAsset(CAsset* pAsset, const char* szNewPath) const
 			}
 		}
 	}
-	editableAsset.SetFiles(nullptr, files);
+	editableAsset.SetFiles(files);
 	editableAsset.SetDependencies(pAsset->GetDependencies());
 	editableAsset.SetDetails(pAsset->GetDetails());
 	editableAsset.InvalidateThumbnail();

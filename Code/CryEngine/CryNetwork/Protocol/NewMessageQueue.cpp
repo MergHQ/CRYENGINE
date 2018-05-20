@@ -1501,7 +1501,7 @@ void CMessageQueue::WriteMessages(IMessageOutput* pOut, const SSchedulingParams&
 		SMsgSlot* pEntSend = &m_slots[idxEntSend];
 
 		if (pEntSend->ordering.latencyClass == eLC_CantSend)
-			break;
+			continue;
 
 		NET_ASSERT(pEntSend->childrenPatched == pEntSend->childCount);
 

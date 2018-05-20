@@ -9,9 +9,9 @@ public:
 	CSamplePlugin() { /* entry point of the plugin, perform initializations */ }
 	~CSamplePlugin() { /* exit point of the plugin, perform cleanup */ }
 
-	int32       GetPluginVersion() { return 1; };
-	const char* GetPluginName() { return "Sample Plugin"; };
-	const char* GetPluginDescription() { return "Plugin used as a code sample to demonstrate Sandbox's plugin system"; };
+	int32       GetPluginVersion() { return 1; }
+	const char* GetPluginName() { return "Sample Plugin"; }
+	const char* GetPluginDescription() { return "Plugin used as a code sample to demonstrate Sandbox's plugin system"; }
 
 private:
 };

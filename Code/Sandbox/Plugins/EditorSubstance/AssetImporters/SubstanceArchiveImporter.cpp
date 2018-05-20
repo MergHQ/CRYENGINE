@@ -62,7 +62,7 @@ namespace EditorSubstance
 			}
 			CEditableAsset editAsset = ctx.CreateEditableAsset(*currentAsset);
 			editAsset.SetMetadataFile(relativeFileName + ".cryasset");
-			editAsset.SetFiles("", { relativeFileName });
+			editAsset.SetFiles({ relativeFileName });
 
 			//////////////////////////////////////////////////////////////////////////
 			// gather the information about substance graph

@@ -414,7 +414,7 @@ void CParticleEditor::SaveEffect(CEditableAsset& editAsset)
 		editAsset.SetDependencies(dependencies);
 	}
 
-	editAsset.SetFiles("", { pfxFilePath });
+	editAsset.SetFiles({ pfxFilePath });
 }
 
 void CParticleEditor::OnReloadEffect()

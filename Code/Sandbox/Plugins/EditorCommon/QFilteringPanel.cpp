@@ -372,10 +372,9 @@ void QFilteringPanel::CFilterWidget::OnSelectAttribute(int index)
 		m_pFilter->SetAttribute(attribute);
 		m_pFilter->SetFilterValue(attribute->GetDefaultFilterValue());
 
-		const EAttributeType type = attribute->GetType();
+		const IAttributeType* pType = attribute->GetType();
 
-		std::vector<Attributes::IAttributeFilterOperator*> types;
-		Attributes::GetOperatorsForType(type, types);
+		std::vector<Attributes::IAttributeFilterOperator*> types = pType->GetOperators();
 
 		CRY_ASSERT(types.size() > 0);
 
@@ -395,7 +394,7 @@ void QFilteringPanel::CFilterWidget::OnSelectAttribute(int index)
 			m_pOperatorsComboBox->setVisible(true);
 		}
 
-		if (attribute->GetType() == eAttributeType_Boolean)
+		if (attribute->GetType() == &Attributes::s_booleanAttributeType)
 		{
 			m_pInvertButton->setChecked(false);
 			m_pInvertButton->setVisible(false);
@@ -755,10 +754,7 @@ void QFilteringPanel::ShowFavoriteFilter(bool show, bool isFiltering)
 	if (show && !m_favoritesFilter)
 	{
 		m_favoritesFilter = std::make_shared<CAttributeFilter>(&Attributes::s_favoriteAttribute);
-
-		std::vector<Attributes::IAttributeFilterOperator*> operators;
-		Attributes::GetOperatorsForType(eAttributeType_Boolean, operators);
-		m_favoritesFilter->SetOperator(operators[0]);
+		m_favoritesFilter->SetOperator(Attributes::s_booleanAttributeType.GetDefaultOperator());
 		m_favoritesFilter->SetFilterValue(Qt::Checked);//value is not changed, we just enable or disable the filter
 		m_favoritesFilter->SetEnabled(m_favoritesButton->isChecked());
 		m_pModel->AddFilter(m_favoritesFilter);

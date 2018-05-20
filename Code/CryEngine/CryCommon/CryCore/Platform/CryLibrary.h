@@ -147,9 +147,15 @@ public:
 
 	~CCryLibrary()
 	{
+		Free();
+	}
+
+	void Free()
+	{
 		if (m_hModule != nullptr)
 		{
 			CryFreeLibrary(m_hModule);
+			m_hModule = nullptr;
 		}
 	}
 

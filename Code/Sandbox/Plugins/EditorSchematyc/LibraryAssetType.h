@@ -30,7 +30,7 @@ public:
 	virtual bool          DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const override;
 
 protected:
-	virtual bool OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const override;
+	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const override;
 
 private:
 	virtual CryIcon GetIconInternal() const override;

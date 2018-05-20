@@ -546,6 +546,8 @@ public:
 
 	static int   CV_r_SSReflections;
 	static int   CV_r_SSReflHalfRes;
+	static float CV_r_SSReflDistance;
+	static int   CV_r_SSReflSamples;
 	static int   CV_r_ssdo;
 	static int   CV_r_ssdoHalfRes;
 	static int   CV_r_ssdoColorBleeding;

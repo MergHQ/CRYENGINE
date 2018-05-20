@@ -76,15 +76,10 @@ public:
 	virtual void       SetWorldPos(const Vec3& pos, int flags = 0) override;
 	virtual void       UpdatePivot(const Vec3& newWorldPivotPos) override;
 
-	CryGUID            GetPrefabGuid() const { return m_prefabGUID; }
-
-	void               SetPivot(const Vec3& newWorldPivotPos);
-	void               SetAutoUpdatePrefab(bool autoUpdate);
-	bool               GetAutoUpdatePrefab() const         { return m_autoUpdatePrefabs; }
-
 	virtual string     GetTypeDescription() const override { return m_pPrefabItem ? m_pPrefabItem->GetName() : ""; }
+	virtual string     GetAssetPath() const override;
 
-	virtual XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode);
+	virtual XmlNodeRef Export(const string& levelPath, XmlNodeRef& xmlNode) override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// CPrefabObject.
@@ -93,6 +88,13 @@ public:
 	virtual void SetPrefab(CPrefabItem* pPrefab, bool bForceReload);
 
 	CPrefabItem* GetPrefabItem() const { return m_pPrefabItem; }
+
+	CryGUID      GetPrefabGuid() const { return m_prefabGUID; }
+
+	void         SetPivot(const Vec3& newWorldPivotPos);
+	void         SetAutoUpdatePrefab(bool autoUpdate);
+	bool         GetAutoUpdatePrefab() const { return m_autoUpdatePrefabs; }
+
 
 	// Extract all objects inside.
 	void         CloneAll(std::vector<CBaseObject*>& extractedObjects);

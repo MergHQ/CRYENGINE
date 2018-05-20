@@ -26,7 +26,6 @@
 
 #define BACKGROUND_SERVER_CHAR '/'
 
-
 //#define DEFENCE_CVAR_HASH_LOGGING
 
 static inline void AssertName(const char* szName)
@@ -1668,7 +1667,7 @@ void CXConsole::Draw()
 		return;
 
 	//if (m_pRenderer->GetIRenderAuxGeom())
-		//m_pRenderer->GetIRenderAuxGeom()->Flush();
+	//m_pRenderer->GetIRenderAuxGeom()->Flush();
 
 	//m_pRenderer->PushProfileMarker("DISPLAY_CONSOLE");
 
@@ -3231,7 +3230,7 @@ void CXConsole::Copy()
 
 	size_t cbLength = m_sInputBuffer.length();
 	wstring textW = CryStringUtils::UTF8ToWStr(m_sInputBuffer);
-	
+
 	HGLOBAL hGlobalA, hGlobalW;
 	LPVOID pGlobalA, pGlobalW;
 
@@ -3284,7 +3283,7 @@ void CXConsole::Paste()
 		CloseClipboard();
 		return;
 	}
-	
+
 	string temp;
 	if (hasUnicode)
 	{
@@ -3599,7 +3598,7 @@ void CXConsole::FindVar(const char* substr)
 						if (isCheat)
 							continue;
 					}
-#endif  // _RELEASE
+#endif    // _RELEASE
 
 					DisplayVarValue(pCvar);
 				}
@@ -3823,3 +3822,123 @@ void CXConsole::RemoveConsoleVarSink(IConsoleVarSink* pSink)
 {
 	m_consoleVarSinks.remove(pSink);
 }
+
+//////////////////////////////////////////////////////////////////////////
+// Tests
+#include <CrySystem/Testing/CryTest.h>
+#include <CrySystem/Testing/CryTestCommands.h>
+
+class CCommandSimulateInputKey
+{
+public:
+	CCommandSimulateInputKey(EKeyId key)
+		: m_key(key)
+	{
+	}
+
+	bool Update()
+	{
+		SInputEvent inputEvent;
+		inputEvent.deviceType = eIDT_Keyboard;
+		inputEvent.keyId = m_key;
+		inputEvent.state = eIS_Pressed;
+		gEnv->pInput->PostInputEvent(inputEvent);
+		inputEvent.state = eIS_Released;
+		gEnv->pInput->PostInputEvent(inputEvent);
+		return true;
+	}
+
+private:
+	EKeyId m_key;
+};
+
+CRY_TEST_FIXTURE(ConsoleTestBase)
+{
+protected:
+
+	static bool IsCVarTestCommandCalled;
+
+	static void CVarTestCommandCallback(IConsoleCmdArgs* args)
+	{
+		CRY_TEST_ASSERT(strcmp(args->GetArg(0), "TestCommand") == 0);
+		IsCVarTestCommandCalled = true;
+	}
+
+	static void ShowConsole()
+	{
+		gEnv->pConsole->ShowConsole(true);
+	}
+
+	static void HideConsole()
+	{
+		gEnv->pConsole->ShowConsole(false);
+	}
+
+	virtual void Init() override {}
+	virtual void Done() override {}
+
+	int m_TestCVar;
+};
+
+bool ConsoleTestBase::IsCVarTestCommandCalled = false;
+
+CRY_TEST_WITH_FIXTURE(ConsoleOpenCloseTest, ConsoleTestBase, timeout = 60.f, game = true, editor = false)
+{
+	commands =
+	{
+		ShowConsole,
+		CryTest::CCommandWait(0.1f),
+		[] {
+			CRY_TEST_ASSERT(gEnv->pConsole->IsOpened());
+		},
+		CryTest::CCommandWait(1.f),
+		HideConsole,
+		CryTest::CCommandWait(0.1f),
+		[] {
+			CRY_TEST_ASSERT(!gEnv->pConsole->IsOpened());
+		}
+	};
+}
+
+CRY_TEST_WITH_FIXTURE(ConsoleCVarTest, ConsoleTestBase, timeout = 60.f, game = true, editor = false)
+{
+	commands =
+	{
+		[this]
+		{
+			REGISTER_CVAR(m_TestCVar, 0, VF_NULL, "");
+		},
+		ShowConsole,
+		[] {
+			gEnv->pConsole->SetInputLine("m_TestCVar 99999");
+		},
+		CCommandSimulateInputKey(EKeyId::eKI_Enter),
+		[] {
+			CRY_TEST_ASSERT(gEnv->pConsole->GetCVar("m_TestCVar")->GetIVal() == 99999);
+		},
+		HideConsole,
+	};
+}
+
+CRY_TEST_WITH_FIXTURE(ConsoleInputCommandTest, ConsoleTestBase, timeout = 60.f, game = true, editor = false)
+{
+	commands =
+	{
+		[] {
+			IsCVarTestCommandCalled = false;
+			REGISTER_COMMAND("TestCommand", CVarTestCommandCallback, 0, "ok");
+		},
+		ShowConsole,
+		CryTest::CCommandWait(0.1f),
+		[] {
+			gEnv->pConsole->SetInputLine("TestCommand");
+		},
+		CCommandSimulateInputKey(EKeyId::eKI_Enter),
+		CryTest::CCommandWait(1.f),
+		[] {
+			CRY_TEST_ASSERT(IsCVarTestCommandCalled);
+		},
+		HideConsole
+	};
+}
+

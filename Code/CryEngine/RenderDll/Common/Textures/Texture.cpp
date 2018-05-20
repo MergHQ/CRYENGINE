@@ -2892,6 +2892,7 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElem
 			if (pPlayer != m_pPlayer)
 			{
 				const bool addTex = m_pPlayer == nullptr;
+				m_pPlayer = nullptr;
 				if (isVisible)
 					m_pPlayer = pPlayer;
 
@@ -2910,6 +2911,7 @@ void CFlashTextureSourceBase::CFlashPlayerInstanceWrapperUIElement::UpdateUIElem
 		{
 			if (m_pPlayer)
 				m_pUIElement->RemoveTexture(pSrc);
+			m_pPlayer = nullptr;
 		}
 	}
 }

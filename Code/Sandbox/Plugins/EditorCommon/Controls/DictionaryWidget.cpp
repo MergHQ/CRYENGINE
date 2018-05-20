@@ -316,13 +316,13 @@ void CAbstractDictionary::Reset()
 
 const CItemModelAttribute* CAbstractDictionary::GetFilterAttribute() const
 {
-	static CItemModelAttribute filterAttribute(GetName(), eAttributeType_String);
+	static CItemModelAttribute filterAttribute(GetName(), &Attributes::s_stringAttributeType);
 	return &filterAttribute;
 }
 
 const CItemModelAttribute* CAbstractDictionary::GetColumnAttribute(int32 index) const
 {
-	static CItemModelAttribute fallback("", eAttributeType_String);
+	static CItemModelAttribute fallback("", &Attributes::s_stringAttributeType);
 
 	QString& columnName = const_cast<QString&>(fallback.GetName());
 	columnName = GetColumnName(index);

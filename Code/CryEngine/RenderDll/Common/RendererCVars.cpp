@@ -379,6 +379,8 @@ float CRendererCVars::CV_r_rainOccluderSizeTreshold;
 
 int CRendererCVars::CV_r_SSReflections;
 int CRendererCVars::CV_r_SSReflHalfRes;
+int CRendererCVars::CV_r_SSReflSamples;
+float CRendererCVars::CV_r_SSReflDistance;
 int CRendererCVars::CV_r_ssdo;
 int CRendererCVars::CV_r_ssdoHalfRes;
 int CRendererCVars::CV_r_ssdoColorBleeding;
@@ -1496,6 +1498,15 @@ void CRendererCVars::InitCVars()
 	               "Glossy screen space reflections [0/1]\n");
 	REGISTER_CVAR3("r_SSReflHalfRes", CV_r_SSReflHalfRes, 1, VF_NULL,
 	               "Toggles rendering reflections in half resolution\n");
+	REGISTER_CVAR3("r_SSReflDistance", CV_r_SSReflDistance, 0.25, VF_NULL,
+	               "Maximum distance of SS raytrace in relation to far-plane.\n"
+	               "Usage: r_SSReflDistance [0...1]\n"
+	               "Default is 0.25, which is about 500m (further away content is fetched from cube-maps)");
+	REGISTER_CVAR3("r_SSReflSamples", CV_r_SSReflSamples, 28, VF_NULL,
+	               "Maximum number of samples taken within allowed distance, in addition to 4 always taken samples.\n"
+	               "Usage: r_SSReflSamples [0...inf]\n"
+	               "Default is 4+28, which is about 1 sample every 15m (with default distance of 500m)");
+
 	REGISTER_CVAR3("r_ssdo", CV_r_ssdo, 1, VF_NULL, "Screen Space Directional Occlusion [0/1]\n");
 	REGISTER_CVAR3("r_ssdoHalfRes", CV_r_ssdoHalfRes, 2, VF_NULL,
 	               "Apply SSDO bandwidth optimizations\n"

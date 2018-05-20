@@ -27,7 +27,7 @@
 #include <CryAISystem/IAISystem.h>
 #include <CryAISystem/IAgent.h>
 #include <CrySystem/File/ICryPak.h>
-#include <CrySystem/ITestSystem.h>
+#include <CrySystem/Testing/CryTest.h>
 #include <CryGame/IGameFramework.h>
 #include <CryMath/Cry_Camera.h>
 #include <CryMath/Cry_Geo.h>
@@ -245,8 +245,6 @@ CScriptBind_System::CScriptBind_System(IScriptSystem* pScriptSystem, ISystem* pS
 	SCRIPT_REG_FUNC(ShowDebugger);
 	SCRIPT_REG_FUNC(DumpMemStats);
 	SCRIPT_REG_FUNC(DumpMemoryCoverage);
-	SCRIPT_REG_FUNC(ApplicationTest);
-	SCRIPT_REG_FUNC(QuitInNSeconds);
 	SCRIPT_REG_FUNC(DumpWinHeaps);
 	SCRIPT_REG_FUNC(Break);
 	SCRIPT_REG_TEMPLFUNC(SetViewCameraFov, "fov");
@@ -303,31 +301,6 @@ int CScriptBind_System::DumpMemoryCoverage(IFunctionHandler* pH)
 	// every time you call this from the console: #System.DumpMemoryCoverage()
 	// it adds a line to "MemoryCoverage.bmp" (generated the first time, there is a max line count)
 	m_pSystem->DumpMemoryCoverage();
-	return pH->EndFunction();
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-int CScriptBind_System::ApplicationTest(IFunctionHandler* pH)
-{
-	SCRIPT_CHECK_PARAMETERS(1);
-	const char* pszParam;
-	pH->GetParam(1, pszParam);
-
-	m_pSystem->ApplicationTest(pszParam);
-
-	return pH->EndFunction();
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-int CScriptBind_System::QuitInNSeconds(IFunctionHandler* pH)
-{
-	SCRIPT_CHECK_PARAMETERS(1);
-	float fInNSeconds;
-	pH->GetParam(1, fInNSeconds);
-
-	if (m_pSystem->GetITestSystem())
-		m_pSystem->GetITestSystem()->QuitInNSeconds(fInNSeconds);
-
 	return pH->EndFunction();
 }
 

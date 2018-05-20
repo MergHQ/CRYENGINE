@@ -9,7 +9,6 @@
 #include "ProxyModels/ItemModelAttribute.h"
 #include "Asset.h"
 #include "AssetEditor.h"
-#include "EditableAsset.h"
 #include "CryIcon.h"
 
 #include <CryString/CryString.h>
@@ -20,6 +19,31 @@
 #define ASSET_THUMBNAIL_SIZE 256
 
 class CAbstractMenu;
+
+//! IAssetMetadata allows to edit asset.
+//! \sa CAssetType::OnEdit
+struct EDITOR_COMMON_API IEditableAsset
+{
+	virtual const char* GetMetadataFile() const = 0;
+	virtual const char* GetFolder() const = 0;
+	virtual const char* GetName() const = 0;
+
+	virtual void SetSourceFile(const char* szFilepath) = 0;
+	virtual void AddFile(const char* szFilepath) = 0;
+	virtual void SetFiles(const std::vector<string>& filenames) = 0;
+	virtual void SetDetails(const std::vector<std::pair<string, string>>& details) = 0;
+	virtual void SetDependencies(const std::vector<SAssetDependencyInfo>& dependencies) = 0;
+
+	virtual ~IEditableAsset() {}
+};
+
+
+//! IAssetMetadata allows to assign initial values of a new asset.
+//! \sa CAssetType::OnCreate
+struct EDITOR_COMMON_API INewAsset : public IEditableAsset
+{
+	virtual void SetGUID(const CryGUID& guid) = 0;
+};
 
 class EDITOR_COMMON_API CAssetType : public IClassDesc
 {
@@ -161,7 +185,7 @@ private:
 	//! \param editAsset An instance to be filled in.
 	//! \param pTypeSpecificParameter Pointer to an extra parameter, can be nullptr. 
 	//! \sa CAssetType::Create
-	virtual bool OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const { CRY_ASSERT(0); /*not implemented*/ return false; }
+	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const { CRY_ASSERT(0); /*not implemented*/ return false; }
 
 private:
 	CryIcon m_icon;

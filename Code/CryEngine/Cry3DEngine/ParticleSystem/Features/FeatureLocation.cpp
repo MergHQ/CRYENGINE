@@ -8,7 +8,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include <CrySystem/CryUnitTest.h>
+#include <CrySystem/Testing/CryTest.h>
 #include <CryMath/SNoise.h>
 #include <CrySerialization/Math.h>
 #include "ParticleSystem/ParticleSystem.h"
@@ -1082,7 +1082,7 @@ void WrapSector(Vec3& pos, const Vec3& posPrev, Vec2 scrWidth)
 	assert(InSector(pos, scrWidth, 0.001f));
 }
 
-CRY_UNIT_TEST(WrapSectorTest)
+CRY_TEST(WrapSectorTest)
 {
 	SChaosKey chaosKey(0u);
 	for (int i = 0; i < 100; ++i)
@@ -1115,7 +1115,7 @@ ILINE int WrapRotation(Vec3& pos, Vec3& posPrev, const Matrix33& camRot, Vec2 sc
 	return true;
 }
 
-CRY_UNIT_TEST(WrapRotationTest)
+CRY_TEST(WrapRotationTest)
 {
 	SChaosKey chaosKey(0u);
 	for (int i = 0; i < 100; ++i)

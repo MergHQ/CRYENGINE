@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 
 #include "3dEngine.h"
+#include "3dEngineLoad.h"
 #include "terrain.h"
 #include "ObjMan.h"
 #include "VisAreas.h"
@@ -685,7 +686,16 @@ void C3DEngine::LoadFlaresData()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool C3DEngine::LoadLevel(const char* szFolderName, const char* szMissionName)
+
+C3DEngineLevelLoadTimeslicer::C3DEngineLevelLoadTimeslicer(C3DEngine& owner, const char* szFolderName, const char* szMissionName)
+	: m_owner(owner)
+	, m_folderName(szFolderName)
+	, m_missionName(szMissionName)
+	, m_setInLoad(owner.m_bInLoad, true)
+{
+}
+
+I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 {
 	LOADING_TIME_PROFILE_SECTION;
 
@@ -693,241 +703,392 @@ bool C3DEngine::LoadLevel(const char* szFolderName, const char* szMissionName)
 	PREFAST_ASSUME(gEnv);
 #endif
 
-	stl::scoped_set<bool> setInLoad(m_bInLoad, true);
+#define NEXT_STEP(step) return SetInProgress(step); case step: 
 
-	m_bInUnload = false;
-	m_bAreaActivationInUse = false;
-	m_bLayersActivated = false;
-	m_eShadowMode = ESM_NORMAL;
+	switch (m_currentStep)
+	{
+	case EStep::Init:
+	{
+		m_owner.m_bInUnload = false;
+		m_owner.m_bAreaActivationInUse = false;
+		m_owner.m_bLayersActivated = false;
+		m_owner.m_eShadowMode = ESM_NORMAL;
 
-	m_vPrevMainFrameCamPos.Set(-1000000.f, -1000000.f, -1000000.f);
-	m_vAverageCameraMoveDir = Vec3(0);
-	m_fAverageCameraSpeed = 0;
+		m_owner.m_vPrevMainFrameCamPos.Set(-1000000.f, -1000000.f, -1000000.f);
+		m_owner.m_vAverageCameraMoveDir = Vec3(0);
+		m_owner.m_fAverageCameraSpeed = 0;
 
-	ClearDebugFPSInfo();
+		m_owner.ClearDebugFPSInfo();
 
 #if CRY_PLATFORM_DESKTOP
-	m_bEditor = false;
+		m_owner.m_bEditor = false;
 #endif
 
-	gEnv->pEntitySystem->RegisterPhysicCallbacks();
+		gEnv->pEntitySystem->RegisterPhysicCallbacks();
 
-	assert(!m_bEditor);
+		assert(!m_owner.m_bEditor);
 
-	//////////////////////////////////////////////////////////////////////////
-	CryComment("initializing merged mesh manager");
-	m_pMergedMeshesManager->Init();
+		//////////////////////////////////////////////////////////////////////////
+		CryComment("initializing merged mesh manager");
+		m_owner.m_pMergedMeshesManager->Init();
 
-	//////////////////////////////////////////////////////////////////////////
-	m_pBreezeGenerator->Initialize();
+		//////////////////////////////////////////////////////////////////////////
+		m_owner.m_pBreezeGenerator->Initialize();
 
-	if (!szFolderName || !szFolderName[0])
-	{
-		Warning("%s: Level name is not specified", __FUNCTION__);
-		return 0;
+		if (m_folderName.empty())
+		{
+			m_owner.Warning("%s: Level name is not specified", __FUNCTION__);
+			return SetFailed();
+		}
+
+		if (m_missionName.empty())
+		{
+			m_owner.Warning("%s: Mission name is not specified", __FUNCTION__);
+
+			m_missionName = "NoMission";
+		}
+
+		m_owner.SetLevelPath(m_folderName);
 	}
 
-	if (!szMissionName || !szMissionName[0])
-	{ Warning("%s: Mission name is not specified", __FUNCTION__); }
-
-	char szMissionNameBody[256] = "NoMission";
-	if (!szMissionName)
-		szMissionName = szMissionNameBody;
-
-	SetLevelPath(szFolderName);
-
-	if (GetPak()->IsFileExist(GetLevelFilePath(LEVEL_CONFIG_FILE)))
-		GetISystem()->LoadConfiguration(GetLevelFilePath(LEVEL_CONFIG_FILE), 0, eLoadConfigLevel);
-
+	NEXT_STEP(EStep::LoadConfiguration)
 	{
-		// check is LevelData.xml file exist
-		char sMapFileName[_MAX_PATH];
-		cry_strcpy(sMapFileName, m_szLevelFolder);
-		cry_strcat(sMapFileName, LEVEL_DATA_FILE);
-		if (!IsValidFile(sMapFileName))
+		if (m_owner.GetPak()->IsFileExist(m_owner.GetLevelFilePath(LEVEL_CONFIG_FILE)))
+			GetISystem()->LoadConfiguration(m_owner.GetLevelFilePath(LEVEL_CONFIG_FILE), 0, eLoadConfigLevel);
+
 		{
-			PrintMessage("Error: Level not found: %s", sMapFileName);
-			return 0;
+			// check is LevelData.xml file exist
+			char sMapFileName[_MAX_PATH];
+			cry_strcpy(sMapFileName, m_owner.m_szLevelFolder);
+			cry_strcat(sMapFileName, LEVEL_DATA_FILE);
+			if (!m_owner.IsValidFile(sMapFileName))
+			{
+				m_owner.PrintMessage("Error: Level not found: %s", sMapFileName);
+				return SetFailed();
+			}
+		}
+
+		if (!m_owner.m_pObjManager)
+		{
+			m_owner.m_pObjManager = CryAlignedNew<CObjManager>();
+		}
+
+		CRY_ASSERT(m_owner.m_pClipVolumeManager->GetClipVolumeCount() == 0);
+		assert(gEnv->pCharacterManager);
+
+	}
+
+	NEXT_STEP(EStep::LoadUserShaders)
+	{
+		// Load and activate all shaders used by the level before activating any shaders
+		if (!m_owner.m_bEditor && m_owner.GetRenderer())
+		{
+			m_owner.LoadUsedShadersList();
+
+			m_owner.GetRenderer()->EF_Query(EFQ_SetDynTexSourceLayerInfo);
 		}
 	}
 
-	if (!m_pObjManager)
+	NEXT_STEP(EStep::LoadDefaultAssets)
 	{
-		m_pObjManager = CryAlignedNew<CObjManager>();
-	}
+		m_owner.LoadDefaultAssets();
 
-	CRY_ASSERT(m_pClipVolumeManager->GetClipVolumeCount() == 0);
-	assert(gEnv->pCharacterManager);
+		if (m_owner.m_pSkyLightManager)
+			m_owner.m_pSkyLightManager->InitSkyDomeMesh();
 
-	// Load and activate all shaders used by the level before activating any shaders
-	if (!m_bEditor && GetRenderer())
-	{
-		LoadUsedShadersList();
+		// Load LevelData.xml File.
+		m_xmlLevelData = m_owner.GetSystem()->LoadXmlFromFile(m_owner.GetLevelFilePath(LEVEL_DATA_FILE));
 
-		GetRenderer()->EF_Query(EFQ_SetDynTexSourceLayerInfo);
-	}
-
-	LoadDefaultAssets();
-
-	if (m_pSkyLightManager)
-		m_pSkyLightManager->InitSkyDomeMesh();
-
-	// Load LevelData.xml File.
-	XmlNodeRef xmlLevelData = GetSystem()->LoadXmlFromFile(GetLevelFilePath(LEVEL_DATA_FILE));
-
-	if (xmlLevelData == 0)
-	{
-		Error("%s: xml file not found (files missing?)", __FUNCTION__);  // files missing ?
-		return false;
-	}
-
-	// re-create decal manager
-	SAFE_DELETE(m_pDecalManager);
-	m_pDecalManager = new CDecalManager();
-
-	SAFE_DELETE(m_pWaterWaveManager);
-	m_pWaterWaveManager = new CWaterWaveManager();
-
-	gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_MATERIALS);
-	if (GetCVars()->e_PreloadMaterials)
-	{
-		// Preload materials.
-		GetMatMan()->PreloadLevelMaterials();
-	}
-	if (GetCVars()->e_PreloadDecals)
-	{
-		// Preload materials.
-		GetMatMan()->PreloadDecalMaterials();
-	}
-
-	// Preload any geometry used by merged meshes
-	m_pMergedMeshesManager->PreloadMeshes();
-
-	gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_OBJECTS);
-	// preload level cgfs
-	if (GetCVars()->e_StatObjPreload && !gEnv->IsEditor())
-	{
-		if (GetCVars()->e_StatObjPreload == 2)
-			GetSystem()->OutputLoadingTimeStats();
-
-		m_pObjManager->PreloadLevelObjects();
-
-		if (GetCVars()->e_StatObjPreload == 2)
+		if (m_xmlLevelData == 0)
 		{
-			GetSystem()->OutputLoadingTimeStats();
+			m_owner.Error("%s: xml file not found (files missing?)", __FUNCTION__);  // files missing ?
+			return SetFailed();
 		}
 
-		gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_CHARACTERS);
-		if (gEnv->pCharacterManager)
+		// re-create decal manager
+		SAFE_DELETE(m_owner.m_pDecalManager);
+		m_owner.m_pDecalManager = new CDecalManager();
+
+		SAFE_DELETE(m_owner.m_pWaterWaveManager);
+		m_owner.m_pWaterWaveManager = new CWaterWaveManager();
+
+	}
+
+	NEXT_STEP(EStep::LoadMaterials)
+	{
+		gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_MATERIALS);
+		if (m_owner.GetCVars()->e_PreloadMaterials)
 		{
-			PrintMessage("Starting loading level characters ...");
-			INDENT_LOG_DURING_SCOPE();
-			float fStartTime = GetCurAsyncTimeSec();
-
-			gEnv->pCharacterManager->PreloadLevelModels();
-
-			float dt = GetCurAsyncTimeSec() - fStartTime;
-			PrintMessage("Finished loading level characters (%.1f sec)", dt);
+			// Preload materials.
+			m_owner.GetMatMan()->PreloadLevelMaterials();
+		}
+		if (m_owner.GetCVars()->e_PreloadDecals)
+		{
+			// Preload materials.
+			m_owner.GetMatMan()->PreloadDecalMaterials();
 		}
 	}
 
-	assert(!m_pLevelStatObjTable);
-	assert(!m_pLevelMaterialsTable);
-	assert(!m_arrObjectLayersActivity.Count());
+	NEXT_STEP(EStep::PreloadMergedMeshes)
+	{
+		// Preload any geometry used by merged meshes
+		m_owner.m_pMergedMeshesManager->PreloadMeshes();
+	}
 
-	// load terrain
-	XmlNodeRef nodeRef = xmlLevelData->findChild("SurfaceTypes");
+#if PRELOAD_OBJECTS_SLICED
 
-	LoadCollisionClasses(xmlLevelData->findChild("CollisionClasses"));
+	NEXT_STEP(EStep::StartPreloadLevelObjects)
+	{
+		gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_OBJECTS);
+		// preload level cgfs
+		if (m_owner.GetCVars()->e_StatObjPreload && !gEnv->IsEditor())
+		{
+			if (m_owner.GetCVars()->e_StatObjPreload == 2)
+				m_owner.GetSystem()->OutputLoadingTimeStats();
 
-	gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_STATIC_WORLD);
+			m_owner.m_pObjManager->StartPreloadLevelObjects();
+		}
+	}
+
+	NEXT_STEP(EStep::UpdatePreloadLevelObjects)
+	{
+		if (m_owner.GetCVars()->e_StatObjPreload && !gEnv->IsEditor())
+		{
+			switch (m_owner.m_pObjManager->UpdatePreloadLevelObjects())
+			{
+			case I3DEngine::ELevelLoadStatus::InProgress:
+				return SetInProgress(m_currentStep);
+
+			case I3DEngine::ELevelLoadStatus::Failed:
+				return SetFailed();
+
+			case I3DEngine::ELevelLoadStatus::Done:
+				// do nothing and continue with next step
+				break;
+			}
+
+			if (m_owner.GetCVars()->e_StatObjPreload == 2)
+			{
+				m_owner.GetSystem()->OutputLoadingTimeStats();
+			}
+		}
+	}
+
+#else
+
+	NEXT_STEP(EStep::PreloadLevelObjects)
+	{
+
+		gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_OBJECTS);
+		// preload level cgfs
+		if (m_owner.GetCVars()->e_StatObjPreload && !gEnv->IsEditor())
+		{
+			if (m_owner.GetCVars()->e_StatObjPreload == 2)
+				m_owner.GetSystem()->OutputLoadingTimeStats();
+
+			m_owner.m_pObjManager->PreloadLevelObjects();
+
+			if (m_owner.GetCVars()->e_StatObjPreload == 2)
+			{
+				m_owner.GetSystem()->OutputLoadingTimeStats();
+			}
+		}
+	}
+
+#endif
+
+	NEXT_STEP(EStep::PreloadLevelCharacters)
+	{
+		if (m_owner.GetCVars()->e_StatObjPreload && !gEnv->IsEditor())
+		{
+			gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_CHARACTERS);
+			if (gEnv->pCharacterManager)
+			{
+				m_owner.PrintMessage("Starting loading level characters ...");
+				INDENT_LOG_DURING_SCOPE();
+				float fStartTime = m_owner.GetCurAsyncTimeSec();
+
+				gEnv->pCharacterManager->PreloadLevelModels();
+
+				float dt = m_owner.GetCurAsyncTimeSec() - fStartTime;
+				m_owner.PrintMessage("Finished loading level characters (%.1f sec)", dt);
+			}
+		}
+	}
+
+	NEXT_STEP(EStep::LoadSvoTiSettings)
+	{
+		assert(!m_owner.m_pLevelStatObjTable);
+		assert(!m_owner.m_pLevelMaterialsTable);
+		assert(!m_owner.m_arrObjectLayersActivity.Count());
+
+		m_owner.LoadCollisionClasses(m_xmlLevelData->findChild("CollisionClasses"));
+
+		gEnv->pSystem->SetSystemGlobalState(ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_START_STATIC_WORLD);
 
 #if defined(FEATURE_SVO_GI)
-	if (GetCVars()->e_svoTI_Active >= 0)
-	{
-		// Load SVOGI settings (must be called before loading of brushes, vegetation and textures)
-		// SVOGI is taken from environment presets, which is already loaded by TimeOfTheDay
-		UpdateTISettings();
-	}
+		if (m_owner.GetCVars()->e_svoTI_Active >= 0)
+		{
+			// Load SVOGI settings (must be called before loading of brushes, vegetation and textures)
+			// SVOGI is taken from environment presets, which is already loaded by TimeOfTheDay
+			m_owner.UpdateTISettings();
+		}
 #endif
+	}
 
-	if (!LoadTerrain(nodeRef, &m_pLevelStatObjTable, &m_pLevelMaterialsTable))
+	NEXT_STEP(EStep::LoadTerrain)
 	{
-		Error("Terrain file (%s) not found or file version error, please try to re-export the level", COMPILED_HEIGHT_MAP_FILE_NAME);
+		// load terrain
+		XmlNodeRef nodeRef = m_xmlLevelData->findChild("SurfaceTypes");
+		if (!m_owner.LoadTerrain(nodeRef, &m_owner.m_pLevelStatObjTable, &m_owner.m_pLevelMaterialsTable))
+		{
+			m_owner.Error("Terrain file (%s) not found or file version error, please try to re-export the level", COMPILED_HEIGHT_MAP_FILE_NAME);
+			return SetFailed();
+		}
+	}
+
+	NEXT_STEP(EStep::LoadVisAreas)
+	{
+		// load indoors
+		if (!m_owner.LoadVisAreas(&m_owner.m_pLevelStatObjTable, &m_owner.m_pLevelMaterialsTable))
+		{
+			m_owner.Error("VisAreas file (%s) not found or file version error, please try to re-export the level", COMPILED_VISAREA_MAP_FILE_NAME);
+			return SetFailed();
+		}
+
+		COctreeNode::FreeLoadingCache();
+	}
+
+	NEXT_STEP(EStep::SyncMergedMeshesPreparation)
+	{
+		// Preload any geometry used by merged meshes
+		if (m_owner.m_pMergedMeshesManager->SyncPreparationStep() == false)
+		{
+			m_owner.Error("some merged meshes failed to prepare properly (missing cgfs, re-export?!)");
+		}
+	}
+
+	NEXT_STEP(EStep::LoadParticles)
+	{
+		// re-create particles and decals
+		if (m_owner.m_pPartManager)
+			m_owner.m_pPartManager->Reset();
+
+		//Update loading screen and important tick functions
+		SYNCHRONOUS_LOADING_TICK();
+
+		m_owner.LoadParticleEffects(m_folderName);
+	}
+
+	NEXT_STEP(EStep::LoadMissionData)
+	{
+		m_owner.PrintMessage("===== Loading mission settings from XML =====");
+
+		//Update loading screen and important tick functions
+		SYNCHRONOUS_LOADING_TICK();
+
+		// load leveldata.xml
+		m_owner.m_pTerrainWaterMat = 0;
+		m_owner.m_nWaterBottomTexId = 0;
+		m_owner.LoadMissionDataFromXMLNode(m_missionName);
+
+		//Update loading screen and important tick functions
+		SYNCHRONOUS_LOADING_TICK();
+
+		if (!m_owner.m_bShowTerrainSurface)
+		{
+			gEnv->pPhysicalWorld->SetHeightfieldData(NULL);
+		}
+
+		// init water if not initialized already (if no mission was found)
+		if (m_owner.m_pTerrain && !m_owner.m_pTerrain->GetOcean())
+		{
+			m_owner.PrintMessage("===== Creating Ocean =====");
+			m_owner.m_pTerrain->InitTerrainWater(m_owner.m_pTerrainWaterMat, m_owner.m_nWaterBottomTexId);
+		}
+
+		m_owner.PrintMessage("===== Load level physics data =====");
+		m_owner.LoadPhysicsData();
+		m_owner.LoadFlaresData();
+
+		// restore game state
+		m_owner.EnableOceanRendering(true);
+		m_owner.m_pObjManager->m_bLockCGFResources = 0;
+
+		m_owner.PrintMessage("===== loading occlusion mesh =====");
+
+		m_owner.GetObjManager()->LoadOcclusionMesh(m_folderName);
+
+		m_owner.PrintMessage("===== Finished loading static world =====");
+
+		m_owner.m_skipedLayers.clear();
+
+		if (gEnv->pMaterialEffects)
+		{
+			gEnv->pMaterialEffects->CompleteInit();
+		}
+	}
+
+	case EStep::Done:
+		return SetDone();
+
+	case EStep::Failed:
+	default:
+		return SetFailed();
+	}
+
+#undef NEXT_STEP
+}
+
+bool C3DEngine::LoadLevel(const char* szFolderName, const char* szMissionName)
+{
+	LOADING_TIME_PROFILE_SECTION;
+
+	C3DEngineLevelLoadTimeslicer slicer(*this, szFolderName, szMissionName);
+	ELevelLoadStatus result;
+	do
+	{
+		result = slicer.DoStep();
+	} while (result == ELevelLoadStatus::InProgress);
+
+	return (result == ELevelLoadStatus::Done);
+}
+
+
+bool C3DEngine::StartLoadLevel(const char* szFolderName, const char* szMissionName)
+{
+	if (m_pLevelLoadTimeslicer)
+	{
 		return false;
 	}
 
-	// load indoors
-	if (!LoadVisAreas(&m_pLevelStatObjTable, &m_pLevelMaterialsTable))
+	m_pLevelLoadTimeslicer.reset(new C3DEngineLevelLoadTimeslicer(*this, szFolderName, szMissionName));
+	return true;
+}
+
+I3DEngine::ELevelLoadStatus C3DEngine::UpdateLoadLevelStatus()
+{
+	if (!m_pLevelLoadTimeslicer)
 	{
-		Error("VisAreas file (%s) not found or file version error, please try to re-export the level", COMPILED_VISAREA_MAP_FILE_NAME);
-		return false;
+		return ELevelLoadStatus::Failed;
 	}
 
-	COctreeNode::FreeLoadingCache();
+	LOADING_TIME_PROFILE_SECTION;
 
-	// Preload any geometry used by merged meshes
-	if (m_pMergedMeshesManager->SyncPreparationStep() == false)
+	switch (m_pLevelLoadTimeslicer->DoStep())
 	{
-		Error("some merged meshes failed to prepare properly (missing cgfs, re-export?!)");
+	case ELevelLoadStatus::InProgress:
+		return ELevelLoadStatus::InProgress;
+
+	case ELevelLoadStatus::Done:
+		m_pLevelLoadTimeslicer.reset();
+		return ELevelLoadStatus::Done;
+
+	case ELevelLoadStatus::Failed:
+	default:
+		m_pLevelLoadTimeslicer.reset();
+		return ELevelLoadStatus::Failed;
 	}
-
-	// re-create particles and decals
-	if (m_pPartManager)
-		m_pPartManager->Reset();
-
-	//Update loading screen and important tick functions
-	SYNCHRONOUS_LOADING_TICK();
-
-	LoadParticleEffects(szFolderName);
-
-	PrintMessage("===== Loading mission settings from XML =====");
-
-	//Update loading screen and important tick functions
-	SYNCHRONOUS_LOADING_TICK();
-
-	// load leveldata.xml
-	m_pTerrainWaterMat = 0;
-	m_nWaterBottomTexId = 0;
-	LoadMissionDataFromXMLNode(szMissionName);
-
-	//Update loading screen and important tick functions
-	SYNCHRONOUS_LOADING_TICK();
-
-	if (!m_bShowTerrainSurface)
-	{
-		gEnv->pPhysicalWorld->SetHeightfieldData(NULL);
-	}
-
-	// init water if not initialized already (if no mission was found)
-	if (m_pTerrain && !m_pTerrain->GetOcean())
-	{
-		PrintMessage("===== Creating Ocean =====");
-		m_pTerrain->InitTerrainWater(m_pTerrainWaterMat, m_nWaterBottomTexId);
-	}
-
-	PrintMessage("===== Load level physics data =====");
-	LoadPhysicsData();
-	LoadFlaresData();
-
-	// restore game state
-	EnableOceanRendering(true);
-	m_pObjManager->m_bLockCGFResources = 0;
-
-	PrintMessage("===== loading occlusion mesh =====");
-
-	GetObjManager()->LoadOcclusionMesh(szFolderName);
-
-	PrintMessage("===== Finished loading static world =====");
-
-	m_skipedLayers.clear();
-
-	if (gEnv->pMaterialEffects)
-	{
-		gEnv->pMaterialEffects->CompleteInit();
-	}
-
-	return (true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1401,18 +1562,7 @@ void C3DEngine::UpdateWindParams()
 	{
 		m_pBreezeGenerator->Shutdown();
 
-		m_pBreezeGenerator->m_enabled = wind.breezeGenerationEnabled;
-		m_pBreezeGenerator->m_strength = wind.breezeStrength;
-		m_pBreezeGenerator->m_variance = wind.breezeVariance;
-		m_pBreezeGenerator->m_lifetime = wind.breezeLifeTime;
-		m_pBreezeGenerator->m_count = wind.breezeCount;
-		m_pBreezeGenerator->m_radius = wind.breezeRadius;
-		m_pBreezeGenerator->m_spawn_radius = wind.breezeSpawnRadius;
-		m_pBreezeGenerator->m_spread = wind.breezeSpread;
-		m_pBreezeGenerator->m_movement_speed = wind.breezeMovementSpeed;
-		m_pBreezeGenerator->m_awake_thresh = wind.breezeAwakeThreshold;
-		m_pBreezeGenerator->m_wind_speed = wind.windVector;
-		m_pBreezeGenerator->m_fixed_height = wind.breezeFixedHeight;
+		m_pBreezeGenerator->SetParams(wind);
 
 		m_pBreezeGenerator->Initialize();
 	}

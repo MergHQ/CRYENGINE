@@ -15,6 +15,7 @@
 struct SNodeInfo;
 class CStitchedImage;
 class CWaterRippleManager;
+class C3DEngineLevelLoadTimeslicer;
 
 struct SEntInFoliage
 {
@@ -356,6 +357,8 @@ public:
 	virtual void      Release() { CryAlignedDelete(this); };
 	virtual void      SetLevelPath(const char* szFolderName);
 	virtual bool      LoadLevel(const char* szFolderName, const char* szMissionName);
+	virtual bool      StartLoadLevel(const char* szFolderName, const char* szMissionName);
+	virtual ELevelLoadStatus UpdateLoadLevelStatus();
 	virtual void      UnloadLevel();
 	virtual void      PostLoadLevel();
 	virtual bool      InitLevelForEditor(const char* szFolderName, const char* szMissionName);
@@ -525,7 +528,7 @@ public:
 
 	virtual Vec3                           GetGlobalWind(bool bIndoors) const;
 	virtual bool                           SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, bool bIndoors) const;
-	virtual IBreezeGenerator*              GetBreezeGenerator();
+	virtual IBreezeGenerator*              GetBreezeGenerator() const;
 	virtual IVisArea*                      GetVisAreaFromPos(const Vec3& vPos);
 	virtual bool                           IntersectsVisAreas(const AABB& box, void** pNodeCache = 0);
 	virtual bool                           ClipToVisAreas(IVisArea* pInside, Sphere& sphere, Vec3 const& vNormal, void* pNodeCache = 0);
@@ -1295,5 +1298,8 @@ private:
 
 	std::unique_ptr<CWaterRippleManager>   m_pWaterRippleManager;
 
+	std::unique_ptr<C3DEngineLevelLoadTimeslicer> m_pLevelLoadTimeslicer;
+
 	friend struct SRenderNodeTempData;
+	friend class C3DEngineLevelLoadTimeslicer;
 };

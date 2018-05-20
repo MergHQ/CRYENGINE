@@ -29,6 +29,8 @@ enum EAssetModelRowType
 
 namespace AssetModelAttributes
 {
+	extern CAttributeType<QString> s_dependenciesAttributeType;
+
 	extern CItemModelAttributeEnumFunc s_AssetTypeAttribute;
 	extern CItemModelAttributeEnumFunc s_AssetStatusAttribute;
 	extern CItemModelAttribute s_AssetFolderAttribute;
@@ -49,7 +51,7 @@ class EDITOR_COMMON_API CAssetModel : public QAbstractItemModel
 	{
 		const CItemModelAttribute* pAttribute;
 		std::vector<CAssetType*> assetTypes; //!< All asset types sharing attribute \p pAttribute.
-		std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pDetail)> computeFn;
+		std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pDetail)> getValueFn;
 	};
 
 public:
@@ -62,15 +64,23 @@ public:
 		Max,
 	};
 
+	//! A helper class to auto registration additional columns.
+	//! \sa CAssetModel::AddColumn
+	class CAutoRegisterColumn : public CAutoRegister<CAutoRegisterColumn>
+	{
+	public:
+		CAutoRegisterColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute)> getValueFn);
+	};
+
 	CAsset* ToAsset(const QModelIndex& index);
 	const CAsset* ToAsset(const QModelIndex& index) const;
 
 	QModelIndex ToIndex(const CAsset& asset, int col = 0) const;
 
 	static const CItemModelAttribute* GetColumnAttribute(int column);
-	static QVariant				GetHeaderData(int section, Qt::Orientation orientation, int role);
-	static int					GetColumnCount();
-	bool AddComputedColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute)> computeFn);
+	static QVariant                   GetHeaderData(int section, Qt::Orientation orientation, int role);
+	static int                        GetColumnCount();
+	bool                              AddColumn(const CItemModelAttribute* pAttribute, std::function<QVariant(const CAsset* pAsset, const CItemModelAttribute* pAttribute)> getValueFn);
 
 	//////////////////////////////////////////////////////////
 	// QAbstractItemModel implementation

@@ -2,6 +2,8 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Source Files"
+		"Utils.h"
+		"Utils.cpp"
 		"TypeTraitsTests.cpp"
 		"TestFrameworkTest.cpp" 
 		"MathTests.cpp"
@@ -15,6 +17,7 @@ add_sources("NoUberFile"
 		"SmartPtrTests.cpp"
 		"PathTests.cpp"
 		"GUIDTests.cpp"
+		"CryTestTests.cpp"
 )
 end_sources()
 

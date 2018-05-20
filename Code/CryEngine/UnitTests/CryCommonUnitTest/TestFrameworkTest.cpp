@@ -2,6 +2,7 @@
 
 #include <UnitTest.h>
 #include <memory>
+#include "Utils.h"
 
 struct SInlineStaticExample
 {
@@ -137,35 +138,6 @@ TEST(CryGTestFrameworkTest, RequireMacroRobustness)
 		return x;
 	}());
 }
-
-class CCopyMoveInspector
-{
-public:
-	static int copyCount;
-	static int moveCount;
-
-	CCopyMoveInspector() = default;
-
-	CCopyMoveInspector(const CCopyMoveInspector&)
-	{
-		++copyCount;
-	}
-
-	CCopyMoveInspector(CCopyMoveInspector&&)
-	{
-		++moveCount;
-	}
-
-	friend bool operator==(const CCopyMoveInspector&, const CCopyMoveInspector&) { return true;  }
-	friend bool operator!=(const CCopyMoveInspector&, const CCopyMoveInspector&) { return false; }
-	friend bool operator<=(const CCopyMoveInspector&, const CCopyMoveInspector&) { return true;  }
-	friend bool operator>=(const CCopyMoveInspector&, const CCopyMoveInspector&) { return true;  }
-	friend bool operator< (const CCopyMoveInspector&, const CCopyMoveInspector&) { return false; }
-	friend bool operator> (const CCopyMoveInspector&, const CCopyMoveInspector&) { return false; }
-};
-
-int CCopyMoveInspector::copyCount = 0;
-int CCopyMoveInspector::moveCount = 0;
 
 struct SNonDefaultConstructible
 {

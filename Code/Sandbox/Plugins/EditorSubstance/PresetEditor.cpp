@@ -4,6 +4,7 @@
 #include "PresetEditor.h"
 #include "SandboxPlugin.h"
 // EditorCommon
+#include <AssetSystem/EditableAsset.h>
 #include <AssetSystem/AssetManager.h>
 #include <QtViewPane.h>
 #include <QVBoxLayout>
@@ -22,7 +23,6 @@
 #include "Renderers/Base.h"
 #include "EditorFramework/PersonalizationManager.h"
 #include "Controls/QMenuComboBox.h"
-
 
 
 namespace Personalization

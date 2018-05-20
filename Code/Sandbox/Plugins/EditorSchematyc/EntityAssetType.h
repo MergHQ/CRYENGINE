@@ -32,7 +32,7 @@ public:
 	virtual string        GetObjectFilePath(const CAsset* pAsset) const override;
 
 protected:
-	virtual bool OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const override;
+	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const override;
 
 private:
 	virtual CryIcon GetIconInternal() const override;

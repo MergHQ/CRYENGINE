@@ -39,6 +39,65 @@ string GetAssetName(const char* szPath)
 	return szExt ? string(szFile, szExt - szFile) : string(szFile);
 }
 
+CAsset* CAssetFactory::CreateFromMetadata(const char* szAssetPath, const SAssetMetadata& metadata)
+{
+	const string path = PathUtil::GetPathWithoutFilename(szAssetPath);
+
+	CryGUID guid = (metadata.guid != CryGUID::Null()) ? metadata.guid : CryGUID::Create();
+
+	CAsset* const pAsset = new CAsset(metadata.type, guid, GetAssetName(szAssetPath));
+
+	CEditableAsset editableAsset(*pAsset);
+	for (const string& filename : metadata.files)
+	{
+		const string filepath = PathUtil::Make(path, filename.c_str());
+		editableAsset.AddFile(filepath);
+	}
+	editableAsset.SetMetadataFile(szAssetPath);
+	editableAsset.SetDetails(metadata.details);
+
+	// Source file may be next to the asset or relative to the assets root directory.
+	if (!metadata.sourceFile.empty() && !strpbrk(metadata.sourceFile.c_str(), "/\\"))
+	{
+		editableAsset.SetSourceFile(PathUtil::Make(path, metadata.sourceFile));
+	}
+	else
+	{
+		editableAsset.SetSourceFile(metadata.sourceFile);
+	}
+
+
+	// Make dependency paths relative to the assets root directory.
+	{
+		std::vector<SAssetDependencyInfo> dependencies;
+		std::transform(metadata.dependencies.begin(), metadata.dependencies.end(), std::back_inserter(dependencies), [&path](const auto& x) -> SAssetDependencyInfo
+		{
+			if (strncmp("./", x.first.c_str(), 2) == 0)
+			{
+				return{ PathUtil::Make(path.c_str(), x.first.c_str() + 2), x.second };
+			}
+			else
+			{
+				return{ x.first, x.second };
+			}
+		});
+
+		// This is a quick solution to fix dependency lookup for tif files.
+		// TODO: Cryasset file should never have dependencies on source files of other assets.
+		for (auto& item : dependencies)
+		{
+			if (stricmp(PathUtil::GetExt(item.path.c_str()), "tif") == 0)
+			{
+				item.path = PathUtil::ReplaceExtension(item.path.c_str(), "dds");
+			}
+		}
+
+		editableAsset.SetDependencies(dependencies);
+	}
+
+	return pAsset;
+}
+
 CAsset* CAssetFactory::LoadAssetFromXmlFile(const char* szAssetPath)
 {
 	ICryPak* const pPak = GetISystem()->GetIPak();
@@ -59,63 +118,14 @@ CAsset* CAssetFactory::LoadAssetFromXmlFile(const char* szAssetPath)
 CAsset* CAssetFactory::LoadAssetFromInMemoryXmlFile(const char* szAssetPath, uint64 timestamp, const char* pBuffer, size_t numberOfBytes)
 {
 	AssetLoader::SAssetMetadata metadata;
+
+	XmlNodeRef container = GetISystem()->LoadXmlFromBuffer(pBuffer, numberOfBytes);
+	if (!container || !AssetLoader::ReadMetadata(container, metadata))
 	{
-		XmlNodeRef container = GetISystem()->LoadXmlFromBuffer(pBuffer, numberOfBytes);
-		if (!container || !AssetLoader::ReadMetadata(container, metadata))
-		{
-			return nullptr;
-		}
+		return nullptr;
 	}
 
-	const string path = PathUtil::GetPathWithoutFilename(szAssetPath);
-
-	CryGUID guid = (metadata.guid != CryGUID::Null()) ? metadata.guid : CryGUID::Create();
-
-	CAsset* const pAsset = new CAsset(metadata.type, guid, GetAssetName(szAssetPath));
-
-	CEditableAsset editableAsset(*pAsset);
-	editableAsset.SetLastModifiedTime(timestamp);
-	editableAsset.SetFiles(path, metadata.files);
-	editableAsset.SetMetadataFile(szAssetPath);
-	editableAsset.SetDetails(metadata.details);
-
-	// Source file may be next to the asset or relative to the assets root directory.
-	if (!metadata.sourceFile.empty() && !strpbrk(metadata.sourceFile.c_str(), "/\\"))
-	{
-		metadata.sourceFile = PathUtil::Make(path, metadata.sourceFile);
-	}
-	editableAsset.SetSourceFile(metadata.sourceFile);
-
-	// Make dependency paths relative to the assets root directory.
-	{
-		std::vector<SAssetDependencyInfo> dependencies;
-		std::transform(metadata.dependencies.begin(), metadata.dependencies.end(), std::back_inserter(dependencies), [&path](const auto& x) -> SAssetDependencyInfo
-		{
-			if (strncmp("./", x.first.c_str(), 2) == 0)
-			{
-				return { PathUtil::Make(path.c_str(), x.first.c_str() + 2), x.second };
-			}
-			else
-			{
-				return { x.first, x.second };
-			}
-		});
-
-		// This is a quick solution to fix dependency lookup for tif files.
-		// TODO: Cryasset file should never have dependencies on source files of other assets.
-		for (auto& item : dependencies)
-		{
-			if (stricmp(PathUtil::GetExt(item.path.c_str()), "tif") == 0)
-			{
-				item.path = PathUtil::ReplaceExtension(item.path.c_str(), "dds");
-			}
-		}
-
-		editableAsset.SetDependencies(dependencies);
-	}
-
-	return pAsset;
-
+	return CreateFromMetadata(szAssetPath, metadata);
 }
 
 std::vector<CAsset*> CAssetFactory::LoadAssetsFromPakFile(const char* szArchivePath, std::function<bool(const char* szAssetRelativePath, uint64 timestamp)> predicate)

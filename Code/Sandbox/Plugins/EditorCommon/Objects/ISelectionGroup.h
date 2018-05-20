@@ -24,6 +24,8 @@ public:
 	virtual CBaseObject* GetObject(int index) const = 0;
 	//! Number of selected object.
 	virtual int GetCount() const = 0;
+	//! Return true if selection doesnt contain any object.
+	virtual bool IsEmpty() const = 0;
 	//! Get mass center of selected objects.
 	virtual Vec3 GetCenter() const = 0;
 	//! Get Bounding box of selection.

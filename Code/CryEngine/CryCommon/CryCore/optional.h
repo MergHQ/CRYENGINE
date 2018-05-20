@@ -181,7 +181,7 @@ namespace stl
 			{
 				if (other.has_val)
 				{
-					assign_val(std::move(other.val()));
+					this->assign_val(std::move(other.val()));
 					other.destroy_val();
 				}
 				else if (has_val)
@@ -335,7 +335,7 @@ namespace stl
 		>
 			optional &operator=(S&& v)
 		{
-			assign_val(std::move(v));
+			this->assign_val(std::move(v));
 			return *this;
 		}
 		template <typename S, typename =
@@ -343,7 +343,7 @@ namespace stl
 		>
 			optional &operator=(const S &v)
 		{
-			assign_val(v);
+			this->assign_val(v);
 			return *this;
 		}
 
@@ -354,7 +354,7 @@ namespace stl
 		{
 			if (other.has_val)
 			{
-				assign_val(std::move(other.val()));
+				this->assign_val(std::move(other.val()));
 				other.destroy_val();
 			}
 			else if (has_val)
@@ -371,7 +371,7 @@ namespace stl
 		{
 			if (other.has_val)
 			{
-				assign_val(other.val());
+				this->assign_val(other.val());
 			}
 			else if (has_val)
 			{

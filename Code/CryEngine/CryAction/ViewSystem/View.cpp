@@ -5,7 +5,7 @@
 #include <CryMath/Cry_Camera.h>
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CrySystem/VR/IHMDManager.h>
-#include <ITimeDemoRecorder.h>
+#include <CryAction/ITimeDemoRecorder.h>
 #include "GameObjects/GameObject.h"
 #include "IGameSessionHandler.h"
 #include "ViewSystem.h"

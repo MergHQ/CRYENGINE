@@ -17,9 +17,9 @@
 REGISTER_ASSET_TYPE(CMeshType);
 
 // Detail attributes.
-CItemModelAttribute CMeshType::s_triangleCountAttribute("Triangle count", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute CMeshType::s_vertexCountAttribute("Vertex count", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute CMeshType::s_materialCountAttribute("Material count", eAttributeType_Int, CItemModelAttribute::StartHidden);
+CItemModelAttribute CMeshType::s_triangleCountAttribute("Triangle count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CMeshType::s_vertexCountAttribute("Vertex count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CMeshType::s_materialCountAttribute("Material count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
 
 CAssetEditor* CMeshType::Edit(CAsset* asset) const
 {

@@ -22,15 +22,17 @@
 
 namespace Private_TerrainLayerListView
 {
-CItemModelAttribute s_LayerAttributes[] = {
+
+CItemModelAttribute s_LayerAttributes[] =
+{
 	Attributes::s_nameAttribute,
-	CItemModelAttribute("Filter Color",eAttributeType_String,  CItemModelAttribute::StartHidden, false, ""),
-	CItemModelAttribute("Min Height",  eAttributeType_Float,   CItemModelAttribute::StartHidden, false, ""),
-	CItemModelAttribute("Max Height",  eAttributeType_Float,   CItemModelAttribute::StartHidden, false, ""),
-	CItemModelAttribute("Min Angle",   eAttributeType_Float,   CItemModelAttribute::StartHidden, false, ""),
-	CItemModelAttribute("Max Angle",   eAttributeType_Float,   CItemModelAttribute::StartHidden, false, ""),
-	CItemModelAttribute("Texture",     eAttributeType_String,  CItemModelAttribute::StartHidden, false, ""),
-	CItemModelAttribute("Material",    eAttributeType_String,  CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Filter Color",&Attributes::s_stringAttributeType,  CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Min Height",  &Attributes::s_floatAttributeType,   CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Max Height",  &Attributes::s_floatAttributeType,   CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Min Angle",   &Attributes::s_floatAttributeType,   CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Max Angle",   &Attributes::s_floatAttributeType,   CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Texture",     &Attributes::s_stringAttributeType,  CItemModelAttribute::StartHidden, false, ""),
+	CItemModelAttribute("Material",    &Attributes::s_stringAttributeType,  CItemModelAttribute::StartHidden, false, ""),
 };
 
 const int s_attributeCount = sizeof(s_LayerAttributes) / sizeof(CItemModelAttribute);
