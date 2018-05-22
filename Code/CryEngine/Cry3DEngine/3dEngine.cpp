@@ -5013,10 +5013,6 @@ byte** C3DEngine::AllocateMips(byte* pImage, int nDim, byte** pImageMips)
 	return pImageMips;
 }
 
-void C3DEngine::SetTerrainLayerBaseTextureData(int nLayerId, byte*, int, const char* pImgFileName, IMaterial* pMat, float fBr, float fTiling, int nDetailSurfTypeId, float fLayerTilingDetail, float fSpecularAmount, float fSortOrder, ColorF layerFilterColor, float fUseRemeshing, bool bShowSelection)
-{
-}
-
 SImageInfo* C3DEngine::GetBaseTextureData(int nLayerId)
 {
 	if (nLayerId < 0 || nLayerId >= m_arrBaseTextureData.Count())//|| !m_arrBaseTextureData[nLayerId].baseInfo.nDim)

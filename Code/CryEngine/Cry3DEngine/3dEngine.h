@@ -622,7 +622,6 @@ public:
 	virtual int  GetTerrainTextureNodeSizeMeters();
 	virtual int  GetTerrainTextureNodeSizePixels(int nLayer);
 
-	virtual void SetTerrainLayerBaseTextureData(int nLayerId, byte* pImage, int nDim, const char* nImgFileName, IMaterial* pMat, float fBr, float fTiling, int nDetailSurfTypeId, float fTilingDetail, float fSpecularAmount, float fSortOrder, ColorF layerFilterColor, float fUseRemeshing, bool bShowSelection);
 	SImageInfo*  GetBaseTextureData(int nLayerId);
 	SImageInfo*  GetBaseTextureDataFromSurfType(int nSurfTypeId);
 

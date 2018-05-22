@@ -50,9 +50,9 @@ CAssetEditor* CSharpSourcefileAssetType::Edit(CAsset* pAsset) const
 	return nullptr;
 }
 
-bool CSharpSourcefileAssetType::OnCreate(CEditableAsset& editAsset, const void* pCreateParams) const
+bool CSharpSourcefileAssetType::OnCreate(INewAsset& editAsset, const void* pCreateParams) const
 {
-	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetAsset().GetMetadataFile()));
+	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetMetadataFile()));
 	const string csFilePath = basePath + ".cs";
 	const string assetName = PathUtil::GetFileName(basePath);
 
@@ -86,7 +86,7 @@ bool CSharpSourcefileAssetType::OnCreate(CEditableAsset& editAsset, const void* 
 
 		if (assetFile.Write(assetContents.data(), assetContents.size()))
 		{
-			editAsset.SetFiles("", { csFilePath });
+			editAsset.SetFiles({ csFilePath });
 		}
 	}
 

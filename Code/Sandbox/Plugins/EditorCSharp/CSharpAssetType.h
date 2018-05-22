@@ -21,7 +21,7 @@ public:
 	virtual CAssetEditor* Edit(CAsset* asset) const override;
 
 protected:
-	virtual bool OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const override;
+	virtual bool OnCreate(INewAsset& editAsset, const void* pTypeSpecificParameter) const override;
 
 private:
 	virtual CryIcon GetIconInternal() const override;

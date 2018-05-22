@@ -1,28 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "SurfaceType.h"
-#include "GameEngine.h"
+#include "Material/MaterialManager.h"
+#include "Terrain/Layer.h"
+#include "Terrain/TerrainManager.h"
+#include "Terrain/SurfaceType.h"
 #include "Vegetation/VegetationMap.h"
 #include "Vegetation/VegetationObject.h"
-#include "Material/MaterialManager.h"
+#include "GameEngine.h"
 
-#include "Terrain/TerrainManager.h"
-#include "Terrain/Layer.h"
+const int CSurfaceType::ms_maxSurfaceTypeIdCount = static_cast<int>(CLayer::e_undefined);
 
 CSurfaceType::CSurfaceType()
 {
-	m_layerReferences = 0;
-	m_detailScale[0] = 1;
-	m_detailScale[1] = 1;
+	m_detailScale[0] = 1.0f;
+	m_detailScale[1] = 1.0f;
 	m_projAxis = ESFT_Z;
 	m_surfaceTypeID = CLayer::e_undefined;
-}
-
-CSurfaceType::~CSurfaceType()
-{
-	m_detailScale[0] = 1;
-	m_detailScale[1] = 1;
 }
 
 void CSurfaceType::Serialize(CXmlArchive& xmlAr)
@@ -32,11 +26,10 @@ void CSurfaceType::Serialize(CXmlArchive& xmlAr)
 
 void CSurfaceType::Serialize(XmlNodeRef xmlRootNode, bool boLoading)
 {
+	XmlNodeRef sfType = xmlRootNode;
+
 	if (boLoading)
 	{
-		XmlNodeRef sfType = xmlRootNode;
-
-		// Name
 		sfType->getAttr("Name", m_name);
 		sfType->getAttr("SurfaceTypeID", m_surfaceTypeID);
 		sfType->getAttr("DetailTexture", m_detailTexture);
@@ -59,9 +52,6 @@ void CSurfaceType::Serialize(XmlNodeRef xmlRootNode, bool boLoading)
 	}
 	else
 	{
-		XmlNodeRef sfType = xmlRootNode;
-
-		// Name
 		sfType->setAttr("Name", m_name);
 		sfType->setAttr("SurfaceTypeID", m_surfaceTypeID);
 		sfType->setAttr("DetailTexture", m_detailTexture);
@@ -84,16 +74,6 @@ void CSurfaceType::Serialize(XmlNodeRef xmlRootNode, bool boLoading)
 			sfType->setAttr("ProjAxis", "Z");
 		}
 
-		/*
-		   XmlNodeRef sfDetObjs = sfType->newChild( "DetailObjects" );
-
-		   for (int i = 0; i < m_detailObjects.size(); i++)
-		   {
-		   XmlNodeRef sfDetObj = sfDetObjs->newChild( "Object" );
-		   sfDetObj->setAttr( "Name",m_detailObjects[i] );
-		   }
-		 */
-
 		SaveVegetationIds(sfType);
 	}
 }
@@ -101,12 +81,12 @@ void CSurfaceType::Serialize(XmlNodeRef xmlRootNode, bool boLoading)
 void CSurfaceType::SaveVegetationIds(XmlNodeRef& node)
 {
 	CVegetationMap* pVegMap = GetIEditorImpl()->GetVegetationMap();
-	// Go through all vegetation groups, and see who uses us.
-
 	if (!pVegMap)
 	{
 		return;
 	}
+
+	// Go through all vegetation groups, and see who uses us.
 	bool bExport = false;
 	if (node && node->getParent() && node->getParent()->getTag())
 	{
@@ -159,36 +139,34 @@ void CSurfaceType::SaveVegetationIds(XmlNodeRef& node)
 	}
 }
 
-void CSurfaceType::SetMaterial(const string& mtl)
-{
-	m_material = mtl;
-}
-
 void CSurfaceType::AssignUnusedSurfaceTypeID()
 {
 	// Inefficient function to find a free unused surface type id.
-	int nID = CLayer::e_undefined;
+
+	const CTerrainManager* pManager = GetIEditorImpl()->GetTerrainManager();
+
+	const int idCount = pManager->GetSurfaceTypeCount();
+
 	std::vector<int> ids;
+	ids.reserve(idCount);
 
-	const CTerrainManager* tManager = GetIEditorImpl()->GetTerrainManager();
-
-	for (int i = 0; i < tManager->GetSurfaceTypeCount(); i++)
+	for (int i = 0; i < idCount; i++)
 	{
-		CSurfaceType* pSrfType = tManager->GetSurfaceTypePtr(i);
+		CSurfaceType* pSrfType = pManager->GetSurfaceTypePtr(i);
 		ids.push_back(pSrfType->GetSurfaceTypeID());
 	}
 	std::sort(ids.begin(), ids.end());
 
-	int numIds = ids.size();
-	for (int i = 0; i < numIds; i++)
+	int nID = CLayer::e_undefined;
+	for (int i = 0; i < idCount; i++)
 	{
 		int j;
-		for (j = 0; j < numIds; j++)
+		for (j = 0; j < idCount; j++)
 		{
 			if (i == ids[j])
 				break;
 		}
-		if (j == numIds)
+		if (j == idCount)
 		{
 			nID = i;
 			break;
@@ -196,7 +174,7 @@ void CSurfaceType::AssignUnusedSurfaceTypeID()
 	}
 	if (nID >= CLayer::e_undefined)
 	{
-		nID = numIds < CLayer::e_undefined ? numIds : CLayer::e_undefined;
+		nID = idCount < CLayer::e_undefined ? idCount : CLayer::e_undefined;
 	}
 
 	m_surfaceTypeID = nID;

@@ -5,18 +5,11 @@
 #include "Dialogs/ToolbarDialog.h"
 #include "IDataBaseManager.h"
 
-// forward declarations.
 class CLayer;
 
 // Internal resolution of the final texture preview
 #define FINAL_TEX_PREVIEW_PRECISION_CX 256
 #define FINAL_TEX_PREVIEW_PRECISION_CY 256
-
-// Hold / fetch temp file
-//#define HOLD_FETCH_FILE_TTS "Temp\\HoldStateTemp.lay"
-
-/////////////////////////////////////////////////////////////////////////////
-// CTerrainTextureDialog dialog
 
 enum SurfaceGenerateFlags
 {
@@ -35,7 +28,7 @@ class CTerrainTextureDialog : public CToolbarDialog, public IEditorNotifyListene
 public:
 	void ReloadLayerList();
 
-	CTerrainTextureDialog(CWnd* pParent = NULL);   // standard constructor
+	CTerrainTextureDialog(CWnd* pParent = nullptr);
 	~CTerrainTextureDialog();
 
 	static void OnUndoUpdate();
@@ -63,7 +56,7 @@ protected:
 	{
 	public:
 		CXTPTaskPanelSpecific() : CXTPTaskPanel(), m_pTerrainTextureDialog(0){}
-		~CXTPTaskPanelSpecific(){};
+		~CXTPTaskPanelSpecific(){}
 
 		void SetTerrainTextureDialog(CTerrainTextureDialog* pTerrainTextureDialog) { m_pTerrainTextureDialog = pTerrainTextureDialog; }
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam);
@@ -71,8 +64,8 @@ protected:
 		CTerrainTextureDialog* m_pTerrainTextureDialog;
 	};
 
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
 
 	void         ClearData();
 
@@ -108,12 +101,9 @@ public:
 	afx_msg void    OnApplyLighting();
 	afx_msg void    OnUpdateApplyLighting(CCmdUI* pCmdUI);
 	afx_msg void    OnSetWaterLevel();
-	afx_msg void    OnLayerExportTexture();
 	afx_msg void    OnHold();
 	afx_msg void    OnFetch();
 	afx_msg void    OnUseLayer();
-	//afx_msg void OnOptionsSetLayerBlending();
-	afx_msg void    OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void    OnAutoGenMask();
 	afx_msg void    OnLoadMask();
 	afx_msg void    OnExportMask();
@@ -146,7 +136,7 @@ private:
 
 	CXTPTaskPanelSpecific m_wndTaskPanel;
 
-	// The currently active layer (syncronized with the list box selection)
+	// The currently active layer (synchronized with the list box selection)
 	CLayer* m_pCurrentLayer;
 
 	// Apply lighting to the previews ?
@@ -167,4 +157,3 @@ private:
 
 	bool                    m_bIgnoreNotify;
 };
-

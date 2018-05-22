@@ -4,16 +4,12 @@
 
 #include "Terrain/Heightmap.h"
 #include "Terrain/Layer.h"
+#include "Terrain/SurfaceType.h"
 #include "DocMultiArchive.h"
-
-class CSurfaceType;
 
 class SANDBOX_API CTerrainManager
 {
 public:
-	CTerrainManager();
-	virtual ~CTerrainManager();
-
 	//////////////////////////////////////////////////////////////////////////
 	// Surface Types.
 	CSurfaceType* GetSurfaceTypePtr(int i) const { if (i >= 0 && i < m_surfaceTypes.size()) return m_surfaceTypes[i]; return nullptr; }
@@ -89,9 +85,8 @@ public:
 	CCrySignal<void(void)>    signalLayersChanged;
 	CCrySignal<void(CLayer*)> signalSelectedLayerChanged;
 
-protected:
+private:
 	std::vector<_smart_ptr<CSurfaceType>> m_surfaceTypes;
 	std::vector<CLayer*>                  m_layers;
 	CHeightmap                            m_heightmap;
 };
-

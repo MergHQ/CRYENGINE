@@ -1,17 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Layer.h"
-
-#include "TerrainGrid.h"
-#include "CryEditDoc.h"
-#include <CryMemory/CrySizer.h>
-#include "SurfaceType.h"
-#include "FilePathUtil.h"
-#include <Preferences/ViewportPreferences.h>
-
+#include "Terrain/Layer.h"
+#include "Terrain/TerrainGrid.h"
 #include "Terrain/TerrainManager.h"
+
 #include "Controls/QuestionDialog.h"
+#include "Preferences/ViewportPreferences.h"
+#include "FilePathUtil.h"
+#include "CryEditDoc.h"
+
+#include <CryMemory/CrySizer.h>
 
 //! Size of the texture preview
 #define LAYER_TEX_PREVIEW_CX    128
@@ -102,17 +101,10 @@ uint32 CLayer::GetOrRequestLayerId()
 
 CLayer::~CLayer()
 {
-	CCryEditDoc* doc = GetIEditorImpl()->GetDocument();
-
-	SetSurfaceType(NULL);
-
 	m_iInstanceCount--;
 
 	// Make sure the DCs are freed correctly
-	m_dcLayerTexPrev.SelectObject((CBitmap*) NULL);
-
-	// Free layer mask data
-	m_layerMask.Release();
+	m_dcLayerTexPrev.SelectObject((CBitmap*) nullptr);
 }
 
 string CLayer::GetTextureFilename()
@@ -147,8 +139,6 @@ void CLayer::DrawLayerTexturePreview(LPRECT rcPos, CDC* pDC)
 
 void CLayer::Serialize(CXmlArchive& xmlAr)
 {
-	CCryEditDoc* doc = GetIEditorImpl()->GetDocument();
-
 	if (xmlAr.bLoading)
 	{
 		// We need an update
@@ -341,10 +331,8 @@ void CLayer::Serialize(CXmlArchive& xmlAr)
 		{
 			string sSurfaceType;
 
-			CSurfaceType* pSurfaceType = m_pSurfaceType;
-
-			if (pSurfaceType)
-				sSurfaceType = pSurfaceType->GetName();
+			if (m_pSurfaceType)
+				sSurfaceType = m_pSurfaceType->GetName();
 
 			layer->setAttr("SurfaceType", sSurfaceType);
 		}
@@ -462,7 +450,6 @@ CLayer* CLayer::Duplicate() const
 	return pNewLayer;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLayer::SetAutoGen(bool bAutoGen)
 {
 	bool prev = m_bAutoGen;
@@ -538,8 +525,6 @@ bool CLayer::LoadTexture(LPCTSTR lpBitmapName, UINT iWidth, UINT iHeight)
 
 	// Convert from BGR tp RGB
 	BGRToRGB();
-
-	Update3dengineInfo();
 
 	return true;
 }
@@ -648,33 +633,11 @@ bool CLayer::LoadTexture(string strFileName)
 	m_previewImage.Allocate(LAYER_TEX_PREVIEW_CX, LAYER_TEX_PREVIEW_CY);
 	CImageUtil::ScaleToFit(filteredImage, m_previewImage);
 
-	Update3dengineInfo();
 	signalPropertiesChanged(this);
 
 	if (GetIEditorImpl()->GetTerrainManager())
 		GetIEditorImpl()->GetTerrainManager()->signalLayersChanged();
 	return !bError;
-}
-
-void CLayer::Update3dengineInfo()
-{
-	if (GetIEditorImpl()->Get3DEngine())
-	{
-		IMaterial* pMat = NULL;
-		CSurfaceType* pSrfType = 0;
-		int iSurfaceTypeId = 0;
-		if (pSrfType = m_pSurfaceType)
-		{
-			pMat = GetIEditorImpl()->Get3DEngine()->GetMaterialManager()->LoadMaterial(pSrfType->GetMaterial());
-			iSurfaceTypeId = pSrfType->GetSurfaceTypeID();
-		}
-
-		GetIEditorImpl()->Get3DEngine()->SetTerrainLayerBaseTextureData(m_dwLayerId,
-		                                                                (byte*)m_texture.GetData(), m_texture.GetWidth(), m_strLayerTexPath,
-		                                                                pMat, 1.0f, GetLayerTiling(), iSurfaceTypeId, pSrfType ? pSrfType->GetDetailTextureScale().x : 0.f,
-		                                                                GetLayerSpecularAmount(), GetLayerSortOrder(), /*GetLayerFilterColor()*/ Col_White, GetLayerUseRemeshing(),
-		                                                                (m_bSelected));
-	}
 }
 
 bool CLayer::LoadTexture(DWORD* pBitmapData, UINT iWidth, UINT iHeight)
@@ -728,8 +691,6 @@ bool CLayer::LoadTexture(DWORD* pBitmapData, UINT iWidth, UINT iHeight)
 	m_dcLayerTexPrev.SetStretchBltMode(COLORONCOLOR);
 	m_dcLayerTexPrev.StretchBlt(0, 0, LAYER_TEX_PREVIEW_CX, LAYER_TEX_PREVIEW_CY, &dcLoad,
 	                            0, 0, iWidth, iHeight, SRCCOPY);
-
-	Update3dengineInfo();
 
 	return true;
 }
@@ -1072,8 +1033,6 @@ void CLayer::InvalidateMask()
 	   m_bCompressedMaskValid = false;
 	   m_compressedMask.Free();
 	 */
-
-	Update3dengineInfo();
 
 	signalPropertiesChanged(this);
 };
@@ -1533,68 +1492,45 @@ void CLayer::GetMemoryUsage(ICrySizer* pSizer)
 void CLayer::AssignMaterial(const string& materialName)
 {
 	m_materialName = materialName;
-	bool bFound = false;
-	CCryEditDoc* doc = GetIEditorImpl()->GetDocument();
+
 	for (int i = 0; i < GetIEditorImpl()->GetTerrainManager()->GetSurfaceTypeCount(); i++)
 	{
 		CSurfaceType* pSrfType = GetIEditorImpl()->GetTerrainManager()->GetSurfaceTypePtr(i);
-		if (stricmp(pSrfType->GetMaterial(), materialName) == 0)
+		if (pSrfType->GetMaterial() == materialName)
 		{
 			SetSurfaceType(pSrfType);
-			bFound = true;
-			break;
+			return;
 		}
 	}
 
-	if (!bFound)
+	// If this is the last reference of this particular surface type (only CTerrainManager has a ref to it, 
+	// then we simply change its data without fearing that anything else will change.
+	if (m_pSurfaceType && m_pSurfaceType->Unique())
 	{
-		// If this is the last reference of this particular surface type, then we
-		// simply change its data without fearing that anything else will change.
-		if (m_pSurfaceType && m_pSurfaceType->GetLayerReferenceCount() == 1)
-		{
-			m_pSurfaceType->SetMaterial(materialName);
-			m_pSurfaceType->SetName(materialName);
-		}
-		else if (GetIEditorImpl()->GetTerrainManager()->GetSurfaceTypeCount() < MAX_SURFACE_TYPE_ID_COUNT)
-		{
-			// Create a new surface type.
-			CSurfaceType* pSrfType = new CSurfaceType;
-
-			SetSurfaceType(pSrfType);
-
-			pSrfType->SetMaterial(materialName);
-			pSrfType->SetName(materialName);
-			GetIEditorImpl()->GetTerrainManager()->AddSurfaceType(pSrfType);
-
-			pSrfType->AssignUnusedSurfaceTypeID();
-		}
-		else
-		{
-			Warning("Maximum of %d different detail textures are supported.", MAX_SURFACE_TYPE_ID_COUNT);
-		}
+		m_pSurfaceType->SetMaterial(materialName);
+		m_pSurfaceType->SetName(materialName);
 	}
+	else if (GetIEditorImpl()->GetTerrainManager()->GetSurfaceTypeCount() < CSurfaceType::ms_maxSurfaceTypeIdCount)
+	{
+		CSurfaceType* pSrfType = new CSurfaceType;
 
-	Update3dengineInfo();
+		SetSurfaceType(pSrfType);
+
+		pSrfType->SetMaterial(materialName);
+		pSrfType->SetName(materialName);
+		GetIEditorImpl()->GetTerrainManager()->AddSurfaceType(pSrfType);
+
+		pSrfType->AssignUnusedSurfaceTypeID();
+	}
+	else
+	{
+		Warning("Maximum of %d different detail textures are supported.", CSurfaceType::ms_maxSurfaceTypeIdCount);
+	}
 }
 
 void CLayer::SetSurfaceType(CSurfaceType* pSurfaceType)
 {
-	if (pSurfaceType != m_pSurfaceType)
-	{
-		// Unreference previous surface type.
-		_smart_ptr<CSurfaceType> pPrev = m_pSurfaceType;
-		if (m_pSurfaceType)
-			m_pSurfaceType->RemoveLayerReference();
-		m_pSurfaceType = pSurfaceType;
-		if (m_pSurfaceType)
-			m_pSurfaceType->AddLayerReference();
-
-		if (pPrev && pPrev->GetLayerReferenceCount() < 1)
-		{
-			// Old unreferenced surface type must be deleted.
-			GetIEditorImpl()->GetTerrainManager()->RemoveSurfaceType((CSurfaceType*)pPrev);
-		}
-	}
+	m_pSurfaceType.reset(pSurfaceType);
 }
 
 int CLayer::GetEngineSurfaceTypeId() const
@@ -1607,9 +1543,6 @@ int CLayer::GetEngineSurfaceTypeId() const
 void CLayer::SetSelected(bool bSelected)
 {
 	m_bSelected = bSelected;
-
-	if (m_bSelected)
-		Update3dengineInfo();
 }
 
 string CLayer::GetLayerPath() const

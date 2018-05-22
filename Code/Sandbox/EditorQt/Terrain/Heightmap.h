@@ -143,7 +143,6 @@ public:
 	uint32 GetDominatingSurfaceTypeIdAtPosition(const int x, const int y) const;
 
 	float  GetElevationAtPosition(const float x, const float y) { return GetZInterpolated(x, y); }
-	float  GetRGBMultiplier();
 
 	// Arguments
 	//   dwLayerId - from CLayer::GetLayerId()
@@ -240,7 +239,7 @@ public:
 	void  UpdateEngineHole(int x1, int y1, int width, int height);
 
 	void  SetWaterLevel(float waterLevel);
-	float GetWaterLevel() const { return m_fWaterLevel; };
+	float GetWaterLevel() const { return m_fWaterLevel; }
 
 	void  CopyData(t_hmap* pDataOut)
 	{
@@ -262,7 +261,7 @@ public:
 
 	void       RecordUndo(int x1, int y1, int width, int height, bool bInfo = false);
 
-	CRGBLayer* GetRGBLayer() { return &m_TerrainRGBTexture; }
+	CRGBLayer* GetRGBLayer() { return &m_terrainRGBTexture; }
 
 	// Arguments:
 	//   texsector - make sure the values are in valid range
@@ -299,18 +298,17 @@ private:
 	{
 		ASSERT(m_iWidth && m_iHeight);
 		ASSERT(!IsBadWritePtr(m_pHeightmap, sizeof(t_hmap) * m_iWidth * m_iHeight));
-	};
+	}
 
 	void InitNoise();
 
-	const float        m_kfBrMultiplier;
 	float              m_fWaterLevel;
 	float              m_fMaxHeight;
 
 	t_hmap*            m_pHeightmap;
 	CDynamicArray2D*   m_pNoise;
 
-	CSurfTypeImage     m_LayerIdBitmap; // (m_iWidth,m_iHeight) LayerId and EHeighmapInfo (was m_info, Detail LayerId per heightmap element)
+	CSurfTypeImage     m_layerIdBitmap; // (m_iWidth,m_iHeight) LayerId and EHeighmapInfo (was m_info, Detail LayerId per heightmap element)
 
 	uint64             m_iWidth;
 	uint64             m_iHeight;
@@ -321,7 +319,7 @@ private:
 
 	CTerrainGrid       m_terrainGrid;
 
-	CRGBLayer          m_TerrainRGBTexture; // Terrain RGB texture
+	CRGBLayer          m_terrainRGBTexture; // Terrain RGB texture
 
 	std::vector<Vec2i> m_modSectors;
 	bool               m_updateModSectors;
@@ -329,8 +327,6 @@ private:
 	friend class CUndoHeightmapInfo;
 };
 
-//////////////////////////////////////////////////////////////////////////
-// Inlined implementation of get slope.
 inline float CHeightmap::GetSlope(int x, int y)
 {
 	//assert( x >= 0 && x < m_iWidth && y >= 0 && y < m_iHeight );

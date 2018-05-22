@@ -1,15 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios
-// -------------------------------------------------------------------------
-//  Created:     10/10/2001 by Timur.
-//  Description: IEditor interface implementation.
-//
-////////////////////////////////////////////////////////////////////////////
+
 #include "IEditor.h"
 #include <CryInput/IInput.h>
 #include <CryCore/Containers/CryListenerSet.h>
@@ -21,104 +13,75 @@
 #define GET_PLUGIN_ID_FROM_MENU_ID(ID)     (((ID) & 0x000000FF))
 #define GET_UI_ELEMENT_ID_FROM_MENU_ID(ID) ((((ID) & 0x0000FF00) >> 8))
 
-class CObjectManager;
-class CGameEngine;
-class EditorScriptEnvironment;
-class CExportManager;
-class CErrorsDlg;
-class CLensFlareManager;
-class CVegetationMap;
-class CIconManager;
-class CBackgroundTaskManager;
-class CTrackViewSequenceManager;
-class CMaterialFXGraphMan;
-class CEditorFileMonitor;
-class CTerrainManager;
-class IPythonManager;
-class CEditorPythonManager;
-class CPolledKeyManager;
-class CGizmoManager;
-struct IDevManager;
-class CClassFactory;
-class CAssetManager;
-class CEditorCommandManager;
-struct SGizmoParameters;
-struct IGizmoManager;
-class CBaseObject;
-class CViewManager;
-class CCryEditDoc;
-class CSelectionGroup;
-class CEditTool;
-class CAnimationContext;
-class CGameEngine;
-struct IIconManager;
-class CEntityPrototypeManager;
-class CMaterialManager;
-class CMaterail;
-class CEntityPrototype;
-class CParticleManager;
-class CPrefabManager;
-class CBroadcastManager;
-class CGameTokenManager;
-class CLensFlareManager;
-class CPluginManager;
-class CEAXPresetManager;
-class CBaseLibraryItem;
-class CBaseLibraryDialog;
-class ICommandManager;
 class CAIManager;
-class INotificationCenter;
-class CPersonalizationManager;
-class CEditorCommandManager;
-class CHeightmap;
-class IPythonManager;
-class CEditorPythonManager;
-class CHyperGraphManager;
-class CFlowGraphManager;
-class CConsoleSynchronization;
-class CUIEnumsDatabase;
-struct ISourceControl;
-struct IEditorClassFactory;
-struct IDataBaseItem;
-struct IUIEvent;
-struct ITransformManipulator;
-struct IDataBaseManager;
-class IFacialEditor;
-class CDialog;
-class C3DConnexionDriver;
-class CRuler;
-class CCustomActionsEditorManager;
-struct IExportManager;
-struct IDevManager;
-class CDisplaySettings;
-struct SGizmoParameters;
-class CFlowGraphDebuggerEditor;
-class CEditorFlowGraphModuleManager;
-class CLevelIndependentFileMan;
-class LevelEditorSharedState;
-class CViewport;
-class CUIManager;
-struct IResourceSelectorHost;
-class CGameExporter;
-struct SPythonCommand;
-struct SPythonModule;
-class QWidget;
+class CAssetManager;
+class CBaseLibraryDialog;
+class CBaseObject;
+class CBroadcastManager;
+class CClassFactory;
 class CConfigurationManager;
+class CConsoleSynchronization;
+class CCryEditDoc;
+class CCustomActionsEditorManager;
+class CEditorCommandManager;
+class CEditorFileMonitor;
+class CEditorFlowGraphModuleManager;
+class CEditorPythonManager;
+class CEditTool;
+class CEntityPrototype;
+class CEntityPrototypeManager;
+class CExportManager;
+class CFlowGraphDebuggerEditor;
+class CFlowGraphManager;
+class CGameEngine;
+class CGameTokenManager;
+class CGizmoManager;
+class CHeightmap;
+class CIconManager;
+class CLensFlareManager;
+class CLevelIndependentFileMan;
+class CMainThreadWorker;
+class CMaterialFXGraphMan;
+class CMaterialManager;
+class CObjectManager;
+class CParticleManager;
+class CPersonalizationManager;
+class CPluginManager;
+class CPolledKeyManager;
+class CPrefabManager;
+class CRuler;
+class CSelectionGroup;
+class CTerrainManager;
 class CTrayArea;
-struct IGizmoManager;
+class CUIEnumsDatabase;
+class CUIManager;
+class CVegetationMap;
+class CViewManager;
+class CViewport;
+class EditorScriptEnvironment;
+class ICommandManager;
+class INotificationCenter;
+class IPane;
+class IPythonManager;
+class LevelEditorSharedState;
+class QWidget;
+
+struct AABB;
+struct I3DEngine;
 struct IBackgroundScheduleManager;
 struct IBackgroundTaskManagerListener;
-class IPane;
-class CMainThreadWorker;
-
-struct ISystem;
-struct IGame;
-struct I3DEngine;
+struct IDataBaseItem;
+struct IDataBaseManager;
+struct IDevManager;
+struct IEditorClassFactory;
+struct IExportManager;
+struct IGizmoManager;
+struct IIconManager;
 struct IRenderer;
-struct AABB;
+struct IResourceSelectorHost;
+struct ISourceControl;
+struct ISystem;
 struct IUriEventListener;
-struct SEditorSettings;
-enum EModifiedModule;
 
 enum EEditorPathName
 {
@@ -149,7 +112,7 @@ struct IPickObjectCallback
 	//! Called when pick mode cancelled.
 	virtual void OnCancelPick() = 0;
 	//! Return true if specified object is pickable.
-	virtual bool OnPickFilter(CBaseObject* filterObject) { return true; };
+	virtual bool OnPickFilter(CBaseObject* filterObject) { return true; }
 };
 
 class SANDBOX_API CEditorImpl : public IEditor, public ISystemEventListener
@@ -172,9 +135,9 @@ public:
 	virtual ILevelEditor*        GetLevelEditor() override;
 	virtual INotificationCenter* GetNotificationCenter() { return m_pNotificationCenter; }
 	void                         ExecuteCommand(const char* sCommand, ...);
-	CAssetManager*               GetAssetManager()       { return m_pAssetManager; };
+	CAssetManager*               GetAssetManager()       { return m_pAssetManager; }
 	IPythonManager*              GetIPythonManager();
-	CEditorPythonManager*        GetPythonManager()      { return m_pPythonManager; };
+	CEditorPythonManager*        GetPythonManager()      { return m_pPythonManager; }
 	void                         SetDocument(CCryEditDoc* pDoc);
 	void                         CloseDocument();
 	CCryEditDoc*                 GetDocument() const;
@@ -221,9 +184,9 @@ public:
 	virtual bool        IsInMatEditMode() { return m_bMatEditMode; }
 
 	//! Enables/Disable updates of editor.
-	void         EnableUpdate(bool enable) { m_bUpdates = enable; };
+	void         EnableUpdate(bool enable) { m_bUpdates = enable; }
 	void         EnableAcceleratos(bool bEnable);
-	CGameEngine* GetGameEngine()           { return m_pGameEngine; };
+	CGameEngine* GetGameEngine()           { return m_pGameEngine; }
 	void         SetModifiedFlag(bool modified = true);
 
 	//! Creates a new object.
@@ -248,13 +211,13 @@ public:
 	void                            CancelPick();
 	bool                            IsPicking();
 	IDataBaseManager*               GetDBItemManager(EDataBaseItemType itemType);
-	CEntityPrototypeManager*        GetEntityProtManager()      { return m_pEntityManager; };
-	CMaterialManager*               GetMaterialManager()        { return m_pMaterialManager; };
-	CParticleManager*               GetParticleManager()        { return m_particleManager; };
-	CPrefabManager*                 GetPrefabManager()          { return m_pPrefabManager; };
+	CEntityPrototypeManager*        GetEntityProtManager()      { return m_pEntityManager; }
+	CMaterialManager*               GetMaterialManager()        { return m_pMaterialManager; }
+	CParticleManager*               GetParticleManager()        { return m_particleManager; }
+	CPrefabManager*                 GetPrefabManager()          { return m_pPrefabManager; }
 	virtual CBroadcastManager*      GetGlobalBroadcastManager() { return m_pGlobalBroadcastManager; }
-	CGameTokenManager*              GetGameTokenManager()       { return m_pGameTokenManager; };
-	CLensFlareManager*              GetLensFlareManager()       { return m_pLensFlareManager; };
+	CGameTokenManager*              GetGameTokenManager()       { return m_pGameTokenManager; }
+	CLensFlareManager*              GetLensFlareManager()       { return m_pLensFlareManager; }
 
 	IBackgroundTaskManager*         GetBackgroundTaskManager();
 	IBackgroundScheduleManager*     GetBackgroundScheduleManager();
@@ -348,10 +311,10 @@ public:
 	virtual void              PostOnMainThread(std::function<void()> task) override;
 	bool                      SelectColor(COLORREF& color, CWnd* parent = 0);
 	void                      Update();
-	Version                   GetFileVersion()    { return m_fileVersion; };
-	Version                   GetProductVersion() { return m_productVersion; };
+	Version                   GetFileVersion()    { return m_fileVersion; }
+	Version                   GetProductVersion() { return m_productVersion; }
 	//! Get shader enumerator.
-	IUndoManager*             GetIUndoManager()   { return m_pUndoManager; };
+	IUndoManager*             GetIUndoManager()   { return m_pUndoManager; }
 	//! Retrieve current animation context.
 	void                      Notify(EEditorNotifyEvent event);
 	void                      RegisterNotifyListener(IEditorNotifyListener* listener);
@@ -365,8 +328,8 @@ public:
 	virtual bool                     IsSourceControlAvailable() override;
 	//! Setup Material Editor mode
 	void                             SetMatEditMode(bool bIsMatEditMode);
-	CFlowGraphManager*               GetFlowGraphManager() override { return m_pFlowGraphManager; };
-	CUIEnumsDatabase*                GetUIEnumsDatabase()           { return m_pUIEnumsDatabase; };
+	CFlowGraphManager*               GetFlowGraphManager() override { return m_pFlowGraphManager; }
+	CUIEnumsDatabase*                GetUIEnumsDatabase()           { return m_pUIEnumsDatabase; }
 	void                             AddUIEnums();
 	void                             GetMemoryUsage(ICrySizer* pSizer);
 	void                             ReduceMemory();
@@ -555,4 +518,3 @@ protected:
 };
 
 CEditorImpl* GetIEditorImpl();
-

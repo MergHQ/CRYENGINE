@@ -8,8 +8,7 @@
 #include "Terrain/TerrainManager.h"   // CLayer for mask computations
 #include "Terrain/SurfaceType.h"      // CLayer for mask computations
 
-SEditorPaintBrush::SEditorPaintBrush(CHeightmap& rHeightmap, CLayer& rLayer,
-                                     const bool bMaskByLayerSettings, const uint32 dwLayerIdMask, const bool bFlood)
+SEditorPaintBrush::SEditorPaintBrush(CHeightmap& rHeightmap, CLayer& rLayer, bool bMaskByLayerSettings, uint32 dwLayerIdMask, bool bFlood)
 	: bBlended(true), m_rHeightmap(rHeightmap), m_rLayer(rLayer), m_cFilterColor(1, 1, 1), m_dwLayerIdMask(dwLayerIdMask), m_bFlood(bFlood)
 {
 	if (bMaskByLayerSettings)
@@ -127,7 +126,8 @@ SSurfaceTypeItem CImagePainter::LerpTerrainSurfaceType(const SSurfaceTypeItem& s
 
 void CImagePainter::PaintBrush(const float fpx, const float fpy, CSurfTypeImage& image, const SEditorPaintBrush& brush)
 {
-	float fX = fpx * image.GetWidth(), fY = fpy * image.GetHeight();
+	const float fX = fpx * image.GetWidth();
+	const float fY = fpy * image.GetHeight();
 
 	const float fScaleX = 1.0f / image.GetWidth();
 	const float fScaleY = 1.0f / image.GetHeight();
@@ -135,17 +135,12 @@ void CImagePainter::PaintBrush(const float fpx, const float fpy, CSurfTypeImage&
 	////////////////////////////////////////////////////////////////////////
 	// Draw an attenuated spot on the map
 	////////////////////////////////////////////////////////////////////////
-	float fMaxDist, fAttenuation, fYSquared;
-	float fHardness = brush.hardness;
-
-	unsigned int pos;
-
-	SSurfaceTypeItem* src = (SSurfaceTypeItem*)image.GetData();
+	SSurfaceTypeItem* src = image.GetData();
 
 	int value = brush.color;
 
 	// Calculate the maximum distance
-	fMaxDist = brush.fRadius * image.GetWidth();
+	float fMaxDist = brush.fRadius * image.GetWidth();
 
 	assert(image.GetWidth() == image.GetHeight());
 
@@ -164,7 +159,7 @@ void CImagePainter::PaintBrush(const float fpx, const float fpy, CSurfTypeImage&
 		float fy = (float)iPosY - fY;
 
 		// Precalculate
-		fYSquared = (float)(fy * fy);
+		float fYSquared = (float)(fy * fy);
 
 		for (int iPosX = iMinX; iPosX <= iMaxX; iPosX++)
 		{
@@ -185,7 +180,7 @@ void CImagePainter::PaintBrush(const float fpx, const float fpy, CSurfTypeImage&
 				continue;
 
 			// Calculate the array index
-			pos = iPosX + iPosY * width;
+			unsigned int pos = iPosX + iPosY * width;
 
 			bool hole = src[pos].GetHole();
 
@@ -193,7 +188,7 @@ void CImagePainter::PaintBrush(const float fpx, const float fpy, CSurfTypeImage&
 			{
 				// Calculate attenuation factor
 
-				fAttenuation = 1.0f - __min(1.0f, dist / fMaxDist);
+				float fAttenuation = 1.0f - __min(1.0f, dist / fMaxDist);
 
 				SSurfaceTypeItem newVal;
 				newVal = value;
@@ -206,7 +201,7 @@ void CImagePainter::PaintBrush(const float fpx, const float fpy, CSurfTypeImage&
 					curVal.we[0] = SATURATEB(15 - curVal.we[1] - curVal.we[2]);
 				}
 
-				curVal = LerpTerrainSurfaceType(curVal, newVal, fAttenuation * fHardness);
+				curVal = LerpTerrainSurfaceType(curVal, newVal, fAttenuation * brush.hardness);
 			}
 			else
 			{

@@ -51,6 +51,7 @@ CMission::CMission(CCryEditDoc* doc)
 	m_minimap.vCenter = Vec2(512, 512);
 	m_minimap.vExtends = Vec2(512, 512);
 	m_minimap.textureWidth = m_minimap.textureHeight = 1024;
+	m_minimap.orientation = 1;
 }
 
 //////////////////////////////////////////////////////////////////////////
