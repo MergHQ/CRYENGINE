@@ -253,7 +253,8 @@ bool CTexture::CreateDeviceTexture(const void* pData[])
 
 	bool bResult = false;
 	gRenDev->ExecuteRenderThreadCommand([=, &bResult] {
-		bResult = this->RT_CreateDeviceTexture(pData); }, ERenderCommandFlags::LevelLoadingThread_executeDirect | ERenderCommandFlags::FlushAndWait);
+		bResult = this->RT_CreateDeviceTexture(pData);
+	}, ERenderCommandFlags::LevelLoadingThread_executeDirect | ERenderCommandFlags::FlushAndWait);
 
 	return bResult;
 }
@@ -698,7 +699,9 @@ static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, const Vec3& Pos,
 		r->Logv(".. DrawSceneToCubeSide .. (DrawCubeSide %d)\n", side);
 #endif
 
-	int nRFlags = SHDF_CUBEMAPGEN | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_NOASYNC;
+	gEnv->pSystem->SetViewCamera(tmpCamera);
+
+	int nRFlags = SHDF_CUBEMAPGEN | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_NOASYNC | SHDF_ALLOW_AO;
 	uint32 nRenderPassFlags = SRenderingPassInfo::DEFAULT_FLAGS | SRenderingPassInfo::CUBEMAP_GEN;
 	
 	// TODO: Try to run cube-map generation as recursive pass
@@ -713,6 +716,8 @@ static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, const Vec3& Pos,
 
 	pEngine->RenderWorld(nRFlags, generalPassInfo, __FUNCTION__);
 
+	gEnv->pSystem->SetViewCamera(prevCamera);
+
 #ifdef DO_RENDERLOG
 	if (CRenderer::CV_r_log)
 		r->Logv(".. End DrawSceneToCubeSide .. (DrawCubeSide %d)\n", side);
@@ -723,7 +728,9 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 {
 #if CRY_PLATFORM_DESKTOP
 
-	iLog->Log("Start generating a cubemap...");
+	float timeStart = gEnv->pTimer->GetAsyncTime().GetSeconds();
+
+	iLog->Log("Start generating a cubemap (%d x %d) at position (%.1f, %.1f, %.1f)", size, size, Pos.x, Pos.y, Pos.z);
 
 	vecData.SetUse(0);
 
@@ -802,9 +809,21 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 
 	for (int nSide = 0; nSide < 6; nSide++)
 	{
-		gEnv->nMainFrameID++;
+		while (true)
+		{
+			bool bSvoReady = gEnv->p3DEngine->IsSvoReady(true);
 
-		DrawSceneToCubeSide(pRenderOutput, Pos, size, nSide);
+			gEnv->nMainFrameID++;
+
+			DrawSceneToCubeSide(pRenderOutput, Pos, size, nSide);
+
+			bSvoReady &= gEnv->p3DEngine->IsSvoReady(true);
+
+			if (bSvoReady)
+				break;
+
+			CrySleep(10);
+		}
 
 		gcpRendD3D->ExecuteRenderThreadCommand([&]
 		{
@@ -855,7 +874,8 @@ bool CTexture::RenderEnvironmentCMHDR(int size, const Vec3& Pos, TArray<unsigned
 	if (pSSDOHalfResCV)
 		pSSDOHalfResCV->Set(nOldSSDOHalfRes);
 
-	iLog->Log("Successfully finished generating a cubemap");
+	float timeUsed = gEnv->pTimer->GetAsyncTime().GetSeconds() - timeStart;
+	iLog->Log("Successfully finished generating a cubemap in %.1f sec", timeUsed);
 #endif
 
 	return true;

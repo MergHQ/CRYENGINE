@@ -4,8 +4,8 @@
 
 #if defined(FEATURE_SVO_GI)
 
-#include <3rdParty/concqueue/concqueue.hpp>
-#include <CryThreading/IThreadManager.h>	
+	#include <3rdParty/concqueue/concqueue.hpp>
+	#include <CryThreading/IThreadManager.h>
 
 	#pragma pack(push,4)
 
@@ -180,11 +180,11 @@ public:
 	public:
 		CVoxStreamEngineThread(CVoxStreamEngine* pStreamingEngine);
 		virtual void ThreadEntry();
-		void SignalStopWork();
+		void         SignalStopWork();
 
 	private:
 		CVoxStreamEngine* m_pStreamingEngine;
-		bool m_bRun;
+		bool              m_bRun;
 	};
 
 	CVoxStreamEngine();
@@ -197,10 +197,10 @@ public:
 public:
 	BoundMPMC<SVoxStreamItem> m_arrForFileRead;
 	BoundMPMC<SVoxStreamItem> m_arrForSyncCallBack;
-	CrySemaphore m_fileReadSemaphore;
+	CrySemaphore              m_fileReadSemaphore;
 
 private:
-	std::vector<CVoxStreamEngineThread*> m_workerThreads;	
+	std::vector<CVoxStreamEngineThread*> m_workerThreads;
 };
 
 class CVoxelSegment : public Cry3DEngineBase, public SSuperMesh, public IStreamCallback
@@ -295,7 +295,7 @@ public:
 	static int                                           m_voxTexPoolDimXY;
 	static int                                           m_voxTexPoolDimZ;
 	static int32                                         m_streamingTasksInProgress;
-	static int32                                         m_tasksInProgressALL;
+	static bool                                          m_bUpdateBrickRenderDataPostponed;
 	static int32                                         m_updatesInProgressBri;
 	static int32                                         m_updatesInProgressTex;
 	static PodArray<CVoxelSegment*>                      m_arrLoadedSegments;
