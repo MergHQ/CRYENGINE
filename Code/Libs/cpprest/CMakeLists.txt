@@ -1,5 +1,5 @@
-set(cpprest_dir ${SDK_DIR}/cpprest)
-set(cpprest_src_dir ${cpprest_dir}/src)
+set(cpprest_dir "${SDK_DIR}/cpprest")
+set(cpprest_src_dir "${cpprest_dir}/src")
 
 # Create the list of source files
 set(cpprest_SOURCES
@@ -35,15 +35,27 @@ set(cpprest_SOURCES_WIN32
 			"${cpprest_src_dir}/streams/fileio_win32.cpp"
 )
 
-file( GLOB_RECURSE header_files ${cpprest_dir}/include/*.h )
+set(cpprest_SOURCES_POSIX
+			"${cpprest_src_dir}/streams/fileio_posix.cpp"
+			"${cpprest_src_dir}/pplx/threadpool.cpp"
+			"${cpprest_src_dir}/http/client/http_client_asio.cpp"
+			"${cpprest_src_dir}/http/listener/http_server_asio.cpp"
+			"${cpprest_src_dir}/pplx/pplxlinux.cpp"
+)
 
-list(APPEND cpprest_SOURCES ${header_files} ${cpprest_SOURCES_WIN32} )
+file( GLOB_RECURSE header_files "${cpprest_dir}/include/*.h" )
 
-CryEngineStaticModule(cpprest SOLUTION_FOLDER "Libs")
+if (WIN32)
+	list(APPEND cpprest_SOURCES ${header_files} ${cpprest_SOURCES_WIN32} )
+else()
+	list(APPEND cpprest_SOURCES ${header_files} ${cpprest_SOURCES_POSIX} )
+endif()
+
+CryEngineStaticModule(cpprest SOLUTION_FOLDER "Libs" MSVC_PERMISSIVE)
 
 target_include_directories(${THIS_PROJECT} PUBLIC
-	${cpprest_dir}/include
-	${cpprest_src_dir}/pch
+	"${cpprest_dir}/include"
+	"${cpprest_src_dir}/pch"
 )
 
 target_compile_definitions(${THIS_PROJECT} PUBLIC
@@ -51,7 +63,11 @@ target_compile_definitions(${THIS_PROJECT} PUBLIC
 	-D_NO_ASYNCRTIMP
 )
 
-target_compile_options(${THIS_PROJECT} PRIVATE /EHsc)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  target_compile_options(${THIS_PROJECT} PRIVATE "-fexceptions")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  target_compile_options(${THIS_PROJECT} PRIVATE /EHsc)
+endif()
 
 #Disable C4530 (warning C4530: C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc)
 #target_compile_options(${PROJECT_NAME} PRIVATE "/wd4530")
@@ -62,5 +78,7 @@ if (WIN32)
 	#Disable link warning LNK4221 (StdAfx.obj : warning LNK4221: This object file does not define any previously undefined public symbols, so it will not be used by any link operation that consumes this library)
 	set_target_properties(${THIS_PROJECT} PROPERTIES STATIC_LIBRARY_FLAGS "/ignore:4221")
 else()
-	target_link_libraries(${THIS_PROJECT} PRIVATE boost_system crypto ssl boost_thread)
+	target_link_libraries(${THIS_PROJECT} PRIVATE "-L${SDK_DIR}/boost/lib/linux_x64" boost_system crypto ssl boost_thread)
+	deploy_runtime_files("${SDK_DIR}/boost/lib/linux_x64/libboost_system*")
+	deploy_runtime_files("${SDK_DIR}/boost/lib/linux_x64/libboost_thread*")
 endif()
