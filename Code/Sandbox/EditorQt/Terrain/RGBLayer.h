@@ -14,7 +14,6 @@ public:
 	explicit CRGBLayer(const char* szFilename);
 	~CRGBLayer();
 
-	// Serialization
 	void Serialize(XmlNodeRef& node, bool bLoading);
 
 	// might throw an exception if memory is low but we only need very few bytes
@@ -24,7 +23,6 @@ public:
 	//   dwTileResolution must be power of two
 	void AllocateTiles(const uint32 dwTileCountX, const uint32 dwTileCountY, const uint32 dwTileResolution);
 
-	//
 	void FreeData();
 
 	// calculated the texture resolution needed to capture all details in the texture
@@ -154,11 +152,9 @@ public:
 	void      UnloadTile(int tileX, int tileY);
 
 private:
-	class CTerrainTextureTiles
+	struct CTerrainTextureTile
 	{
-	public:
-		// default constructor
-		CTerrainTextureTiles() : m_pTileImage(0), m_bDirty(false), m_dwSize(0)
+		CTerrainTextureTile() : m_pTileImage(nullptr), m_bDirty(false), m_dwSize(0)
 		{
 		}
 
@@ -168,7 +164,6 @@ private:
 		uint32     m_dwSize;              // only valid if m_dwSize!=0, if not valid you need to call LoadTileIfNeeded()
 	};
 
-private:
 	bool OpenPakForLoading();
 	bool ClosePakForLoading();
 	bool SaveAndFreeMemory(const bool bForceFileCreation = false);
@@ -181,20 +176,20 @@ private:
 	//   bNoGarbageCollection - do not garbage collect (used by LoadAll())
 	// Return:
 	//   might be 0 if no tile exists at this point
-	CTerrainTextureTiles* LoadTileIfNeeded(const uint32 dwTileX, const uint32 dwTileY, bool bNoGarbageCollection = false);
+	CTerrainTextureTile* LoadTileIfNeeded(const uint32 dwTileX, const uint32 dwTileY, bool bNoGarbageCollection = false);
 
 	// Arguments:
 	//   dwTileX - 0..m_dwTileCountX
 	//   dwTileY - 0..m_dwTileCountY
 	// Return:
 	//   might be 0 if no tile exists at this point
-	CTerrainTextureTiles* GetTilePtr(const uint32 dwTileX, const uint32 dwTileY);
+	CTerrainTextureTile* GetTilePtr(const uint32 dwTileX, const uint32 dwTileY);
 
-	void                  FreeTile(CTerrainTextureTiles& rTile);
+	void                 FreeTile(CTerrainTextureTile& rTile);
 
 	// Return:
 	//   might be 0
-	CTerrainTextureTiles* FindOldestTileToFree();
+	CTerrainTextureTile* FindOldestTileToFree();
 
 	// removed tiles till we reach the limit
 	void ConsiderGarbageCollection();
@@ -208,16 +203,16 @@ private:
 	string GetFullFileName();
 
 private:
-	std::vector<CTerrainTextureTiles> m_TerrainTextureTiles;            // [x+y*m_dwTileCountX]
+	std::vector<CTerrainTextureTile> m_terrainTextureTiles;             // [x+y*m_dwTileCountX]
 
-	uint32                            m_dwTileCountX;                   //
-	uint32                            m_dwTileCountY;                   //
-	uint32                            m_dwTileResolution;               // must be power of two, tiles are square in size
-	uint32                            m_dwCurrentTileMemory;            // to detect if GarbageCollect is needed
-	bool                              m_bPakOpened;                     // to optimize redundant OpenPak an ClosePak
-	bool                              m_bInfoDirty;                     // true=save needed e.g. internal properties changed
-	bool                              m_bNextSerializeForceSizeSave;    //
+	uint32                           m_dwTileCountX;                    //
+	uint32                           m_dwTileCountY;                    //
+	uint32                           m_dwTileResolution;                // must be power of two, tiles are square in size
+	uint32                           m_dwCurrentTileMemory;             // to detect if GarbageCollect is needed
+	bool                             m_bPakOpened;                      // to optimize redundant OpenPak an ClosePak
+	bool                             m_bInfoDirty;                      // true=save needed e.g. internal properties changed
+	bool                             m_bNextSerializeForceSizeSave;     //
 
-	static const uint32               m_dwMaxTileMemory = 1024 * 1024 * 1024; // Stall free support for up to 16k x 16k terrain texture
-	string                            m_TerrainRGBFileName;
+	static const uint32              m_dwMaxTileMemory = 1024 * 1024 * 1024;  // Stall free support for up to 16k x 16k terrain texture
+	string                           m_TerrainRGBFileName;
 };

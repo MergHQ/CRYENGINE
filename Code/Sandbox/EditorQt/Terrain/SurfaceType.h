@@ -2,8 +2,6 @@
 
 #pragma once
 
-#define MAX_SURFACE_TYPE_ID_COUNT 127 // Was 15 in CE2
-
 /** Defines axises of projection for detail texture.
  */
 enum ESurfaceTypeProjectionAxis
@@ -14,15 +12,12 @@ enum ESurfaceTypeProjectionAxis
 };
 
 /** CSurfaceType describe parameters of terrain surface.
-   Surface types are applied to the layers, total of 7 surface types are currently supported.
+   Surface types are applied to the layers, total of ms_maxSurfaceTypeIdCount surface types are currently supported.
  */
 class SANDBOX_API CSurfaceType : public _i_reference_target_t
 {
 public:
 	CSurfaceType();
-	~CSurfaceType();
-
-	CSurfaceType(const CSurfaceType& st) { *this = st; }
 
 	void          SetSurfaceTypeID(int nID) { m_surfaceTypeID = nID; }
 	int           GetSurfaceTypeID() const  { return m_surfaceTypeID; }
@@ -40,41 +35,21 @@ public:
 	void          SetDetailTextureScale(const Vec3& scale) { m_detailScale[0] = scale.x; m_detailScale[1] = scale.y; }
 	Vec3          GetDetailTextureScale() const            { return Vec3(m_detailScale[0], m_detailScale[1], 0); }
 
-	void          SetMaterial(const string& mtl);
-	const string& GetMaterial() const                 { return m_material; }
+	void          SetMaterial(const string& mtl)           { m_material = mtl; }
+	const string& GetMaterial() const                      { return m_material; }
 
-	void          AddDetailObject(const string& name) { m_detailObjects.push_back(name); }
-	int           GetDetailObjectCount() const        { return m_detailObjects.size(); }
-	void          RemoveDetailObject(int i)           { m_detailObjects.erase(m_detailObjects.begin() + i); }
-	const string& GetDetailObject(int i) const        { return m_detailObjects[i]; }
-
-	void          AddLayerReference()                 { ++m_layerReferences; }
-	void          RemoveLayerReference()              { --m_layerReferences; }
-	int           GetLayerReferenceCount() const      { return m_layerReferences; }
-
-	//! Set detail texture projection axis.
+	//! Set detail texture projection axis
 	void SetProjAxis(int axis) { m_projAxis = axis; }
 
-	//! Get detail texture projection axis.
-	int           GetProjAxis() const { return m_projAxis; }
-
-	CSurfaceType& operator=(const CSurfaceType& st)
-	{
-		m_name = st.m_name;
-		m_material = st.m_material;
-		m_detailTexture = st.m_detailTexture;
-		m_detailObjects = st.m_detailObjects;
-		m_detailScale[0] = st.m_detailScale[0];
-		m_detailScale[1] = st.m_detailScale[1];
-		m_projAxis = st.m_projAxis;
-		m_bumpmap = st.m_bumpmap;
-		m_surfaceTypeID = st.m_surfaceTypeID;
-		m_layerReferences = st.m_layerReferences;
-		return *this;
-	}
+	//! Get detail texture projection axis
+	int GetProjAxis() const { return m_projAxis; }
 
 	void Serialize(class CXmlArchive& xmlAr);
 	void Serialize(XmlNodeRef xmlRootNode, bool boLoading);
+
+	//! Maximum SurfaceTypeId count (unique id from 0)
+	static const int ms_maxSurfaceTypeIdCount;
+
 private:
 	void SaveVegetationIds(XmlNodeRef& node);
 
@@ -88,14 +63,9 @@ private:
 	float  m_detailScale[2];
 	string m_material;
 
-	//! Array of detail objects used for this layer.
-	std::vector<string> m_detailObjects;
-
 	//! Detail texture projection axis.
 	int m_projAxis;
 
-	int m_layerReferences;
-
-	// Surface type in in 3dengine, maximum 15
+	//! Surface type in in 3dengine [0; CSurfaceType::ms_maxSurfaceTypeIdCount)
 	int m_surfaceTypeID;
 };

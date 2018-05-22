@@ -77,7 +77,6 @@ public:
 	void Action_Flood();
 	void Action_Paint();
 	void Action_PickLayerId();
-	void Action_FixMaterialCount();
 
 	//Undo
 	void         Action_StartUndo();

@@ -427,7 +427,7 @@ struct IClipVolume
 		eClipVolumeIgnoreOutdoorAO    = BIT32(5)
 	};
 
-	virtual ~IClipVolume() {};
+	virtual ~IClipVolume() {}
 	virtual void        GetClipVolumeMesh(_smart_ptr<IRenderMesh>& renderMesh, Matrix34& worldTM) const = 0;
 	virtual const AABB& GetClipVolumeBBox() const = 0;
 	virtual bool        IsPointInsideClipVolume(const Vec3& point) const = 0;
@@ -654,7 +654,6 @@ struct IEditorHeightmap
 	virtual bool   GetHoleAtPosition(const int x, const int y) const = 0;
 	virtual ColorB GetColorAtPosition(const float x, const float y, ColorB* colors = nullptr, const int colorsNum = 0, const float xStep = 0) = 0;
 	virtual float  GetElevationAtPosition(const float x, const float y) = 0;
-	virtual float  GetRGBMultiplier() = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -919,7 +918,7 @@ struct IMergedMeshesManager
 {
 	enum CLUSTER_FLAGS
 	{
-		//! Uses the samples themselves to calculate the bounds of the areacluster.
+		//! Uses the samples themselves to calculate the bounds of the area cluster.
 		//! If not set, it will use the bounds of the patches to calculate the cluster.
 		CLUSTER_BOUNDARY_FROM_SAMPLES = 1 << 0,
 
@@ -938,7 +937,7 @@ struct IMergedMeshesManager
 	struct SInstanceSector
 	{
 		DynArray<uint8> data;    //!< Memory stream of internally compiled data.
-		string          id;      //!< Unique identifier string identifing this sector.
+		string          id;      //!< Unique identifier string identifying this sector.
 	};
 
 	struct SMeshAreaCluster
@@ -1358,7 +1357,7 @@ struct I3DEngine : public IProcess
 
 	//! \note This is the camera which should be used for all Engine side culling (since e_camerafreeze allows easy debugging then)
 	//! \note Only valid during RenderWorld(else the camera of the last frame is used)
-	//! \return the Camera used for Rendering on 3DEngine Side, normaly equal to the view camera, except if frozen with e_camerafreeze
+	//! \return the Camera used for Rendering on 3DEngine Side, normally equal to the view camera, except if frozen with e_camerafreeze
 	virtual const CCamera& GetRenderingCamera() const = 0;
 	virtual float          GetZoomFactor() const = 0;
 	virtual float          IsZoomInProgress()  const = 0;
@@ -1509,7 +1508,7 @@ struct I3DEngine : public IProcess
 	virtual float GetAccurateOceanHeight(const Vec3& pCurrPos) const = 0;
 
 	//! Gets caustics parameters.
-	//! \return A Vec4 value which constains:
+	//! \return A Vec4 value which contains:
 	//! \return x = unused, y = distance attenuation, z = caustics multiplier, w = caustics darkening multiplier
 	virtual Vec4 GetCausticsParams() const = 0;
 
@@ -1518,7 +1517,7 @@ struct I3DEngine : public IProcess
 	virtual Vec4 GetOceanAnimationCausticsParams() const = 0;
 
 	//! Gets ocean animation parameters.
-	//! \return 2 Vec4s which constain:
+	//! \return 2 Vec4s which contain:
 	//!         0: x = ocean wind direction, y = wind speed, z = free, w = waves amount
 	//!         1: x = waves size, y = free, z = free, w = free
 	virtual void GetOceanAnimationParams(Vec4& pParams0, Vec4& pParams1) const = 0;
@@ -1727,7 +1726,7 @@ struct I3DEngine : public IProcess
 	virtual void OnExplosion(Vec3 vPos, float fRadius, bool bDeformTerrain = true) = 0;
 
 	//! Sets the physics material enumerator.
-	//! \param pPhysMaterialEnumerator The physics material enumarator to set.
+	//! \param pPhysMaterialEnumerator The physics material enumerator to set.
 	virtual void SetPhysMaterialEnumerator(IPhysMaterialEnumerator* pPhysMaterialEnumerator) = 0;
 
 	//! Gets the physics material enumerator.
@@ -1772,7 +1771,7 @@ struct I3DEngine : public IProcess
 
 	//! \internal
 	//! Internal function used by 3d engine and renderer.
-	//! Gets distance to the sector containig ocean water
+	//! Gets distance to the sector containing ocean water
 	virtual float GetDistanceToSectorWithWater() = 0;
 
 	//! Gets the environment ambient color.
@@ -1914,7 +1913,7 @@ struct I3DEngine : public IProcess
 
 	//! Tests for intersection against Vis Areas.
 	//! \param[in] box Volume to test for intersection.
-	//! \paran[out] pNodeCache Optional, set to a cached pointer for quicker calls to ClipToVisAreas.
+	//! \param[out] pNodeCache Optional, set to a cached pointer for quicker calls to ClipToVisAreas.
 	//! \return Whether box intersects any vis areas.
 	virtual bool IntersectsVisAreas(const AABB& box, void** pNodeCache = 0) = 0;
 
@@ -1984,7 +1983,7 @@ struct I3DEngine : public IProcess
 	//! Removes all decals attached to specified entity.
 	virtual void DeleteEntityDecals(IRenderNode* pEntity) = 0;
 
-	//! Finishes objects geometery generation/loading.
+	//! Finishes objects geometry generation/loading.
 	virtual void CompleteObjectsGeometry() = 0;
 
 	//! Disables CGFs unloading.
@@ -2086,11 +2085,11 @@ struct I3DEngine : public IProcess
 
 	//! Sets global 3d engine parameter.
 	virtual void SetGlobalParameter(E3DEngineParameter param, const Vec3& v) = 0;
-	void         SetGlobalParameter(E3DEngineParameter param, float val) { SetGlobalParameter(param, Vec3(val, 0, 0)); };
+	void         SetGlobalParameter(E3DEngineParameter param, float val) { SetGlobalParameter(param, Vec3(val, 0, 0)); }
 
 	//! Retrieves global 3d engine parameter.
 	virtual void                     GetGlobalParameter(E3DEngineParameter param, Vec3& v) = 0;
-	float                            GetGlobalParameter(E3DEngineParameter param) { Vec3 v(0, 0, 0); GetGlobalParameter(param, v); return v.x; };
+	float                            GetGlobalParameter(E3DEngineParameter param) { Vec3 v(0, 0, 0); GetGlobalParameter(param, v); return v.x; }
 
 	virtual void                     SetShadowMode(EShadowMode shadowMode) = 0;
 	virtual EShadowMode              GetShadowMode() const = 0;
@@ -2143,8 +2142,6 @@ struct I3DEngine : public IProcess
 	virtual void        OnObjectModified(IRenderNode* pRenderNode, IRenderNode::RenderFlagsType dwFlags) = 0;
 
 	virtual void        FillDebugFPSInfo(SDebugFPSInfo&) = 0;
-
-	virtual void        SetTerrainLayerBaseTextureData(int nLayerId, byte* pImage, int nDim, const char* nImgFileName, IMaterial* pMat, float fBr, float fTiling, int nDetailSurfTypeId, float fTilingDetail, float fSpecularAmount, float fSortOrder, ColorF layerFilterColor, float fUseRemeshing, bool bShowSelection) = 0;
 
 	virtual bool        IsAreaActivationInUse() = 0;
 
@@ -2559,7 +2556,7 @@ struct SRenderingPassInfo
 	CRenderView*                     GetRenderView() const;
 	IRenderView*                     GetIRenderView() const;
 
-	SRendItemSorter&                 GetRendItemSorter() const                                 { return m_renderItemSorter; };
+	SRendItemSorter&                 GetRendItemSorter() const                                 { return m_renderItemSorter; }
 	void                             OverrideRenderItemSorter(SRendItemSorter s)               { m_renderItemSorter = s; }
 
 	const SDisplayContextKey&        GetDisplayContextKey() const                              { return m_displayContextKey; }

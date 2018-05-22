@@ -7,8 +7,7 @@
 // Brush structure used for painting.
 struct SEditorPaintBrush
 {
-	SEditorPaintBrush(class CHeightmap& rHeightmap, class CLayer& rLayer,
-												const bool bMaskByLayerSettings, const uint32 dwLayerIdMask, const bool bFlood);
+	SEditorPaintBrush(class CHeightmap& rHeightmap, class CLayer& rLayer, bool bMaskByLayerSettings, uint32 dwLayerIdMask, bool bFlood);
 
 	CHeightmap&   m_rHeightmap;       // for mask support
 	unsigned char color;              // Painting color
@@ -27,7 +26,7 @@ struct SEditorPaintBrush
 	//   0=paint there 0% .. 1=paint there 100%
 	float GetMask(const float fX, const float fY) const;
 
-protected:
+private:
 	float m_fMinSlope;                    // in m per m
 	float m_fMaxSlope;                    // in m per me
 	float m_fMinAltitude;                 // in m

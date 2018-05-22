@@ -43,28 +43,28 @@ bool CTerrainTextureDialog::m_bShowWater = true;
 #define IDC_LAYER_PREVIEW_BUTTON  11
 
 //#define COLUMN_LAYER_ICON  0
-#define COLUMN_LAYER_NAME    0
-#define COLUMN_MATERIAL      1
-#define COLUMN_MIN_HEIGHT    2
-#define COLUMN_MAX_HEIGHT    3
-#define COLUMN_MIN_ANGLE     4
-#define COLUMN_MAX_ANGLE     5
-#define COLUMN_BRIGHTNESS    6
-#define COLUMN_TILING        7
-#define COLUMN_SORT_ORDER    8
-#define COLUMN_SPEC_AMOUNT   9
-#define COLUMN_USE_REMESH    10
+#define COLUMN_LAYER_NAME       0
+#define COLUMN_MATERIAL         1
+#define COLUMN_MIN_HEIGHT       2
+#define COLUMN_MAX_HEIGHT       3
+#define COLUMN_MIN_ANGLE        4
+#define COLUMN_MAX_ANGLE        5
+#define COLUMN_BRIGHTNESS       6
+#define COLUMN_TILING           7
+#define COLUMN_SORT_ORDER       8
+#define COLUMN_SPEC_AMOUNT      9
+#define COLUMN_USE_REMESH       10
 
-#define TEXTURE_PREVIEW_SIZE 32
+#define TEXTURE_PREVIEW_SIZE    32
 
-#define SUPPORTED_IMAGES_FILTER      "All Image Files|*.bmp;*.jpg;*.gif;*.pgm;*.raw|All files|*.*||"
+#define SUPPORTED_IMAGES_FILTER "All Image Files|*.bmp;*.jpg;*.gif;*.pgm;*.raw|All files|*.*||"
 
 //////////////////////////////////////////////////////////////////////////
 class CTerrainLayerRecord : public CXTPReportRecord
 {
 	DECLARE_DYNAMIC(CTerrainLayerRecord)
 public:
-	string               m_layerName;
+	string                m_layerName;
 	CLayer*               m_pLayer;
 	CXTPReportRecordItem* m_pVisibleIconItem;
 
@@ -151,8 +151,9 @@ public:
 		m_undo.bLoading = false;
 		GetIEditorImpl()->GetTerrainManager()->SerializeLayerSettings(m_undo);
 	}
-protected:
-	virtual const char* GetDescription() { return "Terrain Layers"; };
+
+private:
+	virtual const char* GetDescription() { return "Terrain Layers"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -176,7 +177,6 @@ protected:
 		GetIEditorImpl()->Notify(eNotify_OnInvalidateControls);
 	}
 
-private:
 	CXmlArchive m_undo;
 	CXmlArchive m_redo;
 };
@@ -285,7 +285,6 @@ ON_COMMAND(ID_LAYER_SETWATERLEVEL, OnSetWaterLevel)
 ON_BN_CLICKED(IDC_TTS_HOLD, OnHold)
 ON_BN_CLICKED(IDC_TTS_FETCH, OnFetch)
 ON_BN_CLICKED(IDC_USE_LAYER, OnUseLayer)
-//	ON_COMMAND(ID_OPTIONS_SETLAYERBLENDING, OnOptionsSetLayerBlending)
 ON_BN_CLICKED(IDC_AUTO_GEN_MASK, OnAutoGenMask)
 ON_BN_CLICKED(IDC_LOAD_MASK, OnLoadMask)
 ON_BN_CLICKED(IDC_EXPORT_MASK, OnExportMask)
@@ -743,8 +742,7 @@ void CTerrainTextureDialog::OnFileExportLargePreview()
 
 	auto result = dialog.GetResult();
 
-	CryLog("Exporting large terrain texture preview (%ix%i)...",
-	                     result.resolution, result.resolution);
+	CryLog("Exporting large terrain texture preview (%ix%i)...", result.resolution, result.resolution);
 
 	// Allocate the memory for the texture
 	CImageEx image;

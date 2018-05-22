@@ -51,7 +51,7 @@ void CRGBLayer::SetSubImageStretched(const float fSrcLeft, const float fSrcTop, 
 	for (uint32 dwTileY = dwTileY1; dwTileY < dwTileY2; dwTileY++)
 		for (uint32 dwTileX = dwTileX1; dwTileX < dwTileX2; dwTileX++)
 		{
-			CTerrainTextureTiles* tile = LoadTileIfNeeded(dwTileX, dwTileY);
+			CTerrainTextureTile* tile = LoadTileIfNeeded(dwTileX, dwTileY);
 			assert(tile);
 			assert(tile->m_pTileImage);
 			uint32 dwTileSize = tile->m_pTileImage->GetWidth();
@@ -133,7 +133,7 @@ void         CRGBLayer::SetSubImageTransformed(const CImageEx* pImage, const Mat
 	{
 		for (uint32 dwTileX = dwTileX1; dwTileX < dwTileX2; dwTileX++)
 		{
-			CTerrainTextureTiles* tile = LoadTileIfNeeded(dwTileX, dwTileY);
+			CTerrainTextureTile* tile = LoadTileIfNeeded(dwTileX, dwTileY);
 			assert(tile);
 			assert(tile->m_pTileImage);
 			uint32 dwTileSize = tile->m_pTileImage->GetWidth();
@@ -203,7 +203,7 @@ bool CRGBLayer::ChangeTileResolution(const uint32 dwTileX, const uint32 dwTileY,
 	assert(dwTileX < m_dwTileCountX);
 	assert(dwTileY < m_dwTileCountY);
 
-	CTerrainTextureTiles* tile = LoadTileIfNeeded(dwTileX, dwTileY);
+	CTerrainTextureTile* tile = LoadTileIfNeeded(dwTileX, dwTileY);
 	assert(tile);
 
 	if (!tile)
@@ -258,7 +258,7 @@ bool CRGBLayer::GetValueAt(const float fpx, const float fpy, uint32*& value)
 	uint32 dwTileX = (uint32)(fpx * m_dwTileCountX);
 	uint32 dwTileY = (uint32)(fpy * m_dwTileCountY);
 
-	CTerrainTextureTiles* tile = LoadTileIfNeeded(dwTileX, dwTileY);
+	CTerrainTextureTile* tile = LoadTileIfNeeded(dwTileX, dwTileY);
 	assert(tile);
 
 	if (!tile)
@@ -306,7 +306,7 @@ uint32 CRGBLayer::GetFilteredValueAt(const float fpx, const float fpy)
 		fY = 0.99999f;
 	}
 
-	CTerrainTextureTiles* tile = LoadTileIfNeeded(dwTileX, dwTileY);
+	CTerrainTextureTile* tile = LoadTileIfNeeded(dwTileX, dwTileY);
 	assert(tile);
 
 	assert(tile->m_pTileImage);
@@ -356,7 +356,7 @@ uint32 CRGBLayer::GetUnfilteredValueAt(float fpx, float fpy)
 
 	float fX = (fpx * m_dwTileCountX - dwTileX), fY = (fpy * m_dwTileCountY - dwTileY);
 
-	CTerrainTextureTiles* tile = LoadTileIfNeeded(dwTileX, dwTileY);
+	CTerrainTextureTile* tile = LoadTileIfNeeded(dwTileX, dwTileY);
 	assert(tile);
 
 	assert(tile->m_pTileImage);
@@ -390,7 +390,7 @@ void CRGBLayer::SetValueAt(const uint32 dwX, const uint32 dwY, const uint32 dwVa
 	uint32 dwTileX = (uint32)dwX / m_dwTileResolution;
 	uint32 dwTileY = (uint32)dwY / m_dwTileResolution;
 
-	CTerrainTextureTiles* tile = LoadTileIfNeeded(dwTileX, dwTileY);
+	CTerrainTextureTile* tile = LoadTileIfNeeded(dwTileX, dwTileY);
 	assert(tile);
 
 	if (!tile)
@@ -409,7 +409,7 @@ void CRGBLayer::SetValueAt(const uint32 dwX, const uint32 dwY, const uint32 dwVa
 	tile->m_pTileImage->ValueAt(dwLocalX, dwLocalY) = dwValue;
 }
 
-void CRGBLayer::FreeTile(CTerrainTextureTiles& rTile)
+void CRGBLayer::FreeTile(CTerrainTextureTile& rTile)
 {
 	delete rTile.m_pTileImage;
 	rTile.m_pTileImage = 0;
@@ -419,7 +419,7 @@ void CRGBLayer::FreeTile(CTerrainTextureTiles& rTile)
 
 	// re-calculate memory usage
 	m_dwCurrentTileMemory = 0;
-	for (std::vector<CTerrainTextureTiles>::iterator it = m_TerrainTextureTiles.begin(); it != m_TerrainTextureTiles.end(); ++it)
+	for (std::vector<CTerrainTextureTile>::iterator it = m_terrainTextureTiles.begin(); it != m_terrainTextureTiles.end(); ++it)
 		m_dwCurrentTileMemory += ((*it).m_pTileImage) ? ((*it).m_pTileImage->GetSize()) : 0;
 }
 
@@ -427,7 +427,7 @@ void CRGBLayer::ConsiderGarbageCollection()
 {
 	while (m_dwCurrentTileMemory > m_dwMaxTileMemory)
 	{
-		CTerrainTextureTiles* pOldestTile = FindOldestTileToFree();
+		CTerrainTextureTile* pOldestTile = FindOldestTileToFree();
 
 		if (pOldestTile)
 			FreeTile(*pOldestTile);
@@ -440,16 +440,14 @@ void CRGBLayer::FreeData()
 {
 	ClosePakForLoading();
 
-	std::vector<CTerrainTextureTiles>::iterator it;
+	std::vector<CTerrainTextureTile>::iterator it;
 
-	for (it = m_TerrainTextureTiles.begin(); it != m_TerrainTextureTiles.end(); ++it)
+	for (auto& tile : m_terrainTextureTiles)
 	{
-		CTerrainTextureTiles& ref = *it;
-
-		FreeTile(ref);
+		FreeTile(tile);
 	}
 
-	m_TerrainTextureTiles.clear();
+	m_terrainTextureTiles.clear();
 
 	m_dwTileCountX = 0;
 	m_dwTileCountY = 0;
@@ -457,23 +455,23 @@ void CRGBLayer::FreeData()
 	m_dwCurrentTileMemory = 0;
 }
 
-CRGBLayer::CTerrainTextureTiles* CRGBLayer::FindOldestTileToFree()
+CRGBLayer::CTerrainTextureTile* CRGBLayer::FindOldestTileToFree()
 {
-	std::vector<CTerrainTextureTiles>::iterator it;
-	uint32 dwI = 0;
+	CTerrainTextureTile* pRet = nullptr;
 
-	CTerrainTextureTiles* pRet = 0;
-
-	for (it = m_TerrainTextureTiles.begin(); it != m_TerrainTextureTiles.end(); ++it, ++dwI)
+	for (std::vector<CTerrainTextureTile>::iterator it = m_terrainTextureTiles.begin(); it != m_terrainTextureTiles.end(); ++it)
 	{
-		CTerrainTextureTiles& ref = *it;
+		CTerrainTextureTile& ref = *it;
 
-		if (ref.m_pTileImage)                 // something to free
-			if (!ref.m_bDirty)                  // hasn't changed
+		if (ref.m_pTileImage)  // something to free
+		{
+
+			if (!ref.m_bDirty)   // hasn't changed
 			{
-				if (pRet == 0 || ref.m_timeLastUsed < pRet->m_timeLastUsed)
+				if (pRet == nullptr || ref.m_timeLastUsed < pRet->m_timeLastUsed)
 					pRet = &ref;
 			}
+		}
 	}
 
 	return pRet;
@@ -526,7 +524,7 @@ bool CRGBLayer::ClosePakForLoading()
 	return !m_bPakOpened;
 }
 
-CRGBLayer::CTerrainTextureTiles* CRGBLayer::GetTilePtr(const uint32 dwTileX, const uint32 dwTileY)
+CRGBLayer::CTerrainTextureTile* CRGBLayer::GetTilePtr(const uint32 dwTileX, const uint32 dwTileY)
 {
 	assert(dwTileX < m_dwTileCountX);
 	assert(dwTileY < m_dwTileCountY);
@@ -534,12 +532,12 @@ CRGBLayer::CTerrainTextureTiles* CRGBLayer::GetTilePtr(const uint32 dwTileX, con
 	if (dwTileX >= m_dwTileCountX || dwTileY >= m_dwTileCountY)
 		return 0;     // to avoid crash
 
-	return &m_TerrainTextureTiles[dwTileX + dwTileY * m_dwTileCountX];
+	return &m_terrainTextureTiles[dwTileX + dwTileY * m_dwTileCountX];
 }
 
-CRGBLayer::CTerrainTextureTiles* CRGBLayer::LoadTileIfNeeded(const uint32 dwTileX, const uint32 dwTileY, bool bNoGarbageCollection)
+CRGBLayer::CTerrainTextureTile* CRGBLayer::LoadTileIfNeeded(const uint32 dwTileX, const uint32 dwTileY, bool bNoGarbageCollection)
 {
-	CTerrainTextureTiles* pTile = GetTilePtr(dwTileX, dwTileY);
+	CTerrainTextureTile* pTile = GetTilePtr(dwTileX, dwTileY);
 
 	if (!pTile)
 		return 0;
@@ -660,7 +658,7 @@ CRGBLayer::CTerrainTextureTiles* CRGBLayer::LoadTileIfNeeded(const uint32 dwTile
 					uint32 dwTileOffsetX = dwTileX * dwTileSizeReduced;
 					uint32 dwTileOffsetY = dwTileY * dwTileSizeReduced;
 
-					painter.FillWithPattern(*pTileImage, dwTileOffsetX, dwTileOffsetY, pLayer->m_texture);
+					painter.FillWithPattern(*pTileImage, dwTileOffsetX, dwTileOffsetY, pLayer->GetTexture());
 				}
 
 			}
@@ -671,7 +669,7 @@ CRGBLayer::CTerrainTextureTiles* CRGBLayer::LoadTileIfNeeded(const uint32 dwTile
 
 			// re-calculate memory usage
 			m_dwCurrentTileMemory = 0;
-			for (std::vector<CTerrainTextureTiles>::iterator it = m_TerrainTextureTiles.begin(); it != m_TerrainTextureTiles.end(); ++it)
+			for (std::vector<CTerrainTextureTile>::iterator it = m_terrainTextureTiles.begin(); it != m_terrainTextureTiles.end(); ++it)
 				m_dwCurrentTileMemory += ((*it).m_pTileImage) ? ((*it).m_pTileImage->GetSize()) : 0;
 
 			//		CryLog("CRGBLayer::LoadTileIfNeeded ... %d",m_dwCurrentTileMemory);		// debugging
@@ -686,15 +684,12 @@ bool CRGBLayer::IsDirty() const
 	if (m_bInfoDirty)
 		return true;
 
-	std::vector<CTerrainTextureTiles>::const_iterator it;
-
-	for (it = m_TerrainTextureTiles.begin(); it != m_TerrainTextureTiles.end(); ++it)
+	for (const auto& tile : m_terrainTextureTiles)
 	{
-		const CTerrainTextureTiles& ref = *it;
-
-		if (ref.m_pTileImage)
-			if (ref.m_bDirty)
-				return true;
+		if (tile.m_pTileImage && tile.m_bDirty)
+		{
+			return true;
+		}
 	}
 
 	return false;
@@ -773,9 +768,9 @@ void CRGBLayer::Offset(int iTilesX, int iTilesY)
 		for (int x = xStart; x != xEnd; x += xStep)
 		{
 			int sx = x - iTilesX;
-			CTerrainTextureTiles* pTile = GetTilePtr(x, y);
+			CTerrainTextureTile* pTile = GetTilePtr(x, y);
 			FreeTile(*pTile);
-			CTerrainTextureTiles* pSrc = (sy >= 0 && sy < m_dwTileCountY && sx >= 0 && sx < m_dwTileCountX) ? GetTilePtr(sx, sy) : 0;
+			CTerrainTextureTile* pSrc = (sy >= 0 && sy < m_dwTileCountY && sx >= 0 && sx < m_dwTileCountX) ? GetTilePtr(sx, sy) : 0;
 			if (pSrc)
 			{
 				*pTile = *pSrc;
@@ -825,7 +820,7 @@ void CRGBLayer::Resize(uint32 dwTileCountX, uint32 dwTileCountY, uint32 dwTileRe
 	{
 		for (x = 0; x < dwTileCountX; ++x)
 		{
-			CTerrainTextureTiles* pTile = GetTilePtr(x, y);
+			CTerrainTextureTile* pTile = GetTilePtr(x, y);
 			pTile->m_pTileImage = pImages[y * dwTileCountX + x];
 			pTile->m_dwSize = dwTileResolution;
 			pTile->m_bDirty = true;
@@ -838,15 +833,12 @@ void CRGBLayer::CleanupCache()
 {
 	ClosePakForLoading();
 
-	std::vector<CTerrainTextureTiles>::iterator it;
-
-	for (it = m_TerrainTextureTiles.begin(); it != m_TerrainTextureTiles.end(); ++it)
+	for (auto& tile : m_terrainTextureTiles)
 	{
-		CTerrainTextureTiles& ref = *it;
-
-		if (ref.m_pTileImage)
-			if (!ref.m_bDirty)
-				FreeTile(ref);
+		if (tile.m_pTileImage && !tile.m_bDirty)
+		{
+			FreeTile(tile);
+		}
 	}
 }
 
@@ -871,12 +863,12 @@ bool CRGBLayer::SaveAndFreeMemory(const bool bForceFileCreation)
 		return false;
 	}
 
-	std::vector<CTerrainTextureTiles>::iterator it;
+	std::vector<CTerrainTextureTile>::iterator it;
 	uint32 dwI = 0;
 
-	for (it = m_TerrainTextureTiles.begin(); it != m_TerrainTextureTiles.end(); ++it, ++dwI)
+	for (it = m_terrainTextureTiles.begin(); it != m_terrainTextureTiles.end(); ++it, ++dwI)
 	{
-		CTerrainTextureTiles& ref = *it;
+		CTerrainTextureTile& ref = *it;
 
 		uint32 dwTileX = dwI % m_dwTileCountX;
 		uint32 dwTileY = dwI / m_dwTileCountX;
@@ -944,7 +936,7 @@ void CRGBLayer::PaintBrushWithPatternTiled(const float fpx, const float fpy, SEd
 	for (uint32 dwTileY = recTiles.top; dwTileY < recTiles.bottom; ++dwTileY)
 		for (uint32 dwTileX = recTiles.left; dwTileX < recTiles.right; ++dwTileX)
 		{
-			CTerrainTextureTiles* tile = LoadTileIfNeeded(dwTileX, dwTileY);
+			CTerrainTextureTile* tile = LoadTileIfNeeded(dwTileX, dwTileY);
 			assert(tile);
 
 			assert(tile->m_pTileImage);
@@ -971,7 +963,7 @@ void CRGBLayer::PaintBrushWithPatternTiled(const float fpx, const float fpy, SEd
 			assert(dwTileX < m_dwTileCountX);
 			assert(dwTileY < m_dwTileCountY);
 
-			CTerrainTextureTiles* tile1 = LoadTileIfNeeded(dwTileX, dwTileY);
+			CTerrainTextureTile* tile1 = LoadTileIfNeeded(dwTileX, dwTileY);
 			assert(tile1);
 			assert(tile1->m_pTileImage);
 			assert(tile1->m_bDirty);
@@ -980,7 +972,7 @@ void CRGBLayer::PaintBrushWithPatternTiled(const float fpx, const float fpy, SEd
 
 			if (dwTileX != recTiles.left)  // vertical border between tile2 and tile 1
 			{
-				CTerrainTextureTiles* tile2 = LoadTileIfNeeded(dwTileX - 1, dwTileY);
+				CTerrainTextureTile* tile2 = LoadTileIfNeeded(dwTileX - 1, dwTileY);
 				assert(tile2);
 				assert(tile2->m_pTileImage);
 				assert(tile2->m_bDirty);
@@ -1002,7 +994,7 @@ void CRGBLayer::PaintBrushWithPatternTiled(const float fpx, const float fpy, SEd
 
 			if (dwTileY != recTiles.top) // horizontal border between tile2 and tile 1
 			{
-				CTerrainTextureTiles* tile2 = LoadTileIfNeeded(dwTileX, dwTileY - 1);
+				CTerrainTextureTile* tile2 = LoadTileIfNeeded(dwTileX, dwTileY - 1);
 				assert(tile2);
 				assert(tile2->m_pTileImage);
 				assert(tile2->m_bDirty);
@@ -1028,7 +1020,7 @@ void CRGBLayer::PaintBrushWithPatternTiled(const float fpx, const float fpy, SEd
 
 uint32 CRGBLayer::GetTileResolution(const uint32 dwTileX, const uint32 dwTileY)
 {
-	CTerrainTextureTiles* tile = GetTilePtr(dwTileX, dwTileY);
+	CTerrainTextureTile* tile = GetTilePtr(dwTileX, dwTileY);
 	assert(tile);
 
 	if (!tile->m_dwSize)   // not size info yet - load the tile
@@ -1078,7 +1070,7 @@ uint32 CRGBLayer::CalcMaxLocalResolution(const float fSrcLeft, const float fSrcT
 
 bool CRGBLayer::IsAllocated() const
 {
-	return m_TerrainTextureTiles.size() != 0;
+	return m_terrainTextureTiles.size() != 0;
 }
 
 void CRGBLayer::Serialize(XmlNodeRef& node, bool bLoading)
@@ -1116,7 +1108,7 @@ void CRGBLayer::Serialize(XmlNodeRef& node, bool bLoading)
 					tile->getAttr("Y", dwY);
 					tile->getAttr("Size", dwSize);
 
-					CTerrainTextureTiles* pPtr = GetTilePtr(dwX, dwY);
+					CTerrainTextureTile* pPtr = GetTilePtr(dwX, dwY);
 					assert(pPtr);
 
 					if (pPtr)
@@ -1144,7 +1136,7 @@ void CRGBLayer::Serialize(XmlNodeRef& node, bool bLoading)
 			{
 				XmlNodeRef obj = tiles->newChild("tile");
 
-				CTerrainTextureTiles* pPtr = GetTilePtr(dwX, dwY);
+				CTerrainTextureTile* pPtr = GetTilePtr(dwX, dwY);
 				assert(pPtr);
 
 				uint32 dwSize = pPtr->m_dwSize;
@@ -1169,8 +1161,8 @@ void CRGBLayer::AllocateTiles(const uint32 dwTileCountX, const uint32 dwTileCoun
 	assert(dwTileCountY);
 
 	// free
-	m_TerrainTextureTiles.clear();
-	m_TerrainTextureTiles.resize(dwTileCountX * dwTileCountY);
+	m_terrainTextureTiles.clear();
+	m_terrainTextureTiles.resize(dwTileCountX * dwTileCountY);
 
 	m_dwTileCountX = dwTileCountX;
 	m_dwTileCountY = dwTileCountY;
@@ -1191,17 +1183,17 @@ void CRGBLayer::SetSubImageRGBLayer(const uint32 dwDstX, const uint32 dwDstY, co
 
 void CRGBLayer::GetMemoryUsage(ICrySizer* pSizer)
 {
-	std::vector<CTerrainTextureTiles>::iterator it;
+	std::vector<CTerrainTextureTile>::iterator it;
 
-	for (it = m_TerrainTextureTiles.begin(); it != m_TerrainTextureTiles.end(); ++it)
+	for (it = m_terrainTextureTiles.begin(); it != m_terrainTextureTiles.end(); ++it)
 	{
-		CTerrainTextureTiles& ref = *it;
+		CTerrainTextureTile& ref = *it;
 
 		if (ref.m_pTileImage)                  // something to free
 			pSizer->Add((char*)ref.m_pTileImage->GetData(), ref.m_pTileImage->GetSize());
 	}
 
-	pSizer->Add(m_TerrainTextureTiles);
+	pSizer->Add(m_terrainTextureTiles);
 
 	pSizer->Add(*this);
 }
@@ -1219,13 +1211,13 @@ uint32 CRGBLayer::CalcMinRequiredTextureExtend()
 
 void CRGBLayer::Debug()
 {
-	std::vector<CTerrainTextureTiles>::iterator it;
+	std::vector<CTerrainTextureTile>::iterator it;
 
 	uint32 dwI = 0;
 
-	for (it = m_TerrainTextureTiles.begin(); it != m_TerrainTextureTiles.end(); ++it, ++dwI)
+	for (it = m_terrainTextureTiles.begin(); it != m_terrainTextureTiles.end(); ++it, ++dwI)
 	{
-		CTerrainTextureTiles& ref = *it;
+		CTerrainTextureTile& ref = *it;
 
 		if (ref.m_pTileImage)
 		{
@@ -1247,12 +1239,12 @@ bool CRGBLayer::RefineTiles()
 
 	out.AllocateTiles(m_dwTileCountX * 2, m_dwTileCountY * 2, m_dwTileResolution / 2);
 
-	std::vector<CTerrainTextureTiles>::iterator it, end = m_TerrainTextureTiles.end();
+	std::vector<CTerrainTextureTile>::iterator it, end = m_terrainTextureTiles.end();
 	uint32 dwI = 0;
 
-	for (it = m_TerrainTextureTiles.begin(); it != end; ++it, ++dwI)
+	for (it = m_terrainTextureTiles.begin(); it != end; ++it, ++dwI)
 	{
-		CTerrainTextureTiles& ref = *it;
+		CTerrainTextureTile& ref = *it;
 
 		uint32 dwTileX = dwI % m_dwTileCountX;
 		uint32 dwTileY = dwI / m_dwTileCountY;
@@ -1264,7 +1256,7 @@ bool CRGBLayer::RefineTiles()
 		for (uint32 dwY = 0; dwY < 2; ++dwY)
 			for (uint32 dwX = 0; dwX < 2; ++dwX)
 			{
-				CTerrainTextureTiles* pOutTile = out.GetTilePtr(dwTileX * 2 + dwX, dwTileY * 2 + dwY);
+				CTerrainTextureTile* pOutTile = out.GetTilePtr(dwTileX * 2 + dwX, dwTileY * 2 + dwY);
 				assert(pOutTile);
 
 				pOutTile->m_dwSize = ref.m_dwSize / 2;
@@ -1403,7 +1395,7 @@ bool CRGBLayer::ImportExportBlock(const char* pFileName, int nSrcLeft, int nSrcT
 
 			nCurrSectorNum++;
 
-			CTerrainTextureTiles* pTile = LoadTileIfNeeded((uint32)iX, (uint32)iY);
+			CTerrainTextureTile* pTile = LoadTileIfNeeded((uint32)iX, (uint32)iY);
 			if (!pTile)
 				continue;
 
@@ -1524,7 +1516,7 @@ bool CRGBLayer::ImportExportBlock(const char* pFileName, int nSrcLeft, int nSrcT
 
 bool CRGBLayer::ExportSegment(CMemoryBlock& mem, uint32 dwTileX, uint32 dwTileY, bool bCompress)
 {
-	CTerrainTextureTiles* pTile = LoadTileIfNeeded(dwTileX, dwTileY);
+	CTerrainTextureTile* pTile = LoadTileIfNeeded(dwTileX, dwTileY);
 	if (!pTile || !pTile->m_pTileImage)
 	{
 		assert(0);
@@ -1565,7 +1557,7 @@ bool CRGBLayer::ExportSegment(CMemoryBlock& mem, uint32 dwTileX, uint32 dwTileY,
 
 CImageEx* CRGBLayer::GetTileImage(int tileX, int tileY, bool setDirtyFlag /* = true */)
 {
-	CTerrainTextureTiles* tile = LoadTileIfNeeded(tileX, tileY);
+	CTerrainTextureTile* tile = LoadTileIfNeeded(tileX, tileY);
 	assert(tile != 0);
 	if (setDirtyFlag)
 		tile->m_bDirty = true;
@@ -1574,7 +1566,7 @@ CImageEx* CRGBLayer::GetTileImage(int tileX, int tileY, bool setDirtyFlag /* = t
 
 void CRGBLayer::UnloadTile(int tileX, int tileY)
 {
-	CTerrainTextureTiles* pTile = GetTilePtr(tileX, tileY);
+	CTerrainTextureTile* pTile = GetTilePtr(tileX, tileY);
 	if (!pTile)
 		return;
 	FreeTile(*pTile);

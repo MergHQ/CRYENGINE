@@ -1,28 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include <StdAfx.h>
-#include "TerrainManager.h"
 
-#include "SurfaceType.h"
-#include "Layer.h"
-#include "TerrainTexGen.h"
+#include "Terrain/SurfaceType.h"
+#include "Terrain/TerrainManager.h"
+#include "Terrain/TerrainTexGen.h"
 #include "Util/AutoLogTime.h"
+#include "CryEditDoc.h"
 
 #include "QT/Widgets/QWaitProgress.h"
-
-#include "CryEditDoc.h"
 
 namespace {
 const char* kHeightmapFile = "Heightmap.dat";
 const char* kTerrainTextureFile = "TerrainTexture.xml";
-}
-
-CTerrainManager::CTerrainManager()
-{
-}
-
-CTerrainManager::~CTerrainManager()
-{
 }
 
 void CTerrainManager::RemoveSurfaceType(CSurfaceType* pSurfaceType)
@@ -188,27 +178,10 @@ void CTerrainManager::RemoveLayer(CLayer* layer)
 
 void CTerrainManager::SwapLayers(int layer1, int layer2)
 {
-	assert(layer1 >= 0 && layer1 < m_layers.size());
-	assert(layer2 >= 0 && layer2 < m_layers.size());
-	std::swap(m_layers[layer1], m_layers[layer2]);
+	CRY_ASSERT(layer1 >= 0 && layer1 < m_layers.size());
+	CRY_ASSERT(layer2 >= 0 && layer2 < m_layers.size());
 
-	// If necessary, also swap the surface types (their order is important when using masked surface type transitions)
-	int st1 = m_layers[layer1]->GetEngineSurfaceTypeId();
-	int st2 = m_layers[layer2]->GetEngineSurfaceTypeId();
-	CSurfaceType* pSurfaceType1 = GetSurfaceTypePtr(st1);
-	CSurfaceType* pSurfaceType2 = GetSurfaceTypePtr(st2);
-	if (pSurfaceType1 && pSurfaceType2 && sgn(st1 - st2) == -sgn(layer1 - layer2))
-	{
-		CLayer TempLayer;
-		TempLayer.SetSurfaceType(pSurfaceType1); // Temporarily holds the surface type so that it does not get deleted
-		m_layers[layer1]->SetSurfaceType(pSurfaceType2);
-		m_layers[layer2]->SetSurfaceType(pSurfaceType1);
-		TempLayer.SetSurfaceType(NULL);
-		CSurfaceType& surfaceType1 = *m_surfaceTypes[st1];
-		CSurfaceType& surfaceType2 = *m_surfaceTypes[st2];
-		std::swap(surfaceType1, surfaceType2);
-		m_heightmap.UpdateEngineTerrain();
-	}
+	std::swap(m_layers[layer1], m_layers[layer2]);
 
 	signalLayersChanged();
 }
@@ -385,18 +358,6 @@ void CTerrainManager::SerializeTerrain(TDocMultiArchive& arrXmlAr)
 			CAutoLogTime logtime("Load Terrain");
 
 			m_heightmap.SerializeTerrain((*arrXmlAr[DMAS_GENERAL]));
-
-			{
-				XmlNodeRef layers = (*arrXmlAr[DMAS_GENERAL]).root->findChild("Layers");
-				if (layers)
-				{
-					int numLayers = layers->getChildCount();
-					for (int i = 0; i < numLayers; i++)
-					{
-						GetLayer(i)->Update3dengineInfo();
-					}
-				}
-			}
 		}
 
 		if (!m_heightmap.IsAllocated())
@@ -448,18 +409,6 @@ void CTerrainManager::SerializeTerrain(CXmlArchive& xmlAr)
 		{
 			CAutoLogTime logtime("Load Terrain");
 			m_heightmap.SerializeTerrain(xmlAr);
-
-			{
-				XmlNodeRef layers = xmlAr.root->findChild("Layers");
-				if (layers)
-				{
-					int numLayers = layers->getChildCount();
-					for (int i = 0; i < numLayers; i++)
-					{
-						GetLayer(i)->Update3dengineInfo();
-					}
-				}
-			}
 		}
 
 		if (!m_heightmap.IsAllocated())

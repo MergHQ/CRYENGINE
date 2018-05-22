@@ -50,58 +50,50 @@ public:
 	void  SetLayerStart(float iStart) { if (m_LayerStart != iStart) { m_LayerStart = iStart; InvalidateMask(); } }
 	void  SetLayerEnd(float iEnd)     { if (m_LayerEnd != iEnd) { m_LayerEnd = iEnd; InvalidateMask(); } }
 
-	// Calculate memory size allocated for this layer
+	//! Calculate memory size [in bytes] allocated for this layer
 	// Return:
-	//   in bytes
+	//   size in bytes
 	int GetSize() const;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Layer Mask
 	//////////////////////////////////////////////////////////////////////////
 	unsigned char GetLayerMaskPoint(uint32 x, uint32 y) { return m_layerMask.ValueAt(x, y); }
-	//	void SetLayerMaskPoint( uint32 x,uint32 y,unsigned char c ) { m_layerMask.ValueAt(x,y) = c; }
-
-	//////////////////////////////////////////////////////////////////////////
-	// Update current mask.
-	//////////////////////////////////////////////////////////////////////////
 
 	// Update current mask for this sector and put it into target mask data.
-	// Argument:s
+	// Arguments
 	//   mask - Mask image returned from function, may not be not initialized when calling function.
 	// Return:
 	//   true is mask for this sector exist, false if not.
 	bool UpdateMaskForSector(CPoint sector, const CRect& sectorRect, const int resolution, const CPoint vTexOffset,
 	                         const CFloatImage& hmap, CByteImage& mask);
-	//
+
 	bool        UpdateMask(const CFloatImage& hmap, CByteImage& mask);
-	//
 	CByteImage& GetMask();
+	int         GetMaskResolution() const { return m_maskResolution; }
 
 	void        GenerateWaterLayer16(float* pHeightmapPixels, UINT iHeightmapWidth, UINT iHeightmapHeight, float waterLevel);
 
-	int         GetMaskResolution() const { return m_maskResolution; }
-
 	// Texture
-	int     GetTextureWidth()      { return m_cTextureDimensions.cx; }
-	int     GetTextureHeight()     { return m_cTextureDimensions.cy; }
-	CSize   GetTextureDimensions() { return m_cTextureDimensions; }
-	// filename without path
-	string  GetTextureFilename();
-	// including path
-	string  GetTextureFilenameWithPath() const;
-	void    DrawLayerTexturePreview(LPRECT rcPos, CDC* pDC);
-	bool    LoadTexture(string strFileName);
-	// used to fille with water color
-	void    FillWithColor(COLORREF col, int width, int height);
-	bool    LoadTexture(LPCTSTR lpBitmapName, UINT iWidth, UINT iHeight);
-	bool    LoadTexture(DWORD* pBitmapData, UINT iWidth, UINT iHeight);
-	void    ExportTexture(string strFileName);
-	// represents the editor feature
-	void    ExportMask(const string& strFileName);
-	bool    HasTexture() { return ((GetTextureWidth() != 0) && (m_texture.GetData() != NULL)); }
-	void    Update3dengineInfo();
+	int             GetTextureWidth()             { return m_cTextureDimensions.cx; }
+	int             GetTextureHeight()            { return m_cTextureDimensions.cy; }
+	CSize           GetTextureDimensions()        { return m_cTextureDimensions; }
+	const CImageEx& GetTexture() const            { return m_texture; }
+	uint32&         GetTexturePixel(int x, int y) { return m_texture.ValueAt(x, y); }
 
-	uint32& GetTexturePixel(int x, int y) { return m_texture.ValueAt(x, y); }
+	string          GetTextureFilename();               // filename without path
+	string          GetTextureFilenameWithPath() const; // including path
+
+	void            DrawLayerTexturePreview(LPRECT rcPos, CDC* pDC);
+	bool            LoadTexture(string strFileName);
+	// used to fill with water color
+	void            FillWithColor(COLORREF col, int width, int height);
+	bool            LoadTexture(LPCTSTR lpBitmapName, UINT iWidth, UINT iHeight);
+	bool            LoadTexture(DWORD* pBitmapData, UINT iWidth, UINT iHeight);
+	void            ExportTexture(string strFileName);
+	// represents the editor feature
+	void            ExportMask(const string& strFileName);
+	bool            HasTexture() { return ((GetTextureWidth() != 0) && (m_texture.GetData() != nullptr)); }
 
 	// represents the editor feature
 	// Load a BMP texture into the layer mask.
@@ -144,11 +136,6 @@ public:
 
 	void          AssignMaterial(const string& materialName);
 
-	// usage currently deactivated (SMOOTH)
-	//	void SetSmooth( bool bSmooth ) { m_bSmooth = bSmooth; InvalidateMask(); }
-	// usage currently deactivated (SMOOTH)
-	//	bool IsSmooth() const { return m_bSmooth; }
-
 	//! Load texture if it was unloaded.
 	void PrecacheTexture();
 	//! Load mask if it was unloaded.
@@ -190,7 +177,7 @@ public:
 	//! Duplicates the current layer.
 	CLayer* Duplicate() const;
 
-protected:
+private:
 
 	enum SectorMaskFlags
 	{
@@ -210,8 +197,6 @@ protected:
 	// Get native resolution for layer mask (For not autogen levels).
 	int GetNativeMaskResolution() const;
 
-private:
-
 	CXTPMenuBar m_wndMenuBar;
 	CXTPToolBar m_wndToolBar;
 
@@ -224,7 +209,6 @@ private:
 	string   m_strLayerTexPath;
 	CSize    m_cTextureDimensions;
 
-public: // test
 	CImageEx m_texture;
 	CImageEx m_previewImage;
 
@@ -245,14 +229,10 @@ public: // test
 
 	string m_materialName;
 
-	//////////////////////////////////////////////////////////////////////////
-	// Mask.
-	//////////////////////////////////////////////////////////////////////////
 	// Layer mask data
 	string                   m_maskFile;
 	CByteImage               m_layerMask;
 	CByteImage               m_scaledMask; // Mask used when scaled mask version is needed.
-
 	int                      m_maskResolution;
 
 	bool                     m_bNeedUpdate;
