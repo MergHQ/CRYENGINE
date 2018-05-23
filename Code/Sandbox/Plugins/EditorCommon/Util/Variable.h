@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __Variable_h__
-#define __Variable_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CryCore/smartptr.h>
 #include <CryCore/functor.h>
@@ -13,7 +8,7 @@
 
 typedef Functor4<uint32, bool, const char*, const char*> TMissingAssetResolveCallback;
 
-inline const char* to_c_str(const char* str)    { return str; }
+inline const char* to_c_str(const char* str)   { return str; }
 inline const char* to_c_str(const string& str) { return str; }
 #define MAX_VAR_STRING_LENGTH 4096
 
@@ -239,16 +234,16 @@ struct EDITOR_COMMON_API IVariable : public IVariableContainer
 	/////////////////////////////////////////////////////////////////////////////
 	// Get methods.
 	/////////////////////////////////////////////////////////////////////////////
-	virtual void    Get(int& value) const = 0;
-	virtual void    Get(bool& value) const = 0;
-	virtual void    Get(float& value) const = 0;
-	virtual void    Get(Vec2& value) const = 0;
-	virtual void    Get(Vec3& value) const = 0;
-	virtual void    Get(Vec4& value) const = 0;
-	virtual void    Get(Ang3& value) const = 0;
-	virtual void    Get(Quat& value) const = 0;
-	virtual void    Get(string& value) const = 0;
-	inline void     Get(CString& value) const // for CString conversion
+	virtual void Get(int& value) const = 0;
+	virtual void Get(bool& value) const = 0;
+	virtual void Get(float& value) const = 0;
+	virtual void Get(Vec2& value) const = 0;
+	virtual void Get(Vec3& value) const = 0;
+	virtual void Get(Vec4& value) const = 0;
+	virtual void Get(Ang3& value) const = 0;
+	virtual void Get(Quat& value) const = 0;
+	virtual void Get(string& value) const = 0;
+	inline void  Get(CString& value) const    // for CString conversion
 	{
 		string str;
 		Get(str);
@@ -256,7 +251,7 @@ struct EDITOR_COMMON_API IVariable : public IVariableContainer
 	}
 
 	virtual string GetDisplayValue() const = 0;
-	virtual bool    HasDefaultValue() const = 0;
+	virtual bool   HasDefaultValue() const = 0;
 
 	//! Return cloned value of variable.
 	virtual IVariable* Clone(bool bRecursive) const = 0;
@@ -336,9 +331,9 @@ class EDITOR_COMMON_API CVariableBase : public IVariable
 public:
 	virtual ~CVariableBase() {}
 
-	void        SetName(const string& name) { m_name = name; };
+	void        SetName(const string& name)       { m_name = name; }
 	//! Get name of parameter.
-	const char* GetName() const              { return to_c_str(m_name); };
+	const char* GetName() const                   { return to_c_str(m_name); }
 
 	void        SetLegacyName(const string& name) { m_legacyName = name; }
 
@@ -350,14 +345,14 @@ public:
 	}
 	void          SetHumanName(const string& name);
 
-	void          SetDescription(const char* desc)    { m_description = desc; };
+	void          SetDescription(const char* desc)    { m_description = desc; }
 	//! Get name of parameter.
-	const char*   GetDescription() const              { return to_c_str(m_description); };
+	const char*   GetDescription() const              { return to_c_str(m_description); }
 
-	EType         GetType() const                     { return IVariable::UNKNOWN; };
-	int           GetSize() const                     { return sizeof(*this); };
+	EType         GetType() const                     { return IVariable::UNKNOWN; }
+	int           GetSize() const                     { return sizeof(*this); }
 
-	unsigned char GetDataType() const                 { return m_dataType; };
+	unsigned char GetDataType() const                 { return m_dataType; }
 	void          SetDataType(unsigned char dataType) { m_dataType = dataType; }
 
 	void          SetFlags(int flags)                 { m_flags = flags; }
@@ -369,38 +364,38 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Set methods.
 	//////////////////////////////////////////////////////////////////////////
-	void Set(int value)                        { assert(0); }
-	void Set(bool value)                       { assert(0); }
-	void Set(float value)                      { assert(0); }
-	void Set(const Vec2& value)                { assert(0); }
-	void Set(const Vec3& value)                { assert(0); }
-	void Set(const Vec4& value)                { assert(0); }
-	void Set(const Ang3& value)                { assert(0); }
-	void Set(const Quat& value)                { assert(0); }
+	void Set(int value)                       { assert(0); }
+	void Set(bool value)                      { assert(0); }
+	void Set(float value)                     { assert(0); }
+	void Set(const Vec2& value)               { assert(0); }
+	void Set(const Vec3& value)               { assert(0); }
+	void Set(const Vec4& value)               { assert(0); }
+	void Set(const Ang3& value)               { assert(0); }
+	void Set(const Quat& value)               { assert(0); }
 	void Set(const string& value)             { assert(0); }
-	void Set(const char* value)                { assert(0); }
+	void Set(const char* value)               { assert(0); }
 	void SetDisplayValue(const string& value) { Set(value); }
-	void SetDisplayValue(const char* value) { SetDisplayValue(string(value)); } // for CString conversion
+	void SetDisplayValue(const char* value)   { SetDisplayValue(string(value)); } // for CString conversion
 
 	//////////////////////////////////////////////////////////////////////////
 	// Get methods.
 	//////////////////////////////////////////////////////////////////////////
-	void    Get(int& value) const     { assert(0); }
-	void    Get(bool& value) const    { assert(0); }
-	void    Get(float& value) const   { assert(0); }
-	void    Get(Vec2& value) const    { assert(0); }
-	void    Get(Vec3& value) const    { assert(0); }
-	void    Get(Vec4& value) const    { assert(0); }
-	void    Get(Ang3& value) const    { assert(0); }
-	void    Get(Quat& value) const    { assert(0); }
-	void    Get(string& value) const { assert(0); }
-	void	Get(CString& value) const // for CString conversion
+	void Get(int& value) const    { assert(0); }
+	void Get(bool& value) const   { assert(0); }
+	void Get(float& value) const  { assert(0); }
+	void Get(Vec2& value) const   { assert(0); }
+	void Get(Vec3& value) const   { assert(0); }
+	void Get(Vec4& value) const   { assert(0); }
+	void Get(Ang3& value) const   { assert(0); }
+	void Get(Quat& value) const   { assert(0); }
+	void Get(string& value) const { assert(0); }
+	void Get(CString& value) const  // for CString conversion
 	{
 		string str;
 		Get(str);
 		value = str.GetString();
 	}
-	string GetDisplayValue() const   { string val; Get(val); return val; }
+	string GetDisplayValue() const { string val; Get(val); return val; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// IVariableContainer functions
@@ -501,7 +496,7 @@ public:
 		}
 	}
 
-	virtual void EnableUpdateCallbacks(bool boEnable)  { m_boUpdateCallbacksEnabled = boEnable; };
+	virtual void EnableUpdateCallbacks(bool boEnable)  { m_boUpdateCallbacksEnabled = boEnable; }
 	virtual void SetForceModified(bool bForceModified) { m_bForceModified = bForceModified; }
 protected:
 	// Constructor.
@@ -575,8 +570,8 @@ class EDITOR_COMMON_API CVariableArray : public CVariableBase
 {
 public:
 	//! Get name of parameter.
-	virtual EType GetType() const { return IVariable::ARRAY; };
-	virtual int   GetSize() const { return sizeof(CVariableArray); };
+	virtual EType GetType() const { return IVariable::ARRAY; }
+	virtual int   GetSize() const { return sizeof(CVariableArray); }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Set methods.
@@ -607,7 +602,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Get methods.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Get(string& value) const { value = m_strValue; }
+	virtual void Get(string& value) const  { value = m_strValue; }
 	virtual void Get(CString& value) const { value = m_strValue.GetString(); }
 
 	virtual bool HasDefaultValue() const
@@ -759,10 +754,10 @@ protected:
 	typedef std::vector<IVariablePtr> Variables;
 	Variables m_vars;
 	//! Any string value displayed in properties.
-	string   m_strValue;
+	string    m_strValue;
 };
 
-/** var_type namespace includes type definitions needed for CVariable implementaton.
+/** var_type namespace includes type definitions needed for CVariable implementation.
  */
 namespace var_type
 {
@@ -770,11 +765,11 @@ namespace var_type
 template<int TypeID, bool IsStandart, bool IsInteger, bool IsSigned>
 struct type_traits_base
 {
-	static int  type()        { return TypeID; };
+	static int  type()        { return TypeID; }
 	//! Return true if standard C++ type.
-	static bool is_standart() { return IsStandart; };
-	static bool is_integer()  { return IsInteger; };
-	static bool is_signed()   { return IsSigned; };
+	static bool is_standart() { return IsStandart; }
+	static bool is_integer()  { return IsInteger; }
+	static bool is_signed()   { return IsSigned; }
 };
 
 template<class Type>
@@ -798,10 +793,10 @@ template<> struct type_traits<string> : public type_traits_base<IVariable::STRIN
 struct type_convertor
 {
 	template<class From, class To>
-	typename std::enable_if<(!std::is_same<From, CString>::value && !std::is_same<To, CString>::value), void>::type operator() (const From& from, To& to) const { assert(0); }
+	typename std::enable_if<(!std::is_same<From, CString>::value&& !std::is_same<To, CString>::value), void>::type operator()(const From& from, To& to) const { assert(0); }
 
 	template<class From, class To>
-	typename std::enable_if<(std::is_same<From, CString>::value && std::is_same<To, CString>::value), void>::type operator() (const From& from, To& to) const { to = from; }
+	typename std::enable_if<(std::is_same<From, CString>::value&& std::is_same<To, CString>::value), void>::type operator()(const From& from, To& to) const { to = from; }
 
 	template<class From>
 	typename std::enable_if<(!std::is_same<From, CString>::value), void>::type operator()(const From& from, CString& to) const
@@ -818,36 +813,36 @@ struct type_convertor
 		operator()(str, to);
 	}
 
-	void operator()(const int& from, int& to) const          { to = from; }
-	void operator()(const int& from, bool& to) const         { to = from != 0; }
-	void operator()(const int& from, float& to) const        { to = (float)from; }
+	void operator()(const int& from, int& to) const         { to = from; }
+	void operator()(const int& from, bool& to) const        { to = from != 0; }
+	void operator()(const int& from, float& to) const       { to = (float)from; }
 	//////////////////////////////////////////////////////////////////////////
-	void operator()(const bool& from, int& to) const         { to = from; }
-	void operator()(const bool& from, bool& to) const        { to = from; }
-	void operator()(const bool& from, float& to) const       { to = from; }
+	void operator()(const bool& from, int& to) const        { to = from; }
+	void operator()(const bool& from, bool& to) const       { to = from; }
+	void operator()(const bool& from, float& to) const      { to = from; }
 	//////////////////////////////////////////////////////////////////////////
-	void operator()(const float& from, int& to) const        { to = (int)from; }
-	void operator()(const float& from, bool& to) const       { to = from != 0; }
-	void operator()(const float& from, float& to) const      { to = from; }
+	void operator()(const float& from, int& to) const       { to = (int)from; }
+	void operator()(const float& from, bool& to) const      { to = from != 0; }
+	void operator()(const float& from, float& to) const     { to = from; }
 
-	void operator()(const Vec2& from, Vec2& to) const        { to = from; }
-	void operator()(const Vec3& from, Vec3& to) const        { to = from; }
-	void operator()(const Vec4& from, Vec4& to) const        { to = from; }
-	void operator()(const Quat& from, Quat& to) const        { to = from; }
-	void operator()(const string& from, string& to) const  { to = from; }
+	void operator()(const Vec2& from, Vec2& to) const       { to = from; }
+	void operator()(const Vec3& from, Vec3& to) const       { to = from; }
+	void operator()(const Vec4& from, Vec4& to) const       { to = from; }
+	void operator()(const Quat& from, Quat& to) const       { to = from; }
+	void operator()(const string& from, string& to) const   { to = from; }
 
-	void operator()(int value, string& to) const            { to.Format("%d", value); };
-	void operator()(bool value, string& to) const           { to.Format("%d", (value) ? (int)1 : (int)0); };
-	void operator()(float value, string& to) const          { to.Format("%g", value); };
-	void operator()(const Vec2& value, string& to) const    { to.Format("%g,%g", value.x, value.y); };
-	void operator()(const Vec3& value, string& to) const    { to.Format("%g,%g,%g", value.x, value.y, value.z); };
-	void operator()(const Vec4& value, string& to) const    { to.Format("%g,%g,%g,%g", value.x, value.y, value.z, value.w); };
-	void operator()(const Ang3& value, string& to) const    { to.Format("%g,%g,%g", value.x, value.y, value.z); };
-	void operator()(const Quat& value, string& to) const    { to.Format("%g,%g,%g,%g", value.w, value.v.x, value.v.y, value.v.z); };
+	void operator()(int value, string& to) const            { to.Format("%d", value); }
+	void operator()(bool value, string& to) const           { to.Format("%d", (value) ? (int)1 : (int)0); }
+	void operator()(float value, string& to) const          { to.Format("%g", value); }
+	void operator()(const Vec2& value, string& to) const    { to.Format("%g,%g", value.x, value.y); }
+	void operator()(const Vec3& value, string& to) const    { to.Format("%g,%g,%g", value.x, value.y, value.z); }
+	void operator()(const Vec4& value, string& to) const    { to.Format("%g,%g,%g,%g", value.x, value.y, value.z, value.w); }
+	void operator()(const Ang3& value, string& to) const    { to.Format("%g,%g,%g", value.x, value.y, value.z); }
+	void operator()(const Quat& value, string& to) const    { to.Format("%g,%g,%g,%g", value.w, value.v.x, value.v.y, value.v.z); }
 
-	void operator()(const string& from, int& value) const   { value = atoi((const char*)from); };
-	void operator()(const string& from, bool& value) const  { value = atoi((const char*)from) != 0; };
-	void operator()(const string& from, float& value) const { value = (float)atof((const char*)from); };
+	void operator()(const string& from, int& value) const   { value = atoi((const char*)from); }
+	void operator()(const string& from, bool& value) const  { value = atoi((const char*)from) != 0; }
+	void operator()(const string& from, float& value) const { value = (float)atof((const char*)from); }
 	void operator()(const string& from, Vec2& value) const
 	{
 		value.x = 0;
@@ -921,31 +916,31 @@ inline void init(Type& val)
 {
 	val = 0;
 };
-inline void init(Vec2& val) { val.x = 0; val.y = 0; };
-inline void init(Vec3& val) { val.x = 0; val.y = 0; val.z = 0; };
-inline void init(Vec4& val) { val.x = 0; val.y = 0; val.z = 0; val.w = 0;  };
-inline void init(Ang3& val) { val.x = 0; val.y = 0; val.z = 0; };
+inline void init(Vec2& val) { val.x = 0; val.y = 0; }
+inline void init(Vec3& val) { val.x = 0; val.y = 0; val.z = 0; }
+inline void init(Vec4& val) { val.x = 0; val.y = 0; val.z = 0; val.w = 0;  }
+inline void init(Ang3& val) { val.x = 0; val.y = 0; val.z = 0; }
 inline void init(Quat& val)
 {
 	val.v.x = 0;
 	val.v.y = 0;
 	val.v.z = 0;
 	val.w = 0;
-};
+}
 inline void init(const char*& val)
 {
 	val = "";
-};
+}
 inline void init(string& val)
 {
 	// self initializing.
-};
+}
 inline void init(CString& val)
 {
 	// self initializing.
-};
+}
 //////////////////////////////////////////////////////////////////////////
-};
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Void variable does not contain any value.
@@ -953,13 +948,13 @@ inline void init(CString& val)
 class CVariableVoid : public CVariableBase
 {
 public:
-	CVariableVoid() {};
-	virtual EType      GetType() const               { return IVariable::UNKNOWN; };
+	CVariableVoid() {}
+	virtual EType      GetType() const               { return IVariable::UNKNOWN; }
 	virtual IVariable* Clone(bool bRecursive) const  { return new CVariableVoid(*this); }
-	virtual void       CopyValue(IVariable* fromVar) {};
+	virtual void       CopyValue(IVariable* fromVar) {}
 	virtual bool       HasDefaultValue() const       { return true; }
 protected:
-	CVariableVoid(const CVariableVoid& v) : CVariableBase(v) {};
+	CVariableVoid(const CVariableVoid& v) : CVariableBase(v) {}
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -978,40 +973,40 @@ public:
 
 	explicit CVariable(const T& set)
 	{
-		var_type::init(m_valueDef);   // Update F32NAN values in Debud mode
+		var_type::init(m_valueDef);   // Update F32NAN values in Debug mode
 		SetValue(set);
 		SetLimits(0.0f, 100.0f, 0.0f, false, false);
 	}
 
 	//! Get name of parameter.
-	virtual EType GetType() const { return (EType)var_type::type_traits<T>::type(); };
-	virtual int   GetSize() const { return sizeof(T); };
+	virtual EType GetType() const { return (EType)var_type::type_traits<T>::type(); }
+	virtual int   GetSize() const { return sizeof(T); }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Set methods.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Set(int value)            { SetValue(value); }
-	virtual void Set(bool value)           { SetValue(value); }
-	virtual void Set(float value)          { SetValue(value); }
-	virtual void Set(const Vec2& value)    { SetValue(value); }
-	virtual void Set(const Vec3& value)    { SetValue(value); }
-	virtual void Set(const Vec4& value)    { SetValue(value); }
-	virtual void Set(const Ang3& value)    { SetValue(value); }
-	virtual void Set(const Quat& value)    { SetValue(value); }
+	virtual void Set(int value)           { SetValue(value); }
+	virtual void Set(bool value)          { SetValue(value); }
+	virtual void Set(float value)         { SetValue(value); }
+	virtual void Set(const Vec2& value)   { SetValue(value); }
+	virtual void Set(const Vec3& value)   { SetValue(value); }
+	virtual void Set(const Vec4& value)   { SetValue(value); }
+	virtual void Set(const Ang3& value)   { SetValue(value); }
+	virtual void Set(const Quat& value)   { SetValue(value); }
 	virtual void Set(const string& value) { SetValue(value); }
-	virtual void Set(const char* value)    { SetValue(string(value)); }
+	virtual void Set(const char* value)   { SetValue(string(value)); }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Get methods.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Get(int& value) const     { GetValue(value); }
-	virtual void Get(bool& value) const    { GetValue(value); }
-	virtual void Get(float& value) const   { GetValue(value); }
-	virtual void Get(Vec2& value) const    { GetValue(value); }
-	virtual void Get(Vec3& value) const    { GetValue(value); }
-	virtual void Get(Vec4& value) const    { GetValue(value); }
-	virtual void Get(Quat& value) const    { GetValue(value); }
-	virtual void Get(string& value) const  { GetValue(value); }
+	virtual void Get(int& value) const    { GetValue(value); }
+	virtual void Get(bool& value) const   { GetValue(value); }
+	virtual void Get(float& value) const  { GetValue(value); }
+	virtual void Get(Vec2& value) const   { GetValue(value); }
+	virtual void Get(Vec3& value) const   { GetValue(value); }
+	virtual void Get(Vec4& value) const   { GetValue(value); }
+	virtual void Get(Quat& value) const   { GetValue(value); }
+	virtual void Get(string& value) const { GetValue(value); }
 	virtual void Get(CString& value) const // for CString conversion
 	{
 		string str;
@@ -1127,13 +1122,13 @@ class TVariableArray : public CVariable<T>
 {
 	typedef TVariableArray<T> Self;
 public:
-	TVariableArray() : CVariable<T>() {};
+	TVariableArray() : CVariable<T>() {}
 	// Copy Constructor.
 	TVariableArray(const Self& var) : CVariable<T>(var)
 	{}
 
 	//! Get name of parameter.
-	virtual int  GetSize() const { return sizeof(Self); };
+	virtual int  GetSize() const { return sizeof(Self); }
 
 	virtual bool HasDefaultValue() const
 	{
@@ -1262,7 +1257,7 @@ public:
 	}
 
 protected:
-	virtual ~CVarEnumListBase() {};
+	virtual ~CVarEnumListBase() {}
 	friend class _smart_ptr<CVarEnumListBase<T>>;
 };
 
@@ -1277,8 +1272,8 @@ public:
 	//! Get the name of specified value in enumeration.
 	virtual const char* GetItemName(uint index);
 
-	virtual string     NameToValue(const string& name);
-	virtual string     ValueToName(const string& value);
+	virtual string      NameToValue(const string& name);
+	virtual string      ValueToName(const string& value);
 
 	//! Don't add anything to a global enum database
 	virtual void AddItem(const string& name, const string& value) {}
@@ -1297,7 +1292,7 @@ public:
 	struct Item
 	{
 		string name;
-		T       value;
+		T      value;
 	};
 	const char* GetItemName(uint index)
 	{
@@ -1338,7 +1333,7 @@ public:
 	};
 
 protected:
-	~CVarEnumList() {};
+	~CVarEnumList() {}
 
 private:
 	std::vector<Item> m_items;
@@ -1352,7 +1347,7 @@ class CVariableEnum : public CVariable<T>
 {
 public:
 	//////////////////////////////////////////////////////////////////////////
-	CVariableEnum() {};
+	CVariableEnum() {}
 
 	//! Assign operator for variable.
 	void operator=(const T& value) { SetValue(value); }
@@ -1438,7 +1433,7 @@ struct CSmartVariableBase
 	VarType& operator*() const      { return *pVar; }
 	VarType* operator->(void) const { return pVar; }
 
-	VarType* GetVar() const         { return pVar; };
+	VarType* GetVar() const         { return pVar; }
 
 protected:
 	_smart_ptr<VarType> pVar;
@@ -1490,7 +1485,7 @@ struct CSmartVariableArray
 	VarType& operator*() const      { return *pVar; }
 	VarType* operator->(void) const { return pVar; }
 
-	VarType* GetVar() const         { return pVar; };
+	VarType* GetVar() const         { return pVar; }
 
 private:
 	_smart_ptr<VarType> pVar;
@@ -1523,7 +1518,7 @@ public:
 	}
 
 	// Clear all vars from VarBlock.
-	virtual void DeleteAllVariables() { m_vars.clear(); };
+	virtual void DeleteAllVariables() { m_vars.clear(); }
 
 	//! Return true if variable block is empty (Does not have any vars).
 	virtual bool IsEmpty() const { return m_vars.empty(); }
@@ -1581,7 +1576,6 @@ public:
 	virtual void GatherUsedResources(CUsedResources& resources);
 
 	void         EnableUpdateCallbacks(bool boEnable);
-	IVariable*   FindChildVar(const char* name, IVariable* pParentVar) const;
 
 	void         Sort();
 
@@ -1604,17 +1598,14 @@ public:
 
 	virtual ~CVarObject() {}
 
-	void       AddVariable(CVariableBase& var, const string& varName, VarOnSetCallback cb = NULL, unsigned char dataType = IVariable::DT_SIMPLE);
-	void       AddVariable(CVariableBase& var, const string& varName, const string& varHumanName, VarOnSetCallback cb = NULL, unsigned char dataType = IVariable::DT_SIMPLE);
-	void       AddVariable(CVariableArray& table, CVariableBase& var, const string& varName, const string& varHumanName, VarOnSetCallback cb = NULL, unsigned char dataType = IVariable::DT_SIMPLE);
-	
+	void AddVariable(CVariableBase& var, const string& varName, VarOnSetCallback cb = NULL, unsigned char dataType = IVariable::DT_SIMPLE);
+	void AddVariable(CVariableBase& var, const string& varName, const string& varHumanName, VarOnSetCallback cb = NULL, unsigned char dataType = IVariable::DT_SIMPLE);
+	void AddVariable(CVariableArray& table, CVariableBase& var, const string& varName, const string& varHumanName, VarOnSetCallback cb = NULL, unsigned char dataType = IVariable::DT_SIMPLE);
+
 	//! Copy values of variables from other VarObject.
 	//! Source object must be of same type.
 	void CopyVariableValues(CVarObject* sourceObject);
 };
 
-// Restore warnings about virtaul overrides hidden
+// Restore warnings about virtual overrides hidden
 #pragma warning(pop)
-
-#endif // __Variable_h__
-

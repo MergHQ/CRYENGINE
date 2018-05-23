@@ -1,18 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2002.
-// -------------------------------------------------------------------------
-//  Created:     10/10/2002 by Timur.
-//  Description: Memory block helper used with ZLib
-//
-////////////////////////////////////////////////////////////////////////////
+
 #include "EditorCommonAPI.h"
 #include <CryCore/smartptr.h>
 
+// Memory block helper used with ZLib
 class EDITOR_COMMON_API CMemoryBlock : public _i_reference_target_t
 {
 public:
@@ -41,7 +34,7 @@ public:
 	//! Returns amount of allocated memory in this block.
 	int   GetUncompressedSize() const { return m_uncompressedSize; }
 
-	void* GetBuffer() const           { return m_buffer; };
+	void* GetBuffer() const           { return m_buffer; }
 
 	//! Copy memory range to memory block.
 	void Copy(void* src, int size);
@@ -68,4 +61,3 @@ private:
 	//! True if memory block owns its memory.
 	bool  m_owns;
 };
-

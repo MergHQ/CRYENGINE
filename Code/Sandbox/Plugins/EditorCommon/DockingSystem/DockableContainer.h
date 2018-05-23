@@ -6,8 +6,8 @@
 #include "EditorFramework/StateSerializable.h"
 #include "QToolwindowManager/QToolWindowManager.h"
 #include <functional>
-#include <QWidget>
 #include <QVariantMap>
+#include <QWidget>
 #include <map>
 
 class CAbstractMenu;
@@ -21,14 +21,14 @@ class EDITOR_COMMON_API CDockableContainer : public QWidget, public IStateSerial
 		std::function<QWidget*()> m_factory;
 		bool                      m_isUnique;
 		bool                      m_isInternal;
-		FactoryInfo() {};
+		FactoryInfo() {}
 		FactoryInfo(std::function<QWidget*()> factory, bool isUnique, bool isInternal);
 	};
 	struct WidgetInstance
 	{
 		QWidget* m_widget;
 		QString  m_spawnName;
-		WidgetInstance() {};
+		WidgetInstance() {}
 		WidgetInstance(QWidget* widget, QString spawnName);
 	};
 
@@ -97,8 +97,7 @@ private:
 	TWidgetMap                               m_spawned;
 	QToolWindowManager*                      m_toolManager;
 	std::function<void(CDockableContainer*)> m_defaultLayoutCallback;
-	CAbstractMenu*							 m_pMenu;
+	CAbstractMenu*                           m_pMenu;
 	QMetaObject::Connection                  m_layoutChangedConnection;
 	QVariantMap                              m_startingLayout;
 };
-

@@ -8,9 +8,9 @@
 
 #include <algorithm>
 
-#include <QMenu>
-#include <QCursor>
 #include <QAction>
+#include <QCursor>
+#include <QMenu>
 
 //////////////////////////////////////////////////////////////////////////
 class CPopupMenuItemCommand : public CPopupMenuItem
@@ -20,13 +20,14 @@ public:
 		: CPopupMenuItem(text)
 		, m_command(command)
 	{
-		m_function = [&]() {
+		m_function = [&]()
+		{
 			GetIEditor()->GetICommandManager()->Execute(m_command);
 		};
 	}
 
-	virtual bool IsEditorCommand() { return true; }
-	const char* GetCommand() const { return m_command; }
+	virtual bool IsEditorCommand()  { return true; }
+	const char*  GetCommand() const { return m_command; }
 
 private:
 	string m_command;
@@ -36,7 +37,6 @@ private:
 class QPopupMenuItemAction : public QAction
 {
 public:
-	
 	QPopupMenuItemAction(const std::shared_ptr<CPopupMenuItem> item, QObject* parent);
 	~QPopupMenuItemAction();
 
@@ -80,7 +80,7 @@ void QPopupMenuItemAction::OnTriggered()
 
 void QPopupMenuItemAction::OnHovered()
 {
-	if(m_item->m_hoverFunc)
+	if (m_item->m_hoverFunc)
 		m_item->m_hoverFunc();
 }
 
@@ -93,11 +93,6 @@ void CDynamicPopupMenu::Clear()
 {
 	m_root.GetChildren().clear();
 }
-
-CPopupMenuItem::~CPopupMenuItem()
-{
-}
-
 
 CPopupMenuItem& CPopupMenuItem::Add(const char* text)
 {
@@ -114,7 +109,7 @@ CPopupMenuItem& CPopupMenuItem::Add(const char* text, const std::function<void()
 	return *item;
 }
 
-CPopupMenuItem& CPopupMenuItem::Add(const char* text,const char* icon, const std::function<void()>& function)
+CPopupMenuItem& CPopupMenuItem::Add(const char* text, const char* icon, const std::function<void()>& function)
 {
 	CPopupMenuItem* item = new CPopupMenuItem(text);
 	item->m_function = function;
@@ -209,5 +204,3 @@ void CDynamicPopupMenu::SpawnAtCursor()
 {
 	Spawn(QCursor::pos().x(), QCursor::pos().y());
 }
-
-

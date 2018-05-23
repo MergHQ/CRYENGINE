@@ -89,7 +89,7 @@ public:
 		QWidget::setAttribute(Qt::WA_DeleteOnClose);
 	}
 	virtual ~CDockableWidgetT() {}
-	virtual QWidget* GetWidget() override { return this; };
+	virtual QWidget* GetWidget() override { return this; }
 };
 
 typedef CDockableWidgetT<QWidget> CDockableWidget;

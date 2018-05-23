@@ -57,8 +57,8 @@ public:
 	CBaseObject* GetLoadedObject(int nIndex) const { return m_loadedObjects[nIndex].pObject; }
 
 	//! Set a guid provider that will be used to generate guids for loaded objects. Should not be set if guid's need to be loaded
-	void SetGuidProvider(IGuidProvider* pGuidProvider) { m_pGuidProvider = pGuidProvider; }
-	IGuidProvider* GetGuidProvider() const { return m_pGuidProvider; }
+	void           SetGuidProvider(IGuidProvider* pGuidProvider) { m_pGuidProvider = pGuidProvider; }
+	IGuidProvider* GetGuidProvider() const                       { return m_pGuidProvider; }
 
 	//! If true new loaded objects will be added to current instead of saved layer.
 	void LoadInCurrentLayer(bool bEnable);
@@ -66,9 +66,9 @@ public:
 	void EnableReconstructPrefabObject(bool bEnable);
 
 	//! Remap object ids.
-	void RemapID(CryGUID oldId, CryGUID newId);
+	void         RemapID(CryGUID oldId, CryGUID newId);
 
-	void         EnableProgressBar(bool bEnable) { m_bProgressBarEnabled = bEnable; };
+	void         EnableProgressBar(bool bEnable) { m_bProgressBarEnabled = bEnable; }
 
 	CBaseObject* GetCurrentObject();
 
@@ -101,11 +101,16 @@ private:
 	IObjectManager* m_objectManager;
 	struct Callback
 	{
+		Callback()
+			: func1(nullptr)
+			, func2(nullptr)
+			, userData(0)
+		{}
+
 		ResolveObjRefFunctor1   func1;
 		ResolveObjRefFunctor2   func2;
 		uint32                  userData;
 		_smart_ptr<CBaseObject> fromObject;
-		Callback() { func1 = 0; func2 = 0; userData = 0; };
 	};
 	typedef std::multimap<CryGUID, Callback> Callbacks;
 	Callbacks m_resolveCallbacks;
@@ -128,17 +133,15 @@ private:
 		eObjectLoader_SavingInPrefabLib    = 0x0004, // We are serializing in the prefab library (used to omit some not needed attributes of objects)
 		eObjectLoader_LoadToCurrentLayer   = 0x0008  // If true new loaded objects will be added to current instead of saved layer.
 	};
-	int             m_nFlags;
-	CPakFile*       m_pGeometryPak;
-	CBaseObject*    m_pCurrentObject;
-	IGuidProvider*  m_pGuidProvider{ nullptr };
+	int            m_nFlags;
+	CPakFile*      m_pGeometryPak;
+	CBaseObject*   m_pCurrentObject;
+	IGuidProvider* m_pGuidProvider { nullptr };
 
-	bool m_bNeedResolveObjects;
-	bool m_bProgressBarEnabled;
+	bool           m_bNeedResolveObjects;
+	bool           m_bProgressBarEnabled;
 
 	// This table is used when there is any collision of ids while importing TrackView sequences.
 	std::map<uint32, uint32> m_sequenceIdRemap;
 	std::vector<uint32>      m_pendingIds;
 };
-
-

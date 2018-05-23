@@ -202,7 +202,7 @@ public:
 	CUndoBaseObject(CBaseObject* pObj, const char* undoDescription);
 
 protected:
-	virtual const char* GetDescription() override { return m_undoDescription; };
+	virtual const char* GetDescription() override { return m_undoDescription; }
 	virtual const char* GetObjectName() override;
 
 	virtual void        Undo(bool bUndo) override;
@@ -4269,4 +4269,3 @@ void CBaseObject::UnRegisterFromEngine()
 		GetIEditor()->UnRegisterEntityAsJob(pRenderNode);
 	}
 }
-

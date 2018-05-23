@@ -15,11 +15,11 @@ struct ICameraDelegate
 };
 
 //! Class that manages state that must be shared to all viewports
-//! This is somewhat of a legacy concept, and there shouldn't be too many 
+//! This is somewhat of a legacy concept, and there shouldn't be too many
 //! shared things between viewports nowadays
 struct IViewportManager
 {
-public:
+	virtual ~IViewportManager() {}
 
 	//! Ensures the game engine processes focus in this viewport
 	//! For example this may influence audio
@@ -38,9 +38,9 @@ public:
 	virtual void RegisterViewport(CViewport* vp) = 0;
 
 	//! Unregister an instance of CViewport on destruct
-	virtual void UnregisterViewport(CViewport* vp) = 0;
+	virtual void    UnregisterViewport(CViewport* vp) = 0;
 
-	virtual int GetNumberOfGameViewports() = 0;
+	virtual int     GetNumberOfGameViewports() = 0;
 
 	virtual CryGUID GetCameraObjectId() const = 0;
 	virtual void    SetCameraObjectId(CryGUID cameraObjectId) = 0;

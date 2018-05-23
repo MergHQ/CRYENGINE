@@ -13,11 +13,13 @@
 // forward declarations.
 class CBaseObject;
 class CPopupMenuItem;
-struct IPhysicalEntity;
-typedef IPhysicalEntity* PIPhysicalEntity;
+
 struct ICameraDelegate;
-struct ray_hit;
+struct IPhysicalEntity;
 struct IRenderMesh;
+struct ray_hit;
+
+typedef IPhysicalEntity* PIPhysicalEntity;
 
 struct SCameraPreferences : public SPreferencePage
 {
@@ -43,7 +45,6 @@ struct SCameraPreferences : public SPreferencePage
 	bool              speedHeightRelativeEnabled;
 	EViewportBehavior viewportPanningStyle;
 };
-
 
 //! More concrete viewport class. This used to be the level editor viewport
 //! however it was moved to EditorCommon as ModelViewport inherits from this and needs to be exposed.
@@ -75,9 +76,9 @@ public:
 	/** Get type of this viewport.
 	 */
 	virtual EViewportType GetType() const             { return ET_ViewportCamera; }
-	virtual void          SetType(EViewportType type) { assert(type == ET_ViewportCamera); };
+	virtual void          SetType(EViewportType type) { assert(type == ET_ViewportCamera); }
 
-	virtual bool          IsRenderViewport()          { return true; };
+	virtual bool          IsRenderViewport()          { return true; }
 
 	// Implementation
 public:
@@ -91,7 +92,7 @@ public:
 	virtual void   UpdateContent(int flags);
 
 	void           SetCamera(const CCamera& camera);
-	const CCamera& GetCamera() const { return m_Camera; };
+	const CCamera& GetCamera() const { return m_Camera; }
 	virtual void   SetViewTM(const Matrix34& tm)
 	{ SetViewTM(tm, false); }
 
@@ -100,16 +101,16 @@ public:
 	virtual Vec3  WorldToView3D(const Vec3& wp, int nFlags = 0) const;
 
 	//! Map viewport position to world space position.
-	virtual void        ViewToWorldRay(POINT vp, Vec3& raySrc, Vec3& rayDir) const;
-	virtual Vec3        ViewToAxisConstraint(POINT& point, Vec3 axis, Vec3 origin) const;
-	virtual Vec3        ViewDirection() const;
-	virtual Vec3        UpViewDirection() const;
-	virtual Vec3        CameraToWorld(Vec3 worldPoint) const;
+	virtual void            ViewToWorldRay(POINT vp, Vec3& raySrc, Vec3& rayDir) const;
+	virtual Vec3            ViewToAxisConstraint(POINT& point, Vec3 axis, Vec3 origin) const;
+	virtual Vec3            ViewDirection() const;
+	virtual Vec3            UpViewDirection() const;
+	virtual Vec3            CameraToWorld(Vec3 worldPoint) const;
 
-	virtual float       GetScreenScaleFactor(const Vec3& worldPoint) const;
-	virtual float       GetAspectRatio() const;
-	virtual bool        HitTest(CPoint point, HitContext& hitInfo);
-	virtual bool        IsBoundsVisible(const AABB& box) const;
+	virtual float           GetScreenScaleFactor(const Vec3& worldPoint) const;
+	virtual float           GetAspectRatio() const;
+	virtual bool            HitTest(CPoint point, HitContext& hitInfo);
+	virtual bool            IsBoundsVisible(const AABB& box) const;
 
 	virtual void            SetResolution(int x, int y) override;
 	virtual void            GetResolution(int& x, int& y) override;
@@ -118,20 +119,20 @@ public:
 
 	CCrySignal<void()> signalResolutionChanged;
 
-	virtual bool        IsSequenceCamera() const            { return m_pCameraDelegate != nullptr; }
+	virtual bool          IsSequenceCamera() const { return m_pCameraDelegate != nullptr; }
 
-	void                SetDefaultCamera();
-	bool                IsDefaultCamera() const;
+	void                  SetDefaultCamera();
+	bool                  IsDefaultCamera() const;
 
-	void                SetCameraObject(CBaseObject* cameraObject);
-	void                SetCameraDelegate(const ICameraDelegate* pDelegate);
+	void                  SetCameraObject(CBaseObject* cameraObject);
+	void                  SetCameraDelegate(const ICameraDelegate* pDelegate);
 
-	virtual float       GetCameraMoveSpeed() const           { return m_moveSpeed; }
-	virtual float       GetCameraMoveSpeedIncrements() const { return m_moveSpeedIncrements; }
-	virtual void        SetCameraMoveSpeedIncrements(int sp, bool bnotify = false);
-	virtual void		OnCameraSpeedChanged() {}
+	virtual float         GetCameraMoveSpeed() const           { return m_moveSpeed; }
+	virtual float         GetCameraMoveSpeedIncrements() const { return m_moveSpeedIncrements; }
+	virtual void          SetCameraMoveSpeedIncrements(int sp, bool bnotify = false);
+	virtual void          OnCameraSpeedChanged()               {}
 
-	virtual const char* GetCameraMenuName() const override;
+	virtual const char*   GetCameraMenuName() const override;
 
 	void                  LockCameraMovement(bool bLock) { m_bLockCameraMovement = bLock;  }
 	bool                  IsCameraMovementLocked() const { return m_bLockCameraMovement; }
@@ -140,13 +141,12 @@ public:
 	CBaseObject*          GetCameraObject() const;
 
 	static SCameraPreferences s_cameraPreferences;
-	CCamera m_Camera;
+	CCamera                   m_Camera;
 
-	virtual void  OnResize();
-	virtual void  OnPaint();
-	virtual void  OnFilterCryInputEvent(CryInputEvent* evt) override;
-	virtual void  OnCameraTransformEvent(CameraTransformEvent* msg) override;
-
+	virtual void OnResize();
+	virtual void OnPaint();
+	virtual void OnFilterCryInputEvent(CryInputEvent* evt) override;
+	virtual void OnCameraTransformEvent(CameraTransformEvent* msg) override;
 
 protected:
 	struct SScopedCurrentContext;
@@ -204,12 +204,8 @@ protected:
 	virtual bool CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType = IRenderer::EViewportType::eViewportType_Secondary);
 	virtual void DestroyRenderContext();
 
-	void         OnMenuCommandChangeAspectRatio(unsigned int commandId);
-
 	bool         AdjustObjectPosition(const ray_hit& hit, Vec3& outNormal, Vec3& outPos) const;
 	bool         RayRenderMeshIntersection(IRenderMesh* pRenderMesh, const Vec3& vInPos, const Vec3& vInDir, Vec3& vOutPos, Vec3& vOutNormal) const;
-
-	void         ResizeView(int width, int height);
 
 	void         HideCursor();
 	void         ShowCursor();
@@ -221,28 +217,28 @@ protected:
 	bool       m_bRenderContextCreated;
 
 	// TODO: wrap all those in camera interaction classes...
-	bool       m_bInRotateMode;
-	bool       m_bInMoveMode;
-	bool       m_bInOrbitMode;
-	Matrix34   m_orbitInitViewMatrix;
-	bool       m_bInZoomMode;
+	bool     m_bInRotateMode;
+	bool     m_bInMoveMode;
+	bool     m_bInOrbitMode;
+	Matrix34 m_orbitInitViewMatrix;
+	bool     m_bInZoomMode;
 
-	CPoint     m_totalMouseMove;
-	CPoint     m_mousePos;
-	CPoint     m_lastMousePos;
+	CPoint   m_totalMouseMove;
+	CPoint   m_mousePos;
+	CPoint   m_lastMousePos;
 
 	// speed is the actual moving speed, calculated from speed increments below with formula: 0.1f + pow (1.1f, m_moveSpeedIncrements)
 	float m_moveSpeed;
 	// this is increments of log scale for the above speed. Useful for UI and to make sure we
 	// minimize floating point errors when increasing/decreasing speed.
-	int   m_moveSpeedIncrements;
+	int  m_moveSpeedIncrements;
 
-	Vec3  m_orbitTarget;
+	Vec3 m_orbitTarget;
 
-	bool  m_bAttachCameraToSelected;
-	bool  m_bCaptureAttachOffset;
-	bool  m_bFakeMouseMove;
-	bool  m_hadLastOrbitTarget;
+	bool m_bAttachCameraToSelected;
+	bool m_bCaptureAttachOffset;
+	bool m_bFakeMouseMove;
+	bool m_hadLastOrbitTarget;
 
 	//-------------------------------------------
 	// Render options.
@@ -289,7 +285,7 @@ protected:
 	bool                      m_bCursorHidden;
 
 	//TODO: We would like all viewports to render whether or not a level is loaded but this has to be further tested.
-	bool					  m_bCanDrawWithoutLevelLoaded;
+	bool m_bCanDrawWithoutLevelLoaded;
 
 protected:
 
@@ -297,27 +293,26 @@ protected:
 	virtual void BeginUndoTransaction() override;
 	virtual void EndUndoTransaction() override;
 
-	SResolution   m_currentResolution;
-	mutable float m_lastCameraSpeedScale;
+	SResolution     m_currentResolution;
+	mutable float   m_lastCameraSpeedScale;
 	EResolutionMode m_eResolutionMode;
 	// stores the last custom resolution mode so we can restore it when selecting another custom resolution
 	EResolutionMode m_eLastCustomResolutionMode;
 
 	// pending resize to gracefully handle viewport resize
-	bool m_bSuspendResizeNotifications;
-	bool m_bPendingResizeNotification;
-	int  m_pendingResizeWidth;
-	int  m_pendingResizeHeight;
+	bool               m_bSuspendResizeNotifications;
+	bool               m_bPendingResizeNotification;
+	int                m_pendingResizeWidth;
+	int                m_pendingResizeHeight;
 
-	SDisplayContextKey            m_displayContextKey;
+	SDisplayContextKey m_displayContextKey;
 };
-
 
 //////////////////////////////////////////////////////////////////////////
 
 struct CRenderViewport::SScopedCurrentContext
 {
-	CRenderViewport*  viewport;
+	CRenderViewport*                  viewport;
 	CRenderViewport::SPreviousContext previousContext;
 
 	SScopedCurrentContext(CRenderViewport* viewport)
@@ -331,4 +326,3 @@ struct CRenderViewport::SScopedCurrentContext
 		viewport->RestorePreviousContext(previousContext);
 	}
 };
-

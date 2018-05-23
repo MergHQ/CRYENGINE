@@ -3,14 +3,14 @@
 
 #include "EditorCommonAPI.h"
 
+#include <QColor>
+#include <QElapsedTimer>
+#include <QFrame>
+#include <QLabel>
 #include <QMenu>
 #include <QSlider>
-#include <QFrame>
-#include <QWidgetAction>
-#include <QColor>
-#include <QLabel>
 #include <QTimer>
-#include <QElapsedTimer>
+#include <QWidgetAction>
 
 //////////////////////////////////////////////////////////////////////////
 // This file is intended to contain reusable Qt Widgets that are
@@ -35,8 +35,8 @@ public:
 	}
 
 protected:
-	virtual void OnTrigger(QAction* action) {};
-	virtual void OnPopulateMenu()           {};
+	virtual void OnTrigger(QAction* action) {}
+	virtual void OnPopulateMenu()           {}
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -79,9 +79,9 @@ class EDITOR_COMMON_API QContainer : public QFrame
 public:
 	QContainer(QWidget* parent = 0);
 
-	void SetChild(QWidget* child);
+	void     SetChild(QWidget* child);
 	QWidget* GetChild() { return m_child; }
-	void Clear() { SetChild(nullptr); }
+	void     Clear()    { SetChild(nullptr); }
 
 private:
 	QWidget* m_child;
@@ -138,4 +138,3 @@ protected:
 	int           m_elapsedTime; // In ms. Needed because QTimer doesn't track elapsed time
 	bool          m_bLoading;
 };
-

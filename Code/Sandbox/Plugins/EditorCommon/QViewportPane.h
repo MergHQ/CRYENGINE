@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __ViewportPane_h__
-#define __ViewportPane_h__
 #pragma once
 
 #include "EditorCommonAPI.h"
@@ -42,7 +40,7 @@ public:
 	// Focus related
 	virtual void focusInEvent(QFocusEvent*) override;
 	virtual void focusOutEvent(QFocusEvent*) override;
-	bool focusNextPrevChild(bool next) override;
+	bool         focusNextPrevChild(bool next) override;
 	//////////////////////////////////////////////////////////////////////////
 	//Drag & drop
 	virtual void          dragEnterEvent(QDragEnterEvent*) override;
@@ -50,9 +48,9 @@ public:
 	virtual void          dragLeaveEvent(QDragLeaveEvent*) override;
 	virtual void          dropEvent(QDropEvent*) override;
 	virtual QPaintEngine* paintEngine() const override { return nullptr; }
-	virtual void          customEvent(QEvent *) override;
+	virtual void          customEvent(QEvent*) override;
 
-	CViewport*            GetViewport()                { return m_viewport.get(); }
+	CViewport*            GetViewport() { return m_viewport.get(); }
 
 Q_SIGNALS:
 	void resolutionChanged();
@@ -103,13 +101,10 @@ public:
 
 private:
 	friend class QViewportWidget;
-	QWidget* m_headerWidget;
+	QWidget*         m_headerWidget;
 	QViewportWidget* m_viewWidget;
 
 private:
 	// This widget owns viewport
 	_smart_ptr<CViewport> m_viewport;
 };
-
-#endif //__ViewportPane_h__
-

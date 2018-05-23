@@ -46,7 +46,7 @@ public:
 	{
 	}
 
-	virtual ~CInteractionMode() {};
+	virtual ~CInteractionMode() {}
 
 	//! Initialize data for interaction. The reason this is done as separate step and not in constructor is that we need
 	//! a boolean return value for cases where we can't interact (mouse too close to gizmo center, for instance)
@@ -63,7 +63,7 @@ public:
 	Vec3& GetCursorPosition() { return m_cursorPosition; }
 
 	//! Get the angle calculated during the Interact call
-	float GetAngle() { return m_angle; }
+	float        GetAngle() { return m_angle; }
 
 	virtual void DrawCursor(DisplayContext& dc, float scale) = 0;
 
@@ -118,21 +118,21 @@ protected:
 	//! Initial gizmo position/axis. We need to store this and calculate interaction against these,
 	//! in case the position of the gizmo changes during interaction
 	//! (for instance, transforming a group of objects and the calculated gizmo position changes)
-	Vec3  m_initPosition;
-	Vec3  m_initAxis;
+	Vec3 m_initPosition;
+	Vec3 m_initAxis;
 
 	//! Direction from which we start rotating, lies on the gizmo plane.
-	Vec3  m_initDirection;
+	Vec3 m_initDirection;
 
 	//! offset of mouse from the initial position, projected on the view plane.
-	Vec3  m_cursorPosition;
+	Vec3 m_cursorPosition;
 
 	//! computed interaction angle
 	float m_angle;
 	bool  m_bScreenAligned;
 
 	//! pixel space offset from center of gizmo. Useful to calculate screen aligned gizmo interaction
-	Vec2  m_initScreenOffest;
+	Vec2 m_initScreenOffest;
 };
 
 //! Dial style interaction, rotate mouse around the center of the gizmo in screen space to change the rotation value
@@ -394,12 +394,11 @@ public:
 
 private:
 	//! Normalized original offset from the origin on the gizmo plane
-	float m_scale;
-	Vec3  m_interactionLine;
+	float             m_scale;
+	Vec3              m_interactionLine;
 	//! viewport in which we are interacting
 	IDisplayViewport* m_view;
 };
-
 
 CAxisRotateGizmo::CAxisRotateGizmo()
 	: m_color(1.0f, 1.0f, 0.0f)
@@ -463,7 +462,7 @@ void CAxisRotateGizmo::Display(DisplayContext& dc)
 		float textSize = 1.4f;
 
 		Matrix34 m = m_interaction->CreateRotationFrameMatrix(view);
-			// Draw the value of rotation within the circle
+		// Draw the value of rotation within the circle
 		string msg;
 		msg.Format("%.1f degrees", angleVal);
 		dc.SetColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -606,7 +605,7 @@ bool CAxisRotateGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent event, 
 			signalBeginDrag(view, this, point, nFlags);
 			return true;
 		}
-		else 
+		else
 		{
 			return false;
 		}
@@ -741,4 +740,3 @@ bool CAxisRotateGizmo::HitTest(HitContext& hc)
 	}
 	return false;
 }
-

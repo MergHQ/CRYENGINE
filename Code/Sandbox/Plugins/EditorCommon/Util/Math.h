@@ -1,16 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __math_h__
-#define __math_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 //! Half PI
 #define PI_HALF (3.1415926535897932384626433832795f / 2.0f)
 
-//! Epsilon for vector comparasion.
+//! Epsilon for vector comparison.
 #define FLOAT_EPSILON 0.000001f
 
 #include <CryMath/Cry_Geo.h>
@@ -63,7 +58,7 @@ inline float PointToLineDistance(const Vec3& p1, const Vec3& p2, const Vec3& p3)
 /** Calculate distance between point and line.
    @param p1 Source line point.
    @param p2 Target line point.
-   @param p3 Point to find intersecion with.
+   @param p3 Point to find intersection with.
    @param intersectPoint Intersection point on the line.
    @return Distance between point and line.
  */
@@ -156,7 +151,7 @@ inline bool LineLineIntersect(const Vec3& p1, const Vec3& p2, const Vec3& p3, co
 }
 
 /*!
-    Calculates shortest distance between ray and a arbitary line segment.
+    Calculates shortest distance between ray and a arbitrary line segment.
     @param raySrc Source point of ray.
     @param rayTrg Target point of ray.
     @param p1 First point of line segment.
@@ -235,7 +230,7 @@ inline uint8 Ray_AABB(const Vec3& rRayStart, const Vec3& rRayDir, const AABB& rB
 }
 
 //! Check if ray intersect edge of bounding box.
-//! @param epsilonDist if distance between ray and egde is less then this epsilon then edge was intersected.
+//! @param epsilonDist if distance between ray and edge is less then this epsilon then edge was intersected.
 //! @param dist Distance between ray and edge.
 //! @param intPnt intersection point.
 inline bool Ray_AABBEdge(const Vec3& raySrc, const Vec3& rayDir, const AABB& aabb, float epsilonDist, float& dist, Vec3& intPnt)
@@ -293,6 +288,3 @@ inline int gcd(int a, int b)
 	}
 	return b;
 }
-
-#endif // __math_h__
-

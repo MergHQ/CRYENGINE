@@ -88,8 +88,9 @@ const float kTangentDelta = 0.01f;
 const float kAspectRatio = 1.777778f;
 const int kReserveCount = 7;             // x,y,z,rot_x,rot_y,rot_z,fov
 const string kMasterCameraName = "MasterCamera";
-}   // namespace
-}
+
+} // unnamed namespace
+} // namespace Export
 
 struct EDITOR_COMMON_API SExportMesh : public _i_reference_target_t
 {
@@ -131,7 +132,7 @@ public:
 	Export::EEntityObjectType     GetObjectEntityType() const                               { return entityType; }
 	size_t                        GetEntityAnimationDataCount() const                       { return m_entityAnimData.size(); }
 	const Export::EntityAnimData* GetEntityAnimationData(int index) const                   { return &m_entityAnimData[index]; }
-	void                          AddEntityAnimationData(Export::EntityAnimData entityData) { m_entityAnimData.push_back(entityData); };
+	void                          AddEntityAnimationData(Export::EntityAnimData entityData) { m_entityAnimData.push_back(entityData); }
 	void                          SetLastPtr(CBaseObject* pObject)                          { m_pLastObject = pObject; }
 	CBaseObject*                  GetLastObjectPtr()                                        { return m_pLastObject; }
 
@@ -166,4 +167,3 @@ struct EDITOR_COMMON_API SExportData
 
 	std::vector<_smart_ptr<SExportObject>> m_objects;
 };
-

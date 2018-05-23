@@ -4,7 +4,6 @@
 
 #include <CrySystem/File/ICryPak.h>
 
-// forward references.
 struct ICryArchive;
 class CCryMemFile;
 class CMemoryBlock;
@@ -39,10 +38,8 @@ public:
 	bool RemoveDir(const char* directory);
 
 	//! Return archive of this pak file wrapper.
-	ICryArchive* GetArchive() { return m_pArchive; };
+	ICryArchive* GetArchive() { return m_pArchive; }
 private:
 	ICryArchive_AutoPtr m_pArchive;
 	ICryPak*            m_pCryPak;
 };
-
-

@@ -163,7 +163,7 @@ public:
 	const string&                       GetDescription() const         { return m_commandDescription.GetDescription(); }
 	virtual string                      GetCommandString() const       { return m_module + "." + m_name; }
 
-	void                                SetAvailableInScripting()      { m_bAlsoAvailableInScripting = true; };
+	void                                SetAvailableInScripting()      { m_bAlsoAvailableInScripting = true; }
 	bool                                IsAvailableInScripting() const { return m_bAlsoAvailableInScripting; }
 
 	const CCommandDescription::TParams& GetParameters() const          { return m_commandDescription.GetParams(); }
@@ -177,13 +177,12 @@ public:
 
 public:
 	template<typename T>
-	static string        ToString_(T t)                   { return ::ToString(t); }
-	static inline string ToString_(const char* val)       { return val; }
-	static inline string ToString_(const string& val)     { return val; }
+	static string        ToString_(T t)                               { return ::ToString(t); }
+	static inline string ToString_(const char* val)                   { return val; }
+	static inline string ToString_(const string& val)                 { return val; }
 	template<typename T>
-	static bool          FromString_(T& t, const char* s) { return ::FromString(t, s); }
-	static inline bool   FromString_(const char*& val, const char* s)
-	{ return (val = s) != 0; }
+	static bool          FromString_(T& t, const char* s)             { return ::FromString(t, s); }
+	static inline bool   FromString_(const char*& val, const char* s) { return (val = s) != 0; }
 
 protected:
 	string              m_module;
@@ -242,7 +241,7 @@ public:
 
 	UiInfo*      GetUiInfo() const                       { return m_UiInfo; }
 
-	void SetUiInfo(UiInfo* info)
+	void         SetUiInfo(UiInfo* info)
 	{
 		if (m_UiInfo != info)
 		{
@@ -252,8 +251,6 @@ public:
 	}
 
 private:
-
-
 
 	UiInfo* m_UiInfo;
 };
@@ -760,4 +757,3 @@ inline string CommandString(const char* commandString, P1 p1, P2 p2, P3 p3, P4 p
 {
 	return string(commandString) + " " + CCommand::ToString_(p1) + " " + CCommand::ToString_(p2) + " " + CCommand::ToString_(p3) + " " + CCommand::ToString_(p4) + " " + CCommand::ToString_(p5);
 }
-

@@ -27,13 +27,8 @@ public:
 		setLayout(pLayout);
 	}
 
-	~CSnappingPreferencesDialog()
-	{
-
-	}
-
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
-	virtual const char*                       GetPaneTitle() const override        { return "Snapping Preferences"; };
+	virtual const char*                       GetPaneTitle() const override        { return "Snapping Preferences"; }
 	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 270, 200); }
 };
 
