@@ -1509,7 +1509,6 @@ PRIVATE
 	"${CRYENGINE_DIR}/Code/Tools"
 	"${CRYENGINE_DIR}/Code/CryPlugins/CryDefaultEntities/Module"
 	"${SDK_DIR}/squish-ccr"
-	../Plugins/MFCToolsPlugin
 )
 target_include_directories( ${THIS_PROJECT}
 PUBLIC
