@@ -13,8 +13,13 @@ EDITOR_COMMON_API bool Remove(const char* szPath);
 EDITOR_COMMON_API bool RemoveFile(const char* szFilePath);
 //! Moves the file at the given file path to the new file path allowing overwriting of the target.
 EDITOR_COMMON_API bool MoveFileAllowOverwrite(const char* szOldFilePath, const char* szNewFilePath);
+//! Copies the file at the given file path to the target file path allowing overwriting of the target.
+EDITOR_COMMON_API bool CopyFileAllowOverwrite(const char* szSourceFilePath, const char* szDestinationFilePath);
 //! Removes the directory at the given path
 EDITOR_COMMON_API bool RemoveDirectory(const char* szPath, bool bRecursive = true);
+//! Sets the file permission from read only to read-write.
+EDITOR_COMMON_API bool MakeFileWritable(const char* szFilePath);
+
 
 //! Extracts all the files from a pak file. The pak should already be open by GetISystem()->GetIPak()->OpenPack();
 //! The function will silently overwrite existing files.
