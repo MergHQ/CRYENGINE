@@ -565,8 +565,10 @@ void CPrefabManager::CloneAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
 
 		pObjectManager->CloneObjects(children, newChildren);
 
+		GetIEditor()->GetIUndoManager()->Suspend();
 		pPrefab->RemoveMembers(newChildren);
 		pPrefab->SetAutoUpdatePrefab(autoUpdatePrefab);
+		GetIEditor()->GetIUndoManager()->Resume();
 
 		objectsToSelect.insert(objectsToSelect.cend(), newChildren.begin(), newChildren.end());
 	}
