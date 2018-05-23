@@ -1,2 +1,0 @@
-All changes made to the tool are provided in the sources.zip archive (all within the /src/ directory).
-Note that the tool based off the 0.62 tag from https://github.com/uncrustify/uncrustify
