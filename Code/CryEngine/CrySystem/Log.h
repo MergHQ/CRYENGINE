@@ -40,6 +40,7 @@ public:
 	virtual void        Release() { delete this; };
 	virtual bool        SetFileName(const char* filename);
 	virtual const char* GetFileName() const;
+	virtual const char* GetFilePath() const;
 	virtual const char* GetBackupFileName() const;
 #if !defined(EXCLUDE_NORMAL_LOG)
 	virtual void        Log(const char* command, ...) PRINTF_PARAMS(2, 3);
@@ -109,16 +110,16 @@ private: // -------------------------------------------------------------------
 	virtual const char* GetAssetScopeString();
 #endif
 
-	ISystem*                  m_pSystem;                  //
-	float                     m_fLastLoadingUpdateTime;   // for non-frequent streamingEngine update
-	//char						m_szTemp[MAX_TEMP_LENGTH_SIZE];				//
-	char                      m_szFilename[MAX_FILENAME_SIZE];      // can be with path
-	mutable char              m_sBackupFilename[MAX_FILENAME_SIZE]; // can be with path
+	ISystem*                  m_pSystem;
+	float                     m_fLastLoadingUpdateTime; // for non-frequent streamingEngine update
+	string                    m_filename;               // Contains exactly what was passed in SetFileName
+	string                    m_filePath;               // Contains full path to the log file
+	string                    m_backupFilePath;
 	FILE*                     m_pLogFile;
-	CryStackStringT<char, 32> m_LogMode;                            //mode m_pLogFile has been opened with
+	CryStackStringT<char, 32> m_LogMode;                // mode m_pLogFile has been opened with
 	FILE*                     m_pErrFile;
 	int                       m_nErrCount;
-	string                    m_logFormat;                // Time logging format
+	string                    m_logFormat;              // Time logging format
 
 #if defined(SUPPORT_LOG_IDENTER)
 	uint8               m_indentation;
@@ -136,9 +137,8 @@ private: // -------------------------------------------------------------------
 	string                       m_assetScopeString;
 #endif
 
-	ICVar*             m_pLogIncludeTime;                 //
-
-	IConsole*          m_pConsole;                        //
+	ICVar*             m_pLogIncludeTime;
+	IConsole*          m_pConsole;
 
 	CryCriticalSection m_logCriticalSection;
 

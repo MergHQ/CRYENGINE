@@ -58,7 +58,7 @@ bool CJiraClient::ReportBug()
 	GetCurrentDirectory(sizeof(workingDirectory) - 1, workingDirectory);
 	commandLine.Format("\"%s\" -buildFolder=\"%s\" -logFileName=\"%s\"",
 	                   crashHandlerPath.c_str(), workingDirectory,
-	                   gEnv->pSystem->GetILog()->GetFileName());
+	                   gEnv->pSystem->GetILog()->GetFilePath());
 
 	// how to create a process: http://msdn.microsoft.com/en-us/library/ms682512(VS.85).aspx
 

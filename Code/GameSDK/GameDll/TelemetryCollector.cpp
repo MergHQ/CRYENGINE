@@ -377,34 +377,33 @@ CTelemetryCollector::~CTelemetryCollector()
 // outputs the session id to the console
 void CTelemetryCollector::OutputSessionId(IConsoleCmdArgs *inArgs)
 {
-	ITelemetryCollector		*tc=g_pGame->GetITelemetryCollector();
-	CryLogAlways("Telemetry: Session id = '%s'",tc->GetSessionId().c_str());
+	ITelemetryCollector* tc = g_pGame->GetITelemetryCollector();
+	CryLogAlways("Telemetry: Session id = '%s'", tc->GetSessionId().c_str());
 }
 
 // static
 // test function which uploads the game.log
 void CTelemetryCollector::SubmitGameLog(IConsoleCmdArgs *inArgs)
 {
-	CTelemetryCollector		*tc=static_cast<CTelemetryCollector*>(static_cast<CGame*>(g_pGame)->GetITelemetryCollector());
-	const char				*logFile=gEnv->pSystem->GetILog()->GetFileName();
+	CTelemetryCollector* tc = static_cast<CTelemetryCollector*>(static_cast<CGame*>(g_pGame)->GetITelemetryCollector());
+	const char* logFile = gEnv->pSystem->GetILog()->GetFilePath();
 
 	if (tc)
 	{
-		TTelemetrySubmitFlags		flags=k_tf_none;
+		TTelemetrySubmitFlags flags=k_tf_none;
+		CryFixedStringT<512> modLogFile(logFile);
 
-
-		CryFixedStringT<512>					modLogFile(logFile);
-
-		if (logFile != NULL && logFile[0]!='.' && logFile[0]!='%')		// if the log file isn't set to write into an alias or the current directory, it will default to writing into the current directory. we need to prepend our path to access it from here
+		// if the log file isn't set to write into an alias or the current directory, it will default to writing into the current directory. we need to prepend our path to access it from here
+		if (logFile != NULL && logFile[0] != '.' && logFile[0] != '%' && PathUtil::IsRelativePath(logFile))
 		{
 			modLogFile.Format(".\\%s",logFile);
 		}
 
-		ITelemetryProducer			*prod=new CTelemetryFileReader(modLogFile,0);
+		ITelemetryProducer* prod = new CTelemetryFileReader(modLogFile,0);
 		if (tc->m_telemetryCompressGameLog->GetIVal())
 		{
-			prod=new CTelemetryCompressor(prod);
-			modLogFile+=".gz";
+			prod = new CTelemetryCompressor(prod);
+			modLogFile += ".gz";
 		}
 
 		tc->SubmitTelemetryProducer(prod,modLogFile.c_str());
@@ -414,8 +413,8 @@ void CTelemetryCollector::SubmitGameLog(IConsoleCmdArgs *inArgs)
 // moves file out of the way, adding a datestamp to the target filename
 // assumes .log extension is needed to be added onto the end of targetFilename
 bool CTelemetryCollector::MoveLogFileOutOfTheWay(
-	const char *inSourceFilename,
-	const char *inTargetFilename)
+	const char* inSourceFilename,
+	const char* inTargetFilename)
 {
 	bool success=false;
 

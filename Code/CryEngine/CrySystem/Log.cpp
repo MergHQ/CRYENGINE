@@ -150,9 +150,6 @@ CLog::CLog(ISystem* pSystem)
 	, m_eLogMode(eLogMode_Normal)
 	, m_logFormat("%Y-%m-%dT%H:%M:%S:fffzzz")
 {
-	memset(m_szFilename, 0, MAX_FILENAME_SIZE);
-	memset(m_sBackupFilename, 0, MAX_FILENAME_SIZE);
-
 	m_nMainThreadId = CryGetCurrentThreadId();
 }
 
@@ -1097,7 +1094,7 @@ void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
 	#if KEEP_LOG_FILE_OPEN
 		if (!m_pLogFile)
 		{
-			OpenLogFile(m_szFilename, "at");
+			OpenLogFile(m_filePath, "at");
 		}
 
 		if (m_pLogFile)
@@ -1124,7 +1121,7 @@ void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
 	#else
 		if (bAdd)
 		{
-			FILE* fp = OpenLogFile(m_szFilename, "r+t");
+			FILE* fp = OpenLogFile(m_filePath, "r+t");
 			if (fp)
 			{
 				int nRes;
@@ -1141,7 +1138,7 @@ void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
 		{
 			// comment on bug by TN: Log file misses the last lines of output
 			// Temporally forcing the Log to flush before closing the file, so all lines will show up
-			if (FILE* fp = OpenLogFile(m_szFilename, "at")) // change to option "atc"
+			if (FILE* fp = OpenLogFile(m_filePath, "at")) // change to option "atc"
 			{
 				fputs(tempString.c_str(), fp);
 				// fflush(fp);  // enable to flush the file
@@ -1173,7 +1170,7 @@ void CLog::LogToFilePlus(const char* szFormat, ...)
 		return;
 	}
 
-	if (!m_szFilename[0] || !szFormat)
+	if (m_filePath.empty() || !szFormat)
 	{
 		return;
 	}
@@ -1201,7 +1198,7 @@ void CLog::LogToFile(const char* szFormat, ...)
 		return;
 	}
 
-	if (!m_szFilename[0] || !szFormat)
+	if (m_filePath.empty() || !szFormat)
 	{
 		return;
 	}
@@ -1232,16 +1229,11 @@ void CLog::CreateBackupFile() const
 		return;
 	}
 
-	const string srcFilePath = m_szFilename;
-	const string srcFileName = PathUtil::GetFileName(srcFilePath);
-	const string srcFileExt = PathUtil::GetExt(srcFilePath);
-	const string srcFileDir = PathUtil::GetParentDirectory(srcFilePath);
-	const string logBackupFolder = PathUtil::Make(srcFileDir, "LogBackups");
-	gEnv->pCryPak->MakeDir(logBackupFolder);
-
 	LockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
-	FILE* src = fxopen(srcFilePath, "rb");
+	FILE* src = fxopen(m_filePath, "rb");
 	UnlockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
+
+	const string dstFileDir = PathUtil::GetParentDirectory(m_backupFilePath);
 
 	string sBackupNameAttachment;
 
@@ -1289,29 +1281,40 @@ void CLog::CreateBackupFile() const
 		LockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
 		fclose(src);
 		UnlockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
+
+		gEnv->pCryPak->MakeDir(dstFileDir);
+	}
+	else
+	{
+		return;
 	}
 
-	const string dstFilePath = PathUtil::Make(logBackupFolder, srcFileName + sBackupNameAttachment + "." + srcFileExt);
+	const string dstFileStr = m_backupFilePath;
+	const string dstFileName = PathUtil::GetFileName(dstFileStr) + sBackupNameAttachment;
+	const string dstFileExt = PathUtil::GetExt(dstFileStr);
+	const string dstFilePath = PathUtil::Make(dstFileDir, dstFileName, dstFileExt);
 	
+	char adjusted[_MAX_PATH];
+	const string adjustedSrcFilePath = gEnv->pCryPak->AdjustFileName(m_filePath, adjusted, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+	const string adjustedDstFilePath = gEnv->pCryPak->AdjustFileName(dstFilePath, adjusted, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+
 #if CRY_PLATFORM_DURANGO
 	// Xbox has some limitation in file names. No spaces in file name are allowed. The full path is limited by MAX_PATH, etc.
 	// I change spaces with underscores here for valid name and cut it if it exceed a limit.
 	auto processDurangoPath = [](const string& path)
 	{
-		// AdjustFileName to handle %ALIAS%
-		char adjusted[_MAX_PATH];
-		const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(path, adjusted, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
-		string durangoPath = PathUtil::ToDosPath(szAdjustedPath);
+		string durangoPath = PathUtil::ToDosPath(path);
 		durangoPath.replace(' ', '_');
 		CRY_ASSERT_MESSAGE(durangoPath.size() <= MAX_PATH, "Log backup path is larger than MAX_PATH");
 		return CryStringUtils::UTF8ToWStrSafe(durangoPath);
 	};
-	const wstring durangoSrcFilePath = processDurangoPath(srcFilePath);
-	const wstring durangosDstFilePath = processDurangoPath(dstFilePath);
+	const wstring durangoSrcFilePath = processDurangoPath(adjustedSrcFilePath);
+	const wstring durangosDstFilePath = processDurangoPath(adjustedDstFilePath);
 	HRESULT result = CopyFile2(durangoSrcFilePath, durangosDstFilePath, nullptr);
 	CRY_ASSERT_MESSAGE(result == S_OK, "Error copying log backup file");
 #else
-	CopyFile(srcFilePath, dstFilePath, false);
+	CRY_ASSERT_MESSAGE(adjustedSrcFilePath[0] != '%' && adjustedDstFilePath[0] != '%', "Invalid %ALIAS% in CLog::CreateBackupFile()");
+	CopyFile(adjustedSrcFilePath, adjustedDstFilePath, false);
 #endif
 
 #endif
@@ -1319,29 +1322,38 @@ void CLog::CreateBackupFile() const
 
 //set the file used to log to disk
 //////////////////////////////////////////////////////////////////////
-bool CLog::SetFileName(const char* filename)
+bool CLog::SetFileName(const char* szFileName)
 {
-	if (!filename)
-	{
-		return false;
-	}
-
-	string temp = filename;
-	if (temp.empty() || temp.size() >= sizeof(m_szFilename))
+	CRY_ASSERT(PathUtil::IsStrValid(szFileName));
+	if (!PathUtil::IsStrValid(szFileName))
 		return false;
 
-#if !defined(CRY_PLATFORM_CONSOLE)
-	if (PathUtil::IsRelativePath(filename))
+	m_filename = szFileName;
+
+	static const string BACKUP_FOLDER = "LogBackups";
+	string directory = PathUtil::GetParentDirectory(szFileName);
+
+#if defined(CRY_PLATFORM_CONSOLE)
+	CRY_ASSERT_MESSAGE(PathUtil::IsRelativePath(szFileName), "Cannot use an absolute file path for .log files on consoles");
+	// On console we just put the LogBackups folder in the root (of the application)
+	string backupDirectory = PathUtil::Make(BACKUP_FOLDER, directory);
+#else
+	//
+	string backupDirectory = PathUtil::Make(directory, BACKUP_FOLDER);
+	if (PathUtil::IsRelativePath(szFileName) && szFileName[0] != '%') // %Alias% could expand to absolute path as well
 	{
-		temp = PathUtil::Make(PathUtil::GetProjectFolder(), filename);
+		backupDirectory = PathUtil::Make(PathUtil::GetProjectFolder(), backupDirectory);
+		directory = PathUtil::Make(PathUtil::GetProjectFolder(), directory);
 	}
 #endif
 
-	cry_strcpy(m_szFilename, temp.c_str());
+	const string fileName = PathUtil::GetFile(szFileName);
+	m_filePath = PathUtil::Make(directory, fileName);
+	m_backupFilePath = PathUtil::Make(backupDirectory, fileName);
 
 	CreateBackupFile();
 
-	FILE* fp = OpenLogFile(m_szFilename, "wt");
+	FILE* fp = OpenLogFile(m_filePath, "wt");
 	if (fp)
 	{
 		CloseLogFile(true);
@@ -1354,12 +1366,17 @@ bool CLog::SetFileName(const char* filename)
 //////////////////////////////////////////////////////////////////////////
 const char* CLog::GetFileName() const
 {
-	return m_szFilename;
+	return m_filename.c_str();
+}
+
+const char* CLog::GetFilePath() const
+{
+	return m_filePath.c_str();
 }
 
 const char* CLog::GetBackupFileName() const
 {
-	return m_sBackupFilename;
+	return m_backupFilePath.c_str();
 }
 
 //////////////////////////////////////////////////////////////////////

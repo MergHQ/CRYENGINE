@@ -252,10 +252,10 @@ bool CCrashRpt::InstallHandler()
 	//crAddScreenshot2(CR_AS_MAIN_WINDOW | CR_AS_USE_JPEG_FORMAT, 95);
 
 	// Add our log file to the error report
-	const char* logFileName = gEnv->pLog->GetFileName();
-	if (logFileName)
+	const char* logFilePath = gEnv->pLog->GetFilePath();
+	if (logFilePath)
 	{
-		crAddFile2(logFileName, NULL, "Log File", CR_AF_TAKE_ORIGINAL_FILE | CR_AF_MISSING_FILE_OK | CR_AF_ALLOW_DELETE);
+		crAddFile2(logFilePath, NULL, "Log File", CR_AF_TAKE_ORIGINAL_FILE | CR_AF_MISSING_FILE_OK | CR_AF_ALLOW_DELETE);
 	}
 	else
 	{
