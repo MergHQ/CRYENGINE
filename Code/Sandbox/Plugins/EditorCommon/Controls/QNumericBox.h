@@ -67,6 +67,7 @@ private:
 	double          m_min;
 	double          m_max;
 	double          m_step;
+	double          m_value;
 	QColor          m_sliderColor;
 };
 

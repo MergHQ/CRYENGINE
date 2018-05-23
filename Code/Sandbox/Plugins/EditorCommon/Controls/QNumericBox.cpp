@@ -489,6 +489,7 @@ QNumericBox::QNumericBox(QWidget* parent)
 	, m_min(-DBL_MAX)
 	, m_max(DBL_MAX)
 	, m_step(0.1)
+	, m_value(0)
 	, m_precision(6)
 {
 	m_pEdit = new QNumericEdit(this);
@@ -553,6 +554,10 @@ double QNumericBox::value() const
 	if (!GetIEditor() || !GetIEditor()->GetIPythonManager())
 		return 0.0;
 
+	if (m_pEdit->text() == "")
+	{
+		return m_value;
+	}
 	GetIEditor()->GetIPythonManager()->Execute((QString("numeric_expression_result = ") + m_pEdit->text()).toUtf8().constData());
 	double result = (double)GetIEditor()->GetIPythonManager()->GetAsFloat("numeric_expression_result");
 	return result;
@@ -601,6 +606,7 @@ void QNumericBox::setValue(double value)
 		outText.remove(outText.length() - 1, 1);
 	}
 
+	m_value = value;
 	m_pEdit->setText(outText);
 	m_pEdit->setCursorPosition(m_pEdit->text().length() - revCursor);
 
