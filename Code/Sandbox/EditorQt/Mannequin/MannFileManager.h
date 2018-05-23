@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MannFileManager_H__
-#define __MannFileManager_H__
 #pragma once
 
 #include "MannequinBase.h"
@@ -47,17 +45,14 @@ protected:
 
 	void         OnDisplayOnlyCurrentPreviewClicked();
 private:
-	CImageList                    m_imageList;
+	CImageList                      m_imageList;
 
-	CXTPReportControl             m_wndReport;
-	CXTPReportSubListControl      m_wndSubList;
-	CXTPReportFilterEditControl   m_wndFilterEdit;
+	CXTPReportControl               m_wndReport;
+	CXTPReportSubListControl        m_wndSubList;
+	CXTPReportFilterEditControl     m_wndFilterEdit;
 
 	std::unique_ptr<CInPlaceButton> m_pShowCurrentPreviewFilesOnlyCheckbox;
-	CMannequinFileChangeWriter&   m_fileChangeWriter;
-	bool                          m_bSourceControlAvailable;
-	bool                          m_bInChangedFileMode;
+	CMannequinFileChangeWriter&     m_fileChangeWriter;
+	bool                            m_bSourceControlAvailable;
+	bool                            m_bInChangedFileMode;
 };
-
-#endif // __MannFileManager_H__
-

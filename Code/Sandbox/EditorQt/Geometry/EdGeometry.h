@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __EdGeometry_h__
-#define __EdGeometry_h__
 #pragma once
 
 struct IIndexedMesh;
@@ -27,7 +25,7 @@ class SANDBOX_API CEdGeometry : public _i_reference_target_t
 {
 	DECLARE_DYNAMIC(CEdGeometry)
 public:
-	CEdGeometry() {};
+	CEdGeometry() {}
 
 	// Query the type of the geometry mesh.
 	virtual EEdGeometryType GetType() const = 0;
@@ -57,8 +55,5 @@ public:
 	virtual bool HitTest(HitContext& hit) = 0;
 
 protected:
-	~CEdGeometry() {};
+	~CEdGeometry() {}
 };
-
-#endif //__EdGeometry_h__
-

@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __particleitem_h__
-#define __particleitem_h__
 #pragma once
 
 #include "BaseLibraryItem.h"
@@ -18,7 +16,7 @@ public:
 	CParticleItem(IParticleEffect* pEffect);
 	~CParticleItem();
 
-	virtual EDataBaseItemType GetType() const { return EDB_TYPE_PARTICLE; };
+	virtual EDataBaseItemType GetType() const { return EDB_TYPE_PARTICLE; }
 
 	virtual void              SetName(const string& name);
 	void                      Serialize(SerializeContext& ctx);
@@ -70,6 +68,3 @@ private:
 	typedef std::map<IVariable::EDataType, uint32> TResolveReq;
 	TResolveReq m_ResolveRequests;
 };
-
-#endif // __particleitem_h__
-

@@ -24,6 +24,8 @@ struct IPlugin
 		eError_VersionMismatch = 1
 	};
 
+	virtual ~IPlugin() {}
+
 	//! Returns the version number of the plugin
 	virtual int32       GetPluginVersion() = 0;
 	//! Returns the human readable name of the plugin
@@ -33,13 +35,13 @@ struct IPlugin
 };
 
 #ifndef eCryModule
-#define eCryModule eCryM_EditorPlugin
+	#define eCryModule eCryM_EditorPlugin
 #endif
 
 // Initialization structure
 struct PLUGIN_INIT_PARAM
 {
-	IEditor* pIEditor;
+	IEditor*        pIEditor;
 	int             pluginVersion;
 	IPlugin::EError outErrorCode;
 };
@@ -48,11 +50,11 @@ struct PLUGIN_INIT_PARAM
 extern "C"
 {
 	DLL_EXPORT IPlugin* CreatePluginInstance(PLUGIN_INIT_PARAM* pInitParam);
-	DLL_EXPORT void DeletePluginInstance(IPlugin* pPlugin);
+	DLL_EXPORT void     DeletePluginInstance(IPlugin* pPlugin);
 }
 
 //Note: Use REGISTER_PLUGIN, do not invoke those directly.
-//These methods are meant to facilitate programming in plugins and automate registration of components. 
+//These methods are meant to facilitate programming in plugins and automate registration of components.
 //The idea is that you can use similar macros for registration relying on the CAutoRegister pattern such as REGISTER_CLASS_DESC.
 //However because of this relying on static initialization, the objects in DLLs will reside in another static space and
 //we will need to call the auto registration in every DLL space. This is what these methods provide.
@@ -83,32 +85,30 @@ inline void UnregisterPlugin()
 }
 
 //Use this in a cpp file in your plugin to register it properly
-#define REGISTER_PLUGIN(PluginClass)													\
-static IEditor* g_pEditor = nullptr;                                                    \
-IEditor* GetIEditor() { return g_pEditor; }                                             \
-                                                                                        \
-DLL_EXPORT IPlugin* CreatePluginInstance(PLUGIN_INIT_PARAM* pInitParam)                 \
-{                                                                                       \
-	if (pInitParam->pluginVersion != SANDBOX_PLUGIN_SYSTEM_VERSION)                     \
-	{                                                                                   \
-		pInitParam->outErrorCode = IPlugin::eError_VersionMismatch;                     \
-		return 0;                                                                       \
-	}                                                                                   \
-                                                                                        \
-	g_pEditor = pInitParam->pIEditor;													\
-	ModuleInitISystem(g_pEditor->GetSystem(), #PluginClass);                            \
-	PluginClass* pPlugin = new PluginClass();                                           \
-                                                                                        \
-	RegisterPlugin();                                                                   \
-                                                                                        \
-	return pPlugin;                                                                     \
-}                                                                                       \
-                                                                                        \
-DLL_EXPORT void DeletePluginInstance(IPlugin* pPlugin)                                  \
-{                                                                                       \
-	UnregisterPlugin();                                                                 \
-	delete pPlugin;                                                                     \
-}                                                                                       \
-
-
+#define REGISTER_PLUGIN(PluginClass)                                       \
+  static IEditor * g_pEditor = nullptr;                                    \
+  IEditor* GetIEditor() { return g_pEditor; }                              \
+                                                                           \
+  DLL_EXPORT IPlugin* CreatePluginInstance(PLUGIN_INIT_PARAM * pInitParam) \
+  {                                                                        \
+    if (pInitParam->pluginVersion != SANDBOX_PLUGIN_SYSTEM_VERSION)        \
+    {                                                                      \
+      pInitParam->outErrorCode = IPlugin::eError_VersionMismatch;          \
+      return 0;                                                            \
+    }                                                                      \
+                                                                           \
+    g_pEditor = pInitParam->pIEditor;                                      \
+    ModuleInitISystem(g_pEditor->GetSystem(), # PluginClass);              \
+    PluginClass* pPlugin = new PluginClass();                              \
+                                                                           \
+    RegisterPlugin();                                                      \
+                                                                           \
+    return pPlugin;                                                        \
+  }                                                                        \
+                                                                           \
+  DLL_EXPORT void DeletePluginInstance(IPlugin * pPlugin)                  \
+  {                                                                        \
+    UnregisterPlugin();                                                    \
+    delete pPlugin;                                                        \
+  }                                                                        \
 

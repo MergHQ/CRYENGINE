@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MaterialFXGraphMan_H__
-#define __MaterialFXGraphMan_H__
+#pragma once
 
 #include "LevelIndependentFileMan.h"
 #include "HyperGraph/HyperGraph.h"
@@ -29,6 +28,3 @@ private:
 	typedef std::list<IFlowGraphPtr> TGraphList;
 	TGraphList m_matFxGraphs;
 };
-
-#endif
-

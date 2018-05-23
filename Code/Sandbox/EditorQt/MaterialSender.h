@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MaterialSender_h__
-#define __MaterialSender_h__
 #pragma once
 
 #define WM_MATEDITSEND (WM_USER + 315)
@@ -161,6 +159,3 @@ private:
 	bool                   m_bIsMatEditor;
 	HANDLE                 hMapFile;
 };
-
-#endif //__MaterialSender_h__
-

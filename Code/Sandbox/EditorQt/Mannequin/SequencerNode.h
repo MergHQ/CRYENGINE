@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SEQUENCER_NODE_h__
-#define __SEQUENCER_NODE_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "ISequencerSystem.h"
 #include "MannequinBase.h"
@@ -25,8 +20,8 @@ public:
 
 	struct SParamInfo
 	{
-		SParamInfo() : name(""), paramId(SEQUENCER_PARAM_UNDEFINED), flags(0) {};
-		SParamInfo(const char* _name, ESequencerParamType _paramId, int _flags) : name(_name), paramId(_paramId), flags(_flags) {};
+		SParamInfo() : name(""), paramId(SEQUENCER_PARAM_UNDEFINED), flags(0) {}
+		SParamInfo(const char* _name, ESequencerParamType _paramId, int _flags) : name(_name), paramId(_paramId), flags(_flags) {}
 
 		const char*         name;
 		ESequencerParamType paramId;
@@ -100,6 +95,3 @@ protected:
 
 	std::vector<TrackDesc> m_tracks;
 };
-
-#endif // __SEQUENCER_NODE_h__
-

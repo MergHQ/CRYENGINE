@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MannequinChangeMonitor_h__
-#define __MannequinChangeMonitor_h__
+#pragma once
 
 #include <CrySystem/File/IFileChangeMonitor.h>
 
@@ -16,6 +15,3 @@ public:
 	class CMannequinFileChangeWriter* m_pFileChangeWriter;
 
 };
-
-#endif //__MannequinChangeMonitor_h__
-

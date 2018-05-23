@@ -1,17 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  CryEngine Source File.
-//  Copyright (C), Crytek, 2014.
-// -------------------------------------------------------------------------
-//  File name: PythonUiActionBinds.cpp
-//  Created:   06/10/2014 by timur
 //  Description: Python stabs for ui actions
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
 
 #include <StdAfx.h>
 

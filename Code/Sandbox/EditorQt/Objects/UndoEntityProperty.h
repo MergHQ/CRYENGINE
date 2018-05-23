@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CUNDOENTITYPROPERTY__H__
-#define __CUNDOENTITYPROPERTY__H__
+#pragma once
 
 #include "Util/BoostPythonHelpers.h"
 #include "EntityObject.h"
@@ -18,12 +17,9 @@ protected:
 	void        Redo();
 
 private:
-	string            m_entityName;
-	string            m_propertyName;
+	string             m_entityName;
+	string             m_propertyName;
 	SPyWrappedProperty m_undo;
 	SPyWrappedProperty m_redo;
 	const char*        m_undoDescription;
 };
-
-#endif // __CUNDOENTITYPROPERTY__H__
-

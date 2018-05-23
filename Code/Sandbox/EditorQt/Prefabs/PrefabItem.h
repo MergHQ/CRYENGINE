@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __PrefabItem_h__
-#define __PrefabItem_h__
 #pragma once
 
 #include "BaseLibraryItem.h"
@@ -30,7 +28,7 @@ public:
 	CPrefabItem();
 	~CPrefabItem();
 
-	virtual EDataBaseItemType GetType() const { return EDB_TYPE_PREFAB; };
+	virtual EDataBaseItemType GetType() const { return EDB_TYPE_PREFAB; }
 
 	void                      Serialize(SerializeContext& ctx);
 
@@ -43,8 +41,8 @@ public:
 	//! Called after particle parameters where updated.
 	void       Update();
 	//! Returns xml node containing prefab objects.
-	XmlNodeRef GetObjectsNode()           { return m_objectsNode; };
-	string    GetPrefabObjectClassName() { return m_PrefabClassName; };
+	XmlNodeRef GetObjectsNode()           { return m_objectsNode; }
+	string     GetPrefabObjectClassName() { return m_PrefabClassName; }
 	void       SetPrefabClassName(string prefabClassNameString);
 
 	void       UpdateObjects();
@@ -77,8 +75,5 @@ private:
 
 private:
 	XmlNodeRef m_objectsNode;
-	string    m_PrefabClassName;
+	string     m_PrefabClassName;
 };
-
-#endif // __PrefabItem_h__
-

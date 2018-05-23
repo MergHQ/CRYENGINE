@@ -46,6 +46,7 @@ enum EIconEffect
 
 struct IIconManager
 {
+	virtual ~IIconManager() {}
 	virtual IStatObj*  GetObject(EStatObject object) = 0;
 	virtual int        GetIconTexture(EIcon icon) = 0;
 	virtual int        GetIconTexture(const char* szIconName) = 0;

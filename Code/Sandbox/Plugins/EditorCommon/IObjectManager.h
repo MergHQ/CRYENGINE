@@ -2,25 +2,23 @@
 
 #pragma once
 
-// forward declarations.
-class CEntityObject;
-struct DisplayContext;
-struct IGizmoManager;
-class CObjectLayer;
-class CTrackViewAnimNode;
-class CUsedResources;
-class CSelectionGroup;
-class CObjectLayerManager;
-class CObjectClassDesc;
+class CBaseObject;
 class CObjectArchive;
+class CObjectClassDesc;
+class CObjectLayer;
+class CObjectLayerManager;
 class CObjectPhysicsManager;
 class CRect;
-class CViewport;
-class CBaseObject;
-struct CObjectEvent;
-struct HitContext;
-struct IObjectLayerManager;
 class CSelectionGroup;
+class CTrackViewAnimNode;
+class CUsedResources;
+class CViewport;
+
+struct CObjectEvent;
+struct DisplayContext;
+struct HitContext;
+struct IGizmoManager;
+struct IObjectLayerManager;
 
 enum EObjectListenerEvent;
 
@@ -52,7 +50,7 @@ private:
 class IGuidProvider
 {
 public:
-	virtual ~IGuidProvider() {};
+	virtual ~IGuidProvider() {}
 	virtual CryGUID GetFrom(const CryGUID& loadedGuid) const = 0;
 	CryGUID         GetFor(CBaseObject*) const;
 };
@@ -81,6 +79,8 @@ public:
 
 	//! This callback will be called on response to object event.
 	typedef Functor2<CBaseObject*, int> EventCallback;
+
+	virtual ~IObjectManager() {}
 
 	virtual bool         CanCreateObject() const = 0;
 
@@ -343,8 +343,8 @@ public:
 
 	//! New method of determining when selection is changed
 	//! Query IObjectManager::GetSelection to see what selection currently is
-	CCrySignal<void(const std::vector<CBaseObject*>&, const std::vector<CBaseObject*>&)>                 signalSelectionChanged;
+	CCrySignal<void(const std::vector<CBaseObject*>&, const std::vector<CBaseObject*>&)> signalSelectionChanged;
 
-	CCrySignal<void(const std::vector<CBaseObject*>& objects)> signalBatchProcessStarted;
+	CCrySignal<void(const std::vector<CBaseObject*>& objects)>                           signalBatchProcessStarted;
 	CCrySignal<void()> signalBatchProcessFinished;
 };

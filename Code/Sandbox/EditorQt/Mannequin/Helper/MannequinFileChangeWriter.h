@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MANNEQUIN_FILE_CHANGE_WRITER__H__
-#define __MANNEQUIN_FILE_CHANGE_WRITER__H__
+#pragma once
 
 #include <ICryMannequinEditor.h>
 #include "../MannFileManager.h"
@@ -72,6 +71,3 @@ private:
 
 	static CMannequinFileChangeWriter* sm_pActiveWriter;
 };
-
-#endif
-

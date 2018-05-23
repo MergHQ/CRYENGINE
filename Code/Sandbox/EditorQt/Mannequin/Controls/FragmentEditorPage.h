@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MANN_FRAGMENT_EDITOR_PAGE__H__
-#define __MANN_FRAGMENT_EDITOR_PAGE__H__
+#pragma once
 
 #include <ICryMannequin.h>
 
@@ -99,20 +98,20 @@ private:
 	SFragTagState GetTagStateFromCtrl() const;
 	void          OnInternalVariableChange(IVariable* pVar);
 
-	CSequencerSplitter                       m_wndSplitterTracks;
-	CClampedSplitterWnd                      m_wndSplitterVert;
-	CClampedSplitterWnd                      m_wndSplitterHorz;
-	CPropertiesPanel                         m_tagsPanel;
-	CMannFragmentEditor                      m_wndTrackPanel;
-	CMannNodesCtrl                           m_wndNodes;
-	CMannKeyPropertiesDlgFE                  m_wndKeyProperties;
-	CSequencerDopeSheetToolbar               m_cDlgToolBar;
-    CMannequinModelViewport*                 m_modelViewport;
+	CSequencerSplitter         m_wndSplitterTracks;
+	CClampedSplitterWnd        m_wndSplitterVert;
+	CClampedSplitterWnd        m_wndSplitterHorz;
+	CPropertiesPanel           m_tagsPanel;
+	CMannFragmentEditor        m_wndTrackPanel;
+	CMannNodesCtrl             m_wndNodes;
+	CMannKeyPropertiesDlgFE    m_wndKeyProperties;
+	CSequencerDopeSheetToolbar m_cDlgToolBar;
+	CMannequinModelViewport*   m_modelViewport;
 
-	QMfcContainer                            m_viewportHost;
-	QMfcViewportHost*                        m_pViewportWidget;
+	QMfcContainer              m_viewportHost;
+	QMfcViewportHost*          m_pViewportWidget;
 
-	SMannequinContexts*                      m_contexts;
+	SMannequinContexts*        m_contexts;
 
 	float                      m_fTime;
 	float                      m_playSpeed;
@@ -134,6 +133,3 @@ private:
 
 	HACCEL                     m_hAccelerators;
 };
-
-#endif
-

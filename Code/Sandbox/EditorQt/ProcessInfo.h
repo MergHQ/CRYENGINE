@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __processinfo_h__
-#define __processinfo_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 /** Stores information about memory usage of process, retrieved from CProcessInfo class.
     All size values are in bytes.
@@ -39,6 +34,3 @@ public:
 	 */
 	static void QueryMemInfo(ProcessMemInfo& meminfo);
 };
-
-#endif // __processinfo_h__
-

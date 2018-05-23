@@ -1,9 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __QEditToolButton_h__
-#define __QEditToolButton_h__
-
 #pragma once
+
 #include <QToolButton>
 
 //////////////////////////////////////////////////////////////////////////
@@ -51,7 +49,7 @@ public:
 		bool           bNeedDocument;
 		CRuntimeClass* pToolClass;
 
-		SButtonInfo() : pToolClass(0), bNeedDocument(true) {};
+		SButtonInfo() : pToolClass(0), bNeedDocument(true) {}
 	};
 
 	enum class LayoutType
@@ -80,12 +78,9 @@ protected:
 	{
 		SButtonInfo      info;
 		QEditToolButton* pButton;
-		SButton() : pButton(0) {};
+		SButton() : pButton(0) {}
 	};
 
 	std::vector<SButton> m_buttons;
 	LayoutType           m_layoutType;
 };
-
-#endif // __QEditToolButton_h__
-

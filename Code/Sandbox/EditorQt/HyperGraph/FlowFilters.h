@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FLOWFILTERS_H__
-#define __FLOWFILTERS_H__
+#pragma once
 
 #include <CryFlowGraph/IFlowSystem.h>
 
@@ -79,5 +78,3 @@ protected:
 	string      m_nodeType;
 	TFlowNodeId m_nodeId;
 };
-#endif
-

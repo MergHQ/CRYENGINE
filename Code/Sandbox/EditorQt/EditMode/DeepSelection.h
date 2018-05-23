@@ -1,16 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  CryEngine Source File.
-//  Copyright (C), Crytek, 1999-2012
-// -------------------------------------------------------------------------
-//  File name:	DeepSelection.h
-//  Created:	08-03-2010 by Dongjoon Kim
-//  Description: Deep Selection Header
-//
-////////////////////////////////////////////////////////////////////////////
 
 class CBaseObject;
 

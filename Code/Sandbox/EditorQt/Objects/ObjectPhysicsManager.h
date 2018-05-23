@@ -1,13 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __ObjectPhysicsManager_h__
-#define __ObjectPhysicsManager_h__
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-//////////////////////////////////////////////////////////////////////////
 class CObjectPhysicsManager
 {
 public:
@@ -45,6 +39,3 @@ private:
 	int                   m_collisionClassExportId;
 	TCollisionClassVector m_collisionClasses;
 };
-
-#endif // __ObjectPhysicsManager_h__
-

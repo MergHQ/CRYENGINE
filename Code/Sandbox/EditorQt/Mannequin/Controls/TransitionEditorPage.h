@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MANN_TRANSITION_EDITOR_PAGE__H__
-#define __MANN_TRANSITION_EDITOR_PAGE__H__
+#pragma once
 
 #include <ICryMannequin.h>
 
@@ -104,23 +103,23 @@ private:
 	void          ResetForcedBlend();
 	void          SelectFirstKey();
 
-	CMannDopeSheet                         m_wndTrackPanel;
-	CMannNodesCtrl                         m_wndNodes;
-	CPropertiesPanel                       m_tagsPanel;
-	CMannKeyPropertiesDlgFE                m_wndKeyProperties;
-	CSequencerSplitter                     m_wndSplitterTracks;
-	CClampedSplitterWnd                    m_wndSplitterHorz;
-	CClampedSplitterWnd                    m_wndSplitterVert;
-	CSequencerDopeSheetToolbar             m_cDlgToolBar;
-	CMannequinModelViewport*               m_modelViewport;
-	QMfcContainer                          m_viewportHost;
-	QMfcViewportHost*                      m_pViewportWidget;
-	SMannequinContexts*                    m_contexts;
-	CFragmentSequencePlayback*             m_sequencePlayback;
+	CMannDopeSheet                           m_wndTrackPanel;
+	CMannNodesCtrl                           m_wndNodes;
+	CPropertiesPanel                         m_tagsPanel;
+	CMannKeyPropertiesDlgFE                  m_wndKeyProperties;
+	CSequencerSplitter                       m_wndSplitterTracks;
+	CClampedSplitterWnd                      m_wndSplitterHorz;
+	CClampedSplitterWnd                      m_wndSplitterVert;
+	CSequencerDopeSheetToolbar               m_cDlgToolBar;
+	CMannequinModelViewport*                 m_modelViewport;
+	QMfcContainer                            m_viewportHost;
+	QMfcViewportHost*                        m_pViewportWidget;
+	SMannequinContexts*                      m_contexts;
+	CFragmentSequencePlayback*               m_sequencePlayback;
 
 	std::unique_ptr<SFragmentHistoryContext> m_contextHistory;
 	std::unique_ptr<SFragmentHistoryContext> m_fragmentHistory;
-	_smart_ptr<CSequencerSequence>         m_sequence;
+	_smart_ptr<CSequencerSequence>           m_sequence;
 
 	float                m_fTime;
 	float                m_fMaxTime;
@@ -148,6 +147,3 @@ private:
 
 	HACCEL               m_hAccelerators;
 };
-
-#endif
-

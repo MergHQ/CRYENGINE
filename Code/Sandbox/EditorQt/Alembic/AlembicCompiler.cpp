@@ -196,15 +196,15 @@ private:
 
 }
 
-bool CAlembicCompiler::CompileAlembic(CString& fileName, const CString& fullPath)
+bool CAlembicCompiler::CompileAlembic(string& fileName, const string& fullPath, bool showDialog)
 {
 	const CString rcFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), fullPath.GetString());
 
-	const CString configPath = PathUtil::ReplaceExtension(rcFilePath.GetString(), "cbc");
-	XmlNodeRef config = XmlHelpers::LoadXmlFromFile(configPath);
+	const string configPath = PathUtil::ReplaceExtension(rcFilePath.GetString(), "cbc");
+	XmlNodeRef config = PathUtil::FileExists(configPath) ? XmlHelpers::LoadXmlFromFile(configPath) : XmlNodeRef();
 	CAlembicCompileDialog dialog(config);
 
-	if (dialog.DoModal() == IDOK)
+	if (!showDialog || dialog.DoModal() == IDOK)
 	{
 		const CString upAxis = dialog.GetUpAxis();
 		const CString playbackFromMemory = dialog.GetPlaybackFromMemory();

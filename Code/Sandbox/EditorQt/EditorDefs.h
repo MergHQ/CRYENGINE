@@ -91,7 +91,7 @@
 #include <CryCore/StlUtils.h>
 
 #include <CryCore/smartptr.h>
-#define TSmartPtr                 _smart_ptr
+#define TSmartPtr _smart_ptr
 
 #ifndef ON_WM_INPUT
 // MFC does not define this one.

@@ -4,6 +4,8 @@
 
 struct IObjectLayerManager
 {
+	virtual ~IObjectLayerManager() {}
+
 	//! Find layer by layer GUID.
 	virtual IObjectLayer* FindLayer(CryGUID guid) const = 0;
 
@@ -12,9 +14,7 @@ struct IObjectLayerManager
 
 	//! Search for layer by name.
 	virtual IObjectLayer* FindLayerByName(const string& layerName) const = 0;
-	
+
 	//! Get this layer is current.
-	virtual IObjectLayer*  GetCurrentLayer() const = 0;
+	virtual IObjectLayer* GetCurrentLayer() const = 0;
 };
-
-

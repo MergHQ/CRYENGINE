@@ -13,6 +13,7 @@ class QAction;
 class ICommandManager
 {
 public:
+	virtual           ~ICommandManager() {}
 	virtual bool      AddCommand(CCommand* pCommand, TPfnDeleter deleter = nullptr) = 0;
 	virtual bool      AddCommandModule(CCommandModuleDescription* pCommand) = 0;
 	virtual void      SetUiDescription(const char* module, const char* name, const CUiCommand::UiInfo& info) const = 0;

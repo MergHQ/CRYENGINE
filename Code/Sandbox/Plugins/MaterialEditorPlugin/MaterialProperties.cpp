@@ -84,7 +84,6 @@ void CMaterialSerializer::CMaterialPropertyTree::OnDataBaseItemEvent(IDataBaseIt
 	}
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 
 //Serialization of IShader enums for UI only
@@ -106,13 +105,11 @@ SERIALIZATION_ENUM(eWF_None, "none", "None")
 SERIALIZATION_ENUM(eWF_Sin, "sin", "Sin")
 SERIALIZATION_ENUM_END()
 
-
 SERIALIZATION_ENUM_BEGIN(ETexGenType, "Texture Gen Type")
 SERIALIZATION_ENUM(ETG_Stream, "stream", "Stream")
 SERIALIZATION_ENUM(ETG_World, "world", "World")
 SERIALIZATION_ENUM(ETG_Camera, "camera", "Camera")
 SERIALIZATION_ENUM_END()
-
 
 SERIALIZATION_ENUM_BEGIN(ETexModRotateType, "Texture Mod Rotate Type")
 SERIALIZATION_ENUM(ETMR_NoChange, "nochange", "No Change")
@@ -120,7 +117,6 @@ SERIALIZATION_ENUM(ETMR_Fixed, "fixed", "Fixed")
 SERIALIZATION_ENUM(ETMR_Constant, "constant", "Constant")
 SERIALIZATION_ENUM(ETMR_Oscillated, "oscillated", "Oscillated")
 SERIALIZATION_ENUM_END()
-
 
 SERIALIZATION_ENUM_BEGIN(ETexModMoveType, "Texture Mod Move Type")
 SERIALIZATION_ENUM(ETMM_NoChange, "nochange", "No Change")
@@ -146,7 +142,6 @@ SERIALIZATION_ENUM_END()
 
 //////////////////////////////////////////////////////////////////////////
 
-
 void SerializeWordToDegree(Serialization::IArchive& ar, uint16& word, char* name, char* label)
 {
 	float degree = Word2Degr(word);
@@ -156,7 +151,7 @@ void SerializeWordToDegree(Serialization::IArchive& ar, uint16& word, char* name
 
 	ar(Serialization::Decorators::Range<float>(degree, 0, 360, 0.5f), name, label);
 
-	if(ar.isInput())
+	if (ar.isInput())
 		word = Degr2Word(degree);
 }
 
@@ -169,7 +164,6 @@ void SetFlag(T& bitFieldInOut, uint64 mask, bool set)
 	else
 		bitFieldInOut &= ~mask;
 }
-
 
 CMaterialSerializer::CMaterialSerializer(CMaterial* pMaterial, bool readOnly)
 	: m_pMaterial(pMaterial)
@@ -206,28 +200,27 @@ void CMaterialSerializer::Serialize(Serialization::IArchive& ar)
 
 		/* Notes on template system:
 
-		Observation from usage:
-		* Setting the template will govern most parameters of the material (should really disable these fields in UI), this is confirmed by CMaterialUI::SetFromMaterial code
-		* Only a few parameters can be changed from template, texture maps and shader params seems like some of them
-		* Changing shaders or shader gen params lead to crash
+		   Observation from usage:
+		 * Setting the template will govern most parameters of the material (should really disable these fields in UI), this is confirmed by CMaterialUI::SetFromMaterial code
+		 * Only a few parameters can be changed from template, texture maps and shader params seems like some of them
+		 * Changing shaders or shader gen params lead to crash
 
-		Observation from code:
-		* CMatInfo::m_sMatTemplate is defined out in non editor targets and unused in engine, there may not be a runtime system to support templates
-		* Material template seems to work from an engine perspective
-		* Template recursion (template that has template) seems to be poorly handled by ui
-		* SetFromMaterial(mtl, false) is called on select which sets the template (parameter if backwards)
-		* SetFromMaterial(template, true) is called before setting properties  > this does not set the template, I assume this is meant to handle template recursion ?
-		* On property change, if shader changed, shader gen mask changed or mtlLayers changed, it calls SetFromMaterial(mtl, false) again (which i suspect leads to crashes)
+		   Observation from code:
+		 * CMatInfo::m_sMatTemplate is defined out in non editor targets and unused in engine, there may not be a runtime system to support templates
+		 * Material template seems to work from an engine perspective
+		 * Template recursion (template that has template) seems to be poorly handled by ui
+		 * SetFromMaterial(mtl, false) is called on select which sets the template (parameter if backwards)
+		 * SetFromMaterial(template, true) is called before setting properties  > this does not set the template, I assume this is meant to handle template recursion ?
+		 * On property change, if shader changed, shader gen mask changed or mtlLayers changed, it calls SetFromMaterial(mtl, false) again (which i suspect leads to crashes)
 
-		How do to it properly:
-		* Template may should not be set in the property tree but rather in the menus / toolbars
-		* Once set the template should appear in the property tree and all the fields inherited should be greyed out
+		   How do to it properly:
+		 * Template may should not be set in the property tree but rather in the menus / toolbars
+		 * Once set the template should appear in the property tree and all the fields inherited should be greyed out
 
-		*/
+		 */
 		/*string mtlTemplate = ;
-		ar(Serialization::MaterialPicker(mtlTemplate), "mtl_template", "Template Material");*/
+		   ar(Serialization::MaterialPicker(mtlTemplate), "mtl_template", "Template Material");*/
 
-		
 		{
 			//Note: If a material was saved and the shader removed, we will get asserts, this is unavoidable with yasli StringListValue...
 			string shader = pMtl->GetShaderName();
@@ -283,7 +276,7 @@ void CMaterialSerializer::Serialize(Serialization::IArchive& ar)
 
 			ar(value, "surfaceType", "Surface Type");
 
-			if(ar.isInput() && value.index() != oldIndex)
+			if (ar.isInput() && value.index() != oldIndex)
 			{
 				surfaceType = value.c_str();
 				if (surfaceType == "None")
@@ -411,7 +404,7 @@ void CMaterialSerializer::Serialize(Serialization::IArchive& ar)
 		ar.openBlock("vertexDeform", "-Vertex Deformation");
 
 		//Note: Vertex deform structure is only partially serialized, there are fields that are present in engine structures but not displayed in UI
-		//The old material editor's behavior was followed here however a better approach would be 
+		//The old material editor's behavior was followed here however a better approach would be
 		//to make engine structures serializable and remove the unused fields or enum values there
 
 		ar(shaderResources.m_DeformInfo.m_eType, "deformType", "Deform Type");
@@ -428,7 +421,7 @@ void CMaterialSerializer::Serialize(Serialization::IArchive& ar)
 			{
 				//TODO: those parameters probably need a range, especially phase
 				ar.openBlock("waveParams", "Wave Parameters");
-				
+
 				ar(shaderResources.m_DeformInfo.m_WaveX.m_Level, "level", "Level");
 				ar(shaderResources.m_DeformInfo.m_WaveX.m_Amp, "amplitude", "Amplitude");
 				ar(shaderResources.m_DeformInfo.m_WaveX.m_Phase, "phase", "Phase");
@@ -468,54 +461,54 @@ void CMaterialSerializer::Serialize(Serialization::IArchive& ar)
 
 	//Propagation system currently disabled, is not supported by this material editor and not used in production
 	/*{
-		
-		ar.openBlock("propagation", "-Propagation");
 
-		int mtlPropagationFlags = pMtl->GetPropagationFlags();
+	   ar.openBlock("propagation", "-Propagation");
 
-		string linkedMaterial = pMtl->GetLinkedMaterialName();
-		ar(Serialization::MaterialPicker(linkedMaterial), "linkedMaterial", "Linked Material");
+	   int mtlPropagationFlags = pMtl->GetPropagationFlags();
 
-		bool bPropagateMaterialSettings = mtlPropagationFlags & MTL_PROPAGATE_MATERIAL_SETTINGS;
-		ar(bPropagateMaterialSettings, "bPropagateMaterialSettings", "Propagate Material Settings");
-		SetFlag(mtlPropagationFlags, MTL_PROPAGATE_MATERIAL_SETTINGS, bPropagateMaterialSettings);
+	   string linkedMaterial = pMtl->GetLinkedMaterialName();
+	   ar(Serialization::MaterialPicker(linkedMaterial), "linkedMaterial", "Linked Material");
 
-		bool bPropagateOpactity = mtlPropagationFlags & MTL_PROPAGATE_OPACITY;
-		ar(bPropagateOpactity, "bPropagateOpactity", "Propagate Opacity Settings");
-		SetFlag(mtlPropagationFlags, MTL_PROPAGATE_OPACITY, bPropagateOpactity);
+	   bool bPropagateMaterialSettings = mtlPropagationFlags & MTL_PROPAGATE_MATERIAL_SETTINGS;
+	   ar(bPropagateMaterialSettings, "bPropagateMaterialSettings", "Propagate Material Settings");
+	   SetFlag(mtlPropagationFlags, MTL_PROPAGATE_MATERIAL_SETTINGS, bPropagateMaterialSettings);
 
-		bool bPropagateLighting = mtlPropagationFlags & MTL_PROPAGATE_LIGHTING;
-		ar(bPropagateLighting, "bPropagateLighting", "Propagate Lighting Settings");
-		SetFlag(mtlPropagationFlags, MTL_PROPAGATE_LIGHTING, bPropagateLighting);
+	   bool bPropagateOpactity = mtlPropagationFlags & MTL_PROPAGATE_OPACITY;
+	   ar(bPropagateOpactity, "bPropagateOpactity", "Propagate Opacity Settings");
+	   SetFlag(mtlPropagationFlags, MTL_PROPAGATE_OPACITY, bPropagateOpactity);
 
-		bool bPropagateAdvanced = mtlPropagationFlags & MTL_PROPAGATE_ADVANCED;
-		ar(bPropagateAdvanced, "bPropagateAdvanced", "Propagate Advanced Settings");
-		SetFlag(mtlPropagationFlags, MTL_PROPAGATE_ADVANCED, bPropagateAdvanced);
+	   bool bPropagateLighting = mtlPropagationFlags & MTL_PROPAGATE_LIGHTING;
+	   ar(bPropagateLighting, "bPropagateLighting", "Propagate Lighting Settings");
+	   SetFlag(mtlPropagationFlags, MTL_PROPAGATE_LIGHTING, bPropagateLighting);
 
-		bool bPropagateTexture = mtlPropagationFlags & MTL_PROPAGATE_TEXTURES;
-		ar(bPropagateTexture, "bPropagateTexture", "Propagate Texture Maps");
-		SetFlag(mtlPropagationFlags, MTL_PROPAGATE_TEXTURES, bPropagateTexture);
+	   bool bPropagateAdvanced = mtlPropagationFlags & MTL_PROPAGATE_ADVANCED;
+	   ar(bPropagateAdvanced, "bPropagateAdvanced", "Propagate Advanced Settings");
+	   SetFlag(mtlPropagationFlags, MTL_PROPAGATE_ADVANCED, bPropagateAdvanced);
 
-		bool bPropagateShaderParams = mtlPropagationFlags & MTL_PROPAGATE_SHADER_PARAMS;
-		ar(bPropagateShaderParams, "bPropagateShaderParams", "Propagate Shader Params");
-		SetFlag(mtlPropagationFlags, MTL_PROPAGATE_SHADER_PARAMS, bPropagateShaderParams);
+	   bool bPropagateTexture = mtlPropagationFlags & MTL_PROPAGATE_TEXTURES;
+	   ar(bPropagateTexture, "bPropagateTexture", "Propagate Texture Maps");
+	   SetFlag(mtlPropagationFlags, MTL_PROPAGATE_TEXTURES, bPropagateTexture);
 
-		bool bPropagateShaderGenParams = mtlPropagationFlags & MTL_PROPAGATE_SHADER_GEN;
-		ar(bPropagateShaderGenParams, "bPropagateShaderGenParams", "Propagate Shader Generation");
-		SetFlag(mtlPropagationFlags, MTL_PROPAGATE_SHADER_GEN, bPropagateShaderGenParams);
+	   bool bPropagateShaderParams = mtlPropagationFlags & MTL_PROPAGATE_SHADER_PARAMS;
+	   ar(bPropagateShaderParams, "bPropagateShaderParams", "Propagate Shader Params");
+	   SetFlag(mtlPropagationFlags, MTL_PROPAGATE_SHADER_PARAMS, bPropagateShaderParams);
 
-		bool bPropagateVertexDef = mtlPropagationFlags & MTL_PROPAGATE_VERTEX_DEF;
-		ar(bPropagateVertexDef, "bPropagateVertexDef", "Propagate Vertex Deformation");
-		SetFlag(mtlPropagationFlags, MTL_PROPAGATE_VERTEX_DEF, bPropagateVertexDef);
+	   bool bPropagateShaderGenParams = mtlPropagationFlags & MTL_PROPAGATE_SHADER_GEN;
+	   ar(bPropagateShaderGenParams, "bPropagateShaderGenParams", "Propagate Shader Generation");
+	   SetFlag(mtlPropagationFlags, MTL_PROPAGATE_SHADER_GEN, bPropagateShaderGenParams);
 
-		bool bPropagateLayerPresets = mtlPropagationFlags & MTL_PROPAGATE_LAYER_PRESETS;
-		ar(bPropagateLayerPresets, "bPropagateLayerPresets", "Propagate Layer Presets");
-		SetFlag(mtlPropagationFlags, MTL_PROPAGATE_LAYER_PRESETS, bPropagateLayerPresets);
+	   bool bPropagateVertexDef = mtlPropagationFlags & MTL_PROPAGATE_VERTEX_DEF;
+	   ar(bPropagateVertexDef, "bPropagateVertexDef", "Propagate Vertex Deformation");
+	   SetFlag(mtlPropagationFlags, MTL_PROPAGATE_VERTEX_DEF, bPropagateVertexDef);
 
-		pMtl->SetPropagationFlags(mtlPropagationFlags);
+	   bool bPropagateLayerPresets = mtlPropagationFlags & MTL_PROPAGATE_LAYER_PRESETS;
+	   ar(bPropagateLayerPresets, "bPropagateLayerPresets", "Propagate Layer Presets");
+	   SetFlag(mtlPropagationFlags, MTL_PROPAGATE_LAYER_PRESETS, bPropagateLayerPresets);
 
-		ar.closeBlock();
-	}*/
+	   pMtl->SetPropagationFlags(mtlPropagationFlags);
+
+	   ar.closeBlock();
+	   }*/
 
 	if (ar.isInput())//writing to material
 	{
@@ -542,7 +535,6 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 	const auto& materialHelpers = GetIEditor()->Get3DEngine()->GetMaterialHelpers();
 
 	SInputShaderResources& shaderResources = m_pMaterial->GetShaderResources();
-
 
 	ar.openBlock("textureMaps", "Texture Maps");
 
@@ -573,7 +565,6 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 				m_textureSlotLabels[texId].replace("[", "(");
 				m_textureSlotLabels[texId].replace("]", ")");
 			}
-				
 
 			if (!ar.openBlock(m_textureSlotLabels[texId].c_str(), m_textureSlotLabels[texId].c_str()))
 				continue;
@@ -588,20 +579,19 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 			if (pSlot)
 				ar.doc(pSlot->m_Description);
 
-			//Old material editor was destroying UI resource before changing texture, 
+			//Old material editor was destroying UI resource before changing texture,
 			//though this seems dangerous without any refcount as the resource may be used by something else
 			//Not to mention this is not the responsibility of the material editor but rather the UI system
 			//TODO: Confirm this can be left out
 			/*
-			//Unload previous dynamic texture/UIElement instance
-			if (IsFlashUIFile(sr.m_Textures[tex].m_Name))
-			{
-				DestroyTexOfFlashFile(sr.m_Textures[tex].m_Name);
-			}
-			*/
+			   //Unload previous dynamic texture/UIElement instance
+			   if (IsFlashUIFile(sr.m_Textures[tex].m_Name))
+			   {
+			   DestroyTexOfFlashFile(sr.m_Textures[tex].m_Name);
+			   }
+			 */
 			shaderTexture.SetName(textureFilePath.c_str());
 		}
-
 
 		{
 			string textureType = materialHelpers.GetNameFromTextureType(shaderTexture.m_Sampler.m_eTexType);
@@ -610,7 +600,7 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 
 			ar(textureTypeVal, "texType", "Texture Type");
 
-			if(textureTypeVal.index() != oldIndex)
+			if (textureTypeVal.index() != oldIndex)
 				shaderTexture.m_Sampler.m_eTexType = materialHelpers.GetTextureTypeFromName(textureTypeVal.c_str());
 		}
 
@@ -626,9 +616,9 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 		//Note that values used to be zeroed when modificator not present but the editor always made it present
 		SEfTexModificator* pTexModifier = nullptr;
 		/*if (ar.isOutput())
-			pTexModifier = shaderTexture.GetModificator();
-		else if (ar.isInput())*/
-			pTexModifier = shaderTexture.AddModificator();
+		   pTexModifier = shaderTexture.GetModificator();
+		   else if (ar.isInput())*/
+		pTexModifier = shaderTexture.AddModificator();
 
 		if (pTexModifier)
 		{
@@ -650,7 +640,7 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 			bHasDetailDecalOut = true;
 
 			ar.openBlock("detailDecal", "Detail Decal");
-			
+
 			//ar(bIsDetailDecal, "bIsDetailDecal", "^^Detail Decal");
 
 			//if (bIsDetailDecal)
@@ -745,7 +735,7 @@ void CMaterialSerializer::SerializeTextureSlots(Serialization::IArchive& ar, boo
 
 				ar.closeBlock();
 			}
-		
+
 			if (ar.openBlock("rotator", "-Rotator"))
 			{
 				ETexModRotateType type = (ETexModRotateType)pTexModifier->m_eRotType;
@@ -834,10 +824,10 @@ CMaterialSerializer::SShaderParamInfo CMaterialSerializer::ParseShaderParamScrip
 
 			//UI widget is not handled as it is based on serializable type
 			/*if (stricmp(element[1], "UIWidget") == 0)
-			{
-				if (stricmp(element[2], "Color") == 0)
-				if (stricmp(element[2], "Slider") == 0)
-			}*/
+			   {
+			   if (stricmp(element[2], "Color") == 0)
+			   if (stricmp(element[2], "Slider") == 0)
+			   }*/
 
 			if (stricmp(element[1], "UIHelp") == 0)
 			{
@@ -868,12 +858,12 @@ CMaterialSerializer::SShaderParamInfo CMaterialSerializer::ParseShaderParamScrip
 		}
 	}
 
-	if(info.m_uiName.size() == 0)
+	if (info.m_uiName.size() == 0)
 		info.m_uiName = param.m_Name;
 
 	//fix step for integer values
 	if (!info.bHasStep && param.m_Type != eType_FLOAT)
-		info.m_step = 1; 
+		info.m_step = 1;
 
 	return info;
 }
@@ -881,7 +871,6 @@ CMaterialSerializer::SShaderParamInfo CMaterialSerializer::ParseShaderParamScrip
 template<typename T>
 void SerializeShaderParam(Serialization::IArchive& ar, T& value, const char* name, const CMaterialSerializer::SShaderParamInfo& paramInfo)
 {
-	
 	if (paramInfo.bHasMin || paramInfo.bHasMax)
 	{
 		ar(Serialization::Decorators::Range<T>(value, (T)paramInfo.m_min, (T)paramInfo.m_max, (T)paramInfo.m_step), name, paramInfo.m_uiName.c_str());
@@ -898,6 +887,12 @@ void SerializeShaderParam(Serialization::IArchive& ar, T& value, const char* nam
 void CMaterialSerializer::SerializeShaderParams(Serialization::IArchive& ar, bool bShaderChanged)
 {
 	auto& shaderParams = m_pMaterial->GetShaderResources().m_ShaderParams;
+
+	std::sort(shaderParams.begin(), shaderParams.end(), [](const SShaderParam& a, const SShaderParam& b)
+	{
+		return std::strcmp(a.m_Name, b.m_Name) < 0;
+	});
+
 	if (shaderParams.empty())
 		return;
 
@@ -918,7 +913,7 @@ void CMaterialSerializer::SerializeShaderParams(Serialization::IArchive& ar, boo
 	{
 		SShaderParam& param = shaderParams[i];
 
-		if(bParseScript)
+		if (bParseScript)
 			m_shaderParamInfoCache[param.m_Name] = ParseShaderParamScript(param);
 
 		const auto& info = m_shaderParamInfoCache[param.m_Name];
@@ -926,83 +921,83 @@ void CMaterialSerializer::SerializeShaderParams(Serialization::IArchive& ar, boo
 		switch (param.m_Type)
 		{
 		case eType_BYTE:
-		{
-			int value = (int)param.m_Value.m_Byte;
-			SerializeShaderParam(ar, value, param.m_Name, info);
-			if (value != (int)param.m_Value.m_Byte)
 			{
-				bShaderParamsChanged = true;
-				param.m_Value.m_Byte = value;
+				int value = (int)param.m_Value.m_Byte;
+				SerializeShaderParam(ar, value, param.m_Name, info);
+				if (value != (int)param.m_Value.m_Byte)
+				{
+					bShaderParamsChanged = true;
+					param.m_Value.m_Byte = value;
+				}
+				break;
 			}
-			break;
-		}
 		case eType_SHORT:
-		{
-			int value = (int)param.m_Value.m_Short;
-			SerializeShaderParam(ar, value, param.m_Name, info);
-			if (value != (int)param.m_Value.m_Short)
 			{
-				bShaderParamsChanged = true;
-				param.m_Value.m_Short = value;
+				int value = (int)param.m_Value.m_Short;
+				SerializeShaderParam(ar, value, param.m_Name, info);
+				if (value != (int)param.m_Value.m_Short)
+				{
+					bShaderParamsChanged = true;
+					param.m_Value.m_Short = value;
+				}
+				break;
 			}
-			break;
-		}
 		case eType_INT:
-		{
-			int value = param.m_Value.m_Int;
-			SerializeShaderParam(ar, value, param.m_Name, info);
-			if (value != param.m_Value.m_Int)
 			{
-				bShaderParamsChanged = true;
-				param.m_Value.m_Int = value;
+				int value = param.m_Value.m_Int;
+				SerializeShaderParam(ar, value, param.m_Name, info);
+				if (value != param.m_Value.m_Int)
+				{
+					bShaderParamsChanged = true;
+					param.m_Value.m_Int = value;
+				}
+				break;
 			}
-			break;
-		}
 		case eType_FLOAT:
-		{
-			float value = param.m_Value.m_Float;
-			SerializeShaderParam(ar, value, param.m_Name, info);
-			if (value != param.m_Value.m_Float)
 			{
-				bShaderParamsChanged = true;
-				param.m_Value.m_Float = value;
+				float value = param.m_Value.m_Float;
+				SerializeShaderParam(ar, value, param.m_Name, info);
+				if (value != param.m_Value.m_Float)
+				{
+					bShaderParamsChanged = true;
+					param.m_Value.m_Float = value;
+				}
+				break;
 			}
-			break;
-		}
 		case eType_FCOLOR:
-		{
-			ColorF color(param.m_Value.m_Color[0], param.m_Value.m_Color[1], param.m_Value.m_Color[2], param.m_Value.m_Color[3]);
-			const ColorF oldColor = color;
-			ar(color, param.m_Name, info.m_uiName);
-			if (info.m_description.size())
-				ar.doc(info.m_description.c_str());
-			if (color != oldColor)
 			{
-				bShaderParamsChanged = true;
-				param.m_Value.m_Color[0] = color.r;
-				param.m_Value.m_Color[1] = color.g;
-				param.m_Value.m_Color[2] = color.b;
-				param.m_Value.m_Color[3] = color.a;
-			}
+				ColorF color(param.m_Value.m_Color[0], param.m_Value.m_Color[1], param.m_Value.m_Color[2], param.m_Value.m_Color[3]);
+				const ColorF oldColor = color;
+				ar(color, param.m_Name, info.m_uiName);
+				if (info.m_description.size())
+					ar.doc(info.m_description.c_str());
+				if (color != oldColor)
+				{
+					bShaderParamsChanged = true;
+					param.m_Value.m_Color[0] = color.r;
+					param.m_Value.m_Color[1] = color.g;
+					param.m_Value.m_Color[2] = color.b;
+					param.m_Value.m_Color[3] = color.a;
+				}
 
-			break;
-		}
-		case eType_VECTOR:
-		{
-			Vec3 vec(param.m_Value.m_Vector[0], param.m_Value.m_Vector[1], param.m_Value.m_Vector[2]);
-			const Vec3 oldVec = vec;
-			ar(vec, param.m_Name, info.m_uiName);
-			if (info.m_description.size())
-				ar.doc(info.m_description.c_str());
-			if (vec != oldVec)
-			{
-				bShaderParamsChanged = true;
-				param.m_Value.m_Vector[0] = vec.x;
-				param.m_Value.m_Vector[1] = vec.y;
-				param.m_Value.m_Vector[2] = vec.z;
+				break;
 			}
-			break;
-		}
+		case eType_VECTOR:
+			{
+				Vec3 vec(param.m_Value.m_Vector[0], param.m_Value.m_Vector[1], param.m_Value.m_Vector[2]);
+				const Vec3 oldVec = vec;
+				ar(vec, param.m_Name, info.m_uiName);
+				if (info.m_description.size())
+					ar.doc(info.m_description.c_str());
+				if (vec != oldVec)
+				{
+					bShaderParamsChanged = true;
+					param.m_Value.m_Vector[0] = vec.x;
+					param.m_Value.m_Vector[1] = vec.y;
+					param.m_Value.m_Vector[2] = vec.z;
+				}
+				break;
+			}
 		default:
 			//Apparently unknown type parameters are a frequent occurence, do not warn
 			//CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unknown shader parameter type found in material %s: %s", m_pMaterial->GetName().c_str(), param.m_Name);
@@ -1033,7 +1028,7 @@ void CMaterialSerializer::SerializeShaderGenParams(Serialization::IArchive& ar)
 	const int count = shaderGen->m_BitMask.size();
 	if (count <= 0)
 		return;
-	
+
 	ar.openBlock("shaderGenParams", "Shader Generation Params");
 
 	for (int i = 0; i < count; i++)
@@ -1070,10 +1065,10 @@ void CMaterialSerializer::PopulateStringLists()
 
 	const auto& shaderList = GetIEditor()->GetMaterialManager()->GetShaderList();
 	m_shaderStringList.reserve(shaderList.size());
-	
+
 	for (const auto& shader : shaderList)
 	{
-		if (strstri(shader,"_Overlay") != 0)
+		if (strstri(shader, "_Overlay") != 0)
 			continue;
 		m_shaderStringList.push_back(shader);
 	}
@@ -1103,7 +1098,6 @@ void CMaterialSerializer::PopulateStringLists()
 	}
 
 	std::sort(m_surfaceTypeStringList.begin(), m_surfaceTypeStringList.end());
-
 
 	//////////////////////////////////////////////////////////////////////////
 	// Texture Type

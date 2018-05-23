@@ -174,8 +174,8 @@ void CParticleManager::DeleteItem(IDataBaseItem* pItem)
 }
 
 #ifndef _LIB
-#include <CryCore/Common_TypeInfo.h>
+	#include <CryCore/Common_TypeInfo.h>
 // Manually instantiate templates as needed here.
-STRUCT_INFO_T_INSTANTIATE(Color_tpl, <float>)
+STRUCT_INFO_T_INSTANTIATE(Color_tpl, <float> )
 #endif
 

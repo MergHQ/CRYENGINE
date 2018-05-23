@@ -259,7 +259,7 @@ bool CShaderMan::mfReloadFile(const char* szPath, const char* szName, int nFlags
 	{
 		m_bReload = true;
 		char szShaderName[256];
-		cry_strcpy(szShaderName, szName, (size_t)(szExt - szName));
+		cry_strcpy(szShaderName, szName, std::distance(szName, szExt - 1)); // skip '.' as well
 		strlwr(szShaderName);
 
 		// Check if this shader already loaded
@@ -279,7 +279,7 @@ bool CShaderMan::mfReloadFile(const char* szPath, const char* szName, int nFlags
 		{
 			m_bReload = true;
 			char szShaderName[256];
-			cry_strcpy(szShaderName, szName, (size_t)(szExt - szName));
+			cry_strcpy(szShaderName, szName, std::distance(szName, szExt - 1)); // skip '.' as well
 			strlwr(szShaderName);
 			SShaderBin* pBin = m_Bin.GetBinShader(szShaderName, true, 0);
 			bool bAffect = false;

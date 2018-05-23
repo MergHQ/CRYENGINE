@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __GameTokenDialog_h__
-#define __GameTokenDialog_h__
 #pragma once
 
 #include "BaseLibraryDialog.h"
@@ -21,7 +19,7 @@ public:
 
 public:
 	enum { IDD = IDD_DATABASE };
-	CGameTokenTreeContainerDialog() : CToolbarDialog(IDD) { m_pTreeCtrl = 0; };
+	CGameTokenTreeContainerDialog() : CToolbarDialog(IDD) { m_pTreeCtrl = 0; }
 
 protected:
 	DECLARE_MESSAGE_MAP()
@@ -44,12 +42,12 @@ class CGameTokenDialog : public CBaseLibraryDialog
 	class CXTPTaskPanelSpecific : public CXTPTaskPanel
 	{
 	public:
-		CXTPTaskPanelSpecific() 
+		CXTPTaskPanelSpecific()
 			: CXTPTaskPanel()
 			, m_poMyOwner(nullptr)
-		{};
+		{}
 
-		~CXTPTaskPanelSpecific(){};
+		~CXTPTaskPanelSpecific(){}
 
 		BOOL              OnCommand(WPARAM wParam, LPARAM lParam);
 
@@ -69,7 +67,7 @@ public:
 	virtual UINT    GetDialogMenuID();
 
 	CGameTokenItem* GetSelectedGameToken();
-	void            SetSelectedGameToken(CGameTokenItem *item);
+	void            SetSelectedGameToken(CGameTokenItem* item);
 	void            UpdateSelectedItemInReport();
 
 protected:
@@ -145,6 +143,3 @@ private:
 
 	bool                  m_bSkipUpdateItems;
 };
-
-#endif // __GameTokenDialog_h__
-

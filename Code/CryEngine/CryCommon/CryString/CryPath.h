@@ -833,6 +833,22 @@ inline string GetProjectFolder()
 		{
 			cmdLineProjectPath = PathUtil::GetParentDirectory(project->GetValue());
 		}
+		else
+		{
+			ICVar* pSysProject = gEnv->pConsole->GetCVar("sys_project");
+			if (pSysProject && pSysProject->GetString())
+			{
+				string sysProjectStr = PathUtil::GetParentDirectory(pSysProject->GetString());
+				if (PathUtil::IsRelativePath(sysProjectStr))
+				{
+					cmdLineProjectPath = PathUtil::Make(GetEnginePath(), sysProjectStr);
+				}
+				else
+				{
+					cmdLineProjectPath = sysProjectStr;
+				}
+			}
+		}
 		checkedForCmdLineProjectArg = true;
 	}
 	return cmdLineProjectPath;

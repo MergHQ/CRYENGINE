@@ -26,7 +26,7 @@ public:
 		m_pManipulator(nullptr)
 	{}
 
-	// Ovverides from CEditTool
+	// Overrides from CEditTool
 	virtual string GetDisplayName() const override { return "Edit Spline"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	void           OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags);
@@ -384,7 +384,7 @@ public:
 
 	CSplitSplineObjectTool();
 
-	// Ovverides from CEditTool
+	// Overrides from CEditTool
 	virtual string GetDisplayName() const override { return "Split Spline"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   SetUserData(const char* key, void* userData);

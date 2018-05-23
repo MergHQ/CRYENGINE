@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __ScriptEnvironment_h__
-#define __ScriptEnvironment_h__
-
 #pragma once
 
 #include <CryScriptSystem/ScriptHelpers.h>
@@ -26,6 +23,3 @@ private:
 private:
 	int Command(IFunctionHandler* pH, const char* commandName);
 };
-
-#endif
-

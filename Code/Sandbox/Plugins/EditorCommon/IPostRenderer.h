@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __IPOSTRENDERER_H__
-#define __IPOSTRENDERER_H__
-
 #pragma once
 
 class IPostRenderer
@@ -20,6 +17,3 @@ protected:
 
 	int m_refCount;
 };
-
-#endif//__IPOSTRENDERER_H__
-

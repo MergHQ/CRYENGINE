@@ -77,6 +77,19 @@ bool MoveFileAllowOverwrite(const char* szOldFilePath, const char* szNewFilePath
 	return QFile::remove(szNewFilePath) && QFile::rename(szOldFilePath, szNewFilePath);
 }
 
+EDITOR_COMMON_API bool CopyFileAllowOverwrite(const char* szSourceFilePath, const char* szDestinationFilePath)
+{
+	GetISystem()->GetIPak()->MakeDir(GetDirectory(szDestinationFilePath));
+
+	if (QFile::copy(szSourceFilePath, szDestinationFilePath))
+	{
+		return true;
+	}
+
+	// Try to overwrite existing file.
+	return QFile::remove(szDestinationFilePath) && QFile::copy(szSourceFilePath, szDestinationFilePath);
+}
+
 bool RemoveDirectory(const char* szPath, bool bRecursive/* = true*/)
 {
 	QDir dir(szPath);
@@ -99,6 +112,12 @@ bool RemoveDirectory(const char* szPath, bool bRecursive/* = true*/)
 
 	CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to remove directory: %s", szPath);
 	return false;
+}
+
+EDITOR_COMMON_API bool MakeFileWritable(const char* szFilePath)
+{
+	QFile f(QtUtil::ToQString(szFilePath));
+	return f.setPermissions(f.permissions() | QFileDevice::WriteOwner);
 }
 
 // The pak should be opened.
@@ -393,11 +412,26 @@ string AbsoluteToRelativePath(const string& absolutePath, const char* dirPathRel
 
 	CryPathString rootPathStr = ToUnixPath(CryPathString(dirPathRelativeTo));
 	if (rootPathStr.empty())
+	{
 		return absolutePath;
+	}
+
 	if (rootPathStr[rootPathStr.length() - 1] != '/')
+	{
 		rootPathStr += '/';
+	}
+
 	PathUtil::SimplifyFilePath(path.c_str(), buf, sizeof(buf), ePathStyle_Posix);
-	path = buf;
+
+	// SimplifyFilePath removes the trailing slash. Restore it, if this is the path to the folder.
+	if (!path.empty() && path[path.length() - 1] == '/')
+	{
+		path = PathUtil::AddSlash(buf);
+	}
+	else
+	{
+		path = buf;
+	}
 	if (cry_strnicmp(path.c_str(), rootPathStr.c_str(), rootPathStr.length()) == 0) // path starts with rootPathStr
 		return path.substr(rootPathStr.length());
 	else

@@ -13,8 +13,8 @@
 
 #include <CryString/CryString.h>
 
-#include <QVariant>
 #include <QColor>
+#include <QVariant>
 
 #define ASSET_THUMBNAIL_SIZE 256
 
@@ -28,15 +28,14 @@ struct EDITOR_COMMON_API IEditableAsset
 	virtual const char* GetFolder() const = 0;
 	virtual const char* GetName() const = 0;
 
-	virtual void SetSourceFile(const char* szFilepath) = 0;
-	virtual void AddFile(const char* szFilepath) = 0;
-	virtual void SetFiles(const std::vector<string>& filenames) = 0;
-	virtual void SetDetails(const std::vector<std::pair<string, string>>& details) = 0;
-	virtual void SetDependencies(const std::vector<SAssetDependencyInfo>& dependencies) = 0;
+	virtual void        SetSourceFile(const char* szFilepath) = 0;
+	virtual void        AddFile(const char* szFilepath) = 0;
+	virtual void        SetFiles(const std::vector<string>& filenames) = 0;
+	virtual void        SetDetails(const std::vector<std::pair<string, string>>& details) = 0;
+	virtual void        SetDependencies(const std::vector<SAssetDependencyInfo>& dependencies) = 0;
 
 	virtual ~IEditableAsset() {}
 };
-
 
 //! IAssetMetadata allows to assign initial values of a new asset.
 //! \sa CAssetType::OnCreate
@@ -50,7 +49,7 @@ class EDITOR_COMMON_API CAssetType : public IClassDesc
 public:
 	virtual ESystemClassID SystemClassID() override { return ESYSTEM_CLASS_ASSET_TYPE; }
 
-	void Init();
+	void                   Init();
 
 	//! Returns the asset type name. DO NOT CHANGE THIS as this will be serialized to disk and used to identify asset types
 	//! Do not use for UI purposes
@@ -75,7 +74,7 @@ public:
 	//! Default-initializes an asset. Creates all the necessary asset files.
 	//! This will be used for creating new assets, e.g., in the asset browser or an asset editor.
 	//! \param szFilepath Path to the cryasset file that has to be created.
-	//! \param pTypeSpecificParameter Pointer to an extra parameter. The default value is nullprt. The actual type of the parameter is specific to the asset type. 
+	//! \param pTypeSpecificParameter Pointer to an extra parameter. The default value is nullprt. The actual type of the parameter is specific to the asset type.
 	//! All the asset types should be able to create a default asset instance if the value of pTypeSpecificParameter is nullptr.
 	//! \sa CAssetType::OnCreate()
 	bool Create(const char* szFilepath, const void* pTypeSpecificParameter = nullptr) const;
@@ -107,13 +106,13 @@ public:
 	//! \param bDeleteSourceFile a boolean value, if true the asset source file will be deleted.
 	//! \param numberOfFilesDeleted The number of files that were deleted. The asset is invalid if at least one file was deleted.
 	//! \return True true if the asset files were deleted. False on errors.
-	virtual bool DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted ) const;
+	virtual bool                              DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const;
 
-	virtual CryIcon GetIcon() const;
-	virtual QWidget* CreatePreviewWidget(CAsset* pAsset, QWidget* pParent = nullptr) const;
+	virtual CryIcon                           GetIcon() const;
+	virtual QWidget*                          CreatePreviewWidget(CAsset* pAsset, QWidget* pParent = nullptr) const;
 
-	virtual std::vector<CItemModelAttribute*> GetDetails() const { return std::vector<CItemModelAttribute*>(); }
-	virtual QVariant GetDetailValue(const CAsset* pAsset, const CItemModelAttribute* pDetail) const { return QVariant(); }
+	virtual std::vector<CItemModelAttribute*> GetDetails() const                                                             { return std::vector<CItemModelAttribute*>(); }
+	virtual QVariant                          GetDetailValue(const CAsset* pAsset, const CItemModelAttribute* pDetail) const { return QVariant(); }
 
 	//! Returns true if the asset may have a thumbnail
 	virtual bool HasThumbnail() const { return false; }
@@ -143,21 +142,21 @@ public:
 	//! Returns the name of an object class description that is used to create editor objects for this asset; or nullptr, if no such class exists.
 	//! @see CObjectClassDesc
 	//! @see CBaseObject
-	virtual const char* GetObjectClassName() const { return nullptr; }
-	virtual string GetObjectFilePath(const CAsset* pAsset) const { return pAsset->GetFile(0); }
+	virtual const char* GetObjectClassName() const                    { return nullptr; }
+	virtual string      GetObjectFilePath(const CAsset* pAsset) const { return pAsset->GetFile(0); }
 
 	//! @}
 
 	//! Asset type can add their own menu entries to the AssetBrowser context menu
 	//! Only assets of this type will be passed into this callback
-	//! If menu entries are added, it is good practice to prefix them by a separator 
+	//! If menu entries are added, it is good practice to prefix them by a separator
 	//! to indicate which assets will be affected, in the following way:
 	//! menu->addAction(new QMenuLabelSeparator("Folders"));
-	virtual void AppendContextMenuActions(const std::vector<CAsset*>& assets, CAbstractMenu* menu) const {};
+	virtual void         AppendContextMenuActions(const std::vector<CAsset*>& assets, CAbstractMenu* menu) const {}
 
 	std::vector<CAsset*> Import(const string& sourceFilePath, const string& outputDirectory, const string& overrideAssetName = string()) const;
 
-	virtual CryIcon GetIconInternal() const;
+	virtual CryIcon      GetIconInternal() const;
 
 	//! When true, this will register a default asset picker for this type, usable with an archive like this
 	//! ar(Serialization::MakeResourceSelector(value, "AssetTypeName"), "value", "Value");
@@ -181,9 +180,9 @@ protected:
 
 private:
 	//! Fills in the files, details and dependencies fields of the editable asset.
-	//! Must be overridden if CanBeCreated() returns true. 
+	//! Must be overridden if CanBeCreated() returns true.
 	//! \param editAsset An instance to be filled in.
-	//! \param pTypeSpecificParameter Pointer to an extra parameter, can be nullptr. 
+	//! \param pTypeSpecificParameter Pointer to an extra parameter, can be nullptr.
 	//! \sa CAssetType::Create
 	virtual bool OnCreate(INewAsset& asset, const void* pTypeSpecificParameter) const { CRY_ASSERT(0); /*not implemented*/ return false; }
 
@@ -192,9 +191,8 @@ private:
 };
 
 //Helper macro for declaring IClassDesc.
-#define DECLARE_ASSET_TYPE_DESC(type)                           \
+#define DECLARE_ASSET_TYPE_DESC(type)                         \
   virtual const char* ClassName() override { return # type; } \
   virtual void* CreateObject() override { return nullptr; }
 
 #define REGISTER_ASSET_TYPE(type) REGISTER_CLASS_DESC(type)
-

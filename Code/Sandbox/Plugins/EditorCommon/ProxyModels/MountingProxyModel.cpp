@@ -48,15 +48,15 @@ struct CMountingProxyModel::Implementation
 
 	typedef QList<QPair<ProxyIndex, QPersistentModelIndex>> QProxyIndexPersistentPairList;
 
-	SourceModelFactory       m_sourceModelFactory;
-	CMountingProxyModel*     m_pModel;
+	SourceModelFactory                                m_sourceModelFactory;
+	CMountingProxyModel*                              m_pModel;
 
-	GetHeaderDataCallback    m_getHeaderDataCallback;
-	SetHeaderDataCallback    m_setHeaderDataCallback;
+	GetHeaderDataCallback                             m_getHeaderDataCallback;
+	SetHeaderDataCallback                             m_setHeaderDataCallback;
 	std::function<QMimeData*(const QModelIndexList&)> m_dragCallback;
 
-	CMultiProxyColumnMapping m_columnMapping;
-	CColumnSort              m_sort;
+	CMultiProxyColumnMapping                          m_columnMapping;
+	CColumnSort m_sort;
 
 	// caches
 	mutable SourceMappingHash    m_sourceMapping;     // submodel mapping for all source indices
@@ -955,7 +955,7 @@ private:
 	}
 
 	bool m_bAllowRemove;
-	bool m_isBusy{ false };
+	bool m_isBusy { false };
 };
 
 CMountingProxyModel::CMountingProxyModel(const SourceModelFactory& factory, QObject* parent)
@@ -1542,4 +1542,3 @@ void CMountingProxyModel::Unmount(const QModelIndex& proxyIndex)
 }
 
 #undef reverse_foreach
-

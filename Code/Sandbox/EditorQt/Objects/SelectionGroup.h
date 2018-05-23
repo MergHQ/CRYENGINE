@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SelectionGroup_h__
-#define __SelectionGroup_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 class CBaseObject;
 class CBrushObject;
@@ -25,9 +20,9 @@ public:
 	CSelectionGroup();
 
 	//! Set name of selection.
-	void           SetName(const string& name) { m_name = name; };
+	void          SetName(const string& name) { m_name = name; }
 	//! Get name of selection.
-	const string& GetName() const              { return m_name; };
+	const string& GetName() const             { return m_name; }
 
 	//! Reserves space for X amount of objects in the selection list
 	void         Reserve(size_t count);
@@ -39,7 +34,7 @@ public:
 	void         RemoveAll();
 	//! Check if object contained in selection list.
 	bool         IsContainObject(CBaseObject* obj) const;
-	//! Return true if selection doesnt contain any object.
+	//! Return true if selection does not contain any object.
 	bool         IsEmpty() const override;
 	//! Number of selected object.
 	int          GetCount() const;
@@ -50,7 +45,7 @@ public:
 	//! Get object from a GUID in a prefab
 	CBaseObject* GetObjectByGuidInPrefab(CryGUID guid) const;
 	//! Get matrix suitable for manipulator
-	bool GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const override;
+	bool         GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const override;
 
 	//! Get mass center of selected objects.
 	Vec3 GetCenter() const;
@@ -110,7 +105,7 @@ public:
 	// Send event to all objects in selection group.
 	void SendEvent(ObjectEvent event) const;
 
-	void                    FinishChanges() const;
+	void FinishChanges() const;
 private:
 	// struct that stores information about initial transforms of objects
 	struct STransformElementInit
@@ -123,18 +118,15 @@ private:
 		Quat     localRotation;
 	};
 
-	string                m_name;
+	string                 m_name;
 	typedef std::vector<_smart_ptr<CBaseObject>> Objects;
 	Objects                m_objects;
 	// Objects set, for fast searches.
 	std::set<CBaseObject*> m_objectsSet;
 
-	//! Selection list with child objecs filtered out
+	//! Selection list with child objects filtered out
 	//! Is mutable because this list will be invalidated if the selection changes
 	//TODO: This should not be a field, FilterParents should simply return a temporary array, as this design is very risky
 	mutable std::vector<CBaseObject*>          m_filtered;
 	mutable std::vector<STransformElementInit> m_initElementTransforms;
 };
-
-#endif // __SelectionGroup_h__
-

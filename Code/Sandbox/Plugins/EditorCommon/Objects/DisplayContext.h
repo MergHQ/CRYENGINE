@@ -6,14 +6,14 @@
 #include <CryMath/Cry_Geo.h>
 #include <CryRenderer/IRenderer.h>
 
-// forward declarations.
-struct IDisplayViewport;
-struct IRenderer;
-struct IRenderAuxGeom;
-struct IIconManager;
-struct I3DEngine;
-class CDisplaySettings;
 class CCamera;
+class CDisplaySettings;
+
+struct I3DEngine;
+struct IDisplayViewport;
+struct IIconManager;
+struct IRenderAuxGeom;
+struct IRenderer;
 
 enum DisplayFlags
 {
@@ -60,31 +60,32 @@ struct EDITOR_COMMON_API DisplayContext
 	void              Flush2D();
 
 	void              SetCamera(CCamera* pCamera);
-	const CCamera&    GetCamera() const { return (camera) ? *camera : GetISystem()->GetViewCamera(); }
+	const CCamera& GetCamera() const { return (camera) ? *camera : GetISystem()->GetViewCamera(); }
 
-	int               GetWidth() const { return static_cast<int>(m_width); }
-	int               GetHeight() const { return static_cast<int>(m_height); }
+	int            GetWidth() const  { return static_cast<int>(m_width); }
+	int            GetHeight() const { return static_cast<int>(m_height); }
 
-	void              SetDisplayContext(const SDisplayContextKey &displayContextKey, IRenderer::EViewportType eType = IRenderer::eViewportType_Default);
+	void           SetDisplayContext(const SDisplayContextKey& displayContextKey, IRenderer::EViewportType eType = IRenderer::eViewportType_Default);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Draw functions
 	//////////////////////////////////////////////////////////////////////////
-	//! Set current materialc color.
-	void   SetColor(float r, float g, float b, float a = 1) { m_color4b = ColorB(int(r * 255.0f), int(g * 255.0f), int(b * 255.0f), int(a * 255.0f)); };
-	void   SetColor(const Vec3& color, float a = 1) { m_color4b = ColorB(int(color.x * 255.0f), int(color.y * 255.0f), int(color.z * 255.0f), int(a * 255.0f)); };
-	void   SetColor(COLORREF rgb, float a = 1) { m_color4b = ColorB(GetRValue(rgb), GetGValue(rgb), GetBValue(rgb), int(a * 255.0f)); };
-	void   SetColor(const ColorB& color) { m_color4b = color; };
-	void   SetColor(const ColorF& color) {
+	//! Set current material color.
+	void SetColor(float r, float g, float b, float a = 1) { m_color4b = ColorB(int(r * 255.0f), int(g * 255.0f), int(b * 255.0f), int(a * 255.0f)); }
+	void SetColor(const Vec3& color, float a = 1)         { m_color4b = ColorB(int(color.x * 255.0f), int(color.y * 255.0f), int(color.z * 255.0f), int(a * 255.0f)); }
+	void SetColor(COLORREF rgb, float a = 1)              { m_color4b = ColorB(GetRValue(rgb), GetGValue(rgb), GetBValue(rgb), int(a * 255.0f)); }
+	void SetColor(const ColorB& color)                    { m_color4b = color; }
+	void SetColor(const ColorF& color)
+	{
 		m_color4b = ColorB(int(color.r * 255.0f), int(color.g * 255.0f), int(color.b * 255.0f), int(color.a * 255.0f));
 	};
-	void   SetAlpha(float a = 1) { m_color4b.a = int(a * 255.0f); };
-	ColorB GetColor() const { return m_color4b; }
+	void   SetAlpha(float a = 1) { m_color4b.a = int(a * 255.0f); }
+	ColorB GetColor() const      { return m_color4b; }
 
 	void   SetSelectedColor(float fAlpha = 1);
 	void   SetFreezeColor();
 
-	//! Get color to draw selectin of object.
+	//! Get color to draw selection of object.
 	COLORREF GetSelectedColor();
 	COLORREF GetFreezeColor();
 
@@ -150,7 +151,7 @@ struct EDITOR_COMMON_API DisplayContext
 	// Draw texture label in 2d view coordinates.
 	// w,h in pixels.
 	void DrawTextureLabel(const Vec3& pos, int nWidth, int nHeight, int nTexId, int nTexIconFlags = 0, int srcOffsetX = 0, int scrOffsetY = 0,
-		float fDistanceScale = 1.0f, float distanceSquared = 0);
+	                      float fDistanceScale = 1.0f, float distanceSquared = 0);
 
 	void RenderObject(int objectType, const Vec3& pos, float scale);
 	void RenderObject(int objectType, const Matrix34& tm);
@@ -191,18 +192,18 @@ struct EDITOR_COMMON_API DisplayContext
 	//   Changes fill mode.
 	// Arguments:
 	//    nFillMode is one of the values from EAuxGeomPublicRenderflags_FillMode
-	int   SetFillMode(int nFillMode);
+	int                SetFillMode(int nFillMode);
 
-	Vec3  ToWorldPos(const Vec3& v) { return ToWS(v); }
-	float GetLineWidth() const { return m_thickness; }
+	Vec3               ToWorldPos(const Vec3& v)    { return ToWS(v); }
+	float              GetLineWidth() const         { return m_thickness; }
 
 	SDisplayContextKey GetDisplayContextKey() const { return m_displayContextKey; }
 
 private:
 	// Convert vector to world space.
-	Vec3  ToWS(const Vec3& v) { return m_matrixStack[m_currentMatrix].TransformPoint(v); }
+	Vec3 ToWS(const Vec3& v) { return m_matrixStack[m_currentMatrix].TransformPoint(v); }
 
-	void  InternalDrawLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1);
+	void InternalDrawLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1);
 
 	ColorB   m_color4b;
 	uint32   m_renderState;
@@ -216,9 +217,9 @@ private:
 	int      m_previousMatrixIndex[32];
 
 	// Display Helper Sizes
-	const int displayHelperSizeLarge = 32;
-	const int displayHelperSizeSmall = 4;
-	SDisplayContextKey m_displayContextKey;
+	const int                displayHelperSizeLarge = 32;
+	const int                displayHelperSizeSmall = 4;
+	SDisplayContextKey       m_displayContextKey;
 	IRenderer::EViewportType m_eType = IRenderer::eViewportType_Default;
 
 	struct STextureLabel
@@ -231,4 +232,3 @@ private:
 	};
 	std::vector<STextureLabel> m_textureLabels;
 };
-

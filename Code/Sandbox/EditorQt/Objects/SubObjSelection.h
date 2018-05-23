@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SubObjSelection_h__
-#define __SubObjSelection_h__
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////
@@ -79,6 +77,3 @@ struct SSubObjSelectionModifyContext
 	Vec3                       vValue;
 	Matrix34                   worldRefFrame;
 };
-
-#endif //__SubObjSelection_h__
-

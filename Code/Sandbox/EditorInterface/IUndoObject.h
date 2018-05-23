@@ -34,7 +34,7 @@ class CUndo
 public:
 	CUndo(const char* description) : m_bCancelled(false)
 	{
-		if (!IsRecording())
+		if (!IsRecording() && !IsSuspended())
 		{
 			GetIEditor()->GetIUndoManager()->Begin();
 			m_description = description;

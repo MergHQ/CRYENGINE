@@ -17,20 +17,20 @@ class EDITOR_COMMON_API CPopupMenuItem
 	friend class CDynamicPopupMenu;
 	friend class QPopupMenuItemAction;
 public:
-	typedef std::vector<std::shared_ptr<CPopupMenuItem> > Children;
+	typedef std::vector<std::shared_ptr<CPopupMenuItem>> Children;
 
-	virtual ~CPopupMenuItem();
+	virtual ~CPopupMenuItem() {}
 
-	CPopupMenuItem& Check(bool checked = true){ m_checked = checked; return *this; }
-	bool IsChecked() const{ return m_checked; }
+	CPopupMenuItem& Check(bool checked = true)          { m_checked = checked; return *this; }
+	bool            IsChecked() const                   { return m_checked; }
 
-	CPopupMenuItem& Enable(bool enabled = true){ m_enabled = enabled; return *this; }
-	bool IsEnabled() const{ return m_enabled; }
+	CPopupMenuItem& Enable(bool enabled = true)         { m_enabled = enabled; return *this; }
+	bool            IsEnabled() const                   { return m_enabled; }
 
-	void SetDefault(bool defaultItem = true){ m_default = defaultItem; }
-	bool IsDefault() const{ return m_default; }
+	void            SetDefault(bool defaultItem = true) { m_default = defaultItem; }
+	bool            IsDefault() const                   { return m_default; }
 
-	const char* Text() { return m_text.c_str(); }
+	const char*     Text()                              { return m_text.c_str(); }
 	CPopupMenuItem& AddSeparator();
 
 	//! Adds a parent menu which should host a submenu as child items
@@ -38,8 +38,8 @@ public:
 
 	//! Please do not use other methods, std::function and std::bind make this the only Add method necessary
 	CPopupMenuItem& Add(const char* text, const std::function<void()>& function);
-	
-	CPopupMenuItem& Add(const char* text, const char* icon,const std::function<void()>& function);
+
+	CPopupMenuItem& Add(const char* text, const char* icon, const std::function<void()>& function);
 
 	//! Useful if a menu item is tied to an editor command. The menu item will then use all the properties of the editor command and its ui action
 	CPopupMenuItem& AddCommand(const char* text, string commandToExecute);
@@ -61,12 +61,12 @@ public:
 
 	CPopupMenuItem* Find(const char* text);
 
-	CPopupMenuItem* GetParent() { return m_parent; }
+	CPopupMenuItem* GetParent()         { return m_parent; }
 	const Children& GetChildren() const { return m_children; }
-	bool Empty() const { return m_children.empty(); }
+	bool            Empty() const       { return m_children.empty(); }
 
 	//! sets mouse hover function
-	void SetHoverFunction(std::function<void()> hoverFunc)	{ m_hoverFunc = hoverFunc; }
+	void SetHoverFunction(std::function<void()> hoverFunc) { m_hoverFunc = hoverFunc; }
 
 	//TODO : handle hotkeys here
 	//void SetHotkey(const CKeyboardShortcut& hotkey) { m_hotkey = hotkey; }
@@ -101,15 +101,15 @@ protected:
 
 	virtual bool IsEditorCommand() { return false; }
 
-	Children& GetChildren() { return m_children; };
+	Children&    GetChildren()     { return m_children; }
 
-	bool m_default;
-	bool m_checked;
-	bool m_enabled;
-	string m_text;
-	string m_icon;
-	CPopupMenuItem* m_parent;
-	Children m_children;
+	bool                  m_default;
+	bool                  m_checked;
+	bool                  m_enabled;
+	string                m_text;
+	string                m_icon;
+	CPopupMenuItem*       m_parent;
+	Children              m_children;
 	std::function<void()> m_function;
 	std::function<void()> m_hoverFunc;
 };
@@ -137,25 +137,22 @@ class EDITOR_COMMON_API CDynamicPopupMenu
 {
 public:
 	CDynamicPopupMenu();
-	CPopupMenuItem& GetRoot() { return m_root; };
-	const CPopupMenuItem& GetRoot() const { return m_root; };
+	CPopupMenuItem&       GetRoot()       { return m_root; }
+	const CPopupMenuItem& GetRoot() const { return m_root; }
 
-	bool IsEmpty() { return m_root.Empty(); }
-	void Clear();
+	bool                  IsEmpty()       { return m_root.Empty(); }
+	void                  Clear();
 
 	//Qt Menu
 	class QMenu* CreateQMenu();
-	void PopulateQMenu(class QMenu* menu);
-	void PopulateQMenu(class QMenu* menu, CPopupMenuItem* parentItem);
-	void Spawn( int x,int y );
+	void         PopulateQMenu(class QMenu* menu);
+	void         PopulateQMenu(class QMenu* menu, CPopupMenuItem* parentItem);
+	void Spawn(int x, int y);
 	void SpawnAtCursor();
 
 	void SetOnHideFunctor(std::function<void()> functor) { m_onHide = functor; }
 
 private:
-	CPopupMenuItem* NextItem(CPopupMenuItem* item) const;
-	CPopupMenuItem m_root;
-
+	CPopupMenuItem        m_root;
 	std::function<void()> m_onHide;
 };
-

@@ -5,27 +5,27 @@
 #include "EditorCommonAPI.h"
 
 #include <QDialog>
-#include <QVariant>
 #include <QString>
-#include <QWidget>
 #include <QObject>
+#include <QVariant>
+#include <QWidget>
 
 #include "QPopupWidget.h"
 #include "CrySandbox/CrySignal.h"
 
-class QModelIndex;
-class QShowEvent;
-class QHideEvent;
-class QFilteringPanel;
-
 class CAbstractDictionary;
-class QSearchBox;
-class QAdvancedTreeView;
 class CDictionaryFilterProxyModel;
 class CDictionaryModel;
-class CMergingProxyModel;
-class QAbstractItemModel;
 class CItemModelAttribute;
+class CMergingProxyModel;
+
+class QAbstractItemModel;
+class QAdvancedTreeView;
+class QFilteringPanel;
+class QHideEvent;
+class QModelIndex;
+class QSearchBox;
+class QShowEvent;
 
 class EDITOR_COMMON_API CAbstractDictionaryEntry
 {
@@ -41,7 +41,7 @@ public:
 	CAbstractDictionaryEntry() {}
 	virtual ~CAbstractDictionaryEntry() {}
 
-	virtual uint32                          GetType() const                         { return Type_Undefined; }	
+	virtual uint32                          GetType() const                         { return Type_Undefined; }
 	virtual QVariant                        GetColumnValue(int32 columnIndex) const { return QVariant(); }
 	virtual const QIcon*                    GetColumnIcon(int32 columnIndex) const  { return nullptr; }
 
@@ -65,8 +65,8 @@ public:
 	virtual ~CAbstractDictionary();
 
 public:
-	void                                    Clear();
-	void                                    Reset();
+	void Clear();
+	void Reset();
 
 public:
 	virtual const char*                     GetName()                       const { return "<Unknown>"; }
@@ -76,7 +76,7 @@ public:
 	virtual void                            ClearEntries()                        { CRY_ASSERT_MESSAGE(false, "Please provide implementation."); }
 	virtual void                            ResetEntries()                        { CRY_ASSERT_MESSAGE(false, "Please provide implementation."); }
 
-	virtual int32                           GetNumColumns()                 const { return 0; };
+	virtual int32                           GetNumColumns()                 const { return 0; }
 	virtual QString                         GetColumnName(int32 index)      const { return QString(); }
 
 	virtual int32                           GetDefaultFilterColumn()        const { return -1; }
@@ -86,11 +86,10 @@ public:
 	virtual const CItemModelAttribute*      GetColumnAttribute(int32 index) const;
 
 private:
-	CDictionaryModel*                       GetDictionaryModel()            const;
+	CDictionaryModel* GetDictionaryModel()            const;
 
 private:
-	CDictionaryModel*                       m_pDictionaryModel;
-
+	CDictionaryModel* m_pDictionaryModel;
 };
 
 class EDITOR_COMMON_API CDictionaryWidget : public QWidget
@@ -108,33 +107,31 @@ public:
 
 	void                 ShowHeader(bool flag);
 	void                 SetFilterText(const QString& filterText);
-	
 
 Q_SIGNALS:
-	void                 OnEntryClicked(CAbstractDictionaryEntry& entry);
-	void                 OnEntryDoubleClicked(CAbstractDictionaryEntry& entry);
+	void OnEntryClicked(CAbstractDictionaryEntry& entry);
+	void OnEntryDoubleClicked(CAbstractDictionaryEntry& entry);
 
-	void                 OnHide();
+	void OnHide();
 
 private:
-	void                 OnClicked(const QModelIndex& index);
-	void                 OnDoubleClicked(const QModelIndex& index);
+	void         OnClicked(const QModelIndex& index);
+	void         OnDoubleClicked(const QModelIndex& index);
 
-	void                 OnFiltered();
+	void         OnFiltered();
 
-	void                 GatherItemModelAttributes(std::vector<CItemModelAttribute*>& columns, std::vector<const QAbstractItemModel*>& models);
-	QVariant             GeneralHeaderDataCallback(std::vector<CItemModelAttribute*>& columns, int section, Qt::Orientation orientation, int role);
+	void         GatherItemModelAttributes(std::vector<CItemModelAttribute*>& columns, std::vector<const QAbstractItemModel*>& models);
+	QVariant     GeneralHeaderDataCallback(std::vector<CItemModelAttribute*>& columns, int section, Qt::Orientation orientation, int role);
 
-	virtual void         showEvent(QShowEvent* pEvent) override;
-	virtual void         hideEvent(QHideEvent* pEvent) override;
+	virtual void showEvent(QShowEvent* pEvent) override;
+	virtual void hideEvent(QHideEvent* pEvent) override;
 
-private:	
+private:
 	QSearchBox*                  m_pFilter;
 	QFilteringPanel*             m_pFilteringPanel;
-	QAdvancedTreeView*           m_pTreeView;	
+	QAdvancedTreeView*           m_pTreeView;
 	CMergingProxyModel*          m_pMergingModel;
 	CDictionaryFilterProxyModel* m_pFilterProxy;
-
 };
 
 class EDITOR_COMMON_API CModalPopupDictionary : public QObject
@@ -148,8 +145,8 @@ public:
 	CAbstractDictionaryEntry* GetResult() const { return m_pResult; }
 
 protected:
-	void                      OnEntryClicked(CAbstractDictionaryEntry& entry);
-	void                      OnAborted();
+	void OnEntryClicked(CAbstractDictionaryEntry& entry);
+	void OnAborted();
 
 private:
 	QString                   m_dictName;
@@ -158,4 +155,3 @@ private:
 	QEventLoop*               m_pEventLoop;
 	CDictionaryWidget*        m_pDictionaryWidget;
 };
-

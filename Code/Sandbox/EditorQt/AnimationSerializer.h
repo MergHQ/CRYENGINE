@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __animationserializer_h__
-#define __animationserializer_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 // forward declarations.
 struct IAnimSequence;
@@ -39,6 +34,3 @@ public:
 	 */
 	void LoadAllSequences(const char* szPath);
 };
-
-#endif // __animationserializer_h__
-

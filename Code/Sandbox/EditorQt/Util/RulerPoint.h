@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __RULERPOINT_H__
-#define __RULERPOINT_H__
+#pragma once
 
 #include <CryExtension/CryGUID.h>
 
@@ -40,13 +39,10 @@ private:
 
 		eType_COUNT,
 	};
-	EType m_type;
+	EType   m_type;
 
-	Vec3     m_vPoint;
-	CryGUID  m_ObjectGUID;
-	float    m_sphereScale;
-	float    m_sphereTrans;
+	Vec3    m_vPoint;
+	CryGUID m_ObjectGUID;
+	float   m_sphereScale;
+	float   m_sphereTrans;
 };
-
-#endif //__RULERPOINT_H__
-

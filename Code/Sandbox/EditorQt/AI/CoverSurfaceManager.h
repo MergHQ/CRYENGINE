@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CoverSurfaceManager_h__
-#define __CoverSurfaceManager_h__
-
 #pragma once
 
 #include <CryAISystem/ICoverSystem.h>
@@ -27,6 +24,3 @@ public:
 private:
 	SurfaceObjects m_surfaceObjects;
 };
-
-#endif
-

@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _DECALOBJECT_H_
-#define _DECALOBJECT_H_
-
 #pragma once
 
 #include "Objects/BaseObject.h"
@@ -20,7 +17,7 @@ public:
 
 	virtual bool         HitTest(HitContext& hc);
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void                 CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	virtual int          MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void         GetLocalBounds(AABB& box);
@@ -31,7 +28,7 @@ public:
 	virtual XmlNodeRef   Export(const string& levelPath, XmlNodeRef& xmlNode);
 	virtual void         SetMinSpec(uint32 nSpec, bool bSetChildren = true);
 	virtual void         SetMaterialLayersMask(uint32 nLayersMask);
-	virtual IRenderNode* GetEngineNode() const { return m_pRenderNode; };
+	virtual IRenderNode* GetEngineNode() const { return m_pRenderNode; }
 
 	// special input handler (to be reused by this class as well as the decal object tool)
 	void MouseCallbackImpl(CViewport* view, EMouseEvent event, CPoint& point, int flags, bool callerIsMouseCreateCallback = false);
@@ -45,7 +42,7 @@ protected:
 	virtual bool Init(CBaseObject* prev, const string& file);
 	virtual bool CreateGameObject();
 	virtual void Done();
-	virtual void DeleteThis() { delete this; };
+	virtual void DeleteThis() { delete this; }
 	virtual void InvalidateTM(int nWhyFlags);
 
 private:
@@ -70,13 +67,10 @@ private:
 class CDecalObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()     { return OBJTYPE_DECAL; };
-	const char*         ClassName()         { return "Decal"; };
-	const char*         Category()          { return "Misc"; };
-	CRuntimeClass*      GetRuntimeClass()   { return RUNTIME_CLASS(CDecalObject); };
-	const char*         GetFileSpec()       { return ""; };
-	virtual const char* GetTextureIcon()    { return "%EDITOR%/ObjectIcons/Decal.bmp"; };
+	ObjectType          GetObjectType()   { return OBJTYPE_DECAL; }
+	const char*         ClassName()       { return "Decal"; }
+	const char*         Category()        { return "Misc"; }
+	CRuntimeClass*      GetRuntimeClass() { return RUNTIME_CLASS(CDecalObject); }
+	const char*         GetFileSpec()     { return ""; }
+	virtual const char* GetTextureIcon()  { return "%EDITOR%/ObjectIcons/Decal.bmp"; }
 };
-
-#endif // _DECALOBJECT_H_
-

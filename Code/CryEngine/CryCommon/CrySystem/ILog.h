@@ -46,8 +46,11 @@ struct ILog : public IMiniLog
 	//! Set the file used to log to disk.
 	virtual bool SetFileName(const char* command = NULL) = 0;
 
-	//! Get the filename used to log to disk.
+	//! Get the file name (without any directories, includes .extention) used to log to disk.
 	virtual const char* GetFileName() const = 0;
+
+	//! Get the full file path used to log to disk.
+	virtual const char* GetFilePath() const = 0;
 
 	//! Get the filename where the current log backup was copied to on disk.
 	virtual const char* GetBackupFileName() const = 0;

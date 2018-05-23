@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MannTagDefEditorDialog_h__
-#define __MannTagDefEditorDialog_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <ICryMannequinEditor.h>
 #include <ICryMannequinDefs.h>
@@ -47,7 +42,7 @@ protected:
 
 	virtual void DoDataExchange(CDataExchange* pDX);
 	virtual BOOL OnInitDialog();
-	virtual void OnOK() {};
+	virtual void OnOK() {}
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 
 	void         CreateToolbarButton(CInPlaceButtonPtr& button, const char* text, CRect& rc, int index, int nID, CStatic* parent, CInPlaceButton::OnClick onClick);
@@ -91,32 +86,29 @@ private:
 
 	std::unique_ptr<CTagDefTreeCtrl> m_tagsTree;
 
-	CStatic                        m_tagDefsGroupBox;
-	CStatic                        m_tagsGroupBox;
-	CListCtrl                      m_tagDefList;
-	CImageList                     m_imageList;
-	CImageList                     m_imageListToolbar;
-	CStatic                        m_priorityLabel;
-	CEdit                          m_priorityEdit;
-	CEdit*                         m_pCurrentTagFile;
+	CStatic                          m_tagDefsGroupBox;
+	CStatic                          m_tagsGroupBox;
+	CListCtrl                        m_tagDefList;
+	CImageList                       m_imageList;
+	CImageList                       m_imageListToolbar;
+	CStatic                          m_priorityLabel;
+	CEdit                            m_priorityEdit;
+	CEdit*                           m_pCurrentTagFile;
 
-	CInPlaceButtonPtr              m_newDefButton;
-	CInPlaceButtonPtr              m_newGroupButton;
-	CInPlaceButtonPtr              m_editGroupButton;
-	CInPlaceButtonPtr              m_deleteGroupButton;
-	CInPlaceButtonPtr              m_newTagButton;
-	CInPlaceButtonPtr              m_editTagButton;
-	CInPlaceButtonPtr              m_deleteTagButton;
-	CInPlaceButtonPtr              m_filterTagsButton;
+	CInPlaceButtonPtr                m_newDefButton;
+	CInPlaceButtonPtr                m_newGroupButton;
+	CInPlaceButtonPtr                m_editGroupButton;
+	CInPlaceButtonPtr                m_deleteGroupButton;
+	CInPlaceButtonPtr                m_newTagButton;
+	CInPlaceButtonPtr                m_editTagButton;
+	CInPlaceButtonPtr                m_deleteTagButton;
+	CInPlaceButtonPtr                m_filterTagsButton;
 
-	CToolTipCtrl*                  m_tooltip;
-	CTagDefinition*                m_selectedTagDef;
-	DynArray<STagDefPair>          m_tagDefLocalCopy;
+	CToolTipCtrl*                    m_tooltip;
+	CTagDefinition*                  m_selectedTagDef;
+	DynArray<STagDefPair>            m_tagDefLocalCopy;
 
-	SSnapshotCollection            m_snapshotCollection;
+	SSnapshotCollection              m_snapshotCollection;
 
-	CString                        m_initialTagFilename;
+	CString                          m_initialTagFilename;
 };
-
-#endif
-

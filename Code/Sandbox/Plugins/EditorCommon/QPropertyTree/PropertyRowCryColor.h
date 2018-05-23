@@ -58,8 +58,7 @@ struct CryColorMenuHandler : PropertyRowMenuHandler
 	IPropertyRowCryColor* propertyRowColor;
 
 	CryColorMenuHandler(PropertyTree* tree, IPropertyRowCryColor* propertyRowColor);
-	~CryColorMenuHandler(){};
+	~CryColorMenuHandler(){}
 
 	void onMenuPickColor();
 };
-

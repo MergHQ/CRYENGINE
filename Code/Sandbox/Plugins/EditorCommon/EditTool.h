@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __EditTool_h__
-#define __EditTool_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CrySandbox/CrySignal.h>
 #include <CrySerialization/IArchive.h>
@@ -13,9 +8,9 @@
 #include "HitContext.h"
 
 class CViewport;
+class QEvent;
 struct IClassDesc;
 struct ITransformManipulator;
-class QEvent;
 enum EOperationMode;
 
 enum EEditToolType
@@ -57,8 +52,8 @@ public:
 	//! Returns true if event processed by callback, and all other processing for this event should abort.
 	//! Return false if event was not processed by callback, and other processing for this event should occur.
 	//! @param view Viewport that sent this callback.
-	//! @param event Indicate what kind of event occured in viewport.
-	//! @param point 2D coordinate in viewport where event occured.
+	//! @param event Indicate what kind of event occurred in viewport.
+	//! @param point 2D coordinate in viewport where event occurred.
 	//! @param flags Additional flags (MK_LBUTTON,etc..) or from (MouseEventFlags) specified by viewport when calling callback.
 	virtual bool MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags) = 0;
 
@@ -88,9 +83,9 @@ public:
 	//! @param event QEvent object from Qt. Use static_cast to get the derived event type.
 	virtual bool OnDragEvent(CViewport* view, EDragEvent eventId, QEvent* event, uint32 flags) { return false; }
 
-	virtual bool IsNeedMoveTool()                                                                                                                                   { return false; }
-	virtual bool IsNeedToSkipPivotBoxForObjects()                                                                                                                   { return false; }
-	virtual bool IsDisplayGrid()                                                                                                                                    { return true; }
+	virtual bool IsNeedMoveTool()                                                              { return false; }
+	virtual bool IsNeedToSkipPivotBoxForObjects()                                              { return false; }
+	virtual bool IsDisplayGrid()                                                               { return true; }
 
 	//DO NOT USE THESE METHODS IF POSSIBLE
 	//TODO : these two helper methods were added for CryDesigner support, remove if possible
@@ -115,8 +110,5 @@ protected:
 	virtual void DeleteThis() = 0;
 
 protected:
-	int     m_nRefCount;
+	int m_nRefCount;
 };
-
-#endif // __EditTool_h__
-

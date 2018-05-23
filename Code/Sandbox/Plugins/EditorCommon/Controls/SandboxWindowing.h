@@ -3,15 +3,15 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
-#include "QToolWindowManager/QToolWindowManager.h"
 #include "QToolWindowManager/QCustomWindowFrame.h"
 #include "QToolWindowManager/QToolWindowCustomWrapper.h"
+#include "QToolWindowManager/QToolWindowManager.h"
 
 //Extra icon keys for the TWM.
 #define SANDBOX_WRAPPER_MINIMIZE_ICON "sandboxMinimizeIcon"
 #define SANDBOX_WRAPPER_MAXIMIZE_ICON "sandboxMaximizeIcon"
-#define SANDBOX_WRAPPER_RESTORE_ICON "sandboxRestoreIcon"
-#define SANDBOX_WRAPPER_CLOSE_ICON "sandboxWindowCloseIcon"
+#define SANDBOX_WRAPPER_RESTORE_ICON  "sandboxRestoreIcon"
+#define SANDBOX_WRAPPER_CLOSE_ICON    "sandboxWindowCloseIcon"
 
 // QSplitterHandle class that also lets us know when we have started resizing the layout
 class EDITOR_COMMON_API QNotifierSplitterHandle : public QSplitterHandle
@@ -21,7 +21,7 @@ public:
 	QNotifierSplitterHandle(Qt::Orientation orientation, QSplitter* parent);
 	void mousePressEvent(QMouseEvent* e);
 	void mouseReleaseEvent(QMouseEvent* e);
-	void mouseMoveEvent(QMouseEvent *e);
+	void mouseMoveEvent(QMouseEvent* e);
 };
 
 // QSplitter class that creates QNotifierSplitterHandle
@@ -34,29 +34,28 @@ public:
 	QSplitterHandle* createHandle();
 };
 
-
 class EDITOR_COMMON_API QSandboxWindow : public QCustomWindowFrame
 {
 public:
-	QSandboxWindow(QToolWindowManager* manager) : QCustomWindowFrame(), m_manager(manager), m_config() {};
-	QSandboxWindow(QVariantMap config) : QCustomWindowFrame(), m_manager(nullptr), m_config(config) {};
-	virtual void ensureTitleBar();
-	virtual void keyPressEvent(QKeyEvent* keyEvent) override;
-	virtual bool eventFilter(QObject *, QEvent *) override;
+	QSandboxWindow(QToolWindowManager* manager) : QCustomWindowFrame(), m_manager(manager), m_config() {}
+	QSandboxWindow(QVariantMap config) : QCustomWindowFrame(), m_manager(nullptr), m_config(config) {}
+	virtual void           ensureTitleBar();
+	virtual void           keyPressEvent(QKeyEvent* keyEvent) override;
+	virtual bool           eventFilter(QObject*, QEvent*) override;
 	static QSandboxWindow* QSandboxWindow::wrapWidget(QWidget* w, QToolWindowManager* manager);
-private:
 
+private:
 	QToolWindowManager* m_manager;
-	QVariantMap m_config;
+	QVariantMap         m_config;
 };
 
 class EDITOR_COMMON_API QSandboxWrapper : public QToolWindowCustomWrapper
 {
 public:
-	QSandboxWrapper(QToolWindowManager* manager) : QToolWindowCustomWrapper(manager) {};
+	QSandboxWrapper(QToolWindowManager* manager) : QToolWindowCustomWrapper(manager) {}
 	virtual void ensureTitleBar();
 	virtual void keyPressEvent(QKeyEvent* keyEvent) override;
-	virtual bool eventFilter(QObject *, QEvent *) override;
+	virtual bool eventFilter(QObject*, QEvent*) override;
 };
 
 class EDITOR_COMMON_API QSandboxTitleBar : public QCustomTitleBar
@@ -71,4 +70,3 @@ public slots:
 private:
 	QVariantMap m_config;
 };
-

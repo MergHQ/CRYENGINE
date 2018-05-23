@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __AICoverSurface_h__
-#define __AICoverSurface_h__
-
 #pragma once
 
 #include "Objects/BaseObject.h"
@@ -44,7 +41,7 @@ public:
 	virtual void          SetHelperScale(float scale);
 	virtual float         GetHelperScale();
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void                  CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	float                 GetHelperSize() const;
 
@@ -158,19 +155,19 @@ protected:
 	{
 		CSmartVariableEnum<string> sampler;
 
-		CSmartVariable<float>       limitLeft;
-		CSmartVariable<float>       limitRight;
-		CSmartVariable<float>       limitDepth;
-		CSmartVariable<float>       limitHeight;
+		CSmartVariable<float>      limitLeft;
+		CSmartVariable<float>      limitRight;
+		CSmartVariable<float>      limitDepth;
+		CSmartVariable<float>      limitHeight;
 
-		CSmartVariable<float>       widthInterval;
-		CSmartVariable<float>       heightInterval;
+		CSmartVariable<float>      widthInterval;
+		CSmartVariable<float>      heightInterval;
 
-		CSmartVariable<float>       maxStartHeight;
+		CSmartVariable<float>      maxStartHeight;
 
-		CSmartVariable<float>       simplifyThreshold;
+		CSmartVariable<float>      simplifyThreshold;
 
-		void                        Serialize(CAICoverSurface& object, CObjectArchive& archive)
+		void                       Serialize(CAICoverSurface& object, CObjectArchive& archive)
 		{
 			object.SerializeVarEnum(archive, "Sampler", sampler);
 			object.SerializeVar(archive, "LimitDepth", limitDepth);
@@ -236,6 +233,3 @@ public:
 		return RUNTIME_CLASS(CAICoverSurface);
 	}
 };
-
-#endif
-

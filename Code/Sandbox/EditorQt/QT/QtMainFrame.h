@@ -1,18 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  CryEngine Source File.
-//  Copyright (C), Crytek, 2014.
-// -------------------------------------------------------------------------
-//  File name: QtMain.h
-//  Created:   26/09/2014 by timur
-//  Description: QT MainFrame window
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <QMainWindow>
@@ -37,11 +24,7 @@ public:
 
 	void ResetAutoSaveTimers();
 
-	//////////////////////////////////////////////////////////////////////////
-
 	static CEditorMainFrame* GetInstance();
-
-	//////////////////////////////////////////////////////////////////////////
 
 	QToolWindowManager*  GetToolManager();
 	QMainToolBarManager* GetToolBarManager();
@@ -103,4 +86,3 @@ private:
 	CTimeValue                  m_lastUserInputTime;
 	bool                        m_bUserEventPriorityMode; // emergency mode will disregard all updates to the engine while
 };
-

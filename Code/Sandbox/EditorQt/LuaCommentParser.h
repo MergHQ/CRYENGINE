@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __LUACOMMENTPARSER_H__
-#define __LUACOMMENTPARSER_H__
+#pragma once
 
 struct LuaTable
 {
@@ -67,6 +66,3 @@ private:
 	LuaCommentParser();
 	LuaTable* m_RootTable;
 };
-
-#endif __LUACOMMENTPARSER_H__
-

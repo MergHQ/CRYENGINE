@@ -7,13 +7,12 @@
 #include "DockingSystem/DockableContainer.h"
 #include "Menu/MenuDesc.h"
 
+#include <QMenuBar>
 #include <QWidget>
 #include <QVariant>
-#include <QMenuBar>
 
 class CAbstractMenu;
 class CMenuBarUpdater;
-
 class QEvent;
 
 //! Base class for Editor(s) which means this should be the base class
@@ -186,7 +185,7 @@ protected:
 	void RegisterDockableWidget(QString name, std::function<QWidget* ()> factory, bool isUnique = false, bool isInternal = false);
 
 	//! Implement this method and use CDockableContainer::SpawnWidget to define the default layout
-	virtual void CreateDefaultLayout(CDockableContainer* sender) { CRY_ASSERT_MESSAGE(false, "Not implemented"); };
+	virtual void CreateDefaultLayout(CDockableContainer* sender) { CRY_ASSERT_MESSAGE(false, "Not implemented"); }
 
 	//! React on docking layout change
 	virtual void OnLayoutChange(const QVariantMap& state);

@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MannequinDialog_h__
-#define __MannequinDialog_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "SequencerSplitter.h"
 #include "SequencerDopeSheet.h"
@@ -178,37 +173,37 @@ public:
 	static const int s_minPanelSize;
 
 private:
-	CFragmentEditorPage                       m_wndFragmentEditorPage;
-	CTransitionEditorPage                     m_wndTransitionEditorPage;
-	CPreviewerPage                            m_wndPreviewerPage;
+	CFragmentEditorPage                         m_wndFragmentEditorPage;
+	CTransitionEditorPage                       m_wndTransitionEditorPage;
+	CPreviewerPage                              m_wndPreviewerPage;
 
-	CPropertiesPanel*                         m_wndTagsPanel;
-	CFont                                     m_wndTagsPanelFont;
-	CFragmentSplitter                         m_wndFragmentSplitter;
-	CFragmentBrowser*                         m_wndFragmentBrowser;
-	CSequenceBrowser*                         m_wndSequenceBrowser;
-	CTransitionBrowser*                       m_wndTransitionBrowser;
-	CRollupCtrl                               m_wndFragmentsRollup;
-	CMannErrorReportDialog                    m_wndErrorReport;
+	CPropertiesPanel*                           m_wndTagsPanel;
+	CFont                                       m_wndTagsPanelFont;
+	CFragmentSplitter                           m_wndFragmentSplitter;
+	CFragmentBrowser*                           m_wndFragmentBrowser;
+	CSequenceBrowser*                           m_wndSequenceBrowser;
+	CTransitionBrowser*                         m_wndTransitionBrowser;
+	CRollupCtrl                                 m_wndFragmentsRollup;
+	CMannErrorReportDialog                      m_wndErrorReport;
 
-	SMannequinContexts                        m_contexts;
-	bool                                      m_bPreviewFileLoaded;
+	SMannequinContexts                          m_contexts;
+	bool                                        m_bPreviewFileLoaded;
 
 	std::unique_ptr<CMannequinFileChangeWriter> m_pFileChangeWriter;
 
-	static CMannequinDialog*                  s_pMannequinDialog;
-	std::vector<const CTagDefinition*>        m_lastFragTagDefVec;
-	bool                                      m_bRefreshingTagCtrl;
-	std::vector<TSmartPtr<CVarBlock>>         m_tagVarsVec;
+	static CMannequinDialog*                    s_pMannequinDialog;
+	std::vector<const CTagDefinition*>          m_lastFragTagDefVec;
+	bool                                        m_bRefreshingTagCtrl;
+	std::vector<TSmartPtr<CVarBlock>>           m_tagVarsVec;
 
-	std::vector<CTagControl>                  m_tagControlsVec;
-	std::vector<CTagControl>                  m_fragTagControlsVec;
+	std::vector<CTagControl>                    m_tagControlsVec;
+	std::vector<CTagControl>                    m_fragTagControlsVec;
 
-	XmlNodeRef                                m_historyBackup;
-	
-	XmlNodeRef                                m_LayoutFromXML;
-	bool                                      m_bShallTryLoadingPanels;
-	int                                       m_OnSizeCallCount;
+	XmlNodeRef                                  m_historyBackup;
+
+	XmlNodeRef                                  m_LayoutFromXML;
+	bool                                        m_bShallTryLoadingPanels;
+	int m_OnSizeCallCount;
 };
 
 enum
@@ -226,6 +221,3 @@ enum
 const CString MANNEQUIN_FOLDER        = "Animations/Mannequin/ADB/";
 const CString TAGS_FILENAME_ENDING    = "tags";
 const CString TAGS_FILENAME_EXTENSION = ".xml";
-
-#endif // __MannequinDialog_h__
-

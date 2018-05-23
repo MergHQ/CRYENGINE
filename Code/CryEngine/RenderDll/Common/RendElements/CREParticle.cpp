@@ -25,7 +25,7 @@ void CFillRateManager::AddPixelCount(float fPixels)
 {
 	if (fPixels > 0.f)
 	{
-		Lock();
+		Lock(); // TODO: Lockless
 		m_afPixels.push_back(fPixels);
 		m_fTotalPixels += fPixels;
 		Unlock();

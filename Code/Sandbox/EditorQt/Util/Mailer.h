@@ -1,13 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __Editor_Mailer_h__
-#define __Editor_Mailer_h__
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-//////////////////////////////////////////////////////////////////////////
 class CMailer
 {
 public:
@@ -17,6 +11,3 @@ public:
 	                     const std::vector<const char*>& _attachments, // All File Attachments
 	                     bool bShowDialog);                            // Whether to allow editing by user
 };
-
-#endif // __Editor_Mailer_h__
-

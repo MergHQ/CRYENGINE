@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SEQUENCER_TRACK_h__
-#define __SEQUENCER_TRACK_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "ISequencerSystem.h"
 
@@ -243,6 +238,3 @@ inline int TSequencerTrack<KeyType >::CopyKey(CSequencerTrack* pFromTrack, int n
 	SetKey(nkey, &key);
 	return nkey;
 }
-
-#endif // __SEQUENCER_TRACK_h__
-

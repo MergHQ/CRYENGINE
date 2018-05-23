@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SEQUENCER_SEQUENCE__H__
-#define __SEQUENCER_SEQUENCE__H__
+#pragma once
 
 #include "ISequencerSystem.h"
 
@@ -38,6 +37,3 @@ private:
 	string         m_name;
 	Range          m_timeRange;
 };
-
-#endif
-

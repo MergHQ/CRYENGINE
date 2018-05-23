@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SEQUENCE_ANALAYZER_NODES__H__
-#define __SEQUENCE_ANALAYZER_NODES__H__
+#pragma once
 
 #include "SequencerNode.h"
 #include "MannequinBase.h"
@@ -44,6 +43,3 @@ private:
 	SScopeData*          m_pScopeData;
 	EMannequinEditorMode m_mode;
 };
-
-#endif
-

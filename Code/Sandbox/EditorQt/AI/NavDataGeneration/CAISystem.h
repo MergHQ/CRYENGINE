@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _CAISYSTEM_H_
-#define _CAISYSTEM_H_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <map>
 #include "AI/NavDataGeneration/AILog.h"
@@ -468,6 +463,3 @@ struct SPerceptionModifierShape : SShape
 typedef std::map<string, SShape>                   ShapeMap;
 
 typedef std::map<string, SPerceptionModifierShape> PerceptionModifierShapeMap;
-
-#endif // _CAISYSTEM_H_
-

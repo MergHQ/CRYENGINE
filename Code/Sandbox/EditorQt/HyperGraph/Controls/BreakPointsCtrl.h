@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(AFX_BREAKPOINTSCONTROL_H)
-#define AFX_BREAKPOINTSCONTROL_H
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
+#pragma once
 
 #include <CryFlowGraph/IFlowGraphDebugger.h>
 
@@ -75,6 +70,3 @@ private:
 	IFlowGraphDebuggerPtr     m_pFlowGraphDebugger;
 	CFlowGraphDebuggerEditor* m_pFlowGraphDebuggerEditor{ nullptr };
 };
-
-#endif // !defined(AFX_BREAKPOINTSCONTROL_H)
-

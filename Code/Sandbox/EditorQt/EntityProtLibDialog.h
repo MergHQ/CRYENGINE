@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __entityprotlibdialog_h__
-#define __entityprotlibdialog_h__
 #pragma once
 
 #include "BaseLibraryDialog.h"
@@ -82,23 +80,20 @@ protected:
 	CPreviewModelCtrl   m_previewCtrl;
 	CPropertyCtrl       m_propsCtrl;
 	CPropertyCtrl       m_objectPropsCtrl;
-	CMFCPropertyTree*   m_pArchetypeExtensionPropsCtrl{ nullptr };
+	CMFCPropertyTree*   m_pArchetypeExtensionPropsCtrl { nullptr };
 	CXTEdit             m_descriptionEditBox;
 	CImageList          m_imageList;
 	CXTCaption          m_wndCaptionEntityClass;
 
 	//! Selected Prototype.
-	IEntity*       m_entity{ nullptr };
-	IEntitySystem* m_pEntitySystem{ nullptr };
+	IEntity*       m_entity { nullptr };
+	IEntitySystem* m_pEntitySystem { nullptr };
 	string         m_visualObject;
 	string         m_PrototypeMaterial;
 
-	bool           m_bEntityPlaying{ false };
-	bool           m_bShowDescription{ false };
+	bool           m_bEntityPlaying { false };
+	bool           m_bShowDescription { false };
 
 	// Prototype manager.
 	CEntityPrototypeManager* m_pEntityManager;
 };
-
-#endif // __entityprotlibdialog_h__
-

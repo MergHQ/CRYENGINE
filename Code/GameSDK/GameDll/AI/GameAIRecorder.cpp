@@ -410,7 +410,7 @@ bool CGameAIRecorder::FinalizeRemoteArchive(const char* szRecordingFile)
 		bPAKCreated = AddFileToRemoteArchive(szRecordingFile);
 
 		// Also attempt to add game log
-		AddFileToRemoteArchive(gEnv->pSystem->GetILog()->GetFileName());
+		AddFileToRemoteArchive(gEnv->pSystem->GetILog()->GetFilePath());
 
 		// Close the archive so it can be sent
 		m_pRemoteArchive = NULL;

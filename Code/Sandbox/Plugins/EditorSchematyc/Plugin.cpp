@@ -99,6 +99,3 @@ const char* CSchematycPlugin::GetPluginDescription()
 {
 	return g_szPluginDesc;
 }
-
-
-

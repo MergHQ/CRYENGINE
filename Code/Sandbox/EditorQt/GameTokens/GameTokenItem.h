@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __GameTokenItem_h__
-#define __GameTokenItem_h__
 #pragma once
 
 #include "BaseLibraryItem.h"
@@ -19,7 +17,7 @@ public:
 	CGameTokenItem();
 	~CGameTokenItem();
 
-	virtual EDataBaseItemType GetType() const { return EDB_TYPE_GAMETOKEN; };
+	virtual EDataBaseItemType GetType() const { return EDB_TYPE_GAMETOKEN; }
 
 	virtual void              SetName(const string& name);
 	void                      Serialize(SerializeContext& ctx);
@@ -30,15 +28,15 @@ public:
 	string GetValueString() const;
 	void   SetValueString(const char* sValue);
 	//! Retrieve value, return false if value cannot be restored
-	bool    GetValue(TFlowInputData& data) const;
+	bool   GetValue(TFlowInputData& data) const;
 	//! Set value, if bUpdateGTS is true, also the GameTokenSystem's value is set
-	void    SetValue(const TFlowInputData& data, bool bUpdateGTS = false);
+	void   SetValue(const TFlowInputData& data, bool bUpdateGTS = false);
 
-	void    SetLocalOnly(bool localOnly)                { m_localOnly = localOnly; ApplyFlags(); }
-	bool    GetLocalOnly() const                        { return m_localOnly; }
-	bool    SetTypeName(const char* typeName);
-	void    SetDescription(const char* sDescription)    { m_description = sDescription; }
-	string  GetDescription() const                      { return m_description; }
+	void   SetLocalOnly(bool localOnly)             { m_localOnly = localOnly; ApplyFlags(); }
+	bool   GetLocalOnly() const                     { return m_localOnly; }
+	bool   SetTypeName(const char* typeName);
+	void   SetDescription(const char* sDescription) { m_description = sDescription; }
+	string GetDescription() const                   { return m_description; }
 
 private:
 	void ApplyFlags();
@@ -53,6 +51,3 @@ private:
 	// this whole inconsistency exists because we have cyclic dependencies
 	// CBaseLibraryItem and CBaseLibrary using smart pointers
 };
-
-#endif // __GameTokenItem_h__
-
