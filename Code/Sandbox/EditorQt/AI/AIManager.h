@@ -28,7 +28,6 @@ enum class ENavigationUpdateType
 // forward declarations.
 class CAIGoalLibrary;
 class CAIBehaviorLibrary;
-class CScriptBind_AI;
 
 class CProgressNotification;
 
@@ -303,8 +302,6 @@ private:
 	friend struct CAIAnchorDump;
 	typedef std::map<string, int> AnchorActions;
 	AnchorActions   m_anchorActions;
-
-	CScriptBind_AI* m_pScriptAI;
 
 	typedef std::map<string, AgentPathfindingProperties> PFPropertiesMap;
 	PFPropertiesMap              m_mapPFProperties;

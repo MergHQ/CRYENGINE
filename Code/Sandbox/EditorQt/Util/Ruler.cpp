@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "AI\AIManager.h"
 #include "Ruler.h"
 #include "Viewport.h"
 
@@ -16,8 +15,6 @@ REGISTER_PREFERENCES_PAGE_PTR(SRulerPreferences, &rulerPreferences);
 CRuler::CRuler()
 	: m_bActive(false)
 	, m_MouseOverObject(CryGUID::Null())
-	, m_pPathAgents(NULL)
-	, m_numPathAgents(0)
 	, m_sphereScale(0.5f)
 	, m_sphereTrans(0.5f)
 {
@@ -28,20 +25,6 @@ CRuler::CRuler()
 CRuler::~CRuler()
 {
 	SetActive(false);
-
-	delete[] m_pPathAgents;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CRuler::HasQueuedPaths() const
-{
-	for (uint32 i = 0; i < m_numPathAgents; ++i)
-	{
-		if (m_pPathAgents[i].HasQueuedPaths())
-			return true;
-	}
-
-	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -50,24 +33,6 @@ void CRuler::SetActive(bool bActive)
 	if (m_bActive != bActive)
 	{
 		m_bActive = bActive;
-
-		// create path agents if they don't already exist
-		if (m_bActive && m_pPathAgents == NULL)
-		{
-			CAIManager* pAIManager = GetIEditorImpl()->GetAI();
-			m_numPathAgents = pAIManager->GetNumPathTypes();
-			m_pPathAgents = new CRulerPathAgent[m_numPathAgents];
-
-			for (uint32 i = 0; i < m_numPathAgents; ++i)
-			{
-				string name = pAIManager->GetPathTypeName(i);
-				const AgentPathfindingProperties* pPfP = pAIManager->GetPFPropertiesOfPathType(name);
-				if (pPfP)
-				{
-					m_pPathAgents[i].SetType(pPfP->id, name);
-				}
-			}
-		}
 
 		if (m_bActive)
 		{
@@ -85,11 +50,6 @@ void CRuler::SetActive(bool bActive)
 			pObject->SetHighlight(false);
 		}
 		m_MouseOverObject = CryGUID::Null();
-
-		for (uint32 i = 0; i < m_numPathAgents; ++i)
-		{
-			m_pPathAgents[i].ClearLastRequest();
-		}
 	}
 }
 
@@ -104,16 +64,6 @@ void CRuler::Update()
 		SetActive(false);
 		return;
 	}
-
-	static const ColorF colours[] =
-	{
-		Col_Blue,
-		Col_Green,
-		Col_Red,
-		Col_Yellow,
-		Col_Magenta,
-		Col_Black,
-	};
 
 	IRenderer* pRenderer = GetIEditorImpl()->GetSystem()->GetIRenderer();
 	CRY_ASSERT(pRenderer);
@@ -136,61 +86,32 @@ void CRuler::Update()
 			pAuxGeom->DrawAABB(AABB(vCursorWorldPos - vOffset * m_sphereScale, vCursorWorldPos + vOffset * m_sphereScale), false, ColorF(1.0f, 0.0f, 0.0f, 1.0f), eBBD_Faceted);
 		}
 
-		uint32 x = 12, y = 60;
-
 		if (!m_startPoint.IsEmpty())
 		{
-			//pAuxGeom->DrawSphere(m_startPoint.GetPos(), 1.0f, ColorB(255,255,255,255));
 			m_startPoint.Render(pRenderer);
 		}
 		if (!m_endPoint.IsEmpty())
 		{
-			//pAuxGeom->DrawSphere(m_endPoint.GetPos(), 1.0f, ColorB(255,255,255,255));
+			CRY_ASSERT(!m_startPoint.IsEmpty());
+
 			m_endPoint.Render(pRenderer);
 
-			pAuxGeom->DrawLine(m_startPoint.GetPos(), ColorB(255, 255, 255, 255), m_endPoint.GetPos(), ColorB(255, 255, 255, 255));
+			pAuxGeom->DrawLine(m_startPoint.GetPos(), Col_White, m_endPoint.GetPos(), Col_White, 2.0f);
 
-			string sTempText;
+			// Compute distances and output results
+			const Vec3 diff = m_endPoint.GetPos() - m_startPoint.GetPos();
+			const float distance = diff.GetLength();
+			const float projectedDistance = diff.GetLength2D();
+			const float elevationDiff = diff.z;
+			
+			const float lineHeight = 18.0f;
+			Vec2 drawPosition(12.0f, 60.0f);
 
-			// Compute distance and output results
-			// TODO: Consider movement speed outputs here as well?
-			const float fDistance = m_startPoint.GetDistance(m_endPoint);
-			sTempText.Format("Straight-line distance: %.3f", fDistance);
-
-			// Draw mid text
-			float white[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-			IRenderAuxText::Draw2dLabel(x, y, 2.0f, white, false, sTempText.c_str());
-			y += 18;
-
-			CAIManager* pAIManager = GetIEditorImpl()->GetAI();
-
-			for (uint32 i = 0; i < m_numPathAgents; ++i)
-			{
-				uint32 colourIndex = i % m_numPathAgents;
-				m_pPathAgents[i].Render(pRenderer, colours[colourIndex]);
-
-				// Check path agent status
-				string sMidText;
-				sMidText.Format("%s (type %d) ", m_pPathAgents[i].GetName(), m_pPathAgents[i].GetType());
-				if (m_pPathAgents[i].HasQueuedPaths())
-				{
-					sMidText += "Path Finder: Pending...";
-				}
-				else if (m_pPathAgents[i].GetLastPathSuccess())
-				{
-					string sTempText;
-					sTempText.Format("Path Finder: %.3f", m_pPathAgents[i].GetLastPathDist());
-					sMidText += sTempText;
-				}
-				else
-				{
-					sMidText += "Path Finder: No Path Found";
-				}
-
-				float col[4] = { colours[colourIndex].r, colours[colourIndex].g, colours[colourIndex].b, 1.0f };
-				IRenderAuxText::Draw2dLabel(x, y, 2.0f, col, false, sMidText.c_str());
-				y += 18;
-			}
+			IRenderAuxText::Draw2dLabel(drawPosition.x, drawPosition.y, 2.0f, Col_White, false, "Straight-line distance: %.3f", distance);
+			drawPosition.y += lineHeight;
+			IRenderAuxText::Draw2dLabel(drawPosition.x, drawPosition.y, 2.0f, Col_White, false, "Projected distance: %.3f", projectedDistance);
+			drawPosition.y += lineHeight;
+			IRenderAuxText::Draw2dLabel(drawPosition.x, drawPosition.y, 2.0f, Col_White, false, "Elevation difference: %.3f", elevationDiff);
 		}
 	}
 }
@@ -223,27 +144,6 @@ void CRuler::UpdateRulerPoint(CViewport* pView, const CPoint& point, CRulerPoint
 	{
 		Vec3 vWorldPoint = pView->SnapToGrid(pView->ViewToWorld(point));
 		rulerPoint.Set(vWorldPoint);
-	}
-
-	if (bRequestPath)
-	{
-		RequestPath();
-	}
-	else
-	{
-		for (uint32 i = 0; i < m_numPathAgents; ++i)
-		{
-			m_pPathAgents[i].ClearLastRequest();
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRuler::RequestPath()
-{
-	for (uint32 i = 0; i < m_numPathAgents; ++i)
-	{
-		m_pPathAgents[i].RequestPath(m_startPoint, m_endPoint);
 	}
 }
 
