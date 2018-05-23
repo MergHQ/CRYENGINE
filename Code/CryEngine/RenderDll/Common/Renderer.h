@@ -392,7 +392,7 @@ struct SSkinningDataPoolInfo
 };
 
 //////////////////////////////////////////////////////////////////////
-class CFillRateManager : private stl::PSyncDebug
+class CFillRateManager : private stl::PSyncMultiThread
 {
 public:
 	CFillRateManager()
