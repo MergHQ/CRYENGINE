@@ -2241,11 +2241,7 @@ void CBaseObject::Serialize(CObjectArchive& ar)
 			xmlNode->setAttr("Pos", GetPos());
 
 		xmlNode->setAttr("Rotate", m_rotate);
-
-		auto scale = GetScale();
-
-		if (scale != Vec3(1, 1, 1))
-			xmlNode->setAttr("Scale", scale);
+		xmlNode->setAttr("Scale", GetScale());
 
 		COLORREF colorToStore = RGB(m_color.r, m_color.g, m_color.b);
 		xmlNode->setAttr("ColorRGB", colorToStore);
