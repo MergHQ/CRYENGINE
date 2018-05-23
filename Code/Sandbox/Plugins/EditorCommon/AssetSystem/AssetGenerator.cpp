@@ -179,27 +179,30 @@ void CAssetGenerator::GenerateCryasset(const string& filePath)
 
 		pProgress->ShowProgress(filePath);
 
-		CResourceCompilerHelper::CallResourceCompiler(
-			filePath.c_str(),
-			m_rcSettings.c_str(),
-			&rcLogger,
-			false, // may show window?
-			CResourceCompilerHelper::eRcExePath_editor,
-			true,  // silent?
-			true);
+		if (GetISystem()->GetIPak()->IsFileExist(filePath))
+		{
+			CResourceCompilerHelper::CallResourceCompiler(
+				filePath.c_str(),
+				m_rcSettings.c_str(),
+				&rcLogger,
+				false, // may show window?
+				CResourceCompilerHelper::eRcExePath_editor,
+				true,  // silent?
+				true);
+		}
 
-			ThreadingUtils::PostOnMainThread([this]() 
+		ThreadingUtils::PostOnMainThread([this]() 
+		{
+			// It mustn't be null here by design.
+			CBatchProcess* pProgress = static_cast<CBatchProcess*>(m_pProgress.get());
+			CRY_ASSERT(pProgress); 
+
+			pProgress->PopItem();
+			if (pProgress->IsDone())
 			{
-				// It mustn't be null here by design.
-				CBatchProcess* pProgress = static_cast<CBatchProcess*>(m_pProgress.get());
-				CRY_ASSERT(pProgress); 
-
-				pProgress->PopItem();
-				if (pProgress->IsDone())
-				{
-					m_pProgress.reset(nullptr);
-				}
-			});
+				m_pProgress.reset(nullptr);
+			}
+		});
 	});
 }
 
